@@ -227,9 +227,14 @@
     const ratingNum = parseFloat(info.rating);
 
     let bg, bgReason;
-    if (isNaN(reviewCountNum) || reviewCountNum < 50) {
+    const highCancelRate = !isNaN(outstockNum) && outstockNum >= 40;
+    if (isNaN(reviewCountNum) || reviewCountNum < 50 || highCancelRate) {
       bg = '#ffd6d6';
-      bgReason = isNaN(reviewCountNum) ? '평가 없음' : '평가수 50개 미만';
+      const reasons = [];
+      if (isNaN(reviewCountNum)) reasons.push('평가 없음');
+      else if (reviewCountNum < 50) reasons.push('평가수 50개 미만');
+      if (highCancelRate) reasons.push('품절취소율 40% 이상');
+      bgReason = reasons.join(', ');
     } else if (reviewCountNum < 100) {
       bg = '#ffcc80';
       bgReason = '평가수 50~99개';
