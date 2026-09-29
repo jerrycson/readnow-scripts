@@ -1,369 +1,1234 @@
-// ReadNow Core Library
-// 여러 Tampermonkey 스크립트(중고가 검토 도우미, 판매자 정보 툴팁, 앞으로 만들 판매가 자동 결정 시스템 등)가
-// @require 로 함께 가져다 쓰는 공용 로직 모음입니다.
-//
-// 이 파일 자체는 독립 실행되는 유저스크립트가 아니라, 다른 스크립트의 @require 로만 사용됩니다.
-// GM_xmlhttpRequest 등은 이 파일을 불러오는 스크립트의 @grant 설정을 그대로 사용합니다.
-//
-// 사용하는 쪽 스크립트에서는:
-//   const Core = (typeof unsafeWindow !== 'undefined' ? unsafeWindow : window).ReadNowCore;
-// 로 꺼내 쓰면 됩니다.
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2F5D50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>리드나우 고객</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{--paper:#FFFFFF;--bg:#F3F5F4;--ink:#1E2B28;--sub:#5B6B66;--line:#DCE3E0;--cloth:#2F5D50;--cloth2:#264D42;--soft:#E6EFEB;--amber:#A8661B;--amberSoft:#FFF4E5;--red:#B0322A;--redSoft:#FDECEA;--gold:#8A6D1D;--goldSoft:#FBF3DC}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 Pretendard,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;padding-top:env(safe-area-inset-top,0);padding-bottom:calc(64px + env(safe-area-inset-bottom,0))}
+button{font:inherit;cursor:pointer}
+input,textarea{font:inherit}
+.top{position:sticky;top:0;z-index:5;background:var(--cloth);color:#fff;padding:10px 16px 12px;padding-top:calc(10px + env(safe-area-inset-top,0))}
+.top .row{display:flex;align-items:center;justify-content:space-between}
+.top h1{margin:0;font-size:17px;letter-spacing:-.01em}
+.top .sync{font-size:11.5px;opacity:.85;display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:#9FD6BE;display:inline-block}
+.dot.off{background:#E8B062}
+.me{border:0;background:rgba(255,255,255,.15);color:#fff;border-radius:14px;padding:3px 10px;font-size:12px}
+.search{margin-top:10px;position:relative}
+.search input{width:100%;border:0;border-radius:10px;padding:11px 14px 11px 38px;font-size:16px;background:#fff;color:var(--ink);outline:none}
+.search svg{position:absolute;left:12px;top:12px}
+main{max-width:720px;margin:0 auto;padding:12px 12px 24px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat{font:inherit;color:inherit;cursor:pointer;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:9px 8px;text-align:center}
+.stat b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+.stat span{font-size:11.5px;color:var(--sub)}
+.stat.warn b{color:var(--amber)} .stat.bad b{color:var(--red)}
+h2{font-size:13px;color:var(--sub);font-weight:600;margin:16px 4px 6px}
+.list{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.item{display:block;width:100%;text-align:left;border:0;background:none;padding:12px 14px;border-top:1px solid var(--line);color:inherit}
+.item:first-child{border-top:0}
+.item:active{background:var(--soft)}
+.item .l1{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.item .name{font-weight:700;font-size:15.5px}
+.item .l2{font-size:12.5px;color:var(--sub);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;line-height:1.6}
+.tag.bl{background:var(--redSoft);color:var(--red)} .tag.vip{background:var(--goldSoft);color:var(--gold)} .tag.ag{background:var(--amberSoft);color:var(--amber)} .tag.pl{background:var(--soft);color:var(--cloth)}
+.empty{padding:28px 16px;text-align:center;color:var(--sub);font-size:14px}
+.more{display:block;width:100%;border:0;background:none;color:var(--cloth);padding:12px;font-weight:600;border-top:1px solid var(--line)}
+/* 하단 탭 */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--paper);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom,0)}
+.tabs button{flex:1;border:0;background:none;padding:9px 0 8px;color:var(--sub);font-size:11.5px;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+.tabs button.on{color:var(--cloth);font-weight:700}
+.tabs svg{width:22px;height:22px}
+.badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:17px;height:17px;border-radius:9px;background:var(--amber);color:#fff;font-size:10.5px;line-height:17px;padding:0 4px;font-weight:700}
+/* 상세 */
+.sheet{position:fixed;inset:0;z-index:10;background:var(--bg);overflow:auto;display:none;padding-bottom:calc(20px + env(safe-area-inset-bottom,0))}
+.sheet.on{display:block}
+.sh{position:sticky;top:0;z-index:2;background:var(--paper);border-bottom:1px solid var(--line);padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0));display:flex;align-items:center;gap:10px}
+.back{border:0;background:none;padding:4px 6px;color:var(--cloth);font-weight:700;font-size:15px}
+.sh .t{font-weight:700;font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 12px}
+.card h3{margin:0 0 8px;font-size:13px;color:var(--sub);font-weight:600}
+.flags{display:flex;gap:8px}
+.flag{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:10px 6px;font-weight:700;color:var(--sub)}
+.flag.vip.on{border-color:var(--gold);background:var(--goldSoft);color:var(--gold)}
+.flag.bl.on{border-color:var(--red);background:var(--redSoft);color:var(--red)}
+.kv{display:grid;grid-template-columns:78px 1fr;gap:4px 10px;font-size:14px}
+.kv dt{color:var(--sub);font-size:12.5px;padding-top:2px} .kv dd{margin:0;word-break:break-all}
+.kv a{color:var(--cloth);text-decoration:none;font-weight:600}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.nums b{display:block;font-size:17px;font-variant-numeric:tabular-nums} .nums span{font-size:11.5px;color:var(--sub)}
+.note-in{display:flex;gap:8px;align-items:flex-end}
+.note-in textarea{flex:1;border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-height:44px;max-height:160px;resize:vertical;font-size:15px;outline:none}
+.note-in textarea:focus{border-color:var(--cloth)}
+.btn{border:0;border-radius:10px;background:var(--cloth);color:#fff;font-weight:700;padding:11px 14px}
+.btn:disabled{opacity:.45}
+.btn.ghost{background:#fff;color:var(--cloth);border:1.5px solid var(--cloth)}
+.btn.warn{background:#fff;color:var(--sub);border:1px solid var(--line);font-weight:600}
+.tl{list-style:none;margin:10px 0 0;padding:0 4px 0 0;max-height:55vh;overflow:auto;overscroll-behavior:contain}
+.tlnote{font-size:11.5px;color:var(--sub);margin-top:8px}
+.tl li{border-top:1px solid var(--line);padding:9px 0}
+.tl li:first-child{border-top:0}
+.tl .h{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--sub)}
+.tl .b{font-size:14px;white-space:pre-wrap;word-break:break-all;margin-top:2px}
+.tl .a{font-size:13.5px;white-space:pre-wrap;margin-top:4px;padding:6px 9px;background:var(--soft);border-radius:8px}
+.order{border-top:1px solid var(--line);padding:10px 0}
+.order:first-of-type{border-top:0}
+.order .oh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.order .oh b{font-size:14px}
+.order .om{font-size:12px;color:var(--sub);margin-top:1px}
+.order ul{margin:6px 0 0;padding:0;list-style:none}
+.order li{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;padding:2px 0}
+.order li .it{min-width:0}
+.st{font-size:11px;font-weight:700;border-radius:5px;padding:0 5px;margin-left:4px;white-space:nowrap}
+.st.x{background:var(--redSoft);color:var(--red)} .st.c{background:var(--amberSoft);color:var(--amber)}
+.seg{display:flex;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:10px}
+.seg button{flex:1;border:0;background:none;border-radius:8px;padding:9px;font-weight:700;color:var(--sub)}
+.seg button.on.bl{background:var(--redSoft);color:var(--red)} .seg button.on.vip{background:var(--goldSoft);color:var(--gold)} .seg button.on{background:var(--soft);color:var(--cloth)}
+.bar{height:6px;background:var(--soft);border-radius:3px;overflow:hidden;margin:6px 0 2px}.bar i{display:block;height:100%;background:var(--cloth)}
+.lk input{width:100%;margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:15px}
+.sortbar{display:flex;gap:6px;margin:0 0 8px}.sortbar select{flex:1;border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;background:#fff}
+.sortbar button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 10px;font-weight:600;color:var(--cloth);white-space:nowrap}
+.rankbtn{display:inline-block}
+.hl{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--cloth)}
+.tag.cau{background:var(--amberSoft);color:var(--amber)}
+.stats.five{grid-template-columns:repeat(5,1fr)}.stats.five .stat{padding:8px 4px}.stats.five .stat b{font-size:16px}
+.nums.five{grid-template-columns:repeat(5,1fr)}
+.flags.three .flag{font-size:13.5px;padding:10px 2px}
+.flag.cau.on{border-color:var(--amber);background:var(--amberSoft);color:var(--amber)}
+.fwhy{font-size:12.5px;margin:6px 2px 0;line-height:1.45}.fwhy a{color:inherit;font-weight:700}
+.linkbtn{display:block;border:0;background:none;color:var(--sub);text-decoration:underline;font-size:12px;padding:4px 2px}
+.scwrap{display:grid;grid-template-columns:1fr 1fr;gap:8px}.scb{border-radius:10px;padding:10px;text-align:center}.scb b{display:block;font-size:26px}.scb span{font-size:12px}
+.scb.good{background:var(--soft);color:var(--cloth)}.scb.bad{background:var(--amberSoft);color:var(--amber)}
+details summary{cursor:pointer;color:var(--cloth);font-weight:600;font-size:13px;margin-top:8px}
+.sth{font-size:12.5px;margin:10px 0 4px;color:var(--sub)}.sp{margin-bottom:6px}.spl{display:flex;justify-content:space-between;font-size:12.5px}.spb{height:6px;border-radius:3px;background:var(--bg);overflow:hidden}.spb i{display:block;height:100%}.spb.good i{background:var(--cloth)}.spb.bad i{background:var(--amber)}.spt{font-size:11.5px;color:var(--sub)}
+.src{font-size:11px;border-radius:4px;padding:0 4px}.src.auto{background:var(--soft);color:var(--cloth)}.src.manual{background:var(--goldSoft);color:var(--gold)}.src.sheet{background:var(--redSoft);color:var(--red)}
+.seg{flex-wrap:wrap}.seg button.on.cau{background:var(--amberSoft);color:var(--amber)}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.mgrid div{background:var(--bg);border-radius:10px;padding:9px}.mgrid b{display:block;font-size:18px}.mgrid span{display:block;font-size:12.5px;font-weight:600}.mgrid small{display:block;font-size:11px;color:var(--sub)}
+.rn2{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--soft);color:var(--cloth);text-align:center;font-size:12px;line-height:22px;font-weight:700}
+/* 순위 패널 */
+#rank{display:none}
+body.withrank.rankopen #rank{display:block;position:fixed;top:0;right:0;bottom:0;width:min(340px,88vw);z-index:9;background:var(--bg);border-left:1px solid var(--line);overflow:auto;padding:calc(12px + env(safe-area-inset-top,0)) 12px 90px;box-shadow:-8px 0 24px rgba(0,0,0,.12)}
+.rkh{display:flex;justify-content:space-between;align-items:center;margin:0 2px 8px}.rkx{border:0;background:none;color:var(--cloth);font-weight:700}
+.rk{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.rk h4{margin:0 0 6px;font-size:13.5px}.rk ol{list-style:none;margin:0;padding:0}
+.rk li{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--line);cursor:pointer;font-size:13.5px}.rk li:first-child{border-top:0}
+.rk .rn{width:20px;height:20px;border-radius:50%;text-align:center;line-height:20px;font-size:11px;font-weight:700;flex:none}.rk .rnm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rk .rv{font-weight:700;font-variant-numeric:tabular-nums}
+.rk.good{border-top:4px solid var(--cloth)}.rk.good h4{color:var(--cloth)}.rk.good .rn{background:var(--soft);color:var(--cloth)}.rk.good li:nth-child(-n+3) .rn{background:var(--cloth);color:#fff}
+.rk.bad{border-top:4px solid var(--red);background:#FFFBFA}.rk.bad h4{color:var(--red)}.rk.bad .rn{background:var(--redSoft);color:var(--red)}.rk.bad .rv{color:var(--red)}
+.rk.mid{border-top:4px solid #7C8B96}.rk.mid h4{color:#56636C}.rk.mid .rn{background:#EEF1F3;color:#56636C}
+@media (min-width:1080px){
+  body.withrank main{max-width:none;margin:0;padding-right:calc(max(12px,calc((100vw - 1100px)/2 - 12px)) + 356px);padding-left:max(12px,calc((100vw - 1100px)/2))}
+  body.withrank #rank{display:block;position:fixed;top:124px;right:max(12px,calc((100vw - 1100px)/2 - 12px));width:340px;bottom:70px;overflow:auto;padding:0;background:none;border:0;box-shadow:none}
+  body.withrank .rkx,body.withrank .rankbtn{display:none}
+}
+.tbtns{display:flex;gap:6px}.tbtns .me{white-space:nowrap}
+#modal{display:none;position:fixed;inset:0;z-index:30;background:rgba(20,30,27,.45);padding:calc(10px + env(safe-area-inset-top,0)) 10px 10px}
+#modal.on{display:flex;justify-content:center;align-items:flex-start}
+.mbox{background:var(--bg);border-radius:14px;width:min(760px,100%);max-height:calc(100vh - 20px);overflow:auto;padding:0 12px 16px}
+.mhead{position:sticky;top:0;background:var(--bg);display:flex;align-items:center;justify-content:space-between;padding:12px 2px 8px;z-index:1}
+.ptabs{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:3px}
+.ptabs button{border:0;background:none;border-radius:8px;padding:7px 12px;font-weight:700;color:var(--sub)}.ptabs button.on{background:var(--soft);color:var(--cloth)}
+.tbl{width:100%;border-collapse:collapse;background:var(--paper);border-radius:10px;overflow:hidden;font-size:13px;margin-bottom:6px}
+.tbl th,.tbl td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}.tbl th{background:var(--soft);color:var(--cloth);font-size:12px}
+.tbl td:nth-child(2){text-align:center;font-weight:700;white-space:nowrap}
+.mh{margin:14px 2px 6px;font-size:14px}.mh.good{color:var(--cloth)}.mh.bad{color:var(--amber)}
+.cfg{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:10px 12px}.cfg label{display:block;margin:6px 0;font-size:14px}
+.cfg input[type=number]{width:64px;border:1px solid var(--line);border-radius:6px;padding:4px 6px;font:inherit;text-align:center}
+.cfgprev{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--soft);color:var(--cloth);font-weight:700;font-size:13.5px}
+.spark{width:100%;height:70px;display:block}
+.seg.chips{flex-wrap:wrap}.seg.chips button{flex:0 0 auto;padding:7px 10px;font-size:13px}
+.st.ship-free{background:var(--soft);color:var(--cloth)}.st.ship-paid{background:#EEF1F3;color:#56636C}.st.ship-unk{background:#F3F3F3;color:#999}
+.acct .ar{display:grid;grid-template-columns:1fr auto;gap:0 8px;padding:7px 0;border-bottom:1px dashed var(--line)}.acct .ar span{font-size:13.5px}.acct .ar b{font-size:16px;font-variant-numeric:tabular-nums}.acct .ar small{grid-column:1/-1;font-size:11.5px;color:var(--sub)}
+.acct .ar.minus b{color:var(--cloth)}.acct .ar.total{border-bottom:0;border-top:2px solid var(--ink);margin-top:2px}.acct .ar.total span{font-weight:700}.acct .ar.total b{font-size:19px}
+.cadd{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.cadd input{border:1px solid var(--line);border-radius:6px;padding:6px;font:inherit;min-width:0;flex:1 1 90px}.cadd .btn{padding:8px 14px}
+.tag.grade{background:#3F7FD1;font-weight:800;text-shadow:0 1px 1px rgba(0,0,0,.45)}
+.pend{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.pend .src{font-size:12px;color:var(--sub)} .pend .who{font-weight:700;margin:3px 0} .pend .body{font-size:13.5px;color:var(--ink);white-space:pre-wrap;max-height:90px;overflow:auto;background:var(--bg);border-radius:8px;padding:6px 9px;margin:6px 0}
+.cand{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px dashed var(--line);padding:8px 0}
+.cand .ci{min-width:0;font-size:13.5px} .cand .ci small{display:block;color:var(--sub);font-size:12px}
+.cand .btn{padding:8px 12px;font-size:13px;white-space:nowrap}
+.login{max-width:380px;margin:12vh auto 0;padding:24px;background:var(--paper);border:1px solid var(--line);border-radius:16px;text-align:center}
+.login h1{margin:0 0 4px;font-size:21px} .login p{color:var(--sub);font-size:14px;margin:0 0 18px}
+.login .btn{width:100%;padding:13px}
+.login details{margin-top:16px;text-align:left;font-size:13px;color:var(--sub)}
+.login input{width:100%;margin-top:6px;border:1px solid var(--line);border-radius:8px;padding:9px}
+.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0));transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:20px;font-size:13.5px;z-index:20;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+.toast.on{opacity:.95}
+.hint{font-size:12.5px;color:var(--sub);margin:4px 4px 10px}
+.pp{display:flex;flex-direction:column;gap:6px}.pp .ptabs{align-self:flex-start;flex-wrap:wrap}.ppnav{display:flex;align-items:center;gap:8px}.ppnav b{font-size:13.5px;min-width:0}.ppnav button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:3px 10px;color:var(--cloth);font-weight:700}.ppnav button:disabled{opacity:.35}.ppnav .now{font-size:12px}
+.fold{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;border-top:1px solid var(--line);background:var(--bg)}.fold button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;color:var(--cloth);font-weight:600;font-size:13px}.fold small{color:var(--sub);font-weight:400}
+.rk ol .fold{border:0;background:none;padding:6px 0 0}
+details.sec{margin:14px 0 0}details.sec>summary{list-style:none;font-size:13px;color:var(--sub);font-weight:700;margin:0 4px 6px;display:flex;align-items:center;gap:6px}details.sec>summary::-webkit-details-marker{display:none}details.sec>summary::before{content:'▸';color:var(--cloth);transition:transform .15s}details.sec[open]>summary::before{transform:rotate(90deg)}
+.mgrid.kpi{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}.mgrid .cmp{margin-top:2px}
+em.up,em.dn{font-style:normal;font-size:11.5px;font-weight:700;margin-left:4px}em.up{color:var(--cloth)}em.dn{color:var(--red)}
+.dist{display:grid;grid-template-columns:78px 1fr auto;gap:8px;align-items:center;font-size:12.5px;margin:3px 0}.dist .bar{margin:0}.dist b{font-size:12px;white-space:nowrap}
+.dual{display:grid;gap:2px;margin:6px 0 2px}.dual i{display:block;height:5px;border-radius:3px}.dual i.a,.lg.a{background:#7C9FC4}.dual i.b,.lg.b{background:var(--cloth)}.lg{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin:0 3px 0 6px}
+.prow{display:flex;gap:10px;align-items:flex-start}.pth{width:44px;height:62px;object-fit:cover;border-radius:4px;background:var(--soft);flex:none}.pth.none{display:block}.pbody{min-width:0;flex:1;display:block}.pbody .l1,.pbody .l2{display:flex}
+.pimgs{display:flex;gap:8px;overflow-x:auto;padding:10px 12px 0}.pimgs img{height:220px;border-radius:6px;background:var(--soft);flex:none}
+@media (min-width:760px){.stats{grid-template-columns:repeat(4,1fr)} body{font-size:15px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
 
-(function (global) {
-  'use strict';
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+'use strict';
+/* 리드나우 웹앱 v0.7.0 (고객·주문·상품)
+ * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
+ * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
+ * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
+ */
+const APP_VER = '0.7.0';
+const WRITER_SCHEMA = 6;
+firebase.initializeApp({
+  apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
+  storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15',
+});
+const db = firebase.firestore();
+db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); // 전파가 약해도 작성한 내용은 기기에 보관 후 자동 전송
+const TS = () => firebase.firestore.FieldValue.serverTimestamp();
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const won = (n) => (n == null ? '-' : Number(n).toLocaleString('ko-KR') + '원');
+const d10 = (s) => (s ? String(s).slice(0, 10) : '-');
+const dt16 = (s) => (s ? String(s).replace('T', ' ').slice(0, 16) : '-');
+const tsText = (t) => { if (!t) return ''; const d = t.toDate ? t.toDate() : new Date(typeof t === 'object' && t.seconds ? t.seconds * 1000 : t); if (isNaN(d)) return ''; return d.toLocaleString('ko-KR', { year: '2-digit', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }); };
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2200); }
 
-  // =========================================================================
-  // 공용 유틸
-  // =========================================================================
+/* ── 고객 목록은 기기에 보관하고 바뀐 것만 받아옴 (읽기 한도 절약) ── */
+const IDB = { db: null };
+function idbOpen() { return new Promise((res, rej) => { const r = indexedDB.open('readnow-app', 4); r.onupgradeneeded = () => { const d = r.result; [['customers', 'customerId'], ['meta', 'k'], ['orders', 'id'], ['sellers', 'id'], ['plist', 'id'], ['psales', 'id'], ['pbooks', 'id']].forEach(([n, k]) => { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: k }); }); }; r.onsuccess = () => { IDB.db = r.result; res(); }; r.onerror = () => rej(r.error); }); }
+const idbReq = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const idbAll = (s) => idbReq(IDB.db.transaction(s).objectStore(s).getAll());
+const idbGet = (s, k) => idbReq(IDB.db.transaction(s).objectStore(s).get(k));
+const idbPut = (s, arr) => new Promise((res, rej) => { const t = IDB.db.transaction(s, 'readwrite'); const st = t.objectStore(s); arr.forEach((o) => st.put(o)); t.oncomplete = res; t.onerror = () => rej(t.error); });
 
-  // 상품명 앞의 "[..]" 표기와 그 뒤 공백, " - " 이후의 부제목,
-  // 그리고 맨 뒤의 마침표/느낌표/물음표 등 문장부호 제거
-  function cleanTitle(title) {
-    let t = (title || '').replace(/^\[[^\]]*\]\s*/, '').trim();
-    const idx = t.indexOf(' - ');
-    if (idx !== -1) t = t.slice(0, idx).trim();
-    t = t.replace(/[.!?…,;:]+$/, '').trim();
-    return t;
+const S = { user: null, orders: new Map(), ordersLoaded: false, sellers: new Map(), sellersLoaded: false, sort: localStorage.getItem('rn-sort') || 'recent', rev: false, customers: new Map(), pending: [], tab: 'search', q: '', limit: 30, live: false, lastSync: null, detail: null, detailUnsubs: [] };
+const norm = (s) => String(s || '').toLowerCase().replace(/[\s\-()]/g, '');
+function searchKey(c) { return norm([c.displayName, ...(c.names || []), ...(c.phones || []), ...(c.phoneKeys || []), ...(c.emails || []), ...(c.emailsMasked || []), ...(c.otherRecipients || []), ...((c.addresses || []).map((a) => a.address)), c.platformCustomerKey].join('|')); }
+function putCustomer(id, v) { v.customerId = id; v._sk = searchKey(v); v._t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; S.customers.set(id, v); return v; }
+const deTs = (v) => (v && typeof v === 'object' ? (typeof v.toMillis === 'function' ? v.toMillis() : Array.isArray(v) ? v.map(deTs) : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, deTs(x)]))) : v);
+function serializable(v) { const o = deTs({ ...v }); delete o.uploadedAt; return o; } // 기기 보관용: 시각 값은 숫자로
+
+async function syncCustomers() {
+  const meta = await idbGet('meta', 'sync');
+  let q = db.collection('crm_customers');
+  if (meta && meta.last) q = q.where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last));
+  setSync('고객 목록 받는 중');
+  const snap = await q.get({ source: 'server' }).catch(() => q.get());
+  let max = meta ? meta.last || 0 : 0; const batch = [];
+  snap.forEach((d) => { const v = putCustomer(d.id, d.data()); if (v._t > max) max = v._t; batch.push(serializable(v)); });
+  if (batch.length) await idbPut('customers', batch);
+  await idbPut('meta', [{ k: 'sync', last: max, at: Date.now() }]);
+  S.lastSync = Date.now();
+  // 이후 바뀌는 고객은 실시간으로
+  const lq = db.collection('crm_customers').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(max || 0));
+  lq.onSnapshot((ss) => {
+    const ch = []; ss.docChanges().forEach((c) => { if (c.type !== 'removed') { const v = putCustomer(c.doc.id, c.doc.data()); ch.push(serializable(v)); } });
+    if (ch.length) { idbPut('customers', ch); if (S.tab !== 'detail') renderMain(); }
+    S.live = !ss.metadata.fromCache; setSync();
+  }, () => { S.live = false; setSync(); });
+}
+function watchPending() {
+  db.collection('crm_interactions').where('matchStatus', 'in', ['pending', 'none']).onSnapshot((ss) => {
+    S.pending = []; ss.forEach((d) => { const v = d.data(); if (!v.confirmed) S.pending.push({ id: d.id, ...v }); });
+    S.pending.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    renderTabs(); if (S.tab === 'pending') renderMain();
+  }, () => {});
+}
+/* ── 주문 기록: 처음 한 번은 버튼을 눌러 내려받고(약 5천 건), 이후엔 바뀐 것만 ── */
+function orderKey(o) { return norm([o.orderNo, o.buyer && o.buyer.name, o.recipient && o.recipient.name, ...(o.items || []).flatMap((i) => [i.title, i.isbn13, i.sku])].join('|')); }
+function putOrder(id, v) { v.id = id; v._sk = orderKey(v); v._t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : (v._t || 0); S.orders.set(id, v); return v; }
+async function syncOrders(first) {
+  const meta = await idbGet('meta', 'osync'); if (!meta && !first) return;
+  let q = db.collection('crm_orders'); if (meta && meta.last) q = q.where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last));
+  if (first) { S.ordersBusy = true; renderMain(); }
+  const snap = await q.get(); let max = meta ? meta.last || 0 : 0; const batch = [];
+  snap.forEach((d) => { const v = putOrder(d.id, d.data()); if (v._t > max) max = v._t; const o = deTs({ ...v }); delete o.uploadedAt; batch.push(o); });
+  if (batch.length) await idbPut('orders', batch);
+  await idbPut('meta', [{ k: 'osync', last: max, at: Date.now() }]); S.ordersLoaded = true; S.ordersBusy = false;
+  db.collection('crm_orders').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(max || 0)).onSnapshot((ss) => {
+    const ch = []; ss.docChanges().forEach((c) => { if (c.type !== 'removed') { const v = putOrder(c.doc.id, c.doc.data()); const o = deTs({ ...v }); delete o.uploadedAt; ch.push(o); } });
+    if (ch.length) { idbPut('orders', ch); if (S.tab === 'orders') renderMain(); }
+  }, () => {});
+  if (S.tab === 'orders') renderMain();
+}
+function setSync(msg) {
+  const el = $('.sync'); if (!el) return;
+  el.innerHTML = msg ? `<span class="dot off"></span>${esc(msg)}` : `<span class="dot ${S.live ? '' : 'off'}"></span>${S.live ? '실시간 연결됨' : '연결 대기 (기기에 저장된 내용 표시 중)'}`;
+}
+
+/* ── 쓰기: 모든 기록에 누가·언제를 남김 ── */
+function who() { return { by: S.user.email, byName: S.user.displayName || S.user.email.split('@')[0] }; }
+async function setFlag(cid, kind, on, reason) {
+  const w = who(); const payload = { on, ...w, at: TS() }; if (reason) payload.reason = reason; if (on === null) payload.reset = true;
+  const b = db.batch();
+  b.set(db.collection('crm_customers').doc(cid), { flags: { [kind]: payload }, uploadedAt: TS(), writerSchema: WRITER_SCHEMA }, { merge: true });
+  b.set(db.collection('crm_notes').doc(), { customerId: cid, type: 'flag', flag: kind, on, reason: reason || null, ...w, createdAt: TS(), writerSchema: WRITER_SCHEMA });
+  await b.commit();
+}
+async function addNote(cid, body) {
+  await db.collection('crm_notes').add({ customerId: cid, type: 'memo', body, ...who(), createdAt: TS(), writerSchema: WRITER_SCHEMA });
+}
+async function confirmLink(it, cid) {
+  const w = who(); const b = db.batch();
+  b.set(db.collection('crm_interactions').doc(it.id), { customerId: cid, matchStatus: cid ? 'matched' : 'dismissed', confirmed: true, confirmedBy: w.by, confirmedAt: TS(), uploadedAt: TS(), writerSchema: WRITER_SCHEMA }, { merge: true });
+  if (cid) {
+    if (it.type === 'blacklistNote') b.set(db.collection('crm_customers').doc(cid), { flags: { blacklist: { on: true, ...w, at: TS(), reason: it.body || '구글 시트 블랙리스트' } }, uploadedAt: TS(), writerSchema: WRITER_SCHEMA }, { merge: true });
+    b.set(db.collection('crm_system').doc('recompute'), { ids: firebase.firestore.FieldValue.arrayUnion(cid), writerSchema: WRITER_SCHEMA }, { merge: true }); // 다음 올리기 때 수집기가 고객 요약 다시 계산
   }
+  await b.commit();
+}
 
-  function cleanHtmlText(html) {
-    return (html || '')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/<[^>]+>/g, '')
-      .trim();
+/* ── 화면 ── */
+const ICON = {
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  pending: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
+  agent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 21h20L12 3z"/><path d="M12 10v5M12 18h.01"/></svg>',
+  orders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M4 19h16"/><path d="M8 16v-5M12 16V8M16 16v-3"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></svg>',
+  flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>',
+};
+function shell() {
+  $('#app').innerHTML = `
+  <header class="top"><div class="row"><h1>리드나우</h1><span class="tbtns"><button class="me" id="hscore">점수 기준</button><button class="me" id="hmet">지표·차트</button><button class="me" id="me">${esc((S.user.displayName || S.user.email).slice(0, 6))}</button></span></div>
+    <div class="sync"></div>
+    <div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6B66" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="고객·전화, 주문번호, 책 제목·ISBN (상품 탭에선 상품 검색)" autocomplete="off" inputmode="search"></div></header>
+  <main id="main"></main>
+  <aside id="rank"></aside>
+  <nav class="tabs" id="tabs"></nav>
+  <section class="sheet" id="sheet"></section>
+  <section id="modal"><div class="mbox"><div class="mhead"><div id="modaltabs" class="ptabs"></div><button class="rkx" id="mclose">닫기</button></div><div id="modalbody"></div></div></section>`;
+  $('#hscore').onclick = () => openModal('score'); $('#hmet').onclick = () => openModal('metrics'); $('#mclose').onclick = closeModal;
+  $('#modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
+  $('#q').addEventListener('input', (e) => { S.q = e.target.value; S.limit = 30; if (!['search', 'orders', 'sellers', 'products'].includes(S.tab)) S.tab = 'search'; renderTabs(); renderMain(); });
+  $('#me').onclick = () => { if (confirm(`${S.user.email}\n로그아웃할까요?`)) firebase.auth().signOut(); };
+  renderTabs(); renderMain(); setSync();
+}
+function renderTabs() {
+  const pc = S.pending.length;
+  const t = [['search', '고객', ICON.search], ['orders', '주문·매출', ICON.orders], ['products', '상품', ICON.book], ['sellers', '판매자', ICON.agent], ['flags', '표시 고객', ICON.flag], ['pending', '연결 확정', ICON.pending]];
+  $('#tabs').innerHTML = t.map(([k, l, i]) => `<button class="${S.tab === k ? 'on' : ''}" data-tab="${k}">${i}${l}${k === 'pending' && pc ? `<span class="badge">${pc}</span>` : ''}</button>`).join('');
+  $('#tabs').querySelectorAll('button').forEach((b) => (b.onclick = () => { S.tab = b.dataset.tab; S.limit = 30; renderTabs(); renderMain(); window.scrollTo(0, 0); }));
+}
+/* ── 자동 판정 기준 (Firebase에 저장, 바뀌면 모든 기기에 즉시 반영) ── */
+const CFG_DEFAULT = { vip: { minValue: 65, maxRisk: 25, minOrders: 3, excludeSellers: true }, caution: { minRisk: 35 } };
+S.cfg = JSON.parse(JSON.stringify(CFG_DEFAULT));
+function watchConfig() {
+  db.collection('crm_system').doc('scoring').onSnapshot((d) => {
+    const x = d.exists ? d.data() : {}; S.cfg = { vip: { ...CFG_DEFAULT.vip, ...(x.vip || {}) }, caution: { ...CFG_DEFAULT.caution, ...(x.caution || {}) }, by: x.updatedByName || null, at: x.updatedAt || null };
+    if (S.detail && S.detail.cid) renderDetail(); renderMain(); if ($('#modal.on')) renderModal();
+  }, () => {});
+}
+function strongSellers(c) { return (c.sellerLinks || []).filter((x) => x.strong !== false); }
+function autoFlag(c, k) {
+  const sc = c.scores; if (!sc) return { on: false };
+  const top = (parts) => (parts || []).filter((x) => x.pts > 0).sort((a, b) => b.pts - a.pts).slice(0, 3).map((x) => `${x.label}: ${x.text}`);
+  if (k === 'vip') {
+    const v = S.cfg.vip; const on = sc.value >= v.minValue && sc.risk < v.maxRisk && (c.saleOrderCount || 0) >= v.minOrders && !(v.excludeSellers && strongSellers(c).length);
+    return { on, reasons: on ? [`가치 ${sc.value}점 (기준 ${v.minValue}점 이상), 주의 ${sc.risk}점 (기준 ${v.maxRisk}점 미만)`, ...top(sc.valueParts)] : [] };
   }
+  const on = sc.risk >= S.cfg.caution.minRisk;
+  return { on, reasons: on ? [`주의 ${sc.risk}점 (기준 ${S.cfg.caution.minRisk}점 이상)`, ...top(sc.riskParts)] : [] };
+}
+function effFlag(c, k) {
+  const m = (c.flags || {})[k];
+  if (m && (m.on === true || m.on === false)) return { on: m.on, src: 'manual', reason: m.reason || '', by: m.byName || m.by || '', at: m.at };
+  if (k === 'vip' || k === 'caution') { const a = autoFlag(c, k); if (a.on) return { on: true, src: 'auto', reasons: a.reasons }; }
+  if (k === 'blacklist' && c.sheetFlags && c.sheetFlags.blacklist) return { on: true, src: 'sheet', reason: c.sheetFlags.blacklist.reason || '' };
+  return { on: false, src: m && m.reset ? 'reset' : null };
+}
+function flagsOf(c) { return { vip: effFlag(c, 'vip').on, cau: effFlag(c, 'caution').on, bl: effFlag(c, 'blacklist').on, agent: (c.otherRecipientCount || 0) >= 3, seller: strongSellers(c).length > 0 }; }
 
-  // 단어(숫자 포함) 단위를 유지하면서 대략 maxLen자 근처에서 줄바꿈
-  function chunkText(text, maxLen) {
-    const words = (text || '').split(' ');
-    const lines = [];
-    let current = '';
-    for (const word of words) {
-      const candidate = current ? current + ' ' + word : word;
-      if (candidate.length > maxLen && current) {
-        lines.push(current);
-        current = word;
-      } else {
-        current = candidate;
-      }
-    }
-    if (current) lines.push(current);
-    return lines.join('<br>');
+/* ── 배송비 회계: 주문마다 그 주문에 실제 적용된 배송비(주문 시점 값)로 무료·유료를 가르고,
+ *    택배사·건당 택배비는 기간별로 설정 (계약이 바뀌면 그날부터 새 값 적용) ── */
+const COURIER_DEFAULT = [{ from: '2000-01-01', carrier: '롯데택배', cost: 2500 }];
+S.acct = { couriers: COURIER_DEFAULT }; S.policy = null;
+function watchAcct() {
+  db.collection('crm_system').doc('accounting').onSnapshot((d) => { const x = d.exists ? d.data() : {}; S.acct = { ...x, couriers: (x.couriers && x.couriers.length ? x.couriers : COURIER_DEFAULT).slice().sort((a, b) => String(a.from).localeCompare(String(b.from))) }; if ($('#modal.on')) renderModal(); if (S.tab === 'orders') renderMain(); }, () => {});
+  db.collection('crm_system').doc('shopPolicy').onSnapshot((d) => { S.policy = d.exists ? d.data() : null; if ($('#modal.on')) renderModal(); if (S.tab === 'orders') renderMain(); }, () => {});
+}
+function courierFor(iso) { const d = String(iso || '').slice(0, 10); let hit = S.acct.couriers[0]; for (const c of S.acct.couriers) if (String(c.from) <= d) hit = c; return hit; }
+const SHIP_LABEL = { free: ['무료배송 (우리 부담)', 'ship-free'], paid: ['고객 부담', 'ship-paid'], remote: ['도서산간 (고객 부담)', 'ship-paid'], unknown: ['배송비 모름', 'ship-unk'] };
+function shipType(o) { if (o.kind !== 'sale') return null; if (o.shippingType) return o.shippingType; const f = o.shippingFee; if (f == null) return 'unknown'; if (f === 0) return 'free'; return f >= 6000 ? 'remote' : 'paid'; }
+function shipTag(o) { const t = shipType(o); if (!t) return ''; const [l, c] = SHIP_LABEL[t]; return `<span class="st ${c}">${t === 'paid' || t === 'remote' ? `배송비 ${won(o.shippingFee)}` : l}</span>`; }
+function shipStats(kind) {
+  const keyOf = (iso) => { const d = String(iso || '').slice(0, 10); if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null; if (kind === 'day') return d; if (kind === 'month') return d.slice(0, 7); const dt = new Date(d + 'T00:00:00'); dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7)); const z = (x) => String(x).padStart(2, '0'); return `${dt.getFullYear()}-${z(dt.getMonth() + 1)}-${z(dt.getDate())}`; };
+  const mm = {};
+  for (const o of S.orders.values()) {
+    if (o.kind !== 'sale') continue; const k = keyOf(o.orderedAt); if (!k) continue;
+    const r = (mm[k] = mm[k] || { k, orders: 0, free: 0, paid: 0, remote: 0, unknown: 0, fees: 0, freeAmt: 0, paidAmt: 0, costAll: 0, costFree: 0, costPaid: 0, carriers: new Set() });
+    r.orders += 1; const t = shipType(o); r[t] += 1; if (t === 'unknown') continue;
+    const cr = courierFor(o.orderedAt); const cost = cr ? cr.cost || 0 : 0; if (cr) r.carriers.add(cr.carrier);
+    r.costAll += cost;
+    if (t === 'free') { r.costFree += cost; r.freeAmt += o.totalAmount || 0; } else { r.costPaid += cost; r.fees += o.shippingFee || 0; r.paidAmt += o.totalAmount || 0; }
   }
-
-  // =========================================================================
-  // 상품 검색/매칭 로직 (TTB가 못 찾는 DVD/음반 등도 대응)
-  // "지금 보고 있는 상품"과 "알라딘 검색 결과의 여러 후보" 중 진짜 같은 상품을 찾아냄.
-  // 판매가 자동 결정 시스템의 1단계(유효한 상품 후보군 추리기)로 그대로 재사용될 로직.
-  // =========================================================================
-
-  // 우리 상품(알라딘 새책 상품페이지 기준)의 출시일/저자/출판사 조회
-  function fetchOwnProductMeta(itemId, cb) {
-    GM_xmlhttpRequest({
-      method: 'GET',
-      url: `https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${itemId}`,
-      timeout: 15000,
-      ontimeout: () => cb({ date: null, authors: [], publisher: '' }),
-      onload: (res) => {
-        const html = res.responseText;
-        const dateMatch = html.match(/<span class="Ere_PR10"><\/span>(\d{4}-\d{2}-\d{2})<span class="Ere_PR10">/);
-        const liMatch = html.match(/<li class="Ere_sub2_title">([\s\S]*?)<\/li>/);
-        let authors = [];
-        let publisher = '';
-        if (liMatch) {
-          authors = [...liMatch[1].matchAll(/AuthorSearch=[^"]*"[^>]*>([^<]+)<\/a>/g)].map((a) => a[1]);
-          const pubMatch = liMatch[1].match(/PublisherSearch=[^"]*"[^>]*>([^<]+)<\/a>/);
-          publisher = pubMatch ? pubMatch[1] : '';
-        }
-        cb({ date: dateMatch ? dateMatch[1] : null, authors, publisher });
-      },
-      onerror: () => cb({ date: null, authors: [], publisher: '' }),
-    });
-  }
-
-  // 검색 결과에서 후보별로 {itemId, title, year, month, authors, publisher, hasNewBookPrice} 추출
-  function parseSearchCandidatesDetailed(html) {
-    const titleRe = /<a href="\/shop\/UsedShop\/wuseditemall\.aspx\?ItemId=(\d+)" class="bo3"><b>([^<]+)<\/b><\/a>/g;
-    const marks = [];
-    let m;
-    while ((m = titleRe.exec(html)) !== null) {
-      marks.push({ index: m.index, itemId: m[1], title: m[2].trim() });
-    }
-    const candidates = [];
-    for (let i = 0; i < marks.length; i++) {
-      const start = marks[i].index;
-      const end = i + 1 < marks.length ? marks[i + 1].index : html.length;
-      const block = html.slice(start, end);
-
-      const dateMatch = block.match(/(\d{4})년\s*(\d{1,2})월/);
-      const authors = [...block.matchAll(/AuthorSearch=[^"]*"[^>]*>([^<]+)<\/a>/g)].map((a) => a[1]);
-      const publisherMatch = block.match(/PublisherSearch=[^"]*"[^>]*>([^<]+)<\/a>/);
-      const newBookRe = new RegExp(
-        `wproduct\\.aspx\\?ItemId=${marks[i].itemId}"\\s+class="bo_used"><b>([\\d,]+원[^<]*)<\\/b><\\/a>`
-      );
-      const newBookMatch = block.match(newBookRe);
-
-      candidates.push({
-        itemId: marks[i].itemId,
-        title: marks[i].title,
-        year: dateMatch ? parseInt(dateMatch[1], 10) : null,
-        month: dateMatch ? parseInt(dateMatch[2], 10) : null,
-        authors,
-        publisher: publisherMatch ? publisherMatch[1] : '',
-        hasNewBookPrice: !!newBookMatch,
-      });
-    }
-    return candidates;
-  }
-
-  function searchUsedCandidatesDetailed(keyword, cb) {
-    const kw = encodeURIComponent(keyword);
-    const url =
-      `https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Used` +
-      `&KeyWord=${kw}&OutStock=0&ViewType=Detail&KeyFullWord=${kw}&KeyLastWord=${kw}`;
-    GM_xmlhttpRequest({
-      method: 'GET',
-      url,
-      timeout: 15000,
-      ontimeout: () => cb([]),
-      onload: (res) => cb(parseSearchCandidatesDetailed(res.responseText)),
-      onerror: () => cb([]),
-    });
-  }
-
-  // 동점 처리 순서: 출시년월(개월차) -> 출판사 일치 -> 저자 겹침 개수. 그래도 남으면 첫 번째
-  function pickBestCandidate(candidates, ourMeta) {
-    if (candidates.length === 0) return null;
-    if (candidates.length === 1) return candidates[0];
-
-    let pool = candidates;
-
-    if (ourMeta && ourMeta.date) {
-      const ourDate = new Date(ourMeta.date);
-      const oy = ourDate.getFullYear();
-      const om = ourDate.getMonth() + 1;
-      const withDate = candidates.filter((c) => c.year != null && c.month != null);
-      if (withDate.length > 0) {
-        let minDiff = Infinity;
-        withDate.forEach((c) => {
-          const diff = Math.abs((c.year - oy) * 12 + (c.month - om));
-          if (diff < minDiff) minDiff = diff;
-        });
-        pool = withDate.filter((c) => Math.abs((c.year - oy) * 12 + (c.month - om)) === minDiff);
-      }
-    }
-    if (pool.length === 1) return pool[0];
-
-    if (ourMeta && ourMeta.publisher) {
-      const pubMatches = pool.filter((c) => c.publisher && c.publisher === ourMeta.publisher);
-      if (pubMatches.length > 0) pool = pubMatches;
-    }
-    if (pool.length === 1) return pool[0];
-
-    if (ourMeta && ourMeta.authors && ourMeta.authors.length > 0) {
-      const overlapCount = (c) => (c.authors || []).filter((a) => ourMeta.authors.includes(a)).length;
-      const maxOverlap = Math.max(...pool.map(overlapCount));
-      const withMaxOverlap = pool.filter((c) => overlapCount(c) === maxOverlap);
-      if (withMaxOverlap.length > 0) pool = withMaxOverlap;
-    }
-
-    return pool[0];
-  }
-
-  // 상품명 검색: 제목이 정확히 일치 + "새책" 가격 근거가 있는 후보만 자동 선택 대상으로 삼음.
-  // noAutoMatch: true 를 반환하면 자동으로 고르지 않고 검색결과 페이지에 그대로 머무르는 게 맞음
-  function resolveViaTitleSearchWithNewBookCheck(title, ourMeta, cb) {
-    const cleanedTitle = cleanTitle(title);
-    searchUsedCandidatesDetailed(cleanedTitle, (candidates) => {
-      if (candidates.length === 0) {
-        cb(null);
-        return;
-      }
-      const exactTitleMatches = candidates.filter((c) => c.title === cleanedTitle);
-      const withNewBook = exactTitleMatches.filter((c) => c.hasNewBookPrice);
-
-      if (withNewBook.length === 0) {
-        cb({ noAutoMatch: true });
-        return;
-      }
-      cb(pickBestCandidate(withNewBook, ourMeta));
-    });
-  }
-
-  // ISBN 검색 -> 없으면 상품명(새책 근거 확인 포함) 검색 -> 그래도 없으면 null
-  function resolveUsedItemIdViaSearch(isbn13, title, updateItemId, cb) {
-    fetchOwnProductMeta(updateItemId, (ourMeta) => {
-      searchUsedCandidatesDetailed(isbn13, (candidatesByIsbn) => {
-        if (candidatesByIsbn.length > 0) {
-          cb(pickBestCandidate(candidatesByIsbn, ourMeta));
-          return;
-        }
-        resolveViaTitleSearchWithNewBookCheck(title, ourMeta, cb);
-      });
-    });
-  }
-
-  // =========================================================================
-  // 판매자 등급 판정 (순수 계산 로직만 — DOM/화면 표시는 각 스크립트 쪽에서 담당)
-  // 판매가 자동 결정 시스템에서 "유효한 판매자"를 걸러내는 기준으로 그대로 재사용됨.
-  // =========================================================================
-
-  // 사업년차 계산 (최초 리뷰일 기준)
-  function computeBusinessYears(firstReviewDate) {
-    if (!firstReviewDate) return null;
-    const first = new Date(firstReviewDate);
-    if (isNaN(first.getTime())) return null;
-    const years = (Date.now() - first.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-    return Math.floor(years);
-  }
-
-  // 배경색: 오직 평가수 기준 (5단계, 평가 없는 것도 빨강에 포함)
-  // 폰트색: 품절취소율/총상품수/배송비/평점 기준 (배경과 무관, 진한 색 + 볼드)
-  function evaluateBackground(info, rowShippingFee) {
-    const reviewCountNum = parseInt((info.reviewCount || '').replace(/,/g, ''), 10);
-    const outstockNum = parseFloat(info.outstockRate);
-    const totalItemsNum = parseInt((info.totalItems || '').replace(/,/g, ''), 10);
-    const ratingNum = parseFloat(info.rating);
-
-    let bg, bgReason;
-    const highCancelRate = !isNaN(outstockNum) && outstockNum >= 40;
-    if (isNaN(reviewCountNum) || reviewCountNum < 50 || highCancelRate) {
-      bg = '#ffd6d6';
-      const reasons = [];
-      if (isNaN(reviewCountNum)) reasons.push('평가 없음');
-      else if (reviewCountNum < 50) reasons.push('평가수 50개 미만');
-      if (highCancelRate) reasons.push('품절취소율 40% 이상');
-      bgReason = reasons.join(', ');
-    } else if (reviewCountNum < 100) {
-      bg = '#ffcc80';
-      bgReason = '평가수 50~99개';
-    } else if (reviewCountNum < 200) {
-      bg = '#fff3b0';
-      bgReason = '평가수 100~199개';
-    } else if (reviewCountNum < 1000) {
-      bg = '#c9f2c9';
-      bgReason = '평가수 200개 이상';
-    } else {
-      bg = '#66c17a';
-      bgReason = '평가수 1000개 이상';
-    }
-
-    const redReasons = [];
-    const redKeys = [];
-    if (!isNaN(outstockNum) && outstockNum >= 15) {
-      redReasons.push('품절취소율 15% 이상');
-      redKeys.push('outstock');
-    }
-    if (!isNaN(totalItemsNum) && totalItemsNum < 100) {
-      redReasons.push('총상품수 100개 미만');
-      redKeys.push('total');
-    }
-    if (!isNaN(rowShippingFee) && rowShippingFee >= 5000) {
-      redReasons.push('배송비 5,000원 이상');
-      redKeys.push('shipping');
-    }
-    if (!isNaN(ratingNum) && ratingNum < 90) {
-      redReasons.push('평점 90% 미만');
-      redKeys.push('rating');
-    }
-    if (redReasons.length > 0) {
-      return { bg, bgReason, fontColor: '#a30000', fontReasons: redReasons, fontKeys: redKeys };
-    }
-
-    const orangeReasons = [];
-    const orangeKeys = [];
-    if (!isNaN(outstockNum) && outstockNum >= 10 && outstockNum < 15) {
-      orangeReasons.push('품절취소율 10~14.99%');
-      orangeKeys.push('outstock');
-    }
-    if (!isNaN(ratingNum) && ratingNum >= 90 && ratingNum < 94) {
-      orangeReasons.push('평점 90~93.99%');
-      orangeKeys.push('rating');
-    }
-    if (orangeReasons.length > 0) {
-      return { bg, bgReason, fontColor: '#a15c00', fontReasons: orangeReasons, fontKeys: orangeKeys };
-    }
-
-    const yellowReasons = [];
-    const yellowKeys = [];
-    if (!isNaN(outstockNum) && outstockNum >= 5 && outstockNum < 10) {
-      yellowReasons.push('품절취소율 5~9.99%');
-      yellowKeys.push('outstock');
-    }
-    if (!isNaN(ratingNum) && ratingNum >= 94 && ratingNum < 97) {
-      yellowReasons.push('평점 94~96.99%');
-      yellowKeys.push('rating');
-    }
-    if (yellowReasons.length > 0) {
-      return { bg, bgReason, fontColor: '#7a6900', fontReasons: yellowReasons, fontKeys: yellowKeys };
-    }
-
-    if (!isNaN(outstockNum) && outstockNum < 5 && !isNaN(ratingNum) && ratingNum >= 97) {
-      return {
-        bg,
-        bgReason,
-        fontColor: '#0d5c0d',
-        fontReasons: ['품절취소율 5% 미만, 평점 97% 이상'],
-        fontKeys: ['outstock', 'rating'],
-      };
-    }
-
-    return { bg, bgReason, fontColor: null, fontReasons: [], fontKeys: [] };
-  }
-
-  // 음반/DVD 비중이 30% 이상인 판매자 판정. 강조색은 평가수 기준
-  function evaluateAvHighlight(info) {
-    const totalItemsNum = parseInt((info.totalItems || '').replace(/,/g, ''), 10);
-    if (!totalItemsNum || isNaN(totalItemsNum)) return null;
-    const musicNum = parseInt((info.musicCount || '').replace(/,/g, ''), 10);
-    const videoNum = parseInt((info.videoCount || '').replace(/,/g, ''), 10);
-
-    const musicPct = !isNaN(musicNum) ? (musicNum / totalItemsNum) * 100 : 0;
-    const videoPct = !isNaN(videoNum) ? (videoNum / totalItemsNum) * 100 : 0;
-
-    const labels = [];
-    if (musicPct >= 30) labels.push(`음반(${musicPct.toFixed(0)}%)`);
-    if (videoPct >= 30) labels.push(`DVD(${videoPct.toFixed(0)}%)`);
-    if (labels.length === 0) return null;
-
-    const reviewCountNum = parseInt((info.reviewCount || '').replace(/,/g, ''), 10);
-    let bg, border;
-    if (isNaN(reviewCountNum) || reviewCountNum < 30) {
-      bg = '#ffeaea';
-      border = '#c62828';
-    } else if (reviewCountNum < 60) {
-      bg = '#ffe9c7';
-      border = '#ef6c00';
-    } else if (reviewCountNum < 180) {
-      bg = '#fffae0';
-      border = '#c9a227';
-    } else {
-      bg = '#e3f9e3';
-      border = '#2e7d32';
-    }
-
-    return { label: labels.join('/'), bg, border };
-  }
-
-  // =========================================================================
-  // 내보내기
-  // =========================================================================
-  global.ReadNowCore = {
-    // 유틸
-    cleanTitle,
-    cleanHtmlText,
-    chunkText,
-    // 상품 검색/매칭
-    fetchOwnProductMeta,
-    parseSearchCandidatesDetailed,
-    searchUsedCandidatesDetailed,
-    pickBestCandidate,
-    resolveViaTitleSearchWithNewBookCheck,
-    resolveUsedItemIdViaSearch,
-    // 판매자 등급 판정
-    computeBusinessYears,
-    evaluateBackground,
-    evaluateAvHighlight,
+  let arr = Object.values(mm).sort((a, b) => b.k.localeCompare(a.k)); if (kind === 'day') arr = arr.slice(0, 31); if (kind === 'week') arr = arr.slice(0, 16);
+  return arr;
+}
+function policyCard() {
+  const p = S.policy; if (!p) return '<div class="hint">우리 가게 배송비 정책 기록이 아직 없습니다. 수집기가 매일 수집할 때 확인해 기록합니다.</div>';
+  const cur = p.current || {}; const hist = [...(p.tooltipHistory || []), ...(p.history || [])].sort((a, b) => String(a.from).localeCompare(String(b.from)));
+  const txt = (x) => (x.paidOnly ? `무조건 유료, 배송비 ${won(x.fee)}` : `${won(x.freeOver)} 이상 무료, 미만 배송비 ${won(x.fee)}`);
+  return `<div class="cfg"><b>지금 고객 배송비 정책</b>: ${txt(cur)} <span class="hint">(${esc(cur.day || '')} 확인)</span>
+    ${hist.length ? `<details><summary>정책 변경 기록 ${hist.length}건</summary><ul class="tl" style="max-height:200px">${hist.slice().reverse().map((x) => `<li><div class="h"><span>${esc(x.from || '')}부터</span><span>${esc(x.by || '')}</span></div><div class="b">${txt(x)}</div></li>`).join('')}</ul></details>` : ''}</div>`;
+}
+function courierEditor() {
+  const rows = S.acct.couriers;
+  return `<div class="cfg" style="margin-top:8px"><b>택배사·우리 부담 택배비 (기간별)</b>
+    <p class="hint" style="margin:4px 0 6px">택배사와 계약이 바뀌면 바뀐 날짜로 한 줄을 추가하세요. 그날부터의 주문에 새 값이 적용되고, 그 전 주문은 예전 값으로 계산됩니다.</p>
+    <table class="tbl"><tr><th>적용 시작일</th><th>택배사</th><th>건당 택배비</th><th></th></tr>
+    ${rows.map((c, i) => `<tr><td>${c.from === '2000-01-01' ? '처음부터' : esc(c.from)}</td><td>${esc(c.carrier)}</td><td>${won(c.cost)}</td><td>${rows.length > 1 ? `<button class="linkbtn" data-cdel="${i}">삭제</button>` : ''}</td></tr>`).join('')}</table>
+    <div class="cadd"><input type="date" id="cr_from" value="${new Date().toISOString().slice(0, 10)}"><input type="text" id="cr_name" value="${esc(rows[rows.length - 1].carrier)}" placeholder="택배사"><input type="number" id="cr_cost" value="${rows[rows.length - 1].cost}" min="0" step="10" placeholder="건당 원"><button class="btn" id="cr_add">추가</button></div>
+    <p class="hint">평균 택배비 계산 방식과 포장비 같은 다른 발송 비용은 나중에 따로 넣을 수 있게 넓힐 예정입니다.</p></div>`;
+}
+function shipSection(kind) {
+  if (!S.ordersLoaded) return '';
+  const arr = shipStats(kind);
+  const T = arr.reduce((a, x) => { Object.keys(x).forEach((k) => { if (k !== 'k' && k !== 'carriers') a[k] = (a[k] || 0) + x[k]; }); return a; }, {});
+  const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
+  const gain = (r) => r.fees - r.costPaid; // 유료 주문: 고객 배송비 − 그 주문들의 택배비
+  const net = (r) => r.costAll - r.fees; // 실제 우리 순지출
+  return `<h2>택배비 정산 (${kind === 'day' ? '최근 31일' : kind === 'week' ? '최근 16주' : '전체 기간'})</h2>
+    <div class="card" style="margin:0 0 8px">
+      <div class="acct">
+        <div class="ar"><span>① 택배사에 낼 택배비</span><b>${won(T.costAll || 0)}</b><small>발송 ${(((T.orders || 0) - (T.unknown || 0))).toLocaleString()}건 × 기간별 건당 택배비</small></div>
+        <div class="ar minus"><span>② 고객이 낸 배송비 (알라딘 정산으로 들어옴)</span><b>− ${won(T.fees || 0)}</b><small>유료 ${(T.paid || 0).toLocaleString()}건 · 도서산간 ${(T.remote || 0).toLocaleString()}건</small></div>
+        <div class="ar total"><span>= 실제 우리 순지출</span><b style="color:${net(T) > 0 ? 'var(--red)' : 'var(--cloth)'}">${won(net(T))}</b><small>①에서 ②를 뺀 금액</small></div>
+      </div>
+      <div class="mgrid" style="margin-top:10px">
+        <div><b>${won(T.costFree || 0)}</b><span>무료배송으로 전부 우리가 부담</span><small>${(T.free || 0).toLocaleString()}건 · 판매 주문의 ${pct(T.free || 0, T.orders || 0)}%</small></div>
+        <div><b style="color:${gain(T) >= 0 ? 'var(--cloth)' : 'var(--red)'}">${gain(T) >= 0 ? '+' : ''}${won(gain(T))}</b><span>유료 주문에서 남거나 모자란 돈</span><small>고객 배송비 ${won(T.fees || 0)} − 그 주문들 택배비 ${won(T.costPaid || 0)}</small></div></div>
+      ${(T.unknown || 0) ? `<div class="hint" style="margin-top:6px">배송비를 모르는 주문 ${T.unknown}건은 계산에서 뺐습니다 (엑셀에만 있는 주문 등)</div>` : ''}
+      <div class="hint" style="margin-top:6px">무료배송 주문 평균 주문 금액 ${won(T.free ? Math.round(T.freeAmt / T.free) : 0)} · 유료 주문 평균 ${won((T.paid || 0) + (T.remote || 0) ? Math.round(T.paidAmt / ((T.paid || 0) + (T.remote || 0))) : 0)}</div></div>
+    <div class="list">${arr.map((x) => `<div class="item" style="cursor:default"><div class="l1" style="justify-content:space-between"><b>${periodLabel(kind, x.k)}</b><b style="color:${net(x) > 0 ? 'var(--red)' : 'var(--cloth)'}">순지출 ${won(net(x))}</b></div>
+      <div class="l2"><span>택배비 ${won(x.costAll)} (${[...x.carriers].join(', ')})</span><span>고객 배송비 −${won(x.fees)}</span></div>
+      <div class="l2"><span>무료 ${x.free}건 부담 ${won(x.costFree)}</span><span>유료 ${x.paid + x.remote}건 차익 ${gain(x) >= 0 ? '+' : ''}${won(gain(x))}</span>${x.unknown ? `<span>모름 ${x.unknown}</span>` : ''}</div></div>`).join('')}</div>
+    <h2>배송비 정책·택배 계약</h2>${policyCard()}${courierEditor()}`;
+}
+function bindShip(root) {
+  const save = async (list, note) => { try { await db.collection('crm_system').doc('accounting').set({ couriers: list, updatedBy: S.user.email, updatedAt: TS(), history: firebase.firestore.FieldValue.arrayUnion({ at: Date.now(), by: S.user.email, note, couriers: list }) }, { merge: true }); toast('저장했습니다. 모든 기기에 바로 반영됩니다'); } catch (e) { toast('실패: ' + e.message); } };
+  const add = root.querySelector('#cr_add'); if (add) add.onclick = () => {
+    const from = root.querySelector('#cr_from').value; const carrier = root.querySelector('#cr_name').value.trim() || '롯데택배'; const cost = parseInt(root.querySelector('#cr_cost').value, 10);
+    if (!from || !Number.isFinite(cost)) { toast('날짜와 금액을 넣어 주세요'); return; }
+    const list = S.acct.couriers.filter((c) => c.from !== from).concat([{ from, carrier, cost }]).sort((a, b) => String(a.from).localeCompare(String(b.from)));
+    save(list, `${from}부터 ${carrier} ${cost}원`);
   };
-})(typeof unsafeWindow !== 'undefined' ? unsafeWindow : window);
+  root.querySelectorAll('[data-cdel]').forEach((b) => (b.onclick = () => { const i = +b.dataset.cdel; const c = S.acct.couriers[i]; if (!confirm(`${c.from} ${c.carrier} ${c.cost}원 줄을 지울까요?`)) return; save(S.acct.couriers.filter((_, j) => j !== i), `삭제: ${c.from} ${c.carrier} ${c.cost}원`); }));
+}
+/* ── 매출 집계: 일별(최근 31일)·주별(최근 16주)·월별 ── */
+function periodStats(kind) {
+  const first = new Map([...S.customers.values()].map((c) => [c.customerId, String(c.firstOrderAt || '').slice(0, 10)]));
+  const keyOf = (iso) => {
+    const d = String(iso || '').slice(0, 10); if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null;
+    if (kind === 'day') return d; if (kind === 'month') return d.slice(0, 7);
+    const dt = new Date(d + 'T00:00:00'); const wd = (dt.getDay() + 6) % 7; dt.setDate(dt.getDate() - wd); const z = (x) => String(x).padStart(2, '0'); return `${dt.getFullYear()}-${z(dt.getMonth() + 1)}-${z(dt.getDate())}`; // 월요일 시작 주
+  };
+  const mm = {};
+  for (const o of S.orders.values()) {
+    const k = keyOf(o.orderedAt); if (!k) continue;
+    const r = (mm[k] = mm[k] || { k, orders: 0, qty: 0, amount: 0, cancelQty: 0, pre: 0, ret: 0, newC: new Set(), repC: new Set() });
+    if (o.kind !== 'sale') { r.pre += 1; continue; }
+    r.orders += 1; const f = first.get(o.customerId) || ''; (keyOf(f) === k ? r.newC : r.repC).add(o.customerId);
+    (o.items || []).forEach((it) => { const q = it.qty || 1; if (it.lineStatus === 'normal') { r.qty += q; r.amount += (it.price || 0) * q; } else if (it.lineStatus === 'returned') r.ret += q; else if (it.lineStatus !== 'cancelledInOrder' && /cancel/i.test(it.lineStatus || '')) r.cancelQty += q; });
+  }
+  let arr = Object.values(mm).sort((a, b) => b.k.localeCompare(a.k));
+  if (kind === 'day') arr = arr.slice(0, 31); if (kind === 'week') arr = arr.slice(0, 16);
+  return arr;
+}
+function periodLabel(kind, k) {
+  if (kind === 'month') return k.replace('-', '년 ') + '월';
+  if (kind === 'day') { const d = new Date(k + 'T00:00:00'); return `${d.getMonth() + 1}/${d.getDate()} (${'일월화수목금토'[d.getDay()]})`; }
+  const d = new Date(k + 'T00:00:00'); const e = new Date(d); e.setDate(e.getDate() + 6); return `${d.getMonth() + 1}/${d.getDate()} ~ ${e.getMonth() + 1}/${e.getDate()}`;
+}
+function salesChart(kind) {
+  if (!S.ordersLoaded) return `<div class="empty">${S.ordersBusy ? '주문 기록을 받는 중입니다. 잠시 뒤 자동으로 나타납니다.' : '주문 기록이 아직 없습니다.'}</div>`;
+  const arr = periodStats(kind); const maxA = Math.max(1, ...arr.map((x) => x.amount));
+  const tot = arr.reduce((s, x) => s + x.amount, 0); const ord = arr.reduce((s, x) => s + x.orders, 0);
+  return `<div class="ptabs">${[['day', '일별'], ['week', '주별'], ['month', '월별']].map(([k, l]) => `<button class="${kind === k ? 'on' : ''}" data-period="${k}">${l}</button>`).join('')}</div>
+    <div class="hint" style="margin:6px 2px">${kind === 'day' ? '최근 31일' : kind === 'week' ? '최근 16주 (월~일)' : '전체 기간'} 합계: 순매출 <b>${tot.toLocaleString('ko-KR')}원</b>, 주문 ${ord.toLocaleString()}건</div>
+    <div class="list">${arr.map((x) => `<div class="item" style="cursor:default"><div class="l1" style="justify-content:space-between"><b>${periodLabel(kind, x.k)}</b><b>${x.amount.toLocaleString('ko-KR')}원</b></div>
+      <div class="bar"><i style="width:${(x.amount / maxA * 100).toFixed(1)}%"></i></div>
+      <div class="l2"><span>주문 ${x.orders}</span><span>신규 ${x.newC.size} · 재구매 ${x.repC.size}명</span><span>순판매 ${x.qty}권</span>${x.cancelQty ? `<span>고객 취소 ${x.cancelQty}권</span>` : ''}${x.ret ? `<span>반품 ${x.ret}권</span>` : ''}${x.pre ? `<span>판매 전 취소 ${x.pre}건</span>` : ''}</div></div>`).join('') || '<div class="empty">기록 없음</div>'}</div>`;
+}
+function bindPeriod(root, rerender) { root.querySelectorAll('[data-period]').forEach((b) => (b.onclick = () => { S.period = b.dataset.period; rerender(); })); }
+
+/* ── 도움말 창: 점수 기준(표·설정) / 지표·차트. 어느 화면에서든 위쪽 버튼으로 엶 ── */
+function openModal(which) { S.modal = which; $('#modal').classList.add('on'); document.body.style.overflow = 'hidden'; renderModal(); }
+function closeModal() { $('#modal').classList.remove('on'); if (!S.detail) document.body.style.overflow = ''; }
+function renderModal() {
+  const box = $('#modalbody'); const which = S.modal;
+  $('#modaltabs').innerHTML = [['score', '점수 기준'], ['metrics', '지표·차트']].map(([k, l]) => `<button class="${which === k ? 'on' : ''}" data-mt="${k}">${l}</button>`).join('');
+  $('#modaltabs').querySelectorAll('[data-mt]').forEach((b) => (b.onclick = () => { S.modal = b.dataset.mt; renderModal(); }));
+  if (which === 'score') {
+    const v = S.cfg.vip; const c = S.cfg.caution;
+    box.innerHTML = `<p class="hint">고객 등급화에 가장 널리 쓰는 <b>RFM</b>(최근성 Recency · 빈도 Frequency · 금액 Monetary)에 참여도와 거래 기간을 더한 것이 <b>가치 점수</b>, 중고책 판매에서 손해가 되는 요소를 모은 것이 <b>주의 점수</b>입니다. 점수는 매일 자동 수집 때 다시 계산됩니다.</p>
+      <h4 class="mh good">가치 점수 (100점, 높을수록 좋은 고객)</h4>
+      <table class="tbl"><tr><th>요소</th><th>배점</th><th>기준</th></tr>
+        <tr><td>최근성 (R)</td><td>25</td><td>마지막 구매 30일 이내 25 · 90일 20 · 180일 14 · 1년 8 · 그 이상 3</td></tr>
+        <tr><td>구매 빈도 (F)</td><td>25</td><td>10회 이상 25 · 5회 20 · 3회 15 · 2회 10 · 1회 5</td></tr>
+        <tr><td>누적 순매출 (M)</td><td>30</td><td>30만 원 이상 30 · 15만 27 · 7만 22 · 3만 16 · 1만 10 · 그 미만 5</td></tr>
+        <tr><td>구매확정·평가</td><td>10</td><td>주문의 절반 이상 평가 10 · 4분의 1 이상 7 · 1건 이상 4</td></tr>
+        <tr><td>거래 기간</td><td>10</td><td>재구매 고객의 첫 주문부터 12개월 10 · 6개월 7 · 3개월 4</td></tr></table>
+      <h4 class="mh bad">주의 점수 (100점 한도, 높을수록 조심)</h4>
+      <table class="tbl"><tr><th>요소</th><th>배점</th><th>기준</th></tr>
+        <tr><td>고객 취소</td><td>35</td><td>1번 5 · 2번 이상은 취소율에 따라 6~25 · 3번 이상 + 절반 이상 취소 35 · 5번 이상 최소 25</td></tr>
+        <tr><td>반품</td><td>25</td><td>2건 이상 25 · 1건 15</td></tr>
+        <tr><td>대행 의심</td><td>35</td><td>주문인과 다른 수령인 30명 이상 35 · 10명 25 · 3명 12</td></tr>
+        <tr><td>판매자 연결</td><td>30</td><td>허위 매물 판매자와 전화·이메일·반품 주소로 연결 30 · 다른 판매자 15 (이메일이 비슷하기만 하면 제외)</td></tr>
+        <tr><td>문의 부담</td><td>10</td><td>문의 5건 이상이면서 구매보다 많음 10 · 문의 3건 이상에 구매 없음 6</td></tr>
+        <tr><td>기록된 문제</td><td>10</td><td>구글 시트의 취소·불만 기록 1건 이상</td></tr></table>
+      <p class="hint">우리 품절로 취소된 책은 고객 책임이 아니므로 점수에 넣지 않습니다.</p>
+      <h4 class="mh">자동 판정 기준 (바꾸면 모든 기기에 바로 반영)</h4>
+      <div class="cfg">
+        <label>자동 VIP: 가치 점수 <input type="number" id="c_vv" value="${v.minValue}" min="0" max="100"> 점 이상</label>
+        <label>그리고 주의 점수 <input type="number" id="c_vr" value="${v.maxRisk}" min="0" max="100"> 점 미만</label>
+        <label>그리고 구매 <input type="number" id="c_vo" value="${v.minOrders}" min="0" max="100"> 회 이상</label>
+        <label class="ck"><input type="checkbox" id="c_vs" ${v.excludeSellers ? 'checked' : ''}> 판매자와 연결된 고객은 VIP에서 제외</label>
+        <label>자동 주의고객: 주의 점수 <input type="number" id="c_cr" value="${c.minRisk}" min="0" max="100"> 점 이상</label>
+        <div class="cfgprev" id="cfgprev"></div>
+        <div style="display:flex;gap:8px;margin-top:8px"><button class="btn" id="c_save">기준 저장</button><button class="btn warn" id="c_def">처음 값으로</button></div>
+        ${S.cfg.by ? `<p class="hint" style="margin-top:6px">마지막 변경: ${esc(S.cfg.by)} ${tsText(S.cfg.at)}</p>` : ''}
+        <p class="hint">사람이 직접 VIP·주의로 정하거나 해제한 고객은 기준과 상관없이 그대로 유지됩니다.</p></div>`;
+    const read = () => ({ vip: { minValue: +$('#c_vv').value || 0, maxRisk: +$('#c_vr').value || 0, minOrders: +$('#c_vo').value || 0, excludeSellers: $('#c_vs').checked }, caution: { minRisk: +$('#c_cr').value || 0 } });
+    const preview = () => { const saved = S.cfg; S.cfg = { ...S.cfg, ...read() }; const all = [...S.customers.values()]; const nv = all.filter((x) => effFlag(x, 'vip').on).length; const nc = all.filter((x) => effFlag(x, 'caution').on).length; S.cfg = saved; $('#cfgprev').textContent = `이 기준이면 VIP ${nv}명, 주의고객 ${nc}명 (직접 정한 고객 포함)`; };
+    box.querySelectorAll('.cfg input').forEach((i) => (i.oninput = preview)); preview();
+    $('#c_save').onclick = async () => { const x = read(); try { await db.collection('crm_system').doc('scoring').set({ ...x, updatedBy: S.user.email, updatedByName: S.user.displayName || S.user.email, updatedAt: TS(), history: firebase.firestore.FieldValue.arrayUnion({ at: Date.now(), by: S.user.email, ...x }) }, { merge: true }); toast('기준을 저장했습니다. 모든 기기에 바로 반영됩니다'); } catch (e) { toast('실패: ' + e.message); } };
+    $('#c_def').onclick = () => { $('#c_vv').value = CFG_DEFAULT.vip.minValue; $('#c_vr').value = CFG_DEFAULT.vip.maxRisk; $('#c_vo').value = CFG_DEFAULT.vip.minOrders; $('#c_vs').checked = true; $('#c_cr').value = CFG_DEFAULT.caution.minRisk; preview(); };
+  } else {
+    box.innerHTML = ordersDash('m');
+    bindDash(box, renderModal);
+  }
+}
+const SORTS = {
+  recent: { label: '최근 주문', key: (c) => c.lastOrderAt || '', desc: true },
+  sales: { label: '매출', key: (c) => c.salesAmount || 0, desc: true },
+  orders: { label: '주문 수', key: (c) => c.saleOrderCount || 0, desc: true },
+  cancels: { label: '취소 수', key: (c) => (c.cancelOrderCount || 0) + (c.cancelledItemQty || 0), desc: true },
+  qna: { label: '문의 수', key: (c) => c.qnaCount || 0, desc: true },
+  reviews: { label: '구매확정(평가) 수', key: (c) => c.reviewCount || 0, desc: true },
+  value: { label: '가치 점수', key: (c) => (c.scores && c.scores.value) || 0, desc: true },
+  risk: { label: '주의 점수', key: (c) => (c.scores && c.scores.risk) || 0, desc: true },
+  name: { label: '이름', key: (c) => c.displayName || '힣', desc: false },
+};
+function sortCustomers(arr) {
+  const s = SORTS[S.sort] || SORTS.recent; const dir = (s.desc ? -1 : 1) * (S.rev ? -1 : 1);
+  return arr.slice().sort((a, b) => { const x = s.key(a); const y = s.key(b); return (typeof x === 'string' ? x.localeCompare(y, 'ko') : x - y) * dir; });
+}
+function sortBar() {
+  return `<div class="sortbar"><select id="sortsel">${Object.entries(SORTS).map(([k, v]) => `<option value="${k}" ${S.sort === k ? 'selected' : ''}>${v.label} 순</option>`).join('')}</select>
+    <button id="sortrev" class="rev" title="순서 뒤집기">${(SORTS[S.sort] || SORTS.recent).desc !== !!S.rev ? '큰 순 ↓' : '작은 순 ↑'}</button>
+    <button id="rankbtn" class="rankbtn">순위 TOP10</button></div>`;
+}
+function bindSort(m) {
+  const ss = $('#sortsel', m); if (ss) ss.onchange = () => { S.sort = ss.value; S.rev = false; S.limit = 30; localStorage.setItem('rn-sort', S.sort); renderMain(); };
+  const rv = $('#sortrev', m); if (rv) rv.onclick = () => { S.rev = !S.rev; renderMain(); };
+  const rb = $('#rankbtn', m); if (rb) rb.onclick = () => { document.body.classList.toggle('rankopen'); renderRank(); };
+}
+function custRow(c, extra) {
+  const f = flagsOf(c);
+  const tags = `${f.bl ? '<span class="tag bl">블랙리스트</span>' : ''}${f.cau ? '<span class="tag cau">주의</span>' : ''}${f.vip ? '<span class="tag vip">VIP</span>' : ''}${f.seller ? '<span class="tag bl">판매자 정보 일치</span>' : ''}${f.agent ? `<span class="tag ag">수령인 ${c.otherRecipientCount}명</span>` : ''}${c.platforms && c.platforms.some((p) => p !== 'aladin') ? c.platforms.filter((p) => p !== 'aladin').map((p) => `<span class="tag pl">${p === 'yes24' ? '예스24' : p === 'direct' ? '직접' : esc(p)}</span>`).join('') : ''}`;
+  const sv = SORTS[S.sort]; const hl = S.tab === 'search' && sv && !['recent', 'name'].includes(S.sort) ? `<span class="hl">${sv.label} ${S.sort === 'sales' ? won(sv.key(c)) : sv.key(c).toLocaleString()}</span>` : '';
+  return `<button class="item" data-cid="${esc(c.customerId)}"><div class="l1"><span class="name">${esc(c.displayName || '(이름 없음)')}</span>${tags}${hl}</div>
+    <div class="l2"><span>${esc((c.phones || [])[0] || (c.emails || [])[0] || (c.emailsMasked || [])[0] || '')}</span><span>주문 ${c.saleOrderCount || 0}${c.cancelOrderCount ? ` · 취소 ${c.cancelOrderCount}` : ''}</span><span>최근 ${d10(c.lastOrderAt)}</span>${extra || ''}</div></button>`;
+}
+function bindRows(root) { root.querySelectorAll('[data-cid]').forEach((b) => (b.onclick = () => openCustomer(b.dataset.cid))); }
+function renderMain() {
+  const m = $('#main'); if (!m) return; const all = [...S.customers.values()];
+  document.body.classList.toggle('withrank', S.tab === 'search');
+  if (S.tab === 'search') {
+    const q = norm(S.q);
+    if (!q) {
+      const cnt = (k) => all.filter((c) => flagsOf(c)[k]).length;
+      const list = sortCustomers(all.filter((c) => c.lastOrderAt || c.saleOrderCount || c.qnaCount));
+      m.innerHTML = `<div class="stats five"><div class="stat"><b>${all.length.toLocaleString()}</b><span>고객</span></div><button class="stat" data-go="flags:vip"><b>${cnt('vip')}</b><span>VIP</span></button><button class="stat warn" data-go="flags:cau"><b>${cnt('cau')}</b><span>주의</span></button><button class="stat bad" data-go="flags:bl"><b>${cnt('bl')}</b><span>블랙리스트</span></button><button class="stat warn" data-go="pending"><b>${S.pending.length}</b><span>연결 대기</span></button></div>
+        ${sortBar()}<div class="list">${list.slice(0, S.limit).map((c) => custRow(c)).join('') || '<div class="empty">고객 목록을 받는 중입니다</div>'}${list.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
+    } else {
+      const hits = sortCustomers(all.filter((c) => c._sk.includes(q)));
+      const oh = S.ordersLoaded ? [...S.orders.values()].filter((o) => o._sk.includes(q)).sort((a, b) => String(b.orderedAt || '').localeCompare(String(a.orderedAt || ''))) : [];
+      const cLim = S.limit; const oLim = S.olimit || 20;
+      let html = `${sortBar()}<h2>고객 ${hits.length.toLocaleString()}명</h2><div class="list">${hits.slice(0, cLim).map((c) => custRow(c)).join('') || '<div class="empty">이름·전화·이메일·주소로 찾은 고객이 없습니다</div>'}${hits.length > cLim ? '<button class="more" id="more">고객 더 보기</button>' : ''}</div>`;
+      if (S.ordersLoaded) html += `<h2>주문 ${oh.length.toLocaleString()}건 (주문번호·책 제목·ISBN·받는 분)</h2><div class="list">${oh.slice(0, oLim).map(orderRow).join('') || '<div class="empty">찾은 주문이 없습니다</div>'}${oh.length > oLim ? '<button class="more" id="omore">주문 더 보기</button>' : ''}</div>`;
+      else html += `<div class="card" style="margin:12px 0 0"><h3>책 제목·ISBN으로도 찾으려면</h3><p class="hint" style="margin:0 0 10px">이 기기에 주문 기록을 한 번 내려받아야 합니다 (약 5천 건, 처음 한 번만). 주문번호(001-A…)는 지금도 바로 찾을 수 있습니다.</p><button class="btn" id="oload2" ${S.ordersBusy ? 'disabled' : ''}>${S.ordersBusy ? '내려받는 중…' : '주문 기록 내려받기'}</button></div>`;
+      m.innerHTML = html;
+      const b2 = $('#oload2'); if (b2) b2.onclick = () => syncOrders(true).then(() => renderMain()).catch((e) => toast('실패: ' + e.message));
+      const om = $('#omore'); if (om) om.onclick = () => { S.olimit = oLim + 50; renderMain(); };
+      if (/^\d{3}-?a\d{9}$/i.test(S.q.trim()) && !oh.length) { const ono = S.q.trim().toUpperCase().replace(/^(\d{3})-?A/, '$1-A'); db.collection('crm_orders').doc('aladin_' + ono).get().then((d) => { if (d.exists) openCustomer(d.data().customerId); else toast('그 주문번호가 없습니다'); }); }
+    }
+    bindSort(m); renderRank();
+  } else if (S.tab === 'flags') {
+    const which = S.flagList || 'vip';
+    const segs = [['vip', 'VIP', 'vip'], ['cau', '주의', 'cau'], ['bl', '블랙리스트', 'bl'], ['agent', '대행 의심', 'cau']];
+    const pick = (k) => all.filter((c) => (k === 'agent' ? (c.otherRecipientCount || 0) >= 2 || (c.sellerLinks || []).length : flagsOf(c)[k]));
+    // 기간별 집계: 오늘·이번 주·이번 달·올해·전체
+    const per = S.flagPeriod || 'all'; const t0 = new Date(); const z = (x) => String(x).padStart(2, '0'); const ds = (d) => `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+    const start = per === 'day' ? ds(t0) : per === 'week' ? ds(new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() - ((t0.getDay() + 6) % 7))) : per === 'month' ? `${t0.getFullYear()}-${z(t0.getMonth() + 1)}-01` : per === 'year' ? `${t0.getFullYear()}-01-01` : null;
+    const kmap0 = { vip: 'vip', cau: 'caution', bl: 'blacklist' };
+    const inPer = new Map(); // customerId → {orders, amount}
+    if (start && S.ordersLoaded) for (const o of S.orders.values()) { if (o.kind !== 'sale' || String(o.orderedAt || '').slice(0, 10) < start) continue; const r = inPer.get(o.customerId) || { orders: 0, amount: 0 }; r.orders += 1; (o.items || []).forEach((it) => { if (it.lineStatus === 'normal') r.amount += (it.price || 0) * (it.qty || 1); }); inPer.set(o.customerId, r); }
+    const flaggedIn = (c) => { const m = (c.flags || {})[kmap0[which]]; const at = m && m.at ? (m.at.toMillis ? m.at.toMillis() : m.at.seconds ? m.at.seconds * 1000 : m.at) : null; return start && at && ds(new Date(at)) >= start; };
+    let base = pick(which); const all0 = base.length;
+    if (start) base = base.filter((c) => inPer.has(c.customerId) || flaggedIn(c));
+    const arr = base.sort((a, b) => (start ? ((inPer.get(b.customerId) || {}).amount || 0) - ((inPer.get(a.customerId) || {}).amount || 0) : which === 'agent' ? (b.otherRecipientCount || 0) - (a.otherRecipientCount || 0) : String(b.lastOrderAt || '').localeCompare(String(a.lastOrderAt || ''))));
+    const sumO = arr.reduce((x, c) => x + ((inPer.get(c.customerId) || {}).orders || (start ? 0 : c.saleOrderCount || 0)), 0);
+    const sumA = arr.reduce((x, c) => x + (start ? (inPer.get(c.customerId) || {}).amount || 0 : c.salesAmount || 0), 0);
+    const newF = start && which !== 'agent' ? arr.filter(flaggedIn).length : null;
+    const kmap = { vip: 'vip', cau: 'caution', bl: 'blacklist' };
+    const why = (c) => {
+      if (which === 'agent') return `<span style="width:100%">${(c.sellerLinks || []).length ? `판매자 연결: ${esc(c.sellerLinks.map((s) => s.name).join(', '))} · ` : ''}수령인 예: ${esc((c.otherRecipients || []).slice(0, 3).join(', '))}</span>`;
+      const e = effFlag(c, kmap[which]); const src = { manual: '직접 지정', auto: '자동', sheet: '구글 시트' }[e.src] || '';
+      const r = e.src === 'auto' ? (e.reasons || [])[0] || '' : e.reason || '';
+      return `<span style="width:100%"><b class="src ${e.src}">${src}</b> ${esc(r.length > 70 ? r.slice(0, 70) + '…' : r)}</span>`;
+    };
+    const perTxt = { day: '오늘', week: '이번 주', month: '이번 달', year: '올해', all: '전체' };
+    m.innerHTML = `<div class="seg">${segs.map(([k, l, cls]) => `<button class="${which === k ? 'on ' + cls : ''}" data-fl="${k}">${l} ${pick(k).length}</button>`).join('')}</div>
+      <div class="ptabs" style="margin-bottom:8px">${Object.entries(perTxt).map(([k, l]) => `<button class="${per === k ? 'on' : ''}" data-fp="${k}">${l}</button>`).join('')}</div>
+      <div class="card" style="margin:0 0 10px"><div class="mgrid">
+        <div><b>${arr.length.toLocaleString()}명</b><span>${perTxt[per]} ${start ? '구매했거나 새로 지정된 고객' : '전체 고객'}</span><small>${start ? `전체 ${all0.toLocaleString()}명 중` : ''}</small></div>
+        <div><b>${won(sumA)}</b><span>${perTxt[per]} 순매출</span><small>주문 ${sumO.toLocaleString()}건</small></div>
+        ${newF != null ? `<div><b>${newF}명</b><span>${perTxt[per]} 새로 지정</span><small>사람이 직접 지정한 경우 (자동 판정은 날짜 없음)</small></div>` : ''}
+        ${start && !S.ordersLoaded ? '<div><b>-</b><span>주문 기록을 받는 중</span><small>잠시 뒤 자동으로 채워집니다</small></div>' : ''}</div></div>
+      ${which === 'vip' || which === 'cau' ? '<p class="hint">자동 표시는 매일 점수 계산으로 정해집니다. 고객 화면에서 직접 켜거나 끄면 그쪽이 우선합니다.</p>' : ''}
+      <div class="list">${arr.slice(0, S.limit).map((c) => custRow(c, (start ? `<span>${perTxt[per]} 주문 ${(inPer.get(c.customerId) || {}).orders || 0} · ${won((inPer.get(c.customerId) || {}).amount || 0)}${flaggedIn(c) ? ' · 새로 지정' : ''}</span>` : '') + why(c))).join('') || '<div class="empty">없음</div>'}${arr.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
+    m.querySelectorAll('[data-fl]').forEach((b) => (b.onclick = () => { S.flagList = b.dataset.fl; S.limit = 30; renderMain(); }));
+    m.querySelectorAll('[data-fp]').forEach((b) => (b.onclick = () => { S.flagPeriod = b.dataset.fp; S.limit = 30; renderMain(); }));
+  } else if (S.tab === 'pending') renderPending(m);
+  else if (S.tab === 'orders') renderOrders(m);
+  else if (S.tab === 'sellers') renderSellers(m);
+  else if (S.tab === 'products') renderProducts(m);
+  m.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => { const [t, f] = b.dataset.go.split(':'); S.tab = t; if (f) S.flagList = f; renderTabs(); renderMain(); window.scrollTo(0, 0); }));
+  const mo = $('#more'); if (mo) mo.onclick = () => { S.limit += 50; renderMain(); };
+  bindRows(m);
+}
+function monthStats() {
+  const mm = {};
+  for (const o of S.orders.values()) {
+    const k = String(o.orderedAt || '').slice(0, 7); if (!/^\d{4}-\d{2}$/.test(k)) continue;
+    const r = (mm[k] = mm[k] || { k, orders: 0, qty: 0, amount: 0, cancelQty: 0, pre: 0, ret: 0 });
+    if (o.kind !== 'sale') { r.pre += 1; continue; }
+    r.orders += 1;
+    (o.items || []).forEach((it) => { const q = it.qty || 1; if (it.lineStatus === 'normal') { r.qty += q; r.amount += (it.price || 0) * q; } else if (it.lineStatus === 'returned') r.ret += q; else if (/cancel/i.test(it.lineStatus || '')) r.cancelQty += q; });
+  }
+  return Object.values(mm).sort((a, b) => b.k.localeCompare(a.k));
+}
+function orderRow(o) {
+  const q = norm(S.q); const it = (o.items || []).find((i) => q && (norm(i.title).includes(q) || norm(i.isbn13).includes(q))) || (o.items || [])[0] || {};
+  return `<button class="item" data-cid="${esc(o.customerId)}"><div class="l1"><span class="name">${esc((o.buyer && o.buyer.name) || '(이름 없음)')}</span>${o.kind !== 'sale' ? '<span class="tag bl">판매 전 취소</span>' : ''}</div>
+    <div class="l2"><span>${dt16(o.orderedAt)}</span><span>${esc(o.orderNo || '')}</span><span>${won(o.totalAmount)}</span>${shipTag(o)}</div><div class="l2"><span>${esc(it.title || '')}${it.isbn13 ? ' · ' + esc(it.isbn13) : ''}${(o.items || []).length > 1 ? ` 외 ${(o.items || []).length - 1}권` : ''}${lineStatusTag(it.lineStatus)}</span></div></button>`;
+}
+function custMetrics() {
+  const all = [...S.customers.values()]; const buyers = all.filter((c) => (c.saleOrderCount || 0) > 0);
+  const repeat = buyers.filter((c) => c.saleOrderCount >= 2).length; const totalAmt = buyers.reduce((s, c) => s + (c.salesAmount || 0), 0); const totalOrd = buyers.reduce((s, c) => s + (c.saleOrderCount || 0), 0);
+  const sorted = buyers.slice().sort((a, b) => (b.salesAmount || 0) - (a.salesAmount || 0)); const top20 = sorted.slice(0, Math.ceil(sorted.length * 0.2)).reduce((s, c) => s + (c.salesAmount || 0), 0);
+  const t = new Date(); const dormant = buyers.filter((c) => c.lastOrderAt && (t - new Date(String(c.lastOrderAt).slice(0, 10))) / 864e5 > 180).length;
+  const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
+  return `<div class="card" style="margin:0 0 10px"><h3>고객 지표</h3><div class="mgrid">
+    <div><b>${pct(repeat, buyers.length)}%</b><span>재구매율</span><small>2회 이상 구매 ${repeat.toLocaleString()} / 구매 고객 ${buyers.length.toLocaleString()}명</small></div>
+    <div><b>${won(totalOrd ? Math.round(totalAmt / totalOrd) : 0)}</b><span>평균 주문 금액</span><small>순매출 ÷ 구매 주문 수</small></div>
+    <div><b>${pct(top20, totalAmt)}%</b><span>상위 20% 고객 매출 비중</span><small>높을수록 소수 단골 의존</small></div>
+    <div><b>${dormant.toLocaleString()}명</b><span>휴면 고객</span><small>마지막 구매 180일 넘음</small></div></div></div>
+    <h2>고객별 매출 순위</h2><div class="list">${sorted.slice(0, 10).map((c, i) => `<button class="item" data-cid="${esc(c.customerId)}"><div class="l1"><span class="rn2">${i + 1}</span><span class="name">${esc(c.displayName || '')}</span><span class="hl">${won(c.salesAmount)}</span></div><div class="l2"><span>주문 ${c.saleOrderCount}회</span><span>매출 비중 ${pct(c.salesAmount || 0, totalAmt)}%</span><span>최근 ${d10(c.lastOrderAt)}</span></div></button>`).join('')}</div>`;
+}
+function newVsRepeat() {
+  const first = new Map([...S.customers.values()].map((c) => [c.customerId, String(c.firstOrderAt || '').slice(0, 7)]));
+  const mm = {}; for (const o of S.orders.values()) { if (o.kind !== 'sale') continue; const k = String(o.orderedAt || '').slice(0, 7); if (!/^\d{4}-\d{2}$/.test(k)) continue; const r = (mm[k] = mm[k] || { newC: new Set(), repC: new Set() }); (first.get(o.customerId) === k ? r.newC : r.repC).add(o.customerId); }
+  return mm;
+}
+function renderOrders(m) {
+  const q = norm(S.q);
+  if (/^\d{3}-?a\d{9}$/i.test(S.q.trim())) { // 주문번호는 내려받지 않아도 바로 찾음
+    const ono = S.q.trim().toUpperCase().replace(/^(\d{3})-?A/, '$1-A');
+    m.innerHTML = '<div class="empty">주문 찾는 중</div>';
+    db.collection('crm_orders').doc('aladin_' + ono).get().then((d) => { if (!d.exists) { m.innerHTML = '<div class="empty">그 주문번호가 없습니다</div>'; return; } const o = d.data(); openCustomer(o.customerId); });
+    return;
+  }
+  if (!S.ordersLoaded) {
+    m.innerHTML = perfSection('o') + `<div class="card" style="margin:10px 0 0;display:${S.ordersBusy ? 'none' : ''}"><h3>주문 기록 내려받기</h3><p class="hint" style="margin:0 0 10px">책 제목·ISBN으로 주문을 찾거나 월별 매출을 보려면, 이 기기에 주문 기록을 한 번 내려받아야 합니다. 약 5천 건이라 Firebase 무료 읽기 한도(하루 5만 건)의 10% 정도를 씁니다. 이후에는 바뀐 주문만 받습니다.<br>주문번호(001-A…)는 내려받지 않아도 위 검색창에서 바로 찾을 수 있습니다.</p>
+      <button class="btn" id="oload" ${S.ordersBusy ? 'disabled' : ''}>${S.ordersBusy ? '내려받는 중…' : '이 기기에 주문 기록 내려받기'}</button></div>`;
+    const b = $('#oload'); if (b) b.onclick = () => syncOrders(true).catch((e) => toast('실패: ' + e.message));
+    return;
+  }
+  if (q) {
+    const hits = [...S.orders.values()].filter((o) => o._sk.includes(q)).sort((a, b) => String(b.orderedAt || '').localeCompare(String(a.orderedAt || '')));
+    m.innerHTML = `<h2>주문 검색 ${hits.length.toLocaleString()}건</h2><div class="list">${hits.slice(0, S.limit).map(orderRow).join('') || '<div class="empty">찾는 주문이 없습니다</div>'}${hits.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
+    return;
+  }
+  m.innerHTML = ordersDash('o') + '<p class="hint">주문 기록은 이 기기에 저장되어 있고, 새 주문은 자동으로 더해집니다. 책 제목·ISBN·주문번호는 위 검색창에 입력하세요.</p>';
+  bindDash(m, renderMain);
+}
+function renderPending(m) {
+  if (!S.pending.length) { m.innerHTML = '<div class="empty">확정할 연결이 없습니다.</div>'; return; }
+  const typeName = { blacklistNote: '블랙리스트', customerCancelNote: '고객 취소 기록', adminNote: '관리자 메모' };
+  m.innerHTML = `<p class="hint">구글 시트 기록 중 자동으로 고객을 정하지 못한 것들입니다. 맞는 고객을 골라 주세요. 확정하면 모든 기기에 바로 반영됩니다.</p>` + S.pending.map((it) => {
+    const cands = (it.candidates || []).map((cd) => { const c = S.customers.get(cd.customerId) || {}; return `<div class="cand"><div class="ci"><b>${esc(c.displayName || cd.customerId)}</b> <small>${esc((c.phones || [])[0] || '')} · 주문 ${c.saleOrderCount || 0} · 최근 ${d10(c.lastOrderAt)} · 근거: ${esc((cd.reasons || []).join(', '))}</small></div><button class="btn" data-link="${esc(it.id)}" data-to="${esc(cd.customerId)}">이 고객</button></div>`; }).join('');
+    return `<div class="pend"><div class="src">${esc(typeName[it.type] || it.type)} · ${esc(it.sheet || '')} ${it.sheetRow ? it.sheetRow + '행' : ''} · ${d10(it.createdAt)}</div>
+      <div class="who">${esc(it.name || '(이름 없음)')} ${esc((it.phones || []).join(', '))} ${esc(it.email || '')}</div>
+      ${it.title ? `<div class="src">상품: ${esc(it.title)}</div>` : ''}${it.body ? `<div class="body">${esc(it.body)}</div>` : ''}
+      ${cands || '<div class="src" style="margin:6px 0">자동으로 찾은 후보가 없습니다. 아래에서 고객을 검색해 연결하세요.</div>'}
+      <div class="lk"><input type="search" placeholder="다른 고객 검색해서 연결 (이름·전화 일부)" data-find="${esc(it.id)}"><div class="lkres"></div></div>
+      <div style="margin-top:8px"><button class="btn warn" data-link="${esc(it.id)}" data-to="">맞는 고객 없음 (연결 안 함)</button></div></div>`;
+  }).join('');
+  m.querySelectorAll('[data-find]').forEach((inp) => (inp.oninput = () => {
+    const qq = norm(inp.value); const box = inp.nextElementSibling; if (qq.length < 2) { box.innerHTML = ''; return; }
+    const hits = [...S.customers.values()].filter((c) => c._sk.includes(qq)).slice(0, 6);
+    box.innerHTML = hits.map((c) => `<div class="cand"><div class="ci"><b>${esc(c.displayName || c.customerId)}</b> <small>${esc((c.phones || [])[0] || '')} · 주문 ${c.saleOrderCount || 0} · 최근 ${d10(c.lastOrderAt)}</small></div><button class="btn" data-link="${esc(inp.dataset.find)}" data-to="${esc(c.customerId)}">연결</button></div>`).join('') || '<div class="src" style="margin-top:6px">없음</div>';
+    bindLinks(box);
+  }));
+  bindLinks(m);
+}
+function bindLinks(root) {
+  root.querySelectorAll('[data-link]').forEach((b) => (b.onclick = async () => {
+    const it = S.pending.find((x) => x.id === b.dataset.link); const to = b.dataset.to;
+    const label = to ? (S.customers.get(to) || {}).displayName || to : '연결 안 함';
+    if (!confirm(`${it.name || '이 기록'} → ${label}\n이대로 확정할까요?`)) return;
+    b.disabled = true; try { await confirmLink(it, to || null); toast('확정했습니다'); } catch (e) { toast('실패: ' + e.message); b.disabled = false; }
+  }));
+}
+
+/* ── 고객 상세 ── */
+function closeDetail() { S.detailUnsubs.forEach((u) => u()); S.detailUnsubs = []; S.detail = null; $('#sheet').classList.remove('on'); document.body.style.overflow = ''; }
+window.addEventListener('popstate', () => { if (S.detail) closeDetail(); });
+async function openCustomer(cid) {
+  const sh = $('#sheet'); S.detail = { cid, orders: null, inters: null, notes: [] };
+  history.pushState({ d: cid }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
+  renderDetail();
+  S.detailUnsubs.push(db.collection('crm_customers').doc(cid).onSnapshot((d) => { if (d.exists) { putCustomer(cid, d.data()); renderDetail(); } }, () => {}));
+  S.detailUnsubs.push(db.collection('crm_notes').where('customerId', '==', cid).onSnapshot((ss) => { S.detail.notes = []; ss.forEach((d) => S.detail.notes.push({ id: d.id, ...d.data() })); renderDetail(); }, () => {}));
+  const [os, is] = await Promise.all([db.collection('crm_orders').where('customerId', '==', cid).get(), db.collection('crm_interactions').where('customerId', '==', cid).get()]);
+  if (!S.detail || S.detail.cid !== cid) return;
+  S.detail.orders = []; os.forEach((d) => S.detail.orders.push({ id: d.id, ...d.data() })); S.detail.orders.sort((a, b) => String(b.orderedAt || '').localeCompare(String(a.orderedAt || '')));
+  S.detail.inters = []; is.forEach((d) => S.detail.inters.push({ id: d.id, ...d.data() }));
+  renderDetail();
+}
+function lineStatusTag(s) {
+  const map = { cancelled: ['취소', 'x'], cancelledInOrder: ['품절취소', 'x'], partialCancelled: ['부분취소', 'c'], returned: ['반품', 'x'], check: ['확인', 'c'] };
+  const v = map[s]; return v ? `<span class="st ${v[1]}">${v[0]}</span>` : '';
+}
+function scoreBars(parts, tone) {
+  return (parts || []).map((p) => `<div class="sp"><div class="spl"><span>${esc(p.label)}</span><span>${p.pts}/${p.max}</span></div><div class="spb ${tone}"><i style="width:${Math.round((p.pts / p.max) * 100)}%"></i></div><div class="spt">${esc(p.text)}</div></div>`).join('');
+}
+function renderDetail() {
+  const D = S.detail; if (!D) return; const c = S.customers.get(D.cid) || { customerId: D.cid };
+  const ev = effFlag(c, 'vip'); const ec = effFlag(c, 'caution'); const eb = effFlag(c, 'blacklist');
+  const phones = (c.phones || []).map((p) => `<a href="tel:${esc(p)}">${esc(p)}</a>`).join('<br>') || '-';
+  const emails = [...(c.emails || []).map((e) => `<a href="mailto:${esc(e)}">${esc(e)}</a>`), ...(c.emailsMasked || []).filter((m) => !(c.emails || []).some((e) => e.startsWith(m.replace(/@\.+$/, '')))).map(esc)].join('<br>') || '-';
+  const addrs = (c.addresses || []).slice().sort((a, b) => String(b.lastUsedAt || '').localeCompare(String(a.lastUsedAt || ''))).map((a) => `${esc(a.address)} <span style="color:var(--sub);font-size:12px">(${esc(a.zip || '')}, ${a.useCount}회)</span>`).join('<br>') || '-';
+  const flagName = { vip: 'VIP', caution: '주의고객', blacklist: '블랙리스트' };
+  const tl = [];
+  (D.notes || []).forEach((n) => tl.push({ t: n.createdAt && n.createdAt.toMillis ? n.createdAt.toMillis() : Date.now(), h: `${n.type === 'flag' ? (flagName[n.flag] || n.flag) + (n.on === true ? ' 지정' : n.on === false ? ' 해제' : ' 자동 판정으로 되돌림') : '메모'} · ${esc(n.byName || n.by || '')}`, when: tsText(n.createdAt), b: n.type === 'flag' ? (n.reason || '') : n.body }));
+  (D.inters || []).forEach((i) => { const tm = Date.parse(i.createdAt || '') || 0; const nm = { qna: '문의', review: '구매평(구매확정)', blacklistNote: '블랙리스트(시트)', customerCancelNote: '취소 기록(시트)', adminNote: '관리자 메모(시트)' }[i.type] || i.type;
+    tl.push({ t: tm, h: `${nm}${i.title ? ' · ' + esc(i.title) : ''}${i.rating ? ' · ' + esc(i.rating) : ''}`, when: d10(i.createdAt), b: i.body || '', a: i.type === 'qna' ? i.answer : null }); });
+  tl.sort((a, b) => b.t - a.t);
+  const orders = D.orders == null ? '<div class="empty">주문을 불러오는 중</div>' : D.orders.map((o) => {
+    const plat = o.platform === 'yes24' ? '예스24' : o.platform === 'direct' ? '직접 판매' : '알라딘';
+    const rc = o.recipient && !o.recipient.sameAsBuyer && o.recipient.name ? `받는 분 ${esc(o.recipient.name)} ` : '';
+    return `<div class="order"><div class="oh"><b>${dt16(o.orderedAt)} ${o.kind !== 'sale' ? '<span class="st x">판매 전 취소</span>' : ''}</b><span>${won(o.totalAmount)}</span></div>
+      <div class="om">${plat} ${esc(o.orderNo || '')} ${shipTag(o)}${o.invoiceNo ? ' · 송장 ' + esc(o.invoiceNo) : ''}${o.shippingRequest ? ' · ' + esc(o.shippingRequest) : ''}</div>${rc ? `<div class="om">${rc}${esc(o.recipient.address || '')}</div>` : ''}
+      <ul>${(o.items || []).map((it) => `<li><span class="it">${it.condition ? `[${esc(it.condition)}] ` : ''}${esc(it.title)}${lineStatusTag(it.lineStatus)}</span><span>${it.price != null ? won(it.price) : ''}</span></li>`).join('')}</ul></div>`;
+  }).join('') || '<div class="empty">주문 없음</div>';
+  const fdesc = (e, k) => {
+    if (!e.on && e.src !== 'reset') return '';
+    const cls = { vip: 'var(--gold)', caution: 'var(--amber)', blacklist: 'var(--red)' }[k];
+    if (e.src === 'auto') return `<div class="fwhy" style="color:${cls}"><b>${flagName[k]} (자동)</b> ${esc((e.reasons || []).join(' / '))}</div>`;
+    if (e.src === 'sheet') return `<div class="fwhy" style="color:${cls}"><b>${flagName[k]} (구글 시트)</b> ${esc(e.reason)}</div>`;
+    if (e.src === 'manual') return `<div class="fwhy" style="color:${cls}"><b>${flagName[k]} (직접)</b> ${esc(e.reason || '')} <span style="color:var(--sub)">${esc(e.by)} ${tsText(e.at)}</span></div>`;
+    return '';
+  };
+  const manualOf = (k) => { const m = (c.flags || {})[k]; return m && (m.on === true || m.on === false); };
+  const autoOffNote = (k) => (manualOf(k) && (k === 'vip' || k === 'caution') ? `<button class="linkbtn" data-reset="${k}">${flagName[k]}: 직접 정한 것을 지우고 자동 판정으로 되돌리기</button>` : '');
+  const sc = c.scores;
+  $('#sheet').innerHTML = `
+    <div class="sh"><button class="back" id="back">‹ 목록</button><div class="t">${esc(c.displayName || '(이름 없음)')}</div></div>
+    <div class="card"><div class="flags three">
+      <button class="flag vip ${ev.on ? 'on' : ''}" data-flag="vip">${ev.on ? '★ VIP' : '☆ VIP'}</button>
+      <button class="flag cau ${ec.on ? 'on' : ''}" data-flag="caution">${ec.on ? '⚠ 주의' : '주의'}</button>
+      <button class="flag bl ${eb.on ? 'on' : ''}" data-flag="blacklist">${eb.on ? '⛔ 블랙리스트' : '블랙리스트'}</button></div>
+      ${fdesc(ev, 'vip')}${fdesc(ec, 'caution')}${fdesc(eb, 'blacklist')}${autoOffNote('vip')}${autoOffNote('caution')}
+      ${(c.otherRecipientCount || 0) >= 3 ? `<div class="fwhy" style="color:var(--amber)">주문인과 다른 수령인 ${c.otherRecipientCount}명: ${esc((c.otherRecipients || []).slice(0, 6).join(', '))}</div>` : ''}
+      ${['match', 'suspect'].map((lv) => { const L = (c.sellerLinks || []).filter((x) => (x.level || (x.strong === false ? 'suspect' : 'match')) === lv); return L.length ? `<div class="fwhy" style="color:${lv === 'match' ? 'var(--red)' : 'var(--amber)'}">${lv === 'match' ? '정보가 일치하는 판매자' : '일치 의심 판매자'}: ${L.map((x) => `<a href="#" data-seller-name="${esc(x.name)}">${esc(x.name)}</a>${x.aladinGrade ? ' ' + gradeTag(x.aladinGrade) : ''}${x.grade === 'fake' ? ' <span class="tag bl">허위 매물</span>' : ''} <span style="color:var(--sub)">(${esc((x.reasons || []).map(reasonTxt).join(', '))})</span>`).join(' · ')}</div>` : ''; }).join('')}
+    </div>
+    <div class="card"><div class="nums five"><div><b>${c.saleOrderCount || 0}</b><span>주문</span></div><div><b>${(c.saleItemQty || 0).toLocaleString()}</b><span>권</span></div><div><b style="font-size:14px">${(c.salesAmount || 0).toLocaleString('ko-KR')}</b><span>순매출(원)</span></div><div><b>${(c.cancelOrderCount || 0) + (c.returnCount || 0)}</b><span>취소·반품</span></div><div><b>${c.reviewCount || 0}</b><span>구매확정(평가)</span></div></div>
+      <div class="hint" style="margin:6px 0 0">배송비: 무료배송 ${c.freeShipCount || 0}회(우리 부담) · 고객 부담 ${c.paidShipCount || 0}회 합계 ${won(c.shipPaidTotal || 0)}</div>
+      <div class="hint" style="margin:2px 0 0">문의 ${c.qnaCount || 0}건${c.sellerCancelQty ? ` · 우리 품절로 취소된 ${c.sellerCancelQty}권은 고객 책임이 아니라 점수에서 뺌` : ''}</div></div>
+    ${sc ? `<div class="card"><h3>점수 <span style="font-weight:400">(${esc(sc.day || '')} 계산)</span></h3>
+      <div class="scwrap"><div class="scb good"><b>${sc.value}</b><span>가치 점수 /100</span></div><div class="scb bad"><b>${sc.risk}</b><span>주의 점수 /100</span></div></div>
+      <details><summary>점수 근거 보기</summary><h4 class="sth">가치 (높을수록 좋은 고객)</h4>${scoreBars(sc.valueParts, 'good')}<h4 class="sth">주의 (높을수록 조심)</h4>${scoreBars(sc.riskParts, 'bad')}
+      <p class="hint" style="margin:8px 0 0">자동 VIP: 가치 65점 이상 + 주의 25점 미만 + 구매 3회 이상 + 판매자 연결 없음 · 자동 주의: 주의 35점 이상</p></details></div>` : ''}
+    <div class="card"><h3>연락처</h3><dl class="kv"><dt>전화</dt><dd>${phones}</dd><dt>이메일</dt><dd>${emails}</dd><dt>배송지</dt><dd>${addrs}</dd><dt>이름 기록</dt><dd>${esc((c.names || []).join(', ') || '-')}</dd><dt>기간</dt><dd>${d10(c.firstOrderAt)} ~ ${d10(c.lastOrderAt)}</dd></dl></div>
+    <div class="card"><h3>메모·기록</h3><div class="note-in"><textarea id="note" placeholder="이 고객에 대한 메모 (모든 기기에 바로 공유)"></textarea><button class="btn" id="save">저장</button></div>
+      <div class="tlnote">기록 ${tl.length}건 · 메모와 표시 변경 기록은 지울 수 없게 영구 보존됩니다</div>
+      <ul class="tl">${tl.map((x) => `<li><div class="h"><span>${x.h}</span><span>${esc(x.when || '')}</span></div>${x.b ? `<div class="b">${esc(x.b)}</div>` : ''}${x.a ? `<div class="a">답변: ${esc(x.a)}</div>` : ''}</li>`).join('') || '<li class="empty">기록 없음</li>'}</ul></div>
+    <div class="card"><h3>주문 ${D.orders ? D.orders.length : ''}건</h3>${orders}</div>
+    <div class="hint" style="margin:4px 16px">고객 번호 ${esc(c.customerId)}${c.platformCustomerKey ? ' (알라딘 ' + esc(c.platformCustomerKey) + ')' : ''}</div>`;
+  $('#back').onclick = () => history.back();
+  $('#sheet').querySelectorAll('[data-flag]').forEach((b) => (b.onclick = async () => {
+    const k = b.dataset.flag; const cur = effFlag(c, k).on;
+    const r = prompt(`${flagName[k]} ${cur ? '해제' : '지정'} 사유 (기록으로 영구 보존됩니다)`); if (r === null) return;
+    try { await setFlag(D.cid, k, !cur, r.trim() || null); toast(`${flagName[k]} ${cur ? '해제' : '지정'}`); } catch (e) { toast('실패: ' + e.message); }
+  }));
+  $('#sheet').querySelectorAll('[data-reset]').forEach((b) => (b.onclick = async () => {
+    const k = b.dataset.reset; if (!confirm(`${flagName[k]}를 직접 정한 것을 지우고, 매일 점수 계산에 맡길까요?`)) return;
+    try { await setFlag(D.cid, k, null, '자동 판정으로 되돌림'); toast('자동 판정으로 되돌렸습니다'); } catch (e) { toast('실패: ' + e.message); }
+  }));
+  $('#sheet').querySelectorAll('[data-seller-name]').forEach((a) => (a.onclick = (e) => { e.preventDefault(); const s = [...S.sellers.values()].find((x) => x.name === a.dataset.sellerName); if (s) openSeller(s.id); else toast('판매자 탭을 한 번 열어 목록을 받아 주세요'); }));
+  $('#save').onclick = async () => { const t = $('#note').value.trim(); if (!t) return; $('#save').disabled = true; try { await addNote(D.cid, t); $('#note').value = ''; toast('저장했습니다'); } catch (e) { toast('실패: ' + e.message); } finally { $('#save').disabled = false; } };
+}
+
+/* ── 판매자: 툴팁 데이터(알라딘 판매자 번호·등급·평점 기록) + 구글 시트(우리 분류: 전문·개인·허위 매물) ── */
+const OURG = { pro: ['전문셀러(우리 분류)', 'pl'], personal: ['개인셀러(우리 분류)', 'vip'], fake: ['허위 매물', 'bl'] };
+const sgOf = (s) => s.ourGrade || s.grade || null;
+async function syncSellers() {
+  if (S.sellersLoaded) return; S.sellersBusy = true;
+  const cached = await idbAll('sellers').catch(() => []); cached.forEach((v) => S.sellers.set(v.id, v));
+  const meta = await idbGet('meta', 'ssync'); let q = db.collection('sellers');
+  if (meta && meta.last) q = q.where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last));
+  const snap = await q.get(); let max = meta ? meta.last || 0 : 0; const batch = [];
+  snap.forEach((d) => { const v = { id: d.id, ...d.data() }; const t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; if (t > max) max = t; const o = deTs(v); delete o.uploadedAt; S.sellers.set(d.id, o); batch.push(o); });
+  if (batch.length) await idbPut('sellers', batch);
+  await idbPut('meta', [{ k: 'ssync', last: max }]); S.sellersLoaded = true; S.sellersBusy = false;
+}
+function pctText(v) { return v == null || v === '' || !Number.isFinite(Number(v)) ? '-' : `${(Number(v) * 100).toFixed(Number(v) < 0.1 ? 2 : 1)}%`; }
+// 품절 취소율: 툴팁 기록은 퍼센트 숫자(0.75 = 0.75%), 구글 시트 기록은 비율(0.0075 = 0.75%)
+const pctNum = (v) => (v == null || v === '' || !Number.isFinite(Number(v)) ? '-' : `${Number(v).toFixed(Number(v) < 10 ? 2 : 1)}%`);
+function outstockText(s) { return s.sc ? pctNum(s.outstockRate) : pctText(s.outstockRate); }
+// 판매자와 우리고객의 연결: 전화·이메일·반품 주소가 정확히 같으면 '일치', 일부만 같으면 '일치 의심'
+const REASON_TXT = { '전화': '전화번호 같음', '이메일': '이메일 같음', '비슷한 이메일': '이메일 앞부분이 비슷함', '대표자 이름': '대표자 이름 같음', '반품 주소 = 우리 배송지': '반품 주소가 우리고객 배송지와 비슷함 (예전 기준, 다음 갱신 때 다시 판정)' };
+const reasonTxt = (r) => REASON_TXT[r] || r;
+function linkLevel(l) { if (l.level) return l.level; return (l.reasons || []).some((r) => r === '전화' || r === '이메일') ? 'match' : 'suspect'; }
+const LEVEL_TXT = { match: ['우리고객 정보와 일치', 'bl'], suspect: ['우리고객과 일치 의심', 'cau'] };
+// 알라딘 판매자 등급: 알라딘측 파란 바탕 + 등급별 글자색(파워 하늘·골드 노랑·실버 회색·새내기 초록·전문 붉은색), 굵게
+const GRADE_COLOR = { 파워셀러: '#CFF3FF', 골드셀러: '#FFE066', 실버셀러: '#E3E6E8', 새내기셀러: '#9CF5B4', 전문셀러: '#FFB3B3' };
+const gradeTag = (g) => `<span class="tag grade" style="color:${GRADE_COLOR[g] || '#fff'}">${esc(g)}</span>`;
+function gradeChip(s) { const g = s.aladinGrade || (s.ourGrade === 'pro' || s.grade === 'pro' ? '전문셀러' : null); return g ? gradeTag(g) : ''; }
+function sellerTags(s) {
+  const L = s.linkedCustomers || []; const lv = L.some((l) => linkLevel(l) === 'match') ? 'match' : L.length ? 'suspect' : null;
+  return `${sgOf(s) === 'fake' ? '<span class="tag bl">허위 매물</span>' : ''}${lv ? `<span class="tag ${LEVEL_TXT[lv][1]}">${LEVEL_TXT[lv][0]}</span>` : ''}`;
+}
+function renderSellers(m) {
+  if (!S.sellersLoaded) { m.innerHTML = '<div class="empty">판매자 목록을 받는 중 (처음 한 번)</div>'; syncSellers().then(() => { if (S.tab === 'sellers') renderMain(); }).catch((e) => { m.innerHTML = `<div class="empty">받기 실패: ${esc(e.message)}</div>`; }); return; }
+  const q = norm(S.q); const g = S.sellerGrade || 'all'; const all = [...S.sellers.values()];
+  const pass = (s, k) => (k === 'all' ? true : k === 'lmatch' ? (s.linkedCustomers || []).some((l) => linkLevel(l) === 'match') : k === 'lsuspect' ? (s.linkedCustomers || []).length > 0 && !(s.linkedCustomers || []).some((l) => linkLevel(l) === 'match') : k.startsWith('a:') ? (s.aladinGrade || (k === 'a:전문셀러' && sgOf(s) === 'pro' ? '전문셀러' : null)) === k.slice(2) : sgOf(s) === k);
+  let arr = all.filter((s) => pass(s, g) && (!q || norm([s.name, s.company, s.owner, s.phone, s.asPhone, s.email, s.address, s.returnAddress, s.sc, s.bizNo, s.remark].join('|')).includes(q)));
+  const sk = S.sellerSort || 'items'; const key = { items: (s) => s.totalItems || s.stock || 0, rating: (s) => s.rating ?? s.rating6m ?? 0, outstock: (s) => (s.sc ? (s.outstockRate || 0) / 100 : s.outstockRate || 0), reviews: (s) => s.totalReviewCount || s.reviewsAll || 0 }[sk];
+  arr.sort((a, b) => key(b) - key(a)); if (S.sellerRev) arr.reverse();
+  const filters = [['all', '전체'], ['lmatch', '우리고객 정보와 일치'], ['lsuspect', '우리고객과 일치 의심'], ['fake', '허위 매물'], ['a:전문셀러', '전문셀러'], ['a:파워셀러', '파워'], ['a:골드셀러', '골드'], ['a:실버셀러', '실버'], ['a:새내기셀러', '새내기']];
+  m.innerHTML = `<div class="seg chips">${filters.map(([k, l]) => `<button class="${g === k ? 'on' + (k === 'fake' ? ' bl' : '') : ''}" data-sg="${k}">${l} ${all.filter((s) => pass(s, k)).length.toLocaleString()}</button>`).join('')}</div>
+    <div class="sortbar"><select id="ssort">${[['items', '보유 상품 많은'], ['rating', '평점 높은'], ['outstock', '품절 취소율 높은'], ['reviews', '평가 많은']].map(([k, l]) => `<option value="${k}" ${sk === k ? 'selected' : ''}>${l} 순</option>`).join('')}</select><button id="srev" class="rev">${S.sellerRev ? '거꾸로 ↑' : '순서대로 ↓'}</button></div>
+    <p class="hint">툴팁이 모은 판매자 ${all.filter((s) => s.sc).length.toLocaleString()}곳과 구글 시트 기록을 합친 목록입니다. 전화·이메일·반품 주소가 우리고객과 정확히 같으면 '우리고객 정보와 일치', 동·호수 등 일부만 같으면 '우리고객과 일치 의심'으로 표시됩니다.</p>
+    <div class="list">${arr.slice(0, S.limit).map((s) => `<button class="item" data-sid="${esc(s.id)}"><div class="l1"><span class="name">${esc(s.name || '(이름 없음)')}</span>${gradeChip(s)}${sellerTags(s)}</div>
+      <div class="l2"><span>보유 ${((s.totalItems || s.stock) || 0).toLocaleString()}</span><span>평점 ${pctText(s.rating ?? s.rating6m)}</span><span>품절 취소율 ${outstockText(s)}</span>${s.shippingFee != null ? `<span>배송비 ${won(s.shippingFee)}</span>` : ''}${s.owner ? `<span>${esc(s.company || '')} ${esc(s.owner)}</span>` : ''}</div></button>`).join('') || '<div class="empty">없음</div>'}${arr.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
+  m.querySelectorAll('[data-sg]').forEach((b) => (b.onclick = () => { S.sellerGrade = b.dataset.sg; S.limit = 30; renderMain(); }));
+  $('#ssort', m).onchange = (e) => { S.sellerSort = e.target.value; renderMain(); }; $('#srev', m).onclick = () => { S.sellerRev = !S.sellerRev; renderMain(); };
+  m.querySelectorAll('[data-sid]').forEach((b) => (b.onclick = () => openSeller(b.dataset.sid)));
+}
+function miniLine(points, fmt) {
+  const p = points.filter((x) => x.v != null && x.t); if (p.length < 2) return '<div class="hint">기록이 2개 이상 쌓이면 추이가 보입니다.</div>';
+  const W = 300; const H = 70; const t0 = p[0].t; const t1 = p[p.length - 1].t; const vs = p.map((x) => x.v); const lo = Math.min(...vs); const hi = Math.max(...vs); const span = hi - lo || 1;
+  const xy = p.map((x) => [((x.t - t0) / (t1 - t0 || 1)) * (W - 10) + 5, H - 8 - ((x.v - lo) / span) * (H - 20)]);
+  return `<svg viewBox="0 0 ${W} ${H}" class="spark"><polyline points="${xy.map((a) => a.join(',')).join(' ')}" fill="none" stroke="currentColor" stroke-width="2"/></svg><div class="hint" style="margin:0">${new Date(t0).toLocaleDateString('ko-KR')} ${fmt(p[0].v)} → ${new Date(t1).toLocaleDateString('ko-KR')} ${fmt(p[p.length - 1].v)} (최저 ${fmt(lo)}, 최고 ${fmt(hi)})</div>`;
+}
+async function openSeller(id) {
+  const s = S.sellers.get(id); if (!s) return;
+  S.detail = { seller: id }; history.pushState({ s: id }, ''); const sh = $('#sheet'); sh.classList.add('on'); document.body.style.overflow = 'hidden';
+  const kv = (k, v) => (v == null || v === '' ? '' : `<dt>${k}</dt><dd>${v}</dd>`);
+  const draw = (hist) => {
+    sh.innerHTML = `<div class="sh"><button class="back" id="back">‹ 목록</button><div class="t">${esc(s.name || '')}</div></div>
+    <div class="card">${gradeChip(s)}${sellerTags(s)}${s.sc ? ` <span class="hint">판매자 번호 ${esc(s.sc)}</span>` : ''}${s.sheet && s.sheet.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.sheet.remark)}</div>` : s.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.remark)}</div>` : ''}
+      <div class="nums five" style="margin-top:10px"><div><b>${((s.totalItems || s.stock) || 0).toLocaleString()}</b><span>보유 상품</span></div><div><b>${pctText(s.rating ?? s.rating6m)}</b><span>평점</span></div><div><b>${(s.totalReviewCount || s.reviewsAll || 0).toLocaleString()}</b><span>전체 평가</span></div><div><b>${outstockText(s)}</b><span>품절 취소율</span></div><div><b>${s.shippingDays ?? s.actualDays ?? '-'}</b><span>출고일</span></div></div></div>
+    ${['match', 'suspect'].map((lv) => { const L = (s.linkedCustomers || []).filter((l) => linkLevel(l) === lv); if (!L.length) return ''; return `<div class="card"><h3 style="color:${lv === 'match' ? 'var(--red)' : 'var(--amber)'}">${LEVEL_TXT[lv][0]} ${L.length}명</h3>${L.map((l) => { const c = S.customers.get(l.customerId) || {}; return `<div class="cand"><div class="ci"><b>${esc(c.displayName || l.customerId)}</b> <small>주문 ${c.saleOrderCount || 0} · 순매출 ${won(c.salesAmount)} · 이유: ${esc((l.reasons || []).map(reasonTxt).join(', '))}</small></div><button class="btn" data-cid="${esc(l.customerId)}">고객 보기</button></div>`; }).join('')}</div>`; }).join('')}
+    ${hist ? (() => { const snaps = hist.snapshots || []; const quick = hist.quick || []; const both = (k) => [...snaps.map((x) => ({ t: x.t, v: x[k] })), ...quick.map((x) => ({ t: x.t, v: x[k] }))].sort((a, b) => a.t - b.t);
+      return `<div class="card"><h3>전체 평가 수 추이</h3><div style="color:var(--cloth)">${miniLine(snaps.map((x) => ({ t: x.t, v: x.total })), (v) => Math.round(v).toLocaleString() + '건')}</div>
+      <h3 style="margin-top:12px">평점 추이</h3><div style="color:var(--cloth)">${miniLine(both('rating'), pctText)}</div>
+      <h3 style="margin-top:12px">보유 상품 수 추이</h3><div style="color:#56636C">${miniLine(snaps.map((x) => ({ t: x.t, v: x.items })), (v) => Math.round(v).toLocaleString() + '개')}</div>
+      <h3 style="margin-top:12px">배송비 추이</h3><div style="color:var(--amber)">${miniLine(both('fee'), (v) => won(v))}</div>
+      <h3 style="margin-top:12px">품절 취소율 추이</h3><div style="color:var(--red)">${miniLine(snaps.map((x) => ({ t: x.t, v: x.outstock })), pctNum)}</div></div>`; })() : ''}
+    <div class="card"><h3>판매 조건</h3><dl class="kv">${kv('무료배송', s.freeShipping != null ? won(s.freeShipping) + ' 이상' : '')}${kv('배송비', s.shippingFee != null ? won(s.shippingFee) : '')}${kv('출고일', s.shippingDays != null ? s.shippingDays + '일' : '')}${kv('국내도서', s.domesticBooks != null ? s.domesticBooks.toLocaleString() : '')}${kv('외국도서', s.foreignBooks != null ? s.foreignBooks.toLocaleString() : '')}${kv('음반·영상', s.music != null || s.video != null ? `${(s.music || 0).toLocaleString()} / ${(s.video || 0).toLocaleString()}` : '')}${kv('분야', (s.categories || s.topCategories || []).map((c) => `${esc(c.name)} ${c.count != null ? c.count.toLocaleString() : ''}`).join(', '))}${kv('공지', esc((s.notices || []).join(' / ')))}</dl></div>
+    <div class="card"><h3>사업자 정보</h3><dl class="kv">${kv('상호', esc(s.company || ''))}${kv('대표자', esc(s.owner || ''))}${kv('전화', s.phone ? `<a href="tel:${esc(s.phone)}">${esc(s.phone)}</a>` : '')}${kv('A/S 전화', esc(s.asPhone || ''))}${kv('이메일', esc(s.email || ''))}${kv('사업자번호', esc(s.bizNo || ''))}${kv('통신판매', esc(s.mailOrderNo || ''))}${kv('소재지', esc(s.address || ''))}${kv('택배사', esc(s.courier || ''))}${kv('반품 주소', esc(s.returnAddress || ''))}${kv('첫 평가일', esc(s.firstReviewDate || ''))}${kv('소개', esc(s.notice || ''))}</dl></div>`;
+    $('#back').onclick = () => history.back();
+    sh.querySelectorAll('[data-cid]').forEach((b) => (b.onclick = () => { closeDetail(); openCustomer(b.dataset.cid); }));
+  };
+  draw(null);
+  if (s.sc) { try { const h = await db.collection('seller_history').doc(id).get(); if (S.detail && S.detail.seller === id && h.exists) draw(h.data()); } catch (e) {} }
+}
+
+/* ══════════ 공통: 기간 선택 · 접고 펴기 · 구역 접기 ══════════ */
+S.pp = JSON.parse(localStorage.getItem('rn-pp') || '{}'); S.fold = {}; S.sec = JSON.parse(localStorage.getItem('rn-sec') || '{}');
+const PK = { day: '일별', week: '주별', month: '월별', year: '연별', all: '전체' };
+const z2 = (x) => String(x).padStart(2, '0');
+const dstr = (d) => `${d.getFullYear()}-${z2(d.getMonth() + 1)}-${z2(d.getDate())}`;
+function rangeOf(kind, off = 0) {
+  if (kind === 'all') return { kind, off: 0, start: null, end: null, label: '전체 기간', days: null, current: true };
+  const t = new Date(); t.setHours(0, 0, 0, 0); let s, e;
+  if (kind === 'day') { s = new Date(t); s.setDate(s.getDate() + off); e = new Date(s); e.setDate(e.getDate() + 1); }
+  else if (kind === 'week') { s = new Date(t); s.setDate(s.getDate() - ((s.getDay() + 6) % 7) + off * 7); e = new Date(s); e.setDate(e.getDate() + 7); }
+  else if (kind === 'month') { s = new Date(t.getFullYear(), t.getMonth() + off, 1); e = new Date(s.getFullYear(), s.getMonth() + 1, 1); }
+  else { s = new Date(t.getFullYear() + off, 0, 1); e = new Date(s.getFullYear() + 1, 0, 1); }
+  const last = new Date(e); last.setDate(last.getDate() - 1);
+  const lab = kind === 'day' ? `${s.getMonth() + 1}/${s.getDate()} (${'일월화수목금토'[s.getDay()]})` : kind === 'week' ? `${s.getMonth() + 1}/${s.getDate()} ~ ${last.getMonth() + 1}/${last.getDate()}` : kind === 'month' ? `${s.getFullYear()}년 ${s.getMonth() + 1}월` : `${s.getFullYear()}년`;
+  const now = new Date(); const days = Math.max(1, Math.ceil(((e > now ? now : e) - s) / 864e5));
+  return { kind, off, start: dstr(s), end: dstr(e), label: (off === 0 ? { day: '오늘', week: '이번 주', month: '이번 달', year: '올해' }[kind] + ' · ' : '') + lab, days, current: off === 0 };
+}
+const shiftYear = (iso, n) => (iso ? `${+iso.slice(0, 4) + n}${iso.slice(4)}` : iso);
+const prevRange = (r) => (r.kind === 'all' ? null : rangeOf(r.kind, r.off - 1));
+const yoyRange = (r) => (r.kind === 'all' || r.kind === 'year' ? null : { ...r, start: shiftYear(r.start, -1), end: shiftYear(r.end, -1) });
+const inRange = (iso, r) => { if (!r || !r.start) return true; const d = String(iso || '').slice(0, 10); return d >= r.start && d < r.end; };
+function picker(id, def) {
+  const p = S.pp[id] || (S.pp[id] = { kind: def || 'all', off: 0 }); const r = rangeOf(p.kind, p.off);
+  return `<div class="pp" data-pp="${id}"><div class="ptabs">${Object.entries(PK).map(([k, l]) => `<button class="${p.kind === k ? 'on' : ''}" data-ppk="${k}">${l}</button>`).join('')}</div>
+    ${p.kind !== 'all' ? `<div class="ppnav"><button data-ppo="-1" aria-label="이전">◀</button><b>${r.label}</b><button data-ppo="1" ${p.off >= 0 ? 'disabled' : ''} aria-label="다음">▶</button>${p.off ? '<button data-ppo="0" class="now">지금</button>' : ''}</div>` : ''}</div>`;
+}
+const rangeFor = (id, def) => { const p = S.pp[id] || (S.pp[id] = { kind: def || 'all', off: 0 }); return rangeOf(p.kind, p.off); };
+function fold(id, rows, step = 10) {
+  const n = S.fold[id] || step; const rest = rows.length - n;
+  return rows.slice(0, n).join('') + (rows.length > step ? `<div class="fold" data-fold="${id}" data-step="${step}">${rest > 0 ? `<button data-fa="more">${Math.min(step, rest)}개 더 보기 <small>남은 ${rest.toLocaleString()}</small></button><button data-fa="all">모두 펼치기</button>` : ''}${n > step ? '<button data-fa="less">접기</button>' : ''}</div>` : '');
+}
+function sec(id, title, body, open = true) { const o = S.sec[id] ?? open; return `<details class="sec" data-sec="${id}" ${o ? 'open' : ''}><summary>${title}</summary><div class="secb">${body}</div></details>`; }
+function bindUI(root, rerender) {
+  root.querySelectorAll('[data-pp]').forEach((w) => { const id = w.dataset.pp;
+    w.querySelectorAll('[data-ppk]').forEach((b) => (b.onclick = () => { S.pp[id] = { kind: b.dataset.ppk, off: 0 }; localStorage.setItem('rn-pp', JSON.stringify(S.pp)); rerender(); }));
+    w.querySelectorAll('[data-ppo]').forEach((b) => (b.onclick = () => { const v = +b.dataset.ppo; S.pp[id].off = v === 0 ? 0 : Math.min(0, S.pp[id].off + v); localStorage.setItem('rn-pp', JSON.stringify(S.pp)); rerender(); })); });
+  root.querySelectorAll('[data-fold]').forEach((w) => { const id = w.dataset.fold; const st = +w.dataset.step;
+    w.querySelectorAll('[data-fa]').forEach((b) => (b.onclick = (e) => { e.stopPropagation(); const a = b.dataset.fa; S.fold[id] = a === 'more' ? (S.fold[id] || st) + st : a === 'all' ? 1e9 : st; rerender(); })); });
+  root.querySelectorAll('details[data-sec]').forEach((d) => (d.ontoggle = () => { S.sec[d.dataset.sec] = d.open; localStorage.setItem('rn-sec', JSON.stringify(S.sec)); }));
+}
+const pctv = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
+const grow = (cur, prev) => { if (prev == null || !prev) return ''; const g = ((cur - prev) / prev) * 100; return `<em class="${g >= 0 ? 'up' : 'dn'}">${g >= 0 ? '▲' : '▼'}${Math.abs(g).toFixed(1)}%</em>`; };
+const num = (n, d = 0) => (n == null || !Number.isFinite(n) ? '-' : n.toLocaleString('ko-KR', { maximumFractionDigits: d, minimumFractionDigits: d }));
+function spanText(fromIso) { if (!fromIso) return '-'; const a = new Date(String(fromIso).slice(0, 10) + 'T00:00:00'); const b = new Date(); let m = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()); if (b.getDate() < a.getDate()) m -= 1; const days = Math.floor((b - a) / 864e5); return `${Math.floor(m / 12) ? Math.floor(m / 12) + '년 ' : ''}${m % 12}개월 (${days.toLocaleString()}일)`; }
+
+/* ══════════ 주문 집계 ══════════ */
+function saleLines(o) { let qty = 0, amt = 0, cq = 0, rq = 0; (o.items || []).forEach((it) => { const q = it.qty || 1; if (it.lineStatus === 'normal') { qty += q; amt += (it.price || 0) * q; } else if (it.lineStatus === 'returned') rq += q; else if (it.lineStatus !== 'cancelledInOrder' && /cancel/i.test(it.lineStatus || '')) cq += q; }); return { qty, amt, cq, rq }; }
+function firstMap() { if (S._firstMap && S._firstMapN === S.orders.size) return S._firstMap; const m = new Map(); for (const o of S.orders.values()) { if (o.kind !== 'sale') continue; const d = String(o.orderedAt || '').slice(0, 10); if (d && (!m.has(o.customerId) || d < m.get(o.customerId))) m.set(o.customerId, d); } S._firstMap = m; S._firstMapN = S.orders.size; return m; }
+function agg(r) {
+  const first = firstMap(); const A = { orders: 0, qty: 0, amt: 0, cq: 0, rq: 0, pre: 0, cust: new Map(), newC: new Set(), retC: new Set(), preC: new Map() };
+  for (const o of S.orders.values()) {
+    if (!inRange(o.orderedAt, r)) continue;
+    if (o.kind !== 'sale') { A.pre += 1; A.preC.set(o.customerId, (A.preC.get(o.customerId) || 0) + 1); continue; }
+    const L = saleLines(o); A.orders += 1; A.qty += L.qty; A.amt += L.amt; A.cq += L.cq; A.rq += L.rq;
+    const c = A.cust.get(o.customerId) || { orders: 0, amt: 0, qty: 0 }; c.orders += 1; c.amt += L.amt; c.qty += L.qty; A.cust.set(o.customerId, c);
+    const f = first.get(o.customerId) || ''; ((r && r.start) ? f >= r.start : c.orders === 1) ? A.newC.add(o.customerId) : A.retC.add(o.customerId);
+  }
+  if (!r || !r.start) { A.retC = new Set([...A.cust].filter(([, c]) => c.orders >= 2).map(([k]) => k)); A.newC = new Set([...A.cust.keys()].filter((k) => !A.retC.has(k))); }
+  return A;
+}
+function cohort() { // 첫 구매 후 90일 안 재구매율, 평균 재구매 주기
+  if (S._coh && S._cohN === S.orders.size) return S._coh;
+  const by = new Map(); for (const o of S.orders.values()) { if (o.kind !== 'sale') continue; const d = String(o.orderedAt || '').slice(0, 10); if (!d) continue; (by.get(o.customerId) || by.set(o.customerId, []).get(o.customerId)).push(d); }
+  const cut = dstr(new Date(Date.now() - 90 * 864e5)); let base = 0, rep90 = 0, gaps = 0, gapN = 0;
+  for (const ds of by.values()) { ds.sort(); if (ds[0] <= cut) { base += 1; const lim = dstr(new Date(new Date(ds[0] + 'T00:00:00').getTime() + 90 * 864e5)); if (ds.slice(1).some((d) => d > ds[0] && d <= lim)) rep90 += 1; } for (let i = 1; i < ds.length; i++) { const g = (new Date(ds[i]) - new Date(ds[i - 1])) / 864e5; if (g > 0) { gaps += g; gapN += 1; } } }
+  S._coh = { rate90: pctv(rep90, base), base, avgGap: gapN ? gaps / gapN : null }; S._cohN = S.orders.size; return S._coh;
+}
+const salesStart = () => { let m = null; for (const o of S.orders.values()) { if (o.kind !== 'sale') continue; const d = String(o.orderedAt || '').slice(0, 10); if (d && (!m || d < m)) m = d; } return m; };
+function mcell(v, label, basis, extra) { return `<div><b>${v}${extra || ''}</b><span>${label}</span><small>${basis}</small></div>`; }
+
+/* 판매 실적 (KPI) */
+function perfSection(ctx) {
+  if (!S.ordersLoaded) return `<div class="card" style="margin:0 0 10px"><h3>판매 실적</h3><div class="empty">${S.ordersBusy ? '주문 기록을 받는 중입니다' : '주문 기록을 받으면 나타납니다'}</div></div>`;
+  const id = 'perf_' + ctx; const r = rangeFor(id, 'month'); const A = agg(r);
+  const pr = prevRange(r); const P = pr ? agg(pr) : null; const yr = yoyRange(r); const Y = yr ? agg(yr) : null;
+  const custN = A.cust.size; const tot = A.qty + A.cq + A.rq;
+  const top = [...A.cust.values()].sort((a, b) => b.amt - a.amt); const top20 = top.slice(0, Math.ceil(top.length * 0.2)).reduce((s, c) => s + c.amt, 0);
+  const all = [...S.customers.values()].filter((c) => (c.saleOrderCount || 0) > 0); const dormant = all.filter((c) => c.lastOrderAt && (Date.now() - new Date(String(c.lastOrderAt).slice(0, 10))) / 864e5 > 180).length;
+  const ch = cohort(); const days = r.days || Math.max(1, Math.ceil((Date.now() - new Date((salesStart() || dstr(new Date())) + 'T00:00:00')) / 864e5));
+  const cmp = (f) => (P ? `<small class="cmp">전기 ${grow(f(A), f(P))}${Y ? ` · 전년 동기 ${grow(f(A), f(Y))}` : ''}</small>` : '');
+  const cells = [
+    mcell(won(A.amt), '순매출', '정상 판매된 책 판매가 합계 (취소·반품 제외)') + cmp((x) => x.amt),
+    mcell(num(A.orders) + '건', '총 주문건수', `판매 전 취소 ${num(A.pre)}건 별도`) + cmp((x) => x.orders),
+    mcell(num(A.qty) + '권', '총 판매 권수', '정상 판매 권수') + cmp((x) => x.qty),
+    mcell(num(custN) + '명', '구매 고객 수', `신규 ${num(A.newC.size)} · 재구매 ${num(A.retC.size)}`) + cmp((x) => x.cust.size),
+    mcell(won(A.orders ? Math.round(A.amt / A.orders) : 0), '평균 주문 금액 (객단가·AOV)', '순매출 ÷ 주문건수'),
+    mcell(num(A.orders ? A.qty / A.orders : 0, 2) + '권', '주문건당 권 수 (UPT)', '판매 권수 ÷ 주문건수. 묶음 구매 정도'),
+    mcell(won(A.qty ? Math.round(A.amt / A.qty) : 0), '평균 권당 판매가 (ASP)', '순매출 ÷ 판매 권수'),
+    mcell(won(custN ? Math.round(A.amt / custN) : 0), '고객당 매출 (ARPC)', '순매출 ÷ 구매 고객 수'),
+    mcell(num(custN ? A.orders / custN : 0, 2) + '회', '구매 빈도', '주문건수 ÷ 구매 고객 수'),
+    mcell(pctv(A.retC.size, custN) + '%', r.start ? '재구매 고객 비중' : '재구매율', r.start ? '이 기간 구매 고객 중 예전에 산 적 있는 고객' : '2회 이상 구매 고객 ÷ 구매 고객'),
+    mcell(won(Math.round(A.amt / days)), '일평균 매출', `${num(days)}일 기준 · 일평균 ${num(A.orders / days, 1)}건`),
+    mcell(pctv(A.cq, tot) + '%', '고객 취소율', `고객 취소 ${num(A.cq)}권 ÷ 주문된 권수`),
+    mcell(pctv(A.rq, A.qty + A.rq) + '%', '반품률', `반품 ${num(A.rq)}권`),
+    mcell(pctv(top20, A.amt) + '%', '상위 20% 고객 매출 비중', '파레토 지표. 높을수록 소수 단골 의존'),
+    mcell(ch.rate90 + '%', '90일 재구매율 (코호트)', `첫 구매 후 90일 안에 다시 산 고객 · 대상 ${num(ch.base)}명`),
+    mcell(ch.avgGap ? num(ch.avgGap, 0) + '일' : '-', '평균 재구매 주기', '같은 고객의 주문 사이 평균 간격'),
+    mcell(num(dormant) + '명', '휴면 고객', '마지막 구매 180일 넘음 (전체 기준)'),
+  ];
+  const rank = top.length ? [...A.cust.entries()].sort((a, b) => b[1].amt - a[1].amt).map(([cid, c], i) => { const cu = S.customers.get(cid) || {}; return `<button class="item" data-cid="${esc(cid)}"><div class="l1"><span class="rn2">${i + 1}</span><span class="name">${esc(cu.displayName || '(이름 없음)')}</span><span class="hl">${won(c.amt)}</span></div><div class="l2"><span>주문 ${c.orders}건 · ${c.qty}권</span><span>매출 비중 ${pctv(c.amt, A.amt)}%</span><span>최근 ${d10(cu.lastOrderAt)}</span></div></button>`; }) : [];
+  return `<div class="card" style="margin:0 0 10px"><h3>판매 실적</h3>${picker(id, 'month')}<div class="mgrid kpi" style="margin-top:8px">${cells.join('')}</div></div>
+    ${sec('custrank_' + ctx, `고객별 매출 순위 · ${r.label}`, `<div class="list">${fold('custrank_' + ctx, rank) || '<div class="empty">기록 없음</div>'}</div>`)}`;
+}
+
+/* 매출 추이: 일·주·월·연 */
+const trendKey = (iso, kind) => { const d = String(iso || '').slice(0, 10); if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null; if (kind === 'day') return d; if (kind === 'month') return d.slice(0, 7); if (kind === 'year') return d.slice(0, 4); const dt = new Date(d + 'T00:00:00'); dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7)); return dstr(dt); };
+function trendLabel(kind, k) { if (kind === 'year') return k + '년'; if (kind === 'month') return k.replace('-', '년 ') + '월'; const d = new Date(k + 'T00:00:00'); if (kind === 'day') return `${d.getFullYear() % 100}.${d.getMonth() + 1}.${d.getDate()} (${'일월화수목금토'[d.getDay()]})`; const e = new Date(d); e.setDate(e.getDate() + 6); return `${d.getFullYear() % 100}.${d.getMonth() + 1}.${d.getDate()} ~ ${e.getMonth() + 1}/${e.getDate()}`; }
+function trendSection(ctx) {
+  if (!S.ordersLoaded) return '';
+  const kind = S['trend_' + ctx] || 'month'; const first = firstMap(); const mm = {};
+  for (const o of S.orders.values()) {
+    const k = trendKey(o.orderedAt, kind); if (!k) continue;
+    const r = (mm[k] = mm[k] || { k, orders: 0, qty: 0, amt: 0, cq: 0, rq: 0, pre: 0, cust: new Set(), newC: new Set() });
+    if (o.kind !== 'sale') { r.pre += 1; continue; }
+    const L = saleLines(o); r.orders += 1; r.qty += L.qty; r.amt += L.amt; r.cq += L.cq; r.rq += L.rq; r.cust.add(o.customerId);
+    if (trendKey(first.get(o.customerId), kind) === k) r.newC.add(o.customerId);
+  }
+  const arr = Object.values(mm).sort((a, b) => b.k.localeCompare(a.k)); const maxA = Math.max(1, ...arr.map((x) => x.amt));
+  const st = salesStart(); const T = arr.reduce((s, x) => ({ amt: s.amt + x.amt, orders: s.orders + x.orders, qty: s.qty + x.qty }), { amt: 0, orders: 0, qty: 0 });
+  const rows = arr.map((x, i) => { const pv = arr[i + 1]; return `<div class="item" style="cursor:default"><div class="l1" style="justify-content:space-between"><b>${trendLabel(kind, x.k)}</b><b>${won(x.amt)} ${pv ? grow(x.amt, pv.amt) : ''}</b></div>
+    <div class="bar"><i style="width:${(x.amt / maxA * 100).toFixed(1)}%"></i></div>
+    <div class="l2"><span>주문 ${x.orders}건</span><span>${x.qty}권</span><span>고객 ${x.cust.size}명 (신규 ${x.newC.size})</span><span>객단가 ${won(x.orders ? Math.round(x.amt / x.orders) : 0)}</span><span>UPT ${num(x.orders ? x.qty / x.orders : 0, 2)}</span><span>권당 ${won(x.qty ? Math.round(x.amt / x.qty) : 0)}</span>${x.cq ? `<span>취소 ${x.cq}권</span>` : ''}${x.rq ? `<span>반품 ${x.rq}권</span>` : ''}${x.pre ? `<span>판매 전 취소 ${x.pre}건</span>` : ''}</div></div>`; });
+  const body = `<div class="card" style="margin:0 0 8px"><div class="mgrid">
+      ${mcell(st || '-', '판매 시작일', '가장 오래된 판매 주문 기준')}${mcell(spanText(st), '판매 기간', '판매 시작일부터 오늘까지')}
+      ${mcell(won(T.amt), '누적 순매출', `주문 ${num(T.orders)}건 · ${num(T.qty)}권`)}${mcell(won(arr.length ? Math.round(T.amt / arr.length) : 0), `${{ day: '하루', week: '주', month: '월', year: '연' }[kind]} 평균 순매출`, `판매가 있었던 ${arr.length}개 ${PK[kind].replace('별', '')} 기준`)}</div></div>
+    <div class="ptabs" style="margin-bottom:8px">${['day', 'week', 'month', 'year'].map((k) => `<button class="${kind === k ? 'on' : ''}" data-trend="${ctx}:${k}">${PK[k]}</button>`).join('')}</div>
+    <div class="list">${fold('trend_' + ctx + kind, rows) || '<div class="empty">기록 없음</div>'}</div><p class="hint">▲▼는 바로 앞 기간 대비 증감입니다.</p>`;
+  return sec('trend_' + ctx, '매출 추이', body);
+}
+
+/* 택배비 정산: 매출 추이와 별도 기간 */
+function shipSection2(ctx) {
+  if (!S.ordersLoaded) return '';
+  const id = 'ship_' + ctx; const r = rangeFor(id, 'month');
+  const gran = { all: 'month', year: 'month', month: 'day', week: 'day', day: null }[r.kind];
+  const sub = {}; const T = { orders: 0, free: 0, paid: 0, remote: 0, unknown: 0, fees: 0, freeAmt: 0, paidAmt: 0, costAll: 0, costFree: 0, costPaid: 0 };
+  for (const o of S.orders.values()) {
+    if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue;
+    const add = (x) => { x.orders += 1; const t = shipType(o); x[t] += 1; if (t === 'unknown') return; const cr = courierFor(o.orderedAt); const cost = cr ? cr.cost || 0 : 0; if (cr && x.carriers) x.carriers.add(cr.carrier); x.costAll += cost; if (t === 'free') { x.costFree += cost; x.freeAmt += o.totalAmount || 0; } else { x.costPaid += cost; x.fees += o.shippingFee || 0; x.paidAmt += o.totalAmount || 0; } };
+    add(T); if (gran) { const k = trendKey(o.orderedAt, gran); add(sub[k] = sub[k] || { k, orders: 0, free: 0, paid: 0, remote: 0, unknown: 0, fees: 0, freeAmt: 0, paidAmt: 0, costAll: 0, costFree: 0, costPaid: 0, carriers: new Set() }); }
+  }
+  const gain = (x) => x.fees - x.costPaid; const net = (x) => x.costAll - x.fees;
+  const rows = Object.values(sub).sort((a, b) => b.k.localeCompare(a.k)).map((x) => `<div class="item" style="cursor:default"><div class="l1" style="justify-content:space-between"><b>${trendLabel(gran, x.k)}</b><b style="color:${net(x) > 0 ? 'var(--red)' : 'var(--cloth)'}">순지출 ${won(net(x))}</b></div>
+      <div class="l2"><span>택배비 ${won(x.costAll)} (${[...x.carriers].join(', ')})</span><span>고객 배송비 −${won(x.fees)}</span></div>
+      <div class="l2"><span>무료 ${x.free}건 부담 ${won(x.costFree)}</span><span>유료 ${x.paid + x.remote}건 차익 ${gain(x) >= 0 ? '+' : ''}${won(gain(x))}</span>${x.unknown ? `<span>모름 ${x.unknown}</span>` : ''}</div></div>`);
+  const sent = T.orders - T.unknown;
+  const body = `${picker(id, 'month')}<div class="card" style="margin:8px 0">
+      <div class="acct">
+        <div class="ar"><span>① 택배사에 낼 택배비</span><b>${won(T.costAll)}</b><small>발송 ${num(sent)}건 × 기간별 건당 택배비</small></div>
+        <div class="ar minus"><span>② 고객이 낸 배송비 (알라딘 정산으로 들어옴)</span><b>− ${won(T.fees)}</b><small>유료 ${num(T.paid)}건 · 도서산간 ${num(T.remote)}건</small></div>
+        <div class="ar total"><span>= 실제 우리 순지출</span><b style="color:${net(T) > 0 ? 'var(--red)' : 'var(--cloth)'}">${won(net(T))}</b><small>①에서 ②를 뺀 금액</small></div></div>
+      <div class="mgrid" style="margin-top:10px">
+        ${mcell(won(T.costFree), '무료배송으로 우리가 부담', `${num(T.free)}건 · 판매 주문의 ${pctv(T.free, T.orders)}%`)}
+        ${mcell(`<span style="color:${gain(T) >= 0 ? 'var(--cloth)' : 'var(--red)'}">${gain(T) >= 0 ? '+' : ''}${won(gain(T))}</span>`, '유료 주문에서 남거나 모자란 돈', `고객 배송비 ${won(T.fees)} − 그 주문들 택배비 ${won(T.costPaid)}`)}
+        ${mcell(won(sent ? Math.round(net(T) / sent) : 0), '발송 1건당 순배송비', '순지출 ÷ 발송 건수')}
+        ${mcell(pctv(net(T), (agg(r).amt) || 0) + '%', '매출 대비 배송비 비율', '순지출 ÷ 순매출. 물류비율로 흔히 봄')}
+        ${mcell(won(T.free ? Math.round(T.freeAmt / T.free) : 0), '무료배송 주문 평균 금액', '')}${mcell(won(T.paid + T.remote ? Math.round(T.paidAmt / (T.paid + T.remote)) : 0), '유료 주문 평균 금액', '')}</div>
+      ${T.unknown ? `<div class="hint" style="margin-top:6px">배송비를 모르는 주문 ${T.unknown}건은 계산에서 뺐습니다</div>` : ''}</div>
+    ${gran ? `<div class="list">${fold('shiprows_' + ctx + r.kind, rows) || '<div class="empty">기록 없음</div>'}</div>` : ''}
+    ${sec('shippolicy_' + ctx, '배송비 정책·택배 계약', policyCard() + courierEditor(), false)}`;
+  return sec('ship_' + ctx, '택배비 정산', body);
+}
+function ordersDash(ctx) { return perfSection(ctx) + trendSection(ctx) + shipSection2(ctx); }
+function bindDash(root, rerender) {
+  bindUI(root, rerender); bindShip(root);
+  root.querySelectorAll('[data-trend]').forEach((b) => (b.onclick = () => { const [c, k] = b.dataset.trend.split(':'); S['trend_' + c] = k; rerender(); }));
+  root.querySelectorAll('[data-cid]').forEach((b) => (b.onclick = () => { if ($('#modal.on')) closeModal(); openCustomer(b.dataset.cid); }));
+}
+
+/* ══════════ 고객 순위 TOP10: 기간별 ══════════ */
+S.interCache = {};
+async function loadInters(r) {
+  const k = r.start + '_' + r.end; if (S.interCache[k]) return S.interCache[k];
+  S.interCache[k] = 'loading';
+  try { const ss = await db.collection('crm_interactions').where('createdAt', '>=', r.start).where('createdAt', '<', r.end).get(); const arr = []; ss.forEach((d) => arr.push(d.data())); S.interCache[k] = arr; }
+  catch (e) { S.interCache[k] = []; }
+  renderRank(); return S.interCache[k];
+}
+function renderRank() {
+  const box = $('#rank'); if (!box) return; const r = rangeFor('rank', 'all');
+  let boards;
+  if (!r.start) {
+    const all = [...S.customers.values()]; const L = (key) => all.filter((c) => key(c) > 0).sort((a, b) => key(b) - key(a)).map((c) => [c.customerId, key(c)]);
+    boards = [['good', '최대 매출', L((c) => c.salesAmount || 0), (v) => won(v)], ['good', '다수 주문', L((c) => c.saleOrderCount || 0), (v) => `${v}회`], ['good', '다수 구매확정(평가)', L((c) => c.reviewCount || 0), (v) => `${v}건`], ['bad', '다수 취소', L((c) => c.cancelOrderCount || 0), (v) => `${v}건`], ['mid', '다수 문의', L((c) => c.qnaCount || 0), (v) => `${v}건`]];
+  } else if (!S.ordersLoaded) boards = null;
+  else {
+    const A = agg(r); const srt = (m) => [...m.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    const inters = S.interCache[r.start + '_' + r.end]; if (!inters) loadInters(r);
+    const cnt = (type) => { const m = new Map(); if (Array.isArray(inters)) inters.forEach((i) => { if (i.type === type && i.customerId) m.set(i.customerId, (m.get(i.customerId) || 0) + 1); }); return srt(m); };
+    const waiting = !Array.isArray(inters);
+    boards = [['good', '최대 매출', srt(new Map([...A.cust].map(([k, c]) => [k, c.amt]))), (v) => won(v)], ['good', '다수 주문', srt(new Map([...A.cust].map(([k, c]) => [k, c.orders]))), (v) => `${v}회`],
+      ['good', '다수 구매확정(평가)', waiting ? 'wait' : cnt('review'), (v) => `${v}건`], ['bad', '다수 취소', srt(A.preC), (v) => `${v}건`], ['mid', '다수 문의', waiting ? 'wait' : cnt('qna'), (v) => `${v}건`]];
+  }
+  box.innerHTML = `<div class="rkh"><b>고객 순위</b><button id="rkx" class="rkx">닫기</button></div>${picker('rank', 'all')}` + (boards ? boards.map(([tone, title, list, fmt]) => {
+    const rows = list === 'wait' ? [] : list.map(([cid, v], i) => `<li data-cid="${esc(cid)}"><span class="rn">${i + 1}</span><span class="rnm">${esc((S.customers.get(cid) || {}).displayName || '(이름 없음)')}</span><span class="rv">${fmt(v)}</span></li>`);
+    return `<section class="rk ${tone}"><h4>${title}</h4><ol>${list === 'wait' ? '<li class="empty">불러오는 중</li>' : fold('rk_' + title + r.kind, rows) || '<li class="empty">없음</li>'}</ol></section>`;
+  }).join('') : '<div class="empty">주문 기록을 받는 중입니다</div>');
+  bindUI(box, renderRank);
+  box.querySelectorAll('[data-cid]').forEach((b) => (b.onclick = () => { document.body.classList.remove('rankopen'); openCustomer(b.dataset.cid); }));
+  const x = $('#rkx'); if (x) x.onclick = () => document.body.classList.remove('rankopen');
+}
+
+/* ══════════ 상품 탭 ══════════ */
+S.plist = new Map(); S.psales = new Map(); S.pbooks = new Map(); S.prodLoaded = false; S.prodBusy = false;
+const IMG_BASE = 'https://firebasestorage.googleapis.com/v0/b/readnow-3a385.firebasestorage.app/o/';
+const imgUrl = (im, thumb) => { if (!im) return null; const p = thumb ? im.thumb || im.stored : im.stored; return p ? IMG_BASE + encodeURIComponent(p) + '?alt=media' : im.src || null; };
+async function syncColl(coll, store, map, metaKey) {
+  const meta = await idbGet('meta', metaKey); let q = db.collection(coll);
+  if (meta && meta.last) q = q.where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last));
+  const snap = await q.get(); let max = meta ? meta.last || 0 : 0; const batch = [];
+  snap.forEach((d) => { const v = d.data(); const t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; if (t > max) max = t; const o = deTs({ ...v, id: d.id }); delete o.uploadedAt; map.set(d.id, o); batch.push(o); });
+  if (batch.length) await idbPut(store, batch);
+  await idbPut('meta', [{ k: metaKey, last: max, at: Date.now() }]);
+  db.collection(coll).where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(max || 0)).onSnapshot((ss) => {
+    const ch = []; ss.docChanges().forEach((c) => { if (c.type !== 'removed') { const o = deTs({ ...c.doc.data(), id: c.doc.id }); delete o.uploadedAt; map.set(c.doc.id, o); ch.push(o); } });
+    if (ch.length) { idbPut(store, ch); S._pinv = null; if (S.tab === 'products') renderMain(); }
+  }, () => {});
+}
+async function loadProducts() {
+  if (S.prodLoaded || S.prodBusy || (S.prodFailAt && Date.now() - S.prodFailAt < 60000)) return; S.prodBusy = true;
+  try {
+    for (const [st, map] of [['plist', S.plist], ['psales', S.psales], ['pbooks', S.pbooks]]) (await idbAll(st)).forEach((v) => map.set(v.id, v));
+    if (S.plist.size) { S.prodLoaded = true; if (S.tab === 'products') renderMain(); }
+    setSync('상품 기록 받는 중 (처음 한 번은 오래 걸림)');
+    await syncColl('prd_listings', 'plist', S.plist, 'pl_sync'); await syncColl('prd_sales', 'psales', S.psales, 'ps_sync'); await syncColl('prd_books', 'pbooks', S.pbooks, 'pb_sync');
+    S.prodLoaded = true; setSync();
+  } catch (e) { S.prodFailAt = Date.now(); setSync('상품 기록 받기 실패: ' + (e.code || e.message) + ' (1분 뒤 다시 시도)'); }
+  S.prodBusy = false; S._pinv = null; if (S.tab === 'products') renderMain();
+}
+const ageDays = (iso) => (iso ? Math.floor((Date.now() - new Date(String(iso).slice(0, 16))) / 864e5) : null);
+function prodInv() {
+  if (S._pinv) return S._pinv;
+  const act = [...S.plist.values()].filter((l) => l.active); const I = { n: act.length, qty: 0, value: 0, list: 0, listN: 0, ages: [], grade: {}, price: { '~3천': 0, '3천~6천': 0, '6천~1만': 0, '1만~2만': 0, '2만~': 0 }, pub: new Map(), bucket: { '0~30일': [0, 0], '31~90일': [0, 0], '91~180일': [0, 0], '181~365일': [0, 0], '1년 넘음': [0, 0] } };
+  for (const l of act) {
+    const q = l.qty || 1; const p = l.price || 0; I.qty += q; I.value += p * q; if (l.priceList) { I.list += l.priceList * q; I.listN += p * q; }
+    I.grade[l.grade || '?'] = (I.grade[l.grade || '?'] || 0) + q;
+    I.price[p < 3000 ? '~3천' : p < 6000 ? '3천~6천' : p < 10000 ? '6천~1만' : p < 20000 ? '1만~2만' : '2만~'] += q;
+    const pb = l.publisher || '(모름)'; const x = I.pub.get(pb) || { qty: 0, value: 0 }; x.qty += q; x.value += p * q; I.pub.set(pb, x);
+    const a = ageDays(l.registeredAt); if (a != null) { I.ages.push(a); const b = a <= 30 ? '0~30일' : a <= 90 ? '31~90일' : a <= 180 ? '91~180일' : a <= 365 ? '181~365일' : '1년 넘음'; I.bucket[b][0] += q; I.bucket[b][1] += p * q; }
+  }
+  I.ages.sort((a, b) => a - b); I.ageAvg = I.ages.length ? I.ages.reduce((s, x) => s + x, 0) / I.ages.length : null; I.ageMed = I.ages.length ? I.ages[Math.floor(I.ages.length / 2)] : null;
+  S._pinv = I; return I;
+}
+function soldIn(r) { // 판매 권수·금액은 주문 기록(주문·매출 탭과 같은 숫자), 출판사는 판매 줄에서
+  let qty = 0, amt = 0; const pub = new Map();
+  for (const o of S.orders.values()) { if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue; (o.items || []).forEach((it) => { if (it.lineStatus !== 'normal') return; const q = it.qty || 1; qty += q; amt += (it.price || 0) * q; }); }
+  for (const s of S.psales.values()) { if (!inRange(s.orderedAt, r) || s.channel !== 'aladin') continue; const pb = s.publisher || '(모름)'; const x = pub.get(pb) || { qty: 0, amt: 0 }; x.qty += s.qty || 1; x.amt += (s.price || 0) * (s.qty || 1); pub.set(pb, x); }
+  return { qty, amt, pub };
+}
+function daysToSell(r) { const out = []; for (const s of S.psales.values()) { if (!inRange(s.orderedAt, r) || !s.usedCode) continue; const l = S.plist.get('aladin_' + s.usedCode); if (!l || !l.registeredAt || !s.orderedAt) continue; const d = (new Date(String(s.orderedAt).slice(0, 16)) - new Date(String(l.registeredAt).slice(0, 16))) / 864e5; if (d >= 0) out.push(d); } out.sort((a, b) => a - b); return out; }
+function prodDash() {
+  const I = prodInv(); const id = 'prod'; const r = rangeFor(id, 'month');
+  const sold = S.ordersLoaded ? soldIn(r) : { qty: 0, amt: 0, pub: new Map() };
+  const regs = [...S.plist.values()].filter((l) => l.registeredAt && inRange(l.registeredAt, r));
+  const regQty = regs.reduce((s, l) => s + (l.qty || 1), 0);
+  const y365 = { start: dstr(new Date(Date.now() - 365 * 864e5)), end: dstr(new Date(Date.now() + 864e5)) };
+  const s365 = S.ordersLoaded ? soldIn(y365).qty : 0; const turn = I.qty ? s365 / I.qty : null; const dsi = turn ? 365 / turn : null;
+  const dts = daysToSell(r); const dtsMed = dts.length ? dts[Math.floor(dts.length / 2)] : null;
+  const old = I.bucket['181~365일'][0] + I.bucket['1년 넘음'][0]; const oldV = I.bucket['181~365일'][1] + I.bucket['1년 넘음'][1];
+  const inv = [
+    mcell(num(I.n) + '종', '재고 품목 수 (SKU)', '판매중·대기·일시중지 등 활성 상품'), mcell(num(I.qty) + '권', '재고 권수', '활성 상품 수량 합'),
+    mcell(won(I.value), '재고 금액 (판매가 기준)', '판매가 × 수량. 매입가가 생기면 원가 기준도 표시'), mcell(won(I.qty ? Math.round(I.value / I.qty) : 0), '재고 평균 판매가', '재고 금액 ÷ 재고 권수'),
+    mcell(I.list ? pctv(I.listN, I.list) + '%' : '-', '정가 대비 판매가', '재고 판매가 합 ÷ 정가 합'), mcell(I.ageAvg != null ? num(I.ageAvg) + '일' : '-', '평균 재고 연령', `중앙값 ${I.ageMed ?? '-'}일 · 등록일부터 오늘까지`),
+    mcell(pctv(old, I.qty) + '%', '장기 재고 비율 (180일+)', `${num(old)}권 · ${won(oldV)}. 체화 재고 관리 지표`),
+    mcell(turn != null ? num(turn, 2) + '회' : '-', '재고 회전율 (연)', '최근 365일 판매 권수 ÷ 현재 재고 권수'), mcell(dsi != null ? num(dsi) + '일' : '-', '재고 보유 일수 (DSI)', '365 ÷ 회전율. 지금 재고를 다 팔 때까지 예상 일수'),
+  ];
+  const flow = [
+    mcell(num(regs.length) + '종', '신규 등록', `${num(regQty)}권 (현재 수량 기준)`), mcell(num(sold.qty) + '권', '판매 권수', won(sold.amt)),
+    mcell((regQty - sold.qty >= 0 ? '+' : '') + num(regQty - sold.qty) + '권', '재고 순증감', '신규 등록 − 판매'),
+    mcell(r.current ? pctv(sold.qty, sold.qty + I.qty) + '%' : '-', '판매율 (Sell-through)', r.current ? '판매 ÷ (판매 + 현재 재고). 현재 기간만' : '지난 기간은 그 시점 재고를 몰라 계산 안 함'),
+    mcell(dtsMed != null ? num(dtsMed) + '일' : '-', '등록→판매 소요일 (중앙값)', `판매완료 엑셀·수집 기록 ${num(dts.length)}건 기준`),
+  ];
+  const bar = (obj, tot, fmt) => Object.entries(obj).map(([k, v]) => { const q = Array.isArray(v) ? v[0] : v; return `<div class="dist"><span>${esc(k)}</span><div class="bar"><i style="width:${pctv(q, tot)}%"></i></div><b>${fmt ? fmt(v) : num(q) + '권'}</b></div>`; }).join('');
+  const pubRows = (m, key, f) => [...m.entries()].sort((a, b) => b[1][key] - a[1][key]).map(([p, v], i) => `<div class="item" style="cursor:default"><div class="l1"><span class="rn2">${i + 1}</span><span class="name">${esc(p)}</span><span class="hl">${f(v)}</span></div></div>`);
+  // 추이: 등록·판매
+  const kind = S.ptrend || 'month'; const mm = {};
+  for (const l of S.plist.values()) { const k = trendKey(l.registeredAt, kind); if (!k) continue; const x = (mm[k] = mm[k] || { k, reg: 0, sold: 0, amt: 0 }); x.reg += 1; }
+  if (S.ordersLoaded) for (const o of S.orders.values()) { if (o.kind !== 'sale') continue; const k = trendKey(o.orderedAt, kind); if (!k) continue; const x = (mm[k] = mm[k] || { k, reg: 0, sold: 0, amt: 0 }); const L = saleLines(o); x.sold += L.qty; x.amt += L.amt; }
+  const tarr = Object.values(mm).sort((a, b) => b.k.localeCompare(a.k)); const maxT = Math.max(1, ...tarr.map((x) => Math.max(x.reg, x.sold)));
+  const trows = tarr.map((x) => `<div class="item" style="cursor:default"><div class="l1" style="justify-content:space-between"><b>${trendLabel(kind, x.k)}</b><b>${x.reg - x.sold >= 0 ? '+' : ''}${num(x.reg - x.sold)}</b></div>
+    <div class="dual"><i class="a" style="width:${(x.reg / maxT * 100).toFixed(1)}%"></i><i class="b" style="width:${(x.sold / maxT * 100).toFixed(1)}%"></i></div>
+    <div class="l2"><span>등록 ${num(x.reg)}종</span><span>판매 ${num(x.sold)}권</span><span>판매액 ${won(x.amt)}</span><span>권당 ${won(x.sold ? Math.round(x.amt / x.sold) : 0)}</span></div></div>`);
+  return `<div class="card" style="margin:0 0 10px"><h3>재고 현황 (지금)</h3><div class="mgrid kpi">${inv.join('')}</div></div>
+    <div class="card" style="margin:0 0 10px"><h3>입고·판매 흐름</h3>${picker(id, 'month')}<div class="mgrid kpi" style="margin-top:8px">${flow.join('')}</div></div>
+    ${sec('p_age', '재고 연령 분포 (에이징)', `<div class="card" style="margin:0 0 8px">${bar(I.bucket, I.qty, (v) => `${num(v[0])}권 · ${won(v[1])}`)}<p class="hint">오래된 재고일수록 가격 조정·재진열 대상입니다.</p></div>`)}
+    ${sec('p_grade', '등급·가격대 분포', `<div class="card" style="margin:0 0 8px"><h3>등급</h3>${bar(I.grade, I.qty)}<h3 style="margin-top:10px">판매가 구간</h3>${bar(I.price, I.qty)}</div>`, false)}
+    ${sec('p_trend', '등록·판매 추이', `<div class="ptabs" style="margin-bottom:8px">${['day', 'week', 'month', 'year'].map((k) => `<button class="${kind === k ? 'on' : ''}" data-ptrend="${k}">${PK[k]}</button>`).join('')}</div><div class="hint"><span class="lg a"></span>등록 <span class="lg b"></span>판매 · 오른쪽 숫자는 순증감</div><div class="list">${fold('ptr' + kind, trows) || '<div class="empty">기록 없음</div>'}</div>`)}
+    ${sec('p_pubsold', `출판사별 판매 · ${r.label}`, `<div class="list">${fold('pubsold', pubRows(sold.pub, 'amt', (v) => `${won(v.amt)} · ${v.qty}권`)) || '<div class="empty">판매완료 엑셀 기록 기준. 기록 없음</div>'}</div>`, false)}
+    ${sec('p_pubinv', '출판사별 재고', `<div class="list">${fold('pubinv', pubRows(I.pub, 'value', (v) => `${num(v.qty)}권 · ${won(v.value)}`)) || '<div class="empty">없음</div>'}</div>`, false)}`;
+}
+function prodRow(l) {
+  const b = l.bookId ? S.pbooks.get(l.bookId) : null; const src = b && b.images ? imgUrl(b.images.front, true) : null;
+  return `<button class="item prow" data-pid="${esc(l.id)}">${src ? `<img class="pth" src="${esc(src)}" loading="lazy" decoding="async" alt="">` : '<span class="pth none"></span>'}<span class="pbody"><span class="l1"><span class="name">${esc(l.title || l.usedCode)}</span>${l.grade ? `<span class="tag pl">${esc(l.grade)}</span>` : ''}${!l.active ? '<span class="tag bl">비활성</span>' : ''}</span>
+    <span class="l2"><span>${won(l.price)}</span><span>수량 ${l.qty ?? '-'}</span><span>${esc(l.status || '')}</span><span>등록 ${d10(l.registeredAt)}</span><span>${esc(l.publisher || '')}</span></span></span></button>`;
+}
+function renderProducts(m) {
+  loadProducts();
+  if (!S.prodLoaded) { m.innerHTML = `<div class="empty">${S.prodBusy ? '상품 기록을 받는 중입니다. 처음 한 번은 몇 분 걸릴 수 있습니다.' : '상품 기록이 아직 없습니다. 상품 수집기로 먼저 수집해 주세요.'}</div>`; return; }
+  const q = norm(S.q); const all = [...S.plist.values()];
+  if (q) {
+    const hits = all.filter((l) => norm([l.title, l.usedCode, l.isbn13, l.isbn10, l.aladinCode, l.sku, l.publisher, l.listingId].join('|')).includes(q)).sort((a, b) => String(b.registeredAt || '').localeCompare(String(a.registeredAt || '')));
+    m.innerHTML = `<h2>상품 ${hits.length.toLocaleString()}건</h2><div class="list">${fold('psearch', hits.map(prodRow), 20) || '<div class="empty">찾는 상품이 없습니다</div>'}</div>`;
+  } else {
+    const recent = all.filter((l) => l.active).sort((a, b) => String(b.registeredAt || '').localeCompare(String(a.registeredAt || '')));
+    m.innerHTML = prodDash() + sec('p_recent', '최근 등록 상품', `<div class="list">${fold('precent', recent.map(prodRow)) || '<div class="empty">없음</div>'}</div>`) + '<p class="hint">제목·ISBN·U코드·자체코드·출판사는 위 검색창에 입력하세요. 지표 설명은 각 칸 아래 작은 글씨에 있습니다.</p>';
+  }
+  bindUI(m, renderMain);
+  m.querySelectorAll('[data-ptrend]').forEach((b) => (b.onclick = () => { S.ptrend = b.dataset.ptrend; renderMain(); }));
+  m.querySelectorAll('[data-pid]').forEach((b) => (b.onclick = () => openProduct(b.dataset.pid)));
+}
+async function openProduct(pid) {
+  const l = S.plist.get(pid); if (!l) return; const sh = $('#sheet'); S.detail = { product: pid };
+  history.pushState({ p: pid }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
+  const draw = (x) => {
+    const b = x.book || (l.bookId && S.pbooks.get(l.bookId)) || null; const im = (b && b.images) || {};
+    const imgs = ['front', 'back', 'spine'].map((k) => (im[k] ? `<img src="${esc(imgUrl(im[k]))}" alt="${k}" decoding="async">` : '')).join('');
+    const kv = (k, v) => (v == null || v === '' ? '' : `<dt>${k}</dt><dd>${v}</dd>`);
+    const ids = (l.ids || []).map((c) => `<li><b>${esc(c.value)}</b> <span class="tag ${c.kind === 'unknown' || c.kind === 'invalid' ? 'bl' : 'pl'}">${esc(c.guess)}</span><div class="hint" style="margin:2px 0 0">${esc(c.reason)}</div></li>`).join('');
+    const mt = x.metrics;
+    sh.innerHTML = `<div class="sh"><button class="back" id="back">← 뒤로</button><div class="t">${esc(l.title || l.usedCode)}</div></div>
+      ${imgs ? `<div class="pimgs">${imgs}</div>` : ''}
+      <div class="card"><h3>등록 정보</h3><dl class="kv">${kv('상태', esc(l.status || ''))}${kv('판매가', won(l.price))}${kv('정가', l.priceList ? won(l.priceList) : '')}${kv('수량', l.qty)}${kv('등급', esc(l.grade || ''))}${kv('자체코드', esc(l.sku || ''))}${kv('출판사', esc(l.publisher || ''))}${kv('등록일', dt16(l.registeredAt) + (l.registeredYearGuessed ? ' (연도 추정)' : ''))}${kv('상품번호', esc(l.listingId || ''))}${kv('U코드', esc(l.usedCode || ''))}</dl></div>
+      ${b ? `<div class="card"><h3>도서 정보</h3><dl class="kv">${kv('제목', esc(b.title || ''))}${kv('부제', esc(b.subtitle || ''))}${kv('기여자', esc((b.contributors || []).map((c) => c.name + (c.role ? `(${c.role})` : '')).join(', ')))}${kv('출판사', esc(b.publisher || ''))}${kv('출간일', esc(b.pubDate || ''))}${kv('원제', esc(b.originalTitle || ''))}${kv('쪽수', b.pages)}${kv('크기', esc(b.size || ''))}${kv('무게', b.weightG ? b.weightG + 'g' : '')}${kv('분류', esc((b.categories || []).map((c) => (c.path || []).join(' > ')).join(' / ')))}</dl></div>` : '<div class="card"><h3>도서 정보</h3><div class="hint">아직 수집 전입니다 (상품 수집기의 "도서 정보·시장 지표 갱신")</div></div>'}
+      ${mt ? `<div class="card"><h3>시장 지표 <small>${esc(dt16(mt.lastCheckedAt))} 확인</small></h3><div class="mgrid">${mcell(won(mt.priceSales), '새책 판매가', `정가 ${won(mt.priceList)}`)}${mcell(num(mt.salesPoint), 'Sales Point', '알라딘 판매 지수')}${mcell(num(mt.usedTotal), '전체 중고 수', mt.usedMins ? Object.entries(mt.usedMins).map(([k, v]) => `${k} ${v.count}${v.min ? ` 최저 ${won(v.min)}` : ''}`).join(' · ') : '')}${mcell(mt.buyback ? Object.entries(mt.buyback).map(([k, v]) => `${k} ${won(v)}`).join('<br>') : '-', '알라딘 매입 예상가', '판매가 하한선 근거')}${mcell(mt.rating ?? '-', '평점', `100자평 ${mt.commentCount ?? '-'} · 리뷰 ${mt.reviewCount ?? '-'}`)}${mcell(esc((mt.activeRanks || []).join(', ') || '-'), '순위', '')}</div></div>` : ''}
+      <div class="card"><h3>식별 코드</h3><ul class="tl" style="max-height:none">${ids || '<li>없음</li>'}</ul>${(l.idWarn || []).map((w) => `<div class="hint" style="color:var(--red)">${esc(w)}</div>`).join('')}</div>
+      <div class="card"><h3>판매 기록</h3>${(x.sales || []).length ? `<ul class="tl">${x.sales.map((s) => `<li><div class="h"><span>${dt16(s.orderedAt)}</span><span>${esc(s.orderNo || '')}</span></div><div class="b">${won(s.price)} × ${s.qty || 1}${s.needsCheck ? ' <span class="tag cau">확인 필요</span>' : ''}</div></li>`).join('')}</ul>` : '<div class="hint">기록 없음</div>'}</div>
+      <div class="card"><h3>변경 이력</h3>${x.changes == null ? '<div class="hint">불러오는 중</div>' : x.changes.length ? `<ul class="tl">${x.changes.map((c) => `<li><div class="h"><span>${dt16(c.at)}</span><span>${esc(c.source || '')}</span></div><div class="b">${Object.entries(c.changes || {}).map(([k, v]) => `${esc(k)}: ${esc(JSON.stringify(v.from))} → ${esc(JSON.stringify(v.to))}`).join('\n')}</div></li>`).join('')}</ul>` : '<div class="hint">변경 없음</div>'}</div>`;
+    $('#back').onclick = () => history.back();
+  };
+  const x = { sales: [...S.psales.values()].filter((s) => s.usedCode === l.usedCode).sort((a, b) => String(b.orderedAt).localeCompare(String(a.orderedAt))), changes: null };
+  draw(x);
+  try {
+    const [ch, mt, bk] = await Promise.all([db.collection('prd_listing_changes').where('listingKey', '==', pid).get(), l.bookId ? db.collection('prd_book_metrics').doc(l.bookId).get() : null, l.bookId && !S.pbooks.get(l.bookId) ? db.collection('prd_books').doc(l.bookId).get() : null]);
+    if (!S.detail || S.detail.product !== pid) return;
+    x.changes = []; ch.forEach((d) => x.changes.push(d.data())); x.changes.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    if (mt && mt.exists) x.metrics = deTs(mt.data()); if (bk && bk.exists) x.book = deTs(bk.data());
+    draw(x);
+  } catch (e) { x.changes = []; draw(x); }
+}
+
+/* ── 로그인 ── */
+function loginView(err) {
+  $('#app').innerHTML = `<div class="login"><h1>리드나우 고객</h1><p>등록된 구글 계정으로 로그인하세요</p>
+    <button class="btn" id="g">구글 계정으로 로그인</button>${err ? `<p style="color:var(--red);margin-top:12px">${esc(err)}</p>` : ''}
+    <details><summary>Firebase 전용 계정으로 로그인</summary><input id="em" type="email" placeholder="이메일" autocomplete="username"><input id="pw" type="password" placeholder="비밀번호" autocomplete="current-password"><button class="btn ghost" id="e" style="margin-top:8px;width:100%">로그인</button></details></div>`;
+  $('#g').onclick = () => firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch((e) => loginView(e.code === 'auth/popup-blocked' ? '팝업이 막혔습니다. 브라우저에서 팝업을 허용해 주세요.' : e.message));
+  $('#e').onclick = () => firebase.auth().signInWithEmailAndPassword($('#em').value.trim(), $('#pw').value).catch((e) => loginView('로그인 실패: ' + e.code));
+}
+firebase.auth().onAuthStateChanged(async (u) => {
+  if (!u) { S.user = null; loginView(); return; }
+  S.user = u;
+  await idbOpen();
+  (await idbAll('customers')).forEach((v) => { v._sk = searchKey(v); S.customers.set(v.customerId, v); });
+  shell();
+  try { await syncCustomers(); } catch (e) { setSync(e.code === 'permission-denied' ? '권한 없음: 등록된 계정이 아닙니다' : '연결 실패: 기기에 저장된 내용 표시 중'); }
+  watchPending(); renderMain();
+  const hm = location.hash.match(/#c=([^&]+)/); if (hm) { history.replaceState(null, '', location.pathname); openCustomer(decodeURIComponent(hm[1])); }
+  watchConfig(); watchAcct();
+  // 로그인하면 주문 기록·판매자 목록도 자동으로 받아 둠 (처음 한 번은 전체, 이후엔 바뀐 것만)
+  try {
+    const os = await idbAll('orders'); if (os.length) { os.forEach((v) => { v._sk = orderKey(v); S.orders.set(v.id, v); }); S.ordersLoaded = true; }
+    setSync(S.ordersLoaded ? null : '주문 기록 받는 중 (처음 한 번)'); await syncOrders(true); setSync();
+  } catch (e) { S.ordersBusy = false; setSync('주문 기록 받기 실패: 나중에 다시 시도합니다'); }
+  try { setSync(S.sellersLoaded ? null : '판매자 목록 받는 중 (처음 한 번)'); await syncSellers(); setSync(); if (S.tab === 'sellers') renderMain(); } catch (e) { setSync(); }
+});
+</script>
+</body>
+</html>
