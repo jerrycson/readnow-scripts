@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.2.0';
+  const VERSION = '0.3.0';
   const EMPTY = '-'; // 화면 표시용
 
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -109,9 +109,11 @@
         case '전화2': (section === 'recipient' ? rcpt : buyer).phone2 = normPhone(value); break;
         case '주소': Object.assign(rcpt, splitAddress(value)); break;
         case '배송 요청사항': o.shippingRequest = nullIfEmpty(value); break;
-        case '제품명': item = { ...splitTitle(value), option: null, qty: null, isbn13: null, isbnAlt: null, sku: null, note: null }; o.items.push(item); section = 'item'; break;
+        case '제품명': item = { ...splitTitle(value), option: null, qty: null, cancelQty: 0, cancelled: false, isbn13: null, isbnAlt: null, sku: null, note: null }; o.items.push(item); section = 'item'; break;
         case '옵션': if (item) item.option = nullIfEmpty(value); break;
-        case '수량': if (item) item.qty = toInt(value); break;
+        case '수량': if (item) { // "1개(취소 1개)" → 수량 1, 취소 1 (판매자 품절 취소 등, 판매총액에서 빠짐)
+          item.qty = toInt(value); const c = value.match(/취소\s*(\d+)/); item.cancelQty = c ? parseInt(c[1], 10) : 0;
+          item.cancelled = item.cancelQty > 0 && item.cancelQty >= (item.qty || 1); } break;
         case 'ISBN': if (item) { // "9788960301658<br>(8960301655)" — 괄호 안은 ISBN10 또는 K코드
           const m = value.match(/(\d{13}|\S+?)\s*\(([^)]+)\)/);
           item.isbn13 = m ? m[1] : nullIfEmpty(value); item.isbnAlt = m ? m[2] : null; } break;
@@ -200,16 +202,21 @@
   }
 
   // 목록 행(같은 주문번호 묶음) ↔ 팝업 상품 연결: 제목 일치 우선, 남으면 순서대로
+  // 전체주문 목록에는 주문 안에서 취소된 상품이 나오지 않으므로, 취소 안 된 상품끼리 비교한다.
   function matchListToPopup(listRows, popup) {
     const items = popup.items.map((it, i) => ({ ...it, _i: i, _used: false }));
+    const active = (it) => !it.cancelled;
     const out = [];
     for (const r of listRows) {
-      let hit = items.find((it) => !it._used && it.title === r.title) || items.find((it) => !it._used);
+      let hit = items.find((it) => !it._used && active(it) && it.title === r.title) || items.find((it) => !it._used && it.title === r.title)
+        || items.find((it) => !it._used && active(it)) || items.find((it) => !it._used);
       if (hit) hit._used = true;
       out.push({ row: r, item: hit || null, matchedBy: hit ? (hit.title === r.title ? 'title' : 'order') : null });
     }
     const leftover = items.filter((it) => !it._used);
-    return { lines: out, leftoverItems: leftover, countMismatch: listRows.length !== popup.items.length };
+    const activeCount = popup.items.filter(active).length;
+    return { lines: out, leftoverItems: leftover, cancelledInOrder: leftover.filter((it) => it.cancelled),
+      countMismatch: listRows.length !== activeCount, activeItemCount: activeCount };
   }
 
   /* ───────── 반품 목록 (반품관리) ───────── */
