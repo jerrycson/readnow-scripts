@@ -175,12 +175,12 @@ body.withrank.rankopen #rank{display:block;position:fixed;top:0;right:0;bottom:0
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 'use strict';
-/* 리드나우 고객 웹앱 v0.6.1
+/* 리드나우 고객 웹앱 v0.6.2
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.6.1';
+const APP_VER = '0.6.2';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -805,7 +805,10 @@ async function syncSellers() {
   if (batch.length) await idbPut('sellers', batch);
   await idbPut('meta', [{ k: 'ssync', last: max }]); S.sellersLoaded = true; S.sellersBusy = false;
 }
-function pctText(v) { return v == null ? '-' : `${(v * 100).toFixed(v < 0.1 ? 2 : 1)}%`; }
+function pctText(v) { return v == null || v === '' || !Number.isFinite(Number(v)) ? '-' : `${(Number(v) * 100).toFixed(Number(v) < 0.1 ? 2 : 1)}%`; }
+// 품절 취소율: 툴팁 기록은 퍼센트 숫자(0.75 = 0.75%), 구글 시트 기록은 비율(0.0075 = 0.75%)
+const pctNum = (v) => (v == null || v === '' || !Number.isFinite(Number(v)) ? '-' : `${Number(v).toFixed(Number(v) < 10 ? 2 : 1)}%`);
+function outstockText(s) { return s.sc ? pctNum(s.outstockRate) : pctText(s.outstockRate); }
 // 판매자와 우리고객의 연결: 전화·이메일·반품 주소가 정확히 같으면 '일치', 일부만 같으면 '일치 의심'
 const REASON_TXT = { '전화': '전화번호 같음', '이메일': '이메일 같음', '비슷한 이메일': '이메일 앞부분이 비슷함', '대표자 이름': '대표자 이름 같음', '반품 주소 = 우리 배송지': '반품 주소가 우리고객 배송지와 비슷함 (예전 기준, 다음 갱신 때 다시 판정)' };
 const reasonTxt = (r) => REASON_TXT[r] || r;
@@ -824,14 +827,14 @@ function renderSellers(m) {
   const q = norm(S.q); const g = S.sellerGrade || 'all'; const all = [...S.sellers.values()];
   const pass = (s, k) => (k === 'all' ? true : k === 'lmatch' ? (s.linkedCustomers || []).some((l) => linkLevel(l) === 'match') : k === 'lsuspect' ? (s.linkedCustomers || []).length > 0 && !(s.linkedCustomers || []).some((l) => linkLevel(l) === 'match') : k.startsWith('a:') ? (s.aladinGrade || (k === 'a:전문셀러' && sgOf(s) === 'pro' ? '전문셀러' : null)) === k.slice(2) : sgOf(s) === k);
   let arr = all.filter((s) => pass(s, g) && (!q || norm([s.name, s.company, s.owner, s.phone, s.asPhone, s.email, s.address, s.returnAddress, s.sc, s.bizNo, s.remark].join('|')).includes(q)));
-  const sk = S.sellerSort || 'items'; const key = { items: (s) => s.totalItems || s.stock || 0, rating: (s) => s.rating ?? s.rating6m ?? 0, outstock: (s) => s.outstockRate || 0, reviews: (s) => s.totalReviewCount || s.reviewsAll || 0 }[sk];
+  const sk = S.sellerSort || 'items'; const key = { items: (s) => s.totalItems || s.stock || 0, rating: (s) => s.rating ?? s.rating6m ?? 0, outstock: (s) => (s.sc ? (s.outstockRate || 0) / 100 : s.outstockRate || 0), reviews: (s) => s.totalReviewCount || s.reviewsAll || 0 }[sk];
   arr.sort((a, b) => key(b) - key(a)); if (S.sellerRev) arr.reverse();
   const filters = [['all', '전체'], ['lmatch', '우리고객 정보와 일치'], ['lsuspect', '우리고객과 일치 의심'], ['fake', '허위 매물'], ['a:전문셀러', '전문셀러'], ['a:파워셀러', '파워'], ['a:골드셀러', '골드'], ['a:실버셀러', '실버'], ['a:새내기셀러', '새내기']];
   m.innerHTML = `<div class="seg chips">${filters.map(([k, l]) => `<button class="${g === k ? 'on' + (k === 'fake' ? ' bl' : '') : ''}" data-sg="${k}">${l} ${all.filter((s) => pass(s, k)).length.toLocaleString()}</button>`).join('')}</div>
     <div class="sortbar"><select id="ssort">${[['items', '보유 상품 많은'], ['rating', '평점 높은'], ['outstock', '품절 취소율 높은'], ['reviews', '평가 많은']].map(([k, l]) => `<option value="${k}" ${sk === k ? 'selected' : ''}>${l} 순</option>`).join('')}</select><button id="srev" class="rev">${S.sellerRev ? '거꾸로 ↑' : '순서대로 ↓'}</button></div>
     <p class="hint">툴팁이 모은 판매자 ${all.filter((s) => s.sc).length.toLocaleString()}곳과 구글 시트 기록을 합친 목록입니다. 전화·이메일·반품 주소가 우리고객과 정확히 같으면 '우리고객 정보와 일치', 동·호수 등 일부만 같으면 '우리고객과 일치 의심'으로 표시됩니다.</p>
     <div class="list">${arr.slice(0, S.limit).map((s) => `<button class="item" data-sid="${esc(s.id)}"><div class="l1"><span class="name">${esc(s.name || '(이름 없음)')}</span>${gradeChip(s)}${sellerTags(s)}</div>
-      <div class="l2"><span>보유 ${((s.totalItems || s.stock) || 0).toLocaleString()}</span><span>평점 ${pctText(s.rating ?? s.rating6m)}</span><span>품절 취소율 ${pctText(s.outstockRate)}</span>${s.shippingFee != null ? `<span>배송비 ${won(s.shippingFee)}</span>` : ''}${s.owner ? `<span>${esc(s.company || '')} ${esc(s.owner)}</span>` : ''}</div></button>`).join('') || '<div class="empty">없음</div>'}${arr.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
+      <div class="l2"><span>보유 ${((s.totalItems || s.stock) || 0).toLocaleString()}</span><span>평점 ${pctText(s.rating ?? s.rating6m)}</span><span>품절 취소율 ${outstockText(s)}</span>${s.shippingFee != null ? `<span>배송비 ${won(s.shippingFee)}</span>` : ''}${s.owner ? `<span>${esc(s.company || '')} ${esc(s.owner)}</span>` : ''}</div></button>`).join('') || '<div class="empty">없음</div>'}${arr.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
   m.querySelectorAll('[data-sg]').forEach((b) => (b.onclick = () => { S.sellerGrade = b.dataset.sg; S.limit = 30; renderMain(); }));
   $('#ssort', m).onchange = (e) => { S.sellerSort = e.target.value; renderMain(); }; $('#srev', m).onclick = () => { S.sellerRev = !S.sellerRev; renderMain(); };
   m.querySelectorAll('[data-sid]').forEach((b) => (b.onclick = () => openSeller(b.dataset.sid)));
@@ -849,12 +852,14 @@ async function openSeller(id) {
   const draw = (hist) => {
     sh.innerHTML = `<div class="sh"><button class="back" id="back">‹ 목록</button><div class="t">${esc(s.name || '')}</div></div>
     <div class="card">${gradeChip(s)}${sellerTags(s)}${s.sc ? ` <span class="hint">판매자 번호 ${esc(s.sc)}</span>` : ''}${s.sheet && s.sheet.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.sheet.remark)}</div>` : s.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.remark)}</div>` : ''}
-      <div class="nums five" style="margin-top:10px"><div><b>${((s.totalItems || s.stock) || 0).toLocaleString()}</b><span>보유 상품</span></div><div><b>${pctText(s.rating ?? s.rating6m)}</b><span>평점</span></div><div><b>${(s.totalReviewCount || s.reviewsAll || 0).toLocaleString()}</b><span>전체 평가</span></div><div><b>${pctText(s.outstockRate)}</b><span>품절 취소율</span></div><div><b>${s.shippingDays ?? s.actualDays ?? '-'}</b><span>출고일</span></div></div></div>
+      <div class="nums five" style="margin-top:10px"><div><b>${((s.totalItems || s.stock) || 0).toLocaleString()}</b><span>보유 상품</span></div><div><b>${pctText(s.rating ?? s.rating6m)}</b><span>평점</span></div><div><b>${(s.totalReviewCount || s.reviewsAll || 0).toLocaleString()}</b><span>전체 평가</span></div><div><b>${outstockText(s)}</b><span>품절 취소율</span></div><div><b>${s.shippingDays ?? s.actualDays ?? '-'}</b><span>출고일</span></div></div></div>
     ${['match', 'suspect'].map((lv) => { const L = (s.linkedCustomers || []).filter((l) => linkLevel(l) === lv); if (!L.length) return ''; return `<div class="card"><h3 style="color:${lv === 'match' ? 'var(--red)' : 'var(--amber)'}">${LEVEL_TXT[lv][0]} ${L.length}명</h3>${L.map((l) => { const c = S.customers.get(l.customerId) || {}; return `<div class="cand"><div class="ci"><b>${esc(c.displayName || l.customerId)}</b> <small>주문 ${c.saleOrderCount || 0} · 순매출 ${won(c.salesAmount)} · 이유: ${esc((l.reasons || []).map(reasonTxt).join(', '))}</small></div><button class="btn" data-cid="${esc(l.customerId)}">고객 보기</button></div>`; }).join('')}</div>`; }).join('')}
-    ${hist ? `<div class="card"><h3>평점 추이</h3><div style="color:var(--cloth)">${miniLine([...(hist.snapshots || []).map((x) => ({ t: x.t, v: x.rating })), ...(hist.quick || []).map((x) => ({ t: x.t, v: x.rating }))].sort((a, b) => a.t - b.t), pctText)}</div>
-      <h3 style="margin-top:12px">배송비 추이</h3><div style="color:var(--amber)">${miniLine([...(hist.snapshots || []).map((x) => ({ t: x.t, v: x.fee })), ...(hist.quick || []).map((x) => ({ t: x.t, v: x.fee }))].sort((a, b) => a.t - b.t), (v) => won(v))}</div>
-      <h3 style="margin-top:12px">전체 평가 수 추이</h3><div style="color:var(--cloth)">${miniLine((hist.snapshots || []).map((x) => ({ t: x.t, v: x.total })), (v) => Math.round(v).toLocaleString() + '건')}</div>
-      <h3 style="margin-top:12px">보유 상품 추이</h3><div style="color:#56636C">${miniLine((hist.snapshots || []).map((x) => ({ t: x.t, v: x.items })), (v) => Math.round(v).toLocaleString())}</div></div>` : ''}
+    ${hist ? (() => { const snaps = hist.snapshots || []; const quick = hist.quick || []; const both = (k) => [...snaps.map((x) => ({ t: x.t, v: x[k] })), ...quick.map((x) => ({ t: x.t, v: x[k] }))].sort((a, b) => a.t - b.t);
+      return `<div class="card"><h3>전체 평가 수 추이</h3><div style="color:var(--cloth)">${miniLine(snaps.map((x) => ({ t: x.t, v: x.total })), (v) => Math.round(v).toLocaleString() + '건')}</div>
+      <h3 style="margin-top:12px">평점 추이</h3><div style="color:var(--cloth)">${miniLine(both('rating'), pctText)}</div>
+      <h3 style="margin-top:12px">보유 상품 수 추이</h3><div style="color:#56636C">${miniLine(snaps.map((x) => ({ t: x.t, v: x.items })), (v) => Math.round(v).toLocaleString() + '개')}</div>
+      <h3 style="margin-top:12px">배송비 추이</h3><div style="color:var(--amber)">${miniLine(both('fee'), (v) => won(v))}</div>
+      <h3 style="margin-top:12px">품절 취소율 추이</h3><div style="color:var(--red)">${miniLine(snaps.map((x) => ({ t: x.t, v: x.outstock })), pctNum)}</div></div>`; })() : ''}
     <div class="card"><h3>판매 조건</h3><dl class="kv">${kv('무료배송', s.freeShipping != null ? won(s.freeShipping) + ' 이상' : '')}${kv('배송비', s.shippingFee != null ? won(s.shippingFee) : '')}${kv('출고일', s.shippingDays != null ? s.shippingDays + '일' : '')}${kv('국내도서', s.domesticBooks != null ? s.domesticBooks.toLocaleString() : '')}${kv('외국도서', s.foreignBooks != null ? s.foreignBooks.toLocaleString() : '')}${kv('음반·영상', s.music != null || s.video != null ? `${(s.music || 0).toLocaleString()} / ${(s.video || 0).toLocaleString()}` : '')}${kv('분야', (s.categories || s.topCategories || []).map((c) => `${esc(c.name)} ${c.count != null ? c.count.toLocaleString() : ''}`).join(', '))}${kv('공지', esc((s.notices || []).join(' / ')))}</dl></div>
     <div class="card"><h3>사업자 정보</h3><dl class="kv">${kv('상호', esc(s.company || ''))}${kv('대표자', esc(s.owner || ''))}${kv('전화', s.phone ? `<a href="tel:${esc(s.phone)}">${esc(s.phone)}</a>` : '')}${kv('A/S 전화', esc(s.asPhone || ''))}${kv('이메일', esc(s.email || ''))}${kv('사업자번호', esc(s.bizNo || ''))}${kv('통신판매', esc(s.mailOrderNo || ''))}${kv('소재지', esc(s.address || ''))}${kv('택배사', esc(s.courier || ''))}${kv('반품 주소', esc(s.returnAddress || ''))}${kv('첫 평가일', esc(s.firstReviewDate || ''))}${kv('소개', esc(s.notice || ''))}</dl></div>`;
     $('#back').onclick = () => history.back();
