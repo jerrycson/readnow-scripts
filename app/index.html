@@ -149,6 +149,7 @@ body.withrank.rankopen #rank{display:block;position:fixed;top:0;right:0;bottom:0
 .acct .ar{display:grid;grid-template-columns:1fr auto;gap:0 8px;padding:7px 0;border-bottom:1px dashed var(--line)}.acct .ar span{font-size:13.5px}.acct .ar b{font-size:16px;font-variant-numeric:tabular-nums}.acct .ar small{grid-column:1/-1;font-size:11.5px;color:var(--sub)}
 .acct .ar.minus b{color:var(--cloth)}.acct .ar.total{border-bottom:0;border-top:2px solid var(--ink);margin-top:2px}.acct .ar.total span{font-weight:700}.acct .ar.total b{font-size:19px}
 .cadd{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.cadd input{border:1px solid var(--line);border-radius:6px;padding:6px;font:inherit;min-width:0;flex:1 1 90px}.cadd .btn{padding:8px 14px}
+.tag.grade{background:#3F7FD1;font-weight:800;text-shadow:0 1px 1px rgba(0,0,0,.45)}
 .pend{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
 .pend .src{font-size:12px;color:var(--sub)} .pend .who{font-weight:700;margin:3px 0} .pend .body{font-size:13.5px;color:var(--ink);white-space:pre-wrap;max-height:90px;overflow:auto;background:var(--bg);border-radius:8px;padding:6px 9px;margin:6px 0}
 .cand{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px dashed var(--line);padding:8px 0}
@@ -174,12 +175,12 @@ body.withrank.rankopen #rank{display:block;position:fixed;top:0;right:0;bottom:0
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 'use strict';
-/* 리드나우 고객 웹앱 v0.5.1
+/* 리드나우 고객 웹앱 v0.6.1
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.5.1';
+const APP_VER = '0.6.1';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -528,7 +529,7 @@ function bindSort(m) {
 }
 function custRow(c, extra) {
   const f = flagsOf(c);
-  const tags = `${f.bl ? '<span class="tag bl">블랙리스트</span>' : ''}${f.cau ? '<span class="tag cau">주의</span>' : ''}${f.vip ? '<span class="tag vip">VIP</span>' : ''}${f.seller ? '<span class="tag bl">판매자 연결</span>' : ''}${f.agent ? `<span class="tag ag">수령인 ${c.otherRecipientCount}명</span>` : ''}${c.platforms && c.platforms.some((p) => p !== 'aladin') ? c.platforms.filter((p) => p !== 'aladin').map((p) => `<span class="tag pl">${p === 'yes24' ? '예스24' : p === 'direct' ? '직접' : esc(p)}</span>`).join('') : ''}`;
+  const tags = `${f.bl ? '<span class="tag bl">블랙리스트</span>' : ''}${f.cau ? '<span class="tag cau">주의</span>' : ''}${f.vip ? '<span class="tag vip">VIP</span>' : ''}${f.seller ? '<span class="tag bl">판매자 정보 일치</span>' : ''}${f.agent ? `<span class="tag ag">수령인 ${c.otherRecipientCount}명</span>` : ''}${c.platforms && c.platforms.some((p) => p !== 'aladin') ? c.platforms.filter((p) => p !== 'aladin').map((p) => `<span class="tag pl">${p === 'yes24' ? '예스24' : p === 'direct' ? '직접' : esc(p)}</span>`).join('') : ''}`;
   const sv = SORTS[S.sort]; const hl = S.tab === 'search' && sv && !['recent', 'name'].includes(S.sort) ? `<span class="hl">${sv.label} ${S.sort === 'sales' ? won(sv.key(c)) : sv.key(c).toLocaleString()}</span>` : '';
   return `<button class="item" data-cid="${esc(c.customerId)}"><div class="l1"><span class="name">${esc(c.displayName || '(이름 없음)')}</span>${tags}${hl}</div>
     <div class="l2"><span>${esc((c.phones || [])[0] || (c.emails || [])[0] || (c.emailsMasked || [])[0] || '')}</span><span>주문 ${c.saleOrderCount || 0}${c.cancelOrderCount ? ` · 취소 ${c.cancelOrderCount}` : ''}</span><span>최근 ${d10(c.lastOrderAt)}</span>${extra || ''}</div></button>`;
@@ -578,7 +579,19 @@ function renderMain() {
     const which = S.flagList || 'vip';
     const segs = [['vip', 'VIP', 'vip'], ['cau', '주의', 'cau'], ['bl', '블랙리스트', 'bl'], ['agent', '대행 의심', 'cau']];
     const pick = (k) => all.filter((c) => (k === 'agent' ? (c.otherRecipientCount || 0) >= 2 || (c.sellerLinks || []).length : flagsOf(c)[k]));
-    const arr = pick(which).sort((a, b) => (which === 'agent' ? (b.otherRecipientCount || 0) - (a.otherRecipientCount || 0) : String(b.lastOrderAt || '').localeCompare(String(a.lastOrderAt || ''))));
+    // 기간별 집계: 오늘·이번 주·이번 달·올해·전체
+    const per = S.flagPeriod || 'all'; const t0 = new Date(); const z = (x) => String(x).padStart(2, '0'); const ds = (d) => `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+    const start = per === 'day' ? ds(t0) : per === 'week' ? ds(new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() - ((t0.getDay() + 6) % 7))) : per === 'month' ? `${t0.getFullYear()}-${z(t0.getMonth() + 1)}-01` : per === 'year' ? `${t0.getFullYear()}-01-01` : null;
+    const kmap0 = { vip: 'vip', cau: 'caution', bl: 'blacklist' };
+    const inPer = new Map(); // customerId → {orders, amount}
+    if (start && S.ordersLoaded) for (const o of S.orders.values()) { if (o.kind !== 'sale' || String(o.orderedAt || '').slice(0, 10) < start) continue; const r = inPer.get(o.customerId) || { orders: 0, amount: 0 }; r.orders += 1; (o.items || []).forEach((it) => { if (it.lineStatus === 'normal') r.amount += (it.price || 0) * (it.qty || 1); }); inPer.set(o.customerId, r); }
+    const flaggedIn = (c) => { const m = (c.flags || {})[kmap0[which]]; const at = m && m.at ? (m.at.toMillis ? m.at.toMillis() : m.at.seconds ? m.at.seconds * 1000 : m.at) : null; return start && at && ds(new Date(at)) >= start; };
+    let base = pick(which); const all0 = base.length;
+    if (start) base = base.filter((c) => inPer.has(c.customerId) || flaggedIn(c));
+    const arr = base.sort((a, b) => (start ? ((inPer.get(b.customerId) || {}).amount || 0) - ((inPer.get(a.customerId) || {}).amount || 0) : which === 'agent' ? (b.otherRecipientCount || 0) - (a.otherRecipientCount || 0) : String(b.lastOrderAt || '').localeCompare(String(a.lastOrderAt || ''))));
+    const sumO = arr.reduce((x, c) => x + ((inPer.get(c.customerId) || {}).orders || (start ? 0 : c.saleOrderCount || 0)), 0);
+    const sumA = arr.reduce((x, c) => x + (start ? (inPer.get(c.customerId) || {}).amount || 0 : c.salesAmount || 0), 0);
+    const newF = start && which !== 'agent' ? arr.filter(flaggedIn).length : null;
     const kmap = { vip: 'vip', cau: 'caution', bl: 'blacklist' };
     const why = (c) => {
       if (which === 'agent') return `<span style="width:100%">${(c.sellerLinks || []).length ? `판매자 연결: ${esc(c.sellerLinks.map((s) => s.name).join(', '))} · ` : ''}수령인 예: ${esc((c.otherRecipients || []).slice(0, 3).join(', '))}</span>`;
@@ -586,10 +599,18 @@ function renderMain() {
       const r = e.src === 'auto' ? (e.reasons || [])[0] || '' : e.reason || '';
       return `<span style="width:100%"><b class="src ${e.src}">${src}</b> ${esc(r.length > 70 ? r.slice(0, 70) + '…' : r)}</span>`;
     };
+    const perTxt = { day: '오늘', week: '이번 주', month: '이번 달', year: '올해', all: '전체' };
     m.innerHTML = `<div class="seg">${segs.map(([k, l, cls]) => `<button class="${which === k ? 'on ' + cls : ''}" data-fl="${k}">${l} ${pick(k).length}</button>`).join('')}</div>
+      <div class="ptabs" style="margin-bottom:8px">${Object.entries(perTxt).map(([k, l]) => `<button class="${per === k ? 'on' : ''}" data-fp="${k}">${l}</button>`).join('')}</div>
+      <div class="card" style="margin:0 0 10px"><div class="mgrid">
+        <div><b>${arr.length.toLocaleString()}명</b><span>${perTxt[per]} ${start ? '구매했거나 새로 지정된 고객' : '전체 고객'}</span><small>${start ? `전체 ${all0.toLocaleString()}명 중` : ''}</small></div>
+        <div><b>${won(sumA)}</b><span>${perTxt[per]} 순매출</span><small>주문 ${sumO.toLocaleString()}건</small></div>
+        ${newF != null ? `<div><b>${newF}명</b><span>${perTxt[per]} 새로 지정</span><small>사람이 직접 지정한 경우 (자동 판정은 날짜 없음)</small></div>` : ''}
+        ${start && !S.ordersLoaded ? '<div><b>-</b><span>주문 기록을 받는 중</span><small>잠시 뒤 자동으로 채워집니다</small></div>' : ''}</div></div>
       ${which === 'vip' || which === 'cau' ? '<p class="hint">자동 표시는 매일 점수 계산으로 정해집니다. 고객 화면에서 직접 켜거나 끄면 그쪽이 우선합니다.</p>' : ''}
-      <div class="list">${arr.slice(0, S.limit).map((c) => custRow(c, why(c))).join('') || '<div class="empty">없음</div>'}${arr.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
+      <div class="list">${arr.slice(0, S.limit).map((c) => custRow(c, (start ? `<span>${perTxt[per]} 주문 ${(inPer.get(c.customerId) || {}).orders || 0} · ${won((inPer.get(c.customerId) || {}).amount || 0)}${flaggedIn(c) ? ' · 새로 지정' : ''}</span>` : '') + why(c))).join('') || '<div class="empty">없음</div>'}${arr.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
     m.querySelectorAll('[data-fl]').forEach((b) => (b.onclick = () => { S.flagList = b.dataset.fl; S.limit = 30; renderMain(); }));
+    m.querySelectorAll('[data-fp]').forEach((b) => (b.onclick = () => { S.flagPeriod = b.dataset.fp; S.limit = 30; renderMain(); }));
   } else if (S.tab === 'pending') renderPending(m);
   else if (S.tab === 'orders') renderOrders(m);
   else if (S.tab === 'sellers') renderSellers(m);
@@ -742,7 +763,7 @@ function renderDetail() {
       <button class="flag bl ${eb.on ? 'on' : ''}" data-flag="blacklist">${eb.on ? '⛔ 블랙리스트' : '블랙리스트'}</button></div>
       ${fdesc(ev, 'vip')}${fdesc(ec, 'caution')}${fdesc(eb, 'blacklist')}${autoOffNote('vip')}${autoOffNote('caution')}
       ${(c.otherRecipientCount || 0) >= 3 ? `<div class="fwhy" style="color:var(--amber)">주문인과 다른 수령인 ${c.otherRecipientCount}명: ${esc((c.otherRecipients || []).slice(0, 6).join(', '))}</div>` : ''}
-      ${(c.sellerLinks || []).length ? `<div class="fwhy" style="color:var(--red)">연결된 판매자: ${c.sellerLinks.map((s) => `<a href="#" data-seller-name="${esc(s.name)}">${esc(s.name)}${s.grade === 'fake' ? '(허위 매물)' : s.aladinGrade ? '(' + esc(s.aladinGrade) + ')' : ''}</a>`).join(', ')}</div>` : ''}
+      ${['match', 'suspect'].map((lv) => { const L = (c.sellerLinks || []).filter((x) => (x.level || (x.strong === false ? 'suspect' : 'match')) === lv); return L.length ? `<div class="fwhy" style="color:${lv === 'match' ? 'var(--red)' : 'var(--amber)'}">${lv === 'match' ? '정보가 일치하는 판매자' : '일치 의심 판매자'}: ${L.map((x) => `<a href="#" data-seller-name="${esc(x.name)}">${esc(x.name)}</a>${x.aladinGrade ? ' ' + gradeTag(x.aladinGrade) : ''}${x.grade === 'fake' ? ' <span class="tag bl">허위 매물</span>' : ''} <span style="color:var(--sub)">(${esc((x.reasons || []).map(reasonTxt).join(', '))})</span>`).join(' · ')}</div>` : ''; }).join('')}
     </div>
     <div class="card"><div class="nums five"><div><b>${c.saleOrderCount || 0}</b><span>주문</span></div><div><b>${(c.saleItemQty || 0).toLocaleString()}</b><span>권</span></div><div><b style="font-size:14px">${(c.salesAmount || 0).toLocaleString('ko-KR')}</b><span>순매출(원)</span></div><div><b>${(c.cancelOrderCount || 0) + (c.returnCount || 0)}</b><span>취소·반품</span></div><div><b>${c.reviewCount || 0}</b><span>구매확정(평가)</span></div></div>
       <div class="hint" style="margin:6px 0 0">배송비: 무료배송 ${c.freeShipCount || 0}회(우리 부담) · 고객 부담 ${c.paidShipCount || 0}회 합계 ${won(c.shipPaidTotal || 0)}</div>
@@ -785,21 +806,31 @@ async function syncSellers() {
   await idbPut('meta', [{ k: 'ssync', last: max }]); S.sellersLoaded = true; S.sellersBusy = false;
 }
 function pctText(v) { return v == null ? '-' : `${(v * 100).toFixed(v < 0.1 ? 2 : 1)}%`; }
+// 판매자와 우리고객의 연결: 전화·이메일·반품 주소가 정확히 같으면 '일치', 일부만 같으면 '일치 의심'
+const REASON_TXT = { '전화': '전화번호 같음', '이메일': '이메일 같음', '비슷한 이메일': '이메일 앞부분이 비슷함', '대표자 이름': '대표자 이름 같음', '반품 주소 = 우리 배송지': '반품 주소가 우리고객 배송지와 비슷함 (예전 기준, 다음 갱신 때 다시 판정)' };
+const reasonTxt = (r) => REASON_TXT[r] || r;
+function linkLevel(l) { if (l.level) return l.level; return (l.reasons || []).some((r) => r === '전화' || r === '이메일') ? 'match' : 'suspect'; }
+const LEVEL_TXT = { match: ['우리고객 정보와 일치', 'bl'], suspect: ['우리고객과 일치 의심', 'cau'] };
+// 알라딘 판매자 등급: 알라딘측 파란 바탕 + 등급별 글자색(파워 하늘·골드 노랑·실버 회색·새내기 초록·전문 붉은색), 굵게
+const GRADE_COLOR = { 파워셀러: '#CFF3FF', 골드셀러: '#FFE066', 실버셀러: '#E3E6E8', 새내기셀러: '#9CF5B4', 전문셀러: '#FFB3B3' };
+const gradeTag = (g) => `<span class="tag grade" style="color:${GRADE_COLOR[g] || '#fff'}">${esc(g)}</span>`;
+function gradeChip(s) { const g = s.aladinGrade || (s.ourGrade === 'pro' || s.grade === 'pro' ? '전문셀러' : null); return g ? gradeTag(g) : ''; }
 function sellerTags(s) {
-  const g = sgOf(s); return `${g && OURG[g] ? `<span class="tag ${OURG[g][1]}">${OURG[g][0]}</span>` : ''}${s.aladinGrade ? `<span class="tag pl">${esc(s.aladinGrade)}</span>` : ''}${(s.linkedCustomers || []).some((l) => (l.reasons || []).some((r) => r !== '비슷한 이메일')) ? '<span class="tag bl">우리 고객과 연결</span>' : (s.linkedCustomers || []).length ? '<span class="tag cau">비슷한 고객</span>' : ''}`;
+  const L = s.linkedCustomers || []; const lv = L.some((l) => linkLevel(l) === 'match') ? 'match' : L.length ? 'suspect' : null;
+  return `${sgOf(s) === 'fake' ? '<span class="tag bl">허위 매물</span>' : ''}${lv ? `<span class="tag ${LEVEL_TXT[lv][1]}">${LEVEL_TXT[lv][0]}</span>` : ''}`;
 }
 function renderSellers(m) {
   if (!S.sellersLoaded) { m.innerHTML = '<div class="empty">판매자 목록을 받는 중 (처음 한 번)</div>'; syncSellers().then(() => { if (S.tab === 'sellers') renderMain(); }).catch((e) => { m.innerHTML = `<div class="empty">받기 실패: ${esc(e.message)}</div>`; }); return; }
   const q = norm(S.q); const g = S.sellerGrade || 'all'; const all = [...S.sellers.values()];
-  const pass = (s, k) => (k === 'all' ? true : k === 'linked' ? (s.linkedCustomers || []).length > 0 : k.startsWith('a:') ? s.aladinGrade === k.slice(2) : sgOf(s) === k);
+  const pass = (s, k) => (k === 'all' ? true : k === 'lmatch' ? (s.linkedCustomers || []).some((l) => linkLevel(l) === 'match') : k === 'lsuspect' ? (s.linkedCustomers || []).length > 0 && !(s.linkedCustomers || []).some((l) => linkLevel(l) === 'match') : k.startsWith('a:') ? (s.aladinGrade || (k === 'a:전문셀러' && sgOf(s) === 'pro' ? '전문셀러' : null)) === k.slice(2) : sgOf(s) === k);
   let arr = all.filter((s) => pass(s, g) && (!q || norm([s.name, s.company, s.owner, s.phone, s.asPhone, s.email, s.address, s.returnAddress, s.sc, s.bizNo, s.remark].join('|')).includes(q)));
   const sk = S.sellerSort || 'items'; const key = { items: (s) => s.totalItems || s.stock || 0, rating: (s) => s.rating ?? s.rating6m ?? 0, outstock: (s) => s.outstockRate || 0, reviews: (s) => s.totalReviewCount || s.reviewsAll || 0 }[sk];
   arr.sort((a, b) => key(b) - key(a)); if (S.sellerRev) arr.reverse();
-  const filters = [['all', '전체'], ['linked', '고객 연결'], ['fake', '허위 매물'], ['pro', '전문(우리)'], ['personal', '개인(우리)'], ['a:파워셀러', '파워'], ['a:골드셀러', '골드'], ['a:실버셀러', '실버'], ['a:전문셀러', '전문'], ['a:새내기셀러', '새내기']];
+  const filters = [['all', '전체'], ['lmatch', '우리고객 정보와 일치'], ['lsuspect', '우리고객과 일치 의심'], ['fake', '허위 매물'], ['a:전문셀러', '전문셀러'], ['a:파워셀러', '파워'], ['a:골드셀러', '골드'], ['a:실버셀러', '실버'], ['a:새내기셀러', '새내기']];
   m.innerHTML = `<div class="seg chips">${filters.map(([k, l]) => `<button class="${g === k ? 'on' + (k === 'fake' ? ' bl' : '') : ''}" data-sg="${k}">${l} ${all.filter((s) => pass(s, k)).length.toLocaleString()}</button>`).join('')}</div>
     <div class="sortbar"><select id="ssort">${[['items', '보유 상품 많은'], ['rating', '평점 높은'], ['outstock', '품절 취소율 높은'], ['reviews', '평가 많은']].map(([k, l]) => `<option value="${k}" ${sk === k ? 'selected' : ''}>${l} 순</option>`).join('')}</select><button id="srev" class="rev">${S.sellerRev ? '거꾸로 ↑' : '순서대로 ↓'}</button></div>
-    <p class="hint">툴팁이 모은 판매자 ${all.filter((s) => s.sc).length.toLocaleString()}곳과 구글 시트의 우리 분류를 합친 목록입니다. 전화·이메일·반품 주소가 우리 고객과 겹치면 '우리 고객과 연결'로 표시됩니다.</p>
-    <div class="list">${arr.slice(0, S.limit).map((s) => `<button class="item" data-sid="${esc(s.id)}"><div class="l1"><span class="name">${esc(s.name || '(이름 없음)')}</span>${sellerTags(s)}</div>
+    <p class="hint">툴팁이 모은 판매자 ${all.filter((s) => s.sc).length.toLocaleString()}곳과 구글 시트 기록을 합친 목록입니다. 전화·이메일·반품 주소가 우리고객과 정확히 같으면 '우리고객 정보와 일치', 동·호수 등 일부만 같으면 '우리고객과 일치 의심'으로 표시됩니다.</p>
+    <div class="list">${arr.slice(0, S.limit).map((s) => `<button class="item" data-sid="${esc(s.id)}"><div class="l1"><span class="name">${esc(s.name || '(이름 없음)')}</span>${gradeChip(s)}${sellerTags(s)}</div>
       <div class="l2"><span>보유 ${((s.totalItems || s.stock) || 0).toLocaleString()}</span><span>평점 ${pctText(s.rating ?? s.rating6m)}</span><span>품절 취소율 ${pctText(s.outstockRate)}</span>${s.shippingFee != null ? `<span>배송비 ${won(s.shippingFee)}</span>` : ''}${s.owner ? `<span>${esc(s.company || '')} ${esc(s.owner)}</span>` : ''}</div></button>`).join('') || '<div class="empty">없음</div>'}${arr.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
   m.querySelectorAll('[data-sg]').forEach((b) => (b.onclick = () => { S.sellerGrade = b.dataset.sg; S.limit = 30; renderMain(); }));
   $('#ssort', m).onchange = (e) => { S.sellerSort = e.target.value; renderMain(); }; $('#srev', m).onclick = () => { S.sellerRev = !S.sellerRev; renderMain(); };
@@ -817,11 +848,12 @@ async function openSeller(id) {
   const kv = (k, v) => (v == null || v === '' ? '' : `<dt>${k}</dt><dd>${v}</dd>`);
   const draw = (hist) => {
     sh.innerHTML = `<div class="sh"><button class="back" id="back">‹ 목록</button><div class="t">${esc(s.name || '')}</div></div>
-    <div class="card">${sellerTags(s)}${s.sc ? ` <span class="hint">판매자 번호 ${esc(s.sc)}</span>` : ''}${s.sheet && s.sheet.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.sheet.remark)}</div>` : s.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.remark)}</div>` : ''}
+    <div class="card">${gradeChip(s)}${sellerTags(s)}${s.sc ? ` <span class="hint">판매자 번호 ${esc(s.sc)}</span>` : ''}${s.sheet && s.sheet.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.sheet.remark)}</div>` : s.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.remark)}</div>` : ''}
       <div class="nums five" style="margin-top:10px"><div><b>${((s.totalItems || s.stock) || 0).toLocaleString()}</b><span>보유 상품</span></div><div><b>${pctText(s.rating ?? s.rating6m)}</b><span>평점</span></div><div><b>${(s.totalReviewCount || s.reviewsAll || 0).toLocaleString()}</b><span>전체 평가</span></div><div><b>${pctText(s.outstockRate)}</b><span>품절 취소율</span></div><div><b>${s.shippingDays ?? s.actualDays ?? '-'}</b><span>출고일</span></div></div></div>
-    ${(s.linkedCustomers || []).length ? `<div class="card"><h3>우리 고객과 연결</h3>${s.linkedCustomers.map((l) => { const c = S.customers.get(l.customerId) || {}; return `<div class="cand"><div class="ci"><b>${esc(c.displayName || l.customerId)}</b> <small>주문 ${c.saleOrderCount || 0} · 순매출 ${won(c.salesAmount)} · 근거: ${esc((l.reasons || []).join(', '))}</small></div><button class="btn" data-cid="${esc(l.customerId)}">고객 보기</button></div>`; }).join('')}</div>` : ''}
+    ${['match', 'suspect'].map((lv) => { const L = (s.linkedCustomers || []).filter((l) => linkLevel(l) === lv); if (!L.length) return ''; return `<div class="card"><h3 style="color:${lv === 'match' ? 'var(--red)' : 'var(--amber)'}">${LEVEL_TXT[lv][0]} ${L.length}명</h3>${L.map((l) => { const c = S.customers.get(l.customerId) || {}; return `<div class="cand"><div class="ci"><b>${esc(c.displayName || l.customerId)}</b> <small>주문 ${c.saleOrderCount || 0} · 순매출 ${won(c.salesAmount)} · 이유: ${esc((l.reasons || []).map(reasonTxt).join(', '))}</small></div><button class="btn" data-cid="${esc(l.customerId)}">고객 보기</button></div>`; }).join('')}</div>`; }).join('')}
     ${hist ? `<div class="card"><h3>평점 추이</h3><div style="color:var(--cloth)">${miniLine([...(hist.snapshots || []).map((x) => ({ t: x.t, v: x.rating })), ...(hist.quick || []).map((x) => ({ t: x.t, v: x.rating }))].sort((a, b) => a.t - b.t), pctText)}</div>
       <h3 style="margin-top:12px">배송비 추이</h3><div style="color:var(--amber)">${miniLine([...(hist.snapshots || []).map((x) => ({ t: x.t, v: x.fee })), ...(hist.quick || []).map((x) => ({ t: x.t, v: x.fee }))].sort((a, b) => a.t - b.t), (v) => won(v))}</div>
+      <h3 style="margin-top:12px">전체 평가 수 추이</h3><div style="color:var(--cloth)">${miniLine((hist.snapshots || []).map((x) => ({ t: x.t, v: x.total })), (v) => Math.round(v).toLocaleString() + '건')}</div>
       <h3 style="margin-top:12px">보유 상품 추이</h3><div style="color:#56636C">${miniLine((hist.snapshots || []).map((x) => ({ t: x.t, v: x.items })), (v) => Math.round(v).toLocaleString())}</div></div>` : ''}
     <div class="card"><h3>판매 조건</h3><dl class="kv">${kv('무료배송', s.freeShipping != null ? won(s.freeShipping) + ' 이상' : '')}${kv('배송비', s.shippingFee != null ? won(s.shippingFee) : '')}${kv('출고일', s.shippingDays != null ? s.shippingDays + '일' : '')}${kv('국내도서', s.domesticBooks != null ? s.domesticBooks.toLocaleString() : '')}${kv('외국도서', s.foreignBooks != null ? s.foreignBooks.toLocaleString() : '')}${kv('음반·영상', s.music != null || s.video != null ? `${(s.music || 0).toLocaleString()} / ${(s.video || 0).toLocaleString()}` : '')}${kv('분야', (s.categories || s.topCategories || []).map((c) => `${esc(c.name)} ${c.count != null ? c.count.toLocaleString() : ''}`).join(', '))}${kv('공지', esc((s.notices || []).join(' / ')))}</dl></div>
     <div class="card"><h3>사업자 정보</h3><dl class="kv">${kv('상호', esc(s.company || ''))}${kv('대표자', esc(s.owner || ''))}${kv('전화', s.phone ? `<a href="tel:${esc(s.phone)}">${esc(s.phone)}</a>` : '')}${kv('A/S 전화', esc(s.asPhone || ''))}${kv('이메일', esc(s.email || ''))}${kv('사업자번호', esc(s.bizNo || ''))}${kv('통신판매', esc(s.mailOrderNo || ''))}${kv('소재지', esc(s.address || ''))}${kv('택배사', esc(s.courier || ''))}${kv('반품 주소', esc(s.returnAddress || ''))}${kv('첫 평가일', esc(s.firstReviewDate || ''))}${kv('소개', esc(s.notice || ''))}</dl></div>`;
