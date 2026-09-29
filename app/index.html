@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2F5D50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>리드나우 고객</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{--paper:#FFFFFF;--bg:#F3F5F4;--ink:#1E2B28;--sub:#5B6B66;--line:#DCE3E0;--cloth:#2F5D50;--cloth2:#264D42;--soft:#E6EFEB;--amber:#A8661B;--amberSoft:#FFF4E5;--red:#B0322A;--redSoft:#FDECEA;--gold:#8A6D1D;--goldSoft:#FBF3DC}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 Pretendard,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;padding-top:env(safe-area-inset-top,0);padding-bottom:calc(64px + env(safe-area-inset-bottom,0))}
+button{font:inherit;cursor:pointer}
+input,textarea{font:inherit}
+.top{position:sticky;top:0;z-index:5;background:var(--cloth);color:#fff;padding:10px 16px 12px;padding-top:calc(10px + env(safe-area-inset-top,0))}
+.top .row{display:flex;align-items:center;justify-content:space-between}
+.top h1{margin:0;font-size:17px;letter-spacing:-.01em}
+.top .sync{font-size:11.5px;opacity:.85;display:flex;align-items:center;gap:6px}
+.dot{width:7px;height:7px;border-radius:50%;background:#9FD6BE;display:inline-block}
+.dot.off{background:#E8B062}
+.me{border:0;background:rgba(255,255,255,.15);color:#fff;border-radius:14px;padding:3px 10px;font-size:12px}
+.search{margin-top:10px;position:relative}
+.search input{width:100%;border:0;border-radius:10px;padding:11px 14px 11px 38px;font-size:16px;background:#fff;color:var(--ink);outline:none}
+.search svg{position:absolute;left:12px;top:12px}
+main{max-width:720px;margin:0 auto;padding:12px 12px 24px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:9px 8px;text-align:center}
+.stat b{display:block;font-size:18px;font-variant-numeric:tabular-nums}
+.stat span{font-size:11.5px;color:var(--sub)}
+.stat.warn b{color:var(--amber)} .stat.bad b{color:var(--red)}
+h2{font-size:13px;color:var(--sub);font-weight:600;margin:16px 4px 6px}
+.list{background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.item{display:block;width:100%;text-align:left;border:0;background:none;padding:12px 14px;border-top:1px solid var(--line);color:inherit}
+.item:first-child{border-top:0}
+.item:active{background:var(--soft)}
+.item .l1{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.item .name{font-weight:700;font-size:15.5px}
+.item .l2{font-size:12.5px;color:var(--sub);margin-top:2px;display:flex;gap:10px;flex-wrap:wrap}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;line-height:1.6}
+.tag.bl{background:var(--redSoft);color:var(--red)} .tag.vip{background:var(--goldSoft);color:var(--gold)} .tag.ag{background:var(--amberSoft);color:var(--amber)} .tag.pl{background:var(--soft);color:var(--cloth)}
+.empty{padding:28px 16px;text-align:center;color:var(--sub);font-size:14px}
+.more{display:block;width:100%;border:0;background:none;color:var(--cloth);padding:12px;font-weight:600;border-top:1px solid var(--line)}
+/* 하단 탭 */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--paper);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom,0)}
+.tabs button{flex:1;border:0;background:none;padding:9px 0 8px;color:var(--sub);font-size:11.5px;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+.tabs button.on{color:var(--cloth);font-weight:700}
+.tabs svg{width:22px;height:22px}
+.badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:17px;height:17px;border-radius:9px;background:var(--amber);color:#fff;font-size:10.5px;line-height:17px;padding:0 4px;font-weight:700}
+/* 상세 */
+.sheet{position:fixed;inset:0;z-index:10;background:var(--bg);overflow:auto;display:none;padding-bottom:calc(20px + env(safe-area-inset-bottom,0))}
+.sheet.on{display:block}
+.sh{position:sticky;top:0;z-index:2;background:var(--paper);border-bottom:1px solid var(--line);padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0));display:flex;align-items:center;gap:10px}
+.back{border:0;background:none;padding:4px 6px;color:var(--cloth);font-weight:700;font-size:15px}
+.sh .t{font-weight:700;font-size:16px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 12px}
+.card h3{margin:0 0 8px;font-size:13px;color:var(--sub);font-weight:600}
+.flags{display:flex;gap:8px}
+.flag{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:10px 6px;font-weight:700;color:var(--sub)}
+.flag.vip.on{border-color:var(--gold);background:var(--goldSoft);color:var(--gold)}
+.flag.bl.on{border-color:var(--red);background:var(--redSoft);color:var(--red)}
+.kv{display:grid;grid-template-columns:78px 1fr;gap:4px 10px;font-size:14px}
+.kv dt{color:var(--sub);font-size:12.5px;padding-top:2px} .kv dd{margin:0;word-break:break-all}
+.kv a{color:var(--cloth);text-decoration:none;font-weight:600}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.nums b{display:block;font-size:17px;font-variant-numeric:tabular-nums} .nums span{font-size:11.5px;color:var(--sub)}
+.note-in{display:flex;gap:8px;align-items:flex-end}
+.note-in textarea{flex:1;border:1px solid var(--line);border-radius:10px;padding:9px 11px;min-height:44px;max-height:160px;resize:vertical;font-size:15px;outline:none}
+.note-in textarea:focus{border-color:var(--cloth)}
+.btn{border:0;border-radius:10px;background:var(--cloth);color:#fff;font-weight:700;padding:11px 14px}
+.btn:disabled{opacity:.45}
+.btn.ghost{background:#fff;color:var(--cloth);border:1.5px solid var(--cloth)}
+.btn.warn{background:#fff;color:var(--sub);border:1px solid var(--line);font-weight:600}
+.tl{list-style:none;margin:10px 0 0;padding:0}
+.tl li{border-top:1px solid var(--line);padding:9px 0}
+.tl li:first-child{border-top:0}
+.tl .h{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--sub)}
+.tl .b{font-size:14px;white-space:pre-wrap;word-break:break-all;margin-top:2px}
+.tl .a{font-size:13.5px;white-space:pre-wrap;margin-top:4px;padding:6px 9px;background:var(--soft);border-radius:8px}
+.order{border-top:1px solid var(--line);padding:10px 0}
+.order:first-of-type{border-top:0}
+.order .oh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.order .oh b{font-size:14px}
+.order .om{font-size:12px;color:var(--sub);margin-top:1px}
+.order ul{margin:6px 0 0;padding:0;list-style:none}
+.order li{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;padding:2px 0}
+.order li .it{min-width:0}
+.st{font-size:11px;font-weight:700;border-radius:5px;padding:0 5px;margin-left:4px;white-space:nowrap}
+.st.x{background:var(--redSoft);color:var(--red)} .st.c{background:var(--amberSoft);color:var(--amber)}
+.pend{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.pend .src{font-size:12px;color:var(--sub)} .pend .who{font-weight:700;margin:3px 0} .pend .body{font-size:13.5px;color:var(--ink);white-space:pre-wrap;max-height:90px;overflow:auto;background:var(--bg);border-radius:8px;padding:6px 9px;margin:6px 0}
+.cand{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px dashed var(--line);padding:8px 0}
+.cand .ci{min-width:0;font-size:13.5px} .cand .ci small{display:block;color:var(--sub);font-size:12px}
+.cand .btn{padding:8px 12px;font-size:13px;white-space:nowrap}
+.login{max-width:380px;margin:12vh auto 0;padding:24px;background:var(--paper);border:1px solid var(--line);border-radius:16px;text-align:center}
+.login h1{margin:0 0 4px;font-size:21px} .login p{color:var(--sub);font-size:14px;margin:0 0 18px}
+.login .btn{width:100%;padding:13px}
+.login details{margin-top:16px;text-align:left;font-size:13px;color:var(--sub)}
+.login input{width:100%;margin-top:6px;border:1px solid var(--line);border-radius:8px;padding:9px}
+.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom,0));transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:20px;font-size:13.5px;z-index:20;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+.toast.on{opacity:.95}
+.hint{font-size:12.5px;color:var(--sub);margin:4px 4px 10px}
+@media (min-width:760px){.stats{grid-template-columns:repeat(4,1fr)} body{font-size:15px}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+'use strict';
+/* 리드나우 고객 웹앱 v0.1.0
+ * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
+ * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
+ * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
+ */
+const APP_VER = '0.1.0';
+const WRITER_SCHEMA = 6;
+firebase.initializeApp({
+  apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
+  storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15',
+});
+const db = firebase.firestore();
+db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); // 전파가 약해도 작성한 내용은 기기에 보관 후 자동 전송
+const TS = () => firebase.firestore.FieldValue.serverTimestamp();
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const won = (n) => (n == null ? '-' : Number(n).toLocaleString('ko-KR') + '원');
+const d10 = (s) => (s ? String(s).slice(0, 10) : '-');
+const dt16 = (s) => (s ? String(s).replace('T', ' ').slice(0, 16) : '-');
+const tsText = (t) => { if (!t) return ''; const d = t.toDate ? t.toDate() : new Date(typeof t === 'object' && t.seconds ? t.seconds * 1000 : t); if (isNaN(d)) return ''; return d.toLocaleString('ko-KR', { year: '2-digit', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }); };
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2200); }
+
+/* ── 고객 목록은 기기에 보관하고 바뀐 것만 받아옴 (읽기 한도 절약) ── */
+const IDB = { db: null };
+function idbOpen() { return new Promise((res, rej) => { const r = indexedDB.open('readnow-app', 1); r.onupgradeneeded = () => { r.result.createObjectStore('customers', { keyPath: 'customerId' }); r.result.createObjectStore('meta', { keyPath: 'k' }); }; r.onsuccess = () => { IDB.db = r.result; res(); }; r.onerror = () => rej(r.error); }); }
+const idbReq = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const idbAll = (s) => idbReq(IDB.db.transaction(s).objectStore(s).getAll());
+const idbGet = (s, k) => idbReq(IDB.db.transaction(s).objectStore(s).get(k));
+const idbPut = (s, arr) => new Promise((res, rej) => { const t = IDB.db.transaction(s, 'readwrite'); const st = t.objectStore(s); arr.forEach((o) => st.put(o)); t.oncomplete = res; t.onerror = () => rej(t.error); });
+
+const S = { user: null, customers: new Map(), pending: [], tab: 'search', q: '', limit: 30, live: false, lastSync: null, detail: null, detailUnsubs: [] };
+const norm = (s) => String(s || '').toLowerCase().replace(/[\s\-()]/g, '');
+function flagsOf(c) {
+  const f = c.flags || {};
+  const bl = f.blacklist ? !!f.blacklist.on : !!(c.sheetFlags && c.sheetFlags.blacklist);
+  return { vip: !!(f.vip && f.vip.on), bl, agent: (c.otherRecipientCount || 0) >= 3 };
+}
+function searchKey(c) { return norm([c.displayName, ...(c.names || []), ...(c.phones || []), ...(c.phoneKeys || []), ...(c.emails || []), ...(c.emailsMasked || []), ...(c.otherRecipients || []), ...((c.addresses || []).map((a) => a.address)), c.platformCustomerKey].join('|')); }
+function putCustomer(id, v) { v.customerId = id; v._sk = searchKey(v); v._t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; S.customers.set(id, v); return v; }
+const deTs = (v) => (v && typeof v === 'object' ? (typeof v.toMillis === 'function' ? v.toMillis() : Array.isArray(v) ? v.map(deTs) : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, deTs(x)]))) : v);
+function serializable(v) { const o = deTs({ ...v }); delete o.uploadedAt; return o; } // 기기 보관용: 시각 값은 숫자로
+
+async function syncCustomers() {
+  const meta = await idbGet('meta', 'sync');
+  let q = db.collection('crm_customers');
+  if (meta && meta.last) q = q.where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last));
+  setSync('고객 목록 받는 중');
+  const snap = await q.get({ source: 'server' }).catch(() => q.get());
+  let max = meta ? meta.last || 0 : 0; const batch = [];
+  snap.forEach((d) => { const v = putCustomer(d.id, d.data()); if (v._t > max) max = v._t; batch.push(serializable(v)); });
+  if (batch.length) await idbPut('customers', batch);
+  await idbPut('meta', [{ k: 'sync', last: max, at: Date.now() }]);
+  S.lastSync = Date.now();
+  // 이후 바뀌는 고객은 실시간으로
+  const lq = db.collection('crm_customers').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(max || 0));
+  lq.onSnapshot((ss) => {
+    const ch = []; ss.docChanges().forEach((c) => { if (c.type !== 'removed') { const v = putCustomer(c.doc.id, c.doc.data()); ch.push(serializable(v)); } });
+    if (ch.length) { idbPut('customers', ch); if (S.tab !== 'detail') renderMain(); }
+    S.live = !ss.metadata.fromCache; setSync();
+  }, () => { S.live = false; setSync(); });
+}
+function watchPending() {
+  db.collection('crm_interactions').where('matchStatus', 'in', ['pending', 'none']).onSnapshot((ss) => {
+    S.pending = []; ss.forEach((d) => { const v = d.data(); if (!v.confirmed) S.pending.push({ id: d.id, ...v }); });
+    S.pending.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+    renderTabs(); if (S.tab === 'pending') renderMain();
+  }, () => {});
+}
+function setSync(msg) {
+  const el = $('.sync'); if (!el) return;
+  el.innerHTML = msg ? `<span class="dot off"></span>${esc(msg)}` : `<span class="dot ${S.live ? '' : 'off'}"></span>${S.live ? '실시간 연결됨' : '연결 대기 (기기에 저장된 내용 표시 중)'}`;
+}
+
+/* ── 쓰기: 모든 기록에 누가·언제를 남김 ── */
+function who() { return { by: S.user.email, byName: S.user.displayName || S.user.email.split('@')[0] }; }
+async function setFlag(cid, kind, on, reason) {
+  const w = who(); const payload = { on, ...w, at: TS() }; if (reason) payload.reason = reason;
+  const b = db.batch();
+  b.set(db.collection('crm_customers').doc(cid), { flags: { [kind]: payload }, uploadedAt: TS(), writerSchema: WRITER_SCHEMA }, { merge: true });
+  b.set(db.collection('crm_notes').doc(), { customerId: cid, type: 'flag', flag: kind, on, reason: reason || null, ...w, createdAt: TS(), writerSchema: WRITER_SCHEMA });
+  await b.commit();
+}
+async function addNote(cid, body) {
+  await db.collection('crm_notes').add({ customerId: cid, type: 'memo', body, ...who(), createdAt: TS(), writerSchema: WRITER_SCHEMA });
+}
+async function confirmLink(it, cid) {
+  const w = who(); const b = db.batch();
+  b.set(db.collection('crm_interactions').doc(it.id), { customerId: cid, matchStatus: cid ? 'matched' : 'dismissed', confirmed: true, confirmedBy: w.by, confirmedAt: TS(), uploadedAt: TS(), writerSchema: WRITER_SCHEMA }, { merge: true });
+  if (cid) {
+    if (it.type === 'blacklistNote') b.set(db.collection('crm_customers').doc(cid), { flags: { blacklist: { on: true, ...w, at: TS(), reason: it.body || '구글 시트 블랙리스트' } }, uploadedAt: TS(), writerSchema: WRITER_SCHEMA }, { merge: true });
+    b.set(db.collection('crm_system').doc('recompute'), { ids: firebase.firestore.FieldValue.arrayUnion(cid), writerSchema: WRITER_SCHEMA }, { merge: true }); // 다음 올리기 때 수집기가 고객 요약 다시 계산
+  }
+  await b.commit();
+}
+
+/* ── 화면 ── */
+const ICON = {
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  pending: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
+  agent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 21h20L12 3z"/><path d="M12 10v5M12 18h.01"/></svg>',
+  flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>',
+};
+function shell() {
+  $('#app').innerHTML = `
+  <header class="top"><div class="row"><h1>리드나우 고객</h1><button class="me" id="me">${esc((S.user.displayName || S.user.email).slice(0, 10))}</button></div>
+    <div class="sync"></div>
+    <div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6B66" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="이름·전화·이메일·주소 검색" autocomplete="off" inputmode="search"></div></header>
+  <main id="main"></main>
+  <nav class="tabs" id="tabs"></nav>
+  <section class="sheet" id="sheet"></section>`;
+  $('#q').addEventListener('input', (e) => { S.q = e.target.value; S.limit = 30; if (S.tab !== 'search') S.tab = 'search'; renderTabs(); renderMain(); });
+  $('#me').onclick = () => { if (confirm(`${S.user.email}\n로그아웃할까요?`)) firebase.auth().signOut(); };
+  renderTabs(); renderMain(); setSync();
+}
+function renderTabs() {
+  const pc = S.pending.length;
+  const t = [['search', '고객', ICON.search], ['pending', '연결 확정', ICON.pending], ['flags', '표시 고객', ICON.flag], ['agent', '대행 의심', ICON.agent]];
+  $('#tabs').innerHTML = t.map(([k, l, i]) => `<button class="${S.tab === k ? 'on' : ''}" data-tab="${k}">${i}${l}${k === 'pending' && pc ? `<span class="badge">${pc}</span>` : ''}</button>`).join('');
+  $('#tabs').querySelectorAll('button').forEach((b) => (b.onclick = () => { S.tab = b.dataset.tab; S.limit = 30; renderTabs(); renderMain(); window.scrollTo(0, 0); }));
+}
+function custRow(c, extra) {
+  const f = flagsOf(c);
+  const tags = `${f.bl ? '<span class="tag bl">블랙리스트</span>' : ''}${f.vip ? '<span class="tag vip">VIP</span>' : ''}${f.agent ? `<span class="tag ag">수령인 ${c.otherRecipientCount}명</span>` : ''}${c.platforms && c.platforms.some((p) => p !== 'aladin') ? c.platforms.filter((p) => p !== 'aladin').map((p) => `<span class="tag pl">${p === 'yes24' ? '예스24' : p === 'direct' ? '직접' : esc(p)}</span>`).join('') : ''}`;
+  return `<button class="item" data-cid="${esc(c.customerId)}"><div class="l1"><span class="name">${esc(c.displayName || '(이름 없음)')}</span>${tags}</div>
+    <div class="l2"><span>${esc((c.phones || [])[0] || (c.emails || [])[0] || (c.emailsMasked || [])[0] || '')}</span><span>주문 ${c.saleOrderCount || 0}${c.cancelOrderCount ? ` · 취소 ${c.cancelOrderCount}` : ''}</span><span>최근 ${d10(c.lastOrderAt)}</span>${extra || ''}</div></button>`;
+}
+function bindRows(root) { root.querySelectorAll('[data-cid]').forEach((b) => (b.onclick = () => openCustomer(b.dataset.cid))); }
+function renderMain() {
+  const m = $('#main'); if (!m) return; const all = [...S.customers.values()];
+  if (S.tab === 'search') {
+    const q = norm(S.q);
+    if (!q) {
+      const bl = all.filter((c) => flagsOf(c).bl).length; const vip = all.filter((c) => flagsOf(c).vip).length;
+      const recent = all.filter((c) => c.lastOrderAt).sort((a, b) => b.lastOrderAt.localeCompare(a.lastOrderAt)).slice(0, S.limit);
+      m.innerHTML = `<div class="stats"><div class="stat"><b>${all.length.toLocaleString()}</b><span>고객</span></div><div class="stat bad"><b>${bl}</b><span>블랙리스트</span></div><div class="stat"><b>${vip}</b><span>VIP</span></div><div class="stat warn"><b>${S.pending.length}</b><span>연결 대기</span></div></div>
+        <h2>최근 주문한 고객</h2><div class="list">${recent.map((c) => custRow(c)).join('') || '<div class="empty">고객 목록을 받는 중입니다</div>'}${recent.length >= S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
+    } else {
+      const hits = all.filter((c) => c._sk.includes(q)).sort((a, b) => String(b.lastOrderAt || '').localeCompare(String(a.lastOrderAt || '')));
+      m.innerHTML = `<h2>검색 결과 ${hits.length.toLocaleString()}명</h2><div class="list">${hits.slice(0, S.limit).map((c) => custRow(c)).join('') || '<div class="empty">찾는 고객이 없습니다. 전화번호는 숫자 일부만 넣어도 됩니다.</div>'}${hits.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
+    }
+  } else if (S.tab === 'flags') {
+    const bl = all.filter((c) => flagsOf(c).bl); const vip = all.filter((c) => flagsOf(c).vip);
+    m.innerHTML = `<h2>블랙리스트 ${bl.length}명</h2><div class="list">${bl.map((c) => custRow(c)).join('') || '<div class="empty">없음</div>'}</div>
+      <h2>VIP ${vip.length}명</h2><div class="list">${vip.map((c) => custRow(c)).join('') || '<div class="empty">아직 없음. 고객 화면에서 VIP를 켜면 여기에 모입니다.</div>'}</div>`;
+  } else if (S.tab === 'agent') {
+    const ag = all.filter((c) => (c.otherRecipientCount || 0) >= 2).sort((a, b) => b.otherRecipientCount - a.otherRecipientCount).slice(0, S.limit);
+    m.innerHTML = `<p class="hint">주문인과 다른 수령인에게 여러 번 보낸 고객입니다. 다른 사람 주문을 대신 받아 우리 책을 사가는 대행형 판매자일 가능성이 있습니다.</p>
+      <div class="list">${ag.map((c) => custRow(c, `<span>수령인 예: ${esc((c.otherRecipients || []).slice(0, 3).join(', '))}</span>`)).join('') || '<div class="empty">없음</div>'}${ag.length >= S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
+  } else if (S.tab === 'pending') renderPending(m);
+  const mo = $('#more'); if (mo) mo.onclick = () => { S.limit += 50; renderMain(); };
+  bindRows(m);
+}
+function renderPending(m) {
+  if (!S.pending.length) { m.innerHTML = '<div class="empty">확정할 연결이 없습니다.</div>'; return; }
+  const typeName = { blacklistNote: '블랙리스트', customerCancelNote: '고객 취소 기록', adminNote: '관리자 메모' };
+  m.innerHTML = `<p class="hint">구글 시트 기록 중 자동으로 고객을 정하지 못한 것들입니다. 맞는 고객을 골라 주세요. 확정하면 모든 기기에 바로 반영됩니다.</p>` + S.pending.map((it) => {
+    const cands = (it.candidates || []).map((cd) => { const c = S.customers.get(cd.customerId) || {}; return `<div class="cand"><div class="ci"><b>${esc(c.displayName || cd.customerId)}</b> <small>${esc((c.phones || [])[0] || '')} · 주문 ${c.saleOrderCount || 0} · 최근 ${d10(c.lastOrderAt)} · 근거: ${esc((cd.reasons || []).join(', '))}</small></div><button class="btn" data-link="${esc(it.id)}" data-to="${esc(cd.customerId)}">이 고객</button></div>`; }).join('');
+    return `<div class="pend"><div class="src">${esc(typeName[it.type] || it.type)} · ${esc(it.sheet || '')} ${it.sheetRow ? it.sheetRow + '행' : ''} · ${d10(it.createdAt)}</div>
+      <div class="who">${esc(it.name || '(이름 없음)')} ${esc((it.phones || []).join(', '))} ${esc(it.email || '')}</div>
+      ${it.title ? `<div class="src">상품: ${esc(it.title)}</div>` : ''}${it.body ? `<div class="body">${esc(it.body)}</div>` : ''}
+      ${cands || '<div class="src" style="margin:6px 0">자동으로 찾은 후보가 없습니다. 위 검색창으로 고객을 찾아 연결할 수 있게 다음 버전에서 추가합니다.</div>'}
+      <div style="margin-top:8px"><button class="btn warn" data-link="${esc(it.id)}" data-to="">맞는 고객 없음 (연결 안 함)</button></div></div>`;
+  }).join('');
+  m.querySelectorAll('[data-link]').forEach((b) => (b.onclick = async () => {
+    const it = S.pending.find((x) => x.id === b.dataset.link); const to = b.dataset.to;
+    const label = to ? (S.customers.get(to) || {}).displayName || to : '연결 안 함';
+    if (!confirm(`${it.name || '이 기록'} → ${label}\n이대로 확정할까요?`)) return;
+    b.disabled = true; try { await confirmLink(it, to || null); toast('확정했습니다'); } catch (e) { toast('실패: ' + e.message); b.disabled = false; }
+  }));
+}
+
+/* ── 고객 상세 ── */
+function closeDetail() { S.detailUnsubs.forEach((u) => u()); S.detailUnsubs = []; S.detail = null; $('#sheet').classList.remove('on'); document.body.style.overflow = ''; }
+window.addEventListener('popstate', () => { if (S.detail) closeDetail(); });
+async function openCustomer(cid) {
+  const sh = $('#sheet'); S.detail = { cid, orders: null, inters: null, notes: [] };
+  history.pushState({ d: cid }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
+  renderDetail();
+  S.detailUnsubs.push(db.collection('crm_customers').doc(cid).onSnapshot((d) => { if (d.exists) { putCustomer(cid, d.data()); renderDetail(); } }, () => {}));
+  S.detailUnsubs.push(db.collection('crm_notes').where('customerId', '==', cid).onSnapshot((ss) => { S.detail.notes = []; ss.forEach((d) => S.detail.notes.push({ id: d.id, ...d.data() })); renderDetail(); }, () => {}));
+  const [os, is] = await Promise.all([db.collection('crm_orders').where('customerId', '==', cid).get(), db.collection('crm_interactions').where('customerId', '==', cid).get()]);
+  if (!S.detail || S.detail.cid !== cid) return;
+  S.detail.orders = []; os.forEach((d) => S.detail.orders.push({ id: d.id, ...d.data() })); S.detail.orders.sort((a, b) => String(b.orderedAt || '').localeCompare(String(a.orderedAt || '')));
+  S.detail.inters = []; is.forEach((d) => S.detail.inters.push({ id: d.id, ...d.data() }));
+  renderDetail();
+}
+function lineStatusTag(s) {
+  const map = { cancelled: ['취소', 'x'], cancelledInOrder: ['품절취소', 'x'], partialCancelled: ['부분취소', 'c'], returned: ['반품', 'x'], check: ['확인', 'c'] };
+  const v = map[s]; return v ? `<span class="st ${v[1]}">${v[0]}</span>` : '';
+}
+function renderDetail() {
+  const D = S.detail; if (!D) return; const c = S.customers.get(D.cid) || { customerId: D.cid }; const f = flagsOf(c);
+  const fl = c.flags || {};
+  const phones = (c.phones || []).map((p) => `<a href="tel:${esc(p)}">${esc(p)}</a>`).join('<br>') || '-';
+  const emails = [...(c.emails || []).map((e) => `<a href="mailto:${esc(e)}">${esc(e)}</a>`), ...(c.emailsMasked || []).filter((m) => !(c.emails || []).some((e) => e.startsWith(m.replace(/@\.+$/, '')))).map(esc)].join('<br>') || '-';
+  const addrs = (c.addresses || []).sort((a, b) => String(b.lastUsedAt || '').localeCompare(String(a.lastUsedAt || ''))).map((a) => `${esc(a.address)} <span style="color:var(--sub);font-size:12px">(${esc(a.zip || '')}, ${a.useCount}회)</span>`).join('<br>') || '-';
+  // 시간순 기록: 메모 + 표시 변경 + 구글 시트 + 문의 + 구매평
+  const tl = [];
+  (D.notes || []).forEach((n) => tl.push({ t: n.createdAt && n.createdAt.toMillis ? n.createdAt.toMillis() : Date.now(), h: `${n.type === 'flag' ? (n.flag === 'vip' ? 'VIP' : '블랙리스트') + (n.on ? ' 지정' : ' 해제') : '메모'} · ${esc(n.byName || n.by || '')}`, when: tsText(n.createdAt), b: n.type === 'flag' ? (n.reason || '') : n.body }));
+  (D.inters || []).forEach((i) => { const tm = Date.parse(i.createdAt || '') || 0; const nm = { qna: '문의', review: '구매평', blacklistNote: '블랙리스트(시트)', customerCancelNote: '취소 기록(시트)', adminNote: '관리자 메모(시트)' }[i.type] || i.type;
+    tl.push({ t: tm, h: `${nm}${i.title ? ' · ' + esc(i.title) : ''}${i.rating ? ' · ' + esc(i.rating) : ''}`, when: d10(i.createdAt), b: i.body || '', a: i.type === 'qna' ? i.answer : null }); });
+  tl.sort((a, b) => b.t - a.t);
+  const orders = D.orders == null ? '<div class="empty">주문을 불러오는 중</div>' : D.orders.map((o) => {
+    const plat = o.platform === 'yes24' ? '예스24' : o.platform === 'direct' ? '직접 판매' : '알라딘';
+    const rc = o.recipient && !o.recipient.sameAsBuyer && o.recipient.name ? `받는 분 ${esc(o.recipient.name)} ` : '';
+    return `<div class="order"><div class="oh"><b>${dt16(o.orderedAt)} ${o.kind !== 'sale' ? '<span class="st x">판매 전 취소</span>' : ''}</b><span>${won(o.totalAmount)}</span></div>
+      <div class="om">${plat} ${esc(o.orderNo || '')}${o.invoiceNo ? ' · 송장 ' + esc(o.invoiceNo) : ''}${o.shippingRequest ? ' · ' + esc(o.shippingRequest) : ''}</div>${rc ? `<div class="om">${rc}${esc(o.recipient.address || '')}</div>` : ''}
+      <ul>${(o.items || []).map((it) => `<li><span class="it">${it.condition ? `[${esc(it.condition)}] ` : ''}${esc(it.title)}${lineStatusTag(it.lineStatus)}</span><span>${it.price != null ? won(it.price) : ''}</span></li>`).join('')}</ul></div>`;
+  }).join('') || '<div class="empty">주문 없음</div>';
+  $('#sheet').innerHTML = `
+    <div class="sh"><button class="back" id="back">‹ 목록</button><div class="t">${esc(c.displayName || '(이름 없음)')}</div></div>
+    <div class="card"><div class="flags">
+      <button class="flag vip ${f.vip ? 'on' : ''}" id="fvip">${f.vip ? '★ VIP' : '☆ VIP 지정'}</button>
+      <button class="flag bl ${f.bl ? 'on' : ''}" id="fbl">${f.bl ? '⛔ 블랙리스트' : '블랙리스트 지정'}</button></div>
+      ${fl.vip && fl.vip.byName ? `<div class="hint" style="margin:6px 2px 0">VIP: ${esc(fl.vip.byName)} ${tsText(fl.vip.at)}</div>` : ''}
+      ${f.bl ? `<div class="hint" style="margin:6px 2px 0;color:var(--red)">${esc((fl.blacklist && fl.blacklist.reason) || (c.sheetFlags && c.sheetFlags.blacklist && c.sheetFlags.blacklist.reason) || '')}</div>` : ''}
+      ${f.agent ? `<div class="hint" style="margin:6px 2px 0;color:var(--amber)">주문인과 다른 수령인 ${c.otherRecipientCount}명: ${esc((c.otherRecipients || []).slice(0, 6).join(', '))}</div>` : ''}
+    </div>
+    <div class="card"><div class="nums"><div><b>${c.saleOrderCount || 0}</b><span>주문</span></div><div><b>${(c.saleItemQty || 0).toLocaleString()}</b><span>권</span></div><div><b>${c.salesAmount ? Math.round(c.salesAmount / 1000).toLocaleString() + '천' : 0}</b><span>순매출</span></div><div><b>${(c.cancelOrderCount || 0) + (c.returnCount || 0)}</b><span>취소·반품</span></div></div></div>
+    <div class="card"><h3>연락처</h3><dl class="kv"><dt>전화</dt><dd>${phones}</dd><dt>이메일</dt><dd>${emails}</dd><dt>배송지</dt><dd>${addrs}</dd><dt>이름 기록</dt><dd>${esc((c.names || []).join(', ') || '-')}</dd><dt>기간</dt><dd>${d10(c.firstOrderAt)} ~ ${d10(c.lastOrderAt)}</dd></dl></div>
+    <div class="card"><h3>메모·기록</h3><div class="note-in"><textarea id="note" placeholder="이 고객에 대한 메모 (모든 기기에 바로 공유)"></textarea><button class="btn" id="save">저장</button></div>
+      <ul class="tl">${tl.map((x) => `<li><div class="h"><span>${x.h}</span><span>${esc(x.when || '')}</span></div>${x.b ? `<div class="b">${esc(x.b)}</div>` : ''}${x.a ? `<div class="a">답변: ${esc(x.a)}</div>` : ''}</li>`).join('') || '<li class="empty">기록 없음</li>'}</ul></div>
+    <div class="card"><h3>주문 ${D.orders ? D.orders.length : ''}건</h3>${orders}</div>
+    <div class="hint" style="margin:4px 16px">고객 번호 ${esc(c.customerId)}${c.platformCustomerKey ? ' (알라딘 ' + esc(c.platformCustomerKey) + ')' : ''}</div>`;
+  $('#back').onclick = () => history.back();
+  $('#fvip').onclick = async () => { try { await setFlag(D.cid, 'vip', !f.vip); toast(f.vip ? 'VIP 해제' : 'VIP 지정'); } catch (e) { toast('실패: ' + e.message); } };
+  $('#fbl').onclick = async () => {
+    if (!f.bl) { const r = prompt('블랙리스트 사유 (모든 기기에 공유됩니다)'); if (r === null) return; try { await setFlag(D.cid, 'blacklist', true, r); toast('블랙리스트 지정'); } catch (e) { toast('실패: ' + e.message); } }
+    else if (confirm('블랙리스트를 해제할까요?')) { try { await setFlag(D.cid, 'blacklist', false); toast('블랙리스트 해제'); } catch (e) { toast('실패: ' + e.message); } }
+  };
+  $('#save').onclick = async () => { const t = $('#note').value.trim(); if (!t) return; $('#save').disabled = true; try { await addNote(D.cid, t); $('#note').value = ''; toast('저장했습니다'); } catch (e) { toast('실패: ' + e.message); } finally { $('#save').disabled = false; } };
+}
+
+/* ── 로그인 ── */
+function loginView(err) {
+  $('#app').innerHTML = `<div class="login"><h1>리드나우 고객</h1><p>등록된 구글 계정으로 로그인하세요</p>
+    <button class="btn" id="g">구글 계정으로 로그인</button>${err ? `<p style="color:var(--red);margin-top:12px">${esc(err)}</p>` : ''}
+    <details><summary>Firebase 전용 계정으로 로그인</summary><input id="em" type="email" placeholder="이메일" autocomplete="username"><input id="pw" type="password" placeholder="비밀번호" autocomplete="current-password"><button class="btn ghost" id="e" style="margin-top:8px;width:100%">로그인</button></details></div>`;
+  $('#g').onclick = () => firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch((e) => loginView(e.code === 'auth/popup-blocked' ? '팝업이 막혔습니다. 브라우저에서 팝업을 허용해 주세요.' : e.message));
+  $('#e').onclick = () => firebase.auth().signInWithEmailAndPassword($('#em').value.trim(), $('#pw').value).catch((e) => loginView('로그인 실패: ' + e.code));
+}
+firebase.auth().onAuthStateChanged(async (u) => {
+  if (!u) { S.user = null; loginView(); return; }
+  S.user = u;
+  await idbOpen();
+  (await idbAll('customers')).forEach((v) => { v._sk = searchKey(v); S.customers.set(v.customerId, v); });
+  shell();
+  try { await syncCustomers(); } catch (e) { setSync(e.code === 'permission-denied' ? '권한 없음: 등록된 계정이 아닙니다' : '연결 실패: 기기에 저장된 내용 표시 중'); }
+  watchPending(); renderMain();
+});
+</script>
+</body>
+</html>
