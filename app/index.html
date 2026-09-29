@@ -145,6 +145,10 @@ body.withrank.rankopen #rank{display:block;position:fixed;top:0;right:0;bottom:0
 .cfgprev{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--soft);color:var(--cloth);font-weight:700;font-size:13.5px}
 .spark{width:100%;height:70px;display:block}
 .seg.chips{flex-wrap:wrap}.seg.chips button{flex:0 0 auto;padding:7px 10px;font-size:13px}
+.st.ship-free{background:var(--soft);color:var(--cloth)}.st.ship-paid{background:#EEF1F3;color:#56636C}.st.ship-unk{background:#F3F3F3;color:#999}
+.acct .ar{display:grid;grid-template-columns:1fr auto;gap:0 8px;padding:7px 0;border-bottom:1px dashed var(--line)}.acct .ar span{font-size:13.5px}.acct .ar b{font-size:16px;font-variant-numeric:tabular-nums}.acct .ar small{grid-column:1/-1;font-size:11.5px;color:var(--sub)}
+.acct .ar.minus b{color:var(--cloth)}.acct .ar.total{border-bottom:0;border-top:2px solid var(--ink);margin-top:2px}.acct .ar.total span{font-weight:700}.acct .ar.total b{font-size:19px}
+.cadd{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.cadd input{border:1px solid var(--line);border-radius:6px;padding:6px;font:inherit;min-width:0;flex:1 1 90px}.cadd .btn{padding:8px 14px}
 .pend{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
 .pend .src{font-size:12px;color:var(--sub)} .pend .who{font-weight:700;margin:3px 0} .pend .body{font-size:13.5px;color:var(--ink);white-space:pre-wrap;max-height:90px;overflow:auto;background:var(--bg);border-radius:8px;padding:6px 9px;margin:6px 0}
 .cand{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px dashed var(--line);padding:8px 0}
@@ -170,12 +174,12 @@ body.withrank.rankopen #rank{display:block;position:fixed;top:0;right:0;bottom:0
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 'use strict';
-/* 리드나우 고객 웹앱 v0.4.0
+/* 리드나우 고객 웹앱 v0.5.1
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.4.0';
+const APP_VER = '0.5.1';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -337,6 +341,82 @@ function effFlag(c, k) {
 }
 function flagsOf(c) { return { vip: effFlag(c, 'vip').on, cau: effFlag(c, 'caution').on, bl: effFlag(c, 'blacklist').on, agent: (c.otherRecipientCount || 0) >= 3, seller: strongSellers(c).length > 0 }; }
 
+/* ── 배송비 회계: 주문마다 그 주문에 실제 적용된 배송비(주문 시점 값)로 무료·유료를 가르고,
+ *    택배사·건당 택배비는 기간별로 설정 (계약이 바뀌면 그날부터 새 값 적용) ── */
+const COURIER_DEFAULT = [{ from: '2000-01-01', carrier: '롯데택배', cost: 2500 }];
+S.acct = { couriers: COURIER_DEFAULT }; S.policy = null;
+function watchAcct() {
+  db.collection('crm_system').doc('accounting').onSnapshot((d) => { const x = d.exists ? d.data() : {}; S.acct = { ...x, couriers: (x.couriers && x.couriers.length ? x.couriers : COURIER_DEFAULT).slice().sort((a, b) => String(a.from).localeCompare(String(b.from))) }; if ($('#modal.on')) renderModal(); if (S.tab === 'orders') renderMain(); }, () => {});
+  db.collection('crm_system').doc('shopPolicy').onSnapshot((d) => { S.policy = d.exists ? d.data() : null; if ($('#modal.on')) renderModal(); if (S.tab === 'orders') renderMain(); }, () => {});
+}
+function courierFor(iso) { const d = String(iso || '').slice(0, 10); let hit = S.acct.couriers[0]; for (const c of S.acct.couriers) if (String(c.from) <= d) hit = c; return hit; }
+const SHIP_LABEL = { free: ['무료배송 (우리 부담)', 'ship-free'], paid: ['고객 부담', 'ship-paid'], remote: ['도서산간 (고객 부담)', 'ship-paid'], unknown: ['배송비 모름', 'ship-unk'] };
+function shipType(o) { if (o.kind !== 'sale') return null; if (o.shippingType) return o.shippingType; const f = o.shippingFee; if (f == null) return 'unknown'; if (f === 0) return 'free'; return f >= 6000 ? 'remote' : 'paid'; }
+function shipTag(o) { const t = shipType(o); if (!t) return ''; const [l, c] = SHIP_LABEL[t]; return `<span class="st ${c}">${t === 'paid' || t === 'remote' ? `배송비 ${won(o.shippingFee)}` : l}</span>`; }
+function shipStats(kind) {
+  const keyOf = (iso) => { const d = String(iso || '').slice(0, 10); if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return null; if (kind === 'day') return d; if (kind === 'month') return d.slice(0, 7); const dt = new Date(d + 'T00:00:00'); dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7)); const z = (x) => String(x).padStart(2, '0'); return `${dt.getFullYear()}-${z(dt.getMonth() + 1)}-${z(dt.getDate())}`; };
+  const mm = {};
+  for (const o of S.orders.values()) {
+    if (o.kind !== 'sale') continue; const k = keyOf(o.orderedAt); if (!k) continue;
+    const r = (mm[k] = mm[k] || { k, orders: 0, free: 0, paid: 0, remote: 0, unknown: 0, fees: 0, freeAmt: 0, paidAmt: 0, costAll: 0, costFree: 0, costPaid: 0, carriers: new Set() });
+    r.orders += 1; const t = shipType(o); r[t] += 1; if (t === 'unknown') continue;
+    const cr = courierFor(o.orderedAt); const cost = cr ? cr.cost || 0 : 0; if (cr) r.carriers.add(cr.carrier);
+    r.costAll += cost;
+    if (t === 'free') { r.costFree += cost; r.freeAmt += o.totalAmount || 0; } else { r.costPaid += cost; r.fees += o.shippingFee || 0; r.paidAmt += o.totalAmount || 0; }
+  }
+  let arr = Object.values(mm).sort((a, b) => b.k.localeCompare(a.k)); if (kind === 'day') arr = arr.slice(0, 31); if (kind === 'week') arr = arr.slice(0, 16);
+  return arr;
+}
+function policyCard() {
+  const p = S.policy; if (!p) return '<div class="hint">우리 가게 배송비 정책 기록이 아직 없습니다. 수집기가 매일 수집할 때 확인해 기록합니다.</div>';
+  const cur = p.current || {}; const hist = [...(p.tooltipHistory || []), ...(p.history || [])].sort((a, b) => String(a.from).localeCompare(String(b.from)));
+  const txt = (x) => (x.paidOnly ? `무조건 유료, 배송비 ${won(x.fee)}` : `${won(x.freeOver)} 이상 무료, 미만 배송비 ${won(x.fee)}`);
+  return `<div class="cfg"><b>지금 고객 배송비 정책</b>: ${txt(cur)} <span class="hint">(${esc(cur.day || '')} 확인)</span>
+    ${hist.length ? `<details><summary>정책 변경 기록 ${hist.length}건</summary><ul class="tl" style="max-height:200px">${hist.slice().reverse().map((x) => `<li><div class="h"><span>${esc(x.from || '')}부터</span><span>${esc(x.by || '')}</span></div><div class="b">${txt(x)}</div></li>`).join('')}</ul></details>` : ''}</div>`;
+}
+function courierEditor() {
+  const rows = S.acct.couriers;
+  return `<div class="cfg" style="margin-top:8px"><b>택배사·우리 부담 택배비 (기간별)</b>
+    <p class="hint" style="margin:4px 0 6px">택배사와 계약이 바뀌면 바뀐 날짜로 한 줄을 추가하세요. 그날부터의 주문에 새 값이 적용되고, 그 전 주문은 예전 값으로 계산됩니다.</p>
+    <table class="tbl"><tr><th>적용 시작일</th><th>택배사</th><th>건당 택배비</th><th></th></tr>
+    ${rows.map((c, i) => `<tr><td>${c.from === '2000-01-01' ? '처음부터' : esc(c.from)}</td><td>${esc(c.carrier)}</td><td>${won(c.cost)}</td><td>${rows.length > 1 ? `<button class="linkbtn" data-cdel="${i}">삭제</button>` : ''}</td></tr>`).join('')}</table>
+    <div class="cadd"><input type="date" id="cr_from" value="${new Date().toISOString().slice(0, 10)}"><input type="text" id="cr_name" value="${esc(rows[rows.length - 1].carrier)}" placeholder="택배사"><input type="number" id="cr_cost" value="${rows[rows.length - 1].cost}" min="0" step="10" placeholder="건당 원"><button class="btn" id="cr_add">추가</button></div>
+    <p class="hint">평균 택배비 계산 방식과 포장비 같은 다른 발송 비용은 나중에 따로 넣을 수 있게 넓힐 예정입니다.</p></div>`;
+}
+function shipSection(kind) {
+  if (!S.ordersLoaded) return '';
+  const arr = shipStats(kind);
+  const T = arr.reduce((a, x) => { Object.keys(x).forEach((k) => { if (k !== 'k' && k !== 'carriers') a[k] = (a[k] || 0) + x[k]; }); return a; }, {});
+  const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
+  const gain = (r) => r.fees - r.costPaid; // 유료 주문: 고객 배송비 − 그 주문들의 택배비
+  const net = (r) => r.costAll - r.fees; // 실제 우리 순지출
+  return `<h2>택배비 정산 (${kind === 'day' ? '최근 31일' : kind === 'week' ? '최근 16주' : '전체 기간'})</h2>
+    <div class="card" style="margin:0 0 8px">
+      <div class="acct">
+        <div class="ar"><span>① 택배사에 낼 택배비</span><b>${won(T.costAll || 0)}</b><small>발송 ${(((T.orders || 0) - (T.unknown || 0))).toLocaleString()}건 × 기간별 건당 택배비</small></div>
+        <div class="ar minus"><span>② 고객이 낸 배송비 (알라딘 정산으로 들어옴)</span><b>− ${won(T.fees || 0)}</b><small>유료 ${(T.paid || 0).toLocaleString()}건 · 도서산간 ${(T.remote || 0).toLocaleString()}건</small></div>
+        <div class="ar total"><span>= 실제 우리 순지출</span><b style="color:${net(T) > 0 ? 'var(--red)' : 'var(--cloth)'}">${won(net(T))}</b><small>①에서 ②를 뺀 금액</small></div>
+      </div>
+      <div class="mgrid" style="margin-top:10px">
+        <div><b>${won(T.costFree || 0)}</b><span>무료배송으로 전부 우리가 부담</span><small>${(T.free || 0).toLocaleString()}건 · 판매 주문의 ${pct(T.free || 0, T.orders || 0)}%</small></div>
+        <div><b style="color:${gain(T) >= 0 ? 'var(--cloth)' : 'var(--red)'}">${gain(T) >= 0 ? '+' : ''}${won(gain(T))}</b><span>유료 주문에서 남거나 모자란 돈</span><small>고객 배송비 ${won(T.fees || 0)} − 그 주문들 택배비 ${won(T.costPaid || 0)}</small></div></div>
+      ${(T.unknown || 0) ? `<div class="hint" style="margin-top:6px">배송비를 모르는 주문 ${T.unknown}건은 계산에서 뺐습니다 (엑셀에만 있는 주문 등)</div>` : ''}
+      <div class="hint" style="margin-top:6px">무료배송 주문 평균 주문 금액 ${won(T.free ? Math.round(T.freeAmt / T.free) : 0)} · 유료 주문 평균 ${won((T.paid || 0) + (T.remote || 0) ? Math.round(T.paidAmt / ((T.paid || 0) + (T.remote || 0))) : 0)}</div></div>
+    <div class="list">${arr.map((x) => `<div class="item" style="cursor:default"><div class="l1" style="justify-content:space-between"><b>${periodLabel(kind, x.k)}</b><b style="color:${net(x) > 0 ? 'var(--red)' : 'var(--cloth)'}">순지출 ${won(net(x))}</b></div>
+      <div class="l2"><span>택배비 ${won(x.costAll)} (${[...x.carriers].join(', ')})</span><span>고객 배송비 −${won(x.fees)}</span></div>
+      <div class="l2"><span>무료 ${x.free}건 부담 ${won(x.costFree)}</span><span>유료 ${x.paid + x.remote}건 차익 ${gain(x) >= 0 ? '+' : ''}${won(gain(x))}</span>${x.unknown ? `<span>모름 ${x.unknown}</span>` : ''}</div></div>`).join('')}</div>
+    <h2>배송비 정책·택배 계약</h2>${policyCard()}${courierEditor()}`;
+}
+function bindShip(root) {
+  const save = async (list, note) => { try { await db.collection('crm_system').doc('accounting').set({ couriers: list, updatedBy: S.user.email, updatedAt: TS(), history: firebase.firestore.FieldValue.arrayUnion({ at: Date.now(), by: S.user.email, note, couriers: list }) }, { merge: true }); toast('저장했습니다. 모든 기기에 바로 반영됩니다'); } catch (e) { toast('실패: ' + e.message); } };
+  const add = root.querySelector('#cr_add'); if (add) add.onclick = () => {
+    const from = root.querySelector('#cr_from').value; const carrier = root.querySelector('#cr_name').value.trim() || '롯데택배'; const cost = parseInt(root.querySelector('#cr_cost').value, 10);
+    if (!from || !Number.isFinite(cost)) { toast('날짜와 금액을 넣어 주세요'); return; }
+    const list = S.acct.couriers.filter((c) => c.from !== from).concat([{ from, carrier, cost }]).sort((a, b) => String(a.from).localeCompare(String(b.from)));
+    save(list, `${from}부터 ${carrier} ${cost}원`);
+  };
+  root.querySelectorAll('[data-cdel]').forEach((b) => (b.onclick = () => { const i = +b.dataset.cdel; const c = S.acct.couriers[i]; if (!confirm(`${c.from} ${c.carrier} ${c.cost}원 줄을 지울까요?`)) return; save(S.acct.couriers.filter((_, j) => j !== i), `삭제: ${c.from} ${c.carrier} ${c.cost}원`); }));
+}
 /* ── 매출 집계: 일별(최근 31일)·주별(최근 16주)·월별 ── */
 function periodStats(kind) {
   const first = new Map([...S.customers.values()].map((c) => [c.customerId, String(c.firstOrderAt || '').slice(0, 10)]));
@@ -417,8 +497,8 @@ function renderModal() {
     $('#c_save').onclick = async () => { const x = read(); try { await db.collection('crm_system').doc('scoring').set({ ...x, updatedBy: S.user.email, updatedByName: S.user.displayName || S.user.email, updatedAt: TS(), history: firebase.firestore.FieldValue.arrayUnion({ at: Date.now(), by: S.user.email, ...x }) }, { merge: true }); toast('기준을 저장했습니다. 모든 기기에 바로 반영됩니다'); } catch (e) { toast('실패: ' + e.message); } };
     $('#c_def').onclick = () => { $('#c_vv').value = CFG_DEFAULT.vip.minValue; $('#c_vr').value = CFG_DEFAULT.vip.maxRisk; $('#c_vo').value = CFG_DEFAULT.vip.minOrders; $('#c_vs').checked = true; $('#c_cr').value = CFG_DEFAULT.caution.minRisk; preview(); };
   } else {
-    box.innerHTML = custMetrics() + `<h2>매출 추이</h2>` + salesChart(S.period || 'day');
-    bindPeriod(box, renderModal); box.querySelectorAll('[data-cid]').forEach((b) => (b.onclick = () => { closeModal(); openCustomer(b.dataset.cid); }));
+    box.innerHTML = custMetrics() + `<h2>매출 추이</h2>` + salesChart(S.period || 'day') + shipSection(S.period || 'day');
+    bindPeriod(box, renderModal); bindShip(box); box.querySelectorAll('[data-cid]').forEach((b) => (b.onclick = () => { closeModal(); openCustomer(b.dataset.cid); }));
   }
 }
 const SORTS = {
@@ -531,7 +611,7 @@ function monthStats() {
 function orderRow(o) {
   const q = norm(S.q); const it = (o.items || []).find((i) => q && (norm(i.title).includes(q) || norm(i.isbn13).includes(q))) || (o.items || [])[0] || {};
   return `<button class="item" data-cid="${esc(o.customerId)}"><div class="l1"><span class="name">${esc((o.buyer && o.buyer.name) || '(이름 없음)')}</span>${o.kind !== 'sale' ? '<span class="tag bl">판매 전 취소</span>' : ''}</div>
-    <div class="l2"><span>${dt16(o.orderedAt)}</span><span>${esc(o.orderNo || '')}</span><span>${won(o.totalAmount)}</span></div><div class="l2"><span>${esc(it.title || '')}${it.isbn13 ? ' · ' + esc(it.isbn13) : ''}${(o.items || []).length > 1 ? ` 외 ${(o.items || []).length - 1}권` : ''}${lineStatusTag(it.lineStatus)}</span></div></button>`;
+    <div class="l2"><span>${dt16(o.orderedAt)}</span><span>${esc(o.orderNo || '')}</span><span>${won(o.totalAmount)}</span>${shipTag(o)}</div><div class="l2"><span>${esc(it.title || '')}${it.isbn13 ? ' · ' + esc(it.isbn13) : ''}${(o.items || []).length > 1 ? ` 외 ${(o.items || []).length - 1}권` : ''}${lineStatusTag(it.lineStatus)}</span></div></button>`;
 }
 function custMetrics() {
   const all = [...S.customers.values()]; const buyers = all.filter((c) => (c.saleOrderCount || 0) > 0);
@@ -570,8 +650,8 @@ function renderOrders(m) {
     m.innerHTML = `<h2>주문 검색 ${hits.length.toLocaleString()}건</h2><div class="list">${hits.slice(0, S.limit).map(orderRow).join('') || '<div class="empty">찾는 주문이 없습니다</div>'}${hits.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
     return;
   }
-  m.innerHTML = custMetrics() + '<h2>매출 추이</h2>' + salesChart(S.period || 'month') + '<p class="hint">주문 기록은 이 기기에 저장되어 있고, 새 주문은 자동으로 더해집니다. 책 제목·ISBN·주문번호는 위 검색창에 입력하세요.</p>';
-  bindPeriod(m, renderMain);
+  m.innerHTML = custMetrics() + '<h2>매출 추이</h2>' + salesChart(S.period || 'month') + shipSection(S.period || 'month') + '<p class="hint">주문 기록은 이 기기에 저장되어 있고, 새 주문은 자동으로 더해집니다. 책 제목·ISBN·주문번호는 위 검색창에 입력하세요.</p>';
+  bindPeriod(m, renderMain); bindShip(m);
 }
 function renderPending(m) {
   if (!S.pending.length) { m.innerHTML = '<div class="empty">확정할 연결이 없습니다.</div>'; return; }
@@ -640,7 +720,7 @@ function renderDetail() {
     const plat = o.platform === 'yes24' ? '예스24' : o.platform === 'direct' ? '직접 판매' : '알라딘';
     const rc = o.recipient && !o.recipient.sameAsBuyer && o.recipient.name ? `받는 분 ${esc(o.recipient.name)} ` : '';
     return `<div class="order"><div class="oh"><b>${dt16(o.orderedAt)} ${o.kind !== 'sale' ? '<span class="st x">판매 전 취소</span>' : ''}</b><span>${won(o.totalAmount)}</span></div>
-      <div class="om">${plat} ${esc(o.orderNo || '')}${o.invoiceNo ? ' · 송장 ' + esc(o.invoiceNo) : ''}${o.shippingRequest ? ' · ' + esc(o.shippingRequest) : ''}</div>${rc ? `<div class="om">${rc}${esc(o.recipient.address || '')}</div>` : ''}
+      <div class="om">${plat} ${esc(o.orderNo || '')} ${shipTag(o)}${o.invoiceNo ? ' · 송장 ' + esc(o.invoiceNo) : ''}${o.shippingRequest ? ' · ' + esc(o.shippingRequest) : ''}</div>${rc ? `<div class="om">${rc}${esc(o.recipient.address || '')}</div>` : ''}
       <ul>${(o.items || []).map((it) => `<li><span class="it">${it.condition ? `[${esc(it.condition)}] ` : ''}${esc(it.title)}${lineStatusTag(it.lineStatus)}</span><span>${it.price != null ? won(it.price) : ''}</span></li>`).join('')}</ul></div>`;
   }).join('') || '<div class="empty">주문 없음</div>';
   const fdesc = (e, k) => {
@@ -665,7 +745,8 @@ function renderDetail() {
       ${(c.sellerLinks || []).length ? `<div class="fwhy" style="color:var(--red)">연결된 판매자: ${c.sellerLinks.map((s) => `<a href="#" data-seller-name="${esc(s.name)}">${esc(s.name)}${s.grade === 'fake' ? '(허위 매물)' : s.aladinGrade ? '(' + esc(s.aladinGrade) + ')' : ''}</a>`).join(', ')}</div>` : ''}
     </div>
     <div class="card"><div class="nums five"><div><b>${c.saleOrderCount || 0}</b><span>주문</span></div><div><b>${(c.saleItemQty || 0).toLocaleString()}</b><span>권</span></div><div><b style="font-size:14px">${(c.salesAmount || 0).toLocaleString('ko-KR')}</b><span>순매출(원)</span></div><div><b>${(c.cancelOrderCount || 0) + (c.returnCount || 0)}</b><span>취소·반품</span></div><div><b>${c.reviewCount || 0}</b><span>구매확정(평가)</span></div></div>
-      <div class="hint" style="margin:6px 0 0">문의 ${c.qnaCount || 0}건${c.sellerCancelQty ? ` · 우리 품절로 취소된 ${c.sellerCancelQty}권은 고객 책임이 아니라 점수에서 뺌` : ''}</div></div>
+      <div class="hint" style="margin:6px 0 0">배송비: 무료배송 ${c.freeShipCount || 0}회(우리 부담) · 고객 부담 ${c.paidShipCount || 0}회 합계 ${won(c.shipPaidTotal || 0)}</div>
+      <div class="hint" style="margin:2px 0 0">문의 ${c.qnaCount || 0}건${c.sellerCancelQty ? ` · 우리 품절로 취소된 ${c.sellerCancelQty}권은 고객 책임이 아니라 점수에서 뺌` : ''}</div></div>
     ${sc ? `<div class="card"><h3>점수 <span style="font-weight:400">(${esc(sc.day || '')} 계산)</span></h3>
       <div class="scwrap"><div class="scb good"><b>${sc.value}</b><span>가치 점수 /100</span></div><div class="scb bad"><b>${sc.risk}</b><span>주의 점수 /100</span></div></div>
       <details><summary>점수 근거 보기</summary><h4 class="sth">가치 (높을수록 좋은 고객)</h4>${scoreBars(sc.valueParts, 'good')}<h4 class="sth">주의 (높을수록 조심)</h4>${scoreBars(sc.riskParts, 'bad')}
@@ -768,7 +849,7 @@ firebase.auth().onAuthStateChanged(async (u) => {
   try { await syncCustomers(); } catch (e) { setSync(e.code === 'permission-denied' ? '권한 없음: 등록된 계정이 아닙니다' : '연결 실패: 기기에 저장된 내용 표시 중'); }
   watchPending(); renderMain();
   const hm = location.hash.match(/#c=([^&]+)/); if (hm) { history.replaceState(null, '', location.pathname); openCustomer(decodeURIComponent(hm[1])); }
-  watchConfig();
+  watchConfig(); watchAcct();
   // 로그인하면 주문 기록·판매자 목록도 자동으로 받아 둠 (처음 한 번은 전체, 이후엔 바뀐 것만)
   try {
     const os = await idbAll('orders'); if (os.length) { os.forEach((v) => { v._sk = orderKey(v); S.orders.set(v.id, v); }); S.ordersLoaded = true; }
