@@ -119,12 +119,12 @@ h2{font-size:13px;color:var(--sub);font-weight:600;margin:16px 4px 6px}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 'use strict';
-/* 리드나우 고객 웹앱 v0.2.0
+/* 리드나우 고객 웹앱 v0.2.1
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.2.0';
+const APP_VER = '0.2.1';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -275,8 +275,17 @@ function renderMain() {
       m.innerHTML = `<div class="stats"><div class="stat"><b>${all.length.toLocaleString()}</b><span>고객</span></div><button class="stat bad" data-go="flags:bl"><b>${bl}</b><span>블랙리스트</span></button><button class="stat" data-go="flags:vip"><b>${vip}</b><span>VIP</span></button><button class="stat warn" data-go="pending"><b>${S.pending.length}</b><span>연결 대기</span></button></div>
         <h2>최근 주문한 고객</h2><div class="list">${recent.map((c) => custRow(c)).join('') || '<div class="empty">고객 목록을 받는 중입니다</div>'}${recent.length >= S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
     } else {
+      // 한 번에 찾기: 고객(이름·전화·이메일·주소) + 주문(주문번호·책 제목·ISBN·받는 분)
       const hits = all.filter((c) => c._sk.includes(q)).sort((a, b) => String(b.lastOrderAt || '').localeCompare(String(a.lastOrderAt || '')));
-      m.innerHTML = `<h2>검색 결과 ${hits.length.toLocaleString()}명</h2><div class="list">${hits.slice(0, S.limit).map((c) => custRow(c)).join('') || '<div class="empty">찾는 고객이 없습니다. 전화번호는 숫자 일부만 넣어도 됩니다.</div>'}${hits.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
+      const oh = S.ordersLoaded ? [...S.orders.values()].filter((o) => o._sk.includes(q)).sort((a, b) => String(b.orderedAt || '').localeCompare(String(a.orderedAt || ''))) : [];
+      const cLim = S.limit; const oLim = S.olimit || 20;
+      let html = `<h2>고객 ${hits.length.toLocaleString()}명</h2><div class="list">${hits.slice(0, cLim).map((c) => custRow(c)).join('') || '<div class="empty">이름·전화·이메일·주소로 찾은 고객이 없습니다</div>'}${hits.length > cLim ? '<button class="more" id="more">고객 더 보기</button>' : ''}</div>`;
+      if (S.ordersLoaded) html += `<h2>주문 ${oh.length.toLocaleString()}건 (주문번호·책 제목·ISBN·받는 분)</h2><div class="list">${oh.slice(0, oLim).map(orderRow).join('') || '<div class="empty">찾은 주문이 없습니다</div>'}${oh.length > oLim ? '<button class="more" id="omore">주문 더 보기</button>' : ''}</div>`;
+      else html += `<div class="card" style="margin:12px 0 0"><h3>책 제목·ISBN으로도 찾으려면</h3><p class="hint" style="margin:0 0 10px">이 기기에 주문 기록을 한 번 내려받아야 합니다 (약 5천 건, 처음 한 번만). 주문번호(001-A…)는 지금도 바로 찾을 수 있습니다.</p><button class="btn" id="oload2" ${S.ordersBusy ? 'disabled' : ''}>${S.ordersBusy ? '내려받는 중…' : '주문 기록 내려받기'}</button></div>`;
+      m.innerHTML = html;
+      const b2 = $('#oload2'); if (b2) b2.onclick = () => syncOrders(true).then(() => renderMain()).catch((e) => toast('실패: ' + e.message));
+      const om = $('#omore'); if (om) om.onclick = () => { S.olimit = oLim + 50; renderMain(); };
+      if (/^\d{3}-?a\d{9}$/i.test(S.q.trim()) && !oh.length) { const ono = S.q.trim().toUpperCase().replace(/^(\d{3})-?A/, '$1-A'); db.collection('crm_orders').doc('aladin_' + ono).get().then((d) => { if (d.exists) openCustomer(d.data().customerId); else toast('그 주문번호가 없습니다'); }); }
     }
   } else if (S.tab === 'flags') {
     const bl = all.filter((c) => flagsOf(c).bl); const vip = all.filter((c) => flagsOf(c).vip);
@@ -306,6 +315,11 @@ function monthStats() {
   }
   return Object.values(mm).sort((a, b) => b.k.localeCompare(a.k));
 }
+function orderRow(o) {
+  const q = norm(S.q); const it = (o.items || []).find((i) => q && (norm(i.title).includes(q) || norm(i.isbn13).includes(q))) || (o.items || [])[0] || {};
+  return `<button class="item" data-cid="${esc(o.customerId)}"><div class="l1"><span class="name">${esc((o.buyer && o.buyer.name) || '(이름 없음)')}</span>${o.kind !== 'sale' ? '<span class="tag bl">판매 전 취소</span>' : ''}</div>
+    <div class="l2"><span>${dt16(o.orderedAt)}</span><span>${esc(o.orderNo || '')}</span><span>${won(o.totalAmount)}</span></div><div class="l2"><span>${esc(it.title || '')}${it.isbn13 ? ' · ' + esc(it.isbn13) : ''}${(o.items || []).length > 1 ? ` 외 ${(o.items || []).length - 1}권` : ''}${lineStatusTag(it.lineStatus)}</span></div></button>`;
+}
 function renderOrders(m) {
   const q = norm(S.q);
   if (/^\d{3}-?a\d{9}$/i.test(S.q.trim())) { // 주문번호는 내려받지 않아도 바로 찾음
@@ -322,10 +336,7 @@ function renderOrders(m) {
   }
   if (q) {
     const hits = [...S.orders.values()].filter((o) => o._sk.includes(q)).sort((a, b) => String(b.orderedAt || '').localeCompare(String(a.orderedAt || '')));
-    m.innerHTML = `<h2>주문 검색 ${hits.length.toLocaleString()}건</h2><div class="list">${hits.slice(0, S.limit).map((o) => {
-      const it = (o.items || []).find((i) => norm(i.title).includes(q) || norm(i.isbn13).includes(q)) || (o.items || [])[0] || {};
-      return `<button class="item" data-cid="${esc(o.customerId)}"><div class="l1"><span class="name">${esc(o.buyer && o.buyer.name || '(이름 없음)')}</span>${o.kind !== 'sale' ? '<span class="tag bl">판매 전 취소</span>' : ''}</div>
-        <div class="l2"><span>${dt16(o.orderedAt)}</span><span>${esc(o.orderNo || '')}</span><span>${won(o.totalAmount)}</span></div><div class="l2"><span>${esc(it.title || '')}${(o.items || []).length > 1 ? ` 외 ${(o.items || []).length - 1}권` : ''}${lineStatusTag(it.lineStatus)}</span></div></button>`; }).join('') || '<div class="empty">찾는 주문이 없습니다</div>'}${hits.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
+    m.innerHTML = `<h2>주문 검색 ${hits.length.toLocaleString()}건</h2><div class="list">${hits.slice(0, S.limit).map(orderRow).join('') || '<div class="empty">찾는 주문이 없습니다</div>'}${hits.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
     return;
   }
   const ms = monthStats(); const maxA = Math.max(1, ...ms.map((x) => x.amount));
@@ -447,6 +458,7 @@ firebase.auth().onAuthStateChanged(async (u) => {
   shell();
   try { await syncCustomers(); } catch (e) { setSync(e.code === 'permission-denied' ? '권한 없음: 등록된 계정이 아닙니다' : '연결 실패: 기기에 저장된 내용 표시 중'); }
   watchPending(); renderMain();
+  const hm = location.hash.match(/#c=([^&]+)/); if (hm) { history.replaceState(null, '', location.pathname); openCustomer(decodeURIComponent(hm[1])); }
   try { const os = await idbAll('orders'); if (os.length) { os.forEach((v) => { v._sk = orderKey(v); S.orders.set(v.id, v); }); S.ordersLoaded = true; } await syncOrders(false); } catch (e) {}
 });
 </script>
