@@ -225,6 +225,9 @@ fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opa
 @media(max-width:520px){.pit{grid-template-columns:1fr 50px auto 80px auto}.pit_t{grid-column:1/-1}.pit_e{grid-column:1/-1}}
 .ptot{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;padding:10px;background:var(--soft);border-radius:10px}.ptot span{display:block;font-size:12px;color:var(--sub)}.ptot b{display:block;font-size:17px}.ptot small{font-size:11px;color:var(--sub)}
 .pf select,.pf textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px;margin-top:4px}
+.cheapd summary{cursor:pointer;padding:6px 0;font-size:14px}.cheapd[disabled] summary{pointer-events:none;color:var(--sub)}
+.ulink{display:inline-block;margin-left:6px;padding:1px 7px;border:1px solid #9FC1B4;border-radius:999px;font-size:11.5px;font-weight:600;color:var(--cloth);background:#fff;cursor:pointer;white-space:nowrap;vertical-align:middle}.ulink:hover{background:var(--cloth);color:#fff}
+.alinks{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.alinks .btn{text-decoration:none;padding:8px 12px;font-size:13.5px}
 </style>
 </head>
 <body>
@@ -238,12 +241,12 @@ fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opa
 <script src="../readnow-products-core.js?v=0.3.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.17.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.20.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.17.0';
+const APP_VER = '0.20.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1500,9 +1503,21 @@ function prodDash() {
     ${sec('p_trend', '등록·판매 추이', `<div class="ptabs" style="margin-bottom:8px">${['day', 'week', 'month', 'year'].map((k) => `<button class="${kind === k ? 'on' : ''}" data-ptrend="${k}">${PK[k]}</button>`).join('')}</div><div class="hint"><span class="lg a"></span>등록 <span class="lg b"></span>판매 · 오른쪽 숫자는 순증감</div><div class="list">${fold('ptr' + kind, trows) || '<div class="empty">기록 없음</div>'}</div>`)}
 `;
 }
+/* 알라딘 바로가기: 온라인 중고(전체 중고 탭) · 우리 상품 페이지 · 새상품 페이지 */
+function aladinLinks(l, it) {
+  const b = l && l.bookId ? S.pbooks.get(l.bookId) : null; const item = b && b.aladinItemId;
+  const q = (l && (l.isbn13 || l.isbn10 || l.title)) || (it && (it.isbn13 || it.title)) || '';
+  return {
+    used: item ? `https://www.aladin.co.kr/shop/UsedShop/wuseditemall.aspx?ItemId=${item}&TabType=0&Fix=1` : q ? `https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Used&SearchWord=${encodeURIComponent(String(q).replace(/^\[중고[^\]]*\]\s*/, ''))}` : null,
+    usedExact: !!item, mine: l && l.listingId ? `https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${l.listingId}` : null,
+    newp: item ? `https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${item}` : null,
+  };
+}
+const usedBtn = (l, it) => { const u = aladinLinks(l, it); return u.used ? `<span class="ulink" data-open="${esc(u.used)}" title="${u.usedExact ? '알라딘 온라인 중고 (전체 중고)' : '알라딘 중고 검색 (도서 정보를 받으면 바로 이동)'}">중고↗</span>` : ''; };
+document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-open]'); if (!a) return; ev.preventDefault(); ev.stopPropagation(); window.open(a.dataset.open, '_blank', 'noopener'); }, true);
 function prodRow(l) {
   const b = l.bookId ? S.pbooks.get(l.bookId) : null; const src = b && b.images ? imgUrl(b.images.front, true) : null;
-  return `<button class="item prow" data-pid="${esc(l.id)}">${src ? `<img class="pth" src="${esc(src)}" loading="lazy" decoding="async" alt="">` : '<span class="pth none"></span>'}<span class="pbody"><span class="l1"><span class="name">${esc(l.title || l.usedCode)}</span>${l.grade ? `<span class="tag pl">${esc(l.grade)}</span>` : ''}${mtTag(mtOfListing(l).type)}${!l.active ? '<span class="tag bl">비활성</span>' : ''}</span>
+  return `<button class="item prow" data-pid="${esc(l.id)}">${src ? `<img class="pth" src="${esc(src)}" loading="lazy" decoding="async" alt="">` : '<span class="pth none"></span>'}<span class="pbody"><span class="l1"><span class="name">${esc(l.title || l.usedCode)}</span>${l.grade ? `<span class="tag pl">${esc(l.grade)}</span>` : ''}${mtTag(mtOfListing(l).type)}${!l.active ? '<span class="tag bl">비활성</span>' : ''}${usedBtn(l)}</span>
     <span class="l2"><span>${won(l.price)}</span><span>수량 ${l.qty ?? '-'}</span><span>${esc(l.status || '')}</span><span>등록 ${d10(l.registeredAt)}</span><span>${esc(l.publisher || '')}</span></span></span></button>`;
 }
 function renderProducts(m) {
@@ -1529,7 +1544,10 @@ async function openProduct(pid) {
     const kv = (k, v) => (v == null || v === '' ? '' : `<dt>${k}</dt><dd>${v}</dd>`);
     const ids = (l.ids || []).map((c) => `<li><b>${esc(c.value)}</b> <span class="tag ${c.kind === 'unknown' || c.kind === 'invalid' ? 'bl' : 'pl'}">${esc(c.guess)}</span><div class="hint" style="margin:2px 0 0">${esc(c.reason)}</div></li>`).join('');
     const mt = x.metrics;
+    const U = aladinLinks(l);
     sh.innerHTML = `<div class="sh"><button class="back" id="back">← 뒤로</button><div class="t">${esc(l.title || l.usedCode)}</div></div>
+      <div class="alinks">${U.used ? `<a class="btn" href="${esc(U.used)}" target="_blank" rel="noopener">온라인 중고 ↗</a>` : ''}${U.mine ? `<a class="btn ghost" href="${esc(U.mine)}" target="_blank" rel="noopener">우리 상품 페이지 ↗</a>` : ''}${U.newp ? `<a class="btn ghost" href="${esc(U.newp)}" target="_blank" rel="noopener">새상품 페이지 ↗</a>` : ''}</div>
+      ${!U.usedExact ? '<p class="hint" style="margin:0 0 8px">도서 정보를 아직 받지 않아 온라인 중고는 검색으로 엽니다</p>' : ''}
       ${imgs ? `<div class="pimgs">${imgs}</div>` : ''}
       <div class="card"><h3>등록 정보</h3><dl class="kv">${(() => { const t = mtOfListing(l); return kv('상품 유형', `${MT_LABEL[t.type]} <small class="hint">(${esc(t.why || '')})</small>`); })()}${kv('상태', esc(l.status || ''))}${kv('판매가', won(l.price))}${kv('정가', l.priceList ? won(l.priceList) : '')}${kv('수량', l.qty)}${kv('등급', esc(l.grade || ''))}${kv('자체코드', esc(l.sku || ''))}${kv('출판사', esc(l.publisher || ''))}${kv('등록일', dt16(l.registeredAt) + (l.registeredYearGuessed ? ' (연도 추정)' : ''))}${kv('상품번호', esc(l.listingId || ''))}${kv('U코드', esc(l.usedCode || ''))}</dl></div>
       ${b ? `<div class="card"><h3>도서 정보</h3><dl class="kv">${kv('제목', esc(b.title || ''))}${kv('부제', esc(b.subtitle || ''))}${kv('기여자', esc((b.contributors || []).map((c) => c.name + (c.role ? `(${c.role})` : '')).join(', ')))}${kv('출판사', esc(b.publisher || ''))}${kv('출간일', esc(b.pubDate || ''))}${kv('원제', esc(b.originalTitle || ''))}${kv('쪽수', b.pages)}${kv('크기', esc(b.size || ''))}${kv('무게', b.weightG ? b.weightG + 'g' : '')}${kv('분류', esc((b.categories || []).map((c) => (c.path || []).join(' > ')).join(' / ')))}</dl></div>` : '<div class="card"><h3>도서 정보</h3><div class="hint">아직 수집 전입니다 (상품 수집기의 "도서 정보·시장 지표 갱신")</div></div>'}
@@ -1560,12 +1578,28 @@ const APPSET_DEFAULT = {
   priceBands: [3000, 6000, 10000, 20000, 30000, 50000, 80000, 100000, 150000, 300000],
   costPerBook: 2000, feeRate: 0.1,
   seller: { modelHigh: 70, modelLow: 35, gainHigh: 60, gainLow: 40 },
-  adminDevices: ['JS-MAIN', 'JS-PHONE'],
-  alerts: { lateDays: 2, oldDays1: 180, oldDays2: 365, overMinPct: 30, staleHours: 36, dormantMinOrders: 3, dormantFrom: 90, dormantTo: 240, risingFactor: 1.3 },
+  adminDevices: ['JS-MAIN', 'JS-PHONE', 'HOME'],
+  alerts: { lateDays: 2, oldDays1: 180, oldDays2: 365, overMinPct: 30, staleHours: 36, dormantMinOrders: 3, dormantFrom: 90, dormantTo: 240, risingFactor: 1.3, cheapPct: 10 },
+  gradeCoef: { '최상': 1, '상': 0.9, '중': 0.75 },
 };
 S.app = JSON.parse(JSON.stringify(APPSET_DEFAULT)); S.homeAdmin = null;
 const deviceName = () => localStorage.getItem('rn-device') || '';
-const isAdminDevice = () => [...(S.app.adminDevices || []), 'JS-MAIN', 'JS-PHONE'].map((x) => String(x).trim().toUpperCase()).includes(deviceName().trim().toUpperCase());
+const isAdminDevice = () => S.devOk === true && [...(S.app.adminDevices || []), 'JS-MAIN', 'JS-PHONE', 'HOME'].map((x) => String(x).trim().toUpperCase()).includes(deviceName().trim().toUpperCase());
+/* 기기 이름은 한 기기만 쓸 수 있음: app_devices/{이름}에 처음 정한 기기의 고유 번호를 기록. 다른 기기는 같은 이름을 못 씀 (이름을 바꿔도 예전 이름은 계속 그 기기 것) */
+const deviceId = () => { let v = localStorage.getItem('rn-device-id'); if (!v) { v = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('rn-device-id', v); } return v; };
+const devKey = (n) => String(n || '').trim().toUpperCase().replace(/[\/.#\[\]]/g, '_');
+async function claimDeviceName(name) {
+  const key = devKey(name); if (!key) throw new Error('이름을 적어 주세요');
+  const ref = db.collection('app_devices').doc(key);
+  await db.runTransaction(async (tx) => { const d = await tx.get(ref); if (d.exists && d.data().deviceId !== deviceId()) { const e = new Error('TAKEN'); e.info = d.data(); throw e; }
+    tx.set(ref, { name: String(name).trim(), deviceId: deviceId(), by: S.user.email, byName: S.user.displayName || S.user.email, ua: navigator.userAgent.slice(0, 120), claimedAt: d.exists ? d.data().claimedAt : TS(), lastSeenAt: TS() }, { merge: true }); });
+}
+async function verifyDevice() {
+  const n = deviceName(); if (!n) { S.devOk = false; return; }
+  try { await claimDeviceName(n); S.devOk = true; S.devConflict = null; }
+  catch (e) { S.devOk = false; S.devConflict = e.message === 'TAKEN' ? e.info : null; if (e.message === 'TAKEN') toast(`'${n}'은(는) 다른 기기가 먼저 쓰는 이름입니다. 설정에서 새 이름을 정해 주세요`); }
+  if (S.tab === 'settings') renderMain();
+}
 function watchAppSettings() {
   db.collection('app_settings').doc('main').onSnapshot((d) => {
     const x = d.exists ? d.data() : {};
@@ -1707,7 +1741,7 @@ function productRankBoards() {
   const m = [...bookStats(r).values()];
   if (!Array.isArray(S.qnaAll)) loadQnaAll();
   const qm = new Map(); if (Array.isArray(S.qnaAll)) S.qnaAll.forEach((q) => { if (!inRange(q.createdAt, r)) return; const t = String(q.title || '').replace(/^\[중고[^\]]*\]\s*/, ''); if (!t) return; qm.set(t, (qm.get(t) || 0) + 1); });
-  const row = (b, v, sub) => `<li data-book="${esc(b.code || '')}" data-btitle="${esc(b.title || '')}"><span class="rn"></span><span class="rnm">${esc(b.title || '')}${sub ? `<small class="rwhy">${sub}</small>` : ''}</span><span class="rv">${v}</span></li>`;
+  const row = (b, v, sub) => `<li data-book="${esc(b.code || '')}" data-btitle="${esc(b.title || '')}"><span class="rn"></span><span class="rnm">${esc(b.title || '')} ${usedBtn(b.code ? S.plist.get('aladin_' + b.code) : null, { title: b.title, isbn13: b.k && /^\d{13}$/.test(b.k) ? b.k : null })}${sub ? `<small class="rwhy">${sub}</small>` : ''}</span><span class="rv">${v}</span></li>`;
   const top = (key, f, sub) => m.filter((b) => key(b) > 0).sort((a, b) => key(b) - key(a)).map((b) => row(b, f(key(b)), sub ? sub(b) : ''));
   const boards = [
     ['good', '가장 많이 팔린 책', top((b) => b.qty, (v) => v + '권', (b) => won(b.amt))],
@@ -1717,7 +1751,7 @@ function productRankBoards() {
     ['mid', '문의가 많은 책', !Array.isArray(S.qnaAll) ? 'wait' : [...qm.entries()].sort((a, b) => b[1] - a[1]).map(([t, n]) => row({ title: t }, n + '건'))],
   ];
   const act = S.prodLoaded ? [...S.plist.values()].filter((l) => l.active) : [];
-  const lrow = (l, v, sub) => `<li data-book="${esc(l.usedCode || '')}" data-btitle="${esc(l.title || '')}"><span class="rn"></span><span class="rnm">${esc(l.title || '')}${sub ? `<small class="rwhy">${sub}</small>` : ''}</span><span class="rv">${v}</span></li>`;
+  const lrow = (l, v, sub) => `<li data-book="${esc(l.usedCode || '')}" data-btitle="${esc(l.title || '')}"><span class="rn"></span><span class="rnm">${esc(l.title || '')} ${usedBtn(l.usedCode ? S.plist.get('aladin_' + l.usedCode) || l : l, l)}${sub ? `<small class="rwhy">${sub}</small>` : ''}</span><span class="rv">${v}</span></li>`;
   if (!S.prodLoaded) loadProducts();
   const soldLines = []; for (const o of S.orders.values()) { if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue; for (const it of o.items || []) if (it.lineStatus === 'normal' && it.price) soldLines.push({ it, o }); }
   boards.push(['good', '등록 상품 중 가격 높은 책 (판매완료 중)', soldLines.sort((a, b) => b.it.price - a.it.price).map(({ it, o }) => lrow({ usedCode: it.aladinUsedCode, title: it.title }, won(it.price), `${esc(d10(o.orderedAt))} 판매${it.condition ? ' · ' + esc(it.condition) : ''}${(() => { const t = mtOfItem(it).type; return t !== 'book' ? ' · ' + MT_LABEL[t] : ''; })()}`))]);
@@ -1742,9 +1776,11 @@ function renderSettings(m) {
   const card = (key, title, body, note) => `${sec('set_' + key, title, `<fieldset class="setf" ${dis}>${body}</fieldset>${note ? `<p class="hint">${note}</p>` : ''}`, false)}`;
   m.innerHTML = `
   <div class="card" style="border-left:4px solid ${adm ? 'var(--cloth)' : 'var(--amber)'}"><h3>① 이 기기 · 권한</h3>
-    <label class="set">이 기기 이름 (이 기기에만 저장) <input id="st_dev" value="${esc(deviceName())}" placeholder="예: JS-MAIN, 사무실-1, 아내폰"></label>
+    <label class="set">이 기기 이름 (한 번 정한 이름은 다른 기기에서 쓸 수 없음) <input id="st_dev" value="${esc(deviceName())}" placeholder="예: JS-MAIN, JS-PHONE, HOME"></label>
+    ${S.devConflict ? `<p class="hint" style="margin:6px 0 0;color:var(--red)"><b>'${esc(deviceName())}'은(는) 다른 기기가 먼저 쓰는 이름이라 이 기기는 관리자 권한이 없습니다.</b> 새 이름을 정해 주세요.</p>` : ''}
     <p class="hint" style="margin:6px 0 0">${adm ? '<b style="color:var(--cloth)">관리자 기기입니다.</b> 아래 모든 값을 바꿀 수 있고, 바꾸면 모든 기기에 바로 반영됩니다.' : '<b style="color:var(--amber)">관리자 기기가 아니라 아래 값은 볼 수만 있습니다.</b> 관리자 기기(' + esc((a.adminDevices || []).join(', ')) + ')에서 바꿔 주세요.'}</p>
-    <fieldset class="setf" ${dis}><label class="set">관리자 기기 (쉼표로, 자기 기기를 빼면 다시 넣을 수 없음)<input id="st_admins" value="${esc((a.adminDevices || []).join(', '))}"></label></fieldset></div>
+    <fieldset class="setf" ${dis}><label class="set">관리자 기기 (쉼표로. JS-MAIN · JS-PHONE · HOME은 항상 관리자)<input id="st_admins" value="${esc((a.adminDevices || []).join(', '))}"></label></fieldset>
+    <details style="margin-top:8px"><summary>이름이 정해진 기기 목록</summary><div class="list" id="st_devlist"><div class="hint">불러오는 중</div></div><p class="hint">기기의 브라우저 저장공간을 지우면 그 기기는 자기 이름을 잃습니다. 그때는 관리자 기기에서 '이름 풀기'를 누른 뒤 다시 정하세요.</p></details></div>
   ${card('goal', '② 목표', `<label class="set">월 매출 목표 (원, 0이면 표시 안 함)${num_('st_gm', G.monthSales || 0, 100000)}</label><label class="set">하루 등록 목표 (권)${num_('st_gl2', G.dailyListing || 0, 10)}</label><label class="set">목표 공헌이익률 (%)${num_('st_gp', G.marginPct || 0)}</label>`, '홈·경영 탭의 달성률과 "목표 미달" 알림에 씁니다.')}
   ${card('profit', '③ 매출·이익 계산', `<label class="set">추정 수수료율 (%) — 수수료 기록이 없는 주문에만${num_('st_fee', Math.round((a.feeRate || 0) * 1000) / 10, 0.1)}</label><label class="set">권당 매입 비용 (원) — 매입 기록이 없거나 권수가 너무 적을 때만${num_('st_cost', a.costPerBook, 100)}</label>`, `지금 계산에 쓰는 권당 매입가: ${won(Math.round(unitCost()))}`)}
   ${sec('set_ship', '④ 택배 계약 (기간별 택배비)', `${policyCard()}<fieldset class="setf" ${dis}>${courierEditor()}</fieldset>`, false)}
@@ -1753,7 +1789,8 @@ function renderSettings(m) {
   ${card('cust', '⑥ 고객 점수 기준 (자동 VIP·주의)', `<label class="set">자동 VIP: 가치 점수 이상${num_('c_vv', V.minValue)}</label><label class="set">그리고 주의 점수 미만${num_('c_vr', V.maxRisk)}</label><label class="set">그리고 구매 횟수 이상${num_('c_vo', V.minOrders)}</label><label class="set ck"><input type="checkbox" id="c_vs" ${V.excludeSellers ? 'checked' : ''}> 판매자와 연결된 고객은 VIP에서 제외</label><label class="set">자동 주의고객: 주의 점수 이상${num_('c_cr', Cc.minRisk)}</label><div class="hint" id="cfgprev"></div>`, '사람이 직접 VIP·주의로 정한 고객은 기준과 상관없이 유지됩니다. 점수 계산 방식은 위쪽 "점수 기준"에서 봅니다.')}
   ${card('seller', '⑦ 판매자 점수 기준', `<label class="set">★ 모범: 모범 점수 이상${num_('st_mh', T.modelHigh)}</label><label class="set">✕ 불량: 모범 점수 이하 (또는 윤리 위반)${num_('st_ml', T.modelLow)}</label><label class="set">₩＋ 우리에게 이득: 이득 점수 이상${num_('st_gh', T.gainHigh)}</label><label class="set">₩－ 우리에게 불익: 이득 점수 이하${num_('st_gl', T.gainLow)}</label>`, '알라딘 화면의 판매자 배지(툴팁·고객 카드)에도 같은 기준이 쓰입니다.')}
   ${card('alert', '⑧ 경영 알림 기준', `<label class="set">출고 지연으로 볼 기간 (주문 후 일)${num_('al_late', A.lateDays)}</label><label class="set">장기 재고 1단계 (등록 후 일)${num_('al_old1', A.oldDays1, 10)}</label><label class="set">장기 재고 2단계 (등록 후 일)${num_('al_old2', A.oldDays2, 10)}</label>
-    <label class="set">"최저가보다 비쌈"으로 볼 차이 (%)${num_('al_over', A.overMinPct)}</label><label class="set">수집이 오래됐다고 알릴 시간 (시간)${num_('al_stale', A.staleHours)}</label>
+    <label class="set">"최저가보다 비쌈"으로 볼 차이 (%)${num_('al_over', A.overMinPct)}</label><label class="set">"너무 싸게 팜"으로 볼 차이 (%) — 유효·첫 번째 최저가 기준${num_('al_cheap', A.cheapPct ?? 10)}</label>
+    <label class="set">등급 환산 계수 (같은 등급이 없을 때): 최상 · 상 · 중<input id="al_coef" value="${esc([(a.gradeCoef || APPSET_DEFAULT.gradeCoef)['최상'], (a.gradeCoef || APPSET_DEFAULT.gradeCoef)['상'], (a.gradeCoef || APPSET_DEFAULT.gradeCoef)['중']].join(', '))}"></label><label class="set">수집이 오래됐다고 알릴 시간 (시간)${num_('al_stale', A.staleHours)}</label>
     <label class="set">휴면 위험 단골: 최소 구매 횟수${num_('al_dmin', A.dormantMinOrders)}</label><label class="set">휴면 위험 단골: 마지막 구매 후 (일부터)${num_('al_dfrom', A.dormantFrom, 10)}</label><label class="set">휴면 위험 단골: (일까지)${num_('al_dto', A.dormantTo, 10)}</label>
     <label class="set">떠오르는 판매자: 최근 1개월 속도가 6개월 평균의 (배 이상)${num_('al_rise', A.risingFactor, 0.1)}</label>`, '홈·경영 탭의 알림과 목록이 이 값으로 걸러집니다.')}
   ${card('col', '⑨ 수집기 공통 (모든 PC의 상품 수집기)', `<label class="set">알라딘 요청 간격 (ms, 실제 대기는 이 값 ~ 1.6배)${num_('cs_delay', C.delayMs ?? 700, 100)}</label><label class="set">도서 정보·시장 지표 재확인 주기 (일, 0이면 매번 전체)${num_('cs_recheck', C.recheckDays ?? 7)}</label>
@@ -1767,11 +1804,13 @@ function renderSettings(m) {
   const readCfg = () => ({ vip: { minValue: +$('#c_vv').value || 0, maxRisk: +$('#c_vr').value || 0, minOrders: +$('#c_vo').value || 0, excludeSellers: $('#c_vs').checked }, caution: { minRisk: +$('#c_cr').value || 0 } });
   const cprev = () => { const saved = S.cfg; S.cfg = { ...S.cfg, ...readCfg() }; const all = [...S.customers.values()]; const nv = all.filter((x) => effFlag(x, 'vip').on).length; const nc = all.filter((x) => effFlag(x, 'caution').on).length; S.cfg = saved; $('#cfgprev').textContent = `이 기준이면 VIP ${num(nv)}명 · 주의고객 ${num(nc)}명`; };
   ['#c_vv', '#c_vr', '#c_vo', '#c_vs', '#c_cr'].forEach((k) => ($(k).oninput = cprev)); cprev();
-  $('#st_dev').onchange = (e) => { localStorage.setItem('rn-device', e.target.value.trim()); toast('이 기기 이름 저장'); renderMain(); };
+  $('#st_dev').onchange = async (e) => { const n = e.target.value.trim(); if (!n) return; try { await claimDeviceName(n); localStorage.setItem('rn-device', n); S.devOk = true; S.devConflict = null; toast(`이 기기 이름: ${n}`); } catch (er) { e.target.value = deviceName(); toast(er.message === 'TAKEN' ? `'${n}'은(는) 이미 다른 기기(${er.info.byName || ''}, ${String(er.info.ua || '').match(/iPhone|Android|Windows|Mac/) || ''})가 쓰는 이름입니다` : '저장 실패: ' + er.message); } renderMain(); };
+  const dl = $('#st_devlist'); if (dl) db.collection('app_devices').get().then((ss) => { const a = []; ss.forEach((d) => a.push({ id: d.id, ...d.data() })); dl.innerHTML = a.map((x) => `<div class="item" style="cursor:default"><span><b>${esc(x.name)}</b>${x.deviceId === deviceId() ? ' <span class="tag pl">이 기기</span>' : ''}<br><small>${esc(x.byName || '')} · ${esc(String(x.ua || '').match(/iPhone|iPad|Android|Windows|Macintosh|Linux/) || '')}</small></span>${adm && x.deviceId !== deviceId() ? `<button class="linkbtn" data-devdel="${esc(x.id)}">이름 풀기</button>` : ''}</div>`).join('') || '<div class="hint">등록된 기기 없음</div>';
+    dl.querySelectorAll('[data-devdel]').forEach((b) => (b.onclick = async () => { if (!confirm(`'${b.dataset.devdel}' 이름을 풀까요? 그 기기는 다음에 이름을 다시 정해야 하고, 다른 기기가 이 이름을 쓸 수 있게 됩니다.`)) return; await db.collection('app_devices').doc(b.dataset.devdel).delete(); renderMain(); })); }).catch(() => {});
   if (!adm) return;
   $('#st_def').onclick = () => { const D = APPSET_DEFAULT; $('#st_bands').value = D.priceBands.join(', '); $('#st_cost').value = D.costPerBook; $('#st_fee').value = D.feeRate * 100;
     $('#st_mh').value = D.seller.modelHigh; $('#st_ml').value = D.seller.modelLow; $('#st_gh').value = D.seller.gainHigh; $('#st_gl').value = D.seller.gainLow;
-    const DA = D.alerts; [['al_late', 'lateDays'], ['al_old1', 'oldDays1'], ['al_old2', 'oldDays2'], ['al_over', 'overMinPct'], ['al_stale', 'staleHours'], ['al_dmin', 'dormantMinOrders'], ['al_dfrom', 'dormantFrom'], ['al_dto', 'dormantTo'], ['al_rise', 'risingFactor']].forEach(([id, k]) => ($('#' + id).value = DA[k]));
+    const DA = D.alerts; [['al_late', 'lateDays'], ['al_old1', 'oldDays1'], ['al_old2', 'oldDays2'], ['al_over', 'overMinPct'], ['al_cheap', 'cheapPct'], ['al_stale', 'staleHours'], ['al_dmin', 'dormantMinOrders'], ['al_dfrom', 'dormantFrom'], ['al_dto', 'dormantTo'], ['al_rise', 'risingFactor']].forEach(([id, k]) => ($('#' + id).value = DA[k]));
     $('#c_vv').value = CFG_DEFAULT.vip.minValue; $('#c_vr').value = CFG_DEFAULT.vip.maxRisk; $('#c_vo').value = CFG_DEFAULT.vip.minOrders; $('#c_vs').checked = true; $('#c_cr').value = CFG_DEFAULT.caution.minRisk;
     $('#cs_delay').value = 700; $('#cs_recheck').value = 7; $('#cs_topn').value = 50; $('#cs_r6').value = 7; prev(); cprev(); toast('처음 값으로 채웠습니다. 저장을 눌러야 반영됩니다'); };
   $('#st_save').onclick = async () => {
@@ -1781,8 +1820,9 @@ function renderSettings(m) {
     const n = (id) => +$('#' + id).value;
     const main = { priceBands: B.length ? [...new Set(B)] : APPSET_DEFAULT.priceBands, costPerBook: Math.max(0, n('st_cost') || 0), feeRate: Math.max(0, (n('st_fee') || 0) / 100), adminDevices: L,
       seller: { modelHigh: n('st_mh'), modelLow: n('st_ml'), gainHigh: n('st_gh'), gainLow: n('st_gl') },
+      gradeCoef: (() => { const v = $('#al_coef').value.split(/[,\s]+/).map(Number).filter((x) => x > 0); return v.length === 3 ? { '최상': v[0], '상': v[1], '중': v[2] } : APPSET_DEFAULT.gradeCoef; })(),
       goals: { monthSales: Math.max(0, n('st_gm') || 0), dailyListing: Math.max(0, n('st_gl2') || 0), marginPct: Math.max(0, n('st_gp') || 0) },
-      alerts: { lateDays: n('al_late'), oldDays1: n('al_old1'), oldDays2: n('al_old2'), overMinPct: n('al_over'), staleHours: n('al_stale'), dormantMinOrders: n('al_dmin'), dormantFrom: n('al_dfrom'), dormantTo: n('al_dto'), risingFactor: n('al_rise') } };
+      alerts: { lateDays: n('al_late'), oldDays1: n('al_old1'), oldDays2: n('al_old2'), overMinPct: n('al_over'), cheapPct: n('al_cheap'), staleHours: n('al_stale'), dormantMinOrders: n('al_dmin'), dormantFrom: n('al_dfrom'), dormantTo: n('al_dto'), risingFactor: n('al_rise') } };
     const pur = { msTotalCost: n('ps_mscost') || 0, msTotalBooks: n('ps_msn') || 0, msKeepRatio: Math.min(1, Math.max(0, (n('ps_mskeep') || 0) / 100)), includeMunjeong: $('#ps_mj').checked, excludeExistingFromUnit: $('#ps_ex').checked };
     const col = { delayMs: Math.max(300, n('cs_delay') || 700), recheckDays: Math.max(0, Math.round(n('cs_recheck'))), topN: Math.max(5, Math.round(n('cs_topn') || 50)), rev6mDays: Math.max(1, Math.round(n('cs_r6') || 7)) };
     const who = { updatedBy: S.user.email, updatedByName: S.user.displayName || S.user.email, updatedAt: TS() };
@@ -1819,7 +1859,7 @@ const WIDGETS = {
     return `<div class="mgrid">${mcell(p(T.good) + '%', '만족률', `만족 ${num(T.good)} · 보통 ${T.mid} · 불만족 ${T.bad}`)}${mcell(num(byC.size) + '명', '평가한 고객', `구매평 ${num(n)}건`)}${mcell(w.length ? Math.round((low / w.length) * 1000) / 10 + '%' : '-', '최근 30일 보통·불만족', `평가 ${w.length}건`)}</div><div class="sc" style="margin-top:8px"><button data-go="search" data-cv2="reviews">평가 참여 자세히</button></div>`; }],
   shortcuts: ['바로가기', () => `<div class="sc">${[['search', '고객'], ['flags', '표시 고객'], ['products', '상품'], ['sellers', '판매자'], ['orders', '주문·매출'], ['purchase', '매입'], ['biz', '경영'], ['pending', '연결 확정'], ['settings', '설정']].map(([k, l]) => `<button data-go="${k}">${l}</button>`).join('')}</div>`],
 };
-const HOME_DEFAULT = ['alerts', 'pace', 'goal', 'margin', 'purUnit', 'purRecover', 'purMonth', 'jobs', 'sales', 'cust', 'reviews', 'inv', 'topBooks', 'topCust', 'sellers', 'shortcuts'];
+const HOME_DEFAULT = ['alerts', 'pace', 'goal', 'cheapValid', 'cheapFirst', 'margin', 'purUnit', 'purRecover', 'purMonth', 'jobs', 'sales', 'cust', 'reviews', 'inv', 'topBooks', 'topCust', 'sellers', 'shortcuts'];
 function homeLayout(mode) {
   const adm = (S.homeAdmin && S.homeAdmin.widgets) || HOME_DEFAULT;
   if (mode === 'admin') return adm.filter((k) => WIDGETS[k]);
@@ -2190,6 +2230,27 @@ function bizCalc() {
   const reg7 = regSince(7), reg30 = regSince(30), regToday = [...S.plist.values()].filter((l) => String(l.registeredAt || '').slice(0, 10) === td).reduce((a, l) => a + (l.qty || 1), 0);
   const AL = S.app.alerts || APPSET_DEFAULT.alerts; const old365 = act.filter((l) => ageDays(l.registeredAt) > AL.oldDays2); const old180 = act.filter((l) => ageDays(l.registeredAt) > AL.oldDays1);
   // 가격 경쟁력 (도서 정보·시장 지표를 받은 상품만)
+  // 너무 싸게 파는 상품 (이익을 놓치는 중): 시장 지표의 온라인 중고 첫 페이지 기준, 배송비 포함 비교
+  //  유효 최저가(잠정) = 같은 등급의 유효 상품 중 최저 (가격+배송비). 유효 = 허위 매물·불량 판매자가 아닌 판매자 + 알라딘측.
+  //    같은 등급이 없으면 등급 환산 계수(최상 1.0·상 0.9·중 0.75)로 환산. 판정 엔진이 붙으면 그 결과로 바뀜.
+  //  첫 번째 최저가 = 목록 맨 위 상품(우리 제외)
+  const cheapK = 1 - ((AL.cheapPct ?? 10) / 100); const coef = S.app.gradeCoef || APPSET_DEFAULT.gradeCoef; const scMap = S.sellersLoaded ? scores() : null;
+  const ourShipDef = S.policy && S.policy.current ? S.policy.current.fee || 0 : 0; const cheapV = [], cheapF = []; let cmpN = 0;
+  const bad = (code) => { if (!code) return false; const sl = S.sellers.get('sc_' + code); if (!sl) return false; if ((sl.ourGrade || sl.grade) === 'fake') return true; const x = scMap && scMap.get(sl.id); return !!(x && x.mcls === 'bad'); };
+  for (const l of act) {
+    const m = l.bookId ? S.pmetrics.get(l.bookId) : null; const rows = m && m.usedFirstPage; if (!rows || !rows.length || !l.price) continue;
+    const mine = rows.find((x) => (l.usedCode && x.usedCode === l.usedCode) || (l.listingId && x.listingId && String(x.listingId) === String(l.listingId)));
+    const ours = l.price + (mine && mine.ship != null ? mine.ship : ourShipDef);
+    const others = rows.filter((x) => x !== mine && x.sellerCode !== '996008' && !x.soldOut && x.price); if (!others.length) continue; cmpN++;
+    const tot = (x) => x.price + (x.ship || 0);
+    const valid = others.filter((x) => !bad(x.sellerCode)); const same = valid.filter((x) => x.grade === l.grade);
+    let ref = null, refRow = null, how = '';
+    if (same.length) { refRow = same.reduce((a, b) => (tot(b) < tot(a) ? b : a)); ref = tot(refRow); how = '같은 등급'; }
+    else if (valid.length && coef[l.grade]) { let best = null; valid.forEach((x) => { const c = coef[x.grade]; if (!c) return; const v = tot(x) * (coef[l.grade] / c); if (best == null || v < best) { best = v; refRow = x; } }); if (best != null) { ref = Math.round(best); how = `${refRow.grade} → ${l.grade} 환산`; } }
+    if (ref && ours <= ref * cheapK) cheapV.push({ l, ours, ref, gap: 1 - ours / ref, who: refRow.sellerName || '', how });
+    const f = others[0]; const fr = tot(f); if (fr && ours <= fr * cheapK) cheapF.push({ l, ours, ref: fr, gap: 1 - ours / fr, who: f.sellerName || '', how: `첫 번째 · ${f.grade || ''}` });
+  }
+  cheapV.sort((a, b) => b.gap - a.gap); cheapF.sort((a, b) => b.gap - a.gap);
   const feeR = S.app.feeRate || 0.1; let checked = 0, cheapest = 0, over30 = 0; const underBuy = []; const gaps = [];
   for (const l of act) {
     const m = l.bookId ? S.pmetrics.get(l.bookId) : null; if (!m) continue; checked++;
@@ -2208,7 +2269,7 @@ function bizCalc() {
   const myRank = me && rev6(me) ? ranked.findIndex((s) => s.id === me.id) + 1 : null;
   const X = S.pur.loaded ? purStats() : null;
   const lastBulk = S.jobs && S.jobs.lastBulk ? S.jobs.lastBulk : null;
-  S._biz = { td, T, Y, W7, W7p, M, PM, forecast, dim, el, G, uc, fee, ship, shipKnown, cogs, contrib, invQty, invVal, S30, sellThru, dsi, reg7, reg30, regToday, old365, old180, checked, cheapest, over30, underBuy, gaps, rv30, bad7, unanswered, late, me, myRank, ranked, X, lastBulk };
+  S._biz = { cheapV, cheapF, cmpN, td, T, Y, W7, W7p, M, PM, forecast, dim, el, G, uc, fee, ship, shipKnown, cogs, contrib, invQty, invVal, S30, sellThru, dsi, reg7, reg30, regToday, old365, old180, checked, cheapest, over30, underBuy, gaps, rv30, bad7, unanswered, late, me, myRank, ranked, X, lastBulk };
   S._bizAt = Date.now(); return S._biz;
 }
 function bizAlerts(B) {
@@ -2217,6 +2278,7 @@ function bizAlerts(B) {
   if (B.unanswered && B.unanswered.length) add('red', `답하지 않은 문의 ${B.unanswered.length}건 (최근 30일)`, 'search');
   if (B.bad7.length) add('red', `최근 7일 불만족 평가 ${B.bad7.length}건`, 'search:reviews');
   if (B.underBuy.length) add('amber', `알라딘 매입가보다 싸게 파는 상품 ${B.underBuy.length}개 — 알라딘에 파는 게 더 이득`, 'biz');
+  if (B.cheapV.length) add('amber', `유효 최저가보다 ${(S.app.alerts || {}).cheapPct ?? 10}% 이상 싸게 파는 상품 ${B.cheapV.length}종 — 이익을 놓치는 중`, 'biz');
   if (B.G.monthSales && B.forecast < B.G.monthSales) add('amber', `이번 달 예상 매출 ${won(Math.round(B.forecast))} — 목표 ${won(B.G.monthSales)}에 ${won(Math.round(B.G.monthSales - B.forecast))} 모자람`, 'biz');
   if (B.G.dailyListing && B.regToday < B.G.dailyListing) add('amber', `오늘 등록 ${num(B.regToday)}권 — 목표 ${num(B.G.dailyListing)}권`, 'products');
   if (B.old365.length) add('amber', `${(S.app.alerts || {}).oldDays2 || 365}일 넘은 재고 ${num(B.old365.reduce((a, l) => a + (l.qty || 1), 0))}권 — 가격 조정·정리 대상`, 'products');
@@ -2234,6 +2296,10 @@ function paceHtml(B) {
   const g = B.G.monthSales; const pct = g ? Math.round((B.forecast / g) * 100) : null;
   return `<div class="mgrid">${mcell(won(B.T.amt), '오늘 매출', `${B.T.n}건 · ${B.T.qty}권 · 어제 ${won(B.Y.amt)}`)}${mcell(won(B.W7.amt), '최근 7일', (grow(B.W7.amt, B.W7p.amt) ? `전 7일 대비 ${grow(B.W7.amt, B.W7p.amt)}` : `전 7일 ${won(B.W7p.amt)}`))}${mcell(won(B.M.amt), '이번 달 누적', `지난달 같은 기간 ${won(B.PM.amt)}${grow(B.M.amt, B.PM.amt) ? ` (${grow(B.M.amt, B.PM.amt)})` : ''}`)}${mcell(won(Math.round(B.forecast)), '이번 달 예상', g ? `목표 ${won(g)}의 ${pct}%` : '설정에서 월 목표를 넣으면 달성률 표시')}</div>${spark14()}<div class="hint" style="margin:2px 0 0">최근 14일 매출 (오른쪽 끝이 오늘)</div>`;
 }
+function cheapList(arr, key) {
+  const pct = (S.app.alerts || {}).cheapPct ?? 10;
+  return `<details class="cheapd"${arr.length ? '' : ' disabled'}><summary><b>${num(arr.length)}종</b> — 펼쳐서 상품 보기</summary><div class="list">${fold('cheap_' + key, arr.map((x) => `<button class="item" data-pid="${esc(x.l.id)}"><span>${esc(x.l.title || '')} <span class="tag pl">${esc(x.l.grade || '')}</span> ${usedBtn(x.l)}<br><small>기준 ${esc(x.who)} (${esc(x.how)})</small></span><span style="text-align:right">우리 ${won(x.ours)}<br><small>기준 ${won(x.ref)} · <b style="color:var(--red)">${Math.round(x.gap * 100)}% 쌈</b></small></span></button>`)) || '<div class="empty">없음</div>'}</div></details><p class="hint" style="margin:4px 0 0">가격+배송비로 비교, ${pct}% 이상 싸면 표시 (설정 ⑧에서 변경)</p>`;
+}
 function renderBiz(m) {
   if (!S.ordersLoaded) { m.innerHTML = '<div class="empty">주문 기록을 받는 중</div>'; return; }
   loadProducts(); loadMetrics(); if (!S.pur.loaded) loadPur().then(() => S.tab === 'biz' && renderMain()); if (!Array.isArray(S.qnaAll)) loadQnaAll(); if (!S.sellersLoaded) syncSellers().then(() => S.tab === 'biz' && renderMain()).catch(() => {});
@@ -2248,7 +2314,9 @@ function renderBiz(m) {
   ${sec('bz_inv', '④ 재고 건강', `<div class="mgrid">${mcell(num(B.invQty) + '권', '재고', `판매가 ${won(B.invVal)} · 원가 약 ${won(Math.round(B.invQty * B.uc))}`)}${mcell(pc(B.S30.qty, B.S30.qty + B.invQty), '30일 판매율 (sell-through)', `30일 판매 ${num(B.S30.qty)}권`)}${mcell(B.dsi ? num(Math.round(B.dsi)) + '일' : '-', '재고 소진 일수 (DSI)', '지금 속도로 다 팔리는 데 걸리는 날')}${mcell(num(B.old180.reduce((a, l) => a + (l.qty || 1), 0)) + '권', '180일 넘은 재고', `1년 넘음 ${num(B.old365.reduce((a, l) => a + (l.qty || 1), 0))}권`)}</div>
     <div class="mgrid" style="margin-top:8px">${mcell(num(B.regToday) + '권', '오늘 등록', B.G.dailyListing ? `목표 ${num(B.G.dailyListing)}권` : '설정에서 일 등록 목표')}${mcell(num(Math.round(B.reg7 / 7)) + '권/일', '최근 7일 등록 속도', `판매 속도 ${num(Math.round(B.W7.qty / 7))}권/일`)}${mcell((B.reg30 - B.S30.qty >= 0 ? '+' : '') + num(B.reg30 - B.S30.qty) + '권', '30일 재고 순증감', `등록 ${num(B.reg30)} − 판매 ${num(B.S30.qty)}`)}${mcell(B.X ? num(Math.max(0, Math.round(B.X.msKeep - (B.X.G.ms.active + B.X.G.ms.sold)))) + '권' : '-', '김미소책방 남은 등록 (가정)', '매입 설정의 남길 비율 기준')}</div>` + why('재고는 현금이 묶인 것입니다. 판매율이 낮고 오래된 재고가 늘면 등록보다 가격 조정이 먼저입니다. 등록 속도 > 판매 속도면 재고가 쌓이는 중.'), true)}
   ${sec('bz_price', '⑤ 가격 경쟁력', (B.checked ? `<div class="mgrid">${mcell(pc(B.cheapest, B.checked), '최저가 이하로 파는 비율', `시장 지표 받은 ${num(B.checked)}종 기준`)}${mcell(med ? (med * 100).toFixed(0) + '%' : '-', '최저가 대비 우리 가격 (중앙값)', '100%면 최저가와 같음')}${mcell(num(B.over30) + '종', '최저가보다 30% 넘게 비쌈', '안 팔리는 이유일 수 있음')}${mcell(num(B.underBuy.length) + '종', '알라딘 매입가보다 쌈', '수수료 떼면 알라딘에 파는 게 이득')}</div>
-    ${B.underBuy.length ? `<div class="list" style="margin-top:8px">${fold('bz_under', B.underBuy.sort((a, b) => b.bb - b.l.price * 0.9 - (a.bb - a.l.price * 0.9)).map(({ l, bb }) => `<button class="item" data-pid="${esc(l.id)}"><span>${esc(l.title)} <span class="tag pl">${esc(l.grade || '')}</span></span><span>판매가 ${won(l.price)} · 알라딘 매입가 ${won(bb)}</span></button>`))}</div>` : ''}` : '<div class="hint" style="margin:0">상품 수집기에서 "도서 정보·시장 지표 갱신"을 돌리면 나타납니다</div>') + why('판정 엔진이 붙기 전까지 가격의 기준선입니다: 알라딘 매입가 아래로는 팔 이유가 없고, 최저가보다 너무 비싸면 안 팔립니다.'), true)}
+    <div class="two" style="margin-top:10px"><div class="card" style="margin:0"><h3>유효 최저가보다 ${(S.app.alerts || {}).cheapPct ?? 10}% 이상 쌈</h3>${cheapList(B.cheapV, 'v')}<p class="hint" style="margin:4px 0 0">유효 최저가(잠정): 같은 등급 유효 상품 최저. 허위 매물·불량 판매자 제외, 판정 엔진이 붙으면 바뀜</p></div>
+    <div class="card" style="margin:0"><h3>첫 번째 최저가보다 ${(S.app.alerts || {}).cheapPct ?? 10}% 이상 쌈</h3>${cheapList(B.cheapF, 'f')}<p class="hint" style="margin:4px 0 0">온라인 중고 목록 맨 위 상품(우리 제외) 기준</p></div></div>
+    ${B.underBuy.length ? `<div class="list" style="margin-top:8px">${fold('bz_under', B.underBuy.sort((a, b) => b.bb - b.l.price * 0.9 - (a.bb - a.l.price * 0.9)).map(({ l, bb }) => `<button class="item" data-pid="${esc(l.id)}"><span>${esc(l.title)} <span class="tag pl">${esc(l.grade || '')}</span> ${usedBtn(l)}</span><span>판매가 ${won(l.price)} · 알라딘 매입가 ${won(bb)}</span></button>`))}</div>` : ''}` : '<div class="hint" style="margin:0">상품 수집기에서 "도서 정보·시장 지표 갱신"을 돌리면 나타납니다</div>') + why('판정 엔진이 붙기 전까지 가격의 기준선입니다: 알라딘 매입가 아래로는 팔 이유가 없고, 최저가보다 너무 비싸면 안 팔립니다.'), true)}
   ${sec('bz_cust', '⑥ 고객·평판', `<div class="mgrid">${mcell(B.rv30.length ? pc(B.rv30.filter((r) => r._r === 'good').length, B.rv30.length) : '-', '만족률 (30일)', `평가 ${B.rv30.length}건`)}${mcell(num(B.bad7.length) + '건', '불만족 (7일)', '바로 연락·환불 판단')}${mcell(B.unanswered ? num(B.unanswered.length) + '건' : '…', '미답변 문의 (30일)', '답이 늦으면 구매 포기')}${mcell(num(B.W7.retC.size) + ' / ' + num(B.W7.cust.size) + '명', '재구매 고객 (7일)', `신규 ${num(B.W7.newC.size)}명`)}</div>
     <div class="mgrid" style="margin-top:8px">${mcell(pctv(B.M.cq, B.M.qty + B.M.cq + B.M.rq) + '%', '고객 취소율 (이번 달)', '')}${mcell(pctv(B.M.rq, B.M.qty + B.M.rq) + '%', '반품률 (이번 달)', '검수·상태 표기 점검')}${mcell(num(B.late.length) + '건', '출고 기록 없음 (2일+)', '')}${mcell(cohort().rate90 + '%', '90일 재구매율', '단골이 늘고 있는가')}</div>` + why('중고책은 같은 책이 여러 판매자에게 있어 평점·응답 속도가 선택을 가릅니다.'), true)}
   ${sec('bz_market', '⑦ 시장 위치', (B.me && rev6(B.me) ? `<div class="mgrid">${mcell(num(rev6(B.me)) + '건', '우리 최근 6개월 평가', '판매량의 대리 지표')}${mcell(B.myRank ? B.myRank + '위' : '-', '평가 수 순위 (6개월)', `평가 수를 아는 ${num(B.ranked.length)}곳 중`)}${mcell(B.ranked[0] ? num(rev6(B.ranked[0])) + '건' : '-', '1위 판매자', esc(B.ranked[0] ? B.ranked[0].name : ''))}${mcell(B.myRank > 1 ? num(rev6(B.ranked[B.myRank - 2]) - rev6(B.me)) + '건' : '-', '바로 윗 순위와 차이', B.myRank > 1 ? esc(B.ranked[B.myRank - 2].name) : '')}</div>` : '<div class="hint" style="margin:0">상품 수집기의 "6개월 평가 수 수집"이 우리 가게(북스킹)까지 모으면 나타납니다</div>') + why('업계 최고를 목표로 하면 우리 매출이 아니라 경쟁자 대비 순위를 봐야 합니다.'), true)}
@@ -2295,9 +2363,11 @@ Object.assign(WIDGETS, {
   invHealth: ['재고 회전', () => { const n = wNeed(); if (n) return n; const B = bizCalc(); return `<div class="mgrid">${mcell(Math.round(B.sellThru * 1000) / 10 + '%', '30일 판매율', `30일 판매 ${num(B.S30.qty)}권`)}${mcell(B.dsi ? num(Math.round(B.dsi)) + '일' : '-', '재고 소진 일수', `재고 ${num(B.invQty)}권`)}${mcell(num(B.old180.reduce((a, l) => a + (l.qty || 1), 0)) + '권', '180일 넘은 재고', '')}${mcell((B.reg30 - B.S30.qty >= 0 ? '+' : '') + num(B.reg30 - B.S30.qty), '30일 순증감', '등록 − 판매')}</div>`; }, '재고·가격', '재고가 돌고 있는가'],
   listPace: ['등록 속도', () => { const n = wNeed(); if (n) return n; const B = bizCalc(); const g = B.G.dailyListing; return `<div class="mgrid">${mcell(num(B.regToday) + '권', '오늘 등록', g ? `목표 ${num(g)}권` : '')}${mcell(num(Math.round(B.reg7 / 7)) + '권/일', '7일 평균 등록', `판매 ${num(Math.round(B.W7.qty / 7))}권/일`)}</div>${g ? pbar(B.regToday, g) : ''}`; }, '재고·가격', '오늘 등록 목표와 속도'],
   oldStock: ['오래된 재고 TOP 5', () => { const n = wNeed(); if (n) return n; const a = [...S.plist.values()].filter((l) => l.active && l.registeredAt).sort((x, y) => String(x.registeredAt).localeCompare(String(y.registeredAt))).slice(0, 5);
-    return wl(a.map((l) => `<li data-pid="${esc(l.id)}"><span>${esc(l.title || '')}</span><b>${num(ageDays(l.registeredAt))}일 · ${won(l.price)}</b></li>`)); }, '재고·가격', '가격 조정 1순위'],
+    return wl(a.map((l) => `<li data-pid="${esc(l.id)}"><span>${esc(l.title || '')} ${usedBtn(l)}</span><b>${num(ageDays(l.registeredAt))}일 · ${won(l.price)}</b></li>`)); }, '재고·가격', '가격 조정 1순위'],
   priceWatch: ['가격 경고', () => { const n = wNeed(); if (n) return n; loadMetrics(); if (!S.pmLoaded) return wWait('시장 지표를 받는 중'); const B = bizCalc(); if (!B.checked) return wWait('상품 수집기의 "도서 정보·시장 지표 갱신" 뒤에 나타납니다');
-    return `<div class="mgrid">${mcell(num(B.underBuy.length) + '종', '알라딘 매입가보다 쌈', '알라딘에 파는 게 이득')}${mcell(num(B.over30) + '종', '최저가보다 30%↑', '안 팔리는 이유일 수 있음')}</div>${wl(B.underBuy.slice(0, 4).map(({ l, bb }) => `<li data-pid="${esc(l.id)}"><span>${esc(l.title)}</span><b>${won(l.price)} → 매입가 ${won(bb)}</b></li>`))}`; }, '재고·가격', '손해 보는 가격, 너무 비싼 가격'],
+    return `<div class="mgrid">${mcell(num(B.underBuy.length) + '종', '알라딘 매입가보다 쌈', '알라딘에 파는 게 이득')}${mcell(num(B.over30) + '종', '최저가보다 30%↑', '안 팔리는 이유일 수 있음')}</div>${wl(B.underBuy.slice(0, 4).map(({ l, bb }) => `<li data-pid="${esc(l.id)}"><span>${esc(l.title)} ${usedBtn(l)}</span><b>${won(l.price)} → 매입가 ${won(bb)}</b></li>`))}`; }, '재고·가격', '손해 보는 가격, 너무 비싼 가격'],
+  cheapValid: ['유효 최저가보다 싼 상품', () => { const n = wNeed(); if (n) return n; loadMetrics(); if (!S.pmLoaded) return wWait('시장 지표를 받는 중'); const B = bizCalc(); if (!B.cmpN) return wWait('상품 수집기의 "도서 정보·시장 지표 갱신" 뒤에 나타납니다'); return cheapList(B.cheapV, 'hv'); }, '재고·가격', '이익을 놓치는 상품 (유효 최저가 기준)'],
+  cheapFirst: ['첫 번째 최저가보다 싼 상품', () => { const n = wNeed(); if (n) return n; loadMetrics(); if (!S.pmLoaded) return wWait('시장 지표를 받는 중'); const B = bizCalc(); if (!B.cmpN) return wWait('상품 수집기의 "도서 정보·시장 지표 갱신" 뒤에 나타납니다'); return cheapList(B.cheapF, 'hf'); }, '재고·가격', '목록 맨 위보다 너무 싸게 파는 상품'],
   typeMix: ['상품 유형별 (이번 달)', () => { const n = wNeed(); if (n) return n; const T = typeSales(rangeOf('month', 0)); const I = {}; for (const l of S.plist.values()) if (l.active) { const t = mtOfListing(l).type; I[t] = (I[t] || 0) + (l.qty || 1); }
     return `<table class="tbl"><tr><th>유형</th><th>매출</th><th>판매</th><th>재고</th></tr>${MT_KEYS.map((k) => `<tr><td>${MT_LABEL[k]}</td><td>${won(T[k].amt)}</td><td>${num(T[k].qty)}</td><td>${num(I[k] || 0)}</td></tr>`).join('')}</table>`; }, '재고·가격', '책·영상·음반·기타 비중'],
   priceBand: ['가격대별 판매 (최근 30일)', () => { const n = wNeed(); if (n) return n; const m = Object.fromEntries(bandKeys().map((k) => [k, 0])); const r = rangeOf('r30', 0); for (const o of S.orders.values()) { if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue; for (const it of o.items || []) if (it.lineStatus === 'normal') m[bandOf(it.price || 0)] += it.qty || 1; } const tot = Object.values(m).reduce((a, b) => a + b, 0) || 1;
@@ -2469,7 +2539,7 @@ firebase.auth().onAuthStateChanged(async (u) => {
   if (os0.length) { os0.forEach((v) => { v._sk = orderKey(v); S.orders.set(v.id, v); }); S.ordersLoaded = true; } bump();
   shell(); if (IDB.off) setSync(IDB.off);
   const hm = location.hash.match(/#c=([^&]+)/); if (hm) { history.replaceState(null, '', location.pathname); openCustomer(decodeURIComponent(hm[1])); }
-  watchPending(); watchConfig(); watchAcct(); watchJobs(); watchRemote(); watchAppSettings(); watchRunStatus();
+  watchPending(); watchConfig(); watchAcct(); watchJobs(); watchRemote(); watchAppSettings(); watchRunStatus(); verifyDevice();
   // 네트워크: 고객·주문은 나란히, 나머지는 그다음 (처음 한 번만 전체, 이후엔 바뀐 것만)
   const custP = syncCustomers().catch((e) => setSync(e.code === 'permission-denied' ? '권한 없음: 등록된 계정이 아닙니다' : '연결 실패: 기기에 저장된 내용 표시 중'));
   const ordP = (async () => { try { if (!S.ordersLoaded) setSync('주문 기록 받는 중 (처음 한 번)'); await syncOrders(true); setSync(); } catch (e) { S.ordersBusy = false; setSync('주문 기록 받기 실패: 나중에 다시 시도합니다'); } })();
