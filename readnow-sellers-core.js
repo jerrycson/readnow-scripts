@@ -7,7 +7,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '1.1.0';
+  const VERSION = '1.2.0';
   const DEFAULT_THRESHOLDS = { modelHigh: 70, modelLow: 35, gainHigh: 60, gainLow: 40 };
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const numK = (v) => { if (v == null || v === '') return null; if (typeof v === 'number') return Number.isFinite(v) ? v : null; const n = parseFloat(String(v).replace(/[^\d.\-]/g, '')); return Number.isFinite(n) ? n : null; };
@@ -106,11 +106,34 @@
   // 날짜별 [만족, 보통, 불만족] 묶음 → 기간별 합계
   function reviewStats(days, now) {
     const t = now || Date.now(); const ds = (n) => new Date(t - n * 864e5).toISOString().slice(0, 10);
-    const cut = { d7: ds(7), d30: ds(30), d90: ds(90), d365: ds(365) }; const st = { d7: 0, d30: 0, d90: 0, d365: 0, total: 0, good: 0, mid: 0, bad: 0, first: null, last: null };
+    const cut = { d7: ds(7), d30: ds(30), d90: ds(90), d180: ds(180), d365: ds(365) }; const st = { d7: 0, d30: 0, d90: 0, d180: 0, d365: 0, total: 0, good: 0, mid: 0, bad: 0, first: null, last: null };
     for (const [d, v] of Object.entries(days || {})) { const n = (v[0] || 0) + (v[1] || 0) + (v[2] || 0); st.total += n; st.good += v[0] || 0; st.mid += v[1] || 0; st.bad += v[2] || 0;
       for (const k of Object.keys(cut)) if (d > cut[k]) st[k] += n; if (!st.first || d < st.first) st.first = d; if (!st.last || d > st.last) st.last = d; }
     return st;
   }
-  const api = { VERSION, DEFAULT_THRESHOLDS, normalize, score, linkLevel, quadrant, modelReasons, gainReasons, fromTooltip, MODEL_TXT, GAIN_TXT, GAIN_SHORT, parseSurveyPage, reviewStats };
+  // 판매자 숍 첫 화면의 '구매 만족도' 표 → 기간별 평점·평가 수 (최근 6개월 평가 수가 판매량을 가늠하는 핵심 값)
+  function parseShopSummary(doc) {
+    const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
+    const periods = {};
+    doc.querySelectorAll('tr').forEach((tr) => {
+      const cells = [...tr.children].map(txt); if (!cells.length) return;
+      const label = cells.find((c) => /^(최근\s*\d+\s*(개월|주|일)|전체\s*기간)$/.test(c)); if (!label) return;
+      const rest = cells.slice(cells.indexOf(label) + 1);
+      const rating = rest.find((c) => /^[\d.]+\s*%$/.test(c)); const count = rest.find((c) => /^[\d,]+$/.test(c));
+      if (rating || count) periods[label.replace(/\s+/g, ' ')] = { rating: rating ? parseFloat(rating) / 100 : null, count: count ? parseInt(count.replace(/,/g, ''), 10) : null };
+    });
+    let rev6m = periods['최근 6개월'] ? periods['최근 6개월'].count : null;
+    if (rev6m == null) { const m = (doc.body ? doc.body.textContent : '').match(/최근\s*6\s*개월,?\s*([\d,]+)\s*개\s*평가/); if (m) rev6m = parseInt(m[1].replace(/,/g, ''), 10); }
+    return { periods, rev6m, total: periods['전체 기간'] ? periods['전체 기간'].count : null };
+  }
+  // 최근 6개월 평가 수: 숍 화면 값(가장 정확) → 모은 평가(6개월 이상 모았을 때) → 툴팁 기록 → 구글 시트
+  function rev6m(s) {
+    if (s.rev6m != null) return { n: s.rev6m, src: '숍 화면', at: s.rev6mAt || null };
+    const st = s.reviewStats; if (st && st.d180 != null && (st.complete || (st.first && st.first <= new Date(Date.now() - 180 * 864e5).toISOString().slice(0, 10)))) return { n: st.d180, src: '모은 평가', at: st.at || null };
+    const tc = numK(s.reviewCount); if (tc != null) return { n: tc, src: '툴팁 기록', at: s.lastFetchedAt || null };
+    const sh = numK(s.reviews6m ?? (s.sheet && s.sheet.reviews6m)); if (sh != null) return { n: sh, src: '구글 시트', at: null };
+    return { n: null, src: null, at: null };
+  }
+  const api = { VERSION, DEFAULT_THRESHOLDS, normalize, score, linkLevel, quadrant, modelReasons, gainReasons, fromTooltip, MODEL_TXT, GAIN_TXT, GAIN_SHORT, parseSurveyPage, reviewStats, parseShopSummary, rev6m };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowSellers = api;
 })(typeof window !== 'undefined' ? window : this);
