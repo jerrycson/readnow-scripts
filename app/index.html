@@ -179,6 +179,32 @@ em.up,em.dn{font-style:normal;font-size:11.5px;font-weight:700;margin-left:4px}e
 .prow{display:flex;gap:10px;align-items:flex-start}.pth{width:44px;height:62px;object-fit:cover;border-radius:4px;background:var(--soft);flex:none}.pth.none{display:block}.pbody{min-width:0;flex:1;display:block}.pbody .l1,.pbody .l2{display:flex}
 .pimgs{display:flex;gap:8px;overflow-x:auto;padding:10px 12px 0}.pimgs img{height:220px;border-radius:6px;background:var(--soft);flex:none}
 @media (min-width:760px){.stats{grid-template-columns:repeat(4,1fr)} body{font-size:15px}}
+.top h1.homelink{cursor:pointer;display:inline-block}
+.top .jobs{font-size:11.5px;margin-top:2px}.top .jobs .job{display:flex;align-items:center;gap:6px;margin-top:2px}.top .jobs em.dn{color:#FFD2CC}
+.job .jbar{flex:none;width:46px;height:5px;border-radius:3px;background:rgba(255,255,255,.3);overflow:hidden}.job .jbar i{display:block;height:100%;background:#fff}
+.job .jspin{flex:none;width:8px;height:8px;border-radius:50%;background:#FFE08A}
+.job.big{display:block;padding:6px 0;border-top:1px solid var(--line);font-size:13px}.job.big:first-child{border-top:0}.job.big .jbar{display:block;width:100%;height:6px;background:var(--soft);margin-bottom:4px}.job.big .jbar i{background:var(--cloth)}
+.rwhy{display:block;font-size:11px;color:var(--sub);font-weight:400;white-space:normal;line-height:1.35}
+.rk li .rnm{white-space:normal}
+.axis{margin:0 0 14px;padding:8px 8px 2px;border-radius:10px}.axis .axh{display:flex;flex-direction:column;margin:0 2px 8px}.axis .axh b{font-size:14px}.axis .axh span{font-size:11.5px;color:var(--sub)}
+.axis.model{background:#F1F1FA;border:1.5px solid #C9CAE6}.axis.model .axh b{color:#4B4E9E}
+.axis.gain{background:#F2F8F4;border:1.5px dashed #9CC7AC}.axis.gain .axh b{color:#2F7D4F}
+.axis.plain{background:none;padding:0}
+.rk.model.good{border-top:4px solid #4B4E9E}.rk.model.good h4{color:#4B4E9E}.rk.model.good .rn{background:#E4E5F5;color:#4B4E9E}
+.rk.model.bad{border-top:4px solid #3A3A3A}.rk.model.bad h4{color:#3A3A3A}.rk.model.bad .rn{background:#3A3A3A;color:#fff}
+.rk.gain.good{border-top:4px solid #2F7D4F}.rk.gain.good h4{color:#2F7D4F}.rk.gain.good .rn{background:#DDEFE3;color:#2F7D4F}.rk.gain.good .rv{color:#2F7D4F}
+.rk.gain.bad{border-top:4px solid var(--red)}.rk.gain.bad h4{color:var(--red)}.rk.gain.bad .rn{background:var(--redSoft);color:var(--red)}.rk.gain.bad .rv{color:var(--red)}
+.mb,.gb{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;padding:1px 7px;margin-left:4px;white-space:nowrap}
+.mb{border:1.5px solid #4B4E9E;color:#4B4E9E;border-radius:4px;background:#fff}.mb.bad{border-color:#3A3A3A;background:#3A3A3A;color:#fff}.mb.mid,.mb.na{border-color:#B9BAD6;color:#6E7098}
+.gb{border-radius:999px;background:#EEF1F3;color:#56636C}.gb.good{background:#2F7D4F;color:#fff}.gb.bad{background:var(--red);color:#fff}
+.quad{margin-top:8px;padding:7px 10px;border-radius:8px;background:var(--bg);font-weight:700;font-size:13px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:520px){.two{grid-template-columns:1fr}}
+.homebar{display:flex;justify-content:space-between;align-items:center;gap:8px}.btn.sm{padding:7px 12px;font-size:13px}
+.wcard h3{margin-bottom:8px}.wl{list-style:none;margin:0;padding:0}.wl li{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-top:1px solid var(--line);font-size:13.5px;cursor:pointer}.wl li:first-child{border-top:0}.wl li span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.axis.mini{padding:6px 8px;margin:0 0 8px}
+.sc{display:flex;flex-wrap:wrap;gap:6px}.sc button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 11px;color:var(--cloth);font-weight:600}
+.hrow{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--line)}.hrow:first-of-type{border-top:0}.hrow button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 9px;margin-left:4px;color:var(--cloth)}
+label.set{display:block;font-size:13px;color:var(--sub);margin-top:8px}label.set input{display:block;width:100%;margin-top:4px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-size:14px}
 </style>
 </head>
 <body>
@@ -190,12 +216,12 @@ em.up,em.dn{font-style:normal;font-size:11.5px;font-weight:700;margin-left:4px}e
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.8.2 (고객·주문·상품, 평가 참여)
+/* 리드나우 웹앱 v0.9.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.8.2';
+const APP_VER = '0.9.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -220,7 +246,7 @@ const idbAll = (s) => idbReq(IDB.db.transaction(s).objectStore(s).getAll());
 const idbGet = (s, k) => idbReq(IDB.db.transaction(s).objectStore(s).get(k));
 const idbPut = (s, arr) => new Promise((res, rej) => { const t = IDB.db.transaction(s, 'readwrite'); const st = t.objectStore(s); arr.forEach((o) => st.put(o)); t.oncomplete = res; t.onerror = () => rej(t.error); });
 
-const S = { user: null, orders: new Map(), ordersLoaded: false, sellers: new Map(), sellersLoaded: false, sort: localStorage.getItem('rn-sort') || 'recent', rev: false, customers: new Map(), pending: [], tab: 'search', q: '', limit: 30, live: false, lastSync: null, detail: null, detailUnsubs: [] };
+const S = { user: null, orders: new Map(), ordersLoaded: false, sellers: new Map(), sellersLoaded: false, sort: localStorage.getItem('rn-sort') || 'recent', rev: false, customers: new Map(), pending: [], tab: 'home', q: '', limit: 30, live: false, lastSync: null, detail: null, detailUnsubs: [] };
 const norm = (s) => String(s || '').toLowerCase().replace(/[\s\-()]/g, '');
 function searchKey(c) { return norm([c.displayName, ...(c.names || []), ...(c.phones || []), ...(c.phoneKeys || []), ...(c.emails || []), ...(c.emailsMasked || []), ...(c.otherRecipients || []), ...((c.addresses || []).map((a) => a.address)), c.platformCustomerKey].join('|')); }
 function putCustomer(id, v) { v.customerId = id; v._sk = searchKey(v); v._t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; S.customers.set(id, v); return v; }
@@ -304,12 +330,14 @@ const ICON = {
   agent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 21h20L12 3z"/><path d="M12 10v5M12 18h.01"/></svg>',
   orders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M4 19h16"/><path d="M8 16v-5M12 16V8M16 16v-3"/></svg>',
   book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></svg>',
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   flag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>',
 };
 function shell() {
   $('#app').innerHTML = `
-  <header class="top"><div class="row"><h1>리드나우</h1><span class="tbtns"><button class="me" id="hscore">점수 기준</button><button class="me" id="hmet">지표·차트</button><button class="me" id="me">${esc((S.user.displayName || S.user.email).slice(0, 6))}</button></span></div>
-    <div class="sync"></div><div class="colbar" id="colbar"></div>
+  <header class="top"><div class="row"><h1 id="gohome" class="homelink" title="홈으로">리드나우</h1><span class="tbtns"><button class="me" id="hscore">점수 기준</button><button class="me" id="hmet">지표·차트</button><button class="me" id="me">${esc((S.user.displayName || S.user.email).slice(0, 6))}</button></span></div>
+    <div class="sync"></div><div class="colbar" id="colbar"></div><div class="jobs" id="jobs"></div>
     <div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6B66" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" type="search" placeholder="고객·전화, 주문번호, 책 제목·ISBN (상품 탭에선 상품 검색)" autocomplete="off" inputmode="search"></div></header>
   <main id="main"></main>
@@ -320,12 +348,13 @@ function shell() {
   $('#hscore').onclick = () => openModal('score'); $('#hmet').onclick = () => openModal('metrics'); $('#mclose').onclick = closeModal;
   $('#modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
   $('#q').addEventListener('input', (e) => { S.q = e.target.value; S.limit = 30; if (!['search', 'orders', 'sellers', 'products'].includes(S.tab)) S.tab = 'search'; renderTabs(); renderMain(); });
+  $('#gohome').onclick = () => { S.tab = 'home'; S.q = ''; $('#q').value = ''; renderTabs(); renderMain(); window.scrollTo(0, 0); };
   $('#me').onclick = () => { if (confirm(`${S.user.email}\n로그아웃할까요?`)) firebase.auth().signOut(); };
   renderTabs(); renderMain(); setSync();
 }
 function renderTabs() {
   const pc = S.pending.length;
-  const t = [['search', '고객', ICON.search], ['orders', '주문·매출', ICON.orders], ['products', '상품', ICON.book], ['sellers', '판매자', ICON.agent], ['flags', '표시 고객', ICON.flag], ['pending', '연결 확정', ICON.pending]];
+  const t = [['home', '홈', ICON.home], ['search', '고객', ICON.search], ['orders', '주문·매출', ICON.orders], ['products', '상품', ICON.book], ['sellers', '판매자', ICON.agent], ['flags', '표시 고객', ICON.flag], ['pending', '연결 확정', ICON.pending], ['settings', '설정', ICON.gear]];
   $('#tabs').innerHTML = t.map(([k, l, i]) => `<button class="${S.tab === k ? 'on' : ''}" data-tab="${k}">${i}${l}${k === 'pending' && pc ? `<span class="badge">${pc}</span>` : ''}</button>`).join('');
   $('#tabs').querySelectorAll('button').forEach((b) => (b.onclick = () => { S.tab = b.dataset.tab; S.limit = 30; renderTabs(); renderMain(); window.scrollTo(0, 0); }));
 }
@@ -476,7 +505,7 @@ function openModal(which) { S.modal = which; $('#modal').classList.add('on'); do
 function closeModal() { $('#modal').classList.remove('on'); if (!S.detail) document.body.style.overflow = ''; }
 function renderModal() {
   const box = $('#modalbody'); const which = S.modal;
-  $('#modaltabs').innerHTML = [['score', '점수 기준'], ['metrics', '지표·차트']].map(([k, l]) => `<button class="${which === k ? 'on' : ''}" data-mt="${k}">${l}</button>`).join('');
+  $('#modaltabs').innerHTML = [['score', '고객 점수'], ['seller', '판매자 점수'], ['metrics', '지표·차트']].map(([k, l]) => `<button class="${which === k ? 'on' : ''}" data-mt="${k}">${l}</button>`).join('');
   $('#modaltabs').querySelectorAll('[data-mt]').forEach((b) => (b.onclick = () => { S.modal = b.dataset.mt; renderModal(); }));
   if (which === 'score') {
     const v = S.cfg.vip; const c = S.cfg.caution;
@@ -513,6 +542,8 @@ function renderModal() {
     box.querySelectorAll('.cfg input').forEach((i) => (i.oninput = preview)); preview();
     $('#c_save').onclick = async () => { const x = read(); try { await db.collection('crm_system').doc('scoring').set({ ...x, updatedBy: S.user.email, updatedByName: S.user.displayName || S.user.email, updatedAt: TS(), history: firebase.firestore.FieldValue.arrayUnion({ at: Date.now(), by: S.user.email, ...x }) }, { merge: true }); toast('기준을 저장했습니다. 모든 기기에 바로 반영됩니다'); } catch (e) { toast('실패: ' + e.message); } };
     $('#c_def').onclick = () => { $('#c_vv').value = CFG_DEFAULT.vip.minValue; $('#c_vr').value = CFG_DEFAULT.vip.maxRisk; $('#c_vo').value = CFG_DEFAULT.vip.minOrders; $('#c_vs').checked = true; $('#c_cr').value = CFG_DEFAULT.caution.minRisk; preview(); };
+  } else if (which === 'seller') {
+    box.innerHTML = sellerHelp();
   } else {
     box.innerHTML = ordersDash('m');
     bindDash(box, renderModal);
@@ -755,7 +786,7 @@ function linkCheck() {
 }
 function renderMain() {
   const m = $('#main'); if (!m) return; const all = [...S.customers.values()];
-  document.body.classList.toggle('withrank', S.tab === 'search');
+  document.body.classList.toggle('withrank', ['search', 'sellers', 'products'].includes(S.tab));
   if (S.tab === 'search') {
     const q = norm(S.q);
     if (!q && S.custView === 'reviews') {
@@ -788,7 +819,7 @@ function renderMain() {
     const pick = (k) => all.filter((c) => (k === 'agent' ? (c.otherRecipientCount || 0) >= 2 || (c.sellerLinks || []).length : flagsOf(c)[k]));
     // 기간별 집계: 오늘·이번 주·이번 달·올해·전체
     const per = S.flagPeriod || 'all'; const t0 = new Date(); const z = (x) => String(x).padStart(2, '0'); const ds = (d) => `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
-    const start = per === 'day' ? ds(t0) : per === 'week' ? ds(new Date(t0.getFullYear(), t0.getMonth(), t0.getDate() - ((t0.getDay() + 6) % 7))) : per === 'month' ? `${t0.getFullYear()}-${z(t0.getMonth() + 1)}-01` : per === 'year' ? `${t0.getFullYear()}-01-01` : null;
+    const start = per === 'all' ? null : rangeOf(per, 0).start;
     const kmap0 = { vip: 'vip', cau: 'caution', bl: 'blacklist' };
     const inPer = new Map(); // customerId → {orders, amount}
     if (start && S.ordersLoaded) for (const o of S.orders.values()) { if (o.kind !== 'sale' || String(o.orderedAt || '').slice(0, 10) < start) continue; const r = inPer.get(o.customerId) || { orders: 0, amount: 0 }; r.orders += 1; (o.items || []).forEach((it) => { if (it.lineStatus === 'normal') r.amount += (it.price || 0) * (it.qty || 1); }); inPer.set(o.customerId, r); }
@@ -806,7 +837,7 @@ function renderMain() {
       const r = e.src === 'auto' ? (e.reasons || [])[0] || '' : e.reason || '';
       return `<span style="width:100%"><b class="src ${e.src}">${src}</b> ${esc(r.length > 70 ? r.slice(0, 70) + '…' : r)}</span>`;
     };
-    const perTxt = { day: '오늘', week: '이번 주', month: '이번 달', year: '올해', all: '전체' };
+    const perTxt = { day: '오늘', week: '이번 주', month: '이번 달', year: '올해', r7: '최근 7일', r30: '최근 30일', r365: '최근 365일', all: '전체' };
     m.innerHTML = `<div class="seg">${segs.map(([k, l, cls]) => `<button class="${which === k ? 'on ' + cls : ''}" data-fl="${k}">${l} ${pick(k).length}</button>`).join('')}</div>
       <div class="ptabs" style="margin-bottom:8px">${Object.entries(perTxt).map(([k, l]) => `<button class="${per === k ? 'on' : ''}" data-fp="${k}">${l}</button>`).join('')}</div>
       <div class="card" style="margin:0 0 10px"><div class="mgrid">
@@ -820,9 +851,12 @@ function renderMain() {
     m.querySelectorAll('[data-fp]').forEach((b) => (b.onclick = () => { S.flagPeriod = b.dataset.fp; S.limit = 30; renderMain(); }));
   } else if (S.tab === 'pending') renderPending(m);
   else if (S.tab === 'orders') renderOrders(m);
-  else if (S.tab === 'sellers') renderSellers(m);
-  else if (S.tab === 'products') renderProducts(m);
-  m.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => { const [t, f] = b.dataset.go.split(':'); S.tab = t; if (f) S.flagList = f; renderTabs(); renderMain(); window.scrollTo(0, 0); }));
+  else if (S.tab === 'sellers') { renderSellers(m); renderRank(); }
+  else if (S.tab === 'products') { renderProducts(m); renderRank(); }
+  else if (S.tab === 'home') renderHome(m);
+  else if (S.tab === 'settings') renderSettings(m);
+  m.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => { const [t, f] = b.dataset.go.split(':'); S.tab = t; if (f) S.flagList = f; if (b.dataset.cv2) S.custView = b.dataset.cv2; renderTabs(); renderMain(); window.scrollTo(0, 0); }));
+  const rb2 = $('#rankbtn2'); if (rb2) rb2.onclick = () => { document.body.classList.toggle('rankopen'); renderRank(); };
   const mo = $('#more'); if (mo) mo.onclick = () => { S.limit += 50; renderMain(); };
   bindRows(m);
 }
@@ -1037,13 +1071,14 @@ function renderSellers(m) {
   const q = norm(S.q); const g = S.sellerGrade || 'all'; const all = [...S.sellers.values()];
   const pass = (s, k) => (k === 'all' ? true : k === 'lmatch' ? (s.linkedCustomers || []).some((l) => linkLevel(l) === 'match') : k === 'lsuspect' ? (s.linkedCustomers || []).length > 0 && !(s.linkedCustomers || []).some((l) => linkLevel(l) === 'match') : k.startsWith('a:') ? (s.aladinGrade || (k === 'a:전문셀러' && sgOf(s) === 'pro' ? '전문셀러' : null)) === k.slice(2) : sgOf(s) === k);
   let arr = all.filter((s) => pass(s, g) && (!q || norm([s.name, s.company, s.owner, s.phone, s.asPhone, s.email, s.address, s.returnAddress, s.sc, s.bizNo, s.remark].join('|')).includes(q)));
-  const sk = S.sellerSort || 'items'; const key = { items: (s) => s.totalItems || s.stock || 0, rating: (s) => s.rating ?? s.rating6m ?? 0, outstock: (s) => (s.sc ? (s.outstockRate || 0) / 100 : s.outstockRate || 0), reviews: (s) => s.totalReviewCount || s.reviewsAll || 0 }[sk];
+  const sk = S.sellerSort || 'items'; const SC = scores(); const key = { items: (s) => s.totalItems || s.stock || 0, rating: (s) => s.rating ?? s.rating6m ?? 0, outstock: (s) => (s.sc ? (s.outstockRate || 0) / 100 : s.outstockRate || 0), reviews: (s) => s.totalReviewCount || s.reviewsAll || 0, model: (s) => (SC.get(s.id) || {}).model ?? -1, gain: (s) => (SC.get(s.id) || {}).gain ?? 50, age: (s) => sYears(s) ?? -1 }[sk];
   arr.sort((a, b) => key(b) - key(a)); if (S.sellerRev) arr.reverse();
   const filters = [['all', '전체'], ['lmatch', '우리고객 정보와 일치'], ['lsuspect', '우리고객과 일치 의심'], ['fake', '허위 매물'], ['a:전문셀러', '전문셀러'], ['a:파워셀러', '파워'], ['a:골드셀러', '골드'], ['a:실버셀러', '실버'], ['a:새내기셀러', '새내기']];
   m.innerHTML = `<div class="seg chips">${filters.map(([k, l]) => `<button class="${g === k ? 'on' + (k === 'fake' ? ' bl' : '') : ''}" data-sg="${k}">${l} ${all.filter((s) => pass(s, k)).length.toLocaleString()}</button>`).join('')}</div>
-    <div class="sortbar"><select id="ssort">${[['items', '보유 상품 많은'], ['rating', '평점 높은'], ['outstock', '품절 취소율 높은'], ['reviews', '평가 많은']].map(([k, l]) => `<option value="${k}" ${sk === k ? 'selected' : ''}>${l} 순</option>`).join('')}</select><button id="srev" class="rev">${S.sellerRev ? '거꾸로 ↑' : '순서대로 ↓'}</button></div>
+    <div class="sortbar"><select id="ssort">${[['items', '보유 상품 많은'], ['rating', '평점 높은'], ['outstock', '품절 취소율 높은'], ['reviews', '평가 많은'], ['age', '오래된 사업자'], ['model', '★ 본보기 점수 높은'], ['gain', '₩ 득실 점수 높은']].map(([k, l]) => `<option value="${k}" ${sk === k ? 'selected' : ''}>${l} 순</option>`).join('')}</select><button id="srev" class="rev">${S.sellerRev ? '거꾸로 ↑' : '순서대로 ↓'}</button></div>
+    <div class="sortbar"><button id="rankbtn2" class="rankbtn">판매자 순위 TOP10</button></div>
     <p class="hint">툴팁이 모은 판매자 ${all.filter((s) => s.sc).length.toLocaleString()}곳과 구글 시트 기록을 합친 목록입니다. 전화·이메일·반품 주소가 우리고객과 정확히 같으면 '우리고객 정보와 일치', 동·호수 등 일부만 같으면 '우리고객과 일치 의심'으로 표시됩니다.</p>
-    <div class="list">${arr.slice(0, S.limit).map((s) => `<button class="item" data-sid="${esc(s.id)}"><div class="l1"><span class="name">${esc(s.name || '(이름 없음)')}</span>${gradeChip(s)}${sellerTags(s)}</div>
+    <div class="list">${arr.slice(0, S.limit).map((s) => `<button class="item" data-sid="${esc(s.id)}"><div class="l1"><span class="name">${esc(s.name || '(이름 없음)')}</span>${gradeChip(s)}${sellerTags(s)}${(() => { const x = scores().get(s.id); return x ? modelBadge(x) + gainBadge(x) : ''; })()}</div>
       <div class="l2"><span>보유 ${((s.totalItems || s.stock) || 0).toLocaleString()}</span><span>평점 ${pctText(s.rating ?? s.rating6m)}</span><span>품절 취소율 ${outstockText(s)}</span>${s.shippingFee != null ? `<span>배송비 ${won(s.shippingFee)}</span>` : ''}${s.owner ? `<span>${esc(s.company || '')} ${esc(s.owner)}</span>` : ''}</div></button>`).join('') || '<div class="empty">없음</div>'}${arr.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
   m.querySelectorAll('[data-sg]').forEach((b) => (b.onclick = () => { S.sellerGrade = b.dataset.sg; S.limit = 30; renderMain(); }));
   $('#ssort', m).onchange = (e) => { S.sellerSort = e.target.value; renderMain(); }; $('#srev', m).onclick = () => { S.sellerRev = !S.sellerRev; renderMain(); };
@@ -1063,6 +1098,11 @@ async function openSeller(id) {
     sh.innerHTML = `<div class="sh"><button class="back" id="back">‹ 목록</button><div class="t">${esc(s.name || '')}</div></div>
     <div class="card">${gradeChip(s)}${sellerTags(s)}${s.sc ? ` <span class="hint">판매자 번호 ${esc(s.sc)}</span>` : ''}${s.sheet && s.sheet.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.sheet.remark)}</div>` : s.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.remark)}</div>` : ''}
       <div class="nums five" style="margin-top:10px"><div><b>${((s.totalItems || s.stock) || 0).toLocaleString()}</b><span>보유 상품</span></div><div><b>${pctText(s.rating ?? s.rating6m)}</b><span>평점</span></div><div><b>${(s.totalReviewCount || s.reviewsAll || 0).toLocaleString()}</b><span>전체 평가</span></div><div><b>${outstockText(s)}</b><span>품절 취소율</span></div><div><b>${s.shippingDays ?? s.actualDays ?? '-'}</b><span>출고일</span></div></div></div>
+    ${(() => { const x = scores().get(s.id) || sellerScore(s); const mr = modelReasons(x, 3); const gr = gainReasons(x); const q = quadrant(x);
+      return `<div class="card"><h3>판매자 점수</h3><div class="two">
+        <div class="axis model" style="margin:0"><div class="axh"><b>★ 본보기 ${x.model ?? '-'}점 · ${MODEL_TXT[x.mcls]}</b><span>배울 만한가</span></div>${x.mp.map((p) => `<div class="spl"><span>${esc(p.label)}</span><b>${p.pts == null ? '자료 없음' : `${Math.round(p.pts)} / ${p.w}`}</b></div><div class="hint" style="margin:0 0 4px">${esc(p.why || '')}</div>`).join('')}${x.gates.map((g) => `<div class="fwhy" style="color:#3A3A3A;font-weight:700">✕ ${esc(g)}</div>`).join('')}</div>
+        <div class="axis gain" style="margin:0"><div class="axh"><b>₩ 득실 ${x.gain}점 · ${GAIN_TXT[x.gcls]}</b><span>우리 돈에 어떤가 (50 = 중립)</span></div>${gr.plus.map((t) => `<div class="spl" style="color:#2F7D4F">＋ ${esc(t)}</div>`).join('')}${gr.minus.map((t) => `<div class="spl" style="color:var(--red)">－ ${esc(t)}</div>`).join('')}${!gr.plus.length && !gr.minus.length ? '<div class="hint">특별히 더하거나 뺄 요소 없음</div>' : ''}</div></div>
+        ${q ? `<div class="quad">${q}</div>` : ''}</div>`; })()}
     ${['match', 'suspect'].map((lv) => { const L = (s.linkedCustomers || []).filter((l) => linkLevel(l) === lv); if (!L.length) return ''; return `<div class="card"><h3 style="color:${lv === 'match' ? 'var(--red)' : 'var(--amber)'}">${LEVEL_TXT[lv][0]} ${L.length}명</h3>${L.map((l) => { const c = S.customers.get(l.customerId) || {}; return `<div class="cand"><div class="ci"><b>${esc(c.displayName || l.customerId)}</b> <small>주문 ${c.saleOrderCount || 0} · 순매출 ${won(c.salesAmount)} · 이유: ${esc((l.reasons || []).map(reasonTxt).join(', '))}</small></div><button class="btn" data-cid="${esc(l.customerId)}">고객 보기</button></div>`; }).join('')}</div>`; }).join('')}
     ${hist ? (() => { const snaps = hist.snapshots || []; const quick = hist.quick || []; const both = (k) => [...snaps.map((x) => ({ t: x.t, v: x[k] })), ...quick.map((x) => ({ t: x.t, v: x[k] }))].sort((a, b) => a.t - b.t);
       return `<div class="card"><h3>전체 평가 수 추이</h3><div style="color:var(--cloth)">${miniLine(snaps.map((x) => ({ t: x.t, v: x.total })), (v) => Math.round(v).toLocaleString() + '건')}</div>
@@ -1081,12 +1121,19 @@ async function openSeller(id) {
 
 /* ══════════ 공통: 기간 선택 · 접고 펴기 · 구역 접기 ══════════ */
 S.pp = JSON.parse(localStorage.getItem('rn-pp') || '{}'); S.fold = {}; S.sec = JSON.parse(localStorage.getItem('rn-sec') || '{}');
-const PK = { day: '일별', week: '주별', month: '월별', year: '연별', all: '전체' };
+const PK = { day: '일별', week: '주별', month: '월별', year: '연별', r7: '7일간', r30: '30일간', r365: '365일간', all: '전체' };
+const ROLL = { r7: 7, r30: 30, r365: 365 };
 const z2 = (x) => String(x).padStart(2, '0');
 const dstr = (d) => `${d.getFullYear()}-${z2(d.getMonth() + 1)}-${z2(d.getDate())}`;
 function rangeOf(kind, off = 0) {
   if (kind === 'all') return { kind, off: 0, start: null, end: null, label: '전체 기간', days: null, current: true };
   const t = new Date(); t.setHours(0, 0, 0, 0); let s, e;
+  if (ROLL[kind]) { // 오늘을 포함해 거꾸로 N일 (이전 = 그 앞 N일)
+    const n = ROLL[kind]; e = new Date(t); e.setDate(e.getDate() + 1 + off * n); s = new Date(e); s.setDate(s.getDate() - n);
+    const l2 = new Date(e); l2.setDate(l2.getDate() - 1);
+    const lab2 = `${s.getFullYear() % 100}.${s.getMonth() + 1}.${s.getDate()} ~ ${l2.getMonth() + 1}/${l2.getDate()}`;
+    return { kind, off, start: dstr(s), end: dstr(e), label: (off === 0 ? `이번 ${n}일간 · ` : '') + lab2, days: n, current: off === 0 };
+  }
   if (kind === 'day') { s = new Date(t); s.setDate(s.getDate() + off); e = new Date(s); e.setDate(e.getDate() + 1); }
   else if (kind === 'week') { s = new Date(t); s.setDate(s.getDate() - ((s.getDay() + 6) % 7) + off * 7); e = new Date(s); e.setDate(e.getDate() + 7); }
   else if (kind === 'month') { s = new Date(t.getFullYear(), t.getMonth() + off, 1); e = new Date(s.getFullYear(), s.getMonth() + 1, 1); }
@@ -1098,7 +1145,7 @@ function rangeOf(kind, off = 0) {
 }
 const shiftYear = (iso, n) => (iso ? `${+iso.slice(0, 4) + n}${iso.slice(4)}` : iso);
 const prevRange = (r) => (r.kind === 'all' ? null : rangeOf(r.kind, r.off - 1));
-const yoyRange = (r) => (r.kind === 'all' || r.kind === 'year' ? null : { ...r, start: shiftYear(r.start, -1), end: shiftYear(r.end, -1) });
+const yoyRange = (r) => (r.kind === 'all' || r.kind === 'year' || r.kind === 'r365' ? null : { ...r, start: shiftYear(r.start, -1), end: shiftYear(r.end, -1) });
 const inRange = (iso, r) => { if (!r || !r.start) return true; const d = String(iso || '').slice(0, 10); return d >= r.start && d < r.end; };
 function picker(id, def) {
   const p = S.pp[id] || (S.pp[id] = { kind: def || 'all', off: 0 }); const r = rangeOf(p.kind, p.off);
@@ -1108,7 +1155,7 @@ function picker(id, def) {
 const rangeFor = (id, def) => { const p = S.pp[id] || (S.pp[id] = { kind: def || 'all', off: 0 }); return rangeOf(p.kind, p.off); };
 function fold(id, rows, step = 10) {
   const n = S.fold[id] || step; const rest = rows.length - n;
-  return rows.slice(0, n).join('') + (rows.length > step ? `<div class="fold" data-fold="${id}" data-step="${step}">${rest > 0 ? `<button data-fa="more">${Math.min(step, rest)}개 더 보기 <small>남은 ${rest.toLocaleString()}</small></button><button data-fa="all">모두 펼치기</button>` : ''}${n > step ? '<button data-fa="less">접기</button>' : ''}</div>` : '');
+  return rows.slice(0, n).join('') + (rows.length > step ? `<div class="fold" data-fold="${id}" data-step="${step}">${rest > 0 ? `<button data-fa="more">${Math.min(step, rest)}개 더 보기 <small>남은 ${rest.toLocaleString()}</small></button>` : ''}${n > step ? '<button data-fa="less">접기</button>' : ''}</div>` : '');
 }
 function sec(id, title, body, open = true) { const o = S.sec[id] ?? open; return `<details class="sec" data-sec="${id}" ${o ? 'open' : ''}><summary>${title}</summary><div class="secb">${body}</div></details>`; }
 function bindUI(root, rerender) {
@@ -1257,8 +1304,21 @@ async function loadInters(r) {
   catch (e) { S.interCache[k] = []; }
   renderRank(); return S.interCache[k];
 }
+const numbered = (html) => { let i = 0; return html.replace(/<span class="rn"><\/span>/g, () => `<span class="rn">${++i}</span>`); };
 function renderRank() {
-  const box = $('#rank'); if (!box) return; const r = rangeFor('rank', 'all');
+  const box = $('#rank'); if (!box) return;
+  if (S.tab === 'sellers' || S.tab === 'products') {
+    const isS = S.tab === 'sellers';
+    if (isS && !S.sellersLoaded) { box.innerHTML = '<div class="empty">판매자 목록을 받는 중</div>'; return; }
+    box.innerHTML = `<div class="rkh"><b>${isS ? '판매자 순위' : '상품 순위 (북스킹 판매)'}</b><button id="rkx" class="rkx">닫기</button></div>` + (isS ? sellerRankBoards() : productRankBoards());
+    box.querySelectorAll('ol.num').forEach((ol) => (ol.innerHTML = numbered(ol.innerHTML)));
+    bindUI(box, renderRank);
+    box.querySelectorAll('[data-sid]').forEach((b) => (b.onclick = () => { document.body.classList.remove('rankopen'); openSeller(b.dataset.sid); }));
+    box.querySelectorAll('[data-btitle]').forEach((b) => (b.onclick = () => { document.body.classList.remove('rankopen'); const code = b.dataset.book; if (code && S.plist.get('aladin_' + code)) return openProduct('aladin_' + code); S.q = b.dataset.btitle; $('#q').value = S.q; S.tab = 'products'; renderTabs(); renderMain(); }));
+    const x = $('#rkx'); if (x) x.onclick = () => document.body.classList.remove('rankopen');
+    return;
+  }
+  const r = rangeFor('rank', 'all');
   let boards;
   if (!r.start) {
     const all = [...S.customers.values()]; const L = (key) => all.filter((c) => key(c) > 0).sort((a, b) => key(b) - key(a)).map((c) => [c.customerId, key(c)]);
@@ -1303,7 +1363,7 @@ async function loadProducts() {
     for (const [st, map] of [['plist', S.plist], ['psales', S.psales], ['pbooks', S.pbooks]]) (await idbAll(st)).forEach((v) => map.set(v.id, v));
     if (S.plist.size) { S.prodLoaded = true; if (S.tab === 'products') renderMain(); }
     setSync('상품 기록 받는 중 (처음 한 번은 오래 걸림)');
-    await syncColl('prd_listings', 'plist', S.plist, 'pl_sync'); await syncColl('prd_sales', 'psales', S.psales, 'ps_sync'); await syncColl('prd_books', 'pbooks', S.pbooks, 'pb_sync');
+    await syncColl('prd_listings', 'plist', S.plist, 'pl_sync'); await syncColl('prd_books', 'pbooks', S.pbooks, 'pb_sync');
     S.prodLoaded = true; setSync();
   } catch (e) { S.prodFailAt = Date.now(); setSync('상품 기록 받기 실패: ' + (e.code || e.message) + ' (1분 뒤 다시 시도)'); }
   S.prodBusy = false; S._pinv = null; if (S.tab === 'products') renderMain();
@@ -1311,11 +1371,11 @@ async function loadProducts() {
 const ageDays = (iso) => (iso ? Math.floor((Date.now() - new Date(String(iso).slice(0, 16))) / 864e5) : null);
 function prodInv() {
   if (S._pinv) return S._pinv;
-  const act = [...S.plist.values()].filter((l) => l.active); const I = { n: act.length, qty: 0, value: 0, list: 0, listN: 0, ages: [], grade: {}, price: { '~3천': 0, '3천~6천': 0, '6천~1만': 0, '1만~2만': 0, '2만~': 0 }, pub: new Map(), bucket: { '0~30일': [0, 0], '31~90일': [0, 0], '91~180일': [0, 0], '181~365일': [0, 0], '1년 넘음': [0, 0] } };
+  const act = [...S.plist.values()].filter((l) => l.active); const I = { n: act.length, qty: 0, value: 0, list: 0, listN: 0, ages: [], grade: {}, price: Object.fromEntries(bandKeys().map((k) => [k, 0])), pub: new Map(), bucket: { '0~30일': [0, 0], '31~90일': [0, 0], '91~180일': [0, 0], '181~365일': [0, 0], '1년 넘음': [0, 0] } };
   for (const l of act) {
     const q = l.qty || 1; const p = l.price || 0; I.qty += q; I.value += p * q; if (l.priceList) { I.list += l.priceList * q; I.listN += p * q; }
     I.grade[l.grade || '?'] = (I.grade[l.grade || '?'] || 0) + q;
-    I.price[p < 3000 ? '~3천' : p < 6000 ? '3천~6천' : p < 10000 ? '6천~1만' : p < 20000 ? '1만~2만' : '2만~'] += q;
+    I.price[bandOf(p)] += q;
     const pb = l.publisher || '(모름)'; const x = I.pub.get(pb) || { qty: 0, value: 0 }; x.qty += q; x.value += p * q; I.pub.set(pb, x);
     const a = ageDays(l.registeredAt); if (a != null) { I.ages.push(a); const b = a <= 30 ? '0~30일' : a <= 90 ? '31~90일' : a <= 180 ? '91~180일' : a <= 365 ? '181~365일' : '1년 넘음'; I.bucket[b][0] += q; I.bucket[b][1] += p * q; }
   }
@@ -1325,10 +1385,10 @@ function prodInv() {
 function soldIn(r) { // 판매 권수·금액은 주문 기록(주문·매출 탭과 같은 숫자), 출판사는 판매 줄에서
   let qty = 0, amt = 0; const pub = new Map();
   for (const o of S.orders.values()) { if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue; (o.items || []).forEach((it) => { if (it.lineStatus !== 'normal') return; const q = it.qty || 1; qty += q; amt += (it.price || 0) * q; }); }
-  for (const s of S.psales.values()) { if (!inRange(s.orderedAt, r) || s.channel !== 'aladin') continue; const pb = s.publisher || '(모름)'; const x = pub.get(pb) || { qty: 0, amt: 0 }; x.qty += s.qty || 1; x.amt += (s.price || 0) * (s.qty || 1); pub.set(pb, x); }
+  for (const o of S.orders.values()) { if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue; (o.items || []).forEach((it) => { if (it.lineStatus !== 'normal') return; const l = it.aladinUsedCode ? S.plist.get('aladin_' + it.aladinUsedCode) : null; const pb = it.publisher || (l && l.publisher) || '(모름)'; const x = pub.get(pb) || { qty: 0, amt: 0 }; x.qty += it.qty || 1; x.amt += (it.price || 0) * (it.qty || 1); pub.set(pb, x); }); }
   return { qty, amt, pub };
 }
-function daysToSell(r) { const out = []; for (const s of S.psales.values()) { if (!inRange(s.orderedAt, r) || !s.usedCode) continue; const l = S.plist.get('aladin_' + s.usedCode); if (!l || !l.registeredAt || !s.orderedAt) continue; const d = (new Date(String(s.orderedAt).slice(0, 16)) - new Date(String(l.registeredAt).slice(0, 16))) / 864e5; if (d >= 0) out.push(d); } out.sort((a, b) => a - b); return out; }
+function daysToSell(r) { const out = []; for (const o of S.orders.values()) { if (o.kind !== 'sale' || !inRange(o.orderedAt, r) || !o.orderedAt) continue; for (const it of o.items || []) { if (it.lineStatus !== 'normal' || !it.aladinUsedCode) continue; const l = S.plist.get('aladin_' + it.aladinUsedCode); if (!l || !l.registeredAt) continue; const d = (new Date(String(o.orderedAt).slice(0, 16)) - new Date(String(l.registeredAt).slice(0, 16))) / 864e5; if (d >= 0) out.push(d); } } out.sort((a, b) => a - b); return out; }
 function prodDash() {
   const I = prodInv(); const id = 'prod'; const r = rangeFor(id, 'month');
   const sold = S.ordersLoaded ? soldIn(r) : { qty: 0, amt: 0, pub: new Map() };
@@ -1349,7 +1409,7 @@ function prodDash() {
     mcell(num(regs.length) + '종', '신규 등록', `${num(regQty)}권 (현재 수량 기준)`), mcell(num(sold.qty) + '권', '판매 권수', won(sold.amt)),
     mcell((regQty - sold.qty >= 0 ? '+' : '') + num(regQty - sold.qty) + '권', '재고 순증감', '신규 등록 − 판매'),
     mcell(r.current ? pctv(sold.qty, sold.qty + I.qty) + '%' : '-', '판매율 (Sell-through)', r.current ? '판매 ÷ (판매 + 현재 재고). 현재 기간만' : '지난 기간은 그 시점 재고를 몰라 계산 안 함'),
-    mcell(dtsMed != null ? num(dtsMed) + '일' : '-', '등록→판매 소요일 (중앙값)', `판매완료 엑셀·수집 기록 ${num(dts.length)}건 기준`),
+    mcell(dtsMed != null ? num(dtsMed) + '일' : '-', '등록→판매 소요일 (중앙값)', `주문 기록의 U코드로 연결된 ${num(dts.length)}건 기준`),
   ];
   const bar = (obj, tot, fmt) => Object.entries(obj).map(([k, v]) => { const q = Array.isArray(v) ? v[0] : v; return `<div class="dist"><span>${esc(k)}</span><div class="bar"><i style="width:${pctv(q, tot)}%"></i></div><b>${fmt ? fmt(v) : num(q) + '권'}</b></div>`; }).join('');
   const pubRows = (m, key, f) => [...m.entries()].sort((a, b) => b[1][key] - a[1][key]).map(([p, v], i) => `<div class="item" style="cursor:default"><div class="l1"><span class="rn2">${i + 1}</span><span class="name">${esc(p)}</span><span class="hl">${f(v)}</span></div></div>`);
@@ -1364,9 +1424,9 @@ function prodDash() {
   return `<div class="card" style="margin:0 0 10px"><h3>재고 현황 (지금)</h3><div class="mgrid kpi">${inv.join('')}</div></div>
     <div class="card" style="margin:0 0 10px"><h3>입고·판매 흐름</h3>${picker(id, 'month')}<div class="mgrid kpi" style="margin-top:8px">${flow.join('')}</div></div>
     ${sec('p_age', '재고 연령 분포 (에이징)', `<div class="card" style="margin:0 0 8px">${bar(I.bucket, I.qty, (v) => `${num(v[0])}권 · ${won(v[1])}`)}<p class="hint">오래된 재고일수록 가격 조정·재진열 대상입니다.</p></div>`)}
-    ${sec('p_grade', '등급·가격대 분포', `<div class="card" style="margin:0 0 8px"><h3>등급</h3>${bar(I.grade, I.qty)}<h3 style="margin-top:10px">판매가 구간</h3>${bar(I.price, I.qty)}</div>`, false)}
+    ${sec('p_grade', '등급·가격대 분포', `<div class="card" style="margin:0 0 8px"><h3>등급</h3>${bar(I.grade, I.qty)}<h3 style="margin-top:10px">판매가 구간 <small>(설정 탭에서 구간 변경)</small></h3>${bar(I.price, I.qty)}</div>`, false)}
     ${sec('p_trend', '등록·판매 추이', `<div class="ptabs" style="margin-bottom:8px">${['day', 'week', 'month', 'year'].map((k) => `<button class="${kind === k ? 'on' : ''}" data-ptrend="${k}">${PK[k]}</button>`).join('')}</div><div class="hint"><span class="lg a"></span>등록 <span class="lg b"></span>판매 · 오른쪽 숫자는 순증감</div><div class="list">${fold('ptr' + kind, trows) || '<div class="empty">기록 없음</div>'}</div>`)}
-    ${sec('p_pubsold', `출판사별 판매 · ${r.label}`, `<div class="list">${fold('pubsold', pubRows(sold.pub, 'amt', (v) => `${won(v.amt)} · ${v.qty}권`)) || '<div class="empty">판매완료 엑셀 기록 기준. 기록 없음</div>'}</div>`, false)}
+    ${sec('p_pubsold', `출판사별 판매 · ${r.label}`, `<div class="list">${fold('pubsold', pubRows(sold.pub, 'amt', (v) => `${won(v.amt)} · ${v.qty}권`)) || '<div class="empty">주문 기록 기준. 기록 없음</div>'}</div>`, false)}
     ${sec('p_pubinv', '출판사별 재고', `<div class="list">${fold('pubinv', pubRows(I.pub, 'value', (v) => `${num(v.qty)}권 · ${won(v.value)}`)) || '<div class="empty">없음</div>'}</div>`, false)}`;
 }
 function prodRow(l) {
@@ -1383,7 +1443,7 @@ function renderProducts(m) {
     m.innerHTML = `<h2>상품 ${hits.length.toLocaleString()}건</h2><div class="list">${fold('psearch', hits.map(prodRow), 20) || '<div class="empty">찾는 상품이 없습니다</div>'}</div>`;
   } else {
     const recent = all.filter((l) => l.active).sort((a, b) => String(b.registeredAt || '').localeCompare(String(a.registeredAt || '')));
-    m.innerHTML = prodDash() + sec('p_recent', '최근 등록 상품', `<div class="list">${fold('precent', recent.map(prodRow)) || '<div class="empty">없음</div>'}</div>`) + '<p class="hint">제목·ISBN·U코드·자체코드·출판사는 위 검색창에 입력하세요. 지표 설명은 각 칸 아래 작은 글씨에 있습니다.</p>';
+    m.innerHTML = '<div class="sortbar"><button id="rankbtn2" class="rankbtn">상품 순위 TOP10</button></div>' + prodDash() + sec('p_recent', '최근 등록 상품', `<div class="list">${fold('precent', recent.map(prodRow)) || '<div class="empty">없음</div>'}</div>`) + '<p class="hint">제목·ISBN·U코드·자체코드·출판사는 위 검색창에 입력하세요. 지표 설명은 각 칸 아래 작은 글씨에 있습니다.</p>';
   }
   bindUI(m, renderMain);
   m.querySelectorAll('[data-ptrend]').forEach((b) => (b.onclick = () => { S.ptrend = b.dataset.ptrend; renderMain(); }));
@@ -1404,11 +1464,12 @@ async function openProduct(pid) {
       ${b ? `<div class="card"><h3>도서 정보</h3><dl class="kv">${kv('제목', esc(b.title || ''))}${kv('부제', esc(b.subtitle || ''))}${kv('기여자', esc((b.contributors || []).map((c) => c.name + (c.role ? `(${c.role})` : '')).join(', ')))}${kv('출판사', esc(b.publisher || ''))}${kv('출간일', esc(b.pubDate || ''))}${kv('원제', esc(b.originalTitle || ''))}${kv('쪽수', b.pages)}${kv('크기', esc(b.size || ''))}${kv('무게', b.weightG ? b.weightG + 'g' : '')}${kv('분류', esc((b.categories || []).map((c) => (c.path || []).join(' > ')).join(' / ')))}</dl></div>` : '<div class="card"><h3>도서 정보</h3><div class="hint">아직 수집 전입니다 (상품 수집기의 "도서 정보·시장 지표 갱신")</div></div>'}
       ${mt ? `<div class="card"><h3>시장 지표 <small>${esc(dt16(mt.lastCheckedAt))} 확인</small></h3><div class="mgrid">${mcell(won(mt.priceSales), '새책 판매가', `정가 ${won(mt.priceList)}`)}${mcell(num(mt.salesPoint), 'Sales Point', '알라딘 판매 지수')}${mcell(num(mt.usedTotal), '전체 중고 수', mt.usedMins ? Object.entries(mt.usedMins).map(([k, v]) => `${k} ${v.count}${v.min ? ` 최저 ${won(v.min)}` : ''}`).join(' · ') : '')}${mcell(mt.buyback ? Object.entries(mt.buyback).map(([k, v]) => `${k} ${won(v)}`).join('<br>') : '-', '알라딘 매입 예상가', '판매가 하한선 근거')}${mcell(mt.rating ?? '-', '평점', `100자평 ${mt.commentCount ?? '-'} · 리뷰 ${mt.reviewCount ?? '-'}`)}${mcell(esc((mt.activeRanks || []).join(', ') || '-'), '순위', '')}</div></div>` : ''}
       <div class="card"><h3>식별 코드</h3><ul class="tl" style="max-height:none">${ids || '<li>없음</li>'}</ul>${(l.idWarn || []).map((w) => `<div class="hint" style="color:var(--red)">${esc(w)}</div>`).join('')}</div>
-      <div class="card"><h3>판매 기록</h3>${(x.sales || []).length ? `<ul class="tl">${x.sales.map((s) => `<li><div class="h"><span>${dt16(s.orderedAt)}</span><span>${esc(s.orderNo || '')}</span></div><div class="b">${won(s.price)} × ${s.qty || 1}${s.needsCheck ? ' <span class="tag cau">확인 필요</span>' : ''}</div></li>`).join('')}</ul>` : '<div class="hint">기록 없음</div>'}</div>
+      <div class="card"><h3>판매 기록</h3>${(x.sales || []).length ? `<ul class="tl">${x.sales.map((s) => `<li><div class="h"><span>${dt16(s.orderedAt)}</span><span>${esc(s.orderNo || '')}</span></div><div class="b">${won(s.price)} × ${s.qty || 1}${s.needsCheck ? ` <span class="tag cau">${esc(s.status || '')}</span>` : ''}</div></li>`).join('')}</ul>` : '<div class="hint">기록 없음</div>'}</div>
       <div class="card"><h3>변경 이력</h3>${x.changes == null ? '<div class="hint">불러오는 중</div>' : x.changes.length ? `<ul class="tl">${x.changes.map((c) => `<li><div class="h"><span>${dt16(c.at)}</span><span>${esc(c.source || '')}</span></div><div class="b">${Object.entries(c.changes || {}).map(([k, v]) => `${esc(k)}: ${esc(JSON.stringify(v.from))} → ${esc(JSON.stringify(v.to))}`).join('\n')}</div></li>`).join('')}</ul>` : '<div class="hint">변경 없음</div>'}</div>`;
     $('#back').onclick = () => history.back();
   };
-  const x = { sales: [...S.psales.values()].filter((s) => s.usedCode === l.usedCode).sort((a, b) => String(b.orderedAt).localeCompare(String(a.orderedAt))), changes: null };
+  const sales = []; for (const o of S.orders.values()) (o.items || []).forEach((it) => { if (it.aladinUsedCode && it.aladinUsedCode === l.usedCode) sales.push({ orderedAt: o.orderedAt, orderNo: o.orderNo, price: it.price, qty: it.qty, needsCheck: it.lineStatus !== 'normal', status: it.lineStatus, customerId: o.customerId }); });
+  const x = { sales: sales.sort((a, b) => String(b.orderedAt).localeCompare(String(a.orderedAt))), changes: null };
   draw(x);
   try {
     const [ch, mt, bk] = await Promise.all([db.collection('prd_listing_changes').where('listingKey', '==', pid).get(), l.bookId ? db.collection('prd_book_metrics').doc(l.bookId).get() : null, l.bookId && !S.pbooks.get(l.bookId) ? db.collection('prd_books').doc(l.bookId).get() : null]);
@@ -1419,9 +1480,313 @@ async function openProduct(pid) {
   } catch (e) { x.changes = []; draw(x); }
 }
 
+
+/* ══════════ v0.8.0~: 공용 설정 · 기기 이름 ══════════
+ * app_settings/main  (모든 기기 공통, Firebase): 판매가 구간, 권당 매입 비용, 추정 수수료율, 판매자 점수 경계값, 홈 관리자 기기
+ * app_settings/home  (관리자 홈 배치, Firebase)
+ * localStorage rn-device (이 기기 이름) · rn-home (개인 홈 배치, 이 기기에만) */
+const APPSET_DEFAULT = {
+  priceBands: [3000, 6000, 10000, 20000, 30000, 50000, 80000, 100000, 150000, 300000],
+  costPerBook: 2000, feeRate: 0.1,
+  seller: { modelHigh: 70, modelLow: 35, gainHigh: 60, gainLow: 40 },
+  adminDevices: ['JS-MAIN'],
+};
+S.app = JSON.parse(JSON.stringify(APPSET_DEFAULT)); S.homeAdmin = null;
+const deviceName = () => localStorage.getItem('rn-device') || '';
+const isAdminDevice = () => (S.app.adminDevices || []).map((x) => String(x).trim().toUpperCase()).includes(deviceName().trim().toUpperCase());
+function watchAppSettings() {
+  db.collection('app_settings').doc('main').onSnapshot((d) => {
+    const x = d.exists ? d.data() : {};
+    S.app = { ...APPSET_DEFAULT, ...x, seller: { ...APPSET_DEFAULT.seller, ...(x.seller || {}) } };
+    S._pinv = null; S._sellerScores = null; renderMain(); if (S.tab === 'sellers' || S.tab === 'products') renderRank();
+  }, () => {});
+  db.collection('app_settings').doc('home').onSnapshot((d) => { S.homeAdmin = d.exists ? d.data() : null; if (S.tab === 'home') renderMain(); }, () => {});
+}
+const manLabel = (w) => (w >= 10000 ? (w % 10000 ? (w / 10000).toFixed(1).replace(/\.0$/, '') : w / 10000) + '만' : (w / 1000) + '천');
+function bandOf(p) {
+  const B = (S.app.priceBands || APPSET_DEFAULT.priceBands).slice().sort((a, b) => a - b);
+  if (p < B[0]) return `~${manLabel(B[0])}`;
+  for (let i = 1; i < B.length; i++) if (p < B[i]) return `${manLabel(B[i - 1])}~${manLabel(B[i])}`;
+  return `${manLabel(B[B.length - 1])} 이상`;
+}
+function bandKeys() { const B = (S.app.priceBands || APPSET_DEFAULT.priceBands).slice().sort((a, b) => a - b); return [`~${manLabel(B[0])}`, ...B.slice(1).map((b, i) => `${manLabel(B[i])}~${manLabel(b)}`), `${manLabel(B[B.length - 1])} 이상`]; }
+
+/* ══════════ 수집 진행 상황 (웹앱 상단, 리드나우 아래) ══════════
+ * 각 수집기가 30초마다 rn_status/{PC}에 진행 상황을 올림 → 남은 수량·남은 시간 표시.
+ * 진행 정보를 아직 안 올리는 수집기는 공용 잠금(crm_system/work_lock)으로 "어느 PC가 무엇을 하는지"만 표시. */
+S.runs = {}; S.lock = null;
+function watchRunStatus() {
+  db.collection('rn_status').onSnapshot((qs) => { qs.forEach((d) => (S.runs[d.id] = d.data())); renderJobs(); }, () => {});
+  db.collection('crm_system').doc('work_lock').onSnapshot((d) => { S.lock = d.exists ? d.data() : null; renderJobs(); }, () => {});
+  setInterval(renderJobs, 60000);
+}
+function fmtDur(min) { if (min == null || !isFinite(min)) return ''; if (min < 1) return '1분 미만'; const h = Math.floor(min / 60), m = Math.round(min % 60); return h ? `${h}시간 ${m}분` : `${m}분`; }
+function activeJobs() {
+  const now = Date.now(); const out = [];
+  for (const [id, s] of Object.entries(S.runs)) {
+    if (!s.running) continue; const ago = (now - (s.atMs || 0)) / 60000; if (ago > 10) continue;
+    out.push({ id, pc: s.pcName || id, tool: s.tool || '상품 수집기', label: s.state || s.running, done: s.done, total: s.total, eta: s.etaMin, stale: ago > 3, ago: Math.round(ago) });
+  }
+  const L = S.lock;
+  if (L && L.holder && now - (L.heartbeatMs || 0) < 5 * 60000 && !out.some((j) => j.pc === L.pcName)) out.push({ id: 'lock', pc: L.pcName, tool: '', label: L.taskLabel || L.task, noProgress: true });
+  return out;
+}
+function jobLine(j, long) {
+  const left = j.total ? Math.max(0, j.total - (j.done || 0)) : null;
+  const pct = j.total ? ((j.done || 0) / j.total * 100).toFixed(1) : null;
+  if (j.noProgress) return `<b>${esc(j.pc)}</b> · ${esc(j.label || '작업')} 진행 중${long ? ' <small>(진행률은 이 수집기 새 버전부터 표시)</small>' : ''}`;
+  return `<b>${esc(j.pc)}</b> · ${esc(j.tool ? j.tool + ': ' : '')}${esc(j.label || '')}${pct != null ? ` <b>${pct}%</b> · 남은 ${num(left)}건` : ''}${j.eta != null && !j.stale ? ` · 약 ${fmtDur(j.eta)}` : ''}${j.stale ? ` <em class="dn">신호 끊김 ${j.ago}분</em>` : ''}`;
+}
+function renderJobs() {
+  const el = $('#jobs'); if (!el) return; const js = activeJobs();
+  el.innerHTML = js.map((j) => `<div class="job">${j.total ? `<span class="jbar"><i style="width:${Math.min(100, (j.done || 0) / j.total * 100).toFixed(1)}%"></i></span>` : '<span class="jspin"></span>'}<span>${jobLine(j)}</span></div>`).join('');
+  if (S.tab === 'home') { const w = $('#w_jobs'); if (w) w.innerHTML = jobsWidgetBody(); }
+}
+function jobsWidgetBody() { const js = activeJobs(); const bs = typeof bulkState === 'function' && S.jobs ? `<div class="hint" style="margin:0 0 6px">${bulkState().txt}</div>` : ''; return bs + js.length ? js.map((j) => `<div class="job big">${j.total ? `<span class="jbar"><i style="width:${Math.min(100, (j.done || 0) / j.total * 100).toFixed(1)}%"></i></span>` : ''}<div>${jobLine(j, true)}</div></div>`).join('') : '<div class="hint" style="margin:0">지금 돌고 있는 수집 없음</div>'; }
+
+/* ══════════ 판매자 점수: 본보기 · 득실 ══════════
+ * 두 점수는 서로 다른 질문이다.
+ *  본보기 (배울 만한가): 돈을 잘 벌면서 오래 갈 수 있는 방식인가. 상도·기본 윤리를 어기면 크게 깎는다.
+ *  득실   (우리 돈에 어떤가): 순전히 북스킹의 매출·이익에 도움이 되는가 손해가 되는가. 50이 중립.
+ * 본보기이면서 '실'일 수 있다 (잘하는 강한 경쟁자 = 배우되 경계). 그래서 화면에서 두 축을 모양·색·위치로 분리한다. */
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const sRating = (s) => { const v = s.rating ?? s.rating6m; return v == null || v === '' ? null : Number(v); };
+const sOut = (s) => (s.outstockRate == null || s.outstockRate === '' ? null : s.sc ? Number(s.outstockRate) / 100 : Number(s.outstockRate));
+const sReviews = (s) => s.totalReviewCount || s.reviewsAll || null;
+const sItems = (s) => s.totalItems || s.stock || null;
+const sYears = (s) => (s.firstReviewDate ? (Date.now() - new Date(String(s.firstReviewDate).slice(0, 10))) / (365.25 * 864e5) : null);
+const sDays = (s) => s.shippingDays ?? s.actualDays ?? null;
+function sellerScore(s) {
+  const mp = []; let got = 0, wsum = 0; const add = (w, v, label, why) => { if (v == null) { mp.push({ label, pts: null, w, why: '자료 없음' }); return; } const p = clamp(v, 0, 1) * w; got += p; wsum += w; mp.push({ label, pts: p, w, why }); };
+  const r = sRating(s), o = sOut(s), rv = sReviews(s), it = sItems(s), y = sYears(s), d = sDays(s);
+  add(25, r == null ? null : (r - 0.95) / 0.045, '고객 신뢰 (평점)', r == null ? '' : `평점 ${(r * 100).toFixed(1)}%`);
+  add(20, o == null ? null : 1 - (o - 0.002) / 0.028, '약속 이행 (품절 취소율 낮음)', o == null ? '' : `품절 취소율 ${(o * 100).toFixed(2)}%`);
+  add(20, rv == null ? null : Math.log10(rv + 1) / Math.log10(50000), '판매 성과 (누적 평가 수)', rv == null ? '' : `평가 ${num(rv)}건 (판매량의 대리 지표)`);
+  add(15, y == null ? null : y / 10, '지속성 (업력)', y == null ? '' : `첫 평가부터 ${y.toFixed(1)}년`);
+  add(10, d == null ? null : 1 - (d - 1) / 4, '속도 (출고일)', d == null ? '' : `출고 ${d}일`);
+  add(10, it == null ? null : Math.log10(it + 1) / 5, '상품력 (보유 상품 수)', it == null ? '' : `보유 ${num(it)}개`);
+  const known = mp.filter((x) => x.pts != null).length;
+  let model = known >= 3 && wsum ? Math.round((got / wsum) * 100) : null; const gates = [];
+  if (sgOf(s) === 'fake') { gates.push('허위 매물 판매자 — 상도 위반'); if (model != null) model = Math.min(model, 15); else model = 10; }
+  if (o != null && o > 0.05) { gates.push(`품절 취소율 ${(o * 100).toFixed(1)}% — 없는 재고를 파는 방식으로 의심`); if (model != null) model = Math.min(model, 30); }
+  // 득실: 50에서 시작해 우리 매출·이익에 미치는 영향만 더하고 뺀다
+  const gp = []; let gain = 50; const g = (v, label) => { if (!v) return; gain += v; gp.push({ v, label }); };
+  const linked = (s.linkedCustomers || []).filter((l) => linkLevel(l) === 'match'); const bought = linked.reduce((a, l) => a + ((S.customers.get(l.customerId) || {}).salesAmount || 0), 0);
+  if (bought) g(Math.round(clamp(bought / 50000, 0, 1) * 20), `우리 책을 ${won(bought)} 사 감 (우리 고객으로서 매출)`);
+  if (it != null) g(-Math.round(clamp(Math.log10(it + 1) / 5, 0, 1) * 15), `보유 ${num(it)}개 — 같은 책에서 부딪칠 가능성`);
+  const gr = s.aladinGrade || ''; if (/파워|골드/.test(gr)) g(-5, `${gr} — 검색·노출에서 유리`);
+  if (s.freeShipping != null && s.freeShipping <= 15000) g(-5, `무료배송 ${won(s.freeShipping)}부터 — 묶음 구매 고객을 끌어감`);
+  if (s.shippingFee != null) { if (s.shippingFee >= 3000) g(5, `배송비 ${won(s.shippingFee)} — 우리 쪽이 상대적으로 쌈`); else if (s.shippingFee <= 1500) g(-5, `배송비 ${won(s.shippingFee)} — 싼 배송비로 고객을 끌어감`); }
+  if (r != null && r < 0.97) g(5, `평점 ${(r * 100).toFixed(1)}% — 고객이 떠날 여지`);
+  if (o != null && o > 0.01) g(5, `품절 취소 ${(o * 100).toFixed(1)}% — 취소된 고객이 다른 판매자로 옴`);
+  if (sgOf(s) === 'fake') g(-20, '허위 매물 — 가짜 최저가로 고객을 빼앗고 가격 판단을 흐림');
+  gain = clamp(Math.round(gain), 0, 100);
+  const T = S.app.seller; const mcls = model == null ? 'na' : model >= T.modelHigh ? 'good' : model <= T.modelLow || gates.length ? 'bad' : 'mid';
+  const gcls = gain >= T.gainHigh ? 'good' : gain <= T.gainLow ? 'bad' : 'mid';
+  return { model, mcls, mp, gates, gain, gcls, gp };
+}
+function scores() {
+  if (S._sellerScores && S._sellerScoresN === S.sellers.size) return S._sellerScores;
+  const m = new Map(); for (const s of S.sellers.values()) m.set(s.id, sellerScore(s));
+  S._sellerScores = m; S._sellerScoresN = S.sellers.size; return m;
+}
+const MODEL_TXT = { good: '본보기', mid: '보통', bad: '반면교사', na: '판단 보류' };
+const GAIN_TXT = { good: '득', mid: '중립', bad: '실' };
+const modelBadge = (x) => `<span class="mb ${x.mcls}" title="본보기 점수: 배울 만한가">${x.mcls === 'bad' ? '✕' : x.mcls === 'good' ? '★' : '☆'} ${MODEL_TXT[x.mcls]}${x.model != null ? ` <b>${x.model}</b>` : ''}</span>`;
+const gainBadge = (x) => `<span class="gb ${x.gcls}" title="득실 점수: 우리 돈에 이득인가">₩${x.gcls === 'good' ? '＋' : x.gcls === 'bad' ? '－' : '·'} ${GAIN_TXT[x.gcls]} <b>${x.gain}</b></span>`;
+function quadrant(x) {
+  if (x.mcls === 'good' && x.gcls === 'bad') return '강한 경쟁자 — 배우되 경계';
+  if (x.mcls === 'good' && x.gcls !== 'bad') return '좋은 본보기 — 적극적으로 배움';
+  if (x.mcls === 'bad' && x.gcls === 'good') return '약한 경쟁자 — 우리에겐 이득, 따라 하지 않음';
+  if (x.mcls === 'bad' && x.gcls === 'bad') return '위협 — 따라 하지 말고 대응';
+  return '';
+}
+function modelReasons(x, n = 2) { const pos = x.mp.filter((p) => p.pts != null).sort((a, b) => b.pts / b.w - a.pts / a.w); const good = pos.slice(0, n).filter((p) => p.pts / p.w >= 0.6).map((p) => p.why); const weak = pos.slice(-n).filter((p) => p.pts / p.w < 0.4).map((p) => p.why); return { good, weak: [...x.gates, ...weak] }; }
+function gainReasons(x) { const s = x.gp.slice().sort((a, b) => Math.abs(b.v) - Math.abs(a.v)); return { plus: s.filter((a) => a.v > 0).map((a) => a.label), minus: s.filter((a) => a.v < 0).map((a) => a.label) }; }
+
+function sellerRankBoards() {
+  const all = [...S.sellers.values()]; const sc = scores();
+  const L = (key, asc) => all.filter((s) => key(s) != null && key(s) !== 0).sort((a, b) => (asc ? key(a) - key(b) : key(b) - key(a)));
+  const row = (s, v, why) => `<li data-sid="${esc(s.id)}"><span class="rn"></span><span class="rnm">${esc(s.name || '(이름 없음)')}${why ? `<small class="rwhy">${esc(why)}</small>` : ''}</span><span class="rv">${v}</span></li>`;
+  const plain = [
+    ['mid', '평가 많은 순', L(sReviews).map((s) => row(s, num(sReviews(s)) + '건'))],
+    ['mid', '보유 상품 많은 순', L(sItems).map((s) => row(s, num(sItems(s)) + '개'))],
+    ['mid', '오래된 사업자 순', all.filter((s) => s.firstReviewDate).sort((a, b) => String(a.firstReviewDate).localeCompare(String(b.firstReviewDate))).map((s) => row(s, `${sYears(s).toFixed(1)}년`, `첫 평가 ${d10(s.firstReviewDate)}`))],
+  ];
+  const withS = all.map((s) => [s, sc.get(s.id)]).filter(([, x]) => x);
+  const model = [
+    ['model good', '★ 본보기 판매자', withS.filter(([, x]) => x.mcls === 'good').sort((a, b) => b[1].model - a[1].model).map(([s, x]) => row(s, x.model, modelReasons(x).good.join(' · ')))],
+    ['model bad', '✕ 반면교사 판매자', withS.filter(([, x]) => x.mcls === 'bad').sort((a, b) => (a[1].model ?? 0) - (b[1].model ?? 0)).map(([s, x]) => row(s, x.model ?? '-', modelReasons(x).weak.join(' · ')))],
+  ];
+  const gain = [
+    ['gain good', '₩＋ 우리에게 득', withS.filter(([, x]) => x.gcls === 'good').sort((a, b) => b[1].gain - a[1].gain).map(([s, x]) => row(s, x.gain, gainReasons(x).plus.join(' · ')))],
+    ['gain bad', '₩－ 우리에게 실', withS.filter(([, x]) => x.gcls === 'bad').sort((a, b) => a[1].gain - b[1].gain).map(([s, x]) => row(s, x.gain, gainReasons(x).minus.join(' · ')))],
+  ];
+  const sect = (tone, title, rows) => `<section class="rk ${tone}"><h4>${title}</h4><ol class="num">${fold('srk_' + title, rows) || '<li class="empty">없음</li>'}</ol></section>`;
+  return `<div class="axis model"><div class="axh"><b>★ 본보기</b><span>배울 만한가 — 돈을 잘 벌면서 오래 갈 방식인가</span></div>${model.map((b) => sect(...b)).join('')}</div>
+    <div class="axis gain"><div class="axh"><b>₩ 득실</b><span>우리 돈에 어떤가 — 북스킹 매출·이익에 이득인가 손해인가</span></div>${gain.map((b) => sect(...b)).join('')}</div>
+    <div class="axis plain"><div class="axh"><b>규모·경력</b><span>점수 아님, 사실 순위</span></div>${plain.map((b) => sect(...b)).join('')}</div>
+    <p class="hint">본보기와 득실은 서로 다른 질문이라 한 판매자가 '본보기'이면서 '실'일 수 있습니다 (강한 경쟁자). 기준은 위쪽 '점수 기준' → 판매자 점수.</p>`;
+}
+
+/* ══════════ 상품 순위 TOP10 (북스킹 판매 기준) ══════════ */
+S.qnaAll = null;
+async function loadQnaAll() { if (S.qnaAll) return; S.qnaAll = 'loading'; try { const ss = await db.collection('crm_interactions').where('type', '==', 'qna').get(); const a = []; ss.forEach((d) => a.push(d.data())); S.qnaAll = a; } catch (e) { S.qnaAll = []; } renderRank(); }
+function lineFee(o, it, amt) {
+  if (it.fee != null && Number.isFinite(+it.fee)) return +it.fee;
+  const oAmt = (o.items || []).reduce((s, x) => s + (x.lineStatus === 'normal' ? (x.price || 0) * (x.qty || 1) : 0), 0);
+  if (o.fee != null && oAmt) return o.fee * (amt / oAmt);
+  return amt * (S.app.feeRate || 0);
+}
+function bookStats(r) {
+  const m = new Map();
+  for (const o of S.orders.values()) {
+    if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue;
+    for (const it of o.items || []) {
+      if (it.lineStatus !== 'normal') continue;
+      const k = it.isbn13 || norm(it.title); if (!k) continue; const q = it.qty || 1; const amt = (it.price || 0) * q;
+      const x = m.get(k) || { k, title: it.title, code: it.aladinUsedCode, qty: 0, amt: 0, maxUnit: 0, profit: 0, fee: 0 };
+      const fee = lineFee(o, it, amt); x.qty += q; x.amt += amt; x.fee += fee; x.profit += amt - fee - (S.app.costPerBook || 0) * q; x.maxUnit = Math.max(x.maxUnit, it.price || 0); if (it.aladinUsedCode) x.code = it.aladinUsedCode;
+      m.set(k, x);
+    }
+  }
+  return m;
+}
+function productRankBoards() {
+  const r = rangeFor('prank', 'all');
+  if (!S.ordersLoaded) return `${picker('prank', 'all')}<div class="empty">주문 기록을 받는 중입니다</div>`;
+  const m = [...bookStats(r).values()];
+  if (!Array.isArray(S.qnaAll)) loadQnaAll();
+  const qm = new Map(); if (Array.isArray(S.qnaAll)) S.qnaAll.forEach((q) => { if (!inRange(q.createdAt, r)) return; const t = String(q.title || '').replace(/^\[중고[^\]]*\]\s*/, ''); if (!t) return; qm.set(t, (qm.get(t) || 0) + 1); });
+  const row = (b, v, sub) => `<li data-book="${esc(b.code || '')}" data-btitle="${esc(b.title || '')}"><span class="rn"></span><span class="rnm">${esc(b.title || '')}${sub ? `<small class="rwhy">${sub}</small>` : ''}</span><span class="rv">${v}</span></li>`;
+  const top = (key, f, sub) => m.filter((b) => key(b) > 0).sort((a, b) => key(b) - key(a)).map((b) => row(b, f(key(b)), sub ? sub(b) : ''));
+  const boards = [
+    ['good', '가장 많이 팔린 책', top((b) => b.qty, (v) => v + '권', (b) => won(b.amt))],
+    ['good', '매출 합계가 높은 책', top((b) => b.amt, won, (b) => `${b.qty}권`)],
+    ['good', '한 권 값이 높은 책', top((b) => b.maxUnit, won, (b) => `${b.qty}권 판매`)],
+    ['good', '순이익이 높은 책', top((b) => b.profit, (v) => won(Math.round(v)), (b) => `매출 ${won(b.amt)} − 수수료 ${won(Math.round(b.fee))} − 매입 ${won((S.app.costPerBook || 0) * b.qty)}`)],
+    ['mid', '문의가 많은 책', !Array.isArray(S.qnaAll) ? 'wait' : [...qm.entries()].sort((a, b) => b[1] - a[1]).map(([t, n]) => row({ title: t }, n + '건'))],
+  ];
+  return `${picker('prank', 'all')}` + boards.map(([tone, title, rows]) => `<section class="rk ${tone}"><h4>${title}</h4><ol class="num">${rows === 'wait' ? '<li class="empty">불러오는 중</li>' : fold('prk_' + title + r.kind, rows) || '<li class="empty">없음</li>'}</ol></section>`).join('')
+    + `<p class="hint">순이익 = 매출 − 판매 수수료 − 권당 매입 비용 ${won(S.app.costPerBook)} (설정에서 변경). 수수료는 주문 기록의 실제 수수료, 없으면 추정 ${Math.round((S.app.feeRate || 0) * 100)}%. 택배비는 '택배비 정산'에서 따로 봅니다. 매입가 기록이 생기면 책마다 실제 매입가로 바뀝니다.</p>`;
+}
+
+/* ══════════ 설정 탭 ══════════ */
+function renderSettings(m) {
+  const a = S.app; const adm = isAdminDevice(); const T = a.seller;
+  m.innerHTML = `<div class="card"><h3>이 기기</h3><label class="set">이 기기 이름 <input id="st_dev" value="${esc(deviceName())}" placeholder="예: JS-MAIN, 사무실-1, 아내폰"></label>
+      <p class="hint">${adm ? '<b style="color:var(--cloth)">관리자 기기입니다.</b> 홈 관리자 페이지와 관리자 기기 목록을 바꿀 수 있습니다.' : '관리자 기기가 아닙니다. 홈 관리자 페이지는 볼 수만 있습니다.'} 기기 이름은 이 기기에만 저장됩니다.</p></div>
+    <div class="card"><h3>판매가 구간 (상품 탭 분포)</h3><label class="set">구간 경계 (원, 쉼표로) <input id="st_bands" value="${(a.priceBands || []).join(', ')}"></label>
+      <div class="hint" id="st_bandprev"></div></div>
+    <div class="card"><h3>이익 계산</h3>
+      <label class="set">권당 매입 비용 (원) <input id="st_cost" type="number" step="100" value="${a.costPerBook}"></label>
+      <label class="set">수수료 기록이 없는 주문의 추정 수수료율 (%) <input id="st_fee" type="number" step="0.1" value="${Math.round((a.feeRate || 0) * 1000) / 10}"></label>
+      <p class="hint">매입가 기록이 생기면 권당 매입 비용 대신 책마다 실제 매입가를 쓰도록 바뀝니다.</p></div>
+    <div class="card"><h3>판매자 점수 경계</h3><div class="cfg">
+      <label>★ 본보기: 본보기 점수 <input type="number" id="st_mh" value="${T.modelHigh}"> 점 이상</label>
+      <label>✕ 반면교사: 본보기 점수 <input type="number" id="st_ml" value="${T.modelLow}"> 점 이하 (또는 윤리 위반)</label>
+      <label>₩＋ 득: 득실 점수 <input type="number" id="st_gh" value="${T.gainHigh}"> 점 이상</label>
+      <label>₩－ 실: 득실 점수 <input type="number" id="st_gl" value="${T.gainLow}"> 점 이하</label></div></div>
+    <div class="card"><h3>홈 관리자 기기</h3><label class="set">기기 이름 (쉼표로) <input id="st_admins" value="${esc((a.adminDevices || []).join(', '))}" ${adm ? '' : 'disabled'}></label>
+      <p class="hint">${adm ? '여기 적힌 기기만 홈 관리자 페이지를 편집할 수 있습니다. 자기 기기를 빼면 다시 넣을 수 없으니 주의하세요.' : '관리자 기기에서만 바꿀 수 있습니다.'}</p></div>
+    <div style="display:flex;gap:8px;margin:12px 0"><button class="btn" id="st_save">저장 (모든 기기에 반영)</button><button class="btn ghost" id="st_def">처음 값으로</button></div>
+    ${a.updatedByName ? `<p class="hint">마지막 변경: ${esc(a.updatedByName)} ${tsText(a.updatedAt)}</p>` : ''}`;
+  const prev = () => { const B = $('#st_bands').value.split(/[,\s]+/).map((x) => +x).filter((x) => x > 0); const save = S.app.priceBands; S.app.priceBands = B.length ? B : save; $('#st_bandprev').textContent = '구간: ' + bandKeys().join(' · '); S.app.priceBands = save; };
+  $('#st_bands').oninput = prev; prev();
+  $('#st_dev').onchange = (e) => { localStorage.setItem('rn-device', e.target.value.trim()); toast('이 기기 이름 저장'); renderMain(); };
+  $('#st_def').onclick = () => { $('#st_bands').value = APPSET_DEFAULT.priceBands.join(', '); $('#st_cost').value = APPSET_DEFAULT.costPerBook; $('#st_fee').value = APPSET_DEFAULT.feeRate * 100; const d = APPSET_DEFAULT.seller; $('#st_mh').value = d.modelHigh; $('#st_ml').value = d.modelLow; $('#st_gh').value = d.gainHigh; $('#st_gl').value = d.gainLow; prev(); };
+  $('#st_save').onclick = async () => {
+    const B = $('#st_bands').value.split(/[,\s]+/).map((x) => +x).filter((x) => x > 0).sort((x, y) => x - y);
+    const x = { priceBands: B.length ? [...new Set(B)] : APPSET_DEFAULT.priceBands, costPerBook: Math.max(0, +$('#st_cost').value || 0), feeRate: Math.max(0, (+$('#st_fee').value || 0) / 100),
+      seller: { modelHigh: +$('#st_mh').value, modelLow: +$('#st_ml').value, gainHigh: +$('#st_gh').value, gainLow: +$('#st_gl').value } };
+    if (adm) { const L = $('#st_admins').value.split(',').map((s) => s.trim()).filter(Boolean); if (!L.length) return toast('관리자 기기를 하나 이상 남겨 주세요'); x.adminDevices = L; }
+    try { await db.collection('app_settings').doc('main').set({ ...x, updatedBy: S.user.email, updatedByName: S.user.displayName || S.user.email, updatedAt: TS() }, { merge: true }); toast('저장했습니다. 모든 기기에 반영됩니다'); } catch (e) { toast('저장 실패: ' + e.message); }
+  };
+}
+
+/* ══════════ 홈: 원하는 칸을 골라 조합 ══════════
+ * 개인 페이지: 이 기기에만 저장 (rn-home). 관리자 페이지: Firebase에 저장, 관리자 기기만 편집. 개인 배치가 없으면 관리자 배치를 따름. */
+const WIDGETS = {
+  jobs: ['수집 진행 상황', () => `<div id="w_jobs">${jobsWidgetBody()}</div>`],
+  sales: ['매출 요약', () => { if (!S.ordersLoaded) return '<div class="hint" style="margin:0">주문 기록을 받는 중</div>'; const c = [['day', '오늘'], ['r7', '최근 7일'], ['r30', '최근 30일'], ['month', '이번 달']].map(([k, l]) => { const A = agg(rangeOf(k, 0)); return mcell(won(A.amt), l, `주문 ${num(A.orders)}건 · ${num(A.qty)}권`); }); return `<div class="mgrid">${c.join('')}</div>`; }],
+  cust: ['고객 현황', () => { const all = [...S.customers.values()]; const cnt = (k) => all.filter((c) => flagsOf(c)[k]).length; return `<div class="stats five"><div class="stat"><b>${num(all.length)}</b><span>고객</span></div><button class="stat" data-go="flags:vip"><b>${cnt('vip')}</b><span>VIP</span></button><button class="stat warn" data-go="flags:cau"><b>${cnt('cau')}</b><span>주의</span></button><button class="stat bad" data-go="flags:bl"><b>${cnt('bl')}</b><span>블랙리스트</span></button><button class="stat" data-go="pending"><b>${S.pending.length}</b><span>연결 확정</span></button></div>`; }],
+  inv: ['재고 요약', () => { loadProducts(); if (!S.prodLoaded) return '<div class="hint" style="margin:0">상품 기록을 받는 중</div>'; const I = prodInv(); const old = I.bucket['181~365일'][0] + I.bucket['1년 넘음'][0]; return `<div class="mgrid">${mcell(num(I.n) + '종', '재고 품목', `${num(I.qty)}권`)}${mcell(won(I.value), '재고 금액', '판매가 기준')}${mcell(I.ageAvg != null ? num(I.ageAvg) + '일' : '-', '평균 재고 연령', '')}${mcell(pctv(old, I.qty) + '%', '장기 재고 (180일+)', `${num(old)}권`)}</div>`; }],
+  topBooks: ['최근 30일 많이 팔린 책', () => { if (!S.ordersLoaded) return '<div class="hint" style="margin:0">주문 기록을 받는 중</div>'; const m = [...bookStats(rangeOf('r30', 0)).values()].sort((a, b) => b.qty - a.qty).slice(0, 5); return `<ol class="wl">${m.map((b) => `<li><span>${esc(b.title)}</span><b>${b.qty}권</b></li>`).join('') || '<li>없음</li>'}</ol>`; }],
+  topCust: ['최근 30일 매출 상위 고객', () => { if (!S.ordersLoaded) return '<div class="hint" style="margin:0">주문 기록을 받는 중</div>'; const A = agg(rangeOf('r30', 0)); const t = [...A.cust.entries()].sort((a, b) => b[1].amt - a[1].amt).slice(0, 5); return `<ol class="wl">${t.map(([cid, c]) => `<li data-cid="${esc(cid)}"><span>${esc((S.customers.get(cid) || {}).displayName || '(이름 없음)')}</span><b>${won(c.amt)}</b></li>`).join('') || '<li>없음</li>'}</ol>`; }],
+  sellers: ['판매자 본보기·득실', () => { if (!S.sellersLoaded) return '<div class="hint" style="margin:0">판매자 목록을 받는 중</div>'; const sc = scores(); const all = [...S.sellers.values()].map((s) => [s, sc.get(s.id)]); const g = all.filter(([, x]) => x.mcls === 'good').sort((a, b) => b[1].model - a[1].model).slice(0, 3); const b = all.filter(([, x]) => x.gcls === 'bad').sort((a, b2) => a[1].gain - b2[1].gain).slice(0, 3); return `<div class="axis model mini"><div class="axh"><b>★ 본보기</b></div><ol class="wl">${g.map(([s, x]) => `<li data-sid="${esc(s.id)}"><span>${esc(s.name)}</span><b>${x.model}</b></li>`).join('') || '<li>없음</li>'}</ol></div><div class="axis gain mini"><div class="axh"><b>₩－ 실</b></div><ol class="wl">${b.map(([s, x]) => `<li data-sid="${esc(s.id)}"><span>${esc(s.name)}</span><b>${x.gain}</b></li>`).join('') || '<li>없음</li>'}</ol></div>`; }],
+  recent: ['최근 등록 상품', () => { loadProducts(); if (!S.prodLoaded) return '<div class="hint" style="margin:0">상품 기록을 받는 중</div>'; const r = [...S.plist.values()].filter((l) => l.active).sort((a, b) => String(b.registeredAt || '').localeCompare(String(a.registeredAt || ''))).slice(0, 5); return `<div class="list">${r.map(prodRow).join('')}</div>`; }],
+  reviews: ['구매평 (평가 참여)', () => { if (!S.reviewsLoaded) return '<div class="hint" style="margin:0">구매평 기록을 받는 중</div>'; const { byC, all } = reviewStats(); const T = { good: 0, mid: 0, bad: 0 }; all.forEach((r) => (T[r._r] += 1)); const n = all.length; const p = (x) => (n ? Math.round((x / n) * 1000) / 10 : 0); const since = dstr(new Date(Date.now() - 30 * 864e5)); const w = all.filter((r) => String(r.createdAt || '').slice(0, 10) >= since); const low = w.filter((r) => r._r !== 'good').length;
+    return `<div class="mgrid">${mcell(p(T.good) + '%', '만족률', `만족 ${num(T.good)} · 보통 ${T.mid} · 불만족 ${T.bad}`)}${mcell(num(byC.size) + '명', '평가한 고객', `구매평 ${num(n)}건`)}${mcell(w.length ? Math.round((low / w.length) * 1000) / 10 + '%' : '-', '최근 30일 보통·불만족', `평가 ${w.length}건`)}</div><div class="sc" style="margin-top:8px"><button data-go="search" data-cv2="reviews">평가 참여 자세히</button></div>`; }],
+  shortcuts: ['바로가기', () => `<div class="sc">${[['search', '고객'], ['orders', '주문·매출'], ['products', '상품'], ['sellers', '판매자'], ['flags', '표시 고객'], ['pending', '연결 확정'], ['settings', '설정']].map(([k, l]) => `<button data-go="${k}">${l}</button>`).join('')}</div>`],
+};
+const HOME_DEFAULT = ['jobs', 'sales', 'cust', 'reviews', 'inv', 'topBooks', 'topCust', 'sellers', 'shortcuts'];
+function homeLayout(mode) {
+  const adm = (S.homeAdmin && S.homeAdmin.widgets) || HOME_DEFAULT;
+  if (mode === 'admin') return adm.filter((k) => WIDGETS[k]);
+  const p = JSON.parse(localStorage.getItem('rn-home') || 'null'); return (p || adm).filter((k) => WIDGETS[k]);
+}
+function renderHome(m) {
+  const mode = S.homeMode || 'personal'; const edit = S.homeEdit && (mode === 'personal' || isAdminDevice());
+  const lay = homeLayout(mode); const personalSaved = !!localStorage.getItem('rn-home');
+  const head = `<div class="homebar"><div class="ptabs"><button class="${mode === 'personal' ? 'on' : ''}" data-hm="personal">개인 페이지</button><button class="${mode === 'admin' ? 'on' : ''}" data-hm="admin">관리자 페이지</button></div>
+    <button class="btn ghost sm" id="hedit" ${mode === 'admin' && !isAdminDevice() ? 'disabled title="관리자 기기만 편집할 수 있습니다"' : ''}>${edit ? '편집 끝내기' : '편집'}</button></div>
+    <p class="hint" style="margin:4px 2px 8px">${mode === 'personal' ? (personalSaved ? '이 기기에만 저장된 내 배치입니다.' : '아직 내 배치가 없어 관리자 배치를 보여 줍니다. 편집하면 이 기기에만 저장됩니다.') : `모든 기기가 기본으로 보는 배치입니다.${isAdminDevice() ? '' : ' 관리자 기기에서만 바꿀 수 있습니다.'}${S.homeAdmin && S.homeAdmin.byName ? ` 마지막 변경: ${esc(S.homeAdmin.byName)}` : ''}`}</p>`;
+  if (edit) {
+    const rows = lay.map((k, i) => `<div class="hrow"><b>${WIDGETS[k][0]}</b><span><button data-mv="${i}:-1" ${i ? '' : 'disabled'}>↑</button><button data-mv="${i}:1" ${i < lay.length - 1 ? '' : 'disabled'}>↓</button><button data-rm="${i}">빼기</button></span></div>`).join('');
+    const add = Object.keys(WIDGETS).filter((k) => !lay.includes(k)).map((k) => `<button data-add="${k}">＋ ${WIDGETS[k][0]}</button>`).join('');
+    m.innerHTML = head + `<div class="card"><h3>보이는 칸 (위에서부터)</h3>${rows || '<div class="hint">없음</div>'}<h3 style="margin-top:12px">더할 수 있는 칸</h3><div class="sc">${add || '<span class="hint">모두 들어 있음</span>'}</div>
+      ${mode === 'personal' && personalSaved ? '<button class="btn ghost" id="hreset" style="margin-top:12px">내 배치 지우고 관리자 배치 따르기</button>' : ''}</div>`;
+    const save = async (L) => { if (mode === 'personal') { localStorage.setItem('rn-home', JSON.stringify(L)); renderMain(); } else { try { await db.collection('app_settings').doc('home').set({ widgets: L, by: S.user.email, byName: S.user.displayName || S.user.email, device: deviceName(), at: TS() }); } catch (e) { toast('저장 실패: ' + e.message); } } };
+    m.querySelectorAll('[data-mv]').forEach((b) => (b.onclick = () => { const [i, d] = b.dataset.mv.split(':').map(Number); const L = lay.slice(); [L[i], L[i + d]] = [L[i + d], L[i]]; save(L); }));
+    m.querySelectorAll('[data-rm]').forEach((b) => (b.onclick = () => { const L = lay.slice(); L.splice(+b.dataset.rm, 1); save(L); }));
+    m.querySelectorAll('[data-add]').forEach((b) => (b.onclick = () => save([...lay, b.dataset.add])));
+    const hr = $('#hreset'); if (hr) hr.onclick = () => { localStorage.removeItem('rn-home'); renderMain(); };
+  } else {
+    m.innerHTML = head + lay.map((k) => `<div class="card wcard"><h3>${WIDGETS[k][0]}</h3>${WIDGETS[k][1]()}</div>`).join('');
+    m.querySelectorAll('[data-sid]').forEach((b) => (b.onclick = () => openSeller(b.dataset.sid)));
+    m.querySelectorAll('[data-pid]').forEach((b) => (b.onclick = () => openProduct(b.dataset.pid)));
+  }
+  m.querySelectorAll('[data-hm]').forEach((b) => (b.onclick = () => { S.homeMode = b.dataset.hm; S.homeEdit = false; renderMain(); }));
+  $('#hedit').onclick = () => { S.homeEdit = !S.homeEdit; renderMain(); };
+  if (!S.sellersLoaded && lay.includes('sellers')) syncSellers().then(() => { if (S.tab === 'home') renderMain(); }).catch(() => {});
+}
+
+/* 판매자 점수 도움말 (점수 기준 창의 '판매자 점수' 탭) */
+function sellerHelp() {
+  const T = S.app.seller;
+  return `<p class="hint">판매자는 <b>두 가지 질문</b>으로 따로 봅니다. 사업은 돈이 먼저이고, 그 돈이 오래 가야 합니다. 그래서 "배울 만한가"와 "우리 돈에 어떤가"를 섞지 않습니다.</p>
+    <h4 class="mh" style="color:#4B4E9E">★ 본보기 점수 — 배울 만한가 (100점)</h4>
+    <p class="hint">돈을 잘 벌면서 오래 갈 수 있는 방식인지 봅니다. 오래 살아남아 크게 성공한 가게들(아마존의 고객 신뢰·약속 이행, 코스트코의 적정 마진과 회원 유지, 오프라인 헌책방 중 수십 년 가는 곳들)의 공통점은 ① 고객 신뢰 ② 약속을 지킴(없는 물건을 팔지 않음) ③ 실제 판매 성과 ④ 오래 버틴 것 ⑤ 빠른 처리 ⑥ 상품력입니다. 반대로 상도를 어기면 당장은 벌어도 오래 못 갑니다 — 그런 판매자는 점수를 강제로 낮춥니다.</p>
+    <table class="tbl"><tr><th>요소</th><th>배점</th><th>기준</th></tr>
+      <tr><td>고객 신뢰 (평점)</td><td>25</td><td>평점 95% 이하 0점 → 99.5% 이상 만점</td></tr>
+      <tr><td>약속 이행 (품절 취소율)</td><td>20</td><td>0.2% 이하 만점 → 3% 이상 0점</td></tr>
+      <tr><td>판매 성과 (누적 평가 수)</td><td>20</td><td>평가 수는 판매량의 대리 지표. 로그 척도, 5만 건이면 만점 — 돈을 실제로 버는가</td></tr>
+      <tr><td>지속성 (업력)</td><td>15</td><td>첫 평가일부터 10년이면 만점</td></tr>
+      <tr><td>속도 (출고일)</td><td>10</td><td>1일 만점 → 5일 0점</td></tr>
+      <tr><td>상품력 (보유 상품 수)</td><td>10</td><td>로그 척도, 10만 개면 만점</td></tr>
+      <tr><td><b>윤리 기준</b></td><td>상한</td><td>허위 매물 → 최대 15점 · 품절 취소율 5% 초과(없는 재고 판매 의심) → 최대 30점</td></tr></table>
+    <p class="hint">자료가 없는 요소는 빼고 나머지 비율로 계산합니다. 요소가 3개 미만이면 '판단 보류'. ★ 본보기 ${T.modelHigh}점 이상 · ✕ 반면교사 ${T.modelLow}점 이하 또는 윤리 위반 (설정에서 변경).</p>
+    <h4 class="mh" style="color:#2F7D4F">₩ 득실 점수 — 우리 돈에 어떤가 (50 = 중립)</h4>
+    <p class="hint">순전히 북스킹의 매출·이익에 미치는 영향만 봅니다. 착한 판매자인지와는 상관없습니다.</p>
+    <table class="tbl"><tr><th>요소</th><th>점수</th><th>이유</th></tr>
+      <tr><td>우리 책을 사 감</td><td>+0~20</td><td>우리고객 정보와 일치하는 판매자의 구매액 (5만 원이면 +20). 우리 가격이 싸다는 신호이기도 함</td></tr>
+      <tr><td>규모 (보유 상품)</td><td>−0~15</td><td>상품이 많을수록 같은 책에서 부딪칠 가능성</td></tr>
+      <tr><td>파워·골드 등급</td><td>−5</td><td>검색·노출에서 유리</td></tr>
+      <tr><td>무료배송 기준 1만5천 원 이하</td><td>−5</td><td>묶음 구매 고객을 끌어감</td></tr>
+      <tr><td>배송비</td><td>±5</td><td>3천 원 이상이면 +5 (우리가 상대적으로 쌈), 1,500원 이하면 −5</td></tr>
+      <tr><td>평점 97% 미만 · 품절 취소 1% 초과</td><td>각 +5</td><td>그쪽 고객이 떠나 우리에게 올 여지</td></tr>
+      <tr><td>허위 매물</td><td>−20</td><td>가짜 최저가로 고객을 빼앗고 우리 가격 판단을 흐림</td></tr></table>
+    <p class="hint">₩＋ 득 ${T.gainHigh}점 이상 · ₩－ 실 ${T.gainLow}점 이하. 상품 기록과 판정 엔진이 연결되면 '우리와 겹치는 책 수'·'우리보다 싸게 파는 빈도'를 더해 더 정확해집니다.</p>
+    <h4 class="mh">두 점수를 함께 읽는 법</h4>
+    <table class="tbl"><tr><th></th><th>₩＋ 득 / 중립</th><th>₩－ 실</th></tr>
+      <tr><th>★ 본보기</th><td>좋은 본보기 — 적극적으로 배움</td><td>강한 경쟁자 — 배우되 경계</td></tr>
+      <tr><th>✕ 반면교사</th><td>약한 경쟁자 — 우리에겐 이득, 따라 하지 않음</td><td>위협 — 따라 하지 말고 대응</td></tr></table>
+    <p class="hint">화면에서는 본보기는 <b>별(★/✕)·남색</b>, 득실은 <b>₩ 기호·초록/빨강</b>으로 모양과 색을 다르게 해서 섞이지 않게 했습니다.</p>`;
+}
+
 /* ── 로그인 ── */
 function loginView(err) {
-  $('#app').innerHTML = `<div class="login"><h1>리드나우 고객</h1><p>등록된 구글 계정으로 로그인하세요</p>
+  $('#app').innerHTML = `<div class="login"><h1>리드나우</h1><p>등록된 구글 계정으로 로그인하세요</p>
     <button class="btn" id="g">구글 계정으로 로그인</button>${err ? `<p style="color:var(--red);margin-top:12px">${esc(err)}</p>` : ''}
     <details><summary>Firebase 전용 계정으로 로그인</summary><input id="em" type="email" placeholder="이메일" autocomplete="username"><input id="pw" type="password" placeholder="비밀번호" autocomplete="current-password"><button class="btn ghost" id="e" style="margin-top:8px;width:100%">로그인</button></details></div>`;
   $('#g').onclick = () => firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch((e) => loginView(e.code === 'auth/popup-blocked' ? '팝업이 막혔습니다. 브라우저에서 팝업을 허용해 주세요.' : e.message));
@@ -1436,7 +1801,7 @@ firebase.auth().onAuthStateChanged(async (u) => {
   try { await syncCustomers(); } catch (e) { setSync(e.code === 'permission-denied' ? '권한 없음: 등록된 계정이 아닙니다' : '연결 실패: 기기에 저장된 내용 표시 중'); }
   watchPending(); renderMain();
   const hm = location.hash.match(/#c=([^&]+)/); if (hm) { history.replaceState(null, '', location.pathname); openCustomer(decodeURIComponent(hm[1])); }
-  watchConfig(); watchAcct(); watchJobs(); watchRemote();
+  watchConfig(); watchAcct(); watchJobs(); watchRemote(); watchAppSettings(); watchRunStatus();
   // 로그인하면 주문 기록·판매자 목록도 자동으로 받아 둠 (처음 한 번은 전체, 이후엔 바뀐 것만)
   try {
     const os = await idbAll('orders'); if (os.length) { os.forEach((v) => { v._sk = orderKey(v); S.orders.set(v.id, v); }); S.ordersLoaded = true; }
