@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.2.0';
+  const VERSION = '0.3.0';
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -408,6 +408,43 @@
     return out;
   }
 
+  // ---------- 상품 유형: 책 / 영상(DVD·블루레이·VHS) / 음반(CD·LP) / 기타 상품 ----------
+  // 근거 순서: 제목의 매체 표시 → 알라딘 분류 → 코드 종류 → ISBN → 기타 상품 낱말 → 나머지는 책(세트 등)으로 추정
+  const MEDIA = { book: '책', video: 'DVD·블루레이·VHS', music: 'CD·LP', other: '기타 상품' };
+  const RE_VIDEO = /\[(?:\d+\s*K\s*|UHD\s*|3D\s*)?(?:블루레이|blu-?ray|DVD|VHS|UHD)[^\]]*\]|블루레이|blu-?ray|\bDVDs?\b|\bVHS\b|4K\s*UHD|스틸북|\[dts\]|\b\d+\s*disc\b|디스크\)/i;
+  const RE_MUSIC = /\[(?:LP|CD|SACD|카세트|cassette|수입\s*LP|2LP|3LP)[^\]]*\]|\(\s*\d?\s*LP\s*\)|\b\d?LP\b|바이닐|vinyl|\bSACD\b|\[CD\]|카세트\s*테이프/i;
+  const RE_OTHER = /굿즈|피규어|키링|머그컵|에코백|문구|퍼즐(?!\s*북)|보드\s*게임|카드\s*게임|SD\s*카드|메모리\s*카드|아크릴\s*스탠드(?!.*권)|포스터(?!\s*북)|달력(?!.*책)/i;
+  function mediaType(x) {
+    const title = String(x.title || x.titleRaw || ''); const cats = (x.categories || []).map((c) => (c.path || [])[0]).filter(Boolean);
+    const ids = x.ids || []; const kinds = new Set(ids.map((c) => c.kind));
+    const hasIsbn = ids.some((c) => (c.kind === 'isbn13' || c.kind === 'isbn10') && c.valid) || /^97[89]\d{10}$/.test(String(x.isbn13 || ''));
+    const r = (t, why) => ({ type: t, label: MEDIA[t], why });
+    // 1) 제목 앞의 매체 표시가 가장 확실 (책에 딸린 CD·DVD는 ISBN이 있어 책으로 둠)
+    const head = title.slice(0, 40);
+    if (/^\s*(\[[^\]]*\]\s*)*\[(?:\d+\s*K\s*|UHD\s*|3D\s*)?(?:블루레이|blu-?ray|DVD|VHS|UHD)/i.test(head)) return r('video', '제목의 [블루레이]·[DVD]·[VHS] 표시');
+    if (/^\s*(\[[^\]]*\]\s*)*\[(?:LP|CD|SACD|카세트|수입\s*LP|\d?LP)/i.test(head)) return r('music', '제목의 [CD]·[LP] 표시');
+    // 2) 알라딘 분류 (도서 정보를 받은 상품)
+    if (cats.some((c) => /음반/.test(c))) return r('music', `알라딘 분류: ${cats[0]}`);
+    if (cats.some((c) => /DVD|블루레이|Blu/i.test(c))) return r('video', `알라딘 분류: ${cats[0]}`);
+    if (cats.some((c) => /도서|전자책/.test(c))) return RE_OTHER.test(title) && !hasIsbn ? r('other', '기타 상품 낱말') : r('book', `알라딘 분류: ${cats[0]}`);
+    // 3) 코드 종류
+    if (kinds.has('aladinDvdCode')) return r('video', 'D코드 (알라딘 DVD·블루레이 코드)');
+    if (hasIsbn) return r('book', 'ISBN이 있음');
+    if (kinds.has('issn13')) return r('book', '잡지 (ISSN 바코드)');
+    if (RE_VIDEO.test(title)) return r('video', '제목에 블루레이·DVD·disc 낱말');
+    if (RE_MUSIC.test(title)) return r('music', '제목에 LP·CD 낱말');
+    if (RE_OTHER.test(title)) return r('other', '기타 상품 낱말');
+    if (kinds.has('aladinMediaCode')) return r('music', 'C코드 (알라딘 음반·DVD 코드, 제목에 영상 표시 없음)');
+    const ac = String(x.aladinCode || (ids.find((c) => c.kind === 'aladinCode') || {}).value || '');
+    const bc = String(x.barcode || (ids.find((c) => c.kind === 'ean13') || {}).value || '');
+    if (/^K/.test(ac)) return r('book', 'K코드 (알라딘 도서 코드)');
+    if (/^49\d/.test(bc)) return r('book', '일본 잡지·도서 바코드 (491)');
+    if (/^F/.test(ac)) return r('book', 'F코드 (수입 도서), 영상·음반 표시 없음');
+    if (kinds.has('ean13') && /^[56]000/.test(ac)) return r('video', '책이 아닌 바코드 + 알라딘 6000번대 코드 — 영상으로 추정, 확인 필요');
+    if (kinds.has('ean13')) return r('music', '책이 아닌 바코드(음반·DVD 대역), 영상 표시 없음 — 확인 필요');
+    return r('book', 'ISBN 없음 — 세트·구판 등 책으로 추정');
+  }
+
   // ---------- 변경 비교 ----------
   function diff(prev, next, fields) {
     const ch = {};
@@ -428,7 +465,7 @@
     VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
-    parseBuyerDist, parseRelationBuy, diff, rankTransitions,
+    parseBuyerDist, parseRelationBuy, diff, rankTransitions, mediaType, MEDIA,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
 })(typeof window !== 'undefined' ? window : this);
