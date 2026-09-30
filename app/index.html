@@ -153,6 +153,8 @@ body.withrank.rankopen #rank{display:block;position:fixed;top:0;right:0;bottom:0
 .tag.rv-good{background:var(--soft);color:var(--cloth)}.tag.rv-mid{background:#FFF1D6;color:#9A6200}.tag.rv-bad{background:var(--redSoft);color:var(--red)}
 .stk{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--bg)}.stk i{display:block;height:100%}.stk i.g{background:var(--cloth)}.stk i.m{background:#E0A33B}.stk i.b{background:var(--red)}
 .dist .stk{height:8px}
+.colbar{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:#fff}.colbar .cdot{width:8px;height:8px;border-radius:50%;background:#9FD6BE;flex:none}.colbar.warn .cdot{background:#E8B062}.colbar.run .cdot{background:#fff;animation:pl 1s infinite alternate}@keyframes pl{to{opacity:.3}}
+.colbar .ctxt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.92}.colbar button{border:0;background:#fff;color:var(--cloth);border-radius:12px;padding:3px 10px;font-weight:700;font-size:12px}.colbar button:disabled{opacity:.6}.colbar .cauto{display:flex;align-items:center;gap:3px;font-size:11.5px;opacity:.9}
 .pend{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
 .pend .src{font-size:12px;color:var(--sub)} .pend .who{font-weight:700;margin:3px 0} .pend .body{font-size:13.5px;color:var(--ink);white-space:pre-wrap;max-height:90px;overflow:auto;background:var(--bg);border-radius:8px;padding:6px 9px;margin:6px 0}
 .cand{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px dashed var(--line);padding:8px 0}
@@ -188,12 +190,12 @@ em.up,em.dn{font-style:normal;font-size:11.5px;font-weight:700;margin-left:4px}e
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.8.0 (고객·주문·상품, 평가 참여)
+/* 리드나우 웹앱 v0.8.1 (고객·주문·상품, 평가 참여)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.8.0';
+const APP_VER = '0.8.1';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -307,7 +309,7 @@ const ICON = {
 function shell() {
   $('#app').innerHTML = `
   <header class="top"><div class="row"><h1>리드나우</h1><span class="tbtns"><button class="me" id="hscore">점수 기준</button><button class="me" id="hmet">지표·차트</button><button class="me" id="me">${esc((S.user.displayName || S.user.email).slice(0, 6))}</button></span></div>
-    <div class="sync"></div>
+    <div class="sync"></div><div class="colbar" id="colbar"></div>
     <div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6B66" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" type="search" placeholder="고객·전화, 주문번호, 책 제목·ISBN (상품 탭에선 상품 검색)" autocomplete="off" inputmode="search"></div></header>
   <main id="main"></main>
@@ -667,6 +669,66 @@ function renderReviews(m) {
 }
 function custSubNav() { const n = S.reviewsLoaded ? reviewStats().byC.size : null; return `<div class="seg" style="margin-bottom:10px"><button class="${S.custView !== 'reviews' ? 'on' : ''}" data-cv="list">고객 목록</button><button class="${S.custView === 'reviews' ? 'on' : ''}" data-cv="reviews">평가 참여${n != null ? ' ' + n.toLocaleString() : ''}</button></div>`; }
 function bindCustSubNav(m) { m.querySelectorAll('[data-cv]').forEach((b) => (b.onclick = () => { S.custView = b.dataset.cv; S.limit = 30; renderMain(); window.scrollTo(0, 0); })); }
+/* ── 알라딘 수집: 웹앱에서 상태를 보고, PC에서는 버튼(또는 자동)으로 수집 창을 엶 ──
+ *  웹앱은 보안상 알라딘 샵매니저에 직접 접근할 수 없어서, 수집기(Tampermonkey)가 설치된 PC의 알라딘 창을 대신 열어 시작시킴 */
+S.jobs = null;
+const COLLECT_URL = 'https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx#rnrun=bulk&rnclose=1';
+const isPC = () => !/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+function todayStr() { const d = new Date(); const z = (x) => String(x).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; }
+function openCollect(auto) {
+  const w = window.open(COLLECT_URL, 'rn-collect');
+  if (!w) toast(auto ? '자동 수집 창이 막혔습니다. 주소창 오른쪽에서 이 사이트의 팝업을 허용해 주세요' : '팝업이 막혔습니다. 주소창 오른쪽에서 이 사이트의 팝업을 허용해 주세요');
+  else toast('알라딘 창에서 수집을 시작합니다');
+}
+function watchJobs() {
+  let first = true;
+  db.collection('crm_system').doc('jobs').onSnapshot((d) => {
+    S.jobs = d.exists ? d.data() : {}; renderColbar();
+    if (first) { first = false; maybeAutoCollect(); }
+  }, () => {});
+}
+function bulkState() {
+  const lb = (S.jobs || {}).lastBulk; if (!lb) return { txt: '알라딘 수집 기록 없음', cls: 'warn', done: false, running: false };
+  const at = new Date(lb.at); const hm = at.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }); const isToday = lb.day === todayStr();
+  const when = isToday ? `오늘 ${hm}` : `${lb.day} ${hm}`; const stale = lb.state === 'running' && Date.now() - at > 3 * 3600e3;
+  if (lb.state === 'running' && !stale) return { txt: `알라딘 수집 진행 중 (${esc(lb.pcName || '')}, ${when} 시작)`, cls: 'run', done: false, running: true };
+  if (lb.state === 'done') return { txt: `마지막 수집 ${when} 완료 (${esc(lb.pcName || '')})`, cls: isToday ? 'ok' : 'warn', done: isToday, running: false };
+  return { txt: `수집이 멈춰 있음 (${when}, ${esc(lb.pcName || '')})${lb.message ? ': ' + esc(String(lb.message).slice(0, 40)) : ''}`, cls: 'warn', done: false, running: false };
+}
+function renderColbar() {
+  const el = $('#colbar'); if (!el) return; const st = bulkState(); const auto = localStorage.getItem('rn-autocollect') === '1';
+  el.className = 'colbar ' + st.cls;
+  el.innerHTML = `<span class="cdot"></span><span class="ctxt">${st.txt}</span>${isPC() ? `<button id="cnow" ${st.running ? 'disabled' : ''}>${st.running ? '수집 중' : st.done ? '다시 수집' : '지금 수집'}</button><label class="cauto" title="이 PC에서 웹앱을 열 때 오늘 수집이 안 되어 있으면 자동으로 알라딘 수집 창을 엶"><input type="checkbox" id="cauto" ${auto ? 'checked' : ''}>자동</label>` : ''}`;
+  const b = $('#cnow'); if (b) b.onclick = () => openCollect(false);
+  const c = $('#cauto'); if (c) c.onchange = () => { localStorage.setItem('rn-autocollect', c.checked ? '1' : '0'); toast(c.checked ? '이 PC에서 웹앱을 열면 오늘 수집이 안 됐을 때 자동으로 시작합니다' : '자동 수집을 껐습니다'); if (c.checked) maybeAutoCollect(); };
+}
+function maybeAutoCollect() {
+  if (!isPC() || localStorage.getItem('rn-autocollect') !== '1' || sessionStorage.getItem('rn-autocollect-done')) return;
+  const st = bulkState(); if (st.done || st.running) return;
+  sessionStorage.setItem('rn-autocollect-done', '1'); openCollect(true);
+}
+
+/* ── 고객 연결 점검: 주문과 고객이 제대로 이어졌는지 ── */
+function linkCheck() {
+  if (!S.ordersLoaded) return '<h2>고객 연결 점검</h2><div class="empty">주문 기록을 받는 중입니다</div>';
+  const custs = [...S.customers.values()]; const hasOrder = new Set(); const orphan = [];
+  for (const o of S.orders.values()) { if (o.customerId) hasOrder.add(o.customerId); if (o.customerId && !S.customers.has(o.customerId)) orphan.push(o); }
+  const noOrder = custs.filter((c) => !hasOrder.has(c.customerId) && (c.orderCount || c.saleOrderCount || c.cancelOrderCount));
+  const cancelOnly = custs.filter((c) => !(c.saleOrderCount) && (c.cancelOrderCount || 0) > 0);
+  const noKey = custs.filter((c) => c.unresolvedKey);
+  const noContact = custs.filter((c) => (c.saleOrderCount || 0) > 0 && !(c.phones || []).length && !(c.addresses || []).length);
+  const row = (c, why) => custRow(c, `<span style="width:100%">${why}</span>`);
+  return `<h2>고객 연결 점검</h2>
+    <div class="card" style="margin:0 0 8px"><div class="mgrid kpi">
+      <div><b style="color:${noOrder.length ? 'var(--red)' : 'var(--cloth)'}">${noOrder.length}명</b><span>주문이 안 이어진 고객</span><small>0이어야 정상</small></div>
+      <div><b style="color:${orphan.length ? 'var(--red)' : 'var(--cloth)'}">${orphan.length}건</b><span>고객이 없는 주문</span><small>0이어야 정상</small></div>
+      <div><b>${cancelOnly.length}명</b><span>판매 전 취소만 한 고객</span><small>연락처 없음이 정상 (알라딘이 지움)</small></div>
+      <div><b>${noKey.length}명</b><span>알라딘 고객번호 없는 고객</span><small>엑셀·직접 판매 등</small></div>
+      <div><b>${noContact.length}명</b><span>연락처 없는 구매 고객</span><small>상세 정보가 지워진 뒤 수집됨 · 엑셀로 채움</small></div></div></div>
+    ${noOrder.length ? `<details class="sec" open><summary>주문이 안 이어진 고객 ${noOrder.length}명</summary><div class="list">${noOrder.slice(0, 50).map((c) => row(c, '고객 요약에는 주문이 있는데 주문 기록을 못 찾음 → 다음 수집·올리기 때 다시 계산됩니다')).join('')}</div></details>` : ''}
+    ${orphan.length ? `<details class="sec"><summary>고객이 없는 주문 ${orphan.length}건</summary><div class="list">${orphan.slice(0, 50).map((o) => `<div class="item" style="cursor:default"><div class="l1"><span class="name">${esc((o.buyer || {}).name || '')}</span><span class="hl">${esc(o.orderNo || '')}</span></div><div class="l2"><span>${dt16(o.orderedAt)} · ${esc(((o.items || [])[0] || {}).title || '')}</span></div></div>`).join('')}</div></details>` : ''}
+    <details class="sec"><summary>판매 전 취소만 한 고객 ${cancelOnly.length}명</summary><p class="hint">알라딘은 취소된 주문의 구매자 연락처·주소를 상세 정보에서 지웁니다. 그래서 이름, 이메일 앞부분, 취소한 책과 시각만 남는 것이 정상입니다. 같은 사람이 나중에 구매하면 알라딘 고객번호로 자동으로 한 고객에 합쳐집니다.</p><div class="list">${cancelOnly.slice(0, S.limit).map((c) => row(c, `취소 ${c.cancelOrderCount}건 · ${esc((c.emailsMasked || [])[0] || '')}`)).join('')}</div></details>`;
+}
 function renderMain() {
   const m = $('#main'); if (!m) return; const all = [...S.customers.values()];
   document.body.classList.toggle('withrank', S.tab === 'search');
@@ -797,7 +859,7 @@ function renderOrders(m) {
   bindDash(m, renderMain);
 }
 function renderPending(m) {
-  if (!S.pending.length) { m.innerHTML = '<div class="empty">확정할 연결이 없습니다.</div>'; return; }
+  if (!S.pending.length) { m.innerHTML = '<div class="empty">확정할 구글 시트 연결이 없습니다.</div>' + linkCheck(); bindRows(m); return; }
   const typeName = { blacklistNote: '블랙리스트', customerCancelNote: '고객 취소 기록', adminNote: '관리자 메모' };
   m.innerHTML = `<p class="hint">구글 시트 기록 중 자동으로 고객을 정하지 못한 것들입니다. 맞는 고객을 골라 주세요. 확정하면 모든 기기에 바로 반영됩니다.</p>` + S.pending.map((it) => {
     const cands = (it.candidates || []).map((cd) => { const c = S.customers.get(cd.customerId) || {}; return `<div class="cand"><div class="ci"><b>${esc(c.displayName || cd.customerId)}</b> <small>${esc((c.phones || [])[0] || '')} · 주문 ${c.saleOrderCount || 0} · 최근 ${d10(c.lastOrderAt)} · 근거: ${esc((cd.reasons || []).join(', '))}</small></div><button class="btn" data-link="${esc(it.id)}" data-to="${esc(cd.customerId)}">이 고객</button></div>`; }).join('');
@@ -808,6 +870,7 @@ function renderPending(m) {
       <div class="lk"><input type="search" placeholder="다른 고객 검색해서 연결 (이름·전화 일부)" data-find="${esc(it.id)}"><div class="lkres"></div></div>
       <div style="margin-top:8px"><button class="btn warn" data-link="${esc(it.id)}" data-to="">맞는 고객 없음 (연결 안 함)</button></div></div>`;
   }).join('');
+  m.insertAdjacentHTML('beforeend', linkCheck()); bindRows(m);
   m.querySelectorAll('[data-find]').forEach((inp) => (inp.oninput = () => {
     const qq = norm(inp.value); const box = inp.nextElementSibling; if (qq.length < 2) { box.innerHTML = ''; return; }
     const hits = [...S.customers.values()].filter((c) => c._sk.includes(qq)).slice(0, 6);
@@ -895,7 +958,7 @@ function renderDetail() {
       <div class="scwrap"><div class="scb good"><b>${sc.value}</b><span>가치 점수 /100</span></div><div class="scb bad"><b>${sc.risk}</b><span>주의 점수 /100</span></div></div>
       <details><summary>점수 근거 보기</summary><h4 class="sth">가치 (높을수록 좋은 고객)</h4>${scoreBars(sc.valueParts, 'good')}<h4 class="sth">주의 (높을수록 조심)</h4>${scoreBars(sc.riskParts, 'bad')}
       <p class="hint" style="margin:8px 0 0">자동 VIP: 가치 65점 이상 + 주의 25점 미만 + 구매 3회 이상 + 판매자 연결 없음 · 자동 주의: 주의 35점 이상</p></details></div>` : ''}
-    <div class="card"><h3>연락처</h3><dl class="kv"><dt>전화</dt><dd>${phones}</dd><dt>이메일</dt><dd>${emails}</dd><dt>배송지</dt><dd>${addrs}</dd><dt>이름 기록</dt><dd>${esc((c.names || []).join(', ') || '-')}</dd><dt>기간</dt><dd>${d10(c.firstOrderAt)} ~ ${d10(c.lastOrderAt)}</dd></dl></div>
+    ${!(c.phones || []).length && !(c.addresses || []).length ? `<div class="card" style="border-color:#E8C88F;background:#FFFBF2"><h3 style="color:var(--amber)">${!c.saleOrderCount && c.cancelOrderCount ? '판매 전 취소만 한 고객' : '연락처가 없는 고객'}</h3><div class="hint" style="margin:0">${!c.saleOrderCount && c.cancelOrderCount ? `알라딘은 취소된 주문의 구매자 연락처·주소를 지웁니다. 남아 있는 정보는 이름, 이메일 앞부분(${esc((c.emailsMasked || []).join(', ') || '없음')}), 아래 주문 목록의 취소한 책과 시각입니다. 이 사람이 나중에 구매하면 같은 고객으로 자동으로 합쳐집니다.` : '주문 상세의 개인정보가 알라딘에서 지워진 뒤에 수집된 고객입니다. 판매완료 엑셀을 가져오면 연락처가 채워집니다.'}</div></div>` : ''}<div class="card"><h3>연락처</h3><dl class="kv"><dt>전화</dt><dd>${phones}</dd><dt>이메일</dt><dd>${emails}</dd><dt>배송지</dt><dd>${addrs}</dd><dt>이름 기록</dt><dd>${esc((c.names || []).join(', ') || '-')}</dd><dt>기간</dt><dd>${d10(c.firstOrderAt)} ~ ${d10(c.lastOrderAt)}</dd></dl></div>
     <div class="card"><h3>메모·기록</h3><div class="note-in"><textarea id="note" placeholder="이 고객에 대한 메모 (모든 기기에 바로 공유)"></textarea><button class="btn" id="save">저장</button></div>
       <div class="tlnote">기록 ${tl.length}건 · 메모와 표시 변경 기록은 지울 수 없게 영구 보존됩니다</div>
       <ul class="tl">${tl.map((x) => `<li><div class="h"><span>${x.h}</span><span>${esc(x.when || '')}</span></div>${x.b ? `<div class="b">${esc(x.b)}</div>` : ''}${x.a ? `<div class="a">답변: ${esc(x.a)}</div>` : ''}</li>`).join('') || '<li class="empty">기록 없음</li>'}</ul></div>
@@ -1349,7 +1412,7 @@ firebase.auth().onAuthStateChanged(async (u) => {
   try { await syncCustomers(); } catch (e) { setSync(e.code === 'permission-denied' ? '권한 없음: 등록된 계정이 아닙니다' : '연결 실패: 기기에 저장된 내용 표시 중'); }
   watchPending(); renderMain();
   const hm = location.hash.match(/#c=([^&]+)/); if (hm) { history.replaceState(null, '', location.pathname); openCustomer(decodeURIComponent(hm[1])); }
-  watchConfig(); watchAcct();
+  watchConfig(); watchAcct(); watchJobs();
   // 로그인하면 주문 기록·판매자 목록도 자동으로 받아 둠 (처음 한 번은 전체, 이후엔 바뀐 것만)
   try {
     const os = await idbAll('orders'); if (os.length) { os.forEach((v) => { v._sk = orderKey(v); S.orders.set(v.id, v); }); S.ordersLoaded = true; }
