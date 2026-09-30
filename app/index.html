@@ -216,6 +216,8 @@ label.set{display:block;font-size:13px;color:var(--sub);margin-top:8px}label.set
 fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opacity:.6}label.set.ck{display:flex;gap:8px;align-items:center}label.set.ck input{width:auto;display:inline;margin:0}
 .nums.six{grid-template-columns:repeat(6,1fr)}@media(max-width:520px){.nums.six{grid-template-columns:repeat(3,1fr)}}
 .ro{background:var(--soft);border-radius:8px;padding:8px 10px;font-size:13px}.ro b{color:var(--ink)}
+.wload{height:48px;border-radius:8px;background:linear-gradient(90deg,var(--soft) 25%,#EEF3F1 50%,var(--soft) 75%);background-size:200% 100%;animation:wl 1.2s infinite}@keyframes wl{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.top .hbtn{position:relative}.top .hbtn .badge{position:absolute;top:-6px;right:-6px}
 </style>
 </head>
 <body>
@@ -229,12 +231,12 @@ fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opa
 <script src="../readnow-products-core.js?v=0.3.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.15.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.16.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.15.0';
+const APP_VER = '0.16.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -253,16 +255,29 @@ function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('o
 
 /* ── 고객 목록은 기기에 보관하고 바뀐 것만 받아옴 (읽기 한도 절약) ── */
 const IDB = { db: null };
-function idbOpen() { return new Promise((res, rej) => { const r = indexedDB.open('readnow-app', 6); r.onupgradeneeded = () => { const d = r.result; [['customers', 'customerId'], ['meta', 'k'], ['orders', 'id'], ['sellers', 'id'], ['plist', 'id'], ['psales', 'id'], ['pbooks', 'id'], ['reviews', 'id'], ['pmetrics', 'id']].forEach(([n, k]) => { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: k }); }); }; r.onsuccess = () => { IDB.db = r.result; res(); }; r.onerror = () => rej(r.error); }); }
+function idbOpen() {
+  // 다른 탭(예전 버전)이 열려 있으면 저장소 업그레이드가 막혀 첫 화면에서 멈춤 → 4초 기다리다 저장소 없이 시작, 막힘은 안내
+  return new Promise((res) => {
+    let done = false; const finish = (db, why) => { if (done) return; done = true; IDB.db = db || null; if (!db) { IDB.off = why || '기기 저장소를 쓸 수 없음'; } res(); };
+    let r; try { r = indexedDB.open('readnow-app', 6); } catch (e) { return finish(null, '이 브라우저는 기기 저장소를 쓸 수 없음'); }
+    r.onupgradeneeded = () => { const d = r.result; [['customers', 'customerId'], ['meta', 'k'], ['orders', 'id'], ['sellers', 'id'], ['plist', 'id'], ['psales', 'id'], ['pbooks', 'id'], ['reviews', 'id'], ['pmetrics', 'id']].forEach(([n, k]) => { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: k }); }); };
+    r.onsuccess = () => { const d = r.result; d.onversionchange = () => { d.close(); toast && toast('웹앱이 새 버전으로 바뀌었습니다. 새로고침해 주세요'); }; finish(d); };
+    r.onerror = () => finish(null, '기기 저장소 열기 실패');
+    r.onblocked = () => { IDB.blocked = true; };
+    setTimeout(() => finish(null, IDB.blocked ? '다른 탭에 예전 웹앱이 열려 있어 기기 저장소를 못 씀 — 다른 탭을 닫고 새로고침하면 빨라집니다' : '기기 저장소 응답 없음'), 4000);
+  });
+}
 const idbReq = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
-const idbAll = (s) => idbReq(IDB.db.transaction(s).objectStore(s).getAll());
-const idbGet = (s, k) => idbReq(IDB.db.transaction(s).objectStore(s).get(k));
-const idbPut = (s, arr) => new Promise((res, rej) => { const t = IDB.db.transaction(s, 'readwrite'); const st = t.objectStore(s); arr.forEach((o) => st.put(o)); t.oncomplete = res; t.onerror = () => rej(t.error); });
+const idbAll = (s) => (IDB.db ? idbReq(IDB.db.transaction(s).objectStore(s).getAll()).catch(() => []) : Promise.resolve([]));
+const idbGet = (s, k) => (IDB.db ? idbReq(IDB.db.transaction(s).objectStore(s).get(k)).catch(() => undefined) : Promise.resolve(undefined));
+const idbPut = (s, arr) => !IDB.db ? Promise.resolve() : new Promise((res, rej) => { const t = IDB.db.transaction(s, 'readwrite'); const st = t.objectStore(s); arr.forEach((o) => st.put(o)); t.oncomplete = res; t.onerror = () => rej(t.error); });
 
-const S = { user: null, orders: new Map(), ordersLoaded: false, sellers: new Map(), sellersLoaded: false, sort: localStorage.getItem('rn-sort') || 'recent', rev: false, customers: new Map(), pending: [], tab: 'home', q: '', limit: 30, live: false, lastSync: null, detail: null, detailUnsubs: [] };
+const MEMO = new Map(); const memo = (k, fn, ttl) => { const x = MEMO.get(k); if (x && x.v === S.ver && (!ttl || Date.now() - x.t < ttl)) return x.r; const r = fn(); MEMO.set(k, { v: S.ver, t: Date.now(), r }); return r; };
+const bump = () => { S.ver = (S.ver || 0) + 1; };
+const S = { ver: 0, user: null, orders: new Map(), ordersLoaded: false, sellers: new Map(), sellersLoaded: false, sort: localStorage.getItem('rn-sort') || 'recent', rev: false, customers: new Map(), pending: [], tab: 'home', q: '', limit: 30, live: false, lastSync: null, detail: null, detailUnsubs: [] };
 const norm = (s) => String(s || '').toLowerCase().replace(/[\s\-()]/g, '');
 function searchKey(c) { return norm([c.displayName, ...(c.names || []), ...(c.phones || []), ...(c.phoneKeys || []), ...(c.emails || []), ...(c.emailsMasked || []), ...(c.otherRecipients || []), ...((c.addresses || []).map((a) => a.address)), c.platformCustomerKey].join('|')); }
-function putCustomer(id, v) { v.customerId = id; v._sk = searchKey(v); v._t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; S.customers.set(id, v); return v; }
+function putCustomer(id, v) { bump(); v.customerId = id; v._sk = searchKey(v); v._t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; S.customers.set(id, v); return v; }
 const deTs = (v) => (v && typeof v === 'object' ? (typeof v.toMillis === 'function' ? v.toMillis() : Array.isArray(v) ? v.map(deTs) : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, deTs(x)]))) : v);
 function serializable(v) { const o = deTs({ ...v }); delete o.uploadedAt; return o; } // 기기 보관용: 시각 값은 숫자로
 
@@ -294,7 +309,7 @@ function watchPending() {
 }
 /* ── 주문 기록: 처음 한 번은 버튼을 눌러 내려받고(약 5천 건), 이후엔 바뀐 것만 ── */
 function orderKey(o) { return norm([o.orderNo, o.buyer && o.buyer.name, o.recipient && o.recipient.name, ...(o.items || []).flatMap((i) => [i.title, i.isbn13, i.sku])].join('|')); }
-function putOrder(id, v) { v.id = id; v._sk = orderKey(v); v._t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : (v._t || 0); S.orders.set(id, v); return v; }
+function putOrder(id, v) { bump(); v.id = id; v._sk = orderKey(v); v._t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : (v._t || 0); S.orders.set(id, v); return v; }
 async function syncOrders(first) {
   const meta = await idbGet('meta', 'osync'); if (!meta && !first) return;
   let q = db.collection('crm_orders'); if (meta && meta.last) q = q.where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last));
@@ -311,7 +326,7 @@ async function syncOrders(first) {
 }
 function setSync(msg) {
   const el = $('.sync'); if (!el) return;
-  el.innerHTML = msg ? `<span class="dot off"></span>${esc(msg)}` : `<span class="dot ${S.live ? '' : 'off'}"></span>${S.live ? '실시간 연결됨' : '연결 대기 (기기에 저장된 내용 표시 중)'}`;
+  el.innerHTML = msg ? `<span class="dot off"></span>${esc(msg)}` : `<span class="dot ${S.live ? '' : 'off'}"></span>${S.live ? '실시간 연결됨' : '연결 대기 (기기에 저장된 내용 표시 중)'}` + (IDB.off && !msg ? ` · <b style="color:#FFE08A">${esc(IDB.off)}</b>` : '');
 }
 
 /* ── 쓰기: 모든 기록에 누가·언제를 남김 ── */
@@ -349,7 +364,7 @@ const ICON = {
 };
 function shell() {
   $('#app').innerHTML = `
-  <header class="top"><div class="row"><h1 id="gohome" class="homelink" title="홈으로">리드나우</h1><span class="tbtns"><button class="me" id="hscore">점수 기준</button><button class="me" id="hmet">지표·차트</button><button class="me" id="me">${esc((S.user.displayName || S.user.email).slice(0, 6))}</button></span></div>
+  <header class="top"><div class="row"><h1 id="gohome" class="homelink" title="홈으로">리드나우</h1><span class="tbtns"><button class="me hbtn" id="hpend">연결 확정</button><button class="me hbtn" id="hset" title="설정">⚙ 설정</button><button class="me" id="hscore">점수 기준</button><button class="me" id="hmet">지표·차트</button><button class="me" id="me">${esc((S.user.displayName || S.user.email).slice(0, 6))}</button></span></div>
     <div class="sync"></div><div class="colbar" id="colbar"></div><div class="jobs" id="jobs"></div>
     <div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6B66" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" type="search" placeholder="고객·전화, 주문번호, 책 제목·ISBN (상품 탭에선 상품 검색)" autocomplete="off" inputmode="search"></div></header>
@@ -358,6 +373,7 @@ function shell() {
   <nav class="tabs" id="tabs"></nav>
   <section class="sheet" id="sheet"></section>
   <section id="modal"><div class="mbox"><div class="mhead"><div id="modaltabs" class="ptabs"></div><button class="rkx" id="mclose">닫기</button></div><div id="modalbody"></div></div></section>`;
+  const goTop = (t) => { S.tab = t; S.limit = 30; renderTabs(); renderMain(); window.scrollTo(0, 0); }; $('#hpend').onclick = () => goTop('pending'); $('#hset').onclick = () => goTop('settings');
   $('#hscore').onclick = () => openModal('score'); $('#hmet').onclick = () => openModal('metrics'); $('#mclose').onclick = closeModal;
   $('#modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
   $('#q').addEventListener('input', (e) => { S.q = e.target.value; S.limit = 30; if (!['search', 'orders', 'sellers', 'products'].includes(S.tab)) S.tab = 'search'; renderTabs(); renderMain(); });
@@ -367,9 +383,11 @@ function shell() {
 }
 function renderTabs() {
   const pc = S.pending.length;
-  const t = [['home', '홈', ICON.home], ['biz', '경영', ICON.orders], ['search', '고객', ICON.search], ['orders', '주문·매출', ICON.orders], ['products', '상품', ICON.book], ['sellers', '판매자', ICON.agent], ['flags', '표시 고객', ICON.flag], ['pending', '연결 확정', ICON.pending], ['purchase', '매입', ICON.orders], ['settings', '설정', ICON.gear]];
+  const t = [['home', '홈', ICON.home], ['search', '고객', ICON.search], ['flags', '표시 고객', ICON.flag], ['products', '상품', ICON.book], ['sellers', '판매자', ICON.agent], ['orders', '주문·매출', ICON.orders], ['purchase', '매입', ICON.orders], ['biz', '경영', ICON.orders]];
   $('#tabs').innerHTML = t.map(([k, l, i]) => `<button class="${S.tab === k ? 'on' : ''}" data-tab="${k}">${i}${l}${k === 'pending' && pc ? `<span class="badge">${pc}</span>` : ''}</button>`).join('');
   $('#tabs').querySelectorAll('button').forEach((b) => (b.onclick = () => { S.tab = b.dataset.tab; S.limit = 30; renderTabs(); renderMain(); window.scrollTo(0, 0); }));
+  const hp = $('#hpend'); if (hp) { hp.classList.toggle('on', S.tab === 'pending'); hp.innerHTML = `연결 확정${pc ? `<span class="badge">${pc}</span>` : ''}`; }
+  const hs = $('#hset'); if (hs) hs.classList.toggle('on', S.tab === 'settings');
 }
 /* ── 자동 판정 기준 (Firebase에 저장, 바뀌면 모든 기기에 즉시 반영) ── */
 const CFG_DEFAULT = { vip: { minValue: 65, maxRisk: 25, minOrders: 3, excludeSellers: true }, caution: { minRisk: 35 } };
@@ -591,7 +609,7 @@ function bindRows(root) { root.querySelectorAll('[data-cid]').forEach((b) => (b.
 S.reviews = new Map(); S.reviewsLoaded = false; S.custView = S.custView || 'list';
 const RATE = { 만족: 'good', 보통: 'mid', 불만족: 'bad' };
 const RATE_TXT = { good: ['만족', 'rv-good'], mid: ['보통', 'rv-mid'], bad: ['불만족', 'rv-bad'] };
-function putReview(id, v) { v.id = id; v._r = RATE[String(v.rating || '').trim()] || null; S.reviews.set(id, v); return v; }
+function putReview(id, v) { bump(); v.id = id; v._r = RATE[String(v.rating || '').trim()] || null; S.reviews.set(id, v); return v; }
 async function syncReviews() {
   const cached = await idbAll('reviews').catch(() => []); cached.forEach((v) => putReview(v.id, v));
   const meta = await idbGet('meta', 'rsync'); let max = meta ? meta.last || 0 : 0; const batch = [];
@@ -787,7 +805,9 @@ function linkCheck() {
     ${orphan.length ? `<details class="sec"><summary>고객이 없는 주문 ${orphan.length}건</summary><div class="list">${orphan.slice(0, 50).map((o) => `<div class="item" style="cursor:default"><div class="l1"><span class="name">${esc((o.buyer || {}).name || '')}</span><span class="hl">${esc(o.orderNo || '')}</span></div><div class="l2"><span>${dt16(o.orderedAt)} · ${esc(((o.items || [])[0] || {}).title || '')}</span></div></div>`).join('')}</div></details>` : ''}
     <details class="sec"><summary>판매 전 취소만 한 고객 ${cancelOnly.length}명</summary><p class="hint">알라딘은 취소된 주문의 구매자 연락처·주소를 상세 정보에서 지웁니다. 그래서 이름, 이메일 앞부분, 취소한 책과 시각만 남는 것이 정상입니다. 같은 사람이 나중에 구매하면 알라딘 고객번호로 자동으로 한 고객에 합쳐집니다.</p><div class="list">${cancelOnly.slice(0, S.limit).map((c) => row(c, `취소 ${c.cancelOrderCount}건 · ${esc((c.emailsMasked || [])[0] || '')}`)).join('')}</div></details>`;
 }
-function renderMain() {
+let _rmT = null;
+function renderMain() { if (_rmT) return; _rmT = setTimeout(() => { _rmT = null; try { renderMainNow(); } catch (e) { console.error(e); const m = $('#main'); if (m) m.innerHTML = `<div class="card" style="border-color:var(--red)"><h3 style="color:var(--red)">화면을 그리다 오류가 났습니다</h3><div class="hint">${esc(e.message)}</div><button class="btn" onclick="location.reload()">새로고침</button></div>`; } }, 16); }
+function renderMainNow() {
   const m = $('#main'); if (!m) return; const all = [...S.customers.values()];
   document.body.classList.toggle('withrank', ['search', 'sellers', 'products'].includes(S.tab));
   if (S.tab === 'search') {
@@ -1044,15 +1064,20 @@ function renderDetail() {
 /* ── 판매자: 툴팁 데이터(알라딘 판매자 번호·등급·평점 기록) + 구글 시트(우리 분류: 전문·개인·허위 매물) ── */
 const OURG = { pro: ['전문셀러(우리 분류)', 'pl'], personal: ['개인셀러(우리 분류)', 'vip'], fake: ['허위 매물', 'bl'] };
 const sgOf = (s) => s.ourGrade || s.grade || null;
-async function syncSellers() {
-  if (S.sellersLoaded) return; S.sellersBusy = true;
+function syncSellers() {
+  if (S.sellersLoaded) return Promise.resolve(); if (S._sellersP) return S._sellersP;
+  S._sellersP = syncSellersNow().catch((e) => { S._sellersP = null; S.sellersFailAt = Date.now(); throw e; }).finally(() => { S.sellersBusy = false; });
+  return S._sellersP;
+}
+async function syncSellersNow() {
+  if (S.sellersFailAt && Date.now() - S.sellersFailAt < 60000) throw new Error('잠시 뒤 다시'); S.sellersBusy = true;
   const cached = await idbAll('sellers').catch(() => []); cached.forEach((v) => S.sellers.set(v.id, v));
   const meta = await idbGet('meta', 'ssync'); let q = db.collection('sellers');
   if (meta && meta.last) q = q.where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last));
   const snap = await q.get(); let max = meta ? meta.last || 0 : 0; const batch = [];
   snap.forEach((d) => { const v = { id: d.id, ...d.data() }; const t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; if (t > max) max = t; const o = deTs(v); delete o.uploadedAt; S.sellers.set(d.id, o); batch.push(o); });
   if (batch.length) await idbPut('sellers', batch);
-  await idbPut('meta', [{ k: 'ssync', last: max }]); S.sellersLoaded = true; S.sellersBusy = false;
+  await idbPut('meta', [{ k: 'ssync', last: max }]); S.sellersLoaded = true; S.sellersBusy = false; bump(); S._sellerScores = null;
 }
 function pctText(v) { return v == null || v === '' || !Number.isFinite(Number(v)) ? '-' : `${(Number(v) * 100).toFixed(Number(v) < 0.1 ? 2 : 1)}%`; }
 // 품절 취소율: 툴팁 기록은 퍼센트 숫자(0.75 = 0.75%), 구글 시트 기록은 비율(0.0075 = 0.75%)
@@ -1388,12 +1413,12 @@ async function syncColl(coll, store, map, metaKey) {
   const meta = await idbGet('meta', metaKey); let q = db.collection(coll);
   if (meta && meta.last) q = q.where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last));
   const snap = await q.get(); let max = meta ? meta.last || 0 : 0; const batch = [];
-  snap.forEach((d) => { const v = d.data(); const t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; if (t > max) max = t; const o = deTs({ ...v, id: d.id }); delete o.uploadedAt; map.set(d.id, o); batch.push(o); });
+  snap.forEach((d) => { const v = d.data(); const t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; if (t > max) max = t; const o = deTs({ ...v, id: d.id }); delete o.uploadedAt; map.set(d.id, o); batch.push(o); }); if (batch.length) bump();
   if (batch.length) await idbPut(store, batch);
   await idbPut('meta', [{ k: metaKey, last: max, at: Date.now() }]);
   db.collection(coll).where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(max || 0)).onSnapshot((ss) => {
     const ch = []; ss.docChanges().forEach((c) => { if (c.type !== 'removed') { const o = deTs({ ...c.doc.data(), id: c.doc.id }); delete o.uploadedAt; map.set(c.doc.id, o); ch.push(o); } });
-    if (ch.length) { idbPut(store, ch); S._pinv = null; if (S.tab === 'products') renderMain(); }
+    if (ch.length) { bump(); idbPut(store, ch); S._pinv = null; if (S.tab === 'products' || S.tab === 'home' || S.tab === 'biz') renderMain(); }
   }, () => {});
 }
 async function loadProducts() {
@@ -1528,12 +1553,12 @@ const APPSET_DEFAULT = {
   priceBands: [3000, 6000, 10000, 20000, 30000, 50000, 80000, 100000, 150000, 300000],
   costPerBook: 2000, feeRate: 0.1,
   seller: { modelHigh: 70, modelLow: 35, gainHigh: 60, gainLow: 40 },
-  adminDevices: ['JS-MAIN'],
+  adminDevices: ['JS-MAIN', 'JS-PHONE'],
   alerts: { lateDays: 2, oldDays1: 180, oldDays2: 365, overMinPct: 30, staleHours: 36, dormantMinOrders: 3, dormantFrom: 90, dormantTo: 240, risingFactor: 1.3 },
 };
 S.app = JSON.parse(JSON.stringify(APPSET_DEFAULT)); S.homeAdmin = null;
 const deviceName = () => localStorage.getItem('rn-device') || '';
-const isAdminDevice = () => (S.app.adminDevices || []).map((x) => String(x).trim().toUpperCase()).includes(deviceName().trim().toUpperCase());
+const isAdminDevice = () => [...(S.app.adminDevices || []), 'JS-MAIN', 'JS-PHONE'].map((x) => String(x).trim().toUpperCase()).includes(deviceName().trim().toUpperCase());
 function watchAppSettings() {
   db.collection('app_settings').doc('main').onSnapshot((d) => {
     const x = d.exists ? d.data() : {};
@@ -1647,14 +1672,15 @@ function sellerRankBoards() {
 
 /* ══════════ 상품 순위 TOP10 (북스킹 판매 기준) ══════════ */
 S.qnaAll = null;
-async function loadQnaAll() { if (S.qnaAll) return; S.qnaAll = 'loading'; try { const ss = await db.collection('crm_interactions').where('type', '==', 'qna').get(); const a = []; ss.forEach((d) => a.push(d.data())); S.qnaAll = a; } catch (e) { S.qnaAll = []; } renderRank(); }
+async function loadQnaAll() { if (S.qnaAll) return; if (S.qnaFailAt && Date.now() - S.qnaFailAt < 60000) return; S.qnaAll = 'loading'; try { const ss = await db.collection('crm_interactions').where('type', '==', 'qna').get(); const a = []; ss.forEach((d) => a.push(d.data())); S.qnaAll = a; bump(); } catch (e) { S.qnaAll = null; S.qnaFailAt = Date.now(); } renderRank(); }
 function lineFee(o, it, amt) {
   if (it.fee != null && Number.isFinite(+it.fee)) return +it.fee;
   const oAmt = (o.items || []).reduce((s, x) => s + (x.lineStatus === 'normal' ? (x.price || 0) * (x.qty || 1) : 0), 0);
   if (o.fee != null && oAmt) return o.fee * (amt / oAmt);
   return amt * (S.app.feeRate || 0);
 }
-function bookStats(r) {
+function bookStats(r) { return memo('bs|' + (r && r.start) + '|' + (r && r.end), () => bookStatsNow(r)); }
+function bookStatsNow(r) {
   const m = new Map(); const UC = unitCost();
   for (const o of S.orders.values()) {
     if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue;
@@ -1784,7 +1810,7 @@ const WIDGETS = {
   recent: ['최근 등록 상품', () => { loadProducts(); if (!S.prodLoaded) return '<div class="hint" style="margin:0">상품 기록을 받는 중</div>'; const r = [...S.plist.values()].filter((l) => l.active).sort((a, b) => String(b.registeredAt || '').localeCompare(String(a.registeredAt || ''))).slice(0, 5); return `<div class="list">${r.map(prodRow).join('')}</div>`; }],
   reviews: ['구매평 (평가 참여)', () => { if (!S.reviewsLoaded) return '<div class="hint" style="margin:0">구매평 기록을 받는 중</div>'; const { byC, all } = reviewStats(); const T = { good: 0, mid: 0, bad: 0 }; all.forEach((r) => (T[r._r] += 1)); const n = all.length; const p = (x) => (n ? Math.round((x / n) * 1000) / 10 : 0); const since = dstr(new Date(Date.now() - 30 * 864e5)); const w = all.filter((r) => String(r.createdAt || '').slice(0, 10) >= since); const low = w.filter((r) => r._r !== 'good').length;
     return `<div class="mgrid">${mcell(p(T.good) + '%', '만족률', `만족 ${num(T.good)} · 보통 ${T.mid} · 불만족 ${T.bad}`)}${mcell(num(byC.size) + '명', '평가한 고객', `구매평 ${num(n)}건`)}${mcell(w.length ? Math.round((low / w.length) * 1000) / 10 + '%' : '-', '최근 30일 보통·불만족', `평가 ${w.length}건`)}</div><div class="sc" style="margin-top:8px"><button data-go="search" data-cv2="reviews">평가 참여 자세히</button></div>`; }],
-  shortcuts: ['바로가기', () => `<div class="sc">${[['biz', '경영'], ['search', '고객'], ['orders', '주문·매출'], ['products', '상품'], ['sellers', '판매자'], ['flags', '표시 고객'], ['pending', '연결 확정'], ['settings', '설정']].map(([k, l]) => `<button data-go="${k}">${l}</button>`).join('')}</div>`],
+  shortcuts: ['바로가기', () => `<div class="sc">${[['search', '고객'], ['flags', '표시 고객'], ['products', '상품'], ['sellers', '판매자'], ['orders', '주문·매출'], ['purchase', '매입'], ['biz', '경영'], ['pending', '연결 확정'], ['settings', '설정']].map(([k, l]) => `<button data-go="${k}">${l}</button>`).join('')}</div>`],
 };
 const HOME_DEFAULT = ['alerts', 'pace', 'goal', 'margin', 'purUnit', 'purRecover', 'purMonth', 'jobs', 'sales', 'cust', 'reviews', 'inv', 'topBooks', 'topCust', 'sellers', 'shortcuts'];
 function homeLayout(mode) {
@@ -1810,10 +1836,24 @@ function renderHome(m) {
     m.querySelectorAll('[data-add]').forEach((b) => (b.onclick = () => save([...lay, b.dataset.add])));
     const hr = $('#hreset'); if (hr) hr.onclick = () => { localStorage.removeItem('rn-home'); renderMain(); };
   } else {
-    m.innerHTML = head + lay.map((k) => `<div class="card wcard"><h3>${WIDGETS[k][0]}</h3>${WIDGETS[k][1]()}</div>`).join('');
-    m.querySelectorAll('[data-sid]').forEach((b) => (b.onclick = () => openSeller(b.dataset.sid)));
-    m.querySelectorAll('[data-pid]').forEach((b) => (b.onclick = () => openProduct(b.dataset.pid)));
-    m.querySelectorAll('.wcard [data-cid]').forEach((b) => (b.onclick = () => b.dataset.cid && openCustomer(b.dataset.cid)));
+    // 칸을 먼저 자리만 그리고, 위에서부터 하나씩 채움 (계산이 많아도 화면이 멈추지 않게)
+    const gen = (S._homeGen = (S._homeGen || 0) + 1);
+    m.innerHTML = head + lay.map((k) => `<div class="card wcard" id="wc_${k}"><h3>${WIDGETS[k][0]}</h3><div class="wbody">${S._wcache && S._wcache[k] ? S._wcache[k] : '<div class="wload"></div>'}</div></div>`).join('');
+    const bindW = (el) => {
+      el.querySelectorAll('[data-sid]').forEach((b) => (b.onclick = () => openSeller(b.dataset.sid)));
+      el.querySelectorAll('[data-pid]').forEach((b) => (b.onclick = () => openProduct(b.dataset.pid)));
+      el.querySelectorAll('[data-cid]').forEach((b) => (b.onclick = () => b.dataset.cid && openCustomer(b.dataset.cid)));
+      el.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => { const [t, f] = b.dataset.go.split(':'); S.tab = t; if (f) S.flagList = f; if (b.dataset.cv2) S.custView = b.dataset.cv2; renderTabs(); renderMain(); window.scrollTo(0, 0); }));
+    };
+    bindW(m); S._wcache = S._wcache || {};
+    (async () => {
+      for (const k of lay) {
+        await new Promise((r) => setTimeout(r, 0)); if (gen !== S._homeGen || S.tab !== 'home') return;
+        const el = document.getElementById('wc_' + k); if (!el) continue;
+        let html; try { html = WIDGETS[k][1](); } catch (e) { console.error(k, e); html = `<div class="hint" style="margin:0;color:var(--red)">표시 오류: ${esc(e.message)}</div>`; }
+        S._wcache[k] = html; const body = el.querySelector('.wbody'); body.innerHTML = html; bindW(body);
+      }
+    })();
   }
   m.querySelectorAll('[data-hm]').forEach((b) => (b.onclick = () => { S.homeMode = b.dataset.hm; S.homeEdit = false; renderMain(); }));
   $('#hedit').onclick = () => { S.homeEdit = !S.homeEdit; renderMain(); };
@@ -1870,7 +1910,8 @@ function mtOfItem(it) {
   return RP.mediaType({ title: it.rawTitle || it.title, isbn13: it.isbn13, ids: RP.collectIds([it.isbn13, it.isbnAlt]).ids });
 }
 const mtTag = (t) => (t && t !== 'book' ? `<span class="tag ${t === 'other' ? 'cau' : 'pl'}">${MT_LABEL[t]}</span>` : '');
-function typeSales(r) {
+function typeSales(r) { return memo('ts|' + (r && r.start) + '|' + (r && r.end), () => typeSalesNow(r)); }
+function typeSalesNow(r) {
   const T = Object.fromEntries(MT_KEYS.map((k) => [k, { qty: 0, amt: 0 }]));
   for (const o of S.orders.values()) { if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue; for (const it of o.items || []) { if (it.lineStatus !== 'normal') continue; const t = mtOfItem(it).type; T[t].qty += it.qty || 1; T[t].amt += (it.price || 0) * (it.qty || 1); } }
   return T;
@@ -1988,7 +2029,7 @@ async function importPurFiles(files) {
   S.pur.loaded = false; await loadPur(); renderMain();
 }
 async function loadPur(force) {
-  if (S.pur.loaded && !force) return; if (S.pur.loading) return; S.pur.loading = true;
+  if (S.pur.loaded && !force) return; if (S.pur.loading) return; if (!force && S.pur.failAt && Date.now() - S.pur.failAt < 60000) return; S.pur.loading = true;
   try {
     const [e, h, x, st, al, ao] = await Promise.all([db.collection('pur_entries').get(), db.collection('pur_heonot').get(), db.collection('pur_existing').get(), db.collection('app_settings').doc('purchase').get(), db.collection('pur_aladin_list').doc('summary').get(), db.collection('pur_aladin_orders').get()]);
     const arr = (s) => { const a = []; s.forEach((d) => a.push({ ...d.data(), id: d.id })); return a; };
@@ -1996,12 +2037,13 @@ async function loadPur(force) {
     S.pur.set = { ...PSET_DEFAULT, ...((st.exists && st.data()) || {}) }; S.pur.lastImport = st.exists ? st.data().lastImport : null;
     S.pur.aList = al.exists ? al.data() : null;
     if (S.pur.aList && S.pur.aList.chunks && !S.pur.aItems) { const cs = await Promise.all([...Array(S.pur.aList.chunks).keys()].map((i) => db.collection('pur_aladin_list').doc('chunk_' + i).get())); S.pur.aItems = cs.flatMap((d) => (d.exists ? d.data().items || [] : [])); }
-    matchAladinOrders(); S.pur.loaded = true; S._bizAt = 0;
-  } catch (er) { toast('매입 기록 읽기 실패: ' + er.message); } finally { S.pur.loading = false; }
+    matchAladinOrders(); S.pur.loaded = true; S._bizAt = 0; bump();
+  } catch (er) { S.pur.failAt = Date.now(); toast('매입 기록 읽기 실패: ' + er.message); } finally { S.pur.loading = false; }
 }
 const catOf = (e) => e.catManual || e.cat;
 // 핵심 계산: 어디서든 쓰는 권당 매입가
-function purStats() {
+function purStats() { return memo('purStats', purStatsNow); }
+function purStatsNow() {
   const P = S.pur; const st = P.set;
   const use = P.entries.filter((e) => st.includeMunjeong || !/^문정/.test(e.sheet));
   const bookAmt = use.filter((e) => ['book', 'mixed', 'aladinAdd'].includes(catOf(e))).reduce((a, e) => a + e.amt, 0);
@@ -2111,13 +2153,14 @@ document.addEventListener('click', (ev) => {
 S.pmetrics = new Map(); S.pmLoaded = false;
 async function loadMetrics() {
   if (S.pmLoaded || S.pmBusy) return; S.pmBusy = true;
-  try { (await idbAll('pmetrics')).forEach((v) => S.pmetrics.set(v.id, v)); await syncColl('prd_book_metrics', 'pmetrics', S.pmetrics, 'pm_sync'); S.pmLoaded = true; } catch (e) {}
+  if (S.pmFailAt && Date.now() - S.pmFailAt < 60000) { S.pmBusy = false; return; }
+  try { (await idbAll('pmetrics')).forEach((v) => S.pmetrics.set(v.id, v)); await syncColl('prd_book_metrics', 'pmetrics', S.pmetrics, 'pm_sync'); S.pmLoaded = true; bump(); } catch (e) { S.pmFailAt = Date.now(); }
   S.pmBusy = false; S._bizAt = 0; if (S.tab === 'biz' || S.tab === 'home') renderMain();
 }
 const kst = (d) => dstr(d || new Date());
 function daySales(day) { let amt = 0, qty = 0, n = 0; for (const o of S.orders.values()) { if (o.kind !== 'sale' || String(o.orderedAt || '').slice(0, 10) !== day) continue; const L = saleLines(o); amt += L.amt; qty += L.qty; n++; } return { amt, qty, n }; }
 function bizCalc() {
-  if (S._biz && Date.now() - S._bizAt < 20000) return S._biz;
+  if (S._biz && S._bizV === S.ver && Date.now() - S._bizAt < 60000) return S._biz; S._bizV = S.ver;
   const today = new Date(); const td = kst(today); const yd = kst(new Date(Date.now() - 864e5));
   const G = S.app.goals || {};
   const T = daySales(td); const Y = daySales(yd); const W7 = agg(rangeOf('r7', 0)); const W7p = agg(rangeOf('r7', -1));
@@ -2293,19 +2336,20 @@ firebase.auth().onAuthStateChanged(async (u) => {
   if (!u) { S.user = null; loginView(); return; }
   S.user = u;
   await idbOpen();
-  (await idbAll('customers')).forEach((v) => { v._sk = searchKey(v); S.customers.set(v.customerId, v); });
-  shell();
-  try { await syncCustomers(); } catch (e) { setSync(e.code === 'permission-denied' ? '권한 없음: 등록된 계정이 아닙니다' : '연결 실패: 기기에 저장된 내용 표시 중'); }
-  watchPending(); renderMain();
+  const [cs, os0] = await Promise.all([idbAll('customers'), idbAll('orders')]);
+  cs.forEach((v) => { v._sk = searchKey(v); S.customers.set(v.customerId, v); });
+  if (os0.length) { os0.forEach((v) => { v._sk = orderKey(v); S.orders.set(v.id, v); }); S.ordersLoaded = true; } bump();
+  shell(); if (IDB.off) setSync(IDB.off);
   const hm = location.hash.match(/#c=([^&]+)/); if (hm) { history.replaceState(null, '', location.pathname); openCustomer(decodeURIComponent(hm[1])); }
-  watchConfig(); watchAcct(); watchJobs(); watchRemote(); watchAppSettings(); watchRunStatus(); setTimeout(() => loadPur().catch(() => {}), 3000);
-  // 로그인하면 주문 기록·판매자 목록도 자동으로 받아 둠 (처음 한 번은 전체, 이후엔 바뀐 것만)
-  try {
-    const os = await idbAll('orders'); if (os.length) { os.forEach((v) => { v._sk = orderKey(v); S.orders.set(v.id, v); }); S.ordersLoaded = true; }
-    setSync(S.ordersLoaded ? null : '주문 기록 받는 중 (처음 한 번)'); await syncOrders(true); setSync();
-  } catch (e) { S.ordersBusy = false; setSync('주문 기록 받기 실패: 나중에 다시 시도합니다'); }
-  try { setSync(S.sellersLoaded ? null : '판매자 목록 받는 중 (처음 한 번)'); await syncSellers(); setSync(); if (S.tab === 'sellers') renderMain(); } catch (e) { setSync(); }
-  try { setSync(S.reviewsLoaded ? null : '구매평 기록 받는 중 (처음 한 번)'); await syncReviews(); setSync(); reviewStats(); if (S.tab === 'search') renderMain(); } catch (e) { setSync(); }
+  watchPending(); watchConfig(); watchAcct(); watchJobs(); watchRemote(); watchAppSettings(); watchRunStatus();
+  // 네트워크: 고객·주문은 나란히, 나머지는 그다음 (처음 한 번만 전체, 이후엔 바뀐 것만)
+  const custP = syncCustomers().catch((e) => setSync(e.code === 'permission-denied' ? '권한 없음: 등록된 계정이 아닙니다' : '연결 실패: 기기에 저장된 내용 표시 중'));
+  const ordP = (async () => { try { if (!S.ordersLoaded) setSync('주문 기록 받는 중 (처음 한 번)'); await syncOrders(true); setSync(); } catch (e) { S.ordersBusy = false; setSync('주문 기록 받기 실패: 나중에 다시 시도합니다'); } })();
+  await Promise.all([custP, ordP]); renderMain();
+  setTimeout(() => loadPur().catch(() => {}), 1500);
+  try { await syncSellers(); if (S.tab === 'sellers' || S.tab === 'home') renderMain(); } catch (e) {}
+  try { await syncReviews(); reviewStats(); if (S.tab === 'search' || S.tab === 'home') renderMain(); } catch (e) {}
+  setSync();
 });
 </script>
 </body>
