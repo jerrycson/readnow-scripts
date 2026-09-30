@@ -241,12 +241,12 @@ fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opa
 <script src="../readnow-products-core.js?v=0.3.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.21.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.21.1 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.21.0';
+const APP_VER = '0.21.1';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1991,7 +1991,7 @@ function pDate(v) {
   if (typeof v === 'number') { const s = String(Math.round(v)); if (s.length === 6) return `20${s.slice(0, 2)}-${s.slice(2, 4)}-${s.slice(4, 6)}`; if (s.length === 8) return `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}`; if (v > 30000 && v < 80000) return dstr(new Date(Math.round((v - 25569) * 864e5))); return null; }
   const m = String(v).match(/(\d{2,4})[.\-/](\d{1,2})[.\-/](\d{1,2})/); if (!m) return null;
   const y = m[1].length === 2 ? '20' + m[1] : m[1]; const mo = +m[2], d = +m[3]; if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
-  return `${y}-${z(mo)}-${z(d)}`;
+  return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 const hash36 = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
 const NONBOOK = /(책장(?!\s*정리)|선반|지지대|수납장|멀티탭|피스\s*\d+\s*mm|사무가구|책상|(?<![가-힣])의자|캠핑의자|폴딩의자|SD\s*카드|마이크로\s*sd|PMP|모니터|프린터|스캐너|라벨기|행거)/i;
