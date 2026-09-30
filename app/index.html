@@ -228,6 +228,7 @@ fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opa
 .cheapd summary{cursor:pointer;padding:6px 0;font-size:14px}.cheapd[disabled] summary{pointer-events:none;color:var(--sub)}
 .ulink{display:inline-block;margin-left:6px;padding:1px 7px;border:1px solid #9FC1B4;border-radius:999px;font-size:11.5px;font-weight:600;color:var(--cloth);background:#fff;cursor:pointer;white-space:nowrap;vertical-align:middle}.ulink:hover{background:var(--cloth);color:#fff}
 .alinks{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.alinks .btn{text-decoration:none;padding:8px 12px;font-size:13.5px}
+.clk{cursor:pointer}tr.clk:hover td,span.clk:hover{background:var(--soft)}
 </style>
 </head>
 <body>
@@ -241,12 +242,12 @@ fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opa
 <script src="../readnow-products-core.js?v=0.3.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.21.1 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.22.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.21.1';
+const APP_VER = '0.22.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -2161,22 +2162,27 @@ function renderPurchase(m) {
   ${sec('pu_grp', '매입처별', `<div style="overflow-x:auto"><table class="tbl"><tr><th>구분</th><th>지금 등록</th><th>판매완료</th><th>합계 권수</th><th>매입액</th><th>권당 매입가</th><th>매출</th></tr>
     ${g3('gen', '일반 매입 (구글 시트)', X.bookAmt, X.unitGen)}${g3('ms', '김미소책방 (_ms)', X.msAmt, X.unitMsNow)}${g3('hd', '헌옷도라이 (_hd)', X.hdAmt, X.unitHd)}${st.excludeExistingFromUnit ? g3('ex', '기존보유 (계산에서 뺌)', null, null) : ''}</table></div>
     <p class="hint">김미소책방: 인수 ${num(st.msTotalBooks)}권 · ${won(st.msTotalCost)}. 남길 비율 ${Math.round(st.msKeepRatio * 100)}% 가정 시 약 ${num(Math.round(X.msKeep))}권 → 권당 ${X.unitMsPlan ? won(Math.round(X.unitMsPlan)) : '-'}. 지금까지 등록·판매 ${num(G.ms.active + G.ms.sold)}권 (가정 대비 ${pct(G.ms.active + G.ms.sold, X.msKeep)}).</p>`, true)}
+  ${sec('pu_split', '품목으로 나눈 매입 (추정)', (() => { const rows = purItemRows(); const q = rows.reduce((a, r) => a + r.qty, 0); const al = rows.filter((r) => r.grade); const pr = rows.filter((r) => r.price != null);
+    return `<div class="mgrid">${mcell(num(rows.length) + '품목', '나눈 품목', `${num(q)}권`)}${mcell(num(al.length), '알라딘 주문에서 읽음', '등급·가격·수량 그대로')}${mcell(num(pr.length), '가격이 적힌 품목', '')}${mcell(num(rows.length - pr.length), '총액을 나눈 품목', '가격을 몰라 균등 추정')}</div><button class="btn ghost" id="pu_items2" style="width:100%;margin-top:8px">품목 목록 보기 · 검색</button>`; })(), false)}
   ${sec('pu_trend', '월별 매입 · 매출', chart, true)}
   ${sec('pu_plat', '매입 플랫폼별 (책 매입)', `<div class="list">${[...plat.entries()].sort((a, b) => b[1].amt - a[1].amt).map(([p, v]) => `<div class="item"><span>${esc(p)}</span><span>${won(v.amt)} · ${v.n}건</span></div>`).join('')}</div>`, false)}
   ${sec('pu_ex', `기존보유 책 (사업 시작 전) ${P.existing.length}권`, `<div class="mgrid">${mcell(num(exMatch.filter((x) => x.act).length) + '권', '지금 등록 중', '')}${mcell(num(exMatch.filter((x) => x.sold).length) + '권', '판매됨', '')}${mcell(num(exMatch.filter((x) => !x.act && !x.sold).length) + '권', '등록·판매 기록 없음', '')}${mcell(won(exCost), '추정 원가', '시트의 최종 매입가, 없으면 알라딘 구매목록 가격')}</div>
     <div class="list" style="margin-top:8px">${fold('pur_ex', exMatch.map((x) => `<div class="item"><span>${esc(x.title)}</span><span>${x.act ? '<span class="tag">등록 중</span>' : ''}${x.sold ? '<span class="tag">판매됨</span>' : ''} ${x.finalBuy || x.buyPrice ? won(x.finalBuy || x.buyPrice) : x.al ? `${won(x.al.p)} <small>(알라딘 ${esc(x.al.d)})</small>` : '<small>출처 불분명</small>'}</span></div>`)) || '<div class="empty">없음</div>'}</div>`, false)}
-  ${sec('pu_al', '알라딘 구매 (참고)', `${P.aList ? `<p class="hint" style="margin-top:0">구매목록 파일(~${esc(P.aList.last || '')}): ${num(P.aList.n)}개 · 판매가 합계 ${won(P.aList.amt)}. <b>총 매입가에 더하지 않습니다</b> (구글 시트에 이미 들어 있음).</p><div style="overflow-x:auto"><table class="tbl"><tr><th>연도</th><th>개수</th><th>합계</th><th>그중 중고</th></tr>${Object.entries(P.aList.byYear).sort().map(([y, v]) => `<tr><td>${y}</td><td>${num(v.n)}</td><td>${won(v.amt)}</td><td>${num(v.used)} · ${won(v.usedAmt)}</td></tr>`).join('')}</table></div>` : '<div class="hint">알라딘 구매목록 파일을 아직 넣지 않았습니다</div>'}
+  ${sec('pu_al', '알라딘 구매 (참고)', `${P.aList ? `<div class="card" style="margin:0 0 8px;font-size:13px;line-height:1.6;background:var(--soft)">${ALADIN_NOTE}</div><p class="hint" style="margin-top:0">구매목록 파일(~${esc(P.aList.last || '')}): ${num(P.aList.n)}개 · 판매가 합계 ${won(P.aList.amt)} — <b>참고용, 총 매입가에 더하지 않음</b>. 연도 줄을 누르면 그해 목록이 열립니다.</p><div style="overflow-x:auto"><table class="tbl"><tr><th>연도</th><th>개수</th><th>합계</th><th>그중 중고</th></tr>${Object.entries(P.aList.byYear).sort().map(([y, v]) => `<tr class="clk" data-aly="${esc(y)}"><td>${y} ›</td><td>${num(v.n)}</td><td>${won(v.amt)}</td><td>${num(v.used)} · ${won(v.usedAmt)}</td></tr>`).join('')}</table></div><button class="btn" id="al_all" style="width:100%;margin-top:8px">전체 목록 보기 · 검색</button>` : '<div class="hint">알라딘 구매목록 파일을 아직 넣지 않았습니다</div>'}
     <h3 style="margin-top:12px">3월 14일 이후 알라딘 주문 대조 ${P.aOrders.length ? `(${P.aOrders.length}건 수집)` : ''}</h3>
     ${P.aOrders.length ? `<p class="hint" style="margin:0">구글 시트의 알라딘 거래와 날짜·금액으로 맞춰 봅니다. 시트에 없는 주문 ${unmatched.length}건 — 확인 후 '매입에 넣기'를 누르면 총 매입가에 더해집니다.</p><div class="list">${fold('pur_ao', unmatched.map((o) => `<div class="item"><span>${esc(o.date)} ${esc(o.ono)}<br><small>${esc(o.summary || '')} · ${esc(o.note || '')}</small></span><span>${won(o.amount)} <button class="btn ghost sm" data-aadd="${esc(o.id)}">${o.added ? '빼기' : '매입에 넣기'}</button></span></div>`)) || '<div class="empty">모두 시트와 맞음</div>'}</div>` : '<div class="hint">상품 수집기 → 알라딘 구매 내역 수집을 돌리면 나타납니다</div>'}`, false)}
   ${sec('pu_check', `확인 필요 ${check.length + (P.lastImport && P.lastImport.warn ? P.lastImport.warn.length : 0)}건`, `${(P.lastImport && P.lastImport.warn || []).map((w) => `<div class="fwhy" style="color:var(--amber)">${esc(w)}</div>`).join('')}
     <div class="list">${fold('pur_chk', check.map((e) => `<div class="item"><span><b>${esc(e.sheet)}</b> ${e.row}행 · ${esc(e.date || e.dateGuess || '날짜 없음')} · ${won(e.amt)}<br><small>${esc(e.txt.slice(0, 80))}</small><br><small style="color:var(--amber)">${esc(e.catWhy || '')}</small></span><span><select data-pcat="${esc(e.id)}">${[['book', '책 매입'], ['etc', '기타 매입'], ['dup', '중복(제외)'], ['heonot', '헌옷도라이(제외)'], ['mixed', '섞임(책으로)']].map(([k, l]) => `<option value="${k}" ${catOf(e) === k ? 'selected' : ''}>${l}</option>`).join('')}</select></span></div>`)) || '<div class="empty">없음</div>'}</div>`, check.length > 0)}
   ${sec('pu_list', `시트 거래 전체 ${P.entries.length}건`, `<p class="hint" style="margin-top:0">책 ${cats.book} · 섞임 ${cats.mixed} · 기타 ${cats.etc} · 헌옷(제외) ${cats.heonot} · 중복(제외) ${cats.dup}. 분류는 칸마다 바꿀 수 있고, 바꾼 값은 다음에 시트를 다시 넣어도 유지됩니다.</p>
-    <div class="list">${fold('pur_all', P.entries.slice().sort((a, b) => String(b.date || b.dateGuess || '').localeCompare(String(a.date || a.dateGuess || ''))).map((e) => `<div class="item"><span>${esc(e.date || e.dateGuess || '-')} · <b>${esc(e.sheet)}</b> · ${esc(e.plat || '')}<br><small>${esc(e.txt.slice(0, 70))}</small></span><span>${won(e.amt)} <select data-pcat="${esc(e.id)}">${[['book', '책'], ['mixed', '섞임'], ['etc', '기타'], ['dup', '중복'], ['heonot', '헌옷']].map(([k, l]) => `<option value="${k}" ${catOf(e) === k ? 'selected' : ''}>${l}</option>`).join('')}</select></span></div>`))}</div>`, false)}
+    <button class="btn" id="pu_items" style="width:100%;margin:0 0 8px">품목별 매입가 (추정) 전체 보기 · 검색</button><div class="list">${fold('pur_all', P.entries.filter((e) => !e.deleted).slice().sort((a, b) => String(b.date || b.dateGuess || '').localeCompare(String(a.date || a.dateGuess || ''))).map((e) => { const r = splitPur(e); return `<div class="item"><span class="clk" data-pent="${esc(e.id)}">${esc(e.date || e.dateGuess || '-')} · <b>${esc(e.sheet)}</b> · ${esc(e.plat || '')}<br><small>${esc(String(e.txt || '').slice(0, 70))}</small><br><small style="color:var(--cloth)">${num(r.items.length)}품목 · ${num(r.totalQ)}권 · 권당 약 ${won(Math.round(r.unit))} ›</small></span><span>${won(e.amt)} <select data-pcat="${esc(e.id)}">${[['book', '책'], ['mixed', '섞임'], ['etc', '기타'], ['dup', '중복'], ['heonot', '헌옷']].map(([k, l]) => `<option value="${k}" ${catOf(e) === k ? 'selected' : ''}>${l}</option>`).join('')}</select></span></div>`; }))}</div>`, false)}
   ${sec('pu_set', '매입 설정 · 파일 넣기', `<div class="ro">김미소책방 인수 <b>${won(st.msTotalCost)}</b> · <b>${num(st.msTotalBooks)}</b>권 · 남길 비율 <b>${Math.round(st.msKeepRatio * 100)}%</b> · 문정 시트 <b>${st.includeMunjeong ? '넣음' : '뺌'}</b> · 기존보유 <b>${st.excludeExistingFromUnit ? '권당 계산에서 뺌' : '넣음'}</b></div><p class="hint">바꾸기: <b>설정 탭 → ⑤ 매입</b> (관리자 기기)</p>
     <div class="drop" id="pu_drop" style="margin-top:12px;padding:18px;border:2px dashed var(--line);border-radius:10px;text-align:center;cursor:pointer"><b>구글 시트(.xlsx 통째로) · 알라딘 구매목록(.xlsx)</b><br><small>여기에 끌어다 놓거나 눌러서 고르기. 구글 시트는 지정한 탭만 읽고 나머지 탭은 무시합니다.</small></div><input type="file" id="pu_file" accept=".xlsx" multiple style="display:none">
     ${P.lastImport ? `<p class="hint">마지막 시트 넣기: ${esc(P.lastImport.byName || '')} ${tsText(P.lastImport.at)} · ${esc(P.lastImport.fileName || '')} · 읽은 탭 ${esc((P.lastImport.sheets || []).join(', '))}</p>` : ''}`, !P.entries.length)}`;
   bindUI(m, renderMain);
   bindPurApp(m);
+  m.querySelectorAll('[data-aly]').forEach((t) => (t.onclick = () => openAladinList(t.dataset.aly))); const aa = m.querySelector('#al_all'); if (aa) aa.onclick = () => openAladinList(null);
+  const pi = m.querySelector('#pu_items'); if (pi) pi.onclick = openPurItems; const pi2 = m.querySelector('#pu_items2'); if (pi2) pi2.onclick = openPurItems;
+  m.querySelectorAll('[data-pent]').forEach((x) => (x.onclick = () => { const e = S.pur.entries.find((y) => y.id === x.dataset.pent); if (e) openPurEntry(e); }));
   m.querySelectorAll('[data-pcat]').forEach((sel) => (sel.onchange = async () => { const e = P.entries.find((x) => x.id === sel.dataset.pcat); e.catManual = sel.value; try { await db.collection('pur_entries').doc(e.id).set({ catManual: sel.value, catBy: S.user.email, catAt: TS() }, { merge: true }); } catch (er) { toast('저장 실패: ' + er.message); } renderMain(); }));
   m.querySelectorAll('[data-aadd]').forEach((b) => (b.onclick = async () => { const o = P.aOrders.find((x) => x.id === b.dataset.aadd); o.added = !o.added; await db.collection('pur_aladin_orders').doc(o.id).set({ added: o.added, addedBy: S.user.email }, { merge: true }); renderMain(); }));
   const dz = $('#pu_drop'); const fi = $('#pu_file');
@@ -2408,6 +2414,143 @@ Object.assign(WIDGETS, {
 Object.entries(WIDGETS).forEach(([k, v]) => { if (!v[2]) v[2] = WCAT[k] || '기타'; });
 const W_DESC = { alerts: '지금 처리할 문제', pace: '이번 달 예상 매출', margin: '이번 달 공헌이익·재고 요약', jobs: 'PC별 수집 진행률', sales: '오늘·7일·30일·지난 달', cust: '고객·VIP·주의·블랙리스트 수', reviews: '구매평 만족률', inv: '재고 권수·금액·연령', topBooks: '많이 팔린 책', topCust: '매출 상위 고객', sellers: '6개월 평가·모범·불익', recent: '최근 등록 상품', shortcuts: '탭 바로가기' };
 
+
+/* 매입 한 건의 '내용'을 품목으로 나누고 권당 매입가를 추정 */
+function splitPurNow(e) {
+  const raw = String(e.txt || '').replace(/\r/g, '');
+  const amt = +e.amt || 0;
+  const qtyCol = (e.qty || []).map((x) => parseFloat(String(x).replace(/[^\d.]/g, ''))).filter((x) => x > 0);
+  const colQ = qtyCol.length ? Math.max(...qtyCol) : null; // 권수 칸 (2508 시트는 확실·예측 두 칸 중 큰 값)
+  const items = [];
+  // ── ① 알라딘 주문 복사본: "[중고-상] 제목 ... 가격 : 8,900원" 또는 "[온라인중고-상] 제목 ... 7,400원, 0원, 1개"
+  //    "[중고] 제목" 줄은 링크 이름이 같이 붙은 것이라 버림
+  if (/\[(온라인)?중고-[^\]]+\]/.test(raw)) {
+    const lines = raw.split(/\n|\t/).map((x) => x.trim()).filter(Boolean);
+    let cur = null;
+    for (const ln of lines) {
+      const h = ln.match(/^\[(?:온라인)?중고-([^\]]+)\]\s*(.+)$/);
+      if (h) { cur = { title: h[2].replace(/\s*소득공제\s*$/, '').trim(), grade: h[1].trim(), qty: 1, price: null }; items.push(cur); continue; }
+      if (/^\[중고\]/.test(ln)) continue;
+      if (!cur) continue;
+      let m;
+      if ((m = ln.match(/^가격\s*:\s*([\d,]+)\s*원/))) cur.price = +m[1].replace(/,/g, '');
+      else if ((m = ln.match(/^([\d,]+)\s*원\s*,\s*([\d,]+)\s*원\s*,\s*(\d+)\s*개/))) { cur.price = +m[1].replace(/,/g, ''); cur.qty = +m[3]; }
+      else if ((m = ln.match(/^(\d+)\s*\/\s*(\d+)$/))) cur.qty = +m[1];
+    }
+  }
+  // ── ② 그 밖의 거래: 줄·' / '·번호·글머리로 나누고, 끝의 가격·권수를 읽음. 대화체 줄(입금·상태·택배 등)은 버림
+  let hintQ = null;
+  if (!items.length) {
+    let parts = raw.split(/\n|\s\/\s|●|•/).map((x) => x.trim().replace(/^[-–]\s+/, '').replace(/^\d+\.\s+(?=\D)/, '')).filter((x) => x && !/^[-/·,.]+$/.test(x));
+    parts = parts.flatMap((p) => { const bits = p.split(/\s*[,，]\s*/); return bits.length > 1 && bits.every((b) => b && !/^\d+(\s*권)?$/.test(b) && b.length >= 2) ? bits : [p]; });
+    const CHAT = /(입금|드릴|드려요|주세요|이고요|입니다|좋습니다|합니다|감사|부탁|가능|문의|택배|직거래|픽업|시경|오후|오전|총금액|총액|상태\s*(최상|상|중|하|양호|좋)|계좌|연락)/;
+    for (let p of parts) {
+      let m;
+      if ((m = p.match(/^(?:총|약|대략)\s*(\d+)\s*권/)) && CHAT.test(p + ' 이고요')) { hintQ = +m[1]; continue; } // "총 14권이고요" → 권수 힌트
+      if ((m = p.match(/^(\d+(?:\.\d+)?)\s*(만)?\s*원?$/))) { const v = +m[1]; const last = items[items.length - 1]; if (last && last.price == null && v > 0) { const t = v < 100 ? Math.round(v * 10000) : v; last.lineTotal = t; last.price = t / last.qty; } continue; } // "4.5" = 4만5천 원 (앞 품목 가격)
+      if (/(정가|판매가)/.test(p) && (m = p.match(/판매가\s*[:：]?\s*([\d,]{3,})/))) { const v = +m[1].replace(/,/g, ''); const t = (p.match(/^(.*?)\s*[-–]?\s*(새\s*책|비닐째|미개봉)?\s*(정가|판매가)/) || [])[1]; if (t && t.trim().length >= 2) items.push({ title: t.trim(), grade: null, qty: 1, price: v, lineTotal: v }); else { const last = items[items.length - 1]; if (last && last.price == null) { last.lineTotal = v; last.price = v / last.qty; } } continue; } // '제목 - 새책 정가 6만 판매가 2만' 또는 다음 줄의 가격 // "새책 정가 60000 판매가 20000" → 앞 품목 가격
+      if (CHAT.test(p) || /:\s*$/.test(p)) continue;
+      let price = null, qty = 1;
+      if ((m = p.match(/\s(\d{1,2}\.\d)\s*(만)?\s*(\(.*\))?\s*$/))) { price = Math.round(+m[1] * 10000); p = p.slice(0, m.index).trim(); }
+      else if ((m = p.match(/[:：]?\s*([\d,]{3,})\s*원?\s*(\(.*\))?\s*$/)) && !/권\s*$/.test(p)) { const v = +m[1].replace(/,/g, ''); if (v >= 100 && v < 5000000 && !/^\d{9,13}$/.test(m[1])) { price = v; p = p.slice(0, m.index).replace(/[:：\-]\s*$/, '').trim(); } }
+      if ((m = p.match(/(\d+)\s*[~\-]\s*(\d+)\s*(권|완결|편)?/)) && +m[2] > +m[1] && +m[2] - +m[1] < 200) qty = +m[2] - +m[1] + 1;
+      else if ((m = p.match(/(\d+(?:\s*,\s*\d+){1,})(?!\d)/))) qty = m[1].split(',').length;
+      if ((m = p.match(/(?:총|약|대략)?\s*(\d+)\s*권/))) qty = +m[1];
+      if (!p && price == null) continue;
+      items.push({ title: p || '(제목 없음)', grade: null, qty, price: price != null ? price / qty : null, lineTotal: price });
+    }
+  }
+  if (!items.length) items.push({ title: '(내용 없음)', grade: null, qty: colQ || 1, price: null });
+  // ── ③ 권당 매입가 추정
+  const colQ2 = colQ || hintQ;
+  let listedQ = items.reduce((a, it) => a + it.qty, 0);
+  if (colQ2 && colQ2 > listedQ && !items.some((it) => it.grade)) { items.push({ title: `(내용에 없는 나머지 ${colQ2 - listedQ}권)`, grade: null, qty: colQ2 - listedQ, price: null, rest: true }); listedQ = colQ2; }
+  const priced = items.filter((it) => it.price != null); const pricedSum = priced.reduce((a, it) => a + it.price * it.qty, 0);
+  const unpricedQ = items.filter((it) => it.price == null).reduce((a, it) => a + it.qty, 0);
+  let how;
+  if (priced.length && !unpricedQ) {
+    // 품목 가격이 모두 있으면: 총액과의 차이(배송비 등)를 가격 비율로 나눠 얹음
+    const k = pricedSum ? amt / pricedSum : 1; items.forEach((it) => (it.est = Math.round(it.price * k))); how = pricedSum === amt ? '품목 가격 그대로' : `품목 가격 + 차액 ${amt - pricedSum >= 0 ? '' : '−'}${Math.abs(amt - pricedSum).toLocaleString()}원을 가격 비율로 나눔`;
+  } else if (priced.length && unpricedQ) {
+    const rest = Math.max(0, amt - pricedSum); items.forEach((it) => (it.est = it.price != null ? Math.round(it.price) : Math.round(rest / unpricedQ))); how = '적힌 가격은 그대로, 나머지 금액을 남은 권수로 나눔';
+  } else { const q = Math.max(listedQ, colQ2 || 0) || 1; items.forEach((it) => (it.est = Math.round(amt / q))); how = `총액 ÷ ${q}권 (균등)`; }
+  const totalQ = Math.max(listedQ, colQ2 || 0);
+  return { items, totalQ, unit: totalQ ? amt / totalQ : amt, how, colQ: colQ2, aladin: items.some((it) => it.grade) };
+}
+
+// 웹앱에서 직접 적은 기록은 품목이 이미 나뉘어 있음
+function splitPur(e) {
+  return memo('sp|' + e.id + '|' + (e.amt || 0) + '|' + String(e.txt || '').length, () => {
+    if (e.source === 'app' && Array.isArray(e.items) && e.items.length) {
+      const t = purTotals(e); const items = e.items.map((it) => ({ title: it.title || '(제목 없음)', grade: null, qty: +it.qty || 1, price: it.price === '' || it.price == null ? null : +it.price }));
+      const ps = items.reduce((a, it) => a + (it.price || 0) * it.qty, 0);
+      if (!e.lump && ps) { const k = t.total / ps; items.forEach((it) => (it.est = Math.round((it.price || 0) * k))); } else items.forEach((it) => (it.est = Math.round(t.total / Math.max(1, t.qty))));
+      return { items, totalQ: t.qty, unit: t.qty ? t.total / t.qty : t.total, how: e.lump ? '묶음 가격 ÷ 권수' : '품목 가격 + 배송비·할인을 가격 비율로 나눔', aladin: false };
+    }
+    return splitPurNow(e);
+  });
+}
+/* 목록 창: 검색·거르기·합계가 있는 전체 목록 (알라딘 구매목록, 품목별 매입가 등에 공용) */
+function openListView(o) {
+  const sh = $('#sheet'); S.detail = { list: o.title }; history.pushState({ lv: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
+  let q = '', lim = 200, flt = o.filters ? o.filters[0][0] : null;
+  const draw = () => {
+    const nq = norm(q); const rows = o.rows.filter((r) => (!flt || !o.filterFn || o.filterFn(r, flt)) && (!nq || norm(o.text(r)).includes(nq)));
+    sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">${esc(o.title)}</div></div>
+      ${o.note ? `<div class="card" style="font-size:13px;line-height:1.6">${o.note}</div>` : ''}
+      <div class="card" style="position:sticky;top:0;z-index:2"><input id="lv_q" type="search" placeholder="${esc(o.placeholder || '검색')}" value="${esc(q)}" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;font-size:15px">
+        ${o.filters ? `<div class="ptabs" style="margin-top:8px;flex-wrap:wrap">${o.filters.map(([k, l]) => `<button class="${flt === k ? 'on' : ''}" data-lvf="${esc(k)}">${esc(l)}</button>`).join('')}</div>` : ''}
+        <div class="hint" style="margin:6px 0 0">${o.sum ? o.sum(rows) : `${num(rows.length)}건`}</div></div>
+      <div class="list">${rows.slice(0, lim).map(o.row).join('') || '<div class="empty">없음</div>'}</div>
+      ${rows.length > lim ? `<button class="btn ghost" id="lv_more" style="width:100%;margin:8px 0 30px">${num(Math.min(200, rows.length - lim))}건 더 보기 (남은 ${num(rows.length - lim)})</button>` : ''}`;
+    $('#back').onclick = () => history.back();
+    const qi = $('#lv_q'); qi.oninput = () => { q = qi.value; lim = 200; clearTimeout(qi._t); qi._t = setTimeout(() => { const pos = qi.selectionStart; draw(); const n = $('#lv_q'); n.focus(); n.setSelectionRange(pos, pos); }, 180); };
+    sh.querySelectorAll('[data-lvf]').forEach((b) => (b.onclick = () => { flt = b.dataset.lvf; lim = 200; draw(); }));
+    const mo = $('#lv_more'); if (mo) mo.onclick = () => { lim += 200; draw(); };
+    if (o.bind) o.bind(sh);
+  };
+  draw();
+}
+function purItemRows() {
+  return memo('purItemRows', () => { const out = []; for (const e of S.pur.entries) { if (e.deleted) continue; const c = catOf(e); if (['dup', 'heonot'].includes(c)) continue; const r = splitPur(e); r.items.forEach((it) => out.push({ ...it, e, how: r.how, cat: c })); } return out.sort((a, b) => String(b.e.date || b.e.dateGuess || '').localeCompare(String(a.e.date || a.e.dateGuess || ''))); });
+}
+function openPurItems() {
+  const rows = purItemRows();
+  openListView({ title: '품목별 매입가 (추정)', rows, placeholder: '제목·판매자·플랫폼 검색',
+    note: '구글 시트와 웹앱 기록의 <b>내용</b>을 품목으로 나눠 권당 매입가를 추정한 목록입니다. 알라딘 주문을 붙여넣은 칸은 주문 형식(등급·가격·수량)을 그대로 읽고, 함께 붙은 링크 이름 줄([중고] 제목)은 버립니다. 가격이 적힌 품목은 그 가격에 배송비 등 차액을 가격 비율로 얹고, 가격이 없으면 총액을 권수로 나눕니다. 나중에 등록 상품과 이어 붙여 책마다 매입가를 매길 때 씁니다.',
+    filters: [['all', '전체'], ['aladin', '알라딘 주문'], ['priced', '가격 적힘'], ['even', '균등 나눔'], ['etc', '기타 매입']],
+    filterFn: (r, f) => (f === 'all' ? true : f === 'aladin' ? !!r.grade : f === 'priced' ? r.price != null : f === 'even' ? r.price == null : r.cat === 'etc'),
+    text: (r) => `${r.title} ${r.e.who || ''} ${r.e.plat || ''} ${r.e.sheet || ''}`,
+    sum: (rs) => `${num(rs.length)}품목 · ${num(rs.reduce((a, r) => a + r.qty, 0))}권 · 추정 합계 ${won(rs.reduce((a, r) => a + (r.est || 0) * r.qty, 0))} · 권당 평균 ${won(Math.round(rs.reduce((a, r) => a + (r.est || 0) * r.qty, 0) / Math.max(1, rs.reduce((a, r) => a + r.qty, 0))))}`,
+    row: (r) => `<div class="item" style="cursor:default"><div class="l1" style="justify-content:space-between"><span><b>${esc(r.title)}</b>${r.grade ? ` <span class="tag pl">${esc(r.grade)}</span>` : ''}${r.qty > 1 ? ` <span class="tag">${r.qty}권</span>` : ''} ${usedBtn(null, { title: r.title })}</span><b>${won(r.est || 0)}${r.qty > 1 ? '/권' : ''}</b></div><div class="l2"><span>${esc(r.e.date || r.e.dateGuess || '')} · ${esc(r.e.plat || '')} ${esc(r.e.who || '')}</span><span>${esc(r.e.sheet || '')}</span><span>${r.price != null ? `적힌 가격 ${won(Math.round(r.price))}` : '균등 나눔'}</span></div></div>` });
+}
+function openPurEntry(e) {
+  const r = splitPur(e);
+  openListView({ title: `${e.date || e.dateGuess || ''} ${e.plat || ''} ${won(e.amt)}`, rows: r.items, placeholder: '품목 검색',
+    note: `<b>${esc(e.sheet || '')}</b> ${e.row ? e.row + '행' : ''} · ${esc(e.who || '')}<br>총액 ${won(e.amt)} · ${num(r.totalQ)}권 · 권당 평균 ${won(Math.round(r.unit))}<br>나눈 방법: ${esc(r.how)}${r.colQ ? ` · 시트 권수 ${num(r.colQ)}` : ''}<details style="margin-top:6px"><summary>원문 보기</summary><pre style="white-space:pre-wrap;font-size:12px">${esc(e.txt || '')}</pre></details>`,
+    text: (it) => it.title, sum: (rs) => `${num(rs.length)}품목`,
+    row: (it) => `<div class="item" style="cursor:default"><div class="l1" style="justify-content:space-between"><span>${esc(it.title)}${it.grade ? ` <span class="tag pl">${esc(it.grade)}</span>` : ''} ${usedBtn(null, { title: it.title })}</span><b>${it.qty}권 × ${won(it.est || 0)}</b></div>${it.price != null ? `<div class="l2"><span>적힌 가격 ${won(Math.round(it.price))}</span></div>` : ''}</div>` });
+}
+function openAladinList(year) {
+  const items = S.pur.aItems || []; const years = [...new Set(items.map((x) => (x.d || '').slice(0, 4)).filter(Boolean))].sort().reverse();
+  const kinds = [...new Set(items.map((x) => x.k))];
+  openListView({ title: '알라딘 구매목록 (~2026-03-13)', rows: items, placeholder: '제목·출판사·ISBN 검색',
+    note: ALADIN_NOTE,
+    filters: [['all', '전체'], ...years.map((y) => ['y' + y, y + '년']), ...kinds.map((k) => ['k' + k, k])],
+    filterFn: (x, f) => (f === 'all' ? true : f[0] === 'y' ? (x.d || '').startsWith(f.slice(1)) : x.k === f.slice(1)),
+    text: (x) => `${x.t} ${x.pub || ''} ${x.i || ''}`,
+    sum: (rs) => `${num(rs.length)}개 · 합계 ${won(rs.reduce((a, x) => a + (x.p || 0), 0))} · 평균 ${won(Math.round(rs.reduce((a, x) => a + (x.p || 0), 0) / Math.max(1, rs.length)))}`,
+    row: (x) => `<div class="item" style="cursor:default"><div class="l1" style="justify-content:space-between"><span><b>${esc(x.t)}</b> <span class="tag">${esc(x.k)}</span> ${usedBtn(null, { title: x.t, isbn13: x.i })}</span><b>${won(x.p)}</b></div><div class="l2"><span>${esc(x.d || '')}</span><span>${esc(x.pub || '')}</span>${x.i ? `<span>${esc(x.i)}</span>` : ''}</div></div>` });
+  if (year) { const b = document.querySelector(`[data-lvf="y${year}"]`); if (b) b.click(); }
+}
+const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
+알라딘에서 받은 우리 계정의 구매목록(2026-03-13까지)입니다. 여기 있는 상품은 <b>모두 우리가 산 것</b>입니다.<br><br>
+<b>왜 총 매입가에 더하지 않나</b><br>
+구글 시트는 작년에 사업을 시작한 뒤부터 적었고, 알라딘 구매 중 <b>일부만</b> 시트에 들어가 있습니다. 그 전의 구매(주로 기존보유 책이 된 것)는 시트에 없습니다. 시트에 있는 것과 없는 것이 섞여 있어, 그대로 더하면 시트와 겹치는 부분이 두 번 계산됩니다. 그래서 지금은 <b>참고로만</b> 보여줍니다.<br><br>
+<b>앞으로 어디에 쓰나</b><br>
+등록 상품·판매된 상품마다 매입가를 붙일 때, 구글 시트·웹앱 기록 등 <b>근거 있는 매입 정보를 모두 모았는데도 매입가가 비는 상품</b>을 찾아 채우는 데 씁니다. 특히 기존보유 책의 원가를 찾는 데 쓰입니다. 그래서 지금 적용하지 않을 뿐, 지우지 않고 보관합니다.<br><br>
+<b>2026-03-14 이후</b><br>
+그 뒤 알라딘 구매는 상품 수집기의 "알라딘 구매 내역"이 모으고, 시트·웹앱 기록과 맞춰 봅니다.`;
 
 /* ══════════ 매입 기록: 웹앱에서 바로 입력 (구글 시트 대신) ══════════
  * 한 건 = 한 번의 거래(한 판매자에게서 산 묶음). 품목마다 내용·권수·개별 가격, 나중에 예상 판매가가 자동으로 붙음.
