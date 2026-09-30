@@ -245,12 +245,12 @@ fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opa
 <script src="../readnow-products-core.js?v=0.3.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.23.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.24.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.23.0';
+const APP_VER = '0.24.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1230,9 +1230,12 @@ function picker(id, def) {
     ${p.kind !== 'all' ? `<div class="ppnav"><button data-ppo="-1" aria-label="이전">◀</button><b>${r.label}</b><button data-ppo="1" ${p.off >= 0 ? 'disabled' : ''} aria-label="다음">▶</button>${p.off ? '<button data-ppo="0" class="now">지금</button>' : ''}</div>` : ''}</div>`;
 }
 const rangeFor = (id, def) => { const p = S.pp[id] || (S.pp[id] = { kind: def || 'all', off: 0 }); return rangeOf(p.kind, p.off); };
+// 긴 목록은 보이는 줄만 만듦 (lzmap: 수천 줄이어도 화면에 보일 10줄만 계산)
+const lz = (arr, fn) => ({ _lz: true, length: arr.length, head: (n) => arr.slice(0, n).map(fn) });
+Object.defineProperty(Array.prototype, 'lzmap', { value: function (fn) { return lz(this, fn); }, enumerable: false });
 function fold(id, rows, step = 10) {
   const n = S.fold[id] || step; const rest = rows.length - n;
-  return rows.slice(0, n).join('') + (rows.length > step ? `<div class="fold" data-fold="${id}" data-step="${step}">${rest > 0 ? `<button data-fa="more">${Math.min(step, rest)}개 더 보기 <small>남은 ${rest.toLocaleString()}</small></button>` : ''}${n > step ? '<button data-fa="less">접기</button>' : ''}</div>` : '');
+  return (rows._lz ? rows.head(n) : rows.slice(0, n)).join('') + (rows.length > step ? `<div class="fold" data-fold="${id}" data-step="${step}">${rest > 0 ? `<button data-fa="more">${Math.min(step, rest)}개 더 보기 <small>남은 ${rest.toLocaleString()}</small></button>` : ''}${n > step ? '<button data-fa="less">접기</button>' : ''}</div>` : '');
 }
 function sec(id, title, body, open = true) { const o = S.sec[id] ?? open; const lazy = typeof body === 'function'; return `<details class="sec" data-sec="${id}" ${lazy && !o ? 'data-lazy="1"' : ''} ${o ? 'open' : ''}><summary>${title}</summary><div class="secb">${lazy ? (o ? body() : '<div class="wload"></div>') : body}</div></details>`; }
 function bindUI(root, rerender) {
@@ -1697,19 +1700,19 @@ function sellerRankBoards() {
   const row = (s, v, why) => `<li data-sid="${esc(s.id)}"><span class="rn"></span><span class="rnm">${esc(s.name || '(이름 없음)')}${why ? `<small class="rwhy">${esc(why)}</small>` : ''}</span><span class="rv">${v}</span></li>`;
   const r3 = L(rev6);
   const plain = [
-    ['mid', '평가 많은 순 (전체)', L(sReviews).map((s) => row(s, num(sReviews(s)) + '건'))],
-    ['mid', '평가 많은 순 (최근 6개월) — 매출 가늠에 가장 중요', r3.length ? r3.map((s) => row(s, num(rev6(s)) + '건', (() => { const x = rev6src(s); return `${x.src || ''}${x.at ? ' · ' + d10(typeof x.at === 'number' ? new Date(x.at).toISOString() : x.at) : ''}`; })())) : 'wait3'],
-    ['mid', '보유 상품 많은 순 (품절 취소율 10% 이상 제외)', L(sItems).filter((s) => !(sOut(s) >= 0.1)).map((s) => row(s, num(sItems(s)) + '개', sOut(s) != null ? `품절 취소율 ${(sOut(s) * 100).toFixed(1)}%` : ''))],
-    ['mid', '오래된 사업자 순', all.filter((s) => s.firstReviewDate).sort((a, b) => String(a.firstReviewDate).localeCompare(String(b.firstReviewDate))).map((s) => row(s, `${sYears(s).toFixed(1)}년`, `첫 평가 ${d10(s.firstReviewDate)}`))],
+    ['mid', '평가 많은 순 (전체)', L(sReviews).lzmap((s) => row(s, num(sReviews(s)) + '건'))],
+    ['mid', '평가 많은 순 (최근 6개월) — 매출 가늠에 가장 중요', r3.length ? r3.lzmap((s) => row(s, num(rev6(s)) + '건', (() => { const x = rev6src(s); return `${x.src || ''}${x.at ? ' · ' + d10(typeof x.at === 'number' ? new Date(x.at).toISOString() : x.at) : ''}`; })())) : 'wait3'],
+    ['mid', '보유 상품 많은 순 (품절 취소율 10% 이상 제외)', L(sItems).filter((s) => !(sOut(s) >= 0.1)).lzmap((s) => row(s, num(sItems(s)) + '개', sOut(s) != null ? `품절 취소율 ${(sOut(s) * 100).toFixed(1)}%` : ''))],
+    ['mid', '오래된 사업자 순', all.filter((s) => s.firstReviewDate).sort((a, b) => String(a.firstReviewDate).localeCompare(String(b.firstReviewDate))).lzmap((s) => row(s, `${sYears(s).toFixed(1)}년`, `첫 평가 ${d10(s.firstReviewDate)}`))],
   ];
   const withS = all.map((s) => [s, sc.get(s.id)]).filter(([, x]) => x);
   const model = [
-    ['model good', '★ 모범 판매자', withS.filter(([, x]) => x.mcls === 'good').sort((a, b) => b[1].model - a[1].model).map(([s, x]) => row(s, x.model, modelReasons(x).good.join(' · ')))],
-    ['model bad', '✕ 불량 판매자', withS.filter(([, x]) => x.mcls === 'bad').sort((a, b) => (a[1].model ?? 0) - (b[1].model ?? 0)).map(([s, x]) => row(s, x.model ?? '-', modelReasons(x).weak.join(' · ')))],
+    ['model good', '★ 모범 판매자', withS.filter(([, x]) => x.mcls === 'good').sort((a, b) => b[1].model - a[1].model).lzmap(([s, x]) => row(s, x.model, modelReasons(x).good.join(' · ')))],
+    ['model bad', '✕ 불량 판매자', withS.filter(([, x]) => x.mcls === 'bad').sort((a, b) => (a[1].model ?? 0) - (b[1].model ?? 0)).lzmap(([s, x]) => row(s, x.model ?? '-', modelReasons(x).weak.join(' · ')))],
   ];
   const gain = [
-    ['gain good', '₩＋ 우리에게 이득', withS.filter(([, x]) => x.gcls === 'good').sort((a, b) => b[1].gain - a[1].gain).map(([s, x]) => row(s, x.gain, gainReasons(x).plus.join(' · ')))],
-    ['gain bad', '₩－ 우리에게 불익', withS.filter(([, x]) => x.gcls === 'bad').sort((a, b) => a[1].gain - b[1].gain).map(([s, x]) => row(s, x.gain, gainReasons(x).minus.join(' · ')))],
+    ['gain good', '₩＋ 우리에게 이득', withS.filter(([, x]) => x.gcls === 'good').sort((a, b) => b[1].gain - a[1].gain).lzmap(([s, x]) => row(s, x.gain, gainReasons(x).plus.join(' · ')))],
+    ['gain bad', '₩－ 우리에게 불익', withS.filter(([, x]) => x.gcls === 'bad').sort((a, b) => a[1].gain - b[1].gain).lzmap(([s, x]) => row(s, x.gain, gainReasons(x).minus.join(' · ')))],
   ];
   const sect = (tone, title, rows) => `<section class="rk ${tone}"><h4>${title}</h4><ol class="num">${rows === 'wait3' ? '<li class="empty">상품 수집기 → 6개월 평가 수 수집을 돌리면 나타납니다</li>' : fold('srk_' + title, rows) || '<li class="empty">없음</li>'}</ol></section>`;
   return `<div class="axis plain"><div class="axh"><b>규모·경력</b><span>점수 아님, 사실 순위</span></div>${plain.map((b) => sect(...b)).join('')}</div>
@@ -1749,21 +1752,21 @@ function productRankBoards() {
   if (!Array.isArray(S.qnaAll)) loadQnaAll();
   const qm = new Map(); if (Array.isArray(S.qnaAll)) S.qnaAll.forEach((q) => { if (!inRange(q.createdAt, r)) return; const t = String(q.title || '').replace(/^\[중고[^\]]*\]\s*/, ''); if (!t) return; qm.set(t, (qm.get(t) || 0) + 1); });
   const row = (b, v, sub) => `<li data-book="${esc(b.code || '')}" data-btitle="${esc(b.title || '')}"><span class="rn"></span><span class="rnm">${esc(b.title || '')} ${usedBtn(b.code ? S.plist.get('aladin_' + b.code) : null, { title: b.title, isbn13: b.k && /^\d{13}$/.test(b.k) ? b.k : null })}${sub ? `<small class="rwhy">${sub}</small>` : ''}</span><span class="rv">${v}</span></li>`;
-  const top = (key, f, sub) => m.filter((b) => key(b) > 0).sort((a, b) => key(b) - key(a)).map((b) => row(b, f(key(b)), sub ? sub(b) : ''));
+  const top = (key, f, sub) => m.filter((b) => key(b) > 0).sort((a, b) => key(b) - key(a)).lzmap((b) => row(b, f(key(b)), sub ? sub(b) : ''));
   const boards = [
     ['good', '가장 많이 팔린 책', top((b) => b.qty, (v) => v + '권', (b) => won(b.amt))],
     ['good', '매출 합계가 높은 책', top((b) => b.amt, won, (b) => `${b.qty}권`)],
     ['good', '한 권 값이 높은 책', top((b) => b.maxUnit, won, (b) => `${b.qty}권 판매`)],
     ['good', '순이익이 높은 책', top((b) => b.profit, (v) => won(Math.round(v)), (b) => `매출 ${won(b.amt)} − 수수료 ${won(Math.round(b.fee))} − 매입 ${won(Math.round(unitCost() * b.qty))}`)],
-    ['mid', '문의가 많은 책', !Array.isArray(S.qnaAll) ? 'wait' : [...qm.entries()].sort((a, b) => b[1] - a[1]).map(([t, n]) => row({ title: t }, n + '건'))],
+    ['mid', '문의가 많은 책', !Array.isArray(S.qnaAll) ? 'wait' : [...qm.entries()].sort((a, b) => b[1] - a[1]).lzmap(([t, n]) => row({ title: t }, n + '건'))],
   ];
   const act = S.prodLoaded ? [...S.plist.values()].filter((l) => l.active) : [];
   const lrow = (l, v, sub) => `<li data-book="${esc(l.usedCode || '')}" data-btitle="${esc(l.title || '')}"><span class="rn"></span><span class="rnm">${esc(l.title || '')} ${usedBtn(l.usedCode ? S.plist.get('aladin_' + l.usedCode) || l : l, l)}${sub ? `<small class="rwhy">${sub}</small>` : ''}</span><span class="rv">${v}</span></li>`;
   if (!S.prodLoaded) loadProducts();
   const soldLines = []; for (const o of S.orders.values()) { if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue; for (const it of o.items || []) if (it.lineStatus === 'normal' && it.price) soldLines.push({ it, o }); }
-  boards.push(['good', '등록 상품 중 가격 높은 책 (판매완료 중)', soldLines.sort((a, b) => b.it.price - a.it.price).map(({ it, o }) => lrow({ usedCode: it.aladinUsedCode, title: it.title }, won(it.price), `${esc(d10(o.orderedAt))} 판매${it.condition ? ' · ' + esc(it.condition) : ''}${(() => { const t = mtOfItem(it).type; return t !== 'book' ? ' · ' + MT_LABEL[t] : ''; })()}`))]);
-  boards.push(['mid', '등록 상품 중 가격 높은 책 (지금 판매 중)', !S.prodLoaded ? 'wait' : act.filter((l) => l.price).sort((a, b) => b.price - a.price).map((l) => lrow(l, won(l.price), `${esc(l.grade || '')} · 수량 ${l.qty ?? '-'}${mtOfListing(l).type !== 'book' ? ' · ' + MT_LABEL[mtOfListing(l).type] : ''}`))]);
-  boards.push(['mid', '등록 상품 중 수량 많은 책 (지금 판매 중)', !S.prodLoaded ? 'wait' : act.filter((l) => (l.qty || 0) > 1).sort((a, b) => b.qty - a.qty).map((l) => lrow(l, l.qty + '권', `${won(l.price)} · ${esc(l.grade || '')}`))]);
+  boards.push(['good', '등록 상품 중 가격 높은 책 (판매완료 중)', soldLines.sort((a, b) => b.it.price - a.it.price).lzmap(({ it, o }) => lrow({ usedCode: it.aladinUsedCode, title: it.title }, won(it.price), `${esc(d10(o.orderedAt))} 판매${it.condition ? ' · ' + esc(it.condition) : ''}${(() => { const t = mtOfItem(it).type; return t !== 'book' ? ' · ' + MT_LABEL[t] : ''; })()}`))]);
+  boards.push(['mid', '등록 상품 중 가격 높은 책 (지금 판매 중)', !S.prodLoaded ? 'wait' : act.filter((l) => l.price).sort((a, b) => b.price - a.price).lzmap((l) => lrow(l, won(l.price), `${esc(l.grade || '')} · 수량 ${l.qty ?? '-'}${mtOfListing(l).type !== 'book' ? ' · ' + MT_LABEL[mtOfListing(l).type] : ''}`))]);
+  boards.push(['mid', '등록 상품 중 수량 많은 책 (지금 판매 중)', !S.prodLoaded ? 'wait' : act.filter((l) => (l.qty || 0) > 1).sort((a, b) => b.qty - a.qty).lzmap((l) => lrow(l, l.qty + '권', `${won(l.price)} · ${esc(l.grade || '')}`))]);
   return `${picker('prank', 'all')}` + boards.map(([tone, title, rows]) => `<section class="rk ${tone}"><h4>${title}</h4><ol class="num">${rows === 'wait' ? '<li class="empty">불러오는 중</li>' : fold('prk_' + title + r.kind, rows) || '<li class="empty">없음</li>'}</ol></section>`).join('')
     + `<p class="hint">순이익 = 매출 − 판매 수수료 − 권당 매입가 ${won(Math.round(unitCost()))} (매입 탭에서 계산, 매입 기록이 없으면 설정값). 수수료는 주문 기록의 실제 수수료, 없으면 추정 ${Math.round((S.app.feeRate || 0) * 100)}%. 택배비는 '택배비 정산'에서 따로 봅니다. 매입가 기록이 생기면 책마다 실제 매입가로 바뀝니다.</p>`;
 }
@@ -2160,7 +2163,7 @@ function renderPurchase(m) {
   const mx = Math.max(1, ...months.map((k) => Math.max(monthly.get(k) || 0, salesM.get(k) || 0)));
   const chart = `<div style="overflow-x:auto"><svg width="${Math.max(300, months.length * 34)}" height="150">${months.map((k, i) => { const a = monthly.get(k) || 0, b = salesM.get(k) || 0; const ha = (a / mx) * 120, hb = (b / mx) * 120; return `<g><title>${k}: 매입 ${won(a)} · 매출 ${won(b)}</title><rect x="${i * 34 + 2}" y="${126 - ha}" width="14" height="${ha}" fill="#A8661B"/><rect x="${i * 34 + 16}" y="${126 - hb}" width="14" height="${hb}" fill="#2F5D50"/><text x="${i * 34 + 16}" y="142" font-size="9" text-anchor="middle" fill="#5B6B66">${k.slice(2).replace('-', '.')}</text></g>`; }).join('')}</svg></div><div class="hint" style="margin:2px 0 0"><span style="color:#A8661B">■</span> 매입 <span style="color:#2F5D50">■</span> 매출</div>`;
   const plat = new Map(); X.use.filter((e) => ['book', 'mixed'].includes(catOf(e))).forEach((e) => { const p = (e.plat || '(모름)').replace(/[\s\-]+$/, '').trim() || '(모름)'; const x = plat.get(p) || { n: 0, amt: 0 }; x.n++; x.amt += e.amt; plat.set(p, x); });
-  const exMatch = P.existing.map((x) => { const t = norm(x.title); const act = [...S.plist.values()].some((l) => l.active && norm(l.title || '') === t); const sold = [...S.orders.values()].some((o) => o.kind === 'sale' && (o.items || []).some((it) => it.lineStatus === 'normal' && norm(it.title || '') === t)); const al = (P.aItems || []).find((a) => norm(a.t) === t); return { ...x, act, sold, al }; });
+  const exMatch = existingMatch();
   const exCost = exMatch.reduce((a, x) => a + (x.finalBuy || x.buyPrice || (x.al ? x.al.p : 0) || 0), 0);
   const check = P.entries.filter((e) => catOf(e) === 'mixed' || (catOf(e) === 'dup' && !e.catManual));
   const unmatched = P.aOrders.filter((o) => !o.matched);
@@ -2195,12 +2198,12 @@ function renderPurchase(m) {
   ${sec('pu_trend', '월별 매입 · 매출', chart, true)}
   ${sec('pu_plat', '매입 플랫폼별 (책 매입)', () => `<div class="list">${[...plat.entries()].sort((a, b) => b[1].amt - a[1].amt).map(([p, v]) => `<div class="item"><span>${esc(p)}</span><span>${won(v.amt)} · ${v.n}건</span></div>`).join('')}</div>`, false)}
   ${sec('pu_ex', `기존보유 책 (사업 시작 전) ${P.existing.length}권`, () => `<div class="mgrid">${mcell(num(exMatch.filter((x) => x.act).length) + '권', '지금 등록 중', '')}${mcell(num(exMatch.filter((x) => x.sold).length) + '권', '판매됨', '')}${mcell(num(exMatch.filter((x) => !x.act && !x.sold).length) + '권', '등록·판매 기록 없음', '')}${mcell(won(exCost), '추정 원가', '시트의 최종 매입가, 없으면 알라딘 구매목록 가격')}</div>
-    <div class="list" style="margin-top:8px">${fold('pur_ex', exMatch.map((x) => `<div class="item"><span>${esc(x.title)}</span><span>${x.act ? '<span class="tag">등록 중</span>' : ''}${x.sold ? '<span class="tag">판매됨</span>' : ''} ${x.finalBuy || x.buyPrice ? won(x.finalBuy || x.buyPrice) : x.al ? `${won(x.al.p)} <small>(알라딘 ${esc(x.al.d)})</small>` : '<small>출처 불분명</small>'}</span></div>`)) || '<div class="empty">없음</div>'}</div>`, false)}
+    <div class="list" style="margin-top:8px">${fold('pur_ex', exMatch.lzmap((x) => `<div class="item"><span>${esc(x.title)}</span><span>${x.act ? '<span class="tag">등록 중</span>' : ''}${x.sold ? '<span class="tag">판매됨</span>' : ''} ${x.finalBuy || x.buyPrice ? won(x.finalBuy || x.buyPrice) : x.al ? `${won(x.al.p)} <small>(알라딘 ${esc(x.al.d)})</small>` : '<small>출처 불분명</small>'}</span></div>`)) || '<div class="empty">없음</div>'}</div>`, false)}
   ${sec('pu_al', '알라딘 구매 (참고)', `${P.aList ? `<div class="card" style="margin:0 0 8px;font-size:13px;line-height:1.6;background:var(--soft)">${ALADIN_NOTE}</div><p class="hint" style="margin-top:0">구매목록 파일(~${esc(P.aList.last || '')}): ${num(P.aList.n)}개 · 판매가 합계 ${won(P.aList.amt)} — <b>참고용, 총 매입가에 더하지 않음</b>. 연도 줄을 누르면 그해 목록이 열립니다.</p><div style="overflow-x:auto"><table class="tbl"><tr><th>연도</th><th>개수</th><th>합계</th><th>그중 중고</th></tr>${Object.entries(P.aList.byYear).sort().map(([y, v]) => `<tr class="clk" data-aly="${esc(y)}"><td>${y} ›</td><td>${num(v.n)}</td><td>${won(v.amt)}</td><td>${num(v.used)} · ${won(v.usedAmt)}</td></tr>`).join('')}</table></div><button class="btn" id="al_all" style="width:100%;margin-top:8px">전체 목록 보기 · 검색</button>` : '<div class="hint">알라딘 구매목록 파일을 아직 넣지 않았습니다</div>'}
     <h3 style="margin-top:12px">3월 14일 이후 알라딘 주문 대조 ${P.aOrders.length ? `(${P.aOrders.length}건 수집)` : ''}</h3>
-    ${P.aOrders.length ? `<p class="hint" style="margin:0">구글 시트의 알라딘 거래와 날짜·금액으로 맞춰 봅니다. 시트에 없는 주문 ${unmatched.length}건 — 확인 후 '매입에 넣기'를 누르면 총 매입가에 더해집니다.</p><div class="list">${fold('pur_ao', unmatched.map((o) => `<div class="item"><span>${esc(o.date)} ${esc(o.ono)}<br><small>${esc(o.summary || '')} · ${esc(o.note || '')}</small></span><span>${won(o.amount)} <button class="btn ghost sm" data-aadd="${esc(o.id)}">${o.added ? '빼기' : '매입에 넣기'}</button></span></div>`)) || '<div class="empty">모두 시트와 맞음</div>'}</div>` : '<div class="hint">상품 수집기 → 알라딘 구매 내역 수집을 돌리면 나타납니다</div>'}`, false)}
+    ${P.aOrders.length ? `<p class="hint" style="margin:0">구글 시트의 알라딘 거래와 날짜·금액으로 맞춰 봅니다. 시트에 없는 주문 ${unmatched.length}건 — 확인 후 '매입에 넣기'를 누르면 총 매입가에 더해집니다.</p><div class="list">${fold('pur_ao', unmatched.lzmap((o) => `<div class="item"><span>${esc(o.date)} ${esc(o.ono)}<br><small>${esc(o.summary || '')} · ${esc(o.note || '')}</small></span><span>${won(o.amount)} <button class="btn ghost sm" data-aadd="${esc(o.id)}">${o.added ? '빼기' : '매입에 넣기'}</button></span></div>`)) || '<div class="empty">모두 시트와 맞음</div>'}</div>` : '<div class="hint">상품 수집기 → 알라딘 구매 내역 수집을 돌리면 나타납니다</div>'}`, false)}
   ${sec('pu_check', `확인 필요 ${check.length + (P.lastImport && P.lastImport.warn ? P.lastImport.warn.length : 0)}건`, `${(P.lastImport && P.lastImport.warn || []).map((w) => `<div class="fwhy" style="color:var(--amber)">${esc(w)}</div>`).join('')}
-    <div class="list">${fold('pur_chk', check.map((e) => `<div class="item"><span><b>${esc(e.sheet)}</b> ${e.row}행 · ${esc(e.date || e.dateGuess || '날짜 없음')} · ${won(e.amt)}<br><small>${esc(e.txt.slice(0, 80))}</small><br><small style="color:var(--amber)">${esc(e.catWhy || '')}</small></span><span><select data-pcat="${esc(e.id)}">${[['book', '책 매입'], ['etc', '기타 매입'], ['dup', '중복(제외)'], ['heonot', '헌옷도라이(제외)'], ['mixed', '섞임(책으로)']].map(([k, l]) => `<option value="${k}" ${catOf(e) === k ? 'selected' : ''}>${l}</option>`).join('')}</select></span></div>`)) || '<div class="empty">없음</div>'}</div>`, check.length > 0)}
+    <div class="list">${fold('pur_chk', check.lzmap((e) => `<div class="item"><span><b>${esc(e.sheet)}</b> ${e.row}행 · ${esc(e.date || e.dateGuess || '날짜 없음')} · ${won(e.amt)}<br><small>${esc(e.txt.slice(0, 80))}</small><br><small style="color:var(--amber)">${esc(e.catWhy || '')}</small></span><span><select data-pcat="${esc(e.id)}">${[['book', '책 매입'], ['etc', '기타 매입'], ['dup', '중복(제외)'], ['heonot', '헌옷도라이(제외)'], ['mixed', '섞임(책으로)']].map(([k, l]) => `<option value="${k}" ${catOf(e) === k ? 'selected' : ''}>${l}</option>`).join('')}</select></span></div>`)) || '<div class="empty">없음</div>'}</div>`, check.length > 0)}
   ${sec('pu_list', `시트 거래 전체 ${P.entries.length}건`, () => `<p class="hint" style="margin-top:0">책 ${cats.book} · 섞임 ${cats.mixed} · 기타 ${cats.etc} · 헌옷(제외) ${cats.heonot} · 중복(제외) ${cats.dup}. 분류는 칸마다 바꿀 수 있고, 바꾼 값은 다음에 시트를 다시 넣어도 유지됩니다.</p>
     <button class="btn" id="pu_items" style="width:100%;margin:0 0 8px">품목별 매입가 (추정) 전체 보기 · 검색</button><div class="list">${fold('pur_all', P.entries.filter((e) => !e.deleted).slice().sort((a, b) => String(b.date || b.dateGuess || '').localeCompare(String(a.date || a.dateGuess || ''))).map((e) => { const r = splitPur(e); return `<div class="item"><span class="clk" data-pent="${esc(e.id)}">${esc(e.date || e.dateGuess || '-')} · <b>${esc(e.sheet)}</b> · ${esc(e.plat || '')}<br><small>${esc(String(e.txt || '').slice(0, 70))}</small><br><small style="color:var(--cloth)">${num(r.items.length)}품목 · ${num(r.totalQ)}권 · 권당 약 ${won(Math.round(r.unit))} ›</small></span><span>${won(e.amt)} <select data-pcat="${esc(e.id)}">${[['book', '책'], ['mixed', '섞임'], ['etc', '기타'], ['dup', '중복'], ['heonot', '헌옷']].map(([k, l]) => `<option value="${k}" ${catOf(e) === k ? 'selected' : ''}>${l}</option>`).join('')}</select></span></div>`; }))}</div>`, false)}
   ${sec('pu_set', '매입 설정 · 파일 넣기', `<div class="ro">김미소책방 인수 <b>${won(st.msTotalCost)}</b> · <b>${num(st.msTotalBooks)}</b>권 · 남길 비율 <b>${Math.round(st.msKeepRatio * 100)}%</b> · 문정 시트 <b>${st.includeMunjeong ? '넣음' : '뺌'}</b> · 기존보유 <b>${st.excludeExistingFromUnit ? '권당 계산에서 뺌' : '넣음'}</b></div><p class="hint">바꾸기: <b>설정 탭 → ⑤ 매입</b> (관리자 기기)</p>
@@ -2337,7 +2340,7 @@ function paceHtml(B) {
 }
 function cheapList(arr, key) {
   const pct = (S.app.alerts || {}).cheapPct ?? 10;
-  return `<details class="cheapd" data-sec="cheap_${key}" ${S.sec['cheap_' + key] ? 'open' : ''}${arr.length ? '' : ' disabled'}><summary><b>${num(arr.length)}종</b> — 펼쳐서 상품 보기</summary><div class="list">${fold('cheap_' + key, arr.map((x) => `<button class="item" data-pid="${esc(x.l.id)}"><span>${esc(x.l.title || '')} <span class="tag pl">${esc(x.l.grade || '')}</span> ${usedBtn(x.l)}<br><small>기준 ${esc(x.who)} (${esc(x.how)})</small></span><span style="text-align:right">우리 ${won(x.ours)}<br><small>기준 ${won(x.ref)} · <b style="color:var(--red)">${Math.round(x.gap * 100)}% 쌈</b></small></span></button>`)) || '<div class="empty">없음</div>'}</div></details><p class="hint" style="margin:4px 0 0">가격+배송비로 비교, ${pct}% 이상 싸면 표시 (설정 ⑧에서 변경)</p>`;
+  return `<details class="cheapd" data-sec="cheap_${key}" ${S.sec['cheap_' + key] ? 'open' : ''}${arr.length ? '' : ' disabled'}><summary><b>${num(arr.length)}종</b> — 펼쳐서 상품 보기</summary><div class="list">${fold('cheap_' + key, arr.lzmap((x) => `<button class="item" data-pid="${esc(x.l.id)}"><span>${esc(x.l.title || '')} <span class="tag pl">${esc(x.l.grade || '')}</span> ${usedBtn(x.l)}<br><small>기준 ${esc(x.who)} (${esc(x.how)})</small></span><span style="text-align:right">우리 ${won(x.ours)}<br><small>기준 ${won(x.ref)} · <b style="color:var(--red)">${Math.round(x.gap * 100)}% 쌈</b></small></span></button>`)) || '<div class="empty">없음</div>'}</div></details><p class="hint" style="margin:4px 0 0">가격+배송비로 비교, ${pct}% 이상 싸면 표시 (설정 ⑧에서 변경)</p>`;
 }
 function renderBiz(m) {
   if (!S.ordersLoaded) { m.innerHTML = '<div class="empty">주문 기록을 받는 중</div>'; return; }
@@ -2540,6 +2543,15 @@ function openListView(o) {
   };
   draw();
 }
+// 기존보유 책 ↔ 등록·판매·알라딘 구매목록: 제목 색인을 한 번 만들어 맞춤 (예전엔 책마다 전체를 훑어 매입 탭이 20초 넘게 멈춤)
+function titleIndex() {
+  return memo('titleIdx', () => { const act = new Set(), sold = new Set(), al = new Map();
+    for (const l of S.plist.values()) if (l.active) act.add(norm(l.title || ''));
+    for (const o of S.orders.values()) { if (o.kind !== 'sale') continue; for (const it of o.items || []) if (it.lineStatus === 'normal') sold.add(norm(it.title || '')); }
+    for (const a of S.pur.aItems || []) { const k = norm(a.t); if (!al.has(k)) al.set(k, a); }
+    return { act, sold, al }; });
+}
+function existingMatch() { return memo('exMatch', () => { const I = titleIndex(); return S.pur.existing.map((x) => { const t = norm(x.title); return { ...x, act: I.act.has(t), sold: I.sold.has(t), al: I.al.get(t) || null }; }); }); }
 function purItemRows() {
   return memo('purItemRows', () => { const out = []; for (const e of S.pur.entries) { if (e.deleted) continue; const c = catOf(e); if (['dup', 'heonot'].includes(c)) continue; const r = splitPur(e); r.items.forEach((it, idx) => out.push({ ...it, idx, e, how: r.how, cat: c })); } return out.sort((a, b) => String(b.e.date || b.e.dateGuess || '').localeCompare(String(a.e.date || a.e.dateGuess || ''))); });
 }
@@ -2586,6 +2598,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.24.0': ['매입 탭이 멈추던 문제 해결 (기존보유 맞추기가 20초 넘게 걸리던 것 → 0.2초)', '긴 목록은 보이는 줄만 계산 (상품·판매자 순위, 매입 목록 등)'],
   '0.23.0': ['새 버전 알림 띠 (지금 보고 있는 것)', '매입 탭: 기기에 저장해 두고 바로 표시, 읽기 실패 시 원인 표시', '매입 상단: 대기 미등록 상품 수(추정)·추정 권당 가격', '상품 ↔ 매입 연결: 새 매입 / 기존 미등록분 자동 구분, 빈 매입가 채우기', '수집 진행 상태 줄: 기본으로 접힘 (펼칠 때만 실시간)', '속도 개선: 화면 밖 칸은 보일 때 계산, 그리기 생략 등'],
   '0.22.0': ['매입 내용을 품목으로 나눠 권당 매입가 추정', '알라딘 구매목록 설명·전체 목록 검색'],
   '0.21.1': ['시트 넣기 오류(z) 수정'],
