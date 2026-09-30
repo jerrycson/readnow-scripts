@@ -241,12 +241,12 @@ fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opa
 <script src="../readnow-products-core.js?v=0.3.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.20.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.21.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.20.0';
+const APP_VER = '0.21.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1237,7 +1237,8 @@ function bindUI(root, rerender) {
     w.querySelectorAll('[data-ppo]').forEach((b) => (b.onclick = () => { const v = +b.dataset.ppo; S.pp[id].off = v === 0 ? 0 : Math.min(0, S.pp[id].off + v); localStorage.setItem('rn-pp', JSON.stringify(S.pp)); rerender(); })); });
   root.querySelectorAll('[data-fold]').forEach((w) => { const id = w.dataset.fold; const st = +w.dataset.step;
     w.querySelectorAll('[data-fa]').forEach((b) => (b.onclick = (e) => { e.stopPropagation(); const a = b.dataset.fa; S.fold[id] = a === 'more' ? (S.fold[id] || st) + st : a === 'all' ? 1e9 : st; rerender(); })); });
-  root.querySelectorAll('details[data-sec]').forEach((d) => (d.ontoggle = () => { S.sec[d.dataset.sec] = d.open; localStorage.setItem('rn-sec', JSON.stringify(S.sec)); }));
+  root.querySelectorAll('details[data-sec]').forEach((d) => { const save = (v) => { S.sec[d.dataset.sec] = v; localStorage.setItem('rn-sec', JSON.stringify(S.sec)); };
+    const sm = d.querySelector(':scope > summary'); if (sm) sm.addEventListener('click', () => save(!d.open)); d.ontoggle = () => save(d.open); });
 }
 const pctv = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
 const grow = (cur, prev) => { if (prev == null || !prev) return ''; const g = ((cur - prev) / prev) * 100; return `<em class="${g >= 0 ? 'up' : 'dn'}">${g >= 0 ? '▲' : '▼'}${Math.abs(g).toFixed(1)}%</em>`; };
@@ -1770,7 +1771,7 @@ function renderSettings(m) {
   const a = S.app; const adm = isAdminDevice(); const T = a.seller; const G = a.goals || {}; const A = { ...APPSET_DEFAULT.alerts, ...(a.alerts || {}) };
   const P = S.pur.set || PSET_DEFAULT; const V = S.cfg.vip, Cc = S.cfg.caution;
   if (!S.colSet) db.collection('prd_system').doc('settings').get().then((d) => { S.colSet = d.exists ? d.data() : {}; if (S.tab === 'settings') renderMain(); }).catch(() => { S.colSet = {}; });
-  if (!S.pur.loaded) loadPur().then(() => S.tab === 'settings' && renderMain());
+  if (!S.pur.loaded) loadPur().then((ok) => ok && S.tab === 'settings' && renderMain());
   const C = S.colSet || {}; const dis = adm ? '' : 'disabled';
   const num_ = (id, v, step, suf) => `<input id="${id}" type="number" step="${step || 1}" value="${v ?? ''}">${suf ? ` <span class="hint" style="display:inline">${suf}</span>` : ''}`;
   const card = (key, title, body, note) => `${sec('set_' + key, title, `<fieldset class="setf" ${dis}>${body}</fieldset>${note ? `<p class="hint">${note}</p>` : ''}`, false)}`;
@@ -1780,7 +1781,7 @@ function renderSettings(m) {
     ${S.devConflict ? `<p class="hint" style="margin:6px 0 0;color:var(--red)"><b>'${esc(deviceName())}'은(는) 다른 기기가 먼저 쓰는 이름이라 이 기기는 관리자 권한이 없습니다.</b> 새 이름을 정해 주세요.</p>` : ''}
     <p class="hint" style="margin:6px 0 0">${adm ? '<b style="color:var(--cloth)">관리자 기기입니다.</b> 아래 모든 값을 바꿀 수 있고, 바꾸면 모든 기기에 바로 반영됩니다.' : '<b style="color:var(--amber)">관리자 기기가 아니라 아래 값은 볼 수만 있습니다.</b> 관리자 기기(' + esc((a.adminDevices || []).join(', ')) + ')에서 바꿔 주세요.'}</p>
     <fieldset class="setf" ${dis}><label class="set">관리자 기기 (쉼표로. JS-MAIN · JS-PHONE · HOME은 항상 관리자)<input id="st_admins" value="${esc((a.adminDevices || []).join(', '))}"></label></fieldset>
-    <details style="margin-top:8px"><summary>이름이 정해진 기기 목록</summary><div class="list" id="st_devlist"><div class="hint">불러오는 중</div></div><p class="hint">기기의 브라우저 저장공간을 지우면 그 기기는 자기 이름을 잃습니다. 그때는 관리자 기기에서 '이름 풀기'를 누른 뒤 다시 정하세요.</p></details></div>
+    <details style="margin-top:8px" data-sec="set_devlist" ${S.sec.set_devlist ? 'open' : ''}><summary>이름이 정해진 기기 목록</summary><div class="list" id="st_devlist"><div class="hint">불러오는 중</div></div><p class="hint">기기의 브라우저 저장공간을 지우면 그 기기는 자기 이름을 잃습니다. 그때는 관리자 기기에서 '이름 풀기'를 누른 뒤 다시 정하세요.</p></details></div>
   ${card('goal', '② 목표', `<label class="set">월 매출 목표 (원, 0이면 표시 안 함)${num_('st_gm', G.monthSales || 0, 100000)}</label><label class="set">하루 등록 목표 (권)${num_('st_gl2', G.dailyListing || 0, 10)}</label><label class="set">목표 공헌이익률 (%)${num_('st_gp', G.marginPct || 0)}</label>`, '홈·경영 탭의 달성률과 "목표 미달" 알림에 씁니다.')}
   ${card('profit', '③ 매출·이익 계산', `<label class="set">추정 수수료율 (%) — 수수료 기록이 없는 주문에만${num_('st_fee', Math.round((a.feeRate || 0) * 1000) / 10, 0.1)}</label><label class="set">권당 매입 비용 (원) — 매입 기록이 없거나 권수가 너무 적을 때만${num_('st_cost', a.costPerBook, 100)}</label>`, `지금 계산에 쓰는 권당 매입가: ${won(Math.round(unitCost()))}`)}
   ${sec('set_ship', '④ 택배 계약 (기간별 택배비)', `${policyCard()}<fieldset class="setf" ${dis}>${courierEditor()}</fieldset>`, false)}
@@ -1887,6 +1888,7 @@ function renderHome(m) {
     const gen = (S._homeGen = (S._homeGen || 0) + 1);
     m.innerHTML = head + lay.map((k) => `<div class="card wcard" id="wc_${k}"><h3>${WIDGETS[k][0]}</h3><div class="wbody">${S._wcache && S._wcache[k] ? S._wcache[k] : '<div class="wload"></div>'}</div></div>`).join('');
     const bindW = (el) => {
+      bindUI(el, renderMain);
       el.querySelectorAll('[data-sid]').forEach((b) => (b.onclick = () => openSeller(b.dataset.sid)));
       el.querySelectorAll('[data-pid]').forEach((b) => (b.onclick = () => openProduct(b.dataset.pid)));
       el.querySelectorAll('[data-cid]').forEach((b) => (b.onclick = () => b.dataset.cid && openCustomer(b.dataset.cid)));
@@ -2076,7 +2078,8 @@ async function importPurFiles(files) {
   S.pur.loaded = false; await loadPur(); renderMain();
 }
 async function loadPur(force) {
-  if (S.pur.loaded && !force) return; if (S.pur.loading) return; if (!force && S.pur.failAt && Date.now() - S.pur.failAt < 60000) return; S.pur.loading = true;
+  if (S.pur.loaded && !force) return false; if (S.pur.loading) return S.pur._p || false; if (!force && S.pur.failAt && Date.now() - S.pur.failAt < 60000) return false; S.pur.loading = true;
+  S.pur._p = (async () => {
   try {
     const [e, h, x, st, al, ao] = await Promise.all([db.collection('pur_entries').get(), db.collection('pur_heonot').get(), db.collection('pur_existing').get(), db.collection('app_settings').doc('purchase').get(), db.collection('pur_aladin_list').doc('summary').get(), db.collection('pur_aladin_orders').get()]);
     const arr = (s) => { const a = []; s.forEach((d) => a.push({ ...d.data(), id: d.id })); return a; };
@@ -2087,6 +2090,7 @@ async function loadPur(force) {
     matchAladinOrders(); S.pur.loaded = true; S._bizAt = 0; bump();
     if (!S.purLive) { S.purLive = true; db.collection('pur_entries').where('source', '==', 'app').onSnapshot((ss) => { let ch = 0; ss.docChanges().forEach((c) => { const v = { ...c.doc.data(), id: c.doc.id }; const i = S.pur.entries.findIndex((x) => x.id === v.id); if (i >= 0) S.pur.entries[i] = v; else S.pur.entries.push(v); ch++; }); if (ch) { bump(); matchAladinOrders(); if (S.tab === 'purchase' && !(S.detail && S.detail.pur)) renderMain(); } }, () => {}); }
   } catch (er) { S.pur.failAt = Date.now(); toast('매입 기록 읽기 실패: ' + er.message); } finally { S.pur.loading = false; }
+  return S.pur.loaded; })(); return S.pur._p;
 }
 const catOf = (e) => e.catManual || e.cat;
 // 핵심 계산: 어디서든 쓰는 권당 매입가
@@ -2121,7 +2125,7 @@ function purStatsNow() {
 let _ucAt = 0, _uc = null;
 const unitCost = () => { if (S.pur.loaded && S.ordersLoaded && S.prodLoaded) { if (Date.now() - _ucAt > 5000) { const X = purStats(); _uc = X.allN >= 100 ? X.unit : null; _ucAt = Date.now(); } if (_uc) return _uc; } return S.app.costPerBook || 0; };
 function renderPurchase(m) {
-  if (!S.pur.loaded) { loadPur().then(() => { if (S.tab === 'purchase') renderMain(); }); m.innerHTML = '<div class="empty">매입 기록을 받는 중</div>'; return; }
+  if (!S.pur.loaded) { loadPur().then((ok) => { if (ok && S.tab === 'purchase') renderMain(); }); m.innerHTML = '<div class="empty">매입 기록을 받는 중</div>'; return; }
   if (!S.ordersLoaded || !S.prodLoaded) { loadProducts(); m.innerHTML = '<div class="empty">주문·상품 기록을 받는 중 (권수 계산에 필요)</div>'; setTimeout(() => S.tab === 'purchase' && renderMain(), 1500); return; }
   const P = S.pur; const X = purStats(); const st = P.set;
   const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 + '%' : '-');
@@ -2298,11 +2302,11 @@ function paceHtml(B) {
 }
 function cheapList(arr, key) {
   const pct = (S.app.alerts || {}).cheapPct ?? 10;
-  return `<details class="cheapd"${arr.length ? '' : ' disabled'}><summary><b>${num(arr.length)}종</b> — 펼쳐서 상품 보기</summary><div class="list">${fold('cheap_' + key, arr.map((x) => `<button class="item" data-pid="${esc(x.l.id)}"><span>${esc(x.l.title || '')} <span class="tag pl">${esc(x.l.grade || '')}</span> ${usedBtn(x.l)}<br><small>기준 ${esc(x.who)} (${esc(x.how)})</small></span><span style="text-align:right">우리 ${won(x.ours)}<br><small>기준 ${won(x.ref)} · <b style="color:var(--red)">${Math.round(x.gap * 100)}% 쌈</b></small></span></button>`)) || '<div class="empty">없음</div>'}</div></details><p class="hint" style="margin:4px 0 0">가격+배송비로 비교, ${pct}% 이상 싸면 표시 (설정 ⑧에서 변경)</p>`;
+  return `<details class="cheapd" data-sec="cheap_${key}" ${S.sec['cheap_' + key] ? 'open' : ''}${arr.length ? '' : ' disabled'}><summary><b>${num(arr.length)}종</b> — 펼쳐서 상품 보기</summary><div class="list">${fold('cheap_' + key, arr.map((x) => `<button class="item" data-pid="${esc(x.l.id)}"><span>${esc(x.l.title || '')} <span class="tag pl">${esc(x.l.grade || '')}</span> ${usedBtn(x.l)}<br><small>기준 ${esc(x.who)} (${esc(x.how)})</small></span><span style="text-align:right">우리 ${won(x.ours)}<br><small>기준 ${won(x.ref)} · <b style="color:var(--red)">${Math.round(x.gap * 100)}% 쌈</b></small></span></button>`)) || '<div class="empty">없음</div>'}</div></details><p class="hint" style="margin:4px 0 0">가격+배송비로 비교, ${pct}% 이상 싸면 표시 (설정 ⑧에서 변경)</p>`;
 }
 function renderBiz(m) {
   if (!S.ordersLoaded) { m.innerHTML = '<div class="empty">주문 기록을 받는 중</div>'; return; }
-  loadProducts(); loadMetrics(); if (!S.pur.loaded) loadPur().then(() => S.tab === 'biz' && renderMain()); if (!Array.isArray(S.qnaAll)) loadQnaAll(); if (!S.sellersLoaded) syncSellers().then(() => S.tab === 'biz' && renderMain()).catch(() => {});
+  loadProducts(); loadMetrics(); if (!S.pur.loaded) loadPur().then((ok) => ok && S.tab === 'biz' && renderMain()); if (!Array.isArray(S.qnaAll)) loadQnaAll(); if (!S.sellersLoaded) syncSellers().then(() => S.tab === 'biz' && renderMain()).catch(() => {});
   const B = bizCalc(); const pc = (a, b) => (b ? Math.round((a / b) * 1000) / 10 + '%' : '-');
   const why = (t) => `<p class="hint" style="margin:6px 0 0">${t}</p>`;
   const med = B.gaps.length ? B.gaps.slice().sort((a, b) => a - b)[Math.floor(B.gaps.length / 2)] : null;
@@ -2337,7 +2341,7 @@ const WCAT = {
 const W_ORDER = ['오늘·알림', '매출', '수익·매입', '재고·가격', '고객·평판', '판매자·시장'];
 const wWait = (t) => `<div class="hint" style="margin:0">${t}</div>`;
 const wNeed = () => { if (!S.ordersLoaded) return wWait('주문 기록을 받는 중'); loadProducts(); if (!S.prodLoaded) return wWait('상품 기록을 받는 중'); return null; };
-const wPur = () => { const n = wNeed(); if (n) return n; if (!S.pur.loaded) { loadPur().then(() => S.tab === 'home' && renderMain()); return wWait('매입 기록을 받는 중'); } if (!S.pur.entries.length) return wWait('매입 탭에 구글 시트를 넣으면 나타납니다'); return null; };
+const wPur = () => { const n = wNeed(); if (n) return n; if (!S.pur.loaded) { loadPur().then((ok) => ok && S.tab === 'home' && renderMain()); return wWait('매입 기록을 받는 중'); } if (!S.pur.entries.length) return wWait('매입 탭에 구글 시트를 넣으면 나타납니다'); return null; };
 const pbar = (v, max, color) => `<div style="height:8px;background:var(--soft);border-radius:4px;overflow:hidden;margin:6px 0 2px"><i style="display:block;height:100%;width:${Math.min(100, max ? (v / max) * 100 : 0).toFixed(1)}%;background:${color || 'var(--cloth)'}"></i></div>`;
 const wl = (rows) => `<ol class="wl">${rows.join('') || '<li><span>없음</span></li>'}</ol>`;
 const monthSales = (ym) => { let a = 0, q = 0; for (const o of S.orders.values()) { if (o.kind !== 'sale' || String(o.orderedAt || '').slice(0, 7) !== ym) continue; const L = saleLines(o); a += L.amt; q += L.qty; } return { a, q }; };
