@@ -150,6 +150,9 @@ body.withrank.rankopen #rank{display:block;position:fixed;top:0;right:0;bottom:0
 .acct .ar.minus b{color:var(--cloth)}.acct .ar.total{border-bottom:0;border-top:2px solid var(--ink);margin-top:2px}.acct .ar.total span{font-weight:700}.acct .ar.total b{font-size:19px}
 .cadd{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.cadd input{border:1px solid var(--line);border-radius:6px;padding:6px;font:inherit;min-width:0;flex:1 1 90px}.cadd .btn{padding:8px 14px}
 .tag.grade{background:#3F7FD1;font-weight:800;text-shadow:0 1px 1px rgba(0,0,0,.45)}
+.tag.rv-good{background:var(--soft);color:var(--cloth)}.tag.rv-mid{background:#FFF1D6;color:#9A6200}.tag.rv-bad{background:var(--redSoft);color:var(--red)}
+.stk{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--bg)}.stk i{display:block;height:100%}.stk i.g{background:var(--cloth)}.stk i.m{background:#E0A33B}.stk i.b{background:var(--red)}
+.dist .stk{height:8px}
 .pend{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px}
 .pend .src{font-size:12px;color:var(--sub)} .pend .who{font-weight:700;margin:3px 0} .pend .body{font-size:13.5px;color:var(--ink);white-space:pre-wrap;max-height:90px;overflow:auto;background:var(--bg);border-radius:8px;padding:6px 9px;margin:6px 0}
 .cand{display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px dashed var(--line);padding:8px 0}
@@ -185,12 +188,12 @@ em.up,em.dn{font-style:normal;font-size:11.5px;font-weight:700;margin-left:4px}e
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.7.0 (고객·주문·상품)
+/* 리드나우 웹앱 v0.8.0 (고객·주문·상품, 평가 참여)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.7.0';
+const APP_VER = '0.8.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -209,7 +212,7 @@ function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('o
 
 /* ── 고객 목록은 기기에 보관하고 바뀐 것만 받아옴 (읽기 한도 절약) ── */
 const IDB = { db: null };
-function idbOpen() { return new Promise((res, rej) => { const r = indexedDB.open('readnow-app', 4); r.onupgradeneeded = () => { const d = r.result; [['customers', 'customerId'], ['meta', 'k'], ['orders', 'id'], ['sellers', 'id'], ['plist', 'id'], ['psales', 'id'], ['pbooks', 'id']].forEach(([n, k]) => { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: k }); }); }; r.onsuccess = () => { IDB.db = r.result; res(); }; r.onerror = () => rej(r.error); }); }
+function idbOpen() { return new Promise((res, rej) => { const r = indexedDB.open('readnow-app', 5); r.onupgradeneeded = () => { const d = r.result; [['customers', 'customerId'], ['meta', 'k'], ['orders', 'id'], ['sellers', 'id'], ['plist', 'id'], ['psales', 'id'], ['pbooks', 'id'], ['reviews', 'id']].forEach(([n, k]) => { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: k }); }); }; r.onsuccess = () => { IDB.db = r.result; res(); }; r.onerror = () => rej(r.error); }); }
 const idbReq = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
 const idbAll = (s) => idbReq(IDB.db.transaction(s).objectStore(s).getAll());
 const idbGet = (s, k) => idbReq(IDB.db.transaction(s).objectStore(s).get(k));
@@ -540,21 +543,145 @@ function bindSort(m) {
 }
 function custRow(c, extra) {
   const f = flagsOf(c);
-  const tags = `${f.bl ? '<span class="tag bl">블랙리스트</span>' : ''}${f.cau ? '<span class="tag cau">주의</span>' : ''}${f.vip ? '<span class="tag vip">VIP</span>' : ''}${f.seller ? '<span class="tag bl">판매자 정보 일치</span>' : ''}${f.agent ? `<span class="tag ag">수령인 ${c.otherRecipientCount}명</span>` : ''}${c.platforms && c.platforms.some((p) => p !== 'aladin') ? c.platforms.filter((p) => p !== 'aladin').map((p) => `<span class="tag pl">${p === 'yes24' ? '예스24' : p === 'direct' ? '직접' : esc(p)}</span>`).join('') : ''}`;
+  const rst = S.reviewsLoaded && S._rstats ? S._rstats.byC.get(c.customerId) : null;
+  const tags = `${rst && rst.bad ? `<span class="tag rv-bad">불만족 ${rst.bad}</span>` : ''}${f.bl ? '<span class="tag bl">블랙리스트</span>' : ''}${f.cau ? '<span class="tag cau">주의</span>' : ''}${f.vip ? '<span class="tag vip">VIP</span>' : ''}${f.seller ? '<span class="tag bl">판매자 정보 일치</span>' : ''}${f.agent ? `<span class="tag ag">수령인 ${c.otherRecipientCount}명</span>` : ''}${c.platforms && c.platforms.some((p) => p !== 'aladin') ? c.platforms.filter((p) => p !== 'aladin').map((p) => `<span class="tag pl">${p === 'yes24' ? '예스24' : p === 'direct' ? '직접' : esc(p)}</span>`).join('') : ''}`;
   const sv = SORTS[S.sort]; const hl = S.tab === 'search' && sv && !['recent', 'name'].includes(S.sort) ? `<span class="hl">${sv.label} ${S.sort === 'sales' ? won(sv.key(c)) : sv.key(c).toLocaleString()}</span>` : '';
   return `<button class="item" data-cid="${esc(c.customerId)}"><div class="l1"><span class="name">${esc(c.displayName || '(이름 없음)')}</span>${tags}${hl}</div>
     <div class="l2"><span>${esc((c.phones || [])[0] || (c.emails || [])[0] || (c.emailsMasked || [])[0] || '')}</span><span>주문 ${c.saleOrderCount || 0}${c.cancelOrderCount ? ` · 취소 ${c.cancelOrderCount}` : ''}</span><span>최근 ${d10(c.lastOrderAt)}</span>${extra || ''}</div></button>`;
 }
 function bindRows(root) { root.querySelectorAll('[data-cid]').forEach((b) => (b.onclick = () => openCustomer(b.dataset.cid))); }
+/* ── 평가 참여: 알라딘 구매평(만족·보통·불만족)을 고객과 연결해 관리 ──
+ *  구매평에는 주문번호가 있어 대부분 정확히 연결됨. 주문번호로 못 찾으면 같은 책 주문 + 작성자 표시로 추정하고 이유를 남김 */
+S.reviews = new Map(); S.reviewsLoaded = false; S.custView = S.custView || 'list';
+const RATE = { 만족: 'good', 보통: 'mid', 불만족: 'bad' };
+const RATE_TXT = { good: ['만족', 'rv-good'], mid: ['보통', 'rv-mid'], bad: ['불만족', 'rv-bad'] };
+function putReview(id, v) { v.id = id; v._r = RATE[String(v.rating || '').trim()] || null; S.reviews.set(id, v); return v; }
+async function syncReviews() {
+  const cached = await idbAll('reviews').catch(() => []); cached.forEach((v) => putReview(v.id, v));
+  const meta = await idbGet('meta', 'rsync'); let max = meta ? meta.last || 0 : 0; const batch = [];
+  const take = (d) => { const v = d.data(); if (v.type !== 'review') return; const t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; if (t > max) max = t; const o = deTs({ ...v }); delete o.uploadedAt; batch.push(putReview(d.id, o)); };
+  const snap = meta && meta.last ? await db.collection('crm_interactions').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last)).get() : await db.collection('crm_interactions').where('type', '==', 'review').get();
+  snap.forEach(take);
+  if (batch.length) await idbPut('reviews', batch);
+  await idbPut('meta', [{ k: 'rsync', last: max, at: Date.now() }]); S.reviewsLoaded = true; S._rstats = null;
+  db.collection('crm_interactions').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(max || 0)).onSnapshot((ss) => {
+    const ch = []; ss.docChanges().forEach((c) => { if (c.type === 'removed') return; const v = c.doc.data(); if (v.type !== 'review') return; const o = deTs({ ...v }); delete o.uploadedAt; ch.push(putReview(c.doc.id, o)); });
+    if (ch.length) { idbPut('reviews', ch); S._rstats = null; if (S.tab === 'search') renderMain(); }
+  }, () => {});
+}
+// 구매평 → 고객: ① 저장된 고객 ② 주문번호로 주문 찾기 ③ 같은 책을 그 전에 주문한 고객 중 작성자 표시가 맞는 사람 (추정)
+function resolveReview(r) {
+  if (r.customerId) return { cid: r.customerId, how: 'exact', reason: '주문번호로 정확히 연결' };
+  const o = r.orderId && S.orders.get(r.orderId);
+  if (o && o.customerId) return { cid: o.customerId, how: 'exact', reason: '주문번호로 정확히 연결' };
+  if (!S.ordersLoaded || !r.title) return { cid: null, how: 'none', reason: '주문 기록이 없어 특정 불가' };
+  const mask = String(r.authorMasked || '').replace(/\*+$/, '').toLowerCase(); const tt = norm(r.title); const rd = String(r.createdAt || '').slice(0, 10);
+  const cands = [];
+  for (const x of S.orders.values()) {
+    if (x.kind !== 'sale' || !(x.items || []).some((it) => norm(it.title) === tt)) continue;
+    const od = String(x.orderedAt || '').slice(0, 10); if (rd && od && (od > rd || (new Date(rd) - new Date(od)) / 864e5 > 180)) continue;
+    const c = S.customers.get(x.customerId) || {}; const names = [...(c.names || []), (x.buyer || {}).name].filter(Boolean);
+    const locals = [...(c.emails || []), ...(c.emailsMasked || [])].map((e) => String(e).split('@')[0].toLowerCase());
+    const hit = mask && (names.some((n) => n.startsWith(mask)) || locals.some((l) => l.startsWith(mask)));
+    cands.push({ cid: x.customerId, hit, od, name: c.displayName || (x.buyer || {}).name || '' });
+  }
+  const hits = cands.filter((c) => c.hit); const uniqC = (a) => [...new Set(a.map((x) => x.cid))];
+  if (uniqC(hits).length === 1) { const h = hits[0]; return { cid: h.cid, how: 'estimated', reason: `같은 책을 ${h.od}에 주문했고, 작성자 표시 '${r.authorMasked}'가 ${h.name}의 이름·아이디 앞부분과 맞음` }; }
+  if (!mask && uniqC(cands).length === 1) { const h = cands[0]; return { cid: h.cid, how: 'estimated', reason: `평가 전 180일 안에 이 책을 주문한 고객이 ${h.name} 한 명뿐임` }; }
+  if (uniqC(hits.length ? hits : cands).length > 1) return { cid: null, how: 'none', reason: `후보 ${uniqC(hits.length ? hits : cands).length}명 (${uniqC(hits.length ? hits : cands).slice(0, 3).map((id) => (S.customers.get(id) || {}).displayName || id).join(', ')}) 중 특정 불가` };
+  return { cid: null, how: 'none', reason: '같은 책을 주문한 고객을 찾지 못함' };
+}
+function reviewStats() {
+  if (S._rstats) return S._rstats;
+  const byC = new Map(); const all = [];
+  for (const r of S.reviews.values()) {
+    if (!r._r) continue; const res = resolveReview(r); const x = { ...r, res }; all.push(x);
+    if (!res.cid) continue;
+    const s = byC.get(res.cid) || { good: 0, mid: 0, bad: 0, total: 0, comments: 0, last: '', lastBad: '', lastBadText: '', estimated: 0, list: [] };
+    s[r._r] += 1; s.total += 1; if (r.body) s.comments += 1; if (res.how === 'estimated') s.estimated += 1;
+    const d = String(r.createdAt || ''); if (d > s.last) s.last = d; if (r._r === 'bad' && d >= s.lastBad) { s.lastBad = d; s.lastBadText = r.body || ''; }
+    s.list.push(x); byC.set(res.cid, s);
+  }
+  // 불만족·보통 뒤에 다시 샀는지 (회복 여부)
+  if (S.ordersLoaded) for (const [cid, s] of byC) {
+    const since = s.lastBad || (s.mid ? s.list.filter((x) => x._r === 'mid').map((x) => String(x.createdAt || '')).sort().pop() : '');
+    if (!since) continue; s.reorderAfter = 0;
+    for (const o of S.orders.values()) if (o.customerId === cid && o.kind === 'sale' && String(o.orderedAt || '').slice(0, 10) > since) s.reorderAfter += 1;
+  }
+  all.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  S._rstats = { byC, all }; return S._rstats;
+}
+function rvChip(k) { return `<span class="tag ${RATE_TXT[k][1]}">${RATE_TXT[k][0]}</span>`; }
+function renderReviews(m) {
+  if (!S.reviewsLoaded) { m.innerHTML += '<div class="empty">구매평 기록을 받는 중입니다 (처음 한 번)</div>'; return; }
+  const { byC, all } = reviewStats();
+  const T = { good: 0, mid: 0, bad: 0 }; all.forEach((r) => (T[r._r] += 1)); const tot = all.length;
+  const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
+  const saleOrders = S.ordersLoaded ? [...S.orders.values()].filter((o) => o.kind === 'sale').length : 0;
+  const reviewedOrders = new Set(all.map((r) => r.orderId).filter(Boolean)).size;
+  const dayAgo = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10); };
+  const win = (from, to) => { const a = all.filter((r) => { const d = String(r.createdAt || '').slice(0, 10); return d >= from && d < to; }); return { n: a.length, bad: a.filter((r) => r._r !== 'good').length }; };
+  const w1 = win(dayAgo(30), '9999'); const w0 = win(dayAgo(60), dayAgo(30));
+  const r1 = pct(w1.bad, w1.n); const r0 = pct(w0.bad, w0.n); const diff = Math.round((r1 - r0) * 10) / 10;
+  // 상품 상태 등급별: 어떤 등급에서 보통·불만족이 많은지 (검수 기준 점검용)
+  const byCond = {}; all.forEach((r) => { const k = r.condition || '표시 없음'; const x = (byCond[k] = byCond[k] || { n: 0, good: 0, mid: 0, bad: 0 }); x.n += 1; x[r._r] += 1; });
+  const condOrder = ['최상', '상', '중', '하', '표시 없음'];
+  // 월별 추이 (최근 12개월)
+  const byM = {}; all.forEach((r) => { const k = String(r.createdAt || '').slice(0, 7); if (!/^\d{4}-\d{2}$/.test(k)) return; const x = (byM[k] = byM[k] || { good: 0, mid: 0, bad: 0 }); x[r._r] += 1; });
+  const months = Object.keys(byM).sort().reverse().slice(0, 12);
+  // 고객 목록
+  const seg = S.rvSeg || 'bad'; const sortK = S.rvSort || (seg === 'bad' ? 'bad' : seg === 'mid' ? 'mid' : 'total');
+  let rows = [...byC.entries()].map(([cid, s]) => ({ c: S.customers.get(cid) || { customerId: cid, displayName: cid }, s }));
+  rows = rows.filter(({ s }) => (seg === 'bad' ? s.bad > 0 : seg === 'mid' ? s.mid > 0 : seg === 'good' ? s.good > 0 && !s.mid && !s.bad : true));
+  const rate = ({ c, s }) => (c.saleOrderCount ? s.total / c.saleOrderCount : 0);
+  const keys = { total: ({ s }) => s.total, bad: ({ s }) => s.bad * 1000 + s.total, mid: ({ s }) => s.mid * 1000 + s.total, good: ({ s }) => s.good, recent: ({ s }) => s.last, rate, sales: ({ c }) => c.salesAmount || 0 };
+  rows.sort((a, b) => { const x = keys[sortK](a); const y = keys[sortK](b); return typeof x === 'string' ? y.localeCompare(x) : y - x; }); if (S.rvRev) rows.reverse();
+  const cntSeg = (k) => [...byC.values()].filter((s) => (k === 'bad' ? s.bad > 0 : k === 'mid' ? s.mid > 0 : k === 'good' ? s.good > 0 && !s.mid && !s.bad : true)).length;
+  const unlinked = all.filter((r) => r.res.how !== 'exact');
+  const recentLow = all.filter((r) => r._r !== 'good').slice(0, S.rvFeed || 15);
+  m.innerHTML += `
+    <div class="card" style="margin:0 0 10px"><div class="mgrid kpi">
+      <div><b>${tot.toLocaleString()}건</b><span>전체 구매평</span><small>평가한 고객 ${byC.size.toLocaleString()}명</small></div>
+      <div><b style="color:var(--cloth)">${pct(T.good, tot)}%</b><span>만족률</span><small>만족 ${T.good.toLocaleString()} · 보통 ${T.mid} · 불만족 ${T.bad}</small></div>
+      <div><b>${saleOrders ? pct(reviewedOrders, saleOrders) + '%' : '-'}</b><span>평가 참여율</span><small>평가 받은 주문 ${reviewedOrders.toLocaleString()} / 판매 주문 ${saleOrders.toLocaleString()}</small></div>
+      <div><b>${pct(all.filter((r) => r.body).length, tot)}%</b><span>코멘트 남긴 비율</span><small>글로 남긴 평가 ${all.filter((r) => r.body).length}건</small></div>
+      <div><b style="color:${r1 > r0 ? 'var(--red)' : 'var(--cloth)'}">${r1}%</b><span>최근 30일 보통·불만족 비율</span><small>평가 ${w1.n}건 · 그 전 30일 ${r0}%${w0.n ? ` <em class="${diff > 0 ? 'dn' : 'up'}">${diff > 0 ? '▲' : '▼'}${Math.abs(diff)}%p</em>` : ''}</small></div>
+    </div></div>
+    <h2>상품 상태 등급별 평가 (검수 기준 점검)</h2>
+    <div class="card" style="margin:0 0 10px">${condOrder.filter((k) => byCond[k]).map((k) => { const x = byCond[k]; return `<div class="dist"><span>${esc(k)} (${x.n})</span><span class="stk"><i class="g" style="width:${pct(x.good, x.n)}%"></i><i class="m" style="width:${pct(x.mid, x.n)}%"></i><i class="b" style="width:${pct(x.bad, x.n)}%"></i></span><b>${x.mid + x.bad ? `보통·불만족 ${pct(x.mid + x.bad, x.n)}%` : '모두 만족'}</b></div>`; }).join('')}
+      <div class="hint" style="margin-top:6px"><span class="lg" style="background:var(--cloth)"></span>만족 <span class="lg" style="background:#E0A33B"></span>보통 <span class="lg" style="background:var(--red)"></span>불만족 · 특정 등급에서 보통·불만족이 두드러지면 그 등급의 검수 기준을 점검해 보세요</div></div>
+    <h2>월별 평가 추이</h2>
+    <div class="list">${months.map((k) => { const x = byM[k]; const n = x.good + x.mid + x.bad; return `<div class="item" style="cursor:default"><div class="l1" style="justify-content:space-between"><b>${k.replace('-', '년 ')}월</b><span>${n}건 · 만족률 ${pct(x.good, n)}%</span></div><span class="stk" style="margin:6px 0 2px"><i class="g" style="width:${pct(x.good, n)}%"></i><i class="m" style="width:${pct(x.mid, n)}%"></i><i class="b" style="width:${pct(x.bad, n)}%"></i></span><div class="l2"><span>만족 ${x.good}</span><span>보통 ${x.mid}</span><span>불만족 ${x.bad}</span></div></div>`; }).join('') || '<div class="empty">기록 없음</div>'}</div>
+    <h2>평가한 고객</h2>
+    <div class="seg">${[['bad', '불만족 남긴 고객'], ['mid', '보통 남긴 고객'], ['good', '만족만 남긴 고객'], ['all', '전체']].map(([k, l]) => `<button class="${seg === k ? 'on' + (k === 'bad' ? ' bl' : k === 'mid' ? ' cau' : '') : ''}" data-rvseg="${k}">${l} ${cntSeg(k).toLocaleString()}</button>`).join('')}</div>
+    <div class="sortbar"><select id="rvsort">${[['total', '평가 많은'], ['bad', '불만족 많은'], ['mid', '보통 많은'], ['good', '만족 많은'], ['recent', '최근 평가'], ['rate', '평가율(주문 대비) 높은'], ['sales', '매출 많은']].map(([k, l]) => `<option value="${k}" ${sortK === k ? 'selected' : ''}>${l} 순</option>`).join('')}</select><button id="rvrev" class="rev">${S.rvRev ? '거꾸로 ↑' : '순서대로 ↓'}</button></div>
+    <div class="list">${rows.slice(0, S.limit).map(({ c, s }) => custRow(c, `<span style="width:100%">${s.good ? rvChip('good') + ' ' + s.good : ''} ${s.mid ? rvChip('mid') + ' ' + s.mid : ''} ${s.bad ? rvChip('bad') + ' ' + s.bad : ''} · 평가율 ${c.saleOrderCount ? pct(s.total, c.saleOrderCount) : 0}% · 최근 ${esc(d10(s.last))}${s.estimated ? ` · 추정 ${s.estimated}건` : ''}${s.reorderAfter != null ? ` · <b style="color:${s.reorderAfter ? 'var(--cloth)' : 'var(--red)'}">${s.reorderAfter ? `그 뒤 재구매 ${s.reorderAfter}회` : '그 뒤 재구매 없음'}</b>` : ''}</span>${s.lastBadText ? `<span style="width:100%;color:var(--red)">“${esc(s.lastBadText.slice(0, 60))}${s.lastBadText.length > 60 ? '…' : ''}”</span>` : ''}`)).join('') || '<div class="empty">없음</div>'}${rows.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>
+    <h2>최근 보통·불만족 평가</h2>
+    <div class="list">${recentLow.map((r) => { const c = r.res.cid ? S.customers.get(r.res.cid) || {} : null; return `<div class="item" ${r.res.cid ? `data-cid="${esc(r.res.cid)}"` : 'style="cursor:default"'}><div class="l1">${rvChip(r._r)}<span class="name">${esc(c ? c.displayName || r.res.cid : '(고객 특정 불가)')}</span>${r.res.how === 'estimated' ? '<span class="tag cau">추정</span>' : ''}<span class="hl">${esc(d10(r.createdAt))}</span></div>
+      <div class="l2"><span>${r.condition ? `[${esc(r.condition)}] ` : ''}${esc(r.title || '')}</span><span>작성자 ${esc(r.authorMasked || '')}</span></div>${r.body ? `<div class="l2"><span style="color:var(--ink)">“${esc(r.body)}”</span></div>` : ''}${r.res.how !== 'exact' ? `<div class="l2"><span>${esc(r.res.reason)}</span></div>` : ''}</div>`; }).join('') || '<div class="empty">보통·불만족 평가가 없습니다</div>'}${all.filter((r) => r._r !== 'good').length > (S.rvFeed || 15) ? '<button class="more" id="rvmore">더 보기</button>' : ''}</div>
+    ${unlinked.length ? `<details class="sec"><summary>주문번호로 연결되지 않은 평가 ${unlinked.length}건 (추정 ${unlinked.filter((r) => r.res.how === 'estimated').length} · 특정 불가 ${unlinked.filter((r) => r.res.how === 'none').length})</summary><div class="list">${unlinked.map((r) => `<div class="item" ${r.res.cid ? `data-cid="${esc(r.res.cid)}"` : 'style="cursor:default"'}><div class="l1">${rvChip(r._r)}<span class="name">${esc(r.res.cid ? (S.customers.get(r.res.cid) || {}).displayName || r.res.cid : '특정 불가')}</span>${r.res.how === 'estimated' ? '<span class="tag cau">추정</span>' : ''}</div><div class="l2"><span>${esc(r.title || '')} · 작성자 ${esc(r.authorMasked || '')} · ${esc(d10(r.createdAt))}</span></div><div class="l2"><span>이유: ${esc(r.res.reason)}</span></div></div>`).join('')}</div></details>` : ''}`;
+  m.querySelectorAll('[data-rvseg]').forEach((b) => (b.onclick = () => { S.rvSeg = b.dataset.rvseg; S.rvSort = null; S.limit = 30; renderMain(); }));
+  const ss = $('#rvsort', m); if (ss) ss.onchange = () => { S.rvSort = ss.value; renderMain(); };
+  const rv = $('#rvrev', m); if (rv) rv.onclick = () => { S.rvRev = !S.rvRev; renderMain(); };
+  const rm = $('#rvmore', m); if (rm) rm.onclick = () => { S.rvFeed = (S.rvFeed || 15) + 30; renderMain(); };
+}
+function custSubNav() { const n = S.reviewsLoaded ? reviewStats().byC.size : null; return `<div class="seg" style="margin-bottom:10px"><button class="${S.custView !== 'reviews' ? 'on' : ''}" data-cv="list">고객 목록</button><button class="${S.custView === 'reviews' ? 'on' : ''}" data-cv="reviews">평가 참여${n != null ? ' ' + n.toLocaleString() : ''}</button></div>`; }
+function bindCustSubNav(m) { m.querySelectorAll('[data-cv]').forEach((b) => (b.onclick = () => { S.custView = b.dataset.cv; S.limit = 30; renderMain(); window.scrollTo(0, 0); })); }
 function renderMain() {
   const m = $('#main'); if (!m) return; const all = [...S.customers.values()];
   document.body.classList.toggle('withrank', S.tab === 'search');
   if (S.tab === 'search') {
     const q = norm(S.q);
+    if (!q && S.custView === 'reviews') {
+      m.innerHTML = custSubNav(); renderReviews(m); bindCustSubNav(m);
+      m.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => { const [t, f] = b.dataset.go.split(':'); S.tab = t; if (f) S.flagList = f; renderTabs(); renderMain(); }));
+      const mo = $('#more', m); if (mo) mo.onclick = () => { S.limit += 50; renderMain(); };
+      bindRows(m); renderRank(); return;
+    }
     if (!q) {
       const cnt = (k) => all.filter((c) => flagsOf(c)[k]).length;
       const list = sortCustomers(all.filter((c) => c.lastOrderAt || c.saleOrderCount || c.qnaCount));
-      m.innerHTML = `<div class="stats five"><div class="stat"><b>${all.length.toLocaleString()}</b><span>고객</span></div><button class="stat" data-go="flags:vip"><b>${cnt('vip')}</b><span>VIP</span></button><button class="stat warn" data-go="flags:cau"><b>${cnt('cau')}</b><span>주의</span></button><button class="stat bad" data-go="flags:bl"><b>${cnt('bl')}</b><span>블랙리스트</span></button><button class="stat warn" data-go="pending"><b>${S.pending.length}</b><span>연결 대기</span></button></div>
+      m.innerHTML = `${custSubNav()}<div class="stats five"><div class="stat"><b>${all.length.toLocaleString()}</b><span>고객</span></div><button class="stat" data-go="flags:vip"><b>${cnt('vip')}</b><span>VIP</span></button><button class="stat warn" data-go="flags:cau"><b>${cnt('cau')}</b><span>주의</span></button><button class="stat bad" data-go="flags:bl"><b>${cnt('bl')}</b><span>블랙리스트</span></button><button class="stat warn" data-go="pending"><b>${S.pending.length}</b><span>연결 대기</span></button></div>
         ${sortBar()}<div class="list">${list.slice(0, S.limit).map((c) => custRow(c)).join('') || '<div class="empty">고객 목록을 받는 중입니다</div>'}${list.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>`;
     } else {
       const hits = sortCustomers(all.filter((c) => c._sk.includes(q)));
@@ -568,7 +695,7 @@ function renderMain() {
       const om = $('#omore'); if (om) om.onclick = () => { S.olimit = oLim + 50; renderMain(); };
       if (/^\d{3}-?a\d{9}$/i.test(S.q.trim()) && !oh.length) { const ono = S.q.trim().toUpperCase().replace(/^(\d{3})-?A/, '$1-A'); db.collection('crm_orders').doc('aladin_' + ono).get().then((d) => { if (d.exists) openCustomer(d.data().customerId); else toast('그 주문번호가 없습니다'); }); }
     }
-    bindSort(m); renderRank();
+    bindSort(m); renderRank(); bindCustSubNav(m);
   } else if (S.tab === 'flags') {
     const which = S.flagList || 'vip';
     const segs = [['vip', 'VIP', 'vip'], ['cau', '주의', 'cau'], ['bl', '블랙리스트', 'bl'], ['agent', '대행 의심', 'cau']];
@@ -762,6 +889,7 @@ function renderDetail() {
     </div>
     <div class="card"><div class="nums five"><div><b>${c.saleOrderCount || 0}</b><span>주문</span></div><div><b>${(c.saleItemQty || 0).toLocaleString()}</b><span>권</span></div><div><b style="font-size:14px">${(c.salesAmount || 0).toLocaleString('ko-KR')}</b><span>순매출(원)</span></div><div><b>${(c.cancelOrderCount || 0) + (c.returnCount || 0)}</b><span>취소·반품</span></div><div><b>${c.reviewCount || 0}</b><span>구매확정(평가)</span></div></div>
       <div class="hint" style="margin:6px 0 0">배송비: 무료배송 ${c.freeShipCount || 0}회(우리 부담) · 고객 부담 ${c.paidShipCount || 0}회 합계 ${won(c.shipPaidTotal || 0)}</div>
+      ${(() => { const st = S.reviewsLoaded ? reviewStats().byC.get(c.customerId) : null; return st ? `<div class="hint" style="margin:2px 0 0">구매평: ${st.good ? rvChip('good') + ' ' + st.good + ' ' : ''}${st.mid ? rvChip('mid') + ' ' + st.mid + ' ' : ''}${st.bad ? rvChip('bad') + ' ' + st.bad + ' ' : ''}${st.estimated ? `(그중 ${st.estimated}건은 추정 연결)` : ''}${st.reorderAfter != null ? ` · ${st.reorderAfter ? `보통·불만족 뒤 재구매 ${st.reorderAfter}회` : '보통·불만족 뒤 재구매 없음'}` : ''}</div>` : ''; })()}
       <div class="hint" style="margin:2px 0 0">문의 ${c.qnaCount || 0}건${c.sellerCancelQty ? ` · 우리 품절로 취소된 ${c.sellerCancelQty}권은 고객 책임이 아니라 점수에서 뺌` : ''}</div></div>
     ${sc ? `<div class="card"><h3>점수 <span style="font-weight:400">(${esc(sc.day || '')} 계산)</span></h3>
       <div class="scwrap"><div class="scb good"><b>${sc.value}</b><span>가치 점수 /100</span></div><div class="scb bad"><b>${sc.risk}</b><span>주의 점수 /100</span></div></div>
@@ -1228,6 +1356,7 @@ firebase.auth().onAuthStateChanged(async (u) => {
     setSync(S.ordersLoaded ? null : '주문 기록 받는 중 (처음 한 번)'); await syncOrders(true); setSync();
   } catch (e) { S.ordersBusy = false; setSync('주문 기록 받기 실패: 나중에 다시 시도합니다'); }
   try { setSync(S.sellersLoaded ? null : '판매자 목록 받는 중 (처음 한 번)'); await syncSellers(); setSync(); if (S.tab === 'sellers') renderMain(); } catch (e) { setSync(); }
+  try { setSync(S.reviewsLoaded ? null : '구매평 기록 받는 중 (처음 한 번)'); await syncReviews(); setSync(); reviewStats(); if (S.tab === 'search') renderMain(); } catch (e) { setSync(); }
 });
 </script>
 </body>
