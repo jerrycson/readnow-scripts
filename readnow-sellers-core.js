@@ -2,12 +2,12 @@
  * 판매자 점수(본보기·득실) 계산 — 웹앱과 알라딘 화면(판매자 툴팁)이 같은 파일을 써서 항상 같은 점수를 보여준다.
  * 순수 함수만 둔다 (저장·네트워크 없음). ERP·PC 엔진에서도 그대로 재사용.
  *
- *  본보기 (배울 만한가, 100점): 돈을 잘 벌면서 오래 갈 수 있는 방식인가. 상도·기본 윤리를 어기면 상한을 강제로 낮춘다.
- *  득실   (우리 돈에 어떤가, 50 = 중립): 순전히 북스킹의 매출·이익에 이득인가 손해인가.
+ *  모범 (배울 만한가, 100점, 반대는 불량): 돈을 잘 벌면서 오래 갈 수 있는 방식인가. 상도·기본 윤리를 어기면 상한을 강제로 낮춘다.
+ *  우리 이득 (우리 돈에 어떤가, 50 = 중립: 우리에게 이득 / 우리에게 불익): 순전히 북스킹의 매출·이익에 이득인가 손해인가.
  */
 (function (root) {
   'use strict';
-  const VERSION = '1.0.0';
+  const VERSION = '1.1.0';
   const DEFAULT_THRESHOLDS = { modelHigh: 70, modelLow: 35, gainHigh: 60, gainLow: 40 };
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const numK = (v) => { if (v == null || v === '') return null; if (typeof v === 'number') return Number.isFinite(v) ? v : null; const n = parseFloat(String(v).replace(/[^\d.\-]/g, '')); return Number.isFinite(n) ? n : null; };
@@ -64,8 +64,9 @@
     const gcls = gain >= T.gainHigh ? 'good' : gain <= T.gainLow ? 'bad' : 'mid';
     return { model, mcls, mp, gates, gain, gcls, gp, norm: n };
   }
-  const MODEL_TXT = { good: '본보기', mid: '보통', bad: '반면교사', na: '판단 보류' };
-  const GAIN_TXT = { good: '득', mid: '중립', bad: '실' };
+  const MODEL_TXT = { good: '모범', mid: '보통', bad: '불량', na: '판단 보류' };
+  const GAIN_TXT = { good: '우리에게 이득', mid: '중립', bad: '우리에게 불익' };
+  const GAIN_SHORT = { good: '이득', mid: '중립', bad: '불익' };
   function quadrant(x) {
     if (x.mcls === 'good' && x.gcls === 'bad') return '강한 경쟁자 — 배우되 경계';
     if (x.mcls === 'good') return '좋은 본보기 — 적극적으로 배움';
@@ -82,6 +83,34 @@
       totalItems: numK(info.totalItems), shippingDays: numK(info.shippingDays), freeShipping: /무조건/.test(info.freeShipping || '') ? null : numK(info.freeShipping), shippingFee: numK(info.shippingFee),
       firstReviewDate: company && company.firstReviewDate ? company.firstReviewDate : null, linkedCustomers: [] };
   }
-  const api = { VERSION, DEFAULT_THRESHOLDS, normalize, score, linkLevel, quadrant, modelReasons, gainReasons, fromTooltip, MODEL_TXT, GAIN_TXT };
+  // 판매자 평가 목록 한 페이지 → [{d: 작성일, r: 'good'|'mid'|'bad', c: 코멘트, a: 작성자(보이는 그대로)}]
+  //  날짜 칸(class="y_usedsmall")이 있는 줄을 평가 한 건으로 보고, 같은 줄에서 만족도·작성자·코멘트를 읽는다.
+  function parseSurveyPage(doc) {
+    const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
+    const out = [];
+    doc.querySelectorAll('td.y_usedsmall').forEach((td) => {
+      const d = txt(td); if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+      const tr = td.closest('tr'); if (!tr) return;
+      const cells = [...tr.children].map(txt).filter((t) => t && t !== d);
+      const all = cells.join(' | ');
+      const r = /불만족/.test(all) ? 'bad' : /보통/.test(all) ? 'mid' : /만족/.test(all) ? 'good' : null;
+      const img = tr.querySelector('img[alt*="만족"], img[alt*="보통"]'); const ra = img ? img.getAttribute('alt') : '';
+      const r2 = r || (/불만족/.test(ra) ? 'bad' : /보통/.test(ra) ? 'mid' : /만족/.test(ra) ? 'good' : null);
+      const a = cells.find((t) => /\*/.test(t) && t.length <= 30) || null;
+      const c = cells.filter((t) => t !== a && !/^(만족|보통|불만족)$/.test(t)).sort((x, y) => y.length - x.length)[0] || '';
+      out.push({ d, r: r2, c: c.slice(0, 500), a });
+    });
+    const nums = [...(doc.documentElement ? doc.documentElement.innerHTML : '').matchAll(/Page_Set\('(\d+)'\)/g)].map((m) => +m[1]);
+    return { rows: out, lastPage: nums.length ? Math.max(...nums) : 1 };
+  }
+  // 날짜별 [만족, 보통, 불만족] 묶음 → 기간별 합계
+  function reviewStats(days, now) {
+    const t = now || Date.now(); const ds = (n) => new Date(t - n * 864e5).toISOString().slice(0, 10);
+    const cut = { d7: ds(7), d30: ds(30), d90: ds(90), d365: ds(365) }; const st = { d7: 0, d30: 0, d90: 0, d365: 0, total: 0, good: 0, mid: 0, bad: 0, first: null, last: null };
+    for (const [d, v] of Object.entries(days || {})) { const n = (v[0] || 0) + (v[1] || 0) + (v[2] || 0); st.total += n; st.good += v[0] || 0; st.mid += v[1] || 0; st.bad += v[2] || 0;
+      for (const k of Object.keys(cut)) if (d > cut[k]) st[k] += n; if (!st.first || d < st.first) st.first = d; if (!st.last || d > st.last) st.last = d; }
+    return st;
+  }
+  const api = { VERSION, DEFAULT_THRESHOLDS, normalize, score, linkLevel, quadrant, modelReasons, gainReasons, fromTooltip, MODEL_TXT, GAIN_TXT, GAIN_SHORT, parseSurveyPage, reviewStats };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowSellers = api;
 })(typeof window !== 'undefined' ? window : this);
