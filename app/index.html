@@ -250,12 +250,12 @@ main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px)) !important}
 <script src="../readnow-products-core.js?v=0.3.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.29.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.31.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.29.0';
+const APP_VER = '0.31.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -386,7 +386,7 @@ function shell() {
   <header class="top"><div class="row"><h1 id="gohome" class="homelink" title="홈으로">리드나우</h1><span class="tbtns"><button class="me hbtn" id="hpend">연결 확정</button><button class="me hbtn" id="hset" title="설정">⚙ 설정</button><button class="me" id="hscore">점수 기준</button><button class="me" id="hmet">지표·차트</button><button class="me" id="me">${esc((S.user.displayName || S.user.email).slice(0, 6))}</button></span></div>
     <div class="sync"></div><div class="colbar" id="colbar"></div><div class="jobs" id="jobs"></div>
     <div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6B66" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input id="q" type="search" placeholder="고객·전화, 주문번호, 책 제목·ISBN (상품 탭에선 상품 검색)" autocomplete="off" inputmode="search"></div></header>
+      <input id="q" type="search" placeholder="고객·전화, 주문번호, 책 제목·ISBN (상품 탭에선 상품, 매입 탭에선 매입 검색)" autocomplete="off" inputmode="search"></div></header>
   <main id="main"></main>
   <aside id="rank"></aside>
   <nav class="tabs" id="tabs"></nav>
@@ -395,7 +395,7 @@ function shell() {
   const goTop = (t) => { S.tab = t; S.limit = 30; renderTabs(); renderMain(); window.scrollTo(0, 0); }; $('#hpend').onclick = () => goTop('pending'); $('#hset').onclick = () => goTop('settings');
   $('#hscore').onclick = () => openModal('score'); $('#hmet').onclick = () => openModal('metrics'); $('#mclose').onclick = closeModal;
   $('#modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
-  $('#q').addEventListener('input', (e) => { S.q = e.target.value; S.limit = 30; if (!['search', 'orders', 'sellers', 'products'].includes(S.tab)) S.tab = 'search'; renderTabs(); renderMain(); });
+  $('#q').addEventListener('input', (e) => { S.q = e.target.value; S.limit = 30; if (!['search', 'orders', 'sellers', 'products', 'purchase'].includes(S.tab)) S.tab = 'search'; renderTabs(); renderMain(); });
   $('#gohome').onclick = () => { S.tab = 'home'; S.q = ''; $('#q').value = ''; renderTabs(); renderMain(); window.scrollTo(0, 0); };
   $('#me').onclick = () => { if (confirm(`${S.user.email}\n로그아웃할까요?`)) firebase.auth().signOut(); };
   renderTabs(); renderMain(); setSync();
@@ -897,7 +897,7 @@ function renderMainNow() {
   else if (S.tab === 'products') { renderProducts(m); renderRank(); }
   else if (S.tab === 'home') renderHome(m);
   else if (S.tab === 'settings') renderSettings(m);
-  else if (S.tab === 'purchase') renderPurchase(m);
+  else if (S.tab === 'purchase') { if (norm(S.q) && S.pur.loaded) renderPurSearch(m); else renderPurchase(m); }
   else if (S.tab === 'biz') renderBiz(m);
   m.querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => { const [t, f] = b.dataset.go.split(':'); S.tab = t; if (f) S.flagList = f; if (b.dataset.cv2) S.custView = b.dataset.cv2; renderTabs(); renderMain(); window.scrollTo(0, 0); }));
   const rb2 = $('#rankbtn2'); if (rb2) rb2.onclick = () => { document.body.classList.toggle('rankopen'); renderRank(); };
@@ -1828,6 +1828,7 @@ function renderSettings(m) {
     <label class="set">그 PC가 안 하면 다른 PC가 맡기까지 기다릴 시간 (분)${num_('cs_agr', C.autoGraceMin ?? 30, 10)}</label>
     <label class="set">웹앱 수집 요청을 먼저 받을 PC (2분 안에 안 받으면 다른 PC)<input id="cs_rpc" value="${esc(C.reqPc || 'JS-MAIN')}"></label>
     <div class="set">일괄 수집에서 할 단계 (수집기 패널에서도 켜고 끔)<div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px">${[['crm', '고객·주문 전체'], ['scanNew', '신규 등록분'], ['aladinBuy', '알라딘 구매 내역'], ['buyback', '알라딘 팔기 내역'], ['market', '도서·시장 지표'], ['rev6m', '6개월 평가 수'], ['revTop', '상위 판매자 평가'], ['dynamic', '구매자 분포·함께 산 책']].map(([k, l]) => `<label class="ck" style="display:flex;gap:4px;align-items:center"><input type="checkbox" data-cstep="${k}" ${((C.steps || {})[k] ?? true) ? 'checked' : ''} style="width:auto"> ${l}</label>`).join('')}</div></div>
+    <div class="set">수집 작업 중요도 (클수록 먼저 — 높은 작업이 시작되면 낮은 작업은 진행 위치를 저장하고 멈췄다가, 끝나면 자동으로 이어감)<div style="display:grid;grid-template-columns:1fr 70px;gap:4px 8px;margin-top:4px">${[['crm', '고객·주문 수집', 100], ['scanNew', '신규 등록분', 90], ['buyback', '알라딘 팔기 내역', 80], ['aladinBuy', '알라딘 구매 내역', 75], ['scanFull', '등록 상품 전체 재검토', 70], ['market', '도서·시장 지표', 60], ['rev6m', '6개월 평가 수', 50], ['revTop', '상위 판매자 평가', 45], ['rev6mAll', '6개월 평가 수 (전체)', 40], ['dynamic', '구매자 분포·함께 산 책', 30], ['revAll', '판매자 평가 전체', 20]].map(([k, l, d]) => `<span>${l}</span><input type="number" data-prio="${k}" value="${(C.prio || {})[k] ?? d}" ${k === 'crm' ? 'title="고객 수집은 늘 가장 먼저 (100 고정 권장)"' : ''}>`).join('')}</div></div>
     <label class="set">구매자 분포·함께 산 책: 일괄 수집 한 번에 권수 (0이면 남은 것 전부)${num_('cs_dd', C.dynDaily ?? 300, 50)}</label><label class="set">구매자 분포 다시 보는 주기 (일)${num_('cs_dy', C.dynDays ?? 60, 10)}</label>`, S.colSet ? '수집기가 다음 작업을 시작할 때 읽습니다.' : '수집기 설정을 읽는 중')}
   ${card('view', '⑩ 화면 표시', `<label class="set">판매가 구간 경계 (원, 쉼표로)<input id="st_bands" value="${(a.priceBands || []).join(', ')}"></label><div class="hint" id="st_bandprev"></div>`, '상품 탭의 가격대 분포, 홈의 가격대별 판매에 씁니다.')}
   ${adm ? `<div style="display:flex;gap:8px;margin:12px 0"><button class="btn" id="st_save">저장 (모든 기기에 반영)</button><button class="btn ghost" id="st_def">처음 값으로 채우기</button></div>` : ''}
@@ -1858,7 +1859,7 @@ function renderSettings(m) {
       goals: { monthSales: Math.max(0, n('st_gm') || 0), dailyListing: Math.max(0, n('st_gl2') || 0), marginPct: Math.max(0, n('st_gp') || 0) },
       alerts: { lateDays: n('al_late'), oldDays1: n('al_old1'), oldDays2: n('al_old2'), overMinPct: n('al_over'), cheapPct: n('al_cheap'), staleHours: n('al_stale'), dormantMinOrders: n('al_dmin'), dormantFrom: n('al_dfrom'), dormantTo: n('al_dto'), risingFactor: n('al_rise') } };
     const pur = { msTotalCost: n('ps_mscost') || 0, msTotalBooks: n('ps_msn') || 0, msKeepRatio: Math.min(1, Math.max(0, (n('ps_mskeep') || 0) / 100)), includeMunjeong: $('#ps_mj').checked, excludeExistingFromUnit: $('#ps_ex').checked, msBooksMin: n('ps_msmin') || 20000, msBooksMax: n('ps_msmax') || 30000, msBooksFinal: $('#ps_msfin').value === '' ? null : n('ps_msfin'), hdBooksMin: n('ps_hdmin') || 0, hdBooksMax: n('ps_hdmax') || 0, hdBooksFinal: $('#ps_hdfin').value === '' ? null : n('ps_hdfin'), genSpread: Math.max(0, (n('ps_gsp') || 0) / 100), dispRate: n('ps_drate') || 110, weightSpread: Math.max(0, (n('ps_wsp') || 0) / 100), bookWeightG: n('ps_bw') || 450, unregManualLo: $('#ps_umlo').value === '' ? null : n('ps_umlo'), unregManualHi: $('#ps_umhi').value === '' ? null : n('ps_umhi'), newWindowDays: Math.max(1, n('ps_win') || 60) };
-    const col = { delayMs: Math.max(300, n('cs_delay') || 700), recheckDays: Math.max(0, Math.round(n('cs_recheck'))), topN: Math.max(5, Math.round(n('cs_topn') || 50)), rev6mDays: Math.max(1, Math.round(n('cs_r6') || 7)), autoDaily: $('#cs_auto').checked, autoHour: Math.min(23, Math.max(0, Math.round(n('cs_ah')))), autoPc: $('#cs_apc').value.trim() || 'JS-MAIN', autoGraceMin: Math.max(0, Math.round(n('cs_agr') || 0)), reqPc: $('#cs_rpc').value.trim() || 'JS-MAIN', steps: Object.fromEntries([...document.querySelectorAll('[data-cstep]')].map((c) => [c.dataset.cstep, c.checked])), dynDaily: Math.max(0, Math.round(n('cs_dd') || 0)), dynDays: Math.max(7, Math.round(n('cs_dy') || 60)) };
+    const col = { delayMs: Math.max(300, n('cs_delay') || 700), recheckDays: Math.max(0, Math.round(n('cs_recheck'))), topN: Math.max(5, Math.round(n('cs_topn') || 50)), rev6mDays: Math.max(1, Math.round(n('cs_r6') || 7)), autoDaily: $('#cs_auto').checked, autoHour: Math.min(23, Math.max(0, Math.round(n('cs_ah')))), autoPc: $('#cs_apc').value.trim() || 'JS-MAIN', autoGraceMin: Math.max(0, Math.round(n('cs_agr') || 0)), reqPc: $('#cs_rpc').value.trim() || 'JS-MAIN', steps: Object.fromEntries([...document.querySelectorAll('[data-cstep]')].map((c) => [c.dataset.cstep, c.checked])), prio: Object.fromEntries([...document.querySelectorAll('[data-prio]')].map((c) => [c.dataset.prio, +c.value || 0])), dynDaily: Math.max(0, Math.round(n('cs_dd') || 0)), dynDays: Math.max(7, Math.round(n('cs_dy') || 60)) };
     const who = { updatedBy: S.user.email, updatedByName: S.user.displayName || S.user.email, updatedAt: TS() };
     try {
       const b = db.batch();
@@ -2367,13 +2368,25 @@ function bizAlerts(B) {
   return A;
 }
 const alertsHtml = (A) => A.length ? `<div class="alerts">${A.map((a) => `<button class="al ${a.lv}" data-go="${a.go}">${a.lv === 'red' ? '●' : a.lv === 'amber' ? '▲' : 'ⓘ'} ${esc(a.t)}</button>`).join('')}</div>` : '<div class="hint" style="margin:0;color:var(--cloth)">✓ 지금 확인할 문제 없음</div>';
-function spark14() {
-  const days = [...Array(14).keys()].map((i) => kst(new Date(Date.now() - (13 - i) * 864e5))); const v = days.map((d) => daySales(d).amt); const mx = Math.max(1, ...v);
-  return `<svg width="100%" viewBox="0 0 280 60" preserveAspectRatio="none" style="display:block;height:60px">${v.map((x, i) => `<rect x="${i * 20 + 2}" y="${56 - (x / mx) * 52}" width="16" height="${(x / mx) * 52}" fill="${i === 13 ? '#2F5D50' : '#9FC1B4'}"><title>${days[i]} ${won(x)}</title></rect>`).join('')}</svg>`;
+const PACEP = [['w1', '1주'], ['w2', '2주'], ['m1', '1개월'], ['m3', '3개월'], ['m6', '6개월'], ['y1', '12개월'], ['all', '전체']];
+function salesBuckets(per) {
+  const now = new Date(); const ds = (d) => dstr(d);
+  if (['w1', 'w2', 'm1'].includes(per)) { const n = { w1: 7, w2: 14, m1: 30 }[per]; return [...Array(n).keys()].map((i) => { const d = new Date(Date.now() - (n - 1 - i) * 864e5); const k = ds(d); return { k, lbl: `${d.getMonth() + 1}/${d.getDate()}`, start: k, end: ds(new Date(d.getTime() + 864e5)) }; }); }
+  if (['m3', 'm6'].includes(per)) { const n = per === 'm3' ? 13 : 26; const mon = new Date(now); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7)); return [...Array(n).keys()].map((i) => { const st = new Date(mon.getTime() - (n - 1 - i) * 7 * 864e5); return { k: ds(st), lbl: `${st.getMonth() + 1}/${st.getDate()}~`, start: ds(st), end: ds(new Date(st.getTime() + 7 * 864e5)) }; }); }
+  if (per === 'y1') return [...Array(12).keys()].map((i) => { const st = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1); const en = new Date(st.getFullYear(), st.getMonth() + 1, 1); return { k: ds(st), lbl: `${st.getMonth() + 1}월`, start: ds(st), end: ds(en) }; });
+  const y0 = +String(salesStart() || ds(now)).slice(0, 4); return [...Array(now.getFullYear() - y0 + 1).keys()].map((i) => ({ k: String(y0 + i), lbl: `${y0 + i}년`, start: `${y0 + i}-01-01`, end: `${y0 + i + 1}-01-01` }));
 }
+function spark14() {
+  const per = S.paceP || localStorage.getItem('rn-pacep') || 'w2';
+  const B = memo('pace|' + per, () => { const bs = salesBuckets(per); const v = bs.map(() => 0); for (const o of S.orders.values()) { if (o.kind !== 'sale' || !o.orderedAt) continue; const d = String(o.orderedAt).slice(0, 10); const i = bs.findIndex((b) => d >= b.start && d < b.end); if (i >= 0) v[i] += saleLines(o).amt; } return { bs, v }; });
+  const { bs, v } = B; const mx = Math.max(1, ...v); const n = bs.length; const W = 300 / n; const every = Math.ceil(n / 8);
+  return `<svg width="100%" viewBox="0 0 300 74" preserveAspectRatio="none" style="display:block;height:74px">${v.map((x, i) => `<rect x="${i * W + W * 0.12}" y="${58 - (x / mx) * 54}" width="${W * 0.76}" height="${(x / mx) * 54}" fill="${i === n - 1 ? '#2F5D50' : '#9FC1B4'}" data-sdrill="sales|${bs[i].start}|${bs[i].end}" style="cursor:pointer"><title>${bs[i].lbl} ${won(x)}</title></rect>${i % every === 0 || i === n - 1 ? `<text x="${i * W + W / 2}" y="71" font-size="8" text-anchor="middle" fill="#5B6B66">${bs[i].lbl}</text>` : ''}`).join('')}</svg>
+    <div class="ptabs" style="margin:4px 0 0">${PACEP.map(([k, l]) => `<button class="${per === k ? 'on' : ''}" data-pacep="${k}">${l}</button>`).join('')}</div>`;
+}
+document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-pacep]'); if (!b) return; ev.preventDefault(); S.paceP = b.dataset.pacep; localStorage.setItem('rn-pacep', S.paceP); if (S._wcache) delete S._wcache.pace; renderMain(); });
 function paceHtml(B) {
   const g = B.G.monthSales; const pct = g ? Math.round((B.forecast / g) * 100) : null;
-  return `<div class="mgrid">${mcellS(won(B.T.amt), '오늘 매출', `${B.T.n}건 · ${B.T.qty}권 · 어제 ${won(B.Y.amt)}`, 'sales', rangeOf('day', 0))}${mcell(won(B.W7.amt), '최근 7일', (grow(B.W7.amt, B.W7p.amt) ? `전 7일 대비 ${grow(B.W7.amt, B.W7p.amt)}` : `전 7일 ${won(B.W7p.amt)}`))}${mcell(won(B.M.amt), '이번 달 누적', `지난달 같은 기간 ${won(B.PM.amt)}${grow(B.M.amt, B.PM.amt) ? ` (${grow(B.M.amt, B.PM.amt)})` : ''}`)}${mcell(won(Math.round(B.forecast)), '이번 달 예상', g ? `목표 ${won(g)}의 ${pct}%` : '설정에서 월 목표를 넣으면 달성률 표시')}</div>${spark14()}<div class="hint" style="margin:2px 0 0">최근 14일 매출 (오른쪽 끝이 오늘)</div>`;
+  return `<div class="mgrid">${mcellS(won(B.T.amt), '오늘 매출', `${B.T.n}건 · ${B.T.qty}권 · 어제 ${won(B.Y.amt)}`, 'sales', rangeOf('day', 0))}${mcell(won(B.W7.amt), '최근 7일', (grow(B.W7.amt, B.W7p.amt) ? `전 7일 대비 ${grow(B.W7.amt, B.W7p.amt)}` : `전 7일 ${won(B.W7p.amt)}`))}${mcell(won(B.M.amt), '이번 달 누적', `지난달 같은 기간 ${won(B.PM.amt)}${grow(B.M.amt, B.PM.amt) ? ` (${grow(B.M.amt, B.PM.amt)})` : ''}`)}${mcell(won(Math.round(B.forecast)), '이번 달 예상', g ? `목표 ${won(g)}의 ${pct}%` : '설정에서 월 목표를 넣으면 달성률 표시')}</div>${spark14()}<div class="hint" style="margin:2px 0 0">막대를 누르면 그 기간의 매출 순 상품 · 오른쪽 끝이 지금</div>`;
 }
 function cheapList(arr, key) {
   const pct = (S.app.alerts || {}).cheapPct ?? 10;
@@ -2635,6 +2648,8 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.31.0': ['매입 탭에서 위 검색창으로 매입 품목 검색 (연결된 상품·후보 함께)', '상품 ↔ 매입 연결 보강: 블루레이·DVD·한정판 등 매체 표시·괄호·부제를 빼고, 제목이 서로 들어 있어도 맞춤', '연결은 매입·상품 기록을 받으면 어느 기기에서나 자동으로 (빈칸만 채움)'],
+  '0.30.0': ['홈 매출 페이스 그래프: 1주·2주·1개월·3개월·6개월·12개월·전체(연별) 선택', '설정 ⑨: 수집 작업 중요도 (높은 작업이 낮은 작업을 잠시 멈추고 먼저 함)'],
   '0.29.0': ['설정 ⑨: 매일 자동 \'모두 일괄 수집\' — 기본 오후 5시·JS-MAIN, 단계별 켜고 끄기, 웹앱 요청 받을 PC', '수집 요청 \'모두 일괄 수집\''],
   '0.28.0': ['통합 수집기(리드나우 수집기) 대응: 웹앱에서 수집 요청 (알라딘 구매·팔기·일괄·구매자 분포)', '상품 탭: 분류별 매출·판매 권수·등록·매입 추이, 분류를 누르면 자세한 탐색 화면', '상품 탭: 구매 연령대 (알라딘 구매자 분포 기준)', '설정 ⑨: 매일 자동 일괄 수집 시각·구매자 분포 하루 권수'],
   '0.27.0': ['반품 내역 엑셀 넣기 → 매출·판매 권수·반품률 등 모든 곳 반영 (자료 불완전 표시)', '알라딘 팔기: 반송은 없음 → 매입불가는 모두 폐기로 계산', '순매출·구매 고객 수·판매 권수를 누르면 상품·고객 목록', '홈 칸 중복 정리 (매출 요약 → 매출 비교, 공헌이익·평판 칸 정리, 수집 진행 칸은 기본에서 뺌)'],
@@ -2707,10 +2722,11 @@ function runMatching() {
   const todo = [...S.plist.values()].filter((l) => !S.pmatch.has(l.id) || S.pmatch.get(l.id).kind === 'none').sort((a, b) => String(a.registeredAt || '').localeCompare(String(b.registeredAt || '')));
   const out = [];
   for (const l of todo) {
-    const reg = String(l.registeredAt || '9999').slice(0, 10); const k = tKey(l.title); const cands = (pool.get(k) || []).filter((x) => x.left > 0 && (!x.date || x.date <= reg));
+    const reg = String(l.registeredAt || '9999').slice(0, 10); const k = tKey(l.title); let cands = (pool.get(k) || []).filter((x) => x.left > 0 && (!x.date || x.date <= reg)); let how2 = '제목 일치';
+    if (!cands.length) { cands = candidatesFor(l.title).map((c) => ({ c, it: byKey.get(c.r._key) })).filter((x) => x.it && x.it.left > 0 && (!x.it.date || x.it.date <= reg)).sort((a, b) => String(a.it.date).localeCompare(String(b.it.date))).map((x) => { how2 = x.c.how; return x.it; }); }
     const qty = l.qty || 1;
     if (cands.length) { const it = cands[0]; it.left -= qty; const days = it.date ? (new Date(reg) - new Date(it.date)) / 864e5 : null;
-      out.push({ id: l.id, kind: days != null && days <= winDays ? 'new' : 'backlog', itemKey: it.key, entryId: it.entryId, cost: it.est, qty, how: `제목 일치 · ${it.sheet || ''} ${it.date || ''} ${it.plat || ''}`, purDate: it.date || null, regDate: reg }); continue; }
+      out.push({ id: l.id, kind: days != null && days <= winDays ? 'new' : 'backlog', itemKey: it.key, entryId: it.entryId, cost: it.est, qty, how: `${how2} · ${it.sheet || ''} ${it.date || ''} ${it.plat || ''}`, purDate: it.date || null, regDate: reg }); continue; }
     if (/_ms$/i.test(l.sku || '') && msUnit) { out.push({ id: l.id, kind: 'ms', cost: Math.round(msUnit), qty, how: '김미소책방 인수분 (권당 추정가)', regDate: reg }); continue; }
     if (/_hd$/i.test(l.sku || '') && hdUnit) { out.push({ id: l.id, kind: 'hd', cost: Math.round(hdUnit), qty, how: '헌옷도라이 (권당 추정가)', regDate: reg }); continue; }
     out.push({ id: l.id, kind: 'none', cost: null, qty, how: '근거 없음 — 매입 기록에서 제목을 못 찾음', regDate: reg });
@@ -2737,7 +2753,7 @@ function purMatchSection() {
   return `<div class="mgrid">${mcell(num(c.new), '새 매입에서 등록', `매입 후 ${S.pur.set.newWindowDays || 60}일 안에 등록`)}${mcell(num(c.backlog), '기존 매입 미등록분', '오래전에 사서 늦게 등록')}${mcell(num(c.ms + c.hd), '김미소·헌옷도라이 추정', '상품코드로 구분')}${mcell(num(c.none), '매입가 빈칸', '근거를 아직 못 찾음')}</div>
     ${pbar(q - c.none, q)}<div class="hint" style="margin:0">매입가가 붙은 상품 ${num(q - c.none)} / ${num(q)}권 (${q ? Math.round(((q - c.none) / q) * 100) : 0}%)${at ? ` · 마지막 연결 ${new Date(at).toLocaleString('ko-KR')}` : ''}</div>
     <div style="display:flex;gap:6px;margin-top:8px"><button class="btn" id="pm_run" style="flex:1">지금 연결 실행 (새로 들어온 것만)</button><button class="btn ghost" id="pm_none">빈칸 목록</button></div>
-    <p class="hint">한 번 연결된 상품은 바뀌지 않아, 새 매입을 적어도 예전 연결을 빼앗지 않습니다. 매입 기록이 늘면 '빈칸'이던 상품만 다시 찾아 채웁니다. 관리자 기기에서는 하루 한 번 자동으로 돕니다.</p>`;
+    <p class="hint">한 번 연결된 상품은 바뀌지 않아, 새 매입을 적어도 예전 연결을 빼앗지 않습니다. 매입 기록이 늘면 '빈칸'이던 상품만 다시 찾아 채웁니다. 매입·상품 기록을 받은 기기에서 6시간에 한 번 자동으로 돕니다. 매입 탭 위 검색창으로 매입 품목과 연결 상태를 찾을 수 있습니다.</p>`;
 }
 function openMatchNone() {
   const rows = [...S.plist.values()].filter((l) => { const m = S.pmatch.get(l.id); return !m || m.kind === 'none'; }).sort((a, b) => String(b.registeredAt || '').localeCompare(String(a.registeredAt || '')));
@@ -3088,6 +3104,47 @@ function ageSection() {
     <div style="overflow-x:auto"><table class="tbl"><tr><th>연령대</th><th>그 연령이 많이 산 우리 분류 (추정)</th></tr>${AGES.map((a) => `<tr><td>${a}</td><td>${[...byAge[a].entries()].sort((x, y) => y[1] - x[1]).slice(0, 3).map(([c, v]) => `${esc(c)} <small>${num(Math.round(v))}권</small>`).join(' · ') || '-'}</td></tr>`).join('')}</table></div>`;
 }
 
+
+/* ══════════ 매입 검색 · 매칭 보강 ══════════
+ * 제목 열쇠: 매체·상태 낱말(블루레이·DVD·중고·스틸북·한정판·소득공제 등)과 괄호·부제를 떼고 비교
+ * 맞추기: ① 열쇠가 같음 ② 매입 품목 글에 상품 제목이 통째로 들어 있음 ③ 상품 제목에 매입 품목 열쇠가 들어 있음 (4글자 이상) */
+const NOISE = /\[[^\]]*\]|\([^)]*\)|（[^）]*）|블루레이|blu-?ray|\bdvd\b|\bvhs\b|\bcd\b|\blp\b|4k|uhd|스틸북|한정판|초회판|일반판|풀슬립|렌티큘러|디지팩|소득공제|중고|새책|미개봉|\d+\s*disc|\d+\s*디스크|\d+\s*권|세트|전\d+권/gi;
+const coreKey = (t) => norm(String(t || '').replace(NOISE, ' ').replace(/\s*[-:：|/].*$/, '')).slice(0, 40);
+const fullText = (t) => norm(String(t || '').replace(NOISE, ' '));
+function itemIndex() {
+  return memo('itemIdx', () => { const byKey = new Map(), byGram = new Map(), byKeyGram = new Map(); const rows = purItemRows().filter((r) => r.cat !== 'etc' && !r.rest);
+    rows.forEach((r, i) => { r._k = coreKey(r.title); r._t = fullText(r.title); r._key = `${r.e.id}#${r.idx}`; if (r._k.length >= 2) (byKey.get(r._k) || byKey.set(r._k, []).get(r._k)).push(r);
+      const seen = new Set(); for (let j = 0; j + 4 <= r._t.length; j++) { const g = r._t.slice(j, j + 4); if (seen.has(g)) continue; seen.add(g); (byGram.get(g) || byGram.set(g, []).get(g)).push(r); }
+      if (r._k.length >= 4) { const g = r._k.slice(0, 4); (byKeyGram.get(g) || byKeyGram.set(g, []).get(g)).push(r); } });
+    return { rows, byKey, byGram, byKeyGram }; });
+}
+// 상품 하나에 맞는 매입 품목 후보 (정확 → 매입 글에 상품 제목 포함 → 상품 제목에 매입 열쇠 포함)
+function candidatesFor(title) {
+  const I = itemIndex(); const k = coreKey(title); const T = fullText(title); const out = new Map();
+  (I.byKey.get(k) || []).forEach((r) => out.set(r._key, { r, how: '제목 같음' }));
+  if (k.length >= 4) (I.byGram.get(k.slice(0, 4)) || []).forEach((r) => { if (!out.has(r._key) && r._t.includes(k)) out.set(r._key, { r, how: '매입 내용에 상품 제목이 들어 있음' }); });
+  for (let j = 0; j + 4 <= T.length; j++) (I.byKeyGram.get(T.slice(j, j + 4)) || []).forEach((r) => { if (!out.has(r._key) && r._k.length >= 4 && T.includes(r._k)) out.set(r._key, { r, how: '상품 제목에 매입 품목 제목이 들어 있음' }); });
+  return [...out.values()];
+}
+// 매입 탭에서 위 검색창: 매입 품목(시트·웹앱 기록을 나눈 것)과 연결된 상품을 함께
+function renderPurSearch(m) {
+  const q = norm(S.q); const qk = coreKey(S.q); const rows = purItemRows().filter((r) => norm(r.title).includes(q) || (qk.length >= 2 && coreKey(r.title).includes(qk)) || norm(`${r.e.who || ''} ${r.e.plat || ''}`).includes(q));
+  const linked = new Map(); for (const mm of S.pmatch.values()) if (mm.itemKey) (linked.get(mm.itemKey) || linked.set(mm.itemKey, []).get(mm.itemKey)).push(mm.id);
+  const prodHits = [...S.plist.values()].filter((l) => norm(l.title || '').includes(q) || (qk.length >= 2 && coreKey(l.title).includes(qk))).slice(0, 30);
+  const row = (r) => { const key = `${r.e.id}#${r.idx}`; const ls = (linked.get(key) || []).map((id) => S.plist.get(id)).filter(Boolean);
+    return `<div class="item"><div class="l1" style="justify-content:space-between"><span><b>${esc(r.title)}</b>${r.grade ? ` <span class="tag pl">${esc(r.grade)}</span>` : ''}${r.qty > 1 ? ` <span class="tag">${r.qty}권</span>` : ''}</span><b>${won(r.est || 0)}${r.qty > 1 ? '/권' : ''}</b></div>
+      <div class="l2"><span class="clk" data-pent="${esc(r.e.id)}">${esc(r.e.date || r.e.dateGuess || '')} · ${esc(r.e.plat || '')} ${esc(r.e.who || '')} · ${esc(r.e.sheet || '')} ›</span></div>
+      <div class="l2">${ls.length ? ls.map((l) => `<button class="linkbtn" data-pid="${esc(l.id)}">✓ 연결된 상품: ${esc(l.title)}</button>`).join(' ') : '<span style="color:var(--amber)">연결된 상품 없음</span>'}</div></div>`; };
+  m.innerHTML = `<h2>매입 검색 ${num(rows.length)}건</h2><p class="hint" style="margin-top:0">구글 시트·웹앱 매입 기록을 품목으로 나눈 것에서 찾습니다. 매체 표시(블루레이·DVD 등)·괄호·부제는 빼고 비교합니다.</p>
+    <div class="list">${rows.slice(0, S.limit).map(row).join('') || '<div class="empty">매입 기록에 없음</div>'}${rows.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>
+    ${prodHits.length ? `<h3 style="margin-top:14px">같은 제목의 등록·판매 상품 ${prodHits.length}${prodHits.length === 30 ? '+' : ''}</h3><div class="list">${prodHits.map((l) => { const mm = S.pmatch.get(l.id); const c = !mm || mm.kind === 'none' ? candidatesFor(l.title) : []; return `<button class="item" data-pid="${esc(l.id)}"><span>${esc(l.title)} ${usedBtn(l)}<br><small>${mm && mm.kind !== 'none' ? `매입가 ${won(mm.cost)} · ${esc(mm.how || '')}` : c.length ? `<span style="color:var(--amber)">연결 전 — 후보 ${c.length}건 (연결 실행하면 붙음)</span>` : '<span style="color:var(--amber)">매입 기록에서 못 찾음</span>'}</small></span><span>${won(l.price)}</span></button>`; }).join('')}</div>` : ''}
+    <div style="margin:10px 0"><button class="btn ghost" id="ps_match">지금 연결 실행 (빈칸만 다시 찾기)</button></div>`;
+  m.querySelectorAll('[data-pid]').forEach((b) => (b.onclick = (ev) => { if (ev.target.closest('[data-open]')) return; openProduct(b.dataset.pid); }));
+  m.querySelectorAll('[data-pent]').forEach((x) => (x.onclick = () => { const e = S.pur.entries.find((y) => y.id === x.dataset.pent); if (e) openPurEntry(e); }));
+  const mo = $('#more', m); if (mo) mo.onclick = () => { S.limit += 50; renderMain(); };
+  const pm = $('#ps_match', m); if (pm) pm.onclick = () => matchNow(false);
+}
+
 /* ══════════ 매입 기록: 웹앱에서 바로 입력 (구글 시트 대신) ══════════
  * 한 건 = 한 번의 거래(한 판매자에게서 산 묶음). 품목마다 내용·권수·개별 가격, 나중에 예상 판매가가 자동으로 붙음.
  * 저장: pur_entries (source: 'app') — 시트에서 가져온 거래와 같은 곳이라 권당 매입가·월별 매입 등 모든 통계에 바로 반영.
@@ -3228,7 +3285,7 @@ firebase.auth().onAuthStateChanged(async (u) => {
   const ordP = (async () => { try { if (!S.ordersLoaded) setSync('주문 기록 받는 중 (처음 한 번)'); await syncOrders(true); setSync(); } catch (e) { S.ordersBusy = false; setSync('주문 기록 받기 실패: 나중에 다시 시도합니다'); } })();
   await Promise.all([custP, ordP]); renderMain();
   setTimeout(() => loadPur().catch(() => {}), 1500); loadReturns();
-  setTimeout(async () => { if (!isAdminDevice()) return; const at = +localStorage.getItem('rn-match-at') || 0; if (Date.now() - at < 20 * 3600e3) return; loadProducts(); for (let i = 0; i < 60 && !(S.prodLoaded && S.pur.fresh); i++) await new Promise((r) => setTimeout(r, 5000)); if (S.prodLoaded && S.pur.fresh) matchNow(true).catch(() => {}); }, 20000);
+  setTimeout(async () => { const at = +localStorage.getItem('rn-match-at') || 0; if (Date.now() - at < 6 * 3600e3) return; loadProducts(); for (let i = 0; i < 60 && !(S.prodLoaded && S.pur.fresh); i++) await new Promise((r) => setTimeout(r, 5000)); if (S.prodLoaded && S.pur.fresh) matchNow(true).catch(() => {}); }, 20000);
   loadMatches(); watchRequest();
   try { await syncSellers(); if (S.tab === 'sellers' || S.tab === 'home') renderMain(); } catch (e) {}
   try { await syncReviews(); reviewStats(); if (S.tab === 'search' || S.tab === 'home') renderMain(); } catch (e) {}
