@@ -253,12 +253,12 @@ main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px)) !important}
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.40.2 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.41.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.40.2';
+const APP_VER = '0.41.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1675,7 +1675,7 @@ function jobLine(j, long) {
 }
 function renderJobs() {
   const el = $('#jobs'); if (!el) return; const js = activeJobs();
-  const head = `<button class="runsbtn" id="runs_t">${S.runsOpen ? '▾' : '▸'} ${js.length ? `<span class="jspin sm"></span> 수집 중 ${js.length}건 — ${esc(js.map((j) => j.pc).filter(Boolean).join(', '))}` : '수집 쉬는 중'} <small>${S.runsOpen ? '실시간 · 누르면 접음' : '누르면 진행률 보기'}</small></button>`;
+  const head = `<button class="runsbtn" id="runs_t">${S.runsOpen ? '▾' : '▸'} ${js.length ? `<span class="jspin sm"></span> 수집 중 ${js.length}건 — ${esc(js.map((j) => j.pc).filter(Boolean).join(', '))}` : '수집 쉬는 중'} <small>${S.runsOpen ? '실시간 · 누르면 접음' : '누르면 진행률 보기'}</small></button> <a href="#" id="open_logs" style="color:#cfe3da;font-size:12px;margin-left:6px">기록 보기</a>`;
   const html = head + (S.runsOpen ? js.map((j) => `<div class="job">${j.total ? `<span class="jbar"><i style="width:${Math.min(100, (j.done || 0) / j.total * 100).toFixed(1)}%"></i></span>` : '<span class="jspin"></span>'}<span>${jobLine(j)}</span></div>`).join('') : '');
   if (el._h !== html) { el._h = html; el.innerHTML = html; const t = el.querySelector('#runs_t'); if (t) t.onclick = toggleRuns; }
   if (S.tab === 'home') { const w = $('#w_jobs'); if (w) w.innerHTML = jobsWidgetBody(); }
@@ -1836,6 +1836,7 @@ function renderSettings(m) {
     <label class="set">매일 평가를 추적할 상위 판매자 수 (분류마다)${num_('cs_topn', C.topN ?? 50, 10)}</label><label class="set">6개월 평가 수 재확인 주기 (일)${num_('cs_r6', C.rev6mDays ?? 7)}</label>
     <div class="two"><label class="set">같은 인터넷 주소에서 동시에 알라딘 작업할 PC 수 (1~3, 늘려도 전체 속도는 같음)${num_('cs_lanes', C.maxLanes ?? 1, 1)}</label><label class="set">인터넷 주소가 다른 PC (쉼표로, 따로 동시에 돎)<input id="cs_ipg" value="${esc(Object.keys(C.ipGroups || { HOME: 'home' }).join(', '))}"></label></div>
     <p class="hint" style="margin:0">사무실 PC들은 보통 인터넷 주소 하나를 같이 써서, 동시에 돌면 알라딘에는 한 곳에서 요청이 몰리는 것으로 보입니다. 그래서 PC 수를 늘리면 PC마다 요청 간격도 그만큼 늘려 차단 위험을 그대로 둡니다. 집 PC처럼 주소가 다른 PC는 따로 묶어 실제로 처리량이 늘어납니다.</p>
+    <button class="btn ghost" id="open_logs" style="width:100%;margin:6px 0">PC별 수집 작업 기록 보기</button>
     <label class="set ck"><input id="cs_auto" type="checkbox" ${C.autoDaily ?? true ? 'checked' : ''}> 매일 자동 '모두 일괄 수집'</label>
     <div class="two"><label class="set">시작 시각 (한국 시간, 시)${num_('cs_ah', C.autoHour ?? 17)}</label><label class="set">맡을 PC<input id="cs_apc" value="${esc(C.autoPc || 'JS-MAIN')}"></label></div>
     <label class="set">그 PC가 안 하면 다른 PC가 맡기까지 기다릴 시간 (분)${num_('cs_agr', C.autoGraceMin ?? 30, 10)}</label>
@@ -2668,6 +2669,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.41.0': ['PC별 수집 작업 기록 보기 (위쪽 수집 상태 줄 → 기록 보기, 또는 설정 ⑨)'],
   '0.40.2': ["판매자 평가 수 추이: '전체'가 최근 6개월만 보이던 잘못 고침 → 처음부터 연도별", '막대 아래 연도·월 표시, 연도별은 막대마다 건수 표시'],
   '0.40.1': ["문의 답변여부 'Yes'를 '답변 완료'로 표시"],
   '0.40.0': ["문의 모음의 '답 안 함' 탭과 고르기 없앰 — 샵매니저 답변여부 값만 그대로", "홈 '답하지 않은 문의'는 답변여부가 Yes도 취소된 질문도 아닌 문의만 (지금은 0건)"],
@@ -3391,6 +3393,29 @@ async function aladinCleanup() {
   } catch (e) { toast('정리 실패: ' + (e.code || e.message)); }
 }
 document.addEventListener('click', (ev) => { const t = ev.target; if (t.closest('#ao_open')) { ev.preventDefault(); openAladinPool(); } else if (t.closest('#ao_match')) { ev.preventDefault(); matchNow(false); } else if (t.closest('#ao_clean')) { ev.preventDefault(); aladinCleanup(); } });
+
+
+/* ══════════ PC별 수집 작업 기록 (수집기 1.8.0이 1분마다 올림: rn_logs) ══════════ */
+async function openLogViewer(pc, date) {
+  const d = date || dstr(new Date()); const key = d.replace(/-/g, '');
+  const sh = $('#sheet'); S.detail = { logs: 1 }; if (!pc && !date) history.pushState({ lg: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
+  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">수집 작업 기록</div></div><div class="card"><div class="empty">불러오는 중</div></div>`; $('#back').onclick = () => history.back();
+  let docs = []; try { const ss = await db.collection('rn_logs').where('slot', '>=', key + '0000').where('slot', '<=', key + '2359').get(); ss.forEach((x) => docs.push(x.data())); } catch (e) { sh.querySelector('.card').innerHTML = `<div class="empty">기록을 못 읽음: ${esc(e.code || e.message)} (Firebase 규칙에 rn_logs 허용 필요)</div>`; return; }
+  const pcs = [...new Set(docs.map((x) => x.pc))].sort(); const cur = pc || pcs[0] || '';
+  const lines = docs.filter((x) => x.pc === cur).sort((a, b) => String(a.slot).localeCompare(String(b.slot))).flatMap((x) => x.lines || []);
+  const f = S.logF || 'all';
+  const shown = lines.filter((l) => f === 'all' || (f === 'imp' ? !/\] · /.test(l) : /\] (⚠|!) /.test(l)));
+  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">수집 작업 기록</div></div>
+    <div class="card"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><input type="date" id="lg_d" value="${d}"> ${pcs.map((p) => `<button class="btn ${p === cur ? '' : 'ghost'} sm" data-lgpc="${esc(p)}">${esc(p)}</button>`).join('') || '<span class="hint">이 날 기록 없음</span>'}</div>
+    <div class="ptabs" style="margin:8px 0">${[['all', '전체'], ['imp', '중요만'], ['err', '오류·경고']].map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-lgf="${k}">${l}</button>`).join('')}</div>
+    <div style="font:12px/1.5 Consolas,monospace;white-space:pre-wrap;max-height:65vh;overflow:auto;background:#F7F9F8;border-radius:6px;padding:8px">${shown.map((l) => `<div style="${/\] ⚠ /.test(l) ? 'color:#B0322A;font-weight:700' : /\] ! /.test(l) ? 'color:#A8661B' : /\] · /.test(l) ? 'color:#5B6B66' : 'font-weight:600'}">${esc(l)}</div>`).join('') || '없음'}</div>
+    <p class="hint">${num(shown.length)}줄 · 수집기가 1분마다 올립니다 (한국 시간). 아주 최근 1분은 아직 안 보일 수 있습니다.</p></div>`;
+  $('#back').onclick = () => history.back();
+  sh.querySelectorAll('[data-lgpc]').forEach((b) => (b.onclick = () => openLogViewer(b.dataset.lgpc, d)));
+  sh.querySelectorAll('[data-lgf]').forEach((b) => (b.onclick = () => { S.logF = b.dataset.lgf; openLogViewer(cur, d); }));
+  $('#lg_d').onchange = (e) => openLogViewer(null, e.target.value);
+}
+document.addEventListener('click', (ev) => { if (ev.target.closest('#open_logs')) { ev.preventDefault(); openLogViewer(); } });
 
 /* ══════════ 매입 기록: 웹앱에서 바로 입력 (구글 시트 대신) ══════════
  * 한 건 = 한 번의 거래(한 판매자에게서 산 묶음). 품목마다 내용·권수·개별 가격, 나중에 예상 판매가가 자동으로 붙음.
