@@ -232,6 +232,7 @@ fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opa
 .verbar{position:sticky;top:0;z-index:50;background:#1E3A5F;color:#fff;padding:10px 14px;font-size:13.5px;line-height:1.5}.verbar.new{background:#A8661B}.verbar ul{margin:4px 0 0 18px;padding:0}.verbar small{opacity:.7}.verbar .vx{margin-left:10px;border:0;border-radius:6px;padding:4px 12px;font-weight:700;cursor:pointer;background:#fff;color:#1E3A5F}
 .runsbtn{background:none;border:0;color:inherit;font-size:12.5px;padding:2px 0;cursor:pointer;text-align:left;opacity:.95}.runsbtn small{opacity:.7;margin-left:4px}.jspin.sm{width:9px;height:9px;display:inline-block;vertical-align:middle}
 #main>details.sec,#main>.card{content-visibility:auto;contain-intrinsic-size:auto 320px}
+main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px)) !important}
 </style>
 </head>
 <body>
@@ -246,12 +247,12 @@ fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opa
 <script src="../readnow-products-core.js?v=0.3.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.25.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.25.1 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.25.0';
+const APP_VER = '0.25.1';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -2179,6 +2180,7 @@ function renderPurchase(m) {
   const unmatched = P.aOrders.filter((o) => !o.matched);
   const G = X.G; const g3 = (k, l, amt, u) => `<tr><td>${l}</td><td>${num(G[k].active)}</td><td>${num(G[k].sold)}</td><td>${num(G[k].active + G[k].sold)}</td><td>${amt != null ? won(amt) : '-'}</td><td>${u != null ? won(Math.round(u)) : '-'}</td><td>${won(G[k].soldAmt)}</td></tr>`;
   m.innerHTML = `${P.fromCache ? `<div class="hint" style="margin:0 0 6px">기기에 저장된 매입 기록 표시 중 (${new Date(P.fromCache).toLocaleString('ko-KR')}) · 최신으로 받는 중…</div>` : ''}${(P.errors || []).length ? `<div class="hint" style="margin:0 0 6px;color:var(--red)">일부를 못 읽음: ${esc(P.errors.map((x) => x.name + ' (' + x.msg + ')').join(', '))}</div>` : ''}
+  <div style="display:flex;gap:6px;margin:0 0 8px"><button class="btn" id="pu_filetop" style="flex:1">📂 파일 넣기 (구글 시트 · 알라딘 구매목록 · 폐기 목록)</button></div><input type="file" id="pu_file2" accept=".xlsx" multiple style="display:none">
   ${unregCard()}
   ${sec('pu_disp', '폐기 (정왕 등) · 폐기 매출', () => dispSection(), false)}
   ${sec('pu_match', '상품 ↔ 매입 연결 (새 매입 · 기존 미등록분 · 빈 매입가)', () => purMatchSection(), true)}
@@ -2217,6 +2219,7 @@ function renderPurchase(m) {
     ${P.lastImport ? `<p class="hint">마지막 시트 넣기: ${esc(P.lastImport.byName || '')} ${tsText(P.lastImport.at)} · ${esc(P.lastImport.fileName || '')} · 읽은 탭 ${esc((P.lastImport.sheets || []).join(', '))}</p>` : ''}`, !P.entries.length)}`;
   bindUI(m, renderMain);
   bindPurApp(m);
+  const ft = m.querySelector('#pu_filetop'), f2 = m.querySelector('#pu_file2'); if (ft && f2) { ft.onclick = () => f2.click(); f2.onchange = () => { if (f2.files.length) importPurFiles([...f2.files]).catch((er) => toast('실패: ' + er.message)); }; }
   if (!S.disp.loaded) loadDisposals(); if (!S.bb.loaded) loadBuyback();
   const dn = m.querySelector('#dp_new'); if (dn) dn.onclick = () => openDispForm(null); m.querySelectorAll('[data-disp]').forEach((x) => (x.onclick = () => openDispForm(x.dataset.disp)));
   const pr = m.querySelector('#pm_run'); if (pr) pr.onclick = () => matchNow(false); const pn2 = m.querySelector('#pm_none'); if (pn2) pn2.onclick = openMatchNone;
@@ -2606,6 +2609,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.25.1': ['맨 아래 칸이 아래쪽 탭 막대에 가려 안 보이던 문제 수정', "매입 탭 맨 위에 '파일 넣기' 버튼"],
   '0.25.0': ['미등록 책을 범위로 추정 (항목마다 확정·추정, 확정될수록 범위가 좁아짐)', '폐기(정왕 등) 기록·폐기 매출·폐기 권수 추정, 정왕 엑셀 넣기', '권당 평균 무게 (상품 탭)', "'남길 비율' → '유효 상품 비율' (자동 계산)", '김미소책방 권수 2만~3만 범위', '홈 개인/관리자 선택을 기기마다 기억'],
   '0.24.0': ['매입 탭이 멈추던 문제 해결 (기존보유 맞추기가 20초 넘게 걸리던 것 → 0.2초)', '긴 목록은 보이는 줄만 계산 (상품·판매자 순위, 매입 목록 등)'],
   '0.23.0': ['새 버전 알림 띠 (지금 보고 있는 것)', '매입 탭: 기기에 저장해 두고 바로 표시, 읽기 실패 시 원인 표시', '매입 상단: 대기 미등록 상품 수(추정)·추정 권당 가격', '상품 ↔ 매입 연결: 새 매입 / 기존 미등록분 자동 구분, 빈 매입가 채우기', '수집 진행 상태 줄: 기본으로 접힘 (펼칠 때만 실시간)', '속도 개선: 화면 밖 칸은 보일 때 계산, 그리기 생략 등'],
