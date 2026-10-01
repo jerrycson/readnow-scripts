@@ -253,12 +253,12 @@ main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px)) !important}
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.40.1 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.40.2 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.40.1';
+const APP_VER = '0.40.2';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1189,7 +1189,7 @@ function reviewTrend(s, rev) {
   if (!s.sc) return '';
   if (!rev || !rev.days) return `<div class="card"><h3>평가 수 추이</h3><div class="hint" style="margin:0">아직 이 판매자의 평가를 모으지 않았습니다. 상품 수집기 → 판매자 평가에서 모으면 기간별 추이가 나타납니다.</div></div>`;
   const per = S.revPer || localStorage.getItem('rn-revper') || 'm6'; if (!REVPER.some((x) => x[0] === per)) S.revPer = null;
-  const back = { all: null, y1: 365, m6: 180, m1: 30, w1: 7 }[per] ?? 180;
+  const BACK = { all: null, y1: 365, m6: 180, m1: 30, w1: 7 }; const back = per in BACK ? BACK[per] : 180; // ('전체'의 null이 ?? 때문에 180일로 바뀌던 잘못 고침)
   const since = back ? new Date(Date.now() - back * 864e5).toISOString().slice(0, 10) : '0000';
   const unit = per === 'all' ? 'year' : per === 'y1' ? 'month' : per === 'm6' ? 'week' : 'day';
   const keyOf = (d) => { if (unit === 'year') return d.slice(0, 4); if (unit === 'month') return d.slice(0, 7); if (unit === 'day') return d; const t = new Date(d); t.setDate(t.getDate() - ((t.getDay() + 6) % 7)); return t.toISOString().slice(0, 10); };
@@ -1201,14 +1201,15 @@ function reviewTrend(s, rev) {
     else if (unit === 'month') { let y = +firstKey.slice(0, 4), mo = +firstKey.slice(5, 7); while (y < now.getFullYear() || (y === now.getFullYear() && mo <= now.getMonth() + 1)) { keys.push(`${y}-${pad(mo)}`); mo++; if (mo > 12) { mo = 1; y++; } } }
     else { const t = new Date((back ? since : firstKey) + 'T12:00:00'); let guard = 0; while (t <= now && guard++ < 400) { const k = keyOf(`${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`); if (!keys.includes(k)) keys.push(k); t.setDate(t.getDate() + (unit === 'week' ? 7 : 1)); } } }
   const rows = keys.map((k) => [k, B.get(k) || [0, 0, 0]]); const max = Math.max(1, ...rows.map(([, v]) => v[0] + v[1] + v[2]));
-  const n = tot[0] + tot[1] + tot[2]; const W = Math.max(2, Math.min(18, Math.floor(620 / Math.max(1, rows.length)) - 1));
+  const n = tot[0] + tot[1] + tot[2]; const W = Math.max(2, Math.min(unit === 'year' ? 44 : 18, Math.floor(620 / Math.max(1, rows.length)) - 1)); const lab = (k) => (unit === 'year' ? k : unit === 'month' ? (k.slice(5) === '01' ? k.slice(2, 4) + '.01' : +k.slice(5) + '월') : k.slice(5).replace('-', '/')); const every = unit === 'year' ? 1 : Math.ceil(rows.length / 10);
   const bars = rows.map(([k, v], i) => { const h = (x) => (x / max) * 110; let y = 120; const seg = (x, c) => { if (!x) return ''; y -= h(x); return `<rect x="${i * (W + 1)}" y="${y.toFixed(1)}" width="${W}" height="${h(x).toFixed(1)}" fill="${c}"/>`; };
-    return `<g><title>${k}: 만족 ${v[0]} · 보통 ${v[1]} · 불만족 ${v[2]}</title>${seg(v[0], '#2F7D4F')}${seg(v[1], '#D9A400')}${seg(v[2], '#B0322A')}</g>`; }).join('');
+    const sum = v[0] + v[1] + v[2]; const top = 120 - h(sum);
+    return `<g><title>${k}: 만족 ${v[0]} · 보통 ${v[1]} · 불만족 ${v[2]}</title>${seg(v[0], '#2F7D4F')}${seg(v[1], '#D9A400')}${seg(v[2], '#B0322A')}${unit === 'year' && sum ? `<text x="${i * (W + 1) + W / 2}" y="${Math.max(9, top - 2).toFixed(1)}" font-size="9" text-anchor="middle" fill="#5B6B66">${sum.toLocaleString()}</text>` : ''}${i % every === 0 || i === rows.length - 1 ? `<text x="${i * (W + 1) + W / 2}" y="134" font-size="9" text-anchor="middle" fill="#5B6B66">${lab(k)}</text>` : ''}</g>`; }).join('');
   const st = rev.stats || {};
   return `<div class="card"><h3>평가 수 추이 <small>(${unit === 'year' ? '연도별' : unit === 'month' ? '월별' : unit === 'week' ? '주별' : '일별'})</small></h3>
     <div class="ptabs" style="margin:6px 0">${REVPER.map(([k, l]) => `<button class="${k === per ? 'on' : ''}" data-rper="${k}">${l}</button>`).join('')}</div>
     <div class="mgrid">${mcell(num(n) + '건', (REVPER.find((x) => x[0] === per) || REVPER[2])[1] + ' 평가', rows.length ? `${unit === 'year' ? '연' : unit === 'month' ? '월' : unit === 'week' ? '주' : '일'} 평균 ${(n / rows.length).toFixed(1)}건` : '')}${mcell(n ? Math.round((tot[0] / n) * 1000) / 10 + '%' : '-', '만족 비율', `보통 ${tot[1]} · 불만족 ${tot[2]}`)}${mcell(num(rev6(s) ?? 0) + '건', '최근 6개월', `${esc(rev6src(s).src || '')} · 최근 1개월 ${num(st.d30 || 0)}`)}</div>
-    <div style="overflow-x:auto;margin-top:8px"><svg width="${Math.max(200, rows.length * (W + 1))}" height="124" style="display:block">${bars}</svg></div>
+    <div style="overflow-x:auto;margin-top:8px"><svg width="${Math.max(200, rows.length * (W + 1))}" height="138" style="display:block">${bars}</svg></div>
     <div class="hint" style="margin:4px 0 0"><span style="color:#2F7D4F">■</span> 만족 <span style="color:#D9A400">■</span> 보통 <span style="color:#B0322A">■</span> 불만족 · 모은 범위: ${esc(st.first || '-')} ~ ${esc(st.last || '-')}${rev.complete ? ' (전체)' : ' (최근분만, 전체 수집 전)'} · ${rev.updatedAt ? tsText(rev.updatedAt) + ' 갱신' : ''}</div></div>`;
 }
 
@@ -2667,6 +2668,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.40.2': ["판매자 평가 수 추이: '전체'가 최근 6개월만 보이던 잘못 고침 → 처음부터 연도별", '막대 아래 연도·월 표시, 연도별은 막대마다 건수 표시'],
   '0.40.1': ["문의 답변여부 'Yes'를 '답변 완료'로 표시"],
   '0.40.0': ["문의 모음의 '답 안 함' 탭과 고르기 없앰 — 샵매니저 답변여부 값만 그대로", "홈 '답하지 않은 문의'는 답변여부가 Yes도 취소된 질문도 아닌 문의만 (지금은 0건)"],
   '0.39.1': ['문의 모음: 어느 수집기 버전이 올린 기록인지 표시 (답변여부 확인용)'],
