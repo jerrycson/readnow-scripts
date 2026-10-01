@@ -250,12 +250,12 @@ main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px)) !important}
 <script src="../readnow-products-core.js?v=0.3.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.28.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.29.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.28.0';
+const APP_VER = '0.29.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1514,7 +1514,7 @@ function prodDash() {
     <div class="card" style="margin:0 0 10px"><h3>입고·판매 흐름</h3>${picker(id, 'month')}<div class="mgrid kpi" style="margin-top:8px">${flow.join('')}</div></div>
     ${sec('p_age', '재고 연령 분포 (에이징)', `<div class="card" style="margin:0 0 8px">${bar(I.bucket, I.qty, (v) => `${num(v[0])}권 · ${won(v[1])}`)}<p class="hint">오래된 재고일수록 가격 조정·재진열 대상입니다.</p></div>`)}
     ${(() => { const A = avgBookWeight(); return A ? `<div class="card"><h3>권당 평균 무게</h3><div class="mgrid">${mcell(Math.round(A.avg) + 'g', '평균 (권수 가중)', `무게 기록 ${num(A.n)}권`)}${mcell(A.p50 + 'g', '중간값', `25%~75%: ${A.p25}~${A.p75}g`)}</div><p class="hint">폐기 무게를 권수로 바꿀 때 씁니다 (매입 탭 → 미등록 책).</p></div>` : ''; })()}
-    ${reqBtns([['chain', '일괄 수집'], ['dynamic', '구매자 분포·함께 산 책 수집']])}
+    ${reqBtns([['chain', '모두 일괄 수집'], ['dynAll', '구매자 분포 전체 수집']])}
     ${sec('p_cat', '분류별 추이 (매출 · 판매 권수 · 등록 · 매입)', () => catTrendSection(), true)}
     ${sec('p_age', '구매 연령대 (알라딘 구매자 분포 기준)', () => ageSection(), false)}
     ${sec('p_mtype', '상품 유형 (지금 등록)', `<div class="card" style="margin:0 0 8px">${bar(I.mtype, I.qty)}<p class="hint" style="margin:6px 0 0">책 · DVD·블루레이·VHS · CD·LP · 기타 상품. 기타 상품은 권당 매입가 계산에서 빠지고 총매출에서 따로 관리합니다.</p></div>`, true)}
@@ -1823,8 +1823,12 @@ function renderSettings(m) {
     <label class="set">떠오르는 판매자: 최근 1개월 속도가 6개월 평균의 (배 이상)${num_('al_rise', A.risingFactor, 0.1)}</label>`, '홈·경영 탭의 알림과 목록이 이 값으로 걸러집니다.')}
   ${card('col', '⑨ 수집기 공통 (모든 PC의 리드나우 수집기)', `<label class="set">알라딘 요청 간격 (ms, 실제 대기는 이 값 ~ 1.6배)${num_('cs_delay', C.delayMs ?? 700, 100)}</label><label class="set">도서 정보·시장 지표 재확인 주기 (일, 0이면 매번 전체)${num_('cs_recheck', C.recheckDays ?? 7)}</label>
     <label class="set">매일 평가를 추적할 상위 판매자 수 (분류마다)${num_('cs_topn', C.topN ?? 50, 10)}</label><label class="set">6개월 평가 수 재확인 주기 (일)${num_('cs_r6', C.rev6mDays ?? 7)}</label>
-    <label class="set ck"><input id="cs_auto" type="checkbox" ${C.autoDaily ?? true ? 'checked' : ''}> 매일 자동 일괄 수집 (알라딘 화면이 열린 PC 중 한 대가)</label><label class="set">자동 시작 시각 (한국 시간, 시)${num_('cs_ah', C.autoHour ?? 4)}</label>
-    <label class="set">구매자 분포·함께 산 책: 하루 권수${num_('cs_dd', C.dynDaily ?? 300, 50)}</label><label class="set">구매자 분포 다시 보는 주기 (일)${num_('cs_dy', C.dynDays ?? 60, 10)}</label>`, S.colSet ? '수집기가 다음 작업을 시작할 때 읽습니다.' : '수집기 설정을 읽는 중')}
+    <label class="set ck"><input id="cs_auto" type="checkbox" ${C.autoDaily ?? true ? 'checked' : ''}> 매일 자동 '모두 일괄 수집'</label>
+    <div class="two"><label class="set">시작 시각 (한국 시간, 시)${num_('cs_ah', C.autoHour ?? 17)}</label><label class="set">맡을 PC<input id="cs_apc" value="${esc(C.autoPc || 'JS-MAIN')}"></label></div>
+    <label class="set">그 PC가 안 하면 다른 PC가 맡기까지 기다릴 시간 (분)${num_('cs_agr', C.autoGraceMin ?? 30, 10)}</label>
+    <label class="set">웹앱 수집 요청을 먼저 받을 PC (2분 안에 안 받으면 다른 PC)<input id="cs_rpc" value="${esc(C.reqPc || 'JS-MAIN')}"></label>
+    <div class="set">일괄 수집에서 할 단계 (수집기 패널에서도 켜고 끔)<div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:4px">${[['crm', '고객·주문 전체'], ['scanNew', '신규 등록분'], ['aladinBuy', '알라딘 구매 내역'], ['buyback', '알라딘 팔기 내역'], ['market', '도서·시장 지표'], ['rev6m', '6개월 평가 수'], ['revTop', '상위 판매자 평가'], ['dynamic', '구매자 분포·함께 산 책']].map(([k, l]) => `<label class="ck" style="display:flex;gap:4px;align-items:center"><input type="checkbox" data-cstep="${k}" ${((C.steps || {})[k] ?? true) ? 'checked' : ''} style="width:auto"> ${l}</label>`).join('')}</div></div>
+    <label class="set">구매자 분포·함께 산 책: 일괄 수집 한 번에 권수 (0이면 남은 것 전부)${num_('cs_dd', C.dynDaily ?? 300, 50)}</label><label class="set">구매자 분포 다시 보는 주기 (일)${num_('cs_dy', C.dynDays ?? 60, 10)}</label>`, S.colSet ? '수집기가 다음 작업을 시작할 때 읽습니다.' : '수집기 설정을 읽는 중')}
   ${card('view', '⑩ 화면 표시', `<label class="set">판매가 구간 경계 (원, 쉼표로)<input id="st_bands" value="${(a.priceBands || []).join(', ')}"></label><div class="hint" id="st_bandprev"></div>`, '상품 탭의 가격대 분포, 홈의 가격대별 판매에 씁니다.')}
   ${adm ? `<div style="display:flex;gap:8px;margin:12px 0"><button class="btn" id="st_save">저장 (모든 기기에 반영)</button><button class="btn ghost" id="st_def">처음 값으로 채우기</button></div>` : ''}
   ${a.updatedByName ? `<p class="hint">마지막 변경: ${esc(a.updatedByName)} ${tsText(a.updatedAt)}</p>` : ''}`;
@@ -1842,7 +1846,7 @@ function renderSettings(m) {
     $('#st_mh').value = D.seller.modelHigh; $('#st_ml').value = D.seller.modelLow; $('#st_gh').value = D.seller.gainHigh; $('#st_gl').value = D.seller.gainLow;
     const DA = D.alerts; [['al_late', 'lateDays'], ['al_old1', 'oldDays1'], ['al_old2', 'oldDays2'], ['al_over', 'overMinPct'], ['al_cheap', 'cheapPct'], ['al_stale', 'staleHours'], ['al_dmin', 'dormantMinOrders'], ['al_dfrom', 'dormantFrom'], ['al_dto', 'dormantTo'], ['al_rise', 'risingFactor']].forEach(([id, k]) => ($('#' + id).value = DA[k]));
     $('#c_vv').value = CFG_DEFAULT.vip.minValue; $('#c_vr').value = CFG_DEFAULT.vip.maxRisk; $('#c_vo').value = CFG_DEFAULT.vip.minOrders; $('#c_vs').checked = true; $('#c_cr').value = CFG_DEFAULT.caution.minRisk;
-    $('#cs_delay').value = 700; $('#cs_recheck').value = 7; $('#cs_topn').value = 50; $('#cs_r6').value = 7; prev(); cprev(); toast('처음 값으로 채웠습니다. 저장을 눌러야 반영됩니다'); };
+    $('#cs_delay').value = 700; $('#cs_recheck').value = 7; $('#cs_topn').value = 50; $('#cs_r6').value = 7; $('#cs_ah').value = 17; $('#cs_apc').value = 'JS-MAIN'; $('#cs_rpc').value = 'JS-MAIN'; $('#cs_agr').value = 30; prev(); cprev(); toast('처음 값으로 채웠습니다. 저장을 눌러야 반영됩니다'); };
   $('#st_save').onclick = async () => {
     const B = $('#st_bands').value.split(/[,\s]+/).map((x) => +x).filter((x) => x > 0).sort((x, y) => x - y);
     const L = $('#st_admins').value.split(',').map((s) => s.trim()).filter(Boolean); if (!L.length) return toast('관리자 기기를 하나 이상 남겨 주세요');
@@ -1854,7 +1858,7 @@ function renderSettings(m) {
       goals: { monthSales: Math.max(0, n('st_gm') || 0), dailyListing: Math.max(0, n('st_gl2') || 0), marginPct: Math.max(0, n('st_gp') || 0) },
       alerts: { lateDays: n('al_late'), oldDays1: n('al_old1'), oldDays2: n('al_old2'), overMinPct: n('al_over'), cheapPct: n('al_cheap'), staleHours: n('al_stale'), dormantMinOrders: n('al_dmin'), dormantFrom: n('al_dfrom'), dormantTo: n('al_dto'), risingFactor: n('al_rise') } };
     const pur = { msTotalCost: n('ps_mscost') || 0, msTotalBooks: n('ps_msn') || 0, msKeepRatio: Math.min(1, Math.max(0, (n('ps_mskeep') || 0) / 100)), includeMunjeong: $('#ps_mj').checked, excludeExistingFromUnit: $('#ps_ex').checked, msBooksMin: n('ps_msmin') || 20000, msBooksMax: n('ps_msmax') || 30000, msBooksFinal: $('#ps_msfin').value === '' ? null : n('ps_msfin'), hdBooksMin: n('ps_hdmin') || 0, hdBooksMax: n('ps_hdmax') || 0, hdBooksFinal: $('#ps_hdfin').value === '' ? null : n('ps_hdfin'), genSpread: Math.max(0, (n('ps_gsp') || 0) / 100), dispRate: n('ps_drate') || 110, weightSpread: Math.max(0, (n('ps_wsp') || 0) / 100), bookWeightG: n('ps_bw') || 450, unregManualLo: $('#ps_umlo').value === '' ? null : n('ps_umlo'), unregManualHi: $('#ps_umhi').value === '' ? null : n('ps_umhi'), newWindowDays: Math.max(1, n('ps_win') || 60) };
-    const col = { delayMs: Math.max(300, n('cs_delay') || 700), recheckDays: Math.max(0, Math.round(n('cs_recheck'))), topN: Math.max(5, Math.round(n('cs_topn') || 50)), rev6mDays: Math.max(1, Math.round(n('cs_r6') || 7)), autoDaily: $('#cs_auto').checked, autoHour: Math.min(23, Math.max(0, Math.round(n('cs_ah')))), dynDaily: Math.max(0, Math.round(n('cs_dd') || 0)), dynDays: Math.max(7, Math.round(n('cs_dy') || 60)) };
+    const col = { delayMs: Math.max(300, n('cs_delay') || 700), recheckDays: Math.max(0, Math.round(n('cs_recheck'))), topN: Math.max(5, Math.round(n('cs_topn') || 50)), rev6mDays: Math.max(1, Math.round(n('cs_r6') || 7)), autoDaily: $('#cs_auto').checked, autoHour: Math.min(23, Math.max(0, Math.round(n('cs_ah')))), autoPc: $('#cs_apc').value.trim() || 'JS-MAIN', autoGraceMin: Math.max(0, Math.round(n('cs_agr') || 0)), reqPc: $('#cs_rpc').value.trim() || 'JS-MAIN', steps: Object.fromEntries([...document.querySelectorAll('[data-cstep]')].map((c) => [c.dataset.cstep, c.checked])), dynDaily: Math.max(0, Math.round(n('cs_dd') || 0)), dynDays: Math.max(7, Math.round(n('cs_dy') || 60)) };
     const who = { updatedBy: S.user.email, updatedByName: S.user.displayName || S.user.email, updatedAt: TS() };
     try {
       const b = db.batch();
@@ -2631,6 +2635,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.29.0': ['설정 ⑨: 매일 자동 \'모두 일괄 수집\' — 기본 오후 5시·JS-MAIN, 단계별 켜고 끄기, 웹앱 요청 받을 PC', '수집 요청 \'모두 일괄 수집\''],
   '0.28.0': ['통합 수집기(리드나우 수집기) 대응: 웹앱에서 수집 요청 (알라딘 구매·팔기·일괄·구매자 분포)', '상품 탭: 분류별 매출·판매 권수·등록·매입 추이, 분류를 누르면 자세한 탐색 화면', '상품 탭: 구매 연령대 (알라딘 구매자 분포 기준)', '설정 ⑨: 매일 자동 일괄 수집 시각·구매자 분포 하루 권수'],
   '0.27.0': ['반품 내역 엑셀 넣기 → 매출·판매 권수·반품률 등 모든 곳 반영 (자료 불완전 표시)', '알라딘 팔기: 반송은 없음 → 매입불가는 모두 폐기로 계산', '순매출·구매 고객 수·판매 권수를 누르면 상품·고객 목록', '홈 칸 중복 정리 (매출 요약 → 매출 비교, 공헌이익·평판 칸 정리, 수집 진행 칸은 기본에서 뺌)'],
   '0.26.0': ['폐기·알라딘 팔기를 회수율·남은 금액·경영 탭·홈에 모두 반영', '알라딘 팔기 기록 직접 적기 (같은 주문은 다시 안 들어감)', '파일 넣기: 이미 있는 기록은 건드리지 않고 새 기록만 더함', '숫자 칸을 누르면 그 숫자를 이룬 기록 목록이 열림 (› 표시)', '김미소책방 유효 권수를 자동 유효 상품 비율로 계산'],
