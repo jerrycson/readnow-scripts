@@ -234,6 +234,8 @@ fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opa
 #main>details.sec,#main>.card{content-visibility:auto;contain-intrinsic-size:auto 320px}
 main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px)) !important}
 .drill{cursor:pointer;border-radius:8px}.drill:hover{background:var(--soft)}.drill .dr{font-style:normal;color:var(--cloth);font-size:.8em}
+.reqbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px}.reqbar #req_state{flex-basis:100%}
+.agebars .ab{display:grid;grid-template-columns:38px 1fr 44px 1fr 44px;gap:4px;align-items:center;font-size:12.5px;margin:3px 0}.agebars i{display:block;height:10px;border-radius:3px}.agebars i.f{background:#C2577A}.agebars i.m{background:#3F7FD1}.agebars b{font-weight:600;font-size:11.5px}
 </style>
 </head>
 <body>
@@ -248,12 +250,12 @@ main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px)) !important}
 <script src="../readnow-products-core.js?v=0.3.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.27.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.28.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.27.0';
+const APP_VER = '0.28.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1475,6 +1477,7 @@ function soldIn(r) { // 판매 권수·금액은 주문 기록(주문·매출 �
   return { qty, amt, pub };
 }
 function daysToSell(r) { const out = []; for (const o of S.orders.values()) { if (o.kind !== 'sale' || !inRange(o.orderedAt, r) || !o.orderedAt) continue; for (const it of o.items || []) { if (it.lineStatus !== 'normal' || !it.aladinUsedCode) continue; const l = S.plist.get('aladin_' + it.aladinUsedCode); if (!l || !l.registeredAt) continue; const d = (new Date(String(o.orderedAt).slice(0, 16)) - new Date(String(l.registeredAt).slice(0, 16))) / 864e5; if (d >= 0) out.push(d); } } out.sort((a, b) => a - b); return out; }
+document.addEventListener('click', (ev) => { const c = ev.target.closest('[data-cat]'); if (c && !ev.target.closest('[data-open]')) { ev.preventDefault(); openCatPage(c.dataset.cat); return; } const m = ev.target.closest('[data-catm]'); if (m) { S.catMetric = m.dataset.catm; renderMain(); } });
 function prodDash() {
   const I = prodInv(); const id = 'prod'; const r = rangeFor(id, 'month');
   const sold = S.ordersLoaded ? soldIn(r) : { qty: 0, amt: 0, pub: new Map() };
@@ -1511,6 +1514,9 @@ function prodDash() {
     <div class="card" style="margin:0 0 10px"><h3>입고·판매 흐름</h3>${picker(id, 'month')}<div class="mgrid kpi" style="margin-top:8px">${flow.join('')}</div></div>
     ${sec('p_age', '재고 연령 분포 (에이징)', `<div class="card" style="margin:0 0 8px">${bar(I.bucket, I.qty, (v) => `${num(v[0])}권 · ${won(v[1])}`)}<p class="hint">오래된 재고일수록 가격 조정·재진열 대상입니다.</p></div>`)}
     ${(() => { const A = avgBookWeight(); return A ? `<div class="card"><h3>권당 평균 무게</h3><div class="mgrid">${mcell(Math.round(A.avg) + 'g', '평균 (권수 가중)', `무게 기록 ${num(A.n)}권`)}${mcell(A.p50 + 'g', '중간값', `25%~75%: ${A.p25}~${A.p75}g`)}</div><p class="hint">폐기 무게를 권수로 바꿀 때 씁니다 (매입 탭 → 미등록 책).</p></div>` : ''; })()}
+    ${reqBtns([['chain', '일괄 수집'], ['dynamic', '구매자 분포·함께 산 책 수집']])}
+    ${sec('p_cat', '분류별 추이 (매출 · 판매 권수 · 등록 · 매입)', () => catTrendSection(), true)}
+    ${sec('p_age', '구매 연령대 (알라딘 구매자 분포 기준)', () => ageSection(), false)}
     ${sec('p_mtype', '상품 유형 (지금 등록)', `<div class="card" style="margin:0 0 8px">${bar(I.mtype, I.qty)}<p class="hint" style="margin:6px 0 0">책 · DVD·블루레이·VHS · CD·LP · 기타 상품. 기타 상품은 권당 매입가 계산에서 빠지고 총매출에서 따로 관리합니다.</p></div>`, true)}
     ${sec('p_grade', '등급·가격대 분포', `<div class="card" style="margin:0 0 8px"><h3>등급</h3>${bar(I.grade, I.qty)}<h3 style="margin-top:10px">판매가 구간 <small>(설정 탭에서 구간 변경)</small></h3>${bar(I.price, I.qty)}</div>`, false)}
     ${sec('p_trend', '등록·판매 추이', `<div class="ptabs" style="margin-bottom:8px">${['day', 'week', 'month', 'year'].map((k) => `<button class="${kind === k ? 'on' : ''}" data-ptrend="${k}">${PK[k]}</button>`).join('')}</div><div class="hint"><span class="lg a"></span>등록 <span class="lg b"></span>판매 · 오른쪽 숫자는 순증감</div><div class="list">${fold('ptr' + kind, trows) || '<div class="empty">기록 없음</div>'}</div>`)}
@@ -1815,8 +1821,10 @@ function renderSettings(m) {
     <label class="set">등급 환산 계수 (같은 등급이 없을 때): 최상 · 상 · 중<input id="al_coef" value="${esc([(a.gradeCoef || APPSET_DEFAULT.gradeCoef)['최상'], (a.gradeCoef || APPSET_DEFAULT.gradeCoef)['상'], (a.gradeCoef || APPSET_DEFAULT.gradeCoef)['중']].join(', '))}"></label><label class="set">수집이 오래됐다고 알릴 시간 (시간)${num_('al_stale', A.staleHours)}</label>
     <label class="set">휴면 위험 단골: 최소 구매 횟수${num_('al_dmin', A.dormantMinOrders)}</label><label class="set">휴면 위험 단골: 마지막 구매 후 (일부터)${num_('al_dfrom', A.dormantFrom, 10)}</label><label class="set">휴면 위험 단골: (일까지)${num_('al_dto', A.dormantTo, 10)}</label>
     <label class="set">떠오르는 판매자: 최근 1개월 속도가 6개월 평균의 (배 이상)${num_('al_rise', A.risingFactor, 0.1)}</label>`, '홈·경영 탭의 알림과 목록이 이 값으로 걸러집니다.')}
-  ${card('col', '⑨ 수집기 공통 (모든 PC의 상품 수집기)', `<label class="set">알라딘 요청 간격 (ms, 실제 대기는 이 값 ~ 1.6배)${num_('cs_delay', C.delayMs ?? 700, 100)}</label><label class="set">도서 정보·시장 지표 재확인 주기 (일, 0이면 매번 전체)${num_('cs_recheck', C.recheckDays ?? 7)}</label>
-    <label class="set">매일 평가를 추적할 상위 판매자 수 (분류마다)${num_('cs_topn', C.topN ?? 50, 10)}</label><label class="set">6개월 평가 수 재확인 주기 (일)${num_('cs_r6', C.rev6mDays ?? 7)}</label>`, S.colSet ? '수집기가 다음 작업을 시작할 때 읽습니다.' : '수집기 설정을 읽는 중')}
+  ${card('col', '⑨ 수집기 공통 (모든 PC의 리드나우 수집기)', `<label class="set">알라딘 요청 간격 (ms, 실제 대기는 이 값 ~ 1.6배)${num_('cs_delay', C.delayMs ?? 700, 100)}</label><label class="set">도서 정보·시장 지표 재확인 주기 (일, 0이면 매번 전체)${num_('cs_recheck', C.recheckDays ?? 7)}</label>
+    <label class="set">매일 평가를 추적할 상위 판매자 수 (분류마다)${num_('cs_topn', C.topN ?? 50, 10)}</label><label class="set">6개월 평가 수 재확인 주기 (일)${num_('cs_r6', C.rev6mDays ?? 7)}</label>
+    <label class="set ck"><input id="cs_auto" type="checkbox" ${C.autoDaily ?? true ? 'checked' : ''}> 매일 자동 일괄 수집 (알라딘 화면이 열린 PC 중 한 대가)</label><label class="set">자동 시작 시각 (한국 시간, 시)${num_('cs_ah', C.autoHour ?? 4)}</label>
+    <label class="set">구매자 분포·함께 산 책: 하루 권수${num_('cs_dd', C.dynDaily ?? 300, 50)}</label><label class="set">구매자 분포 다시 보는 주기 (일)${num_('cs_dy', C.dynDays ?? 60, 10)}</label>`, S.colSet ? '수집기가 다음 작업을 시작할 때 읽습니다.' : '수집기 설정을 읽는 중')}
   ${card('view', '⑩ 화면 표시', `<label class="set">판매가 구간 경계 (원, 쉼표로)<input id="st_bands" value="${(a.priceBands || []).join(', ')}"></label><div class="hint" id="st_bandprev"></div>`, '상품 탭의 가격대 분포, 홈의 가격대별 판매에 씁니다.')}
   ${adm ? `<div style="display:flex;gap:8px;margin:12px 0"><button class="btn" id="st_save">저장 (모든 기기에 반영)</button><button class="btn ghost" id="st_def">처음 값으로 채우기</button></div>` : ''}
   ${a.updatedByName ? `<p class="hint">마지막 변경: ${esc(a.updatedByName)} ${tsText(a.updatedAt)}</p>` : ''}`;
@@ -1846,7 +1854,7 @@ function renderSettings(m) {
       goals: { monthSales: Math.max(0, n('st_gm') || 0), dailyListing: Math.max(0, n('st_gl2') || 0), marginPct: Math.max(0, n('st_gp') || 0) },
       alerts: { lateDays: n('al_late'), oldDays1: n('al_old1'), oldDays2: n('al_old2'), overMinPct: n('al_over'), cheapPct: n('al_cheap'), staleHours: n('al_stale'), dormantMinOrders: n('al_dmin'), dormantFrom: n('al_dfrom'), dormantTo: n('al_dto'), risingFactor: n('al_rise') } };
     const pur = { msTotalCost: n('ps_mscost') || 0, msTotalBooks: n('ps_msn') || 0, msKeepRatio: Math.min(1, Math.max(0, (n('ps_mskeep') || 0) / 100)), includeMunjeong: $('#ps_mj').checked, excludeExistingFromUnit: $('#ps_ex').checked, msBooksMin: n('ps_msmin') || 20000, msBooksMax: n('ps_msmax') || 30000, msBooksFinal: $('#ps_msfin').value === '' ? null : n('ps_msfin'), hdBooksMin: n('ps_hdmin') || 0, hdBooksMax: n('ps_hdmax') || 0, hdBooksFinal: $('#ps_hdfin').value === '' ? null : n('ps_hdfin'), genSpread: Math.max(0, (n('ps_gsp') || 0) / 100), dispRate: n('ps_drate') || 110, weightSpread: Math.max(0, (n('ps_wsp') || 0) / 100), bookWeightG: n('ps_bw') || 450, unregManualLo: $('#ps_umlo').value === '' ? null : n('ps_umlo'), unregManualHi: $('#ps_umhi').value === '' ? null : n('ps_umhi'), newWindowDays: Math.max(1, n('ps_win') || 60) };
-    const col = { delayMs: Math.max(300, n('cs_delay') || 700), recheckDays: Math.max(0, Math.round(n('cs_recheck'))), topN: Math.max(5, Math.round(n('cs_topn') || 50)), rev6mDays: Math.max(1, Math.round(n('cs_r6') || 7)) };
+    const col = { delayMs: Math.max(300, n('cs_delay') || 700), recheckDays: Math.max(0, Math.round(n('cs_recheck'))), topN: Math.max(5, Math.round(n('cs_topn') || 50)), rev6mDays: Math.max(1, Math.round(n('cs_r6') || 7)), autoDaily: $('#cs_auto').checked, autoHour: Math.min(23, Math.max(0, Math.round(n('cs_ah')))), dynDaily: Math.max(0, Math.round(n('cs_dd') || 0)), dynDays: Math.max(7, Math.round(n('cs_dy') || 60)) };
     const who = { updatedBy: S.user.email, updatedByName: S.user.displayName || S.user.email, updatedAt: TS() };
     try {
       const b = db.batch();
@@ -2191,6 +2199,7 @@ function renderPurchase(m) {
   const unmatched = P.aOrders.filter((o) => !o.matched);
   const G = X.G; const g3 = (k, l, amt, u) => `<tr class="clk" data-drill="grp_${k}"><td>${l} ›</td><td>${num(G[k].active)}</td><td>${num(G[k].sold)}</td><td>${num(G[k].active + G[k].sold)}</td><td>${amt != null ? won(amt) : '-'}</td><td>${u != null ? won(Math.round(u)) : '-'}</td><td>${won(G[k].soldAmt)}</td></tr>`;
   m.innerHTML = `${P.fromCache ? `<div class="hint" style="margin:0 0 6px">기기에 저장된 매입 기록 표시 중 (${new Date(P.fromCache).toLocaleString('ko-KR')}) · 최신으로 받는 중…</div>` : ''}${(P.errors || []).length ? `<div class="hint" style="margin:0 0 6px;color:var(--red)">일부를 못 읽음: ${esc(P.errors.map((x) => x.name + ' (' + x.msg + ')').join(', '))}</div>` : ''}
+  ${reqBtns([['aladinBuy', '알라딘 구매 내역 수집'], ['buyback', '알라딘 팔기 내역 수집']])}
   <div style="display:flex;gap:6px;margin:0 0 8px"><button class="btn" id="pu_filetop" style="flex:1">📂 파일 넣기 (구글 시트 · 알라딘 구매목록 · 폐기 목록)</button></div><input type="file" id="pu_file2" accept=".xlsx" multiple style="display:none">
   ${unregCard()}
   ${sec('pu_disp', '폐기 (정왕 등) · 폐기 매출', () => dispSection(), false)}
@@ -2622,6 +2631,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.28.0': ['통합 수집기(리드나우 수집기) 대응: 웹앱에서 수집 요청 (알라딘 구매·팔기·일괄·구매자 분포)', '상품 탭: 분류별 매출·판매 권수·등록·매입 추이, 분류를 누르면 자세한 탐색 화면', '상품 탭: 구매 연령대 (알라딘 구매자 분포 기준)', '설정 ⑨: 매일 자동 일괄 수집 시각·구매자 분포 하루 권수'],
   '0.27.0': ['반품 내역 엑셀 넣기 → 매출·판매 권수·반품률 등 모든 곳 반영 (자료 불완전 표시)', '알라딘 팔기: 반송은 없음 → 매입불가는 모두 폐기로 계산', '순매출·구매 고객 수·판매 권수를 누르면 상품·고객 목록', '홈 칸 중복 정리 (매출 요약 → 매출 비교, 공헌이익·평판 칸 정리, 수집 진행 칸은 기본에서 뺌)'],
   '0.26.0': ['폐기·알라딘 팔기를 회수율·남은 금액·경영 탭·홈에 모두 반영', '알라딘 팔기 기록 직접 적기 (같은 주문은 다시 안 들어감)', '파일 넣기: 이미 있는 기록은 건드리지 않고 새 기록만 더함', '숫자 칸을 누르면 그 숫자를 이룬 기록 목록이 열림 (› 표시)', '김미소책방 유효 권수를 자동 유효 상품 비율로 계산'],
   '0.25.1': ['맨 아래 칸이 아래쪽 탭 막대에 가려 안 보이던 문제 수정', "매입 탭 맨 위에 '파일 넣기' 버튼"],
@@ -2992,6 +3002,87 @@ document.addEventListener('click', (ev) => { const d = ev.target.closest('[data-
 const sdr = (kind, r) => `${kind}|${rkey(r)}`;
 const mcellS = (v, label, basis, kind, r) => `<div class="drill" data-sdrill="${sdr(kind, r)}" title="눌러서 목록 보기"><b>${v} <i class="dr">›</i></b><span>${label}</span><small>${basis}</small></div>`;
 
+
+/* ══════════ 수집 요청 (웹앱 → 알라딘 화면이 열린 PC의 수집기) ══════════ */
+async function requestJob(job, label) {
+  try { await db.collection('prd_jobs').doc('request').set({ job, label, atMs: Date.now(), at: TS(), by: S.user.email, byName: S.user.displayName || S.user.email, handled: false, handledBy: null }); toast(`'${label}' 요청을 보냈습니다. 알라딘 화면이 열린 PC의 수집기가 받아서 시작합니다`); watchRequest(); }
+  catch (e) { toast('요청 실패: ' + e.message); }
+}
+function watchRequest() { if (S._reqUnsub) return; S._reqUnsub = db.collection('prd_jobs').doc('request').onSnapshot((d) => { S.req = d.exists ? d.data() : null; const el = document.getElementById('req_state'); if (el) el.innerHTML = reqStateHtml(); }, () => {}); }
+function reqStateHtml() { const r = S.req; if (!r || !r.job) return ''; const ago = Math.round((Date.now() - (r.atMs || 0)) / 60000); return r.handled ? `<small class="hint">최근 요청 '${esc(r.label || r.job)}' → <b>${esc(r.handledBy || '')}</b>가 받음 (${ago}분 전)</small>` : ago > 30 ? `<small class="hint" style="color:var(--amber)">'${esc(r.label || r.job)}' 요청을 받은 PC가 없습니다 — 알라딘 화면(주문조회 또는 상품 조회)이 열린 PC가 있어야 합니다</small>` : `<small class="hint">'${esc(r.label || r.job)}' 요청 보냄 · 받을 PC 기다리는 중 (${ago}분)</small>`; }
+const reqBtns = (list) => `<div class="reqbar">${list.map(([j, l]) => `<button class="btn ghost sm" data-req="${j}" data-reql="${esc(l)}">⇢ ${esc(l)} 요청</button>`).join('')}<div id="req_state">${reqStateHtml()}</div></div>`;
+document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-req]'); if (!b) return; ev.preventDefault(); requestJob(b.dataset.req, b.dataset.reql); });
+
+/* ══════════ 분류별 추이: 매출 · 판매 권수 · 등록 · 매입 ══════════
+ * 분류 = 알라딘 분류 둘째 단계 (예: 소설/시/희곡, 인문학). 도서 정보를 받은 책만 분류가 있고, 나머지는 '분류 모름'. */
+function bookCatOf(bookId, depth) { const b = bookId ? S.pbooks.get(bookId) : null; const p = b && b.categories && b.categories[0] && b.categories[0].path; if (!p || !p.length) return '분류 모름'; return depth === 3 ? (p[2] || p[1] || p[0]) : (p[1] || p[0]); }
+function catSeries() {
+  return memo('catSeries', () => {
+    const months = [...Array(12).keys()].map((i) => { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - (11 - i)); return dstr(d).slice(0, 7); });
+    const C = new Map(); const get = (c) => C.get(c) || C.set(c, { cat: c, sales: {}, qty: {}, reg: {}, pur: {} }).get(c);
+    const add = (c, f, m, v) => { if (!months.includes(m)) return; const x = get(c); x[f][m] = (x[f][m] || 0) + v; };
+    for (const o of S.orders.values()) { if (o.kind !== 'sale') continue; const m = String(o.orderedAt || '').slice(0, 7); for (const it of o.items || []) { if (it.lineStatus !== 'normal') continue; const l = it.aladinUsedCode ? S.plist.get('aladin_' + it.aladinUsedCode) : null; const c = bookCatOf(l && l.bookId); add(c, 'sales', m, (it.price || 0) * (it.qty || 1)); add(c, 'qty', m, it.qty || 1); } }
+    for (const l of S.plist.values()) add(bookCatOf(l.bookId), 'reg', String(l.registeredAt || '').slice(0, 7), l.qty || 1);
+    for (const mm of S.pmatch.values()) { if (!mm.purDate || mm.cost == null || !['new', 'backlog'].includes(mm.kind)) continue; const l = S.plist.get(mm.id); add(bookCatOf(l && l.bookId), 'pur', String(mm.purDate).slice(0, 7), (mm.cost || 0) * (mm.qty || 1)); }
+    return { months, cats: [...C.values()] };
+  });
+}
+const sum12 = (o) => Object.values(o).reduce((a, b) => a + b, 0);
+function sparkMini(vals, color) { const mx = Math.max(1, ...vals); return `<svg width="84" height="22" style="vertical-align:middle">${vals.map((v, i) => `<rect x="${i * 7}" y="${21 - (v / mx) * 20}" width="5" height="${(v / mx) * 20}" fill="${color || '#2F5D50'}"/>`).join('')}</svg>`; }
+function catTrendSection() {
+  if (!S.ordersLoaded || !S.prodLoaded) return '<div class="wload"></div>';
+  const { months, cats } = catSeries(); const f = S.catMetric || 'sales'; const lbl = { sales: '매출', qty: '판매 권수', reg: '등록 권수', pur: '매입 (상품↔매입 연결된 것)' }[f];
+  const rows = cats.map((c) => ({ c, tot: sum12(c[f]), vals: months.map((m) => c[f][m] || 0) })).filter((x) => x.tot > 0).sort((a, b) => b.tot - a.tot); const all = rows.reduce((a, x) => a + x.tot, 0);
+  const fmt = (v) => (f === 'sales' || f === 'pur' ? won(Math.round(v)) : num(v) + '권');
+  return `<div class="ptabs" style="margin:0 0 8px">${[['sales', '매출'], ['qty', '판매 권수'], ['reg', '등록'], ['pur', '매입']].map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-catm="${k}">${l}</button>`).join('')}</div>
+    <div class="hint" style="margin:0 0 6px">최근 12개월 ${lbl} · 막대는 월별 (왼쪽이 오래된 달) · 분류를 누르면 자세히</div>
+    <div class="list">${fold('cat_' + f, rows.lzmap((x) => `<button class="item" data-cat="${esc(x.c.cat)}"><span><b>${esc(x.c.cat)}</b> <small>${Math.round((x.tot / Math.max(1, all)) * 100)}%</small><br>${sparkMini(x.vals, f === 'pur' ? '#A8661B' : f === 'reg' ? '#4B4E9E' : '#2F5D50')}</span><span style="text-align:right">${fmt(x.tot)}<br><small>최근 3개월 ${fmt(x.vals.slice(-3).reduce((a, b) => a + b, 0))}</small></span></button>`), 12) || '<div class="empty">없음</div>'}</div>
+    ${f === 'pur' ? '<p class="hint">매입은 상품 ↔ 매입 연결로 제목이 맞은 책만 분류됩니다 (매입 탭에서 연결 실행).</p>' : ''}<p class="hint">분류는 도서 정보를 받은 책에만 있습니다. '분류 모름'이 크면 상품 수집기의 도서 정보·시장 지표 갱신을 더 돌려 주세요.</p>`;
+}
+function openCatPage(cat) {
+  const { months, cats } = catSeries(); const c = cats.find((x) => x.cat === cat) || { sales: {}, qty: {}, reg: {}, pur: {} };
+  const inCat = (l) => bookCatOf(l && l.bookId) === cat; const act = [...S.plist.values()].filter((l) => l.active && inCat(l));
+  const sold30 = (() => { let q = 0; const r = rangeOf('r30', 0); for (const o of S.orders.values()) { if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue; for (const it of o.items || []) if (it.lineStatus === 'normal' && inCat(S.plist.get('aladin_' + it.aladinUsedCode))) q += it.qty || 1; } return q; })();
+  const invQ = act.reduce((a, l) => a + (l.qty || 1), 0); const invV = act.reduce((a, l) => a + (l.price || 0) * (l.qty || 1), 0);
+  const s12 = sum12(c.sales), q12 = sum12(c.qty);
+  const mx = Math.max(1, ...months.map((m) => Math.max(c.sales[m] || 0, (c.pur[m] || 0))));
+  const chart = `<svg width="100%" viewBox="0 0 360 120" style="display:block">${months.map((m, i) => `<g><title>${m} 매출 ${won(c.sales[m] || 0)} · 매입 ${won(c.pur[m] || 0)} · 등록 ${num(c.reg[m] || 0)}권</title><rect x="${i * 30 + 3}" y="${100 - ((c.sales[m] || 0) / mx) * 95}" width="12" height="${((c.sales[m] || 0) / mx) * 95}" fill="#2F5D50"/><rect x="${i * 30 + 16}" y="${100 - ((c.pur[m] || 0) / mx) * 95}" width="10" height="${((c.pur[m] || 0) / mx) * 95}" fill="#A8661B"/><text x="${i * 30 + 15}" y="114" font-size="9" text-anchor="middle" fill="#5B6B66">${+m.slice(5)}월</text></g>`).join('')}</svg>`;
+  const subs = new Map(); for (const o of S.orders.values()) { if (o.kind !== 'sale') continue; for (const it of o.items || []) { if (it.lineStatus !== 'normal') continue; const l = S.plist.get('aladin_' + it.aladinUsedCode); if (!inCat(l)) continue; const k = bookCatOf(l.bookId, 3); subs.set(k, (subs.get(k) || 0) + (it.price || 0) * (it.qty || 1)); } }
+  const top = [...bookStats(rangeOf('r365', 0)).values()].filter((b) => inCat(S.plist.get('aladin_' + b.code))).sort((a, b) => b.amt - a.amt);
+  const age = ageAgg((l) => inCat(l));
+  const sh = $('#sheet'); S.detail = { cat }; history.pushState({ cat: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
+  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">${esc(cat)}</div></div>
+    <div class="card"><div class="mgrid">${mcell(won(s12), '최근 12개월 매출', `${num(q12)}권 · 권당 ${won(Math.round(s12 / Math.max(1, q12)))}`)}${mcell(num(invQ) + '권', '지금 재고', `판매가 ${won(invV)}`)}${mcell(invQ + sold30 ? Math.round((sold30 / (invQ + sold30)) * 1000) / 10 + '%' : '-', '30일 판매율', `30일 ${num(sold30)}권`)}${mcell(num(sum12(c.reg)) + '권', '12개월 등록', `매입(연결된 것) ${won(sum12(c.pur))}`)}</div>
+    ${chart}<div class="hint" style="margin:2px 0 0"><span style="color:#2F5D50">■</span> 매출 <span style="color:#A8661B">■</span> 매입 (막대에 손을 대면 등록 권수도)</div></div>
+    ${age ? `<div class="card"><h3>구매자 연령대 (알라딘 구매자 분포, 이 분류의 판매 책 기준)</h3>${ageBars(age)}</div>` : ''}
+    <div class="card"><h3>세부 분류별 매출 (전체 기간)</h3><div class="list">${[...subs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k, v]) => `<div class="item"><span>${esc(k)}</span><b>${won(v)}</b></div>`).join('') || '<div class="empty">없음</div>'}</div></div>
+    <div class="card"><h3>최근 1년 매출 상위 책</h3><div class="list">${top.slice(0, 20).map((b) => `<div class="item"><span>${esc(b.title)} ${usedBtn(S.plist.get('aladin_' + b.code), { title: b.title })}<br><small>${num(b.qty)}권</small></span><b>${won(b.amt)}</b></div>`).join('') || '<div class="empty">없음</div>'}</div></div>
+    <div class="card"><h3>오래된 재고 (이 분류)</h3><div class="list">${act.sort((a, b) => String(a.registeredAt || '').localeCompare(String(b.registeredAt || ''))).slice(0, 15).map((l) => `<div class="item"><span>${esc(l.title || '')} ${usedBtn(l)}<br><small>${num(ageDays(l.registeredAt))}일</small></span><b>${won(l.price)}</b></div>`).join('') || '<div class="empty">없음</div>'}</div></div>`;
+  $('#back').onclick = () => history.back();
+}
+
+/* ══════════ 구매 연령대 (알라딘 새상품 페이지의 구매자 분포) ══════════
+ * 우리 판매 책마다 알라딘 전체 구매자의 성별·연령 비율이 있음 → 우리가 판 권수만큼 가중해 '우리 고객층'을 추정 */
+const AGES = ['10대', '20대', '30대', '40대', '50대', '60대'];
+function ageAgg(filter) {
+  if (!S.pmLoaded) { loadMetrics(); return null; }
+  let w = 0; const F = Object.fromEntries(AGES.map((a) => [a, 0])), M = Object.fromEntries(AGES.map((a) => [a, 0])); let books = 0;
+  const qty = new Map(); for (const o of S.orders.values()) { if (o.kind !== 'sale') continue; for (const it of o.items || []) { if (it.lineStatus !== 'normal') continue; const l = S.plist.get('aladin_' + it.aladinUsedCode); if (!l || !l.bookId || (filter && !filter(l))) continue; qty.set(l.bookId, (qty.get(l.bookId) || 0) + (it.qty || 1)); } }
+  for (const [bid, q] of qty) { const d = (S.pmetrics.get(bid) || {}).buyerDist; if (!d || !d.female) continue; books++; w += q; AGES.forEach((a) => { F[a] += (d.female[a] || 0) * q; M[a] += (d.male[a] || 0) * q; }); }
+  if (!w) return null; AGES.forEach((a) => { F[a] /= w; M[a] /= w; }); return { F, M, books, w, cover: books / Math.max(1, qty.size) };
+}
+function ageBars(A) { const mx = Math.max(1, ...AGES.map((a) => Math.max(A.F[a], A.M[a])));
+  return `<div class="agebars">${AGES.map((a) => `<div class="ab"><span>${a}</span><i class="f" style="width:${(A.F[a] / mx) * 100}%"></i><b>${A.F[a].toFixed(1)}%</b><i class="m" style="width:${(A.M[a] / mx) * 100}%"></i><b>${A.M[a].toFixed(1)}%</b></div>`).join('')}</div><div class="hint" style="margin:4px 0 0"><span style="color:#C2577A">■</span> 여성 <span style="color:#3F7FD1">■</span> 남성 · 분포를 아는 책 ${num(A.books)}종 (판매 책의 ${Math.round(A.cover * 100)}%) · 판매 권수로 가중</div>`; }
+function ageSection() {
+  const A = ageAgg(null); if (!A) return `<div class="hint" style="margin:0">수집기의 '구매자 분포·함께 산 책'이 돌면 나타납니다 (하루 정해진 권수씩, 판매 중인 책부터).</div>`;
+  const tot = AGES.map((a) => [a, A.F[a] + A.M[a]]).sort((x, y) => y[1] - x[1]); const [g1, g2] = tot; const fem = AGES.reduce((s, a) => s + A.F[a], 0);
+  // 연령대별 우리가 잘 파는 분류 (판매 권수 × 그 연령 비율)
+  const byAge = Object.fromEntries(AGES.map((a) => [a, new Map()]));
+  for (const o of S.orders.values()) { if (o.kind !== 'sale') continue; for (const it of o.items || []) { if (it.lineStatus !== 'normal') continue; const l = S.plist.get('aladin_' + it.aladinUsedCode); const d = l && l.bookId && (S.pmetrics.get(l.bookId) || {}).buyerDist; if (!d || !d.female) continue; const c = bookCatOf(l.bookId); AGES.forEach((a) => byAge[a].set(c, (byAge[a].get(c) || 0) + ((d.female[a] || 0) + (d.male[a] || 0)) * (it.qty || 1) / 100)); } }
+  return `${ageBars(A)}<p class="hint" style="margin:8px 0 0"><b>우리 책을 사는 층:</b> ${g1[0]} ${g1[1].toFixed(0)}%, ${g2[0]} ${g2[1].toFixed(0)}% · 여성 ${fem.toFixed(0)}%. 이 층이 많이 사는 분류를 매입·등록 우선순위로 두면 회전이 빨라집니다.</p>
+    <div style="overflow-x:auto"><table class="tbl"><tr><th>연령대</th><th>그 연령이 많이 산 우리 분류 (추정)</th></tr>${AGES.map((a) => `<tr><td>${a}</td><td>${[...byAge[a].entries()].sort((x, y) => y[1] - x[1]).slice(0, 3).map(([c, v]) => `${esc(c)} <small>${num(Math.round(v))}권</small>`).join(' · ') || '-'}</td></tr>`).join('')}</table></div>`;
+}
+
 /* ══════════ 매입 기록: 웹앱에서 바로 입력 (구글 시트 대신) ══════════
  * 한 건 = 한 번의 거래(한 판매자에게서 산 묶음). 품목마다 내용·권수·개별 가격, 나중에 예상 판매가가 자동으로 붙음.
  * 저장: pur_entries (source: 'app') — 시트에서 가져온 거래와 같은 곳이라 권당 매입가·월별 매입 등 모든 통계에 바로 반영.
@@ -3133,7 +3224,7 @@ firebase.auth().onAuthStateChanged(async (u) => {
   await Promise.all([custP, ordP]); renderMain();
   setTimeout(() => loadPur().catch(() => {}), 1500); loadReturns();
   setTimeout(async () => { if (!isAdminDevice()) return; const at = +localStorage.getItem('rn-match-at') || 0; if (Date.now() - at < 20 * 3600e3) return; loadProducts(); for (let i = 0; i < 60 && !(S.prodLoaded && S.pur.fresh); i++) await new Promise((r) => setTimeout(r, 5000)); if (S.prodLoaded && S.pur.fresh) matchNow(true).catch(() => {}); }, 20000);
-  loadMatches();
+  loadMatches(); watchRequest();
   try { await syncSellers(); if (S.tab === 'sellers' || S.tab === 'home') renderMain(); } catch (e) {}
   try { await syncReviews(); reviewStats(); if (S.tab === 'search' || S.tab === 'home') renderMain(); } catch (e) {}
   setSync();
