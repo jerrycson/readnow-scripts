@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.3.0';
+  const VERSION = '0.4.0';
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -408,6 +408,32 @@
     return out;
   }
 
+  // '지금 이 상품을 클릭한 분들이 다음 상품도 클릭' (알라딘 지니 추천, 늘 나오지는 않음)
+  function parseClickRelation(d) {
+    let box = d.getElementById ? (d.getElementById('w_jiny_recentContent') || d.getElementById('w_jiny_recentRecomList') || d.getElementById('swiper_nowClick')) : null;
+    if (!box) { const h = [...d.querySelectorAll('div,p,span,h3,h4')].find((e) => /지금 이 상품을 클릭한/.test(e.textContent || '') && (e.textContent || '').length < 200); box = h ? h.closest('div[id]') || h.parentElement : null; } if (!box) return [];
+    const out = []; const seen = new Set();
+    box.querySelectorAll('a[href*="wproduct.aspx?ItemId="]').forEach((a) => { const id = ((a.getAttribute('href') || '').match(/ItemId=(\d+)/) || [])[1]; if (!id || seen.has(id)) return;
+      const img = a.querySelector('img'); const t = txt(a) || (img && (img.getAttribute('alt') || '').trim()) || ''; if (!t) { seen.add(id); out.push({ title: null, aladinItemId: id }); return; } seen.add(id); out.push({ title: t, aladinItemId: id }); });
+    // 제목이 비어 있으면 같은 번호의 다른 링크에서 찾음
+    out.forEach((x) => { if (x.title) return; const a = [...box.querySelectorAll(`a[href*="ItemId=${x.aladinItemId}"]`)].map((y) => txt(y) || ((y.querySelector('img') || {}).alt || '')).find(Boolean); x.title = a || null; });
+    return out;
+  }
+  // 알라딘에 중고팔기 내역 (내 계정): 목록 → 접수번호들, 상세 → 신청 정보 + 권별 매입 결과
+  function parseC2BList(d) { const ids = new Set(); d.querySelectorAll('a[href*="c2bsalesno="]').forEach((a) => { const m = (a.getAttribute('href') || '').match(/c2bsalesno=(\d+)/i); if (m) ids.add(m[1]); });
+    const pages = [...(d.documentElement ? d.documentElement.innerHTML : '').matchAll(/Page_Set\('(\d+)'\)/g)].map((m) => +m[1]); return { orders: [...ids], lastPage: pages.length ? Math.max(...pages) : 1 }; }
+  function parseC2BDetail(d) {
+    const head = {}; d.querySelectorAll('th').forEach((th) => { const k = txt(th); const td = th.nextElementSibling; if (k && td && td.tagName === 'TD' && k.length < 20 && !(k in head)) head[k] = txt(td); });
+    const items = [];
+    d.querySelectorAll('tr').forEach((tr) => { const c = [...tr.children].map(txt); if (c.length < 5 || !/^\d+$/.test(c[0])) return; const idc = c.find((x) => /^(97[89]\d{10})/.test(x.replace(/\s/g, '')) || /^K\d+/.test(x)) || ''; const ids = idc.replace(/\s/g, ''); if (!ids) return;
+      const i13 = (ids.match(/^(97[89]\d{10})/) || [])[1] || null; const i10 = i13 ? (ids.slice(13).match(/^[\dX]{10}/) || [])[0] || null : null;
+      const buy = c[c.length - 1] || ''; const req = c[c.length - 2] || ''; const num = (t) => { const m = String(t).match(/([\d,]+)\s*원/); return m ? +m[1].replace(/,/g, '') : null; };
+      const result = /매입\s*불가|불가|반송|폐기/.test(buy) ? 'discard' : num(buy) != null ? 'bought' : null;
+      items.push({ no: +c[0], title: c[1], isbn13: i13, isbn10: i10, code: (ids.match(/K\d+/) || [])[0] || null, req, reqPrice: num(req), reqGrade: (req.match(/^([^\d]+)/) || [])[1] || null, buy: buy || null, buyPrice: num(buy), result }); });
+    const tot = (head['판매금액'] || '').match(/총\s*(\d+)\s*권,\s*([\d,]+)\s*원/);
+    return { head, items, date: head['신청일'] || null, type: head['판매타입'] || null, shipDate: head['발송일'] || null, doneDate: head['매입완료일'] || null, status: head['상태'] || head['신청 상태'] || head['신청상태'] || null, settle: head['정산방법'] || null, discardPolicy: head['매입불가처리'] || null, buyer: head['매입처'] || null, reqN: tot ? +tot[1] : items.length, reqAmount: tot ? +tot[2].replace(/,/g, '') : null };
+  }
+
   // ---------- 상품 유형: 책 / 영상(DVD·블루레이·VHS) / 음반(CD·LP) / 기타 상품 ----------
   // 근거 순서: 제목의 매체 표시 → 알라딘 분류 → 코드 종류 → ISBN → 기타 상품 낱말 → 나머지는 책(세트 등)으로 추정
   const MEDIA = { book: '책', video: 'DVD·블루레이·VHS', music: 'CD·LP', other: '기타 상품' };
@@ -465,7 +491,7 @@
     VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
-    parseBuyerDist, parseRelationBuy, diff, rankTransitions, mediaType, MEDIA,
+    parseBuyerDist, parseRelationBuy, parseClickRelation, parseC2BList, parseC2BDetail, diff, rankTransitions, mediaType, MEDIA,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
 })(typeof window !== 'undefined' ? window : this);
