@@ -253,12 +253,12 @@ main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px)) !important}
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.36.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.37.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.36.0';
+const APP_VER = '0.37.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -2170,7 +2170,7 @@ function purStatsNow() {
   const bookAmt = use.filter((e) => ['book', 'mixed', 'aladinAdd'].includes(catOf(e))).reduce((a, e) => a + e.amt, 0);
   const etcAmt = use.filter((e) => catOf(e) === 'etc').reduce((a, e) => a + e.amt, 0);
   const hdAmt = P.heonot.reduce((a, e) => a + e.amt, 0) + use.filter((e) => catOf(e) === 'hd').reduce((a, e) => a + (e.amt || 0), 0); const msAmt = st.msTotalCost || 0;
-  const addAladin = P.aOrders.filter((o) => aoCounts(o)).reduce((a, o) => a + (o.amount || 0), 0);
+  const addAladin = P.aOrders.filter((o) => aoCounts(o)).reduce((a, o) => a + (o.amount || 0), 0) + aoLinked().cost; // 알라딘 구매 풀: 상품과 연결된 책의 매입가만 확정
   const total = bookAmt + hdAmt + msAmt + addAladin;
   // 권수: 판매완료(주문 기록) + 지금 등록(활성 상품 수량). 상품코드 끝으로 김미소(_ms)·헌옷도라이(_hd) 구분
   const grp = (sku) => (/_ms$/i.test(sku || '') ? 'ms' : /_hd$/i.test(sku || '') ? 'hd' : 'gen');
@@ -2214,12 +2214,12 @@ function renderPurchase(m) {
   const unmatched = P.aOrders.filter((o) => !o.matched && !aoAuto(o));
   const G = X.G; const g3 = (k, l, amt, u) => `<tr class="clk" data-drill="grp_${k}"><td>${l} ›</td><td>${num(G[k].active)}</td><td>${num(G[k].sold)}</td><td>${num(G[k].active + G[k].sold)}</td><td>${amt != null ? won(amt) : '-'}</td><td>${u != null ? won(Math.round(u)) : '-'}</td><td>${won(G[k].soldAmt)}</td></tr>`;
   m.innerHTML = `${P.fromCache ? `<div class="hint" style="margin:0 0 6px">기기에 저장된 매입 기록 표시 중 (${new Date(P.fromCache).toLocaleString('ko-KR')}) · 최신으로 받는 중…</div>` : ''}${(P.errors || []).length ? `<div class="hint" style="margin:0 0 6px;color:var(--red)">일부를 못 읽음: ${esc(P.errors.map((x) => x.name + ' (' + x.msg + ')').join(', '))}</div>` : ''}
-  ${reqBtns([['aladinBuy', '알라딘 구매 내역 수집 (2025-01-01~)'], ['buyback', '알라딘 팔기 내역 수집']])}
+  ${reqBtns([['aladinBuy', '알라딘 구매 내역 수집 (전체)'], ['buyback', '알라딘 팔기 내역 수집']])}
   <div style="display:flex;gap:6px;margin:0 0 8px"><button class="btn" id="pu_filetop" style="flex:1">📂 파일 넣기 (구글 시트 · 알라딘 구매목록 · 폐기 목록)</button></div><input type="file" id="pu_file2" accept=".xlsx" multiple style="display:none">
   ${unregCard()}
   ${sec('pu_disp', '폐기 (정왕 등) · 폐기 매출', () => dispSection(), false)}
   ${sec('pu_bb', '알라딘에 판 것 (중고팔기) · 정산 매출', () => bbSection(), false)}
-  ${sec('pu_aopool', '알라딘 구매 풀 (수집한 주문 · 2025-01-01~)', () => aladinPoolSection(), true)}
+  ${sec('pu_aopool', '알라딘 구매 풀 (알라딘 전체 구매 · 연결된 책만 매입 확정)', () => aladinPoolSection(), true)}
   ${sec('pu_match', '상품 ↔ 매입 연결 (새 매입 · 기존 미등록분 · 빈 매입가)', () => purMatchSection(), true)}
   ${sec('pu_app', '매입 기록 (웹앱에 바로 입력)', purAppSection(), true)}
   ${sec('pu_main', '핵심: 권당 매입가', `<div class="mgrid">
@@ -2665,6 +2665,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.37.0': ['알라딘 구매 풀 = 알라딘에서 산 전체 주문. 총 매입가에는 상품과 연결된 책의 매입가만 (근거가 생길 때마다 확정)', '문의 답변 여부: 알라딘 목록의 답변여부 칸을 그대로 보여주고, 답 안 함으로 볼 값은 직접 고름 (추정 판단 없앰)'],
   '0.36.0': ['알라딘 구매 풀: 수집한 주문(2025-01-01~)의 책을 상품과 연결, 미연결은 풀에 남김', '시트·엑셀의 알라딘 기록 정리 도구 (백업 파일 내려받은 뒤 지움)', '판매자 평가 추이: 전체는 연도별 막대', '구매자 분포 다시 모으는 주기 기본 14일'],
   '0.35.0': ['유효 최저가 고침: 판매자 점수(불량)로 빼던 것을 없애고, 터무니없는 가격(예: 35만 원 매물)만 뺌', '분류 직접 정하기: 상품 상세의 분류, 분류 모름 목록에서 줄마다 고르기'],
   '0.34.0': ['알라딘 구매 내역(수집)을 매입 품목으로: 검색·연결·통계에 포함, 시트 마지막 날 이후 주문은 자동으로 매입에 넣음', '여러 상품에 나눠 연결 (시리즈·묶음: 금액 ÷ 원하는 수)', '거래 전체를 여러 상품에 나눠 연결', '답한 문의가 답 안 함으로 보이던 문제 (수집기 1.4.0과 함께)', '유효·첫 번째 최저가: 말이 안 되는 기준(정가보다 훨씬 비싼 값 등) 제외, 기준 상세 표시', "분류별 추이 '분류 모름' 원인 안내"],
@@ -2828,14 +2829,14 @@ function unregModel() {
     const genQ = book.filter((e) => !isAl(e)).reduce((a, e) => a + (splitPur(e).totalQ || 0), 0);
     const sheetAlQ = book.filter(isAl).reduce((a, e) => a + (splitPur(e).totalQ || 0), 0);
     const alList = (S.pur.aItems || []).filter((x) => (x.d || '') >= BIZ_START && x.k !== 'Gift' && x.k !== '증정품').length;
-    const aoQ = (S.pur.aOrders || []).filter((o) => aoCounts(o)).reduce((a, o) => a + (o.qty || 1), 0); const alQ = sheetAlQ + aoQ; // 시트의 알라딘 줄은 정리 도구로 지움 → 수집한 주문이 근거 // 알라딘 구매목록(~3/13)과 시트의 알라딘 거래 중 큰 쪽 (겹침 방지)
+    const aoQ = aoLinked().n; const alQ = sheetAlQ + aoQ; // 알라딘 구매 풀은 연결된 책만 매입 권수로 확정 (미연결은 풀에 보류) // 알라딘 구매목록(~3/13)과 시트의 알라딘 거래 중 큰 쪽 (겹침 방지)
     const ms = [+(st.msBooksMin ?? 20000), +(st.msBooksMax ?? 30000)]; if (st.msBooksFinal) { ms[0] = ms[1] = +st.msBooksFinal; }
     const hd = [+(st.hdBooksMin ?? 1500), +(st.hdBooksMax ?? 2500)]; if (st.hdBooksFinal) { hd[0] = hd[1] = +st.hdBooksFinal; }
     const exQ = X.G.ex.active + X.G.ex.sold; // 기존보유: 등록·판매와 맞춰진 것만
     const spreadGen = st.genSpread ?? 0.1;
     const inn = [
       { k: '일반 매입 (시트·웹앱, 알라딘 외)', lo: genQ * (1 - spreadGen), hi: genQ * (1 + spreadGen), conf: false, why: `품목 나눔 ${num(genQ)}권 ±${Math.round(spreadGen * 100)}%` },
-      { k: '알라딘 구매 (2025-01-01 이후)', lo: alQ, hi: alQ, conf: true, why: `수집한 주문 ${num(aoQ)}권${sheetAlQ ? ` + 시트에 남은 알라딘 ${num(sheetAlQ)}권 (정리 전)` : ''}` },
+      { k: '알라딘 구매 (풀에서 상품과 연결된 책)', lo: alQ, hi: alQ, conf: true, why: `연결 확정 ${num(aoQ)}권${sheetAlQ ? ` + 시트에 남은 알라딘 ${num(sheetAlQ)}권 (정리 전)` : ''} · 미연결은 풀에 보류` },
       { k: '김미소책방 인수', lo: ms[0], hi: ms[1], conf: !!st.msBooksFinal, why: st.msBooksFinal ? '확정' : '추정 범위 (설정)' },
       { k: '헌옷도라이', lo: hd[0], hi: hd[1], conf: !!st.hdBooksFinal, why: st.hdBooksFinal ? '확정' : '추정 범위 (설정)' },
       { k: '기존보유 (2025 이전, 맞춰진 것만)', lo: exQ, hi: exQ, conf: true, why: '등록·판매와 제목이 맞은 책' },
@@ -3214,12 +3215,17 @@ document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-
 /* ══════════ 고객 탭: 북스킹 문의 · 평가 모아 보기 ══════════ */
 function renderQnaBox(m) {
   if (!Array.isArray(S.qnaAll)) { loadQnaAll(); m.insertAdjacentHTML('beforeend', '<div class="empty">문의 기록을 받는 중</div>'); setTimeout(() => S.tab === 'search' && renderMain(), 1500); return; }
-  const f = S.qnaF || 'open'; const all = S.qnaAll.slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
-  const rows = all.filter((q) => (f === 'open' ? !qAnswered(q) : f === 'done' ? qAnswered(q) : true));
-  m.insertAdjacentHTML('beforeend', `<div class="ptabs" style="margin:0 0 8px">${[['open', `답 안 함 ${all.filter((q) => !qAnswered(q)).length}`], ['done', '답함'], ['all', `전체 ${all.length}`]].map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-qf="${k}">${l}</button>`).join('')}</div>
-    <div class="list">${rows.slice(0, S.limit).map((q) => `<div class="item"><div class="l1" style="justify-content:space-between"><span>${qAnswered(q) ? '' : '<span class="tag cau">답 안 함</span> '}<b>${esc(q.title || '(상품 없음)')}</b></span><small>${esc(d10(q.createdAt))}</small></div><div class="l2"><span>${esc(String(q.body || '').slice(0, 160))}</span></div>${q.answer ? `<div class="l2"><span style="color:var(--cloth)">↳ ${esc(String(q.answer).slice(0, 120))}</span></div>` : q.answered ? '<div class="l2"><span style="color:var(--cloth)">↳ 답함 (알라딘 표시)</span></div>' : ''}${q.customerId ? `<div class="l2"><button class="linkbtn" data-cid="${esc(q.customerId)}">${esc((S.customers.get(q.customerId) || {}).displayName || '고객 보기')} ›</button></div>` : ''}</div>`).join('') || '<div class="empty">없음</div>'}${rows.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>
-    <p class="hint">알라딘 묻고 답하기에서 수집기가 모은 문의입니다. 답은 알라딘 화면에서 달고, 다음 수집 때 '답함'으로 바뀝니다.</p>`);
+  const all = S.qnaAll.slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  const sts = [...new Set(all.map((q) => q.answerStatus).filter((x) => x != null))]; const cnt = (v) => all.filter((q) => q.answerStatus === v).length;
+  const f = S.qnaF || (qOpenSt().length ? 'open' : 'all');
+  const rows = all.filter((q) => (f === 'all' ? true : f === 'open' ? !qAnswered(q) : f.startsWith('st:') ? q.answerStatus === f.slice(3) : f === 'nost' ? q.answerStatus == null : true));
+  m.insertAdjacentHTML('beforeend', `${sts.length && !qOpenSt().length ? `<div class="card" style="border-left:4px solid var(--amber)"><b>알라딘 '답변여부' 칸에 나오는 값입니다. 이 중 '답 안 한 상태'를 골라 주세요</b> (한 번만, 모든 기기에 적용)<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${sts.map((v) => `<button class="btn ghost sm" data-qopen="${esc(v)}">${esc(v)} (${cnt(v)}건)</button>`).join('')}</div></div>` : ''}
+    <div class="ptabs" style="margin:0 0 8px;flex-wrap:wrap">${qOpenSt().length ? `<button class="${f === 'open' ? 'on' : ''}" data-qf="open">답 안 함 ${all.filter((q) => !qAnswered(q)).length}</button>` : ''}${sts.map((v) => `<button class="${f === 'st:' + v ? 'on' : ''}" data-qf="st:${esc(v)}">${esc(v)} ${cnt(v)}</button>`).join('')}${all.some((q) => q.answerStatus == null) ? `<button class="${f === 'nost' ? 'on' : ''}" data-qf="nost">답변여부 미수집 ${all.filter((q) => q.answerStatus == null).length}</button>` : ''}<button class="${f === 'all' ? 'on' : ''}" data-qf="all">전체 ${all.length}</button></div>
+    <div class="list">${rows.slice(0, S.limit).map((q) => `<div class="item"><div class="l1" style="justify-content:space-between"><span>${q.answerStatus != null ? `<span class="tag ${qOpenSt().includes(q.answerStatus) ? 'cau' : 'pl'}">${esc(q.answerStatus)}</span> ` : '<span class="tag">답변여부 미수집</span> '}<b>${esc(q.title || '(상품 없음)')}</b></span><small>${esc(d10(q.createdAt))}</small></div><div class="l2"><span>${esc(String(q.body || '').slice(0, 160))}</span></div>${q.answer ? `<div class="l2"><span style="color:var(--cloth)">↳ ${esc(String(q.answer).slice(0, 120))}</span></div>` : ''}${q.customerId ? `<div class="l2"><button class="linkbtn" data-cid="${esc(q.customerId)}">${esc((S.customers.get(q.customerId) || {}).displayName || '고객 보기')} ›</button></div>` : ''}</div>`).join('') || '<div class="empty">없음</div>'}${rows.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>
+    <p class="hint">답변여부는 알라딘 묻고 답하기 목록의 '답변여부' 칸을 수집기가 그대로 옮긴 값입니다 (수집기 1.5.1부터). ${qOpenSt().length ? `'답 안 함'으로 보는 값: ${esc(qOpenSt().join(', '))} · <button class="linkbtn" data-qopen-reset="1">다시 고르기</button>` : ''}</p>`);
   m.querySelectorAll('[data-qf]').forEach((b) => (b.onclick = () => { S.qnaF = b.dataset.qf; S.limit = 30; renderMain(); }));
+  m.querySelectorAll('[data-qopen]').forEach((b) => (b.onclick = async () => { const v = [...qOpenSt(), b.dataset.qopen]; S.app.qnaOpenStatus = v; try { await db.collection('app_settings').doc('main').set({ qnaOpenStatus: v }, { merge: true }); toast(`'${b.dataset.qopen}'을(를) 답 안 함으로 봅니다`); } catch (e) { toast('저장 실패: ' + e.message); } S.qnaF = 'open'; S._bizAt = 0; bump(); renderMain(); }));
+  const rs = m.querySelector('[data-qopen-reset]'); if (rs) rs.onclick = async () => { S.app.qnaOpenStatus = []; await db.collection('app_settings').doc('main').set({ qnaOpenStatus: [] }, { merge: true }); S.qnaF = 'all'; bump(); renderMain(); };
 }
 function renderRevBox(m) {
   if (!S.reviewsLoaded) { m.insertAdjacentHTML('beforeend', '<div class="empty">평가 기록을 받는 중</div>'); return; }
@@ -3280,15 +3286,17 @@ function openManual() {
 /* ══════════ 알라딘 주문(수집기) → 매입 품목 ══════════
  * 시트·웹앱 기록과 맞춰진 주문은 그 기록이 있으니 빼고, 맞춰지지 않은 주문만 매입 품목으로 씀 (검색·연결·통계).
  * 시트 마지막 날짜 이후의 알라딘 주문은 자동으로 매입에 넣음(시트를 더 쓰지 않으므로). 그 전 주문은 '확인 후 넣기'. */
-const qAnswered = (q) => !!(q.answer || q.answered || (q.answerStatus && !/미답|대기|없음|미완/.test(q.answerStatus)));
+const qOpenSt = () => (S.app.qnaOpenStatus || []); // 알라딘 '답변여부' 값 중 '답 안 함'으로 볼 값 — 사람이 고름
+const qAnswered = (q) => (q.answerStatus != null && qOpenSt().length ? !qOpenSt().includes(q.answerStatus) : !!q.answer);
 function sheetCutoff() { return memo('sheetCut', () => S.pur.entries.filter((e) => e.source !== 'app' && !e.deleted && (e.date || e.dateGuess)).reduce((a, e) => ((e.date || e.dateGuess) > a ? (e.date || e.dateGuess) : a), '')); }
-const aoAuto = (o) => !o.matched && o.date && o.date >= AO_FROM && !aoCanceled(o); // 알라딘 구매는 수집한 주문이 근거 → 2025-01-01 이후 주문은 모두 매입에 넣음
-const aoCounts = (o) => o.added || aoAuto(o);
+const aoAuto = () => false; // 주문 금액을 통째로 넣지 않음 — 상품과 연결된 책만 매입으로 확정
+const aoCounts = (o) => !!o.added; // 예전 '매입에 넣기'를 직접 누른 주문만 (새로는 쓰지 않음)
+function aoLinked() { return memo('aoLinked', () => { let cost = 0, n = 0; for (const m of S.pmatch.values()) { if (m.kind === 'none' || !m.itemKey || !String(m.itemKey).startsWith('ao_')) continue; cost += +m.cost || 0; n += m.qty || 1; } return { cost, n }; }); }
 function aladinOrderEntries() {
   return memo('aoEntries', () => (S.pur.aOrders || []).filter((o) => !o.matched && o.amount && String(o.date || '') >= AO_FROM && !aoCanceled(o)).map((o) => {
     const lines = Array.isArray(o.lines) && o.lines.length ? o.lines : (o.items || []).map((t) => ({ title: t, qty: 1, price: null }));
     const txt = lines.length ? lines.map((x) => x.title).join('\n') : String(o.summary || '').replace(/\s*외\s*$/, '');
-    return { _search: `${o.summary || ''} ${(o.items || []).join(' ')} ${o.detailText || ''}`, id: 'ao_' + o.ono, source: 'aladin_order', sheet: aoCounts(o) ? '알라딘 주문 (수집 · 매입에 넣음)' : '알라딘 주문 (수집 · 확인 전)', date: o.date, amt: o.amount, plat: '알라딘', who: o.note || '', txt, qty: [o.qty || lines.length || 1], cat: 'book', _ao: o, _lines: lines };
+    return { _search: `${o.summary || ''} ${(o.items || []).join(' ')} ${o.detailText || ''}`, id: 'ao_' + o.ono, source: 'aladin_order', sheet: aoCounts(o) ? '알라딘 주문 (수집)' : '알라딘 주문 (수집)', date: o.date, amt: o.amount, plat: '알라딘', who: o.note || '', txt, qty: [o.qty || lines.length || 1], cat: 'book', _ao: o, _lines: lines };
   }));
 }
 function splitAladinOrder(e) {
@@ -3336,7 +3344,7 @@ function openUnknownCats() {
 /* ══════════ 알라딘 구매 풀 ══════════
  * 알라딘에서 산 책은 '수집기가 모은 주문 페이지'만 근거로 씀 (구글 시트의 알라딘 줄·알라딘 구매목록 엑셀은 정리 도구로 지움).
  * 풀 = 2025-01-01 이후 알라딘 주문의 책 한 권 한 권 (취소·반품 주문 제외). 등록·판매 상품과 맞춰 연결하고, 남은 것은 '미연결'로 풀에 남음(등록·매출에 안 셈). */
-const AO_FROM = '2025-01-01';
+const AO_FROM = ''; // 기간 제한 없음: 알라딘에서 산 전체 주문
 const aoCanceled = (o) => /취소|반품|환불/.test(`${o.note || ''} ${o.status || ''}`);
 function aladinPool() {
   return memo('aoPool', () => { const linked = new Map(); for (const m of S.pmatch.values()) if (m.itemKey && m.kind !== 'none') (linked.get(m.itemKey) || linked.set(m.itemKey, []).get(m.itemKey)).push(m.id);
@@ -3344,13 +3352,13 @@ function aladinPool() {
 }
 function aladinPoolSection() {
   const P = aladinPool(); const q = P.reduce((a, r) => a + (r.qty || 1), 0); const lk = P.filter((r) => r.links.length); const lq = lk.reduce((a, r) => a + (r.qty || 1), 0); const ords = new Set(P.map((r) => r.e.id)).size; const noLines = (S.pur.aOrders || []).filter((o) => o.date >= AO_FROM && !aoCanceled(o) && !(o.lines && o.lines.length)).length;
-  return `<div class="mgrid">${mcell(num(ords) + '건', '알라딘 주문 (2025-01-01~)', `${num(q)}권 · ${won(P.reduce((a, r) => a + (r.est || 0) * (r.qty || 1), 0))}`, '', 'aopool')}${mcell(num(lq) + '권', '등록·판매 상품과 연결됨', `${num(lk.length)}줄`, '', 'aopool')}${mcell(num(q - lq) + '권', '미연결 (풀에 남음)', '등록·매출에 안 셈', '', 'aopool')}${mcell(num(noLines) + '건', '책 목록 아직 없음', '수집기가 주문 상세를 받으면 채워짐')}</div>
+  return `<div class="mgrid">${mcell(num(ords) + '건', '알라딘 주문 (전체)', `${num(q)}권 · ${won(P.reduce((a, r) => a + (r.est || 0) * (r.qty || 1), 0))}`, '', 'aopool')}${mcell(num(lq) + '권', '상품과 연결 = 매입 확정', `총 매입가에 ${won(aoLinked().cost)}`, '', 'aopool')}${mcell(num(q - lq) + '권', '미연결 (풀에 보류)', '근거가 생기면 연결 → 그때 매입 확정', '', 'aopool')}${mcell(num(noLines) + '건', '책 목록 아직 없음', '수집기가 주문 상세를 받으면 채워짐')}</div>
     <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn" id="ao_open" style="flex:1">풀 전체 보기 · 검색</button><button class="btn ghost" id="ao_match">지금 연결 실행</button><button class="btn ghost" id="ao_clean">시트·엑셀의 알라딘 기록 정리</button></div>
-    <p class="hint">알라딘 구매는 이제 <b>수집기가 모은 주문 페이지</b>만 근거로 씁니다 (상품 탭 '알라딘 구매 내역' 버튼: 2025-01-01부터, 이미 받은 주문은 건너뜀). 주문 금액은 총 매입가에 들어갑니다.</p>`;
+    <p class="hint">풀 = 수집기가 모은 <b>알라딘 전체 구매</b>의 책 한 권 한 권. <b>등록·판매 상품과 연결된 책만</b> 그 매입가가 총 매입가에 확정되고, 미연결은 풀에 보류됩니다 (허위로 잡지 않음). 연결할 때마다 매입이 확정되어 늘어납니다.</p>`;
 }
 function openAladinPool() {
   const rows = aladinPool().slice().sort((a, b) => String(b.e.date || '').localeCompare(String(a.e.date || '')));
-  openListView({ title: '알라딘 구매 풀 (2025-01-01~)', rows, placeholder: '제목·주문번호 검색', note: '수집기가 모은 알라딘 주문의 책 한 권 한 권입니다. 연결된 것은 등록·판매 상품의 매입가가 되고, 미연결은 풀에 남습니다 (등록·매출에 안 셈). 줄마다 직접 연결할 수 있습니다.',
+  openListView({ title: '알라딘 구매 풀 (전체)', rows, placeholder: '제목·주문번호 검색', note: '알라딘에서 산 전체 주문의 책 한 권 한 권입니다. 연결된 책만 매입으로 확정되어 총 매입가에 들어가고, 미연결은 풀에 보류됩니다. 줄마다 직접 연결할 수 있습니다 (여러 상품에 나눠 연결도 가능).',
     filters: [['all', '전체'], ['un', '미연결'], ['ln', '연결됨']], filterFn: (r, f) => f === 'all' || (f === 'un' ? !r.links.length : !!r.links.length), text: (r) => `${r.title} ${r.e._ao ? r.e._ao.ono : ''}`,
     sum: (rs) => `${num(rs.length)}줄 · ${num(rs.reduce((a, r) => a + (r.qty || 1), 0))}권 · ${won(rs.reduce((a, r) => a + (r.est || 0) * (r.qty || 1), 0))}`,
     row: (r) => `<div class="item"><div class="l1" style="justify-content:space-between"><span><b>${esc(r.title)}</b>${r.grade ? ` <span class="tag pl">${esc(r.grade)}</span>` : ''}${r.qty > 1 ? ` <span class="tag">${r.qty}권</span>` : ''} ${usedBtn(null, { title: r.title })}</span><b>${won(r.est || 0)}</b></div>
