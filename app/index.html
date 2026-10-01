@@ -253,12 +253,12 @@ main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px)) !important}
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.39.1 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.40.1 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.39.1';
+const APP_VER = '0.40.1';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -741,7 +741,7 @@ function renderReviews(m) {
   const rv = $('#rvrev', m); if (rv) rv.onclick = () => { S.rvRev = !S.rvRev; renderMain(); };
   const rm = $('#rvmore', m); if (rm) rm.onclick = () => { S.rvFeed = (S.rvFeed || 15) + 30; renderMain(); };
 }
-function custSubNav() { const n = S.reviewsLoaded ? reviewStats().byC.size : null; return `<div class="seg" style="margin-bottom:10px"><button class="${S.custView !== 'reviews' ? 'on' : ''}" data-cv="list">고객 목록</button><button class="${S.custView === 'reviews' ? 'on' : ''}" data-cv="reviews">평가 참여${n != null ? ' ' + n.toLocaleString() : ''}</button><button class="${S.custView === 'revlist' ? 'on' : ''}" data-cv="revlist">평가 모음</button><button class="${S.custView === 'qna' ? 'on' : ''}" data-cv="qna">문의 모음${Array.isArray(S.qnaAll) ? ' ' + S.qnaAll.filter((q) => !qAnswered(q)).length : ''}</button></div>`; }
+function custSubNav() { const n = S.reviewsLoaded ? reviewStats().byC.size : null; return `<div class="seg" style="margin-bottom:10px"><button class="${S.custView !== 'reviews' ? 'on' : ''}" data-cv="list">고객 목록</button><button class="${S.custView === 'reviews' ? 'on' : ''}" data-cv="reviews">평가 참여${n != null ? ' ' + n.toLocaleString() : ''}</button><button class="${S.custView === 'revlist' ? 'on' : ''}" data-cv="revlist">평가 모음</button><button class="${S.custView === 'qna' ? 'on' : ''}" data-cv="qna">문의 모음${Array.isArray(S.qnaAll) && S.qnaAll.some(qNeeds) ? ' ' + S.qnaAll.filter(qNeeds).length : ''}</button></div>`; }
 function bindCustSubNav(m) { m.querySelectorAll('[data-cv]').forEach((b) => (b.onclick = () => { S.custView = b.dataset.cv; S.limit = 30; renderMain(); window.scrollTo(0, 0); })); }
 /* ── 알라딘 수집: 웹앱에서 상태를 보고, PC에서는 버튼(또는 자동)으로 수집 창을 엶 ──
  *  웹앱은 보안상 알라딘 샵매니저에 직접 접근할 수 없어서, 수집기(Tampermonkey)가 설치된 PC의 알라딘 창을 대신 열어 시작시킴 */
@@ -2358,7 +2358,7 @@ function bizCalc() {
   // 고객·평판
   const d7 = kst(new Date(Date.now() - 7 * 864e5)), d30 = kst(new Date(Date.now() - 30 * 864e5));
   const rv = [...S.reviews.values()]; const rv30 = rv.filter((r) => String(r.createdAt || '').slice(0, 10) >= d30); const bad7 = rv.filter((r) => r._r === 'bad' && String(r.createdAt || '').slice(0, 10) >= d7);
-  const unanswered = Array.isArray(S.qnaAll) ? S.qnaAll.filter((q) => !qAnswered(q) && String(q.createdAt || '').slice(0, 10) >= d30) : null;
+  const unanswered = Array.isArray(S.qnaAll) ? S.qnaAll.filter((q) => qNeeds(q) && String(q.createdAt || '').slice(0, 10) >= d30) : null;
   // 출고: 주문 후 2일 넘게 출고 기록이 없는 주문 (최근 30일)
   const late = [...S.orders.values()].filter((o) => o.kind === 'sale' && !o.shippedAt && o.orderedAt && String(o.orderedAt).slice(0, 10) >= d30 && (Date.now() - new Date(String(o.orderedAt).slice(0, 16))) / 864e5 > AL.lateDays && (o.items || []).some((it) => it.lineStatus === 'normal'));
   // 시장 위치: 최근 6개월 평가 수 (판매량 대리 지표)
@@ -2494,7 +2494,7 @@ Object.assign(WIDGETS, {
   custRep: ['평판 요약', () => { const n = wNeed(); if (n) return n; if (!Array.isArray(S.qnaAll)) loadQnaAll(); const B = bizCalc(); const ra = agg(rangeOf('r30', 0)); return `<div class="mgrid">${mcell(pctv(ra.rq, ra.qty + ra.rq) + '%', '반품률 (30일)', '엑셀 반품 자료 일부 빠짐')}${mcell(num(B.bad7.length) + '건', '불만족 (7일)', '')}${mcell(B.unanswered ? num(B.unanswered.length) + '건' : '…', '미답변 문의', '최근 30일')}${mcell(num(B.late.length) + '건', '출고 기록 없음', '2일 넘음')}</div>`; }, '고객·평판', '평점·응답·출고'],
   badRecent: ['최근 보통·불만족 평가', () => { const a = [...S.reviews.values()].filter((r) => r._r && r._r !== 'good').sort((x, y) => String(y.createdAt || '').localeCompare(String(x.createdAt || ''))).slice(0, 5);
     return wl(a.map((r) => `<li${r.customerId ? ` data-cid="${esc(r.customerId)}"` : ''}><span>${r._r === 'bad' ? '🔴' : '🟡'} ${esc(r.title || '')}${r.body ? ` <small>“${esc(String(r.body).slice(0, 30))}”</small>` : ''}</span><b>${esc(d10(r.createdAt))}</b></li>`)); }, '고객·평판', '바로 연락할 고객'],
-  unanswered: ['답하지 않은 문의', () => { if (!Array.isArray(S.qnaAll)) { loadQnaAll(); return wWait('문의 기록을 받는 중'); } const a = S.qnaAll.filter((q) => !qAnswered(q)).sort((x, y) => String(y.createdAt || '').localeCompare(String(x.createdAt || ''))).slice(0, 5);
+  unanswered: ['답하지 않은 문의', () => { if (!Array.isArray(S.qnaAll)) { loadQnaAll(); return wWait('문의 기록을 받는 중'); } const a = S.qnaAll.filter(qNeeds).sort((x, y) => String(y.createdAt || '').localeCompare(String(x.createdAt || ''))).slice(0, 5);
     return wl(a.map((q) => `<li${q.customerId ? ` data-cid="${esc(q.customerId)}"` : ''}><span>${esc(q.title || '(상품 없음)')} <small>${esc(String(q.body || '').slice(0, 30))}</small></span><b>${esc(d10(q.createdAt))}</b></li>`)); }, '고객·평판', '답이 늦으면 구매를 포기함'],
   lateOrders: ['출고 기록 없는 주문', () => { const n = wNeed(); if (n) return n; const B = bizCalc(); return wl(B.late.slice(0, 6).map((o) => `<li data-cid="${esc(o.customerId || '')}"><span>${esc(o.orderNo || '')} <small>${esc(((S.customers.get(o.customerId) || {}).displayName) || '')}</small></span><b>${esc(d10(o.orderedAt))}</b></li>`)) + `<div class="hint" style="margin:0">주문 후 2일 넘게 출고 기록이 없음 (수집이 늦었을 수도)</div>`; }, '고객·평판', '출고 지연 확인'],
   dormantVip: ['휴면 위험 단골', () => { const now = Date.now(); const AL = S.app.alerts || APPSET_DEFAULT.alerts; const a = [...S.customers.values()].filter((c) => (c.saleOrderCount || 0) >= AL.dormantMinOrders && c.lastOrderAt).map((c) => [c, (now - new Date(String(c.lastOrderAt).slice(0, 10))) / 864e5]).filter(([, d]) => d >= AL.dormantFrom && d < AL.dormantTo).sort((x, y) => (y[0].salesAmount || 0) - (x[0].salesAmount || 0)).slice(0, 5);
@@ -2667,6 +2667,8 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.40.1': ["문의 답변여부 'Yes'를 '답변 완료'로 표시"],
+  '0.40.0': ["문의 모음의 '답 안 함' 탭과 고르기 없앰 — 샵매니저 답변여부 값만 그대로", "홈 '답하지 않은 문의'는 답변여부가 Yes도 취소된 질문도 아닌 문의만 (지금은 0건)"],
   '0.39.1': ['문의 모음: 어느 수집기 버전이 올린 기록인지 표시 (답변여부 확인용)'],
   '0.39.0': ['설정 ⑨: 동시에 알라딘 작업할 PC 수, 인터넷 주소가 다른 PC(따로 동시에 돎)'],
   '0.38.0': ["설정 ⑨: '모두 일괄 수집' 단계에 판매완료 정보·이미지·전체 재검토·판매자 평가 전체 추가"],
@@ -3223,15 +3225,12 @@ function renderQnaBox(m) {
   if (!Array.isArray(S.qnaAll)) { loadQnaAll(); m.insertAdjacentHTML('beforeend', '<div class="empty">문의 기록을 받는 중</div>'); setTimeout(() => S.tab === 'search' && renderMain(), 1500); return; }
   const all = S.qnaAll.slice().sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
   const sts = [...new Set(all.map((q) => q.answerStatus).filter((x) => x != null))]; const cnt = (v) => all.filter((q) => q.answerStatus === v).length;
-  const f = S.qnaF || (qOpenSt().length ? 'open' : 'all');
-  const rows = all.filter((q) => (f === 'all' ? true : f === 'open' ? !qAnswered(q) : f.startsWith('st:') ? q.answerStatus === f.slice(3) : f === 'nost' ? q.answerStatus == null : true));
-  m.insertAdjacentHTML('beforeend', `${sts.length && !qOpenSt().length ? `<div class="card" style="border-left:4px solid var(--amber)"><b>샵매니저 '답변여부' 칸에 나오는 값입니다. 이 중 '답 안 한 상태'를 골라 주세요</b> (한 번만, 모든 기기에 적용)<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${sts.map((v) => `<button class="btn ghost sm" data-qopen="${esc(v)}">${esc(v)} (${cnt(v)}건)</button>`).join('')}</div></div>` : ''}
-    <div class="ptabs" style="margin:0 0 8px;flex-wrap:wrap">${qOpenSt().length ? `<button class="${f === 'open' ? 'on' : ''}" data-qf="open">답 안 함 ${all.filter((q) => !qAnswered(q)).length}</button>` : ''}${sts.map((v) => `<button class="${f === 'st:' + v ? 'on' : ''}" data-qf="st:${esc(v)}">${esc(v)} ${cnt(v)}</button>`).join('')}${all.some((q) => q.answerStatus == null) ? `<button class="${f === 'nost' ? 'on' : ''}" data-qf="nost">답변여부 미수집 ${all.filter((q) => q.answerStatus == null).length}</button>` : ''}<button class="${f === 'all' ? 'on' : ''}" data-qf="all">전체 ${all.length}</button></div>
-    <div class="list">${rows.slice(0, S.limit).map((q) => `<div class="item"><div class="l1" style="justify-content:space-between"><span>${q.answerStatus != null ? `<span class="tag ${qOpenSt().includes(q.answerStatus) ? 'cau' : 'pl'}">${esc(q.answerStatus)}</span> ` : '<span class="tag">답변여부 미수집</span> '}<b>${esc(q.title || '(상품 없음)')}</b></span><small>${esc(d10(q.createdAt))}</small></div><div class="l2"><span>${esc(String(q.body || '').slice(0, 160))}</span></div>${q.answer ? `<div class="l2"><span style="color:var(--cloth)">↳ ${esc(String(q.answer).slice(0, 120))}</span></div>` : ''}${q.customerId ? `<div class="l2"><button class="linkbtn" data-cid="${esc(q.customerId)}">${esc((S.customers.get(q.customerId) || {}).displayName || '고객 보기')} ›</button></div>` : ''}</div>`).join('') || '<div class="empty">없음</div>'}${rows.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>
-    <p class="hint">답변여부는 샵매니저 묻고 답하기 목록의 '답변여부' 칸(행의 5번째 칸) 값을 수집기가 그대로 옮긴 것입니다 (수집기 1.5.4부터). ${(() => { const v = {}; all.forEach((q) => { const k = q.uploaderVersion || '알 수 없음'; v[k] = (v[k] || 0) + 1; }); return `<br>올린 수집기 버전: ${Object.entries(v).map(([k, n]) => `${esc(k)} ${n}건`).join(', ')}`; })()} ${qOpenSt().length ? `'답 안 함'으로 보는 값: ${esc(qOpenSt().join(', '))} · <button class="linkbtn" data-qopen-reset="1">다시 고르기</button>` : ''}</p>`);
+  const f = S.qnaF && S.qnaF !== 'open' ? S.qnaF : 'all';
+  const rows = all.filter((q) => (f === 'all' ? true : f.startsWith('st:') ? q.answerStatus === f.slice(3) : f === 'nost' ? q.answerStatus == null : true));
+  m.insertAdjacentHTML('beforeend', `<div class="ptabs" style="margin:0 0 8px;flex-wrap:wrap"><button class="${f === 'all' ? 'on' : ''}" data-qf="all">전체 ${all.length}</button>${sts.map((v) => `<button class="${f === 'st:' + v ? 'on' : ''}" data-qf="st:${esc(v)}">${esc(qLabel(v))} ${cnt(v)}</button>`).join('')}${all.some((q) => q.answerStatus == null) ? `<button class="${f === 'nost' ? 'on' : ''}" data-qf="nost">답변여부 미수집 ${all.filter((q) => q.answerStatus == null).length}</button>` : ''}</div>
+    <div class="list">${rows.slice(0, S.limit).map((q) => `<div class="item"><div class="l1" style="justify-content:space-between"><span>${q.answerStatus != null ? `<span class="tag ${qNeeds(q) ? 'cau' : 'pl'}">${esc(qLabel(q.answerStatus))}</span> ` : '<span class="tag">답변여부 미수집</span> '}<b>${esc(q.title || '(상품 없음)')}</b></span><small>${esc(d10(q.createdAt))}</small></div><div class="l2"><span>${esc(String(q.body || '').slice(0, 160))}</span></div>${q.answer ? `<div class="l2"><span style="color:var(--cloth)">↳ ${esc(String(q.answer).slice(0, 120))}</span></div>` : ''}${q.customerId ? `<div class="l2"><button class="linkbtn" data-cid="${esc(q.customerId)}">${esc((S.customers.get(q.customerId) || {}).displayName || '고객 보기')} ›</button></div>` : ''}</div>`).join('') || '<div class="empty">없음</div>'}${rows.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>
+    <p class="hint">답변여부는 샵매니저 묻고 답하기 목록의 '답변여부' 칸 값 그대로입니다. 홈의 '답하지 않은 문의'는 답변 완료도 취소된 질문도 아닌 문의만 셉니다.</p>`);
   m.querySelectorAll('[data-qf]').forEach((b) => (b.onclick = () => { S.qnaF = b.dataset.qf; S.limit = 30; renderMain(); }));
-  m.querySelectorAll('[data-qopen]').forEach((b) => (b.onclick = async () => { const v = [...qOpenSt(), b.dataset.qopen]; S.app.qnaOpenStatus = v; try { await db.collection('app_settings').doc('main').set({ qnaOpenStatus: v }, { merge: true }); toast(`'${b.dataset.qopen}'을(를) 답 안 함으로 봅니다`); } catch (e) { toast('저장 실패: ' + e.message); } S.qnaF = 'open'; S._bizAt = 0; bump(); renderMain(); }));
-  const rs = m.querySelector('[data-qopen-reset]'); if (rs) rs.onclick = async () => { S.app.qnaOpenStatus = []; await db.collection('app_settings').doc('main').set({ qnaOpenStatus: [] }, { merge: true }); S.qnaF = 'all'; bump(); renderMain(); };
 }
 function renderRevBox(m) {
   if (!S.reviewsLoaded) { m.insertAdjacentHTML('beforeend', '<div class="empty">평가 기록을 받는 중</div>'); return; }
@@ -3249,7 +3248,7 @@ function openAlert(key) {
     text: (o) => `${o.orderNo} ${(S.customers.get(o.customerId) || {}).displayName || ''}`, sum: (rs) => `${num(rs.length)}건`,
     row: (o) => `<button class="item" data-cid="${esc(o.customerId || '')}"><span><b>${esc(o.orderNo || '')}</b> ${esc((S.customers.get(o.customerId) || {}).displayName || '')}<br><small>${esc((o.items || []).map((it) => it.title).join(', ').slice(0, 80))}</small></span><span>${esc(dt16(o.orderedAt))}</span></button>`,
     bind: (sh) => sh.querySelectorAll('[data-cid]').forEach((b) => (b.onclick = () => { history.back(); setTimeout(() => b.dataset.cid && openCustomer(b.dataset.cid), 60); })) });
-  if (key === 'qna') return go('search', () => { S.q = ''; const q = $('#q'); if (q) q.value = ''; S.custView = 'qna'; S.qnaF = 'open'; });
+  if (key === 'qna') return go('search', () => { S.q = ''; const q = $('#q'); if (q) q.value = ''; S.custView = 'qna'; S.qnaF = 'all'; });
   if (key === 'bad') return go('search', () => { S.q = ''; const q = $('#q'); if (q) q.value = ''; S.custView = 'revlist'; S.revF = 'bad'; });
   if (key === 'under') return openListView({ title: '알라딘 매입가보다 싸게 파는 상품', rows: B.underBuy, placeholder: '제목 검색', text: (x) => x.l.title, sum: (rs) => `${num(rs.length)}종`,
     row: ({ l, bb }) => `<button class="item" data-pid="${esc(l.id)}"><span>${esc(l.title)} <span class="tag pl">${esc(l.grade || '')}</span> ${usedBtn(l)}</span><span>판매가 ${won(l.price)} · 매입가 ${won(bb)}</span></button>`, bind: (sh) => sh.querySelectorAll('[data-pid]').forEach((b) => (b.onclick = (ev) => { if (ev.target.closest('[data-open]')) return; history.back(); setTimeout(() => openProduct(b.dataset.pid), 60); })) });
@@ -3292,8 +3291,10 @@ function openManual() {
 /* ══════════ 알라딘 주문(수집기) → 매입 품목 ══════════
  * 시트·웹앱 기록과 맞춰진 주문은 그 기록이 있으니 빼고, 맞춰지지 않은 주문만 매입 품목으로 씀 (검색·연결·통계).
  * 시트 마지막 날짜 이후의 알라딘 주문은 자동으로 매입에 넣음(시트를 더 쓰지 않으므로). 그 전 주문은 '확인 후 넣기'. */
-const qOpenSt = () => (S.app.qnaOpenStatus || []); // 알라딘 '답변여부' 값 중 '답 안 함'으로 볼 값 — 사람이 고름
-const qAnswered = (q) => (q.answerStatus != null && qOpenSt().length ? !qOpenSt().includes(q.answerStatus) : !!q.answer);
+const Q_DONE = ['Yes', '취소된 질문']; // 샵매니저 묻고 답하기 '답변여부'에 실제로 나오는 값: Yes = 답함, 취소된 질문 = 고객이 취소
+const qLabel = (v) => (v === 'Yes' ? '답변 완료' : v); // 샵매니저의 'Yes' = 답변 완료
+const qNeeds = (q) => q.answerStatus != null && !Q_DONE.includes(q.answerStatus); // 그 밖의 값이 나올 때만 '답할 문의'
+const qAnswered = (q) => !qNeeds(q);
 function sheetCutoff() { return memo('sheetCut', () => S.pur.entries.filter((e) => e.source !== 'app' && !e.deleted && (e.date || e.dateGuess)).reduce((a, e) => ((e.date || e.dateGuess) > a ? (e.date || e.dateGuess) : a), '')); }
 const aoAuto = () => false; // 주문 금액을 통째로 넣지 않음 — 상품과 연결된 책만 매입으로 확정
 const aoCounts = (o) => !!o.added; // 예전 '매입에 넣기'를 직접 누른 주문만 (새로는 쓰지 않음)
