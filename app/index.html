@@ -253,12 +253,12 @@ main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px)) !important}
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.39.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.39.1 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.39.0';
+const APP_VER = '0.39.1';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -2667,6 +2667,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.39.1': ['문의 모음: 어느 수집기 버전이 올린 기록인지 표시 (답변여부 확인용)'],
   '0.39.0': ['설정 ⑨: 동시에 알라딘 작업할 PC 수, 인터넷 주소가 다른 PC(따로 동시에 돎)'],
   '0.38.0': ["설정 ⑨: '모두 일괄 수집' 단계에 판매완료 정보·이미지·전체 재검토·판매자 평가 전체 추가"],
   '0.37.1': ['문의 답변여부: 샵매니저 묻고 답하기 목록의 값(예: Yes, 취소된 질문)을 그대로 표시'],
@@ -3227,7 +3228,7 @@ function renderQnaBox(m) {
   m.insertAdjacentHTML('beforeend', `${sts.length && !qOpenSt().length ? `<div class="card" style="border-left:4px solid var(--amber)"><b>샵매니저 '답변여부' 칸에 나오는 값입니다. 이 중 '답 안 한 상태'를 골라 주세요</b> (한 번만, 모든 기기에 적용)<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${sts.map((v) => `<button class="btn ghost sm" data-qopen="${esc(v)}">${esc(v)} (${cnt(v)}건)</button>`).join('')}</div></div>` : ''}
     <div class="ptabs" style="margin:0 0 8px;flex-wrap:wrap">${qOpenSt().length ? `<button class="${f === 'open' ? 'on' : ''}" data-qf="open">답 안 함 ${all.filter((q) => !qAnswered(q)).length}</button>` : ''}${sts.map((v) => `<button class="${f === 'st:' + v ? 'on' : ''}" data-qf="st:${esc(v)}">${esc(v)} ${cnt(v)}</button>`).join('')}${all.some((q) => q.answerStatus == null) ? `<button class="${f === 'nost' ? 'on' : ''}" data-qf="nost">답변여부 미수집 ${all.filter((q) => q.answerStatus == null).length}</button>` : ''}<button class="${f === 'all' ? 'on' : ''}" data-qf="all">전체 ${all.length}</button></div>
     <div class="list">${rows.slice(0, S.limit).map((q) => `<div class="item"><div class="l1" style="justify-content:space-between"><span>${q.answerStatus != null ? `<span class="tag ${qOpenSt().includes(q.answerStatus) ? 'cau' : 'pl'}">${esc(q.answerStatus)}</span> ` : '<span class="tag">답변여부 미수집</span> '}<b>${esc(q.title || '(상품 없음)')}</b></span><small>${esc(d10(q.createdAt))}</small></div><div class="l2"><span>${esc(String(q.body || '').slice(0, 160))}</span></div>${q.answer ? `<div class="l2"><span style="color:var(--cloth)">↳ ${esc(String(q.answer).slice(0, 120))}</span></div>` : ''}${q.customerId ? `<div class="l2"><button class="linkbtn" data-cid="${esc(q.customerId)}">${esc((S.customers.get(q.customerId) || {}).displayName || '고객 보기')} ›</button></div>` : ''}</div>`).join('') || '<div class="empty">없음</div>'}${rows.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>
-    <p class="hint">답변여부는 샵매니저 묻고 답하기 목록의 '답변여부' 칸(행의 5번째 칸) 값을 수집기가 그대로 옮긴 것입니다 (수집기 1.5.4부터). ${qOpenSt().length ? `'답 안 함'으로 보는 값: ${esc(qOpenSt().join(', '))} · <button class="linkbtn" data-qopen-reset="1">다시 고르기</button>` : ''}</p>`);
+    <p class="hint">답변여부는 샵매니저 묻고 답하기 목록의 '답변여부' 칸(행의 5번째 칸) 값을 수집기가 그대로 옮긴 것입니다 (수집기 1.5.4부터). ${(() => { const v = {}; all.forEach((q) => { const k = q.uploaderVersion || '알 수 없음'; v[k] = (v[k] || 0) + 1; }); return `<br>올린 수집기 버전: ${Object.entries(v).map(([k, n]) => `${esc(k)} ${n}건`).join(', ')}`; })()} ${qOpenSt().length ? `'답 안 함'으로 보는 값: ${esc(qOpenSt().join(', '))} · <button class="linkbtn" data-qopen-reset="1">다시 고르기</button>` : ''}</p>`);
   m.querySelectorAll('[data-qf]').forEach((b) => (b.onclick = () => { S.qnaF = b.dataset.qf; S.limit = 30; renderMain(); }));
   m.querySelectorAll('[data-qopen]').forEach((b) => (b.onclick = async () => { const v = [...qOpenSt(), b.dataset.qopen]; S.app.qnaOpenStatus = v; try { await db.collection('app_settings').doc('main').set({ qnaOpenStatus: v }, { merge: true }); toast(`'${b.dataset.qopen}'을(를) 답 안 함으로 봅니다`); } catch (e) { toast('저장 실패: ' + e.message); } S.qnaF = 'open'; S._bizAt = 0; bump(); renderMain(); }));
   const rs = m.querySelector('[data-qopen-reset]'); if (rs) rs.onclick = async () => { S.app.qnaOpenStatus = []; await db.collection('app_settings').doc('main').set({ qnaOpenStatus: [] }, { merge: true }); S.qnaF = 'all'; bump(); renderMain(); };
