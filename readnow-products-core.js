@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.6.0';
+  const VERSION = '0.7.0';
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -412,7 +412,36 @@
   function parseSearchResults(d) {
     return [...d.querySelectorAll('.ss_book_box')].map((b) => { const a = b.querySelector('a.bo3'); const img = b.querySelector('img.front_cover') || b.querySelector('img');
       const id = b.getAttribute('itemid') || (((a && a.getAttribute('href')) || '').match(/ItemId=(\d+)/) || [])[1] || null; const src = img ? img.getAttribute('src') || '' : '';
-      return { itemId: id, title: a ? txt(a) : '', href: a ? a.getAttribute('href') : null, img: /^\/\//.test(src) ? 'https:' + src : src, used: /\[중고\]/.test(b.textContent || '') }; }).filter((x) => x.itemId && x.title);
+      return { itemId: id, title: a ? txt(a) : '', href: a ? a.getAttribute('href') : null, img: /^\/\//.test(src) ? 'https:' + src : src, used: /\[중고\]/.test(b.textContent || ''), channels: searchChannels(b) }; }).filter((x) => x.itemId && x.title);
+  }
+  // 검색 결과 상품 칸 아래 작은 표(table.usedtable02): 머리 줄 = 알라딘 중고 / ○○점(알라딘 매장) / 판매자 중고 (개수), 아래 줄 = 각 최저가 ('-' = 없음)
+  function searchChannels(box) {
+    const t = box.querySelector('table.usedtable02'); if (!t) return null; const rows = [...t.querySelectorAll('tr')]; if (rows.length < 2) return null;
+    const hd = [...rows[0].children], vl = [...rows[1].children]; const out = {};
+    hd.forEach((th, i) => { const name = txt(th).replace(/\(\d+\)/, '').trim(); const cnt = (txt(th).match(/\((\d+)\)/) || [])[1]; const v = vl[i] ? toInt((txt(vl[i]).match(/[\d,]+\s*원/) || [])[0]) : null;
+      const key = /판매자/.test(name) ? 'seller' : /알라딘 중고/.test(name) ? 'aladin' : 'store'; out[key] = { name, min: v, count: cnt != null ? +cnt : v != null ? null : 0 }; });
+    return out;
+  }
+  // ── 새상품 페이지가 없는 상품의 시세 (0.7.0) ──
+  // 재료: 같은 책을 상품명으로 검색한 결과 중 이름 일치 90% 이상인 상품들의 채널별 최저가 (우리 상품 자신은 뺌, 우리 가게 다른 상품은 '우리'로 표시)
+  // 방법: ① 비교 가격 = 상품마다 판매자 중고 최저가 + 알라딘 중고·매장 최저가(있으면) ② 튀는 값 제거: 중앙값의 3배 초과·1/3 미만 빼기
+  //       ③ 시세 = 남은 값의 중앙값, 범위 = 25~75% 구간, 유효 최저 = 남은 값 중 가장 낮은 값 ④ 신뢰도 = 가격 수와 흩어짐(변동계수)
+  function marketNoBook(cands, opts) {
+    const o = opts || {}; const th = o.match ?? 0.9; const ours = String(o.ourSeller || '996008');
+    const pts = [];
+    (cands || []).forEach((c) => { if ((c.cov ?? 1) < th || (o.selfItemId && String(c.itemId) === String(o.selfItemId))) return; const ch = c.channels || {}; const mine = c.ours || new RegExp('scm' + ours).test(c.img || '');
+      if (ch.seller && ch.seller.min) pts.push({ v: ch.seller.min, ch: 'seller', itemId: c.itemId, title: c.title, ours: mine, count: ch.seller.count });
+      if (ch.aladin && ch.aladin.min) pts.push({ v: ch.aladin.min, ch: 'aladin', itemId: c.itemId, title: c.title, ours: false });
+      if (ch.store && ch.store.min) pts.push({ v: ch.store.min, ch: 'store', itemId: c.itemId, title: c.title, ours: false }); });
+    const others = pts.filter((x) => !x.ours); const vals = others.map((x) => x.v).sort((a, b) => a - b);
+    const q = (arr, p) => { if (!arr.length) return null; const i = (arr.length - 1) * p; const lo = Math.floor(i), hi = Math.ceil(i); return Math.round(arr[lo] + (arr[hi] - arr[lo]) * (i - lo)); };
+    const med0 = q(vals, 0.5); // 튀는 값: 중앙값의 3배 넘거나 1/3 밑 (앞서 정한 '터무니없는 가격'과 같은 기준). 가격 수가 적을 때도 정상 값을 잘못 빼지 않음
+    const keep = vals.filter((v) => med0 == null || (v <= med0 * 3 && v >= med0 / 3)); const out = vals.filter((v) => !keep.includes(v));
+    const med = q(keep, 0.5), p25 = q(keep, 0.25), p75 = q(keep, 0.75); const mean = keep.length ? keep.reduce((a, b) => a + b, 0) / keep.length : null;
+    const sd = keep.length > 1 ? Math.sqrt(keep.reduce((a, b) => a + (b - mean) ** 2, 0) / (keep.length - 1)) : null; const cv = sd && mean ? sd / mean : null;
+    const conf = !keep.length ? '없음' : keep.length === 1 ? '낮음' : keep.length >= 4 && cv != null && cv < 0.35 ? '높음' : '보통';
+    const our = o.ourPrice != null ? +o.ourPrice : null; const pos = our != null && keep.length ? keep.filter((v) => v < our).length / keep.length : null;
+    return { n: keep.length, nAll: vals.length, outliers: out, median: med, p25, p75, low: keep.length ? keep[0] : null, high: keep.length ? keep[keep.length - 1] : null, cv, conf, ourPrice: our, ourVsMedian: our != null && med ? our / med - 1 : null, cheaperShare: pos, points: pts };
   }
   // 검색어가 상품 이름에 얼마나 들어 있나 (0~1): 띄어쓰기·문장부호를 빼고, 검색어 글자가 순서대로 몇 개 들어 있는지(최장 공통 부분수열) ÷ 검색어 길이
   function nameCoverage(query, title) { const n = (x) => String(x || '').toLowerCase().replace(/[\s\p{P}\p{S}]/gu, ''); const q = n(query), t = n(title); if (!q.length) return 0;
@@ -511,7 +540,7 @@
     VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
-    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, nameCoverage, parseC2BList, parseC2BDetail, diff, rankTransitions, mediaType, MEDIA,
+    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, searchChannels, marketNoBook, nameCoverage, parseC2BList, parseC2BDetail, diff, rankTransitions, mediaType, MEDIA,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
 })(typeof window !== 'undefined' ? window : this);
