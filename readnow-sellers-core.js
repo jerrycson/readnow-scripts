@@ -7,7 +7,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '1.2.0';
+  const VERSION = '1.3.0';
   const DEFAULT_THRESHOLDS = { modelHigh: 70, modelLow: 35, gainHigh: 60, gainLow: 40 };
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const numK = (v) => { if (v == null || v === '') return null; if (typeof v === 'number') return Number.isFinite(v) ? v : null; const n = parseFloat(String(v).replace(/[^\d.\-]/g, '')); return Number.isFinite(n) ? n : null; };
@@ -112,24 +112,43 @@
     return st;
   }
   // 판매자 숍 첫 화면의 '구매 만족도' 표 → 기간별 평점·평가 수 (최근 6개월 평가 수가 판매량을 가늠하는 핵심 값)
+  // 판매자 숍 첫 화면 → 등급·구매만족도(기간별)·품절취소율·판매자 정보
+  // · 등급: 이름 옆 라벨(span.usedseller_label_*) — 전문셀러(사업자, 알라딘 인증) / 파워·골드·실버·새내기셀러(= 모두 개인셀러)
+  // · 구매만족도 표: 기간 · 평점 · 평가수 · 만족 · 보통 · 불만족. '-' = 그 기간 평가가 3건 미만이라 알라딘이 표시하지 않음 (0이 아님)
+  // · 판매자 정보: 전문셀러만 상호·대표자·전화·이메일·사업자등록번호 등이 보임. 개인셀러는 '최근 7일 내 거래 고객에게만 연락처 제공' 문구뿐
+  // 반환 status: 'ok'(6개월 평가 수 있음) · 'lt3'(6개월 줄은 있으나 '-' = 최근 6개월 평가 3건 미만, 활동 없음에 가까움) · 'missing'(표 자체가 없음 = 화면 구조 문제)
   function parseShopSummary(doc) {
     const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
-    const periods = {};
-    doc.querySelectorAll('tr').forEach((tr) => {
+    const num = (c) => (/^[\d,]+$/.test(c || '') ? parseInt(c.replace(/,/g, ''), 10) : null);
+    const periods = {}; let sawTable = false;
+    const gp = doc.getElementById('guide_GoodPoint'); const rowsRoot = gp || doc;
+    rowsRoot.querySelectorAll('tr').forEach((tr) => {
       const cells = [...tr.children].map(txt); if (!cells.length) return;
       const label = cells.find((c) => /^(최근\s*\d+\s*(개월|주|일)|전체\s*기간)$/.test(c)); if (!label) return;
-      const rest = cells.slice(cells.indexOf(label) + 1);
-      const rating = rest.find((c) => /^[\d.]+\s*%$/.test(c)); const count = rest.find((c) => /^[\d,]+$/.test(c));
-      if (rating || count) periods[label.replace(/\s+/g, ' ')] = { rating: rating ? parseFloat(rating) / 100 : null, count: count ? parseInt(count.replace(/,/g, ''), 10) : null };
+      const rest = cells.slice(cells.indexOf(label) + 1); const key = label.replace(/\s+/g, ' ');
+      if (gp || rest.length >= 5) sawTable = true;
+      if (gp) { // 구매만족도 표: 평점 · 평가수 · 만족 · 보통 · 불만족
+        const [r, n, g, so, bad] = rest; periods[key] = { rating: /^[\d.]+\s*%$/.test(r || '') ? parseFloat(r) / 100 : null, count: num(n), good: num(g), soso: num(so), bad: num(bad), lt3: (n || '').trim() === '-' };
+      } else { const rating = rest.find((c) => /^[\d.]+\s*%$/.test(c)); const count = rest.find((c) => /^[\d,]+$/.test(c)); if (rating || count) periods[key] = { rating: rating ? parseFloat(rating) / 100 : null, count: count ? num(count) : null }; }
     });
-    let rev6m = periods['최근 6개월'] ? periods['최근 6개월'].count : null;
-    if (rev6m == null) { const m = (doc.body ? doc.body.textContent : '').match(/최근\s*6\s*개월,?\s*([\d,]+)\s*개\s*평가/); if (m) rev6m = parseInt(m[1].replace(/,/g, ''), 10); }
-    return { periods, rev6m, total: periods['전체 기간'] ? periods['전체 기간'].count : null };
+    // 품절취소율 (최근 3개월)
+    let cancel3m = null; const oc = doc.getElementById('guide_OutStockCancelRate'); if (oc) { const m = txt(oc).match(/최근\s*3\s*개월\s*([\d.]+)\s*%/); if (m) cancel3m = parseFloat(m[1]) / 100; }
+    // 등급
+    const gl = doc.querySelector('span[class^="usedseller_label"], span[class*=" usedseller_label"]'); const grade = gl ? txt(gl) : null; const isPro = grade ? /전문/.test(grade) : null;
+    // 판매자 정보 (전문셀러만 내용 있음)
+    const info = {}; let infoNote = null; const il = doc.getElementById('sellerInfoLayer');
+    if (il) { il.querySelectorAll('.seller_infolayer_list li').forEach((li) => { const k = txt(li.querySelector('.left')), v = txt(li.querySelector('.right')); if (k) info[k] = v; }); if (!Object.keys(info).length) { const t = txt(il).replace(/판매자 정보|닫기/g, '').trim(); infoNote = t.slice(0, 200) || null; } }
+    const p6 = periods['최근 6개월']; let rev6m = p6 ? p6.count : null;
+    if (rev6m == null && !(p6 && p6.lt3)) { const m = (doc.body ? doc.body.textContent : '').match(/최근\s*6\s*개월,?\s*([\d,]+)\s*개\s*평가/); if (m) rev6m = parseInt(m[1].replace(/,/g, ''), 10); }
+    const status = rev6m != null ? 'ok' : p6 && p6.lt3 ? 'lt3' : sawTable || gp ? 'lt3' : 'missing';
+    const tot = periods['전체 기간'];
+    return { status, periods, rev6m, rev6mLt3: !!(p6 && p6.lt3), total: tot ? tot.count : null, totalLt3: !!(tot && tot.lt3), grade, isPro, cancel3m, info: Object.keys(info).length ? info : null, infoNote };
   }
   // 최근 6개월 평가 수: 숍 화면 값(가장 정확) → 모은 평가(6개월 이상 모았을 때) → 툴팁 기록 → 구글 시트
   function rev6m(s) {
     if (s.rev6m != null) return { n: s.rev6m, src: '숍 화면', at: s.rev6mAt || null };
     const st = s.reviewStats; if (st && st.d180 != null && (st.complete || (st.first && st.first <= new Date(Date.now() - 180 * 864e5).toISOString().slice(0, 10)))) return { n: st.d180, src: '모은 평가', at: st.at || null };
+    if (s.rev6mLt3) return { n: null, lt3: true, src: '숍 화면: 3건 미만', at: s.rev6mAt || null }; // 알라딘이 '-'로 표시 = 최근 6개월 평가 3건 미만 (0이 아님)
     const tc = numK(s.reviewCount); if (tc != null) return { n: tc, src: '툴팁 기록', at: s.lastFetchedAt || null };
     const sh = numK(s.reviews6m ?? (s.sheet && s.sheet.reviews6m)); if (sh != null) return { n: sh, src: '구글 시트', at: null };
     return { n: null, src: null, at: null };
