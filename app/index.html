@@ -265,16 +265,16 @@ details > summary .vztg{float:none;margin-left:8px;vertical-align:middle}.card{p
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-<script src="../readnow-sellers-core.js?v=1.2.0"></script>
+<script src="../readnow-sellers-core.js?v=1.3.0"></script>
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.50.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.50.1 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.50.0';
+const APP_VER = '0.50.1';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1171,8 +1171,9 @@ async function openSeller(id) {
   const kv = (k, v) => (v == null || v === '' ? '' : `<dt>${k}</dt><dd>${v}</dd>`);
   const draw = (hist, rev) => {
     sh.innerHTML = `<div class="sh"><button class="back" id="back">‹ 목록</button><div class="t">${esc(s.name || '')}</div></div>
-    <div class="card">${gradeChip(s)}${sellerTags(s)}${s.sc ? ` <span class="hint">판매자 번호 ${esc(s.sc)}</span> <a class="btn ghost sm" style="margin-left:6px" target="_blank" rel="noopener" href="https://www.aladin.co.kr/shop/usedshop/wshopitem.aspx?SC=${encodeURIComponent(s.sc)}">알라딘 숍 열기 ↗</a> <a class="btn ghost sm" target="_blank" rel="noopener" href="https://www.aladin.co.kr/shop/UsedShop/wshopsurvey.aspx?SC=${encodeURIComponent(s.sc)}">평가 보기 ↗</a>` : ''}${s.sheet && s.sheet.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.sheet.remark)}</div>` : s.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.remark)}</div>` : ''}
-      <div class="nums six" style="margin-top:10px"><div><b>${((s.totalItems || s.stock) || 0).toLocaleString()}</b><span>보유 상품</span></div><div><b>${pctText(s.rating ?? s.rating6m)}</b><span>평점</span></div><div><b>${(s.totalReviewCount || s.reviewsAll || 0).toLocaleString()}</b><span>전체 평가</span></div><div><b>${rev6(s) != null ? num(rev6(s)) : '-'}</b><span>최근 6개월 평가</span></div><div><b>${outstockText(s)}</b><span>품절 취소율</span></div><div><b>${s.shippingDays ?? s.actualDays ?? '-'}</b><span>출고일</span></div></div></div>
+    <div class="card">${s.grade ? `<span class="tag ${s.isPro ? 'pl' : ''}" title="${s.isPro ? '전문셀러 = 사업자번호가 있는 판매자 (알라딘 인증)' : '전문셀러가 아닌 등급은 모두 개인셀러 (연락처 비공개)'}">${esc(s.grade)} · ${s.isPro ? '사업자' : '개인'}</span> ` : ''}${gradeChip(s)}${sellerTags(s)}${s.sc ? ` <span class="hint">판매자 번호 ${esc(s.sc)}</span> <a class="btn ghost sm" style="margin-left:6px" target="_blank" rel="noopener" href="https://www.aladin.co.kr/shop/usedshop/wshopitem.aspx?SC=${encodeURIComponent(s.sc)}">알라딘 숍 열기 ↗</a> <a class="btn ghost sm" target="_blank" rel="noopener" href="https://www.aladin.co.kr/shop/UsedShop/wshopsurvey.aspx?SC=${encodeURIComponent(s.sc)}">평가 보기 ↗</a>` : ''}${s.sheet && s.sheet.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.sheet.remark)}</div>` : s.remark ? `<div class="fwhy" style="color:var(--red)">${esc(s.remark)}</div>` : ''}
+      ${s.bizInfo ? `<details style="margin-top:8px"><summary class="hint">사업자 정보 (전문셀러 공개 정보)</summary><dl class="kv">${Object.entries(s.bizInfo).filter(([, v]) => v).map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></details>` : s.contactNote ? `<div class="hint" style="margin-top:6px">개인셀러: ${esc(s.contactNote.replace(/^.*?판매자님과/, '판매자와'))}</div>` : ''}
+      <div class="nums six" style="margin-top:10px"><div><b>${((s.totalItems || s.stock) || 0).toLocaleString()}</b><span>보유 상품</span></div><div><b>${pctText(s.rating ?? s.rating6m)}</b><span>평점</span></div><div><b>${(s.totalReviewCount || s.reviewsAll || 0).toLocaleString()}</b><span>전체 평가</span></div><div><b>${rev6(s) != null ? num(rev6(s)) : s.rev6mLt3 ? '3건 미만' : '-'}</b><span>최근 6개월 평가</span></div><div><b>${outstockText(s)}</b><span>품절 취소율</span></div><div><b>${s.shippingDays ?? s.actualDays ?? '-'}</b><span>출고일</span></div></div></div>
     ${(() => { if (!RS) return '<div class="card"><div class="hint">판매자 점수 파일(readnow-sellers-core.js)을 불러오지 못했습니다. GitHub에 올렸는지 확인해 주세요.</div></div>'; const x = scores().get(s.id) || sellerScore(s); const mr = modelReasons(x, 3); const gr = gainReasons(x); const q = quadrant(x);
       return `<div class="card"><h3>판매자 점수</h3><div class="two">
         <div class="axis model" style="margin:0"><div class="axh"><b>★ 모범 ${x.model ?? '-'}점 · ${MODEL_TXT[x.mcls]}</b><span>배울 만한가</span></div>${x.mp.map((p) => `<div class="spl"><span>${esc(p.label)}</span><b>${p.pts == null ? '자료 없음' : `${Math.round(p.pts)} / ${p.w}`}</b></div><div class="hint" style="margin:0 0 4px">${esc(p.why || '')}</div>`).join('')}${x.gates.map((g) => `<div class="fwhy" style="color:#3A3A3A;font-weight:700">✕ ${esc(g)}</div>`).join('')}</div>
@@ -2710,6 +2711,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.50.1': ['판매자: 알라딘 등급(전문셀러 = 사업자 / 그 밖 = 개인셀러)·최근 6개월 평가 3건 미만 표시·전문셀러 사업자 정보'],
   '0.50.0': ['새상품 페이지가 없는 상품의 시세: 상품명 검색 결과(이름 90% 이상 일치)의 채널별 최저가로 시세·범위·유효 최저·신뢰도·우리 위치 (상품 상세, 상품 탭)'],
   '0.49.1': ['상품 상세: 우리 상품 페이지에서 받은 사진(여러 장)도 함께 보임'],
   '0.49.0': ['시각화 모드: 오른쪽 아래 📊/📝로 화면 전체를 그래프 ↔ 글, 칸마다 ◐로 따로'],
