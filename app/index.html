@@ -244,6 +244,17 @@ html,body{max-width:100%;overflow-x:hidden}
 @media(max-width:600px){.top .tbtns .me{padding:4px 8px;font-size:12px}.top h1{font-size:16px}}
 main,.card,.list,.item{min-width:0}.mgrid>div{min-width:0}.mgrid b,.mgrid small,.item span{overflow-wrap:anywhere}
 main img{max-width:100%}
+#vzToggle{position:fixed;right:12px;bottom:calc(70px + env(safe-area-inset-bottom,0px));z-index:30;width:52px;height:52px;border-radius:26px;border:0;background:#fff;box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:20px;line-height:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+#vzToggle small{font-size:9.5px;color:#5B6B66;margin-top:1px}#vzToggle.on{background:#2F5D50}#vzToggle.on small{color:#cfe3da}
+.vztg{float:right;margin-left:6px;border:1px solid var(--line);background:#fff;border-radius:12px;width:26px;height:22px;font-size:13px;line-height:1;color:#2F5D50;cursor:pointer;padding:0}
+details > summary .vztg{float:none;margin-left:8px;vertical-align:middle}.card{position:relative}
+.vz .vzc > b,.vz .vzc > span,.vz .vzc > small{display:none}
+.vzg{display:flex;flex-direction:column;align-items:flex-start;gap:3px}.vzi{font-size:15px;line-height:1}.vzn{font-size:20px;font-weight:800;color:#1E2B27;letter-spacing:-.02em;line-height:1.1}.vzn.neg{color:#B0322A}
+.vzl{font-size:11px;color:#5B6B66}.vzbar{width:100%;height:8px;background:#E4ECE8;border-radius:4px;overflow:hidden}.vzbar i{display:block;height:100%;border-radius:4px}
+.vzrange{position:relative;width:100%;height:10px;background:#EEF3F1;border-radius:5px}.vzrange i{position:absolute;top:2px;height:6px;background:#9FC1B4;border-radius:3px}.vzrange b{position:absolute;top:-1px;width:3px;height:12px;background:#1E2B27;border-radius:2px;margin-left:-1px}
+.vzd{font-size:11px;font-weight:700;padding:1px 6px;border-radius:8px}.vzd.up{background:#E3F1E8;color:#2F7D4F}.vzd.dn{background:#FDE8E6;color:#B0322A}
+.vz .hint,.vz p.hint,.vz .l2 small{display:none}.vz .item.vzrow,.vz li.vzrow{position:relative;overflow:hidden}.vzib{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(47,93,80,.16),rgba(47,93,80,.06));border-right:2px solid rgba(47,93,80,.35);pointer-events:none;z-index:0}
+.vz .vzrow > *:not(.vzib){position:relative;z-index:1}.vz .item.vzrow .l2{display:none}
 </style>
 </head>
 <body>
@@ -258,12 +269,12 @@ main img{max-width:100%}
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.48.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.49.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.48.0';
+const APP_VER = '0.49.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -2697,6 +2708,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.49.0': ['시각화 모드: 오른쪽 아래 📊/📝로 화면 전체를 그래프 ↔ 글, 칸마다 ◐로 따로'],
   '0.48.0': ['이번 달 예상 매출 강화: 요일 지수 + 지수평활 + 오늘 시간대 반영 + 백테스트 범위 (누르면 근거)', '휴대폰에서 화면 오른쪽이 잘리던 문제 (위쪽 버튼 줄)'],
   '0.47.0': ['매입 전체 목록: 웹앱·구글 시트·헌옷도라이·알라딘 주문 수집·김미소 인수를 한곳에, 정렬·거르기·검색, 출처 표시, 상태 고치기(기록 남음)', "'문제(확인 필요)' 매입은 홈 알림에"],
   '0.46.1': ['기존 구글시트 매입: 받음·확인 완료로 바꾼 것 다시 보기와 되돌리기'],
@@ -3548,7 +3560,7 @@ const TAB_ORDER_DEFAULT = {
   purchase: ['pu_app', 'pu_pools', 'pu_main', 'pu_match', 'pu_aopool', 'pu_check', 'pu_disp', 'pu_bb', 'pu_grp', 'pu_trend', 'pu_type', 'pu_plat', 'pu_split', 'pu_list', 'pu_ex', 'pu_al', 'pu_set', 'pu_old'],
   products: ['p_age', 'p_trend', 'p_cat', 'p_grade', 'p_mtype', 'p_buyage', 'p_recent'],
 };
-function afterRender() { const m = $('#main'); if (!m || S.tab === 'home') return; try { applyTabOrder(m, S.tab); } catch (e) {}
+function afterRender() { try { vzInit(); } catch (e) {} const m = $('#main'); if (!m || S.tab === 'home') return; try { applyTabOrder(m, S.tab); } catch (e) {}
   if (isAdminDevice() && m.querySelectorAll('details[data-sec]').length >= 2 && !m.querySelector('.taborder')) m.insertAdjacentHTML('afterbegin', `<div class="taborder" style="text-align:right;margin:-4px 0 4px"><button class="linkbtn" data-taborder="${S.tab}">⇅ 칸 순서 바꾸기</button></div>`); }
 function applyTabOrder(m, tab) {
   const order = ((S.app.tabOrder || {})[tab]) || TAB_ORDER_DEFAULT[tab]; if (!order) return;
@@ -3849,6 +3861,63 @@ function openForecast() {
   $('#back').onclick = () => history.back();
 }
 document.addEventListener('click', (ev) => { if (ev.target.closest('[data-fc]')) { ev.preventDefault(); ev.stopPropagation(); openForecast(); } }, true);
+
+
+/* ══════════ 시각화 모드 (전체 토글 + 칸마다 토글) ══════════
+ * 원칙 (인지심리·정보 디자인):
+ *  · 양(量) 비교는 '같은 기준선 위 길이'로 — 사람이 가장 정확히 비교하는 시각 단서 (Cleveland & McGill의 지각 정확도 순서: 위치·길이 > 각도·면적 > 색)
+ *  · 전체 중 비율(%)은 고리(부분-전체) 하나로, 색은 의미(좋음·나쁨)에만 — 색을 장식에 쓰지 않음
+ *  · 글자는 숫자와 2~4자 이름만, 설명 문장은 숨김 (데이터-잉크 비율을 높임 — Tufte)
+ *  · 같은 칸 안 것끼리 묶어 보이게 (게슈탈트 근접성), 오르내림은 ▲▼ 방향과 색 두 단서로
+ *  · 원본 화면은 그대로 두고 그래픽만 덧입힘 → 누르는 기능은 그대로, 언제든 글 모드로 돌아감 */
+S.vz = localStorage.getItem('rn-vz') === '1'; S.vzP = (() => { try { return JSON.parse(localStorage.getItem('rn-vzp') || '{}'); } catch (e) { return {}; } })();
+const VZ_BAD = /불만족|폐기|반품|오차|지연|문제|실패|못|빈칸|미답|남은 금액|늦|불익|불량|위험|수수료|비용|지출|택배|고정비|원가/;
+const VZ_ICON = [[/매출|순매출|판매액|회수/, '💰'], [/이익|공헌/, '📈'], [/예상|페이스/, '🔮'], [/주문|건/, '🧾'], [/고객/, '👤'], [/권|재고|상품|책/, '📚'], [/매입/, '🛒'], [/폐기/, '🗑️'], [/평가|만족/, '⭐'], [/문의/, '💬'], [/판매자/, '🏪'], [/시간|일|기간|째/, '⏱️'], [/무게|kg/, '⚖️'], [/택배|배송/, '📦'], [/비율|율|%/, '◔']];
+const vzIcon = (t) => (VZ_ICON.find(([r]) => r.test(t)) || [0, '•'])[1];
+function vzParse(txt) { const t = String(txt || '').replace(/[›\s]/g, ''); const m = t.match(/^([+\-−]?[\d,]+(?:\.\d+)?)(%|원|권|건|명|종|개|일|kg|g|곳|줄|분|시간)?/); if (!m) return null; const n = +m[1].replace(/[,−]/g, (c) => (c === '−' ? '-' : '')); return isFinite(n) ? { n, u: m[2] || '' } : null; }
+function vzShort(n, u) { const a = Math.abs(n); const s = n < 0 ? '-' : ''; if (u === '원') return s + (a >= 1e8 ? (a / 1e8).toFixed(a >= 1e9 ? 0 : 1) + '억' : a >= 1e4 ? Math.round(a / 1e4).toLocaleString() + '만' : Math.round(a).toLocaleString()); if (u === '%') return (Math.round(n * 10) / 10) + '%'; return s + (a >= 1e4 ? (a / 1e4).toFixed(1) + '만' : Math.round(a).toLocaleString()) + (u && u !== '원' ? u : ''); }
+function vzRing(p, bad) { const v = Math.max(0, Math.min(100, p)); const r = 17, c = 2 * Math.PI * r; const col = bad ? (v > 15 ? '#B0322A' : '#C98A2B') : '#2F5D50';
+  return `<svg width="46" height="46" viewBox="0 0 46 46" class="vzring"><circle cx="23" cy="23" r="${r}" fill="none" stroke="#E4ECE8" stroke-width="6"/><circle cx="23" cy="23" r="${r}" fill="none" stroke="${col}" stroke-width="6" stroke-linecap="round" stroke-dasharray="${(c * v) / 100} ${c}" transform="rotate(-90 23 23)"/><text x="23" y="27" text-anchor="middle" font-size="11" font-weight="700" fill="#1E2B27">${Math.round(p)}%</text></svg>`; }
+function vzDelta(txt) { const m = String(txt || '').match(/([▲▼])\s?([\d.]+)%/); if (!m) return ''; const up = m[1] === '▲'; return `<span class="vzd ${up ? 'up' : 'dn'}">${up ? '▲' : '▼'}${m[2]}%</span>`; }
+function vzRange(txt, unit) { const m = String(txt || '').match(/([\d,]+)\s*원?\s*[~∼]\s*([\d,]+)\s*원?/); if (!m) return null; const a = +m[1].replace(/,/g, ''), b = +m[2].replace(/,/g, ''); return a && b && b > a ? { a, b } : null; }
+function vzGrid(g) {
+  const cells = [...g.children].filter((d) => d.querySelector(':scope > b')); if (!cells.length) return;
+  const P = cells.map((d) => { const b = d.querySelector(':scope > b'), sp = d.querySelector(':scope > span'), sm = d.querySelector(':scope > small'); return { d, v: vzParse(b ? b.textContent : ''), label: sp ? sp.textContent.trim() : '', basis: sm ? sm.textContent : '' }; });
+  const maxBy = {}; P.forEach((x) => { if (x.v && x.v.u !== '%') maxBy[x.v.u] = Math.max(maxBy[x.v.u] || 0, Math.abs(x.v.n)); });
+  const cnt = {}; P.forEach((x) => { if (x.v) cnt[x.v.u] = (cnt[x.v.u] || 0) + 1; });
+  P.forEach((x) => { if (x.d.querySelector('.vzg')) return; const bad = VZ_BAD.test(x.label); const lab = x.label.replace(/\(.*?\)/g, '').trim().slice(0, 10);
+    let g2 = '';
+    if (!x.v) g2 = `<div class="vzn">${esc((x.d.querySelector(':scope > b') || {}).textContent || '-').replace('›', '')}</div>`;
+    else if (x.v.u === '%') g2 = vzRing(x.v.n, bad);
+    else { const w = maxBy[x.v.u] ? (Math.abs(x.v.n) / maxBy[x.v.u]) * 100 : 0; const rg = vzRange(x.basis);
+      g2 = `<div class="vzn ${x.v.n < 0 ? 'neg' : ''}">${vzShort(x.v.n, x.v.u)}</div>${cnt[x.v.u] > 1 ? `<div class="vzbar"><i style="width:${Math.max(2, w).toFixed(1)}%;background:${bad ? '#C0624F' : '#2F5D50'}"></i></div>` : ''}${rg ? `<div class="vzrange" title="범위"><i style="left:${((rg.a / (rg.b * 1.1)) * 100).toFixed(1)}%;width:${(((rg.b - rg.a) / (rg.b * 1.1)) * 100).toFixed(1)}%"></i><b style="left:${Math.min(99, ((x.v.n / (rg.b * 1.1)) * 100)).toFixed(1)}%"></b></div>` : ''}`; }
+    x.d.insertAdjacentHTML('afterbegin', `<div class="vzg"><span class="vzi">${vzIcon(x.label)}</span>${g2}${vzDelta(x.basis)}<span class="vzl">${esc(lab)}</span></div>`); x.d.classList.add('vzc'); });
+}
+function vzList(list) { // 숫자로 끝나는 줄이 3개 이상이면 같은 기준선 막대로
+  const items = [...list.children].filter((it) => it.classList.contains('item') || it.tagName === 'LI'); if (items.length < 2) return;
+  const P = items.map((it) => { const bs = it.querySelectorAll('b'); const last = bs[bs.length - 1]; return { it, v: vzParse(last ? last.textContent : '') }; }).filter((x) => x.v && x.v.u !== '%');
+  if (P.length < 2) return; const mx = Math.max(...P.map((x) => Math.abs(x.v.n))) || 1;
+  P.forEach((x) => { if (x.it.querySelector('.vzib')) return; x.it.insertAdjacentHTML('afterbegin', `<i class="vzib" style="width:${((Math.abs(x.v.n) / mx) * 100).toFixed(1)}%"></i>`); x.it.classList.add('vzrow'); });
+}
+function vzTable(t) { const rows = [...t.querySelectorAll('tr')]; const cols = {}; rows.forEach((r) => [...r.children].forEach((c, i) => { if (c.tagName !== 'TD') return; const v = vzParse(c.textContent); if (v) { (cols[i] = cols[i] || []).push([c, Math.abs(v.n)]); } }));
+  Object.values(cols).forEach((arr) => { const mx = Math.max(...arr.map((x) => x[1])) || 1; arr.forEach(([c, n]) => { if (c.dataset.vzbg) return; c.dataset.vzbg = 1; c.style.background = `rgba(47,93,80,${(0.06 + 0.32 * (n / mx)).toFixed(2)})`; }); }); }
+function vzApply(p) { if (p.dataset.vzon) return; p.dataset.vzon = 1; p.classList.add('vz'); p.querySelectorAll('.mgrid').forEach(vzGrid); p.querySelectorAll('.list, ol.num, ul.wl, ol.wl').forEach(vzList); p.querySelectorAll('table').forEach(vzTable); }
+function vzRemove(p) { if (!p.dataset.vzon) return; delete p.dataset.vzon; p.classList.remove('vz'); p.querySelectorAll('.vzg,.vzib').forEach((x) => x.remove()); p.querySelectorAll('.vzc').forEach((x) => x.classList.remove('vzc')); p.querySelectorAll('.vzrow').forEach((x) => x.classList.remove('vzrow')); p.querySelectorAll('[data-vzbg]').forEach((c) => { c.style.background = ''; delete c.dataset.vzbg; }); }
+const vzKey = (p) => p.dataset.sec || p.dataset.w || (p.closest('[data-w]') && p.closest('[data-w]').dataset.w) || 'c:' + ((p.querySelector('h3,summary') || {}).textContent || '').trim().slice(0, 24);
+const vzOn = (k) => (k in S.vzP ? !!S.vzP[k] : S.vz);
+function vzScan() {
+  const roots = [$('#main'), $('#sheet')].filter(Boolean);
+  roots.forEach((root) => { const panels = [...root.querySelectorAll('details[data-sec], .card, .wcard')].filter((p) => !p.parentElement.closest('details[data-sec], .card, .wcard'));
+    panels.forEach((p) => { const k = vzKey(p); if (!p.querySelector(':scope > .vztg, :scope > summary .vztg')) { const host = p.matches('details') ? p.querySelector(':scope > summary') : p; if (host) host.insertAdjacentHTML(p.matches('details') ? 'beforeend' : 'afterbegin', `<button class="vztg" data-vzk="${esc(k)}" title="이 칸만 그래프 ↔ 글">◐</button>`); }
+      if (vzOn(k)) vzApply(p); else vzRemove(p); }); });
+  const g = $('#vzToggle'); if (g) { g.classList.toggle('on', S.vz); g.innerHTML = S.vz ? '📊<small>그래프</small>' : '📝<small>글</small>'; }
+}
+let _vzT = null; const vzSoon = () => { clearTimeout(_vzT); _vzT = setTimeout(() => { try { vzScan(); } catch (e) { console.error(e); } }, 120); };
+document.addEventListener('click', (ev) => { const t = ev.target.closest('.vztg'); if (t) { ev.preventDefault(); ev.stopPropagation(); const k = t.dataset.vzk; S.vzP[k] = !vzOn(k); localStorage.setItem('rn-vzp', JSON.stringify(S.vzP)); vzScan(); return; }
+  const g = ev.target.closest('#vzToggle'); if (g) { ev.preventDefault(); S.vz = !S.vz; S.vzP = {}; localStorage.setItem('rn-vz', S.vz ? '1' : '0'); localStorage.setItem('rn-vzp', '{}'); vzScan(); toast(S.vz ? '시각화 모드' : '글 모드'); } }, true);
+function vzInit() { if (document.getElementById('vzToggle')) return; document.body.insertAdjacentHTML('beforeend', '<button id="vzToggle" title="화면 전체: 그래프 ↔ 글 (칸마다 ◐로 따로 바꿀 수 있음)"></button>');
+  const mo = new MutationObserver((ms) => { if (ms.some((m) => [...m.addedNodes].some((n) => n.nodeType === 1 && !(n.classList && (n.classList.contains('vzg') || n.classList.contains('vzib') || n.classList.contains('vztg')))))) vzSoon(); });
+  ['#main', '#sheet'].forEach((q) => { const el = $(q); if (el) mo.observe(el, { childList: true, subtree: true }); }); vzScan(); }
 
 /* ══════════ 매입 기록: 웹앱에서 바로 입력 (구글 시트 대신) ══════════
  * 한 건 = 한 번의 거래(한 판매자에게서 산 묶음). 품목마다 내용·권수·개별 가격, 나중에 예상 판매가가 자동으로 붙음.
