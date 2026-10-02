@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.4.0';
+  const VERSION = '0.6.0';
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -408,6 +408,26 @@
     return out;
   }
 
+  // 알라딘 검색 결과: 상품마다 상자(.ss_book_box) — 번호(itemid), 제목(a.bo3), 사진, 링크
+  function parseSearchResults(d) {
+    return [...d.querySelectorAll('.ss_book_box')].map((b) => { const a = b.querySelector('a.bo3'); const img = b.querySelector('img.front_cover') || b.querySelector('img');
+      const id = b.getAttribute('itemid') || (((a && a.getAttribute('href')) || '').match(/ItemId=(\d+)/) || [])[1] || null; const src = img ? img.getAttribute('src') || '' : '';
+      return { itemId: id, title: a ? txt(a) : '', href: a ? a.getAttribute('href') : null, img: /^\/\//.test(src) ? 'https:' + src : src, used: /\[중고\]/.test(b.textContent || '') }; }).filter((x) => x.itemId && x.title);
+  }
+  // 검색어가 상품 이름에 얼마나 들어 있나 (0~1): 띄어쓰기·문장부호를 빼고, 검색어 글자가 순서대로 몇 개 들어 있는지(최장 공통 부분수열) ÷ 검색어 길이
+  function nameCoverage(query, title) { const n = (x) => String(x || '').toLowerCase().replace(/[\s\p{P}\p{S}]/gu, ''); const q = n(query), t = n(title); if (!q.length) return 0;
+    const dp = new Array(t.length + 1).fill(0); for (let i = 1; i <= q.length; i++) { let prev = 0; for (let j = 1; j <= t.length; j++) { const tmp = dp[j]; dp[j] = q[i - 1] === t[j - 1] ? prev + 1 : Math.max(dp[j], dp[j - 1]); prev = tmp; } } return dp[t.length] / q.length; }
+  // 우리(판매자) 중고 상품 페이지의 상품 사진: 위쪽 표지 영역(#CoverMainImage·표지 넘김 사진) + '중고상품 구매 유의 사항'(#usedDecription) 안 사진
+  // 같은 사진이 크기만 다르게 여러 번 나오므로 파일 이름으로 하나만 남김. 표지 영역 작은 크기(coversum 등)는 cover500으로 바꿔 둔 주소도 함께 줌
+  function parseUsedItemPhotos(d) {
+    const out = []; const seen = new Set(); const base = (u) => String(u || '').split('?')[0].split('/').pop().replace(/\(\d+\)(?=\.)/, '');
+    const add = (img, where) => { const src = img && (img.getAttribute('src') || img.getAttribute('data-src') || ''); if (!src || /icon|btn|blank|noimg|spacer/i.test(src)) return; const k = base(src); if (!k || seen.has(k)) return; seen.add(k);
+      const abs = /^\/\//.test(src) ? 'https:' + src : src; const big = abs.replace(/\/(coversum|cover150|cover200|cover|cover300)\//, '/cover500/'); out.push({ src: abs, big: big !== abs ? big : null, where, file: k }); };
+    const main = d.getElementById('CoverMainImage'); if (main) add(main, 'top');
+    d.querySelectorAll('#swiper-container-cover img.imgbox, #swiper-container-cover .swiper-slide img').forEach((im) => add(im, 'top'));
+    d.querySelectorAll('#usedDecription img').forEach((im) => add(im, 'desc'));
+    return out;
+  }
   // '지금 이 상품을 클릭한 분들이 다음 상품도 클릭' (알라딘 지니 추천, 늘 나오지는 않음)
   function parseClickRelation(d) {
     let box = d.getElementById ? (d.getElementById('w_jiny_recentContent') || d.getElementById('w_jiny_recentRecomList') || d.getElementById('swiper_nowClick')) : null;
@@ -491,7 +511,7 @@
     VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
-    parseBuyerDist, parseRelationBuy, parseClickRelation, parseC2BList, parseC2BDetail, diff, rankTransitions, mediaType, MEDIA,
+    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, nameCoverage, parseC2BList, parseC2BDetail, diff, rankTransitions, mediaType, MEDIA,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
 })(typeof window !== 'undefined' ? window : this);
