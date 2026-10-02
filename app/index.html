@@ -269,12 +269,12 @@ details > summary .vztg{float:none;margin-left:8px;vertical-align:middle}.card{p
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.49.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.49.1 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.49.0';
+const APP_VER = '0.49.1';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1587,7 +1587,7 @@ async function openProduct(pid) {
   history.pushState({ p: pid }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
   const draw = (x) => {
     const b = x.book || (l.bookId && S.pbooks.get(l.bookId)) || null; const im = (b && b.images) || {};
-    const imgs = ['front', 'back', 'spine'].map((k) => (im[k] ? `<img src="${esc(imgUrl(im[k]))}" data-full="${esc(imgUrl(im[k]))}" alt="${k}" decoding="async" title="눌러서 크게 보기">` : '')).join('');
+    const imgs = ['front', 'back', 'spine'].map((k) => (im[k] ? `<img src="${esc(imgUrl(im[k]))}" data-full="${esc(imgUrl(im[k]))}" alt="${k}" decoding="async" title="눌러서 크게 보기">` : '')).join('') + (l.photos || []).filter((x) => x.stored).map((x, k) => `<img src="${esc(imgUrl(x, true))}" data-full="${esc(imgUrl(x))}" alt="우리 사진 ${k + 1}" decoding="async" title="우리 상품 사진 ${k + 1} · 눌러서 크게 보기">`).join(''); // 우리 상품 페이지 사진 (여러 장)
     const kv = (k, v) => (v == null || v === '' ? '' : `<dt>${k}</dt><dd>${v}</dd>`);
     const ids = (l.ids || []).map((c) => `<li><b>${esc(c.value)}</b> <span class="tag ${c.kind === 'unknown' || c.kind === 'invalid' ? 'bl' : 'pl'}">${esc(c.guess)}</span><div class="hint" style="margin:2px 0 0">${esc(c.reason)}</div></li>`).join('');
     const mt = x.metrics;
@@ -2708,6 +2708,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.49.1': ['상품 상세: 우리 상품 페이지에서 받은 사진(여러 장)도 함께 보임'],
   '0.49.0': ['시각화 모드: 오른쪽 아래 📊/📝로 화면 전체를 그래프 ↔ 글, 칸마다 ◐로 따로'],
   '0.48.0': ['이번 달 예상 매출 강화: 요일 지수 + 지수평활 + 오늘 시간대 반영 + 백테스트 범위 (누르면 근거)', '휴대폰에서 화면 오른쪽이 잘리던 문제 (위쪽 버튼 줄)'],
   '0.47.0': ['매입 전체 목록: 웹앱·구글 시트·헌옷도라이·알라딘 주문 수집·김미소 인수를 한곳에, 정렬·거르기·검색, 출처 표시, 상태 고치기(기록 남음)', "'문제(확인 필요)' 매입은 홈 알림에"],
