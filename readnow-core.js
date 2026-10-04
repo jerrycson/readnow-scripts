@@ -1,4 +1,4 @@
-// ReadNow Core Library
+// ReadNow Core Library — 1.1.0 (판매자 분류 classifySellerDoc를 이 파일 한 곳에)
 // 여러 Tampermonkey 스크립트(중고가 검토 도우미, 판매자 정보 툴팁, 앞으로 만들 판매가 자동 결정 시스템 등)가
 // @require 로 함께 가져다 쓰는 공용 로직 모음입니다.
 //
@@ -346,6 +346,40 @@
     return { label: labels.join('/'), bg, border };
   }
 
+
+  // =========================================================================
+  // 판매자 분류 (판매가 기준점을 믿어도 되는가) — 이 파일이 유일한 기준. 툴팁·웹앱·판정 엔진이 모두 이 함수를 부름
+  //  · 평가 수 = 최근 6개월 평가 수 (숍 화면 '최근 6개월, N개 평가'. 3건 미만 '-'는 없음 → 평가 없음)
+  //    이유(정범): 오래 팔았어도 최근 6개월 활동·평가가 없으면 그 전 이력은 지금 물건을 보낼지 판단하는 데 쓸모없음
+  //  · 품절취소율 = % (숍 화면 최근 3개월 값 우선. 시트 기록의 비율·툴팁 기록의 %를 여기서 맞춤)
+  //  · 허위 매물로 표시한 판매자는 색과 관계없이 무효
+  // 반환 cls: 'dkgreen'(유효, 1000+) · 'green'(유효) · 'yellow'(보류 노랑) · 'orange'(보류 주황) · 'red'(무효) · 'unknown'(판매자 기록 없음 = 아직 안 모음)
+  // =========================================================================
+  const BG_CLASS = { '#66c17a': 'dkgreen', '#c9f2c9': 'green', '#fff3b0': 'yellow', '#ffcc80': 'orange', '#ffd6d6': 'red' };
+  function sellerInfoFromDoc(doc, RS) {
+    if (!doc) return null;
+    let n6 = null;
+    if (RS && RS.rev6m) { const r = RS.rev6m(doc); n6 = r && r.n != null ? r.n : null; }
+    else if (doc.rev6m != null) n6 = doc.rev6m;
+    else if (!doc.rev6mLt3 && doc.reviewCount != null && doc.reviewCount !== '') n6 = parseInt(String(doc.reviewCount).replace(/,/g, ''), 10);
+    let outR = null;
+    if (doc.cancel3m != null) outR = Number(doc.cancel3m);
+    else if (doc.outstockRate != null && doc.outstockRate !== '') { const o = Number(doc.outstockRate); outR = doc.sc ? o / 100 : o > 1 ? o / 100 : o; }
+    const rt = doc.rating != null && doc.rating !== '' ? Number(doc.rating) : null;
+    return {
+      reviewCount: n6 != null && !isNaN(n6) ? String(n6) : '',
+      outstockRate: outR != null && !isNaN(outR) ? String(outR * 100) : '',
+      totalItems: doc.totalItems != null ? String(doc.totalItems) : '',
+      rating: rt != null && !isNaN(rt) ? String(rt <= 1 ? rt * 100 : rt) : '',
+    };
+  }
+  function classifySellerDoc(doc, RS) {
+    if (!doc) return { cls: 'unknown', bg: null, why: '판매자 기록 없음 (아직 안 모음)', font: [], info: null };
+    const info = sellerInfoFromDoc(doc, RS);
+    if ((doc.ourGrade || doc.grade) === 'fake') return { cls: 'red', bg: '#ffd6d6', why: '허위 매물 판매자', font: [], info };
+    const b = evaluateBackground(info, NaN);
+    return { cls: BG_CLASS[String(b.bg || '').toLowerCase()] || 'red', bg: b.bg, why: b.bgReason, font: b.fontReasons || [], info };
+  }
   // =========================================================================
   // 내보내기
   // =========================================================================
@@ -365,5 +399,9 @@
     computeBusinessYears,
     evaluateBackground,
     evaluateAvHighlight,
+    BG_CLASS,
+    sellerInfoFromDoc,
+    classifySellerDoc,
+    CORE_VERSION: '1.1.0',
   };
 })(typeof unsafeWindow !== 'undefined' ? unsafeWindow : window);
