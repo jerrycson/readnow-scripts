@@ -258,12 +258,28 @@ details > summary .vztg{float:none;margin-left:8px;vertical-align:middle}.card{p
 mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .sleg{margin:8px 0 0;padding:8px 10px;border:1px solid var(--line,#D6DDDA);border-radius:8px;font-size:12.5px;line-height:1.5}.sleg>div{margin-top:4px}.sleg .sw{display:inline-block;width:12px;height:12px;border:1px solid #999;vertical-align:-2px;margin-right:4px}.tag.mon-treat{background:#1F5FAF;color:#fff}.tag.mon-control{background:#6B3FA0;color:#fff}.tag.mon-hold{background:#8A4B0F;color:#fff}.tag.mon-retire{background:#555;color:#fff}.tag.mon-excluded{background:#B0322A;color:#fff}.rtabs{display:flex;gap:6px;margin:0 0 8px}.rtabs button{flex:1;padding:8px;border:1px solid var(--line,#D6DDDA);border-radius:8px;background:#fff;font-weight:700}.rtabs button.on{background:var(--cloth,#2F5D50);color:#fff}
 .pq{display:flex;gap:10px}.pq-l{flex:2;min-width:0}.pq-r{flex:1.1;min-width:150px;display:flex;flex-direction:column;gap:2px;max-height:520px;overflow:auto}
-.pblk{display:flex;gap:5px;align-items:center;font-size:12.5px;line-height:1.55;padding:0 4px;border-radius:3px;text-decoration:none;white-space:nowrap;overflow:hidden}.pblk b{min-width:22px}.pq-q{display:inline-block;width:10px;font-style:normal;font-weight:900;color:#B0322A;background:#fff;border-radius:2px;text-align:center}.pblk span{min-width:44px;text-align:right}.pblk em{font-style:normal;overflow:hidden;text-overflow:ellipsis}
+.pblk{display:flex;gap:4px;align-items:center;font-size:11px;line-height:1.35;padding:0 4px;border-radius:3px;text-decoration:none;white-space:nowrap;overflow:hidden}.pblk b{min-width:22px}.pq-q{display:inline-block;width:10px;font-style:normal;font-weight:900;color:#B0322A;background:#fff;border-radius:2px;text-align:center}.pblk span{min-width:44px;text-align:right}.pblk em{font-style:normal;overflow:hidden;text-overflow:ellipsis}
 .pq-ctl{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-top:6px}.pq-ctl input{width:96px;padding:6px}.pq-warn{background:#FDE2E0;color:#B0322A;padding:4px 8px;border-radius:6px;margin-top:6px}.pq-done{background:#E2ECFA;padding:4px 8px;border-radius:6px;margin-top:6px;font-size:12.5px}
 .pq-why{margin-top:6px}.rgrp{margin-top:4px}.rgrp small{display:block;color:var(--sub)}.rchip{display:inline-flex;gap:3px;align-items:center;border:1px solid var(--line,#D6DDDA);border-radius:12px;padding:1px 8px;margin:2px;font-size:12px}
 @media(max-width:640px){.pq{flex-direction:column}.pq-r{max-height:220px}}
 .top.cond{padding-top:calc(4px + env(safe-area-inset-top,0));padding-bottom:6px}.top.cond .sync,.top.cond .colbar,.top.cond .jobs{display:none}.top .jobs{max-height:36px;overflow:hidden;cursor:pointer}.top .jobs.open{max-height:none}
 .bform .brow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:5px 0}.bform .brow>label:first-child{min-width:84px;font-weight:700;font-size:13px}.bform input[type=number]{width:90px;padding:5px}.bform input:not([type]),.bform input[type=date]{padding:5px}.bcount{margin:8px 0;padding:8px;background:#E2ECFA;border-radius:6px}
+
+/* ── 가격 결정 화면·블록 (0.62.2) — 앞의 규칙보다 뒤에 둬서 확실히 적용 ── */
+.pq-big{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.pq-grade{display:inline-block;font-size:30px;font-weight:900;line-height:1;padding:8px 12px;border-radius:4px;color:#fff;min-width:58px;text-align:center;background:#8d8d8d}
+.pq-grade.g최상{background:#e8457c}.pq-grade.g상{background:#2e9d5b}.pq-grade.g중{background:#8d8d8d}
+.pq-price{font-size:28px;font-weight:800;line-height:1.1}.pq-price small{display:block;font-size:11px;font-weight:400;color:var(--sub)}.pq-arrow{font-size:22px;color:var(--sub)}
+.pq-l small.hint b,.pq-l .hint b{font-weight:400}
+.pblk{cursor:pointer;text-decoration:none}.pblk *{cursor:pointer}.pblk .pq-q{cursor:help}
+.pblk b.gsq{display:inline-block;min-width:26px;text-align:center;color:#fff!important;font-weight:400;border-radius:2px;padding:0 3px;background:#8d8d8d}
+.pblk b.gsq.g최상{background:#e8457c}.pblk b.gsq.g상{background:#2e9d5b}.pblk b.gsq.g중{background:#8d8d8d}
+.pblk .pp{min-width:46px;text-align:right;margin-right:12px;font-weight:400}.pblk em{font-style:normal;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}.pblk small{opacity:.85;font-size:10px}
+.pblk.ours{background:#0d1b4c!important;color:#fff!important;outline:2px solid #ffd54f}.pblk:hover{outline:2px solid #1E2B28}
+.pq{display:flex;gap:10px}.pq-l{flex:2;min-width:0}.pq-r{flex:1.1;min-width:150px;display:flex;flex-direction:column;gap:1px;max-height:430px;overflow:auto}@media(max-width:640px){.pq{flex-direction:column}.pq-r{max-height:220px}}
+.uipop{position:fixed;z-index:9999;background:#fff;border:1px solid #888;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.25);padding:10px;width:min(420px,92vw);font-size:12.5px}
+.item.haslv{flex-wrap:wrap}.lvblk{flex-basis:100%;display:flex;flex-direction:column;gap:1px;margin-top:6px;max-height:260px;overflow:auto}@media(min-width:900px){.item.haslv{flex-wrap:nowrap}.lvblk{flex:0 0 36%;margin:0 0 0 8px}}
+.pq-verdict{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;background:#E2ECFA;color:#1F5FAF;margin:2px 0}
 </style>
 </head>
 <body>
@@ -285,7 +301,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.62.1';
+const APP_VER = '0.62.2';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -2740,7 +2756,8 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
-  '0.62.1': ["홈 '오늘 확인할 것'에 가격 관리자 결정 대기·반영 실패 표시 (누르면 가격 결정 화면)", '블록: 북스킹이 빠지던 것 고침(엔진 기준 매물 목록 대신 첫 페이지 전체 사용), 색을 온라인 중고 페이지 색 그대로(보라·회색 없앰), 상태를 알라딘 색 네모(최상 분홍·상 초록·중 회색), 상태·가격 크게', '블록을 누르면 지정 창에서 그 매물 페이지가 열리도록 고침'],
+  '0.62.2': ['상태 네모(최상 분홍·상 초록·중 회색, 흰 글자)와 상품 카드의 큰 상태·가격 표시가 실제로 적용되도록 고침 (화면 꾸밈 규칙이 들어가지 않았던 문제)', '굵은 글씨는 카드의 상태·지금 가격·추천 가격만, 블록 글자 크기는 원래대로', '블록에 마우스를 올리면 링크 손가락 커서'],
+  '0.62.1': ["홈 '오늘 확인할 것'에 가격 관리자 결정 대기·반영 실패 표시 (누르면 가격 결정 화면)", '블록: 북스킹이 빠지던 것 고침(엔진 기준 매물 목록 대신 첫 페이지 전체 사용), 색을 온라인 중고 페이지 색 그대로(보라·회색 없앰)', '블록을 누르면 지정 창에서 그 매물 페이지가 열리도록 고침'],
   '0.62.0': ['가격 결정: 우리 상태(최상·상·중)와 지금 가격·추천 가격을 크게, 엔진 판정을 사람 말로(유지·기다림·확인), 등록일', "탭: 바꾸자는 것 / 유지·기다림·확인 / 판정만 있음 / 결정함 / 전체 미결정", '블록: 판매자 이름과 (배송비: n), 판매가와 판매자 사이 간격, 북스킹 진한 남색, 누르면 그 매물 페이지(지정 창), ?를 누르면 구매 유의 사항 글·사진', "'전체중고 창 지정하기' 버튼 — 그 탭 하나에서 모든 전체중고·매물 링크가 열림", '상품 목록 화면(유효 최저가보다 싸게 파는 상품·오래된 재고 등)에도 블록'],
   '0.61.1': ['설명서: 경쟁 매물 유의사항은 첫 페이지 전부·덮어쓰지 않고 판으로 쌓음·주기 설정, 알라딘 요청 속도 자동 조절(모든 수집·감시 공통)'],
   '0.61.0': ['수동 일괄 처리: 조건으로 그룹(개수 즉시 계산) → 상품마다 추천가·이유 → 체크한 것 한꺼번에 결정, 그룹 저장', '결정 화면 블록에 ? 표시(구매 유의 사항·실사진)', "판정·반영 목록에 '판정만 있음' 묶음 (147개 중 결정 대기가 아닌 나머지)", '설명서: 가격 단위(가격대 5%)·±5% 버튼, 수동 일괄 처리, ? 표시'],
@@ -3697,7 +3714,7 @@ function openPriceQueue() {
       <div class="pq-big"><span class="pq-grade g${esc(x.grade || '')}" title="우리 상품 상태">${esc(x.grade || '?')}</span>
         <span class="pq-price"><small>지금 가격</small>${won(x.current)}</span>${isSet(x) ? `<span class="pq-arrow">→</span><span class="pq-price" style="color:${up ? '#1F6F4A' : '#B0322A'}"><small>엔진 추천 (${up ? '+' : ''}${Math.round((x.deltaPct || 0) * 100)}%)</small>${won(x.target)}</span>` : ''}</div>
       <div><span class="pq-verdict" title="${esc(prVerdict(x)[1])}">${esc(prVerdict(x)[0])}</span> <small class="hint">${esc(prVerdict(x)[1])}${!x.approvalState ? ' · 예전 감시기가 결정 대기에 올리지 않았던 판정' : ''}</small></div>
-      <small class="hint">등록 <b>${esc(String((S.plist.get(x.key) || {}).registeredAt || '-').slice(0, 10))}</b>${(S.plist.get(x.key) || {}).registeredAt ? ` (${Math.floor((Date.now() - Date.parse(String(S.plist.get(x.key).registeredAt).slice(0, 10))) / 864e5)}일)` : ''} · ${esc(x.usedCode)} · ${esc(x.sku || '')} · ${esc((x.tier && x.tier.name) || '')}${x.yes24Used ? ' · <span class="tag" style="background:#E8F0FF;color:#1F5FAF">예스24 참고함</span>' : ''}${(x.autoBlock || []).some((t) => /특별판/.test(t)) ? ' · <span class="tag">특별판 키워드</span>' : ''}</small>
+      <small class="hint">등록 ${esc(String((S.plist.get(x.key) || {}).registeredAt || '-').slice(0, 10))}${(S.plist.get(x.key) || {}).registeredAt ? ` (${Math.floor((Date.now() - Date.parse(String(S.plist.get(x.key).registeredAt).slice(0, 10))) / 864e5)}일)` : ''} · ${esc(x.usedCode)} · ${esc(x.sku || '')} · ${esc((x.tier && x.tier.name) || '')}${x.yes24Used ? ' · <span class="tag" style="background:#E8F0FF;color:#1F5FAF">예스24 참고함</span>' : ''}${(x.autoBlock || []).some((t) => /특별판/.test(t)) ? ' · <span class="tag">특별판 키워드</span>' : ''}</small>
       ${r.price != null ? `<div class="hint">기준: <span style="background:${PR_COL[r.color] || '#eee'};color:${['aladin', 'dkgreen'].includes(r.color) ? '#fff' : 'inherit'};padding:0 4px;border-radius:4px">${esc(r.sellerName || r.sellerCode || '알라딘측')}</span> ${esc(r.grade || '')} ${won(r.price)} + 배송 ${won(r.ship)} · ${esc(r.how || '')}</div>` : ''}
       <ul style="margin:4px 0 4px 18px;font-size:12.5px">${(x.reasons || []).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
       ${oldEng(x) ? `<div class="pq-warn">옛 판정 엔진(${esc(x.engine)})의 판정 — 새 엔진(${esc(curEng)})으로 다시 판정될 때까지 '엔진 추천대로'는 막아 둠</div>` : ''}
@@ -3892,7 +3909,7 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
   { d: '2026-10-04', app: '수집기', v: '1.25.0', n: ['알라딘 요청 속도 자동 조절: 상품·고객 수집이 같은 조절 하나를 같이 씀(같은 PC의 모든 탭·스크립트 공유) — 1초 시작, 20번 성공마다 10% 빨라짐(최소 0.6초), 실패 2배·로그인 풀림 3배로 바로 느려짐(최대 15초). 예전 고정 간격(상품 0.7~1.1초, 고객 1.5~3초 따로)과 탭마다 따로 세던 것 때문에 합쳐진 속도가 빨라 튕기던 문제', '경쟁 매물 유의사항·사진: 첫 페이지 다른 판매자 매물 전부로, 바뀐 내용은 덮어쓰지 않고 판(v)으로 쌓음, 다시 확인 주기를 설정에서'] },
   { d: '2026-10-04', app: '공용 · 상품 파서 readnow-products-core.js', v: '0.11.0', n: ['알라딘 요청 속도 자동 조절(makePacer) — 수집기·가격 감시기가 같이 씀'] },
