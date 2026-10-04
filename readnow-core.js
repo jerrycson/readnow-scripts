@@ -1,4 +1,4 @@
-// ReadNow Core Library — 1.1.0 (판매자 분류 classifySellerDoc를 이 파일 한 곳에)
+// ReadNow Core Library — 1.2.0 (판매자 분류의 유일한 기준: sellerBg → evaluateBackground·classifySellerDoc 가 모두 이것만 씀)
 // 여러 Tampermonkey 스크립트(중고가 검토 도우미, 판매자 정보 툴팁, 앞으로 만들 판매가 자동 결정 시스템 등)가
 // @require 로 함께 가져다 쓰는 공용 로직 모음입니다.
 //
@@ -220,34 +220,38 @@
 
   // 배경색: 오직 평가수 기준 (5단계, 평가 없는 것도 빨강에 포함)
   // 폰트색: 품절취소율/총상품수/배송비/평점 기준 (배경과 무관, 진한 색 + 볼드)
+  // ── 판매자 분류 기준 v2 (1.2.0) — 유일한 기준. 배경색 = 분류 ──
+  // 두 축: ① 활동 = 최근 6개월 평가 수 (50 미만·없음 = 비활동 → 무효)  ② 신뢰 = 최근 3개월 품절취소율
+  // 근거: 판매자 4,365곳·첫 페이지 매물 32만 8천 건 분석(2026-10-04) — 거래량이 많아도 취소율 10~30%인 판매자가 첫 페이지의 15.5%를 차지,
+  //       거래량은 중간이어도 취소율 2.5% 미만인 판매자가 많음. 아마존 판매자 기준(판매자 취소율 2.5% 미만)을 '좋음' 기준으로 씀
+  //       평점은 시간이 갈수록 부풀어 구분력이 약해(Reputation Inflation 연구) 분류에 쓰지 않음(글자색 참고로만)
+  const CLASS_BG = { dkgreen: '#66c17a', green: '#c9f2c9', yellow: '#fff3b0', orange: '#ffcc80', red: '#ffd6d6' };
+  const SELLER_RULES = { minActive: 50, red: 20, orange: 10, yellow: 5, good: 2.5 }; // 활동 최소, 취소율 % 경계
+  function sellerBg(info, flags) {
+    const f = flags || {}; const R = SELLER_RULES;
+    const n6 = parseInt(String((info && info.reviewCount) || '').replace(/,/g, ''), 10);
+    const c = parseFloat(info && info.outstockRate);
+    const out = (cls, why) => ({ cls, bg: CLASS_BG[cls], why });
+    if (f.fake) return out('red', '허위 매물 판매자');
+    if (isNaN(n6)) return out('red', '최근 6개월 평가 없음(3건 미만 포함) = 비활동');
+    if (n6 < R.minActive) return out('red', `최근 6개월 평가 ${n6}개 (${R.minActive}개 미만 = 비활동)`);
+    if (!isNaN(c) && c >= R.red) return out('red', `품절취소율 ${c}% (${R.red}% 이상)`);
+    const A = n6 >= 1000 ? 4 : n6 >= 200 ? 3 : n6 >= 100 ? 2 : 1;
+    const act = `최근 6개월 평가 ${n6}개`;
+    if (isNaN(c)) return out(A === 4 ? 'green' : A === 3 ? 'yellow' : 'orange', `${act} · 취소율 모름(한 단계 낮춤)`);
+    const cw = `품절취소율 ${c}%`;
+    if (c >= R.orange) return out('orange', `${act} · ${cw} (${R.orange}~${R.red}%)`);
+    if (c >= R.yellow) return out(A >= 3 ? 'yellow' : 'orange', `${act} · ${cw} (${R.yellow}~${R.orange}%)`);
+    if (c >= R.good) return out(A >= 3 ? 'green' : A === 2 ? 'yellow' : 'orange', `${act} · ${cw} (${R.good}~${R.yellow}%)`);
+    return out(A === 4 ? 'dkgreen' : A >= 2 ? 'green' : 'yellow', `${act} · ${cw} (${R.good}% 미만 = 좋음)`);
+  }
+
+  // 배경색 = 위 분류(sellerBg). 폰트색 = 참고 경고(품절취소율/총상품수/배송비/평점)
   function evaluateBackground(info, rowShippingFee) {
-    const reviewCountNum = parseInt((info.reviewCount || '').replace(/,/g, ''), 10);
     const outstockNum = parseFloat(info.outstockRate);
     const totalItemsNum = parseInt((info.totalItems || '').replace(/,/g, ''), 10);
     const ratingNum = parseFloat(info.rating);
-
-    let bg, bgReason;
-    const highCancelRate = !isNaN(outstockNum) && outstockNum >= 40;
-    if (isNaN(reviewCountNum) || reviewCountNum < 50 || highCancelRate) {
-      bg = '#ffd6d6';
-      const reasons = [];
-      if (isNaN(reviewCountNum)) reasons.push('평가 없음');
-      else if (reviewCountNum < 50) reasons.push('평가수 50개 미만');
-      if (highCancelRate) reasons.push('품절취소율 40% 이상');
-      bgReason = reasons.join(', ');
-    } else if (reviewCountNum < 100) {
-      bg = '#ffcc80';
-      bgReason = '평가수 50~99개';
-    } else if (reviewCountNum < 200) {
-      bg = '#fff3b0';
-      bgReason = '평가수 100~199개';
-    } else if (reviewCountNum < 1000) {
-      bg = '#c9f2c9';
-      bgReason = '평가수 200개 이상';
-    } else {
-      bg = '#66c17a';
-      bgReason = '평가수 1000개 이상';
-    }
+    const sb = sellerBg(info, null); const bg = sb.bg, bgReason = sb.why;
 
     const redReasons = [];
     const redKeys = [];
@@ -348,14 +352,13 @@
 
 
   // =========================================================================
-  // 판매자 분류 (판매가 기준점을 믿어도 되는가) — 이 파일이 유일한 기준. 툴팁·웹앱·판정 엔진이 모두 이 함수를 부름
+  // 판매자 기록(Firestore 문서) → sellerBg 입력으로 바꾸기. 툴팁·웹앱·판정 엔진이 모두 이 함수를 부름
   //  · 평가 수 = 최근 6개월 평가 수 (숍 화면 '최근 6개월, N개 평가'. 3건 미만 '-'는 없음 → 평가 없음)
   //    이유(정범): 오래 팔았어도 최근 6개월 활동·평가가 없으면 그 전 이력은 지금 물건을 보낼지 판단하는 데 쓸모없음
   //  · 품절취소율 = % (숍 화면 최근 3개월 값 우선. 시트 기록의 비율·툴팁 기록의 %를 여기서 맞춤)
   //  · 허위 매물로 표시한 판매자는 색과 관계없이 무효
-  // 반환 cls: 'dkgreen'(유효, 1000+) · 'green'(유효) · 'yellow'(보류 노랑) · 'orange'(보류 주황) · 'red'(무효) · 'unknown'(판매자 기록 없음 = 아직 안 모음)
+  // 반환 cls: 'dkgreen'·'green'(유효) · 'yellow'(보류 노랑) · 'orange'(보류 주황) · 'red'(무효) · 'unknown'(판매자 기록 없음 = 아직 안 모음). 기준은 위 sellerBg 하나
   // =========================================================================
-  const BG_CLASS = { '#66c17a': 'dkgreen', '#c9f2c9': 'green', '#fff3b0': 'yellow', '#ffcc80': 'orange', '#ffd6d6': 'red' };
   function sellerInfoFromDoc(doc, RS) {
     if (!doc) return null;
     let n6 = null;
@@ -376,9 +379,9 @@
   function classifySellerDoc(doc, RS) {
     if (!doc) return { cls: 'unknown', bg: null, why: '판매자 기록 없음 (아직 안 모음)', font: [], info: null };
     const info = sellerInfoFromDoc(doc, RS);
-    if ((doc.ourGrade || doc.grade) === 'fake') return { cls: 'red', bg: '#ffd6d6', why: '허위 매물 판매자', font: [], info };
+    const sb = sellerBg(info, { fake: (doc.ourGrade || doc.grade) === 'fake' });
     const b = evaluateBackground(info, NaN);
-    return { cls: BG_CLASS[String(b.bg || '').toLowerCase()] || 'red', bg: b.bg, why: b.bgReason, font: b.fontReasons || [], info };
+    return { cls: sb.cls, bg: sb.bg, why: sb.why, font: b.fontReasons || [], info };
   }
   // =========================================================================
   // 내보내기
@@ -399,9 +402,11 @@
     computeBusinessYears,
     evaluateBackground,
     evaluateAvHighlight,
-    BG_CLASS,
+    CLASS_BG,
+    SELLER_RULES,
+    sellerBg,
     sellerInfoFromDoc,
     classifySellerDoc,
-    CORE_VERSION: '1.1.0',
+    CORE_VERSION: '1.2.0',
   };
 })(typeof unsafeWindow !== 'undefined' ? unsafeWindow : window);
