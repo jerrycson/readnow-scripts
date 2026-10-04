@@ -256,7 +256,7 @@ details > summary .vztg{float:none;margin-left:8px;vertical-align:middle}.card{p
 .vz .hint,.vz p.hint,.vz .l2 small{display:none}.vz .item.vzrow,.vz li.vzrow{position:relative;overflow:hidden}.vzib{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(47,93,80,.16),rgba(47,93,80,.06));border-right:2px solid rgba(47,93,80,.35);pointer-events:none;z-index:0}
 .vz .vzrow > *:not(.vzib){position:relative;z-index:1}.vz .item.vzrow .l2{display:none}
 mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
-.sleg{margin:8px 0 0;padding:8px 10px;border:1px solid var(--line,#D6DDDA);border-radius:8px;font-size:12.5px;line-height:1.5}.sleg>div{margin-top:4px}.sleg .sw{display:inline-block;width:12px;height:12px;border:1px solid #999;vertical-align:-2px;margin-right:4px}.tag.mon-treat{background:#1F5FAF;color:#fff}.tag.mon-control{background:#6B3FA0;color:#fff}.tag.mon-hold{background:#8A4B0F;color:#fff}.tag.mon-retire{background:#555;color:#fff}.rtabs{display:flex;gap:6px;margin:0 0 8px}.rtabs button{flex:1;padding:8px;border:1px solid var(--line,#D6DDDA);border-radius:8px;background:#fff;font-weight:700}.rtabs button.on{background:var(--cloth,#2F5D50);color:#fff}
+.sleg{margin:8px 0 0;padding:8px 10px;border:1px solid var(--line,#D6DDDA);border-radius:8px;font-size:12.5px;line-height:1.5}.sleg>div{margin-top:4px}.sleg .sw{display:inline-block;width:12px;height:12px;border:1px solid #999;vertical-align:-2px;margin-right:4px}.tag.mon-treat{background:#1F5FAF;color:#fff}.tag.mon-control{background:#6B3FA0;color:#fff}.tag.mon-hold{background:#8A4B0F;color:#fff}.tag.mon-retire{background:#555;color:#fff}.tag.mon-excluded{background:#FFF8D6;color:#7A6A00;border:1px solid #C9A400}.rtabs{display:flex;gap:6px;margin:0 0 8px}.rtabs button{flex:1;padding:8px;border:1px solid var(--line,#D6DDDA);border-radius:8px;background:#fff;font-weight:700}.rtabs button.on{background:var(--cloth,#2F5D50);color:#fff}
 </style>
 </head>
 <body>
@@ -269,7 +269,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="../readnow-sellers-core.js?v=1.3.0"></script>
 <script src="../readnow-core.js?v=1.3.0"></script>
-<script src="../readnow-pricing-core.js?v=0.5.0"></script>
+<script src="../readnow-pricing-core.js?v=0.6.0"></script>
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
@@ -278,7 +278,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.57.0';
+const APP_VER = '0.58.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1569,9 +1569,10 @@ function aladinLinks(l, it) {
 const usedBtn = (l, it) => { const u = aladinLinks(l, it); return u.used ? `<span class="ulink" data-open="${esc(u.used)}" title="${u.usedExact ? '알라딘 온라인 중고 (전체 중고)' : '알라딘 중고 검색 (도서 정보를 받으면 바로 이동)'}">중고↗</span>` : ''; };
 document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-open]'); if (!a) return; ev.preventDefault(); ev.stopPropagation(); window.open(a.dataset.open, '_blank', 'noopener'); }, true);
 // 가격 감시 묶음 표시 — 배정은 판정 엔진(readnow-pricing-core.js)의 groupOf 하나 (수집기 상품 조회 화면과 같은 결과)
-const MONTXT = { treat: ['감시·적용', '판정 엔진이 매일 보고 가격을 맞추는 상품 (파랑)'], control: ['감시·비교', '판정만 기록하고 가격은 절대 안 바꾸는 비교 묶음 — 효과 측정용 (보라)'], hold: ['가격상승대기 PND', '판매보류풀: 일시판매중지 + 관리코드 뒤 PND. 정한 가격 이상으로 최저가에 설 수 있을 때만 판매중'], retire: ['불용 BAD', '불용 재고: 일시판매중지 + 관리코드 뒤 BAD (4년 초과, 관리자 승인)'] }; // 초록은 검토 색이라 쓰지 않음
+const MONTXT = { treat: ['감시·적용', '판정 엔진이 매일 보고 가격을 맞추는 상품 (파랑)'], control: ['감시·비교', '판정만 기록하고 가격은 절대 안 바꾸는 비교 묶음 — 효과 측정용 (보라)'], hold: ['가격상승대기 PND', '판매보류풀: 일시판매중지 + 관리코드 뒤 PND. 정한 가격 이상으로 최저가에 설 수 있을 때만 판매중'], retire: ['불용 BAD', '불용 재고: 일시판매중지 + 관리코드 뒤 BAD (4년 초과, 관리자 승인)'], excluded: ['자동 제외', '자동 감시 제외 관리코드(KHKDVD 등) — 마진 구조가 달라 따로 정할 때까지 무조건 관리자 확인'] }; // 초록은 검토 색이라 쓰지 않음
 function loadPricingCfg() { if (S.prCfgLoading) return; S.prCfgLoading = true; db.collection('prd_system').doc('pricing').get().then((d) => { S.prCfg = d.exists ? d.data() : {}; if (['products', 'home'].includes(S.tab)) renderMain(); }).catch(() => { S.prCfg = {}; }); }
-function monGroup(l) { const PRC = window.ReadnowPricing; if (!PRC || !l || !l.usedCode) return null; const tag = PRC.skuTag ? PRC.skuTag(l.sku) : null; if (tag) return tag; if (l.status !== '판매중') return null; if (!S.prCfg) { loadPricingCfg(); return null; } const g = PRC.groupOf(l.usedCode, { rollout: S.prCfg.rollout || PRC.DEFAULTS.rollout }); return g === 'off' ? null : g; } // 보관함 구분은 관리코드(판정 엔진 skuTag) 한 곳
+function monGroup(l) { const PRC = window.ReadnowPricing; if (!PRC || !l || !l.usedCode) return null; if (!S.prCfg) { loadPricingCfg(); return null; } const g = PRC.groupOfListing(l, prSettings()); return g === 'off' ? null : g; } // 묶음·보관함(PND·BAD)·제외(KHKDVD) 판단은 판정 엔진 한 곳
+function prSettings() { const PRC = window.ReadnowPricing; const c = S.prCfg || {}; return { rollout: c.rollout || (PRC && PRC.DEFAULTS.rollout), excludeSku: c.excludeSku || (PRC && PRC.DEFAULTS.excludeSku), cutoverAt: c.cutoverAt || null }; }
 function monTag(l) { const g = monGroup(l); return g ? `<span class="tag mon-${g}" title="${esc(MONTXT[g][1])}">${MONTXT[g][0]}</span>` : ''; }
 function prodRow(l) {
   const b = l.bookId ? S.pbooks.get(l.bookId) : null; const src = b && b.images ? imgUrl(b.images.front, true) : null;
@@ -1587,9 +1588,9 @@ function renderProducts(m) {
     m.innerHTML = `<h2>상품 ${hits.length.toLocaleString()}건</h2><div class="list">${fold('psearch', hits.map(prodRow), 20) || '<div class="empty">찾는 상품이 없습니다</div>'}</div>`;
   } else {
     const recent = all.filter((l) => l.active).sort((a, b) => String(b.registeredAt || '').localeCompare(String(a.registeredAt || '')));
-    m.innerHTML = '<div class="sortbar"><button id="rankbtn2" class="rankbtn">상품 순위 TOP10</button></div>' + prodDash() + sec('p_recent', '최근 등록 상품', `<div class="list">${fold('precent', recent.map(prodRow)) || '<div class="empty">없음</div>'}</div>`) + '<p class="hint">제목·ISBN·U코드·자체코드·출판사는 위 검색창에 입력하세요. 지표 설명은 각 칸 아래 작은 글씨에 있습니다.</p>';
+    m.innerHTML = '<div class="sortbar"><button id="rankbtn2" class="rankbtn">상품 순위 TOP10</button></div>' + priceCard() + prodDash() + sec('p_recent', '최근 등록 상품', `<div class="list">${fold('precent', recent.map(prodRow)) || '<div class="empty">없음</div>'}</div>`) + '<p class="hint">제목·ISBN·U코드·자체코드·출판사는 위 검색창에 입력하세요. 지표 설명은 각 칸 아래 작은 글씨에 있습니다.</p>';
   }
-  bindUI(m, renderMain);
+  bindUI(m, renderMain); bindPriceCard(m);
   m.querySelectorAll('[data-ptrend]').forEach((b) => (b.onclick = () => { S.ptrend = b.dataset.ptrend; renderMain(); }));
   m.querySelectorAll('[data-pid]').forEach((b) => (b.onclick = () => openProduct(b.dataset.pid)));
 }
@@ -2725,6 +2726,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.58.0': ['상품 탭 맨 위 \'가격 감시\' 칸: A단계 시작·멈춤·전체 정지, 승인 대기·감시·적용·감시·비교·자동 제외 목록', '가격 승인 대기 화면: 하나씩 승인·거절(이유), 모두 승인', 'KHKDVD는 자동 감시에서 항상 제외(관리자 확인 필수) — 표시 \'자동 제외\'', '수집 작업 기록 목록을 날짜별 접기·펼치기로'],
   '0.57.0': ["'기록' 화면: 수집 작업 기록 목록 + 업데이트 기록 목록(웹앱·수집기·툴팁·공용 파일 전체, 날짜별)", '가격 감시 색: 감시·적용 = 파랑, 감시·비교 = 보라', '일시판매중지 보관함 표시: 가격상승대기 PND · 불용 BAD (관리코드로 구분)', '설명서: 불용 = 일시판매중지 + BAD, 판매보류풀 = PND'],
   '0.56.0': ['판매자 분류 범례(판매자 집계·설명서) — 기준 파일 readnow-core.js 1.3.0의 범례에서 그대로', '상품 목록·상세에 가격 감시 묶음 표시(감시·적용 / 감시·비교 / 가격상승대기)', '판정 엔진 설명서 갱신: 예스24 대조, 맨 위 매물 배송비 규칙, 판매중지(판매금지 아님), 판매보류풀이 돈이 되는 경우', "헷갈림 정리: '판매자 평가 점수'(★모범·₩이득)는 분류와 별개라고 표시"],
   '0.55.0': ['판매자 분류 기준 v2(활동량 + 최근 3개월 품절취소율 + 허위 매물) — 기준은 readnow-core.js 1.2.0 한 곳', '❓ 설명서에 ⚙ 판정 엔진(기준·층 구조 로드맵·임시 기준·적용 단계) 항상 보기'],
@@ -3371,7 +3373,7 @@ function engineManualHtml() {
   <h4>6. 가격 감시 표시</h4>
   <p>수집기(샵매니저 상품 조회/수정 목록)와 웹앱 상품 목록·상세에 묶음이 색으로 표시됩니다: <span class="tag mon-treat">감시·적용</span>(파랑) 판정 엔진이 매일 보고 가격을 맞춤 · <span class="tag mon-control">감시·비교</span>(보라) 판정만 기록하고 가격은 절대 안 바꿈(효과 측정용) · <span class="tag mon-hold">가격상승대기 PND</span> 판매보류풀 · <span class="tag mon-retire">불용 BAD</span>. 초록은 검토 때 쓰는 색이라 쓰지 않습니다. 지금 비율: 적용 ${ro.treatPct || 0}% · 비교 ${ro.controlPct || 0}%. 묶음은 상품코드로 고정 배정되어 비율을 올려도 이미 들어간 상품은 그대로.</p>
   <h4>7. 실제 적용 단계</h4>
-  <p>A: 1% 실제 적용 <b>3일</b>(실행이 정확한지 안전 확인) → B: 적용 25% vs 비교 25% <b>1주</b> → 확인 후 C: 적용 묶음 안에서 강도(맨 위 동가 / 한 단위 아래 / 유효 최저만)를 나눠 '다이얼 눈금' 만들기 → D: 전체. 비교 묶음은 C 이후에도 계속 두어 측정을 이어감(1주는 묶음당 판매 약 40건이라 아주 큰 차이만 보임).</p>
+  <p><b>적용 상품은 사람이 고르지 않고 상품코드로 정해지는 무작위</b>입니다(측정이 공정하도록). 단 <b>${esc((prSettings().excludeSku || []).join(', '))}</b>는 마진 구조가 달라 비율과 관계없이 항상 자동 감시에서 빼고, 자동화를 따로 정할 때까지 무조건 관리자 확인입니다.<br><b>가격 감시기</b>는 수집기와 따로 도는 스크립트입니다(작업 잠금·진행 기록·저장 칸 모두 따로, 로그인은 수집기에 맡김). 웹앱에서 지정한 감시 PC 한 대에서만 돌고, 알라딘 요청 간격을 3~5초로 둬 같은 인터넷 주소의 수집과 부딪히지 않습니다. 상품 탭 맨 위 '가격 감시' 칸에서 시작·멈춤·전체 정지·승인합니다.<br>A: 1% 실제 적용 <b>3일</b>(실행이 정확한지 안전 확인) → B: 적용 25% vs 비교 25% <b>1주</b> → 확인 후 C: 적용 묶음 안에서 강도(맨 위 동가 / 한 단위 아래 / 유효 최저만)를 나눠 '다이얼 눈금' 만들기 → D: 전체. 비교 묶음은 C 이후에도 계속 두어 측정을 이어감(1주는 묶음당 판매 약 40건이라 아주 큰 차이만 보임).</p>
   <h4>8. 판매보류풀 — 가격상승대기</h4>
   <p>상품마다 '최저 수용가'를 정해 두고, 그 가격 이상으로 최저가 자리에 설 수 있을 때만 판매중, 아니면 일시판매중지. <b>관리코드 뒤 3자리를 PND로</b> 바꿔 구분합니다(예: BLKCMN → BLKPND · 앞 3자리 서가는 그대로 · 원래 가격 코드와 최저 수용가는 Firebase에 남김). 판매중↔일시판매중지 전환은 ${D.confirmHours || 24}시간 확정 + 최소 유지 시간을 둬 깜빡이지 않게 함. <b>일시판매중지 = 우리 전용 보관함</b>: 관리코드 뒤 PND = 판매보류풀, BAD = 불용. 이 둘이 아닌 일시판매중지 상품은 엔진이 건드리지 않고 처리 여부를 묻습니다.<br>
   <b>풀이 확실히 돈이 되는 경우는 두 가지</b>: ① <b>공급이 적은 책</b> — 우리 매물이 보이면 시장 가격을 붙잡아 둠, 숨기면 다른 판매자 가격이 오를 여지 ② <b>추격자가 붙은 책</b> — 보이는 동안 계속 따라 내려옴. 그 밖의 책은 수용가로 <b>계속 보여 두는 편이 낫습니다</b>(허위 매물을 피해 오는 손님에게 팔릴 기회가 남음).<br>
@@ -3509,11 +3511,61 @@ async function aladinCleanup() {
 document.addEventListener('click', (ev) => { const t = ev.target; if (t.closest('#ao_open')) { ev.preventDefault(); openAladinPool(); } else if (t.closest('#ao_match')) { ev.preventDefault(); matchNow(false); } else if (t.closest('#ao_clean')) { ev.preventDefault(); aladinCleanup(); } });
 
 
+/* ══════════ 가격 감시 (판정 엔진) — 상품 탭 맨 위 ══════════ */
+function loadPriceRun() { if (S.prRunLoading) return; S.prRunLoading = true; Promise.all([db.collection('prd_system').doc('pricing_run').get(), db.collection('prd_price_decisions').get()]).then(([r, ds]) => { S.prRun = r.exists ? r.data() : {}; S.prDec = new Map(); ds.forEach((d) => S.prDec.set(d.id, d.data())); S.prRunLoading = false; if (S.tab === 'products') renderMain(); }).catch((e) => { S.prRun = { err: e.code || e.message }; S.prDec = new Map(); S.prRunLoading = false; }); }
+function priceCard() {
+  const PRC = window.ReadnowPricing; if (!PRC) return '<div class="card"><b style="color:#c62828">판정 엔진 파일(readnow-pricing-core.js)을 못 읽음</b></div>';
+  if (!S.prCfg) { loadPricingCfg(); return '<div class="card"><div class="hint">가격 감시 설정 읽는 중</div></div>'; }
+  if (!S.prRun) loadPriceRun();
+  const c = S.prCfg; const st = prSettings(); const cnt = { treat: 0, control: 0, excluded: 0 }; for (const l of S.plist.values()) { const g = PRC.groupOfListing(l, st); if (cnt[g] != null) cnt[g]++; }
+  const dec = S.prDec ? [...S.prDec.values()] : []; const pend = dec.filter((x) => x.approvalState === 'pending').length; const r = S.prRun || {};
+  const stTxt = !c.enabled ? '<b>꺼짐</b>' : c.killSwitch ? '<b style="color:#B0322A">전체 정지</b>' : `<b style="color:#1F5FAF">켜짐</b> · ${esc(c.phase || 'A')}단계`;
+  return `<div class="card" style="border-left:5px solid #1F5FAF"><h3>가격 감시 (판정 엔진) ${stTxt}</h3>
+    <div class="mgrid"><div class="drill" data-prq="1"><b>${num(pend)} <i class="dr">›</i></b><span>승인 대기</span><small>누르면 하나씩 승인·거절</small></div>
+      <div class="drill" data-prl="treat"><b>${num(cnt.treat)} <i class="dr">›</i></b><span>감시·적용</span><small>적용 ${(st.rollout || {}).treatPct ?? 0}%</small></div>
+      <div class="drill" data-prl="control"><b>${num(cnt.control)} <i class="dr">›</i></b><span>감시·비교</span><small>비교 ${(st.rollout || {}).controlPct ?? 0}%</small></div>
+      <div class="drill" data-prl="excluded"><b>${num(cnt.excluded)} <i class="dr">›</i></b><span>자동 제외</span><small>${esc((st.excludeSku || []).join(', '))} — 관리자 확인</small></div></div>
+    <p class="hint" style="margin:6px 0">감시 PC: <b>${esc(c.watchPc || '지정 안 됨 — 그 PC의 가격 감시기 칸에서 지정')}</b> · 이번 바퀴 ${r.keys ? `${num(r.idx || 0)} / ${num(r.keys.length)}${r.doneAt ? ' (끝남 ' + esc(String(r.doneAt).slice(5, 16).replace('T', ' ')) + ')' : ''}` : '아직 없음'}${r.err ? ` · <b style="color:#c62828">읽기 실패 ${esc(r.err)}</b>` : ''} · 감시 시작일 ${esc(c.cutoverAt ? String(c.cutoverAt).slice(0, 10) : '-')}</p>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">${!c.enabled ? '<button class="btn" id="pr_start">A단계 시작 (적용 1%)</button>' : '<button class="btn ghost" id="pr_off">멈춤</button>'}<button class="btn ghost" id="pr_kill">${c.killSwitch ? '전체 정지 풀기' : '전체 정지'}</button><button class="btn ghost" id="pr_reload">새로 읽기</button></div>
+    <p class="hint" style="margin:6px 0 0">A단계(L0): 엔진은 판정만 하고, <b>여기서 승인한 가격만</b> 감시 PC가 샵매니저에 반영합니다. 기준·로드맵: ❓ 설명서 → ⚙ 판정 엔진.</p></div>`;
+}
+function bindPriceCard(m) {
+  const w = (o) => db.collection('prd_system').doc('pricing').set({ ...o, updatedBy: S.user.email, updatedAt: new Date().toISOString(), writerSchema: 6 }, { merge: true }).then(() => { S.prCfg = null; S.prRun = null; toast('저장됨'); renderMain(); }).catch((e) => toast('실패: ' + e.message));
+  const st = m.querySelector('#pr_start'); if (st) st.onclick = () => { if (!confirm('A단계를 시작할까요?\n· 적용 1% (KHKDVD 제외)\n· 엔진은 판정만, 가격은 승인한 것만 반영\n· 감시 PC에서 가격 감시기 스크립트가 돌아야 합니다')) return; const PRC = window.ReadnowPricing; w({ enabled: true, phase: 'A', rollout: { treatPct: 1, controlPct: 0 }, excludeSku: (S.prCfg && S.prCfg.excludeSku) || PRC.DEFAULTS.excludeSku, cutoverAt: (S.prCfg && S.prCfg.cutoverAt) || new Date().toISOString(), dailyCap: (S.prCfg && S.prCfg.dailyCap) || 300, startedAt: new Date().toISOString(), startedBy: S.user.email }); };
+  const off = m.querySelector('#pr_off'); if (off) off.onclick = () => w({ enabled: false });
+  const k = m.querySelector('#pr_kill'); if (k) k.onclick = () => w({ killSwitch: !(S.prCfg && S.prCfg.killSwitch) });
+  const rl = m.querySelector('#pr_reload'); if (rl) rl.onclick = () => { S.prCfg = null; S.prRun = null; renderMain(); };
+  m.querySelectorAll('[data-prq]').forEach((b) => (b.onclick = () => openPriceQueue()));
+  m.querySelectorAll('[data-prl]').forEach((b) => (b.onclick = () => { const g = b.dataset.prl; const PRC = window.ReadnowPricing; const rows = [...S.plist.values()].filter((l) => PRC.groupOfListing(l, prSettings()) === g); openListView({ title: `${MONTXT[g][0]} 상품 ${rows.length}개`, rows, placeholder: '제목·코드 검색', note: esc(MONTXT[g][1]), row: prodRow, text: (l) => [l.title, l.usedCode, l.sku].join(' '), bind: (sh) => sh.querySelectorAll('[data-pid]').forEach((x) => (x.onclick = () => openProduct(x.dataset.pid))) }); }));
+}
+function openPriceQueue() {
+  const sh = $('#sheet'); S.detail = { prq: 1 }; history.pushState({ prq: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
+  const L = [...(S.prDec || new Map()).values()].filter((x) => x.approvalState === 'pending').sort((a, b) => Math.abs(b.deltaPct || 0) - Math.abs(a.deltaPct || 0));
+  const COL = { dkgreen: '#66c17a', green: '#c9f2c9', yellow: '#fff3b0', orange: '#ffcc80', red: '#ffd6d6', aladin: '#cfe3ff', proxy: '#e9d7ff' };
+  const one = (x) => { const r = x.ref || {}; const up = (x.delta || 0) > 0; return `<div class="card" data-k="${esc(x.key)}"><b>${esc(x.title || x.usedCode)}</b> <small class="hint">${esc(x.sku || '')} · ${esc(x.grade || '')} · ${esc((x.tier && x.tier.name) || '')}</small>
+    <div style="font-size:18px;margin:4px 0">${won(x.current)} → <b style="color:${up ? '#1F6F4A' : '#B0322A'}">${won(x.target)}</b> <small>(${up ? '+' : ''}${Math.round((x.deltaPct || 0) * 100)}%)</small></div>
+    <div class="hint">기준: <span style="background:${COL[r.color] || '#eee'};padding:0 4px;border-radius:4px">${esc(r.sellerName || r.sellerCode || '알라딘측')}</span> ${esc(r.grade || '')} ${won(r.price)} + 배송 ${won(r.ship)} · ${esc(r.how || '')}${r.isFirst ? ' · 목록 맨 위' : ''}</div>
+    <ul style="margin:4px 0 4px 18px;font-size:12.5px">${(x.reasons || []).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+    ${(x.autoBlock || []).length ? `<div class="hint">사람 확인 이유: ${esc(x.autoBlock.join(' · '))}</div>` : ''}
+    <div style="display:flex;gap:6px;margin-top:6px"><button class="btn" data-ok="${esc(x.key)}">승인</button><select data-why="${esc(x.key)}"><option value="">거절 이유</option><option>기준 매물이 이상함</option><option>너무 많이 내림</option><option>올리면 안 됨</option><option>이 책은 따로 관리</option><option>기타</option></select><button class="btn ghost" data-no="${esc(x.key)}">거절</button></div></div>`; };
+  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">가격 승인 대기 ${L.length}건</div></div>
+    <div class="card"><p class="hint" style="margin:0">승인한 가격만 감시 PC가 샵매니저에 반영합니다 (판정 후 48시간 안). 거절 이유는 엔진 개선에 쓰입니다. 변화 폭이 큰 것부터.</p>${L.length ? '<button class="btn ghost" id="pr_all" style="margin-top:6px">보이는 것 모두 승인</button>' : ''}</div>${L.map(one).join('') || '<div class="empty">승인할 것이 없습니다</div>'}`;
+  $('#back').onclick = () => history.back();
+  const save = (key, o) => db.collection('prd_price_decisions').doc(key).set({ ...o, writerSchema: 6 }, { merge: true }).then(() => { const x = S.prDec.get(key); Object.assign(x, o); const el = sh.querySelector(`[data-k="${CSS.escape(key)}"]`); if (el) el.remove(); }).catch((e) => toast('실패: ' + e.message));
+  const approve = (key) => { const x = S.prDec.get(key); return save(key, { approvalState: 'approved', approval: { by: S.user.email, at: new Date().toISOString(), price: x.target } }); };
+  sh.querySelectorAll('[data-ok]').forEach((b) => (b.onclick = () => approve(b.dataset.ok)));
+  sh.querySelectorAll('[data-no]').forEach((b) => (b.onclick = () => { const k = b.dataset.no; const why = sh.querySelector(`[data-why="${CSS.escape(k)}"]`).value; if (!why) return toast('거절 이유를 고르세요'); save(k, { approvalState: 'rejected', approval: { by: S.user.email, at: new Date().toISOString(), reason: why } }); }));
+  const all = sh.querySelector('#pr_all'); if (all) all.onclick = async () => { if (!confirm(`${L.length}건을 모두 승인할까요?`)) return; for (const x of L) await approve(x.key); toast('모두 승인'); };
+}
+
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
+  { d: '2026-10-04', app: '가격 감시기', v: '0.1.0', n: ['수집기와 따로 도는 새 스크립트: 감시 묶음을 하루 한 바퀴 판정(중단돼도 이어서), 예스24 대조, 승인된 가격만 샵매니저에 반영, 요청 간격 3.2~4.8초, 로그인은 수집기에 맡김'] },
+  { d: '2026-10-04', app: '수집기', v: '1.23.1', n: ['가격 감시 표시에 \'자동 제외\'(KHKDVD) 추가, 판정 엔진 0.6.0 사용'] },
+  { d: '2026-10-04', app: '공용 · 판정 엔진 readnow-pricing-core.js', v: '0.6.0', n: ['KHKDVD를 자동 감시에서 항상 제외(관리자 확인 필수), 상품 단위 묶음 판정(groupOfListing)'] },
   { d: '2026-10-04', app: '수집기', v: '1.23.0', n: ['가격 감시 표시 색: 감시·적용 = 파랑, 감시·비교 = 보라 (초록은 검토 색)', '일시판매중지 보관함을 관리코드로 구분해 표시: 가격상승대기 PND · 불용 BAD', '판정 엔진 0.5.0 사용'] },
   { d: '2026-10-04', app: '수집기', v: '1.22.0', n: ["옛 버전 요구 팝업 고침: 공용 파일이 '옛 버전'일 때만 알림, 필요 버전은 한 곳에서", '샵매니저 상품 조회/수정 목록에 가격 감시 묶음 표시·범례', '예스24 접속 허용, 판매자 분류 기준·판정 엔진 파일 불러옴'] },
   { d: '2026-10-04', app: '수집기', v: '1.21.0', n: ['온라인 중고 첫 페이지 매물의 변화(새 매물·빠진 매물·가격 변화)를 지우지 않고 쌓음 (prd_metric_changes · usedListings)'] },
@@ -3549,24 +3601,33 @@ function openUpdateLog() {
 function bindRecTabs(sh) { sh.querySelectorAll('[data-rtab]').forEach((b) => (b.onclick = () => (b.dataset.rtab === 'updates' ? openUpdateLog() : openLogViewer()))); }
 
 /* ══════════ PC별 수집 작업 기록 (수집기 1.8.0이 1분마다 올림: rn_logs) ══════════ */
-async function openLogViewer(pc, date) {
-  const d = date || dstr(new Date()); const key = d.replace(/-/g, '');
-  const sh = $('#sheet'); S.detail = { logs: 1 }; if (!pc && !date) history.pushState({ lg: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
-  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">기록</div></div><div class="rtabs"><button class="on" data-rtab="jobs">수집 작업 기록 목록</button><button data-rtab="updates">업데이트 기록 목록</button></div><div class="card"><div class="empty">불러오는 중</div></div>`; bindRecTabs(sh); $('#back').onclick = () => history.back();
-  let docs = []; try { const ss = await db.collection('rn_logs').where('slot', '>=', key + '0000').where('slot', '<=', key + '2359').get(); ss.forEach((x) => docs.push(x.data())); } catch (e) { sh.querySelector('.card').innerHTML = `<div class="empty">기록을 못 읽음: ${esc(e.code || e.message)} (Firebase 규칙에 rn_logs 허용 필요)</div>`; return; }
-  const pcs = [...new Set(docs.map((x) => x.pc))].sort(); const cur = pc || pcs[0] || '';
-  const lines = docs.filter((x) => x.pc === cur).sort((a, b) => String(a.slot).localeCompare(String(b.slot))).flatMap((x) => x.lines || []);
-  const f = S.logF || 'all';
-  const shown = lines.filter((l) => f === 'all' || (f === 'imp' ? !/\] · /.test(l) : /\] (⚠|!) /.test(l)));
+async function openLogViewer(pc, date) { // 수집 작업 기록 목록: 날짜별 접기·펼치기 (펼친 날만 불러옴), 날짜 안에서 PC·중요도 고르기
+  const sh = $('#sheet'); S.detail = { logs: 1 }; if (!sh.classList.contains('on')) history.pushState({ lg: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
+  const days = []; const t0 = new Date(); for (let k = 0; k < 21; k++) { const d = new Date(t0); d.setDate(t0.getDate() - k); days.push(dstr(d)); }
+  const openDay = date || days[0];
   sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">기록</div></div><div class="rtabs"><button class="on" data-rtab="jobs">수집 작업 기록 목록</button><button data-rtab="updates">업데이트 기록 목록</button></div>
-    <div class="card"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><input type="date" id="lg_d" value="${d}"> ${pcs.map((p) => `<button class="btn ${p === cur ? '' : 'ghost'} sm" data-lgpc="${esc(p)}">${esc(p)}</button>`).join('') || '<span class="hint">이 날 기록 없음</span>'}</div>
-    <div class="ptabs" style="margin:8px 0">${[['all', '전체'], ['imp', '중요만'], ['err', '오류·경고']].map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-lgf="${k}">${l}</button>`).join('')}</div>
-    <div style="font:12px/1.5 Consolas,monospace;white-space:pre-wrap;max-height:65vh;overflow:auto;background:#F7F9F8;border-radius:6px;padding:8px">${shown.map((l) => `<div style="${/\] ⚠ /.test(l) ? 'color:#B0322A;font-weight:700' : /\] ! /.test(l) ? 'color:#A8661B' : /\] · /.test(l) ? 'color:#5B6B66' : 'font-weight:600'}">${esc(l)}</div>`).join('') || '없음'}</div>
-    <p class="hint">${num(shown.length)}줄 · 수집기가 1분마다 올립니다 (한국 시간). 아주 최근 1분은 아직 안 보일 수 있습니다.</p></div>`;
-  $('#back').onclick = () => history.back();
-  sh.querySelectorAll('[data-lgpc]').forEach((b) => (b.onclick = () => openLogViewer(b.dataset.lgpc, d)));
-  sh.querySelectorAll('[data-lgf]').forEach((b) => (b.onclick = () => { S.logF = b.dataset.lgf; openLogViewer(cur, d); }));
-  $('#lg_d').onchange = (e) => openLogViewer(null, e.target.value); bindRecTabs(sh);
+    <div class="card"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="hint">다른 날짜:</span><input type="date" id="lg_d" value="${openDay}"> <span class="hint">최근 3주는 아래에서 날짜를 눌러 펼치세요. 수집기가 1분마다 올립니다(한국 시간).</span></div></div>
+    ${[...new Set([openDay, ...days])].map((d) => `<details class="card man lgday" data-day="${d}" ${d === openDay ? 'open' : ''}><summary><b>${d}</b> <small class="hint lgsum"></small></summary><div class="lgbody"><div class="hint">펼치면 불러옵니다</div></div></details>`).join('')}`;
+  $('#back').onclick = () => history.back(); bindRecTabs(sh);
+  $('#lg_d').onchange = (e) => openLogViewer(null, e.target.value);
+  S.logPc = S.logPc || {};
+  const load = async (det) => {
+    const d = det.dataset.day; const key = d.replace(/-/g, ''); const body = det.querySelector('.lgbody'); body.innerHTML = '<div class="hint">불러오는 중</div>';
+    let docs = []; try { const ss = await db.collection('rn_logs').where('slot', '>=', key + '0000').where('slot', '<=', key + '2359').get(); ss.forEach((x) => docs.push(x.data())); } catch (e) { body.innerHTML = `<div class="empty">기록을 못 읽음: ${esc(e.code || e.message)}</div>`; return; }
+    const pcs = [...new Set(docs.map((x) => x.pc))].sort(); det.querySelector('.lgsum').textContent = pcs.length ? `PC ${pcs.join(' · ')}` : '기록 없음';
+    const draw = () => {
+      const cur = (pc && d === openDay ? pc : null) || S.logPc[d] || pcs[0] || ''; const f = S.logF || 'all';
+      const lines = docs.filter((x) => x.pc === cur).sort((a, b) => String(a.slot).localeCompare(String(b.slot))).flatMap((x) => x.lines || []);
+      const shown = lines.filter((l) => f === 'all' || (f === 'imp' ? !/\] · /.test(l) : /\] (⚠|!) /.test(l)));
+      body.innerHTML = pcs.length ? `<div style="display:flex;gap:6px;flex-wrap:wrap">${pcs.map((p) => `<button class="btn ${p === cur ? '' : 'ghost'} sm" data-lgpc="${esc(p)}">${esc(p)}</button>`).join('')}</div>
+        <div class="ptabs" style="margin:8px 0">${[['all', '전체'], ['imp', '중요만'], ['err', '오류·경고']].map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-lgf="${k}">${l}</button>`).join('')}</div>
+        <div style="font:12px/1.5 Consolas,monospace;white-space:pre-wrap;max-height:60vh;overflow:auto;background:#F7F9F8;border-radius:6px;padding:8px">${shown.map((l) => `<div style="${/\] ⚠ /.test(l) ? 'color:#B0322A;font-weight:700' : /\] ! /.test(l) ? 'color:#A8661B' : /\] · /.test(l) ? 'color:#5B6B66' : 'font-weight:600'}">${esc(l)}</div>`).join('') || '없음'}</div><p class="hint">${num(shown.length)}줄</p>` : '<div class="hint">이 날 기록 없음</div>';
+      body.querySelectorAll('[data-lgpc]').forEach((b) => (b.onclick = () => { S.logPc[d] = b.dataset.lgpc; pc = null; draw(); }));
+      body.querySelectorAll('[data-lgf]').forEach((b) => (b.onclick = () => { S.logF = b.dataset.lgf; draw(); }));
+    };
+    draw();
+  };
+  sh.querySelectorAll('details.lgday').forEach((det) => { det.addEventListener('toggle', () => { if (det.open && !det._loaded) { det._loaded = true; load(det); } }); if (det.open) { det._loaded = true; load(det); } });
 }
 document.addEventListener('click', (ev) => { if (ev.target.closest('#open_logs')) { ev.preventDefault(); openLogViewer(); } });
 
