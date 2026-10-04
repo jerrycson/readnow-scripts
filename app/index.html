@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#2F5D50">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>리드나우 고객</title>
+<title>리드나우(북스킹)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
 :root{--paper:#FFFFFF;--bg:#F3F5F4;--ink:#1E2B28;--sub:#5B6B66;--line:#DCE3E0;--cloth:#2F5D50;--cloth2:#264D42;--soft:#E6EFEB;--amber:#A8661B;--amberSoft:#FFF4E5;--red:#B0322A;--redSoft:#FDECEA;--gold:#8A6D1D;--goldSoft:#FBF3DC}
@@ -267,7 +267,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="../readnow-sellers-core.js?v=1.3.0"></script>
-<script src="../readnow-core.js"></script>
+<script src="../readnow-core.js?v=1.1.0"></script>
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
@@ -276,7 +276,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.53.0';
+const APP_VER = '0.54.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -404,7 +404,7 @@ const ICON = {
 };
 function shell() {
   $('#app').innerHTML = `
-  <header class="top"><div class="row"><h1 id="gohome" class="homelink" title="홈으로">리드나우</h1><span class="tbtns"><button class="me hbtn" id="hpend">연결 확정</button><button class="me hbtn" id="hset" title="설정">⚙ 설정</button><button class="me hbtn" id="hman" title="사용 설명서">❓ 설명서</button><button class="me" id="hscore">점수 기준</button><button class="me" id="hmet">지표·차트</button><button class="me" id="me">${esc((S.user.displayName || S.user.email).slice(0, 6))}</button></span></div>
+  <header class="top"><div class="row"><h1 id="gohome" class="homelink" title="홈으로">리드나우(북스킹)</h1><span class="tbtns"><button class="me hbtn" id="hpend">연결 확정</button><button class="me hbtn" id="hset" title="설정">⚙ 설정</button><button class="me hbtn" id="hman" title="사용 설명서">❓ 설명서</button><button class="me" id="hscore">점수 기준</button><button class="me" id="hmet">지표·차트</button><button class="me" id="me">${esc((S.user.displayName || S.user.email).slice(0, 6))}</button></span></div>
     <div class="sync"></div><div class="colbar" id="colbar"></div><div class="jobs" id="jobs"></div>
     <div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6B66" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" type="search" placeholder="고객·전화, 주문번호, 책 제목·ISBN (상품 탭에선 상품, 매입 탭에선 매입 검색)" autocomplete="off" inputmode="search"></div></header>
@@ -2717,6 +2717,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.54.0': ['판매자 분류를 공용 파일 readnow-core.js(1.1.0)의 한 함수로만 — 웹앱 안의 복사본 없앰 (툴팁·판정 엔진과 같은 함수)', '분석 자료 내려받기에 판매 기록(주문 줄) 추가', '이름: 리드나우(북스킹)'],
   '0.53.0': ['판매자 분류 고침: 평가 수를 툴팁과 똑같이 최근 6개월 평가 수로 (전에는 툴팁 기록이 없는 판매자를 전체 기간 평가 수로 재서 기준이 섞였음), 구글 시트 판매자의 품절취소율 단위(비율↔%) 맞춤', '판매자 집계에 \'판매자 분석 자료 내려받기\' (판정 엔진 분류 개편용)'],
   '0.52.0': ['판매자 집계(유효·보류 노랑·보류 주황·무효)를 툴팁과 같은 정의(readnow-core.js 배경색 기준)로'],
   '0.51.2': ['설정 저장 오류(목록 안의 목록) 고침 — 운영 비용 설정이 저장되지 않던 원인', '상품 상세: 구매자 분포·함께 산 책의 변화 기록', '설정 ⑨ 구매자 분포 기간 칸 하나로(기본 30일), 0 = 무제한 안내'],
@@ -4033,14 +4034,9 @@ function openSalesView(r, lbl, replace) {
 //  보류 노랑 = 평가 100~199개 → 기본은 무효로 치되, 상품 조건을 대조해 유효에 가까우면 유효로
 //  유효(초록) = 평가 200개 이상 → 가격 비교에서 무조건 참고
 const RNC = window.ReadNowCore || null;
-function bgOf(s) { // 툴팁과 같은 입력: 평가 수 = 숍 화면의 '최근 6개월, N개 평가'(툴팁 readnow-core 입력 reviewCount와 같은 값), 품절취소율 = %
-  const r6 = RS ? RS.rev6m(s) : { n: s.reviewCount ?? null }; const n6 = r6 && r6.n != null ? r6.n : null; // 3건 미만('-')이면 null → 툴팁처럼 '평가 없음'(무효)
-  const ocv = s.cancel3m != null ? s.cancel3m * 100 : RS ? (sN(s).outRatio != null ? sN(s).outRatio * 100 : null) : s.outstockRate; // 시트 기록(비율)·툴팁 기록(%) 단위 차이를 여기서 맞춤
-  const info = { reviewCount: n6 != null ? String(n6) : '', outstockRate: ocv != null ? String(ocv) : '', totalItems: s.totalItems != null ? String(s.totalItems) : '', rating: s.rating != null ? String(s.rating <= 1 ? s.rating * 100 : s.rating) : '' };
-  if (RNC && RNC.evaluateBackground) return RNC.evaluateBackground(info, NaN);
-  const rc = parseInt(info.reviewCount.replace(/,/g, ''), 10), oc = parseFloat(info.outstockRate); // readnow-core.js를 못 읽었을 때만: 같은 기준의 복사본
-  if (isNaN(rc) || rc < 50 || (!isNaN(oc) && oc >= 40)) return { bg: '#ffd6d6', bgReason: isNaN(rc) ? '평가 없음' : rc < 50 ? '평가수 50개 미만' : '품절취소율 40% 이상' };
-  return rc < 100 ? { bg: '#ffcc80', bgReason: '평가수 50~99개' } : rc < 200 ? { bg: '#fff3b0', bgReason: '평가수 100~199개' } : rc < 1000 ? { bg: '#c9f2c9', bgReason: '평가수 200개 이상' } : { bg: '#66c17a', bgReason: '평가수 1000개 이상' };
+function bgOf(s) { // 판매자 분류 = readnow-core.js classifySellerDoc 한 곳의 기준 (툴팁·판정 엔진과 같은 함수). 복사본 없음 — 못 읽으면 분류하지 않고 알림
+  if (!RNC || !RNC.classifySellerDoc) return { bg: '#ffd6d6', bgReason: '기준 파일(readnow-core.js 1.1.0)을 못 읽음 — 분류 불가', fontReasons: [], missing: true };
+  const r = RNC.classifySellerDoc(s, RS); return { bg: r.bg, bgReason: r.why, fontReasons: r.font || [] };
 }
 const BG2CLS = { '#ffd6d6': 'bad', '#ffcc80': 'orange', '#fff3b0': 'yellow', '#c9f2c9': 'ok', '#66c17a': 'ok' };
 function sellerClass(s) { return BG2CLS[String(bgOf(s).bg || '').toLowerCase()] || 'bad'; }
@@ -4054,10 +4050,12 @@ async function exportSellerAnalysis(btn) {
       market.push({ b: bid, t: bk.title || null, lp: bk.priceList || m.priceList || null, sp: m.salesPoint ?? null, av: m.availability || null, tot: m.usedTotal ?? null, bb: m.buyback || null, at: m.lastCheckedAt || null,
         r: rows.map((x) => [x.sellerCode || null, x.sellerName || null, x.grade || null, x.price ?? null, x.ship ?? null, x.soldOut ? 1 : 0, x.sellerBadge || null, x.usedCode || null]) }); }
     const ours = [...S.plist.values()].map((l) => [l.bookId || null, l.price ?? null, l.grade || null, l.registeredAt || null, l.active ? 1 : 0, l.status || null, l.usedCode || null]);
-    const out = { at: new Date().toISOString(), appVer: APP_VER, by: S.user && S.user.email, note: '판매자 분류 개편용 원자료. sellers = Firestore sellers 전체, cls = 지금 분류(툴팁 기준), market.r = [판매자번호, 이름, 등급, 가격, 배송비, 판매중지, 표시, 상품코드]', sellers: [...S.sellers.values()], cls, market, ours };
+    if (btn) btn.textContent = '판매 기록 받는 중…'; if (!S.ordersLoaded) await syncOrders(true);
+    const sales = []; for (const o of S.orders.values()) { if (o.kind !== 'sale') continue; for (const it of o.items || []) sales.push([o.orderedAt || null, it.aladinUsedCode || null, it.price ?? null, it.qty || 1, it.lineStatus || null, o.shippingFee ?? null]); }
+    const out = { at: new Date().toISOString(), appVer: APP_VER, by: S.user && S.user.email, note: '판매자 분류 개편용 원자료. sellers = Firestore sellers 전체, cls = 지금 분류(툴팁 기준), market.r = [판매자번호, 이름, 등급, 가격, 배송비, 판매중지, 표시, 상품코드], ours = [도서, 가격, 등급, 등록일, 판매중여부, 상태, 상품코드], sales = [주문일, 상품코드, 가격, 수량, 줄 상태, 주문 배송비]', sellers: [...S.sellers.values()], cls, market, ours, sales };
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(out)], { type: 'application/json' })); a.download = `readnow-seller-analysis-${dstr(new Date())}.json`; document.body.appendChild(a); a.click(); a.remove();
-    toast(`내려받음: 판매자 ${num(out.sellers.length)}곳 · 시장 ${num(market.length)}종`);
-  } catch (e) { toast('실패: ' + e.message); } finally { if (btn) { btn.disabled = false; btn.textContent = '판매자 분석 자료 내려받기 (판정 엔진 분류 개편용)'; } }
+    toast(`내려받음: 판매자 ${num(out.sellers.length)}곳 · 시장 ${num(market.length)}종 · 판매 ${num(sales.length)}줄`);
+  } catch (e) { toast('실패: ' + e.message); } finally { if (btn) { btn.disabled = false; btn.textContent = '판매자·등록·판매 분석 자료 내려받기 (판정 엔진용)'; } }
 }
 document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('#sexport'); if (b) exportSellerAnalysis(b); });
 function sellerCountPanel() {
@@ -4065,7 +4063,7 @@ function sellerCountPanel() {
   const pro = all.filter((s) => s.isPro || s.aladinGrade === '전문셀러').length;
   return `<div class="card"><h3>판매자 집계 <small class="hint">전체 ${num(all.length)}곳 · 전문셀러(사업자) ${num(pro)} · 개인 ${num(all.length - pro)}</small></h3>
     <div class="mgrid"><div class="drill" data-scnt="all"><b>${num(all.length)} <i class="dr">›</i></b><span>전체</span><small>모은 판매자</small></div>${Object.entries(SCLS).map(([k, [l, col, why]]) => `<div class="drill" data-scnt="${k}" style="border-left:4px solid ${col}" title="${why}"><b>${num(c[k].length)} <i class="dr">›</i></b><span>${l}</span><small>${Math.round((c[k].length / Math.max(1, all.length)) * 100)}% · ${why.split(' — ')[0]}</small></div>`).join('')}</div>
-    <p class="hint" style="margin:6px 0 0">판매자 정보 툴팁의 배경색과 같은 기준입니다(공용 파일 readnow-core.js). 지금은 판매자 기준으로 판매가의 유효성을 가르고, 자료가 쌓이면 상품 기준으로 바꿀 예정입니다.</p><p style="margin:8px 0 0"><button class="btn" id="sexport">판매자 분석 자료 내려받기 (판정 엔진 분류 개편용)</button>${fake ? ` 따로 '허위 매물'로 표시한 판매자 ${num(fake)}곳.` : ''}${RNC ? '' : ' (readnow-core.js를 못 읽어 같은 기준의 복사본으로 계산)'}</p></div>`;
+    <p class="hint" style="margin:6px 0 0">판매자 정보 툴팁의 배경색과 같은 기준입니다(공용 파일 readnow-core.js). 지금은 판매자 기준으로 판매가의 유효성을 가르고, 자료가 쌓이면 상품 기준으로 바꿀 예정입니다.</p><p style="margin:8px 0 0"><button class="btn" id="sexport">판매자·등록·판매 분석 자료 내려받기 (판정 엔진용)</button>${fake ? ` 따로 '허위 매물'로 표시한 판매자 ${num(fake)}곳.` : ''}${RNC && RNC.classifySellerDoc ? '' : ' <b style="color:#c62828">⚠ 기준 파일 readnow-core.js(1.1.0)를 못 읽어 분류할 수 없습니다 — GitHub에 올렸는지 확인</b>'}</p></div>`;
 }
 function openSellerCount(k) {
   const SC = scores(); const rows = [...S.sellers.values()].filter((s) => k === 'all' || sellerClass(s) === k);
@@ -4287,7 +4285,7 @@ function openPurForm(id) {
 
 /* ── 로그인 ── */
 function loginView(err) {
-  $('#app').innerHTML = `<div class="login"><h1>리드나우</h1><p>등록된 구글 계정으로 로그인하세요</p>
+  $('#app').innerHTML = `<div class="login"><h1>리드나우(북스킹)</h1><p>등록된 구글 계정으로 로그인하세요</p>
     <button class="btn" id="g">구글 계정으로 로그인</button>${err ? `<p style="color:var(--red);margin-top:12px">${esc(err)}</p>` : ''}
     <details><summary>Firebase 전용 계정으로 로그인</summary><input id="em" type="email" placeholder="이메일" autocomplete="username"><input id="pw" type="password" placeholder="비밀번호" autocomplete="current-password"><button class="btn ghost" id="e" style="margin-top:8px;width:100%">로그인</button></details></div>`;
   $('#g').onclick = () => firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch((e) => loginView(e.code === 'auth/popup-blocked' ? '팝업이 막혔습니다. 브라우저에서 팝업을 허용해 주세요.' : e.message));
