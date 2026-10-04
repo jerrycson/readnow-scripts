@@ -18,11 +18,12 @@
  *   - 가격 단위 = 가격대의 5% (100원대 5원, 1,000원대 50원, 10,000원대 500원). 상대 가격과 정확히 같게 맞출 때만 단위 예외
  *   - 알라딘 매입가가 모든 단계의 하한선. 초기 단계는 원가 하한선도 함께
  *   - 알라딘 반영 지연(대부분 24시간 내) → 새로 나타난 싼 매물·사라진 매물·우리 가격 변경은 24시간 지나 확정된 뒤에 판단
- *   - 4년 초과(불용) = 판매중지 + 관리코드 뒤 3자리 BAD, 관리자 승인 후에만 ('판매금지'는 알라딘만 정하는 상태라 우리가 못 바꿈)
+ *   - 일시판매중지는 우리 전용 보관함: 관리코드 뒤 3자리로 구분 — PND = 판매보류풀(가격상승대기), BAD = 불용(4년 초과, 관리자 승인)
+ *     (판매중지는 알라딘이 다른 이유로 쓰는 일이 많아 쓰지 않음 · '판매금지'는 알라딘만 정하는 상태)
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.4.0';
+  const VERSION = '0.5.0';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -144,6 +145,11 @@
     return { buyback: bb || null, fBuyback, cost: cost ?? null, costFrom: listing.cost != null ? (listing.costSource || '연결된 매입') : '평균 권당 매입가', fCost, fZero, applied };
   }
 
+  // ── 관리코드 표시 (일시판매중지 보관함 구분) ── 기준은 여기 한 곳: 앞 3자리 = 서가(절대 안 건드림), 뒤 3자리 = 가격 코드 자리에 표시를 씀
+  const SKU_TAGS = { hold: 'PND', retire: 'BAD' }; // PND = 판매보류풀(가격상승대기) · BAD = 불용
+  function skuTag(sku) { const t = String(sku || '').slice(3, 6).toUpperCase(); return t === SKU_TAGS.hold ? 'hold' : t === SKU_TAGS.retire ? 'retire' : null; }
+  function skuWith(sku, kind) { const s0 = String(sku || ''); if (s0.length < 3) return null; return s0.slice(0, 3) + SKU_TAGS[kind] + s0.slice(6); } // 예: BLKCMN → BLKPND / BLKBAD
+
   // ── 대행형 판별 (예스24 대조) ──
   // ① 같은 판매자: 알라딘 판매자 이름 = 예스24 이 책의 판매자 이름(또는 아이디) → 두 곳에 같은 재고를 올린 것 = 실제로 팔리는 경쟁 매물
   // ② 대행 이윤: 알라딘에서 받는 돈(판매가 − 수수료 + 배송비) − 예스24에서 같은 등급 이상을 사서 바로 보내는 비용(판매가 + 배송비) ≥ 0 → 대행해도 남음 = 실제로 보낼 수 있음
@@ -194,7 +200,7 @@
     const T = S.tiers[tier];
     out.tier = { code: tier, name: T.name, days, basis, regDays, lowestDays: lowDays, temp };
     if (listing.lock) { R.push('가격 잠금 상품 — 자동 수정 안 함'); return done('hold', { action: 'none' }); }
-    if (tier === 'T8') { R.push(`등록 ${days}일 — 불용 재고: 판매중지 + 관리코드 뒤 3자리 BAD (관리자 승인 필요)`); const sku = listing.sku || ''; return done('retire', { action: 'retire', newSku: sku.length >= 3 ? sku.slice(0, 3) + 'BAD' + sku.slice(6) : null, autoBlock: block.concat('불용 처리는 항상 관리자 승인') }); }
+    if (tier === 'T8') { R.push(`등록 ${days}일 — 불용 재고: 일시판매중지 + 관리코드 뒤 3자리 ${SKU_TAGS.retire} (관리자 승인 필요, 원래 관리코드는 기록에 남김)`); return done('retire', { action: 'retire', toStatus: '일시판매중지', newSku: skuWith(listing.sku, 'retire'), origSku: listing.sku || null, autoBlock: block.concat('불용 처리는 항상 관리자 승인') }); }
 
     // 1. 관측이 쓸 만한가
     if (!market || !market.rows) { R.push('온라인 중고 관측이 없음'); return done('queue', { action: 'review', why: 'noMarket' }); }
@@ -366,6 +372,6 @@
     st.lastAt = new Date(at).toISOString(); st.lastLowest = !!obs.atLowest; st.obsN = (st.obsN || 0) + 1; return st;
   }
 
-  const api = { VERSION, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, proxyCheck, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
+  const api = { VERSION, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowPricing = api;
 })(typeof window !== 'undefined' ? window : this);
