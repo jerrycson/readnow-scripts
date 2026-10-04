@@ -18,11 +18,11 @@
  *   - 가격 단위 = 가격대의 5% (100원대 5원, 1,000원대 50원, 10,000원대 500원). 상대 가격과 정확히 같게 맞출 때만 단위 예외
  *   - 알라딘 매입가가 모든 단계의 하한선. 초기 단계는 원가 하한선도 함께
  *   - 알라딘 반영 지연(대부분 24시간 내) → 새로 나타난 싼 매물·사라진 매물·우리 가격 변경은 24시간 지나 확정된 뒤에 판단
- *   - 4년 초과(불용) = 판매금지 + 관리코드 뒤 3자리 BAD, 관리자 승인 후에만
+ *   - 4년 초과(불용) = 판매중지 + 관리코드 뒤 3자리 BAD, 관리자 승인 후에만 ('판매금지'는 알라딘만 정하는 상태라 우리가 못 바꿈)
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.3.1';
+  const VERSION = '0.4.0';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -55,6 +55,7 @@
     // 첫 페이지 예외 키워드 (제목에 있으면 뒤쪽 쪽까지 봄)
     specialKeywords: ['한정', '특별', '특전', '특장', '기념', '리커버', '초판', '초회', '교보', '알라딘', '예스24', '밀리의', '인터파크'],
     specialMaxPages: 10,
+    firstTieMaxShipGap: 1000, // 맨 위 매물의 배송비가 우리보다 이만큼 넘게 비싸면 판매가 동가 대신 총액 기준 (배송비로 남기는 판매자에게 마진을 퍼주지 않음)
     advPct: 0.05,          // 맨 위가 아닌 기준 상품과 비교할 때 구매자에게 주는 이점 (총액 기준 1~5%의 위쪽). 단위로 내림
     confirmHours: 24,      // 알라딘 반영 지연: 이 시간 지나야 '확정'
     staleHours: 48,        // 관측이 이보다 오래되면 판정하지 않음
@@ -74,11 +75,12 @@
     // 희소 후보: 우리 말고 유효 판매자 0~1곳 + 전체 판매자 2곳 이하
     rareMaxValid: 1, rareMaxAll: 2,
     // 추격자
+    useYes24Proxy: true,   // 기준보다 앞의 무효·보류 매물을 예스24로 대조: 같은 판매자이거나 대행해도 이윤이 남으면(배송비 포함) 실제로 팔리는 경쟁 매물로 봄
     chase: { windowHours: 24, lookbackDays: 7, minEvents: 3, halfLifeDays: 14, releaseDays: 30, sellerMinBooks: 3 },
   };
 
   const LABEL = { // 한글 사전 (필드명은 영어로 저장)
-    dkgreen: '짙은 초록', green: '초록', yellow: '노랑', orange: '주황', red: '빨강', aladin: '알라딘측',
+    dkgreen: '짙은 초록', green: '초록', yellow: '노랑', orange: '주황', red: '빨강', aladin: '알라딘측', proxy: '대행 가능(예스24 대조)',
   };
 
   // ───────────────────────── 작은 도구 ─────────────────────────
@@ -142,6 +144,27 @@
     return { buyback: bb || null, fBuyback, cost: cost ?? null, costFrom: listing.cost != null ? (listing.costSource || '연결된 매입') : '평균 권당 매입가', fCost, fZero, applied };
   }
 
+  // ── 대행형 판별 (예스24 대조) ──
+  // ① 같은 판매자: 알라딘 판매자 이름 = 예스24 이 책의 판매자 이름(또는 아이디) → 두 곳에 같은 재고를 올린 것 = 실제로 팔리는 경쟁 매물
+  // ② 대행 이윤: 알라딘에서 받는 돈(판매가 − 수수료 + 배송비) − 예스24에서 같은 등급 이상을 사서 바로 보내는 비용(판매가 + 배송비) ≥ 0 → 대행해도 남음 = 실제로 보낼 수 있음
+  //    배송비를 높게 받는 판매자는 판매가가 조금 낮아도 배송비에서 남기므로 반드시 배송비까지 셈
+  const GRADE_RANK = { '최상': 3, '상': 2, '중': 1, '하': 0 };
+  const normName = (x) => String(x || '').toLowerCase().replace(/[\s·.,'"()\[\]{}<>\-_=~!@#$%^&*+|/\\:;?]/g, '');
+  function proxyCheck(row, y24, S0) {
+    const S = S0 || DEFAULTS;
+    if (!y24 || !y24.offers) return { verdict: 'noData', why: '예스24 자료 없음' };
+    const nm = normName(row.sellerName);
+    const same = nm && y24.offers.find((o) => normName(o.shopName) === nm || normName(o.shopId) === nm);
+    if (same) return { verdict: 'sameSeller', why: `예스24에도 같은 판매자(${same.shopName})가 이 책을 올림 ${same.price.toLocaleString()}원`, offer: same };
+    const need = GRADE_RANK[row.grade] ?? 0;
+    const src = y24.offers.filter((o) => (GRADE_RANK[o.grade] ?? -1) >= need && o.price > 0).map((o) => ({ o, cost: o.price + (o.freeOver != null && o.price >= o.freeOver ? 0 : o.ship || 0) })).sort((a, b) => a.cost - b.cost)[0];
+    if (!src) return { verdict: 'noSource', why: `예스24에 ${row.grade || ''} 이상 매물 없음 → 대행 불가 → 실물 없을 가능성 큼` };
+    const income = row.price * (1 - S.feeRate) + (row.ship || 0); const margin = Math.round(income - src.cost);
+    return margin >= 0
+      ? { verdict: 'profitable', why: `대행해도 ${margin.toLocaleString()}원 남음 (알라딘 ${row.price.toLocaleString()}+배송 ${(row.ship || 0).toLocaleString()} vs 예스24 ${src.o.shopName} ${src.cost.toLocaleString()})`, margin, offer: src.o }
+      : { verdict: 'loss', why: `대행하면 ${(-margin).toLocaleString()}원 손해 → 실제로 보낼 가능성 낮음`, margin, offer: src.o };
+  }
+
   // ───────────────────────── 판정 ─────────────────────────
   function decide(listing, market, sellers, ctxIn) {
     const ctx = ctxIn || {}; const S = merge(DEFAULTS, ctx.settings || {}); const now = t(ctx.now) || Date.now();
@@ -171,7 +194,7 @@
     const T = S.tiers[tier];
     out.tier = { code: tier, name: T.name, days, basis, regDays, lowestDays: lowDays, temp };
     if (listing.lock) { R.push('가격 잠금 상품 — 자동 수정 안 함'); return done('hold', { action: 'none' }); }
-    if (tier === 'T8') { R.push(`등록 ${days}일 — 불용 재고: 판매금지 + 관리코드 뒤 3자리 BAD (관리자 승인 필요)`); const sku = listing.sku || ''; return done('retire', { action: 'retire', newSku: sku.length >= 3 ? sku.slice(0, 3) + 'BAD' + sku.slice(6) : null, autoBlock: block.concat('불용 처리는 항상 관리자 승인') }); }
+    if (tier === 'T8') { R.push(`등록 ${days}일 — 불용 재고: 판매중지 + 관리코드 뒤 3자리 BAD (관리자 승인 필요)`); const sku = listing.sku || ''; return done('retire', { action: 'retire', newSku: sku.length >= 3 ? sku.slice(0, 3) + 'BAD' + sku.slice(6) : null, autoBlock: block.concat('불용 처리는 항상 관리자 승인') }); }
 
     // 1. 관측이 쓸 만한가
     if (!market || !market.rows) { R.push('온라인 중고 관측이 없음'); return done('queue', { action: 'review', why: 'noMarket' }); }
@@ -209,9 +232,15 @@
     if (!ctx.classify && !(Core && Core.classifySellerDoc)) { R.push('기준 파일 readnow-core.js(1.2.0)를 못 읽음 — 판매자 분류 없이 판정하지 않음'); return done('queue', { action: 'review', why: 'noCore' }); }
     const classify = ctx.classify || ((r) => Core.classifySellerDoc(sellers && r.sellerCode ? sellers['sc_' + r.sellerCode] || sellers[r.sellerCode] || null : null, RSx));
     sane.forEach((r) => { if (isAladinSide(r, S)) { r.color = 'aladin'; r.why = '알라딘측'; } else { const c = classify(r, listing); r.color = c.cls; r.why = c.why; } });
+    // 예스24 대조 (대행형 판별): 허위 매물로 직접 표시한 판매자는 사람이 정한 것이 우선이라 제외
+    if (S.useYes24Proxy) sane.forEach((r) => {
+      if (!['red', 'orange', 'yellow'].includes(r.color) || r.color === 'unknown') return;
+      const doc = sellers && r.sellerCode ? sellers['sc_' + r.sellerCode] || sellers[r.sellerCode] : null; if (doc && (doc.ourGrade || doc.grade) === 'fake') return;
+      const pc = proxyCheck(r, ctx.yes24, S); r.proxy = pc; if (pc.verdict === 'sameSeller' || pc.verdict === 'profitable') { r.color = 'proxy'; r.why = pc.why; }
+    });
     const tot = (r) => r.price + (r.ship || 0);
     const first = sane[0]; // 목록 맨 위 (우리 제외)
-    const allow = new Set(T.colors.concat('aladin'));
+    const allow = new Set(T.colors.concat('aladin', 'proxy'));
     let pool = sane.filter((r) => allow.has(r.color));
     out.rows = sane.map((r) => [r.rank, r.sellerCode || null, r.color, r.grade || null, r.price, r.ship || 0]); // 학습용 근거 (상품 기준으로 옮겨 갈 자료)
     out.counts = { all: sane.length, valid: sane.filter((r) => ['dkgreen', 'green', 'aladin'].includes(r.color)).length, inPool: pool.length };
@@ -232,7 +261,9 @@
     }
     const sg = same(pool);
     // 목록 맨 위(최저가 표시)가 기준이 될 수 있는 매물이면 그 매물이 기준 (그 가격과 동가 = 최저가 표시를 함께 받음)
-    if (sg.length && first && sg.includes(first)) { ref = first; how = how || '목록 맨 위(최저가 표시)가 유효 상품'; ref.conv = null; }
+    const ourShip0 = listing.ship != null ? listing.ship : (ctx.policy && ctx.policy.fee) || 0;
+    // 맨 위 매물은 배송비가 우리와 비슷할 때만 '판매가 동가' 기준 (배송비로 남기는 매물이면 총액이 가장 싼 매물이 기준)
+    if (sg.length && first && sg.includes(first) && (first.ship || 0) - ourShip0 <= S.firstTieMaxShipGap) { ref = first; how = how || '목록 맨 위(최저가 표시)가 유효 상품'; ref.conv = null; }
     else if (sg.length) { ref = sg.reduce((a, b) => (tot(b) < tot(a) ? b : a)); how = how || '같은 등급 유효 최저(배송비 포함 총액)'; ref.conv = null; }
     else if (pool.length && S.gradeCoef[listing.grade]) {
       let best = null; pool.forEach((r) => { const c = S.gradeCoef[r.grade]; if (!c) return; const v = tot(r) * (S.gradeCoef[listing.grade] / c); if (best == null || v < best.v) best = { r, v }; });
@@ -240,6 +271,7 @@
     }
     if (!ref) { R.push(`${special ? `${maxPage}쪽까지` : '첫 페이지에'} 기준이 될 매물(${T.colors.map((c) => LABEL[c]).join('·')}·알라딘측)이 없음`); return done('queue', { action: 'review', why: 'noRef' }); }
     const refTotal = ref.conv != null ? ref.conv : tot(ref);
+    if (S.useYes24Proxy && !ctx.yes24 && sane.some((r) => r.rank < ref.rank && ['red', 'orange', 'yellow'].includes(r.color))) { out.needYes24 = true; R.push('기준보다 앞에 무효·보류 매물이 있음 — 예스24 대조 자료가 없어 일단 제외하고 판정 (다음 감시 때 예스24를 같이 봄)'); }
     const unknownAhead = sane.filter((r) => r.color === 'unknown' && r.rank < ref.rank);
     if (unknownAhead.length) { R.push(`기준보다 앞에 판매자 기록이 없는 매물 ${unknownAhead.length}건 — 판매자 정보를 먼저 모아야 판정 가능`); return done('wait', { action: 'none', why: 'needSellers', needSellers: [...new Set(unknownAhead.map((r) => r.sellerCode))] }); }
     out.ref = { rank: ref.rank, sellerCode: ref.sellerCode || null, sellerName: ref.sellerName || null, color: ref.color, grade: ref.grade, price: ref.price, ship: ref.ship || 0, total: refTotal, how, isFirst: !!(first && (ref === first || (ref.listingId && ref.listingId === first.listingId))), ghost: !!ref.ghost };
@@ -253,7 +285,8 @@
     const ourShip = listing.ship != null ? listing.ship : (ctx.policy && ctx.policy.fee) || 0;
     let base, rule;
     if (ref.conv != null) { base = snapDown(ref.conv - ourShip); rule = `환산 총액 ${ref.conv.toLocaleString()} − 우리 배송비 ${ourShip.toLocaleString()}`; }
-    else if (out.ref.isFirst) { base = ref.price; rule = '기준이 목록 맨 위(최저가 표시) → 동가, 더 내리지 않음'; }
+    else if (out.ref.isFirst && (ref.ship || 0) - ourShip <= S.firstTieMaxShipGap) { base = ref.price; rule = '기준이 목록 맨 위(최저가 표시) → 동가, 더 내리지 않음'; }
+    else if (out.ref.isFirst) { const tie = ref.price + (ref.ship || 0) - ourShip; base = snapDown(tie * (1 - S.advPct)); if (base >= tie) base = stepDown(tie); rule = `맨 위지만 배송비가 우리보다 ${((ref.ship || 0) - ourShip).toLocaleString()}원 비쌈 → 판매가 동가로 맞추면 배송비 차이만큼 마진을 버림 → 총액 기준 ${Math.round(S.advPct * 100)}% 이점`; }
     else { const tie = ref.price + (ref.ship || 0) - ourShip; base = snapDown(tie * (1 - S.advPct)); if (base >= tie) base = stepDown(tie); rule = `총액 동가 ${tie.toLocaleString()}원에서 구매자 이점 ${Math.round(S.advPct * 100)}% (단위 내림)`; }
 
     // 7. 재고 기간 할인 (보호·희소는 할인 없음). 추격자가 기준이면 '맨 위 동가'보다 더 내리지 않음
@@ -333,6 +366,6 @@
     st.lastAt = new Date(at).toISOString(); st.lastLowest = !!obs.atLowest; st.obsN = (st.obsN || 0) + 1; return st;
   }
 
-  const api = { VERSION, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
+  const api = { VERSION, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, proxyCheck, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowPricing = api;
 })(typeof window !== 'undefined' ? window : this);
