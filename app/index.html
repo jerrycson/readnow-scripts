@@ -256,7 +256,7 @@ details > summary .vztg{float:none;margin-left:8px;vertical-align:middle}.card{p
 .vz .hint,.vz p.hint,.vz .l2 small{display:none}.vz .item.vzrow,.vz li.vzrow{position:relative;overflow:hidden}.vzib{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(47,93,80,.16),rgba(47,93,80,.06));border-right:2px solid rgba(47,93,80,.35);pointer-events:none;z-index:0}
 .vz .vzrow > *:not(.vzib){position:relative;z-index:1}.vz .item.vzrow .l2{display:none}
 mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
-.sleg{margin:8px 0 0;padding:8px 10px;border:1px solid var(--line,#D6DDDA);border-radius:8px;font-size:12.5px;line-height:1.5}.sleg>div{margin-top:4px}.sleg .sw{display:inline-block;width:12px;height:12px;border:1px solid #999;vertical-align:-2px;margin-right:4px}.tag.mon-treat{background:#1F6F4A;color:#fff}.tag.mon-control{background:#2B5C8A;color:#fff}.tag.mon-hold{background:#8A4B0F;color:#fff}
+.sleg{margin:8px 0 0;padding:8px 10px;border:1px solid var(--line,#D6DDDA);border-radius:8px;font-size:12.5px;line-height:1.5}.sleg>div{margin-top:4px}.sleg .sw{display:inline-block;width:12px;height:12px;border:1px solid #999;vertical-align:-2px;margin-right:4px}.tag.mon-treat{background:#1F5FAF;color:#fff}.tag.mon-control{background:#6B3FA0;color:#fff}.tag.mon-hold{background:#8A4B0F;color:#fff}.tag.mon-retire{background:#555;color:#fff}.rtabs{display:flex;gap:6px;margin:0 0 8px}.rtabs button{flex:1;padding:8px;border:1px solid var(--line,#D6DDDA);border-radius:8px;background:#fff;font-weight:700}.rtabs button.on{background:var(--cloth,#2F5D50);color:#fff}
 </style>
 </head>
 <body>
@@ -269,7 +269,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="../readnow-sellers-core.js?v=1.3.0"></script>
 <script src="../readnow-core.js?v=1.3.0"></script>
-<script src="../readnow-pricing-core.js?v=0.4.0"></script>
+<script src="../readnow-pricing-core.js?v=0.5.0"></script>
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
@@ -278,7 +278,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.56.0';
+const APP_VER = '0.57.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1569,9 +1569,9 @@ function aladinLinks(l, it) {
 const usedBtn = (l, it) => { const u = aladinLinks(l, it); return u.used ? `<span class="ulink" data-open="${esc(u.used)}" title="${u.usedExact ? '알라딘 온라인 중고 (전체 중고)' : '알라딘 중고 검색 (도서 정보를 받으면 바로 이동)'}">중고↗</span>` : ''; };
 document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-open]'); if (!a) return; ev.preventDefault(); ev.stopPropagation(); window.open(a.dataset.open, '_blank', 'noopener'); }, true);
 // 가격 감시 묶음 표시 — 배정은 판정 엔진(readnow-pricing-core.js)의 groupOf 하나 (수집기 상품 조회 화면과 같은 결과)
-const MONTXT = { treat: ['감시·적용', '판정 엔진이 매일 보고 가격을 맞추는 상품'], control: ['감시·비교', '판정만 기록하고 가격은 절대 안 바꾸는 비교 묶음 (효과 측정용)'], hold: ['가격상승대기', '판매보류풀: 정한 가격 이상으로 최저가에 설 수 있을 때만 판매중'] };
+const MONTXT = { treat: ['감시·적용', '판정 엔진이 매일 보고 가격을 맞추는 상품 (파랑)'], control: ['감시·비교', '판정만 기록하고 가격은 절대 안 바꾸는 비교 묶음 — 효과 측정용 (보라)'], hold: ['가격상승대기 PND', '판매보류풀: 일시판매중지 + 관리코드 뒤 PND. 정한 가격 이상으로 최저가에 설 수 있을 때만 판매중'], retire: ['불용 BAD', '불용 재고: 일시판매중지 + 관리코드 뒤 BAD (4년 초과, 관리자 승인)'] }; // 초록은 검토 색이라 쓰지 않음
 function loadPricingCfg() { if (S.prCfgLoading) return; S.prCfgLoading = true; db.collection('prd_system').doc('pricing').get().then((d) => { S.prCfg = d.exists ? d.data() : {}; if (['products', 'home'].includes(S.tab)) renderMain(); }).catch(() => { S.prCfg = {}; }); }
-function monGroup(l) { const PRC = window.ReadnowPricing; if (!PRC || !l || !l.usedCode || l.status !== '판매중' && l.status !== '일시판매중지') return null; if (!S.prCfg) { loadPricingCfg(); return null; } if (S.prCfg.holdPool && S.prCfg.holdPool[l.usedCode]) return 'hold'; const g = PRC.groupOf(l.usedCode, { rollout: S.prCfg.rollout || PRC.DEFAULTS.rollout }); return g === 'off' ? null : g; }
+function monGroup(l) { const PRC = window.ReadnowPricing; if (!PRC || !l || !l.usedCode) return null; const tag = PRC.skuTag ? PRC.skuTag(l.sku) : null; if (tag) return tag; if (l.status !== '판매중') return null; if (!S.prCfg) { loadPricingCfg(); return null; } const g = PRC.groupOf(l.usedCode, { rollout: S.prCfg.rollout || PRC.DEFAULTS.rollout }); return g === 'off' ? null : g; } // 보관함 구분은 관리코드(판정 엔진 skuTag) 한 곳
 function monTag(l) { const g = monGroup(l); return g ? `<span class="tag mon-${g}" title="${esc(MONTXT[g][1])}">${MONTXT[g][0]}</span>` : ''; }
 function prodRow(l) {
   const b = l.bookId ? S.pbooks.get(l.bookId) : null; const src = b && b.images ? imgUrl(b.images.front, true) : null;
@@ -1885,7 +1885,7 @@ function renderSettings(m) {
     <div class="two"><label class="set">알라딘 자동 로그인 시도 횟수 (기본 6)${num_('cs_mlt', C.maxLoginTries ?? 6, 1)}<small class="hint" style="display:block">0으로 두면 <b>무제한</b> — 로그인될 때까지 계속 시도합니다. 숫자를 넣으면 그 횟수만큼 시도하고 멈춘 뒤 알립니다.</small></label><div></div></div>
     <label class="set">구매자 분포 범위 (순서: 판매 중 → 알라딘 구매 풀 → 판매완료)<select id="cs_dys">${[['all', '전부 (기본)'], ['active_pool', '판매 중 + 알라딘 구매 풀'], ['active', '판매 중만']].map(([k, l]) => `<option value="${k}" ${(C.dynScope || 'all') === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
     <div class="two"><label class="set">작업 기록 구글 드라이브 저장 주소 (Apps Script 웹 앱 URL)<input id="cs_drv" value="${esc(C.driveLogUrl || '')}" placeholder="https://script.google.com/macros/s/…/exec"></label><label class="set">열쇠 (Apps Script의 KEY와 같게)<input id="cs_drvk" value="${esc(C.driveLogKey || '')}"></label></div>
-    <button class="btn ghost" id="open_logs" style="width:100%;margin:6px 0">PC별 수집 작업 기록 보기</button>
+    <button class="btn ghost" id="open_logs" style="width:100%;margin:6px 0">기록 보기 (수집 작업 · 업데이트)</button>
     <label class="set ck"><input id="cs_auto" type="checkbox" ${C.autoDaily ?? true ? 'checked' : ''}> 매일 자동 '모두 일괄 수집'</label>
     <div class="two"><label class="set">시작 시각 (한국 시간, 시)${num_('cs_ah', C.autoHour ?? 17)}</label><label class="set">맡을 PC<input id="cs_apc" value="${esc(C.autoPc || 'JS-MAIN')}"></label></div>
     <label class="set">그 PC가 안 하면 다른 PC가 맡기까지 기다릴 시간 (분)${num_('cs_agr', C.autoGraceMin ?? 30, 10)}</label>
@@ -2725,6 +2725,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.57.0': ["'기록' 화면: 수집 작업 기록 목록 + 업데이트 기록 목록(웹앱·수집기·툴팁·공용 파일 전체, 날짜별)", '가격 감시 색: 감시·적용 = 파랑, 감시·비교 = 보라', '일시판매중지 보관함 표시: 가격상승대기 PND · 불용 BAD (관리코드로 구분)', '설명서: 불용 = 일시판매중지 + BAD, 판매보류풀 = PND'],
   '0.56.0': ['판매자 분류 범례(판매자 집계·설명서) — 기준 파일 readnow-core.js 1.3.0의 범례에서 그대로', '상품 목록·상세에 가격 감시 묶음 표시(감시·적용 / 감시·비교 / 가격상승대기)', '판정 엔진 설명서 갱신: 예스24 대조, 맨 위 매물 배송비 규칙, 판매중지(판매금지 아님), 판매보류풀이 돈이 되는 경우', "헷갈림 정리: '판매자 평가 점수'(★모범·₩이득)는 분류와 별개라고 표시"],
   '0.55.0': ['판매자 분류 기준 v2(활동량 + 최근 3개월 품절취소율 + 허위 매물) — 기준은 readnow-core.js 1.2.0 한 곳', '❓ 설명서에 ⚙ 판정 엔진(기준·층 구조 로드맵·임시 기준·적용 단계) 항상 보기'],
   '0.54.0': ['판매자 분류를 공용 파일 readnow-core.js(1.1.0)의 한 함수로만 — 웹앱 안의 복사본 없앰 (툴팁·판정 엔진과 같은 함수)', '분석 자료 내려받기에 판매 기록(주문 줄) 추가', '이름: 리드나우(북스킹)'],
@@ -3364,19 +3365,19 @@ function engineManualHtml() {
   <h4>4. 재고 기간 = 최저가 등록 기간</h4>
   <p>재고 단계(신규~불용)는 <b>우리가 최저가 자리를 지킨 날수</b>로 잽니다. 두 관측이 모두 최저가였고 간격이 ${D.lowestMaxGapHours || 48}시간 이하일 때만 그 사이를 셉니다.<br>
   <b>임시 기준(스스로 끝남)</b>: 감시 시작일 <b>전에</b> 등록된 상품만 · 감시 시작일 당시의 등록 날수로 <b>고정</b> · 최대 ${esc(D.tempTierCap || 'T3')}(둔화 재고)까지 · 측정값이 따라잡거나 <b>감시 시작 ${D.tempSunsetDays || 365}일 뒤</b> 자동으로 꺼짐. 판정마다 이유 칸에 자동 종료일이 찍힙니다.<br>
-  <b>불용(4년 초과)</b>: 등록일 기준 · <b>판매중지</b> + 관리코드 뒤 3자리 BAD (관리자 승인). '판매금지'는 알라딘만 정하는 상태라 우리가 바꿀 수 없습니다.</p>
+  <b>불용(4년 초과)</b>: 등록일 기준 · <b>일시판매중지</b> + 관리코드 뒤 3자리 <b>BAD</b> (관리자 승인, 원래 관리코드는 기록에 남김). 판매중지는 알라딘이 다른 이유로 쓰는 일이 많아 쓰지 않고, '판매금지'는 알라딘만 정하는 상태입니다.</p>
   <h4>5. 가격 정하기</h4>
   <p>유효 최저가와 <b>정확히 동가</b>가 기본. 기준이 목록 맨 위(최저가 표시)이고 배송비가 우리와 비슷하면(차이 ${(D.firstTieMaxShipGap || 1000).toLocaleString()}원 이하) 판매가 동가로 서고 더 내리지 않음 · <b>맨 위 매물의 배송비가 그보다 비싸면</b> 판매가를 맞추면 배송비 차이만큼 마진을 버리므로 총액 기준 · 그 밖에는 배송비 차이를 반영해 ${Math.round((D.advPct || 0.05) * 100)}% 이점 · 가격 단위는 가격대의 5% · 하한선 = 알라딘 매입가(모든 단계)·원가(초기 단계) · 알라딘 반영 지연 때문에 변화는 ${D.confirmHours || 24}시간 확정 뒤 판단 · 판매자 기록이 없는 매물이 기준보다 앞에 있으면 판매자 정보부터 모음.</p>
   <h4>6. 가격 감시 표시</h4>
-  <p>수집기(샵매니저 상품 조회/수정 목록)와 웹앱 상품 목록·상세에 묶음이 색으로 표시됩니다: <span class="tag mon-treat">감시·적용</span> 판정 엔진이 매일 보고 가격을 맞춤 · <span class="tag mon-control">감시·비교</span> 판정만 기록하고 가격은 절대 안 바꿈(효과 측정용) · <span class="tag mon-hold">가격상승대기</span> 판매보류풀. 지금 비율: 적용 ${ro.treatPct || 0}% · 비교 ${ro.controlPct || 0}%. 묶음은 상품코드로 고정 배정되어 비율을 올려도 이미 들어간 상품은 그대로.</p>
+  <p>수집기(샵매니저 상품 조회/수정 목록)와 웹앱 상품 목록·상세에 묶음이 색으로 표시됩니다: <span class="tag mon-treat">감시·적용</span>(파랑) 판정 엔진이 매일 보고 가격을 맞춤 · <span class="tag mon-control">감시·비교</span>(보라) 판정만 기록하고 가격은 절대 안 바꿈(효과 측정용) · <span class="tag mon-hold">가격상승대기 PND</span> 판매보류풀 · <span class="tag mon-retire">불용 BAD</span>. 초록은 검토 때 쓰는 색이라 쓰지 않습니다. 지금 비율: 적용 ${ro.treatPct || 0}% · 비교 ${ro.controlPct || 0}%. 묶음은 상품코드로 고정 배정되어 비율을 올려도 이미 들어간 상품은 그대로.</p>
   <h4>7. 실제 적용 단계</h4>
   <p>A: 1% 실제 적용 <b>3일</b>(실행이 정확한지 안전 확인) → B: 적용 25% vs 비교 25% <b>1주</b> → 확인 후 C: 적용 묶음 안에서 강도(맨 위 동가 / 한 단위 아래 / 유효 최저만)를 나눠 '다이얼 눈금' 만들기 → D: 전체. 비교 묶음은 C 이후에도 계속 두어 측정을 이어감(1주는 묶음당 판매 약 40건이라 아주 큰 차이만 보임).</p>
   <h4>8. 판매보류풀 — 가격상승대기</h4>
-  <p>상품마다 '최저 수용가'를 정해 두고, 그 가격 이상으로 최저가 자리에 설 수 있을 때만 판매중, 아니면 일시판매중지. 판매중↔일시판매중지 전환은 ${D.confirmHours || 24}시간 확정 + 최소 유지 시간을 둬 깜빡이지 않게 함. <b>일시판매중지는 이 풀 전용</b> — 풀 목록에 없는 일시판매중지 상품은 엔진이 건드리지 않고 처리 여부를 묻습니다.<br>
+  <p>상품마다 '최저 수용가'를 정해 두고, 그 가격 이상으로 최저가 자리에 설 수 있을 때만 판매중, 아니면 일시판매중지. <b>관리코드 뒤 3자리를 PND로</b> 바꿔 구분합니다(예: BLKCMN → BLKPND · 앞 3자리 서가는 그대로 · 원래 가격 코드와 최저 수용가는 Firebase에 남김). 판매중↔일시판매중지 전환은 ${D.confirmHours || 24}시간 확정 + 최소 유지 시간을 둬 깜빡이지 않게 함. <b>일시판매중지 = 우리 전용 보관함</b>: 관리코드 뒤 PND = 판매보류풀, BAD = 불용. 이 둘이 아닌 일시판매중지 상품은 엔진이 건드리지 않고 처리 여부를 묻습니다.<br>
   <b>풀이 확실히 돈이 되는 경우는 두 가지</b>: ① <b>공급이 적은 책</b> — 우리 매물이 보이면 시장 가격을 붙잡아 둠, 숨기면 다른 판매자 가격이 오를 여지 ② <b>추격자가 붙은 책</b> — 보이는 동안 계속 따라 내려옴. 그 밖의 책은 수용가로 <b>계속 보여 두는 편이 낫습니다</b>(허위 매물을 피해 오는 손님에게 팔릴 기회가 남음).<br>
   ★ 확인할 위험: 판매상태를 바꿨다 돌리면 알라딘에서 등록일·노출 순서가 바뀌는지 아직 모름 → A단계에서 소수로 먼저 확인.</p>
   <h4>9. 샵매니저 실제 동작 (확인된 것)</h4>
-  <p>가격: <code>ajaxCmd.aspx?cmd=chg.pricesales</code> · 수량: <code>cmd=chg.stock</code> · 관리코드: <code>cmd=chg.supplieritemcode</code> · 판매상태: <code>wrecord_edit_usedbatch.aspx</code>(fn=stockstatusbulkchg, 판매중 1 · 일시판매중지 3 · 판매중지 15 · 삭제 17). 모두 readnow-products-core.js의 scmAction 한 곳에 있음.</p>
+  <p>가격: <code>ajaxCmd.aspx?cmd=chg.pricesales</code> · 수량: <code>cmd=chg.stock</code> · 관리코드: <code>cmd=chg.supplieritemcode</code> · 판매상태: <code>wrecord_edit_usedbatch.aspx</code>(fn=stockstatusbulkchg, 판매중 1 · 일시판매중지 3 · 판매중지 15 · 삭제 17 — 우리는 판매중·일시판매중지만 씀). 모두 readnow-products-core.js의 scmAction 한 곳에 있음.</p>
   <h4>10. 쌓는 기록</h4>
   <p>온라인 중고 첫 페이지 매물의 변화(새 매물·빠진 매물·가격 변화)를 수집기 1.21.0부터 지우지 않고 쌓음(prd_metric_changes, kind = usedListings). 3층 판정과 실험 측정의 원자료.</p>`;
 }
@@ -3508,17 +3509,56 @@ async function aladinCleanup() {
 document.addEventListener('click', (ev) => { const t = ev.target; if (t.closest('#ao_open')) { ev.preventDefault(); openAladinPool(); } else if (t.closest('#ao_match')) { ev.preventDefault(); matchNow(false); } else if (t.closest('#ao_clean')) { ev.preventDefault(); aladinCleanup(); } });
 
 
+/* ══════════ 기록: 업데이트 기록 목록 ══════════
+   웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
+   날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
+const UPDATE_DATES = { '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_LOG = [
+  { d: '2026-10-04', app: '수집기', v: '1.23.0', n: ['가격 감시 표시 색: 감시·적용 = 파랑, 감시·비교 = 보라 (초록은 검토 색)', '일시판매중지 보관함을 관리코드로 구분해 표시: 가격상승대기 PND · 불용 BAD', '판정 엔진 0.5.0 사용'] },
+  { d: '2026-10-04', app: '수집기', v: '1.22.0', n: ["옛 버전 요구 팝업 고침: 공용 파일이 '옛 버전'일 때만 알림, 필요 버전은 한 곳에서", '샵매니저 상품 조회/수정 목록에 가격 감시 묶음 표시·범례', '예스24 접속 허용, 판매자 분류 기준·판정 엔진 파일 불러옴'] },
+  { d: '2026-10-04', app: '수집기', v: '1.21.0', n: ['온라인 중고 첫 페이지 매물의 변화(새 매물·빠진 매물·가격 변화)를 지우지 않고 쌓음 (prd_metric_changes · usedListings)'] },
+  { d: '2026-10-04', app: '수집기', v: '1.20.1', n: ['(다른 채팅) 고객·상품 수집기 통합본 — 이 날짜 이전 수집기 기록은 날짜 기록 없음'] },
+  { d: '2026-10-04', app: '판매자 툴팁', v: '0.7.1', n: ['온라인 중고 화면 왼쪽 아래 판매자 분류 범례(접기 가능)', '굵은 테두리 = 음반·DVD 전문 표시(분류와 별개)라고 표시'] },
+  { d: '2026-10-04', app: '판매자 툴팁', v: '0.7.0', n: ['줄 배경색을 공용 기준 sellerBg로, 허위 매물 표시도 Firestore에서 받아 반영'] },
+  { d: null, app: '판매자 툴팁', v: '0.6.5', n: ['(다른 채팅) 이전 버전 — 날짜 기록 없음'] },
+  { d: '2026-10-04', app: '공용 · 판매자 분류 기준 readnow-core.js', v: '1.3.0', n: ['범례(sellerLegend)를 기준 숫자에서 바로 만듦'] },
+  { d: '2026-10-04', app: '공용 · 판매자 분류 기준 readnow-core.js', v: '1.2.0', n: ['판매자 분류 v2: 최근 6개월 활동 + 최근 3개월 품절취소율 + 허위 매물 (sellerBg 한 곳)'] },
+  { d: '2026-10-04', app: '공용 · 판매자 분류 기준 readnow-core.js', v: '1.1.0', n: ['classifySellerDoc: 판매자 기록 → 분류 (복사본 없앰)'] },
+  { d: '2026-10-04', app: '공용 · 판정 엔진 readnow-pricing-core.js', v: '0.5.0', n: ['일시판매중지 보관함: PND = 판매보류풀, BAD = 불용 (판매중지는 쓰지 않음)'] },
+  { d: '2026-10-04', app: '공용 · 판정 엔진 readnow-pricing-core.js', v: '0.4.0', n: ['예스24 대조(같은 판매자·대행 이윤, 배송비 포함)', '맨 위 매물 배송비가 우리보다 1,000원 넘게 비싸면 총액 기준'] },
+  { d: '2026-10-04', app: '공용 · 판정 엔진 readnow-pricing-core.js', v: '0.3.1', n: ['분류 기준 복사본 제거, 실험 묶음 배정(groupOf), 임시 기준 자동 종료, 최저가 등록 기간'] },
+  { d: '2026-10-02', app: '공용 · 판정 엔진 readnow-pricing-core.js', v: '0.1.0', n: ['판정 엔진 첫 판: 유효 최저가·가격 단위·하한선·24시간 확정·추격자'] },
+  { d: '2026-10-04', app: '공용 · 상품 파서 readnow-products-core.js', v: '0.9.0', n: ['예스24 검색·묶음·가게 화면 읽기', '샵매니저 실제 동작(가격·수량·관리코드·판매상태) 한 곳(scmAction)'] },
+  { d: '2026-10-04', app: '공용 · 상품 파서 readnow-products-core.js', v: '0.8.0', n: ['매물 변화 비교(listingsDiff)'] },
+  { d: '2026-10-03', app: '공용 · 판매자 파서 readnow-sellers-core.js', v: '1.3.0', n: ["(다른 채팅) 숍 화면 '최근 6개월 3건 미만'을 정상 정보로"] },
+];
+function openUpdateLog() {
+  const sh = $('#sheet'); S.detail = { logs: 1 }; sh.classList.add('on'); document.body.style.overflow = 'hidden';
+  const rows = Object.entries(CHANGELOG).map(([v, n]) => ({ d: UPDATE_DATES[v] || null, app: '웹앱', v, n })).concat(UPDATE_LOG);
+  const vn = (v) => String(v).split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
+  rows.sort((a, b) => String(b.d || '0').localeCompare(String(a.d || '0')) || a.app.localeCompare(b.app) || vn(b.v) - vn(a.v));
+  const F = S.updF || 'all'; const apps = [...new Set(rows.map((r) => r.app))];
+  const shown = rows.filter((r) => F === 'all' || r.app === F); let last = null;
+  const body = shown.map((r) => { const head = r.d !== last ? `<h4 style="margin:12px 0 4px">${r.d || '날짜 기록 없음'}</h4>` : ''; last = r.d; return head + `<div style="margin:0 0 6px"><b>${esc(r.app)} ${esc(r.v)}</b><ul style="margin:2px 0 0 18px">${r.n.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>`; }).join('');
+  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">기록</div></div><div class="rtabs"><button data-rtab="jobs">수집 작업 기록 목록</button><button class="on" data-rtab="updates">업데이트 기록 목록</button></div>
+    <div class="card"><div class="ptabs" style="margin:0 0 8px;flex-wrap:wrap">${[['all', '전체']].concat(apps.map((a) => [a, a])).map(([k, l]) => `<button class="${F === k ? 'on' : ''}" data-updf="${esc(k)}">${esc(l)}</button>`).join('')}</div>${body}
+    <p class="hint">웹앱·수집기·툴팁·공용 파일의 모든 업데이트를 날짜별로 적습니다. 지금 웹앱 v${APP_VER}.</p></div>`;
+  $('#back').onclick = () => history.back(); bindRecTabs(sh);
+  sh.querySelectorAll('[data-updf]').forEach((b) => (b.onclick = () => { S.updF = b.dataset.updf; openUpdateLog(); }));
+}
+function bindRecTabs(sh) { sh.querySelectorAll('[data-rtab]').forEach((b) => (b.onclick = () => (b.dataset.rtab === 'updates' ? openUpdateLog() : openLogViewer()))); }
+
 /* ══════════ PC별 수집 작업 기록 (수집기 1.8.0이 1분마다 올림: rn_logs) ══════════ */
 async function openLogViewer(pc, date) {
   const d = date || dstr(new Date()); const key = d.replace(/-/g, '');
   const sh = $('#sheet'); S.detail = { logs: 1 }; if (!pc && !date) history.pushState({ lg: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
-  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">수집 작업 기록</div></div><div class="card"><div class="empty">불러오는 중</div></div>`; $('#back').onclick = () => history.back();
+  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">기록</div></div><div class="rtabs"><button class="on" data-rtab="jobs">수집 작업 기록 목록</button><button data-rtab="updates">업데이트 기록 목록</button></div><div class="card"><div class="empty">불러오는 중</div></div>`; bindRecTabs(sh); $('#back').onclick = () => history.back();
   let docs = []; try { const ss = await db.collection('rn_logs').where('slot', '>=', key + '0000').where('slot', '<=', key + '2359').get(); ss.forEach((x) => docs.push(x.data())); } catch (e) { sh.querySelector('.card').innerHTML = `<div class="empty">기록을 못 읽음: ${esc(e.code || e.message)} (Firebase 규칙에 rn_logs 허용 필요)</div>`; return; }
   const pcs = [...new Set(docs.map((x) => x.pc))].sort(); const cur = pc || pcs[0] || '';
   const lines = docs.filter((x) => x.pc === cur).sort((a, b) => String(a.slot).localeCompare(String(b.slot))).flatMap((x) => x.lines || []);
   const f = S.logF || 'all';
   const shown = lines.filter((l) => f === 'all' || (f === 'imp' ? !/\] · /.test(l) : /\] (⚠|!) /.test(l)));
-  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">수집 작업 기록</div></div>
+  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">기록</div></div><div class="rtabs"><button class="on" data-rtab="jobs">수집 작업 기록 목록</button><button data-rtab="updates">업데이트 기록 목록</button></div>
     <div class="card"><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><input type="date" id="lg_d" value="${d}"> ${pcs.map((p) => `<button class="btn ${p === cur ? '' : 'ghost'} sm" data-lgpc="${esc(p)}">${esc(p)}</button>`).join('') || '<span class="hint">이 날 기록 없음</span>'}</div>
     <div class="ptabs" style="margin:8px 0">${[['all', '전체'], ['imp', '중요만'], ['err', '오류·경고']].map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-lgf="${k}">${l}</button>`).join('')}</div>
     <div style="font:12px/1.5 Consolas,monospace;white-space:pre-wrap;max-height:65vh;overflow:auto;background:#F7F9F8;border-radius:6px;padding:8px">${shown.map((l) => `<div style="${/\] ⚠ /.test(l) ? 'color:#B0322A;font-weight:700' : /\] ! /.test(l) ? 'color:#A8661B' : /\] · /.test(l) ? 'color:#5B6B66' : 'font-weight:600'}">${esc(l)}</div>`).join('') || '없음'}</div>
@@ -3526,7 +3566,7 @@ async function openLogViewer(pc, date) {
   $('#back').onclick = () => history.back();
   sh.querySelectorAll('[data-lgpc]').forEach((b) => (b.onclick = () => openLogViewer(b.dataset.lgpc, d)));
   sh.querySelectorAll('[data-lgf]').forEach((b) => (b.onclick = () => { S.logF = b.dataset.lgf; openLogViewer(cur, d); }));
-  $('#lg_d').onchange = (e) => openLogViewer(null, e.target.value);
+  $('#lg_d').onchange = (e) => openLogViewer(null, e.target.value); bindRecTabs(sh);
 }
 document.addEventListener('click', (ev) => { if (ev.target.closest('#open_logs')) { ev.preventDefault(); openLogViewer(); } });
 
