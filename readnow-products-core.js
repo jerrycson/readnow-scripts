@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.9.0';
+  const VERSION = '0.11.0';
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -457,6 +457,17 @@
     d.querySelectorAll('#usedDecription img').forEach((im) => add(im, 'desc'));
     return out;
   }
+  // 다른 판매자 중고 매물 페이지(wproduct.aspx?ItemId=매물번호): '중고상품 구매 유의 사항' 글 전체 + 사진(위쪽 표지 영역·유의 사항 안)
+  // newCoverFile(새상품 표지 파일 이름)을 주면 '새상품 사진과 다른 사진이 있는가'를 계산 — 위쪽 영역에 새상품 표지가 아닌 사진이 있거나 유의 사항 안에 사진이 있으면 다름
+  function parseUsedItemInfo(d, newCoverFile) {
+    const box = d.getElementById ? d.getElementById('usedDecription') : null;
+    const note = box ? txtBr(box) : '';
+    const photos = parseUsedItemPhotos(d);
+    const baseOf = (f) => String(f || '').split('?')[0].split('/').pop().replace(/\(\d+\)(?=\.)/, '');
+    const nc = newCoverFile ? baseOf(newCoverFile) : null;
+    const sellerPhotos = photos.filter((p) => p.where === 'desc' || (nc && p.where === 'top' && p.file !== nc));
+    return { note, hasNote: !!(note && note.replace(/\s/g, '').length), photos, sellerPhotoCount: sellerPhotos.length, photoDiff: sellerPhotos.length > 0, coverKnown: !!nc, found: !!(box || photos.length) };
+  }
   // '지금 이 상품을 클릭한 분들이 다음 상품도 클릭' (알라딘 지니 추천, 늘 나오지는 않음)
   function parseClickRelation(d) {
     let box = d.getElementById ? (d.getElementById('w_jiny_recentContent') || d.getElementById('w_jiny_recentRecomList') || d.getElementById('swiper_nowClick')) : null;
@@ -583,6 +594,28 @@
   };
   function parseAjaxResult(text) { try { const j = JSON.parse(text); return { ok: !!j.result, value: j.resultValue ?? null, error: j.result ? null : `${j.errorCode || ''} ${j.errorMsg || ''}`.trim() || '실패' }; } catch (e) { return { ok: false, value: null, error: '응답을 읽지 못함(로그인 풀림일 수 있음)' }; } }
 
+  // ========== 알라딘 요청 속도 조절 (모든 수집·감시가 같이 씀) ==========
+  // 같은 브라우저의 모든 탭·스크립트(상품 수집·고객 수집·가격 감시)가 '마지막 요청 시각'과 '지금 간격'을 같이 봄(알라딘 화면의 localStorage)
+  // → 탭·스크립트를 여러 개 열어도 이 PC에서 알라딘으로 가는 요청 속도는 하나로 묶임
+  // 자동 조절(AIMD): 시작 1초 간격 → 연속 성공 20번마다 10%씩 빨라짐(최소 간격까지) → 실패·시간초과는 2배, 로그인 풀림은 3배로 즉시 느려짐(최대 간격까지)
+  // 목표: 막히지 않는 범위에서 가장 빠르게. 숫자는 설정(상품 수집기 설정 → Firestore prd_system/settings)에서 바꾸고, 그 값이 여기로 전달됨
+  const PACER_DEFAULTS = { minMs: 600, startMs: 1000, maxMs: 15000, upEvery: 20, upMul: 0.9, failMul: 2, loginMul: 3 };
+  function makePacer(key) {
+    const LSx = (() => { try { return typeof localStorage !== 'undefined' ? localStorage : null; } catch (e) { return null; } })();
+    const K = 'rnPacer:' + key; const mem = {};
+    const rd = (k) => { try { return LSx ? JSON.parse(LSx.getItem(k) || 'null') : mem[k] || null; } catch (e) { return null; } };
+    const wr = (k, v) => { try { if (LSx) LSx.setItem(k, JSON.stringify(v)); else mem[k] = v; } catch (e) {} };
+    const cfg = () => ({ ...PACER_DEFAULTS, ...(rd('rnPacer:cfg') || {}) });
+    const st = () => { const c = cfg(); const x = rd(K) || {}; if (!(x.gap > 0)) x.gap = c.startMs; x.gap = Math.min(c.maxMs, Math.max(c.minMs, x.gap)); return x; };
+    return {
+      async wait(sleep, mult = 1) { for (;;) { const x = st(); const gap = x.gap * (mult || 1) * (0.85 + Math.random() * 0.3); const w = (x.last || 0) + gap - Date.now(); if (w > 0) { await sleep(Math.min(w, 4000)); continue; } x.last = Date.now(); wr(K, x); return; } },
+      ok() { const c = cfg(); const x = st(); x.ok = (x.ok || 0) + 1; if (x.ok >= c.upEvery) { x.gap = Math.max(c.minMs, Math.round(x.gap * c.upMul)); x.ok = 0; } wr(K, x); },
+      fail(kind) { const c = cfg(); const x = st(); x.ok = 0; x.gap = Math.min(c.maxMs, Math.round(x.gap * (kind === 'login' ? c.loginMul : c.failMul))); x.failAt = Date.now(); x.failKind = kind || 'error'; wr(K, x); },
+      state() { return { ...st(), cfg: cfg() }; },
+      setCfg(o) { const c = { ...cfg(), ...o }; wr('rnPacer:cfg', { minMs: c.minMs, startMs: c.startMs, maxMs: c.maxMs }); },
+    };
+  }
+
   // ---------- 변경 비교 ----------
   function diff(prev, next, fields) {
     const ch = {};
@@ -617,7 +650,7 @@
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
     parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, searchChannels, marketNoBook, nameCoverage, parseC2BList, parseC2BDetail, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
-    parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
+    parseUsedItemInfo, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
 })(typeof window !== 'undefined' ? window : this);
