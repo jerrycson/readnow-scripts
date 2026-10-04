@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.8.0';
+  const VERSION = '0.9.1';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -53,13 +53,15 @@
     rollout: { treatPct: 1, controlPct: 0 }, // 실제 적용 비율: 상품코드로 고정 배정(0~99) → 비율을 올려도 이미 들어간 상품은 그대로
 
     lowestMaxGapHours: 48, // 두 관측 사이가 이보다 길면 그 사이는 최저가 기간에 넣지 않음 (정확히 아는 것만 셈)
-    aladinSideNames: ['알라딘 직접 배송', '이 광활한 우주점'],
-    gradeCoef: { '최상': 1, '상': 0.9, '중': 0.75 },
+    aladinSideNames: ['알라딘 직접 배송', '우주점', '중고매장'],
+    gradeCoef: { '최상': 1, '상': 0.95, '중': 0.85 }, // 정범 지정 2026-10-04
+    useBetterGrade: true, // 더 좋은 등급 유효 매물도 기준 후보로 (끄면 같은 등급만 — 수동 일괄 처리 그룹에서 바꿀 수 있음)
+    buybackGrades: ['최상', '상'], // 알라딘은 '중' 상태를 사지 않음 → 중 상품은 매입가 하한선 없음
     // 첫 페이지 예외 키워드 (제목에 있으면 뒤쪽 쪽까지 봄)
     specialKeywords: ['한정', '특별', '특전', '특장', '기념', '리커버', '초판', '초회', '교보', '알라딘', '예스24', '밀리의', '인터파크'],
     specialMaxPages: 10,
     firstTieMaxShipGap: 1000, // 맨 위 매물의 배송비가 우리보다 이만큼 넘게 비싸면 판매가 동가 대신 총액 기준 (배송비로 남기는 판매자에게 마진을 퍼주지 않음)
-    advPct: 0.05,          // 맨 위가 아닌 기준 상품과 비교할 때 구매자에게 주는 이점 (총액 기준 1~5%의 위쪽). 단위로 내림
+    advPct: 0,             // 구매자 이점: 기본은 주지 않음(정확히 동가). 정범 지정 2026-10-04
     confirmHours: 24,      // 알라딘 반영 지연: 이 시간 지나야 '확정'
     staleHours: 48,        // 관측이 이보다 오래되면 판정하지 않음
     buybackTolerance: 0.10, // 목표가가 알라딘 매입가 하한가보다 이만큼 이상 낮을 때만 하한가에 멈춤
@@ -78,7 +80,7 @@
     // 희소 후보: 우리 말고 유효 판매자 0~1곳 + 전체 판매자 2곳 이하
     rareMaxValid: 1, rareMaxAll: 2,
     // 추격자
-    useYes24Proxy: true,   // 기준보다 앞의 무효·보류 매물을 예스24로 대조: 같은 판매자이거나 대행해도 이윤이 남으면(배송비 포함) 실제로 팔리는 경쟁 매물로 봄
+    useYes24Proxy: false,  // 예스24 대조로 무효·보류(주황 등) 매물을 경쟁 매물로 올리는 기능 — 관리자 판정 기간에는 끔 (주황이 기준이 되는 일이 없게, 정범 지정 2026-10-04)
     chase: { windowHours: 24, lookbackDays: 7, minEvents: 3, halfLifeDays: 14, releaseDays: 30, sellerMinBooks: 3 },
   };
 
@@ -118,7 +120,8 @@
   // 나중에 '상품 기준'으로 바꿀 때는 ctx.classify(row, listing) 만 갈아 끼움
   const coreOf = (ctx) => ctx.core || (root && root.ReadNowCore) || null;
   const rsOf = (ctx) => ctx.RS || (root && root.ReadnowSellers) || null;
-  const isAladinSide = (row, S) => !row.sellerCode && (S.aladinSideNames || []).some((n) => String(row.sellerName || '').includes(n));
+  // 알라딘측 = 알라딘 직접 배송(판매자 번호 0) · 이 광활한 우주점(표시) · 알라딘 중고매장 ○○점(판매자 링크 없이 매장 이름) — 유효 판매자와 같이 항상 기준 후보
+  const isAladinSide = (row, S) => String(row.sellerCode || '') === '0' || !row.sellerCode || (S.aladinSideNames || []).some((n) => String(row.sellerName || '').includes(n) || String(row.sellerBadge || '').includes(n));
   function specialHit(title, S) { const s = String(title || ''); return (S.specialKeywords || []).filter((k) => k && s.includes(k)); }
 
   // ───────────────────────── 남는 돈과 하한선 ─────────────────────────
@@ -140,7 +143,7 @@
   // 매입가 하한가 = 팔아서 손에 남는 돈(판매가 − 수수료 − 주문당 비용)이 알라딘 매입가와 같아지는 판매가.
   // 목표가가 그보다 낮아도 차이가 buybackTolerance(10%) 안이면 그대로 둠(최저가 자리가 더 중요) — 10% 넘게 낮을 때만 하한가에 멈추고 '알라딘에 팔기' 검토로 표시
   function floors(listing, tier, ctx, S) {
-    const bb = listing.grade && ctx.buyback ? ctx.buyback[listing.grade] : null;
+    const bb = listing.grade && ctx.buyback && (S.buybackGrades || []).includes(listing.grade) ? ctx.buyback[listing.grade] : null; // 중은 알라딘이 사지 않음
     const fBuyback = bb ? minPriceFor(bb, ctx, S) : null;
     return { buyback: bb || null, fBuyback, tolerance: S.buybackTolerance, applied: fBuyback };
   }
@@ -223,7 +226,8 @@
     const ours = String(S.ourSeller);
     const all = market.rows.map((r, i) => ({ ...r, rank: i + 1 }))
       .concat((market.recentGone || []).filter((g) => now - t(g.goneAt) < S.confirmHours * HOUR).map((g) => ({ ...g, rank: (g.rank != null ? g.rank : 1) - 0.5, ghost: true })))
-      .filter((r) => (r.page || 1) <= maxPage && !r.soldOut && r.price > 0);
+      .filter((r) => (r.page || 1) <= maxPage && !r.soldOut && r.price > 0)
+      .map((r) => (isAladinSide(r, S) && !['최상', '상', '중'].includes(r.grade) ? { ...r, gradeRaw: r.grade, grade: '중' } : r)); // 알라딘측 균일가 = 중 상태로 (정범 지정)
     const others = all.filter((r) => String(r.sellerCode || '') !== ours && !(listing.usedCode && r.usedCode === listing.usedCode));
     others.sort((a, b) => a.rank - b.rank);
     if (!others.length) { R.push('비교할 다른 매물이 없음 (우리만 있음)'); return done('queue', { action: 'review', why: 'alone', rare: true }); }
@@ -265,7 +269,7 @@
     const gr = (g) => (GRADE_RANK[g] != null ? GRADE_RANK[g] : -1); const myR = gr(listing.grade);
     const myC = S.gradeCoef[listing.grade];
     const effTotal = (r) => { if (myR < 0 || r.grade === listing.grade) return tot(r); const c = S.gradeCoef[r.grade]; return c && myC ? Math.round(r.price * (myC / c)) + (r.ship || 0) : tot(r); }; // 환산은 판매가에만, 배송비는 그대로
-    let cand = pool.filter((r) => myR < 0 || gr(r.grade) >= myR);
+    let cand = pool.filter((r) => myR < 0 || (S.useBetterGrade ? gr(r.grade) >= myR : r.grade === listing.grade));
     let ref = null, how = '';
     if (tier === 'T1') {
       const fresh = listing.pubDate && now - t(listing.pubDate) < 365 * DAY;
@@ -288,7 +292,7 @@
     if (S.useYes24Proxy && !ctx.yes24 && sane.some((r) => r.rank < ref.rank && ['red', 'orange', 'yellow'].includes(r.color))) { out.needYes24 = true; R.push('기준보다 앞에 무효·보류 매물이 있음 — 예스24 대조 자료가 없어 일단 제외하고 판정 (다음 감시 때 예스24를 같이 봄)'); }
     const unknownAhead = sane.filter((r) => r.color === 'unknown' && r.rank < ref.rank);
     if (unknownAhead.length) { R.push(`기준보다 앞에 판매자 기록이 없는 매물 ${unknownAhead.length}건 — 판매자 정보를 먼저 모아야 판정 가능`); return done('wait', { action: 'none', why: 'needSellers', needSellers: [...new Set(unknownAhead.map((r) => r.sellerCode))] }); }
-    out.ref = { rank: ref.rank, sellerCode: ref.sellerCode || null, sellerName: ref.sellerName || null, color: ref.color, grade: ref.grade, price: ref.price, ship: ref.ship || 0, total: refTotal, how, isFirst: !!(first && (ref === first || (ref.listingId && ref.listingId === first.listingId))), ghost: !!ref.ghost };
+    out.ref = { rank: ref.rank, sellerCode: ref.sellerCode || null, sellerName: ref.sellerName || null, color: ref.color, grade: ref.grade, price: ref.price, ship: ref.ship || 0, total: refTotal, how, isFirst: !!(first && ref.rank === first.rank), ghost: !!ref.ghost };
     if (ref.ghost) { R.push('기준 매물이 사라졌지만 24시간이 안 돼 아직 있는 것으로 봄 — 확정될 때까지 지금 가격 유지'); return done('wait', { action: 'none', why: 'refGone' }); }
     // 안전: 유효 기준이 목록 맨 위보다 터무니없이 비쌈 → 진짜 싼 매물을 판매자 점수로 버린 것일 수 있음
     if (first && refTotal > tot(first) * S.queueGapMult) { R.push(`유효 기준(${refTotal.toLocaleString()}원)이 목록 맨 위(${tot(first).toLocaleString()}원, ${LABEL[first.color] || first.color})보다 ${S.queueGapMult}배 넘게 비쌈`); return done('queue', { action: 'review', why: 'gapToFirst' }); }
@@ -298,18 +302,23 @@
     // 6. 소매 기준가: 맨 위면 동가, 아니면 배송비 차이 반영 + 구매자 이점
     const ourShip = listing.ship != null ? listing.ship : (ctx.policy && ctx.policy.fee) || 0;
     let base, rule;
-    if (ref.conv != null) { const tie = ref.conv - ourShip; base = snapDown(tie); if (base >= ref.price) base = stepDown(ref.price); rule = `더 좋은 등급 매물의 환산 총액 ${ref.conv.toLocaleString()} − 우리 배송비 ${ourShip.toLocaleString()} (그 매물 판매가 ${ref.price.toLocaleString()}원보다 반드시 쌈)`; }
+    if (ref.conv != null) { const cv = ref.price * (myC / S.gradeCoef[ref.grade]); base = snapDown(cv); if (base >= ref.price) base = stepDown(ref.price); rule = `더 좋은 등급(${ref.grade}) 매물 판매가 ${ref.price.toLocaleString()}원 × 등급 계수 ${myC}/${S.gradeCoef[ref.grade]} = ${Math.round(cv).toLocaleString()}원 (단위 내림) — 판매가끼리 비교, 배송비는 계산에 넣지 않음`; }
     else if (out.ref.isFirst && (ref.ship || 0) - ourShip <= S.firstTieMaxShipGap) { base = ref.price; rule = '기준이 목록 맨 위(최저가 표시) → 동가, 더 내리지 않음'; }
-    else if (out.ref.isFirst) { const tie = ref.price + (ref.ship || 0) - ourShip; base = snapDown(tie * (1 - S.advPct)); if (base >= tie) base = stepDown(tie); rule = `맨 위지만 배송비가 우리보다 ${((ref.ship || 0) - ourShip).toLocaleString()}원 비쌈 → 판매가 동가로 맞추면 배송비 차이만큼 마진을 버림 → 총액 기준 ${Math.round(S.advPct * 100)}% 이점`; }
-    else { const tie = ref.price + (ref.ship || 0) - ourShip; base = snapDown(tie * (1 - S.advPct)); if (base >= tie) base = stepDown(tie); rule = `총액 동가 ${tie.toLocaleString()}원에서 구매자 이점 ${Math.round(S.advPct * 100)}% (단위 내림)`; }
+    else if (out.ref.isFirst) { const tie = Math.max(10, ref.price + (ref.ship || 0) - ourShip); base = S.advPct > 0 ? snapDown(tie * (1 - S.advPct)) : tie; if (S.advPct > 0 && base >= tie) base = stepDown(tie); rule = `맨 위지만 배송비가 우리보다 ${((ref.ship || 0) - ourShip).toLocaleString()}원 비쌈 → 판매가 동가로 맞추면 배송비 차이만큼 마진을 버림 → 총액 기준 ${Math.round(S.advPct * 100)}% 이점`; }
+    else { const tie = Math.max(10, ref.price + (ref.ship || 0) - ourShip); if (S.advPct > 0) { base = snapDown(tie * (1 - S.advPct)); if (base >= tie) base = stepDown(tie); rule = `총액 동가 ${tie.toLocaleString()}원에서 구매자 이점 ${Math.round(S.advPct * 100)}%`; } else { base = tie; rule = `배송비 포함 총액이 기준 매물과 정확히 같게 (기준 ${ref.price.toLocaleString()}+${(ref.ship || 0).toLocaleString()}, 우리 배송비 ${ourShip.toLocaleString()})`; } }
 
     // 7. 재고 기간 할인 (보호·희소는 할인 없음). 추격자가 기준이면 '맨 위 동가'보다 더 내리지 않음
     let d = T.disc[S.discPick === 'high' ? 1 : 0];
     if (listing.protect || rare) d = 0;
     const chased = ctx.chase && ref.sellerCode && (ctx.chase[ref.sellerCode] || {}).active;
     if (chased && d > 0) { R.push(`기준 판매자가 추격자(${ref.sellerName || ref.sellerCode}) — 할인 없이 동가 유지 (가격 싸움 피함)`); d = 0; }
+    // ★ 맨 위 동가 우선(정범 원칙): 기준이 목록 맨 위(최저가 표시)면 기간 할인을 하지 않음 — 최저가 표시는 같은 가격이면 함께 달리고,
+    //   그 자리를 우리가 더 싸게 뺏으면 상대(프로그램을 쓰는 판매자 포함)와 쓸데없는 출혈 경쟁이 시작됨
+    if (d > 0 && out.ref.isFirst) { R.push(`기준이 목록 맨 위(최저가 표시) — 동가 우선이라 ${T.name} 할인 ${Math.round(d * 100)}%는 하지 않음`); d = 0; }
     let target = d > 0 ? snapDown(base * (1 - d)) : base;
     if (d > 0) rule += ` → ${T.name} 할인 ${Math.round(d * 100)}%`;
+    // 할인을 해도 같은 등급 유효 매물이 맨 위에 있으면 그 가격 밑으로는 내리지 않음 (함께 최저가 표시, 뺏지 않음)
+    if (first && first.grade === listing.grade && allow.has(first.color) && target < first.price && ref.conv == null) { R.push(`맨 위 유효 매물(${first.sellerName || first.sellerCode || '알라딘측'}) ${first.price.toLocaleString()}원 밑으로는 내리지 않음 — 동가로 최저가 표시만 함께`); target = first.price; }
 
     // 8. 하한선 (알라딘 매입가만)
     const F = floors(listing, tier, ctx, S); out.floors = F;
@@ -326,7 +335,7 @@
     out.target = target; out.delta = delta; out.deltaPct = cur ? delta / cur : null; out.rule = rule; out.discount = d;
     if (delta === 0 || (Math.abs(delta) < priceStep(cur) && !crosses)) { R.push(`지금 가격 유지 (${rule})`); return done('ok', { action: 'none' }); }
     if (delta < 0 && refYoung) { R.push(`기준 매물이 ${S.confirmHours}시간 안에 새로 나타남 — 확정될 때까지 내리지 않음`); return done('wait', { action: 'none', why: 'refYoung' }); }
-    if (delta < 0 && (listing.protect || rare)) { R.push('보호·희소 상품은 자동으로 내리지 않음'); block.push(listing.protect ? '보호 재고' : '희소 후보'); }
+    if (delta < 0 && (listing.protect || rare)) { R.push('보호·희소 상품 — 자동으로는 내리지 않음 (관리자 결정)'); block.push(listing.protect ? '보호 재고' : '희소 후보'); }
     if (special) block.push(`특별판 키워드(${hits.join(', ')})`);
     if (delta < 0 && -out.deltaPct > S.maxAutoDropPct) block.push(`한 번에 ${Math.round(-out.deltaPct * 100)}% 인하`);
     if (delta > 0 && out.deltaPct > S.maxAutoRaisePct) block.push(`한 번에 ${Math.round(out.deltaPct * 100)}% 인상`);
@@ -389,6 +398,6 @@
     st.lastAt = new Date(at).toISOString(); st.lastLowest = !!obs.atLowest; st.obsN = (st.obsN || 0) + 1; return st;
   }
 
-  const api = { VERSION, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
+  const api = { VERSION, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, merge(DEFAULTS, S0 || {})), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowPricing = api;
 })(typeof window !== 'undefined' ? window : this);
