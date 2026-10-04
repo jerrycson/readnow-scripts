@@ -16,14 +16,14 @@
  *   - 비교는 목록 첫 페이지만. 단 특별판 키워드가 제목에 있으면 첫 페이지 조건 제외(뒤쪽 쪽까지 봄). 비교 대상 없으면 관리자 대기열
  *   - 목표는 유효 최저가와 '정확히' 동가 → 기준 상품이 목록 맨 위면 그대로 동가, 아니면 배송비 차이를 반영해 구매자에게 1~5% 이점
  *   - 가격 단위 = 가격대의 5% (100원대 5원, 1,000원대 50원, 10,000원대 500원). 상대 가격과 정확히 같게 맞출 때만 단위 예외
- *   - 알라딘 매입가가 모든 단계의 하한선. 초기 단계는 원가 하한선도 함께
+ *   - 하한선은 알라딘 매입가 하나뿐. 목표가가 그 하한가보다 10% 넘게 낮을 때만 멈춤 (원가 하한선 없음)
  *   - 알라딘 반영 지연(대부분 24시간 내) → 새로 나타난 싼 매물·사라진 매물·우리 가격 변경은 24시간 지나 확정된 뒤에 판단
  *   - 일시판매중지는 우리 전용 보관함: 관리코드 뒤 3자리로 구분 — PND = 판매보류풀(가격상승대기), BAD = 불용(4년 초과, 관리자 승인)
  *     (판매중지는 알라딘이 다른 이유로 쓰는 일이 많아 쓰지 않음 · '판매금지'는 알라딘만 정하는 상태)
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.6.0';
+  const VERSION = '0.7.0';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -62,7 +62,7 @@
     advPct: 0.05,          // 맨 위가 아닌 기준 상품과 비교할 때 구매자에게 주는 이점 (총액 기준 1~5%의 위쪽). 단위로 내림
     confirmHours: 24,      // 알라딘 반영 지연: 이 시간 지나야 '확정'
     staleHours: 48,        // 관측이 이보다 오래되면 판정하지 않음
-    minMargin: 0,          // 원가 하한선에 더할 최소 이익(원)
+    buybackTolerance: 0.10, // 목표가가 알라딘 매입가 하한가보다 이만큼 이상 낮을 때만 하한가에 멈춤
     feeRate: 0.10,
     packPerOrder: 394,
     courierPerOrder: 2500,
@@ -136,15 +136,13 @@
     let p = snapUp(hi); while (sellNet(p, ctx, S) < need) p = snapUp(p + 1); return p;
   }
   // 하한선: 매입가 하한(모든 단계) + 원가 하한(T1~T3) / 처분 하한(T4~: 매입원가는 이미 쓴 돈 → 팔아서 손해만 안 보면 됨)
+  // 하한선 = 알라딘 매입가 하나뿐 (정범 결정 2026-10-04: 원가·손해선 같은 다른 제약은 걸지 않음)
+  // 매입가 하한가 = 팔아서 손에 남는 돈(판매가 − 수수료 − 주문당 비용)이 알라딘 매입가와 같아지는 판매가.
+  // 목표가가 그보다 낮아도 차이가 buybackTolerance(10%) 안이면 그대로 둠(최저가 자리가 더 중요) — 10% 넘게 낮을 때만 하한가에 멈추고 '알라딘에 팔기' 검토로 표시
   function floors(listing, tier, ctx, S) {
     const bb = listing.grade && ctx.buyback ? ctx.buyback[listing.grade] : null;
-    const cost = listing.cost != null ? listing.cost : ctx.defaultCost;
-    const early = ['T1', 'T2', 'T3'].includes(tier);
     const fBuyback = bb ? minPriceFor(bb, ctx, S) : null;
-    const fCost = early && cost != null ? minPriceFor(cost + S.minMargin, ctx, S) : null;
-    const fZero = minPriceFor(0, ctx, S);
-    const applied = Math.max(fBuyback || 0, fCost || 0, early ? 0 : fZero || 0) || null;
-    return { buyback: bb || null, fBuyback, cost: cost ?? null, costFrom: listing.cost != null ? (listing.costSource || '연결된 매입') : '평균 권당 매입가', fCost, fZero, applied };
+    return { buyback: bb || null, fBuyback, tolerance: S.buybackTolerance, applied: fBuyback };
   }
 
   // ── 관리코드 표시 (일시판매중지 보관함 구분) ── 기준은 여기 한 곳: 앞 3자리 = 서가(절대 안 건드림), 뒤 3자리 = 가격 코드 자리에 표시를 씀
@@ -306,12 +304,14 @@
     let target = d > 0 ? snapDown(base * (1 - d)) : base;
     if (d > 0) rule += ` → ${T.name} 할인 ${Math.round(d * 100)}%`;
 
-    // 8. 하한선
+    // 8. 하한선 (알라딘 매입가만)
     const F = floors(listing, tier, ctx, S); out.floors = F;
     let floored = false;
-    if (F.applied && target < F.applied) { target = F.applied; floored = true; R.push(`하한선 ${F.applied.toLocaleString()}원에 막힘 (${F.fBuyback && F.applied === F.fBuyback ? `알라딘 매입가 ${F.buyback.toLocaleString()}원` : F.fCost && F.applied === F.fCost ? `원가 ${F.cost.toLocaleString()}원(${F.costFrom})` : '팔면 손해 보지 않는 선'})`); block.push('하한선에 막힘'); }
-    // 알라딘에 파는 게 더 나은가: 소매 기준가로 팔아도 남는 돈 < 알라딘 매입가
-    if (F.buyback && sellNet(base, ctx, S) < F.buyback) { out.sellToAladin = true; R.push(`기준가로 팔아도 남는 돈이 알라딘 매입가(${F.buyback.toLocaleString()}원)보다 적음 → 알라딘에 팔기 검토`); }
+    if (F.fBuyback && target < F.fBuyback) {
+      const gap = (F.fBuyback - target) / F.fBuyback;
+      if (gap >= S.buybackTolerance) { R.push(`목표가 ${target.toLocaleString()}원이 알라딘 매입가 하한가 ${F.fBuyback.toLocaleString()}원보다 ${Math.round(gap * 100)}% 낮음 → 하한가에 멈춤 (알라딘 매입가 ${F.buyback.toLocaleString()}원 — 이 가격에 팔면 알라딘에 파는 것보다 덜 남음)`); target = F.fBuyback; floored = true; out.sellToAladin = true; block.push('알라딘 매입가 하한'); }
+      else R.push(`목표가가 알라딘 매입가 하한가보다 ${Math.round(gap * 100)}% 낮지만 ${Math.round(S.buybackTolerance * 100)}% 안이라 최저가를 그대로 맞춤`);
+    }
 
     // 9. 바꿀 만한가: 한 단위 미만 차이는 그대로. 단 기준 가격을 넘나드는 변화(순위가 바뀜)는 바꿈
     const cur = listing.price; const delta = target - cur; const crosses = ref.conv == null && ((cur > ref.price && target <= ref.price) || (cur <= ref.price && target > ref.price));
