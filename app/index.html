@@ -256,6 +256,7 @@ details > summary .vztg{float:none;margin-left:8px;vertical-align:middle}.card{p
 .vz .hint,.vz p.hint,.vz .l2 small{display:none}.vz .item.vzrow,.vz li.vzrow{position:relative;overflow:hidden}.vzib{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(47,93,80,.16),rgba(47,93,80,.06));border-right:2px solid rgba(47,93,80,.35);pointer-events:none;z-index:0}
 .vz .vzrow > *:not(.vzib){position:relative;z-index:1}.vz .item.vzrow .l2{display:none}
 mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
+.sleg{margin:8px 0 0;padding:8px 10px;border:1px solid var(--line,#D6DDDA);border-radius:8px;font-size:12.5px;line-height:1.5}.sleg>div{margin-top:4px}.sleg .sw{display:inline-block;width:12px;height:12px;border:1px solid #999;vertical-align:-2px;margin-right:4px}.tag.mon-treat{background:#1F6F4A;color:#fff}.tag.mon-control{background:#2B5C8A;color:#fff}.tag.mon-hold{background:#8A4B0F;color:#fff}
 </style>
 </head>
 <body>
@@ -267,7 +268,8 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="../readnow-sellers-core.js?v=1.3.0"></script>
-<script src="../readnow-core.js?v=1.2.0"></script>
+<script src="../readnow-core.js?v=1.3.0"></script>
+<script src="../readnow-pricing-core.js?v=0.4.0"></script>
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
@@ -276,7 +278,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.55.0';
+const APP_VER = '0.56.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -579,7 +581,7 @@ function openModal(which) { S.modal = which; $('#modal').classList.add('on'); do
 function closeModal() { $('#modal').classList.remove('on'); if (!S.detail) document.body.style.overflow = ''; }
 function renderModal() {
   const box = $('#modalbody'); const which = S.modal;
-  $('#modaltabs').innerHTML = [['score', '고객 점수'], ['seller', '판매자 점수'], ['metrics', '지표·차트']].map(([k, l]) => `<button class="${which === k ? 'on' : ''}" data-mt="${k}">${l}</button>`).join('');
+  $('#modaltabs').innerHTML = [['score', '고객 점수'], ['seller', '판매자 평가 점수'], ['metrics', '지표·차트']].map(([k, l]) => `<button class="${which === k ? 'on' : ''}" data-mt="${k}">${l}</button>`).join('');
   $('#modaltabs').querySelectorAll('[data-mt]').forEach((b) => (b.onclick = () => { S.modal = b.dataset.mt; renderModal(); }));
   if (which === 'score') {
     const v = S.cfg.vip; const c = S.cfg.caution;
@@ -1566,9 +1568,14 @@ function aladinLinks(l, it) {
 }
 const usedBtn = (l, it) => { const u = aladinLinks(l, it); return u.used ? `<span class="ulink" data-open="${esc(u.used)}" title="${u.usedExact ? '알라딘 온라인 중고 (전체 중고)' : '알라딘 중고 검색 (도서 정보를 받으면 바로 이동)'}">중고↗</span>` : ''; };
 document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-open]'); if (!a) return; ev.preventDefault(); ev.stopPropagation(); window.open(a.dataset.open, '_blank', 'noopener'); }, true);
+// 가격 감시 묶음 표시 — 배정은 판정 엔진(readnow-pricing-core.js)의 groupOf 하나 (수집기 상품 조회 화면과 같은 결과)
+const MONTXT = { treat: ['감시·적용', '판정 엔진이 매일 보고 가격을 맞추는 상품'], control: ['감시·비교', '판정만 기록하고 가격은 절대 안 바꾸는 비교 묶음 (효과 측정용)'], hold: ['가격상승대기', '판매보류풀: 정한 가격 이상으로 최저가에 설 수 있을 때만 판매중'] };
+function loadPricingCfg() { if (S.prCfgLoading) return; S.prCfgLoading = true; db.collection('prd_system').doc('pricing').get().then((d) => { S.prCfg = d.exists ? d.data() : {}; if (['products', 'home'].includes(S.tab)) renderMain(); }).catch(() => { S.prCfg = {}; }); }
+function monGroup(l) { const PRC = window.ReadnowPricing; if (!PRC || !l || !l.usedCode || l.status !== '판매중' && l.status !== '일시판매중지') return null; if (!S.prCfg) { loadPricingCfg(); return null; } if (S.prCfg.holdPool && S.prCfg.holdPool[l.usedCode]) return 'hold'; const g = PRC.groupOf(l.usedCode, { rollout: S.prCfg.rollout || PRC.DEFAULTS.rollout }); return g === 'off' ? null : g; }
+function monTag(l) { const g = monGroup(l); return g ? `<span class="tag mon-${g}" title="${esc(MONTXT[g][1])}">${MONTXT[g][0]}</span>` : ''; }
 function prodRow(l) {
   const b = l.bookId ? S.pbooks.get(l.bookId) : null; const src = b && b.images ? imgUrl(b.images.front, true) : null;
-  return `<button class="item prow" data-pid="${esc(l.id)}">${src ? `<img class="pth" src="${esc(src)}" loading="lazy" decoding="async" alt="">` : '<span class="pth none"></span>'}<span class="pbody"><span class="l1"><span class="name">${esc(l.title || l.usedCode)}</span>${l.grade ? `<span class="tag pl">${esc(l.grade)}</span>` : ''}${mtTag(mtOfListing(l).type)}${!l.active ? '<span class="tag bl">비활성</span>' : ''}${usedBtn(l)}</span>
+  return `<button class="item prow" data-pid="${esc(l.id)}">${src ? `<img class="pth" src="${esc(src)}" loading="lazy" decoding="async" alt="">` : '<span class="pth none"></span>'}<span class="pbody"><span class="l1"><span class="name">${esc(l.title || l.usedCode)}</span>${l.grade ? `<span class="tag pl">${esc(l.grade)}</span>` : ''}${mtTag(mtOfListing(l).type)}${monTag(l)}${!l.active ? '<span class="tag bl">비활성</span>' : ''}${usedBtn(l)}</span>
     <span class="l2"><span>${won(l.price)}</span><span>수량 ${l.qty ?? '-'}</span><span>${esc(l.status || '')}</span><span>등록 ${d10(l.registeredAt)}</span><span>${esc(l.publisher || '')}</span></span></span></button>`;
 }
 function renderProducts(m) {
@@ -1600,6 +1607,7 @@ async function openProduct(pid) {
       <div class="alinks">${U.used ? `<a class="btn" href="${esc(U.used)}" target="_blank" rel="noopener">온라인 중고 ↗</a>` : ''}${U.mine ? `<a class="btn ghost" href="${esc(U.mine)}" target="_blank" rel="noopener">우리 상품 페이지 ↗</a>` : ''}${U.newp ? `<a class="btn ghost" href="${esc(U.newp)}" target="_blank" rel="noopener">새상품 페이지 ↗</a>` : ''}</div>
       ${!U.usedExact ? '<p class="hint" style="margin:0 0 8px">도서 정보를 아직 받지 않아 온라인 중고는 검색으로 엽니다</p>' : ''}
       ${imgs ? `<div class="pimgs">${imgs}</div>` : ''}
+      ${(() => { const g = monGroup(l); const PRC = window.ReadnowPricing; return `<div class="card"><h3>가격 감시 ${g ? `<span class="tag mon-${g}">${MONTXT[g][0]}</span>` : '<small class="hint">대상 아님</small>'}</h3><p class="hint" style="margin:0">${g ? esc(MONTXT[g][1]) : `지금 단계에서는 판정 엔진이 이 상품을 보지 않습니다 (적용 ${(S.prCfg && S.prCfg.rollout || (PRC && PRC.DEFAULTS.rollout) || {}).treatPct || 0}% 단계).`} 판정 기록·가격 변경 내역은 감시 단계가 켜지면 여기에 나옵니다.</p></div>`; })()}
       ${(() => { if (!S.nbmLoaded) loadNbm(); return nbmCard(l); })()}
       ${l.bookId ? `<div class="card"><h3>구매자 분포·함께 산 책 — 변화 기록</h3><div id="dynhist"><div class="hint">불러오는 중</div></div></div>` : ''}
       <div class="card"><h3>등록 정보</h3><dl class="kv">${(() => { const mm = S.pmatch.get(l.id); return kv('매입가', (mm ? (mm.cost != null ? `${won(mm.cost)} <small class="hint">(${esc({ new: '새 매입', backlog: '기존 매입 미등록분', ms: '김미소책방', hd: '헌옷도라이', manual: '사람이 연결', none: '' }[mm.kind] || '')} · ${esc(mm.how || '')})</small>` : '<span style="color:var(--amber)">빈칸 — 매입 기록에서 못 찾음</span>') : '<small class="hint">아직 연결 안 함</small>') + ` <button class="linkbtn" data-plink="${esc(l.id)}">${mm && mm.kind !== 'none' ? '다른 매입으로 바꾸기' : '매입 기록과 연결'}</button>`); })()}${(() => { if (!S.catManLoaded) loadCatMan(); const c = listingCat(l); const m = S.catMan.get(l.id); return kv('분류', `${esc(c)}${m ? ' <small class="hint">(사람이 정함)</small>' : ''} ${catSelect(l.id, c)}`); })()}${(() => { const t = mtOfListing(l); return kv('상품 유형', `${MT_LABEL[t.type]} <small class="hint">(${esc(t.why || '')})</small>`); })()}${kv('상태', esc(l.status || ''))}${kv('판매가', won(l.price))}${kv('정가', l.priceList ? won(l.priceList) : '')}${kv('수량', l.qty)}${kv('등급', esc(l.grade || ''))}${kv('자체코드', esc(l.sku || ''))}${kv('출판사', esc(l.publisher || ''))}${kv('등록일', dt16(l.registeredAt) + (l.registeredYearGuessed ? ' (연도 추정)' : ''))}${kv('상품번호', esc(l.listingId || ''))}${kv('U코드', esc(l.usedCode || ''))}</dl></div>
@@ -1763,7 +1771,7 @@ function sellerRankBoards() {
   return `<div class="axis plain"><div class="axh"><b>규모·경력</b><span>점수 아님, 사실 순위</span></div>${plain.map((b) => sect(...b)).join('')}</div>
     <div class="axis model"><div class="axh"><b>★ 모범 · 불량</b><span>배울 만한가 — 돈을 잘 벌면서 오래 갈 방식인가</span></div>${model.map((b) => sect(...b)).join('')}</div>
     <div class="axis gain"><div class="axh"><b>₩ 우리에게 이득 · 불익</b><span>우리 돈에 어떤가 — 북스킹 매출·이익에 이득인가 손해인가</span></div>${gain.map((b) => sect(...b)).join('')}</div>
-    <p class="hint">모범·불량과 이득·불익은 서로 다른 질문이라 한 판매자가 '모범'이면서 '우리에게 불익'일 수 있습니다 (강한 경쟁자). 기준은 위쪽 '점수 기준' → 판매자 점수. 최근 6개월 평가·모범·불량·이득·불익 상위 판매자는 상품 수집기가 매일 평가를 추적합니다.</p>`;
+    <p class="hint"><b>이 점수들은 '판매자 평가'로, 판매가 기준점을 가르는 판매자 분류(유효·노랑·주황·무효, 위 범례)와 별개입니다.</b> 모범·불량과 이득·불익은 서로 다른 질문이라 한 판매자가 '모범'이면서 '우리에게 불익'일 수 있습니다 (강한 경쟁자). 기준은 위쪽 '점수 기준' → 판매자 점수. 최근 6개월 평가·모범·불량·이득·불익 상위 판매자는 상품 수집기가 매일 평가를 추적합니다.</p>`;
 }
 
 /* ══════════ 상품 순위 TOP10 (북스킹 판매 기준) ══════════ */
@@ -2717,6 +2725,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.56.0': ['판매자 분류 범례(판매자 집계·설명서) — 기준 파일 readnow-core.js 1.3.0의 범례에서 그대로', '상품 목록·상세에 가격 감시 묶음 표시(감시·적용 / 감시·비교 / 가격상승대기)', '판정 엔진 설명서 갱신: 예스24 대조, 맨 위 매물 배송비 규칙, 판매중지(판매금지 아님), 판매보류풀이 돈이 되는 경우', "헷갈림 정리: '판매자 평가 점수'(★모범·₩이득)는 분류와 별개라고 표시"],
   '0.55.0': ['판매자 분류 기준 v2(활동량 + 최근 3개월 품절취소율 + 허위 매물) — 기준은 readnow-core.js 1.2.0 한 곳', '❓ 설명서에 ⚙ 판정 엔진(기준·층 구조 로드맵·임시 기준·적용 단계) 항상 보기'],
   '0.54.0': ['판매자 분류를 공용 파일 readnow-core.js(1.1.0)의 한 함수로만 — 웹앱 안의 복사본 없앰 (툴팁·판정 엔진과 같은 함수)', '분석 자료 내려받기에 판매 기록(주문 줄) 추가', '이름: 리드나우(북스킹)'],
   '0.53.0': ['판매자 분류 고침: 평가 수를 툴팁과 똑같이 최근 6개월 평가 수로 (전에는 툴팁 기록이 없는 판매자를 전체 기간 평가 수로 재서 기준이 섞였음), 구글 시트 판매자의 품절취소율 단위(비율↔%) 맞춤', '판매자 집계에 \'판매자 분석 자료 내려받기\' (판정 엔진 분류 개편용)'],
@@ -3338,31 +3347,37 @@ document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-
 
 /* ══════════ 사용 설명서 (위 '❓ 설명서' 버튼) ══════════ */
 function engineManualHtml() {
-  const R = (RNC && RNC.SELLER_RULES) || null; const cv = (RNC && RNC.CORE_VERSION) || '못 읽음';
-  return `<p><b>목표</b>: 중고책방으로 많은 돈을 빨리 벌기. 엔진은 <b>쓸데없이 마진을 잃지 않으면서, 우리 책이 고객에게 가장 먼저 선택되는 가격</b>을 매일 자동으로 맞춥니다. 기준 파일 readnow-core.js v${cv} · 판정 파일 readnow-pricing-core.js.</p>
-  <h4>1. 판매자 분류 = 판매가 기준점을 믿어도 되는가 (기준은 sellerBg 한 곳)</h4>
-  ${R ? `<table class="tbl"><tr><th>분류</th><th>조건</th><th>판매가 정할 때</th></tr>
-    <tr><td>무효</td><td>허위 매물 표시 · 최근 6개월 평가 ${R.minActive}개 미만(없음·3건 미만 포함) · 품절취소율 ${R.red}% 이상</td><td>무시</td></tr>
-    <tr><td>보류 주황</td><td>취소율 ${R.orange}~${R.red}% · 또는 활동 50~99개면서 취소율 ${R.good}% 이상 · 활동 적은데 취소율 모름</td><td>기본 제외 (청산 단계부터 포함)</td></tr>
-    <tr><td>보류 노랑</td><td>취소율 ${R.yellow}~${R.orange}%(활동 200+) · 활동 100~199개면서 취소율 ${R.good}~${R.yellow}% · 활동 50~99개면서 취소율 ${R.good}% 미만 · 활동 200~999개인데 취소율 모름</td><td>기본 제외 (장기 단계부터 포함)</td></tr>
-    <tr><td>유효</td><td>활동 100개 이상 + 취소율 ${R.good}% 미만 · 활동 200개 이상 + 취소율 ${R.yellow}% 미만 · 1,000개 이상인데 취소율 모름</td><td>무조건 참고</td></tr>
-    <tr><td>짙은 유효</td><td>활동 1,000개 이상 + 취소율 ${R.good}% 미만</td><td>신규 재고의 가격 앵커</td></tr></table>` : '<p><b style="color:#c62828">기준 파일을 못 읽었습니다.</b></p>'}
-  <p class="hint">근거(2026-10-04 분석: 판매자 4,365곳·첫 페이지 매물 32만 8천 건): 거래가 많아도 취소율 10~30%인 대형 판매자가 첫 페이지의 15.5%를 차지했고, 이들 상당수가 보유 상품 수십만 개의 '매물 농장'이었음. 취소율 '좋음' 기준 ${R ? R.good : 2.5}%는 아마존 판매자 기준. 평점은 시간이 갈수록 부풀어 분류에 쓰지 않음. 최근 6개월 기준인 이유: 오래 팔았어도 최근 활동이 없으면 지금 물건을 보낼지 알 수 없음.</p>
-  <h4>2. 판정 모델의 층 구조 (로드맵)</h4>
+  const cv = (RNC && RNC.CORE_VERSION) || '못 읽음'; const PRC = window.ReadnowPricing; const pv = (PRC && PRC.VERSION) || '못 읽음'; const D = (PRC && PRC.DEFAULTS) || {};
+  const ro = (S.prCfg && S.prCfg.rollout) || D.rollout || {};
+  return `<p><b>목표</b>: 중고책방으로 많은 돈을 빨리 벌기. 엔진은 <b>쓸데없이 마진을 잃지 않으면서, 우리 책이 고객에게 가장 먼저 선택되는 가격</b>을 매일 자동으로 맞춥니다.<br><small class="hint">기준 파일 readnow-core.js v${esc(cv)} · 판정 파일 readnow-pricing-core.js v${esc(pv)} · 이 설명서의 숫자는 두 파일에서 바로 읽어 표시하므로 기준이 바뀌면 같이 바뀝니다.</small></p>
+  <h4>1. 판매자 분류 = 판매가 기준점을 믿어도 되는가</h4>
+  <p>기준은 readnow-core.js의 <b>sellerBg 한 곳</b>뿐입니다. 툴팁 줄 배경색·웹앱 판매자 집계·판정 엔진이 모두 이 함수를 부릅니다. 두 축: ① 활동 = 최근 6개월 평가 수(오래 팔았어도 최근 활동이 없으면 지금 물건을 보낼지 알 수 없음) ② 신뢰 = 최근 3개월 품절취소율. 허위 매물로 직접 표시한 판매자는 항상 무효.</p>
+  ${sellerLegendHtml()}
+  <p class="hint">근거(2026-10-04 분석, 판매자 4,365곳·첫 페이지 매물 32만 8천 건): 보유 상품 30만~60만 개에 취소율 27~32%인 대형 '매물 농장'이 첫 페이지를 크게 차지. 취소율 '좋음' 기준은 아마존 판매자 기준(2.5%). 평점은 시간이 갈수록 부풀어 분류에 안 씀.<br><b>헷갈리기 쉬운 것</b>: 툴팁 <b>글자색</b>(참고 경고)과 <b>굵은 테두리</b>(음반·DVD 전문 표시), 판매자 탭의 <b>★모범·₩이득 점수</b>(판매자 평가)는 모두 이 분류와 별개입니다.</p>
+  <h4>2. 예스24 대조 — 대행 매물이 진짜 경쟁자인가</h4>
+  <p>우리 기준보다 앞에 무효·보류 매물이 있으면 예스24의 같은 책을 봅니다(검색 결과 중 판매자가 가장 많은 묶음). ① <b>같은 판매자</b>(이름·아이디 일치)가 예스24에도 이 책을 올렸으면 실제로 팔리는 경쟁 매물로 봄 ② <b>대행 이윤</b>: 알라딘에서 받는 돈(판매가 − 수수료 + <b>배송비</b>) ≥ 예스24에서 같은 등급 이상을 사서 보내는 비용(판매가 + 배송비)이면 대행해도 남으므로 경쟁 매물로 봄. 손해면 실물 없을 가능성이 커서 무시. 사람이 '허위 매물'로 표시한 판매자는 대조하지 않고 항상 무시.</p>
+  <h4>3. 판정 모델의 층 구조 (로드맵)</h4>
   <table class="tbl"><tr><th>층</th><th>무엇으로 판단</th><th>상태</th><th>다음 층으로 바꾸는 조건</th></tr>
-    <tr><td>1층</td><td>판매자 활동량(최근 6개월 평가 수)</td><td>끝남</td><td>—</td></tr>
-    <tr><td>2층</td><td>활동량 + 최근 3개월 품절취소율 + 허위 매물 표시 (지금 쓰는 기준)</td><td><b>지금</b></td><td>매일 감시 8주 이상 쌓이면 3층을 그림자로 계산 시작</td></tr>
-    <tr><td>3층</td><td>매물마다 '실제로 발송될 확률' — 싼데도 오래 안 팔리는 최저가 매물, 판매자 운영 유형(실재고·대행·허위·도매), 우리 순위별 판매 기록</td><td>자료 모으는 중</td><td>그림자 계산이 지난 몇 주 자료로 '어떤 맨 위 매물이 실제로 팔려 사라졌나'를 2층보다 확실히 잘 맞힐 때 교체 (설정 하나로 되돌릴 수 있음)</td></tr></table>
-  <h4>3. 재고 기간 = 최저가 등록 기간</h4>
-  <p>재고 단계(신규~불용)는 등록 후 날수가 아니라 <b>우리가 최저가 자리를 지킨 날수</b>로 잽니다. 두 관측이 모두 최저가였고 간격이 48시간 이하일 때만 그 사이를 셉니다(모르는 시간은 안 셈).<br>
-  <b>임시 기준(스스로 끝남)</b>: 감시 시작일 <b>전에</b> 등록된 상품만 · 감시 시작일 당시의 등록 날수로 <b>고정</b>(늘지 않음) · 최대 둔화 재고(T3)까지 · 측정값이 T3에 닿거나 <b>감시 시작 365일 뒤</b> 자동으로 꺼짐. 판정마다 이유 칸에 '임시 기준 … 자동 종료일'이 찍힙니다. 불용(4년 초과)은 등록일 기준.</p>
-  <h4>4. 가격 정하기</h4>
-  <p>유효 최저가와 <b>정확히 동가</b>가 기본. 기준이 목록 맨 위(최저가 표시)면 동가로 서고 더 내리지 않음 · 아니면 배송비 차이를 반영해 1~5% 이점 · 가격 단위는 가격대의 5% · 하한선 = 알라딘 매입가(모든 단계)·원가(초기 단계) · 알라딘 반영 지연 때문에 변화는 24시간 확정 뒤 판단 · 판매자 기록이 없는 매물이 기준보다 앞에 있으면 판매자 정보부터 모음.</p>
-  <h4>5. 실제 적용 단계</h4>
-  <p>A: 1% 실제 적용 <b>3일</b>(실행이 정확한지 안전 확인) → B: 적용 25% vs 비교 25% <b>1주</b> → 확인 후 C: 적용 묶음 안에서 강도(맨 위 동가 / 한 단위 아래 / 유효 최저만)를 나눠 '다이얼 눈금' 만들기 → D: 전체. 비교 묶음은 C 이후에도 그대로 두어 측정을 이어감. 묶음은 상품코드로 고정 배정되어 비율을 올려도 이미 들어간 상품은 그대로.</p>
-  <h4>6. 판매보류풀 — 가격상승대기</h4>
-  <p>정한 최저 수용가 이상으로 최저가 자리에 설 수 있을 때만 판매중, 아니면 일시판매중지. 일시판매중지는 이 풀 전용(풀 목록에 없는 일시판매중지 상품은 엔진이 건드리지 않음). 상태를 오가는 깜빡임을 막으려 확정(24시간)·최소 유지 시간을 둠. (실행기와 함께 구현 예정)</p>
-  <h4>7. 쌓는 기록</h4>
+    <tr><td>1층</td><td>판매자 활동량</td><td>끝남</td><td>—</td></tr>
+    <tr><td>2층</td><td>활동량 + 품절취소율 + 허위 매물 표시 + 예스24 대조</td><td><b>지금</b></td><td>매일 감시 8주 이상 쌓이면 3층을 그림자로 계산 시작</td></tr>
+    <tr><td>3층</td><td>매물마다 '실제로 발송될 확률' — 싼데도 오래 안 팔리는 최저가 매물, 운영 유형(실재고·대행·허위·도매), 우리 순위별 판매 기록</td><td>자료 모으는 중</td><td>그림자 계산이 지난 몇 주 자료로 '어떤 맨 위 매물이 실제로 팔려 사라졌나'를 2층보다 확실히 잘 맞힐 때 교체 (설정 하나로 되돌림)</td></tr></table>
+  <h4>4. 재고 기간 = 최저가 등록 기간</h4>
+  <p>재고 단계(신규~불용)는 <b>우리가 최저가 자리를 지킨 날수</b>로 잽니다. 두 관측이 모두 최저가였고 간격이 ${D.lowestMaxGapHours || 48}시간 이하일 때만 그 사이를 셉니다.<br>
+  <b>임시 기준(스스로 끝남)</b>: 감시 시작일 <b>전에</b> 등록된 상품만 · 감시 시작일 당시의 등록 날수로 <b>고정</b> · 최대 ${esc(D.tempTierCap || 'T3')}(둔화 재고)까지 · 측정값이 따라잡거나 <b>감시 시작 ${D.tempSunsetDays || 365}일 뒤</b> 자동으로 꺼짐. 판정마다 이유 칸에 자동 종료일이 찍힙니다.<br>
+  <b>불용(4년 초과)</b>: 등록일 기준 · <b>판매중지</b> + 관리코드 뒤 3자리 BAD (관리자 승인). '판매금지'는 알라딘만 정하는 상태라 우리가 바꿀 수 없습니다.</p>
+  <h4>5. 가격 정하기</h4>
+  <p>유효 최저가와 <b>정확히 동가</b>가 기본. 기준이 목록 맨 위(최저가 표시)이고 배송비가 우리와 비슷하면(차이 ${(D.firstTieMaxShipGap || 1000).toLocaleString()}원 이하) 판매가 동가로 서고 더 내리지 않음 · <b>맨 위 매물의 배송비가 그보다 비싸면</b> 판매가를 맞추면 배송비 차이만큼 마진을 버리므로 총액 기준 · 그 밖에는 배송비 차이를 반영해 ${Math.round((D.advPct || 0.05) * 100)}% 이점 · 가격 단위는 가격대의 5% · 하한선 = 알라딘 매입가(모든 단계)·원가(초기 단계) · 알라딘 반영 지연 때문에 변화는 ${D.confirmHours || 24}시간 확정 뒤 판단 · 판매자 기록이 없는 매물이 기준보다 앞에 있으면 판매자 정보부터 모음.</p>
+  <h4>6. 가격 감시 표시</h4>
+  <p>수집기(샵매니저 상품 조회/수정 목록)와 웹앱 상품 목록·상세에 묶음이 색으로 표시됩니다: <span class="tag mon-treat">감시·적용</span> 판정 엔진이 매일 보고 가격을 맞춤 · <span class="tag mon-control">감시·비교</span> 판정만 기록하고 가격은 절대 안 바꿈(효과 측정용) · <span class="tag mon-hold">가격상승대기</span> 판매보류풀. 지금 비율: 적용 ${ro.treatPct || 0}% · 비교 ${ro.controlPct || 0}%. 묶음은 상품코드로 고정 배정되어 비율을 올려도 이미 들어간 상품은 그대로.</p>
+  <h4>7. 실제 적용 단계</h4>
+  <p>A: 1% 실제 적용 <b>3일</b>(실행이 정확한지 안전 확인) → B: 적용 25% vs 비교 25% <b>1주</b> → 확인 후 C: 적용 묶음 안에서 강도(맨 위 동가 / 한 단위 아래 / 유효 최저만)를 나눠 '다이얼 눈금' 만들기 → D: 전체. 비교 묶음은 C 이후에도 계속 두어 측정을 이어감(1주는 묶음당 판매 약 40건이라 아주 큰 차이만 보임).</p>
+  <h4>8. 판매보류풀 — 가격상승대기</h4>
+  <p>상품마다 '최저 수용가'를 정해 두고, 그 가격 이상으로 최저가 자리에 설 수 있을 때만 판매중, 아니면 일시판매중지. 판매중↔일시판매중지 전환은 ${D.confirmHours || 24}시간 확정 + 최소 유지 시간을 둬 깜빡이지 않게 함. <b>일시판매중지는 이 풀 전용</b> — 풀 목록에 없는 일시판매중지 상품은 엔진이 건드리지 않고 처리 여부를 묻습니다.<br>
+  <b>풀이 확실히 돈이 되는 경우는 두 가지</b>: ① <b>공급이 적은 책</b> — 우리 매물이 보이면 시장 가격을 붙잡아 둠, 숨기면 다른 판매자 가격이 오를 여지 ② <b>추격자가 붙은 책</b> — 보이는 동안 계속 따라 내려옴. 그 밖의 책은 수용가로 <b>계속 보여 두는 편이 낫습니다</b>(허위 매물을 피해 오는 손님에게 팔릴 기회가 남음).<br>
+  ★ 확인할 위험: 판매상태를 바꿨다 돌리면 알라딘에서 등록일·노출 순서가 바뀌는지 아직 모름 → A단계에서 소수로 먼저 확인.</p>
+  <h4>9. 샵매니저 실제 동작 (확인된 것)</h4>
+  <p>가격: <code>ajaxCmd.aspx?cmd=chg.pricesales</code> · 수량: <code>cmd=chg.stock</code> · 관리코드: <code>cmd=chg.supplieritemcode</code> · 판매상태: <code>wrecord_edit_usedbatch.aspx</code>(fn=stockstatusbulkchg, 판매중 1 · 일시판매중지 3 · 판매중지 15 · 삭제 17). 모두 readnow-products-core.js의 scmAction 한 곳에 있음.</p>
+  <h4>10. 쌓는 기록</h4>
   <p>온라인 중고 첫 페이지 매물의 변화(새 매물·빠진 매물·가격 변화)를 수집기 1.21.0부터 지우지 않고 쌓음(prd_metric_changes, kind = usedListings). 3층 판정과 실험 측정의 원자료.</p>`;
 }
 function openManual() {
@@ -4065,12 +4080,16 @@ function openSalesView(r, lbl, replace) {
 //  유효(초록) = 평가 200개 이상 → 가격 비교에서 무조건 참고
 const RNC = window.ReadNowCore || null;
 function bgOf(s) { // 판매자 분류 = readnow-core.js classifySellerDoc 한 곳의 기준 (툴팁·판정 엔진과 같은 함수). 복사본 없음 — 못 읽으면 분류하지 않고 알림
-  if (!RNC || !RNC.classifySellerDoc) return { bg: '#ffd6d6', bgReason: '기준 파일(readnow-core.js 1.2.0)을 못 읽음 — 분류 불가', fontReasons: [], missing: true };
+  if (!RNC || !RNC.classifySellerDoc) return { bg: '#ffd6d6', bgReason: '기준 파일(readnow-core.js 1.3.0)을 못 읽음 — 분류 불가', fontReasons: [], missing: true };
   const r = RNC.classifySellerDoc(s, RS); return { bg: r.bg, bgReason: r.why, fontReasons: r.font || [] };
 }
 const CLS2W = { dkgreen: 'ok', green: 'ok', yellow: 'yellow', orange: 'orange', red: 'bad', unknown: 'bad' }; // 공용 기준(readnow-core.js)의 분류 이름 → 이 화면의 묶음 이름 (기준 자체는 여기 없음)
 function sellerClass(s) { if (!RNC || !RNC.classifySellerDoc) return 'bad'; return CLS2W[RNC.classifySellerDoc(s, RS).cls] || 'bad'; }
-const SCLS = { ok: ['유효', '#2F7D4F', '최근 6개월 활발 + 품절취소율 낮음 — 가격 비교에서 무조건 참고'], yellow: ['보류 노랑', '#C9A400', '활동 중간 또는 취소율 5~10% — 기본 제외, 상품 조건이 맞으면 유효로'], orange: ['보류 주황', '#D9822B', '활동 적음 또는 취소율 10~20% — 기본 제외 (무효에 가까움)'], bad: ['무효', '#B0322A', '비활동(최근 6개월 평가 50개 미만)·취소율 20% 이상·허위 매물 — 판매가 정할 때 무시'] };
+const SCLS = (() => { // 화면 묶음 4개 (유효 = 짙은 유효 + 유효). 설명 글은 기준 파일의 범례에서 그대로 가져옴 — 기준 숫자가 여기 따로 있지 않음
+  const L = RNC && RNC.sellerLegend ? RNC.sellerLegend() : []; const f = (c) => L.find((x) => x.cls === c) || { use: '', cond: '기준 파일을 못 읽음' };
+  return { ok: ['유효', '#2F7D4F', `${f('green').use} — ${f('green').cond} (짙은 유효: ${f('dkgreen').cond})`], yellow: ['보류 노랑', '#C9A400', `${f('yellow').use} — ${f('yellow').cond}`], orange: ['보류 주황', '#D9822B', `${f('orange').use} — ${f('orange').cond}`], bad: ['무효', '#B0322A', `${f('red').use} — ${f('red').cond}`] };
+})();
+function sellerLegendHtml() { if (!RNC || !RNC.sellerLegend) return ''; return `<div class="sleg"><b>판매자 분류 범례</b> <small class="hint">툴팁 줄 배경색과 같은 색 · 기준 파일 readnow-core.js v${esc(RNC.CORE_VERSION || '')}</small>${RNC.sellerLegend().map((x) => `<div><span class="sw" style="background:${x.bg}"></span><b>${esc(x.name)}</b> — ${esc(x.use)}<br><small class="hint">${esc(x.cond)}</small></div>`).join('')}</div>`; }
 async function exportSellerAnalysis(btn) {
   try {
     if (btn) { btn.disabled = true; btn.textContent = '시장 지표 받는 중…'; }
@@ -4093,7 +4112,7 @@ function sellerCountPanel() {
   const pro = all.filter((s) => s.isPro || s.aladinGrade === '전문셀러').length;
   return `<div class="card"><h3>판매자 집계 <small class="hint">전체 ${num(all.length)}곳 · 전문셀러(사업자) ${num(pro)} · 개인 ${num(all.length - pro)}</small></h3>
     <div class="mgrid"><div class="drill" data-scnt="all"><b>${num(all.length)} <i class="dr">›</i></b><span>전체</span><small>모은 판매자</small></div>${Object.entries(SCLS).map(([k, [l, col, why]]) => `<div class="drill" data-scnt="${k}" style="border-left:4px solid ${col}" title="${why}"><b>${num(c[k].length)} <i class="dr">›</i></b><span>${l}</span><small>${Math.round((c[k].length / Math.max(1, all.length)) * 100)}% · ${why.split(' — ')[0]}</small></div>`).join('')}</div>
-    <p class="hint" style="margin:6px 0 0">툴팁 배경색·판정 엔진과 같은 기준 하나(공용 파일 readnow-core.js의 sellerBg)입니다. 자세한 기준과 로드맵: ❓ 설명서 → ⚙ 판정 엔진.</p><p style="margin:8px 0 0"><button class="btn" id="sexport">판매자·등록·판매 분석 자료 내려받기 (판정 엔진용)</button>${fake ? ` 따로 '허위 매물'로 표시한 판매자 ${num(fake)}곳.` : ''}${RNC && RNC.classifySellerDoc ? '' : ' <b style="color:#c62828">⚠ 기준 파일 readnow-core.js(1.1.0)를 못 읽어 분류할 수 없습니다 — GitHub에 올렸는지 확인</b>'}</p></div>`;
+    ${sellerLegendHtml()}<p class="hint" style="margin:6px 0 0">이 분류는 '판매가 기준점을 믿어도 되는가'입니다 (툴팁 배경색·판정 엔진과 같은 기준 하나). 아래의 ★모범·₩이득 점수는 '판매자 평가'로 이 분류와 별개입니다. 자세한 기준과 로드맵: ❓ 설명서 → ⚙ 판정 엔진.</p><p style="margin:8px 0 0"><button class="btn" id="sexport">판매자·등록·판매 분석 자료 내려받기 (판정 엔진용)</button>${fake ? ` 따로 '허위 매물'로 표시한 판매자 ${num(fake)}곳.` : ''}${RNC && RNC.classifySellerDoc ? '' : ' <b style="color:#c62828">⚠ 기준 파일 readnow-core.js(1.3.0)를 못 읽어 분류할 수 없습니다 — GitHub에 올렸는지 확인</b>'}</p></div>`;
 }
 function openSellerCount(k) {
   const SC = scores(); const rows = [...S.sellers.values()].filter((s) => k === 'all' || sellerClass(s) === k);
