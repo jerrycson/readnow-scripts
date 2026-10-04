@@ -257,8 +257,8 @@ details > summary .vztg{float:none;margin-left:8px;vertical-align:middle}.card{p
 .vz .vzrow > *:not(.vzib){position:relative;z-index:1}.vz .item.vzrow .l2{display:none}
 mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .sleg{margin:8px 0 0;padding:8px 10px;border:1px solid var(--line,#D6DDDA);border-radius:8px;font-size:12.5px;line-height:1.5}.sleg>div{margin-top:4px}.sleg .sw{display:inline-block;width:12px;height:12px;border:1px solid #999;vertical-align:-2px;margin-right:4px}.tag.mon-treat{background:#1F5FAF;color:#fff}.tag.mon-control{background:#6B3FA0;color:#fff}.tag.mon-hold{background:#8A4B0F;color:#fff}.tag.mon-retire{background:#555;color:#fff}.tag.mon-excluded{background:#B0322A;color:#fff}.rtabs{display:flex;gap:6px;margin:0 0 8px}.rtabs button{flex:1;padding:8px;border:1px solid var(--line,#D6DDDA);border-radius:8px;background:#fff;font-weight:700}.rtabs button.on{background:var(--cloth,#2F5D50);color:#fff}
-.pq{display:flex;gap:10px}.pq-l{flex:2;min-width:0}.pq-r{flex:1;min-width:120px;display:flex;flex-direction:column;gap:1px;max-height:430px;overflow:auto}
-.pblk{display:flex;gap:4px;align-items:center;font-size:11px;line-height:1.35;padding:0 4px;border-radius:3px;text-decoration:none;white-space:nowrap;overflow:hidden}.pblk b{min-width:22px}.pq-q{display:inline-block;width:10px;font-style:normal;font-weight:900;color:#B0322A;background:#fff;border-radius:2px;text-align:center}.pblk span{min-width:44px;text-align:right}.pblk em{font-style:normal;overflow:hidden;text-overflow:ellipsis}
+.pq{display:flex;gap:10px}.pq-l{flex:2;min-width:0}.pq-r{flex:1.1;min-width:150px;display:flex;flex-direction:column;gap:2px;max-height:520px;overflow:auto}
+.pblk{display:flex;gap:5px;align-items:center;font-size:12.5px;line-height:1.55;padding:0 4px;border-radius:3px;text-decoration:none;white-space:nowrap;overflow:hidden}.pblk b{min-width:22px}.pq-q{display:inline-block;width:10px;font-style:normal;font-weight:900;color:#B0322A;background:#fff;border-radius:2px;text-align:center}.pblk span{min-width:44px;text-align:right}.pblk em{font-style:normal;overflow:hidden;text-overflow:ellipsis}
 .pq-ctl{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-top:6px}.pq-ctl input{width:96px;padding:6px}.pq-warn{background:#FDE2E0;color:#B0322A;padding:4px 8px;border-radius:6px;margin-top:6px}.pq-done{background:#E2ECFA;padding:4px 8px;border-radius:6px;margin-top:6px;font-size:12.5px}
 .pq-why{margin-top:6px}.rgrp{margin-top:4px}.rgrp small{display:block;color:var(--sub)}.rchip{display:inline-flex;gap:3px;align-items:center;border:1px solid var(--line,#D6DDDA);border-radius:12px;padding:1px 8px;margin:2px;font-size:12px}
 @media(max-width:640px){.pq{flex-direction:column}.pq-r{max-height:220px}}
@@ -285,7 +285,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.62.0';
+const APP_VER = '0.62.1';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -2443,6 +2443,9 @@ function bizAlerts(B) {
   if (B.late.length) add('red', `출고 기록 없는 주문 ${B.late.length}건 (주문 후 ${(S.app.alerts || {}).lateDays || 2}일 넘음) — 수집이 늦었거나 실제 지연`, 'orders');
   if (B.unanswered && B.unanswered.length) add('red', `답하지 않은 문의 ${B.unanswered.length}건 (최근 30일)`, 'search');
   if (B.bad7.length) add('red', `최근 7일 불만족 평가 ${B.bad7.length}건`, 'search:reviews');
+  try { if (!S.prDec && !S.prRunLoading) loadPriceRun(); if (S.prDec) { const L = [...S.prDec.values()].filter((x) => x.group === 'treat' && !/^_check/.test(x.key || '')); const pend = L.filter((x) => x.approvalState === 'pending').length; const none = L.filter((x) => !x.approvalState).length; const setN = L.filter((x) => x.approvalState === 'pending' && x.action === 'set').length; const fail = L.filter((x) => x.execFailAt && ['approved', 'manual', 'hold', 'unhold'].includes(x.approvalState)).length;
+    if (pend + none) add(setN ? 'red' : 'amber', `가격 관리자 결정 대기 ${pend + none}건 — 엔진이 바꾸자는 것 ${setN}건${none ? ` · 판정만 있음 ${none}건` : ''}`, 'prq');
+    if (fail) add('red', `결정했지만 샵매니저 반영에 실패한 가격 ${fail}건 — 감시 탭·로그인 확인`, 'prq'); } } catch (e) {}
   if (B.underBuy.length) add('amber', `알라딘 매입가보다 싸게 파는 상품 ${B.underBuy.length}개 — 알라딘에 파는 게 더 이득`, 'under');
   if (B.cheapV.length) add('amber', `유효 최저가보다 ${(S.app.alerts || {}).cheapPct ?? 10}% 이상 싸게 파는 상품 ${B.cheapV.length}종 — 이익을 놓치는 중`, 'cheap');
   if (B.G.monthSales && B.forecast < B.G.monthSales) add('amber', `이번 달 예상 매출 ${won(Math.round(B.forecast))} — 목표 ${won(B.G.monthSales)}에 ${won(Math.round(B.G.monthSales - B.forecast))} 모자람`, 'goal');
@@ -2737,6 +2740,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.62.1': ["홈 '오늘 확인할 것'에 가격 관리자 결정 대기·반영 실패 표시 (누르면 가격 결정 화면)", '블록: 북스킹이 빠지던 것 고침(엔진 기준 매물 목록 대신 첫 페이지 전체 사용), 색을 온라인 중고 페이지 색 그대로(보라·회색 없앰), 상태를 알라딘 색 네모(최상 분홍·상 초록·중 회색), 상태·가격 크게', '블록을 누르면 지정 창에서 그 매물 페이지가 열리도록 고침'],
   '0.62.0': ['가격 결정: 우리 상태(최상·상·중)와 지금 가격·추천 가격을 크게, 엔진 판정을 사람 말로(유지·기다림·확인), 등록일', "탭: 바꾸자는 것 / 유지·기다림·확인 / 판정만 있음 / 결정함 / 전체 미결정", '블록: 판매자 이름과 (배송비: n), 판매가와 판매자 사이 간격, 북스킹 진한 남색, 누르면 그 매물 페이지(지정 창), ?를 누르면 구매 유의 사항 글·사진', "'전체중고 창 지정하기' 버튼 — 그 탭 하나에서 모든 전체중고·매물 링크가 열림", '상품 목록 화면(유효 최저가보다 싸게 파는 상품·오래된 재고 등)에도 블록'],
   '0.61.1': ['설명서: 경쟁 매물 유의사항은 첫 페이지 전부·덮어쓰지 않고 판으로 쌓음·주기 설정, 알라딘 요청 속도 자동 조절(모든 수집·감시 공통)'],
   '0.61.0': ['수동 일괄 처리: 조건으로 그룹(개수 즉시 계산) → 상품마다 추천가·이유 → 체크한 것 한꺼번에 결정, 그룹 저장', '결정 화면 블록에 ? 표시(구매 유의 사항·실사진)', "판정·반영 목록에 '판정만 있음' 묶음 (147개 중 결정 대기가 아닌 나머지)", '설명서: 가격 단위(가격대 5%)·±5% 버튼, 수동 일괄 처리, ? 표시'],
@@ -3347,6 +3351,7 @@ function renderRevBox(m) {
 
 /* ══════════ '오늘 확인할 것'을 누르면 바로 그 목록으로 ══════════ */
 function openAlert(key) {
+  if (key === 'prq') { if (!S.prCfg) loadPricingCfg(); return openPriceQueue(); }
   const B = bizCalc(); const go = (t, extra) => { history.state && S.detail && history.back(); S.tab = t; S.limit = 30; if (extra) extra(); renderTabs(); renderMain(); window.scrollTo(0, 0); };
   if (key === 'late') return openListView({ title: '출고 기록 없는 주문', rows: B.late.slice().sort((a, b) => String(a.orderedAt).localeCompare(String(b.orderedAt))), placeholder: '주문번호·고객 검색', note: `주문 후 ${(S.app.alerts || {}).lateDays || 2}일이 지났는데 출고 기록이 없는 주문입니다. 수집이 늦었으면 수집 후 사라집니다.`,
     text: (o) => `${o.orderNo} ${(S.customers.get(o.customerId) || {}).displayName || ''}`, sum: (rs) => `${num(rs.length)}건`,
@@ -3398,7 +3403,7 @@ function engineManualHtml() {
   <p>상품 탭 → 가격 감시 → '수동 일괄 처리'. 조건(등급·판매가·관리코드·등록일·이름 키워드·빼기)을 고를 때마다 해당 상품 수가 바로 바뀝니다. 기준(무조건 최상단 배치 / 유효 같은 등급 대비 최저가), 기준 판매자 범위(노랑·주황·빨강 추가), 기준 대비 x%, 등급 환산(이 그룹만 계수 변경), 하한선(알라딘 매입가·최소 판매가·최대 인하폭)을 정하면 상품마다 추천가와 이유가 나오고, 체크한 것을 한꺼번에 '관리자 가격'으로 결정합니다. 시장 자료는 수집기의 시장 지표(온라인 중고 첫 페이지)를 쓰며 상품마다 수집 날짜가 보입니다. 그룹 조건은 저장돼 다시 쓸 수 있고, 모든 결정은 그룹 이름과 함께 판단 기록에 남습니다.</p>
   <h4>7-3a. 가격 결정 화면 보는 법</h4>
   <p>상품마다 크게: <b>우리 상태</b>(최상·상·중 글자) · <b>지금 가격 → 엔진 추천 가격</b>, 그 아래 엔진 판정(바꾸자 · 유지 = 이미 기준과 같음 · 기다림 = 24시간 확정 등 판단을 미룬 이유 · 확인 = 기준을 못 찾음)과 <b>등록일</b>. 탭: 바꾸자는 것 / 유지·기다림·확인 / 판정만 있음(예전 감시기가 결정 대기에 올리지 않았던 것 — 같은 종류, 바로 결정 가능) / 결정함 / 전체 미결정.<br>
-  오른쪽 블록 한 줄 = <b>[?] 상태 판매가 · 판매자 이름 (배송비: n)</b>. 색은 판매자 분류(툴팁 줄 색), 알라딘측 파랑, <b>북스킹은 진한 남색(노란 테두리)</b>. 블록을 누르면 그 매물 페이지, <b>?</b>를 누르면 구매 유의 사항 글과 사진이 뜹니다. '전체중고 창 지정하기'를 누르면 새 탭이 열리고 그 탭이 지정 창이 되어, 이후 전체중고·매물 링크가 모두 그 탭 하나에서 열립니다. 같은 블록이 수동 일괄 처리와 상품 목록 화면(유효 최저가보다 싸게 파는 상품·오래된 재고 등 상품이 나열되는 모든 목록)에도 붙습니다 — 목록에서는 수집기 시장 지표의 첫 페이지 기준(날짜 표시).</p>
+  오른쪽 블록 한 줄 = <b>[?] 상태 판매가 · 판매자 이름 (배송비: n)</b>. 블록 배경 = 온라인 중고 페이지(판매자 툴팁)의 줄 색 그대로 — 판매자 분류 5색 · 알라딘측 파랑 · <b>북스킹 남색(노란 테두리)</b>, 판매자 기록이 아직 없는 매물은 무효 색. 상태는 알라딘 색 네모: <b>최상 분홍 · 상 초록 · 중 회색</b>(흰 글자). 자료는 가격 감시기가 판정 때 본 첫 페이지, 없으면 수집기 시장 지표의 첫 페이지(블록 아래에 출처 표시). 블록을 누르면 그 매물 페이지, <b>?</b>를 누르면 구매 유의 사항 글과 사진이 뜹니다. '전체중고 창 지정하기'를 누르면 새 탭이 열리고 그 탭이 지정 창이 되어, 이후 전체중고·매물 링크가 모두 그 탭 하나에서 열립니다. 같은 블록이 수동 일괄 처리와 상품 목록 화면(유효 최저가보다 싸게 파는 상품·오래된 재고 등 상품이 나열되는 모든 목록)에도 붙습니다 — 목록에서는 수집기 시장 지표의 첫 페이지 기준(날짜 표시).</p>
   <h4>7-3. 블록의 ? 표시</h4>
   <p>결정 화면 오른쪽 블록 왼쪽의 <b>?</b> = 그 매물에 '중고상품 구매 유의 사항' 글이 있거나 새상품 표지와 다른 사진(판매자 실사진)이 있음. 마우스를 올리면 내용. 수집기 '경쟁 매물 유의사항·사진'(버튼, 상품 일괄·모두 일괄에 포함)이 우리 책마다 온라인 중고 <b>첫 페이지의 다른 판매자 매물 전부</b>를 모읍니다(가격 감시 중인 책 먼저). 다시 확인 주기는 수집기 설정에서 바꿈(기본 30일, 0 = 매번). 내용이 바뀌면 <b>이전 내용을 덮어쓰지 않고 새 판으로 쌓아 모두 보관</b>하고, 같으면 판을 늘리지 않고 확인 시각만 남깁니다.</p>
   <h4>7-4. 알라딘 요청 속도 (모든 수집·감시 공통)</h4>
@@ -3543,7 +3548,7 @@ document.addEventListener('click', (ev) => { const t = ev.target; if (t.closest(
 
 
 /* ══════════ 가격 감시 (판정 엔진) — 상품 탭 맨 위 ══════════ */
-function loadPriceRun() { if (S.prRunLoading) return; S.prRunLoading = true; Promise.all([db.collection('prd_system').doc('pricing_run').get(), db.collection('prd_price_decisions').get()]).then(([r, ds]) => { S.prRun = r.exists ? r.data() : {}; S.prDec = new Map(); ds.forEach((d) => S.prDec.set(d.id, d.data())); S.prRunLoading = false; if (S.tab === 'products') renderMain(); }).catch((e) => { S.prRun = { err: e.code || e.message }; S.prDec = new Map(); S.prRunLoading = false; }); }
+function loadPriceRun() { if (S.prRunLoading) return; S.prRunLoading = true; Promise.all([db.collection('prd_system').doc('pricing_run').get(), db.collection('prd_price_decisions').get()]).then(([r, ds]) => { S.prRun = r.exists ? r.data() : {}; S.prDec = new Map(); ds.forEach((d) => S.prDec.set(d.id, d.data())); S.prRunLoading = false; S._bizAt = 0; if (S.tab === 'products' || S.tab === 'home') renderMain(); }).catch((e) => { S.prRun = { err: e.code || e.message }; S.prDec = new Map(); S.prRunLoading = false; }); }
 function priceCard() {
   const PRC = window.ReadnowPricing; if (!PRC) return '<div class="card"><b style="color:#c62828">판정 엔진 파일(readnow-pricing-core.js)을 못 읽음</b></div>';
   if (!S.prCfg) { loadPricingCfg(); return '<div class="card"><div class="hint">가격 감시 설정 읽는 중</div></div>'; }
@@ -3573,7 +3578,7 @@ function bindPriceCard(m) {
   m.querySelectorAll('[data-prl]').forEach((b) => (b.onclick = () => { const g = b.dataset.prl; const PRC = window.ReadnowPricing; const rows = [...S.plist.values()].filter((l) => PRC.groupOfListing(l, prSettings()) === g); openListView({ title: `${MONTXT[g][0]} 상품 ${rows.length}개`, rows, placeholder: '제목·코드 검색', note: esc(MONTXT[g][1]), row: prodRow, text: (l) => [l.title, l.usedCode, l.sku].join(' '), bind: (sh) => sh.querySelectorAll('[data-pid]').forEach((x) => (x.onclick = () => openProduct(x.dataset.pid))) }); }));
 }
 const PR_ST = { none: '판정만 있음(결정 대기 아님)', pending: '관리자 결정 대기', approved: '엔진 제안 승인(반영 대기)', manual: '관리자 가격(반영 대기)', hold: '판매보류풀로(반영 대기)', unhold: '보류풀 해제(반영 대기)', kept: '지금 가격 유지', rejected: '거절', done: '반영됨', blocked: '막힘', stale: '오래돼 다시 판정' };
-const PR_COL = { dkgreen: '#66c17a', green: '#c9f2c9', yellow: '#fff3b0', orange: '#ffcc80', red: '#ffd6d6', aladin: '#3f7fd1', ours: '#0d1b4c', proxy: '#e9d7ff', unknown: '#eee' }; // 툴팁 줄 색과 같게 (알라딘측 파랑·북스킹 남색)
+const PR_COL = { dkgreen: '#66c17a', green: '#c9f2c9', yellow: '#fff3b0', orange: '#ffcc80', red: '#ffd6d6', aladin: '#3f7fd1', ours: '#0d1b4c', unknown: '#ffd6d6', proxy: '#ffcc80' }; // 온라인 중고 페이지(판매자 툴팁) 줄 색 그대로: 판매자 분류 5색 + 알라딘측 파랑 + 북스킹 남색. 판매자 기록이 없는 매물은 무효 색(판정에서도 기준으로 안 씀)
 function usedUrlOf(x) { const id = x.aladinItemId || (x.bookId && S.pbooks && (S.pbooks.get(x.bookId) || {}).aladinItemId); return id ? `https://www.aladin.co.kr/shop/UsedShop/wuseditemall.aspx?ItemId=${id}&TabType=0` : null; }
 function openUsed(x) { const u = usedUrlOf(x); if (!u) return toast('도서 정보(알라딘 상품번호)가 아직 없음'); openInUsedWin(u); } // 늘 같은 창 하나에서 열림
 // 관리자 결정 하나 = 결정 문서 갱신 + 판단 기록(prd_price_reviews, 지우지 않음 — 나중에 자동화 기준을 만들 원자료)
@@ -3603,7 +3608,10 @@ async function prDecide(x, decision, o) {
    색 = 판매자 분류(툴팁 줄 색과 같음), 알라딘측 파랑, 북스킹 진한 남색. 한 줄: [?] 상태 판매가 · 판매자 이름 (배송비: n)
    블록을 누르면 그 매물 페이지가 '지정된 전체중고 창'에서 열림, ?를 누르면 구매 유의 사항 글과 사진이 뜸 */
 function sellerNameOf(sc) { if (!sc) return null; const d = S.sellers && (S.sellers.get('sc_' + sc) || S.sellers.get(String(sc))); return (d && (d.name || d.sellerName)) || null; }
-function openInUsedWin(url) { const w = window.open(url, 'rn_used'); if (w) { try { w.focus(); } catch (e) {} } else toast('팝업이 막혔습니다 — 브라우저에서 이 사이트의 팝업을 허용하세요'); return w; }
+function openInUsedWin(url) { // 지정 창(이름 rn_used)에서 열기. 지정 창을 이 화면이 열었으면 그 창을 직접 옮김(다른 사이트 창도 확실히 이동)
+  let w = S.usedWin && !S.usedWin.closed ? S.usedWin : null;
+  if (w) { try { w.location.href = url; w.focus(); return w; } catch (e) { w = null; } }
+  w = window.open(url, 'rn_used'); if (w) { S.usedWin = w; try { w.focus(); } catch (e) {} } else toast('팝업이 막혔습니다 — 브라우저 주소창 오른쪽에서 이 사이트의 팝업을 허용하세요'); return w; }
 function designateUsedWin() { const w = openInUsedWin('https://www.aladin.co.kr/'); if (w) { sessionStorage.setItem('rn-usedwin', '1'); toast('이 창이 전체중고 창으로 지정됐습니다 — 이제 모든 전체중고·매물 링크가 이 창에서 열립니다'); } }
 function usedWinBtn() { const on = sessionStorage.getItem('rn-usedwin') === '1'; return `<button class="btn ghost sm" data-usedwin="1" title="누르면 새 탭이 열리고, 그 탭이 '전체중고 창'으로 지정됩니다. 이후 전체중고·매물 링크는 모두 그 탭 하나에서 열림">${on ? '✓ 전체중고 창 지정됨 (다시 열기)' : '전체중고 창 지정하기'}</button>`; }
 function page1FromMetrics(l) { // 수집기 시장 지표의 첫 페이지 → 블록 자료 (색은 공용 기준 함수)
@@ -3612,11 +3620,13 @@ function page1FromMetrics(l) { // 수집기 시장 지표의 첫 페이지 → �
     return { r: i + 1, n: r.sellerName || null, sc: r.sellerCode || null, g: r.grade, p: r.price, s: r.ship, lid: r.listingId || null, c: ours ? 'ours' : al ? 'aladin' : sd && RNC ? RNC.classifySellerDoc(sd, RS).cls : 'unknown', so: r.soldOut ? 1 : 0 }; });
 }
 function prBlocks(x) {
-  const P1 = x.page1 || (x.rows || []).map((w) => ({ r: w.rank, n: w.name, sc: w.sc, g: w.grade, p: w.price, s: w.ship, c: w.color }));
-  if (!P1 || !P1.length) return '<div class="hint" style="font-size:11px">첫 페이지 매물 자료 없음 (판정·시장 지표 수집 뒤 채워짐)</div>';
-  return P1.slice(0, 20).map((w) => { const bg = PR_COL[w.c] || '#eee'; const dark = ['aladin', 'ours', 'dkgreen'].includes(w.c); const nm = w.n || sellerNameOf(w.sc) || (w.c === 'aladin' ? '알라딘측' : w.sc ? `판매자 ${w.sc}` : '');
+  // 자료: 가격 감시기가 판정 때 본 첫 페이지(page1) → 없으면 수집기 시장 지표의 첫 페이지. (엔진 기준 매물 목록은 북스킹·매물 번호가 빠져 있어 쓰지 않음)
+  let P1 = x.page1 && x.page1.length ? x.page1 : null; let src = '판정 때 본 첫 페이지';
+  if (!P1) { const l = x.l || (x.key && S.plist ? S.plist.get(x.key) : null); if (!S.pmLoaded && !S.pmBusyBlk) { S.pmBusyBlk = 1; loadMetrics().then(() => { S.pmBusyBlk = 0; const sh = $('#sheet'); if (sh && sh.classList.contains('on') && S.detail && S.detail.prq) openPriceQueue(); }).catch(() => { S.pmBusyBlk = 0; }); } P1 = l ? page1FromMetrics(l) : null; src = '시장 지표의 첫 페이지 ' + String(((l && S.pmetrics && S.pmetrics.get(l.bookId)) || {}).lastCheckedAt || '').slice(0, 10); }
+  if (!P1 || !P1.length) return '<div class="hint" style="font-size:11px">첫 페이지 매물 자료 없음 (시장 지표 읽는 중이거나 수집 전)</div>';
+  return P1.slice(0, 20).map((w) => { const bg = PR_COL[w.c] || '#eee'; const dark = ['aladin', 'ours', 'dkgreen'].includes(w.c); const nm = w.c === 'ours' ? (w.n || '북스킹') : w.n || sellerNameOf(w.sc) || (w.c === 'aladin' ? '알라딘측' : w.sc ? `판매자 ${w.sc}` : '');
     const q = w.q || (w.lid && S.uinfo && S.uinfo.get(String(w.lid)) && (S.uinfo.get(String(w.lid)).hasNote || S.uinfo.get(String(w.lid)).photoDiff));
-    return `<div class="pblk${w.c === 'ours' ? ' ours' : ''}" data-lid="${esc(w.lid || '')}" style="background:${bg};color:${dark ? '#fff' : '#1E2B28'}" title="${esc(`${w.r}위 · ${nm} · ${w.g || ''} · ${(w.p || 0).toLocaleString()}원 + 배송 ${(w.s || 0).toLocaleString()}원${w.lid ? ' — 누르면 이 매물 페이지' : ''}`)}"><i class="pq-q" data-qlid="${esc(w.lid || '')}">${q ? '?' : ''}</i><b>${esc(w.g || '-')}</b><span class="pp">${(w.p || 0).toLocaleString()}</span><em>${esc(nm)}</em><small>(배송비: ${(w.s || 0).toLocaleString()})</small></div>`; }).join('');
+    return `<div class="pblk${w.c === 'ours' ? ' ours' : ''}" data-lid="${esc(w.lid || '')}" style="background:${bg};color:${dark ? '#fff' : '#1E2B28'}" title="${esc(`${w.r}위 · ${nm} · ${w.g || ''} · ${(w.p || 0).toLocaleString()}원 + 배송 ${(w.s || 0).toLocaleString()}원${w.c === 'unknown' ? ' · 판매자 기록 없음(아직 안 모음)' : ''}${w.lid ? ' — 누르면 이 매물 페이지' : ''}`)}"><i class="pq-q" data-qlid="${esc(w.lid || '')}">${q ? '?' : ''}</i><b class="gsq g${esc(w.g || '')}">${esc(w.g || '-')}</b><span class="pp">${(w.p || 0).toLocaleString()}</span><em>${esc(nm)}</em><small>(배송비: ${(w.s || 0).toLocaleString()})</small></div>`; }).join('') + `<div class="hint" style="font-size:10px;margin-top:2px">${esc(src)}</div>`;
 }
 async function fillUsedInfo(root) { // 화면에 보이는 블록의 ? 표시를 채움 (수집기 '경쟁 매물 유의사항·사진' 자료, 한 번 읽은 것은 기억)
   S.uinfo = S.uinfo || new Map(); const ids = [...new Set([...root.querySelectorAll('.pblk[data-lid]')].map((b) => b.dataset.lid).filter((x) => x && !S.uinfo.has(x)))];
@@ -3639,7 +3649,7 @@ if (!window.__rnBlkBound) { window.__rnBlkBound = 1; // 블록 클릭은 안에 
   document.addEventListener('click', (e) => {
     const u = e.target.closest && e.target.closest('[data-usedwin]'); if (u) { e.preventDefault(); e.stopPropagation(); designateUsedWin(); u.outerHTML = usedWinBtn(); return; }
     const q = e.target.closest && e.target.closest('.pq-q'); if (q && q.dataset.qlid) { e.preventDefault(); e.stopPropagation(); showUsedInfo(q.dataset.qlid, q); return; }
-    const b = e.target.closest && e.target.closest('.pblk'); if (b) { e.preventDefault(); e.stopPropagation(); if (b.dataset.lid) openInUsedWin(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${b.dataset.lid}`); else toast('이 매물의 페이지 번호가 없음'); return; }
+    const b = e.target.closest && e.target.closest('.pblk'); if (b) { e.preventDefault(); e.stopPropagation(); if (b.dataset.lid) openInUsedWin(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${b.dataset.lid}`); else toast('이 매물의 페이지 번호가 없음 — 오른쪽 위 \'전체중고\'로 목록을 여세요'); return; }
     if (!(e.target.closest && e.target.closest('.uipop'))) document.querySelectorAll('.uipop').forEach((x) => x.remove());
   }, true);
 }
@@ -3882,7 +3892,7 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
   { d: '2026-10-04', app: '수집기', v: '1.25.0', n: ['알라딘 요청 속도 자동 조절: 상품·고객 수집이 같은 조절 하나를 같이 씀(같은 PC의 모든 탭·스크립트 공유) — 1초 시작, 20번 성공마다 10% 빨라짐(최소 0.6초), 실패 2배·로그인 풀림 3배로 바로 느려짐(최대 15초). 예전 고정 간격(상품 0.7~1.1초, 고객 1.5~3초 따로)과 탭마다 따로 세던 것 때문에 합쳐진 속도가 빨라 튕기던 문제', '경쟁 매물 유의사항·사진: 첫 페이지 다른 판매자 매물 전부로, 바뀐 내용은 덮어쓰지 않고 판(v)으로 쌓음, 다시 확인 주기를 설정에서'] },
   { d: '2026-10-04', app: '공용 · 상품 파서 readnow-products-core.js', v: '0.11.0', n: ['알라딘 요청 속도 자동 조절(makePacer) — 수집기·가격 감시기가 같이 씀'] },
