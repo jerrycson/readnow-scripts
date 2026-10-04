@@ -1,4 +1,4 @@
-// ReadNow Core Library — 1.2.0 (판매자 분류의 유일한 기준: sellerBg → evaluateBackground·classifySellerDoc 가 모두 이것만 씀)
+// ReadNow Core Library — 1.3.0 (판매자 분류의 유일한 기준: sellerBg → evaluateBackground·classifySellerDoc 가 모두 이것만 씀)
 // 여러 Tampermonkey 스크립트(중고가 검토 도우미, 판매자 정보 툴팁, 앞으로 만들 판매가 자동 결정 시스템 등)가
 // @require 로 함께 가져다 쓰는 공용 로직 모음입니다.
 //
@@ -246,6 +246,19 @@
     return out(A === 4 ? 'dkgreen' : A >= 2 ? 'green' : 'yellow', `${act} · ${cw} (${R.good}% 미만 = 좋음)`);
   }
 
+
+  // 범례 (1.3.0): 분류 색·이름·조건을 기준 숫자(SELLER_RULES)에서 바로 만듦 → 기준이 바뀌면 웹앱·툴팁·설명서의 범례가 저절로 같이 바뀜
+  function sellerLegend() {
+    const R = SELLER_RULES;
+    return [
+      { cls: 'dkgreen', bg: CLASS_BG.dkgreen, name: '짙은 유효', use: '무조건 참고 · 신규 재고의 가격 앵커', cond: `최근 6개월 평가 1,000개 이상 + 품절취소율 ${R.good}% 미만` },
+      { cls: 'green', bg: CLASS_BG.green, name: '유효', use: '가격 비교에서 무조건 참고', cond: `평가 100개 이상 + 취소율 ${R.good}% 미만 · 평가 200개 이상 + 취소율 ${R.yellow}% 미만 · 1,000개 이상인데 취소율 모름` },
+      { cls: 'yellow', bg: CLASS_BG.yellow, name: '보류 노랑', use: '기본 제외 · 상품 조건이 맞으면 유효로 (장기 재고부터 포함)', cond: `취소율 ${R.yellow}~${R.orange}% · 평가 100~199개 + 취소율 ${R.good}~${R.yellow}% · 평가 50~99개 + 취소율 ${R.good}% 미만` },
+      { cls: 'orange', bg: CLASS_BG.orange, name: '보류 주황', use: '기본 제외 · 무효에 가까움 (청산 재고부터 포함)', cond: `취소율 ${R.orange}~${R.red}% · 활동 적은데 취소율 높거나 모름` },
+      { cls: 'red', bg: CLASS_BG.red, name: '무효', use: '판매가 정할 때 무시', cond: `허위 매물 표시 · 최근 6개월 평가 ${R.minActive}개 미만(없음 포함) · 품절취소율 ${R.red}% 이상` },
+    ];
+  }
+
   // 배경색 = 위 분류(sellerBg). 폰트색 = 참고 경고(품절취소율/총상품수/배송비/평점)
   function evaluateBackground(info, rowShippingFee) {
     const outstockNum = parseFloat(info.outstockRate);
@@ -405,8 +418,9 @@
     CLASS_BG,
     SELLER_RULES,
     sellerBg,
+    sellerLegend,
     sellerInfoFromDoc,
     classifySellerDoc,
-    CORE_VERSION: '1.2.0',
+    CORE_VERSION: '1.3.0',
   };
 })(typeof unsafeWindow !== 'undefined' ? unsafeWindow : window);
