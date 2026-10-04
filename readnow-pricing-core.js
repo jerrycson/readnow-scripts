@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.5.0';
+  const VERSION = '0.6.0';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -48,6 +48,8 @@
     cutoverAt: null,        // 매일 감시를 처음 시작한 날 (한 번 정하면 바꾸지 않음 — prd_system/pricing 에 저장)
     tempSunsetDays: 365,    // 감시 시작 후 이 날수가 지나면 임시 기준은 완전히 꺼짐
     // 적용 단계: A = 적용 1% · 3일 → B = 적용 25% / 비교 25% · 1주 → (확인 후) C = 적용 묶음 안에서 강도 나누기. 비교 묶음은 계속 유지
+    // 자동 감시에서 항상 빼는 관리코드 (관리자 확인 필수). KHKDVD = 음반·영상 — 마진 구조가 달라 따로 정할 때까지 무조건 사람 확인
+    excludeSku: ['KHKDVD'],
     rollout: { treatPct: 1, controlPct: 0 }, // 실제 적용 비율: 상품코드로 고정 배정(0~99) → 비율을 올려도 이미 들어간 상품은 그대로
 
     lowestMaxGapHours: 48, // 두 관측 사이가 이보다 길면 그 사이는 최저가 기간에 넣지 않음 (정확히 아는 것만 셈)
@@ -175,7 +177,7 @@
   function decide(listing, market, sellers, ctxIn) {
     const ctx = ctxIn || {}; const S = merge(DEFAULTS, ctx.settings || {}); const now = t(ctx.now) || Date.now();
     const R = []; const block = []; const out = { v: VERSION, key: listing.key, at: new Date(now).toISOString(), current: listing.price, reasons: R, autoBlock: block };
-    out.group = groupOf(listing.usedCode || listing.key, S);
+    out.group = groupOfListing(listing, S);
     const done = (status, extra) => { Object.assign(out, { status }, extra || {}); out.auto = out.action === 'set' && block.length === 0 && autoAllowed(out, S); out.execute = out.group === 'treat' && out.action === 'set'; if (out.group === 'control') out.reasons.push('비교군 — 판정만 기록, 가격은 바꾸지 않음'); return out; };
 
     // 0. 대상: 판매중만
@@ -200,6 +202,7 @@
     const T = S.tiers[tier];
     out.tier = { code: tier, name: T.name, days, basis, regDays, lowestDays: lowDays, temp };
     if (listing.lock) { R.push('가격 잠금 상품 — 자동 수정 안 함'); return done('hold', { action: 'none' }); }
+    const excl = isExcluded(listing, S); if (excl) { block.push(`${listing.sku}: 관리자 확인 필수 (자동 감시 제외 코드)`); R.push(`관리코드 ${listing.sku} — 자동 감시에서 제외, 판정은 참고용으로만 계산`); }
     if (tier === 'T8') { R.push(`등록 ${days}일 — 불용 재고: 일시판매중지 + 관리코드 뒤 3자리 ${SKU_TAGS.retire} (관리자 승인 필요, 원래 관리코드는 기록에 남김)`); return done('retire', { action: 'retire', toStatus: '일시판매중지', newSku: skuWith(listing.sku, 'retire'), origSku: listing.sku || null, autoBlock: block.concat('불용 처리는 항상 관리자 승인') }); }
 
     // 1. 관측이 쓸 만한가
@@ -327,6 +330,12 @@
   function bucketOf(code) { let h = 2166136261; const s = String(code || ''); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h % 100; }
   function groupOf(code, S0) { const S = merge(DEFAULTS, S0 || {}); const b = bucketOf(code); const tp = S.rollout.treatPct, cp = S.rollout.controlPct;
     return b < tp ? 'treat' : b >= 100 - cp ? 'control' : 'off'; }
+  // 상품 단위 묶음: 제외 관리코드(KHKDVD 등)와 보관함(PND·BAD)을 먼저 보고, 그다음 상품코드 칸으로 적용·비교·꺼짐
+  function isExcluded(listing, S0) { const S = merge(DEFAULTS, S0 || {}); const sku = String((listing && listing.sku) || '').toUpperCase(); return (S.excludeSku || []).some((x) => x && sku === String(x).toUpperCase()); }
+  function groupOfListing(listing, S0) {
+    if (!listing) return 'off'; const tag = skuTag(listing.sku); if (tag) return tag; if (isExcluded(listing, S0)) return 'excluded';
+    if (listing.status && listing.status !== '판매중') return 'off'; return groupOf(listing.usedCode || listing.key, S0);
+  }
   function autoAllowed(o, S) {
     if (S.autoLevel === 'L0') { o.autoBlock.push('자동 단계 L0 (전부 사람 확인)'); return false; }
     if (S.autoLevel === 'L1' && Math.abs(o.deltaPct || 0) > 0.15) { o.autoBlock.push('L1: 15% 넘는 변경은 사람 확인'); return false; }
@@ -372,6 +381,6 @@
     st.lastAt = new Date(at).toISOString(); st.lastLowest = !!obs.atLowest; st.obsN = (st.obsN || 0) + 1; return st;
   }
 
-  const api = { VERSION, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
+  const api = { VERSION, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowPricing = api;
 })(typeof window !== 'undefined' ? window : this);
