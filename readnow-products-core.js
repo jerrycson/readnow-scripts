@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.7.0';
+  const VERSION = '0.8.0';
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -530,6 +530,19 @@
     }
     return ch;
   }
+  // 온라인 중고 목록(첫 페이지) 변화: 같은 내용이면 아무것도 돌려주지 않음 → 바뀐 것만 기록 (데이터 수집 철칙)
+  // 매물 열쇠 = 판매 상품코드(usedCode) → 없으면 상품번호(listingId) → 없으면 판매자+등급+가격
+  // add = 새로 보인 매물(전체 내용 + 순위), del = 첫 페이지에서 빠진 매물(팔림·내림·뒤 페이지로 밀림을 구분 못 함 — 그대로 '빠짐'으로만 기록), chg = 같은 매물의 가격·배송비·등급·판매중지 변화
+  function listingKey(r) { return r.usedCode || (r.listingId ? 'L' + r.listingId : `${r.sellerCode || r.sellerName}|${r.grade}|${r.price}`); }
+  function listingsDiff(prev, next) {
+    if (!next) return null; const P0 = prev || []; const pm = new Map(P0.map((r, i) => [listingKey(r), { r, pos: i + 1 }]));
+    const nm = new Map(next.map((r, i) => [listingKey(r), { r, pos: i + 1 }])); const F = ['price', 'ship', 'halfShip', 'grade', 'soldOut', 'sellerBadge'];
+    const add = [], del = [], chg = [];
+    for (const [k, { r, pos }] of nm) { const o = pm.get(k); if (!o) { add.push({ k, pos, ...r }); continue; } const f = {}; for (const x of F) if (JSON.stringify(o.r[x] ?? null) !== JSON.stringify(r[x] ?? null)) f[x] = [o.r[x] ?? null, r[x] ?? null]; if (Object.keys(f).length) chg.push({ k, sellerCode: r.sellerCode || null, pos, f }); }
+    for (const [k, { r, pos }] of pm) if (!nm.has(k)) del.push({ k, sellerCode: r.sellerCode || null, sellerName: r.sellerName || null, grade: r.grade || null, price: r.price ?? null, ship: r.ship ?? null, pos });
+    return add.length || del.length || chg.length ? { add, del, chg, first: !prev } : null;
+  }
+
   // 순위 타이틀 기간: 이전 활성 목록과 현재 목록 비교
   function rankTransitions(prevActive, nowList) {
     const a = new Set(prevActive || []); const b = new Set(nowList || []);
@@ -540,7 +553,7 @@
     VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
-    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, searchChannels, marketNoBook, nameCoverage, parseC2BList, parseC2BDetail, diff, rankTransitions, mediaType, MEDIA,
+    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, searchChannels, marketNoBook, nameCoverage, parseC2BList, parseC2BDetail, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
 })(typeof window !== 'undefined' ? window : this);
