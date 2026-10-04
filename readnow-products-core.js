@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.8.0';
+  const VERSION = '0.9.0';
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -520,6 +520,69 @@
     return r('book', 'ISBN 없음 — 세트·구판 등 책으로 추정');
   }
 
+
+  // ========== 예스24 (2026-10-04 실제 화면 저장본으로 확인한 구조) ==========
+  // 검색: https://www.yes24.com/Product/Search?domain=USED_GOODS&query=ISBN → 상품 묶음(Hub)마다 '매장ON N'·'판매자 배송 N'·'(총 N개)'
+  const Y24_GRADE = { '01': '최상', '02': '상', '03': '중', '04': '하' };
+  function parseYes24Search(doc) {
+    const out = [];
+    doc.querySelectorAll('li').forEach((li) => {
+      const a = li.querySelector('a.gd_name[href*="UsedShopHub/Hub/"]'); if (!a) return;
+      const hubId = ((a.getAttribute('href') || '').match(/Hub\/(\d+)/) || [])[1]; if (!hubId || out.some((x) => x.hubId === hubId)) return;
+      const off = li.querySelector('.used_online strong'), c2c = li.querySelector('.used_seller strong'), tot = li.querySelector('.btn_used .num');
+      const nw = (txt(li.querySelector('.info_usedNew')) || '').match(/새상품\s*:\s*([\d,]+)원/);
+      out.push({ hubId, title: txt(a), offstore: off ? toInt(txt(off)) : 0, c2c: c2c ? toInt(txt(c2c)) : 0, total: tot ? toInt((txt(tot) || '').replace(/\D/g, '')) : null, newPrice: nw ? toInt(nw[1]) : null });
+    });
+    return out;
+  }
+  // 여러 묶음이면 판매자 배송 + 매장 수가 가장 많은 묶음 (같으면 먼저 나온 것)
+  function pickYes24Hub(items) { if (!items || !items.length) return null; return items.slice().sort((a, b) => (b.c2c + b.offstore) - (a.c2c + a.offstore))[0]; }
+  // 묶음 화면: https://www.yes24.com/Product/UsedShopHub/Hub/{hubId} — 가격 낮은 순, 줄마다 판매가·등급·배송비·판매자·평가 수·출고
+  function parseYes24Hub(doc) {
+    const offers = [];
+    doc.querySelectorAll('li[saleprice][data-goods-no]').forEach((li, i) => {
+      const deli = txt(li.querySelector('.info_deli')) || '';
+      const shop = li.querySelector('.store_name a[href*="usedShop/mall/"]');
+      const typ = [...li.querySelectorAll('.info_usedIco .txt')].map((e) => txt(e)).join(' ');
+      const rc = (txt(li.querySelector('.store_txt')) || '').match(/([\d,]+)\s*명/);
+      const rs = (li.querySelector('.store_rating .rating') || {}).className || ''; const score = (rs.match(/rating_(\d+)/) || [])[1];
+      offers.push({
+        pos: i + 1, goodsNo: li.getAttribute('data-goods-no'), price: toInt(li.getAttribute('saleprice')),
+        grade: Y24_GRADE[li.getAttribute('levelgb')] || nz(txt(li.querySelector('.ico_used'))), levelgb: li.getAttribute('levelgb'),
+        ship: toInt((deli.match(/배송비\s*:\s*([\d,]+)원/) || [])[1]), freeOver: toInt((deli.match(/([\d,]+)원\s*이상\s*구매\s*시\s*무료배송/) || [])[1]),
+        shopId: shop ? ((shop.getAttribute('href') || '').match(/mall\/([^/]+)/) || [])[1] : null, shopName: shop ? txt(shop) : null,
+        store: /매장/.test(typ) ? 'OFFSTORE' : 'C2C', ratingCount: rc ? toInt(rc[1]) : null, score: score ? +score : null,
+        shipDays: nz(txt(li.querySelector('.deli_act'))), lowestBadge: /동급최저가/.test(txt(li.querySelector('.info_price')) || ''),
+      });
+    });
+    return { offers };
+  }
+  // 판매자 가게: https://www.yes24.com/24/usedShop/mall/{shopId}/main (저장본은 EUC-KR — 받을 때 글자 판독 주의)
+  function parseYes24Shop(doc) {
+    const t = (txt(doc.body) || '').replace(/\s+/g, ' ');
+    const g = (re) => (t.match(re) || [])[1];
+    return {
+      shopName: nz(g(/중고샵\s*>\s*(.+?)님의 가게/)), score: toInt(g(/판매자 만족도\s*(\d)\s*점/)), ratingCount: toInt(g(/\(\s*([\d,]+)\s*명 평가\)/)),
+      avgShipDays: toInt(g(/평균 발송일:\s*주문완료 후\s*(\d+)일/)), totalItems: toInt(g(/총\s*([\d,]+)\s*건/)),
+      shipFee: toInt(g(/배송비 안내:\s*([\d,]+)원/)), freeOver: toInt(g(/([\d,]+)원 이상 구매 시 무료배송/)),
+      usedBooks: toInt(g(/중고도서\s*\(([\d,]+)\)/)),
+    };
+  }
+
+  // ========== 샵매니저 상품 조회/수정의 실제 동작 (wrecord_edit.js·화면 저장본으로 확인) ==========
+  // 가격: GET /scm/ajaxCmd.aspx?cmd=chg.pricesales&ItemId=..&priceSales=.. → {"result":true,"resultValue":".."} (10원 이상)
+  // 수량: GET cmd=chg.stock&ItemId=..&realStock=.. (1 이상) · 관리코드: POST cmd=chg.supplieritemcode&ItemId=..&supCode=escape(코드)
+  // 판매상태: POST /scm/wrecord_edit_usedbatch.aspx  fn=stockstatusbulkchg · stockStatusBefore(지금 상태) · stockStatusToDo(바꿀 상태) · items(쉼표로 이은 ItemId) → 화면 전체가 다시 열림
+  // 판매자가 고를 수 있는 상태는 판매중·일시판매중지·판매중지·삭제뿐 ('판매금지'는 알라딘이 정하는 상태라 우리가 바꿀 수 없음)
+  const SCM_STATUS = { '판매중': 1, '일시판매중지': 3, '판매중지': 15, '삭제': 17 };
+  const scmAction = {
+    price: (itemId, price) => ({ method: 'GET', url: `/scm/ajaxCmd.aspx?cmd=chg.pricesales&ItemId=${encodeURIComponent(itemId)}&priceSales=${Math.round(price)}&_=${Date.now()}` }),
+    stock: (itemId, n) => ({ method: 'GET', url: `/scm/ajaxCmd.aspx?cmd=chg.stock&ItemId=${encodeURIComponent(itemId)}&realStock=${Math.round(n)}&_=${Date.now()}` }),
+    supCode: (itemId, code) => ({ method: 'POST', url: '/scm/ajaxCmd.aspx', body: `cmd=chg.supplieritemcode&ItemId=${encodeURIComponent(itemId)}&supCode=${escape(code)}` }),
+    status: (fromName, toName, itemIds) => ({ method: 'POST', url: '/scm/wrecord_edit_usedbatch.aspx', body: `fn=stockstatusbulkchg&stockStatusBefore=${SCM_STATUS[fromName]}&stockStatusToDo=${SCM_STATUS[toName]}&items=${[].concat(itemIds).join(',')}` }),
+  };
+  function parseAjaxResult(text) { try { const j = JSON.parse(text); return { ok: !!j.result, value: j.resultValue ?? null, error: j.result ? null : `${j.errorCode || ''} ${j.errorMsg || ''}`.trim() || '실패' }; } catch (e) { return { ok: false, value: null, error: '응답을 읽지 못함(로그인 풀림일 수 있음)' }; } }
+
   // ---------- 변경 비교 ----------
   function diff(prev, next, fields) {
     const ch = {};
@@ -554,6 +617,7 @@
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
     parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, searchChannels, marketNoBook, nameCoverage, parseC2BList, parseC2BDetail, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
+    parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
 })(typeof window !== 'undefined' ? window : this);
