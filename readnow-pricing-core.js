@@ -22,7 +22,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.3.0';
+  const VERSION = '0.3.1';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -41,11 +41,12 @@
       T8: { name: '불용 재고', colors: [], disc: [0, 0] },
     },
     discPick: 'low', // 범위 중 어느 값을 쓸지: 'low'(작은 할인) / 'high'. 판매 자료가 쌓이면 학습값으로 바꿈
-    // 판매자 분류는 이 파일에 기준을 두지 않음 → readnow-core.js evaluateBackground(툴팁 배경색) 한 곳만 씀. 아래 복사본은 그 파일을 못 읽었을 때만
+    // 판매자 분류 기준은 이 파일에 없음 → readnow-core.js(1.2.0) sellerBg 한 곳. 못 읽으면 판정하지 않음
     // 재고 기간의 기준 = '최저가 등록 기간'(우리 매물이 최저가 자리를 지킨 날수). 측정 안 된 상품은 임시 기준(등록 후 일수)을 쓰되 tempTierCap 단계까지만
     tempTierCap: 'T3',
     cutoverAt: null,        // 매일 감시를 처음 시작한 날 (한 번 정하면 바꾸지 않음 — prd_system/pricing 에 저장)
     tempSunsetDays: 365,    // 감시 시작 후 이 날수가 지나면 임시 기준은 완전히 꺼짐
+    // 적용 단계: A = 적용 1% · 3일 → B = 적용 25% / 비교 25% · 1주 → (확인 후) C = 적용 묶음 안에서 강도 나누기. 비교 묶음은 계속 유지
     rollout: { treatPct: 1, controlPct: 0 }, // 실제 적용 비율: 상품코드로 고정 배정(0~99) → 비율을 올려도 이미 들어간 상품은 그대로
 
     lowestMaxGapHours: 48, // 두 관측 사이가 이보다 길면 그 사이는 최저가 기간에 넣지 않음 (정확히 아는 것만 셈)
@@ -107,7 +108,7 @@
     return b;
   }
 
-  // ── 판매자 분류: 이 파일에는 기준이 없음. readnow-core.js(1.1.0)의 classifySellerDoc 한 곳만 부름 (툴팁·웹앱과 같은 함수) ──
+  // ── 판매자 분류: 이 파일에는 기준이 없음. readnow-core.js(1.2.0)의 classifySellerDoc 한 곳만 부름 (툴팁·웹앱과 같은 함수) ──
   // ctx.core = ReadNowCore, ctx.RS = ReadnowSellers 를 넘기거나 전역에 있어야 함. 없으면 판정하지 않음(복사본으로 계산하지 않음)
   // 나중에 '상품 기준'으로 바꿀 때는 ctx.classify(row, listing) 만 갈아 끼움
   const coreOf = (ctx) => ctx.core || (root && root.ReadNowCore) || null;
@@ -205,7 +206,7 @@
 
     // 4. 판매자 색 붙이기
     const Core = coreOf(ctx); const RSx = rsOf(ctx);
-    if (!ctx.classify && !(Core && Core.classifySellerDoc)) { R.push('기준 파일 readnow-core.js(1.1.0)를 못 읽음 — 판매자 분류 없이 판정하지 않음'); return done('queue', { action: 'review', why: 'noCore' }); }
+    if (!ctx.classify && !(Core && Core.classifySellerDoc)) { R.push('기준 파일 readnow-core.js(1.2.0)를 못 읽음 — 판매자 분류 없이 판정하지 않음'); return done('queue', { action: 'review', why: 'noCore' }); }
     const classify = ctx.classify || ((r) => Core.classifySellerDoc(sellers && r.sellerCode ? sellers['sc_' + r.sellerCode] || sellers[r.sellerCode] || null : null, RSx));
     sane.forEach((r) => { if (isAladinSide(r, S)) { r.color = 'aladin'; r.why = '알라딘측'; } else { const c = classify(r, listing); r.color = c.cls; r.why = c.why; } });
     const tot = (r) => r.price + (r.ship || 0);
