@@ -269,7 +269,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="../readnow-sellers-core.js?v=1.3.0"></script>
 <script src="../readnow-core.js?v=1.3.0"></script>
-<script src="../readnow-pricing-core.js?v=0.7.0"></script>
+<script src="../readnow-pricing-core.js?v=0.8.0"></script>
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
@@ -278,7 +278,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.58.4';
+const APP_VER = '0.59.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -2726,6 +2726,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.59.0': ['관리자 판정 기간: 감시 상품 모두 관리자 결정(엔진 제안대로·직접 가격·유지·거절+이유·메모) — 모든 결정을 판단 기록에 쌓음', '결정 화면: 상품마다 \'전체중고 열기\'(늘 같은 창), 첫 페이지 매물 목록(판매자 분류 색)', '판정·반영 목록: 실제로 바뀐 가격과 되돌리기', '\'모두 승인\' 없앰 (하나씩 판단을 기록하기 위해)', '설명서: 상태 등급(최상>상>중)과 더 좋은 등급 기준, 관리자 판정 기간, 한 탭 규칙'],
   '0.58.4': ['설명서: 하한선 = 알라딘 매입가 하나뿐(10% 넘게 낮을 때만 멈춤), 원가 하한선 없앰'],
   '0.58.3': ['설명서: 가격 감시기 기록 내려받기·웹앱 기록에 함께 보임'],
   '0.58.2': ['설명서: 가격 감시기는 샵매니저 오른쪽 위 탭 묶음의 \'가격 감시\' 탭'],
@@ -3373,10 +3374,12 @@ function engineManualHtml() {
   <b>임시 기준(스스로 끝남)</b>: 감시 시작일 <b>전에</b> 등록된 상품만 · 감시 시작일 당시의 등록 날수로 <b>고정</b> · 최대 ${esc(D.tempTierCap || 'T3')}(둔화 재고)까지 · 측정값이 따라잡거나 <b>감시 시작 ${D.tempSunsetDays || 365}일 뒤</b> 자동으로 꺼짐. 판정마다 이유 칸에 자동 종료일이 찍힙니다.<br>
   <b>불용(4년 초과)</b>: 등록일 기준 · <b>일시판매중지</b> + 관리코드 뒤 3자리 <b>BAD</b> (관리자 승인, 원래 관리코드는 기록에 남김). 판매중지는 알라딘이 다른 이유로 쓰는 일이 많아 쓰지 않고, '판매금지'는 알라딘만 정하는 상태입니다.</p>
   <h4>5. 가격 정하기</h4>
-  <p>유효 최저가와 <b>정확히 동가</b>가 기본. 기준이 목록 맨 위(최저가 표시)이고 배송비가 우리와 비슷하면(차이 ${(D.firstTieMaxShipGap || 1000).toLocaleString()}원 이하) 판매가 동가로 서고 더 내리지 않음 · <b>맨 위 매물의 배송비가 그보다 비싸면</b> 판매가를 맞추면 배송비 차이만큼 마진을 버리므로 총액 기준 · 그 밖에는 배송비 차이를 반영해 ${Math.round((D.advPct || 0.05) * 100)}% 이점 · 가격 단위는 가격대의 5% · <b>하한선은 알라딘 매입가 하나뿐</b>: 목표가가 '알라딘 매입가 하한가'(팔아서 손에 남는 돈 = 알라딘 매입가가 되는 판매가)보다 <b>${Math.round((D.buybackTolerance ?? 0.1) * 100)}% 넘게 낮을 때만</b> 하한가에 멈추고 '알라딘에 팔기' 검토로 표시, 그 안이면 최저가를 그대로 맞춤 (원가 하한선 없음 — 이미 산 책의 값은 되돌릴 수 없으므로) · 알라딘 반영 지연 때문에 변화는 ${D.confirmHours || 24}시간 확정 뒤 판단 · 판매자 기록이 없는 매물이 기준보다 앞에 있으면 판매자 정보부터 모음.</p>
+  <p><b>상태 등급: 최상 &gt; 상 &gt; 중</b>(최상이 가장 좋음). 소비자는 상태가 같거나 <b>더 좋은</b> 매물이 더 싸면 그쪽을 사므로, 같은 등급뿐 아니라 <b>더 좋은 등급의 유효 매물도 모두 기준 후보</b>로 봅니다 — 더 좋은 등급 매물의 판매가를 우리 등급 값으로 환산해, 우리 가격이 항상 그보다 확실히 싸게 합니다. 더 나쁜 등급 매물은 기준으로 삼지 않되(상태 이점), 우리보다 싸면 이유 칸에 알립니다.<br>유효 최저가와 <b>정확히 동가</b>가 기본. 기준이 목록 맨 위(최저가 표시)이고 배송비가 우리와 비슷하면(차이 ${(D.firstTieMaxShipGap || 1000).toLocaleString()}원 이하) 판매가 동가로 서고 더 내리지 않음 · <b>맨 위 매물의 배송비가 그보다 비싸면</b> 판매가를 맞추면 배송비 차이만큼 마진을 버리므로 총액 기준 · 그 밖에는 배송비 차이를 반영해 ${Math.round((D.advPct || 0.05) * 100)}% 이점 · 가격 단위는 가격대의 5% · <b>하한선은 알라딘 매입가 하나뿐</b>: 목표가가 '알라딘 매입가 하한가'(팔아서 손에 남는 돈 = 알라딘 매입가가 되는 판매가)보다 <b>${Math.round((D.buybackTolerance ?? 0.1) * 100)}% 넘게 낮을 때만</b> 하한가에 멈추고 '알라딘에 팔기' 검토로 표시, 그 안이면 최저가를 그대로 맞춤 (원가 하한선 없음 — 이미 산 책의 값은 되돌릴 수 없으므로) · 알라딘 반영 지연 때문에 변화는 ${D.confirmHours || 24}시간 확정 뒤 판단 · 판매자 기록이 없는 매물이 기준보다 앞에 있으면 판매자 정보부터 모음.</p>
   <h4>6. 가격 감시 표시</h4>
   <p>수집기(샵매니저 상품 조회/수정 목록)와 웹앱 상품 목록·상세에 묶음이 색으로 표시됩니다: <span class="tag mon-treat">감시·적용</span>(파랑) 판정 엔진이 매일 보고 가격을 맞춤 · <span class="tag mon-control">감시·비교</span>(보라) 판정만 기록하고 가격은 절대 안 바꿈(효과 측정용) · <span class="tag mon-hold">가격상승대기 PND</span> 판매보류풀 · <span class="tag mon-retire">불용 BAD</span> · <span class="tag mon-excluded">자동 제외</span>(빨강, KHKDVD 등 — 관리자 확인 필수). 초록은 검토, 노랑은 판매자 분류에 쓰는 색이라 감시 표시에는 쓰지 않습니다. 샵매니저 목록 위 범례에서 <b>이 쪽만</b>(지금 쪽에서 그 묶음만 남기기)·<b>전체 모아보기</b>(우리 상품 기록 전체에서 그 묶음만 골라 정렬)를 누를 수 있고, 웹앱은 상품 탭 '가격 감시' 칸의 숫자를 누르면 같은 목록이 나옵니다. 지금 비율: 적용 ${ro.treatPct || 0}% · 비교 ${ro.controlPct || 0}%. 묶음은 상품코드로 고정 배정되어 비율을 올려도 이미 들어간 상품은 그대로.</p>
-  <h4>7. 실제 적용 단계</h4>
+  <h4>7. 관리자 판정 기간 (지금)</h4>
+  <p>감시 상품은 엔진 판정과 관계없이 <b>모두</b> 관리자 결정 대기에 들어갑니다(바꾸자는 것·유지·기다림·확인 모두). 결정: 엔진 제안대로 · 직접 가격 · 지금 가격 유지 · 거절(이유). 결정한 가격만 반영되고, 모든 결정은 이유·메모·그때의 매물 목록과 함께 <b>지우지 않는 판단 기록</b>(prd_price_reviews)에 쌓입니다. 이 기록을 분석해 엔진을 고친 뒤에 자동화로 넘어갑니다. 실제로 바뀐 가격은 '판정·반영 목록 → 실제 반영'에서 보고 되돌릴 수 있습니다(웹앱·샵매니저 둘 다).<br><b>가격 감시 탭은 딱 한 PC의 딱 한 탭</b>: 샵매니저 '가격 감시' 탭에서 '이 탭을 가격 감시 탭으로'를 누르면 그 탭만 작동하고 다른 모든 탭·PC는 즉시 꺼집니다(회색).</p>
+  <h4>7-1. 실제 적용 단계</h4>
   <p><b>적용 상품은 사람이 고르지 않고 상품코드로 정해지는 무작위</b>입니다(측정이 공정하도록). 단 <b>${esc((prSettings().excludeSku || []).join(', '))}</b>는 마진 구조가 달라 비율과 관계없이 항상 자동 감시에서 빼고, 자동화를 따로 정할 때까지 무조건 관리자 확인입니다.<br><b>가격 감시기</b>는 수집기와 따로 도는 스크립트입니다(작업 잠금·진행 기록·저장 칸 모두 따로, 로그인은 수집기에 맡김). 웹앱에서 지정한 감시 PC 한 대에서만 돌고, 알라딘 요청 간격을 3~5초로 둬 같은 인터넷 주소의 수집과 부딪히지 않습니다. 상품 탭 맨 위 '가격 감시' 칸에서 시작·멈춤·전체 정지·승인합니다. 감시 PC의 샵매니저 화면에서는 오른쪽 위 탭 묶음(▶ 모두 · 고객·주문 · 상품·매입 · <b>가격 감시</b> · 기록)의 '가격 감시' 탭에 있고, 탭 이름 옆 점이 상태입니다(파랑 감시 중 · 회색 대기 · 빨강 문제). 감시기 칸의 '기록 내려받기'로 날짜별 기록을 파일로 받을 수 있고, 같은 기록이 웹앱 '기록 → 수집 작업 기록 목록'에도 [가격 감시]로 함께 보입니다(감시기 PC 이름을 수집기와 같게 지으면 한 줄로 합쳐 보임).<br>A: 1% 실제 적용 <b>3일</b>(실행이 정확한지 안전 확인) → B: 적용 25% vs 비교 25% <b>1주</b> → 확인 후 C: 적용 묶음 안에서 강도(맨 위 동가 / 한 단위 아래 / 유효 최저만)를 나눠 '다이얼 눈금' 만들기 → D: 전체. 비교 묶음은 C 이후에도 계속 두어 측정을 이어감(1주는 묶음당 판매 약 40건이라 아주 큰 차이만 보임).</p>
   <h4>8. 판매보류풀 — 가격상승대기</h4>
   <p>상품마다 '최저 수용가'를 정해 두고, 그 가격 이상으로 최저가 자리에 설 수 있을 때만 판매중, 아니면 일시판매중지. <b>관리코드 뒤 3자리를 PND로</b> 바꿔 구분합니다(예: BLKCMN → BLKPND · 앞 3자리 서가는 그대로 · 원래 가격 코드와 최저 수용가는 Firebase에 남김). 판매중↔일시판매중지 전환은 ${D.confirmHours || 24}시간 확정 + 최소 유지 시간을 둬 깜빡이지 않게 함. <b>일시판매중지 = 우리 전용 보관함</b>: 관리코드 뒤 PND = 판매보류풀, BAD = 불용. 이 둘이 아닌 일시판매중지 상품은 엔진이 건드리지 않고 처리 여부를 묻습니다.<br>
@@ -3522,16 +3525,16 @@ function priceCard() {
   if (!S.prCfg) { loadPricingCfg(); return '<div class="card"><div class="hint">가격 감시 설정 읽는 중</div></div>'; }
   if (!S.prRun) loadPriceRun();
   const c = S.prCfg; const st = prSettings(); const cnt = { treat: 0, control: 0, excluded: 0 }; for (const l of S.plist.values()) { const g = PRC.groupOfListing(l, st); if (cnt[g] != null) cnt[g]++; }
-  const dec = S.prDec ? [...S.prDec.values()] : []; const pend = dec.filter((x) => x.approvalState === 'pending').length; const r = S.prRun || {};
+  const dec = S.prDec ? [...S.prDec.values()].filter((x) => !/^_check/.test(x.key || '')) : []; const pend = dec.filter((x) => x.approvalState === 'pending').length; const r = S.prRun || {};
   const stTxt = !c.enabled ? '<b>꺼짐</b>' : c.killSwitch ? '<b style="color:#B0322A">전체 정지</b>' : `<b style="color:#1F5FAF">켜짐</b> · ${esc(c.phase || 'A')}단계`;
   return `<div class="card" style="border-left:5px solid #1F5FAF"><h3>가격 감시 (판정 엔진) ${stTxt}</h3>
-    <div class="mgrid"><div class="drill" data-prq="1"><b>${num(pend)} <i class="dr">›</i></b><span>승인 대기</span><small>누르면 하나씩 승인·거절</small></div>
+    <div class="mgrid"><div class="drill" data-prq="1"><b>${num(pend)} <i class="dr">›</i></b><span>관리자 결정 대기</span><small>누르면 하나씩 결정</small></div><div class="drill" data-prh="1"><b>${num(dec.length)} <i class="dr">›</i></b><span>판정·반영 목록</span><small>실제 반영·되돌리기</small></div>
       <div class="drill" data-prl="treat"><b>${num(cnt.treat)} <i class="dr">›</i></b><span>감시·적용</span><small>적용 ${(st.rollout || {}).treatPct ?? 0}%</small></div>
       <div class="drill" data-prl="control"><b>${num(cnt.control)} <i class="dr">›</i></b><span>감시·비교</span><small>비교 ${(st.rollout || {}).controlPct ?? 0}%</small></div>
       <div class="drill" data-prl="excluded"><b>${num(cnt.excluded)} <i class="dr">›</i></b><span>자동 제외</span><small>${esc((st.excludeSku || []).join(', '))} — 관리자 확인</small></div></div>
-    <p class="hint" style="margin:6px 0">감시 PC: <b>${esc(c.watchPc || '지정 안 됨 — 그 PC의 가격 감시기 칸에서 지정')}</b> · 이번 바퀴 ${r.keys ? `${num(r.idx || 0)} / ${num(r.keys.length)}${r.doneAt ? ' (끝남 ' + esc(String(r.doneAt).slice(5, 16).replace('T', ' ')) + ')' : ''}` : '아직 없음'}${r.err ? ` · <b style="color:#c62828">읽기 실패 ${esc(r.err)}</b>` : ''} · 감시 시작일 ${esc(c.cutoverAt ? String(c.cutoverAt).slice(0, 10) : '-')}</p>
+    <p class="hint" style="margin:6px 0">감시 탭: <b>${esc(c.watchTab ? `${c.watchPc || '?'} PC의 한 탭` : '지정 안 됨 — 샵매니저 \'가격 감시\' 탭에서 \'이 탭을 가격 감시 탭으로\'')}</b>${c.watchBeat ? ` <small>(마지막 응답 ${Math.round((Date.now() - Date.parse(c.watchBeat)) / 60000)}분 전)</small>` : ''} · 이번 바퀴 ${r.keys ? `${num(r.idx || 0)} / ${num(r.keys.length)}${r.doneAt ? ' (끝남 ' + esc(String(r.doneAt).slice(5, 16).replace('T', ' ')) + ')' : ''}` : '아직 없음'}${r.err ? ` · <b style="color:#c62828">읽기 실패 ${esc(r.err)}</b>` : ''} · 감시 시작일 ${esc(c.cutoverAt ? String(c.cutoverAt).slice(0, 10) : '-')}</p>
     <div style="display:flex;gap:6px;flex-wrap:wrap">${!c.enabled ? '<button class="btn" id="pr_start">A단계 시작 (적용 1%)</button>' : '<button class="btn ghost" id="pr_off">멈춤</button>'}<button class="btn ghost" id="pr_kill">${c.killSwitch ? '전체 정지 풀기' : '전체 정지'}</button><button class="btn ghost" id="pr_reload">새로 읽기</button></div>
-    <p class="hint" style="margin:6px 0 0">A단계(L0): 엔진은 판정만 하고, <b>여기서 승인한 가격만</b> 감시 PC가 샵매니저에 반영합니다. 기준·로드맵: ❓ 설명서 → ⚙ 판정 엔진.</p></div>`;
+    <p class="hint" style="margin:6px 0 0"><b>관리자 판정 기간</b>: 감시 상품은 모두 관리자가 결정하고(엔진 제안 승인·직접 가격·유지·거절), <b>결정한 가격만</b> 감시 탭이 샵매니저에 반영합니다. 모든 결정은 이유와 함께 기록돼 자동화 기준을 만드는 데 쓰입니다. 기준·로드맵: ❓ 설명서 → ⚙ 판정 엔진.</p></div>`;
 }
 function bindPriceCard(m) {
   const w = (o) => db.collection('prd_system').doc('pricing').set({ ...o, updatedBy: S.user.email, updatedAt: new Date().toISOString(), writerSchema: 6 }, { merge: true }).then(() => { S.prCfg = null; S.prRun = null; toast('저장됨'); renderMain(); }).catch((e) => toast('실패: ' + e.message));
@@ -3540,33 +3543,89 @@ function bindPriceCard(m) {
   const k = m.querySelector('#pr_kill'); if (k) k.onclick = () => w({ killSwitch: !(S.prCfg && S.prCfg.killSwitch) });
   const rl = m.querySelector('#pr_reload'); if (rl) rl.onclick = () => { S.prCfg = null; S.prRun = null; renderMain(); };
   m.querySelectorAll('[data-prq]').forEach((b) => (b.onclick = () => openPriceQueue()));
+  m.querySelectorAll('[data-prh]').forEach((b) => (b.onclick = () => openPriceHistory()));
   m.querySelectorAll('[data-prl]').forEach((b) => (b.onclick = () => { const g = b.dataset.prl; const PRC = window.ReadnowPricing; const rows = [...S.plist.values()].filter((l) => PRC.groupOfListing(l, prSettings()) === g); openListView({ title: `${MONTXT[g][0]} 상품 ${rows.length}개`, rows, placeholder: '제목·코드 검색', note: esc(MONTXT[g][1]), row: prodRow, text: (l) => [l.title, l.usedCode, l.sku].join(' '), bind: (sh) => sh.querySelectorAll('[data-pid]').forEach((x) => (x.onclick = () => openProduct(x.dataset.pid))) }); }));
 }
+const PR_ST = { pending: '관리자 결정 대기', approved: '엔진 제안 승인(반영 대기)', manual: '관리자 가격(반영 대기)', kept: '지금 가격 유지', rejected: '거절', done: '반영됨', blocked: '막힘', stale: '오래돼 다시 판정' };
+const PR_COL = { dkgreen: '#66c17a', green: '#c9f2c9', yellow: '#fff3b0', orange: '#ffcc80', red: '#ffd6d6', aladin: '#cfe3ff', proxy: '#e9d7ff', unknown: '#eee' };
+function usedUrlOf(x) { const id = x.aladinItemId || (x.bookId && S.pbooks && (S.pbooks.get(x.bookId) || {}).aladinItemId); return id ? `https://www.aladin.co.kr/shop/UsedShop/wuseditemall.aspx?ItemId=${id}&TabType=0` : null; }
+function openUsed(x) { const u = usedUrlOf(x); if (!u) return toast('도서 정보(알라딘 상품번호)가 아직 없음'); window.open(u, 'rn_used'); } // 늘 같은 창 하나에서 열림
+// 관리자 결정 하나 = 결정 문서 갱신 + 판단 기록(prd_price_reviews, 지우지 않음 — 나중에 자동화 기준을 만들 원자료)
+async function prDecide(x, decision, o) {
+  const now = new Date().toISOString(); const st = { approve: 'approved', manual: 'manual', keep: 'kept', reject: 'rejected', revert: 'manual' }[decision];
+  const approval = { by: S.user.email, at: now, decision, price: o.price ?? null, reason: o.reason || null, memo: o.memo || null };
+  const b = db.batch();
+  b.set(db.collection('prd_price_decisions').doc(x.key), { approvalState: st, approval, writerSchema: 6 }, { merge: true });
+  b.set(db.collection('prd_price_reviews').doc(), { key: x.key, usedCode: x.usedCode, title: x.title || null, grade: x.grade || null, sku: x.sku || null, at: now, by: S.user.email, decision, price: o.price ?? null, reason: o.reason || null, memo: o.memo || null, current: x.current ?? null,
+    engine: { status: x.status || null, action: x.action || null, target: x.target ?? null, rule: x.rule || null, ref: x.ref || null, reasons: x.reasons || [], tier: x.tier || null, version: x.engine || null }, rows: x.rows || [], worseCheapest: x.worseCheapest || null, decidedAt: x.at || null, writerSchema: 6 });
+  await b.commit(); Object.assign(x, { approvalState: st, approval });
+}
 function openPriceQueue() {
-  const sh = $('#sheet'); S.detail = { prq: 1 }; history.pushState({ prq: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
-  const L = [...(S.prDec || new Map()).values()].filter((x) => x.approvalState === 'pending').sort((a, b) => Math.abs(b.deltaPct || 0) - Math.abs(a.deltaPct || 0));
-  const COL = { dkgreen: '#66c17a', green: '#c9f2c9', yellow: '#fff3b0', orange: '#ffcc80', red: '#ffd6d6', aladin: '#cfe3ff', proxy: '#e9d7ff' };
-  const one = (x) => { const r = x.ref || {}; const up = (x.delta || 0) > 0; return `<div class="card" data-k="${esc(x.key)}"><b>${esc(x.title || x.usedCode)}</b> <small class="hint">${esc(x.sku || '')} · ${esc(x.grade || '')} · ${esc((x.tier && x.tier.name) || '')}</small>
-    <div style="font-size:18px;margin:4px 0">${won(x.current)} → <b style="color:${up ? '#1F6F4A' : '#B0322A'}">${won(x.target)}</b> <small>(${up ? '+' : ''}${Math.round((x.deltaPct || 0) * 100)}%)</small></div>
-    <div class="hint">기준: <span style="background:${COL[r.color] || '#eee'};padding:0 4px;border-radius:4px">${esc(r.sellerName || r.sellerCode || '알라딘측')}</span> ${esc(r.grade || '')} ${won(r.price)} + 배송 ${won(r.ship)} · ${esc(r.how || '')}${r.isFirst ? ' · 목록 맨 위' : ''}</div>
+  const sh = $('#sheet'); S.detail = { prq: 1 }; if (!sh.classList.contains('on')) history.pushState({ prq: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
+  const all = [...(S.prDec || new Map()).values()].filter((x) => x.approvalState === 'pending' && !/^_check/.test(x.key || ''));
+  const F = S.prqF || 'all'; const isSet = (x) => x.action === 'set';
+  const L = all.filter((x) => F === 'all' || (F === 'set' ? isSet(x) : !isSet(x))).sort((a, b) => (isSet(b) - isSet(a)) || Math.abs(b.deltaPct || 0) - Math.abs(a.deltaPct || 0));
+  const curEng = window.ReadnowPricing && window.ReadnowPricing.VERSION; const oldEng = (x) => curEng && x.engine && x.engine !== curEng;
+  const one = (x) => { const r = x.ref || {}; const up = (x.delta || 0) > 0;
+    return `<div class="card" data-k="${esc(x.key)}"><div style="display:flex;justify-content:space-between;gap:6px"><b>${esc(x.title || x.usedCode)}</b><button class="btn ghost sm" data-used="${esc(x.key)}">전체중고 열기 ↗</button></div>
+    <small class="hint">${esc(x.sku || '')} · 우리 상태 <b>${esc(x.grade || '?')}</b> · ${esc((x.tier && x.tier.name) || '')} · 판정 ${esc(String(x.at || '').slice(5, 16).replace('T', ' '))}</small>
+    <div style="margin:6px 0">지금 <b>${won(x.current)}</b> ${isSet(x) ? `→ 엔진 제안 <b style="color:${up ? '#1F6F4A' : '#B0322A'}">${won(x.target)}</b> <small>(${up ? '+' : ''}${Math.round((x.deltaPct || 0) * 100)}%)</small>` : `<span class="tag">${esc(x.status || '')} · 엔진은 바꾸지 말자는 판정</span>`}</div>
+    ${r.price != null ? `<div class="hint">기준: <span style="background:${PR_COL[r.color] || '#eee'};padding:0 4px;border-radius:4px">${esc(r.sellerName || r.sellerCode || '알라딘측')}</span> ${esc(r.grade || '')} ${won(r.price)} + 배송 ${won(r.ship)} · ${esc(r.how || '')}</div>` : ''}
     <ul style="margin:4px 0 4px 18px;font-size:12.5px">${(x.reasons || []).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
-    ${(x.autoBlock || []).length ? `<div class="hint">사람 확인 이유: ${esc(x.autoBlock.join(' · '))}</div>` : ''}
-    <div style="display:flex;gap:6px;margin-top:6px"><button class="btn" data-ok="${esc(x.key)}">승인</button><select data-why="${esc(x.key)}"><option value="">거절 이유</option><option>기준 매물이 이상함</option><option>너무 많이 내림</option><option>올리면 안 됨</option><option>이 책은 따로 관리</option><option>기타</option></select><button class="btn ghost" data-no="${esc(x.key)}">거절</button></div></div>`; };
-  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">가격 승인 대기 ${L.length}건</div></div>
-    <div class="card"><p class="hint" style="margin:0">승인한 가격만 감시 PC가 샵매니저에 반영합니다 (판정 후 48시간 안). 거절 이유는 엔진 개선에 쓰입니다. 변화 폭이 큰 것부터.</p>${L.length ? '<button class="btn ghost" id="pr_all" style="margin-top:6px">보이는 것 모두 승인</button>' : ''}</div>${L.map(one).join('') || '<div class="empty">승인할 것이 없습니다</div>'}`;
+    ${(x.rows || []).length ? `<details><summary class="hint">첫 페이지 매물 ${x.rows.length}개 보기 (색 = 판매자 분류)</summary><table class="tbl" style="font-size:12px"><tr><th>#</th><th>판매자</th><th>상태</th><th>판매가</th><th>배송비</th></tr>${x.rows.map((w) => `<tr><td>${w.rank}</td><td><span style="background:${PR_COL[w.color] || '#eee'};padding:0 4px;border-radius:4px">${esc(w.name || w.sc || '알라딘측')}</span></td><td>${esc(w.grade || '')}</td><td>${won(w.price)}</td><td>${won(w.ship)}</td></tr>`).join('')}</table></details>` : ''}
+    ${oldEng(x) ? `<div style="background:#FDE2E0;color:#B0322A;padding:4px 8px;border-radius:6px;margin-top:6px">옛 판정 엔진(${esc(x.engine)})의 판정입니다 — 새 엔진(${esc(curEng)})으로 다시 판정될 때까지 '엔진 제안대로'는 막아 둡니다 (직접 가격·유지는 가능)</div>` : ''}
+    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center">${isSet(x) && !oldEng(x) ? `<button class="btn" data-ok="${esc(x.key)}">엔진 제안대로 ${won(x.target)}</button>` : ''}
+      <input type="number" min="10" step="10" placeholder="직접 가격" data-pin="${esc(x.key)}" style="width:110px;padding:6px"><button class="btn ghost" data-man="${esc(x.key)}">이 가격으로</button>
+      <button class="btn ghost" data-keep="${esc(x.key)}">지금 가격 유지</button></div>
+    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap"><select data-why="${esc(x.key)}"><option value="">판단 이유(선택)</option><option>엔진 기준 매물이 이상함</option><option>상태(등급) 비교가 틀림</option><option>너무 많이 내림</option><option>너무 적게 내림</option><option>올리면 안 됨</option><option>이 책은 따로 관리</option><option>기타</option></select><input data-memo="${esc(x.key)}" placeholder="메모(선택) — 자동화 기준을 만드는 데 씀" style="flex:1;min-width:160px;padding:6px"><button class="btn ghost" data-no="${esc(x.key)}">거절</button></div></div>`; };
+  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">관리자 결정 대기 ${all.length}건</div></div>
+    <div class="card"><p class="hint" style="margin:0"><b>관리자 판정 기간</b>: 감시 상품은 엔진 판정과 관계없이 모두 여기서 결정합니다. 결정한 가격만 샵매니저에 반영되고, 모든 결정은 이유와 함께 기록돼 자동화 기준을 만드는 데 쓰입니다. '전체중고 열기'는 늘 같은 창 하나에서 열립니다.</p>
+      <div class="ptabs" style="margin-top:8px">${[['all', '전체 ' + all.length], ['set', '엔진이 바꾸자는 것 ' + all.filter(isSet).length], ['other', '유지·기다림·확인 ' + all.filter((x) => !isSet(x)).length]].map(([k, l]) => `<button class="${F === k ? 'on' : ''}" data-prqf="${k}">${l}</button>`).join('')}</div></div>
+    ${L.map(one).join('') || '<div class="empty">결정할 것이 없습니다</div>'}`;
   $('#back').onclick = () => history.back();
-  const save = (key, o) => db.collection('prd_price_decisions').doc(key).set({ ...o, writerSchema: 6 }, { merge: true }).then(() => { const x = S.prDec.get(key); Object.assign(x, o); const el = sh.querySelector(`[data-k="${CSS.escape(key)}"]`); if (el) el.remove(); }).catch((e) => toast('실패: ' + e.message));
-  const approve = (key) => { const x = S.prDec.get(key); return save(key, { approvalState: 'approved', approval: { by: S.user.email, at: new Date().toISOString(), price: x.target } }); };
-  sh.querySelectorAll('[data-ok]').forEach((b) => (b.onclick = () => approve(b.dataset.ok)));
-  sh.querySelectorAll('[data-no]').forEach((b) => (b.onclick = () => { const k = b.dataset.no; const why = sh.querySelector(`[data-why="${CSS.escape(k)}"]`).value; if (!why) return toast('거절 이유를 고르세요'); save(k, { approvalState: 'rejected', approval: { by: S.user.email, at: new Date().toISOString(), reason: why } }); }));
-  const all = sh.querySelector('#pr_all'); if (all) all.onclick = async () => { if (!confirm(`${L.length}건을 모두 승인할까요?`)) return; for (const x of L) await approve(x.key); toast('모두 승인'); };
+  const get = (k) => S.prDec.get(k); const gone = (k) => { const el = sh.querySelector(`[data-k="${CSS.escape(k)}"]`); if (el) el.remove(); };
+  const extra = (k) => ({ reason: (sh.querySelector(`[data-why="${CSS.escape(k)}"]`) || {}).value || null, memo: ((sh.querySelector(`[data-memo="${CSS.escape(k)}"]`) || {}).value || '').trim() || null });
+  const run = (k, decision, o) => prDecide(get(k), decision, { ...extra(k), ...o }).then(() => { gone(k); toast('기록됨'); }).catch((e) => toast('실패: ' + e.message));
+  sh.querySelectorAll('[data-prqf]').forEach((b) => (b.onclick = () => { S.prqF = b.dataset.prqf; openPriceQueue(); }));
+  sh.querySelectorAll('[data-used]').forEach((b) => (b.onclick = () => openUsed(get(b.dataset.used))));
+  sh.querySelectorAll('[data-ok]').forEach((b) => (b.onclick = () => run(b.dataset.ok, 'approve', { price: get(b.dataset.ok).target })));
+  sh.querySelectorAll('[data-man]').forEach((b) => (b.onclick = () => { const k = b.dataset.man; const v = parseInt(sh.querySelector(`[data-pin="${CSS.escape(k)}"]`).value, 10); if (!(v >= 10)) return toast('10원 이상 가격을 넣으세요'); run(k, 'manual', { price: v }); }));
+  sh.querySelectorAll('[data-keep]').forEach((b) => (b.onclick = () => run(b.dataset.keep, 'keep', { price: get(b.dataset.keep).current })));
+  sh.querySelectorAll('[data-no]').forEach((b) => (b.onclick = () => { const k = b.dataset.no; if (!extra(k).reason) return toast('거절 이유를 고르세요'); run(k, 'reject', {}); }));
+}
+function openPriceHistory() {
+  const sh = $('#sheet'); S.detail = { prh: 1 }; if (!sh.classList.contains('on')) history.pushState({ prh: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
+  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">판정·반영 목록</div></div><div class="card"><div class="empty">불러오는 중</div></div>`; $('#back').onclick = () => history.back();
+  Promise.all([db.collection('prd_price_decisions').get(), db.collection('prd_price_actions').get()]).then(([ds, as]) => {
+    const D = []; ds.forEach((d) => { if (!/^_check/.test(d.id)) D.push(d.data()); }); const A = []; as.forEach((d) => { if (!/^_check/.test(d.id)) A.push({ id: d.id, ...d.data() }); }); A.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    S.prDec = new Map(D.map((x) => [x.key, x]));
+    const draw = () => {
+      const T = S.prhT || 'dec', F = S.prhF || 'all';
+      const rows = D.filter((x) => F === 'all' || (x.approvalState || 'none') === F).sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'ko'));
+      sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">판정·반영 목록</div></div>
+        <div class="rtabs"><button class="${T === 'dec' ? 'on' : ''}" data-ht="dec">판정 ${D.length}</button><button class="${T === 'act' ? 'on' : ''}" data-ht="act">실제 반영 ${A.length}</button></div>
+        ${T === 'dec' ? `<div class="card"><div class="ptabs" style="flex-wrap:wrap">${[['all', '전체']].concat(Object.entries(PR_ST)).map(([k, l]) => `<button class="${F === k ? 'on' : ''}" data-hf="${k}">${l} ${k === 'all' ? D.length : D.filter((x) => x.approvalState === k).length}</button>`).join('')}</div></div>
+          <div class="list">${rows.map((x) => `<div class="item" style="display:block"><b>${esc(x.title || x.usedCode)}</b> <small class="hint">${esc(x.grade || '')} · ${esc(x.sku || '')}</small><div class="hint">지금 ${won(x.current)} · 엔진 ${x.action === 'set' ? won(x.target) : esc(x.status || '')} · <b>${esc(PR_ST[x.approvalState] || '-')}</b>${x.approval && x.approval.price ? ' ' + won(x.approval.price) : ''}${x.execNote ? ' · ' + esc(x.execNote) : ''} <a href="#" data-hu="${esc(x.key)}">전체중고 ↗</a></div></div>`).join('') || '<div class="empty">없음</div>'}</div>`
+        : `<div class="card"><p class="hint" style="margin:0">실제로 샵매니저 가격을 바꾼 기록입니다. '되돌리기'는 바꾸기 전 가격으로 다시 바꾸도록 감시 탭에 맡기고, 되돌린 것도 기록에 남습니다.</p></div>
+          <div class="list">${A.map((a) => `<div class="item" style="display:block"><b>${esc(a.title || a.usedCode)}</b> <small class="hint">${esc(String(a.at).slice(5, 16).replace('T', ' '))} · ${esc(a.by || '')}</small><div>${won(a.from)} → <b>${won(a.to)}</b> <small class="hint">${esc({ approved: '엔진 제안 승인', manual: '관리자 가격' }[a.kind] || a.kind || '')}</small> <a href="#" data-hu="${esc(a.key)}">전체중고 ↗</a> <button class="btn ghost sm" data-rev="${esc(a.id)}">되돌리기 (${won(a.from)})</button></div></div>`).join('') || '<div class="empty">아직 실제로 바꾼 가격이 없습니다 — 가격은 관리자가 결정한 것만 바뀝니다</div>'}</div>`}`;
+      $('#back').onclick = () => history.back();
+      sh.querySelectorAll('[data-ht]').forEach((b) => (b.onclick = () => { S.prhT = b.dataset.ht; draw(); }));
+      sh.querySelectorAll('[data-hf]').forEach((b) => (b.onclick = () => { S.prhF = b.dataset.hf; draw(); }));
+      sh.querySelectorAll('[data-hu]').forEach((a) => (a.onclick = (e) => { e.preventDefault(); const x = S.prDec.get(a.dataset.hu) || A.find((y) => y.key === a.dataset.hu) || {}; openUsed(x); }));
+      sh.querySelectorAll('[data-rev]').forEach((b) => (b.onclick = () => { const a = A.find((y) => y.id === b.dataset.rev); const x = S.prDec.get(a.key); if (!x) return toast('판정 기록을 못 찾음'); if (!confirm(`${a.title}: ${won(a.to)} → ${won(a.from)}로 되돌릴까요?`)) return; prDecide(x, 'revert', { price: a.from, reason: '되돌리기', memo: `반영(${a.at}) 되돌림` }).then(() => toast('되돌리기 맡김 — 감시 탭이 곧 반영')).catch((e) => toast('실패: ' + e.message)); }));
+    };
+    draw();
+  }).catch((e) => { sh.querySelector('.card').innerHTML = `<div class="empty">못 읽음: ${esc(e.code || e.message)}</div>`; });
 }
 
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
+  { d: '2026-10-04', app: '수집기', v: '1.23.5', n: ['판정 엔진 0.8.0 사용'] },
+  { d: '2026-10-04', app: '공용 · 판정 엔진 readnow-pricing-core.js', v: '0.8.0', n: ['★ 상태 등급 오류 고침: 같은 등급만 보던 것을, 같거나 더 좋은 등급(최상>상>중)의 유효 매물을 모두 기준 후보로 — 더 좋은 등급이 더 싸면 우리 등급 값으로 환산해 그보다 확실히 싸게 (바흐: 우리 중 1,000원 위에 상 590원이 있던 사고)', '더 나쁜 등급이 더 싸면 이유 칸에 알림', '판정 근거 매물 목록에 판매자 이름'] },
+  { d: '2026-10-04', app: '가격 감시기', v: '0.2.0', n: ['가격 감시는 딱 한 PC의 딱 한 탭: \'이 탭을 가격 감시 탭으로\'를 누르면 다른 모든 탭·PC는 즉시 꺼짐(회색)', '관리자 판정 기간: 감시 상품 모두 관리자 결정 대기로, 관리자 가격(직접 입력·되돌리기)도 반영', '샵매니저에서 \'판정·반영 목록\'(판정 전체·실제 반영, 전체중고·정보수정 바로가기)', '반영 기록에 엔진 제안가·결정 종류 함께', '옛 판정 엔진의 \'엔진 제안 승인\'은 반영하지 않음(엔진을 고친 뒤 옛 제안이 실행되지 않게)'] },
   { d: '2026-10-04', app: '공용 · 판정 엔진 readnow-pricing-core.js', v: '0.7.0', n: ['하한선을 알라딘 매입가 하나로: 목표가가 매입가 하한가보다 10% 넘게 낮을 때만 멈추고 알라딘에 팔기 검토 표시', '원가 하한선(권당 2,000원 추정)과 손해선 없앰 — 우리 매물 약 18%가 최저가를 못 맞추던 원인'] },
   { d: '2026-10-04', app: '수집기', v: '1.23.4', n: ['판정 엔진 0.7.0 사용'] },
   { d: '2026-10-04', app: '가격 감시기', v: '0.1.2', n: ['판정 저장이 모두 실패하던 오류 고침 (경쟁 매물 줄을 \'목록 안의 목록\'으로 저장하려 해 Firestore가 거절) — 줄마다 이름 붙인 칸으로', '빈 칸 때문에 저장이 통째로 실패하지 않게', '\'기록 내려받기\'(날짜 골라 텍스트 파일, 이 PC에 최근 7일 보관) · 기록을 수집기와 같은 형식으로 Firebase에 올려 웹앱 \'기록\'에서 함께 봄', '\'지금 새 바퀴\' 버튼 · 감시기 버전이 바뀌면 자동으로 새 바퀴(이전 실패분 다시 판정)', '시작 전 저장 권한 점검(막히면 시작하지 않고 어디가 막혔는지 표시)', '처음 보는 책은 수집기가 전에 본 첫 페이지 시각을 매물의 첫 관측 시각으로 씀(근거 있는 시각만) — 첫날 모든 인하가 24시간 대기로 멈추지 않게', '우리 매물이 첫 페이지에 없으면 우리 가게 배송비 정책(crm_system/shopPolicy)으로 계산', '우리 매물은 상품코드로만 찾음(같은 책 여러 권 혼동 방지)', '같은 PC에 샵매니저 탭이 여러 개여도 감시는 한 탭에서만(가격 두 번 반영 방지)', '반영 후 알라딘이 돌려준 가격이 보낸 가격과 같은지 확인'] },
