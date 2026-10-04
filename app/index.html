@@ -267,15 +267,16 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="../readnow-sellers-core.js?v=1.3.0"></script>
+<script src="../readnow-core.js"></script>
 <script src="../readnow-products-core.js?v=0.4.0"></script>
 <script>
 'use strict';
-/* 리드나우 웹앱 v0.51.2 (홈·고객·주문·상품·판매자·평가 참여·설정)
+/* 리드나우 웹앱 v0.52.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
  * 데이터: Firebase readnow-3a385 (수집기가 올린 crm_* 컬렉션)
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.51.2';
+const APP_VER = '0.52.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -2716,6 +2717,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.52.0': ['판매자 집계(유효·보류 노랑·보류 주황·무효)를 툴팁과 같은 정의(readnow-core.js 배경색 기준)로'],
   '0.51.2': ['설정 저장 오류(목록 안의 목록) 고침 — 운영 비용 설정이 저장되지 않던 원인', '상품 상세: 구매자 분포·함께 산 책의 변화 기록', '설정 ⑨ 구매자 분포 기간 칸 하나로(기본 30일), 0 = 무제한 안내'],
   '0.51.1': ['설정 ⑨: 자동 로그인 시도 횟수(0 = 무제한), 구매자 분포 범위·다시 보는 기간(기본 30일), 작업 기록 구글 드라이브 저장 주소'],
   '0.51.0': ['홈 통합 검색(탭별 묶음), 모든 검색 결과에 검색어 강조', '순매출 누르면: 상품별·주문별, 정렬 고르기, 누르면 해당 화면', '판매자 집계(전체·유효·보류 노랑/주황·무효)', '구매자 분포·함께 산 책 자세히 (근거 포함)', '알라딘 팔기 정산을 매출 탭에, 전체 매출에 포함', '시각화 버튼 반투명'],
@@ -4024,23 +4026,36 @@ function openSalesView(r, lbl, replace) {
 /* ══════════ 판매자 집계: 전체 · 유효 · 보류(노랑 · 주황) · 무효 ══════════
  * 무효 = 허위 매물 판매자 (유효 최저가에서 빼는 유일한 판매자 기준) · 보류 주황 = 최근 6개월 평가 3건 미만(활동 거의 없음, 알라딘 '-')
  * 보류 노랑 = 모범 점수 '판단 보류'(판단할 자료 요소가 3개 미만) · 유효 = 그 밖 */
-function sellerClass(s, SC) { if (sgOf(s) === 'fake') return 'bad'; if (s.rev6mLt3) return 'orange'; const x = SC.get(s.id); if (!x || x.mcls === 'na') return 'yellow'; return 'ok'; }
-const SCLS = { ok: ['유효', '#2F7D4F'], yellow: ['보류 — 자료 부족', '#C9A400'], orange: ['보류 — 최근 6개월 활동 거의 없음', '#D9822B'], bad: ['무효 — 허위 매물', '#B0322A'] };
+// 판매자 분류 = 판매자 정보 툴팁의 배경색 정의 그대로 (공용 파일 readnow-core.js의 evaluateBackground — 툴팁·판정 엔진과 한 곳의 기준)
+//  무효(빨강) = 평가 없음·50개 미만 또는 품절취소율 40% 이상 → 판매가를 정할 때 무시
+//  보류 주황 = 평가 50~99개 → 기본은 무효처럼 봄 (허위 가능성 높음, 다만 실제로는 70~80%는 상품이 있을 수 있음)
+//  보류 노랑 = 평가 100~199개 → 기본은 무효로 치되, 상품 조건을 대조해 유효에 가까우면 유효로
+//  유효(초록) = 평가 200개 이상 → 가격 비교에서 무조건 참고
+const RNC = window.ReadNowCore || null;
+function bgOf(s) { const rcv = s.reviewCount ?? s.shopTotal ?? (s.shopPeriods && s.shopPeriods['전체 기간'] ? s.shopPeriods['전체 기간'].count : null); const info = { reviewCount: rcv != null ? String(rcv) : '', /* 툴팁이 쓰는 전체 평가 수, 없으면 숍 화면의 전체 기간 평가 수 */ outstockRate: s.outstockRate != null ? String(s.outstockRate) : '', totalItems: s.totalItems != null ? String(s.totalItems) : '', rating: s.rating != null ? String(s.rating <= 1 ? s.rating * 100 : s.rating) : '' };
+  if (RNC && RNC.evaluateBackground) return RNC.evaluateBackground(info, NaN);
+  const rc = parseInt(info.reviewCount.replace(/,/g, ''), 10), oc = parseFloat(info.outstockRate); // readnow-core.js를 못 읽었을 때만: 같은 기준의 복사본
+  if (isNaN(rc) || rc < 50 || (!isNaN(oc) && oc >= 40)) return { bg: '#ffd6d6', bgReason: isNaN(rc) ? '평가 없음' : rc < 50 ? '평가수 50개 미만' : '품절취소율 40% 이상' };
+  return rc < 100 ? { bg: '#ffcc80', bgReason: '평가수 50~99개' } : rc < 200 ? { bg: '#fff3b0', bgReason: '평가수 100~199개' } : rc < 1000 ? { bg: '#c9f2c9', bgReason: '평가수 200개 이상' } : { bg: '#66c17a', bgReason: '평가수 1000개 이상' };
+}
+const BG2CLS = { '#ffd6d6': 'bad', '#ffcc80': 'orange', '#fff3b0': 'yellow', '#c9f2c9': 'ok', '#66c17a': 'ok' };
+function sellerClass(s) { return BG2CLS[String(bgOf(s).bg || '').toLowerCase()] || 'bad'; }
+const SCLS = { ok: ['유효', '#2F7D4F', '평가 200개 이상 — 가격 비교에서 무조건 참고'], yellow: ['보류 노랑', '#C9A400', '평가 100~199개 — 기본 무효, 상품 조건이 맞으면 유효로'], orange: ['보류 주황', '#D9822B', '평가 50~99개 — 기본 무효처럼 봄 (무효에 가까움)'], bad: ['무효', '#B0322A', '평가 없음·50개 미만 또는 품절취소율 40% 이상 — 판매가 정할 때 무시'] };
 function sellerCountPanel() {
-  const SC = scores(); const all = [...S.sellers.values()]; const c = { ok: [], yellow: [], orange: [], bad: [] }; all.forEach((s) => c[sellerClass(s, SC)].push(s));
+  const all = [...S.sellers.values()]; const c = { ok: [], yellow: [], orange: [], bad: [] }; all.forEach((s) => c[sellerClass(s)].push(s)); const fake = all.filter((s) => sgOf(s) === 'fake').length;
   const pro = all.filter((s) => s.isPro || s.aladinGrade === '전문셀러').length;
   return `<div class="card"><h3>판매자 집계 <small class="hint">전체 ${num(all.length)}곳 · 전문셀러(사업자) ${num(pro)} · 개인 ${num(all.length - pro)}</small></h3>
-    <div class="mgrid"><div class="drill" data-scnt="all"><b>${num(all.length)} <i class="dr">›</i></b><span>전체</span><small>모은 판매자</small></div>${Object.entries(SCLS).map(([k, [l, col]]) => `<div class="drill" data-scnt="${k}" style="border-left:4px solid ${col}"><b>${num(c[k].length)} <i class="dr">›</i></b><span>${l}</span><small>${Math.round((c[k].length / Math.max(1, all.length)) * 100)}%</small></div>`).join('')}</div>
-    <p class="hint" style="margin:6px 0 0">무효 = 허위 매물(유효 최저가에서 빼는 유일한 기준) · 보류 주황 = 최근 6개월 평가 3건 미만 · 보류 노랑 = 모범 점수 판단 자료가 3개 미만 · 유효 = 그 밖.</p></div>`;
+    <div class="mgrid"><div class="drill" data-scnt="all"><b>${num(all.length)} <i class="dr">›</i></b><span>전체</span><small>모은 판매자</small></div>${Object.entries(SCLS).map(([k, [l, col, why]]) => `<div class="drill" data-scnt="${k}" style="border-left:4px solid ${col}" title="${why}"><b>${num(c[k].length)} <i class="dr">›</i></b><span>${l}</span><small>${Math.round((c[k].length / Math.max(1, all.length)) * 100)}% · ${why.split(' — ')[0]}</small></div>`).join('')}</div>
+    <p class="hint" style="margin:6px 0 0">판매자 정보 툴팁의 배경색과 같은 기준입니다(공용 파일 readnow-core.js). 지금은 판매자 기준으로 판매가의 유효성을 가르고, 자료가 쌓이면 상품 기준으로 바꿀 예정입니다.${fake ? ` 따로 '허위 매물'로 표시한 판매자 ${num(fake)}곳.` : ''}${RNC ? '' : ' (readnow-core.js를 못 읽어 같은 기준의 복사본으로 계산)'}</p></div>`;
 }
 function openSellerCount(k) {
-  const SC = scores(); const rows = [...S.sellers.values()].filter((s) => k === 'all' || sellerClass(s, SC) === k);
-  const sorts = [['items', '보유 상품 많은 순', (s) => s.totalItems || s.stock || 0], ['rev6', '최근 6개월 평가 많은 순', (s) => rev6(s) ?? -1], ['reviews', '전체 평가 많은 순', (s) => s.shopTotal || s.totalReviewCount || 0], ['rating', '평점 높은 순', (s) => s.rating ?? 0], ['model', '모범 점수 높은 순', (s) => (SC.get(s.id) || {}).model ?? -1], ['gain', '우리 이득 점수 높은 순', (s) => (SC.get(s.id) || {}).gain ?? 50], ['cancel', '품절취소율 높은 순', (s) => s.cancel3m ?? (s.outstockRate || 0) / 100], ['name', '이름 순', null]];
+  const SC = scores(); const rows = [...S.sellers.values()].filter((s) => k === 'all' || sellerClass(s) === k);
+  const sorts = [['items', '보유 상품 많은 순', (s) => s.totalItems || s.stock || 0], ['rev6', '최근 6개월 평가 많은 순', (s) => rev6(s) ?? -1], ['reviews', '전체 평가 많은 순', (s) => parseInt(String(s.reviewCount ?? s.shopTotal ?? 0).replace(/,/g, ''), 10) || 0], ['rating', '평점 높은 순', (s) => s.rating ?? 0], ['model', '모범 점수 높은 순', (s) => (SC.get(s.id) || {}).model ?? -1], ['gain', '우리 이득 점수 높은 순', (s) => (SC.get(s.id) || {}).gain ?? 50], ['cancel', '품절취소율 높은 순', (s) => s.cancel3m ?? (s.outstockRate || 0) / 100], ['name', '이름 순', null]];
   const so = S.scSort || 'items'; const f = sorts.find((x) => x[0] === so) || sorts[0]; if (f[2]) rows.sort((a, b) => f[2](b) - f[2](a)); else rows.sort((a, b) => String(a.name).localeCompare(String(b.name)));
   openListView({ replace: !!S._scOpen, title: `판매자 — ${k === 'all' ? '전체' : SCLS[k][0]}`, rows, placeholder: '이름·SC 검색', text: (s) => `${s.name} ${s.sc} ${s.company || ''}`, sum: (rs) => `${num(rs.length)}곳`,
     head: `<select id="sc_sort">${sorts.map(([kk, l]) => `<option value="${kk}" ${so === kk ? 'selected' : ''}>${l}</option>`).join('')}</select>`,
     filters: [['all', '모두'], ['pro', '전문셀러'], ['ind', '개인']], filterFn: (s, fl) => fl === 'all' || (fl === 'pro' ? s.isPro || s.aladinGrade === '전문셀러' : !(s.isPro || s.aladinGrade === '전문셀러')),
-    row: (s) => { const cl = sellerClass(s, SC); return `<button class="item" data-sid2="${esc(s.id)}" style="border-left:4px solid ${SCLS[cl][1]}"><span>${esc(s.name || '')} ${s.aladinGrade || (!OURG[s.grade] && s.grade) ? `<span class="tag">${esc(s.aladinGrade || s.grade)}</span>` : ''}<br><small>SC ${esc(s.sc || '')} · 6개월 ${rev6(s) != null ? num(rev6(s)) : s.rev6mLt3 ? '3건 미만' : '-'} · 평점 ${s.rating != null ? Math.round(s.rating * 100) + '%' : '-'}</small></span><span>${num(s.totalItems || s.stock || 0)}종</span></button>`; },
+    row: (s) => { const cl = sellerClass(s); return `<button class="item" data-sid2="${esc(s.id)}" style="border-left:4px solid ${SCLS[cl][1]}"><span>${esc(s.name || '')} ${s.aladinGrade || (!OURG[s.grade] && s.grade) ? `<span class="tag">${esc(s.aladinGrade || s.grade)}</span>` : ''}<br><small>SC ${esc(s.sc || '')} · ${esc(bgOf(s).bgReason || '')} · 6개월 ${rev6(s) != null ? num(rev6(s)) : s.rev6mLt3 ? '3건 미만' : '-'} · 평점 ${s.rating != null ? Math.round(s.rating * 100) + '%' : '-'}</small></span><span>${num(s.totalItems || s.stock || 0)}종</span></button>`; },
     bind: (sh) => { S._scOpen = true; const ss = sh.querySelector('#sc_sort'); if (ss) ss.onchange = () => { S.scSort = ss.value; openSellerCount(k); }; sh.querySelectorAll('[data-sid2]').forEach((b) => (b.onclick = () => { history.back(); S._scOpen = false; setTimeout(() => openSeller(b.dataset.sid2), 60); })); sh.querySelector('#back').addEventListener('click', () => { S._scOpen = false; }); } });
 }
 document.addEventListener('click', (ev) => { const b = ev.target.closest('[data-scnt]'); if (!b) return; ev.preventDefault(); S._scOpen = false; openSellerCount(b.dataset.scnt); });
