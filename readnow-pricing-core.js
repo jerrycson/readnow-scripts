@@ -5,7 +5,7 @@
  * 입력 4가지
  *   listing : 우리 상품 1개 (prd_listings 문서 + 매입원가)
  *   market  : 그 책의 온라인 중고 목록 관측 (parseUsedPage 결과를 쪽 순서대로 이어 붙인 것 + 관측 시각 정보)
- *   sellers : 판매자 판정 재료 (sellerInfoFromDoc 으로 만든 값, 키 = 판매자 번호). 분류는 readnow-core.js evaluateBackground(툴팁 배경색) 한 곳의 기준
+ *   sellers : Firestore sellers 문서 그대로 (키 = 'sc_번호'). 분류는 readnow-core.js classifySellerDoc 한 곳의 기준 (이 파일에 복사본 없음)
  *   ctx     : 지금 시각·우리 배송비 정책·운영 비용·추격자 상태·설정
  * 출력 : decide() → 판정 1건 (추천가·적용 규칙·근거·자동 적용 가능 여부·막힌 이유)
  *
@@ -22,7 +22,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.2.0';
+  const VERSION = '0.3.0';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -44,6 +44,10 @@
     // 판매자 분류는 이 파일에 기준을 두지 않음 → readnow-core.js evaluateBackground(툴팁 배경색) 한 곳만 씀. 아래 복사본은 그 파일을 못 읽었을 때만
     // 재고 기간의 기준 = '최저가 등록 기간'(우리 매물이 최저가 자리를 지킨 날수). 측정 안 된 상품은 임시 기준(등록 후 일수)을 쓰되 tempTierCap 단계까지만
     tempTierCap: 'T3',
+    cutoverAt: null,        // 매일 감시를 처음 시작한 날 (한 번 정하면 바꾸지 않음 — prd_system/pricing 에 저장)
+    tempSunsetDays: 365,    // 감시 시작 후 이 날수가 지나면 임시 기준은 완전히 꺼짐
+    rollout: { treatPct: 1, controlPct: 0 }, // 실제 적용 비율: 상품코드로 고정 배정(0~99) → 비율을 올려도 이미 들어간 상품은 그대로
+
     lowestMaxGapHours: 48, // 두 관측 사이가 이보다 길면 그 사이는 최저가 기간에 넣지 않음 (정확히 아는 것만 셈)
     aladinSideNames: ['알라딘 직접 배송', '이 광활한 우주점'],
     gradeCoef: { '최상': 1, '상': 0.9, '중': 0.75 },
@@ -103,30 +107,11 @@
     return b;
   }
 
-  // ── 판매자 분류 (교체 가능한 한 단계) ──
-  // 지금 = '판매자 기준': 툴팁 배경색 정의 그대로 (readnow-core.js evaluateBackground). 나중에 '상품 기준'으로 바꿀 때는 ctx.classify 만 갈아 끼움
-  // 입력 만들기는 웹앱 bgOf 와 똑같이: 평가 수 = 최근 6개월 평가 수(RS.rev6m — 3건 미만 '-'면 없음 = 평가 없음), 품절취소율 = %(최근 3개월 값 우선, 단위 맞춤)
-  function sellerInfoFromDoc(doc, RS) {
-    if (!doc) return null;
-    const r6 = RS ? RS.rev6m(doc) : { n: doc.rev6m ?? doc.reviewCount ?? null }; const n6 = r6 && r6.n != null ? r6.n : null;
-    const outR = doc.cancel3m != null ? doc.cancel3m : RS ? RS.normalize(doc).outRatio : (doc.outstockRate != null ? (doc.sc ? doc.outstockRate / 100 : doc.outstockRate > 1 ? doc.outstockRate / 100 : doc.outstockRate) : null);
-    return { reviewCount: n6 != null ? String(n6) : '', outstockRate: outR != null ? String(outR * 100) : '', totalItems: doc.totalItems != null ? String(doc.totalItems) : '', rating: doc.rating != null ? String(doc.rating <= 1 ? doc.rating * 100 : doc.rating) : '',
-      fake: (doc.ourGrade || doc.grade) === 'fake', isPro: doc.isPro ?? (doc.aladinGrade === '전문셀러' ? true : null), name: doc.name || null };
-  }
-  const BG2CLS = { '#66c17a': 'dkgreen', '#c9f2c9': 'green', '#fff3b0': 'yellow', '#ffcc80': 'orange', '#ffd6d6': 'red' };
-  function bgCopy(info) { // readnow-core.js를 못 읽었을 때만 쓰는 같은 기준의 복사본
-    const rc = parseInt(String(info.reviewCount || '').replace(/,/g, ''), 10), oc = parseFloat(info.outstockRate);
-    if (isNaN(rc) || rc < 50 || (!isNaN(oc) && oc >= 40)) return { bg: '#ffd6d6', bgReason: isNaN(rc) ? '평가 없음' : rc < 50 ? '평가수 50개 미만' : '품절취소율 40% 이상' };
-    return rc < 100 ? { bg: '#ffcc80', bgReason: '평가수 50~99개' } : rc < 200 ? { bg: '#fff3b0', bgReason: '평가수 100~199개' } : rc < 1000 ? { bg: '#c9f2c9', bgReason: '평가수 200~999개' } : { bg: '#66c17a', bgReason: '평가수 1000개 이상' };
-  }
-  // info(sellerInfoFromDoc 결과) → { cls, why }. 허위 매물로 표시한 판매자는 색과 관계없이 무효
-  function sellerClass(info, Core) {
-    if (!info) return { cls: 'red', why: '판매자 정보 없음' };
-    if (info.fake) return { cls: 'red', why: '허위 매물 판매자' };
-    const C = Core || (typeof root !== 'undefined' && root.ReadNowCore) || null;
-    const b = C && C.evaluateBackground ? C.evaluateBackground(info, NaN) : bgCopy(info);
-    return { cls: BG2CLS[String(b.bg || '').toLowerCase()] || 'red', why: b.bgReason || '', font: b.fontReasons || [] };
-  }
+  // ── 판매자 분류: 이 파일에는 기준이 없음. readnow-core.js(1.1.0)의 classifySellerDoc 한 곳만 부름 (툴팁·웹앱과 같은 함수) ──
+  // ctx.core = ReadNowCore, ctx.RS = ReadnowSellers 를 넘기거나 전역에 있어야 함. 없으면 판정하지 않음(복사본으로 계산하지 않음)
+  // 나중에 '상품 기준'으로 바꿀 때는 ctx.classify(row, listing) 만 갈아 끼움
+  const coreOf = (ctx) => ctx.core || (root && root.ReadNowCore) || null;
+  const rsOf = (ctx) => ctx.RS || (root && root.ReadnowSellers) || null;
   const isAladinSide = (row, S) => !row.sellerCode && (S.aladinSideNames || []).some((n) => String(row.sellerName || '').includes(n));
   function specialHit(title, S) { const s = String(title || ''); return (S.specialKeywords || []).filter((k) => k && s.includes(k)); }
 
@@ -160,18 +145,30 @@
   function decide(listing, market, sellers, ctxIn) {
     const ctx = ctxIn || {}; const S = merge(DEFAULTS, ctx.settings || {}); const now = t(ctx.now) || Date.now();
     const R = []; const block = []; const out = { v: VERSION, key: listing.key, at: new Date(now).toISOString(), current: listing.price, reasons: R, autoBlock: block };
-    const done = (status, extra) => { Object.assign(out, { status }, extra || {}); out.auto = out.action === 'set' && block.length === 0 && autoAllowed(out, S); return out; };
+    out.group = groupOf(listing.usedCode || listing.key, S);
+    const done = (status, extra) => { Object.assign(out, { status }, extra || {}); out.auto = out.action === 'set' && block.length === 0 && autoAllowed(out, S); out.execute = out.group === 'treat' && out.action === 'set'; if (out.group === 'control') out.reasons.push('비교군 — 판정만 기록, 가격은 바꾸지 않음'); return out; };
 
     // 0. 대상: 판매중만
     if (listing.status && listing.status !== '판매중') { R.push(`판매 상태가 '${listing.status}' — 수정 모드는 판매중만`); return done('skip', { action: 'none' }); }
-    // 재고 기간 = 최저가 등록 기간(측정된 것) 우선. 측정 안 됐으면 등록 후 일수로 임시 판정하되 tempTierCap(기본 T3)까지만 → 측정 안 된 시간으로 도매급 할인(T4~)을 하지 않음
+    // 재고 기간 = '최저가 등록 기간'(측정값). 임시 기준은 '감시 시작일(cutoverAt) 전에 등록된 상품'에만, 그리고 스스로 끝남:
+    //   임시 단계 = 감시 시작일 당시의 등록 후 일수로 고정(시간이 지나도 늘지 않음) → 최대 tempTierCap(T3)
+    //   적용 단계 = max(측정 단계, 임시 단계) → 측정 단계가 T3에 닿는 순간 임시는 의미가 없어짐
+    //   감시 시작일 + tempSunsetDays(365일)가 지나면 임시 기준은 코드에서 완전히 꺼짐 (그 뒤엔 측정값만)
+    //   → 1년 뒤 '등록 2년차'로 잘못 뛰는 일 없음: 감시 전 시간은 T3 이상으로 절대 세지 않고, 감시 뒤에는 최저가를 지킨 날만 셈
     const regDays = Math.floor((now - t(listing.registeredAt)) / DAY);
-    const lw = listing.lowest; const measured = !!(lw && lw.measured);
-    let tier, basis, days;
-    if (measured) { days = Math.floor(lw.days || 0); tier = tierOf(days, S.tierBounds); basis = '최저가 등록 기간'; }
-    else { days = regDays; tier = tierOf(regDays, S.tierBounds); basis = '임시: 등록 후 일수'; if (tier !== 'T8' && +tier.slice(1) > +S.tempTierCap.slice(1)) { tier = S.tempTierCap; basis += ` (측정 전이라 ${S.tempTierCap}까지만)`; } }
+    const lw = listing.lowest || { days: 0 }; const lowDays = Math.floor(lw.days || 0);
+    const cut = S.cutoverAt ? t(S.cutoverAt) : null;
+    const legacy = cut != null && t(listing.registeredAt) < cut;
+    const sunset = cut != null ? cut + S.tempSunsetDays * DAY : null;
+    let tier = tierOf(lowDays, S.tierBounds), basis = `최저가 등록 기간 ${lowDays}일`, days = lowDays, temp = null;
+    if (cut == null) { tier = tierOf(regDays, S.tierBounds); if (tier !== 'T8' && +tier.slice(1) > +S.tempTierCap.slice(1)) tier = S.tempTierCap; basis = `감시 시작 전: 등록 후 ${regDays}일 (${S.tempTierCap}까지만)`; days = regDays; }
+    else if (legacy && now < sunset) {
+      const frozen = Math.floor((cut - t(listing.registeredAt)) / DAY); let tt = tierOf(frozen, S.tierBounds); if (+tt.slice(1) > +S.tempTierCap.slice(1)) tt = S.tempTierCap;
+      if (+tt.slice(1) > +tier.slice(1)) { temp = { tier: tt, frozenDays: frozen, endsAt: new Date(sunset).toISOString().slice(0, 10) }; tier = tt; basis = `임시 기준: 감시 시작일까지 등록 ${frozen}일 → ${tt} (최저가 기간 ${lowDays}일이 따라잡거나 ${temp.endsAt}에 자동 종료)`; }
+    }
+    if (listing.registeredAt && regDays > S.tierBounds[S.tierBounds.length - 1]) { tier = 'T8'; basis = `등록 ${regDays}일 — 불용은 등록일 기준`; days = regDays; }
     const T = S.tiers[tier];
-    out.tier = { code: tier, name: T.name, days, basis, regDays, lowestDays: lw ? lw.days || 0 : null };
+    out.tier = { code: tier, name: T.name, days, basis, regDays, lowestDays: lowDays, temp };
     if (listing.lock) { R.push('가격 잠금 상품 — 자동 수정 안 함'); return done('hold', { action: 'none' }); }
     if (tier === 'T8') { R.push(`등록 ${days}일 — 불용 재고: 판매금지 + 관리코드 뒤 3자리 BAD (관리자 승인 필요)`); const sku = listing.sku || ''; return done('retire', { action: 'retire', newSku: sku.length >= 3 ? sku.slice(0, 3) + 'BAD' + sku.slice(6) : null, autoBlock: block.concat('불용 처리는 항상 관리자 승인') }); }
 
@@ -207,7 +204,9 @@
     if (sane.length < others.length) R.push(`터무니없는 가격 ${others.length - sane.length}건 뺌`);
 
     // 4. 판매자 색 붙이기
-    const classify = ctx.classify || ((r) => sellerClass(sellers && r.sellerCode ? sellers[r.sellerCode] : null, ctx.core));
+    const Core = coreOf(ctx); const RSx = rsOf(ctx);
+    if (!ctx.classify && !(Core && Core.classifySellerDoc)) { R.push('기준 파일 readnow-core.js(1.1.0)를 못 읽음 — 판매자 분류 없이 판정하지 않음'); return done('queue', { action: 'review', why: 'noCore' }); }
+    const classify = ctx.classify || ((r) => Core.classifySellerDoc(sellers && r.sellerCode ? sellers['sc_' + r.sellerCode] || sellers[r.sellerCode] || null : null, RSx));
     sane.forEach((r) => { if (isAladinSide(r, S)) { r.color = 'aladin'; r.why = '알라딘측'; } else { const c = classify(r, listing); r.color = c.cls; r.why = c.why; } });
     const tot = (r) => r.price + (r.ship || 0);
     const first = sane[0]; // 목록 맨 위 (우리 제외)
@@ -240,6 +239,8 @@
     }
     if (!ref) { R.push(`${special ? `${maxPage}쪽까지` : '첫 페이지에'} 기준이 될 매물(${T.colors.map((c) => LABEL[c]).join('·')}·알라딘측)이 없음`); return done('queue', { action: 'review', why: 'noRef' }); }
     const refTotal = ref.conv != null ? ref.conv : tot(ref);
+    const unknownAhead = sane.filter((r) => r.color === 'unknown' && r.rank < ref.rank);
+    if (unknownAhead.length) { R.push(`기준보다 앞에 판매자 기록이 없는 매물 ${unknownAhead.length}건 — 판매자 정보를 먼저 모아야 판정 가능`); return done('wait', { action: 'none', why: 'needSellers', needSellers: [...new Set(unknownAhead.map((r) => r.sellerCode))] }); }
     out.ref = { rank: ref.rank, sellerCode: ref.sellerCode || null, sellerName: ref.sellerName || null, color: ref.color, grade: ref.grade, price: ref.price, ship: ref.ship || 0, total: refTotal, how, isFirst: !!(first && (ref === first || (ref.listingId && ref.listingId === first.listingId))), ghost: !!ref.ghost };
     if (ref.ghost) { R.push('기준 매물이 사라졌지만 24시간이 안 돼 아직 있는 것으로 봄 — 확정될 때까지 지금 가격 유지'); return done('wait', { action: 'none', why: 'refGone' }); }
     // 안전: 유효 기준이 목록 맨 위보다 터무니없이 비쌈 → 진짜 싼 매물을 판매자 점수로 버린 것일 수 있음
@@ -282,6 +283,10 @@
     return done(floored ? 'floor' : 'ok', { action: 'set' });
   }
 
+  // 실험 묶음: 상품코드를 0~99 칸에 고정 배정 (FNV 해시). 0..treat-1 = 적용, 그다음 control 칸 = 비교군(판정만 기록, 절대 안 바꿈), 나머지 = 꺼짐
+  function bucketOf(code) { let h = 2166136261; const s = String(code || ''); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h % 100; }
+  function groupOf(code, S0) { const S = merge(DEFAULTS, S0 || {}); const b = bucketOf(code); const tp = S.rollout.treatPct, cp = S.rollout.controlPct;
+    return b < tp ? 'treat' : b >= 100 - cp ? 'control' : 'off'; }
   function autoAllowed(o, S) {
     if (S.autoLevel === 'L0') { o.autoBlock.push('자동 단계 L0 (전부 사람 확인)'); return false; }
     if (S.autoLevel === 'L1' && Math.abs(o.deltaPct || 0) > 0.15) { o.autoBlock.push('L1: 15% 넘는 변경은 사람 확인'); return false; }
@@ -327,6 +332,6 @@
     st.lastAt = new Date(at).toISOString(); st.lastLowest = !!obs.atLowest; st.obsN = (st.obsN || 0) + 1; return st;
   }
 
-  const api = { VERSION, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, sellerInfoFromDoc, sellerClass, trackLowest, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
+  const api = { VERSION, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowPricing = api;
 })(typeof window !== 'undefined' ? window : this);
