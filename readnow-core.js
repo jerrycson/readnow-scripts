@@ -1,4 +1,4 @@
-// ReadNow Core Library — 1.3.0 (판매자 분류의 유일한 기준: sellerBg → evaluateBackground·classifySellerDoc 가 모두 이것만 씀)
+// ReadNow Core Library — 1.4.0 (판매자 분류의 유일한 기준: sellerBg → evaluateBackground·classifySellerDoc 가 모두 이것만 씀)
 // 여러 Tampermonkey 스크립트(중고가 검토 도우미, 판매자 정보 툴팁, 앞으로 만들 판매가 자동 결정 시스템 등)가
 // @require 로 함께 가져다 쓰는 공용 로직 모음입니다.
 //
@@ -396,6 +396,24 @@
     const b = evaluateBackground(info, NaN);
     return { cls: sb.cls, bg: sb.bg, why: sb.why, font: b.fontReasons || [], info };
   }
+
+  // =========================================================================
+  // 온라인 중고 페이지(wuseditemall.aspx)를 열면 매물 목록이 화면 맨 위에 오도록 내림 (1.4.0)
+  // 기준: 목록 바로 위 '반값택배 가능한 상품만 보기' 줄(글자로 찾음), 없으면 매물 표. 페이지마다 한 번만
+  // 판매자 툴팁이 모든 알라딘 화면(사람이 보는 iframe 포함)에서 부름 → '온라인중고 바로가기'를 꺼 둬도 항상 같은 위치에서 열림
+  // =========================================================================
+  function scrollToUsedList(win) {
+    const w = win || (typeof window !== 'undefined' ? window : null); if (!w || !w.document) return;
+    const d = w.document; if (!/\/shop\/UsedShop\/wuseditemall\.aspx/i.test(w.location.pathname) || w.__rnUsedScrolled) return;
+    const find = () => {
+      try { const r = d.evaluate("//*[contains(normalize-space(text()),'반값택배 가능한 상품만 보기')]", d, null, 9, null).singleNodeValue; if (r) return r; } catch (e) {}
+      return d.querySelector('.Ere_usedsell_table');
+    };
+    const go = () => { const el = find(); if (!el) return false; const y = el.getBoundingClientRect().top + w.scrollY - 60; w.scrollTo(0, Math.max(0, y)); w.__rnUsedScrolled = true; return true; };
+    const start = () => { if (go()) return; const ob = new w.MutationObserver(() => { if (go()) ob.disconnect(); }); ob.observe(d.body, { childList: true, subtree: true }); w.setTimeout(() => ob.disconnect(), 6000); };
+    if (d.body) start(); else d.addEventListener('DOMContentLoaded', start);
+  }
+
   // =========================================================================
   // 내보내기
   // =========================================================================
@@ -416,11 +434,12 @@
     evaluateBackground,
     evaluateAvHighlight,
     CLASS_BG,
+    scrollToUsedList,
     SELLER_RULES,
     sellerBg,
     sellerLegend,
     sellerInfoFromDoc,
     classifySellerDoc,
-    CORE_VERSION: '1.3.0',
+    CORE_VERSION: '1.4.0',
   };
 })(typeof unsafeWindow !== 'undefined' ? unsafeWindow : window);
