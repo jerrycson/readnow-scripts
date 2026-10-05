@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.11.0';
+  const VERSION = '0.12.0';
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -599,7 +599,8 @@
   // → 탭·스크립트를 여러 개 열어도 이 PC에서 알라딘으로 가는 요청 속도는 하나로 묶임
   // 자동 조절(AIMD): 시작 1초 간격 → 연속 성공 20번마다 10%씩 빨라짐(최소 간격까지) → 실패·시간초과는 2배, 로그인 풀림은 3배로 즉시 느려짐(최대 간격까지)
   // 목표: 막히지 않는 범위에서 가장 빠르게. 숫자는 설정(상품 수집기 설정 → Firestore prd_system/settings)에서 바꾸고, 그 값이 여기로 전달됨
-  const PACER_DEFAULTS = { minMs: 600, startMs: 1000, maxMs: 15000, upEvery: 20, upMul: 0.9, failMul: 2, loginMul: 3 };
+  const PACER_DEFAULTS = { minMs: 700, startMs: 1200, maxMs: 20000, upEvery: 20, upMul: 0.9, failMul: 2, loginMul: 3, tooManyMul: 4 };
+  // 429 = 알라딘이 '요청이 너무 많다'고 거절 → 간격 4배 + 이 PC의 모든 탭·스크립트가 함께 쉼(1분, 거듭되면 2·3…10분). 성공이 쌓이면 다시 빨라짐
   function makePacer(key) {
     const LSx = (() => { try { return typeof localStorage !== 'undefined' ? localStorage : null; } catch (e) { return null; } })();
     const K = 'rnPacer:' + key; const mem = {};
@@ -608,10 +609,13 @@
     const cfg = () => ({ ...PACER_DEFAULTS, ...(rd('rnPacer:cfg') || {}) });
     const st = () => { const c = cfg(); const x = rd(K) || {}; if (!(x.gap > 0)) x.gap = c.startMs; x.gap = Math.min(c.maxMs, Math.max(c.minMs, x.gap)); return x; };
     return {
-      async wait(sleep, mult = 1) { for (;;) { const x = st(); const gap = x.gap * (mult || 1) * (0.85 + Math.random() * 0.3); const w = (x.last || 0) + gap - Date.now(); if (w > 0) { await sleep(Math.min(w, 4000)); continue; } x.last = Date.now(); wr(K, x); return; } },
-      ok() { const c = cfg(); const x = st(); x.ok = (x.ok || 0) + 1; if (x.ok >= c.upEvery) { x.gap = Math.max(c.minMs, Math.round(x.gap * c.upMul)); x.ok = 0; } wr(K, x); },
-      fail(kind) { const c = cfg(); const x = st(); x.ok = 0; x.gap = Math.min(c.maxMs, Math.round(x.gap * (kind === 'login' ? c.loginMul : c.failMul))); x.failAt = Date.now(); x.failKind = kind || 'error'; wr(K, x); },
+      async wait(sleep, mult = 1) { for (;;) { const x = st(); const cool = (x.coolUntil || 0) - Date.now(); if (cool > 0) { await sleep(Math.min(cool, 4000)); continue; } const gap = x.gap * (mult || 1) * (0.85 + Math.random() * 0.3); const w = (x.last || 0) + gap - Date.now(); if (w > 0) { await sleep(Math.min(w, 4000)); continue; } x.last = Date.now(); wr(K, x); return; } },
+      ok() { const c = cfg(); const x = st(); x.ok = (x.ok || 0) + 1; if (x.ok >= c.upEvery) { x.gap = Math.max(c.minMs, Math.round(x.gap * c.upMul)); x.ok = 0; x.n429 = 0; } wr(K, x); },
+      fail(kind) { const c = cfg(); const x = st(); x.ok = 0; x.gap = Math.min(c.maxMs, Math.round(x.gap * (kind === '429' ? c.tooManyMul : kind === 'login' ? c.loginMul : c.failMul))); x.failAt = Date.now(); x.failKind = kind || 'error';
+        if (kind === '429') { x.n429 = (x.n429 || 0) + 1; x.coolUntil = Date.now() + Math.min(10, x.n429) * 60000; } wr(K, x); },
+      cooling() { const x = st(); return Math.max(0, (x.coolUntil || 0) - Date.now()); },
       state() { return { ...st(), cfg: cfg() }; },
+      kindOf(status) { return status === 429 || status === 503 ? '429' : 'error'; },
       setCfg(o) { const c = { ...cfg(), ...o }; wr('rnPacer:cfg', { minMs: c.minMs, startMs: c.startMs, maxMs: c.maxMs }); },
     };
   }
