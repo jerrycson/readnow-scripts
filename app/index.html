@@ -280,6 +280,9 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .uipop{position:fixed;z-index:9999;background:#fff;border:1px solid #888;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.25);padding:10px;width:min(420px,92vw);font-size:12.5px}
 .item.haslv{flex-wrap:wrap}.lvblk{flex-basis:100%;display:flex;flex-direction:column;gap:1px;margin-top:6px;max-height:260px;overflow:auto}@media(min-width:900px){.item.haslv{flex-wrap:nowrap}.lvblk{flex:0 0 36%;margin:0 0 0 8px}}
 .pq-verdict{display:inline-block;padding:2px 8px;border-radius:10px;font-size:12px;background:#E2ECFA;color:#1F5FAF;margin:2px 0}
+
+.pq-price .pq-u{font-size:13px;font-weight:400;margin-left:1px}
+.pq-ctl .pq-down{background:#c62828;color:#fff;border-color:#c62828}.pq-ctl .pq-up{background:#5aa978;color:#fff;border-color:#5aa978}
 </style>
 </head>
 <body>
@@ -301,7 +304,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.62.3';
+const APP_VER = '0.62.5';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -2756,6 +2759,8 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.62.5': ['가격 결정: 큰 가격의 원은 작게·보통 굵기, \'이 가격으로\' → \'추천가격으로\', −5% 빨강·+5% 초록 버튼', '전체중고 링크는 Fix=1로 열어 한 번에 도착(매물 목록 위치로 내려감)'],
+  '0.62.4': ['업데이트 기록: 툴팁 0.7.4 · 검토 도우미 0.1.1 · 수집기 1.25.2'],
   '0.62.3': ['설명서: 오래 도는 수집의 메모리 정리(자동 새로고침 후 이어가기)'],
   '0.62.2': ['상태 네모(최상 분홍·상 초록·중 회색, 흰 글자)와 상품 카드의 큰 상태·가격 표시가 실제로 적용되도록 고침 (화면 꾸밈 규칙이 들어가지 않았던 문제)', '굵은 글씨는 카드의 상태·지금 가격·추천 가격만, 블록 글자 크기는 원래대로', '블록에 마우스를 올리면 링크 손가락 커서'],
   '0.62.1': ["홈 '오늘 확인할 것'에 가격 관리자 결정 대기·반영 실패 표시 (누르면 가격 결정 화면)", '블록: 북스킹이 빠지던 것 고침(엔진 기준 매물 목록 대신 첫 페이지 전체 사용), 색을 온라인 중고 페이지 색 그대로(보라·회색 없앰)', '블록을 누르면 지정 창에서 그 매물 페이지가 열리도록 고침'],
@@ -3416,12 +3421,12 @@ function engineManualHtml() {
   <h4>6. 가격 감시 표시</h4>
   <p>수집기(샵매니저 상품 조회/수정 목록)와 웹앱 상품 목록·상세에 묶음이 색으로 표시됩니다: <span class="tag mon-treat">감시·적용</span>(파랑) 판정 엔진이 매일 보고 가격을 맞춤 · <span class="tag mon-control">감시·비교</span>(보라) 판정만 기록하고 가격은 절대 안 바꿈(효과 측정용) · <span class="tag mon-hold">가격상승대기 PND</span> 판매보류풀 · <span class="tag mon-retire">불용 BAD</span> · <span class="tag mon-excluded">자동 제외</span>(빨강, KHKDVD 등 — 관리자 확인 필수). 초록은 검토, 노랑은 판매자 분류에 쓰는 색이라 감시 표시에는 쓰지 않습니다. 샵매니저 목록 위 범례에서 <b>이 쪽만</b>(지금 쪽에서 그 묶음만 남기기)·<b>전체 모아보기</b>(우리 상품 기록 전체에서 그 묶음만 골라 정렬)를 누를 수 있고, 웹앱은 상품 탭 '가격 감시' 칸의 숫자를 누르면 같은 목록이 나옵니다. 지금 비율: 적용 ${ro.treatPct || 0}% · 비교 ${ro.controlPct || 0}%. 묶음은 상품코드로 고정 배정되어 비율을 올려도 이미 들어간 상품은 그대로.</p>
   <h4>7. 관리자 판정 기간 (지금)</h4>
-  <p>감시 상품은 엔진 판정과 관계없이 <b>모두</b> 관리자 결정 대기에 들어갑니다(바꾸자는 것·유지·기다림·확인 모두). 결정: 엔진 추천대로 · 직접 가격(±5% 버튼은 가격대 5% 단위로) · 지금 가격 유지 · 판매보류풀로(PND, 입력칸 가격 = 최저 수용가) · 거절. 결정한 것은 '결정함' 탭으로 옮겨지고 거기서 다시 정하거나 원상복귀(하나씩·전체, 범위 = 이번 접속 / 이번 감시 바퀴)할 수 있습니다. 판단 이유는 기준 매물·판매자 분류·등급·수요 전략·채널로 나눈 코드라 엔진이 같은 상황을 스스로 알아보는 학습 신호가 됩니다. 관리자가 정해 아직 반영 안 된 결정은 새 판정이 절대 덮지 않습니다. 결정한 가격만 반영되고, 모든 결정은 이유·메모·그때의 매물 목록과 함께 <b>지우지 않는 판단 기록</b>(prd_price_reviews)에 쌓입니다. 이 기록을 분석해 엔진을 고친 뒤에 자동화로 넘어갑니다. 실제로 바뀐 가격은 '판정·반영 목록 → 실제 반영'에서 보고 되돌릴 수 있습니다(웹앱·샵매니저 둘 다).<br><b>가격 감시 탭은 딱 한 PC의 딱 한 탭</b>: 샵매니저 '가격 감시' 탭에서 '이 탭을 가격 감시 탭으로'를 누르면 그 탭만 작동하고 다른 모든 탭·PC는 즉시 꺼집니다(회색).</p>
+  <p>감시 상품은 엔진 판정과 관계없이 <b>모두</b> 관리자 결정 대기에 들어갑니다(바꾸자는 것·유지·기다림·확인 모두). 결정: 엔진 추천대로 · 입력칸 가격으로 결정하는 '추천가격으로'(−5% 빨강·+5% 초록 버튼은 가격대 5% 단위로) · 지금 가격 유지 · 판매보류풀로(PND, 입력칸 가격 = 최저 수용가) · 거절. 결정한 것은 '결정함' 탭으로 옮겨지고 거기서 다시 정하거나 원상복귀(하나씩·전체, 범위 = 이번 접속 / 이번 감시 바퀴)할 수 있습니다. 판단 이유는 기준 매물·판매자 분류·등급·수요 전략·채널로 나눈 코드라 엔진이 같은 상황을 스스로 알아보는 학습 신호가 됩니다. 관리자가 정해 아직 반영 안 된 결정은 새 판정이 절대 덮지 않습니다. 결정한 가격만 반영되고, 모든 결정은 이유·메모·그때의 매물 목록과 함께 <b>지우지 않는 판단 기록</b>(prd_price_reviews)에 쌓입니다. 이 기록을 분석해 엔진을 고친 뒤에 자동화로 넘어갑니다. 실제로 바뀐 가격은 '판정·반영 목록 → 실제 반영'에서 보고 되돌릴 수 있습니다(웹앱·샵매니저 둘 다).<br><b>가격 감시 탭은 딱 한 PC의 딱 한 탭</b>: 샵매니저 '가격 감시' 탭에서 '이 탭을 가격 감시 탭으로'를 누르면 그 탭만 작동하고 다른 모든 탭·PC는 즉시 꺼집니다(회색).</p>
   <h4>7-2. 수동 일괄 처리</h4>
   <p>상품 탭 → 가격 감시 → '수동 일괄 처리'. 조건(등급·판매가·관리코드·등록일·이름 키워드·빼기)을 고를 때마다 해당 상품 수가 바로 바뀝니다. 기준(무조건 최상단 배치 / 유효 같은 등급 대비 최저가), 기준 판매자 범위(노랑·주황·빨강 추가), 기준 대비 x%, 등급 환산(이 그룹만 계수 변경), 하한선(알라딘 매입가·최소 판매가·최대 인하폭)을 정하면 상품마다 추천가와 이유가 나오고, 체크한 것을 한꺼번에 '관리자 가격'으로 결정합니다. 시장 자료는 수집기의 시장 지표(온라인 중고 첫 페이지)를 쓰며 상품마다 수집 날짜가 보입니다. 그룹 조건은 저장돼 다시 쓸 수 있고, 모든 결정은 그룹 이름과 함께 판단 기록에 남습니다.</p>
   <h4>7-3a. 가격 결정 화면 보는 법</h4>
   <p>상품마다 크게: <b>우리 상태</b>(최상·상·중 글자) · <b>지금 가격 → 엔진 추천 가격</b>, 그 아래 엔진 판정(바꾸자 · 유지 = 이미 기준과 같음 · 기다림 = 24시간 확정 등 판단을 미룬 이유 · 확인 = 기준을 못 찾음)과 <b>등록일</b>. 탭: 바꾸자는 것 / 유지·기다림·확인 / 판정만 있음(예전 감시기가 결정 대기에 올리지 않았던 것 — 같은 종류, 바로 결정 가능) / 결정함 / 전체 미결정.<br>
-  오른쪽 블록 한 줄 = <b>[?] 상태 판매가 · 판매자 이름 (배송비: n)</b>. 블록 배경 = 온라인 중고 페이지(판매자 툴팁)의 줄 색 그대로 — 판매자 분류 5색 · 알라딘측 파랑 · <b>북스킹 남색(노란 테두리)</b>, 판매자 기록이 아직 없는 매물은 무효 색. 상태는 알라딘 색 네모: <b>최상 분홍 · 상 초록 · 중 회색</b>(흰 글자). 자료는 가격 감시기가 판정 때 본 첫 페이지, 없으면 수집기 시장 지표의 첫 페이지(블록 아래에 출처 표시). 블록을 누르면 그 매물 페이지, <b>?</b>를 누르면 구매 유의 사항 글과 사진이 뜹니다. '전체중고 창 지정하기'를 누르면 새 탭이 열리고 그 탭이 지정 창이 되어, 이후 전체중고·매물 링크가 모두 그 탭 하나에서 열립니다. 같은 블록이 수동 일괄 처리와 상품 목록 화면(유효 최저가보다 싸게 파는 상품·오래된 재고 등 상품이 나열되는 모든 목록)에도 붙습니다 — 목록에서는 수집기 시장 지표의 첫 페이지 기준(날짜 표시).</p>
+  오른쪽 블록 한 줄 = <b>[?] 상태 판매가 · 판매자 이름 (배송비: n)</b>. 블록 배경 = 온라인 중고 페이지(판매자 툴팁)의 줄 색 그대로 — 판매자 분류 5색 · 알라딘측 파랑 · <b>북스킹 남색(노란 테두리)</b>, 판매자 기록이 아직 없는 매물은 무효 색. 상태는 알라딘 색 네모: <b>최상 분홍 · 상 초록 · 중 회색</b>(흰 글자). 자료는 가격 감시기가 판정 때 본 첫 페이지, 없으면 수집기 시장 지표의 첫 페이지(블록 아래에 출처 표시). 블록을 누르면 그 매물 페이지, <b>?</b>를 누르면 구매 유의 사항 글과 사진이 뜹니다. 온라인 중고 페이지는 언제 열어도 매물 목록(반값택배 줄)이 화면 맨 위에 오도록 내려간 채로 열립니다(온라인중고 바로가기 10.2). '전체중고 창 지정하기'를 누르면 새 탭이 열리고 그 탭이 지정 창이 되어, 이후 전체중고·매물 링크가 모두 그 탭 하나에서 열립니다. 같은 블록이 수동 일괄 처리와 상품 목록 화면(유효 최저가보다 싸게 파는 상품·오래된 재고 등 상품이 나열되는 모든 목록)에도 붙습니다 — 목록에서는 수집기 시장 지표의 첫 페이지 기준(날짜 표시).</p>
   <h4>7-3. 블록의 ? 표시</h4>
   <p>결정 화면 오른쪽 블록 왼쪽의 <b>?</b> = 그 매물에 '중고상품 구매 유의 사항' 글이 있거나 새상품 표지와 다른 사진(판매자 실사진)이 있음. 마우스를 올리면 내용. 수집기 '경쟁 매물 유의사항·사진'(버튼, 상품 일괄·모두 일괄에 포함)이 우리 책마다 온라인 중고 <b>첫 페이지의 다른 판매자 매물 전부</b>를 모읍니다(가격 감시 중인 책 먼저). 다시 확인 주기는 수집기 설정에서 바꿈(기본 30일, 0 = 매번). 내용이 바뀌면 <b>이전 내용을 덮어쓰지 않고 새 판으로 쌓아 모두 보관</b>하고, 같으면 판을 늘리지 않고 확인 시각만 남깁니다.</p>
   <h4>7-5. 오래 도는 수집의 메모리</h4>
@@ -3599,7 +3604,7 @@ function bindPriceCard(m) {
 }
 const PR_ST = { none: '판정만 있음(결정 대기 아님)', pending: '관리자 결정 대기', approved: '엔진 제안 승인(반영 대기)', manual: '관리자 가격(반영 대기)', hold: '판매보류풀로(반영 대기)', unhold: '보류풀 해제(반영 대기)', kept: '지금 가격 유지', rejected: '거절', done: '반영됨', blocked: '막힘', stale: '오래돼 다시 판정' };
 const PR_COL = { dkgreen: '#66c17a', green: '#c9f2c9', yellow: '#fff3b0', orange: '#ffcc80', red: '#ffd6d6', aladin: '#3f7fd1', ours: '#0d1b4c', unknown: '#ffd6d6', proxy: '#ffcc80' }; // 온라인 중고 페이지(판매자 툴팁) 줄 색 그대로: 판매자 분류 5색 + 알라딘측 파랑 + 북스킹 남색. 판매자 기록이 없는 매물은 무효 색(판정에서도 기준으로 안 씀)
-function usedUrlOf(x) { const id = x.aladinItemId || (x.bookId && S.pbooks && (S.pbooks.get(x.bookId) || {}).aladinItemId); return id ? `https://www.aladin.co.kr/shop/UsedShop/wuseditemall.aspx?ItemId=${id}&TabType=0` : null; }
+function usedUrlOf(x) { const id = x.aladinItemId || (x.bookId && S.pbooks && (S.pbooks.get(x.bookId) || {}).aladinItemId); return id ? `https://www.aladin.co.kr/shop/UsedShop/wuseditemall.aspx?ItemId=${id}&TabType=0&Fix=1` : null; } // Fix=1: 온라인중고 바로가기가 한 번 더 넘기지 않음 (도착하면 그 스크립트가 매물 목록 위치로 내려 줌)
 function openUsed(x) { const u = usedUrlOf(x); if (!u) return toast('도서 정보(알라딘 상품번호)가 아직 없음'); openInUsedWin(u); } // 늘 같은 창 하나에서 열림
 // 관리자 결정 하나 = 결정 문서 갱신 + 판단 기록(prd_price_reviews, 지우지 않음 — 나중에 자동화 기준을 만들 원자료)
 // 판단 이유 = 엔진이 배울 '특징' 단위로 설계 (관리자 통계용이 아니라, 나중에 엔진이 같은 상황을 스스로 알아보게 하는 학습 신호)
@@ -3682,6 +3687,7 @@ function attachListBlocks(sh) {
     const d = document.createElement('div'); d.className = 'lvblk'; d.innerHTML = `<div class="hint" style="font-size:10.5px">온라인 중고 첫 페이지 (시장 지표 ${esc(String((S.pmetrics.get(l.bookId) || {}).lastCheckedAt || '').slice(0, 10))})</div>` + prBlocks({ page1: P1 }); el.classList.add('haslv'); el.appendChild(d); }
   fillUsedInfo(sh);
 }
+function pqWon(n) { return n == null ? '-' : `${Number(n).toLocaleString()}<span class="pq-u">원</span>`; } // 큰 가격 숫자 옆 '원'은 작게·보통 굵기
 function prVerdict(x) { // 엔진 판정을 사람 말로 (유지 = 이미 기준 가격과 같음 · 기다림 = 판단을 미룬 이유 · 확인 = 엔진이 기준을 못 찾음)
   const W = { stale: '시장 관측이 오래됨', ourReflect: '우리 가격 변경이 알라딘에 반영되기를 기다림(24시간)', needPages: '특별판 키워드 — 뒤쪽 쪽까지 봐야 함', refYoung: '새로 나타난 싼 매물이 24시간 확정되기를 기다림', refGone: '기준 매물이 사라졌는데 24시간 확정 전', needSellers: '앞에 있는 매물의 판매자 정보를 먼저 모아야 함' };
   const Q = { noRef: '첫 페이지에 기준이 될 유효 매물이 없음', gapToFirst: '유효 기준이 맨 위보다 터무니없이 비쌈', noMarket: '시장 관측이 없음', alone: '우리 말고 매물이 없음' };
@@ -3715,15 +3721,15 @@ function openPriceQueue() {
     return `<div class="card pq" data-k="${k}"><div class="pq-l">
       <div style="display:flex;justify-content:space-between;gap:6px"><b>${esc(x.title || x.usedCode)}</b><button class="btn ghost sm" data-used="${k}">전체중고 ↗</button></div>
       <div class="pq-big"><span class="pq-grade g${esc(x.grade || '')}" title="우리 상품 상태">${esc(x.grade || '?')}</span>
-        <span class="pq-price"><small>지금 가격</small>${won(x.current)}</span>${isSet(x) ? `<span class="pq-arrow">→</span><span class="pq-price" style="color:${up ? '#1F6F4A' : '#B0322A'}"><small>엔진 추천 (${up ? '+' : ''}${Math.round((x.deltaPct || 0) * 100)}%)</small>${won(x.target)}</span>` : ''}</div>
+        <span class="pq-price"><small>지금 가격</small>${pqWon(x.current)}</span>${isSet(x) ? `<span class="pq-arrow">→</span><span class="pq-price" style="color:${up ? '#1F6F4A' : '#B0322A'}"><small>엔진 추천 (${up ? '+' : ''}${Math.round((x.deltaPct || 0) * 100)}%)</small>${pqWon(x.target)}</span>` : ''}</div>
       <div><span class="pq-verdict" title="${esc(prVerdict(x)[1])}">${esc(prVerdict(x)[0])}</span> <small class="hint">${esc(prVerdict(x)[1])}${!x.approvalState ? ' · 예전 감시기가 결정 대기에 올리지 않았던 판정' : ''}</small></div>
       <small class="hint">등록 ${esc(String((S.plist.get(x.key) || {}).registeredAt || '-').slice(0, 10))}${(S.plist.get(x.key) || {}).registeredAt ? ` (${Math.floor((Date.now() - Date.parse(String(S.plist.get(x.key).registeredAt).slice(0, 10))) / 864e5)}일)` : ''} · ${esc(x.usedCode)} · ${esc(x.sku || '')} · ${esc((x.tier && x.tier.name) || '')}${x.yes24Used ? ' · <span class="tag" style="background:#E8F0FF;color:#1F5FAF">예스24 참고함</span>' : ''}${(x.autoBlock || []).some((t) => /특별판/.test(t)) ? ' · <span class="tag">특별판 키워드</span>' : ''}</small>
       ${r.price != null ? `<div class="hint">기준: <span style="background:${PR_COL[r.color] || '#eee'};color:${['aladin', 'dkgreen'].includes(r.color) ? '#fff' : 'inherit'};padding:0 4px;border-radius:4px">${esc(r.sellerName || r.sellerCode || '알라딘측')}</span> ${esc(r.grade || '')} ${won(r.price)} + 배송 ${won(r.ship)} · ${esc(r.how || '')}</div>` : ''}
       <ul style="margin:4px 0 4px 18px;font-size:12.5px">${(x.reasons || []).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
       ${oldEng(x) ? `<div class="pq-warn">옛 판정 엔진(${esc(x.engine)})의 판정 — 새 엔진(${esc(curEng)})으로 다시 판정될 때까지 '엔진 추천대로'는 막아 둠</div>` : ''}
       ${decided ? `<div class="pq-done"><b>${esc(PR_ST[x.approvalState] || x.approvalState)}</b>${x.approval && x.approval.price ? ' ' + won(x.approval.price) : ''}${x.approval && x.approval.reasons && x.approval.reasons.length ? ' · ' + esc(x.approval.reasons.map((c) => PR_REASON_LABEL[c] || c).join(', ')) : ''}${x.execNote ? `<br><small>${esc(x.execNote)}</small>` : ''}</div>` : ''}
-      <div class="pq-ctl"><button class="btn ghost sm" data-step="-1" data-k2="${k}">−5%</button><input type="number" min="10" value="${start || ''}" data-pin="${k}"><button class="btn ghost sm" data-step="1" data-k2="${k}">+5%</button>
-        <button class="btn" data-man="${k}">이 가격으로</button>${isSet(x) && !oldEng(x) ? `<button class="btn ghost" data-ok="${k}">엔진 추천대로 ${won(x.target)}</button>` : ''}<button class="btn ghost" data-keep="${k}">지금 가격 유지</button><button class="btn ghost" data-hold="${k}" title="입력칸 가격을 최저 수용가로 저장">판매보류풀로 (PND)</button>${decided ? `<button class="btn ghost" data-undo="${k}">원상복귀</button>` : ''}</div>
+      <div class="pq-ctl"><button class="btn sm pq-down" data-step="-1" data-k2="${k}">−5%</button><input type="number" min="10" value="${start || ''}" data-pin="${k}"><button class="btn sm pq-up" data-step="1" data-k2="${k}">+5%</button>
+        <button class="btn" data-man="${k}" title="입력칸의 가격으로 결정">추천가격으로</button>${isSet(x) && !oldEng(x) ? `<button class="btn ghost" data-ok="${k}">엔진 추천대로 ${won(x.target)}</button>` : ''}<button class="btn ghost" data-keep="${k}">지금 가격 유지</button><button class="btn ghost" data-hold="${k}" title="입력칸 가격을 최저 수용가로 저장">판매보류풀로 (PND)</button>${decided ? `<button class="btn ghost" data-undo="${k}">원상복귀</button>` : ''}</div>
       <details class="pq-why"><summary>판단 이유 (엔진이 배울 신호 — 여러 개 고를 수 있음)</summary>${chips(k)}<input data-rtext="${k}" placeholder="기타를 골랐으면 내용을 적으세요" style="width:100%;margin-top:4px;padding:6px"><input data-memo="${k}" placeholder="메모(선택)" style="width:100%;margin-top:4px;padding:6px"><button class="btn ghost sm" data-no="${k}" style="margin-top:6px">거절 (엔진 추천이 틀림)</button></details>
     </div><div class="pq-r">${prBlocks(x)}</div></div>`; };
   sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">가격 결정 (관리자 판정 기간)</div>${usedWinBtn()}</div>
@@ -3912,8 +3918,13 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
+  { d: '2026-10-05', app: '온라인중고 바로가기', v: '10.2', n: ['온라인 중고 전체중고 페이지에 도착하면 항상 매물 목록(반값택배 줄)이 화면 맨 위에 오도록 내려 줌 — 웹앱 링크·검토 도우미 패널·ISBN 모드 등 어디서 열어도'] },
+  { d: '2026-10-05', app: '중고가 검토 도우미', v: '0.1.2', n: ['패널의 온라인 중고 화면을 화면 높이 80%만큼 내리던 것을 없앰 — 바로가기 스크립트가 매물 목록 위치로 맞춤'] },
+  { d: '2026-10-05', app: '판매자 툴팁', v: '0.7.4', n: ["0.7.3의 '숨은 창에서 안 돎'을 되돌림 — 검토 도우미 패널·등록 도우미 분할 화면·ISBN 모드의 알라딘 화면도 iframe이라 툴팁이 꺼지는 문제가 생김", '대신 수집기가 연 숨은 창(주소에 rnCollect=1)에서만 맨 처음에 바로 끝냄 (Firebase 연결 안 함)'] },
+  { d: '2026-10-05', app: '중고가 검토 도우미', v: '0.1.1', n: ['숨은 창 안에서는 돌지 않게(@noframes)', '공용 파일 readnow-core.js를 버전 붙여 불러옴(1.3.0 — 옛 파일이 남아 있지 않게)'] },
+  { d: '2026-10-05', app: '수집기', v: '1.25.2', n: ['(다른 채팅) 작업 기록 구글 드라이브 저장 개선·시작 전 점검에 드라이브 연결 확인'] },
   { d: '2026-10-05', app: '수집기', v: '1.25.1', n: ["일괄 수집 중 몇 시간 뒤 탭이 'Out of Memory'로 죽던 문제: '구매자 분포·함께 산 책'이 숨은 창 하나에 상품 페이지를 수천 번 연달아 열며 메모리가 쌓였음 → 20번마다 숨은 창을 새로 만듦", '메모리 지킴이: 탭 메모리가 한계의 65%를 넘거나 숨은 창 페이지가 400개를 넘으면 진행 위치 저장 → 새로고침 → 같은 작업을 그 자리부터 자동으로 이어감', '작업 기록 보관 방식: 하루치 전체를 20초마다 다시 쓰던 것을 작은 묶음 덧붙이기로(오래 돌수록 무거워지던 원인), 화면 메모리의 기록 줄 수 30,000 → 10,000', '숨은 창(iframe) 안에서는 수집기가 돌지 않게(@noframes)'] },
   { d: '2026-10-05', app: '판매자 툴팁', v: '0.7.3', n: ['수집기가 숨은 창으로 여는 알라딘 페이지마다 툴팁(Firebase 포함)이 통째로 다시 실행되던 것을 막음(@noframes) — 메모리 부족의 큰 원인'] },
   { d: '2026-10-05', app: '가격 감시기', v: '0.4.1', n: ['숨은 창 안에서는 돌지 않게(@noframes)'] },
