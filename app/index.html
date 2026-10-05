@@ -309,7 +309,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.62.7';
+const APP_VER = '0.63.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1604,7 +1604,7 @@ const usedBtn = (l, it) => { const u = aladinLinks(l, it); return u.used ? `<spa
 document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-open]'); if (!a) return; ev.preventDefault(); ev.stopPropagation(); window.open(a.dataset.open, '_blank', 'noopener'); }, true);
 // 가격 감시 묶음 표시 — 배정은 판정 엔진(readnow-pricing-core.js)의 groupOf 하나 (수집기 상품 조회 화면과 같은 결과)
 const MONTXT = { treat: ['감시·적용', '판정 엔진이 매일 보고 가격을 맞추는 상품 (파랑)'], control: ['감시·비교', '판정만 기록하고 가격은 절대 안 바꾸는 비교 묶음 — 효과 측정용 (보라)'], hold: ['가격상승대기 PND', '판매보류풀: 일시판매중지 + 관리코드 뒤 PND. 정한 가격 이상으로 최저가에 설 수 있을 때만 판매중'], retire: ['불용 BAD', '불용 재고: 일시판매중지 + 관리코드 뒤 BAD (4년 초과, 관리자 승인)'], excluded: ['자동 제외', '자동 감시 제외 관리코드(KHKDVD 등) — 마진 구조가 달라 따로 정할 때까지 무조건 관리자 확인'] }; // 초록은 검토 색이라 쓰지 않음
-function loadPricingCfg() { if (S.prCfgLoading) return; S.prCfgLoading = true; db.collection('prd_system').doc('pricing').get().then((d) => { S.prCfg = d.exists ? d.data() : {}; if (['products', 'home'].includes(S.tab)) renderMain(); }).catch(() => { S.prCfg = {}; }); }
+function loadPricingCfg() { if (S.prCfgLoading) return; S.prCfgLoading = true; const t0 = Date.now(); db.collection('prd_system').doc('pricing').get().then((d) => { S.prCfg = d.exists ? d.data() : {}; S.prCfgErr = null; S.prCfgMs = Date.now() - t0; }).catch((e) => { S.prCfg = {}; S.prCfgErr = e.code || e.message; }).finally(() => { S.prCfgLoading = false; if (['products', 'home'].includes(S.tab)) renderMain(); }); }
 function monGroup(l) { const PRC = window.ReadnowPricing; if (!PRC || !l || !l.usedCode) return null; if (!S.prCfg) { loadPricingCfg(); return null; } const g = PRC.groupOfListing(l, prSettings()); return g === 'off' ? null : g; } // 묶음·보관함(PND·BAD)·제외(KHKDVD) 판단은 판정 엔진 한 곳
 function prSettings() { const PRC = window.ReadnowPricing; const c = S.prCfg || {}; return { rollout: c.rollout || (PRC && PRC.DEFAULTS.rollout), excludeSku: c.excludeSku || (PRC && PRC.DEFAULTS.excludeSku), cutoverAt: c.cutoverAt || null }; }
 function monTag(l) { const g = monGroup(l); return g ? `<span class="tag mon-${g}" title="${esc(MONTXT[g][1])}">${MONTXT[g][0]}</span>` : ''; }
@@ -1865,6 +1865,33 @@ function productRankBoards() {
  * 분류: ① 이 기기·권한 ② 목표 ③ 매출·이익 계산 ④ 택배 계약 ⑤ 매입 ⑥ 고객 점수 ⑦ 판매자 점수 ⑧ 경영 알림 기준 ⑨ 수집기 공통 ⑩ 화면 표시 */
 S.colSet = null;
 document.addEventListener('change', (ev) => { if (ev.target && ev.target.id === 'st_mg_m') { const v = costs().mgmtByMonth[ev.target.value]; const i = document.getElementById('st_mg_v'); if (i) i.value = v ?? ''; } });
+/* ══════════ Firebase 자료 전체 내려받기 (이 컴퓨터로) ══════════
+   모든 저장 칸(아래 목록)과 그 아래 기록 칸(판정 기록·경쟁 매물 판 등)을 500건씩 차례로 읽어 칸마다 한 줄에 한 문서(JSON Lines)로 ZIP 하나에 담음.
+   문서 경로·시각 그대로 보존(시각은 ISO 글자로). 사진·이미지 파일(Storage)은 따로(아래 안내). 읽기만 함 — 아무것도 바꾸지 않음 */
+const FB_COLLECTIONS = ['app_devices', 'app_settings', 'crm_customers', 'crm_interactions', 'crm_notes', 'crm_order_ops', 'crm_orders', 'crm_returns', 'crm_system', 'prd_book_metrics', 'prd_books', 'prd_cat_manual', 'prd_dyn_history', 'prd_ids', 'prd_imports', 'prd_jobs', 'prd_listing_changes', 'prd_listings', 'prd_market_nobook', 'prd_market_watch', 'prd_metric_changes', 'prd_price_actions', 'prd_price_batches', 'prd_price_decisions', 'prd_price_reviews', 'prd_rank_periods', 'prd_system', 'prd_used_info', 'pur_aladin_list', 'pur_aladin_orders', 'pur_buyback', 'pur_disposals', 'pur_entries', 'pur_entry_state', 'pur_existing', 'pur_heonot', 'pur_matches', 'rn_logs', 'rn_status', 'seller_history', 'seller_rev6m', 'seller_review_daily', 'seller_reviews', 'sellers'];
+const FB_SUBGROUPS = ['log', 'v']; // 판정 기록(prd_price_decisions/*/log) · 판(prd_used_info/*/v, prd_market_nobook/*/v)
+function loadScript(src) { return new Promise((res, rej) => { if ([...document.scripts].some((x) => x.src === src)) return res(); const t = document.createElement('script'); t.src = src; t.onload = res; t.onerror = () => rej(new Error('불러오기 실패 ' + src)); document.head.appendChild(t); }); }
+async function exportAllFirebase(btn, out) {
+  if (!confirm('Firebase의 모든 자료를 이 컴퓨터로 내려받을까요?\n· 읽기만 하고 아무것도 바꾸지 않습니다\n· 자료가 많아 몇 분 걸릴 수 있습니다(휴대폰보다 PC 권장)\n· 끝나면 ZIP 파일 하나가 내려받아집니다')) return;
+  btn.disabled = true; const t0 = Date.now(); const say = (t) => { out.textContent = t; };
+  try {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'); const zip = new JSZip();
+    const conv = (v) => (v && typeof v.toDate === 'function' ? v.toDate().toISOString() : v && v._lat !== undefined ? { lat: v.latitude, lng: v.longitude } : v);
+    const ser = (o) => JSON.stringify(o, (k, v) => conv(v));
+    const summary = { exportedAt: new Date().toISOString(), by: S.user.email, project: 'readnow-3a385', collections: {} };
+    const pull = async (label, q0) => { let last = null, n = 0; const lines = [];
+      for (;;) { let q = q0.orderBy(firebase.firestore.FieldPath.documentId()).limit(500); if (last) q = q.startAfter(last); const qs = await q.get(); if (qs.empty) break;
+        qs.forEach((d) => lines.push(ser({ _path: d.ref.path, _id: d.id, ...d.data() }))); n += qs.size; last = qs.docs[qs.docs.length - 1]; say(`${label}: ${n.toLocaleString()}건 읽는 중… (${Math.round((Date.now() - t0) / 1000)}초)`); if (qs.size < 500) break; }
+      return { lines, n }; };
+    for (const c of FB_COLLECTIONS) { try { const r = await pull(c, db.collection(c)); if (r.n) zip.file(`${c}.jsonl`, r.lines.join('\n')); summary.collections[c] = r.n; } catch (e) { summary.collections[c] = '읽기 실패: ' + (e.code || e.message); } }
+    for (const g of FB_SUBGROUPS) { try { const r = await pull(`(아래 칸) ${g}`, db.collectionGroup(g)); if (r.n) zip.file(`_sub_${g}.jsonl`, r.lines.join('\n')); summary.collections['(아래 칸) ' + g] = r.n; } catch (e) { summary.collections['(아래 칸) ' + g] = '읽기 실패: ' + (e.code || e.message); } }
+    zip.file('_summary.json', JSON.stringify(summary, null, 2));
+    say('ZIP 만드는 중…'); const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `readnow-firebase-${new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16).replace(/[:T]/g, '-')}.zip`; document.body.appendChild(a); a.click(); a.remove();
+    const tot = Object.values(summary.collections).filter((x) => typeof x === 'number').reduce((a, b) => a + b, 0); const bad = Object.entries(summary.collections).filter(([, v]) => typeof v !== 'number');
+    say(`완료: 문서 ${tot.toLocaleString()}건 · ${(blob.size / 1048576).toFixed(1)}MB · ${Math.round((Date.now() - t0) / 1000)}초${bad.length ? ` · 못 읽은 칸 ${bad.length}개(_summary.json 참고)` : ''}`);
+  } catch (e) { say('실패: ' + (e.code || e.message)); } finally { btn.disabled = false; }
+}
 function renderSettings(m) {
   const a = S.app; const adm = isAdminDevice(); const T = a.seller; const G = a.goals || {}; const A = { ...APPSET_DEFAULT.alerts, ...(a.alerts || {}) };
   const P = S.pur.set || PSET_DEFAULT; const V = S.cfg.vip, Cc = S.cfg.caution;
@@ -1911,7 +1938,8 @@ function renderSettings(m) {
     <label class="set">등급 환산 계수 (같은 등급이 없을 때): 최상 · 상 · 중<input id="al_coef" value="${esc([(a.gradeCoef || APPSET_DEFAULT.gradeCoef)['최상'], (a.gradeCoef || APPSET_DEFAULT.gradeCoef)['상'], (a.gradeCoef || APPSET_DEFAULT.gradeCoef)['중']].join(', '))}"></label><label class="set">수집이 오래됐다고 알릴 시간 (시간)${num_('al_stale', A.staleHours)}</label>
     <label class="set">휴면 위험 단골: 최소 구매 횟수${num_('al_dmin', A.dormantMinOrders)}</label><label class="set">휴면 위험 단골: 마지막 구매 후 (일부터)${num_('al_dfrom', A.dormantFrom, 10)}</label><label class="set">휴면 위험 단골: (일까지)${num_('al_dto', A.dormantTo, 10)}</label>
     <label class="set">떠오르는 판매자: 최근 1개월 속도가 6개월 평균의 (배 이상)${num_('al_rise', A.risingFactor, 0.1)}</label>`, '홈·경영 탭의 알림과 목록이 이 값으로 걸러집니다.')}
-  ${card('col', '⑨ 수집기 공통 (모든 PC의 리드나우 수집기)', `<label class="set">알라딘 요청 간격 (ms, 실제 대기는 이 값 ~ 1.6배)${num_('cs_delay', C.delayMs ?? 700, 100)}</label><label class="set">도서 정보·시장 지표 재확인 주기 (일, 0이면 매번 전체)${num_('cs_recheck', C.recheckDays ?? 7)}</label>
+  ${card('fbx', '⑪ Firebase 자료 전체 내려받기', `<p class="hint" style="margin:0 0 6px">Firebase에 쌓인 모든 자료(고객·주문·상품·시장 지표와 그 변화 기록·판매자·매입·가격 판정과 판단 기록·작업 기록 등)를 이 컴퓨터로 ZIP 하나에 내려받습니다. 칸마다 파일 하나(한 줄에 문서 하나, 시각 포함). 읽기만 합니다. 사진 파일은 Firebase 콘솔 → Storage에서 폴더째 내려받으세요.</p><button class="btn" id="fb_export">전체 내려받기</button> <span class="hint" id="fb_export_out"></span>`)}
+  ${card('col', '⑨ 수집기 공통 (모든 PC의 리드나우 수집기)', `<p class="hint" style="margin:0 0 6px">여기 '○일' 주기는 일괄·자동 수집에만 적용됩니다. 수집기의 개별 수집 버튼을 사람이 누르면 기간 제한 없이 전부 다시 모읍니다(기존 기록은 덮어쓰지 않고 바뀐 것만 시각과 함께 덧붙임).</p><label class="set">알라딘 요청 간격 최소 (ms) — 자동 조절(1초 시작, 잘 되면 이 값까지 빨라짐)${num_('cs_delay', C.reqMinMs ?? 600, 50)}</label><label class="set">알라딘 요청 간격 최대 (ms) — 막힐 때 늦출 한계${num_('cs_delaymax', C.reqMaxMs ?? 15000, 1000)}</label><label class="set">도서 정보·시장 지표 재확인 주기 (일, 0이면 매번 전체)${num_('cs_recheck', C.recheckDays ?? 7)}</label><label class="set">경쟁 매물 유의사항·사진 재확인 주기 (일, 0이면 매번 전체)${num_('cs_uid', C.usedInfoDays ?? 30)}</label>
     <label class="set">매일 평가를 추적할 상위 판매자 수 (분류마다)${num_('cs_topn', C.topN ?? 50, 10)}</label><label class="set">6개월 평가 수 재확인 주기 (일)${num_('cs_r6', C.rev6mDays ?? 7)}</label>
     <div class="two"><label class="set">같은 인터넷 주소에서 동시에 알라딘 작업할 PC 수 (1~3, 늘려도 전체 속도는 같음)${num_('cs_lanes', C.maxLanes ?? 1, 1)}</label><label class="set">인터넷 주소가 다른 PC (쉼표로, 따로 동시에 돎)<input id="cs_ipg" value="${esc(Object.keys(C.ipGroups || { HOME: 'home' }).join(', '))}"></label></div>
     <p class="hint" style="margin:0">사무실 PC들은 보통 인터넷 주소 하나를 같이 써서, 동시에 돌면 알라딘에는 한 곳에서 요청이 몰리는 것으로 보입니다. 그래서 PC 수를 늘리면 PC마다 요청 간격도 그만큼 늘려 차단 위험을 그대로 둡니다. 집 PC처럼 주소가 다른 PC는 따로 묶어 실제로 처리량이 늘어납니다.</p>
@@ -1945,7 +1973,8 @@ function renderSettings(m) {
     $('#st_mh').value = D.seller.modelHigh; $('#st_ml').value = D.seller.modelLow; $('#st_gh').value = D.seller.gainHigh; $('#st_gl').value = D.seller.gainLow;
     const DA = D.alerts; [['al_late', 'lateDays'], ['al_old1', 'oldDays1'], ['al_old2', 'oldDays2'], ['al_over', 'overMinPct'], ['al_cheap', 'cheapPct'], ['al_stale', 'staleHours'], ['al_dmin', 'dormantMinOrders'], ['al_dfrom', 'dormantFrom'], ['al_dto', 'dormantTo'], ['al_rise', 'risingFactor']].forEach(([id, k]) => ($('#' + id).value = DA[k]));
     $('#c_vv').value = CFG_DEFAULT.vip.minValue; $('#c_vr').value = CFG_DEFAULT.vip.maxRisk; $('#c_vo').value = CFG_DEFAULT.vip.minOrders; $('#c_vs').checked = true; $('#c_cr').value = CFG_DEFAULT.caution.minRisk;
-    $('#cs_delay').value = 700; $('#cs_recheck').value = 7; $('#cs_topn').value = 50; $('#cs_r6').value = 7; $('#cs_ah').value = 17; $('#cs_apc').value = 'JS-MAIN'; $('#cs_rpc').value = 'JS-MAIN'; $('#cs_agr').value = 30; prev(); cprev(); toast('처음 값으로 채웠습니다. 저장을 눌러야 반영됩니다'); };
+    $('#cs_delay').value = 600; $('#cs_delaymax').value = 15000; $('#cs_uid').value = 30; $('#cs_recheck').value = 7; $('#cs_topn').value = 50; $('#cs_r6').value = 7; $('#cs_ah').value = 17; $('#cs_apc').value = 'JS-MAIN'; $('#cs_rpc').value = 'JS-MAIN'; $('#cs_agr').value = 30; prev(); cprev(); toast('처음 값으로 채웠습니다. 저장을 눌러야 반영됩니다'); };
+  { const fx = $('#fb_export'); if (fx) fx.onclick = () => exportAllFirebase(fx, $('#fb_export_out')); }
   $('#st_save').onclick = async () => {
     const B = $('#st_bands').value.split(/[,\s]+/).map((x) => +x).filter((x) => x > 0).sort((x, y) => x - y);
     const L = $('#st_admins').value.split(',').map((s) => s.trim()).filter(Boolean); if (!L.length) return toast('관리자 기기를 하나 이상 남겨 주세요');
@@ -1960,7 +1989,7 @@ function renderSettings(m) {
       goals: { monthSales: Math.max(0, n('st_gm') || 0), dailyListing: Math.max(0, n('st_gl2') || 0), marginPct: Math.max(0, n('st_gp') || 0) },
       alerts: { lateDays: n('al_late'), oldDays1: n('al_old1'), oldDays2: n('al_old2'), overMinPct: n('al_over'), cheapPct: n('al_cheap'), staleHours: n('al_stale'), dormantMinOrders: n('al_dmin'), dormantFrom: n('al_dfrom'), dormantTo: n('al_dto'), risingFactor: n('al_rise') } };
     const pur = { msTotalCost: n('ps_mscost') || 0, msTotalBooks: n('ps_msn') || 0, msKeepRatio: Math.min(1, Math.max(0, (n('ps_mskeep') || 0) / 100)), includeMunjeong: $('#ps_mj').checked, excludeExistingFromUnit: $('#ps_ex').checked, hdKgLo: n('ps_hdklo') || 500, hdKgHi: n('ps_hdkhi') || 1000, msPool: { at: $('#ps_msat').value || MS_POOL_DEFAULT.at, books: n('ps_msb') || 0, dvd: n('ps_msd') || 0, cd: n('ps_msc') || 0 }, dispMixed: n('ps_dmix') || 0, unkLo: $('#ps_unklo').value === '' ? null : n('ps_unklo'), unkHi: $('#ps_unkhi').value === '' ? null : n('ps_unkhi'), msBooksMin: n('ps_msmin') || 20000, msBooksMax: n('ps_msmax') || 30000, msBooksFinal: $('#ps_msfin').value === '' ? null : n('ps_msfin'), hdBooksMin: n('ps_hdmin') || 0, hdBooksMax: n('ps_hdmax') || 0, hdBooksFinal: $('#ps_hdfin').value === '' ? null : n('ps_hdfin'), genSpread: Math.max(0, (n('ps_gsp') || 0) / 100), dispRate: n('ps_drate') || 110, weightSpread: Math.max(0, (n('ps_wsp') || 0) / 100), bookWeightG: n('ps_bw') || 450, unregManualLo: $('#ps_umlo').value === '' ? null : n('ps_umlo'), unregManualHi: $('#ps_umhi').value === '' ? null : n('ps_umhi'), newWindowDays: Math.max(1, n('ps_win') || 60) };
-    const col = { delayMs: Math.max(300, n('cs_delay') || 700), recheckDays: Math.max(0, Math.round(n('cs_recheck'))), topN: Math.max(5, Math.round(n('cs_topn') || 50)), rev6mDays: Math.max(1, Math.round(n('cs_r6') || 7)), maxLoginTries: Math.max(0, Math.round(n('cs_mlt'))), dynScope: $('#cs_dys').value, driveLogUrl: $('#cs_drv').value.trim(), driveLogKey: $('#cs_drvk').value.trim(), scanFullDays: Math.max(1, Math.round(n('cs_sfd') || 7)), revAllDays: Math.max(1, Math.round(n('cs_rad') || 7)), crmAnyPc: $('#cs_crmany').checked, maxLanes: Math.min(3, Math.max(1, Math.round(n('cs_lanes') || 1))), ipGroups: Object.fromEntries($('#cs_ipg').value.split(/[,\s]+/).map((x) => x.trim().toUpperCase()).filter(Boolean).map((x) => [x, x.toLowerCase()])), autoDaily: $('#cs_auto').checked, autoHour: Math.min(23, Math.max(0, Math.round(n('cs_ah')))), autoPc: $('#cs_apc').value.trim() || 'JS-MAIN', autoGraceMin: Math.max(0, Math.round(n('cs_agr') || 0)), reqPc: $('#cs_rpc').value.trim() || 'JS-MAIN', steps: Object.fromEntries([...document.querySelectorAll('[data-cstep]')].map((c) => [c.dataset.cstep, c.checked])), prio: Object.fromEntries([...document.querySelectorAll('[data-prio]')].map((c) => [c.dataset.prio, +c.value || 0])), dynDaily: Math.max(0, Math.round(n('cs_dd') || 0)), dynDays: Math.max(1, Math.round(n('cs_dy') || 30)) };
+    const col = { reqMinMs: Math.max(300, n('cs_delay') || 600), reqMaxMs: Math.max(2000, n('cs_delaymax') || 15000), usedInfoDays: Math.max(0, Math.round(n('cs_uid'))), recheckDays: Math.max(0, Math.round(n('cs_recheck'))), topN: Math.max(5, Math.round(n('cs_topn') || 50)), rev6mDays: Math.max(1, Math.round(n('cs_r6') || 7)), maxLoginTries: Math.max(0, Math.round(n('cs_mlt'))), dynScope: $('#cs_dys').value, driveLogUrl: $('#cs_drv').value.trim(), driveLogKey: $('#cs_drvk').value.trim(), scanFullDays: Math.max(1, Math.round(n('cs_sfd') || 7)), revAllDays: Math.max(1, Math.round(n('cs_rad') || 7)), crmAnyPc: $('#cs_crmany').checked, maxLanes: Math.min(3, Math.max(1, Math.round(n('cs_lanes') || 1))), ipGroups: Object.fromEntries($('#cs_ipg').value.split(/[,\s]+/).map((x) => x.trim().toUpperCase()).filter(Boolean).map((x) => [x, x.toLowerCase()])), autoDaily: $('#cs_auto').checked, autoHour: Math.min(23, Math.max(0, Math.round(n('cs_ah')))), autoPc: $('#cs_apc').value.trim() || 'JS-MAIN', autoGraceMin: Math.max(0, Math.round(n('cs_agr') || 0)), reqPc: $('#cs_rpc').value.trim() || 'JS-MAIN', steps: Object.fromEntries([...document.querySelectorAll('[data-cstep]')].map((c) => [c.dataset.cstep, c.checked])), prio: Object.fromEntries([...document.querySelectorAll('[data-prio]')].map((c) => [c.dataset.prio, +c.value || 0])), dynDaily: Math.max(0, Math.round(n('cs_dd') || 0)), dynDays: Math.max(1, Math.round(n('cs_dy') || 30)) };
     const who = { updatedBy: S.user.email, updatedByName: S.user.displayName || S.user.email, updatedAt: TS() };
     try {
       const b = db.batch();
@@ -2467,9 +2496,9 @@ function bizAlerts(B) {
   if (B.late.length) add('red', `출고 기록 없는 주문 ${B.late.length}건 (주문 후 ${(S.app.alerts || {}).lateDays || 2}일 넘음) — 수집이 늦었거나 실제 지연`, 'orders');
   if (B.unanswered && B.unanswered.length) add('red', `답하지 않은 문의 ${B.unanswered.length}건 (최근 30일)`, 'search');
   if (B.bad7.length) add('red', `최근 7일 불만족 평가 ${B.bad7.length}건`, 'search:reviews');
-  try { if (!S.prDec && !S.prRunLoading) loadPriceRun(); if (S.prDec) { const L = [...S.prDec.values()].filter((x) => x.group === 'treat' && !/^_check/.test(x.key || '')); const pend = L.filter((x) => x.approvalState === 'pending').length; const none = L.filter((x) => !x.approvalState).length; const setN = L.filter((x) => x.approvalState === 'pending' && x.action === 'set').length; const fail = L.filter((x) => x.execFailAt && ['approved', 'manual', 'hold', 'unhold'].includes(x.approvalState)).length;
-    if (pend + none) add(setN ? 'red' : 'amber', `가격 관리자 결정 대기 ${pend + none}건 — 엔진이 바꾸자는 것 ${setN}건${none ? ` · 판정만 있음 ${none}건` : ''}`, 'prq');
-    if (fail) add('red', `결정했지만 샵매니저 반영에 실패한 가격 ${fail}건 — 감시 탭·로그인 확인`, 'prq'); } } catch (e) {}
+  try { if (!S.prSum && !S.prSumLoading) loadPriceSum(); const P0 = S.prSum; if (P0 && !P0.err) {
+    if (P0.pend) add(P0.setN ? 'red' : 'amber', `가격 관리자 결정 대기 ${P0.pend}건 — 변경 결정 대기 ${P0.setN}건 · 변경 없음·유지 ${P0.keep}건`, 'prq');
+    if (P0.fail) add('red', `결정했지만 샵매니저 반영에 실패한 가격 ${P0.fail}건 — 감시 탭·로그인 확인`, 'prq'); } else if (P0 && P0.err) add('amber', prErrText(P0.err, '가격 판정'), 'prq'); } catch (e) {}
   if (B.underBuy.length) add('amber', `알라딘 매입가보다 싸게 파는 상품 ${B.underBuy.length}개 — 알라딘에 파는 게 더 이득`, 'under');
   if (B.cheapV.length) add('amber', `유효 최저가보다 ${(S.app.alerts || {}).cheapPct ?? 10}% 이상 싸게 파는 상품 ${B.cheapV.length}종 — 이익을 놓치는 중`, 'cheap');
   if (B.G.monthSales && B.forecast < B.G.monthSales) add('amber', `이번 달 예상 매출 ${won(Math.round(B.forecast))} — 목표 ${won(B.G.monthSales)}에 ${won(Math.round(B.G.monthSales - B.forecast))} 모자람`, 'goal');
@@ -2764,6 +2793,8 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.63.0': ['설정 ⑪ Firebase 자료 전체 내려받기 (모든 칸 + 판정 기록·판, ZIP 하나, 읽기만)', '설정 ⑨: 옛 요청 간격(수집기가 더 쓰지 않던 값) → 지금 쓰는 자동 조절 최소·최대, 경쟁 매물 재확인 주기 추가, 수동 실행은 기간 제한 없음 안내'],
+  '0.62.8': ["상품 탭 '가격 감시' 칸·홈 알림이 판정 문서 전체 대신 필요한 칸만 서버에서 골라 받음 — 휴대폰에서 느리던 문제", "한 번 읽은 뒤 '새로 읽기'·설정 저장 후 다시 읽히지 않던 문제(설정 읽는 중에서 멈춤) 고침", '읽기 실패를 사람 말로 표시(권한 없는 계정이면 어느 계정이 무엇을 못 읽는지), 읽는 데 걸린 시간 표시'],
   '0.62.7': ["가격 결정 탭 4개로: 변경 결정 대기 · 변경 없음·유지(예전 '유지·기다림·확인'과 '판정만 있음'은 같은 종류라 합침) · 결정함 · 전체 미결정", '가격 결정 버튼 정리: [−·입력칸·+·승인] 한 묶음(입력칸 가격으로 결정) | 간격 두고 [추천가격으로 · 지금 가격 유지 · 판매보류풀로 · 원상복귀]', "'추천가격으로'는 언제나 엔진 추천가, '지금 가격 유지'는 언제나 지금 가격", '−·+ 비율을 화면 위에서 바꿈(기본 5%, 이 기기에 기억)'],
   '0.62.6': ['설명서: 온라인 중고 페이지 매물 목록 위치는 판매자 툴팁이 맡음(바로가기를 꺼도 작동)'],
   '0.62.5': ['가격 결정: 큰 가격의 원은 작게·보통 굵기, \'이 가격으로\' → \'추천가격으로\', −5% 빨강·+5% 초록 버튼', '전체중고 링크는 Fix=1로 열어 한 번에 도착(매물 목록 위치로 내려감)'],
@@ -3580,29 +3611,54 @@ document.addEventListener('click', (ev) => { const t = ev.target; if (t.closest(
 
 
 /* ══════════ 가격 감시 (판정 엔진) — 상품 탭 맨 위 ══════════ */
+// 가격 감시 요약 (상품 탭 '가격 감시' 칸·홈 알림용): 판정 문서마다 필요한 칸 몇 개만 서버에서 골라 받음 — 문서 전체를 받던 예전 방식은 휴대폰에서 매우 느렸음
+async function loadPriceSum() {
+  if (S.prSumLoading) return; S.prSumLoading = true; const t0 = Date.now(); const u = firebase.auth().currentUser;
+  try {
+    const tok = await u.getIdToken();
+    const runP = db.collection('prd_system').doc('pricing_run').get().then((d) => (d.exists ? d.data() : {})).catch((e) => ({ err: e.code || e.message }));
+    const r = await fetch('https://firestore.googleapis.com/v1/projects/readnow-3a385/databases/(default)/documents:runQuery', { method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'prd_price_decisions' }], select: { fields: ['approvalState', 'action', 'group', 'execFailAt'].map((f) => ({ fieldPath: f })) } } }) });
+    const j = await r.json(); const errObj = (Array.isArray(j) ? (j.find((x) => x.error) || {}).error : j.error) || (!r.ok ? { status: 'HTTP ' + r.status } : null);
+    if (errObj) throw Object.assign(new Error(errObj.message || errObj.status), { code: errObj.status || errObj.code });
+    const v = (f) => (f ? f.stringValue ?? (f.nullValue !== undefined ? null : f.timestampValue ?? null) : null);
+    const rows = j.filter((x) => x.document && !/\/_check/.test(x.document.name)).map((x) => { const F = x.document.fields || {}; return { st: v(F.approvalState), act: v(F.action), g: v(F.group), fail: v(F.execFailAt) }; }).filter((x) => x.g === 'treat');
+    const DEC = ['approved', 'manual', 'hold', 'unhold', 'kept', 'rejected', 'done', 'blocked', 'stale'];
+    S.prSum = { at: Date.now(), ms: Date.now() - t0, total: rows.length, setN: rows.filter((x) => x.st === 'pending' && x.act === 'set').length, keep: rows.filter((x) => (x.st === 'pending' && x.act !== 'set') || !x.st).length,
+      dec: rows.filter((x) => DEC.includes(x.st)).length, fail: rows.filter((x) => x.fail && ['approved', 'manual', 'hold', 'unhold'].includes(x.st)).length };
+    S.prSum.pend = S.prSum.setN + S.prSum.keep; S.prRun = await runP;
+  } catch (e) { S.prSum = { err: e.code || e.message, ms: Date.now() - t0 }; }
+  finally { S.prSumLoading = false; S._bizAt = 0; if (S.tab === 'products' || S.tab === 'home') renderMain(); }
+}
+function prErrText(code, what) { // 읽기 실패를 사람 말로
+  const em = (S.user && S.user.email) || '이 계정';
+  if (/PERMISSION|permission/i.test(String(code))) return `이 계정(${em})은 '${what}'을(를) 읽을 권한이 없습니다 — Firestore 보안 규칙의 허용 계정에 이 계정을 넣어야 합니다 (규칙을 보내 주시면 고친 문구를 드립니다)`;
+  if (/unavailable|network|Failed to fetch/i.test(String(code))) return `'${what}'을(를) 읽는 중 연결이 끊김 — 전파가 약하면 잠시 뒤 '새로 읽기'`;
+  return `'${what}' 읽기 실패: ${code}`;
+}
 function loadPriceRun() { if (S.prRunLoading) return; S.prRunLoading = true; Promise.all([db.collection('prd_system').doc('pricing_run').get(), db.collection('prd_price_decisions').get()]).then(([r, ds]) => { S.prRun = r.exists ? r.data() : {}; S.prDec = new Map(); ds.forEach((d) => S.prDec.set(d.id, d.data())); S.prRunLoading = false; S._bizAt = 0; if (S.tab === 'products' || S.tab === 'home') renderMain(); }).catch((e) => { S.prRun = { err: e.code || e.message }; S.prDec = new Map(); S.prRunLoading = false; }); }
 function priceCard() {
   const PRC = window.ReadnowPricing; if (!PRC) return '<div class="card"><b style="color:#c62828">판정 엔진 파일(readnow-pricing-core.js)을 못 읽음</b></div>';
   if (!S.prCfg) { loadPricingCfg(); return '<div class="card"><div class="hint">가격 감시 설정 읽는 중</div></div>'; }
-  if (!S.prRun) loadPriceRun();
+  if (!S.prSum && !S.prSumLoading) loadPriceSum();
   const c = S.prCfg; const st = prSettings(); const cnt = { treat: 0, control: 0, excluded: 0, hold: 0 }; for (const l of S.plist.values()) { const g = PRC.groupOfListing(l, st); if (cnt[g] != null) cnt[g]++; }
-  const dec = S.prDec ? [...S.prDec.values()].filter((x) => !/^_check/.test(x.key || '')) : []; const pend = dec.filter((x) => x.approvalState === 'pending').length; const r = S.prRun || {};
+  const sum = S.prSum || {}; const pend = sum.pend ?? '…'; const r = S.prRun || {};
   const stTxt = !c.enabled ? '<b>꺼짐</b>' : c.killSwitch ? '<b style="color:#B0322A">전체 정지</b>' : `<b style="color:#1F5FAF">켜짐</b> · ${esc(c.phase || 'A')}단계`;
   return `<div class="card" style="border-left:5px solid #1F5FAF"><h3>가격 감시 (판정 엔진) ${stTxt}</h3>
-    <div class="mgrid"><div class="drill" data-prq="1"><b>${num(pend)} <i class="dr">›</i></b><span>관리자 결정 대기</span><small>누르면 하나씩 결정</small></div><div class="drill" data-prh="1"><b>${num(dec.length)} <i class="dr">›</i></b><span>판정·반영 목록</span><small>실제 반영·되돌리기</small></div>
+    <div class="mgrid"><div class="drill" data-prq="1"><b>${typeof pend === 'number' ? num(pend) : pend} <i class="dr">›</i></b><span>관리자 결정 대기</span><small>누르면 하나씩 결정</small></div><div class="drill" data-prh="1"><b>${sum.total != null ? num(sum.total) : '…'} <i class="dr">›</i></b><span>판정·반영 목록</span><small>실제 반영·되돌리기</small></div>
       <div class="drill" data-prl="treat"><b>${num(cnt.treat)} <i class="dr">›</i></b><span>감시·적용</span><small>적용 ${(st.rollout || {}).treatPct ?? 0}%</small></div>
       <div class="drill" data-prl="control"><b>${num(cnt.control)} <i class="dr">›</i></b><span>감시·비교</span><small>비교 ${(st.rollout || {}).controlPct ?? 0}%</small></div>
       <div class="drill" data-prl="excluded"><b>${num(cnt.excluded)} <i class="dr">›</i></b><span>자동 제외</span><small>${esc((st.excludeSku || []).join(', '))} — 관리자 확인</small></div><div class="drill" data-prhold="1"><b>${num(cnt.hold)} <i class="dr">›</i></b><span>판매보류풀 (PND)</span><small>최저 수용가 이상으로 최저가 가능할 때만 판매</small></div></div>
-    <p class="hint" style="margin:6px 0">감시 탭: <b>${esc(c.watchTab ? `${c.watchPc || '?'} PC의 한 탭` : '지정 안 됨 — 샵매니저 \'가격 감시\' 탭에서 \'이 탭을 가격 감시 탭으로\'')}</b>${c.watchBeat ? ` <small>(마지막 응답 ${Math.round((Date.now() - Date.parse(c.watchBeat)) / 60000)}분 전)</small>` : ''} · 이번 바퀴 ${r.keys ? `${num(r.idx || 0)} / ${num(r.keys.length)}${r.doneAt ? ' (끝남 ' + esc(String(r.doneAt).slice(5, 16).replace('T', ' ')) + ')' : ''}` : '아직 없음'}${r.err ? ` · <b style="color:#c62828">읽기 실패 ${esc(r.err)}</b>` : ''} · 감시 시작일 ${esc(c.cutoverAt ? String(c.cutoverAt).slice(0, 10) : '-')}</p>
+    <p class="hint" style="margin:6px 0">감시 탭: <b>${esc(c.watchTab ? `${c.watchPc || '?'} PC의 한 탭` : '지정 안 됨 — 샵매니저 \'가격 감시\' 탭에서 \'이 탭을 가격 감시 탭으로\'')}</b>${c.watchBeat ? ` <small>(마지막 응답 ${Math.round((Date.now() - Date.parse(c.watchBeat)) / 60000)}분 전)</small>` : ''} · 이번 바퀴 ${r.keys ? `${num(r.idx || 0)} / ${num(r.keys.length)}${r.doneAt ? ' (끝남 ' + esc(String(r.doneAt).slice(5, 16).replace('T', ' ')) + ')' : ''}` : '아직 없음'}${S.prCfgErr ? `<br><b style="color:#c62828">${esc(prErrText(S.prCfgErr, '가격 감시 설정'))}</b>` : ''}${sum.err ? `<br><b style="color:#c62828">${esc(prErrText(sum.err, '가격 판정'))}</b>` : ''}${r.err ? `<br><b style="color:#c62828">${esc(prErrText(r.err, '감시 진행 상황'))}</b>` : ''}${S.prSumLoading ? ' · 판정 요약 읽는 중…' : sum.ms != null ? ` · 읽는 데 ${(sum.ms / 1000).toFixed(1)}초` : ''} · 감시 시작일 ${esc(c.cutoverAt ? String(c.cutoverAt).slice(0, 10) : '-')}</p>
     <div style="display:flex;gap:6px;flex-wrap:wrap">${!c.enabled ? '<button class="btn" id="pr_start">A단계 시작 (적용 1%)</button>' : '<button class="btn ghost" id="pr_off">멈춤</button>'}<button class="btn ghost" id="pr_kill">${c.killSwitch ? '전체 정지 풀기' : '전체 정지'}</button><button class="btn ghost" id="pr_reload">새로 읽기</button><button class="btn ghost" id="pr_batch">수동 일괄 처리</button></div>
     <p class="hint" style="margin:6px 0 0"><b>관리자 판정 기간</b>: 감시 상품은 모두 관리자가 결정하고(엔진 제안 승인·직접 가격·유지·거절), <b>결정한 가격만</b> 감시 탭이 샵매니저에 반영합니다. 모든 결정은 이유와 함께 기록돼 자동화 기준을 만드는 데 쓰입니다. 기준·로드맵: ❓ 설명서 → ⚙ 판정 엔진.</p></div>`;
 }
 function bindPriceCard(m) {
-  const w = (o) => db.collection('prd_system').doc('pricing').set({ ...o, updatedBy: S.user.email, updatedAt: new Date().toISOString(), writerSchema: 6 }, { merge: true }).then(() => { S.prCfg = null; S.prRun = null; toast('저장됨'); renderMain(); }).catch((e) => toast('실패: ' + e.message));
+  const w = (o) => db.collection('prd_system').doc('pricing').set({ ...o, updatedBy: S.user.email, updatedAt: new Date().toISOString(), writerSchema: 6 }, { merge: true }).then(() => { S.prCfg = null; S.prRun = null; S.prSum = null; toast('저장됨'); renderMain(); }).catch((e) => toast('실패: ' + e.message));
   const st = m.querySelector('#pr_start'); if (st) st.onclick = () => { if (!confirm('A단계를 시작할까요?\n· 적용 1% (KHKDVD 제외)\n· 엔진은 판정만, 가격은 승인한 것만 반영\n· 감시 PC에서 가격 감시기 스크립트가 돌아야 합니다')) return; const PRC = window.ReadnowPricing; w({ enabled: true, phase: 'A', rollout: { treatPct: 1, controlPct: 0 }, excludeSku: (S.prCfg && S.prCfg.excludeSku) || PRC.DEFAULTS.excludeSku, cutoverAt: (S.prCfg && S.prCfg.cutoverAt) || new Date().toISOString(), dailyCap: (S.prCfg && S.prCfg.dailyCap) || 300, startedAt: new Date().toISOString(), startedBy: S.user.email }); };
   const off = m.querySelector('#pr_off'); if (off) off.onclick = () => w({ enabled: false });
   const k = m.querySelector('#pr_kill'); if (k) k.onclick = () => w({ killSwitch: !(S.prCfg && S.prCfg.killSwitch) });
-  const rl = m.querySelector('#pr_reload'); if (rl) rl.onclick = () => { S.prCfg = null; S.prRun = null; renderMain(); };
+  const rl = m.querySelector('#pr_reload'); if (rl) rl.onclick = () => { S.prCfg = null; S.prRun = null; S.prSum = null; S.prDec = null; renderMain(); };
   const bt = m.querySelector('#pr_batch'); if (bt) bt.onclick = () => openBatch();
   m.querySelectorAll('[data-prq]').forEach((b) => (b.onclick = () => openPriceQueue()));
   m.querySelectorAll('[data-prh]').forEach((b) => (b.onclick = () => openPriceHistory()));
@@ -3634,7 +3690,7 @@ async function prDecide(x, decision, o) {
   b.set(db.collection('prd_price_reviews').doc(), { key: x.key, usedCode: x.usedCode, title: x.title || null, grade: x.grade || null, sku: x.sku || null, at: now, by: S.user.email, decision, price: o.price ?? null,
     reasons: o.reasons || [], reasonLabels: (o.reasons || []).map((c) => PR_REASON_LABEL[c] || c), reasonText: o.reasonText || null, memo: o.memo || null, prevState: x.approvalState || null, current: x.current ?? null,
     engine: { status: x.status || null, action: x.action || null, target: x.target ?? null, rule: x.rule || null, ref: x.ref || null, reasons: x.reasons || [], tier: x.tier || null, version: x.engine || null }, rows: x.rows || [], page1: x.page1 || [], worseCheapest: x.worseCheapest || null, decidedAt: x.at || null, session: S.prSessionId, writerSchema: 6 });
-  await b.commit(); Object.assign(x, { approvalState: st, approval }); (S.prSession = S.prSession || new Set()).add(x.key);
+  await b.commit(); Object.assign(x, { approvalState: st, approval }); (S.prSession = S.prSession || new Set()).add(x.key); S.prSum = null; // 요약은 다음 화면에서 다시 셈
 }
 /* ── 온라인 중고 첫 페이지 블록 (가격 결정·일괄 처리·상품 목록 공통) ──
    색 = 판매자 분류(툴팁 줄 색과 같음), 알라딘측 파랑, 북스킹 진한 남색. 한 줄: [?] 상태 판매가 · 판매자 이름 (배송비: n)
@@ -3707,6 +3763,8 @@ function prVerdict(x) { // 엔진 판정을 사람 말로 (유지 = 이미 기�
   return [x.status || '?', (x.reasons || [])[0] || ''];
 }
 function openPriceQueue() {
+  if (!S.prDec) { const sh0 = $('#sheet'); S.detail = { prq: 1 }; if (!sh0.classList.contains('on')) history.pushState({ prq: 1 }, ''); sh0.classList.add('on'); document.body.style.overflow = 'hidden'; sh0.innerHTML = '<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">가격 결정</div></div><div class="card"><div class="empty">판정 불러오는 중…</div></div>'; $('#back').onclick = () => history.back();
+    S.prRunLoading = false; const t0 = Date.now(); Promise.all([db.collection('prd_system').doc('pricing_run').get(), db.collection('prd_price_decisions').get()]).then(([r, ds]) => { S.prRun = r.exists ? r.data() : {}; S.prDec = new Map(); ds.forEach((d) => S.prDec.set(d.id, d.data())); if (S.detail && S.detail.prq) openPriceQueue(); }).catch((e) => { const c = sh0.querySelector('.card'); if (c) c.innerHTML = `<div class="empty" style="color:#c62828">${esc(prErrText(e.code || e.message, '가격 판정'))}</div>`; }); return; }
   const sh = $('#sheet'); S.detail = { prq: 1 }; if (!sh.classList.contains('on')) history.pushState({ prq: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
   if (!S.prSessionId) S.prSessionId = new Date().toISOString();
   const PRC = window.ReadnowPricing; const curEng = PRC && PRC.VERSION; const oldEng = (x) => curEng && x.engine && x.engine !== curEng;
@@ -3930,8 +3988,9 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
+  { d: '2026-10-05', app: '수집기', v: '1.26.0', n: ['개별 수집 버튼을 사람이 누르면 기간 설정(○일 안에 본 것 건너뜀)을 적용하지 않고 전부 다시 모음 — 일괄·자동 수집은 그대로', '쌓기 점검: 구매자 분포는 바뀐 때만 시각과 함께 덧붙임(같으면 확인 시각만), 새상품 없는 상품 시세의 후보 목록이 바뀌면 판(v)으로 보관, 판매자 숍 화면 내용이 바뀌면 판매자 기록(seller_history)에 판으로 보관, 도서 정보가 전과 다르면 변화 기록(prd_metric_changes · bookInfo)에 남김', '구매자 분포 기록 줄에 책 제목과 ISBN'] },
   { d: '2026-10-05', app: '판매자 툴팁', v: '0.7.5', n: ['온라인 중고 페이지를 열면 항상 매물 목록(반값택배 줄)이 화면 맨 위에 오도록 내림 — 사람이 보는 iframe(검토 도우미 패널·ISBN 모드 등) 포함, 온라인중고 바로가기를 꺼 둬도 작동'] },
   { d: '2026-10-05', app: '공용 · 판매자 분류 기준 readnow-core.js', v: '1.4.0', n: ['온라인 중고 페이지 매물 목록 위치로 내리기(scrollToUsedList) — 기준은 이 한 곳'] },
   { d: '2026-10-05', app: '온라인중고 바로가기', v: '10.3', n: ['10.2의 내리기 기능을 빼고 원래 역할만 (판매자 툴팁이 맡음 — 같은 기능을 두 곳에 두지 않음)'] },
