@@ -317,7 +317,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.64.0';
+const APP_VER = '0.64.1';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1509,27 +1509,36 @@ S.plist = new Map(); S.psales = new Map(); S.pbooks = new Map(); S.prodLoaded = 
 const IMG_BASE = 'https://firebasestorage.googleapis.com/v0/b/readnow-3a385.firebasestorage.app/o/';
 const imgUrl = (im, thumb) => { if (!im) return null; const p = thumb ? im.thumb || im.stored : im.stored; return p ? IMG_BASE + encodeURIComponent(p) + '?alt=media' : im.src || null; };
 /* ══════════ 상품 사진 불러오기 (Firebase Storage) ══════════
-   <img src>는 로그인 정보를 보낼 수 없어, Storage 규칙이 '로그인한 사람만 읽기'면 사진이 전부 안 나옴.
-   실패한 사진은 로그인 정보(Firebase 토큰)를 붙여 다시 받아 그 자리에 보여 주고(한 번 받은 것은 기억), 그래도 안 되면 이유(권한·파일 없음 등)를 화면 위에 알림 */
-S.imgCache = new Map(); S.imgFail = {}; S.imgAuthMode = false;
-async function fbImgFetch(url) {
-  if (S.imgCache.has(url)) return S.imgCache.get(url);
-  const p = (async () => { const tok = await firebase.auth().currentUser.getIdToken(); const r = await fetch(url, { headers: { Authorization: 'Firebase ' + tok } }); if (!r.ok) throw Object.assign(new Error('HTTP ' + r.status), { status: r.status }); return URL.createObjectURL(await r.blob()); })();
-  S.imgCache.set(url, p); p.catch(() => S.imgCache.delete(url)); return p;
+   <img src>로 바로 부르는 주소는 로그인 정보를 보낼 수 없어, Storage 규칙이 '로그인한 사람만 읽기'면 사진이 전부 안 나옴.
+   (0.64.0의 '로그인 정보를 붙여 다시 받기'는 Storage가 다른 사이트(github.io)에서 머리글을 붙인 요청을 막아(CORS) '연결 문제'로 실패)
+   → 실패한 사진은 Firebase 사진 도구(getDownloadURL)로 '받기 표가 붙은 주소'를 받아 그대로 보여 줌(머리글이 필요 없어 CORS에 안 걸림). 한 번 받은 주소는 기억.
+   그래도 안 되면 이유(권한·파일 없음·로그인 등)와 예시 파일 경로를 화면 아래에 알림 */
+S.imgCache = new Map(); S.imgFail = {}; S.imgAuthMode = false; S.imgFailEx = null;
+const pathOfImg = (src) => { try { return decodeURIComponent(String(src).slice(IMG_BASE.length).split('?')[0]); } catch (e) { return null; } };
+function fbImgUrl(src) {
+  const path = pathOfImg(src); if (!path) return Promise.reject(Object.assign(new Error('경로 없음'), { code: 'path' }));
+  if (S.imgCache.has(path)) return S.imgCache.get(path);
+  const p = firebase.storage().ref(path).getDownloadURL(); S.imgCache.set(path, p); p.catch(() => S.imgCache.delete(path)); return p;
 }
 function fixImg(el) {
   const src = el.getAttribute('src') || ''; if (!src.startsWith(IMG_BASE) || el.dataset.fbtry) return; el.dataset.fbtry = '1';
-  fbImgFetch(src).then((b) => { S.imgAuthMode = true; el.src = b; }).catch((e) => { const k = e.status || 'net'; S.imgFail[k] = (S.imgFail[k] || 0) + 1; imgBanner(); });
+  fbImgUrl(src).then((u) => { S.imgAuthMode = true; el.src = u; }).catch((e) => { const k = e.code || 'unknown'; S.imgFail[k] = (S.imgFail[k] || 0) + 1; if (!S.imgFailEx) S.imgFailEx = { path: pathOfImg(src), code: k, msg: e.message }; imgBanner(); });
 }
 function imgBanner() {
   const n = Object.values(S.imgFail).reduce((a, b) => a + b, 0); if (!n) return; let b = document.getElementById('imgwarn');
   if (!b) { b = document.createElement('div'); b.id = 'imgwarn'; b.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9998;background:#FDE2E0;color:#B0322A;border-radius:8px;padding:8px 12px;font-size:12.5px;box-shadow:0 2px 10px rgba(0,0,0,.2)'; document.body.appendChild(b); b.onclick = () => b.remove(); }
-  const why = S.imgFail[403] ? `권한 없음(403) — 이 계정(${esc((S.user && S.user.email) || '')})이 Storage 사진을 읽을 수 없습니다. Firebase 콘솔 → Storage → 규칙에서 허용 계정에 넣어야 합니다` : S.imgFail[404] ? '파일 없음(404) — 수집기 \'이미지\' 단계에서 다시 올려야 합니다' : S.imgFail[401] ? '로그인 정보 거절(401)' : '연결 문제';
-  b.textContent = `사진 ${n}장을 못 불러옴: ${why} (눌러서 닫기)`;
+  const F = S.imgFail; const em = esc((S.user && S.user.email) || '');
+  const why = F['storage/unauthorized'] ? `권한 없음 — 이 계정(${em})이 Storage 사진을 읽을 수 없습니다. Firebase 콘솔 → Storage → 규칙의 허용 계정에 넣어야 합니다`
+    : F['storage/object-not-found'] ? '파일 없음 — 기록에는 사진이 있다고 돼 있는데 Storage에 파일이 없습니다(수집기 \'이미지\'로 다시 올려야 함)'
+    : F['storage/unauthenticated'] ? '로그인 정보 없음 — 웹앱에서 로그아웃 후 다시 로그인해 보세요'
+    : F['storage/retry-limit-exceeded'] || F['storage/canceled'] ? '연결이 계속 끊김 — 잠시 뒤 새로고침'
+    : F['storage/no-default-bucket'] || F['storage/bucket-not-found'] ? 'Storage 저장소(버킷)를 찾지 못함 — Firebase 설정 확인 필요'
+    : `알 수 없는 이유 (${esc(Object.keys(F).join(', '))})`;
+  b.innerHTML = `사진 ${n}장을 못 불러옴: ${why}${S.imgFailEx ? `<br><small>예: ${esc(S.imgFailEx.path || '')} → ${esc(S.imgFailEx.code)} ${esc(String(S.imgFailEx.msg || '').slice(0, 120))}</small>` : ''} <small>(눌러서 닫기)</small>`;
 }
 document.addEventListener('error', (e) => { const t = e.target; if (t && t.tagName === 'IMG') fixImg(t); }, true);
-// 한 번 '로그인 정보가 필요하다'고 확인되면, 새로 그려지는 사진은 실패를 기다리지 않고 바로 로그인 정보로 받음
-new MutationObserver((ms) => { if (!S.imgAuthMode) return; for (const m of ms) for (const n of m.addedNodes) { if (n.nodeType !== 1) continue; const L = n.tagName === 'IMG' ? [n] : n.querySelectorAll ? n.querySelectorAll('img') : []; L.forEach((el) => { const src = el.getAttribute('src') || ''; if (src.startsWith(IMG_BASE) && !el.dataset.fbtry) { el.dataset.fbtry = '1'; fbImgFetch(src).then((b) => (el.src = b)).catch(() => {}); } }); } }).observe(document.documentElement, { childList: true, subtree: true });
+// 한 번 '받기 표 주소'가 필요하다고 확인되면, 새로 그려지는 사진은 실패를 기다리지 않고 바로 그 주소로
+new MutationObserver((ms) => { if (!S.imgAuthMode) return; for (const m of ms) for (const n of m.addedNodes) { if (n.nodeType !== 1) continue; const L = n.tagName === 'IMG' ? [n] : n.querySelectorAll ? n.querySelectorAll('img') : []; L.forEach((el) => { const src = el.getAttribute('src') || ''; if (src.startsWith(IMG_BASE) && !el.dataset.fbtry) { el.dataset.fbtry = '1'; fbImgUrl(src).then((u) => (el.src = u)).catch(() => {}); } }); } }).observe(document.documentElement, { childList: true, subtree: true });
 async function syncColl(coll, store, map, metaKey) {
   const meta = await idbGet('meta', metaKey); let q = db.collection(coll);
   if (meta && meta.last) q = q.where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last));
@@ -2830,6 +2839,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.64.1': ["상품 사진 '연결 문제' 고침: 로그인 정보를 머리글로 붙이던 방식은 Storage가 다른 사이트 요청으로 막아(CORS) 실패 → Firebase 사진 도구로 받기 표가 붙은 주소를 받아 보여 줌", '못 불러온 사진의 이유를 Storage 오류 종류별로(권한·파일 없음·로그인·연결·버킷) 예시 경로와 함께 표시'],
   '0.64.0': ['오늘 출고 화면: 발송 요청 주문을 서가 순서로(주문은 섞지 않음), 고정 머리(날짜·주문·상품·합계), 상품마다 사진·관리코드 색·이름·수량·판매가·등급·구매 유의 사항·사진, 출고 확정 기록', '상품 사진이 안 나오던 문제: Storage가 로그인한 사람만 읽게 돼 있으면 로그인 정보를 붙여 다시 받음, 그래도 안 되면 이유 표시', '수집 작업 기록: 시간별 접기, 처음엔 맨 아래(최신), 맨 위로·맨 아래로 버튼', '업데이트 기록: 날짜별 접기', '출고 지연 알림을 영업일 기준으로(주말·휴일 제외), 설정 ⑫ 출고(마감 시각·휴일)', '고객 지표 이름: 구매확정(평가) → 구매평(직접 수령확인) — 6일 뒤 자동 구매확정은 고객 행동이 아님', '설정 등급 계수 기본값을 판정 엔진과 같게(1·0.95·0.85)', '설명서: 판매관리 흐름·오늘 출고·탐색 수집'],
   '0.63.2': ['설명서: 오류·복구 과정 기록([안전한 새로고침])'],
   '0.63.1': ['설명서: 429 대응·안전한 새로고침, 설정 ⑨ 요청 간격 기본값 0.7초·최대 20초'],
@@ -4071,7 +4081,7 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
   { d: '2026-10-05', app: '수집기', v: '1.27.0', n: ["'끝없는 탐색 수집 ∞' 버튼: 우리 책들의 함께 산 책에서 시작해 새 책마다 모든 정보를 모으고 끝없이 넓혀 감(대기열 prd_explore, 멈춰도 이어감, 다른 작업이 시작되면 양보 후 다시 이어감)", "'발송 요청 읽기 (오늘 출고)' 버튼 + 영업일 9~16시 15분마다 저절로: 주문·수령인·상품(관리코드·등록일)·우리 매물 구매 유의 사항·사진, 목록이 바뀌면 판으로 보관", '구매자 분포 한 권 읽기를 탐색 수집과 같이 쓰도록 정리'] },
   { d: '2026-10-05', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.1.0', n: ['새 파일: 발송 요청 화면 읽기, 서가 순서·색, 출고 목록 정렬, 영업일·출고 예정일'] },
