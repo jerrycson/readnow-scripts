@@ -331,6 +331,12 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .shp-shelf .shp-oh{color:#fff}
 .shp-view{position:fixed;right:76px;bottom:calc(72px + env(safe-area-inset-bottom,0));z-index:12;border:0;border-radius:24px;padding:12px 18px;font-weight:800;font-size:14px;background:#5a3d7a;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer}
 @media(max-width:760px){.shp-img{width:120px;flex-basis:120px}.shp-big{width:120px;max-height:180px}.shp-sm img{width:52px;height:52px}}
+
+.shp-pics{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;width:150px}
+.shp-pic{width:60px;height:60px;object-fit:cover;border-radius:3px;border:1px solid #ddd;cursor:zoom-in;transition:width .22s ease,height .22s ease}
+.shp-pic.act{width:150px;height:200px;object-fit:contain;border-color:transparent;cursor:default}
+@media(max-width:760px){.shp-pics{width:120px}.shp-pic{width:52px;height:52px}.shp-pic.act{width:120px;height:165px}}
+.shp-view{background:rgba(90,61,122,.55)!important;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);transition:background .2s}.shp-view:hover{background:rgba(90,61,122,.92)!important}
 </style>
 </head>
 <body>
@@ -353,7 +359,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.65.3';
+const APP_VER = '0.65.4';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -2958,6 +2964,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.65.4': ['오늘 출고 사진: 사진마다 제자리 — 누른 사진이 그 자리에서 커지고 크던 사진은 그 자리에서 작아짐(앞표지는 늘 첫 자리), 두 번 누르면 원본', "'⇄' 단추를 반투명하게(뒤가 보임, 마우스를 올리면 진해짐)"],
   '0.65.3': ['머리 칸 버벅임 고침: 크기를 바꾸지 않고 위로 미끄러져 숨고 얇은 띠가 내려옴(움직임만 써서 부드러움), 띠를 누르면 펼침', '오늘 출고 \'⇄\' 단추를 기존 동그란 보기 단추 왼쪽으로 옮겨 겹치지 않게'],
   '0.65.2': ['머리 칸: 화면 위에 고정하고 본문 위쪽을 비워 둬, 줄이고 펼쳐도 스크롤이 움직이지 않음 — 맨 위로 가도 줄어 있던 문제 고침, 부드럽게 접히고 펼쳐짐', '오늘 출고: 오른쪽 아래 \'⇄\' 단추로 주문별 ⇄ 서가별(상품) 보기 — 서가별은 주문을 풀어 모든 상품을 서가 순서·서가 안 철자 순, 상품마다 주문 번호·수령인', '사진: 작은 사진을 누르면 큰 사진과 바뀜(하나만 크게), 두 번 누르면 원본, 큰 사진 키움'],
   '0.65.1': ['머리 칸 줄이기 진짜 고침: 이 웹앱은 body 안에서 스크롤돼 창 스크롤 값이 늘 0이었음 → 실제 스크롤 위치로 판단, 내리면 얇은 띠 하나로(누르면 펼침)', '모든 기록 받기가 멈추던 것: 예전에 다 받아 둔 기록을 처음부터 다시 받던 것, 실패한 단계를 15분 기다리던 것 → 실패를 바로 알아보고 다시 시도(3번), 안 되면 다음 단계로, 못 받은 단계와 이유 표시', '주문·매출 탭 맨 위에 \'오늘의 출고\' 바로가기'],
@@ -3643,7 +3650,7 @@ function engineManualHtml() {
   <p>결정 화면 오른쪽 블록 왼쪽의 <b>?</b> = 그 매물에 '중고상품 구매 유의 사항' 글이 있거나 새상품 표지와 다른 사진(판매자 실사진)이 있음. 마우스를 올리면 내용. 수집기 '경쟁 매물 유의사항·사진'(버튼, 상품 일괄·모두 일괄에 포함)이 우리 책마다 온라인 중고 <b>첫 페이지의 다른 판매자 매물 전부</b>를 모읍니다(가격 감시 중인 책 먼저). 다시 확인 주기는 수집기 설정에서 바꿈(기본 30일, 0 = 매번). 내용이 바뀌면 <b>이전 내용을 덮어쓰지 않고 새 판으로 쌓아 모두 보관</b>하고, 같으면 판을 늘리지 않고 확인 시각만 남깁니다.</p>
   <h4>7-6. 알라딘 판매관리 흐름과 오늘 출고</h4>
   <p>① 주문확인요청 → [발송준비시작] → ② <b>발송 요청</b>(송장 입력) → [입력완료] → ③ 배송&구매확정전(고객이 수령확인·평가하거나, 출고 후 5일 안에 안 누르면 6일째 자동 구매확정) → ④ 구매확정&정산대기(다음 날 새벽 예치금 정산) → ⑤ 정산완료(3개월 보관). <b>오늘 출고 = ② 발송 요청 탭의 주문</b>이고 영업일(주말·설정 ⑫의 휴일 제외) 13~15시에 출고합니다(고객 안내 13시). 매출(0~24시 주문)과 출고(어제 출고 뒤부터 오늘 출고까지 모인 주문)는 따로 셉니다.<br>
-  <b>오늘 출고 화면</b>(홈 알림 · 상품 탭 '오늘 출고'): 수집기 '발송 요청 읽기'(영업일 9~16시 15분마다 저절로)가 읽은 주문을 서가 순서로 보여 줍니다 — 주문은 절대 섞지 않고, 주문 안 상품은 서가 순서(PNKLUX → BLKCMN·GRN·YLW·GRYPNY → REDFGN → BLU·SKY·MGZ → ORGCMC → KHKDVD·KHKCPD → 그 외) → 이름 순, 주문끼리는 첫 상품의 서가 순. 서가 = 관리코드 앞 6자리(뒤의 _ms·-날짜 등은 무시). 상품마다 사진·관리코드(색)·이름·수량·판매가·등급·우리 매물의 구매 유의 사항과 사진(작은 사진을 누르면 큰 사진과 바뀜, 두 번 누르면 원본). 오른쪽 아래(동그란 보기 단추 왼쪽) '⇄' 단추를 누르면 <b>서가별(상품) 보기</b>로 바뀜 — 주문을 풀어 모든 상품을 서가 순서, 서가 안에서는 이름 철자 순으로 늘어놓고 상품마다 주문 번호·수령인을 붙임(서가를 한 바퀴 돌며 꺼낼 때). 다시 누르면 주문별. '출고 확정'은 지금은 기록만 하고, ALPS 송장 출력·알라딘 송장 일괄등록은 양식 파일을 받은 뒤 이 버튼에 붙입니다. 알라딘 송장 일괄등록은 <b>CSV 파일만</b> 받습니다(팝업 step1의 일괄등록용 엑셀에 송장번호를 넣고 CSV로 저장).<br>
+  <b>오늘 출고 화면</b>(홈 알림 · 상품 탭 '오늘 출고'): 수집기 '발송 요청 읽기'(영업일 9~16시 15분마다 저절로)가 읽은 주문을 서가 순서로 보여 줍니다 — 주문은 절대 섞지 않고, 주문 안 상품은 서가 순서(PNKLUX → BLKCMN·GRN·YLW·GRYPNY → REDFGN → BLU·SKY·MGZ → ORGCMC → KHKDVD·KHKCPD → 그 외) → 이름 순, 주문끼리는 첫 상품의 서가 순. 서가 = 관리코드 앞 6자리(뒤의 _ms·-날짜 등은 무시). 상품마다 사진·관리코드(색)·이름·수량·판매가·등급·우리 매물의 구매 유의 사항과 사진(사진은 늘 제자리 — 누른 사진이 그 자리에서 커지고 크던 사진은 작아짐, 앞표지는 늘 첫 자리, 두 번 누르면 원본). 오른쪽 아래(동그란 보기 단추 왼쪽) '⇄' 단추를 누르면 <b>서가별(상품) 보기</b>로 바뀜 — 주문을 풀어 모든 상품을 서가 순서, 서가 안에서는 이름 철자 순으로 늘어놓고 상품마다 주문 번호·수령인을 붙임(서가를 한 바퀴 돌며 꺼낼 때). 다시 누르면 주문별. '출고 확정'은 지금은 기록만 하고, ALPS 송장 출력·알라딘 송장 일괄등록은 양식 파일을 받은 뒤 이 버튼에 붙입니다. 알라딘 송장 일괄등록은 <b>CSV 파일만</b> 받습니다(팝업 step1의 일괄등록용 엑셀에 송장번호를 넣고 CSV로 저장).<br>
   <b>출고 지연 알림</b>: 출고 예정 영업일(마감 시각 전 주문은 그날, 아니면 다음 영업일)에서 설정 ⑧의 영업일 수가 지나도 출고 기록이 없을 때.</p>
   <h4>7-8. 기록 받기와 이 기기 저장 용량</h4>
   <p>웹앱은 탭을 열 때 그 탭에 필요한 기록만 받습니다(받은 것은 기기에 저장돼 다음엔 바뀐 것만). 머리 칸 <b>⬇</b>를 누르면 모든 기록을 한 번에 받는 칸이 펼쳐집니다 — 단계별 진행, 끊기면 끝난 단계는 건너뛰고 큰 기록은 1,000건씩 받은 위치부터 이어 받음, 접어도 계속 받음, '웹앱을 열면 저절로'(기본 켬). 같은 칸에 이 기기가 웹앱 기록에 쓰는 저장 용량·한도와 기록 수가 나옵니다. 아래로 스크롤하면 머리 칸이 얇은 띠 하나(제목·⬇)로 줄고, 맨 위로 가거나 위로 조금 올리거나 띠를 누르면 다시 펼쳐집니다. 받다가 안 되는 단계는 3번까지 다시 시도하고, 그래도 안 되면 빨갛게 표시하고(이유는 마우스를 올리면) 다음 단계로 넘어갑니다. 오늘 출고는 홈 알림·상품 탭 버튼·<b>주문·매출 탭 맨 위</b>에서 엽니다.</p>
@@ -4158,7 +4165,7 @@ async function openShip() {
     const { big, sm } = pics(b, u); const src = big || it.img || ''; const shelf = SH.shelfOf(it.sku); const note = u ? u.note : (l && l.condition) || '';
     const P1 = l ? page1FromMetrics(l) : null; const mAt = l && l.bookId && S.pmetrics ? String((S.pmetrics.get(l.bookId) || {}).lastCheckedAt || '').slice(0, 10) : '';
     const ord = it._o ? `<div class="shp-who"><span class="shp-n sm">${it._o.n}</span>${esc(it._o.rcv)} <small>${esc(it._o.no)}${it._o.cnt > 1 ? ` · ${it._o.cnt}권 주문` : ''}</small></div>` : '';
-    return `<div class="shp-it"><div class="shp-img"><span class="shp-code" style="background:${SH.shelfColor(it.sku)}">${esc(it.sku || '코드 없음')}</span>${src ? `<img class="shp-big shp-pic" src="${esc(src)}" loading="lazy" title="두 번 누르면 원본">` : '<div class="shp-noimg">사진 없음</div>'}${sm.length ? `<div class="shp-sm">${sm.map((x) => `<img class="shp-pic" src="${esc(x)}" loading="lazy" title="누르면 크게 · 두 번 누르면 원본">`).join('')}</div>` : ''}</div>
+    return `<div class="shp-it"><div class="shp-img"><span class="shp-code" style="background:${SH.shelfColor(it.sku)}">${esc(it.sku || '코드 없음')}</span>${src || sm.length ? `<div class="shp-pics">${[src, ...sm].filter(Boolean).map((x, k) => `<img class="shp-pic${k === 0 ? ' act' : ''}" src="${esc(x)}" loading="lazy" title="누르면 이 자리에서 크게 · 두 번 누르면 원본">`).join('')}</div>` : '<div class="shp-noimg">사진 없음</div>'}</div>
       <div class="shp-main">${ord}<div class="shp-t">${esc(it.title)}</div>
       <div class="shp-c"><span class="shp-grade g${esc(it.grade || '')}">${esc(it.grade || '-')}</span><span class="shp-q">× ${it.qty || 1}</span><span class="shp-p">${pqWon(it.price)}</span></div>
       <div class="hint" style="margin-top:2px">${esc(shelf)}${it.registeredAt ? ' · 등록 ' + esc(String(it.registeredAt).slice(0, 10)) : ''}</div>
@@ -4180,8 +4187,8 @@ async function openShip() {
     <button class="shp-view" id="shp_view" title="누를 때마다 보기 바꿈">${S.shipView === 'shelf' ? '⇄ 주문별로 보기' : '⇄ 서가별(상품) 보기'}</button>`;
   $('#back').onclick = () => history.back(); fillUsedInfo(sh);
   sh.querySelector('#shp_view').onclick = () => { S.shipView = S.shipView === 'shelf' ? 'order' : 'shelf'; localStorage.setItem('rn-ship-view', S.shipView); const y = sh.scrollTop; openShip(); sh.scrollTop = 0; };
-  // 사진: 작은 사진을 한 번 누르면 큰 사진과 자리를 바꿈(하나만 크게), 어느 사진이든 두 번 누르면 원본을 새 창으로
-  sh.querySelectorAll('.shp-img').forEach((box) => { let tm = null; box.onclick = (e) => { const im = e.target.closest('.shp-pic'); if (!im) return; clearTimeout(tm); tm = setTimeout(() => { const big = box.querySelector('.shp-big'); if (!big || im === big) return; const a = big.src; big.src = im.src; im.src = a; }, 220); };
+  // 사진: 각 사진은 늘 제자리. 누른 사진이 그 자리에서 커지고, 크던 사진은 그 자리에서 작아짐(앞표지는 언제나 첫 자리). 두 번 누르면 원본을 새 창으로
+  sh.querySelectorAll('.shp-pics').forEach((box) => { let tm = null; box.onclick = (e) => { const im = e.target.closest('.shp-pic'); if (!im) return; clearTimeout(tm); tm = setTimeout(() => { box.querySelectorAll('.shp-pic').forEach((x) => x.classList.toggle('act', x === im)); }, 220); };
     box.ondblclick = (e) => { const im = e.target.closest('.shp-pic'); if (!im) return; clearTimeout(tm); window.open(im.src, '_blank'); }; });
   sh.querySelector('#shp_re').onclick = () => { S.ship = null; loadShip(); openShip(); };
   sh.querySelector('#shp_ok').onclick = async () => { if (!orders.length) return toast('출고할 주문이 없음'); if (!confirm(`${dk} 출고를 확정할까요?\n주문 ${orders.length}건 · 상품 ${items.length}권\n(지금은 기록만 — ALPS 송장 출력·알라딘 송장 등록 자동화는 양식 파일을 받은 뒤 이 버튼에 붙입니다)`)) return;
@@ -4231,7 +4238,7 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
   { d: '2026-10-05', app: '수집기', v: '1.27.0', n: ["'끝없는 탐색 수집 ∞' 버튼: 우리 책들의 함께 산 책에서 시작해 새 책마다 모든 정보를 모으고 끝없이 넓혀 감(대기열 prd_explore, 멈춰도 이어감, 다른 작업이 시작되면 양보 후 다시 이어감)", "'발송 요청 읽기 (오늘 출고)' 버튼 + 영업일 9~16시 15분마다 저절로: 주문·수령인·상품(관리코드·등록일)·우리 매물 구매 유의 사항·사진, 목록이 바뀌면 판으로 보관", '구매자 분포 한 권 읽기를 탐색 수집과 같이 쓰도록 정리'] },
   { d: '2026-10-05', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.1.0', n: ['새 파일: 발송 요청 화면 읽기, 서가 순서·색, 출고 목록 정렬, 영업일·출고 예정일'] },
