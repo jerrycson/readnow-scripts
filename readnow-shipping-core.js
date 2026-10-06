@@ -1,5 +1,5 @@
 // ==========================================================================
-// ReadNow Shipping Core — 0.1.0  (출고: 알라딘 판매관리 화면 읽기 · 서가 순서 · 영업일)
+// ReadNow Shipping Core — 0.2.1  (출고: 알라딘 판매관리 화면 읽기 · 서가 순서 · 영업일)
 // 웹앱(오늘 출고 화면)과 수집기(발송 요청 읽기)가 같이 쓰는 기준 — 같은 기준은 여기 한 곳에만
 // 알라딘 판매관리 흐름: ① 주문확인요청(orderstep=3) → [발송준비시작] → ② 발송 요청(orderstep=4, 송장 입력)
 //   → [입력완료] → ③ 배송&구매확정전(출고 후 5일 안에 수령확인 없으면 6일째 자동 구매확정) → ④ 구매확정&정산대기(다음 날 새벽 예치금 정산) → ⑤ 정산완료(3개월 보관)
@@ -7,7 +7,7 @@
 // ==========================================================================
 (function (root) {
   'use strict';
-  const VERSION = '0.1.0';
+  const VERSION = '0.2.1';
   const T = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
   const toInt = (s) => { const n = parseInt(String(s || '').replace(/[^\d-]/g, ''), 10); return isNaN(n) ? null : n; };
 
@@ -48,25 +48,32 @@
     return { orders, tabCounts };
   }
 
-  // ── 서가 순서 (= 관리코드 앞 3자리·전체) ── 정범 지정 2026-10-05. 순서를 바꾸려면 여기만
+  // ── 서가 (= 실제 책장 한 칸) ── 정범 지정 2026-10-05, 2026-10-06 바로잡음: 서가는 각각 따로, 단 BLK·YLW·GRY·GRN 한 줄만 한 서가에 섞여 꽂혀 있으므로
+  //    서가 안에서는 관리코드를 가리지 않고 이름 철자 순으로 섞어 늘어놓음. 서가 이름(name)은 화면에 그대로 씀. 순서를 바꾸려면 여기만
   const SHELF_ORDER = [
     { name: 'PNKLUX', test: (s) => s === 'PNKLUX' },
-    { name: 'BLKCMN · GRN··· · YLW··· · GRYPNY', test: (s) => s === 'BLKCMN' || /^GRN/.test(s) || /^YLW/.test(s) || s === 'GRYPNY' },
+    { name: 'BLK · YLW · GRY · GRN', test: (s) => /^(BLK|YLW|GRY|GRN)/.test(s) }, // 이 줄만 한 서가에 섞여 있음
     { name: 'REDFGN', test: (s) => s === 'REDFGN' },
-    { name: 'BLU··· · SKY··· · MGZ···', test: (s) => /^(BLU|SKY|MGZ)/.test(s) },
+    { name: 'BLU', test: (s) => /^BLU/.test(s) },
+    { name: 'SKY', test: (s) => /^SKY/.test(s) },
+    { name: 'MGZ', test: (s) => /^MGZ/.test(s) },
     { name: 'ORGCMC', test: (s) => s === 'ORGCMC' },
-    { name: 'KHKDVD · KHKCPD', test: (s) => s === 'KHKDVD' || s === 'KHKCPD' },
+    { name: 'KHKDVD', test: (s) => s === 'KHKDVD' },
+    { name: 'KHKCPD', test: (s) => s === 'KHKCPD' },
   ];
-  const shelfOf = (sku) => String(sku || '').toUpperCase().slice(0, 6); // 서가 = 관리코드 앞 6자리 (뒤에 붙는 _ms·-날짜 등은 매입처·메모)
+  const shelfOf = (sku) => String(sku || '').toUpperCase().slice(0, 6); // 관리코드 앞 6자리 (뒤에 붙는 _ms·-날짜 등은 매입처·메모)
   const shelfRank = (sku) => { const s = shelfOf(sku); const i = SHELF_ORDER.findIndex((g) => g.test(s)); return i < 0 ? SHELF_ORDER.length : i; };
+  const shelfName = (sku) => { const r = shelfRank(sku); return r < SHELF_ORDER.length ? SHELF_ORDER[r].name : '그 외'; }; // 서가 이름 (같은 서가면 같은 이름)
   const SHELF_COLOR = { PNK: '#e8457c', BLK: '#222', GRN: '#2e9d5b', YLW: '#e6b800', GRY: '#888', RED: '#d32f2f', BLU: '#1f5faf', SKY: '#4fb3e8', MGZ: '#a0408c', ORG: '#f57c00', KHK: '#8b7d4a' };
   const shelfColor = (sku) => SHELF_COLOR[String(sku || '').slice(0, 3).toUpperCase()] || '#5B6B66';
-  // 출고 목록 정렬: 주문은 절대 섞지 않음(주문이 최우선) → 주문 안의 상품: 서가 순서 → 같은 서가 안 이름 순 → 주문끼리: 첫 상품의 서가 순서 → 같으면 그 이름 순
+  // 출고 목록 정렬: 주문은 절대 섞지 않음(주문이 최우선) → 주문 안의 상품: 서가 순서 → 같은 서가 안에서는 관리코드를 가리지 않고 이름 철자 순
+  //   → 주문끼리: 첫 상품의 서가 순서 → 같은 서가면 첫 상품 이름 철자 순
+  const byShelfTitle = (a, b) => shelfRank(a.sku) - shelfRank(b.sku) || String(a.title || '').localeCompare(String(b.title || ''), 'ko');
   function sortShipment(orders) {
-    const nm = (a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'ko');
-    const out = orders.map((o) => ({ ...o, items: [...o.items].sort((a, b) => shelfRank(a.sku) - shelfRank(b.sku) || shelfOf(a.sku).localeCompare(shelfOf(b.sku)) || nm(a, b)) }));
-    return out.sort((a, b) => shelfRank(a.items[0] && a.items[0].sku) - shelfRank(b.items[0] && b.items[0].sku) || shelfOf((a.items[0] || {}).sku).localeCompare(shelfOf((b.items[0] || {}).sku)) || nm(a.items[0] || {}, b.items[0] || {}));
+    const out = orders.map((o) => ({ ...o, items: [...o.items].sort(byShelfTitle) }));
+    return out.sort((a, b) => byShelfTitle(a.items[0] || {}, b.items[0] || {}));
   }
+
 
   // ── 영업일 ── 주말 + 설정한 휴일(웹앱 설정에서 날짜를 넣음)은 출고하지 않음
   const ymd = (d) => new Date(d.getTime() + 9 * 3600e3).toISOString().slice(0, 10); // 한국 날짜
@@ -76,6 +83,6 @@
   function dueShipDay(orderedAt, opt) { const o = opt || {}; const cut = o.cutHour ?? 15; const t = new Date(String(orderedAt).replace(' ', 'T') + (/[+Z]/.test(String(orderedAt)) ? '' : '+09:00'));
     const h = +new Date(t.getTime() + 9 * 3600e3).toISOString().slice(11, 13); return isBizDay(t, o.holidays) && h < cut ? ymd(t) : ymd(nextBizDay(t, o.holidays)); }
 
-  const API = { VERSION, parseDeliveryPage, SHELF_ORDER, shelfOf, shelfRank, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd };
+  const API = { VERSION, parseDeliveryPage, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; root.ReadnowShipping = API;
 })(typeof window !== 'undefined' ? window : globalThis);
