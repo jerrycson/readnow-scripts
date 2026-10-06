@@ -356,6 +356,27 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .shp-img .ph.act{width:225px;height:300px;object-fit:contain;border-color:transparent;background:#f3f3f3;cursor:default}
 .shp-img .ph-none{width:225px;height:120px;background:#eee;font-size:12px;display:flex;align-items:center;justify-content:center;color:#888}
 @media(max-width:760px){.shp-img{min-width:180px}.shp-img .ph{width:52px;height:52px}.shp-img .ph.act{width:180px;height:248px}.shp-img .ph-none{width:180px}}
+
+/* 오늘 출고 상품 칸 (0.67.0): 관리코드 → 등급+제목 → 사진 → 상태 글 → 그 외. PC는 3열, 휴대폰은 한 줄로 쌓음 */
+.shp-it{display:grid!important;grid-template-columns:225px minmax(0,1fr) 34%;grid-template-areas:"code gt blk" "img note blk" "img etc blk" "img . blk";grid-template-rows:auto auto auto 1fr;column-gap:14px;row-gap:8px;align-items:start;padding:12px!important}
+.shp-it>.shp-code{grid-area:code}.shp-it>.shp-gt{grid-area:gt}.shp-it>.shp-img{grid-area:img;min-width:0!important}.shp-it>.shp-note{grid-area:note}.shp-it>.shp-etc{grid-area:etc}.shp-it>.shp-blk{grid-area:blk}
+.shp-code{display:flex!important;align-items:center;gap:8px;color:#fff;border-radius:6px;padding:6px 10px!important;margin:0!important;white-space:nowrap;overflow:hidden;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}
+.shp-code .cd{font-family:'SF Mono',Consolas,'Roboto Mono',monospace;letter-spacing:1.5px;line-height:1;overflow:hidden;text-overflow:ellipsis}.shp-code .cd b{font-size:22px;font-weight:900}.shp-code .cd i{font-style:normal;font-size:14px;font-weight:700;opacity:.8;letter-spacing:.5px;margin-left:2px}
+.shp-code.dk{color:#1b1b1b}.shp-code .shp-k{margin-left:auto;font-size:13px;font-weight:800;opacity:.9;font-family:system-ui}.shp-code .shp-qx{margin-left:auto;background:#fff;color:#d32f2f;font-weight:900;font-size:15px;border-radius:10px;padding:2px 8px;font-family:system-ui}.shp-code .shp-qx+.shp-k{margin-left:6px}
+.shp-gt{display:flex;align-items:flex-start;gap:10px}.shp-gt .shp-grade{flex:none;font-size:20px;padding:6px 9px;margin-top:1px}.shp-gt .shp-t{font-size:20px;font-weight:800;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:keep-all;overflow-wrap:anywhere}
+.shp-note{margin:0!important;max-height:none!important;background:#FFF7E6!important;border-left:4px solid #F0A020;border-radius:4px!important;padding:7px 10px!important;font-size:14px!important;line-height:1.45;color:#3a2a00}.shp-note .lb{display:inline-block;font-size:11.5px;font-weight:800;color:#B06A00;margin-right:6px;vertical-align:1px}
+.shp-etc{font-size:13px;color:#555}.shp-etc .shp-c{margin-top:0}.shp-etc .shp-q{font-size:15px}.shp-etc .shp-p{font-size:15px}
+@media(max-width:760px){
+  .shp-o{margin:12px 6px!important}
+  .shp-it{grid-template-columns:minmax(0,1fr);grid-template-areas:"code" "gt" "img" "note" "etc" "blk";grid-template-rows:none;row-gap:10px;padding:14px 12px 16px!important;border-top:8px solid #EEF2F0!important}
+  .shp-it:first-of-type{border-top-width:0!important}
+  .shp-code{padding:9px 12px!important;border-radius:8px}.shp-code .cd b{font-size:30px}.shp-code .cd i{font-size:17px}.shp-code .shp-qx{font-size:17px;padding:3px 10px}.shp-code .shp-k{font-size:15px}
+  .shp-gt .shp-grade{font-size:19px;padding:6px 8px}.shp-gt .shp-t{font-size:21px}
+  .shp-img{align-items:center!important}.shp-img .ph-top,.shp-img .ph-row{justify-content:center}
+  .shp-img .ph{width:64px!important;height:64px!important}.shp-img .ph.act{width:min(78vw,300px)!important;height:auto!important;aspect-ratio:3/4;max-height:48vh}.shp-img .ph-none{width:100%!important}
+  .shp-note{font-size:15px!important}
+  .shp-blk{max-height:240px}
+}
 </style>
 </head>
 <body>
@@ -378,7 +399,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.66.0';
+const APP_VER = '0.67.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -3026,6 +3047,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.67.0': ['오늘 출고 상품 칸을 새로 배치: 휴대폰은 위에서부터 ① 관리코드 ② 등급+제목 ③ 사진 ④ 상태 글 ⑤ 그 외(수량·가격·서가·주문·시장 블록) 한 줄씩, PC는 왼쪽 코드·사진 / 가운데 제목·상태·그 외 / 오른쪽 시장 블록', '관리코드 띠를 크게(휴대폰 30px): 서가 색 바탕 + 서가 6글자는 크게, 뒤(-날짜·_ms)는 작게 — 노랑처럼 밝은 서가 색은 검은 글자', '같은 주문의 몇 번째 책인지(1/3)와 같은 책 2권 이상이면 빨간 \'2권\' 표시를 관리코드 띠에', '등급을 제목 바로 앞에, 제목은 최대 3줄 · 상태 글은 주황 테두리 칸으로 · 휴대폰에서 사진은 가운데 크게(화면 폭 78%까지) · 상품끼리 굵은 구분선'],
   '0.66.0': ['새 정보 받는 중 표시: 새로 올 정보가 있을 때만 그 자리에 돌아가는 주황 별(받는 중)을 띄움 — 탭 단추·홈 칸 제목·화면 아래 왼쪽 알림(무엇이 몇 건 오는지, 받은 건수). 새 정보가 없으면 표시 없이 그냥 보여 줌', '바뀐 것만 받는 기록(고객·주문·구매평·판매자·상품·도서·시장 지표)은 받기와 동시에 새 기록 수를 물어봄(1,000건당 읽기 1회) — 받기 속도는 그대로', '통째로 읽는 기록(매입·반품·문의·오늘 출고·가격 감시 등)과 고객 상세의 주문·기록은 이 기기에 아직 없을 때만 표시 (저장해 둔 것을 먼저 보여 주는 중이면 뒤에서 조용히 맞춤)', '상세 화면을 열고 있으면 알림은 그 상세 화면과 관련된 것만'],
   '0.65.14': ['오늘 출고: 정렬(서가 순 · 관리코드 순) 단추를 위에 붙은 머리 칸 안으로 — 화면을 내려도 보이고 바로 바꿀 수 있음 (바꿔도 보던 자리 유지)'],
   '0.65.13': ['문의 목록 설명: 수집기 1.27.1부터 새 질문·답변여부가 바뀐 질문만 다시 보고, 바뀐 것만 올림'],
@@ -3723,7 +3745,7 @@ function engineManualHtml() {
   <p>결정 화면 오른쪽 블록 왼쪽의 <b>?</b> = 그 매물에 '중고상품 구매 유의 사항' 글이 있거나 새상품 표지와 다른 사진(판매자 실사진)이 있음. 마우스를 올리면 내용. 수집기 '경쟁 매물 유의사항·사진'(버튼, 상품 일괄·모두 일괄에 포함)이 우리 책마다 온라인 중고 <b>첫 페이지의 다른 판매자 매물 전부</b>를 모읍니다(가격 감시 중인 책 먼저). 다시 확인 주기는 수집기 설정에서 바꿈(기본 30일, 0 = 매번). 내용이 바뀌면 <b>이전 내용을 덮어쓰지 않고 새 판으로 쌓아 모두 보관</b>하고, 같으면 판을 늘리지 않고 확인 시각만 남깁니다.</p>
   <h4>7-6. 알라딘 판매관리 흐름과 오늘 출고</h4>
   <p>① 주문확인요청 → [발송준비시작] → ② <b>발송 요청</b>(송장 입력) → [입력완료] → ③ 배송&구매확정전(고객이 수령확인·평가하거나, 출고 후 5일 안에 안 누르면 6일째 자동 구매확정) → ④ 구매확정&정산대기(다음 날 새벽 예치금 정산) → ⑤ 정산완료(3개월 보관). <b>오늘 출고 = ② 발송 요청 탭의 주문</b>이고 영업일(주말·설정 ⑫의 휴일 제외) 13~15시에 출고합니다(고객 안내 13시). 매출(0~24시 주문)과 출고(어제 출고 뒤부터 오늘 출고까지 모인 주문)는 따로 셉니다.<br>
-  <b>오늘 출고 화면</b>(홈 알림 · 상품 탭 '오늘 출고'): 수집기 '발송 요청 읽기'(영업일 9~16시 15분마다 저절로)가 읽은 주문을 서가 순서로 보여 줍니다 — 주문은 절대 섞지 않고, 주문 안 상품은 서가 순서(PNKLUX → [BLK·YLW·GRY·GRN] → REDFGN → BLU → SKY → MGZ → ORGCMC → KHKDVD → KHKCPD → 그 외, 각각 따로 서가) → 같은 서가 안에서는 이름 철자 순. <b>BLK·YLW·GRY·GRN만 한 서가</b>(뒤 3자리 상관없이 한 책장에 섞여 꽂혀 있으므로 관리코드를 가리지 않고 섞어서 이름 철자 순), 주문끼리는 첫 상품의 서가 순. 관리코드는 앞 6자리로 봄(뒤의 _ms·-날짜 등은 무시). 상품마다 사진·관리코드(색)·이름·수량·판매가·등급·우리 매물의 구매 유의 사항과 사진(사진은 늘 제자리 — 누른 사진이 그 자리에서 커지고 크던 사진은 작아짐, 앞표지는 늘 첫 자리, 두 번 누르면 원본). 주문별 보기 머리 칸(화면을 내려도 위에 붙어 있음)의 '정렬'에서 <b>서가 순</b>(기본) 대신 <b>관리코드 순</b>을 고를 수 있음 — 주문 안 상품을 관리코드 글자 순(같은 코드면 이름 순), 주문끼리는 첫 상품의 관리코드 순(주문은 어느 쪽이든 섞지 않음, 고른 것은 그 기기에 기억). 오른쪽 아래(동그란 보기 단추 왼쪽) '⇄' 단추를 누르면 <b>서가별(상품) 보기</b>로 바뀜 — 주문을 풀어 모든 상품을 서가 순서, 서가 안에서는 이름 철자 순으로 늘어놓고 상품마다 주문 번호·수령인을 붙임(서가를 한 바퀴 돌며 꺼낼 때). 다시 누르면 주문별. '출고 확정'은 지금은 기록만 하고, ALPS 송장 출력·알라딘 송장 일괄등록은 양식 파일을 받은 뒤 이 버튼에 붙입니다. 알라딘 송장 일괄등록은 <b>CSV 파일만</b> 받습니다(팝업 step1의 일괄등록용 엑셀에 송장번호를 넣고 CSV로 저장).<br>
+  <b>오늘 출고 화면</b>(홈 알림 · 상품 탭 '오늘 출고'): 수집기 '발송 요청 읽기'(영업일 9~16시 15분마다 저절로)가 읽은 주문을 서가 순서로 보여 줍니다 — 주문은 절대 섞지 않고, 주문 안 상품은 서가 순서(PNKLUX → [BLK·YLW·GRY·GRN] → REDFGN → BLU → SKY → MGZ → ORGCMC → KHKDVD → KHKCPD → 그 외, 각각 따로 서가) → 같은 서가 안에서는 이름 철자 순. <b>BLK·YLW·GRY·GRN만 한 서가</b>(뒤 3자리 상관없이 한 책장에 섞여 꽂혀 있으므로 관리코드를 가리지 않고 섞어서 이름 철자 순), 주문끼리는 첫 상품의 서가 순. 관리코드는 앞 6자리로 봄(뒤의 _ms·-날짜 등은 무시). 상품마다 휴대폰은 위에서부터 <b>관리코드</b>(서가 색 띠, 서가 6글자 크게 · 같은 주문의 몇 번째 책 1/3 · 2권 이상이면 빨간 'n권') → <b>등급+제목</b> → <b>사진</b> → <b>상태 글</b>(우리 매물의 구매 유의 사항, 주황 칸) → 그 외(수량·판매가·서가·주문·시장 블록) 순서로 쌓이고, PC는 왼쪽 코드·사진 / 가운데 제목·상태·그 외 / 오른쪽 시장 블록(사진은 늘 제자리 — 누른 사진이 그 자리에서 커지고 크던 사진은 작아짐, 앞표지는 늘 첫 자리, 두 번 누르면 원본). 주문별 보기 머리 칸(화면을 내려도 위에 붙어 있음)의 '정렬'에서 <b>서가 순</b>(기본) 대신 <b>관리코드 순</b>을 고를 수 있음 — 주문 안 상품을 관리코드 글자 순(같은 코드면 이름 순), 주문끼리는 첫 상품의 관리코드 순(주문은 어느 쪽이든 섞지 않음, 고른 것은 그 기기에 기억). 오른쪽 아래(동그란 보기 단추 왼쪽) '⇄' 단추를 누르면 <b>서가별(상품) 보기</b>로 바뀜 — 주문을 풀어 모든 상품을 서가 순서, 서가 안에서는 이름 철자 순으로 늘어놓고 상품마다 주문 번호·수령인을 붙임(서가를 한 바퀴 돌며 꺼낼 때). 다시 누르면 주문별. '출고 확정'은 지금은 기록만 하고, ALPS 송장 출력·알라딘 송장 일괄등록은 양식 파일을 받은 뒤 이 버튼에 붙입니다. 알라딘 송장 일괄등록은 <b>CSV 파일만</b> 받습니다(팝업 step1의 일괄등록용 엑셀에 송장번호를 넣고 CSV로 저장).<br>
   <b>출고 지연 알림</b>: 출고 예정 영업일(마감 시각 전 주문은 그날, 아니면 다음 영업일)에서 설정 ⑧의 영업일 수가 지나도 출고 기록이 없을 때.</p>
   <h4>7-8. 기록 받기와 이 기기 저장 용량</h4>
   <p>웹앱은 탭을 열 때 그 탭에 필요한 기록만 받습니다(받은 것은 기기에 저장돼 다음엔 바뀐 것만). 머리 칸 <b>⬇</b>를 누르면 모든 기록을 한 번에 받는 칸이 펼쳐집니다 — 단계별 진행, 끊기면 끝난 단계는 건너뛰고 큰 기록은 1,000건씩 받은 위치부터 이어 받음, 접어도 계속 받음, '웹앱을 열면 저절로'(기본 켬). 같은 칸에 이 기기가 웹앱 기록에 쓰는 저장 용량·한도와 기록 수가 나옵니다. 아래로 스크롤하면 머리 칸이 얇은 띠 하나(제목·⬇)로 줄고, 맨 위로 가거나 위로 조금 올리거나 띠를 누르면 다시 펼쳐집니다. 받다가 안 되는 단계는 3번까지 다시 시도하고, 그래도 안 되면 빨갛게 표시하고(이유는 마우스를 올리면) 다음 단계로 넘어갑니다. 오늘 출고는 홈 알림·상품 탭 버튼·<b>주문·매출 탭 맨 위</b>에서 엽니다.</p>
@@ -4238,25 +4260,34 @@ async function openShip() {
     ['back', 'spine'].forEach((k) => { const x = b && b.images && b.images[k]; const u2 = x ? imgUrl(x, true) : null; if (u2 && sm.length < 2) sm.push(u2); });
     (u && u.photos || []).filter((p) => p.where !== 'desc').forEach((p) => sm.length < 2 && !sm.includes(p.src) && p.src !== big && sm.push(p.src));
     return { big, sm }; };
-  const itemHtml = (it) => { const l = shipListingOf(it.listingId); const b = l && l.bookId && S.pbooks ? S.pbooks.get(l.bookId) : null; const u = uinfo.get(String(it.listingId));
+  // 상품 한 줄 = 카드 안 한 칸. 가장 중요한 넷(관리코드 · 등급+제목 · 사진 · 상태 글)을 위에서 아래로 눈이 바로 가는 순서로 — 휴대폰은 한 줄로 쌓고, PC는 왼쪽(코드·사진)·가운데(제목·상태·그 외)·오른쪽(시장 블록)
+  //  · 관리코드 띠: 서가 색 바탕 + 서가 6글자는 크게, 뒤(-날짜·_ms 등)는 작게 → 색으로 서가, 글자로 칸을 한눈에. 노랑·하늘처럼 밝은 서가 색은 검은 글자
+  //  · 같은 주문의 몇 번째 책인지(1/3), 같은 책 2권 이상이면 '2권' 빨간 표시 — 덜 꺼내거나 더 꺼내는 실수를 막음
+  const lum = (hex) => { const m = String(hex).replace('#', ''); const f = m.length === 3 ? m.split('').map((c) => c + c).join('') : m; const [r, g, b2] = [0, 2, 4].map((i) => parseInt(f.slice(i, i + 2), 16) / 255); return 0.299 * r + 0.587 * g + 0.114 * b2; };
+  const itemHtml = (it, k, n) => { const l = shipListingOf(it.listingId); const b = l && l.bookId && S.pbooks ? S.pbooks.get(l.bookId) : null; const u = uinfo.get(String(it.listingId));
     const { big, sm } = pics(b, u); const src = big || it.img || ''; const shelf = SH.shelfOf(it.sku); const note = u ? u.note : (l && l.condition) || '';
     const P1 = l ? page1FromMetrics(l) : null; const mAt = l && l.bookId && S.pmetrics ? String((S.pmetrics.get(l.bookId) || {}).lastCheckedAt || '').slice(0, 10) : '';
     const ord = it._o ? `<div class="shp-who"><span class="shp-n sm">${it._o.n}</span>${esc(it._o.rcv)} <small>${esc(it._o.no)}${it._o.cnt > 1 ? ` · ${it._o.cnt}권 주문` : ''}</small></div>` : '';
-    return `<div class="shp-it"><div class="shp-img"><span class="shp-code" style="background:${SH.shelfColor(it.sku)}">${esc(it.sku || '코드 없음')}</span>${src || sm.length ? `<div class="ph-top">${src ? `<img class="ph act" src="${esc(src)}" loading="lazy" title="누르면 이 자리에서 크게 · 두 번 누르면 원본">` : ''}</div>${sm.length ? `<div class="ph-row">${sm.map((x) => `<img class="ph" src="${esc(x)}" loading="lazy" title="누르면 이 자리에서 크게 · 두 번 누르면 원본">`).join('')}</div>` : ''}` : '<div class="ph-none">사진 없음</div>'}</div>
-      <div class="shp-main">${ord}<div class="shp-t">${esc(it.title)}</div>
-      <div class="shp-c"><span class="shp-grade g${esc(it.grade || '')}">${esc(it.grade || '-')}</span><span class="shp-q">× ${it.qty || 1}</span><span class="shp-p">${pqWon(it.price)}</span></div>
-      <div class="hint" style="margin-top:2px">서가 ${esc(SH.shelfName ? SH.shelfName(it.sku) : shelf)}${it.registeredAt ? ' · 등록 ' + esc(String(it.registeredAt).slice(0, 10)) : ''}</div>
-      ${note ? `<div class="shp-note">${esc(note)}</div>` : ''}</div>
+    const col = SH.shelfColor(it.sku); const dark = lum(col) > 0.62; const sku = String(it.sku || ''); const q = it.qty || 1;
+    const code = sku ? `<b>${esc(sku.slice(0, 6))}</b>${sku.length > 6 ? `<i>${esc(sku.slice(6))}</i>` : ''}` : '<b>코드 없음</b>';
+    const pic = (x, act) => `<img class="ph${act ? ' act' : ''}" src="${esc(x)}" loading="lazy" title="누르면 이 자리에서 크게 · 두 번 누르면 원본">`;
+    return `<div class="shp-it">
+      <div class="shp-code${dark ? ' dk' : ''}" style="background:${col}"><span class="cd">${code}</span>${q > 1 ? `<span class="shp-qx">${q}권</span>` : ''}${n > 1 ? `<span class="shp-k">${k + 1}/${n}</span>` : ''}</div>
+      <div class="shp-gt"><span class="shp-grade g${esc(it.grade || '')}">${esc(it.grade || '-')}</span><span class="shp-t">${esc(it.title)}</span></div>
+      <div class="shp-img">${src || sm.length ? `<div class="ph-top">${src ? pic(src, true) : ''}</div>${sm.length ? `<div class="ph-row">${sm.map((x) => pic(x)).join('')}</div>` : ''}` : '<div class="ph-none">사진 없음</div>'}</div>
+      ${note ? `<div class="shp-note"><span class="lb">상태</span>${esc(note)}</div>` : ''}
+      <div class="shp-etc">${ord}<div class="shp-c"><span class="shp-q">× ${q}</span><span class="shp-p">${pqWon(it.price)}</span></div>
+        <div class="hint" style="margin-top:2px">서가 ${esc(SH.shelfName ? SH.shelfName(it.sku) : shelf)}${it.registeredAt ? ' · 등록 ' + esc(String(it.registeredAt).slice(0, 10)) : ''}</div></div>
       <div class="shp-blk">${P1 ? `<div class="hint" style="font-size:10.5px">온라인 중고 첫 페이지 (시장 지표 ${esc(mAt)})</div>${prBlocks({ page1: P1 })}` : '<div class="hint" style="font-size:11px">시장 지표 없음</div>'}</div></div>`; };
   // 상품별 보기: 주문을 풀어 모든 상품을 서가 순서 → 같은 서가 안에서는 이름 철자 순. 상품마다 어느 주문(번호·수령인)인지 붙임 — 서가를 한 바퀴 돌며 꺼내기용
   const shelfHtml = () => { const L = []; orders.forEach((o, i) => { const cnt = o.items.reduce((a, x) => a + (x.qty || 1), 0); o.items.forEach((it) => L.push({ ...it, _o: { n: i + 1, no: o.orderNo, rcv: (o.recipient && o.recipient.name) || o.buyer || '', cnt } })); });
     L.sort(SH.byShelfTitle); // 서가 순서 → 같은 서가 안은 관리코드 상관없이 이름 철자 순 (BLK·YLW·GRY·GRN은 한 서가라 섞임)
     const SC = ['#e8457c', '#222', '#d32f2f', '#1f5faf', '#2b8fc4', '#a0408c', '#f57c00', '#8b7d4a', '#6b5f35', '#5B6B66']; // SH.SHELF_ORDER 순서와 같게 (마지막 = 그 외)
-    let last = null; return L.map((it) => { const sf = SH.shelfName(it.sku); const head = sf !== last ? `${last !== null ? '</section>' : ''}<section class="shp-o shp-shelf"><header class="shp-oh" style="background:${SC[Math.min(SH.shelfRank(it.sku), SC.length - 1)]}"><span class="shp-rcv">${esc(sf)}</span><span class="shp-ono">${L.filter((x) => SH.shelfName(x.sku) === sf).reduce((a, x) => a + (x.qty || 1), 0)}권</span></header>` : ''; last = sf; return head + itemHtml(it); }).join('') + (L.length ? '</section>' : '<div class="empty">발송 요청 주문이 없습니다</div>'); };
+    let last = null; return L.map((it) => { const sf = SH.shelfName(it.sku); const head = sf !== last ? `${last !== null ? '</section>' : ''}<section class="shp-o shp-shelf"><header class="shp-oh" style="background:${SC[Math.min(SH.shelfRank(it.sku), SC.length - 1)]}"><span class="shp-rcv">${esc(sf)}</span><span class="shp-ono">${L.filter((x) => SH.shelfName(x.sku) === sf).reduce((a, x) => a + (x.qty || 1), 0)}권</span></header>` : ''; last = sf; return head + itemHtml(it, 0, 1); }).join('') + (L.length ? '</section>' : '<div class="empty">발송 요청 주문이 없습니다</div>'); };
   // 주문 머리 띠: 진한 띠(번호·주문번호·수령인)로 주문 경계를 분명히. 여러 권 주문은 띠 오른쪽에 'n권 한 상자' 표시
   const orderHtml = (o, i) => { const n = o.items.reduce((a, x) => a + (x.qty || 1), 0); const rn = (o.recipient && o.recipient.name) || o.buyer || '';
     return `<section class="shp-o${n > 1 ? ' multi' : ''}"><header class="shp-oh"><span class="shp-n">${i + 1}</span><span class="shp-rcv">${esc(rn)}</span><span class="shp-ono">${esc(o.orderNo)}</span>${n > 1 ? `<span class="shp-box">${n}권 한 상자</span>` : ''}</header>
-      <div class="shp-meta">${o.recipient && !o.recipient.sameAsBuyer && o.buyer ? `주문인 ${esc(o.buyer)} · ` : ''}주문 ${esc(String(o.orderedAt || '').slice(5))}${o.recipient && o.recipient.request ? ' · 요청: ' + esc(o.recipient.request) : ''}</div>${o.items.map(itemHtml).join('')}</section>`; };
+      <div class="shp-meta">${o.recipient && !o.recipient.sameAsBuyer && o.buyer ? `주문인 ${esc(o.buyer)} · ` : ''}주문 ${esc(String(o.orderedAt || '').slice(5))}${o.recipient && o.recipient.request ? ' · 요청: ' + esc(o.recipient.request) : ''}</div>${o.items.map((it, k) => itemHtml(it, k, o.items.length)).join('')}</section>`; };
   sh.innerHTML = `<div class="shp-head"><div class="sh" style="margin:0"><button class="back" id="back">← 닫기</button><div class="t">${esc(dk.slice(5).replace('-', '월 '))}일(${wd})의 출고</div></div>
       <div class="shp-sum">주문 <b>${orders.length}</b> · 상품 <b>${items.reduce((a, i) => a + (i.qty || 1), 0)}</b>권 · 판매가 <b>${won(total)}</b> · 읽은 시각 ${esc(String(X.at || '').slice(11, 16) ? new Date(X.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '-')}${tc['주문확인요청'] ? ` · <b style="color:#B0322A">주문확인요청 ${tc['주문확인요청']}건 — 샵매니저에서 발송준비시작을 눌러야 여기 들어옴</b>` : ''}${!biz ? ' · <b>오늘은 출고하지 않는 날(주말·휴일)</b>' : ''}${S.shipErr ? ` · <b style="color:#B0322A">${esc(prErrText(S.shipErr, '발송 요청 목록'))}</b>` : ''}</div>
       ${S.shipView === 'shelf' ? '' : `<div class="shp-sort">정렬 <button data-ss="shelf" class="${S.shipSort !== 'sku' ? 'on' : ''}">서가 순</button><button data-ss="sku" class="${S.shipSort === 'sku' ? 'on' : ''}">관리코드 순</button><span class="hint" title="${S.shipSort === 'sku' ? '주문 안 상품: 관리코드 글자 순 → 같은 코드면 이름 순 · 주문끼리: 첫 상품의 관리코드 순' : '주문 안 상품: 서가 순서 → 같은 서가면 이름 순 · 주문끼리: 첫 상품의 서가 순'}">${S.shipSort === 'sku' ? '관리코드 → 이름' : '서가 → 이름'} · 주문은 안 섞음</span></div>`}</div>
@@ -4318,7 +4349,7 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.66.0': '2026-10-06', '0.65.14': '2026-10-06', '0.65.13': '2026-10-06', '0.65.12': '2026-10-06', '0.65.11': '2026-10-06', '0.65.10': '2026-10-06', '0.65.8': '2026-10-06', '0.65.7': '2026-10-06', '0.65.6': '2026-10-06', '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.67.0': '2026-10-06', '0.66.0': '2026-10-06', '0.65.14': '2026-10-06', '0.65.13': '2026-10-06', '0.65.12': '2026-10-06', '0.65.11': '2026-10-06', '0.65.10': '2026-10-06', '0.65.8': '2026-10-06', '0.65.7': '2026-10-06', '0.65.6': '2026-10-06', '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
   { d: '2026-10-06', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.2.2', n: ['관리코드 순 정렬(bySku) 추가 — 주문별 보기에서 서가 순 대신 고를 수 있음'] },
   { d: '2026-10-06', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.2.1', n: ['서가 바로잡음: BLK·YLW·GRY·GRN만 한 서가, 나머지(PNKLUX·REDFGN·BLU·SKY·MGZ·ORGCMC·KHKDVD·KHKCPD)는 각각 서가'] },
