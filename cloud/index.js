@@ -21,7 +21,7 @@ const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.2.0';
+const VER = '0.2.1';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -99,12 +99,13 @@ async function shipRead(p) {
   const csig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)])); const cc = (await C('shp_state').doc('confirm').get()).data();
   if (!cc || cc.sig !== csig) { const bc = db.batch(); bc.set(C('shp_state').doc('confirm'), { at, orders: rc.orders, tabCounts: rc.tabCounts, sig: csig, pc: 'cloud', ...W() });
     for (const o of rc.orders) bc.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, confirmSeenAt: at, ...(cc && (cc.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { confirmFirstSeenAt: at }), buyer: o.buyer, orderedAt: o.orderedAt, items: o.items, ...W() }, { merge: true });
-    await bc.commit(); } else await C('shp_state').doc('confirm').set({ at, pc: 'cloud', ...W() }, { merge: true });
+    await bc.commit(); } // 그대로면 쓰지 않음 (읽은 시각은 app_settings/cloud.lastShipAt — 웹앱이 거기서 봄)
   // ② 발송 요청
   const sig = JSON.stringify(r.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId), o.deliveryNo])); const cur = (await C('shp_state').doc('current').get()).data();
   // 바뀐 것이 없으면 시각만 (쓰기·읽기 비용 줄임). 바뀌면 PC 수집기와 같은 형식으로 전부
   const changed = !cur || cur.sig !== sig; const b = db.batch();
-  if (!changed) b.set(C('shp_state').doc('current'), { at, pc: 'cloud', tabCounts: r.tabCounts, ...(excel ? { excel: { at, header: excel.header, rows: excel.rows.map((v) => ({ v })) } } : {}), ...W() }, { merge: true });
+  const xchanged = excel && (!cur || !cur.excel || JSON.stringify(cur.excel.rows.map((x) => x.v)) !== JSON.stringify(excel.rows));
+  if (!changed) { if (xchanged || (cur && JSON.stringify(cur.tabCounts) !== JSON.stringify(r.tabCounts))) b.set(C('shp_state').doc('current'), { at, pc: 'cloud', tabCounts: r.tabCounts, ...(excel ? { excel: { at, header: excel.header, rows: excel.rows.map((v) => ({ v })) } } : {}), ...W() }, { merge: true }); } // 그대로면 쓰지 않음 (웹앱 휴대폰이 5분마다 큰 문서를 다시 받지 않게)
   else { b.set(C('shp_state').doc('current'), { at, tabCounts: r.tabCounts, orders: r.orders, sig, pc: 'cloud', excel: excel ? { at, header: excel.header, rows: excel.rows.map((v) => ({ v })) } : (cur && cur.excel) || null, ...W() });
     b.set(C('shp_snapshots').doc(at.replace(/[:.]/g, '-')), { at, tabCounts: r.tabCounts, orders: r.orders, by: 'cloud', ...W() });
     for (const o of r.orders) b.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, stage: '발송 요청', lastSeenAt: at, ...(cur && (cur.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { firstSeenAt: at }), buyer: o.buyer, recipient: o.recipient, orderedAt: o.orderedAt, items: o.items, carrier: o.carrier, ...W() }, { merge: true }); }
