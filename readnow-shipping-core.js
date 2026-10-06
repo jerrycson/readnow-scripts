@@ -1,5 +1,5 @@
 // ==========================================================================
-// ReadNow Shipping Core — 0.4.0  (출고: 알라딘 판매관리 화면 읽기 · 서가 순서 · 영업일)
+// ReadNow Shipping Core — 0.5.0  (출고: 알라딘 판매관리 화면 읽기 · 서가 순서 · 영업일)
 // 웹앱(오늘 출고 화면)과 수집기(발송 요청 읽기)가 같이 쓰는 기준 — 같은 기준은 여기 한 곳에만
 // 알라딘 판매관리 흐름: ① 주문확인요청(orderstep=3) → [발송준비시작] → ② 발송 요청(orderstep=4, 송장 입력)
 //   → [입력완료] → ③ 배송&구매확정전(출고 후 5일 안에 수령확인 없으면 6일째 자동 구매확정) → ④ 구매확정&정산대기(다음 날 새벽 예치금 정산) → ⑤ 정산완료(3개월 보관)
@@ -8,11 +8,11 @@
 // ==========================================================================
 (function (root) {
   'use strict';
-  const VERSION = '0.4.0';
+  const VERSION = '0.5.0';
   const T = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
   const toInt = (s) => { const n = parseInt(String(s || '').replace(/[^\d-]/g, ''), 10); return isNaN(n) ? null : n; };
 
-  // ── ② 발송 요청 화면(worder_delivery.aspx?orderstep=4) 읽기 ──
+  // ── ② 발송 요청 화면(worder_delivery.aspx?orderstep=4) · ① 주문확인요청 화면(worder_preparatory_complete.aspx) 읽기 — 두 화면의 줄 구조가 같음(주문확인요청은 4단계 전이라 주소가 가려짐) ──
   // 줄마다 상품 하나(tr#oList{n}) + 아래 줄(tr#oList{n}b: '관리코드, 등록일시'). 같은 주문의 두 번째 상품부터는 주문번호 칸이 '동일 주문'
   // 주문인(viewAddrLayer(n,0)) · 수령인(viewAddrLayer(n,1) + 숨은 표 addrLayer{n}: 성명·전화·주소·배송비·배송요청사항)
   function parseDeliveryPage(doc) {
@@ -29,9 +29,9 @@
       const titleA = [...tr.querySelectorAll('a[href*="wproduct.aspx?ItemId="]')].find((a) => T(a)); const titleRaw = T(titleA);
       const gm = titleRaw.match(/^\[중고-(최상|상|중)\]\s*/); const img = tr.querySelector('a[href*="wproduct.aspx"] img');
       const cells = [...tr.children].filter((td) => td.tagName === 'TD' && !td.getAttribute('bgcolor'));
-      const ti = cells.findIndex((td) => td.contains(titleA)); const qty = ti >= 0 ? toInt(T(cells[ti + 1])) : null;
+      const ti = cells.findIndex((td) => td.contains(titleA)); const after = ti >= 0 ? cells.slice(ti + 1) : []; const qi = after.findIndex((td) => /^\d{1,3}$/.test(T(td)) && !td.querySelector('select,input')); const qty = qi >= 0 ? toInt(T(after[qi])) : null; // 수량 = 제목 뒤 첫 작은 정수 칸 (주문확인요청 화면은 사이에 출판사 칸이 있음)
       const buyerA = tr.querySelector('a[onclick*="viewAddrLayer"][onclick*=",0)"]'); if (buyerA && !cur.buyer) { cur.buyer = T(buyerA); const em = (buyerA.parentElement.getAttribute('title') || '').trim(); cur.buyerEmail = em || null; }
-      const priceCell = cells.find((td, k) => k > ti + 1 && /^[\d,]+$/.test(T(td)) && !td.querySelector('select,input')); const price = priceCell ? toInt(T(priceCell)) : null;
+      const priceCell = after.slice(qi + 1).find((td) => /^[\d,]+$/.test(T(td)) && toInt(T(td)) >= 100 && !td.querySelector('select,input')); const price = priceCell ? toInt(T(priceCell)) : null; // 판매가 = 수량 뒤 100원 이상 숫자 칸
       const dt = [...tr.querySelectorAll('td.t1')].map((td) => td.innerHTML.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').trim()).find((x) => /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(x)); if (dt && !cur.orderedAt) cur.orderedAt = dt;
       const sel = tr.querySelector('select[name^="deliveryProxy."]'); if (sel && !cur.carrier) { const o = sel.querySelector('option[selected]') || sel.options[sel.selectedIndex]; cur.carrier = o ? { code: o.value, name: T(o) } : null; }
       const inp = tr.querySelector('input[name^="deliveryNo."]'); if (inp) cur.deliveryNo = (inp.getAttribute('value') || '').trim() || null;
@@ -130,6 +130,28 @@
   }
   const nameOk = (a, b) => !!a && !!b && (a === b || (a.length >= 2 && b.startsWith(a)) || (b.length >= 2 && a.startsWith(b)));
 
-  const API = { VERSION, parseDeliveryPage, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices };
+  // ── 실제 집계(날짜별 총 건수·판매 매출)로 우리 주문을 날짜 묶음으로 되짚기 ──
+  // orders: 판매 주문 [{ id, at: 'YYYY-MM-DD HH:MM', a: [금액 후보…] }] (금액 후보 = 지금 정상 줄 합계·처음 주문 합계 등 — 그날 집계 때 금액이 무엇이었는지 모르므로)
+  // days: [{ d, n, amt }]. 날짜 순서대로, 앞 날짜가 끝난 다음 주문부터 n건을 묶고 합계가 실제 매출과 같은지 봄.
+  //   같지 않으면 ① 시작을 뒤로 조금(≤slack) 옮기고 ② 묶음 안에서 1~2건을 빼 보는 순서로 정확히 같은 곳을 찾음(그날 집계에 안 든 취소 주문 등). 끝내 못 찾으면 n건 그대로 두고 '차이'로 표시
+  function rebuildDays(days, orders, opt) {
+    const slack = (opt && opt.slack) || 6; const O = orders.slice().sort((x, y) => String(x.at).localeCompare(String(y.at))); const D = days.slice().sort((x, y) => x.d.localeCompare(y.d));
+    const amtOf = (o, k) => o.a[Math.min(k, o.a.length - 1)]; const K = Math.max(1, ...O.map((o) => o.a.length));
+    const sum = (arr, k) => arr.reduce((s2, o) => s2 + amtOf(o, k), 0);
+    const tryWin = (st, n, amt) => { for (let k = 0; k < K; k++) { const w = O.slice(st, st + n); if (w.length === n && sum(w, k) === amt) return { ids: w.map((o) => o.id), skip: [] }; }
+      for (let extra = 1; extra <= 2; extra++) { const w = O.slice(st, st + n + extra); if (w.length < n + extra) break; const idx = [...w.keys()];
+        const combos = extra === 1 ? idx.map((i) => [i]) : idx.flatMap((i) => idx.filter((j) => j > i).map((j) => [i, j]));
+        for (const c of combos) for (let k = 0; k < K; k++) { const keep = w.filter((_, i) => !c.includes(i)); if (sum(keep, k) === amt) return { ids: keep.map((o) => o.id), skip: c.map((i) => w[i].id), used: n + extra }; } }
+      return null; };
+    const out = new Map(); const firstDay = D.length ? D[0].d : null;
+    let i = firstDay ? O.findIndex((o) => String(o.at).slice(0, 10) >= ymd(new Date(new Date(firstDay + 'T12:00:00+09:00').getTime() - 864e5))) : 0; if (i < 0) i = O.length;
+    for (const day of D) { if (!day.n) { out.set(day.d, { ids: [], status: 'zero', want: day }); continue; }
+      let hit = null, st = i; for (let off = 0; off <= slack && !hit; off++) { const r = tryWin(i + off, day.n, day.amt); if (r) { hit = r; st = i + off; } }
+      if (hit) { const skipped = O.slice(i, st).map((o) => o.id).concat(hit.skip); out.set(day.d, { ids: hit.ids, status: 'exact', skipped, want: day }); i = st + (hit.used || day.n); }
+      else { const w = O.slice(i, i + day.n); out.set(day.d, { ids: w.map((o) => o.id), status: 'diff', diff: sum(w, 0) - day.amt, want: day }); i += day.n; } }
+    return out;
+  }
+
+  const API = { VERSION, parseDeliveryPage, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; root.ReadnowShipping = API;
 })(typeof window !== 'undefined' ? window : globalThis);
