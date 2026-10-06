@@ -262,7 +262,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .pq-ctl{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-top:6px}.pq-ctl input{width:96px;padding:6px}.pq-warn{background:#FDE2E0;color:#B0322A;padding:4px 8px;border-radius:6px;margin-top:6px}.pq-done{background:#E2ECFA;padding:4px 8px;border-radius:6px;margin-top:6px;font-size:12.5px}
 .pq-why{margin-top:6px}.rgrp{margin-top:4px}.rgrp small{display:block;color:var(--sub)}.rchip{display:inline-flex;gap:3px;align-items:center;border:1px solid var(--line,#D6DDDA);border-radius:12px;padding:1px 8px;margin:2px;font-size:12px}
 @media(max-width:640px){.pq{flex-direction:column}.pq-r{max-height:220px}}
-.top.cond{padding-top:calc(4px + env(safe-area-inset-top,0));padding-bottom:6px}.top.cond .sync,.top.cond .colbar,.top.cond .jobs{display:none}.top .jobs{max-height:36px;overflow:hidden;cursor:pointer}.top .jobs.open{max-height:none}
+.top .jobs{max-height:36px;overflow:hidden;cursor:pointer}.top .jobs.open{max-height:none}
 .bform .brow{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:5px 0}.bform .brow>label:first-child{min-width:84px;font-weight:700;font-size:13px}.bform input[type=number]{width:90px;padding:5px}.bform input:not([type]),.bform input[type=date]{padding:5px}.bcount{margin:8px 0;padding:8px;background:#E2ECFA;border-radius:6px}
 
 /* ── 가격 결정 화면·블록 (0.62.2) — 앞의 규칙보다 뒤에 둬서 확실히 적용 ── */
@@ -313,13 +313,10 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .shp-blk{flex:0 0 34%;min-width:0;display:flex;flex-direction:column;gap:1px;max-height:300px;overflow:auto}
 @media(max-width:760px){.shp-it{flex-wrap:wrap}.shp-blk{flex:1 1 100%;max-height:220px}.shp-img{width:90px;flex-basis:90px}.shp-big{width:90px}.shp-t{font-size:17px}.shp-rcv{font-size:18px}}
 
-/* 머리 칸 줄임 (0.65.2) — 고정 머리 + 부드러운 접힘 */
-.top{transition:padding .25s ease}
-.top .sync,.top .colbar,.top .jobs,.top .search,.top .dlpanel{transition:max-height .28s ease,opacity .2s ease,margin .28s ease,padding .28s ease;max-height:420px;overflow:hidden}
-.top .row{transition:height .25s ease}.top h1{transition:font-size .25s ease}
-.top.cond{padding:0 10px!important;padding-top:env(safe-area-inset-top,0)!important;cursor:pointer}
-.top.cond .row{flex-wrap:nowrap;height:20px;overflow:hidden}.top.cond h1{font-size:11px;opacity:.85}.top.cond .tbtns .me:not(.dlb){display:none}.top.cond .dlb{padding:0 6px!important;font-size:10.5px!important;line-height:18px}
-.top.cond .sync,.top.cond .colbar,.top.cond .jobs,.top.cond .search,.top.cond .dlpanel{max-height:0!important;opacity:0;margin:0!important;padding-top:0!important;padding-bottom:0!important}
+/* 머리 칸 줄임 (0.65.3) — 머리 칸 크기는 그대로, 위로 미끄러져 숨고 얇은 띠가 대신 보임 (transform만 써서 부드러움) */
+.top{transition:transform .26s ease;will-change:transform}.top.cond{transform:translateY(-100%)}
+#slimbar{position:fixed;left:0;right:0;top:0;z-index:6;height:calc(22px + env(safe-area-inset-top,0));padding:env(safe-area-inset-top,0) 12px 0;background:var(--cloth);color:#fff;display:flex;align-items:center;gap:10px;font-size:11.5px;cursor:pointer;transform:translateY(-100%);transition:transform .26s ease;will-change:transform;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+#slimbar.on{transform:none}#slimbar b{font-size:12px}#slimbar .sl-dl{margin-left:auto;opacity:.9}#slimbar .sl-hint{opacity:.7}
 .dlb.busy{background:#ffd54f!important;color:#3b2a00!important}
 .dlpanel{background:rgba(0,0,0,.22);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:12.5px}.dlpanel .dlrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .dlbar{height:6px;background:rgba(255,255,255,.25);border-radius:3px;margin:6px 0;overflow:hidden}.dlbar i{display:block;height:100%;background:#ffd54f}
@@ -332,7 +329,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .shp-img{width:150px;flex:0 0 150px}.shp-big{width:150px;max-height:220px;object-fit:contain}.shp-noimg{width:150px}.shp-pic{cursor:zoom-in}.shp-sm img{width:60px;height:60px}
 .shp-who{font-size:13.5px;font-weight:700;margin-bottom:2px}.shp-who small{font-weight:400;color:var(--sub)}.shp-n.sm{min-width:22px;height:22px;font-size:12px;margin-right:6px;background:#24443a;color:#fff}
 .shp-shelf .shp-oh{color:#fff}
-.shp-view{position:fixed;right:14px;bottom:calc(76px + env(safe-area-inset-bottom,0));z-index:12;border:0;border-radius:24px;padding:12px 18px;font-weight:800;font-size:14px;background:#5a3d7a;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer}
+.shp-view{position:fixed;right:76px;bottom:calc(72px + env(safe-area-inset-bottom,0));z-index:12;border:0;border-radius:24px;padding:12px 18px;font-weight:800;font-size:14px;background:#5a3d7a;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer}
 @media(max-width:760px){.shp-img{width:120px;flex-basis:120px}.shp-big{width:120px;max-height:180px}.shp-sm img{width:52px;height:52px}}
 </style>
 </head>
@@ -356,7 +353,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.65.2';
+const APP_VER = '0.65.3';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -472,7 +469,7 @@ async function dlStore() { try { const e = navigator.storage && navigator.storag
 const mb = (b) => (b == null ? '?' : b >= 1073741824 ? (b / 1073741824).toFixed(2) + 'GB' : (b / 1048576).toFixed(1) + 'MB');
 function dlPaint() {
   const b = document.getElementById('dlbtn'), p = document.getElementById('dlpanel'); if (!b || !p) return; const D = S.dl; const n = DL_STEPS.length; const done = D.running ? D.i : (D.doneDay === dstr(new Date()) ? n : D.i);
-  b.innerHTML = D.running ? `⬇ ${Math.round((D.i / n) * 100)}%` : D.err ? '⬇ 멈춤' : done >= n ? '⬇ 다 받음' : '⬇ 받기'; b.classList.toggle('busy', D.running);
+  b.innerHTML = D.running ? `⬇ ${Math.round((D.i / n) * 100)}%` : D.err ? '⬇ 멈춤' : done >= n ? '⬇ 다 받음' : '⬇ 받기'; b.classList.toggle('busy', D.running); { const sd = document.getElementById('sldl'); if (sd) sd.textContent = D.running || D.err ? b.textContent : ''; }
   p.style.display = D.open ? '' : 'none'; if (!D.open) return; const st = D.store || {};
   p.innerHTML = `<div class="dlrow"><b>모든 기록 받기</b> <span>${D.running ? `${D.i + 1}/${n} ${esc(DL_STEPS[D.i] ? DL_STEPS[D.i][0] : '')} 받는 중${D.sub ? ' · ' + esc(D.sub) : ''}${D.el ? ` · ${D.el}초` : ''}` : D.err ? `<b style="color:#FFD2CC">멈춤: ${esc(D.err)}</b> — 다시 누르면 이어 받음` : done >= n ? `오늘 다 받음 (${esc(D.at || '')})` : '아직 다 받지 않음'}</span></div>
     <div class="dlbar"><i style="width:${Math.round((done / n) * 100)}%"></i></div>
@@ -555,15 +552,17 @@ function shell() {
   //  (예전엔 줄어들면서 화면 높이가 바뀌어 곧바로 다시 펼쳐지는 흔들림 때문에 사실상 줄지 않았음)
   // 머리 칸 줄이기: 이 웹앱은 html·body 모두 overflow-x:hidden이라 실제 스크롤은 body 안에서 일어나 window.scrollY가 늘 0 (그래서 그동안 한 번도 안 줄었음)
   //  → 문서의 모든 스크롤을 받아 body·html 중 실제로 움직인 쪽의 위치로 판단. 80px 넘게 내리면 거의 없어질 만큼(얇은 띠 하나) 줄이고, 맨 위 근처이거나 위로 50px 넘게 올리면·띠를 누르면 펼침
-  // 머리 칸 줄이기 (0.65.2): 머리 칸은 화면 위에 고정, 본문 위쪽은 '펼친 머리 칸 높이'만큼 늘 비워 둠 → 줄이고 펼쳐도 본문·스크롤 위치가 그대로라
-  //  (예전엔 높이가 바뀌며 스크롤이 저절로 움직여 맨 위에서도 다시 줄어들었음) 80px 넘게 내리면 얇은 띠, 맨 위 근처·위로 40px 넘게 올림·띠 누름이면 부드럽게 펼침
-  if (!S.condBound) { S.condBound = 1; let top = 0, cond = false; const Y = () => Math.max(window.scrollY || 0, document.body.scrollTop || 0, document.documentElement.scrollTop || 0);
-    const pad = () => { const h = document.querySelector('header.top'); if (h && !cond) document.body.style.paddingTop = h.offsetHeight + 'px'; };
-    try { const ro = new ResizeObserver(() => { if (!cond) pad(); }); const wt = setInterval(() => { const h = document.querySelector('header.top'); if (h) { ro.observe(h); pad(); clearInterval(wt); } }, 200); } catch (e) {}
-    const setC = (on) => { const h = document.querySelector('header.top'); if (!h || cond === on) return; if (on) pad(); cond = on; h.classList.toggle('cond', on); top = Y(); };
-    document.addEventListener('scroll', (e) => { const t = e.target; if (t !== document && t !== document.body && t !== document.documentElement) return; const y = Y();
-      if (!cond) { if (y > 80) setC(true); } else { if (y > top) top = y; if (y < 30 || top - y > 40) setC(false); } }, { passive: true, capture: true });
-    document.addEventListener('click', (e) => { const h = e.target.closest && e.target.closest('header.top.cond'); if (h && !(e.target.closest('#dlbtn'))) { e.preventDefault(); setC(false); } const j = e.target.closest && e.target.closest('.top .jobs'); if (j) j.classList.toggle('open'); }, true); }
+  // 머리 칸 줄이기 (0.65.3): 머리 칸은 화면 위에 고정, 본문 위쪽은 머리 칸 높이만큼 비워 둠. 접을 때 크기를 바꾸지 않고 위로 미끄러져 숨기고 얇은 띠를 내림
+  //  → 화면을 다시 계산하는 일이 없어 버벅이지 않음(0.65.2는 펼치는 동안 높이를 계속 다시 재서 본문까지 출렁였음). 80px 넘게 내리면 띠, 맨 위 근처·위로 40px 넘게 올림·띠 누름이면 펼침
+  if (!S.condBound) { S.condBound = 1; let top = 0, cond = false, raf = 0; const Y = () => Math.max(window.scrollY || 0, document.body.scrollTop || 0, document.documentElement.scrollTop || 0);
+    const slim = document.createElement('div'); slim.id = 'slimbar'; slim.innerHTML = '<b>리드나우(북스킹)</b><span class="sl-hint">눌러서 메뉴</span><span class="sl-dl" id="sldl"></span>'; document.body.appendChild(slim);
+    const pad = () => { const h = document.querySelector('header.top'); if (h) { const v = h.offsetHeight + 'px'; if (document.body.style.paddingTop !== v) document.body.style.paddingTop = v; } };
+    try { const ro = new ResizeObserver(pad); const wt = setInterval(() => { const h = document.querySelector('header.top'); if (h) { ro.observe(h); pad(); clearInterval(wt); } }, 200); } catch (e) {}
+    const setC = (on) => { const h = document.querySelector('header.top'); if (!h || cond === on) return; cond = on; h.classList.toggle('cond', on); slim.classList.toggle('on', on); top = Y(); };
+    document.addEventListener('scroll', (e) => { const t = e.target; if (t !== document && t !== document.body && t !== document.documentElement) return; if (raf) return;
+      raf = requestAnimationFrame(() => { raf = 0; const y = Y(); if (!cond) { if (y > 80) setC(true); } else { if (y > top) top = y; if (y < 30 || top - y > 40) setC(false); } }); }, { passive: true, capture: true });
+    slim.onclick = () => setC(false);
+    document.addEventListener('click', (e) => { const j = e.target.closest && e.target.closest('.top .jobs'); if (j) j.classList.toggle('open'); }, true); }
   { const b = $('#dlbtn'); if (b) b.onclick = (e) => { e.stopPropagation(); S.dl.open = !S.dl.open; if (S.dl.open) dlStore(); dlPaint(); }; dlPaint(); if (!S.dlAutoDone && localStorage.getItem('rn-dl-auto') !== '0') { S.dlAutoDone = 1; setTimeout(() => dlRun(), 4000); } } $('#hpend').onclick = () => goTop('pending'); $('#hset').onclick = () => goTop('settings'); $('#hman').onclick = () => openManual();
   $('#hscore').onclick = () => openModal('score'); $('#hmet').onclick = () => openModal('metrics'); $('#mclose').onclick = closeModal;
   $('#modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
@@ -2959,6 +2958,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.65.3': ['머리 칸 버벅임 고침: 크기를 바꾸지 않고 위로 미끄러져 숨고 얇은 띠가 내려옴(움직임만 써서 부드러움), 띠를 누르면 펼침', '오늘 출고 \'⇄\' 단추를 기존 동그란 보기 단추 왼쪽으로 옮겨 겹치지 않게'],
   '0.65.2': ['머리 칸: 화면 위에 고정하고 본문 위쪽을 비워 둬, 줄이고 펼쳐도 스크롤이 움직이지 않음 — 맨 위로 가도 줄어 있던 문제 고침, 부드럽게 접히고 펼쳐짐', '오늘 출고: 오른쪽 아래 \'⇄\' 단추로 주문별 ⇄ 서가별(상품) 보기 — 서가별은 주문을 풀어 모든 상품을 서가 순서·서가 안 철자 순, 상품마다 주문 번호·수령인', '사진: 작은 사진을 누르면 큰 사진과 바뀜(하나만 크게), 두 번 누르면 원본, 큰 사진 키움'],
   '0.65.1': ['머리 칸 줄이기 진짜 고침: 이 웹앱은 body 안에서 스크롤돼 창 스크롤 값이 늘 0이었음 → 실제 스크롤 위치로 판단, 내리면 얇은 띠 하나로(누르면 펼침)', '모든 기록 받기가 멈추던 것: 예전에 다 받아 둔 기록을 처음부터 다시 받던 것, 실패한 단계를 15분 기다리던 것 → 실패를 바로 알아보고 다시 시도(3번), 안 되면 다음 단계로, 못 받은 단계와 이유 표시', '주문·매출 탭 맨 위에 \'오늘의 출고\' 바로가기'],
   '0.65.0': ['오늘 출고 화면: 주문마다 진한 머리 띠(번호·수령인 크게·주문번호, 여러 권은 보라 띠와 \'n권 한 상자\'), 제목 크게, 상태 네모, 사진은 큰 사진 1장(앞표지)+작은 사진 2장까지, 상품마다 온라인 중고 첫 페이지 블록(PC 오른쪽·휴대폰 아래)', '머리 칸 ⬇ \'모든 기록 받기\': 탭을 열지 않아도 모든 기록을 한 번에(진행 표시, 끊기면 이어 받음, 접혀도 돎, 웹앱을 열면 저절로) + 이 기기 저장 용량·기록 수', '큰 기록(상품·도서·시장 지표)은 1,000건씩 받아 쪽마다 저장 — 끊겨도 받은 데부터', '머리 칸 줄이기 고침: 내려가면 한 줄(제목·⬇·검색)로 크게 줄임 (예전엔 줄자마자 다시 펼쳐져 사실상 안 줄었음)'],
@@ -3643,7 +3643,7 @@ function engineManualHtml() {
   <p>결정 화면 오른쪽 블록 왼쪽의 <b>?</b> = 그 매물에 '중고상품 구매 유의 사항' 글이 있거나 새상품 표지와 다른 사진(판매자 실사진)이 있음. 마우스를 올리면 내용. 수집기 '경쟁 매물 유의사항·사진'(버튼, 상품 일괄·모두 일괄에 포함)이 우리 책마다 온라인 중고 <b>첫 페이지의 다른 판매자 매물 전부</b>를 모읍니다(가격 감시 중인 책 먼저). 다시 확인 주기는 수집기 설정에서 바꿈(기본 30일, 0 = 매번). 내용이 바뀌면 <b>이전 내용을 덮어쓰지 않고 새 판으로 쌓아 모두 보관</b>하고, 같으면 판을 늘리지 않고 확인 시각만 남깁니다.</p>
   <h4>7-6. 알라딘 판매관리 흐름과 오늘 출고</h4>
   <p>① 주문확인요청 → [발송준비시작] → ② <b>발송 요청</b>(송장 입력) → [입력완료] → ③ 배송&구매확정전(고객이 수령확인·평가하거나, 출고 후 5일 안에 안 누르면 6일째 자동 구매확정) → ④ 구매확정&정산대기(다음 날 새벽 예치금 정산) → ⑤ 정산완료(3개월 보관). <b>오늘 출고 = ② 발송 요청 탭의 주문</b>이고 영업일(주말·설정 ⑫의 휴일 제외) 13~15시에 출고합니다(고객 안내 13시). 매출(0~24시 주문)과 출고(어제 출고 뒤부터 오늘 출고까지 모인 주문)는 따로 셉니다.<br>
-  <b>오늘 출고 화면</b>(홈 알림 · 상품 탭 '오늘 출고'): 수집기 '발송 요청 읽기'(영업일 9~16시 15분마다 저절로)가 읽은 주문을 서가 순서로 보여 줍니다 — 주문은 절대 섞지 않고, 주문 안 상품은 서가 순서(PNKLUX → BLKCMN·GRN·YLW·GRYPNY → REDFGN → BLU·SKY·MGZ → ORGCMC → KHKDVD·KHKCPD → 그 외) → 이름 순, 주문끼리는 첫 상품의 서가 순. 서가 = 관리코드 앞 6자리(뒤의 _ms·-날짜 등은 무시). 상품마다 사진·관리코드(색)·이름·수량·판매가·등급·우리 매물의 구매 유의 사항과 사진(작은 사진을 누르면 큰 사진과 바뀜, 두 번 누르면 원본). 오른쪽 아래 '⇄' 단추를 누르면 <b>서가별(상품) 보기</b>로 바뀜 — 주문을 풀어 모든 상품을 서가 순서, 서가 안에서는 이름 철자 순으로 늘어놓고 상품마다 주문 번호·수령인을 붙임(서가를 한 바퀴 돌며 꺼낼 때). 다시 누르면 주문별. '출고 확정'은 지금은 기록만 하고, ALPS 송장 출력·알라딘 송장 일괄등록은 양식 파일을 받은 뒤 이 버튼에 붙입니다. 알라딘 송장 일괄등록은 <b>CSV 파일만</b> 받습니다(팝업 step1의 일괄등록용 엑셀에 송장번호를 넣고 CSV로 저장).<br>
+  <b>오늘 출고 화면</b>(홈 알림 · 상품 탭 '오늘 출고'): 수집기 '발송 요청 읽기'(영업일 9~16시 15분마다 저절로)가 읽은 주문을 서가 순서로 보여 줍니다 — 주문은 절대 섞지 않고, 주문 안 상품은 서가 순서(PNKLUX → BLKCMN·GRN·YLW·GRYPNY → REDFGN → BLU·SKY·MGZ → ORGCMC → KHKDVD·KHKCPD → 그 외) → 이름 순, 주문끼리는 첫 상품의 서가 순. 서가 = 관리코드 앞 6자리(뒤의 _ms·-날짜 등은 무시). 상품마다 사진·관리코드(색)·이름·수량·판매가·등급·우리 매물의 구매 유의 사항과 사진(작은 사진을 누르면 큰 사진과 바뀜, 두 번 누르면 원본). 오른쪽 아래(동그란 보기 단추 왼쪽) '⇄' 단추를 누르면 <b>서가별(상품) 보기</b>로 바뀜 — 주문을 풀어 모든 상품을 서가 순서, 서가 안에서는 이름 철자 순으로 늘어놓고 상품마다 주문 번호·수령인을 붙임(서가를 한 바퀴 돌며 꺼낼 때). 다시 누르면 주문별. '출고 확정'은 지금은 기록만 하고, ALPS 송장 출력·알라딘 송장 일괄등록은 양식 파일을 받은 뒤 이 버튼에 붙입니다. 알라딘 송장 일괄등록은 <b>CSV 파일만</b> 받습니다(팝업 step1의 일괄등록용 엑셀에 송장번호를 넣고 CSV로 저장).<br>
   <b>출고 지연 알림</b>: 출고 예정 영업일(마감 시각 전 주문은 그날, 아니면 다음 영업일)에서 설정 ⑧의 영업일 수가 지나도 출고 기록이 없을 때.</p>
   <h4>7-8. 기록 받기와 이 기기 저장 용량</h4>
   <p>웹앱은 탭을 열 때 그 탭에 필요한 기록만 받습니다(받은 것은 기기에 저장돼 다음엔 바뀐 것만). 머리 칸 <b>⬇</b>를 누르면 모든 기록을 한 번에 받는 칸이 펼쳐집니다 — 단계별 진행, 끊기면 끝난 단계는 건너뛰고 큰 기록은 1,000건씩 받은 위치부터 이어 받음, 접어도 계속 받음, '웹앱을 열면 저절로'(기본 켬). 같은 칸에 이 기기가 웹앱 기록에 쓰는 저장 용량·한도와 기록 수가 나옵니다. 아래로 스크롤하면 머리 칸이 얇은 띠 하나(제목·⬇)로 줄고, 맨 위로 가거나 위로 조금 올리거나 띠를 누르면 다시 펼쳐집니다. 받다가 안 되는 단계는 3번까지 다시 시도하고, 그래도 안 되면 빨갛게 표시하고(이유는 마우스를 올리면) 다음 단계로 넘어갑니다. 오늘 출고는 홈 알림·상품 탭 버튼·<b>주문·매출 탭 맨 위</b>에서 엽니다.</p>
@@ -4231,7 +4231,7 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
   { d: '2026-10-05', app: '수집기', v: '1.27.0', n: ["'끝없는 탐색 수집 ∞' 버튼: 우리 책들의 함께 산 책에서 시작해 새 책마다 모든 정보를 모으고 끝없이 넓혀 감(대기열 prd_explore, 멈춰도 이어감, 다른 작업이 시작되면 양보 후 다시 이어감)", "'발송 요청 읽기 (오늘 출고)' 버튼 + 영업일 9~16시 15분마다 저절로: 주문·수령인·상품(관리코드·등록일)·우리 매물 구매 유의 사항·사진, 목록이 바뀌면 판으로 보관", '구매자 분포 한 권 읽기를 탐색 수집과 같이 쓰도록 정리'] },
   { d: '2026-10-05', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.1.0', n: ['새 파일: 발송 요청 화면 읽기, 서가 순서·색, 출고 목록 정렬, 영업일·출고 예정일'] },
