@@ -229,7 +229,7 @@ fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opa
 .ulink{display:inline-block;margin-left:6px;padding:1px 7px;border:1px solid #9FC1B4;border-radius:999px;font-size:11.5px;font-weight:600;color:var(--cloth);background:#fff;cursor:pointer;white-space:nowrap;vertical-align:middle}.ulink:hover{background:var(--cloth);color:#fff}
 .alinks{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.alinks .btn{text-decoration:none;padding:8px 12px;font-size:13.5px}
 .clk{cursor:pointer}tr.clk:hover td,span.clk:hover{background:var(--soft)}
-#verdock{position:fixed;left:8px;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;flex-direction:column;gap:6px;align-items:flex-start;max-width:calc(100vw - 150px);pointer-events:none}#verdock.wide{max-width:calc(100vw - 16px)}.verbar{pointer-events:auto;background:#1E3A5F;color:#fff;border-radius:18px;box-shadow:0 2px 10px rgba(0,0,0,.25);font-size:12.5px;line-height:1.45;max-width:100%}.verbar.new{background:#A8661B}.verbar .vh{display:flex;align-items:center;gap:6px;padding:5px 6px 5px 12px;white-space:nowrap}.verbar .vt{overflow:hidden;text-overflow:ellipsis;cursor:pointer;min-width:0}.verbar .vx,.verbar .vo{flex:none;border:0;border-radius:12px;padding:3px 10px;font-weight:700;cursor:pointer;background:#fff;color:#1E3A5F;font-size:12px}.verbar .vo{background:rgba(255,255,255,.2);color:#fff}.verbar .vb{display:none;max-height:50vh;overflow:auto;padding:0 12px 10px;width:min(440px,calc(100vw - 16px));box-sizing:border-box}.verbar.open{border-radius:12px}.verbar.open .vb{display:block}.verbar ul{margin:0 0 0 16px;padding:0}.verbar small{opacity:.7}
+.verbar{position:sticky;top:0;z-index:50;background:#1E3A5F;color:#fff;padding:10px 14px;font-size:13.5px;line-height:1.5;cursor:pointer}.verbar.new{background:#A8661B}.verbar ul{margin:4px 0 0 18px;padding:0}.verbar small{opacity:.7}.verbar .vx{margin-left:10px;border:0;border-radius:6px;padding:4px 12px;font-weight:700;cursor:pointer;background:#fff;color:#1E3A5F}
 .runsbtn{background:none;border:0;color:inherit;font-size:12.5px;padding:2px 0;cursor:pointer;text-align:left;opacity:.95}.runsbtn small{opacity:.7;margin-left:4px}.jspin.sm{width:9px;height:9px;display:inline-block;vertical-align:middle}
 #main>details.sec,#main>.card{content-visibility:auto;contain-intrinsic-size:auto 320px}
 main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px)) !important}
@@ -336,6 +336,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 
 
 @media(max-width:760px){}
+.shp-sort{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:0 0 8px;font-size:13px;font-weight:700}.shp-sort button{border:1px solid #5a3d7a;background:#fff;color:#5a3d7a;border-radius:14px;padding:4px 12px;font-weight:700;cursor:pointer;font-size:12.5px}.shp-sort button.on{background:#5a3d7a;color:#fff}.shp-sort .hint{font-weight:400}
 .shp-view{background:rgba(90,61,122,.55)!important;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);transition:background .2s}.shp-view:hover{background:rgba(90,61,122,.92)!important}
 
 /* 0.65.5 큰 사진 50% 키움 (작은 사진 그대로) */
@@ -362,7 +363,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 <script src="../readnow-sellers-core.js?v=1.3.0"></script>
 <script src="../readnow-core.js?v=1.4.1"></script>
 <script src="../readnow-pricing-core.js?v=0.9.1"></script>
-<script src="../readnow-shipping-core.js?v=0.2.1"></script>
+<script src="../readnow-shipping-core.js?v=0.2.2"></script>
 <script src="../readnow-products-core.js?v=0.11.0"></script>
 <script>
 'use strict';
@@ -371,7 +372,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.65.9';
+const APP_VER = '0.65.11';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -2976,7 +2977,8 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
-  '0.65.9': ['업데이트 알림을 화면 왼쪽 아래 작은 한 줄로(기본 접힘) — \'내용\'을 눌러야 바뀐 내용이 펼쳐지고, 닫기 ✕는 늘 그 한 줄 안에 있어 작은 휴대폰에서도 화면 밖으로 나가지 않음 (펼쳐도 높이는 화면 절반까지, 안에서 스크롤)', '새 버전 알림도 같은 작은 줄로 (새로고침 · ✕)'],
+  '0.65.11': ['오늘 출고 주문별 보기에 정렬 고르기: 서가 순(기본, 지금과 같음) · 관리코드 순 — 관리코드 순은 주문 안 상품을 관리코드 글자 순(같은 코드면 이름 순), 주문끼리는 첫 상품의 관리코드 순. 주문은 어느 쪽이든 섞지 않음. 고른 것은 이 기기에 기억'],
+  '0.65.10': ['업데이트 알림(파란 띠)을 원래대로 맨 위 목록으로 되돌리고, 띠 어디를 눌러도 닫히게 — 작은 휴대폰에서 닫기 단추가 화면 밖으로 밀려도 끌 수 있음', '새 버전 알림(주황 띠): 새로고침 단추 말고 다른 곳을 누르면 닫힘'],
   '0.65.8': ['서가 바로잡음: BLK·YLW·GRY·GRN 한 줄만 한 서가(섞어서 이름 순), 나머지 PNKLUX · REDFGN · BLU · SKY · MGZ · ORGCMC · KHKDVD · KHKCPD는 각각 따로 서가 — 이 순서로', '서가별 보기 띠 색을 서가마다 따로'],
   '0.65.7': ['서가 바로잡음: BLK·YLW·GRY·GRN(뒤 3자리 상관없이)은 한 서가 — 서가 안에서는 관리코드를 가리지 않고 이름 철자 순으로 섞어 늘어놓음 (주문별·서가별 보기 모두)', '서가별 보기 띠에 서가 이름(BLK · YLW · GRY · GRN 등), 상품 줄에 \'서가 …\''],
   '0.65.6': ['오늘 출고 사진 고침: 예전 규칙이 큰 사진을 높이 110px에 묶어 둬서 크기가 안 바뀌었음 → 사진 규칙을 한 곳으로 정리, 큰 사진 실제 225×300(휴대폰 180×248)', '사진 자리 고정: 맨 위 줄은 앞표지 하나, 아래 줄은 나머지 — 누른 사진이 자기 줄·자리에서 커지고 다른 사진은 제자리에서 작아짐(줄이 바뀌거나 섞이지 않음)'],
@@ -3059,22 +3061,17 @@ const CHANGELOG = {
   '0.21.0': ['접힘 칸이 바로 닫히던 문제 수정'],
 };
 function versionBanner() {
-  // 업데이트 알림: 화면 왼쪽 아래 작은 한 줄(기본 접힘). '내용'을 눌러야 펼쳐지고, 닫기(✕)는 늘 한 줄 안에 있어 작은 휴대폰에서도 화면 밖으로 안 나감
-  let dock = document.getElementById('verdock'); if (!dock) { dock = document.createElement('div'); dock.id = 'verdock'; document.body.appendChild(dock); }
-  const prev = localStorage.getItem('rn-lastver');
+  // 업데이트 알림(파란 띠): 맨 위에 바뀐 내용 목록. 띠 어디를 눌러도 확인하고 닫힘 (작은 휴대폰에서 닫기 단추가 화면 밖으로 밀려도 끌 수 있게)
+  const prev = localStorage.getItem('rn-lastver'); const bar = document.createElement('div'); bar.className = 'verbar';
   if (prev !== APP_VER) {
     const keys = Object.keys(CHANGELOG).filter((v) => !prev || cmpVer(v, prev) > 0).sort(cmpVer).reverse();
-    const all = keys.flatMap((v) => CHANGELOG[v].map((t) => `<li><small>v${v}</small> ${esc(t)}</li>`)); const items = all.slice(0, 12);
-    const bar = document.createElement('div'); bar.className = 'verbar';
-    bar.innerHTML = `<div class="vh"><span class="vt">v${APP_VER}로 업데이트됨</span>${items.length ? `<button class="vo">내용 ${all.length}</button>` : ''}<button class="vx" title="확인하고 닫기">✕</button></div>${items.length ? `<div class="vb"><ul>${items.join('')}</ul>${all.length > items.length ? `<small>… 나머지는 기록 → 업데이트 기록 목록</small>` : ''}</div>` : ''}`;
-    dock.appendChild(bar);
-    const tog = () => { bar.classList.toggle('open'); dock.classList.toggle('wide', bar.classList.contains('open')); const o = bar.querySelector('.vo'); if (o) o.textContent = bar.classList.contains('open') ? '접기' : `내용 ${all.length}`; };
-    bar.querySelector('.vt').onclick = tog; const vo = bar.querySelector('.vo'); if (vo) vo.onclick = tog;
-    bar.querySelector('.vx').onclick = () => { localStorage.setItem('rn-lastver', APP_VER); bar.remove(); dock.classList.remove('wide'); };
+    const items = keys.flatMap((v) => CHANGELOG[v].map((t) => `<li><small>v${v}</small> ${esc(t)}</li>`)).slice(0, 12);
+    bar.innerHTML = `<b>웹앱이 ${prev ? `v${esc(prev)} → ` : ''}v${APP_VER}(으)로 바뀌었습니다</b> <small>(아무 데나 누르면 닫힘)</small>${items.length ? `<ul>${items.join('')}</ul>` : ''}<button class="vx">확인</button>`;
+    document.body.prepend(bar); bar.onclick = () => { localStorage.setItem('rn-lastver', APP_VER); bar.remove(); };
   }
   const check = async () => {
     try { const t = await (await fetch(location.pathname + '?vc=' + Date.now(), { cache: 'no-store' })).text(); const m = t.match(/const APP_VER = '([\d.]+)'/);
-      if (m && cmpVer(m[1], APP_VER) > 0 && !document.querySelector('.verbar.new')) { const nb = document.createElement('div'); nb.className = 'verbar new'; nb.innerHTML = `<div class="vh"><span class="vt">새 버전 v${esc(m[1])} 있음</span><button class="vx" onclick="location.reload()">새로고침</button><button class="vo" title="닫기">✕</button></div>`; nb.querySelector('.vo').onclick = () => nb.remove(); dock.appendChild(nb); } } catch (e) {}
+      if (m && cmpVer(m[1], APP_VER) > 0 && !document.querySelector('.verbar.new')) { const nb = document.createElement('div'); nb.className = 'verbar new'; nb.innerHTML = `<b>새 버전 v${esc(m[1])}이(가) 올라왔습니다</b> (지금 v${APP_VER}) <button class="vx" onclick="event.stopPropagation();location.reload()">새로고침</button> <small>(다른 곳을 누르면 닫힘)</small>`; nb.onclick = () => nb.remove(); document.body.prepend(nb); } } catch (e) {}
   };
   setTimeout(check, 15000); setInterval(check, 10 * 60000); document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
 }
@@ -3673,7 +3670,7 @@ function engineManualHtml() {
   <p>결정 화면 오른쪽 블록 왼쪽의 <b>?</b> = 그 매물에 '중고상품 구매 유의 사항' 글이 있거나 새상품 표지와 다른 사진(판매자 실사진)이 있음. 마우스를 올리면 내용. 수집기 '경쟁 매물 유의사항·사진'(버튼, 상품 일괄·모두 일괄에 포함)이 우리 책마다 온라인 중고 <b>첫 페이지의 다른 판매자 매물 전부</b>를 모읍니다(가격 감시 중인 책 먼저). 다시 확인 주기는 수집기 설정에서 바꿈(기본 30일, 0 = 매번). 내용이 바뀌면 <b>이전 내용을 덮어쓰지 않고 새 판으로 쌓아 모두 보관</b>하고, 같으면 판을 늘리지 않고 확인 시각만 남깁니다.</p>
   <h4>7-6. 알라딘 판매관리 흐름과 오늘 출고</h4>
   <p>① 주문확인요청 → [발송준비시작] → ② <b>발송 요청</b>(송장 입력) → [입력완료] → ③ 배송&구매확정전(고객이 수령확인·평가하거나, 출고 후 5일 안에 안 누르면 6일째 자동 구매확정) → ④ 구매확정&정산대기(다음 날 새벽 예치금 정산) → ⑤ 정산완료(3개월 보관). <b>오늘 출고 = ② 발송 요청 탭의 주문</b>이고 영업일(주말·설정 ⑫의 휴일 제외) 13~15시에 출고합니다(고객 안내 13시). 매출(0~24시 주문)과 출고(어제 출고 뒤부터 오늘 출고까지 모인 주문)는 따로 셉니다.<br>
-  <b>오늘 출고 화면</b>(홈 알림 · 상품 탭 '오늘 출고'): 수집기 '발송 요청 읽기'(영업일 9~16시 15분마다 저절로)가 읽은 주문을 서가 순서로 보여 줍니다 — 주문은 절대 섞지 않고, 주문 안 상품은 서가 순서(PNKLUX → [BLK·YLW·GRY·GRN] → REDFGN → BLU → SKY → MGZ → ORGCMC → KHKDVD → KHKCPD → 그 외, 각각 따로 서가) → 같은 서가 안에서는 이름 철자 순. <b>BLK·YLW·GRY·GRN만 한 서가</b>(뒤 3자리 상관없이 한 책장에 섞여 꽂혀 있으므로 관리코드를 가리지 않고 섞어서 이름 철자 순), 주문끼리는 첫 상품의 서가 순. 관리코드는 앞 6자리로 봄(뒤의 _ms·-날짜 등은 무시). 상품마다 사진·관리코드(색)·이름·수량·판매가·등급·우리 매물의 구매 유의 사항과 사진(사진은 늘 제자리 — 누른 사진이 그 자리에서 커지고 크던 사진은 작아짐, 앞표지는 늘 첫 자리, 두 번 누르면 원본). 오른쪽 아래(동그란 보기 단추 왼쪽) '⇄' 단추를 누르면 <b>서가별(상품) 보기</b>로 바뀜 — 주문을 풀어 모든 상품을 서가 순서, 서가 안에서는 이름 철자 순으로 늘어놓고 상품마다 주문 번호·수령인을 붙임(서가를 한 바퀴 돌며 꺼낼 때). 다시 누르면 주문별. '출고 확정'은 지금은 기록만 하고, ALPS 송장 출력·알라딘 송장 일괄등록은 양식 파일을 받은 뒤 이 버튼에 붙입니다. 알라딘 송장 일괄등록은 <b>CSV 파일만</b> 받습니다(팝업 step1의 일괄등록용 엑셀에 송장번호를 넣고 CSV로 저장).<br>
+  <b>오늘 출고 화면</b>(홈 알림 · 상품 탭 '오늘 출고'): 수집기 '발송 요청 읽기'(영업일 9~16시 15분마다 저절로)가 읽은 주문을 서가 순서로 보여 줍니다 — 주문은 절대 섞지 않고, 주문 안 상품은 서가 순서(PNKLUX → [BLK·YLW·GRY·GRN] → REDFGN → BLU → SKY → MGZ → ORGCMC → KHKDVD → KHKCPD → 그 외, 각각 따로 서가) → 같은 서가 안에서는 이름 철자 순. <b>BLK·YLW·GRY·GRN만 한 서가</b>(뒤 3자리 상관없이 한 책장에 섞여 꽂혀 있으므로 관리코드를 가리지 않고 섞어서 이름 철자 순), 주문끼리는 첫 상품의 서가 순. 관리코드는 앞 6자리로 봄(뒤의 _ms·-날짜 등은 무시). 상품마다 사진·관리코드(색)·이름·수량·판매가·등급·우리 매물의 구매 유의 사항과 사진(사진은 늘 제자리 — 누른 사진이 그 자리에서 커지고 크던 사진은 작아짐, 앞표지는 늘 첫 자리, 두 번 누르면 원본). 주문별 보기 맨 위 '정렬'에서 <b>서가 순</b>(기본) 대신 <b>관리코드 순</b>을 고를 수 있음 — 주문 안 상품을 관리코드 글자 순(같은 코드면 이름 순), 주문끼리는 첫 상품의 관리코드 순(주문은 어느 쪽이든 섞지 않음, 고른 것은 그 기기에 기억). 오른쪽 아래(동그란 보기 단추 왼쪽) '⇄' 단추를 누르면 <b>서가별(상품) 보기</b>로 바뀜 — 주문을 풀어 모든 상품을 서가 순서, 서가 안에서는 이름 철자 순으로 늘어놓고 상품마다 주문 번호·수령인을 붙임(서가를 한 바퀴 돌며 꺼낼 때). 다시 누르면 주문별. '출고 확정'은 지금은 기록만 하고, ALPS 송장 출력·알라딘 송장 일괄등록은 양식 파일을 받은 뒤 이 버튼에 붙입니다. 알라딘 송장 일괄등록은 <b>CSV 파일만</b> 받습니다(팝업 step1의 일괄등록용 엑셀에 송장번호를 넣고 CSV로 저장).<br>
   <b>출고 지연 알림</b>: 출고 예정 영업일(마감 시각 전 주문은 그날, 아니면 다음 영업일)에서 설정 ⑧의 영업일 수가 지나도 출고 기록이 없을 때.</p>
   <h4>7-8. 기록 받기와 이 기기 저장 용량</h4>
   <p>웹앱은 탭을 열 때 그 탭에 필요한 기록만 받습니다(받은 것은 기기에 저장돼 다음엔 바뀐 것만). 머리 칸 <b>⬇</b>를 누르면 모든 기록을 한 번에 받는 칸이 펼쳐집니다 — 단계별 진행, 끊기면 끝난 단계는 건너뛰고 큰 기록은 1,000건씩 받은 위치부터 이어 받음, 접어도 계속 받음, '웹앱을 열면 저절로'(기본 켬). 같은 칸에 이 기기가 웹앱 기록에 쓰는 저장 용량·한도와 기록 수가 나옵니다. 아래로 스크롤하면 머리 칸이 얇은 띠 하나(제목·⬇)로 줄고, 맨 위로 가거나 위로 조금 올리거나 띠를 누르면 다시 펼쳐집니다. 받다가 안 되는 단계는 3번까지 다시 시도하고, 그래도 안 되면 빨갛게 표시하고(이유는 마우스를 올리면) 다음 단계로 넘어갑니다. 오늘 출고는 홈 알림·상품 탭 버튼·<b>주문·매출 탭 맨 위</b>에서 엽니다.</p>
@@ -3702,7 +3699,7 @@ function openManual() {
   <div class="card" style="font-size:13.5px;line-height:1.7"><b>한눈에</b><br>
   ① <b>리드나우 수집기</b>(Tampermonkey, PC)가 알라딘에서 주문·고객·상품·판매자·매입·팔기 정보를 모아 <b>Firebase</b>에 올립니다.<br>
   ② <b>웹앱</b>(이 화면, 휴대폰·PC)이 Firebase를 읽어 보여주고, 메모·표시·매입 기록·설정을 저장합니다.<br>
-  ③ <b>GitHub</b>(jerrycson/readnow-scripts)에는 웹앱(app/index.html)과 공용 파일(readnow-*-core.js)이 있습니다. 파일을 바꾸면 몇 분 뒤 모든 기기에 반영되고, 새로고침하면 화면 왼쪽 아래에 작은 'v…로 업데이트됨' 알림이 뜹니다(누르면 바뀐 내용 펼침, ✕로 닫기).<br>
+  ③ <b>GitHub</b>(jerrycson/readnow-scripts)에는 웹앱(app/index.html)과 공용 파일(readnow-*-core.js)이 있습니다. 파일을 바꾸면 몇 분 뒤 모든 기기에 반영되고, 새로고침하면 맨 위에 '바뀌었습니다' 띠가 뜹니다(띠 어디를 눌러도 닫힘).<br>
   원칙: <b>들어온 정보는 지우거나 덮어쓰지 않고 새 정보만 쌓습니다.</b> 숫자를 누르면(› 표시) 그 숫자를 만든 기록이 나옵니다.</div>
   ${sec2('⚙ 판정 엔진 (판매가 자동 결정) — 기준·로드맵', engineManualHtml(), false)}
   ${sec2('🧭 매일 쓰는 순서', `<ol><li><b>홈 → 오늘 확인할 것</b>: 빨간 줄(출고 지연·미답변 문의·불만족)을 먼저. 줄을 누르면 해당 목록으로 갑니다.</li><li><b>경영</b>: 매출 페이스·공헌이익·재고 회전·가격 경쟁력.</li><li><b>고객 → 문의 / 평가</b>: 답 안 한 문의, 불만족 평가 처리.</li><li><b>매입</b>: 새 매입은 '＋ 새 매입 기록'으로 바로 적기. 폐기·알라딘 팔기도 여기서.</li><li>수집은 <b>매일 오후 5시 JS-MAIN이 자동</b>으로 '모두 일괄 수집'을 합니다 (설정 ⑨).</li></ol>`, true)}
@@ -3715,7 +3712,7 @@ function openManual() {
   ${sec2('📈 경영', `① 오늘 확인할 것 ② 매출 페이스 ③ 수익성(공헌이익·처분 매출) ④ 재고 건강 ⑤ 가격 경쟁력(알라딘 매입가보다 쌈, 유효·첫 번째 최저가보다 10% 이상 쌈) ⑥ 고객·평판 ⑦ 시장 위치(6개월 평가 순위) ⑧ 매입·투자 회수.`)}
   ${sec2('⚙ 설정 (관리자 기기만 변경: JS-MAIN · JS-PHONE · HOME)', `① 기기 이름(한 기기만 쓸 수 있음) ② 목표 ③ 매출·이익 계산 ④ 택배 계약 ⑤ 매입(김미소·헌옷 범위, 폐기 단가, 무게 폭 등) ⑥ 고객 점수 기준 ⑦ 판매자 점수 기준 ⑧ 경영 알림 기준 ⑨ 수집기 공통(요청 간격, 매일 자동 시각·PC, 일괄 단계 켜고 끄기, 작업 중요도) ⑩ 화면 표시.`)}
   ${sec2('🤖 리드나우 수집기 (PC)', `알라딘 주문조회·판매관리·상품 조회 화면 오른쪽 위: <b>[▶ 모두] [고객·주문] [상품·매입]</b>.<br><b>모두 일괄 수집</b>: 고객·주문 → 신규 등록분 → 알라딘 구매·팔기 → 도서·시장 지표(판매완료 책 포함) → 6개월 평가 → 상위 판매자 평가 → 구매자 분포. 단계는 체크로 켜고 끔.<br><b>중요도</b>: 높은 작업이 시작되면 낮은 작업은 저장 후 멈췄다가 자동으로 이어감. <b>멈춰도 이어서</b> 합니다(진행 위치 저장).<br><b>매일 자동</b>: 오후 5시 JS-MAIN, 안 되면 30분 뒤 다른 PC. 24시간 안에 모두 일괄 수집을 끝냈으면 그날은 건너뜀. <b>웹앱 수집 요청</b>도 JS-MAIN이 먼저 받음.<br>판매자 툴팁(별도 스크립트): 알라딘 중고 화면에 판매자 점수 배지.`)}
-  ${sec2('🔧 문제가 생기면', `<ul><li>새로고침했는데 왼쪽 아래 'v…로 업데이트됨' 알림이 없으면 GitHub 반영 전(몇 분 대기).</li><li>매입 탭에 빨간 '못 읽음' → Firebase 규칙에 해당 컬렉션 허용.</li><li>수집기 기록 칸의 빨간 글씨를 그대로 보내 주세요.</li><li>웹앱이 멈추면 다른 탭의 예전 웹앱을 닫고 새로고침.</li></ul>`)}`;
+  ${sec2('🔧 문제가 생기면', `<ul><li>새로고침했는데 '바뀌었습니다' 띠가 없으면 GitHub 반영 전(몇 분 대기).</li><li>매입 탭에 빨간 '못 읽음' → Firebase 규칙에 해당 컬렉션 허용.</li><li>수집기 기록 칸의 빨간 글씨를 그대로 보내 주세요.</li><li>웹앱이 멈추면 다른 탭의 예전 웹앱을 닫고 새로고침.</li></ul>`)}`;
   $('#back').onclick = () => history.back();
 }
 
@@ -4168,11 +4165,12 @@ function loadShip() { if (S.shipLoading) return; S.shipLoading = true; db.collec
 function shipListingOf(lid) { if (!S.plist) return null; if (!S.plistByLid || S.plistByLidN !== S.plist.size) { S.plistByLid = new Map(); for (const l of S.plist.values()) if (l.listingId) S.plistByLid.set(String(l.listingId), l); S.plistByLidN = S.plist.size; } return S.plistByLid.get(String(lid)) || null; }
 async function openShip() {
   if (!S.shipView) S.shipView = localStorage.getItem('rn-ship-view') || 'order';
+  if (!S.shipSort) S.shipSort = localStorage.getItem('rn-ship-sort') || 'shelf'; // 주문별 보기 정렬: shelf(서가 순, 기본) · sku(관리코드 순)
   const SH = window.ReadnowShipping; const sh = $('#sheet'); S.detail = { ship: 1 }; if (!sh.classList.contains('on')) history.pushState({ ship: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden';
   if (!SH) { sh.innerHTML = '<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">오늘 출고</div></div><div class="card"><div class="empty">출고 기준 파일(readnow-shipping-core.js)을 못 불러옴 — GitHub에 올렸는지 확인</div></div>'; $('#back').onclick = () => history.back(); return; }
   if (!S.ship) { sh.innerHTML = '<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">오늘 출고</div></div><div class="card"><div class="empty">발송 요청 목록 읽는 중…</div></div>'; $('#back').onclick = () => history.back(); loadShip(); return; }
   if (!S.prodLoaded && !S.prodBusy) loadProducts && loadProducts().then(() => { if (S.detail && S.detail.ship) openShip(); }).catch(() => {});
-  const X = S.ship; const orders = SH.sortShipment(X.orders || []); const items = orders.flatMap((o) => o.items); const total = items.reduce((a, i) => a + (i.price || 0) * (i.qty || 1), 0);
+  const X = S.ship; const orders = SH.sortShipment(X.orders || [], S.shipView === 'shelf' ? 'shelf' : S.shipSort); const items = orders.flatMap((o) => o.items); const total = items.reduce((a, i) => a + (i.price || 0) * (i.qty || 1), 0);
   const now = new Date(); const dk = SH.ymd(now); const wd = '일월화수목금토'[new Date(dk + 'T12:00:00Z').getUTCDay()]; const opt = { holidays: ((S.app.ship || {}).holidays) || [], cutHour: ((S.app.ship || {}).cutHour) ?? 15 };
   const biz = SH.isBizDay(now, opt.holidays); const tc = X.tabCounts || {};
   const uinfo = S.shipUinfo || (S.shipUinfo = new Map());
@@ -4207,9 +4205,11 @@ async function openShip() {
       <div class="shp-sum">주문 <b>${orders.length}</b> · 상품 <b>${items.reduce((a, i) => a + (i.qty || 1), 0)}</b>권 · 판매가 <b>${won(total)}</b> · 읽은 시각 ${esc(String(X.at || '').slice(11, 16) ? new Date(X.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '-')}${tc['주문확인요청'] ? ` · <b style="color:#B0322A">주문확인요청 ${tc['주문확인요청']}건 — 샵매니저에서 발송준비시작을 눌러야 여기 들어옴</b>` : ''}${!biz ? ' · <b>오늘은 출고하지 않는 날(주말·휴일)</b>' : ''}${S.shipErr ? ` · <b style="color:#B0322A">${esc(prErrText(S.shipErr, '발송 요청 목록'))}</b>` : ''}</div></div>
     <div class="card"><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" id="shp_ok">출고 확정 (관리자 확인)</button><button class="btn ghost" id="shp_re">새로 읽기</button><button class="btn ghost" disabled title="ALPS 업로드 양식 파일을 받으면 켭니다">ALPS 엑셀 만들기 (준비 중)</button><button class="btn ghost" disabled title="알라딘 송장번호 일괄등록용 파일을 받으면 켭니다">송장번호 일괄등록 CSV (준비 중)</button></div>
       <p class="hint" style="margin:6px 0 0">발송 요청 탭의 주문 = 오늘 출고. 주문은 섞지 않고, 주문 안 상품은 서가 순서 → 이름 순, 주문끼리는 첫 상품의 서가 순입니다. 수집기가 영업일 9~16시에 15분마다 다시 읽습니다. ${X.at ? '' : '아직 읽은 적 없음 — 수집기에서 \'발송 요청 읽기\''}</p></div>
+    ${S.shipView === 'shelf' ? '' : `<div class="shp-sort">정렬 <button data-ss="shelf" class="${S.shipSort !== 'sku' ? 'on' : ''}">서가 순</button><button data-ss="sku" class="${S.shipSort === 'sku' ? 'on' : ''}">관리코드 순</button><span class="hint">${S.shipSort === 'sku' ? '주문 안 상품: 관리코드 글자 순 → 같은 코드면 이름 순 · 주문끼리: 첫 상품의 관리코드 순' : '주문 안 상품: 서가 순서 → 같은 서가면 이름 순 · 주문끼리: 첫 상품의 서가 순'}</span></div>`}
     ${S.shipView === 'shelf' ? shelfHtml() : orders.map(orderHtml).join('') || '<div class="empty">발송 요청 주문이 없습니다</div>'}
     <button class="shp-view" id="shp_view" title="누를 때마다 보기 바꿈">${S.shipView === 'shelf' ? '⇄ 주문별로 보기' : '⇄ 서가별(상품) 보기'}</button>`;
   $('#back').onclick = () => history.back(); fillUsedInfo(sh);
+  sh.querySelectorAll('[data-ss]').forEach((b) => b.onclick = () => { S.shipSort = b.dataset.ss; localStorage.setItem('rn-ship-sort', S.shipSort); const y = sh.scrollTop; openShip(); sh.scrollTop = y; });
   sh.querySelector('#shp_view').onclick = () => { S.shipView = S.shipView === 'shelf' ? 'order' : 'shelf'; localStorage.setItem('rn-ship-view', S.shipView); const y = sh.scrollTop; openShip(); sh.scrollTop = 0; };
   // 사진 자리는 고정: 맨 위 줄 = 앞표지 하나, 아래 줄 = 나머지. 누른 사진이 자기 자리(줄)에서 커지고, 크던 사진은 자기 자리에서 작아짐. 두 번 누르면 원본
   sh.querySelectorAll('.shp-img').forEach((box) => { let tm = null; box.onclick = (e) => { const im = e.target.closest('.ph'); if (!im) return; clearTimeout(tm); tm = setTimeout(() => { box.querySelectorAll('.ph').forEach((x) => x.classList.toggle('act', x === im)); }, 220); };
@@ -4260,10 +4260,11 @@ function openPriceHistory() {
 }
 
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
-   웹앱의 바뀐 내용은 CHANGELOG 한 곳(왼쪽 아래 '업데이트됨' 알림과 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
+   웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.65.9': '2026-10-06', '0.65.8': '2026-10-06', '0.65.7': '2026-10-06', '0.65.6': '2026-10-06', '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.65.11': '2026-10-06', '0.65.10': '2026-10-06', '0.65.8': '2026-10-06', '0.65.7': '2026-10-06', '0.65.6': '2026-10-06', '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
+  { d: '2026-10-06', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.2.2', n: ['관리코드 순 정렬(bySku) 추가 — 주문별 보기에서 서가 순 대신 고를 수 있음'] },
   { d: '2026-10-06', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.2.1', n: ['서가 바로잡음: BLK·YLW·GRY·GRN만 한 서가, 나머지(PNKLUX·REDFGN·BLU·SKY·MGZ·ORGCMC·KHKDVD·KHKCPD)는 각각 서가'] },
   { d: '2026-10-06', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.2.0', n: ['서가 바로잡음: 한 줄 = 한 서가, BLK·YLW·GRY·GRN(뒤 3자리 상관없이)은 한 서가. 같은 서가 안은 관리코드를 가리지 않고 이름 철자 순', '서가 이름(shelfName)·정렬 기준(byShelfTitle) 한 곳에'] },
   { d: '2026-10-05', app: '수집기', v: '1.27.0', n: ["'끝없는 탐색 수집 ∞' 버튼: 우리 책들의 함께 산 책에서 시작해 새 책마다 모든 정보를 모으고 끝없이 넓혀 감(대기열 prd_explore, 멈춰도 이어감, 다른 작업이 시작되면 양보 후 다시 이어감)", "'발송 요청 읽기 (오늘 출고)' 버튼 + 영업일 9~16시 15분마다 저절로: 주문·수령인·상품(관리코드·등록일)·우리 매물 구매 유의 사항·사진, 목록이 바뀌면 판으로 보관", '구매자 분포 한 권 읽기를 탐색 수집과 같이 쓰도록 정리'] },
