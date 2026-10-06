@@ -1,13 +1,14 @@
 // ==========================================================================
-// ReadNow Shipping Core — 0.2.2  (출고: 알라딘 판매관리 화면 읽기 · 서가 순서 · 영업일)
+// ReadNow Shipping Core — 0.4.0  (출고: 알라딘 판매관리 화면 읽기 · 서가 순서 · 영업일)
 // 웹앱(오늘 출고 화면)과 수집기(발송 요청 읽기)가 같이 쓰는 기준 — 같은 기준은 여기 한 곳에만
 // 알라딘 판매관리 흐름: ① 주문확인요청(orderstep=3) → [발송준비시작] → ② 발송 요청(orderstep=4, 송장 입력)
 //   → [입력완료] → ③ 배송&구매확정전(출고 후 5일 안에 수령확인 없으면 6일째 자동 구매확정) → ④ 구매확정&정산대기(다음 날 새벽 예치금 정산) → ⑤ 정산완료(3개월 보관)
-// 오늘 출고 = ② 발송 요청 탭에 있는 주문 (영업일 오후 1~3시 출고, 고객에게는 1시 안내)
+// 오늘 출고 = ② 발송 요청 탭에 있는 주문. 출고 마감 = 영업일 오후 2시(14:00) 원칙 — 이 시각 전 주문은 그날 출고 묶음, 뒤는 다음 영업일 (2026-10-06 정범 지정)
+// 예외 날은 그날 마감 시각을 따로 적음(dayCut) — 웹앱 '출고별 매출'에서 날짜마다 고침
 // ==========================================================================
 (function (root) {
   'use strict';
-  const VERSION = '0.2.2';
+  const VERSION = '0.4.0';
   const T = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
   const toInt = (s) => { const n = parseInt(String(s || '').replace(/[^\d-]/g, ''), 10); return isNaN(n) ? null : n; };
 
@@ -83,10 +84,52 @@
   const ymd = (d) => new Date(d.getTime() + 9 * 3600e3).toISOString().slice(0, 10); // 한국 날짜
   function isBizDay(d, holidays) { const k = ymd(d); const wd = new Date(k + 'T12:00:00Z').getUTCDay(); /* 한국 날짜의 요일 (실행 기기 시간대와 무관) */ return wd !== 0 && wd !== 6 && !(holidays || []).includes(k); }
   function nextBizDay(d, holidays) { let x = new Date(d.getTime()); do { x = new Date(x.getTime() + 864e5); } while (!isBizDay(x, holidays)); return x; }
-  // 주문의 출고 예정일: 영업일 출고 마감(기본 15시) 전 주문 → 그날, 아니면 다음 영업일
-  function dueShipDay(orderedAt, opt) { const o = opt || {}; const cut = o.cutHour ?? 15; const t = new Date(String(orderedAt).replace(' ', 'T') + (/[+Z]/.test(String(orderedAt)) ? '' : '+09:00'));
-    const h = +new Date(t.getTime() + 9 * 3600e3).toISOString().slice(11, 13); return isBizDay(t, o.holidays) && h < cut ? ymd(t) : ymd(nextBizDay(t, o.holidays)); }
+  // 출고 마감: 기본 14:00. opt.cutTime('HH:MM') = 평소 마감, opt.dayCut = { 'YYYY-MM-DD': 'HH:MM' } 그날만 다른 마감(수기 입력)
+  const DEFAULT_CUT = '14:00';
+  const cutMin = (v) => { if (v == null || v === '') return null; const m = String(v).trim().match(/^(\d{1,2})(?::?(\d{2}))?$/); return m && +m[1] < 24 && +(m[2] || 0) < 60 ? +m[1] * 60 + +(m[2] || 0) : null; };
+  const cutOf = (dateKey, opt) => { const o = opt || {}; return cutMin(o.dayCut && o.dayCut[dateKey]) ?? cutMin(o.cutTime) ?? cutMin(DEFAULT_CUT); };
+  const cutIsSet = (dateKey, opt) => !!(opt && opt.dayCut && cutMin(opt.dayCut[dateKey]) != null);
+  // 주문의 출고일(출고 묶음): 영업일이고 그날 마감 전 주문 → 그날, 아니면 다음 영업일
+  function dueShipDay(orderedAt, opt) { const o = opt || {}; const t = new Date(String(orderedAt).replace(' ', 'T') + (/[+Z]/.test(String(orderedAt)) ? '' : '+09:00'));
+    const k = ymd(t); const hm = new Date(t.getTime() + 9 * 3600e3).toISOString().slice(11, 16); const mins = +hm.slice(0, 2) * 60 + +hm.slice(3, 5);
+    return isBizDay(t, o.holidays) && mins < cutOf(k, o) ? k : ymd(nextBizDay(t, o.holidays)); }
 
-  const API = { VERSION, parseDeliveryPage, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd };
+  // ── 알라딘 발송 요청 엑셀(worder_excel.aspx, status=4) → ALPS 일괄주문접수(사용자파일 '알라딘') 업로드 파일 ──
+  // 정범이 ALPS에 올려 성공한 파일(판매완료20260925-ALPS업로드성공.xlsx)과 같은 29칸·같은 순서. 숫자 칸은 그 파일처럼 숫자로
+  const ALADIN_XLS_HEAD = ['상태', '주문번호', '자체상품관리코드', '상품명', 'ISBN', '원상품ISBN', '원상품바코드', '출판사', '수량', '주문인', '수령인', '주문일', '입금일', '판매가', '판매총액', '판매수수료', '정상발송 마감일', '발송일', '택배사', '송장번호', '주문메모', '우편번호', '수령 주소', '전화1', '전화2', '배송요청사항', '위탁승인번호', '증빙서류', '비고'];
+  const XLS_NUM = ['수량', '판매가', '판매총액', '판매수수료', '우편번호'];
+  function parseAladinOrderExcel(doc) { // 알라딘이 내려주는 .xls는 사실 HTML 표
+    const tb = [...doc.querySelectorAll('table')].find((t) => /주문번호/.test(T(t.rows && t.rows[0]))); if (!tb) return null;
+    const rows = [...tb.rows].map((r) => [...r.cells].map((c) => T(c))); const header = rows.shift();
+    return { header, rows: rows.filter((r) => r.some((x) => x)) };
+  }
+  function alpsUploadAoa(excel) { // [[머리 칸], [줄]...] — 머리 칸 이름으로 맞춰 29칸 순서를 지킴
+    const ix = ALADIN_XLS_HEAD.map((h) => excel.header.indexOf(h));
+    return [ALADIN_XLS_HEAD, ...excel.rows.map((r) => ALADIN_XLS_HEAD.map((h, k) => { const v = ix[k] >= 0 ? r[ix[k]] : ''; if (XLS_NUM.includes(h) && /^-?[\d,]+$/.test(String(v || '').trim())) return Number(String(v).replace(/,/g, '')); return v == null ? '' : v; }))];
+  }
+  // ── ALPS '통합관리 운송장출력' 엑셀(출력한 운송장 목록) → 주문별 송장번호 ──
+  // ALPS 목록에는 알라딘 주문번호가 없음(주문번호 칸이 빔) → 수하인명 + 상품명 + 상품상세내용(= 관리코드)으로 알라딘 주문의 상품과 맞춤. 같은 수하인 여러 권은 합포장(같은 운송장번호)
+  function parseAlpsWaybills(aoa) {
+    const hi = aoa.findIndex((r) => r && r.includes('운송장번호') && r.includes('수하인명')); if (hi < 0) return null; const H = aoa[hi]; const c = (n) => H.indexOf(n);
+    return aoa.slice(hi + 1).filter((r) => r && r[c('운송장번호')]).map((r) => ({ invoice: String(r[c('운송장번호')]).replace(/\D/g, ''), name: String(r[c('수하인명')] || '').trim(), title: String(r[c('상품명')] || '').trim(), sku: String(r[c('상품상세내용')] || '').trim(),
+      packKey: c('합포장키') >= 0 ? String(r[c('합포장키')] || '') : '', mgmtNo: c('관리번호') >= 0 ? String(r[c('관리번호')] || '') : '', printed: c('출력여부') >= 0 ? String(r[c('출력여부')] || '') : '', pickedAt: c('집하일자') >= 0 ? String(r[c('집하일자')] || '') : '' }));
+  }
+  const nTitle = (t) => String(t || '').replace(/^\[중고[^\]]*\]\s*/, '').replace(/[\s\W_]+/g, '').toLowerCase();
+  const nName = (t) => String(t || '').replace(/\(.*?\)/g, '').replace(/\s+/g, '').toLowerCase();
+  // 주문마다: ok(운송장 하나로 다 맞음) · partial(일부 상품만 맞음, 운송장 하나) · many(운송장이 여럿 — 확인 필요) · none(못 찾음)
+  function matchInvoices(orders, waybills) {
+    const used = new Set(); const out = [];
+    for (const o of orders) { const rn = nName((o.recipient && o.recipient.name) || o.buyer); const hits = [];
+      for (const it of o.items || []) { const t = nTitle(it.title || it.titleRaw); let k = waybills.findIndex((w, i) => !used.has(i) && nTitle(w.title) === t && (!w.sku || !it.sku || w.sku === it.sku) && nameOk(nName(w.name), rn));
+        if (k < 0) k = waybills.findIndex((w, i) => !used.has(i) && nTitle(w.title) === t && nameOk(nName(w.name), rn));
+        if (k >= 0) { used.add(k); hits.push(waybills[k]); } }
+      const inv = [...new Set(hits.map((w) => w.invoice))]; const n = (o.items || []).length;
+      out.push({ orderNo: o.orderNo, recipient: (o.recipient && o.recipient.name) || o.buyer || '', items: (o.items || []).map((i) => i.title), invoice: inv.length === 1 ? inv[0] : inv[0] || null, invoices: inv,
+        status: !inv.length ? 'none' : inv.length > 1 ? 'many' : hits.length < n ? 'partial' : 'ok' }); }
+    return { byOrder: out, extra: waybills.filter((w, i) => !used.has(i)) };
+  }
+  const nameOk = (a, b) => !!a && !!b && (a === b || (a.length >= 2 && b.startsWith(a)) || (b.length >= 2 && a.startsWith(b)));
+
+  const API = { VERSION, parseDeliveryPage, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; root.ReadnowShipping = API;
 })(typeof window !== 'undefined' ? window : globalThis);
