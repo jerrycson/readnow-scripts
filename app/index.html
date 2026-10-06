@@ -377,6 +377,10 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
   .shp-note{font-size:15px!important}
   .shp-blk{max-height:240px}
 }
+
+/* 끈끈한 머리 띠(sticky header): 주문·서가가 길어도 지금 보는 상품이 어느 주문·서가인지 맨 위에 늘 보임, 다음 주문·서가가 올라오면 그 띠가 밀어내고 자리를 차지 */
+.shp-o{overflow:clip!important}.shp-o>.shp-oh{position:sticky;top:var(--shpH,0px);z-index:4;box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.shp-o.cash .shp-oh{background:#8a5a00!important}.shp-cashh{margin:22px 8px 0;padding:8px 12px;border-radius:8px;background:#FFF1D6;color:#6b4500;font-weight:800}
 </style>
 </head>
 <body>
@@ -399,7 +403,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.67.0';
+const APP_VER = '0.68.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -1225,8 +1229,8 @@ function renderOrders(m) {
     return;
   }
   if (!S.ordOpsLoaded) loadOrdOps();
-  m.innerHTML = shipEntryCard() + ordersDash('o') + sec('o_bb', '알라딘 팔기 정산 · 전체 매출 (판매 + 정산)', () => bbSalesSection(), true) + sec('o_ops', '택배 개수 · 반품/교환 택배비 고치기 (주문별)', ordOpsFinder(), false) + sec('o_ret', '반품 내역 (엑셀 · 일부 빠짐)', () => returnsSection(), false) + '<p class="hint">주문 기록은 이 기기에 저장되어 있고, 새 주문은 자동으로 더해집니다. 책 제목·ISBN·주문번호는 위 검색창에 입력하세요.</p>';
-  bindDash(m, renderMain); 
+  m.innerHTML = shipEntryCard() + ordersDash('o') + sec('o_bb', '알라딘 팔기 정산 · 전체 매출 (판매 + 정산)', () => bbSalesSection(), true) + sec('o_ops', '택배 개수 · 반품/교환 택배비 고치기 (주문별)', ordOpsFinder(), false) + sec('o_ret', '반품 내역 (엑셀 · 일부 빠짐)', () => returnsSection(), false) + cashSecHtml() + sec('o_shipday', '출고별 매출 <small style="font-weight:400">(보조 지표 · 펼칠 때만 계산)</small>', () => shipDaySection(), false) + '<p class="hint">주문 기록은 이 기기에 저장되어 있고, 새 주문은 자동으로 더해집니다. 책 제목·ISBN·주문번호는 위 검색창에 입력하세요.</p>';
+  bindDash(m, renderMain); bindCash(m); 
   const rf = m.querySelector('#ret_file'), ri = m.querySelector('#ret_in'); if (rf && ri) { rf.onclick = () => ri.click(); ri.onchange = () => ri.files[0] && importReturns(ri.files[0]).catch((er) => toast('실패: ' + er.message)); }
 }
 function renderPending(m) {
@@ -1534,11 +1538,11 @@ function spanText(fromIso) { if (!fromIso) return '-'; const a = new Date(String
 function saleLines(o) { let qty = 0, amt = 0, cq = 0, rq = 0; (o.items || []).forEach((it) => { const q = it.qty || 1; if (it.lineStatus === 'normal') { qty += q; amt += (it.price || 0) * q; } else if (it.lineStatus === 'returned') rq += q; else if (it.lineStatus !== 'cancelledInOrder' && /cancel/i.test(it.lineStatus || '')) cq += q; }); return { qty, amt, cq, rq }; }
 function firstMap() { if (S._firstMap && S._firstMapN === S.orders.size) return S._firstMap; const m = new Map(); for (const o of S.orders.values()) { if (o.kind !== 'sale') continue; const d = String(o.orderedAt || '').slice(0, 10); if (d && (!m.has(o.customerId) || d < m.get(o.customerId))) m.set(o.customerId, d); } S._firstMap = m; S._firstMapN = S.orders.size; return m; }
 function agg(r) {
-  const first = firstMap(); const A = { orders: 0, qty: 0, amt: 0, cq: 0, rq: 0, pre: 0, cust: new Map(), newC: new Set(), retC: new Set(), preC: new Map() };
+  const first = firstMap(); const A = { orders: 0, qty: 0, amt: 0, cq: 0, rq: 0, pre: 0, cash: 0, cashN: 0, cust: new Map(), newC: new Set(), retC: new Set(), preC: new Map() };
   for (const o of S.orders.values()) {
     if (!inRange(o.orderedAt, r)) continue;
     if (o.kind !== 'sale') { A.pre += 1; A.preC.set(o.customerId, (A.preC.get(o.customerId) || 0) + 1); continue; }
-    const L = saleLines(o); A.orders += 1; A.qty += L.qty; A.amt += L.amt; A.cq += L.cq; A.rq += L.rq;
+    const L = saleLines(o); A.orders += 1; A.qty += L.qty; A.amt += L.amt; A.cq += L.cq; A.rq += L.rq; if (isCash(o)) { A.cash += L.amt; A.cashN += 1; } // 현금 판매: 매출에 포함, 따로도 셈
     const c = A.cust.get(o.customerId) || { orders: 0, amt: 0, qty: 0 }; c.orders += 1; c.amt += L.amt; c.qty += L.qty; A.cust.set(o.customerId, c);
     const f = first.get(o.customerId) || ''; ((r && r.start) ? f >= r.start : c.orders === 1) ? A.newC.add(o.customerId) : A.retC.add(o.customerId);
   }
@@ -1566,7 +1570,7 @@ function perfSection(ctx) {
   const ch = cohort(); const days = r.days || Math.max(1, Math.ceil((Date.now() - new Date((salesStart() || dstr(new Date())) + 'T00:00:00')) / 864e5));
   const cmp = (f) => (P ? `<small class="cmp">전기 ${grow(f(A), f(P))}${Y ? ` · 전년 동기 ${grow(f(A), f(Y))}` : ''}</small>` : '');
   const cells = [
-    mcellS(won(A.amt), '순매출', '정상 판매된 책 판매가 합계 (취소·반품 제외) · 누르면 매출 순', 'sales', r) + cmp((x) => x.amt),
+    mcellS(won(A.amt), '순매출', `정상 판매된 책 판매가 합계 (취소·반품 제외)${A.cash ? ` · 현금 판매 ${won(A.cash)}(${A.cashN}건) 포함 — 수수료 0 · 세금 계산 제외` : ''} · 누르면 매출 순`, 'sales', r) + cmp((x) => x.amt),
     mcell(num(A.orders) + '건', '총 주문건수', `판매 전 취소 ${num(A.pre)}건 별도`) + cmp((x) => x.orders),
     mcellS(num(A.qty) + '권', '총 판매 권수', '정상 판매 권수 · 누르면 비싼 순', 'qty', r) + cmp((x) => x.qty),
     mcellS(num(custN) + '명', '구매 고객 수', `신규 ${num(A.newC.size)} · 재구매 ${num(A.retC.size)} · 누르면 총액 순`, 'cust', r) + cmp((x) => x.cust.size),
@@ -1653,6 +1657,128 @@ function bindDash(root, rerender) {
   bindUI(root, rerender); bindShip(root);
   root.querySelectorAll('[data-trend]').forEach((b) => (b.onclick = () => { const [c, k] = b.dataset.trend.split(':'); S['trend_' + c] = k; rerender(); }));
   root.querySelectorAll('[data-cid]').forEach((b) => (b.onclick = () => { if ($('#modal.on')) closeModal(); openCustomer(b.dataset.cid); }));
+}
+
+
+/* ══════════ 출고별 매출 (보조 지표) ══════════
+ * 일별 매출(0~24시 주문)과 따로, '그날 출고한 묶음'으로 묶은 매출. 출고일 = 실제 발송일(주문 기록의 발송일), 아직 발송 기록이 없으면 출고 기준(readnow-shipping-core: 영업일 15시 마감)으로 정한 출고 예정일
+ * 펼칠 때만 계산 (주문·매출 탭 '출고별 매출' 칸) */
+function shipDayOf(o) { if (o.shippedAt) return { d: String(o.shippedAt).slice(0, 10), est: false }; const SH = window.ReadnowShipping; if (!SH || !o.orderedAt) return null;
+  return { d: SH.dueShipDay(o.orderedAt, { holidays: ((S.app.ship || {}).holidays) || [], cutHour: ((S.app.ship || {}).cutHour) ?? 15 }), est: true }; }
+function shipDaySection() {
+  const m = new Map(); const today = dstr(new Date());
+  for (const o of S.orders.values()) { if (o.kind !== 'sale') continue; const L = saleLines(o); if (!L.qty) continue; const sd = shipDayOf(o); if (!sd) continue;
+    const x = m.get(sd.d) || { n: 0, qty: 0, amt: 0, cash: 0, est: 0 }; x.n += 1; x.qty += L.qty; x.amt += L.amt; if (isCash(o)) x.cash += L.amt; if (sd.est) x.est += 1; m.set(sd.d, x); }
+  const days = [...m.keys()].sort().reverse(); const lim = S.shipDayN || 20; const wd = (d) => '일월화수목금토'[new Date(d + 'T12:00:00Z').getUTCDay()];
+  const rows = days.slice(0, lim).map((d) => { const x = m.get(d); return `<tr${d > today ? ' style="color:var(--sub)"' : ''}><td>${esc(d.slice(5))}(${wd(d)})${d > today ? ' <small>예정</small>' : d === today ? ' <b>오늘</b>' : ''}</td><td class="r">${num(x.n)}</td><td class="r">${num(x.qty)}</td><td class="r"><b>${won(x.amt)}</b></td><td class="r">${x.cash ? won(x.cash) : '-'}</td><td class="r">${x.est ? `<small>${x.est}건</small>` : ''}</td></tr>`; }).join('');
+  return `<p class="hint" style="margin:0 0 6px">출고 한 번(영업일 오후 출고)에 나간 주문끼리 묶은 매출입니다. 일별 매출(주문 시각 0~24시)과 다른 보조 지표 — 출고량·택배 준비량을 볼 때. 출고일 = 실제 발송일, 발송 기록이 아직 없는 주문은 출고 예정일(영업일 ${((S.app.ship || {}).cutHour) ?? 15}시 전 주문 → 그날, 아니면 다음 영업일)로 셈('예정·추정' 칸).</p>
+    <div style="overflow:auto"><table class="tbl"><tr><th>출고일</th><th class="r">주문</th><th class="r">권수</th><th class="r">매출</th><th class="r">그중 현금</th><th class="r">예정·추정</th></tr>${rows || '<tr><td colspan="6" class="empty">주문 기록이 없습니다</td></tr>'}</table></div>
+    ${days.length > lim ? `<button class="more" data-shipday-more="1">더 보기 (${days.length - lim}일 더)</button>` : ''}`;
+}
+
+/* ══════════ 현금 판매 (알라딘 밖에서 현금 입금으로 판 것) ══════════
+ * 기록: crm_orders/cash_… (플랫폼 'cash') — 주문 기록과 같은 곳이라 매출·고객 요약·책별 판매에 그대로 들어감. 지우지 않고 바뀐 것은 history에 쌓음
+ *  · 수수료 0(줄마다 fee 0) · 세금 계산 제외(taxExcluded) · 매출에는 포함하되 '현금 판매'로 따로 셈
+ *  · 원래 판매가(listPrice)와 받은 금액(price, 협상가)을 둘 다 남김
+ *  · 문의(묻고 답하기)에서 이어지면 그 문의와 연결(qnaId) — 문의에 상품이 있으면 자동으로 그 상품, 없으면 우리 상품에서 검색해 연결
+ * 알라딘 등록 상태는 저절로 바뀌지 않음 → 줄마다 '알라딘 판매중지' 할 일(aladinStop)을 만들고 끝날 때까지 경고:
+ *  ① 홈 '오늘 확인할 것' 빨간 경고 ② 샵매니저 상품 조회 화면(수집기)에서 그 상품 줄을 빨갛게 ③ 상품 수집 결과 그 상품이 판매중이 아니면(판매 종료·재고 0) 저절로 '완료(자동 확인)'
+ *  알라딘에서 팔리기 전에 막지 않으면 같은 책이 두 번 팔려 품절 취소(판매자 평가 감점)가 나므로, 현금 판매가 정해지면 바로 판매중지 */
+const isCash = (o) => !!o && o.platform === 'cash';
+function cashOrders() { return [...S.orders.values()].filter(isCash).sort((a, b) => String(b.orderedAt || '').localeCompare(String(a.orderedAt || ''))); }
+function cashStop(o, it) { // 'done' | 'auto' | 'todo' | 'cancel'
+  if (it.lineStatus !== 'normal') return 'cancel'; const st = it.aladinStop || {}; if (st.status === 'done') return 'done';
+  const l = it.listingKey ? S.plist.get(it.listingKey) : null; if (l && (l.active === false || (l.qty != null && it.qtyBefore != null && l.qty < it.qtyBefore))) return 'auto';
+  return 'todo'; }
+function cashTodo() { const out = { stop: [], ship: [] }; for (const o of cashOrders()) { const live = (o.items || []).filter((it) => it.lineStatus === 'normal'); if (!live.length) continue;
+  live.forEach((it) => { if (cashStop(o, it) === 'todo') out.stop.push({ o, it }); }); if (!o.shippedAt && !o.noShip) out.ship.push(o); } return out; }
+const CASH_STOP_TXT = { todo: ['알라딘 판매중지 전', 'x'], done: ['알라딘 판매중지 완료', 'pl'], auto: ['알라딘 판매중지 확인됨(자동)', 'pl'], cancel: ['취소한 줄', ''] };
+function cashRow(o) { const c = S.customers.get(o.customerId) || {}; const L = saleLines(o); const st = (o.items || []).map((it) => cashStop(o, it)); const todo = st.filter((x) => x === 'todo').length;
+  return `<button class="item" data-cash="${esc(o.id || o._id)}"><span><b>${esc(String(o.orderedAt || '').slice(0, 10))}</b> ${esc(c.displayName || o.payerName || '(고객 연결 전)')} <span class="tag ${todo ? 'x' : 'pl'}">${todo ? `판매중지 전 ${todo}` : '판매중지 완료'}</span> <span class="tag ${o.shippedAt ? 'pl' : o.noShip ? '' : 'cau'}">${o.shippedAt ? '출고 ' + esc(String(o.shippedAt).slice(5, 10)) : o.noShip ? '직접 전달' : '출고 대기'}</span><br><small>${esc((o.items || []).map((it) => it.title).join(', ').slice(0, 80))}</small></span><span><b>${won(L.amt)}</b>${o.listTotal && o.listTotal !== L.amt ? `<br><small class="hint">원래 ${won(o.listTotal)}</small>` : ''}</span></button>`; }
+function cashSecHtml() { const T = cashTodo(); const n = T.stop.length + T.ship.length;
+  return sec('o_cash', `현금 판매 (알라딘 밖)${T.stop.length ? ` <span class="tag x">판매중지 전 ${T.stop.length}</span>` : ''}${T.ship.length ? ` <span class="tag cau">출고 대기 ${T.ship.length}</span>` : ''}`, () => cashSection(), n > 0); }
+function cashSection() { const T = cashTodo(); const L = cashOrders();
+  return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px"><button class="btn" data-cashnew="1">+ 현금 판매 기록</button></div>
+    ${T.stop.length ? `<div class="card" style="border:2px solid var(--red);margin:0 0 8px"><b style="color:var(--red)">알라딘에서 아직 판매중일 수 있는 상품 ${T.stop.length}개 — 지금 샵매니저에서 판매중지(재고 0) 하세요</b><div class="hint">안 하면 같은 책이 알라딘에서 또 팔려 품절 취소(판매자 평가 감점)가 납니다. 상품 수집에서 판매중이 아닌 것으로 확인되면 저절로 사라집니다.</div>
+      <div class="list">${T.stop.map(({ o, it }) => `<div class="item"><span><b>${esc(it.sku || it.aladinUsedCode || '')}</b> ${esc(it.title)}</span><span><button class="btn ghost" data-cashstop="${esc(o.id || o._id)}|${it.lineNo}">판매중지 했음</button></span></div>`).join('')}</div></div>` : ''}
+    <div class="list">${L.slice(0, S.cashN || 30).map(cashRow).join('') || '<div class="empty">현금 판매 기록이 없습니다. 문의(고객 탭 → 문의)에서 바로 기록하거나 위 단추로 기록하세요.</div>'}</div>
+    ${L.length > (S.cashN || 30) ? '<button class="more" data-cashmore="1">더 보기</button>' : ''}
+    <p class="hint">현금 판매는 매출에 포함되고(수수료 0), 세금 계산에서는 빠지도록 따로 표시됩니다(판매 실적의 순매출 설명에 '현금 판매 포함'). 기록은 지우지 않고, 고친 내용은 기록 안에 쌓입니다.</p>`; }
+function bindCash(root) {
+  root.querySelectorAll('[data-cashnew]').forEach((b) => (b.onclick = () => openCashForm({})));
+  root.querySelectorAll('[data-cash]').forEach((b) => (b.onclick = () => openCashForm({ id: b.dataset.cash })));
+  root.querySelectorAll('[data-cashmore]').forEach((b) => (b.onclick = () => { S.cashN = (S.cashN || 30) + 50; renderMain(); }));
+  root.querySelectorAll('[data-shipday-more]').forEach((b) => (b.onclick = () => { S.shipDayN = (S.shipDayN || 20) + 30; const d = b.closest('.secb'); if (d) { d.innerHTML = shipDaySection(); bindCash(d); } }));
+  root.querySelectorAll('[data-cashstop]').forEach((b) => (b.onclick = (e) => { e.stopPropagation(); const [id, ln] = b.dataset.cashstop.split('|'); cashUpdate(id, (o) => { const it = o.items.find((x) => String(x.lineNo) === ln); if (it) it.aladinStop = { status: 'done', at: new Date().toISOString(), by: S.user.email }; return `알라딘 판매중지 완료: ${it ? it.title : ln}`; }); }));
+  // 펼칠 때만 계산하는 칸이 열리면 그 안 단추도 연결
+  root.querySelectorAll('details[data-sec="o_shipday"],details[data-sec="o_cash"]').forEach((d) => d.addEventListener('toggle', () => setTimeout(() => bindCash(d), 0)));
+}
+async function cashUpdate(id, fn) { // 고치기: 기존 기록 위에 바꾸고, 무엇을 바꿨는지 history에 쌓음 (지우지 않음)
+  const o0 = S.orders.get(id); if (!o0) return toast('기록을 찾지 못했습니다'); const o = JSON.parse(JSON.stringify(o0)); const what = fn(o); if (!what) return;
+  const h = { at: new Date().toISOString(), by: S.user.email, what };
+  const data = { items: o.items, shippedAt: o.shippedAt || null, noShip: !!o.noShip, memo: o.memo || null, customerId: o.customerId || null, payerName: o.payerName || null, uploadedAt: firebase.firestore.FieldValue.serverTimestamp(), history: firebase.firestore.FieldValue.arrayUnion(h) };
+  try { await db.collection('crm_orders').doc(id).set(data, { merge: true }); putOrder(id, { ...o0, ...data, uploadedAt: null, history: [...(o0.history || []), h] }); bump(); toast('저장했습니다'); renderMain(); if (S.detail && S.detail.cash) openCashForm({ id, noPush: true }); if (S.detail && S.detail.ship) openShip(); }
+  catch (e) { toast('저장 실패: ' + (e.code || e.message) + ' — Firestore 규칙에서 웹앱의 crm_orders 쓰기를 허용해야 합니다'); }
+}
+function cashListingHits(q) { const qq = norm(q); if (qq.length < 2) return []; const all = [...S.plist.values()];
+  return all.filter((l) => norm([l.title, l.usedCode, l.isbn13, l.isbn10, l.sku, l.listingId].join('|')).includes(qq)).sort((a, b) => (b.active ? 1 : 0) - (a.active ? 1 : 0) || String(b.registeredAt || '').localeCompare(String(a.registeredAt || ''))).slice(0, 12); }
+const cashItemOf = (l, k) => ({ lineNo: k + 1, title: l.title || l.usedCode, grade: l.grade || null, condition: l.grade || null, price: l.price || 0, listPrice: l.price || 0, qty: 1, lineStatus: 'normal', fee: 0,
+  aladinUsedCode: l.usedCode || null, listingKey: l.id, listingId: l.listingId || null, sku: l.sku || null, isbn13: l.isbn13 || null, qtyBefore: l.qty ?? null, aladinStop: { status: 'todo' } });
+function openCashForm(arg) {
+  loadProducts(); if (!Array.isArray(S.qnaAll)) loadQnaAll();
+  const ex = arg.id ? S.orders.get(arg.id) : null; const sh = $('#sheet');
+  if (!arg.noPush) { S.detail = { cash: arg.id || 'new' }; history.pushState({ cash: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden'; }
+  const q = arg.qna || (ex && ex.qnaId && Array.isArray(S.qnaAll) ? S.qnaAll.find((x) => String(x.questionId) === String(ex.qnaId)) : null);
+  if (!ex && !S._cashDraft) { // 새 기록 초안: 문의에 상품이 있으면 그 상품을 자동으로
+    const l = q && q.itemId ? (shipListingOf(q.itemId) || [...S.plist.values()].filter((x) => String(x.aladinCode || '') === String(q.itemId)).sort((x, y) => (y.active ? 1 : 0) - (x.active ? 1 : 0))[0] || null) : null; /* 문의의 상품번호 = 우리 매물 번호(대개) 또는 새책 상품번호 */ S._cashDraft = { customerId: (q && q.customerId) || null, qnaId: q ? q.questionId : null, items: l ? [cashItemOf(l, 0)] : [], payerName: '', at: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16), shipFee: 0, memo: '', noShip: false, qnaTitle: q && !l ? q.title : null }; }
+  const D = ex ? null : S._cashDraft; const cust = S.customers.get((ex || D).customerId) || null;
+  const itemsHtml = (ex ? ex.items : D.items).map((it, k) => { const st = ex ? cashStop(ex, it) : null;
+    return `<div class="item" style="display:block"><div><b>${esc(it.sku || it.aladinUsedCode || '')}</b> <span class="tag pl">${esc(it.grade || '')}</span> ${esc(it.title)}</div>
+      <div class="hint">원래 판매가 ${won(it.listPrice)}${ex ? ` · 받은 금액 <b>${won(it.price)}</b> × ${it.qty} · <span class="tag ${CASH_STOP_TXT[st][1]}">${CASH_STOP_TXT[st][0]}</span>` : ''}</div>
+      ${ex ? (it.lineStatus === 'normal' ? `<div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">${st === 'todo' ? `<button class="btn" data-cs="${k}">알라딘 판매중지 했음</button>` : ''}<button class="btn ghost" data-cx="${k}">이 줄 취소</button></div>` : '')
+        : `<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><label class="set" style="margin:0">받은 금액(협상가)<input type="number" data-cp="${k}" value="${esc(it.price)}" style="width:110px"></label><label class="set" style="margin:0">수량<input type="number" min="1" data-cq="${k}" value="${esc(it.qty)}" style="width:60px"></label><button class="btn ghost" data-cd="${k}">빼기</button></div>`}</div>`; }).join('');
+  const L = ex ? saleLines(ex) : { amt: D.items.reduce((a, it) => a + (+it.price || 0) * (+it.qty || 1), 0) };
+  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">${ex ? '현금 판매 · ' + esc(ex.orderNo) : '현금 판매 기록'}</div></div>
+    ${q ? `<div class="card"><h3>연결된 문의 <small>${esc(d10(q.createdAt))}</small></h3><div class="hint">${esc(q.title || '(문의에 상품 없음)')}</div><div style="white-space:pre-wrap;font-size:13px">${esc(String(q.body || '').slice(0, 400))}</div>${q.answer ? `<div style="white-space:pre-wrap;font-size:13px;color:var(--cloth)">↳ ${esc(String(q.answer).slice(0, 300))}</div>` : ''}</div>` : ''}
+    <div class="card pf"><h3>고객</h3>${cust ? `<div><b>${esc(cust.displayName || cust.customerId)}</b> <small>${esc((cust.phones || [])[0] || '')} · 주문 ${cust.saleOrderCount || 0}</small> <button class="linkbtn" data-cfind="1">바꾸기</button></div>` : '<div class="hint">연결된 고객 없음 (입금자명만 남겨도 됨)</div>'}
+      <div class="lk" style="${cust ? 'display:none' : ''}" id="cash_cf"><input type="search" placeholder="고객 검색 (이름·전화 일부)" id="cash_cq"><div class="lkres" id="cash_cr"></div></div>
+      ${ex ? `<div class="hint" style="margin-top:6px">입금자 ${esc(ex.payerName || '-')} · 입금 ${esc(ex.orderedAt || '')}${ex.shipFee ? ` · 택배비 받음 ${won(ex.shipFee)}` : ''}${ex.memo ? `<br>메모: ${esc(ex.memo)}` : ''}</div>`
+        : `<label class="set">입금자명<input id="cash_payer" value="${esc(D.payerName)}"></label><label class="set">입금 일시<input id="cash_at" type="datetime-local" value="${esc(D.at)}"></label><label class="set">택배비로 받은 금액 (매출과 따로)<input id="cash_sf" type="number" value="${esc(D.shipFee)}"></label><label class="set">메모 (협상 내용 등)<textarea id="cash_memo" rows="2">${esc(D.memo)}</textarea></label>
+          <label class="set" style="flex-direction:row;gap:6px;align-items:center"><input type="checkbox" id="cash_noship" ${D.noShip ? 'checked' : ''}> 택배 없이 직접 전달</label>`}</div>
+    <div class="card"><h3>상품 ${ex ? '' : `<small>합계 <b id="cash_sum">${won(L.amt)}</b></small>`}</h3>${D && D.qnaTitle ? `<div class="hint">문의의 상품 '${esc(D.qnaTitle)}'을 우리 상품에서 찾지 못함 — 아래에서 검색해 연결하세요</div>` : ''}
+      <div class="list">${itemsHtml || '<div class="empty">아직 상품이 없습니다 — 아래에서 검색해 추가</div>'}</div>
+      ${ex ? '' : `<div class="lk" style="margin-top:8px"><input type="search" id="cash_pq" placeholder="우리 상품 검색 (제목·ISBN·관리코드)"><div class="lkres" id="cash_pr">${S.prodLoaded ? '' : '<div class="hint">상품 기록을 받는 중…</div>'}</div></div>`}</div>
+    ${ex ? `<div class="card"><h3>출고</h3>${ex.noShip ? '직접 전달 (택배 없음)' : ex.shippedAt ? `출고함 ${esc(ex.shippedAt)}` : '<b style="color:#A8661B">출고 대기</b> — 오늘 출고 화면 맨 아래 「현금 판매 출고」에도 나옵니다'}<div style="margin-top:6px">${!ex.shippedAt && !ex.noShip ? '<button class="btn" id="cash_ship">출고함 (오늘)</button>' : ''}</div></div>
+      <details class="card"><summary>고친 기록 ${(ex.history || []).length}건</summary>${(ex.history || []).map((h) => `<div class="hint">${esc(String(h.at).slice(0, 16).replace('T', ' '))} ${esc(h.by || '')}: ${esc(h.what)}</div>`).join('')}</details>`
+      : `<div class="card"><button class="btn" id="cash_save" ${D.items.length ? '' : 'disabled'}>저장 (매출에 넣고 알라딘 판매중지 할 일 만들기)</button><p class="hint">저장하면 바로 샵매니저에서 이 상품을 판매중지(재고 0) 하세요 — 그 전까지 홈에 빨간 경고가 뜹니다.</p></div>`}`;
+  $('#back').onclick = () => { if (!ex) S._cashDraft = null; history.back(); };
+  // 고객 찾기
+  const cf = sh.querySelector('[data-cfind]'); if (cf) cf.onclick = () => { $('#cash_cf').style.display = ''; };
+  const cq = $('#cash_cq'); if (cq) cq.oninput = () => { const qq = norm(cq.value); const box = $('#cash_cr'); if (qq.length < 2) { box.innerHTML = ''; return; }
+    box.innerHTML = [...S.customers.values()].filter((c) => c._sk.includes(qq)).slice(0, 6).map((c) => `<div class="cand"><div class="ci"><b>${esc(c.displayName || c.customerId)}</b> <small>${esc((c.phones || [])[0] || '')} · 주문 ${c.saleOrderCount || 0}</small></div><button class="btn" data-cpick="${esc(c.customerId)}">이 고객</button></div>`).join('') || '<div class="hint">없음</div>';
+    box.querySelectorAll('[data-cpick]').forEach((b) => (b.onclick = () => { const cid = b.dataset.cpick; if (ex) cashUpdate(ex.id || ex._id, (o) => { o.customerId = cid; return '고객 연결: ' + cid; }); else { keep(); D.customerId = cid; openCashForm({ noPush: true }); } })); };
+  if (ex) {
+    sh.querySelectorAll('[data-cs]').forEach((b) => (b.onclick = () => cashUpdate(ex.id || ex._id, (o) => { const it = o.items[+b.dataset.cs]; it.aladinStop = { status: 'done', at: new Date().toISOString(), by: S.user.email }; return '알라딘 판매중지 완료: ' + it.title; })));
+    sh.querySelectorAll('[data-cx]').forEach((b) => (b.onclick = () => { if (!confirm('이 줄을 취소로 표시할까요? (기록은 남고 매출에서 빠짐)')) return; cashUpdate(ex.id || ex._id, (o) => { const it = o.items[+b.dataset.cx]; it.lineStatus = 'cancelled'; return '줄 취소: ' + it.title; }); }));
+    const sb = $('#cash_ship'); if (sb) sb.onclick = () => cashUpdate(ex.id || ex._id, (o) => { o.shippedAt = dstr(new Date()); return '출고함 ' + o.shippedAt; });
+    return;
+  }
+  function keep() { const g = (id) => $(id); if (g('#cash_payer')) D.payerName = g('#cash_payer').value; if (g('#cash_at')) D.at = g('#cash_at').value; if (g('#cash_sf')) D.shipFee = +g('#cash_sf').value || 0; if (g('#cash_memo')) D.memo = g('#cash_memo').value; if (g('#cash_noship')) D.noShip = g('#cash_noship').checked;
+    sh.querySelectorAll('[data-cp]').forEach((x) => { D.items[+x.dataset.cp].price = Math.max(0, +x.value || 0); }); sh.querySelectorAll('[data-cq]').forEach((x) => { D.items[+x.dataset.cq].qty = Math.max(1, +x.value || 1); }); }
+  sh.querySelectorAll('[data-cp],[data-cq]').forEach((x) => (x.oninput = () => { keep(); $('#cash_sum').textContent = won(D.items.reduce((a, it) => a + it.price * it.qty, 0)); }));
+  sh.querySelectorAll('[data-cd]').forEach((b) => (b.onclick = () => { keep(); D.items.splice(+b.dataset.cd, 1); D.items.forEach((it, k) => (it.lineNo = k + 1)); openCashForm({ noPush: true }); }));
+  const pq = $('#cash_pq'); if (pq) pq.oninput = () => { clearTimeout(pq._t); pq._t = setTimeout(() => { const box = $('#cash_pr'); const hits = cashListingHits(pq.value);
+    box.innerHTML = hits.map((l) => `<div class="cand"><div class="ci"><b>${esc(l.sku || l.usedCode || '')}</b> <span class="tag pl">${esc(l.grade || '')}</span> ${esc(l.title)} <small>${won(l.price)}${l.active ? '' : ' · 판매중 아님'}</small></div><button class="btn" data-padd="${esc(l.id)}">추가</button></div>`).join('') || (pq.value.length >= 2 ? '<div class="hint">찾는 상품이 없습니다</div>' : '');
+    box.querySelectorAll('[data-padd]').forEach((b) => (b.onclick = () => { keep(); const l = S.plist.get(b.dataset.padd); if (l && !D.items.some((it) => it.listingKey === l.id)) D.items.push(cashItemOf(l, D.items.length)); D.qnaTitle = null; openCashForm({ noPush: true }); })); }, 200); };
+  $('#cash_save').onclick = async () => { keep(); if (!D.items.length) return; const at = (D.at || new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16)).replace('T', ' ');
+    const id = 'cash_' + at.replace(/\D/g, '').slice(0, 12) + '_' + Math.random().toString(36).slice(2, 6); const amt = D.items.reduce((a, it) => a + it.price * it.qty, 0);
+    const doc = { platform: 'cash', kind: 'sale', cash: true, taxExcluded: true, orderNo: '현금-' + at.slice(0, 10).replace(/-/g, '') + '-' + id.slice(-4), customerId: D.customerId || null, qnaId: D.qnaId || null,
+      orderedAt: at, paidAt: at, shippedAt: D.noShip ? at.slice(0, 10) : null, noShip: !!D.noShip, payerName: D.payerName || null, shipFee: D.shipFee || 0, memo: D.memo || null, fee: 0,
+      items: D.items.map((it, k) => ({ ...it, lineNo: k + 1, fee: 0 })), itemCount: D.items.length, totalAmount: amt, listTotal: D.items.reduce((a, it) => a + (it.listPrice || 0) * it.qty, 0),
+      createdAt: new Date().toISOString(), createdBy: S.user.email, history: [{ at: new Date().toISOString(), by: S.user.email, what: `기록 ${won(amt)} (${D.items.length}개)` }], uploadedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    const b = $('#cash_save'); b.disabled = true; b.textContent = '저장 중…';
+    try { await db.collection('crm_orders').doc(id).set(doc); putOrder(id, { ...doc, uploadedAt: null }); bump(); S._cashDraft = null; toast('현금 판매를 기록했습니다 — 지금 샵매니저에서 판매중지 하세요'); history.back(); setTimeout(() => openCashForm({ id }), 80); }
+    catch (e) { b.disabled = false; b.textContent = '저장'; toast('저장 실패: ' + (e.code || e.message) + ' — Firestore 규칙에서 웹앱의 crm_orders 쓰기를 허용해야 합니다'); } };
 }
 
 /* ══════════ 고객 순위 TOP10: 기간별 ══════════ */
@@ -2733,7 +2859,7 @@ function bizCalc() {
   const SHP = window.ReadnowShipping; const shipOpt = { holidays: ((S.app.ship || {}).holidays) || [], cutHour: ((S.app.ship || {}).cutHour) ?? 15 }; const todayK = SHP ? SHP.ymd(new Date()) : '';
     const lateBy = (o) => { if (!SHP) return false; let due = new Date(SHP.dueShipDay(String(o.orderedAt).slice(0, 16), shipOpt) + 'T12:00:00+09:00'); for (let k = 0; k < (AL.lateDays ?? 1); k++) due = SHP.nextBizDay(due, shipOpt.holidays); return todayK > SHP.ymd(due); };
     // 출고 지연: 출고 예정 영업일(영업일 출고 마감 전 주문은 그날, 아니면 다음 영업일)에서 설정한 영업일 수가 지나도 출고 기록 없음 — 주말·휴일 주문을 늦었다고 잘못 세지 않음
-    const late = [...S.orders.values()].filter((o) => o.kind === 'sale' && !o.shippedAt && o.orderedAt && String(o.orderedAt).slice(0, 10) >= d30 && lateBy(o) && (o.items || []).some((it) => it.lineStatus === 'normal'));
+    const late = [...S.orders.values()].filter((o) => o.kind === 'sale' && !isCash(o) && !o.shippedAt && o.orderedAt && String(o.orderedAt).slice(0, 10) >= d30 && lateBy(o) && (o.items || []).some((it) => it.lineStatus === 'normal'));
   // 시장 위치: 최근 6개월 평가 수 (판매량 대리 지표)
   const me = S.sellers.get('sc_996008'); const ranked = [...S.sellers.values()].filter((s) => rev6(s)).sort((a, b) => rev6(b) - rev6(a));
   const myRank = me && rev6(me) ? ranked.findIndex((s) => s.id === me.id) + 1 : null;
@@ -2746,6 +2872,7 @@ function bizAlerts(B) {
   const A = []; const add = (lv, t, key) => A.push({ lv, t, key: { orders: 'late', search: 'qna', 'search:reviews': 'bad', products: 'reg', home: 'stale', purchase: 'pur' }[key] || key });
   try { if (S.pur && S.pur.loaded) { if (!S.entStateLoaded) loadEntState(); const iss = purAllRecords().filter((r) => r.status === 'issue').length; if (iss) add('red', `확인 필요(문제) 매입 ${iss}건`, 'purissue'); } } catch (e) {}
   try { if (S.pur && S.pur.loaded) { const n = purPendingCount(); const late = [...appEntries().filter((e) => ['ordered', 'shipping'].includes(e.status || 'ordered')).map((e) => String(e.dateTime || e.date || '').slice(0, 10)), ...unchecked().filter((e) => ['ordered', 'shipping'].includes(autoFill(e).status)).map((e) => autoFill(e).eta || '')].filter((d) => d && d < dstr(new Date(Date.now() - 2 * 864e5))).length; if (n) add(late ? 'amber' : 'info', `진행중 매입 ${n}건${late ? ` — 예상보다 늦은 것 ${late}건` : ''}`, 'purpend'); } } catch (e) {}
+  try { const CT = cashTodo(); if (CT.stop.length) add('red', `현금 판매한 상품 ${CT.stop.length}개가 알라딘에서 아직 판매중일 수 있음 — 샵매니저에서 판매중지(재고 0) 하세요`, 'cash'); if (CT.ship.length) add('amber', `현금 판매 출고 대기 ${CT.ship.length}건`, 'cash'); } catch (e) {}
   if (B.late.length) add('red', `출고 기록 없는 주문 ${B.late.length}건 (출고 예정 영업일에서 ${(S.app.alerts || {}).lateDays ?? 1}영업일 넘음) — 수집이 늦었거나 실제 지연`, 'orders');
   if (B.unanswered && B.unanswered.length) add('red', `답하지 않은 문의 ${B.unanswered.length}건 (최근 30일)`, 'search');
   if (B.bad7.length) add('red', `최근 7일 불만족 평가 ${B.bad7.length}건`, 'search:reviews');
@@ -3047,6 +3174,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.68.0': ['현금 판매(알라딘 밖 현금 입금) 기록: 주문·매출 탭 \'현금 판매\' 칸 또는 고객 탭 → 문의에서 \'💵 현금 판매로 기록\' — 문의의 상품을 자동 연결, 없으면 우리 상품 검색으로 연결. 받은 금액(협상가)과 원래 판매가를 둘 다 남김', '현금 판매는 매출에 포함(수수료 0), 세금 계산 제외로 따로 표시 — 판매 실적 순매출 설명에 \'현금 판매 포함\'. 기록은 지우지 않고 고친 내용은 기록 안에 쌓음', '알라딘 등록 상태는 저절로 안 바뀌므로 상품마다 \'알라딘 판매중지\' 할 일 — 끝날 때까지 홈 빨간 경고·수집기 상품 조회 화면에 빨간 줄, 상품 수집에서 판매중이 아니면 저절로 완료', '현금 판매 출고 대기는 오늘 출고 화면 맨 아래에 따로(알라딘 주문과 섞지 않음) · \'출고함\' 단추', '출고별 매출(보조 지표): 주문·매출 탭 맨 아래 접힌 칸 — 펼칠 때만 계산. 출고일 = 실제 발송일, 아직 없으면 출고 예정일(영업일 15시 마감)', '오늘 출고: 주문·서가 머리 띠가 스크롤해도 맨 위에 붙어 있음(끈끈한 머리 띠) — 다음 주문·서가가 올라오면 그 띠로 바뀜'],
   '0.67.0': ['오늘 출고 상품 칸을 새로 배치: 휴대폰은 위에서부터 ① 관리코드 ② 등급+제목 ③ 사진 ④ 상태 글 ⑤ 그 외(수량·가격·서가·주문·시장 블록) 한 줄씩, PC는 왼쪽 코드·사진 / 가운데 제목·상태·그 외 / 오른쪽 시장 블록', '관리코드 띠를 크게(휴대폰 30px): 서가 색 바탕 + 서가 6글자는 크게, 뒤(-날짜·_ms)는 작게 — 노랑처럼 밝은 서가 색은 검은 글자', '같은 주문의 몇 번째 책인지(1/3)와 같은 책 2권 이상이면 빨간 \'2권\' 표시를 관리코드 띠에', '등급을 제목 바로 앞에, 제목은 최대 3줄 · 상태 글은 주황 테두리 칸으로 · 휴대폰에서 사진은 가운데 크게(화면 폭 78%까지) · 상품끼리 굵은 구분선'],
   '0.66.0': ['새 정보 받는 중 표시: 새로 올 정보가 있을 때만 그 자리에 돌아가는 주황 별(받는 중)을 띄움 — 탭 단추·홈 칸 제목·화면 아래 왼쪽 알림(무엇이 몇 건 오는지, 받은 건수). 새 정보가 없으면 표시 없이 그냥 보여 줌', '바뀐 것만 받는 기록(고객·주문·구매평·판매자·상품·도서·시장 지표)은 받기와 동시에 새 기록 수를 물어봄(1,000건당 읽기 1회) — 받기 속도는 그대로', '통째로 읽는 기록(매입·반품·문의·오늘 출고·가격 감시 등)과 고객 상세의 주문·기록은 이 기기에 아직 없을 때만 표시 (저장해 둔 것을 먼저 보여 주는 중이면 뒤에서 조용히 맞춤)', '상세 화면을 열고 있으면 알림은 그 상세 화면과 관련된 것만'],
   '0.65.14': ['오늘 출고: 정렬(서가 순 · 관리코드 순) 단추를 위에 붙은 머리 칸 안으로 — 화면을 내려도 보이고 바로 바꿀 수 있음 (바꿔도 보던 자리 유지)'],
@@ -3672,9 +3800,11 @@ function renderQnaBox(m) {
   const f = S.qnaF && S.qnaF !== 'open' ? S.qnaF : 'all';
   const rows = all.filter((q) => (f === 'all' ? true : f.startsWith('st:') ? q.answerStatus === f.slice(3) : f === 'nost' ? q.answerStatus == null : true));
   m.insertAdjacentHTML('beforeend', `<div class="ptabs" style="margin:0 0 8px;flex-wrap:wrap"><button class="${f === 'all' ? 'on' : ''}" data-qf="all">전체 ${all.length}</button>${sts.map((v) => `<button class="${f === 'st:' + v ? 'on' : ''}" data-qf="st:${esc(v)}">${esc(qLabel(v))} ${cnt(v)}</button>`).join('')}${all.some((q) => q.answerStatus == null) ? `<button class="${f === 'nost' ? 'on' : ''}" data-qf="nost">답변여부 미수집 ${all.filter((q) => q.answerStatus == null).length}</button>` : ''}</div>
-    <div class="list">${rows.slice(0, S.limit).map((q) => `<div class="item"><div class="l1" style="justify-content:space-between"><span>${q.answerStatus != null ? `<span class="tag ${qNeeds(q) ? 'cau' : 'pl'}">${esc(qLabel(q.answerStatus))}</span> ` : '<span class="tag">답변여부 미수집</span> '}<b>${esc(q.title || '(상품 없음)')}</b></span><small>${esc(d10(q.createdAt))}</small></div><div class="l2"><span>${esc(String(q.body || '').slice(0, 160))}</span></div>${q.answer ? `<div class="l2"><span style="color:var(--cloth)">↳ ${esc(String(q.answer).slice(0, 120))}</span></div>` : ''}${q.customerId ? `<div class="l2"><button class="linkbtn" data-cid="${esc(q.customerId)}">${esc((S.customers.get(q.customerId) || {}).displayName || '고객 보기')} ›</button></div>` : ''}</div>`).join('') || '<div class="empty">없음</div>'}${rows.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>
+    <div class="list">${rows.slice(0, S.limit).map((q) => `<div class="item"><div class="l1" style="justify-content:space-between"><span>${q.answerStatus != null ? `<span class="tag ${qNeeds(q) ? 'cau' : 'pl'}">${esc(qLabel(q.answerStatus))}</span> ` : '<span class="tag">답변여부 미수집</span> '}<b>${esc(q.title || '(상품 없음)')}</b></span><small>${esc(d10(q.createdAt))}</small></div><div class="l2"><span>${esc(String(q.body || '').slice(0, 160))}</span></div>${q.answer ? `<div class="l2"><span style="color:var(--cloth)">↳ ${esc(String(q.answer).slice(0, 120))}</span></div>` : ''}<div class="l2" style="gap:10px">${q.customerId ? `<button class="linkbtn" data-cid="${esc(q.customerId)}">${esc((S.customers.get(q.customerId) || {}).displayName || '고객 보기')} ›</button>` : ''}${(() => { const co = cashOrders().find((o) => String(o.qnaId) === String(q.questionId)); return co ? `<button class="linkbtn" data-cash="${esc(co.id || co._id)}">💵 현금 판매 기록됨 ›</button>` : `<button class="linkbtn" data-cashq="${esc(q.questionId)}">💵 현금 판매로 기록</button>`; })()}</div></div>`).join('') || '<div class="empty">없음</div>'}${rows.length > S.limit ? '<button class="more" id="more">더 보기</button>' : ''}</div>
     <p class="hint">답변여부는 샵매니저 묻고 답하기 목록의 '답변여부' 칸 값 그대로입니다. 홈의 '답하지 않은 문의'는 답변 완료도 취소된 질문도 아닌 문의만 셉니다. 수집기(1.27.1부터)는 새 질문과 답변여부가 바뀐 질문만 상세를 다시 열고, Firebase에는 바뀐 것만 올립니다. 답변여부가 바뀐 기록·이전 답변은 지우지 않고 수집기 PC에 쌓습니다.</p>`);
   m.querySelectorAll('[data-qf]').forEach((b) => (b.onclick = () => { S.qnaF = b.dataset.qf; S.limit = 30; renderMain(); }));
+  m.querySelectorAll('[data-cashq]').forEach((b) => (b.onclick = () => { S._cashDraft = null; openCashForm({ qna: S.qnaAll.find((x) => String(x.questionId) === b.dataset.cashq) }); }));
+  m.querySelectorAll('[data-cash]').forEach((b) => (b.onclick = () => openCashForm({ id: b.dataset.cash })));
 }
 function renderRevBox(m) {
   if (!S.reviewsLoaded) { m.insertAdjacentHTML('beforeend', '<div class="empty">평가 기록을 받는 중</div>'); return; }
@@ -3688,6 +3818,7 @@ function renderRevBox(m) {
 /* ══════════ '오늘 확인할 것'을 누르면 바로 그 목록으로 ══════════ */
 function openAlert(key) {
   if (key === 'ship') return openShip();
+  if (key === 'cash') { history.state && S.detail && history.back(); S.tab = 'orders'; S.sec.o_cash = true; renderTabs(); renderMain(); setTimeout(() => { const d = document.querySelector('details[data-sec="o_cash"]'); if (d) d.scrollIntoView({ block: 'start' }); }, 120); return; }
   if (key === 'prq') { if (!S.prCfg) loadPricingCfg(); return openPriceQueue(); }
   const B = bizCalc(); const go = (t, extra) => { history.state && S.detail && history.back(); S.tab = t; S.limit = 30; if (extra) extra(); renderTabs(); renderMain(); window.scrollTo(0, 0); };
   if (key === 'late') return openListView({ title: '출고 기록 없는 주문', rows: B.late.slice().sort((a, b) => String(a.orderedAt).localeCompare(String(b.orderedAt))), placeholder: '주문번호·고객 검색', note: `주문 후 ${(S.app.alerts || {}).lateDays || 2}일이 지났는데 출고 기록이 없는 주문입니다. 수집이 늦었으면 수집 후 사라집니다.`,
@@ -3745,7 +3876,7 @@ function engineManualHtml() {
   <p>결정 화면 오른쪽 블록 왼쪽의 <b>?</b> = 그 매물에 '중고상품 구매 유의 사항' 글이 있거나 새상품 표지와 다른 사진(판매자 실사진)이 있음. 마우스를 올리면 내용. 수집기 '경쟁 매물 유의사항·사진'(버튼, 상품 일괄·모두 일괄에 포함)이 우리 책마다 온라인 중고 <b>첫 페이지의 다른 판매자 매물 전부</b>를 모읍니다(가격 감시 중인 책 먼저). 다시 확인 주기는 수집기 설정에서 바꿈(기본 30일, 0 = 매번). 내용이 바뀌면 <b>이전 내용을 덮어쓰지 않고 새 판으로 쌓아 모두 보관</b>하고, 같으면 판을 늘리지 않고 확인 시각만 남깁니다.</p>
   <h4>7-6. 알라딘 판매관리 흐름과 오늘 출고</h4>
   <p>① 주문확인요청 → [발송준비시작] → ② <b>발송 요청</b>(송장 입력) → [입력완료] → ③ 배송&구매확정전(고객이 수령확인·평가하거나, 출고 후 5일 안에 안 누르면 6일째 자동 구매확정) → ④ 구매확정&정산대기(다음 날 새벽 예치금 정산) → ⑤ 정산완료(3개월 보관). <b>오늘 출고 = ② 발송 요청 탭의 주문</b>이고 영업일(주말·설정 ⑫의 휴일 제외) 13~15시에 출고합니다(고객 안내 13시). 매출(0~24시 주문)과 출고(어제 출고 뒤부터 오늘 출고까지 모인 주문)는 따로 셉니다.<br>
-  <b>오늘 출고 화면</b>(홈 알림 · 상품 탭 '오늘 출고'): 수집기 '발송 요청 읽기'(영업일 9~16시 15분마다 저절로)가 읽은 주문을 서가 순서로 보여 줍니다 — 주문은 절대 섞지 않고, 주문 안 상품은 서가 순서(PNKLUX → [BLK·YLW·GRY·GRN] → REDFGN → BLU → SKY → MGZ → ORGCMC → KHKDVD → KHKCPD → 그 외, 각각 따로 서가) → 같은 서가 안에서는 이름 철자 순. <b>BLK·YLW·GRY·GRN만 한 서가</b>(뒤 3자리 상관없이 한 책장에 섞여 꽂혀 있으므로 관리코드를 가리지 않고 섞어서 이름 철자 순), 주문끼리는 첫 상품의 서가 순. 관리코드는 앞 6자리로 봄(뒤의 _ms·-날짜 등은 무시). 상품마다 휴대폰은 위에서부터 <b>관리코드</b>(서가 색 띠, 서가 6글자 크게 · 같은 주문의 몇 번째 책 1/3 · 2권 이상이면 빨간 'n권') → <b>등급+제목</b> → <b>사진</b> → <b>상태 글</b>(우리 매물의 구매 유의 사항, 주황 칸) → 그 외(수량·판매가·서가·주문·시장 블록) 순서로 쌓이고, PC는 왼쪽 코드·사진 / 가운데 제목·상태·그 외 / 오른쪽 시장 블록(사진은 늘 제자리 — 누른 사진이 그 자리에서 커지고 크던 사진은 작아짐, 앞표지는 늘 첫 자리, 두 번 누르면 원본). 주문별 보기 머리 칸(화면을 내려도 위에 붙어 있음)의 '정렬'에서 <b>서가 순</b>(기본) 대신 <b>관리코드 순</b>을 고를 수 있음 — 주문 안 상품을 관리코드 글자 순(같은 코드면 이름 순), 주문끼리는 첫 상품의 관리코드 순(주문은 어느 쪽이든 섞지 않음, 고른 것은 그 기기에 기억). 오른쪽 아래(동그란 보기 단추 왼쪽) '⇄' 단추를 누르면 <b>서가별(상품) 보기</b>로 바뀜 — 주문을 풀어 모든 상품을 서가 순서, 서가 안에서는 이름 철자 순으로 늘어놓고 상품마다 주문 번호·수령인을 붙임(서가를 한 바퀴 돌며 꺼낼 때). 다시 누르면 주문별. '출고 확정'은 지금은 기록만 하고, ALPS 송장 출력·알라딘 송장 일괄등록은 양식 파일을 받은 뒤 이 버튼에 붙입니다. 알라딘 송장 일괄등록은 <b>CSV 파일만</b> 받습니다(팝업 step1의 일괄등록용 엑셀에 송장번호를 넣고 CSV로 저장).<br>
+  <b>오늘 출고 화면</b>(홈 알림 · 상품 탭 '오늘 출고'): 수집기 '발송 요청 읽기'(영업일 9~16시 15분마다 저절로)가 읽은 주문을 서가 순서로 보여 줍니다 — 주문은 절대 섞지 않고, 주문 안 상품은 서가 순서(PNKLUX → [BLK·YLW·GRY·GRN] → REDFGN → BLU → SKY → MGZ → ORGCMC → KHKDVD → KHKCPD → 그 외, 각각 따로 서가) → 같은 서가 안에서는 이름 철자 순. <b>BLK·YLW·GRY·GRN만 한 서가</b>(뒤 3자리 상관없이 한 책장에 섞여 꽂혀 있으므로 관리코드를 가리지 않고 섞어서 이름 철자 순), 주문끼리는 첫 상품의 서가 순. 관리코드는 앞 6자리로 봄(뒤의 _ms·-날짜 등은 무시). 상품마다 휴대폰은 위에서부터 <b>관리코드</b>(서가 색 띠, 서가 6글자 크게 · 같은 주문의 몇 번째 책 1/3 · 2권 이상이면 빨간 'n권') → <b>등급+제목</b> → <b>사진</b> → <b>상태 글</b>(우리 매물의 구매 유의 사항, 주황 칸) → 그 외(수량·판매가·서가·주문·시장 블록) 순서로 쌓이고, PC는 왼쪽 코드·사진 / 가운데 제목·상태·그 외 / 오른쪽 시장 블록(사진은 늘 제자리 — 누른 사진이 그 자리에서 커지고 크던 사진은 작아짐, 앞표지는 늘 첫 자리, 두 번 누르면 원본). 주문별 보기 머리 칸(화면을 내려도 위에 붙어 있음)의 '정렬'에서 <b>서가 순</b>(기본) 대신 <b>관리코드 순</b>을 고를 수 있음 — 주문 안 상품을 관리코드 글자 순(같은 코드면 이름 순), 주문끼리는 첫 상품의 관리코드 순(주문은 어느 쪽이든 섞지 않음, 고른 것은 그 기기에 기억). 오른쪽 아래(동그란 보기 단추 왼쪽) '⇄' 단추를 누르면 <b>서가별(상품) 보기</b>로 바뀜 — 주문을 풀어 모든 상품을 서가 순서, 서가 안에서는 이름 철자 순으로 늘어놓고 상품마다 주문 번호·수령인을 붙임(서가를 한 바퀴 돌며 꺼낼 때). 다시 누르면 주문별. 스크롤하면 지금 보는 상품의 주문·서가 머리 띠가 맨 위(머리 칸 바로 아래)에 붙어 있고, 다음 주문·서가가 올라오면 그 띠로 바뀝니다(끈끈한 머리 띠). 맨 아래에는 택배로 보낼 현금 판매가 따로 나옵니다. '출고 확정'은 지금은 기록만 하고, ALPS 송장 출력·알라딘 송장 일괄등록은 양식 파일을 받은 뒤 이 버튼에 붙입니다. 알라딘 송장 일괄등록은 <b>CSV 파일만</b> 받습니다(팝업 step1의 일괄등록용 엑셀에 송장번호를 넣고 CSV로 저장).<br>
   <b>출고 지연 알림</b>: 출고 예정 영업일(마감 시각 전 주문은 그날, 아니면 다음 영업일)에서 설정 ⑧의 영업일 수가 지나도 출고 기록이 없을 때.</p>
   <h4>7-8. 기록 받기와 이 기기 저장 용량</h4>
   <p>웹앱은 탭을 열 때 그 탭에 필요한 기록만 받습니다(받은 것은 기기에 저장돼 다음엔 바뀐 것만). 머리 칸 <b>⬇</b>를 누르면 모든 기록을 한 번에 받는 칸이 펼쳐집니다 — 단계별 진행, 끊기면 끝난 단계는 건너뛰고 큰 기록은 1,000건씩 받은 위치부터 이어 받음, 접어도 계속 받음, '웹앱을 열면 저절로'(기본 켬). 같은 칸에 이 기기가 웹앱 기록에 쓰는 저장 용량·한도와 기록 수가 나옵니다. 아래로 스크롤하면 머리 칸이 얇은 띠 하나(제목·⬇)로 줄고, 맨 위로 가거나 위로 조금 올리거나 띠를 누르면 다시 펼쳐집니다. 받다가 안 되는 단계는 3번까지 다시 시도하고, 그래도 안 되면 빨갛게 표시하고(이유는 마우스를 올리면) 다음 단계로 넘어갑니다. 오늘 출고는 홈 알림·상품 탭 버튼·<b>주문·매출 탭 맨 위</b>에서 엽니다.</p>
@@ -3787,6 +3918,11 @@ function openManual() {
   ${sec2('📈 경영', `① 오늘 확인할 것 ② 매출 페이스 ③ 수익성(공헌이익·처분 매출) ④ 재고 건강 ⑤ 가격 경쟁력(알라딘 매입가보다 쌈, 유효·첫 번째 최저가보다 10% 이상 쌈) ⑥ 고객·평판 ⑦ 시장 위치(6개월 평가 순위) ⑧ 매입·투자 회수.`)}
   ${sec2('⚙ 설정 (관리자 기기만 변경: JS-MAIN · JS-PHONE · HOME)', `① 기기 이름(한 기기만 쓸 수 있음) ② 목표 ③ 매출·이익 계산 ④ 택배 계약 ⑤ 매입(김미소·헌옷 범위, 폐기 단가, 무게 폭 등) ⑥ 고객 점수 기준 ⑦ 판매자 점수 기준 ⑧ 경영 알림 기준 ⑨ 수집기 공통(요청 간격, 매일 자동 시각·PC, 일괄 단계 켜고 끄기, 작업 중요도) ⑩ 화면 표시.`)}
   ${sec2('🤖 리드나우 수집기 (PC)', `알라딘 주문조회·판매관리·상품 조회 화면 오른쪽 위: <b>[▶ 모두] [고객·주문] [상품·매입]</b>.<br><b>모두 일괄 수집</b>: 고객·주문 → 신규 등록분 → 알라딘 구매·팔기 → 도서·시장 지표(판매완료 책 포함) → 6개월 평가 → 상위 판매자 평가 → 구매자 분포. 단계는 체크로 켜고 끔.<br><b>중요도</b>: 높은 작업이 시작되면 낮은 작업은 저장 후 멈췄다가 자동으로 이어감. <b>멈춰도 이어서</b> 합니다(진행 위치 저장).<br><b>매일 자동</b>: 오후 5시 JS-MAIN, 안 되면 30분 뒤 다른 PC. 24시간 안에 모두 일괄 수집을 끝냈으면 그날은 건너뜀. <b>웹앱 수집 요청</b>도 JS-MAIN이 먼저 받음.<br>판매자 툴팁(별도 스크립트): 알라딘 중고 화면에 판매자 점수 배지.`)}
+  ${sec2('💵 현금 판매 · 출고별 매출', `<p><b>현금 판매</b>(알라딘 밖에서 현금 입금으로 판 것): 고객 탭 → 문의에서 그 문의의 '💵 현금 판매로 기록'을 누르면 문의의 상품·고객이 자동으로 들어갑니다(문의에 상품이 없거나 못 찾으면 우리 상품을 제목·ISBN·관리코드로 검색해 추가). 문의 없이 기록할 때는 주문·매출 탭 '현금 판매' 칸의 '+ 현금 판매 기록'. 상품마다 <b>원래 판매가</b>와 <b>받은 금액(협상가)</b>을 둘 다 남기고, 입금자명·입금 일시·택배비로 받은 금액(매출과 따로)·메모를 적습니다.</p>
+  <p>매출: 판매 실적·매출 비교 등 모든 매출에 <b>포함</b>(수수료 0)되고, 순매출 설명에 '현금 판매 ○원 포함'으로 따로 보입니다. 기록에 '세금 계산 제외' 표시가 붙어 나중에 세금 계산에서 뺍니다. 기록은 지우지 않고, 고친 내용(판매중지·출고·줄 취소·고객 연결)은 기록 안 '고친 기록'에 쌓입니다.</p>
+  <p><b>알라딘 등록 상태는 저절로 안 바뀝니다</b> → 저장하면 상품마다 '알라딘 판매중지' 할 일이 생깁니다. 끝날 때까지 ① 홈 '오늘 확인할 것' 빨간 경고 ② 주문·매출 탭 '현금 판매' 칸 빨간 상자 ③ 수집기가 깔린 PC의 샵매니저 상품 조회 화면 맨 위 빨간 띠 + 그 상품 줄 빨간 표시. 샵매니저에서 판매중지(재고 0) 한 뒤 '판매중지 했음'을 누르거나, 상품 수집 결과 그 상품이 판매중이 아니면 저절로 '확인됨(자동)'. 안 하면 같은 책이 알라딘에서 또 팔려 품절 취소(판매자 평가 감점)가 납니다.</p>
+  <p>출고: 택배로 보낼 현금 판매는 오늘 출고 화면 맨 아래 '현금 판매 출고'에 따로(알라딘 주문과 섞지 않음) 나오고 '출고함'을 누르면 끝. 직접 전달은 기록할 때 '택배 없이 직접 전달'.</p>
+  <p><b>출고별 매출</b>(보조 지표): 주문·매출 탭 맨 아래 접힌 칸 — 펼칠 때만 계산합니다. 일별 매출(주문 시각 0~24시)과 달리 '그날 출고한 묶음'의 주문·권수·매출(그중 현금). 출고일 = 실제 발송일, 발송 기록이 아직 없는 주문은 출고 예정일(영업일 15시 전 주문 → 그날, 아니면 다음 영업일)로 셈.</p>`)}
   ${sec2('⏳ 받는 중 표시 · 화면 이름', `<p><b>화면 이름</b>: 아래 줄의 <b>탭</b>(홈·고객·상품…) → 탭 안의 네모 상자 하나하나는 <b>카드</b>(홈에서는 '홈 칸') → 무엇을 누르면 화면을 덮고 열리는 것은 <b>상세 화면</b>(고객 상세·상품 상세·오늘 출고 등).</p>
   <p><b>돌아가는 주황 별</b> = 새 정보를 받는 중. 새로 올 정보가 있을 때만 뜨고, 새 정보가 없으면 아무 표시 없이 바로 보여 줍니다. 뜨는 곳: ① 아래 탭 단추(그 탭에 새 정보가 오는 중) ② 홈 칸 제목 옆 ③ 화면 아래 왼쪽 알림 — 지금 보는 탭(상세 화면을 열었으면 그 상세 화면)에 무엇이 몇 건 오는지와 받은 건수(예: 주문 새 기록 12건 받는 중 · 5/12). 별이 사라지면 새 정보까지 다 반영된 것.</p>
   <p>기준: 바뀐 것만 받는 기록(고객·주문·구매평·판매자·상품·도서·시장 지표)은 받기와 동시에 새 기록 수를 따로 물어봅니다(1,000건당 읽기 1회, 받기 속도는 그대로). 통째로 읽는 기록(매입·반품·문의·오늘 출고·가격 감시 등)과 고객 상세의 주문·기록은 이 기기에 아직 없을 때만 표시합니다 — 저장해 둔 것을 먼저 보여 주고 있으면 뒤에서 조용히 맞춥니다.</p>`)}
@@ -4294,8 +4430,11 @@ async function openShip() {
     <div class="card"><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" id="shp_ok">출고 확정 (관리자 확인)</button><button class="btn ghost" id="shp_re">새로 읽기</button><button class="btn ghost" disabled title="ALPS 업로드 양식 파일을 받으면 켭니다">ALPS 엑셀 만들기 (준비 중)</button><button class="btn ghost" disabled title="알라딘 송장번호 일괄등록용 파일을 받으면 켭니다">송장번호 일괄등록 CSV (준비 중)</button></div>
       <p class="hint" style="margin:6px 0 0">발송 요청 탭의 주문 = 오늘 출고. 주문은 섞지 않고, 주문 안 상품은 서가 순서 → 이름 순, 주문끼리는 첫 상품의 서가 순입니다. 수집기가 영업일 9~16시에 15분마다 다시 읽습니다. ${X.at ? '' : '아직 읽은 적 없음 — 수집기에서 \'발송 요청 읽기\''}</p></div>
     ${S.shipView === 'shelf' ? shelfHtml() : orders.map(orderHtml).join('') || '<div class="empty">발송 요청 주문이 없습니다</div>'}
+    ${(() => { const C = cashTodo().ship; return C.length ? `<div class="shp-cashh">💵 현금 판매 출고 ${C.length}건 <small>(알라딘 밖 · 송장은 따로)</small></div>` + C.map((o, i) => { const c = S.customers.get(o.customerId) || {}; return orderHtml({ ...o, recipient: { name: c.displayName || o.payerName || '현금 고객' }, buyer: null, items: (o.items || []).filter((it) => it.lineStatus === 'normal') }, orders.length + i).replace('<section class="shp-o', '<section class="shp-o cash').replace('</section>', `<div style="padding:8px 12px"><button class="btn" data-cship="${esc(o.id || o._id)}">출고함 (오늘)</button></div></section>`); }).join('') : ''; })()}
     <button class="shp-view" id="shp_view" title="누를 때마다 보기 바꿈">${S.shipView === 'shelf' ? '⇄ 주문별로 보기' : '⇄ 서가별(상품) 보기'}</button>`;
   $('#back').onclick = () => history.back(); fillUsedInfo(sh);
+  sh.querySelectorAll('[data-cship]').forEach((b) => (b.onclick = () => cashUpdate(b.dataset.cship, (o) => { o.shippedAt = dstr(new Date()); return '출고함 ' + o.shippedAt; })));
+  { const hd = sh.querySelector('.shp-head'); const setH = () => sh.style.setProperty('--shpH', (hd ? hd.offsetHeight : 0) + 'px'); setH(); if (hd && window.ResizeObserver) { if (S._shpRO) S._shpRO.disconnect(); S._shpRO = new ResizeObserver(setH); S._shpRO.observe(hd); } } // 끈끈한 머리 띠: 주문·서가 머리 띠가 위 머리 칸 바로 아래에 붙음
   sh.querySelectorAll('[data-ss]').forEach((b) => b.onclick = () => { S.shipSort = b.dataset.ss; localStorage.setItem('rn-ship-sort', S.shipSort); const y = sh.scrollTop; openShip(); sh.scrollTop = y; });
   sh.querySelector('#shp_view').onclick = () => { S.shipView = S.shipView === 'shelf' ? 'order' : 'shelf'; localStorage.setItem('rn-ship-view', S.shipView); const y = sh.scrollTop; openShip(); sh.scrollTop = 0; };
   // 사진 자리는 고정: 맨 위 줄 = 앞표지 하나, 아래 줄 = 나머지. 누른 사진이 자기 자리(줄)에서 커지고, 크던 사진은 자기 자리에서 작아짐. 두 번 누르면 원본
@@ -4349,11 +4488,12 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.67.0': '2026-10-06', '0.66.0': '2026-10-06', '0.65.14': '2026-10-06', '0.65.13': '2026-10-06', '0.65.12': '2026-10-06', '0.65.11': '2026-10-06', '0.65.10': '2026-10-06', '0.65.8': '2026-10-06', '0.65.7': '2026-10-06', '0.65.6': '2026-10-06', '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.68.0': '2026-10-06', '0.67.0': '2026-10-06', '0.66.0': '2026-10-06', '0.65.14': '2026-10-06', '0.65.13': '2026-10-06', '0.65.12': '2026-10-06', '0.65.11': '2026-10-06', '0.65.10': '2026-10-06', '0.65.8': '2026-10-06', '0.65.7': '2026-10-06', '0.65.6': '2026-10-06', '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
   { d: '2026-10-06', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.2.2', n: ['관리코드 순 정렬(bySku) 추가 — 주문별 보기에서 서가 순 대신 고를 수 있음'] },
   { d: '2026-10-06', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.2.1', n: ['서가 바로잡음: BLK·YLW·GRY·GRN만 한 서가, 나머지(PNKLUX·REDFGN·BLU·SKY·MGZ·ORGCMC·KHKDVD·KHKCPD)는 각각 서가'] },
   { d: '2026-10-06', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.2.0', n: ['서가 바로잡음: 한 줄 = 한 서가, BLK·YLW·GRY·GRN(뒤 3자리 상관없이)은 한 서가. 같은 서가 안은 관리코드를 가리지 않고 이름 철자 순', '서가 이름(shelfName)·정렬 기준(byShelfTitle) 한 곳에'] },
+  { d: '2026-10-06', app: '수집기', v: '1.27.2', n: ['현금 판매(웹앱에서 기록)한 상품 중 알라딘 판매중지 전인 것을 샵매니저 화면 맨 위 빨간 띠로 알림 — \'판매중지 했음\' 단추, 상품 조회 화면에서는 그 상품 줄을 빨갛게'] },
   { d: '2026-10-06', app: '수집기', v: '1.27.1', n: ['묻고 답하기: 새 질문·답변여부가 바뀐 질문만 상세를 엶 (예전엔 답변 없는 질문·취소된 질문을 오래된 것까지 매번 다시 열고, 목록도 끝 페이지까지 넘김)', '묻고 답하기: Firebase에 바뀐 것만 올림 — 예전엔 매번 전부 다시 써서 쓰기 낭비 + 웹앱이 문의 전부를 매번 다시 받음. 빈 값은 보내지 않아 다른 PC가 올린 답변을 지우지 않음', '묻고 답하기 기록을 덮어쓰지 않음: 처음 본 시각·답변여부 바뀐 기록·이전 답변을 쌓고, 새로 읽은 값이 비면 먼저 받은 값 유지', '반품: 끝난 탭(반품완료·반품취소)은 이미 아는 페이지가 이어지면 그 탭을 마침 (진행 중 탭은 상태 변화를 보려고 끝까지)', '구매평: 처음 본 시각 유지'] },
   { d: '2026-10-05', app: '수집기', v: '1.27.0', n: ["'끝없는 탐색 수집 ∞' 버튼: 우리 책들의 함께 산 책에서 시작해 새 책마다 모든 정보를 모으고 끝없이 넓혀 감(대기열 prd_explore, 멈춰도 이어감, 다른 작업이 시작되면 양보 후 다시 이어감)", "'발송 요청 읽기 (오늘 출고)' 버튼 + 영업일 9~16시 15분마다 저절로: 주문·수령인·상품(관리코드·등록일)·우리 매물 구매 유의 사항·사진, 목록이 바뀌면 판으로 보관", '구매자 분포 한 권 읽기를 탐색 수집과 같이 쓰도록 정리'] },
   { d: '2026-10-05', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.1.0', n: ['새 파일: 발송 요청 화면 읽기, 서가 순서·색, 출고 목록 정렬, 영업일·출고 예정일'] },
