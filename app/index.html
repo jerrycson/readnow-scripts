@@ -291,7 +291,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 
 .shp-head{position:sticky;top:0;z-index:5;background:var(--bg,#F4F6F5);padding:6px 0 8px;border-bottom:1px solid var(--line,#D6DDDA)}.shp-sum{font-size:13px;margin:4px 8px 0}
 .shp-o{padding:10px}.shp-oh{font-size:14px;margin-bottom:6px}.shp-n{display:inline-block;min-width:22px;text-align:center;background:#1E2B28;color:#fff;border-radius:10px;font-size:12px;padding:1px 6px}
-.shp-it{display:flex;gap:10px;padding:8px 0;border-top:1px dashed var(--line,#D6DDDA)}.shp-img{width:76px;flex:0 0 76px;text-align:center}.shp-img img{width:76px;max-height:110px;object-fit:contain;border-radius:3px}.shp-noimg{width:76px;height:90px;background:#eee;font-size:11px;display:flex;align-items:center;justify-content:center;color:#888}
+.shp-it{display:flex;gap:10px;padding:8px 0;border-top:1px dashed var(--line,#D6DDDA)}
 .shp-code{display:block;color:#fff;font-size:11px;font-weight:800;border-radius:3px;margin-bottom:3px;padding:1px 0;letter-spacing:.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .shp-main{flex:1;min-width:0}.shp-t{font-size:15px}.shp-q{font-weight:800;margin-left:6px}.shp-p{float:right;font-weight:800}.shp-c{margin-top:4px}.shp-note{font-size:12.5px;white-space:pre-wrap;background:#F7F9F8;border-radius:6px;padding:4px 6px;margin-top:4px;max-height:110px;overflow:auto}.shp-ph{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}.shp-ph img{height:64px;border-radius:3px}
 .lgwrap{position:relative}.lgjump{display:flex;gap:6px;margin:0 0 6px}.lgbox{font:12px/1.5 Consolas,monospace;white-space:pre-wrap;max-height:62vh;overflow-y:scroll;background:#F7F9F8;border-radius:6px;padding:8px}.lghr summary{cursor:pointer;font-family:system-ui,sans-serif;position:sticky;top:-8px;background:#EEF2F0;padding:2px 4px;border-radius:4px}
@@ -305,13 +305,13 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .shp-rcv{font-size:20px;font-weight:800}.shp-ono{font-size:12.5px;opacity:.85;font-family:Consolas,monospace}.shp-box{margin-left:auto;background:#ffd54f;color:#3b2a00;font-weight:800;font-size:12.5px;padding:2px 8px;border-radius:10px}
 .shp-meta{font-size:12px;color:var(--sub);padding:4px 12px;background:#f3f6f5}
 .shp-it{display:flex;gap:12px;padding:10px 12px;border-top:1px solid #e3e9e6}
-.shp-img{width:110px;flex:0 0 110px;text-align:center}.shp-big{width:110px;max-height:160px;object-fit:contain;border-radius:3px}.shp-sm{display:flex;gap:4px;justify-content:center;margin-top:4px}.shp-sm img{width:52px;height:52px;object-fit:cover;border-radius:3px;border:1px solid #ddd}
-.shp-noimg{width:110px;height:130px;background:#eee;font-size:11px;display:flex;align-items:center;justify-content:center;color:#888}
+
+
 .shp-main{flex:1;min-width:0}.shp-t{font-size:19px;font-weight:800;line-height:1.3}
 .shp-c{display:flex;align-items:center;gap:10px;margin-top:6px}.shp-grade{display:inline-block;font-size:20px;font-weight:900;line-height:1;padding:5px 9px;border-radius:4px;color:#fff;min-width:42px;text-align:center;background:#8d8d8d}.shp-grade.g최상{background:#e8457c}.shp-grade.g상{background:#2e9d5b}.shp-grade.g중{background:#8d8d8d}
 .shp-q{font-size:18px;font-weight:800}.shp-p{margin-left:auto;font-size:18px;font-weight:800}.shp-p .pq-u{font-size:12px;font-weight:400}
 .shp-blk{flex:0 0 34%;min-width:0;display:flex;flex-direction:column;gap:1px;max-height:300px;overflow:auto}
-@media(max-width:760px){.shp-it{flex-wrap:wrap}.shp-blk{flex:1 1 100%;max-height:220px}.shp-img{width:90px;flex-basis:90px}.shp-big{width:90px}.shp-t{font-size:17px}.shp-rcv{font-size:18px}}
+@media(max-width:760px){.shp-it{flex-wrap:wrap}.shp-blk{flex:1 1 100%;max-height:220px}.shp-t{font-size:17px}.shp-rcv{font-size:18px}}
 
 /* 머리 칸 줄임 (0.65.3) — 머리 칸 크기는 그대로, 위로 미끄러져 숨고 얇은 띠가 대신 보임 (transform만 써서 부드러움) */
 .top{transition:transform .26s ease;will-change:transform}.top.cond{transform:translateY(-100%)}
@@ -326,21 +326,29 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .shipcard{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;border:0;cursor:pointer;background:#24443a;color:#fff;border-radius:12px;padding:14px 16px;margin:0 0 12px;font:inherit}
 .shipcard .sc-t{font-size:19px}.shipcard .sc-s{font-size:13.5px;opacity:.92;margin-top:2px}.shipcard .sc-w{color:#ffd54f;font-weight:700}.shipcard .sc-go{font-size:16px;font-weight:800;background:#fff;color:#24443a;border-radius:8px;padding:6px 12px;white-space:nowrap}
 
-.shp-img{width:150px;flex:0 0 150px}.shp-big{width:150px;max-height:220px;object-fit:contain}.shp-noimg{width:150px}.shp-pic{cursor:zoom-in}.shp-sm img{width:60px;height:60px}
+
 .shp-who{font-size:13.5px;font-weight:700;margin-bottom:2px}.shp-who small{font-weight:400;color:var(--sub)}.shp-n.sm{min-width:22px;height:22px;font-size:12px;margin-right:6px;background:#24443a;color:#fff}
 .shp-shelf .shp-oh{color:#fff}
 .shp-view{position:fixed;right:76px;bottom:calc(72px + env(safe-area-inset-bottom,0));z-index:12;border:0;border-radius:24px;padding:12px 18px;font-weight:800;font-size:14px;background:#5a3d7a;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.3);cursor:pointer}
-@media(max-width:760px){.shp-img{width:120px;flex-basis:120px}.shp-big{width:120px;max-height:180px}.shp-sm img{width:52px;height:52px}}
+@media(max-width:760px){}
 
-.shp-pics{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;width:150px}
-.shp-pic{width:60px;height:60px;object-fit:cover;border-radius:3px;border:1px solid #ddd;cursor:zoom-in;transition:width .22s ease,height .22s ease}
-.shp-pic.act{width:150px;height:200px;object-fit:contain;border-color:transparent;cursor:default}
-@media(max-width:760px){.shp-pics{width:120px}.shp-pic{width:52px;height:52px}.shp-pic.act{width:120px;height:165px}}
+
+
+
+@media(max-width:760px){}
 .shp-view{background:rgba(90,61,122,.55)!important;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);transition:background .2s}.shp-view:hover{background:rgba(90,61,122,.92)!important}
 
 /* 0.65.5 큰 사진 50% 키움 (작은 사진 그대로) */
-.shp-img{width:225px!important;flex:0 0 225px!important}.shp-pics{width:225px}.shp-pic.act{width:225px;height:300px}
-@media(max-width:760px){.shp-img{width:180px!important;flex:0 0 180px!important}.shp-pics{width:180px}.shp-pic.act{width:180px;height:248px}}
+
+@media(max-width:760px){}
+
+/* 오늘 출고 사진 (0.65.6) — 한 곳에만 둠. 맨 위 줄: 앞표지 하나 / 아래 줄: 나머지 (자리 고정, 줄바꿈 없음) */
+.shp-img{flex:0 0 auto;min-width:225px;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.shp-img .ph-top,.shp-img .ph-row{display:flex;gap:6px;align-items:flex-start;flex-wrap:nowrap}
+.shp-img .ph{display:block;width:60px;height:60px;max-width:none;max-height:none;object-fit:cover;border-radius:3px;border:1px solid #ddd;cursor:zoom-in;transition:width .22s ease,height .22s ease}
+.shp-img .ph.act{width:225px;height:300px;object-fit:contain;border-color:transparent;background:#f3f3f3;cursor:default}
+.shp-img .ph-none{width:225px;height:120px;background:#eee;font-size:12px;display:flex;align-items:center;justify-content:center;color:#888}
+@media(max-width:760px){.shp-img{min-width:180px}.shp-img .ph{width:52px;height:52px}.shp-img .ph.act{width:180px;height:248px}.shp-img .ph-none{width:180px}}
 </style>
 </head>
 <body>
@@ -363,7 +371,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.65.5';
+const APP_VER = '0.65.6';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -2968,6 +2976,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.65.6': ['오늘 출고 사진 고침: 예전 규칙이 큰 사진을 높이 110px에 묶어 둬서 크기가 안 바뀌었음 → 사진 규칙을 한 곳으로 정리, 큰 사진 실제 225×300(휴대폰 180×248)', '사진 자리 고정: 맨 위 줄은 앞표지 하나, 아래 줄은 나머지 — 누른 사진이 자기 줄·자리에서 커지고 다른 사진은 제자리에서 작아짐(줄이 바뀌거나 섞이지 않음)'],
   '0.65.5': ['오늘 출고: 큰 사진 50% 키움(PC 225×300, 휴대폰 180×248), 작은 사진은 그대로'],
   '0.65.4': ['오늘 출고 사진: 사진마다 제자리 — 누른 사진이 그 자리에서 커지고 크던 사진은 그 자리에서 작아짐(앞표지는 늘 첫 자리), 두 번 누르면 원본', "'⇄' 단추를 반투명하게(뒤가 보임, 마우스를 올리면 진해짐)"],
   '0.65.3': ['머리 칸 버벅임 고침: 크기를 바꾸지 않고 위로 미끄러져 숨고 얇은 띠가 내려옴(움직임만 써서 부드러움), 띠를 누르면 펼침', '오늘 출고 \'⇄\' 단추를 기존 동그란 보기 단추 왼쪽으로 옮겨 겹치지 않게'],
@@ -4170,7 +4179,7 @@ async function openShip() {
     const { big, sm } = pics(b, u); const src = big || it.img || ''; const shelf = SH.shelfOf(it.sku); const note = u ? u.note : (l && l.condition) || '';
     const P1 = l ? page1FromMetrics(l) : null; const mAt = l && l.bookId && S.pmetrics ? String((S.pmetrics.get(l.bookId) || {}).lastCheckedAt || '').slice(0, 10) : '';
     const ord = it._o ? `<div class="shp-who"><span class="shp-n sm">${it._o.n}</span>${esc(it._o.rcv)} <small>${esc(it._o.no)}${it._o.cnt > 1 ? ` · ${it._o.cnt}권 주문` : ''}</small></div>` : '';
-    return `<div class="shp-it"><div class="shp-img"><span class="shp-code" style="background:${SH.shelfColor(it.sku)}">${esc(it.sku || '코드 없음')}</span>${src || sm.length ? `<div class="shp-pics">${[src, ...sm].filter(Boolean).map((x, k) => `<img class="shp-pic${k === 0 ? ' act' : ''}" src="${esc(x)}" loading="lazy" title="누르면 이 자리에서 크게 · 두 번 누르면 원본">`).join('')}</div>` : '<div class="shp-noimg">사진 없음</div>'}</div>
+    return `<div class="shp-it"><div class="shp-img"><span class="shp-code" style="background:${SH.shelfColor(it.sku)}">${esc(it.sku || '코드 없음')}</span>${src || sm.length ? `<div class="ph-top">${src ? `<img class="ph act" src="${esc(src)}" loading="lazy" title="누르면 이 자리에서 크게 · 두 번 누르면 원본">` : ''}</div>${sm.length ? `<div class="ph-row">${sm.map((x) => `<img class="ph" src="${esc(x)}" loading="lazy" title="누르면 이 자리에서 크게 · 두 번 누르면 원본">`).join('')}</div>` : ''}` : '<div class="ph-none">사진 없음</div>'}</div>
       <div class="shp-main">${ord}<div class="shp-t">${esc(it.title)}</div>
       <div class="shp-c"><span class="shp-grade g${esc(it.grade || '')}">${esc(it.grade || '-')}</span><span class="shp-q">× ${it.qty || 1}</span><span class="shp-p">${pqWon(it.price)}</span></div>
       <div class="hint" style="margin-top:2px">${esc(shelf)}${it.registeredAt ? ' · 등록 ' + esc(String(it.registeredAt).slice(0, 10)) : ''}</div>
@@ -4192,9 +4201,9 @@ async function openShip() {
     <button class="shp-view" id="shp_view" title="누를 때마다 보기 바꿈">${S.shipView === 'shelf' ? '⇄ 주문별로 보기' : '⇄ 서가별(상품) 보기'}</button>`;
   $('#back').onclick = () => history.back(); fillUsedInfo(sh);
   sh.querySelector('#shp_view').onclick = () => { S.shipView = S.shipView === 'shelf' ? 'order' : 'shelf'; localStorage.setItem('rn-ship-view', S.shipView); const y = sh.scrollTop; openShip(); sh.scrollTop = 0; };
-  // 사진: 각 사진은 늘 제자리. 누른 사진이 그 자리에서 커지고, 크던 사진은 그 자리에서 작아짐(앞표지는 언제나 첫 자리). 두 번 누르면 원본을 새 창으로
-  sh.querySelectorAll('.shp-pics').forEach((box) => { let tm = null; box.onclick = (e) => { const im = e.target.closest('.shp-pic'); if (!im) return; clearTimeout(tm); tm = setTimeout(() => { box.querySelectorAll('.shp-pic').forEach((x) => x.classList.toggle('act', x === im)); }, 220); };
-    box.ondblclick = (e) => { const im = e.target.closest('.shp-pic'); if (!im) return; clearTimeout(tm); window.open(im.src, '_blank'); }; });
+  // 사진 자리는 고정: 맨 위 줄 = 앞표지 하나, 아래 줄 = 나머지. 누른 사진이 자기 자리(줄)에서 커지고, 크던 사진은 자기 자리에서 작아짐. 두 번 누르면 원본
+  sh.querySelectorAll('.shp-img').forEach((box) => { let tm = null; box.onclick = (e) => { const im = e.target.closest('.ph'); if (!im) return; clearTimeout(tm); tm = setTimeout(() => { box.querySelectorAll('.ph').forEach((x) => x.classList.toggle('act', x === im)); }, 220); };
+    box.ondblclick = (e) => { const im = e.target.closest('.ph'); if (!im) return; clearTimeout(tm); window.open(im.src, '_blank'); }; });
   sh.querySelector('#shp_re').onclick = () => { S.ship = null; loadShip(); openShip(); };
   sh.querySelector('#shp_ok').onclick = async () => { if (!orders.length) return toast('출고할 주문이 없음'); if (!confirm(`${dk} 출고를 확정할까요?\n주문 ${orders.length}건 · 상품 ${items.length}권\n(지금은 기록만 — ALPS 송장 출력·알라딘 송장 등록 자동화는 양식 파일을 받은 뒤 이 버튼에 붙입니다)`)) return;
     try { await db.collection('shp_days').doc(dk).set({ day: dk, confirmedAt: new Date().toISOString(), by: S.user.email, orders, orderCount: orders.length, itemCount: items.length, total, readAt: X.at || null, writerSchema: 6 }, { merge: true }); toast('출고 확정 기록함'); } catch (e) { toast('실패: ' + (e.code || e.message)); } };
@@ -4243,7 +4252,7 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.65.6': '2026-10-06', '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
   { d: '2026-10-05', app: '수집기', v: '1.27.0', n: ["'끝없는 탐색 수집 ∞' 버튼: 우리 책들의 함께 산 책에서 시작해 새 책마다 모든 정보를 모으고 끝없이 넓혀 감(대기열 prd_explore, 멈춰도 이어감, 다른 작업이 시작되면 양보 후 다시 이어감)", "'발송 요청 읽기 (오늘 출고)' 버튼 + 영업일 9~16시 15분마다 저절로: 주문·수령인·상품(관리코드·등록일)·우리 매물 구매 유의 사항·사진, 목록이 바뀌면 판으로 보관", '구매자 분포 한 권 읽기를 탐색 수집과 같이 쓰도록 정리'] },
   { d: '2026-10-05', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.1.0', n: ['새 파일: 발송 요청 화면 읽기, 서가 순서·색, 출고 목록 정렬, 영업일·출고 예정일'] },
