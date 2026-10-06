@@ -1,5 +1,5 @@
 // ==========================================================================
-// ReadNow Shipping Core — 0.2.1  (출고: 알라딘 판매관리 화면 읽기 · 서가 순서 · 영업일)
+// ReadNow Shipping Core — 0.2.2  (출고: 알라딘 판매관리 화면 읽기 · 서가 순서 · 영업일)
 // 웹앱(오늘 출고 화면)과 수집기(발송 요청 읽기)가 같이 쓰는 기준 — 같은 기준은 여기 한 곳에만
 // 알라딘 판매관리 흐름: ① 주문확인요청(orderstep=3) → [발송준비시작] → ② 발송 요청(orderstep=4, 송장 입력)
 //   → [입력완료] → ③ 배송&구매확정전(출고 후 5일 안에 수령확인 없으면 6일째 자동 구매확정) → ④ 구매확정&정산대기(다음 날 새벽 예치금 정산) → ⑤ 정산완료(3개월 보관)
@@ -7,7 +7,7 @@
 // ==========================================================================
 (function (root) {
   'use strict';
-  const VERSION = '0.2.1';
+  const VERSION = '0.2.2';
   const T = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
   const toInt = (s) => { const n = parseInt(String(s || '').replace(/[^\d-]/g, ''), 10); return isNaN(n) ? null : n; };
 
@@ -69,9 +69,13 @@
   // 출고 목록 정렬: 주문은 절대 섞지 않음(주문이 최우선) → 주문 안의 상품: 서가 순서 → 같은 서가 안에서는 관리코드를 가리지 않고 이름 철자 순
   //   → 주문끼리: 첫 상품의 서가 순서 → 같은 서가면 첫 상품 이름 철자 순
   const byShelfTitle = (a, b) => shelfRank(a.sku) - shelfRank(b.sku) || String(a.title || '').localeCompare(String(b.title || ''), 'ko');
-  function sortShipment(orders) {
-    const out = orders.map((o) => ({ ...o, items: [...o.items].sort(byShelfTitle) }));
-    return out.sort((a, b) => byShelfTitle(a.items[0] || {}, b.items[0] || {}));
+  // 관리코드 순(주문별 보기에서 고를 수 있음): 관리코드 전체 글자 순(숫자는 크기 순, 대소문자 무시) → 같은 관리코드면 이름 철자 순. 코드 없는 상품은 맨 뒤
+  const bySku = (a, b) => { const x = String(a.sku || ''), y = String(b.sku || ''); if (!x !== !y) return x ? -1 : 1;
+    return x.localeCompare(y, 'en', { numeric: true, sensitivity: 'base' }) || String(a.title || '').localeCompare(String(b.title || ''), 'ko'); };
+  const SORTS = { shelf: byShelfTitle, sku: bySku }; // 주문별 보기 정렬 방식 — 기본 shelf(서가 순)
+  function sortShipment(orders, mode) { const cmp = SORTS[mode] || byShelfTitle;
+    const out = orders.map((o) => ({ ...o, items: [...o.items].sort(cmp) }));
+    return out.sort((a, b) => cmp(a.items[0] || {}, b.items[0] || {}));
   }
 
 
@@ -83,6 +87,6 @@
   function dueShipDay(orderedAt, opt) { const o = opt || {}; const cut = o.cutHour ?? 15; const t = new Date(String(orderedAt).replace(' ', 'T') + (/[+Z]/.test(String(orderedAt)) ? '' : '+09:00'));
     const h = +new Date(t.getTime() + 9 * 3600e3).toISOString().slice(11, 13); return isBizDay(t, o.holidays) && h < cut ? ymd(t) : ymd(nextBizDay(t, o.holidays)); }
 
-  const API = { VERSION, parseDeliveryPage, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd };
+  const API = { VERSION, parseDeliveryPage, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; root.ReadnowShipping = API;
 })(typeof window !== 'undefined' ? window : globalThis);
