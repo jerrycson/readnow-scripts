@@ -21,7 +21,7 @@ const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.2.1';
+const VER = '0.3.0';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -119,8 +119,34 @@ async function shipRead(p) {
       else { const nv = ((prev && prev.versions) || 0) + 1; const b2 = db.batch(); const ver = { note: info.note || null, hasNote: info.hasNote, photos: info.photos.map((x) => ({ src: x.src, where: x.where, file: x.file })), sellerPhotoCount: info.sellerPhotoCount, photoDiff: info.photoDiff, found: info.found, sig: sig2, at };
         b2.set(ref.collection('v').doc(String(nv).padStart(4, '0')), { ...ver, listingId: String(it.listingId), ...W() }); b2.set(ref, { listingId: String(it.listingId), sellerCode: '996008', ours: true, ...ver, versions: nv, firstAt: (prev && prev.firstAt) || at, checkedAt: at, ...W() }, { merge: true }); await b2.commit(); nInfo++; }
       await sleep(600); } catch (e) { log('유의 사항 읽기 실패', it.listingId, e.message); } }
+  lastConfirm = rc.orders;
   return { confirm: rc.orders.length, deliv: r.orders.length, items: items.length, changed: !cur || cur.sig !== sig, nInfo, exErr: R.exErr || null };
 }
+
+/* ── 주문 들어온 책의 지금 시장 (shp_market) ──
+   주문확인요청에 새로 들어온 주문의 상품마다 온라인 중고 첫 페이지 1번만 읽어 '주문 시점 시장'으로 따로 남김 (주문번호__매물번호 문서 하나, 이미 있으면 다시 읽지 않음)
+   · 기존 시장 지표(prd_book_metrics)는 건드리지 않음 — 덮어쓰지 않고 새 문서만 만듦 (create: 이미 있으면 실패 → 그대로 둠)
+   · 한 번에 최대 MARKET_MAX권, 나머지는 다음 회차 · 실패한 책은 이번 회차만 건너뜀(다음 회차에 다시) */
+let lastConfirm = []; const MARKET_MAX = 15; const skipUntil = new Map();
+async function aladinItemIdOf(listingId) {
+  const L = await C('prd_listings').where('listingId', 'in', [String(listingId), Number(listingId)].filter((x) => x === x)).limit(1).get(); const l = L.empty ? null : L.docs[0].data();
+  if (!l || !l.bookId) return { why: '우리 상품 기록에 없음' }; const b = (await C('prd_books').doc(l.bookId).get()).data();
+  return b && b.aladinItemId ? { itemId: String(b.aladinItemId), bookId: l.bookId, key: L.docs[0].id } : { why: '도서 정보(알라딘 상품번호) 없음', bookId: l.bookId }; }
+async function marketSnap(p) {
+  const todo = []; for (const o of lastConfirm || []) for (const it of o.items || []) if (it.listingId) todo.push({ o, it, id: `${o.orderNo}__${it.listingId}` });
+  let n = 0, fail = 0;
+  for (const t of todo) { if (n >= MARKET_MAX) break; if ((skipUntil.get(t.id) || 0) > Date.now()) continue; const ref = C('shp_market').doc(t.id); if ((await ref.get()).exists) continue;
+    try { const ai = await aladinItemIdOf(t.it.listingId); n++;
+      if (!ai.itemId && t.it.title) { // 우리 기록에 없으면 제목으로 알라딘 검색 → 새상품(중고 아님) 중 이름이 90% 이상 같은 것 (PC 수집기 풀 수집과 같은 기준)
+        const c = await p.evaluate(async (q) => { const P = window.ReadnowProducts; const r = await fetch('/search/wsearchresult.aspx?SearchTarget=All&SearchWord=' + encodeURIComponent(q), { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html');
+          return P.parseSearchResults(d).filter((x) => !x.used).map((x) => ({ itemId: x.itemId, cov: P.nameCoverage(q, x.title) })).filter((x) => x.cov >= 0.9).sort((a, b) => b.cov - a.cov)[0] || null; }, String(t.it.title).replace(/^\[[^\]]*\]\s*/, ''));
+        if (c) { ai.itemId = String(c.itemId); ai.via = 'search'; } }
+      if (!ai.itemId) { skipUntil.set(t.id, Date.now() + 3600e3); log('주문 시장: 알라딘 상품번호를 못 찾음', t.id, ai.why); continue; }
+      const u = await p.evaluate(async (id) => { const r = await fetch(`/shop/UsedShop/wuseditemall.aspx?ItemId=${id}&TabType=0`, { credentials: 'include' }); if (!r.ok) throw new Error('HTTP ' + r.status); return window.ReadnowProducts.parseUsedPage(new DOMParser().parseFromString(await r.text(), 'text/html')); }, ai.itemId);
+      await ref.create({ orderNo: t.o.orderNo, listingId: String(t.it.listingId), listingKey: ai.key || null, bookId: ai.bookId, aladinItemId: ai.itemId, via: ai.via || 'ours', title: t.it.title || null, orderedAt: t.o.orderedAt || null, at: nowIso(),
+        page1: u.listings || [], usedTotal: u.usedTotal ?? null, mins: u.mins || null, buyback: u.buyback || null, lastPage: u.lastPage || 1, by: 'cloud', ...W() }).catch(() => {});
+      await sleep(700); } catch (e) { fail++; log('주문 시장 읽기 실패', t.id, e.message); } }
+  return { n, fail, left: Math.max(0, todo.length - n) }; }
 
 /* ── ③ 웹앱이 맡긴 일 (read · startDelivery) ── */
 async function runCmds(p) {
@@ -148,6 +174,7 @@ async function tick(why) {
   try { const p = await getPage(); await login(p);
     const cm = await runCmds(p);
     let rd; try { rd = await shipRead(p); } catch (e) { if (e.relogin) { await login(p); rd = await shipRead(p); } else throw e; }
+    try { rd.market = await marketSnap(p); } catch (e) { rd.market = { err: e.message }; }
     const out = { ok: true, err: null, why, tickMs: Date.now() - t0, lastShipAt: nowIso(), last: rd, cmds: cm.n, login: 'ok' }; await beat(out); log('tick', JSON.stringify(out)); return out;
   } catch (e) { const out = { ok: false, err: String(e.message || e).slice(0, 300), why, tickMs: Date.now() - t0, login: /로그인/.test(e.message) ? 'fail' : 'ok' }; await beat(out); log('tick 실패', e.message); return out; }
 }
