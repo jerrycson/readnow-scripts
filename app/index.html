@@ -229,6 +229,12 @@ fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opa
 .ulink{display:inline-block;margin-left:6px;padding:1px 7px;border:1px solid #9FC1B4;border-radius:999px;font-size:11.5px;font-weight:600;color:var(--cloth);background:#fff;cursor:pointer;white-space:nowrap;vertical-align:middle}.ulink:hover{background:var(--cloth);color:#fff}
 .alinks{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}.alinks .btn{text-decoration:none;padding:8px 12px;font-size:13.5px}
 .clk{cursor:pointer}tr.clk:hover td,span.clk:hover{background:var(--soft)}
+@keyframes rnspin{to{transform:rotate(360deg)}}@keyframes rnfade{0%,100%{opacity:.35}50%{opacity:1}}
+svg.spin{width:1em;height:1em;fill:#D97757;animation:rnspin 1.1s steps(8) infinite;vertical-align:-.15em;flex:none}
+#updpill{position:fixed;left:10px;bottom:calc(66px + env(safe-area-inset-bottom,0px));z-index:35;display:flex;gap:9px;align-items:flex-start;max-width:min(380px,calc(100vw - 150px));background:#fff;color:#2b2b2b;border:1px solid #F0C9B8;border-radius:14px;padding:8px 12px;font-size:12.5px;line-height:1.45;box-shadow:0 4px 14px rgba(0,0,0,.14);pointer-events:none}
+#updpill svg.spin{width:20px;height:20px;margin-top:1px}#updpill small{display:block;color:#999;font-size:11px}
+.tspin{position:absolute;top:3px;right:calc(50% - 22px);font-size:11px;line-height:0}#tabs button{position:relative}
+.wspin{margin-left:6px;font-size:14px;line-height:0;animation:rnfade 1.4s ease-in-out infinite}
 .verbar{position:sticky;top:0;z-index:50;background:#1E3A5F;color:#fff;padding:10px 14px;font-size:13.5px;line-height:1.5;cursor:pointer}.verbar.new{background:#A8661B}.verbar ul{margin:4px 0 0 18px;padding:0}.verbar small{opacity:.7}.verbar .vx{margin-left:10px;border:0;border-radius:6px;padding:4px 12px;font-weight:700;cursor:pointer;background:#fff;color:#1E3A5F}
 .runsbtn{background:none;border:0;color:inherit;font-size:12.5px;padding:2px 0;cursor:pointer;text-align:left;opacity:.95}.runsbtn small{opacity:.7;margin-left:4px}.jspin.sm{width:9px;height:9px;display:inline-block;vertical-align:middle}
 #main>details.sec,#main>.card{content-visibility:auto;contain-intrinsic-size:auto 320px}
@@ -372,7 +378,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.65.14';
+const APP_VER = '0.66.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -417,12 +423,50 @@ function putCustomer(id, v) { bump(); v.customerId = id; v._sk = searchKey(v); v
 const deTs = (v) => (v && typeof v === 'object' ? (typeof v.toMillis === 'function' ? v.toMillis() : Array.isArray(v) ? v.map(deTs) : Object.fromEntries(Object.entries(v).map(([k, x]) => [k, deTs(x)]))) : v);
 function serializable(v) { const o = deTs({ ...v }); delete o.uploadedAt; return o; } // 기기 보관용: 시각 값은 숫자로
 
+/* ══════════ 새 정보 받는 중 표시 (한 곳) ══════════
+ * 원칙: 새로 올 정보가 있을 때만 그 자리에 '받는 중' 표시(돌아가는 별)를 띄움 — 새 정보가 없으면 아무 표시 없이 그냥 보여 줌.
+ *  · 바뀐 것만 받는 기록(고객·주문·구매평·판매자·상품·도서·시장 지표): 받기와 동시에 '새 기록이 몇 건인지'를 따로 물어봄(count, 1,000건당 읽기 1회)
+ *    → 0건이면 표시 없음, 있으면 '주문 새 기록 12건 받는 중 · 340/1,200' 표시. 처음 받는 기록은 전부 새 정보.
+ *  · 통째로 읽는 기록(매입·반품·문의 등): 이 기기에 아직 아무것도 없을 때(= 오는 것이 전부 새 정보)만 표시. 저장해 둔 것을 먼저 보여 주는 중이면 표시 없이 뒤에서 맞춤.
+ * 표시 자리: ① 그 탭 단추(작은 별) ② 홈 칸 제목(별) ③ 화면 아래 왼쪽 알림(지금 보는 화면과 관련된 것만, 무엇이 몇 건 오는지) — 상세 화면을 열고 있으면 상세 화면 기준 */
+const UPD_SRC = { customers: '고객', orders: '주문', reviews: '구매평', qna: '문의', sellers: '판매자', products: '상품', books: '도서 정보', metrics: '시장 지표', pricing: '가격 감시',
+  pur: '매입', pmatch: '매입 연결', disp: '폐기', returns: '반품', bb: '알라딘 팔기', catman: '분류 수정', entstate: '입고 상태', ordops: '택배비 기록', nbm: '시세', ship: '오늘 출고', cdetail: '이 고객의 주문·기록', inters: '기간별 문의·구매평' };
+const UPD_TAB = { home: null /* 홈은 칸마다 */, search: ['customers', 'orders', 'reviews', 'qna', 'inters'], flags: ['customers', 'orders'], products: ['products', 'books', 'metrics', 'pricing', 'catman', 'nbm'], sellers: ['sellers'],
+  orders: ['orders', 'customers', 'returns', 'ordops', 'ship'], purchase: ['pur', 'pmatch', 'disp', 'bb', 'entstate', 'products'], biz: ['orders', 'products', 'metrics', 'disp', 'ordops', 'returns'], pending: ['customers'], settings: [] };
+const UPD_W = { alerts: ['orders', 'products', 'metrics', 'qna', 'ship'], pace: ['orders'], margin: ['orders', 'disp', 'ordops'], jobs: [], sales: ['orders'], cust: ['customers'], inv: ['products'], topBooks: ['orders'], topCust: ['orders', 'customers'],
+  sellers: ['sellers'], recent: ['products'], reviews: ['reviews'], shortcuts: [], invHealth: ['products', 'orders'], listPace: ['products'], oldStock: ['products'], priceWatch: ['products', 'metrics', 'pricing'], cheapValid: ['products', 'metrics'],
+  cheapFirst: ['products', 'metrics'], typeMix: ['orders', 'products'], priceBand: ['orders'], goal: ['orders'], months12: ['orders'], weekday: ['orders'], topRevenue: ['orders'] };
+const updDetailSrc = (d) => !d ? null : d.ship ? ['ship', 'products', 'books', 'metrics'] : d.cid ? ['cdetail', 'customers', 'orders', 'reviews', 'qna'] : d.product ? ['products', 'books', 'metrics', 'pricing'] : d.seller ? ['sellers']
+  : (d.pur || d.purAll) ? ['pur', 'pmatch'] : d.disp ? ['disp'] : d.bb ? ['bb'] : d.ordops ? ['ordops', 'orders'] : d.order ? ['orders'] : d.list ? ['products', 'orders'] : [];
+S.upd = new Map();
+function updOn(k, n) { const u = S.upd.get(k) || { got: 0 }; S.upd.set(k, { n: n == null ? u.n ?? null : n, got: u.got || 0 }); updPaint(); }
+function updGot(k, got) { const u = S.upd.get(k); if (u) { u.got = got; updPaint(); } }
+function updOff(k) { if (S.upd.delete(k)) updPaint(); }
+// 통째로 읽는 기록: 이 기기에 아직 없을 때만 표시. 돌려주는 함수를 부르면 표시를 끔
+function updBegin(k, empty) { if (!empty) return () => {}; updOn(k, null); return () => updOff(k); }
+// 바뀐 것만 받는 기록: 받기와 같이 '새 기록 수'를 물어 0이 아니면 표시 (받기를 늦추지 않음)
+async function probeNew(q) { try { const c = await q.count().get(); return c.data().count; } catch (e) {} try { const x = await q.limit(1).get(); return x.empty ? 0 : -1; } catch (e) { return -1; } }
+function updWatch(k, q, first) { let fin = false; if (first) updOn(k, null); else if (q) probeNew(q).then((n) => { if (!fin && n) updOn(k, n > 0 ? n : null); }); return () => { fin = true; updOff(k); }; }
+const SPIN = '<svg class="spin" viewBox="0 0 24 24" aria-hidden="true"><g>' + [0, 45, 90, 135, 180, 225, 270, 315].map((a, i) => `<rect x="10.8" y="1.5" width="2.4" height="7" rx="1.2" opacity="${(0.25 + (i / 7) * 0.75).toFixed(2)}" transform="rotate(${a} 12 12)"/>`).join('') + '</g></svg>';
+let _updT = null; function updPaint() { if (_updT) return; _updT = requestAnimationFrame(() => { _updT = null; updPaintNow(); }); }
+function updPaintNow() {
+  const on = (L) => (L || []).filter((k) => S.upd.has(k));
+  const tabs = $('#tabs'); if (tabs) tabs.querySelectorAll('button[data-tab]').forEach((b) => { const t = b.dataset.tab; const L = t === 'home' ? [...new Set(Object.values(UPD_W).flat())] : UPD_TAB[t]; const busy = on(L).length > 0;
+    if (busy !== b.classList.contains('upd')) { b.classList.toggle('upd', busy); const x = b.querySelector('.tspin'); if (busy && !x) b.insertAdjacentHTML('beforeend', `<span class="tspin">${SPIN}</span>`); if (!busy && x) x.remove(); } });
+  if (S.tab === 'home') document.querySelectorAll('[id^="wc_"]').forEach((el) => { const busy = on(UPD_W[el.id.slice(3)]).length > 0; const h = el.querySelector('h3, .wh, .wt') || el.firstElementChild; if (!h) return; const x = h.querySelector('.wspin');
+    if (busy && !x) h.insertAdjacentHTML('beforeend', `<span class="wspin" title="새 정보를 받는 중">${SPIN}</span>`); else if (!busy && x) x.remove(); });
+  const sheetOn = $('#sheet') && $('#sheet').classList.contains('on'); const L = on(sheetOn ? updDetailSrc(S.detail) : S.tab === 'home' ? [...new Set(Object.values(UPD_W).flat())] : UPD_TAB[S.tab]);
+  let pill = $('#updpill'); const txt = L.map((k) => { const u = S.upd.get(k); return `${UPD_SRC[k] || k} ${u.n ? `새 기록 ${u.n.toLocaleString()}건` : '새 정보'} 받는 중${u.got && u.n ? ` · ${Math.min(u.got, u.n).toLocaleString()}/${u.n.toLocaleString()}` : u.got ? ` · ${u.got.toLocaleString()}건 받음` : ''}`; }).join('<br>');
+  if (!L.length) { if (pill) pill.remove(); return; }
+  if (!pill) { pill = document.createElement('div'); pill.id = 'updpill'; document.body.appendChild(pill); }
+  const html = `${SPIN}<span>${txt}<small>조금만 기다리면 바로 보여 줍니다</small></span>`; if (pill.innerHTML !== html) pill.innerHTML = html;
+}
 async function syncCustomers() {
   const meta = await idbGet('meta', 'sync');
   let q = db.collection('crm_customers');
   if (meta && meta.last) q = q.where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last));
-  setSync('고객 목록 받는 중');
-  const snap = await q.get({ source: 'server' }).catch(() => q.get());
+  setSync('고객 목록 받는 중'); const _u = updWatch('customers', q, !(meta && meta.last));
+  const snap = await q.get({ source: 'server' }).catch(() => q.get()).finally(_u);
   let max = meta ? meta.last || 0 : 0; const batch = [];
   snap.forEach((d) => { const v = putCustomer(d.id, d.data()); if (v._t > max) max = v._t; batch.push(serializable(v)); });
   if (batch.length) await idbPut('customers', batch);
@@ -449,8 +493,8 @@ function putOrder(id, v) { bump(); v.id = id; v._sk = orderKey(v); v._t = v.uplo
 async function syncOrders(first) {
   const meta = await idbGet('meta', 'osync'); if (!meta && !first) return;
   let q = db.collection('crm_orders'); if (meta && meta.last) q = q.where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last));
-  if (first) { S.ordersBusy = true; renderMain(); }
-  const snap = await q.get(); let max = meta ? meta.last || 0 : 0; const batch = [];
+  if (first) { S.ordersBusy = true; renderMain(); } const _u = updWatch('orders', q, !(meta && meta.last));
+  const snap = await q.get().finally(_u); let max = meta ? meta.last || 0 : 0; const batch = [];
   snap.forEach((d) => { const v = putOrder(d.id, d.data()); if (v._t > max) max = v._t; const o = deTs({ ...v }); delete o.uploadedAt; batch.push(o); });
   if (batch.length) await idbPut('orders', batch);
   await idbPut('meta', [{ k: 'osync', last: max, at: Date.now() }]); S.ordersLoaded = true; S.ordersBusy = false;
@@ -594,7 +638,7 @@ function renderTabs() {
   const pc = S.pending.length;
   const t = [['home', '홈', ICON.home], ['search', '고객', ICON.search], ['flags', '표시 고객', ICON.flag], ['products', '상품', ICON.book], ['sellers', '판매자', ICON.agent], ['orders', '주문·매출', ICON.orders], ['purchase', '매입', ICON.orders], ['biz', '경영', ICON.orders]];
   $('#tabs').innerHTML = t.map(([k, l, i]) => `<button class="${S.tab === k ? 'on' : ''}" data-tab="${k}">${i}${l}${k === 'pending' && pc ? `<span class="badge">${pc}</span>` : ''}</button>`).join('');
-  $('#tabs').querySelectorAll('button').forEach((b) => (b.onclick = () => { S.tab = b.dataset.tab; S.limit = 30; renderTabs(); renderMain(); window.scrollTo(0, 0); }));
+  updPaint(); $('#tabs').querySelectorAll('button').forEach((b) => (b.onclick = () => { S.tab = b.dataset.tab; S.limit = 30; renderTabs(); renderMain(); window.scrollTo(0, 0); }));
   const hp = $('#hpend'); if (hp) { hp.classList.toggle('on', S.tab === 'pending'); hp.innerHTML = `연결 확정${pc ? `<span class="badge">${pc}</span>` : ''}`; }
   const hs = $('#hset'); if (hs) hs.classList.toggle('on', S.tab === 'settings');
 }
@@ -823,7 +867,8 @@ async function syncReviews() {
   const cached = await idbAll('reviews').catch(() => []); cached.forEach((v) => putReview(v.id, v));
   const meta = await idbGet('meta', 'rsync'); let max = meta ? meta.last || 0 : 0; const batch = [];
   const take = (d) => { const v = d.data(); if (v.type !== 'review') return; const t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; if (t > max) max = t; const o = deTs({ ...v }); delete o.uploadedAt; batch.push(putReview(d.id, o)); };
-  const snap = meta && meta.last ? await db.collection('crm_interactions').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last)).get() : await db.collection('crm_interactions').where('type', '==', 'review').get();
+  const rq = meta && meta.last ? db.collection('crm_interactions').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last)) : db.collection('crm_interactions').where('type', '==', 'review');
+  const _u = updWatch('reviews', rq, !(meta && meta.last) && !cached.length); const snap = await rq.get().finally(_u);
   snap.forEach(take);
   if (batch.length) await idbPut('reviews', batch);
   await idbPut('meta', [{ k: 'rsync', last: max, at: Date.now() }]); S.reviewsLoaded = true; S._rstats = null;
@@ -1202,7 +1247,7 @@ async function openCustomer(cid) {
   renderDetail();
   S.detailUnsubs.push(db.collection('crm_customers').doc(cid).onSnapshot((d) => { if (d.exists) { putCustomer(cid, d.data()); renderDetail(); } }, () => {}));
   S.detailUnsubs.push(db.collection('crm_notes').where('customerId', '==', cid).onSnapshot((ss) => { S.detail.notes = []; ss.forEach((d) => S.detail.notes.push({ id: d.id, ...d.data() })); renderDetail(); }, () => {}));
-  const [os, is] = await Promise.all([db.collection('crm_orders').where('customerId', '==', cid).get(), db.collection('crm_interactions').where('customerId', '==', cid).get()]);
+  const _u = updBegin('cdetail', true); const [os, is] = await Promise.all([db.collection('crm_orders').where('customerId', '==', cid).get(), db.collection('crm_interactions').where('customerId', '==', cid).get()]).finally(_u);
   if (!S.detail || S.detail.cid !== cid) return;
   S.detail.orders = []; os.forEach((d) => S.detail.orders.push({ id: d.id, ...d.data() })); S.detail.orders.sort((a, b) => String(b.orderedAt || '').localeCompare(String(a.orderedAt || '')));
   S.detail.inters = []; is.forEach((d) => S.detail.inters.push({ id: d.id, ...d.data() }));
@@ -1296,7 +1341,7 @@ async function syncSellersNow() {
   const cached = await idbAll('sellers').catch(() => []); cached.forEach((v) => S.sellers.set(v.id, v));
   const meta = await idbGet('meta', 'ssync'); let q = db.collection('sellers');
   if (meta && meta.last) q = q.where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last));
-  const snap = await q.get(); let max = meta ? meta.last || 0 : 0; const batch = [];
+  const _u = updWatch('sellers', q, !(meta && meta.last)); const snap = await q.get().finally(_u); let max = meta ? meta.last || 0 : 0; const batch = [];
   snap.forEach((d) => { const v = { id: d.id, ...d.data() }; const t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; if (t > max) max = t; const o = deTs(v); delete o.uploadedAt; S.sellers.set(d.id, o); batch.push(o); });
   if (batch.length) await idbPut('sellers', batch);
   await idbPut('meta', [{ k: 'ssync', last: max }]); S.sellersLoaded = true; S.sellersBusy = false; bump(); S._sellerScores = null;
@@ -1594,7 +1639,7 @@ S.interCache = {};
 async function loadInters(r) {
   const k = r.start + '_' + r.end; if (S.interCache[k]) return S.interCache[k];
   S.interCache[k] = 'loading';
-  try { const ss = await db.collection('crm_interactions').where('createdAt', '>=', r.start).where('createdAt', '<', r.end).get(); const arr = []; ss.forEach((d) => arr.push(d.data())); S.interCache[k] = arr; }
+  const _u = updBegin('inters', true); try { const ss = await db.collection('crm_interactions').where('createdAt', '>=', r.start).where('createdAt', '<', r.end).get().finally(_u); const arr = []; ss.forEach((d) => arr.push(d.data())); S.interCache[k] = arr; }
   catch (e) { S.interCache[k] = []; }
   renderRank(); return S.interCache[k];
 }
@@ -1671,14 +1716,18 @@ document.addEventListener('error', (e) => { const t = e.target; if (t && t.tagNa
 // 한 번 '받기 표 주소'가 필요하다고 확인되면, 새로 그려지는 사진은 실패를 기다리지 않고 바로 그 주소로
 new MutationObserver((ms) => { if (!S.imgAuthMode) return; for (const m of ms) for (const n of m.addedNodes) { if (n.nodeType !== 1) continue; const L = n.tagName === 'IMG' ? [n] : n.querySelectorAll ? n.querySelectorAll('img') : []; L.forEach((el) => { const src = el.getAttribute('src') || ''; if (src.startsWith(IMG_BASE) && !el.dataset.fbtry) { el.dataset.fbtry = '1'; fbImgUrl(src).then((u) => (el.src = u)).catch(() => {}); } }); } }).observe(document.documentElement, { childList: true, subtree: true });
 // 기록 받기: 1,000건씩 받아 쪽마다 기기에 저장하고 위치를 남김 → 끊기면 다음에 그 위치부터 이어 받음 (처음 받기 = 문서 번호 순, 그 뒤 = 바뀐 것만)
-async function syncColl(coll, store, map, metaKey) {
+const COLL_SRC = { prd_listings: 'products', prd_books: 'books', prd_book_metrics: 'metrics' };
+async function syncColl(coll, store, map, metaKey) { const src = COLL_SRC[coll] || coll; let _u = () => {}; try { return await syncCollNow(coll, store, map, metaKey, src, (f) => (_u = f)); } finally { _u(); } }
+async function syncCollNow(coll, store, map, metaKey, src, setU) {
   const meta = (await idbGet('meta', metaKey)) || {}; if (meta.last && meta.done === undefined && !meta.cursor) meta.done = true; /* 예전 방식으로 다 받아 둔 기록 */ let max = meta.last || 0; const FP = firebase.firestore.FieldPath; const PG = 1000; let got = 0;
-  const take = async (snap) => { const batch = []; snap.forEach((d) => { const v = d.data(); const t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; if (t > max) max = t; const o = deTs({ ...v, id: d.id }); delete o.uploadedAt; map.set(d.id, o); batch.push(o); }); if (batch.length) { bump(); await idbPut(store, batch); } got += batch.length; dlNote(coll, got); };
-  if (!meta.done) { // 처음 받기: 문서 번호 순으로 쪽마다
+  const take = async (snap) => { const batch = []; snap.forEach((d) => { const v = d.data(); const t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; if (t > max) max = t; const o = deTs({ ...v, id: d.id }); delete o.uploadedAt; map.set(d.id, o); batch.push(o); }); if (batch.length) { bump(); await idbPut(store, batch); } got += batch.length; dlNote(coll, got); updGot(src, got); };
+  if (!meta.done) { // 처음 받기: 문서 번호 순으로 쪽마다 — 전부 새 정보 (전체 건수를 물어 진행률 표시)
+    setU(updWatch(src, null, true)); probeNew(db.collection(coll)).then((n) => { if (n > 0 && S.upd.has(src)) updOn(src, n); });
     let cur = meta.cursor || null;
     for (;;) { let q = db.collection(coll).orderBy(FP.documentId()).limit(PG); if (cur) q = q.startAfter(cur); const snap = await q.get(); await take(snap); if (snap.empty || snap.size < PG) break; cur = snap.docs[snap.docs.length - 1].id; await idbPut('meta', [{ k: metaKey, cursor: cur, last: max, done: false, at: Date.now() }]); }
     await idbPut('meta', [{ k: metaKey, last: max, done: true, at: Date.now() }]);
-  } else { // 바뀐 것만 (uploadedAt 순, 쪽마다 위치 저장)
+  } else { // 바뀐 것만 (uploadedAt 순, 쪽마다 위치 저장) — 새 기록이 있을 때만 표시
+    setU(updWatch(src, db.collection(coll).where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(max)), false));
     for (;;) { const snap = await db.collection(coll).where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(max)).orderBy('uploadedAt').limit(PG).get(); await take(snap); await idbPut('meta', [{ k: metaKey, last: max, done: true, at: Date.now() }]); if (snap.size < PG) break; }
   }
   if (S._live && S._live[coll]) return; (S._live = S._live || {})[coll] = 1;
@@ -1781,7 +1830,7 @@ const usedBtn = (l, it) => { const u = aladinLinks(l, it); return u.used ? `<spa
 document.addEventListener('click', (ev) => { const a = ev.target.closest('[data-open]'); if (!a) return; ev.preventDefault(); ev.stopPropagation(); window.open(a.dataset.open, '_blank', 'noopener'); }, true);
 // 가격 감시 묶음 표시 — 배정은 판정 엔진(readnow-pricing-core.js)의 groupOf 하나 (수집기 상품 조회 화면과 같은 결과)
 const MONTXT = { treat: ['감시·적용', '판정 엔진이 매일 보고 가격을 맞추는 상품 (파랑)'], control: ['감시·비교', '판정만 기록하고 가격은 절대 안 바꾸는 비교 묶음 — 효과 측정용 (보라)'], hold: ['가격상승대기 PND', '판매보류풀: 일시판매중지 + 관리코드 뒤 PND. 정한 가격 이상으로 최저가에 설 수 있을 때만 판매중'], retire: ['불용 BAD', '불용 재고: 일시판매중지 + 관리코드 뒤 BAD (4년 초과, 관리자 승인)'], excluded: ['자동 제외', '자동 감시 제외 관리코드(KHKDVD 등) — 마진 구조가 달라 따로 정할 때까지 무조건 관리자 확인'] }; // 초록은 검토 색이라 쓰지 않음
-function loadPricingCfg() { if (S.prCfgLoading) return; S.prCfgLoading = true; const t0 = Date.now(); db.collection('prd_system').doc('pricing').get().then((d) => { S.prCfg = d.exists ? d.data() : {}; S.prCfgErr = null; S.prCfgMs = Date.now() - t0; }).catch((e) => { S.prCfg = {}; S.prCfgErr = e.code || e.message; }).finally(() => { S.prCfgLoading = false; if (['products', 'home'].includes(S.tab)) renderMain(); }); }
+function loadPricingCfg() { if (S.prCfgLoading) return; S.prCfgLoading = true; const t0 = Date.now(); const _u = updBegin('pricing', !S.prCfg); db.collection('prd_system').doc('pricing').get().finally(_u).then((d) => { S.prCfg = d.exists ? d.data() : {}; S.prCfgErr = null; S.prCfgMs = Date.now() - t0; }).catch((e) => { S.prCfg = {}; S.prCfgErr = e.code || e.message; }).finally(() => { S.prCfgLoading = false; if (['products', 'home'].includes(S.tab)) renderMain(); }); }
 function monGroup(l) { const PRC = window.ReadnowPricing; if (!PRC || !l || !l.usedCode) return null; if (!S.prCfg) { loadPricingCfg(); return null; } const g = PRC.groupOfListing(l, prSettings()); return g === 'off' ? null : g; } // 묶음·보관함(PND·BAD)·제외(KHKDVD) 판단은 판정 엔진 한 곳
 function prSettings() { const PRC = window.ReadnowPricing; const c = S.prCfg || {}; return { rollout: c.rollout || (PRC && PRC.DEFAULTS.rollout), excludeSku: c.excludeSku || (PRC && PRC.DEFAULTS.excludeSku), cutoverAt: c.cutoverAt || null }; }
 function monTag(l) { const g = monGroup(l); return g ? `<span class="tag mon-${g}" title="${esc(MONTXT[g][1])}">${MONTXT[g][0]}</span>` : ''; }
@@ -1989,7 +2038,7 @@ function sellerRankBoards() {
 
 /* ══════════ 상품 순위 TOP10 (북스킹 판매 기준) ══════════ */
 S.qnaAll = null;
-async function loadQnaAll() { if (S.qnaAll) return; if (S.qnaFailAt && Date.now() - S.qnaFailAt < 60000) return; S.qnaAll = 'loading'; try { const ss = await db.collection('crm_interactions').where('type', '==', 'qna').get(); const a = []; ss.forEach((d) => a.push(d.data())); S.qnaAll = a; bump(); } catch (e) { S.qnaAll = null; S.qnaFailAt = Date.now(); } renderRank(); }
+async function loadQnaAll() { if (S.qnaAll) return; if (S.qnaFailAt && Date.now() - S.qnaFailAt < 60000) return; S.qnaAll = 'loading'; const _u = updBegin('qna', true); try { const ss = await db.collection('crm_interactions').where('type', '==', 'qna').get().finally(_u); const a = []; ss.forEach((d) => a.push(d.data())); S.qnaAll = a; bump(); } catch (e) { S.qnaAll = null; S.qnaFailAt = Date.now(); } renderRank(); }
 function lineFee(o, it, amt) {
   if (it.fee != null && Number.isFinite(+it.fee)) return +it.fee;
   const oAmt = (o.items || []).reduce((s, x) => s + (x.lineStatus === 'normal' ? (x.price || 0) * (x.qty || 1) : 0), 0);
@@ -2244,7 +2293,7 @@ function renderHome(m) {
     const fill = (k) => {
         if (gen !== S._homeGen || S.tab !== 'home') return; const el = document.getElementById('wc_' + k); if (!el || el._done) return; el._done = true;
         let html; try { html = WIDGETS[k][1](); } catch (e) { console.error(k, e); html = `<div class="hint" style="margin:0;color:var(--red)">표시 오류: ${esc(e.message)}</div>`; }
-        S._wcache[k] = html; const body = el.querySelector('.wbody'); body.innerHTML = html; bindW(body);
+        S._wcache[k] = html; const body = el.querySelector('.wbody'); body.innerHTML = html; bindW(body); updPaint();
     };
     if ('IntersectionObserver' in window) { const io = new IntersectionObserver((ents) => ents.forEach((en) => { if (en.isIntersecting) { io.unobserve(en.target); const k = en.target.id.slice(3); setTimeout(() => fill(k), 0); } }), { rootMargin: '600px 0px' }); lay.forEach((k) => { const el = document.getElementById('wc_' + k); if (el) io.observe(el); }); }
     else (async () => { for (const k of lay) { await new Promise((r) => setTimeout(r, 0)); fill(k); } })();
@@ -2436,14 +2485,14 @@ async function loadPur(force) {
   if (S.pur.loaded && !force && S.pur.fresh) return false; if (S.pur.loading) return S.pur._p || false; if (!force && S.pur.failAt && Date.now() - S.pur.failAt < 60000) return false; S.pur.loading = true;
   S.pur._p = (async () => {
     if (!S.pur.loaded) { try { const c = await idbGet('meta', 'purCache'); if (c && c.v) { Object.assign(S.pur, c.v, { loaded: true, fromCache: c.at }); S.pur.set = { ...PSET_DEFAULT, ...(c.v.set || {}) }; matchAladinOrders(); bump(); if (S.tab === 'purchase') renderMain(); } } catch (e) {} }
-    const errs = []; const get = async (name, fn) => { try { return await fn(); } catch (e) { errs.push({ name, msg: e.code || e.message }); return null; } };
+    const _u = updBegin('pur', !S.pur.loaded); const errs = []; const get = async (name, fn) => { try { return await fn(); } catch (e) { errs.push({ name, msg: e.code || e.message }); return null; } };
     const arr = (s) => { const a = []; if (s) s.forEach((d) => a.push({ ...d.data(), id: d.id })); return a; };
     const [e, h, x, st, al, ao] = await Promise.all([get('pur_entries', () => db.collection('pur_entries').get()), get('pur_heonot', () => db.collection('pur_heonot').get()), get('pur_existing', () => db.collection('pur_existing').get()), get('app_settings/purchase', () => db.collection('app_settings').doc('purchase').get()), get('pur_aladin_list', () => db.collection('pur_aladin_list').doc('summary').get()), get('pur_aladin_orders', () => db.collection('pur_aladin_orders').get())]);
     if (e) S.pur.entries = arr(e); if (h) S.pur.heonot = arr(h); if (x) S.pur.existing = arr(x); if (ao) S.pur.aOrders = arr(ao);
     if (st) { S.pur.set = { ...PSET_DEFAULT, ...((st.exists && st.data()) || {}) }; S.pur.lastImport = st.exists ? st.data().lastImport : null; }
     if (al) { const nl = al.exists ? al.data() : null; const same = S.pur.aList && nl && S.pur.aList.n === nl.n && S.pur.aList.last === nl.last && S.pur.aItems; S.pur.aList = nl;
       if (nl && nl.chunks && !same) { const cs = await get('pur_aladin_list 목록', () => Promise.all([...Array(nl.chunks).keys()].map((i) => db.collection('pur_aladin_list').doc('chunk_' + i).get()))); if (cs) S.pur.aItems = cs.flatMap((d) => (d.exists ? d.data().items || [] : [])); } }
-    S.pur.errors = errs; S.pur.loading = false;
+    _u(); S.pur.errors = errs; S.pur.loading = false;
     if (errs.length >= 6) { S.pur.failAt = Date.now(); toast('매입 기록을 읽지 못했습니다: ' + errs[0].msg); return true; }
     S.pur.loaded = true; S.pur.fresh = true; S.pur.fromCache = null; matchAladinOrders(); S._bizAt = 0; bump();
     try { const keep = { entries: S.pur.entries, heonot: S.pur.heonot, existing: S.pur.existing, aOrders: S.pur.aOrders, set: S.pur.set, lastImport: S.pur.lastImport, aList: S.pur.aList, aItems: S.pur.aItems }; await idbPut('meta', [{ k: 'purCache', v: JSON.parse(JSON.stringify(keep)), at: Date.now() }]); } catch (er) {}
@@ -2977,6 +3026,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.66.0': ['새 정보 받는 중 표시: 새로 올 정보가 있을 때만 그 자리에 돌아가는 주황 별(받는 중)을 띄움 — 탭 단추·홈 칸 제목·화면 아래 왼쪽 알림(무엇이 몇 건 오는지, 받은 건수). 새 정보가 없으면 표시 없이 그냥 보여 줌', '바뀐 것만 받는 기록(고객·주문·구매평·판매자·상품·도서·시장 지표)은 받기와 동시에 새 기록 수를 물어봄(1,000건당 읽기 1회) — 받기 속도는 그대로', '통째로 읽는 기록(매입·반품·문의·오늘 출고·가격 감시 등)과 고객 상세의 주문·기록은 이 기기에 아직 없을 때만 표시 (저장해 둔 것을 먼저 보여 주는 중이면 뒤에서 조용히 맞춤)', '상세 화면을 열고 있으면 알림은 그 상세 화면과 관련된 것만'],
   '0.65.14': ['오늘 출고: 정렬(서가 순 · 관리코드 순) 단추를 위에 붙은 머리 칸 안으로 — 화면을 내려도 보이고 바로 바꿀 수 있음 (바꿔도 보던 자리 유지)'],
   '0.65.13': ['문의 목록 설명: 수집기 1.27.1부터 새 질문·답변여부가 바뀐 질문만 다시 보고, 바뀐 것만 올림'],
   '0.65.12': ['새 버전 알림(주황 띠)을 원래 모양으로 되돌리고, 띠 어디를 눌러도 새로고침되며 닫힘'],
@@ -3107,7 +3157,7 @@ S.pmatch = new Map(); S.pmatchLoaded = false;
 async function loadMatches() {
   if (S.pmatchLoaded || S._pmP) return S._pmP; S._pmP = (async () => {
     try { (await idbGet('meta', 'pmatch'))?.v?.forEach((x) => S.pmatch.set(x.id, x)); } catch (e) {}
-    try { const ss = await db.collection('pur_matches').get(); S.pmatch.clear(); ss.forEach((d) => S.pmatch.set(d.id, { ...d.data(), id: d.id })); idbPut('meta', [{ k: 'pmatch', v: [...S.pmatch.values()] }]); } catch (e) { S.pmatchErr = e.message; }
+    const _u = updBegin('pmatch', !S.pmatch.size); try { const ss = await db.collection('pur_matches').get().finally(_u); S.pmatch.clear(); ss.forEach((d) => S.pmatch.set(d.id, { ...d.data(), id: d.id })); idbPut('meta', [{ k: 'pmatch', v: [...S.pmatch.values()] }]); } catch (e) { S.pmatchErr = e.message; }
     S.pmatchLoaded = true; bump(); return true; })(); return S._pmP;
 }
 const tKey = (t) => norm(String(t || '').replace(/^\[[^\]]*\]\s*/, '').replace(/\s*[-:：(（].*$/, '')).slice(0, 40);
@@ -3177,7 +3227,7 @@ S.disp = { list: [], loaded: false };
 async function loadDisposals() {
   if (S.disp.loaded || S.disp._p) return S.disp._p; S.disp._p = (async () => {
     try { const c = await idbGet('meta', 'dispCache'); if (c && c.v && !S.disp.loaded) { S.disp.list = c.v; S.disp.loaded = true; bump(); } } catch (e) {}
-    try { const ss = await db.collection('pur_disposals').get(); const a = []; ss.forEach((d) => a.push({ ...d.data(), id: d.id })); S.disp.list = a; S.disp.loaded = true; S.disp.err = null; bump(); idbPut('meta', [{ k: 'dispCache', v: JSON.parse(JSON.stringify(a)) }]).catch(() => {}); }
+    const _u = updBegin('disp', !S.disp.loaded); try { const ss = await db.collection('pur_disposals').get().finally(_u); const a = []; ss.forEach((d) => a.push({ ...d.data(), id: d.id })); S.disp.list = a; S.disp.loaded = true; S.disp.err = null; bump(); idbPut('meta', [{ k: 'dispCache', v: JSON.parse(JSON.stringify(a)) }]).catch(() => {}); }
     catch (e) { S.disp.err = e.code || e.message; S.disp.loaded = true; }
     S.disp._p = null; if (S.tab === 'purchase' || S.tab === 'home') renderMain(); return true; })(); return S.disp._p;
 }
@@ -3243,7 +3293,7 @@ function unregModel() {
 const BIZ_START = '2025-01-01';
 // 알라딘에 판 것: 상품 수집기가 모은 '알라딘에 중고팔기' 내역 (pur_buyback)
 S.bb = { list: [], loaded: false };
-async function loadBuyback() { if (S.bb.loaded || S.bb._p) return S.bb._p; S.bb._p = (async () => { try { const ss = await db.collection('pur_buyback').get(); const a = []; ss.forEach((d) => a.push({ ...d.data(), id: d.id })); S.bb.list = a; bump(); } catch (e) { S.bb.err = e.code || e.message; } S.bb.loaded = true; S.bb._p = null; return true; })(); return S.bb._p; }
+async function loadBuyback() { if (S.bb.loaded || S.bb._p) return S.bb._p; S.bb._p = (async () => { const _u = updBegin('bb', true); try { const ss = await db.collection('pur_buyback').get().finally(_u); const a = []; ss.forEach((d) => a.push({ ...d.data(), id: d.id })); S.bb.list = a; bump(); } catch (e) { S.bb.err = e.code || e.message; } S.bb.loaded = true; S.bb._p = null; return true; })(); return S.bb._p; }
 function bbCounts(o) { const it = o.items || []; if (it.length) return { bought: it.filter((x) => x.result === 'bought').length, discard: it.filter((x) => x.result === 'discard' || x.result === 'return').length, ret: 0, pending: it.filter((x) => !x.result).length }; return { bought: +o.boughtN || 0, discard: (+o.discardN || 0) + (+o.returnN || 0), ret: 0, pending: Math.max(0, (+o.reqN || 0) - (+o.boughtN || 0) - (+o.discardN || 0) - (+o.returnN || 0)) }; } // 알라딘으로 간 책은 돌아오지 않음: 반송·매입불가는 모두 폐기로 봄
 function buybackStats() {
   return memo('bbStats', () => { let orders = 0, bought = 0, discarded = 0, returned = 0, amount = 0, pending = 0;
@@ -3383,7 +3433,7 @@ document.addEventListener('click', (ev) => { const d = ev.target.closest('[data-
 S.ret = { list: [], map: new Map(), loaded: false };
 const RET_NOTE = '반품 내역은 엑셀로 받은 일부만 있습니다 (빠진 반품이 있음). 반품률·원인 분석 때 실제보다 적게 잡혔을 수 있다는 점을 감안해 주세요.';
 async function loadReturns() {
-  try { const ss = await db.collection('crm_returns').get(); const a = []; ss.forEach((d) => a.push({ ...d.data(), id: d.id })); S.ret.list = a; S.ret.map = new Map(a.map((r) => [`${r.orderNo}|${r.usedCode}`, r])); S.ret.loaded = true; applyReturns(); bump(); } catch (e) { S.ret.err = e.code || e.message; S.ret.loaded = true; }
+  const _u = updBegin('returns', !S.ret.loaded); try { const ss = await db.collection('crm_returns').get().finally(_u); const a = []; ss.forEach((d) => a.push({ ...d.data(), id: d.id })); S.ret.list = a; S.ret.map = new Map(a.map((r) => [`${r.orderNo}|${r.usedCode}`, r])); S.ret.loaded = true; applyReturns(); bump(); } catch (e) { S.ret.err = e.code || e.message; S.ret.loaded = true; }
 }
 function applyReturnsTo(o) { if (!S.ret.map.size || !o || !o.items) return; for (const it of o.items) { const r = S.ret.map.get(`${o.orderNo}|${it.aladinUsedCode}`); if (r && it.lineStatus === 'normal') { it.lineStatus = 'returned'; it._retExcel = true; } } }
 function applyReturns() { for (const o of S.orders.values()) applyReturnsTo(o); S._bizAt = 0; }
@@ -3715,6 +3765,9 @@ function openManual() {
   ${sec2('📈 경영', `① 오늘 확인할 것 ② 매출 페이스 ③ 수익성(공헌이익·처분 매출) ④ 재고 건강 ⑤ 가격 경쟁력(알라딘 매입가보다 쌈, 유효·첫 번째 최저가보다 10% 이상 쌈) ⑥ 고객·평판 ⑦ 시장 위치(6개월 평가 순위) ⑧ 매입·투자 회수.`)}
   ${sec2('⚙ 설정 (관리자 기기만 변경: JS-MAIN · JS-PHONE · HOME)', `① 기기 이름(한 기기만 쓸 수 있음) ② 목표 ③ 매출·이익 계산 ④ 택배 계약 ⑤ 매입(김미소·헌옷 범위, 폐기 단가, 무게 폭 등) ⑥ 고객 점수 기준 ⑦ 판매자 점수 기준 ⑧ 경영 알림 기준 ⑨ 수집기 공통(요청 간격, 매일 자동 시각·PC, 일괄 단계 켜고 끄기, 작업 중요도) ⑩ 화면 표시.`)}
   ${sec2('🤖 리드나우 수집기 (PC)', `알라딘 주문조회·판매관리·상품 조회 화면 오른쪽 위: <b>[▶ 모두] [고객·주문] [상품·매입]</b>.<br><b>모두 일괄 수집</b>: 고객·주문 → 신규 등록분 → 알라딘 구매·팔기 → 도서·시장 지표(판매완료 책 포함) → 6개월 평가 → 상위 판매자 평가 → 구매자 분포. 단계는 체크로 켜고 끔.<br><b>중요도</b>: 높은 작업이 시작되면 낮은 작업은 저장 후 멈췄다가 자동으로 이어감. <b>멈춰도 이어서</b> 합니다(진행 위치 저장).<br><b>매일 자동</b>: 오후 5시 JS-MAIN, 안 되면 30분 뒤 다른 PC. 24시간 안에 모두 일괄 수집을 끝냈으면 그날은 건너뜀. <b>웹앱 수집 요청</b>도 JS-MAIN이 먼저 받음.<br>판매자 툴팁(별도 스크립트): 알라딘 중고 화면에 판매자 점수 배지.`)}
+  ${sec2('⏳ 받는 중 표시 · 화면 이름', `<p><b>화면 이름</b>: 아래 줄의 <b>탭</b>(홈·고객·상품…) → 탭 안의 네모 상자 하나하나는 <b>카드</b>(홈에서는 '홈 칸') → 무엇을 누르면 화면을 덮고 열리는 것은 <b>상세 화면</b>(고객 상세·상품 상세·오늘 출고 등).</p>
+  <p><b>돌아가는 주황 별</b> = 새 정보를 받는 중. 새로 올 정보가 있을 때만 뜨고, 새 정보가 없으면 아무 표시 없이 바로 보여 줍니다. 뜨는 곳: ① 아래 탭 단추(그 탭에 새 정보가 오는 중) ② 홈 칸 제목 옆 ③ 화면 아래 왼쪽 알림 — 지금 보는 탭(상세 화면을 열었으면 그 상세 화면)에 무엇이 몇 건 오는지와 받은 건수(예: 주문 새 기록 12건 받는 중 · 5/12). 별이 사라지면 새 정보까지 다 반영된 것.</p>
+  <p>기준: 바뀐 것만 받는 기록(고객·주문·구매평·판매자·상품·도서·시장 지표)은 받기와 동시에 새 기록 수를 따로 물어봅니다(1,000건당 읽기 1회, 받기 속도는 그대로). 통째로 읽는 기록(매입·반품·문의·오늘 출고·가격 감시 등)과 고객 상세의 주문·기록은 이 기기에 아직 없을 때만 표시합니다 — 저장해 둔 것을 먼저 보여 주고 있으면 뒤에서 조용히 맞춥니다.</p>`)}
   ${sec2('🔧 문제가 생기면', `<ul><li>새로고침했는데 '바뀌었습니다' 띠가 없으면 GitHub 반영 전(몇 분 대기).</li><li>매입 탭에 빨간 '못 읽음' → Firebase 규칙에 해당 컬렉션 허용.</li><li>수집기 기록 칸의 빨간 글씨를 그대로 보내 주세요.</li><li>웹앱이 멈추면 다른 탭의 예전 웹앱을 닫고 새로고침.</li></ul>`)}`;
   $('#back').onclick = () => history.back();
 }
@@ -3761,7 +3814,7 @@ async function manualLinkMany(ids, r, divisor, opts) {
 /* ══════════ 분류 직접 정하기 (분류 모름 상품) ══════════
  * 저장: prd_cat_manual/{상품} {cat, by, at} — 수집기가 받은 도서 정보는 건드리지 않고, 사람이 정한 분류를 따로 둠. 화면 계산은 사람이 정한 분류가 먼저. */
 S.catMan = new Map(); S.catManLoaded = false;
-async function loadCatMan() { if (S.catManLoaded || S._cmP) return S._cmP; S._cmP = (async () => { try { const ss = await db.collection('prd_cat_manual').get(); ss.forEach((d) => S.catMan.set(d.id, d.data())); } catch (e) {} S.catManLoaded = true; bump(); return true; })(); return S._cmP; }
+async function loadCatMan() { if (S.catManLoaded || S._cmP) return S._cmP; S._cmP = (async () => { const _u = updBegin('catman', true); try { const ss = await db.collection('prd_cat_manual').get().finally(_u); ss.forEach((d) => S.catMan.set(d.id, d.data())); } catch (e) {} S.catManLoaded = true; bump(); return true; })(); return S._cmP; }
 function listingCat(l, depth) { if (!l) return '분류 모름'; const m = S.catMan.get(l.id); if (m && m.cat) return depth === 3 ? (m.sub || m.cat) : m.cat; return bookCatOf(l.bookId, depth); }
 function knownCats() { return memo('knownCats', () => { const c = new Map(); for (const b of S.pbooks.values()) { const p = b.categories && b.categories[0] && b.categories[0].path; const k = p && (p[1] || p[0]); if (k) c.set(k, (c.get(k) || 0) + 1); } for (const m of S.catMan.values()) if (m.cat) c.set(m.cat, (c.get(m.cat) || 0) + 1); return [...c.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k); }); }
 async function setCat(id, cat) { const l = S.plist.get(id); cat = String(cat || '').trim(); if (!cat) return;
@@ -3849,7 +3902,7 @@ function prErrText(code, what) { // 읽기 실패를 사람 말로
   if (/unavailable|network|Failed to fetch/i.test(String(code))) return `'${what}'을(를) 읽는 중 연결이 끊김 — 전파가 약하면 잠시 뒤 '새로 읽기'`;
   return `'${what}' 읽기 실패: ${code}`;
 }
-function loadPriceRun() { if (S.prRunLoading) return; S.prRunLoading = true; Promise.all([db.collection('prd_system').doc('pricing_run').get(), db.collection('prd_price_decisions').get()]).then(([r, ds]) => { S.prRun = r.exists ? r.data() : {}; S.prDec = new Map(); ds.forEach((d) => S.prDec.set(d.id, d.data())); S.prRunLoading = false; S._bizAt = 0; if (S.tab === 'products' || S.tab === 'home') renderMain(); }).catch((e) => { S.prRun = { err: e.code || e.message }; S.prDec = new Map(); S.prRunLoading = false; }); }
+function loadPriceRun() { if (S.prRunLoading) return; S.prRunLoading = true; const _u = updBegin('pricing', !S.prRun); Promise.all([db.collection('prd_system').doc('pricing_run').get(), db.collection('prd_price_decisions').get()]).finally(_u).then(([r, ds]) => { S.prRun = r.exists ? r.data() : {}; S.prDec = new Map(); ds.forEach((d) => S.prDec.set(d.id, d.data())); S.prRunLoading = false; S._bizAt = 0; if (S.tab === 'products' || S.tab === 'home') renderMain(); }).catch((e) => { S.prRun = { err: e.code || e.message }; S.prDec = new Map(); S.prRunLoading = false; }); }
 function priceCard() {
   const PRC = window.ReadnowPricing; if (!PRC) return '<div class="card"><b style="color:#c62828">판정 엔진 파일(readnow-pricing-core.js)을 못 읽음</b></div>';
   if (!S.prCfg) { loadPricingCfg(); return '<div class="card"><div class="hint">가격 감시 설정 읽는 중</div></div>'; }
@@ -4164,7 +4217,7 @@ function drawBatchRes(sh, c, id) {
    자료: 수집기 '발송 요청 읽기'(shp_state/current, 영업일 9~16시 15분마다). 정렬·서가·영업일 기준은 공용 파일 readnow-shipping-core.js 한 곳
    순서: 주문은 절대 섞지 않음 → 주문 안 상품은 서가 순서(PNKLUX → [BLK·YLW·GRY·GRN 한 서가] → REDFGN → BLU → SKY → MGZ → ORGCMC → KHKDVD → KHKCPD → 그 외) → 같은 서가는 이름 순
          → 주문끼리는 첫 상품의 서가·이름 순 (서가가 섞인 주문은 첫 상품 서가 자리에 통째로 들어감) */
-function loadShip() { if (S.shipLoading) return; S.shipLoading = true; db.collection('shp_state').doc('current').get().then((d) => { S.ship = d.exists ? d.data() : { orders: [] }; S.shipErr = null; }).catch((e) => { S.ship = { orders: [] }; S.shipErr = e.code || e.message; }).finally(() => { S.shipLoading = false; S._bizAt = 0; if (S.tab === 'home' || S.tab === 'orders') renderMain(); if (S.detail && S.detail.ship) openShip(); }); }
+function loadShip() { if (S.shipLoading) return; S.shipLoading = true; const _u = updBegin('ship', true); db.collection('shp_state').doc('current').get().finally(_u).then((d) => { S.ship = d.exists ? d.data() : { orders: [] }; S.shipErr = null; }).catch((e) => { S.ship = { orders: [] }; S.shipErr = e.code || e.message; }).finally(() => { S.shipLoading = false; S._bizAt = 0; if (S.tab === 'home' || S.tab === 'orders') renderMain(); if (S.detail && S.detail.ship) openShip(); }); }
 function shipListingOf(lid) { if (!S.plist) return null; if (!S.plistByLid || S.plistByLidN !== S.plist.size) { S.plistByLid = new Map(); for (const l of S.plist.values()) if (l.listingId) S.plistByLid.set(String(l.listingId), l); S.plistByLidN = S.plist.size; } return S.plistByLid.get(String(lid)) || null; }
 async function openShip() {
   if (!S.shipView) S.shipView = localStorage.getItem('rn-ship-view') || 'order';
@@ -4265,7 +4318,7 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.65.14': '2026-10-06', '0.65.13': '2026-10-06', '0.65.12': '2026-10-06', '0.65.11': '2026-10-06', '0.65.10': '2026-10-06', '0.65.8': '2026-10-06', '0.65.7': '2026-10-06', '0.65.6': '2026-10-06', '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.66.0': '2026-10-06', '0.65.14': '2026-10-06', '0.65.13': '2026-10-06', '0.65.12': '2026-10-06', '0.65.11': '2026-10-06', '0.65.10': '2026-10-06', '0.65.8': '2026-10-06', '0.65.7': '2026-10-06', '0.65.6': '2026-10-06', '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
   { d: '2026-10-06', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.2.2', n: ['관리코드 순 정렬(bySku) 추가 — 주문별 보기에서 서가 순 대신 고를 수 있음'] },
   { d: '2026-10-06', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.2.1', n: ['서가 바로잡음: BLK·YLW·GRY·GRN만 한 서가, 나머지(PNKLUX·REDFGN·BLU·SKY·MGZ·ORGCMC·KHKDVD·KHKCPD)는 각각 서가'] },
@@ -4451,7 +4504,7 @@ function poolsCard() {
  * 시트의 첫 칸(완료 체크)이 꺼진 줄. 원본 시트 기록은 그대로 두고, 웹앱 쪽 상태만 따로(pur_entry_state) 둠.
  * 자동 채움 기준(시험): 상태 = 배송 중 · 품목·등급·가격·권수 = 내용 나누기 · 받는 방법 = 플랫폼(알라딘·예스24·번개장터·DVDPRIME 등 = 택배, 당근 = 직거래/택배 미정) · 예상 도착 = 택배면 날짜 + 3일 */
 S.entState = new Map(); S.entStateLoaded = false;
-async function loadEntState() { if (S.entStateLoaded || S._esP) return; S._esP = true; try { const ss = await db.collection('pur_entry_state').get(); ss.forEach((d) => S.entState.set(d.id, d.data())); } catch (e) {} S.entStateLoaded = true; bump(); if (S.tab === 'purchase') renderMain(); }
+async function loadEntState() { if (S.entStateLoaded || S._esP) return; S._esP = true; const _u = updBegin('entstate', true); try { const ss = await db.collection('pur_entry_state').get().finally(_u); ss.forEach((d) => S.entState.set(d.id, d.data())); } catch (e) {} S.entStateLoaded = true; bump(); if (S.tab === 'purchase') renderMain(); }
 const unchecked = () => S.pur.entries.filter((e) => e.source !== 'app' && !e.deleted && Array.isArray(e.raw) && (e.raw[0] === false || String(e.raw[0]).toLowerCase() === 'false'));
 function autoFill(e) { const sp = splitPur(e); const plat = String(e.plat || '').trim(); const parcel = /알라딘|예스24|yes24|번개|DVDPRIME|교보|중고나라|쿠팡/i.test(plat); const d = e.date || e.dateGuess || '';
   const eta = parcel && d ? dstr(new Date(new Date(d + 'T12:00:00').getTime() + 3 * 864e5)) : null; const st = S.entState.get(e.id) || {};
@@ -4476,7 +4529,7 @@ const TAB_ORDER_DEFAULT = {
   purchase: ['pu_app', 'pu_pools', 'pu_main', 'pu_match', 'pu_aopool', 'pu_check', 'pu_disp', 'pu_bb', 'pu_grp', 'pu_trend', 'pu_type', 'pu_plat', 'pu_split', 'pu_list', 'pu_ex', 'pu_al', 'pu_set', 'pu_old'],
   products: ['p_age', 'p_nbm', 'p_trend', 'p_cat', 'p_grade', 'p_mtype', 'p_buyage', 'p_recent'],
 };
-function afterRender() { try { vzInit(); } catch (e) {} try { if (S.q && S.tab !== 'home') { const mm = $('#main'); mm && mm.querySelectorAll('.list, table, .clist, ul').forEach((x) => hlMark(x, S.q)); } } catch (e) {} const m = $('#main'); if (!m || S.tab === 'home') return; try { applyTabOrder(m, S.tab); } catch (e) {}
+function afterRender() { updPaint(); try { vzInit(); } catch (e) {} try { if (S.q && S.tab !== 'home') { const mm = $('#main'); mm && mm.querySelectorAll('.list, table, .clist, ul').forEach((x) => hlMark(x, S.q)); } } catch (e) {} const m = $('#main'); if (!m || S.tab === 'home') return; try { applyTabOrder(m, S.tab); } catch (e) {}
   if (isAdminDevice() && m.querySelectorAll('details[data-sec]').length >= 2 && !m.querySelector('.taborder')) m.insertAdjacentHTML('afterbegin', `<div class="taborder" style="text-align:right;margin:-4px 0 4px"><button class="linkbtn" data-taborder="${S.tab}">⇅ 칸 순서 바꾸기</button></div>`); }
 function applyTabOrder(m, tab) {
   const order = ((S.app.tabOrder || {})[tab]) || TAB_ORDER_DEFAULT[tab]; if (!order) return;
@@ -4572,7 +4625,7 @@ const POOL_CODE_RE = /^_[a-z]{2}$/; // 대량 매입 풀 상품코드 끝자리 
 /* ══════════ 주문별 택배 개수 · 반품/교환 택배비 (기본: 1개 · 우리 부담) ══════════
  * 저장: crm_order_ops/{주문} {parcels, returnShip, by, at} — 원래 주문 기록은 그대로 두고 따로 둠 */
 S.ordOps = new Map(); S.ordOpsLoaded = false;
-async function loadOrdOps() { if (S.ordOpsLoaded || S._ooP) return; S._ooP = true; try { const ss = await db.collection('crm_order_ops').get(); ss.forEach((d) => S.ordOps.set(d.id, d.data())); } catch (e) {} S.ordOpsLoaded = true; bump(); }
+async function loadOrdOps() { if (S.ordOpsLoaded || S._ooP) return; S._ooP = true; const _u = updBegin('ordops', true); try { const ss = await db.collection('crm_order_ops').get().finally(_u); ss.forEach((d) => S.ordOps.set(d.id, d.data())); } catch (e) {} S.ordOpsLoaded = true; bump(); }
 const hasReturn = (o) => (o.items || []).some((it) => it.lineStatus === 'returned') || (S.ret && S.ret.list.some((r) => r.orderNo === o.orderNo));
 function orderShip(o) { // 우리가 낸 택배비(순): 택배 개수 × 그날 계약 택배비 − 고객 배송비 + 반품·교환 택배비(우리 부담일 때)
   const op = S.ordOps.get(o.id) || {}; const cr = courierFor(o.orderedAt); const unit = cr ? cr.cost || 0 : 0; const parcels = +op.parcels || 1; const c = costs();
@@ -4842,7 +4895,7 @@ function vzInit() { if (document.getElementById('vzToggle')) return; document.bo
  * 시세 = 튀는 값(중앙값의 3배 초과·1/3 미만)을 뺀 가격들의 중앙값 · 범위 = 25~75% · 유효 최저 = 남은 값 중 최저 · 신뢰도 = 가격 수·흩어짐
  * 이 결과는 '판정 엔진'(가격 자동화)에서 재료로 쓰고 거기서 더 다듬음 */
 S.nbm = new Map(); S.nbmLoaded = false;
-async function loadNbm() { if (S.nbmLoaded || S._nbmP) return; S._nbmP = true; try { const ss = await db.collection('prd_market_nobook').get(); ss.forEach((d) => S.nbm.set(d.id, d.data())); } catch (e) {} S.nbmLoaded = true; bump(); if (['products', 'search'].includes(S.tab)) renderMain(); }
+async function loadNbm() { if (S.nbmLoaded || S._nbmP) return; S._nbmP = true; const _u = updBegin('nbm', true); try { const ss = await db.collection('prd_market_nobook').get().finally(_u); ss.forEach((d) => S.nbm.set(d.id, d.data())); } catch (e) {} S.nbmLoaded = true; bump(); if (['products', 'search'].includes(S.tab)) renderMain(); }
 const CH_LABEL = { seller: '판매자 중고', aladin: '알라딘 중고', store: '알라딘 매장' };
 function nbmCard(l) {
   const x = S.nbm.get(l.id); if (!x) return ''; const M = x.market || {}; const f = (v) => (v == null ? '-' : won(v)); const pc = (v) => (v == null ? '' : `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`);
