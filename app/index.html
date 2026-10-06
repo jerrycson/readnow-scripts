@@ -295,6 +295,34 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .shp-code{display:block;color:#fff;font-size:11px;font-weight:800;border-radius:3px;margin-bottom:3px;padding:1px 0;letter-spacing:.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .shp-main{flex:1;min-width:0}.shp-t{font-size:15px}.shp-q{font-weight:800;margin-left:6px}.shp-p{float:right;font-weight:800}.shp-c{margin-top:4px}.shp-note{font-size:12.5px;white-space:pre-wrap;background:#F7F9F8;border-radius:6px;padding:4px 6px;margin-top:4px;max-height:110px;overflow:auto}.shp-ph{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}.shp-ph img{height:64px;border-radius:3px}
 .lgwrap{position:relative}.lgjump{display:flex;gap:6px;margin:0 0 6px}.lgbox{font:12px/1.5 Consolas,monospace;white-space:pre-wrap;max-height:62vh;overflow-y:scroll;background:#F7F9F8;border-radius:6px;padding:8px}.lghr summary{cursor:pointer;font-family:system-ui,sans-serif;position:sticky;top:-8px;background:#EEF2F0;padding:2px 4px;border-radius:4px}
+
+/* 오늘 출고 (0.65.0) */
+.shp-o{background:#fff;border-radius:10px;margin:14px 8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.12);border:1px solid #cfd8d4}
+.shp-o .shp-oh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#24443a;color:#fff;padding:8px 12px;margin:0}
+.shp-o.multi .shp-oh{background:#5a3d7a}
+.shp-n{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;border-radius:50%;background:#fff;color:#24443a;font-weight:900;font-size:15px;padding:0 4px}
+.shp-o.multi .shp-n{color:#5a3d7a}
+.shp-rcv{font-size:20px;font-weight:800}.shp-ono{font-size:12.5px;opacity:.85;font-family:Consolas,monospace}.shp-box{margin-left:auto;background:#ffd54f;color:#3b2a00;font-weight:800;font-size:12.5px;padding:2px 8px;border-radius:10px}
+.shp-meta{font-size:12px;color:var(--sub);padding:4px 12px;background:#f3f6f5}
+.shp-it{display:flex;gap:12px;padding:10px 12px;border-top:1px solid #e3e9e6}
+.shp-img{width:110px;flex:0 0 110px;text-align:center}.shp-big{width:110px;max-height:160px;object-fit:contain;border-radius:3px}.shp-sm{display:flex;gap:4px;justify-content:center;margin-top:4px}.shp-sm img{width:52px;height:52px;object-fit:cover;border-radius:3px;border:1px solid #ddd}
+.shp-noimg{width:110px;height:130px;background:#eee;font-size:11px;display:flex;align-items:center;justify-content:center;color:#888}
+.shp-main{flex:1;min-width:0}.shp-t{font-size:19px;font-weight:800;line-height:1.3}
+.shp-c{display:flex;align-items:center;gap:10px;margin-top:6px}.shp-grade{display:inline-block;font-size:20px;font-weight:900;line-height:1;padding:5px 9px;border-radius:4px;color:#fff;min-width:42px;text-align:center;background:#8d8d8d}.shp-grade.g최상{background:#e8457c}.shp-grade.g상{background:#2e9d5b}.shp-grade.g중{background:#8d8d8d}
+.shp-q{font-size:18px;font-weight:800}.shp-p{margin-left:auto;font-size:18px;font-weight:800}.shp-p .pq-u{font-size:12px;font-weight:400}
+.shp-blk{flex:0 0 34%;min-width:0;display:flex;flex-direction:column;gap:1px;max-height:300px;overflow:auto}
+@media(max-width:760px){.shp-it{flex-wrap:wrap}.shp-blk{flex:1 1 100%;max-height:220px}.shp-img{width:90px;flex-basis:90px}.shp-big{width:90px}.shp-t{font-size:17px}.shp-rcv{font-size:18px}}
+
+/* 머리 칸 줄임 (0.65.0) */
+.top.cond{padding:3px 10px 4px!important;padding-top:calc(3px + env(safe-area-inset-top,0))!important}
+.top.cond .row{flex-wrap:nowrap}.top.cond h1{font-size:13px}.top.cond .tbtns .me:not(.dlb){display:none}.top.cond .dlpanel{display:none!important}
+.top.cond .search{margin-top:3px;padding:3px 8px}.top.cond .search input{font-size:13px;padding:2px 0}
+.top.cond .row{position:relative}.top.cond .search{position:absolute;top:2px;left:110px;right:70px;margin:0}
+.dlb.busy{background:#ffd54f!important;color:#3b2a00!important}
+.dlpanel{background:rgba(0,0,0,.22);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:12.5px}.dlpanel .dlrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dlbar{height:6px;background:rgba(255,255,255,.25);border-radius:3px;margin:6px 0;overflow:hidden}.dlbar i{display:block;height:100%;background:#ffd54f}
+.dlsteps{display:flex;flex-wrap:wrap;gap:3px}.dlsteps span{font-size:11px;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,.15)}.dlsteps span.ok{background:#2e9d5b}.dlsteps span.now{background:#ffd54f;color:#3b2a00}
+.dlpanel button{border:0;border-radius:6px;padding:3px 10px;font-weight:700;cursor:pointer}.dlcnt{opacity:.85;font-size:11.5px;margin-top:3px}
 </style>
 </head>
 <body>
@@ -317,7 +345,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.64.1';
+const APP_VER = '0.65.0';
 const WRITER_SCHEMA = 6;
 firebase.initializeApp({
   apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
@@ -405,6 +433,52 @@ async function syncOrders(first) {
   }, () => {});
   if (S.tab === 'orders') renderMain();
 }
+/* ══════════ 모든 기록 받기 (머리 칸의 ⬇ — 기본 접힘, 접혀도 돎) ══════════
+   웹앱은 탭을 열 때 그 탭에 필요한 기록만 받음(받은 것은 기기에 저장돼 다음엔 바뀐 것만). 열지 않은 탭의 기록은 받지 않으므로, 여기서 한 번에 전부 받음.
+   단계마다 끝나면 '오늘 끝남'을 기기에 적어 둠 → 끊겼다 다시 시작하면 끝난 단계는 건너뛰고, 큰 기록(상품·도서·시장 지표)은 1,000건씩 받은 위치부터 이어 받음 */
+const DL_STEPS = [
+  ['고객·주문', () => null, () => !!S.live || (S.customers && S.customers.size > 0)], // 웹앱을 열 때 받음 — 여기선 끝났는지만 봄
+  ['상품·도서', () => loadProducts(), () => S.prodLoaded && !S.prodBusy],
+  ['시장 지표', () => loadMetrics(), () => S.pmLoaded],
+  ['판매자', () => syncSellers(), () => S.sellersLoaded],
+  ['매입', () => loadPur(), () => S.pur.loaded],
+  ['매입 연결', () => loadMatches(), () => S.pmatchLoaded],
+  ['입고 상태', () => loadEntState(), () => S.entStateLoaded],
+  ['알라딘 팔기', () => loadBuyback(), () => S.bb.loaded],
+  ['폐기', () => loadDisposals(), () => S.disp.loaded],
+  ['분류 수정', () => loadCatMan(), () => S.catManLoaded],
+  ['새상품 없는 상품 시세', () => loadNbm(), () => S.nbmLoaded],
+  ['택배비 기록', () => loadOrdOps(), () => S.ordOpsLoaded],
+  ['반품', () => loadReturns(), () => S.ret.loaded],
+  ['문의', () => loadQnaAll(), () => Array.isArray(S.qnaAll)],
+  ['가격 감시', () => (loadPricingCfg(), loadPriceSum()), () => !!S.prSum],
+  ['오늘 출고', () => loadShip(), () => !!S.ship],
+];
+S.dl = { running: false, i: 0, sub: '', err: null, open: false, at: null, store: null };
+async function dlStore() { try { const e = navigator.storage && navigator.storage.estimate ? await navigator.storage.estimate() : null; const cnt = {}; for (const st of ['plist', 'psales', 'pbooks', 'pmetrics', 'sellers', 'reviews']) { try { cnt[st] = (await idbAll(st)).length; } catch (x) {} }
+    let persisted = null; try { persisted = navigator.storage && navigator.storage.persisted ? await navigator.storage.persisted() : null; } catch (x) {}
+    S.dl.store = { used: e ? e.usage : null, quota: e ? e.quota : null, cnt, persisted, cust: S.customers ? S.customers.size : null, ord: S.orders ? S.orders.size : null }; } catch (x) {} dlPaint(); }
+const mb = (b) => (b == null ? '?' : b >= 1073741824 ? (b / 1073741824).toFixed(2) + 'GB' : (b / 1048576).toFixed(1) + 'MB');
+function dlPaint() {
+  const b = document.getElementById('dlbtn'), p = document.getElementById('dlpanel'); if (!b || !p) return; const D = S.dl; const n = DL_STEPS.length; const done = D.running ? D.i : (D.doneDay === dstr(new Date()) ? n : D.i);
+  b.innerHTML = D.running ? `⬇ ${Math.round((D.i / n) * 100)}%` : D.err ? '⬇ 멈춤' : done >= n ? '⬇ 다 받음' : '⬇ 받기'; b.classList.toggle('busy', D.running);
+  p.style.display = D.open ? '' : 'none'; if (!D.open) return; const st = D.store || {};
+  p.innerHTML = `<div class="dlrow"><b>모든 기록 받기</b> <span>${D.running ? `${D.i + 1}/${n} ${esc(DL_STEPS[D.i] ? DL_STEPS[D.i][0] : '')} 받는 중${D.sub ? ' · ' + esc(D.sub) : ''}` : D.err ? `<b style="color:#FFD2CC">멈춤: ${esc(D.err)}</b> — 다시 누르면 이어 받음` : done >= n ? `오늘 다 받음 (${esc(D.at || '')})` : '아직 다 받지 않음'}</span></div>
+    <div class="dlbar"><i style="width:${Math.round((done / n) * 100)}%"></i></div>
+    <div class="dlsteps">${DL_STEPS.map(([nm, , ok], k) => `<span class="${ok() ? 'ok' : D.running && k === D.i ? 'now' : ''}">${esc(nm)}</span>`).join('')}</div>
+    <div class="dlrow" style="margin-top:6px"><button class="dlgo">${D.running ? '받는 중…' : '지금 모두 받기'}</button><label><input type="checkbox" class="dlauto" ${localStorage.getItem('rn-dl-auto') !== '0' ? 'checked' : ''}> 웹앱을 열면 저절로</label></div>
+    <div class="dlrow" style="margin-top:6px"><b>이 기기 저장 용량</b> <span>${mb(st.used)} 사용${st.quota ? ` / 쓸 수 있는 한도 ${mb(st.quota)} (${((st.used / st.quota) * 100).toFixed(1)}%)` : ''}${st.persisted === false ? ' · <span title="브라우저가 공간이 모자라면 지울 수 있는 상태">임시 보관</span>' : st.persisted ? ' · 보존 보관' : ''}</span> <button class="dlref">다시 재기</button></div>
+    <div class="dlcnt">기기에 저장된 기록: 상품 ${(st.cnt && st.cnt.plist || 0).toLocaleString()} · 도서 ${(st.cnt && st.cnt.pbooks || 0).toLocaleString()} · 시장 지표 ${(st.cnt && st.cnt.pmetrics || 0).toLocaleString()} · 판매 ${(st.cnt && st.cnt.psales || 0).toLocaleString()} · 판매자 ${(st.cnt && st.cnt.sellers || 0).toLocaleString()} · 구매평 ${(st.cnt && st.cnt.reviews || 0).toLocaleString()}${st.cust != null ? ` · 고객 ${st.cust.toLocaleString()}` : ''}${st.ord != null ? ` · 주문 ${st.ord.toLocaleString()}` : ''}</div>`;
+  p.querySelector('.dlgo').onclick = () => dlRun(); p.querySelector('.dlref').onclick = () => dlStore(); p.querySelector('.dlauto').onchange = (e) => localStorage.setItem('rn-dl-auto', e.target.checked ? '1' : '0');
+}
+async function dlRun() {
+  const D = S.dl; if (D.running) return; D.running = true; D.err = null; const day = dstr(new Date()); let prog = {}; try { prog = JSON.parse(localStorage.getItem('rn-dl') || '{}'); } catch (x) {} if (prog.day !== day) prog = { day, done: [] };
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (x) {} // 기기가 공간이 모자라도 지우지 않게 요청
+  for (D.i = 0; D.i < DL_STEPS.length; D.i++) { const [nm, run, ok] = DL_STEPS[D.i]; D.sub = ''; dlPaint(); if (prog.done.includes(nm) && ok()) continue;
+    try { await run(); const t0 = Date.now(); while (!ok()) { if (Date.now() - t0 > 15 * 60000) throw new Error(`${nm}: 15분 넘게 끝나지 않음`); await new Promise((r) => setTimeout(r, 700)); if (!S.prodBusy && nm === '상품·도서' && !S.prodLoaded) await loadProducts(); } prog.done.push(nm); localStorage.setItem('rn-dl', JSON.stringify(prog)); }
+    catch (e) { D.err = `${nm} — ${e.code || e.message}`; D.running = false; dlPaint(); dlStore(); return; } }
+  D.running = false; D.doneDay = day; D.at = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }); D.sub = ''; dlPaint(); dlStore(); if (['home', 'products', 'biz', 'purchase'].includes(S.tab)) renderMain();
+}
 function setSync(msg) {
   const el = $('.sync'); if (!el) return;
   el.innerHTML = msg ? `<span class="dot off"></span>${esc(msg)}` : `<span class="dot ${S.live ? '' : 'off'}"></span>${S.live ? '실시간 연결됨' : '연결 대기 (기기에 저장된 내용 표시 중)'}` + (IDB.off && !msg ? ` · <b style="color:#FFE08A">${esc(IDB.off)}</b>` : '');
@@ -445,8 +519,8 @@ const ICON = {
 };
 function shell() {
   $('#app').innerHTML = `
-  <header class="top"><div class="row"><h1 id="gohome" class="homelink" title="홈으로">리드나우(북스킹)</h1><span class="tbtns"><button class="me hbtn" id="hpend">연결 확정</button><button class="me hbtn" id="hset" title="설정">⚙ 설정</button><button class="me hbtn" id="hman" title="사용 설명서">❓ 설명서</button><button class="me" id="hscore">점수 기준</button><button class="me" id="hmet">지표·차트</button><button class="me" id="me">${esc((S.user.displayName || S.user.email).slice(0, 6))}</button></span></div>
-    <div class="sync"></div><div class="colbar" id="colbar"></div><div class="jobs" id="jobs"></div>
+  <header class="top"><div class="row"><h1 id="gohome" class="homelink" title="홈으로">리드나우(북스킹)</h1><span class="tbtns"><button class="me hbtn dlb" id="dlbtn" title="모든 기록 받기 · 이 기기 저장 용량">⬇ 받기</button><button class="me hbtn" id="hpend">연결 확정</button><button class="me hbtn" id="hset" title="설정">⚙ 설정</button><button class="me hbtn" id="hman" title="사용 설명서">❓ 설명서</button><button class="me" id="hscore">점수 기준</button><button class="me" id="hmet">지표·차트</button><button class="me" id="me">${esc((S.user.displayName || S.user.email).slice(0, 6))}</button></span></div>
+    <div id="dlpanel" class="dlpanel" style="display:none"></div><div class="sync"></div><div class="colbar" id="colbar"></div><div class="jobs" id="jobs"></div>
     <div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6B66" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input id="q" type="search" placeholder="고객·전화, 주문번호, 책 제목·ISBN (상품 탭에선 상품, 매입 탭에선 매입 검색)" autocomplete="off" inputmode="search"></div></header>
   <main id="main"></main>
@@ -456,8 +530,12 @@ function shell() {
   <section id="modal"><div class="mbox"><div class="mhead"><div id="modaltabs" class="ptabs"></div><button class="rkx" id="mclose">닫기</button></div><div id="modalbody"></div></div></section>`;
   const goTop = (t) => { S.tab = t; S.limit = 30; renderTabs(); renderMain(); window.scrollTo(0, 0); };
   // 머리 칸 줄이기: 아래로 스크롤하면 수집 상태·작업 줄을 접어 제목·버튼·검색만 남기고, 위로 올리면 다시 펼침. 작업 줄은 두 줄까지만 보이고 누르면 전부
-  if (!S.condBound) { S.condBound = 1; let ly = 0; addEventListener('scroll', () => { const y = window.scrollY; const h = document.querySelector('header.top'); if (h) h.classList.toggle('cond', y > 60 && y >= ly); ly = y; }, { passive: true });
-    document.addEventListener('click', (e) => { const j = e.target.closest && e.target.closest('.top .jobs'); if (j) j.classList.toggle('open'); }); } $('#hpend').onclick = () => goTop('pending'); $('#hset').onclick = () => goTop('settings'); $('#hman').onclick = () => openManual();
+  // 머리 칸 줄이기: 120px 넘게 내려가면 한 줄(제목·⬇·검색)로 크게 줄이고, 맨 위 근처(30px 안)로 오거나 위로 60px 넘게 올리면 다시 펼침
+  //  (예전엔 줄어들면서 화면 높이가 바뀌어 곧바로 다시 펼쳐지는 흔들림 때문에 사실상 줄지 않았음)
+  if (!S.condBound) { S.condBound = 1; let top = 0, cond = false; addEventListener('scroll', () => { const y = window.scrollY; const h = document.querySelector('header.top'); if (!h) return;
+      if (!cond && y > 120) { cond = true; top = y; h.classList.add('cond'); } else if (cond) { if (y > top) top = y; if (y < 30 || top - y > 60) { cond = false; h.classList.remove('cond'); } } }, { passive: true });
+    document.addEventListener('click', (e) => { const j = e.target.closest && e.target.closest('.top .jobs'); if (j) j.classList.toggle('open'); }); }
+  { const b = $('#dlbtn'); if (b) b.onclick = (e) => { e.stopPropagation(); S.dl.open = !S.dl.open; if (S.dl.open) dlStore(); dlPaint(); }; dlPaint(); if (!S.dlAutoDone && localStorage.getItem('rn-dl-auto') !== '0') { S.dlAutoDone = 1; setTimeout(() => dlRun(), 4000); } } $('#hpend').onclick = () => goTop('pending'); $('#hset').onclick = () => goTop('settings'); $('#hman').onclick = () => openManual();
   $('#hscore').onclick = () => openModal('score'); $('#hmet').onclick = () => openModal('metrics'); $('#mclose').onclick = closeModal;
   $('#modal').onclick = (e) => { if (e.target.id === 'modal') closeModal(); };
   $('#q').addEventListener('input', (e) => { S.q = e.target.value; S.limit = 30; if (['home', 'biz', 'settings'].includes(S.tab) || (S.tab === 'search' && S.unifiedFrom)) { S.tab = 'home'; S.unifiedFrom = true; } else if (!['search', 'orders', 'sellers', 'products', 'purchase'].includes(S.tab)) S.tab = 'search'; renderTabs(); renderMain(); });
@@ -1539,18 +1617,25 @@ function imgBanner() {
 document.addEventListener('error', (e) => { const t = e.target; if (t && t.tagName === 'IMG') fixImg(t); }, true);
 // 한 번 '받기 표 주소'가 필요하다고 확인되면, 새로 그려지는 사진은 실패를 기다리지 않고 바로 그 주소로
 new MutationObserver((ms) => { if (!S.imgAuthMode) return; for (const m of ms) for (const n of m.addedNodes) { if (n.nodeType !== 1) continue; const L = n.tagName === 'IMG' ? [n] : n.querySelectorAll ? n.querySelectorAll('img') : []; L.forEach((el) => { const src = el.getAttribute('src') || ''; if (src.startsWith(IMG_BASE) && !el.dataset.fbtry) { el.dataset.fbtry = '1'; fbImgUrl(src).then((u) => (el.src = u)).catch(() => {}); } }); } }).observe(document.documentElement, { childList: true, subtree: true });
+// 기록 받기: 1,000건씩 받아 쪽마다 기기에 저장하고 위치를 남김 → 끊기면 다음에 그 위치부터 이어 받음 (처음 받기 = 문서 번호 순, 그 뒤 = 바뀐 것만)
 async function syncColl(coll, store, map, metaKey) {
-  const meta = await idbGet('meta', metaKey); let q = db.collection(coll);
-  if (meta && meta.last) q = q.where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(meta.last));
-  const snap = await q.get(); let max = meta ? meta.last || 0 : 0; const batch = [];
-  snap.forEach((d) => { const v = d.data(); const t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; if (t > max) max = t; const o = deTs({ ...v, id: d.id }); delete o.uploadedAt; map.set(d.id, o); batch.push(o); }); if (batch.length) bump();
-  if (batch.length) await idbPut(store, batch);
-  await idbPut('meta', [{ k: metaKey, last: max, at: Date.now() }]);
+  const meta = (await idbGet('meta', metaKey)) || {}; let max = meta.last || 0; const FP = firebase.firestore.FieldPath; const PG = 1000; let got = 0;
+  const take = async (snap) => { const batch = []; snap.forEach((d) => { const v = d.data(); const t = v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0; if (t > max) max = t; const o = deTs({ ...v, id: d.id }); delete o.uploadedAt; map.set(d.id, o); batch.push(o); }); if (batch.length) { bump(); await idbPut(store, batch); } got += batch.length; dlNote(coll, got); };
+  if (!meta.done) { // 처음 받기: 문서 번호 순으로 쪽마다
+    let cur = meta.cursor || null;
+    for (;;) { let q = db.collection(coll).orderBy(FP.documentId()).limit(PG); if (cur) q = q.startAfter(cur); const snap = await q.get(); await take(snap); if (snap.empty || snap.size < PG) break; cur = snap.docs[snap.docs.length - 1].id; await idbPut('meta', [{ k: metaKey, cursor: cur, last: max, done: false, at: Date.now() }]); }
+    await idbPut('meta', [{ k: metaKey, last: max, done: true, at: Date.now() }]);
+  } else { // 바뀐 것만 (uploadedAt 순, 쪽마다 위치 저장)
+    for (;;) { const snap = await db.collection(coll).where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(max)).orderBy('uploadedAt').limit(PG).get(); await take(snap); await idbPut('meta', [{ k: metaKey, last: max, done: true, at: Date.now() }]); if (snap.size < PG) break; }
+  }
+  if (S._live && S._live[coll]) return; (S._live = S._live || {})[coll] = 1;
   db.collection(coll).where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(max || 0)).onSnapshot((ss) => {
     const ch = []; ss.docChanges().forEach((c) => { if (c.type !== 'removed') { const o = deTs({ ...c.doc.data(), id: c.doc.id }); delete o.uploadedAt; map.set(c.doc.id, o); ch.push(o); } });
     if (ch.length) { bump(); idbPut(store, ch); S._pinv = null; if (S.tab === 'products' || S.tab === 'home' || S.tab === 'biz') renderMain(); }
   }, () => {});
 }
+function dlNote(coll, n) { if (S.dl && S.dl.running) { S.dl.sub = `${coll} ${n.toLocaleString()}건`; dlPaint(); } }
+
 async function loadProducts() {
   if (S.prodLoaded || S.prodBusy || (S.prodFailAt && Date.now() - S.prodFailAt < 60000)) return; S.prodBusy = true;
   try {
@@ -2839,6 +2924,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.65.0': ['오늘 출고 화면: 주문마다 진한 머리 띠(번호·수령인 크게·주문번호, 여러 권은 보라 띠와 \'n권 한 상자\'), 제목 크게, 상태 네모, 사진은 큰 사진 1장(앞표지)+작은 사진 2장까지, 상품마다 온라인 중고 첫 페이지 블록(PC 오른쪽·휴대폰 아래)', '머리 칸 ⬇ \'모든 기록 받기\': 탭을 열지 않아도 모든 기록을 한 번에(진행 표시, 끊기면 이어 받음, 접혀도 돎, 웹앱을 열면 저절로) + 이 기기 저장 용량·기록 수', '큰 기록(상품·도서·시장 지표)은 1,000건씩 받아 쪽마다 저장 — 끊겨도 받은 데부터', '머리 칸 줄이기 고침: 내려가면 한 줄(제목·⬇·검색)로 크게 줄임 (예전엔 줄자마자 다시 펼쳐져 사실상 안 줄었음)'],
   '0.64.1': ["상품 사진 '연결 문제' 고침: 로그인 정보를 머리글로 붙이던 방식은 Storage가 다른 사이트 요청으로 막아(CORS) 실패 → Firebase 사진 도구로 받기 표가 붙은 주소를 받아 보여 줌", '못 불러온 사진의 이유를 Storage 오류 종류별로(권한·파일 없음·로그인·연결·버킷) 예시 경로와 함께 표시'],
   '0.64.0': ['오늘 출고 화면: 발송 요청 주문을 서가 순서로(주문은 섞지 않음), 고정 머리(날짜·주문·상품·합계), 상품마다 사진·관리코드 색·이름·수량·판매가·등급·구매 유의 사항·사진, 출고 확정 기록', '상품 사진이 안 나오던 문제: Storage가 로그인한 사람만 읽게 돼 있으면 로그인 정보를 붙여 다시 받음, 그래도 안 되면 이유 표시', '수집 작업 기록: 시간별 접기, 처음엔 맨 아래(최신), 맨 위로·맨 아래로 버튼', '업데이트 기록: 날짜별 접기', '출고 지연 알림을 영업일 기준으로(주말·휴일 제외), 설정 ⑫ 출고(마감 시각·휴일)', '고객 지표 이름: 구매확정(평가) → 구매평(직접 수령확인) — 6일 뒤 자동 구매확정은 고객 행동이 아님', '설정 등급 계수 기본값을 판정 엔진과 같게(1·0.95·0.85)', '설명서: 판매관리 흐름·오늘 출고·탐색 수집'],
   '0.63.2': ['설명서: 오류·복구 과정 기록([안전한 새로고침])'],
@@ -3522,6 +3608,8 @@ function engineManualHtml() {
   <p>① 주문확인요청 → [발송준비시작] → ② <b>발송 요청</b>(송장 입력) → [입력완료] → ③ 배송&구매확정전(고객이 수령확인·평가하거나, 출고 후 5일 안에 안 누르면 6일째 자동 구매확정) → ④ 구매확정&정산대기(다음 날 새벽 예치금 정산) → ⑤ 정산완료(3개월 보관). <b>오늘 출고 = ② 발송 요청 탭의 주문</b>이고 영업일(주말·설정 ⑫의 휴일 제외) 13~15시에 출고합니다(고객 안내 13시). 매출(0~24시 주문)과 출고(어제 출고 뒤부터 오늘 출고까지 모인 주문)는 따로 셉니다.<br>
   <b>오늘 출고 화면</b>(홈 알림 · 상품 탭 '오늘 출고'): 수집기 '발송 요청 읽기'(영업일 9~16시 15분마다 저절로)가 읽은 주문을 서가 순서로 보여 줍니다 — 주문은 절대 섞지 않고, 주문 안 상품은 서가 순서(PNKLUX → BLKCMN·GRN·YLW·GRYPNY → REDFGN → BLU·SKY·MGZ → ORGCMC → KHKDVD·KHKCPD → 그 외) → 이름 순, 주문끼리는 첫 상품의 서가 순. 서가 = 관리코드 앞 6자리(뒤의 _ms·-날짜 등은 무시). 상품마다 사진·관리코드(색)·이름·수량·판매가·등급·우리 매물의 구매 유의 사항과 사진. '출고 확정'은 지금은 기록만 하고, ALPS 송장 출력·알라딘 송장 일괄등록은 양식 파일을 받은 뒤 이 버튼에 붙입니다. 알라딘 송장 일괄등록은 <b>CSV 파일만</b> 받습니다(팝업 step1의 일괄등록용 엑셀에 송장번호를 넣고 CSV로 저장).<br>
   <b>출고 지연 알림</b>: 출고 예정 영업일(마감 시각 전 주문은 그날, 아니면 다음 영업일)에서 설정 ⑧의 영업일 수가 지나도 출고 기록이 없을 때.</p>
+  <h4>7-8. 기록 받기와 이 기기 저장 용량</h4>
+  <p>웹앱은 탭을 열 때 그 탭에 필요한 기록만 받습니다(받은 것은 기기에 저장돼 다음엔 바뀐 것만). 머리 칸 <b>⬇</b>를 누르면 모든 기록을 한 번에 받는 칸이 펼쳐집니다 — 단계별 진행, 끊기면 끝난 단계는 건너뛰고 큰 기록은 1,000건씩 받은 위치부터 이어 받음, 접어도 계속 받음, '웹앱을 열면 저절로'(기본 켬). 같은 칸에 이 기기가 웹앱 기록에 쓰는 저장 용량·한도와 기록 수가 나옵니다. 아래로 스크롤하면 머리 칸이 한 줄(제목·⬇·검색)로 줄고, 맨 위로 가거나 위로 조금 올리면 다시 펼쳐집니다.</p>
   <h4>7-7. 끝없는 탐색 수집</h4>
   <p>수집기 버튼으로만(일괄 수집 제외). 우리 책들의 함께 산 책·함께 클릭한 책에서 시작해, 새 책마다 도서 정보·사진·분야·평점·온라인 중고 시장 지표·구매자 분포를 모으고 그 책의 함께 산 책을 다시 대기열(prd_explore)에 넣어 멈출 때까지 넓혀 갑니다. 처음 보는 판매자는 판매자 목록에 넣어 판매자 수집이 이어 모읍니다. 탐색으로 모은 책은 '탐색' 표시로 우리 상품·알라딘 구매 풀과 구분되고, 나중에 매입하면 같은 기록을 그대로 씁니다. 다른 작업이 시작되면 잠시 멈췄다가 그 작업이 끝나면 다시 이어갑니다.</p>
   <h4>7-5. 오래 도는 수집의 메모리</h4>
@@ -4020,19 +4108,33 @@ async function openShip() {
   const now = new Date(); const dk = SH.ymd(now); const wd = '일월화수목금토'[new Date(dk + 'T12:00:00Z').getUTCDay()]; const opt = { holidays: ((S.app.ship || {}).holidays) || [], cutHour: ((S.app.ship || {}).cutHour) ?? 15 };
   const biz = SH.isBizDay(now, opt.holidays); const tc = X.tabCounts || {};
   const uinfo = S.shipUinfo || (S.shipUinfo = new Map());
-  const itemHtml = (it) => { const l = shipListingOf(it.listingId); const b = l && l.bookId && S.pbooks ? S.pbooks.get(l.bookId) : null; const im = b && b.images && b.images.front ? imgUrl(b.images.front, true) : null; const src = im || it.img || '';
-    const shelf = SH.shelfOf(it.sku); const u = uinfo.get(String(it.listingId)); const note = u ? u.note : (l && l.condition) || '';
-    return `<div class="shp-it"><div class="shp-img"><span class="shp-code" style="background:${SH.shelfColor(it.sku)}">${esc(it.sku || '코드 없음')}</span>${src ? `<img src="${esc(src)}" loading="lazy">` : '<div class="shp-noimg">사진 없음</div>'}</div>
-      <div class="shp-main"><div class="shp-t"><b>${esc(it.title)}</b> <span class="shp-q">× ${it.qty || 1}</span> <span class="shp-p">${won(it.price)}</span></div>
-      <div class="shp-c"><b class="gsq g${esc(it.grade || '')}">${esc(it.grade || '-')}</b> <span class="hint">${esc(shelf)}${it.registeredAt ? ' · 등록 ' + esc(String(it.registeredAt).slice(0, 10)) : ''}</span></div>
-      ${note ? `<div class="shp-note">${esc(note)}</div>` : ''}${u && (u.photos || []).length ? `<div class="shp-ph">${u.photos.map((p) => `<a href="${esc(p.src)}" target="_blank"><img src="${esc(p.src)}" loading="lazy"></a>`).join('')}</div>` : ''}</div></div>`; };
-  const orderHtml = (o, i) => `<div class="card shp-o"><div class="shp-oh"><span class="shp-n">${i + 1}</span> <b>${esc(o.orderNo)}</b> · 수령인 <b>${esc((o.recipient && o.recipient.name) || o.buyer || '')}</b>${o.recipient && !o.recipient.sameAsBuyer && o.buyer ? ` <small class="hint">(주문인 ${esc(o.buyer)})</small>` : ''} <small class="hint">· ${o.items.length}권 · ${esc(String(o.orderedAt || '').slice(5))}${o.recipient && o.recipient.request ? ' · 요청: ' + esc(o.recipient.request) : ''}</small></div>${o.items.map(itemHtml).join('')}</div>`;
+  if (!S.pmLoaded && !S.pmBusy) loadMetrics().then(() => { if (S.detail && S.detail.ship) openShip(); }).catch(() => {});
+  if (!S.sellersLoaded && !S.sellersBusy) syncSellers().then(() => { if (S.detail && S.detail.ship) openShip(); }).catch(() => {});
+  // 사진: 큰 사진 1장(앞표지) + 작은 사진 2장까지(우리 매물의 구매 유의 사항 사진 먼저, 모자라면 뒤표지·책등). 수집한 사진은 그대로 두고 이 화면에서만 줄여 보여 줌
+  const pics = (b, u) => { const big = b && b.images && b.images.front ? imgUrl(b.images.front, false) || imgUrl(b.images.front, true) : null; const sm = [];
+    (u && u.photos || []).filter((p) => p.where === 'desc').forEach((p) => sm.length < 2 && sm.push(p.src));
+    ['back', 'spine'].forEach((k) => { const x = b && b.images && b.images[k]; const u2 = x ? imgUrl(x, true) : null; if (u2 && sm.length < 2) sm.push(u2); });
+    (u && u.photos || []).filter((p) => p.where !== 'desc').forEach((p) => sm.length < 2 && !sm.includes(p.src) && p.src !== big && sm.push(p.src));
+    return { big, sm }; };
+  const itemHtml = (it) => { const l = shipListingOf(it.listingId); const b = l && l.bookId && S.pbooks ? S.pbooks.get(l.bookId) : null; const u = uinfo.get(String(it.listingId));
+    const { big, sm } = pics(b, u); const src = big || it.img || ''; const shelf = SH.shelfOf(it.sku); const note = u ? u.note : (l && l.condition) || '';
+    const P1 = l ? page1FromMetrics(l) : null; const mAt = l && l.bookId && S.pmetrics ? String((S.pmetrics.get(l.bookId) || {}).lastCheckedAt || '').slice(0, 10) : '';
+    return `<div class="shp-it"><div class="shp-img"><span class="shp-code" style="background:${SH.shelfColor(it.sku)}">${esc(it.sku || '코드 없음')}</span>${src ? `<a href="${esc(src)}" target="_blank"><img class="shp-big" src="${esc(src)}" loading="lazy"></a>` : '<div class="shp-noimg">사진 없음</div>'}${sm.length ? `<div class="shp-sm">${sm.map((x) => `<a href="${esc(x)}" target="_blank"><img src="${esc(x)}" loading="lazy"></a>`).join('')}</div>` : ''}</div>
+      <div class="shp-main"><div class="shp-t">${esc(it.title)}</div>
+      <div class="shp-c"><span class="shp-grade g${esc(it.grade || '')}">${esc(it.grade || '-')}</span><span class="shp-q">× ${it.qty || 1}</span><span class="shp-p">${pqWon(it.price)}</span></div>
+      <div class="hint" style="margin-top:2px">${esc(shelf)}${it.registeredAt ? ' · 등록 ' + esc(String(it.registeredAt).slice(0, 10)) : ''}</div>
+      ${note ? `<div class="shp-note">${esc(note)}</div>` : ''}</div>
+      <div class="shp-blk">${P1 ? `<div class="hint" style="font-size:10.5px">온라인 중고 첫 페이지 (시장 지표 ${esc(mAt)})</div>${prBlocks({ page1: P1 })}` : '<div class="hint" style="font-size:11px">시장 지표 없음</div>'}</div></div>`; };
+  // 주문 머리 띠: 진한 띠(번호·주문번호·수령인)로 주문 경계를 분명히. 여러 권 주문은 띠 오른쪽에 'n권 한 상자' 표시
+  const orderHtml = (o, i) => { const n = o.items.reduce((a, x) => a + (x.qty || 1), 0); const rn = (o.recipient && o.recipient.name) || o.buyer || '';
+    return `<section class="shp-o${n > 1 ? ' multi' : ''}"><header class="shp-oh"><span class="shp-n">${i + 1}</span><span class="shp-rcv">${esc(rn)}</span><span class="shp-ono">${esc(o.orderNo)}</span>${n > 1 ? `<span class="shp-box">${n}권 한 상자</span>` : ''}</header>
+      <div class="shp-meta">${o.recipient && !o.recipient.sameAsBuyer && o.buyer ? `주문인 ${esc(o.buyer)} · ` : ''}주문 ${esc(String(o.orderedAt || '').slice(5))}${o.recipient && o.recipient.request ? ' · 요청: ' + esc(o.recipient.request) : ''}</div>${o.items.map(itemHtml).join('')}</section>`; };
   sh.innerHTML = `<div class="shp-head"><div class="sh" style="margin:0"><button class="back" id="back">← 닫기</button><div class="t">${esc(dk.slice(5).replace('-', '월 '))}일(${wd})의 출고</div></div>
       <div class="shp-sum">주문 <b>${orders.length}</b> · 상품 <b>${items.reduce((a, i) => a + (i.qty || 1), 0)}</b>권 · 판매가 <b>${won(total)}</b> · 읽은 시각 ${esc(String(X.at || '').slice(11, 16) ? new Date(X.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '-')}${tc['주문확인요청'] ? ` · <b style="color:#B0322A">주문확인요청 ${tc['주문확인요청']}건 — 샵매니저에서 발송준비시작을 눌러야 여기 들어옴</b>` : ''}${!biz ? ' · <b>오늘은 출고하지 않는 날(주말·휴일)</b>' : ''}${S.shipErr ? ` · <b style="color:#B0322A">${esc(prErrText(S.shipErr, '발송 요청 목록'))}</b>` : ''}</div></div>
     <div class="card"><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn" id="shp_ok">출고 확정 (관리자 확인)</button><button class="btn ghost" id="shp_re">새로 읽기</button><button class="btn ghost" disabled title="ALPS 업로드 양식 파일을 받으면 켭니다">ALPS 엑셀 만들기 (준비 중)</button><button class="btn ghost" disabled title="알라딘 송장번호 일괄등록용 파일을 받으면 켭니다">송장번호 일괄등록 CSV (준비 중)</button></div>
       <p class="hint" style="margin:6px 0 0">발송 요청 탭의 주문 = 오늘 출고. 주문은 섞지 않고, 주문 안 상품은 서가 순서 → 이름 순, 주문끼리는 첫 상품의 서가 순입니다. 수집기가 영업일 9~16시에 15분마다 다시 읽습니다. ${X.at ? '' : '아직 읽은 적 없음 — 수집기에서 \'발송 요청 읽기\''}</p></div>
     ${orders.map(orderHtml).join('') || '<div class="empty">발송 요청 주문이 없습니다</div>'}`;
-  $('#back').onclick = () => history.back();
+  $('#back').onclick = () => history.back(); fillUsedInfo(sh);
   sh.querySelector('#shp_re').onclick = () => { S.ship = null; loadShip(); openShip(); };
   sh.querySelector('#shp_ok').onclick = async () => { if (!orders.length) return toast('출고할 주문이 없음'); if (!confirm(`${dk} 출고를 확정할까요?\n주문 ${orders.length}건 · 상품 ${items.length}권\n(지금은 기록만 — ALPS 송장 출력·알라딘 송장 등록 자동화는 양식 파일을 받은 뒤 이 버튼에 붙입니다)`)) return;
     try { await db.collection('shp_days').doc(dk).set({ day: dk, confirmedAt: new Date().toISOString(), by: S.user.email, orders, orderCount: orders.length, itemCount: items.length, total, readAt: X.at || null, writerSchema: 6 }, { merge: true }); toast('출고 확정 기록함'); } catch (e) { toast('실패: ' + (e.code || e.message)); } };
@@ -4081,7 +4183,7 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
   { d: '2026-10-05', app: '수집기', v: '1.27.0', n: ["'끝없는 탐색 수집 ∞' 버튼: 우리 책들의 함께 산 책에서 시작해 새 책마다 모든 정보를 모으고 끝없이 넓혀 감(대기열 prd_explore, 멈춰도 이어감, 다른 작업이 시작되면 양보 후 다시 이어감)", "'발송 요청 읽기 (오늘 출고)' 버튼 + 영업일 9~16시 15분마다 저절로: 주문·수령인·상품(관리코드·등록일)·우리 매물 구매 유의 사항·사진, 목록이 바뀌면 판으로 보관", '구매자 분포 한 권 읽기를 탐색 수집과 같이 쓰도록 정리'] },
   { d: '2026-10-05', app: '공용 · 출고 기준 readnow-shipping-core.js', v: '0.1.0', n: ['새 파일: 발송 요청 화면 읽기, 서가 순서·색, 출고 목록 정렬, 영업일·출고 예정일'] },
