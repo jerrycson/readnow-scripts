@@ -1,0 +1,14 @@
+{
+  "name": "readnow-cloud",
+  "version": "0.1.0",
+  "private": true,
+  "description": "리드나우 클라우드 수집 (알라딘 주문확인요청·발송 요청 읽기, 발송준비시작, 사진 가격 조회)",
+  "main": "index.js",
+  "scripts": { "start": "node index.js" },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@google-cloud/vision": "^6.1.1",
+    "firebase-admin": "^14.5.0",
+    "puppeteer-core": "^25.12.0"
+  }
+}
