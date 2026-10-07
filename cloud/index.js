@@ -22,7 +22,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.5.4';
+const VER = '0.5.5';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -348,6 +348,19 @@ async function spines(b64) {
   return { spines: out, w: Wd, h: Ht, standing: tall };
 }
 
+/* ── (0.5.5) 사진 가격 조회 기록 저장·읽기 — 웹앱이 Firebase 규칙에 막힐 때 저절로 여기로 (관리자 권한이라 규칙과 관계없음, 허용한 계정만)
+   ppt_sessions/{조회} = 웹앱과 같은 문서 · 사진은 ppt_photo_data/{조회} {data: JPEG base64} (Storage 대신 — Storage 권한을 따로 주지 않아도 되게) */
+async function pptStore(b, u) { const fs = getFirestore(); const sid = String(b.sid || ''); const okId = /^[A-Za-z0-9_-]{8,40}$/.test(sid); const now = new Date().toISOString();
+  if (b.op === 'save') { if (!okId) throw Object.assign(new Error('조회 번호가 이상함'), { code: 400 }); const doc = b.doc && typeof b.doc === 'object' ? b.doc : null; if (!doc) throw Object.assign(new Error('기록 없음'), { code: 400 });
+    if (JSON.stringify(doc).length > 900e3) throw Object.assign(new Error('기록이 너무 큼 (1MB 한도)'), { code: 413 });
+    const out = { ...doc, by: u.email, via: 'cloud', savedAt: now };
+    if (b.photo) { const data = String(b.photo).replace(/^data:[^,]+,/, ''); if (data.length > 950e3) throw Object.assign(new Error('사진이 너무 큼'), { code: 413 }); await fs.collection('ppt_photo_data').doc(sid).set({ data, type: 'image/jpeg', at: now, by: u.email }); out.photoFs = true; }
+    await fs.collection('ppt_sessions').doc(sid).set(out, { merge: true }); return { ok: true }; }
+  if (b.op === 'list') { const qs = await fs.collection('ppt_sessions').orderBy('at', 'desc').limit(60).get(); return { ok: true, list: qs.docs.filter((d) => d.id !== '_perm_check').map((d) => { const v = d.data(); return { id: d.id, at: v.at || null, by: v.by || null, mode: v.mode || null, n: v.n || 0, found: v.found || 0, titles: v.titles || [], photoUrl: v.photoUrl || null, photoFs: !!v.photoFs }; }) }; }
+  if (b.op === 'get') { if (!okId) throw Object.assign(new Error('조회 번호가 이상함'), { code: 400 }); const d = await fs.collection('ppt_sessions').doc(sid).get(); if (!d.exists) return { ok: true, doc: null };
+    const v = d.data(); let photo = null; if (v.photoFs) { const p = await fs.collection('ppt_photo_data').doc(sid).get(); if (p.exists) photo = 'data:image/jpeg;base64,' + p.data().data; } return { ok: true, doc: v, photo }; }
+  throw Object.assign(new Error('모르는 일: ' + b.op), { code: 400 }); }
+
 /* ── HTTP ── */
 async function authUser(req) {
   const h = req.headers.authorization || ''; const tok = h.startsWith('Bearer ') ? h.slice(7) : null; if (!tok) throw Object.assign(new Error('로그인 토큰 없음'), { code: 401 });
@@ -366,6 +379,7 @@ const server = http.createServer(async (req, res) => {
     if (path === '/tick') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); tickBusy = true; try { const out = await serial(() => tick('schedule')); return send(200, out); } finally { tickBusy = false; } }
     if (path === '/kick') { await authUser(req); const out = await serial(() => tick('kick')); return send(200, out); }
     if (path === '/lookup') { await authUser(req); const b = await bodyOf(req); const out = await serial(() => lookup(b)); return send(200, out); }
+    if (path === '/ppt') { const u = await authUser(req); const b = await bodyOf(req); return send(200, await pptStore(b, u)); }
     if (path === '/spines') { await authUser(req); const b = await bodyOf(req); if (!b.image) return send(400, { ok: false, err: '사진 없음' }); const out = await spines(String(b.image).replace(/^data:[^,]+,/, '')); return send(200, out); }
     if (path === '/test') { await authUser(req); const out = await serial(async () => { const p = await getPage(); try { await login(p); return { ok: true, login: 'ok', cores: coreVer }; } catch (e) { return { ok: false, login: 'fail', err: e.message }; } }); return send(200, out); }
     return send(404, { ok: false, err: '없는 주소' });
