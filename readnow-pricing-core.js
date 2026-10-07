@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.11.0';
+  const VERSION = '0.12.0';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -410,6 +410,21 @@
     st.lastAt = new Date(at).toISOString(); st.lastLowest = !!obs.atLowest; st.obsN = (st.obsN || 0) + 1; return st;
   }
 
-  const api = { VERSION, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, merge(DEFAULTS, S0 || {})), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
+  /* (0.12.0) 같은 등급 최저가 동가 (수동 일괄 처리 기준 '같은 등급 동가') — 배송비는 보지 않고 판매가끼리만
+   *  상태 등급: 최상 > 상 > 중 (최상이 가장 좋음 = 가장 비싸야 함). 우리 등급 G일 때
+   *  ① 기준 = 허용 판매자(유효·알라딘측 등) 매물 중 G와 같은 등급의 최저 판매가 → 그 값과 완전히 같게
+   *  ② 더 좋은 등급(G보다 위) 매물이 그보다 싸면(useBetter): 소비자는 더 좋은 상태를 사므로 그 판매가 × 등급 계수(우리/그쪽)로 환산, 그 판매가보다 반드시 한 단위 아래 — 더 좋은 상태보다 비싸거나 같게 두지 않음
+   *  ③ 더 나쁜 등급(G보다 아래) 매물은 기준으로 삼지 않음 (우리가 더 좋은 상태라 그보다 비싸도 됨) — 우리 값보다 싸면 이유에 알림만
+   *  rows: [{ g, p, ok }] (ok = 기준으로 써도 되는 판매자) · 알라딘측 균일가처럼 등급 글자가 없는 것은 부르는 쪽에서 '중'으로 넘김 */
+  function sameGradeMatch(grade, rows, opt) { const o = opt || {}; const coef = o.coef || DEFAULTS.gradeCoef; const R = []; const myR = GRADE_RANK[grade];
+    if (myR == null) return { t: null, reasons: [`우리 상태 등급(${grade || '없음'})을 몰라 같은 등급을 고를 수 없음`] };
+    const ok = (rows || []).filter((r) => r && r.ok && r.p > 0 && GRADE_RANK[r.g] != null);
+    const same = ok.filter((r) => r.g === grade).sort((a, b) => a.p - b.p)[0] || null; let t = same ? same.p : null;
+    if (same) R.push(`같은 등급(${grade}) 유효 최저가 ${same.p.toLocaleString()}원과 동가 (배송비는 보지 않음)`); else R.push(`첫 페이지에 같은 등급(${grade}) 유효 매물이 없음`);
+    if (o.useBetter !== false) { let bb = null; for (const r of ok) { if (GRADE_RANK[r.g] <= myR) continue; const c0 = coef[r.g], c1 = coef[grade]; let v = c0 && c1 ? snapDown(r.p * (c1 / c0)) : stepDown(r.p); if (!(v < r.p)) v = stepDown(r.p); if (!bb || v < bb.v) bb = { r, v }; }
+      if (bb && (t == null || bb.v < t)) { R.push(`더 좋은 등급(${bb.r.g}) 매물 ${bb.r.p.toLocaleString()}원이 ${t == null ? '있음' : '더 쌈'} → ${grade} 값으로 환산 ${bb.v.toLocaleString()}원 (× ${coef[grade]}/${coef[bb.r.g]}, 그 매물보다 반드시 낮게)`); t = bb.v; } }
+    if (t != null) { const w = ok.filter((r) => GRADE_RANK[r.g] < myR && r.p < t).sort((a, b) => a.p - b.p)[0]; if (w) R.push(`더 낮은 등급(${w.g}) 매물 ${w.p.toLocaleString()}원이 더 싸지만 따라가지 않음 (우리 상태가 더 좋음)`); }
+    return { t, reasons: R }; }
+  const api = { VERSION, GRADE_RANK, sameGradeMatch, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, merge(DEFAULTS, S0 || {})), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowPricing = api;
 })(typeof window !== 'undefined' ? window : this);
