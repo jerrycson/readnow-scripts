@@ -8,7 +8,7 @@
 // ==========================================================================
 (function (root) {
   'use strict';
-  const VERSION = '0.5.0';
+  const VERSION = '0.5.1';
   const T = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
   const toInt = (s) => { const n = parseInt(String(s || '').replace(/[^\d-]/g, ''), 10); return isNaN(n) ? null : n; };
 
@@ -120,12 +120,16 @@
   function matchInvoices(orders, waybills) {
     const used = new Set(); const out = [];
     for (const o of orders) { const rn = nName((o.recipient && o.recipient.name) || o.buyer); const hits = [];
-      for (const it of o.items || []) { const t = nTitle(it.title || it.titleRaw); let k = waybills.findIndex((w, i) => !used.has(i) && nTitle(w.title) === t && (!w.sku || !it.sku || w.sku === it.sku) && nameOk(nName(w.name), rn));
-        if (k < 0) k = waybills.findIndex((w, i) => !used.has(i) && nTitle(w.title) === t && nameOk(nName(w.name), rn));
+      // (0.5.1) 관리코드가 양쪽에 있고 같을 때만 이름 앞부분 일치(김민 ↔ 김민수)를 허용 · 관리코드가 한쪽에 없으면 이름이 똑같아야 · 관리코드가 서로 다르면 '약한 맞음' → 확인이 필요한 partial
+      let weak = 0;
+      for (const it of o.items || []) { const t = nTitle(it.title || it.titleRaw); const same = (w) => nName(w.name) === rn;
+        let k = waybills.findIndex((w, i) => !used.has(i) && nTitle(w.title) === t && w.sku && it.sku && w.sku === it.sku && nameOk(nName(w.name), rn));
+        if (k < 0) k = waybills.findIndex((w, i) => !used.has(i) && nTitle(w.title) === t && (!w.sku || !it.sku) && same(w));
+        if (k < 0) { k = waybills.findIndex((w, i) => !used.has(i) && nTitle(w.title) === t && same(w)); if (k >= 0) weak++; }
         if (k >= 0) { used.add(k); hits.push(waybills[k]); } }
       const inv = [...new Set(hits.map((w) => w.invoice))]; const n = (o.items || []).length;
       out.push({ orderNo: o.orderNo, recipient: (o.recipient && o.recipient.name) || o.buyer || '', items: (o.items || []).map((i) => i.title), invoice: inv.length === 1 ? inv[0] : inv[0] || null, invoices: inv,
-        status: !inv.length ? 'none' : inv.length > 1 ? 'many' : hits.length < n ? 'partial' : 'ok' }); }
+        status: !inv.length ? 'none' : inv.length > 1 ? 'many' : hits.length < n || weak ? 'partial' : 'ok', weak: weak || undefined }); }
     return { byOrder: out, extra: waybills.filter((w, i) => !used.has(i)) };
   }
   const nameOk = (a, b) => !!a && !!b && (a === b || (a.length >= 2 && b.startsWith(a)) || (b.length >= 2 && a.startsWith(b)));
