@@ -22,7 +22,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.5.2';
+const VER = '0.5.3';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -114,7 +114,7 @@ async function ourOf(listingId) {
   const b = l && l.bookId ? (await C('prd_books').doc(l.bookId).get()).data() : null; const ui = (await C('prd_used_info').doc(String(listingId)).get()).data();
   const img = b && b.images && b.images.front ? (b.images.front.stored || b.images.front.src || null) : null;
   return { key: L.empty ? null : L.docs[0].id, usedCode: l ? l.usedCode || null : null, bookId: l ? l.bookId || null : null, grade: l ? l.grade || null : null, sku: l ? l.sku || null : null, regAt: l ? l.registeredAt || l.regDate || null : null,
-    itemId: b && b.aladinItemId ? String(b.aladinItemId) : null, cover: img, note: ui ? ui.note || null : (l && l.condition) || null, photos: ui && ui.photos ? ui.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src) : [], ui: ui || null }; }
+    itemId: b && b.aladinItemId ? String(b.aladinItemId) : null, cover: img, note: (ui && ui.note) || null, /* (0.5.3) 등급 글자(l.condition '중' 등)를 유의 사항으로 쓰지 않음 — 빠진 것을 가렸음 */ photos: ui && ui.photos ? ui.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src) : [], ui: ui || null }; }
 async function marketOf(p, itemId, ourUsed) {
   const u = await p.evaluate(async (id) => { const r = await fetch(`/shop/UsedShop/wuseditemall.aspx?ItemId=${id}&TabType=0`, { credentials: 'include' }); if (!r.ok) throw new Error('HTTP ' + r.status); return window.ReadnowProducts.parseUsedPage(new DOMParser().parseFromString(await r.text(), 'text/html')); }, itemId);
   const codes = [...new Set((u.listings || []).map((r) => r.sellerCode).filter((c) => c && String(c) !== '0' && String(c) !== '996008'))];
@@ -124,24 +124,34 @@ async function marketOf(p, itemId, ourUsed) {
       try { c = ours ? 'ours' : PRC && PRC.isAladinSide(r) ? 'aladin' : d && RNC ? RNC.classifySellerDoc(d, RS).cls : 'unknown'; } catch (e) {}
       return { r: i + 1, n: r.sellerName || null, sc: r.sellerCode || null, g: r.grade || null, p: r.price ?? null, s: r.ship ?? null, lid: r.listingId || null, so: r.soldOut ? 1 : 0, c }; }); }, u.listings || [], sd, ourUsed || null);
   return { u, rows }; }
+const realNote = (n, g) => { const t = String(n || '').trim(); return t && t !== g && !/^(최상|상|중|하|새것같음|새상품)$/.test(t) ? t : null; };
+const uiNext = new Map(), uiTry = new Map();
+function midAfter(lid, grade, note) { lid = String(lid); if (grade !== '중' || realNote(note, grade)) { uiTry.delete(lid); uiNext.delete(lid); if (grade === '중') C('shp_cmds').doc('ui_' + lid).update({ status: 'done', doneAt: nowIso(), by: 'cloud', results: { [lid]: { ok: true, at: nowIso(), by: 'cloud' } }, uploadedAt: FV.serverTimestamp() }).catch(() => {}); return; }
+  const k = (uiTry.get(lid) || 0) + 1; uiTry.set(lid, k); uiNext.set(lid, Date.now() + Math.min(30, 2 ** k) * 60e3);
+  if (k >= 2) { const ref = C('shp_cmds').doc('ui_' + lid); db.runTransaction(async (tx) => { const sn = await tx.get(ref); const x = sn.exists ? sn.data() : null; if (x && (x.status === 'queued' || x.status === 'running')) { if (!x.cloudTried) tx.update(ref, { cloudTried: true, uploadedAt: FV.serverTimestamp() }); return; } if (x && x.status === 'done' && (x.tries || 0) >= 3) return;
+      tx.set(ref, { type: 'usedInfo', listingIds: [lid], grade, status: 'queued', cloudTried: true, createdAt: nowIso(), by: 'cloud', tries: ((x && x.tries) || 0) + 1, uploadedAt: FV.serverTimestamp() }); }).catch(() => {}); } } // 클라우드가 두 번 못 읽으면 PC 수집기에 맡김
 async function enrichConfirm(p, cr, force, until) {
   const t0 = Date.now(); const stopAt = Math.min(t0 + 40000, until || Infinity); const ref = C('shp_state').doc('confirm'); let n = 0, fail = 0; const todo = [];
-  for (const o of lastConfirm) for (const it of o.items || []) { const lid = String(it.listingId || ''); if (!lid) continue; const e = cr.enrich[lid]; if (e && e.mkt && e.uiAt && !(force && force.has(lid))) continue; const uiOnly = e && (e.mkt || e.mktErr) && !e.uiAt; if (!uiOnly && (skipUntil.get(lid) || 0) > Date.now() && !(force && force.has(lid))) continue; todo.push({ o, it, lid }); }
+  // (0.5.3) '중' 상품인데 유의 사항이 없으면(등급 글자만 있는 것도) 다시 읽음 — 2·4·8…분(최대 30분) 간격, 세 번째부터는 PC 수집기에도 맡김
+  const midNo = (e, it) => (e && (e.grade || it.grade)) === '중' && !realNote(e && e.note, '중') && (uiNext.get(String(it.listingId)) || 0) <= Date.now();
+  for (const o of lastConfirm) for (const it of o.items || []) { const lid = String(it.listingId || ''); if (!lid) continue; const e = cr.enrich[lid]; const mn = midNo(e, it); if (e && e.mkt && e.uiAt && !mn && !(force && force.has(lid))) continue; const uiOnly = e && (e.mkt || e.mktErr) && (!e.uiAt || mn); if (!uiOnly && (skipUntil.get(lid) || 0) > Date.now() && !(force && force.has(lid))) continue; todo.push({ o, it, lid, mn }); }
   for (const t of todo) { if (Date.now() > stopAt) break;
     try { const prevE = cr.enrich[t.lid];
-      if (prevE && (prevE.mkt || prevE.mktErr) && !prevE.uiAt && !(force && force.has(t.lid))) { // (0.5.0) 시장은 이미 읽음 — 우리 매물 유의 사항·사진만 채움 (시장을 다시 읽지 않음)
-        let ui0 = (await C('prd_used_info').doc(String(t.lid)).get()).data(); if (looksBlanked(ui0)) ui0 = await repairUsedInfo(t.lid, ui0); let ui = ui0;
-        if (!ui0 || !ui0.checkedAt || Date.now() - Date.parse(ui0.checkedAt) > 864e5) ui = (await refreshUsedInfo(p, t.lid, ui0)) || ui0;
-        const E2 = { ...prevE, note: (ui && ui.note) || prevE.note || null, photos: ui && ui.photos ? ui.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src) : prevE.photos || [], uiAt: nowIso() };
+      if (prevE && (prevE.mkt || prevE.mktErr) && (!prevE.uiAt || t.mn) && !(force && force.has(t.lid))) { // (0.5.0) 시장은 이미 읽음 — 우리 매물 유의 사항·사진만 채움 (시장을 다시 읽지 않음)
+        const gr = prevE.grade || t.it.grade || null; let ui0 = (await C('prd_used_info').doc(String(t.lid)).get()).data(); if (looksBlanked(ui0)) ui0 = await repairUsedInfo(t.lid, ui0); let ui = ui0;
+        if (!ui0 || !ui0.checkedAt || Date.now() - Date.parse(ui0.checkedAt) > 864e5 || (gr === '중' && !(ui0 && ui0.note))) ui = (await refreshUsedInfo(p, t.lid, ui0, null, gr)) || ui0;
+        midAfter(t.lid, gr, ui && ui.note);
+        const E2 = { ...prevE, note: (ui && ui.note) || realNote(prevE.note, gr) || null, photos: ui && ui.photos ? ui.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src) : prevE.photos || [], uiAt: nowIso() };
         await ref.update(new FieldPath('enrich', t.lid), E2); cr.enrich[t.lid] = E2; n++; await sleep(300); continue; }
       const our = await ourOf(t.lid); let itemId = our.itemId, via = 'ours';
       if (looksBlanked(our.ui)) { const r = await repairUsedInfo(t.lid, our.ui); if (r && r.note) our.note = r.note; if (r && r.photos) our.photos = r.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src); our.ui = r; }
-      if (!our.ui || !our.ui.checkedAt || Date.now() - Date.parse(our.ui.checkedAt) > 864e5) { try { const ui = await refreshUsedInfo(p, t.lid, our.ui); if (ui) { our.note = ui.note || our.note; if ((ui.photos || []).length) our.photos = ui.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src); } } catch (e) { log('유의 사항 읽기 실패', t.lid, e.message); } } // 주문확인요청 상품도 우리 매물 유의 사항·사진을 바로 읽음 (예전엔 발송 요청 때만)
+      const gr0 = our.grade || t.it.grade || null; if (!our.ui || !our.ui.checkedAt || Date.now() - Date.parse(our.ui.checkedAt) > 864e5 || (gr0 === '중' && !our.note)) { try { const ui = await refreshUsedInfo(p, t.lid, our.ui, null, gr0); if (ui) { our.note = ui.note || our.note; if ((ui.photos || []).length) our.photos = ui.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src); } } catch (e) { log('유의 사항 읽기 실패', t.lid, e.message); } } // 주문확인요청 상품도 우리 매물 유의 사항·사진을 바로 읽음 (예전엔 발송 요청 때만)
       if (!itemId && t.it.title) { const q = String(t.it.title).replace(/^\[[^\]]*\]\s*/, '');
         const c = await p.evaluate(async (q) => { const P = window.ReadnowProducts; const r = await fetch('/search/wsearchresult.aspx?SearchTarget=All&SearchWord=' + encodeURIComponent(q), { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html');
           return P.parseSearchResults(d).filter((x) => !x.used).map((x) => ({ itemId: x.itemId, cov: P.nameCoverage(q, x.title), img: x.img || null })).filter((x) => x.cov >= 0.9).sort((a, b) => b.cov - a.cov)[0] || null; }, q);
         if (c) { itemId = String(c.itemId); via = 'search'; if (!our.cover) our.cover = c.img; } }
-      const E = { at: nowIso(), cover: our.cover, grade: our.grade, sku: our.sku, regAt: our.regAt, note: our.note, photos: our.photos, itemId, via, key: our.key, uiAt: nowIso() };
+      midAfter(t.lid, gr0, our.note);
+      const E = { at: nowIso(), cover: our.cover, grade: our.grade || t.it.grade || null, sku: our.sku, regAt: our.regAt, note: our.note, photos: our.photos, itemId, via, key: our.key, uiAt: nowIso() };
       if (itemId) { const m = await marketOf(p, itemId, our.usedCode); const at = nowIso();
         E.mkt = { at, usedTotal: m.u.usedTotal ?? null, buyback: m.u.buyback || null, rows: m.rows };
         await C('shp_market').doc(`${t.o.orderNo}__${t.lid}__${at.replace(/[:.]/g, '-')}`).create({ orderNo: t.o.orderNo, listingId: t.lid, listingKey: our.key, bookId: our.bookId, aladinItemId: itemId, via, title: t.it.title || null, orderedAt: t.o.orderedAt || null, at,
@@ -152,9 +162,14 @@ async function enrichConfirm(p, cr, force, until) {
   return { n, fail, left: todo.length - n - fail }; }
 
 /* 우리 매물의 구매 유의 사항·사진 (알라딘 상품 화면) — 24시간에 한 번, 바뀐 판만 쌓음 (prd_used_info + v/ 판). 주문확인요청·발송 요청 둘 다 씀 */
-async function refreshUsedInfo(p, lid, prev, at) {
-  const info = await p.evaluate(async (lid) => { const r0 = await fetch('/shop/wproduct.aspx?ItemId=' + lid, { credentials: 'include' }); const html = await r0.text(); const d = new DOMParser().parseFromString(html, 'text/html'); const x = window.ReadnowProducts.parseUsedItemInfo(d, null); x._title = (d.title || '').slice(0, 80); x._len = html.length; x._url = r0.url; return x; }, String(lid));
+async function refreshUsedInfo(p, lid, prev, at, grade) {
+  const rd = (t) => p.evaluate(async ([lid, t]) => { const r0 = await fetch('/shop/wproduct.aspx?ItemId=' + lid + (t ? '&_=' + Date.now() : ''), { credentials: 'include', cache: 'no-store' }); const html = await r0.text(); const d = new DOMParser().parseFromString(html, 'text/html'); const x = window.ReadnowProducts.parseUsedItemInfo(d, null); x._box = !!d.getElementById('usedDecription'); x._title = (d.title || '').slice(0, 80); x._len = html.length; x._url = r0.url; return x; }, [String(lid), t]);
+  let info = await rd(0); if (!info._box || (!info.hasNote && grade === '중')) { await sleep(1500); const i2 = await rd(1); if (i2._box && (i2.hasNote || !info._box)) info = i2; } // 한 번 더 (캐시 피해서)
   const ref = C('prd_used_info').doc(String(lid)); at = at || nowIso();
+  // (0.5.3) 유의 사항 칸(#usedDecription)이 없으면 위쪽 표지 사진이 있어도 '못 읽음' — 예전엔 표지 사진만으로 '읽음'이 되어 빈 판을 쌓기도 했음
+  //   '중' 상품인데 글이 비면 잘못 읽은 것으로 보고 쓰지 않음 → 다음 회차에 다시 · 그래도 못 읽으면 PC 수집기에 맡김(shp_cmds/ui_상품번호)
+  if (info.found && !info._box) { info.found = false; }
+  if (info.found && !info.hasNote && grade === '중' && !(prev && prev.note)) { log("'중' 상품인데 유의 사항이 비어 있음 — 쓰지 않음", lid, info._title, info._len, info._url); await ref.set({ lastMissAt: at, lastMissWhy: "'중' 상품인데 유의 사항 글이 비어 있음 (클라우드)", lastMissTitle: info._title || null }, { merge: true }).catch(() => {}); return prev || null; }
   // (0.5.1) 화면에서 유의 사항 칸·사진을 하나도 못 찾으면(다른 화면이 왔거나 읽기 실패) 아무것도 바꾸지 않음 — 예전엔 '빈 판'을 새로 쌓아 있던 유의 사항이 화면에서 사라졌음
   if (!info.found) { log('유의 사항 칸을 못 찾음 — 기록 그대로 둠', lid, info._title, info._len, info._url); await ref.set({ lastMissAt: at, lastMissTitle: info._title || null }, { merge: true }).catch(() => {}); return prev || null; }
   delete info._title; delete info._len; delete info._url;
@@ -200,8 +215,8 @@ async function shipRead(p, until) {
   let nInfo = 0; const items = r.orders.flatMap((o) => o.items).filter((i) => i.listingId);
   const prevs = items.length ? await db.getAll(...items.map((it) => C('prd_used_info').doc(String(it.listingId)))) : []; // 한 번에 읽음 (예전: 한 권씩)
   for (let ii = 0; ii < items.length; ii++) { const it = items[ii]; if (until && Date.now() > until) break; // 시간 상자: 한 회차가 1분을 넘지 않게 — 남은 것은 다음 회차
-    const ref = C('prd_used_info').doc(String(it.listingId)); let prev = prevs[ii] && prevs[ii].exists ? prevs[ii].data() : undefined; if (looksBlanked(prev)) prev = await repairUsedInfo(it.listingId, prev); if (prev && prev.checkedAt && Date.now() - Date.parse(prev.checkedAt) < 864e5) continue;
-    try { const nx = await refreshUsedInfo(p, it.listingId, prev, at); if (nx && (!prev || nx.versions !== prev.versions)) nInfo++; void ref;
+    const ref = C('prd_used_info').doc(String(it.listingId)); let prev = prevs[ii] && prevs[ii].exists ? prevs[ii].data() : undefined; if (looksBlanked(prev)) prev = await repairUsedInfo(it.listingId, prev); const mid = it.grade === '중' && !(prev && prev.note) && (uiNext.get(String(it.listingId)) || 0) <= Date.now(); if (!mid && prev && prev.checkedAt && Date.now() - Date.parse(prev.checkedAt) < 864e5) continue;
+    try { const nx = await refreshUsedInfo(p, it.listingId, prev, at, it.grade || null); if (it.grade === '중') midAfter(it.listingId, it.grade, nx && nx.note); if (nx && (!prev || nx.versions !== prev.versions)) nInfo++; void ref;
       await sleep(600); } catch (e) { log('유의 사항 읽기 실패', it.listingId, e.message); } }
   lastDelivAt = Date.now();
   return { deliv: r.orders.length, items: items.length, changed, nInfo, exErr: R.exErr || null }; }
@@ -210,7 +225,7 @@ async function shipRead(p, until) {
 async function runCmds(p) {
   const qs = await C('shp_cmds').where('status', '==', 'queued').get(); let n = 0, needRead = false; const force = new Set();
   let buy = false;
-  for (const d of qs.docs) { const x0 = d.data(); if (!['read', 'startDelivery', 'market', 'aladinBuy'].includes(x0.type)) continue; let v = null;
+  for (const d of qs.docs) { const x0 = d.data(); if (!['read', 'startDelivery', 'market', 'aladinBuy', 'usedInfo'].includes(x0.type)) continue; if (x0.type === 'usedInfo' && x0.cloudTried) continue; /* 클라우드가 이미 못 읽은 것 = PC 몫 */ let v = null;
     await db.runTransaction(async (tx) => { const sn = await tx.get(d.ref); const x = sn.data(); if (!x || x.status !== 'queued') return; tx.update(d.ref, { status: 'running', claim: { pc: 'cloud', at: nowIso() }, uploadedAt: FV.serverTimestamp() }); v = x; });
     if (!v) continue; n++;
     if (v.type === 'startDelivery') { const results = {};
@@ -220,6 +235,12 @@ async function runCmds(p) {
       try { const chk = await p.evaluate(async (u) => { const r = await fetch(u, { credentials: 'include' }); if (/\/login\/|wlogin/i.test(r.url)) return { ok: false }; const d = new DOMParser().parseFromString(await r.text(), 'text/html'); const x = window.ReadnowShipping.parseDeliveryPage(d); return { ok: !!(x && x.tabCounts && Object.keys(x.tabCounts).length), left: (x.orders || []).map((o) => o.orderNo) }; }, CONFIRM_URL);
         for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = !chk.ok ? 'unknown' : chk.left.includes(ono) ? 'fail' : 'done'; } catch (e) { for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = 'unknown'; }
       await d.ref.set({ status: 'done', results, doneAt: nowIso(), uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
+    else if (v.type === 'usedInfo') { const results = {}; let allOk = true; // (0.5.3) '중' 상품 유의 사항 다시 읽기 (웹앱이 맡김) — 못 읽으면 PC 수집기 몫으로 남김
+      for (const lid of v.listingIds || []) { try { const prev = (await C('prd_used_info').doc(String(lid)).get()).data(); const ui = await refreshUsedInfo(p, lid, prev, null, v.grade || null); const ok = !!(ui && realNote(ui.note, v.grade));
+          results[lid] = ok ? { ok: true, at: nowIso(), by: 'cloud' } : { ok: false, why: '클라우드: 상품 화면에서 유의 사항을 못 읽음', at: nowIso() }; if (!ok) allOk = false;
+          if (ok) { const cr0 = (await C('shp_state').doc('confirm').get()).data(); if (cr0 && cr0.enrich && cr0.enrich[lid]) await C('shp_state').doc('confirm').update(new FieldPath('enrich', String(lid)), { ...cr0.enrich[lid], note: ui.note, photos: (ui.photos || []).filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src), uiAt: nowIso() }); } }
+        catch (e) { results[lid] = { ok: false, why: e.message, at: nowIso() }; allOk = false; } }
+      await d.ref.set(allOk ? { status: 'done', results, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() } : { status: 'queued', cloudTried: true, cloudResults: results, claim: null, uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'market') { (v.listingIds || []).forEach((x) => force.add(String(x))); await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'aladinBuy') { buy = true; await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else { await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; } }
