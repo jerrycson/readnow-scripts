@@ -3,7 +3,7 @@
  *   동시에 뒤에서 새 판을 받아 저장 → 새 판이 올라오면 웹앱의 '새 버전' 띠 → 새로고침하면 새 판.
  * 자료(Firebase 기록)는 여기서 다루지 않음 — Firebase가 따로 실시간으로 받음.
  * 문제가 생기면: 주소 끝에 ?nosw=1 을 붙여 열면 이 워커를 끄고 저장본을 지움. */
-const CACHE = 'rn-app-v1';
+const CACHE = 'rn-app-v2'; // (0.81.0) 판을 올려 모든 기기의 옛 저장본을 한 번 비움
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil((async () => { for (const k of await caches.keys()) if (k !== CACHE) await caches.delete(k); await self.clients.claim(); })()));
 const isShell = (u) => u.origin === self.location.origin && /\/app\/(index\.html)?$/.test(u.pathname) && !u.searchParams.has('vc') && !u.searchParams.has('nosw');
