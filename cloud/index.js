@@ -1,7 +1,7 @@
 /* 리드나우 클라우드 수집 (readnow-cloud) 0.1.0 — Google Cloud Run
  *
  * 하는 일 (PC 수집기와 같은 기준 파일·같은 저장 형식, PC 수집기와 함께 돌아도 됨)
- *  - /tick  (Cloud Scheduler가 매일 24시간 5분마다 부름)
+ *  - /tick  (Cloud Scheduler가 매일 24시간 1분마다 부름 — 0.4.0부터: ① 주문확인요청은 매번, ② 발송 요청은 5분마다·필요할 때)
  *      ① 알라딘 판매관리 ① 주문확인요청 · ② 발송 요청 읽기 → shp_state/confirm · shp_state/current · shp_orders · shp_snapshots (= 실시간 주문 수집)
  *      ② 발송 요청 엑셀(ALPS 업로드 재료) · 우리 매물 유의 사항·사진(prd_used_info, 24시간에 한 번)
  *      ③ 웹앱이 맡긴 일(shp_cmds) 중 read · startDelivery 를 맡아 처리 (PC가 먼저 맡으면 PC가 함 — 트랜잭션으로 한 곳만)
@@ -17,16 +17,16 @@
 'use strict';
 const http = require('http');
 const { initializeApp } = require('firebase-admin/app');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.3.0';
+const VER = '0.4.0';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
 const RAW = process.env.CORE_BASE || 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/';
-const CORES = ['readnow-shipping-core.js', 'readnow-products-core.js'];
+const CORES = ['readnow-shipping-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-sellers-core.js', 'readnow-core.js']; // 출고·상품 파서 + 판매자 분류(웹앱 블록 색과 같은 기준)
 const ALADIN_ID = process.env.ALADIN_ID || '', ALADIN_PW = process.env.ALADIN_PW || '', TICK_KEY = process.env.TICK_KEY || '';
 const ALLOW = (process.env.ALLOW_EMAILS || 'jerrycson@gmail.com').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 const ORIGINS = (process.env.ALLOW_ORIGINS || 'https://jerrycson.github.io').split(',').map((s) => s.trim());
@@ -47,7 +47,7 @@ async function cores() {
 }
 
 /* ── 브라우저 (하나를 계속 씀, 일은 한 번에 하나씩) ── */
-let browser = null, page = null; let chain = Promise.resolve();
+let browser = null, page = null; let chain = Promise.resolve(); let tickBusy = false; // 1분 예약이 겹치면(앞 회차가 길면) 건너뜀 — 쌓이지 않게
 const serial = (fn) => { const p = chain.then(fn, fn); chain = p.catch(() => {}); return p; };
 async function getPage() {
   if (!browser || !browser.connected) { browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || '/usr/bin/chromium', headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--lang=ko-KR'] }); page = null; }
@@ -55,7 +55,7 @@ async function getPage() {
   if (!/aladin\.co\.kr/.test(page.url())) await page.goto(AL + '/', { waitUntil: 'domcontentloaded' });
   await ensureCores(page); return page;
 }
-async function ensureCores(p) { const has = await p.evaluate(() => !!(window.ReadnowShipping && window.ReadnowProducts)).catch(() => false); if (!has) await p.addScriptTag({ content: await cores() }); }
+async function ensureCores(p) { const has = await p.evaluate(() => !!(window.ReadnowShipping && window.ReadnowProducts && window.ReadnowPricing && window.ReadNowCore)).catch(() => false); if (!has) await p.addScriptTag({ content: await cores() }); }
 
 /* ── 로그인 (PC 수집기의 자동 로그인과 같은 방식: 보이는 아이디 칸 + 비밀번호 칸 + 로그인 단추) ── */
 let loginFailAt = 0, loginFailMsg = null;
@@ -83,33 +83,81 @@ async function login(p) {
   loginFailAt = 0; loginFailMsg = null; log('로그인 됨'); return true;
 }
 
-/* ── ① 주문확인요청 · ② 발송 요청 읽기 (PC 수집기 shipReadJob과 같은 저장 형식) ── */
+/* ── ① 주문확인요청: 1분마다 이것부터 (알라딘 요청 1번) ──
+   읽자마자 바뀌었으면 바로 shp_state/confirm 에 씀 → 웹앱은 Firestore 실시간 수신이라 몇 초 안에 화면에 뜸.
+   그 뒤 같은 회차에서 상품마다 '보강'(사진·등급·등록일·유의사항·지금 시장 첫 페이지 + 판매자 분류)을 하나씩 채워 넣음 — 채워질 때마다 화면도 그 상품만 채워짐 */
+const CONFIRM_URL = '/scm/worder_preparatory_complete.aspx';
+let lastConfirm = [], lastDelivAt = 0, lastConfirmAt = null; const skipUntil = new Map();
+async function confirmRead(p) {
+  const R = await p.evaluate(async (u) => { const r = await fetch(u, { credentials: 'include' }); const t = await r.text(); if (/\/login\/|wlogin/i.test(r.url)) return { login: false };
+    const d = new DOMParser().parseFromString(t, 'text/html'); if (d.querySelector('input[type="password"]') && !/샵매니저/.test(d.title || '')) return { login: false };
+    return { login: true, rc: window.ReadnowShipping.parseDeliveryPage(d) }; }, CONFIRM_URL);
+  if (!R.login) throw Object.assign(new Error('로그인 풀림'), { relogin: true });
+  const rc = R.rc; const at = nowIso(); lastConfirmAt = at; lastConfirm = rc.orders;
+  const csig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)])); const ref = C('shp_state').doc('confirm'); const cc = (await ref.get()).data();
+  const changed = !cc || cc.sig !== csig; const keepL = new Set(rc.orders.flatMap((o) => o.items.map((i) => String(i.listingId))));
+  const enrich = {}; for (const [k, v] of Object.entries((cc && cc.enrich) || {})) if (keepL.has(k) || (v && v.at && Date.now() - Date.parse(v.at) < 3 * 864e5)) enrich[k] = v; // 남은 주문의 보강은 그대로 이어 씀(다시 읽지 않음) · 발송 요청으로 넘어간 주문도 3일은 남겨 ② 탭에서 씀
+  if (changed) { const bc = db.batch(); bc.set(ref, { at, orders: rc.orders, tabCounts: rc.tabCounts, sig: csig, pc: 'cloud', enrich, ...W() });
+    for (const o of rc.orders) bc.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, confirmSeenAt: at, ...(cc && (cc.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { confirmFirstSeenAt: at }), buyer: o.buyer, orderedAt: o.orderedAt, items: o.items, ...W() }, { merge: true });
+    await bc.commit(); }
+  return { n: rc.orders.length, changed, enrich, tabCounts: rc.tabCounts, prevTab: cc && cc.tabCounts }; }
+
+/* 상품 보강: 우리 상품 기록(prd_listings·prd_books·prd_used_info) + 지금 시장(온라인 중고 첫 페이지 1번 + 판매자 분류)
+   · 기존 시장 지표(prd_book_metrics)는 건드리지 않음 — 시장은 shp_market 에 새 문서로 쌓고(덮어쓰지 않음), 화면용 사본만 confirm.enrich 에
+   · 시간 상자: 한 회차에 최대 40초 — 넘으면 다음 회차(1분 뒤)에 이어 함. 한 권 실패는 그 책만 건너뜀 */
+async function ourOf(listingId) {
+  const L = await C('prd_listings').where('listingId', 'in', [String(listingId), Number(listingId)].filter((x) => x === x)).limit(1).get(); const l = L.empty ? null : L.docs[0].data();
+  const b = l && l.bookId ? (await C('prd_books').doc(l.bookId).get()).data() : null; const ui = (await C('prd_used_info').doc(String(listingId)).get()).data();
+  const img = b && b.images && b.images.front ? (b.images.front.stored || b.images.front.src || null) : null;
+  return { key: L.empty ? null : L.docs[0].id, usedCode: l ? l.usedCode || null : null, bookId: l ? l.bookId || null : null, grade: l ? l.grade || null : null, sku: l ? l.sku || null : null, regAt: l ? l.registeredAt || l.regDate || null : null,
+    itemId: b && b.aladinItemId ? String(b.aladinItemId) : null, cover: img, note: ui ? ui.note || null : (l && l.condition) || null, photos: ui && ui.photos ? ui.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src) : [] }; }
+async function marketOf(p, itemId, ourUsed) {
+  const u = await p.evaluate(async (id) => { const r = await fetch(`/shop/UsedShop/wuseditemall.aspx?ItemId=${id}&TabType=0`, { credentials: 'include' }); if (!r.ok) throw new Error('HTTP ' + r.status); return window.ReadnowProducts.parseUsedPage(new DOMParser().parseFromString(await r.text(), 'text/html')); }, itemId);
+  const codes = [...new Set((u.listings || []).map((r) => r.sellerCode).filter((c) => c && String(c) !== '0' && String(c) !== '996008'))];
+  const sd = {}; if (codes.length) (await db.getAll(...codes.map((c) => C('sellers').doc('sc_' + c)))).forEach((d) => { if (d.exists) sd[d.id] = d.data(); });
+  const rows = await p.evaluate((L, sd, ourUsed) => { const PRC = window.ReadnowPricing, RNC = window.ReadNowCore, RS = window.ReadnowSellers;
+    return L.map((r, i) => { const ours = String(r.sellerCode) === '996008' || (ourUsed && r.usedCode === ourUsed); const d = r.sellerCode ? sd['sc_' + r.sellerCode] : null; let c = 'unknown';
+      try { c = ours ? 'ours' : PRC && PRC.isAladinSide(r) ? 'aladin' : d && RNC ? RNC.classifySellerDoc(d, RS).cls : 'unknown'; } catch (e) {}
+      return { r: i + 1, n: r.sellerName || null, sc: r.sellerCode || null, g: r.grade || null, p: r.price ?? null, s: r.ship ?? null, lid: r.listingId || null, so: r.soldOut ? 1 : 0, c }; }); }, u.listings || [], sd, ourUsed || null);
+  return { u, rows }; }
+async function enrichConfirm(p, cr, force) {
+  const t0 = Date.now(); const ref = C('shp_state').doc('confirm'); let n = 0, fail = 0; const todo = [];
+  for (const o of lastConfirm) for (const it of o.items || []) { const lid = String(it.listingId || ''); if (!lid) continue; const e = cr.enrich[lid]; if (e && e.mkt && !(force && force.has(lid))) continue; if ((skipUntil.get(lid) || 0) > Date.now() && !(force && force.has(lid))) continue; todo.push({ o, it, lid }); }
+  for (const t of todo) { if (Date.now() - t0 > 40000) break;
+    try { const our = await ourOf(t.lid); let itemId = our.itemId, via = 'ours';
+      if (!itemId && t.it.title) { const q = String(t.it.title).replace(/^\[[^\]]*\]\s*/, '');
+        const c = await p.evaluate(async (q) => { const P = window.ReadnowProducts; const r = await fetch('/search/wsearchresult.aspx?SearchTarget=All&SearchWord=' + encodeURIComponent(q), { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html');
+          return P.parseSearchResults(d).filter((x) => !x.used).map((x) => ({ itemId: x.itemId, cov: P.nameCoverage(q, x.title), img: x.img || null })).filter((x) => x.cov >= 0.9).sort((a, b) => b.cov - a.cov)[0] || null; }, q);
+        if (c) { itemId = String(c.itemId); via = 'search'; if (!our.cover) our.cover = c.img; } }
+      const E = { at: nowIso(), cover: our.cover, grade: our.grade, sku: our.sku, regAt: our.regAt, note: our.note, photos: our.photos, itemId, via, key: our.key };
+      if (itemId) { const m = await marketOf(p, itemId, our.usedCode); const at = nowIso();
+        E.mkt = { at, usedTotal: m.u.usedTotal ?? null, buyback: m.u.buyback || null, rows: m.rows };
+        await C('shp_market').doc(`${t.o.orderNo}__${t.lid}__${at.replace(/[:.]/g, '-')}`).create({ orderNo: t.o.orderNo, listingId: t.lid, listingKey: our.key, bookId: our.bookId, aladinItemId: itemId, via, title: t.it.title || null, orderedAt: t.o.orderedAt || null, at,
+          page1: m.u.listings || [], usedTotal: m.u.usedTotal ?? null, mins: m.u.mins || null, buyback: m.u.buyback || null, lastPage: m.u.lastPage || 1, by: 'cloud', ...W() }).catch(() => {}); }
+      else { E.mktErr = '알라딘 상품번호를 못 찾음 (우리 기록·제목 검색 모두)'; skipUntil.set(t.lid, Date.now() + 3600e3); }
+      await ref.update(new FieldPath('enrich', t.lid), E); cr.enrich[t.lid] = E; n++; await sleep(300);
+    } catch (e) { fail++; log('보강 실패', t.lid, e.message); } }
+  return { n, fail, left: todo.length - n - fail }; }
+
+/* ── ② 발송 요청 읽기 (5분마다 · 주문확인요청에서 주문이 빠졌을 때 · 맡긴 일이 있을 때) — PC 수집기 shipReadJob과 같은 저장 형식 ── */
 async function shipRead(p) {
   const R = await p.evaluate(async () => {
     const SH = window.ReadnowShipping; const get = async (u) => { const r = await fetch(u, { credentials: 'include' }); const t = await r.text(); return { url: r.url, doc: new DOMParser().parseFromString(t, 'text/html') }; };
     const d = await get('/scm/worder_delivery.aspx?orderstep=4'); if (/\/login\/|wlogin/i.test(d.url)) return { login: false };
-    const r = SH.parseDeliveryPage(d.doc); const c = await get('/scm/worder_preparatory_complete.aspx'); const rc = SH.parseDeliveryPage(c.doc);
-    let excel = null, exErr = null;
+    const r = SH.parseDeliveryPage(d.doc); let excel = null, exErr = null;
     try { const fd = new URLSearchParams({ status: '4', keywordType: '0', keyword: '', filterType: '0', limitDate: '0', dnb: '0', page: '' }); const rr = await fetch('/scm/worder_excel.aspx', { method: 'POST', body: fd, credentials: 'include' }); if (!rr.ok) throw new Error('HTTP ' + rr.status); excel = SH.parseAladinOrderExcel(new DOMParser().parseFromString(await rr.text(), 'text/html')); if (!excel) exErr = '엑셀 표를 못 찾음'; } catch (e) { exErr = e.message; }
-    return { login: true, r, rc, excel, exErr };
+    return { login: true, r, excel, exErr };
   });
   if (!R.login) throw Object.assign(new Error('로그인 풀림'), { relogin: true });
-  const at = nowIso(); const { r, rc, excel } = R;
-  // ① 주문확인요청
-  const csig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)])); const cc = (await C('shp_state').doc('confirm').get()).data();
-  if (!cc || cc.sig !== csig) { const bc = db.batch(); bc.set(C('shp_state').doc('confirm'), { at, orders: rc.orders, tabCounts: rc.tabCounts, sig: csig, pc: 'cloud', ...W() });
-    for (const o of rc.orders) bc.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, confirmSeenAt: at, ...(cc && (cc.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { confirmFirstSeenAt: at }), buyer: o.buyer, orderedAt: o.orderedAt, items: o.items, ...W() }, { merge: true });
-    await bc.commit(); } // 그대로면 쓰지 않음 (읽은 시각은 app_settings/cloud.lastShipAt — 웹앱이 거기서 봄)
-  // ② 발송 요청
+  const at = nowIso(); const { r, excel } = R;
   const sig = JSON.stringify(r.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId), o.deliveryNo])); const cur = (await C('shp_state').doc('current').get()).data();
-  // 바뀐 것이 없으면 시각만 (쓰기·읽기 비용 줄임). 바뀌면 PC 수집기와 같은 형식으로 전부
-  const changed = !cur || cur.sig !== sig; const b = db.batch();
-  const xchanged = excel && (!cur || !cur.excel || JSON.stringify(cur.excel.rows.map((x) => x.v)) !== JSON.stringify(excel.rows));
-  if (!changed) { if (xchanged || (cur && JSON.stringify(cur.tabCounts) !== JSON.stringify(r.tabCounts))) b.set(C('shp_state').doc('current'), { at, pc: 'cloud', tabCounts: r.tabCounts, ...(excel ? { excel: { at, header: excel.header, rows: excel.rows.map((v) => ({ v })) } } : {}), ...W() }, { merge: true }); } // 그대로면 쓰지 않음 (웹앱 휴대폰이 5분마다 큰 문서를 다시 받지 않게)
-  else { b.set(C('shp_state').doc('current'), { at, tabCounts: r.tabCounts, orders: r.orders, sig, pc: 'cloud', excel: excel ? { at, header: excel.header, rows: excel.rows.map((v) => ({ v })) } : (cur && cur.excel) || null, ...W() });
+  const changed = !cur || cur.sig !== sig; const b = db.batch(); let w = false;
+  if (changed) { w = true; b.set(C('shp_state').doc('current'), { at, tabCounts: r.tabCounts, orders: r.orders, sig, pc: 'cloud', excel: null, ...W() }); // 엑셀은 따로(shp_state/excel) — 목록 문서를 가볍게
     b.set(C('shp_snapshots').doc(at.replace(/[:.]/g, '-')), { at, tabCounts: r.tabCounts, orders: r.orders, by: 'cloud', ...W() });
     for (const o of r.orders) b.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, stage: '발송 요청', lastSeenAt: at, ...(cur && (cur.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { firstSeenAt: at }), buyer: o.buyer, recipient: o.recipient, orderedAt: o.orderedAt, items: o.items, carrier: o.carrier, ...W() }, { merge: true }); }
-  await b.commit();
+  else if (cur && JSON.stringify(cur.tabCounts) !== JSON.stringify(r.tabCounts)) { w = true; b.set(C('shp_state').doc('current'), { at, tabCounts: r.tabCounts, pc: 'cloud', ...W() }, { merge: true }); }
+  if (excel) { const xr = C('shp_state').doc('excel'); const xo = (await xr.get()).data(); const rows = excel.rows.map((v) => ({ v })); if (!xo || JSON.stringify(xo.rows) !== JSON.stringify(rows)) { w = true; b.set(xr, { at, header: excel.header, rows, pc: 'cloud', ...W() }); } }
+  if (w) await b.commit();
   // 우리 매물 유의 사항·사진 (24시간에 한 번 — PC 수집기와 같은 기록, 바뀐 판만 쌓음)
   let nInfo = 0; const items = r.orders.flatMap((o) => o.items).filter((i) => i.listingId);
   for (const it of items) { const ref = C('prd_used_info').doc(String(it.listingId)); const prev = (await ref.get()).data(); if (prev && prev.checkedAt && Date.now() - Date.parse(prev.checkedAt) < 864e5) continue;
@@ -119,63 +167,41 @@ async function shipRead(p) {
       else { const nv = ((prev && prev.versions) || 0) + 1; const b2 = db.batch(); const ver = { note: info.note || null, hasNote: info.hasNote, photos: info.photos.map((x) => ({ src: x.src, where: x.where, file: x.file })), sellerPhotoCount: info.sellerPhotoCount, photoDiff: info.photoDiff, found: info.found, sig: sig2, at };
         b2.set(ref.collection('v').doc(String(nv).padStart(4, '0')), { ...ver, listingId: String(it.listingId), ...W() }); b2.set(ref, { listingId: String(it.listingId), sellerCode: '996008', ours: true, ...ver, versions: nv, firstAt: (prev && prev.firstAt) || at, checkedAt: at, ...W() }, { merge: true }); await b2.commit(); nInfo++; }
       await sleep(600); } catch (e) { log('유의 사항 읽기 실패', it.listingId, e.message); } }
-  lastConfirm = rc.orders;
-  return { confirm: rc.orders.length, deliv: r.orders.length, items: items.length, changed: !cur || cur.sig !== sig, nInfo, exErr: R.exErr || null };
-}
+  lastDelivAt = Date.now();
+  return { deliv: r.orders.length, items: items.length, changed, nInfo, exErr: R.exErr || null }; }
 
-/* ── 주문 들어온 책의 지금 시장 (shp_market) ──
-   주문확인요청에 새로 들어온 주문의 상품마다 온라인 중고 첫 페이지 1번만 읽어 '주문 시점 시장'으로 따로 남김 (주문번호__매물번호 문서 하나, 이미 있으면 다시 읽지 않음)
-   · 기존 시장 지표(prd_book_metrics)는 건드리지 않음 — 덮어쓰지 않고 새 문서만 만듦 (create: 이미 있으면 실패 → 그대로 둠)
-   · 한 번에 최대 MARKET_MAX권, 나머지는 다음 회차 · 실패한 책은 이번 회차만 건너뜀(다음 회차에 다시) */
-let lastConfirm = []; const MARKET_MAX = 15; const skipUntil = new Map();
-async function aladinItemIdOf(listingId) {
-  const L = await C('prd_listings').where('listingId', 'in', [String(listingId), Number(listingId)].filter((x) => x === x)).limit(1).get(); const l = L.empty ? null : L.docs[0].data();
-  if (!l || !l.bookId) return { why: '우리 상품 기록에 없음' }; const b = (await C('prd_books').doc(l.bookId).get()).data();
-  return b && b.aladinItemId ? { itemId: String(b.aladinItemId), bookId: l.bookId, key: L.docs[0].id } : { why: '도서 정보(알라딘 상품번호) 없음', bookId: l.bookId }; }
-async function marketSnap(p) {
-  const todo = []; for (const o of lastConfirm || []) for (const it of o.items || []) if (it.listingId) todo.push({ o, it, id: `${o.orderNo}__${it.listingId}` });
-  let n = 0, fail = 0;
-  for (const t of todo) { if (n >= MARKET_MAX) break; if ((skipUntil.get(t.id) || 0) > Date.now()) continue; const ref = C('shp_market').doc(t.id); if ((await ref.get()).exists) continue;
-    try { const ai = await aladinItemIdOf(t.it.listingId); n++;
-      if (!ai.itemId && t.it.title) { // 우리 기록에 없으면 제목으로 알라딘 검색 → 새상품(중고 아님) 중 이름이 90% 이상 같은 것 (PC 수집기 풀 수집과 같은 기준)
-        const c = await p.evaluate(async (q) => { const P = window.ReadnowProducts; const r = await fetch('/search/wsearchresult.aspx?SearchTarget=All&SearchWord=' + encodeURIComponent(q), { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html');
-          return P.parseSearchResults(d).filter((x) => !x.used).map((x) => ({ itemId: x.itemId, cov: P.nameCoverage(q, x.title) })).filter((x) => x.cov >= 0.9).sort((a, b) => b.cov - a.cov)[0] || null; }, String(t.it.title).replace(/^\[[^\]]*\]\s*/, ''));
-        if (c) { ai.itemId = String(c.itemId); ai.via = 'search'; } }
-      if (!ai.itemId) { skipUntil.set(t.id, Date.now() + 3600e3); log('주문 시장: 알라딘 상품번호를 못 찾음', t.id, ai.why); continue; }
-      const u = await p.evaluate(async (id) => { const r = await fetch(`/shop/UsedShop/wuseditemall.aspx?ItemId=${id}&TabType=0`, { credentials: 'include' }); if (!r.ok) throw new Error('HTTP ' + r.status); return window.ReadnowProducts.parseUsedPage(new DOMParser().parseFromString(await r.text(), 'text/html')); }, ai.itemId);
-      await ref.create({ orderNo: t.o.orderNo, listingId: String(t.it.listingId), listingKey: ai.key || null, bookId: ai.bookId, aladinItemId: ai.itemId, via: ai.via || 'ours', title: t.it.title || null, orderedAt: t.o.orderedAt || null, at: nowIso(),
-        page1: u.listings || [], usedTotal: u.usedTotal ?? null, mins: u.mins || null, buyback: u.buyback || null, lastPage: u.lastPage || 1, by: 'cloud', ...W() }).catch(() => {});
-      await sleep(700); } catch (e) { fail++; log('주문 시장 읽기 실패', t.id, e.message); } }
-  return { n, fail, left: Math.max(0, todo.length - n) }; }
-
-/* ── ③ 웹앱이 맡긴 일 (read · startDelivery) ── */
+/* ── ③ 웹앱이 맡긴 일 (read · startDelivery · market = 그 주문 책의 시장 다시 읽기) ── */
 async function runCmds(p) {
-  const qs = await C('shp_cmds').where('status', '==', 'queued').get(); let n = 0, needRead = false;
-  for (const d of qs.docs) { const x0 = d.data(); if (!['read', 'startDelivery'].includes(x0.type)) continue; let v = null;
+  const qs = await C('shp_cmds').where('status', '==', 'queued').get(); let n = 0, needRead = false; const force = new Set();
+  for (const d of qs.docs) { const x0 = d.data(); if (!['read', 'startDelivery', 'market'].includes(x0.type)) continue; let v = null;
     await db.runTransaction(async (tx) => { const sn = await tx.get(d.ref); const x = sn.data(); if (!x || x.status !== 'queued') return; tx.update(d.ref, { status: 'running', claim: { pc: 'cloud', at: nowIso() }, uploadedAt: FV.serverTimestamp() }); v = x; });
     if (!v) continue; n++;
     if (v.type === 'startDelivery') { const results = {};
       for (const ono of v.orderNos || []) { try { const rr = await p.evaluate(async (o) => { const r = await fetch('/scm/worder_process.aspx?cmd=StartDelivery&ono=' + encodeURIComponent(o), { credentials: 'include' }); const t = await r.text(); return { ok: r.ok, status: r.status, al: (t.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || null }; }, ono);
           results[ono] = { state: rr.ok ? 'sent' : 'fail', at: nowIso(), http: rr.status, msg: rr.al, by: 'cloud' }; } catch (e) { results[ono] = { state: 'fail', at: nowIso(), msg: e.message, by: 'cloud' }; } await sleep(800); }
-      try { const left = new Set(await p.evaluate(async () => { const r = await fetch('/scm/worder_preparatory_complete.aspx', { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html'); return window.ReadnowShipping.parseDeliveryPage(d).orders.map((o) => o.orderNo); }));
+      try { const left = new Set(await p.evaluate(async (u) => { const r = await fetch(u, { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html'); return window.ReadnowShipping.parseDeliveryPage(d).orders.map((o) => o.orderNo); }, CONFIRM_URL));
         for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = left.has(ono) ? 'fail' : 'done'; } catch (e) {}
-      await d.ref.set({ status: 'done', results, doneAt: nowIso(), uploadedAt: FV.serverTimestamp() }, { merge: true }); }
-    else await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true });
-    needRead = true; }
-  return { n, needRead };
+      await d.ref.set({ status: 'done', results, doneAt: nowIso(), uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
+    else if (v.type === 'market') { (v.listingIds || []).forEach((x) => force.add(String(x))); await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
+    else { await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; } }
+  return { n, needRead, force };
 }
 
 /* ── 신호 ── */
 async function beat(x) { const at = nowIso(); await C('app_settings').doc('cloud').set({ at, ver: VER, cores: coreVer, ...x, ...W() }, { merge: true }).catch((e) => log('신호 저장 실패', e.message));
   if (x.ok === false) await C('cloud_log').add({ at, ...x, ver: VER, ...W() }).catch(() => {}); }
 
+// 한 회차(1분마다): ① 주문확인요청 → 맡긴 일 → (필요할 때만) ② 발송 요청 → 상품 보강
 async function tick(why) {
   const t0 = Date.now();
-  try { const p = await getPage(); await login(p);
-    const cm = await runCmds(p);
-    let rd; try { rd = await shipRead(p); } catch (e) { if (e.relogin) { await login(p); rd = await shipRead(p); } else throw e; }
-    try { rd.market = await marketSnap(p); } catch (e) { rd.market = { err: e.message }; }
-    const out = { ok: true, err: null, why, tickMs: Date.now() - t0, lastShipAt: nowIso(), last: rd, cmds: cm.n, login: 'ok' }; await beat(out); log('tick', JSON.stringify(out)); return out;
+  try { const p = await getPage(); let cr;
+    try { cr = await confirmRead(p); } catch (e) { if (!e.relogin) throw e; await login(p); cr = await confirmRead(p); }
+    const cm = await runCmds(p); if (cm.needRead) cr = await confirmRead(p);
+    const delivDue = why !== 'schedule' || cm.needRead || cr.changed || !lastDelivAt || Date.now() - lastDelivAt > 4.5 * 60e3 || (cr.prevTab && cr.prevTab['발송 요청'] !== cr.tabCounts['발송 요청']);
+    let rd = null; if (delivDue) rd = await shipRead(p);
+    let en = null; try { en = await enrichConfirm(p, cr, cm.force); } catch (e) { en = { err: e.message }; }
+    const out = { ok: true, err: null, why, tickMs: Date.now() - t0, lastShipAt: nowIso(), lastConfirmAt, lastDelivAt: lastDelivAt ? new Date(lastDelivAt).toISOString() : null, last: { confirm: cr.n, deliv: rd ? rd.deliv : null, delivRead: !!rd, enrich: en }, cmds: cm.n, login: 'ok' };
+    await beat(out); log('tick', JSON.stringify(out)); return out;
   } catch (e) { const out = { ok: false, err: String(e.message || e).slice(0, 300), why, tickMs: Date.now() - t0, login: /로그인/.test(e.message) ? 'fail' : 'ok' }; await beat(out); log('tick 실패', e.message); return out; }
 }
 
@@ -231,7 +257,7 @@ const server = http.createServer(async (req, res) => {
   const path = (req.url || '/').split('?')[0];
   try {
     if (path === '/status' || path === '/') return send(200, { ok: true, ver: VER, cores: coreVer, login: loginFailAt ? 'fail' : 'unknown', hasCred: !!(ALADIN_ID && ALADIN_PW) });
-    if (path === '/tick') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); const out = await serial(() => tick('schedule')); return send(200, out); }
+    if (path === '/tick') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); tickBusy = true; try { const out = await serial(() => tick('schedule')); return send(200, out); } finally { tickBusy = false; } }
     if (path === '/kick') { await authUser(req); const out = await serial(() => tick('kick')); return send(200, out); }
     if (path === '/lookup') { await authUser(req); const b = await bodyOf(req); const out = await serial(() => lookup(b)); return send(200, out); }
     if (path === '/spines') { await authUser(req); const b = await bodyOf(req); if (!b.image) return send(400, { ok: false, err: '사진 없음' }); const out = await spines(String(b.image).replace(/^data:[^,]+,/, '')); return send(200, out); }

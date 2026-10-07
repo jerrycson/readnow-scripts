@@ -37,12 +37,12 @@ gcloud run deploy "$SERVICE" --source . --region "$REGION" --allow-unauthenticat
   --set-env-vars "FB_PROJECT=$PROJECT,ALLOW_EMAILS=$ALLOW_EMAILS,ALLOW_ORIGINS=https://jerrycson.github.io"
 URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')
 
-echo "④ 예약: 매일 24시간, 5분마다 /tick"
+echo "④ 예약: 매일 24시간, 1분마다 /tick (주문확인요청은 매번, 발송 요청은 5분마다)"
 KEY=$(gcloud secrets versions access latest --secret=TICK_KEY)
 if gcloud scheduler jobs describe readnow-tick --location "$REGION" >/dev/null 2>&1; then
-  gcloud scheduler jobs update http readnow-tick --location "$REGION" --schedule "*/5 * * * *" --time-zone "Asia/Seoul" --uri "$URL/tick" --http-method POST --update-headers "x-tick-key=$KEY" --attempt-deadline 300s >/dev/null
+  gcloud scheduler jobs update http readnow-tick --location "$REGION" --schedule "* * * * *" --time-zone "Asia/Seoul" --uri "$URL/tick" --http-method POST --update-headers "x-tick-key=$KEY" --attempt-deadline 180s >/dev/null
 else
-  gcloud scheduler jobs create http readnow-tick --location "$REGION" --schedule "*/5 * * * *" --time-zone "Asia/Seoul" --uri "$URL/tick" --http-method POST --headers "x-tick-key=$KEY" --attempt-deadline 300s >/dev/null
+  gcloud scheduler jobs create http readnow-tick --location "$REGION" --schedule "* * * * *" --time-zone "Asia/Seoul" --uri "$URL/tick" --http-method POST --headers "x-tick-key=$KEY" --attempt-deadline 180s >/dev/null
 fi
 
 echo "⑤ 예산 알림: 이 프로젝트 비용이 한 달 ${BUDGET:-10000}원의 50%·90%·100%를 넘으면 결제 계정 관리자 메일로 알림 (처음 한 번)"
