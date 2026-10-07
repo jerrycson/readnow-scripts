@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.10.0';
+  const VERSION = '0.11.0';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -49,7 +49,7 @@
     tempSunsetDays: 365,    // 감시 시작 후 이 날수가 지나면 임시 기준은 완전히 꺼짐
     // 적용 단계: A = 적용 1% · 3일 → B = 적용 25% / 비교 25% · 1주 → (확인 후) C = 적용 묶음 안에서 강도 나누기. 비교 묶음은 계속 유지
     // 자동 감시에서 항상 빼는 관리코드 (관리자 확인 필수). KHKDVD = 음반·영상 — 마진 구조가 달라 따로 정할 때까지 무조건 사람 확인
-    excludeSku: ['KHKDVD'],
+    excludeSku: ['KHKDVD'], excludeUsed: [],
     rollout: { treatPct: 1, controlPct: 0 }, // 실제 적용 비율: 상품코드로 고정 배정(0~99) → 비율을 올려도 이미 들어간 상품은 그대로
 
     lowestMaxGapHours: 48, // 두 관측 사이가 이보다 길면 그 사이는 최저가 기간에 넣지 않음 (정확히 아는 것만 셈)
@@ -358,7 +358,9 @@
   function groupOf(code, S0) { const S = merge(DEFAULTS, S0 || {}); const b = bucketOf(code); const tp = S.rollout.treatPct, cp = S.rollout.controlPct;
     return b < tp ? 'treat' : b >= 100 - cp ? 'control' : 'off'; }
   // 상품 단위 묶음: 제외 관리코드(KHKDVD 등)와 보관함(PND·BAD)을 먼저 보고, 그다음 상품코드 칸으로 적용·비교·꺼짐
-  function isExcluded(listing, S0) { const S = merge(DEFAULTS, S0 || {}); const sku = String((listing && listing.sku) || '').toUpperCase(); return (S.excludeSku || []).some((x) => x && sku === String(x).toUpperCase()); }
+  // (0.11.0) 자동 제외: 관리코드 앞부분 일치(묶음 — 예 KHKDVD, BLK) 또는 상품코드(한 권씩, excludeUsed). 웹앱 '자동 제외 관리'에서 켜고 끄고 더하고 뺌
+  function isExcluded(listing, S0) { const S = merge(DEFAULTS, S0 || {}); const sku = String((listing && listing.sku) || '').toUpperCase(); const uc = String((listing && (listing.usedCode || '')) || '');
+    return (S.excludeSku || []).some((x) => x && sku.startsWith(String(x).toUpperCase())) || (!!uc && (S.excludeUsed || []).some((x) => String(x) === uc)); }
   function groupOfListing(listing, S0) {
     if (!listing) return 'off'; const tag = skuTag(listing.sku); if (tag) return tag; if (isExcluded(listing, S0)) return 'excluded';
     if (listing.status && listing.status !== '판매중') return 'off'; return groupOf(listing.usedCode || listing.key, S0);
