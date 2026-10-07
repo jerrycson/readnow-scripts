@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.9.1';
+  const VERSION = '0.10.0';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -81,7 +81,10 @@
     rareMaxValid: 1, rareMaxAll: 2,
     // 추격자
     useYes24Proxy: false,  // 예스24 대조로 무효·보류(주황 등) 매물을 경쟁 매물로 올리는 기능 — 관리자 판정 기간에는 끔 (주황이 기준이 되는 일이 없게, 정범 지정 2026-10-04)
-    chase: { windowHours: 24, lookbackDays: 7, minEvents: 3, halfLifeDays: 14, releaseDays: 30, sellerMinBooks: 3 },
+    chase: { windowHours: 24, lookbackDays: 7, minEvents: 3, halfLifeDays: 14, releaseDays: 30, sellerMinBooks: 3,
+      // (0.10.0) 추격자 양보(방임): 기준 판매자가 추격자면 따라 내리지 않고 그 매물이 팔릴 때까지 기다림 — 다음 유효 매물을 기준으로, 없으면 지금 가격 유지.
+      //   우리 재고 기간이 maxTier(기본 T3 = 등록 1년 안)까지만 — 더 오래된 재고는 기다릴 이유가 줄어 원래대로 경쟁. 추격 기록이 releaseDays(30일) 없으면 추격자 표시가 풀려 저절로 끝남
+      yield: { on: true, maxTier: 'T3' } },
   };
 
   const LABEL = { // 한글 사전 (필드명은 영어로 저장)
@@ -287,6 +290,13 @@
     }
     const worse = pool.filter((r) => myR >= 0 && gr(r.grade) >= 0 && gr(r.grade) < myR).sort((a, b) => tot(a) - tot(b))[0];
     if (worse) out.worseCheapest = { grade: worse.grade, price: worse.price, ship: worse.ship || 0, sellerName: worse.sellerName || null };
+    // (0.10.0) 추격자 양보: 기준이 추격자면 그 판매자 매물을 빼고 다음 기준으로 (그 매물이 첫 페이지에서 사라지면 = 팔리면 다음 판정에서 저절로 원래대로)
+    { const Y = (S.chase && S.chase.yield) || {}; const ch0 = ref && ref.sellerCode && ctx.chase && (ctx.chase[ref.sellerCode] || {}).active;
+      if (ch0 && Y.on !== false && +tier.slice(1) <= +String(Y.maxTier || 'T3').slice(1)) { const ys = ref.sellerName || ref.sellerCode; out.yield = { sellerCode: ref.sellerCode, sellerName: ref.sellerName || null, price: ref.price, grade: ref.grade || null };
+        const rest = cand.filter((r) => String(r.sellerCode || '') !== String(ref.sellerCode));
+        if (rest.length) { const b2 = rest.reduce((a, b) => (effTotal(b) < effTotal(a) ? b : a)); ref = b2.grade === listing.grade || myR < 0 ? { ...b2, conv: null } : { ...b2, conv: effTotal(b2) }; how = `추격자(${ys}) 양보 — 그 매물이 팔릴 때까지 다음 유효 매물 기준`;
+          R.push(`기준 판매자 ${ys}가 우리를 따라 내리는 추격자 → 따라 내리지 않고 그 매물이 팔릴 때까지 양보, 다음 유효 매물을 기준으로 (재고 기간 ${String(Y.maxTier || 'T3')}까지만 · 추격 기록이 ${S.chase.releaseDays}일 없으면 저절로 풀림)`); }
+        else { R.push(`기준 판매자 ${ys}가 추격자 — 다른 기준 매물이 없어 지금 가격 유지(양보), 그 매물이 팔리면 다시 판정`); return done('hold', { action: 'none', why: 'yieldChaser' }); } } }
     if (!ref) { R.push(`${special ? `${maxPage}쪽까지` : '첫 페이지에'} 기준이 될 매물(${T.colors.map((c) => LABEL[c]).join('·')}·알라딘측)이 없음`); return done('queue', { action: 'review', why: 'noRef' }); }
     const refTotal = ref.conv != null ? ref.conv : tot(ref);
     if (S.useYes24Proxy && !ctx.yes24 && sane.some((r) => r.rank < ref.rank && ['red', 'orange', 'yellow'].includes(r.color))) { out.needYes24 = true; R.push('기준보다 앞에 무효·보류 매물이 있음 — 예스24 대조 자료가 없어 일단 제외하고 판정 (다음 감시 때 예스24를 같이 봄)'); }
