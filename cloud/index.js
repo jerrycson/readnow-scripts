@@ -22,7 +22,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.5.0';
+const VER = '0.5.2';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -48,11 +48,12 @@ async function cores() {
 }
 
 /* ── 브라우저 (하나를 계속 씀, 일은 한 번에 하나씩) ── */
-let browser = null, page = null; let chain = Promise.resolve(); let tickBusy = false; // 1분 예약이 겹치면(앞 회차가 길면) 건너뜀 — 쌓이지 않게
+let browser = null, page = null, pageAt = 0; let chain = Promise.resolve(); let tickBusy = false; // 1분 예약이 겹치면(앞 회차가 길면) 건너뜀 — 쌓이지 않게
 const serial = (fn) => { const p = chain.then(fn, fn); chain = p.catch(() => {}); return p; };
 async function getPage() {
   if (!browser || !browser.connected) { browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || '/usr/bin/chromium', headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--lang=ko-KR'] }); page = null; }
-  if (!page || page.isClosed()) { page = await browser.newPage(); await page.setBypassCSP(true); /* 기준 파일을 넣으려고 (수집기도 Tampermonkey로 같은 일) */ await page.setUserAgent(UA); await page.setExtraHTTPHeaders({ 'Accept-Language': 'ko-KR,ko;q=0.9' }); page.setDefaultTimeout(60000); }
+  if (page && !page.isClosed() && Date.now() - pageAt > 6 * 3600e3) { try { await page.close(); } catch (e) {} page = null; log('화면 새로 만듦 (6시간마다 — 메모리 정리, 로그인은 유지)'); } // 오래 켜 둔 화면은 메모리가 쌓임
+  if (!page || page.isClosed()) { pageAt = Date.now(); page = await browser.newPage(); await page.setBypassCSP(true); /* 기준 파일을 넣으려고 (수집기도 Tampermonkey로 같은 일) */ await page.setUserAgent(UA); await page.setExtraHTTPHeaders({ 'Accept-Language': 'ko-KR,ko;q=0.9' }); page.setDefaultTimeout(60000); }
   if (!/aladin\.co\.kr/.test(page.url())) { await page.goto(AL + '/', { waitUntil: 'domcontentloaded' }); injectedSrc = null; } // 새 화면 = 기준 파일 다시 넣기
   await ensureCores(page); return page;
 }
@@ -129,12 +130,13 @@ async function enrichConfirm(p, cr, force, until) {
   for (const t of todo) { if (Date.now() > stopAt) break;
     try { const prevE = cr.enrich[t.lid];
       if (prevE && (prevE.mkt || prevE.mktErr) && !prevE.uiAt && !(force && force.has(t.lid))) { // (0.5.0) 시장은 이미 읽음 — 우리 매물 유의 사항·사진만 채움 (시장을 다시 읽지 않음)
-        const ui0 = (await C('prd_used_info').doc(String(t.lid)).get()).data(); let ui = ui0;
-        if (!ui0 || !ui0.checkedAt || Date.now() - Date.parse(ui0.checkedAt) > 864e5) ui = await refreshUsedInfo(p, t.lid, ui0);
+        let ui0 = (await C('prd_used_info').doc(String(t.lid)).get()).data(); if (looksBlanked(ui0)) ui0 = await repairUsedInfo(t.lid, ui0); let ui = ui0;
+        if (!ui0 || !ui0.checkedAt || Date.now() - Date.parse(ui0.checkedAt) > 864e5) ui = (await refreshUsedInfo(p, t.lid, ui0)) || ui0;
         const E2 = { ...prevE, note: (ui && ui.note) || prevE.note || null, photos: ui && ui.photos ? ui.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src) : prevE.photos || [], uiAt: nowIso() };
         await ref.update(new FieldPath('enrich', t.lid), E2); cr.enrich[t.lid] = E2; n++; await sleep(300); continue; }
       const our = await ourOf(t.lid); let itemId = our.itemId, via = 'ours';
-      if (!our.ui || !our.ui.checkedAt || Date.now() - Date.parse(our.ui.checkedAt) > 864e5) { try { const ui = await refreshUsedInfo(p, t.lid, our.ui); our.note = ui.note || our.note; our.photos = (ui.photos || []).filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src); } catch (e) { log('유의 사항 읽기 실패', t.lid, e.message); } } // 주문확인요청 상품도 우리 매물 유의 사항·사진을 바로 읽음 (예전엔 발송 요청 때만)
+      if (looksBlanked(our.ui)) { const r = await repairUsedInfo(t.lid, our.ui); if (r && r.note) our.note = r.note; if (r && r.photos) our.photos = r.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src); our.ui = r; }
+      if (!our.ui || !our.ui.checkedAt || Date.now() - Date.parse(our.ui.checkedAt) > 864e5) { try { const ui = await refreshUsedInfo(p, t.lid, our.ui); if (ui) { our.note = ui.note || our.note; if ((ui.photos || []).length) our.photos = ui.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src); } } catch (e) { log('유의 사항 읽기 실패', t.lid, e.message); } } // 주문확인요청 상품도 우리 매물 유의 사항·사진을 바로 읽음 (예전엔 발송 요청 때만)
       if (!itemId && t.it.title) { const q = String(t.it.title).replace(/^\[[^\]]*\]\s*/, '');
         const c = await p.evaluate(async (q) => { const P = window.ReadnowProducts; const r = await fetch('/search/wsearchresult.aspx?SearchTarget=All&SearchWord=' + encodeURIComponent(q), { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html');
           return P.parseSearchResults(d).filter((x) => !x.used).map((x) => ({ itemId: x.itemId, cov: P.nameCoverage(q, x.title), img: x.img || null })).filter((x) => x.cov >= 0.9).sort((a, b) => b.cov - a.cov)[0] || null; }, q);
@@ -151,12 +153,28 @@ async function enrichConfirm(p, cr, force, until) {
 
 /* 우리 매물의 구매 유의 사항·사진 (알라딘 상품 화면) — 24시간에 한 번, 바뀐 판만 쌓음 (prd_used_info + v/ 판). 주문확인요청·발송 요청 둘 다 씀 */
 async function refreshUsedInfo(p, lid, prev, at) {
-  const info = await p.evaluate(async (lid) => { const r0 = await fetch('/shop/wproduct.aspx?ItemId=' + lid, { credentials: 'include' }); const d = new DOMParser().parseFromString(await r0.text(), 'text/html'); return window.ReadnowProducts.parseUsedItemInfo(d, null); }, String(lid));
-  const ref = C('prd_used_info').doc(String(lid)); const sig2 = JSON.stringify([info.note, info.photos.map((x) => x.file)]); at = at || nowIso();
+  const info = await p.evaluate(async (lid) => { const r0 = await fetch('/shop/wproduct.aspx?ItemId=' + lid, { credentials: 'include' }); const html = await r0.text(); const d = new DOMParser().parseFromString(html, 'text/html'); const x = window.ReadnowProducts.parseUsedItemInfo(d, null); x._title = (d.title || '').slice(0, 80); x._len = html.length; x._url = r0.url; return x; }, String(lid));
+  const ref = C('prd_used_info').doc(String(lid)); at = at || nowIso();
+  // (0.5.1) 화면에서 유의 사항 칸·사진을 하나도 못 찾으면(다른 화면이 왔거나 읽기 실패) 아무것도 바꾸지 않음 — 예전엔 '빈 판'을 새로 쌓아 있던 유의 사항이 화면에서 사라졌음
+  if (!info.found) { log('유의 사항 칸을 못 찾음 — 기록 그대로 둠', lid, info._title, info._len, info._url); await ref.set({ lastMissAt: at, lastMissTitle: info._title || null }, { merge: true }).catch(() => {}); return prev || null; }
+  delete info._title; delete info._len; delete info._url;
+  if (prev && (prev.note || (prev.photos || []).length) && !info.note && !(info.photos || []).length) { await ref.set({ lastMissAt: at, lastMissWhy: '빈 내용 — 그대로 둠' }, { merge: true }).catch(() => {}); return prev; } // 있던 내용을 빈 것으로 바꾸지 않음
+  const sig2 = JSON.stringify([info.note, info.photos.map((x) => x.file)]);
   if (prev && prev.sig === sig2) { await ref.set({ checkedAt: at }, { merge: true }); return { ...prev, checkedAt: at }; }
   const nv = ((prev && prev.versions) || 0) + 1; const b2 = db.batch(); const ver = { note: info.note || null, hasNote: info.hasNote, photos: info.photos.map((x) => ({ src: x.src, where: x.where, file: x.file })), sellerPhotoCount: info.sellerPhotoCount, photoDiff: info.photoDiff, found: info.found, sig: sig2, at };
   b2.set(ref.collection('v').doc(String(nv).padStart(4, '0')), { ...ver, listingId: String(lid), ...W() }); b2.set(ref, { listingId: String(lid), sellerCode: '996008', ours: true, ...ver, versions: nv, firstAt: (prev && prev.firstAt) || at, checkedAt: at, ...W() }, { merge: true }); await b2.commit();
   return { ...(prev || {}), ...ver, versions: nv, checkedAt: at }; }
+
+// 빈 판으로 덮인 유의 사항 되살리기: 마지막 '제대로 읽은 판'(v/ 기록, 지우지 않고 쌓여 있음)의 내용을 다시 지금 값으로 — 판 기록은 그대로 두고 덧붙임
+const looksBlanked = (x) => !!x && (x.found === false || (!x.note && !(x.photos || []).length && x.writer === 'cloud')) && x.versions > 1;
+async function repairUsedInfo(lid, cur) { if (!looksBlanked(cur)) return cur;
+  const vs = await C('prd_used_info').doc(String(lid)).collection('v').get(); const L = vs.docs.map((d) => ({ id: d.id, ...d.data() })).filter((x) => x.found !== false && (x.note || (x.photos || []).length)).sort((a, b) => (a.id < b.id ? 1 : -1));
+  const g = L[0]; if (!g) return cur; const fix = { note: g.note || null, hasNote: !!(g.hasNote || g.note), photos: g.photos || [], sellerPhotoCount: g.sellerPhotoCount || 0, photoDiff: !!g.photoDiff, found: true, sig: g.sig || null, repairedAt: nowIso(), repairedFrom: g.id };
+  await C('prd_used_info').doc(String(lid)).set(fix, { merge: true }); log('유의 사항 되살림', lid, '판', g.id); return { ...cur, ...fix }; }
+let lastRepairAt = 0;
+async function repairSweep() { if (Date.now() - lastRepairAt < 6 * 3600e3) return 0; lastRepairAt = Date.now(); let n = 0;
+  try { for (const q of [C('prd_used_info').where('found', '==', false).limit(300), C('prd_used_info').where('writer', '==', 'cloud').limit(500)]) { const qs = await q.get(); for (const d of qs.docs) { const x = d.data(); if (looksBlanked(x)) { const y = await repairUsedInfo(d.id, x); if (y !== x) n++; } } } } catch (e) { log('유의 사항 되살리기 실패', e.message); }
+  return n; }
 
 /* ── ② 발송 요청 읽기 (5분마다 · 주문확인요청에서 주문이 빠졌을 때 · 맡긴 일이 있을 때) — PC 수집기 shipReadJob과 같은 저장 형식 ── */
 const sameMap = (a, b) => { a = a || {}; b = b || {}; const ka = Object.keys(a), kb = Object.keys(b); return ka.length === kb.length && ka.every((k) => a[k] === b[k]); }; // 키 순서가 달라도 같으면 같음 (예전 비교는 순서가 다르면 늘 '바뀜' → 매번 다시 씀)
@@ -182,8 +200,8 @@ async function shipRead(p, until) {
   let nInfo = 0; const items = r.orders.flatMap((o) => o.items).filter((i) => i.listingId);
   const prevs = items.length ? await db.getAll(...items.map((it) => C('prd_used_info').doc(String(it.listingId)))) : []; // 한 번에 읽음 (예전: 한 권씩)
   for (let ii = 0; ii < items.length; ii++) { const it = items[ii]; if (until && Date.now() > until) break; // 시간 상자: 한 회차가 1분을 넘지 않게 — 남은 것은 다음 회차
-    const ref = C('prd_used_info').doc(String(it.listingId)); const prev = prevs[ii] && prevs[ii].exists ? prevs[ii].data() : undefined; if (prev && prev.checkedAt && Date.now() - Date.parse(prev.checkedAt) < 864e5) continue;
-    try { const nx = await refreshUsedInfo(p, it.listingId, prev, at); if (!prev || nx.versions !== prev.versions) nInfo++; void ref;
+    const ref = C('prd_used_info').doc(String(it.listingId)); let prev = prevs[ii] && prevs[ii].exists ? prevs[ii].data() : undefined; if (looksBlanked(prev)) prev = await repairUsedInfo(it.listingId, prev); if (prev && prev.checkedAt && Date.now() - Date.parse(prev.checkedAt) < 864e5) continue;
+    try { const nx = await refreshUsedInfo(p, it.listingId, prev, at); if (nx && (!prev || nx.versions !== prev.versions)) nInfo++; void ref;
       await sleep(600); } catch (e) { log('유의 사항 읽기 실패', it.listingId, e.message); } }
   lastDelivAt = Date.now();
   return { deliv: r.orders.length, items: items.length, changed, nInfo, exErr: R.exErr || null }; }
@@ -197,9 +215,10 @@ async function runCmds(p) {
     if (!v) continue; n++;
     if (v.type === 'startDelivery') { const results = {};
       for (const ono of v.orderNos || []) { try { const rr = await p.evaluate(async (o) => { const r = await fetch('/scm/worder_process.aspx?cmd=StartDelivery&ono=' + encodeURIComponent(o), { credentials: 'include' }); const t = await r.text(); return { ok: r.ok, status: r.status, al: (t.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || null }; }, ono);
-          results[ono] = { state: rr.ok ? 'sent' : 'fail', at: nowIso(), http: rr.status, msg: rr.al, by: 'cloud' }; } catch (e) { results[ono] = { state: 'fail', at: nowIso(), msg: e.message, by: 'cloud' }; } await sleep(800); }
-      try { const left = new Set(await p.evaluate(async (u) => { const r = await fetch(u, { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html'); return window.ReadnowShipping.parseDeliveryPage(d).orders.map((o) => o.orderNo); }, CONFIRM_URL));
-        for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = left.has(ono) ? 'fail' : 'done'; } catch (e) {}
+          results[ono] = { state: rr.ok && !/실패|오류|불가|잘못|없습니다|않습니다|error/i.test(rr.al || '') ? 'sent' : 'fail', at: nowIso(), http: rr.status, msg: rr.al, by: 'cloud' }; } catch (e) { results[ono] = { state: 'fail', at: nowIso(), msg: e.message, by: 'cloud' }; } await sleep(800); }
+      // 확인: 주문확인요청 화면을 다시 읽어 빠졌는지 — 화면을 제대로 읽었을 때만 '끝남'(로그인 화면·읽기 실패로 빈 목록이면 '확인 못함')
+      try { const chk = await p.evaluate(async (u) => { const r = await fetch(u, { credentials: 'include' }); if (/\/login\/|wlogin/i.test(r.url)) return { ok: false }; const d = new DOMParser().parseFromString(await r.text(), 'text/html'); const x = window.ReadnowShipping.parseDeliveryPage(d); return { ok: !!(x && x.tabCounts && Object.keys(x.tabCounts).length), left: (x.orders || []).map((o) => o.orderNo) }; }, CONFIRM_URL);
+        for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = !chk.ok ? 'unknown' : chk.left.includes(ono) ? 'fail' : 'done'; } catch (e) { for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = 'unknown'; }
       await d.ref.set({ status: 'done', results, doneAt: nowIso(), uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
     else if (v.type === 'market') { (v.listingIds || []).forEach((x) => force.add(String(x))); await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'aladinBuy') { buy = true; await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
@@ -263,6 +282,7 @@ async function tick(why) {
     const until = t0 + 52000; // 한 회차는 1분 안에 끝냄 (다음 예약을 건너뛰지 않게) — 못 한 것은 다음 회차에 이어 함
     let rd = null; if (delivDue) rd = await shipRead(p, until);
     let en = null; try { en = await enrichConfirm(p, cr, cm.force, until - 8000); } catch (e) { en = { err: e.message }; }
+    try { const nr = await repairSweep(); if (nr) log('유의 사항 되살림', nr, '건'); } catch (e) {} // 6시간에 한 번: 빈 판으로 덮였던 유의 사항을 지난 판에서 되살림
     let by = null; if (cm.buy || !lastBuyAt || Date.now() - lastBuyAt > 5 * 60e3 || (lastBuyRes && lastBuyRes.left)) { try { by = await buyRead(p, until); } catch (e) { if (e.relogin) { try { await login(p); by = await buyRead(p, until); } catch (e2) { by = { err: e2.message }; } } else by = { err: e.message }; } }
     const out = { ok: true, err: null, why, tickMs: Date.now() - t0, lastShipAt: nowIso(), lastConfirmAt, lastDelivAt: lastDelivAt ? new Date(lastDelivAt).toISOString() : null, lastBuyAt: lastBuyAt ? new Date(lastBuyAt).toISOString() : null, last: { confirm: cr.n, deliv: rd ? rd.deliv : null, delivRead: !!rd, enrich: en, buy: by }, cmds: cm.n, login: 'ok' };
     await beat(out); log('tick', JSON.stringify(out)); return out;
