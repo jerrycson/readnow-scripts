@@ -447,7 +447,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.79.0';
+const APP_VER = '0.80.0';
 const pm = (k) => { try { if (window.__pm[k] == null) window.__pm[k] = Math.round(performance.now()); } catch (e) {} }; pm('js'); // 속도 기록: 웹앱이 열리는 단계마다 걸린 시각(ms)
 const IS_PHONE = (() => { try { return matchMedia('(max-width: 760px)').matches || /Android|iPhone|iPad/i.test(navigator.userAgent); } catch (e) { return false; } })();
 const GO = (() => { try { return new URLSearchParams(location.search).get('go'); } catch (e) { return null; } })(); // 핸드폰: 무거운 상품·시장 자료는 홈에서 미리 받지 않음 · ?go=confirm = 홈 화면 바로가기(주문확인요청)
@@ -468,11 +468,11 @@ const tsText = (t) => { if (!t) return ''; const d = t.toDate ? t.toDate() : new
 function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 2200); }
 
 /* ── 고객 목록은 기기에 보관하고 바뀐 것만 받아옴 (읽기 한도 절약) ── */
-const IDB = { db: null };
+const IDB = { db: null }; IDB.readyP = new Promise((r) => (IDB._ready = r)); // 기기 저장소가 열릴 때까지 모든 읽기·쓰기가 기다림 (0.80.0: 전에는 열리기 전에 부른 상품 받기가 '처음 받기'로 착각해 1만여 건을 서버에서 통째로 다시 받았음)
 function idbOpen() {
   // 다른 탭(예전 버전)이 열려 있으면 저장소 업그레이드가 막혀 첫 화면에서 멈춤 → 4초 기다리다 저장소 없이 시작, 막힘은 안내
   return new Promise((res) => {
-    let done = false; const finish = (db, why) => { if (done) return; done = true; IDB.db = db || null; if (!db) { IDB.off = why || '기기 저장소를 쓸 수 없음'; } res(); };
+    let done = false; const finish = (db, why) => { if (done) return; done = true; IDB.db = db || null; if (!db) { IDB.off = why || '기기 저장소를 쓸 수 없음'; } IDB._ready(); res(); };
     let r; try { r = indexedDB.open('readnow-app', 6); } catch (e) { return finish(null, '이 브라우저는 기기 저장소를 쓸 수 없음'); }
     r.onupgradeneeded = () => { const d = r.result; [['customers', 'customerId'], ['meta', 'k'], ['orders', 'id'], ['sellers', 'id'], ['plist', 'id'], ['psales', 'id'], ['pbooks', 'id'], ['reviews', 'id'], ['pmetrics', 'id']].forEach(([n, k]) => { if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: k }); }); };
     r.onsuccess = () => { const d = r.result; d.onversionchange = () => { d.close(); toast && toast('웹앱이 새 버전으로 바뀌었습니다. 새로고침해 주세요'); }; finish(d); };
@@ -482,15 +482,15 @@ function idbOpen() {
   });
 }
 const idbReq = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
-const idbAll = (s) => (IDB.db ? idbReq(IDB.db.transaction(s).objectStore(s).getAll()).catch(() => []) : Promise.resolve([]));
+const idbAll = async (s) => { await IDB.readyP; return IDB.db ? idbReq(IDB.db.transaction(s).objectStore(s).getAll()).catch(() => []) : []; };
 // 큰 저장소(고객·주문·상품·도서·시장 지표)는 2천 건씩 나눠 읽고 사이사이 화면에 양보 → 읽는 동안에도 화면이 멈추지 않음
-async function idbEach(s, fn, n) { if (!IDB.db) return 0; n = n || 2000; let lo = null, got = 0;
+async function idbEach(s, fn, n) { await IDB.readyP; if (!IDB.db) return 0; n = n || 2000; let lo = null, got = 0;
   for (;;) { let vals = [], keys = []; try { const st = IDB.db.transaction(s).objectStore(s); const rng = lo == null ? null : IDBKeyRange.lowerBound(lo, true); [vals, keys] = await Promise.all([idbReq(st.getAll(rng, n)), idbReq(st.getAllKeys(rng, n))]); } catch (e) { break; }
     for (const v of vals) fn(v); got += vals.length; if (vals.length < n) break; lo = keys[keys.length - 1]; await new Promise((r) => setTimeout(r, 0)); }
   return got; }
-const idbCount = (s) => (IDB.db ? idbReq(IDB.db.transaction(s).objectStore(s).count()).catch(() => 0) : Promise.resolve(0));
-const idbGet = (s, k) => (IDB.db ? idbReq(IDB.db.transaction(s).objectStore(s).get(k)).catch(() => undefined) : Promise.resolve(undefined));
-const idbPut = (s, arr) => !IDB.db ? Promise.resolve() : new Promise((res, rej) => { const t = IDB.db.transaction(s, 'readwrite'); const st = t.objectStore(s); arr.forEach((o) => st.put(o)); t.oncomplete = res; t.onerror = () => rej(t.error); });
+const idbCount = async (s) => { await IDB.readyP; return IDB.db ? idbReq(IDB.db.transaction(s).objectStore(s).count()).catch(() => 0) : 0; };
+const idbGet = async (s, k) => { await IDB.readyP; return IDB.db ? idbReq(IDB.db.transaction(s).objectStore(s).get(k)).catch(() => undefined) : undefined; };
+const idbPut = async (s, arr) => { await IDB.readyP; return !IDB.db ? undefined : new Promise((res, rej) => { const t = IDB.db.transaction(s, 'readwrite'); const st = t.objectStore(s); arr.forEach((o) => st.put(o)); t.oncomplete = res; t.onerror = () => rej(t.error); }); };
 
 const MEMO = new Map(); const memo = (k, fn, ttl) => { const x = MEMO.get(k); if (x && x.v === S.ver && (!ttl || Date.now() - x.t < ttl)) return x.r; const r = fn(); MEMO.set(k, { v: S.ver, t: Date.now(), r }); return r; };
 const bump = () => { S.ver = (S.ver || 0) + 1; };
@@ -578,7 +578,7 @@ async function syncOrders(first) {
   await idbPut('meta', [{ k: 'osync', last: max, at: Date.now() }]); S.ordersLoaded = true; S.ordersBusy = false;
   db.collection('crm_orders').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(max || 0)).onSnapshot((ss) => {
     const ch = []; ss.docChanges().forEach((c) => { if (c.type !== 'removed') { const v = putOrder(c.doc.id, c.doc.data()); const o = deTs({ ...v }); delete o.uploadedAt; ch.push(o); } });
-    if (ch.length) { idbPut('orders', ch); if (S.tab === 'orders') renderMain(); }
+    if (ch.length) { idbPut('orders', ch); S._bizAt = 0; if (S.tab === 'orders' || S.tab === 'home') renderMain(); homeSumSoon(); }
   }, () => {});
   if (S.tab === 'orders') renderMain();
 }
@@ -636,7 +636,7 @@ async function dlRun() {
     }
     if (ok()) { prog.done.push(nm); localStorage.setItem('rn-dl', JSON.stringify(prog)); delete D.fails[nm]; } else D.fails[nm] = D.fails[nm] || '3번 시도해도 끝나지 않음';
   }
-  D.running = false; const nf = Object.keys(D.fails).length; D.err = nf ? `${nf}단계 못 받음 (${Object.entries(D.fails).map(([k, v]) => `${k}: ${v}`).join(' · ')})` : null; if (!nf) D.doneDay = day;
+  D.running = false; const nf = Object.keys(D.fails).length; if (!nf && S.ordersLoaded) { S._allLoaded = true; S._bizAt = 0; homeSumSoon(); } D.err = nf ? `${nf}단계 못 받음 (${Object.entries(D.fails).map(([k, v]) => `${k}: ${v}`).join(' · ')})` : null; if (!nf) D.doneDay = day;
   D.at = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }); D.sub = ''; dlPaint(); dlStore(); if (['home', 'products', 'biz', 'purchase', 'orders'].includes(S.tab)) renderMain();
 }
 function setSync(msg) {
@@ -1139,11 +1139,7 @@ function linkCheck() {
     <details class="sec"><summary>판매 전 취소만 한 고객 ${cancelOnly.length}명</summary><p class="hint">알라딘은 취소된 주문의 구매자 연락처·주소를 상세 정보에서 지웁니다. 그래서 이름, 이메일 앞부분, 취소한 책과 시각만 남는 것이 정상입니다. 같은 사람이 나중에 구매하면 알라딘 고객번호로 자동으로 한 고객에 합쳐집니다.</p><div class="list">${cancelOnly.slice(0, S.limit).map((c) => row(c, `취소 ${c.cancelOrderCount}건 · ${esc((c.emailsMasked || [])[0] || '')}`)).join('')}</div></details>`;
 }
 let _rmT = null;
-// 홈 화면 저장본: 홈을 다 그리면 30초에 한 번 이 기기에 저장 → 다음에 열 때 기기 기록을 읽는 동안 바로 보여 줌 (그 사이 숫자는 지난번 것 · 맨 위 '↻ 최신으로 바꾸는 중')
-function homeSnapSave() { try { if (S.tab !== 'home' || !S.ordersLoaded || Date.now() - (S._hsAt || 0) < 30000) return; const m = $('#main'); if (!m || m.innerHTML.length > 900000) return; S._hsAt = Date.now(); localStorage.setItem('rn-home-snap', JSON.stringify({ at: Date.now(), u: S.user && S.user.email, v: APP_VER, h: m.innerHTML })); } catch (e) {} }
-function homeSnapShow() { try { if (S.tab !== 'home' || S.ordersLoaded) return; const x = JSON.parse(localStorage.getItem('rn-home-snap') || 'null'); if (!x || x.u !== (S.user && S.user.email) || Date.now() - x.at > 3 * 864e5) return; const m = $('#main'); if (!m) return;
-  S._snapOn = true; m.innerHTML = `<div class="hint" style="margin:0 0 6px"><span class="ldg">✳</span>지난번 화면(${esc(new Date(x.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }))}) — 최신으로 바꾸는 중</div>` + x.h; } catch (e) {} }
-function renderMain() { if (_rmT) return; _rmT = setTimeout(() => { _rmT = null; if (S._snapOn && S.tab === 'home' && !S.ordersLoaded) return; /* 저장본을 보여 주는 동안은 빈 홈으로 덮지 않음 */ S._snapOn = false; try { renderMainNow(); afterRender(); homeSnapSave(); } catch (e) { console.error(e); const m = $('#main'); if (m) m.innerHTML = `<div class="card" style="border-color:var(--red)"><h3 style="color:var(--red)">화면을 그리다 오류가 났습니다</h3><div class="hint">${esc(e.message)}</div><button class="btn" onclick="location.reload()">새로고침</button></div>`; } }, 16); }
+function renderMain() { if (_rmT) return; _rmT = setTimeout(() => { _rmT = null; try { renderMainNow(); afterRender(); } catch (e) { console.error(e); const m = $('#main'); if (m) m.innerHTML = `<div class="card" style="border-color:var(--red)"><h3 style="color:var(--red)">화면을 그리다 오류가 났습니다</h3><div class="hint">${esc(e.message)}</div><button class="btn" onclick="location.reload()">새로고침</button></div>`; } }, 16); }
 function renderMainNow() {
   const m = $('#main'); if (!m) return; const all = [...S.customers.values()];
   document.body.classList.toggle('withrank', ['search', 'sellers', 'products'].includes(S.tab));
@@ -2206,7 +2202,7 @@ async function syncCollNow(coll, store, map, metaKey, src, setU) {
 }
 function dlNote(coll, n) { if (S.dl && S.dl.running) { S.dl.sub = `${coll} ${n.toLocaleString()}건`; dlPaint(); } }
 
-const heavyWait = () => IS_PHONE && !S.heavyOK && S.tab === 'home' && !S.detail; // 핸드폰: 첫 화면이 뜨기 전에는 무거운 자료를 미룸 → 뒤에서 저절로 받기(bgLoad)가 시작되면 풀림 // 핸드폰 홈에서는 상품·시장 자료(수만 건)를 미리 읽지 않음 — 다른 탭·화면을 열거나 홈 알림 '받기'를 누르면 그때
+const heavyWait = () => !S.heavyOK && S.tab === 'home' && !S.detail; // 핸드폰: 첫 화면이 뜨기 전에는 무거운 자료를 미룸 → 뒤에서 저절로 받기(bgLoad)가 시작되면 풀림 // 핸드폰 홈에서는 상품·시장 자료(수만 건)를 미리 읽지 않음 — 다른 탭·화면을 열거나 홈 알림 '받기'를 누르면 그때
 async function loadProducts() {
   if (heavyWait()) return; if (S.prodLoaded || S.prodBusy || (S.prodFailAt && Date.now() - S.prodFailAt < 60000)) return; S.prodBusy = true;
   try {
@@ -2727,6 +2723,21 @@ const WIDGETS = {
     return `<div class="mgrid">${mcell(p(T.good) + '%', '만족률', `만족 ${num(T.good)} · 보통 ${T.mid} · 불만족 ${T.bad}`)}${mcell(num(byC.size) + '명', '평가한 고객', `구매평 ${num(n)}건`)}${mcell(w.length ? Math.round((low / w.length) * 1000) / 10 + '%' : '-', '최근 30일 보통·불만족', `평가 ${w.length}건`)}</div><div class="sc" style="margin-top:8px"><button data-go="search" data-cv2="reviews">평가 참여 자세히</button></div>`; }],
   shortcuts: ['바로가기', () => `<div class="sc">${[['search', '고객'], ['flags', '표시 고객'], ['products', '상품'], ['sellers', '판매자'], ['orders', '주문·매출'], ['purchase', '매입'], ['biz', '경영'], ['pending', '연결 확정'], ['settings', '설정']].map(([k, l]) => `<button data-go="${k}">${l}</button>`).join('')}</div>`],
 };
+/* ══════════ 공유 홈 요약 (0.80.0) ══════════
+   쓰는 쪽: 이 기기가 모든 기록을 다 받았으면(S._allLoaded) 홈 칸을 전부 계산해 바뀐 칸의 화면만 Firestore app_summary/home.w.{칸} 에 씀 — 20초마다 + 주문·출고·문의가 바뀌면 2초 뒤
+   보는 쪽: 아직 다 못 받은 기기(핸드폰이 막 열었을 때 등)는 그 칸을 기다리지 않고 요약을 바로 보여 줌(실시간 수신) + 'hh:mm 기준' · 다 받으면 이 기기가 직접 계산한 것으로 바뀜
+   다 받기 전 기기는 절대 쓰지 않음(덜 계산된 숫자로 덮지 않게). 진행 상황(jobs)·바로가기는 기기마다 달라 빼고, 칸 하나 60KB 넘으면 뺌 */
+const HS_SKIP = new Set(['jobs', 'shortcuts']);
+const wIncomplete = (h) => !h || /class="wload"|class="ldg"|받는 중|읽는 중/.test(h);
+let _hsT = null; function homeSumSoon() { clearTimeout(_hsT); _hsT = setTimeout(homeSumWrite, 2000); }
+async function homeSumWrite() { if (!S._allLoaded || !S.user || S._hsBusy) return; S._hsBusy = true;
+  try { const now = new Date().toISOString(); const cur = (S.homeSum && S.homeSum.w) || {}; const out = {}; let size = 0;
+    for (const k of Object.keys(WIDGETS)) { if (HS_SKIP.has(k)) continue; let h; try { h = WIDGETS[k][1](); } catch (e) { continue; } if (wIncomplete(h) || h.length > 60000) continue; size += h.length; if (size > 700000) break; if (cur[k] && cur[k].h === h) continue; out[k] = { h, at: now }; }
+    if (Object.keys(out).length) { S.homeSum = { ...(S.homeSum || {}), w: { ...cur, ...out } }; db.collection('app_summary').doc('home').set({ w: out, at: now, by: S.user.email, dev: deviceName() || (IS_PHONE ? '핸드폰' : 'PC'), ver: APP_VER }, { merge: true }).catch(() => {}); } // 기다리지 않음(전파가 약할 때 멈추지 않게)
+  } catch (e) {} finally { S._hsBusy = false; } }
+function homeSumWatch() { if (S._hsLive) return; S._hsLive = true;
+  db.collection('app_summary').doc('home').onSnapshot((d) => { S.homeSum = d.exists ? d.data() : null; if (S.tab === 'home' && !S._allLoaded && !S.homeEdit) renderMain(); }, () => {});
+  setInterval(() => { if (S._allLoaded) homeSumWrite(); }, 20000); }
 const HOME_DEFAULT = ['alerts', 'pace', 'goal', 'cheapValid', 'cheapFirst', 'margin', 'purUnit', 'purRecover', 'purMonth', 'sales', 'cust', 'reviews', 'inv', 'topBooks', 'topCust', 'sellers', 'shortcuts'];
 function homeLayout(mode) {
   const adm = (S.homeAdmin && S.homeAdmin.widgets) || HOME_DEFAULT;
@@ -2765,6 +2776,8 @@ function renderHome(m) {
     const fill = (k) => {
         if (gen !== S._homeGen || S.tab !== 'home') return; const el = document.getElementById('wc_' + k); if (!el || el._done) return; el._done = true;
         let html; try { html = WIDGETS[k][1](); } catch (e) { console.error(k, e); html = `<div class="hint" style="margin:0;color:var(--red)">표시 오류: ${esc(e.message)}</div>`; }
+        const sm = S.homeSum && S.homeSum.w && S.homeSum.w[k]; // 이 기기가 아직 다 못 받았으면 공유 요약(다 받은 기기가 계산한 것)을 바로 보여 줌
+        if (sm && sm.h && !HS_SKIP.has(k) && (!S._allLoaded || wIncomplete(html))) html = sm.h + `<div class="hint" style="margin:6px 0 0;font-size:11px"><span class="ldg">✳</span>${esc(new Date(sm.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }))} 기준 (${esc(S.homeSum.dev || '다른 기기')} 계산) · 이 기기 최신 계산 중</div>`;
         S._wcache[k] = html; const body = el.querySelector('.wbody'); body.innerHTML = html; bindW(body); updPaint();
     };
     if ('IntersectionObserver' in window) { const io = new IntersectionObserver((ents) => ents.forEach((en) => { if (en.isIntersecting) { io.unobserve(en.target); const k = en.target.id.slice(3); setTimeout(() => fill(k), 0); } }), { rootMargin: '600px 0px' }); lay.forEach((k) => { const el = document.getElementById('wc_' + k); if (el) io.observe(el); }); }
@@ -3502,6 +3515,7 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.80.0': ['공유 홈 요약: 모든 기록을 다 받은 기기(보통 PC)가 홈 칸을 계산해 서버(app_summary/home)에 두고(20초마다·주문·출고·문의가 바뀌면 2초 뒤, 바뀐 칸만), 막 연 기기(핸드폰)는 기다리지 않고 그것을 실시간으로 바로 보여 줌(\'hh:mm 기준 · 이 기기 최신 계산 중\') → 다 받으면 직접 계산으로 바뀜. 다 받기 전 기기는 절대 쓰지 않음', '기기 저장소가 열리기 전에 상품 받기가 불리면 \'처음 받기\'로 착각해 1만여 건을 서버에서 통째로 다시 받던 문제 고침(모든 저장소 읽기·쓰기가 열릴 때까지 기다림) — PC가 느리고 계속 받던 또 하나의 원인', '홈에서는 고객·주문 다음에 무거운 기록을 받음(모든 기기) · 새 주문이 오면 홈 숫자도 바로 다시 계산'],
   '0.79.0': ['매입 기록: 결제 방식(계좌이체·현금·카드·당근페이·네이버페이·알라딘 결제·기타) · 계좌는 한 번 적으면 모든 기기에서 다음부터 고름(칸 아래 단추·입력 칸 목록) · 판매자 이름·연락처·주소 · 사진(여러 장, 기기에서 줄여 올림, 저장 후에도 기록에서 보고 누르면 원본, 목록에 📷 n)', '핸드폰 시장 블록 줄 높이를 조금 늘려 글자 위아래가 가리지 않게', 'PC에서 서버 새 기록이 54초 걸리던 원인 고침: 웹앱 탭을 여러 개 열면 뒤에 숨은 탭 하나가 서버 연결을 맡고, 크롬이 숨은 탭을 1분 단위로 재워 다른 탭의 요청이 밀렸음 → 탭마다 따로 연결'],
   '0.78.0': ['모든 기록을 뒤에서 저절로 받음 — 모든 기기, 열 때마다, 화면이 뜬 뒤 차례로(누를 일 없음). 받은 뒤엔 실시간 수신으로 최신 유지. 머리 칸 ⬇ 옆 작은 ✳만 돎', '기기 저장소를 2천 건씩 나눠 읽고 사이사이 화면에 양보(읽는 동안 화면이 멈추지 않음) · 저장 개수 셀 때 전부 읽던 것을 개수만', '홈 화면 저장본: 지난번 홈을 바로 보여 주고(\'✳ 지난번 화면 — 최신으로 바꾸는 중\') 계산이 끝나면 바뀜', '열 때 고객·주문을 받는 동안 다른 큰 기록을 같이 받지 않음(전에는 4초 뒤부터 겹쳐 PC에서 서버 새 기록이 27초 걸림)', '⏱ 자세히에 바뀐 고객·주문 건수와 시간'],
   '0.77.1': ['\'⬇ 받는 중\'이 끝나지 않던 것 고침: 열 때마다 \'모든 기록 받기\'가 저절로 돌며 상품 1만여 건·시장 지표까지 다시 읽었고, 핸드폰은 홈에서 상품 자료를 막아 둔 것과 엉켜 한 단계마다 2분씩 3번 기다리며 끝나지 않았음 → 저절로 받기는 PC에서 하루 한 번만, 핸드폰은 ⬇ 단추를 누를 때만(누르면 그때는 다 받음)'],
@@ -4292,7 +4306,7 @@ function openManual() {
   ${sec2('⏳ 받는 중 표시 · 화면 이름', `<p><b>화면 이름</b>: 아래 줄의 <b>탭</b>(홈·고객·상품…) → 탭 안의 네모 상자 하나하나는 <b>카드</b>(홈에서는 '홈 칸') → 무엇을 누르면 화면을 덮고 열리는 것은 <b>상세 화면</b>(고객 상세·상품 상세·오늘 출고 등).</p>
   <p><b>돌아가는 주황 별</b> = 새 정보를 받는 중. 새로 올 정보가 있을 때만 뜨고, 새 정보가 없으면 아무 표시 없이 바로 보여 줍니다. 뜨는 곳: ① 아래 탭 단추(그 탭에 새 정보가 오는 중) ② 홈 칸 제목 옆 ③ 화면 아래 왼쪽 알림 — 지금 보는 탭(상세 화면을 열었으면 그 상세 화면)에 무엇이 몇 건 오는지와 받은 건수(예: 주문 새 기록 12건 받는 중 · 5/12). 별이 사라지면 새 정보까지 다 반영된 것.</p>
   <p>기준: 바뀐 것만 받는 기록(고객·주문·구매평·판매자·상품·도서·시장 지표)은 받기와 동시에 새 기록 수를 따로 물어봅니다(1,000건당 읽기 1회, 받기 속도는 그대로). 통째로 읽는 기록(매입·반품·문의·오늘 출고·가격 감시 등)과 고객 상세의 주문·기록은 이 기기에 아직 없을 때만 표시합니다 — 저장해 둔 것을 먼저 보여 주고 있으면 뒤에서 조용히 맞춥니다.</p>`)}
-  ${sec2('🔧 문제가 생기면', `<ul><li><b>기록 받기</b>: 웹앱을 열면 고객·주문(기기 저장본 + 바뀐 것만) → 화면 → 나머지 모든 기록(상품·시장·판매자·매입·문의·반품·가격 감시)을 뒤에서 차례로 저절로 받고, 받은 뒤엔 실시간으로 최신을 유지합니다. 누를 것은 없고, 받는 동안 머리 칸 ⬇ 옆 작은 ✳만 돕니다. 홈은 지난번 화면 저장본을 먼저 보여 주고 최신으로 바뀝니다.</li><li><b>⏱ 속도</b>: 웹앱을 열 때마다 화면 아래에 '⏱ 화면 · 기기 기록 · 서버' 시간이 잠깐 뜹니다(누르면 단계별). 기록은 Firebase perf_logs에도 남아 느린 단계를 찾는 데 씁니다. <b>서비스 워커</b>(app/sw.js)가 웹앱을 기기에 저장해 두고 바로 띄우고, 새 판은 뒤에서 받아 '새 버전' 띠로 알립니다. 이상하면 주소 끝에 <code>?nosw=1</code>을 붙여 한 번 열면 저장본을 지우고 꺼집니다.</li><li>새로고침했는데 '바뀌었습니다' 띠가 없으면 GitHub 반영 전(몇 분 대기).</li><li>매입 탭에 빨간 '못 읽음' → Firebase 규칙에 해당 컬렉션 허용.</li><li>수집기 기록 칸의 빨간 글씨를 그대로 보내 주세요.</li><li>웹앱이 멈추면 다른 탭의 예전 웹앱을 닫고 새로고침.</li></ul>`)}`;
+  ${sec2('🔧 문제가 생기면', `<ul><li><b>공유 홈 요약</b>: 모든 기록을 다 받은 기기가 홈 칸을 계산해 서버에 두고(20초마다·변화 때), 막 연 기기는 그것을 바로 보여 줍니다 — 칸 아래 '✳ hh:mm 기준 (계산한 기기) · 이 기기 최신 계산 중'. 그 기기도 다 받으면 직접 계산한 실시간 숫자로 바뀝니다.</li><li><b>기록 받기</b>: 웹앱을 열면 고객·주문(기기 저장본 + 바뀐 것만) → 화면 → 나머지 모든 기록(상품·시장·판매자·매입·문의·반품·가격 감시)을 뒤에서 차례로 저절로 받고, 받은 뒤엔 실시간으로 최신을 유지합니다. 누를 것은 없고, 받는 동안 머리 칸 ⬇ 옆 작은 ✳만 돕니다. 홈은 지난번 화면 저장본을 먼저 보여 주고 최신으로 바뀝니다.</li><li><b>⏱ 속도</b>: 웹앱을 열 때마다 화면 아래에 '⏱ 화면 · 기기 기록 · 서버' 시간이 잠깐 뜹니다(누르면 단계별). 기록은 Firebase perf_logs에도 남아 느린 단계를 찾는 데 씁니다. <b>서비스 워커</b>(app/sw.js)가 웹앱을 기기에 저장해 두고 바로 띄우고, 새 판은 뒤에서 받아 '새 버전' 띠로 알립니다. 이상하면 주소 끝에 <code>?nosw=1</code>을 붙여 한 번 열면 저장본을 지우고 꺼집니다.</li><li>새로고침했는데 '바뀌었습니다' 띠가 없으면 GitHub 반영 전(몇 분 대기).</li><li>매입 탭에 빨간 '못 읽음' → Firebase 규칙에 해당 컬렉션 허용.</li><li>수집기 기록 칸의 빨간 글씨를 그대로 보내 주세요.</li><li>웹앱이 멈추면 다른 탭의 예전 웹앱을 닫고 새로고침.</li></ul>`)}`;
   $('#back').onclick = () => history.back();
 }
 
@@ -5003,6 +5017,7 @@ async function permCheck() {
     ['쓰기', 'prd_price_batches (수동 일괄 처리 그룹)', () => db.collection('prd_price_batches').doc('_check_price_watch').set({ permAt: new Date().toISOString() }, { merge: true })],
     ['쓰기', 'prd_system (그룹 시장 지표 설정)', () => db.collection('prd_system').doc('_perm_check').set({ at: new Date().toISOString(), by: S.user.email })],
     ['읽기', 'crm_customers (고객)', () => db.collection('crm_customers').doc('_perm_check').get()],
+    ['쓰기', 'app_summary (공유 홈 요약 — 핸드폰이 홈을 바로 보여 줌)', () => db.collection('app_summary').doc('_perm_check').set({ at: new Date().toISOString(), by: S.user.email })],
     ['쓰기', '사진 저장소 Storage pur_photos (매입 사진)', () => firebase.storage().ref('pur_photos/_perm_check.txt').putString('ok')],
     ['쓰기', 'app_settings (클라우드 주소 등 설정)', () => db.collection('app_settings').doc('_perm_check').set({ at: new Date().toISOString(), by: S.user.email })]];
   const R = await Promise.all(T.map(async ([k, nm, f]) => { try { await f(); return [k, nm, true]; } catch (e) { return [k, nm, false, e.code || e.message]; } }));
@@ -5026,7 +5041,7 @@ function loadShip() { if (S._shipLive) return; S._shipLive = true; const _u = up
   // 주문 들어온 책의 지금 시장(클라우드·수집기가 주문확인요청마다 한 번 읽어 남김, shp_market/{주문번호}__{매물번호}) — 최근 7일 것만
   db.collection('shp_market').where('at', '>=', new Date(Date.now() - 7 * 864e5).toISOString()).onSnapshot((ss) => { S.shpMarket = new Map(); ss.forEach((d) => S.shpMarket.set(d.id, d.data())); if (S.detail && S.detail.ship) shipRerender(); }, () => { S.shpMarket = S.shpMarket || new Map(); });
   const dk = dstr(new Date()); db.collection('shp_plan').doc(dk).onSnapshot((d) => { S.shipPlan = d.exists ? d.data() : {}; S.shipPlanDay = dk; shipRerender(); }, () => { S.shipPlan = {}; }); }
-let _srT = null; function shipRerender() { clearTimeout(_srT); _srT = setTimeout(() => { if (S.tab === 'home' || S.tab === 'orders') renderMain(); if (S.detail && S.detail.ship) shipRedrawKeep(); }, 200); }
+let _srT = null; function shipRerender() { homeSumSoon(); clearTimeout(_srT); _srT = setTimeout(() => { if (S.tab === 'home' || S.tab === 'orders') renderMain(); if (S.detail && S.detail.ship) shipRedrawKeep(); }, 200); }
 // 새 주문·보강이 실시간으로 와도 보던 자리는 그대로: 화면 맨 위에 걸친 주문을 기억해 다시 그린 뒤 그 주문이 같은 높이에 오게 스크롤을 맞춤. 누르고 있는 중(0.6초)이면 잠깐 미룸
 function shipRedrawKeep() { const sh = $('#sheet'); if (!sh) return; if (Date.now() - (S._shipTouch || 0) < 600) { clearTimeout(_srT); _srT = setTimeout(shipRedrawKeep, 700); return; }
   const top = sh.getBoundingClientRect().top; let key = null, off = 0; for (const el of sh.querySelectorAll('[data-anc]')) { const r = el.getBoundingClientRect(); if (r.bottom > top + 60) { key = el.dataset.anc; off = r.top - top; break; } }
@@ -5192,7 +5207,7 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.79.0': '2026-10-07', '0.78.0': '2026-10-07', '0.77.1': '2026-10-07', '0.77.0': '2026-10-07', '0.76.0': '2026-10-07', '0.75.0': '2026-10-06', '0.74.0': '2026-10-06', '0.73.0': '2026-10-06', '0.72.0': '2026-10-06', '0.71.0': '2026-10-06', '0.70.0': '2026-10-06', '0.69.0': '2026-10-06', '0.68.2': '2026-10-06', '0.68.1': '2026-10-06', '0.68.0': '2026-10-06', '0.67.0': '2026-10-06', '0.66.0': '2026-10-06', '0.65.14': '2026-10-06', '0.65.13': '2026-10-06', '0.65.12': '2026-10-06', '0.65.11': '2026-10-06', '0.65.10': '2026-10-06', '0.65.8': '2026-10-06', '0.65.7': '2026-10-06', '0.65.6': '2026-10-06', '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.80.0': '2026-10-07', '0.79.0': '2026-10-07', '0.78.0': '2026-10-07', '0.77.1': '2026-10-07', '0.77.0': '2026-10-07', '0.76.0': '2026-10-07', '0.75.0': '2026-10-06', '0.74.0': '2026-10-06', '0.73.0': '2026-10-06', '0.72.0': '2026-10-06', '0.71.0': '2026-10-06', '0.70.0': '2026-10-06', '0.69.0': '2026-10-06', '0.68.2': '2026-10-06', '0.68.1': '2026-10-06', '0.68.0': '2026-10-06', '0.67.0': '2026-10-06', '0.66.0': '2026-10-06', '0.65.14': '2026-10-06', '0.65.13': '2026-10-06', '0.65.12': '2026-10-06', '0.65.11': '2026-10-06', '0.65.10': '2026-10-06', '0.65.8': '2026-10-06', '0.65.7': '2026-10-06', '0.65.6': '2026-10-06', '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
   { d: '2026-10-07', app: '클라우드 수집 readnow-cloud (Cloud Run)', v: '0.4.0', n: ['1분마다: ① 주문확인요청 1번 읽기 → 바뀌면 바로 저장 · 상품 보강(사진·등급·등록일·유의사항·지금 시장 + 판매자 분류)을 상품마다 채워 넣음(shp_state/confirm.enrich, 40초 상자) · ② 발송 요청은 5분마다·주문이 넘어갔을 때·맡긴 일이 있을 때', '엑셀은 shp_state/excel 로 따로(목록 문서를 가볍게)', '로그인 확인 요청을 따로 하지 않음(주문확인요청 응답으로 판단)', '앞 회차가 길면 다음 1분 예약은 건너뜀(쌓이지 않게)', '웹앱 \'시장 ↻\'(shp_cmds market)'] },
   { d: '2026-10-07', app: '수집기', v: '1.33.1', n: ['현금 판매 띠 \'접기\'를 왼쪽 맨 앞으로(수집기 패널에 가려짐)', '주문확인요청을 쓸 때 클라우드 보강(enrich)을 지우지 않음', '\'시장 다시 읽기\'(market)는 클라우드 몫으로 남겨 둠'] },
@@ -6173,7 +6188,7 @@ function loginView(err) {
 firebase.auth().onAuthStateChanged(async (u) => {
   if (!u) { S.user = null; loginView(); return; }
   S.user = u; pm('auth');
-  shell(); pm('shell'); homeSnapShow(); // 화면 틀부터 바로 + 지난번 홈 화면 저장본 (기기 기록을 다 읽으면 새로 그려짐)
+  shell(); pm('shell'); homeSumWatch(); // 화면 틀(홈을 바로 그림) + 공유 홈 요약(실시간) → 홈은 기기 기록을 기다리지 않음. 무거운 기록은 홈에서 고객·주문 다음에 뒤에서
   loadShip(); if (GO === 'confirm') { S.shipTab = 'confirm'; openShip(); } // 출고·주문확인요청은 가장 먼저 (Firestore 실시간 — 고객·주문 기록을 기다리지 않음)
   await idbOpen();
   const nO = await idbEach('orders', (v) => { v._sk = orderKey(v); S.orders.set(v.id, v); }); if (nO) S.ordersLoaded = true; pm('idbO'); // 주문 먼저(홈 숫자) → 고객
