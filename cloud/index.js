@@ -10,6 +10,7 @@
  *  - /kick  (웹앱이 일을 맡긴 직후 부름: 5분 기다리지 않고 바로 ③)
  *  - /lookup (웹앱 '사진 가격': ISBN·알라딘 상품번호 → 새상품 정보 + 온라인 중고 첫 페이지 / 제목 → 알라딘 검색 후보)
  *  - /spines (웹앱 '사진 가격' 책등 사진 → Google Vision 글자 읽기 → 책등마다 글자 묶음)
+ *  - (0.5.7) 매일 데이터 관리 비용(Firestore·Cloud Run·Vision·Storage·이미지 보관) 사용량 × 공식 단가 → app_settings/costs_auto_YYYY-MM (웹앱 매입 탭 '기타 지출')
  *  - /inventory · /storage-files (0.5.6, 웹앱 백업: 모든 칸의 문서 수·어림 크기 + 사진 파일 목록·크기 — 읽기만)
  *  - /status (상태 확인, 인증 없음 — 비밀 정보 없음)
  *
@@ -23,7 +24,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.5.6';
+const VER = '0.5.7';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -388,6 +389,61 @@ async function inventory() { const t0 = Date.now(); const cols = [];
   let storage = null; try { const F = await storageFiles(''); const G = {}; for (const f of F) { const g = stGroupOf(f.name); const x = G[g] || (G[g] = { n: 0, bytes: 0 }); x.n++; x.bytes += f.size; } storage = { bucket: BUCKET, groups: G }; }
   catch (e) { storage = { bucket: BUCKET, err: e.message }; }
   return { ok: true, at: nowIso(), ms: Date.now() - t0, cols: cols.sort((a, b) => a.id.localeCompare(b.id)), subs, storage }; }
+
+/* ── (0.5.7) 데이터 관리 비용 자동 기록 → app_settings/costs_auto_YYYY-MM (달마다 한 문서, 날마다 한 칸 · 웹앱 매입 탭 '기타 지출') ──
+ * 하루에 한 번(한국 시각 0시 20분 뒤), 아직 안 적은 날(어제까지)을 하루씩: Google Cloud 사용량(Cloud Monitoring — 이 프로젝트의 실제 측정값)
+ *   × 공식 단가(아래 RATES, 출처·확인 날짜 함께) − 무료 한도 = 그날 추정 비용(달러) → 그날 환율(frankfurter, 유럽중앙은행 기준)로 원.
+ * 실제 청구 금액은 Google 결제 화면에만 있음 → 웹앱에서 '청구서 금액(달)'을 넣으면 그 달은 청구서 금액이 확정값, 이 추정은 비교로 남음.
+ * 이미 적은 날은 다시 쓰지 않음(그 날 칸이 있으면 그대로). Monitoring은 약 6주만 보관 → 처음 돌 때 6주 전부터 채움(한 번에 4일씩).
+ * 읽기만 하는 권한(roles/monitoring.viewer · roles/artifactregistry.reader)은 deploy.sh가 줌 */
+const COST_RATES = { asOf: '2026-10-08', usdKrwFallback: 1400,
+  fsRead: 0.03 / 1e5, fsWrite: 0.09 / 1e5, fsDelete: 0.01 / 1e5, fsFreeRead: 50000, fsFreeWrite: 20000, fsFreeDelete: 20000, // cloud.google.com/firestore/pricing (Standard, 하루 무료)
+  fsStoreGiBMonth: 0.000205479 * 730, fsFreeGiB: 1, // 같은 페이지: GiB·시간 단가 × 730시간
+  runCpuSec: 0.0000336, runGiBSec: 0.0000035, runReq: 0.4 / 1e6, runFreeUsdMonth: 180000 * 0.000024 + 360000 * 0.0000025 + 2e6 * 0.4 / 1e6, runCpu: 1, runGiB: 2, // cloud.google.com/run/pricing — 서울=Tier 2(요청 처리 중에만 CPU), 무료 = Tier 1 단가로 한 달 $6.02 할인
+  visionUnit: 1.5 / 1000, visionFreeMonth: 1000, // cloud.google.com/vision/pricing (글자 읽기)
+  gcsGiBMonth: 0.02, gcsFreeGiB: 5, gcsFreeRegions: ['US-CENTRAL1', 'US-EAST1', 'US-WEST1'], // cloud.google.com/storage/pricing (Standard 한 지역; 무료 5GB는 미국 세 지역만)
+  arGiBMonth: 0.10, arFreeGiB: 0.5 }; // Artifact Registry(클라우드 이미지 보관)
+const PROJECT = process.env.FB_PROJECT || 'readnow-3a385';
+async function gToken() { const r = await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-account/token', { headers: { 'Metadata-Flavor': 'Google' } }); if (!r.ok) throw new Error('토큰 못 받음 ' + r.status); return (await r.json()).access_token; }
+async function gGet(tok, url) { const r = await fetch(url, { headers: { Authorization: 'Bearer ' + tok } }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error((j.error && j.error.message) || 'HTTP ' + r.status); return j; }
+async function mSum(tok, filter, s, e, aligner) { const q = new URLSearchParams({ filter, 'interval.startTime': s, 'interval.endTime': e, 'aggregation.alignmentPeriod': '86400s', 'aggregation.perSeriesAligner': aligner || 'ALIGN_SUM', 'aggregation.crossSeriesReducer': 'REDUCE_SUM' });
+  const j = await gGet(tok, `https://monitoring.googleapis.com/v3/projects/${PROJECT}/timeSeries?${q}`); let v = 0; for (const ts of j.timeSeries || []) for (const p of ts.points || []) v += +(p.value.int64Value ?? p.value.doubleValue ?? 0); return v; }
+const kstDay = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
+const dayRange = (day) => { const s = Date.parse(day + 'T00:00:00+09:00'); return [new Date(s).toISOString(), new Date(s + 864e5).toISOString()]; };
+async function fxRate(day) { try { const r = await fetch(`https://api.frankfurter.app/${day}?from=USD&to=KRW`); const j = await r.json(); if (j && j.rates && j.rates.KRW) return { rate: +j.rates.KRW, src: 'frankfurter(ECB) ' + (j.date || day) }; } catch (e) {} return { rate: COST_RATES.usdKrwFallback, src: '기본값(환율 못 받음)' }; }
+async function costUsage(tok, day) { const [s, e] = dayRange(day); const U = {}; const tryM = async (k, f, al) => { try { U[k] = await mSum(tok, f, s, e, al); } catch (er) { U[k] = null; U.err = (U.err || []).concat(`${k}: ${er.message}`.slice(0, 160)); } };
+  await tryM('fsRead', 'metric.type="firestore.googleapis.com/document/read_count"'); await tryM('fsWrite', 'metric.type="firestore.googleapis.com/document/write_count"'); await tryM('fsDelete', 'metric.type="firestore.googleapis.com/document/delete_count"');
+  await tryM('runSec', 'metric.type="run.googleapis.com/container/billable_instance_time" AND resource.labels.service_name="readnow-cloud"'); await tryM('runReq', 'metric.type="run.googleapis.com/request_count" AND resource.labels.service_name="readnow-cloud"');
+  await tryM('vision', 'metric.type="serviceruntime.googleapis.com/api/request_count" AND resource.type="consumed_api" AND resource.labels.service="vision.googleapis.com"');
+  await tryM('gcsBytes', 'metric.type="storage.googleapis.com/storage/total_bytes"', 'ALIGN_MEAN'); return U; }
+async function costDaily(maxDays) { const ST = C('app_settings').doc('costs_auto'); const st = (await ST.get()).data() || {}; const today = kstDay(Date.now()); const kNow = new Date(Date.now() + 9 * 3600e3);
+  if (kNow.getUTCHours() === 0 && kNow.getUTCMinutes() < 20) return { skip: '0시 20분 뒤에' }; // 어제 측정값이 다 모인 뒤
+  let day = st.lastDay ? kstDay(Date.parse(st.lastDay + 'T12:00:00+09:00') + 864e5) : kstDay(Date.now() - 42 * 864e5); if (day >= today) return { skip: '다 적음' };
+  const tok = await gToken(); let bucketLoc = st.bucketLoc || null; if (!bucketLoc) { try { const { getStorage } = require('firebase-admin/storage'); const [m] = await getStorage().bucket(BUCKET).getMetadata(); bucketLoc = String(m.location || '').toUpperCase(); } catch (e) { bucketLoc = '?'; } }
+  let arBytes = null; try { const j = await gGet(tok, `https://artifactregistry.googleapis.com/v1/projects/${PROJECT}/locations/asia-northeast3/repositories`); arBytes = (j.repositories || []).reduce((a, r) => a + (+r.sizeBytes || 0), 0); } catch (e) { arBytes = null; }
+  let fsBytes = null; try { const inv = st.fsBytesAt && Date.now() - Date.parse(st.fsBytesAt) < 7 * 864e5 ? null : await inventory(); if (inv) fsBytes = (inv.cols || []).reduce((a, c) => a + (c.estBytes || 0), 0) + (inv.subs || []).reduce((a, c) => a + (c.estBytes || 0), 0); } catch (e) {}
+  if (fsBytes == null) fsBytes = st.fsBytes ?? null; const R = COST_RATES; const done = [];
+  for (let n = 0; n < (maxDays || 4) && day < today; n++, day = kstDay(Date.parse(day + 'T12:00:00+09:00') + 864e5)) {
+    const U = await costUsage(tok, day); const fx = await fxRate(day); const ym = day.slice(0, 7); const dim = new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate();
+    const mo = (st.month && st.month.ym === ym) ? st.month : { ym, runUsd: 0, runDisc: 0, vision: 0 }; // 달 무료 한도는 그 달 누적으로
+    const lines = []; const L = (key, service, item, qty, unit, free, billable, unitUsd, usd, note) => lines.push({ key, service, item, qty, unit, free, billable, unitUsd, usd: Math.round(usd * 1e6) / 1e6, note: note || null });
+    const fz = (q, f) => Math.max(0, (q || 0) - f);
+    if (U.fsRead != null) L('fs_read', 'Firestore', '문서 읽기', U.fsRead, '건', R.fsFreeRead, fz(U.fsRead, R.fsFreeRead), R.fsRead, fz(U.fsRead, R.fsFreeRead) * R.fsRead, '하루 무료 5만 건(미국 태평양 자정 기준)');
+    if (U.fsWrite != null) L('fs_write', 'Firestore', '문서 쓰기', U.fsWrite, '건', R.fsFreeWrite, fz(U.fsWrite, R.fsFreeWrite), R.fsWrite, fz(U.fsWrite, R.fsFreeWrite) * R.fsWrite, '하루 무료 2만 건');
+    if (U.fsDelete != null) L('fs_delete', 'Firestore', '문서 지우기', U.fsDelete, '건', R.fsFreeDelete, fz(U.fsDelete, R.fsFreeDelete), R.fsDelete, fz(U.fsDelete, R.fsFreeDelete) * R.fsDelete, '하루 무료 2만 건');
+    if (fsBytes != null) { const g = fsBytes / 2 ** 30; L('fs_store', 'Firestore', '저장 용량', Math.round(g * 1000) / 1000, 'GiB', R.fsFreeGiB, Math.max(0, g - R.fsFreeGiB), R.fsStoreGiBMonth / dim, Math.max(0, g - R.fsFreeGiB) * R.fsStoreGiBMonth / dim, '칸마다 앞쪽 25건 평균으로 어림한 크기(백업 목록과 같은 값) · 무료 1GiB'); }
+    if (U.runSec != null) { const cpu = U.runSec * R.runCpu, mem = U.runSec * R.runGiB; const g = cpu * R.runCpuSec + mem * R.runGiBSec + (U.runReq || 0) * R.runReq; const before = mo.runUsd; mo.runUsd += g; const disc = Math.min(g, Math.max(0, R.runFreeUsdMonth - before));
+      L('run_cpu', 'Cloud Run', 'CPU 시간', Math.round(cpu), 'vCPU·초', null, Math.round(cpu), R.runCpuSec, cpu * R.runCpuSec, `요청 처리 중 시간 ${Math.round(U.runSec)}초 × ${R.runCpu} vCPU`); L('run_mem', 'Cloud Run', '메모리 시간', Math.round(mem), 'GiB·초', null, Math.round(mem), R.runGiBSec, mem * R.runGiBSec, `× ${R.runGiB} GiB`);
+      L('run_req', 'Cloud Run', '요청', U.runReq || 0, '건', null, U.runReq || 0, R.runReq, (U.runReq || 0) * R.runReq, '1분마다 수집 + 웹앱 호출'); if (disc > 0) L('run_free', 'Cloud Run', '무료 한도 할인', null, null, null, null, null, -disc, `한 달 $${R.runFreeUsdMonth.toFixed(2)}까지 (이 달 누적 $${mo.runUsd.toFixed(3)})`); mo.runDisc += disc; }
+    if (U.vision != null && U.vision > 0) { const before = mo.vision; mo.vision += U.vision; const bill = Math.max(0, mo.vision - R.visionFreeMonth) - Math.max(0, before - R.visionFreeMonth); L('vision', 'Vision API', '책등 글자 읽기', U.vision, '건', R.visionFreeMonth, bill, R.visionUnit, bill * R.visionUnit, '한 달 무료 1,000건 (이 달 누적 ' + mo.vision + '건)'); }
+    if (U.gcsBytes != null) { const g = U.gcsBytes / 2 ** 30; const free = R.gcsFreeRegions.includes(bucketLoc) ? R.gcsFreeGiB : 0; L('gcs', 'Cloud Storage', '사진 저장', Math.round(g * 1000) / 1000, 'GiB', free, Math.max(0, g - free), R.gcsGiBMonth / dim, Math.max(0, g - free) * R.gcsGiBMonth / dim, `버킷 위치 ${bucketLoc}${free ? ' (무료 5GB 지역)' : ''}`); }
+    if (arBytes != null) { const g = arBytes / 2 ** 30; L('ar', 'Artifact Registry', '클라우드 이미지 보관', Math.round(g * 1000) / 1000, 'GiB', R.arFreeGiB, Math.max(0, g - R.arFreeGiB), R.arGiBMonth / dim, Math.max(0, g - R.arFreeGiB) * R.arGiBMonth / dim, '배포할 때마다 쌓임 — deploy.sh가 최근 3개만 남기게 정리'); }
+    const ref = C('app_settings').doc('costs_auto_' + ym); const rec = { rate: fx.rate, rateSrc: fx.src, lines: lines.map((x) => ({ ...x, krw: Math.round(x.usd * fx.rate) })), basis: '공식 단가 × 측정 사용량 − 무료 한도 (추정 — 실제는 청구서)', ratesAsOf: R.asOf, src: 'Cloud Monitoring', at: nowIso(), errs: U.err || null };
+    await db.runTransaction(async (tx) => { const sn = await tx.get(ref); if (sn.exists && (sn.data().days || {})[day]) return; tx.set(ref, { ym, cat: '데이터 관리', vendor: 'Google Cloud (Firebase)', days: { [day]: rec }, ...W() }, { merge: true }); }); // 이미 적은 날은 그대로
+    st.month = mo; st.lastDay = day; await ST.set({ lastDay: day, month: mo, bucketLoc, fsBytes, fsBytesAt: fsBytes != null ? (st.fsBytesAt && Date.now() - Date.parse(st.fsBytesAt) < 7 * 864e5 ? st.fsBytesAt : nowIso()) : null, arBytes, at: nowIso(), errs: U.err || null, ratesAsOf: R.asOf }, { merge: true });
+    done.push({ day, krw: lines.reduce((a, x) => a + Math.round(x.usd * fx.rate), 0), err: U.err || null }); }
+  return { done }; }
+let costNextAt = 0;
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin || ''; if (ORIGINS.includes(origin)) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin'); }
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -396,7 +452,7 @@ const server = http.createServer(async (req, res) => {
   const path = (req.url || '/').split('?')[0];
   try {
     if (path === '/status' || path === '/') return send(200, { ok: true, ver: VER, cores: coreVer, login: loginFailAt ? 'fail' : 'unknown', hasCred: !!(ALADIN_ID && ALADIN_PW) });
-    if (path === '/tick') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); tickBusy = true; try { const out = await serial(() => tick('schedule')); return send(200, out); } finally { tickBusy = false; } }
+    if (path === '/tick') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); tickBusy = true; try { const out = await serial(() => tick('schedule')); if (Date.now() > costNextAt) { try { const r = await costDaily(4); out.costs = r; costNextAt = r.skip ? Date.now() + 15 * 60e3 : 0; if (r.done && r.done.length) log('비용 기록', JSON.stringify(r.done)); } catch (e) { costNextAt = Date.now() + 30 * 60e3; out.costsErr = e.message; log('비용 기록 실패', e.message); } } return send(200, out); } finally { tickBusy = false; } }
     if (path === '/kick') { await authUser(req); const out = await serial(() => tick('kick')); return send(200, out); }
     if (path === '/lookup') { await authUser(req); const b = await bodyOf(req); const out = await serial(() => lookup(b)); return send(200, out); }
     if (path === '/inventory') { await authUser(req); return send(200, await inventory()); }

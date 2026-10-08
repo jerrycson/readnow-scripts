@@ -30,12 +30,17 @@ if ! gcloud secrets describe TICK_KEY >/dev/null 2>&1; then printf '%s' "$(head 
 for s in ALADIN_ID ALADIN_PW TICK_KEY; do gcloud secrets add-iam-policy-binding "$s" --member="serviceAccount:$SA" --role=roles/secretmanager.secretAccessor >/dev/null; done
 gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$SA" --role=roles/datastore.user --condition=None >/dev/null
 gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$SA" --role=roles/storage.objectViewer --condition=None >/dev/null   # (0.5.6) 백업: 사진 파일 목록·크기 읽기만
+gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$SA" --role=roles/monitoring.viewer --condition=None >/dev/null   # (0.5.7) 비용 기록: 사용량 읽기만
+gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$SA" --role=roles/artifactregistry.reader --condition=None >/dev/null   # (0.5.7) 비용 기록: 이미지 보관 크기 읽기만
 
 echo "③ 올리기 (빌드 3~6분)"
 gcloud run deploy "$SERVICE" --source . --region "$REGION" --allow-unauthenticated \
   --memory 2Gi --cpu 1 --timeout 300 --concurrency 4 --min-instances 0 --max-instances 1 \
   --set-secrets "ALADIN_ID=ALADIN_ID:latest,ALADIN_PW=ALADIN_PW:latest,TICK_KEY=TICK_KEY:latest" \
   --set-env-vars "FB_PROJECT=$PROJECT,ALLOW_EMAILS=$ALLOW_EMAILS,ALLOW_ORIGINS=https://jerrycson.github.io"
+# (0.5.7) 비용 줄이기: 배포할 때마다 쌓이는 클라우드 이미지를 최근 3개만 남기고 7일 지난 것은 지움 (실패해도 배포는 그대로)
+printf '%s' '[{"name":"keep-recent-3","action":{"type":"Keep"},"mostRecentVersions":{"keepCount":3}},{"name":"delete-old","action":{"type":"Delete"},"condition":{"tagState":"any","olderThan":"7d"}}]' > /tmp/rn-ar-policy.json
+gcloud artifacts repositories set-cleanup-policies cloud-run-source-deploy --location="$REGION" --policy=/tmp/rn-ar-policy.json --no-dry-run >/dev/null 2>&1 && echo "   이미지 정리 규칙: 최근 3개만" || echo "   (이미지 정리 규칙은 건너뜀)"
 URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')
 
 echo "④ 예약: 매일 24시간, 1분마다 /tick (주문확인요청은 매번, 발송 요청은 5분마다)"
