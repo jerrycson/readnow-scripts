@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.42.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.43.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.42.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.43.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.42.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.43.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -437,6 +437,7 @@
     $('#rnpEta').textContent = eta != null ? `남은 시간 약 ${fmtDur(eta)} · 끝나는 시각 약 ${new Date(Date.now() + eta * 60000).toTimeString().slice(0, 5)}` : (total ? '남은 시간 계산 중…' : '');
     $('#rnpSub').textContent = sub || ''; if (next != null) $('#rnpNext').textContent = next;
     lastUi = { state, done, total, sub: sub || '', etaMin: eta != null ? Math.round(eta) : null };
+    try { if (running && window.__rnPhase) window.__rnPhase('prd', state); } catch (e) {} // (1.43.0) 단계 표시 (작업 중일 때만)
     if (window.__rnStatus) window.__rnStatus.cur = { ...lastUi };
     if (auth.currentUser && Date.now() - lastPub > 30000) { lastPub = Date.now(); publishStatus(); }
   }
@@ -449,7 +450,7 @@
   }
   let running = null; let stopFlag = false;
   function setRunning(name) {
-    running = name; stopFlag = false;
+    running = name; stopFlag = false; if (name && window.__rnPhaseReset && !['chain', 'prdChain'].includes(curKey)) window.__rnPhaseReset('prd', name); // (1.43.0) 새 작업 = 단계 표시 처음부터 (일괄은 단계마다 아래에서)
     box.querySelectorAll('[data-job]').forEach((b) => (b.disabled = !!name && b.dataset.job !== 'images'));
     $('#rnpCtlStop').classList.toggle('on', !!name);
     $('#rnpWhy').textContent = name ? `'${name}' 진행 중 — 다른 알라딘 작업은 새 탭에서 동시에 할 수 있습니다 (요청 간격은 탭끼리 나눠 씀)` : '';
@@ -1340,7 +1341,7 @@
       for (let i = ORDER.indexOf(st); i < ORDER.length; i++) {
         const k = ORDER[i]; if (!on(k)) { log(`일괄 수집: '${STEP_LABEL[k]}' 끔 → 건너뜀`); continue; }
         if (k === 'scanFull' || k === 'revAll') { const days = k === 'scanFull' ? (SET.scanFullDays ?? 7) : (SET.revAllDays ?? 7); const jd = (await jobRef(k).get()).data() || {}; if (jd.done && jd.finishedAt && Date.now() - jd.finishedAt < days * 864e5) { log(`일괄 수집: '${STEP_LABEL[k]}'은(는) ${Math.round((Date.now() - jd.finishedAt) / 864e5 * 10) / 10}일 전에 했음 (${days}일마다) → 건너뜀`); CS.res[k] = 'done'; continue; } }
-        const tS = Date.now(); CS.cur = k; window.__rnStatus.cur = {}; log(`[일괄 ${i + 1}/${ORDER.length}] ▶ '${STEP_LABEL[k]}' 시작`);
+        const tS = Date.now(); CS.cur = k; window.__rnStatus.cur = {}; window.__rnPhaseReset && window.__rnPhaseReset(k === 'crm' ? 'crm' : 'prd', STEP_LABEL[k]); log(`[일괄 ${i + 1}/${ORDER.length}] ▶ '${STEP_LABEL[k]}' 시작`);
         curStage = k; lastSame = false; let rr; try { rr = await RUN[k](); } catch (e) { if (e && e.message === '멈춤') throw e; log(`[일괄] '${STEP_LABEL[k]}' 오류: ${e && e.message} — 이 단계는 실패로 두고 다음 단계로 갑니다 (진행 위치는 저장돼 다음에 이어감)`, 1); rr = 'error'; } finally { curStage = null; }
         log(`[일괄 ${i + 1}/${ORDER.length}] ${rr === false ? '■ 시작 못 함' : stopFlag ? '■ 멈춤' : rr === 'partial' ? '◐ 정한 시간만큼 함 (나머지는 다음 일괄 때 이어서)' : '✓ 끝'} '${STEP_LABEL[k]}' (${Math.round((Date.now() - tS) / 60000)}분)`);
         if (window.__rnPaused || stopFlag) { CS.res[k] = 'wait'; CS.cur = null; log(`[일괄] '${STEP_LABEL[k]}' 중 일시정지 — 다음 단계로 넘어가지 않고 여기서 멈춤 (이어하기로 이 단계부터)`); throw new Error('멈춤'); }

@@ -1,7 +1,7 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.42.0의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.43.0의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.42.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.43.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
  * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
@@ -89,6 +89,14 @@
   } catch (e) {} })(); // 새로고침하면 '이번 화면'은 비어서 시작 — 오늘 앞선 기록은 '지난 기록'의 오늘 날짜에 있음
   const pcName = () => (window.__rnPcName && window.__rnPcName.get()) || '이 PC';
   window.__rnStatus = window.__rnStatus || {};
+  /* (1.43.0) 단계 표시 — 일괄이든 개별 수집이든 '지금 작업 안의 단계'를 차례로 적음 (지난 단계 ✓·걸린 시간, 지금 ▶).
+   *  고객 쪽(progress)·상품 쪽(ui)이 단계 이름을 알리면 여기 한 곳에서 쌓음. 기다림·양보·로그인처럼 잠깐 지나가는 상태는 단계로 치지 않고 '잠깐' 글로만 */
+  const PH_TMP = /^(다른 PC 작업 중|대기 중|기다리|양보|자동 로그인|네이버로 다시 로그인|알라딘 요청 제한|새 버전으로|시작 못 함|취소|오류로 멈춤|완료|일시정지)|기다리는 중|쉬는 중/;
+  window.__rnPhaseReset = (kind, title) => { const S = window.__rnStatus; S.ph = S.ph || {}; S.ph[kind] = { title: title || null, list: [], note: null, start: Date.now() }; };
+  window.__rnPhase = (kind, label, key) => { const S = window.__rnStatus; S.ph = S.ph || {}; let P = S.ph[kind]; if (!P || (key !== undefined && P.key !== key)) { window.__rnPhaseReset(kind, null); P = S.ph[kind]; P.key = key; }
+    const l = String(label || '').replace(/\s+/g, ' ').trim().slice(0, 60); if (!l) return; if (PH_TMP.test(l)) { P.note = l; return; } P.note = null;
+    const last = P.list[P.list.length - 1]; if (last && last.l === l) return; const now = Date.now(); if (last) last.ms = now - last.at;
+    P.list.push({ l, at: now }); if (P.list.length > 40) { P.cut = (P.cut || 0) + 1; P.list.shift(); } };
   window.__rnLog = (mod, lv, msg) => { const now = new Date(); const e = { t: now.getTime(), m: mod, l: lv, x: String(msg).slice(0, 600) };
     const last = buf[buf.length - 1]; if (lv === 'detail' && last && last.l === 'detail' && last.m === mod && last.x === e.x) return; // 같은 줄 반복은 생략
     buf.push(e); if (buf.length > MAXMEM) buf.splice(0, buf.length - MAXMEM); if (lv !== 'detail') { lt.push(e); if (lt.length > 80) lt.shift(); ltDirty = true; } pend.push(e); idbPend.push(e); dirty = true; };
@@ -106,7 +114,7 @@
   const liveNow = () => { const S = window.__rnStatus || {}; let crmBusy = false, crmLabel = null; try { crmBusy = !!(window.__rnCrm && window.__rnCrm.busy()); crmLabel = crmBusy && window.__rnCrm.label ? String(window.__rnCrm.label() || '') : null; } catch (e) {}
     let imgBusy = false; try { imgBusy = !!(window.__rnPrd && window.__rnPrd.imgBusy && window.__rnPrd.imgBusy()); } catch (e) {}
     const slim = (o) => (o && typeof o === 'object' ? JSON.parse(JSON.stringify(o)) : o || null);
-    return { tab: TAB, page, at: Date.now(), busy: !!(S.job || crmBusy || imgBusy), job: S.job || (crmBusy ? '고객·주문: ' + (crmLabel || '수집') : imgBusy ? '이미지 받기' : null), jobKey: S.jobKey || null, jobStart: S.jobStart || null, chain: slim(S.chain), sub: slim(S.sub), cur: slim(S.cur), crm: slim(S.crm), crmBusy, lastEnd: S.lastEnd || null, stopping: !!(S.job && window.__rnPaused) }; };
+    return { tab: TAB, page, at: Date.now(), busy: !!(S.job || crmBusy || imgBusy), job: S.job || (crmBusy ? '고객·주문: ' + (crmLabel || '수집') : imgBusy ? '이미지 받기' : null), jobKey: S.jobKey || null, jobStart: S.jobStart || null, chain: slim(S.chain), sub: slim(S.sub), cur: slim(S.cur), crm: slim(S.crm), ph: slim(S.ph), crmBusy, lastEnd: S.lastEnd || null, stopping: !!(S.job && window.__rnPaused) }; };
   const pubLive = () => { try { GM_setValue('rnu-live-' + TAB, liveNow());
       if (ltDirty) { ltDirty = false; GM_setValue('rnu-lt-' + TAB, lt.slice()); } } catch (e) {} };
   setInterval(pubLive, 2000); setTimeout(pubLive, 300);
@@ -135,10 +143,13 @@
         return `<span class="chip ${st}" title="${c.labels[k]}${st === 'off' ? ' (끔)' : st === 'skip' ? (c.res[k] === 'partial' ? ' (정한 시간만큼 하고 다음 단계로 — 나머지는 다음 일괄 때 이어서)' : ' (다른 PC가 하는 중이라 건너뜀)') : ''}">${st === 'done' ? '✓' : st === 'now' ? '▶' : st === 'off' ? '–' : st === 'skip' ? '↷' : st === 'fail' ? '✗' : i + 1} ${c.labels[k]}</span>`; }).join('')}</div>`; }
     if (S.sub && S.sub.order) { const sb = S.sub; h += `<div class="chips" style="margin-left:14px"><span style="font-size:11px;color:#5B6B66">고객 세부:</span>${sb.order.map((k) => { const st = sb.res[k] === 'done' ? 'done' : k === sb.cur ? 'now' : 'wait'; return `<span class="chip ${st}">${st === 'done' ? '✓' : st === 'now' ? '▶' : ''} ${sb.labels[k]}</span>`; }).join('')}</div>`; }
     const x = (c && c.cur === 'crm') || (S.job === '고객 전체 일괄 수집') ? crm : cur;
+    { const P = (S.ph || {})[x === crm ? 'crm' : 'prd']; if (P && P.list && P.list.length) { const L = P.list.slice(-12); const hid = P.list.length - L.length + (P.cut || 0);
+      h += `<div class="chips" style="margin-left:${c && c.order ? 14 : 0}px"><span style="font-size:11px;color:#5B6B66">${c && c.order ? '이 단계 안:' : '단계:'}</span>${hid ? `<span class="chip done" title="앞 단계 ${hid}개">… ${hid}</span>` : ''}${L.map((q, i) => { const isNow = i === L.length - 1;
+        return `<span class="chip ${isNow ? 'now' : 'done'}" title="${String(q.l).replace(/"/g, '&quot;')} · ${new Date(q.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 시작${q.ms != null ? ' · ' + fm(q.ms) + ' 걸림' : ''}">${isNow ? '▶' : '✓'} ${String(q.l).replace(/</g, '&lt;')}${!isNow && q.ms != null && q.ms >= 60000 ? ` <small>${fm(q.ms)}</small>` : ''}</span>`; }).join('')}</div>${P.note ? `<div class="ol sub">잠깐: ${String(P.note).replace(/</g, '&lt;')}</div>` : ''}`; } }
     if (x && (x.state || x.label)) h += `<div class="ol now">지금: <b>${x.state || x.label}</b>${x.total ? ` · ${(+x.done || 0).toLocaleString()} / ${(+x.total).toLocaleString()} (${(curFrac(x) * 100).toFixed(1)}%)` : ''}${x.etaMin != null ? ` · 남은 시간 약 ${fm(x.etaMin * 60000)} (끝 ${new Date(Date.now() + x.etaMin * 60000).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})` : ''}</div>${x.total ? bar(curFrac(x), '#3F7FD1') : ''}${x.sub ? `<div class="ol sub">${String(x.sub).replace(/</g, '&lt;')}</div>` : ''}`;
     return h; };
   const mount = () => { document.head.appendChild(st); const w = document.createElement('div'); w.id = 'rn-jw';
-    w.innerHTML = `<div class="h"><b title="이 띠를 잡고 끌어서 옮김 · 두 번 누르면 처음 자리로 · 오른쪽 아래 모서리로 크기 조절">⠿ 작업 기록 — ${pcName()}</b><span class="jt"><button data-jt="today" class="on" title="이 화면을 연(새로고침한) 뒤의 기록">이번 화면</button><button data-jt="hist" title="날짜별로 쌓인 모든 기록 (오늘 포함)">전체 기록</button></span><select id="rnjF"><option value="imp">중요만</option><option value="all" selected>전체 (항목마다)</option><option value="err">오류·경고만</option></select><input id="rnjQ" placeholder="검색"><label style="font-weight:400"><input type="checkbox" id="rnjA" checked> 자동 스크롤</label><button id="rnjD" title="모든 기록(오늘+지난)을 파일로 받고, 이 PC의 기록을 비웁니다">내려받기·비우기</button><button id="rnjX">닫기</button></div><div class="ov" id="rnjO"></div><div class="b" id="rnjB"></div>`;
+    w.innerHTML = `<div class="h"><b title="이 띠를 잡고 끌어서 옮김 · 두 번 누르면 처음 자리로 · 오른쪽 아래 모서리로 크기 조절">⠿ 작업 기록 — ${pcName()}</b><span class="jt"><button data-jt="today" class="on" title="이 화면을 연(새로고침한) 뒤의 기록">이번 화면</button><button data-jt="hist" title="날짜별로 쌓인 모든 기록 (오늘 포함)">전체 기록</button><button data-jt="pw" title="가격 감시기의 지금 상태와 기록만 따로 (수집기 기록과 섞지 않음 · 이 PC의 감시 탭에서 모아 둠)">🛰 감시</button></span><select id="rnjF"><option value="imp">중요만</option><option value="all" selected>전체 (항목마다)</option><option value="err">오류·경고만</option></select><input id="rnjQ" placeholder="검색"><label style="font-weight:400"><input type="checkbox" id="rnjA" checked> 자동 스크롤</label><button id="rnjD" title="모든 기록(오늘+지난)을 파일로 받고, 이 PC의 기록을 비웁니다">내려받기·비우기</button><button id="rnjX">닫기</button></div><div class="ov" id="rnjO"></div><div class="b" id="rnjB"></div>`;
     document.body.appendChild(w); let lastDrawn = -1;
     // 위쪽 초록 띠를 잡고 끌어서 옮김. 위치·크기는 기억 (화면 밖으로 나가지 않게)
     const place = () => { const g = GM_getValue('rnu-jw-geo', null); if (!g) return; const W = Math.min(g.w || 760, innerWidth - 20), H = Math.min(g.h || 360, innerHeight - 20);
@@ -156,17 +167,30 @@
     const drawHist = async () => { const b = w.querySelector('#rnjB'); b.innerHTML = '<div class="detail">불러오는 중</div>'; let keys = []; try { await jflush(); keys = (await jdays()).sort().reverse(); } catch (e) {}
       b.innerHTML = keys.map((k) => `<details class="jd" data-day="${k}"><summary>${k}${k === day(new Date()) ? ' (오늘)' : ''} <small>펼쳐서 보기</small></summary><div class="jdb"></div></details>`).join('') || '<div class="detail">쌓인 기록 없음</div>';
       b.querySelectorAll('details.jd').forEach((d) => (d.ontoggle = async () => { if (!d.open) return; const rec = await jgetDay(d.dataset.day); const L = (rec && rec.lines) || []; const rows = L.filter(pass); d.querySelector('summary small').textContent = `${L.length.toLocaleString()}줄 · 오류 ${L.filter((e) => e.l === 'err').length} · 경고 ${L.filter((e) => e.l === 'warn').length}${rows.length !== L.length ? ` · 거른 결과 ${rows.length.toLocaleString()}줄` : ''}`; d.querySelector('.jdb').innerHTML = rows.slice(-5000).map(fmtRow).join('') || '<div class="detail">없음</div>'; })); };
-    w.querySelectorAll('[data-jt]').forEach((bt) => (bt.onclick = () => { tab = bt.dataset.jt; w.querySelectorAll('[data-jt]').forEach((x) => x.classList.toggle('on', x === bt)); lastDrawn = -1; if (tab === 'hist') drawHist(); else draw(); }));
+    w.querySelectorAll('[data-jt]').forEach((bt) => (bt.onclick = () => { tab = bt.dataset.jt; w.querySelectorAll('[data-jt]').forEach((x) => x.classList.toggle('on', x === bt)); lastDrawn = -1; pwDrawn = -1; if (tab === 'hist') drawHist(); else if (tab === 'pw') drawPw(); else draw(); drawOv(); }));
     const draw = () => { if (!w.classList.contains('on') || tab !== 'today') return; const f = w.querySelector('#rnjF').value, q = w.querySelector('#rnjQ').value.trim();
       const rows = buf.filter((e) => (f === 'all' || (f === 'imp' ? e.l !== 'detail' : e.l === 'err' || e.l === 'warn')) && (!q || e.x.includes(q))).slice(-3000);
       const b = w.querySelector('#rnjB'); b.innerHTML = rows.map((e) => `<div class="${e.l}"><span class="tm">${new Date(e.t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span> <span class="md">${e.m}</span> ${e.x.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`).join('') || '<div class="detail">기록 없음</div>';
       if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; lastDrawn = buf.length; };
     // ── 맨 위 요약: 지금 무엇을, 전체 중 어디까지 (1초마다)
     const ov = w.querySelector('#rnjO');
-    const drawOv = () => { if (!w.classList.contains('on')) return; ov.innerHTML = window.__rnOvHtml(window.__rnStatus || {}, !!(window.__rnCrm && window.__rnCrm.busy())); };
+    /* (1.43.0) 이 PC 전체에서 지금 하는 일 — 개요와 같은 기준(일하는 탭이 따로 있어도 그 탭의 단계가 보임). 예전엔 기록 창을 연 탭의 상태만 봐서, 다른 탭·자동 수집이 일할 때 단계 표시가 비었음 */
+    const drawOv = () => { if (!w.classList.contains('on')) return; if (tab === 'pw') { const h = pwOvHtml(); if (ov.innerHTML !== h) ov.innerHTML = h; return; } let lives = []; try { lives = window.__rnLive ? window.__rnLive() : []; } catch (e) {} const mine = lives.find((v) => v.tab === TAB); const busy = lives.filter((v) => v.busy); const main = mine && mine.busy ? mine : busy[0] || null;
+      const html = main ? window.__rnOvHtml(main, !!main.crmBusy) + (main.tab !== TAB ? `<div class="ol sub">이 PC의 다른 탭(${main.page === 'worders.aspx' ? '주문조회' : main.page === 'wrecord_edit.aspx' ? '상품 조회' : '판매관리'})에서 진행 중${busy.length > 1 ? ` · 함께 진행 중: ${busy.filter((v) => v !== main).map((v) => String(v.job || '').replace(/</g, '&lt;')).join(', ')}` : ''}</div>` : busy.length > 1 ? `<div class="ol sub">함께 진행 중: ${busy.filter((v) => v !== main).map((v) => String(v.job || '').replace(/</g, '&lt;')).join(', ')}</div>` : '') : window.__rnOvHtml(window.__rnStatus || {}, !!(window.__rnCrm && window.__rnCrm.busy()));
+      if (ov.innerHTML !== html) ov.innerHTML = html; };
+    /* (1.43.0) 🛰 감시 탭: 가격 감시기(따로 도는 스크립트)의 지금 상태와 기록 — 수집기 기록과 섞지 않고 따로. 감시기가 도는 상품 조회 탭이 모아 두면(GM) 이 PC의 어느 탭에서도 봄 */
+    let pwDrawn = -1;
+    const pwOvHtml = () => { const st = GM_getValue('rnu-pw-st', null); const e = (x) => String(x || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      if (!st) return '<div class="ol"><b>가격 감시기 신호 없음</b> — 이 PC에서 가격 감시기가 도는 상품 조회 탭(wrecord_edit)이 열려 있지 않거나, 감시기가 설치되지 않음</div>';
+      const age = Date.now() - (st.at || 0); const off = age > 90000;
+      return `<div class="ol"><b>${off ? '⚪ 감시기 신호 끊김' : '🛰 가격 감시기'}</b>${st.ver ? ` v${e(st.ver)}` : ''} · ${off ? `${Math.round(age / 60000)}분 전 마지막 신호 (감시 탭이 닫혔거나 멈춤)` : '지금'}</div><div class="ol now">${e(st.state) || '-'}</div>${st.prog ? `<div class="ol sub">${e(st.prog)}</div>` : ''}`; };
+    const drawPw = () => { if (!w.classList.contains('on') || tab !== 'pw') return; const L = GM_getValue('rnu-pw-tail', []) || []; const stamp = L.length + ':' + (L.length ? L[L.length - 1].t : 0) + w.querySelector('#rnjF').value + w.querySelector('#rnjQ').value; if (stamp === pwDrawn) return; pwDrawn = stamp;
+      const rows = L.filter(pass).slice(-3000); const b = w.querySelector('#rnjB'); b.innerHTML = rows.map(fmtRow).join('') || '<div class="detail">감시 기록 없음 — 가격 감시기가 이 PC에서 돌면 여기에 쌓입니다 (예전 기록은 가격 감시 탭의 기록 받기)</div>';
+      if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; };
+    setInterval(drawPw, 2000);
     setInterval(drawOv, 1000);
     setInterval(() => { if (buf.length !== lastDrawn) draw(); }, 1000); // 진행을 늦추지 않게 1초에 한 번만 그림
-    ['#rnjF', '#rnjQ'].forEach((q) => (w.querySelector(q).oninput = () => (tab === 'hist' ? drawHist() : draw()))); w.querySelector('#rnjX').onclick = () => { w.classList.remove('on'); GM_setValue('rnu-jw', 0); };
+    ['#rnjF', '#rnjQ'].forEach((q) => (w.querySelector(q).oninput = () => (tab === 'hist' ? drawHist() : tab === 'pw' ? ((pwDrawn = -1), drawPw()) : draw()))); w.querySelector('#rnjX').onclick = () => { w.classList.remove('on'); GM_setValue('rnu-jw', 0); };
   // 구글 드라이브로 바로 저장 (설정 ⑨에 Apps Script 주소·열쇠가 있으면). 실패하면 PC로 내려받기
   const driveSave = (name, content) => new Promise((res) => { const url = GM_getValue('rnu-drive-url', ''), key = GM_getValue('rnu-drive-key', ''); if (!url) return res(null);
     GM_xmlhttpRequest({ method: 'POST', url, data: JSON.stringify({ key, name, content }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, timeout: 120000, onload: (r) => { try { const j = JSON.parse(r.responseText); res(j && j.ok ? j : null); } catch (e) { res(null); } }, onerror: () => res(null), ontimeout: () => res(null) }); });
@@ -180,6 +204,18 @@
     window.__rnJournalToggle = () => { const on = !w.classList.contains('on'); w.classList.toggle('on', on); GM_setValue('rnu-jw', on ? 1 : 0); lastDrawn = -1; draw(); drawOv(); };
     if (GM_getValue('rnu-jw', 0)) window.__rnJournalToggle(); };
   if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
+  /* (1.43.0) 가격 감시기 기록 모으기: 감시기 칸(#rn-prc)이 이 화면에 있으면 그 기록 줄·상태를 이 수집기의 GM에 모아 둠(최근 400줄) → 기록 창 🛰 감시 탭.
+   *  감시기 코드는 바꾸지 않음(화면에 쓰는 글을 그대로 옮김). Firebase에는 다시 올리지 않음 — 감시기가 이미 rn_logs에 올림(중복 없게) */
+  (function pwMirror() { let tail = null, dirty = false, seen = null;
+    const ingest = (nodes) => { tail = tail || GM_getValue('rnu-pw-tail', []) || []; seen = seen || new Set(tail.slice(-300).map((e) => e.raw));
+      for (const n of nodes) { const raw = String(n.textContent || '').trim(); if (!raw || seen.has(raw)) continue; seen.add(raw); const x = raw.replace(/^\d{2}:\d{2}:\d{2} \[가격 감시\] /, '');
+        const bad = /B0322A|rgb\(176, 50, 42\)/i.test((n.getAttribute && n.getAttribute('style')) || '') || /^⚠/.test(x); tail.push({ t: Date.now(), m: '감시', l: bad ? 'err' : 'info', x, raw }); }
+      if (tail.length > 400) tail.splice(0, tail.length - 400); if (seen.size > 1000) seen = new Set(tail.map((e) => e.raw)); dirty = true; };
+    const attach = () => { const lg = document.getElementById('pw_log'); if (!lg) return false; ingest([...lg.children].reverse());
+      new MutationObserver((ms) => { const add = []; ms.forEach((m) => m.addedNodes.forEach((x) => add.push(x))); if (add.length) ingest(add.reverse()); }).observe(lg, { childList: true });
+      setInterval(() => { try { const vm = ((document.querySelector('#rn-prc .hd small') || {}).textContent || '').match(/v([\d.]+)/); GM_setValue('rnu-pw-st', { at: Date.now(), state: ((document.getElementById('pw_state') || {}).textContent || '').trim().slice(0, 300), prog: ((document.getElementById('pw_prog') || {}).textContent || '').trim().slice(0, 300), ver: vm ? vm[1] : null, tab: TAB });
+        if (dirty) { dirty = false; GM_setValue('rnu-pw-tail', tail); } } catch (e) {} }, 2000); return true; };
+    if (!attach()) { let n = 0; const t = setInterval(() => { if (attach() || ++n > 60) clearInterval(t); }, 1000); } })();
   window.addEventListener('error', (ev) => window.__rnLog('오류', 'err', `${ev.message} (${(ev.filename || '').split('/').pop()}:${ev.lineno})`));
   window.addEventListener('unhandledrejection', (ev) => window.__rnLog('오류', 'err', `처리되지 않은 오류: ${ev.reason && ev.reason.message ? ev.reason.message : ev.reason}`));
   window.__rnLog('수집기', 'info', `탭 열림 · ${location.pathname.split('/').pop()}`);
