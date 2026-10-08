@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.13.0';
+  const VERSION = '0.14.0';
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -412,7 +412,7 @@
   function parseSearchResults(d) {
     return [...d.querySelectorAll('.ss_book_box')].map((b) => { const a = b.querySelector('a.bo3'); const img = b.querySelector('img.front_cover') || b.querySelector('img');
       const id = b.getAttribute('itemid') || (((a && a.getAttribute('href')) || '').match(/ItemId=(\d+)/) || [])[1] || null; const src = img ? img.getAttribute('src') || '' : '';
-      return { itemId: id, title: a ? txt(a) : '', href: a ? a.getAttribute('href') : null, img: /^\/\//.test(src) ? 'https:' + src : src, used: /\[중고\]/.test(b.textContent || ''), channels: searchChannels(b) }; }).filter((x) => x.itemId && x.title);
+      const ck = b.querySelector('input[name^="chkCart."]'); return { itemId: id, title: a ? txt(a) : '', href: a ? a.getAttribute('href') : null, img: /^\/\//.test(src) ? 'https:' + src : src, used: /\[중고\]/.test(b.textContent || ''), channels: searchChannels(b), cart: ck ? ck.getAttribute('name').replace('chkCart.', '') : null, ours: /scm996008/.test(src) }; }).filter((x) => x.itemId && x.title); // (0.14.0) cart = 장바구니 상품코드 · ours = 사진 주소가 우리 판매자(scm996008…)
   }
   // 검색 결과 상품 칸 아래 작은 표(table.usedtable02): 머리 줄 = 알라딘 중고 / ○○점(알라딘 매장) / 판매자 중고 (개수), 아래 줄 = 각 최저가 ('-' = 없음)
   function searchChannels(box) {
@@ -444,6 +444,30 @@
     return { n: keep.length, nAll: vals.length, outliers: out, median: med, p25, p75, low: keep.length ? keep[0] : null, high: keep.length ? keep[keep.length - 1] : null, cv, conf, ourPrice: our, ourVsMedian: our != null && med ? our / med - 1 : null, cheaperShare: pos, points: pts };
   }
   // 검색어가 상품 이름에 얼마나 들어 있나 (0~1): 띄어쓰기·문장부호를 빼고, 검색어 글자가 순서대로 몇 개 들어 있는지(최장 공통 부분수열) ÷ 검색어 길이
+  /* (0.14.0) 세트 상품 알아보기 — 기계 학습·관찰 도구·가격 판단에서 상품을 가르는 중요한 기준 (정범 2026-10-08)
+   *  강함(strong, 거의 늘 세트): [세트]·(세트)·【세트】 · 끝 쪽 '1~10'·'1-10'·'Ⅰ~Ⅴ'(권·편·부·집 붙어도) · 전10권 · 총 10권 · 10권 세트·일괄·묶음 · 상·하권 · (1+2)
+   *  약함(weak, 확인 필요): 괄호 없이 '세트'·'전집'·'박스'·'+색인' — 제목에 우연히 들어간 경우가 있음
+   *  연도 범위(1985-1990)·학년(2-3학년)·쪽수는 세트로 보지 않음. 세트라고 꼭 ISBN·새상품이 없는 것은 아님 */
+  function setInfo(title) { const t0 = String(title || '').replace(/^\[중고[^\]]*\]\s*/, ''); const t = t0.split(/\s\/\s?|\/\s/)[0]; const L = t.length; const why = [];
+    if (/[\[\(（【]\s*(세트|SET|Set|set|박스\s*세트|전집)\s*[\]\)）】]/.test(t0)) why.push('[세트] 표시');
+    if (/전\s*\d{1,3}\s*(권|책|巻|부)/.test(t0)) why.push('전 n권');
+    if (/총\s*\d{1,3}\s*(권|책)/.test(t0)) why.push('총 n권');
+    if (/\d{1,3}\s*권\s*(세트|일괄|묶음|합본)/.test(t0)) why.push('n권 세트');
+    if (/(상\s*[·.,/+~\-]\s*하|상하)\s*권|\(\s*상\s*[,·/]\s*하\s*\)|상\s*·\s*중\s*·\s*하/.test(t0)) why.push('상·하권');
+    if (/\(\s*\d{1,3}\s*\+\s*\d{1,3}\s*(권)?\s*\)/.test(t0)) why.push('(1+2)');
+    { const re = /(^|[\s(\[,])(\d{1,3})\s*[~∼〜\-–]\s*(\d{1,3})\s*(권|편|부|집|화|호)?(?=\s*[)\]]|\s|$|\+|,)/g; let m; while ((m = re.exec(t))) { const a = +m[2], b = +m[3]; const rest = t.slice(m.index + m[0].length); if (a < b && b - a <= 300 && m.index + m[1].length >= L * 0.2 && !/^\s*(학년|세(?!트)|살|쪽|p\b|페이지|년|월|일|시|분|명|인|개월)/.test(rest)) { why.push(`${a}~${b}`); break; } } }
+    if (/(^|[\s(\[])([IⅠ]{1,3}|Ⅰ)\s*[~∼\-–]\s*([IVXⅠ-Ⅻ]{1,4})(?=\s*[)\]]|\s|$|\+)/.test(t)) why.push('Ⅰ~Ⅴ');
+    if (why.length) return { set: true, level: 'strong', why };
+    const weak = []; if (/세트(?!장|포인트|업|팅)/.test(t0)) weak.push("'세트' 단어"); if (/전집(?!\s*(제\s*)?\d)/.test(t0)) weak.push('전집'); /* '한국민화전집 6' = 전집의 한 권 */ if (/박스\s*(세트|판)|BOX\s*SET/i.test(t0)) weak.push('박스'); if (/\+\s*(색인|별권|부록\s*\d)/.test(t0)) weak.push('+색인·별권');
+    return weak.length ? { set: true, level: 'weak', why: weak } : { set: false, level: null, why: [] }; }
+  // (0.14.0) 알라딘 미등록 상품: 알라딘 상품(새책 카탈로그)에 붙이지 않고 정보를 직접 써서 등록한 것 — 샵매니저 목록의 번호 칸이 ISBN이 아니라 상품코드(U…)
+  //  다른 판매자는 그 상세에 붙을 수 없고, 같은 책을 각자 따로 등록하므로 '전체 중고' 목록이 아니라 검색(SearchTarget=Used)으로 경쟁 상품을 찾음
+  //  판단 근거가 있을 때만: 샵매니저에서 읽은 번호(ids)가 상품코드(usedCode)뿐이고 ISBN·알라딘 상품코드가 없을 때. 번호 기록이 없으면 '모름'(false) — 근거 없이 미등록으로 보지 않음
+  const isUnregistered = (l) => { if (!l || l.isbn13 || l.isbn10 || l.aladinCode) return false; const ids = Array.isArray(l.ids) ? l.ids.filter(Boolean) : []; return ids.length > 0 && ids.some((x) => x.kind === 'usedCode') && !ids.some((x) => ['isbn13', 'isbn10', 'aladinCode', 'barcode'].includes(x.kind)); };
+  // (0.14.0) 검색어: [중고]·앞 [..] 떼고, '/' 뒤(저자·출판사) 떼고, 끝 (..) 떼기 — 정범이 확인한 방법('포스트모더니즘 : 이합 핫산의 문화 및 문학 이론')
+  function searchQueryOf(title) { let t = String(title || '').replace(/^\[중고[^\]]*\]\s*/, '').replace(/^(\s*\[[^\]]*\]\s*)+/, ''); t = t.split(/\s*\/\s*/)[0]; for (let i = 0; i < 3; i++) t = t.replace(/\s*[\(（][^()（）]*[\)）]\s*$/, ''); return t.replace(/\s+/g, ' ').trim(); }
+  // (0.14.0) 권 번호가 같은지: '한국사론 1'과 '한국사론 10'은 이름 일치가 높아도 다른 책 — 연도(1800~2099)는 빼고, 제목 본문(앞 [..]·'/' 뒤·끝 (..) 뺀 것)의 숫자들이 같아야 같은 상품
+  function sameVolume(a, b) { const nums = (x) => (searchQueryOf(x).match(/\d+/g) || []).map(Number).filter((n) => !(n >= 1800 && n <= 2099)).sort((p, q) => p - q).join(','); return nums(a) === nums(b); }
   function nameCoverage(query, title) { const n = (x) => String(x || '').toLowerCase().replace(/[\s\p{P}\p{S}]/gu, ''); const q = n(query), t = n(title); if (!q.length) return 0;
     const dp = new Array(t.length + 1).fill(0); for (let i = 1; i <= q.length; i++) { let prev = 0; for (let j = 1; j <= t.length; j++) { const tmp = dp[j]; dp[j] = q[i - 1] === t[j - 1] ? prev + 1 : Math.max(dp[j], dp[j - 1]); prev = tmp; } } return dp[t.length] / q.length; }
   // 우리(판매자) 중고 상품 페이지의 상품 사진: 위쪽 표지 영역(#CoverMainImage·표지 넘김 사진) + '중고상품 구매 유의 사항'(#usedDecription) 안 사진
@@ -673,7 +697,7 @@
     VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
-    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, searchChannels, marketNoBook, nameCoverage, parseC2BList, parseC2BDetail, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
+    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
     parseUsedItemInfo, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.36.0
+// @version      1.37.0
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/worders.aspx*
 // @match        https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx*
@@ -20,11 +20,11 @@
 // @noframes
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-orders-core.js?v=0.3.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.13.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.14.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.5.1
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.1.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.2.0
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
@@ -235,7 +235,7 @@
 
 (async function () {
   'use strict';
-  const APP_VER = '1.36.0';
+  const APP_VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.37.0'; // (1.36.0) 판 번호는 맨 위 @version 한 곳 — 고객 쪽·상품 쪽이 같은 값
   const BASE = 'https://www.aladin.co.kr/scm/';
   const now = () => new Date().toISOString();
   const LOGIN_FLAG = 'rn-autologin-pending';
@@ -2479,7 +2479,7 @@
  */
 (async function () {
   'use strict';
-  const VER = '1.27.0';
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.37.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
   {
@@ -2512,7 +2512,7 @@
   const PACE = P.makePacer('aladin'); // 알라딘 요청 속도: 이 PC의 모든 탭·스크립트가 같이 씀 (readnow-products-core.js makePacer)
   if (!P) { alert('[리드나우 상품 수집기] 파서 파일(readnow-products-core.js)을 불러오지 못했습니다. GitHub에 올렸는지 확인해 주세요.'); return; }
   // 공용 파일이 요구 버전보다 '옛것'일 때만 알림 (같거나 더 새것이면 조용히 씀). 요구 버전은 이 한 곳에서만 정함
-  const NEED_FILES = { '상품 파서 readnow-products-core.js': [() => P.VERSION, '0.12.0'], '판매자 파서 readnow-sellers-core.js': [() => (window.ReadnowSellers || globalThis.ReadnowSellers || {}).VERSION, '1.3.0'], '판매자 분류 기준 readnow-core.js': [() => (((typeof unsafeWindow !== 'undefined' && unsafeWindow.ReadNowCore) || window.ReadNowCore || globalThis.ReadNowCore || {}).CORE_VERSION), '1.3.0'], '판정 엔진 readnow-pricing-core.js': [() => (window.ReadnowPricing || globalThis.ReadnowPricing || {}).VERSION, '0.9.1'], '출고 기준 readnow-shipping-core.js': [() => (window.ReadnowShipping || globalThis.ReadnowShipping || {}).VERSION, '0.5.1'], '관리도구 노선표 readnow-registry.js': [() => (window.ReadnowRegistry || globalThis.ReadnowRegistry || {}).VERSION, '0.1.0'] };
+  const NEED_FILES = { '상품 파서 readnow-products-core.js': [() => P.VERSION, '0.14.0'], '판매자 파서 readnow-sellers-core.js': [() => (window.ReadnowSellers || globalThis.ReadnowSellers || {}).VERSION, '1.3.0'], '판매자 분류 기준 readnow-core.js': [() => (((typeof unsafeWindow !== 'undefined' && unsafeWindow.ReadNowCore) || window.ReadNowCore || globalThis.ReadNowCore || {}).CORE_VERSION), '1.3.0'], '판정 엔진 readnow-pricing-core.js': [() => (window.ReadnowPricing || globalThis.ReadnowPricing || {}).VERSION, '0.9.1'], '출고 기준 readnow-shipping-core.js': [() => (window.ReadnowShipping || globalThis.ReadnowShipping || {}).VERSION, '0.5.1'], '관리도구 노선표 readnow-registry.js': [() => (window.ReadnowRegistry || globalThis.ReadnowRegistry || {}).VERSION, '0.2.0'] };
   const verN = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
   const OLD_FILES = Object.entries(NEED_FILES).map(([k, [g, w]]) => [k, g(), w]).filter(([, v, w]) => verN(v) < verN(w));
   if (OLD_FILES.length) alert(`[리드나우 수집기] GitHub의 공용 파일이 이 수집기보다 옛 버전입니다:\n${OLD_FILES.map(([k, v, w]) => `· ${k}: ${v || '못 읽음'} (필요 ${w} 이상)`).join('\n')}\n새 파일을 올린 뒤 몇 분 뒤 새로고침해 주세요.`);
@@ -2595,6 +2595,25 @@
     if (!rr.ok || /실패|오류|error/i.test(al)) throw new Error(al || ('HTTP ' + rr.status)); return al; }
   async function statusCodeOf(it) { try { const ld = (await C('prd_listings').doc(it.listingKey || ('aladin_' + it.aladinUsedCode)).get()).data(); if (ld && ST_CODE[ld.status]) return ST_CODE[ld.status]; } catch (er) {} return null; }
   const sendSignal = (phase, t, extra) => C('shp_cmds').add({ type: 'cashTest', status: 'signal', phase, orderId: t.id, lineNo: t.it.lineNo, title: t.it.title, listingId: t.it.listingId || null, at: nowIso(), createdAt: nowIso(), by: PC_NAME, ...(extra || {}), uploadedAt: TS() }).catch(() => {});
+  // (1.37.0) 현금 판매 판매중지 도우미 — 띠의 단추와 웹앱이 맡긴 일(cashStop)이 같이 씀
+  const cashLidOf = async (t) => { if (t.it.listingId) return String(t.it.listingId); if (t.rowLid) return String(t.rowLid);
+    try { const ld = (await C('prd_listings').doc(t.it.listingKey || ('aladin_' + t.it.aladinUsedCode)).get()).data(); if (ld && ld.listingId) return String(ld.listingId); } catch (er) {} throw new Error('알라딘 상품번호를 못 찾음 — 상품 조회/수정 목록에서 그 줄의 단추로 해 주세요'); };
+  const cashInStopList = async (lid, title) => { const kw = String(title || '').replace(/^\[[^\]]*\]\s*/, '').slice(0, 30); if (!kw) return null; try { const r = await fetch(stopListUrl(kw), { credentials: 'include', cache: 'no-store' }); if (!r.ok) return null; const doc = new DOMParser().parseFromString(await r.text(), 'text/html'); return P.parseScmList(doc).rows.some((x) => String(x.listingId) === String(lid)); } catch (e) { return null; } };
+  const cashUpdLine = (id, lineNo, fn, what) => db.runTransaction(async (tx) => { const ref = C('crm_orders').doc(id); const sn = await tx.get(ref); if (!sn.exists) throw new Error('현금 판매 기록이 없음'); const o = sn.data();
+    const items = JSON.parse(JSON.stringify(o.items || [])); const it = items.find((x) => x.lineNo === lineNo); if (!it) throw new Error('그 줄을 못 찾음'); fn(it);
+    const tot = items.filter((x) => x.lineStatus === 'normal').reduce((s, x) => s + (+x.price || 0) * (+x.qty || 1), 0);
+    tx.update(ref, { items, totalAmount: tot, uploadedAt: TS(), history: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), by: PC_NAME, what }) }); });
+  /* (1.37.0) 웹앱이 맡긴 '현금 판매 → 알라딘 판매중지'(shp_cmds cashStop {orderId, lineNo, listingId, listingKey, usedCode, title}) — 띠의 '지금 판매중지로 바꾸기'와 같은 길, 확인 창 없이
+     판매중지 목록에서 그 상품번호를 찾아야 완료('done'), 못 찾으면 원래 상태를 다른 값으로 한 번씩 더 → 그래도 없으면 '확인 필요'(check — 완료로 적지 않음) */
+  async function cashStopCmd(ref, v) { const t = { id: v.orderId, it: { lineNo: v.lineNo, listingId: v.listingId || null, listingKey: v.listingKey || null, aladinUsedCode: v.usedCode || null, title: v.title || '' } };
+    try { const sn = (await C('crm_orders').doc(v.orderId).get()).data(); const it0 = sn && (sn.items || []).find((x) => x.lineNo === v.lineNo);
+      if (!it0 || it0.released || it0.lineStatus !== 'normal' || (it0.aladinStop && it0.aladinStop.status === 'done')) { await ref.set({ status: 'done', result: { state: 'skip', msg: '이미 처리됐거나 판매 줄이 아님' }, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); return; }
+      const lid = await cashLidOf(t); const before = (await statusCodeOf(t.it)) || 1; let al = await setAladinStatus(lid, before, 15); let ok = await cashInStopList(lid, t.it.title); let usedBefore = before;
+      for (const alt of [1, 3, 41]) { if (ok !== false || alt === before) continue; al = await setAladinStatus(lid, alt, 15).catch((e) => e.message); usedBefore = alt; ok = await cashInStopList(lid, t.it.title); }
+      const st = ok ? 'done' : 'check'; const by = (auth.currentUser && auth.currentUser.email) || PC_NAME;
+      await cashUpdLine(t.id, t.it.lineNo, (it) => { if (it.aladinStop && it.aladinStop.status === 'done') return; it.listingId = it.listingId || lid; it.aladinStop = { status: st, at: nowIso(), by, from: 'collector-auto', before: usedBefore, verified: ok === true, msg: al || null, cmd: ref.id }; }, `알라딘 판매중지로 바꿈(수집기 자동 · 웹앱 저장): ${t.it.title}${ok ? ' · 판매중지 목록에서 확인함' : ' · 판매중지 목록에서 확인 못함(확인 필요)'}${al ? ' · 알라딘: ' + al : ''}`);
+      await ref.set({ status: 'done', result: { state: st, listingId: lid, before: usedBefore, msg: al || null }, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`현금 판매 판매중지(자동): ${t.it.title} — ${ok ? '완료' : '확인 필요'}`, ok ? 0 : 1);
+    } catch (e) { await ref.set({ status: 'done', result: { state: 'fail', msg: e.message }, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }).catch(() => {}); log('현금 판매 판매중지 실패: ' + e.message, 1); } }
   async function paintCashSold() {
     try { await new Promise((r) => { const u = auth.onAuthStateChanged((x) => { u(); r(x); }); }); if (!auth.currentUser) return;
       const onEdit = /\/scm\/wrecord_edit\.aspx/i.test(location.pathname);
@@ -2606,16 +2625,12 @@
         const t0 = { id: d.id, o, it, test: isT }; if (it.aladinUsedCode) { sold.set(String(it.aladinUsedCode), ok); soldT.set(String(it.aladinUsedCode), t0); } if (it.listingId) { sold.set('L' + it.listingId, ok); soldT.set('L' + it.listingId, t0); } (ok ? done : todo).push(t0); }); });
       const reasons = new Map(); if (sr) sr.forEach((d) => { const v = d.data(); if (v.usedCode) reasons.set(String(v.usedCode), v); });
       // 알라딘 상품번호(listingId): 현금 판매 기록에 없으면 우리 상품 기록 → 이 화면의 그 줄 순서로 찾음
-      const lidOf = async (t) => { if (t.it.listingId) return String(t.it.listingId); if (t.rowLid) return String(t.rowLid);
-        try { const ld = (await C('prd_listings').doc(t.it.listingKey || ('aladin_' + t.it.aladinUsedCode)).get()).data(); if (ld && ld.listingId) return String(ld.listingId); } catch (er) {} throw new Error('알라딘 상품번호를 못 찾음 — 상품 조회/수정 목록에서 그 줄의 단추로 해 주세요'); };
+      const lidOf = cashLidOf;
       const WHY = { return: '반품', exchange: '교환', other: '기타' };
       // (1.34.0) 판매중지 확인: 바꾼 뒤 '판매중지' 목록에서 그 상품을 실제로 찾아야 완료 — 못 찾으면 원래 상태를 다른 값으로 한 번씩 더 시도, 그래도 없으면 '확인 필요'(완료로 적지 않음)
-      const inStopList = async (lid, title) => { const kw = String(title || '').replace(/^\[[^\]]*\]\s*/, '').slice(0, 30); if (!kw) return null; try { const r = await fetch(stopListUrl(kw), { credentials: 'include', cache: 'no-store' }); if (!r.ok) return null; const doc = new DOMParser().parseFromString(await r.text(), 'text/html'); return P.parseScmList(doc).rows.some((x) => String(x.listingId) === String(lid)); } catch (e) { return null; } };
+      const inStopList = cashInStopList;
       // 현금 판매 기록의 한 줄만 바꿈 (트랜잭션: 그 사이 웹앱에서 고친 다른 줄·금액을 덮어쓰지 않음) + 합계 다시 셈
-      const updLine = (id, lineNo, fn, what) => db.runTransaction(async (tx) => { const ref = C('crm_orders').doc(id); const sn = await tx.get(ref); if (!sn.exists) throw new Error('현금 판매 기록이 없음'); const o = sn.data();
-        const items = JSON.parse(JSON.stringify(o.items || [])); const it = items.find((x) => x.lineNo === lineNo); if (!it) throw new Error('그 줄을 못 찾음'); fn(it);
-        const tot = items.filter((x) => x.lineStatus === 'normal').reduce((s, x) => s + (+x.price || 0) * (+x.qty || 1), 0);
-        tx.update(ref, { items, totalAmount: tot, uploadedAt: TS(), history: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), by: PC_NAME, what }) }); });
+      const updLine = cashUpdLine;
       async function doStop(t, b) { if (!t.test && !confirm(`'${t.it.title}'을(를) 알라딘에서 판매중지로 바꿀까요?`)) return; b.disabled = true; b.textContent = '바꾸는 중…';
         try { const lid = await lidOf(t); const before = t.test ? 1 : (await statusCodeOf(t.it)) || 1; let al = await setAladinStatus(lid, before, 15);
           if (t.test) { await sendSignal('stop', t, { msg: al || null }); GM_deleteValue('rn-cash-test'); GM_setValue('rn-cash-hl', { listingId: lid, at: Date.now() }); location.href = stopListUrl('이터널 선샤인'); return; }
@@ -2810,7 +2825,7 @@
     </div>
     <div class="sec">
       <p class="cap">우리 상품 보강 (알라딘 줄)</p>
-      <div class="g2"><button class="b2" data-job="nbMarket" title="새상품 페이지가 없는 상품: 상품명 검색 결과로 시세">새상품 없는 상품 시세</button><button class="b2" data-job="photos" title="새상품 표지가 없는 상품: 우리 상품 페이지의 사진을 전부">우리 상품 사진</button><button class="b2" data-job="usedInfo" title="우리 책 온라인 중고 첫 페이지의 다른 판매자 매물 전부: 중고상품 구매 유의 사항 글과 사진 — 가격 결정 화면 블록의 ? 표시">경쟁 매물 유의사항·사진</button></div>
+      <div class="g2"><button class="b2" data-job="nbMarket" title="알라딘 미등록·세트·새상품 페이지 없는 상품: 바깥 검색(중고) 화면의 따로 등록된 같은 책들로 경쟁·시세">검색 시세 (미등록·세트)</button><button class="b2" data-job="photos" title="새상품 표지가 없는 상품: 우리 상품 페이지의 사진을 전부">우리 상품 사진</button><button class="b2" data-job="usedInfo" title="우리 책 온라인 중고 첫 페이지의 다른 판매자 매물 전부: 중고상품 구매 유의 사항 글과 사진 — 가격 결정 화면 블록의 ? 표시">경쟁 매물 유의사항·사진</button></div>
     </div>
     <details class="sec" style="margin-top:10px"><summary class="cap" style="cursor:pointer">예비 · 가끔 쓰는 것 (펼치기)</summary>
       <p class="cap" style="margin-top:6px">출고 — 클라우드가 1분마다 하므로 클라우드가 멈췄을 때만</p>
@@ -4006,7 +4021,7 @@
   /* (1.36.0) 관리도구 노선표: PC가 맡는 일 = 노선표(readnow-registry.js 기본값 + Firebase app_settings/sys_registry)에서 'PC가 맡을 수 있음'이고 멈춤이 아닌 종류만.
      예전 목록(CMD_NOT_PC)과 달리 모르는 종류는 맡지 않음 — 예전엔 모르는 종류를 '끝남'으로 적어 일이 사라질 수 있었음. 노선표 파일을 못 읽었을 때만 예전 목록으로 */
   let REGDOC = null, regUnsub = null; const REGF = () => window.ReadnowRegistry || globalThis.ReadnowRegistry || null;
-  const PC_KNOWN_OLD = new Set(['read', 'startDelivery', 'usedInfo', 'c2bAdd', 'lookup', 'metrics']);
+  const PC_KNOWN_OLD = new Set(['read', 'startDelivery', 'usedInfo', 'c2bAdd', 'lookup', 'metrics', 'cashStop']);
   const pcCan = (type) => { const G = REGF(); if (!G) return PC_KNOWN_OLD.has(type); return G.canHandle(G.merge(REGDOC || {}), type, 'pc'); };
   async function runCmd(id) { const ref = C('shp_cmds').doc(id); let v = null;
     await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const x = sn.data(); if (!x || x.status !== 'queued' || !pcCan(x.type) || String(x.pcSkip || '').includes(` ${APP_VER}에`)) return; /* 노선표에서 PC 몫인 종류만 (1.36.0) */ tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, uploadedAt: TS() }); v = x; });
@@ -4025,7 +4040,8 @@
       for (const lid of v.listingIds || []) { try { const prev = (await C('prd_used_info').doc(String(lid)).get()).data(); const r = await readOurUsed(lid, v.grade || null, prev);
           results[lid] = r.miss ? { ok: false, why: r.miss, at: nowIso() } : { ok: true, note: !!r.note, at: nowIso() }; } catch (e) { results[lid] = { ok: false, why: e.message, at: nowIso() }; } }
       await ref.set({ status: 'done', results, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`유의 사항 다시 읽기: ${Object.values(results).filter((r) => r.ok).length} / ${Object.keys(results).length}건`); return; }
-    else if (v.type === 'c2bAdd') { await c2bAddCmd(ref, v); return; } // (1.35.0) 알라딘 매입: 팔기 장바구니에 담기
+    else if (v.type === 'c2bAdd') { await c2bAddCmd(ref, v); return; }
+    else if (v.type === 'cashStop') { await cashStopCmd(ref, v); return; } // (1.37.0) 현금 판매 → 알라딘 판매중지 자동 // (1.35.0) 알라딘 매입: 팔기 장바구니에 담기
     else if (v.type === 'lookup') { await lookupCmd(ref, v); return; }
     else if (v.type === 'metrics') { log(`그룹 시장 지표 갱신 맡음: ${v.label || ''} ${(v.keys || []).length}개`); if (!running) runJob('metricsReq'); else log('다른 작업 중 — 끝나면 이어서 (5분마다 확인)'); return; }
     else if (v.type === 'read') { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (SH) try { await shipLiteRead(SH, null); } catch (e) {} await ref.set({ status: 'done', doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); }
@@ -4147,9 +4163,13 @@
     } finally { await releaseLane('aladin'); }
   }
 
-  /* ───────── 새상품 페이지가 없는 상품의 시세 (파서 0.7.0의 marketNoBook) ─────────
-   * 대상: 도서 정보(새상품 페이지)가 없는 우리 상품 (판매 중 먼저). 상품명으로 알라딘 검색 → 이름 일치 90% 이상 상품들의 채널별 최저가 → 시세
-   * 저장: prd_market_nobook/{상품} — 최신 결과 + 바뀔 때만 기록(history)에 덧붙임. 기본 7일에 한 번 다시 봄 (설정 nbDays) */
+  /* ───────── 검색 시세: 알라딘 미등록·세트·새상품 페이지 없는 상품 (1.37.0 — 예전 '새상품 없는 상품 시세') ─────────
+   * 왜: 미등록 상품(정보를 직접 써서 등록 — 번호 칸이 ISBN이 아닌 상품코드)·세트 상품은 '전체 중고' 상세에 다른 판매자가 붙지 않아 단독처럼 보이지만,
+   *     같은 책을 다른 판매자들이 각자 따로 등록해 둠 → 바깥 검색 화면(SearchTarget=Used)에 따로따로 나오고, 그 화면에서 바로 가격(판매자 중고 최저가)이 보임
+   * 대상: 판매 중 + (미등록 · 세트(파서 setInfo) · 도서 정보 없음). 검색어 = 파서 searchQueryOf(앞 [..]·'/' 뒤·끝 (..) 뗌)
+   * 같은 상품 = 이름 일치(설정 photoMatch, 기본 90%) + 권 번호 같음(sameVolume — '한국사론 1' ≠ '한국사론 10'). 우리 가게 상품(사진 주소 scm996008)은 경쟁에서 뺌(우리끼리 경쟁 안 함)
+   * 저장: prd_market_nobook/{상품} — src 'usedSearch' · rows(상품마다 번호·이름·일치·우리 여부·판매자/알라딘/매장 최저가·개수) · 시세(marketNoBook) · 후보가 바뀔 때만 판(v)을 통째로 보관 · 시세가 바뀔 때만 history
+   *       기본 7일에 한 번 다시 봄 (설정 nbDays) — 웹앱 시장 블록·관찰 도구·수동 일괄 처리가 이 rows로 '첫 페이지' 대신 비교 */
   async function nbMarketJob() {
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
     try {
@@ -4158,28 +4178,31 @@
       if (!prog || !prog.list) {
         const have = new Map(); (await C('prd_market_nobook').get()).forEach((d) => have.set(d.id, d.data().at || ''));
         const cut = FORCE_ALL ? '9999' : new Date(Date.now() - Math.max(1, SET.nbDays || 7) * 864e5).toISOString();
-        const list = [...LISTINGS.entries()].filter(([k, l]) => l.usedCode && !l.bookId && l.title && (!have.get(k) || have.get(k) < cut)).sort((a, b) => (b[1].active ? 1 : 0) - (a[1].active ? 1 : 0)).map(([k]) => k);
+        const want = (l) => l.usedCode && l.title && (!l.bookId || P.isUnregistered(l) || P.setInfo(l.title).set); const haveV = new Map(); (await C('prd_market_nobook').get()).forEach((d) => haveV.set(d.id, d.data().src || ''));
+        const list = [...LISTINGS.entries()].filter(([k, l]) => want(l) && (l.active || !l.bookId) && (!have.get(k) || have.get(k) < cut || haveV.get(k) !== 'usedSearch')).sort((a, b) => (b[1].active ? 1 : 0) - (a[1].active ? 1 : 0)).map(([k]) => k); // 예전 방식(전체 검색)으로 본 것은 새 방식으로 다시
         prog = { list, i: 0, ok: 0, none: 0, startedAt: nowIso() }; await saveProgress('nbMarket', prog);
-        log(`새상품 없는 상품 시세: ${list.length.toLocaleString()}개 (판매 중 먼저, ${SET.nbDays || 7}일 안에 본 것은 건너뜀)`);
+        log(`검색 시세(미등록·세트·새상품 없음): ${list.length.toLocaleString()}개 (판매 중 먼저, ${SET.nbDays || 7}일 안에 본 것은 건너뜀)`);
       }
       for (; prog.i < prog.list.length; prog.i++) {
         if (stopFlag) { await saveProgress('nbMarket', prog); throw new Error('멈춤'); }
         const key = prog.list[prog.i]; const l = LISTINGS.get(key); if (!l) continue;
-        const qy = String(l.title).replace(/^\[중고\]\s*/, '').replace(/\((최상|상|중|하)[^)]*\)\s*$/, '').trim();
+        const qy = P.searchQueryOf(l.title);
         try {
-          const sr = await getDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=All&SearchWord=${encodeURIComponent(qy)}`);
-          const cands = P.parseSearchResults(sr.doc).map((r) => ({ ...r, cov: Math.round(P.nameCoverage(qy, r.title) * 1000) / 1000, ours: /scm996008/.test(r.img || '') })).filter((r) => r.cov >= 0.5).slice(0, 20);
-          const M = P.marketNoBook(cands, { match: SET.photoMatch ?? 0.9, selfItemId: l.listingId, ourPrice: l.price });
+          if (!qy) throw new Error('검색어를 만들 수 없음');
+          const sr = await getDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Used&SearchWord=${encodeURIComponent(qy)}`);
+          const th = SET.photoMatch ?? 0.9; const all = P.parseSearchResults(sr.doc).map((r) => ({ ...r, cov: Math.round(P.nameCoverage(qy, r.title) * 1000) / 1000, vol: P.sameVolume(qy, r.title) }));
+          const cands = all.filter((r) => r.cov >= 0.5).slice(0, 30).map((r) => ({ ...r, match: r.cov >= th && r.vol && !(l.bookId && String(r.itemId) === String(l.bookId)) })); // 같은 상품 = 이름 일치 + 권 번호 같음 (세트의 새책 상세 = 첫 페이지에 이미 있으니 뺌)
+          const M = P.marketNoBook(cands.map((r) => ({ ...r, cov: r.match ? r.cov : 0 })), { match: th, selfItemId: null, ourPrice: l.price });
           const ref = C('prd_market_nobook').doc(key); const old = (await ref.get()).data(); const sig = `${M.median}|${M.low}|${M.n}`;
           const cSig = JSON.stringify(cands.map((x) => [x.itemId, x.price, x.title])); if (!old || old.candSig !== cSig) await ref.collection('v').doc(nowIso().replace(/[:.]/g, '-')).set({ at: nowIso(), query: qy, cands, market: { median: M.median, low: M.low, n: M.n }, ...W() }); // 후보 목록이 바뀌면 그 판을 통째로 보관
-          await ref.set({ usedCode: l.usedCode, listingId: l.listingId || null, title: l.title, query: qy, at: nowIso(), cands, candSig: cSig, market: { ...M, points: M.points.map((x) => ({ v: x.v, ch: x.ch, itemId: x.itemId, ours: !!x.ours })) },
+          await ref.set({ usedCode: l.usedCode, listingId: l.listingId || null, title: l.title, query: qy, at: nowIso(), src: 'usedSearch', unreg: P.isUnregistered(l), set: P.setInfo(l.title), cands, candSig: cSig, market: { ...M, points: M.points.map((x) => ({ v: x.v, ch: x.ch, itemId: x.itemId, ours: !!x.ours })) },
             ...(old && old.sig === sig ? {} : { sig, history: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), median: M.median, low: M.low, n: M.n, our: l.price ?? null }) }), ...W() }, { merge: true });
           M.n ? prog.ok++ : prog.none++;
-          ui('새상품 없는 상품 시세', prog.i + 1, prog.list.length, `${l.title} · ${M.n ? `시세 ${M.median.toLocaleString()}원 (${M.n}개, 신뢰도 ${M.conf})` : '비교할 상품 없음'}`);
+          ui('검색 시세 (미등록·세트)', prog.i + 1, prog.list.length, `${l.title} · ${M.n ? `시세 ${M.median.toLocaleString()}원 (${M.n}개, 신뢰도 ${M.conf})` : '비교할 상품 없음'}`);
         } catch (e) { prog.none++; if (prog.none < 20) log(`시세 ${l.title}: ${e.message}`, 1); }
         if (prog.i % 5 === 0) await saveProgress('nbMarket', prog);
       }
-      await finishJob('nbMarket', { ok: prog.ok, none: prog.none }); log(`새상품 없는 상품 시세 완료: 시세 잡힘 ${prog.ok} · 비교 상품 없음 ${prog.none}`);
+      await finishJob('nbMarket', { ok: prog.ok, none: prog.none }); log(`검색 시세 완료: 경쟁 상품 잡힘 ${prog.ok} · 경쟁 상품 없음 ${prog.none}`);
     } finally { await releaseLane('aladin'); }
   }
 
