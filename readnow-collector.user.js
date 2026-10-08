@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.35.0
+// @version      1.35.1
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/worders.aspx*
 // @match        https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx*
@@ -234,7 +234,7 @@
 
 (async function () {
   'use strict';
-  const APP_VER = '1.35.0';
+  const APP_VER = '1.35.1';
   const BASE = 'https://www.aladin.co.kr/scm/';
   const now = () => new Date().toISOString();
   const LOGIN_FLAG = 'rn-autologin-pending';
@@ -4375,12 +4375,14 @@
    * 그 시각에 PC가 꺼져 있었으면 그날 안에 알라딘 화면이 열린 PC가 늦게라도 한 번 함(밀린 회차는 한 번으로 묶음).
    * 주문(주문확인요청·발송 요청)과 알라딘 구매 첫 쪽은 클라우드가 늘 하므로 여기 없음.
    * 고객 쪽 일(묻고 답하기·반품·고객 일괄)은 주문조회·판매관리 화면 탭에서만 돎(그 화면에 고객 수집기가 있음). */
+  /* (1.35.1) 같은 때 여러 항목이 할 때가 되면 이 목록 위에서부터 한 번에 하나씩(이 순서 = 우선순위): 고객 응대(묻고 답하기·반품) → 상품 상태 → 팔기 정산 → 구매 내역 → 긴 일괄.
+     앞 항목이 막혀 있으면(다른 PC가 알라딘 작업 중·고객 탭 바쁨) 건너뛰고 다음 항목을 함 — 예전엔 막힌 항목 하나가 뒤 항목까지 붙잡아 둠 */
   const SCHED_ITEMS = [
     { k: 'qna', label: '묻고 답하기', kind: 'crm', task: 'qna', def: ['09:00', '13:00', '17:00'], why: '새 질문·답 안 한 질문 (답이 늦으면 구매 포기)' },
     { k: 'returns', label: '반품 관리', kind: 'crm', task: 'returns', def: ['10:00', '16:00'], why: '반품 요청·처리 상태' },
-    { k: 'aladinBuy', label: '알라딘 구매 내역 (내가 산 것)', kind: 'prd', job: 'aladinBuy', def: ['22:00'], why: '모든 구매 주문·상세 (첫 쪽은 클라우드가 5분마다)' },
-    { k: 'buyback', label: '알라딘 팔기 정산 내역', kind: 'prd', job: 'buyback', def: ['21:00'], why: '팔기 접수·매입·정산' },
     { k: 'scanDaily', label: '상품 조회/수정 (판매중·일시판매중지·판매중지)', kind: 'prd', job: 'scanDaily', def: ['08:00', '20:00'], why: '새로 등록된 상품 + 상태가 바뀐 상품 (지난번까지 확인한 곳에서 멈춤)' },
+    { k: 'buyback', label: '알라딘 팔기 정산 내역', kind: 'prd', job: 'buyback', def: ['21:00'], why: '팔기 접수·매입·정산' },
+    { k: 'aladinBuy', label: '알라딘 구매 내역 (내가 산 것)', kind: 'prd', job: 'aladinBuy', def: ['22:00'], why: '모든 구매 주문·상세 (첫 쪽은 클라우드가 5분마다)' },
     { k: 'crmBulk', label: '고객·주문 전체 일괄', kind: 'crm', task: 'bulk', def: ['06:00'], why: '예전 \'매일 자동 수집\' (고객 수집기)', off: true },
     { k: 'chain', label: '모두 일괄 수집 (고객 + 상품 전체)', kind: 'prd', job: 'chain', def: ['17:00'], why: '예전 \'매일 자동 모두 일괄\' — 오래 걸림', off: true },
   ];
@@ -4407,17 +4409,20 @@
     setInterval(schedTick, 60000); setTimeout(schedTick, 15000);
   }
   // 오늘 해야 할 회차: 시각이 지났고 아직 아무 PC도 안 잡은 것 — 밀린 회차가 여럿이면 마지막 것 하나로
-  function schedDue() { if (!SCHED || !SCHED.on) return null; const { day, min } = kstNow();
+  function schedDue() { if (!SCHED || !SCHED.on) return []; const { day, min } = kstNow(); const out = [];
     for (const it of SCHED_ITEMS) { const c = (SCHED.items || {})[it.k]; if (!c || !c.on) continue; const ts = normTimes(c.times).filter((t) => tMin(t) <= min); if (!ts.length) continue;
       const last = ts[ts.length - 1]; const key = `${it.k}@${day}@${last}`; if (SCHED_RUNS[key]) continue;
       if (it.kind === 'crm' && !(window.__rnCrm && window.__rnCrm.start)) continue; // 고객 수집기가 없는 화면(상품 조회/수정)에서는 건너뜀 — 다른 탭이 함
-      return { it, key, last, day, skip: ts.slice(0, -1).map((t) => `${it.k}@${day}@${t}`).filter((k) => !SCHED_RUNS[k]) }; }
-    return null; }
+      out.push({ it, key, last, day, skip: ts.slice(0, -1).map((t) => `${it.k}@${day}@${t}`).filter((k) => !SCHED_RUNS[k]) }); }
+    return out; } // 우선순위 순서(SCHED_ITEMS 순서) 그대로
   let schedBusy = false;
   async function schedTick() { if (schedBusy || running || window.__rnPaused || !auth.currentUser) return; if (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) return;
-    const due = schedDue(); if (!due) return; schedBusy = true;
-    try { if (due.it.kind === 'crm' && window.__rnCrm.otherBusy && window.__rnCrm.otherBusy()) return; // 이 PC의 다른 탭이 고객 작업 중
-      if (due.it.kind === 'prd') { const lk = (await LOCK().get()).data(); if (laneBusy(lk)) return; } // 알라딘 줄이 다른 PC 작업으로 차 있으면 다음 확인 때
+    const dues = schedDue(); if (!dues.length) return; schedBusy = true;
+    try { let due = null; let lk = null; // (1.35.1) 위(우선)부터 지금 할 수 있는 첫 항목 — 막힌 항목은 건너뜀(다음 확인 때 다시)
+      for (const d of dues) { if (d.it.kind === 'crm' && window.__rnCrm.otherBusy && window.__rnCrm.otherBusy()) continue; // 이 PC의 다른 탭이 고객 작업 중
+        if (d.it.kind === 'prd') { if (lk === null) lk = (await LOCK().get()).data() || {}; if (laneBusy(lk)) continue; } // 알라딘 줄이 다른 PC 작업으로 차 있음
+        due = d; break; }
+      if (!due) return;
       let ok = false; await db.runTransaction(async (tx) => { const s = await tx.get(SCHED_RUN()); const r = (s.exists && s.data().runs) || {}; if (r[due.key]) return; const up = { [due.key]: { by: PC_NAME, at: nowIso(), state: 'running' } }; due.skip.forEach((k) => (up[k] = { by: PC_NAME, at: nowIso(), state: 'merged', into: due.key })); tx.set(SCHED_RUN(), { runs: up }, { merge: true }); ok = true; });
       if (!ok) return; const t0 = Date.now(); log(`⏰ 매일 자동: '${due.it.label}' 시작 (${due.last} 회차${due.skip.length ? ` · 밀린 ${due.skip.length}회차 함께` : ''})`);
       let res, err = null;
@@ -4430,10 +4435,10 @@
     } catch (e) { log('⏰ 매일 자동 확인 실패: ' + (e.code || e.message), 1); } finally { schedBusy = false; } }
   // 화면: 상품 패널 맨 위 카드
   function schedDraw() { const el = document.getElementById('rnpSched'); if (!el) return; const S0 = SCHED || { on: false, items: {} }; const { day, min } = kstNow();
-    const rows = SCHED_ITEMS.map((it) => { const c = (S0.items || {})[it.k] || { on: false, times: it.def }; const ts = normTimes(c.times);
+    const rows = SCHED_ITEMS.map((it, ix) => { const c = (S0.items || {})[it.k] || { on: false, times: it.def }; const ts = normTimes(c.times);
       const st = ts.map((t) => { const r = SCHED_RUNS[`${it.k}@${day}@${t}`]; const past = tMin(t) <= min; const s = r ? ({ done: '✓', running: '▶', error: '⚠', merged: '↷', busy: '…' })[r.state] || '·' : past ? (S0.on && c.on ? '⌛' : '–') : '·'; return `<span class="ts ${r ? r.state : past ? 'late' : ''}" title="${t} ${r ? `${r.state === 'done' ? '끝' : r.state === 'running' ? '하는 중' : r.state === 'merged' ? '다음 회차와 함께 함' : r.state === 'error' ? '멈춤: ' + (r.err || '') : r.state} · ${r.by || ''}` : past ? '아직 안 함 (알라딘 화면이 열린 PC가 곧 함)' : '오늘 예정'}">${s} ${t}</span>`; }).join('');
-      return `<div class="sr${c.on ? ' on' : ''}"><label class="sw2"><input type="checkbox" data-sk="${it.k}" ${c.on ? 'checked' : ''}><span></span></label><div class="sb"><b>${it.label}</b><small>${it.why}</small><div class="tl">${st || '<i>시각 없음</i>'} <a href="#" data-st="${it.k}" title="시각 고치기 (하루 여러 번: 쉼표로)">시각 ✎</a></div></div></div>`; }).join('');
-    el.innerHTML = `<div class="sh2"><label class="sw2 big"><input type="checkbox" id="rnpSchedOn" ${S0.on ? 'checked' : ''}><span></span></label><b>⏰ 매일 자동 수집</b><span class="hint2">${S0.on ? '켜짐 — 끌 때까지 매일 정한 시각에' : '꺼짐 — 켜면 아래 켠 항목을 매일 정한 시각에'}</span></div><div class="sl${S0.on ? '' : ' dim'}">${rows}</div><div class="hint2" style="margin-top:3px">✓ 끝 · ▶ 하는 중 · ⌛ 시각 지남(곧 함) · ⚠ 멈춤(마우스를 올리면 이유) · 모든 PC가 같은 설정, 시각마다 한 PC만 함. 브라우저가 꺼져 있을 때도 돌리려면 <a href="#" id="rnpSchedHelp">윈도우 작업 스케줄러</a></div>`;
+      return `<div class="sr${c.on ? ' on' : ''}"><label class="sw2"><input type="checkbox" data-sk="${it.k}" ${c.on ? 'checked' : ''}><span></span></label><div class="sb"><b>${ix + 1}. ${it.label}</b><small>${it.why}</small><div class="tl">${st || '<i>시각 없음</i>'} <a href="#" data-st="${it.k}" title="시각 고치기 (하루 여러 번: 쉼표로)">시각 ✎</a></div></div></div>`; }).join('');
+    el.innerHTML = `<div class="sh2"><label class="sw2 big"><input type="checkbox" id="rnpSchedOn" ${S0.on ? 'checked' : ''}><span></span></label><b>⏰ 매일 자동 수집</b><span class="hint2">${S0.on ? '켜짐 — 끌 때까지 매일 정한 시각에' : '꺼짐 — 켜면 아래 켠 항목을 매일 정한 시각에'}</span></div><div class="sl${S0.on ? '' : ' dim'}">${rows}</div><div class="hint2" style="margin-top:3px">같은 때 여러 항목이면 번호 순서대로 하나씩(앞 항목이 막혀 있으면 다음 것부터) · ✓ 끝 · ▶ 하는 중 · ⌛ 시각 지남(곧 함) · ⚠ 멈춤(마우스를 올리면 이유) · 모든 PC가 같은 설정, 시각마다 한 PC만 함. 브라우저가 꺼져 있을 때도 돌리려면 <a href="#" id="rnpSchedHelp">윈도우 작업 스케줄러</a></div>`;
     el.querySelector('#rnpSchedOn').onchange = (e) => SCHED_REF().set({ on: e.target.checked, at: nowIso(), by: PC_NAME }, { merge: true }).then(() => log(`⏰ 매일 자동 수집 ${e.target.checked ? '켬' : '끔'}`)).catch((er) => alert('저장 실패: ' + er.message));
     el.querySelectorAll('[data-sk]').forEach((cb) => (cb.onchange = () => SCHED_REF().set({ items: { [cb.dataset.sk]: { on: cb.checked } } }, { merge: true }).catch((er) => alert('저장 실패: ' + er.message))));
     el.querySelectorAll('[data-st]').forEach((a) => (a.onclick = (ev) => { ev.preventDefault(); const it = SCHED_ITEMS.find((x) => x.k === a.dataset.st); const c = (S0.items || {})[it.k] || { times: it.def };

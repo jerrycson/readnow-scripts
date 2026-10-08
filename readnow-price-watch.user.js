@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.9.0
+// @version      0.9.1
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -22,7 +22,7 @@
 (async function () {
   'use strict';
   if (window.top !== window) return;
-  const VER = '0.9.0';
+  const VER = '0.9.1';
   const g = (n) => (typeof unsafeWindow !== 'undefined' && unsafeWindow[n]) || window[n] || globalThis[n] || null;
   const Core = g('ReadNowCore'), RS = g('ReadnowSellers'), P = g('ReadnowProducts'), PR = g('ReadnowPricing');
   const NEED = [['판매자 분류 기준 readnow-core.js', Core && Core.CORE_VERSION, '1.3.0'], ['판매자 파서', RS && RS.VERSION, '1.3.0'], ['상품 파서', P && P.VERSION, '0.12.0'], ['판정 엔진', PR && PR.VERSION, '0.11.0']];
@@ -250,7 +250,34 @@
   async function claim(ref, x, kind) { let ok = false; await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data(); if (!v || v.approvalState !== kind || !sameApproval(v.approval, x.approval)) return;
     const a = v.approval || {}; if (a.decision === 'batch' && a.batchId) { const cfg = (await tx.get(SREF)).data() || {}; if ((cfg.batchOff || {})[a.batchId] || cfg.killSwitch) return; } // (0.6.0) 그룹 끄기·전체 정지를 맡는 순간에 다시 확인 (트랜잭션 — 그 사이 꺼졌으면 맡지 않음)
     tx.update(ref, { approvalState: 'applying', applyingAt: new Date().toISOString(), applyingBy: `${PC}:${TAB}`, applyingFrom: kind }); ok = true; }); return ok; }
-  async function settle(ref, x, patch, actionDoc) { let wrote = false; const aref = actionDoc ? C('prd_price_actions').doc() : null; settle.last = aref; await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data() || {}; if (actionDoc) tx.set(aref, actionDoc); if (v.approvalState === 'applying' && v.applyingBy === `${PC}:${TAB}` && sameApproval(v.approval, x.approval)) { tx.set(ref, patch, { merge: true }); wrote = true; } else tx.set(ref, { lastExecAt: patch.executedAt || new Date().toISOString(), lastExecNote: (patch.execNote || '') + ' (그 사이 결정이 바뀌어 상태는 그대로 둠)' }, { merge: true }); }); return wrote; }
+  /* (0.9.1) 반영하면 상품 기록(prd_listings)의 지금 값도 같이 바꾸고 변화 기록(prd_listing_changes, source 'price-watch')을 남김 — 같은 트랜잭션.
+     예전엔 반영 기록(prd_price_actions)에만 있어, 수집기가 그 상품을 다시 읽기 전까지 웹앱 상품 기록의 가격이 옛 값이고 상품 상세 '변경 이력'에도 없었음.
+     수집기가 나중에 다시 읽으면 값이 같으므로 이력이 겹치지 않음 */
+  function listingSync(tx, lref, ls, a, aid) { if (!lref || !ls || !ls.exists) return; const cur = ls.data() || {}; const ch = {}, up = {};
+    const isPrice = a.to != null && a.kind !== 'hold' && a.kind !== 'unhold'; if (isPrice && Number(a.to) !== Number(cur.price)) { ch.price = { from: cur.price ?? a.from ?? null, to: a.to }; up.price = a.to; }
+    if (a.toSku && a.toSku !== cur.sku) { ch.sku = { from: cur.sku ?? null, to: a.toSku }; up.sku = a.toSku; } if (a.toStatus && a.toStatus !== cur.status) { ch.status = { from: cur.status ?? null, to: a.toStatus }; up.status = a.toStatus; }
+    if (!Object.keys(ch).length) return; const now = new Date().toISOString();
+    tx.set(lref, { ...up, watchSyncAt: now, watchSyncAction: aid, ...W() }, { merge: true });
+    tx.set(C('prd_listing_changes').doc(), { listingKey: a.key, at: a.at || now, source: 'price-watch', actionId: aid, kind: a.kind || null, batchId: a.batchId || null, batchName: a.batchName || null, changes: ch, ...W() }); }
+  async function settle(ref, x, patch, actionDoc) { let wrote = false; const aref = actionDoc ? C('prd_price_actions').doc() : null; settle.last = aref; const lref = actionDoc && actionDoc.key ? C('prd_listings').doc(actionDoc.key) : null;
+    await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const ls = lref ? await tx.get(lref) : null; const v = sn.data() || {}; if (actionDoc) { tx.set(aref, actionDoc); listingSync(tx, lref, ls, actionDoc, aref.id); } if (v.approvalState === 'applying' && v.applyingBy === `${PC}:${TAB}` && sameApproval(v.approval, x.approval)) { tx.set(ref, patch, { merge: true }); wrote = true; } else tx.set(ref, { lastExecAt: patch.executedAt || new Date().toISOString(), lastExecNote: (patch.execNote || '') + ' (그 사이 결정이 바뀌어 상태는 그대로 둠)' }, { merge: true }); }); return wrote; }
+  /* (0.9.1) 한 번만: 0.9.0까지 반영한 것 중 상품 기록에 아직 안 들어간 것을 채움 — 반영 시각이 수집기가 그 상품을 마지막으로 본 때보다 뒤인 것만(그 뒤 수집기가 다시 읽은 것은 수집기 값이 맞음).
+     가격은 가장 마지막 반영 값으로, 변화 기록은 반영마다 한 줄(backfill 표시). 한 PC만 함(트랜잭션으로 잡음), 끝나면 prd_system/pricing.listingSync */
+  async function listingBackfill() { const VERK = '0.9.1'; let mine = false;
+    try { await db.runTransaction(async (tx) => { const d = await tx.get(SREF); const ls = (d.data() || {}).listingSync || {}; if (ls.ver === VERK && (ls.state === 'done' || (ls.state === 'running' && Date.now() - Date.parse(ls.at || 0) < 30 * 60000))) return; tx.set(SREF, { listingSync: { ver: VERK, state: 'running', by: PC, at: new Date().toISOString() } }, { merge: true }); mine = true; }); } catch (e) { return; }
+    if (!mine) return; log('상품 기록에 지난 가격 반영 채우는 중 (한 번만)');
+    try { const acts = []; (await C('prd_price_actions').get()).forEach((d) => { const a = d.data(); if (a && a.key && a.at && (a.to != null || a.toSku || a.toStatus)) acts.push({ id: d.id, ...a }); }); acts.sort((p, q) => String(p.at).localeCompare(String(q.at)));
+      const byKey = new Map(); acts.forEach((a) => (byKey.get(a.key) || byKey.set(a.key, []).get(a.key)).push(a)); let nL = 0, nC = 0; let b = db.batch(), ops = 0; const flush = async () => { if (ops) { await b.commit(); b = db.batch(); ops = 0; } };
+      const keys = [...byKey.keys()]; for (let i = 0; i < keys.length; i += 200) { const part = keys.slice(i, i + 200); const docs = await Promise.all(part.map((k) => C('prd_listings').doc(k).get()));
+        for (let j = 0; j < part.length; j++) { const ld = docs[j]; if (!ld.exists) continue; const L = ld.data() || {}; const seen = String(L.lastSeenAt || ''); const later = byKey.get(part[j]).filter((a) => String(a.at) > seen); if (!later.length) continue;
+          let price = L.price, sku = L.sku, status = L.status; const up = {};
+          for (const a of later) { const ch = {}; const isPrice = a.to != null && a.kind !== 'hold' && a.kind !== 'unhold'; if (isPrice && Number(a.to) !== Number(price)) { ch.price = { from: price ?? a.from ?? null, to: a.to }; price = a.to; up.price = a.to; }
+            if (a.toSku && a.toSku !== sku) { ch.sku = { from: sku ?? null, to: a.toSku }; sku = a.toSku; up.sku = a.toSku; } if (a.toStatus && a.toStatus !== status) { ch.status = { from: status ?? null, to: a.toStatus }; status = a.toStatus; up.status = a.toStatus; }
+            if (Object.keys(ch).length) { b.set(C('prd_listing_changes').doc(), { listingKey: part[j], at: a.at, source: 'price-watch', backfill: true, actionId: a.id, kind: a.kind || null, batchId: a.batchId || null, batchName: a.batchName || null, changes: ch, ...W() }); ops++; nC++; } }
+          if (Object.keys(up).length) { b.set(C('prd_listings').doc(part[j]), { ...up, watchSyncAt: new Date().toISOString(), watchSyncAction: later[later.length - 1].id, ...W() }, { merge: true }); ops++; nL++; }
+          if (ops >= 400) await flush(); } await flush(); }
+      await SREF.set({ listingSync: { ver: VERK, state: 'done', by: PC, at: new Date().toISOString(), listings: nL, changes: nC } }, { merge: true }); log(`상품 기록 채움: 상품 ${nL}개 · 변화 기록 ${nC}줄`); }
+    catch (e) { log('상품 기록 채우기 실패(다음 시작 때 다시): ' + e.message, 1); try { await SREF.set({ listingSync: { ver: VERK, state: 'error', by: PC, at: new Date().toISOString(), err: e.message } }, { merge: true }); } catch (er) {} } }
   async function unstick() { try { const q = await C('prd_price_decisions').where('approvalState', '==', 'applying').get(); for (const d of q.docs) { const v = d.data(); if (Date.now() - Date.parse(v.applyingAt || 0) < 10 * 60000) continue;
       await d.ref.set({ approvalState: 'blocked', execNote: `반영 중 멈춤(${v.applyingBy || '?'}, ${String(v.applyingAt || '').slice(5, 16).replace('T', ' ')}) — 알라딘에 들어갔는지 모름: 샵매니저에서 가격 확인 후 다시 결정`, execFailAt: new Date().toISOString(), ...W() }, { merge: true }); log(`반영 중 멈춘 결정을 막힘으로: ${v.title || v.usedCode}`, 1); } } catch (e) {} }
   async function executeApproved() {
@@ -468,5 +495,5 @@
     } catch (e) { log('오류: ' + e.message, 1); if (/permission/i.test(e.message)) state('<b style="color:#B0322A">Firestore 쓰기 권한 없음</b><br>규칙에 prd_price_decisions · prd_price_actions · prd_market_watch 허용 필요'); }
     finally { ticking = false; }
   }
-  await adoptHandoff(); paintOwner(); buttons(); log('준비됨'); tick(); (async () => { for (;;) { await sleep(60 * 1000); tick(); } })(); // 1분마다 (숨은 탭에서도)
+  await adoptHandoff(); paintOwner(); buttons(); log('준비됨'); listingBackfill().catch(() => {}); tick(); (async () => { for (;;) { await sleep(60 * 1000); tick(); } })(); // 1분마다 (숨은 탭에서도)
 })();
