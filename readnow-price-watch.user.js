@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.9.4
+// @version      0.10.0
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -9,6 +9,8 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.14.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-aladin-core.js?v=0.1.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-exec-core.js?v=0.1.0
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js
@@ -22,9 +24,9 @@
 (async function () {
   'use strict';
   if (window.top !== window) return;
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '0.9.4'; // 판 번호는 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '0.10.0'; // 판 번호는 맨 위 @version 한 곳
   const gvw = (n) => (typeof unsafeWindow !== 'undefined' && unsafeWindow[n]) || window[n] || globalThis[n] || {}; // (0.9.3) 읽은 공용 파일 판 → 웹앱 관리도구가 노선표의 판과 비교
-  const coreVers = () => ({ core: gvw('ReadNowCore').CORE_VERSION || null, sellers: gvw('ReadnowSellers').VERSION || null, products: gvw('ReadnowProducts').VERSION || null, pricing: gvw('ReadnowPricing').VERSION || null });
+  const coreVers = () => ({ core: gvw('ReadNowCore').CORE_VERSION || null, sellers: gvw('ReadnowSellers').VERSION || null, products: gvw('ReadnowProducts').VERSION || null, pricing: gvw('ReadnowPricing').VERSION || null, aladin: gvw('ReadnowAladin').VERSION || null, exec: gvw('ReadnowExec').VERSION || null });
   const g = (n) => (typeof unsafeWindow !== 'undefined' && unsafeWindow[n]) || window[n] || globalThis[n] || null;
   const Core = g('ReadNowCore'), RS = g('ReadnowSellers'), P = g('ReadnowProducts'), PR = g('ReadnowPricing');
   const NEED = [['판매자 분류 기준 readnow-core.js', Core && Core.CORE_VERSION, '1.3.0'], ['판매자 파서', RS && RS.VERSION, '1.3.0'], ['상품 파서', P && P.VERSION, '0.12.0'], ['판정 엔진', PR && PR.VERSION, '0.11.0']];
@@ -149,7 +151,9 @@
   async function aladinDoc(url) {
     for (let i = 0; i < 3; i++) {
       await PACE.wait(sleep);
-      try { const r = await fetch(url, { credentials: 'include' }); if (!r.ok) throw Object.assign(new Error('응답 ' + r.status), { status: r.status }); const html = await r.text(); PACE.ok(); return new DOMParser().parseFromString(html, 'text/html'); }
+      try { const r = await fetch(url, { credentials: 'include' }); if (!r.ok) throw Object.assign(new Error('응답 ' + r.status), { status: r.status }); const AL = window.ReadnowAladin || globalThis.ReadnowAladin; const html = AL ? AL.decode(await r.arrayBuffer(), r.headers.get('content-type')) : await r.text(); const d = new DOMParser().parseFromString(html, 'text/html');
+        if (AL && AL.isMaintenance(d)) throw new Error('알라딘 점검 중 — 빈 목록으로 판정하지 않음'); // (0.9.5) 점검 안내 화면을 매물 0개로 읽어 \'단독\'처럼 올리지 않게 (알라딘 창구 공용 기준)
+        PACE.ok(); return d; }
       catch (e) { PACE.fail(PACE.kindOf(e.status)); log(`알라딘 받기 실패(${e.message}) — 30초 뒤 다시`, 1); await sleep(30000); }
     }
     throw new Error('알라딘 받기 3번 실패');
@@ -282,6 +286,10 @@
     catch (e) { log('상품 기록 채우기 실패(다음 시작 때 다시): ' + e.message, 1); try { await SREF.set({ listingSync: { ver: VERK, state: 'error', by: PC, at: new Date().toISOString(), err: e.message } }, { merge: true }); } catch (er) {} } }
   async function unstick() { try { const q = await C('prd_price_decisions').where('approvalState', '==', 'applying').get(); for (const d of q.docs) { const v = d.data(); if (Date.now() - Date.parse(v.applyingAt || 0) < 10 * 60000) continue;
       await d.ref.set({ approvalState: 'blocked', execNote: `반영 중 멈춤(${v.applyingBy || '?'}, ${String(v.applyingAt || '').slice(5, 16).replace('T', ' ')}) — 알라딘에 들어갔는지 모름: 샵매니저에서 가격 확인 후 다시 결정`, execFailAt: new Date().toISOString(), ...W() }, { merge: true }); log(`반영 중 멈춘 결정을 막힘으로: ${v.title || v.usedCode}`, 1); } } catch (e) {} }
+  /* (0.10.0) 실행도구의 한 문 (readnow-exec-core.js): 가격·판매보류 반영 전에 exec_log에 '시작'을 적고 — 같은 결정이 이미 끝났거나 다른 곳이 하는 중이면 보내지 않음 — 끝나면 결과를 적음 */
+  const EXW = () => window.ReadnowExec || globalThis.ReadnowExec;
+  async function xBegin(kind, key, detail) { const X = EXW(); if (!X) return { ok: true, none: true }; try { return await X.begin(db, { kind, key, by: PC, detail }); } catch (e) { log(`⚠ 실행 기록을 못 적음 — ${e.code || e.message}${/permission/i.test(e.code || e.message) ? ' (Firestore 규칙에 exec_log 허용 필요)' : ''} · 반영은 예전처럼 하고 기록만 빠짐`, 1); return { ok: true, none: true }; } }
+  const xEnd = (o, status, msg) => { const X = EXW(); if (!X || !o || o.none) return Promise.resolve(); return X.finish(db, { kind: o.kind, key: o.key }, status, { msg }).catch(() => {}); };
   async function executeApproved() {
     await unstick();
     const st = ['approved', 'manual', 'hold', 'unhold']; const docs = [];
@@ -293,7 +301,10 @@
     const post = async (url, body) => { await PACE.wait(sleep); return fetch(url, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' }, body }); };
     for (const d0 of docs) {
       if (stop || SET.killSwitch || !isMine()) return; const x = d0.data(); const kind = x.approvalState; const now = new Date().toISOString(); const d = d0;
-      const fail = async (msg, block) => { const tries = (x.execTries || 0) + 1; if (!block && tries >= 3 && !/로그인/.test(msg)) { block = true; msg += ' (세 번 실패 — 더 보내지 않음)'; } await d.ref.set({ ...(block ? { approvalState: 'blocked' } : { approvalState: kind }), execTries: tries, execNote: `반영 ${block ? '안 함' : '실패'}: ${msg}`, execFailAt: now, ...W() }, { merge: true }); log(`반영 ${block ? '안 함' : '실패'}: ${x.title || x.usedCode} — ${msg}`, 1); };
+      let xo = null; // 이 결정의 실행 기록 (열려 있으면 실패 때 '실패'로 닫음)
+      const xGate = async (kind2) => { const key = `${x.key}@${(x.approval && x.approval.at) || x.at || ''}`; const g = await xBegin(kind2, key, { listingId: x.listingId || null, title: x.title || null, price: (x.approval && x.approval.price) ?? null, decision: (x.approval && x.approval.decision) || kind });
+        if (!g.ok) { await d.ref.set({ approvalState: g.state === 'done' ? 'done' : 'blocked', execNote: `실행 문: ${g.why}`, ...W() }, { merge: true }); log(`보내지 않음(실행 문): ${x.title || x.usedCode} — ${g.why}`, 1); return false; } xo = { kind: kind2, key, none: !!g.none }; return true; };
+      const fail = async (msg, block) => { if (xo) { await xEnd(xo, 'failed', msg); xo = null; } const tries = (x.execTries || 0) + 1; if (!block && tries >= 3 && !/로그인/.test(msg)) { block = true; msg += ' (세 번 실패 — 더 보내지 않음)'; } await d.ref.set({ ...(block ? { approvalState: 'blocked' } : { approvalState: kind }), execTries: tries, execNote: `반영 ${block ? '안 함' : '실패'}: ${msg}`, execFailAt: now, ...W() }, { merge: true }); log(`반영 ${block ? '안 함' : '실패'}: ${x.title || x.usedCode} — ${msg}`, 1); };
       if (offOf(x)) { offN++; continue; }
       let got = false; try { got = await claim(d.ref, x, kind); } catch (e) { log('맡기 실패: ' + e.message, 1); continue; } if (!got) { log(`그 사이 결정이 바뀌어 건너뜀: ${x.title || x.usedCode}`); continue; }
       // ↓ 맡은(반영 중) 뒤에 확인 — 확인하다 막을 때도 그 사이 바뀐 다른 결정을 덮지 않음
@@ -316,27 +327,30 @@
       }
       if (kind === 'unhold') { // 판매보류풀 해제(원상복귀): 원래 관리코드 → 판매중
         const orig = (x.approval && x.approval.sku) || (x.holdInfo && x.holdInfo.origSku); if (!orig) { await fail('원래 관리코드 기록이 없음'); continue; }
+        if (!(await xGate('unhold'))) continue;
         let r1; try { r1 = P.parseAjaxResult(await (await post('/scm/ajaxCmd.aspx', P.scmAction.supCode(x.listingId, orig).body)).text()); } catch (e) { r1 = { ok: false, error: e.message }; }
         if (!r1.ok) { await fail('관리코드 되돌리기 ' + r1.error); if (/로그인/.test(r1.error || '')) return; continue; }
         await sleep(1500); let ok2 = false, err2 = ''; try { const r2 = await post('/scm/wrecord_edit_usedbatch.aspx', P.scmAction.status('일시판매중지', '판매중', [x.listingId]).body); ok2 = r2.ok; err2 = '응답 ' + r2.status; } catch (e) { err2 = e.message; }
         if (!ok2) { await fail(`관리코드는 ${orig}로 돌렸지만 판매중 변경 실패(${err2}) — 샵매니저에서 확인`); continue; }
-        n++; await settle(d.ref, x, { approvalState: 'done', executedAt: now, execNote: `판매보류풀 해제: 관리코드 ${orig}, 판매중`, holdInfo: null, ...W() }, { key: x.key, usedCode: x.usedCode, listingId: x.listingId, title: x.title, kind: 'unhold', fromSku: PR.skuWith(orig, 'hold'), toSku: orig, fromStatus: '일시판매중지', toStatus: '판매중', at: now, day: today, by: (x.approval && x.approval.by) || null, pc: PC, engine: PR.VERSION, ...W() }); log(`판매보류풀 해제: ${x.title || x.usedCode} (→ ${orig}, 판매중)`); await sleep(GAP()); continue;
+        n++; await xEnd(xo, 'done', `관리코드 ${orig}, 판매중`); xo = null; await settle(d.ref, x, { approvalState: 'done', executedAt: now, execNote: `판매보류풀 해제: 관리코드 ${orig}, 판매중`, holdInfo: null, ...W() }, { key: x.key, usedCode: x.usedCode, listingId: x.listingId, title: x.title, kind: 'unhold', fromSku: PR.skuWith(orig, 'hold'), toSku: orig, fromStatus: '일시판매중지', toStatus: '판매중', at: now, day: today, by: (x.approval && x.approval.by) || null, pc: PC, engine: PR.VERSION, ...W() }); log(`판매보류풀 해제: ${x.title || x.usedCode} (→ ${orig}, 판매중)`); await sleep(GAP()); continue;
       }
       if (kind === 'hold') { // 판매보류풀: 관리코드 뒤 3자리 PND → 판매상태 일시판매중지
         const newSku = PR.skuWith(x.sku, 'hold'); if (!newSku) { await fail('관리코드가 없어 PND로 바꿀 수 없음'); continue; }
+        if (!(await xGate('hold'))) continue;
         let r1; try { r1 = P.parseAjaxResult(await (await post('/scm/ajaxCmd.aspx', P.scmAction.supCode(x.listingId, newSku).body)).text()); } catch (e) { r1 = { ok: false, error: e.message }; }
         if (!r1.ok) { await fail('관리코드 변경 ' + r1.error); if (/로그인/.test(r1.error || '')) return; continue; }
         await sleep(1500);
         let ok2 = false, err2 = ''; try { const r2 = await post('/scm/wrecord_edit_usedbatch.aspx', P.scmAction.status('판매중', '일시판매중지', [x.listingId]).body); ok2 = r2.ok; err2 = '응답 ' + r2.status; } catch (e) { err2 = e.message; }
         if (!ok2) { await fail(`관리코드는 ${newSku}로 바뀌었지만 일시판매중지 변경 실패(${err2}) — 샵매니저에서 확인`); continue; }
-        n++; await settle(d.ref, x, { approvalState: 'done', executedAt: now, execNote: `판매보류풀로 옮김: ${x.sku} → ${newSku}, 일시판매중지`, holdInfo: { origSku: x.sku || null, minPrice: (x.approval && x.approval.price) || null, at: now }, ...W() }, { key: x.key, usedCode: x.usedCode, listingId: x.listingId, title: x.title, grade: x.grade || null, aladinItemId: x.aladinItemId || null, kind: 'hold', fromSku: x.sku || null, toSku: newSku, fromStatus: '판매중', toStatus: '일시판매중지', from: x.current ?? null, to: x.current ?? null, minPrice: (x.approval && x.approval.price) || null, at: now, day: today, by: (x.approval && x.approval.by) || null, pc: PC, engine: PR.VERSION, ...W() }); log(`판매보류풀: ${x.title || x.usedCode} (${x.sku} → ${newSku}, 일시판매중지)`); await sleep(GAP()); continue;
+        n++; await xEnd(xo, 'done', `${x.sku} → ${newSku}, 일시판매중지`); xo = null; await settle(d.ref, x, { approvalState: 'done', executedAt: now, execNote: `판매보류풀로 옮김: ${x.sku} → ${newSku}, 일시판매중지`, holdInfo: { origSku: x.sku || null, minPrice: (x.approval && x.approval.price) || null, at: now }, ...W() }, { key: x.key, usedCode: x.usedCode, listingId: x.listingId, title: x.title, grade: x.grade || null, aladinItemId: x.aladinItemId || null, kind: 'hold', fromSku: x.sku || null, toSku: newSku, fromStatus: '판매중', toStatus: '일시판매중지', from: x.current ?? null, to: x.current ?? null, minPrice: (x.approval && x.approval.price) || null, at: now, day: today, by: (x.approval && x.approval.by) || null, pc: PC, engine: PR.VERSION, ...W() }); log(`판매보류풀: ${x.title || x.usedCode} (${x.sku} → ${newSku}, 일시판매중지)`); await sleep(GAP()); continue;
       }
       const price = Math.round(kind === 'manual' ? +(x.approval && x.approval.price) : (x.approval && x.approval.price) || x.target); if (!(price >= 10)) { await fail('가격이 없음', true); continue; } // (0.5.0) 관리자 가격은 적은 가격만
+      if (!(await xGate('price'))) continue;
       let res; try { await PACE.wait(sleep); const r = await fetch(P.scmAction.price(x.listingId, price).url, { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } }); res = P.parseAjaxResult(await r.text()); } catch (e) { res = { ok: false, error: e.message }; }
       if (res.ok) PACE.ok(); else PACE.fail(/로그인/.test(res.error || '') ? 'login' : 'error');
       if (res.ok && parseInt(String(res.value || '').replace(/\D/g, ''), 10) !== price) res = { ok: false, error: `알라딘이 돌려준 값(${res.value})이 보낸 가격(${price})과 다름` };
       if (!res.ok) { await fail(res.error, /돌려준 값/.test(res.error || '')); /* 알라딘이 다른 값으로 받았으면 다시 보내지 않음 */ if (/로그인/.test(res.error || '')) { state('<b style="color:#B0322A">알라딘 로그인 풀림</b> — 수집기가 다시 로그인할 때까지 기다림'); return; } continue; }
-      n++; const fromP = (x.approval && x.approval.expectPrice != null ? x.approval.expectPrice : x.current) ?? null;
+      n++; await xEnd(xo, 'done', `${price} (알라딘 답: ${res.value})`); xo = null; const fromP = (x.approval && x.approval.expectPrice != null ? x.approval.expectPrice : x.current) ?? null;
       const fine = Math.random() < 0.1; const vNew = { state: 'wait', n: 0, si: 0, fine, next: new Date(Date.parse(now) + (fine ? V_FINE : V_STEPS)[0] * 60000).toISOString() }; const actDoc = { key: x.key, usedCode: x.usedCode, listingId: x.listingId, title: x.title, grade: x.grade || null, aladinItemId: x.aladinItemId || null, from: fromP, to: price, engineTarget: x.target ?? null, kind: (x.approval && x.approval.decision) || kind, batchId: (x.approval && x.approval.batchId) || null, batchName: (x.approval && x.approval.batchName) || null, at: now, day: today, kst: kstOf(now), confirmedAt: (x.approval && x.approval.at) || null, by: (x.approval && x.approval.by) || null, pc: PC, result: res.value, engine: PR.VERSION, verify: vNew, ...(fine && x.listingId ? { verifyPg: { state: 'wait', n: 0, si: 0, next: vNew.next } } : {}), ...W() };
       const ap0 = x.approval || {}; const wgA = ap0.decision === 'batch' && ap0.batchId ? (await wgLoad()).get(ap0.batchId) : null; // (0.8.0) 감시 켠 그룹의 첫 가격이 반영되면 그 상품은 이제부터 그 그룹으로 감시
       const enroll = wgA ? { watch: { gid: wgA.id, since: now, startPrice: fromP, by: ap0.by || null } } : {};
