@@ -35,7 +35,7 @@ gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$SA" 
 
 echo "③ 올리기 (빌드 3~6분)"
 gcloud run deploy "$SERVICE" --source . --region "$REGION" --allow-unauthenticated \
-  --memory 2Gi --cpu 1 --timeout 300 --concurrency 4 --min-instances 0 --max-instances 1 \
+  --memory 2Gi --cpu 1 --timeout 600 --concurrency 4 --min-instances 0 --max-instances 1 \
   --set-secrets "ALADIN_ID=ALADIN_ID:latest,ALADIN_PW=ALADIN_PW:latest,TICK_KEY=TICK_KEY:latest" \
   --set-env-vars "FB_PROJECT=$PROJECT,ALLOW_EMAILS=$ALLOW_EMAILS,ALLOW_ORIGINS=https://jerrycson.github.io"
 # (0.5.7) 비용 줄이기: 배포할 때마다 쌓이는 클라우드 이미지를 최근 3개만 남기고 7일 지난 것은 지움 (실패해도 배포는 그대로)

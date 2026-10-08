@@ -28,7 +28,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.9.0';
+const VER = '0.9.1';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -95,11 +95,29 @@ async function sysSweep() { const { M, R } = await regNow(); const now = Date.no
 /* ── 브라우저 (하나를 계속 씀, 일은 한 번에 하나씩) ── */
 let browser = null, page = null, pageAt = 0; let chain = Promise.resolve(); let tickBusy = false; // 1분 예약이 겹치면(앞 회차가 길면) 건너뜀 — 쌓이지 않게
 const serial = (fn) => { const p = chain.then(fn, fn); chain = p.catch(() => {}); return p; };
+/* (0.9.1) 알라딘 화면 안의 읽기에 시간 제한 — 예전엔 화면 안 fetch에 제한이 없어, 알라딘(또는 브라우저)이 응답 하나를 붙잡으면 3분 동안 멈췄다가
+ *  'Runtime.callFunctionOn timed out' 오류로 회차가 통째로 실패 → 맡긴 일(발송준비시작 등)·주문 읽기가 계속 밀렸음.
+ *  ① 화면 안 fetch는 25초면 끊음(머리·본문 모두) ② 화면 일 하나(evaluate)는 60초(판매중지처럼 여러 번 묻는 일은 200초)면 끊고 그 화면을 버림
+ *  ③ 버린 화면은 다음에 새로 만들고, 브라우저가 답이 없으면 브라우저를 다시 띄움(로그인은 저절로 다시) */
+const FETCH_MS = 25000, EVAL_MS = 60000, EVAL_SLOW_MS = 230000;
+const FETCH_GUARD = `(() => { if (window.__rnFetchGuard) return; window.__rnFetchGuard = 1; const f0 = window.fetch.bind(window);
+  window.fetch = (u, o) => { o = o || {}; const ac = new AbortController(); if (o.signal) { try { if (o.signal.aborted) ac.abort(); else o.signal.addEventListener('abort', () => ac.abort()); } catch (e) {} } setTimeout(() => ac.abort(), ${FETCH_MS}); return f0(u, { ...o, signal: ac.signal }); }; })();`;
+let pageBroken = false;
+const withTO = (pr, ms, what) => { let t; return Promise.race([pr, new Promise((_, rej) => { t = setTimeout(() => { pageBroken = true; rej(Object.assign(new Error(`알라딘 화면이 ${Math.round(ms / 1000)}초 넘게 답이 없음 (${what}) — 화면을 새로 만들어 이어 감`), { pageTimeout: true })); }, ms); })]).finally(() => clearTimeout(t)); };
+const isAbort = (e) => /abort|AbortError|signal is aborted|timed out|답이 없음/i.test(String((e && e.message) || e));
+const isClosed = (e) => !isAbort(e) && /Target closed|Session closed|has been closed|detached|Connection closed|Protocol error/i.test(String((e && e.message) || e)); // 화면이 이미 닫혀 요청을 보내지 못함 (보냈는지 모를 일이 아님)
+const curPage = (p) => (page && page !== p && !page.isClosed() ? page : p); // (0.9.1) 다른 단계가 화면을 새로 만들었으면 그 화면으로
+function guardPage(pg) { const ev = pg.evaluate.bind(pg), ast = pg.addScriptTag.bind(pg);
+  pg.evaluate = (...a) => withTO(ev(...a), EVAL_MS, 'evaluate'); pg.evaluateSlow = (...a) => withTO(ev(...a), EVAL_SLOW_MS, 'evaluate'); pg.addScriptTag = (...a) => withTO(ast(...a), EVAL_MS, 'addScriptTag'); return pg; }
+async function dropPage(why) { const old = page; page = null; injectedSrc = null; pageBroken = false; log('화면 버림', why || '');
+  if (old) { const closed = await Promise.race([old.close().then(() => true, () => false), sleep(5000).then(() => false)]); if (!closed && browser) { log('브라우저가 답이 없음 — 다시 띄움 (로그인은 저절로 다시)'); try { const pr = browser.process(); if (pr) pr.kill('SIGKILL'); } catch (e) {} try { await Promise.race([browser.close(), sleep(3000)]); } catch (e) {} browser = null; } } }
 async function getPage() {
-  if (!browser || !browser.connected) { browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || '/usr/bin/chromium', headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--lang=ko-KR'] }); page = null; }
+  if (pageBroken) await dropPage('응답 없음 뒤');
+  if (!browser || !browser.connected) { browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || '/usr/bin/chromium', headless: true, protocolTimeout: 240000, args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--lang=ko-KR'] }); page = null; }
   if (page && !page.isClosed() && Date.now() - pageAt > 6 * 3600e3) { try { await page.close(); } catch (e) {} page = null; log('화면 새로 만듦 (6시간마다 — 메모리 정리, 로그인은 유지)'); } // 오래 켜 둔 화면은 메모리가 쌓임
-  if (!page || page.isClosed()) { pageAt = Date.now(); page = await browser.newPage(); await page.setBypassCSP(true); /* 기준 파일을 넣으려고 (수집기도 Tampermonkey로 같은 일) */ await page.setUserAgent(UA); await page.setExtraHTTPHeaders({ 'Accept-Language': 'ko-KR,ko;q=0.9' }); page.setDefaultTimeout(60000); }
-  if (!/aladin\.co\.kr/.test(page.url())) { await page.goto(AL + '/', { waitUntil: 'domcontentloaded' }); injectedSrc = null; } // 새 화면 = 기준 파일 다시 넣기
+  if (!page || page.isClosed()) { pageAt = Date.now(); page = guardPage(await browser.newPage()); await page.evaluateOnNewDocument(FETCH_GUARD); await page.setBypassCSP(true); /* 기준 파일을 넣으려고 (수집기도 Tampermonkey로 같은 일) */ await page.setUserAgent(UA); await page.setExtraHTTPHeaders({ 'Accept-Language': 'ko-KR,ko;q=0.9' }); page.setDefaultTimeout(60000); page.setDefaultNavigationTimeout(45000); }
+  if (!/aladin\.co\.kr/.test(page.url())) { await page.goto(AL + '/', { waitUntil: 'domcontentloaded' }); injectedSrc = null; }
+  await page.evaluate(FETCH_GUARD).catch(() => {}); // 지금 문서에도 (이미 열린 화면) // 새 화면 = 기준 파일 다시 넣기
   await ensureCores(page); return page;
 }
 // 기준 파일이 GitHub에서 바뀌면(30분마다 확인) 열린 화면에도 새 판을 다시 넣음 — 예전엔 처음 넣은 판을 계속 써서 파서 고침이 반영되지 않았음
@@ -279,24 +297,38 @@ async function shipRead(p, until) {
   return { deliv: r.orders.length, items: items.length, changed, nInfo, exErr: R.exErr || null }; }
 
 /* ── ③ 웹앱이 맡긴 일 (read · startDelivery · market = 그 주문 책의 시장 다시 읽기) ── */
-async function runCmds(p) {
+async function runCmds(p, deadline) { deadline = deadline || Date.now() + 150000; // (0.9.1) 이 시각이 지나면 새 일을 맡지 않음(남은 일은 대기 그대로 → 다음 회차) — 회차가 Cloud Run 5분 한도를 넘지 않게
   const qs = await C('shp_cmds').where('status', '==', 'queued').get(); let n = 0, needRead = false; const force = new Set();
   let buy = false; const { M, R } = qs.size ? await regNow() : { M: null, R: null };
-  for (const d of qs.docs) { const x0 = d.data(); if (!M.canHandle(R, x0.type, 'cloud') || String(x0.cloudSkip || '').includes(` ${VER}가`)) continue; /* (0.6.0) 노선표에서 클라우드가 맡는 종류만 (예전: 이 자리의 목록) */ if (x0.type === 'usedInfo' && x0.cloudTried) continue; /* 클라우드가 이미 못 읽은 것 = PC 몫 */ let v = null;
+  for (const d of qs.docs) { if (Date.now() > deadline) { log('맡긴 일: 이번 회차 시간을 다 씀 — 남은 일은 다음 회차에'); break; } p = curPage(p); const x0 = d.data(); if (!M.canHandle(R, x0.type, 'cloud') || String(x0.cloudSkip || '').includes(` ${VER}가`)) continue; /* (0.6.0) 노선표에서 클라우드가 맡는 종류만 (예전: 이 자리의 목록) */ if (x0.type === 'usedInfo' && x0.cloudTried) continue; /* 클라우드가 이미 못 읽은 것 = PC 몫 */ let v = null;
     await db.runTransaction(async (tx) => { const sn = await tx.get(d.ref); const x = sn.data(); if (!x || x.status !== 'queued') return; tx.update(d.ref, { status: 'running', claim: { pc: 'cloud', at: nowIso() }, uploadedAt: FV.serverTimestamp() }); v = x; });
     if (!v) continue; n++;
+    try { /* (0.9.1) 한 일이 실패해도 나머지 맡긴 일은 계속 — 예전엔 하나가 오류를 던지면 그 회차의 남은 일이 모두 밀리고 그 일은 '하는 중'으로 남았음 */
     if (v.type === 'startDelivery') { const results = {};
       const X = await execMod(); if (!X) { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 실행 문 파일을 못 읽음 — 기록 없이 알라딘을 바꾸지 않음`, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('발송준비시작: 실행 문 파일 없음 — 대기로'); continue; }
-      for (const ono of v.orderNos || []) { const xk = `${d.id}:${ono}`; let g; try { g = await X.begin(db, { kind: 'startDelivery', key: xk, by: 'cloud', detail: { ono } }); } catch (e) { g = { ok: false, state: 'noledger', why: '실행 기록을 못 적음: ' + e.message }; }
+      let leftOver = false; for (const ono of v.orderNos || []) { if (Date.now() > deadline + 30000 && !results[ono]) { leftOver = true; continue; } /* (0.9.1) 회차 시간 넘음 — 시작 안 한 주문은 다음 회차로 */ const xk = `${d.id}:${ono}`; let g; try { g = await X.begin(db, { kind: 'startDelivery', key: xk, by: 'cloud', detail: { ono } }); } catch (e) { g = { ok: false, state: 'noledger', why: '실행 기록을 못 적음: ' + e.message }; }
         if (!g.ok) { results[ono] = { state: g.state === 'done' ? 'done' : 'unknown', at: nowIso(), msg: '실행 문: ' + g.why, by: 'cloud', gate: g.state }; continue; }
-        try { const rr = await p.evaluate(async (o) => { const r = await fetch('/scm/worder_process.aspx?cmd=StartDelivery&ono=' + encodeURIComponent(o), { credentials: 'include' }); const t = await r.text(); return { ok: r.ok, status: r.status, al: (t.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || null }; }, ono);
-          results[ono] = { state: rr.ok && !/실패|오류|불가|잘못|없습니다|않습니다|error/i.test(rr.al || '') ? 'sent' : 'fail', at: nowIso(), http: rr.status, msg: rr.al, by: 'cloud' }; } catch (e) { results[ono] = { state: 'fail', at: nowIso(), msg: e.message, by: 'cloud' }; }
+        /* (0.9.1) 보내기: ① 화면이 이미 닫혀 못 보냄 → 새 화면으로 한 번 더 ② 로그인 화면으로 돌아옴(처리 안 됨) → 그 자리에서 다시 로그인 뒤 한 번 더 ③ 보낸 뒤 답이 끊김 → 아래 목록 확인이 정함 */
+        let rr = null, sendErr = null; for (let at = 0; at < 2 && !rr; at++) { p = curPage(p); if (p.isClosed && p.isClosed()) { try { p = await getPage(); } catch (e) { sendErr = { notSent: true, msg: '화면을 새로 못 만들어 보내지 못함: ' + e.message }; break; } } /* 보내기 전에 닫혀 있으면 = 확실히 안 보냄 → 새 화면 */
+          try { const r1 = await p.evaluate(async (o) => { const r = await fetch('/scm/worder_process.aspx?cmd=StartDelivery&ono=' + encodeURIComponent(o), { credentials: 'include' }); const t = await r.text(); if (/\/login\/|wlogin/i.test(r.url)) return { login: false }; return { ok: r.ok, status: r.status, al: (t.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || null }; }, ono);
+            if (r1.login === false) { if (at === 0) { try { await login(p); continue; } catch (e) { sendErr = { notSent: true, msg: '로그인 풀림 — 다시 로그인 실패: ' + e.message }; break; } } sendErr = { notSent: true, msg: '로그인 풀림 — 알라딘이 받지 않음(보내지지 않음)' }; break; }
+            rr = r1; }
+          catch (e) { /* 보내는 도중 오류(끊김·브라우저 멈춤·닫힘) = 알라딘이 받았는지 모름 → 목록 확인이 정함 */ sendErr = { noReply: true, msg: '답을 못 받음 — 목록으로 확인: ' + String(e.message).slice(0, 120) }; if (e.pageTimeout || pageBroken || isClosed(e)) { try { p = await getPage(); } catch (e2) {} } break; } }
+        if (rr) results[ono] = { state: rr.ok && !/실패|오류|불가|잘못|없습니다|않습니다|error/i.test(rr.al || '') ? 'sent' : 'fail', at: nowIso(), http: rr.status, msg: rr.al, by: 'cloud' };
+        else if (sendErr && sendErr.noReply) results[ono] = { state: 'sent', at: nowIso(), msg: sendErr.msg, by: 'cloud', noReply: true };
+        else results[ono] = { state: 'fail', at: nowIso(), msg: (sendErr && sendErr.msg) || '보내지 못함', by: 'cloud', notSent: true }; // 보내지 않은 것이 확실 → 실패(다시 할 수 있음)
         await d.ref.set({ results, beatAt: nowIso(), uploadedAt: FV.serverTimestamp() }, { merge: true }).catch(() => {}); await sleep(800); } // (0.5.4) 한 건마다 결과·살아 있음 신호
       // 확인: 주문확인요청 화면을 다시 읽어 빠졌는지 — 화면을 제대로 읽었을 때만 '끝남'(로그인 화면·읽기 실패로 빈 목록이면 '확인 못함')
-      try { const chk = await p.evaluate(async (u) => { const r = await fetch(u, { credentials: 'include' }); if (/\/login\/|wlogin/i.test(r.url)) return { ok: false }; const d = new DOMParser().parseFromString(await r.text(), 'text/html'); const x = window.ReadnowShipping.parseDeliveryPage(d); return { ok: !!(x && x.tabCounts && Object.keys(x.tabCounts).length), left: (x.orders || []).map((o) => o.orderNo) }; }, CONFIRM_URL);
-        for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = !chk.ok ? 'unknown' : chk.left.includes(ono) ? 'fail' : 'done'; } catch (e) { for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = 'unknown'; }
+      // (0.9.1) 답이 끊긴 주문이 있으면 알라딘이 마저 처리할 틈(5초)을 준 뒤 확인 · 지금 화면으로 · 로그인 화면이면 다시 로그인 뒤 한 번 더
+      if (Object.values(results).some((r) => r.noReply)) await sleep(5000);
+      if (pageBroken) { try { p = await getPage(); } catch (e) {} } p = curPage(p);
+      const readLeft = () => p.evaluate(async (u) => { const r = await fetch(u, { credentials: 'include' }); if (/\/login\/|wlogin/i.test(r.url)) return { ok: false, login: false }; const d = new DOMParser().parseFromString(await r.text(), 'text/html'); const x = window.ReadnowShipping.parseDeliveryPage(d); return { ok: !!(x && x.tabCounts && Object.keys(x.tabCounts).length), left: (x.orders || []).map((o) => o.orderNo) }; }, CONFIRM_URL);
+      try { let chk = null; for (let at = 0; at < 2; at++) { try { chk = await readLeft(); } catch (e) { if (at === 0 && (isClosed(e) || e.pageTimeout || pageBroken)) { p = await getPage(); continue; } throw e; } if (chk.login === false && at === 0) { await login(p); continue; } break; }
+        for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = !chk || !chk.ok ? 'unknown' : chk.left.includes(ono) ? 'fail' : 'done'; } catch (e) { for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = 'unknown'; }
       for (const [ono, r] of Object.entries(results)) if (!r.gate) await X.finish(db, { kind: 'startDelivery', key: `${d.id}:${ono}` }, r.state === 'done' ? 'done' : r.state === 'fail' ? 'failed' : 'unknown', { msg: r.msg || null, result: { http: r.http || null } }).catch(() => {});
-      await d.ref.set({ status: 'done', results, doneAt: nowIso(), uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
+      { const notSent = Object.values(results).filter((r) => r.notSent); // (0.9.1) 보내지 못한 주문(로그인 실패 등)·시간이 모자라 시작 못 한 주문이 있으면 '끝남'으로 닫지 않고 대기로 → 다음 회차(또는 PC)가 이어 함 (끝난 주문은 실행 문이 다시 보내지 않음)
+        if (notSent.length || leftOver) { const nErr = (v.cloudErrN || 0) + (notSent.length ? 1 : 0); await d.ref.set({ status: 'queued', claim: null, results, cloudErr: notSent.length ? notSent[0].msg : '시간이 모자라 남은 주문은 다음 회차에', cloudErrN: nErr, cloudErrAt: nowIso(), ...(nErr >= 3 ? { cloudSkip: `클라우드 ${VER}가 3번 보내지 못함 — PC 수집기 몫` } : {}), uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
+        else { await d.ref.set({ status: 'done', results, doneAt: nowIso(), uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; } } }
     else if (v.type === 'usedInfo') { const results = {}; let allOk = true; // (0.5.3) '중' 상품 유의 사항 다시 읽기 (웹앱이 맡김) — 못 읽으면 PC 수집기 몫으로 남김
       for (const lid of v.listingIds || []) { try { const prev = (await C('prd_used_info').doc(String(lid)).get()).data(); const ui = await refreshUsedInfo(p, lid, prev, null, v.grade || null); const ok = !!(ui && realNote(ui.note, v.grade));
           results[lid] = ok ? { ok: true, at: nowIso(), by: 'cloud' } : { ok: false, why: '클라우드: 상품 화면에서 유의 사항을 못 읽음', at: nowIso() }; if (!ok) allOk = false;
@@ -305,14 +337,18 @@ async function runCmds(p) {
       await d.ref.set(allOk ? { status: 'done', results, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() } : { status: 'queued', cloudTried: true, cloudResults: results, claim: null, uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'market') { (v.listingIds || []).forEach((x) => force.add(String(x))); await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'aladinBuy') { buy = true; await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
+    else if (v.type === 'cashStop' && Date.now() > deadline - 60000) { await d.ref.set({ status: 'queued', claim: null, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('판매중지: 이번 회차 남은 시간이 모자라 다음 회차에'); } // (0.9.1) 판매중지는 최대 230초 — 회차 한도를 넘지 않게
     else if (v.type === 'cashStop') { const X = await execMod(); if (!X) { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 실행 문 파일을 못 읽음 — 기록 없이 알라딘을 바꾸지 않음`, uploadedAt: FV.serverTimestamp() }, { merge: true }); continue; }
       let g; try { g = await X.begin(db, { kind: 'cashStop', key: d.id, by: 'cloud', detail: { orderId: v.orderId, lineNo: v.lineNo, listingId: v.listingId || null, title: v.title || null } }); } catch (e) { g = { ok: false, state: 'noledger', why: e.message }; }
       if (!g.ok) { await d.ref.set({ status: 'done', result: { state: g.state === 'done' ? 'skip' : 'check', msg: '실행 문: ' + g.why }, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); continue; }
       let r; try { r = await cashStopRun(p, v); } catch (e) { await X.finish(db, { kind: 'cashStop', key: d.id }, 'failed', { msg: e.message }).catch(() => {}); throw e; }
       await X.finish(db, { kind: 'cashStop', key: d.id }, r.state === 'done' ? 'done' : r.state === 'fail' ? 'failed' : 'unknown', { msg: r.msg || null }).catch(() => {}); await d.ref.set({ status: 'done', result: r, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); log('현금 판매 판매중지', v.title || v.listingId, r.state); }
     else if (v.type === 'read') { await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
-    else { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 처리하는 길이 없는 종류 — 노선표 확인`, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('맡긴 일: 처리 길 없음', v.type); } } // 노선표엔 클라우드 몫인데 이 판에 처리 길이 없으면 '끝남'으로 지우지 않고 대기로 되돌림
-  return { n, needRead, force, buy };
+    else { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 처리하는 길이 없는 종류 — 노선표 확인`, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('맡긴 일: 처리 길 없음', v.type); }
+    } catch (e) { const nErr = (v.cloudErrN || 0) + 1; const msg = String(e.message || e).slice(0, 300);
+      await d.ref.set({ status: 'queued', claim: null, cloudErr: msg, cloudErrN: nErr, cloudErrAt: nowIso(), ...(nErr >= 3 && !e.relogin ? { cloudSkip: `클라우드 ${VER}가 3번 실패 — PC 수집기 몫 (마지막: ${msg.slice(0, 80)})` } : {}), uploadedAt: FV.serverTimestamp() }, { merge: true }).catch(() => {});
+      log('맡긴 일 실패 — 대기로 되돌림', v.type, d.id, nErr + '번째', msg); if (e.relogin) throw e; if (e.pageTimeout || pageBroken || isClosed(e)) { try { p = await getPage(); } catch (e2) {} } } } // 노선표엔 클라우드 몫인데 이 판에 처리 길이 없으면 '끝남'으로 지우지 않고 대기로 되돌림
+  return { n, needRead, force, buy, p };
 }
 
 /* ── (0.6.1) 현금 판매한 상품 → 알라딘 판매중지 (수집기 1.37.0의 같은 일과 같은 방법 — 상품 조회/수정 화면의 '판매상태 일괄 변경' 요청)
@@ -324,7 +360,7 @@ async function cashStopRun(p, v) { const by = 'cloud';
   let lid = v.listingId ? String(v.listingId) : null; let ld = null; try { ld = (await C('prd_listings').doc(v.listingKey || ('aladin_' + v.usedCode)).get()).data() || null; } catch (e) {} if (!lid && ld && ld.listingId) lid = String(ld.listingId);
   if (!lid) return { state: 'fail', msg: '알라딘 상품번호를 못 찾음' };
   const before = (ld && ST_CODE[ld.status]) || 1; const kw = String(v.title || '').replace(/^\[[^\]]*\]\s*/, '').slice(0, 30);
-  const R = await p.evaluate(async (a) => { const set = async (from) => { const fd = new URLSearchParams({ fn: 'stockstatusbulkchg', stockStatusBefore: String(from), stockStatusToDo: '15', items: a.lid }); const rr = await fetch('/scm/wrecord_edit_usedbatch.aspx', { method: 'POST', body: fd, credentials: 'include' }); const t = await rr.text(); if (/\/login\/|wlogin/i.test(rr.url)) return { login: false }; return { ok: rr.ok, al: (t.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || '' }; };
+  const R = await (p.evaluateSlow || p.evaluate)(async (a) => { const set = async (from) => { try { const fd = new URLSearchParams({ fn: 'stockstatusbulkchg', stockStatusBefore: String(from), stockStatusToDo: '15', items: a.lid }); const rr = await fetch('/scm/wrecord_edit_usedbatch.aspx', { method: 'POST', body: fd, credentials: 'include' }); const t = await rr.text(); if (/\/login\/|wlogin/i.test(rr.url)) return { login: false }; return { ok: rr.ok, al: (t.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || '' }; } catch (e) { return { ok: false, al: '답을 못 받음 (판매중지 목록으로 확인)' }; } }; /* (0.9.1) 보낸 뒤 답이 끊겨도 아래 판매중지 목록 확인이 정함 */
     const inStop = async () => { if (!a.kw) return null; try { const r = await fetch(`/scm/wrecord_edit.aspx?chkItemStockStatus=15&chkItemInDate=0&searchCat1=0&searchType=1&keyword=${encodeURIComponent(a.kw)}&ViewRowsCount=100&page=1&SortOrder=6&itemStockStatus=15&categoryId=0`, { credentials: 'include', cache: 'no-store' }); if (!r.ok) return null; const doc = new DOMParser().parseFromString(await r.text(), 'text/html'); return window.ReadnowProducts.parseScmList(doc).rows.some((x) => String(x.listingId) === String(a.lid)); } catch (e) { return null; } };
     let s1 = await set(a.before); if (s1.login === false) return { login: false }; let ok = await inStop(); let used = a.before; let al = s1.al;
     for (const alt of [1, 3, 41]) { if (ok !== false || alt === a.before) continue; const s2 = await set(alt); al = s2.al || al; used = alt; ok = await inStop(); }
@@ -397,27 +433,30 @@ async function fastMode() { if (!fastCfg || Date.now() - fastCfgAt > 5 * 60e3) {
   const k = new Date(Date.now() + 9 * 3600e3); const wd = k.getUTCDay(), h = k.getUTCHours(); const from = fastCfg.from ?? 8, to = fastCfg.to ?? 19; const on = wd >= 1 && wd <= 5 && h >= from && h < to; return { on, why: `평일 ${from}~${to}시` }; }
 async function fastLoop(p, until, cr, cm) { const FAST = 15000; let loops = 0, changed = 0, n = 0, rd = null; let last = Date.now();
   while (Date.now() < until) { while (Date.now() < Math.min(until, last + FAST) && !kickFlag) await sleep(300); if (Date.now() >= until && !kickFlag) break;
-    kickFlag = false; last = Date.now(); loops++;
-    try { const cm2 = await runCmds(p); n += cm2.n; let c2; try { c2 = await confirmRead(p); } catch (e) { if (!e.relogin) throw e; await login(p); c2 = await confirmRead(p); }
+    kickFlag = false; last = Date.now(); loops++; p = curPage(p); if (pageBroken) { try { p = await getPage(); } catch (e) { break; } }
+    try { const cm2 = await runCmds(p, until + 20000); if (cm2.p) p = curPage(cm2.p); n += cm2.n; let c2; try { c2 = await confirmRead(p); } catch (e) { if (!e.relogin) throw e; await login(p); c2 = await confirmRead(p); }
       if (c2.changed) { changed++; cr = c2; } if (cm2.needRead || (c2.prevTab && c2.tabCounts && c2.prevTab['발송 요청'] !== c2.tabCounts['발송 요청'])) { try { rd = await shipRead(p, Math.min(until + 5000, Date.now() + 20000)); lastDelivAt = Date.now(); } catch (e) { log('빠른 발송 요청 읽기 실패', e.message); } }
       if (c2.changed || (cm2.force && cm2.force.size)) { try { await enrichConfirm(p, c2, cm2.force, Math.min(until, Date.now() + 15000)); } catch (e) {} }
       await C('app_settings').doc('cloud').set({ lastConfirmAt, lastLoopAt: nowIso(), ok: true, err: null }, { merge: true }).catch(() => {}); // 신선함 신호 — 웹앱 '읽은 시각'이 15초마다
-    } catch (e) { log('빠른 읽기 실패', e.message); break; } }
+    } catch (e) { log('빠른 읽기 실패', e.message); if (e.pageTimeout || pageBroken || isClosed(e)) { try { p = await getPage(); continue; } catch (e2) {} } break; } }
   return { cr, rd, n, loops, changed }; }
 async function tick(why) {
   const t0 = Date.now(); const out0 = {}; watchCmds();
-  try { const p = await getPage(); let cr;
-    try { cr = await confirmRead(p); } catch (e) { if (!e.relogin) throw e; await login(p); cr = await confirmRead(p); }
-    const cm = await runCmds(p); if (cm.needRead) cr = await confirmRead(p);
+  try { let p = await getPage(); let cr = null; const errs = []; if (!EXECM) execMod().catch(() => {}); if (!MLM) mlMod().catch(() => {}); // (0.9.1) 관리도구에 판이 '?'로 뜨지 않게 미리 읽음
+    // (0.9.1) 맡긴 일(발송준비시작·판매중지 등 돈이 걸린 일) 먼저, 그리고 각 단계가 실패해도 다음 단계는 함 — 예전엔 주문 읽기가 실패하면 맡긴 일까지 그 회차를 통째로 건너뜀
+    const step = async (name, fn) => { for (let a = 0; a < 2; a++) { try { const r = await fn(p); p = curPage(p); return r; } catch (e) { if (e.relogin && a === 0) { try { await login(p); continue; } catch (e2) { errs.push(`${name}: ${e2.message}`); return null; } } if ((e.pageTimeout || pageBroken || isClosed(e)) && a === 0) { try { p = await getPage(); continue; } catch (e2) { errs.push(`${name}: ${e2.message}`); return null; } } errs.push(`${name}: ${String(e.message || e).slice(0, 160)}`); return null; } } return null; };
+    cr = await step('주문확인요청', confirmRead); // 로그인 확인을 겸함 (풀렸으면 여기서 다시 로그인)
+    const cm = (await step('맡긴 일', (pp) => runCmds(pp, t0 + 120000))) || { n: 0, needRead: false, force: new Set(), buy: false }; p = curPage(p); if (cm.needRead) cr = (await step('주문확인요청', confirmRead)) || cr;
+    if (!cr) throw new Error(errs.join(' · ') || '주문확인요청을 못 읽음');
     const delivDue = why !== 'schedule' || cm.needRead || cr.changed || !lastDelivAt || Date.now() - lastDelivAt > 4.5 * 60e3 || (cr.prevTab && cr.prevTab['발송 요청'] !== cr.tabCounts['발송 요청']);
     const until = t0 + 30000; // (0.9.0) 무거운 일은 30초 안에서 — 나머지 시간은 빠른 고리(15초마다 주문확인요청) · 한 회차는 1분 안에 끝냄 (다음 예약을 건너뛰지 않게) — 못 한 것은 다음 회차에 이어 함
-    let rd = null; if (delivDue) rd = await shipRead(p, until);
+    let rd = null; if (delivDue) rd = await step('발송 요청', (pp) => shipRead(pp, until));
     let en = null; try { en = await enrichConfirm(p, cr, cm.force, until - 8000); } catch (e) { en = { err: e.message }; }
     try { const nr = await repairSweep(); if (nr) log('유의 사항 되살림', nr, '건'); } catch (e) {} // 6시간에 한 번: 빈 판으로 덮였던 유의 사항을 지난 판에서 되살림
     // (0.9.0) 빠른 고리: 남은 시간 동안 15초마다 ① 주문확인요청을 다시 읽고, 맡긴 일(발송준비시작 등)이 들어오면 기다리지 않고 바로 처리 — 새 주문이 웹앱에 15초 안에, 단추를 누르면 몇 초 안에
-    { const fm = await fastMode(); out0.fastMode = fm.on ? fm.why : '꺼짐 · ' + fm.why; const r2 = await fastLoop(p, fm.on ? t0 + 50000 : Date.now(), cr, cm); if (r2.cr) cr = r2.cr; if (r2.rd) rd = r2.rd; cm.n += r2.n; out0.fast = r2.loops; out0.fastChanged = r2.changed; }
-    let by = null; if (cm.buy || !lastBuyAt || Date.now() - lastBuyAt > 5 * 60e3 || (lastBuyRes && lastBuyRes.left)) { try { by = await buyRead(p, until); } catch (e) { if (e.relogin) { try { await login(p); by = await buyRead(p, until); } catch (e2) { by = { err: e2.message }; } } else by = { err: e.message }; } }
-    const out = { ok: true, err: null, why, ...out0, tickMs: Date.now() - t0, lastShipAt: nowIso(), lastConfirmAt, lastDelivAt: lastDelivAt ? new Date(lastDelivAt).toISOString() : null, lastBuyAt: lastBuyAt ? new Date(lastBuyAt).toISOString() : null, last: { confirm: cr.n, deliv: rd ? rd.deliv : null, delivRead: !!rd, enrich: en, buy: by }, cmds: cm.n, login: 'ok' };
+    { const fm = await fastMode(); out0.fastMode = fm.on ? fm.why : '꺼짐 · ' + fm.why; p = curPage(p); if (pageBroken) p = await getPage(); const r2 = await fastLoop(p, fm.on ? t0 + 50000 : Date.now(), cr, cm); if (r2.cr) cr = r2.cr; if (r2.rd) rd = r2.rd; cm.n += r2.n; out0.fast = r2.loops; out0.fastChanged = r2.changed; }
+    p = curPage(p); let by = null; if (cm.buy || !lastBuyAt || Date.now() - lastBuyAt > 5 * 60e3 || (lastBuyRes && lastBuyRes.left)) { try { by = await buyRead(p, until); } catch (e) { if (e.relogin) { try { await login(p); by = await buyRead(p, until); } catch (e2) { by = { err: e2.message }; } } else by = { err: e.message }; } }
+    const out = { ok: !errs.length, err: errs.length ? errs.join(' · ').slice(0, 300) : null, why, ...out0, tickMs: Date.now() - t0, lastShipAt: nowIso(), lastConfirmAt, lastDelivAt: lastDelivAt ? new Date(lastDelivAt).toISOString() : null, lastBuyAt: lastBuyAt ? new Date(lastBuyAt).toISOString() : null, last: { confirm: cr.n, deliv: rd ? rd.deliv : null, delivRead: !!rd, enrich: en, buy: by }, cmds: cm.n, login: 'ok' };
     await beat(out); log('tick', JSON.stringify(out)); return out;
   } catch (e) { const out = { ok: false, err: String(e.message || e).slice(0, 300), why, tickMs: Date.now() - t0, login: /로그인/.test(e.message) ? 'fail' : 'ok' }; await beat(out); log('tick 실패', e.message); return out; }
 }
