@@ -10,6 +10,7 @@
  *  - /kick  (웹앱이 일을 맡긴 직후 부름: 5분 기다리지 않고 바로 ③)
  *  - /lookup (웹앱 '사진 가격': ISBN·알라딘 상품번호 → 새상품 정보 + 온라인 중고 첫 페이지 / 제목 → 알라딘 검색 후보)
  *  - /spines (웹앱 '사진 가격' 책등 사진 → Google Vision 글자 읽기 → 책등마다 글자 묶음)
+ *  - /inventory · /storage-files (0.5.6, 웹앱 백업: 모든 칸의 문서 수·어림 크기 + 사진 파일 목록·크기 — 읽기만)
  *  - /status (상태 확인, 인증 없음 — 비밀 정보 없음)
  *
  * 비밀: 알라딘 아이디·비밀번호(ALADIN_ID · ALADIN_PW)와 TICK_KEY는 Secret Manager에만 둠 (Firebase·웹앱·GitHub에는 절대 두지 않음)
@@ -22,7 +23,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.5.5';
+const VER = '0.5.6';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -368,6 +369,25 @@ async function authUser(req) {
   if (!ALLOW.includes(String(u.email || '').toLowerCase())) throw Object.assign(new Error('허용되지 않은 계정: ' + u.email), { code: 403 }); return u;
 }
 const bodyOf = (req) => new Promise((res, rej) => { const ch = []; let n = 0; req.on('data', (c) => { n += c.length; if (n > 15e6) { rej(Object.assign(new Error('너무 큼'), { code: 413 })); req.destroy(); } else ch.push(c); }); req.on('end', () => { try { res(ch.length ? JSON.parse(Buffer.concat(ch).toString('utf8')) : {}); } catch (e) { rej(Object.assign(new Error('JSON 아님'), { code: 400 })); } }); });
+
+/* ── (0.5.6) 백업용 자료 목록 (/inventory · /storage-files) — 웹앱 '⑪ Firebase 자료 전체 내려받기'가 미리 크기를 보여 주고, 새로 생긴 칸도 빠짐없이 담게
+ *   /inventory: Firestore의 모든 최상위 칸(listCollections — 코드에 이름을 적어 두지 않아도 새 칸이 저절로 잡힘) + 아래 칸(log·v·big)
+ *               칸마다 문서 수(count — 문서를 다 읽지 않음) · 앞쪽 25건 평균 크기로 어림한 총 크기 / Storage(사진 파일) 폴더마다 파일 수·실제 크기
+ *   /storage-files: 고른 폴더의 파일 이름·크기 목록 (웹앱이 그 목록대로 내려받아 나눠 ZIP으로) — 읽기만 함 */
+const BUCKET = process.env.FB_BUCKET || 'readnow-3a385.firebasestorage.app';
+const SUB_GROUPS = ['log', 'v', 'big'];
+async function colStat(q) { let n = null, avg = null; try { n = (await q.count().get()).data().count; } catch (e) {}
+  try { const qs = await q.limit(25).get(); if (qs.size) avg = Math.round(qs.docs.reduce((a, d) => a + Buffer.byteLength(JSON.stringify(d.data())) + d.ref.path.length, 0) / qs.size); } catch (e) {}
+  return { n, avgBytes: avg, estBytes: n != null && avg != null ? n * avg : null }; }
+const stGroupOf = (name) => { const top = name.split('/')[0]; if (top === 'img') return /_t\.webp$/.test(name) ? 'img(작은 그림)' : 'img'; return top; };
+async function storageFiles(prefix) { const { getStorage } = require('firebase-admin/storage'); const [files] = await getStorage().bucket(BUCKET).getFiles({ prefix: prefix || '', autoPaginate: true });
+  return files.filter((f) => !/\/$/.test(f.name) && !/_perm_check\.txt$/.test(f.name)).map((f) => ({ name: f.name, size: +((f.metadata && f.metadata.size) || 0), type: (f.metadata && f.metadata.contentType) || null })); }
+async function inventory() { const t0 = Date.now(); const cols = [];
+  for (const c of await db.listCollections()) cols.push({ id: c.id, ...(await colStat(c)) });
+  const subs = []; for (const g of SUB_GROUPS) subs.push({ id: g, ...(await colStat(db.collectionGroup(g))) });
+  let storage = null; try { const F = await storageFiles(''); const G = {}; for (const f of F) { const g = stGroupOf(f.name); const x = G[g] || (G[g] = { n: 0, bytes: 0 }); x.n++; x.bytes += f.size; } storage = { bucket: BUCKET, groups: G }; }
+  catch (e) { storage = { bucket: BUCKET, err: e.message }; }
+  return { ok: true, at: nowIso(), ms: Date.now() - t0, cols: cols.sort((a, b) => a.id.localeCompare(b.id)), subs, storage }; }
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin || ''; if (ORIGINS.includes(origin)) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin'); }
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -379,6 +399,8 @@ const server = http.createServer(async (req, res) => {
     if (path === '/tick') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); tickBusy = true; try { const out = await serial(() => tick('schedule')); return send(200, out); } finally { tickBusy = false; } }
     if (path === '/kick') { await authUser(req); const out = await serial(() => tick('kick')); return send(200, out); }
     if (path === '/lookup') { await authUser(req); const b = await bodyOf(req); const out = await serial(() => lookup(b)); return send(200, out); }
+    if (path === '/inventory') { await authUser(req); return send(200, await inventory()); }
+    if (path === '/storage-files') { await authUser(req); const b = await bodyOf(req); const pre = String(b.prefix || ''); if (!/^[A-Za-z0-9_\-\/]*$/.test(pre)) return send(400, { ok: false, err: '폴더 이름이 이상함' }); return send(200, { ok: true, files: await storageFiles(pre) }); }
     if (path === '/ppt') { const u = await authUser(req); const b = await bodyOf(req); return send(200, await pptStore(b, u)); }
     if (path === '/spines') { await authUser(req); const b = await bodyOf(req); if (!b.image) return send(400, { ok: false, err: '사진 없음' }); const out = await spines(String(b.image).replace(/^data:[^,]+,/, '')); return send(200, out); }
     if (path === '/test') { await authUser(req); const out = await serial(async () => { const p = await getPage(); try { await login(p); return { ok: true, login: 'ok', cores: coreVer }; } catch (e) { return { ok: false, login: 'fail', err: e.message }; } }); return send(200, out); }

@@ -29,6 +29,7 @@ mk ALADIN_PW "알라딘 비밀번호 (화면에 안 보임)" 1
 if ! gcloud secrets describe TICK_KEY >/dev/null 2>&1; then printf '%s' "$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9')" | gcloud secrets create TICK_KEY --replication-policy=automatic --data-file=- >/dev/null; echo "   TICK_KEY: 새로 만듦"; fi
 for s in ALADIN_ID ALADIN_PW TICK_KEY; do gcloud secrets add-iam-policy-binding "$s" --member="serviceAccount:$SA" --role=roles/secretmanager.secretAccessor >/dev/null; done
 gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$SA" --role=roles/datastore.user --condition=None >/dev/null
+gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$SA" --role=roles/storage.objectViewer --condition=None >/dev/null   # (0.5.6) 백업: 사진 파일 목록·크기 읽기만
 
 echo "③ 올리기 (빌드 3~6분)"
 gcloud run deploy "$SERVICE" --source . --region "$REGION" --allow-unauthenticated \
