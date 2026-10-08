@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.12.0';
+  const VERSION = '0.13.0';
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -459,6 +459,26 @@
   }
   // 다른 판매자 중고 매물 페이지(wproduct.aspx?ItemId=매물번호): '중고상품 구매 유의 사항' 글 전체 + 사진(위쪽 표지 영역·유의 사항 안)
   // newCoverFile(새상품 표지 파일 이름)을 주면 '새상품 사진과 다른 사진이 있는가'를 계산 — 위쪽 영역에 새상품 표지가 아닌 사진이 있거나 유의 사항 안에 사진이 있으면 다름
+  // ---------- (0.13.0) 중고 상품 페이지(wproduct.aspx?ItemId=중고 상품번호) 판매가 — 실제 화면(2026-10-08 저장본)에서 확인한 자리 ----------
+  //  판매가 = 'schema.org/Offer' 칸의 큰 글자(.Ere_fs24) (그 아래 카드 할인가 .Ere_fs24 와 헷갈리지 않게 Offer 칸 안에서만) · 없으면 <meta property="og:price">
+  //  판매자 = '판매자' 줄의 wshopitem.aspx?SC= 링크
+  function parseUsedItemPrice(d) {
+    const off = d.querySelector('[itemtype="https://schema.org/Offer"] .Ere_fs24'); const og = d.querySelector('meta[property="og:price"]');
+    const price = off ? toInt(txt(off)) : og ? toInt(og.getAttribute('content')) : null;
+    let sellerCode = null, sellerName = null; for (const li of d.querySelectorAll('.info_list li')) { if (txt(li.querySelector('.Litem')) !== '판매자') continue; const a = li.querySelector('a[href*="SC="]'); if (a) { sellerCode = ((a.getAttribute('href') || '').match(/SC=(\d+)/) || [])[1] || null; sellerName = txt(a) || null; } break; }
+    return { price, ogPrice: og ? toInt(og.getAttribute('content')) : null, sellerCode, sellerName };
+  }
+  // ---------- (0.13.0) 알라딘에 중고 팔기: 매입가 조회 화면(wc2b_search.aspx) · 팔기 장바구니(wc2b_sales.aspx) — 실제 화면 저장본에서 확인한 자리 ----------
+  //  조회 결과 #searchResult 의 줄마다: 체크칸 input.chk[isbn] · 제목 a.c2b_b · 'ISBN13, ISBN10 (ISBN)' 글 · '팔기 장바구니에 추가' 단추 .c2b_add[isbn] (없으면 지금 매입 불가)
+  //  매입가 표: 머리 칸 .c2b_tablet2 (정가 · 매입가 최상 · 상 · 중) ↔ 값 칸 .c2b_tablet3
+  function parseC2BSearch(d) { const out = [];
+    for (const chk of d.querySelectorAll('#searchResult input.chk[isbn]')) { const tr = chk.closest('tr'); if (!tr) continue; const t = txt(tr);
+      const isbn13 = (t.match(/(97[89]\d{10})/) || [])[1] || null; const title = txt(tr.querySelector('a.c2b_b')) || null; const add = tr.querySelector('.c2b_add');
+      const heads = [...tr.querySelectorAll('.c2b_tablet2')].map((x) => txt(x).replace(/\s+/g, '')); const vals = [...tr.querySelectorAll('.c2b_tablet3')].map((x) => toInt(txt(x)));
+      const price = {}; heads.forEach((h, i) => { const k = h === '정가' ? 'list' : h.replace(/^매입가/, '') || h; price[k] = vals[i] ?? null; });
+      out.push({ isbn10: chk.getAttribute('isbn') || null, isbn13, title, canSell: !!add, price, note: add ? null : (t.match(/(매입\s*불가[^.]*|판매\s*불가[^.]*|매입하지 않[^.]*)/) || [])[1] || '팔기 장바구니에 추가 단추 없음' }); }
+    return out; }
+  function parseC2BCart(d) { return [...d.querySelectorAll('tr.item[pkid]')].map((tr) => { const t = txt(tr.querySelector('.c2b_td_int')); return { pkid: tr.getAttribute('pkid'), itemId: tr.getAttribute('itemid') || null, isbn13: (t.match(/ISBN13\s*:\s*(97[89]\d{10})/) || [])[1] || null, isbn10: (t.match(/ISBN10\s*:\s*([0-9A-Z]{10})/) || [])[1] || null, title: txt(tr.querySelector('.c2b_bbb strong')) || null, priceStd: toInt(txt(tr.querySelector('.pricestd'))), grade: /균일가/.test(txt(tr.querySelector('.c2b_td_u'))) ? '균일가' : null, gradeOpts: [...tr.querySelectorAll('.c2b_td_u li')].map((li) => txt(li)).filter(Boolean), c2bPrice: toInt(txt(tr.querySelector('.c2bprice'))) }; }); }
   function parseUsedItemInfo(d, newCoverFile) {
     const box = d.getElementById ? d.getElementById('usedDecription') : null;
     const note = box ? txtBr(box) : '';
@@ -654,7 +674,7 @@
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
     parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, searchChannels, marketNoBook, nameCoverage, parseC2BList, parseC2BDetail, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
-    parseUsedItemInfo, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
+    parseUsedItemInfo, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
 })(typeof window !== 'undefined' ? window : this);

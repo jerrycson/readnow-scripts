@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.13.0';
+  const VERSION = '0.14.0';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -441,6 +441,14 @@
     else if (d) { t = d.action === 'set' || d.status === 'ok' || d.status === 'floor' ? (d.target ?? l.price) : null; if (d.status === 'floor') out.bbHit = { buy: (buyback || {})[l.grade] || null, floor: d.target ?? null }; } // 엔진의 하한선 = 알라딘 매입가 하나뿐 → 매입가 하한
     if (t != null && +c.pct) { const k = 1 + (+c.pct) / 100; t = +c.pct < 0 ? snapDown(t * k) : snapUp(t * k); R.push(`기준 대비 ${c.pct > 0 ? '+' : ''}${c.pct}% (가격대 5% 단위 맞춤)`); }
     if (t != null && c.topNearOn && mode !== 'top' && +c.topNear > 0) { const top = P.find((w) => w.c !== 'ours' && w.p > 0); if (top && top.p !== t) { const gap = Math.abs(t - top.p) / t; if (gap <= +c.topNear / 100) { const tg = gOf(top); R.push(`최상단 동가: 맨 위 ${top.n || (top.c === 'aladin' ? '알라딘측' : '매물')} ${tg || ''} ${top.p.toLocaleString()}원이 ${t.toLocaleString()}원과 ${(gap * 100).toFixed(1)}% 차이(${c.topNear}% 이내) → 맨 위와 같게${GRADE_RANK[tg] != null && GRADE_RANK[l.grade] != null && GRADE_RANK[tg] < GRADE_RANK[l.grade] ? ` · ⚠ 맨 위는 우리(${l.grade})보다 낮은 등급` : ''}`); t = top.p; } else R.push(`최상단 동가 안 함: 맨 위 ${top.p.toLocaleString()}원과 ${(gap * 100).toFixed(1)}% 차이 (${c.topNear}% 넘음)`); } }
+    /* (0.14.0) 처리 기준 — 올리지 않고 유지(이미 최상단 · 이미 같은 등급 유효 최저가), 바꾸는 방향(내림만·올림만), 최대 인상 %. 하한선(매입가·최소 판매가·최대 인하)은 이 뒤에 그대로 (늘 우선) */
+    const cur = l.price; if (t != null && cur != null && t > cur) { const ours = P.filter((w) => w.c === 'ours'); const top = P[0] && P[0].c === 'ours';
+      const sameMin = P.filter((w) => w.c !== 'ours' && allow.has(w.c) && gOf(w) === l.grade && w.p > 0).reduce((m, w) => Math.min(m, w.p), Infinity); const lowest = ours.length > 0 && cur <= sameMin;
+      if (c.keepTop && top) { R.push(`이미 첫 페이지 맨 위 — 올리지 않고 지금 가격 유지 (${t.toLocaleString()}원 대신)`); t = cur; }
+      else if (c.keepLowest && lowest) { R.push(`이미 같은 등급(${l.grade}) 유효 최저가${Number.isFinite(sameMin) ? ` (다음 ${sameMin.toLocaleString()}원)` : ''} — 올리지 않고 지금 가격 유지 (${t.toLocaleString()}원 대신)`); t = cur; } }
+    if (t != null && cur != null && c.dir === 'down' && t > cur) { R.push(`내림만 — 올리지 않음 (${t.toLocaleString()}원 대신 지금 가격)`); t = cur; }
+    if (t != null && cur != null && c.dir === 'up' && t < cur) { R.push(`올림만 — 내리지 않음 (${t.toLocaleString()}원 대신 지금 가격)`); t = cur; }
+    if (t != null && cur && +c.maxRise > 0 && t > cur * (1 + c.maxRise / 100)) { const f = snapDown(cur * (1 + c.maxRise / 100)); R.push(`지금 가격 대비 최대 ${c.maxRise}% 인상으로 제한 → ${f.toLocaleString()}원`); t = Math.max(cur, f); }
     const fbb = c.bb && ['최상', '상'].includes(l.grade) && buyback && buyback[l.grade] ? minPriceFor(buyback[l.grade], ctx, DEFAULTS) : null;
     if (t != null && fbb && t < fbb) { R.push(`알라딘 매입가(${l.grade} ${buyback[l.grade].toLocaleString()}원) 하한 ${fbb.toLocaleString()}원으로 올림`); t = fbb; out.bbHit = { buy: buyback[l.grade], floor: fbb }; }
     if (t != null && +c.minPrice && t < +c.minPrice) { R.push(`최소 판매가 ${(+c.minPrice).toLocaleString()}원으로 올림`); t = +c.minPrice; }
