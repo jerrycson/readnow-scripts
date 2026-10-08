@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.12.0';
+  const VERSION = '0.13.0';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -425,6 +425,73 @@
       if (bb && (t == null || bb.v < t)) { R.push(`더 좋은 등급(${bb.r.g}) 매물 ${bb.r.p.toLocaleString()}원이 ${t == null ? '있음' : '더 쌈'} → ${grade} 값으로 환산 ${bb.v.toLocaleString()}원 (× ${coef[grade]}/${coef[bb.r.g]}, 그 매물보다 반드시 낮게)`); t = bb.v; } }
     if (t != null) { const w = ok.filter((r) => GRADE_RANK[r.g] < myR && r.p < t).sort((a, b) => a.p - b.p)[0]; if (w) R.push(`더 낮은 등급(${w.g}) 매물 ${w.p.toLocaleString()}원이 더 싸지만 따라가지 않음 (우리 상태가 더 좋음)`); }
     return { t, reasons: R }; }
-  const api = { VERSION, GRADE_RANK, sameGradeMatch, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, merge(DEFAULTS, S0 || {})), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
+  /* ───────────── (0.13.0) 조건 묶음(수동 일괄 처리 · 반자동 감시가 같이 씀 — 한 곳) ─────────────
+   *  crit = { mode: 'valid'|'same'|'top', colors: ['yellow'…], pct, better, coef, bb, minPrice, maxDrop, topNearOn, topNear }
+   *  critSettings(crit): 엔진(decide)을 이 조건으로 돌릴 설정 — 기준 판매자 색, 등급 계수, 매입가 하한, 할인 없음, 24시간 확정 없음(eng로 덮어씀)
+   *  critTarget(listing, page1, d, crit, ctx, buyback): 첫 페이지(우리 판매자 분류 c 포함)·엔진 결과 d로 이 조건의 추천가 → { t, reasons, bbHit, floor } */
+  function critSettings(c0, eng) { const c = c0 || {}; const colors = ['dkgreen', 'green', ...(c.colors || [])]; const tiers = {}; for (const k of Object.keys(DEFAULTS.tiers)) tiers[k] = { ...DEFAULTS.tiers[k], colors, disc: [0, 0] };
+    const S = { tiers, tierBounds: [0, 1e9, 1e9 + 1, 1e9 + 2, 1e9 + 3, 1e9 + 4, 1e9 + 5], cutoverAt: null, tempTierCap: 'T7', gradeCoef: c.coef || DEFAULTS.gradeCoef, useBetterGrade: !!c.better, advPct: 0, staleHours: 24 * 400, confirmHours: 0, queueGapMult: 999, useYes24Proxy: false, excludeSku: [], buybackGrades: c.bb ? ['최상', '상'] : [], buybackTolerance: 0, rareMaxValid: -1, rareMaxAll: -1, specialKeywords: [] };
+    const e = eng || {}; if (e.confirmHours != null) S.confirmHours = +e.confirmHours; if (e.discOn) for (const k of Object.keys(tiers)) tiers[k].disc = DEFAULTS.tiers[k].disc; return S; }
+  function critTarget(l, page1, d, c0, ctx, buyback) { const c = c0 || {}; const R = []; const out = { t: null, reasons: R, bbHit: null, floor: 0 }; const coef = c.coef || DEFAULTS.gradeCoef;
+    const colors = ['dkgreen', 'green', ...(c.colors || [])]; const allow = new Set([...colors, 'aladin']); const gOf = (w) => (w.c === 'aladin' && !(w.g in GRADE_RANK) ? '중' : w.g); // 알라딘측 균일가 = 중 (엔진과 같은 기준)
+    const P = (page1 || []).filter((w) => w); let t = null; const mode = c.mode || 'valid';
+    if (mode === 'valid') R.push(...((d && d.reasons) || []).filter((x) => !/희소|보호/.test(x))); // 최상단 배치·같은 등급 동가는 엔진 이유를 섞지 않음
+    if (mode === 'top') { const top = P.find((w) => w.c !== 'ours' && allow.has(w.c)); if (top) { t = top.p; R.unshift(`최상단 배치: 허용한 판매자 중 맨 위 ${top.n || '알라딘측'} ${top.g} ${(top.p || 0).toLocaleString()}원과 판매가 동가`); if (GRADE_RANK[gOf(top)] != null && GRADE_RANK[l.grade] != null && GRADE_RANK[gOf(top)] < GRADE_RANK[l.grade]) R.push(`⚠ 맨 위 매물은 우리(${l.grade})보다 낮은 등급(${gOf(top)}) — 우리 더 좋은 상태를 그 값에 맞춤`); } else R.unshift('최상단 배치: 허용한 판매자 매물이 첫 페이지에 없음'); }
+    else if (mode === 'same') { const m = sameGradeMatch(l.grade, P.filter((w) => w.c !== 'ours').map((w) => ({ g: gOf(w), p: w.p, ok: allow.has(w.c) })), { coef, useBetter: !!c.better }); t = m.t; R.unshift(...m.reasons); }
+    else if (d) { t = d.action === 'set' || d.status === 'ok' || d.status === 'floor' ? (d.target ?? l.price) : null; if (d.status === 'floor') out.bbHit = { buy: (buyback || {})[l.grade] || null, floor: d.target ?? null }; } // 엔진의 하한선 = 알라딘 매입가 하나뿐 → 매입가 하한
+    if (t != null && +c.pct) { const k = 1 + (+c.pct) / 100; t = +c.pct < 0 ? snapDown(t * k) : snapUp(t * k); R.push(`기준 대비 ${c.pct > 0 ? '+' : ''}${c.pct}% (가격대 5% 단위 맞춤)`); }
+    if (t != null && c.topNearOn && mode !== 'top' && +c.topNear > 0) { const top = P.find((w) => w.c !== 'ours' && w.p > 0); if (top && top.p !== t) { const gap = Math.abs(t - top.p) / t; if (gap <= +c.topNear / 100) { const tg = gOf(top); R.push(`최상단 동가: 맨 위 ${top.n || (top.c === 'aladin' ? '알라딘측' : '매물')} ${tg || ''} ${top.p.toLocaleString()}원이 ${t.toLocaleString()}원과 ${(gap * 100).toFixed(1)}% 차이(${c.topNear}% 이내) → 맨 위와 같게${GRADE_RANK[tg] != null && GRADE_RANK[l.grade] != null && GRADE_RANK[tg] < GRADE_RANK[l.grade] ? ` · ⚠ 맨 위는 우리(${l.grade})보다 낮은 등급` : ''}`); t = top.p; } else R.push(`최상단 동가 안 함: 맨 위 ${top.p.toLocaleString()}원과 ${(gap * 100).toFixed(1)}% 차이 (${c.topNear}% 넘음)`); } }
+    const fbb = c.bb && ['최상', '상'].includes(l.grade) && buyback && buyback[l.grade] ? minPriceFor(buyback[l.grade], ctx, DEFAULTS) : null;
+    if (t != null && fbb && t < fbb) { R.push(`알라딘 매입가(${l.grade} ${buyback[l.grade].toLocaleString()}원) 하한 ${fbb.toLocaleString()}원으로 올림`); t = fbb; out.bbHit = { buy: buyback[l.grade], floor: fbb }; }
+    if (t != null && +c.minPrice && t < +c.minPrice) { R.push(`최소 판매가 ${(+c.minPrice).toLocaleString()}원으로 올림`); t = +c.minPrice; }
+    if (t != null && +c.maxDrop && l.price && t < l.price * (1 - c.maxDrop / 100)) { const f = snapUp(l.price * (1 - c.maxDrop / 100)); R.push(`지금 가격 대비 최대 ${c.maxDrop}% 인하로 제한 → ${f.toLocaleString()}원`); t = f; }
+    out.floor = Math.max(0, fbb || 0, +c.minPrice || 0, +c.maxDrop && l.price ? snapUp(l.price * (1 - c.maxDrop / 100)) : 0); out.t = t; return out; }
+
+  /* ───────────── (0.13.0) 추격자: 기록에서 찾기 + 대응 전략 ─────────────
+   *  chaseMap(ourActs, changeDocs, now, S): 우리 가격 변경(반영 기록 at·to)과 그 책의 매물 변화 기록(prd_metric_changes: chg의 판매가가 내려간 것, 우리 것 빼고)으로
+   *    추격 사건(우리가 바꾼 뒤 windowHours 안에 우리 새 가격 이하로 내림)을 세어 판매자마다 { active, recent, score, last } — chaseEvents·chaseState 그대로
+   *  chaseStep(o): 추격자가 우리보다 같거나 좋은 등급으로 첫 페이지에 있을 때 전략대로 가격을 정함. 상태(state)는 결정 문서에 남겨 다음 확인(every 시간 뒤)에 이어감
+   *    yield  양보 — 추격자를 빼고 다음 유효 매물 기준(엔진 기본), 추격자가 팔리면 원래대로
+   *    match  동가 — 추격자와 같은 가격(더 내리지 않음), 하한 아래로는 안 감
+   *    shadow 그림자 — 추격자 바로 한 단위 위: 추격자가 먼저 팔리고 우리가 바로 다음
+   *    lure   끌어내린 뒤 빠지기 — 추격자보다 한 단위 아래로 두고(추격자가 또 내리게) 반응하면 되풀이, 하한(유인 하한)에 닿거나 maxRounds를 채우거나
+   *           두 번 반응이 없으면 '빠짐': 추격자를 뺀 다음 기준 값(없으면 유인 전 값)으로 올려 추격자가 낮은 값에 먼저 팔리게 함
+   *    lift   끌어올리기 — 우리 값을 liftStep%씩 올려 추격자가 따라 올라오면 되풀이(상한 = 다음 유효 매물 값·시작 가격 +liftCap%), 따라오지 않으면 멈춤
+   *  안전: 모든 전략은 floor(조건 묶음 하한·매입가 하한·최소 판매가) 아래로 내리지 않음. lure의 유인 하한 = max(floor, 시작 가격 × (1 − floorPct%)) */
+  function chaseMap(ourActs, changeDocs, now0, S0) { const S = merge(DEFAULTS, S0 || {}); const ours = (ourActs || []).filter((a) => a && a.at && a.to != null).map((a) => ({ at: a.at, price: +a.to }));
+    const theirs = []; for (const doc of changeDocs || []) { if (!doc || !doc.at) continue; for (const c of doc.chg || []) { const f = (c.f || {}).price; if (!f || !(f[1] < f[0])) continue; const sc = String(c.sellerCode || ''); if (!sc || sc === '996008') continue; theirs.push({ sellerCode: sc, at: doc.at, price: f[1] }); } }
+    return chaseState(chaseEvents(ours, theirs, S), now0, S); }
+  function chaserOn(page1, chase, grade) { const myR = GRADE_RANK[grade]; let best = null; // 우리보다 같거나 좋은 등급의 추격자 매물(첫 페이지) 중 가장 싼 것
+    for (const w of page1 || []) { if (!w || w.c === 'ours') continue; const sc = String(w.sc || w.sellerCode || ''); if (!sc || !(chase && chase[sc] && chase[sc].active)) continue; const r = GRADE_RANK[w.g || w.grade]; if (myR != null && (r == null || r < myR)) continue; const p = +(w.p ?? w.price); if (!(p > 0)) continue; if (!best || p < best.price) best = { sellerCode: sc, name: w.n || w.sellerName || null, price: p, grade: w.g || w.grade || null }; }
+    return best; }
+  const exitT0 = (o, st) => (o.yieldT != null ? o.yieldT : (st && st.preP) || o.cur);
+  function chaseStep(o) { const C0 = o.strat || {}; const name = C0.name || 'yield'; const R = []; const now = o.now || new Date().toISOString(); const every = Math.max(1, +C0.every || 6) * HOUR; const nextAt = new Date(t(now) + every).toISOString();
+    const fl = Math.max(o.floor || 0, name === 'lure' && o.start && C0.floorPct != null ? snapUp(o.start * (1 - C0.floorPct / 100)) : 0); const maxR = Math.max(1, +C0.maxRounds || 3);
+    const ch = o.chaser; const prev = o.state && o.state.active ? o.state : null;
+    if (!ch) { if (prev) R.push(`추격자(${prev.scName || prev.sc}) 매물이 첫 페이지에서 사라짐(팔렸거나 내림) → 전략 끝, 원래 기준으로`); return { t: o.base, state: prev ? { ...prev, active: false, endedAt: now, end: 'chaserGone' } : null, reasons: R, active: false }; }
+    const nm = ch.name || ch.sellerCode; const st0 = prev && prev.name === name && prev.sc === ch.sellerCode ? prev : null;
+    if (st0 && ['probe', 'lift'].includes(st0.phase) && st0.ourP != null && o.cur !== st0.ourP) { const wa = (st0.waitApply || 0) + 1; // 앞 단계 가격이 아직 공개 목록에 안 보이면(반영 대기·관리자 승인 대기·반영 늦음) 추격자 반응을 판단하지 않음
+      if (wa >= 4) return { t: exitT0(o, st0), state: { ...st0, phase: 'exit', waitApply: wa, lastAt: now, nextAt, exitAt: now }, reasons: [`앞 단계 가격 ${st0.ourP.toLocaleString()}원이 ${wa}번 확인에도 공개 목록에 안 보임 → 전략 그만, 빠진 자리로`], active: true, nextAt };
+      return { t: st0.ourP, state: { ...st0, waitApply: wa, lastAt: now, nextAt }, reasons: [`앞 단계 가격 ${st0.ourP.toLocaleString()}원이 아직 공개 목록에 안 보임(지금 ${o.cur != null ? o.cur.toLocaleString() : '?'}원) — 반영될 때까지 추격자 반응을 판단하지 않고 기다림`], active: true, nextAt }; }
+    if (!st0 && o.base != null && ch.price > o.base) return { t: o.base, state: null, reasons: [`추격자 ${nm}(${ch.price.toLocaleString()}원)가 우리 기준가(${o.base.toLocaleString()}원)보다 비쌈 — 전략 필요 없음`], active: false }; const exitT = o.yieldT != null ? o.yieldT : (st0 && st0.preP) || o.cur;
+    const fin = (tt, st, why) => { let v = tt; if (v != null && v < fl) { R.push(`하한 ${fl.toLocaleString()}원 아래로는 안 감`); v = fl; } if (why) R.unshift(why); return { t: v, state: st, reasons: R, active: !!(st && st.active), nextAt: st && st.active ? st.nextAt || nextAt : null }; };
+    const base = { name, sc: ch.sellerCode, scName: nm, active: true, startedAt: (st0 && st0.startedAt) || now, preP: (st0 && st0.preP) || o.cur, lastAt: now, nextAt };
+    if (name === 'match') return fin(ch.price, { ...base, phase: 'match' }, `추격자 ${nm}(${ch.grade || ''} ${ch.price.toLocaleString()}원)와 동가 유지 — 더 내리지 않음`);
+    if (name === 'shadow') { const sp = snapUp(ch.price + 1); const tt = o.yieldT != null ? Math.min(sp, o.yieldT) : sp; return fin(tt, { ...base, phase: 'shadow' }, `그림자: 추격자 ${nm} ${ch.price.toLocaleString()}원 바로 위 ${tt.toLocaleString()}원 — 추격자가 먼저 팔리고 우리가 바로 다음`); }
+    if (name === 'lift') { const capS = o.start && C0.liftCap != null ? snapUp(o.start * (1 + C0.liftCap / 100)) : Infinity; const cap = Math.min(o.yieldT != null ? o.yieldT : Infinity, capS); const step = 1 + Math.max(1, +C0.liftStep || 5) / 100;
+      if (!st0 || st0.phase === 'start') { const p = snapUp(o.cur * step); if (!(p > o.cur) || p > cap) return fin(exitT, { ...base, phase: 'done', round: 0 }, `끌어올리기 불가(상한 ${Number.isFinite(cap) ? cap.toLocaleString() + '원' : '없음'}) → 양보`); return fin(p, { ...base, phase: 'lift', round: 1, ourP: p, chP: ch.price, noReact: 0 }, `끌어올리기 1회: ${o.cur.toLocaleString()} → ${p.toLocaleString()}원 — 추격자 ${nm}(${ch.price.toLocaleString()}원)가 따라 올라오는지 봄`); }
+      if (st0.phase === 'lift') { if (ch.price > st0.chP) { const round = st0.round + 1; const p = snapUp(st0.ourP * step); if (round > maxR || !(p > st0.ourP) || p > cap) return fin(st0.ourP, { ...base, ...st0, phase: 'done', round, chP: ch.price, lastAt: now, nextAt }, `추격자가 ${st0.chP.toLocaleString()} → ${ch.price.toLocaleString()}원으로 따라 올라옴 — ${round > maxR ? `${maxR}회 채움` : '상한'}이라 여기서 멈춤 (${st0.ourP.toLocaleString()}원 유지)`);
+          return fin(p, { ...base, ...st0, round, ourP: p, chP: ch.price, noReact: 0, lastAt: now, nextAt }, `추격자가 따라 올라옴(${st0.chP.toLocaleString()} → ${ch.price.toLocaleString()}원) → 끌어올리기 ${round}회: ${p.toLocaleString()}원`); }
+        const nr = (st0.noReact || 0) + 1; if (nr >= 2) return fin(Math.min(st0.ourP, exitT), { ...base, ...st0, phase: 'done', noReact: nr, lastAt: now, nextAt }, `추격자가 따라 올라오지 않음(${nr}번) → 끌어올리기 멈춤, 양보 자리`); return fin(st0.ourP, { ...base, ...st0, noReact: nr, lastAt: now, nextAt }, `추격자 반응 기다림(${nr}번째 확인) — ${st0.ourP.toLocaleString()}원 유지`); }
+      return fin(Math.min(st0.ourP || exitT, exitT), { ...base, ...st0, lastAt: now, nextAt }, `끌어올리기 끝 — 추격자가 팔릴 때까지 양보 자리`); }
+    if (name === 'lure') { const probe = (chp) => stepDown(chp);
+      if (!st0) { const p = probe(ch.price); if (p < fl) return fin(exitT, { ...base, phase: 'exit', round: 0 }, `유인 가격(${p.toLocaleString()}원)이 유인 하한 ${fl.toLocaleString()}원 아래 → 유인하지 않고 빠진 자리(양보)`); return fin(p, { ...base, phase: 'probe', round: 1, ourP: p, chP: ch.price, noReact: 0 }, `끌어내리기 1회: 추격자 ${nm} ${ch.price.toLocaleString()}원보다 한 단위 아래 ${p.toLocaleString()}원 — 추격자가 또 내리게 함 (유인 하한 ${fl.toLocaleString()}원)`); }
+      if (st0.phase === 'probe') { if (ch.price <= st0.ourP) { const round = st0.round + 1; const p = probe(ch.price); if (round > maxR || p < fl) return fin(exitT, { ...base, ...st0, phase: 'exit', round, chP: ch.price, exitAt: now, lastAt: now, nextAt }, `추격자가 ${ch.price.toLocaleString()}원까지 내려옴 — ${round > maxR ? `${maxR}회 채움` : '유인 하한에 닿음'} → 빠짐: ${exitT != null ? exitT.toLocaleString() + '원' : '지금 값'}으로 올려 추격자가 먼저 팔리게`);
+          return fin(p, { ...base, ...st0, round, ourP: p, chP: ch.price, noReact: 0, lastAt: now, nextAt }, `추격자가 따라 내림(${st0.chP.toLocaleString()} → ${ch.price.toLocaleString()}원) → 끌어내리기 ${round}회: ${p.toLocaleString()}원`); }
+        const nr = (st0.noReact || 0) + 1; if (nr >= 2) return fin(exitT, { ...base, ...st0, phase: 'exit', noReact: nr, exitAt: now, lastAt: now, nextAt }, `추격자가 반응 없음(${nr}번) → 빠짐: 추격자를 뺀 다음 기준 값으로`); return fin(st0.ourP, { ...base, ...st0, noReact: nr, lastAt: now, nextAt }, `추격자 반응 기다림(${nr}번째 확인) — ${st0.ourP.toLocaleString()}원 유지`); }
+      return fin(exitT, { ...base, ...st0, lastAt: now, nextAt }, `빠진 자리 유지 — 추격자 ${nm}(${ch.price.toLocaleString()}원)가 팔릴 때까지`); }
+    return fin(o.yieldT != null ? o.yieldT : o.cur, { ...base, phase: 'yield' }, `양보: 추격자 ${nm}(${ch.price.toLocaleString()}원)를 따라 내리지 않고 다음 유효 매물 기준`); }
+  const STRATS = { yield: '양보 (따라 내리지 않고 기다림)', match: '동가 유지', shadow: '그림자 (추격자 바로 위)', lure: '끌어내린 뒤 빠지기', lift: '끌어올리기' };
+  const api = { VERSION, GRADE_RANK, sameGradeMatch, critSettings, critTarget, chaseMap, chaserOn, chaseStep, STRATS, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, merge(DEFAULTS, S0 || {})), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowPricing = api;
 })(typeof window !== 'undefined' ? window : this);
