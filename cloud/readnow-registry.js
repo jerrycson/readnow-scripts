@@ -16,13 +16,15 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.1.0';
+  const VERSION = '0.2.0';
   const MIN = 60e3;
 
   const KINDS = {
     read: { label: '출고 목록 다시 읽기', by: ['cloud', 'pc'], lane: 'scm', prio: 2, leaseMin: 10, retry: 2, safe: true, money: false, waitMin: 10, from: '웹앱 출고 화면' },
     startDelivery: { label: '발송준비시작', by: ['cloud', 'pc'], lane: 'scm', prio: 1, leaseMin: 15, retry: 0, safe: false, money: true, waitMin: 10, from: '웹앱 출고 ①',
       stuckNote: '일부 주문은 이미 발송 요청으로 넘어갔을 수 있음 — 출고 화면에서 주문확인요청을 다시 읽어 남은 주문만 다시 넘기세요' },
+    cashStop: { label: '현금 판매 → 알라딘 판매중지', by: ['cloud', 'pc'], lane: 'scm', prio: 1, leaseMin: 10, retry: 2, safe: true, money: true, waitMin: 10, from: '웹앱 현금 판매 저장 (0.97.0)',
+      note: '판매중지 목록에서 그 상품을 찾아야 완료 · 이미 판매중지면 그대로 — 다시 해도 두 번 바뀌지 않음' },
     usedInfo: { label: "'중' 상품 유의 사항 다시 읽기", by: ['cloud', 'pc'], lane: 'shop', prio: 3, leaseMin: 15, retry: 2, safe: true, money: false, waitMin: 60, from: '웹앱·클라우드 (중인데 글 없음)' },
     market: { label: '주문 책 시장 다시 읽기', by: ['cloud'], lane: 'shop', prio: 3, leaseMin: 15, retry: 2, safe: true, money: false, waitMin: 15, from: '웹앱 출고 카드' },
     aladinBuy: { label: '알라딘 구매 내역 읽기', by: ['cloud'], lane: 'shop', prio: 5, leaseMin: 60, retry: 1, safe: true, money: false, waitMin: 30, from: '웹앱 매입 탭' },
@@ -63,7 +65,7 @@
   };
 
   // 공용 파일 판 — 이번 출시에서 모두가 써야 하는 판 하나
-  const PINS = { 'readnow-core.js': '1.4.1', 'readnow-sellers-core.js': '1.3.0', 'readnow-products-core.js': '0.13.0', 'readnow-pricing-core.js': '0.15.0', 'readnow-shipping-core.js': '0.5.1', 'readnow-orders-core.js': '0.3.0', 'readnow-registry.js': VERSION };
+  const PINS = { 'readnow-core.js': '1.4.1', 'readnow-sellers-core.js': '1.3.0', 'readnow-products-core.js': '0.14.0', 'readnow-pricing-core.js': '0.15.0', 'readnow-shipping-core.js': '0.5.1', 'readnow-orders-core.js': '0.3.0', 'readnow-registry.js': VERSION };
   // 도구마다 쓰는 공용 파일 (판 비교 대상)
   const USES = {
     webapp: ['readnow-core.js', 'readnow-sellers-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-shipping-core.js', 'readnow-registry.js'],

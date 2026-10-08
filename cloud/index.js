@@ -10,6 +10,7 @@
  *  - /kick  (웹앱이 일을 맡긴 직후 부름: 5분 기다리지 않고 바로 ③)
  *  - /lookup (웹앱 '사진 가격': ISBN·알라딘 상품번호 → 새상품 정보 + 온라인 중고 첫 페이지 / 제목 → 알라딘 검색 후보)
  *  - /spines (웹앱 '사진 가격' 책등 사진 → Google Vision 글자 읽기 → 책등마다 글자 묶음)
+ *  - (0.6.1) 현금 판매 → 알라딘 판매중지 자동(shp_cmds cashStop): 판매상태 일괄 변경과 같은 요청으로 판매중지 → '판매중지' 목록에서 그 상품을 찾아야 완료, 못 찾으면 '확인 필요'(완료로 적지 않음) → 현금 판매 기록의 그 줄에 결과
  *  - (0.6.0) 관리도구 1판: 맡긴 일은 노선표(readnow-registry.js + Firebase app_settings/sys_registry)에 '클라우드가 맡을 수 있음'인 종류만 맡음 ·
  *      1분마다 맡긴 일 살피기(sweep) — 맡고 멈춘 일은 다시 해도 되는 일만 대기로 되돌리고, 아니면 '사람 확인'으로 · 아무도 안 맡는 일·모르는 종류는 알림 → app_settings/sys_health
  *  - (0.5.8) 매일 결과 기록(개편 1단계): 판매중 상품 전체의 그날 모습(ml_days) + 가격 변경마다 그 뒤 판매(ml_outcomes) + 이어짐 점검(app_settings/ml_state)
@@ -27,7 +28,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.6.0';
+const VER = '0.6.1';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -278,10 +279,32 @@ async function runCmds(p) {
       await d.ref.set(allOk ? { status: 'done', results, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() } : { status: 'queued', cloudTried: true, cloudResults: results, claim: null, uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'market') { (v.listingIds || []).forEach((x) => force.add(String(x))); await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'aladinBuy') { buy = true; await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
+    else if (v.type === 'cashStop') { const r = await cashStopRun(p, v); await d.ref.set({ status: 'done', result: r, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); log('현금 판매 판매중지', v.title || v.listingId, r.state); }
     else if (v.type === 'read') { await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
     else { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 처리하는 길이 없는 종류 — 노선표 확인`, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('맡긴 일: 처리 길 없음', v.type); } } // 노선표엔 클라우드 몫인데 이 판에 처리 길이 없으면 '끝남'으로 지우지 않고 대기로 되돌림
   return { n, needRead, force, buy };
 }
+
+/* ── (0.6.1) 현금 판매한 상품 → 알라딘 판매중지 (수집기 1.37.0의 같은 일과 같은 방법 — 상품 조회/수정 화면의 '판매상태 일괄 변경' 요청)
+ *  ① 알라딘 상품번호: 맡긴 일 → 우리 상품 기록  ② 지금 상태 코드: 우리 상품 기록(판매중 1·일시판매중지 3·판매대기 41)  ③ 판매중지(15)로 바꿈
+ *  ④ '판매중지' 목록에서 제목으로 찾아 그 상품번호가 있어야 'done' — 없으면 원래 상태를 다른 값으로 한 번씩 더, 그래도 없으면 'check'(완료로 적지 않음 — 사람 확인)
+ *  ⑤ 현금 판매 기록(crm_orders)의 그 줄만 트랜잭션으로 고침(다른 줄·금액은 그대로) + 고친 기록 history */
+const ST_CODE = { 판매중: 1, 판매대기: 41, 일시판매중지: 3, 판매중지: 15, 판매완료: 18, 판매금지: 16 };
+async function cashStopRun(p, v) { const by = 'cloud';
+  let lid = v.listingId ? String(v.listingId) : null; let ld = null; try { ld = (await C('prd_listings').doc(v.listingKey || ('aladin_' + v.usedCode)).get()).data() || null; } catch (e) {} if (!lid && ld && ld.listingId) lid = String(ld.listingId);
+  if (!lid) return { state: 'fail', msg: '알라딘 상품번호를 못 찾음' };
+  const before = (ld && ST_CODE[ld.status]) || 1; const kw = String(v.title || '').replace(/^\[[^\]]*\]\s*/, '').slice(0, 30);
+  const R = await p.evaluate(async (a) => { const set = async (from) => { const fd = new URLSearchParams({ fn: 'stockstatusbulkchg', stockStatusBefore: String(from), stockStatusToDo: '15', items: a.lid }); const rr = await fetch('/scm/wrecord_edit_usedbatch.aspx', { method: 'POST', body: fd, credentials: 'include' }); const t = await rr.text(); if (/\/login\/|wlogin/i.test(rr.url)) return { login: false }; return { ok: rr.ok, al: (t.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || '' }; };
+    const inStop = async () => { if (!a.kw) return null; try { const r = await fetch(`/scm/wrecord_edit.aspx?chkItemStockStatus=15&chkItemInDate=0&searchCat1=0&searchType=1&keyword=${encodeURIComponent(a.kw)}&ViewRowsCount=100&page=1&SortOrder=6&itemStockStatus=15&categoryId=0`, { credentials: 'include', cache: 'no-store' }); if (!r.ok) return null; const doc = new DOMParser().parseFromString(await r.text(), 'text/html'); return window.ReadnowProducts.parseScmList(doc).rows.some((x) => String(x.listingId) === String(a.lid)); } catch (e) { return null; } };
+    let s1 = await set(a.before); if (s1.login === false) return { login: false }; let ok = await inStop(); let used = a.before; let al = s1.al;
+    for (const alt of [1, 3, 41]) { if (ok !== false || alt === a.before) continue; const s2 = await set(alt); al = s2.al || al; used = alt; ok = await inStop(); }
+    return { login: true, ok, used, al }; }, { lid, before, kw });
+  if (!R.login) throw Object.assign(new Error('로그인 풀림'), { relogin: true });
+  const st = R.ok ? 'done' : 'check'; const at = nowIso();
+  await db.runTransaction(async (tx) => { const ref = C('crm_orders').doc(v.orderId); const sn = await tx.get(ref); if (!sn.exists) return; const o = sn.data(); const items = JSON.parse(JSON.stringify(o.items || [])); const it = items.find((x) => x.lineNo === v.lineNo); if (!it || (it.aladinStop && it.aladinStop.status === 'done') || it.released) return;
+    it.listingId = it.listingId || lid; it.aladinStop = { status: st, at, by, from: 'cloud-stop', before: R.used, verified: R.ok === true, msg: R.al || null, cmd: v.id || null };
+    tx.update(ref, { items, uploadedAt: FV.serverTimestamp(), history: FV.arrayUnion({ at, by, what: `알라딘 판매중지로 바꿈(클라우드 자동): ${v.title || lid}${R.ok ? ' · 판매중지 목록에서 확인함' : ' · 판매중지 목록에서 확인 못함(확인 필요)'}${R.al ? ' · 알라딘: ' + R.al : ''}` }) }); });
+  return { state: st, listingId: lid, before: R.used, msg: R.al || null }; }
 
 /* ── ④ 알라딘에서 산 주문 (매입) — 5분마다 첫 쪽(최신 주문)만 읽음 · 새 주문은 바로 상세(품목·가격·판매자)까지
    → pur_aladin_orders (PC 수집기 '알라딘 구매 내역'과 같은 저장 형식) → 웹앱이 실시간으로 받아 '주문함' 매입 기록을 만듦
