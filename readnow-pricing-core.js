@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.14.0';
+  const VERSION = '0.15.0';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -426,9 +426,10 @@
     if (t != null) { const w = ok.filter((r) => GRADE_RANK[r.g] < myR && r.p < t).sort((a, b) => a.p - b.p)[0]; if (w) R.push(`더 낮은 등급(${w.g}) 매물 ${w.p.toLocaleString()}원이 더 싸지만 따라가지 않음 (우리 상태가 더 좋음)`); }
     return { t, reasons: R }; }
   /* ───────────── (0.13.0) 조건 묶음(수동 일괄 처리 · 반자동 감시가 같이 씀 — 한 곳) ─────────────
-   *  crit = { mode: 'valid'|'same'|'top', colors: ['yellow'…], pct, better, coef, bb, minPrice, maxDrop, topNearOn, topNear }
+   *  crit = { mode: 'valid'|'same'|'top'|'topAny'|'under'|'shipMin'|'charm'|'newPct' (0.15.0), underScope, underRank, newPct, colors: ['yellow'…], pct, better, coef, bb, minPrice, maxDrop, topNearOn, topNear }
    *  critSettings(crit): 엔진(decide)을 이 조건으로 돌릴 설정 — 기준 판매자 색, 등급 계수, 매입가 하한, 할인 없음, 24시간 확정 없음(eng로 덮어씀)
    *  critTarget(listing, page1, d, crit, ctx, buyback): 첫 페이지(우리 판매자 분류 c 포함)·엔진 결과 d로 이 조건의 추천가 → { t, reasons, bbHit, floor } */
+  const CHARM_TH = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 15000, 20000, 25000, 30000, 40000, 50000]; // 사람이 '앞자리가 바뀌었다'고 느끼는 경계 (관찰 도구 '경계 바로 위 가격' 칸과 같은 목록 — 한 곳)
   function critSettings(c0, eng) { const c = c0 || {}; const colors = ['dkgreen', 'green', ...(c.colors || [])]; const tiers = {}; for (const k of Object.keys(DEFAULTS.tiers)) tiers[k] = { ...DEFAULTS.tiers[k], colors, disc: [0, 0] };
     const S = { tiers, tierBounds: [0, 1e9, 1e9 + 1, 1e9 + 2, 1e9 + 3, 1e9 + 4, 1e9 + 5], cutoverAt: null, tempTierCap: 'T7', gradeCoef: c.coef || DEFAULTS.gradeCoef, useBetterGrade: !!c.better, advPct: 0, staleHours: 24 * 400, confirmHours: 0, queueGapMult: 999, useYes24Proxy: false, excludeSku: [], buybackGrades: c.bb ? ['최상', '상'] : [], buybackTolerance: 0, rareMaxValid: -1, rareMaxAll: -1, specialKeywords: [] };
     const e = eng || {}; if (e.confirmHours != null) S.confirmHours = +e.confirmHours; if (e.discOn) for (const k of Object.keys(tiers)) tiers[k].disc = DEFAULTS.tiers[k].disc; return S; }
@@ -438,7 +439,25 @@
     if (mode === 'valid') R.push(...((d && d.reasons) || []).filter((x) => !/희소|보호/.test(x))); // 최상단 배치·같은 등급 동가는 엔진 이유를 섞지 않음
     if (mode === 'top') { const top = P.find((w) => w.c !== 'ours' && allow.has(w.c)); if (top) { t = top.p; R.unshift(`최상단 배치: 허용한 판매자 중 맨 위 ${top.n || '알라딘측'} ${top.g} ${(top.p || 0).toLocaleString()}원과 판매가 동가`); if (GRADE_RANK[gOf(top)] != null && GRADE_RANK[l.grade] != null && GRADE_RANK[gOf(top)] < GRADE_RANK[l.grade]) R.push(`⚠ 맨 위 매물은 우리(${l.grade})보다 낮은 등급(${gOf(top)}) — 우리 더 좋은 상태를 그 값에 맞춤`); } else R.unshift('최상단 배치: 허용한 판매자 매물이 첫 페이지에 없음'); }
     else if (mode === 'same') { const m = sameGradeMatch(l.grade, P.filter((w) => w.c !== 'ours').map((w) => ({ g: gOf(w), p: w.p, ok: allow.has(w.c) })), { coef, useBetter: !!c.better }); t = m.t; R.unshift(...m.reasons); }
+    /* (0.15.0) 알라딘 관찰 도구 칸 → 수동 일괄 처리 그룹이 쓰는 기준 (칸이 요구하는 자리를 그대로 목표로)
+     *  topAny  맨 위 매물(판매자·배송비 가리지 않음, 우리 것 빼고)과 판매가 동가 — '근소한 차이로 1위를 놓침'·'최상단'
+     *  under   기준 매물 바로 한 단위 아래 — underScope: any(전체)·valid(유효, 등급 상관없이)·same(유효 같은 등급), underRank n: 싼 쪽에서 n번째 매물 아래(n위 안 유지)
+     *          (우리가 이미 그 자리면 = 자리를 지키면서 올릴 수 있는 만큼 올림 · '너무 싸게 둔 1위'·'세 칸 안'·'유효 최저가')
+     *  shipMin 판매가 + 배송비가 유효 매물(기준 판매자) 중 최저와 같게 — 우리 배송비 = 정책(무료 기준 이상이면 0, 아니면 기본 배송비), 결제 총액 동가라 단위 예외(10원)
+     *  charm   경계 바로 위 가격(5,000·10,100 등) → 경계 아래 단위 가격(4,900·9,900, 1만 원대는 그 단위로 11,500 등)
+     *  newPct  새책 판매가의 newPct%(기본 79 — 80% 밑) 단위 가격 — 새책 값을 모르면 계산 안 함
+     *  reach(옵션) 하한선(매입가·최소 판매가·최대 인하) 때문에 목표까지 못 내리면 내리지 않고 지금 가격 유지 — 목표 자리에 서지 못하는 어중간한 인하 막음 */
+    else if (mode === 'topAny') { const top = P.find((w) => w.c !== 'ours' && w.p > 0); if (top) { t = top.p; R.unshift(`맨 위 매물과 동가: ${top.n || (top.c === 'aladin' ? '알라딘측' : '매물')} ${gOf(top) || ''} ${top.p.toLocaleString()}원 (판매자·배송비 가리지 않음)`); if (GRADE_RANK[gOf(top)] != null && GRADE_RANK[l.grade] != null && GRADE_RANK[gOf(top)] < GRADE_RANK[l.grade]) R.push(`⚠ 맨 위 매물은 우리(${l.grade})보다 낮은 등급(${gOf(top)})`); } else R.unshift('첫 페이지에 다른 매물이 없음 — 맞출 맨 위가 없음'); }
+    else if (mode === 'under') { const sc = c.underScope || 'any'; const n = Math.max(1, +c.underRank || 1); const pool = P.filter((w) => w.c !== 'ours' && w.p > 0 && (sc === 'any' || allow.has(w.c)) && (sc !== 'same' || gOf(w) === l.grade)).sort((a, b) => a.p - b.p); const ref = pool[n - 1]; const nm = { any: '전체', valid: '유효', same: `유효 같은 등급(${l.grade})` }[sc];
+      if (ref) { t = stepDown(ref.p); R.unshift(`${nm} 매물 중 싼 쪽 ${n}번째 ${ref.n || (ref.c === 'aladin' ? '알라딘측' : '')} ${gOf(ref) || ''} ${ref.p.toLocaleString()}원보다 한 단위 아래 → ${t.toLocaleString()}원 (${n === 1 ? '맨 위' : n + '위 안'} 유지)`); } else { t = l.price ?? null; R.unshift(`${nm} 매물이 첫 페이지에 ${pool.length}개뿐 — ${n}번째 기준이 없어 지금 가격 유지`); } }
+    else if (mode === 'shipMin') { const pol = (ctx && ctx.policy) || {}; const me = P.find((w) => w.c === 'ours'); const fee = pol.fee != null ? +pol.fee : me && me.s != null ? +me.s : l.ship != null ? +l.ship : 0; const fo = pol.paidOnly ? null : pol.freeOver != null ? +pol.freeOver : null;
+      const vt = P.filter((w) => w.c !== 'ours' && allow.has(w.c) && w.p > 0).map((w) => ({ w, tot: w.p + (+w.s || 0) })).sort((a, b) => a.tot - b.tot)[0];
+      if (!vt) R.unshift('유효 매물이 첫 페이지에 없음 — 결제 총액 기준을 정할 수 없음'); else { const cand = []; if (fo != null && vt.tot >= fo) cand.push({ p: vt.tot, s: 0 }); const p2 = vt.tot - fee; if (p2 > 0 && (fo == null || p2 < fo)) cand.push({ p: p2, s: fee }); const best = cand.sort((a, b) => b.p - a.p)[0];
+        if (best) { t = Math.floor(best.p / 10) * 10; R.unshift(`결제 총액 동가: 유효 최저 총액 ${vt.w.n || (vt.w.c === 'aladin' ? '알라딘측' : '')} ${vt.w.p.toLocaleString()} + 배송 ${(+vt.w.s || 0).toLocaleString()} = ${vt.tot.toLocaleString()}원 → 우리 ${t.toLocaleString()} + 배송 ${best.s.toLocaleString()}원${fo != null ? ` (우리 ${fo.toLocaleString()}원 이상 무료)` : ''}`); } else R.unshift(`유효 최저 총액 ${vt.tot.toLocaleString()}원보다 우리 배송비(${fee.toLocaleString()}원)가 커서 맞출 수 없음`); } }
+    else if (mode === 'charm') { const cur0 = l.price || 0; const th = CHARM_TH.filter((x) => cur0 >= x && cur0 <= x + Math.max(100, x * 0.02)).pop(); if (th) { t = snapDown(th - 100); R.unshift(`경계(${th.toLocaleString()}원) 바로 위 ${cur0.toLocaleString()}원 → 경계 아래 ${t.toLocaleString()}원 (앞자리 효과)`); } else { t = cur0 || null; R.unshift('경계 바로 위 가격이 아님 — 지금 가격 유지'); } }
+    else if (mode === 'newPct') { const ps = +((ctx && ctx.priceSales) || l.priceSales || 0); const k = +c.newPct > 0 ? +c.newPct : 79; if (ps > 0) { t = snapDown(ps * k / 100); R.unshift(`새책 판매가 ${ps.toLocaleString()}원의 ${k}% → ${t.toLocaleString()}원 (새책 값에 너무 가까우면 구매자가 새책을 고름)`); } else R.unshift('새책 판매가를 몰라 계산하지 않음 (시장 지표 필요)'); }
     else if (d) { t = d.action === 'set' || d.status === 'ok' || d.status === 'floor' ? (d.target ?? l.price) : null; if (d.status === 'floor') out.bbHit = { buy: (buyback || {})[l.grade] || null, floor: d.target ?? null }; } // 엔진의 하한선 = 알라딘 매입가 하나뿐 → 매입가 하한
+    const goal = t; // (0.15.0) 조건이 정한 목표가 (기준 대비 %·처리 기준·하한선 전)
     if (t != null && +c.pct) { const k = 1 + (+c.pct) / 100; t = +c.pct < 0 ? snapDown(t * k) : snapUp(t * k); R.push(`기준 대비 ${c.pct > 0 ? '+' : ''}${c.pct}% (가격대 5% 단위 맞춤)`); }
     if (t != null && c.topNearOn && mode !== 'top' && +c.topNear > 0) { const top = P.find((w) => w.c !== 'ours' && w.p > 0); if (top && top.p !== t) { const gap = Math.abs(t - top.p) / t; if (gap <= +c.topNear / 100) { const tg = gOf(top); R.push(`최상단 동가: 맨 위 ${top.n || (top.c === 'aladin' ? '알라딘측' : '매물')} ${tg || ''} ${top.p.toLocaleString()}원이 ${t.toLocaleString()}원과 ${(gap * 100).toFixed(1)}% 차이(${c.topNear}% 이내) → 맨 위와 같게${GRADE_RANK[tg] != null && GRADE_RANK[l.grade] != null && GRADE_RANK[tg] < GRADE_RANK[l.grade] ? ` · ⚠ 맨 위는 우리(${l.grade})보다 낮은 등급` : ''}`); t = top.p; } else R.push(`최상단 동가 안 함: 맨 위 ${top.p.toLocaleString()}원과 ${(gap * 100).toFixed(1)}% 차이 (${c.topNear}% 넘음)`); } }
     /* (0.14.0) 처리 기준 — 올리지 않고 유지(이미 최상단 · 이미 같은 등급 유효 최저가), 바꾸는 방향(내림만·올림만), 최대 인상 %. 하한선(매입가·최소 판매가·최대 인하)은 이 뒤에 그대로 (늘 우선) */
@@ -453,7 +472,8 @@
     if (t != null && fbb && t < fbb) { R.push(`알라딘 매입가(${l.grade} ${buyback[l.grade].toLocaleString()}원) 하한 ${fbb.toLocaleString()}원으로 올림`); t = fbb; out.bbHit = { buy: buyback[l.grade], floor: fbb }; }
     if (t != null && +c.minPrice && t < +c.minPrice) { R.push(`최소 판매가 ${(+c.minPrice).toLocaleString()}원으로 올림`); t = +c.minPrice; }
     if (t != null && +c.maxDrop && l.price && t < l.price * (1 - c.maxDrop / 100)) { const f = snapUp(l.price * (1 - c.maxDrop / 100)); R.push(`지금 가격 대비 최대 ${c.maxDrop}% 인하로 제한 → ${f.toLocaleString()}원`); t = f; }
-    out.floor = Math.max(0, fbb || 0, +c.minPrice || 0, +c.maxDrop && l.price ? snapUp(l.price * (1 - c.maxDrop / 100)) : 0); out.t = t; return out; }
+    if (c.reach && goal != null && t != null && cur != null && t > goal && t < cur) { R.push(`목표 ${goal.toLocaleString()}원까지 못 내림(하한선 ${t.toLocaleString()}원) — 반만 내리면 목표 자리에 못 서고 값만 깎이므로 지금 가격 유지`); t = cur; } // (0.15.0) 목표 자리 아니면 안 내림
+    out.floor = Math.max(0, fbb || 0, +c.minPrice || 0, +c.maxDrop && l.price ? snapUp(l.price * (1 - c.maxDrop / 100)) : 0); out.goal = goal; out.t = t; return out; }
 
   /* ───────────── (0.13.0) 추격자: 기록에서 찾기 + 대응 전략 ─────────────
    *  chaseMap(ourActs, changeDocs, now, S): 우리 가격 변경(반영 기록 at·to)과 그 책의 매물 변화 기록(prd_metric_changes: chg의 판매가가 내려간 것, 우리 것 빼고)으로
@@ -500,6 +520,6 @@
       return fin(exitT, { ...base, ...st0, lastAt: now, nextAt }, `빠진 자리 유지 — 추격자 ${nm}(${ch.price.toLocaleString()}원)가 팔릴 때까지`); }
     return fin(o.yieldT != null ? o.yieldT : o.cur, { ...base, phase: 'yield' }, `양보: 추격자 ${nm}(${ch.price.toLocaleString()}원)를 따라 내리지 않고 다음 유효 매물 기준`); }
   const STRATS = { yield: '양보 (따라 내리지 않고 기다림)', match: '동가 유지', shadow: '그림자 (추격자 바로 위)', lure: '끌어내린 뒤 빠지기', lift: '끌어올리기' };
-  const api = { VERSION, GRADE_RANK, sameGradeMatch, critSettings, critTarget, chaseMap, chaserOn, chaseStep, STRATS, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, merge(DEFAULTS, S0 || {})), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
+  const api = { VERSION, CHARM_TH, GRADE_RANK, sameGradeMatch, critSettings, critTarget, chaseMap, chaserOn, chaseStep, STRATS, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, merge(DEFAULTS, S0 || {})), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowPricing = api;
 })(typeof window !== 'undefined' ? window : this);

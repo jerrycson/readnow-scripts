@@ -1,14 +1,14 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.9.1
+// @version      0.9.3
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.3.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.13.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.14.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.0
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js
@@ -22,7 +22,9 @@
 (async function () {
   'use strict';
   if (window.top !== window) return;
-  const VER = '0.9.1';
+  const VER = '0.9.3';
+  const gvw = (n) => (typeof unsafeWindow !== 'undefined' && unsafeWindow[n]) || window[n] || globalThis[n] || {}; // (0.9.3) 읽은 공용 파일 판 → 웹앱 관리도구가 노선표의 판과 비교
+  const coreVers = () => ({ core: gvw('ReadNowCore').CORE_VERSION || null, sellers: gvw('ReadnowSellers').VERSION || null, products: gvw('ReadnowProducts').VERSION || null, pricing: gvw('ReadnowPricing').VERSION || null });
   const g = (n) => (typeof unsafeWindow !== 'undefined' && unsafeWindow[n]) || window[n] || globalThis[n] || null;
   const Core = g('ReadNowCore'), RS = g('ReadnowSellers'), P = g('ReadnowProducts'), PR = g('ReadnowPricing');
   const NEED = [['판매자 분류 기준 readnow-core.js', Core && Core.CORE_VERSION, '1.3.0'], ['판매자 파서', RS && RS.VERSION, '1.3.0'], ['상품 파서', P && P.VERSION, '0.12.0'], ['판정 엔진', PR && PR.VERSION, '0.11.0']];
@@ -465,7 +467,7 @@
     if (!confirm(`${other}이 탭을 가격 감시 탭으로 정할까요? 다른 모든 탭·PC의 가격 감시는 즉시 꺼집니다.`)) return;
     await SREF.set({ watchPc: PC, watchTab: TAB, watchTabAt: new Date().toISOString(), watchBeat: new Date().toISOString(), watchVer: VER, ...W() }, { merge: true }); await loadSet(); log('이 탭을 가격 감시 탭으로 정함'); paintOwner(); buttons(); tick();
   }
-  (async () => { for (;;) { await sleep(120000); try { await autoTake(); } catch (e) {} if (isMine()) { try { await SREF.set({ watchBeat: new Date().toISOString(), watchVer: VER }, { merge: true }); } catch (e) {} } } })(); // 살아 있음 표시 (2분마다)
+  (async () => { for (;;) { await sleep(120000); try { await autoTake(); } catch (e) {} if (isMine()) { try { await SREF.set({ watchBeat: new Date().toISOString(), watchVer: VER, watchCores: coreVers() }, { merge: true }); } catch (e) {} } } })(); // 살아 있음 표시 (2분마다)
   function paintOwner() {
     const mine = isMine(); box.style.opacity = mine ? '1' : '.55'; box.style.filter = mine ? '' : 'grayscale(1)';
     if (tabBtn) { tabBtn.style.opacity = mine ? '1' : '.5'; tabBtn.title = mine ? '가격 감시기 — 이 탭에서 작동 중' : `가격 감시기 — 꺼짐 (사용 중: ${SET.watchPc || '지정 안 됨'})`; }
@@ -485,7 +487,7 @@
     try {
       await loadSet(); buttons(); paintOwner(); if (!isMine()) return;
       if (!PC) { state('이 PC 이름을 먼저 정하세요'); return; }
-      if (SET.watchVer !== VER) { try { await SREF.set({ watchVer: VER, watchBeat: new Date().toISOString() }, { merge: true }); } catch (e) {} } // 웹앱이 '안전장치 있는 판인가'를 봄
+      if (SET.watchVer !== VER) { try { await SREF.set({ watchVer: VER, watchBeat: new Date().toISOString(), watchCores: coreVers() }, { merge: true }); } catch (e) {} } // 웹앱이 '안전장치 있는 판인가'를 봄
       // (0.5.0) 꺼짐(멈춤) = 엔진 판정만 쉼 — 관리자가 확정한 가격(수동 일괄·직접 가격·승인·보류풀)은 계속 반영. 반영까지 멈추려면 '전체 정지'
       if (SET.killSwitch) { state('<b style="color:#B0322A">전체 정지</b> — 판정·반영 모두 멈춤 (웹앱에서 해제)'); return; }
       const judging = !!SET.enabled && !SET.judgeOff;
