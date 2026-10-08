@@ -10,6 +10,9 @@
  *  - /kick  (웹앱이 일을 맡긴 직후 부름: 5분 기다리지 않고 바로 ③)
  *  - /lookup (웹앱 '사진 가격': ISBN·알라딘 상품번호 → 새상품 정보 + 온라인 중고 첫 페이지 / 제목 → 알라딘 검색 후보)
  *  - /spines (웹앱 '사진 가격' 책등 사진 → Google Vision 글자 읽기 → 책등마다 글자 묶음)
+ *  - (0.6.0) 관리도구 1판: 맡긴 일은 노선표(readnow-registry.js + Firebase app_settings/sys_registry)에 '클라우드가 맡을 수 있음'인 종류만 맡음 ·
+ *      1분마다 맡긴 일 살피기(sweep) — 맡고 멈춘 일은 다시 해도 되는 일만 대기로 되돌리고, 아니면 '사람 확인'으로 · 아무도 안 맡는 일·모르는 종류는 알림 → app_settings/sys_health
+ *  - (0.5.8) 매일 결과 기록(개편 1단계): 판매중 상품 전체의 그날 모습(ml_days) + 가격 변경마다 그 뒤 판매(ml_outcomes) + 이어짐 점검(app_settings/ml_state)
  *  - (0.5.7) 매일 데이터 관리 비용(Firestore·Cloud Run·Vision·Storage·이미지 보관) 사용량 × 공식 단가 → app_settings/costs_auto_YYYY-MM (웹앱 매입 탭 '기타 지출')
  *  - /inventory · /storage-files (0.5.6, 웹앱 백업: 모든 칸의 문서 수·어림 크기 + 사진 파일 목록·크기 — 읽기만)
  *  - /status (상태 확인, 인증 없음 — 비밀 정보 없음)
@@ -24,7 +27,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.5.7';
+const VER = '0.6.0';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -48,6 +51,35 @@ async function cores() {
   const out = await Promise.all(CORES.map(async (f) => { const r = await fetch(RAW + f + '?t=' + Date.now()); if (!r.ok) throw new Error(`${f} 받기 실패 (${r.status})`); const t = await r.text(); coreVer[f] = (t.match(/VERSION\s*[:=]\s*['"]([\d.]+)/) || [])[1] || '?'; return t; })); // 다섯 파일을 한꺼번에 받음 (차례로 받던 것보다 빠름)
   coreSrc = out.join('\n;\n'); coreAt = Date.now(); return coreSrc;
 }
+
+/* ── (0.6.0) 관리도구 노선표: GitHub의 readnow-registry.js(더 새것이면) → 없으면 함께 올린 같은 파일 · 살아 있는 값 = Firebase app_settings/sys_registry ── */
+const REG_LOCAL = require('./readnow-registry.js'); let REGM = REG_LOCAL, regAt = 0;
+const vn = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
+async function regMod() { if (Date.now() - regAt < 30 * 60e3) return REGM; regAt = Date.now();
+  try { const r = await fetch(RAW + 'readnow-registry.js?t=' + Date.now()); if (r.ok) { const t = await r.text(); const m = { exports: {} }; new Function('module', 'exports', t)(m, m.exports); if (m.exports && m.exports.VERSION && vn(m.exports.VERSION) >= vn(REG_LOCAL.VERSION)) REGM = m.exports; } } catch (e) { log('노선표 파일 받기 실패 — 함께 올린 판 씀', e.message); }
+  coreVer['readnow-registry.js'] = REGM.VERSION; return REGM; }
+async function regNow() { const M = await regMod(); let doc = null; try { const d = await C('app_settings').doc('sys_registry').get(); doc = d.exists ? d.data() : null; } catch (e) {} return { M, R: M.merge(doc) }; }
+/* 맡긴 일 살피기 (1분마다, 회차 끝에): 멈춘 일·늦은 일·모르는 종류 → 되돌리기·사람 확인·알림. 상태 문서는 바뀐 때(또는 10분마다)만 씀 */
+let sweepSig = '', sweepAt = 0; const seenFlag = new Set();
+async function sysSweep() { const { M, R } = await regNow(); const now = Date.now();
+  const [q1, q2] = await Promise.all([C('shp_cmds').where('status', '==', 'queued').get(), C('shp_cmds').where('status', '==', 'running').get()]);
+  const cmds = [...q1.docs, ...q2.docs].map((d) => ({ id: d.id, ...d.data() }));
+  let plan = M.sweep(R, cmds, now, { cloud: true, pc: true, webapp: true }); let pcAlive = null;
+  if (plan.some((a) => a.act === 'late')) { try { const rs = await C('rn_status').get(); pcAlive = rs.docs.some((d) => { const v = d.data(); return v.atMs && now - v.atMs < 10 * 60e3; }); } catch (e) {} plan = M.sweep(R, cmds, now, { cloud: true, pc: !!pcAlive, webapp: true }); }
+  const ev = [];
+  for (const a of plan) { if (a.act !== 'requeue' && a.act !== 'stuck') { if (a.act === 'unknown' && !seenFlag.has(a.id)) { seenFlag.add(a.id); ev.push({ at: nowIso(), id: a.id, type: a.type, act: a.act, why: a.why }); } continue; }
+    const ref = C('shp_cmds').doc(a.id); let done = false;
+    await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const x = sn.exists ? { id: sn.id, ...sn.data() } : null; if (!x || x.status !== 'running') return; const again = M.sweep(R, [x], Date.now(), {}).find((y) => y.id === a.id); if (!again || again.act !== a.act) return;
+      const h = { at: nowIso(), act: a.act, why: a.why, claim: x.claim || null };
+      if (a.act === 'requeue') tx.update(ref, { status: 'queued', claim: null, attempts: a.attempts, sweepLog: FV.arrayUnion(h), uploadedAt: FV.serverTimestamp() });
+      else tx.update(ref, { status: 'stuck', stuckAt: nowIso(), stuckWhy: a.why, sweepLog: FV.arrayUnion(h), uploadedAt: FV.serverTimestamp() }); done = true; });
+    if (done) { ev.push({ at: nowIso(), id: a.id, type: a.type, act: a.act, why: a.why }); log('맡긴 일 살피기', a.act, a.type, a.id, a.why); } }
+  const alerts = plan.filter((a) => a.act === 'late' || a.act === 'unknown').slice(0, 50); const counts = { queued: q1.size, running: q2.size };
+  const sig = JSON.stringify([alerts.map((a) => a.id + a.act), counts]);
+  if (ev.length || sig !== sweepSig || now - sweepAt > 10 * 60e3) { sweepSig = sig; sweepAt = now; const ref = C('app_settings').doc('sys_health');
+    await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const old = (sn.exists && sn.data().events) || []; const events = [...old, ...ev].filter((e) => Date.parse(e.at) > now - 30 * 864e5).slice(-300);
+      tx.set(ref, { at: nowIso(), ver: VER, reg: M.VERSION, regDoc: R.docVer || null, alerts, counts, pcAlive, events, lastEventAt: ev.length ? nowIso() : (sn.exists && sn.data().lastEventAt) || null, ...W() }, { merge: true }); }); }
+  return { plan: plan.length, ev: ev.length }; }
 
 /* ── 브라우저 (하나를 계속 씀, 일은 한 번에 하나씩) ── */
 let browser = null, page = null, pageAt = 0; let chain = Promise.resolve(); let tickBusy = false; // 1분 예약이 겹치면(앞 회차가 길면) 건너뜀 — 쌓이지 않게
@@ -226,8 +258,8 @@ async function shipRead(p, until) {
 /* ── ③ 웹앱이 맡긴 일 (read · startDelivery · market = 그 주문 책의 시장 다시 읽기) ── */
 async function runCmds(p) {
   const qs = await C('shp_cmds').where('status', '==', 'queued').get(); let n = 0, needRead = false; const force = new Set();
-  let buy = false;
-  for (const d of qs.docs) { const x0 = d.data(); if (!['read', 'startDelivery', 'market', 'aladinBuy', 'usedInfo'].includes(x0.type)) continue; if (x0.type === 'usedInfo' && x0.cloudTried) continue; /* 클라우드가 이미 못 읽은 것 = PC 몫 */ let v = null;
+  let buy = false; const { M, R } = qs.size ? await regNow() : { M: null, R: null };
+  for (const d of qs.docs) { const x0 = d.data(); if (!M.canHandle(R, x0.type, 'cloud') || String(x0.cloudSkip || '').includes(` ${VER}가`)) continue; /* (0.6.0) 노선표에서 클라우드가 맡는 종류만 (예전: 이 자리의 목록) */ if (x0.type === 'usedInfo' && x0.cloudTried) continue; /* 클라우드가 이미 못 읽은 것 = PC 몫 */ let v = null;
     await db.runTransaction(async (tx) => { const sn = await tx.get(d.ref); const x = sn.data(); if (!x || x.status !== 'queued') return; tx.update(d.ref, { status: 'running', claim: { pc: 'cloud', at: nowIso() }, uploadedAt: FV.serverTimestamp() }); v = x; });
     if (!v) continue; n++;
     if (v.type === 'startDelivery') { const results = {};
@@ -246,7 +278,8 @@ async function runCmds(p) {
       await d.ref.set(allOk ? { status: 'done', results, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() } : { status: 'queued', cloudTried: true, cloudResults: results, claim: null, uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'market') { (v.listingIds || []).forEach((x) => force.add(String(x))); await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'aladinBuy') { buy = true; await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
-    else { await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; } }
+    else if (v.type === 'read') { await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
+    else { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 처리하는 길이 없는 종류 — 노선표 확인`, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('맡긴 일: 처리 길 없음', v.type); } } // 노선표엔 클라우드 몫인데 이 판에 처리 길이 없으면 '끝남'으로 지우지 않고 대기로 되돌림
   return { n, needRead, force, buy };
 }
 
@@ -444,6 +477,51 @@ async function costDaily(maxDays) { const ST = C('app_settings').doc('costs_auto
     done.push({ day, krw: lines.reduce((a, x) => a + Math.round(x.usd * fx.rate), 0), err: U.err || null }); }
   return { done }; }
 let costNextAt = 0;
+
+/* ── (0.5.8) 개편 1단계 '결과 기록' — 판정 → 실행 → 판매를 한 줄로 잇는 매일 기록 (기계 학습의 재료) ──
+ *  ① ml_days/{날짜}_{n}: 하루 한 번(한국 1시 뒤) 판매중 상품 전체의 그날 모습 — 가격·등급·재고 기간·시장(첫 페이지 우리 자리·같은 등급 최저·전체 중고 수·매입가·판매 지수)·
+ *     마지막 가격 변경·속한 감시 그룹. 칸마다 배열(열 단위)로 2000개씩 나눠 저장 → 하루 몇 문서. 판매 여부는 나중에 주문과 이어 붙임(다음 날들의 기록·주문으로)
+ *  ② ml_outcomes/{반영 기록 id}: 가격을 바꾼 기록마다 그 뒤 팔렸는지·언제·얼마에·몇 시간 만에 (60일이 지나거나 팔리면 '닫힘' — 닫힌 것은 다시 쓰지 않음)
+ *  ③ app_settings/ml_state: 마지막으로 만든 날·상품 수·어제 판매가 기록에 이어진 비율(로드맵 1단계 관문: 하루치 판매가 모두 이어짐)
+ *  모든 값은 다시 계산할 수 있는 파생 자료 — 수집한 원래 기록(상품·시장·주문)은 건드리지 않음 */
+const ML_VER = 1;
+const shard = (arr, n) => { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; };
+async function mlSales(fromIso) { const out = new Map(); const t0 = Date.parse(fromIso); const day0 = new Date(t0 + 9 * 3600e3).toISOString().slice(0, 10); const kms = (s) => Date.parse(/[T]/.test(String(s)) ? s : String(s).replace(' ', 'T') + '+09:00');
+  const add = (u, s) => { const L = out.get(u) || out.set(u, []).get(u); if (!L.some((x) => x.ono === s.ono)) L.push(s); };
+  const bad = new Set(); const co = await C('crm_orders').where('orderedAt', '>=', day0).get(); co.forEach((d) => { const o = d.data(); const t = kms(o.orderedAt); if (!(t >= t0) || (o.kind && o.kind !== 'sale')) return; (o.items || []).forEach((it) => { if (!it.aladinUsedCode) return; if (it.lineStatus && it.lineStatus !== 'normal') { bad.add(o.orderNo + '|' + it.aladinUsedCode); return; } add(it.aladinUsedCode, { ono: o.orderNo, at: t, price: it.price || 0, src: 'crm' }); }); });
+  const lid2u = new Map(); (await C('prd_listings').select('usedCode', 'listingId').get()).forEach((d) => { const v = d.data(); if (v.listingId) lid2u.set(String(v.listingId), v.usedCode); });
+  const so = await C('shp_orders').where('orderedAt', '>=', day0).get(); so.forEach((d) => { const o = d.data(); const t = kms(o.orderedAt); if (!(t >= t0)) return; (o.items || []).forEach((it) => { const u = lid2u.get(String(it.listingId)); if (!u || bad.has(o.orderNo + '|' + u)) return; add(u, { ono: o.orderNo, at: t, price: it.price || 0, src: 'shp' }); }); });
+  return out; }
+async function mlSnapshot(day) { const t0 = Date.now(); const L = []; (await C('prd_listings').where('active', '==', true).get()).forEach((d) => L.push({ id: d.id, ...d.data() }));
+  const bids = [...new Set(L.map((l) => l.bookId).filter(Boolean))]; const M = new Map(); for (const part of shard(bids, 300)) { (await db.getAll(...part.map((b) => C('prd_book_metrics').doc(String(b))))).forEach((d) => { if (d.exists) M.set(d.id, d.data()); }); }
+  const since = new Date(Date.now() - 90 * 864e5).toISOString(); const lastAct = new Map(); (await C('prd_price_actions').where('at', '>=', since).get()).forEach((d) => { const a = d.data(); if (!a.key || a.to == null) return; const p = lastAct.get(a.key); if (!p || String(a.at) > String(p.at)) lastAct.set(a.key, { ...a, id: d.id }); });
+  const watch = new Map(); try { (await C('prd_price_decisions').where('watch.gid', '>', '').get()).forEach((d) => { const w = d.data().watch; if (w && w.gid) watch.set(d.id, w.gid); }); } catch (e) {}
+  const now = Date.parse(day + 'T23:59:59+09:00'); const R = ['최상', '상', '중'];
+  const rows = L.map((l) => { const m = M.get(String(l.bookId)) || {}; const P1 = m.usedFirstPage || []; const oth = P1.filter((r) => String(r.sellerCode) !== '996008' && r.usedCode !== l.usedCode && r.price > 0);
+    const sameMin = oth.filter((r) => r.grade === l.grade).reduce((a, r) => Math.min(a, r.price), Infinity); const minAll = oth.reduce((a, r) => Math.min(a, r.price), Infinity); const rank = l.price ? oth.filter((r) => r.price < l.price).length + 1 : null; const a = lastAct.get(l.id);
+    return { key: l.id, price: l.price ?? null, grade: R.indexOf(l.grade), shelf: String(l.sku || '').slice(0, 6), age: l.registeredAt ? Math.round((now - Date.parse(String(l.registeredAt).slice(0, 10) + 'T00:00:00+09:00')) / 864e5) : null,
+      list: m.priceList ?? null, sp: m.salesPoint ?? null, used: m.usedTotal ?? null, p1: P1.length, rank, sameMin: Number.isFinite(sameMin) ? sameMin : null, minAll: Number.isFinite(minAll) ? minAll : null, bb: (m.buyback || {})[l.grade] ?? null,
+      mkt: m.lastCheckedAt ? Math.round((now - Date.parse(m.lastCheckedAt)) / 864e5) : null, act: a ? Math.round((now - Date.parse(a.at)) / 3600e3) : null, actFrom: a ? a.from ?? null : null, actBatch: a ? a.batchId || null : null, wg: watch.get(l.id) || null }; });
+  const cols = Object.keys(rows[0] || { key: 0 }); const parts = shard(rows, 2000); const b = db.batch(); parts.forEach((p, i) => { const o = {}; cols.forEach((c) => (o[c] = p.map((r) => r[c]))); b.set(C('ml_days').doc(`${day}_${String(i).padStart(2, '0')}`), { day, i, n: p.length, ver: ML_VER, cols: o, ...W() }); });
+  b.set(C('ml_days').doc(day), { day, shards: parts.length, n: rows.length, ver: ML_VER, colNames: cols, at: nowIso(), ms: Date.now() - t0, ...W() }); await b.commit(); return { n: rows.length, shards: parts.length }; }
+async function mlOutcomes() { const since = new Date(Date.now() - 90 * 864e5).toISOString(); const acts = []; (await C('prd_price_actions').where('at', '>=', since).get()).forEach((d) => { const a = d.data(); if (a.key && a.to != null && a.kind !== 'hold' && a.kind !== 'unhold') acts.push({ id: d.id, ...a }); });
+  if (!acts.length) return { n: 0 }; const closed = new Set(); (await C('ml_outcomes').where('closed', '==', true).select().get()).forEach((d) => closed.add(d.id)); const open = acts.filter((a) => !closed.has(a.id)); if (!open.length) return { n: 0 };
+  const todo = open.sort((x, y) => String(x.at).localeCompare(String(y.at))).slice(0, 450); // 하루 450개까지(오래된 것부터) — 남으면 다음 날 이어서
+  const first = String(todo[0].at); const sales = await mlSales(first); let n = 0, nSold = 0; const b = db.batch();
+  for (const a of todo) { const t = Date.parse(a.at); const s = (sales.get(a.usedCode) || []).filter((x) => x.at >= t).sort((x, y) => x.at - y.at)[0] || null; const age = (Date.now() - t) / 864e5;
+    b.set(C('ml_outcomes').doc(a.id), { key: a.key, usedCode: a.usedCode || null, at: a.at, from: a.from ?? null, to: a.to, kind: a.kind || null, batchId: a.batchId || null, batchName: a.batchName || null, sold: !!s, soldAt: s ? new Date(s.at).toISOString() : null, soldPrice: s ? s.price : null, hours: s ? Math.round((s.at - t) / 36e5 * 10) / 10 : null, src: s ? s.src : null, closed: !!s || age > 60, checkedAt: nowIso(), ver: ML_VER, ...W() }); n++; if (s) nSold++; }
+  await b.commit(); return { n, nSold, open: open.length }; }
+
+async function mlCheck(day) { // 관문: 어제 판매가 기록(그 전날 판매중 모습 또는 반영 기록)에 이어졌는지
+  const t0 = Date.parse(day + 'T00:00:00+09:00'); const sales = await mlSales(new Date(t0).toISOString()); const prev = new Date(t0 - 864e5 + 9 * 3600e3).toISOString().slice(0, 10); let keys = new Set();
+  const meta = await C('ml_days').doc(prev).get(); if (meta.exists) for (let i = 0; i < (meta.data().shards || 0); i++) { const d = await C('ml_days').doc(`${prev}_${String(i).padStart(2, '0')}`).get(); if (d.exists) (d.data().cols.key || []).forEach((k) => keys.add(k)); }
+  let n = 0, hit = 0; for (const [u, L] of sales) { const inDay = L.filter((s) => s.at < t0 + 864e5); if (!inDay.length) continue; n += inDay.length; if (keys.has('aladin_' + u)) hit += inDay.length; }
+  return { day, sales: n, linked: hit, prevSnapshot: meta.exists }; }
+async function mlDaily() { const ST = C('app_settings').doc('ml_state'); const st = (await ST.get()).data() || {}; const k = new Date(Date.now() + 9 * 3600e3); if (k.getUTCHours() < 1) return { skip: '1시 뒤에' };
+  const today = k.toISOString().slice(0, 10); if (st.lastDay === today) return { skip: '오늘 함' };
+  const snap = await mlSnapshot(today); let out = null; try { out = await mlOutcomes(); } catch (e) { out = { err: e.message }; } let chk = null; try { chk = await mlCheck(new Date(Date.parse(today + 'T00:00:00+09:00') - 864e5 + 9 * 3600e3).toISOString().slice(0, 10)); } catch (e) { chk = { err: e.message }; }
+  await ST.set({ lastDay: today, snap, outcomes: out, check: chk, ver: ML_VER, at: nowIso(), days: FV.arrayUnion(today) }, { merge: true }); return { snap, out, chk }; }
+let mlNextAt = 0;
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin || ''; if (ORIGINS.includes(origin)) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin'); }
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -452,7 +530,7 @@ const server = http.createServer(async (req, res) => {
   const path = (req.url || '/').split('?')[0];
   try {
     if (path === '/status' || path === '/') return send(200, { ok: true, ver: VER, cores: coreVer, login: loginFailAt ? 'fail' : 'unknown', hasCred: !!(ALADIN_ID && ALADIN_PW) });
-    if (path === '/tick') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); tickBusy = true; try { const out = await serial(() => tick('schedule')); if (Date.now() > costNextAt) { try { const r = await costDaily(4); out.costs = r; costNextAt = r.skip ? Date.now() + 15 * 60e3 : 0; if (r.done && r.done.length) log('비용 기록', JSON.stringify(r.done)); } catch (e) { costNextAt = Date.now() + 30 * 60e3; out.costsErr = e.message; log('비용 기록 실패', e.message); } } return send(200, out); } finally { tickBusy = false; } }
+    if (path === '/tick') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); tickBusy = true; try { const out = await serial(() => tick('schedule')); try { const sw = await sysSweep(); if (sw.ev) out.sweep = sw; } catch (e) { out.sweepErr = e.message; log('맡긴 일 살피기 실패', e.message); } if (Date.now() > costNextAt) { try { const r = await costDaily(4); out.costs = r; costNextAt = r.skip ? Date.now() + 15 * 60e3 : 0; if (r.done && r.done.length) log('비용 기록', JSON.stringify(r.done)); } catch (e) { costNextAt = Date.now() + 30 * 60e3; out.costsErr = e.message; log('비용 기록 실패', e.message); } } if (Date.now() > mlNextAt) { try { const r = await mlDaily(); out.ml = r.skip ? undefined : r; mlNextAt = Date.now() + (r.skip ? 15 : 60) * 60e3; if (!r.skip) log('결과 기록', JSON.stringify(r).slice(0, 400)); } catch (e) { mlNextAt = Date.now() + 30 * 60e3; out.mlErr = e.message; log('결과 기록 실패', e.message); } } return send(200, out); } finally { tickBusy = false; } }
     if (path === '/kick') { await authUser(req); const out = await serial(() => tick('kick')); return send(200, out); }
     if (path === '/lookup') { await authUser(req); const b = await bodyOf(req); const out = await serial(() => lookup(b)); return send(200, out); }
     if (path === '/inventory') { await authUser(req); return send(200, await inventory()); }
