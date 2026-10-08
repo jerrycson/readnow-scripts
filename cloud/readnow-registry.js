@@ -16,7 +16,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.5.0';
+  const VERSION = '0.6.0';
   const MIN = 60e3;
 
   const KINDS = {
@@ -30,6 +30,8 @@
     aladinBuy: { label: '알라딘 구매 내역 읽기', by: ['cloud'], lane: 'shop', prio: 5, leaseMin: 60, retry: 1, safe: true, money: false, waitMin: 30, from: '웹앱 매입 탭' },
     c2bAdd: { label: '알라딘 팔기 장바구니 담기', by: ['pc'], lane: 'shop', prio: 4, leaseMin: 30, retry: 1, safe: true, money: true, waitMin: 24 * 60, from: '웹앱 알라딘 매입',
       note: '담기 전에 장바구니를 먼저 읽어 이미 담긴 책은 건너뜀 → 다시 해도 두 번 담기지 않음 (매입 신청·판매 확정은 하지 않음)' },
+    regBulk: { label: '📥 알라딘 대량 등록', by: ['pc'], lane: 'scm', prio: 3, leaseMin: 30, retry: 0, safe: false, money: true, waitMin: 60, from: '웹앱 상품 등록 (1.5.0)',
+      note: '실행 문(exec_log)에 시작을 적을 수 있을 때만 · 미리보기가 넣은 줄과 하나도 다르지 않을 때만 등록완료 · 등록 뒤 상품 조회에서 공개 확인(90분)', stuckNote: '등록완료를 이미 눌렀을 수 있음 — 웹앱 등록 화면·알라딘 상품 조회에서 확인한 뒤 다시 맡기기' },
     lookup: { label: '사진 가격 조회', by: ['pc'], lane: 'shop', prio: 2, leaseMin: 10, retry: 1, safe: true, money: false, waitMin: 10, from: '웹앱 사진 가격·매입' },
     metrics: { label: '그룹 시장 지표 갱신', by: ['pc'], lane: 'shop', prio: 6, leaseMin: 6 * 60, retry: 3, safe: true, money: false, waitMin: 24 * 60, from: '웹앱 수동 일괄·감시 묶음·관찰 도구',
       note: '긴 일 — 5권마다 진행(i)을 남기므로 다른 PC가 이어받아도 처음부터 하지 않음' },
@@ -63,15 +65,18 @@
     rn_status: C(['pc'], ['webapp'], 30, 'atMs', 'PC 수집기 살아 있음 신호'), rn_logs: C(['pc'], ['webapp'], null), cloud_log: C(['cloud'], ['webapp'], null, 'uploadedAt', '클라우드 오류 기록 (오류 때만)'),
     app_settings: C(['webapp', 'cloud'], ['webapp', 'cloud', 'pc'], null), ml_days: C(['cloud'], ['cloud', 'webapp'], 26 * 60, 'uploadedAt', '결과 기록 (매일)'), ml_outcomes: C(['cloud'], ['cloud', 'webapp'], null),
     ml_models: C(['cloud'], ['webapp', 'cloud'], null, 'trainedAt', '팔릴 확률 모델 (0.5.0)'), ml_shadow: C(['cloud'], ['cloud'], null), ml_eval: C(['cloud'], ['webapp', 'cloud'], null, 'at', '그림자 채점'), strategy_weeks: C(['webapp'], ['webapp'], null, 'at', '주간 조언'),
-    exec_log: C(['pc', 'watch', 'cloud'], ['webapp', 'pc', 'watch', 'cloud'], null, 'startedAt', '실행도구의 한 문 — 알라딘을 바꾼 일의 시작·결과 (0.4.0)'),
+    reg_items: C(['webapp', 'pc'], ['webapp', 'pc'], null, 'uploadedAt', '📥 상품 등록 줄 (조회·선택·결정·확정 — 지우지 않음, 빼기 = stage gone) (0.6.0)'),
+    /* (0.6.0) 코드에서 실제로 쓰고 읽는 곳을 찾아 빠졌던 칸을 모두 넣음 (w 쓰는 곳 · r 읽는 곳 — 새로움 기준은 정하지 않음) */
+    app_devices: C(['webapp'], ['webapp'], null), app_summary: C(['webapp'], ['webapp'], null), perf_logs: C(['webapp'], ['webapp'], null), ppt_sessions: C(['webapp', 'cloud'], ['webapp', 'cloud'], null), prd_cat_manual: C(['webapp'], ['webapp', 'pc'], null), prd_dyn_history: C(['pc'], ['webapp'], null), prd_explore: C(['pc'], ['pc'], null), prd_ids: C(['pc'], ['pc'], null), prd_imports: C(['pc'], ['webapp'], null), prd_jobs: C(['webapp', 'pc'], ['webapp', 'pc'], null), prd_market_nobook: C(['pc'], ['webapp', 'pc'], null), prd_market_watch: C(['watch'], ['webapp'], null), prd_rank_periods: C(['pc'], ['pc'], null), prd_stop_reasons: C(['webapp'], ['webapp', 'pc'], null), pur_aladin_list: C(['webapp'], ['webapp'], null), pur_aladin_orders: C(['webapp', 'pc', 'cloud'], ['webapp', 'pc'], null), pur_buyback: C(['webapp', 'pc'], ['webapp', 'pc'], null), pur_disposals: C(['webapp'], ['webapp'], null), pur_entries: C(['webapp'], ['webapp'], null), pur_entry_state: C(['webapp'], ['webapp'], null), pur_existing: C(['webapp'], ['webapp'], null), pur_heonot: C(['webapp'], ['webapp'], null), pur_matches: C(['webapp'], ['webapp', 'pc'], null), seller_rev6m: C(['pc'], ['webapp'], null), shp_enrich: C(['cloud'], ['webapp', 'cloud'], null), shp_invoices: C(['webapp', 'pc'], ['webapp', 'pc'], null), shp_market: C(['pc'], ['webapp'], null), shp_orders: C(['pc', 'cloud'], ['webapp', 'cloud'], null), shp_plan: C(['webapp'], ['webapp'], null), shp_snapshots: C(['pc', 'cloud'], ['webapp'], null), reg_claims: C(['pc'], ['webapp'], null),
+    exec_log: C(['pc', 'watch', 'cloud', 'webapp'], ['webapp', 'pc', 'watch', 'cloud'], null, 'startedAt', '실행도구의 한 문 — 알라딘을 바꾼 일의 시작·결과 (0.4.0)'),
   };
 
   // 공용 파일 판 — 이번 출시에서 모두가 써야 하는 판 하나
-  const PINS = { 'readnow-core.js': '1.4.1', 'readnow-sellers-core.js': '1.3.0', 'readnow-products-core.js': '0.14.0', 'readnow-pricing-core.js': '0.15.0', 'readnow-shipping-core.js': '0.5.1', 'readnow-orders-core.js': '0.3.0', 'readnow-aladin-core.js': '0.1.0', 'readnow-exec-core.js': '0.1.0', 'readnow-ml-core.js': '0.1.0', 'readnow-registry.js': VERSION }; // (0.5.0) 스스로 배우기 — 팔릴 확률 모델 (웹앱·클라우드) // (0.4.0) 실행도구의 한 문 — 알라딘을 바꾸는 모든 일이 시작·결과를 exec_log에 // (0.3.0) 알라딘 창구 — 수집기·가격 감시기가 알라딘 화면을 읽는 길 하나
+  const PINS = { 'readnow-core.js': '1.4.1', 'readnow-sellers-core.js': '1.3.0', 'readnow-products-core.js': '0.14.0', 'readnow-pricing-core.js': '0.15.0', 'readnow-shipping-core.js': '0.5.1', 'readnow-orders-core.js': '0.3.0', 'readnow-aladin-core.js': '0.1.0', 'readnow-exec-core.js': '0.1.0', 'readnow-ml-core.js': '0.1.0', 'readnow-register-core.js': '0.1.0', 'readnow-registry.js': VERSION }; // (0.6.0) 등록 엔진 — 상품 관리 코드 판정·대량 등록 엑셀 (웹앱·PC 수집기) // (0.5.0) 스스로 배우기 — 팔릴 확률 모델 (웹앱·클라우드) // (0.4.0) 실행도구의 한 문 — 알라딘을 바꾸는 모든 일이 시작·결과를 exec_log에 // (0.3.0) 알라딘 창구 — 수집기·가격 감시기가 알라딘 화면을 읽는 길 하나
   // 도구마다 쓰는 공용 파일 (판 비교 대상)
   const USES = {
-    webapp: ['readnow-core.js', 'readnow-sellers-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-shipping-core.js', 'readnow-exec-core.js', 'readnow-ml-core.js', 'readnow-registry.js'],
-    pc: ['readnow-core.js', 'readnow-sellers-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-shipping-core.js', 'readnow-orders-core.js', 'readnow-aladin-core.js', 'readnow-exec-core.js', 'readnow-registry.js'],
+    webapp: ['readnow-core.js', 'readnow-sellers-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-shipping-core.js', 'readnow-exec-core.js', 'readnow-ml-core.js', 'readnow-register-core.js', 'readnow-registry.js'],
+    pc: ['readnow-core.js', 'readnow-sellers-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-shipping-core.js', 'readnow-orders-core.js', 'readnow-aladin-core.js', 'readnow-exec-core.js', 'readnow-register-core.js', 'readnow-registry.js'],
     watch: ['readnow-core.js', 'readnow-sellers-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-aladin-core.js', 'readnow-exec-core.js'],
     cloud: ['readnow-core.js', 'readnow-sellers-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-shipping-core.js', 'readnow-exec-core.js', 'readnow-ml-core.js', 'readnow-registry.js'],
   };
@@ -79,7 +84,7 @@
 
   const SETTINGS = [
     ['prd_system/pricing', '가격: 판정 엔진 설정·실험 한도·감시 묶음·조건 묶음·감시 탭', ['webapp', 'watch', 'pc']], ['prd_system/settings', '수집기 설정(작업 중요도·자리 수)', ['pc', 'webapp']],
-    ['app_settings/main', '웹앱 공용 설정(비용·목표·출고 마감)', ['webapp']], ['crm_system/accounting', '택배 계약(기간별 택배비)', ['webapp']], ['crm_system/shopPolicy', '우리 배송비 정책', ['pc', 'webapp']],
+    ['app_settings/main', '웹앱 공용 설정(비용·목표·출고 마감·📥 등록 조건 reg)', ['webapp']], ['crm_system/accounting', '택배 계약(기간별 택배비)', ['webapp']], ['crm_system/shopPolicy', '우리 배송비 정책', ['pc', 'webapp']],
     ['app_settings/qna_phrases', '고객 응대 문구', ['webapp', 'pc']], ['prd_system/buyback', '알라딘 매입 진행 상태', ['webapp', 'pc']], ['app_settings/expenses', '기타 지출(수동)', ['webapp']],
     ['app_settings/cloud', '클라우드 신호·판', ['cloud', 'webapp']], ['app_settings/sys_registry', '이 노선표 (Firebase 기준)', ['webapp', 'cloud', 'pc', 'watch']],
   ];
@@ -112,7 +117,7 @@
   function pinDiff(R, tool, reported) { const P = (R && R.PINS) || PINS; const g = (f) => (reported ? reported[f] || reported[fileKey(f)] || null : null); return (USES[tool] || []).map((f) => ({ f, want: P[f], got: g(f) })).map((x) => ({ ...x, ok: x.got != null && x.got === x.want })); }
   // 도구가 지금 읽은 공용 파일 판 (브라우저 전역에서) — 신호에 실어 보냄 (짧은 이름 키)
   function loadedVers(g) { const G = g || (typeof globalThis !== 'undefined' ? globalThis : {}); const v = (n, k) => (G[n] && (G[n][k || 'VERSION'] || null)) || null;
-    return { core: v('ReadNowCore', 'CORE_VERSION'), sellers: v('ReadnowSellers'), products: v('ReadnowProducts'), pricing: v('ReadnowPricing'), shipping: v('ReadnowShipping'), orders: v('ReadnowOrders'), aladin: v('ReadnowAladin'), exec: v('ReadnowExec'), ml: v('ReadnowML'), registry: v('ReadnowRegistry') }; }
+    return { core: v('ReadNowCore', 'CORE_VERSION'), sellers: v('ReadnowSellers'), products: v('ReadnowProducts'), pricing: v('ReadnowPricing'), shipping: v('ReadnowShipping'), orders: v('ReadnowOrders'), aladin: v('ReadnowAladin'), exec: v('ReadnowExec'), ml: v('ReadnowML'), register: v('ReadnowRegister'), registry: v('ReadnowRegistry') }; }
   // 칸 새로움: lastMs = 그 칸의 가장 새 시각 → 정한 주기보다 오래면 늦음
   function freshness(R, name, lastMs, now) { const c = ((R && R.COLLECTIONS) || COLLECTIONS)[name]; if (!c || !c.freshMin) return null; if (!Number.isFinite(lastMs)) return { ok: false, ageMin: null, want: c.freshMin }; const ageMin = (now - lastMs) / MIN; return { ok: ageMin <= c.freshMin, ageMin, want: c.freshMin }; }
 

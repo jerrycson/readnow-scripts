@@ -9,6 +9,8 @@
  *      ④ 신호: app_settings/cloud { at, ok, err, ... } — PC 수집기는 이 신호가 10분 안이면 자동 '발송 요청 읽기'를 쉼 (손으로 누르는 것·다른 수집은 그대로)
  *  - /kick  (웹앱이 일을 맡긴 직후 부름: 5분 기다리지 않고 바로 ③)
  *  - /lookup (웹앱 '사진 가격': ISBN·알라딘 상품번호 → 새상품 정보 + 온라인 중고 첫 페이지 / 제목 → 알라딘 검색 후보)
+ *      (0.9.3) 현금 판매 판매중지: 웹앱이 다시 맡길 때마다 실행 문 열쇠가 새것(맡긴 일#회차) — '확인 못함' 뒤 다시 하지 못하던 것 고침
+ *      (0.9.2) 웹앱 '📥 상품 등록'도 씀: 모든 분류·Sales Point·순위·리뷰·규격·쪽수 등을 함께 · 제목 검색은 상품 구분(branch 1 국내·2 음반·3 DVD·7 외국)대로
  *  - /spines (웹앱 '사진 가격' 책등 사진 → Google Vision 글자 읽기 → 책등마다 글자 묶음)
  *  - (0.6.1) 현금 판매 → 알라딘 판매중지 자동(shp_cmds cashStop): 판매상태 일괄 변경과 같은 요청으로 판매중지 → '판매중지' 목록에서 그 상품을 찾아야 완료, 못 찾으면 '확인 필요'(완료로 적지 않음) → 현금 판매 기록의 그 줄에 결과
  *  - (0.6.0) 관리도구 1판: 맡긴 일은 노선표(readnow-registry.js + Firebase app_settings/sys_registry)에 '클라우드가 맡을 수 있음'인 종류만 맡음 ·
@@ -28,7 +30,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.9.1';
+const VER = '0.9.3';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -66,7 +68,7 @@ async function regMod() { if (Date.now() - regAt < 30 * 60e3) return REGM; regAt
  *  함께 올린 파일 → 없으면 GitHub에서 받음 → 그것도 안 되면 기록 없이 하지 않고 대기로 남김(PC 수집기가 맡을 수 있음) */
 let EXEC_LOCAL = null; try { EXEC_LOCAL = require('./readnow-exec-core.js'); } catch (e) { console.log(new Date().toISOString(), '함께 올린 실행 문 파일 없음 — GitHub에서 받음', e.message); }
 let EXECM = EXEC_LOCAL, execAt = 0;
-async function execMod() { if (EXECM && (EXEC_LOCAL || Date.now() - execAt < 30 * 60e3)) return EXECM; execAt = Date.now();
+async function execMod() { if (EXECM) coreVer['readnow-exec-core.js'] = EXECM.VERSION; /* (0.9.3) 함께 올린 파일이 있을 때도 판을 신호에 (예전엔 여기서 먼저 돌아가 관리도구에 '?'로 빨갛게) */ if (EXECM && (EXEC_LOCAL || Date.now() - execAt < 30 * 60e3)) return EXECM; execAt = Date.now();
   try { const r = await fetch(RAW + 'readnow-exec-core.js?t=' + Date.now()); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', await r.text())(m, m.exports); if (m.exports && m.exports.begin) EXECM = m.exports; } } catch (e) { log('실행 문 파일 받기 실패', e.message); }
   if (EXECM) coreVer['readnow-exec-core.js'] = EXECM.VERSION; return EXECM; }
 async function regNow() { const M = await regMod(); let doc = null; try { const d = await C('app_settings').doc('sys_registry').get(); doc = d.exists ? d.data() : null; } catch (e) {} return { M, R: M.merge(doc) }; }
@@ -339,10 +341,10 @@ async function runCmds(p, deadline) { deadline = deadline || Date.now() + 150000
     else if (v.type === 'aladinBuy') { buy = true; await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'cashStop' && Date.now() > deadline - 60000) { await d.ref.set({ status: 'queued', claim: null, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('판매중지: 이번 회차 남은 시간이 모자라 다음 회차에'); } // (0.9.1) 판매중지는 최대 230초 — 회차 한도를 넘지 않게
     else if (v.type === 'cashStop') { const X = await execMod(); if (!X) { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 실행 문 파일을 못 읽음 — 기록 없이 알라딘을 바꾸지 않음`, uploadedAt: FV.serverTimestamp() }, { merge: true }); continue; }
-      let g; try { g = await X.begin(db, { kind: 'cashStop', key: d.id, by: 'cloud', detail: { orderId: v.orderId, lineNo: v.lineNo, listingId: v.listingId || null, title: v.title || null } }); } catch (e) { g = { ok: false, state: 'noledger', why: e.message }; }
+      let g; try { g = await X.begin(db, { kind: 'cashStop', key: d.id + '#' + (v.tries || 1), by: 'cloud', detail: { orderId: v.orderId, lineNo: v.lineNo, listingId: v.listingId || null, title: v.title || null } }); } catch (e) { g = { ok: false, state: 'noledger', why: e.message }; }
       if (!g.ok) { await d.ref.set({ status: 'done', result: { state: g.state === 'done' ? 'skip' : 'check', msg: '실행 문: ' + g.why }, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); continue; }
-      let r; try { r = await cashStopRun(p, v); } catch (e) { await X.finish(db, { kind: 'cashStop', key: d.id }, 'failed', { msg: e.message }).catch(() => {}); throw e; }
-      await X.finish(db, { kind: 'cashStop', key: d.id }, r.state === 'done' ? 'done' : r.state === 'fail' ? 'failed' : 'unknown', { msg: r.msg || null }).catch(() => {}); await d.ref.set({ status: 'done', result: r, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); log('현금 판매 판매중지', v.title || v.listingId, r.state); }
+      let r; try { r = await cashStopRun(p, v); } catch (e) { await X.finish(db, { kind: 'cashStop', key: d.id + '#' + (v.tries || 1) }, 'failed', { msg: e.message }).catch(() => {}); throw e; }
+      await X.finish(db, { kind: 'cashStop', key: d.id + '#' + (v.tries || 1) }, r.state === 'done' ? 'done' : r.state === 'fail' ? 'failed' : 'unknown', { msg: r.msg || null }).catch(() => {}); await d.ref.set({ status: 'done', result: r, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); log('현금 판매 판매중지', v.title || v.listingId, r.state); }
     else if (v.type === 'read') { await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
     else { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 처리하는 길이 없는 종류 — 노선표 확인`, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('맡긴 일: 처리 길 없음', v.type); }
     } catch (e) { const nErr = (v.cloudErrN || 0) + 1; const msg = String(e.message || e).slice(0, 300);
@@ -442,7 +444,7 @@ async function fastLoop(p, until, cr, cm) { const FAST = 15000; let loops = 0, c
   return { cr, rd, n, loops, changed }; }
 async function tick(why) {
   const t0 = Date.now(); const out0 = {}; watchCmds();
-  try { let p = await getPage(); let cr = null; const errs = []; if (!EXECM) execMod().catch(() => {}); if (!MLM) mlMod().catch(() => {}); // (0.9.1) 관리도구에 판이 '?'로 뜨지 않게 미리 읽음
+  try { let p = await getPage(); let cr = null; const errs = []; execMod().catch(() => {}); mlMod().catch(() => {}); /* (0.9.3) 늘 불러 판을 신호에 (함께 올린 파일이면 바로 돌아옴) */ // (0.9.1) 관리도구에 판이 '?'로 뜨지 않게 미리 읽음
     // (0.9.1) 맡긴 일(발송준비시작·판매중지 등 돈이 걸린 일) 먼저, 그리고 각 단계가 실패해도 다음 단계는 함 — 예전엔 주문 읽기가 실패하면 맡긴 일까지 그 회차를 통째로 건너뜀
     const step = async (name, fn) => { for (let a = 0; a < 2; a++) { try { const r = await fn(p); p = curPage(p); return r; } catch (e) { if (e.relogin && a === 0) { try { await login(p); continue; } catch (e2) { errs.push(`${name}: ${e2.message}`); return null; } } if ((e.pageTimeout || pageBroken || isClosed(e)) && a === 0) { try { p = await getPage(); continue; } catch (e2) { errs.push(`${name}: ${e2.message}`); return null; } } errs.push(`${name}: ${String(e.message || e).slice(0, 160)}`); return null; } } return null; };
     cr = await step('주문확인요청', confirmRead); // 로그인 확인을 겸함 (풀렸으면 여기서 다시 로그인)
@@ -468,12 +470,14 @@ async function lookup(req) {
     const g = await get(u); const b = P.parseProductPage(g.doc, g.url); if (!b.aladinItemId) return { err: '알라딘에서 이 책을 못 찾음' };
     const us = P.parseUsedPage((await get(`/shop/UsedShop/wuseditemall.aspx?ItemId=${b.aladinItemId}&TabType=0`)).doc);
     return { itemId: b.aladinItemId, isbn13: b.isbn13 || null, title: b.title || null, subtitle: b.subtitle || null, author: (b.contributors || []).slice(0, 2).map((c) => c.name).join(', ') || null, publisher: b.publisher || null, pubDate: b.pubDate || null,
-      cover: (b.images && b.images.front) || null, priceList: b.priceList ?? null, priceSales: b.priceSales ?? null, availability: b.availability || null, usedTotal: us.usedTotal ?? null, buyback: us.buyback || null, mins: us.mins || null, page1: us.listings || [], lastPage: us.lastPage || 1 }; }, u);
+      cover: (b.images && b.images.front) || null, priceList: b.priceList ?? null, priceSales: b.priceSales ?? null, availability: b.availability || null, usedTotal: us.usedTotal ?? null, buyback: us.buyback || null, mins: us.mins || null, page1: us.listings || [], lastPage: us.lastPage || 1,
+      /* (0.9.2) 등록 엔진: 상품 관리 코드 판정·카드에 쓰는 정보 */ categories: (b.categories || []).map((c) => ({ path: c.path || [], cids: c.cids || [] })), salesPoint: b.salesPoint ?? null, ranks: b.ranks || [], reviewCount: b.reviewCount ?? null, commentCount: b.commentCount ?? null, rating: b.rating ?? null, size: b.size || null, pages: b.pages || null, originalTitle: b.originalTitle || null, series: b.series || null }; }, u);
   const keep = async (key, r) => { r.at = nowIso(); items[key] = r; await C('prd_lookups').add({ key, ...r, by: 'cloud', ...W() }).catch(() => {}); };
   for (const isbn of (req.isbns || []).slice(0, 40)) { try { const r = await book(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(isbn)}`); if (r.err) errs[isbn] = r.err; else await keep(isbn, r); } catch (e) { errs[isbn] = e.message; } await sleep(400); }
   for (const id of (req.itemIds || []).slice(0, 40)) { try { const r = await book(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`); if (r.err) errs['id_' + id] = r.err; else await keep('id_' + id, r); } catch (e) { errs['id_' + id] = e.message; } await sleep(400); }
-  for (const q of (req.queries || []).slice(0, 40)) { try { cands[q] = await p.evaluate(async (q) => { const P = window.ReadnowProducts; const r = await fetch('/search/wsearchresult.aspx?SearchTarget=Book&SearchWord=' + encodeURIComponent(q), { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html');
-      return P.parseSearchResults(d).filter((x) => !x.used).slice(0, 8).map((x) => ({ itemId: x.itemId, title: x.title, img: x.img || null, cov: Math.round(P.nameCoverage(q, x.title) * 1000) / 1000, channels: x.channels || null })); }, q); } catch (e) { errs['q_' + q] = e.message; } await sleep(400); }
+  const TGT = { 1: 'Book', 2: 'Music', 3: 'DVD', 7: 'Foreign' }[+req.branch || 1] || 'Book'; // (0.9.2) 등록 엔진: 상품 구분(국내도서·음반·DVD·외국도서)에 맞춰 찾음
+  for (const q of (req.queries || []).slice(0, 40)) { try { cands[q] = await p.evaluate(async (q, tgt) => { const P = window.ReadnowProducts; const r = await fetch('/search/wsearchresult.aspx?SearchTarget=' + tgt + '&SearchWord=' + encodeURIComponent(q), { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html');
+      return P.parseSearchResults(d).filter((x) => !x.used).slice(0, 8).map((x) => ({ itemId: x.itemId, title: x.title, img: x.img || null, cov: Math.round(P.nameCoverage(q, x.title) * 1000) / 1000, channels: x.channels || null })); }, q, TGT); } catch (e) { errs['q_' + q] = e.message; } await sleep(400); }
   return { items, cands, errs, by: 'cloud' };
 }
 
@@ -616,7 +620,7 @@ async function mlSnapshot(day) { const t0 = Date.now(); const L = []; (await C('
   const cols = Object.keys(rows[0] || { key: 0 }); const parts = shard(rows, 2000); const b = db.batch(); parts.forEach((p, i) => { const o = {}; cols.forEach((c) => (o[c] = p.map((r) => r[c]))); b.set(C('ml_days').doc(`${day}_${String(i).padStart(2, '0')}`), { day, i, n: p.length, ver: ML_VER, cols: o, ...W() }); });
   b.set(C('ml_days').doc(day), { day, shards: parts.length, n: rows.length, ver: ML_VER, colNames: cols, at: nowIso(), ms: Date.now() - t0, ...W() }); await b.commit(); return { n: rows.length, shards: parts.length }; }
 async function mlOutcomes() { const since = new Date(Date.now() - 90 * 864e5).toISOString(); const acts = []; (await C('prd_price_actions').where('at', '>=', since).get()).forEach((d) => { const a = d.data(); if (a.key && a.to != null && a.kind !== 'hold' && a.kind !== 'unhold') acts.push({ id: d.id, ...a }); });
-  if (!acts.length) return { n: 0 }; const closed = new Set(); (await C('ml_outcomes').where('closed', '==', true).select().get()).forEach((d) => closed.add(d.id)); const open = acts.filter((a) => !closed.has(a.id)); if (!open.length) return { n: 0 };
+  if (!acts.length) return { n: 0 }; const closed = new Set(); (await C('ml_outcomes').where('at', '>=', since).select('closed').get()).forEach((d) => { if (d.get('closed')) closed.add(d.id); }); /* (0.9.3) 90일 안 것만 읽음 — 예전엔 닫힌 결과 전체를 날마다 읽어 쌓일수록 비용이 늘었음 */ const open = acts.filter((a) => !closed.has(a.id)); if (!open.length) return { n: 0 };
   const todo = open.sort((x, y) => String(x.at).localeCompare(String(y.at))).slice(0, 450); // 하루 450개까지(오래된 것부터) — 남으면 다음 날 이어서
   const first = String(todo[0].at); const sales = await mlSales(first); let n = 0, nSold = 0; const b = db.batch();
   for (const a of todo) { const t = Date.parse(a.at); const s = (sales.get(a.usedCode) || []).filter((x) => x.at >= t).sort((x, y) => x.at - y.at)[0] || null; const age = (Date.now() - t) / 864e5;
@@ -636,11 +640,11 @@ async function mlDaily() { const ST = C('app_settings').doc('ml_state'); const s
 /* ── (0.8.0) 개편 6단계 '스스로 배우기' — 팔릴 확률 모델 (계산은 readnow-ml-core.js 한 곳, 웹앱과 같음)
  *  매일(한국 2시 뒤, 결과 기록 뒤) ① 배우기: 7일이 지나 결과를 아는 날들(최근 60일)의 하루 모습 + 그 뒤 7일 판매 → 새 모델(도전자)
  *  ② 그림자: 오늘 판매중 상품마다 지금 모델·도전자의 확률을 적어 두기만(ml_shadow) — 실제 판단에는 쓰지 않음
- *  ③ 채점: 7일이 지난 그림자를 실제 판매와 맞춰 로그 손실·AUC(ml_eval) ④ 승격: 최근 3번 모두 도전자가 1% 넘게 나으면 지금 모델로(ml_state.model, 기록 남김)
+ *  ③ 채점: 7일이 지난 그림자를 실제 판매와 맞춰 로그 손실·AUC(ml_eval) ④ 승격: (0.9.3) 고정한 후보 하나가 지금 모델과 겨룬 채점 3번이 모두 1% 넘게 나으면 그 후보를 지금 모델로(ml_state.model, 기록 남김) — 아니면 탈락, 새 후보
  *  처음 지금 모델 = 기준선(1위 여부 × 등급별 평균 판매율). 모델은 조언 금액에만 쓰임 — 알라딘을 바꾸지 않음 */
 let ML_LOCAL = null; try { ML_LOCAL = require('./readnow-ml-core.js'); } catch (e) { console.log(new Date().toISOString(), '함께 올린 학습 파일 없음 — GitHub에서 받음', e.message); }
 let MLM = ML_LOCAL, mlmAt = 0;
-async function mlMod() { if (MLM && (ML_LOCAL || Date.now() - mlmAt < 30 * 60e3)) return MLM; mlmAt = Date.now();
+async function mlMod() { if (MLM) coreVer['readnow-ml-core.js'] = MLM.VERSION; if (MLM && (ML_LOCAL || Date.now() - mlmAt < 30 * 60e3)) return MLM; mlmAt = Date.now();
   try { const r = await fetch(RAW + 'readnow-ml-core.js?t=' + Date.now()); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', await r.text())(m, m.exports); if (m.exports && m.exports.train) MLM = m.exports; } } catch (e) { log('학습 파일 받기 실패', e.message); }
   if (MLM) coreVer['readnow-ml-core.js'] = MLM.VERSION; return MLM; }
 function trainOff(ML, X, Y) { if (!ML_LOCAL) return Promise.resolve(ML.train(X, Y)); // 함께 올린 파일이 있을 때만 일꾼을 씀 (없으면 이 자리에서)
@@ -650,7 +654,7 @@ async function mlLoadDay(day) { const meta = await C('ml_days').doc(day).get(); 
   for (let i = 0; i < (meta.data().shards || 0); i++) { const d = await C('ml_days').doc(`${day}_${String(i).padStart(2, '0')}`).get(); if (!d.exists) continue; const cols = d.data().cols || {}; const names = Object.keys(cols); const n = (cols.key || []).length; for (let k = 0; k < n; k++) { const r = {}; names.forEach((c) => (r[c] = cols[c][k])); rows.push(r); } }
   return rows; }
 const kday = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10); const dayEnd = (d) => Date.parse(d + 'T23:59:59+09:00');
-function mlLabel(ML, rows, day, sales) { const t0 = dayEnd(day), t1 = t0 + ML.HORIZON_D * 864e5; return rows.map((r) => { const u = String(r.key || '').replace(/^aladin_/, ''); return (sales.get(u) || []).some((s) => s.at > t0 && s.at <= t1) ? 1 : 0; }); }
+function mlLabel(ML, rows, day, sales) { const t0 = Date.parse(day + 'T01:00:00+09:00'), t1 = t0 + ML.HORIZON_D * 864e5; /* (0.9.3) 하루 모습은 한국 1시 뒤에 찍음 → 그때부터 7일 (예전엔 그날 밤 23:59부터라 그날 팔린 책을 '안 팔림'으로 셈 — 잘 팔리는 책일수록 빠져 확률이 낮게 나왔음) */ return rows.map((r) => { const u = String(r.key || '').replace(/^aladin_/, ''); return (sales.get(u) || []).some((s) => s.at > t0 && s.at <= t1) ? 1 : 0; }); }
 async function mlShadowWrite(day, champId, challId, rows, pc, ph) { const parts = shard(rows.map((r, i) => [r.key, pc[i], ph[i]]), 2000); const b = db.batch();
   parts.forEach((p, i) => b.set(C('ml_shadow').doc(`${day}_${String(i).padStart(2, '0')}`), { day, i, keys: p.map((x) => x[0]), pc: p.map((x) => x[1] == null ? null : Math.round(x[1] * 1000) / 1000), ph: p.map((x) => x[2] == null ? null : Math.round(x[2] * 1000) / 1000), ...W() }));
   b.set(C('ml_shadow').doc(day), { day, shards: parts.length, n: rows.length, champId, challId, at: nowIso(), ...W() }); await b.commit(); }
@@ -681,11 +685,20 @@ async function mlLearn() { const ML = await mlMod(); if (!ML) return { skip: '�
   const challId = 'm_' + today; await C('ml_models').doc(challId).set({ ...mdl, id: challId, trainedAt: nowIso(), nTrain: trS.length, nVal: va.length, labDays: lab.length, valFrom, val, ...W() });
   if (!champ0) await C('ml_models').doc('base_' + today).set({ ...base, id: 'base_' + today, trainedAt: nowIso(), ...W() });
   const champId = champ0 ? st.model.champion : 'base_' + today;
-  // ② 그림자: 오늘 상품
-  let shadowN = 0; try { const rows = await mlLoadDay(today); if (rows && rows.length) { await mlShadowWrite(today, champId, challId, rows, rows.map((r) => ML.predict(champ, r)), rows.map((r) => ML.predict(mdl, r))); shadowN = rows.length; } } catch (e) { res.shadowErr = e.message; }
-  // ④ 승격
-  const pr = ML.shouldPromote(evals.sort((a, b) => String(a.day).localeCompare(String(b.day)))); const model = { champion: champ0 ? st.model.champion : champId, kind: champ.kind, since: (st.model && st.model.since) || today, latestChallenger: challId };
-  if (pr.ok) { model.champion = challId; model.kind = 'logit'; model.since = today; model.lastPromotion = { at: nowIso(), from: champId, to: challId, why: pr.why }; log('모델 승격', champId, '→', challId, pr.why); }
+  /* (0.9.3) 도전자를 며칠 고정: 그림자 채점을 받은 바로 그 모델만 승격 (예전엔 날마다 새 도전자로 그림자를 적고, 승격은 채점받지 않은 오늘 모델을 올렸음)
+   *  후보(candidate) = 지금 모델과 겨루는 한 모델 · 그 후보의 채점이 3번 모이면 승격 또는 탈락 → 다음 날 새 후보 · 후보가 14일 넘게 채점 3번을 못 모으면 새 후보 */
+  const cand0 = st.model && st.model.candidate; let candId = cand0 && cand0.id, candM = null;
+  if (candId && (cand0.champ !== champId || Date.parse(today) - Date.parse(cand0.since || today) > 14 * 864e5)) candId = null;
+  if (candId) { candM = (await C('ml_models').doc(candId).get()).data() || null; if (!candM) candId = null; }
+  const candEv = candId ? evals.filter((e) => e.challId === candId && e.champId === champId).sort((a, b) => String(a.day).localeCompare(String(b.day))) : [];
+  let pr = { ok: false, why: candId ? `후보 ${candId} 채점 ${candEv.length}/3번` : '새 후보' }; let nextCand = candId ? cand0 : null;
+  if (candId && candEv.length >= 3) { pr = ML.shouldPromote(candEv); if (!pr.ok) { pr = { ...pr, rejected: candId }; nextCand = null; candId = null; candM = null; } }
+  if (!candId) { candId = challId; candM = mdl; nextCand = { id: challId, since: today, champ: champId }; }
+  // ② 그림자: 오늘 상품 — 지금 모델 · 후보
+  let shadowN = 0; try { const rows = await mlLoadDay(today); if (rows && rows.length) { await mlShadowWrite(today, champId, candId, rows, rows.map((r) => ML.predict(champ, r)), rows.map((r) => ML.predict(candM, r))); shadowN = rows.length; } } catch (e) { res.shadowErr = e.message; }
+  // ④ 승격 (채점받은 후보만)
+  const model = { champion: champ0 ? st.model.champion : champId, kind: champ.kind, since: (st.model && st.model.since) || today, latestChallenger: challId, candidate: nextCand };
+  if (pr.ok && nextCand && nextCand.id !== challId) { const to = nextCand.id; model.champion = to; model.kind = 'logit'; model.since = today; model.candidate = { id: challId, since: today, champ: to }; model.lastPromotion = { at: nowIso(), from: champId, to, why: pr.why, evals: candEv.map((e) => e.day) }; log('모델 승격', champId, '→', to, pr.why); }
   await ST.set({ learn: { day: today, state: 'ok', rows: X.length, train: trS.length, val: va.length, valFrom, metrics: val, shadow: shadowN, promote: pr, ms: Date.now() - t0, at: nowIso() }, model, ...(pr.ok ? { promotions: FV.arrayUnion(model.lastPromotion) } : {}) }, { merge: true });
   return { ...res, rows: X.length, val, shadowN, promote: pr }; }
 let mlNextAt = 0, learnNextAt = 0, lastDailyAt = Date.now(), dailyBusy = false;
