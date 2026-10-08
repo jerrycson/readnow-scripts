@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.43.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.44.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.43.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.44.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.43.1'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.44.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -140,7 +140,7 @@
     tx.update(ref, { items, totalAmount: tot, uploadedAt: TS(), history: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), by: PC_NAME, what }) }); });
   /* (1.37.0) 웹앱이 맡긴 '현금 판매 → 알라딘 판매중지'(shp_cmds cashStop {orderId, lineNo, listingId, listingKey, usedCode, title}) — 띠의 '지금 판매중지로 바꾸기'와 같은 길, 확인 창 없이
      판매중지 목록에서 그 상품번호를 찾아야 완료('done'), 못 찾으면 원래 상태를 다른 값으로 한 번씩 더 → 그래도 없으면 '확인 필요'(check — 완료로 적지 않음) */
-  async function cashStopCmd(ref, v) { const key = `${ref.id}`; const gate = await exBegin('cashStop', key, { orderId: v.orderId, lineNo: v.lineNo, listingId: v.listingId || null, title: v.title || null });
+  async function cashStopCmd(ref, v) { const key = `${ref.id}#${v.tries || 1}`; /* (1.44.0) 웹앱이 다시 맡길 때(tries+1)마다 새 열쇠 — 예전엔 같은 열쇠라 '확인 못함' 뒤 다시 하지 못해 현금으로 판 책이 알라딘에 판매중으로 남을 수 있었음. 같은 회차를 다시 하는 것은 그대로 막음 */ const gate = await exBegin('cashStop', key, { orderId: v.orderId, lineNo: v.lineNo, listingId: v.listingId || null, title: v.title || null });
     if (!gate.ok) { await ref.set({ status: 'done', doneAt: nowIso(), by: PC_NAME, result: { state: gate.state === 'done' ? 'skip' : 'check', msg: '실행 문: ' + gate.why }, uploadedAt: TS() }, { merge: true }); return; } // 같은 맡긴 일을 이미 시작했던 것 — 다시 보내지 않고 사람 확인
     try { await cashStopCmd0(ref, v); } finally { let st = 'unknown', msg = null; try { const r = ((await ref.get()).data() || {}).result || {}; st = r.state === 'done' || r.state === 'skip' ? 'done' : r.state === 'fail' ? 'failed' : 'unknown'; msg = r.msg || null; } catch (e) {} await exEnd('cashStop', key, st, msg); } }
   async function cashStopCmd0(ref, v) { const t = { id: v.orderId, it: { lineNo: v.lineNo, listingId: v.listingId || null, listingKey: v.listingKey || null, aladinUsedCode: v.usedCode || null, title: v.title || '' } };
@@ -445,8 +445,8 @@
   function publishStatus(extra) {
     const key = curKey || pubKey; if (!key) return Promise.resolve(); pubKey = key;
     const G = window.ReadnowRegistry || globalThis.ReadnowRegistry; const gv = (n) => (typeof unsafeWindow !== 'undefined' && unsafeWindow[n]) || window[n] || globalThis[n]; // (1.36.0) 읽은 공용 파일 판을 신호에 실음 → 웹앱 관리도구가 노선표의 판과 비교
-    const cores = G ? G.loadedVers({ ReadNowCore: gv('ReadNowCore'), ReadnowSellers: gv('ReadnowSellers'), ReadnowProducts: gv('ReadnowProducts'), ReadnowPricing: gv('ReadnowPricing'), ReadnowShipping: gv('ReadnowShipping'), ReadnowOrders: gv('ReadnowOrders'), ReadnowAladin: gv('ReadnowAladin'), ReadnowExec: gv('ReadnowExec'), ReadnowRegistry: G }) : null; // (1.43.1) 알라딘 창구·실행 문 판도 (예전엔 빠져 관리도구에 '?'로 빨갛게)
-    return C('rn_status').doc(`prd_${PC_ID}_${key}`).set({ tool: '상품 수집기', pcName: LS.get('pcName', PC_ID), running: running || null, key, ...lastUi, ...(extra || {}), ver: APP_VER, cores, mods: window.__rnMods || null, atMs: Date.now(), ...W() }, { merge: true }).catch(() => {});
+    const cores = G ? G.loadedVers({ ReadNowCore: gv('ReadNowCore'), ReadnowSellers: gv('ReadnowSellers'), ReadnowProducts: gv('ReadnowProducts'), ReadnowPricing: gv('ReadnowPricing'), ReadnowShipping: gv('ReadnowShipping'), ReadnowOrders: gv('ReadnowOrders'), ReadnowAladin: gv('ReadnowAladin'), ReadnowExec: gv('ReadnowExec'), ReadnowRegistry: G, ReadnowRegister: gv('ReadnowRegister') }) : null; // (1.43.1) 알라딘 창구·실행 문 판도 · (1.44.0) 등록 엔진 판도 (예전엔 빠져 관리도구에 '?'로 빨갛게)
+    return C('rn_status').doc(`prd_${PC_ID}_${key}`).set({ tool: '상품 수집기', pcName: LS.get('pcName', PC_ID), running: running || null, key, ...lastUi, ...(extra || {}), ver: APP_VER, cores, mods: window.__rnMods || null, ledgerDown: window.__rnLedgerDown || null, /* (1.44.0) 실행 기록을 못 적는 중이면 관리도구에 빨갛게 */ atMs: Date.now(), ...W() }, { merge: true }).catch(() => {});
   }
   let running = null; let stopFlag = false;
   function setRunning(name) {
@@ -1571,6 +1571,7 @@
     else if (v.type === 'c2bAdd') { await c2bAddCmd(ref, v); return; }
     else if (v.type === 'cashStop') { await cashStopCmd(ref, v); return; } // (1.37.0) 현금 판매 → 알라딘 판매중지 자동 // (1.35.0) 알라딘 매입: 팔기 장바구니에 담기
     else if (v.type === 'lookup') { await lookupCmd(ref, v); return; }
+    else if (v.type === 'regBulk') { await regBulkCmd(ref, v); return; } // (1.44.0) 📥 알라딘 대량 등록
     else if (v.type === 'metrics') { log(`그룹 시장 지표 갱신 맡음: ${v.label || ''} ${(v.keys || []).length}개`); if (!running) runJob('metricsReq'); else log('다른 작업 중 — 끝나면 이어서 (5분마다 확인)'); return; }
     else if (v.type === 'read') { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (SH) try { await shipLiteRead(SH, null); } catch (e) {} await ref.set({ status: 'done', doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); }
     else { await ref.set({ status: 'queued', claim: null, pcSkip: `수집기 ${APP_VER}에 처리 길이 없는 종류 — 노선표 확인`, uploadedAt: TS() }, { merge: true }); log(`맡긴 일 '${v.type}': 이 수집기 판에 처리하는 길이 없어 대기로 되돌림 (노선표 확인)`, 1); return; } // (1.36.0) 예전: 모르는 종류도 '끝남' // (1.34.6) '다시 읽기'는 목록부터 바로(몇 초), 전체 읽기(유의 사항·엑셀)는 이어서
@@ -1580,7 +1581,7 @@
      결과는 그 일 문서(items · cands)에 바로 쓰고, 책마다 prd_lookups에도 한 줄씩 쌓음(덮어쓰지 않음 — 같은 책을 다시 찍으면 웹앱이 24시간 안 기록을 먼저 씀). 다른 작업 중이어도 바로 처리(책 몇 권이라 짧음) */
   /* (1.40.0) 실행도구의 한 문 (readnow-exec-core.js): 알라딘을 바꾸는 일은 모두 exGate를 지나감 — 시작을 먼저 적고(같은 일이 이미 끝났거나 하는 중이면 안 함), 끝나면 결과를 적음 */
   const EXC = () => window.ReadnowExec || globalThis.ReadnowExec;
-  const exBegin = async (kind, key, detail) => { const X = EXC(); if (!X) return { ok: true, none: true }; try { return await X.begin(db, { kind, key, by: PC_NAME, detail: detail || null }); } catch (e) { log(`⚠ 실행 기록을 못 적음(${kind}) — ${e.code || e.message}${/permission/i.test(e.code || e.message) ? ' (Firestore 규칙에 exec_log 허용 필요)' : ''} · 일은 예전처럼 하고 기록만 빠짐`, 1); return { ok: true, none: true }; } }; // 기록 칸 문제로 출고·판매중지를 막지 않음
+  const exBegin = async (kind, key, detail) => { const X = EXC(); if (!X) return { ok: true, none: true }; try { const r = await X.begin(db, { kind, key, by: PC_NAME, detail: detail || null }); window.__rnLedgerDown = null; return r; } catch (e) { window.__rnLedgerDown = { at: nowIso(), msg: e.code || e.message }; log(`⚠ 실행 기록을 못 적음(${kind}) — ${e.code || e.message}${/permission/i.test(e.code || e.message) ? ' (Firestore 규칙에 exec_log 허용 필요)' : ''} · 일은 예전처럼 하고 기록만 빠짐`, 1); return { ok: true, none: true }; } }; // 기록 칸 문제로 출고·판매중지를 막지 않음
   const exEnd = (kind, key, status, msg, result) => { const X = EXC(); if (!X) return Promise.resolve(); return X.finish(db, { kind, key }, status, { msg, result }).catch((e) => log(`실행 결과를 못 적음(${kind}): ${e.code || e.message}`, 1)); };
   const lookDoc = (url) => AL.quick(url, { pace: PACE, sleep }); // 일시정지·작업 줄과 상관없이 짧게 (책 몇 권) — (1.39.0) 알라딘 창구: 속도 조절을 같이 쓰고 점검 화면은 오류로
   /* (1.42.0) 출고 실시간 (PC): 알라딘 화면이 열린 PC가 15초마다 ① 주문확인요청을 한 번 읽어 바뀐 때만 씀 — 클라우드 사용료 없이 실시간
@@ -1601,17 +1602,126 @@
   async function lookupBook(url) { const g = await lookDoc(url); const p = P.parseProductPage(g.doc, g.finalUrl); if (!p.aladinItemId) throw new Error('알라딘에서 이 책을 못 찾음');
     const u = P.parseUsedPage((await lookDoc(`/shop/UsedShop/wuseditemall.aspx?ItemId=${p.aladinItemId}&TabType=0`)).doc);
     return { itemId: p.aladinItemId, isbn13: p.isbn13 || null, title: p.title || null, subtitle: p.subtitle || null, author: (p.contributors || []).slice(0, 2).map((c) => c.name).join(', ') || null, publisher: p.publisher || null, pubDate: p.pubDate || null,
-      cover: (p.images && p.images.front) || null, priceList: p.priceList ?? null, priceSales: p.priceSales ?? null, availability: p.availability || null, usedTotal: u.usedTotal ?? null, buyback: u.buyback || null, mins: u.mins || null, page1: u.listings || [], lastPage: u.lastPage || 1, at: nowIso() }; }
+      cover: (p.images && p.images.front) || null, priceList: p.priceList ?? null, priceSales: p.priceSales ?? null, availability: p.availability || null, usedTotal: u.usedTotal ?? null, buyback: u.buyback || null, mins: u.mins || null, page1: u.listings || [], lastPage: u.lastPage || 1, at: nowIso(),
+      /* (1.44.0) 등록 엔진: 클라우드 /lookup(0.9.2)과 같은 칸 — 상품 관리 코드 판정·카드 */ categories: (p.categories || []).map((c) => ({ path: c.path || [], cids: c.cids || [] })), salesPoint: p.salesPoint ?? null, ranks: p.ranks || [], reviewCount: p.reviewCount ?? null, commentCount: p.commentCount ?? null, rating: p.rating ?? null, size: p.size || null, pages: p.pages || null, originalTitle: p.originalTitle || null, series: p.series || null }; }
   async function lookupCmd(ref, v) { const isb = v.isbns || [], ids = v.itemIds || [], qs = v.queries || []; const tot = isb.length + ids.length + qs.length; let n = 0; const items = {}, cands = {}, errs = {};
     log(`사진 가격: 알라딘에서 ${tot}건 읽기 (웹앱에서 맡김)`);
     const prog = () => ref.set({ n, tot, items, cands, errs, uploadedAt: TS() }, { merge: true }).catch(() => {});
     const keep = async (key, r) => { items[key] = r; try { await C('prd_lookups').add({ key, isbn13: r.isbn13, itemId: r.itemId, ...r, by: PC_NAME, cmdId: ref.id, ...W() }); } catch (e) {} };
     for (const isbn of isb) { try { await keep(isbn, await lookupBook(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(isbn)}`)); } catch (e) { errs[isbn] = e.message; } n++; await prog(); }
     for (const id of ids) { try { await keep('id_' + id, await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`)); } catch (e) { errs['id_' + id] = e.message; } n++; await prog(); }
-    for (const q of qs) { try { const sr = await lookDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Book&SearchWord=${encodeURIComponent(q)}`);
+    for (const q of qs) { try { const sr = await lookDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=${{ 1: 'Book', 2: 'Music', 3: 'DVD', 7: 'Foreign' }[+v.branch || 1] || 'Book'}&SearchWord=${encodeURIComponent(q)}`); /* (1.44.0) 등록 엔진: 상품 구분에 맞춰 찾음 */
         cands[q] = P.parseSearchResults(sr.doc).filter((r) => !r.used).slice(0, 8).map((r) => ({ itemId: r.itemId, title: r.title, img: r.img || null, cov: Math.round(P.nameCoverage(q, r.title) * 1000) / 1000, channels: r.channels || null })); } catch (e) { errs['q_' + q] = e.message; } n++; await prog(); }
     await ref.set({ status: 'done', n, tot, items, cands, errs, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
     log(`사진 가격: ${Object.keys(items).length}권 · 검색 ${Object.keys(cands).length}건 끝${Object.keys(errs).length ? ` · 실패 ${Object.keys(errs).length}` : ''}`, Object.keys(errs).length ? 1 : 0); }
+  /* (1.44.0) 📥 알라딘 대량 등록 (웹앱 '상품 등록'의 일괄 확정 → shp_cmds type 'regBulk' · rows [{isbn, state, qty, grade, price, title, code, desc, regItem}] · 200줄까지)
+   *  돈이 걸린 일 — 한 단계라도 어긋나면 알라딘에 등록하지 않고 멈춤:
+   *   ⓪ 한 번에 하나(모든 PC): 등록 자리(prd_system/reg_lane)를 잡은 일만 · 다른 등록이 하는 중이면 '차례 기다림'(held)으로 두고 그 일이 끝나면 이어서
+   *   ① 실행도구의 한 문(exec_log)에 '시작'을 적을 수 있을 때만 (기록 칸을 못 쓰면 하지 않음 — 같은 일을 두 번 등록하지 않게)
+   *   ② 엑셀 = 알라딘 원본 양식(공용 파일 readnow-register-core.js 안)에 줄만 넣어 만듦 → 다시 읽어 넣은 값과 같은지 확인
+   *   ③ 등록 전 우리 상품 조회의 가장 최근 상품 번호(기준)를 적어 둠 — 등록 뒤 '새로 생긴 상품'만 찾으려고 (못 읽으면 멈춤)
+   *   ④ 대량 등록 화면에 올림 → 미리보기를 읽어 넣은 줄과 ISBN·판매가·코드·품질·수량·판매상태가 하나도 다르지 않고 다른 줄도 없을 때만
+   *   ⑤ '보냄'을 먼저 Firebase에 적고(못 적으면 보내지 않음) 우리 줄만 골라 '등록완료'와 같은 요청 → 한 번 보낸 일은 자동으로 다시 하지 않음
+   *   ⑥ 공개 확인(한 PC·한 탭만, 3분마다): 상품 조회(최신순)에서 기준보다 새 상품 중 ISBN·코드·판매가·품질·수량이 맞는 것 → '알라딘에 보임'(U코드)
+   *      상품 번호는 한 번만 짝지음(reg_claims) — 손으로 같이 등록한 다른 상품을 우리 것으로 잘못 잡지 않게 · 90분 안에 못 찾으면 '결과 모름'
+   *   ⑦ 보이면 '신규 등록분 수집'으로 상품 목록에 넣고 그 상품들의 시장 지표를 맡김(등록 뒤 나머지 수집)
+   *   지킴이: 탭이 중간에 닫혀 '하는 중'으로 15분 넘게 조용하면 — 보내기 전이면 '멈춤(등록 안 함)'으로(다시 맡길 수 있음), 보낸 뒤면 공개 확인으로 */
+  const RGF = () => window.ReadnowRegister || globalThis.ReadnowRegister || null;
+  const BULK_URL = 'https://www.aladin.co.kr/scm/UsedItemBulkReg.aspx';
+  const REG_LIST_CODE = { 1: 1, 2: 3, 3: 15 }; // 대량 등록 판매상태(1 판매중·2 일시판매중지·3 판매중지) → 상품 조회 상태 번호
+  const REG_ME = () => PC_NAME + ':' + TAB_ID; const REG_LANE = () => C('prd_system').doc('reg_lane'); const REG_LANE_STALE = 20 * 60000;
+  const regNotSent = (m) => Object.assign(new Error(m), { notSent: true });
+  const regIsbnEq = (a, b) => { a = String(a || '').replace(/[^0-9Xx]/g, '').toUpperCase(); b = String(b || '').replace(/[^0-9Xx]/g, '').toUpperCase(); if (!a || !b) return false; if (a === b) return true; const t = (x) => (x.length === 10 ? '978' + x.slice(0, 9) : x.length === 13 && x.startsWith('978') ? x : null); const k = (x) => (x ? x.slice(0, 12) : null); return !!t(a) && !!t(b) && k(t(a)) === k(t(b)); };
+  async function regNewest(codes, beat) { let base = 0; for (const code of [...new Set([1, ...codes])]) { if (beat) await beat(); const g = await lookDoc(listUrl(code, 1)); if (looksLoggedOut(g.finalUrl, g.doc)) throw regNotSent('알라딘 로그인이 풀림 — 샵매니저에 로그인한 뒤 웹앱에서 다시 맡기기'); const r = P.parseScmList(g.doc, new Date().getFullYear()); base = Math.max(base, ...r.rows.map((x) => +x.listingId || 0)); }
+    const cur = +(((await C('prd_system').doc('cursor').get()).data() || {}).maxListingId || 0); if (!base && !cur) throw regNotSent('상품 조회 목록을 읽지 못해 등록 전 기준을 못 정함 — 등록하지 않음'); return Math.max(base, cur); }
+  async function regItemsSet(rows, results, extra) { try { const b = db.batch(); let n = 0; for (const r of rows) { if (!r.regItem) continue; const x = results[r.regItem]; if (!x) continue; b.set(C('reg_items').doc(r.regItem), { result: x, ...(extra || {}), ...W() }, { merge: true }); n++; } if (n) await b.commit(); } catch (e) { log('등록 결과를 상품 줄에 못 적음: ' + (e.code || e.message), 1); } }
+  async function regLane(cmdId, op) { const ref = REG_LANE(); let res = { ok: false, holder: null }; await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.exists ? sn.data() : {}; const fresh = v.cmd && Date.now() - Date.parse(v.at || 0) < REG_LANE_STALE;
+      if (op === 'take') { if (fresh && v.cmd !== cmdId) { res = { ok: false, holder: v.cmd }; return; } tx.set(ref, { cmd: cmdId, by: REG_ME(), at: nowIso() }); res = { ok: true }; }
+      else if (op === 'beat') { if (v.cmd === cmdId) tx.set(ref, { at: nowIso() }, { merge: true }); res = { ok: true }; }
+      else if (op === 'free') { if (v.cmd === cmdId) tx.set(ref, { cmd: null, by: null, at: nowIso(), last: cmdId }); res = { ok: true }; } }); return res; }
+  async function regHeldToQueued(ref, prev) { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data() || {}; if (v.status !== 'held' || (prev !== undefined && v.prev !== prev)) return; tx.update(ref, { status: 'queued', claim: null, heldMsg: null, releasedAt: nowIso(), uploadedAt: TS() }); }); } /* 트랜잭션: 그사이 웹앱에서 '맡김 취소'했으면 되살리지 않음 */
+  async function regReleaseNext(cmdId) { try { const qs = await C('shp_cmds').where('status', '==', 'held').get(); for (const d of qs.docs) { const v = d.data(); if (v.type === 'regBulk' && v.prev === cmdId) await regHeldToQueued(d.ref, cmdId).catch(() => {}); } } catch (e) {} }
+  async function regBulkCmd(ref, v) { const RG = RGF(); const X = EXC(); const rows = Array.isArray(v.rows) ? v.rows : []; const results = {}; const t0 = Date.now(); let laneOk = false;
+    const st = (step, extra) => Promise.all([ref.set({ step, beatAt: nowIso(), ...(extra || {}), uploadedAt: TS() }, { merge: true }).catch(() => {}), laneOk ? regLane(ref.id, 'beat').catch(() => {}) : null]);
+    const stop = async (msg, extra, state) => { rows.forEach((r) => (results[r.regItem] = { state: state || 'fail', at: nowIso(), msg })); try { await ref.set({ status: 'fail', msg, results, sent: false, doneAt: nowIso(), by: PC_NAME, ...(extra || {}), uploadedAt: TS() }, { merge: true }); } catch (e) { log('멈춤을 적지 못함: ' + (e.code || e.message), 1); } await regItemsSet(rows, results); log(`📥 대량 등록 멈춤 (알라딘에 등록하지 않음): ${msg}`, 1); };
+    log(`📥 대량 등록 맡음: ${rows.length}줄 · ${v.qty || rows.length}부 · 판매가 합계 ${(+v.sum || 0).toLocaleString()}원`);
+    if (!RG || typeof XLSX === 'undefined' || !XLSX.CFB) return stop('공용 파일 readnow-register-core.js 또는 엑셀 도구(SheetJS)를 못 읽음 — 수집기 탭을 새로고침');
+    if (!rows.length || rows.length > 200) return stop(`줄 수가 이상함 (${rows.length}) — 한 번에 1~200줄`);
+    if (!X) return stop('실행도구 공용 파일(readnow-exec-core.js)이 없음 — 돈이 걸린 일이라 기록 없이 하지 않음');
+    try { const ln = await regLane(ref.id, 'take'); if (!ln.ok) { await ref.set({ status: 'held', prev: ln.holder, claim: null, heldMsg: '다른 등록이 하는 중 — 끝나면 이어서 (한 번에 하나)', uploadedAt: TS() }, { merge: true }); log('📥 다른 대량 등록이 하는 중 — 끝나면 이어서'); return; } laneOk = true; }
+    catch (e) { return stop('등록 자리(prd_system/reg_lane)를 못 잡음 — ' + (e.code || e.message)); }
+    let sent = false, base = 0; const xend = (s, m, r) => exEnd('regBulk', ref.id, s, m, r);
+    try {
+      let gate; try { gate = await X.begin(db, { kind: 'regBulk', key: ref.id, by: PC_NAME, detail: { n: rows.length, qty: v.qty || null, sum: v.sum || null }, staleMin: 120 }); } catch (e) { return await stop(`실행 기록(exec_log)을 못 적어 하지 않음 — ${e.code || e.message}${/permission/i.test(e.code || e.message) ? ' (Firestore 규칙에 exec_log 허용 필요)' : ''}`); }
+      if (!gate.ok) { if (gate.state === 'done' && v.verify && v.verify.base) { await ref.set({ status: 'verify', msg: '이미 등록한 일 — 공개 확인만 이어감', uploadedAt: TS() }, { merge: true }); return; }
+        return await stop('실행 문이 막음: ' + gate.why + ' — 이미 등록됐을 수 있음, 알라딘 상품 조회에서 확인한 뒤 관리도구에서 닫기', { gate: gate.state }, 'unknown'); }
+      const codes = [...new Set(rows.map((r) => REG_LIST_CODE[+r.state || 1] || 1))];
+      await st(2); const bytes = RG.buildBulkXls(RG.templateBytes(), rows, XLSX.CFB); const vr = RG.verifyBulkXls(bytes, rows, XLSX); if (!vr.ok) throw regNotSent('만든 엑셀을 다시 읽으니 넣은 값과 다름: ' + vr.bad.slice(0, 3).join(' / '));
+      base = await regNewest(codes, () => st(2));
+      await st(3, { base, codes }); const g0 = await lookDoc(BULK_URL); const p0 = RG.parseBulkPage(g0.doc); if (looksLoggedOut(g0.finalUrl, g0.doc) || !p0.loggedIn) throw regNotSent('알라딘 로그인이 풀림 — 샵매니저에 로그인한 뒤 웹앱에서 다시 맡기기'); if (!p0.hasUpload || !p0.excelKey) throw regNotSent('대량 등록 화면에서 올리기 칸(excelKey)을 못 찾음 — 알라딘 화면이 바뀌었을 수 있음');
+      const fd = new FormData(); fd.append('excelFileInputText', `readnow_${ref.id}.xls`); fd.append('excelFileInput', new Blob([bytes], { type: 'application/vnd.ms-excel' }), `readnow_${ref.id}.xls`); fd.append('x', '31'); fd.append('y', '11'); fd.append('excelAction', '1'); fd.append('excelKey', p0.excelKey);
+      await PACE.wait(sleep); await st(3); const ac = new AbortController(); const tmo = setTimeout(() => ac.abort(), 120000); let r1; try { r1 = await fetch(BULK_URL, { method: 'POST', body: fd, credentials: 'include', signal: ac.signal }); } catch (e) { throw regNotSent('올리기 응답 없음(2분) — 등록하지 않음: ' + e.message); } finally { clearTimeout(tmo); } const h1 = await r1.text(); const d1 = new DOMParser().parseFromString(h1, 'text/html'); const p1 = RG.parseBulkPage(d1);
+      await st(4, { upload: { http: r1.status, n: p1.count, alerts: p1.alerts.slice(0, 5), token: p1.tokenId || null } });
+      if (!r1.ok) throw regNotSent(`올리기 실패 (HTTP ${r1.status})`); if (!p1.hasPreview || !p1.tokenId) throw regNotSent('올린 뒤 미리보기가 없음' + (p1.alerts.length ? ' — 알라딘: ' + p1.alerts.slice(0, 3).join(' / ') : ' (파일을 받지 않았을 수 있음)'));
+      const m = RG.matchPreview(p1, rows); if (!m.ok) throw regNotSent(`미리보기가 넣은 것과 다름 — 등록하지 않음${m.miss.length ? ` · 빠진 ISBN ${m.miss.slice(0, 5).join(', ')}` : ''}${m.diff.length ? ' · 다름: ' + m.diff.slice(0, 3).join(' / ') : ''}${m.extra.length ? ` · 넣지 않은 줄 ${m.extra.length}개가 미리보기에 있음` : ''}${p1.alerts.length ? ' · 알라딘: ' + p1.alerts.slice(0, 2).join(' / ') : ''}`);
+      const q = new URLSearchParams(); m.pairs.forEach((pk) => q.append('chk_' + pk, pk)); q.append('x', '52'); q.append('y', '14'); q.append('regItemAction', '1'); q.append('tokenId', p1.tokenId);
+      /* 보냄 표시는 트랜잭션: 이 일이 아직 '하는 중'이고 이 탭이 맡았고 등록 자리도 이 일일 때만 — 지킴이가 그사이 '멈춤'으로 바꿨거나 다른 곳이 맡았으면 보내지 않음 */
+      let mine = false; try { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const lane = await tx.get(REG_LANE()); const cv = sn.data() || {}; const lv = lane.exists ? lane.data() : {}; if (cv.status !== 'running' || (cv.claim || {}).tab !== TAB_ID || lv.cmd !== ref.id) return;
+          tx.update(ref, { step: 5, sent: true, sentAt: nowIso(), beatAt: nowIso(), preview: { n: p1.count }, verify: { base, codes, until: new Date(Date.now() + 90 * 60000).toISOString(), tries: 0 }, uploadedAt: TS() }); tx.set(REG_LANE(), { at: nowIso() }, { merge: true }); mine = true; }); }
+      catch (e) { throw regNotSent('보내기 전 기록(보냄 표시)을 못 적음 — 두 번 등록을 막으려고 보내지 않음: ' + (e.code || e.message)); }
+      if (!mine) { laneOk = false; log('📥 이 일이 그사이 멈춤 처리됐거나 다른 곳이 맡음 — 등록을 보내지 않음', 1); return; }
+      await PACE.wait(sleep); sent = true; const regAt = nowIso(); let h2 = '', http2 = null, al2 = [];
+      try { const r2 = await fetch(BULK_URL + '?' + q.toString(), { credentials: 'include' }); http2 = r2.status; h2 = await r2.text(); al2 = RG.pageAlerts(h2); } catch (e) { al2 = ['응답을 못 받음: ' + e.message]; } /* 화면 자체 안내 알림(등록할 상품이 없습니다 등 늘 있는 글)은 빼고 서버가 넣은 알림만 */
+      const bad = http2 !== 200 || al2.some((a) => /실패|오류|불가|잘못|없습니다|초과|error/i.test(a)) || (/로그인|wlogin/i.test(h2.slice(0, 3000)) && !/wC2Cuser_logout/.test(h2)); const stt = bad ? 'unknown' : 'registered';
+      rows.forEach((r, i) => (results[r.regItem] = { state: stt, at: nowIso(), pkid: m.pairs[i], msg: bad ? `알라딘 답: ${al2.slice(0, 2).join(' / ') || 'HTTP ' + http2} — 공개 확인으로 판단` : null }));
+      await ref.set({ status: 'verify', step: 6, regAt, reg: { http: http2, alerts: al2.slice(0, 5) }, results, by: PC_NAME, ms: Date.now() - t0, uploadedAt: TS() }, { merge: true }).catch((e) => log('등록 결과를 못 적음(공개 확인이 이어서 적음): ' + (e.code || e.message), 1));
+      await regItemsSet(rows, results); await xend(bad ? 'unknown' : 'done', al2.slice(0, 2).join(' / ') || null, { n: rows.length, http: http2, base });
+      log(`📥 대량 등록 ${bad ? '보냄(알라딘 답 확인 필요)' : '완료'}: ${rows.length}줄 — 이제 상품 조회에서 공개 확인 (3분마다, 90분까지)`, bad ? 1 : 0); setTimeout(() => regVerifyAll().catch(() => {}), 60000);
+    } catch (e) { if (!sent) { await xend('failed', e.message, null); return await stop(e.message); }
+      rows.forEach((r) => (results[r.regItem] = results[r.regItem] || { state: 'unknown', at: nowIso(), msg: '등록 요청 뒤 오류: ' + e.message }));
+      await ref.set({ status: 'verify', step: 6, results, msg: '등록 요청 뒤 오류 — 공개 확인으로 판단: ' + e.message, uploadedAt: TS() }, { merge: true }).catch(() => {});
+      await xend('unknown', e.message, { base }); log('📥 대량 등록: 등록 요청 뒤 오류 — ' + e.message, 1); }
+    finally { if (laneOk) { await regLane(ref.id, 'free').catch(() => {}); await regReleaseNext(ref.id); } } }
+  /* 공개 확인·지킴이 — 3분마다 · 읽기만(알라딘을 바꾸지 않음) · 한 일은 한 곳만(lease) */
+  let regVerBusy = false;
+  async function regLease(ref) { let ok = false; await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data() || {}; const L = v.lease || {}; if (L.by && L.by !== REG_ME() && Date.parse(L.until || 0) > Date.now()) return; tx.set(ref, { lease: { by: REG_ME(), until: new Date(Date.now() + 6 * 60000).toISOString() } }, { merge: true }); ok = true; }); return ok; }
+  async function regVerifyAll() { if (regVerBusy || !auth.currentUser || !RGF()) return; regVerBusy = true; const X = EXC();
+    try { // ① 지킴이: '하는 중'·'멈춘 일(sweep)'인데 15분 넘게 조용함
+      for (const stName of ['running', 'stuck']) { const qs = await C('shp_cmds').where('status', '==', stName).get(); for (const d of qs.docs) { const v = d.data(); if (v.type !== 'regBulk') continue; const quiet = Date.now() - Math.max(Date.parse(v.beatAt || 0) || 0, Date.parse((v.claim || {}).at || 0) || 0, Date.parse(v.createdAt || 0) || 0) > 15 * 60000; if (!quiet || !(await regLease(d.ref))) continue;
+          if (v.sent) { await d.ref.set({ status: 'verify', msg: '수집기 탭이 등록 요청 뒤 멈춤 — 공개 확인으로 판단', verify: { ...(v.verify || {}), base: (v.verify || {}).base || v.base || 0, codes: (v.verify || {}).codes || v.codes || [1], until: new Date(Date.now() + 90 * 60000).toISOString() }, uploadedAt: TS() }, { merge: true }); log('📥 지킴이: 등록 요청 뒤 멈춘 일 → 공개 확인으로', 1); }
+          else { const res = {}; (v.rows || []).forEach((r) => (res[r.regItem] = { state: 'fail', at: nowIso(), msg: '수집기 탭이 중간에 멈춤 — 알라딘에 등록하지 않음' })); await d.ref.set({ status: 'fail', sent: false, msg: '수집기 탭이 등록 요청 전에 멈춤(탭 닫힘·새로고침) — 알라딘에 등록하지 않음 · 다시 맡길 수 있음', results: res, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
+            if (X) await X.finish(db, { kind: 'regBulk', key: d.id }, 'failed', { msg: '보내기 전에 멈춤 (지킴이)' }).catch(() => {}); await regItemsSet(v.rows || [], res); log('📥 지킴이: 보내기 전에 멈춘 등록 → 멈춤(등록 안 함)', 1); }
+          await regLane(d.id, 'free').catch(() => {}); await regReleaseNext(d.id); } }
+      // ② 차례 기다림: 앞 일이 끝났으면(또는 사라졌으면) 대기로
+      { const qs = await C('shp_cmds').where('status', '==', 'held').get(); for (const d of qs.docs) { const v = d.data(); if (v.type !== 'regBulk') continue; const pv = v.prev ? (await C('shp_cmds').doc(v.prev).get()).data() : null; if (!pv || ['verify', 'done', 'fail', 'cancelled'].includes(pv.status)) await regHeldToQueued(d.ref, v.prev).catch(() => {}); } }
+      // ③ 공개 확인
+      const qs = await C('shp_cmds').where('status', '==', 'verify').get(); for (const d of qs.docs) { const v = d.data(); if (v.type !== 'regBulk') continue; if (!(await regLease(d.ref))) continue; await regVerifyOne(d.ref, v); }
+      const q2 = await C('shp_cmds').where('post', '==', 'need').get(); for (const d of q2.docs) { const v = d.data(); if (v.type !== 'regBulk' || v.status !== 'done') continue; if (!(await regLease(d.ref))) continue; await regPostCollect(d.ref, v.rows || [], v.results || {}); } }
+    catch (e) { log('공개 확인 실패: ' + (e.code || e.message), 1); } finally { regVerBusy = false; } }
+  async function regClaim(lid, cmdId, regItem) { let ok = false; const ref = C('reg_claims').doc(String(lid)); await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && !(v.cmd === cmdId && v.regItem === regItem)) return; tx.set(ref, { cmd: cmdId, regItem, at: nowIso(), by: PC_NAME }); ok = true; }); return ok; }
+  async function regVerifyOne(ref, v) { const rows = v.rows || []; const results = { ...(v.results || {}) }; const vf = v.verify || {}; const base = +vf.base || 0;
+    const pend = rows.filter((r) => !results[r.regItem] || results[r.regItem].state !== 'live'); if (!pend.length) { await ref.set({ status: 'done', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); return; }
+    if (!base) { rows.forEach((r) => { if (!results[r.regItem] || results[r.regItem].state !== 'live') results[r.regItem] = { ...(results[r.regItem] || {}), state: 'unknown', at: nowIso(), msg: '등록 전 기준이 없어 공개 확인을 못 함 — 알라딘 상품 조회에서 확인' }; }); await ref.set({ results, status: 'done', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); await regItemsSet(rows, results); return; }
+    const found = []; const codes = vf.codes && vf.codes.length ? vf.codes : [...new Set(rows.map((r) => REG_LIST_CODE[+r.state || 1] || 1))];
+    for (const code of codes) for (let pg = 1; pg <= 6; pg++) { const g = await lookDoc(listUrl(code, pg)); if (looksLoggedOut(g.finalUrl, g.doc)) throw new Error('알라딘 로그인이 풀림'); const L = P.parseScmList(g.doc, new Date().getFullYear()).rows; const nw = L.filter((x) => +x.listingId > base); found.push(...nw.map((x) => ({ ...x, code }))); if (nw.length < L.length || !L.length) break; }
+    const used = new Set(Object.values(results).map((x) => x && x.listingId).filter(Boolean).map(String)); let hit = 0; const G = RGF().GRADE;
+    for (const r of pend) { const want = { sku: r.code, price: Math.round(+r.price), grade: G[+r.grade || 2], qty: Math.max(1, +r.qty || 1), code: REG_LIST_CODE[+r.state || 1] || 1 };
+      const cands = found.filter((x) => !used.has(String(x.listingId)) && String(x.sku || '') === want.sku && +x.price === want.price && x.grade === want.grade && +x.qty === want.qty && x.code === want.code)
+        .map((x) => ({ x, isb: x.isbn13 || x.isbn10 ? regIsbnEq(x.isbn13 || x.isbn10, r.isbn) || regIsbnEq(x.isbn10, r.isbn) : null, s: P.nameCoverage ? P.nameCoverage(r.title || '', x.title || '') : 0 }))
+        .filter((c) => c.isb === true || (c.isb === null && c.s >= 0.6)).sort((a, b) => (b.isb === true) - (a.isb === true) || b.s - a.s); /* ISBN이 보이면 ISBN이 같아야 · 안 보이면 상품명이 60% 넘게 같아야 */
+      for (const c of cands) { if (!(await regClaim(c.x.listingId, ref.id, r.regItem).catch(() => false))) continue; used.add(String(c.x.listingId)); hit++; results[r.regItem] = { ...(results[r.regItem] || {}), state: 'live', at: nowIso(), usedCode: c.x.usedCode || null, listingId: String(c.x.listingId), by: c.isb ? 'isbn' : 'title', msg: null }; break; } }
+    const left = rows.filter((r) => !results[r.regItem] || results[r.regItem].state !== 'live').length; const over = vf.until && Date.now() > Date.parse(vf.until);
+    if (over && left) rows.forEach((r) => { const x = results[r.regItem]; if (!x || x.state !== 'live') results[r.regItem] = { ...(x || {}), state: 'unknown', at: nowIso(), msg: '90분 안에 상품 조회에서 못 찾음 — 알라딘 상품 조회(코드·판매가)로 확인' }; });
+    const done = !left || over; await ref.set({ results, status: done ? 'done' : 'verify', ...(done ? { doneAt: nowIso() } : {}), verify: { ...vf, tries: (vf.tries || 0) + 1, lastAt: nowIso(), by: PC_NAME, foundNew: found.length }, post: hit ? 'need' : v.post || null, uploadedAt: TS() }, { merge: true });
+    await regItemsSet(rows, results); if (hit) log(`📥 공개 확인: ${hit}개가 알라딘에 보임 (남은 ${left}개)`);
+    if (hit || v.post === 'need') await regPostCollect(ref, rows, results); }
+  /* 등록 뒤 나머지 수집: 신규 등록분 수집(상품 목록에 넣음) → 그 상품들 시장 지표를 맡김. 다른 작업 중이면 다음 확인 때 */
+  async function regPostCollect(ref, rows, results) { if (running) { await ref.set({ post: 'need' }, { merge: true }).catch(() => {}); return; }
+    const had = new Set(((await ref.get()).data() || {}).postKeys || []); const keys = rows.map((r) => results[r.regItem]).filter((x) => x && x.state === 'live' && x.usedCode).map((x) => 'aladin_' + x.usedCode).filter((k) => !had.has(k)); if (!keys.length) { await ref.set({ post: 'done' }, { merge: true }).catch(() => {}); return; }
+    await ref.set({ post: 'done', postAt: nowIso(), postKeys: firebase.firestore.FieldValue.arrayUnion(...keys) }, { merge: true }); /* 먼저 적어 두 번 맡기지 않음 */
+    await runJob('scanNew'); await C('shp_cmds').add({ type: 'metrics', keys, label: '📥 등록 뒤 시장 지표 (' + keys.length + '개)', status: 'queued', createdAt: nowIso(), by: PC_NAME + ' (등록 뒤 자동)', uploadedAt: TS() }).catch(() => {});
+    log(`📥 등록 뒤 나머지 수집: 신규 등록분 수집 끝 → 시장 지표 ${keys.length}개 맡김`); }
+  setInterval(() => { regVerifyAll().catch(() => {}); }, 3 * 60000);
   /* (1.35.0) 알라딘 매입 — 웹앱 '알라딘 매입' 화면이 맡긴 '팔기 장바구니에 담기' (shp_cmds type 'c2bAdd' · items [{usedCode, isbn13, title, grade, ...}])
      책마다: ① 팔기 장바구니(wc2b_sales.aspx)에 이미 있으면 'already'
              ② 매입가 조회 화면(wc2b_search.aspx?KeyWord=ISBN)을 이 일 전용 숨은 창에 열어 그 책 줄을 찾음(ISBN13으로) — 없으면 'notFound', '팔기 장바구니에 추가' 단추가 없으면 'notBuyable'
