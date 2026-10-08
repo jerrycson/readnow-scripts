@@ -43,12 +43,19 @@ printf '%s' '[{"name":"keep-recent-3","action":{"type":"Keep"},"mostRecentVersio
 gcloud artifacts repositories set-cleanup-policies cloud-run-source-deploy --location="$REGION" --policy=/tmp/rn-ar-policy.json --no-dry-run >/dev/null 2>&1 && echo "   이미지 정리 규칙: 최근 3개만" || echo "   (이미지 정리 규칙은 건너뜀)"
 URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --format='value(status.url)')
 
-echo "④ 예약: 매일 24시간, 1분마다 /tick (주문확인요청은 매번, 발송 요청은 5분마다)"
+echo "④ 예약: 매일 24시간, 1분마다 /tick (주문확인요청은 매번 — 평일 8~19시는 15초마다, 발송 요청은 5분마다·바뀌면 바로)"
 KEY=$(gcloud secrets versions access latest --secret=TICK_KEY)
 if gcloud scheduler jobs describe readnow-tick --location "$REGION" >/dev/null 2>&1; then
   gcloud scheduler jobs update http readnow-tick --location "$REGION" --schedule "* * * * *" --time-zone "Asia/Seoul" --uri "$URL/tick" --http-method POST --update-headers "x-tick-key=$KEY" --attempt-deadline 180s >/dev/null
 else
   gcloud scheduler jobs create http readnow-tick --location "$REGION" --schedule "* * * * *" --time-zone "Asia/Seoul" --uri "$URL/tick" --http-method POST --headers "x-tick-key=$KEY" --attempt-deadline 180s >/dev/null
+fi
+
+echo "④-2 예약: 10분마다 /daily (비용 기록·결과 기록·배우기 — 주문 읽기와 따로, 0.9.0)"
+if gcloud scheduler jobs describe readnow-daily --location "$REGION" >/dev/null 2>&1; then
+  gcloud scheduler jobs update http readnow-daily --location "$REGION" --schedule "*/10 * * * *" --time-zone "Asia/Seoul" --uri "$URL/daily" --http-method POST --update-headers "x-tick-key=$KEY" --attempt-deadline 300s >/dev/null
+else
+  gcloud scheduler jobs create http readnow-daily --location "$REGION" --schedule "*/10 * * * *" --time-zone "Asia/Seoul" --uri "$URL/daily" --http-method POST --headers "x-tick-key=$KEY" --attempt-deadline 300s >/dev/null
 fi
 
 echo "⑤ 예산 알림: 이 프로젝트 비용이 한 달 ${BUDGET:-10000}원의 50%·90%·100%를 넘으면 결제 계정 관리자 메일로 알림 (처음 한 번)"

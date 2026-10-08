@@ -28,7 +28,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.8.0';
+const VER = '0.9.0';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -107,12 +107,13 @@ let injectedSrc = null;
 async function ensureCores(p) { const src = await cores(); const has = await p.evaluate(() => !!(window.ReadnowShipping && window.ReadnowProducts && window.ReadnowPricing && window.ReadNowCore)).catch(() => false); if (!has || injectedSrc !== src) { await p.addScriptTag({ content: src }); injectedSrc = src; } }
 
 /* ── 로그인 (PC 수집기의 자동 로그인과 같은 방식: 보이는 아이디 칸 + 비밀번호 칸 + 로그인 단추) ── */
-let loginFailAt = 0, loginFailMsg = null;
+let loginFailAt = 0, loginFailMsg = null, loginFailN = 0; // (0.9.0) 실패 쉬는 시간: 1번째 3분 → 2번째 10분 → 그 뒤 30분 (예전: 한 번만 실패해도 30분 동안 주문을 못 읽었음)
+const loginRest = () => (loginFailN <= 1 ? 3 : loginFailN === 2 ? 10 : 30) * 60e3;
 async function loggedIn(p) { return p.evaluate(async () => { try { const r = await fetch('/scm/worders.aspx?searchType=1&limitDate=1', { credentials: 'include' }); const h = await r.text(); if (/\/login\/|wlogin/i.test(r.url)) return false; const d = new DOMParser().parseFromString(h, 'text/html'); return !(d.querySelector('input[type="password"]') && !/샵매니저/.test(d.title || '')); } catch (e) { return false; } }); }
 async function login(p) {
   if (await loggedIn(p)) return true;
   if (!ALADIN_ID || !ALADIN_PW) throw new Error('알라딘 아이디·비밀번호 비밀(ALADIN_ID·ALADIN_PW)이 없음');
-  if (loginFailAt && Date.now() - loginFailAt < 30 * 60e3) throw new Error('로그인 실패 뒤 30분 쉬는 중 (계정 잠김 방지): ' + (loginFailMsg || ''));
+  if (loginFailAt && Date.now() - loginFailAt < loginRest()) throw new Error(`로그인 실패 뒤 ${Math.round(loginRest() / 60e3)}분 쉬는 중 (계정 잠김 방지, ${loginFailN}번째): ` + (loginFailMsg || ''));
   log('알라딘 로그인');
   await p.goto(AL + '/login/wlogin.aspx?returnurl=' + encodeURIComponent(AL + '/scm/worders.aspx'), { waitUntil: 'domcontentloaded' });
   const ok = await p.evaluate((id, pw) => {
@@ -124,12 +125,12 @@ async function login(p) {
     const btn = [...form.querySelectorAll('button,input[type="submit"],input[type="image"],a')].find((b) => /^\s*로그인\s*$/.test(b.textContent || b.value || b.alt || '') || b.type === 'submit' || b.type === 'image');
     if (btn) btn.click(); else if (pwI.form) pwI.form.submit(); else return 'no-btn'; return 'sent';
   }, ALADIN_ID, ALADIN_PW);
-  if (ok !== 'sent') { loginFailAt = Date.now(); loginFailMsg = '로그인 화면 모양이 다름 (' + ok + ')'; throw new Error(loginFailMsg); }
+  if (ok !== 'sent') { loginFailAt = Date.now(); loginFailN++; loginFailMsg = '로그인 화면 모양이 다름 (' + ok + ')'; throw new Error(loginFailMsg); }
   await p.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {}); await sleep(1500);
   if (!/aladin\.co\.kr/.test(p.url())) await p.goto(AL + '/', { waitUntil: 'domcontentloaded' });
   await ensureCores(p);
-  if (!(await loggedIn(p))) { const msg = await p.evaluate(() => (document.body.innerText.match(/(아이디|비밀번호|보안|인증|자동입력)[^\n]{0,80}/) || [''])[0]).catch(() => ''); loginFailAt = Date.now(); loginFailMsg = msg || '로그인 뒤에도 샵매니저가 열리지 않음'; throw new Error('알라딘 로그인 실패: ' + loginFailMsg); }
-  loginFailAt = 0; loginFailMsg = null; log('로그인 됨'); return true;
+  if (!(await loggedIn(p))) { const msg = await p.evaluate(() => (document.body.innerText.match(/(아이디|비밀번호|보안|인증|자동입력)[^\n]{0,80}/) || [''])[0]).catch(() => ''); loginFailAt = Date.now(); loginFailN++; loginFailMsg = msg || '로그인 뒤에도 샵매니저가 열리지 않음'; throw new Error('알라딘 로그인 실패: ' + loginFailMsg); }
+  loginFailAt = 0; loginFailN = 0; loginFailMsg = null; log('로그인 됨'); return true;
 }
 
 /* ── ① 주문확인요청: 1분마다 이것부터 (알라딘 요청 1번) ──
@@ -143,13 +144,24 @@ async function confirmRead(p) {
     return { login: true, rc: window.ReadnowShipping.parseDeliveryPage(d) }; }, CONFIRM_URL);
   if (!R.login) throw Object.assign(new Error('로그인 풀림'), { relogin: true });
   const rc = R.rc; const at = nowIso(); lastConfirmAt = at; lastConfirm = rc.orders;
-  const csig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)])); const ref = C('shp_state').doc('confirm'); const cc = (await ref.get()).data();
-  const changed = !cc || cc.sig !== csig; const keepL = new Set(rc.orders.flatMap((o) => o.items.map((i) => String(i.listingId))));
-  const enrich = {}; for (const [k, v] of Object.entries((cc && cc.enrich) || {})) if (keepL.has(k) || (v && v.at && Date.now() - Date.parse(v.at) < 3 * 864e5)) enrich[k] = v; // 남은 주문의 보강은 그대로 이어 씀(다시 읽지 않음) · 발송 요청으로 넘어간 주문도 3일은 남겨 ② 탭에서 씀
-  if (changed) { const bc = db.batch(); bc.set(ref, { at, orders: rc.orders, tabCounts: rc.tabCounts, sig: csig, pc: 'cloud', enrich, ...W() });
+  const csig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)])); const ref = C('shp_state').doc('confirm');
+  // (0.9.0) 같은 목록이면 Firestore를 다시 읽지 않음 (15초마다 읽으므로) — 목록 문서는 바뀐 때만 읽고 씀
+  let cc = confirmDoc; if (!cc || cc.sig !== csig || Date.now() - confirmDocAt > 5 * 60e3) { cc = (await ref.get()).data() || null; confirmDocAt = Date.now(); } /* 5분마다는 서버와 맞춤 (PC 수집기가 쓴 경우) */
+  try { await enrichMigrate(cc); } catch (e) { log('보강 칸 옮기기 실패 — 다음에 다시 (예전 칸은 그대로 둠)', e.message); }
+  const changed = !cc || cc.sig !== csig; const enrich = await enrichOf(rc.orders);
+  if (changed) { const bc = db.batch(); bc.set(ref, { at, orders: rc.orders, tabCounts: rc.tabCounts, sig: csig, pc: 'cloud', ...(cc && cc.enrich ? { enrich: cc.enrich } : {}), ...W() }); /* 옮기기 전이면 예전 칸을 지우지 않음 */ // (0.9.0) 보강(enrich)은 문서마다 따로(shp_enrich) — 주문이 많아도 목록 문서가 1MB를 넘지 않게
     for (const o of rc.orders) bc.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, confirmSeenAt: at, ...(cc && (cc.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { confirmFirstSeenAt: at }), buyer: o.buyer, orderedAt: o.orderedAt, items: o.items, ...W() }, { merge: true });
-    await bc.commit(); }
+    await bc.commit(); confirmDoc = { sig: csig, tabCounts: rc.tabCounts, orders: rc.orders }; } else confirmDoc = cc;
   return { n: rc.orders.length, changed, enrich, tabCounts: rc.tabCounts, prevTab: cc && cc.tabCounts }; }
+/* (0.9.0) 상품 보강은 상품마다 문서 하나(shp_enrich/{매물번호}) — 예전엔 목록 문서 안 enrich 칸에 3일치를 모아 둬, 주문이 많아지면 문서가 1MB를 넘어 목록 저장이 통째로 실패할 수 있었음
+ *  처음 한 번 예전 enrich 칸을 옮기고 그 칸을 지움(내용은 shp_enrich에 그대로). 기억(enrichMem)으로 같은 것을 다시 읽지 않음 */
+let confirmDoc = null, confirmDocAt = 0, enrichMemAt = 0; const enrichMem = new Map();
+async function enrichMigrate(cc) { const E = cc && cc.enrich; if (!E || !Object.keys(E).length) return; const ks = Object.keys(E);
+  for (let i = 0; i < ks.length; i += 400) { const b = db.batch(); ks.slice(i, i + 400).forEach((k) => { b.set(C('shp_enrich').doc(String(k)), { ...E[k], listingId: String(k), at: E[k].at || nowIso(), migratedAt: nowIso(), ...W() }, { merge: true }); enrichMem.set(String(k), E[k]); }); await b.commit(); }
+  await C('shp_state').doc('confirm').update({ enrich: FV.delete() }); delete cc.enrich; log('보강 칸 옮김', ks.length, '개 → shp_enrich'); }
+async function enrichOf(orders) { if (!enrichMemAt || Date.now() - enrichMemAt > 30 * 60e3) { enrichMemAt = Date.now(); try { (await C('shp_enrich').where('at', '>=', new Date(Date.now() - 3 * 864e5).toISOString()).get()).forEach((d) => enrichMem.set(d.id, d.data())); } catch (e) { log('보강 읽기 실패', e.message); } }
+  const out = {}; for (const o of orders) for (const it of o.items || []) { const k = String(it.listingId || ''); if (k && enrichMem.has(k)) out[k] = enrichMem.get(k); } return out; }
+const enrichPut = async (lid, E, merge) => { await C('shp_enrich').doc(String(lid)).set({ ...E, listingId: String(lid), ...W() }, { merge: !!merge }); enrichMem.set(String(lid), { ...(merge ? enrichMem.get(String(lid)) || {} : {}), ...E }); };
 
 /* 상품 보강: 우리 상품 기록(prd_listings·prd_books·prd_used_info) + 지금 시장(온라인 중고 첫 페이지 1번 + 판매자 분류)
    · 기존 시장 지표(prd_book_metrics)는 건드리지 않음 — 시장은 shp_market 에 새 문서로 쌓고(덮어쓰지 않음), 화면용 사본만 confirm.enrich 에
@@ -187,7 +199,7 @@ async function enrichConfirm(p, cr, force, until) {
         if (!ui0 || !ui0.checkedAt || Date.now() - Date.parse(ui0.checkedAt) > 864e5 || (gr === '중' && !(ui0 && ui0.note))) ui = (await refreshUsedInfo(p, t.lid, ui0, null, gr)) || ui0;
         midAfter(t.lid, gr, ui && ui.note);
         const E2 = { ...prevE, note: (ui && ui.note) || realNote(prevE.note, gr) || null, photos: ui && ui.photos ? ui.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src) : prevE.photos || [], uiAt: nowIso() };
-        await ref.update(new FieldPath('enrich', t.lid), E2); cr.enrich[t.lid] = E2; n++; await sleep(300); continue; }
+        await enrichPut(t.lid, E2, true); cr.enrich[t.lid] = E2; n++; await sleep(300); continue; }
       const our = await ourOf(t.lid); let itemId = our.itemId, via = 'ours';
       if (looksBlanked(our.ui)) { const r = await repairUsedInfo(t.lid, our.ui); if (r && r.note) our.note = r.note; if (r && r.photos) our.photos = r.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src); our.ui = r; }
       const gr0 = our.grade || t.it.grade || null; if (!our.ui || !our.ui.checkedAt || Date.now() - Date.parse(our.ui.checkedAt) > 864e5 || (gr0 === '중' && !our.note)) { try { const ui = await refreshUsedInfo(p, t.lid, our.ui, null, gr0); if (ui) { our.note = ui.note || our.note; if ((ui.photos || []).length) our.photos = ui.photos.filter((x) => x.where === 'desc').slice(0, 2).map((x) => x.src); } } catch (e) { log('유의 사항 읽기 실패', t.lid, e.message); } } // 주문확인요청 상품도 우리 매물 유의 사항·사진을 바로 읽음 (예전엔 발송 요청 때만)
@@ -202,7 +214,7 @@ async function enrichConfirm(p, cr, force, until) {
         await C('shp_market').doc(`${t.o.orderNo}__${t.lid}__${at.replace(/[:.]/g, '-')}`).create({ orderNo: t.o.orderNo, listingId: t.lid, listingKey: our.key, bookId: our.bookId, aladinItemId: itemId, via, title: t.it.title || null, orderedAt: t.o.orderedAt || null, at,
           page1: m.u.listings || [], usedTotal: m.u.usedTotal ?? null, mins: m.u.mins || null, buyback: m.u.buyback || null, lastPage: m.u.lastPage || 1, by: 'cloud', ...W() }).catch(() => {}); }
       else { E.mktErr = '알라딘 상품번호를 못 찾음 (우리 기록·제목 검색 모두)'; skipUntil.set(t.lid, Date.now() + 3600e3); }
-      await ref.update(new FieldPath('enrich', t.lid), E); cr.enrich[t.lid] = E; n++; await sleep(300);
+      await enrichPut(t.lid, { ...E, orderNo: t.o.orderNo }, false); cr.enrich[t.lid] = E; n++; await sleep(300);
     } catch (e) { fail++; const k = (failN.get(t.lid) || 0) + 1; failN.set(t.lid, k); skipUntil.set(t.lid, Date.now() + Math.min(60, 2 ** k) * 60e3); log('보강 실패', t.lid, `${k}번째 · ${Math.min(60, 2 ** k)}분 뒤 다시`, e.message); } } // 실패하면 2·4·8…분(최대 60분) 뒤 다시 — 매분 같은 실패를 되풀이하지 않음
   return { n, fail, left: todo.length - n - fail }; }
 
@@ -371,18 +383,41 @@ async function beat(x) { const at = nowIso(); await C('app_settings').doc('cloud
   if (x.ok) lastErrLog = { err: null, at: 0 }; }
 
 // 한 회차(1분마다): ① 주문확인요청 → 맡긴 일 → (필요할 때만) ② 발송 요청 → 상품 보강
+/* (0.9.0) 맡긴 일 듣기: 대기 중인 일이 생기면 바로 깨움 (웹앱이 단추를 누르면 15초를 기다리지 않음) */
+let kickFlag = false, cmdUnsub = null; const KICK = () => { kickFlag = true; };
+function watchCmds() { if (cmdUnsub) return; try { cmdUnsub = C('shp_cmds').where('status', '==', 'queued').onSnapshot((qs) => { if (!qs.empty) kickFlag = true; }, (e) => { cmdUnsub = null; log('맡긴 일 듣기 끊김 — 다음 회차에 다시', e.message); }); } catch (e) { cmdUnsub = null; } }
+/* 빠른 고리를 언제 돌릴지 (app_settings/main.shipFast · 웹앱 설정 ⑯): 'biz'(기본) = 평일 8~19시 · 'always' = 늘 · 'off' = 안 함(1분마다만)
+ *  빠른 고리는 회차(요청)를 1분 가까이 열어 두므로 클라우드 사용 시간이 늘어남 → 비용과 맞바꿈. 그 밖의 시간에도 단추(맡긴 일)는 다음 회차(1분 안)에 처리 */
+let fastCfg = null, fastCfgAt = 0;
+async function fastMode() { if (!fastCfg || Date.now() - fastCfgAt > 5 * 60e3) { fastCfgAt = Date.now(); try { fastCfg = ((await C('app_settings').doc('main').get()).data() || {}).shipFast || {}; } catch (e) { fastCfg = fastCfg || {}; } }
+  const mode = fastCfg.mode || 'biz'; if (mode === 'off') return { on: false, why: '설정에서 끔' };
+  // PC 수집기가 15초마다 읽는 중이면(shp_state/fast.at 45초 안) 클라우드 빠른 고리는 쉼 — 같은 일을 두 번 하지 않고 비용을 아낌. PC가 꺼지면 다음 회차부터 다시 돎
+  try { const f = (await C('shp_state').doc('fast').get()).data() || {}; const age = Date.now() - Date.parse(f.at || 0); if (age >= 0 && age < 45e3) return { on: false, why: `PC(${f.pc || '?'})가 15초마다 읽는 중` }; } catch (e) {}
+  if (mode === 'always') return { on: true, why: '늘' };
+  const k = new Date(Date.now() + 9 * 3600e3); const wd = k.getUTCDay(), h = k.getUTCHours(); const from = fastCfg.from ?? 8, to = fastCfg.to ?? 19; const on = wd >= 1 && wd <= 5 && h >= from && h < to; return { on, why: `평일 ${from}~${to}시` }; }
+async function fastLoop(p, until, cr, cm) { const FAST = 15000; let loops = 0, changed = 0, n = 0, rd = null; let last = Date.now();
+  while (Date.now() < until) { while (Date.now() < Math.min(until, last + FAST) && !kickFlag) await sleep(300); if (Date.now() >= until && !kickFlag) break;
+    kickFlag = false; last = Date.now(); loops++;
+    try { const cm2 = await runCmds(p); n += cm2.n; let c2; try { c2 = await confirmRead(p); } catch (e) { if (!e.relogin) throw e; await login(p); c2 = await confirmRead(p); }
+      if (c2.changed) { changed++; cr = c2; } if (cm2.needRead || (c2.prevTab && c2.tabCounts && c2.prevTab['발송 요청'] !== c2.tabCounts['발송 요청'])) { try { rd = await shipRead(p, Math.min(until + 5000, Date.now() + 20000)); lastDelivAt = Date.now(); } catch (e) { log('빠른 발송 요청 읽기 실패', e.message); } }
+      if (c2.changed || (cm2.force && cm2.force.size)) { try { await enrichConfirm(p, c2, cm2.force, Math.min(until, Date.now() + 15000)); } catch (e) {} }
+      await C('app_settings').doc('cloud').set({ lastConfirmAt, lastLoopAt: nowIso(), ok: true, err: null }, { merge: true }).catch(() => {}); // 신선함 신호 — 웹앱 '읽은 시각'이 15초마다
+    } catch (e) { log('빠른 읽기 실패', e.message); break; } }
+  return { cr, rd, n, loops, changed }; }
 async function tick(why) {
-  const t0 = Date.now();
+  const t0 = Date.now(); const out0 = {}; watchCmds();
   try { const p = await getPage(); let cr;
     try { cr = await confirmRead(p); } catch (e) { if (!e.relogin) throw e; await login(p); cr = await confirmRead(p); }
     const cm = await runCmds(p); if (cm.needRead) cr = await confirmRead(p);
     const delivDue = why !== 'schedule' || cm.needRead || cr.changed || !lastDelivAt || Date.now() - lastDelivAt > 4.5 * 60e3 || (cr.prevTab && cr.prevTab['발송 요청'] !== cr.tabCounts['발송 요청']);
-    const until = t0 + 52000; // 한 회차는 1분 안에 끝냄 (다음 예약을 건너뛰지 않게) — 못 한 것은 다음 회차에 이어 함
+    const until = t0 + 30000; // (0.9.0) 무거운 일은 30초 안에서 — 나머지 시간은 빠른 고리(15초마다 주문확인요청) · 한 회차는 1분 안에 끝냄 (다음 예약을 건너뛰지 않게) — 못 한 것은 다음 회차에 이어 함
     let rd = null; if (delivDue) rd = await shipRead(p, until);
     let en = null; try { en = await enrichConfirm(p, cr, cm.force, until - 8000); } catch (e) { en = { err: e.message }; }
     try { const nr = await repairSweep(); if (nr) log('유의 사항 되살림', nr, '건'); } catch (e) {} // 6시간에 한 번: 빈 판으로 덮였던 유의 사항을 지난 판에서 되살림
+    // (0.9.0) 빠른 고리: 남은 시간 동안 15초마다 ① 주문확인요청을 다시 읽고, 맡긴 일(발송준비시작 등)이 들어오면 기다리지 않고 바로 처리 — 새 주문이 웹앱에 15초 안에, 단추를 누르면 몇 초 안에
+    { const fm = await fastMode(); out0.fastMode = fm.on ? fm.why : '꺼짐 · ' + fm.why; const r2 = await fastLoop(p, fm.on ? t0 + 50000 : Date.now(), cr, cm); if (r2.cr) cr = r2.cr; if (r2.rd) rd = r2.rd; cm.n += r2.n; out0.fast = r2.loops; out0.fastChanged = r2.changed; }
     let by = null; if (cm.buy || !lastBuyAt || Date.now() - lastBuyAt > 5 * 60e3 || (lastBuyRes && lastBuyRes.left)) { try { by = await buyRead(p, until); } catch (e) { if (e.relogin) { try { await login(p); by = await buyRead(p, until); } catch (e2) { by = { err: e2.message }; } } else by = { err: e.message }; } }
-    const out = { ok: true, err: null, why, tickMs: Date.now() - t0, lastShipAt: nowIso(), lastConfirmAt, lastDelivAt: lastDelivAt ? new Date(lastDelivAt).toISOString() : null, lastBuyAt: lastBuyAt ? new Date(lastBuyAt).toISOString() : null, last: { confirm: cr.n, deliv: rd ? rd.deliv : null, delivRead: !!rd, enrich: en, buy: by }, cmds: cm.n, login: 'ok' };
+    const out = { ok: true, err: null, why, ...out0, tickMs: Date.now() - t0, lastShipAt: nowIso(), lastConfirmAt, lastDelivAt: lastDelivAt ? new Date(lastDelivAt).toISOString() : null, lastBuyAt: lastBuyAt ? new Date(lastBuyAt).toISOString() : null, last: { confirm: cr.n, deliv: rd ? rd.deliv : null, delivRead: !!rd, enrich: en, buy: by }, cmds: cm.n, login: 'ok' };
     await beat(out); log('tick', JSON.stringify(out)); return out;
   } catch (e) { const out = { ok: false, err: String(e.message || e).slice(0, 300), why, tickMs: Date.now() - t0, login: /로그인/.test(e.message) ? 'fail' : 'ok' }; await beat(out); log('tick 실패', e.message); return out; }
 }
@@ -569,6 +604,9 @@ let MLM = ML_LOCAL, mlmAt = 0;
 async function mlMod() { if (MLM && (ML_LOCAL || Date.now() - mlmAt < 30 * 60e3)) return MLM; mlmAt = Date.now();
   try { const r = await fetch(RAW + 'readnow-ml-core.js?t=' + Date.now()); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', await r.text())(m, m.exports); if (m.exports && m.exports.train) MLM = m.exports; } } catch (e) { log('학습 파일 받기 실패', e.message); }
   if (MLM) coreVer['readnow-ml-core.js'] = MLM.VERSION; return MLM; }
+function trainOff(ML, X, Y) { if (!ML_LOCAL) return Promise.resolve(ML.train(X, Y)); // 함께 올린 파일이 있을 때만 일꾼을 씀 (없으면 이 자리에서)
+  return new Promise((res) => { try { const { Worker } = require('worker_threads'); const w = new Worker(`const { parentPort, workerData } = require('worker_threads'); const ML = require(workerData.path); parentPort.postMessage(ML.train(workerData.X, workerData.Y));`, { eval: true, workerData: { path: require.resolve('./readnow-ml-core.js'), X, Y } });
+    w.once('message', (m) => { res(m); w.terminate(); }); w.once('error', (e) => { log('일꾼 배우기 실패 — 이 자리에서', e.message); res(ML.train(X, Y)); }); } catch (e) { res(ML.train(X, Y)); } }); }
 async function mlLoadDay(day) { const meta = await C('ml_days').doc(day).get(); if (!meta.exists) return null; const rows = [];
   for (let i = 0; i < (meta.data().shards || 0); i++) { const d = await C('ml_days').doc(`${day}_${String(i).padStart(2, '0')}`).get(); if (!d.exists) continue; const cols = d.data().cols || {}; const names = Object.keys(cols); const n = (cols.key || []).length; for (let k = 0; k < n; k++) { const r = {}; names.forEach((c) => (r[c] = cols[c][k])); rows.push(r); } }
   return rows; }
@@ -598,7 +636,7 @@ async function mlLearn() { const ML = await mlMod(); if (!ML) return { skip: '�
   if (X.length < 200) { await ST.set({ learn: { day: today, state: 'wait', why: `배울 줄 ${X.length}개 — 200개부터`, at: nowIso() } }, { merge: true }); return { ...res, wait: true, rows: X.length }; }
   const valFrom = lab.length >= 10 ? lab[lab.length - 7] : lab[Math.floor(lab.length * 0.7)]; const tr = [], va = []; D.forEach((d, i) => (d < valFrom ? tr : va).push(i)); if (!tr.length || !va.length) { tr.length = 0; va.length = 0; D.forEach((d, i) => (i % 5 ? tr : va).push(i)); }
   const cap = 150000; const trS = tr.length > cap ? tr.filter((_, i) => i % Math.ceil(tr.length / cap) === 0) : tr; // 많으면 고르게 줄여서 (시간·비용)
-  const mdl = ML.train(trS.map((i) => X[i]), trS.map((i) => Y[i])); const base = ML.trainBase(tr.map((i) => R0[i]), tr.map((i) => Y[i]));
+  const mdl = await trainOff(ML, trS.map((i) => X[i]), trS.map((i) => Y[i])); /* (0.9.0) 따로 도는 일꾼(worker)에서 — 배우는 동안에도 주문 읽기가 멈추지 않게 */ const base = ML.trainBase(tr.map((i) => R0[i]), tr.map((i) => Y[i]));
   const champ = champ0 || base; const pv = (M) => va.map((i) => ML.predict(M, R0[i])); const vy = va.map((i) => Y[i]);
   const val = { chall: ML.evaluate(pv(mdl), vy), champ: ML.evaluate(pv(champ), vy), base: ML.evaluate(pv(base), vy) };
   const challId = 'm_' + today; await C('ml_models').doc(challId).set({ ...mdl, id: challId, trainedAt: nowIso(), nTrain: trS.length, nVal: va.length, labDays: lab.length, valFrom, val, ...W() });
@@ -611,7 +649,13 @@ async function mlLearn() { const ML = await mlMod(); if (!ML) return { skip: '�
   if (pr.ok) { model.champion = challId; model.kind = 'logit'; model.since = today; model.lastPromotion = { at: nowIso(), from: champId, to: challId, why: pr.why }; log('모델 승격', champId, '→', challId, pr.why); }
   await ST.set({ learn: { day: today, state: 'ok', rows: X.length, train: trS.length, val: va.length, valFrom, metrics: val, shadow: shadowN, promote: pr, ms: Date.now() - t0, at: nowIso() }, model, ...(pr.ok ? { promotions: FV.arrayUnion(model.lastPromotion) } : {}) }, { merge: true });
   return { ...res, rows: X.length, val, shadowN, promote: pr }; }
-let mlNextAt = 0, learnNextAt = 0;
+let mlNextAt = 0, learnNextAt = 0, lastDailyAt = Date.now(), dailyBusy = false;
+/* (0.9.0) 무거운 하루 일(비용·결과 기록·배우기)은 주문 읽기(/tick)와 따로 /daily(10분마다 예약)에서 — 예전엔 1분 회차 끝에 붙어 있어, 길어지면 다음 회차(주문 읽기)를 건너뛰었음 */
+async function dailyJobs() { if (dailyBusy) return { skipped: true }; dailyBusy = true; lastDailyAt = Date.now(); const out = {};
+  try { if (Date.now() > costNextAt) { try { const r = await costDaily(4); out.costs = r; costNextAt = r.skip ? Date.now() + 15 * 60e3 : 0; if (r.done && r.done.length) log('비용 기록', JSON.stringify(r.done)); } catch (e) { costNextAt = Date.now() + 30 * 60e3; out.costsErr = e.message; log('비용 기록 실패', e.message); } }
+    if (Date.now() > mlNextAt) { try { const r = await mlDaily(); out.ml = r.skip ? undefined : r; mlNextAt = Date.now() + (r.skip ? 15 : 60) * 60e3; if (!r.skip) log('결과 기록', JSON.stringify(r).slice(0, 400)); } catch (e) { mlNextAt = Date.now() + 30 * 60e3; out.mlErr = e.message; log('결과 기록 실패', e.message); } }
+    if (Date.now() > learnNextAt) { try { const r = await mlLearn(); learnNextAt = Date.now() + (r.skip ? 20 : 120) * 60e3; if (!r.skip) { out.learn = r; log('스스로 배우기', JSON.stringify(r).slice(0, 400)); } } catch (e) { learnNextAt = Date.now() + 60 * 60e3; out.learnErr = e.message; log('스스로 배우기 실패', e.message); } }
+  } finally { dailyBusy = false; } return out; }
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin || ''; if (ORIGINS.includes(origin)) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin'); }
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -620,8 +664,11 @@ const server = http.createServer(async (req, res) => {
   const path = (req.url || '/').split('?')[0];
   try {
     if (path === '/status' || path === '/') return send(200, { ok: true, ver: VER, cores: coreVer, login: loginFailAt ? 'fail' : 'unknown', hasCred: !!(ALADIN_ID && ALADIN_PW) });
-    if (path === '/tick') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); tickBusy = true; try { const out = await serial(() => tick('schedule')); try { const sw = await sysSweep(); if (sw.ev) out.sweep = sw; } catch (e) { out.sweepErr = e.message; log('맡긴 일 살피기 실패', e.message); } if (Date.now() > costNextAt) { try { const r = await costDaily(4); out.costs = r; costNextAt = r.skip ? Date.now() + 15 * 60e3 : 0; if (r.done && r.done.length) log('비용 기록', JSON.stringify(r.done)); } catch (e) { costNextAt = Date.now() + 30 * 60e3; out.costsErr = e.message; log('비용 기록 실패', e.message); } } if (Date.now() > mlNextAt) { try { const r = await mlDaily(); out.ml = r.skip ? undefined : r; mlNextAt = Date.now() + (r.skip ? 15 : 60) * 60e3; if (!r.skip) log('결과 기록', JSON.stringify(r).slice(0, 400)); } catch (e) { mlNextAt = Date.now() + 30 * 60e3; out.mlErr = e.message; log('결과 기록 실패', e.message); } } if (Date.now() > learnNextAt) { try { const r = await mlLearn(); learnNextAt = Date.now() + (r.skip ? 20 : 120) * 60e3; if (!r.skip) { out.learn = r; log('스스로 배우기', JSON.stringify(r).slice(0, 400)); } } catch (e) { learnNextAt = Date.now() + 60 * 60e3; out.learnErr = e.message; log('스스로 배우기 실패', e.message); } } return send(200, out); } finally { tickBusy = false; } }
-    if (path === '/kick') { await authUser(req); const out = await serial(() => tick('kick')); return send(200, out); }
+    if (path === '/tick') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); tickBusy = true; try { const out = await serial(() => tick('schedule')); try { const sw = await sysSweep(); if (sw.ev) out.sweep = sw; } catch (e) { out.sweepErr = e.message; log('맡긴 일 살피기 실패', e.message); }
+      if (Date.now() - lastDailyAt > 3 * 3600e3) { out.daily = await dailyJobs().catch((e) => ({ err: e.message })); } // 예비: /daily 예약이 3시간 넘게 없으면(예전 deploy) 여기서 — deploy.sh를 다시 돌리면 /daily가 따로 맡음
+      return send(200, out); } finally { tickBusy = false; } }
+    if (path === '/daily') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (dailyBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); const out = await dailyJobs(); return send(200, out); }
+    if (path === '/kick') { await authUser(req); KICK(); if (tickBusy) return send(200, { ok: true, queued: '도는 회차가 바로 처리 (빠른 고리)' }); tickBusy = true; try { const out = await serial(() => tick('kick')); return send(200, out); } finally { tickBusy = false; } } // (0.9.0) 회차가 돌고 있으면 기다리지 않고 그 회차의 빠른 고리가 바로 처리
     if (path === '/lookup') { await authUser(req); const b = await bodyOf(req); const out = await serial(() => lookup(b)); return send(200, out); }
     if (path === '/inventory') { await authUser(req); return send(200, await inventory()); }
     if (path === '/storage-files') { await authUser(req); const b = await bodyOf(req); const pre = String(b.prefix || ''); if (!/^[A-Za-z0-9_\-\/]*$/.test(pre)) return send(400, { ok: false, err: '폴더 이름이 이상함' }); return send(200, { ok: true, files: await storageFiles(pre) }); }
