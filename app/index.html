@@ -431,6 +431,8 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .bbit.bsel{background:#FFF8E1}.bbchk{display:inline-flex;align-items:center;margin-right:8px}.bbchk input{width:18px;height:18px;margin:0}.bbbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding:6px 8px;background:var(--soft,#EEF2F0);border-radius:8px;position:sticky;top:0;z-index:3}.bbgh{font-weight:800;margin:12px 0 2px;padding:4px 8px;background:#24443a;color:#fff;border-radius:6px}.bbgh small{opacity:.8;margin-left:4px}.bbnum{margin-top:3px;font-size:13px}.bbcards{padding:4px 8px}
 .fbx-t{width:100%;border-collapse:collapse;font-size:12.5px;margin:4px 0}.fbx-t td,.fbx-t th{padding:3px 6px;border-bottom:1px solid var(--line,#e3e9e6);text-align:left}.fbx-t .r{text-align:right;font-variant-numeric:tabular-nums}.fbx-d summary{cursor:pointer;padding:4px 0}
 .shipcard.hasbar{border-radius:12px 12px 0 0;margin-bottom:0}.sdbar{display:flex;align-items:center;justify-content:center;position:relative;width:100%;min-height:30px;background:#DCEBE3;color:#24443a;border:0;border-radius:0 0 12px 12px;padding:5px 120px;font:inherit;font-weight:700;cursor:pointer;margin:0 0 12px}.sdbar small{font-weight:500;opacity:.75}.sdbar:hover{background:#CFE4D8}.sdbar .sdb-h{position:absolute;right:14px;font-size:12px;font-weight:600;opacity:.8}.sdbar-wrap.on .sdbar{border-radius:0;margin:0}.sdpanel{background:#F4F9F6;border:1px solid #DCEBE3;border-top:0;border-radius:0 0 12px 12px;padding:10px 12px;margin:0 0 12px}@media(max-width:480px){.sdbar{padding:5px 96px 5px 12px;justify-content:flex-start}}
+.mgr-t{font-size:12.5px}.tag.mgrx{background:#FDECEA;color:#B0322A}.mgr-t td,.mgr-t th{vertical-align:top;padding:4px 6px}
+.obs-plan{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding:8px;border-radius:8px;background:#EEF5FF}
 .obs-g{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}.obs-t.tmp{background:#FFF8E8}.obs-c{border-top:1px solid var(--line,#e3e9e6)}.obs-c:first-child{border-top:0}.obs-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 4px;cursor:pointer}.obs-h:hover{background:var(--soft,#EEF2F0)}.obs-tt{font-weight:700;flex:1 1 200px;min-width:0}.obs-ar{font-size:12px;color:var(--sub,#6B7A75);margin-left:auto}.obs-c.on{background:#F7FAF8}.obs-b{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,380px);gap:12px;padding:4px 6px 12px}@media(max-width:700px){.obs-b{grid-template-columns:1fr}}
 .pq.bq{display:grid;grid-template-columns:minmax(0,500px) minmax(250px,380px);gap:12px;justify-content:start;align-items:start}.pq.bq .pq-r{max-height:none}.pq.bq{position:relative}.pq.bq>.vztg{position:absolute;top:6px;right:6px;margin:0}@media(max-width:700px){.pq.bq{grid-template-columns:1fr}.pq.bq .pq-r{max-height:300px}}.pblk.me em{font-weight:800}.shp-blk .pblk.dim{opacity:.45}.shp-blk .pblk.same{box-shadow:inset 4px 0 0 #1E2B28}
 .shp-go{display:block;width:100%;margin-top:8px;border:0;border-radius:10px;padding:11px 10px;font-size:15.5px;font-weight:900;background:#1F6F4A;color:#fff;cursor:pointer;box-shadow:0 2px 0 #134a31}.shp-go small{font-weight:700;opacity:.9}.shp-go.arm{background:#B0322A;box-shadow:0 2px 0 #7d1f18;animation:rnfade 1s infinite}
@@ -464,9 +466,10 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="../readnow-sellers-core.js?v=1.3.0"></script>
 <script src="../readnow-core.js?v=1.4.1"></script>
-<script src="../readnow-pricing-core.js?v=0.14.0"></script>
-<script src="../readnow-shipping-core.js?v=0.5.0"></script>
+<script src="../readnow-pricing-core.js?v=0.15.0"></script>
+<script src="../readnow-shipping-core.js?v=0.5.1"></script>
 <script src="../readnow-products-core.js?v=0.13.0"></script>
+<script src="../readnow-registry.js?v=0.1.0"></script>
 <script>
 'use strict';
 /* 리드나우 웹앱 v0.52.0 (홈·고객·주문·상품·판매자·평가 참여·설정)
@@ -474,7 +477,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
  * 여러 핸드폰·PC 동시 사용: 실시간 반영, 메모는 한 건씩 따로 저장, 표시 변경은 누가·언제 기록
  * 이 앱이 쓰는 칸(flags, crm_notes, 연결 확정)은 수집기가 덮어쓰지 않음
  */
-const APP_VER = '0.94.0';
+const APP_VER = '0.96.0';
 const WATCH_GROUP_MIN = '0.8.0'; // 감시 그룹(자동·반자동·추격자 전략)을 지키는 가장 낮은 가격 감시기 판
 const WATCH_MIN = '0.6.0'; // 수동 일괄 실행·그룹 켜기/끄기를 지키는 가장 낮은 가격 감시기 판 (이 한 곳에서만 정함)
 const pm = (k) => { try { if (window.__pm[k] == null) window.__pm[k] = Math.round(performance.now()); } catch (e) {} }; pm('js'); // 속도 기록: 웹앱이 열리는 단계마다 걸린 시각(ms)
@@ -1667,6 +1670,45 @@ function sellerTags(s) {
   const L = s.linkedCustomers || []; const lv = L.some((l) => linkLevel(l) === 'match') ? 'match' : L.length ? 'suspect' : null;
   return `${sgOf(s) === 'fake' ? '<span class="tag bl">허위 매물</span>' : ''}${lv ? `<span class="tag ${LEVEL_TXT[lv][1]}">${LEVEL_TXT[lv][0]}</span>` : ''}`;
 }
+/* ══════════ (0.95.0) 주목할 만한 신규 판매자 ══════════
+ * 조건(정범): ① 시작 1년 안 ② 한 달 평균 3,000권 넘게 등록 ③ 매달 빠짐없이 3,000권 이상 등록 ④ 최근 6개월 평가 400개 이상(전체 평가 수 상관없음) ⑤ 평점 97.5% 이상
+ * 쓰는 자료(지어내지 않음): 시작 = 툴팁의 첫 평가일(없으면 모은 평가를 다 모았을 때 가장 오래된 평가일) — 첫 판매 무렵이라 실제 개점일보다 조금 늦을 수 있음
+ *   6개월 평가 = 숍 화면 값(rev6m) · 평점 = 숍 화면 '최근 6개월' 평점(없으면 툴팁 평점)
+ *   등록 수: 알라딘에 '월별 등록 수'를 바로 보는 자료를 아직 모으지 않음 → 보유 상품 수(툴팁 총상품수)로 확인할 수 있는 만큼만 ✓
+ *     평균 = 보유 상품 ÷ 활동 개월 (팔린 책은 빠져 있으니 실제 등록 평균은 이보다 크거나 같음 → 이 값이 3,000 넘으면 확실히 ✓, 못 넘으면 '모름')
+ *     매달 = 판매자 기록(seller_history)의 툴팁 총상품수 시점들(하루 한 시점): 그 달 전체가 시점들 사이에 들고, 그 달에 걸친 구간마다 순증가를 한 달로 환산해 3,000 이상이면 ✓ (순증가 ≤ 등록 수) — 끝난 활동 달이 모두 ✓여야 ✓
+ *   ✗인 조건이 하나라도 있으면 뺌. '모름'만 남은 판매자는 '등록 수 확인 필요'로 따로 보여 줌 */
+const NS_TH = { days: 365, perMonth: 3000, rev6: 400, rating: 0.975 };
+function nsRows() { return memo('nsRows|' + S.sellers.size + '|' + (S.nsHistV || 0), () => { const now = Date.now(); const out = [];
+  for (const s of S.sellers.values()) { if (!s || !s.sc) continue; const st = s.reviewStats || {}; const first = s.firstReviewDate || (st.complete && st.first) || null; const ft = first ? Date.parse(String(first).slice(0, 10) + 'T00:00:00+09:00') : NaN;
+    const days = Number.isFinite(ft) ? (now - ft) / 864e5 : null; const months = days != null ? Math.max(1, days / 30.44) : null; const r6 = rev6(s); const p6 = (s.shopPeriods || {})['최근 6개월'] || {}; const rating = p6.rating != null ? p6.rating : s.rating ?? null; const items = s.totalItems ?? null;
+    const c = { start: days == null ? null : days <= NS_TH.days, rev: r6 == null ? null : r6 >= NS_TH.rev6, rating: rating == null ? null : rating >= NS_TH.rating, avg: items != null && months ? (items / months >= NS_TH.perMonth ? true : null) : null, every: null };
+    const H = (S.nsHist || {})[s.id]; let ev = null; if (H && days != null) { ev = nsMonthly(H, ft, now); c.every = ev.need && ev.ok === ev.need ? true : null; }
+    if (Object.values(c).some((v) => v === false)) continue; out.push({ s, first, days, months, r6, rating, items, avgLow: items != null && months ? items / months : null, c, ev, known: c.start && c.rev && c.rating }); }
+  out.sort((a, b) => (b.r6 || 0) - (a.r6 || 0) || (b.items || 0) - (a.items || 0)); return out; }); }
+function nsMonthly(H, ft, now) { const P = (H.snapshots || []).filter((x) => x && x.t && x.items != null).map((x) => ({ t: +x.t, n: +x.items })).sort((a, b) => a.t - b.t); const months = new Map(); // 'YYYY-MM' → 확인됨
+  for (let m = new Date(ft + 9 * 3600e3); ; ) { const k = m.toISOString().slice(0, 7); months.set(k, false); m = new Date(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1)); if (m.getTime() - 9 * 3600e3 > now) break; }
+  const cur = new Date(now + 9 * 3600e3).toISOString().slice(0, 7); months.delete(cur); // 이번 달은 끝나지 않아 셈에서 뺌
+  const D = []; for (const x of P) { const dk = Math.floor((x.t + 9 * 3600e3) / 864e5); if (D.length && D[D.length - 1].dk === dk) D[D.length - 1] = { ...x, dk }; else D.push({ ...x, dk }); } // 하루에 한 시점(그날 마지막)
+  const pairs = []; for (let i = 1; i < D.length; i++) { const gap = (D[i].t - D[i - 1].t) / 864e5; pairs.push({ a: D[i - 1].t, b: D[i].t, rate: ((D[i].n - D[i - 1].n) / gap) * 30.44 }); }
+  for (const k of months.keys()) { const s0 = Math.max(ft, Date.parse(k + '-01T00:00:00+09:00')), e0 = Date.parse(new Date(Date.UTC(+k.slice(0, 4), +k.slice(5, 7), 1)).toISOString().slice(0, 10) + 'T00:00:00+09:00');
+    if (!D.length || D[0].t > s0 + 3 * 864e5 || D[D.length - 1].t < e0 - 3 * 864e5) continue; const ov = pairs.filter((q) => q.b > s0 && q.a < e0); if (ov.length && ov.every((q) => q.rate >= NS_TH.perMonth)) months.set(k, true); } // 그 달 전체가 시점 사이에 들고, 그 달에 걸친 구간마다 순증가가 한 달 3,000 이상
+  return { snaps: P.length, need: months.size, ok: [...months.values()].filter(Boolean).length, months: [...months.entries()] }; }
+async function nsLoadHist(rows) { S.nsHist = S.nsHist || {}; const ids = rows.map((x) => x.s.id).filter((id) => !(id in S.nsHist)).slice(0, 120); if (!ids.length) return 0;
+  for (let i = 0; i < ids.length; i += 10) { const part = ids.slice(i, i + 10); const docs = await Promise.all(part.map((id) => db.collection('seller_history').doc(id).get().catch(() => null))); docs.forEach((d, j) => { S.nsHist[part[j]] = d && d.exists ? d.data() : { snapshots: [] }; }); }
+  S.nsHistV = (S.nsHistV || 0) + 1; return ids.length; }
+function nsHtml() { if (!S.sellersLoaded) return '<div class="hint">판매자 목록을 받는 중</div>'; const R = nsRows(); const ok = R.filter((x) => x.known && x.c.avg && x.c.every); const wait = R.filter((x) => x.known && !(x.c.avg && x.c.every)); const unk = R.filter((x) => !x.known);
+  const mk = (v) => (v === true ? '<b style="color:var(--cloth)">✓</b>' : '<span class="hint">?</span>');
+  const row = (x, i) => `<button class="item" data-sid="${esc(x.s.id)}"><div class="l1"><span class="rn2">${i + 1}</span><span class="name">${esc(x.s.name || '(이름 없음)')}</span>${gradeChip(x.s)}<span class="hl">6개월 평가 ${num(x.r6)}</span></div>
+    <div class="l2"><span>${mk(x.c.start)} 시작 ${esc(String(x.first || '?').slice(0, 10))}${x.days != null ? ` (${num(x.days / 30.44, 1)}개월)` : ''}</span><span>${mk(x.c.rev)} 6개월 평가 ${num(x.r6)}</span><span>${mk(x.c.rating)} 평점 ${pctText(x.rating)}</span></div>
+    <div class="l2"><span>${mk(x.c.avg)} 월 평균 등록 ≥ ${x.avgLow != null ? num(Math.round(x.avgLow)) : '?'}권 <small class="hint">(보유 ${num(x.items)} ÷ 활동 개월 — 하한)</small></span><span>${mk(x.c.every)} 매달 3,000+ ${x.ev ? `${x.ev.ok}/${x.ev.need}달 확인 <small class="hint">(툴팁 시점 ${x.ev.snaps}개)</small>` : '<small class="hint">근거 안 읽음</small>'}</span></div></button>`;
+  const loaded = R.length && R.every((x) => S.nsHist && x.s.id in S.nsHist);
+  return `<p class="hint" style="margin:0 0 6px">조건: 시작 1년 안 · 월 평균 3,000권 넘게 등록 · 매달 빠짐없이 3,000권 이상 · 최근 6개월 평가 400개 이상 · 평점 97.5% 이상. 순위 = 최근 6개월 평가 수(판매 실적). ✓ = 모은 자료로 확인됨, ? = 아직 확인할 자료 없음 (✗인 판매자는 뺌).</p>
+    ${loaded ? '' : `<button class="btn ghost sm" id="ns_hist">매달 등록 근거 읽기 (판매자 기록 ${num(Math.min(120, R.filter((x) => !(S.nsHist && x.s.id in S.nsHist)).length))}곳)</button>`}
+    <h4 style="margin:10px 0 4px">모든 조건 확인 ${ok.length}곳</h4><div class="list">${ok.map(row).join('') || '<div class="empty">아직 없음 — 등록 수를 확인할 자료가 부족함 (아래)</div>'}</div>
+    <h4 style="margin:10px 0 4px">등록 수 확인 필요 ${wait.length}곳 <small class="hint">시작·6개월 평가·평점은 맞음</small></h4><div class="list">${wait.slice(0, 50).map(row).join('') || '<div class="empty">없음</div>'}</div>
+    ${unk.length ? `<details style="margin-top:8px"><summary class="hint">시작일·평가·평점 중 모르는 것이 있는 판매자 ${unk.length}곳</summary><div class="list">${unk.slice(0, 30).map(row).join('')}</div></details>` : ''}
+    <p class="hint">등록 수를 정확히(달마다) 세려면 판매자 숍의 상품 목록에서 등록일을 읽어야 합니다 — 그 화면 자료를 받으면 수집기 작업으로 붙입니다. 지금 ✓는 보유 상품 수가 늘어난 만큼만 인정(팔린 책은 빠지므로 실제 등록은 더 많음).</p>`; }
 function renderSellers(m) {
   if (!S.sellersLoaded) { m.innerHTML = '<div class="empty">판매자 목록을 받는 중 (처음 한 번)</div>'; syncSellers().then(() => { if (S.tab === 'sellers') renderMain(); }).catch((e) => { m.innerHTML = `<div class="empty">받기 실패: ${esc(e.message)}</div>`; }); return; }
   const q = norm(S.q); const g = S.sellerGrade || 'all'; const all = [...S.sellers.values()];
@@ -1676,7 +1718,7 @@ function renderSellers(m) {
   const sk = S.sellerSort || 'items'; const SC = scores(); const key = { items: (s) => s.totalItems || s.stock || 0, rating: (s) => s.rating ?? s.rating6m ?? 0, outstock: (s) => (s.sc ? (s.outstockRate || 0) / 100 : s.outstockRate || 0), reviews: (s) => s.totalReviewCount || s.reviewsAll || 0, rev6: (s) => rev6(s) ?? -1, model: (s) => (SC.get(s.id) || {}).model ?? -1, gain: (s) => (SC.get(s.id) || {}).gain ?? 50, age: (s) => sYears(s) ?? -1 }[sk];
   { const K = new Map(arr.map((s) => [s, key(s)])); arr.sort((a, b) => K.get(b) - K.get(a)); } if (S.sellerRev) arr.reverse(); // 정렬 값은 판매자마다 한 번만 계산
   const filters = [['all', '전체'], ['lmatch', '우리고객 정보와 일치'], ['lsuspect', '우리고객과 일치 의심'], ['fake', '허위 매물'], ['a:전문셀러', '전문셀러'], ['a:파워셀러', '파워'], ['a:골드셀러', '골드'], ['a:실버셀러', '실버'], ['a:새내기셀러', '새내기']];
-  m.innerHTML = `${q ? '' : sellerCountPanel()}<div class="seg chips">${filters.map(([k, l]) => `<button class="${g === k ? 'on' + (k === 'fake' ? ' bl' : '') : ''}" data-sg="${k}">${l} ${(memo('sellerChip|' + k, () => all.filter((s) => pass(s, k)).length)).toLocaleString()}</button>`).join('')}</div>
+  m.innerHTML = `${q ? '' : sellerCountPanel() + sec('sl_new', '🌱 주목할 만한 신규 판매자', () => nsHtml(), false)}<div class="seg chips">${filters.map(([k, l]) => `<button class="${g === k ? 'on' + (k === 'fake' ? ' bl' : '') : ''}" data-sg="${k}">${l} ${(memo('sellerChip|' + k, () => all.filter((s) => pass(s, k)).length)).toLocaleString()}</button>`).join('')}</div>
     <div class="sortbar"><select id="ssort">${[['items', '보유 상품 많은'], ['rating', '평점 높은'], ['outstock', '품절 취소율 높은'], ['reviews', '평가 많은'], ['age', '오래된 사업자'], ['rev6', '최근 6개월 평가 많은'], ['model', '★ 모범 점수 높은'], ['gain', '₩ 우리 이득 점수 높은']].map(([k, l]) => `<option value="${k}" ${sk === k ? 'selected' : ''}>${l} 순</option>`).join('')}</select><button id="srev" class="rev">${S.sellerRev ? '거꾸로 ↑' : '순서대로 ↓'}</button></div>
     <div class="sortbar"><button id="rankbtn2" class="rankbtn">판매자 순위 TOP10</button></div>
     <p class="hint">툴팁이 모은 판매자 ${all.filter((s) => s.sc).length.toLocaleString()}곳과 구글 시트 기록을 합친 목록입니다. 전화·이메일·반품 주소가 우리고객과 정확히 같으면 '우리고객 정보와 일치', 동·호수 등 일부만 같으면 '우리고객과 일치 의심'으로 표시됩니다.</p>
@@ -1685,6 +1727,7 @@ function renderSellers(m) {
   m.querySelectorAll('[data-sg]').forEach((b) => (b.onclick = () => { S.sellerGrade = b.dataset.sg; S.limit = 30; renderMain(); }));
   $('#ssort', m).onchange = (e) => { S.sellerSort = e.target.value; renderMain(); }; $('#srev', m).onclick = () => { S.sellerRev = !S.sellerRev; renderMain(); };
   m.querySelectorAll('[data-sid]').forEach((b) => (b.onclick = () => openSeller(b.dataset.sid)));
+  bindUI(m, renderMain); { const nb = $('#ns_hist', m); if (nb) nb.onclick = async () => { nb.disabled = true; nb.textContent = '읽는 중…'; try { await nsLoadHist(nsRows()); } catch (e) { toast('읽기 실패: ' + (e.code || e.message)); } if (S.tab === 'sellers') renderMain(); }; }
 }
 function miniLine(points, fmt) {
   const p = points.filter((x) => x.v != null && x.t); if (p.length < 2) return '<div class="hint">기록이 2개 이상 쌓이면 추이가 보입니다.</div>';
@@ -1907,43 +1950,86 @@ function trendSection(ctx) {
   return sec('trend_' + ctx, '매출 추이', body);
 }
 
-/* 택배비 정산: 매출 추이와 별도 기간 */
+/* 택배비 정산 (0.95.0): 주문 한 건의 택배비는 orderShip() 하나로만 계산 (택배 개수 × 그날 계약 택배비 + 반품·교환 택배비 − 고객 배송비) — 경영 비용(opsToDate)과 같은 숫자
+ * 발송한 주문 = 판매 주문 중 정상 또는 반품된 줄이 하나라도 있는 것 (전부 취소된 주문은 택배를 안 보냈으므로 뺌, 상세의 '발송 안 함'에서 확인)
+ * 카드·기간 줄·각 칸을 누르면 openShipCost(): 주문 한 건씩 나눠 보여 줌 */
+const shipSent = (o) => { const L = saleLines(o); return L.qty + L.rq > 0; };
+function shipRowOf(o) { const t = shipType(o); const sent = shipSent(o); const X = orderShip(o); const cr = courierFor(o.orderedAt); const L = saleLines(o);
+  const counted = sent && t !== 'unknown'; return { o, t, sent, counted, X, carrier: cr ? cr.carrier : '', amt: L.amt, qty: L.qty, rq: L.rq, fee: counted ? X.fee : 0, cost: counted ? X.out + X.ret : 0, net: counted ? X.out + X.ret - X.fee : 0 }; }
+const SHIP_F = { all: '발송 전체', free: '무료배송', paid: '고객 부담', ret: '반품·교환 있음', multi: '택배 2개 이상', custom: '직접 고친 주문', unknown: '배송비 모름', none: '발송 안 함' };
+function shipFilt(R, f) { switch (f) { case 'free': return R.counted && R.t === 'free'; case 'paid': return R.counted && (R.t === 'paid' || R.t === 'remote'); case 'ret': return R.counted && R.X.ret > 0; case 'multi': return R.counted && R.X.parcels > 1; case 'custom': return R.sent && R.X.custom; case 'unknown': return R.sent && R.t === 'unknown'; case 'none': return !R.sent; default: return R.counted; } }
+function shipAgg(rows) { const x = { orders: 0, sent: 0, free: 0, paid: 0, remote: 0, unknown: 0, none: 0, out: 0, ret: 0, retN: 0, fees: 0, parcels: 0, multi: 0, freeAmt: 0, paidAmt: 0, costFree: 0, costPaid: 0, carriers: new Set() };
+  for (const R of rows) { x.orders++; if (!R.sent) { x.none++; continue; } x.sent++; x[R.t]++; if (!R.counted) continue; x.out += R.X.out; x.ret += R.X.ret; if (R.X.ret) x.retN++; x.parcels += R.X.parcels; if (R.X.parcels > 1) x.multi++; if (R.carrier) x.carriers.add(R.carrier);
+    if (R.t === 'free') { x.costFree += R.cost; x.freeAmt += R.amt; } else { x.costPaid += R.cost; x.fees += R.fee; x.paidAmt += R.amt; } }
+  x.costAll = x.out + x.ret; return x; }
 function shipSection2(ctx) {
   if (!S.ordersLoaded) return '';
   const id = 'ship_' + ctx; const r = rangeFor(id, 'month');
   const gran = { all: 'month', year: 'month', month: 'day', week: 'day', day: null }[r.kind];
-  const sub = {}; const T = { orders: 0, free: 0, paid: 0, remote: 0, unknown: 0, fees: 0, freeAmt: 0, paidAmt: 0, costAll: 0, costFree: 0, costPaid: 0 };
-  for (const o of S.orders.values()) {
-    if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue;
-    const add = (x) => { x.orders += 1; const t = shipType(o); x[t] += 1; if (t === 'unknown') return; const cr = courierFor(o.orderedAt); const cost = cr ? cr.cost || 0 : 0; if (cr && x.carriers) x.carriers.add(cr.carrier); x.costAll += cost; if (t === 'free') { x.costFree += cost; x.freeAmt += o.totalAmount || 0; } else { x.costPaid += cost; x.fees += o.shippingFee || 0; x.paidAmt += o.totalAmount || 0; } };
-    add(T); if (gran) { const k = trendKey(o.orderedAt, gran); add(sub[k] = sub[k] || { k, orders: 0, free: 0, paid: 0, remote: 0, unknown: 0, fees: 0, freeAmt: 0, paidAmt: 0, costAll: 0, costFree: 0, costPaid: 0, carriers: new Set() }); }
-  }
+  const all = []; const subR = {};
+  for (const o of S.orders.values()) { if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue; const R = shipRowOf(o); all.push(R); if (gran) { const k = trendKey(o.orderedAt, gran); (subR[k] = subR[k] || []).push(R); } }
+  const T = shipAgg(all); const sub = Object.entries(subR).map(([k, L]) => ({ k, ...shipAgg(L) }));
   const gain = (x) => x.fees - x.costPaid; const net = (x) => x.costAll - x.fees;
-  const rows = Object.values(sub).sort((a, b) => b.k.localeCompare(a.k)).map((x) => `<div class="item" style="cursor:default"><div class="l1" style="justify-content:space-between"><b>${trendLabel(gran, x.k)}</b><b style="color:${net(x) > 0 ? 'var(--red)' : 'var(--cloth)'}">순지출 ${won(net(x))}</b></div>
-      <div class="l2"><span>택배비 ${won(x.costAll)} (${[...x.carriers].join(', ')})</span><span>고객 배송비 −${won(x.fees)}</span></div>
-      <div class="l2"><span>무료 ${x.free}건 부담 ${won(x.costFree)}</span><span>유료 ${x.paid + x.remote}건 차익 ${gain(x) >= 0 ? '+' : ''}${won(gain(x))}</span>${x.unknown ? `<span>모름 ${x.unknown}</span>` : ''}</div></div>`);
-  const sent = T.orders - T.unknown;
+  const P = S.pp[id] || { kind: r.kind, off: 0 }; const D = (f, k) => ` data-shipd="${esc(JSON.stringify({ kind: P.kind, off: P.off, f, k: k || null, gran: k ? gran : null }))}"`;
+  const rows = sub.sort((a, b) => b.k.localeCompare(a.k)).map((x) => `<button class="item"${D('all', x.k)}><div class="l1" style="justify-content:space-between"><b>${trendLabel(gran, x.k)}</b><b style="color:${net(x) > 0 ? 'var(--red)' : 'var(--cloth)'}">순지출 ${won(net(x))} <i class="dr">›</i></b></div>
+      <div class="l2"><span>택배비 ${won(x.out)} (${[...x.carriers].join(', ')}${x.parcels > x.sent - x.unknown ? ` · 택배 ${x.parcels}개` : ''})</span>${x.ret ? `<span>반품·교환 +${won(x.ret)}</span>` : ''}<span>고객 배송비 −${won(x.fees)}</span></div>
+      <div class="l2"><span>무료 ${x.free}건 부담 ${won(x.costFree)}</span><span>유료 ${x.paid + x.remote}건 차익 ${gain(x) >= 0 ? '+' : ''}${won(gain(x))}</span>${x.unknown ? `<span>모름 ${x.unknown}</span>` : ''}${x.none ? `<span>발송 안 함 ${x.none}</span>` : ''}</div></button>`);
+  const cnt = T.sent - T.unknown;
+  const dc = (f, inner) => `<div class="drill"${D(f)} title="눌러서 주문 한 건씩 보기">${inner}</div>`;
   const body = `${picker(id, 'month')}<div class="card" style="margin:8px 0">
       <div class="acct">
-        <div class="ar"><span>① 택배사에 낼 택배비</span><b>${won(T.costAll)}</b><small>발송 ${num(sent)}건 × 기간별 건당 택배비</small></div>
-        <div class="ar minus"><span>② 고객이 낸 배송비 (알라딘 정산으로 들어옴)</span><b>− ${won(T.fees)}</b><small>유료 ${num(T.paid)}건 · 도서산간 ${num(T.remote)}건</small></div>
-        <div class="ar total"><span>= 실제 우리 순지출</span><b style="color:${net(T) > 0 ? 'var(--red)' : 'var(--cloth)'}">${won(net(T))}</b><small>①에서 ②를 뺀 금액</small></div></div>
+        <div class="ar drill"${D('all')}><span>① 택배사에 낼 택배비 <i class="dr">›</i></span><b>${won(T.out)}</b><small>발송 ${num(cnt)}건 · 택배 ${num(T.parcels)}개 × 기간별 건당 택배비${T.multi ? ` (2개 이상 보낸 주문 ${T.multi}건)` : ''}</small></div>
+        ${T.ret ? `<div class="ar drill"${D('ret')}><span>①-2 반품·교환 택배비 (우리 부담) <i class="dr">›</i></span><b>+ ${won(T.ret)}</b><small>반품·교환 ${num(T.retN)}건</small></div>` : ''}
+        <div class="ar minus drill"${D('paid')}><span>② 고객이 낸 배송비 (알라딘 정산으로 들어옴) <i class="dr">›</i></span><b>− ${won(T.fees)}</b><small>유료 ${num(T.paid)}건 · 도서산간 ${num(T.remote)}건</small></div>
+        <div class="ar total drill"${D('all')}><span>= 실제 우리 순지출 <i class="dr">›</i></span><b style="color:${net(T) > 0 ? 'var(--red)' : 'var(--cloth)'}">${won(net(T))}</b><small>①${T.ret ? '+①-2' : ''}에서 ②를 뺀 금액 · 누르면 주문 한 건씩</small></div></div>
       <div class="mgrid" style="margin-top:10px">
-        ${mcell(won(T.costFree), '무료배송으로 우리가 부담', `${num(T.free)}건 · 판매 주문의 ${pctv(T.free, T.orders)}%`)}
-        ${mcell(`<span style="color:${gain(T) >= 0 ? 'var(--cloth)' : 'var(--red)'}">${gain(T) >= 0 ? '+' : ''}${won(gain(T))}</span>`, '유료 주문에서 남거나 모자란 돈', `고객 배송비 ${won(T.fees)} − 그 주문들 택배비 ${won(T.costPaid)}`)}
-        ${mcell(won(sent ? Math.round(net(T) / sent) : 0), '발송 1건당 순배송비', '순지출 ÷ 발송 건수')}
-        ${mcell(pctv(net(T), (agg(r).amt) || 0) + '%', '매출 대비 배송비 비율', '순지출 ÷ 순매출. 물류비율로 흔히 봄')}
-        ${mcell(won(T.free ? Math.round(T.freeAmt / T.free) : 0), '무료배송 주문 평균 금액', '')}${mcell(won(T.paid + T.remote ? Math.round(T.paidAmt / (T.paid + T.remote)) : 0), '유료 주문 평균 금액', '')}</div>
-      ${T.unknown ? `<div class="hint" style="margin-top:6px">배송비를 모르는 주문 ${T.unknown}건은 계산에서 뺐습니다</div>` : ''}</div>
+        ${dc('free', `<b>${won(T.costFree)} <i class="dr">›</i></b><span>무료배송으로 우리가 부담</span><small>${num(T.free)}건 · 발송 주문의 ${pctv(T.free, T.sent)}%</small>`)}
+        ${dc('paid', `<b><span style="color:${gain(T) >= 0 ? 'var(--cloth)' : 'var(--red)'}">${gain(T) >= 0 ? '+' : ''}${won(gain(T))}</span> <i class="dr">›</i></b><span>유료 주문에서 남거나 모자란 돈</span><small>고객 배송비 ${won(T.fees)} − 그 주문들 택배비 ${won(T.costPaid)}</small>`)}
+        ${dc('all', `<b>${won(cnt ? Math.round(net(T) / cnt) : 0)} <i class="dr">›</i></b><span>발송 1건당 순배송비</span><small>순지출 ÷ 발송 건수</small>`)}
+        ${dc('all', `<b>${pctv(net(T), (agg(r).amt) || 0)}% <i class="dr">›</i></b><span>매출 대비 배송비 비율</span><small>순지출 ÷ 순매출. 물류비율로 흔히 봄</small>`)}
+        ${dc('free', `<b>${won(T.free ? Math.round(T.freeAmt / T.free) : 0)} <i class="dr">›</i></b><span>무료배송 주문 평균 금액</span><small></small>`)}${dc('paid', `<b>${won(T.paid + T.remote ? Math.round(T.paidAmt / (T.paid + T.remote)) : 0)} <i class="dr">›</i></b><span>유료 주문 평균 금액</span><small></small>`)}
+        ${T.multi ? dc('multi', `<b>${num(T.multi)}건 <i class="dr">›</i></b><span>택배 2개 이상 보낸 주문</span><small>주문 택배 고치기에서 정한 개수</small>`) : ''}</div>
+      ${T.unknown ? `<div class="hint drill" style="margin-top:6px"${D('unknown')}>배송비를 모르는 주문 ${T.unknown}건은 계산에서 뺐습니다 ›</div>` : ''}${T.none ? `<div class="hint drill" style="margin-top:4px"${D('none')}>전부 취소돼 택배를 보내지 않은 주문 ${T.none}건은 뺐습니다 ›</div>` : ''}</div>
     ${gran ? `<div class="list">${fold('shiprows_' + ctx + r.kind, rows) || '<div class="empty">기록 없음</div>'}</div>` : ''}
     ${sec('shippolicy_' + ctx, '배송비 정책·택배 계약', policyCard() + courierView(), false)}`;
   return sec('ship_' + ctx, '택배비 정산', body);
+}
+function openShipCost(spec) { const sh = $('#sheet'); const key = JSON.stringify(spec);
+  if (!(S.detail && S.detail.shipcost === key)) { history.pushState({ shipcost: 1 }, ''); S.detail = { shipcost: key }; sh.classList.add('on'); document.body.style.overflow = 'hidden'; }
+  const r = rangeOf(spec.kind, spec.off); const f = spec.f || 'all'; const so = spec.sort || 'new'; const lim = spec.lim || 50;
+  const base = []; for (const o of S.orders.values()) { if (o.kind !== 'sale' || !inRange(o.orderedAt, r)) continue; if (spec.k && trendKey(o.orderedAt, spec.gran) !== spec.k) continue; base.push(shipRowOf(o)); }
+  const cntF = Object.fromEntries(Object.keys(SHIP_F).map((k) => [k, base.filter((R) => shipFilt(R, k)).length]));
+  const L = base.filter((R) => shipFilt(R, f)); const A = shipAgg(L);
+  const SORT = { new: ['최근 주문', (a, b) => String(b.o.orderedAt).localeCompare(String(a.o.orderedAt))], net: ['순지출 큰 순', (a, b) => b.net - a.net || String(b.o.orderedAt).localeCompare(String(a.o.orderedAt))], gain: ['남은 돈 큰 순', (a, b) => a.net - b.net], amt: ['주문 금액 큰 순', (a, b) => b.amt - a.amt], old: ['오래된 주문', (a, b) => String(a.o.orderedAt).localeCompare(String(b.o.orderedAt))] };
+  L.sort(SORT[so][1]);
+  const title = spec.k ? trendLabel(spec.gran, spec.k) : r.label;
+  const row = (R) => { const o = R.o; const c = S.customers.get(o.customerId) || {}; const X = R.X; const [tl, tc] = SHIP_LABEL[R.t] || ['', ''];
+    return `<div class="item" style="display:block"><div class="l1" style="justify-content:space-between;gap:6px"><span><b class="gl"${gC(o.customerId)}>${esc(c.displayName || (o.buyer || {}).name || '(이름 없음)')}</b> <small>${esc(o.orderNo || '')} · 주문 ${esc(String(o.orderedAt || '').slice(2, 16).replace('T', ' '))}${o.shippedAt ? ' · 발송 ' + esc(String(o.shippedAt).slice(5, 10)) : ''}</small></span>
+        <b style="color:${R.net > 0 ? 'var(--red)' : 'var(--cloth)'};white-space:nowrap">${R.counted ? `순 ${R.net > 0 ? won(R.net) : '+' + won(-R.net)}` : R.sent ? '모름' : '발송 안 함'}</b></div>
+      <div class="l2"><span class="st ${tc}">${esc(R.t === 'paid' || R.t === 'remote' ? `${tl} ${won(o.shippingFee)}` : tl)}</span><span>주문 ${won(R.amt)} · ${R.qty}권${R.rq ? ` · 반품 ${R.rq}권` : ''}</span></div>
+      ${R.sent ? `<div class="l2"><span>택배 ${X.parcels}개 × ${won(X.unit)}${R.carrier ? ` (${esc(R.carrier)})` : ''} = ${won(X.out)}</span>${X.ret ? `<span>반품·교환 +${won(X.ret)}</span>` : ''}<span>고객 배송비 −${won(X.fee)}${X.feeKnown ? '' : ' (모름)'}</span>${X.custom ? '<span class="tag">직접 고침</span>' : ''}</div>` : ''}
+      <details class="shd"><summary class="hint">책 ${(o.items || []).length}줄 보기</summary>${(o.items || []).map((it) => `<div class="hint" style="display:flex;justify-content:space-between;gap:6px${it.lineStatus !== 'normal' ? ';text-decoration:line-through' : ''}"><span>${bkT(it.title || '', { uc: it.aladinUsedCode, ono: o.orderNo })}${it.lineStatus !== 'normal' ? ` <small>(${esc(it.lineStatus)})</small>` : ''}</span><span>${won((it.price || 0) * (it.qty || 1))}</span></div>`).join('')}</details>
+      ${R.sent ? `<div style="margin-top:4px"><button class="btn ghost sm" data-shoo="${esc(o.id)}">택배 개수·반품비 고치기</button></div>` : ''}</div>`; };
+  const net = A.costAll - A.fees;
+  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 택배비 정산</button><div class="t">📦 택배비 정산 — ${esc(title)}</div></div>
+    <div class="card"><div class="ptabs" style="flex-wrap:wrap">${Object.entries(SHIP_F).filter(([k]) => k === 'all' || cntF[k]).map(([k, l]) => `<button class="${f === k ? 'on' : ''}" data-shf="${k}">${l} ${num(cntF[k])}</button>`).join('')}</div>
+      <div class="mgrid" style="margin-top:8px">${mcell(num(L.length) + '건', SHIP_F[f], f === 'none' ? '전부 취소돼 택배 없음' : f === 'unknown' ? '고객 배송비를 몰라 합계에서 뺌' : `택배 ${num(A.parcels)}개`)}${mcell(won(A.out), '택배비', '택배 개수 × 그날 계약 택배비')}${mcell(won(A.ret), '반품·교환 택배비', `${num(A.retN)}건`)}${mcell(won(A.fees), '고객 배송비', '알라딘 정산으로 들어옴')}${mcell(`<span style="color:${net > 0 ? 'var(--red)' : 'var(--cloth)'}">${won(net)}</span>`, '순지출', '택배비 + 반품 − 고객 배송비')}${mcell(won(A.sent - A.unknown ? Math.round(net / (A.sent - A.unknown)) : 0), '1건당 순배송비', '')}</div>
+      <div class="ptabs" style="margin-top:8px;flex-wrap:wrap">${Object.entries(SORT).map(([k, [l]]) => `<button class="${so === k ? 'on' : ''}" data-shs="${k}">${l}</button>`).join('')}</div>
+      <p class="hint">한 줄 = 주문 한 건. 택배 개수·반품비가 틀리면 '고치기'로 바로 고칠 수 있습니다 (정산·경영 비용에 같이 반영). 이름을 누르면 고객, 책 제목을 누르면 그 상품.</p></div>
+    <div class="list">${L.slice(0, lim).map(row).join('') || '<div class="empty">해당 주문 없음</div>'}</div>${L.length > lim ? `<button class="btn ghost" id="sh_more" style="width:100%;margin-top:8px">${Math.min(50, L.length - lim)}건 더 보기 (남은 ${num(L.length - lim)})</button>` : ''}`;
+  $('#back').onclick = () => history.back();
+  const re = (p) => { const y = sh.scrollTop; navReplace(() => openShipCost({ ...spec, ...p })); if (!('f' in p) && !('sort' in p)) sh.scrollTop = y; };
+  sh.querySelectorAll('[data-shf]').forEach((b) => (b.onclick = () => re({ f: b.dataset.shf, lim: 50 })));
+  sh.querySelectorAll('[data-shs]').forEach((b) => (b.onclick = () => re({ sort: b.dataset.shs, lim: 50 })));
+  const mo = $('#sh_more'); if (mo) mo.onclick = () => re({ lim: lim + 50 });
+  sh.querySelectorAll('[data-shoo]').forEach((b) => (b.onclick = () => openOrderOps(b.dataset.shoo)));
 }
 function ordersDash(ctx) { return perfSection(ctx) + trendSection(ctx) + shipSection2(ctx); }
 function bindDash(root, rerender) {
   bindUI(root, rerender); bindShip(root);
   root.querySelectorAll('[data-trend]').forEach((b) => (b.onclick = () => { const [c, k] = b.dataset.trend.split(':'); S['trend_' + c] = k; rerender(); }));
   root.querySelectorAll('[data-cid]').forEach((b) => (b.onclick = () => { if ($('#modal.on')) closeModal(); openCustomer(b.dataset.cid); }));
+  root.querySelectorAll('[data-shipd]').forEach((b) => (b.onclick = (e) => { e.preventDefault(); if ($('#modal.on')) closeModal(); try { openShipCost(JSON.parse(b.dataset.shipd)); } catch (er) { console.warn(er); } }));
 }
 
 
@@ -2924,6 +3010,7 @@ function renderSettings(m) {
     </details>`, '대기 미등록 상품 수와 추정 권당 가격, 상품 ↔ 매입 연결에 씁니다. 매입 파일 넣기는 매입 탭에서 합니다.')}
   ${card('cust', '⑥ 고객 점수 기준 (자동 VIP·주의)', `<label class="set">자동 VIP: 가치 점수 이상${num_('c_vv', V.minValue)}</label><label class="set">그리고 주의 점수 미만${num_('c_vr', V.maxRisk)}</label><label class="set">그리고 구매 횟수 이상${num_('c_vo', V.minOrders)}</label><label class="set ck"><input type="checkbox" id="c_vs" ${V.excludeSellers ? 'checked' : ''}> 판매자와 연결된 고객은 VIP에서 제외</label><label class="set">자동 주의고객: 주의 점수 이상${num_('c_cr', Cc.minRisk)}</label><div class="hint" id="cfgprev"></div>`, '사람이 직접 VIP·주의로 정한 고객은 기준과 상관없이 유지됩니다. 점수 계산 방식은 위쪽 "점수 기준"에서 봅니다.')}
   ${card('seller', '⑦ 판매자 점수 기준', `<label class="set">★ 모범: 모범 점수 이상${num_('st_mh', T.modelHigh)}</label><label class="set">✕ 불량: 모범 점수 이하 (또는 윤리 위반)${num_('st_ml', T.modelLow)}</label><label class="set">₩＋ 우리에게 이득: 이득 점수 이상${num_('st_gh', T.gainHigh)}</label><label class="set">₩－ 우리에게 불익: 이득 점수 이하${num_('st_gl', T.gainLow)}</label>`, '알라딘 화면의 판매자 배지(툴팁·고객 카드)에도 같은 기준이 쓰입니다.')}
+  ${sec('set_mgr', '⑭ 🧭 관리도구 — 노선표·건강판 (누가 무엇을 맡는지 · 살아 있는지 · 판)', `<p class="hint" style="margin:0 0 6px">맡긴 일 종류마다 맡는 곳·멈춤·기한, 도구마다 살아 있음·읽은 공용 파일 판, 자료 칸이 정한 주기 안에 새로운지, 지난 7일 잃은 일. 노선표는 Firebase(app_settings/sys_registry)가 기준.</p><button class="btn" id="st_mgr">🧭 관리도구 열기</button>`, false)}
   ${sec('set_qph', '⑬ 고객 응대 문구 (묻고 답하기 · 구매평 답변 도우미)', qnaPhraseCard(), false)}
   ${card('ship', '⑫ 출고 (영업일·마감)', `<label class="set">출고 마감 시각 (원칙 14:00 — 영업일 이 시각 전 주문은 그날 출고 묶음, 뒤는 다음 영업일. 특정 날만 다르면 주문·매출 탭 '출고별 매출'에서 그날 마감을 고침)<input type="time" id="sh_cut" value="${esc(shipOpt().cutTime)}"></label><label class="set">휴일 (주말 말고 출고하지 않는 날, 한 줄에 하나 YYYY-MM-DD)<textarea id="sh_hol" rows="4" style="width:100%">${esc((((S.app.ship || {}).holidays) || []).join('\n'))}</textarea></label><p class="hint" style="margin:4px 0 0">출고 예정일·출고 지연 알림·오늘 출고 화면이 이 값을 씁니다.</p>`)}
   ${card('alert', '⑧ 경영 알림 기준', `<label class="set">출고 지연으로 볼 기간 (출고 예정 영업일 뒤 영업일 수, 주말·휴일 빼고)${num_('al_late', A.lateDays)}</label><label class="set">장기 재고 1단계 (등록 후 일)${num_('al_old1', A.oldDays1, 10)}</label><label class="set">장기 재고 2단계 (등록 후 일)${num_('al_old2', A.oldDays2, 10)}</label>
@@ -2967,7 +3054,7 @@ function renderSettings(m) {
     const DA = D.alerts; [['al_late', 'lateDays'], ['al_old1', 'oldDays1'], ['al_old2', 'oldDays2'], ['al_over', 'overMinPct'], ['al_cheap', 'cheapPct'], ['al_stale', 'staleHours'], ['al_dmin', 'dormantMinOrders'], ['al_dfrom', 'dormantFrom'], ['al_dto', 'dormantTo'], ['al_rise', 'risingFactor']].forEach(([id, k]) => ($('#' + id).value = DA[k]));
     $('#c_vv').value = CFG_DEFAULT.vip.minValue; $('#c_vr').value = CFG_DEFAULT.vip.maxRisk; $('#c_vo').value = CFG_DEFAULT.vip.minOrders; $('#c_vs').checked = true; $('#c_cr').value = CFG_DEFAULT.caution.minRisk;
     $('#cs_delay').value = 700; $('#cs_delaymax').value = 20000; $('#cs_uid').value = 30; $('#cs_recheck').value = 7; $('#cs_topn').value = 50; $('#cs_r6').value = 7; $('#cs_ah').value = 17; $('#cs_apc').value = 'JS-MAIN'; $('#cs_rpc').value = 'JS-MAIN'; $('#cs_agr').value = 30; prev(); cprev(); toast('처음 값으로 채웠습니다. 저장을 눌러야 반영됩니다'); };
-  { const fb = $('#fbx_box'); if (fb) fbxBind(fb); }
+  { const fb = $('#fbx_box'); if (fb) fbxBind(fb); } { const mb = $('#st_mgr'); if (mb) mb.onclick = () => openMgr(); }
   $('#st_save').onclick = async () => {
     const B = $('#st_bands').value.split(/[,\s]+/).map((x) => +x).filter((x) => x > 0).sort((x, y) => x - y);
     const L = $('#st_admins').value.split(',').map((s) => s.trim()).filter(Boolean); if (!L.length) return toast('관리자 기기를 하나 이상 남겨 주세요');
@@ -3534,6 +3621,7 @@ function bizAlerts(B) {
   if (B.lastBulk && B.lastBulk.at && (Date.now() - new Date(B.lastBulk.at)) / 36e5 > ((S.app.alerts || {}).staleHours || 36)) add('amber', `알라딘 주문 수집이 ${Math.round((Date.now() - new Date(B.lastBulk.at)) / 36e5)}시간 전 — 숫자가 오래됨`, 'home');
   if (B.X) { const ck = S.pur.entries.filter((e) => (e.catManual || e.cat) === 'mixed').length; if (ck) add('info', `매입 확인 필요 ${ck}건`, 'purchase'); }
   if (!B.checked && S.pmLoaded) add('info', '가격 경쟁력: 도서 정보·시장 지표를 아직 받지 않았습니다 (상품 수집기)', 'metrics');
+  try { mgrAlerts(add); } catch (e) {} // (0.96.0) 관리도구: 멈춘 일·모르는 종류·늦은 일
   const rk = (a) => (a.lv === 'top' ? (a.key === 'shipconfirm' ? 0 : 1) : 2); return A.sort((a, b) => rk(a) - rk(b));
 }
 const alertsHtml = (A) => A.length ? `<div class="alerts">${A.map((a) => `<button class="al ${a.lv}" data-alert="${a.key || ''}">${a.lv === 'top' ? '❗' : a.lv === 'red' ? '●' : a.lv === 'amber' ? '▲' : 'ⓘ'} ${esc(a.t)}</button>`).join('')}</div>` : '<div class="hint" style="margin:0;color:var(--cloth)">✓ 지금 확인할 문제 없음</div>';
@@ -3633,7 +3721,8 @@ function renderBiz(m) {
  * 유효 = 판매자 분류 초록·진초록 + 알라딘측(판정 엔진 기준과 같음). 첫 페이지 밖은 볼 수 없으므로, 첫 페이지만으로 확실히 말할 수 없는 상품은 그 슬롯에 넣지 않음(추정하지 않음)
  * '임시' 슬롯(★): 경영·심리 근거로 지금 쓰는 신호 — 기계 학습(전략도구의 팔릴 확률 모델)이 같은 일을 하게 되면 빼기로 함(그때 Claude가 제안) */
 const OBS_VALID = new Set(['dkgreen', 'green', 'aladin']);
-const OBS_TH = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 15000, 20000, 25000, 30000, 40000, 50000];
+const OBS_TH = [ // 판정 엔진 0.15.0부터 CHARM_TH가 기준(한 곳) — 이 목록은 엔진을 못 읽었을 때만
+  1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 12000, 15000, 20000, 25000, 30000, 40000, 50000];
 const OBS_SLOTS = [
   ['top', '전체 중 최상단', '최저가 타이틀 — 온라인 중고 전체 중 맨 위(첫 번째)가 우리 상품'],
   ['vmin', '전체 중 유효 최저가', '유효 매물 전체 중 우리가 가장 쌈 (상태 등급 상관없이, 동가 포함)'],
@@ -3656,6 +3745,39 @@ const OBS_SLOTS = [
   ['oldOff', '★ 오래 묵고 첫 페이지 밖', '등록 180일 넘고 첫 페이지 밖 — 보관 비용·자금 묶임'],
   ['stale', '★ 시장 지표가 14일 넘음', '자리 판단이 낡음 — 수집기 시장 지표 갱신 대상'],
 ];
+/* (0.95.0) 관찰 도구 칸 → 수동 일괄 처리 그룹: 칸이 요구하는 자리를 목표로 조건을 자동으로 정함 (기준은 판정 엔진 critTarget 한 곳 — 새 기준 topAny·under·shipMin·charm·newPct)
+ *  좋은 자리(최상단·유효 최저가·세 칸 안·단독) = 자리를 지키면서 올릴 수 있는 만큼 올림(올림만, 한 번에 최대 인상 %) · 나쁜 자리(최고가·비싼 쪽·첫 페이지 밖) = 같은 등급 유효 최저가로
+ *  ★ 칸 = 그 신호가 가리키는 가격으로 (근소한 차이 → 맨 위와 동가, 배송비로 밀림 → 결제 총액 동가 …). 알라딘 매입가 하한·최근 7일 안 바꾼 상품 빼기는 늘 그대로 */
+const OBS_PLAN = {
+  top: [{ mode: 'under', underScope: 'any', underRank: 1, dir: 'up', maxRise: 30 }, '맨 위를 지키면서 다음 매물 바로 한 단위 아래까지 올림 (올림만 · 한 번에 최대 30%)'],
+  vmin: [{ mode: 'under', underScope: 'valid', underRank: 1, dir: 'up', maxRise: 30 }, '유효 최저가를 지키면서 다음 유효 매물 바로 아래까지 올림 (올림만 · 최대 30%)'],
+  vminG: [{ mode: 'under', underScope: 'same', underRank: 1, dir: 'up', maxRise: 30 }, '같은 등급 유효 최저가를 지키면서 다음 같은 등급 유효 매물 바로 아래까지 올림 (올림만 · 최대 30%)'],
+  top3: [{ mode: 'under', underScope: 'any', underRank: 3, dir: 'up', maxRise: 30 }, '세 칸 안을 지키면서 세 번째 매물 바로 아래까지 올림 (올림만 · 최대 30%)'],
+  p1: [{ mode: 'same', better: true, keepTop: true, keepLowest: true }, '첫 페이지 유지: 같은 등급 유효 최저가와 동가 (그 매물이 첫 페이지에 있음) · 이미 맨 위·최저가면 그대로'],
+  solo: [{ mode: 'newPct', newPct: 79, dir: 'up', maxRise: 30 }, '경쟁 없음: 새책 판매가의 79%(80% 밑)까지 올림 (올림만 · 최대 30%)'],
+  soloV: [{ mode: 'newPct', newPct: 79, dir: 'up', maxRise: 30 }, '유효 경쟁 없음: 새책 판매가의 79%까지 올림 (올림만 · 최대 30%)'],
+  max: [{ mode: 'same', better: true, dir: 'down' }, '같은 등급 유효 최저가와 동가로 내림 (더 좋은 등급이 더 싸면 환산)'],
+  high: [{ mode: 'same', better: true, dir: 'down' }, '같은 등급 유효 최저가와 동가로 내림'],
+  c10: [{ mode: 'same', better: true, keepTop: true, keepLowest: true }, '경쟁 적음: 같은 등급 유효 최저가와 동가 · 이미 맨 위·최저가면 그대로'],
+  c5: [{ mode: 'same', better: true, keepTop: true, keepLowest: true }, '경쟁 적음: 같은 등급 유효 최저가와 동가 · 이미 맨 위·최저가면 그대로'],
+  c3: [{ mode: 'same', better: true, keepTop: true, keepLowest: true }, '경쟁 적음: 같은 등급 유효 최저가와 동가 · 이미 맨 위·최저가면 그대로'],
+  near: [{ mode: 'topAny', dir: 'down', maxDrop: 15, reach: true }, '맨 위 매물과 동가로 내림 (판매자·배송비 가리지 않음 · 최대 15% · 못 닿으면 안 내림)'],
+  leave: [{ mode: 'under', underScope: 'any', underRank: 1, dir: 'up', maxRise: 50 }, '1위를 지키면서 다음 매물 바로 한 단위 아래까지 올림 (올림만 · 최대 50%)'],
+  shipLose: [{ mode: 'shipMin', dir: 'down', maxDrop: 20, reach: true }, '판매가 + 배송비가 유효 매물 중 최저가 되게 (결제 총액 동가 · 최대 20% · 못 닿으면 안 내림)'],
+  charm: [{ mode: 'charm', dir: 'down' }, '경계 아래 가격으로 (5,000 → 4,900 · 10,100 → 9,900 · 1만 원대는 가격 단위로)'],
+  nearNew: [{ mode: 'newPct', newPct: 79, dir: 'down' }, '새책 판매가의 79%로 내림'],
+  popOff: [{ mode: 'same', better: true, dir: 'down', maxDrop: 30, reach: true }, '첫 페이지로: 같은 등급 유효 최저가와 동가 (최대 30% · 못 닿으면 안 내림)'],
+  oldOff: [{ mode: 'same', better: true, dir: 'down', maxDrop: 30, reach: true }, '첫 페이지로: 같은 등급 유효 최저가와 동가 (최대 30% · 못 닿으면 안 내림)'],
+  stale: [{ mode: 'valid', mktDays: 2, maxDrop: 30 }, '시장 지표부터 새로 (만들 때 수집기에 바로 맡김) → 2일 안 시장 자료가 생긴 상품만 엔진 규칙으로 계산 (낡은 자료로는 값을 안 정함 · 최대 30% 인하)'],
+};
+async function obsToBatch(k, L) { const slot = OBS_SLOTS.find((x) => x[0] === k); const pl = OBS_PLAN[k]; if (!slot || !pl || !L.length) return toast('옮길 상품이 없음');
+  const now = new Date().toISOString(); const nm0 = `관찰 ${slot[1].replace(/^★ /, '')} ${kTime(now).slice(0, 5).replace('-', '')}`;
+  const nm = prompt(`🔭 '${slot[1]}' ${L.length.toLocaleString()}개를 수동 일괄 처리 그룹으로 만듭니다.\n\n자동으로 정하는 조건: ${pl[1]}\n늘 그대로: 알라딘 매입가 하한 · 판매보류풀·비교 묶음 빼기 · 최근 7일 안 가격 바꾼 상품 빼기(그룹에서 0일로 바꾸면 포함)\n\n만든 뒤 바로 추천가를 계산합니다 (확정 전에는 가격이 바뀌지 않음). 그룹 이름:`, nm0); if (!nm || !nm.trim()) return;
+  const c = { ...JSON.parse(JSON.stringify(BATCH_DEF)), ...JSON.parse(JSON.stringify(pl[0])), name: nm.trim(), only: L.map((x) => String(x.l.usedCode)), obs: k, obsAt: now };
+  S.batchC = null; S.batchId = null; S.batchSt = { picks: {}, decided: {}, start: {} }; S.batchMeta = {}; S.batchRes = null; S.batchT = 'sel'; S.batchCondJ = null;
+  history.pushState({ batch: 1 }, ''); openBatch(c); const r2 = $('#sheet').querySelector('#b_run'); if (r2) r2.click();
+  if (k === 'stale') { try { const keys = L.map((x) => 'aladin_' + x.l.usedCode); const gid = S.batchId; await db.collection('shp_cmds').add({ type: 'metrics', keys, label: '그룹: ' + c.name, batchId: gid || null, status: 'queued', createdAt: now, by: S.user.email, uploadedAt: TS() }); if (gid) await db.collection('prd_price_batches').doc(gid).set({ lastMetricsReqAt: now, uploadedAt: TS() }, { merge: true }); if (S.batchMeta) S.batchMeta.lastMetricsReqAt = now; toast(`시장 지표 새로 받기 ${keys.length}개를 수집기에 맡김 — 끝나면 그룹을 다시 계산하세요`); } catch (e) { toast('시장 지표 맡기기 실패: ' + (e.code || e.message)); } }
+}
 function obsCompute() { if (!S.pmLoaded || !S.prodLoaded) return null; return memo('obs|' + S.plist.size + '|' + (S.pmetrics ? S.pmetrics.size : 0) + '|' + (S.sellers ? S.sellers.size : 0), () => {
   const act = [...S.plist.values()].filter((l) => l.active && l.usedCode); const now = Date.now(); const out = { act: act.length, have: 0, fresh: 0, items: [], slots: {} }; OBS_SLOTS.forEach(([k]) => (out.slots[k] = []));
   const spAll = act.map((l) => (S.pmetrics.get(l.bookId) || {}).salesPoint).filter((x) => x > 0).sort((a, b) => a - b); const sp75 = spAll.length ? spAll.at(Math.floor(spAll.length * 0.75)) : Infinity;
@@ -3671,7 +3793,7 @@ function obsCompute() { if (!S.pmLoaded || !S.prodLoaded) return null; return me
     const top0 = P.find((w, i) => i !== me && w.c !== 'ours' && w.p > 0); if (on && rank > 1 && top0) { x.gapTop = price - top0.p; S0('near', price - top0.p <= Math.max(300, price * 0.03)); }
     if (rank === 1 && oth.length) { const nx = oth.reduce((a, w) => Math.min(a, w.p), Infinity); x.gapNext = nx / price - 1; S0('leave', nx >= price * 1.2); }
     if (on && vo.every((w) => w.p >= price) && vo.length) { const mine = P[me]; const myT = price + ((mine && mine.s) || 0); x.shipBeat = vo.filter((w) => w.p + (w.s || 0) < myT).length; S0('shipLose', x.shipBeat > 0); }
-    S0('charm', price >= 2000 && OBS_TH.some((t) => price >= t && price <= t + Math.max(100, t * 0.02))); S0('nearNew', m.priceSales > 0 && price >= m.priceSales * 0.8);
+    S0('charm', price >= 2000 && ((window.ReadnowPricing && window.ReadnowPricing.CHARM_TH) || OBS_TH).some((t) => price >= t && price <= t + Math.max(100, t * 0.02))); S0('nearNew', m.priceSales > 0 && price >= m.priceSales * 0.8);
     S0('popOff', !on && m.salesPoint > 0 && m.salesPoint >= sp75); const reg = Date.parse(String(l.registeredAt || '').slice(0, 10)); S0('oldOff', !on && Number.isFinite(reg) && now - reg > 180 * 864e5); S0('stale', ageD > 14);
     out.items.push(x); }
   return out; }); }
@@ -3695,6 +3817,7 @@ function openObs(k) { const sh = $('#sheet'); if (!(S.detail && S.detail.obs)) {
   const qq = norm(P.q); if (qq) L = L.filter((x) => norm([x.l.title, x.l.sku, x.l.usedCode, x.l.isbn13].join('|')).includes(qq)); const sum = L.reduce((a, x) => a + (+x.l.price || 0), 0);
   sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">🔭 ${esc(slot[1])}</div></div>
     <div class="card"><p class="hint" style="margin:0 0 6px">${esc(slot[2])}</p><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><b>${num(L.length)}개</b><span class="hint">판매가 합 ${won(sum)}</span><input id="obs_q" type="search" placeholder="제목·관리코드·ISBN" value="${esc(P.q)}" style="flex:1;min-width:160px"><button class="btn ghost sm" id="obs_all">${P.open.size ? '모두 접기' : '보이는 것 모두 펼치기'}</button></div>
+      ${OBS_PLAN[k] ? `<div class="obs-plan"><button class="btn sm" id="obs_tobatch" ${L.length ? '' : 'disabled'}>⚙ ${qq ? '찾은 ' : ''}${num(L.length)}개로 수동 일괄 처리 그룹 만들기</button><span class="hint">자동 조건: ${esc(OBS_PLAN[k][1])}</span></div>` : ''}
       <div class="ptabs" style="flex-wrap:wrap;margin-top:6px">${OBS_SLOTS.map(([k2, t]) => `<button class="${k2 === k ? 'on' : ''}" data-obsk="${k2}">${esc(t.replace(/^★ /, '★'))} ${O ? num(O.slots[k2].length) : ''}</button>`).join('')}</div></div>
     <div class="card obs-list">${L.slice(0, P.lim).map((x) => obsCard(x, P.open.has(x.l.id))).join('') || '<div class="empty">없음</div>'}${L.length > P.lim ? `<button class="more" id="obs_more">더 보기 (${num(L.length - P.lim)}개 남음)</button>` : ''}</div>`;
   sh.scrollTop = y; $('#back').onclick = () => history.back(); fillUsedInfo(sh);
@@ -3704,6 +3827,7 @@ function openObs(k) { const sh = $('#sheet'); if (!(S.detail && S.detail.obs)) {
   sh.querySelectorAll('[data-pid]').forEach((b) => (b.onclick = (e) => { e.stopPropagation(); openProduct(b.dataset.pid); }));
   const q = $('#obs_q'); if (q) { q.oninput = () => { clearTimeout(S._obsQT); S._obsQT = setTimeout(() => { P.q = q.value; P.lim = 60; re(); const q2 = $('#obs_q'); if (q2) { q2.focus(); q2.setSelectionRange(q2.value.length, q2.value.length); } }, 250); }; }
   const mo = $('#obs_more'); if (mo) mo.onclick = () => { P.lim += 120; re(); };
+  { const tb = $('#obs_tobatch'); if (tb) tb.onclick = () => obsToBatch(k, L); }
   const al = $('#obs_all'); if (al) al.onclick = () => { if (P.open.size) P.open.clear(); else L.slice(0, P.lim).forEach((x) => P.open.add(x.l.id)); re(); }; }
 document.addEventListener('click', (e) => { const t = e.target.closest && e.target.closest('[data-obs]'); if (t) { e.preventDefault(); S.obsP = null; openObs(t.dataset.obs); } });
 
@@ -3941,6 +4065,14 @@ const ALADIN_NOTE = `<b>이 목록은 무엇인가</b><br>
  * ① 이 기기에서 처음 여는 버전이면 맨 위에 "v○ → v○ 로 바뀜 + 바뀐 내용" 띠
  * ② 열어 둔 사이 GitHub에 새 버전이 올라오면 "새 버전이 있습니다 — 새로고침" 띠 (10분마다·다시 볼 때 확인) */
 const CHANGELOG = {
+  '0.96.0': ['🧭 관리도구 1판(개편 2단계): 설정 ⑭ 또는 ☁ 클라우드 화면 → 노선표·건강판 — ① 도구마다 살아 있음 + 읽은 공용 파일 판을 노선표의 판과 비교(다르면 빨강) ② 맡긴 일 지금 대기·처리 중 + 늦음·멈춤·모르는 종류 ③ 지난 7일 잃은 일(관문: 0) ④ 자료 칸이 정한 주기 안에 새로운지 ⑤ 맡긴 일 종류 표 — 맡을 곳·멈춤·기한을 관리자 기기에서 바꾸면 수집기·클라우드가 바로 따름 ⑥~⑨ 일정·공용 파일 판·칸 주인·설정 위치',
+    '노선표는 Firebase(app_settings/sys_registry)가 기준 — 관리자 기기가 열면 새 판을 올림(바꾼 값은 그대로) · 홈 알림: 맡긴 일 멈춤·모르는 종류·늦음',
+    '발송준비시작이 \'멈춤\'(맡은 곳이 도중에 꺼짐)이면 출고 카드에 "넘어갔는지 확인 못함 — 다시 읽은 뒤 남아 있으면 다시 누르세요"'],
+  '0.95.0': ['📦 택배비 정산(주문·매출 탭): 카드의 줄(①·①-2·②·순지출)·숫자 칸·기간 줄을 누르면 주문 한 건씩 — 고객·주문번호·주문/발송 시각·주문 금액·고객 배송비·택배 개수 × 그날 택배비(택배사)·반품·교환 택배비·순지출·책 줄. 무료·유료·반품 있음·택배 2개 이상·직접 고친 주문·배송비 모름·발송 안 함으로 나누고 순지출·금액 순 정렬, 그 자리에서 택배 개수·반품비 고치기',
+    '택배비 정산을 경영 비용과 같은 계산 하나로: 택배 개수(직접 고친 값)와 반품·교환 택배비를 넣음(예전엔 1건 = 1개, 반품비 없음) · 전부 취소돼 보내지 않은 주문은 뺌(경영 비용은 전부 반품된 주문도 택배를 보냈으니 셈)',
+    '🔭 알라딘 관찰 도구 칸 → 수동 일괄 처리 그룹: 칸을 열고 \'⚙ n개로 수동 일괄 처리 그룹 만들기\' — 그 상품만 대상(고정)으로 그룹을 만들고, 칸이 요구하는 자리를 목표로 조건을 자동으로 정해 바로 추천가 계산(확정 전엔 가격 안 바뀜). 예: 근소한 차이 → 맨 위와 동가 · 배송비로 밀림 → 결제 총액 동가 · 너무 싸게 둔 1위 → 다음 매물 바로 아래까지 올림 · 경계 위 → 4,900·9,900 · 최고가 → 같은 등급 유효 최저가 · 시장 지표 낡음 → 시장 지표부터 수집기에 맡김',
+    '수동 일괄 처리 새 기준(판정 엔진 0.15.0): 맨 위 매물과 동가 · 기준 매물 바로 한 단위 아래(n번째·전체/유효/같은 등급) · 결제 총액 동가 · 경계 아래 가격 · 새책 판매가의 n% — 그리고 \'목표 못 닿으면 안 내림\'(하한선 때문에 어중간하게만 내리는 것 막음)',
+    '🌱 판매자 탭 \'주목할 만한 신규 판매자\': 시작 1년 안 · 월 평균 3,000권 넘게 · 매달 3,000권 이상 · 6개월 평가 400+ · 평점 97.5%+ — 6개월 평가 순위. 모은 자료로 확인된 조건만 ✓, 등록 수는 보유 상품 수 증가로 확인되는 만큼만(월별 등록일 자료는 아직 없음)'],
   '0.94.0': ['🔭 경영 탭 알라딘 관찰 도구: 전체 중 최상단 · 전체 중 유효 최저가 · 같은 등급 유효 최저가 · 세 칸 안 · 첫 페이지 · 단독 판매 · 단독 판매 유효 · 최고가 · 비싼 쪽 절반 · 경쟁 10·5·3개 이하 — 슬롯마다 수·비율, 누르면 그 상품 전부(접힌 카드 → 눌러 펼치면 시장 블록·도서·시장 정보·상품 상세 링크), 슬롯끼리 바로 옮겨 다님·찾기',
     '★ 임시 신호(기계 학습 전까지): 근소한 차이로 1위를 놓침 · 너무 싸게 둔 1위 · 배송비 합치면 밀림 · 경계 바로 위 가격(왼쪽 자리 효과) · 새책 값의 80% 넘음(기준 가격 효과) · 인기 책인데 첫 페이지 밖 · 오래 묵고 첫 페이지 밖 · 시장 지표 14일 넘음',
     '기타 지출: 정범이 준 Claude 결제 내역 17건(2025-09~2026-10, 그날 환율)을 넣고, 앞으로 Max(5x) 예상 $110/달 — 그 달 실제 결제를 넣으면 실제 값만 셈'],
@@ -4706,6 +4838,7 @@ function renderRevBox(m) {
 
 /* ══════════ '오늘 확인할 것'을 누르면 바로 그 목록으로 ══════════ */
 function openAlert(key) {
+  if (key === 'mgr') return openMgr();
   if (key === 'ship') { S.shipTab = 'deliv'; return openShip(); }
   if (key === 'shipconfirm') { S.shipTab = 'confirm'; return openShip(); }
   if (key === 'cash') { history.state && S.detail && history.back(); S.tab = 'orders'; S.sec.o_cash = true; renderTabs(); renderMain(); setTimeout(() => { const d = document.querySelector('details[data-sec="o_cash"]'); if (d) d.scrollIntoView({ block: 'start' }); }, 120); return; }
@@ -4863,6 +4996,10 @@ function openManual() {
   <p><b>비밀</b>: 알라딘 아이디·비밀번호는 Google Cloud Secret Manager에만 있습니다(웹앱·Firebase·GitHub에는 없음). 바꿀 때는 Cloud Shell에서 <code>bash deploy.sh --reset-secrets</code>. 네이버로 로그인하는 계정이면 클라우드 로그인이 안 됩니다(알라딘 아이디·비밀번호 로그인 필요).</p>`)}
   ${sec2('📊 그룹 성과 · 상품 가격 기록', `<p><b>상품 상세 → 가격 기록</b>(0.93.0): 가격 감시기가 바꾼 기록(언제·얼마→얼마·어느 그룹·공개 반영 확인), 관리자 결정 기록, 지금 결정 상태, 속한 수동 일괄·감시 그룹(누르면 그 그룹)을 한국 시각으로 보여 줍니다. 감시기 0.9.1부터는 반영과 함께 상품 기록의 가격도 바뀌고 '변경 이력'에 '가격 감시기 반영'으로 남습니다(예전 반영분은 감시기가 처음 켜질 때 한 번 채움 — '나중에 채움' 표시). 예전엔 수집기가 그 상품을 다시 읽기 전까지 옛 가격·빈 이력이었습니다.</p>
     <p><b>그룹 성과</b>: 상품 탭 수동 일괄 그룹 칸의 <b>📊 그룹 성과</b>(모든 그룹 비교) 또는 그룹 결과 맨 위 진행 칸의 <b>📊 성과</b>. 그룹이 가격을 바꾼 상품마다 <b>처음 바꾼 때</b>부터: 그룹 매출 · 판매율 · 그룹 밖 대비(같은 기간 그룹 밖 판매중 상품의 판매율 — 참고) · 바꾼 뒤 판매까지 걸린 시간(중앙값, 가운데 50%) · 첫 반응 · 공개 반영 뒤 판매까지 · 바꾼 가격으로 더/덜 받은 금액(판매가 − 바꾸기 전 가격) · 내림/올림 · 아직 안 팔린 재고, 날짜별 누적 판매율 그래프, 방향·등급·가격대별 표, 날마다 판매, 팔린 것/안 팔린 것 목록. 판매 = 주문 기록(취소·반품 뺌) + 클라우드 실시간 주문. 앞으로 만드는 모든 그룹이 저절로 여기 들어갑니다.</p>`, false)}
+  ${sec2('🧭 관리도구 — 노선표·건강판 (0.96.0, 개편 2단계)', `<p><b>어디서</b>: 설정 ⑭ 또는 ☁ 클라우드 화면 위 <b>🧭 관리도구</b>. 홈 알림(맡긴 일 멈춤·늦음·모르는 종류)을 눌러도 열림.</p><p><b>노선표</b> = 누가 무엇을 맡는지 적은 한 곳. 공용 파일 readnow-registry.js(기본값) + Firebase <b>app_settings/sys_registry</b>(기준 — 관리자 기기가 새 판을 올리고, 바꾼 값은 그대로 둠). 수집기(1.36.0)·클라우드(0.6.0)는 노선표에서 자기 몫인 종류만 맡고, <b>모르는 종류는 아무도 맡지 않음</b>(예전 수집기는 '끝남'으로 적어 사라질 수 있었음).</p><p><b>건강판</b>: ① 도구마다 살아 있음·판·<b>읽은 공용 파일 판</b>(노선표 판과 다르면 빨강 — Tampermonkey는 주소의 ?v= 판으로 파일을 기억하므로 도구를 새 판으로 바꿔야 같은 계산) ② 맡긴 일 지금 상태와 판단(정상·늦음·멈춤·다시 대기로·모르는 종류) ③ 지난 7일 사건 — <b>잃은 일</b>(멈춤·모르는 종류)이 2단계 관문(7일간 0). 멈춤은 알라딘에서 실제로 됐는지 본 뒤 '확인함'으로 닫음 ④ 자료 칸 새로움(새 자료가 매일 생기는 칸만) ⑤ 종류 표: 맡을 곳(클라우드·PC·웹앱)·멈춘 것으로 볼 시간·'안 맡음' 알림 시간·멈춤 — 관리자 기기에서 바꾸면 바로 저장되고 기록이 남음 ⑥~⑨ 일정·공용 파일 판·칸 주인(주황 = 쓰는 도구 둘 이상)·설정 위치.</p><p><b>살피기</b>: 클라우드가 1분마다 — 맡은 뒤 정한 시간 넘게 신호 없는 일은 다시 해도 같은 일(다시 읽기·조회·시장 지표 등)이면 대기로 되돌려 다른 곳이 맡게 하고(횟수 제한), <b>알라딘을 바꾸는 일(발송준비시작)은 자동으로 다시 하지 않고 '멈춤'</b>으로 — 출고 카드에 '넘어갔는지 확인 못함' 표시, 목록을 다시 읽은 뒤 남은 주문만 다시 누름. 팔기 장바구니 담기는 담기 전에 장바구니를 읽어 겹치지 않으므로 한 번 다시 함.</p>`)}
+  ${sec2('📦 택배비 정산 — 주문 한 건씩 (0.95.0)', `<p>주문·매출 탭 → <b>택배비 정산</b> 카드의 ①·①-2·②·순지출 줄, 아래 숫자 칸, 날짜·달 줄을 <b>누르면</b> 그 기간(또는 그날) 주문을 <b>한 건씩</b> 봅니다: 고객·주문번호·주문/발송 시각·주문 금액·권 수·고객 배송비·<b>택배 개수 × 그날 계약 택배비</b>(택배사)·<b>반품·교환 택배비</b>·순지출(빨강 = 우리가 낸 돈, 초록 = 남은 돈)·책 줄(펼치기).</p><p>위 칸으로 나눠 보기: 발송 전체 · 무료배송 · 고객 부담 · 반품·교환 있음 · 택배 2개 이상 · 직접 고친 주문 · 배송비 모름 · 발송 안 함. 정렬: 최근 · 순지출 큰 순 · 남은 돈 큰 순 · 주문 금액 · 오래된 순. 틀린 주문은 <b>택배 개수·반품비 고치기</b>로 바로 고침(정산·경영 비용 같이 바뀜).</p><p><b>계산 하나</b>: 정산과 경영 비용 모두 orderShip() 하나 — 택배 개수 × 그날 택배비 + 반품·교환 택배비 − 고객 배송비. 전부 취소돼 택배를 안 보낸 주문은 뺍니다(\'발송 안 함\'에서 확인). 배송비를 모르는 주문은 합계에서 빼고 따로 보여 줍니다.</p>`)}
+  ${sec2('🔭 → ⚙ 관찰 도구 칸을 수동 일괄 처리 그룹으로 (0.95.0)', `<p>관찰 도구 칸을 열면 위에 <b>⚙ n개로 수동 일괄 처리 그룹 만들기</b>와 자동 조건 설명. 누르면 이름을 묻고 → 그 칸의 상품만 대상으로 고정한 그룹을 만들어 → 칸의 목표대로 조건을 정하고 → 바로 추천가를 계산합니다(찾기로 좁혔으면 찾은 것만). 가격은 결과에서 고르고 확정해야 바뀝니다.</p><p>칸별 목표: <b>최상단·유효 최저가·같은 등급 유효 최저가·세 칸 안·너무 싸게 둔 1위</b> = 자리를 지키며 다음(세 번째) 매물 바로 한 단위 아래까지 <b>올림만</b>(한 번에 최대 30%, 1위 남겨 둔 돈은 50%) · <b>첫 페이지·경쟁 n개 이하</b> = 같은 등급 유효 최저가와 동가(이미 맨 위·최저가면 유지) · <b>단독·단독 유효</b> = 새책 판매가의 79%까지 올림만(최대 30%) · <b>최고가·비싼 쪽 절반</b> = 같은 등급 유효 최저가로 내림 · <b>근소한 차이</b> = 맨 위와 동가(최대 15%) · <b>배송비로 밀림</b> = 결제 총액 동가(최대 20%) · <b>경계 위</b> = 4,900·9,900 · <b>새책 80% 넘음</b> = 79%로 · <b>인기·오래 묵고 첫 페이지 밖</b> = 같은 등급 유효 최저가(최대 30%) · <b>시장 지표 낡음</b> = 만들 때 시장 지표를 수집기에 맡기고, 2일 안 자료가 생긴 상품만 엔진 규칙으로.</p><p>내리는 칸은 <b>목표 못 닿으면 안 내림</b>이 켜져 있어 하한선(알라딘 매입가·최대 인하) 때문에 어중간하게만 내리지 않습니다. 늘 그대로: 알라딘 매입가 하한 · 판매보류풀·비교 묶음 빼기 · 최근 7일 안 가격 바꾼 상품 빼기(그룹에서 0일로 바꾸면 포함). 그룹 화면의 <b>대상 고정</b> 줄에서 고정을 풀면 위 조건으로 전체에서 고릅니다.</p>`)}
+  ${sec2('🌱 주목할 만한 신규 판매자 (판매자 탭, 0.95.0)', `<p>조건: <b>시작 1년 안 · 한 달 평균 3,000권 넘게 등록 · 매달 빠짐없이 3,000권 이상 · 최근 6개월 평가 400개 이상(전체 평가 수 상관없음) · 평점 97.5% 이상</b>. 순위는 최근 6개월 평가 수.</p><p>✓ = 모은 자료로 확인됨, ? = 아직 확인할 자료 없음, ✗가 하나라도 있으면 뺌. 시작 = 툴팁 첫 평가일(첫 판매 무렵) · 6개월 평가·평점 = 숍 화면. <b>등록 수</b>는 알라딘이 판매자별 월 등록 수를 보여 주는 곳을 아직 모으지 않아, 보유 상품 수로 확인되는 만큼만 ✓: 월 평균 = 보유 ÷ 활동 개월(팔린 책이 빠져 있어 실제보다 작거나 같음), 매달 = <b>매달 등록 근거 읽기</b>로 판매자 기록의 툴팁 총상품수 시점들을 읽어 그 달 순증가가 3,000 넘는 달만 ✓.</p>`)}
   ${sec2('🔭 알라딘 관찰 도구 (경영 탭)', `<p>판매중 상품마다 시장 지표(수집기가 읽은 온라인 중고 첫 페이지 + 전체 중고 수)로 지금 자리를 셉니다. 우리 줄은 매물 번호로 찾고, <b>유효</b> = 판매자 분류 초록·진초록 + 알라딘측(판정 엔진과 같은 기준). 첫 페이지 밖은 볼 수 없으므로 <b>첫 페이지만으로 확실하지 않은 상품은 그 칸에 넣지 않습니다</b>(예: 매물이 첫 페이지보다 많으면 '최고가'·'단독 판매 유효'는 판단하지 않음). 비율은 시장 지표가 있는 상품 대비.</p>
     <p>칸을 누르면 그 상품 전부 — 접힌 카드(등급·제목·가격·자리·전체 수). 카드를 누르면 펼쳐져 왼쪽에 도서·시장 정보와 해당 칸들, 오른쪽에 시장 블록(맨 위 줄 = 북스킹 지금 가격·첫 페이지 자리·같은 등급 최저 — 판매용 카드), '상품 상세 ›'는 따로 단추. 위쪽 칸 줄로 다른 칸으로 바로, 찾기·모두 펼치기.</p>
     <p><b>★ 임시 신호</b>(기계 학습의 팔릴 확률 모델이 같은 일을 하게 되면 정리): 근소한 차이로 1위를 놓침(맨 위와 3%·300원 안) · 너무 싸게 둔 1위(다음 매물 +20% 넘음 — 남겨 둔 돈) · 배송비 합치면 밀림(구매자는 결제 총액으로 비교) · 경계 바로 위 가격(5,000원·10,100원 → 4,900원·9,900원이 훨씬 싸게 느껴지는 왼쪽 자리 효과) · 새책 값의 80% 넘음(새책 값이 기준점) · 인기 책인데 첫 페이지 밖(판매 지수 상위 25%) · 오래 묵고 첫 페이지 밖(180일) · 시장 지표 14일 넘음.</p>`, false)}
@@ -5321,7 +5458,8 @@ function openPriceQueue() {
 const BATCH_DEF = { name: '', grades: [], pmin: '', pmax: '', sku: '', regFrom: '', regTo: '', kw: '', exHold: true, exControl: true, exExcl: false,
   mode: 'valid', colors: [], pct: 0, better: true, coef: null, bb: true, minPrice: '', maxDrop: '', recentDays: 7, topNearOn: false, topNear: 10, rndPct: '', rndSeed: '',
   exSku: '', exKw: '', ageMin: '', ageMax: '', listMin: '', listMax: '', discMin: '', discMax: '', pubMin: '', pubMax: '', src: [], copiesMin: '', rankMax: '', notOnP1: false, usedMin: '', usedMax: '', sameMin: '', sameMax: '', gapMin: '', gapMax: '', bbHas: '', mktDays: '',
-  keepTop: false, keepLowest: false, dir: '', maxRise: '' };
+  keepTop: false, keepLowest: false, dir: '', maxRise: '', only: [], obs: '', obsAt: '', underScope: 'any', underRank: 1, newPct: 79, reach: false };
+const BMODES_X = { topAny: '맨 위 매물과 동가 (판매자·배송비 가리지 않음)', under: '기준 매물 바로 한 단위 아래 (자리를 지키며 올리기)', shipMin: '결제 총액(판매가+배송비) 유효 최저와 동가', charm: '경계 바로 위 가격 → 경계 아래 (4,900·9,900)', newPct: '새책 판매가의 n% 아래' }; // (0.95.0) 판정 엔진 critTarget의 새 기준 — 설명은 readnow-pricing-core.js 한 곳
 const batchRecent = (days) => (S.prRecentByDays || {})[+days || 0] || null; // 최근 n일 안에 가격이 바뀐 상품 → 바꾼 그룹들(Set, 그룹이 아니면 '')
 function batchFilter(c, gid) {
   const PRC = window.ReadnowPricing; const st = prSettings(); const skus = String(c.sku || '').split(',').map((x) => x.trim().toUpperCase()).filter(Boolean); const kws = String(c.kw || '').split(',').map((x) => x.trim()).filter(Boolean);
@@ -5331,7 +5469,8 @@ function batchFilter(c, gid) {
   const mktOn = c.rankMax !== '' || c.notOnP1 || c.usedMin !== '' || c.usedMax !== '' || c.sameMin !== '' || c.sameMax !== '' || c.gapMin !== '' || c.gapMax !== '' || c.bbHas || c.mktDays !== '';
   const inRng = (v, lo, hi) => !((lo != null && !(v >= lo)) || (hi != null && !(v <= hi)));
   const srcOf = (sku) => { const s0 = String(sku || '').toLowerCase(); return s0.includes('_ms') ? 'ms' : s0.includes('_hd') ? 'hd' : 'etc'; };
-  return [...S.plist.values()].filter((l) => { if (l.status !== '판매중' || !l.usedCode) return false;
+  const only = Array.isArray(c.only) && c.only.length ? new Set(c.only.map(String)) : null; // (0.95.0) 알라딘 관찰 도구 칸에서 옮긴 상품만 (상품코드 목록 고정)
+  return [...S.plist.values()].filter((l) => { if (l.status !== '판매중' || !l.usedCode) return false; if (only && !only.has(String(l.usedCode))) return false;
     /* (0.92.0) 세부 조건 — 빼기(관리코드·키워드) · 상품(재고 기간·정가·정가 대비 판매가·출간 연도·매입처·같은 책 보유) · 시장(우리 순위·전체 중고·같은 등급 매물 수·같은 등급 최저가 대비·매입가·시장 자료 나이) */
     if (exSk.length && exSk.some((x) => String(l.sku || '').toUpperCase().startsWith(x))) return false; if (exKw.length && exKw.some((k) => String(l.title || '').includes(k))) return false;
     if (c.ageMin !== '' || c.ageMax !== '') { const r = Date.parse(String(l.registeredAt || '').slice(0, 10)); if (!Number.isFinite(r)) return false; if (!inRng((now0 - r) / 864e5, n0(c.ageMin), n0(c.ageMax))) return false; }
@@ -5361,8 +5500,8 @@ function batchRows(c, gid, st) { const rows = batchFilter(c, gid); const out = n
   for (const k of extra) { if (have.has(k)) continue; const l = S.plist.get(k); if (!l || !l.usedCode) continue; have.add(k); out.add(k); rows.push(l); } return { rows, out }; }
 /* (0.83.0) 시작 가격: 상품이 이 그룹에 처음 들어온 때의 가격 (예전 그룹은 확정 전 가격, 없으면 지금 가격) — 실행 때 10분의 1·10배·30% 확인의 기준 */
 function batchStartAdd(R, st) { const S0 = st.start || (st.start = {}); const add = {}; R.forEach((x) => { const u = x.l.usedCode; if (S0[u] != null) return; const d = (st.decided || {})['aladin_' + u]; const v = d && d.from != null ? d.from : x.l.price; if (v != null) { S0[u] = v; add[u] = v; } }); return add; }
-const BATCH_LBL = { name: '이름', grades: '상태 등급', pmin: '최소 판매가(조건)', pmax: '최대 판매가(조건)', sku: '관리코드', regFrom: '등록일 시작', regTo: '등록일 끝', kw: '이름 키워드', exHold: '판매보류풀 빼기', exControl: '비교 묶음 빼기', exExcl: '자동 제외 빼기', mode: '기준', colors: '기준 판매자', pct: '기준 대비 %', better: '더 좋은 등급 기준', coef: '등급 계수', bb: '알라딘 매입가 하한', minPrice: '최소 판매가(하한)', maxDrop: '최대 인하 %', recentDays: '최근 변경 제외 일수', rndPct: '무작위 %', exSku: '빼기 관리코드', exKw: '빼기 키워드', ageMin: '재고 기간 최소(일)', ageMax: '재고 기간 최대(일)', listMin: '정가 최소', listMax: '정가 최대', discMin: '정가 대비 판매가 최소%', discMax: '정가 대비 판매가 최대%', pubMin: '출간 연도 최소', pubMax: '출간 연도 최대', src: '매입처', copiesMin: '같은 책 보유 최소', rankMax: '우리 첫 페이지 n위 이내', notOnP1: '첫 페이지에 없는 것만', usedMin: '전체 중고 최소', usedMax: '전체 중고 최대', sameMin: '같은 등급 매물 최소', sameMax: '같은 등급 매물 최대', gapMin: '같은 등급 최저가보다 비싼 % 최소', gapMax: '같은 등급 최저가보다 비싼 % 최대', bbHas: '알라딘 매입가', mktDays: '시장 자료 n일 안', keepTop: '최상단이면 유지', keepLowest: '유효 최저가면 유지', dir: '바꾸는 방향', maxRise: '최대 인상 %', topNearOn: '최상단 n% 이내면 동가', topNear: '최상단 동가 범위 %' };
-const batchCondDiff = (a, b) => Object.keys(BATCH_LBL).filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k])).map((k) => `${BATCH_LBL[k]}: ${JSON.stringify(a[k] ?? '')} → ${JSON.stringify(b[k] ?? '')}`);
+const BATCH_LBL = { name: '이름', grades: '상태 등급', pmin: '최소 판매가(조건)', pmax: '최대 판매가(조건)', sku: '관리코드', regFrom: '등록일 시작', regTo: '등록일 끝', kw: '이름 키워드', exHold: '판매보류풀 빼기', exControl: '비교 묶음 빼기', exExcl: '자동 제외 빼기', mode: '기준', colors: '기준 판매자', pct: '기준 대비 %', better: '더 좋은 등급 기준', coef: '등급 계수', bb: '알라딘 매입가 하한', minPrice: '최소 판매가(하한)', maxDrop: '최대 인하 %', recentDays: '최근 변경 제외 일수', rndPct: '무작위 %', exSku: '빼기 관리코드', exKw: '빼기 키워드', ageMin: '재고 기간 최소(일)', ageMax: '재고 기간 최대(일)', listMin: '정가 최소', listMax: '정가 최대', discMin: '정가 대비 판매가 최소%', discMax: '정가 대비 판매가 최대%', pubMin: '출간 연도 최소', pubMax: '출간 연도 최대', src: '매입처', copiesMin: '같은 책 보유 최소', rankMax: '우리 첫 페이지 n위 이내', notOnP1: '첫 페이지에 없는 것만', usedMin: '전체 중고 최소', usedMax: '전체 중고 최대', sameMin: '같은 등급 매물 최소', sameMax: '같은 등급 매물 최대', gapMin: '같은 등급 최저가보다 비싼 % 최소', gapMax: '같은 등급 최저가보다 비싼 % 최대', bbHas: '알라딘 매입가', mktDays: '시장 자료 n일 안', keepTop: '최상단이면 유지', keepLowest: '유효 최저가면 유지', dir: '바꾸는 방향', maxRise: '최대 인상 %', only: '관찰 도구에서 옮긴 상품', underScope: '바로 아래 기준 범위', underRank: '바로 아래 기준 순위', newPct: '새책 판매가 대비 %', reach: '목표 못 닿으면 안 내림', topNearOn: '최상단 n% 이내면 동가', topNear: '최상단 동가 범위 %' };
+const batchCondDiff = (a, b) => Object.keys(BATCH_LBL).filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k])).map((k) => (k === 'only' ? `${BATCH_LBL[k]}: ${(a[k] || []).length}개 → ${(b[k] || []).length}개` : `${BATCH_LBL[k]}: ${JSON.stringify(a[k] ?? '')} → ${JSON.stringify(b[k] ?? '')}`));
 /* (0.89.0) 그룹 상품별 기록(고른 것 picks · 확정 decided · 시작 가격 start · 확정 취소 undone)은 그룹 문서 하나에 넣지 않고 같은 모음(prd_price_batches)의 나눔 문서 32개({그룹}~s0…s31, shardOf=그룹)에 상품코드로 나눠 담음
    이유: 상품이 몇 천 개인 그룹은 문서 하나가 Firebase 한도(1MB · 색인 4만 개)를 넘어 '저장 실패'가 났음. 같은 모음이라 Firebase 규칙을 바꿀 필요 없음. 예전 그룹 문서에 들어 있던 것은 열 때 나눔 문서로 옮기고 그룹 문서에서는 비움(옮긴 뒤에만) */
 const BSH = 32, BITEM = new Set(['picks', 'decided', 'start', 'undone']);
@@ -5400,7 +5539,7 @@ function batchCompute(c, rows) { // (0.91.0) 조건 → 추천가 계산은 판�
     const out = { l, m, at: m.lastCheckedAt || null, target: null, reasons: [], page1: R0.map((r, i) => { const al = PRC.isAladinSide(r, settings); const ours = r.usedCode === l.usedCode || String(r.sellerCode) === '996008'; const sd = r.sellerCode ? sellers['sc_' + r.sellerCode] : null;
       return { r: i + 1, n: r.sellerName, g: r.grade, p: r.price, s: r.ship, lid: r.listingId, c: ours ? 'ours' : al ? 'aladin' : sd && RNC ? RNC.classifySellerDoc(sd, RS0).cls : 'unknown' }; }) };
     if (!R0.length) { out.reasons.push('시장 자료(첫 페이지)가 없음 — 상품 수집기의 시장 지표 수집이 먼저 필요'); return out; }
-    const ctx = { now: new Date().toISOString(), core: RNC, RS: RS0, buyback: c.bb ? m.buyback || null : null, policy: { fee: pol.fee ?? null, freeOver: pol.freeOver ?? null }, settings };
+    const ctx = { now: new Date().toISOString(), core: RNC, RS: RS0, buyback: c.bb ? m.buyback || null : null, policy: { fee: pol.fee ?? null, freeOver: pol.freeOver ?? null, paidOnly: !!pol.paidOnly }, settings, priceSales: m.priceSales || null };
     const d = PRC.decide({ ...l, key: 'aladin_' + l.usedCode, ship: undefined }, { at: out.at || ctx.now, rows: R0, pagesSeen: 1, lastPage: 1 }, sellers, ctx);
     const ct = PRC.critTarget(l, out.page1, d, c, ctx, m.buyback || null);
     out.reasons = ct.reasons; out.target = ct.t; if (ct.bbHit) out.bbHit = ct.bbHit; out.floor = ct.floor; out.status = d.status; return out; });
@@ -5737,7 +5876,13 @@ function openBatch(edit) {
       </details>
       <div class="brow"><label>무작위</label><input type="number" data-bf="rndPct" value="${esc(c.rndPct)}" min="1" max="99" style="width:60px" placeholder="전부">% <small class="hint">위 조건에 맞는 것 중 무작위로 이만큼만 (그룹마다 고정 — 다시 계산해도 같은 상품) · 비우면 전부</small></div>
       <div class="brow"><label>빼기</label>${chip('exHold', 1, '판매보류풀·불용', c.exHold)}${chip('exControl', 1, '비교 묶음(측정용)', c.exControl)}${chip('exExcl', 1, '자동 제외 코드(KHKDVD 등)', c.exExcl)}<label class="rchip">최근 <input type="number" data-bf="recentDays" value="${esc(c.recentDays)}" style="width:44px">일 안 가격 바꾼 상품</label></div>
-      <hr><div class="brow"><label>기준</label><label class="rchip"><input type="radio" name="bmode" data-bf="mode" value="top" ${c.mode === 'top' ? 'checked' : ''}>무조건 최상단 배치 (맨 위 매물과 동가)</label><label class="rchip"><input type="radio" name="bmode" data-bf="mode" value="valid" ${c.mode !== 'top' && c.mode !== 'same' ? 'checked' : ''}>유효 상품 같은 등급 대비 최저가 (엔진 규칙)</label><label class="rchip"><input type="radio" name="bmode" data-bf="mode" value="same" ${c.mode === 'same' ? 'checked' : ''}>유효 상품 같은 등급 최저가와 동가 (배송비 등 따지지 않고 판매가 완전히 같게)</label></div>
+      <hr><div class="brow"><label>기준</label><label class="rchip"><input type="radio" name="bmode" data-bf="mode" value="top" ${c.mode === 'top' ? 'checked' : ''}>무조건 최상단 배치 (맨 위 매물과 동가)</label><label class="rchip"><input type="radio" name="bmode" data-bf="mode" value="valid" ${!BMODES_X[c.mode] && c.mode !== 'top' && c.mode !== 'same' ? 'checked' : ''}>유효 상품 같은 등급 대비 최저가 (엔진 규칙)</label><label class="rchip"><input type="radio" name="bmode" data-bf="mode" value="same" ${c.mode === 'same' ? 'checked' : ''}>유효 상품 같은 등급 최저가와 동가 (배송비 등 따지지 않고 판매가 완전히 같게)</label>
+        ${Object.entries(BMODES_X).map(([k, l]) => `<label class="rchip"><input type="radio" name="bmode" data-bf="mode" value="${k}" ${c.mode === k ? 'checked' : ''}>${l}</label>`).join('')}</div>
+      ${c.mode === 'under' ? `<div class="brow"><label>바로 아래 기준</label><select data-bf="underScope"><option value="any" ${c.underScope === 'any' ? 'selected' : ''}>전체 매물 (판매자 가리지 않음)</option><option value="valid" ${c.underScope === 'valid' ? 'selected' : ''}>유효 매물 (등급 상관없이)</option><option value="same" ${c.underScope === 'same' ? 'selected' : ''}>유효 같은 등급 매물</option></select> 중 싼 쪽 <input type="number" data-bf="underRank" value="${esc(c.underRank ?? 1)}" min="1" style="width:44px">번째 매물보다 한 단위 아래 <small class="hint">(1 = 맨 위 유지, 3 = 세 칸 안 유지 · 우리 것 빼고 셈 · 기준이 없으면 지금 가격)</small></div>` : ''}
+      ${c.mode === 'newPct' ? `<div class="brow"><label>새책 대비</label>새책 판매가의 <input type="number" data-bf="newPct" value="${esc(c.newPct ?? 79)}" style="width:52px">% <small class="hint">(가격 단위로 내림 · 새책 값은 시장 지표의 판매가)</small></div>` : ''}
+      ${c.mode === 'shipMin' ? '<p class="hint" style="margin:0 0 6px">우리 배송비 = 지금 배송비 정책(무료 기준 이상이면 0원, 아니면 기본 배송비). 유효 매물(아래 기준 판매자)의 판매가 + 배송비 중 가장 싼 총액과 우리 총액이 같도록 — 무료 기준을 넘겨 배송비를 없애는 쪽이 더 비싸게 팔 수 있으면 그쪽</p>' : ''}
+      <div class="brow"><label>목표 자리</label>${chip('reach', 1, '하한선 때문에 목표까지 못 내리면 내리지 않음 (어중간한 인하 막기)', c.reach)}</div>
+      ${Array.isArray(c.only) && c.only.length ? `<div class="brow" style="background:#EEF5FF;border-radius:8px;padding:6px"><label>대상 고정</label><span>🔭 알라딘 관찰 도구 <b>${esc((OBS_SLOTS.find((x) => x[0] === c.obs) || [, c.obs || ''])[1])}</b>에서 옮긴 상품 <b>${num(c.only.length)}</b>개만 ${c.obsAt ? `<small class="hint">(${esc(kTime(c.obsAt))} 기준)</small>` : ''}</span> <button class="linkbtn" id="b_onlyx">고정 풀기 (위 조건으로 전체에서)</button></div>` : ''}
       ${c.mode === 'same' ? '<p class="hint" style="margin:0 0 6px">상태 등급 최상 &gt; 상 &gt; 중. 같은 등급 유효 최저가와 똑같이 · 더 좋은 등급 매물이 그보다 싸면(아래 \'더 좋은 등급 매물도 기준\'이 켜졌을 때) 등급 계수로 환산해 그 매물보다 반드시 낮게 · 더 낮은 등급 매물은 따라가지 않음</p>' : ''}
       <div class="brow"><label>기준 판매자</label><span class="rchip" style="opacity:.7">유효·알라딘측 (항상)</span>${chip('colors', 'yellow', '+ 노랑', c.colors.includes('yellow'))}${chip('colors', 'orange', '+ 주황', c.colors.includes('orange'))}${chip('colors', 'red', '+ 빨강', c.colors.includes('red'))}</div>
       <div class="brow"><label>최상단 동가</label>${chip('topNearOn', 1, '맨 위(첫 페이지 가장 위 액면 최저가)와', c.topNearOn)}<input type="number" data-bf="topNear" value="${esc(c.topNear ?? 10)}" style="width:52px">% 이내 차이면 맨 위와 같은 가격 <small class="hint">위 기준·기준 대비 %로 정한 가격에 덧붙임 · 판매자·배송비 가리지 않음 · 차이 = |정한 가격 − 맨 위| ÷ 정한 가격 · 하한선은 그 뒤에 그대로</small></div>
@@ -5757,6 +5902,7 @@ function openBatch(edit) {
   { const bm = sh.querySelector('.bmore'); if (bm) bm.ontoggle = () => { S.bMoreOpen = bm.open; }; }
   sh.querySelectorAll('[data-bopen]').forEach((b) => (b.onclick = () => openBatchGroup(b.dataset.bopen))); // (0.83.0) 그룹 바로 가기와 같은 길 (서버의 최신 그룹 문서로 열고 바로 계산)
   { const cp = sh.querySelector('#b_copy'); if (cp) cp.onclick = () => { const nm = prompt('새 그룹 이름', c.name + ' (2)'); if (!nm || !nm.trim()) return; S.batchId = null; S.batchSt = { picks: {}, decided: {}, start: {} }; S.batchMeta = {}; S.batchRes = null; S.batchT = 'sel'; S.batchCondJ = null; const c2 = JSON.parse(JSON.stringify({ ...c, name: nm.trim() })); openBatch(c2); const r2 = $('#sheet').querySelector('#b_run'); if (r2) r2.click(); }; }
+  { const ox = sh.querySelector('#b_onlyx'); if (ox) ox.onclick = () => { if (!confirm('관찰 도구에서 옮긴 상품 고정을 풀까요? 위 조건에 맞는 판매중 상품 전체가 대상이 됩니다.')) return; c.only = []; const y = sh.scrollTop; openBatch(c); $('#sheet').scrollTop = y; if (S.batchId && S.batchRes) recompute(true); }; }
   sh.querySelector('#b_reset').onclick = () => { S.batchC = null; S.batchId = null; S.batchSt = null; S.batchMeta = null; S.batchRes = null; S.batchCondJ = null; openBatch(JSON.parse(JSON.stringify(BATCH_DEF))); };
   /* 계산 = 지금 조건으로 그룹 상품(조건 밖이 된 결정 대기·확정 포함) → 추천가 → 그룹 문서에 조건·상품·처음 본 시작 가격 저장. live = 조건을 바꿔 저절로 (화면 위치 그대로, 바꾼 조건은 condLog에) */
   async function recompute(live) {
@@ -6214,10 +6360,103 @@ function perfReport() { try { const P = window.__pm || {}; const nav = (performa
   const el = document.createElement('div'); el.className = 'perfchip'; el.title = '누르면 자세히'; el.innerHTML = `⏱ 화면 ${f(P.shell)} · 기기 기록 ${f(P.idb)} · 서버 ${f(P.sync)}${R.sw ? '' : ' · (저장 안 됨)'}`;
   el.onclick = () => alert(`열기 단계 (페이지 연 순간부터, 초)\n웹앱 파일 받음 ${f(R.html)}${R.sw ? ' (기기 저장본)' : ''}\n프로그램 준비 ${f(P.js)}\n로그인 확인 ${f(P.auth)}\n화면 틀 ${f(P.shell)}\n기기 기록(고객 ${num(R.n.customers)}·주문 ${num(R.n.orders)}) ${f(P.idb)}\n홈 그림 ${f(P.home)}\n서버 새 기록 ${f(P.sync)} (바뀐 고객 ${num(P.custN ?? 0)}건 ${f(P.custMs)} · 바뀐 주문 ${num(P.ordN ?? 0)}건 ${f(P.ordMs)})\n\n이 기록은 Firebase perf_logs에도 남습니다.`);
   const hr = document.querySelector('header.top .row'); const tb = hr && hr.querySelector('.tbtns'); if (hr && tb) hr.insertBefore(el, tb); else document.body.appendChild(el); setTimeout(() => el.remove(), 9000); } catch (e) {} } // (0.92.0) 오른쪽 위 머리 줄 안 (버튼 왼쪽) — 화면 내용·단추를 가리지 않게
+/* ══════════ (0.96.0) 🧭 관리도구 1판 — 노선표·건강판 (개편 2단계) ══════════
+ * 노선표 = readnow-registry.js(기본값) + Firebase app_settings/sys_registry(살아 있는 값 — Firebase가 기준). 관리자 기기가 열면 파일 판이 더 새것일 때 문서에 올림(정범이 바꾼 overrides는 그대로)
+ * 건강판: ① 도구(클라우드·PC 수집기·가격 감시기·이 웹앱)가 살아 있는지 + 읽은 공용 파일 판이 노선표의 판과 같은지 ② 맡긴 일 — 지금 대기·처리 중, 늦음·멈춤·모르는 종류(노선표 sweep 판단 = 클라우드가 1분마다 실제로 처리)
+ *   ③ 지난 7일 잃은 일(멈춤·모르는 종류) = 2단계 관문 ④ 자료 칸이 정한 주기 안에 새로워졌는지 ⑤ 맡긴 일 종류 표(멈춤·맡는 곳·기한 — 관리자 기기에서 바꿈) ⑥ 일정·칸 주인·설정 위치 */
+S.sysReg = null; S.sysHealth = null;
+const REGF = () => window.ReadnowRegistry || null;
+const REGR = () => { const G = REGF(); return G ? G.merge(S.sysReg || {}) : null; };
+const vnum = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
+function mgrWatch() { if (S._mgrUn) return; S._mgrUn = 1;
+  db.collection('app_settings').doc('sys_registry').onSnapshot((d) => { S.sysReg = d.exists ? d.data() : {}; mgrPublish(); if (S.detail && S.detail.mgr) mgrRedraw(); }, () => {});
+  db.collection('app_settings').doc('sys_health').onSnapshot((d) => { S.sysHealth = d.exists ? d.data() : null; if (S.detail && S.detail.mgr) mgrRedraw(); if (S.tab === 'home') S._biz = null; }, () => {}); }
+async function mgrPublish() { const G = REGF(); if (!G || !S.sysReg || !isAdminDevice() || S._mgrPub) return; if (S.sysReg.ver && vnum(S.sysReg.ver) >= vnum(G.VERSION)) return; S._mgrPub = 1;
+  const D = G.DEFAULTS; const defaults = { KINDS: D.KINDS, JOBS: D.JOBS, COLLECTIONS: D.COLLECTIONS, PINS: D.PINS, USES: D.USES, SETTINGS: D.SETTINGS.map(([doc, what, by]) => ({ doc, what, by })) }; // Firebase는 배열 안 배열을 못 담음
+  try { await db.collection('app_settings').doc('sys_registry').set({ ver: G.VERSION, defaults: JSON.parse(JSON.stringify(defaults)), publishedAt: new Date().toISOString(), publishedBy: deviceName(), log: firebase.firestore.FieldValue.arrayUnion({ at: new Date().toISOString(), by: S.user.email, what: `노선표 ${S.sysReg.ver || '처음'} → ${G.VERSION} 올림 (웹앱 ${APP_VER})` }), uploadedAt: TS() }, { merge: true }); } catch (e) { console.warn('노선표 올리기 실패', e); } S._mgrPub = 0; }
+// 도구 신호 모으기 (열 때 한 번 + 맡긴 일은 실시간)
+async function mgrLoad() { const now = Date.now(); const out = { at: now, pcs: [], fresh: {}, cmds7: [] }; const R = REGR();
+  const tasks = [db.collection('rn_status').get().then((qs) => { const by = new Map(); qs.forEach((d) => { const v = d.data(); if (!v.atMs) return; const k = v.pcName || d.id; const o = by.get(k); if (!o || v.atMs > o.atMs) by.set(k, { ...v, id: d.id }); }); out.pcs = [...by.values()].sort((a, b) => b.atMs - a.atMs); }).catch((e) => (out.pcErr = e.code || e.message)),
+    db.collection('prd_system').doc('pricing').get().then((d) => (out.watch = d.exists ? d.data() : {})).catch(() => {}),
+    db.collection('shp_cmds').where('createdAt', '>=', new Date(now - 7 * 864e5).toISOString()).get().then((qs) => qs.forEach((d) => out.cmds7.push({ id: d.id, ...d.data() }))).catch((e) => (out.cmdErr = e.code || e.message))];
+  for (const [name, c] of Object.entries(R ? R.COLLECTIONS : {})) { if (!c.freshMin) continue; tasks.push(db.collection(name).orderBy(c.ts, 'desc').limit(1).get().then((qs) => { const v = qs.docs[0] && qs.docs[0].data(); out.fresh[name] = v ? REGF().tms(v[c.ts]) : NaN; }).catch((e) => (out.fresh[name] = { err: e.code || e.message }))); }
+  await Promise.all(tasks); S.mgrData = out; return out; }
+function mgrLive() { if (S._mgrLiveUn) return; const L = (S.mgrLiveCmds = { q: [], r: [] }); const un = [];
+  ['queued', 'running'].forEach((st) => un.push(db.collection('shp_cmds').where('status', '==', st).onSnapshot((qs) => { L[st[0]] = qs.docs.map((d) => ({ id: d.id, ...d.data() })); if (S.detail && S.detail.mgr) mgrRedraw(); }, () => {})));
+  S._mgrLiveUn = () => { un.forEach((f) => f()); S._mgrLiveUn = null; }; }
+const mgrAgo = (ms) => { if (!Number.isFinite(ms)) return '없음'; const m = (Date.now() - ms) / 60e3; return m < 1 ? '방금' : m < 60 ? `${Math.round(m)}분 전` : m < 48 * 60 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
+const mgrMyVers = () => { const G = REGF(); return G ? G.loadedVers({ ReadNowCore: window.ReadNowCore, ReadnowSellers: window.ReadnowSellers, ReadnowProducts: window.ReadnowProducts, ReadnowPricing: window.ReadnowPricing, ReadnowShipping: window.ReadnowShipping, ReadnowOrders: window.ReadnowOrders, ReadnowRegistry: G }) : {}; };
+function mgrTools(R, D) { const G = REGF(); const now = Date.now(); const tm = G.tms; const rows = [];
+  const pin = (tool, rep) => G.pinDiff(R, tool, rep || {}); const chip = (L) => L.map((x) => `<span class="tag ${x.ok ? 'pl' : 'mgrx'}" title="노선표 판 ${esc(x.want)}">${esc(G.fileKey(x.f))} ${esc(x.got || '?')}${x.ok ? '' : ` → ${esc(x.want)}`}</span>`).join(' ');
+  const c = S.cloud || {}; const cAt = tm(c.at); rows.push({ name: '☁ 클라우드', alive: now - cAt < 3 * 60e3, at: cAt, ver: c.ver, pins: pin('cloud', c.cores), extra: c.ok === false ? `오류: ${c.err || ''}` : '' });
+  (D.pcs || []).forEach((p) => rows.push({ name: `🖥 PC 수집기 · ${p.pcName || p.id}`, alive: now - p.atMs < 10 * 60e3, at: p.atMs, ver: p.ver || null, pins: pin('pc', p.cores), extra: p.running ? `작업: ${p.running}` : '', noCores: !p.cores }));
+  if (!(D.pcs || []).length) rows.push({ name: '🖥 PC 수집기', alive: false, at: NaN, ver: null, pins: pin('pc', null), extra: D.pcErr ? '읽기 실패: ' + D.pcErr : '신호 기록 없음' });
+  const w = D.watch || {}; const wAt = tm(w.watchBeat); rows.push({ name: `💹 가격 감시기${w.watchPc ? ' · ' + w.watchPc : ''}`, alive: now - wAt < 6 * 60e3, at: wAt, ver: w.watchVer || null, pins: pin('watch', w.watchCores), noCores: !w.watchCores });
+  rows.push({ name: `🌐 이 웹앱 · ${deviceName() || '이 기기'}`, alive: true, at: now, ver: APP_VER, pins: pin('webapp', mgrMyVers()) });
+  return `<div class="list">${rows.map((x) => `<div class="item" style="display:block"><div class="l1" style="justify-content:space-between"><b>${esc(x.name)}</b><span><span class="tag ${x.alive ? 'pl' : 'x'}">${x.alive ? '살아 있음' : '신호 없음'}</span> <small class="hint">${mgrAgo(x.at)}${x.ver ? ' · 판 ' + esc(x.ver) : ''}</small></span></div>
+    <div class="l2" style="flex-wrap:wrap;gap:3px">${chip(x.pins)}${x.noCores ? ' <small class="hint">(이 판은 읽은 판을 아직 안 보냄 — 새 판으로 바꾸면 보임)</small>' : ''}</div>${x.extra ? `<div class="hint">${esc(x.extra)}</div>` : ''}</div>`).join('')}</div>`; }
+function mgrCmds(R) { const G = REGF(); const L = S.mgrLiveCmds || { q: [], r: [] }; const live = [...L.q, ...L.r]; const plan = G.sweep(R, live, Date.now(), { cloud: !!(S.cloud && Date.now() - G.tms(S.cloud.at) < 3 * 60e3), pc: (S.mgrData && S.mgrData.pcs || []).some((p) => Date.now() - p.atMs < 10 * 60e3), webapp: true });
+  const lbl = (t) => ((R.KINDS[t] || {}).label || t); const ACT = { requeue: ['다시 대기로 (클라우드가 곧)', 'cau'], stuck: ['멈춤 — 사람 확인', 'x'], late: ['늦음 — 아무도 안 맡음', 'cau'], unknown: ['모르는 종류', 'x'] };
+  const rows = live.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || ''))).map((x) => { const p = plan.find((y) => y.id === x.id); return `<div class="item" style="display:block"><div class="l1" style="justify-content:space-between"><span><b>${esc(lbl(x.type))}</b> <small class="hint">${esc(x.id.slice(0, 10))} · ${esc(kTime(x.createdAt))} · ${x.status === 'running' ? `${esc((x.claim && x.claim.pc) || '?')} 처리 중` : '대기'}${x.attempts ? ` · 다시 ${x.attempts}번째` : ''}</small></span>${p ? `<span class="tag ${ACT[p.act][1]}">${ACT[p.act][0]}</span>` : '<span class="tag pl">정상</span>'}</div>${p ? `<div class="hint">${esc(p.why)}</div>` : ''}${x.pcSkip || x.cloudSkip ? `<div class="hint">${esc(x.pcSkip || x.cloudSkip)}</div>` : ''}</div>`; });
+  return { html: `<div class="list">${rows.join('') || '<div class="empty">지금 대기·처리 중인 맡긴 일 없음</div>'}</div>`, plan }; }
+function mgrLost(D) { const H = S.sysHealth || {}; const wk = Date.now() - 7 * 864e5; const ev = (H.events || []).filter((e) => Date.parse(e.at) > wk); const lost = ev.filter((e) => e.act === 'stuck' || e.act === 'unknown'); const rq = ev.filter((e) => e.act === 'requeue');
+  const stuckNow = (D.cmds7 || []).filter((x) => x.status === 'stuck'); return { ev, lost, rq, stuckNow }; }
+function mgrKinds(R, D) { const adm = isAdminDevice(); const st = {}; (D.cmds7 || []).forEach((x) => { const o = st[x.type] || (st[x.type] = { n: 0, done: 0, stuck: 0, ms: [] }); o.n++; if (x.status === 'done') { o.done++; const a = Date.parse(x.createdAt), b = Date.parse(x.doneAt); if (a && b && b > a) o.ms.push(b - a); } if (x.status === 'stuck') o.stuck++; });
+  const med = (A) => { if (!A.length) return null; const s = A.slice().sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; }; const T = REGF().TOOLS;
+  const unknown = Object.keys(st).filter((k) => !R.KINDS[k]);
+  const rows = Object.entries(R.KINDS).sort((a, b) => a[1].prio - b[1].prio).map(([k, v]) => { const s0 = st[k] || { n: 0, done: 0, stuck: 0, ms: [] }; const m = med(s0.ms);
+    return `<tr${v.off ? ' style="opacity:.55"' : ''}><td><b>${esc(v.label)}</b><br><small class="hint">${esc(k)} · ${esc(v.from || '')}${v.money ? ' · 💰 알라딘을 바꿈' : ''}${v.test ? ' · 시험' : ''}</small></td>
+      <td>${['cloud', 'pc', 'webapp'].map((w) => `<label class="rchip" style="margin:1px"><input type="checkbox" data-mgk="${esc(k)}" data-mgw="${w}" ${(v.by || []).includes(w) ? 'checked' : ''} ${adm && !v.test ? '' : 'disabled'}>${esc(T[w])}</label>`).join('')}</td>
+      <td><input type="number" data-mgk="${esc(k)}" data-mgf="leaseMin" value="${v.leaseMin}" style="width:56px" ${adm ? '' : 'disabled'}>분<br><small class="hint">다시 ${v.retry}번${v.safe ? '' : ' · 자동 다시 안 함'}</small></td>
+      <td><input type="number" data-mgk="${esc(k)}" data-mgf="waitMin" value="${v.waitMin}" style="width:56px" ${adm ? '' : 'disabled'}>분</td>
+      <td>${num(s0.n)}건 · 끝 ${num(s0.done)}${s0.stuck ? ` · <b style="color:var(--red)">멈춤 ${s0.stuck}</b>` : ''}${m != null ? `<br><small class="hint">걸린 시간(중간) ${durTxt ? durTxt(m) : Math.round(m / 1000) + '초'}</small>` : ''}</td>
+      <td><label class="rchip"><input type="checkbox" data-mgk="${esc(k)}" data-mgf="off" ${v.off ? 'checked' : ''} ${adm ? '' : 'disabled'}>멈춤</label></td></tr>`; });
+  return `<div style="overflow-x:auto"><table class="tbl mgr-t"><tr><th>일의 종류</th><th>맡을 수 있는 곳</th><th>멈춘 것으로 볼 시간</th><th>'안 맡음' 알림</th><th>지난 7일</th><th></th></tr>${rows.join('')}</table></div>
+    ${unknown.length ? `<p class="hint" style="color:var(--red)">노선표에 없는 종류가 지난 7일에 있었음: ${unknown.map(esc).join(', ')}</p>` : ''}
+    <p class="hint">${adm ? '바꾸면 바로 저장 → 수집기·클라우드가 다음 확인부터 따름(Firebase 기준). 멈춤 = 그 종류는 아무도 맡지 않음(대기로 남음).' : '관리자 기기에서만 바꿀 수 있음'} 맡을 수 있는 곳이 여럿이면 먼저 받은 쪽이 한 번만 합니다(트랜잭션). 💰 일(알라딘을 바꿈)은 멈췄을 때 자동으로 다시 하지 않습니다.</p>`; }
+function mgrFresh(R, D) { const G = REGF(); const rows = Object.entries(R.COLLECTIONS).filter(([, c]) => c.freshMin).map(([n, c]) => { const v = D.fresh[n]; const err = v && v.err; const f = err ? null : G.freshness(R, n, v, Date.now());
+    return `<tr><td><b>${esc(n)}</b><br><small class="hint">${esc(c.note || '')}</small></td><td>${c.w.map((w) => esc(G.TOOLS[w] || w)).join('·')}</td><td>${err ? `<span class="hint">읽기 실패 ${esc(err)}</span>` : mgrAgo(v)}</td><td>${durTxt ? durTxt(c.freshMin * 60e3) : c.freshMin + '분'}</td><td>${f ? `<span class="tag ${f.ok ? 'pl' : 'x'}">${f.ok ? '정상' : '늦음'}</span>` : '-'}</td></tr>`; });
+  return `<div style="overflow-x:auto"><table class="tbl mgr-t"><tr><th>자료 칸</th><th>쓰는 도구</th><th>마지막 새 자료</th><th>정한 주기</th><th></th></tr>${rows.join('')}</table></div>`; }
+function mgrStatic(R) { const G = REGF(); const T = G.TOOLS;
+  const jobs = `<table class="tbl mgr-t"><tr><th>순서</th><th>일정·요청 작업</th><th>하는 곳</th></tr>${R.JOBS.slice().sort((a, b) => a.order - b.order).map((j) => `<tr><td>${j.order}</td><td>${esc(j.label)} <small class="hint">${esc(j.k)}</small></td><td>${j.by.map((w) => esc(T[w])).join('·')}</td></tr>`).join('')}</table><p class="hint">같은 때 여러 PC 일정이면 번호 순서대로 (수집기 1.35.1~). 실행 위치는 1판에서는 지금 그대로 — 다음 판에서 이 표로 옮김.</p>`;
+  const cols = `<table class="tbl mgr-t"><tr><th>칸</th><th>쓰는 도구</th><th>읽는 도구</th></tr>${Object.entries(R.COLLECTIONS).map(([n, c]) => `<tr><td>${esc(n)}</td><td${c.w.length > 1 ? ' style="color:var(--amber)" title="쓰는 도구가 둘 이상 — 개편에서 하나로 모을 칸"' : ''}>${c.w.map((w) => esc(T[w] || w)).join('·')}</td><td>${c.r.map((w) => esc(T[w] || w)).join('·')}</td></tr>`).join('')}</table><p class="hint">주황 = 쓰는 도구가 둘 이상(개편에서 하나로 모을 칸).</p>`;
+  const pins = `<table class="tbl mgr-t"><tr><th>공용 파일</th><th>이번 판</th><th>쓰는 도구</th></tr>${Object.entries(R.PINS).map(([f, v]) => `<tr><td>${esc(f)}</td><td><b>${esc(v)}</b></td><td>${Object.entries(R.USES).filter(([, L]) => L.includes(f)).map(([t]) => esc(T[t])).join('·')}</td></tr>`).join('')}</table>`;
+  const sets = `<table class="tbl mgr-t"><tr><th>설정 문서</th><th>무엇</th><th>쓰는 곳</th></tr>${R.SETTINGS.map(([d, w, by]) => `<tr><td>${esc(d)}</td><td>${esc(w)}</td><td>${by.map((x) => esc(T[x] || x)).join('·')}</td></tr>`).join('')}</table>`;
+  return { jobs, cols, pins, sets }; }
+function openMgr() { const sh = $('#sheet'); if (!(S.detail && S.detail.mgr)) { history.pushState({ mgr: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden'; } S.detail = { mgr: 1 }; mgrWatch(); mgrLive();
+  if (!REGF()) { sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">🧭 관리도구</div></div><div class="card"><b style="color:var(--red)">노선표 파일(readnow-registry.js)을 못 읽음</b> — GitHub에 올렸는지 확인</div>`; $('#back').onclick = () => history.back(); return; }
+  if (!S.mgrData || Date.now() - S.mgrData.at > 60e3) { if (!S._mgrLd) { S._mgrLd = 1; mgrLoad().finally(() => { S._mgrLd = 0; if (S.detail && S.detail.mgr) mgrRedraw(); }); } }
+  mgrRedraw(); }
+function mgrRedraw() { const sh = $('#sheet'); if (!(S.detail && S.detail.mgr)) return; const y = sh.scrollTop; const R = REGR(); const D = S.mgrData || { pcs: [], fresh: {}, cmds7: [], loading: 1 }; const G = REGF(); const H = S.sysHealth;
+  const C0 = mgrCmds(R); const Lz = mgrLost(D); const st = mgrStatic(R); const regOk = S.sysReg && S.sysReg.ver;
+  const gate = Lz.lost.length === 0 && Lz.stuckNow.length === 0; const hAge = H ? Date.now() - G.tms(H.at) : Infinity;
+  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">🧭 관리도구 — 노선표·건강판</div><button class="btn ghost sm" id="mg_re">새로 읽기</button></div>
+    <div class="card"><div class="mgrid">${mcell(`<span style="color:${gate ? 'var(--cloth)' : 'var(--red)'}">${num(Lz.lost.length + Lz.stuckNow.length)}건</span>`, '지난 7일 잃은 일', '멈춤(사람 확인)·모르는 종류 — 2단계 관문: 7일간 0')}${mcell(num(Lz.rq.length) + '건', '자동으로 다시 대기로', '멈춘 일 중 다시 해도 되는 것')}${mcell(num(C0.plan.filter((a) => a.act === 'late' || a.act === 'unknown').length) + '건', '지금 알림', '늦음·모르는 종류')}${mcell(regOk ? esc(S.sysReg.ver) : '<span style="color:var(--amber)">아직 없음</span>', '노선표 (Firebase)', regOk ? `${esc(kTime(S.sysReg.publishedAt))} 올림 · 파일 ${esc(G.VERSION)}` : '관리자 기기가 열면 올림')}</div>
+      <p class="hint" style="margin:6px 0 0">살피는 곳: 클라우드가 1분마다 노선표대로 맡긴 일을 살핌 ${H ? `(마지막 ${mgrAgo(G.tms(H.at))}${hAge > 15 * 60e3 ? ' — <b style="color:var(--amber)">클라우드 0.6.0을 올렸는지 확인</b>' : ''})` : '— <b style="color:var(--amber)">아직 기록 없음: 클라우드 0.6.0을 올리면 시작</b>'}</p></div>
+    ${sec('mg_tools', '① 도구 — 살아 있음 · 읽은 공용 파일 판', D.loading ? '<div class="hint"><span class="ldg">✳</span> 신호 읽는 중</div>' : mgrTools(R, D), true)}
+    ${sec('mg_cmds', `② 맡긴 일 — 지금 ${num(((S.mgrLiveCmds || {}).q || []).length)}건 대기 · ${num(((S.mgrLiveCmds || {}).r || []).length)}건 처리 중`, C0.html, true)}
+    ${sec('mg_lost', `③ 지난 7일 사건 ${num(Lz.ev.length)}건`, `${Lz.stuckNow.length ? `<div class="list">${Lz.stuckNow.map((x) => `<div class="item" style="display:block"><b style="color:var(--red)">멈춤: ${esc((R.KINDS[x.type] || {}).label || x.type)}</b> <small class="hint">${esc(kTime(x.stuckAt || x.createdAt))}</small><div class="hint">${esc(x.stuckWhy || '')}</div><button class="btn ghost sm" data-mgok="${esc(x.id)}">확인함 (닫기)</button></div>`).join('')}</div>` : ''}<div class="list">${Lz.ev.slice().reverse().map((e) => `<div class="item" style="display:block"><small class="hint">${esc(kTime(e.at))}</small> <b>${esc({ requeue: '다시 대기로', stuck: '멈춤', unknown: '모르는 종류' }[e.act] || e.act)}</b> ${esc((R.KINDS[e.type] || {}).label || e.type)}<div class="hint">${esc(e.why || '')}</div></div>`).join('') || '<div class="empty">사건 없음</div>'}</div>`, Lz.lost.length > 0 || Lz.stuckNow.length > 0)}
+    ${sec('mg_fresh', '④ 자료 칸 — 정한 주기 안에 새로워졌나', D.loading ? '<div class="hint"><span class="ldg">✳</span> 읽는 중</div>' : mgrFresh(R, D), false)}
+    ${sec('mg_kinds', '⑤ 맡긴 일 종류 (노선표)', D.loading ? '<div class="hint"><span class="ldg">✳</span> 읽는 중</div>' : mgrKinds(R, D), false)}
+    ${sec('mg_jobs', '⑥ 일정·요청 작업', st.jobs, false)}${sec('mg_pins', '⑦ 공용 파일 판 (이번 출시)', st.pins + '<p class="hint">도구의 Tampermonkey는 @require 주소의 ?v= 판으로 파일을 기억합니다 — 판이 다르면 그 도구를 새 판으로 바꿔야 같은 계산을 합니다. 클라우드는 GitHub의 지금 파일을 읽습니다.</p>', false)}
+    ${sec('mg_cols', '⑧ 자료 칸 주인', st.cols, false)}${sec('mg_sets', '⑨ 설정은 어디에', st.sets, false)}
+    ${(S.sysReg && (S.sysReg.log || []).length) ? sec('mg_log', `노선표 바꾼 기록 ${(S.sysReg.log || []).length}건`, `<div class="list">${(S.sysReg.log || []).slice().reverse().slice(0, 50).map((l) => `<div class="item"><small class="hint">${esc(kTime(l.at))} ${esc(l.by || '')}</small> ${esc(l.what)}</div>`).join('')}</div>`, false) : ''}`;
+  sh.scrollTop = y; $('#back').onclick = () => { if (S._mgrLiveUn) S._mgrLiveUn(); history.back(); };
+  bindUI(sh, mgrRedraw); $('#mg_re').onclick = () => { S.mgrData = null; openMgr(); };
+  const save = async (k, patch, what) => { if (!isAdminDevice()) return toast('관리자 기기에서만'); try { await db.collection('app_settings').doc('sys_registry').set({ overrides: { kinds: { [k]: patch } }, log: firebase.firestore.FieldValue.arrayUnion({ at: new Date().toISOString(), by: S.user.email, what }), uploadedAt: TS() }, { merge: true }); toast('노선표 저장 — ' + what); } catch (e) { toast('저장 실패: ' + (e.code || e.message)); } };
+  sh.querySelectorAll('[data-mgw]').forEach((el) => (el.onchange = () => { const k = el.dataset.mgk; const by = [...sh.querySelectorAll(`[data-mgw][data-mgk="${CSS.escape(k)}"]:checked`)].map((x) => x.dataset.mgw); if (!by.length && !confirm('맡을 곳을 모두 빼면 이 종류는 아무도 맡지 않습니다. 그래도?')) { el.checked = true; return; } save(k, { by }, `${k} 맡을 곳 → ${by.join('·') || '없음'}`); }));
+  sh.querySelectorAll('[data-mgf]').forEach((el) => (el.onchange = () => { const k = el.dataset.mgk, f = el.dataset.mgf; const v = f === 'off' ? el.checked : Math.max(1, +el.value || 1); if (f === 'off' && v && R.KINDS[k] && R.KINDS[k].money === false && !confirm(`'${R.KINDS[k].label}'을 멈출까요? 새로 맡긴 일이 대기로 남습니다.`)) { el.checked = false; return; } save(k, { [f]: v }, `${k} ${f === 'off' ? (v ? '멈춤' : '다시 켬') : f + ' → ' + v + '분'}`); }));
+  sh.querySelectorAll('[data-mgok]').forEach((b) => (b.onclick = async () => { if (!confirm('멈춘 일을 확인했나요? (알라딘에서 실제로 됐는지 본 뒤 닫으세요 — 닫으면 \'확인함\'으로 남음)')) return; try { await db.collection('shp_cmds').doc(b.dataset.mgok).set({ status: 'resolved', resolvedAt: new Date().toISOString(), resolvedBy: S.user.email, uploadedAt: TS() }, { merge: true }); S.mgrData = null; openMgr(); } catch (e) { toast('실패: ' + (e.code || e.message)); } }));
+}
+// 홈·경영 알림: 노선표 건강판의 문제
+function mgrAlerts(add) { const G = REGF(); if (!G) return; mgrWatch(); const H = S.sysHealth; if (!H) return; const R = REGR();
+  const late = (H.alerts || []).filter((a) => a.act === 'late' && !(R.KINDS[a.type] || {}).test); const unk = (H.alerts || []).filter((a) => a.act === 'unknown');
+  const wk = Date.now() - 7 * 864e5; const stuck = (H.events || []).filter((e) => e.act === 'stuck' && Date.parse(e.at) > wk);
+  if (stuck.length) add('red', `맡긴 일 ${stuck.length}건이 멈춤(지난 7일) — 관리도구에서 확인`, 'mgr'); if (unk.length) add('red', `노선표에 없는 맡긴 일 ${unk.length}건 — 아무도 안 맡음`, 'mgr'); if (late.length) add('amber', `맡긴 일 ${late.length}건이 늦음 (${[...new Set(late.map((a) => (R.KINDS[a.type] || {}).label || a.type))].join(', ')})`, 'mgr'); }
 function openCloud() {
   const sh = $('#sheet'); const back = S.detail; S.detail = { cloud: 1, back }; if (!sh.classList.contains('on')) history.pushState({ cloud: 1 }, ''); sh.classList.add('on'); document.body.style.overflow = 'hidden'; if (!S._shipLive) loadShip();
   const c = S.cloud || {}; const u = pptCloudUrl() || ''; const f = cloudFresh();
-  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">☁ 클라우드 수집</div></div>
+  sh.innerHTML = `<div class="sh"><button class="back" id="back">← 닫기</button><div class="t">☁ 클라우드 수집</div><button class="btn ghost sm" id="cl_mgr">🧭 관리도구</button></div>
     <div class="card"><b>지금 상태</b>: ${f ? '<span class="tag pl">켜짐</span>' : c.ok === false ? '<span class="tag x">오류</span>' : '<span class="tag">신호 없음</span>'}
       <div class="hint" style="margin-top:4px">마지막 신호 ${c.at ? esc(new Date(c.at).toLocaleString('ko-KR')) : '-'} · 판 ${esc(c.ver || '-')} · 알라딘 로그인 ${esc(c.login || '-')}${c.tickMs ? ` · 한 번 ${Math.round(c.tickMs / 1000)}초` : ''}${c.last ? ` · 주문확인요청 ${c.last.confirm}건 · 발송 요청 ${c.last.deliv}건` : ''}${c.err ? `<br><b style="color:#B0322A">오류: ${esc(c.err)}</b>` : ''}</div>
       <div class="hint" style="margin-top:4px">클라우드가 켜져 있으면(신호 10분 안) PC 수집기는 자동 '발송 요청 읽기'만 쉬고, 나머지(고객·상품·가격 감시·벤치마킹 등)는 그대로 PC가 합니다. 맡긴 일(발송준비시작·다시 읽기)은 먼저 받은 쪽이 한 번만 합니다.</div></div>
@@ -6229,7 +6468,7 @@ function openCloud() {
     <div class="card"><b>비용</b><div class="hint" style="margin-top:4px">클라우드(Cloud Run·예약·비밀 저장·Vision)는 Google Cloud 결제 계정에 붙습니다. 보는 곳: <a href="https://console.cloud.google.com/billing/linkedaccount?project=readnow-3a385" target="_blank">Google Cloud 콘솔 → 결제</a> → '보고서'(서비스별 금액) · '예산 및 알림'(deploy.sh가 한 달 1만 원 예산 알림을 만듦 — 50%·90%·100%에서 메일).</div></div>
     <div class="card"><b>하는 일</b><ul style="margin:4px 0 0 18px;font-size:13px"><li>매일 24시간 1분마다 ① 주문확인요청(새 주문은 1분 안에 화면에 + 상품마다 사진·유의사항·지금 시장을 채움), 5분마다 ② 발송 요청 읽기(새 주문이 5분 안에 웹앱에) + 발송 요청 엑셀(ALPS 재료) + 우리 매물 유의 사항·사진</li><li>웹앱에서 맡긴 발송준비시작·다시 읽기 (맡기면 바로 클라우드를 깨움)</li><li>📷 사진 가격: 알라딘 조회 · 책등 글자 읽기(Google Vision)</li></ul>
       <p class="hint" style="margin:6px 0 0">알라딘 아이디·비밀번호는 Google Cloud의 Secret Manager에만 있습니다(웹앱·Firebase·GitHub에는 없음). 바꿀 때는 Cloud Shell에서 <code>bash deploy.sh --reset-secrets</code>.</p></div>`;
-  $('#back').onclick = () => (back && back.ppt ? openPhotoPrice() : history.back());
+  $('#back').onclick = () => (back && back.ppt ? openPhotoPrice() : history.back()); { const mg = $('#cl_mgr'); if (mg) mg.onclick = () => openMgr(); }
   $('#cl_save').onclick = async () => { const v = $('#cl_url').value.trim().replace(/\/+$/, ''); if (v && !/^https:\/\/[^\s]+$/.test(v)) return toast('https:// 로 시작하는 주소'); try { await db.collection('app_settings').doc('main').set({ cloudUrl: v || firebase.firestore.FieldValue.delete(), cloudLog: firebase.firestore.FieldValue.arrayUnion({ at: new Date().toISOString(), by: S.user.email, url: v || null }) }, { merge: true }); S.app.cloudUrl = v || null; toast('저장했습니다'); openCloud(); } catch (e) { toast('저장 실패: ' + (e.code || e.message)); } };
   const out = (t) => { const el = $('#cl_out'); if (el) el.textContent = t; };
   $('#cl_test').onclick = async () => { out('시험 중… (처음엔 30초쯤)'); try { const j = await cloudCall('/test', {}); out(j.ok ? '✓ 알라딘 로그인 됨 · 기준 파일 ' + JSON.stringify(j.cores || {}) : '✗ ' + (j.err || '실패')); } catch (e) { out('✗ ' + e.message); } };
@@ -6318,8 +6557,8 @@ function cmdStateOf(ono) { for (const c of S.shipStart || S.shipCmds || []) { if
 // (0.81.6) 발송준비시작이 끝난(넘어간) 주문은 목록을 다시 읽기 전이라도 ① 주문확인요청에서 빼고 ② 쪽으로 — 숫자·'모두' 단추에서도 뺌
 const cmdMoved = (ono) => cmdStateOf(ono) === 'done';
 const cmdCanPress = (ono) => { const st = cmdStateOf(ono); return !st || CMD_RETRY.has(st); };
-const CMD_TXT = { stale: ['맡겼는데 2분 넘게 응답 없음 — 다시 누르세요', 'x'], doneLeft: ['넘어간 것으로 적혔지만 아직 주문확인요청에 있음 — 다시 누르세요', 'x'], queued: ['맡김 · 수집기 기다리는 중', 'cau'], running: ['수집기가 처리 중', 'cau'], done: ['발송 요청으로 넘어감', 'pl'], fail: ['실패 — 다시 누르거나 알라딘에서 직접', 'x'], unknown: ['눌렀지만 넘어갔는지 확인 못함', 'cau'], sent: ['눌렀지만 넘어갔는지 확인 못함', 'cau'] };
-const CMD_RETRY = new Set(['fail', 'unknown', 'sent', 'stale', 'doneLeft']); // 이 상태면 주문이 아직 주문확인요청에 있을 때 '다시' 단추를 보여 줌
+const CMD_TXT = { stuck: ['맡은 곳이 멈춤 — 넘어갔는지 확인 못함, 목록을 다시 읽은 뒤 남아 있으면 다시 누르세요', 'x'], stale: ['맡겼는데 2분 넘게 응답 없음 — 다시 누르세요', 'x'], doneLeft: ['넘어간 것으로 적혔지만 아직 주문확인요청에 있음 — 다시 누르세요', 'x'], queued: ['맡김 · 수집기 기다리는 중', 'cau'], running: ['수집기가 처리 중', 'cau'], done: ['발송 요청으로 넘어감', 'pl'], fail: ['실패 — 다시 누르거나 알라딘에서 직접', 'x'], unknown: ['눌렀지만 넘어갔는지 확인 못함', 'cau'], sent: ['눌렀지만 넘어갔는지 확인 못함', 'cau'] };
+const CMD_RETRY = new Set(['fail', 'unknown', 'sent', 'stale', 'doneLeft', 'stuck']); // 이 상태면 주문이 아직 주문확인요청에 있을 때 '다시' 단추를 보여 줌
 // 오늘 출고 계획 (shp_plan/{날짜}): ex = { 주문번호: true } 오늘 출고에서 뺀 주문 · exItems = { 주문번호: [상품 제목…] } 뺀 상품 · moveTo = { 주문번호: 'YYYY-MM-DD' } 다른 날 출고로 · add = [주문번호…] 다른 날에서 옮겨 온 주문. 바꾼 기록은 log에 쌓음
 async function planSet(patch, what) { const dk = S.shipPlanDay || dstr(new Date()); try { await db.collection('shp_plan').doc(dk).set({ ...patch, day: dk, log: firebase.firestore.FieldValue.arrayUnion({ at: new Date().toISOString(), by: S.user.email, what }), uploadedAt: TS() }, { merge: true }); } catch (e) { toast('저장 실패: ' + (e.code || e.message) + ' — Firestore 규칙에서 shp_plan 쓰기를 허용해야 합니다'); } }
 function shipListingOf(lid) { if (!S.plist) return null; if (!S.plistByLid || S.plistByLidN !== S.plist.size) { S.plistByLid = new Map(); for (const l of S.plist.values()) if (l.listingId) S.plistByLid.set(String(l.listingId), l); S.plistByLidN = S.plist.size; } return S.plistByLid.get(String(lid)) || null; }
@@ -6596,8 +6835,15 @@ function openPriceHistory() {
 /* ══════════ 기록: 업데이트 기록 목록 ══════════
    웹앱의 바뀐 내용은 CHANGELOG 한 곳(위쪽 '바뀌었습니다' 띠와 같은 출처), 날짜는 UPDATE_DATES, 그 밖의 도구(수집기·툴팁·공용 파일)는 UPDATE_LOG 한 곳.
    날짜를 확인할 수 없는 옛 버전은 지어내지 않고 '날짜 기록 없음'으로 둠. 앞으로 업데이트마다 여기에 같이 적음 */
-const UPDATE_DATES = { '0.94.0': '2026-10-08', '0.93.1': '2026-10-08', '0.93.0': '2026-10-08', '0.92.0': '2026-10-08', '0.91.0': '2026-10-08', '0.90.0': '2026-10-07', '0.89.0': '2026-10-07', '0.88.0': '2026-10-07', '0.87.0': '2026-10-07', '0.86.0': '2026-10-07', '0.85.0': '2026-10-07', '0.84.0': '2026-10-07', '0.83.0': '2026-10-07', '0.82.0': '2026-10-07', '0.81.9': '2026-10-07', '0.81.8': '2026-10-07', '0.81.7': '2026-10-07', '0.81.6': '2026-10-07', '0.81.5': '2026-10-07', '0.81.4': '2026-10-07', '0.81.3': '2026-10-07', '0.81.2': '2026-10-07', '0.81.1': '2026-10-07', '0.81.0': '2026-10-07', '0.80.0': '2026-10-07', '0.79.0': '2026-10-07', '0.78.0': '2026-10-07', '0.77.1': '2026-10-07', '0.77.0': '2026-10-07', '0.76.0': '2026-10-07', '0.75.0': '2026-10-06', '0.74.0': '2026-10-06', '0.73.0': '2026-10-06', '0.72.0': '2026-10-06', '0.71.0': '2026-10-06', '0.70.0': '2026-10-06', '0.69.0': '2026-10-06', '0.68.2': '2026-10-06', '0.68.1': '2026-10-06', '0.68.0': '2026-10-06', '0.67.0': '2026-10-06', '0.66.0': '2026-10-06', '0.65.14': '2026-10-06', '0.65.13': '2026-10-06', '0.65.12': '2026-10-06', '0.65.11': '2026-10-06', '0.65.10': '2026-10-06', '0.65.8': '2026-10-06', '0.65.7': '2026-10-06', '0.65.6': '2026-10-06', '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
+const UPDATE_DATES = { '0.96.0': '2026-10-08', '0.95.0': '2026-10-08', '0.94.0': '2026-10-08', '0.93.1': '2026-10-08', '0.93.0': '2026-10-08', '0.92.0': '2026-10-08', '0.91.0': '2026-10-08', '0.90.0': '2026-10-07', '0.89.0': '2026-10-07', '0.88.0': '2026-10-07', '0.87.0': '2026-10-07', '0.86.0': '2026-10-07', '0.85.0': '2026-10-07', '0.84.0': '2026-10-07', '0.83.0': '2026-10-07', '0.82.0': '2026-10-07', '0.81.9': '2026-10-07', '0.81.8': '2026-10-07', '0.81.7': '2026-10-07', '0.81.6': '2026-10-07', '0.81.5': '2026-10-07', '0.81.4': '2026-10-07', '0.81.3': '2026-10-07', '0.81.2': '2026-10-07', '0.81.1': '2026-10-07', '0.81.0': '2026-10-07', '0.80.0': '2026-10-07', '0.79.0': '2026-10-07', '0.78.0': '2026-10-07', '0.77.1': '2026-10-07', '0.77.0': '2026-10-07', '0.76.0': '2026-10-07', '0.75.0': '2026-10-06', '0.74.0': '2026-10-06', '0.73.0': '2026-10-06', '0.72.0': '2026-10-06', '0.71.0': '2026-10-06', '0.70.0': '2026-10-06', '0.69.0': '2026-10-06', '0.68.2': '2026-10-06', '0.68.1': '2026-10-06', '0.68.0': '2026-10-06', '0.67.0': '2026-10-06', '0.66.0': '2026-10-06', '0.65.14': '2026-10-06', '0.65.13': '2026-10-06', '0.65.12': '2026-10-06', '0.65.11': '2026-10-06', '0.65.10': '2026-10-06', '0.65.8': '2026-10-06', '0.65.7': '2026-10-06', '0.65.6': '2026-10-06', '0.65.5': '2026-10-06', '0.65.4': '2026-10-06', '0.65.3': '2026-10-06', '0.65.2': '2026-10-06', '0.65.1': '2026-10-06', '0.65.0': '2026-10-06', '0.64.1': '2026-10-05', '0.64.0': '2026-10-05', '0.63.2': '2026-10-05', '0.63.1': '2026-10-05', '0.63.0': '2026-10-05', '0.62.8': '2026-10-05', '0.62.7': '2026-10-05', '0.62.6': '2026-10-05', '0.62.5': '2026-10-05', '0.62.4': '2026-10-05', '0.62.3': '2026-10-05', '0.62.2': '2026-10-04', '0.62.1': '2026-10-04', '0.62.0': '2026-10-04', '0.61.1': '2026-10-04', '0.61.0': '2026-10-04', '0.60.0': '2026-10-04', '0.59.0': '2026-10-04', '0.58.4': '2026-10-04', '0.58.3': '2026-10-04', '0.58.2': '2026-10-04', '0.58.1': '2026-10-04', '0.58.0': '2026-10-04', '0.50.0': '2026-10-02', '0.50.1': '2026-10-03', '0.51.0': '2026-10-03', '0.51.1': '2026-10-03', '0.51.2': '2026-10-03', '0.52.0': '2026-10-04', '0.53.0': '2026-10-04', '0.54.0': '2026-10-04', '0.55.0': '2026-10-04', '0.56.0': '2026-10-04', '0.57.0': '2026-10-04' };
 const UPDATE_LOG = [
+  { d: '2026-10-08', app: '공용 · 관리도구 노선표 readnow-registry.js', v: '0.1.0', n: ['새 파일: 맡긴 일 종류(맡을 곳·자리·기한·다시 하기·알라딘을 바꾸는 일인지) · 일정 · 자료 칸 주인과 새로움 주기 · 공용 파일 판(이번 출시) · 설정 위치 — 모든 도구가 이것(+ Firebase app_settings/sys_registry)만 봄', '살피기(sweep): 맡고 멈춘 일은 다시 해도 되는 일만 대기로 되돌림, 알라딘을 바꾸는 일(발송준비시작)은 자동으로 다시 하지 않고 사람 확인 · 늦은 일·모르는 종류 알림'] },
+  { d: '2026-10-08', app: '클라우드 수집 readnow-cloud (Cloud Run)', v: '0.6.0', n: ['맡긴 일: 노선표에서 클라우드 몫인 종류만 맡음(이 판의 목록 대신) · 처리 길이 없는 종류는 끝남으로 지우지 않고 대기로 되돌림', '1분마다 맡긴 일 살피기 → 멈춘 일 되돌리기·사람 확인 표시 + app_settings/sys_health(알림·사건 기록 30일)'] },
+  { d: '2026-10-08', app: '수집기', v: '1.36.0', n: ['맡긴 일: 노선표에서 PC 몫인 종류만 맡음 — 모르는 종류를 \'끝남\'으로 적어 일이 사라질 수 있던 것 막음 · 웹앱에서 멈춘 종류는 바로 안 맡음', '공용 파일 판 맞춤: 판매자 분류 기준 1.3.0 → 1.4.1 · 출고 기준 0.5.0 → 0.5.1(ALPS 송장 맞추기 안전 고침이 수집기에 들어감) · 노선표 0.1.0', '살아 있음 신호에 수집기 판·읽은 공용 파일 판을 실음(관리도구 건강판)'] },
+  { d: '2026-10-08', app: '가격 감시기 readnow-price-watch', v: '0.9.3', n: ['판매자 분류 기준 1.3.0 → 1.4.1(웹앱과 같은 판) · 살아 있음 신호에 읽은 공용 파일 판'] },
+  { d: '2026-10-08', app: '공용 · 판정 엔진 readnow-pricing-core.js', v: '0.15.0', n: ['조건 묶음 새 기준(알라딘 관찰 도구 칸 → 수동 일괄 그룹): topAny 맨 위 매물과 동가 · under 기준 매물(n번째, 전체/유효/같은 등급) 바로 한 단위 아래 · shipMin 결제 총액(판매가+배송비) 유효 최저와 동가(우리 배송비는 무료 기준 반영) · charm 경계 아래 가격 · newPct 새책 판매가의 n%', 'reach: 하한선 때문에 목표까지 못 내리면 내리지 않고 유지 · 경계 가격 목록 CHARM_TH 한 곳(웹앱 관찰 도구도 이것을 씀)'] },
+  { d: '2026-10-08', app: '가격 감시기 readnow-price-watch', v: '0.9.2', n: ['판정 엔진 0.15.0을 읽음 (반자동 감시의 조건 묶음도 새 기준을 같은 계산으로)'] },
+  { d: '2026-10-08', app: '수집기', v: '1.35.2', n: ['판정 엔진 0.15.0을 읽음 (웹앱·가격 감시기와 같은 판)'] },
   { d: '2026-10-08', app: '수집기', v: '1.35.1', n: ['⏰ 매일 자동 수집: 같은 때 여러 항목이면 번호 순서(묻고 답하기 → 반품 → 상품 조회/수정 → 팔기 정산 → 구매 내역 → 일괄)로 하나씩 · 앞 항목이 막혀 있으면 건너뛰고 다음 것부터(예전엔 막힌 항목 하나가 뒤 항목까지 붙잡음)'] },
   { d: '2026-10-08', app: '가격 감시기 readnow-price-watch', v: '0.9.1', n: ['가격을 반영하면 상품 기록(prd_listings) 가격도 같은 트랜잭션에서 바꾸고 변경 이력(prd_listing_changes, 가격 감시기 반영)에 남김 · 0.9.0까지 반영분 중 수집기가 아직 다시 읽지 않은 것은 처음 켤 때 한 번 채움'] },
   { d: '2026-10-08', app: '클라우드 수집 readnow-cloud (Cloud Run)', v: '0.5.8', n: ['개편 1단계 결과 기록: 매일(한국 1시 뒤) 판매중 상품 전체의 그날 모습(가격·등급·재고 기간·첫 페이지 자리·같은 등급 최저·전체 중고 수·매입가·마지막 가격 변경·감시 그룹) → ml_days, 가격 변경마다 그 뒤 팔렸는지·몇 시간 만에·얼마에 → ml_outcomes, 어제 판매가 기록에 이어진 비율 → app_settings/ml_state — 기계 학습의 재료, 원래 기록은 건드리지 않음'] },
@@ -6901,7 +7147,7 @@ function fixedToDate() { return memo('fixedToDate', () => { const c = costs(); c
   let y = +first.slice(0, 4), mo = +first.slice(5, 7), tot = 0, months = 0; while (`${y}-${String(mo).padStart(2, '0')}` <= cur && months < 240) { const ym = `${y}-${String(mo).padStart(2, '0')}`; const f = fixedForMonth(ym).total; if (ym === cur) { const dim = new Date(y, mo, 0).getDate(); tot += f * (now.getDate() / dim); } else tot += f; months++; mo++; if (mo > 12) { mo = 1; y++; } }
   return { from: first, total: tot, months }; }); }
 // 전체 기간 운영 비용 (판매 주문 수 × 포장재, 택배 순지출)
-function opsToDate() { return memo('opsToDate', () => { let orders = 0, ship = 0, noFee = 0, parcels = 0, ret = 0; for (const o of S.orders.values()) { if (o.kind !== 'sale' || !saleLines(o).qty) continue; orders++; const X = orderShip(o); ship += X.net; parcels += X.parcels; ret += X.ret; if (!X.feeKnown) noFee++; }
+function opsToDate() { return memo('opsToDate', () => { let orders = 0, ship = 0, noFee = 0, parcels = 0, ret = 0; for (const o of S.orders.values()) { if (o.kind !== 'sale' || !shipSent(o)) continue; orders++; const X = orderShip(o); ship += X.net; parcels += X.parcels; ret += X.ret; if (!X.feeKnown) noFee++; }
   const F = fixedToDate(); const pack = orders * packPerOrder(); return { orders, ship, pack, fixed: F.total, fixedFrom: F.from, months: F.months, noFee, parcels, ret }; }); }
 function costInsightHtml(B) {
   const ppo = packPerOrder(); const ym = dstr(new Date()).slice(0, 7); const F = fixedForMonth(ym); const ord = B.M.orders || 0;
@@ -7770,7 +8016,7 @@ function loginView(err) {
   if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').then((reg) => { // (0.81.1) 화면으로 돌아올 때마다·30분마다 새 워커가 있는지 확인 — 새 워커가 켜지면 화면을 새 판으로 다시 엶
     const up = () => reg.update().catch(() => {}); document.addEventListener('visibilitychange', () => { if (!document.hidden) up(); }); setInterval(up, 30 * 60000); }).catch(() => {})); } catch (e) {} })();
 // 화면 쌓기: 고객·상품·판매자·책 화면은 뒤로 돌아올 때 최신으로 다시 그림 (navWrap이 다시 그리는 방법을 기억)
-openCustomer = navWrap(openCustomer); openProduct = navWrap(openProduct); openSeller = navWrap(openSeller); openBookSheet = navWrap(openBookSheet); openPending = navWrap(openPending); openPurRec = navWrap(openPurRec); openPurAll = navWrap(openPurAll);
+openCustomer = navWrap(openCustomer); openProduct = navWrap(openProduct); openSeller = navWrap(openSeller); openBookSheet = navWrap(openBookSheet); openPending = navWrap(openPending); openPurRec = navWrap(openPurRec); openPurAll = navWrap(openPurAll); openShipCost = navWrap(openShipCost);
 firebase.auth().onAuthStateChanged(async (u) => {
   if (!u) { S.user = null; loginView(); return; }
   S.user = u; pm('auth');
