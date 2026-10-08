@@ -28,7 +28,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.6.2';
+const VER = '0.7.0';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -62,6 +62,13 @@ const vn = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (parse
 async function regMod() { if (Date.now() - regAt < 30 * 60e3) return REGM; regAt = Date.now();
   try { const r = await fetch(RAW + 'readnow-registry.js?t=' + Date.now()); if (r.ok) { const t = await r.text(); const m = { exports: {} }; new Function('module', 'exports', t)(m, m.exports); if (m.exports && m.exports.VERSION && vn(m.exports.VERSION) >= vn((REG_LOCAL || REG_MIN).VERSION)) REGM = m.exports; } } catch (e) { log('노선표 파일 받기 실패 — 함께 올린 판 씀', e.message); }
   coreVer['readnow-registry.js'] = REGM.VERSION; return REGM; }
+/* (0.7.0) 실행도구의 한 문 (readnow-exec-core.js) — 알라딘을 바꾸는 일(발송준비시작·판매중지)은 exec_log에 시작을 먼저 적고, 같은 일이 이미 끝났거나 하는 중이면 하지 않음.
+ *  함께 올린 파일 → 없으면 GitHub에서 받음 → 그것도 안 되면 기록 없이 하지 않고 대기로 남김(PC 수집기가 맡을 수 있음) */
+let EXEC_LOCAL = null; try { EXEC_LOCAL = require('./readnow-exec-core.js'); } catch (e) { console.log(new Date().toISOString(), '함께 올린 실행 문 파일 없음 — GitHub에서 받음', e.message); }
+let EXECM = EXEC_LOCAL, execAt = 0;
+async function execMod() { if (EXECM && (EXEC_LOCAL || Date.now() - execAt < 30 * 60e3)) return EXECM; execAt = Date.now();
+  try { const r = await fetch(RAW + 'readnow-exec-core.js?t=' + Date.now()); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', await r.text())(m, m.exports); if (m.exports && m.exports.begin) EXECM = m.exports; } } catch (e) { log('실행 문 파일 받기 실패', e.message); }
+  if (EXECM) coreVer['readnow-exec-core.js'] = EXECM.VERSION; return EXECM; }
 async function regNow() { const M = await regMod(); let doc = null; try { const d = await C('app_settings').doc('sys_registry').get(); doc = d.exists ? d.data() : null; } catch (e) {} return { M, R: M.merge(doc) }; }
 /* 맡긴 일 살피기 (1분마다, 회차 끝에): 멈춘 일·늦은 일·모르는 종류 → 되돌리기·사람 확인·알림. 상태 문서는 바뀐 때(또는 10분마다)만 씀 */
 let sweepSig = '', sweepAt = 0; const seenFlag = new Set();
@@ -267,12 +274,16 @@ async function runCmds(p) {
     await db.runTransaction(async (tx) => { const sn = await tx.get(d.ref); const x = sn.data(); if (!x || x.status !== 'queued') return; tx.update(d.ref, { status: 'running', claim: { pc: 'cloud', at: nowIso() }, uploadedAt: FV.serverTimestamp() }); v = x; });
     if (!v) continue; n++;
     if (v.type === 'startDelivery') { const results = {};
-      for (const ono of v.orderNos || []) { try { const rr = await p.evaluate(async (o) => { const r = await fetch('/scm/worder_process.aspx?cmd=StartDelivery&ono=' + encodeURIComponent(o), { credentials: 'include' }); const t = await r.text(); return { ok: r.ok, status: r.status, al: (t.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || null }; }, ono);
+      const X = await execMod(); if (!X) { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 실행 문 파일을 못 읽음 — 기록 없이 알라딘을 바꾸지 않음`, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('발송준비시작: 실행 문 파일 없음 — 대기로'); continue; }
+      for (const ono of v.orderNos || []) { const xk = `${d.id}:${ono}`; let g; try { g = await X.begin(db, { kind: 'startDelivery', key: xk, by: 'cloud', detail: { ono } }); } catch (e) { g = { ok: false, state: 'noledger', why: '실행 기록을 못 적음: ' + e.message }; }
+        if (!g.ok) { results[ono] = { state: g.state === 'done' ? 'done' : 'unknown', at: nowIso(), msg: '실행 문: ' + g.why, by: 'cloud', gate: g.state }; continue; }
+        try { const rr = await p.evaluate(async (o) => { const r = await fetch('/scm/worder_process.aspx?cmd=StartDelivery&ono=' + encodeURIComponent(o), { credentials: 'include' }); const t = await r.text(); return { ok: r.ok, status: r.status, al: (t.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || null }; }, ono);
           results[ono] = { state: rr.ok && !/실패|오류|불가|잘못|없습니다|않습니다|error/i.test(rr.al || '') ? 'sent' : 'fail', at: nowIso(), http: rr.status, msg: rr.al, by: 'cloud' }; } catch (e) { results[ono] = { state: 'fail', at: nowIso(), msg: e.message, by: 'cloud' }; }
         await d.ref.set({ results, beatAt: nowIso(), uploadedAt: FV.serverTimestamp() }, { merge: true }).catch(() => {}); await sleep(800); } // (0.5.4) 한 건마다 결과·살아 있음 신호
       // 확인: 주문확인요청 화면을 다시 읽어 빠졌는지 — 화면을 제대로 읽었을 때만 '끝남'(로그인 화면·읽기 실패로 빈 목록이면 '확인 못함')
       try { const chk = await p.evaluate(async (u) => { const r = await fetch(u, { credentials: 'include' }); if (/\/login\/|wlogin/i.test(r.url)) return { ok: false }; const d = new DOMParser().parseFromString(await r.text(), 'text/html'); const x = window.ReadnowShipping.parseDeliveryPage(d); return { ok: !!(x && x.tabCounts && Object.keys(x.tabCounts).length), left: (x.orders || []).map((o) => o.orderNo) }; }, CONFIRM_URL);
         for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = !chk.ok ? 'unknown' : chk.left.includes(ono) ? 'fail' : 'done'; } catch (e) { for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = 'unknown'; }
+      for (const [ono, r] of Object.entries(results)) if (!r.gate) await X.finish(db, { kind: 'startDelivery', key: `${d.id}:${ono}` }, r.state === 'done' ? 'done' : r.state === 'fail' ? 'failed' : 'unknown', { msg: r.msg || null, result: { http: r.http || null } }).catch(() => {});
       await d.ref.set({ status: 'done', results, doneAt: nowIso(), uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
     else if (v.type === 'usedInfo') { const results = {}; let allOk = true; // (0.5.3) '중' 상품 유의 사항 다시 읽기 (웹앱이 맡김) — 못 읽으면 PC 수집기 몫으로 남김
       for (const lid of v.listingIds || []) { try { const prev = (await C('prd_used_info').doc(String(lid)).get()).data(); const ui = await refreshUsedInfo(p, lid, prev, null, v.grade || null); const ok = !!(ui && realNote(ui.note, v.grade));
@@ -282,7 +293,11 @@ async function runCmds(p) {
       await d.ref.set(allOk ? { status: 'done', results, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() } : { status: 'queued', cloudTried: true, cloudResults: results, claim: null, uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'market') { (v.listingIds || []).forEach((x) => force.add(String(x))); await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'aladinBuy') { buy = true; await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
-    else if (v.type === 'cashStop') { const r = await cashStopRun(p, v); await d.ref.set({ status: 'done', result: r, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); log('현금 판매 판매중지', v.title || v.listingId, r.state); }
+    else if (v.type === 'cashStop') { const X = await execMod(); if (!X) { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 실행 문 파일을 못 읽음 — 기록 없이 알라딘을 바꾸지 않음`, uploadedAt: FV.serverTimestamp() }, { merge: true }); continue; }
+      let g; try { g = await X.begin(db, { kind: 'cashStop', key: d.id, by: 'cloud', detail: { orderId: v.orderId, lineNo: v.lineNo, listingId: v.listingId || null, title: v.title || null } }); } catch (e) { g = { ok: false, state: 'noledger', why: e.message }; }
+      if (!g.ok) { await d.ref.set({ status: 'done', result: { state: g.state === 'done' ? 'skip' : 'check', msg: '실행 문: ' + g.why }, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); continue; }
+      let r; try { r = await cashStopRun(p, v); } catch (e) { await X.finish(db, { kind: 'cashStop', key: d.id }, 'failed', { msg: e.message }).catch(() => {}); throw e; }
+      await X.finish(db, { kind: 'cashStop', key: d.id }, r.state === 'done' ? 'done' : r.state === 'fail' ? 'failed' : 'unknown', { msg: r.msg || null }).catch(() => {}); await d.ref.set({ status: 'done', result: r, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); log('현금 판매 판매중지', v.title || v.listingId, r.state); }
     else if (v.type === 'read') { await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
     else { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 처리하는 길이 없는 종류 — 노선표 확인`, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('맡긴 일: 처리 길 없음', v.type); } } // 노선표엔 클라우드 몫인데 이 판에 처리 길이 없으면 '끝남'으로 지우지 않고 대기로 되돌림
   return { n, needRead, force, buy };
