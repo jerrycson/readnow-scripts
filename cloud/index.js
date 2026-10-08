@@ -28,7 +28,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.7.0';
+const VER = '0.8.0';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -537,12 +537,8 @@ async function mlSnapshot(day) { const t0 = Date.now(); const L = []; (await C('
   const bids = [...new Set(L.map((l) => l.bookId).filter(Boolean))]; const M = new Map(); for (const part of shard(bids, 300)) { (await db.getAll(...part.map((b) => C('prd_book_metrics').doc(String(b))))).forEach((d) => { if (d.exists) M.set(d.id, d.data()); }); }
   const since = new Date(Date.now() - 90 * 864e5).toISOString(); const lastAct = new Map(); (await C('prd_price_actions').where('at', '>=', since).get()).forEach((d) => { const a = d.data(); if (!a.key || a.to == null) return; const p = lastAct.get(a.key); if (!p || String(a.at) > String(p.at)) lastAct.set(a.key, { ...a, id: d.id }); });
   const watch = new Map(); try { (await C('prd_price_decisions').where('watch.gid', '>', '').get()).forEach((d) => { const w = d.data().watch; if (w && w.gid) watch.set(d.id, w.gid); }); } catch (e) {}
-  const now = Date.parse(day + 'T23:59:59+09:00'); const R = ['최상', '상', '중'];
-  const rows = L.map((l) => { const m = M.get(String(l.bookId)) || {}; const P1 = m.usedFirstPage || []; const oth = P1.filter((r) => String(r.sellerCode) !== '996008' && r.usedCode !== l.usedCode && r.price > 0);
-    const sameMin = oth.filter((r) => r.grade === l.grade).reduce((a, r) => Math.min(a, r.price), Infinity); const minAll = oth.reduce((a, r) => Math.min(a, r.price), Infinity); const rank = l.price ? oth.filter((r) => r.price < l.price).length + 1 : null; const a = lastAct.get(l.id);
-    return { key: l.id, price: l.price ?? null, grade: R.indexOf(l.grade), shelf: String(l.sku || '').slice(0, 6), age: l.registeredAt ? Math.round((now - Date.parse(String(l.registeredAt).slice(0, 10) + 'T00:00:00+09:00')) / 864e5) : null,
-      list: m.priceList ?? null, sp: m.salesPoint ?? null, used: m.usedTotal ?? null, p1: P1.length, rank, sameMin: Number.isFinite(sameMin) ? sameMin : null, minAll: Number.isFinite(minAll) ? minAll : null, bb: (m.buyback || {})[l.grade] ?? null,
-      mkt: m.lastCheckedAt ? Math.round((now - Date.parse(m.lastCheckedAt)) / 864e5) : null, act: a ? Math.round((now - Date.parse(a.at)) / 3600e3) : null, actFrom: a ? a.from ?? null : null, actBatch: a ? a.batchId || null : null, wg: watch.get(l.id) || null }; });
+  const now = Date.parse(day + 'T23:59:59+09:00'); const ML = await mlMod(); if (!ML) throw new Error('학습 파일(readnow-ml-core.js)이 없어 하루 모습을 못 만듦');
+  const rows = L.map((l) => ML.rawRow(l, M.get(String(l.bookId)), lastAct.get(l.id), watch.get(l.id), now)); // (0.8.0) 한 줄 만드는 곳은 readnow-ml-core.js 한 곳 — 웹앱도 같은 것으로 지금 상품을 셈
   const cols = Object.keys(rows[0] || { key: 0 }); const parts = shard(rows, 2000); const b = db.batch(); parts.forEach((p, i) => { const o = {}; cols.forEach((c) => (o[c] = p.map((r) => r[c]))); b.set(C('ml_days').doc(`${day}_${String(i).padStart(2, '0')}`), { day, i, n: p.length, ver: ML_VER, cols: o, ...W() }); });
   b.set(C('ml_days').doc(day), { day, shards: parts.length, n: rows.length, ver: ML_VER, colNames: cols, at: nowIso(), ms: Date.now() - t0, ...W() }); await b.commit(); return { n: rows.length, shards: parts.length }; }
 async function mlOutcomes() { const since = new Date(Date.now() - 90 * 864e5).toISOString(); const acts = []; (await C('prd_price_actions').where('at', '>=', since).get()).forEach((d) => { const a = d.data(); if (a.key && a.to != null && a.kind !== 'hold' && a.kind !== 'unhold') acts.push({ id: d.id, ...a }); });
@@ -562,7 +558,60 @@ async function mlDaily() { const ST = C('app_settings').doc('ml_state'); const s
   const today = k.toISOString().slice(0, 10); if (st.lastDay === today) return { skip: '오늘 함' };
   const snap = await mlSnapshot(today); let out = null; try { out = await mlOutcomes(); } catch (e) { out = { err: e.message }; } let chk = null; try { chk = await mlCheck(new Date(Date.parse(today + 'T00:00:00+09:00') - 864e5 + 9 * 3600e3).toISOString().slice(0, 10)); } catch (e) { chk = { err: e.message }; }
   await ST.set({ lastDay: today, snap, outcomes: out, check: chk, ver: ML_VER, at: nowIso(), days: FV.arrayUnion(today) }, { merge: true }); return { snap, out, chk }; }
-let mlNextAt = 0;
+
+/* ── (0.8.0) 개편 6단계 '스스로 배우기' — 팔릴 확률 모델 (계산은 readnow-ml-core.js 한 곳, 웹앱과 같음)
+ *  매일(한국 2시 뒤, 결과 기록 뒤) ① 배우기: 7일이 지나 결과를 아는 날들(최근 60일)의 하루 모습 + 그 뒤 7일 판매 → 새 모델(도전자)
+ *  ② 그림자: 오늘 판매중 상품마다 지금 모델·도전자의 확률을 적어 두기만(ml_shadow) — 실제 판단에는 쓰지 않음
+ *  ③ 채점: 7일이 지난 그림자를 실제 판매와 맞춰 로그 손실·AUC(ml_eval) ④ 승격: 최근 3번 모두 도전자가 1% 넘게 나으면 지금 모델로(ml_state.model, 기록 남김)
+ *  처음 지금 모델 = 기준선(1위 여부 × 등급별 평균 판매율). 모델은 조언 금액에만 쓰임 — 알라딘을 바꾸지 않음 */
+let ML_LOCAL = null; try { ML_LOCAL = require('./readnow-ml-core.js'); } catch (e) { console.log(new Date().toISOString(), '함께 올린 학습 파일 없음 — GitHub에서 받음', e.message); }
+let MLM = ML_LOCAL, mlmAt = 0;
+async function mlMod() { if (MLM && (ML_LOCAL || Date.now() - mlmAt < 30 * 60e3)) return MLM; mlmAt = Date.now();
+  try { const r = await fetch(RAW + 'readnow-ml-core.js?t=' + Date.now()); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', await r.text())(m, m.exports); if (m.exports && m.exports.train) MLM = m.exports; } } catch (e) { log('학습 파일 받기 실패', e.message); }
+  if (MLM) coreVer['readnow-ml-core.js'] = MLM.VERSION; return MLM; }
+async function mlLoadDay(day) { const meta = await C('ml_days').doc(day).get(); if (!meta.exists) return null; const rows = [];
+  for (let i = 0; i < (meta.data().shards || 0); i++) { const d = await C('ml_days').doc(`${day}_${String(i).padStart(2, '0')}`).get(); if (!d.exists) continue; const cols = d.data().cols || {}; const names = Object.keys(cols); const n = (cols.key || []).length; for (let k = 0; k < n; k++) { const r = {}; names.forEach((c) => (r[c] = cols[c][k])); rows.push(r); } }
+  return rows; }
+const kday = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10); const dayEnd = (d) => Date.parse(d + 'T23:59:59+09:00');
+function mlLabel(ML, rows, day, sales) { const t0 = dayEnd(day), t1 = t0 + ML.HORIZON_D * 864e5; return rows.map((r) => { const u = String(r.key || '').replace(/^aladin_/, ''); return (sales.get(u) || []).some((s) => s.at > t0 && s.at <= t1) ? 1 : 0; }); }
+async function mlShadowWrite(day, champId, challId, rows, pc, ph) { const parts = shard(rows.map((r, i) => [r.key, pc[i], ph[i]]), 2000); const b = db.batch();
+  parts.forEach((p, i) => b.set(C('ml_shadow').doc(`${day}_${String(i).padStart(2, '0')}`), { day, i, keys: p.map((x) => x[0]), pc: p.map((x) => x[1] == null ? null : Math.round(x[1] * 1000) / 1000), ph: p.map((x) => x[2] == null ? null : Math.round(x[2] * 1000) / 1000), ...W() }));
+  b.set(C('ml_shadow').doc(day), { day, shards: parts.length, n: rows.length, champId, challId, at: nowIso(), ...W() }); await b.commit(); }
+async function mlShadowLoad(day) { const meta = await C('ml_shadow').doc(day).get(); if (!meta.exists) return null; const out = { ...meta.data(), keys: [], pc: [], ph: [] };
+  for (let i = 0; i < (meta.data().shards || 0); i++) { const d = await C('ml_shadow').doc(`${day}_${String(i).padStart(2, '0')}`).get(); if (!d.exists) continue; const v = d.data(); out.keys.push(...v.keys); out.pc.push(...v.pc); out.ph.push(...v.ph); } return out; }
+async function mlLearn() { const ML = await mlMod(); if (!ML) return { skip: '학습 파일 없음' }; const ST = C('app_settings').doc('ml_state'); const st = (await ST.get()).data() || {}; const k = new Date(Date.now() + 9 * 3600e3);
+  const today = k.toISOString().slice(0, 10); if (k.getUTCHours() < 2) return { skip: '2시 뒤에' }; if (st.lastDay !== today) return { skip: '오늘 결과 기록 먼저' }; if ((st.learn || {}).day === today) return { skip: '오늘 함' };
+  const t0 = Date.now(); const days = [...new Set(st.days || [])].sort(); const lastLab = kday(Date.now() - (ML.HORIZON_D + 1) * 864e5); const lab = days.filter((d) => d <= lastLab).slice(-60);
+  const champ0 = st.model && st.model.champion ? ((await C('ml_models').doc(st.model.champion).get()).data() || null) : null;
+  const res = { day: today, labDays: lab.length, days: days.length, ver: ML.VERSION };
+  // ③ 채점 먼저: 7일 지난 그림자
+  const evals = []; try { const sales0 = lab.length ? await mlSales(new Date(dayEnd(lab[0]) - 864e5).toISOString()) : new Map();
+    for (const d of days.filter((x) => x <= lastLab).slice(-14)) { const ev = await C('ml_eval').doc(d).get(); if (ev.exists) { evals.push(ev.data()); continue; } const sh = await mlShadowLoad(d); if (!sh) continue;
+      const y = mlLabel(ML, sh.keys.map((key) => ({ key })), d, sales0); const ic = sh.pc.map((v, i) => [v, y[i]]).filter((x) => x[0] != null); const ih = sh.ph.map((v, i) => [v, y[i]]).filter((x) => x[0] != null);
+      const e = { day: d, champId: sh.champId, challId: sh.challId, champ: ML.evaluate(ic.map((x) => x[0]), ic.map((x) => x[1])), chall: sh.challId ? ML.evaluate(ih.map((x) => x[0]), ih.map((x) => x[1])) : null, at: nowIso() }; await C('ml_eval').doc(d).set({ ...e, ...W() }); evals.push(e); } } catch (e) { res.evalErr = e.message; }
+  res.evals = evals.length;
+  if (lab.length < 3) { await ST.set({ learn: { day: today, state: 'wait', why: `결과를 아는 날 ${lab.length}일 — 3일부터 배움 (하루 모습을 쌓은 지 ${days.length}일)`, at: nowIso() } }, { merge: true }); return { ...res, wait: true }; }
+  // ① 배우기
+  const sales = await mlSales(new Date(dayEnd(lab[0]) - 864e5).toISOString()); const X = [], Y = [], R0 = [], D = [];
+  let tot = 0; for (const d of lab) { const m0 = await C('ml_days').doc(d).get(); tot += m0.exists ? m0.data().n || 0 : 0; } const stride = Math.max(1, Math.ceil(tot / 200000)); res.stride = stride; // 메모리·시간: 많으면 고르게 줄여서 (최대 약 20만 줄)
+  for (const d of lab) { const rows = await mlLoadDay(d); if (!rows) continue; const y = mlLabel(ML, rows, d, sales); rows.forEach((r, i) => { if (i % stride) return; const x = ML.feats(r); if (!x) return; X.push(x); Y.push(y[i]); R0.push(r); D.push(d); }); }
+  if (X.length < 200) { await ST.set({ learn: { day: today, state: 'wait', why: `배울 줄 ${X.length}개 — 200개부터`, at: nowIso() } }, { merge: true }); return { ...res, wait: true, rows: X.length }; }
+  const valFrom = lab.length >= 10 ? lab[lab.length - 7] : lab[Math.floor(lab.length * 0.7)]; const tr = [], va = []; D.forEach((d, i) => (d < valFrom ? tr : va).push(i)); if (!tr.length || !va.length) { tr.length = 0; va.length = 0; D.forEach((d, i) => (i % 5 ? tr : va).push(i)); }
+  const cap = 150000; const trS = tr.length > cap ? tr.filter((_, i) => i % Math.ceil(tr.length / cap) === 0) : tr; // 많으면 고르게 줄여서 (시간·비용)
+  const mdl = ML.train(trS.map((i) => X[i]), trS.map((i) => Y[i])); const base = ML.trainBase(tr.map((i) => R0[i]), tr.map((i) => Y[i]));
+  const champ = champ0 || base; const pv = (M) => va.map((i) => ML.predict(M, R0[i])); const vy = va.map((i) => Y[i]);
+  const val = { chall: ML.evaluate(pv(mdl), vy), champ: ML.evaluate(pv(champ), vy), base: ML.evaluate(pv(base), vy) };
+  const challId = 'm_' + today; await C('ml_models').doc(challId).set({ ...mdl, id: challId, trainedAt: nowIso(), nTrain: trS.length, nVal: va.length, labDays: lab.length, valFrom, val, ...W() });
+  if (!champ0) await C('ml_models').doc('base_' + today).set({ ...base, id: 'base_' + today, trainedAt: nowIso(), ...W() });
+  const champId = champ0 ? st.model.champion : 'base_' + today;
+  // ② 그림자: 오늘 상품
+  let shadowN = 0; try { const rows = await mlLoadDay(today); if (rows && rows.length) { await mlShadowWrite(today, champId, challId, rows, rows.map((r) => ML.predict(champ, r)), rows.map((r) => ML.predict(mdl, r))); shadowN = rows.length; } } catch (e) { res.shadowErr = e.message; }
+  // ④ 승격
+  const pr = ML.shouldPromote(evals.sort((a, b) => String(a.day).localeCompare(String(b.day)))); const model = { champion: champ0 ? st.model.champion : champId, kind: champ.kind, since: (st.model && st.model.since) || today, latestChallenger: challId };
+  if (pr.ok) { model.champion = challId; model.kind = 'logit'; model.since = today; model.lastPromotion = { at: nowIso(), from: champId, to: challId, why: pr.why }; log('모델 승격', champId, '→', challId, pr.why); }
+  await ST.set({ learn: { day: today, state: 'ok', rows: X.length, train: trS.length, val: va.length, valFrom, metrics: val, shadow: shadowN, promote: pr, ms: Date.now() - t0, at: nowIso() }, model, ...(pr.ok ? { promotions: FV.arrayUnion(model.lastPromotion) } : {}) }, { merge: true });
+  return { ...res, rows: X.length, val, shadowN, promote: pr }; }
+let mlNextAt = 0, learnNextAt = 0;
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin || ''; if (ORIGINS.includes(origin)) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin'); }
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -571,7 +620,7 @@ const server = http.createServer(async (req, res) => {
   const path = (req.url || '/').split('?')[0];
   try {
     if (path === '/status' || path === '/') return send(200, { ok: true, ver: VER, cores: coreVer, login: loginFailAt ? 'fail' : 'unknown', hasCred: !!(ALADIN_ID && ALADIN_PW) });
-    if (path === '/tick') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); tickBusy = true; try { const out = await serial(() => tick('schedule')); try { const sw = await sysSweep(); if (sw.ev) out.sweep = sw; } catch (e) { out.sweepErr = e.message; log('맡긴 일 살피기 실패', e.message); } if (Date.now() > costNextAt) { try { const r = await costDaily(4); out.costs = r; costNextAt = r.skip ? Date.now() + 15 * 60e3 : 0; if (r.done && r.done.length) log('비용 기록', JSON.stringify(r.done)); } catch (e) { costNextAt = Date.now() + 30 * 60e3; out.costsErr = e.message; log('비용 기록 실패', e.message); } } if (Date.now() > mlNextAt) { try { const r = await mlDaily(); out.ml = r.skip ? undefined : r; mlNextAt = Date.now() + (r.skip ? 15 : 60) * 60e3; if (!r.skip) log('결과 기록', JSON.stringify(r).slice(0, 400)); } catch (e) { mlNextAt = Date.now() + 30 * 60e3; out.mlErr = e.message; log('결과 기록 실패', e.message); } } return send(200, out); } finally { tickBusy = false; } }
+    if (path === '/tick') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); tickBusy = true; try { const out = await serial(() => tick('schedule')); try { const sw = await sysSweep(); if (sw.ev) out.sweep = sw; } catch (e) { out.sweepErr = e.message; log('맡긴 일 살피기 실패', e.message); } if (Date.now() > costNextAt) { try { const r = await costDaily(4); out.costs = r; costNextAt = r.skip ? Date.now() + 15 * 60e3 : 0; if (r.done && r.done.length) log('비용 기록', JSON.stringify(r.done)); } catch (e) { costNextAt = Date.now() + 30 * 60e3; out.costsErr = e.message; log('비용 기록 실패', e.message); } } if (Date.now() > mlNextAt) { try { const r = await mlDaily(); out.ml = r.skip ? undefined : r; mlNextAt = Date.now() + (r.skip ? 15 : 60) * 60e3; if (!r.skip) log('결과 기록', JSON.stringify(r).slice(0, 400)); } catch (e) { mlNextAt = Date.now() + 30 * 60e3; out.mlErr = e.message; log('결과 기록 실패', e.message); } } if (Date.now() > learnNextAt) { try { const r = await mlLearn(); learnNextAt = Date.now() + (r.skip ? 20 : 120) * 60e3; if (!r.skip) { out.learn = r; log('스스로 배우기', JSON.stringify(r).slice(0, 400)); } } catch (e) { learnNextAt = Date.now() + 60 * 60e3; out.learnErr = e.message; log('스스로 배우기 실패', e.message); } } return send(200, out); } finally { tickBusy = false; } }
     if (path === '/kick') { await authUser(req); const out = await serial(() => tick('kick')); return send(200, out); }
     if (path === '/lookup') { await authUser(req); const b = await bodyOf(req); const out = await serial(() => lookup(b)); return send(200, out); }
     if (path === '/inventory') { await authUser(req); return send(200, await inventory()); }
