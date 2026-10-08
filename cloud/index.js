@@ -28,7 +28,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.6.1';
+const VER = '0.6.2';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -54,10 +54,13 @@ async function cores() {
 }
 
 /* ── (0.6.0) 관리도구 노선표: GitHub의 readnow-registry.js(더 새것이면) → 없으면 함께 올린 같은 파일 · 살아 있는 값 = Firebase app_settings/sys_registry ── */
-const REG_LOCAL = require('./readnow-registry.js'); let REGM = REG_LOCAL, regAt = 0;
+// 함께 올린 파일이 없어도(예: Dockerfile이 옛 판이라 이미지에 안 들어감) 죽지 않음 — GitHub에서 받고, 그것도 안 되면 예전 목록(클라우드가 맡던 종류)으로 계속
+const REG_MIN = { VERSION: '0.0.0', merge: () => ({ KINDS: {} }), canHandle: (R, t, who) => who === 'cloud' && ['read', 'startDelivery', 'market', 'aladinBuy', 'usedInfo', 'cashStop'].includes(t), sweep: () => [] };
+let REG_LOCAL = null; try { REG_LOCAL = require('./readnow-registry.js'); } catch (e) { console.log(new Date().toISOString(), '함께 올린 노선표 파일 없음 — GitHub에서 받음', e.message); }
+let REGM = REG_LOCAL || REG_MIN, regAt = 0;
 const vn = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
 async function regMod() { if (Date.now() - regAt < 30 * 60e3) return REGM; regAt = Date.now();
-  try { const r = await fetch(RAW + 'readnow-registry.js?t=' + Date.now()); if (r.ok) { const t = await r.text(); const m = { exports: {} }; new Function('module', 'exports', t)(m, m.exports); if (m.exports && m.exports.VERSION && vn(m.exports.VERSION) >= vn(REG_LOCAL.VERSION)) REGM = m.exports; } } catch (e) { log('노선표 파일 받기 실패 — 함께 올린 판 씀', e.message); }
+  try { const r = await fetch(RAW + 'readnow-registry.js?t=' + Date.now()); if (r.ok) { const t = await r.text(); const m = { exports: {} }; new Function('module', 'exports', t)(m, m.exports); if (m.exports && m.exports.VERSION && vn(m.exports.VERSION) >= vn((REG_LOCAL || REG_MIN).VERSION)) REGM = m.exports; } } catch (e) { log('노선표 파일 받기 실패 — 함께 올린 판 씀', e.message); }
   coreVer['readnow-registry.js'] = REGM.VERSION; return REGM; }
 async function regNow() { const M = await regMod(); let doc = null; try { const d = await C('app_settings').doc('sys_registry').get(); doc = d.exists ? d.data() : null; } catch (e) {} return { M, R: M.merge(doc) }; }
 /* 맡긴 일 살피기 (1분마다, 회차 끝에): 멈춘 일·늦은 일·모르는 종류 → 되돌리기·사람 확인·알림. 상태 문서는 바뀐 때(또는 10분마다)만 씀 */
