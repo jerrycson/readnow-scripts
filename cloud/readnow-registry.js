@@ -16,7 +16,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.12.0';
+  const VERSION = '0.13.0';
   const MIN = 60e3;
 
   const KINDS = {
@@ -71,7 +71,7 @@
     app_settings: C(['webapp', 'cloud'], ['webapp', 'cloud', 'pc'], null), ml_days: C(['cloud'], ['cloud', 'webapp'], 26 * 60, 'uploadedAt', '결과 기록 (매일)'), ml_outcomes: C(['cloud'], ['cloud', 'webapp'], null),
     ml_models: C(['cloud'], ['webapp', 'cloud'], null, 'trainedAt', '팔릴 확률 모델 (0.5.0)'), ml_shadow: C(['cloud'], ['cloud'], null), ml_eval: C(['cloud'], ['webapp', 'cloud'], null, 'at', '그림자 채점'), strategy_weeks: C(['webapp'], ['webapp'], null, 'at', '주간 조언'),
     reg_aux: C(['cloud', 'pc'], ['webapp'], null, 'uploadedAt', '📥 분류·저자·출판사 찾기 결과 보관 (웹앱이 먼저 봄) (0.8.0)'), reg_probe: C(['pc'], ['webapp'], null, 'uploadedAt', '알라딘 등록 화면 조사 기록 — 사진 자동 첨부를 만들려고 (0.8.0)'),
-    bench_items: C(['pc'], ['webapp'], null, 'uploadedAt', '🎯 집중 벤치마킹 판매자 상품 — 처음 본 날·사라진 날·값 바뀜·최저가 표시 붙음/떨어짐(lowEvents) (덧붙이기만) (0.9.0 · 0.11.0)'), bench_days: C(['pc'], ['webapp'], null, 'uploadedAt', '🎯 집중 벤치마킹 하루 요약 + 새로 올린 것·사라진 것 목록 (0.9.0)'), bench_state: C(['pc'], ['pc'], null, 'uploadedAt', '🎯 집중 벤치마킹 지금 목록(다음 날 비교용) (0.9.0)'), bench_probe: C(['pc'], ['webapp'], null, 'uploadedAt', '🎯 판매자 숍 화면 읽기 확인(첫 쪽 일부·읽은 결과) (0.9.0)'),
+    bench_books: C(['pc'], ['pc', 'webapp'], null, 'at', '🎯 벤치마킹 상품 페이지에서 읽은 ISBN·주제 분류·출간 연월 (알라딘 상품 번호마다 · 판매자끼리 같이 씀 · 0.13.0)'),     bench_items: C(['pc'], ['webapp'], null, 'uploadedAt', '🎯 집중 벤치마킹 판매자 상품 — 처음 본 날·사라진 날·값 바뀜·최저가 표시 붙음/떨어짐(lowEvents) (덧붙이기만) (0.9.0 · 0.11.0)'), bench_days: C(['pc'], ['webapp'], null, 'uploadedAt', '🎯 집중 벤치마킹 하루 요약 + 새로 올린 것·사라진 것 목록 (0.9.0)'), bench_state: C(['pc'], ['pc'], null, 'uploadedAt', '🎯 집중 벤치마킹 지금 목록(다음 날 비교용) (0.9.0)'), bench_probe: C(['pc'], ['webapp'], null, 'uploadedAt', '🎯 판매자 숍 화면 읽기 확인(첫 쪽 일부·읽은 결과) (0.9.0)'),
     prd_cancel_hits: C(['webapp'], ['webapp'], null, 'uploadedAt', '취소 주문 줄과 정확히 맞은 상품(안 팔린 것·뒤에 팔린 것) — 맞은 줄을 쌓기만 · 처리 완료/이유(resolved·resolvedLog) (0.9.0 · 0.11.0)'),
     reg_items: C(['webapp', 'pc'], ['webapp', 'pc'], null, 'uploadedAt', '📥 상품 등록 줄 (조회·선택·결정·확정 — 지우지 않음, 빼기 = stage gone) (0.6.0)'),
     /* (0.6.0) 코드에서 실제로 쓰고 읽는 곳을 찾아 빠졌던 칸을 모두 넣음 (w 쓰는 곳 · r 읽는 곳 — 새로움 기준은 정하지 않음) */
@@ -93,10 +93,56 @@
   const SETTINGS = [
     ['prd_system/pricing', '가격: 판정 엔진 설정·실험 한도·감시 묶음·조건 묶음·감시 탭', ['webapp', 'watch', 'pc']], ['prd_system/settings', '수집기 설정(작업 중요도·자리 수)', ['pc', 'webapp']],
     ['app_settings/main', '웹앱 공용 설정(비용·목표·출고 마감·📥 등록 조건 reg·맡긴 일 기록 기간 cmdWinDays)', ['webapp']], ['crm_system/accounting', '택배 계약(기간별 택배비)', ['webapp']], ['crm_system/shopPolicy', '우리 배송비 정책', ['pc', 'webapp']],
-    ['app_settings/qna_phrases', '고객 응대 문구', ['webapp', 'pc']], ['app_settings/bench', '🎯 집중 벤치마킹 대상 판매자(15명까지 · targets · 처음 15명 seed190)', ['webapp', 'pc']], ['prd_system/buyback', '알라딘 매입 진행 상태', ['webapp', 'pc']], ['app_settings/expenses', '기타 지출(수동)', ['webapp']],
+    ['app_settings/qna_phrases', '고객 응대 문구', ['webapp', 'pc']], ['app_settings/bench', '🎯 집중 벤치마킹 대상 판매자(15명까지 · targets · 처음 15명 seed190) · 수집 그룹·주기(groups) · 모을 정보(fields·detail) · 보기 기준(view) · 주기 수집 켜기(autoOn)', ['webapp', 'pc']], ['prd_system/buyback', '알라딘 매입 진행 상태', ['webapp', 'pc']], ['app_settings/expenses', '기타 지출(수동)', ['webapp']],
     ['app_settings/cloud', '클라우드 신호·판', ['cloud', 'webapp']], ['app_settings/sys_registry', '이 노선표 (Firebase 기준)', ['webapp', 'cloud', 'pc', 'watch']],
   ];
 
+
+  /* ══════════ (0.13.0) 🎯 집중 벤치마킹 — 웹앱·수집기가 같이 쓰는 기준 한 곳 ══════════
+   * ① FIELDS: 판매자 상품마다 모을 수 있는 정보 목록(켜고 끄기 · app_settings/bench.fields) — 'list' = 숍 목록 화면에 이미 있어 시간이 거의 안 듦 · 'detail' = 상품 페이지를 하나씩 열어야 함(한 개당 약 1~2초)
+   * ② 수집 주기: 그룹(app_settings/bench.groups — 위에서부터 차례) 마다 'n시간에 한 번' 또는 'n일에 한 번'. 겹치면 위 그룹 먼저 · 그룹 안은 위에서부터
+   *    'n일에 한 번' = 한국 날짜로 n일이 바뀌면 · 'n시간에 한 번' = 지난번 시작부터 n시간 지나면 · 그룹에 없는 판매자는 '그룹 없음 — 1일에 한 번'
+   * ③ VIEW: 판매자 상세 화면의 보는 기준(가격대 경계·걸린 날 묶음·기간 등) 처음 값 — 관리자가 바꾸면 app_settings/bench.view */
+  const BENCH_FIELDS = [
+    { k: 'price', grp: 'list', label: '판매가', why: '가격대별 올림·사라짐·회전 · 값 바뀜 · 우리 값과 비교', uses: '가격대·회전·값 바뀜' },
+    { k: 'grade', grp: 'list', label: '상태 (최상·상·중·하)', why: '상태별로 잘 팔리는지', uses: '상태' },
+    { k: 'title', grp: 'list', label: '책 제목', why: '빨리 팔린 책·새로 올린 책 목록에 이름으로', uses: '목록' },
+    { k: 'low', grp: 'list', label: '🏷 최저가 배지', why: '배지 획득·상실·보유 소진 · 배지 효과', uses: '배지' },
+    { k: 'priceList', grp: 'list', label: '정가', why: '정가 대비 몇 %에 파는지', uses: '할인율' },
+    { k: 'byline', grp: 'list', label: '지은이·출판사 줄', why: '어느 출판사·지은이 책이 잘 빠지는지(출판사별)', uses: '출판사' },
+    { k: 'usedCode', grp: 'list', label: '중고 상품 코드', why: '같은 책의 다른 매물과 구분 (기록용)', uses: '기록' },
+    { k: 'cover', grp: 'list', label: '표지 그림 이름', why: '표지 파일 이름(ISBN과 비슷하지만 확인 안 된 값) — 기록용', uses: '기록' },
+    { k: 'page', grp: 'list', label: '숍 쪽 번호', why: '배지를 얻은 상품이 숍 몇 쪽에 있었는지', uses: '배지' },
+    { k: 'isbn', grp: 'detail', label: 'ISBN', why: '우리 재고와 같은 책 찾기 → 값 비교 · 빨리 팔린 책 중 우리에게 없는 것(매입 후보)', uses: '겹치는 책·매입 후보' },
+    { k: 'cat', grp: 'detail', label: '주제 분류', why: '분야별 올림·사라짐·회전 — 어느 분야가 잘 빠지는지', uses: '분야' },
+    { k: 'pubYm', grp: 'detail', label: '출간 연월', why: '새 책·옛 책 중 무엇이 잘 빠지는지', uses: '출간 연도' },
+  ];
+  const BENCH_FIELDS_DEF = Object.fromEntries(BENCH_FIELDS.map((f) => [f.k, f.grp === 'list']));
+  const BENCH_DETAIL_DEF = { max: 300, maxMin: 30 }; // 상품 페이지 열기: 판매자 한 번 수집에 최대 개수·최대 분 (새로 올린 것 먼저, 남으면 예전 것 채움)
+  const BENCH_VIEW_DEF = { bands: [3000, 6000, 10000, 20000, 40000], life: [3, 7, 14, 30, 60], days: 0, cohortDays: 7, fastDays: 7, catDepth: 2, recentN: 60, ourDays: 30, minN: 5 };
+  const benchFields = (cfg) => ({ ...BENCH_FIELDS_DEF, ...((cfg && cfg.fields) || {}) });
+  const benchNeedsDetail = (cfg) => { const f = benchFields(cfg); return BENCH_FIELDS.some((x) => x.grp === 'detail' && f[x.k]); };
+  const kstDay = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
+  const dayMs = (d) => Date.parse(d + 'T00:00:00+09:00');
+  /* 그룹 목록(빈 칸·없는 판매자 정리) — 그룹에 없는 '따라가는' 판매자는 맨 아래 '그룹 없음(1일에 한 번)' */
+  function benchGroups(cfg) { const T = ((cfg && cfg.targets) || []).filter((t) => t && t.sc && t.on !== false); const on = new Set(T.map((t) => String(t.sc))); const seen = new Set();
+    const G = ((cfg && cfg.groups) || []).filter((g) => g && g.id).map((g) => ({ id: g.id, name: g.name || '그룹', unit: g.unit === 'h' ? 'h' : 'd', n: Math.max(1, Math.round(+g.n || 1)), scs: (g.scs || []).map(String).filter((sc) => on.has(sc) && !seen.has(sc) && seen.add(sc)) }));
+    const rest = T.map((t) => String(t.sc)).filter((sc) => !seen.has(sc)); if (rest.length) G.push({ id: '_none', name: '그룹 없음', unit: 'd', n: 1, scs: rest, auto: true }); return G; }
+  /* 다음 수집 시각: last = 지난번 시작(ms) · lastDay = 지난번 날짜(예전 기록은 시각이 없음) */
+  function benchNext(g, last, lastDay) { if (!last && !lastDay) return 0; if (g.unit === 'h') return (last || dayMs(lastDay)) + g.n * 3600e3 - 60e3; return dayMs(lastDay || kstDay(last)) + g.n * 864e5; }
+  /* 지금 할 차례: [{sc, gi, g, rank, due, next}] — rank = 전체 순서(위 그룹 먼저, 그룹 안은 위에서부터) */
+  function benchPlan(cfg, states, now) { const G = benchGroups(cfg); const out = []; let rank = 0;
+    G.forEach((g, gi) => g.scs.forEach((sc) => { const st = (states && states[sc]) || {}; const last = st.runAt ? Date.parse(st.runAt) : null; const next = benchNext(g, last, st.day || null); out.push({ sc, gi, g, rank: rank++, last, next, due: next <= now }); }));
+    return out; }
+  /* 순서표: 지금부터 차례로 했을 때 판매자마다 다음 수집 시작·끝 (durOf(sc) = 걸릴 초) — 겹치면 위 차례가 먼저, 한 번에 하나 */
+  function benchSim(cfg, states, now, durOf, horizonH) { const P = benchPlan(cfg, states, now); const end = now + (horizonH || 48) * 3600e3; let t = now; const first = {}; const runs = [];
+    const S = P.map((x) => ({ ...x, nx: x.next })); let guard = 0;
+    while (guard++ < 2000 && t < end && Object.keys(first).length < S.length) { const ready = S.filter((x) => x.nx <= t).sort((a, b) => a.rank - b.rank)[0];
+      if (!ready) { t = Math.min(...S.map((x) => x.nx)); continue; }
+      const d = Math.max(60, +durOf(ready.sc) || 600) * 1000; const r = { sc: ready.sc, start: t, end: t + d, rank: ready.rank, gi: ready.gi }; runs.push(r); if (!first[ready.sc]) first[ready.sc] = r; t += d;
+      ready.nx = benchNext(ready.g, r.start, null); if (ready.g.unit === 'd') ready.nx = dayMs(kstDay(r.start)) + ready.g.n * 864e5; }
+    return { plan: P, first, runs }; }
+  const BENCH = { FIELDS: BENCH_FIELDS, FIELDS_DEF: BENCH_FIELDS_DEF, DETAIL_DEF: BENCH_DETAIL_DEF, VIEW_DEF: BENCH_VIEW_DEF, fields: benchFields, needsDetail: benchNeedsDetail, groups: benchGroups, next: benchNext, plan: benchPlan, sim: benchSim, kstDay };
   const DEFAULTS = { KINDS, JOBS, COLLECTIONS, PINS, USES, SETTINGS };
   // Firebase 문서(doc)의 overrides를 기본값 위에 얹음: overrides.kinds.{종류}.{by,prio,leaseMin,retry,waitMin,off} · overrides.pins.{파일}
   function merge(doc) { const o = (doc && doc.overrides) || {}; const K = {}; for (const [k, v] of Object.entries(KINDS)) K[k] = { ...v, ...((o.kinds || {})[k] || {}) };
@@ -129,6 +175,6 @@
   // 칸 새로움: lastMs = 그 칸의 가장 새 시각 → 정한 주기보다 오래면 늦음
   function freshness(R, name, lastMs, now) { const c = ((R && R.COLLECTIONS) || COLLECTIONS)[name]; if (!c || !c.freshMin) return null; if (!Number.isFinite(lastMs)) return { ok: false, ageMin: null, want: c.freshMin }; const ageMin = (now - lastMs) / MIN; return { ok: ageMin <= c.freshMin, ageMin, want: c.freshMin }; }
 
-  const api = { VERSION, DEFAULTS, KINDS, JOBS, COLLECTIONS, PINS, USES, SETTINGS, TOOLS, merge, kindOf, canHandle, sweep, pinDiff, freshness, lastSign, tms, fileKey, loadedVers };
+  const api = { VERSION, BENCH, DEFAULTS, KINDS, JOBS, COLLECTIONS, PINS, USES, SETTINGS, TOOLS, merge, kindOf, canHandle, sweep, pinDiff, freshness, lastSign, tms, fileKey, loadedVers };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowRegistry = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
