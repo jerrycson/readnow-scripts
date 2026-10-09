@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.54.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.54.2의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.54.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.54.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.54.1'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.54.2'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -1417,7 +1417,11 @@
       if (bad.length) log(`🎯 집중 벤치마킹: 오류 난 판매자 ${bad.length}명 — ${bad.join(', ')}`, 1); } finally { await releaseLane('aladin'); } }
   async function benchOne(t) { const sc = String(t.sc); const name = t.name || sc; const day = kDayB(); const stRef = C('bench_state').doc(sc); const st = (await stRef.get()).data() || {};
     /* (1.53.0) 하루에 여러 번(n시간에 한 번)도 되게: 끝나지 않은 회차는 시작한 지 20시간 안이면 이어서, 아니면 새 회차 (차례는 benchJob이 정함) */
-    const JN = 'bench_' + sc; let prog = await loadProgress(JN); if (!prog || !(prog.startedAt && Date.now() - Date.parse(prog.startedAt) < 20 * 3600e3) || (!Array.isArray(prog.items) && !(prog.blocks > 0))) prog = { day, page: 1, items: [], blocks: 0, startedAt: nowIso(), sc, name };
+    const JN = 'bench_' + sc; let prog = await loadProgress(JN); if (!prog || !(prog.startedAt && Date.now() - Date.parse(prog.startedAt) < 20 * 3600e3) || (!Array.isArray(prog.items) && !(prog.blocks > 0))) { prog = { day, page: 1, items: [], blocks: 0, startedAt: nowIso(), sc, name, readDone: false, pagingBroken: false, lastPage: null };
+      /* (1.54.2) 새 회차는 진행 문서를 통째로 바꿔 씀 — 진행 저장은 합치기(merge)라, 예전엔 지난 회차의 '숍 읽기 끝남(readDone)'이 남아 있다가 멈췄다 이어 할 때 몇 쪽만 읽고 회차를 끝냈음(나머지 수만 개가 '이번에 안 보임') */
+      try { await C('prd_jobs').doc(JN).set({ day, page: 1, blocks: 0, startedAt: prog.startedAt, sc, name, readDone: false, pagingBroken: false, lastPage: null, done: false, by: PC_NAME, pc: PC_ID, savedAt: Date.now(), ...W() }); } catch (e) {} }
+    /* (1.54.2) 이어 할 때 '읽기 끝남'인데 숍 끝 쪽까지 못 읽었으면 믿지 않고 그 쪽부터 이어 읽음 (2쪽이 1쪽과 같은 숍은 1쪽만 쓰는 게 맞아 제외) */
+    if (prog.readDone && !prog.pagingBroken && prog.lastPage && prog.page < prog.lastPage - 3) { log(`🎯 '${name}': '숍 읽기 끝남'으로 적혀 있지만 ${prog.page.toLocaleString()} / ${prog.lastPage.toLocaleString()}쪽까지만 읽었음(예전 판 오류) — 끝으로 보지 않고 ${prog.page.toLocaleString()}쪽부터 이어 읽음`, 1); prog.readDone = false; }
     /* (1.48.0) 큰 숍(수만 개)도 되게: 읽은 상품을 10쪽마다 조각(prd_jobs/bench_{번호}/bk/{n})으로 덧붙여 저장 — 예전처럼 4쪽마다 전체 목록(수 MB)을 다시 올리지 않음 · 쪽 수 상한(600) 없앰 → 숍 화면의 '끝' 쪽까지 */
     const bkRef = (k) => C('prd_jobs').doc(JN).collection('bk').doc(String(k)); if (!Array.isArray(prog.items)) prog.items = [];
     if ((prog.blocks || 0) > 0 && !prog.items.length) { for (let k = 0; k < prog.blocks; k++) { const d = (await bkRef(k).get()).data(); if (d && d.s) { try { prog.items.push(...JSON.parse(d.s)); } catch (e) {} } } log(`🎯 '${name}': 저장해 둔 ${prog.blocks}조각 · ${prog.items.length.toLocaleString()}개를 불러옴`); }
@@ -1436,10 +1440,13 @@
     if (!prog.readDone) for (;; prog.page++) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); }
       if (lastP && prog.page > lastP + 3) break; /* 읽는 동안 새로 올라온 만큼 뒤로 밀릴 수 있어 끝 쪽 + 3쪽까지 */
       let r; try { r = await PUB.read('shop', benchUrl(sc, prog.page), (g) => ({ items: benchParse(g.doc), last: benchLastPage(g.doc, g.html) }), (g) => benchParse(g.doc).length > 0); } catch (e) { if (e.message === '멈춤') { await saveBk(); throw e; } log(`벤치마킹 '${name}' ${prog.page}쪽 읽기 실패: ${e.message} — 다음에 이 쪽부터`, 1); await saveBk(); return; }
-      const L = benchParse(r.doc);
+      let L = benchParse(r.doc);
+      /* (1.54.2) 끝 쪽보다 한참 앞에서 빈 쪽이 오면 '끝'으로 보지 않음 — 로그인 상태로 한 번 더 읽고, 그래도 비면 저장하고 다음에 이 쪽부터(회차를 끝내지 않음 · 나머지를 '안 보임'으로 적지 않게) */
+      if (!L.length && lastP && prog.page < lastP - 3) { try { const r2 = await getDoc(benchUrl(sc, prog.page)); const L2 = benchParse(r2.doc); if (L2.length) { r = r2; L = L2; } } catch (e) { if (e.message === '멈춤') { await saveBk(); throw e; } }
+        if (!L.length) { log(`벤치마킹 '${name}' ${prog.page}쪽이 비어 있음(끝 쪽 ${lastP}쪽보다 앞) — 회차를 끝내지 않고 저장, 다음에 이 쪽부터`, 1); await saveBk(); return; } }
       if (prog.page === 1 || !lastP) { const lp = benchLastPage(r.doc, r.html); if (lp) { if (lp !== lastP && prog.page === 1) log(`🎯 '${name}': 숍 끝 쪽 ${lp.toLocaleString()}쪽 (약 ${(lp * 48).toLocaleString()}개)`); lastP = Math.max(lp, prog.page); prog.lastPage = lastP; } }
       if (prog.page === 1) { firstIds = L.map((x) => x.id).join(','); await C('bench_probe').doc(sc).set({ sc, name, at: nowIso(), day, url: benchUrl(sc, 1), view: L.length && L[0].uc ? 'simple' : 'other', pubMode: PUB.st.shop.mode, pubWhy: PUB.st.shop.last || null, lastPage: lastP || null, n: L.length, withPrice: L.filter((x) => x.p).length, withGrade: L.filter((x) => x.g).length, noGrade: L.filter((x) => x.g0).length, withIsbn: L.filter((x) => x.isbn).length, withCover: L.filter((x) => x.cov).length, withLow: L.filter((x) => x.low).length, sample: L.slice(0, 5), html: String(r.html || '').slice(0, 250000), pc: PC_NAME, ...W() }); }
-      if (prog.page === 2 && L.map((x) => x.id).join(',') === firstIds && firstIds) { log(`벤치마킹 '${name}': 2쪽이 1쪽과 같음 — 쪽 넘김 방식이 다름(웹앱에 '읽기 확인 필요') · 1쪽만 씀`, 1); await C('bench_probe').doc(sc).set({ pagingBroken: true }, { merge: true }); break; }
+      if (prog.page === 2 && L.map((x) => x.id).join(',') === firstIds && firstIds) { log(`벤치마킹 '${name}': 2쪽이 1쪽과 같음 — 쪽 넘김 방식이 다름(웹앱에 '읽기 확인 필요') · 1쪽만 씀`, 1); await C('bench_probe').doc(sc).set({ pagingBroken: true }, { merge: true }); prog.pagingBroken = true; break; }
       let fresh = 0; for (const x of L) { if (have.has(x.id)) continue; have.add(x.id); fresh++; const row = [x.id, x.p, x.g, x.t, x.isbn, x.ym, x.pl, x.low ? 1 : 0, prog.page, x.uc || null, x.au || null, x.cov || null]; prog.items.push(row); pend.push(row); }
       { const e = eta(); const exp = expOf(); ui(`집중 벤치마킹 · ${name}`, prog.page, Math.max(prog.page, exp || prog.page), `${prog.page.toLocaleString()}${exp ? ' / ' + exp.toLocaleString() : ''}쪽 · 지금까지 ${prog.items.length.toLocaleString()}개${e && e.ms != null ? ` · 남은 약 ${Math.max(1, Math.round(e.ms / 60000))}분 (${hm(e.ms)} 끝 예상)` : ''}`); } say(false);
       if (!L.length) break; /* 빈 쪽 = 끝 */
@@ -1473,7 +1480,7 @@
       if (b) { v[7] = b.isbn || null; v[8] = b.cat || null; v[9] = b.pubYm || null; v[10] = 1; out.filled.push(id); } else v[10] = 2;
       if (Date.now() - lastLog > 30000) { lastLog = Date.now(); log(`🎯 '${name}' 상품 정보 더 읽기 ${out.tried}/${cand.length}`); ui(`집중 벤치마킹 · ${name} · 상품 정보`, out.tried, cand.length, `ISBN·분류 ${out.tried}/${cand.length}`); } }
     log(`🎯 '${name}' 상품 정보 더 읽기 끝: ${out.filled.length}/${out.tried}개 (${Math.round((Date.now() - t0) / 1000)}초)`); return out; }
-  async function benchFinish(t, prog, st) { const sc = String(t.sc); const day = prog.day; const dayN = day.replace(/-/g, ''); const old = new Map(); const nC = st.chunks || 0;
+  async function benchFinish(t, prog, st) { const RUN_OK = !!prog.pagingBroken || !prog.lastPage || prog.page >= prog.lastPage - 3; const sc = String(t.sc); const day = prog.day; const dayN = day.replace(/-/g, ''); const old = new Map(); const nC = st.chunks || 0;
     for (let k = 0; k < nC; k++) { const c = (await C('bench_state').doc(sc).collection('c').doc(String(k)).get()).data(); let M = c && c.m; if (c && c.s) { try { M = JSON.parse(c.s); } catch (e) { M = null; } } if (M) for (const [id, v] of Object.entries(M)) old.set(id, v); } /* (1.53.3) 새 모양 s(글자) · 예전 모양 m 둘 다 읽음 */ /* v = [값, 처음 본 날(YYYYMMDD), 상태, 처음부터 있던 것(1), 제목 앞 40자] */
     const RB = (BREG() || {}).BENCH; const F = RB ? RB.fields(BENCH_CFG) : { price: true, grade: true, title: true, low: true, priceList: true, byline: true, usedCode: true, cover: true, page: true }; /* (1.53.0) 웹앱 ⚙ 수집 항목에서 끈 정보는 모으지 않음 */
     const base = !st.day; const now = new Map(); const add = [], gone = [], moved = []; const dd = (a) => Math.max(0, Math.round((Date.parse(day) - Date.parse(`${String(a).slice(0, 4)}-${String(a).slice(4, 6)}-${String(a).slice(6, 8)}`)) / 864e5));
@@ -1504,6 +1511,7 @@
       totalBand: cntBy(all, (v) => band(v[0])), totalGrade: cntBy(all, (v) => v[2] || '?'), addBand: cntBy(add, (x) => band(x.p)), addGrade: cntBy(add, (x) => x.g || '?'), addYear: cntBy(add, (x) => (x.ym ? x.ym.slice(0, 4) : '?')),
       goneBand: cntBy(gone, (x) => band(x.p)), goneGrade: cntBy(gone, (x) => x.g || '?'), goneLife: cntBy(gone.filter((x) => !x.base), (x) => (x.life <= 3 ? '0~3일' : x.life <= 7 ? '4~7일' : x.life <= 14 ? '8~14일' : x.life <= 30 ? '15~30일' : x.life <= 60 ? '31~60일' : '61일~')),
 /* (1.54.0) 💰 판매가 합 — 지금 숍 전체(재고 가치)·배지 보유분·이번 회차 사라진 것·새로 올린 것 (목록은 3,000개까지만 담지만 합은 전부로) */
+      complete: RUN_OK, runLastPage: prog.lastPage || null, /* (1.54.2) 숍 끝 쪽까지 읽은 회차인지 — 웹앱·순서표는 끝까지 못 읽은 회차를 셈에서 빼고 곧바로 다시 읽을 차례로 */
       sumNow: all.reduce((a2, v) => a2 + (+v[0] || 0), 0), priceN: all.filter((v) => +v[0] > 0).length, sumLow: all.filter((v) => v[5]).reduce((a2, v) => a2 + (+v[0] || 0), 0), sumGone: gone.reduce((a2, x) => a2 + (+x.p || 0), 0), sumGoneNew: gone.filter((x) => !x.base).reduce((a2, x) => a2 + (+x.p || 0), 0), sumAdd: add.reduce((a2, x) => a2 + (+x.p || 0), 0),
       lowNow: all.filter((v) => v[5]).length, lowOn: lowOn.length, lowOff: lowOff.length, goneLow: gone.filter((x) => x.low).length, goneLowNew: gone.filter((x) => x.low && !x.base).length, addLow: add.filter((x) => x.low).length, lowBand: cntBy(all.filter((v) => v[5]), (v) => band(v[0])), lowOnList: lowOn.slice(0, 1000).map((x) => JR([x.id, T60(x.t), x.p, x.g, x.pg || null])), lowOffList: lowOff.slice(0, 1000).map((x) => JR([x.id, T60(x.t), x.p, x.g])),
       addList: add.slice(0, 3000).map((x) => JR([x.id, T60(x.t), x.p, x.g, x.ym, x.isbn, x.pl, x.low, x.cat || null])), goneList: gone.slice(0, 3000).map((x) => JR([x.id, T60(x.t), x.p, x.g, x.base ? null : x.life, x.first, x.low ? 1 : 0, x.isbn || null, x.cat || null, x.ym || null])), movedList: moved.slice(0, 1000).map((x) => JR([x.id, x.from, x.to])), rowFmt: 'json',
@@ -1514,7 +1522,7 @@
     let dayId = `${sc}_${day}`; { const ex = (await C('bench_days').doc(dayId).get()).data(); if (ex && ex.runAt && prog.startedAt && ex.runAt !== prog.startedAt) dayId = `${sc}_${day}_${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; else if (ex && !ex.runAt && prog.startedAt && ex.at && Date.parse(ex.at) < Date.parse(prog.startedAt)) dayId = `${sc}_${day}_${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; }
     sumD.dayId = dayId; await C('bench_days').doc(dayId).set(sumD);
     const ent = [...now.entries()]; const CH = 2500; /* (1.53.0) 상품마다 ISBN·분류가 붙어 한 조각 2,500개로 (Firebase 문서 1MB 한도) */ const chunks = Math.ceil(ent.length / CH); for (let k = 0; k < chunks; k++) await C('bench_state').doc(sc).collection('c').doc(String(k)).set({ s: JSON.stringify(Object.fromEntries(ent.slice(k * CH, (k + 1) * CH))), n: Math.min(CH, ent.length - k * CH), fmt: 'json', day, at: nowIso() }); /* (1.53.3) 조각을 글자(JSON) 한 칸으로 — 상품마다 목록(값 11개)을 칸으로 두면 Firebase가 칸마다 색인을 만들어 '색인 항목이 너무 많음(too many index entries)'으로 거절했음 */
-    await C('bench_state').doc(sc).set({ sc, name: t.name || sc, day, runAt: prog.startedAt || nowIso(), endAt: nowIso(), runs: firebase.firestore.FieldValue.increment(1), detailNow: sumD.detailNow, total: seenN, missOnce: miss.length, pages: prog.page, lastPage: st.lastPage || null, chunks, startDay: st.startDay || day, secPerPage: st.secPerPage || null, lowNow: all.filter((v) => v[5]).length, prog: null, at: nowIso(), ...W() }, { merge: true }); /* (1.54.0) 회차 끝 — 하는 중 표시 지움 */
+    await C('bench_state').doc(sc).set({ sc, name: t.name || sc, day, runAt: prog.startedAt || nowIso(), endAt: nowIso(), runs: firebase.firestore.FieldValue.increment(1), detailNow: sumD.detailNow, total: seenN, missOnce: miss.length, pages: prog.page, lastPage: prog.lastPage || st.lastPage || null, chunks, startDay: st.startDay || day, secPerPage: st.secPerPage || null, lowNow: all.filter((v) => v[5]).length, prog: null, complete: RUN_OK, at: nowIso(), ...W() }, { merge: true }); /* (1.54.0) 회차 끝 — 하는 중 표시 지움 · (1.54.2) 끝까지 읽었는지 */
     log(`집중 벤치마킹 '${t.name || sc}': ${seenN.toLocaleString()}개${miss.length ? ` · 이번에 안 보임 ${miss.length}(내일도 없으면 사라짐)` : ''}${back.length ? ` · 어제 놓쳤다 다시 보임 ${back.length}` : ''} · ${base ? '첫 바퀴(오늘부터 새로 올린 것을 셈)' : `새로 올림 ${add.length} · 사라짐 ${gone.length}(최저가였던 것 ${gone.filter((x) => x.low).length}) · 값 바뀜 ${moved.length} · 최저가 표시 지금 ${all.filter((v) => v[5]).length}개(새로 ${lowOn.length} · 잃음 ${lowOff.length})`}`); }
 
 
