@@ -1,7 +1,7 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.49.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.50.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.49.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.50.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -184,7 +184,7 @@
   window.__rnRegAuto = (ref, v, id) => { const hb = setInterval(() => ref.set({ beatAt: nowIso(), waitMsg: '이 PC의 앞 자동 등록이 끝나길 기다림' }, { merge: true }).catch(() => {}), 60000);
     const p = autoChain.then(() => { clearInterval(hb); return regAutoOne(ref, v, id); }).catch((e) => console.warn('[리드나우] 자동 등록', e)).finally(() => clearInterval(hb)); autoChain = p; return p; };
   async function regAutoOne(ref, v, id) { const itemId = v.itemId; await ref.set({ beatAt: nowIso(), waitMsg: null, step: 1 }, { merge: true }).catch(() => {}); const sn = await C('reg_items').doc(itemId).get().catch(() => null); const it = sn && sn.exists ? sn.data() : null;
-    const notSent = async (msg, extra) => { await ref.set({ status: 'fail', sent: false, msg: '자동 등록 — 보내지 않음: ' + msg, doneAt: nowIso(), ...(extra || {}), uploadedAt: TS() }, { merge: true }).catch(() => {}); await C('reg_items').doc(itemId).set({ lookErr: '🤖 자동 등록 멈춤: ' + String(msg).slice(0, 200), autoCmd: null, uploadedAt: TS() }, { merge: true }).catch(() => {}); };
+    const notSent = async (msg, extra) => { await ref.set({ status: 'fail', sent: false, msg: (v.mock ? '🧷 모의 등록 — ' : '자동 등록 — 보내지 않음: ') + msg, doneAt: nowIso(), ...(extra || {}), uploadedAt: TS() }, { merge: true }).catch(() => {}); await C('reg_items').doc(itemId).set(v.mock ? { mockResult: { at: nowIso(), ok: false, msg: '못 채움 — ' + String(msg).slice(0, 200), fill: (extra && extra.fill) || null, kind: 'auto' }, autoCmd: null, uploadedAt: TS() } : { lookErr: '🤖 자동 등록 멈춤: ' + String(msg).slice(0, 200), autoCmd: null, uploadedAt: TS() }, { merge: true }).catch(() => {}); };
     if (!it || !it.plan) return notSent('등록 계획이 없음 — 웹앱에서 다시');
     if (it.stage !== 'pick' || (it.cmdId && it.cmdId !== id)) return notSent('결정 대기가 아님(이미 등록을 보냈거나 옮겨짐)');
     const plan = it.plan; const url = plan.method === 'one' ? `/scm/wrecord.aspx?ISBN=${encodeURIComponent(plan.isbn)}` : '/scm/wrecord.aspx';
@@ -196,6 +196,8 @@
       const F = makeFiller(d, W, { auto: true }); let rep; try { rep = await F.fill(plan); /* (1.49.0) 사진 칸(대표·추가)의 사진도 넣음 — 넣은 뒤 칸에 사진 주소가 들어왔는지 확인(attachOne) · 하나라도 안 되면 아래에서 보내지 않음 · 설명 안 사진(편집기)은 자동으로 못 넣음 */ const todo = F.photoTodo(plan); if (todo.some((t) => !t.field)) rep.push({ k: '설명 안 사진', ok: false, note: '편집기 사진은 자동으로 못 넣음 — \'채워서 열기\'로' }); else if (todo.length) { await ref.set({ beatAt: nowIso(), step: 2, waitMsg: `사진 ${todo.length}장 넣는 중` }, { merge: true }).catch(() => {}); rep.push(...(await F.attachImages(plan))); } } catch (e) { return await notSent('채우지 못함: ' + e.message); }
       const bad = rep.filter((x) => !x.ok); const fillTxt = rep.map((x) => `${x.ok ? '✓' : '✗'} ${x.k}${x.note && !x.ok ? ' (' + x.note + ')' : ''}`).join(' · ').slice(0, 900);
       if (bad.length) return await notSent('못 채운 칸 ' + bad.map((x) => x.k + (x.note ? ` (${x.note})` : '')).join(', ') + ' — 카드에서 고치거나 \'채워서 열기\'로 직접', { fill: fillTxt });
+      if (v.mock) { /* (1.50.0) 🧷 모의 등록: 모든 칸·사진을 채웠으니 여기서 멈춤 — 실행 문·보냄 기록도 만들지 않고, 알라딘 '등록'은 누르지 않음 */ const msg = `알라딘에 보내지 않음 · ${rep.length}칸 모두 채움`; await ref.set({ status: 'done', mock: true, sent: false, step: 4, fill: fillTxt, msg: '🧷 모의 등록 — ' + msg, results: { [itemId]: { state: 'mock', at: nowIso(), msg } }, doneAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {});
+        await C('reg_items').doc(itemId).set({ mockResult: { at: nowIso(), ok: true, msg, fill: fillTxt, kind: 'auto' }, autoCmd: null, lookErr: null, uploadedAt: TS() }, { merge: true }).catch(() => {}); return; }
       let P; try { P = await F.prep(itemId, it, plan, rep, id); } catch (e) { return await notSent(e.message, { fill: fillTxt }); }
       const al = []; F.hook(al, true); const nav = loaded(30000); try { W.frmRecord_submit_C2C(false, '6', plan.method === 'one'); } catch (e) { al.push('보내기 함수 오류: ' + e.message); }
       const went = await nav; const errA = al.some((a) => ERR_RE.test(a) || /^\(확인\)/.test(a));

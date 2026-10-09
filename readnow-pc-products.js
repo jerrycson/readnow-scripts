@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.49.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.50.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.49.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.50.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.49.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.50.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -1678,8 +1678,8 @@ lowNow: all.filter((v) => v[5]).length, lowOn: lowOn.length, lowOff: lowOff.leng
     else if (v.type === 'c2bAdd') { await c2bAddCmd(ref, v); return; }
     else if (v.type === 'cashStop') { await cashStopCmd(ref, v); return; } // (1.37.0) 현금 판매 → 알라딘 판매중지 자동 // (1.35.0) 알라딘 매입: 팔기 장바구니에 담기
     else if (v.type === 'lookup') { await lookupCmd(ref, v); return; }
-    else if (v.type === 'regBulk') { await regBulkCmd(ref, v); return; }
-    else if (v.type === 'regOne' && v.auto) { if (!window.__rnRegAuto) { await ref.set({ status: 'queued', claim: null, pcSkip: `수집기 ${APP_VER}에 자동 등록 모듈이 없음`, uploadedAt: TS() }, { merge: true }); return; } log(`🤖 자동 등록 맡음: ${v.title || v.itemId}`); try { await window.__rnRegAuto(ref, v, id); } catch (e) { log('자동 등록 오류: ' + e.message, 1); } return; } // (1.47.0) 창 없이 개별·미등록 등록 // (1.44.0) 📥 알라딘 대량 등록
+    else if (v.type === 'regBulk' || v.type === 'regBulkMock') { await regBulkCmd(ref, v.type === 'regBulkMock' ? { ...v, mock: true } : v); return; } /* (1.50.0) 🧷 모의 등록은 종류를 따로(regBulkMock·regOneMock) — 예전 판 수집기는 모르는 종류라 받지 않음(실수로 올리지 않게) */
+    else if ((v.type === 'regOne' || v.type === 'regOneMock') && v.auto) { if (v.type === 'regOneMock') v = { ...v, mock: true }; if (!window.__rnRegAuto) { await ref.set({ status: 'queued', claim: null, pcSkip: `수집기 ${APP_VER}에 자동 등록 모듈이 없음`, uploadedAt: TS() }, { merge: true }); return; } log(`🤖 자동 등록 맡음: ${v.title || v.itemId}`); try { await window.__rnRegAuto(ref, v, id); } catch (e) { log('자동 등록 오류: ' + e.message, 1); } return; } // (1.47.0) 창 없이 개별·미등록 등록 // (1.44.0) 📥 알라딘 대량 등록
     else if (v.type === 'regAux') { const RG = RGF(); let out; try { if (!RG || !RG.auxRun) throw new Error('등록 엔진 공용 파일 0.3.0이 아님 — 수집기 새로고침'); const val = await RG.auxRun(v.op, v.a || {}); out = { v: val }; await C('reg_aux').doc(RG.auxKey(v.op, v.a || {})).set({ op: v.op, a: v.a || {}, v: val, at: nowIso(), by: PC_NAME, ...W() }).catch(() => {}); } catch (e) { out = { err: e.message }; } await ref.set({ status: 'done', ...out, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); return; } // (1.45.0) 📥 분류·저자·출판사 찾기 (클라우드가 안 될 때)
     else if (v.type === 'metrics') { log(`그룹 시장 지표 갱신 맡음: ${v.label || ''} ${(v.keys || []).length}개`); if (!running) runJob('metricsReq'); else log('다른 작업 중 — 끝나면 이어서 (5분마다 확인)'); return; }
     else if (v.type === 'read') { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (SH) try { await shipLiteRead(SH, null); } catch (e) {} await ref.set({ status: 'done', doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); }
@@ -1753,7 +1753,7 @@ lowNow: all.filter((v) => v[5]).length, lowOn: lowOn.length, lowOff: lowOff.leng
       else if (op === 'beat') { if (v.cmd === cmdId) tx.set(ref, { at: nowIso() }, { merge: true }); res = { ok: true }; }
       else if (op === 'free') { if (v.cmd === cmdId) tx.set(ref, { cmd: null, by: null, at: nowIso(), last: cmdId }); res = { ok: true }; } }); return res; }
   async function regHeldToQueued(ref, prev) { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data() || {}; if (v.status !== 'held' || (prev !== undefined && v.prev !== prev)) return; tx.update(ref, { status: 'queued', claim: null, heldMsg: null, releasedAt: nowIso(), uploadedAt: TS() }); }); } /* 트랜잭션: 그사이 웹앱에서 '맡김 취소'했으면 되살리지 않음 */
-  async function regReleaseNext(cmdId) { try { const qs = await C('shp_cmds').where('status', '==', 'held').get(); for (const d of qs.docs) { const v = d.data(); if (v.type === 'regBulk' && v.prev === cmdId) await regHeldToQueued(d.ref, cmdId).catch(() => {}); } } catch (e) {} }
+  async function regReleaseNext(cmdId) { try { const qs = await C('shp_cmds').where('status', '==', 'held').get(); for (const d of qs.docs) { const v = d.data(); if ((v.type === 'regBulk' || v.type === 'regBulkMock') && v.prev === cmdId) await regHeldToQueued(d.ref, cmdId).catch(() => {}); } } catch (e) {} }
   async function regBulkCmd(ref, v) { const RG = RGF(); const X = EXC(); const rows = Array.isArray(v.rows) ? v.rows : []; const results = {}; const t0 = Date.now(); let laneOk = false;
     const st = (step, extra) => Promise.all([ref.set({ step, beatAt: nowIso(), ...(extra || {}), uploadedAt: TS() }, { merge: true }).catch(() => {}), laneOk ? regLane(ref.id, 'beat').catch(() => {}) : null]);
     const stop = async (msg, extra, state) => { rows.forEach((r) => (results[r.regItem] = { state: state || 'fail', at: nowIso(), msg })); try { await ref.set({ status: 'fail', msg, results, sent: false, doneAt: nowIso(), by: PC_NAME, ...(extra || {}), uploadedAt: TS() }, { merge: true }); } catch (e) { log('멈춤을 적지 못함: ' + (e.code || e.message), 1); } await regItemsSet(rows, results); log(`📥 대량 등록 멈춤 (알라딘에 등록하지 않음): ${msg}`, 1); };
@@ -1777,6 +1777,11 @@ lowNow: all.filter((v) => v[5]).length, lowOn: lowOn.length, lowOff: lowOff.leng
       await st(4, { upload: { http: r1.status, n: p1.count, alerts: p1.alerts.slice(0, 5), token: p1.tokenId || null } });
       if (!r1.ok) throw regNotSent(`올리기 실패 (HTTP ${r1.status})`); if (!p1.hasPreview || !p1.tokenId) throw regNotSent('올린 뒤 미리보기가 없음' + (p1.alerts.length ? ' — 알라딘: ' + p1.alerts.slice(0, 3).join(' / ') : ' (파일을 받지 않았을 수 있음)'));
       const m = RG.matchPreview(p1, rows); if (!m.ok) throw regNotSent(`미리보기가 넣은 것과 다름 — 등록하지 않음${m.miss.length ? ` · 빠진 ISBN ${m.miss.slice(0, 5).join(', ')}` : ''}${m.diff.length ? ' · 다름: ' + m.diff.slice(0, 3).join(' / ') : ''}${m.extra.length ? ` · 넣지 않은 줄 ${m.extra.length}개가 미리보기에 있음` : ''}${p1.alerts.length ? ' · 알라딘: ' + p1.alerts.slice(0, 2).join(' / ') : ''}`);
+      if (v.mock) { /* (1.50.0) 🧷 모의 등록: 엑셀 만들기·올리기·미리보기 대조까지 했으니 여기서 멈춤 — '등록 완료'는 누르지 않음(알라딘에 안 올라감) · 상품은 결정 대기로 */
+        const msg = `알라딘에 보내지 않음 · 엑셀 ${rows.length}줄 만들기·올리기·미리보기 대조 모두 맞음 (미리보기 ${p1.count}줄)`; rows.forEach((r) => (results[r.regItem] = { state: 'mock', at: nowIso(), msg }));
+        await ref.set({ status: 'done', mock: true, step: 4, msg: '🧷 모의 등록 — ' + msg, results, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }).catch(() => {});
+        try { const b = db.batch(); rows.forEach((r) => r.regItem && b.set(C('reg_items').doc(r.regItem), { stage: 'pick', cmdId: null, final: null, confirmedAt: null, result: null, mockResult: { at: nowIso(), ok: true, msg, kind: 'bulk' }, ...W() }, { merge: true })); await b.commit(); } catch (e) { log('모의 결과를 상품 줄에 못 적음: ' + (e.code || e.message), 1); }
+        await xend('failed', '🧷 모의 등록 — 보내지 않음', { n: rows.length, mock: true }); log(`🧷 대량 모의 등록 끝: ${rows.length}줄 — 미리보기 대조까지 맞음, 알라딘에 보내지 않음`); return; }
       const q = new URLSearchParams(); m.pairs.forEach((pk) => q.append('chk_' + pk, pk)); q.append('x', '52'); q.append('y', '14'); q.append('regItemAction', '1'); q.append('tokenId', p1.tokenId);
       /* 보냄 표시는 트랜잭션: 이 일이 아직 '하는 중'이고 이 탭이 맡았고 등록 자리도 이 일일 때만 — 지킴이가 그사이 '멈춤'으로 바꿨거나 다른 곳이 맡았으면 보내지 않음 */
       let mine = false; try { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const lane = await tx.get(REG_LANE()); const cv = sn.data() || {}; const lv = lane.exists ? lane.data() : {}; if (cv.status !== 'running' || (cv.claim || {}).tab !== TAB_ID || lv.cmd !== ref.id) return;
@@ -1800,7 +1805,7 @@ lowNow: all.filter((v) => v[5]).length, lowOn: lowOn.length, lowOff: lowOff.leng
   async function regLease(ref) { let ok = false; await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data() || {}; const L = v.lease || {}; if (L.by && L.by !== REG_ME() && Date.parse(L.until || 0) > Date.now()) return; tx.set(ref, { lease: { by: REG_ME(), until: new Date(Date.now() + 6 * 60000).toISOString() } }, { merge: true }); ok = true; }); return ok; }
   async function regVerifyAll() { if (regVerBusy || !auth.currentUser || !RGF()) return; regVerBusy = true; const X = EXC();
     try { // ① 지킴이: '하는 중'·'멈춘 일(sweep)'인데 15분 넘게 조용함
-      for (const stName of ['running', 'stuck']) { const qs = await C('shp_cmds').where('status', '==', stName).get(); for (const d of qs.docs) { const v = d.data(); if (!['regBulk', 'regOne'].includes(v.type)) continue; const quiet = Date.now() - Math.max(Date.parse(v.beatAt || 0) || 0, Date.parse((v.claim || {}).at || 0) || 0, Date.parse(v.createdAt || 0) || 0) > 15 * 60000; if (!quiet || !(await regLease(d.ref))) continue;
+      for (const stName of ['running', 'stuck']) { const qs = await C('shp_cmds').where('status', '==', stName).get(); for (const d of qs.docs) { const v = d.data(); if (!['regBulk', 'regOne', 'regBulkMock', 'regOneMock'].includes(v.type)) continue; const quiet = Date.now() - Math.max(Date.parse(v.beatAt || 0) || 0, Date.parse((v.claim || {}).at || 0) || 0, Date.parse(v.createdAt || 0) || 0) > 15 * 60000; if (!quiet || !(await regLease(d.ref))) continue;
           if (v.sent) { await d.ref.set({ status: 'verify', msg: '수집기 탭이 등록 요청 뒤 멈춤 — 공개 확인으로 판단', verify: { ...(v.verify || {}), base: (v.verify || {}).base || v.base || 0, codes: (v.verify || {}).codes || v.codes || [1], until: new Date(Date.now() + 90 * 60000).toISOString() }, uploadedAt: TS() }, { merge: true }); log('📥 지킴이: 등록 요청 뒤 멈춘 일 → 공개 확인으로', 1); }
           else { const res = {}; (v.rows || []).forEach((r) => (res[r.regItem] = { state: 'fail', at: nowIso(), msg: '수집기 탭이 중간에 멈춤 — 알라딘에 등록하지 않음' })); await d.ref.set({ status: 'fail', sent: false, msg: '수집기 탭이 등록 요청 전에 멈춤(탭 닫힘·새로고침) — 알라딘에 등록하지 않음 · 다시 맡길 수 있음', results: res, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
             if (X && v.type === 'regBulk') await X.finish(db, { kind: 'regBulk', key: d.id }, 'failed', { msg: '보내기 전에 멈춤 (지킴이)' }).catch(() => {}); await regItemsSet(v.rows || [], res); log('📥 지킴이: 보내기 전에 멈춘 등록 → 멈춤(등록 안 함)', 1); }
@@ -1808,8 +1813,8 @@ lowNow: all.filter((v) => v[5]).length, lowOn: lowOn.length, lowOff: lowOff.leng
       // ② 차례 기다림: 앞 일이 끝났으면(또는 사라졌으면) 대기로
       { const qs = await C('shp_cmds').where('status', '==', 'held').get(); for (const d of qs.docs) { const v = d.data(); if (v.type !== 'regBulk') continue; const pv = v.prev ? (await C('shp_cmds').doc(v.prev).get()).data() : null; if (!pv || ['verify', 'done', 'fail', 'cancelled'].includes(pv.status)) await regHeldToQueued(d.ref, v.prev).catch(() => {}); } }
       // ③ 공개 확인
-      const qs = await C('shp_cmds').where('status', '==', 'verify').get(); for (const d of qs.docs) { const v = d.data(); if (!['regBulk', 'regOne'].includes(v.type)) continue; if (!(await regLease(d.ref))) continue; await regVerifyOne(d.ref, v); }
-      const q2 = await C('shp_cmds').where('post', '==', 'need').get(); for (const d of q2.docs) { const v = d.data(); if (!['regBulk', 'regOne'].includes(v.type) || v.status !== 'done') continue; if (!(await regLease(d.ref))) continue; await regPostCollect(d.ref, v.rows || [], v.results || {}); } }
+      const qs = await C('shp_cmds').where('status', '==', 'verify').get(); for (const d of qs.docs) { const v = d.data(); if (!['regBulk', 'regOne', 'regBulkMock', 'regOneMock'].includes(v.type)) continue; if (!(await regLease(d.ref))) continue; await regVerifyOne(d.ref, v); }
+      const q2 = await C('shp_cmds').where('post', '==', 'need').get(); for (const d of q2.docs) { const v = d.data(); if (!['regBulk', 'regOne', 'regBulkMock', 'regOneMock'].includes(v.type) || v.status !== 'done') continue; if (!(await regLease(d.ref))) continue; await regPostCollect(d.ref, v.rows || [], v.results || {}); } }
     catch (e) { log('공개 확인 실패: ' + (e.code || e.message), 1); } finally { regVerBusy = false; } }
   async function regClaim(lid, cmdId, regItem) { let ok = false; const ref = C('reg_claims').doc(String(lid)); await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && !(v.cmd === cmdId && v.regItem === regItem)) return; tx.set(ref, { cmd: cmdId, regItem, at: nowIso(), by: PC_NAME }); ok = true; }); return ok; }
   async function regVerifyOne(ref, v) { const rows = v.rows || []; const results = { ...(v.results || {}) }; const vf = v.verify || {}; const base = +vf.base || 0;
