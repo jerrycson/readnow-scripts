@@ -5,7 +5,7 @@
  *   셀 서식(XF)은 원본에서 실제로 등록에 성공했던 줄(19행)의 것을 그대로 씀: ISBN = 텍스트 셀, 판매상태·수량·품질·판매가 = 숫자 셀.
  * 이 파일은 알라딘에 아무것도 바꾸지 않음 — 계산·만들기·읽기만. */
 (function (root) {
-  const VERSION = '0.3.0';
+  const VERSION = '0.4.0';
   // 상품 구분 (알라딘 SelectType / BranchType)
   const BRANCH = { 1: '국내도서', 2: '음반', 3: 'DVD/블루레이', 7: '외국도서' };
   // 상품 관리 코드 아이콘 — 알라딘 상품 등록 도우미 0.1.0과 같은 색 (한 곳)
@@ -48,8 +48,16 @@
    *  sameTodayN = 오늘 이미 등록(또는 이번 묶음에서 앞서 정한)한 같은 상품의 중 상태 수. 접미사는 6자리 코드 없이 혼자 쓰지 않음 */
   function withSuffix(code, o) { o = o || {}; if (!/^[A-Z]{6}$/.test(String(code || ''))) return String(code || ''); let s = code; const src = SOURCES.find((x) => x.id === o.source); if (src) s += src.suffix;
     if (o.isNew || NEW_WORDS.test(String(o.desc || ''))) s += '_NEW';
-    if (o.grade === 3 || o.grade === '중') { const n = +o.sameTodayN || 0; s += '_' + yymmdd(o.now) + (n > 0 ? String.fromCharCode(96 + Math.min(26, n)) : ''); }
+    if (o.dateOn !== undefined) { if (o.dateOn) s += '_' + yymmdd(o.now) + String.fromCharCode(97 + Math.min(25, Math.max(0, +o.letterN || 0))); } /* (0.4.0) 날짜는 needDate가 정함 — 늘 알파벳까지(a부터) */
+    else if (o.grade === 3 || o.grade === '중') { const n = +o.sameTodayN || 0; s += '_' + yymmdd(o.now) + (n > 0 ? String.fromCharCode(96 + Math.min(26, n)) : ''); } /* 옛 규칙(0.3.0까지 · 웹앱 1.6.x) */
     return s; }
+  /* (0.4.0) 날짜 접미사를 붙일지 — 한 곳. 같은 상품이 우리 재고에 안 팔린 채 있고(hasStock), 이번 상품에 특이 사항이 있을 때만(서가의 같은 책 중 '다른 그 한 권'을 집어내려는 것).
+   *  빼는 경우(특이 사항 없음): ① 최상 + 설명에 밀봉·새상품·미개봉 ② 상·최상 + 설명 없음. 조건은 웹앱 ⚙ 조건(app_settings/main.reg.dateRule)에서 바꿈 */
+  const DATE_RULE_DEFAULT = { on: true, grades: [1, 2, 3], skip: [{ grades: [1], words: ['밀봉', '새상품', '미개봉'] }, { grades: [1, 2], empty: true }] };
+  function needDate(o, rule) { const R = { ...DATE_RULE_DEFAULT, ...(rule || {}) }; const g = +o.grade; const d = String(o.desc || '').trim(); const gn = GRADE[g] || g;
+    if (R.on === false) return { on: false, why: '날짜 붙이기 꺼짐' }; if (!o.hasStock) return { on: false, why: '같은 상품이 우리 재고에 없음' }; if (!(R.grades || []).includes(g)) return { on: false, why: `${gn}은 날짜 안 붙임` };
+    const sk = R.skip || []; for (let i = 0; i < sk.length; i++) { const x = sk[i] || {}; if (!(x.grades || []).includes(g)) continue; if (i === 1 || x.empty) { if (!d) return { on: false, why: `${gn} · 설명 없음 — 같은 상품과 다를 것 없음` }; } else { const w = (x.words || []).find((t) => t && d.includes(t)); if (w) return { on: false, why: `${gn} · 설명에 '${w}' — 같은 상품과 다를 것 없음` }; } }
+    return { on: true, why: '같은 상품이 재고에 있고 이 상품만의 특이 사항(상태·설명)이 있음' }; }
   // 알라딘 대량등록 판매상태 숫자: 1 판매중 · 2 일시판매중지 · 3 판매중지 (개별 등록 화면의 1·3·15와 다름)
   /* (0.2.0) 상품 번호(ISBN·음반/DVD 바코드) — 한 곳
    *  normCode: 넣은 글자 → 10·13자리(대량 등록 A칸 규칙) · 바코드 뒤 부가기호 5자리(18자리)는 버림 · 12자리 UPC(외국 음반)는 앞에 0을 붙여 13자리 EAN으로
@@ -178,6 +186,6 @@
   // 상품 설명 문구 (알라딘 상품 등록 도우미와 같은 기본값 — 웹앱에서 고친 것은 Firebase에 저장해 모든 PC가 같게)
   const PHRASES_A = ['띠지 있습니다.', '비닐 뜯지 않은 밀봉 제품입니다.', '책등 약간 색바램 있습니다.', '책등 색바램 있습니다.', '겉커버 없습니다.', '표지 빛바램 및 내지 변색 있습니다.', '표지 빛바램 및 내지 변색 많습니다.', '대체적으로 중고감 많습니다.', '10페이지 가량 밑줄 있습니다.', '책머리에 드림도장 있습니다.', '책꼬리에 드림도장 있습니다.', '앞 면지에 드림도장 있습니다.', '책등 하단에 "북카페" 스티커 있습니다.', '도서관 정리 도서 입니다!!', '책등 하단에 "도서관"스티커 있습니다.', '앞표지에 "기증"스티커 있습니다.', '둘레 "도서관"도장 찍혀 있습니다.', '해당 도서는 연/구용이지만 학생용과 동일합니다.'];
   const PHRASES_B = ['', '그 외 상태 양호합니다.', '그 외 상급입니다.'];
-  const api = { VERSION, BRANCH, CODES, SOURCES, NEW_WORDS, RULES_DEFAULT, BULK_STATE, GRADE, PHRASES_A, PHRASES_B, templateBytes, pageAlerts, normCode, sameCode, matchCode, pageBarcode, auxRun, auxKey, AUX_TTL_D, parseAuthorPopup, parseBrandPopup, ITEM_SIZES, descHtml, topCats, sizeMm, decideCode, withSuffix, yymmdd, buildBulkXls, verifyBulkXls, parseBulkPage, matchPreview, _readRecs: readRecs };
+  const api = { VERSION, DATE_RULE_DEFAULT, needDate, BRANCH, CODES, SOURCES, NEW_WORDS, RULES_DEFAULT, BULK_STATE, GRADE, PHRASES_A, PHRASES_B, templateBytes, pageAlerts, normCode, sameCode, matchCode, pageBarcode, auxRun, auxKey, AUX_TTL_D, parseAuthorPopup, parseBrandPopup, ITEM_SIZES, descHtml, topCats, sizeMm, decideCode, withSuffix, yymmdd, buildBulkXls, verifyBulkXls, parseBulkPage, matchPreview, _readRecs: readRecs };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowRegister = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

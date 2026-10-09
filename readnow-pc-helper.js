@@ -1,7 +1,7 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.45.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.46.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.45.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.46.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -10,7 +10,7 @@
   if (window.top !== window || !/\/scm\/(wUsedShopC2C|wShopSurvey)/i.test(location.pathname)) return;
   const DEF = {
     greet: ['안녕하세요? 반갑습니다!', '안녕하세요, 북스킹입니다. 문의 주셔서 진심으로 감사드립니다.', '안녕하세요, 고객님. 저희 상품에 관심 가져 주셔서 감사합니다.', '안녕하세요, 고객님. 답변이 늦어 죄송합니다.', '안녕하세요, 북스킹입니다. 기다려 주셔서 감사합니다.', '안녕하세요, 고객님. 소중한 구매평 남겨 주셔서 진심으로 감사드립니다.'],
-    body: ['문의하신 상품은 현재 재고가 있어 바로 구매하실 수 있습니다.', '확인해 보니 문의하신 상품은 아쉽게도 현재 품절되었습니다.', '상품 상태는 등록된 등급과 상품 설명에 적힌 내용과 같습니다.', '직접 확인한 결과 말씀하신 부분(낙서·밑줄·변색 등)은 없으며 상태 양호합니다.', '확인 결과 일부 사용감이 있어 상품 설명에 자세히 적어 두었습니다.', '영업일 오후 2시까지 주문하시면 당일 출고를 원칙으로 하고 있습니다.', '택배는 롯데택배로 보내 드리며, 출고 후 송장번호로 배송 조회가 가능합니다.', '저희(북스킹) 상품끼리는 한 상자에 묶어 보내 드립니다.', '주문 취소는 출고 전까지 알라딘 주문 내역에서 바로 하실 수 있습니다.', '반품·교환은 상품을 받으신 날로부터 7일 안에 신청하실 수 있습니다.', '불편을 드려 대단히 죄송합니다. 확인하는 대로 신속하게 처리해 드리겠습니다.', '말씀해 주신 의견은 상품 검수에 꼭 반영하겠습니다.', '만족스러운 거래가 되셨다니 저희도 정말 기쁩니다.'],
+    body: ['문의하신 상품은 현재 재고가 있어 바로 구매하실 수 있습니다.', '확인해 보니 문의하신 상품은 아쉽게도 현재 품절되었습니다.', '상품 상태는 등록된 등급과 상품 설명에 적힌 내용과 같습니다.', '직접 확인한 결과 말씀하신 부분(낙서·밑줄·변색 등)은 없으며 상태 양호합니다.', '확인 결과 일부 사용감이 있어 상품 설명에 자세히 적어 두었습니다.', '영업일 오후 2시까지 주문하시면 당일 출고를 원칙으로 하고 있습니다.', '택배는 롯데택배로 보내 드리며, 출고 후 송장번호로 배송 조회가 가능합니다.', '저희(북스킹) 상품끼리는 한 상자에 묶어 보내 드립니다.', '주문 취소는 출고 전까지 알라딘 주문 내역에서 바로 하실 수 있습니다.', '반품·교환은 상품을 받으신 날로부터 7일 안에 신청하실 수 있습니다.', '불편을 드려 대단히 죄송합니다. 확인하는 대로 신속하게 처리해 드리겠습니다.', '말씀해 주신 의견은 상품 검수에 꼭 반영하겠습니다.', '만족스러운 거래가 되셨다니 저희도 정말 기쁩니다.', '부득이하게 중고상품의 경우 각 상품마다 품질 정보가 상이하며 매입 후 별도의 상품번호로 재고 관리가 진행되고 있어 교환 불가한점 안내드리며, 알라딘 부담으로 반품접수 하였습니다.'],
     close: ['오늘도 좋은 하루 보내세요!', '또 궁금하신 점 있으면 언제든 편하게 문의주세요!', '감사합니다.', '북스킹을 이용해 주셔서 감사합니다.', '앞으로도 더 좋은 상품과 서비스로 보답하겠습니다.', '다시 한번 불편을 드려 죄송합니다.', '즐거운 독서 되세요!'] };
   const PARTS = [['greet', '① 인사말'], ['body', '② 내용'], ['close', '③ 마무리']];
   const LKEY = 'rn-phrases'; let P = null; try { P = GM_getValue(LKEY, null); } catch (e) {}
@@ -28,9 +28,10 @@
     ta.dispatchEvent(new Event('input', { bubbles: true })); ta.dispatchEvent(new Event('change', { bubbles: true })); try { ta.focus(); ta.setSelectionRange(ta._rnPos, ta._rnPos); } catch (e) {} flash(''); }
   // ── 저장: 이 PC 사본(GM) + Firebase 한 곳
   let fs = null, user = null;
-  const saveAll = () => { try { GM_setValue(LKEY, P); } catch (e) {} if (fs && user) fs.collection('app_settings').doc('qna_phrases').set({ ...P, at: new Date().toISOString(), by: user.email || '', from: 'collector' }).catch((e) => flash('Firebase 저장 실패 (이 PC에만 저장됨): ' + (e.code || e.message))); };
+  let seeded = ['nx1']; /* (1.46.0) 웹앱이 한 번만 넣은 기본 문구 표시 — 저장할 때 같이 남김(지운 문구가 다시 들어오지 않게) */
+  const saveAll = () => { try { GM_setValue(LKEY, P); } catch (e) {} if (fs && user) fs.collection('app_settings').doc('qna_phrases').set({ ...P, seeded, at: new Date().toISOString(), by: user.email || '', from: 'collector' }).catch((e) => flash('Firebase 저장 실패 (이 PC에만 저장됨): ' + (e.code || e.message))); };
   try { if (window.firebase) { if (!firebase.apps.length) firebase.initializeApp({ apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385', storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15' });
-    fs = firebase.firestore(); firebase.auth().onAuthStateChanged((u) => { user = u; if (!u) return; fs.collection('app_settings').doc('qna_phrases').onSnapshot((d) => { if (!d.exists) { saveAll(); return; } const x = d.data(); if (okP(x)) { P = { greet: x.greet, body: x.body, close: x.close }; try { GM_setValue(LKEY, P); } catch (e) {} draw(); } }, () => {}); }); } } catch (e) {}
+    fs = firebase.firestore(); firebase.auth().onAuthStateChanged((u) => { user = u; if (!u) return; fs.collection('app_settings').doc('qna_phrases').onSnapshot((d) => { if (!d.exists) { saveAll(); return; } const x = d.data(); if (Array.isArray(x.seeded)) seeded = x.seeded; if (okP(x)) { P = { greet: x.greet, body: x.body, close: x.close }; try { GM_setValue(LKEY, P); } catch (e) {} draw(); } }, () => {}); }); } } catch (e) {}
   // ── 화면
   const st = document.createElement('style'); st.textContent = `#rn-ph{position:fixed;right:14px;top:90px;z-index:2147483640;width:340px;max-height:calc(100vh - 110px);display:flex;flex-direction:column;background:#fff;border:1px solid #2F5D50;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);font:12.5px/1.45 system-ui,'Malgun Gothic',sans-serif;color:#1E2B27}
   #rn-ph .hd{display:flex;align-items:center;gap:6px;padding:7px 10px;background:#2F5D50;color:#fff;border-radius:9px 9px 0 0;cursor:move;user-select:none} #rn-ph .hd b{flex:1} #rn-ph .hd button{border:0;border-radius:5px;background:#24493F;color:#fff;padding:2px 8px;cursor:pointer}
