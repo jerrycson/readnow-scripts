@@ -16,7 +16,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.11.0';
+  const VERSION = '0.12.0';
   const MIN = 60e3;
 
   const KINDS = {
@@ -34,6 +34,8 @@
       note: '실행 문(exec_log)에 시작을 적을 수 있을 때만 · 미리보기가 넣은 줄과 하나도 다르지 않을 때만 등록완료 · 등록 뒤 상품 조회에서 공개 확인(90분)', stuckNote: '등록완료를 이미 눌렀을 수 있음 — 웹앱 등록 화면·알라딘 상품 조회에서 확인한 뒤 다시 맡기기' },
     regOne: { label: '📥 개별·미등록 등록 (알라딘 등록 화면)', by: ['pc'], lane: 'scm', prio: 3, leaseMin: 30, retry: 0, safe: false, money: true, waitMin: 60, from: '웹앱 상품 등록 → 알라딘 등록 화면 채워서 열기 (1.6.0)',
       note: '(1.6.0) 사람이 보는 등록 화면: 수집기가 \'하는 중·보냄\'으로 만들어 둠(아무도 가져가지 않음) · (0.10.0) auto=true면 웹앱이 \'대기\'로 맡기고 수집기 PC가 받아 보이지 않는 틀에서 채움 → 못 채운 칸이 있으면 보내지 않음 · 화면이 바뀌면 공개 확인 · 탭이 닫히면 15분 뒤 지킴이가 공개 확인으로', stuckNote: '등록완료를 이미 눌렀을 수 있음 — 알라딘 상품 조회에서 확인' },
+    regBulkMock: { label: '🧷 대량 모의 등록 (알라딘에 안 올림)', by: ['pc'], lane: 'scm', prio: 3, leaseMin: 30, retry: 0, safe: true, money: false, waitMin: 60, from: '웹앱 상품 등록 (1.11.0)', note: '엑셀 만들기·올리기·미리보기 대조까지만 — 등록완료는 누르지 않음. 종류를 따로 둔 것은 예전 판 수집기가 받아 실제로 올리지 않게' },
+    regOneMock: { label: '🧷 개별·미등록 모의 등록 (알라딘에 안 올림)', by: ['pc'], lane: 'scm', prio: 3, leaseMin: 30, retry: 0, safe: true, money: false, waitMin: 60, from: '웹앱 상품 등록 (1.11.0)', note: '보이지 않는 틀에서 모든 칸·사진 채우기까지 — 등록 단추는 누르지 않음' },
     regAux: { label: '📥 분류·저자·출판사 찾기', by: ['pc'], lane: 'shop', prio: 2, leaseMin: 10, retry: 1, safe: true, money: false, waitMin: 10, from: '웹앱 상품 등록 (클라우드가 안 될 때)' },
     lookup: { label: '사진 가격 조회', by: ['pc'], lane: 'shop', prio: 2, leaseMin: 10, retry: 1, safe: true, money: false, waitMin: 10, from: '웹앱 사진 가격·매입' },
     metrics: { label: '그룹 시장 지표 갱신', by: ['pc'], lane: 'shop', prio: 6, leaseMin: 6 * 60, retry: 3, safe: true, money: false, waitMin: 24 * 60, from: '웹앱 수동 일괄·감시 묶음·관찰 도구',
