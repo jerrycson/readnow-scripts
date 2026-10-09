@@ -4,7 +4,7 @@
  * 쓰는 곳: 리드나우 수집기(PC) · 가격 감시기. 브라우저 전용(fetch·DOMParser). 판은 노선표(readnow-registry.js PINS)에 적힘.
  * 이 파일은 알라딘에 아무것도 바꾸지 않음 — 읽기(GET)만. */
 (function (root) {
-  const VERSION = '0.1.0';
+  const VERSION = '0.2.0';
   const RETRY_WAITS = [5, 15, 45, 120, 300]; // 초. 이후로는 5분 간격
   const LOGOUT_LINK = 'a[href*="wC2Cuser_logout"]';
   // 글자 인코딩: 응답 머리(content-type)의 charset → 없으면 화면 안 <meta charset> (euc-kr 화면도 바르게)
@@ -24,20 +24,24 @@
    *  o.wait(): 요청 앞 기다림 (기본 pace.wait(sleep)) · o.beforeEach(): 멈춤 확인(멈췄으면 throw)
    *  o.loggedOut(finalUrl, doc, url, html) → bool · o.onLoggedOut(finalUrl, tries): 다시 로그인(포기하면 throw)
    *  o.fatal(e) → bool: 다시 하지 않고 바로 던질 오류 · o.maxOutageMin(): 이 시간 넘게 안 되면 o.outageError(min)를 던짐
-   *  o.on429(status) · o.onRetry(e, waitSec, attempt) · o.onRecover() · o.onOk(ms) · o.timeoutSec(기본 30) · o.maintenance(기본 true) */
+   *  o.on429(status) · o.onRetry(e, waitSec, attempt) · o.onRecover() · o.onOk(ms) · o.timeoutSec(기본 30) · o.maintenance(기본 true)
+   *  (0.2.0) read(url, { cred: 'omit' }) = 로그인 쿠키를 싣지 않고 읽기(공개 페이지용). 이때 로그인·성인 인증 화면으로 가면 다시 로그인하지 않고 { needLogin: true }를 돌려줌
+   *          → 부르는 쪽이 그 페이지만 로그인 상태로 다시 읽음. cred를 안 주면 예전과 똑같이 로그인 상태(include) — 가격 감시기 등 기존 사용처는 그대로 */
   function makeReader(o) {
     const pace = o.pace, sleep = o.sleep; const wait = o.wait || (() => pace.wait(sleep));
     return async function read(url, opt) { opt = opt || {}; let firstFail = null, attempt = 0, loginTries = 0;
+      const anon = opt.cred === 'omit';
       for (;;) {
         if (o.beforeEach) o.beforeEach();
         await wait(); const t0 = Date.now();
         try {
           const ac = new AbortController(); const to = setTimeout(() => ac.abort(), (o.timeoutSec || 30) * 1000);
-          let r; try { r = await fetch(url, { credentials: 'include', signal: ac.signal }); } finally { clearTimeout(to); }
+          let r; try { r = await fetch(url, { credentials: anon ? 'omit' : 'include', signal: ac.signal }); } finally { clearTimeout(to); }
           if (!r.ok) { if ((r.status === 429 || r.status === 503) && o.on429) { pace.fail(pace.kindOf ? pace.kindOf(r.status) : '429'); o.on429(r.status); throw Object.assign(new Error('서버 응답 ' + r.status + ' (요청이 너무 많음 — 쉬었다가 느리게)'), { status: r.status, counted: true }); }
             throw Object.assign(new Error('서버 응답 ' + r.status + (r.status === 429 ? ' (요청이 너무 많음 — 쉬었다가 느리게)' : '')), { status: r.status }); }
           const html = decode(await r.arrayBuffer(), r.headers.get('content-type')); const doc = new DOMParser().parseFromString(html, 'text/html');
           if (o.maintenance !== false && isMaintenance(doc)) throw new Error('알라딘 점검 중');
+          if (anon && (looksLoggedOut(r.url, doc) || /adult/i.test(r.url || ''))) { pace.ok(); return { needLogin: true, doc, html, url: r.url, finalUrl: r.url }; } // 로그인 없이는 못 보는 페이지(19금 등)
           if (o.loggedOut(r.url, doc, url, html)) { loginTries++; await o.onLoggedOut(r.url, loginTries); continue; }
           if (opt.expect && !opt.expect(doc)) throw new Error('페이지 내용이 예상과 다름 (서버 오류 화면일 수 있음)');
           pace.ok(); if (o.onOk) o.onOk(Date.now() - t0); if (firstFail && o.onRecover) o.onRecover();

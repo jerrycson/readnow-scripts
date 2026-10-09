@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.0
+// @version      0.10.2
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.14.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-aladin-core.js?v=0.1.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.1
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-aladin-core.js?v=0.2.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-exec-core.js?v=0.1.0
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
@@ -24,7 +24,7 @@
 (async function () {
   'use strict';
   if (window.top !== window) return;
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '0.10.0'; // 판 번호는 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '0.10.2'; // 판 번호는 맨 위 @version 한 곳
   const gvw = (n) => (typeof unsafeWindow !== 'undefined' && unsafeWindow[n]) || window[n] || globalThis[n] || {}; // (0.9.3) 읽은 공용 파일 판 → 웹앱 관리도구가 노선표의 판과 비교
   const coreVers = () => ({ core: gvw('ReadNowCore').CORE_VERSION || null, sellers: gvw('ReadnowSellers').VERSION || null, products: gvw('ReadnowProducts').VERSION || null, pricing: gvw('ReadnowPricing').VERSION || null, aladin: gvw('ReadnowAladin').VERSION || null, exec: gvw('ReadnowExec').VERSION || null });
   const g = (n) => (typeof unsafeWindow !== 'undefined' && unsafeWindow[n]) || window[n] || globalThis[n] || null;
