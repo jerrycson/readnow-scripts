@@ -6,7 +6,7 @@
  * 이 파일이 바뀌어 새 워커가 켜지면, 열려 있던 웹앱 화면을 모두 새로 엶.
  * 자료(Firebase 기록)는 여기서 다루지 않음 — Firebase가 따로 실시간으로 받음.
  * 문제가 생기면: 주소 끝에 ?nosw=1 을 붙여 열면 이 워커를 끄고 저장본을 지움. */
-const CACHE = 'rn-app-v4';
+const CACHE = 'rn-app-v4'; /* sw 1.12.1 */
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil((async () => {
   const ks = await caches.keys(); const upgraded = ks.some((k) => /^rn-app-/.test(k) && k !== CACHE);
@@ -24,6 +24,9 @@ self.addEventListener('fetch', (e) => {
     if (shell) { // (0.98.0) 저장본 먼저 — 뒤에서 새 판을 받아 저장하고, 판 번호가 다르면 화면에 알림
       const hit = await c.match(key); const verOf = (t) => (String(t).match(/const APP_VER = '([\d.]+)'/) || [])[1] || null;
       const net = fetch(u.href, { cache: 'no-store', credentials: 'same-origin' }).then(async (r) => { if (!r || !r.ok) return r; const txt = await r.clone().text(); const nv = verOf(txt); let ov = null; if (hit) { try { ov = verOf(await hit.clone().text()); } catch (x) {} }
+          /* (1.12.1) 받은 판이 지금 저장본보다 옛 판이면(깃허브 페이지 배포 직후 옛 판이 잠깐 오는 때) 저장본을 덮지 않음 */
+          const vcmp = (x, y) => { const A = String(x).split('.').map(Number), B = String(y).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((A[i] || 0) !== (B[i] || 0)) return (A[i] || 0) - (B[i] || 0); } return 0; };
+          if (nv && ov && vcmp(nv, ov) < 0) return r;
           await c.put(key, r.clone()).catch(() => {}); if (nv) await c.put(new Request(u.origin + '/__rn_ver'), new Response(nv)).catch(() => {}); if (hit && nv && ov && nv !== ov) { const cs = await self.clients.matchAll({ type: 'window' }); cs.forEach((cl) => cl.postMessage({ type: 'rn-newver', ver: nv, from: ov })); } return r; }).catch(() => null);
       if (hit) { e.waitUntil(net); return hit; }
       const r2 = await net; return r2 || new Response('오프라인 — 저장된 웹앱이 없습니다', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
