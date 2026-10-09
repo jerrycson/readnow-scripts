@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.53.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.53.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.53.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.53.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.53.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.53.1'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -1420,19 +1420,21 @@
    *  한 번 수집에 판매자마다 최대 N개·M분(⚙에서 바꿈) — 새로 올린 것 먼저, 남으면 예전 상품을 조금씩 채움(몇 번에 걸쳐 숍 전체가 채워짐) */
   const benchBookMem = new Map();
   async function benchBook(id) { if (benchBookMem.has(id)) return benchBookMem.get(id); const ref = C('bench_books').doc(String(id)); let b = (await ref.get().catch(() => null)); b = b && b.exists ? b.data() : null;
-    if (!b) { try { const m = (await C('prd_ids').doc('itemId_' + id).get()).data(); if (m && m.bookId) { const k = (await C('prd_books').doc(String(m.bookId)).get()).data(); if (k) { const c0 = (k.categories || [])[0]; b = { id: String(id), isbn: k.isbn13 || null, cat: c0 && c0.path ? c0.path.slice(0, 4).join('>') : null, catCid: c0 && c0.cids ? c0.cids[c0.cids.length - 1] || null : null, pubYm: k.pubDate ? String(k.pubDate).slice(0, 7) : null, src: 'ours', at: nowIso() }; } } } catch (e) {} }
-    if (!b) { const g = await getDoc(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`); const pg = P.parseProductPage(g.doc, g.finalUrl); const c0 = (pg.categories || [])[0]; const pd = pg.pubDate || (pg.basic && pg.basic.pubDate) || null;
-      b = { id: String(id), isbn: pg.isbn13 || (pg.basic && pg.basic.isbn13) || null, cat: c0 && c0.path ? c0.path.slice(0, 4).join('>') : null, catCid: c0 && c0.cids ? c0.cids[c0.cids.length - 1] || null : null, pubYm: pd ? String(pd).replace(/[./]/g, '-').slice(0, 7) : null, title: pg.title || null, src: 'page', at: nowIso() }; }
+    if (!b) { try { const m = (await C('prd_ids').doc('itemId_' + id).get()).data(); if (m && m.bookId) { const k = (await C('prd_books').doc(String(m.bookId)).get()).data(); if (k) { const c0 = (k.categories || [])[0]; b = { full: true, bookId: String(m.bookId), id: String(id), isbn: k.isbn13 || null, cat: c0 && c0.path ? c0.path.slice(0, 4).join('>') : null, catCid: c0 && c0.cids ? c0.cids[c0.cids.length - 1] || null : null, pubYm: k.pubDate ? String(k.pubDate).slice(0, 7) : null, src: 'ours', at: nowIso() }; } } } catch (e) {} }
+    if (b && !b.full && b.src === 'page') b = null; /* (1.53.1) 예전(1.53.0)엔 세 가지만 저장 → 상품 페이지 정보 전부로 다시 읽음 */
+    if (!b) { const g = await getDoc(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`); const pg = P.parseProductPage(g.doc, g.finalUrl); const c0 = (pg.categories || [])[0]; const pd = pg.pubDate || null;
+      /* (1.53.1) 상품 페이지에서 읽은 것 전부(우리 책 도서 정보와 같은 파서 · 같은 칸 이름) — 한 번 저장하면 덮어쓰지 않고 영원히 보관 · 판매자끼리 같이 씀 */
+      const page = JSON.parse(JSON.stringify(pg, (k, v) => (v === undefined ? null : v))); b = { id: String(id), isbn: pg.isbn13 || null, cat: c0 && c0.path ? c0.path.slice(0, 4).join('>') : null, catCid: c0 && c0.cids ? c0.cids[c0.cids.length - 1] || null : null, pubYm: pd ? String(pd).replace(/[./]/g, '-').slice(0, 7) : null, title: pg.title || null, page, full: true, src: 'page', at: nowIso() }; }
     if (b && !b.isbn && !b.cat && !b.pubYm) { benchBookMem.set(id, null); return null; } /* 아무것도 못 읽었으면 저장하지 않음(다음에 다시 시도) */
-    if (b && b.src && !b.saved) { try { await ref.set({ ...b, saved: true, ...W() }, { merge: true }); } catch (e) {} b.saved = true; }
+    if (b && b.src && !b.saved) { try { await ref.set({ ...b, saved: true, ...W() }, { merge: true }); } catch (e) { try { const { page, ...rest } = b; await ref.set({ ...rest, pageJ: JSON.stringify(page || null).slice(0, 200000), saved: true, ...W() }, { merge: true }); } catch (e2) {} } b.saved = true; } /* 중첩 목록 등으로 거절되면 글자(JSON)로 */
     benchBookMem.set(id, b); if (benchBookMem.size > 20000) benchBookMem.clear(); return b; }
   async function benchDetail(t, now, newIds, F) { const RB = (BREG() || {}).BENCH; const out = { tried: 0, filled: [], newIds }; if (!RB || !RB.needsDetail(BENCH_CFG)) return out;
     const D = { ...RB.DETAIL_DEF, ...((BENCH_CFG && BENCH_CFG.detail) || {}) }; const name = t.name || t.sc; const t0 = Date.now(); const until = t0 + Math.max(1, +D.maxMin || 30) * 60000; let lastLog = t0;
     const C0 = [...now.entries()].filter(([, v]) => !v[6] && v[10] !== 1); /* 못 읽은 것(2)은 맨 뒤에서 다시 시도 */ const cand = C0.filter(([id]) => newIds.has(id)).concat(C0.filter(([id, v]) => !newIds.has(id) && v[10] !== 2).sort((a, b) => String(b[1][1]).localeCompare(String(a[1][1]))), C0.filter(([id, v]) => !newIds.has(id) && v[10] === 2)).slice(0, Math.max(0, +D.max || 0));
-    if (!cand.length) return out; log(`🎯 '${name}' 상품 정보 더 읽기(ISBN·분류 등): ${cand.length.toLocaleString()}개 (새로 올린 것 ${cand.filter(([id]) => newIds.has(id)).length} · 아직 안 읽은 상품 ${C0.length.toLocaleString()}개 중) · 최대 ${D.maxMin}분`);
+    if (!cand.length) return out; log(`🎯 '${name}' 상품 페이지 정보 읽기(도서 정보 전부): ${cand.length.toLocaleString()}개 (새로 올린 것 ${cand.filter(([id]) => newIds.has(id)).length} · 아직 안 읽은 상품 ${C0.length.toLocaleString()}개 중) · 최대 ${D.maxMin}분`);
     for (const [id, v] of cand) { if (stopFlag) throw new Error('멈춤'); if (Date.now() > until) { log(`🎯 '${name}' 상품 정보 더 읽기: ${D.maxMin}분이 되어 여기까지(${out.tried}개) — 나머지는 다음 수집 때`); break; }
       out.tried++; let b = null; try { b = await benchBook(id); } catch (e) { if (e.message === '멈춤') throw e; }
-      if (b) { v[7] = F.isbn ? b.isbn || null : null; v[8] = F.cat ? b.cat || null : null; v[9] = F.pubYm ? b.pubYm || null : null; v[10] = 1; out.filled.push(id); } else v[10] = 2;
+      if (b) { v[7] = b.isbn || null; v[8] = b.cat || null; v[9] = b.pubYm || null; v[10] = 1; out.filled.push(id); } else v[10] = 2;
       if (Date.now() - lastLog > 30000) { lastLog = Date.now(); log(`🎯 '${name}' 상품 정보 더 읽기 ${out.tried}/${cand.length}`); ui(`집중 벤치마킹 · ${name} · 상품 정보`, out.tried, cand.length, `ISBN·분류 ${out.tried}/${cand.length}`); } }
     log(`🎯 '${name}' 상품 정보 더 읽기 끝: ${out.filled.length}/${out.tried}개 (${Math.round((Date.now() - t0) / 1000)}초)`); return out; }
   async function benchFinish(t, prog, st) { const sc = String(t.sc); const day = prog.day; const dayN = day.replace(/-/g, ''); const old = new Map(); const nC = st.chunks || 0;

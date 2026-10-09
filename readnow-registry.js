@@ -16,7 +16,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.13.0';
+  const VERSION = '0.13.1';
   const MIN = 60e3;
 
   const KINDS = {
@@ -113,14 +113,13 @@
     { k: 'usedCode', grp: 'list', label: '중고 상품 코드', why: '같은 책의 다른 매물과 구분 (기록용)', uses: '기록' },
     { k: 'cover', grp: 'list', label: '표지 그림 이름', why: '표지 파일 이름(ISBN과 비슷하지만 확인 안 된 값) — 기록용', uses: '기록' },
     { k: 'page', grp: 'list', label: '숍 쪽 번호', why: '배지를 얻은 상품이 숍 몇 쪽에 있었는지', uses: '배지' },
-    { k: 'isbn', grp: 'detail', label: 'ISBN', why: '우리 재고와 같은 책 찾기 → 값 비교 · 빨리 팔린 책 중 우리에게 없는 것(매입 후보)', uses: '겹치는 책·매입 후보' },
-    { k: 'cat', grp: 'detail', label: '주제 분류', why: '분야별 올림·사라짐·회전 — 어느 분야가 잘 빠지는지', uses: '분야' },
-    { k: 'pubYm', grp: 'detail', label: '출간 연월', why: '새 책·옛 책 중 무엇이 잘 빠지는지', uses: '출간 연도' },
+    /* (0.13.1) 상품 페이지는 한 번 열면 그 안의 정보를 다 읽는 데 시간이 같음 → 셋으로 나누지 않고 하나로: 켜면 우리가 우리 책에서 모으는 도서 정보 전부(ISBN·분류·출간일·지은이들·출판사·쪽수·크기·무게·원제·시리즈·정가·판매가·Sales Point·순위·평점·리뷰 수·표지 주소·절판/품절 등) */
+    { k: 'detail', grp: 'detail', label: '상품 페이지 정보 전부', why: 'ISBN·주제 분류·출간일·지은이·출판사·쪽수·크기·무게·원제·시리즈·정가·새상품 판매가·Sales Point·순위·평점·리뷰 수·표지·절판/품절 — 우리 책에서 모으는 도서 정보와 같은 것 전부', uses: '겹치는 책·매입 후보·분야·출간 연도' },
   ];
   const BENCH_FIELDS_DEF = Object.fromEntries(BENCH_FIELDS.map((f) => [f.k, f.grp === 'list']));
   const BENCH_DETAIL_DEF = { max: 300, maxMin: 30 }; // 상품 페이지 열기: 판매자 한 번 수집에 최대 개수·최대 분 (새로 올린 것 먼저, 남으면 예전 것 채움)
   const BENCH_VIEW_DEF = { bands: [3000, 6000, 10000, 20000, 40000], life: [3, 7, 14, 30, 60], days: 0, cohortDays: 7, fastDays: 7, catDepth: 2, recentN: 60, ourDays: 30, minN: 5 };
-  const benchFields = (cfg) => ({ ...BENCH_FIELDS_DEF, ...((cfg && cfg.fields) || {}) });
+  const benchFields = (cfg) => { const f = { ...BENCH_FIELDS_DEF, ...((cfg && cfg.fields) || {}) }; if (f.detail == null || (cfg && cfg.fields && cfg.fields.detail == null)) f.detail = !!(cfg && cfg.fields && (cfg.fields.isbn || cfg.fields.cat || cfg.fields.pubYm)); f.isbn = f.cat = f.pubYm = !!f.detail; return f; }; /* 예전(0.13.0) 세 칸 설정도 읽음 */
   const benchNeedsDetail = (cfg) => { const f = benchFields(cfg); return BENCH_FIELDS.some((x) => x.grp === 'detail' && f[x.k]); };
   const kstDay = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
   const dayMs = (d) => Date.parse(d + 'T00:00:00+09:00');
