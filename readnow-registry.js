@@ -16,7 +16,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.13.3';
+  const VERSION = '0.13.4';
   const MIN = 60e3;
 
   const KINDS = {
@@ -128,17 +128,22 @@
     const G = ((cfg && cfg.groups) || []).filter((g) => g && g.id).map((g) => ({ id: g.id, name: g.name || '그룹', unit: g.unit === 'h' ? 'h' : 'd', n: Math.max(1, Math.round(+g.n || 1)), scs: (g.scs || []).map(String).filter((sc) => on.has(sc) && !seen.has(sc) && seen.add(sc)) }));
     const rest = T.map((t) => String(t.sc)).filter((sc) => !seen.has(sc)); if (rest.length) G.push({ id: '_none', name: '그룹 없음', unit: 'd', n: 1, scs: rest, auto: true }); return G; }
   /* 다음 수집 시각: last = 지난번 시작(ms) · lastDay = 지난번 날짜(예전 기록은 시각이 없음) */
-  /* (0.13.3) 'n일에 한 번'은 날짜가 바뀌어도 지난번 시작부터 (n×24 − 4)시간(1일 = 20시간)이 지나야 다시 — 밤 11시에 읽은 판매자를 자정 지나 바로 또 읽지 않게 */
+  /* (0.13.4) '다 읽은 지 얼마 안 된 판매자는 다시 읽지 않음' — 기준은 지난 회차가 '끝난' 시각(bench_state.endAt · 없으면 시작 시각)
+   *  'n일에 한 번' = 날짜가 n번 바뀌고 + 끝난 지 (n×24 − 4)시간(1일 = 20시간) 지남 · 'n시간에 한 번' = 시작부터 n시간 + 끝난 지 n시간의 절반 지남
+   *  (0.13.3은 시작 시각부터 20시간이라, 일찍 시작해 늦게 끝낸 회차(멈췄다 이어서·다른 PC로 옮김)는 끝난 지 얼마 안 돼도 다시 읽었음) */
   const BENCH_DAY_GAP_H = (n) => n * 24 - 4;
-  function benchNext(g, last, lastDay) { if (!last && !lastDay) return 0; if (g.unit === 'h') return (last || dayMs(lastDay)) + g.n * 3600e3 - 60e3; return Math.max(dayMs(lastDay || kstDay(last)) + g.n * 864e5, last ? last + BENCH_DAY_GAP_H(g.n) * 3600e3 : 0); }
+  const benchGapMs = (g) => (g.unit === 'h' ? g.n * 1800e3 : BENCH_DAY_GAP_H(g.n) * 3600e3);
+  function benchNext(g, last, lastDay, end) { if (!last && !lastDay && !end) return 0; const fin = end || last; const gap = fin ? fin + benchGapMs(g) : 0;
+    if (g.unit === 'h') return Math.max((last || end || dayMs(lastDay)) + g.n * 3600e3 - 60e3, gap); return Math.max(dayMs(lastDay || kstDay(last || end)) + g.n * 864e5, gap); }
   /* 지금 할 차례: [{sc, gi, g, rank, due, next}] — rank = 전체 순서(위 그룹 먼저, 그룹 안은 위에서부터) */
   /* (0.13.3) 하던 회차(bench_state.prog — 수집기 1.54.0이 10쪽마다 남김)가 시작 20시간 안이면 '하는 중' → 늘 할 차례
    *  behind = 한 주기 이상 밀린 횟수(예: 1일에 한 번인데 어제 차례를 못 끝냄 = 1) */
   function benchPlan(cfg, states, now) { const G = benchGroups(cfg); const out = []; let rank = 0;
-    G.forEach((g, gi) => g.scs.forEach((sc) => { const st = (states && states[sc]) || {}; const last = st.runAt ? Date.parse(st.runAt) : null; const next = benchNext(g, last, st.day || null);
+    G.forEach((g, gi) => g.scs.forEach((sc) => { const st = (states && states[sc]) || {}; const last = st.runAt ? Date.parse(st.runAt) : null; const end = st.endAt ? Date.parse(st.endAt) : null; const next = benchNext(g, last, st.day || null, end);
+      const fresh = !!(end || last) && now - (end || last) < benchGapMs(g); /* 끝난 지 얼마 안 됨 — 수동(모두) 실행에서도 건너뜀 */
       const ps = st.prog && st.prog.startedAt ? Date.parse(st.prog.startedAt) : NaN; const inProg = Number.isFinite(ps) && now - ps < 20 * 3600e3 && !(last && last >= ps);
       const per = g.n * (g.unit === 'h' ? 3600e3 : 864e5); const behind = next <= now && next > 0 ? Math.floor((now - next) / per) : next === 0 ? 1 : 0;
-      out.push({ sc, gi, g, rank: rank++, last, next, inProg, behind, due: inProg || next <= now }); }));
+      out.push({ sc, gi, g, rank: rank++, last, end, next, inProg, behind, fresh: fresh && !inProg, due: inProg || next <= now }); }));
     return out; }
   /* (0.13.3) 할 차례 순서 — ① 하던 회차(멈췄다 다시 시작해도 처음 판매자로 돌아가지 않고 하던 판매자부터 이어서) ② 한 주기 이상 밀린 판매자(지난 차례를 못 끝낸 쪽 먼저)
    *  ③ 그다음은 관리자가 정한 블록·판매자 순서(위 블록 먼저 · 블록 안은 위에서부터). 예) 1일에 한 번 15명을 돌다 자정을 넘기면, 이미 끝낸 맨 위 판매자를 다시 읽기 전에 어제 못 한 판매자부터 */
@@ -150,7 +155,7 @@
     while (guard++ < 2000 && t < end && Object.keys(first).length < S.length) { const ready = S.filter((x) => x.nx <= t || x.inProg).map((x) => ({ x, k: { ...x, behind: x.nx <= t && x.nx > 0 ? Math.floor((t - x.nx) / (x.g.n * (x.g.unit === 'h' ? 3600e3 : 864e5))) : x.behind } })).sort((a, b) => benchCmp(a.k, b.k)).map((o) => o.x)[0];
       if (!ready) { t = Math.min(...S.map((x) => x.nx)); continue; }
       const d = Math.max(60, +durOf(ready.sc) || 600) * 1000; const r = { sc: ready.sc, start: t, end: t + d, rank: ready.rank, gi: ready.gi }; runs.push(r); if (!first[ready.sc]) first[ready.sc] = r; t += d;
-      ready.inProg = false; ready.nx = benchNext(ready.g, r.start, null); }
+      ready.inProg = false; ready.nx = benchNext(ready.g, r.start, null, r.end); }
     return { plan: P, first, runs }; }
   const BENCH = { FIELDS: BENCH_FIELDS, FIELDS_DEF: BENCH_FIELDS_DEF, DETAIL_DEF: BENCH_DETAIL_DEF, VIEW_DEF: BENCH_VIEW_DEF, fields: benchFields, needsDetail: benchNeedsDetail, groups: benchGroups, next: benchNext, plan: benchPlan, order: benchOrder, sim: benchSim, kstDay };
   const DEFAULTS = { KINDS, JOBS, COLLECTIONS, PINS, USES, SETTINGS };
