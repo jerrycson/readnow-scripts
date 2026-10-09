@@ -1,13 +1,13 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.52.0의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.53.0의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.52.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.53.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
 (async function () {
   'use strict';
-  const APP_VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.52.0'; // (1.36.0) 판 번호는 맨 위 @version 한 곳 — 고객 쪽·상품 쪽이 같은 값
+  const APP_VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.53.0'; // (1.36.0) 판 번호는 맨 위 @version 한 곳 — 고객 쪽·상품 쪽이 같은 값
   const BASE = 'https://www.aladin.co.kr/scm/';
   const now = () => new Date().toISOString();
   const LOGIN_FLAG = 'rn-autologin-pending';
