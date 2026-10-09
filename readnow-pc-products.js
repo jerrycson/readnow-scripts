@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.53.2의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.53.3의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.53.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.53.3' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.53.2'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.53.3'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -1438,7 +1438,7 @@
       if (Date.now() - lastLog > 30000) { lastLog = Date.now(); log(`🎯 '${name}' 상품 정보 더 읽기 ${out.tried}/${cand.length}`); ui(`집중 벤치마킹 · ${name} · 상품 정보`, out.tried, cand.length, `ISBN·분류 ${out.tried}/${cand.length}`); } }
     log(`🎯 '${name}' 상품 정보 더 읽기 끝: ${out.filled.length}/${out.tried}개 (${Math.round((Date.now() - t0) / 1000)}초)`); return out; }
   async function benchFinish(t, prog, st) { const sc = String(t.sc); const day = prog.day; const dayN = day.replace(/-/g, ''); const old = new Map(); const nC = st.chunks || 0;
-    for (let k = 0; k < nC; k++) { const c = (await C('bench_state').doc(sc).collection('c').doc(String(k)).get()).data(); if (c && c.m) for (const [id, v] of Object.entries(c.m)) old.set(id, v); } /* v = [값, 처음 본 날(YYYYMMDD), 상태, 처음부터 있던 것(1), 제목 앞 40자] */
+    for (let k = 0; k < nC; k++) { const c = (await C('bench_state').doc(sc).collection('c').doc(String(k)).get()).data(); let M = c && c.m; if (c && c.s) { try { M = JSON.parse(c.s); } catch (e) { M = null; } } if (M) for (const [id, v] of Object.entries(M)) old.set(id, v); } /* (1.53.3) 새 모양 s(글자) · 예전 모양 m 둘 다 읽음 */ /* v = [값, 처음 본 날(YYYYMMDD), 상태, 처음부터 있던 것(1), 제목 앞 40자] */
     const RB = (BREG() || {}).BENCH; const F = RB ? RB.fields(BENCH_CFG) : { price: true, grade: true, title: true, low: true, priceList: true, byline: true, usedCode: true, cover: true, page: true }; /* (1.53.0) 웹앱 ⚙ 수집 항목에서 끈 정보는 모으지 않음 */
     const base = !st.day; const now = new Map(); const add = [], gone = [], moved = []; const dd = (a) => Math.max(0, Math.round((Date.parse(day) - Date.parse(`${String(a).slice(0, 4)}-${String(a).slice(4, 6)}-${String(a).slice(6, 8)}`)) / 864e5));
     const lowOn = [], lowOff = []; /* (1.48.0) '최저가' 표시가 켜지고 꺼진 때 — 덮어쓰지 않고 쌓음 */
@@ -1475,7 +1475,7 @@ lowNow: all.filter((v) => v[5]).length, lowOn: lowOn.length, lowOff: lowOff.leng
     /* (1.53.0) 하루에 여러 번 읽으면 하루 요약도 회차마다 따로(덮어쓰지 않음): 그날 첫 회차 = {판매자_날짜} · 다음 회차 = {판매자_날짜_시분} */
     let dayId = `${sc}_${day}`; { const ex = (await C('bench_days').doc(dayId).get()).data(); if (ex && ex.runAt && prog.startedAt && ex.runAt !== prog.startedAt) dayId = `${sc}_${day}_${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; else if (ex && !ex.runAt && prog.startedAt && ex.at && Date.parse(ex.at) < Date.parse(prog.startedAt)) dayId = `${sc}_${day}_${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; }
     sumD.dayId = dayId; await C('bench_days').doc(dayId).set(sumD);
-    const ent = [...now.entries()]; const CH = 2500; /* (1.53.0) 상품마다 ISBN·분류가 붙어 한 조각 2,500개로 (Firebase 문서 1MB 한도) */ const chunks = Math.ceil(ent.length / CH); for (let k = 0; k < chunks; k++) await C('bench_state').doc(sc).collection('c').doc(String(k)).set({ m: Object.fromEntries(ent.slice(k * CH, (k + 1) * CH)), day, at: nowIso() });
+    const ent = [...now.entries()]; const CH = 2500; /* (1.53.0) 상품마다 ISBN·분류가 붙어 한 조각 2,500개로 (Firebase 문서 1MB 한도) */ const chunks = Math.ceil(ent.length / CH); for (let k = 0; k < chunks; k++) await C('bench_state').doc(sc).collection('c').doc(String(k)).set({ s: JSON.stringify(Object.fromEntries(ent.slice(k * CH, (k + 1) * CH))), n: Math.min(CH, ent.length - k * CH), fmt: 'json', day, at: nowIso() }); /* (1.53.3) 조각을 글자(JSON) 한 칸으로 — 상품마다 목록(값 11개)을 칸으로 두면 Firebase가 칸마다 색인을 만들어 '색인 항목이 너무 많음(too many index entries)'으로 거절했음 */
     await C('bench_state').doc(sc).set({ sc, name: t.name || sc, day, runAt: prog.startedAt || nowIso(), endAt: nowIso(), runs: firebase.firestore.FieldValue.increment(1), detailNow: sumD.detailNow, total: seenN, missOnce: miss.length, pages: prog.page, lastPage: st.lastPage || null, chunks, startDay: st.startDay || day, secPerPage: st.secPerPage || null, lowNow: all.filter((v) => v[5]).length, at: nowIso(), ...W() }, { merge: true });
     log(`집중 벤치마킹 '${t.name || sc}': ${seenN.toLocaleString()}개${miss.length ? ` · 이번에 안 보임 ${miss.length}(내일도 없으면 사라짐)` : ''}${back.length ? ` · 어제 놓쳤다 다시 보임 ${back.length}` : ''} · ${base ? '첫 바퀴(오늘부터 새로 올린 것을 셈)' : `새로 올림 ${add.length} · 사라짐 ${gone.length}(최저가였던 것 ${gone.filter((x) => x.low).length}) · 값 바뀜 ${moved.length} · 최저가 표시 지금 ${all.filter((v) => v[5]).length}개(새로 ${lowOn.length} · 잃음 ${lowOff.length})`}`); }
 
