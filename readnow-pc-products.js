@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.47.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.48.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.47.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.48.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.47.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.48.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -1325,13 +1325,29 @@
     } finally { await releaseLane('aladin'); }
   }
   /* ───────── 🎯 집중 벤치마킹 (1.46.0): 관리자가 고른 판매자(웹앱 경영 → 집중 벤치마킹 · app_settings/bench.targets)의 알라딘 중고샵 목록 전체를 하루 한 번 끝까지 읽음 ─────────
-   * 화면: /shop/usedshop/wshopitem.aspx?SC=판매자&ViewType=Detail&ViewRowsCount=25&page=N (한 쪽 25개) — 쪽마다 진행 위치 저장(멈춰도 그 쪽부터 이어감)
+   * 화면 (1.48.0): /shop/usedshop/wshopitem.aspx?SC=판매자&ViewType=Simple&ViewRowsCount=48&SortOrder=6&page=N (간단히 보기 · 한 쪽 48개 · 등록순) — 10쪽마다 진행 저장(멈춰도 그 쪽부터 이어감) · 끝 쪽까지(상한 없음)
    * 한 바퀴가 끝나면 어제 목록과 견줌: 새로 보인 것 = 새로 올린 상품(첫 바퀴는 '처음부터 있던 것'으로만 표시) · 안 보이게 된 것 = 사라짐(팔렸거나 내림) · 값이 바뀐 것
    * 저장: bench_items/{판매자_상품번호}(처음 본 날·사라진 날·값 바뀜 — 덮어쓰지 않고 덧붙임) · bench_days/{판매자_날짜}(하루 요약 + 새로 올린 것·사라진 것 목록) · bench_state/{판매자}/c/*(지금 목록 — 다음 비교용)
    *       bench_probe/{판매자}(첫 쪽 화면 일부와 읽은 결과 — 화면 모양이 다르면 웹앱에 '읽기 확인 필요'로 뜸) */
   const kDayB = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
-  const benchUrl = (sc, page) => `/shop/usedshop/wshopitem.aspx?SC=${encodeURIComponent(sc)}&ViewType=Detail&ViewRowsCount=25&page=${page}`;
-  function benchParse(doc) { const idOf = (a) => (String(a.getAttribute('href') || '').match(/[?&]ItemId=(\d+)/i) || [])[1] || null; const A = [...doc.querySelectorAll('a[href*="ItemId="]')].filter((a) => /wproduct\.aspx/i.test(a.getAttribute('href') || ''));
+  /* (1.48.0) 정범이 저장해 준 15개 숍 화면(2026-10-09)으로 맞춤: 숍 기본 화면은 '간단히 보기'(ViewType=Simple) · 한 쪽 24개 또는 48개(화면의 개수 고르기와 같은 값) · 등록순(SortOrder=6)
+   * 48개로 읽으면 쪽 수가 반으로 줄어듦 (예: 우리집은도서관 4,076쪽 → 약 2,038쪽) */
+  const benchUrl = (sc, page) => `/shop/usedshop/wshopitem.aspx?SC=${encodeURIComponent(sc)}&ViewType=Simple&ViewRowsCount=48&SortOrder=6&page=${page}`;
+  /* 표지 그림 파일 이름(예: 8963718182_1.jpg → '8963718182') — ISBN처럼 보이지만 늘 ISBN이라는 확인이 없어 ISBN 칸에 넣지 않고 그대로 보관만 함(나중에 우리 상품과 견줘 확인되면 씀) */
+  const coverKey = (src) => (String(src || '').match(/(?:^|\/)([0-9A-Za-z]{8,13})_\d+\.(?:jpe?g|gif|png)/i) || [])[1] || null;
+  /* 숍 화면의 끝 쪽 번호 ('끝' 단추 · 없으면 보이는 쪽 번호 중 가장 큰 것) */
+  const benchLastPage = (doc, html) => { const h = String(html || (doc && doc.documentElement ? doc.documentElement.innerHTML : '')); const m = h.match(/Page_Set\('(\d+)'\)"?[^>]*>\s*끝/); if (m) return +m[1]; let mx = 0; h.replace(/Page_Set\('(\d+)'\)/g, (a, n) => { mx = Math.max(mx, +n); return a; }); return mx || null; };
+  /* 간단히 보기 한 칸: [중고-상] 제목(a.bo) · 지은이 | 출판사 · 정가<span class="">N</span>원→<span class="p1_bold">판매가</span> · 장바구니 네모 chkCart.U… · '최저가' used_label_04 */
+  function benchParseSimple(doc) { const out = []; const seen = new Set();
+    for (const cb of doc.querySelectorAll('input[name^="chkCart.U"]')) { const cell = cb.closest('td[width="25%"]') || cb.closest('td[valign="top"]'); if (!cell) continue; const a = cell.querySelector('a.bo[href*="ItemId="]') || cell.querySelector('a[href*="ItemId="]'); if (!a) continue;
+      const id = (String(a.getAttribute('href') || '').match(/[?&]ItemId=(\d+)/i) || [])[1]; if (!id || seen.has(id)) continue; seen.add(id); const T = (cell.textContent || '').replace(/[\u00a0\s]+/g, ' ');
+      const g = (T.match(/\[\s*중고\s*-\s*(최상|상|중|하)\s*\]/) || [])[1] || null; const pb = cell.querySelector('.p1_bold'); const p = pb ? +String(pb.textContent).replace(/[^\d]/g, '') || null : null;
+      let pl = null; const arrow = [...cell.querySelectorAll('span')].find((x) => !x.className && /^[\d,]+$/.test((x.textContent || '').trim()) && /^\s*원\s*→/.test((x.nextSibling && x.nextSibling.nodeValue) || '')); if (arrow) pl = +arrow.textContent.replace(/[^\d]/g, '');
+      const gw = cell.querySelector('.gw'); const au = gw ? gw.textContent.replace(/[\u00a0\s]+/g, ' ').trim().slice(0, 80) : '';
+      const img = cell.querySelector('img[src*="_"]'); const cov = img ? coverKey(img.getAttribute('src')) : null; const isbn = null; const low = !!cell.querySelector('.used_label_04');
+      out.push({ id, ids: [id], t: (a.textContent || '').replace(/[\u00a0\s]+/g, ' ').trim().slice(0, 120), p, pl, g, isbn, ym: null, low, uc: cb.name.slice(8), au, cov, g0: /\[\s*중고\s*\]/.test(T) && !g }); }
+    return out; }
+  function benchParse(doc) { const S0 = benchParseSimple(doc); if (S0.length) return S0; /* 간단히 보기가 아니면(자세히 보기 등) 예전처럼 상자 단위로 */ const idOf = (a) => (String(a.getAttribute('href') || '').match(/[?&]ItemId=(\d+)/i) || [])[1] || null; const A = [...doc.querySelectorAll('a[href*="ItemId="]')].filter((a) => /wproduct\.aspx/i.test(a.getAttribute('href') || ''));
     const out = []; const done = new Set(); const txt = (el) => { if (!el) return ''; const w = doc.createTreeWalker(el, 4); const P = []; for (let n = w.nextNode(); n; n = w.nextNode()) P.push(n.nodeValue); return P.join(' ').replace(/[\u00a0\s]+/g, ' ').trim(); }; /* 글 조각 사이에 빈칸 (줄바꿈 태그로 붙은 글자가 섞이지 않게) */
     for (const a of A) { const id = idOf(a); if (!id || done.has(id)) continue;
       let box = a.closest('.ss_book_box') || null; if (!box) { for (let el = a.parentElement, k = 0; el && el !== doc.body && k < 14; el = el.parentElement, k++) { const ids = new Set([...el.querySelectorAll('a[href*="ItemId="]')].map(idOf).filter(Boolean)); if (ids.size > 3) break; box = el; if (/[\d,]{3,}\s*원/.test(txt(el)) && el.querySelectorAll('a[href*="ItemId="]').length) break; } }
@@ -1342,45 +1358,78 @@
       const used = prices.filter((x) => !x.list && x.v >= 100); const list = prices.find((x) => x.list);
       const gm = T.match(/\[\s*중고\s*-?\s*(최상|상|중|하)\s*\]/) || T.match(/(?:품질|상태|등급)\s*[:：]?\s*(최상|상|중|하)(?![가-힣])/) || T.match(/(?:^|\s)(최상|상|중|하)\s*(?:등급|급)(?:\s|$)/);
       const isbn = (box.innerHTML.match(/\b(97[89]\d{10})\b/) || [])[1] || null; const ym = T.match(/(19|20)(\d{2})\s*년\s*(\d{1,2})\s*월/);
-      out.push({ id: main, ids: bIds, t: title.replace(/^\[중고[^\]]*\]\s*/, '').slice(0, 120), p: used.length ? used[0].v : null, pl: list ? list.v : null, g: gm ? gm[1] : null, isbn, ym: ym ? `${ym[1]}${ym[2]}-${String(ym[3]).padStart(2, '0')}` : null }); }
+      const low = !!box.querySelector('.used_label_04') || [...box.querySelectorAll('span,em,b,i')].some((e) => /^\s*최저가\s*$/.test(e.textContent || '')); /* (1.48.0) '최저가' 표시 = 온라인 중고 목록 맨 위(그때 같은 상품 경쟁 매물 중 가장 쌈) */
+      out.push({ id: main, ids: bIds, t: title.replace(/^\[중고[^\]]*\]\s*/, '').slice(0, 120), p: used.length ? used[0].v : null, pl: list ? list.v : null, g: gm ? gm[1] : null, isbn, ym: ym ? `${ym[1]}${ym[2]}-${String(ym[3]).padStart(2, '0')}` : null, low }); }
     return out; }
   async function benchJob() { const cfg = (await C('app_settings').doc('bench').get()).data() || {}; const T = (cfg.targets || []).filter((t) => t && t.sc && t.on !== false);
     if (!T.length) { log('집중 벤치마킹: 고른 판매자 없음 — 웹앱 경영 탭 → 🎯 집중 벤치마킹에서 고르세요'); return; }
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
-    try { for (const t of T) { if (stopFlag) throw new Error('멈춤'); await benchOne(t); } } finally { await releaseLane('aladin'); } }
+    { const sts = await Promise.all(T.map((t) => C('bench_state').doc(String(t.sc)).get().then((d) => d.data() || {}).catch(() => ({})))); const day = kDayB(); const todo = T.filter((t, i) => sts[i].day !== day || FORCE_ALL); const pages = todo.reduce((a, t) => a + (sts[T.indexOf(t)].lastPage || sts[T.indexOf(t)].pages || 0), 0); const per = sts.map((x) => x.secPerPage).filter(Boolean); const spp = per.length ? per.reduce((a, b) => a + b, 0) / per.length : null;
+      log(`🎯 집중 벤치마킹: 판매자 ${T.length}명 중 오늘 읽을 ${todo.length}명${pages ? ` · 지난번 기준 약 ${pages.toLocaleString()}쪽` : ''}${spp && pages ? ` · 예상 약 ${Math.round(pages * spp / 60)}분` : ''} — 순서: ${todo.map((t) => t.name || t.sc).join(' → ') || '없음(모두 오늘 끝남)'}`); }
+    try { for (let i = 0; i < T.length; i++) { if (stopFlag) throw new Error('멈춤'); log(`🎯 [${i + 1}/${T.length}] ${T[i].name || T[i].sc}`); await benchOne(T[i]); } } finally { await releaseLane('aladin'); } }
   async function benchOne(t) { const sc = String(t.sc); const name = t.name || sc; const day = kDayB(); const stRef = C('bench_state').doc(sc); const st = (await stRef.get()).data() || {};
     if (st.day === day && !FORCE_ALL) { log(`집중 벤치마킹 '${name}': 오늘 이미 끝까지 읽음 — 건너뜀`); return; }
-    const JN = 'bench_' + sc; let prog = await loadProgress(JN); if (!prog || prog.day !== day || !Array.isArray(prog.items)) prog = { day, page: 1, items: [], startedAt: nowIso(), sc, name };
-    const have = new Set(prog.items.map((x) => x[0])); const maxP = Math.max(1, SET.benchMaxPages || 600); let firstIds = null;
-    for (; prog.page <= maxP; prog.page++) { if (stopFlag) { await saveProgress(JN, prog); throw new Error('멈춤'); }
-      let r; try { r = await getDoc(benchUrl(sc, prog.page)); } catch (e) { if (e.message === '멈춤') throw e; log(`벤치마킹 '${name}' ${prog.page}쪽 읽기 실패: ${e.message} — 다음에 이 쪽부터`, 1); await saveProgress(JN, prog); return; }
+    const JN = 'bench_' + sc; let prog = await loadProgress(JN); if (!prog || prog.day !== day || (!Array.isArray(prog.items) && !(prog.blocks > 0))) prog = { day, page: 1, items: [], blocks: 0, startedAt: nowIso(), sc, name };
+    /* (1.48.0) 큰 숍(수만 개)도 되게: 읽은 상품을 10쪽마다 조각(prd_jobs/bench_{번호}/bk/{n})으로 덧붙여 저장 — 예전처럼 4쪽마다 전체 목록(수 MB)을 다시 올리지 않음 · 쪽 수 상한(600) 없앰 → 숍 화면의 '끝' 쪽까지 */
+    const bkRef = (k) => C('prd_jobs').doc(JN).collection('bk').doc(String(k)); if (!Array.isArray(prog.items)) prog.items = [];
+    if ((prog.blocks || 0) > 0 && !prog.items.length) { for (let k = 0; k < prog.blocks; k++) { const d = (await bkRef(k).get()).data(); if (d && d.s) { try { prog.items.push(...JSON.parse(d.s)); } catch (e) {} } } log(`🎯 '${name}': 저장해 둔 ${prog.blocks}조각 · ${prog.items.length.toLocaleString()}개를 불러옴`); }
+    let pend = !(prog.blocks > 0) && prog.items.length ? prog.items.slice() : []; const meta = () => { const m = { ...prog }; delete m.items; return m; };
+    const saveBk = async () => { if (pend.length) { await bkRef(prog.blocks || 0).set({ s: JSON.stringify(pend), n: pend.length, at: Date.now() }); prog.blocks = (prog.blocks || 0) + 1; pend = []; } await saveProgress(JN, meta()); };
+    const have = new Set(prog.items.map((x) => x[0])); let firstIds = null; let lastP = prog.lastPage || st.lastPage || null;
+    /* 진행 기록: 시작 · 10쪽마다 · 25/50/75/90% · 끝 — 끝 쪽(숍 화면의 '끝' 단추)을 알면 처음부터 정확한 남은 쪽 수 · 쪽당 걸린 시간으로 남은 시간·끝날 시각 */
+    const t0 = Date.now(); const p0 = prog.page; const hm = (ms) => { const d = new Date(Date.now() + ms + 9 * 3600e3); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
+    const expOf = () => lastP || st.pages || 0; const spp0 = st.secPerPage ? st.secPerPage * 1000 : null;
+    const eta = () => { const done = prog.page - p0; const per = done >= 3 ? (Date.now() - t0) / done : spp0; if (!per) return null; const exp = expOf(); const left = exp ? Math.max(0, exp - prog.page) : null; return { per, left, ms: left != null ? left * per : null, measured: done >= 3 }; };
+    const marks = new Set(); const say = (force) => { const e = eta(); const exp = expOf(); const pct = exp ? Math.min(99, Math.floor(prog.page / exp * 100)) : null; const ms = [25, 50, 75, 90].find((m) => pct != null && pct >= m && !marks.has(m)); if (!force && !ms && prog.page % 10) return; if (ms) marks.add(ms);
+      log(`🎯 '${name}' ${prog.page}${exp ? ` / ${exp}` : ''}쪽${pct != null ? ` (${pct}%)` : ''} · ${prog.items.length.toLocaleString()}개${e ? ` · 쪽당 ${(e.per / 1000).toFixed(1)}초${e.measured ? '' : '(지난번)'}` : ''}${e && e.ms != null ? ` · 남은 약 ${Math.max(1, Math.round(e.ms / 60000))}분 → ${hm(e.ms)} 끝 예상` : ''}${ms ? ` · ◆ ${ms}% 지남` : ''}`); };
+    log(`🎯 집중 벤치마킹 '${name}' (SC ${sc}) ${prog.page > 1 ? `${prog.page}쪽부터 이어서` : '시작'} — ${expOf() ? `${lastP ? '끝' : '지난번'} ${expOf().toLocaleString()}쪽(한 쪽 48개)` : '처음 읽음 — 1쪽을 읽으면 끝 쪽을 앎'}${expOf() && st.secPerPage ? ` · 예상 약 ${Math.round(Math.max(0, expOf() - prog.page) * st.secPerPage / 60)}분 → ${hm(Math.max(0, expOf() - prog.page) * st.secPerPage * 1000)} 끝 예상` : ''}`);
+    let dupRun = 0;
+    for (;; prog.page++) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); }
+      if (lastP && prog.page > lastP + 3) break; /* 읽는 동안 새로 올라온 만큼 뒤로 밀릴 수 있어 끝 쪽 + 3쪽까지 */
+      let r; try { r = await getDoc(benchUrl(sc, prog.page)); } catch (e) { if (e.message === '멈춤') { await saveBk(); throw e; } log(`벤치마킹 '${name}' ${prog.page}쪽 읽기 실패: ${e.message} — 다음에 이 쪽부터`, 1); await saveBk(); return; }
       const L = benchParse(r.doc);
-      if (prog.page === 1) { firstIds = L.map((x) => x.id).join(','); await C('bench_probe').doc(sc).set({ sc, name, at: nowIso(), day, url: benchUrl(sc, 1), n: L.length, withPrice: L.filter((x) => x.p).length, withGrade: L.filter((x) => x.g).length, withIsbn: L.filter((x) => x.isbn).length, sample: L.slice(0, 5), html: String(r.html || '').slice(0, 250000), pc: PC_NAME, ...W() }); }
+      if (prog.page === 1 || !lastP) { const lp = benchLastPage(r.doc, r.html); if (lp) { if (lp !== lastP && prog.page === 1) log(`🎯 '${name}': 숍 끝 쪽 ${lp.toLocaleString()}쪽 (약 ${(lp * 48).toLocaleString()}개)`); lastP = Math.max(lp, prog.page); prog.lastPage = lastP; } }
+      if (prog.page === 1) { firstIds = L.map((x) => x.id).join(','); await C('bench_probe').doc(sc).set({ sc, name, at: nowIso(), day, url: benchUrl(sc, 1), view: L.length && L[0].uc ? 'simple' : 'other', lastPage: lastP || null, n: L.length, withPrice: L.filter((x) => x.p).length, withGrade: L.filter((x) => x.g).length, noGrade: L.filter((x) => x.g0).length, withIsbn: L.filter((x) => x.isbn).length, withCover: L.filter((x) => x.cov).length, withLow: L.filter((x) => x.low).length, sample: L.slice(0, 5), html: String(r.html || '').slice(0, 250000), pc: PC_NAME, ...W() }); }
       if (prog.page === 2 && L.map((x) => x.id).join(',') === firstIds && firstIds) { log(`벤치마킹 '${name}': 2쪽이 1쪽과 같음 — 쪽 넘김 방식이 다름(웹앱에 '읽기 확인 필요') · 1쪽만 씀`, 1); await C('bench_probe').doc(sc).set({ pagingBroken: true }, { merge: true }); break; }
-      let fresh = 0; for (const x of L) { if (have.has(x.id)) continue; have.add(x.id); fresh++; prog.items.push([x.id, x.p, x.g, x.t, x.isbn, x.ym, x.pl]); }
-      ui(`집중 벤치마킹 · ${name}`, prog.page, Math.max(prog.page, st.pages || prog.page), `${prog.page}쪽 · 지금까지 ${prog.items.length.toLocaleString()}개`);
-      if (!L.length || !fresh) break; if (prog.page % 4 === 0) await saveProgress(JN, prog); }
-    await benchFinish(t, prog, st); await finishJob(JN, { n: prog.items.length, pages: prog.page }); }
+      let fresh = 0; for (const x of L) { if (have.has(x.id)) continue; have.add(x.id); fresh++; const row = [x.id, x.p, x.g, x.t, x.isbn, x.ym, x.pl, x.low ? 1 : 0, prog.page, x.uc || null, x.au || null, x.cov || null]; prog.items.push(row); pend.push(row); }
+      { const e = eta(); const exp = expOf(); ui(`집중 벤치마킹 · ${name}`, prog.page, Math.max(prog.page, exp || prog.page), `${prog.page.toLocaleString()}${exp ? ' / ' + exp.toLocaleString() : ''}쪽 · 지금까지 ${prog.items.length.toLocaleString()}개${e && e.ms != null ? ` · 남은 약 ${Math.max(1, Math.round(e.ms / 60000))}분 (${hm(e.ms)} 끝 예상)` : ''}`); } say(false);
+      if (!L.length) break; /* 빈 쪽 = 끝 */
+      dupRun = fresh ? 0 : dupRun + 1; if (!lastP && dupRun >= 2) break; /* 끝 쪽을 모를 때만: 두 쪽 연속 새 상품이 없으면 끝 (끝 쪽을 알면 앞쪽 상품이 밀려 겹친 쪽이어도 끝까지 감) */
+      if (prog.page % 10 === 0) await saveBk(); }
+    if (pend.length) { await bkRef(prog.blocks || 0).set({ s: JSON.stringify(pend), n: pend.length, at: Date.now() }); prog.blocks = (prog.blocks || 0) + 1; pend = []; }
+    const secPerPage = prog.page > p0 ? Math.round((Date.now() - t0) / (prog.page - p0) / 100) / 10 : st.secPerPage || null; await benchFinish(t, prog, { ...st, secPerPage, lastPage: lastP || null });
+    for (let k = 0; k < (prog.blocks || 0); k++) await bkRef(k).delete().catch(() => {}); /* 읽는 동안 임시로 둔 조각 — 결과는 bench_state·bench_days·bench_items에 저장됨 */
+    await finishJob(JN, { n: prog.items.length, pages: prog.page });
+    log(`🎯 '${name}' 끝 — ${prog.page.toLocaleString()}쪽 · ${prog.items.length.toLocaleString()}개 · ${Math.round((Date.now() - t0) / 60000)}분 걸림`); }
   async function benchFinish(t, prog, st) { const sc = String(t.sc); const day = prog.day; const dayN = day.replace(/-/g, ''); const old = new Map(); const nC = st.chunks || 0;
     for (let k = 0; k < nC; k++) { const c = (await C('bench_state').doc(sc).collection('c').doc(String(k)).get()).data(); if (c && c.m) for (const [id, v] of Object.entries(c.m)) old.set(id, v); } /* v = [값, 처음 본 날(YYYYMMDD), 상태, 처음부터 있던 것(1), 제목 앞 40자] */
     const base = !st.day; const now = new Map(); const add = [], gone = [], moved = []; const dd = (a) => Math.max(0, Math.round((Date.parse(day) - Date.parse(`${String(a).slice(0, 4)}-${String(a).slice(4, 6)}-${String(a).slice(6, 8)}`)) / 864e5));
-    for (const [id, p, g, ti, isbn, ym, pl] of prog.items) { const o = old.get(id); if (o) { now.set(id, [p, o[1], g, o[3] || 0, String(ti || o[4] || '').slice(0, 40)]); if (p && o[0] && p !== o[0]) moved.push({ id, from: o[0], to: p }); } else { now.set(id, [p, dayN, g, base ? 1 : 0, String(ti || '').slice(0, 40)]); if (!base) add.push({ id, t: ti, p, g, isbn, ym, pl }); } }
-    for (const [id, o] of old) if (!now.has(id)) gone.push({ id, p: o[0], g: o[2], first: o[1], life: dd(o[1]), base: !!o[3], t: o[4] || null });
+    const lowOn = [], lowOff = []; /* (1.48.0) '최저가' 표시가 켜지고 꺼진 때 — 덮어쓰지 않고 쌓음 */
+    /* (1.48.0) 숍 전체를 읽는 데 몇 시간 걸려, 그동안 앞쪽 상품이 팔리면 뒤 상품이 한 칸씩 당겨져 몇 개는 못 보고 지나감 → 한 번 안 보인 것은 '안 보임 1번'(v[6] = 처음 안 보인 날)으로 두고,
+     *   다음 바퀴에도 안 보이면 그때 '사라짐'(사라진 날 = 처음 안 보인 날)으로 셈 · 다시 보이면 놓친 것(돌아옴)으로만 셈 — 사라짐이 하루 늦게 확정되는 대신 잘못 센 사라짐이 없음 */
+    const back = [];
+    for (const [id, p, g, ti, isbn, ym, pl, low, pg] of prog.items) { const o = old.get(id); const L1 = low ? 1 : 0; if (o) { if (o[6]) back.push(id); now.set(id, [p, o[1], g, o[3] || 0, String(ti || o[4] || '').slice(0, 40), L1]); if (p && o[0] && p !== o[0]) moved.push({ id, from: o[0], to: p }); if (L1 && !o[5]) lowOn.push({ id, p, g, pg, t: ti }); if (!L1 && o[5]) lowOff.push({ id, p, g, pg, t: ti }); } else { now.set(id, [p, dayN, g, base ? 1 : 0, String(ti || '').slice(0, 40), L1]); if (!base) add.push({ id, t: ti, p, g, isbn, ym, pl, low: L1 }); if (L1) lowOn.push({ id, p, g, pg, t: ti, first: true }); } }
+    const miss = []; for (const [id, o] of old) { if (now.has(id)) continue; if (o[6]) gone.push({ id, p: o[0], g: o[2], first: o[1], life: dd(o[1]) - dd(o[6]), base: !!o[3], t: o[4] || null, low: !!o[5], missDay: o[6] }); else { miss.push(id); now.set(id, [o[0], o[1], o[2], o[3] || 0, o[4] || '', o[5] || 0, dayN]); } }
+    const seenN = now.size - miss.length; const ymd = (a) => `${String(a).slice(0, 4)}-${String(a).slice(4, 6)}-${String(a).slice(6, 8)}`;
     const AU = firebase.firestore.FieldValue.arrayUnion; let B = db.batch(), n = 0; const flush = async () => { if (n) { await B.commit(); B = db.batch(); n = 0; } };
     const byId = new Map(prog.items.map((x) => [x[0], x]));
-    for (const id of base ? [...now.keys()] : add.map((x) => x.id)) { const x = byId.get(id); B.set(C('bench_items').doc(`${sc}_${id}`), { sc, id, title: x[3] || '', price: x[1] ?? null, grade: x[2] || null, isbn: x[4] || null, pubYm: x[5] || null, priceList: x[6] ?? null, firstDay: day, base, ...W() }, { merge: true }); if (++n >= 400) await flush(); }
-    for (const x of gone) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, goneDay: day, lifeDays: x.base ? null : x.life, ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    for (const id of base ? [...now.keys()] : add.map((x) => x.id)) { const x = byId.get(id); B.set(C('bench_items').doc(`${sc}_${id}`), { sc, id, title: x[3] || '', price: x[1] ?? null, grade: x[2] || null, isbn: x[4] || null, coverKey: x[11] || null, pubYm: x[5] || null, priceList: x[6] ?? null, usedCode: x[9] || null, byline: x[10] || null, firstDay: day, firstPage: x[8] || null, base, ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    for (const x of gone) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, goneDay: ymd(x.missDay), goneConfirmDay: day, lifeDays: x.base ? null : x.life, ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    const nowI = nowIso(); for (const x of lowOn) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, lowNow: true, lowEvents: AU({ d: day, at: nowI, on: true, p: x.p ?? null, g: x.g || null, page: x.pg || null }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    for (const x of lowOff) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, lowNow: false, lowEvents: AU({ d: day, at: nowI, on: false, p: x.p ?? null, g: x.g || null, page: x.pg || null }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    for (const x of gone.filter((y) => y.low)) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { lowEvents: AU({ d: day, at: nowI, gone: true, p: x.p ?? null }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
     for (const x of moved) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, prices: AU({ d: day, p: x.to, from: x.from }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
     await flush();
     const band = (p) => (!p ? '?' : p < 3000 ? '~3천' : p < 6000 ? '3~6천' : p < 10000 ? '6천~1만' : p < 20000 ? '1~2만' : p < 40000 ? '2~4만' : '4만~'); const cntBy = (L, f) => L.reduce((m, x) => { const k = f(x); m[k] = (m[k] || 0) + 1; return m; }, {});
-    const all = [...now.values()]; const sumD = { sc, name: t.name || sc, day, base, total: now.size, add: add.length, gone: gone.length, goneNew: gone.filter((x) => !x.base).length, moved: moved.length, pages: prog.page,
+    const all = [...now.values()].filter((v) => !v[6]); const sumD = { sc, name: t.name || sc, day, base, total: seenN, missOnce: miss.length, missBack: back.length, add: add.length, gone: gone.length, goneNew: gone.filter((x) => !x.base).length, moved: moved.length, pages: prog.page,
       totalBand: cntBy(all, (v) => band(v[0])), totalGrade: cntBy(all, (v) => v[2] || '?'), addBand: cntBy(add, (x) => band(x.p)), addGrade: cntBy(add, (x) => x.g || '?'), addYear: cntBy(add, (x) => (x.ym ? x.ym.slice(0, 4) : '?')),
       goneBand: cntBy(gone, (x) => band(x.p)), goneGrade: cntBy(gone, (x) => x.g || '?'), goneLife: cntBy(gone.filter((x) => !x.base), (x) => (x.life <= 3 ? '0~3일' : x.life <= 7 ? '4~7일' : x.life <= 14 ? '8~14일' : x.life <= 30 ? '15~30일' : x.life <= 60 ? '31~60일' : '61일~')),
-      addList: add.slice(0, 600).map((x) => [x.id, x.t, x.p, x.g, x.ym, x.isbn, x.pl]), goneList: gone.slice(0, 600).map((x) => [x.id, x.t, x.p, x.g, x.base ? null : x.life, x.first]), movedList: moved.slice(0, 300).map((x) => [x.id, x.from, x.to]), at: nowIso(), pc: PC_NAME, ...W() };
+lowNow: all.filter((v) => v[5]).length, lowOn: lowOn.length, lowOff: lowOff.length, goneLow: gone.filter((x) => x.low).length, goneLowNew: gone.filter((x) => x.low && !x.base).length, addLow: add.filter((x) => x.low).length, lowBand: cntBy(all.filter((v) => v[5]), (v) => band(v[0])), lowOnList: lowOn.slice(0, 300).map((x) => [x.id, x.t || null, x.p, x.g, x.pg || null]), lowOffList: lowOff.slice(0, 300).map((x) => [x.id, x.t || null, x.p, x.g]),
+      addList: add.slice(0, 600).map((x) => [x.id, x.t, x.p, x.g, x.ym, x.isbn, x.pl, x.low]), goneList: gone.slice(0, 600).map((x) => [x.id, x.t, x.p, x.g, x.base ? null : x.life, x.first, x.low ? 1 : 0]), movedList: moved.slice(0, 300).map((x) => [x.id, x.from, x.to]), at: nowIso(), pc: PC_NAME, ...W() };
     await C('bench_days').doc(`${sc}_${day}`).set(sumD);
     const ent = [...now.entries()]; const CH = 4000; const chunks = Math.ceil(ent.length / CH); for (let k = 0; k < chunks; k++) await C('bench_state').doc(sc).collection('c').doc(String(k)).set({ m: Object.fromEntries(ent.slice(k * CH, (k + 1) * CH)), day, at: nowIso() });
-    await C('bench_state').doc(sc).set({ sc, name: t.name || sc, day, total: now.size, pages: prog.page, chunks, startDay: st.startDay || day, at: nowIso(), ...W() }, { merge: true });
-    log(`집중 벤치마킹 '${t.name || sc}': ${now.size.toLocaleString()}개 · ${base ? '첫 바퀴(오늘부터 새로 올린 것을 셈)' : `새로 올림 ${add.length} · 사라짐 ${gone.length} · 값 바뀜 ${moved.length}`}`); }
+    await C('bench_state').doc(sc).set({ sc, name: t.name || sc, day, total: seenN, missOnce: miss.length, pages: prog.page, lastPage: st.lastPage || null, chunks, startDay: st.startDay || day, secPerPage: st.secPerPage || null, lowNow: all.filter((v) => v[5]).length, at: nowIso(), ...W() }, { merge: true });
+    log(`집중 벤치마킹 '${t.name || sc}': ${seenN.toLocaleString()}개${miss.length ? ` · 이번에 안 보임 ${miss.length}(내일도 없으면 사라짐)` : ''}${back.length ? ` · 어제 놓쳤다 다시 보임 ${back.length}` : ''} · ${base ? '첫 바퀴(오늘부터 새로 올린 것을 셈)' : `새로 올림 ${add.length} · 사라짐 ${gone.length}(최저가였던 것 ${gone.filter((x) => x.low).length}) · 값 바뀜 ${moved.length} · 최저가 표시 지금 ${all.filter((v) => v[5]).length}개(새로 ${lowOn.length} · 잃음 ${lowOff.length})`}`); }
 
 
   async function runChain(onlyPrd) { const DOC = onlyPrd ? 'prdChain' : 'chain'; const NAME = onlyPrd ? '상품 일괄 수집' : '모두 일괄 수집';
@@ -2349,24 +2398,27 @@
   async function refreshResume() {
     try {
       const qs = await C('prd_jobs').where('done', '==', false).get(); const list = {};
-      qs.forEach((d) => { if (JOBS[d.id] && d.id !== 'explore') list[d.id] = d.data(); });
+      qs.forEach((d) => { if ((JOBS[d.id] || /^bench_/.test(d.id)) && d.id !== 'explore') list[d.id] = d.data(); }); /* (1.48.0) 집중 벤치마킹은 판매자마다 bench_{번호} */
       const hide = new Set(); ['chain', 'prdChain'].forEach((c) => { const st = list[c] && list[c].stage; if (st && STAGE_JOB[st]) hide.add(STAGE_JOB[st]); }); // 일괄의 '지금 단계' 자리는 일괄 안에 묶어 보여 줌
       const pr = (j) => (j && j._n ? `${(+j._i || 0).toLocaleString()} / ${(+j._n).toLocaleString()}` : '');
-      RESUMABLES = [...new Set(['chain', 'prdChain', ...Object.keys(JOBS)])].filter((k) => list[k] && !hide.has(k)).map((k) => { const j = list[k]; const st = j.stage; const sj = st && STAGE_JOB[st] ? list[STAGE_JOB[st]] : null;
-        return { key: k, name: JOBS[k][0], by: j.by || '', savedAt: j.savedAt || 0, stage: st ? (STEP_LABEL[st] || st) : null, prog: sj ? pr(sj) : pr(j) }; });
+      const nameOf = (k) => (JOBS[k] ? JOBS[k][0] : /^bench_/.test(k) ? `🎯 집중 벤치마킹 · ${(list[k] && list[k].name) || k.slice(6)}` : k);
+      /* (1.48.0) 멈춘 자리 전부를 보여 줌 — 일괄의 '지금 단계' 자리도 따로 한 줄(└)로 · 줄마다 이어하기·버리기 */
+      const keys = [...new Set(['chain', 'prdChain', ...Object.keys(JOBS), ...Object.keys(list)])].filter((k) => list[k]);
+      RESUMABLES = keys.map((k) => { const j = list[k]; const st = j.stage; const sj = st && STAGE_JOB[st] ? list[STAGE_JOB[st]] : null; const sub = hide.has(k);
+        return { key: k, name: (sub ? '└ 일괄 안 단계: ' : '') + nameOf(k), by: j.by || '', savedAt: j.savedAt || 0, stage: st ? (STEP_LABEL[st] || st) : null, prog: sj ? pr(sj) : j.page ? `${j.page}쪽 · ${(Array.isArray(j.items) ? j.items.length : 0).toLocaleString()}개` : pr(j), sub }; });
       resumeKey = RESUMABLES.length ? RESUMABLES[0].key : null;
       $('#rnpCtlResume').classList.remove('on'); // 예전 버튼 자리 — 개요로 옮김
     } catch (e) {}
     try { window.__rnCtlDraw && window.__rnCtlDraw(); } catch (e) {}
     return RESUMABLES;
   }
-  async function discardJob(k) {
-    if (!JOBS[k]) return { ok: false, why: '모르는 작업' };
-    if (runningKeys().has(k)) return { ok: false, why: `'${JOBS[k][0]}'은(는) 지금 진행 중입니다 — 먼저 일시정지하고, 멈춘 뒤에 버리세요` };
+  async function discardJob(k) { const nm = JOBS[k] ? JOBS[k][0] : /^bench_/.test(k) ? '집중 벤치마킹 ' + k.slice(6) : k;
+    if (!JOBS[k] && !/^bench_/.test(k) && !((await jobRef(k).get()).exists)) return { ok: false, why: '모르는 작업' };
+    if (runningKeys().has(k) || (/^bench_/.test(k) && runningKeys().has('bench'))) return { ok: false, why: `'${nm}'은(는) 지금 진행 중입니다 — 먼저 일시정지하고, 멈춘 뒤에 버리세요` };
     const keys = [k]; if (k === 'chain' || k === 'prdChain') { const st = ((await jobRef(k).get()).data() || {}).stage; if (st && STAGE_JOB[st]) keys.push(STAGE_JOB[st]); } // 일괄이면 일괄 순서표와 '지금 단계'의 자리
     for (const x of keys) { try { const d = (await jobRef(x).get()).data(); if (d && !d.done) await jobRef(x).set({ done: true, discarded: true, discardedAt: Date.now(), discardedBy: PC_NAME }, { merge: true }); LS.set('job_' + x, null); } catch (e) { return { ok: false, why: e.message }; } }
-    log(`'${JOBS[k][0]}'의 멈춘 자리만 잊었습니다 (받은 기록은 그대로 · 다음엔 처음부터 훑되 이미 받은 것은 건너뜀)`); await refreshResume(); return { ok: true }; }
-  function resumeJob(k) { if (!JOBS[k]) return; if (running) return alert(`이 탭은 '${running}' 진행 중입니다`); if (runningKeys().has(k)) return alert(`'${JOBS[k][0]}'은(는) 이미 진행 중입니다`); window.__rnResumeOk && window.__rnResumeOk(); runJob(k); }
+    log(`'${nm}'의 멈춘 자리만 잊었습니다 (받은 기록은 그대로 · 다음엔 처음부터 훑되 이미 받은 것은 건너뜀)`); await refreshResume(); return { ok: true }; }
+  function resumeJob(k) { if (/^bench_/.test(k)) k = 'bench'; if (!JOBS[k]) return; if (running) return alert(`이 탭은 '${running}' 진행 중입니다`); if (runningKeys().has(k)) return alert(`'${JOBS[k][0]}'은(는) 이미 진행 중입니다`); window.__rnResumeOk && window.__rnResumeOk(); runJob(k); }
   $('#rnpCheck').onclick = () => preflight(false).then((ok) => ok && alert('시작 전 점검: 모두 정상입니다. 자세한 내용은 기록 창에 있습니다.'));
   $('#rnpLogBig').onclick = (e) => { e.preventDefault(); window.__rnJournalToggle && window.__rnJournalToggle(); };
   $('#rnpResume').onclick = () => { if (resumeKey) resumeJob(resumeKey); };

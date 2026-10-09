@@ -1,7 +1,7 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.47.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.48.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.47.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.48.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -156,11 +156,11 @@
       try { const DT = (fi.ownerDocument.defaultView && fi.ownerDocument.defaultView.DataTransfer) || DataTransfer; const dt = new DT(); dt.items.add(file); fi.files = dt.files; fi.dataset.rnUsed = '1'; ['input', 'change'].forEach((t) => fi.dispatchEvent(new Event(t, { bubbles: true }))); } catch (e) { return { ok: false, why: '파일을 넣지 못함: ' + e.message }; }
       for (let i = 0; i < 80; i++) { await sleep(500); const v = ($(field) || {}).value; if (v && v !== before) { try { if (popup && !popup.closed) popup.close(); } catch (e) {} return { ok: true, where }; } if (i === 8 && fi.form && !fi.form.dataset.rnSent) { fi.form.dataset.rnSent = '1'; try { fi.form.submit(); } catch (e) {} } }
       return { ok: false, why: `올렸지만 칸에 사진이 들어오지 않음 (${where})` }; }
-    /* 사진 전부: 대표(b) → mainCover · 보조(c) → zoomCover0·1 · 설명 사진(a) → 남은 추가 사진 칸 zoomCover2~7 (편집기 사진 넣기는 아직 모름 — 그래서 상품 사진 칸에) */
-    async function attachImages(plan) { const im = plan.images || {}; const out = []; const todo = [];
-      if (im.main && im.main.path) todo.push(['mainCover', im.main, '대표 사진']); (im.subs || []).filter((x) => x && x.path).slice(0, 2).forEach((x, i) => todo.push(['zoomCover' + i, x, '보조 사진 ' + (i + 1)])); (im.desc || []).filter((x) => x && x.path).slice(0, 6).forEach((x, i) => todo.push(['zoomCover' + (2 + i), x, '설명 사진 ' + (i + 1)]));
-      for (const [field, x, label] of todo) { let r; try { const f = await getPhoto(x); r = await attachOne(field, f); } catch (e) { r = { ok: false, why: e.message }; } out.push({ k: label, ok: r.ok, note: r.ok ? x.name : `${x.name} — ${r.why}`, photo: true }); }
-      return out; }
+    /* 사진 목록 (웹앱 카드의 사진 칸 그대로): 대표 → mainCover · 추가 1~8 → zoomCover0~7 · 설명 안 사진 → 편집기(자동 넣기 없음 — 받아서 편집기 사진 넣기로) · (1.48.0) 예전 계획(subs·desc 이름만)도 읽음 */
+    function photoTodo(plan) { const im = plan.images || {}; const out = []; if (im.main && im.main.path) out.push({ field: 'mainCover', x: im.main, label: '대표(기본) 이미지' });
+      (im.zoom || []).forEach((x, i) => { if (x && x.path) out.push({ field: 'zoomCover' + i, x, label: '추가 이미지 ' + (i + 1) }); }); (im.subs || []).filter((x) => x && x.path).slice(0, 2).forEach((x, i) => out.push({ field: 'zoomCover' + i, x, label: '추가 이미지 ' + (i + 1) }));
+      (im.desc || []).filter((x) => x && x.path).forEach((x, i) => out.push({ field: null, x, label: '설명 안 사진 ' + (i + 1) })); return out; }
+    async function attachImages(plan) { const out = []; for (const t of photoTodo(plan)) { if (!t.field) { out.push({ k: t.label, ok: false, note: '편집기 사진은 직접', photo: true }); continue; } let r; try { const f = await getPhoto(t.x); r = await attachOne(t.field, f); } catch (e) { r = { ok: false, why: e.message }; } out.push({ k: t.label, ok: r.ok, note: r.ok ? t.x.name : `${t.x.name} — ${r.why}`, photo: true }); } return out; }
     async function newestListing(code) { const P = PR(); const r = await fetch(`/scm/wrecord_edit.aspx?chkItemStockStatus=${code}&chkItemInDate=0&searchCat1=0&searchType=1&keyword=&ViewRowsCount=100&page=1&SortOrder=6&itemStockStatus=${code}&categoryId=0`, { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html'); return Math.max(0, ...P.parseScmList(d, new Date().getFullYear()).rows.map((x) => +x.listingId || 0)); }
     /* 보내기 전 기록: 실행 문(exec_log) 시작 → 등록 전 상품 조회 최근 번호(공개 확인 기준) → 맡긴 일 regOne '보냄' + 상품 줄 '확정' (한 번에) — 못 적으면 보내지 않음 */
     async function prep(itemId, it, plan, rep, cmdIdIn) { const X = XC(); if (!X) throw new Error('실행 문 공용 파일이 없음 — 기록 없이 등록하지 않음');
@@ -177,7 +177,7 @@
     function hook(sink, auto) { const nA = W0.alert, nC = W0.confirm;
       W0.alert = function (msg) { sink.push(String(msg).slice(0, 200)); if (!auto) return nA.call(W0, msg); };
       W0.confirm = function (msg) { const m = String(msg); sink.push('(확인) ' + m.slice(0, 200)); if (!auto) return nC.call(W0, msg); return /(등록|저장|진행)\s*하시겠습니까/.test(m) && !/중복|이미|다시/.test(m); }; }
-    return { fill, attachImages, prep, hook, $ }; }
+    return { fill, attachImages, attachOne, photoTodo, prep, hook, $ }; }
   window.__rnRegMake = makeFiller;
   /* ── 창 없이 하는 자동 등록 (웹앱 '🤖 자동 등록' → 맡긴 일 regOne auto): 보이지 않는 틀 안에 알라딘 등록 화면을 열고 같은 방법으로 채움 → 못 채운 칸이 하나라도 있으면 보내지 않음 → 보냄 → 화면이 바뀌면 공개 확인 ── */
   let autoChain = Promise.resolve(); /* 한 PC에서 하나씩 (틀이 여럿 동시에 열리지 않게) — 기다리는 일은 1분마다 '살아 있음'(beatAt)을 남겨 지킴이가 멈춘 일로 보지 않게 */
@@ -193,7 +193,7 @@
     const p0 = loaded(60000); fr.src = url; document.body.appendChild(fr); const clean = () => setTimeout(() => { try { fr.remove(); } catch (e) {} }, 3000);
     try { if (!(await p0)) return await notSent('알라딘 등록 화면이 1분 안에 열리지 않음'); await sleep(1500);
       const uf = UW.document.getElementById(fr.id); const W = uf && uf.contentWindow; const d = fr.contentDocument; if (!W || !d || !/wrecord\.aspx/i.test(String(W.location.pathname))) return await notSent('등록 화면이 아님(로그인이 풀렸을 수 있음)');
-      const F = makeFiller(d, W, { auto: true }); let rep; try { rep = await F.fill(plan); rep = rep.concat(await F.attachImages(plan)); } catch (e) { return await notSent('채우지 못함: ' + e.message); }
+      const F = makeFiller(d, W, { auto: true }); let rep; try { rep = await F.fill(plan); if (F.photoTodo(plan).length) rep.push({ k: '사진', ok: false, note: '사진 자동 넣기는 아직 — 사진이 있는 상품은 \'채워서 열기\'로' }); } catch (e) { return await notSent('채우지 못함: ' + e.message); }
       const bad = rep.filter((x) => !x.ok); const fillTxt = rep.map((x) => `${x.ok ? '✓' : '✗'} ${x.k}${x.note && !x.ok ? ' (' + x.note + ')' : ''}`).join(' · ').slice(0, 900);
       if (bad.length) return await notSent('못 채운 칸 ' + bad.map((x) => x.k + (x.note ? ` (${x.note})` : '')).join(', ') + ' — 카드에서 고치거나 \'채워서 열기\'로 직접', { fill: fillTxt });
       let P; try { P = await F.prep(itemId, it, plan, rep, id); } catch (e) { return await notSent(e.message, { fill: fillTxt }); }
@@ -244,17 +244,20 @@
     const sn = await C('reg_items').doc(itemId).get().catch(() => null); const it = sn && sn.exists ? sn.data() : null; if (!it || !it.plan) return paint('등록 계획을 찾지 못함 — 웹앱에서 다시 \'채워서 열기\'');
     if (it.stage === 'done') return paint('이미 등록을 보낸 상품입니다 (웹앱 확정 탭에서 결과 확인) — 다시 채우지 않음');
     const plan = it.plan; let rep = []; try { rep = await F.fill(plan); } catch (e) { return paint(`<b style="color:#B0322A">채우지 못함</b><div>${esc(e.message)}</div>`); }
-    const draw = (photoNote) => { const bad = rep.filter((x) => !x.ok);
+    /* (1.48.0) 사진: 자동으로 넣지 않음 — 칸마다 사진을 보여 주고 '받기'(이 PC에 내려받기 → 알라딘 '찾아보기'에서 고름) · '넣기 (시험)'(한 칸만 자동 시도) */
+    const todo = F.photoTodo(plan); let photoState = {};
+    const photoHtml = () => todo.length ? `<div style="background:#F4F8FE;border:1px solid #B9CCEB;border-radius:8px;padding:6px 8px;margin:6px 0"><b>📷 사진 ${todo.length}장</b> <small style="color:#5B6B66">받기 → 아래 알라딘 사진 칸의 '찾아보기'에서 고름</small>${todo.map((t, i) => `<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b>${esc(t.label)}</b> <small style="color:#5B6B66">${esc(t.x.name)}${t.field ? ' → ' + esc(t.field) : ' → 편집기 사진 넣기'}</small>${photoState[i] ? ` <small style="color:${photoState[i].ok ? '#2F5D50' : '#B0322A'}">${esc(photoState[i].msg)}</small>` : ''}</span><button data-rnpdl="${i}" style="border:1px solid #2F5D50;background:#fff;color:#2F5D50;border-radius:6px;padding:2px 8px;cursor:pointer">받기</button>${t.field ? `<button data-rnpput="${i}" style="border:1px solid #9FB3AC;background:#fff;color:#5B6B66;border-radius:6px;padding:2px 6px;cursor:pointer" title="이 칸에 자동으로 넣어 봄 (시험 — 안 되면 받기로)">넣기</button>` : ''}</div>`).join('')}</div>` : (plan.method === 'new' ? '<div style="color:#A8661B;margin:6px 0">미등록 상품은 대표 이미지가 필수 — 웹앱 카드의 사진 칸에 끌어 놓거나, 화면 아래 \'대표 이미지\'에서 직접 첨부</div>' : '');
+    const draw = () => { const bad = rep.filter((x) => !x.ok);
       paint(`<div style="font-weight:800;font-size:14px">${esc(plan.method === 'new' ? '미등록 상품 등록' : '개별 등록')}${plan.univ && plan.univ.on ? ' · 🎓 대학교장터' : ''} · ${esc(plan.title || '')}</div>
       <div style="margin:4px 0;color:#5B6B66">${esc(plan.code)} · ${(+plan.price).toLocaleString()}원 · ${esc({ 1: '최상', 2: '상', 3: '중' }[+plan.grade])} · ${+plan.qty || 1}부</div>
       <div style="margin:6px 0">${rep.map((x) => `<div style="color:${x.ok ? '#2F5D50' : '#B0322A'}">${x.ok ? '✓' : '✗'} ${esc(x.k)}${x.note ? ` <small style="color:#5B6B66">${esc(x.note)}</small>` : ''}</div>`).join('')}</div>
-      ${photoNote || ''}${bad.length ? `<div style="color:#B0322A;margin:4px 0">✗ 칸은 화면에서 직접 확인·입력</div>` : ''}
+      ${photoHtml()}${bad.length ? `<div style="color:#B0322A;margin:4px 0">✗ 칸은 화면에서 직접 확인·입력</div>` : ''}
       <button id="rnRfGo" style="width:100%;margin-top:6px;padding:10px;border:0;border-radius:8px;background:#B0322A;color:#fff;font-weight:800;font-size:14px;cursor:pointer">확인했음 → 등록완료 (기록 남기고 알라딘에 보냄)</button>
       <div style="color:#5B6B66;font-size:11.5px;margin-top:4px">알라딘의 '등록완료'를 직접 눌러도 등록되지만, 그러면 웹앱이 결과를 모릅니다 — 이 단추로 누르세요.</div>`);
+      box.querySelectorAll('[data-rnpdl]').forEach((b) => (b.onclick = async () => { const t = todo[+b.dataset.rnpdl]; b.disabled = true; try { const f = await getPhoto(t.x); const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = (t.field ? t.field + '_' : 'desc_') + (t.x.name || 'photo.jpg').replace(/\.[^.]+$/, '') + '.jpg'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 3000); photoState[+b.dataset.rnpdl] = { ok: true, msg: '받음' }; } catch (e) { photoState[+b.dataset.rnpdl] = { ok: false, msg: e.message }; } draw(); }));
+      box.querySelectorAll('[data-rnpput]').forEach((b) => (b.onclick = async () => { const i = +b.dataset.rnpput; const t = todo[i]; b.disabled = true; b.textContent = '넣는 중'; let r; try { r = await F.attachOne(t.field, await getPhoto(t.x)); } catch (e) { r = { ok: false, why: e.message }; } photoState[i] = { ok: r.ok, msg: r.ok ? '들어감' : '안 됨 — 받기로: ' + r.why }; draw(); }));
       const go = box.querySelector('#rnRfGo'); go.onclick = async () => { go.disabled = true; go.textContent = '보내는 중…'; try { await submit(it, plan, rep); go.textContent = '보냄 — 알라딘 화면 결과를 기다리는 중'; } catch (e) { go.disabled = false; go.textContent = '확인했음 → 등록완료'; alert('등록하지 않음: ' + e.message); } }; };
-    const im = plan.images || {}; const hasPhoto = !!((im.main && im.main.path) || (im.subs || []).some((x) => x && x.path) || (im.desc || []).some((x) => x && x.path));
-    if (hasPhoto) { draw('<div style="background:#E8F0FF;border-radius:8px;padding:6px 8px;margin:6px 0">📷 사진을 넣는 중…</div>'); const pr = await F.attachImages(plan); rep = rep.concat(pr); draw(pr.some((x) => !x.ok) ? '<div style="background:#FFF7E0;border:1px solid #E9D79A;border-radius:8px;padding:6px 8px;margin:6px 0">✗ 사진은 화면 아래 사진 칸에서 직접 첨부</div>' : ''); }
-    else draw(plan.method === 'new' ? '<div style="color:#A8661B;margin:6px 0">미등록 상품은 대표 이미지가 필수 — 웹앱에서 사진 폴더를 열어 두면 저절로 넣음, 아니면 화면 아래 \'대표 이미지\'에서 첨부</div>' : '');
+    draw();
   })();
 })();
 /* ══════════ (1.47.0) 알라딘 화면의 우리 상품 옆에: ⚠ 취소 주문 기록 · 참고 가격(정가·알라딘 새상품 판매가) · 예스24 중고 링크 ══════════

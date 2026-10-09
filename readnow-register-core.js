@@ -5,7 +5,7 @@
  *   셀 서식(XF)은 원본에서 실제로 등록에 성공했던 줄(19행)의 것을 그대로 씀: ISBN = 텍스트 셀, 판매상태·수량·품질·판매가 = 숫자 셀.
  * 이 파일은 알라딘에 아무것도 바꾸지 않음 — 계산·만들기·읽기만. */
 (function (root) {
-  const VERSION = '0.5.0';
+  const VERSION = '0.6.0';
   // 상품 구분 (알라딘 SelectType / BranchType)
   const BRANCH = { 1: '국내도서', 2: '음반', 3: 'DVD/블루레이', 7: '외국도서' };
   // 상품 관리 코드 아이콘 — 알라딘 상품 등록 도우미 0.1.0과 같은 색 (한 곳)
@@ -53,11 +53,11 @@
     return s; }
   /* (0.4.0) 날짜 접미사를 붙일지 — 한 곳. 같은 상품이 우리 재고에 안 팔린 채 있고(hasStock), 이번 상품에 특이 사항이 있을 때만(서가의 같은 책 중 '다른 그 한 권'을 집어내려는 것).
    *  빼는 경우(특이 사항 없음): ① 최상 + 설명에 밀봉·새상품·미개봉 ② 상·최상 + 설명 없음. 조건은 웹앱 ⚙ 조건(app_settings/main.reg.dateRule)에서 바꿈 */
-  const DATE_RULE_DEFAULT = { on: true, grades: [1, 2, 3], skip: [{ grades: [1], words: ['밀봉', '새상품', '미개봉'] }, { grades: [1, 2], empty: true }] };
+  const DATE_RULE_DEFAULT = { on: true, sameGrade: true, grades: [1, 2, 3], skip: [{ grades: [1], words: ['밀봉', '새상품', '미개봉'] }, { grades: [1, 2], empty: true }] };
   function needDate(o, rule) { const R = { ...DATE_RULE_DEFAULT, ...(rule || {}) }; const g = +o.grade; const d = String(o.desc || '').trim(); const gn = GRADE[g] || g;
-    if (R.on === false) return { on: false, why: '날짜 붙이기 꺼짐' }; if (!o.hasStock) return { on: false, why: '같은 상품이 우리 재고에 없음' }; if (!(R.grades || []).includes(g)) return { on: false, why: `${gn}은 날짜 안 붙임` };
+    if (R.on === false) return { on: false, why: '날짜 붙이기 꺼짐' }; if (!o.hasStock) return { on: false, why: R.sameGrade === false ? '중복될 우려 상품이 우리 재고에 없음' : `중복될 우려 상품(같은 ${gn} 상태)이 우리 재고에 없음` }; if (!(R.grades || []).includes(g)) return { on: false, why: `${gn}은 날짜 안 붙임` };
     const sk = R.skip || []; for (let i = 0; i < sk.length; i++) { const x = sk[i] || {}; if (!(x.grades || []).includes(g)) continue; if (i === 1 || x.empty) { if (!d) return { on: false, why: `${gn} · 설명 없음 — 같은 상품과 다를 것 없음` }; } else { const w = (x.words || []).find((t) => t && d.includes(t)); if (w) return { on: false, why: `${gn} · 설명에 '${w}' — 같은 상품과 다를 것 없음` }; } }
-    return { on: true, why: '같은 상품이 재고에 있고 이 상품만의 특이 사항(상태·설명)이 있음' }; }
+    return { on: true, why: `${R.sameGrade === false ? '같은 상품' : `같은 ${gn} 상태의 같은 상품`}이 재고에 있고, ${d ? '이번 상품에 상태 설명이 있음(특이 사항)' : '설명은 없지만 빼는 조건(⚙ 날짜 붙이기 ①②)에 들지 않음'}` }; }
   // 알라딘 대량등록 판매상태 숫자: 1 판매중 · 2 일시판매중지 · 3 판매중지 (개별 등록 화면의 1·3·15와 다름)
   /* (0.2.0) 상품 번호(ISBN·음반/DVD 바코드) — 한 곳
    *  normCode: 넣은 글자 → 10·13자리(대량 등록 A칸 규칙) · 바코드 뒤 부가기호 5자리(18자리)는 버림 · 12자리 UPC(외국 음반)는 앞에 0을 붙여 13자리 EAN으로
