@@ -16,7 +16,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.13.5';
+  const VERSION = '0.13.6';
   const MIN = 60e3;
 
   const KINDS = {
@@ -134,7 +134,7 @@
   const BENCH_DAY_GAP_H = (n) => n * 24 - 4;
   /* (0.13.5) 숍 끝 쪽까지 못 읽고 끝난 회차 — 수집기 1.54.2부터 complete:false로 적음 · 그 전 판(1.53.x 멈췄다 이어 할 때 몇 쪽만 읽고 끝낸 오류)은 읽은 쪽 수가 끝 쪽의 절반도 안 되는 것
    *  그 전 판 회차는 끝 쪽 번호가 남아 있지 않아 '이번에 안 보인 상품 수(missOnce)가 본 상품 수(total)보다 많음'으로 알아봄 — 숍을 끝까지 읽었다면 생길 수 없는 모양(예: 딱따구리 4,944개 봄 · 55,264개 안 보임)
-   *  이런 회차는 '끝난 회차'로 치지 않음 → 20시간 규칙에 걸리지 않고 곧바로 다시 읽을 차례(밀림 1) · 웹앱 통계에서도 뺌 */
+   *  (0.13.6) 이런 회차도 차례는 평소대로(곧바로 다시 읽게 하지 않음 — 그 전 회차 자료는 그대로 유효하고, 다음 회차가 끝까지 읽으면 '다시 보임'으로 정리됨) · 웹앱 통계에서만 뺌 */
   const benchRunBad = (x) => !!x && (x.complete === false || (x.complete == null && x.missOnce > 0 && x.total >= 0 && x.missOnce > x.total));
   const benchGapMs = (g) => (g.unit === 'h' ? g.n * 1800e3 : BENCH_DAY_GAP_H(g.n) * 3600e3);
   function benchNext(g, last, lastDay, end) { if (!last && !lastDay && !end) return 0; const fin = end || last; const gap = fin ? fin + benchGapMs(g) : 0;
@@ -143,11 +143,11 @@
   /* (0.13.3) 하던 회차(bench_state.prog — 수집기 1.54.0이 10쪽마다 남김)가 시작 20시간 안이면 '하는 중' → 늘 할 차례
    *  behind = 한 주기 이상 밀린 횟수(예: 1일에 한 번인데 어제 차례를 못 끝냄 = 1) */
   function benchPlan(cfg, states, now) { const G = benchGroups(cfg); const out = []; let rank = 0;
-    G.forEach((g, gi) => g.scs.forEach((sc) => { const st = (states && states[sc]) || {}; const bad = benchRunBad(st); const last = st.runAt && !bad ? Date.parse(st.runAt) : null; const end = st.endAt && !bad ? Date.parse(st.endAt) : null; const next = bad ? 0 : benchNext(g, last, st.day || null, end);
+    G.forEach((g, gi) => g.scs.forEach((sc) => { const st = (states && states[sc]) || {}; const bad = benchRunBad(st); const last = st.runAt ? Date.parse(st.runAt) : null; const end = st.endAt ? Date.parse(st.endAt) : null; const next = benchNext(g, last, st.day || null, end);
       const fresh = !!(end || last) && now - (end || last) < benchGapMs(g); /* 끝난 지 얼마 안 됨 — 수동(모두) 실행에서도 건너뜀 */
       const ps = st.prog && st.prog.startedAt ? Date.parse(st.prog.startedAt) : NaN; const inProg = Number.isFinite(ps) && now - ps < 20 * 3600e3 && !(last && last >= ps);
       const per = g.n * (g.unit === 'h' ? 3600e3 : 864e5); const behind = next <= now && next > 0 ? Math.floor((now - next) / per) : next === 0 ? 1 : 0;
-      out.push({ sc, gi, g, rank: rank++, last, end, next, inProg, behind, bad, fresh: fresh && !inProg && !bad, due: inProg || bad || next <= now }); }));
+      out.push({ sc, gi, g, rank: rank++, last, end, next, inProg, behind, bad, fresh: fresh && !inProg, due: inProg || next <= now }); }));
     return out; }
   /* (0.13.3) 할 차례 순서 — ① 하던 회차(멈췄다 다시 시작해도 처음 판매자로 돌아가지 않고 하던 판매자부터 이어서) ② 한 주기 이상 밀린 판매자(지난 차례를 못 끝낸 쪽 먼저)
    *  ③ 그다음은 관리자가 정한 블록·판매자 순서(위 블록 먼저 · 블록 안은 위에서부터). 예) 1일에 한 번 15명을 돌다 자정을 넘기면, 이미 끝낸 맨 위 판매자를 다시 읽기 전에 어제 못 한 판매자부터 */

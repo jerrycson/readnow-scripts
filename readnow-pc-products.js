@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.54.2의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.54.3의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.54.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.54.3' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.54.2'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.54.3'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -1407,7 +1407,7 @@
     if (!RB) { log('집중 벤치마킹: 공용 노선표(readnow-registry.js 0.13.0 이상)가 없어 수집 차례를 못 정함 — 수집기를 새로 고치세요', 1); return; }
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
     const byS = new Map(T.map((t) => [String(t.sc), t])); const done = new Set(); const bad = [];
-    try { for (let loop = 0; loop < 300; loop++) { if (stopFlag) throw new Error('멈춤'); const sts = await benchStates(T); const P0 = RB.plan(cfg, sts, Date.now()); const P = RB.order ? RB.order(P0) : P0; /* (1.54.0) 하던 판매자 → 밀린 판매자 → 블록 순서 */
+    try { for (let loop = 0; loop < 300; loop++) { if (stopFlag) throw new Error('멈춤'); const sts = await benchStates(T); /* (1.54.3) '하는 중' 표시가 있어도 진행 문서가 없거나 버렸으면(끝남·버림) 표시를 지우고 평소 차례로 */ for (const [sc0, s0] of Object.entries(sts)) { if (!s0 || !s0.prog) continue; try { const jd = (await C('prd_jobs').doc('bench_' + sc0).get()).data(); if (!jd || jd.done) { s0.prog = null; await C('bench_state').doc(sc0).set({ prog: null }, { merge: true }); } } catch (e) {} } const P0 = RB.plan(cfg, sts, Date.now()); const P = RB.order ? RB.order(P0) : P0; /* (1.54.0) 하던 판매자 → 밀린 판매자 → 블록 순서 */
         const next = P.find((x) => !done.has(x.sc) && (x.due || (FORCE_ALL && !x.fresh))) || (P.find((x) => x.due && done.has(x.sc) && x.g.unit === 'h' && Date.now() - (sts[x.sc].runAt ? Date.parse(sts[x.sc].runAt) : 0) > 3600e3) || null);
         if (loop === 0) { const due = P.filter((x) => x.due || (FORCE_ALL && !x.fresh)); const fr = P.filter((x) => !x.due && x.fresh); const hm = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' '); if (fr.length) log(`🎯 끝난 지 얼마 안 돼 이번엔 건너뜀(다시 읽지 않음): ${fr.map((x) => `${(byS.get(x.sc) || {}).name || x.sc} ${hm(x.end || x.last)} 끝 → ${hm(x.next)}부터`).join(', ')}`); const pages = due.reduce((a, x) => a + (sts[x.sc].lastPage || sts[x.sc].pages || 0), 0);
           log(`🎯 집중 벤치마킹: 판매자 ${T.length}명 중 지금 할 차례 ${due.length}명${FORCE_ALL ? '(수동 — 모두)' : ''}${pages ? ` · 약 ${pages.toLocaleString()}쪽` : ''} — 순서: ${due.map((x) => `${(byS.get(x.sc) || {}).name || x.sc}(${x.g.name})`).join(' → ') || '없음'}${!due.length ? ` · 다음 차례: ${P.slice().sort((a, b) => a.next - b.next).slice(0, 3).map((x) => `${(byS.get(x.sc) || {}).name || x.sc} ${new Date(x.next + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')}`).join(', ')}` : ''}`); }
@@ -2527,7 +2527,7 @@
     if (!JOBS[k] && !/^bench_/.test(k) && !((await jobRef(k).get()).exists)) return { ok: false, why: '모르는 작업' };
     if (runningKeys().has(k) || (/^bench_/.test(k) && runningKeys().has('bench'))) return { ok: false, why: `'${nm}'은(는) 지금 진행 중입니다 — 먼저 일시정지하고, 멈춘 뒤에 버리세요` };
     const keys = [k]; if (k === 'chain' || k === 'prdChain') { const st = ((await jobRef(k).get()).data() || {}).stage; if (st && STAGE_JOB[st]) keys.push(STAGE_JOB[st]); } // 일괄이면 일괄 순서표와 '지금 단계'의 자리
-    for (const x of keys) { try { const d = (await jobRef(x).get()).data(); if (d && !d.done) await jobRef(x).set({ done: true, discarded: true, discardedAt: Date.now(), discardedBy: PC_NAME }, { merge: true }); LS.set('job_' + x, null); } catch (e) { return { ok: false, why: e.message }; } }
+    for (const x of keys) { try { const d = (await jobRef(x).get()).data(); if (d && !d.done) await jobRef(x).set({ done: true, discarded: true, discardedAt: Date.now(), discardedBy: PC_NAME }, { merge: true }); LS.set('job_' + x, null); if (/^bench_\d+$/.test(x)) { try { await C('bench_state').doc(x.slice(6)).set({ prog: null }, { merge: true }); } catch (e) {} } /* (1.54.3) 벤치마킹 회차를 버리면 '하는 중' 표시도 지움 — 다시 시작해도 그 판매자를 처음부터 다시 읽지 않고 평소 차례대로 */ } catch (e) { return { ok: false, why: e.message }; } }
     log(`'${nm}'의 멈춘 자리만 잊었습니다 (받은 기록은 그대로 · 다음엔 처음부터 훑되 이미 받은 것은 건너뜀)`); await refreshResume(); return { ok: true }; }
   function resumeJob(k) { if (/^bench_/.test(k)) k = 'bench'; if (!JOBS[k]) return; if (running) return alert(`이 탭은 '${running}' 진행 중입니다`); if (runningKeys().has(k)) return alert(`'${JOBS[k][0]}'은(는) 이미 진행 중입니다`); window.__rnResumeOk && window.__rnResumeOk(); runJob(k); }
   $('#rnpCheck').onclick = () => preflight(false).then((ok) => ok && alert('시작 전 점검: 모두 정상입니다. 자세한 내용은 기록 창에 있습니다.'));
