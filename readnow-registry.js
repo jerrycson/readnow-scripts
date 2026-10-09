@@ -16,7 +16,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.13.1';
+  const VERSION = '0.13.2';
   const MIN = 60e3;
 
   const KINDS = {
@@ -80,7 +80,7 @@
   };
 
   // 공용 파일 판 — 이번 출시에서 모두가 써야 하는 판 하나
-  const PINS = { 'readnow-core.js': '1.4.1', 'readnow-sellers-core.js': '1.3.0', 'readnow-products-core.js': '0.14.0', 'readnow-pricing-core.js': '0.15.0', 'readnow-shipping-core.js': '0.5.1', 'readnow-orders-core.js': '0.3.0', 'readnow-aladin-core.js': '0.1.0', 'readnow-exec-core.js': '0.1.0', 'readnow-ml-core.js': '0.1.0', 'readnow-register-core.js': '0.6.0', 'readnow-registry.js': VERSION }; // (0.6.0) 등록 엔진 — 상품 관리 코드 판정·대량 등록 엑셀 (웹앱·PC 수집기) // (0.5.0) 스스로 배우기 — 팔릴 확률 모델 (웹앱·클라우드) // (0.4.0) 실행도구의 한 문 — 알라딘을 바꾸는 모든 일이 시작·결과를 exec_log에 // (0.3.0) 알라딘 창구 — 수집기·가격 감시기가 알라딘 화면을 읽는 길 하나
+  const PINS = { 'readnow-core.js': '1.4.1', 'readnow-sellers-core.js': '1.3.0', 'readnow-products-core.js': '0.14.0', 'readnow-pricing-core.js': '0.15.1', 'readnow-shipping-core.js': '0.5.1', 'readnow-orders-core.js': '0.3.0', 'readnow-aladin-core.js': '0.1.0', 'readnow-exec-core.js': '0.1.0', 'readnow-ml-core.js': '0.1.0', 'readnow-register-core.js': '0.6.0', 'readnow-registry.js': VERSION }; // (0.6.0) 등록 엔진 — 상품 관리 코드 판정·대량 등록 엑셀 (웹앱·PC 수집기) // (0.5.0) 스스로 배우기 — 팔릴 확률 모델 (웹앱·클라우드) // (0.4.0) 실행도구의 한 문 — 알라딘을 바꾸는 모든 일이 시작·결과를 exec_log에 // (0.3.0) 알라딘 창구 — 수집기·가격 감시기가 알라딘 화면을 읽는 길 하나
   // 도구마다 쓰는 공용 파일 (판 비교 대상)
   const USES = {
     webapp: ['readnow-core.js', 'readnow-sellers-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-shipping-core.js', 'readnow-exec-core.js', 'readnow-ml-core.js', 'readnow-register-core.js', 'readnow-registry.js'],

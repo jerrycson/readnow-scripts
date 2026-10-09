@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.15.0';
+  const VERSION = '0.15.1';
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -437,7 +437,8 @@
     const colors = ['dkgreen', 'green', ...(c.colors || [])]; const allow = new Set([...colors, 'aladin']); const gOf = (w) => (w.c === 'aladin' && !(w.g in GRADE_RANK) ? '중' : w.g); // 알라딘측 균일가 = 중 (엔진과 같은 기준)
     const P = (page1 || []).filter((w) => w); let t = null; const mode = c.mode || 'valid';
     if (mode === 'valid') R.push(...((d && d.reasons) || []).filter((x) => !/희소|보호/.test(x))); // 최상단 배치·같은 등급 동가는 엔진 이유를 섞지 않음
-    if (mode === 'top') { const top = P.find((w) => w.c !== 'ours' && allow.has(w.c)); if (top) { t = top.p; R.unshift(`최상단 배치: 허용한 판매자 중 맨 위 ${top.n || '알라딘측'} ${top.g} ${(top.p || 0).toLocaleString()}원과 판매가 동가`); if (GRADE_RANK[gOf(top)] != null && GRADE_RANK[l.grade] != null && GRADE_RANK[gOf(top)] < GRADE_RANK[l.grade]) R.push(`⚠ 맨 위 매물은 우리(${l.grade})보다 낮은 등급(${gOf(top)}) — 우리 더 좋은 상태를 그 값에 맞춤`); } else R.unshift('최상단 배치: 허용한 판매자 매물이 첫 페이지에 없음'); }
+    /* (0.15.1) '무조건 최상단 배치' = 말 그대로 첫 페이지 맨 위(우리 것 빼고 · 판매자 색·등급·배송비 가리지 않음)와 동가 — 예전엔 '기준 판매자'로 고른 색만 봐서, 노랑·주황·빨강 매물이 맨 위면 그 아래 매물을 기준으로 삼아 '이미 부합'·'추천 못 함'이 나왔음. 하한선(매입가·최소 판매가·최대 인하)·처리 기준(내림만 등)은 이 뒤에 그대로 */
+    if (mode === 'top') { const top = P.find((w) => w.c !== 'ours' && w.p > 0); if (top) { t = top.p; R.unshift(`최상단 배치: 첫 페이지 맨 위 ${top.n || (top.c === 'aladin' ? '알라딘측' : '매물')} ${gOf(top) || ''} ${(top.p || 0).toLocaleString()}원과 판매가 동가 (판매자·등급·배송비 가리지 않음)`); if (GRADE_RANK[gOf(top)] != null && GRADE_RANK[l.grade] != null && GRADE_RANK[gOf(top)] < GRADE_RANK[l.grade]) R.push(`⚠ 맨 위 매물은 우리(${l.grade})보다 낮은 등급(${gOf(top)}) — 우리 더 좋은 상태를 그 값에 맞춤`); } else R.unshift('최상단 배치: 첫 페이지에 다른 매물이 없음'); }
     else if (mode === 'same') { const m = sameGradeMatch(l.grade, P.filter((w) => w.c !== 'ours').map((w) => ({ g: gOf(w), p: w.p, ok: allow.has(w.c) })), { coef, useBetter: !!c.better }); t = m.t; R.unshift(...m.reasons); }
     /* (0.15.0) 알라딘 관찰 도구 칸 → 수동 일괄 처리 그룹이 쓰는 기준 (칸이 요구하는 자리를 그대로 목표로)
      *  topAny  맨 위 매물(판매자·배송비 가리지 않음, 우리 것 빼고)과 판매가 동가 — '근소한 차이로 1위를 놓침'·'최상단'
