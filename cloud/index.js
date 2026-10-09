@@ -30,12 +30,13 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.9.3';
+const VER = '0.9.5';
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
 const RAW = process.env.CORE_BASE || 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/';
-const CORES = ['readnow-shipping-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-sellers-core.js', 'readnow-core.js']; // 출고·상품 파서 + 판매자 분류(웹앱 블록 색과 같은 기준)
+const CORES_OPTIONAL = new Set(['readnow-register-core.js']); // 없어도 주문 읽기 등은 그대로 (등록 엔진 번호 맞춤만 글자 비교로)
+const CORES = ['readnow-shipping-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-sellers-core.js', 'readnow-core.js', 'readnow-register-core.js']; // (0.9.3) 등록 엔진 공용 파일: 상품 번호(ISBN·바코드) 맞춤 한 곳 // 출고·상품 파서 + 판매자 분류(웹앱 블록 색과 같은 기준)
 const ALADIN_ID = process.env.ALADIN_ID || '', ALADIN_PW = process.env.ALADIN_PW || '', TICK_KEY = process.env.TICK_KEY || '';
 const ALLOW = (process.env.ALLOW_EMAILS || 'jerrycson@gmail.com').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 const ORIGINS = (process.env.ALLOW_ORIGINS || 'https://jerrycson.github.io').split(',').map((s) => s.trim());
@@ -51,7 +52,7 @@ const log = (...a) => console.log(new Date().toISOString(), ...a);
 let coreSrc = null, coreAt = 0, coreVer = {};
 async function cores() {
   if (coreSrc && Date.now() - coreAt < 30 * 60e3) return coreSrc;
-  const out = await Promise.all(CORES.map(async (f) => { const r = await fetch(RAW + f + '?t=' + Date.now()); if (!r.ok) throw new Error(`${f} 받기 실패 (${r.status})`); const t = await r.text(); coreVer[f] = (t.match(/VERSION\s*[:=]\s*['"]([\d.]+)/) || [])[1] || '?'; return t; })); // 다섯 파일을 한꺼번에 받음 (차례로 받던 것보다 빠름)
+  const out = await Promise.all(CORES.map(async (f) => { const r = await fetch(RAW + f + '?t=' + Date.now()); if (!r.ok) { if (CORES_OPTIONAL.has(f)) { log(`${f} 받기 실패 (${r.status}) — 이 파일 없이 계속`); return ''; } throw new Error(`${f} 받기 실패 (${r.status})`); } const t = await r.text(); coreVer[f] = (t.match(/VERSION\s*[:=]\s*['"]([\d.]+)/) || [])[1] || '?'; return t; })); // 다섯 파일을 한꺼번에 받음 (차례로 받던 것보다 빠름)
   coreSrc = out.join('\n;\n'); coreAt = Date.now(); return coreSrc;
 }
 
@@ -466,20 +467,31 @@ async function tick(why) {
 /* ── 사진 가격: 알라딘 조회 (로그인 필요 없음) ── */
 async function lookup(req) {
   const p = await getPage(); const items = {}, cands = {}, errs = {};
-  const book = (u) => p.evaluate(async (u) => { const P = window.ReadnowProducts; const get = async (x) => { const r = await fetch(x, { credentials: 'include' }); return { url: r.url, doc: new DOMParser().parseFromString(await r.text(), 'text/html') }; };
+  const book = (u, code) => p.evaluate(async (u, code) => { const P = window.ReadnowProducts; const RG = window.ReadnowRegister; const get = async (x) => { const r = await fetch(x, { credentials: 'include' }); return { url: r.url, doc: new DOMParser().parseFromString(await r.text(), 'text/html') }; };
     const g = await get(u); const b = P.parseProductPage(g.doc, g.url); if (!b.aladinItemId) return { err: '알라딘에서 이 책을 못 찾음' };
+    const bm = g.doc.querySelector('meta[property="og:barcode"], meta[name="og:barcode"]'); const barcode = RG ? RG.pageBarcode(g.doc) : bm ? String(bm.getAttribute('content') || '').replace(/\D/g, '') || null : null; const codeOk = !code || (RG ? RG.matchCode({ isbn13: b.isbn13, barcode }, code) : [b.isbn13, barcode].includes(String(code))); /* 공용 파일을 못 받았을 때는 글자가 똑같을 때만 */ if (!codeOk) return { wrong: true, itemId: b.aladinItemId, title: b.title || null, isbn13: b.isbn13 || null, barcode }; /* (0.9.3) 찾던 번호와 다른 상품이면 쓰지 않음 */
     const us = P.parseUsedPage((await get(`/shop/UsedShop/wuseditemall.aspx?ItemId=${b.aladinItemId}&TabType=0`)).doc);
-    return { itemId: b.aladinItemId, isbn13: b.isbn13 || null, title: b.title || null, subtitle: b.subtitle || null, author: (b.contributors || []).slice(0, 2).map((c) => c.name).join(', ') || null, publisher: b.publisher || null, pubDate: b.pubDate || null,
+    return { itemId: b.aladinItemId, isbn13: b.isbn13 || null, barcode, title: b.title || null, subtitle: b.subtitle || null, author: (b.contributors || []).slice(0, 2).map((c) => c.name).join(', ') || null, publisher: b.publisher || null, pubDate: b.pubDate || null,
       cover: (b.images && b.images.front) || null, priceList: b.priceList ?? null, priceSales: b.priceSales ?? null, availability: b.availability || null, usedTotal: us.usedTotal ?? null, buyback: us.buyback || null, mins: us.mins || null, page1: us.listings || [], lastPage: us.lastPage || 1,
-      /* (0.9.2) 등록 엔진: 상품 관리 코드 판정·카드에 쓰는 정보 */ categories: (b.categories || []).map((c) => ({ path: c.path || [], cids: c.cids || [] })), salesPoint: b.salesPoint ?? null, ranks: b.ranks || [], reviewCount: b.reviewCount ?? null, commentCount: b.commentCount ?? null, rating: b.rating ?? null, size: b.size || null, pages: b.pages || null, originalTitle: b.originalTitle || null, series: b.series || null }; }, u);
+      /* (0.9.2) 등록 엔진: 상품 관리 코드 판정·카드에 쓰는 정보 */ categories: (b.categories || []).map((c) => ({ path: c.path || [], cids: c.cids || [] })), salesPoint: b.salesPoint ?? null, ranks: b.ranks || [], reviewCount: b.reviewCount ?? null, commentCount: b.commentCount ?? null, rating: b.rating ?? null, size: b.size || null, pages: b.pages || null, originalTitle: b.originalTitle || null, series: b.series || null }; }, u, code || null);
   const keep = async (key, r) => { r.at = nowIso(); items[key] = r; await C('prd_lookups').add({ key, ...r, by: 'cloud', ...W() }).catch(() => {}); };
-  for (const isbn of (req.isbns || []).slice(0, 40)) { try { const r = await book(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(isbn)}`); if (r.err) errs[isbn] = r.err; else await keep(isbn, r); } catch (e) { errs[isbn] = e.message; } await sleep(400); }
-  for (const id of (req.itemIds || []).slice(0, 40)) { try { const r = await book(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`); if (r.err) errs['id_' + id] = r.err; else await keep('id_' + id, r); } catch (e) { errs['id_' + id] = e.message; } await sleep(400); }
   const TGT = { 1: 'Book', 2: 'Music', 3: 'DVD', 7: 'Foreign' }[+req.branch || 1] || 'Book'; // (0.9.2) 등록 엔진: 상품 구분(국내도서·음반·DVD·외국도서)에 맞춰 찾음
-  for (const q of (req.queries || []).slice(0, 40)) { try { cands[q] = await p.evaluate(async (q, tgt) => { const P = window.ReadnowProducts; const r = await fetch('/search/wsearchresult.aspx?SearchTarget=' + tgt + '&SearchWord=' + encodeURIComponent(q), { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html');
-      return P.parseSearchResults(d).filter((x) => !x.used).slice(0, 8).map((x) => ({ itemId: x.itemId, title: x.title, img: x.img || null, cov: Math.round(P.nameCoverage(q, x.title) * 1000) / 1000, channels: x.channels || null })); }, q, TGT); } catch (e) { errs['q_' + q] = e.message; } await sleep(400); }
+  const search = (q, tgt) => p.evaluate(async (q, tgt) => { const P = window.ReadnowProducts; const r = await fetch('/search/wsearchresult.aspx?SearchTarget=' + tgt + '&SearchWord=' + encodeURIComponent(q), { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html');
+      return P.parseSearchResults(d).filter((x) => !x.used).slice(0, 8).map((x) => ({ itemId: x.itemId, title: x.title, img: x.img || null, cov: Math.round(P.nameCoverage(q, x.title) * 1000) / 1000, channels: x.channels || null })); }, q, tgt);
+  /* (0.9.3) 번호(ISBN·바코드)로 찾기: ① 상품 페이지(ISBN=)가 그 번호의 상품일 때만 ② 아니면(음반·DVD 바코드는 엉뚱한 책으로 갈 때가 있음) 그 번호로 검색해 앞 3개 중 번호가 맞는 상품 */
+  for (const isbn of (req.isbns || []).slice(0, 40)) { try { let r = await book(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(isbn)}`, isbn); let wrong = r.wrong ? r : null;
+      if (r.err || r.wrong) { r = null; for (const tgt of [...new Set([TGT, 'All'])]) { const C0 = await search(isbn, tgt).catch(() => []); for (const c of C0.slice(0, 3)) { await sleep(300); const r2 = await book(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(c.itemId)}`, isbn); if (r2 && !r2.err && !r2.wrong) { r = r2; break; } } if (r) break; } }
+      if (r) await keep(isbn, r); else errs[isbn] = wrong ? `알라딘이 다른 상품(${wrong.title || wrong.itemId})으로 연결함 — 이 번호의 상품을 찾지 못함 (상품명으로 찾아 고르세요)` : '알라딘에서 이 번호(ISBN·바코드)의 상품을 못 찾음'; } catch (e) { errs[isbn] = e.message; } await sleep(400); }
+  for (const id of (req.itemIds || []).slice(0, 40)) { try { const r = await book(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`); if (r.err) errs['id_' + id] = r.err; else await keep('id_' + id, r); } catch (e) { errs['id_' + id] = e.message; } await sleep(400); }
+  for (const q of (req.queries || []).slice(0, 40)) { try { cands[q] = await search(q, TGT); } catch (e) { errs['q_' + q] = e.message; } await sleep(400); }
   return { items, cands, errs, by: 'cloud' };
 }
+
+/* ── (0.9.5) 📥 등록 도우미: 알라딘 등록 화면의 분류·저자·출판사 팝업이 하는 검색을 대신 (읽기만) — 결과는 reg_aux에 보관(웹앱이 먼저 봄) ── */
+async function regAux(b) { const op = String(b.op || ''); if (!['cat', 'author', 'brand'].includes(op)) throw Object.assign(new Error('모르는 일: ' + op), { code: 400 }); const a = b.a || {};
+  const p = await getPage(); const r = await p.evaluate(async (op, a) => { const RG = window.ReadnowRegister; if (!RG || !RG.auxRun) return { err: '등록 엔진 공용 파일(0.3.0)을 못 읽음' }; try { return { v: await RG.auxRun(op, a) }; } catch (e) { return { err: e.message }; } }, op, a);
+  if (r.err) { if (/로그인/.test(r.err)) { try { await login(p); } catch (e) {} } return { ok: false, err: r.err }; }
+  const key = (await p.evaluate((op, a) => window.ReadnowRegister.auxKey(op, a), op, a)); await C('reg_aux').doc(key).set({ op, a, v: r.v, at: nowIso(), by: 'cloud', ...W() }).catch(() => {}); return { ok: true, v: r.v, key }; }
 
 /* ── 사진 가격: 책등 글자 (Google Vision) → 책등마다 묶음 ── */
 let visionClient = null;
@@ -721,6 +733,7 @@ const server = http.createServer(async (req, res) => {
       return send(200, out); } finally { tickBusy = false; } }
     if (path === '/daily') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (dailyBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); const out = await dailyJobs(); return send(200, out); }
     if (path === '/kick') { await authUser(req); KICK(); if (tickBusy) return send(200, { ok: true, queued: '도는 회차가 바로 처리 (빠른 고리)' }); tickBusy = true; try { const out = await serial(() => tick('kick')); return send(200, out); } finally { tickBusy = false; } } // (0.9.0) 회차가 돌고 있으면 기다리지 않고 그 회차의 빠른 고리가 바로 처리
+    if (path === '/regaux') { await authUser(req); const b = await bodyOf(req); const out = await serial(() => regAux(b)); return send(200, out); } // (0.9.5) 📥 개별·미등록 등록: 분류·저자·출판사 찾기 (알라딘 팝업 대신)
     if (path === '/lookup') { await authUser(req); const b = await bodyOf(req); const out = await serial(() => lookup(b)); return send(200, out); }
     if (path === '/inventory') { await authUser(req); return send(200, await inventory()); }
     if (path === '/storage-files') { await authUser(req); const b = await bodyOf(req); const pre = String(b.prefix || ''); if (!/^[A-Za-z0-9_\-\/]*$/.test(pre)) return send(400, { ok: false, err: '폴더 이름이 이상함' }); return send(200, { ok: true, files: await storageFiles(pre) }); }
