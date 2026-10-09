@@ -1,7 +1,7 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.48.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.49.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.48.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.49.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -78,7 +78,7 @@
 /* ══════════ (1.45.0) 📥 개별·미등록 등록 — 알라딘 '상품 등록' 화면(wrecord.aspx)을 웹앱에서 정한 대로 채움 ══════════
  * 웹앱 📥 등록 카드에서 '알라딘 등록 화면 채워서 열기'를 누르면 이 화면이 #rnreg=상품줄번호 로 열림 → 이 스크립트가 Firebase(reg_items)의 계획(plan)대로 채움:
  *   미등록: 상품 구분 · 'ISBN 없는 상품' 체크(확인 창 자동) · 분류(최대 3) · 상품명·원제·부제 · 지은이·옮긴이·출판사(알라딘 번호로 — 팝업 없이) 또는 직접 입력 · 19세 · 쪽수 · 규격 · 출간일 · 정가
- *   공통(개별·미등록): 상품 관리 코드 · 품질(최상·상·중 — 품질 팝업이 하는 것과 같은 요청으로 팝업 없이) · 상태 부연 설명 · 판매가 · 판매상태 · 수량 · 상품 설명(편집기)
+ *   공통(개별·미등록): 상품 관리 코드 · 품질(최상·상·중 — 품질 팝업이 하는 것과 같은 요청으로 팝업 없이) · 판매가 · 판매상태 · 수량 · 상품 설명(편집기)
  *   팝업이 하는 일은 저장해 둔 실제 팝업 화면(품질·저자·출판사·분류)의 스크립트를 그대로 따라 함 — 짐작으로 칸을 만들지 않음
  * 채운 뒤 오른쪽 위 판에서 칸마다 ✓ · 사진(대표·보조·설명 사진)은 아직 직접 첨부(사진 폴더에서 맞는 파일 이름을 판에 보여 줌)
  * '등록완료'(판의 단추): 실행 문(exec_log)에 시작을 적을 수 있을 때만 → 등록 전 상품 조회 최근 번호(기준) → 맡긴 일 regOne(보냄 표시) → 알라딘 화면의 등록 함수 그대로
@@ -109,7 +109,7 @@
     async function quality(plan) { /* 품질 팝업(wc2c_itemsales.aspx)의 frmsubmit과 같은 일 — 같은 추천가 요청 → 같은 칸 */
       const ps = $('priceStd') && $('priceStd').value; if (!(+ps > 0)) throw new Error('정가가 없어 품질을 정할 수 없음');
       const r = await fetch(`/shop/usedshop/c2c_sales_ajax.aspx?method=recomPriceSales&priceStd=${encodeURIComponent(ps)}&itemQuailty=${+plan.grade}`, { credentials: 'include' }); const j = JSON.parse(await r.text());
-      setV('QualityType', String(+plan.grade)); setV('CommentDirty', String(plan.comment || '').slice(0, 50)); const pS = $('priceSales'); if (pS) { pS.readOnly = false; pS.value = j.PriceSales; } setV('QualityTypeKOR', j.QualityTypeDesc || ''); const g = $('Guaranted'); if (g) g.checked = true;
+      setV('QualityType', String(+plan.grade)); /* (1.49.0) 품질 창의 '상태 부연 설명'은 입력 칸이 없어 건드리지 않음 · 창 아래 확인 질문(ISBN이 맞습니까 · 정가가 맞습니까)은 '예'와 같음 = 정가 그대로(priceStd)·추천가 요청 */ const pS = $('priceSales'); if (pS) { pS.readOnly = false; pS.value = j.PriceSales; } setV('QualityTypeKOR', j.QualityTypeDesc || ''); const g = $('Guaranted'); if (g) g.checked = true;
       try { W0.PercentPriceSales(); W0.calcSummaryC2C(); } catch (e) {} return j; }
     /* 대학교장터(등록 화면의 '대학교장터 상품으로 등록하기' 칸들 — 저장해 둔 실제 화면 그대로): 체크 → SetIsUniv() · 카테고리는 팝업이 부르는 UnivCategory_Selected(번호, 경로) · 학부·학과(필수)·사용년도·과목명·사용학년·사용학기·교수명 */
     function univ(plan, ok) { const u = plan.univ; if (!u || !u.on) return; const ck = $('chkIsUniv'); if (ck && !ck.checked) { ck.checked = true; fire(ck); try { W0.SetIsUniv(); } catch (e) {} } ok('대학교장터', !!(ck && ck.checked));
@@ -138,7 +138,7 @@
           ok('정가', setV('priceStd', +plan.priceStd));
         } else { univ(plan, ok); if (plan.priceStd && !(+($('priceStd') || {}).value > 0)) ok('정가', setV('priceStd', +plan.priceStd)); }
         ok('관리 코드', setV('supItemCode', plan.code), plan.code);
-        try { const j = await quality(plan); ok('품질', true, j.QualityTypeDesc || ''); } catch (e) { ok('품질', false, e.message); }
+        try { const j = await quality(plan); ok('품질', true, `${j.QualityTypeDesc || ''} · ISBN·정가 확인 '예'`); } catch (e) { ok('품질', false, e.message); }
         ok('판매가', setV('priceSales', +plan.price), (+plan.price).toLocaleString() + '원'); try { W0.calcSummaryC2C(); } catch (e) {}
         const st = $('stockState'); ok('판매상태', selectVal(st, { 1: 1, 2: 3, 3: 15 }[+plan.saleState || 1])); try { W0.stockStatusChg(); } catch (e) {}
         ok('수량', setV('stockCount', Math.max(1, +plan.qty || 1)));
@@ -193,7 +193,7 @@
     const p0 = loaded(60000); fr.src = url; document.body.appendChild(fr); const clean = () => setTimeout(() => { try { fr.remove(); } catch (e) {} }, 3000);
     try { if (!(await p0)) return await notSent('알라딘 등록 화면이 1분 안에 열리지 않음'); await sleep(1500);
       const uf = UW.document.getElementById(fr.id); const W = uf && uf.contentWindow; const d = fr.contentDocument; if (!W || !d || !/wrecord\.aspx/i.test(String(W.location.pathname))) return await notSent('등록 화면이 아님(로그인이 풀렸을 수 있음)');
-      const F = makeFiller(d, W, { auto: true }); let rep; try { rep = await F.fill(plan); if (F.photoTodo(plan).length) rep.push({ k: '사진', ok: false, note: '사진 자동 넣기는 아직 — 사진이 있는 상품은 \'채워서 열기\'로' }); } catch (e) { return await notSent('채우지 못함: ' + e.message); }
+      const F = makeFiller(d, W, { auto: true }); let rep; try { rep = await F.fill(plan); /* (1.49.0) 사진 칸(대표·추가)의 사진도 넣음 — 넣은 뒤 칸에 사진 주소가 들어왔는지 확인(attachOne) · 하나라도 안 되면 아래에서 보내지 않음 · 설명 안 사진(편집기)은 자동으로 못 넣음 */ const todo = F.photoTodo(plan); if (todo.some((t) => !t.field)) rep.push({ k: '설명 안 사진', ok: false, note: '편집기 사진은 자동으로 못 넣음 — \'채워서 열기\'로' }); else if (todo.length) { await ref.set({ beatAt: nowIso(), step: 2, waitMsg: `사진 ${todo.length}장 넣는 중` }, { merge: true }).catch(() => {}); rep.push(...(await F.attachImages(plan))); } } catch (e) { return await notSent('채우지 못함: ' + e.message); }
       const bad = rep.filter((x) => !x.ok); const fillTxt = rep.map((x) => `${x.ok ? '✓' : '✗'} ${x.k}${x.note && !x.ok ? ' (' + x.note + ')' : ''}`).join(' · ').slice(0, 900);
       if (bad.length) return await notSent('못 채운 칸 ' + bad.map((x) => x.k + (x.note ? ` (${x.note})` : '')).join(', ') + ' — 카드에서 고치거나 \'채워서 열기\'로 직접', { fill: fillTxt });
       let P; try { P = await F.prep(itemId, it, plan, rep, id); } catch (e) { return await notSent(e.message, { fill: fillTxt }); }
