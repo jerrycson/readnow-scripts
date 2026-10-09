@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.51.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.52.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.51.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.52.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.51.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.52.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -1366,7 +1366,10 @@
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
     { const sts = await Promise.all(T.map((t) => C('bench_state').doc(String(t.sc)).get().then((d) => d.data() || {}).catch(() => ({})))); const day = kDayB(); const todo = T.filter((t, i) => sts[i].day !== day || FORCE_ALL); const pages = todo.reduce((a, t) => a + (sts[T.indexOf(t)].lastPage || sts[T.indexOf(t)].pages || 0), 0); const per = sts.map((x) => x.secPerPage).filter(Boolean); const spp = per.length ? per.reduce((a, b) => a + b, 0) / per.length : null;
       log(`🎯 집중 벤치마킹: 판매자 ${T.length}명 중 오늘 읽을 ${todo.length}명${pages ? ` · 지난번 기준 약 ${pages.toLocaleString()}쪽` : ''}${spp && pages ? ` · 예상 약 ${Math.round(pages * spp / 60)}분` : ''} — 순서: ${todo.map((t) => t.name || t.sc).join(' → ') || '없음(모두 오늘 끝남)'}`); }
-    try { for (let i = 0; i < T.length; i++) { if (stopFlag) throw new Error('멈춤'); log(`🎯 [${i + 1}/${T.length}] ${T[i].name || T[i].sc}`); await benchOne(T[i]); } } finally { await releaseLane('aladin'); } }
+    const bad = []; try { for (let i = 0; i < T.length; i++) { if (stopFlag) throw new Error('멈춤'); log(`🎯 [${i + 1}/${T.length}] ${T[i].name || T[i].sc}`);
+      /* (1.52.0) 한 판매자에서 오류가 나도 다음 판매자로 넘어감 — 예전엔 첫 판매자 저장 오류 하나로 나머지 14명이 모두 멈춤. 실패한 판매자는 읽은 조각이 남아 있어 다음 실행 때 읽기 없이 저장만 다시 함 */
+      try { await benchOne(T[i]); } catch (e) { if (e && e.message === '멈춤') throw e; bad.push(T[i].name || T[i].sc); log(`🎯 '${T[i].name || T[i].sc}' 처리 중 오류: ${e && e.message} — 다음 판매자로 넘어감 (다음 실행 때 이 판매자는 읽은 것을 그대로 두고 저장만 다시 함)`, 1); } }
+      if (bad.length) log(`🎯 집중 벤치마킹: 오류 난 판매자 ${bad.length}명 — ${bad.join(', ')}`, 1); } finally { await releaseLane('aladin'); } }
   async function benchOne(t) { const sc = String(t.sc); const name = t.name || sc; const day = kDayB(); const stRef = C('bench_state').doc(sc); const st = (await stRef.get()).data() || {};
     if (st.day === day && !FORCE_ALL) { log(`집중 벤치마킹 '${name}': 오늘 이미 끝까지 읽음 — 건너뜀`); return; }
     const JN = 'bench_' + sc; let prog = await loadProgress(JN); if (!prog || prog.day !== day || (!Array.isArray(prog.items) && !(prog.blocks > 0))) prog = { day, page: 1, items: [], blocks: 0, startedAt: nowIso(), sc, name };
@@ -1384,7 +1387,8 @@
       log(`🎯 '${name}' ${prog.page}${exp ? ` / ${exp}` : ''}쪽${pct != null ? ` (${pct}%)` : ''} · ${prog.items.length.toLocaleString()}개${e ? ` · 쪽당 ${(e.per / 1000).toFixed(1)}초${e.measured ? '' : '(지난번)'}` : ''}${e && e.ms != null ? ` · 남은 약 ${Math.max(1, Math.round(e.ms / 60000))}분 → ${hm(e.ms)} 끝 예상` : ''}${ms ? ` · ◆ ${ms}% 지남` : ''}`); };
     log(`🎯 집중 벤치마킹 '${name}' (SC ${sc}) ${prog.page > 1 ? `${prog.page}쪽부터 이어서` : '시작'} — ${expOf() ? `${lastP ? '끝' : '지난번'} ${expOf().toLocaleString()}쪽(한 쪽 48개)` : '처음 읽음 — 1쪽을 읽으면 끝 쪽을 앎'}${expOf() && st.secPerPage ? ` · 예상 약 ${Math.round(Math.max(0, expOf() - prog.page) * st.secPerPage / 60)}분 → ${hm(Math.max(0, expOf() - prog.page) * st.secPerPage * 1000)} 끝 예상` : ''}`);
     let dupRun = 0;
-    for (;; prog.page++) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); }
+    if (prog.readDone) log(`🎯 '${name}': 오늘 숍 읽기는 이미 끝남(${prog.items.length.toLocaleString()}개) — 저장만 다시 함`);
+    if (!prog.readDone) for (;; prog.page++) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); }
       if (lastP && prog.page > lastP + 3) break; /* 읽는 동안 새로 올라온 만큼 뒤로 밀릴 수 있어 끝 쪽 + 3쪽까지 */
       let r; try { r = await getDoc(benchUrl(sc, prog.page)); } catch (e) { if (e.message === '멈춤') { await saveBk(); throw e; } log(`벤치마킹 '${name}' ${prog.page}쪽 읽기 실패: ${e.message} — 다음에 이 쪽부터`, 1); await saveBk(); return; }
       const L = benchParse(r.doc);
@@ -1397,6 +1401,7 @@
       dupRun = fresh ? 0 : dupRun + 1; if (!lastP && dupRun >= 2) break; /* 끝 쪽을 모를 때만: 두 쪽 연속 새 상품이 없으면 끝 (끝 쪽을 알면 앞쪽 상품이 밀려 겹친 쪽이어도 끝까지 감) */
       if (prog.page % 10 === 0) await saveBk(); }
     if (pend.length) { await bkRef(prog.blocks || 0).set({ s: JSON.stringify(pend), n: pend.length, at: Date.now() }); prog.blocks = (prog.blocks || 0) + 1; pend = []; }
+    if (!prog.readDone) { prog.readDone = true; await saveProgress(JN, meta()); } /* (1.52.0) 읽기 끝을 먼저 적어 둠 — 저장 단계에서 멈춰도 다시 읽지 않음 */
     const secPerPage = prog.page > p0 ? Math.round((Date.now() - t0) / (prog.page - p0) / 100) / 10 : st.secPerPage || null; await benchFinish(t, prog, { ...st, secPerPage, lastPage: lastP || null });
     for (let k = 0; k < (prog.blocks || 0); k++) await bkRef(k).delete().catch(() => {}); /* 읽는 동안 임시로 둔 조각 — 결과는 bench_state·bench_days·bench_items에 저장됨 */
     await finishJob(JN, { n: prog.items.length, pages: prog.page });
@@ -1411,21 +1416,23 @@
     for (const [id, p, g, ti, isbn, ym, pl, low, pg] of prog.items) { const o = old.get(id); const L1 = low ? 1 : 0; if (o) { if (o[6]) back.push(id); now.set(id, [p, o[1], g, o[3] || 0, String(ti || o[4] || '').slice(0, 40), L1]); if (p && o[0] && p !== o[0]) moved.push({ id, from: o[0], to: p }); if (L1 && !o[5]) lowOn.push({ id, p, g, pg, t: ti }); if (!L1 && o[5]) lowOff.push({ id, p, g, pg, t: ti }); } else { now.set(id, [p, dayN, g, base ? 1 : 0, String(ti || '').slice(0, 40), L1]); if (!base) add.push({ id, t: ti, p, g, isbn, ym, pl, low: L1 }); if (L1) lowOn.push({ id, p, g, pg, t: ti, first: true }); } }
     const miss = []; for (const [id, o] of old) { if (now.has(id)) continue; if (o[6]) gone.push({ id, p: o[0], g: o[2], first: o[1], life: dd(o[1]) - dd(o[6]), base: !!o[3], t: o[4] || null, low: !!o[5], missDay: o[6] }); else { miss.push(id); now.set(id, [o[0], o[1], o[2], o[3] || 0, o[4] || '', o[5] || 0, dayN]); } }
     const seenN = now.size - miss.length; const ymd = (a) => `${String(a).slice(0, 4)}-${String(a).slice(4, 6)}-${String(a).slice(6, 8)}`;
-    const AU = firebase.firestore.FieldValue.arrayUnion; let B = db.batch(), n = 0; const flush = async () => { if (n) { await B.commit(); B = db.batch(); n = 0; } };
+    const AU = firebase.firestore.FieldValue.arrayUnion; let B = db.batch(), n = 0, wN = 0, wT = Date.now(), wL = Date.now(); const flush = async () => { if (n) { await B.commit(); wN += n; B = db.batch(); n = 0; if (Date.now() - wL > 30000) { wL = Date.now(); log(`🎯 '${t.name || sc}' 저장 중 — 상품 기록 ${wN.toLocaleString()}건 (${Math.round((Date.now() - wT) / 1000)}초)`); ui(`집중 벤치마킹 · ${t.name || sc} · 저장 중`, wN, wN, `상품 기록 ${wN.toLocaleString()}건 저장함`); } } };
     const byId = new Map(prog.items.map((x) => [x[0], x]));
     for (const id of base ? [...now.keys()] : add.map((x) => x.id)) { const x = byId.get(id); B.set(C('bench_items').doc(`${sc}_${id}`), { sc, id, title: x[3] || '', price: x[1] ?? null, grade: x[2] || null, isbn: x[4] || null, coverKey: x[11] || null, pubYm: x[5] || null, priceList: x[6] ?? null, usedCode: x[9] || null, byline: x[10] || null, firstDay: day, firstPage: x[8] || null, base, ...W() }, { merge: true }); if (++n >= 400) await flush(); }
     for (const x of gone) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, goneDay: ymd(x.missDay), goneConfirmDay: day, lifeDays: x.base ? null : x.life, ...W() }, { merge: true }); if (++n >= 400) await flush(); }
-    const nowI = nowIso(); for (const x of lowOn) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, lowNow: true, lowEvents: AU({ d: day, at: nowI, on: true, p: x.p ?? null, g: x.g || null, page: x.pg || null }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    const nowI = prog.startedAt || nowIso(); /* (1.52.0) 같은 날 저장을 다시 해도 같은 기록이 두 번 쌓이지 않게 '읽기 시작 시각'으로 고정 */ for (const x of lowOn) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, lowNow: true, lowEvents: AU({ d: day, at: nowI, on: true, p: x.p ?? null, g: x.g || null, page: x.pg || null }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
     for (const x of lowOff) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, lowNow: false, lowEvents: AU({ d: day, at: nowI, on: false, p: x.p ?? null, g: x.g || null, page: x.pg || null }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
     for (const x of gone.filter((y) => y.low)) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { lowEvents: AU({ d: day, at: nowI, gone: true, p: x.p ?? null }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
     for (const x of moved) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, prices: AU({ d: day, p: x.to, from: x.from }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
-    await flush();
+    await flush(); if (wN) log(`🎯 '${t.name || sc}' 상품 기록 ${wN.toLocaleString()}건 저장 끝 (${Math.round((Date.now() - wT) / 1000)}초)`);
     const band = (p) => (!p ? '?' : p < 3000 ? '~3천' : p < 6000 ? '3~6천' : p < 10000 ? '6천~1만' : p < 20000 ? '1~2만' : p < 40000 ? '2~4만' : '4만~'); const cntBy = (L, f) => L.reduce((m, x) => { const k = f(x); m[k] = (m[k] || 0) + 1; return m; }, {});
+    /* (1.52.0) Firebase는 '목록 안의 목록'을 저장하지 못함(Nested arrays are not supported) → 한 줄을 글자(JSON)로 바꿔 담음 · 웹앱은 글자·목록 둘 다 읽음 */
+    const JR = (a) => JSON.stringify(a.map((v) => (v === undefined ? null : v)));
     const all = [...now.values()].filter((v) => !v[6]); const sumD = { sc, name: t.name || sc, day, base, total: seenN, missOnce: miss.length, missBack: back.length, add: add.length, gone: gone.length, goneNew: gone.filter((x) => !x.base).length, moved: moved.length, pages: prog.page,
       totalBand: cntBy(all, (v) => band(v[0])), totalGrade: cntBy(all, (v) => v[2] || '?'), addBand: cntBy(add, (x) => band(x.p)), addGrade: cntBy(add, (x) => x.g || '?'), addYear: cntBy(add, (x) => (x.ym ? x.ym.slice(0, 4) : '?')),
       goneBand: cntBy(gone, (x) => band(x.p)), goneGrade: cntBy(gone, (x) => x.g || '?'), goneLife: cntBy(gone.filter((x) => !x.base), (x) => (x.life <= 3 ? '0~3일' : x.life <= 7 ? '4~7일' : x.life <= 14 ? '8~14일' : x.life <= 30 ? '15~30일' : x.life <= 60 ? '31~60일' : '61일~')),
-lowNow: all.filter((v) => v[5]).length, lowOn: lowOn.length, lowOff: lowOff.length, goneLow: gone.filter((x) => x.low).length, goneLowNew: gone.filter((x) => x.low && !x.base).length, addLow: add.filter((x) => x.low).length, lowBand: cntBy(all.filter((v) => v[5]), (v) => band(v[0])), lowOnList: lowOn.slice(0, 300).map((x) => [x.id, x.t || null, x.p, x.g, x.pg || null]), lowOffList: lowOff.slice(0, 300).map((x) => [x.id, x.t || null, x.p, x.g]),
-      addList: add.slice(0, 600).map((x) => [x.id, x.t, x.p, x.g, x.ym, x.isbn, x.pl, x.low]), goneList: gone.slice(0, 600).map((x) => [x.id, x.t, x.p, x.g, x.base ? null : x.life, x.first, x.low ? 1 : 0]), movedList: moved.slice(0, 300).map((x) => [x.id, x.from, x.to]), at: nowIso(), pc: PC_NAME, ...W() };
+lowNow: all.filter((v) => v[5]).length, lowOn: lowOn.length, lowOff: lowOff.length, goneLow: gone.filter((x) => x.low).length, goneLowNew: gone.filter((x) => x.low && !x.base).length, addLow: add.filter((x) => x.low).length, lowBand: cntBy(all.filter((v) => v[5]), (v) => band(v[0])), lowOnList: lowOn.slice(0, 300).map((x) => JR([x.id, x.t || null, x.p, x.g, x.pg || null])), lowOffList: lowOff.slice(0, 300).map((x) => JR([x.id, x.t || null, x.p, x.g])),
+      addList: add.slice(0, 600).map((x) => JR([x.id, x.t, x.p, x.g, x.ym, x.isbn, x.pl, x.low])), goneList: gone.slice(0, 600).map((x) => JR([x.id, x.t, x.p, x.g, x.base ? null : x.life, x.first, x.low ? 1 : 0])), movedList: moved.slice(0, 300).map((x) => JR([x.id, x.from, x.to])), rowFmt: 'json', at: nowIso(), pc: PC_NAME, ...W() };
     await C('bench_days').doc(`${sc}_${day}`).set(sumD);
     const ent = [...now.entries()]; const CH = 4000; const chunks = Math.ceil(ent.length / CH); for (let k = 0; k < chunks; k++) await C('bench_state').doc(sc).collection('c').doc(String(k)).set({ m: Object.fromEntries(ent.slice(k * CH, (k + 1) * CH)), day, at: nowIso() });
     await C('bench_state').doc(sc).set({ sc, name: t.name || sc, day, total: seenN, missOnce: miss.length, pages: prog.page, lastPage: st.lastPage || null, chunks, startDay: st.startDay || day, secPerPage: st.secPerPage || null, lowNow: all.filter((v) => v[5]).length, at: nowIso(), ...W() }, { merge: true });

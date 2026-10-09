@@ -1,7 +1,7 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.51.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.52.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.51.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.52.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -147,7 +147,33 @@
       return out; }
     /* 사진 한 장: 알라딘 화면의 사진 단추와 같은 imgUp2(칸, 6, 0)를 부른 뒤 → 생긴 '파일 고르기' 칸(숨은 imgUploader 틀 · 새 창 · 화면 안)에 파일을 넣고 바뀜을 알림 → 그 칸(mainCover·zoomCoverN)에 사진 주소가 들어올 때까지 기다림
      *  파일 고르기 창은 사람이 누를 때만 뜨므로 여기서는 열리지 않음. 칸이 안 채워지면 ✗ (그 사진만 직접) */
-    async function attachOne(field, file) { const inp0 = $(field); if (!inp0) return { ok: false, why: '사진 칸 없음' }; const before = inp0.value; let popup = null;
+    /* (1.52.0) 사진 올리기 — 정범이 저장해 준 알라딘 사진 창 2개(2026-10-09) 그대로:
+     *  ① 대표·추가 사진 창 /scm/upload/imgUpPopup.aspx : 폼 fSCMImgUploader(multipart) → 같은 주소로 보냄 · 칸 SCMImg(파일) · Action=1 · targetO=칸 이름(mainCover·zoomCoverN) · branchType=6
+     *     → 알라딘이 돌려주는 화면이 window.opener(등록 화면)의 그 칸·그림을 채움(창 안 함수 pd(id) = opener.document.getElementById(id))
+     *  ② 편집기(설명 안) 사진 창 /scm/upload/wimage_upload_scm.aspx : 폼 Myform(multipart) → 같은 주소 · 칸 uploadFile(파일) · action=1 · imgalign=1(왼쪽 · 창 기본값) · 가로 570픽셀 이하
+     *     → 돌려주는 화면이 opener.InsertHtml(그림)을 불러 편집기에 넣음 (등록 화면: function InsertHtml(img){ EditorManager.pasteContent(img); })
+     *  방법: 창을 띄우지 않고 그 폼과 똑같은 내용을 직접 보냄(fetch · 같은 알라딘 로그인) → 돌려받은 화면을 보이지 않는 빈 틀에 그대로 그리되 그 틀의 opener를 등록 화면으로 정해 둠
+     *  → 사람이 창에서 올렸을 때와 똑같이 알라딘 화면 스크립트가 칸을 채움. 예전(1.50~1.51)엔 틀이 새 화면으로 넘어가며 opener가 사라져 안 들어갔음
+     *  돌려받은 화면은 처음 몇 번 reg_probe/{mainImg·editorImg}에 남김(안 맞으면 그걸로 고침) */
+    const sniffText = async (r) => { const buf = await r.arrayBuffer(); const ct = String(r.headers.get('content-type') || ''); let cs = (ct.match(/charset=([\w-]+)/i) || [])[1]; let t = new TextDecoder(cs || 'utf-8').decode(buf); if (!cs) { const m = t.slice(0, 2000).match(/charset=["']?([\w-]+)/i); if (m && !/utf-?8/i.test(m[1])) { try { t = new TextDecoder(m[1]).decode(buf); } catch (e) {} } } return t; };
+    const runAsPopup = async (html, url) => { const fr = doc.createElement('iframe'); fr.style.cssText = 'position:fixed;left:-4000px;top:0;width:560px;height:480px;border:0;opacity:0;pointer-events:none'; doc.body.appendChild(fr); const w = fr.contentWindow; const d = fr.contentDocument; const errs = [];
+      try { try { w.opener = W0; } catch (e) {} w.onerror = (m) => { errs.push(String(m).slice(0, 200)); return true; }; w.alert = (m) => errs.push('(알림) ' + String(m).slice(0, 200)); w.close = () => {}; try { w.resizeTo = () => {}; } catch (e) {}
+        d.open(); try { w.opener = W0; } catch (e) {} const base = `<base href="${String(url).replace(/"/g, '')}">`; d.write(/<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + base) : base + html); d.close(); } catch (e) { errs.push('그리기 오류: ' + e.message); }
+      await sleep(1500); setTimeout(() => { try { fr.remove(); } catch (e) {} }, 8000); return errs; };
+    let probeN = 0; const probeUp = async (kind, data) => { if (probeN++ > 6) return; try { await C('reg_probe').doc(kind).set({ last: { at: nowIso(), pc: PC_NAME, ...data }, pc: PC_NAME, ...W() }, { merge: true }); } catch (e) {} };
+    /* 편집기 사진은 가로 570픽셀 이하만 받음(창 안내) → 넓으면 줄여서 JPEG로 (세로는 비율대로) · 이름 확장자도 jpg로 */
+    async function fitWidth(file, maxW) { try { const bmp = await createImageBitmap(file); if (bmp.width <= maxW && /\.(jpe?g|png|gif)$/i.test(file.name)) { bmp.close && bmp.close(); return file; } const r = Math.min(1, maxW / bmp.width); const cv = doc.createElement('canvas'); cv.width = Math.round(bmp.width * r); cv.height = Math.round(bmp.height * r); cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height); bmp.close && bmp.close();
+      const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.9)); return new File([blob], String(file.name || 'photo').replace(/\.[^.]*$/, '') + '.jpg', { type: 'image/jpeg' }); } catch (e) { return file; } }
+    async function postUpload(kind, url, fields, fileKey, file) { const fd = new FormData(); for (const [k, v] of Object.entries(fields)) fd.append(k, v); fd.append(fileKey, file, file.name || 'photo.jpg');
+      const r = await fetch(url, { method: 'POST', body: fd, credentials: 'include' }); const html = await sniffText(r); if (!r.ok) throw new Error('알라딘이 받지 않음 HTTP ' + r.status);
+      if (/로그인|login/i.test(html) && /<form[^>]+login/i.test(html)) throw new Error('알라딘 로그인이 풀림'); const errs = await runAsPopup(html, r.url || url); return { html, errs }; }
+    async function attachOne(field, file) { const inp0 = $(field); if (!inp0) return { ok: false, why: '사진 칸 없음' }; const before = inp0.value; const imgEl = $(field + 'img'); const src0 = imgEl ? imgEl.getAttribute('src') : null; let res = null, why = '';
+      try { res = await postUpload('mainImg', '/scm/upload/imgUpPopup.aspx', { Action: '1', targetO: field, branchType: '6' }, 'SCMImg', file); } catch (e) { why = e.message; }
+      for (let i = 0; i < 20 && res; i++) { const v = ($(field) || {}).value; const s2 = imgEl ? imgEl.getAttribute('src') : null; if ((v && v !== before) || (s2 && s2 !== src0 && !/space/i.test(s2))) { await probeUp('mainImg', { field, ok: true, value: v || null, src: s2 || null, html: res.html.slice(0, 30000), errs: res.errs }); return { ok: true, where: '직접 올림' }; } await sleep(300); }
+      if (res) await probeUp('mainImg', { field, ok: false, html: res.html.slice(0, 30000), errs: res.errs });
+      const old = await attachOneOld(field, file); if (old.ok) return old; return { ok: false, why: `${why || '올렸지만 칸이 안 채워짐'}${res && res.errs.length ? ' · ' + res.errs.join(' / ').slice(0, 160) : ''} — 돌려받은 화면을 reg_probe/mainImg에 남김` }; }
+    /* 예전 방식(사진 단추 imgUp2를 불러 생긴 파일 칸에 넣기) — 직접 올리기가 안 될 때만 */
+    async function attachOneOld(field, file) { const inp0 = $(field); if (!inp0) return { ok: false, why: '사진 칸 없음' }; const before = inp0.value; let popup = null;
       const nOpen = W0.open; W0.open = function () { popup = nOpen.apply(W0, arguments); return popup; };
       try { if (typeof W0.imgUp2 !== 'function') return { ok: false, why: '알라딘 사진 단추 함수(imgUp2)가 없음' }; W0.imgUp2(field, 6, 0); } catch (e) { return { ok: false, why: 'imgUp2 오류: ' + e.message }; } finally { W0.open = nOpen; }
       let fi = null, where = ''; for (let i = 0; i < 40 && !fi; i++) { await sleep(250); try { const fr = $('imgUploader'); const d = fr && fr.contentDocument; const x = d && d.querySelector('input[type=file]'); if (x && !x.dataset.rnUsed) { fi = x; where = '숨은 틀'; } } catch (e) {}
@@ -163,7 +189,17 @@
     /* (1.50.0) 설명 안 사진(편집기): 사람이 편집기 '사진' 단추를 누르면 뜨는 창(알라딘 편집기 설정 popPageUrl = /scm/upload/wimage_upload_scm.aspx)을
      *  보이지 않는 틀로 열고(그 창의 opener = 이 등록 화면) → 파일 칸에 사진을 넣고 → 그 창의 올리기 단추·폼을 누름 → 올린 뒤 화면의 '넣기·확인' 단추(InsertHtml 부르는 것)를 누름
      *  → 편집기 글에 새 <img>가 들어왔는지 확인. 창 모양은 처음 보는 것이라 화면을 reg_probe/editorImg에 남김(안 맞으면 그걸로 고침) · 안 들어가면 ✗ → 자동 등록은 보내지 않음 */
-    async function editorPhoto(file, label) { const before = (() => { try { return W0.Editor.getContent(); } catch (e) { return ''; } })(); const nImg = (h) => (String(h || '').match(/<img\b/gi) || []).length; const n0 = nImg(before); const trace = [];
+    async function editorPhoto(file, label) { const getC = () => { try { return W0.Editor.getContent(); } catch (e) { return ''; } }; const nImg = (h) => (String(h || '').match(/<img\b/gi) || []).length; const n0 = nImg(getC());
+      let got = null; const nIns = W0.InsertHtml; W0.InsertHtml = function (img) { got = String(img || ''); try { return nIns.apply(W0, arguments); } catch (e) { try { W0.EditorManager.pasteContent(img); } catch (e2) { try { W0.EditorManager.pasteContentBottom(img); } catch (e3) {} } } };
+      let res = null, why = ''; const f2 = await fitWidth(file, 570);
+      try { try { res = await postUpload('editorImg', '/scm/upload/wimage_upload_scm.aspx', { action: '1', imgalign: '1' }, 'uploadFile', f2); } catch (e) { why = e.message; }
+        for (let i = 0; i < 20 && res; i++) { if (got || nImg(getC()) > n0) { await probeUp('editorImg', { ok: true, inserted: (got || '').slice(0, 2000), html: res.html.slice(0, 30000), errs: res.errs }); return { ok: true, note: label }; } await sleep(300); }
+        /* 알라딘 화면 스크립트가 넣지 않았을 때: 돌려받은 화면 안의 올린 그림 주소(image.aladin.co.kr …)를 찾으면 그 그림을 편집기에 넣음 */
+        if (res) { const m = res.html.match(/https?:\/\/[\w.-]*aladin\.co\.kr\/[^"'\s<>()]+\.(?:jpe?g|png|gif)/i); if (m) { try { W0.InsertHtml(`<img src="${m[0]}">`); } catch (e) {} if (nImg(getC()) > n0) { await probeUp('editorImg', { ok: true, via: 'url', url: m[0], html: res.html.slice(0, 30000), errs: res.errs }); return { ok: true, note: label + ' (주소로 넣음)' }; } }
+          await probeUp('editorImg', { ok: false, html: res.html.slice(0, 30000), errs: res.errs }); } }
+      finally { W0.InsertHtml = nIns; }
+      const old = await editorPhotoOld(file, label); if (old.ok) return old; return { ok: false, why: `${why || '올렸지만 편집기에 안 들어감'}${res && res.errs.length ? ' · ' + res.errs.join(' / ').slice(0, 160) : ''} — 돌려받은 화면을 reg_probe/editorImg에 남김` }; }
+    async function editorPhotoOld(file, label) { const before = (() => { try { return W0.Editor.getContent(); } catch (e) { return ''; } })(); const nImg = (h) => (String(h || '').match(/<img\b/gi) || []).length; const n0 = nImg(before); const trace = [];
       let got = null; const nIns = W0.InsertHtml; W0.InsertHtml = function (img) { got = String(img || ''); trace.push('InsertHtml'); try { return nIns.apply(W0, arguments); } catch (e) { try { W0.EditorManager.pasteContentBottom(img); } catch (e2) {} } };
       const fr = doc.createElement('iframe'); fr.style.cssText = 'position:fixed;left:-4000px;top:0;width:560px;height:480px;border:0;opacity:0;pointer-events:none'; const ld = () => new Promise((res) => { const t = setTimeout(() => res(false), 30000); fr.addEventListener('load', () => { clearTimeout(t); res(true); }, { once: true }); });
       let p = ld(); fr.src = '/scm/upload/wimage_upload_scm.aspx'; doc.body.appendChild(fr); const probe = async (stage, dd) => { try { await C('reg_probe').doc('editorImg').set({ [stage]: { at: nowIso(), html: dd && dd.documentElement ? dd.documentElement.outerHTML.slice(0, 60000) : null, trace }, pc: PC_NAME }, { merge: true }); } catch (e) {} };
