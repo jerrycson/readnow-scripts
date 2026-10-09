@@ -1,7 +1,7 @@
-/* readnow-pc-ship.js — 리드나우 수집기 1.50.0의 모듈 ④ 출고 — 발송 요청 화면 송장 입력
+/* readnow-pc-ship.js — 리드나우 수집기 1.51.0의 모듈 ④ 출고 — 발송 요청 화면 송장 입력
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { ship: '1.50.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { ship: '1.51.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ══════════ 송장 입력 (1.28.0): 발송 요청 화면(worder_delivery.aspx?orderstep=4)에서 주문마다 송장번호를 넣고 알라딘의 '입력완료'(deliveryNoComplete)를 누름 ══════════
  * 한 번에 한 주문 → 화면이 다시 열리면 결과 확인 → 다음 주문 (진행은 shp_invoices/{id}.items[].state 에 저장: todo → sent → done / fail / missing)
  * 알라딘 화면의 기능을 그대로 씀(새로 만든 요청 없음). 확인 창은 '예'로, 알림 글은 기록으로 남김
