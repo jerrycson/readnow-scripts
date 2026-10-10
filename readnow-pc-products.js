@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.56.4의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.56.5의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.56.4' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.56.5' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.56.4'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.56.5'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -1553,9 +1553,13 @@
     /* v = [0 값, 1 처음 본 날, 2 상태, 3 처음부터 있던 것, 4 제목 앞 40자, 5 배지, 6 처음 안 보인 날, 7 ISBN, 8 주제 분류, 9 출간 연월, 10 상품 페이지 읽음(1)·못 읽음(2)] — (1.53.0) 7~10 추가 · 예전 것을 그대로 이어 받음 */
     const carry = (o) => [o ? o[7] ?? null : null, o ? o[8] ?? null : null, o ? o[9] ?? null : null, o ? o[10] || 0 : 0];
     for (const [id, p0, g0, ti0, isbn, ym, pl, low0, pg0] of prog.items) { const p = F.price ? p0 : null, g = F.grade ? g0 : null, ti = F.title ? ti0 : '', low = F.low ? low0 : 0, pg = F.page ? pg0 : null; const o = old.get(id); const L1 = low ? 1 : 0; if (o) { if (o[6]) back.push(id); now.set(id, [p, o[1], g, o[3] || 0, String(ti || o[4] || '').slice(0, 40), L1, 0, ...carry(o)]); if (p && o[0] && p !== o[0]) moved.push({ id, from: o[0], to: p }); if (L1 && !o[5]) lowOn.push({ id, p, g, pg, t: ti }); if (!L1 && o[5]) lowOff.push({ id, p, g, pg, t: ti }); } else { now.set(id, [p, dayN, g, base ? 1 : 0, String(ti || '').slice(0, 40), L1, 0, null, null, null, 0]); if (!base) add.push({ id, t: ti, p, g, isbn, ym, pl: F.priceList ? pl : null, low: L1 }); if (L1) lowOn.push({ id, p, g, pg, t: ti, first: true }); } }
+    /* (1.56.5) 숍을 다 못 읽은 회차(절반 넘게 읽어 쓰는 회차): 못 읽은 쪽의 상품은 '못 본 것'일 뿐 — 안 보임·사라짐으로 적지 않고 지난 상태 그대로 둠(팔리지 않은 것으로 셈).
+     *  사라짐은 숍을 끝까지 다 읽은 회차에서 실제로 안 보일 때만 셈(그때부터 평소처럼: 한 번 안 보임 → 다음 온전한 회차에도 없으면 사라짐) */
+    const FULL = prog.cover == null || prog.cover >= 1; let notRead = 0;
+    if (!FULL) for (const [id, o] of old) { if (now.has(id)) continue; now.set(id, o.slice()); notRead++; }
     const miss = []; for (const [id, o] of old) { if (now.has(id)) continue; if (o[6]) gone.push({ id, p: o[0], g: o[2], first: o[1], life: dd(o[1]) - dd(o[6]), base: !!o[3], t: o[4] || null, low: !!o[5], missDay: o[6], isbn: o[7] || null, cat: o[8] || null, ym: o[9] || null }); else { miss.push(id); now.set(id, [o[0], o[1], o[2], o[3] || 0, o[4] || '', o[5] || 0, dayN, ...carry(o)]); } }
     const dt = await benchDetail(t, now, new Set(add.map((x) => x.id)), F); add.forEach((x) => { const v = now.get(x.id); if (v) { x.isbn = v[7] || x.isbn || null; x.cat = v[8] || null; x.ym = v[9] || x.ym || null; } });
-    const seenN = now.size - miss.length; const ymd = (a) => `${String(a).slice(0, 4)}-${String(a).slice(4, 6)}-${String(a).slice(6, 8)}`;
+    const seenN = now.size - miss.length - notRead; /* (1.56.5) 이번에 실제로 본 상품 수 (못 읽은 쪽 상품은 빼고) */ const ymd = (a) => `${String(a).slice(0, 4)}-${String(a).slice(4, 6)}-${String(a).slice(6, 8)}`;
     const AU = firebase.firestore.FieldValue.arrayUnion; let B = db.batch(), n = 0, wN = 0, wT = Date.now(), wL = Date.now(); const flush = async () => { if (n) { await B.commit(); wN += n; B = db.batch(); n = 0; if (Date.now() - wL > 30000) { wL = Date.now(); log(`🎯 '${t.name || sc}' 저장 중 — 상품 기록 ${wN.toLocaleString()}건 (${Math.round((Date.now() - wT) / 1000)}초)`); ui(`집중 벤치마킹 · ${t.name || sc} · 저장 중`, wN, wN, `상품 기록 ${wN.toLocaleString()}건 저장함`); } } };
     const byId = new Map(prog.items.map((x) => [x[0], x]));
     for (const id of base ? [...now.keys()] : add.map((x) => x.id)) { const x = byId.get(id); const v = now.get(id) || []; B.set(C('bench_items').doc(`${sc}_${id}`), { sc, id, title: F.title ? x[3] || '' : '', price: F.price ? x[1] ?? null : null, grade: F.grade ? x[2] || null : null, isbn: v[7] || x[4] || null, cat: v[8] || null, coverKey: F.cover ? x[11] || null : null, pubYm: v[9] || x[5] || null, priceList: F.priceList ? x[6] ?? null : null, usedCode: F.usedCode ? x[9] || null : null, byline: F.byline ? x[10] || null : null, firstDay: day, firstPage: F.page ? x[8] || null : null, base, ...W() }, { merge: true }); if (++n >= 400) await flush(); }
@@ -1569,7 +1573,7 @@
     const band = (p) => (!p ? '?' : p < 3000 ? '~3천' : p < 6000 ? '3~6천' : p < 10000 ? '6천~1만' : p < 20000 ? '1~2만' : p < 40000 ? '2~4만' : '4만~'); const cntBy = (L, f) => L.reduce((m, x) => { const k = f(x); m[k] = (m[k] || 0) + 1; return m; }, {});
     /* (1.52.0) Firebase는 '목록 안의 목록'을 저장하지 못함(Nested arrays are not supported) → 한 줄을 글자(JSON)로 바꿔 담음 · 웹앱은 글자·목록 둘 다 읽음 */
     const JR = (a) => JSON.stringify(a.map((v) => (v === undefined ? null : v))); const T60 = (t) => (t ? String(t).slice(0, 60) : null); const cat2 = (c) => String(c || '').split('>').slice(0, 3).join('>');
-    const all = [...now.values()].filter((v) => !v[6]); const sumD = { sc, name: t.name || sc, day, base, total: seenN, missOnce: miss.length, missBack: back.length, add: add.length, gone: gone.length, goneNew: gone.filter((x) => !x.base).length, moved: moved.length, pages: prog.page,
+    const all = [...now.values()].filter((v) => !v[6]); const sumD = { sc, name: t.name || sc, day, base, notRead, full: FULL, total: seenN + notRead, seen: seenN, missOnce: miss.length, missBack: back.length, add: add.length, gone: gone.length, goneNew: gone.filter((x) => !x.base).length, moved: moved.length, pages: prog.page,
       totalBand: cntBy(all, (v) => band(v[0])), totalGrade: cntBy(all, (v) => v[2] || '?'), addBand: cntBy(add, (x) => band(x.p)), addGrade: cntBy(add, (x) => x.g || '?'), addYear: cntBy(add, (x) => (x.ym ? x.ym.slice(0, 4) : '?')),
       goneBand: cntBy(gone, (x) => band(x.p)), goneGrade: cntBy(gone, (x) => x.g || '?'), goneLife: cntBy(gone.filter((x) => !x.base), (x) => (x.life <= 3 ? '0~3일' : x.life <= 7 ? '4~7일' : x.life <= 14 ? '8~14일' : x.life <= 30 ? '15~30일' : x.life <= 60 ? '31~60일' : '61일~')),
 /* (1.54.0) 💰 판매가 합 — 지금 숍 전체(재고 가치)·배지 보유분·이번 회차 사라진 것·새로 올린 것 (목록은 3,000개까지만 담지만 합은 전부로) */
@@ -1584,7 +1588,7 @@
     let dayId = `${sc}_${day}`; { const ex = (await C('bench_days').doc(dayId).get()).data(); if (ex && ex.runAt && prog.startedAt && ex.runAt !== prog.startedAt) dayId = `${sc}_${day}_${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; else if (ex && !ex.runAt && prog.startedAt && ex.at && Date.parse(ex.at) < Date.parse(prog.startedAt)) dayId = `${sc}_${day}_${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; }
     sumD.dayId = dayId; await C('bench_days').doc(dayId).set(sumD);
     const ent = [...now.entries()]; const CH = 2500; /* (1.53.0) 상품마다 ISBN·분류가 붙어 한 조각 2,500개로 (Firebase 문서 1MB 한도) */ const chunks = Math.ceil(ent.length / CH); for (let k = 0; k < chunks; k++) await C('bench_state').doc(sc).collection('c').doc(String(k)).set({ s: JSON.stringify(Object.fromEntries(ent.slice(k * CH, (k + 1) * CH))), n: Math.min(CH, ent.length - k * CH), fmt: 'json', day, at: nowIso() }); /* (1.53.3) 조각을 글자(JSON) 한 칸으로 — 상품마다 목록(값 11개)을 칸으로 두면 Firebase가 칸마다 색인을 만들어 '색인 항목이 너무 많음(too many index entries)'으로 거절했음 */
-    await C('bench_state').doc(sc).set({ sc, name: t.name || sc, day, runAt: prog.startedAt || nowIso(), endAt: nowIso(), runs: firebase.firestore.FieldValue.increment(1), detailNow: sumD.detailNow, total: seenN, missOnce: miss.length, pages: prog.page, lastPage: prog.lastPage || st.lastPage || null, chunks, startDay: st.startDay || day, secPerPage: st.secPerPage || null, lowNow: all.filter((v) => v[5]).length, prog: null, complete: RUN_OK, okRunAt: prog.startedAt || nowIso(), okEndAt: nowIso(), at: nowIso(), ...W() }, { merge: true }); /* (1.54.0) 회차 끝 — 하는 중 표시 지움 · (1.54.2) 끝까지 읽었는지 */
+    await C('bench_state').doc(sc).set({ sc, name: t.name || sc, day, runAt: prog.startedAt || nowIso(), endAt: nowIso(), runs: firebase.firestore.FieldValue.increment(1), detailNow: sumD.detailNow, total: seenN + notRead, missOnce: miss.length, notRead, pages: prog.page, lastPage: prog.lastPage || st.lastPage || null, chunks, startDay: st.startDay || day, secPerPage: st.secPerPage || null, lowNow: all.filter((v) => v[5]).length, prog: null, complete: RUN_OK, okRunAt: prog.startedAt || nowIso(), okEndAt: nowIso(), at: nowIso(), ...W() }, { merge: true }); /* (1.54.0) 회차 끝 — 하는 중 표시 지움 · (1.54.2) 끝까지 읽었는지 */
     log(`집중 벤치마킹 '${t.name || sc}': ${seenN.toLocaleString()}개${miss.length ? ` · 이번에 안 보임 ${miss.length}(내일도 없으면 사라짐)` : ''}${back.length ? ` · 어제 놓쳤다 다시 보임 ${back.length}` : ''} · ${base ? '첫 바퀴(오늘부터 새로 올린 것을 셈)' : `새로 올림 ${add.length} · 사라짐 ${gone.length}(최저가였던 것 ${gone.filter((x) => x.low).length}) · 값 바뀜 ${moved.length} · 최저가 표시 지금 ${all.filter((v) => v[5]).length}개(새로 ${lowOn.length} · 잃음 ${lowOff.length})`}`); }
 
 
