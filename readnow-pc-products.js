@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.56.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.56.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.56.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.56.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.56.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.56.1'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -363,7 +363,7 @@
     </div>
     <div class="sec">
       <p class="cap">우리 상품 보강 (알라딘 줄)</p>
-      <div class="g2"><button class="b2" data-job="nbMarket" title="알라딘 미등록·세트·새상품 페이지 없는 상품: 바깥 검색(중고) 화면의 따로 등록된 같은 책들로 경쟁·시세">검색 시세 (미등록·세트)</button><button class="b2" data-job="bench" title="웹앱 경영 탭 → 🎯 집중 벤치마킹에서 고른 판매자의 중고샵 목록 전체를 끝까지 읽어, 어제와 견줘 새로 올린 것·사라진 것(팔렸거나 내림)·값 바뀐 것을 기록 (하루 한 번 · 일괄 수집에도 들어 있음)">🎯 집중 벤치마킹</button><button class="b2" data-job="photos" title="새상품 표지가 없는 상품: 우리 상품 페이지의 사진을 전부">우리 상품 사진</button><button class="b2" data-job="usedInfo" title="우리 책 온라인 중고 첫 페이지에서 우리보다 앞에 있는 매물과 바로 뒤 몇 개(설정): 중고상품 구매 유의 사항 글과 사진 — 가격 결정 화면 블록의 ? 표시">경쟁 매물 유의사항·사진</button></div>
+      <div class="g2"><button class="b2" data-job="nbMarket" title="알라딘 미등록·세트·새상품 페이지 없는 상품: 바깥 검색(중고) 화면의 따로 등록된 같은 책들로 경쟁·시세">검색 시세 (미등록·세트)</button><button class="b2" data-job="bench" title="웹앱 경영 탭 → 🎯 집중 벤치마킹에서 고른 판매자의 중고샵 목록 전체를 끝까지 읽어, 어제와 견줘 새로 올린 것·사라진 것(팔렸거나 내림)·값 바뀐 것을 기록 (하루 한 번 · 일괄 수집에도 들어 있음)">🎯 집중 벤치마킹</button><button class="b2" data-job="benchForce" title="주기(n시간·n일에 한 번)와 '끝난 지 20시간 안이면 건너뜀' 규칙을 무시하고, 웹앱에서 고른 판매자 목록의 맨 처음 판매자부터 차례로 모두 지금 읽음 · 멈췄다 이어 하면 이번에 이미 읽은 판매자는 건너뜀(3일 안)">🎯 강제: 처음 판매자부터</button><button class="b2" data-job="photos" title="새상품 표지가 없는 상품: 우리 상품 페이지의 사진을 전부">우리 상품 사진</button><button class="b2" data-job="usedInfo" title="우리 책 온라인 중고 첫 페이지에서 우리보다 앞에 있는 매물과 바로 뒤 몇 개(설정): 중고상품 구매 유의 사항 글과 사진 — 가격 결정 화면 블록의 ? 표시">경쟁 매물 유의사항·사진</button></div>
     </div>
     <details class="sec" style="margin-top:10px"><summary class="cap" style="cursor:pointer">예비 · 가끔 쓰는 것 (펼치기)</summary>
       <p class="cap" style="margin-top:6px">출고 — 클라우드가 1분마다 하므로 클라우드가 멈췄을 때만</p>
@@ -1414,14 +1414,22 @@
    *  수동(수집기 단추·'다시 받기'로 FORCE_ALL)은 차례와 상관없이 모두 */
   const BREG = () => window.ReadnowRegistry || globalThis.ReadnowRegistry || null; let BENCH_CFG = {};
   const benchStates = async (T) => { const out = {}; const sts = await Promise.all(T.map((t) => C('bench_state').doc(String(t.sc)).get().then((d) => d.data() || {}).catch(() => ({})))); T.forEach((t, i) => (out[String(t.sc)] = sts[i])); return out; };
-  async function benchJob() { const cfg = (await C('app_settings').doc('bench').get()).data() || {}; BENCH_CFG = cfg; const T = (cfg.targets || []).filter((t) => t && t.sc && t.on !== false); const RB = (BREG() || {}).BENCH;
+  /* (1.56.1) 🎯 강제 실행(benchForce): 주기·'끝난 지 20시간' 규칙과 상관없이 고른 판매자 목록의 맨 처음 판매자부터 차례로 모두 읽음
+   *  진행은 서버 prd_jobs/benchForce에 {startedAt, list}로 — 멈췄다 이어하면(멈춘 작업 목록 · 다시 누름 · 3일 안) 이번 강제 실행이 시작된 뒤에 끝난 판매자는 건너뛰고 다음 판매자부터
+   *  한 판매자 안에서는 평소처럼: 그 판매자의 회차가 시작한 지 20시간 안이고 아직 안 끝났으면 그 쪽부터 이어 읽고, 끝났으면 새 회차 */
+  async function benchJob(opt) { const FORCE = !!(opt && opt.force); const cfg = (await C('app_settings').doc('bench').get()).data() || {}; BENCH_CFG = cfg; const T = (cfg.targets || []).filter((t) => t && t.sc && t.on !== false); const RB = (BREG() || {}).BENCH;
     if (!T.length) { log('집중 벤치마킹: 고른 판매자 없음 — 웹앱 경영 탭 → 🎯 집중 벤치마킹에서 고르세요'); return; }
     if (!RB) { log('집중 벤치마킹: 공용 노선표(readnow-registry.js 0.13.0 이상)가 없어 수집 차례를 못 정함 — 수집기를 새로 고치세요', 1); return; }
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
     const byS = new Map(T.map((t) => [String(t.sc), t])); const done = new Set(); const bad = [];
+    let FJ = null; if (FORCE) { const fref = C('prd_jobs').doc('benchForce'); const old = (await fref.get()).data(); const keep = old && old.done === false && old.startedAt && Date.now() - Date.parse(old.startedAt) < 3 * 864e5;
+      FJ = keep ? old : { startedAt: nowIso(), list: T.map((t) => String(t.sc)), done: false, by: PC_NAME }; if (!keep) await fref.set({ ...FJ, savedAt: Date.now(), ...W() }); else FJ.list = [...new Set([...(FJ.list || []), ...T.map((t) => String(t.sc))])].filter((sc) => byS.has(sc));
+      log(`🎯 강제 실행 ${keep ? `이어서 (${new Date(Date.parse(FJ.startedAt) + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')} 시작한 것)` : '시작'} — 주기와 상관없이 맨 처음 판매자부터: ${FJ.list.map((sc) => (byS.get(sc) || {}).name || sc).join(' → ')}`); }
     try { for (let loop = 0; loop < 300; loop++) { if (stopFlag) throw new Error('멈춤'); const sts = await benchStates(T); /* (1.54.3) '하는 중' 표시가 있어도 진행 문서가 없거나 버렸으면(끝남·버림) 표시를 지우고 평소 차례로 */ for (const [sc0, s0] of Object.entries(sts)) { if (!s0 || !s0.prog) continue; try { const jd = (await C('prd_jobs').doc('bench_' + sc0).get()).data(); if (!jd || jd.done) { s0.prog = null; await C('bench_state').doc(sc0).set({ prog: null }, { merge: true }); } } catch (e) {} } const P0 = RB.plan(cfg, sts, Date.now()); const P = RB.order ? RB.order(P0) : P0; /* (1.54.0) 하던 판매자 → 밀린 판매자 → 블록 순서 */
+        if (FORCE) { const t0f = Date.parse(FJ.startedAt); const byP = new Map(P.map((x) => [String(x.sc), x])); const sc = FJ.list.find((k) => !done.has(k) && !(((byP.get(k) || {}).end || 0) >= t0f && !(byP.get(k) || {}).inProg)); if (!sc) { await C('prd_jobs').doc('benchForce').set({ done: true, doneAt: nowIso(), savedAt: Date.now() }, { merge: true }); log(`🎯 강제 실행 끝 — 판매자 ${FJ.list.length}명 모두 이번에 읽음`); break; }
+          const t = byS.get(sc); done.add(sc); log(`🎯 [강제 ${FJ.list.indexOf(sc) + 1}/${FJ.list.length}] ${t.name || sc} — 주기와 상관없이 읽음`); try { await benchOne(t); } catch (e) { if (e && e.message === '멈춤') throw e; bad.push(t.name || sc); log(`🎯 '${t.name || sc}' 처리 중 오류: ${e && e.message} — 다음 판매자로 넘어감`, 1); } continue; }
         const next = P.find((x) => !done.has(x.sc) && (x.due || (FORCE_ALL && !x.fresh))) || (P.find((x) => x.due && done.has(x.sc) && x.g.unit === 'h' && Date.now() - (sts[x.sc].runAt ? Date.parse(sts[x.sc].runAt) : 0) > 3600e3) || null);
-        if (loop === 0) { const due = P.filter((x) => x.due || (FORCE_ALL && !x.fresh)); const fr = P.filter((x) => !x.due && x.fresh); const hm = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' '); if (fr.length) log(`🎯 끝난 지 얼마 안 돼 이번엔 건너뜀(다시 읽지 않음): ${fr.map((x) => `${(byS.get(x.sc) || {}).name || x.sc} ${hm(x.end || x.last)} 끝 → ${hm(x.next)}부터`).join(', ')}`); const pages = due.reduce((a, x) => a + (sts[x.sc].lastPage || sts[x.sc].pages || 0), 0);
+        if (loop === 0 && !FORCE) { const due = P.filter((x) => x.due || (FORCE_ALL && !x.fresh)); const fr = P.filter((x) => !x.due && x.fresh); const hm = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' '); if (fr.length) log(`🎯 끝난 지 얼마 안 돼 이번엔 건너뜀(다시 읽지 않음): ${fr.map((x) => `${(byS.get(x.sc) || {}).name || x.sc} ${hm(x.end || x.last)} 끝 → ${hm(x.next)}부터`).join(', ')}`); const pages = due.reduce((a, x) => a + (sts[x.sc].lastPage || sts[x.sc].pages || 0), 0);
           log(`🎯 집중 벤치마킹: 판매자 ${T.length}명 중 지금 할 차례 ${due.length}명${FORCE_ALL ? '(수동 — 모두)' : ''}${pages ? ` · 약 ${pages.toLocaleString()}쪽` : ''} — 순서: ${due.map((x) => `${(byS.get(x.sc) || {}).name || x.sc}(${x.g.name})`).join(' → ') || '없음'}${!due.length ? ` · 다음 차례: ${P.slice().sort((a, b) => a.next - b.next).slice(0, 3).map((x) => `${(byS.get(x.sc) || {}).name || x.sc} ${new Date(x.next + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')}`).join(', ')}` : ''}`); }
         if (!next) break; const t = byS.get(next.sc); done.add(next.sc); { const hm2 = (ms) => (ms ? new Date(ms + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ') : '-'); const why = next.inProg ? `하던 회차 이어서(${(sts[next.sc].prog || {}).page || '?'}쪽부터)` : next.behind ? `지난 차례를 못 끝냄(밀림 ${next.behind}번)` : !next.due && FORCE_ALL ? '수동 실행' : '차례'; log(`🎯 [${done.size}] ${t.name || t.sc} · ${next.g.name}(${next.g.n}${next.g.unit === 'h' ? '시간' : '일'}에 한 번) · 왜: ${why} · 지난번 ${hm2(next.last)} 시작 ~ ${hm2(next.end)} 끝`); }
         /* (1.52.0) 한 판매자에서 오류가 나도 다음 판매자로 넘어감. 실패한 판매자는 읽은 조각이 남아 있어 다음 실행 때 읽기 없이 저장만 다시 함 */
@@ -2450,6 +2458,7 @@
     if (!mine) return; log('📚 출판 판매 통계 하루 한 번 자동 받기 시작'); window.__rnAuto = true; try { await runJob('kpipa'); } finally { window.__rnAuto = false; } } catch (e) {} }, 15 * 60000);
   const JOBS = {
     bench: ['집중 벤치마킹 판매자 (고른 판매자 숍 전체)', () => benchJob()],
+    benchForce: ['집중 벤치마킹 — 주기 무시, 처음 판매자부터 모두', () => benchJob({ force: true })],
     scanNew: ['신규 등록분 수집', () => scan('new')],
     scanFull: ['전체 재검토', () => scan('full')],
     scanDaily: ['상품 조회 (판매중·일시판매중지·판매중지) 새로·바뀐 것', () => scan('daily')],
