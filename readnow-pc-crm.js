@@ -1,13 +1,13 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.55.0의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.56.0의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.55.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.56.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
 (async function () {
   'use strict';
-  const APP_VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.55.0'; // (1.36.0) 판 번호는 맨 위 @version 한 곳 — 고객 쪽·상품 쪽이 같은 값
+  const APP_VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.56.0'; // (1.36.0) 판 번호는 맨 위 @version 한 곳 — 고객 쪽·상품 쪽이 같은 값
   const BASE = 'https://www.aladin.co.kr/scm/';
   const now = () => new Date().toISOString();
   const LOGIN_FLAG = 'rn-autologin-pending';
@@ -566,6 +566,7 @@
         const det = new Map((await dbAll('qnaDetail')).map((d) => [d._key, d]));
         const fix = []; // 예전 기록(상세에 목록 답변여부가 없음)은 지금 목록 값으로 한 번 맞춰 두고 다시 열지 않음
         job.queue = (await dbAll('qnaList')).filter((q) => { const d = det.get(q._key); if (!d) return true;
+          if (!d.orderNo && !d.itemId && !d.orderRecheck) return true; /* (1.55.1) 주문번호·상품이 둘 다 없이 저장된 예전 문의는 한 번 다시 열어 '관련 주문번호'를 채움 (웹앱이 주문·상품·고객에 이음) */
           if (!('listStatus' in d)) { fix.push({ ...d, listStatus: q.answered ?? null }); return false; }
           return (d.listStatus ?? null) !== (q.answered ?? null); }).map((q) => q._key);
         if (fix.length) await dbPut('qnaDetail', fix);
@@ -581,7 +582,7 @@
         if (!d.answer) { // 우리 답변은 '수정하기' 화면(method=edit)의 답변 입력칸(#txtAnswer)에 있음
           const e2 = await fetchDoc(`${BASE}wUsedShopC2CAnswer.aspx?questionid=${id}&method=edit`, { expect: (x) => !!x.querySelector('#divQuestion, #txtAnswer') });
           const ta = e2.doc.querySelector('#txtAnswer'); const v = ta ? String(ta.value || ta.textContent || '').trim() : ''; if (v) { d.answer = v; d.answerFrom = 'edit'; } }
-        { const o = await dbGet('qnaDetail', id); const ql = await dbGet('qnaList', id); const rec = { _key: id, ...d, listStatus: ql ? ql.answered ?? null : null, collectedAt: now(), parserVersion: P.VERSION };
+        { const o = await dbGet('qnaDetail', id); const ql = await dbGet('qnaList', id); const rec = { _key: id, ...d, listStatus: ql ? ql.answered ?? null : null, collectedAt: now(), parserVersion: P.VERSION, orderRecheck: true };
           if (o) { rec.firstCollectedAt = o.firstCollectedAt || o.collectedAt || null; for (const k of Object.keys(o)) if ((rec[k] === null || rec[k] === undefined || rec[k] === '') && o[k] !== null && o[k] !== undefined && o[k] !== '') rec[k] = o[k]; // 새로 읽은 값이 비면 먼저 받은 값 유지
             rec.answerHistory = o.answerHistory || []; if (o.answer && d.answer && o.answer !== d.answer) rec.answerHistory = [...rec.answerHistory, { answer: o.answer, until: now() }]; }
           else rec.firstCollectedAt = now();
@@ -1609,7 +1610,7 @@
   const todayKst = () => { const d = new Date(); const z = (x) => String(x).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; };
   async function autoRunCheck() {
     if (window.__rnUniAuto || window.__rnPaused || window.__rnSchedOn || window.__rnSchedHas) return; // (1.34.0) 새 '⏰ 매일 자동 수집'이 맡음 · 통합 수집기의 '매일 자동(모두 일괄)'이 대신 함
-    if (!settings.autoRun || running || otherTabBusy()) return;
+    if (!settings.autoRun || running || otherTabBusy() || (window.__rnRest && window.__rnRest())) return;
     const [hh, mm] = String(settings.autoTime || '06:00').split(':').map((x) => parseInt(x, 10));
     const nowD = new Date(); if (nowD.getHours() * 60 + nowD.getMinutes() < hh * 60 + mm) return;
     const day = todayKst(); const la = await dbGet('meta', 'lastAutoRun'); if (la && la.day === day) return;
@@ -1708,6 +1709,7 @@
     discard: async (t) => { if (running || otherTabBusy()) return { ok: false, why: '고객 작업이 지금 진행 중입니다 — 먼저 일시정지하세요' }; const names = t === 'bulk' ? ['bulk', ...BULK] : [t]; for (const n of names) { const j = await loadJob(n); if (['paused', 'running', 'error'].includes(j.status)) { j.status = 'idle'; j.discardedAt = now(); await saveJob(j); } } log(`'${t === 'bulk' ? '고객 전체 일괄 수집' : (TASKS[t] ? TASKS[t].label : t)}'의 멈춘 자리만 잊었습니다 (받은 기록은 그대로)`); render(); return { ok: true }; } };
   async function start(name, { fresh = false } = {}) {
     if (running) return;
+    if (window.__rnGate && !window.__rnGate(name === 'bulk' ? '고객 전체 일괄 수집' : TASKS[name] ? TASKS[name].label : name)) return; // (1.56.0) 쉬는 탭이면 시작 안 함 (사람이 누른 거면 켤지 물음)
     const ob = otherTabBusy();
     if (ob) { alert(`이 PC의 다른 탭(${ob.page === 'worders.aspx' ? '주문조회' : '판매관리'})에서 '${ob.label}' 작업 중입니다.\n그 탭에서 진행 상황을 확인하거나, 끝난 뒤 다시 눌러 주세요.`); return; }
     markTab(true, name === 'bulk' ? '전체 일괄 수집' : (TASKS[name] ? TASKS[name].label : name));
@@ -2156,13 +2158,13 @@
   let remoteInit = false; let lastReqSeen = GM_getValue('rn-last-req', null);
   async function remoteLoop() {
     if (!fdb || !fbUser || remoteInit) return; remoteInit = true;
-    const beat = () => { if (!settings.remoteRun || !fbUser) return; SYS().doc('collectors').set({ [PC.id]: { pcName: PC.name || PC.id, lastSeen: now(), running: running, page: location.pathname.split('/').pop() }, writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {}); };
+    const beat = () => { if (!settings.remoteRun || !fbUser || (window.__rnRest && window.__rnRest())) return; SYS().doc('collectors').set({ [PC.id]: { pcName: PC.name || PC.id, lastSeen: now(), running: running, page: location.pathname.split('/').pop() }, writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {}); };
     beat(); setInterval(beat, 120000);
     SYS().doc('collectRequest').onSnapshot(async (d) => {
       if (!d.exists || !settings.remoteRun) return; const r = d.data();
       if (!r || r.state !== 'requested' || r.id === lastReqSeen) return;
       if (Date.now() - Date.parse(r.requestedAt || 0) > 30 * 60000) return; // 30분 넘은 요청은 무시
-      if (running || otherTabBusy()) return;
+      if (running || otherTabBusy() || (window.__rnRest && window.__rnRest())) return; // (1.56.0) 쉬는 탭은 받지 않음 — 이 PC의 수집기 탭이 받음
       // 한 대만 받도록: 트랜잭션으로 '받음' 표시
       let mine = false;
       try { await fdb.runTransaction(async (tx) => { const cur = await tx.get(SYS().doc('collectRequest')); const c = cur.data() || {}; if (c.id !== r.id || c.state !== 'requested') return; tx.set(SYS().doc('collectRequest'), { state: 'claimed', claimedBy: PC.name || PC.id, claimedAt: now(), writerSchema: WRITER_SCHEMA }, { merge: true }); mine = true; }); } catch (e) { return; }
@@ -2174,11 +2176,22 @@
     }, () => {});
   }
   setInterval(() => remoteLoop().catch(() => {}), 5000);
+  /* (1.56.0) 쉬는 탭이 넘긴 웹앱 요청(#rnrun=bulk)을 이 PC의 수집기 탭이 받아 시작 */
+  { const take = async (c) => { if (!c || c.cmd !== 'bulk' || c.done || Date.now() - (c.at || 0) > 120000) return; if (!window.__rnRole || window.__rnRole() !== 'lead') return;
+      GM_setValue('rnu-lead-cmd', { ...c, done: true, by: window.__rnTab }); for (let i = 0; i < 40 && !fbUser; i++) await sleep(500);
+      if (window.__rnPaused) { log('다른 탭으로 온 웹앱 요청: 이 PC는 일시정지 상태라 시작하지 않습니다 (다시 시작을 눌러 주세요)', 'warn'); return; }
+      if (running || otherTabBusy() || (window.__rnPrd && window.__rnPrd.busy && window.__rnPrd.busy())) { log('다른 탭으로 온 웹앱 요청: 이 탭이 이미 작업 중이라 건너뜁니다', 'warn'); return; }
+      log('다른 탭으로 온 웹앱 수집 요청을 이 탭(이 PC의 수집기)에서 시작합니다', 'ok'); autoTriggered = true; const r = await resumable(); await start('bulk', { fresh: r !== 'bulk' }); autoTriggered = false; };
+    try { if (typeof GM_addValueChangeListener === 'function') GM_addValueChangeListener('rnu-lead-cmd', (k, o, n, remote) => { if (remote) take(n).catch(() => {}); }); } catch (e) {} }
   // 웹앱의 [지금 수집] 버튼으로 열린 경우: 로그인이 준비되면 전체 일괄 수집을 시작(멈춘 게 있으면 이어서), 끝나면 창을 닫음
   if (/rnrun=bulk/.test(location.hash)) {
     const closeAfter = /rnclose=1/.test(location.hash); history.replaceState(null, '', location.pathname + location.search);
     (async () => {
       for (let i = 0; i < 40 && !fbUser; i++) await sleep(500);
+      await (window.__rnRoleReady || Promise.resolve());
+      if (window.__rnRest && window.__rnRest()) { // (1.56.0) 이 탭이 쉬는 탭이면: 이 PC의 수집기 탭에 넘김 (한 PC에 수집기 하나)
+        GM_setValue('rnu-lead-cmd', { cmd: 'bulk', id: Math.random().toString(36).slice(2, 10), at: Date.now(), from: window.__rnTab });
+        log('웹앱 요청을 이 PC의 수집기 탭에 넘겼습니다 (이 탭은 쉬는 탭)', 'ok'); if (closeAfter) setTimeout(() => { try { window.close(); } catch (e) {} }, 8000); return; }
       if (running) return; if (window.__rnPaused) { log('웹앱 요청: 이 PC는 일시정지 상태라 시작하지 않습니다 (다시 시작을 눌러 주세요)', 'warn'); return; } if (otherTabBusy()) { log('웹앱 요청: 이 PC의 다른 탭에서 이미 수집 중이라 건너뜁니다.', 'warn'); return; }
       log('웹앱에서 요청한 수집을 시작합니다.', 'ok');
       autoTriggered = true; const r = await resumable(); await start('bulk', { fresh: r !== 'bulk' }); autoTriggered = false;

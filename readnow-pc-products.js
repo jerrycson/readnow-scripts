@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.55.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.56.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.55.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.56.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.55.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.56.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -1757,9 +1757,9 @@
         log(`그룹 시장 지표 갱신 끝: ${v.label || ''} 성공 ${ok} · 실패 ${fail}`); }
     } finally { await releaseLane('aladin'); } }
   // 5분마다: 맡아 둔 그룹 시장 지표가 남았으면 이어서 · 한 시간마다: '매일 자동'을 켠 그룹(수동 일괄 처리 그룹·감시 묶음)이 24시간 지났으면 스스로 맡김
-  setInterval(async () => { try { if (running || window.__rnPaused || !auth.currentUser) return; const qs = await C('shp_cmds').where('status', '==', 'running').get();
+  setInterval(async () => { try { if (running || window.__rnPaused || !auth.currentUser || (window.__rnRest && window.__rnRest())) return; const qs = await C('shp_cmds').where('status', '==', 'running').get();
     if (qs.docs.some((d) => { const v = d.data(); return v.type === 'metrics' && v.claim && v.claim.pc === PC_NAME; })) runJob('metricsReq'); } catch (e) {} }, 5 * 60000);
-  setInterval(async () => { try { if (!auth.currentUser) return; const day = 864e5; const PRC = window.ReadnowPricing || globalThis.ReadnowPricing;
+  setInterval(async () => { try { if (!auth.currentUser || (window.__rnRest && window.__rnRest())) return; const day = 864e5; const PRC = window.ReadnowPricing || globalThis.ReadnowPricing;
     const pc0 = (await C('prd_system').doc('pricing').get()).data() || {}; const off = pc0.batchOff || {}; // (1.34.9) 웹앱에서 끈 그룹(감시·적용 꺼짐)·보관한 그룹은 매일 자동 시장 지표를 맡기지 않음
     const bs = await C('prd_price_batches').get(); for (const d of bs.docs) { const b = d.data(); if (!b.autoMetrics || b.archived || off[d.id] || !b.lastKeys || !b.lastKeys.length) continue; if (b.lastMetricsReqAt && Date.now() - Date.parse(b.lastMetricsReqAt) < day) continue;
       await d.ref.set({ lastMetricsReqAt: nowIso() }, { merge: true }); await C('shp_cmds').add({ type: 'metrics', keys: b.lastKeys, label: '그룹: ' + (b.name || d.id), batchId: d.id, status: 'queued', createdAt: nowIso(), by: PC_NAME + ' (매일 자동)', uploadedAt: TS() }); }
@@ -1775,7 +1775,7 @@
   let REGDOC = null, regUnsub = null; const REGF = () => window.ReadnowRegistry || globalThis.ReadnowRegistry || null;
   const PC_KNOWN_OLD = new Set(['read', 'startDelivery', 'usedInfo', 'c2bAdd', 'lookup', 'metrics', 'cashStop']);
   const pcCan = (type) => { const G = REGF(); if (!G) return PC_KNOWN_OLD.has(type); return G.canHandle(G.merge(REGDOC || {}), type, 'pc'); };
-  async function runCmd(id) { const ref = C('shp_cmds').doc(id); let v = null;
+  async function runCmd(id) { const ref = C('shp_cmds').doc(id); let v = null; if ((window.__rnRest && window.__rnRest())) return; // (1.56.0) 맡긴 일은 이 PC의 수집기 탭만
     await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const x = sn.data(); if (!x || x.status !== 'queued' || !pcCan(x.type) || String(x.pcSkip || '').includes(` ${APP_VER}에`)) return; /* 노선표에서 PC 몫인 종류만 (1.36.0) */ tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, uploadedAt: TS() }); v = x; });
     if (!v) return;
     if (v.type === 'startDelivery') { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; const results = {};
@@ -1922,7 +1922,7 @@
   /* 공개 확인·지킴이 — 3분마다 · 읽기만(알라딘을 바꾸지 않음) · 한 일은 한 곳만(lease) */
   let regVerBusy = false;
   async function regLease(ref) { let ok = false; await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data() || {}; const L = v.lease || {}; if (L.by && L.by !== REG_ME() && Date.parse(L.until || 0) > Date.now()) return; tx.set(ref, { lease: { by: REG_ME(), until: new Date(Date.now() + 6 * 60000).toISOString() } }, { merge: true }); ok = true; }); return ok; }
-  async function regVerifyAll() { if (regVerBusy || !auth.currentUser || !RGF()) return; regVerBusy = true; const X = EXC();
+  async function regVerifyAll() { if (regVerBusy || !auth.currentUser || !RGF() || (window.__rnRest && window.__rnRest())) return; regVerBusy = true; const X = EXC();
     try { // ① 지킴이: '하는 중'·'멈춘 일(sweep)'인데 15분 넘게 조용함
       for (const stName of ['running', 'stuck']) { const qs = await C('shp_cmds').where('status', '==', stName).get(); for (const d of qs.docs) { const v = d.data(); if (!['regBulk', 'regOne', 'regBulkMock', 'regOneMock'].includes(v.type)) continue; const quiet = Date.now() - Math.max(Date.parse(v.beatAt || 0) || 0, Date.parse((v.claim || {}).at || 0) || 0, Date.parse(v.createdAt || 0) || 0) > 15 * 60000; if (!quiet || !(await regLease(d.ref))) continue;
           if (v.sent) { await d.ref.set({ status: 'verify', msg: '수집기 탭이 등록 요청 뒤 멈춤 — 공개 확인으로 판단', verify: { ...(v.verify || {}), base: (v.verify || {}).base || v.base || 0, codes: (v.verify || {}).codes || v.codes || [1], until: new Date(Date.now() + 90 * 60000).toISOString() }, uploadedAt: TS() }, { merge: true }); log('📥 지킴이: 등록 요청 뒤 멈춘 일 → 공개 확인으로', 1); }
@@ -2003,14 +2003,14 @@
     const ok = Object.values(results).filter((r) => ['added', 'already'].includes(r.state)).length; await ref.set({ status: 'done', results, n, cartN, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
     log(`알라딘 매입: 장바구니 ${ok} / ${items.length}권 (지금 장바구니 ${cartN}권)`, ok === items.length ? 0 : 1); }
   auth.onAuthStateChanged((u) => { if (!u) return; C('shp_invoices').where('status', '==', 'queued').onSnapshot((ss) => ss.forEach((d) => claimInvoice(d.id).catch((e) => log('송장 입력 맡기 실패: ' + (e.code || e.message), 1))), () => {}); });
-  async function claimInvoice(id) { const ref = C('shp_invoices').doc(id); let ok = false;
+  async function claimInvoice(id) { const ref = C('shp_invoices').doc(id); let ok = false; if ((window.__rnRest && window.__rnRest())) return;
     await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data(); if (!v || v.status !== 'queued') return; tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, uploadedAt: TS() }); ok = true; });
     if (!ok) return; GM_setValue('rn-inv-active', { id, at: Date.now() }); log(`송장 입력 맡음 (${id}) — 발송 요청 화면을 새 탭으로 엽니다`);
     GM_openInTab('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4#rninv=' + id, { active: false, insert: true }); } // #rninv= : 이 탭이 송장 입력을 맡은 탭 (다른 발송 요청 탭은 끼어들지 않음)
   // 영업일(월~금) 9~16시: 쉬는 동안 shipAutoMin분마다 발송 요청 다시 읽기
   let cloudBeat = null; auth.onAuthStateChanged((u) => { if (u) C('app_settings').doc('cloud').onSnapshot((d) => { cloudBeat = d.exists ? d.data() : null; }, () => {}); });
   const cloudOn = () => !!(cloudBeat && cloudBeat.at && Date.now() - Date.parse(cloudBeat.at) < 10 * 60000 && cloudBeat.ok !== false); // 클라우드 수집이 살아 있음 (10분 안 신호)
-  setInterval(() => { try { const m = SET.shipAutoMin ?? 15; if (!m || (running && curKey !== 'explore') || window.__rnPaused || cloudOn()) return; const k = new Date(Date.now() + 9 * 3600e3); const wd = k.getUTCDay(), h = k.getUTCHours(); if (wd === 0 || wd === 6 || h < 9 || h >= 16) return;
+  setInterval(() => { try { const m = SET.shipAutoMin ?? 15; if (!m || (running && curKey !== 'explore') || window.__rnPaused || cloudOn() || (window.__rnRest && window.__rnRest())) return; const k = new Date(Date.now() + 9 * 3600e3); const wd = k.getUTCDay(), h = k.getUTCHours(); if (wd === 0 || wd === 6 || h < 9 || h >= 16) return;
     if (Date.now() - (window.__rnShipAt || 0) < m * 60000) return; window.__rnShipAt = Date.now(); runJob('shipRead'); } catch (e) {} }, 60000);
 
   async function photosJob() {
@@ -2278,7 +2278,7 @@
   setTimeout(() => { try { GM_setValue('rnu-maxlogin', SET.maxLoginTries ?? 6); GM_setValue('rnu-drive-url', SET.driveLogUrl || ''); GM_setValue('rnu-drive-key', SET.driveLogKey || ''); } catch (e) {} }, 2500);
   window.__rnUniAuto = true;
   setInterval(async () => {
-    try { window.__rnUniAuto = !!SET.autoDaily || !!window.__rnSchedOn; if (window.__rnSchedOn || (SCHED && SCHED.items)) return; /* (1.34.0) 새 '⏰ 매일 자동 수집'이 있으면 그쪽만 */ if (running || !auth.currentUser || !SET.autoDaily || window.__rnPaused) return;
+    try { window.__rnUniAuto = !!SET.autoDaily || !!window.__rnSchedOn; if (window.__rnSchedOn || (SCHED && SCHED.items)) return; /* (1.34.0) 새 '⏰ 매일 자동 수집'이 있으면 그쪽만 */ if ((window.__rnRest && window.__rnRest()) || running || !auth.currentUser || !SET.autoDaily || window.__rnPaused) return;
       const kst = new Date(Date.now() + 9 * 3600e3); const mins = kst.getUTCHours() * 60 + kst.getUTCMinutes(); const start = (SET.autoHour ?? 17) * 60;
       const mine = String(PC_NAME || '').toUpperCase() === String(SET.autoPc || 'JS-MAIN').toUpperCase();
       if (mins < start + (mine ? 0 : (SET.autoGraceMin ?? 30))) return; // 지정 PC가 먼저, 다른 PC는 기다렸다가
@@ -2294,7 +2294,7 @@
    *  3분마다 확인 · 이 PC가 다른 일을 하는 중·일시정지·다른 PC가 알라딘 작업 중이면 다음 확인 때 · 지정 PC(설정 autoPc)가 먼저, 다른 PC는 차례가 된 지 30분 지나도 아무도 안 하면
    *  웹앱에서 '⏸ 주기 수집 멈춤'(autoOn:false)이면 하지 않음 (일괄 수집 안의 벤치마킹 단계·수동 단추는 그대로) */
   { let bCfg = null, bSt = null, bStAt = 0; C('app_settings').doc('bench').onSnapshot((d) => { bCfg = d.exists ? d.data() : null; }, () => {});
-    setInterval(async () => { try { if (running || window.__rnPaused || !auth.currentUser || !bCfg || bCfg.autoOn === false) return; const RB = (BREG() || {}).BENCH; if (!RB) return;
+    setInterval(async () => { try { if (running || window.__rnPaused || !auth.currentUser || !bCfg || bCfg.autoOn === false || (window.__rnRest && window.__rnRest())) return; const RB = (BREG() || {}).BENCH; if (!RB) return;
         const T = (bCfg.targets || []).filter((t) => t && t.sc && t.on !== false); if (!T.length) return;
         if (!bSt || Date.now() - bStAt > 30 * 60000) { bSt = await benchStates(T); bStAt = Date.now(); }
         if (!RB.plan(bCfg, bSt, Date.now()).some((x) => x.due)) return;
@@ -2303,7 +2303,7 @@
         const lk = (await LOCK().get()).data(); if (laneBusy(lk)) return;
         log(`🎯 주기 수집: 할 차례가 된 판매자 ${due.length}명 — 시작`); window.__rnAuto = true; try { await runJob('bench'); } finally { window.__rnAuto = false; bStAt = 0; } } catch (e) {} }, 3 * 60000); }
   C('prd_jobs').doc('request').onSnapshot(async (d) => { try {
-    const r = d.exists ? d.data() : null; if (!r || !r.job || r.handled || running || window.__rnPaused || typeof JOBS === 'undefined' || !JOBS[r.job] || Date.now() - (r.atMs || 0) > 30 * 60000) return;
+    const r = d.exists ? d.data() : null; if (!r || !r.job || r.handled || running || window.__rnPaused || (window.__rnRest && window.__rnRest()) || typeof JOBS === 'undefined' || !JOBS[r.job] || Date.now() - (r.atMs || 0) > 30 * 60000) return;
     const mine = String(PC_NAME || '').toUpperCase() === String(SET.reqPc || 'JS-MAIN').toUpperCase(); if (!mine && Date.now() - (r.atMs || 0) < 2 * 60000) { setTimeout(() => d.ref.get().then((x) => x.exists && !x.data().handled && d.ref.set({ ping: Date.now() }, { merge: true })), 2 * 60000 + 2000); return; } // 지정 PC가 2분 안에 안 받으면 다른 PC가
     try { let ok = false; await db.runTransaction(async (tx) => { const s = await tx.get(d.ref); const v = s.data() || {}; if (v.handled) return; tx.set(d.ref, { handled: true, handledBy: PC_NAME, handledAt: nowIso() }, { merge: true }); ok = true; });
       if (ok) { log(`웹앱 요청으로 '${JOBS[r.job][0]}' 시작 (${r.byName || r.by || ''})`); window.__rnRemote = true; const pr = runJob(r.job); setTimeout(() => { window.__rnRemote = false; }, 3000); await pr; } } catch (e) {}
@@ -2356,7 +2356,7 @@
       out.push({ it, key, last, day, skip: ts.slice(0, -1).map((t) => `${it.k}@${day}@${t}`).filter((k) => !SCHED_RUNS[k]) }); }
     return out; } // 우선순위 순서(SCHED_ITEMS 순서) 그대로
   let schedBusy = false;
-  async function schedTick() { if (schedBusy || running || window.__rnPaused || !auth.currentUser) return; if (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) return;
+  async function schedTick() { if (schedBusy || running || window.__rnPaused || !auth.currentUser || (window.__rnRest && window.__rnRest())) return; if (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) return;
     const dues = schedDue(); if (!dues.length) return; schedBusy = true;
     try { let due = null; let lk = null; // (1.35.1) 위(우선)부터 지금 할 수 있는 첫 항목 — 막힌 항목은 건너뜀(다음 확인 때 다시)
       for (const d of dues) { if (d.it.kind === 'crm' && window.__rnCrm.otherBusy && window.__rnCrm.otherBusy()) continue; // 이 PC의 다른 탭이 고객 작업 중
@@ -2391,6 +2391,63 @@
     const hl = el.querySelector('#rnpSchedHelp'); if (hl) hl.onclick = (ev) => { ev.preventDefault(); alert('브라우저가 꺼져 있어도 매일 돌게 하려면 (윈도우 작업 스케줄러)\n\n1. 시작 메뉴에서 "작업 스케줄러"를 엽니다.\n2. 오른쪽 "기본 작업 만들기" → 이름 "리드나우 자동 수집" → 매일 → 시각은 가장 이른 자동 수집 시각보다 5분 이르게.\n3. 동작 "프로그램 시작" → 프로그램: C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\n4. 인수: https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx → 마침.\n5. 만든 작업 → 조건 탭 "절전 모드 해제" 체크, 설정 탭 "예약된 시작 시간을 놓친 경우 가능한 대로 빨리 작업 시작" 체크.\n\nPC가 켜져 있고 크롬에 알라딘 로그인이 유지돼 있으면 정한 시각에 페이지가 열리고 수집기가 스스로 시작합니다.'); }; }
   { let inited = false; auth.onAuthStateChanged((u) => { if (u && !inited) { inited = true; schedInit(); } }); }
   /* ───────── 실행 ───────── */
+  /* ───────── (1.56.0) 📚 출판 판매 통계 — 출판유통통합전산망(KPIPA) 출판산업 통계 → 판매 통계 → 판매 보고서 ─────────
+   *  로그인 없이 누구나 보는 공개 표. 일별 · 도서유형별(지금은 종이책만 공개)과 판매채널별(오프라인 대형·지역, 온라인) 각각 부수·종수·매출총액
+   *  기간: 웹앱 설정(app_settings/kpipa.days, 기본 730일=2년). 이미 받은 날은 건너뛰고 빠진 날만 + 최근 7일은 늘 다시 읽음(공표 뒤 고쳐질 수 있어서)
+   *  받는 법: 그 화면을 한 번 열어 보안 표(CSRF)를 받고 → 화면이 쓰는 것과 같은 조회(POST …/adiStatsSaleReport/search)를 31일씩 · 요청 사이 3~5초
+   *  저장: mkt_kpipa/{YYYYMMDD} = { date, onOff:{series:{오프라인(대형서점):{qty,titles,amt},…}}, bookType:{series:{종이책:{…}}} } — 값이 같으면 쓰지 않음, 달라지면 옛 값을 history에 남기고 바꿈(지우지 않음)
+   *  자동: 하루 한 번 14:30 뒤(그 전엔 전날 자료가 아직 없음) 이 PC의 수집기 탭이 · 여러 PC면 먼저 맡은 한 대만 */
+  const KP_PAGE = 'https://bnk.kpipa.or.kr/home/v3/addition/adiStatsSaleReport';
+  const kpReq = (o) => new Promise((res, rej) => GM_xmlhttpRequest({ timeout: 60000, ...o, onload: (r) => res(r), onerror: () => rej(new Error('연결 실패')), ontimeout: () => rej(new Error('응답 없음(60초)')) }));
+  const kpYmd = (t) => new Date(t + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '');
+  const kpAdd = (ymd, n) => kpYmd(Date.UTC(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8)) - 9 * 3600e3 + n * 864e5);
+  /* 화면이 돌려주는 조각(HTML)의 첫 표: 머리 1줄 = 묶음 이름(오프라인(대형서점)…/종이책), 머리 2줄 = 부수·종수·금액, 몸 = 날짜마다 한 줄 ("26년 10월05일") */
+  function kpParse(html) { const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html'); const t = doc.querySelector('table'); if (!t) return null;
+    const hr = t.querySelectorAll('thead tr'); if (hr.length < 2) return null; const groups = []; hr[0].querySelectorAll('th').forEach((th) => { if (th.getAttribute('rowspan')) return; const n = +th.getAttribute('colspan') || 1; for (let i = 0; i < n; i++) groups.push(th.textContent.trim()); });
+    const subs = [...hr[1].querySelectorAll('th')].map((th) => th.textContent.trim()); if (!groups.length || groups.length !== subs.length) return null;
+    const key = (s) => (/부수/.test(s) ? 'qty' : /종수/.test(s) ? 'titles' : /금액/.test(s) ? 'amt' : s);
+    const rows = []; t.querySelectorAll('tbody tr').forEach((tr) => { const th = tr.querySelector('th'); const m = th && th.textContent.match(/(\d{2,4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/); if (!m) return;
+      const y = m[1].length === 2 ? 2000 + +m[1] : +m[1]; const date = `${y}${String(m[2]).padStart(2, '0')}${String(m[3]).padStart(2, '0')}`; const tds = [...tr.querySelectorAll('td')]; if (tds.length !== subs.length) return;
+      const series = {}; tds.forEach((td, i) => { const v = +String(td.textContent).replace(/[^\d.-]/g, ''); (series[groups[i]] = series[groups[i]] || {})[key(subs[i])] = Number.isFinite(v) ? v : null; }); rows.push({ date, series }); });
+    const cm = (html.match(/cMonth\s*=\s*"(\d{8})"/g) || []).length; return { rows, groups: [...new Set(groups)], cMonth: cm }; }
+  let kpTok = null;
+  async function kpToken() { const r = await kpReq({ method: 'GET', url: KP_PAGE }); if (r.status >= 400) throw new Error(`판매 보고서 화면을 못 엶 (HTTP ${r.status})`); const m = String(r.responseText || '').match(/m_sCsrf\s*=\s*"([^"]+)"/); if (!m) throw new Error('화면에서 보안 표(CSRF)를 못 찾음 — 화면 모양이 바뀌었을 수 있음'); kpTok = m[1]; return kpTok; }
+  async function kpFetch(type, from, to) { for (let tryN = 0; tryN < 2; tryN++) { if (!kpTok || tryN) await kpToken();
+      const body = new URLSearchParams({ rdoSearchType: type, rdoSearchPeriod: 'date', txtFromDate: from, txtToDate: to, _csrf: kpTok }).toString();
+      const r = await kpReq({ method: 'POST', url: KP_PAGE + '/search', data: body, headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-CSRF-TOKEN': kpTok, 'X-Requested-With': 'XMLHttpRequest', Referer: KP_PAGE } });
+      const p = r.status < 400 ? kpParse(r.responseText || '') : null; if (p && p.rows.length) return p;
+      if (tryN) throw new Error(`표를 못 받음 (HTTP ${r.status}${r.status < 400 ? ' · 응답 앞부분: ' + String(r.responseText || '').replace(/\s+/g, ' ').slice(0, 160) : ''})`); }
+    return null; }
+  async function kpipaJob() {
+    const cfg = (await C('app_settings').doc('kpipa').get().catch(() => null))?.data?.() || {}; const days = Math.max(5, Math.min(1900, +cfg.days || 730));
+    const now = Date.now(); const kh = new Date(now + 9 * 3600e3).getUTCHours() * 60 + new Date(now + 9 * 3600e3).getUTCMinutes();
+    const end = kpAdd(kpYmd(now), kh >= 14 * 60 + 30 ? -1 : -2); const start = kpAdd(end, -(days - 1));
+    ui('출판 판매 통계: 이미 받은 날 확인', 0, 0); const have = new Map(); (await C('mkt_kpipa').where(firebase.firestore.FieldPath.documentId(), '>=', start).get()).forEach((d) => have.set(d.id, d.data()));
+    const recent = kpAdd(end, -6); const plan = [];
+    for (const type of ['onOff', 'bookType']) { const need = []; for (let d = start; d <= end; d = kpAdd(d, 1)) { const x = have.get(d); if (!x || !x[type] || d >= recent) need.push(d); }
+      // 이어진 날짜끼리 31일 이하 묶음으로 (화면 규칙: 5~31일) — 5일보다 짧으면 앞으로 늘려 5일
+      let i = 0; while (i < need.length) { let j = i; while (j + 1 < need.length && need[j + 1] === kpAdd(need[j], 1) && j - i < 30) j++; let from = need[i]; const to = need[j]; let n = j - i + 1; if (n < 5) { from = kpAdd(to, -4); n = 5; } plan.push({ type, from, to }); i = j + 1; } }
+    log(`📚 출판 판매 통계: ${start.slice(0, 4)}-${start.slice(4, 6)}-${start.slice(6)} ~ ${end.slice(0, 4)}-${end.slice(4, 6)}-${end.slice(6)} (${days}일) · 이미 ${have.size}일 있음 · 받을 묶음 ${plan.length}개 (31일씩, 판매채널별·도서유형별)`);
+    let wrote = 0, same = 0, changed = 0, rowsN = 0; const seen = new Set(have.keys()); const groupsSeen = { onOff: new Set(), bookType: new Set() };
+    for (let k = 0; k < plan.length; k++) { if (stopFlag) throw new Error('멈춤'); const c = plan[k]; ui('출판 판매 통계 (KPIPA)', k, plan.length, `${c.type === 'onOff' ? '판매채널별' : '도서유형별'} ${c.from}~${c.to}`);
+      let p; try { p = await kpFetch(c.type, c.from, c.to); } catch (e) { log(`📚 ${c.type === 'onOff' ? '판매채널별' : '도서유형별'} ${c.from}~${c.to}: ${e.message}`, 1); if (k === 0) throw e; continue; }
+      if (p.cMonth && p.cMonth !== p.rows.length) log(`📚 ${c.from}~${c.to}: 표의 날짜 ${p.rows.length}줄 · 그래프 날짜 ${p.cMonth}개 — 수가 달라 표 기준으로 저장`, 1);
+      p.groups.forEach((g) => groupsSeen[c.type].add(g)); rowsN += p.rows.length;
+      for (const r of p.rows) { const ref = C('mkt_kpipa').doc(r.date); const old = have.get(r.date) || {}; const prev = old[c.type] && old[c.type].series; const sig = JSON.stringify(r.series);
+        if (prev && JSON.stringify(prev) === sig) { same++; continue; }
+        const up = { date: `${r.date.slice(0, 4)}-${r.date.slice(4, 6)}-${r.date.slice(6)}`, [c.type]: { series: r.series, at: nowIso() }, ...W() };
+        if (prev) { up.history = firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), type: c.type, old: prev }); changed++; } else wrote++;
+        await ref.set(up, { merge: true }); have.set(r.date, { ...old, [c.type]: { series: r.series } }); seen.add(r.date); }
+      await sleep(3000 + Math.random() * 2000); }
+    const st = { lastRunAt: nowIso(), lastDay: end, from: start, days: seen.size, groups: { onOff: [...groupsSeen.onOff], bookType: [...groupsSeen.bookType] }, by: PC_NAME, wrote, changed };
+    await C('app_settings').doc('kpipa').set({ status: st }, { merge: true }).catch(() => {});
+    if (groupsSeen.bookType.size > 1 || [...groupsSeen.bookType].some((g) => g !== '종이책')) log(`📚 도서유형에 새 묶음이 보입니다: ${[...groupsSeen.bookType].join(', ')} (전자책·오디오북 공개 시작일 수 있음 — 그대로 함께 저장함)`, 1);
+    log(`📚 출판 판매 통계 끝: 받은 날 ${rowsN}줄 · 새로 ${wrote} · 고쳐진 날 ${changed}(옛 값은 history에) · 같아서 건너뜀 ${same} · 모은 날 모두 ${seen.size}일`); }
+  /* 하루 한 번 자동 (14:30 뒤 · 이 PC의 수집기 탭 · 여러 PC면 먼저 맡은 한 대) — 웹앱 설정에서 끌 수 있음(auto:false) */
+  setInterval(async () => { try { if (running || window.__rnPaused || !auth.currentUser || (window.__rnRest && window.__rnRest())) return; const k = new Date(Date.now() + 9 * 3600e3); if (k.getUTCHours() * 60 + k.getUTCMinutes() < 14 * 60 + 35) return;
+    const cfg = (await C('app_settings').doc('kpipa').get()).data() || {}; if (cfg.auto === false) return; const day = kpYmd(Date.now()); if (cfg.autoDay === day) return;
+    let mine = false; await db.runTransaction(async (tx) => { const ref = C('app_settings').doc('kpipa'); const s = await tx.get(ref); const v = s.exists ? s.data() : {}; if (v.autoDay === day) return; tx.set(ref, { autoDay: day, autoBy: PC_NAME, autoAt: nowIso() }, { merge: true }); mine = true; });
+    if (!mine) return; log('📚 출판 판매 통계 하루 한 번 자동 받기 시작'); window.__rnAuto = true; try { await runJob('kpipa'); } finally { window.__rnAuto = false; } } catch (e) {} }, 15 * 60000);
   const JOBS = {
     bench: ['집중 벤치마킹 판매자 (고른 판매자 숍 전체)', () => benchJob()],
     scanNew: ['신규 등록분 수집', () => scan('new')],
@@ -2416,6 +2473,7 @@
     nbMarket: ['새상품 없는 상품 시세', () => nbMarketJob()],
     buyback: ['알라딘 팔기 내역', () => buybackJob()],
     dynamic: ['구매자 분포·함께 산 책', () => dynJob(SET.dynDaily || 0)],
+    kpipa: ['출판 판매 통계 (KPIPA 판매 보고서)', () => kpipaJob()],
   };
   /* ───────── 버전 맞추기: 다른 PC가 더 새 수집기로 돌기 시작하면, 이 PC는 지금 항목까지 저장하고 멈춘 뒤 새로고침해 새 버전으로 이어감 ─────────
    * (동기화로 스크립트 파일은 바뀌어도, 이미 열려 있던 탭은 새로고침 전까지 예전 코드로 돎) */
@@ -2441,7 +2499,7 @@
     { const after = GM_getValue('rnu-resume-after-reload', null);
       if (after && JOBS[after]) { let tries = 0; const t = setInterval(() => { tries++;
         if (window.__rnPaused) { clearInterval(t); log(`새로고침 뒤 이어가기 '${JOBS[after][0]}': 일시정지 상태라 이어가지 않음 (개요 탭의 ▶ 다시 시작으로 계속)`, 1); return; }
-        if (running) return; if (tries > 40) { clearInterval(t); log(`새로고침 뒤 이어가기 '${JOBS[after][0]}'를 10분 동안 시작하지 못했습니다 — 개요 탭 '멈춘 작업'의 이어하기를 눌러 주세요`, 1); return; }
+        if (running || (window.__rnRest && window.__rnRest())) return; /* (1.56.0) 이 PC의 수집기 탭이 이어감 */ if (tries > 40) { clearInterval(t); log(`새로고침 뒤 이어가기 '${JOBS[after][0]}'를 10분 동안 시작하지 못했습니다 — 개요 탭 '멈춘 작업'의 이어하기를 눌러 주세요`, 1); return; }
         clearInterval(t); GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 '${JOBS[after][0]}'을(를) 저장된 자리부터 이어갑니다 (수집기 ${VER})`); window.__rnAuto = true; runJob(after).finally(() => { window.__rnAuto = false; }); }, 15000); } }
   }
   // (1.26.1) 안전한 새로고침: 바로 location.reload()하면 알라딘이 429(요청 너무 많음)를 돌려줄 때 크롬 오류 화면에 멈춤(그 화면에서는 어떤 스크립트도 못 돎).
@@ -2457,7 +2515,7 @@
       if (st === 200) {
         const id = HANDOFF_TAB + '_' + tryN; GM_setValue('rn-handoff', { id, at: Date.now() }); GM_setValue('rn-handoff-ack', null);
         log(`${reason}: 새 탭으로 다시 엽니다 (${tryN}번째)`); let tab = null; try { tab = GM_openInTab(location.href.replace(/#.*$/, ''), { active: true, insert: true, setParent: true }); } catch (e) {}
-        const t0 = Date.now(); while (Date.now() - t0 < 120000) { await sleep(3000); if (GM_getValue('rn-handoff-ack', null) === id) { log(`[안전한 새로고침] 새 탭이 이어받았습니다 (${Math.round((Date.now() - t0) / 1000)}초 만에) — 남은 기록을 저장하고 이 탭을 닫습니다 · 전체 ${Math.round((Date.now() - tStart) / 60000)}분 걸림`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} location.replace('about:blank'); return; } }
+        const t0 = Date.now(); while (Date.now() - t0 < 120000) { await sleep(3000); if (GM_getValue('rn-handoff-ack', null) === id) { window.__rnLeadRelease && window.__rnLeadRelease(); log(`[안전한 새로고침] 새 탭이 이어받았습니다 (${Math.round((Date.now() - t0) / 1000)}초 만에) — 남은 기록을 저장하고 이 탭을 닫습니다 · 전체 ${Math.round((Date.now() - tStart) / 60000)}분 걸림`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} location.replace('about:blank'); return; } }
         let closed = false; try { if (tab) { tab.close(); closed = true; } } catch (e) {} log(`[안전한 새로고침] 새 탭이 2분 안에 뜨지 않았습니다(알라딘 오류 화면 — 429 등일 가능성) → 그 탭을 ${closed ? '닫음' : '닫지 못함(직접 닫아 주세요)'} · ${Math.round(wait / 6000) / 10}분 기다렸다 다시`, 1); PACE.fail('429');
       } else { log(`${reason}: 알라딘이 ${st || '응답 없음'}(${st === 429 ? '요청 너무 많음' : '아직 안 됨'}) — ${Math.round(wait / 6000) / 10}분 뒤 다시 확인`, 1); if (st === 429) PACE.fail('429'); }
       ui(`${reason} — 알라딘이 다시 받아 줄 때까지 기다리는 중`, 0, 0, `${Math.round(wait / 6000) / 10}분 뒤 다시 확인 (${tryN}번째) · 이 탭을 닫지 마세요`);
@@ -2465,7 +2523,7 @@
     }
   }
   // 새 탭 쪽: 안전한 새로고침으로 열린 탭이면 '받았음' 신호
-  { const h = GM_getValue('rn-handoff', null); if (h && h.id && Date.now() - h.at < 10 * 60000) { GM_setValue('rn-handoff-ack', h.id); GM_setValue('rn-handoff', null); const rk = GM_getValue('rnu-resume-after-reload', null); log(`[안전한 새로고침] 이 탭이 새로 열려 이어받음 (옛 탭 신호 ${h.id}, ${Math.round((Date.now() - h.at) / 1000)}초 전)${rk ? ` · 곧 '${(JOBS[rk] || [rk])[0]}' 이어가기` : ''}`); } }
+  { const h = GM_getValue('rn-handoff', null); if (h && h.id && Date.now() - h.at < 10 * 60000) { window.__rnClaimHeir && window.__rnClaimHeir(); GM_setValue('rn-handoff-ack', h.id); GM_setValue('rn-handoff', null); const rk = GM_getValue('rnu-resume-after-reload', null); log(`[안전한 새로고침] 이 탭이 새로 열려 이어받음 (옛 탭 신호 ${h.id}, ${Math.round((Date.now() - h.at) / 1000)}초 전)${rk ? ` · 곧 '${(JOBS[rk] || [rk])[0]}' 이어가기` : ''}`); } }
   // (1.25.1) 메모리 지킴이: 오래 도는 작업 중 이 탭의 메모리가 한계의 65%를 넘거나 숨은 창으로 연 페이지가 SET.reloadEveryFrames(400)개를 넘으면
   //  진행 위치를 저장하고 멈춘 뒤 탭을 새로고침해, 같은 작업을 그 자리부터 자동으로 이어감 (새로고침하면 탭 메모리가 처음으로 돌아감)
   let frameLoads = 0, memReload = false, verReload = false;
@@ -2479,8 +2537,9 @@
   let lastRunErr = null;
   async function runJob(key, opt) {
     const [name, fn] = JOBS[key]; lastRunErr = null;
+    if (window.__rnGate && !window.__rnGate(name)) return false; // (1.56.0) 쉬는 탭이면 시작 안 함 (사람이 누른 거면 켤지 물음)
     if (running && curKey === 'explore' && key !== 'explore') { log(`'${name}'을(를) 먼저 하려고 끝없는 탐색 수집을 잠시 멈춥니다 — 끝나면 탐색을 다시 이어감`); GM_setValue('rn-explore-resume', true); stopFlag = true; for (let w = 0; w < 180 && running; w++) await sleep(1000); stopFlag = false; }
-    if (running) { log('이 탭에서 다른 작업 진행 중: ' + running + ' — 다른 알라딘 작업은 새 탭에서 동시에 할 수 있습니다', 1); return; }
+    if (running) { log('이 탭에서 다른 작업 진행 중: ' + running + ' — 끝난 뒤 다시 누르세요 (한 PC에 수집기 하나가 원칙 · 꼭 동시에 해야 하면 새 탭의 [이 탭도 켜기…], 단점 안내 있음)', 1); return; }
     curKey = key; FORCE_ALL = !!(opt && opt.manual) && !['chain', 'prdChain'].includes(key); setRunning(name); const tJ = Date.now(); if (FORCE_ALL) log(`수동 실행: '${name}'을(를) 기간 제한 없이 전부 모읍니다 (기존 기록은 그대로 두고 바뀐 것만 덧붙임)`); if (window.__rnStatus) Object.assign(window.__rnStatus, { job: name, jobKey: key, jobStart: tJ, cur: {}, chain: (key === 'chain' || key === 'prdChain') ? window.__rnStatus.chain : null, sub: null }); log(`▶ '${name}' 시작 (수집기 ${VER} · ${PC_NAME})`);
     let res;
     try { res = await fn(); if (res === 'reload') { ui('새 버전으로 바꾸는 중 — 곧 이어감', 0, 0); } else if (res === 'cancel') { ui('취소함', 0, 0); log(`'${name}' 취소함`); } else if (res === false) { ui('시작 못 함 — 다른 PC가 알라딘 작업 중', 0, 0, '', '그 작업이 끝나면 자동으로 시작합니다 (일시정지를 누르면 취소)'); log(`'${name}': 다른 PC가 알라딘 작업 중이라 기다립니다. 끝나면 자동으로 시작합니다`, 1); waitThenRun(key); } else if (!stopFlag) { ui('완료: ' + name, 1, 1, '', ''); log(name + ' 완료', 0); } }

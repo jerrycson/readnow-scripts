@@ -1,7 +1,7 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.55.0의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.56.0의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.55.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.56.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
  * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
@@ -57,6 +57,63 @@
   const onRemote = (v) => { v = !!v; if (v === window.__rnPaused) return; window.__rnPaused = v; if (v) { stopHere(); window.__rnLog && window.__rnLog('수집기', 'warn', '■ 다른 탭에서 일시정지를 눌렀습니다 — 이 탭의 작업도 지금 항목까지 저장하고 멈춤'); } else window.__rnLog && window.__rnLog('수집기', 'info', '▶ 다른 탭에서 다시 시작을 눌렀습니다 (일시정지 풀림)'); changed(); };
   try { if (typeof GM_addValueChangeListener === 'function') GM_addValueChangeListener('rnu-paused', (k, o, n, remote) => { if (remote) onRemote(n); }); else throw 0; } catch (e) { setInterval(() => onRemote(GM_getValue('rnu-paused', false)), 3000); }
 })();
+/* (1.56.0) 한 PC에 수집기 하나 — 같은 PC(같은 브라우저)에서 수집기 화면(주문조회·판매관리·상품 조회)을 여러 탭·창으로 열어도 '일하는 수집기'는 한 탭뿐
+ *  · 먼저 열린 탭 = 이 PC의 수집기(lead): 매일 자동 수집·웹앱 요청·맡긴 일(등록·송장·시장 지표)·이어가기를 모두 맡음
+ *  · 나중에 열린 탭 = 쉬는 탭(follow): 관제판·기록 창이 접힌 채로 뜨고, 어떤 작업도 저절로 시작하지 않음. 머리줄 아래 옅은 띠에 '이미 이 PC에서 수집기가 일하는 중'을 표시
+ *    수집기 탭을 닫으면 쉬는 탭 중 하나가 저절로 이어받음(그때부터 자동 작업도 맡음)
+ *  · 꼭 필요하면 쉬는 탭에서 [이 탭도 수집기로 켜기] → 단점을 알린 뒤 켬(force): 사람이 직접 누른 작업만 하고, 자동·웹앱 요청·맡긴 일은 계속 원래 탭이 맡음. 새로고침하면 다시 쉬는 탭
+ *  고르는 방법: 브라우저의 Web Locks('rn-collector-lead' — 탭이 닫히거나 멈추면 브라우저가 저절로 풀어 줌). 없는 브라우저면 GM 값 심장박동(5초, 15초 조용하면 넘겨받음)
+ *  안전한 새로고침(새 탭을 열고 옛 탭을 닫음)으로 열린 새 탭은 '이어받을 탭(heir)'으로 표시해, 다른 쉬는 탭이 아니라 그 탭이 수집기를 이어받음 */
+(function rnRole() {
+  const PANEL = window.top === window && /\/scm\/(worders|worder_preparatory_complete|wrecord_edit)\.aspx/i.test(location.pathname);
+  const ME = window.__rnTab || Math.random().toString(36).slice(2, 8); window.__rnTab = ME;
+  const PAGE = location.pathname.split('/').pop();
+  const LK = 'rn-collector-lead', GK = 'rnu-lead', HK = 'rnu-lead-heir';
+  let role = PANEL ? 'wait' : 'other'; let release = null; let beatT = null; let readyRes; const subs = [];
+  window.__rnRoleReady = new Promise((r) => (readyRes = r)); if (!PANEL) readyRes();
+  const L = (lv, m) => { try { window.__rnLog && window.__rnLog('수집기', lv, m); } catch (e) {} };
+  const fire = () => { readyRes(); subs.forEach((f) => { try { f(role); } catch (e) {} }); try { window.__rnCtlDraw && window.__rnCtlDraw(); } catch (e) {} };
+  window.__rnPageName = (p) => (/worders/i.test(p || '') ? '주문조회' : /wrecord_edit/i.test(p || '') ? '상품 조회' : /preparatory/i.test(p || '') ? '판매관리' : p || '다른 화면');
+  window.__rnRole = () => role;
+  window.__rnRoleOn = (f) => subs.push(f);
+  window.__rnLead = () => { const v = GM_getValue(GK, null); return v && Date.now() - (v.at || 0) < 20000 ? v : null; };
+  /* 자동·원격 작업을 건너뛸 탭: 쉬는 탭·확인 중·떠나는 탭, 그리고 '켜 둔' 탭(사람이 누른 것만) */
+  window.__rnRest = () => role === 'wait' || role === 'follow' || role === 'force' || role === 'leaving';
+  const beat = () => { if (role === 'lead') { try { GM_setValue(GK, { tab: ME, page: PAGE, at: Date.now(), since: window.__rnLeadSince || Date.now() }); } catch (e) {} } };
+  const heirOther = () => { const h = GM_getValue(HK, null); return h && h.tab !== ME && Date.now() - (h.at || 0) < 3 * 60000 ? h : null; };
+  const setLead = (how) => { role = 'lead'; window.__rnLeadSince = Date.now(); const h = GM_getValue(HK, null); if (h && h.tab === ME) GM_deleteValue(HK); beat(); clearInterval(beatT); beatT = setInterval(beat, 5000);
+    if (how === 'promote') L('ok', '이 탭이 이제 이 PC의 수집기입니다 (앞서 일하던 수집기 탭이 닫혀 이어받음) — 지금부터 자동 수집·웹앱 요청·맡긴 일도 이 탭이 맡습니다'); fire(); };
+  const setFollow = () => { if (role === 'force') return fire(); role = 'follow'; const v = window.__rnLead();
+    L('info', `이 PC에서는 이미 수집기가 일하는 중${v ? ` (${window.__rnPageName(v.page)} 탭)` : ''} — 이 탭은 쉬는 상태로 엽니다. 저절로 시작하는 작업은 없고, 그 탭을 닫으면 이 탭이 이어받습니다`); fire(); };
+  window.__rnForce = (on) => { if (!PANEL || role === 'lead') return; if (on) { role = 'force'; L('warn', '⚠ 이 탭도 수집기로 켬 (사람이 누름) — 이 PC에 수집기 2개. 자동·웹앱 요청은 원래 탭이 계속 맡고 이 탭은 직접 누른 작업만'); }
+    else { const busy = (window.__rnPrd && window.__rnPrd.busy && window.__rnPrd.busy()) || (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()); if (busy) { alert('이 탭에서 작업이 진행 중입니다. 일시정지로 멈춘 뒤 다시 눌러 주세요'); return; } role = 'follow'; L('info', '이 탭을 다시 쉬는 상태로 돌림'); } fire(); };
+  /* 쉬는 탭에서 사람이 작업 단추를 누르면: 켤지 묻고(단점 안내) 켜면 진행. 저절로 온 요청이면 막고 기록만 (10분에 한 번) */
+  let lastNote = 0;
+  window.__rnForceAsk = () => { const v = window.__rnLead();
+    return confirm(`이 탭도 수집기로 켤까요?\n\n이 PC에서는 이미 ${v ? `'${window.__rnPageName(v.page)}' 탭의 ` : '다른 탭의 '}수집기가 일하고 있습니다. 한 PC에는 수집기 하나가 원칙입니다.\n\n켜면 생기는 단점:\n· 같은 PC·같은 알라딘 아이디로 요청이 두 배로 나가, '요청 너무 많음(429)'·잠시 막힘에 더 빨리 걸립니다. 걸리면 두 탭 모두 느려지고, 다른 PC의 수집까지 늦어질 수 있습니다\n· 두 탭이 같은 종류의 작업을 하면 진행 위치(이어하기 자리)를 서로 덮어쓰거나 같은 쪽을 두 번 읽을 수 있습니다 (작업 잠금이 대부분 막지만 완전하지는 않습니다)\n· 브라우저 메모리·CPU를 두 배로 써서 탭이 느려지거나 멈출 수 있습니다\n· 기록과 진행 상태가 두 탭으로 나뉘어, 무엇이 어디서 도는지 헷갈리기 쉽습니다\n\n켜도 매일 자동 수집·웹앱 요청·맡긴 일(등록·송장·시장 지표)은 원래 탭이 계속 맡고, 이 탭은 사람이 직접 누른 작업만 합니다.\n이 탭을 새로고침하면 다시 쉬는 상태로 돌아갑니다.\n\n그래도 이 탭을 켤까요?`); };
+  window.__rnGate = (what) => { if (role === 'lead' || role === 'other' || role === 'force') return true;
+    let gesture = false; try { gesture = !!(navigator.userActivation && navigator.userActivation.isActive); } catch (e) {}
+    if (gesture && role !== 'leaving') { if (window.__rnForceAsk()) { window.__rnForce(true); return true; } return false; }
+    if (Date.now() - lastNote > 10 * 60000) { lastNote = Date.now(); L('info', `쉬는 탭이라 '${what || '작업'}'을(를) 시작하지 않음 — 이 PC의 수집기 탭이 맡습니다`); } return false; };
+  /* 안전한 새로고침: 옛 탭은 넘겨주며 놓고(떠남), 새 탭은 '이어받을 탭'으로 표시 */
+  window.__rnLeadRelease = () => { if (role !== 'lead') return; role = 'leaving'; clearInterval(beatT); try { const v = GM_getValue(GK, null); if (v && v.tab === ME) GM_deleteValue(GK); } catch (e) {} if (release) { const r = release; release = null; r(); } };
+  window.__rnClaimHeir = () => { try { GM_setValue(HK, { tab: ME, at: Date.now() }); } catch (e) {} };
+  addEventListener('pagehide', () => { if (role === 'lead') { try { const v = GM_getValue(GK, null); if (v && v.tab === ME) GM_deleteValue(GK); } catch (e) {} } });
+  if (!PANEL) return;
+  const hold = () => new Promise((res) => { release = res; });
+  // 넘겨받을 차례가 됐는데 이어받을 탭(heir)이 따로 있으면, 그 탭에 양보하고 다시 줄을 섬
+  const queue = () => navigator.locks.request(LK, () => { if (heirOther()) { setTimeout(queue, 1500); return null; } setLead('promote'); return hold(); }).catch(() => {});
+  const viaGM = () => { // Web Locks가 없는 브라우저: 심장박동
+    const tick = () => { if (role === 'lead') return beat(); if (role === 'leaving') return; const v = GM_getValue(GK, null); const fresh = v && v.tab !== ME && Date.now() - (v.at || 0) < 15000;
+      if (!fresh && !heirOther()) { GM_setValue(GK, { tab: ME, page: PAGE, at: Date.now() }); setTimeout(() => { const w = GM_getValue(GK, null); if (w && w.tab === ME) setLead(role === 'wait' ? 'first' : 'promote'); else if (role === 'wait') setFollow(); }, 800); }
+      else if (role === 'wait') setFollow(); };
+    tick(); setInterval(tick, 5000); };
+  try {
+    if (!navigator.locks || !navigator.locks.request) throw 0;
+    navigator.locks.request(LK, { ifAvailable: true }, (lk) => { if (!lk || heirOther()) { setFollow(); queue(); return null; } setLead('first'); return hold(); }).catch(() => viaGM());
+  } catch (e) { viaGM(); }
+  setTimeout(() => { if (role === 'wait') { L('warn', '수집기 탭 정하기가 5초 안에 끝나지 않아 심장박동 방식으로 바꿉니다'); viaGM(); } }, 5000);
+})();
 (function rnPcName() {
   const keys = () => { let n = null; try { n = GM_getValue('rnu-pcname', null) || GM_getValue('pcName', null) || (GM_getValue('rn-pc', {}) || {}).name || localStorage.getItem('rnu-pcname'); } catch (e) {} return n && String(n).trim() ? String(n).trim() : null; };
   const setAll = (n) => { n = String(n || '').trim(); if (!n) return; try { GM_setValue('rnu-pcname', n); GM_setValue('pcName', n); const pc = GM_getValue('rn-pc', null) || { id: Math.random().toString(36).slice(2, 10), name: '' }; if (pc.name !== n) { pc.name = n; GM_setValue('rn-pc', pc); } localStorage.setItem('rnu-pcname', n); } catch (e) {} };
@@ -109,12 +166,12 @@
   window.__rnFlush = async () => { try { await jflush(); } catch (e) {} try { await upNow(); } catch (e) {} }; // 탭을 닫기 직전 등: 남은 기록을 이 PC(IndexedDB)와 Firebase에 바로 저장
   /* (1.38.0) 탭끼리 나누는 '지금 상태'와 '최근 기록' — 개요 화면은 어느 탭에서 열어도 이 PC 전체(모든 수집기 탭)를 보여 줌
    *  GM 'rnu-live-{탭}' = 그 탭이 지금 하는 일(2초마다) · 'rnu-lt-{탭}' = 그 탭의 중요한 기록 마지막 80줄. 닫힌 탭의 값은 저절로 정리(상태 1분, 기록 12시간) */
-  const TAB = Math.random().toString(36).slice(2, 8); window.__rnTab = TAB;
+  const TAB = window.__rnTab || Math.random().toString(36).slice(2, 8); window.__rnTab = TAB; // (1.56.0) 수집기 탭 고르기(rnRole)와 같은 이름
   const page = location.pathname.split('/').pop();
   const liveNow = () => { const S = window.__rnStatus || {}; let crmBusy = false, crmLabel = null; try { crmBusy = !!(window.__rnCrm && window.__rnCrm.busy()); crmLabel = crmBusy && window.__rnCrm.label ? String(window.__rnCrm.label() || '') : null; } catch (e) {}
     let imgBusy = false; try { imgBusy = !!(window.__rnPrd && window.__rnPrd.imgBusy && window.__rnPrd.imgBusy()); } catch (e) {}
     const slim = (o) => (o && typeof o === 'object' ? JSON.parse(JSON.stringify(o)) : o || null);
-    return { tab: TAB, page, at: Date.now(), busy: !!(S.job || crmBusy || imgBusy), job: S.job || (crmBusy ? '고객·주문: ' + (crmLabel || '수집') : imgBusy ? '이미지 받기' : null), jobKey: S.jobKey || null, jobStart: S.jobStart || null, chain: slim(S.chain), sub: slim(S.sub), cur: slim(S.cur), crm: slim(S.crm), ph: slim(S.ph), crmBusy, lastEnd: S.lastEnd || null, stopping: !!(S.job && window.__rnPaused) }; };
+    return { tab: TAB, page, role: window.__rnRole ? window.__rnRole() : null, at: Date.now(), busy: !!(S.job || crmBusy || imgBusy), job: S.job || (crmBusy ? '고객·주문: ' + (crmLabel || '수집') : imgBusy ? '이미지 받기' : null), jobKey: S.jobKey || null, jobStart: S.jobStart || null, chain: slim(S.chain), sub: slim(S.sub), cur: slim(S.cur), crm: slim(S.crm), ph: slim(S.ph), crmBusy, lastEnd: S.lastEnd || null, stopping: !!(S.job && window.__rnPaused) }; };
   const pubLive = () => { try { GM_setValue('rnu-live-' + TAB, liveNow());
       if (ltDirty) { ltDirty = false; GM_setValue('rnu-lt-' + TAB, lt.slice()); } } catch (e) {} };
   setInterval(pubLive, 2000); setTimeout(pubLive, 300);
@@ -149,7 +206,7 @@
     if (x && (x.state || x.label)) h += `<div class="ol now">지금: <b>${x.state || x.label}</b>${x.total ? ` · ${(+x.done || 0).toLocaleString()} / ${(+x.total).toLocaleString()} (${(curFrac(x) * 100).toFixed(1)}%)` : ''}${x.etaMin != null ? ` · 남은 시간 약 ${fm(x.etaMin * 60000)} (끝 ${new Date(Date.now() + x.etaMin * 60000).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})` : ''}</div>${x.total ? bar(curFrac(x), '#3F7FD1') : ''}${x.sub ? `<div class="ol sub">${String(x.sub).replace(/</g, '&lt;')}</div>` : ''}`;
     return h; };
   const mount = () => { document.head.appendChild(st); const w = document.createElement('div'); w.id = 'rn-jw';
-    w.innerHTML = `<div class="h"><b title="이 띠를 잡고 끌어서 옮김 · 두 번 누르면 처음 자리로 · 오른쪽 아래 모서리로 크기 조절">⠿ 작업 기록 — ${pcName()}</b><span class="jt"><button data-jt="today" class="on" title="이 화면을 연(새로고침한) 뒤의 기록">이번 화면</button><button data-jt="hist" title="날짜별로 쌓인 모든 기록 (오늘 포함)">전체 기록</button><button data-jt="pw" title="가격 감시기의 지금 상태와 기록만 따로 (수집기 기록과 섞지 않음 · 이 PC의 감시 탭에서 모아 둠)">🛰 감시</button></span><select id="rnjF"><option value="imp">중요만</option><option value="all" selected>전체 (항목마다)</option><option value="err">오류·경고만</option></select><input id="rnjQ" placeholder="검색"><label style="font-weight:400"><input type="checkbox" id="rnjA" checked> 자동 스크롤</label><button id="rnjD" title="모든 기록(오늘+지난)을 파일로 받고, 이 PC의 기록을 비웁니다">내려받기·비우기</button><button id="rnjX">닫기</button></div><div class="ov" id="rnjO"></div><div class="b" id="rnjB"></div>`;
+    w.innerHTML = `<div class="h"><b title="이 띠를 잡고 끌어서 옮김 · 두 번 누르면 처음 자리로 · 오른쪽 아래 모서리로 크기 조절">⠿ 작업 기록 — ${pcName()}</b><span class="jt"><button data-jt="today" class="on" title="이 화면을 연(새로고침한) 뒤의 기록">이번 화면</button><button data-jt="hist" title="날짜별로 쌓인 모든 기록 (오늘 포함)">전체 기록</button><button data-jt="pw" title="가격 감시기의 지금 상태와 기록만 따로 (수집기 기록과 섞지 않음 · 이 PC의 감시 탭에서 모아 둠)">🛰 감시</button><button data-jt="pcs" title="다른 PC 수집기의 기록 (각 PC가 1분마다 Firebase에 올린 것 · 1분마다 새로 읽음)">🖥 다른 PC</button></span><select id="rnjF"><option value="imp">중요만</option><option value="all" selected>전체 (항목마다)</option><option value="err">오류·경고만</option></select><input id="rnjQ" placeholder="검색"><label style="font-weight:400"><input type="checkbox" id="rnjA" checked> 자동 스크롤</label><button id="rnjD" title="모든 기록(오늘+지난)을 파일로 받고, 이 PC의 기록을 비웁니다">내려받기·비우기</button><button id="rnjX">닫기</button></div><div class="ov" id="rnjO"></div><div class="b" id="rnjB"></div>`;
     document.body.appendChild(w); let lastDrawn = -1;
     // 위쪽 초록 띠를 잡고 끌어서 옮김. 위치·크기는 기억 (화면 밖으로 나가지 않게)
     const place = () => { const g = GM_getValue('rnu-jw-geo', null); if (!g) return; const W = Math.min(g.w || 760, innerWidth - 20), H = Math.min(g.h || 360, innerHeight - 20);
@@ -167,7 +224,7 @@
     const drawHist = async () => { const b = w.querySelector('#rnjB'); b.innerHTML = '<div class="detail">불러오는 중</div>'; let keys = []; try { await jflush(); keys = (await jdays()).sort().reverse(); } catch (e) {}
       b.innerHTML = keys.map((k) => `<details class="jd" data-day="${k}"><summary>${k}${k === day(new Date()) ? ' (오늘)' : ''} <small>펼쳐서 보기</small></summary><div class="jdb"></div></details>`).join('') || '<div class="detail">쌓인 기록 없음</div>';
       b.querySelectorAll('details.jd').forEach((d) => (d.ontoggle = async () => { if (!d.open) return; const rec = await jgetDay(d.dataset.day); const L = (rec && rec.lines) || []; const rows = L.filter(pass); d.querySelector('summary small').textContent = `${L.length.toLocaleString()}줄 · 오류 ${L.filter((e) => e.l === 'err').length} · 경고 ${L.filter((e) => e.l === 'warn').length}${rows.length !== L.length ? ` · 거른 결과 ${rows.length.toLocaleString()}줄` : ''}`; d.querySelector('.jdb').innerHTML = rows.slice(-5000).map(fmtRow).join('') || '<div class="detail">없음</div>'; })); };
-    w.querySelectorAll('[data-jt]').forEach((bt) => (bt.onclick = () => { tab = bt.dataset.jt; w.querySelectorAll('[data-jt]').forEach((x) => x.classList.toggle('on', x === bt)); lastDrawn = -1; pwDrawn = -1; if (tab === 'hist') drawHist(); else if (tab === 'pw') drawPw(); else draw(); drawOv(); }));
+    w.querySelectorAll('[data-jt]').forEach((bt) => (bt.onclick = () => { tab = bt.dataset.jt; w.querySelectorAll('[data-jt]').forEach((x) => x.classList.toggle('on', x === bt)); lastDrawn = -1; pwDrawn = -1; if (tab === 'hist') drawHist(); else if (tab === 'pw') drawPw(); else if (tab === 'pcs') drawPcs(true); else draw(); drawOv(); }));
     const draw = () => { if (!w.classList.contains('on') || tab !== 'today') return; const f = w.querySelector('#rnjF').value, q = w.querySelector('#rnjQ').value.trim();
       const rows = buf.filter((e) => (f === 'all' || (f === 'imp' ? e.l !== 'detail' : e.l === 'err' || e.l === 'warn')) && (!q || e.x.includes(q))).slice(-3000);
       const b = w.querySelector('#rnjB'); b.innerHTML = rows.map((e) => `<div class="${e.l}"><span class="tm">${new Date(e.t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span> <span class="md">${e.m}</span> ${e.x.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`).join('') || '<div class="detail">기록 없음</div>';
@@ -175,7 +232,7 @@
     // ── 맨 위 요약: 지금 무엇을, 전체 중 어디까지 (1초마다)
     const ov = w.querySelector('#rnjO');
     /* (1.43.0) 이 PC 전체에서 지금 하는 일 — 개요와 같은 기준(일하는 탭이 따로 있어도 그 탭의 단계가 보임). 예전엔 기록 창을 연 탭의 상태만 봐서, 다른 탭·자동 수집이 일할 때 단계 표시가 비었음 */
-    const drawOv = () => { if (!w.classList.contains('on')) return; if (tab === 'pw') { const h = pwOvHtml(); if (ov.innerHTML !== h) ov.innerHTML = h; return; } let lives = []; try { lives = window.__rnLive ? window.__rnLive() : []; } catch (e) {} const mine = lives.find((v) => v.tab === TAB); const busy = lives.filter((v) => v.busy); const main = mine && mine.busy ? mine : busy[0] || null;
+    const drawOv = () => { if (!w.classList.contains('on')) return; if (tab === 'pw') { const h = pwOvHtml(); if (ov.innerHTML !== h) ov.innerHTML = h; return; } if (tab === 'pcs') { const h = pcsOvHtml(); if (ov.innerHTML !== h) ov.innerHTML = h; return; } let lives = []; try { lives = window.__rnLive ? window.__rnLive() : []; } catch (e) {} const mine = lives.find((v) => v.tab === TAB); const busy = lives.filter((v) => v.busy); const main = mine && mine.busy ? mine : busy[0] || null;
       const html = main ? window.__rnOvHtml(main, !!main.crmBusy) + (main.tab !== TAB ? `<div class="ol sub">이 PC의 다른 탭(${main.page === 'worders.aspx' ? '주문조회' : main.page === 'wrecord_edit.aspx' ? '상품 조회' : '판매관리'})에서 진행 중${busy.length > 1 ? ` · 함께 진행 중: ${busy.filter((v) => v !== main).map((v) => String(v.job || '').replace(/</g, '&lt;')).join(', ')}` : ''}</div>` : busy.length > 1 ? `<div class="ol sub">함께 진행 중: ${busy.filter((v) => v !== main).map((v) => String(v.job || '').replace(/</g, '&lt;')).join(', ')}</div>` : '') : window.__rnOvHtml(window.__rnStatus || {}, !!(window.__rnCrm && window.__rnCrm.busy()));
       if (ov.innerHTML !== html) ov.innerHTML = html; };
     /* (1.43.0) 🛰 감시 탭: 가격 감시기(따로 도는 스크립트)의 지금 상태와 기록 — 수집기 기록과 섞지 않고 따로. 감시기가 도는 상품 조회 탭이 모아 두면(GM) 이 PC의 어느 탭에서도 봄 */
@@ -188,9 +245,42 @@
       const rows = L.filter(pass).slice(-3000); const b = w.querySelector('#rnjB'); b.innerHTML = rows.map(fmtRow).join('') || '<div class="detail">감시 기록 없음 — 가격 감시기가 이 PC에서 돌면 여기에 쌓입니다 (예전 기록은 가격 감시 탭의 기록 받기)</div>';
       if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; };
     setInterval(drawPw, 2000);
+    /* (1.56.0) 🖥 다른 PC 탭: 다른 PC 수집기의 기록 — 각 PC가 1분마다 rn_logs/{PC}_{10분 칸}에 올린 줄을 읽어 PC별로 보여 줌 (이 PC는 빼고)
+     *  기본 최근 3시간 · [하루]로 늘림 · 탭을 보고 있을 때만 1분마다 다시 읽음(안 볼 땐 읽지 않음 → Firebase 읽기 아낌) · 위쪽 칩 = PC마다 마지막 기록 시각·오류 수 */
+    let pcsData = null, pcsSel = GM_getValue('rnu-jw-pc', null), pcsHours = 3, pcsAt = 0, pcsBusy = false, pcsErr = null, pcsDrawn = '';
+    const kslot = (t) => new Date(t + 9 * 3600e3).toISOString().slice(0, 15).replace(/[-:T]/g, '') + '0';
+    const pcsLine = (raw, slot) => { const m = String(raw).match(/^(\d{2}):(\d{2}):(\d{2}) \[([^\]]*)\] (⚠ |! |· )?(.*)$/s); if (!m) return { t: 0, m: '', l: 'info', x: String(raw) };
+      const y = +slot.slice(0, 4), mo = +slot.slice(4, 6), d = +slot.slice(6, 8); const t = Date.UTC(y, mo - 1, d, +m[1], +m[2], +m[3]) - 9 * 3600e3;
+      return { t, m: m[4], l: m[5] === '⚠ ' ? 'err' : m[5] === '! ' ? 'warn' : m[5] === '· ' ? 'detail' : 'info', x: m[6] }; };
+    const pcsLoad = async () => { if (pcsBusy) return; if (!window.firebase || !firebase.apps.length || !firebase.auth().currentUser) { pcsErr = 'Firebase에 아직 로그인되지 않았습니다 (잠시 뒤 저절로 다시)'; return; } pcsBusy = true;
+      try { const ss = await firebase.firestore().collection('rn_logs').where('slot', '>=', kslot(Date.now() - pcsHours * 3600e3)).get(); const by = {};
+        ss.forEach((d) => { const v = d.data() || {}; const pc = v.pc || String(d.id).split('_')[0]; if (!pc || pc === pcName()) return; (by[pc] = by[pc] || []).push(v); });
+        const out = {}; Object.entries(by).forEach(([pc, docs]) => { docs.sort((a, b) => String(a.slot).localeCompare(String(b.slot))); const L = []; docs.forEach((v) => (v.lines || []).forEach((r) => L.push(pcsLine(r, String(v.slot))))); L.sort((a, b) => a.t - b.t);
+          out[pc] = { lines: L, last: L.length ? L[L.length - 1].t : 0, err: L.filter((e) => e.l === 'err').length, warn: L.filter((e) => e.l === 'warn').length }; });
+        pcsData = out; pcsErr = null; pcsAt = Date.now(); if (!pcsSel || !out[pcsSel]) { const ks = Object.keys(out).sort((a, b) => out[b].last - out[a].last); pcsSel = ks[0] || null; } }
+      catch (e) { pcsErr = /permission/i.test(e.code || e.message) ? 'Firebase 규칙이 rn_logs 읽기를 막고 있습니다 (웹앱의 기록 보기와 같은 규칙 필요)' : '기록을 못 읽음: ' + (e.code || e.message); }
+      finally { pcsBusy = false; } };
+    const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? '방금' : m < 60 ? `${m}분 전` : `${Math.floor(m / 60)}시간 ${m % 60}분 전`; };
+    const pcsOvHtml = () => { const e = (x) => String(x || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      if (pcsErr) return `<div class="ol"><b>🖥 다른 PC</b> · <span style="color:#B0322A">${e(pcsErr)}</span></div>`;
+      if (!pcsData) return '<div class="ol"><b>🖥 다른 PC</b> · 불러오는 중…</div>';
+      const ks = Object.keys(pcsData).sort((a, b) => pcsData[b].last - pcsData[a].last);
+      if (!ks.length) return `<div class="ol"><b>🖥 다른 PC</b> · 최근 ${pcsHours}시간 동안 기록을 올린 다른 PC가 없습니다 ${pcsHours < 24 ? '<button data-pch="24" style="margin-left:6px">하루로 늘리기</button>' : ''}</div>`;
+      return `<div class="ol"><b>🖥 다른 PC</b> · 최근 ${pcsHours}시간 · ${ago(pcsAt)} 읽음 <button data-pch="${pcsHours < 24 ? 24 : 3}" style="margin-left:6px">${pcsHours < 24 ? '하루로 늘리기' : '3시간만'}</button> <button data-pcr="1">↻ 지금 읽기</button></div><div class="chips">${ks.map((k) => { const x = pcsData[k]; const off = Date.now() - x.last > 15 * 60000;
+        return `<span class="chip ${k === pcsSel ? 'now' : off ? '' : 'done'}" data-pc="${e(k)}" style="cursor:pointer" title="마지막 기록 ${x.last ? new Date(x.last).toLocaleString('ko-KR') : '-'} · ${x.lines.length.toLocaleString()}줄">${off ? '⚪' : '🟢'} ${e(k)} · ${x.last ? ago(x.last) : '-'}${x.err ? ` · 오류 ${x.err}` : ''}${x.warn ? ` · 경고 ${x.warn}` : ''}</span>`; }).join('')}</div>`; };
+    const drawPcs = async (load) => { if (!w.classList.contains('on') || tab !== 'pcs') return; const b = w.querySelector('#rnjB');
+      if (load || !pcsData || Date.now() - pcsAt > 60000) { if (!pcsData) b.innerHTML = '<div class="detail">다른 PC의 기록을 불러오는 중…</div>'; await pcsLoad(); drawOv(); }
+      if (tab !== 'pcs') return; const x = pcsData && pcsSel ? pcsData[pcsSel] : null;
+      const stamp = `${pcsSel}|${pcsAt}|${w.querySelector('#rnjF').value}|${w.querySelector('#rnjQ').value}`; if (!load && stamp === pcsDrawn) return; pcsDrawn = stamp;
+      const rows = x ? x.lines.filter(pass).slice(-3000) : []; b.innerHTML = rows.map(fmtRow).join('') || `<div class="detail">${pcsErr ? '' : x ? '거른 결과 없음' : '고를 PC가 없습니다'}</div>`;
+      if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; };
+    ov.addEventListener('click', (ev) => { if (tab !== 'pcs') return; const c = ev.target.closest('[data-pc]'); const hh = ev.target.closest('[data-pch]'); const rr = ev.target.closest('[data-pcr]');
+      if (c) { pcsSel = c.dataset.pc; GM_setValue('rnu-jw-pc', pcsSel); pcsDrawn = ''; drawOv(); drawPcs(false); }
+      else if (hh) { pcsHours = +hh.dataset.pch; pcsData = null; drawOv(); drawPcs(true); } else if (rr) { drawPcs(true); } });
+    setInterval(() => { if (tab === 'pcs') drawPcs(false); }, 5000);
     setInterval(drawOv, 1000);
     setInterval(() => { if (buf.length !== lastDrawn) draw(); }, 1000); // 진행을 늦추지 않게 1초에 한 번만 그림
-    ['#rnjF', '#rnjQ'].forEach((q) => (w.querySelector(q).oninput = () => (tab === 'hist' ? drawHist() : tab === 'pw' ? ((pwDrawn = -1), drawPw()) : draw()))); w.querySelector('#rnjX').onclick = () => { w.classList.remove('on'); GM_setValue('rnu-jw', 0); };
+    ['#rnjF', '#rnjQ'].forEach((q) => (w.querySelector(q).oninput = () => (tab === 'hist' ? drawHist() : tab === 'pw' ? ((pwDrawn = -1), drawPw()) : tab === 'pcs' ? ((pcsDrawn = ''), drawPcs(false)) : draw()))); w.querySelector('#rnjX').onclick = () => { w.classList.remove('on'); GM_setValue('rnu-jw', 0); };
   // 구글 드라이브로 바로 저장 (설정 ⑨에 Apps Script 주소·열쇠가 있으면). 실패하면 PC로 내려받기
   const driveSave = (name, content) => new Promise((res) => { const url = GM_getValue('rnu-drive-url', ''), key = GM_getValue('rnu-drive-key', ''); if (!url) return res(null);
     GM_xmlhttpRequest({ method: 'POST', url, data: JSON.stringify({ key, name, content }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, timeout: 120000, onload: (r) => { try { const j = JSON.parse(r.responseText); res(j && j.ok ? j : null); } catch (e) { res(null); } }, onerror: () => res(null), ontimeout: () => res(null) }); });
@@ -202,7 +292,7 @@
       else { window.__rnLog('수집기', 'warn', GM_getValue('rnu-drive-url', '') ? '구글 드라이브 저장 실패 (주소·열쇠·배포 권한 확인) — PC의 다운로드 폴더로 내려받습니다' : '구글 드라이브 주소가 설정되지 않아 PC의 다운로드 폴더로 내려받습니다 (웹앱 설정 ⑨)'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([parts.join('\n')], { type: 'text/plain' })); a.download = fname; a.click(); }
       setTimeout(async () => { await jclear(); buf.length = 0; idbPend.length = 0; window.__rnLog('수집기', 'info', `작업 기록을 내려받고 이 PC의 기록을 비웠습니다 (${keys.length}일치, ${parts.length.toLocaleString()}줄)`); lastDrawn = -1; tab === 'hist' ? drawHist() : draw(); }, 1500); };
     window.__rnJournalToggle = () => { const on = !w.classList.contains('on'); w.classList.toggle('on', on); GM_setValue('rnu-jw', on ? 1 : 0); lastDrawn = -1; draw(); drawOv(); };
-    if (GM_getValue('rnu-jw', 0)) window.__rnJournalToggle(); };
+    (window.__rnRoleReady || Promise.resolve()).then(() => { const r = window.__rnRole ? window.__rnRole() : 'lead'; if (GM_getValue('rnu-jw', 0) && r !== 'follow' && r !== 'wait') window.__rnJournalToggle(); }); }; // (1.56.0) 쉬는 탭은 기록 창을 닫은 채로 (기억해 둔 '열림'은 그대로 둠)
   if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
   /* (1.43.0) 가격 감시기 기록 모으기: 감시기 칸(#rn-prc)이 이 화면에 있으면 그 기록 줄·상태를 이 수집기의 GM에 모아 둠(최근 400줄) → 기록 창 🛰 감시 탭.
    *  감시기 코드는 바꾸지 않음(화면에 쓰는 글을 그대로 옮김). Firebase에는 다시 올리지 않음 — 감시기가 이미 rn_logs에 올림(중복 없게) */
@@ -244,6 +334,9 @@
   @keyframes rnblink{50%{opacity:.55}}
   #rn-ctl .ch .tg{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:6px;width:26px;height:22px;cursor:pointer;font-weight:700}
   #rn-ctl.min #rn-uni,#rn-ctl.min .cb{display:none}
+  #rn-ctl .rsub{display:flex;align-items:center;gap:8px;padding:6px 12px;background:#EEF4F1;color:#3F524C;border-bottom:1px solid #DCE6E1;font-size:12px;line-height:1.4} #rn-ctl .rsub[hidden]{display:none} #rn-ctl .rsub .tx{flex:1;min-width:0} #rn-ctl .rsub small{display:block;color:#6B7A75;font-size:11px}
+  #rn-ctl .rsub.force{background:#FFF6E6;color:#7A4A10;border-bottom-color:#F0DDBA} #rn-ctl .rsub.force small{color:#8A6A3A} #rn-ctl .rsub.lead{background:#F4F8F6;color:#5B6B66} #rn-ctl .rsub.new{background:#E6F3EA;color:#2F7D4F}
+  #rn-ctl .rsub button{flex:none;padding:4px 9px;border-radius:6px;border:1px solid #9DB5AC;background:#fff;color:#2F5D50;font:600 11.5px system-ui,'Malgun Gothic';cursor:pointer} #rn-ctl .rsub.force button{border-color:#D9B57A;color:#7A4A10}
   #rn-uni{display:flex;gap:0;border-bottom:1px solid #E1E8E5;background:#F6F9F8;padding:0 6px}
   #rn-uni button{flex:1;padding:8px 4px 7px;border:0;border-bottom:3px solid transparent;background:transparent;color:#4C5E58;cursor:pointer;font:600 12.5px system-ui,'Malgun Gothic'}
   #rn-uni button.on{color:${G};border-bottom-color:${G}} #rn-uni button:hover{color:${G}} #rn-uni small{font-weight:400;opacity:.8}
@@ -279,11 +372,12 @@
   const box = document.createElement('div'); box.id = 'rn-ctl';
   const pc = () => (window.__rnPcName && window.__rnPcName.get()) || '이 PC';
   box.innerHTML = `<div class="ch" title="눌러서 접기·펼치기"><b>리드나우 수집기</b><small id="rnCtlWho"></small><span class="sp"></span><span class="bdg" id="rnCtlBadge">준비 중</span><button class="tg" id="rnCtlMin" title="접기·펼치기">–</button></div>
+    <div class="rsub" id="rnCtlSub" hidden></div>
     <div id="rn-uni"><button data-t="ov">개요</button><button data-t="crm">고객·주문</button><button data-t="prd">상품·매입</button><button data-log="1" title="작업 기록 크게 보기 (이 PC의 모든 기록 · 날짜별 · 검색 · 내려받기)">기록</button></div>
     <div class="cb"><div id="rn-ov"></div></div>`;
   const bar = box.querySelector('#rn-uni'); const body = box.querySelector('.cb'); const ov = box.querySelector('#rn-ov');
   const set = (t) => { if (t === 'hide') t = 'ov'; document.body.dataset.rnu = t; GM_setValue('rnu-tab', t); bar.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.t === t)); draw(); };
-  const setMin = (on) => { box.classList.toggle('min', on); GM_setValue('rnu-ctl-min', on ? 1 : 0); box.querySelector('#rnCtlMin').textContent = on ? '+' : '–'; };
+  const setMin = (on, keep) => { box.classList.toggle('min', on); if (!keep) GM_setValue('rnu-ctl-min', on ? 1 : 0); box.querySelector('#rnCtlMin').textContent = on ? '+' : '–'; };
   box.querySelector('.ch').addEventListener('click', () => setMin(!box.classList.contains('min')));
   bar.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.log) { window.__rnJournalToggle && window.__rnJournalToggle(); return; } if (b.dataset.t) set(b.dataset.t); });
   // 예전 패널(고객·상품·가격 감시)을 이 판 안으로 옮김 — 패널 안의 단추·기능은 그대로
@@ -305,7 +399,21 @@
     const txt = S.kind === 'stop' ? '■ 멈추는 중…' : S.kind === 'pause' ? '■ 일시정지됨' : S.kind === 'busy' ? `▶ ${m && m.job ? m.job : '작업 중'}` : '쉬는 중';
     b.textContent = txt; b.title = txt; b.className = 'bdg ' + ({ stop: 'stop', pause: 'pause', busy: 'busy', idle: '' })[S.kind];
     box.querySelector('#rnCtlWho').textContent = `${pc()} · v${VER}`; };
-  let prevBusy = 0; function draw() { const S = stateOf(); badge(S);
+  /* (1.56.0) 머리줄 아래 옅은 띠: 이 탭이 이 PC의 수집기인지, 쉬는 탭인지 (머리줄은 이름·판·상태로 이미 꽉 차서 따로) */
+  const sub = box.querySelector('#rnCtlSub'); let subHtml = null, promotedAt = 0;
+  const drawSub = (S) => { const r = window.__rnRole ? window.__rnRole() : 'lead'; const pn = window.__rnPageName || ((x) => x); let cls = '', h = '';
+    if (r === 'wait') { h = '<div class="tx">이 PC의 수집기 탭을 확인하는 중…</div>'; }
+    else if (r === 'follow') { const v = window.__rnLead ? window.__rnLead() : null; const lv = v && S.lives.find((x) => x.tab === v.tab);
+      h = `<div class="tx">ⓘ 이 PC에서는 이미 수집기가 일하는 중 — <b>${v ? esc(pn(v.page)) : '다른'} 탭</b>${lv ? (lv.busy ? ` · ▶ ${esc(lv.job || '작업 중')}` : ' · 쉬는 중') : ''}<small>이 탭은 쉬는 상태입니다 (저절로 시작하는 작업 없음 · 보기와 일시정지는 됨). 그 탭을 닫으면 이 탭이 이어받습니다.</small></div><button data-r="force" title="한 PC에 수집기 둘 — 누르면 단점을 먼저 알려 드립니다">이 탭도 켜기…</button>`; }
+    else if (r === 'force') { h = `<div class="tx">⚠ 이 탭도 수집기로 켜 둠 — 이 PC에 수집기 2개<small>매일 자동·웹앱 요청·맡긴 일은 원래 탭이 맡고, 이 탭은 직접 누른 작업만 합니다. 알라딘 요청 제한에 더 빨리 걸릴 수 있어요.</small></div><button data-r="rest">다시 쉬게 하기</button>`; cls = 'force'; }
+    else if (r === 'lead') { const others = S.lives.filter((x) => x.tab !== window.__rnTab && (x.role === 'follow' || x.role === 'force'));
+      if (promotedAt && Date.now() - promotedAt < 60000) { h = '<div class="tx">✓ 앞서 일하던 수집기 탭이 닫혀, 이 탭이 이 PC의 수집기를 이어받았습니다</div>'; cls = 'new'; }
+      else if (others.length) { const f = others.filter((x) => x.role === 'force').length; h = `<div class="tx">이 탭이 이 PC의 수집기 · 다른 수집기 화면 ${others.length}개${f ? ` (그중 ${f}개는 사람이 켜 둠)` : '는 쉬는 중'}</div>`; cls = 'lead'; } }
+    const k = cls + h; if (k === subHtml) return; subHtml = k; sub.className = 'rsub ' + cls; sub.hidden = !h; sub.innerHTML = h; };
+  sub.addEventListener('click', (e) => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (!b) return; if (b.dataset.r === 'force') { if (window.__rnForceAsk && window.__rnForceAsk()) window.__rnForce(true); } else if (b.dataset.r === 'rest') window.__rnForce(false); subHtml = null; draw(); });
+  if (window.__rnRoleOn) window.__rnRoleOn((r) => { if (r === 'lead' && window.__rnLeadSince && Date.now() - window.__rnLeadSince < 3000 && /follow|force/.test(String(lastRole))) promotedAt = Date.now(); if (r === 'follow') setMin(true, true); lastRole = r; subHtml = null; });
+  let lastRole = null;
+  let prevBusy = 0; function draw() { const S = stateOf(); badge(S); drawSub(S);
     if (S.busy.length < prevBusy && window.__rnPrd && window.__rnPrd.refreshResume) { setTimeout(() => { try { window.__rnPrd.refreshResume(); pollCrm(); } catch (e) {} }, 3000); } prevBusy = S.busy.length; /* 어느 탭의 작업이 끝나거나 멈추면 멈춘 작업 목록을 다시 읽음 */ if (box.classList.contains('min') || document.body.dataset.rnu !== 'ov') return;
     const P = window.__rnPrd; const R = resList(); const anyBusy = S.busy.length > 0;
     const pi = window.__rnPauseInfo ? window.__rnPauseInfo() : null;
@@ -355,7 +463,7 @@
     lastHtml = ''; draw(); });
   window.__rnCtlDraw = () => { lastHtml = ''; draw(); };
   const go = () => { document.body.appendChild(box); adopt(); new MutationObserver(adopt).observe(document.body, { childList: true });
-    let saved = GM_getValue('rnu-tab', 'ov'); if (saved === 'hide') saved = 'ov'; set(saved); setMin(!!GM_getValue('rnu-ctl-min', 0));
+    let saved = GM_getValue('rnu-tab', 'ov'); if (saved === 'hide') saved = 'ov'; set(saved); setMin(!!GM_getValue('rnu-ctl-min', 0)); (window.__rnRoleReady || Promise.resolve()).then(() => { if (window.__rnRole && /^(follow|wait)$/.test(window.__rnRole())) setMin(true, true); }); /* (1.56.0) 쉬는 탭은 접힌 채로 (기억해 둔 접힘·펼침은 그대로) */
     if (saved === 'prc') setTimeout(() => { if (!bar.querySelector('button[data-t="prc"]')) set('ov'); }, 4000); // 가격 감시기 탭이 안 붙으면 개요로
     setInterval(draw, 1000); };
   if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
