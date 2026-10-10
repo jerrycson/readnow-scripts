@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.56.3의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.56.4의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.56.3' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.56.4' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.56.3'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.56.4'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -1446,7 +1446,9 @@
       if (bad.length) log(`🎯 집중 벤치마킹: 오류 난 판매자 ${bad.length}명 — ${bad.join(', ')}`, 1); } finally { await releaseLane('aladin'); } }
   async function benchOne(t) { const sc = String(t.sc); const name = t.name || sc; const day = kDayB(); const stRef = C('bench_state').doc(sc); const st = (await stRef.get()).data() || {};
     /* (1.53.0) 하루에 여러 번(n시간에 한 번)도 되게: 끝나지 않은 회차는 시작한 지 20시간 안이면 이어서, 아니면 새 회차 (차례는 benchJob이 정함) */
-    const JN = 'bench_' + sc; let prog = await loadProgress(JN); if (!prog || !(prog.startedAt && Date.now() - Date.parse(prog.startedAt) < 20 * 3600e3) || (!Array.isArray(prog.items) && !(prog.blocks > 0))) { prog = { day, page: 1, items: [], blocks: 0, startedAt: nowIso(), sc, name, readDone: false, pagingBroken: false, lastPage: null, rows: await benchRowsPick(sc, name, st) };
+    const JN = 'bench_' + sc; let prog = await loadProgress(JN); const halfDone = (q) => !!(q && q.lastPage && (q.page - 1) / q.lastPage > 0.5); /* (1.56.4) 절반 넘게 읽고 멈춘 회차는 20시간이 지나도 그 쪽부터 이어 읽음(그사이 뒤쪽이 팔린 손실은 감안) */
+    if (prog && halfDone(prog) && prog.startedAt && Date.now() - Date.parse(prog.startedAt) >= 20 * 3600e3) log(`🎯 '${name}': ${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')}에 시작해 ${prog.page - 1}/${prog.lastPage}쪽까지 읽고 멈춘 회차 — 절반을 넘었으니 20시간이 지났어도 ${prog.page}쪽부터 이어 읽음`);
+    if (!prog || !((prog.startedAt && Date.now() - Date.parse(prog.startedAt) < 20 * 3600e3) || halfDone(prog)) || (!Array.isArray(prog.items) && !(prog.blocks > 0))) { prog = { day, page: 1, items: [], blocks: 0, startedAt: nowIso(), sc, name, readDone: false, pagingBroken: false, lastPage: null, rows: await benchRowsPick(sc, name, st) };
       /* (1.54.2) 새 회차는 진행 문서를 통째로 바꿔 씀 — 진행 저장은 합치기(merge)라, 예전엔 지난 회차의 '숍 읽기 끝남(readDone)'이 남아 있다가 멈췄다 이어 할 때 몇 쪽만 읽고 회차를 끝냈음(나머지 수만 개가 '이번에 안 보임') */
       try { await C('prd_jobs').doc(JN).set({ day, page: 1, blocks: 0, startedAt: prog.startedAt, sc, name, readDone: false, pagingBroken: false, lastPage: null, rows: prog.rows, done: false, by: PC_NAME, pc: PC_ID, savedAt: Date.now(), ...W() }); } catch (e) {} }
     /* (1.54.2) 이어 할 때 '읽기 끝남'인데 숍 끝 쪽까지 못 읽었으면 믿지 않고 그 쪽부터 이어 읽음 (2쪽이 1쪽과 같은 숍은 1쪽만 쓰는 게 맞아 제외) */
@@ -1500,7 +1502,9 @@
     if (pend.length) { await bkRef(prog.blocks || 0).set({ s: JSON.stringify(pend), n: pend.length, at: Date.now() }); prog.blocks = (prog.blocks || 0) + 1; pend = []; }
     /* (1.56.3) '끝까지 확실히 읽었나'를 한 곳에서 엄격하게: ① 이 회차가 1쪽부터 읽었고 ② 숍 끝 쪽을 알면 그 쪽까지 읽었고(빈 쪽이면 지금 끝 쪽을 다시 확인) ③ 2쪽이 1쪽과 같은 숍은 끝 쪽이 1쪽일 때만 ④ 끝 쪽을 모르면 빈 쪽·새 상품 없는 쪽까지 — 하나라도 아니면 끝까지 못 읽은 회차(통계·비교 기준 모두 제외, 읽은 상품은 bench_partial에 상품 정보로만) */
     { const lastRead = prog.page - 1; const r1 = prog.readFrom1 === true || (prog.readFrom1 === undefined && prog.items.length > 0 && !prog.resumedOld); let ok = false, why = '';
-      if (!prog.items.length) why = '읽은 상품 없음'; else if (!r1) why = '이 회차가 1쪽부터 읽지 않음'; else if (prog.pagingBroken) { ok = !lastP || lastP <= 1; why = ok ? '' : `2쪽이 1쪽과 같아 1쪽만 읽힘(끝 쪽 ${lastP}쪽)`; } else if (lastP) { ok = lastRead >= lastP; why = ok ? '' : `끝 쪽 ${lastP}쪽 중 ${lastRead}쪽까지만 읽음`; } else ok = true;
+      /* (1.56.4) 정범 결정: 숍의 절반(50%) 넘게 읽었으면 쓰는 회차, 절반 이하에서 그만둔 회차만 버림(통계·비교 기준·'오늘 읽음' 모두에서 빼고 다음엔 1쪽부터 새로) */
+      const cov = prog.pagingBroken ? (!lastP || lastP <= 1 ? 1 : 1 / lastP) : lastP ? Math.min(1, lastRead / lastP) : 1; prog.cover = Math.round(cov * 1000) / 1000;
+      if (!prog.items.length) why = '읽은 상품 없음'; else if (!r1) why = '이 회차가 1쪽부터 읽지 않음'; else { ok = cov > 0.5; why = ok ? '' : `숍의 ${Math.round(cov * 100)}%만 읽고 그만둠(끝 쪽 ${lastP || '?'}쪽 중 ${prog.pagingBroken ? 1 : lastRead}쪽) — 50% 이하라 버림`; }
       prog.fullRead = ok; prog.fullWhy = why; }
     if (!prog.readDone) { prog.readDone = true; await saveProgress(JN, meta()); } /* (1.52.0) 읽기 끝을 먼저 적어 둠 — 저장 단계에서 멈춰도 다시 읽지 않음 */
     const secPerPage = prog.page > p0 ? Math.round((Date.now() - t0) / (prog.page - p0) / 100) / 10 : st.secPerPage || null; await benchFinish(t, prog, { ...st, secPerPage, lastPage: lastP || null });
@@ -1535,8 +1539,8 @@
      *  숍 상품 상태(조각)·상품 기록(bench_items)·마지막 온전한 회차는 그대로 → 다음 온전한 회차가 마지막 온전한 회차와 바로 견줌 (그 사이 기간은 spanDays로 나눠 하루 값을 냄) */
     if (!RUN_OK) { const seenN = new Set(prog.items.map((x) => x[0])).size; let dayId = `${sc}_${day}`; { const ex = (await C('bench_days').doc(dayId).get()).data(); if (ex) dayId = `${sc}_${day}_${new Date(Date.parse(prog.startedAt || nowIso()) + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; }
       const PCH = 2500; const pn = Math.ceil(prog.items.length / PCH); for (let k = 0; k < pn; k++) await C('bench_partial').doc(`${dayId}_${k}`).set({ sc, dayId, k, n: Math.min(PCH, prog.items.length - k * PCH), s: JSON.stringify(prog.items.slice(k * PCH, (k + 1) * PCH)), fmt: 'json', at: nowIso(), ...W() }).catch(() => {}); /* 읽은 상품은 버리지 않고 상품 정보로만 보관 — 벤치마킹 통계·비교에는 쓰지 않음 */
-      await C('bench_days').doc(dayId).set({ sc, name: t.name || sc, day, dayId, base: false, partial: true, complete: false, total: seenN, pages: prog.page, runLastPage: prog.lastPage || null, runAt: prog.startedAt || null, at: nowIso(), pc: PC_NAME, strict: 1, readTo: prog.page - 1, partialChunks: pn, why: `끝까지 확실히 읽지 못한 회차 — ${prog.fullWhy || `끝 쪽 ${prog.lastPage || '?'}쪽`} · 통계·비교 기준에서 뺌(읽은 상품은 bench_partial에 상품 정보로만)`, ...W() });
-      await C('bench_state').doc(sc).set({ ...(!st.okRunAt && st.day && st.complete !== false && st.runAt ? { okRunAt: st.runAt } : {}), runAt: prog.startedAt || nowIso(), endAt: nowIso(), prog: null, partialRuns: firebase.firestore.FieldValue.increment(1), lastPartial: { day, pages: prog.page, lastPage: prog.lastPage || null, seen: seenN, at: nowIso() }, at: nowIso(), ...W() }, { merge: true });
+      await C('bench_days').doc(dayId).set({ sc, name: t.name || sc, day, dayId, base: false, partial: true, complete: false, total: seenN, pages: prog.page, runLastPage: prog.lastPage || null, runAt: prog.startedAt || null, at: nowIso(), pc: PC_NAME, strict: 1, cover: prog.cover ?? null, readTo: prog.page - 1, partialChunks: pn, why: `끝까지 확실히 읽지 못한 회차 — ${prog.fullWhy || `끝 쪽 ${prog.lastPage || '?'}쪽`} · 통계·비교 기준에서 뺌(읽은 상품은 bench_partial에 상품 정보로만)`, ...W() });
+      await C('bench_state').doc(sc).set({ ...(!st.okRunAt && st.day && st.complete !== false && st.runAt ? { okRunAt: st.runAt } : {}), prog: null, partialRuns: firebase.firestore.FieldValue.increment(1), lastPartial: { day, pages: prog.page, lastPage: prog.lastPage || null, seen: seenN, at: nowIso() }, at: nowIso(), ...W() }, { merge: true });
       log(`🎯 '${t.name || sc}': 숍 끝 쪽(${(prog.lastPage || 0).toLocaleString()}쪽)까지 못 읽고 ${prog.page.toLocaleString()}쪽에서 끝난 회차 — 본 ${seenN.toLocaleString()}개만으로는 새로 올림·사라짐을 판단하지 않음(비교 기준·상품 기록 그대로, 통계에서 뺌). 다음 온전한 회차가 마지막 온전한 회차(${st.day || '-'})와 바로 견줌`, 1); return; }
     const okPrev = st.okRunAt || (st.day && st.complete !== false ? st.runAt : null); const spanDays = !st.day ? null : okPrev && prog.startedAt ? Math.max(0, Math.round(((Date.parse(prog.startedAt) - Date.parse(okPrev)) / 864e5) * 100) / 100) : null; /* (1.56.2) 마지막 온전한 회차부터 이 회차까지 며칠어치 변화인지 — 하루 값을 낼 때 나눔 */ const old = new Map(); const nC = st.chunks || 0;
     for (let k = 0; k < nC; k++) { const c = (await C('bench_state').doc(sc).collection('c').doc(String(k)).get()).data(); let M = c && c.m; if (c && c.s) { try { M = JSON.parse(c.s); } catch (e) { M = null; } } if (M) for (const [id, v] of Object.entries(M)) old.set(id, v); } /* (1.53.3) 새 모양 s(글자) · 예전 모양 m 둘 다 읽음 */ /* v = [값, 처음 본 날(YYYYMMDD), 상태, 처음부터 있던 것(1), 제목 앞 40자] */
@@ -1569,7 +1573,7 @@
       totalBand: cntBy(all, (v) => band(v[0])), totalGrade: cntBy(all, (v) => v[2] || '?'), addBand: cntBy(add, (x) => band(x.p)), addGrade: cntBy(add, (x) => x.g || '?'), addYear: cntBy(add, (x) => (x.ym ? x.ym.slice(0, 4) : '?')),
       goneBand: cntBy(gone, (x) => band(x.p)), goneGrade: cntBy(gone, (x) => x.g || '?'), goneLife: cntBy(gone.filter((x) => !x.base), (x) => (x.life <= 3 ? '0~3일' : x.life <= 7 ? '4~7일' : x.life <= 14 ? '8~14일' : x.life <= 30 ? '15~30일' : x.life <= 60 ? '31~60일' : '61일~')),
 /* (1.54.0) 💰 판매가 합 — 지금 숍 전체(재고 가치)·배지 보유분·이번 회차 사라진 것·새로 올린 것 (목록은 3,000개까지만 담지만 합은 전부로) */
-      complete: RUN_OK, strict: 1, readTo: prog.page - 1, spanDays, runLastPage: prog.lastPage || null, /* (1.54.2) 숍 끝 쪽까지 읽은 회차인지 — 웹앱·순서표는 끝까지 못 읽은 회차를 셈에서 빼고 곧바로 다시 읽을 차례로 */
+      complete: RUN_OK, strict: 1, cover: prog.cover ?? null, readTo: prog.page - 1, spanDays, runLastPage: prog.lastPage || null, /* (1.54.2) 숍 끝 쪽까지 읽은 회차인지 — 웹앱·순서표는 끝까지 못 읽은 회차를 셈에서 빼고 곧바로 다시 읽을 차례로 */
       sumNow: all.reduce((a2, v) => a2 + (+v[0] || 0), 0), priceN: all.filter((v) => +v[0] > 0).length, sumLow: all.filter((v) => v[5]).reduce((a2, v) => a2 + (+v[0] || 0), 0), sumGone: gone.reduce((a2, x) => a2 + (+x.p || 0), 0), sumGoneNew: gone.filter((x) => !x.base).reduce((a2, x) => a2 + (+x.p || 0), 0), sumAdd: add.reduce((a2, x) => a2 + (+x.p || 0), 0),
       lowNow: all.filter((v) => v[5]).length, lowOn: lowOn.length, lowOff: lowOff.length, goneLow: gone.filter((x) => x.low).length, goneLowNew: gone.filter((x) => x.low && !x.base).length, addLow: add.filter((x) => x.low).length, lowBand: cntBy(all.filter((v) => v[5]), (v) => band(v[0])), lowOnList: lowOn.slice(0, 1000).map((x) => JR([x.id, T60(x.t), x.p, x.g, x.pg || null])), lowOffList: lowOff.slice(0, 1000).map((x) => JR([x.id, T60(x.t), x.p, x.g])),
       addList: add.slice(0, 3000).map((x) => JR([x.id, T60(x.t), x.p, x.g, x.ym, x.isbn, x.pl, x.low, x.cat || null])), goneList: gone.slice(0, 3000).map((x) => JR([x.id, T60(x.t), x.p, x.g, x.base ? null : x.life, x.first, x.low ? 1 : 0, x.isbn || null, x.cat || null, x.ym || null])), movedList: moved.slice(0, 1000).map((x) => JR([x.id, x.from, x.to])), rowFmt: 'json',
