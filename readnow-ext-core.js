@@ -8,7 +8,7 @@
  * 화면 모양이 바뀌어 못 읽으면 '못 읽음'과 함께 받은 화면 일부(probe)를 돌려줌 → 수집기가 ext_probe에 남겨 나중에 읽는 법을 고침. 추측으로 채우지 않음.
  * ISBN이 있는 책 정보(교보·예스24)는 받은 상품 페이지 안에 그 ISBN이 정확히 있을 때만 받아들임(다른 책을 잘못 붙이지 않게). */
 (function (root) {
-  const VERSION = '0.1.0';
+  const VERSION = '0.2.0';
 
   /* ── 키 (웹앱 설정 ⑱에서 넣음 → Firebase app_secrets/ext · 백업 파일엔 넣지 않음) ── */
   const KEYS = [
@@ -42,6 +42,7 @@
     kakao: { grp: 'basic', label: '카카오 책 검색 (공식)', kind: 'api', host: 'dapi.kakao.com', keys: ['kakaoRest'], cap: 5000, paceMs: 500 },
     naver: { grp: 'basic', label: '네이버 책 검색 (공식)', kind: 'api', host: 'openapi.naver.com', keys: ['naverId', 'naverSecret'], cap: 5000, paceMs: 500 },
     nl: { grp: 'basic', label: '국립중앙도서관 ISBN 서지 (공식)', kind: 'api', host: 'www.nl.go.kr', keys: ['nlKey'], cap: 3000, paceMs: 800 },
+    joongmo: { grp: 'used', label: '중고닷 (통합 검색)', kind: 'page', host: 'www.joongmo.com', keys: [], cap: 600, paceMs: 3000 }, /* (0.2.0) 당근·중고나라·번개장터·헬로마켓·후르츠를 한 번에 — 정범 지정: 중고 검색은 여기 먼저, 없을 때만 각 장터에 직접 */
     yes24used: { grp: 'used', label: '예스24 중고', kind: 'page', host: 'www.yes24.com', keys: [], cap: 400, paceMs: 3000 },
     bunjang: { grp: 'used', label: '번개장터', kind: 'page', host: 'api.bunjang.co.kr', keys: [], cap: 400, paceMs: 3000 },
     joongna: { grp: 'used', label: '중고나라', kind: 'page', host: 'web.joongna.com', keys: [], cap: 300, paceMs: 3500 },
@@ -51,7 +52,7 @@
     lib: { grp: 'lib', label: '도서관 정보나루 (공식)', kind: 'api', host: 'data4library.kr', keys: ['d4lKey'], cap: 450, paceMs: 1000 },
     ridi: { grp: 'ebook', label: '리디', kind: 'page', host: 'ridibooks.com', keys: [], cap: 300, paceMs: 3000 },
   };
-  const ORDER = ['kyobo', 'yes24', 'google', 'ttb', 'kakao', 'naver', 'nl', 'yes24used', 'bunjang', 'joongna', 'daangn', 'ebay', 'abebooks', 'lib', 'ridi'];
+  const ORDER = ['kyobo', 'yes24', 'google', 'ttb', 'kakao', 'naver', 'nl', 'joongmo', 'yes24used', 'bunjang', 'joongna', 'daangn', 'ebay', 'abebooks', 'lib', 'ridi'];
   /* 기본 정보 칸마다 어느 출처를 먼저 믿는지 (정범 지정: 교보 → 예스24 → 구글 북스, 그 뒤 공식 API) — 설정 ext.basicOrder로 바꿈 */
   const BASIC_ORDER = ['kyobo', 'yes24', 'google', 'ttb', 'nl', 'kakao', 'naver'];
 
@@ -66,6 +67,11 @@
     src: {},               // 출처마다 { on, cap, refreshDays } 덮어쓰기
   };
   const cfgOf = (c) => { const o = { ...CFG_DEF, ...(c || {}) }; o.src = {}; for (const k of ORDER) { const d = SOURCES[k]; const u = ((c && c.src) || {})[k] || {}; o.src[k] = { on: u.on !== false, cap: Math.max(0, +(u.cap ?? d.cap) || 0), refreshDays: Math.max(1, +(u.refreshDays ?? GROUPS[d.grp].refreshDays) || 1) }; } o.gradeMap = { ...CFG_DEF.gradeMap, ...((c && c.gradeMap) || {}) }; return o; };
+  /* 중고닷이 대신 찾아 주는 장터 — 중고닷에서 같은 책을 찾았으면 이 장터들엔 직접 묻지 않음 */
+  const VIA_JOONGMO = ['bunjang', 'joongna', 'daangn'];
+  /* 외부 정보 문서 번호: ISBN이 있으면 ISBN · 없으면(DVD·CD 등) 바코드 'B…' · 그것도 없으면 알라딘 상품코드 'U…' — ISBN이 없는 상품은 중고 시세만 봄 */
+  const keyOf = (l) => { const i = String((l && l.isbn13) || '').replace(/[^0-9]/g, ''); if (/^97[89]\d{10}$/.test(i)) return i; const b = String((l && l.barcode) || '').replace(/[^0-9]/g, ''); if (b.length >= 8) return 'B' + b; return l && l.usedCode ? 'U' + String(l.usedCode).replace(/[^0-9A-Za-z_-]/g, '') : null; };
+  const isIsbnKey = (k) => /^97[89]\d{10}$/.test(String(k || ''));
   const keysReady = (k, K) => { const s = SOURCES[k]; if (!s) return false; return s.keyOptional || s.keys.every((x) => K && String(K[x] || '').trim()); };
 
   /* ══════════ 작은 도구 ══════════ */
@@ -87,6 +93,9 @@
   function jsonBlobs(html) { const out = []; const H = String(html || ''); const tryP = (s) => { try { out.push(JSON.parse(s)); } catch (e) {} };
     H.replace(/<script[^>]*type=["']application\/(?:ld\+)?json["'][^>]*>([\s\S]*?)<\/script>/gi, (m, s) => { tryP(s.trim()); return m; });
     H.replace(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/gi, (m, s) => { tryP(s.trim()); return m; });
+    /* (0.2.0) Next.js 새 방식(App Router) 화면: self.__next_f.push([1,"…"]) 조각을 이어 붙이고, 줄마다 '번호:JSON' 꼴을 읽음 — 중고나라·중고닷·교보가 이 방식 */
+    { let rsc = ''; H.replace(/self\.__next_f\.push\(\[1,"((?:[^"\\]|\\.)*)"\]\)/g, (m, x) => { try { rsc += JSON.parse('"' + x + '"'); } catch (e) {} return m; });
+      if (rsc) rsc.split('\n').forEach((ln) => { const mm = ln.match(/^[0-9a-f]{1,6}:(?:[A-Z]?)([\[{].*)$/); if (mm) tryP(mm[1]); }); }
     const re = /window\.(__[A-Za-z0-9_]+|[A-Za-z_]*(?:STATE|State|Context|DATA|Data)[A-Za-z_]*)\s*=\s*/g; let m; while ((m = re.exec(H))) { const st = m.index + m[0].length; const ch = H[st]; if (ch !== '{' && ch !== '[') continue; const end = balanced(H, st); if (end > st) tryP(H.slice(st, end + 1)); }
     return out; }
   function balanced(s, i) { const open = s[i], close = open === '{' ? '}' : ']'; let d = 0, q = null, esc = false; for (let j = i; j < s.length && j < i + 5e6; j++) { const c = s[j]; if (q) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === q) q = null; continue; } if (c === '"' || c === "'") { q = c; continue; } if (c === '{' || c === '[') d++; else if (c === '}' || c === ']') { d--; if (d === 0) return j; } } return -1; }
@@ -104,14 +113,14 @@
   const priceOf = (o) => { let p = pick(o, PK); if (p && typeof p === 'object') p = pick(p, ['value', 'amount', 'price']); if (p == null && o && o.offers) { const f = Array.isArray(o.offers) ? o.offers[0] : o.offers; p = f && (f.price ?? f.lowPrice); } return toNum(p); };
   function findListings(root0) { let best = null; const seen = new Set(); let guard = 0;
     const walk = (x, depth) => { if (!x || typeof x !== 'object' || depth > 14 || seen.has(x) || guard++ > 200000) return; seen.add(x);
-      if (Array.isArray(x)) { const ok = x.filter((o) => o && typeof o === 'object' && !Array.isArray(o) && typeof pick(o, TK) === 'string' && priceOf(o) != null); if (ok.length >= 1 && (!best || ok.length > best.length)) best = ok; x.forEach((y) => walk(y, depth + 1)); return; }
+      if (Array.isArray(x)) { if (x.some((o) => o && o.item && typeof o.item === 'object' && /ListItem/i.test(String(o['@type'] || '')))) x = x.map((o) => (o && o.item && typeof o.item === 'object' ? o.item : o)); /* (0.2.0) ld+json ItemList(당근) */ const ok = x.filter((o) => o && typeof o === 'object' && !Array.isArray(o) && typeof pick(o, TK) === 'string' && priceOf(o) != null); if (ok.length >= 1 && (!best || ok.length > best.length)) best = ok; x.forEach((y) => walk(y, depth + 1)); return; }
       for (const k of Object.keys(x)) walk(x[k], depth + 1); };
     walk(root0, 0); return best || []; }
   const locOf = (o) => { const v = pick(o, ['location', 'locationName', 'regionName', 'region', 'locationNames', 'area', 'address']); if (v == null) return null; if (Array.isArray(v)) return clip(v.map((y) => (typeof y === 'object' ? pick(y, ['name', 'fullName']) : y)).filter(Boolean).join(', '), 60); if (typeof v === 'object') return clip(pick(v, ['name', 'fullName', 'name3', 'name2']) || '', 60) || null; return clip(String(v), 60); };
   const dateOf = (o) => { const v = pick(o, DK); if (v == null) return null; if (typeof v === 'number') return new Date(v < 1e12 ? v * 1000 : v).toISOString(); const t = Date.parse(v); return Number.isFinite(t) ? new Date(t).toISOString() : clip(String(v), 30); };
   /* 장터 글 상태 → 판매중 / 예약 / 판매완료 */
   /* 숫자로만 된 상태 번호(장터마다 뜻이 다름 — 확인 전엔 추측하지 않음)는 '#번호' 그대로 두고 판매중으로 셈 */
-  const stOf = (v) => { const s = String(v == null ? '' : v).toLowerCase().trim(); if (!s) return null; if (/^\d+$/.test(s)) return '#' + s; if (/sold|완료|closed|complete|done/.test(s)) return 'sold'; if (/reserv|예약/.test(s)) return 'rsv'; if (/sale|ongoing|판매|selling|active|on_sale/.test(s)) return 'sell'; return clip(s, 12); };
+  const stOf = (v) => { const s = String(v == null ? '' : v).toLowerCase().trim(); if (!s) return null; if (/schema\.org\/(soldout|outofstock|discontinued)/.test(s)) return 'sold'; if (/schema\.org\/(instock|limitedavailability|preorder)/.test(s)) return 'sell'; if (/^\d+$/.test(s)) return '#' + s; if (/sold|완료|closed|complete|done/.test(s)) return 'sold'; if (/reserv|예약/.test(s)) return 'rsv'; if (/sale|ongoing|판매|selling|active|on_sale/.test(s)) return 'sell'; return clip(s, 12); };
   /* 잘라 둘 화면 일부 (못 읽었을 때 수집기가 ext_probe에 남김 — 읽는 법 고칠 때 씀) */
   const probe = (text, why, url) => ({ ok: false, why, probe: { url: url || null, len: String(text || '').length, head: clip(String(text || ''), 120000) } });
 
@@ -185,10 +194,19 @@
     if (!items.length && !Array.isArray(j.list)) return probe(r.text, '목록 칸을 못 찾음', url); return usedOut(items, q, title, `https://m.bunjang.co.kr/search/products?q=${enc(q)}`, cfg); };
   const pageMarket = async ({ title, author, http, cfg }, mk, idUrl) => { const q = marketQuery(title, author); if (!q) return { skip: '제목 없음' }; const url = mk(q); const r = await http({ method: 'GET', url }); if (!okStatus(r)) return { ok: false, why: `HTTP ${r.status}` };
     const B = jsonBlobs(r.text); let L = []; for (const b of B) { const x = findListings(b); if (x.length > L.length) L = x; }
-    const absU = (h) => { try { return new URL(String(h), url).href; } catch (e) { return null; } }; const items = L.map((o) => { const id = pick(o, IK); const href = pick(o, ['href', 'url', 'link', 'webUrl']); return { id: id != null ? String(id) : null, t: String(pick(o, TK) || ''), p: priceOf(o), st: stOf(pick(o, SK)), at: dateOf(o), loc: locOf(o), url: href && typeof href === 'string' ? absU(href) : id != null ? idUrl(id) : null }; }).filter((x) => x.t);
+    const absU = (h) => { try { return new URL(String(h), url).href; } catch (e) { return null; } }; const items = L.map((o) => { const id = pick(o, IK); const href = pick(o, ['href', 'url', 'link', 'webUrl']); return { id: id != null ? String(id) : null, t: String(pick(o, TK) || ''), p: priceOf(o), st: stOf(pick(o, SK) ?? (o.offers && (Array.isArray(o.offers) ? o.offers[0] : o.offers) || {}).availability), at: dateOf(o), loc: locOf(o), url: href && typeof href === 'string' && !/\.(jpe?g|png|webp|gif|avif)(\?|$)|\/\/img\d*\.|[?&]impolicy=/i.test(href) ? absU(href) : id != null ? idUrl(id) : null, /* 그림 주소(중고나라 url 칸은 사진)는 글 주소로 쓰지 않음 */ ...(o.description ? { desc: clip(String(o.description), 300) } : {}) }; }).filter((x) => x.t);
     if (!items.length) return NORES.test(r.text) ? { ok: true, d: { q, url, n: 0, items: [] } } : probe(r.text, '화면 안에서 글 목록을 못 찾음', url); return usedOut(items, q, title, url, cfg); };
   ADP.joongna = (a) => pageMarket(a, (q) => `https://web.joongna.com/search/${enc(q)}`, (id) => `https://web.joongna.com/product/${id}`);
-  ADP.daangn = (a) => pageMarket(a, (q) => `https://www.daangn.com/kr/buy-sell/?search=${enc(q)}`, (id) => `https://www.daangn.com/kr/buy-sell/${id}`);
+  ADP.daangn = (a) => pageMarket(a, (q) => `https://www.daangn.com/kr/search/buy-sell/?search=${enc(q)}`, /* (0.2.0) 저장된 당근 검색 화면 주소 — 화면 속 ld+json ItemList(이름·값·판매중/판매완료·주소)를 읽음 */ (id) => `https://www.daangn.com/kr/buy-sell/${id}`);
+
+  /* ── (0.2.0) 중고닷: 검색 결과의 글 링크(/detail/{장터}/{번호}?productUrl=…&title=…&price=…&timeAgo=…&location=…)에 필요한 칸이 다 들어 있어 링크만 읽음 (정범이 준 중고닷 화면으로 확인) ── */
+  const JM_PLAT = { bungaejangtu: '번개장터', daangn: '당근', joonggonara: '중고나라', hellomarket: '헬로마켓', fruitsfamily: '후르츠패밀리' };
+  function jmParse(html) { const out = []; const seen = new Set(); String(html || '').replace(/href=["'](?:https?:\/\/www\.joongmo\.com)?\/detail\/([a-z]+)\/([^"'?]+)\?([^"']+)["']/g, (m, plat, id, qs) => { const k = plat + '/' + id; if (seen.has(k)) return m; seen.add(k); let P; try { P = new URLSearchParams(decodeEnt(qs)); } catch (e) { return m; }
+      const t = P.get('title') || ''; out.push({ id: k, plat, platName: JM_PLAT[plat] || plat, t: t.replace(/\s+-\s+안심되는 중고거래$/, ''), p: toNum(P.get('price')), st: 'sell', ago: P.get('timeAgo') || null, loc: P.get('location') && !/^@/.test(P.get('location')) ? P.get('location') : null, url: /^https?:\/\//.test(P.get('productUrl') || '') ? P.get('productUrl') : `https://www.joongmo.com/detail/${plat}/${id}` }); return m; }); return out; }
+  ADP.joongmo = async ({ title, author, http, cfg }) => { const q = marketQuery(title, author); if (!q) return { skip: '제목 없음' }; const tried = [];
+    let lastT = '', lastU = null; for (const url of [`https://www.joongmo.com/?keyword=${enc(q)}`, `https://www.joongmo.com/search?keyword=${enc(q)}`]) { const r = await http({ method: 'GET', url }); tried.push(`${url.split('?')[0]} HTTP ${r.status}`); if (!okStatus(r)) continue; lastT = r.text; lastU = url;
+      const items = jmParse(r.text); if (!items.length) continue; const o = usedOut(items, q, title, url, cfg); o.d.byPlat = items.reduce((m, x) => { m[x.plat] = (m[x.plat] || 0) + 1; return m; }, {}); /* 검색어가 화면에 안 먹고 첫 화면(인기 글)이 왔으면 닮은 글이 하나도 없음 → 표시만 */ o.d.queryEcho = items.some((x) => sim(q, x.t) >= 0.3); return o; }
+    return { ok: false, why: '중고닷 검색 화면에서 글을 못 읽음 (' + tried.join(' · ') + ') — 검색이 화면을 연 뒤 따로 불러오는 방식이면 수집기 쪽 길을 바꿔야 함', ...(lastT ? { probe: probe(lastT, '', lastU).probe } : {}) }; };
 
   /* ── 외국: eBay 공식 Browse API (미국 eBay · 한국으로 배송되는 즉시 구매 매물만 · 한국까지 배송비 포함) ── */
   const b64 = (s) => (typeof btoa === 'function' ? btoa(s) : Buffer.from(s, 'utf8').toString('base64'));
@@ -269,6 +287,6 @@
   async function run(src, a) { const f = ADP[src]; if (!f) return { ok: false, why: '모르는 출처' }; const s = SOURCES[src]; if (!keysReady(src, a.keys)) return { skip: '키 없음' };
     if (s.grp === 'used' && src !== 'yes24used' && !a.title) return { skip: '제목 없음' }; try { return await f(a); } catch (e) { return { ok: false, why: e.message || String(e) }; } }
 
-  const api = { VERSION, KEYS, GROUPS, SOURCES, ORDER, BASIC_ORDER, BASIC_FIELDS, CFG_DEF, cfgOf, keysReady, isKrIsbn, coreTitle, sim, marketQuery, jsonBlobs, findListings, tableKV, meta, strip, ymd, toNum, run, fxRun, toKrw, median, lowQ, dropOutliers, foreignStats, usedStats, mergeBasic, sig, shard, stOf, FX_CUR, _adp: ADP, _pageBook: pageBook };
+  const api = { VERSION, VIA_JOONGMO, keyOf, isIsbnKey, jmParse, KEYS, GROUPS, SOURCES, ORDER, BASIC_ORDER, BASIC_FIELDS, CFG_DEF, cfgOf, keysReady, isKrIsbn, coreTitle, sim, marketQuery, jsonBlobs, findListings, tableKV, meta, strip, ymd, toNum, run, fxRun, toKrw, median, lowQ, dropOutliers, foreignStats, usedStats, mergeBasic, sig, shard, stOf, FX_CUR, _adp: ADP, _pageBook: pageBook };
   if (typeof module === 'object' && module.exports) module.exports = api; root.ReadnowExt = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
