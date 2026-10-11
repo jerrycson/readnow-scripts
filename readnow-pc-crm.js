@@ -1,13 +1,13 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.57.1의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.57.2의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.57.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.57.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
 (async function () {
   'use strict';
-  const APP_VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.57.1'; // (1.36.0) 판 번호는 맨 위 @version 한 곳 — 고객 쪽·상품 쪽이 같은 값
+  const APP_VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.57.2'; // (1.36.0) 판 번호는 맨 위 @version 한 곳 — 고객 쪽·상품 쪽이 같은 값
   const BASE = 'https://www.aladin.co.kr/scm/';
   const now = () => new Date().toISOString();
   const LOGIN_FLAG = 'rn-autologin-pending';
@@ -611,6 +611,7 @@
     if (!todo.length) { log('묻고 답하기: 지난번에 올린 것과 같아 올릴 것 없음', 'ok'); return; }
     const stamp = FB.firestore.FieldValue.serverTimestamp(); let n = 0;
     for (let i = 0; i < todo.length; i += 300) { const part = todo.slice(i, i + 300); const b = fdb.batch();
+      { const olds = await Promise.all(part.map((t) => fdb.collection('crm_interactions').doc(`aladin_qna_${t.id}`).get().catch(() => null))); const H = []; part.forEach((t, k) => { const od = olds[k]; if (od && od.exists) { const h = crmHistOf('crm_interactions', `aladin_qna_${t.id}`, od.data(), t.data); if (h) H.push(h); } }); if (H.length) await crmHistCommit(H); } // (1.57.2) 답·상태가 바뀌면 옛 값 먼저
       part.forEach((t) => { b.set(fdb.collection('crm_interactions').doc(`aladin_qna_${t.id}`), { ...t.data, uploadedAt: stamp, uploaderVersion: APP_VER, writerSchema: WRITER_SCHEMA, lastWrittenBy: PC.name || '' }, { merge: true }); n++; });
       await commitWithRetry(b, part.length); await dbPut('uploaded', part.map((t) => ({ _key: 'qnaNow/' + t.id, hash: t.h, at: now() }))); }
     log(`묻고 답하기 ${n}건(새것·바뀐 것만)을 Firebase에 올렸습니다 — 전체 ${list.length}건`, 'ok');
@@ -1437,6 +1438,10 @@
     return n;
   }
   const stripMeta = (d) => { const x = { ...d }; delete x.uploadedAt; delete x.uploaderVersion; delete x.lastWrittenBy; delete x.writerSchema; WEB_OWNED.forEach((k) => delete x[k]); return x; };
+  /* (1.57.2) 주문·문의 옛 값 보관 — 이미 있는 문서의 수집 칸이 바뀌면 바뀌기 전 값(바뀐 칸만, 문서 전체는 full)을 crm_hist/{칸}_{번호}_{시각}에 먼저 남김 (덮어써도 옛 상태·금액·송장·답이 사라지지 않게) */
+  const crmHistOf = (col, id, old, neu) => { const o = stripMeta(old || {}); const keys = [...new Set([...Object.keys(o), ...Object.keys(neu || {})])].filter((k) => !['source', 'piiCollectedAt', 'collectedAt', 'uploadedAt'].includes(k) && k in (neu || {}) && JSON.stringify(o[k] ?? null) !== JSON.stringify(neu[k] ?? null) && o[k] != null);
+    if (!keys.length) return null; const prev = {}; keys.forEach((k) => { prev[k] = o[k]; }); const at = new Date().toISOString(); return { ref: fdb.collection('crm_hist').doc(`${col}_${id}_${at.replace(/[^0-9]/g, '').slice(0, 17)}`), data: { col, docId: id, at, keys, prev, by: PC.name || '' } }; };
+  async function crmHistCommit(H) { for (let i = 0; i < H.length; i += 400) { const b = fdb.batch(); H.slice(i, i + 400).forEach((h) => b.set(h.ref, h.data)); await commitWithRetry(b, Math.min(400, H.length - i)); } }
   async function readExisting(col, ids) {
     const out = new Map(); const FP = FB.firestore.FieldPath.documentId();
     for (let i = 0; i < ids.length; i += 30) {
@@ -1480,7 +1485,7 @@
       const chunk = todo.slice(i, i + BATCH);
       // Firebase에 이미 있는 내용 읽어서 합치기 (다른 PC가 올린 정보·엑셀로 채운 정보를 지우지 않음)
       const byCol = {}; chunk.forEach((d) => (byCol[d.col] = byCol[d.col] || []).push(d));
-      const b = fdb.batch(); const stamp = FB.firestore.FieldValue.serverTimestamp(); let n = 0; const wrote = [];
+      const b = fdb.batch(); const stamp = FB.firestore.FieldValue.serverTimestamp(); let n = 0; const wrote = []; const hist = [];
       for (const [col, ds] of Object.entries(byCol)) {
         setNow(`Firebase의 기존 내용 확인 중 (${col})`);
         const ex = await readExisting(col, ds.map((d) => d.id));
@@ -1492,10 +1497,11 @@
           if (merged.customerId) pendingCust.add(merged.customerId);
           const cmp = (x) => stableStr(clean({ ...x, source: undefined, piiCollectedAt: undefined }));
           if (old && cmp(stripMeta(old)) === cmp(merged)) { skipped++; wrote.push(d); continue; } // 이미 같은 내용 (수집 시각만 다른 것 포함)
+          if (old) { const h = crmHistOf(col, d.id, old, merged); if (h) hist.push(h); } // (1.57.2) 바뀐 칸의 옛 값
           b.set(fdb.collection(col).doc(d.id), { ...merged, uploadedAt: stamp, uploaderVersion: APP_VER, writerSchema: WRITER_SCHEMA, lastWrittenBy: PC.name || '' }, { merge: true }); n++; wrote.push(d);
         }
       }
-      if (n) { await guardQuota(n, todo.length - done); await commitWithRetry(b, n); }
+      if (n) { await guardQuota(n + hist.length, todo.length - done); if (hist.length) await crmHistCommit(hist); /* 옛 값을 먼저 남기고(못 남기면 여기서 멈춰 덮어쓰지 않음) */ await commitWithRetry(b, n); }
       await dbPut('uploaded', wrote.map((d) => ({ _key: `${d.col}/${d.id}`, hash: docHash(d), at: now() })));
       await dbPut('meta', { _key: 'pendingCustomers', ids: [...pendingCust] });
       done += chunk.length; progress('Firebase 올리기 (주문·기록)', done, todo.length); setNow(`올린 문서 ${done.toLocaleString()} / ${todo.length.toLocaleString()} (같은 내용이라 건너뜀 ${skipped.toLocaleString()})`);

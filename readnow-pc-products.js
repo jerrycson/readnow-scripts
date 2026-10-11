@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.57.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.57.2의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.57.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.57.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.57.1'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.57.2'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -863,7 +863,7 @@
         const activeN = [...LISTINGS.values()].filter((l) => l.active).length;
         // 안전장치: 판매 중 상품의 30% 넘게 한꺼번에 '사라짐'이면 알라딘 화면 오류(로그인 풀림·빈 화면)일 가능성이 커서 표시하지 않음
         if (activeN >= 50 && gone.length > activeN * 0.3) { log(`전체 재검토: 판매 중 ${activeN.toLocaleString()}개 중 ${gone.length.toLocaleString()}개가 목록에 안 보였습니다. 화면 오류일 수 있어 '사라짐' 표시를 하지 않았습니다 (실제라면 판매관리 화면 확인 후 다시)`, 1); gone.length = 0; }
-        await commitBatches(gone.map(([k]) => (b) => b.set(C('prd_listings').doc(k), { active: false, goneFromActiveAt: nowIso(), ...W() }, { merge: true })), '사라진 상품 표시');
+        await commitBatches(gone.map(([k]) => (b) => b.set(C('prd_listings').doc(k), { active: false, goneFromActiveAt: nowIso(), goneEvents: firebase.firestore.FieldValue.arrayUnion(nowIso()), ...W() }, { merge: true }) /* (1.57.2) 사라진 때를 덮어쓰지 않고 쌓음 */), '사라진 상품 표시');
         gone.forEach(([k, l]) => LISTINGS.set(k, { ...l, active: false }));
         prog.stats.goneFromActive = gone.length;
       }
@@ -960,8 +960,9 @@
       ids: idsAll.ids, idWarn: idsAll.warn, ...fixed, ...(Object.keys(imgs).length ? { images: imgs, imgStatus: 'pending' } : {}),
       ...(page.images && page.images.preview && page.images.preview.length ? { previewUrls: page.images.preview } : {}),
       source: page.fetchedFrom, resolvedBy, productUrl: finalUrl, ...(isNewBook ? { firstSeenAt: at } : {}), lastFetchedAt: at, ...W() }, { merge: true });
-    for (const key of P.lookupKeys(book)) batch.set(C('prd_ids').doc(key), { bookId, ...W() }, { merge: true });
-    if (!l.pool && !l.explore) batch.set(C('prd_ids').doc('usedCode_' + l.usedCode), { bookId, ...W() }, { merge: true });
+    /* (1.57.2) 이어진 책이 바뀌어도 예전 연결을 bookIds에 쌓아 둠(지금 연결 bookId만 바뀜) */ const AUb = firebase.firestore.FieldValue.arrayUnion(bookId);
+    for (const key of P.lookupKeys(book)) batch.set(C('prd_ids').doc(key), { bookId, bookIds: AUb, ...W() }, { merge: true });
+    if (!l.pool && !l.explore) batch.set(C('prd_ids').doc('usedCode_' + l.usedCode), { bookId, bookIds: AUb, ...W() }, { merge: true });
     const mtB = P.mediaType({ title: page.title, categories: page.categories, ids: idsAll.ids, isbn13: idsAll.isbn13 });
     batch.set(bRef, { mediaType: mtB.type, mediaWhy: mtB.why }, { merge: true });
     if (!l.pool && !l.explore) batch.set(C('prd_listings').doc('aladin_' + l.usedCode), { bookId, mediaType: mtB.type, mediaWhy: mtB.why, ...W() }, { merge: true }); else if (l.pool) batch.set(bRef, { aladinPool: true }, { merge: true }); else batch.set(bRef, { explored: true, exploredAt: at, exploreFrom: l.exploreFrom || null }, { merge: true }); // 탐색 수집 책: 우리 상품·알라딘 구매 풀과 구분
@@ -984,7 +985,9 @@
     b2.set(mRef, { bookId, ...cur, activeRanks: page.ranks, lastCheckedAt: at, dynamicPending: !(buyerDist || relationBuy), checkedBy: PC_NAME, ...(used ? { usedFirstPage: used.listings } : {}), ...W() }, { merge: true });
     if (Object.keys(ch).length) b2.set(C('prd_metric_changes').doc(), { bookId, at, changes: ch, firstRecord: !prevM, ...W() });
     // 온라인 중고 첫 페이지 매물의 변화 이력 (1.21.0): 이전 관측과 다른 것만 쌓음 — 덮어쓰는 usedFirstPage와 달리 지워지지 않는 기록
-    if (used && P.listingsDiff) { const ld = P.listingsDiff(prevM && prevM.usedFirstPage, used.listings); if (ld) b2.set(C('prd_metric_changes').doc(), { bookId, at, kind: 'usedListings', add: ld.add, del: ld.del, chg: ld.chg, firstRecord: ld.first, lastPage: used.lastPage || null, usedTotal: used.usedTotal ?? null, ...W() }); }
+    /* (1.57.2) 첫 페이지가 조금이라도 달라지면(순서만 바뀐 것 · 비교 칸 밖의 칸까지) 그때의 첫 페이지 전체(page)를 함께 남김 — 바뀐 칸만 적던 예전엔 순서 변화·다른 칸 변화가 남지 않았음. 같으면 아무것도 쓰지 않음 */
+    if (used) { const ld = P.listingsDiff ? P.listingsDiff(prevM && prevM.usedFirstPage, used.listings) : null; const same = JSON.stringify((prevM && prevM.usedFirstPage) || null) === JSON.stringify(used.listings || null);
+      if (ld || !same) b2.set(C('prd_metric_changes').doc(), { bookId, at, kind: 'usedListings', add: ld ? ld.add : [], del: ld ? ld.del : [], chg: ld ? ld.chg : [], orderOnly: !ld, page: JSON.parse(JSON.stringify(used.listings || [])), firstRecord: ld ? ld.first : !(prevM && prevM.usedFirstPage), lastPage: used.lastPage || null, usedTotal: used.usedTotal ?? null, ...W() }); }
     for (const t of rk.started) b2.set(C('prd_rank_periods').doc(), { bookId, title: t, firstSeenAt: at, lastSeenAt: at, endedSeenAt: null, ...W() });
     await b2.commit();
     if (rk.continuing.length || rk.ended.length) { // 이어지는/끝난 순위 기간 갱신
@@ -1266,7 +1269,7 @@
       const metaRef = C('prd_jobs').doc('aladinBuyMeta'); const meta = (await metaRef.get()).data() || {};
       const prog = (await loadProgress('aladinBuy')) || { page: 1, got: 0, phase: 'list', startedAt: nowIso() };
       const visit = async (page) => { const doc = await buyPage(page); const rows = parseBuyList(doc); const keep = rows.filter((x) => x.date >= BUY_FROM); const fresh = keep.filter((x) => !known.has(x.ono));
-        if (fresh.length) { const b = db.batch(); fresh.forEach((x) => { b.set(C('pur_aladin_orders').doc(x.ono), { ...x, collectedAt: nowIso(), ...W() }); known.add(x.ono); }); await b.commit(); prog.got += fresh.length; }
+        if (fresh.length) { const b = db.batch(); fresh.forEach((x) => { b.set(C('pur_aladin_orders').doc(x.ono), { ...x, collectedAt: nowIso(), ...W() }, { merge: true }); /* (1.57.2) 클라우드가 먼저 적은 상세·메모 기록(lines·noteLog)을 지우지 않게 */ known.add(x.ono); }); await b.commit(); prog.got += fresh.length; }
         return { rows, keep, fresh, first: rows[0] && rows[0].ono, last: rows.length ? rows[rows.length - 1].date : '' }; };
       if (prog.phase === 'list') {
         // ① 앞쪽: 최신 주문부터, 이미 받은 주문만 나오는 쪽에서 멈춤 (멈췄다 이어도 늘 1쪽부터 다시 봄 → 오늘 주문 놓치지 않음)
@@ -1546,13 +1549,13 @@
     for (let k = 0; k < nC; k++) { const c = (await C('bench_state').doc(sc).collection('c').doc(String(k)).get()).data(); let M = c && c.m; if (c && c.s) { try { M = JSON.parse(c.s); } catch (e) { M = null; } } if (M) for (const [id, v] of Object.entries(M)) old.set(id, v); } /* (1.53.3) 새 모양 s(글자) · 예전 모양 m 둘 다 읽음 */ /* v = [값, 처음 본 날(YYYYMMDD), 상태, 처음부터 있던 것(1), 제목 앞 40자] */
     const RB = (BREG() || {}).BENCH; const F = RB ? RB.fields(BENCH_CFG) : { price: true, grade: true, title: true, low: true, priceList: true, byline: true, usedCode: true, cover: true, page: true }; /* (1.53.0) 웹앱 ⚙ 수집 항목에서 끈 정보는 모으지 않음 */
     const base = !st.day; const now = new Map(); const add = [], gone = [], moved = []; const dd = (a) => Math.max(0, Math.round((Date.parse(day) - Date.parse(`${String(a).slice(0, 4)}-${String(a).slice(4, 6)}-${String(a).slice(6, 8)}`)) / 864e5));
-    const lowOn = [], lowOff = []; /* (1.48.0) '최저가' 표시가 켜지고 꺼진 때 — 덮어쓰지 않고 쌓음 */
+    const lowOn = [], lowOff = []; /* (1.48.0) '최저가' 표시가 켜지고 꺼진 때 — 덮어쓰지 않고 쌓음 */ const gradeChg = []; /* (1.57.2) 등급·제목이 바뀐 매물 — 지금 목록은 새 값으로 바뀌므로 옛 값을 bench_items에 쌓음 */
     /* (1.48.0) 숍 전체를 읽는 데 몇 시간 걸려, 그동안 앞쪽 상품이 팔리면 뒤 상품이 한 칸씩 당겨져 몇 개는 못 보고 지나감 → 한 번 안 보인 것은 '안 보임 1번'(v[6] = 처음 안 보인 날)으로 두고,
      *   다음 바퀴에도 안 보이면 그때 '사라짐'(사라진 날 = 처음 안 보인 날)으로 셈 · 다시 보이면 놓친 것(돌아옴)으로만 셈 — 사라짐이 하루 늦게 확정되는 대신 잘못 센 사라짐이 없음 */
     const back = [];
     /* v = [0 값, 1 처음 본 날, 2 상태, 3 처음부터 있던 것, 4 제목 앞 40자, 5 배지, 6 처음 안 보인 날, 7 ISBN, 8 주제 분류, 9 출간 연월, 10 상품 페이지 읽음(1)·못 읽음(2)] — (1.53.0) 7~10 추가 · 예전 것을 그대로 이어 받음 */
     const carry = (o) => [o ? o[7] ?? null : null, o ? o[8] ?? null : null, o ? o[9] ?? null : null, o ? o[10] || 0 : 0];
-    for (const [id, p0, g0, ti0, isbn, ym, pl, low0, pg0] of prog.items) { const p = F.price ? p0 : null, g = F.grade ? g0 : null, ti = F.title ? ti0 : '', low = F.low ? low0 : 0, pg = F.page ? pg0 : null; const o = old.get(id); const L1 = low ? 1 : 0; if (o) { if (o[6]) back.push(id); now.set(id, [p, o[1], g, o[3] || 0, String(ti || o[4] || '').slice(0, 40), L1, 0, ...carry(o)]); if (p && o[0] && p !== o[0]) moved.push({ id, from: o[0], to: p }); if (L1 && !o[5]) lowOn.push({ id, p, g, pg, t: ti }); if (!L1 && o[5]) lowOff.push({ id, p, g, pg, t: ti }); } else { now.set(id, [p, dayN, g, base ? 1 : 0, String(ti || '').slice(0, 40), L1, 0, null, null, null, 0]); if (!base) add.push({ id, t: ti, p, g, isbn, ym, pl: F.priceList ? pl : null, low: L1 }); if (L1) lowOn.push({ id, p, g, pg, t: ti, first: true }); } }
+    for (const [id, p0, g0, ti0, isbn, ym, pl, low0, pg0] of prog.items) { const p = F.price ? p0 : null, g = F.grade ? g0 : null, ti = F.title ? ti0 : '', low = F.low ? low0 : 0, pg = F.page ? pg0 : null; const o = old.get(id); const L1 = low ? 1 : 0; if (o) { if (o[6]) back.push(id); now.set(id, [p, o[1], g, o[3] || 0, String(ti || o[4] || '').slice(0, 40), L1, 0, ...carry(o)]); if (p && o[0] && p !== o[0]) moved.push({ id, from: o[0], to: p }); if ((g && o[2] && g !== o[2]) || (ti && o[4] && String(ti).slice(0, 40) !== o[4])) gradeChg.push({ id, g0: o[2] || null, g, t0: o[4] || null, t: String(ti || '').slice(0, 40) || null }); if (L1 && !o[5]) lowOn.push({ id, p, g, pg, t: ti }); if (!L1 && o[5]) lowOff.push({ id, p, g, pg, t: ti }); } else { now.set(id, [p, dayN, g, base ? 1 : 0, String(ti || '').slice(0, 40), L1, 0, null, null, null, 0]); if (!base) add.push({ id, t: ti, p, g, isbn, ym, pl: F.priceList ? pl : null, low: L1 }); if (L1) lowOn.push({ id, p, g, pg, t: ti, first: true }); } }
     /* (1.56.5) 숍을 다 못 읽은 회차(절반 넘게 읽어 쓰는 회차): 못 읽은 쪽의 상품은 '못 본 것'일 뿐 — 안 보임·사라짐으로 적지 않고 지난 상태 그대로 둠(팔리지 않은 것으로 셈).
      *  사라짐은 숍을 끝까지 다 읽은 회차에서 실제로 안 보일 때만 셈(그때부터 평소처럼: 한 번 안 보임 → 다음 온전한 회차에도 없으면 사라짐) */
     const FULL = prog.cover == null || prog.cover >= 1; let notRead = 0;
@@ -1569,6 +1572,7 @@
     for (const x of lowOff) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, lowNow: false, lowEvents: AU({ d: day, at: nowI, on: false, p: x.p ?? null, g: x.g || null, page: x.pg || null }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
     for (const x of gone.filter((y) => y.low)) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { lowEvents: AU({ d: day, at: nowI, gone: true, p: x.p ?? null }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
     for (const x of moved) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, prices: AU({ d: day, p: x.to, from: x.from }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    for (const x of gradeChg) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, infoEvents: AU({ d: day, ...(x.g !== x.g0 ? { g0: x.g0, g: x.g } : {}), ...(x.t !== x.t0 ? { t0: x.t0, t: x.t } : {}) }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
     await flush(); if (wN) log(`🎯 '${t.name || sc}' 상품 기록 ${wN.toLocaleString()}건 저장 끝 (${Math.round((Date.now() - wT) / 1000)}초)`);
     const band = (p) => (!p ? '?' : p < 3000 ? '~3천' : p < 6000 ? '3~6천' : p < 10000 ? '6천~1만' : p < 20000 ? '1~2만' : p < 40000 ? '2~4만' : '4만~'); const cntBy = (L, f) => L.reduce((m, x) => { const k = f(x); m[k] = (m[k] || 0) + 1; return m; }, {});
     /* (1.52.0) Firebase는 '목록 안의 목록'을 저장하지 못함(Nested arrays are not supported) → 한 줄을 글자(JSON)로 바꿔 담음 · 웹앱은 글자·목록 둘 다 읽음 */
@@ -1755,6 +1759,7 @@
       } catch (e) { log('주문확인요청 읽기 실패: ' + e.message, 1); }
       const b = db.batch(); b.set(C('shp_state').doc('current'), { at, tabCounts: r.tabCounts, orders: r.orders, sig, pc: PC_NAME, excel: excel ? { at, header: excel.header, rows: excel.rows.map((v) => ({ v })) } : (cur && cur.excel) || null, ...W() });
       if (!cur || cur.sig !== sig) b.set(C('shp_snapshots').doc(at.replace(/[:.]/g, '-')), { at, tabCounts: r.tabCounts, orders: r.orders, ...W() }); // 목록이 바뀔 때마다 그 판을 보관
+      if (excel) { const xrows = excel.rows.map((v) => ({ v })); const prevX = cur && cur.excel; if (!prevX || JSON.stringify(prevX.rows || null) !== JSON.stringify(xrows)) b.set(C('shp_excel').doc(at.replace(/[:.]/g, '-')), { at, header: excel.header, rows: xrows, by: PC_NAME, ...W() }); } // (1.57.2) 발송 요청 엑셀도 바뀐 판마다 따로 보관
       for (const o of r.orders) b.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, stage: '발송 요청', lastSeenAt: at, ...(cur && (cur.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { firstSeenAt: at }), buyer: o.buyer, recipient: o.recipient, orderedAt: o.orderedAt, items: o.items, carrier: o.carrier, ...W() }, { merge: true });
       await b.commit(); window.__rnShipAt = Date.now();
       log(`발송 요청 읽기: 주문 ${r.orders.length}건 · 상품 ${items.length}권 · 주문확인요청 ${r.tabCounts['주문확인요청'] ?? '?'}건${nInfo ? ` · 우리 매물 유의 사항 새로/바뀜 ${nInfo}` : ''}${!cur || cur.sig !== sig ? ' (목록 바뀜 — 판 보관)' : ' (바뀐 것 없음)'}`);
@@ -2210,7 +2215,10 @@
           buyStated, shipMethod: ship || null, shipFee, shipFeeBoxes: boxes, settledAmount: x.doneDate && /정산\s*완료/.test(x.status || '') ? (buyStated ?? paid) - shipFee : 0 }; // 실제 정산액 = 매입 금액 − 배송비 차감
         const old = have.get(no); const sig = JSON.stringify([cur.status, cur.doneDate, cur.items.map((it) => it.result + ':' + (it.buyPrice || '')), cur.settledAmount]);
         if (old && old.sig === sig) continue; // 같은 내용이면 기록하지 않음
-        await C('pur_buyback').doc(no).set({ ...(old ? {} : { firstSeenAt: nowIso() }), ...cur, sig, source: 'collector', lastSeenAt: nowIso(), snapshots: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), status: cur.status, doneDate: cur.doneDate, paid: cur.paidAmount, results: cur.items.map((it) => it.result || '-').join('') }), ...W() }, { merge: true });
+        /* (1.57.2) 상태가 바뀔 때마다 그때의 전체 내용(책마다 결과·매입가, 정산·금액)을 snapshots에 — 예전 기록에 전체 내용이 없으면 바꾸기 전 내용을 먼저 한 번 남김 */
+        const full = (v, at0, tag) => JSON.parse(JSON.stringify({ at: at0, status: v.status || null, doneDate: v.doneDate || null, paid: v.paidAmount ?? null, results: (v.items || []).map((it) => it.result || '-').join(''), items: v.items || [], /* 책마다 받은 칸 그대로 */ settle: v.settle ?? null, reqAmount: v.reqAmount ?? null, buyStated: v.buyStated ?? null, settledAmount: v.settledAmount ?? null, shipFee: v.shipFee ?? null, ...(tag ? { tag } : {}) }));
+        const snapAdd = []; if (old && !(old.snapshots || []).some((x) => x && x.items)) snapAdd.push(full(old, old.lastSeenAt || old.firstSeenAt || null, 'before-1.57.2')); snapAdd.push(full(cur, nowIso()));
+        await C('pur_buyback').doc(no).set({ ...(old ? {} : { firstSeenAt: nowIso() }), ...cur, sig, source: 'collector', lastSeenAt: nowIso(), snapshots: firebase.firestore.FieldValue.arrayUnion(...snapAdd), ...W() }, { merge: true });
         old ? prog.upd++ : prog.got++;
         ui('알라딘 팔기 내역: 상세', prog.i + 1, prog.list.length, `${no} · ${x.status || ''} · ${x.reqN}권`);
         if (prog.i % 5 === 0) await saveProgress('buyback', prog);
@@ -2228,8 +2236,8 @@
     const p = r && r.page; const upd = { dynTriedAt: nowIso(), dynLoaded: !!(p && p.dynamicLoaded) };
     if (p) { if (p.buyerDist) upd.buyerDist = p.buyerDist; if (p.relationBuy && p.relationBuy.length) { upd.relationBuy = p.relationBuy.map((x) => x.title); upd.relationBuyIds = p.relationBuy; } if (p.clickRelation && p.clickRelation.length) upd.clickRelation = p.clickRelation; if (p.clickRaw) upd.clickRaw = p.clickRaw; }
     if (upd.buyerDist || upd.relationBuyIds || upd.clickRelation) upd.dynAt = nowIso();
-    if (upd.buyerDist || upd.relationBuy) { const hsig = JSON.stringify([upd.buyerDist || null, upd.relationBuy || null]); const hRef = C('prd_dyn_history').doc(bookId); const hPrev = (await hRef.get().catch(() => null)); const hp = hPrev && hPrev.exists ? hPrev.data() : null;
-      if (!hp || hp.lastSig !== hsig) await hRef.set({ bookId, lastSig: hsig, snaps: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), buyerDist: upd.buyerDist || null, relationBuy: upd.relationBuy || null, relationBuyIds: upd.relationBuyIds || null, clickRelation: upd.clickRelation || null }), lastCheckedAt: nowIso(), ...W() }, { merge: true }).catch(() => {});
+    if (upd.buyerDist || upd.relationBuy || upd.clickRelation) { const hsig = JSON.stringify([upd.buyerDist || null, upd.relationBuy || null, upd.clickRelation || null]); /* (1.57.2) 함께 클릭한 책만 바뀌어도 기록에 남김 */ const hRef = C('prd_dyn_history').doc(bookId); const hPrev = (await hRef.get().catch(() => null)); const hp = hPrev && hPrev.exists ? hPrev.data() : null;
+      if (!hp || hp.lastSig !== hsig) await hRef.set({ bookId, lastSig: hsig, snaps: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), buyerDist: upd.buyerDist || null, relationBuy: upd.relationBuy || null, relationBuyIds: upd.relationBuyIds || null, clickRelation: upd.clickRelation || null, clickRaw: upd.clickRaw || null }), lastCheckedAt: nowIso(), ...W() }, { merge: true }).catch(() => {});
       else await hRef.set({ lastCheckedAt: nowIso() }, { merge: true }).catch(() => {}); }
     await C('prd_book_metrics').doc(bookId).set({ ...upd, dynamicPending: !(upd.buyerDist || upd.relationBuyIds), ...W() }, { merge: true });
     return { p, upd };
