@@ -30,7 +30,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.9.6';
+const VER = '0.10.0'; // (0.10.0) 🌐 외부 정보 — PC가 꺼져 있을 때 클라우드가 이어 받음(10분마다 최대 90초)
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -713,11 +713,87 @@ async function mlLearn() { const ML = await mlMod(); if (!ML) return { skip: '�
   if (pr.ok && nextCand && nextCand.id !== challId) { const to = nextCand.id; model.champion = to; model.kind = 'logit'; model.since = today; model.candidate = { id: challId, since: today, champ: to }; model.lastPromotion = { at: nowIso(), from: champId, to, why: pr.why, evals: candEv.map((e) => e.day) }; log('모델 승격', champId, '→', to, pr.why); }
   await ST.set({ learn: { day: today, state: 'ok', rows: X.length, train: trS.length, val: va.length, valFrom, metrics: val, shadow: shadowN, promote: pr, ms: Date.now() - t0, at: nowIso() }, model, ...(pr.ok ? { promotions: FV.arrayUnion(model.lastPromotion) } : {}) }, { merge: true });
   return { ...res, rows: X.length, val, shadowN, promote: pr }; }
+
+/* ══════════ (0.10.0) 🌐 외부 정보 — PC 수집기가 꺼져 있을 때 클라우드가 이어 받음 ══════════
+ *  같은 기준 파일(readnow-ext-core.js — GitHub의 것)·같은 기록 칸(ext_*)·같은 규칙(같으면 확인 시각만 · 바뀌면 옛 값을 ext_hist에 · 출처마다 하루 최대·다시 볼 날·요청 간격)
+ *  맡는 때: 설정 ⑱ '클라우드가 이어 받기'가 켜져 있고(app_settings/ext.cloud !== false) · 외부 정보가 켜져 있고 · PC가 15분 넘게 맡지 않았을 때만 (PC가 켜져 있으면 PC가 함)
+ *  한 번에 최대 90초(/daily 10분마다) — 비용: PC가 꺼져 있는 동안 하루 최대 약 3.6시간어치 실행(1 vCPU) · 알라딘 로그인은 쓰지 않음(손님으로 외부 사이트만)
+ *  책 목록: 판매중·일시판매중지 상품(ISBN, 판매가 높은 순)을 하루 한 번 만들어 ext_cand에 나눠 저장 → 회차마다 상품 전체를 다시 읽지 않음(읽기 비용) */
+let EXTM = null, extmAt = 0; const EXT_C = { cache: {}, next: {}, idx: null, idxAt: 0, cand: null, candAt: 0, cur: {}, errs: {}, pauseUntil: {}, used: {}, usedDay: null, keys: null, keysAt: 0 };
+async function extMod() { if (EXTM && Date.now() - extmAt < 30 * 60e3) return EXTM; extmAt = Date.now(); try { const r = await fetch(RAW + 'readnow-ext-core.js?t=' + Date.now()); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', await r.text())(m, m.exports); if (m.exports && m.exports.run) EXTM = m.exports; } } catch (e) { log('외부 정보 공용 파일 받기 실패', e.message); } if (EXTM) coreVer['readnow-ext-core.js'] = EXTM.VERSION; return EXTM; }
+const extKst = (ms) => new Date((ms || Date.now()) + 9 * 3600e3).toISOString().slice(0, 10);
+const EXT_RUN = () => C('app_settings').doc('ext_run'); const EXT_BACKOFF = [1, 3, 7, 14, 30];
+const extHttp = async (o) => { const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000); try { const r = await fetch(o.url, { method: o.method || 'GET', headers: { 'User-Agent': UA, 'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8', ...(o.headers || {}) }, body: o.data, signal: ctl.signal, redirect: 'follow' }); return { status: r.status, text: await r.text() }; } catch (e) { throw new Error(e.name === 'AbortError' ? '응답 없음(30초)' : '연결 실패: ' + e.message); } finally { clearTimeout(t); } };
+async function extKeysC() { if (EXT_C.keys && Date.now() - EXT_C.keysAt < 10 * 60e3) return EXT_C.keys; let k = {}; try { const d = await C('app_secrets').doc('ext').get(); k = (d.exists && d.data().keys) || {}; } catch (e) { log('외부 연결 키를 못 읽음', e.message); } EXT_C.keys = k; EXT_C.keysAt = Date.now(); return k; }
+async function extUsedLoadC() { const day = extKst(); let u = {}; try { const d = await EXT_RUN().get(); u = ((d.exists && d.data().cnt) || {})[day] || {}; } catch (e) {} EXT_C.used = { ...u }; EXT_C.usedDay = day; return EXT_C.used; }
+const extUsedAddC = (src, n) => { n = Math.max(1, n || 1); const day = extKst(); if (EXT_C.usedDay !== day) { EXT_C.used = {}; EXT_C.usedDay = day; } EXT_C.used[src] = (EXT_C.used[src] || 0) + n; return EXT_RUN().set({ cnt: { [day]: { [src]: FV.increment(n) } } }, { merge: true }).catch(() => {}); };
+async function extIdxLoadC(X) { if (EXT_C.idx && Date.now() - EXT_C.idxAt < 60 * 60e3) return; const out = {}; for (const src of X.ORDER) out[src] = new Map(); try { const qs = await C('ext_index').get(); qs.forEach((d) => { const [src] = d.id.split('_'); const m = (d.data() || {}).m || {}; if (out[src]) Object.entries(m).forEach(([k, v]) => out[src].set(k, v)); }); } catch (e) {} EXT_C.idx = out; EXT_C.idxAt = Date.now(); }
+const extIdxSetC = (X, src, isbn, val) => { const v = val || extKst(); (EXT_C.idx[src] = EXT_C.idx[src] || new Map()).set(isbn, v); return C('ext_index').doc(`${src}_${X.shard(isbn)}`).set({ m: { [isbn]: v }, ...W() }, { merge: true }).catch(() => {}); };
+const extIdxErrKC = (src, isbn) => { const v = (EXT_C.idx[src] || new Map()).get(isbn); const m = String(v || '').match(/^E (\d{4}-\d\d-\d\d) (\d+)$/); return m ? +m[2] : 0; };
+/* 책 목록 — ext_cand/{0..n} (하루 한 번 다시 만듦 · 상품 전체 읽기는 그때만) */
+async function extCandsC(X) { if (EXT_C.cand && Date.now() - EXT_C.candAt < 6 * 3600e3) return EXT_C.cand;
+  try { const m = await C('ext_cand').doc('meta').get(); const M = m.exists ? m.data() : null; if (M && M.at && M.v === 2 && Date.now() - Date.parse(M.at) < 24 * 3600e3 && M.n) { const L = []; for (let i = 0; i < M.parts; i++) { const d = await C('ext_cand').doc('p' + i).get(); if (d.exists) { try { L.push(...JSON.parse(d.data().J || '[]')); } catch (e) {} } } /* Firestore는 목록 안의 목록을 못 받아 한 쪽을 글자(JSON)로 */ if (L.length && L.length === M.n) { EXT_C.cand = L.map((r) => ({ isbn: r[0], p: r[1], title: r[2] || null, author: r[3] || null, media: r[4] || null })); EXT_C.candAt = Date.now(); return EXT_C.cand; } } } catch (e) { log('외부 정보 책 목록 읽기 실패', e.message); }
+  const seen = new Map(); const qs = await C('prd_listings').where('status', 'in', ['판매중', '일시판매중지']).select('isbn13', 'isbn10', 'mediaType', 'title', 'author', 'price', 'status', 'usedCode', 'itemCode', 'barcode').get();
+  qs.forEach((d) => { const l = d.data(); const isbn = X.keyOf ? X.keyOf(l) : String(l.isbn13 || '').replace(/[^0-9]/g, ''); if (!isbn) return; const isI = /^97[89]\d{10}$/.test(isbn); if (!isI && !['video', 'music'].includes(l.mediaType)) return; const p = +l.price || 0; const o = seen.get(isbn); if (!o || p > o.p) seen.set(isbn, { isbn, media: l.mediaType || null, title: String(l.title || '').replace(/^\[중고[^\]]*\]\s*/, '') || null, author: l.author || null, p }); });
+  const L = [...seen.values()].sort((a, b) => b.p - a.p); const rows = L.map((b) => [b.isbn, b.p, b.title ? b.title.slice(0, 120) : null, b.author ? String(b.author).slice(0, 60) : null, b.media]); const per = 1000; const parts = Math.ceil(rows.length / per); /* 한 쪽 1,000권 — 한국어 제목이 길어도 문서 한도(1MiB) 안 */
+  try { for (let i = 0; i < parts; i++) await C('ext_cand').doc('p' + i).set({ J: JSON.stringify(rows.slice(i * per, (i + 1) * per)), ...W() }); await C('ext_cand').doc('meta').set({ v: 2, at: nowIso(), n: rows.length, parts, from: qs.size, ...W() }); /* 쪽을 모두 쓴 뒤에만 meta */ } catch (e) { log('외부 정보 책 목록 저장 실패', e.message); }
+  EXT_C.cand = L; EXT_C.candAt = Date.now(); log('외부 정보 책 목록', L.length, '권 (상품', qs.size, '개에서)'); return L; }
+const extDueC = (src, isbn, cfg) => { const v = (EXT_C.idx[src] || new Map()).get(isbn); if (!v) return true; const m = String(v).match(/^E (\d{4}-\d\d-\d\d) (\d+)$/); if (m) return Date.now() - Date.parse(m[1] + 'T00:00:00+09:00') >= EXT_BACKOFF[Math.min(EXT_BACKOFF.length, +m[2]) - 1] * 864e5; return Date.now() - Date.parse(v + 'T00:00:00+09:00') >= cfg.src[src].refreshDays * 864e5; };
+const extEligibleC = (X, src, b, cfg) => { const g = X.SOURCES[src].grp; if (!/^97[89]\d{10}$/.test(String(b.isbn || ''))) return g === 'used' && src !== 'yes24used' && !!b.title; if (g === 'foreign' && !cfg.foreignKr && X.isKrIsbn(b.isbn)) return false; if ((g === 'used' && src !== 'yes24used') || g === 'ebook') return !!b.title; return true; };
+/* 한 출처·한 책의 결과 쓰기 — PC 수집기와 같은 규칙(같은 내용이면 확인 시각만 · '없음'은 두 번 잇달아일 때만 · 바뀌면 옛 값을 ext_hist에) */
+async function extSaveC(X, src, b, res) { const col = X.GROUPS[X.SOURCES[src].grp].col; const ref = C(col).doc(b.isbn); const now = nowIso();
+  if (res.skip) return 'skip'; const snap = await ref.get(); const cur = snap.exists ? snap.data() : null; const prev = cur && cur.src ? cur.src[src] : null;
+  if (!res.ok) { const err = { at: now, why: String(res.why || '').slice(0, 300), by: 'cloud', ...(res.mismatch ? { mismatch: true } : {}) }; if (cur) await ref.update({ [`src.${src}.err`]: err, uploadedAt: FV.serverTimestamp() }); else await ref.set({ isbn: b.isbn, title: b.title || null, src: { [src]: { err } }, ...W() });
+    if (res.probe) { const pid = `${src}_${extKst().replace(/-/g, '')}`; const pr = C('ext_probe').doc(pid); try { const ex = await pr.get(); if (!ex.exists) await pr.set({ src, isbn: b.isbn, title: b.title || null, why: res.why, url: res.probe.url, len: res.probe.len, head: res.probe.head, at: now, by: 'cloud', ...W() }); } catch (e) {} }
+    return res.mismatch ? 'mismatch' : 'err'; }
+  let d = res.d ?? null; if (d) { d = JSON.parse(JSON.stringify(d)); let g = 0; while (JSON.stringify(d).length > 600000 && g++ < 10) { if (Array.isArray(d.items) && d.items.length > 5) d.items = d.items.slice(0, Math.ceil(d.items.length / 2)); else if (d.kv) d.kv = null; else break; d.trunc = true; } } const sg = X.sig({ none: !!res.none, d });
+  if (prev && prev.sig === sg) { await ref.update({ [`src.${src}.chk`]: now, [`src.${src}.err`]: FV.delete(), [`src.${src}.noneAt`]: FV.delete(), uploadedAt: FV.serverTimestamp() }); return 'same'; }
+  if (res.none && prev && prev.d && !prev.none && !prev.noneAt) { await ref.update({ [`src.${src}.noneAt`]: now, [`src.${src}.chk`]: now, [`src.${src}.err`]: FV.delete(), uploadedAt: FV.serverTimestamp() }); return 'none1'; }
+  if (prev && prev.at) { const hid = `${col}_${b.isbn}_${src}_${String(prev.at).replace(/[^0-9]/g, '').slice(0, 14)}`; const hr = C('ext_hist').doc(hid); try { const ex = await hr.get(); if (!ex.exists) await hr.set({ col, isbn: b.isbn, src, at: prev.at, chk: prev.chk || null, none: !!prev.none, d: prev.d ?? null, sig: prev.sig || null, ...W() }); } catch (e) { log('옛 값 보관 실패 — 바꾸지 않음', src, b.isbn, e.message); return 'err'; } }
+  const obj = { at: now, chk: now, sig: sg, none: !!res.none, d, by: 'cloud', q: (d && d.q) || null };
+  if (cur) await ref.update({ [`src.${src}`]: obj, ...(b.title && !cur.title ? { title: b.title } : {}), uploadedAt: FV.serverTimestamp() }); else await ref.set({ isbn: b.isbn, title: b.title || null, author: b.author || null, src: { [src]: obj }, ...W() });
+  return prev ? 'changed' : 'new'; }
+async function extOneC(X, src, b, cfg, keys) { const s = X.SOURCES[src]; const h = s.host;
+  if (X.VIA_JOONGMO && X.VIA_JOONGMO.includes(src) && cfg.src.joongmo && cfg.src.joongmo.on) { let jm = null; try { const d = await C('ext_used').doc(b.isbn).get(); jm = d.exists && d.data().src ? d.data().src.joongmo : null; } catch (e) {} if (!jm) return { src, st: 'skip' }; if (jm.d && X.usedStats(jm.d, cfg.sim, cfg.usedMinPrice).match > 0) { extIdxSetC(X, src, b.isbn); return { src, st: 'viaJm' }; } }
+  const at = Math.max(Date.now(), EXT_C.next[h] || 0); EXT_C.next[h] = at + s.paceMs * (0.8 + Math.random() * 0.4); if (at > Date.now()) await sleep(at - Date.now());
+  let calls = 0; const httpF = async (o) => { calls++; if (calls > 1) await sleep(Math.min(s.paceMs, 1500)); return extHttp(o); };
+  const res = await X.run(src, { isbn: b.isbn, title: b.title, author: b.author, keys, http: httpF, cache: EXT_C.cache, cfg }); if (calls > 1) EXT_C.next[h] = Math.max(EXT_C.next[h] || 0, Date.now() + s.paceMs);
+  if (res.skip) return { src, st: 'skip' }; let st; try { st = await extSaveC(X, src, b, res); } catch (e) { st = 'err'; res.ok = false; res.why = '저장 실패: ' + e.message; }
+  if (calls) extUsedAddC(src, calls);
+  if (st !== 'err' && st !== 'mismatch') { extIdxSetC(X, src, b.isbn); EXT_C.errs[src] = 0; }
+  else { const k = Math.min(EXT_BACKOFF.length, extIdxErrKC(src, b.isbn) + 1); if (!/^저장 실패/.test(res.why || '')) extIdxSetC(X, src, b.isbn, `E ${extKst()} ${k}`); if (st === 'err') { EXT_C.errs[src] = (EXT_C.errs[src] || 0) + 1; if (res.limit) EXT_C.pauseUntil[src] = Date.now() + 6 * 3600e3; else if (EXT_C.errs[src] >= 5) { EXT_C.pauseUntil[src] = Date.now() + 3600e3; EXT_C.errs[src] = 0; log('외부 정보', s.label, '5번 잇달아 못 읽어 1시간 쉼 —', res.why); } } }
+  EXT_RUN().set({ last: { [src]: { at: nowIso(), ok: st !== 'err', st, why: st === 'err' || st === 'mismatch' ? String(res.why || '').slice(0, 200) : null, isbn: b.isbn, by: 'cloud', how: 'cloud' } } }, { merge: true }).catch(() => {});
+  return { src, st }; }
+async function extFxC(X, keys) { const day = extKst(); const k = new Date(Date.now() + 9 * 3600e3); const hm = k.getUTCHours() * 60 + k.getUTCMinutes();
+  const run = await EXT_RUN().get().catch(() => null); const F0 = (run && run.exists ? run.data().fx : null) || {}; const fxDay = F0.day || null; if (fxDay === day) return null; if (hm < 11 * 60 + 30 && F0.at && Date.now() - Date.parse(F0.at) < 6 * 3600e3) return null; if (F0.errAt && Date.now() - Date.parse(F0.errAt) < 3600e3) return null;
+  const r = await X.fxRun({ keys, http: extHttp, day }); if (!r.ok) { await EXT_RUN().set({ fx: { err: r.why, errAt: nowIso() } }, { merge: true }).catch(() => {}); return r; }
+  const ref = C('ext_fx').doc(r.date || day); const ex = await ref.get(); if (!ex.exists) await ref.set({ date: r.date || day, rates: r.rates, src: r.src, warn: r.warn || null, at: nowIso(), by: 'cloud', ...W() });
+  await EXT_RUN().set({ fx: { day: hm >= 11 * 60 + 30 ? day : fxDay || null, date: r.date, src: r.src, usd: r.rates.USD, at: nowIso(), err: null } }, { merge: true }).catch(() => {}); return r; }
+/* 맡음 이어 가기·놓기 — 늘 트랜잭션으로, 클라우드가 맡고 있을 때만 (그사이 PC가 맡았으면 건드리지 않음) */
+async function extLeaseC(op) { let ok = false; try { await db.runTransaction(async (tx) => { const s = await tx.get(EXT_RUN()); const L = (s.exists && s.data().lease) || null; if (!L || L.pc !== 'cloud') return; tx.set(EXT_RUN(), { lease: { pc: 'cloud', tab: 'cloud', atMs: op === 'release' ? Date.now() - 5 * 60e3 : Date.now(), at: nowIso() } }, { merge: true }); ok = true; }); } catch (e) {} return ok; }
+/* 이어 받기 한 번 (최대 budgetMs) — PC가 15분 넘게 맡지 않았을 때만 */
+async function extCloud(budgetMs) { const X = await extMod(); if (!X) return { skip: '공용 파일 없음' }; let raw = {}; try { const d = await C('app_settings').doc('ext').get(); raw = d.exists ? d.data() : {}; } catch (e) {} const cfg = X.cfgOf(raw);
+  if (!cfg.on) return { skip: '외부 정보 꺼짐' }; if (raw.cloud === false) return { skip: '클라우드 이어 받기 꺼짐(설정 ⑱)' };
+  let ok = false, holder = null; try { await db.runTransaction(async (tx) => { const s = await tx.get(EXT_RUN()); const L = (s.exists && s.data().lease) || null; holder = L; if (L && L.pc !== 'cloud' && Date.now() - (+L.atMs || 0) < 15 * 60e3) return; tx.set(EXT_RUN(), { lease: { pc: 'cloud', tab: 'cloud', atMs: Date.now(), at: nowIso() } }, { merge: true }); ok = true; }); } catch (e) { return { skip: '맡기 실패: ' + e.message }; }
+  if (!ok) return { skip: `PC ${holder && holder.pc}가 맡는 중` };
+  try { return await extCloudRun(X, cfg, budgetMs); } finally { await extLeaseC('release'); } } /* 어떻게 끝나든(오류·책 없음 포함) 맡음을 놓음 — PC가 바로 이어받게 */
+async function extCloudRun(X, cfg, budgetMs) {
+  const t0 = Date.now(); let leaseAt = Date.now(); const keys = await extKeysC(); await extUsedLoadC(); try { await extFxC(X, keys); } catch (e) { log('환율 실패', e.message); } await extIdxLoadC(X); const C0 = await extCandsC(X); if (!C0.length) return { skip: '책 없음' }; if (!(await extLeaseC('renew'))) return { skip: '맡음을 PC가 가져감' }; leaseAt = Date.now();
+  const srcs = X.ORDER.filter((s) => cfg.src[s].on && X.keysReady(s, keys)); const tally = {}; const done = new Set(); const skipRun = {}; let guard = 0;
+  while (Date.now() - t0 < budgetMs && guard++ < 2000) { let did = false; if (Date.now() - leaseAt > 60e3) { if (!(await extLeaseC('renew'))) break; leaseAt = Date.now(); } /* 1분마다 맡음 이어 가기 — PC가 그사이 맡았으면 멈춤 */
+    for (const src of srcs) { if (Date.now() - leaseAt > 60e3) { if (!(await extLeaseC('renew'))) { guard = 1e9; break; } leaseAt = Date.now(); } if (done.has(src) || (EXT_C.pauseUntil[src] || 0) > Date.now() || (EXT_C.used[src] || 0) >= cfg.src[src].cap || (EXT_C.next[X.SOURCES[src].host] || 0) > Date.now()) continue;
+      let i = EXT_C.cur[src] || 0, b = null; for (let n = 0; n < C0.length; n++, i++) { const x = C0[i % C0.length]; if (extEligibleC(X, src, x, cfg) && extDueC(src, x.isbn, cfg)) { b = x; i++; break; } } EXT_C.cur[src] = i % C0.length; if (!b) { done.add(src); continue; }
+      const r = await extOneC(X, src, b, cfg, keys); did = true; const t = (tally[src] = tally[src] || {}); t[r.st] = (t[r.st] || 0) + 1; skipRun[src] = r.st === 'skip' ? (skipRun[src] || 0) + 1 : 0; if (skipRun[src] >= 20) done.add(src); /* 중고닷이 아직 안 본 책만 남음 — 이번 회차엔 그만(읽기 낭비 막기) */ if (Date.now() - t0 > budgetMs) break; }
+    if (!did) { if (srcs.every((s) => done.has(s) || (EXT_C.pauseUntil[s] || 0) > Date.now() || (EXT_C.used[s] || 0) >= cfg.src[s].cap)) break; await sleep(400); } }
+  const out = { at: nowIso(), ms: Date.now() - t0, books: C0.length, tally }; await EXT_RUN().set({ cloud: out }, { merge: true }).catch(() => {});
+  log('외부 정보(클라우드 이어 받기)', JSON.stringify(out).slice(0, 400)); return out; }
+let extNextAt = 0;
 let mlNextAt = 0, learnNextAt = 0, lastDailyAt = Date.now(), dailyBusy = false;
 /* (0.9.0) 무거운 하루 일(비용·결과 기록·배우기)은 주문 읽기(/tick)와 따로 /daily(10분마다 예약)에서 — 예전엔 1분 회차 끝에 붙어 있어, 길어지면 다음 회차(주문 읽기)를 건너뛰었음 */
 async function dailyJobs() { if (dailyBusy) return { skipped: true }; dailyBusy = true; lastDailyAt = Date.now(); const out = {};
   try { if (Date.now() > costNextAt) { try { const r = await costDaily(4); out.costs = r; costNextAt = r.skip ? Date.now() + 15 * 60e3 : 0; if (r.done && r.done.length) log('비용 기록', JSON.stringify(r.done)); } catch (e) { costNextAt = Date.now() + 30 * 60e3; out.costsErr = e.message; log('비용 기록 실패', e.message); } }
     if (Date.now() > mlNextAt) { try { const r = await mlDaily(); out.ml = r.skip ? undefined : r; mlNextAt = Date.now() + (r.skip ? 15 : 60) * 60e3; if (!r.skip) log('결과 기록', JSON.stringify(r).slice(0, 400)); } catch (e) { mlNextAt = Date.now() + 30 * 60e3; out.mlErr = e.message; log('결과 기록 실패', e.message); } }
+    if (Date.now() > extNextAt) { try { const r = await extCloud(90e3); extNextAt = Date.now() + (r.skip ? 5 : 1) * 60e3; if (!r.skip) out.ext = { ms: r.ms, tally: r.tally }; else out.ext = r.skip; } catch (e) { extNextAt = Date.now() + 20 * 60e3; out.extErr = e.message; log('외부 정보 이어 받기 실패', e.message); } } /* (0.10.0) PC가 꺼져 있을 때만 */
     if (Date.now() > learnNextAt) { try { const r = await mlLearn(); learnNextAt = Date.now() + (r.skip ? 20 : 120) * 60e3; if (!r.skip) { out.learn = r; log('스스로 배우기', JSON.stringify(r).slice(0, 400)); } } catch (e) { learnNextAt = Date.now() + 60 * 60e3; out.learnErr = e.message; log('스스로 배우기 실패', e.message); } }
   } finally { dailyBusy = false; } return out; }
 const server = http.createServer(async (req, res) => {
