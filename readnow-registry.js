@@ -16,7 +16,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.14.3';
+  const VERSION = '0.14.4';
   const MIN = 60e3;
 
   const KINDS = {
@@ -101,7 +101,7 @@
   const SETTINGS = [
     ['prd_system/pricing', '가격: 판정 엔진 설정·실험 한도·감시 묶음·조건 묶음·감시 탭', ['webapp', 'watch', 'pc']], ['prd_system/settings', '수집기 설정(작업 중요도·자리 수)', ['pc', 'webapp']],
     ['app_settings/main', '웹앱 공용 설정(비용·목표·출고 마감·📥 등록 조건 reg·맡긴 일 기록 기간 cmdWinDays)', ['webapp']], ['crm_system/accounting', '택배 계약(기간별 택배비)', ['webapp']], ['crm_system/shopPolicy', '우리 배송비 정책', ['pc', 'webapp']],
-    ['app_settings/qna_phrases', '고객 응대 문구', ['webapp', 'pc']], ['app_settings/phrases_ship', '📝 문구 모음 — 판매 결정 이유 (0.14.3)', ['webapp']], ['app_settings/phrases_buy', '📝 문구 모음 — 매입 결정 이유', ['webapp']], ['app_settings/phrases_reg', '📝 문구 모음 — 등록 결정 이유', ['webapp']], ['app_settings/phrases_price', '📝 문구 모음 — 가격 결정 이유(예전 판단 이유 코드 포함)', ['webapp']], ['app_settings/bench', '🎯 집중 벤치마킹 대상 판매자(15명까지 · targets · 처음 15명 seed190) · 수집 그룹·주기(groups) · 모을 정보(fields·detail) · 보기 기준(view) · 주기 수집 켜기(autoOn)', ['webapp', 'pc']], ['prd_system/buyback', '알라딘 매입 진행 상태', ['webapp', 'pc']], ['app_settings/expenses', '기타 지출(수동)', ['webapp']],
+    ['app_settings/qna_phrases', '고객 응대 문구', ['webapp', 'pc']], ['app_settings/phrases_ship', '📝 문구 모음 — 판매 결정 이유 (0.14.3)', ['webapp']], ['app_settings/phrases_buy', '📝 문구 모음 — 매입 결정 이유', ['webapp']], ['app_settings/phrases_reg', '📝 문구 모음 — 등록 결정 이유', ['webapp']], ['app_settings/phrases_price', '📝 문구 모음 — 가격 결정 이유(예전 판단 이유 코드 포함)', ['webapp']], ['app_settings/bench', '🎯 집중 벤치마킹 대상 판매자(최대 수 max = 관리자 설정 · 기본 15 · 바꾼 기록 maxHist (0.14.4) · targets · 처음 15명 seed190) · 수집 그룹·주기(groups) · 모을 정보(fields·detail) · 보기 기준(view) · 주기 수집 켜기(autoOn)', ['webapp', 'pc']], ['prd_system/buyback', '알라딘 매입 진행 상태', ['webapp', 'pc']], ['app_settings/expenses', '기타 지출(수동)', ['webapp']],
     ['app_settings/ext', '🌐 외부 정보 — 켜기·출처마다 켜기/하루 최대/다시 볼 날·같은 책 닮음·외국 시세 범위·등급 맞춤 (0.14.0)', ['webapp', 'pc']], ['app_settings/ext_run', '🌐 외부 정보 — 맡은 PC·오늘 쓴 수·출처마다 마지막 결과·시험 결과', ['pc', 'webapp']], ['app_secrets/ext', '🌐 외부 연결 키 (알라딘 TTB·카카오·네이버·국립중앙도서관·구글·정보나루·eBay·수출입은행) — 백업 파일에 넣지 않음', ['webapp', 'pc']],
     ['app_settings/cloud', '클라우드 신호·판', ['cloud', 'webapp']], ['app_settings/sys_registry', '이 노선표 (Firebase 기준)', ['webapp', 'cloud', 'pc', 'watch']],
   ];
