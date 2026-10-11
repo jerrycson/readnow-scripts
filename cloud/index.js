@@ -30,7 +30,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.10.0'; // (0.10.0) 🌐 외부 정보 — PC가 꺼져 있을 때 클라우드가 이어 받음(10분마다 최대 90초)
+const VER = '0.11.0'; // (0.11.0) 안전 점검: 작은 오류 번호로 서버가 꺼지던 것 · 비밀을 환경 변수에서 지움 · 알라딘 로그인 실패 상태를 Firestore에 남겨(다시 켜져도) 아이디·비밀번호 문제면 6시간 쉼 · 공용 파일 마지막으로 받은 판으로 계속(문법 검사) · 주문 문서 400개씩 · 열쇠를 같은 시간으로 비교 · 기억 덜어 내기 · 외부 정보 기준을 공용 파일에서 · (0.10.0) 🌐 외부 정보 — PC가 꺼져 있을 때 클라우드가 이어 받음(10분마다 최대 90초)
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -38,6 +38,8 @@ const RAW = process.env.CORE_BASE || 'https://raw.githubusercontent.com/jerrycso
 const CORES_OPTIONAL = new Set(['readnow-register-core.js']); // 없어도 주문 읽기 등은 그대로 (등록 엔진 번호 맞춤만 글자 비교로)
 const CORES = ['readnow-shipping-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-sellers-core.js', 'readnow-core.js', 'readnow-register-core.js']; // (0.9.3) 등록 엔진 공용 파일: 상품 번호(ISBN·바코드) 맞춤 한 곳 // 출고·상품 파서 + 판매자 분류(웹앱 블록 색과 같은 기준)
 const ALADIN_ID = process.env.ALADIN_ID || '', ALADIN_PW = process.env.ALADIN_PW || '', TICK_KEY = process.env.TICK_KEY || '';
+delete process.env.ALADIN_ID; delete process.env.ALADIN_PW; delete process.env.TICK_KEY; /* (0.11.0) 읽은 뒤 환경 변수에서 지움 — 브라우저(자식 프로세스)·GitHub에서 받아 실행하는 공용 파일이 process.env로 볼 수 없게 */
+process.on('unhandledRejection', (e) => { try { console.error('처리 안 된 오류', e && e.message ? e.message : String(e)); } catch (x) {} }); process.on('uncaughtException', (e) => { try { console.error('잡히지 않은 오류', e && e.message ? e.message : String(e)); } catch (x) {} }); /* (0.11.0) 한 요청의 오류로 서버 전체가 꺼지지 않게 */
 const ALLOW = (process.env.ALLOW_EMAILS || 'jerrycson@gmail.com').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 const ORIGINS = (process.env.ALLOW_ORIGINS || 'https://jerrycson.github.io').split(',').map((s) => s.trim());
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
@@ -46,13 +48,18 @@ const nowIso = () => new Date().toISOString();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const W = () => ({ uploadedAt: FV.serverTimestamp(), writer: 'cloud', writerSchema: 6 });
 const C = (n) => db.collection(n);
+const batchOps = async (ops) => { for (let i = 0; i < ops.length; i += 400) { const b = db.batch(); ops.slice(i, i + 400).forEach(([ref, v]) => b.set(ref, v, { merge: true })); await b.commit(); } };
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 
 /* ── 공용 기준 파일 (GitHub의 것 그대로 — PC 수집기·웹앱과 같은 판) ── */
-let coreSrc = null, coreAt = 0, coreVer = {};
+let coreSrc = null, coreAt = 0, coreVer = {}; const coreGood = {}; /* (0.11.0) 파일마다 마지막으로 잘 받은 판 — GitHub가 잠깐 안 되거나 문법이 깨진 파일이 올라와도 그 판으로 계속 */
+const vm = require('vm');
 async function cores() {
   if (coreSrc && Date.now() - coreAt < 30 * 60e3) return coreSrc;
-  const out = await Promise.all(CORES.map(async (f) => { const r = await fetch(RAW + f + '?t=' + Date.now()); if (!r.ok) { if (CORES_OPTIONAL.has(f)) { log(`${f} 받기 실패 (${r.status}) — 이 파일 없이 계속`); return ''; } throw new Error(`${f} 받기 실패 (${r.status})`); } const t = await r.text(); coreVer[f] = (t.match(/VERSION\s*[:=]\s*['"]([\d.]+)/) || [])[1] || '?'; return t; })); // 다섯 파일을 한꺼번에 받음 (차례로 받던 것보다 빠름)
+  const out = await Promise.all(CORES.map(async (f) => { let t = null, why = null; try { const r = await fetch(RAW + f + '?t=' + Date.now()); if (r.ok) { t = await r.text(); try { new vm.Script(t, { filename: f }); } catch (e) { why = '문법 오류: ' + e.message; t = null; } } else why = 'HTTP ' + r.status; } catch (e) { why = e.message; }
+    if (t != null) { coreGood[f] = t; coreVer[f] = (t.match(/VERSION\s*[:=]\s*['"]([\d.]+)/) || [])[1] || '?'; return t; }
+    if (coreGood[f]) { log(`${f} 받기 실패(${why}) — 마지막으로 받은 판으로 계속`); return coreGood[f]; }
+    if (CORES_OPTIONAL.has(f)) { log(`${f} 받기 실패 (${why}) — 이 파일 없이 계속`); return ''; } throw new Error(`${f} 받기 실패 (${why})`); })); // 다섯 파일을 한꺼번에 받음 (차례로 받던 것보다 빠름)
   coreSrc = out.join('\n;\n'); coreAt = Date.now(); return coreSrc;
 }
 
@@ -63,7 +70,7 @@ let REG_LOCAL = null; try { REG_LOCAL = require('./readnow-registry.js'); } catc
 let REGM = REG_LOCAL || REG_MIN, regAt = 0;
 const vn = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
 async function regMod() { if (Date.now() - regAt < 30 * 60e3) return REGM; regAt = Date.now();
-  try { const r = await fetch(RAW + 'readnow-registry.js?t=' + Date.now()); if (r.ok) { const t = await r.text(); const m = { exports: {} }; new Function('module', 'exports', t)(m, m.exports); if (m.exports && m.exports.VERSION && vn(m.exports.VERSION) >= vn((REG_LOCAL || REG_MIN).VERSION)) REGM = m.exports; } } catch (e) { log('노선표 파일 받기 실패 — 함께 올린 판 씀', e.message); }
+  try { const r = await fetch(RAW + 'readnow-registry.js?t=' + Date.now()); if (r.ok) { const t = await r.text(); const m = { exports: {} }; new Function('module', 'exports', t)(m, m.exports); if (m.exports && m.exports.VERSION && vn(m.exports.VERSION) >= vn((REG_LOCAL || REG_MIN).VERSION)) { try { const R0 = m.exports.merge({}); m.exports.canHandle(R0, 'read', 'cloud'); REGM = m.exports; } catch (e) { log('GitHub 노선표가 돌지 않음 — 함께 올린 판 씀', e.message); } } } } catch (e) { log('노선표 파일 받기 실패 — 함께 올린 판 씀', e.message); }
   coreVer['readnow-registry.js'] = REGM.VERSION; return REGM; }
 /* (0.7.0) 실행도구의 한 문 (readnow-exec-core.js) — 알라딘을 바꾸는 일(발송준비시작·판매중지)은 exec_log에 시작을 먼저 적고, 같은 일이 이미 끝났거나 하는 중이면 하지 않음.
  *  함께 올린 파일 → 없으면 GitHub에서 받음 → 그것도 안 되면 기록 없이 하지 않고 대기로 남김(PC 수집기가 맡을 수 있음) */
@@ -129,12 +136,15 @@ async function ensureCores(p) { const src = await cores(); const has = await p.e
 
 /* ── 로그인 (PC 수집기의 자동 로그인과 같은 방식: 보이는 아이디 칸 + 비밀번호 칸 + 로그인 단추) ── */
 let loginFailAt = 0, loginFailMsg = null, loginFailN = 0; // (0.9.0) 실패 쉬는 시간: 1번째 3분 → 2번째 10분 → 그 뒤 30분 (예전: 한 번만 실패해도 30분 동안 주문을 못 읽었음)
-const loginRest = () => (loginFailN <= 1 ? 3 : loginFailN === 2 ? 10 : 30) * 60e3;
+let loginKind = null, loginStLoaded = false; /* (0.11.0) 실패 상태를 Firestore(app_settings/cloud_login)에 남겨 다시 켜져도(배포·재시작) 쉬는 시간을 지킴 · 아이디·비밀번호·자동입력(보안 문자) 때문이면 6시간 쉼 — 계정 잠김 막기 */
+const loginRest = () => (loginKind === 'cred' ? 360 : loginFailN <= 1 ? 3 : loginFailN === 2 ? 10 : 30) * 60e3;
+async function loginStLoad() { if (loginStLoaded) return; loginStLoaded = true; try { const d = await C('app_settings').doc('cloud_login').get(); const v = d.exists ? d.data() : null; if (v && v.failAt) { loginFailAt = +v.failAt || 0; loginFailN = +v.failN || 0; loginFailMsg = v.msg || null; loginKind = v.kind || null; } } catch (e) {} }
+const loginStSave = () => C('app_settings').doc('cloud_login').set({ failAt: loginFailAt || 0, failN: loginFailN || 0, msg: loginFailMsg || null, kind: loginKind || null, at: new Date().toISOString() }).catch(() => {});
 async function loggedIn(p) { return p.evaluate(async () => { try { const r = await fetch('/scm/worders.aspx?searchType=1&limitDate=1', { credentials: 'include' }); const h = await r.text(); if (/\/login\/|wlogin/i.test(r.url)) return false; const d = new DOMParser().parseFromString(h, 'text/html'); return !(d.querySelector('input[type="password"]') && !/샵매니저/.test(d.title || '')); } catch (e) { return false; } }); }
-async function login(p) {
-  if (await loggedIn(p)) return true;
+async function login(p, force) {
+  if (await loggedIn(p)) { if (loginFailAt) { loginFailAt = 0; loginFailN = 0; loginFailMsg = null; loginKind = null; loginStSave(); } return true; }
   if (!ALADIN_ID || !ALADIN_PW) throw new Error('알라딘 아이디·비밀번호 비밀(ALADIN_ID·ALADIN_PW)이 없음');
-  if (loginFailAt && Date.now() - loginFailAt < loginRest()) throw new Error(`로그인 실패 뒤 ${Math.round(loginRest() / 60e3)}분 쉬는 중 (계정 잠김 방지, ${loginFailN}번째): ` + (loginFailMsg || ''));
+  await loginStLoad(); if (!force && loginFailAt && Date.now() - loginFailAt < loginRest()) throw new Error(`로그인 실패 뒤 ${Math.round(loginRest() / 60e3)}분 쉬는 중 (계정 잠김 방지, ${loginFailN}번째): ` + (loginFailMsg || ''));
   log('알라딘 로그인');
   await p.goto(AL + '/login/wlogin.aspx?returnurl=' + encodeURIComponent(AL + '/scm/worders.aspx'), { waitUntil: 'domcontentloaded' });
   const ok = await p.evaluate((id, pw) => {
@@ -146,12 +156,12 @@ async function login(p) {
     const btn = [...form.querySelectorAll('button,input[type="submit"],input[type="image"],a')].find((b) => /^\s*로그인\s*$/.test(b.textContent || b.value || b.alt || '') || b.type === 'submit' || b.type === 'image');
     if (btn) btn.click(); else if (pwI.form) pwI.form.submit(); else return 'no-btn'; return 'sent';
   }, ALADIN_ID, ALADIN_PW);
-  if (ok !== 'sent') { loginFailAt = Date.now(); loginFailN++; loginFailMsg = '로그인 화면 모양이 다름 (' + ok + ')'; throw new Error(loginFailMsg); }
+  if (ok !== 'sent') { loginFailAt = Date.now(); loginFailN++; loginKind = 'page'; loginFailMsg = '로그인 화면 모양이 다름 (' + ok + ')'; loginStSave(); throw new Error(loginFailMsg); }
   await p.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {}); await sleep(1500);
   if (!/aladin\.co\.kr/.test(p.url())) await p.goto(AL + '/', { waitUntil: 'domcontentloaded' });
   await ensureCores(p);
-  if (!(await loggedIn(p))) { const msg = await p.evaluate(() => (document.body.innerText.match(/(아이디|비밀번호|보안|인증|자동입력)[^\n]{0,80}/) || [''])[0]).catch(() => ''); loginFailAt = Date.now(); loginFailN++; loginFailMsg = msg || '로그인 뒤에도 샵매니저가 열리지 않음'; throw new Error('알라딘 로그인 실패: ' + loginFailMsg); }
-  loginFailAt = 0; loginFailN = 0; loginFailMsg = null; log('로그인 됨'); return true;
+  if (!(await loggedIn(p))) { const msg = await p.evaluate(() => (document.body.innerText.match(/(아이디|비밀번호|보안|인증|자동입력)[^\n]{0,80}/) || [''])[0]).catch(() => ''); loginFailAt = Date.now(); loginFailN++; loginKind = /(아이디|비밀번호)[^\n]{0,40}(잘못|일치하지|틀렸|틀립|확인해|다시 입력|오류)|자동\s*입력\s*방지|보안\s*문자|캡차|captcha/i.test(msg || '') ? 'cred' : 'other'; /* 진짜 아이디·비밀번호 오류 글·자동입력 방지일 때만 6시간 — 로그인 화면의 칸 이름('아이디 찾기')만으로는 아님 */ loginFailMsg = msg || '로그인 뒤에도 샵매니저가 열리지 않음'; loginStSave(); throw new Error('알라딘 로그인 실패: ' + loginFailMsg + (loginKind === 'cred' ? ' — 아이디·비밀번호·보안 문자 문제로 보여 6시간 쉼(계정 잠김 막기). 비밀을 고친 뒤 웹앱 설정의 클라우드 시험으로 바로 다시' : '')); }
+  loginFailAt = 0; loginFailN = 0; loginFailMsg = null; loginKind = null; loginStSave(); log('로그인 됨'); return true;
 }
 
 /* ── ① 주문확인요청: 1분마다 이것부터 (알라딘 요청 1번) ──
@@ -171,8 +181,8 @@ async function confirmRead(p) {
   try { await enrichMigrate(cc); } catch (e) { log('보강 칸 옮기기 실패 — 다음에 다시 (예전 칸은 그대로 둠)', e.message); }
   const changed = !cc || cc.sig !== csig; const enrich = await enrichOf(rc.orders);
   if (changed) { const bc = db.batch(); bc.set(ref, { at, orders: rc.orders, tabCounts: rc.tabCounts, sig: csig, pc: 'cloud', ...(cc && cc.enrich ? { enrich: cc.enrich } : {}), ...W() }); /* 옮기기 전이면 예전 칸을 지우지 않음 */ // (0.9.0) 보강(enrich)은 문서마다 따로(shp_enrich) — 주문이 많아도 목록 문서가 1MB를 넘지 않게
-    for (const o of rc.orders) bc.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, confirmSeenAt: at, ...(cc && (cc.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { confirmFirstSeenAt: at }), buyer: o.buyer, orderedAt: o.orderedAt, items: o.items, ...W() }, { merge: true });
-    await bc.commit(); confirmDoc = { sig: csig, tabCounts: rc.tabCounts, orders: rc.orders }; } else confirmDoc = cc;
+    const oOps = rc.orders.map((o) => [C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, confirmSeenAt: at, ...(cc && (cc.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { confirmFirstSeenAt: at }), buyer: o.buyer, orderedAt: o.orderedAt, items: o.items, ...W() }]);
+    await batchOps(oOps); await bc.commit(); /* (0.11.0) 주문 문서는 400개씩 따로 먼저 — 한 묶음 500개 한도(주문이 많은 날 목록이 멈추던 것) · 목록(sig)은 주문을 다 쓴 뒤에(주문 쓰기가 실패하면 다음 회차에 다시) */ confirmDoc = { sig: csig, tabCounts: rc.tabCounts, orders: rc.orders }; } else confirmDoc = cc;
   return { n: rc.orders.length, changed, enrich, tabCounts: rc.tabCounts, prevTab: cc && cc.tabCounts }; }
 /* (0.9.0) 상품 보강은 상품마다 문서 하나(shp_enrich/{매물번호}) — 예전엔 목록 문서 안 enrich 칸에 3일치를 모아 둬, 주문이 많아지면 문서가 1MB를 넘어 목록 저장이 통째로 실패할 수 있었음
  *  처음 한 번 예전 enrich 칸을 옮기고 그 칸을 지움(내용은 shp_enrich에 그대로). 기억(enrichMem)으로 같은 것을 다시 읽지 않음 */
@@ -180,7 +190,7 @@ let confirmDoc = null, confirmDocAt = 0, enrichMemAt = 0; const enrichMem = new 
 async function enrichMigrate(cc) { const E = cc && cc.enrich; if (!E || !Object.keys(E).length) return; const ks = Object.keys(E);
   for (let i = 0; i < ks.length; i += 400) { const b = db.batch(); ks.slice(i, i + 400).forEach((k) => { b.set(C('shp_enrich').doc(String(k)), { ...E[k], listingId: String(k), at: E[k].at || nowIso(), migratedAt: nowIso(), ...W() }, { merge: true }); enrichMem.set(String(k), E[k]); }); await b.commit(); }
   await C('shp_state').doc('confirm').update({ enrich: FV.delete() }); delete cc.enrich; log('보강 칸 옮김', ks.length, '개 → shp_enrich'); }
-async function enrichOf(orders) { if (!enrichMemAt || Date.now() - enrichMemAt > 30 * 60e3) { enrichMemAt = Date.now(); try { (await C('shp_enrich').where('at', '>=', new Date(Date.now() - 3 * 864e5).toISOString()).get()).forEach((d) => enrichMem.set(d.id, d.data())); } catch (e) { log('보강 읽기 실패', e.message); } }
+async function enrichOf(orders) { if (!enrichMemAt || Date.now() - enrichMemAt > 30 * 60e3) { enrichMemAt = Date.now(); { const cut = new Date(Date.now() - 10 * 864e5).toISOString(); for (const [k, v] of enrichMem) if (!v || String(v.at || '') < cut) enrichMem.delete(k); } /* (0.11.0) 10일 넘은 기억은 덜어 냄 — 끝없이 커지던 것 */ { const now = Date.now(); for (const [k, t] of skipUntil) if (t < now) { skipUntil.delete(k); failN.delete(k); } if (seenFlag.size > 5000) seenFlag.clear(); } try { (await C('shp_enrich').where('at', '>=', new Date(Date.now() - 3 * 864e5).toISOString()).get()).forEach((d) => enrichMem.set(d.id, d.data())); } catch (e) { log('보강 읽기 실패', e.message); } }
   const out = {}; for (const o of orders) for (const it of o.items || []) { const k = String(it.listingId || ''); if (k && enrichMem.has(k)) out[k] = enrichMem.get(k); } return out; }
 const enrichPut = async (lid, E, merge) => { await C('shp_enrich').doc(String(lid)).set({ ...E, listingId: String(lid), ...W() }, { merge: !!merge }); enrichMem.set(String(lid), { ...(merge ? enrichMem.get(String(lid)) || {} : {}), ...E }); };
 
@@ -282,13 +292,13 @@ async function shipRead(p, until) {
   if (!R.login) throw Object.assign(new Error('로그인 풀림'), { relogin: true });
   const at = nowIso(); const { r, excel } = R;
   const sig = JSON.stringify(r.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId), o.deliveryNo])); const cur = (await C('shp_state').doc('current').get()).data();
-  const changed = !cur || cur.sig !== sig; const b = db.batch(); let w = false;
+  const changed = !cur || cur.sig !== sig; const b = db.batch(); let w = false; let oOps2 = null;
   if (changed) { w = true; b.set(C('shp_state').doc('current'), { at, tabCounts: r.tabCounts, orders: r.orders, sig, pc: 'cloud', excel: null, ...W() }); // 엑셀은 따로(shp_state/excel) — 목록 문서를 가볍게
     b.set(C('shp_snapshots').doc(at.replace(/[:.]/g, '-')), { at, tabCounts: r.tabCounts, orders: r.orders, by: 'cloud', ...W() });
-    for (const o of r.orders) b.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, stage: '발송 요청', lastSeenAt: at, ...(cur && (cur.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { firstSeenAt: at }), buyer: o.buyer, recipient: o.recipient, orderedAt: o.orderedAt, items: o.items, carrier: o.carrier, ...W() }, { merge: true }); }
+    oOps2 = r.orders.map((o) => [C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, stage: '발송 요청', lastSeenAt: at, ...(cur && (cur.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { firstSeenAt: at }), buyer: o.buyer, recipient: o.recipient, orderedAt: o.orderedAt, items: o.items, carrier: o.carrier, ...W() }]); }
   else if (cur && !sameMap(cur.tabCounts, r.tabCounts)) { w = true; b.set(C('shp_state').doc('current'), { at, tabCounts: r.tabCounts, pc: 'cloud', ...W() }, { merge: true }); }
   if (excel) { const xr = C('shp_state').doc('excel'); const xo = (await xr.get()).data(); const rows = excel.rows.map((v) => ({ v })); if (!xo || JSON.stringify(xo.rows) !== JSON.stringify(rows)) { w = true; b.set(xr, { at, header: excel.header, rows, pc: 'cloud', ...W() }); b.set(C('shp_excel').doc(at.replace(/[:.]/g, '-')), { at, header: excel.header, rows, by: 'cloud', ...W() }); /* (0.9.6) 바뀐 판마다 따로 보관 — 지금 문서는 덮어써도 옛 판이 남게 */ } }
-  if (w) await b.commit();
+  if (oOps2) await batchOps(oOps2); if (w) await b.commit(); /* (0.11.0) 주문 문서는 따로 400개씩 먼저 — 목록(sig)은 그 뒤에 */
   // 우리 매물 유의 사항·사진 (24시간에 한 번 — PC 수집기와 같은 기록, 바뀐 판만 쌓음)
   let nInfo = 0; const items = r.orders.flatMap((o) => o.items).filter((i) => i.listingId);
   const prevs = items.length ? await db.getAll(...items.map((it) => C('prd_used_info').doc(String(it.listingId)))) : []; // 한 번에 읽음 (예전: 한 권씩)
@@ -531,8 +541,10 @@ async function pptStore(b, u) { const fs = getFirestore(); const sid = String(b.
 async function authUser(req) {
   const h = req.headers.authorization || ''; const tok = h.startsWith('Bearer ') ? h.slice(7) : null; if (!tok) throw Object.assign(new Error('로그인 토큰 없음'), { code: 401 });
   const u = await getAuth().verifyIdToken(tok).catch(() => null); if (!u) throw Object.assign(new Error('로그인 토큰이 맞지 않음'), { code: 401 });
+  if (u.email_verified === false) throw Object.assign(new Error('이메일 확인이 안 된 계정'), { code: 403 }); /* (0.11.0) 확인 안 된 이메일로 남의 주소를 쓰지 못하게 */
   if (!ALLOW.includes(String(u.email || '').toLowerCase())) throw Object.assign(new Error('허용되지 않은 계정: ' + u.email), { code: 403 }); return u;
 }
+const keyOk = (req) => { if (!TICK_KEY) return false; const a = Buffer.from(String(req.headers['x-tick-key'] || '')), b = Buffer.from(TICK_KEY); return a.length === b.length && require('crypto').timingSafeEqual(a, b); }; /* (0.11.0) 같은 시간으로 비교 */
 const bodyOf = (req) => new Promise((res, rej) => { const ch = []; let n = 0; req.on('data', (c) => { n += c.length; if (n > 15e6) { rej(Object.assign(new Error('너무 큼'), { code: 413 })); req.destroy(); } else ch.push(c); }); req.on('end', () => { try { res(ch.length ? JSON.parse(Buffer.concat(ch).toString('utf8')) : {}); } catch (e) { rej(Object.assign(new Error('JSON 아님'), { code: 400 })); } }); });
 
 /* ── (0.5.6) 백업용 자료 목록 (/inventory · /storage-files) — 웹앱 '⑪ Firebase 자료 전체 내려받기'가 미리 크기를 보여 주고, 새로 생긴 칸도 빠짐없이 담게
@@ -617,10 +629,12 @@ let costNextAt = 0;
  *  모든 값은 다시 계산할 수 있는 파생 자료 — 수집한 원래 기록(상품·시장·주문)은 건드리지 않음 */
 const ML_VER = 1;
 const shard = (arr, n) => { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; };
+let _l2u = null, _l2uAt = 0; /* (0.11.0) 상품번호→상품코드 표를 1시간 기억 — 하루 일마다 상품 전체를 여러 번 읽던 것 */
+async function lid2uMap() { if (_l2u && Date.now() - _l2uAt < 3600e3) return _l2u; const m = new Map(); (await C('prd_listings').select('usedCode', 'listingId').get()).forEach((d) => { const v = d.data(); if (v.listingId) m.set(String(v.listingId), v.usedCode); }); _l2u = m; _l2uAt = Date.now(); return m; }
 async function mlSales(fromIso) { const out = new Map(); const t0 = Date.parse(fromIso); const day0 = new Date(t0 + 9 * 3600e3).toISOString().slice(0, 10); const kms = (s) => Date.parse(/[T]/.test(String(s)) ? s : String(s).replace(' ', 'T') + '+09:00');
   const add = (u, s) => { const L = out.get(u) || out.set(u, []).get(u); if (!L.some((x) => x.ono === s.ono)) L.push(s); };
   const bad = new Set(); const co = await C('crm_orders').where('orderedAt', '>=', day0).get(); co.forEach((d) => { const o = d.data(); const t = kms(o.orderedAt); if (!(t >= t0) || (o.kind && o.kind !== 'sale')) return; (o.items || []).forEach((it) => { if (!it.aladinUsedCode) return; if (it.lineStatus && it.lineStatus !== 'normal') { bad.add(o.orderNo + '|' + it.aladinUsedCode); return; } add(it.aladinUsedCode, { ono: o.orderNo, at: t, price: it.price || 0, src: 'crm' }); }); });
-  const lid2u = new Map(); (await C('prd_listings').select('usedCode', 'listingId').get()).forEach((d) => { const v = d.data(); if (v.listingId) lid2u.set(String(v.listingId), v.usedCode); });
+  const lid2u = await lid2uMap();
   const so = await C('shp_orders').where('orderedAt', '>=', day0).get(); so.forEach((d) => { const o = d.data(); const t = kms(o.orderedAt); if (!(t >= t0)) return; (o.items || []).forEach((it) => { const u = lid2u.get(String(it.listingId)); if (!u || bad.has(o.orderNo + '|' + u)) return; add(u, { ono: o.orderNo, at: t, price: it.price || 0, src: 'shp' }); }); });
   return out; }
 async function mlSnapshot(day) { const t0 = Date.now(); const L = []; (await C('prd_listings').where('active', '==', true).get()).forEach((d) => L.push({ id: d.id, ...d.data() }));
@@ -739,19 +753,20 @@ async function extCandsC(X) { if (EXT_C.cand && Date.now() - EXT_C.candAt < 6 * 
   try { for (let i = 0; i < parts; i++) await C('ext_cand').doc('p' + i).set({ J: JSON.stringify(rows.slice(i * per, (i + 1) * per)), ...W() }); await C('ext_cand').doc('meta').set({ v: 2, at: nowIso(), n: rows.length, parts, from: qs.size, ...W() }); /* 쪽을 모두 쓴 뒤에만 meta */ } catch (e) { log('외부 정보 책 목록 저장 실패', e.message); }
   EXT_C.cand = L; EXT_C.candAt = Date.now(); log('외부 정보 책 목록', L.length, '권 (상품', qs.size, '개에서)'); return L; }
 const extDueC = (src, isbn, cfg) => { const v = (EXT_C.idx[src] || new Map()).get(isbn); if (!v) return true; const m = String(v).match(/^E (\d{4}-\d\d-\d\d) (\d+)$/); if (m) return Date.now() - Date.parse(m[1] + 'T00:00:00+09:00') >= EXT_BACKOFF[Math.min(EXT_BACKOFF.length, +m[2]) - 1] * 864e5; return Date.now() - Date.parse(v + 'T00:00:00+09:00') >= cfg.src[src].refreshDays * 864e5; };
-const extEligibleC = (X, src, b, cfg) => { const g = X.SOURCES[src].grp; if (!/^97[89]\d{10}$/.test(String(b.isbn || ''))) return g === 'used' && src !== 'yes24used' && !!b.title; if (g === 'foreign' && !cfg.foreignKr && X.isKrIsbn(b.isbn)) return false; if ((g === 'used' && src !== 'yes24used') || g === 'ebook') return !!b.title; return true; };
+const extEligibleC = (X, src, b, cfg) => { if (X.eligible) return X.eligible(src, b, cfg); /* (0.11.0) 공용 파일 0.3.0부터 기준이 공용 파일에 */ const g = X.SOURCES[src].grp; if (!/^97[89]\d{10}$/.test(String(b.isbn || ''))) return g === 'used' && src !== 'yes24used' && !!b.title; if (g === 'foreign' && !cfg.foreignKr && X.isKrIsbn(b.isbn)) return false; if ((g === 'used' && src !== 'yes24used') || g === 'ebook') return !!b.title; return true; };
 /* 한 출처·한 책의 결과 쓰기 — PC 수집기와 같은 규칙(같은 내용이면 확인 시각만 · '없음'은 두 번 잇달아일 때만 · 바뀌면 옛 값을 ext_hist에) */
+const extBytes = (x) => Buffer.byteLength(JSON.stringify(x), 'utf8'); /* (0.11.0) 바이트로 — 출처 하나 150KB까지(한 문서에 출처가 여럿이라 합쳐 1MB 안) */
 async function extSaveC(X, src, b, res) { const col = X.GROUPS[X.SOURCES[src].grp].col; const ref = C(col).doc(b.isbn); const now = nowIso();
   if (res.skip) return 'skip'; const snap = await ref.get(); const cur = snap.exists ? snap.data() : null; const prev = cur && cur.src ? cur.src[src] : null;
-  if (!res.ok) { const err = { at: now, why: String(res.why || '').slice(0, 300), by: 'cloud', ...(res.mismatch ? { mismatch: true } : {}) }; if (cur) await ref.update({ [`src.${src}.err`]: err, uploadedAt: FV.serverTimestamp() }); else await ref.set({ isbn: b.isbn, title: b.title || null, src: { [src]: { err } }, ...W() });
+  if (!res.ok) { const err = { at: now, why: String(res.why || '').slice(0, 300), by: 'cloud', ...(res.mismatch ? { mismatch: true } : {}) }; if (cur) await ref.update({ [`src.${src}.err`]: err, uploadedAt: FV.serverTimestamp() }); else await ref.set({ isbn: b.isbn, title: b.title || null, src: { [src]: { err } }, ...W() }, { merge: true });
     if (res.probe) { const pid = `${src}_${extKst().replace(/-/g, '')}`; const pr = C('ext_probe').doc(pid); try { const ex = await pr.get(); if (!ex.exists) await pr.set({ src, isbn: b.isbn, title: b.title || null, why: res.why, url: res.probe.url, len: res.probe.len, head: res.probe.head, at: now, by: 'cloud', ...W() }); } catch (e) {} }
     return res.mismatch ? 'mismatch' : 'err'; }
-  let d = res.d ?? null; if (d) { d = JSON.parse(JSON.stringify(d)); let g = 0; while (JSON.stringify(d).length > 600000 && g++ < 10) { if (Array.isArray(d.items) && d.items.length > 5) d.items = d.items.slice(0, Math.ceil(d.items.length / 2)); else if (d.kv) d.kv = null; else break; d.trunc = true; } } const sg = X.sig({ none: !!res.none, d });
+  let d = res.d ?? null; if (d) { d = JSON.parse(JSON.stringify(d)); let g = 0; while (extBytes(d) > 150000 && g++ < 12) { if (Array.isArray(d.items) && d.items.length > 5) d.items = d.items.slice(0, Math.ceil(d.items.length / 2)); else if (d.kv) d.kv = null; else break; d.trunc = true; } } const sg = X.sig({ none: !!res.none, d });
   if (prev && prev.sig === sg) { await ref.update({ [`src.${src}.chk`]: now, [`src.${src}.err`]: FV.delete(), [`src.${src}.noneAt`]: FV.delete(), uploadedAt: FV.serverTimestamp() }); return 'same'; }
   if (res.none && prev && prev.d && !prev.none && !prev.noneAt) { await ref.update({ [`src.${src}.noneAt`]: now, [`src.${src}.chk`]: now, [`src.${src}.err`]: FV.delete(), uploadedAt: FV.serverTimestamp() }); return 'none1'; }
   if (prev && prev.at) { const hid = `${col}_${b.isbn}_${src}_${String(prev.at).replace(/[^0-9]/g, '').slice(0, 14)}`; const hr = C('ext_hist').doc(hid); try { const ex = await hr.get(); if (!ex.exists) await hr.set({ col, isbn: b.isbn, src, at: prev.at, chk: prev.chk || null, none: !!prev.none, d: prev.d ?? null, sig: prev.sig || null, ...W() }); } catch (e) { log('옛 값 보관 실패 — 바꾸지 않음', src, b.isbn, e.message); return 'err'; } }
   const obj = { at: now, chk: now, sig: sg, none: !!res.none, d, by: 'cloud', q: (d && d.q) || null };
-  if (cur) await ref.update({ [`src.${src}`]: obj, ...(b.title && !cur.title ? { title: b.title } : {}), uploadedAt: FV.serverTimestamp() }); else await ref.set({ isbn: b.isbn, title: b.title || null, author: b.author || null, src: { [src]: obj }, ...W() });
+  if (cur) await ref.update({ [`src.${src}`]: obj, ...(b.title && !cur.title ? { title: b.title } : {}), uploadedAt: FV.serverTimestamp() }); else await ref.set({ isbn: b.isbn, title: b.title || null, author: b.author || null, src: { [src]: obj }, ...W() }, { merge: true }); /* (1.59.0·0.11.0) 같은 책을 다른 출처가 막 만들었으면 그 출처 칸을 지우지 않게 */
   return prev ? 'changed' : 'new'; }
 async function extOneC(X, src, b, cfg, keys) { const s = X.SOURCES[src]; const h = s.host;
   if (X.VIA_JOONGMO && X.VIA_JOONGMO.includes(src) && cfg.src.joongmo && cfg.src.joongmo.on) { let jm = null; try { const d = await C('ext_used').doc(b.isbn).get(); jm = d.exists && d.data().src ? d.data().src.joongmo : null; } catch (e) {} if (!jm) return { src, st: 'skip' }; if (jm.d && X.usedStats(jm.d, cfg.sim, cfg.usedMinPrice).match > 0) { extIdxSetC(X, src, b.isbn); return { src, st: 'viaJm' }; } }
@@ -804,10 +819,10 @@ const server = http.createServer(async (req, res) => {
   const path = (req.url || '/').split('?')[0];
   try {
     if (path === '/status' || path === '/') return send(200, { ok: true, ver: VER, cores: coreVer, login: loginFailAt ? 'fail' : 'unknown', hasCred: !!(ALADIN_ID && ALADIN_PW) });
-    if (path === '/tick') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); tickBusy = true; try { const out = await serial(() => tick('schedule')); try { const sw = await sysSweep(); if (sw.ev) out.sweep = sw; } catch (e) { out.sweepErr = e.message; log('맡긴 일 살피기 실패', e.message); }
+    if (path === '/tick') { if (!keyOk(req)) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); tickBusy = true; try { const out = await serial(() => tick('schedule')); try { const sw = await sysSweep(); if (sw.ev) out.sweep = sw; } catch (e) { out.sweepErr = e.message; log('맡긴 일 살피기 실패', e.message); }
       if (Date.now() - lastDailyAt > 3 * 3600e3) { out.daily = await dailyJobs().catch((e) => ({ err: e.message })); } // 예비: /daily 예약이 3시간 넘게 없으면(예전 deploy) 여기서 — deploy.sh를 다시 돌리면 /daily가 따로 맡음
       return send(200, out); } finally { tickBusy = false; } }
-    if (path === '/daily') { if (!TICK_KEY || req.headers['x-tick-key'] !== TICK_KEY) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (dailyBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); const out = await dailyJobs(); return send(200, out); }
+    if (path === '/daily') { if (!keyOk(req)) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (dailyBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); const out = await dailyJobs(); return send(200, out); }
     if (path === '/kick') { await authUser(req); KICK(); if (tickBusy) return send(200, { ok: true, queued: '도는 회차가 바로 처리 (빠른 고리)' }); tickBusy = true; try { const out = await serial(() => tick('kick')); return send(200, out); } finally { tickBusy = false; } } // (0.9.0) 회차가 돌고 있으면 기다리지 않고 그 회차의 빠른 고리가 바로 처리
     if (path === '/regaux') { await authUser(req); const b = await bodyOf(req); const out = await serial(() => regAux(b)); return send(200, out); } // (0.9.5) 📥 개별·미등록 등록: 분류·저자·출판사 찾기 (알라딘 팝업 대신)
     if (path === '/lookup') { await authUser(req); const b = await bodyOf(req); const out = await serial(() => lookup(b)); return send(200, out); }
@@ -815,8 +830,8 @@ const server = http.createServer(async (req, res) => {
     if (path === '/storage-files') { await authUser(req); const b = await bodyOf(req); const pre = String(b.prefix || ''); if (!/^[A-Za-z0-9_\-\/]*$/.test(pre)) return send(400, { ok: false, err: '폴더 이름이 이상함' }); return send(200, { ok: true, files: await storageFiles(pre) }); }
     if (path === '/ppt') { const u = await authUser(req); const b = await bodyOf(req); return send(200, await pptStore(b, u)); }
     if (path === '/spines') { await authUser(req); const b = await bodyOf(req); if (!b.image) return send(400, { ok: false, err: '사진 없음' }); const out = await spines(String(b.image).replace(/^data:[^,]+,/, '')); return send(200, out); }
-    if (path === '/test') { await authUser(req); const out = await serial(async () => { const p = await getPage(); try { await login(p); return { ok: true, login: 'ok', cores: coreVer }; } catch (e) { return { ok: false, login: 'fail', err: e.message }; } }); return send(200, out); }
+    if (path === '/test') { await authUser(req); const out = await serial(async () => { const p = await getPage(); try { await login(p, true); /* 사람이 누른 시험은 쉬는 시간과 상관없이 한 번 */ return { ok: true, login: 'ok', cores: coreVer }; } catch (e) { return { ok: false, login: 'fail', err: e.message }; } }); return send(200, out); }
     return send(404, { ok: false, err: '없는 주소' });
-  } catch (e) { log('요청 실패', path, e.message); return send(e.code && e.code < 600 ? e.code : 500, { ok: false, err: e.message }); }
+  } catch (e) { log('요청 실패', path, e.message); const code = Number.isInteger(e.code) && e.code >= 400 && e.code < 600 ? e.code : 500; /* (0.11.0) Firestore·Vision 오류의 작은 번호(3·14 등)를 HTTP 번호로 쓰면 서버가 꺼졌음 */ try { return send(code, { ok: false, err: e.message }); } catch (e2) { try { res.end(); } catch (e3) {} } }
 });
 server.listen(process.env.PORT || 8080, () => log(`readnow-cloud ${VER} 시작`));

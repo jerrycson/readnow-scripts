@@ -5,7 +5,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends chromium fonts-
   && rm -rf /var/lib/apt/lists/*
 ENV CHROME_PATH=/usr/bin/chromium NODE_ENV=production TZ=Asia/Seoul
 WORKDIR /app
-COPY package.json ./
-RUN npm install --omit=dev --no-audit --no-fund
+# (0.11.0) package-lock.json이 있으면 그 판 그대로(npm ci — 다시 배포해도 같은 프로그램), 없으면 예전처럼
+COPY package*.json ./
+RUN if [ -f package-lock.json ]; then npm ci --omit=dev --no-audit --no-fund; else npm install --omit=dev --no-audit --no-fund; fi
 COPY *.js ./
 CMD ["node", "index.js"]

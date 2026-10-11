@@ -7,7 +7,7 @@
  * 쓰는 곳: PC 수집기 · 가격 감시기(브라우저 Firebase) · 클라우드(firebase-admin) — 둘 다 db.collection().doc() · db.runTransaction(tx.get/tx.set) 만 씀.
  * 기록은 지우지 않음. 실패 뒤 다시 하면 tries가 늘고 지난 결과는 hist에 쌓임. */
 (function (root) {
-  const VERSION = '0.1.0';
+  const VERSION = '0.1.1';
   const COL = 'exec_log';
   const KINDS = { price: '가격 반영', hold: '판매보류풀로', unhold: '판매보류풀 해제', startDelivery: '발송준비시작', invoice: '송장 입력', c2bAdd: '팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지' };
   const safeId = (s) => String(s).replace(/[\/#?\[\]*.]/g, '_').slice(0, 300);
@@ -22,7 +22,7 @@
       if (x && x.status === 'started') { const age = Date.now() - Date.parse(x.startedAt || 0); res = age < stale ? { ok: false, state: 'busy', why: `${x.by || '?'}가 하는 중 (${Math.round(age / 60000)}분 전 시작)`, prev: x } : { ok: false, state: 'unknown', why: `${x.by || '?'}가 ${String(x.startedAt || '').slice(0, 16)}에 시작했지만 결과를 못 적음 — 알라딘에서 확인 필요`, prev: x }; return; }
       if (x && x.status === 'unknown') { res = { ok: false, state: 'unknown', why: '결과 모름으로 남아 있음 — 알라딘에서 확인한 뒤 관리도구에서 닫기', prev: x }; return; }
       const hist = x ? [...(x.hist || []), { status: x.status, at: x.finishedAt || x.startedAt || null, by: x.by || null, msg: x.msg || null }].slice(-10) : [];
-      tx.set(ref, { kind: o.kind, label: KINDS[o.kind] || o.kind, key: String(o.key), by: o.by || null, status: 'started', startedAt: now, day: now.slice(0, 10), tries: ((x && x.tries) || 0) + 1, detail: o.detail || null, hist, finishedAt: null, msg: null, result: null, cmd: o.cmd || null });
+      tx.set(ref, { kind: o.kind, label: KINDS[o.kind] || o.kind, key: String(o.key), by: o.by || null, status: 'started', startedAt: now, day: new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) /* (0.1.1) 한국 날짜 */, tries: ((x && x.tries) || 0) + 1, detail: o.detail || null, hist, finishedAt: null, msg: null, result: null, cmd: o.cmd || null });
       res = { ok: true, id }; });
     return res; }
   /* finish(db, { kind, key } | id, status('done'|'failed'|'unknown'), { msg, result }) */
