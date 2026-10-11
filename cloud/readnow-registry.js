@@ -16,7 +16,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.14.0';
+  const VERSION = '0.14.1';
   const MIN = 60e3;
 
   const KINDS = {
@@ -82,6 +82,8 @@
     /* (0.14.0) 🌐 외부 정보 (readnow-ext-core.js) — 책마다(ISBN) 출처별 최근 값 · 바뀌면 옛 값은 ext_hist에 (지우지 않음) */
     ext_basic: C(['pc'], ['webapp'], null, 'uploadedAt', '🌐 기본 정보 — 교보·예스24·구글 북스·알라딘 TTB·카카오·네이버·국립중앙도서관 (ISBN마다)'), ext_used: C(['pc'], ['webapp'], null, 'uploadedAt', '🌐 국내 중고 시세 — 예스24 중고·번개장터·중고나라·당근'), ext_foreign: C(['pc'], ['webapp'], null, 'uploadedAt', '🌐 외국 시세 — eBay·AbeBooks (배송비 포함)'), ext_lib: C(['pc'], ['webapp'], null, 'uploadedAt', '🌐 도서관 대출 — 도서관 정보나루'), ext_ebook: C(['pc'], ['webapp'], null, 'uploadedAt', '🌐 전자책 — 리디'),
     ext_fx: C(['pc'], ['webapp', 'pc'], 4 * 24 * 60, 'uploadedAt', '🌐 환율 (날마다 · 한국수출입은행 → frankfurter)'), ext_hist: C(['pc'], ['webapp'], null, 'uploadedAt', '🌐 외부 정보 옛 값 (바뀌기 전 값 — 덧붙이기만)'), ext_index: C(['pc'], ['pc'], null, 'uploadedAt', '🌐 출처마다 책을 언제 봤는지 색인'), ext_probe: C(['pc'], ['webapp'], null, 'uploadedAt', '🌐 못 읽은 화면 일부 (읽는 법 고칠 때)'),
+    /* (0.14.1) 덮어쓰기 전 옛 값 보관 — 주문·문의 바뀐 칸(crm_hist) · 발송 요청 엑셀 판(shp_excel) · 매입 목록 바꾸기·정리 전 원본(pur_archive) */
+    crm_hist: C(['pc'], ['webapp'], null, 'at', '주문·문의의 바뀌기 전 값 (바뀐 칸만 · 덧붙이기만) (0.14.1)'), shp_excel: C(['pc', 'cloud'], ['webapp'], null, 'uploadedAt', '발송 요청 엑셀 — 바뀐 판마다 (0.14.1)'), pur_archive: C(['webapp'], ['webapp'], null, 'at', '알라딘 구매목록 바꾸기·정리 전 원본 (0.14.1)'),
     exec_log: C(['pc', 'watch', 'cloud', 'webapp'], ['webapp', 'pc', 'watch', 'cloud'], null, 'startedAt', '실행도구의 한 문 — 알라딘을 바꾼 일의 시작·결과 (0.4.0)'),
   };
 
