@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.56.5의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.57.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.56.5' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.57.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.56.5'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.57.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -450,7 +450,7 @@
   function publishStatus(extra) {
     const key = curKey || pubKey; if (!key) return Promise.resolve(); pubKey = key;
     const G = window.ReadnowRegistry || globalThis.ReadnowRegistry; const gv = (n) => (typeof unsafeWindow !== 'undefined' && unsafeWindow[n]) || window[n] || globalThis[n]; // (1.36.0) 읽은 공용 파일 판을 신호에 실음 → 웹앱 관리도구가 노선표의 판과 비교
-    const cores = G ? G.loadedVers({ ReadNowCore: gv('ReadNowCore'), ReadnowSellers: gv('ReadnowSellers'), ReadnowProducts: gv('ReadnowProducts'), ReadnowPricing: gv('ReadnowPricing'), ReadnowShipping: gv('ReadnowShipping'), ReadnowOrders: gv('ReadnowOrders'), ReadnowAladin: gv('ReadnowAladin'), ReadnowExec: gv('ReadnowExec'), ReadnowRegistry: G, ReadnowRegister: gv('ReadnowRegister') }) : null; // (1.43.1) 알라딘 창구·실행 문 판도 · (1.44.0) 등록 엔진 판도 (예전엔 빠져 관리도구에 '?'로 빨갛게)
+    const cores = G ? G.loadedVers({ ReadNowCore: gv('ReadNowCore'), ReadnowSellers: gv('ReadnowSellers'), ReadnowProducts: gv('ReadnowProducts'), ReadnowPricing: gv('ReadnowPricing'), ReadnowShipping: gv('ReadnowShipping'), ReadnowOrders: gv('ReadnowOrders'), ReadnowAladin: gv('ReadnowAladin'), ReadnowExec: gv('ReadnowExec'), ReadnowRegistry: G, ReadnowRegister: gv('ReadnowRegister'), ReadnowExt: gv('ReadnowExt') }) : null; // (1.43.1) 알라딘 창구·실행 문 판도 · (1.44.0) 등록 엔진 판도 (예전엔 빠져 관리도구에 '?'로 빨갛게)
     return C('rn_status').doc(`prd_${PC_ID}_${key}`).set({ tool: '상품 수집기', pcName: LS.get('pcName', PC_ID), running: running || null, key, ...lastUi, ...(extra || {}), ver: APP_VER, cores, mods: window.__rnMods || null, ledgerDown: window.__rnLedgerDown || null, /* (1.44.0) 실행 기록을 못 적는 중이면 관리도구에 빨갛게 */ atMs: Date.now(), ...W() }, { merge: true }).catch(() => {});
   }
   let running = null; let stopFlag = false;
@@ -1814,7 +1814,7 @@
   /* (1.36.0) 관리도구 노선표: PC가 맡는 일 = 노선표(readnow-registry.js 기본값 + Firebase app_settings/sys_registry)에서 'PC가 맡을 수 있음'이고 멈춤이 아닌 종류만.
      예전 목록(CMD_NOT_PC)과 달리 모르는 종류는 맡지 않음 — 예전엔 모르는 종류를 '끝남'으로 적어 일이 사라질 수 있었음. 노선표 파일을 못 읽었을 때만 예전 목록으로 */
   let REGDOC = null, regUnsub = null; const REGF = () => window.ReadnowRegistry || globalThis.ReadnowRegistry || null;
-  const PC_KNOWN_OLD = new Set(['read', 'startDelivery', 'usedInfo', 'c2bAdd', 'lookup', 'metrics', 'cashStop']);
+  const PC_KNOWN_OLD = new Set(['read', 'startDelivery', 'usedInfo', 'c2bAdd', 'lookup', 'metrics', 'cashStop', 'extLookup', 'extTest']);
   const pcCan = (type) => { const G = REGF(); if (!G) return PC_KNOWN_OLD.has(type); return G.canHandle(G.merge(REGDOC || {}), type, 'pc'); };
   async function runCmd(id) { const ref = C('shp_cmds').doc(id); let v = null; if ((window.__rnRest && window.__rnRest())) return; // (1.56.0) 맡긴 일은 이 PC의 수집기 탭만
     await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const x = sn.data(); if (!x || x.status !== 'queued' || !pcCan(x.type) || String(x.pcSkip || '').includes(` ${APP_VER}에`)) return; /* 노선표에서 PC 몫인 종류만 (1.36.0) */ tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, uploadedAt: TS() }); v = x; });
@@ -1838,6 +1838,7 @@
     else if (v.type === 'c2bAdd') { await c2bAddCmd(ref, v); return; }
     else if (v.type === 'cashStop') { await cashStopCmd(ref, v); return; } // (1.37.0) 현금 판매 → 알라딘 판매중지 자동 // (1.35.0) 알라딘 매입: 팔기 장바구니에 담기
     else if (v.type === 'lookup') { await lookupCmd(ref, v); return; }
+    else if (v.type === 'extLookup' || v.type === 'extTest') { await extCmd(ref, v); return; } // (1.57.0) 🌐 외부 정보 — 알라딘과 상관없음
     else if (v.type === 'regBulk' || v.type === 'regBulkMock') { await regBulkCmd(ref, v.type === 'regBulkMock' ? { ...v, mock: true } : v); return; } /* (1.50.0) 🧷 모의 등록은 종류를 따로(regBulkMock·regOneMock) — 예전 판 수집기는 모르는 종류라 받지 않음(실수로 올리지 않게) */
     else if ((v.type === 'regOne' || v.type === 'regOneMock') && v.auto) { if (v.type === 'regOneMock') v = { ...v, mock: true }; if (!window.__rnRegAuto) { await ref.set({ status: 'queued', claim: null, pcSkip: `수집기 ${APP_VER}에 자동 등록 모듈이 없음`, uploadedAt: TS() }, { merge: true }); return; } log(`🤖 자동 등록 맡음: ${v.title || v.itemId}`); try { await window.__rnRegAuto(ref, v, id); } catch (e) { log('자동 등록 오류: ' + e.message, 1); } return; } // (1.47.0) 창 없이 개별·미등록 등록 // (1.44.0) 📥 알라딘 대량 등록
     else if (v.type === 'regAux') { const RG = RGF(); let out; try { if (!RG || !RG.auxRun) throw new Error('등록 엔진 공용 파일 0.3.0이 아님 — 수집기 새로고침'); const val = await RG.auxRun(v.op, v.a || {}); out = { v: val }; await C('reg_aux').doc(RG.auxKey(v.op, v.a || {})).set({ op: v.op, a: v.a || {}, v: val, at: nowIso(), by: PC_NAME, ...W() }).catch(() => {}); } catch (e) { out = { err: e.message }; } await ref.set({ status: 'done', ...out, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); return; } // (1.45.0) 📥 분류·저자·출판사 찾기 (클라우드가 안 될 때)
@@ -2489,6 +2490,93 @@
     const cfg = (await C('app_settings').doc('kpipa').get()).data() || {}; if (cfg.auto === false) return; const day = kpYmd(Date.now()); if (cfg.autoDay === day) return;
     let mine = false; await db.runTransaction(async (tx) => { const ref = C('app_settings').doc('kpipa'); const s = await tx.get(ref); const v = s.exists ? s.data() : {}; if (v.autoDay === day) return; tx.set(ref, { autoDay: day, autoBy: PC_NAME, autoAt: nowIso() }, { merge: true }); mine = true; });
     if (!mine) return; log('📚 출판 판매 통계 하루 한 번 자동 받기 시작'); window.__rnAuto = true; try { await runJob('kpipa'); } finally { window.__rnAuto = false; } } catch (e) {} }, 15 * 60000);
+  /* ───────── (1.57.0) 🌐 외부 정보 엔진 — 공용 파일 readnow-ext-core.js(묻는 법·읽는 법·계산)를 이 PC가 돌림 ─────────
+   *  무엇: 우리 책(판매중·일시판매중지, ISBN 있는 것)마다 알라딘 밖 정보를 출처별로 모음 — 기본 정보(교보·예스24·구글 북스·알라딘 TTB·카카오·네이버·국립중앙도서관) ·
+   *        국내 중고 시세(예스24 중고·번개장터·중고나라·당근) · 외국 시세(eBay·AbeBooks — 기본은 외국 책만) · 도서관 대출(정보나루) · 전자책(리디) · 환율(날마다)
+   *  언제: 저절로 — 5분마다 깨어 4분까지 일함(이 PC의 수집기 탭 한 개 · 여러 PC면 한 대만: app_settings/ext_run.lease) · 알라딘 작업과 따로라 알라딘 일을 막지 않음
+   *  차례: 판매가 높은 책부터(돈이 큰 책 먼저) · 출처마다 '다시 볼 날'이 지난 책만 · 출처마다 하루 최대 수(설정 ⑱) · 요청 사이 간격(출처마다)
+   *  쓰기: 같은 내용이면 다시 쓰지 않고 '확인한 때(chk)'만 · 바뀌면 옛 값을 ext_hist에 남긴 뒤 바꿈 · 못 읽으면 그 출처의 err만(받아 둔 값은 그대로) + 화면 일부를 ext_probe에(하루 한 번)
+   *  웹앱이 맡기는 일: shp_cmds 'extLookup'(책 몇 권 지금 받기) · 'extTest'(연결 시험) — 다른 작업 중이어도 바로 */
+  const EXT = () => window.ReadnowExt || globalThis.ReadnowExt;
+  const extHttp = (o) => new Promise((res, rej) => GM_xmlhttpRequest({ method: o.method || 'GET', url: o.url, headers: o.headers || {}, data: o.data, anonymous: true /* 이 브라우저의 로그인 쿠키(예스24 판매자 계정 등)를 보내지 않음 — 외부 정보 읽기는 손님으로 */, timeout: 30000, onload: (r) => res({ status: r.status, text: r.responseText || '' }), onerror: () => rej(new Error('연결 실패 (@connect에 없는 주소이거나 네트워크)')), ontimeout: () => rej(new Error('응답 없음(30초)')) }));
+  const extKst = (ms) => new Date((ms || Date.now()) + 9 * 3600e3).toISOString().slice(0, 10);
+  const EXT_S = { keys: null, keysAt: 0, cfg: null, cfgAt: 0, cache: {}, next: {}, idx: {}, idxAt: 0, cand: null, candAt: 0, cur: {}, errs: {}, pauseUntil: {}, busy: false, me: 'x' + Math.random().toString(36).slice(2, 7), used: {}, usedDay: null };
+  async function extKeys(force) { if (!force && EXT_S.keys && Date.now() - EXT_S.keysAt < 10 * 60000) return EXT_S.keys; let k = {}; try { const d = await C('app_secrets').doc('ext').get(); k = (d.exists && d.data().keys) || {}; } catch (e) { log('🌐 외부 연결 키를 못 읽음: ' + (e.code || e.message) + (/permission/i.test(e.code || e.message) ? ' — Firebase 규칙에 app_secrets 읽기 허용 필요' : ''), 1); } EXT_S.keys = k; EXT_S.keysAt = Date.now(); return k; }
+  async function extCfg(force) { const X = EXT(); if (!force && EXT_S.cfg && Date.now() - EXT_S.cfgAt < 5 * 60000) return EXT_S.cfg; let c = {}; try { const d = await C('app_settings').doc('ext').get(); c = d.exists ? d.data() : {}; } catch (e) {} EXT_S.cfg = X.cfgOf(c); EXT_S.cfgAt = Date.now(); return EXT_S.cfg; }
+  const EXT_RUN = () => C('app_settings').doc('ext_run');
+  /* 맡은 PC 한 대: 4분 넘게 신호가 없으면 다른 PC가 이어받음 */
+  async function extLease() { let ok = false; try { await db.runTransaction(async (tx) => { const s = await tx.get(EXT_RUN()); const L = (s.exists && s.data().lease) || null; const mine = L && L.pc === PC_NAME && L.tab === EXT_S.me; if (L && !mine && Date.now() - (+L.atMs || 0) < 4 * 60000) return; tx.set(EXT_RUN(), { lease: { pc: PC_NAME, tab: EXT_S.me, atMs: Date.now(), at: nowIso() } }, { merge: true }); ok = true; }); } catch (e) {} return ok; }
+  /* 오늘 쓴 수 (출처마다 · 한국 날짜) — 하루 최대를 넘지 않게. 날짜별로 남김(cnt.{날짜}.{출처}) */
+  /* 오늘 쓴 수: 매 바퀴 시작마다 서버에서 다시 읽음(여러 PC가 번갈아 맡아도 하루 최대를 넘지 않게) · 실제로 보낸 요청 수만큼 셈(eBay 토큰·교보 검색+상품 화면 등) */
+  async function extUsedLoad(force) { const day = extKst(); if (!force && EXT_S.usedDay === day) return EXT_S.used; let u = {}; try { const d = await EXT_RUN().get(); u = ((d.exists && d.data().cnt) || {})[day] || {}; } catch (e) {} EXT_S.used = { ...u }; EXT_S.usedDay = day; return EXT_S.used; }
+  const extUsedAdd = (src, n) => { n = Math.max(1, n || 1); const day = extKst(); if (EXT_S.usedDay !== day) { EXT_S.used = {}; EXT_S.usedDay = day; } EXT_S.used[src] = (EXT_S.used[src] || 0) + n; return EXT_RUN().set({ cnt: { [day]: { [src]: firebase.firestore.FieldValue.increment(n) } } }, { merge: true }).catch(() => {}); };
+  /* 색인: 출처마다 책을 언제 확인했는지(한국 날짜) — ext_index/{출처}_{0~7} . m.{ISBN} = 'YYYY-MM-DD'(받음) 또는 'E YYYY-MM-DD k'(못 읽음 k번째 — 1·3·7·14·30일 뒤 다시) */
+  async function extIdxLoad(force) { const X = EXT(); if (!force && EXT_S.idxAt && Date.now() - EXT_S.idxAt < 60 * 60000) return; const out = {}; for (const src of X.ORDER) { out[src] = new Map(); } try { const qs = await C('ext_index').get(); qs.forEach((d) => { const [src] = d.id.split('_'); const m = (d.data() || {}).m || {}; if (out[src]) Object.entries(m).forEach(([k, v]) => out[src].set(k, v)); }); } catch (e) {} EXT_S.idx = out; EXT_S.idxAt = Date.now(); }
+  const extIdxSet = (src, isbn, val) => { const X = EXT(); const v = val || extKst(); (EXT_S.idx[src] = EXT_S.idx[src] || new Map()).set(isbn, v); return C('ext_index').doc(`${src}_${X.shard(isbn)}`).set({ m: { [isbn]: v }, ...W() }, { merge: true }).catch(() => {}); };
+  const EXT_BACKOFF = [1, 3, 7, 14, 30];
+  const extIdxErrK = (src, isbn) => { const v = (EXT_S.idx[src] || new Map()).get(isbn); const m = String(v || '').match(/^E (\d{4}-\d\d-\d\d) (\d+)$/); return m ? +m[2] : 0; };
+  /* 한 출처·한 책의 결과 쓰기 — 같으면 확인 시각만 · 바뀌면 옛 값을 ext_hist에 남긴 뒤 · 받아 둔 값이 있는데 '그 책 없음'이 한 번 나오면 바로 바꾸지 않고(잠깐 안 보인 것일 수 있음) 두 번 잇달아 나올 때 바꿈 */
+  async function extSave(src, b, res) { const X = EXT(); const col = X.GROUPS[X.SOURCES[src].grp].col; const ref = C(col).doc(b.isbn); const now = nowIso(); const FV = firebase.firestore.FieldValue;
+    if (res.skip) return 'skip'; const snap = await ref.get(); const cur = snap.exists ? snap.data() : null; const prev = cur && cur.src ? cur.src[src] : null;
+    if (!res.ok) { const err = { at: now, why: String(res.why || '').slice(0, 300), by: PC_NAME, ...(res.mismatch ? { mismatch: true } : {}) }; if (cur) await ref.update({ [`src.${src}.err`]: err, uploadedAt: TS() }); else await ref.set({ isbn: b.isbn, title: b.title || null, src: { [src]: { err } }, ...W() });
+      if (res.probe) { const pid = `${src}_${extKst().replace(/-/g, '')}`; const pr = C('ext_probe').doc(pid); try { const ex = await pr.get(); if (!ex.exists) await pr.set({ src, isbn: b.isbn, title: b.title || null, why: res.why, url: res.probe.url, len: res.probe.len, head: res.probe.head, at: now, by: PC_NAME, ...W() }); } catch (e) {} }
+      return res.mismatch ? 'mismatch' : 'err'; }
+    let d = res.d ?? null; if (d) { d = JSON.parse(JSON.stringify(d)); /* Firebase는 undefined를 받지 않음 */ let g = 0; while (JSON.stringify(d).length > 600000 && g++ < 10) { if (Array.isArray(d.items) && d.items.length > 5) d.items = d.items.slice(0, Math.ceil(d.items.length / 2)); else if (d.kv) d.kv = null; else break; d.trunc = true; } } const sg = X.sig({ none: !!res.none, d });
+    if (prev && prev.sig === sg) { await ref.update({ [`src.${src}.chk`]: now, [`src.${src}.err`]: FV.delete(), [`src.${src}.noneAt`]: FV.delete(), uploadedAt: TS() }); return 'same'; }
+    if (res.none && prev && prev.d && !prev.none && !prev.noneAt) { await ref.update({ [`src.${src}.noneAt`]: now, [`src.${src}.chk`]: now, [`src.${src}.err`]: FV.delete(), uploadedAt: TS() }); return 'none1'; }
+    if (prev && prev.at) { const hid = `${col}_${b.isbn}_${src}_${String(prev.at).replace(/[^0-9]/g, '').slice(0, 14)}`; const hr = C('ext_hist').doc(hid); try { const ex = await hr.get(); if (!ex.exists) await hr.set({ col, isbn: b.isbn, src, at: prev.at, chk: prev.chk || null, none: !!prev.none, d: prev.d ?? null, sig: prev.sig || null, ...W() }); } catch (e) { log(`🌐 옛 값 보관 실패(${src} ${b.isbn}) — 바꾸지 않음: ${e.message}`, 1); return 'err'; } }
+    const obj = { at: now, chk: now, sig: sg, none: !!res.none, d, by: PC_NAME, q: (d && d.q) || null };
+    if (cur) await ref.update({ [`src.${src}`]: obj, ...(b.title && !cur.title ? { title: b.title } : {}), uploadedAt: TS() }); else await ref.set({ isbn: b.isbn, title: b.title || null, author: b.author || null, src: { [src]: obj }, ...W() });
+    return prev ? 'changed' : 'new'; }
+  /* 한 책 한 출처: 묻고 → 쓰고 → 색인·오늘 쓴 수·마지막 결과
+   *  간격은 사이트(host)마다 — 예스24와 예스24 중고는 한 사이트로 셈 · 자리를 먼저 잡고 기다려 두 일(자동·웹앱 맡김)이 동시에 같은 사이트를 묻지 않게 · 한 번에 여러 화면을 여는 출처(검색 → 상품)는 화면 사이도 쉼 */
+  async function extOne(src, b, why) { const X = EXT(); const keys = await extKeys(); const cfg = await extCfg(); const s = X.SOURCES[src]; const h = s.host;
+    const at = Math.max(Date.now(), EXT_S.next[h] || 0); EXT_S.next[h] = at + s.paceMs * (0.8 + Math.random() * 0.4); if (at > Date.now()) await sleep(at - Date.now());
+    let calls = 0; const http = async (o) => { calls++; if (calls > 1) await sleep(Math.min(s.paceMs, 1500)); return extHttp(o); };
+    const res = await X.run(src, { isbn: b.isbn, title: b.title, author: b.author, keys, http, cache: EXT_S.cache, cfg }); if (calls > 1) EXT_S.next[h] = Math.max(EXT_S.next[h] || 0, Date.now() + s.paceMs);
+    if (res.skip) return { src, st: 'skip', why: res.skip }; let st; try { st = await extSave(src, b, res); } catch (e) { st = 'err'; res.ok = false; res.why = '저장 실패: ' + (e.code || e.message); }
+    if (calls) extUsedAdd(src, calls);
+    if (st !== 'err' && st !== 'mismatch') { extIdxSet(src, b.isbn); EXT_S.errs[src] = 0; }
+    else { const k = Math.min(EXT_BACKOFF.length, extIdxErrK(src, b.isbn) + 1); if (!/^저장 실패/.test(res.why || '')) extIdxSet(src, b.isbn, `E ${extKst()} ${k}`); /* 같은 책을 날마다 다시 묻지 않게 1·3·7·14·30일 뒤 */
+      if (st === 'err') { EXT_S.errs[src] = (EXT_S.errs[src] || 0) + 1; if (res.limit) EXT_S.pauseUntil[src] = Date.now() + 6 * 3600e3; else if (EXT_S.errs[src] >= 5) { EXT_S.pauseUntil[src] = Date.now() + 3600e3; EXT_S.errs[src] = 0; log(`🌐 ${s.label}: 5번 잇달아 못 읽어 1시간 쉼 — ${res.why}`, 1); } } }
+    EXT_RUN().set({ last: { [src]: { at: nowIso(), ok: st !== 'err', st, why: st === 'err' || st === 'mismatch' ? String(res.why || '').slice(0, 200) : null, isbn: b.isbn, by: PC_NAME, how: why || 'auto' } } }, { merge: true }).catch(() => {});
+    return { src, st, why: res.why || null, n: res.d && (res.d.n ?? null), none: !!res.none }; }
+  /* 할 책 목록: 판매중·일시판매중지 + ISBN · 판매가 높은 순 · 6시간마다 다시 만듦 */
+  async function extCands() { if (EXT_S.cand && Date.now() - EXT_S.candAt < 6 * 3600e3) return EXT_S.cand; if (!LISTINGS) { if (running) return EXT_S.cand || []; await loadListings(); } const seen = new Map();
+    for (const l of LISTINGS.values()) { const isbn = String(l.isbn13 || '').replace(/[^0-9]/g, ''); if (!/^97[89]\d{10}$/.test(isbn)) continue; const st = String(l.status || ''); if (!/판매중/.test(st) || /판매중지/.test(st) && !/일시/.test(st)) continue; const p = +l.price || 0; const o = seen.get(isbn); if (!o || p > o.p) seen.set(isbn, { isbn, title: String(l.title || '').replace(/^\[중고[^\]]*\]\s*/, '') || null, author: l.author || null, p }); }
+    EXT_S.cand = [...seen.values()].sort((a, b) => b.p - a.p); EXT_S.candAt = Date.now(); return EXT_S.cand; }
+  const extDue = (src, isbn, cfg) => { const v = (EXT_S.idx[src] || new Map()).get(isbn); if (!v) return true; const m = String(v).match(/^E (\d{4}-\d\d-\d\d) (\d+)$/); if (m) return Date.now() - Date.parse(m[1] + 'T00:00:00+09:00') >= EXT_BACKOFF[Math.min(EXT_BACKOFF.length, +m[2]) - 1] * 864e5; return Date.now() - Date.parse(v + 'T00:00:00+09:00') >= cfg.src[src].refreshDays * 864e5; };
+  const extEligible = (src, b, cfg) => { const X = EXT(); const g = X.SOURCES[src].grp; if (g === 'foreign' && !cfg.foreignKr && X.isKrIsbn(b.isbn)) return false; if ((g === 'used' && src !== 'yes24used') || g === 'ebook') return !!b.title; return true; };
+  /* 환율: 하루 한 번(한국 11:30 뒤 — 수출입은행 고시 뒤) · ext_fx/{고시일} (이미 있으면 안 씀) */
+  async function extFx(force) { const X = EXT(); const day = extKst(); const k = new Date(Date.now() + 9 * 3600e3); const hm = k.getUTCHours() * 60 + k.getUTCMinutes();
+    const run = await EXT_RUN().get().catch(() => null); const F0 = (run && run.exists ? run.data().fx : null) || {}; const fxDay = F0.day || null; if (!force && fxDay === day) return null; /* 11:30 전(오늘 고시 전)엔 6시간에 한 번만 · 실패했으면 1시간 뒤 다시 */ if (!force && hm < 11 * 60 + 30 && F0.at && Date.now() - Date.parse(F0.at) < 6 * 3600e3) return null; if (!force && F0.errAt && Date.now() - Date.parse(F0.errAt) < 3600e3) return null;
+    const r = await X.fxRun({ keys: await extKeys(), http: extHttp, day }); if (!r.ok) { await EXT_RUN().set({ fx: { err: r.why, errAt: nowIso() } }, { merge: true }).catch(() => {}); log('🌐 환율을 못 받음: ' + r.why, 1); return r; }
+    const ref = C('ext_fx').doc(r.date || day); const ex = await ref.get(); if (!ex.exists) await ref.set({ date: r.date || day, rates: r.rates, src: r.src, warn: r.warn || null, at: nowIso(), by: PC_NAME, ...W() });
+    await EXT_RUN().set({ fx: { day: hm >= 11 * 60 + 30 ? day : fxDay || null, date: r.date, src: r.src, usd: r.rates.USD, at: nowIso(), err: null } }, { merge: true }).catch(() => {}); return r; }
+  /* 한 바퀴(최대 4분): 출처마다 차례가 온 책 하나씩 돌아가며 */
+  async function extFill(cfg) { const X = EXT(); const keys = await extKeys(); await extIdxLoad(); await extUsedLoad(); const C0 = await extCands(); if (!C0.length) return null; const t0 = Date.now(); const tally = {};
+    const srcs = X.ORDER.filter((s) => cfg.src[s].on && X.keysReady(s, keys)); let guard = 0; const done = new Set();
+    let leaseAt = Date.now(); while (Date.now() - t0 < 4 * 60000 && guard++ < 5000) { if (window.__rnPaused || (window.__rnRest && window.__rnRest()) || !auth.currentUser) break; if (Date.now() - leaseAt > 60000) { if (!(await extLease())) break; leaseAt = Date.now(); } let did = false;
+      for (const src of srcs) { if (done.has(src) || (EXT_S.pauseUntil[src] || 0) > Date.now() || (EXT_S.used[src] || 0) >= cfg.src[src].cap || (EXT_S.next[X.SOURCES[src].host] || 0) > Date.now()) continue;
+        let i = EXT_S.cur[src] || 0, b = null; for (let n = 0; n < C0.length; n++, i++) { const x = C0[i % C0.length]; if (extEligible(src, x, cfg) && extDue(src, x.isbn, cfg)) { b = x; i++; break; } } EXT_S.cur[src] = i % C0.length; if (!b) { done.add(src); continue; } /* 이번 바퀴엔 이 출처로 할 책이 없음 — 다시 훑지 않음 */
+        const r = await extOne(src, b, 'auto'); did = true; const t = (tally[src] = tally[src] || {}); t[r.st] = (t[r.st] || 0) + 1; if (Date.now() - t0 > 4 * 60000) break; }
+      if (!did) { if (srcs.every((s) => done.has(s) || (EXT_S.pauseUntil[s] || 0) > Date.now() || (EXT_S.used[s] || 0) >= cfg.src[s].cap)) break; await sleep(400); } }
+    const parts = Object.entries(tally).map(([s, t]) => `${X.SOURCES[s].label} ${Object.entries(t).map(([k, v]) => `${{ new: '새로', changed: '바뀜', same: '같음', err: '못 읽음', skip: '건너뜀', mismatch: '다른 책', none1: '없음(한 번 — 다음에 확인)' }[k] || k} ${v}`).join('·')}`);
+    if (parts.length) log(`🌐 외부 정보 ${Math.round((Date.now() - t0) / 1000)}초: ${parts.join(' / ')}`); return tally; }
+  async function extTick() { if (EXT_S.busy || !auth.currentUser || window.__rnPaused || (window.__rnRest && window.__rnRest())) return; const X = EXT(); if (!X) return; EXT_S.busy = true;
+    try { const cfg = await extCfg(); if (!cfg.on) return; if (!(await extLease())) return; await extUsedLoad(true); await extFx().catch((e) => log('🌐 환율: ' + e.message, 1)); await extFill(cfg); } catch (e) { log('🌐 외부 정보 오류: ' + (e.message || e), 1); } finally { EXT_S.busy = false; } }
+  setTimeout(() => extTick(), 2 * 60000); setInterval(() => extTick(), 5 * 60000);
+  /* 웹앱이 맡긴 일 — extLookup: { books:[{isbn,title,author}], srcs?:[출처] } · extTest: { srcs?:[출처] } (하루 최대와 상관없이 바로) */
+  const EXT_TEST_BOOKS = { kr: { isbn: '9788937460449', title: '데미안', author: '헤르만 헤세' }, en: { isbn: '9780141439518', title: 'Pride and Prejudice', author: 'Jane Austen' } };
+  async function extCmd(ref, v) { const X = EXT(); if (!X) { await ref.set({ status: 'queued', claim: null, pcSkip: `수집기 ${APP_VER}에 외부 정보 공용 파일(readnow-ext-core.js)이 없음`, uploadedAt: TS() }, { merge: true }); return; }
+    const keys = await extKeys(true); const cfg = await extCfg(true); await extUsedLoad(true); const out = {}; const all = X.ORDER.filter((s) => !v.srcs || v.srcs.includes(s));
+    if (v.type === 'extTest') { for (const src of all) { if (!X.keysReady(src, keys)) { out[src] = { ok: false, st: 'nokey', why: '키 없음' }; continue; } const g = X.SOURCES[src].grp; const b = g === 'foreign' ? EXT_TEST_BOOKS.en : EXT_TEST_BOOKS.kr; const r = await extOne(src, b, 'test'); out[src] = { ok: r.st !== 'err', st: r.st, why: r.why || null, n: r.n ?? null, none: r.none, isbn: b.isbn };
+        await ref.set({ results: out, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); }
+      if (!v.srcs || v.srcs.includes('fx')) { const r = await extFx(true).catch((e) => ({ ok: false, why: e.message })); out.fx = r && r.ok ? { ok: true, st: 'ok', why: `${r.src} ${r.date} · 1달러 ${Math.round(r.rates.USD).toLocaleString()}원${r.warn ? ' · (수출입은행: ' + r.warn + ')' : ''}` } : { ok: false, st: 'err', why: (r && r.why) || '?' }; }
+      await EXT_RUN().set({ test: { at: nowIso(), by: PC_NAME, r: out } }, { merge: true }).catch(() => {}); await ref.set({ status: 'done', results: out, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`🌐 외부 연결 시험: ${Object.entries(out).map(([k, r]) => `${(X.SOURCES[k] || { label: '환율' }).label} ${r.ok ? '✓' : '✗'}`).join(' · ')}`); return; }
+    const books = (v.books || []).filter((b) => b && /^97[89]\d{10}$/.test(String(b.isbn || ''))).slice(0, 20); let n = 0;
+    for (const b of books) { const r0 = (out[b.isbn] = {}); for (const src of all) { if (!cfg.src[src].on || !X.keysReady(src, keys) || !extEligible(src, b, { ...cfg, foreignKr: cfg.foreignKr || !!v.foreignKr })) continue; const r = await extOne(src, b, 'webapp'); r0[src] = r.st; n++; await ref.set({ results: out, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); } }
+    await ref.set({ status: 'done', results: out, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`🌐 외부 정보 지금 받기: 책 ${books.length}권 · ${n}번 물음 (웹앱에서 맡김)`); }
   const JOBS = {
     bench: ['집중 벤치마킹 판매자 (고른 판매자 숍 전체)', () => benchJob()],
     benchForce: ['집중 벤치마킹 — 주기 무시, 처음 판매자부터 모두', () => benchJob({ force: true })],
