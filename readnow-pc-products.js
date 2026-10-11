@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.57.8의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.58.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.57.8' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.58.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.57.8'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.58.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -2620,11 +2620,11 @@
     await EXT_RUN().set({ fx: { day: hm >= 11 * 60 + 30 ? day : fxDay || null, date: r.date, src: r.src, usd: r.rates.USD, at: nowIso(), err: null } }, { merge: true }).catch(() => {}); return r; }
   /* 한 바퀴(최대 4분): 출처마다 차례가 온 책 하나씩 돌아가며 */
   async function extFill(cfg) { const X = EXT(); const keys = await extKeys(); await extIdxLoad(); await extUsedLoad(); const C0 = await extCands(); if (!C0.length) return null; const t0 = Date.now(); const tally = {};
-    const srcs = X.ORDER.filter((s) => cfg.src[s].on && X.keysReady(s, keys)); let guard = 0; const done = new Set();
+    const srcs = X.ORDER.filter((s) => cfg.src[s].on && X.keysReady(s, keys)); let guard = 0; const done = new Set(); const skipRun = {};
     let leaseAt = Date.now(); while (Date.now() - t0 < 4 * 60000 && guard++ < 5000) { if (window.__rnPaused || (window.__rnRest && window.__rnRest()) || !auth.currentUser) break; if (Date.now() - leaseAt > 60000) { if (!(await extLease())) break; leaseAt = Date.now(); } let did = false;
       for (const src of srcs) { if (done.has(src) || (EXT_S.pauseUntil[src] || 0) > Date.now() || (EXT_S.used[src] || 0) >= cfg.src[src].cap || (EXT_S.next[X.SOURCES[src].host] || 0) > Date.now()) continue;
         let i = EXT_S.cur[src] || 0, b = null; for (let n = 0; n < C0.length; n++, i++) { const x = C0[i % C0.length]; if (extEligible(src, x, cfg) && extDue(src, x.isbn, cfg)) { b = x; i++; break; } } EXT_S.cur[src] = i % C0.length; if (!b) { done.add(src); continue; } /* 이번 바퀴엔 이 출처로 할 책이 없음 — 다시 훑지 않음 */
-        const r = await extOne(src, b, 'auto'); did = true; const t = (tally[src] = tally[src] || {}); t[r.st] = (t[r.st] || 0) + 1; if (Date.now() - t0 > 4 * 60000) break; }
+        const r = await extOne(src, b, 'auto'); did = true; const t = (tally[src] = tally[src] || {}); t[r.st] = (t[r.st] || 0) + 1; skipRun[src] = r.st === 'skip' ? (skipRun[src] || 0) + 1 : 0; if (skipRun[src] >= 20) done.add(src); /* (1.58.0) 중고닷이 아직 안 본 책만 남으면 이번 바퀴엔 그만 — 책마다 기록을 한 번씩 읽어 읽기 수가 수천 번 나던 것 */ if (Date.now() - t0 > 4 * 60000) break; }
       if (!did) { if (srcs.every((s) => done.has(s) || (EXT_S.pauseUntil[s] || 0) > Date.now() || (EXT_S.used[s] || 0) >= cfg.src[s].cap)) break; await sleep(400); } }
     const parts = Object.entries(tally).map(([s, t]) => `${X.SOURCES[s].label} ${Object.entries(t).map(([k, v]) => `${{ new: '새로', changed: '바뀜', same: '같음', err: '못 읽음', skip: '건너뜀', mismatch: '다른 책', none1: '없음(한 번 — 다음에 확인)', viaJm: '중고닷에서 찾아 직접 안 물음' }[k] || k} ${v}`).join('·')}`);
     if (parts.length) log(`🌐 외부 정보 ${Math.round((Date.now() - t0) / 1000)}초: ${parts.join(' / ')}`); return tally; }

@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.15.1';
+  const VERSION = '0.15.2'; // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -95,6 +95,10 @@
   const HOUR = 3600e3, DAY = 864e5;
   const t = (iso) => (iso == null ? null : typeof iso === 'number' ? iso : Date.parse(String(iso).length === 10 ? iso + 'T00:00:00+09:00' : iso));
   const merge = (a, b) => { const o = JSON.parse(JSON.stringify(a)); for (const k of Object.keys(b || {})) { if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && o[k] && typeof o[k] === 'object') o[k] = merge(o[k], b[k]); else if (b[k] !== undefined) o[k] = b[k]; } return o; };
+  /* (0.15.2) 기본 설정 + 덮어쓸 설정 → 합친 설정을 내용(글자)마다 한 번만 만듦. 합친 설정은 엔진 안에서 읽기만 하므로(바꾸는 곳 없음) 같은 것을 다시 써도 결과가 같음 */
+  const _mergeC = new Map(); let _mergeId = null; const _mergeE = {}; /* 같은 일(한 번의 계산 묶음) 안에서는 같은 설정 객체 → 바로 찾음. 일이 끝나면(약속 차례) 잊음 → 그 뒤 설정을 고쳐도 다시 봄 */
+  const mergeD = (S0) => { if (S0 != null && typeof S0 !== 'object') return mergeD2(S0); const o = S0 || _mergeE; if (_mergeId === null) { _mergeId = new WeakMap(); Promise.resolve().then(() => { _mergeId = null; }); } const hit = _mergeId.get(o); if (hit !== undefined) return hit; const r = mergeD2(S0); _mergeId.set(o, r); return r; };
+  const mergeD2 = (S0) => { const k = JSON.stringify(S0 || {}); let v = _mergeC.get(k); if (v === undefined) { if (_mergeC.size > 64) _mergeC.clear(); v = JSON.parse(JSON.stringify(merge(DEFAULTS, S0 || {}))); /* 깊은 복사본을 기억 — 부른 쪽 목록을 나중에 바꿔도 기억한 설정은 그대로 */ _mergeC.set(k, v); } return v; };
 
   // 가격 단위: 가격이 속한 자릿수 구간 시작값의 5% (100~999 → 5, 1,000~9,999 → 50, 10,000~99,999 → 500 …). 100원 미만은 1원
   function priceStep(p) { if (!(p > 0)) return 1; const band = Math.pow(10, Math.floor(Math.log10(p))); return band < 100 ? 1 : band * 0.05; }
@@ -179,7 +183,7 @@
 
   // ───────────────────────── 판정 ─────────────────────────
   function decide(listing, market, sellers, ctxIn) {
-    const ctx = ctxIn || {}; const S = merge(DEFAULTS, ctx.settings || {}); const now = t(ctx.now) || Date.now();
+    const ctx = ctxIn || {}; const S = mergeD(ctx.settings); const now = t(ctx.now) || Date.now();
     const R = []; const block = []; const out = { v: VERSION, key: listing.key, at: new Date(now).toISOString(), current: listing.price, reasons: R, autoBlock: block };
     out.group = groupOfListing(listing, S);
     const done = (status, extra) => { Object.assign(out, { status }, extra || {}); out.auto = out.action === 'set' && block.length === 0 && autoAllowed(out, S); out.execute = out.group === 'treat' && out.action === 'set'; if (out.group === 'control') out.reasons.push('비교군 — 판정만 기록, 가격은 바꾸지 않음'); return out; };
@@ -355,11 +359,11 @@
 
   // 실험 묶음: 상품코드를 0~99 칸에 고정 배정 (FNV 해시). 0..treat-1 = 적용, 그다음 control 칸 = 비교군(판정만 기록, 절대 안 바꿈), 나머지 = 꺼짐
   function bucketOf(code) { let h = 2166136261; const s = String(code || ''); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h % 100; }
-  function groupOf(code, S0) { const S = merge(DEFAULTS, S0 || {}); const b = bucketOf(code); const tp = S.rollout.treatPct, cp = S.rollout.controlPct;
+  function groupOf(code, S0) { const S = mergeD(S0); const b = bucketOf(code); const tp = S.rollout.treatPct, cp = S.rollout.controlPct;
     return b < tp ? 'treat' : b >= 100 - cp ? 'control' : 'off'; }
   // 상품 단위 묶음: 제외 관리코드(KHKDVD 등)와 보관함(PND·BAD)을 먼저 보고, 그다음 상품코드 칸으로 적용·비교·꺼짐
   // (0.11.0) 자동 제외: 관리코드 앞부분 일치(묶음 — 예 KHKDVD, BLK) 또는 상품코드(한 권씩, excludeUsed). 웹앱 '자동 제외 관리'에서 켜고 끄고 더하고 뺌
-  function isExcluded(listing, S0) { const S = merge(DEFAULTS, S0 || {}); const sku = String((listing && listing.sku) || '').toUpperCase(); const uc = String((listing && (listing.usedCode || '')) || '');
+  function isExcluded(listing, S0) { const S = mergeD(S0); const sku = String((listing && listing.sku) || '').toUpperCase(); const uc = String((listing && (listing.usedCode || '')) || '');
     return (S.excludeSku || []).some((x) => x && sku.startsWith(String(x).toUpperCase())) || (!!uc && (S.excludeUsed || []).some((x) => String(x) === uc)); }
   function groupOfListing(listing, S0) {
     if (!listing) return 'off'; const tag = skuTag(listing.sku); if (tag) return tag; if (isExcluded(listing, S0)) return 'excluded';
@@ -375,13 +379,13 @@
   // 추격 사건 = 우리가 가격을 바꾼 뒤 windowHours(기본 24시간) 안에 그 판매자가 같은 책에서 우리 새 가격 이하로 바꾼 것 (가격 폭은 안 봄, 횟수만)
   // ourChanges: [{at, price}]  theirChanges: [{sellerCode, at, price}]  (둘 다 같은 책)
   function chaseEvents(ourChanges, theirChanges, S0) {
-    const S = merge(DEFAULTS, S0 || {}).chase; const ev = [];
+    const S = mergeD(S0).chase; const ev = [];
     for (const o of ourChanges || []) for (const c of theirChanges || []) { const dt = t(c.at) - t(o.at); if (dt > 0 && dt <= S.windowHours * HOUR && c.price <= o.price) ev.push({ sellerCode: c.sellerCode, at: c.at, ourAt: o.at }); }
     return ev;
   }
   // 책 단위 판정: lookbackDays(7일) 안에 minEvents(3회) 이상 → 추격자. 점수는 halfLifeDays(14일)마다 절반, releaseDays(30일) 동안 사건 없으면 해제
   function chaseState(events, now0, S0) {
-    const S = merge(DEFAULTS, S0 || {}).chase; const now = t(now0) || Date.now(); const by = {};
+    const S = mergeD(S0).chase; const now = t(now0) || Date.now(); const by = {};
     for (const e of events || []) (by[e.sellerCode] = by[e.sellerCode] || []).push(t(e.at));
     const out = {};
     for (const [sc, ts] of Object.entries(by)) {
@@ -394,7 +398,7 @@
   }
   // 판매자 단위: 서로 다른 책 sellerMinBooks(3권) 이상에서 추격자면 판매자 전체 표시
   function sellerChase(bookStates, S0) {
-    const S = merge(DEFAULTS, S0 || {}).chase; const n = {};
+    const S = mergeD(S0).chase; const n = {};
     for (const st of Object.values(bookStates || {})) for (const [sc, x] of Object.entries(st)) if (x.active) n[sc] = (n[sc] || 0) + 1;
     const out = {}; for (const [sc, c] of Object.entries(n)) out[sc] = { books: c, active: c >= S.sellerMinBooks }; return out;
   }
@@ -403,7 +407,7 @@
   // 하루 관측(확정된 것)마다 호출. atLowest = 그 관측에서 우리 매물이 기준(유효 최저가·맨 위 동가) 자리였는가 (decide 결과 action 'none' + status 'ok' 또는 방금 그 자리로 맞춘 뒤 확정)
   // 두 관측이 모두 최저가였고 간격이 lowestMaxGapHours 이하일 때만 그 사이 시간을 더함 → 정확히 아는 시간만 셈. 처음 관측부터 측정 시작(measured=true)
   function trackLowest(state, obs, S0) {
-    const S = merge(DEFAULTS, S0 || {}); const st = state ? { ...state } : { days: 0, measured: true, since: obs.at, lastAt: null, lastLowest: false, obsN: 0 };
+    const S = mergeD(S0); const st = state ? { ...state } : { days: 0, measured: true, since: obs.at, lastAt: null, lastLowest: false, obsN: 0 };
     const at = t(obs.at); const prev = st.lastAt ? t(st.lastAt) : null;
     if (prev != null && at <= prev) return st; // 같은·옛 관측은 무시
     if (prev != null && st.lastLowest && obs.atLowest && at - prev <= S.lowestMaxGapHours * HOUR) st.days = Math.round((st.days + (at - prev) / DAY) * 1000) / 1000;
@@ -487,7 +491,7 @@
    *           두 번 반응이 없으면 '빠짐': 추격자를 뺀 다음 기준 값(없으면 유인 전 값)으로 올려 추격자가 낮은 값에 먼저 팔리게 함
    *    lift   끌어올리기 — 우리 값을 liftStep%씩 올려 추격자가 따라 올라오면 되풀이(상한 = 다음 유효 매물 값·시작 가격 +liftCap%), 따라오지 않으면 멈춤
    *  안전: 모든 전략은 floor(조건 묶음 하한·매입가 하한·최소 판매가) 아래로 내리지 않음. lure의 유인 하한 = max(floor, 시작 가격 × (1 − floorPct%)) */
-  function chaseMap(ourActs, changeDocs, now0, S0) { const S = merge(DEFAULTS, S0 || {}); const ours = (ourActs || []).filter((a) => a && a.at && a.to != null).map((a) => ({ at: a.at, price: +a.to }));
+  function chaseMap(ourActs, changeDocs, now0, S0) { const S = mergeD(S0); const ours = (ourActs || []).filter((a) => a && a.at && a.to != null).map((a) => ({ at: a.at, price: +a.to }));
     const theirs = []; for (const doc of changeDocs || []) { if (!doc || !doc.at) continue; for (const c of doc.chg || []) { const f = (c.f || {}).price; if (!f || !(f[1] < f[0])) continue; const sc = String(c.sellerCode || ''); if (!sc || sc === '996008') continue; theirs.push({ sellerCode: sc, at: doc.at, price: f[1] }); } }
     return chaseState(chaseEvents(ours, theirs, S), now0, S); }
   function chaserOn(page1, chase, grade) { const myR = GRADE_RANK[grade]; let best = null; // 우리보다 같거나 좋은 등급의 추격자 매물(첫 페이지) 중 가장 싼 것
@@ -521,6 +525,6 @@
       return fin(exitT, { ...base, ...st0, lastAt: now, nextAt }, `빠진 자리 유지 — 추격자 ${nm}(${ch.price.toLocaleString()}원)가 팔릴 때까지`); }
     return fin(o.yieldT != null ? o.yieldT : o.cur, { ...base, phase: 'yield' }, `양보: 추격자 ${nm}(${ch.price.toLocaleString()}원)를 따라 내리지 않고 다음 유효 매물 기준`); }
   const STRATS = { yield: '양보 (따라 내리지 않고 기다림)', match: '동가 유지', shadow: '그림자 (추격자 바로 위)', lure: '끌어내린 뒤 빠지기', lift: '끌어올리기' };
-  const api = { VERSION, CHARM_TH, GRADE_RANK, sameGradeMatch, critSettings, critTarget, chaseMap, chaserOn, chaseStep, STRATS, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, merge(DEFAULTS, S0 || {})), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
+  const api = { VERSION, CHARM_TH, GRADE_RANK, sameGradeMatch, critSettings, critTarget, chaseMap, chaserOn, chaseStep, STRATS, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, mergeD(S0)), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowPricing = api;
 })(typeof window !== 'undefined' ? window : this);
