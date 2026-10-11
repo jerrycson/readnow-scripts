@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.57.2의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.57.3의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.57.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.57.3' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.57.2'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.57.3'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -2510,6 +2510,14 @@
    *  차례: 판매가 높은 책부터(돈이 큰 책 먼저) · 출처마다 '다시 볼 날'이 지난 책만 · 출처마다 하루 최대 수(설정 ⑱) · 요청 사이 간격(출처마다)
    *  쓰기: 같은 내용이면 다시 쓰지 않고 '확인한 때(chk)'만 · 바뀌면 옛 값을 ext_hist에 남긴 뒤 바꿈 · 못 읽으면 그 출처의 err만(받아 둔 값은 그대로) + 화면 일부를 ext_probe에(하루 한 번)
    *  웹앱이 맡기는 일: shp_cmds 'extLookup'(책 몇 권 지금 받기) · 'extTest'(연결 시험) — 다른 작업 중이어도 바로 */
+  /* ───────── (1.57.3) Firebase 규칙 자동 점검 (PC) — 노선표에서 'PC가 쓰는 칸' 모두를 이 PC 계정으로: 시험 문서를 만들고 같은 묶음에서 바로 지움(남는 것 없음)
+   *  수집기 판·노선표 판이 바뀐 첫 실행(1분 뒤) · 그 밖엔 하루 한 번 · 결과 rn_status/perm_{PC} → 막히면 웹앱 '오늘 확인할 것'에 빨간 줄 + 이 기록 창에 경고 */
+  async function pcPermProbe() { try { if (!auth.currentUser || (window.__rnRest && window.__rnRest())) return; const R = REGF(); if (!R || !R.COLLECTIONS) return; const key = `${VER}|${R.VERSION}|${auth.currentUser.email || ''}`; const last = GM_getValue('rnu-perm', null); if (last && last.key === key && Date.now() - (last.t || 0) < 24 * 3600e3) return;
+      const deny = (e) => /permission|insufficient/i.test(String((e && (e.code || e.message)) || e)); const cols = Object.entries(R.COLLECTIONS).filter(([, v]) => (v.w || []).includes('pc')).map(([k]) => k); const bad = [];
+      for (const col of cols) { const ref = C(col).doc('_permprobe_' + Math.random().toString(36).slice(2, 10)); try { const b = db.batch(); b.set(ref, { probe: true, at: nowIso() }); b.delete(ref); await b.commit(); } catch (e) { if (deny(e)) bad.push(col); else { try { await ref.set({ probe: true, at: nowIso() }); await ref.delete().catch(() => {}); } catch (e2) { if (deny(e2)) bad.push(col); } } } }
+      GM_setValue('rnu-perm', { key, t: Date.now(), bad }); await C('rn_status').doc('perm_' + PC_NAME).set({ pc: PC_NAME, ver: VER, reg: R.VERSION, email: auth.currentUser.email || null, at: nowIso(), n: cols.length, bad }).catch(() => {});
+      if (bad.length) log(`⚠ Firebase 규칙이 막는 칸 ${bad.length}개: ${bad.join(', ')} — 이 칸의 기록이 저장되지 않음 · 웹앱 '오늘 확인할 것'의 빨간 줄을 누르면 고치는 법`, 1); else log(`🔐 Firebase 규칙 점검: PC가 쓰는 칸 ${cols.length}개 모두 열림`); } catch (e) {} }
+  setTimeout(() => pcPermProbe(), 60000); setInterval(() => pcPermProbe(), 6 * 3600e3);
   const EXT = () => window.ReadnowExt || globalThis.ReadnowExt;
   const extHttp = (o) => new Promise((res, rej) => GM_xmlhttpRequest({ method: o.method || 'GET', url: o.url, headers: o.headers || {}, data: o.data, anonymous: true /* 이 브라우저의 로그인 쿠키(예스24 판매자 계정 등)를 보내지 않음 — 외부 정보 읽기는 손님으로 */, timeout: 30000, onload: (r) => res({ status: r.status, text: r.responseText || '' }), onerror: () => rej(new Error('연결 실패 (@connect에 없는 주소이거나 네트워크)')), ontimeout: () => rej(new Error('응답 없음(30초)')) }));
   const extKst = (ms) => new Date((ms || Date.now()) + 9 * 3600e3).toISOString().slice(0, 10);
