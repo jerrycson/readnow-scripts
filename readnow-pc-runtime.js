@@ -1,7 +1,7 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.59.0의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.59.1의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.59.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.59.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
  * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
@@ -159,9 +159,29 @@
     buf.push(e); if (buf.length > MAXMEM) buf.splice(0, buf.length - MAXMEM); if (lv !== 'detail') { lt.push(e); if (lt.length > 80) lt.shift(); ltDirty = true; } pend.push(e); idbPend.push(e); dirty = true; };
   // 이 PC 보관 (5초마다), Firebase (1분마다, 10분 단위 문서)
   setInterval(() => { if (pend.length > 5000) pend.splice(0, pend.length - 5000); jflush().catch(() => {}); }, 20000); addEventListener('beforeunload', () => { jflush(); });
-  const upNow = async () => { if (!pend.length || !window.firebase || !firebase.apps.length || !firebase.auth().currentUser) return; const out = pend.splice(0, pend.length);
-    const groups = {}; out.forEach((e) => { const k = new Date(e.t + 9 * 3600e3).toISOString().slice(0, 15).replace(/[-:T]/g, ''); (groups[k] = groups[k] || []).push(`${new Date(e.t + 9 * 3600e3).toISOString().slice(11, 19)} [${e.m}] ${e.l === 'err' ? '⚠ ' : e.l === 'warn' ? '! ' : e.l === 'detail' ? '· ' : ''}${e.x}`); });
-    if (window.__rnLogDenied) return; for (const [k, lines] of Object.entries(groups)) { try { await firebase.firestore().collection('rn_logs').doc(`${pcName()}_${k}0`).set({ pc: pcName(), slot: k + '0', lines: firebase.firestore.FieldValue.arrayUnion(...lines), at: Date.now() }, { merge: true }); } catch (e) { if (/permission/i.test(e.code || e.message)) { window.__rnLogDenied = true; buf.push({ t: Date.now(), m: '기록', l: 'warn', x: 'Firebase에 기록을 못 올림 (규칙에 rn_logs 허용 필요) — 이 PC 안에는 계속 보관합니다' }); } else { pend.unshift(...out.slice(-3000)); } break; } } };
+  /* (1.59.1) Firebase 기록(rn_logs) 빠짐 막기
+   *  ① 올리다 실패한 칸의 줄은 버리지 않고 다음 분에 다시(예전: 실패하면 마지막 3,000줄만 남기고 앞을 버렸고, 한 칸이 계속 실패하면 그 뒤 칸도 모두 막혔음)
+   *  ② 칸마다 몇 줄 올렸는지 이 PC에 적어 두고(rnu-log-upled), 30분마다 이 PC 보관 기록(IndexedDB)과 견주어 덜 올라간 칸을 다시 올림 — 같은 줄은 Firebase가 하나로 합치므로(arrayUnion) 두 번 쌓이지 않음
+   *  ③ 기록 내려받기(이 PC 비우기) 전에 먼저 모두 올림 */
+  const lineOf = (e) => `${new Date(e.t + 9 * 3600e3).toISOString().slice(11, 19)} [${e.m}] ${e.l === 'err' ? '⚠ ' : e.l === 'warn' ? '! ' : e.l === 'detail' ? '· ' : ''}${e.x}`;
+  const slotOf = (t) => new Date(t + 9 * 3600e3).toISOString().slice(0, 15).replace(/[-:T]/g, '') + '0';
+  const UPK = 'rnu-log-upled'; const upLed = () => { try { return GM_getValue(UPK, {}) || {}; } catch (e) { return {}; } };
+  const upLedAdd = (slot, n) => { try { const L = upLed(); L[slot] = (L[slot] || 0) + n; const cut = slotOf(Date.now() - 4 * 864e5); for (const k of Object.keys(L)) if (k < cut) delete L[k]; GM_setValue(UPK, L); } catch (e) {} };
+  const upLedSet = (slot, n) => { try { const L = upLed(); L[slot] = Math.max(L[slot] || 0, n); GM_setValue(UPK, L); } catch (e) {} };
+  async function putSlot(slot, lines) { for (let i = 0; i < lines.length; i += 400) await firebase.firestore().collection('rn_logs').doc(`${pcName()}_${slot}`).set({ pc: pcName(), slot, lines: firebase.firestore.FieldValue.arrayUnion(...lines.slice(i, i + 400)), at: Date.now() }, { merge: true }); }
+  const upOk = () => !!(window.firebase && firebase.apps.length && firebase.auth().currentUser) && !window.__rnLogDenied;
+  const upNow = async () => { if (!pend.length || !upOk()) return; const out = pend.splice(0, pend.length);
+    const groups = new Map(); out.forEach((e) => { const k = slotOf(e.t); (groups.get(k) || groups.set(k, []).get(k)).push(e); }); const failed = [];
+    for (const [slot, es] of groups) { try { await putSlot(slot, es.map(lineOf)); upLedAdd(slot, es.length); } catch (e) { if (/permission/i.test(e.code || e.message)) { window.__rnLogDenied = true; buf.push({ t: Date.now(), m: '기록', l: 'warn', x: 'Firebase에 기록을 못 올림 (규칙에 rn_logs 허용 필요) — 이 PC 안에는 계속 보관합니다' }); return; } failed.push(...es); } }
+    if (failed.length) { pend.unshift(...failed); if (pend.length > 30000) pend.splice(0, pend.length - 30000); /* 그래도 넘치면 오래된 것부터 — 이 PC 보관 기록에서 30분마다 다시 채움 */ } };
+  let bfAt = 0, bfBusy = false;
+  async function backfill(force) { if (bfBusy || !upOk() || (!force && Date.now() - bfAt < 30 * 60000)) return { skip: true }; bfBusy = true; bfAt = Date.now(); let slots = 0, lines = 0, bad = 0;
+    try { await jflush(); const L = upLed(); const lim = force ? Date.now() : Date.now() - 15 * 60000; /* 지금 올리는 중인 칸은 빼고 */ const pendN = {}; pend.forEach((e) => { const k = slotOf(e.t); pendN[k] = (pendN[k] || 0) + 1; });
+      for (const d of [day(new Date(Date.now() - 864e5)), day(new Date())]) { const rec = await jgetDay(d); const G = new Map(); ((rec && rec.lines) || []).forEach((e) => { if (e.t > lim) return; const k = slotOf(e.t); (G.get(k) || G.set(k, []).get(k)).push(e); });
+        for (const [slot, es] of G) { if (es.length <= (L[slot] || 0) + (pendN[slot] || 0)) continue; try { await putSlot(slot, es.map(lineOf)); upLedSet(slot, es.length); slots++; lines += es.length; } catch (e) { bad++; } } }
+      if (slots) window.__rnLog('수집기', 'info', `Firebase 기록 채움: 덜 올라간 10분 칸 ${slots}개를 이 PC 보관 기록으로 다시 올림 (${lines.toLocaleString()}줄 — 이미 있던 줄은 하나로 합쳐짐)`); } catch (e) { bad++; } finally { bfBusy = false; } return { slots, lines, bad }; }
+  setInterval(() => backfill().catch(() => {}), 5 * 60000); setTimeout(() => backfill(true).catch(() => {}), 90000);
+  window.__rnLogBackfill = backfill;
   setInterval(upNow, 60000);
   window.__rnFlush = async () => { try { await jflush(); } catch (e) {} try { await upNow(); } catch (e) {} }; // 탭을 닫기 직전 등: 남은 기록을 이 PC(IndexedDB)와 Firebase에 바로 저장
   /* (1.38.0) 탭끼리 나누는 '지금 상태'와 '최근 기록' — 개요 화면은 어느 탭에서 열어도 이 PC 전체(모든 수집기 탭)를 보여 줌
@@ -287,7 +307,7 @@
     GM_xmlhttpRequest({ method: 'POST', url, data: JSON.stringify({ key, name, content }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, timeout: 120000, onload: (r) => { try { const j = JSON.parse(r.responseText); res(j && j.ok ? j : null); } catch (e) { res(null); } }, onerror: () => res(null), ontimeout: () => res(null) }); });
     w.querySelector('#rnjD').onclick = async () => { // 모든 날짜를 한 파일로 받고, 이 PC의 기록을 비움 (Firebase에 올라간 기록은 그대로)
       if (!confirm('이 PC의 모든 작업 기록(오늘 + 지난 기록)을 파일로 내려받은 뒤, 이 PC에서 비웁니다. 계속할까요?')) return;
-      await jflush(); const keys = (await jdays()).sort(); const parts = []; for (const k of keys) { const rec = await jgetDay(k); (rec ? rec.lines : []).forEach((e) => parts.push(`${new Date(e.t).toLocaleString('ko-KR')} [${e.m}] [${e.l}] ${e.x}`)); }
+      await jflush(); try { await upNow(); } catch (e) {} const bfr = await backfill(true).catch(() => ({ bad: 1 })); if ((bfr && bfr.bad) || pend.length) { if (!confirm(`Firebase에 아직 못 올린 기록이 있습니다(${pend.length.toLocaleString()}줄${bfr && bfr.bad ? ' · 못 올린 칸 ' + bfr.bad + '개' : ''}). 그래도 이 PC 기록을 비울까요?\n(내려받는 파일에는 모두 들어 있음 · 취소하면 비우지 않음 — 인터넷이 되면 저절로 올라감)`)) return; } /* (1.59.1) 비우기 전에 Firebase에 모두 올림 */ const keys = (await jdays()).sort(); const parts = []; for (const k of keys) { const rec = await jgetDay(k); (rec ? rec.lines : []).forEach((e) => parts.push(`${new Date(e.t).toLocaleString('ko-KR')} [${e.m}] [${e.l}] ${e.x}`)); }
       const fname = `리드나우-수집기록-${pcName()}-${keys[0] || day(new Date())}~${keys[keys.length - 1] || day(new Date())}.txt`; const drv = await driveSave(fname, parts.join('\n'));
       if (drv) { window.__rnLog('수집기', 'ok', `작업 기록을 구글 드라이브 '리드나우 수집기록' 폴더에 저장했습니다: ${fname}${drv.url ? ' · ' + drv.url : ''}`); if (drv.url) window.open(drv.url, '_blank'); }
       else { window.__rnLog('수집기', 'warn', GM_getValue('rnu-drive-url', '') ? '구글 드라이브 저장 실패 (주소·열쇠·배포 권한 확인) — PC의 다운로드 폴더로 내려받습니다' : '구글 드라이브 주소가 설정되지 않아 PC의 다운로드 폴더로 내려받습니다 (웹앱 설정 ⑨)'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([parts.join('\n')], { type: 'text/plain' })); a.download = fname; a.click(); }

@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.59.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.59.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.59.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.59.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2619,9 +2619,16 @@
     try { window.__rnLog && window.__rnLog('상품', 'detail', `🌐 ${s.label} ${b.isbn} 『${String(b.title || '').slice(0, 40)}』 → ${{ new: '새로', changed: '바뀜(옛 값 보관)', same: '같음', err: '못 읽음', mismatch: '다른 책', none1: '없음(한 번)' }[st] || st}${res.d && res.d.n != null ? ` ${res.d.n}개` : ''}${st === 'err' || st === 'mismatch' ? ' — ' + String(res.why || '').slice(0, 80) : ''}${why === 'webapp' ? ' (웹앱에서 맡김)' : why === 'test' ? ' (시험)' : ''}`); } catch (e) {}
     return { src, st, why: res.why || null, n: res.d && (res.d.n ?? null), none: !!res.none }; }
   /* 할 책 목록: 판매중·일시판매중지 + ISBN · 판매가 높은 순 · 6시간마다 다시 만듦 */
-  async function extCands() { if (EXT_S.cand && Date.now() - EXT_S.candAt < 6 * 3600e3) return EXT_S.cand; if (!LISTINGS) { if (running) return EXT_S.cand || []; await loadListings(); } const seen = new Map();
-    const X = EXT(); for (const l of LISTINGS.values()) { const isbn = X.keyOf ? X.keyOf(l) : String(l.isbn13 || '').replace(/[^0-9]/g, ''); if (!isbn) continue; const isI = /^97[89]\d{10}$/.test(isbn); if (!isI && !['video', 'music'].includes(l.mediaType)) continue; /* (1.57.4) ISBN 없는 DVD·블루레이·CD도 중고 시세(중고닷)는 봄 */ const st = String(l.status || ''); if (!/판매중/.test(st) || /판매중지/.test(st) && !/일시/.test(st)) continue; const p = +l.price || 0; const o = seen.get(isbn); if (!o || p > o.p) seen.set(isbn, { isbn, media: l.mediaType || null, title: String(l.title || '').replace(/^\[중고[^\]]*\]\s*/, '') || null, author: l.author || null, p }); }
-    EXT_S.cand = [...seen.values()].sort((a, b) => b.p - a.p); EXT_S.candAt = Date.now(); return EXT_S.cand; }
+  /* (1.59.1) 다른 작업(집중 벤치마킹·일괄 등)이 도는 중이라 상품 기록을 아직 안 읽었을 때: 예전엔 빈 목록 → 외부 정보가 그 작업이 끝날 때까지(밤새) 아무 말 없이 쉼.
+   *  이제 ① 이 PC 보관본(IndexedDB — 서버 읽기 없음) ② 클라우드가 만든 책 목록(ext_cand) 순서로 써서 작업 중에도 계속함 · 둘 다 없을 때만 쉬고, 쉰다고 기록에 남김 */
+  async function extCandsLite() { try { const c = await LCACHE.get(); if (c && Array.isArray(c.rows) && c.rows.length) return { from: '이 PC 보관본', L: c.rows.map(([, v]) => v) }; } catch (e) {}
+    try { const m = await C('ext_cand').doc('meta').get(); const M = m.exists ? m.data() : null; if (M && M.v === 2 && M.n && M.parts) { const L = []; for (let i = 0; i < M.parts; i++) { const d = await C('ext_cand').doc('p' + i).get(); if (d.exists) { try { L.push(...JSON.parse(d.data().J || '[]')); } catch (e) {} } } if (L.length === M.n) return { from: '클라우드 책 목록', rows: L.map((r) => ({ isbn: r[0], p: r[1], title: r[2] || null, author: r[3] || null, media: r[4] || null })) }; } } catch (e) {}
+    return null; }
+  async function extCands() { if (EXT_S.cand && Date.now() - EXT_S.candAt < 6 * 3600e3) return EXT_S.cand; let src = LISTINGS;
+    if (!src) { if (running) { const lite = await extCandsLite(); if (!lite) return EXT_S.cand || []; if (lite.rows) { EXT_S.cand = lite.rows; EXT_S.candAt = Date.now() - 5 * 3600e3; /* 1시간 뒤 다시 만듦(작업이 끝났으면 진짜 목록으로) */ log(`🌐 외부 정보: 다른 작업 중이라 ${lite.from}(${lite.rows.length.toLocaleString()}권)으로 이어 감`); return EXT_S.cand; } src = new Map(lite.L.map((v, i) => [i, v])); log(`🌐 외부 정보: 다른 작업 중이라 ${lite.from}으로 이어 감`); } else { await loadListings(); src = LISTINGS; } }
+    const seen = new Map();
+    const X = EXT(); for (const l of src.values()) { const isbn = X.keyOf ? X.keyOf(l) : String(l.isbn13 || '').replace(/[^0-9]/g, ''); if (!isbn) continue; const isI = /^97[89]\d{10}$/.test(isbn); if (!isI && !['video', 'music'].includes(l.mediaType)) continue; /* (1.57.4) ISBN 없는 DVD·블루레이·CD도 중고 시세(중고닷)는 봄 */ const st = String(l.status || ''); if (!/판매중/.test(st) || /판매중지/.test(st) && !/일시/.test(st)) continue; const p = +l.price || 0; const o = seen.get(isbn); if (!o || p > o.p) seen.set(isbn, { isbn, media: l.mediaType || null, title: String(l.title || '').replace(/^\[중고[^\]]*\]\s*/, '') || null, author: l.author || null, p }); }
+    EXT_S.cand = [...seen.values()].sort((a, b) => b.p - a.p); EXT_S.candAt = src === LISTINGS ? Date.now() : Date.now() - 5 * 3600e3; return EXT_S.cand; }
   const extDue = (src, isbn, cfg) => { const v = (EXT_S.idx[src] || new Map()).get(isbn); if (!v) return true; const m = String(v).match(/^E (\d{4}-\d\d-\d\d) (\d+)$/); if (m) return Date.now() - Date.parse(m[1] + 'T00:00:00+09:00') >= EXT_BACKOFF[Math.min(EXT_BACKOFF.length, +m[2]) - 1] * 864e5; return Date.now() - Date.parse(v + 'T00:00:00+09:00') >= cfg.src[src].refreshDays * 864e5; };
   const extEligible = (src, b, cfg) => { const X = EXT(); if (X.eligible) return X.eligible(src, b, cfg); /* (1.59.0) 공용 파일 0.3.0부터 기준이 공용 파일에 — 영상·음반 전용 장터(DVDPrime) 포함 */ const g = X.SOURCES[src].grp; if (!/^97[89]\d{10}$/.test(String(b.isbn || ''))) return g === 'used' && src !== 'yes24used' && !!b.title; /* ISBN 없는 상품: 장터 시세만 */ if (g === 'foreign' && !cfg.foreignKr && X.isKrIsbn(b.isbn)) return false; if ((g === 'used' && src !== 'yes24used') || g === 'ebook') return !!b.title; return true; };
   /* 환율: 하루 한 번(한국 11:30 뒤 — 수출입은행 고시 뒤) · ext_fx/{고시일} (이미 있으면 안 씀) */
@@ -2641,7 +2648,9 @@
     const parts = Object.entries(tally).map(([s, t]) => `${X.SOURCES[s].label} ${Object.entries(t).map(([k, v]) => `${{ new: '새로', changed: '바뀜', same: '같음', err: '못 읽음', skip: '건너뜀', mismatch: '다른 책', none1: '없음(한 번 — 다음에 확인)', viaJm: '중고닷에서 찾아 직접 안 물음' }[k] || k} ${v}`).join('·')}`);
     if (parts.length) log(`🌐 외부 정보 ${Math.round((Date.now() - t0) / 1000)}초: ${parts.join(' / ')}`); return tally; }
   async function extTick() { if (EXT_S.busy || !auth.currentUser || window.__rnPaused || (window.__rnRest && window.__rnRest())) return; const X = EXT(); if (!X) return; EXT_S.busy = true;
-    try { const cfg = await extCfg(); if (!cfg.on) return; if (!(await extLease())) return; await extUsedLoad(true); await extFx().catch((e) => log('🌐 환율: ' + e.message, 1)); await extFill(cfg); } catch (e) { log('🌐 외부 정보 오류: ' + (e.message || e), 1); } finally { EXT_S.busy = false; } }
+    try { const cfg = await extCfg(); if (!cfg.on) return; if (!(await extLease())) return; await extUsedLoad(true); await extFx().catch((e) => log('🌐 환율: ' + e.message, 1)); const r = await extFill(cfg);
+      if (r == null) { /* (1.59.1) 할 책 목록이 없어 이번엔 못 함 — 맡음을 바로 놓아(클라우드·다른 PC가 이어받게) 쉰다고 한 시간에 한 번 남김(기록이 비는 까닭이 보이게) */ try { await db.runTransaction(async (tx) => { const s0 = await tx.get(EXT_RUN()); const L = (s0.exists && s0.data().lease) || null; if (L && L.pc === PC_NAME && L.tab === EXT_S.me) tx.set(EXT_RUN(), { lease: { ...L, atMs: Date.now() - 5 * 60000 } }, { merge: true }); }); } catch (e) {}
+        if (Date.now() - (EXT_S.idleLogAt || 0) > 3600e3) { EXT_S.idleLogAt = Date.now(); log('🌐 외부 정보: 상품 기록을 아직 못 읽어(다른 작업 중 · 보관본 없음) 이번엔 쉼 — 맡음을 놓아 클라우드·다른 PC가 이어받게 함'); } } } catch (e) { log('🌐 외부 정보 오류: ' + (e.message || e), 1); } finally { EXT_S.busy = false; } }
   setTimeout(() => extTick(), 2 * 60000); setInterval(() => extTick(), 5 * 60000);
   /* 웹앱이 맡긴 일 — extLookup: { books:[{isbn,title,author}], srcs?:[출처] } · extTest: { srcs?:[출처] } (하루 최대와 상관없이 바로) */
   const EXT_TEST_BOOKS = { kr: { isbn: '9788937460449', title: '데미안', author: '헤르만 헤세' }, en: { isbn: '9780141439518', title: 'Pride and Prejudice', author: 'Jane Austen' } };
