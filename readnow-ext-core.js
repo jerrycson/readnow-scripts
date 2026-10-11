@@ -1,6 +1,6 @@
 /* readnow-ext-core.js — 🌐 외부 정보 엔진 (공용 파일 · 웹앱·PC 수집기가 같은 기준을 씀 · 나중에 클라우드도 그대로)
  * 알라딘 밖에서 책 정보를 모음 — ① 기본 정보(교보·예스24·구글 북스 + 공식 API: 알라딘 TTB·카카오·네이버·국립중앙도서관)
- *   ② 중고 시세(예스24 중고·번개장터·중고나라·당근) ③ 외국 시세(eBay 공식 API 먼저, AbeBooks 보조) ④ 도서관 대출(도서관 정보나루)
+ *   ② 중고 시세(예스24 중고·번개장터·중고나라·당근 · (0.3.0) DVDPrime 장터 — 영상·음반만) ③ 외국 시세(eBay 공식 API 먼저, AbeBooks 보조) ④ 도서관 대출(도서관 정보나루)
  *   ⑤ 전자책(리디) ⑥ 환율(한국수출입은행 → 안 되면 frankfurter)
  * 이 파일은 '어떻게 묻고 어떻게 읽는지'와 '숫자 계산'만 — 요청을 보내는 길(http)은 쓰는 쪽이 넣어 줌:
  *   수집기 = GM_xmlhttpRequest (다른 사이트도 막힘 없이) · 클라우드 = fetch · 시험 = 가짜 응답
@@ -8,7 +8,7 @@
  * 화면 모양이 바뀌어 못 읽으면 '못 읽음'과 함께 받은 화면 일부(probe)를 돌려줌 → 수집기가 ext_probe에 남겨 나중에 읽는 법을 고침. 추측으로 채우지 않음.
  * ISBN이 있는 책 정보(교보·예스24)는 받은 상품 페이지 안에 그 ISBN이 정확히 있을 때만 받아들임(다른 책을 잘못 붙이지 않게). */
 (function (root) {
-  const VERSION = '0.2.0';
+  const VERSION = '0.3.0';
 
   /* ── 키 (웹앱 설정 ⑱에서 넣음 → Firebase app_secrets/ext · 백업 파일엔 넣지 않음) ── */
   const KEYS = [
@@ -47,12 +47,13 @@
     bunjang: { grp: 'used', label: '번개장터', kind: 'page', host: 'api.bunjang.co.kr', keys: [], cap: 400, paceMs: 3000 },
     joongna: { grp: 'used', label: '중고나라', kind: 'page', host: 'web.joongna.com', keys: [], cap: 300, paceMs: 3500 },
     daangn: { grp: 'used', label: '당근', kind: 'page', host: 'www.daangn.com', keys: [], cap: 300, paceMs: 3500 },
+    dvdprime: { grp: 'used', label: 'DVDPrime 장터', kind: 'page', host: 'dvdprime.com', keys: [], cap: 200, paceMs: 4000, media: ['video', 'music'] }, /* (0.3.0) 영상·음반만 — 책은 묻지 않음 */
     ebay: { grp: 'foreign', label: 'eBay (공식 API)', kind: 'api', host: 'api.ebay.com', keys: ['ebayAppId', 'ebayCertId'], cap: 4000, paceMs: 700 },
     abebooks: { grp: 'foreign', label: 'AbeBooks (보조)', kind: 'page', host: 'www.abebooks.com', keys: [], cap: 200, paceMs: 4000 },
     lib: { grp: 'lib', label: '도서관 정보나루 (공식)', kind: 'api', host: 'data4library.kr', keys: ['d4lKey'], cap: 450, paceMs: 1000 },
     ridi: { grp: 'ebook', label: '리디', kind: 'page', host: 'ridibooks.com', keys: [], cap: 300, paceMs: 3000 },
   };
-  const ORDER = ['kyobo', 'yes24', 'google', 'ttb', 'kakao', 'naver', 'nl', 'joongmo', 'yes24used', 'bunjang', 'joongna', 'daangn', 'ebay', 'abebooks', 'lib', 'ridi'];
+  const ORDER = ['kyobo', 'yes24', 'google', 'ttb', 'kakao', 'naver', 'nl', 'joongmo', 'yes24used', 'bunjang', 'joongna', 'daangn', 'dvdprime', 'ebay', 'abebooks', 'lib', 'ridi'];
   /* 기본 정보 칸마다 어느 출처를 먼저 믿는지 (정범 지정: 교보 → 예스24 → 구글 북스, 그 뒤 공식 API) — 설정 ext.basicOrder로 바꿈 */
   const BASIC_ORDER = ['kyobo', 'yes24', 'google', 'ttb', 'nl', 'kakao', 'naver'];
 
@@ -101,7 +102,7 @@
   function balanced(s, i) { const open = s[i], close = open === '{' ? '}' : ']'; let d = 0, q = null, esc = false; for (let j = i; j < s.length && j < i + 5e6; j++) { const c = s[j]; if (q) { if (esc) esc = false; else if (c === '\\') esc = true; else if (c === q) q = null; continue; } if (c === '"' || c === "'") { q = c; continue; } if (c === '{' || c === '[') d++; else if (c === '}' || c === ']') { d--; if (d === 0) return j; } } return -1; }
   /* 표의 이름표 → 값 (th/td · dt/dd) — 화면이 '쪽수 | 320쪽' 같은 표로 보여 주는 칸을 모두 그대로 */
   function tableKV(html) { const o = {}; const H = String(html || ''); const put = (k, v) => { k = strip(k).replace(/\s+/g, ' ').replace(/[:：]$/, '').trim(); v = strip(v).replace(/\s+/g, ' ').trim(); if (k && v && k.length <= 30 && !(k in o)) o[k] = clip(v, 400); };
-    H.replace(/<th[^>]*>([\s\S]*?)<\/th>\s*<td[^>]*>([\s\S]*?)<\/td>/gi, (m, k, v) => { put(k, v); return m; });
+    H.replace(/<th[^>]*>((?:(?!<\/?th[\s>])[\s\S]){0,2000}?)<\/th>\s*<td[^>]*>((?:(?!<\/?td[\s>])[\s\S]){0,20000}?)<\/td>/gi, (m, k, v) => { put(k, v); return m; }); /* (0.3.0) 한 칸 안에서만 — 제목만 있는 줄을 건너 다음 줄 값과 잘못 짝짓던 것 · 긴 화면에서 느리던 것 */
     H.replace(/<dt[^>]*>([\s\S]*?)<\/dt>\s*<dd[^>]*>([\s\S]*?)<\/dd>/gi, (m, k, v) => { put(k, v); return m; }); return o; }
   const kvFind = (kv, re) => { for (const [k, v] of Object.entries(kv || {})) if (re.test(k)) return v; return null; };
   /* JSON 안에서 '책·매물' 같은 줄 목록 찾기: 제목 칸과 값 칸이 있는 물건이 3개 이상 든 배열 중 가장 긴 것 */
@@ -122,7 +123,8 @@
   /* 숫자로만 된 상태 번호(장터마다 뜻이 다름 — 확인 전엔 추측하지 않음)는 '#번호' 그대로 두고 판매중으로 셈 */
   const stOf = (v) => { const s = String(v == null ? '' : v).toLowerCase().trim(); if (!s) return null; if (/schema\.org\/(soldout|outofstock|discontinued)/.test(s)) return 'sold'; if (/schema\.org\/(instock|limitedavailability|preorder)/.test(s)) return 'sell'; if (/^\d+$/.test(s)) return '#' + s; if (/sold|완료|closed|complete|done/.test(s)) return 'sold'; if (/reserv|예약/.test(s)) return 'rsv'; if (/sale|ongoing|판매|selling|active|on_sale/.test(s)) return 'sell'; return clip(s, 12); };
   /* 잘라 둘 화면 일부 (못 읽었을 때 수집기가 ext_probe에 남김 — 읽는 법 고칠 때 씀) */
-  const probe = (text, why, url) => ({ ok: false, why, probe: { url: url || null, len: String(text || '').length, head: clip(String(text || ''), 120000) } });
+  const noKey = (u) => (u == null ? null : String(u).replace(/([?&](?:ttbkey|cert_key|key|authKey|authkey|apikey|api_key|serviceKey|client_secret)=)[^&#]*/gi, '$1***')); /* (0.3.0) 남기는 주소에서 연결 키를 가림 — ext_probe에 키가 남지 않게 */
+  const probe = (text, why, url) => ({ ok: false, why, probe: { url: noKey(url), len: String(text || '').length, head: clip(String(text || '').replace(/(ttbkey|cert_key|authKey|serviceKey)=[^&"'\s<]*/gi, '$1=***'), 120000) } });
 
   /* ══════════ 출처마다: 묻기 → 읽기 ══════════
    * run({ isbn, title, author, keys, http, cache, cfg }) → { ok:true, d } | { ok:true, none:true } (그 책이 없음) | { ok:false, why, probe? } | { skip: '까닭' }
@@ -208,6 +210,57 @@
       const items = jmParse(r.text); if (!items.length) continue; const o = usedOut(items, q, title, url, cfg); o.d.byPlat = items.reduce((m, x) => { m[x.plat] = (m[x.plat] || 0) + 1; return m; }, {}); /* 검색어가 화면에 안 먹고 첫 화면(인기 글)이 왔으면 닮은 글이 하나도 없음 → 표시만 */ o.d.queryEcho = items.some((x) => sim(q, x.t) >= 0.3); return o; }
     return { ok: false, why: '중고닷 검색 화면에서 글을 못 읽음 (' + tried.join(' · ') + ') — 검색이 화면을 연 뒤 따로 불러오는 방식이면 수집기 쪽 길을 바꿔야 함', ...(lastT ? { probe: probe(lastT, '', lastU).probe } : {}) }; };
 
+  /* ── (0.3.0) DVDPrime 중고장터 (dvdprime.com/g2 · 그누보드 게시판 bo_table=market) — 영상·음반(DVD·블루레이·CD·LP)만
+   *  정범이 준 장터 목록 화면 원본으로 확인한 모양: 줄마다 <div id="list_row_{글번호}"> · 말머리(list_category_text: 블루레이·DVD·LP·CD·프로젝터·TV·…·삽니다·그냥드림·공지)
+   *  · 글 제목(list_subject_span_mobile = 잘리지 않은 제목) · 날짜(list_table_dates: 오늘 글은 '19:56') · 글쓴이(sideview_a 안 title)
+   *  목록 화면엔 값 칸이 없음 — 글 제목에 값이 하나만 적혀 있을 때만 그 값을 씀(여러 개 파는 글·값이 둘 이상인 제목은 값 없이 '글 있음'만). 본문 값은 아직 읽지 않음(글 화면 원본을 받아 확인한 뒤에) */
+  const DP_MEDIA_CAT = ['블루레이', 'DVD', 'LP', 'CD', '정성글'];          // 우리 상품과 같은 종류일 수 있는 말머리 (정성글 = 말머리 대신 쓰는 칸 — 제목으로 맞춤)
+  const DP_SKIP_CAT = ['공지', '그냥드림', '구독공유'];                      // 시세가 아닌 글
+  const dpFmt = /\b(?:4k|uhd|bd|blu-?ray|dvd|cd|lp|sacd|xrcd|ost)\b|블루레이|디브이디|스틸북|steelbook|풀슬립|렌티큘러|원클릭|한정판|한정반|초회판|일반판|정발|북미판|일본판|미개봉|\d+\s*(?:discs?|디스크)\b|\b\d+(?:dvd|bd|cd)\b/gi; /* '2disc'·'2 디스크'·'2dvd'(붙여 씀)만 장수 — '대부 2 DVD'의 2는 편 번호라 남김 */
+  /* 영상·음반 제목 맞추기용: 말머리 [블루레이]·괄호·포맷 낱말·'판매/팝니다' 같은 글 말을 빼되, 쌍점(:) 뒤 부제는 남김 — '스파이더맨: 노 웨이 홈'과 '어메이징 스파이더맨 2'를 가르는 게 부제라서 */
+  const mediaCore = (t) => String(t || '').toLowerCase().replace(/\[[^\]]*\]|【[^】]*】|\([^)]*\)/g, ' ').replace(/[<>《》〈〉「」『』]/g, ' ').replace(dpFmt, ' ').replace(/판매(?:합니다|해요|중)?|팝니다|구매(?:합니다)?|삽니다|구합니다|미개봉|새제품|새상품|중고|완료|예약/g, ' ').replace(/[^\p{L}\p{N}]+/gu, ' ').replace(/\s+/g, ' ').trim();
+  const SEQ_RE = /^(?:\d{1,2}|[ivx]{1,4}|part\s*\d+|파트\s*\d+|시즌\s*\d+|season\s*\d+|리턴즈|returns|vs.*|대\s.*|2부|3부|속편|비긴즈|begins)$/i;
+  /* 영상·음반은 '에일리언'과 '에일리언 2'처럼 이어지는 편이 다른 상품 — 한쪽이 다른 쪽을 품고 남는 말이 편 번호·속편 말뿐이면 같은 상품으로 보지 않음 */
+  const simMedia = (a, b) => { const A = mediaCore(a), B = mediaCore(b); const v = sim(A, B); if (v < 0.6) return v; const [S0, L0] = A.length <= B.length ? [A, B] : [B, A]; if (!S0 || S0 === L0) return v; const i = L0.indexOf(S0); if (i < 0) return v; const rest = (L0.slice(0, i) + ' ' + L0.slice(i + S0.length)).replace(/\s+/g, ' ').trim(); return rest && SEQ_RE.test(rest) ? Math.min(v, 0.5) : v; };
+  /* 검색어: 그누보드 제목 검색은 띄어 쓴 낱말이 모두 든 글만 찾고('노 웨이 홈' ≠ '노웨이홈') 첫 쪽만 읽으므로 짧게 — 첫 낱말(두 글자 이하면 둘째 낱말까지) · 같은 책인지는 받은 뒤 제목 닮음으로 가림 */
+  const MQ_STOP = new Set(['the', 'a', 'an', 'of', 'and', 'le', 'la', 'les', 'der', 'die', 'das']); const mediaQuery = (title) => { const w0 = mediaCore(title).split(' ').filter(Boolean); const w = w0.filter((x) => !MQ_STOP.has(x)).length ? w0.filter((x) => !MQ_STOP.has(x)) : w0; if (!w.length) return coreTitle(title).split(' ')[0] || ''; return w[0].length <= 2 && w[1] ? `${w[0]} ${w[1]}` : w[0]; };
+  /* 제목 안 값: '25,000원'·'25000원'·'2.5만'·'3만원' — 값이 정확히 하나일 때만 (둘 이상이면 어느 물건 값인지 모름) */
+  const dpPrices = (t) => { const out = []; let x = String(t || '');
+    /* '2만 5천원'·'1만5천' → 25,000·15,000 (만·천을 함께) · '3만원'·'2.5만' · '25,000원' — '원작'·'원클릭'처럼 '원' 뒤에 한글이 붙은 말은 값이 아님 · '1만 년'처럼 만 뒤에 원·끝·쉼이 없으면 값이 아님 */
+    x = x.replace(/(\d+(?:\.\d+)?)\s*만\s*(\d)\s*천\s*(?:원(?![가-힣]))?/g, (m, a, b) => { out.push(Math.round(+a * 10000 + +b * 1000)); return ' '; });
+    x = x.replace(/(\d+(?:\.\d+)?)\s*만\s*(?:원(?![가-힣])|(?=택포|택배|판매|팝니|에\s|에$|씩|$|[,./)\]!~]))/g, (m, a) => { out.push(Math.round(+a * 10000)); return ' '; });
+    x = x.replace(/(\d+)\s*천\s*원(?![가-힣])/g, (m, a) => { out.push(+a * 1000); return ' '; });
+    x.replace(/(\d{1,3}(?:,\d{3})+|\d+)\s*원(?![가-힣])/g, (m, n) => { out.push(+n.replace(/,/g, '')); return m; });
+    return [...new Set(out)].filter((v) => v >= 100); };
+  const dpMulti = (t) => /[,，、/]|여러|등\b|등\)|\d+\s*(?:개|장|종|편|권|타이틀)|일괄|모음|정리|처분|상품추가|리스트/i.test(String(t || '').replace(/(\d),(?=\d{3})/g, '$1')); /* 값의 천 단위 쉼표는 '여러 개'로 보지 않음 */
+  /* 날짜: 오늘 글은 '시:분'만 → 한국 날짜로 · 'MM-DD' · 'YY-MM-DD' · 'YYYY-MM-DD' (다른 꼴이면 받은 글자 그대로) */
+  const dpDate = (s, now) => { s = String(s || '').trim(); const k = new Date((now || Date.now()) + 9 * 3600e3); const Y = k.getUTCFullYear(); const td = k.toISOString().slice(0, 10); let m;
+    if ((m = s.match(/^(\d{1,2}):(\d{2})$/))) return td; /* (0.3.0) 날짜만 — 시각은 다음 날 '10-11'로 바뀌어 같은 글이 '바뀜'으로 잡히던 것 */
+    if ((m = s.match(/^(\d{4})[-.](\d{1,2})[-.](\d{1,2})$/))) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+    if ((m = s.match(/^(\d{2})[-.](\d{1,2})[-.](\d{1,2})$/))) return `20${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+    if ((m = s.match(/^(\d{1,2})[-.\/](\d{1,2})$/))) { const md = `${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`; const y = md > td.slice(5) ? Y - 1 : Y; return `${y}-${md}`; } /* 오늘(월-일)보다 뒤면 작년 글 */
+    return s ? clip(s, 20) : null; };
+  function dpParse(html, now) { const H = String(html || ''); const out = []; const segs = H.split(/<div[^>]+id=["']list_row_(?=\d)/i).slice(1);
+    for (const sg0 of segs) { const id = (sg0.match(/^(\d+)/) || [])[1]; const sg = sg0.slice(0, 9000); if (!id) continue;
+      const href = (sg.match(/class=["']list_subject_a["'][^>]*href=["']([^"']+)["']/i) || sg.match(/href=["']([^"']*bo_table=[^"']*wr_id=\d+[^"']*)["']/i) || [])[1] || '';
+      if (href && !/bo_table=market\b/.test(href)) continue; /* 공지 게시판 글(bo_table=notice) */
+      const cat = strip((sg.match(/class=["'][^"']*list_category_text[^"']*["'][^>]*>([\s\S]*?)<\/span>/i) || [])[1] || '') || null;
+      if (cat && DP_SKIP_CAT.includes(cat)) continue;
+      const t = strip((sg.match(/class=["']list_subject_span_mobile["'][^>]*>([\s\S]*?)<\/span>/i) || sg.match(/class=["']list_subject_span_pc["'][^>]*>([\s\S]*?)<\/span>/i) || [])[1] || ''); if (!t) continue;
+      const dt = strip((sg.match(/class=["']list_table_dates["'][^>]*>([\s\S]*?)<\/span>/i) || [])[1] || '');
+      const who = strip((sg.match(/class=["']sideview_a["'][\s\S]*?<span title=["']([^"']+)["']/i) || [])[1] || '') || null;
+      const hit = toNum(strip((sg.match(/list_table_col_hit[^>]*>([\s\S]*?)<\/div>/i) || [])[1] || ''));
+      const buy = cat === '삽니다' || /삽니다|구매합니다|구합니다|구입합니다|매입합니다|\[(?:구매|삽니다|구함)\]|\((?:구매|삽니다|구함)\)/.test(t);
+      const st = buy ? 'buy' : /판매\s*완료|거래\s*완료|\[완료\]|\(완료\)|완료\s*$|^완료|sold/i.test(t) ? 'sold' : /예약/.test(t) ? 'rsv' : 'sell';
+      const ps = dpPrices(t); const multi = dpMulti(t); const p = !multi && ps.length === 1 ? ps[0] : null;
+      out.push({ id, t, p, st, cat, at: dpDate(dt, now), who, hit, ...(multi ? { multi: true } : {}), ...(ps.length && p == null ? { pt: ps.slice(0, 4) } : {}), url: `https://dvdprime.com/g2/bbs/board.php?bo_table=market&wr_id=${id}` }); }
+    return out; }
+  ADP.dvdprime = async ({ title, http, cfg }) => { const q = mediaQuery(title); if (!q) return { skip: '제목 없음' }; const url = `https://dvdprime.com/g2/bbs/board.php?bo_table=market&sca=&sfl=wr_subject&sop=and&stx=${enc(q)}`;
+    const r = await http({ method: 'GET', url }); if (!okStatus(r)) return { ok: false, why: `HTTP ${r.status}` }; const H = String(r.text);
+    if (!/bo_table[=_]market/.test(H) || !/list_search_div|name=["']fsearch["']/.test(H)) return probe(H, /login|로그인/.test(H.slice(0, 20000)) && !/list_row_/.test(H) ? '장터 목록 대신 다른 화면(로그인 등)이 옴' : '장터 목록 화면이 아님', url);
+    const all = dpParse(H); const items = all.filter((x) => !x.cat || DP_MEDIA_CAT.includes(x.cat) || x.cat === '삽니다');
+    const L = items.map((x) => ({ ...x, sim: simMedia(title, x.t) })).sort((a, b) => b.sim - a.sim || (a.p || 0) - (b.p || 0)).slice(0, 60); const o = { ok: true, d: { q, url, n: L.length, items: L } }; o.d.cats = all.reduce((m, x) => { const k = x.cat || '?'; m[k] = (m[k] || 0) + 1; return m; }, {}); o.d.buyN = o.d.items.filter((x) => x.st === 'buy').length; o.d.noPrice = o.d.items.filter((x) => x.p == null && x.st !== 'buy').length; o.d.note = '목록 화면엔 값이 없어 제목에 값이 하나만 적힌 글만 값을 씀 — 나머지는 글 수만'; return o; };
+
   /* ── 외국: eBay 공식 Browse API (미국 eBay · 한국으로 배송되는 즉시 구매 매물만 · 한국까지 배송비 포함) ── */
   const b64 = (s) => (typeof btoa === 'function' ? btoa(s) : Buffer.from(s, 'utf8').toString('base64'));
   async function ebayToken({ keys, http, cache }) { const c = cache || {}; if (c.ebayTok && c.ebayTok.exp > Date.now() + 60000) return c.ebayTok.v;
@@ -268,25 +321,31 @@
   function foreignStats(items, fx, coef, grade) { const C = coef || { '최상': 1, '상': 0.95, '중': 0.85 }; const ex = { noShip: 0, noFx: 0, noGrade: 0 }; const used = [], fresh = []; let cur = null;
     for (const x of items || []) { if (x.ship == null) { ex.noShip++; continue; } const sh = toKrw(x.ship, x.shipCur || x.cur, fx), pp = toKrw(x.p, x.cur, fx); if (sh == null || pp == null) { ex.noFx++; continue; } cur = cur || x.cur; const tot = pp + sh;
       if (x.g === 'new') fresh.push(tot); else if (x.g && C[x.g]) used.push({ v: tot / C[x.g], g: x.g, tot }); else ex.noGrade++; }
-    const U = dropOutliers(used.map((u) => u.v)); const N = dropOutliers(fresh); const base = lowQ(U.keep); const g = grade && C[grade] ? grade : '최상';
+    const U = dropOutliers(used.map((u) => u.v)); const N = dropOutliers(fresh); const base = lowQ(U.keep); const g = grade && C[grade] ? grade : grade ? null : '최상'; /* (0.3.0) 계수가 없는 등급('하' 등)은 값 없이 — 예전엔 '최상'으로 셈(비싸게 나옴) */ const cg = g ? C[g] : null;
     const byG = {}; used.forEach((u) => { byG[u.g] = (byG[u.g] || 0) + 1; });
-    return { n: (items || []).length, nUsed: used.length, nNew: fresh.length, ex, outUsed: U.out.length, outNew: N.out.length, base: base != null ? Math.round(base) : null, grade: g, value: base != null ? Math.round(base * C[g]) : null, usedMin: U.keep.length ? Math.round(U.keep[0] * C[g]) : null, usedMed: U.keep.length ? Math.round(median(U.keep) * C[g]) : null, newLowQ: N.keep.length ? Math.round(lowQ(N.keep)) : null, newMin: N.keep.length ? Math.round(N.keep[0]) : null, byG, fxDate: fx && fx.date, fxSrc: fx && fx.src, cur }; }
+    return { n: (items || []).length, nUsed: used.length, nNew: fresh.length, ex, outUsed: U.out.length, outNew: N.out.length, base: base != null ? Math.round(base) : null, grade: g, ...(g ? {} : { noCoef: grade }), value: base != null && cg ? Math.round(base * cg) : null, usedMin: U.keep.length && cg ? Math.round(U.keep[0] * cg) : null, usedMed: U.keep.length && cg ? Math.round(median(U.keep) * cg) : null, newLowQ: N.keep.length ? Math.round(lowQ(N.keep)) : null, newMin: N.keep.length ? Math.round(N.keep[0]) : null, byG, fxDate: fx && fx.date, fxSrc: fx && fx.src, cur }; }
   /* 중고 장터 시세: 제목이 닮은 글(설정 '같은 책 닮음' 이상)만 · 값이 너무 낮은 글(나눔·가격 문의) 빼고 · 판매중·예약과 판매완료를 나눠 · 튀는 값 뺀 뒤 가장 싼 값·가운데 값·낮은 쪽 25% 가운데 값 */
   function usedStats(d, th, minP) { const T = th ?? CFG_DEF.sim, M = minP ?? CFG_DEF.usedMinPrice; const L = ((d && d.items) || []).filter((x) => (x.sim ?? 0) >= T && x.p != null && x.p >= M);
     const f = (a) => { const o = dropOutliers(a.map((x) => x.p)); return { n: a.length, out: o.out.length, min: o.keep.length ? o.keep[0] : null, med: o.keep.length ? Math.round(median(o.keep)) : null, lowQ: o.keep.length ? Math.round(lowQ(o.keep)) : null }; };
-    return { match: L.length, all: ((d && d.items) || []).length, sell: f(L.filter((x) => x.st !== 'sold')), sold: f(L.filter((x) => x.st === 'sold')) }; }
+    return { match: L.length, all: ((d && d.items) || []).length, sell: f(L.filter((x) => x.st !== 'sold' && x.st !== 'buy')), sold: f(L.filter((x) => x.st === 'sold')), buy: ((d && d.items) || []).filter((x) => (x.sim ?? 0) >= T && x.st === 'buy').length }; } /* (0.3.0) '삽니다' 글(사려는 사람)은 파는 값에 섞지 않고 수만 */
   /* 기본 정보 합치기: 칸마다 정한 차례(설정 basicOrder)에서 처음 값이 있는 출처 — 어디서 왔는지(from)도 같이 */
   const BASIC_FIELDS = [['title', '제목'], ['sub', '부제'], ['authors', '지은이'], ['translators', '옮긴이'], ['publisher', '출판사'], ['pubDate', '출간일'], ['pages', '쪽수'], ['size', '크기'], ['weightG', '무게(g)'], ['priceList', '정가'], ['kdc', 'KDC 분류'], ['series', '시리즈'], ['lang', '언어'], ['desc', '소개']];
   function mergeBasic(doc, order) { const O = (order && order.length ? order : BASIC_ORDER).filter((k) => SOURCES[k] && SOURCES[k].grp === 'basic'); const src = (doc && doc.src) || {}; const out = {}, from = {}, diff = {};
     for (const [f] of BASIC_FIELDS) { const vals = []; for (const k of O) { const v = src[k] && src[k].d ? src[k].d[f] : null; if (v != null && v !== '') vals.push([k, v]); } if (vals.length) { out[f] = vals[0][1]; from[f] = vals[0][0]; const norm = (v) => (typeof v === 'number' ? v : String(v).replace(/\s+/g, '').toLowerCase()); const set = new Set(vals.map(([, v]) => norm(v))); if (set.size > 1 && f !== 'desc') diff[f] = vals.map(([k, v]) => ({ k, v })); } }
     return { v: out, from, diff }; }
   /* 저장할 때 '같은 내용인지' 보는 지문 — 시각처럼 늘 바뀌는 칸은 빼고 */
-  function sig(d) { const norm = (x) => { if (Array.isArray(x)) return x.map(norm); if (x && typeof x === 'object') { const o = {}; Object.keys(x).sort().forEach((k) => { o[k] = norm(x[k]); }); /* 모든 칸을 봄(표·글 날짜까지) — 조금이라도 다르면 '바뀜'으로 옛 값을 남김 */ return o; } return x; }; const s = JSON.stringify(norm(d)); let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h.toString(36) + ':' + s.length; }
+  const SIG_SKIP = new Set(['hit', 'ago']); /* (0.3.0) 늘 바뀌는 칸(조회수·'3분 전') — 같은 글인데 '바뀜'으로 옛 값을 매번 쌓던 것 */
+  function sig(d) { const norm = (x) => { if (Array.isArray(x)) return x.map(norm); if (x && typeof x === 'object') { const o = {}; Object.keys(x).sort().forEach((k) => { if (SIG_SKIP.has(k)) return; o[k] = norm(x[k]); }); /* 모든 칸을 봄(표·글 날짜까지) — 조금이라도 다르면 '바뀜'으로 옛 값을 남김 */ return o; } return x; }; const s = JSON.stringify(norm(d)); let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h.toString(36) + ':' + s.length; }
   const shard = (isbn) => (+String(isbn).slice(-2) || 0) % 8; // 출처별 '언제 봤나' 색인을 8개 문서로 나눔(문서 하나가 1MB를 넘지 않게)
 
+  /* (0.3.0) 이 출처로 이 상품을 물을지 — 수집기·클라우드가 같은 기준을 쓰게 여기 한 곳에 (b: { isbn(ISBN 또는 B바코드·U상품코드), title, media }) */
+  function eligible(src, b, cfg) { const s = SOURCES[src]; if (!s || !b) return false; const g = s.grp; const isI = /^97[89]\d{10}$/.test(String(b.isbn || ''));
+    if (s.media) return s.media.includes(b.media) && !!b.title; /* 영상·음반 전용 장터(DVDPrime) */
+    if (!isI) return g === 'used' && src !== 'yes24used' && !!b.title; /* ISBN 없는 상품: 장터 시세만 */
+    if (g === 'foreign' && !(cfg && cfg.foreignKr) && isKrIsbn(b.isbn)) return false; if ((g === 'used' && src !== 'yes24used') || g === 'ebook') return !!b.title; return true; }
   async function run(src, a) { const f = ADP[src]; if (!f) return { ok: false, why: '모르는 출처' }; const s = SOURCES[src]; if (!keysReady(src, a.keys)) return { skip: '키 없음' };
     if (s.grp === 'used' && src !== 'yes24used' && !a.title) return { skip: '제목 없음' }; try { return await f(a); } catch (e) { return { ok: false, why: e.message || String(e) }; } }
 
-  const api = { VERSION, VIA_JOONGMO, keyOf, isIsbnKey, jmParse, KEYS, GROUPS, SOURCES, ORDER, BASIC_ORDER, BASIC_FIELDS, CFG_DEF, cfgOf, keysReady, isKrIsbn, coreTitle, sim, marketQuery, jsonBlobs, findListings, tableKV, meta, strip, ymd, toNum, run, fxRun, toKrw, median, lowQ, dropOutliers, foreignStats, usedStats, mergeBasic, sig, shard, stOf, FX_CUR, _adp: ADP, _pageBook: pageBook };
+  const api = { VERSION, VIA_JOONGMO, eligible, mediaQuery, mediaCore, simMedia, dpParse, _dpDate: (s, n) => dpDate(s, n), keyOf, isIsbnKey, jmParse, KEYS, GROUPS, SOURCES, ORDER, BASIC_ORDER, BASIC_FIELDS, CFG_DEF, cfgOf, keysReady, isKrIsbn, coreTitle, sim, marketQuery, jsonBlobs, findListings, tableKV, meta, strip, ymd, toNum, run, fxRun, toKrw, median, lowQ, dropOutliers, foreignStats, usedStats, mergeBasic, sig, shard, stOf, FX_CUR, _adp: ADP, _pageBook: pageBook };
   if (typeof module === 'object' && module.exports) module.exports = api; root.ReadnowExt = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

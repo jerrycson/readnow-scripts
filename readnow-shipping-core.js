@@ -8,7 +8,7 @@
 // ==========================================================================
 (function (root) {
   'use strict';
-  const VERSION = '0.5.1';
+  const VERSION = '0.5.2';
   const T = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
   const toInt = (s) => { const n = parseInt(String(s || '').replace(/[^\d-]/g, ''), 10); return isNaN(n) ? null : n; };
 
@@ -90,7 +90,7 @@
   const cutOf = (dateKey, opt) => { const o = opt || {}; return cutMin(o.dayCut && o.dayCut[dateKey]) ?? cutMin(o.cutTime) ?? cutMin(DEFAULT_CUT); };
   const cutIsSet = (dateKey, opt) => !!(opt && opt.dayCut && cutMin(opt.dayCut[dateKey]) != null);
   // 주문의 출고일(출고 묶음): 영업일이고 그날 마감 전 주문 → 그날, 아니면 다음 영업일
-  function dueShipDay(orderedAt, opt) { const o = opt || {}; const t = new Date(String(orderedAt).replace(' ', 'T') + (/[+Z]/.test(String(orderedAt)) ? '' : '+09:00'));
+  function dueShipDay(orderedAt, opt) { const o = opt || {}; if (orderedAt == null || orderedAt === '') return null; const t = new Date(String(orderedAt).replace(' ', 'T') + (/[+Z]/.test(String(orderedAt)) ? '' : '+09:00')); if (isNaN(t.getTime())) return null; /* (0.5.2) 날짜를 못 읽으면 null(예전엔 오류로 멈춤) */
     const k = ymd(t); const hm = new Date(t.getTime() + 9 * 3600e3).toISOString().slice(11, 16); const mins = +hm.slice(0, 2) * 60 + +hm.slice(3, 5);
     return isBizDay(t, o.holidays) && mins < cutOf(k, o) ? k : ymd(nextBizDay(t, o.holidays)); }
 
@@ -114,7 +114,8 @@
     return aoa.slice(hi + 1).filter((r) => r && r[c('운송장번호')]).map((r) => ({ invoice: String(r[c('운송장번호')]).replace(/\D/g, ''), name: String(r[c('수하인명')] || '').trim(), title: String(r[c('상품명')] || '').trim(), sku: String(r[c('상품상세내용')] || '').trim(),
       packKey: c('합포장키') >= 0 ? String(r[c('합포장키')] || '') : '', mgmtNo: c('관리번호') >= 0 ? String(r[c('관리번호')] || '') : '', printed: c('출력여부') >= 0 ? String(r[c('출력여부')] || '') : '', pickedAt: c('집하일자') >= 0 ? String(r[c('집하일자')] || '') : '' }));
   }
-  const nTitle = (t) => String(t || '').replace(/^\[중고[^\]]*\]\s*/, '').replace(/[\s\W_]+/g, '').toLowerCase();
+  const nTitle = (t) => String(t || '').replace(/^\[중고[^\]]*\]\s*/, '').replace(/[^\p{L}\p{N}]+/gu, '').toLowerCase(); /* (0.5.2) 한글을 남김 — 예전 [\W]는 한글까지 지워 한국 책 제목이 모두 빈 글자 → 같은 받는 사람의 두 책 송장이 뒤바뀔 수 있었음 */
+  const tEq = (a, b) => a === b || (a.length >= 4 && b.length >= 4 && (a.startsWith(b) || b.startsWith(a))); /* 운송장 목록의 상품명이 잘려 있어도 앞부분이 같으면 같은 책 */
   const nName = (t) => String(t || '').replace(/\(.*?\)/g, '').replace(/\s+/g, '').toLowerCase();
   // 주문마다: ok(운송장 하나로 다 맞음) · partial(일부 상품만 맞음, 운송장 하나) · many(운송장이 여럿 — 확인 필요) · none(못 찾음)
   function matchInvoices(orders, waybills) {
@@ -123,9 +124,11 @@
       // (0.5.1) 관리코드가 양쪽에 있고 같을 때만 이름 앞부분 일치(김민 ↔ 김민수)를 허용 · 관리코드가 한쪽에 없으면 이름이 똑같아야 · 관리코드가 서로 다르면 '약한 맞음' → 확인이 필요한 partial
       let weak = 0;
       for (const it of o.items || []) { const t = nTitle(it.title || it.titleRaw); const same = (w) => nName(w.name) === rn;
-        let k = waybills.findIndex((w, i) => !used.has(i) && nTitle(w.title) === t && w.sku && it.sku && w.sku === it.sku && nameOk(nName(w.name), rn));
-        if (k < 0) k = waybills.findIndex((w, i) => !used.has(i) && nTitle(w.title) === t && (!w.sku || !it.sku) && same(w));
-        if (k < 0) { k = waybills.findIndex((w, i) => !used.has(i) && nTitle(w.title) === t && same(w)); if (k >= 0) weak++; }
+        /* (0.5.2) 제목이 똑같은 운송장을 먼저 · 없을 때만 잘린 제목(앞부분 같음)을, 그것도 하나뿐일 때만 — '해리포터 1'과 '해리포터 10'을 바꿔 붙이지 않게 */
+        const pickT = (pred) => { let k0 = waybills.findIndex((w, i) => !used.has(i) && nTitle(w.title) === t && pred(w)); if (k0 >= 0) return [k0, false]; const C = waybills.map((w, i) => i).filter((i) => !used.has(i) && tEq(nTitle(waybills[i].title), t) && pred(waybills[i])); return C.length === 1 ? [C[0], true] : [-1, false]; };
+        let [k, pre] = pickT((w) => w.sku && it.sku && w.sku === it.sku && nameOk(nName(w.name), rn));
+        if (k < 0) [k, pre] = pickT((w) => (!w.sku || !it.sku) && same(w));
+        if (k < 0) { [k, pre] = pickT((w) => same(w)); if (k >= 0) weak++; } else if (pre) weak++; /* 잘린 제목으로 맞춘 것은 '확인 필요' */
         if (k >= 0) { used.add(k); hits.push(waybills[k]); } }
       const inv = [...new Set(hits.map((w) => w.invoice))]; const n = (o.items || []).length;
       out.push({ orderNo: o.orderNo, recipient: (o.recipient && o.recipient.name) || o.buyer || '', items: (o.items || []).map((i) => i.title), invoice: inv.length === 1 ? inv[0] : inv[0] || null, invoices: inv,

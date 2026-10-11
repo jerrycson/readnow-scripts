@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.15.2'; // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
+  const VERSION = '0.15.3'; // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -93,7 +93,7 @@
 
   // ───────────────────────── 작은 도구 ─────────────────────────
   const HOUR = 3600e3, DAY = 864e5;
-  const t = (iso) => (iso == null ? null : typeof iso === 'number' ? iso : Date.parse(String(iso).length === 10 ? iso + 'T00:00:00+09:00' : iso));
+  const t = (iso) => { if (iso == null || iso === '') return null; if (typeof iso === 'number') return Number.isFinite(iso) ? iso : null; if (iso instanceof Date) return iso.getTime(); if (typeof iso === 'object') { if (typeof iso.toMillis === 'function') return iso.toMillis(); if (iso.seconds != null) return iso.seconds * 1000 + Math.round((iso.nanoseconds || 0) / 1e6); return null; } const v = Date.parse(String(iso).length === 10 ? iso + 'T00:00:00+09:00' : iso); return Number.isFinite(v) ? v : null; }; /* (0.15.3) Firestore 시각(Timestamp·{seconds})·Date도 · 못 읽으면 null */
   const merge = (a, b) => { const o = JSON.parse(JSON.stringify(a)); for (const k of Object.keys(b || {})) { if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k]) && o[k] && typeof o[k] === 'object') o[k] = merge(o[k], b[k]); else if (b[k] !== undefined) o[k] = b[k]; } return o; };
   /* (0.15.2) 기본 설정 + 덮어쓸 설정 → 합친 설정을 내용(글자)마다 한 번만 만듦. 합친 설정은 엔진 안에서 읽기만 하므로(바꾸는 곳 없음) 같은 것을 다시 써도 결과가 같음 */
   const _mergeC = new Map(); let _mergeId = null; const _mergeE = {}; /* 같은 일(한 번의 계산 묶음) 안에서는 같은 설정 객체 → 바로 찾음. 일이 끝나면(약속 차례) 잊음 → 그 뒤 설정을 고쳐도 다시 봄 */
@@ -134,7 +134,7 @@
   // ───────────────────────── 남는 돈과 하한선 ─────────────────────────
   // 한 권 팔았을 때 손에 남는 돈 (매입원가 빼기 전): 판매가 − 수수료 − 주문당 비용(택배 − 고객 배송비 + 포장재) ÷ 주문당 평균 권수
   function sellNet(p, ctx, S) {
-    const pol = ctx.policy || {}; const custShip = pol.freeOver != null && p >= pol.freeOver ? 0 : (pol.fee || 0);
+    if (!S || S.feeRate == null || S.packPerOrder == null || S.courierPerOrder == null || S.booksPerOrder == null) S = mergeD(S); /* (0.15.3) 설정 일부만 넘겨도 기본값을 채움 — 예전엔 NaN → 최소가 1,000만 원 */ const pol = (ctx && ctx.policy) || {}; const custShip = pol.freeOver != null && p >= pol.freeOver ? 0 : (pol.fee || 0);
     const orderCost = S.packPerOrder + Math.max(0, S.courierPerOrder - custShip);
     return p * (1 - S.feeRate) - orderCost / Math.max(1, S.booksPerOrder);
   }
@@ -150,7 +150,7 @@
   // 매입가 하한가 = 팔아서 손에 남는 돈(판매가 − 수수료 − 주문당 비용)이 알라딘 매입가와 같아지는 판매가.
   // 목표가가 그보다 낮아도 차이가 buybackTolerance(10%) 안이면 그대로 둠(최저가 자리가 더 중요) — 10% 넘게 낮을 때만 하한가에 멈추고 '알라딘에 팔기' 검토로 표시
   function floors(listing, tier, ctx, S) {
-    const bb = listing.grade && ctx.buyback && (S.buybackGrades || []).includes(listing.grade) ? ctx.buyback[listing.grade] : null; // 중은 알라딘이 사지 않음
+    ctx = ctx || {}; if (!S || S.buybackGrades == null) S = mergeD(S); const bb = listing.grade && ctx.buyback && (S.buybackGrades || []).includes(listing.grade) ? ctx.buyback[listing.grade] : null; // 중은 알라딘이 사지 않음
     const fBuyback = bb ? minPriceFor(bb, ctx, S) : null;
     return { buyback: bb || null, fBuyback, tolerance: S.buybackTolerance, applied: fBuyback };
   }
@@ -190,12 +190,14 @@
 
     // 0. 대상: 판매중만
     if (listing.status && listing.status !== '판매중') { R.push(`판매 상태가 '${listing.status}' — 수정 모드는 판매중만`); return done('skip', { action: 'none' }); }
+    if (!(Number(listing.price) > 0)) { R.push('지금 판매가를 모름 — 사람이 확인'); return done('queue', { action: 'review', why: 'noPrice' }); } /* (0.15.3) 값이 없으면 계산하다 멈추던 것 */
     // 재고 기간 = '최저가 등록 기간'(측정값). 임시 기준은 '감시 시작일(cutoverAt) 전에 등록된 상품'에만, 그리고 스스로 끝남:
     //   임시 단계 = 감시 시작일 당시의 등록 후 일수로 고정(시간이 지나도 늘지 않음) → 최대 tempTierCap(T3)
     //   적용 단계 = max(측정 단계, 임시 단계) → 측정 단계가 T3에 닿는 순간 임시는 의미가 없어짐
     //   감시 시작일 + tempSunsetDays(365일)가 지나면 임시 기준은 코드에서 완전히 꺼짐 (그 뒤엔 측정값만)
     //   → 1년 뒤 '등록 2년차'로 잘못 뛰는 일 없음: 감시 전 시간은 T3 이상으로 절대 세지 않고, 감시 뒤에는 최저가를 지킨 날만 셈
     const regDays = Math.floor((now - t(listing.registeredAt)) / DAY);
+    if (t(listing.registeredAt) == null || !Number.isFinite(regDays)) { R.push('등록일을 읽지 못함 — 재고 기간(단계)을 셀 수 없어 사람이 확인 (예전엔 불용으로 잘못 갈 수 있었음)'); return done('queue', { action: 'review', why: 'noRegDate' }); } /* (0.15.3) */
     const lw = listing.lowest || { days: 0 }; const lowDays = Math.floor(lw.days || 0);
     const cut = S.cutoverAt ? t(S.cutoverAt) : null;
     const legacy = cut != null && t(listing.registeredAt) < cut;
@@ -321,6 +323,7 @@
     else if (out.ref.isFirst) { const tie = Math.max(10, ref.price + (ref.ship || 0) - ourShip); base = S.advPct > 0 ? snapDown(tie * (1 - S.advPct)) : tie; if (S.advPct > 0 && base >= tie) base = stepDown(tie); rule = `맨 위지만 배송비가 우리보다 ${((ref.ship || 0) - ourShip).toLocaleString()}원 비쌈 → 판매가 동가로 맞추면 배송비 차이만큼 마진을 버림 → 총액 기준 ${Math.round(S.advPct * 100)}% 이점`; }
     else { const tie = Math.max(10, ref.price + (ref.ship || 0) - ourShip); if (S.advPct > 0) { base = snapDown(tie * (1 - S.advPct)); if (base >= tie) base = stepDown(tie); rule = `총액 동가 ${tie.toLocaleString()}원에서 구매자 이점 ${Math.round(S.advPct * 100)}%`; } else { base = tie; rule = `배송비 포함 총액이 기준 매물과 정확히 같게 (기준 ${ref.price.toLocaleString()}+${(ref.ship || 0).toLocaleString()}, 우리 배송비 ${ourShip.toLocaleString()})`; } }
 
+    if (base != null && ref.price && base < ref.price * 0.5) { block.push('배송비 차이로 목표가가 기준 판매가의 절반 아래 — 사람 확인'); R.push(`기준 판매가 ${ref.price.toLocaleString()}원인데 배송비 차이를 빼면 ${Number(base).toLocaleString()}원 — 너무 낮아 자동으로 바꾸지 않음`); } /* (0.15.3) 예: 기준 1,500원·배송비 0 vs 우리 배송비 2,500원 → 10원 */
     // 7. 재고 기간 할인 (보호·희소는 할인 없음). 추격자가 기준이면 '맨 위 동가'보다 더 내리지 않음
     let d = T.disc[S.discPick === 'high' ? 1 : 0];
     if (listing.protect || rare) d = 0;
@@ -473,7 +476,7 @@
     if (t != null && cur != null && c.dir === 'down' && t > cur) { R.push(`내림만 — 올리지 않음 (${t.toLocaleString()}원 대신 지금 가격)`); t = cur; }
     if (t != null && cur != null && c.dir === 'up' && t < cur) { R.push(`올림만 — 내리지 않음 (${t.toLocaleString()}원 대신 지금 가격)`); t = cur; }
     if (t != null && cur && +c.maxRise > 0 && t > cur * (1 + c.maxRise / 100)) { const f = snapDown(cur * (1 + c.maxRise / 100)); R.push(`지금 가격 대비 최대 ${c.maxRise}% 인상으로 제한 → ${f.toLocaleString()}원`); t = Math.max(cur, f); }
-    const fbb = c.bb && ['최상', '상'].includes(l.grade) && buyback && buyback[l.grade] ? minPriceFor(buyback[l.grade], ctx, DEFAULTS) : null;
+    const fbb = c.bb && ['최상', '상'].includes(l.grade) && buyback && buyback[l.grade] ? minPriceFor(buyback[l.grade], ctx || {}, mergeD((ctx && ctx.settings) || null)) : null; /* (0.15.3) 사용자 설정(수수료·택배)으로 — decide와 같은 하한 */
     if (t != null && fbb && t < fbb) { R.push(`알라딘 매입가(${l.grade} ${buyback[l.grade].toLocaleString()}원) 하한 ${fbb.toLocaleString()}원으로 올림`); t = fbb; out.bbHit = { buy: buyback[l.grade], floor: fbb }; }
     if (t != null && +c.minPrice && t < +c.minPrice) { R.push(`최소 판매가 ${(+c.minPrice).toLocaleString()}원으로 올림`); t = +c.minPrice; }
     if (t != null && +c.maxDrop && l.price && t < l.price * (1 - c.maxDrop / 100)) { const f = snapUp(l.price * (1 - c.maxDrop / 100)); R.push(`지금 가격 대비 최대 ${c.maxDrop}% 인하로 제한 → ${f.toLocaleString()}원`); t = f; }
@@ -492,7 +495,7 @@
    *    lift   끌어올리기 — 우리 값을 liftStep%씩 올려 추격자가 따라 올라오면 되풀이(상한 = 다음 유효 매물 값·시작 가격 +liftCap%), 따라오지 않으면 멈춤
    *  안전: 모든 전략은 floor(조건 묶음 하한·매입가 하한·최소 판매가) 아래로 내리지 않음. lure의 유인 하한 = max(floor, 시작 가격 × (1 − floorPct%)) */
   function chaseMap(ourActs, changeDocs, now0, S0) { const S = mergeD(S0); const ours = (ourActs || []).filter((a) => a && a.at && a.to != null).map((a) => ({ at: a.at, price: +a.to }));
-    const theirs = []; for (const doc of changeDocs || []) { if (!doc || !doc.at) continue; for (const c of doc.chg || []) { const f = (c.f || {}).price; if (!f || !(f[1] < f[0])) continue; const sc = String(c.sellerCode || ''); if (!sc || sc === '996008') continue; theirs.push({ sellerCode: sc, at: doc.at, price: f[1] }); } }
+    const theirs = []; for (const doc of changeDocs || []) { if (!doc || !doc.at) continue; for (const c of doc.chg || []) { const f = (c.f || {}).price; if (!f || !(f[1] < f[0])) continue; const sc = String(c.sellerCode || ''); if (!sc || sc === String(S.ourSeller || '996008')) continue; /* (0.15.3) 설정의 우리 판매자 번호 */ theirs.push({ sellerCode: sc, at: doc.at, price: f[1] }); } }
     return chaseState(chaseEvents(ours, theirs, S), now0, S); }
   function chaserOn(page1, chase, grade) { const myR = GRADE_RANK[grade]; let best = null; // 우리보다 같거나 좋은 등급의 추격자 매물(첫 페이지) 중 가장 싼 것
     for (const w of page1 || []) { if (!w || w.c === 'ours') continue; const sc = String(w.sc || w.sellerCode || ''); if (!sc || !(chase && chase[sc] && chase[sc].active)) continue; const r = GRADE_RANK[w.g || w.grade]; if (myR != null && (r == null || r < myR)) continue; const p = +(w.p ?? w.price); if (!(p > 0)) continue; if (!best || p < best.price) best = { sellerCode: sc, name: w.n || w.sellerName || null, price: p, grade: w.g || w.grade || null }; }

@@ -1,7 +1,7 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.58.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.59.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.58.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.59.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -228,7 +228,7 @@
     /* 알림·확인 창: 사람이 보는 화면은 기록하고 그대로 띄움 · 자동(틀 안)은 기록만 — 확인 창은 '등록·저장하시겠습니까'만 예, 그 밖(중복 경고 등)은 아니오(보내지 않음) */
     function hook(sink, auto) { const nA = W0.alert, nC = W0.confirm;
       W0.alert = function (msg) { sink.push(String(msg).slice(0, 200)); if (!auto) return nA.call(W0, msg); };
-      W0.confirm = function (msg) { const m = String(msg); sink.push('(확인) ' + m.slice(0, 200)); if (!auto) return nC.call(W0, msg); return /(등록|저장|진행)\s*하시겠습니까/.test(m) && !/중복|이미|다시/.test(m); }; }
+      W0.confirm = function (msg) { const m = String(msg); if (!auto) { sink.push('(확인) ' + m.slice(0, 200)); return nC.call(W0, msg); } const yes = /(등록|저장|진행)\s*하시겠습니까/.test(m) && !/중복|이미|다시/.test(m); sink.push((yes ? '(확인✓) ' : '(확인✗) ') + m.slice(0, 200)); return yes; }; } /* (1.59.0) 자동으로 '예'를 누른 확인 창(✓)과 '아니오'(✗)를 나눠 남김 — ✓가 있으면 알라딘에 보냈을 수 있음 */
     return { fill, attachImages, attachOne, photoTodo, prep, hook, $ }; }
   window.__rnRegMake = makeFiller;
   /* ── 창 없이 하는 자동 등록 (웹앱 '🤖 자동 등록' → 맡긴 일 regOne auto): 보이지 않는 틀 안에 알라딘 등록 화면을 열고 같은 방법으로 채움 → 못 채운 칸이 하나라도 있으면 보내지 않음 → 보냄 → 화면이 바뀌면 공개 확인 ── */
@@ -252,8 +252,8 @@
         await C('reg_items').doc(itemId).set({ mockResult: { at: nowIso(), ok: true, msg, fill: fillTxt, kind: 'auto' }, autoCmd: null, lookErr: null, uploadedAt: TS() }, { merge: true }).catch(() => {}); return; }
       let P; try { P = await F.prep(itemId, it, plan, rep, id); } catch (e) { return await notSent(e.message, { fill: fillTxt }); }
       const al = []; F.hook(al, true); const nav = loaded(30000); try { W.frmRecord_submit_C2C(false, '6', plan.method === 'one'); } catch (e) { al.push('보내기 함수 오류: ' + e.message); }
-      const went = await nav; const errA = al.some((a) => ERR_RE.test(a) || /^\(확인\)/.test(a));
-      if (!went && al.length) { /* 화면이 그대로 + 알림 = 알라딘이 막음 → 보내지 않음으로 되돌림 */
+      const went = await nav; const errA = al.some((a) => ERR_RE.test(a) || /^\(확인[✗)]/.test(a)); const accepted = al.some((a) => /^\(확인✓\)/.test(a));
+      if (!went && al.length && !accepted) { /* (1.59.0) '등록하시겠습니까'에 예를 눌렀으면(보냈을 수 있음) 화면이 30초 안에 안 바뀌어도 '막음'으로 되돌리지 않음 — 되돌리면 다음 자동 등록이 같은 책을 또 올릴 수 있었음 → 아래 '보냄'으로 두고 지킴이가 공개 확인 */ /* 화면이 그대로 + 알림 = 알라딘이 막음 → 보내지 않음으로 되돌림 */
         await P.ref.set({ status: 'fail', sent: false, msg: '알라딘이 입력을 막음: ' + al.join(' / ').slice(0, 300), results: { [itemId]: { state: 'fail', at: nowIso(), msg: al.join(' / ').slice(0, 200) } }, doneAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {});
         await C('reg_items').doc(itemId).set({ stage: 'pick', cmdId: null, final: null, autoCmd: null, lookErr: '🤖 알라딘 등록 화면: ' + al.join(' / ').slice(0, 200), uploadedAt: TS() }, { merge: true }).catch(() => {});
         await P.X.finish(db, { kind: 'regOne', key: P.execKey }, 'failed', { msg: al.join(' / ') }).catch(() => {}); return; }
