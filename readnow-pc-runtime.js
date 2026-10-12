@@ -1,10 +1,17 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.63.5의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.63.6의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.63.5' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.63.6' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
  * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
+/* (1.63.6 전체 점검) 팝업 대신 화면 위 알림 띠 — alert()는 사람이 '확인'을 누를 때까지 탭 전체(잠금 신호·⏰ 자동·실시간 듣기)를 멈춰, 사람이 없는 PC에서 다른 PC까지 모두 막혔음
+ *  __rnNote(글, 'err'|'warn') = 위에 띠를 띄우고(누르면 닫힘 · 같은 글은 한 번만) 기록에도 남김 · __rnUserAt = 사람이 마지막으로 누른 때(확인 창은 사람이 막 누른 때만) */
+(function () { const G = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window; try { document.addEventListener('pointerdown', () => { window.__rnUserAt = Date.now(); }, true); document.addEventListener('keydown', () => { window.__rnUserAt = Date.now(); }, true); } catch (e) {}
+  window.__rnHuman = (ms) => Date.now() - (window.__rnUserAt || 0) < (ms || 4000);
+  window.__rnNote = (msg, kind) => { try { console.warn('[리드나우]', msg); const show = () => { let box = document.getElementById('rn-note-box'); if (!box) { box = document.createElement('div'); box.id = 'rn-note-box'; box.style.cssText = 'position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:2147483647;max-width:min(720px,92vw);display:flex;flex-direction:column;gap:4px;font:13px/1.45 system-ui,sans-serif'; document.body.appendChild(box); }
+        if ([...box.children].some((x) => x.dataset.msg === msg)) return; const d = document.createElement('div'); d.dataset.msg = msg; d.style.cssText = `background:${kind === 'warn' ? '#FFF4E0;color:#7A4A00;border:1px solid #E8B860' : '#FDE8E6;color:#8A2420;border:1px solid #E7B4AE'};border-radius:8px;padding:8px 12px;white-space:pre-wrap;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer`; d.textContent = msg + '  (누르면 닫힘)'; d.onclick = () => d.remove(); box.appendChild(d); };
+      if (document.body) show(); else document.addEventListener('DOMContentLoaded', show); } catch (e) {} }; })();
 /* ═════════════ 이 PC 이름: 한 곳에서 관리 ═════════════
  * 스크립트 저장공간(GM)과 알라딘 사이트의 브라우저 저장공간(localStorage) 두 곳에 함께 둠 → 스크립트를 다시 설치·교체해도 이름이 남음.
  * 고객 쪽(rn-pc)·상품 쪽(pcName)·기록이 모두 같은 이름을 씀. 자동 작업 중에는 묻지 않고, 버튼을 눌렀을 때만 한 번 물음. */
@@ -118,7 +125,7 @@
   const keys = () => { let n = null; try { n = GM_getValue('rnu-pcname', null) || GM_getValue('pcName', null) || (GM_getValue('rn-pc', {}) || {}).name || localStorage.getItem('rnu-pcname'); } catch (e) {} return n && String(n).trim() ? String(n).trim() : null; };
   const setAll = (n) => { n = String(n || '').trim(); if (!n) return; try { GM_setValue('rnu-pcname', n); GM_setValue('pcName', n); const pc = GM_getValue('rn-pc', null) || { id: Math.random().toString(36).slice(2, 10), name: '' }; if (pc.name !== n) { pc.name = n; GM_setValue('rn-pc', pc); } localStorage.setItem('rnu-pcname', n); } catch (e) {} };
   const cur = keys(); if (cur) setAll(cur); // 한 곳에만 있어도 모두 맞춤
-  window.__rnPcName = { get: keys, set: setAll, ask: (why) => { const v = keys(); if (v) return v; const n = prompt(`이 PC의 이름을 정해 주세요 (예: JS-MAIN, HOME). ${why || ''}\n한 번만 정하면 됩니다 — 새로고침·스크립트 교체 뒤에도 기억합니다.`); if (n && n.trim()) { setAll(n.trim()); return n.trim(); } return null; } };
+  window.__rnPcName = { get: keys, set: setAll, ask: (why) => { const v = keys(); if (v) return v; if (!window.__rnHuman(8000)) { window.__rnNote('이 PC의 이름이 아직 없습니다 — 수집기 개요에서 PC 이름을 정해 주세요 (사람이 없을 때는 묻지 않고 넘어감)', 'warn'); return null; } const n = prompt(`이 PC의 이름을 정해 주세요 (예: JS-MAIN, HOME). ${why || ''}\n한 번만 정하면 됩니다 — 새로고침·스크립트 교체 뒤에도 기억합니다.`); if (n && n.trim()) { setAll(n.trim()); return n.trim(); } return null; } };
 })();
 /* ═════════════ 작업 기록 (두 모듈 공통) ═════════════
  * 모든 진행(단계 시작·끝, 쪽·항목마다의 진행, 양보·기다림·오류)을 초 단위로 남김.
@@ -482,7 +489,7 @@
     else if (a.dataset.a === 'resume') { const S = stateOf(); if (S.busy.length) return alert('아직 멈추는 중입니다 — 멈춘 뒤에 눌러 주세요'); const R = resList().filter((r) => !r.running).sort((x, y) => (y.savedAt || 0) - (x.savedAt || 0)); window.__rnResumeOk && window.__rnResumeOk();
       const t = R[0]; if (t) { if (t.mod === 'crm') window.__rnCrm.resume(); else P.resume(t.key); } }
     else if (a.dataset.a === 'all') { if (!P) return alert('수집기가 아직 준비 중입니다. 잠시 뒤 눌러 주세요'); if (stateOf().busy.length) return alert('이미 작업 중입니다'); window.__rnResumeOk && window.__rnResumeOk(); set('ov'); P.startAll(); }
-    else if (a.dataset.a === 'res1') { window.__rnResumeOk && window.__rnResumeOk(); if (m === 'crm') window.__rnCrm.resume(); else P.resume(k); }
+    else if (a.dataset.a === 'res1') { window.__rnResumeOk && window.__rnResumeOk(); if (m === 'crm') window.__rnCrm.resume(); else { const r = P.resume(k); if (r && r.ok === false) { const row = a.closest('.rs'); let n = row && row.querySelector('.rs-why'); if (row && !n) { n = document.createElement('div'); n.className = 'rs-why'; n.style.cssText = 'flex-basis:100%;font-size:11.5px;color:#B0322A;margin-top:3px'; row.appendChild(n); } if (n) n.textContent = '✕ ' + r.why; return; } } }
     else if (a.dataset.a === 'dis1') { /* (1.63.2) 팝업 대신 단추 두 번 — 첫 누름은 '확정' 단추로 바뀜(4초) · 못 버리면 까닭을 그 줄 아래에 */ const row = a.closest('.rs'); const nm = (row.querySelector('b') || {}).textContent || k;
       if (a.dataset.arm !== '1') { a.dataset.arm = '1'; a.dataset.t0 = a.textContent; a.textContent = '확정'; a.title = `'${nm}'의 멈춘 자리만 잊음 — 받은 기록은 그대로, 다음엔 처음부터 훑되 이미 받은 것은 건너뜀`; a.style.background = '#B0322A'; a.style.color = '#fff'; setTimeout(() => { if (a.isConnected && a.dataset.arm === '1') { a.dataset.arm = ''; a.textContent = a.dataset.t0 || '버리기'; a.style.background = ''; a.style.color = ''; } }, 4000); return; }
       a.dataset.arm = ''; a.disabled = true; a.textContent = '지우는 중'; const r = m === 'crm' ? await window.__rnCrm.discard(k) : await P.discard(k);

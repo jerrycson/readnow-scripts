@@ -6,7 +6,7 @@
  * 이 파일이 바뀌어 새 워커가 켜지면, 열려 있던 웹앱 화면을 모두 새로 엶.
  * 자료(Firebase 기록)는 여기서 다루지 않음 — Firebase가 따로 실시간으로 받음.
  * 문제가 생기면: 주소 끝에 ?nosw=1 을 붙여 열면 이 워커를 끄고 저장본을 지움. */
-const CACHE = 'rn-app-v4'; /* sw 1.24.1 — 웹앱 본문(readnow-webapp.js?v=판)은 새 판을 받으면 옛 판 사본을 지움(1.5MB씩 쌓이지 않게) */
+const CACHE = 'rn-app-v4'; /* sw 1.24.3 — 판 번호 붙은 파일은 저장본만 ·  웹앱 본문(readnow-webapp.js?v=판)은 새 판을 받으면 옛 판 사본을 지움(1.5MB씩 쌓이지 않게) */
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil((async () => {
   const ks = await caches.keys(); const upgraded = ks.some((k) => /^rn-app-/.test(k) && k !== CACHE);
@@ -32,6 +32,7 @@ self.addEventListener('fetch', (e) => {
       const r2 = await net; return r2 || new Response('오프라인 — 저장된 웹앱이 없습니다', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
     }
     const hit = await c.match(key);
+    if (hit && u.origin === self.location.origin && u.searchParams.has('v')) return hit; /* (sw 1.24.3 전체 점검) 판 번호가 붙은 파일(웹앱 본문·공용 파일)은 같은 주소면 내용이 같음 → 다시 받지 않음(예전엔 열 때마다 3MB를 다시 받아 덮어 써 브라우저가 저장한 컴파일 결과가 버려졌음) */
     const net = fetch(req).then((r) => { if (r && (r.ok || r.type === 'opaque')) { c.put(key, r.clone()).then(async () => { if (u.origin !== self.location.origin || !u.search) return; for (const k of await c.keys()) { try { const ku = new URL(k.url); if (ku.pathname === u.pathname && ku.search !== u.search) await c.delete(k); } catch (x) {} } }).catch(() => {}); } return r; }).catch(() => null);
     if (hit) { e.waitUntil(net); return hit; } // 저장본을 바로 주고, 새 판은 뒤에서 받아 둠
     const r = await net; return r || new Response('오프라인 — 저장된 파일이 없습니다', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });

@@ -1,5 +1,6 @@
 # 리드나우 클라우드 자동 배포 — cloud/ 폴더가 바뀐 채로 main에 올라오면 Cloud Run(readnow-cloud · 서울)에 저절로 새 판을 올림
 #  · 비밀번호·열쇠 없음: GitHub가 주는 1회용 신분증(OIDC)을 구글이 확인(Workload Identity Federation) — 이 저장소의 main 가지에서만 통함
+#  · (전체 점검 2026-10-12) 준비가 끝났으므로 로그인 실패는 이제 빨간 실패로 — 예전엔 '준비 전'으로 보고 초록으로 넘어가 배포 안 된 것을 놓칠 수 있었음
 #  · 처음 한 번 준비(2026-10-12 끝남): Cloud Shell에서  curl -sL https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/cloud/setup-autodeploy.sh | bash
 #  · 기존 설정(비밀·메모리·예약 호출)은 그대로 두고 프로그램만 바꿈 — 비밀(알라딘 아이디·비밀번호)은 Secret Manager에만
 #  · 손으로 다시 올리기: GitHub 저장소 → Actions → '클라우드 자동 배포' → Run workflow
@@ -22,25 +23,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0 (node24 · 전체 점검 2026-10-12: v4는 node20이라 곧 막힘)
       - name: 문법 검사 (깨진 파일은 올리지 않음)
         run: |
           for f in cloud/*.js; do node --check "$f"; done
           echo "VER=$(grep -oP "^const VER = '\K[0-9.]+" cloud/index.js)" >> "$GITHUB_ENV"
       - id: auth
         name: 구글 로그인 (열쇠 없이 OIDC)
-        continue-on-error: true
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0 (node24)
         with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}' }
-      - name: 아직 준비 전이면 알림만
-        if: steps.auth.outcome != 'success'
-        run: |
-          echo "::warning::클라우드 자동 배포 준비가 아직 안 됨 — Cloud Shell에서 cloud/setup-autodeploy.sh를 한 번 실행하세요 (이번엔 올리지 않음)"
-          echo "### ⚠ 클라우드 자동 배포 준비 전 — Cloud Shell에서 setup-autodeploy.sh 한 번 실행" >> "$GITHUB_STEP_SUMMARY"
-      - if: steps.auth.outcome == 'success'
-        uses: google-github-actions/setup-gcloud@v2
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1 (node24)
       - name: Cloud Run 올리기 (빌드 3~6분)
-        if: steps.auth.outcome == 'success'
         working-directory: cloud
         run: |
           # 실패하면 마지막 줄들을 알림(annotation)으로 — GitHub 화면·Claude가 로그 파일 없이도 까닭을 봄
@@ -50,7 +43,6 @@ jobs:
             exit 1; fi
           tail -n 5 /tmp/deploy.log
       - name: 올라간 판 확인
-        if: steps.auth.outcome == 'success'
         run: |
           URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')
           for i in 1 2 3 4 5 6; do GOT=$(curl -fsS "$URL/status" | grep -oP '"ver":"\K[0-9.]+' || true); [ "$GOT" = "$VER" ] && break; sleep 10; done

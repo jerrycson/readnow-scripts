@@ -1,7 +1,7 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.63.5의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.63.6의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.63.5' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.63.6' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -254,10 +254,10 @@
    * B. 수집기 (주문조회 페이지)
    * ════════════════════════════════════════════════════════════ */
   const P = (typeof ReadnowOrders !== 'undefined' && ReadnowOrders) || window.ReadnowOrders || globalThis.ReadnowOrders;
-  if (!P) { alert('[리드나우 고객 수집기] 파서 파일(readnow-orders-core.js)을 불러오지 못했습니다. GitHub 주소를 확인해 주세요.'); return; }
+  if (!P) { window.__rnNote('[리드나우 고객 수집기] 파서 파일(readnow-orders-core.js)을 불러오지 못했습니다. GitHub 주소를 확인해 주세요.'); return; }
   const NEED_CORE = '0.3.0';
   const verNum = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
-  if (verNum(P.VERSION) < verNum(NEED_CORE)) alert(`[리드나우 고객 수집기] GitHub의 파서 파일이 옛 버전(${P.VERSION})입니다. ${NEED_CORE} 파일로 바꿔 올린 뒤 몇 분 기다렸다가 새로고침해 주세요.`);
+  if (verNum(P.VERSION) < verNum(NEED_CORE)) window.__rnNote(`[리드나우 고객 수집기] GitHub의 파서 파일이 옛 버전(${P.VERSION})입니다. ${NEED_CORE} 파일로 바꿔 올린 뒤 몇 분 기다렸다가 새로고침해 주세요.`);
 
   /* ── 저장소 (브라우저 IndexedDB) ── */
   const STORES = ['orderLines', 'popups', 'returns', 'qnaList', 'qnaDetail', 'reviews', 'jobs', 'issues', 'meta', 'uploaded', 'excelLines', 'sheetRows', 'sellerRaw'];
@@ -265,7 +265,7 @@
     const r = indexedDB.open('readnow-crm', 4);
     r.onupgradeneeded = () => { for (const s of STORES) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, { keyPath: '_key' }); };
     r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
-    r.onblocked = () => alert('[리드나우 고객 수집기] 예전 버전 수집기가 열린 다른 탭이 있어 저장소를 새 버전으로 바꿀 수 없습니다. 주문조회 탭을 모두 닫고 하나만 다시 열어 주세요.');
+    r.onblocked = () => window.__rnNote('[리드나우 고객 수집기] 예전 버전 수집기가 열린 다른 탭이 있어 저장소를 새 버전으로 바꿀 수 없습니다. 주문조회 탭을 모두 닫고 하나만 다시 열어 주세요.');
   });
   const reqP = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
   const dbGet = (s, k) => reqP(db.transaction(s).objectStore(s).get(k));
@@ -687,7 +687,7 @@
   // 로그인: 구글 창 방식(기본). 창 방식이 이 환경에서 안 되면 Firebase 전용 이메일·비밀번호 방식 사용.
   let fbLoggingIn = false;
   async function fbLogin() {
-    if (!FB) { alert('Firebase 파일을 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요.'); return; }
+    if (!FB) { window.__rnNote('Firebase 파일을 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요.'); return; }
     if (fbLoggingIn) {
       if (Date.now() - fbLoggingIn < 40000) { log('로그인 창이 이미 열려 있습니다. 작업표시줄에 새 크롬 창이 떠 있는지 확인해 주세요.', 'warn'); return; }
       log('앞의 로그인 창을 취소하고 새로 엽니다.', 'warn');
@@ -1471,7 +1471,7 @@
   async function taskUpload() {
     if (!FB || !fdb) throw new Error('Firebase 파일을 불러오지 못했습니다. 새로고침해 주세요.');
     if (!fbUser) throw new StopSignal('FBLOGIN', 'Firebase에 올리려면 먼저 "구글 로그인"을 눌러 주세요.');
-    if (settings.billing !== 'paid' && await limitHitToday() && !confirm(`오늘은 이미 무료 쓰기 한도에 도달한 것으로 보입니다.\n한도 초기화: ${resetText()}\n\n초기화 전에 올리면 다시 2분쯤 기다리다 멈출 가능성이 큽니다. 그래도 지금 시도할까요?\n(인터넷 연결 문제로 멈췄던 경우라면 '확인'을 누르세요)`)) throw new StopSignal('FBQUOTA', `한도 초기화(${resetText()}) 뒤 이어하기를 눌러 주세요.`);
+    if (settings.billing !== 'paid' && await limitHitToday() && !(window.__rnHuman(8000) ? confirm(`오늘은 이미 무료 쓰기 한도에 도달한 것으로 보입니다.\n한도 초기화: ${resetText()}\n\n초기화 전에 올리면 다시 2분쯤 기다리다 멈출 가능성이 큽니다. 그래도 지금 시도할까요?\n(인터넷 연결 문제로 멈췄던 경우라면 '확인'을 누르세요)`) : false)) throw new StopSignal('FBQUOTA', `한도 초기화(${resetText()}) 뒤 이어하기를 눌러 주세요.`);
     const ujob = await loadJob('upload'); ujob.status = 'running'; ujob.startedAt = ujob.startedAt || now(); await saveJob(ujob);
     setNow('올릴 문서를 계산하는 중'); progress('Firebase 올리기', 0, 1);
     const docs = (await buildDocs()).filter((d) => d.col !== 'crm_customers'); // 고객 요약은 아래에서 Firebase 전체 데이터로 계산
@@ -1717,7 +1717,7 @@
     if (running) return; let outcome = 'done'; const tS0 = Date.now(); /* (1.60.0) 끝난 모양을 돌려줌(⏰ 매일 자동이 봄) · 걸린 시간 기록 */
     if (window.__rnGate && !window.__rnGate(name === 'bulk' ? '고객 전체 일괄 수집' : TASKS[name] ? TASKS[name].label : name)) return; // (1.56.0) 쉬는 탭이면 시작 안 함 (사람이 누른 거면 켤지 물음)
     const ob = otherTabBusy();
-    if (ob) { alert(`이 PC의 다른 탭(${ob.page === 'worders.aspx' ? '주문조회' : '판매관리'})에서 '${ob.label}' 작업 중입니다.\n그 탭에서 진행 상황을 확인하거나, 끝난 뒤 다시 눌러 주세요.`); return; }
+    if (ob) { (window.__rnHuman(8000) ? alert : (m) => window.__rnNote(m, 'warn'))(`이 PC의 다른 탭(${ob.page === 'worders.aspx' ? '주문조회' : '판매관리'})에서 '${ob.label}' 작업 중입니다.\n그 탭에서 진행 상황을 확인하거나, 끝난 뒤 다시 눌러 주세요.`); return; }
     markTab(true, name === 'bulk' ? '전체 일괄 수집' : (TASKS[name] ? TASKS[name].label : name));
     running = true; pauseRequested = false; render();
     const needsLock = !['verify', 'fbcheck'].includes(name);

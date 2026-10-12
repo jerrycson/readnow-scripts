@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.63.5의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.63.6의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.5' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.6' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -45,12 +45,12 @@
   const WRITER_SCHEMA = 6;
   const P = window.ReadnowProducts || globalThis.ReadnowProducts;
   const PACE = P.makePacer('aladin'); // 알라딘 요청 속도: 이 PC의 모든 탭·스크립트가 같이 씀 (readnow-products-core.js makePacer)
-  if (!P) { alert('[리드나우 상품 수집기] 파서 파일(readnow-products-core.js)을 불러오지 못했습니다. GitHub에 올렸는지 확인해 주세요.'); return; }
+  if (!P) { window.__rnNote('[리드나우 상품 수집기] 파서 파일(readnow-products-core.js)을 불러오지 못했습니다. GitHub에 올렸는지 확인해 주세요.'); return; }
   // 공용 파일이 요구 버전보다 '옛것'일 때만 알림 (같거나 더 새것이면 조용히 씀). 요구 버전은 이 한 곳에서만 정함
   const NEED_FILES = { '상품 파서 readnow-products-core.js': [() => P.VERSION, '0.14.0'], '판매자 파서 readnow-sellers-core.js': [() => (window.ReadnowSellers || globalThis.ReadnowSellers || {}).VERSION, '1.3.0'], '판매자 분류 기준 readnow-core.js': [() => (((typeof unsafeWindow !== 'undefined' && unsafeWindow.ReadNowCore) || window.ReadNowCore || globalThis.ReadNowCore || {}).CORE_VERSION), '1.3.0'], '판정 엔진 readnow-pricing-core.js': [() => (window.ReadnowPricing || globalThis.ReadnowPricing || {}).VERSION, '0.9.1'], '출고 기준 readnow-shipping-core.js': [() => (window.ReadnowShipping || globalThis.ReadnowShipping || {}).VERSION, '0.5.1'], '관리도구 노선표 readnow-registry.js': [() => (window.ReadnowRegistry || globalThis.ReadnowRegistry || {}).VERSION, '0.2.0'] };
   const verN = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
   const OLD_FILES = Object.entries(NEED_FILES).map(([k, [g, w]]) => [k, g(), w]).filter(([, v, w]) => verN(v) < verN(w));
-  if (OLD_FILES.length) alert(`[리드나우 수집기] GitHub의 공용 파일이 이 수집기보다 옛 버전입니다:\n${OLD_FILES.map(([k, v, w]) => `· ${k}: ${v || '못 읽음'} (필요 ${w} 이상)`).join('\n')}\n새 파일을 올린 뒤 몇 분 뒤 새로고침해 주세요.`);
+  if (OLD_FILES.length) window.__rnNote(`[리드나우 수집기] GitHub의 공용 파일이 이 수집기보다 옛 버전입니다:\n${OLD_FILES.map(([k, v, w]) => `· ${k}: ${v || '못 읽음'} (필요 ${w} 이상)`).join('\n')}\n새 파일을 올린 뒤 몇 분 뒤 새로고침해 주세요.`);
   const LS = { get: (k, d) => GM_getValue(k, d), set: (k, v) => GM_setValue(k, v) };
   const TAB_ID = 't' + Math.random().toString(36).slice(2, 8); // 같은 PC의 탭 구분
   const PC_ID = LS.get('pcId') || (() => { const id = 'pc_' + Math.random().toString(36).slice(2, 8); LS.set('pcId', id); return id; })();
@@ -554,7 +554,7 @@
   const lockDocId = () => (lockGroup() === 'office' ? 'work_lock' : 'work_lock_' + lockGroup());
   const LOCK = () => C('crm_system').doc(lockDocId());
   const JOBREG = () => C('crm_system').doc('running_jobs');
-  let lockBeat = null; let lockHeld = false; let yieldUnsub = null; let yieldFor = null; let laneCount = 1; let myJobLabel = null; let lastSame = false;
+  let lockBeat = null; let lockHeld = false; let yieldUnsub = null; let yieldFor = null; let laneCount = 1; let myJobLabel = null; let myRegKey = null; let lastSame = false;
   const TAB_FRESH = 5 * 60000;
   const freshPcs = (d, now) => { const o = Object.fromEntries(Object.entries((d && d.pcs) || {}).filter(([, v]) => v && now - (v.at || 0) < TAB_FRESH));
     if (d && d.holder && String(d.task || '').startsWith('product_') && !o[d.holder] && d.heartbeatMs && now - d.heartbeatMs < TAB_FRESH) o[d.holder] = { name: d.pcName, at: d.heartbeatMs, prio: d.prio ?? 50, job: String(d.task).slice(8), tabs: d.tabs || {}, legacy: true }; // 1.7.0 전 버전이 잡은 자리
@@ -565,13 +565,13 @@
   async function acquireLane(lane, label) {
     if (lane !== 'aladin') return { ok: true };
     if (!(window.__rnPcName && window.__rnPcName.get())) { const n = window.__rnRemote ? null : window.__rnPcName && window.__rnPcName.ask(''); if (n) $('#rnpName').value = n; }
-    const name = (window.__rnPcName && window.__rnPcName.get()) || LS.get('pcName', PC_ID); const job = (curStage && STEP_LABEL[curStage]) || label || running || ''; const myPrio = curPrio(); const maxN = Math.max(1, +SET.maxLanes || 1);
+    const name = (window.__rnPcName && window.__rnPcName.get()) || LS.get('pcName', PC_ID); const job = (curStage && STEP_LABEL[curStage]) || label || running || ''; /* (1.63.6 전체 점검) '같은 작업은 한 곳만' 열쇠는 이름이 아니라 작업 열쇠로 — 예전엔 일괄 수집 안의 벤치마킹('집중 벤치마킹 판매자')과 ⏰·직접 벤치마킹('🎯 … 정한 순서대로 모두')이 이름이 달라 두 PC가 같은 판매자를 함께 읽어 서로 덮을 수 있었음 */ const regKey = (() => { const k0 = curStage ? (STAGE_JOB[curStage] || curStage) : (curKey || ''); const k = { benchForce: 'bench' }[k0] || k0; return k ? 'job:' + k : job; })(); const myPrio = curPrio(); const maxN = Math.max(1, +SET.maxLanes || 1);
     const t0 = Date.now(); let asked = false;
     for (;;) {
       try {
         await db.runTransaction(async (tx) => {
           const s = await tx.get(LOCK()); const d = s.exists ? s.data() : null; const now = Date.now();
-          const rg = await tx.get(JOBREG()); const reg = rg.exists ? rg.data() : {}; const other = reg[job]; // 같은 작업은 어느 PC든 한 곳만
+          const rg = await tx.get(JOBREG()); const reg = rg.exists ? rg.data() : {}; const other = reg[regKey] || (regKey !== job ? reg[job] : null); // 같은 작업은 어느 PC든 한 곳만 (예전 판 수집기가 이름으로 적은 것도 봄)
           if (other && other.pc !== PC_ID && now - (other.at || 0) < TAB_FRESH) { const e = new Error('SAMEJOB'); e.info = { job, holder: other.name }; throw e; }
           if (legacyOther(d, now)) { const e = new Error('LOCKED'); e.info = d; throw e; }
           const pcs = freshPcs(d, now); const mine = pcs[PC_ID] || { name, tabs: {} };
@@ -582,7 +582,7 @@
           pcs[PC_ID] = { name, at: now, job, prio: Math.max(...Object.values(tabs).map((v) => v.prio ?? 0)), tabs };
           const low = Object.entries(tabs).some(([k, v]) => k !== TAB_ID && (v.prio ?? 0) < myPrio); // 같은 PC의 다른 탭에 낮은 작업 → 양보 요청
           tx.set(LOCK(), { ...lockFields(pcs, d), ...(low ? { yieldReq: { prio: myPrio, pc: PC_ID, tab: TAB_ID, target: PC_ID, pcName: name, tool: job, at: now } } : {}) });
-          tx.set(JOBREG(), { [job]: { pc: PC_ID, name, at: now } }, { merge: true });
+          tx.set(JOBREG(), { [regKey]: { pc: PC_ID, name, at: now, label: job } }, { merge: true });
         });
         break;
       } catch (e) {
@@ -596,9 +596,9 @@
         throw e;
       }
     }
-    myLockPrio = myPrio; myJobLabel = job;
+    myLockPrio = myPrio; myJobLabel = job; myRegKey = regKey;
     lockHeld = true; clearInterval(lockBeat);
-    lockBeat = setInterval(() => { if (!lockHeld) return; const now = Date.now(); LOCK().set({ heartbeatMs: now, writerSchema: WRITER_SCHEMA, pcs: { [PC_ID]: { at: now, tabs: { [TAB_ID]: { at: now, job, prio: myLockPrio } } } } }, { merge: true }).catch(() => {}); JOBREG().set({ [job]: { pc: PC_ID, name, at: now } }, { merge: true }).catch(() => {}); }, 60000);
+    lockBeat = setInterval(() => { if (!lockHeld) return; const now = Date.now(); LOCK().set({ heartbeatMs: now, writerSchema: WRITER_SCHEMA, pcs: { [PC_ID]: { at: now, tabs: { [TAB_ID]: { at: now, job, prio: myLockPrio } } } } }, { merge: true }).catch(() => {}); JOBREG().set({ [regKey]: { pc: PC_ID, name, at: now, label: job } }, { merge: true }).catch(() => {}); }, 60000);
     // 양보 요청(나보다 중요한 작업, 나를 지목했거나 지목 없음) → 진행 위치 저장 후 멈춤 → 끝나면 자동으로 이어감. 묶음 안 PC 수만큼 요청 간격을 늘림
     if (!yieldUnsub) yieldUnsub = LOCK().onSnapshot((d) => { const x = d.exists ? d.data() : null; laneCount = Math.max(1, Object.keys(freshPcs(x, Date.now())).length); const y = x && x.yieldReq;
       if (lockHeld && running && y && Date.now() - (y.at || 0) < 3 * 60000 && !yieldFor && (y.prio ?? 100) > myLockPrio && !(y.pc === PC_ID && y.tab === TAB_ID) && (!y.target || y.target === PC_ID)) { yieldFor = { ...y, key: curKey, myPrio: myLockPrio }; stopFlag = true; log(`${y.pcName || '다른 PC'}의 '${y.tool || '고객 수집'}'(중요도 ${y.prio ?? 100})이 더 중요해 양보합니다 (지금 작업 중요도 ${myLockPrio}). 진행 위치를 저장하고 멈췄다가, 끝나면 자동으로 이어갑니다`, 1); } }, () => {});
@@ -606,7 +606,7 @@
   }
   async function releaseLane(lane) {
     if (lane !== 'aladin') return;
-    clearInterval(lockBeat); if (!lockHeld) return; lockHeld = false; const job = myJobLabel;
+    clearInterval(lockBeat); if (!lockHeld) return; lockHeld = false; const job = myRegKey || myJobLabel;
     try {
       await db.runTransaction(async (tx) => {
         const s = await tx.get(LOCK()); const rg = await tx.get(JOBREG()); const now = Date.now();
@@ -1344,7 +1344,7 @@
     try { const st = (SET.steps || {}); add(true, `일괄 단계 켬: ${Object.keys(STEP_LABEL).filter((k) => st[k] !== false).map((k) => STEP_LABEL[k]).join(' · ')}`); } catch (e) {}
     const fatal = R.filter((r) => !r.ok && r.fatal); const warn = R.filter((r) => !r.ok && !r.fatal);
     log(`시작 전 점검: ${fatal.length ? `✗ 꼭 고칠 것 ${fatal.length}` : '✓ 시작 가능'}${warn.length ? ` · 확인할 것 ${warn.length}` : ''} (자세한 내용은 기록 창)`, fatal.length || warn.length);
-    if (!quiet && (fatal.length || warn.length)) alert(`시작 전 점검\n\n${R.map((r) => `${r.ok ? '✓' : r.fatal ? '✗' : '!'} ${r.msg}`).join('\n')}`);
+    if (!quiet && (fatal.length || warn.length)) (window.__rnHuman(8000) ? alert : (m) => window.__rnNote(m, fatal.length ? 'err' : 'warn'))(`시작 전 점검\n\n${R.map((r) => `${r.ok ? '✓' : r.fatal ? '✗' : '!'} ${r.msg}`).join('\n')}`);
     return !fatal.length;
   }
   /* ───────── 알라딘 구매 풀: 아직 연결되지 않은(미규명) 책의 도서 정보·시장 지표·이미지 ─────────
@@ -1443,7 +1443,7 @@
     if (cfg && cfg.noneOff) for (const t of cfg.targets || []) if (t && t.sc && !inG.has(String(t.sc))) off.add(String(t.sc)); return off; }
   function benchTargets(cfg) { const off = benchOffSet(cfg); return ((cfg && cfg.targets) || []).filter((t) => t && t.sc && t.on !== false && !t.self && String(t.sc) !== '996008' && !off.has(String(t.sc))); }
   /* (1.60.1) 판매자마다 걸린 시간 기록(⏰ 시간표의 판매자별 칸막이·한 바퀴 예상) — 하던 회차를 이어 읽은 것은 '일부'라 평균에서 뺌 */
-  async function benchOneT(t, resumed) { const tB = Date.now(); window.__rnBenchCur = String(t.sc); /* (1.63.2) 지금 이 탭이 읽는 판매자 — 버리기 막기는 이 판매자만 */ try { const r = await benchOne(t); try { window.__rnJobDone && window.__rnJobDone('bench:' + String(t.sc), Date.now() - tB, resumed ? 'part' : 'done'); } catch (x) {} return r; }
+  async function benchOneT(t, resumed) { const tB = Date.now(); window.__rnBenchCur = String(t.sc); /* (1.63.2) 지금 이 탭이 읽는 판매자 — 버리기 막기는 이 판매자만 */ try { const r = await benchOne(t); try { window.__rnJobDone && window.__rnJobDone('bench:' + String(t.sc), Date.now() - tB, r === 'partial' ? 'error' : resumed ? 'part' : 'done'); } catch (x) {} return r; } /* (1.63.6) 쪽을 못 읽어 회차를 못 끝냈으면 'partial' — 끝낸 것으로 치지 않음 */
     catch (e) { try { window.__rnJobDone && window.__rnJobDone('bench:' + String(t.sc), Date.now() - tB, e && e.message === '멈춤' ? 'stop' : 'error'); } catch (x) {} throw e; } finally { if (window.__rnBenchCur === String(t.sc)) window.__rnBenchCur = null; } }
   async function benchJob(opt) { const FORCE = !!(opt && opt.force); const cfg = (await C('app_settings').doc('bench').get()).data() || {}; BENCH_CFG = cfg; const T = benchTargets(cfg); /* (1.57.6) 우리 숍(북스킹)은 읽지 않음 — 웹앱 우리 카드는 우리 기록으로 셈 */ const RB = (BREG() || {}).BENCH;
     { const offN = benchOffSet(cfg).size; if (offN) log(`🎯 꺼진 그룹의 판매자 ${offN}명은 건너뜀 (웹앱 🎯 그룹 머리의 토글)`); }
@@ -1454,18 +1454,21 @@
     const TF = T.filter((t) => !restS.has(String(t.sc)));
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
     const byS = new Map(T.map((t) => [String(t.sc), t])); const done = new Set(); const bad = []; const wantDetail = RB.needsDetail(cfg); BENCH_DEFER_DETAIL = wantDetail; let listDone = false;
-    let FJ = null; if (FORCE) { const fref = C('prd_jobs').doc('benchForce'); const old = (await fref.get()).data(); const keep = !(opt && opt.fresh) && old && old.done === false && old.startedAt && Date.now() - Date.parse(old.startedAt) < 3 * 864e5; /* (1.60.1) fresh = 처음 판매자부터 다시 */
-      FJ = keep ? old : { startedAt: nowIso(), list: TF.map((t) => String(t.sc)), done: false, by: PC_NAME }; if (!keep) await fref.set({ ...FJ, savedAt: Date.now(), ...W() }); else FJ.list = [...new Set([...(FJ.list || []), ...TF.map((t) => String(t.sc))])].filter((sc) => byS.has(sc));
+    let FJ = null; try { /* (1.63.6 전체 점검) 알라딘 차례를 잡은 뒤의 서버 읽기·쓰기가 실패해도 차례를 반드시 놓음 — 예전엔 놓지 않아 다른 PC가 모두 멈췄음 */ if (FORCE) { const fref = C('prd_jobs').doc('benchForce'); const old = (await fref.get()).data(); const keep = !(opt && opt.fresh) && old && old.done === false && old.startedAt && Date.now() - Date.parse(old.startedAt) < 3 * 864e5; /* (1.60.1) fresh = 처음 판매자부터 다시 */
+      const only = opt && opt.only ? String(opt.only) : null; /* (1.63.6) 판매자 한 줄의 이어하기 — 멈춘 강제 실행이 없으면 그 판매자만(다른 판매자를 다시 읽지 않음) */
+      FJ = keep ? old : { startedAt: nowIso(), list: only && byS.has(only) ? [only] : TF.map((t) => String(t.sc)), done: false, by: PC_NAME, ...(only ? { only } : {}) }; if (!keep) await fref.set({ ...FJ, savedAt: Date.now(), ...W() }); else { FJ.list = [...new Set([...(FJ.list || []), ...TF.map((t) => String(t.sc))])].filter((sc) => byS.has(sc)); if (only && FJ.list.includes(only)) FJ.list = [only, ...FJ.list.filter((x) => x !== only)]; }
       FJ.fin = FJ.fin || {}; /* (1.63.5) 이번 강제 실행에서 끝낸(또는 버리기로 건너뛴) 판매자 — 서버에 하나씩 적어 이어하기 때 확실히 건너뜀 */
       const nm0 = (sc) => (byS.get(sc) || {}).name || sc; const finL = FJ.list.filter((sc) => FJ.fin[sc]);
       log(keep ? `🎯 강제 실행 이어서 (${new Date(Date.parse(FJ.startedAt) + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')} 시작한 것) — 이미 끝낸 ${finL.length}명 건너뜀${finL.length ? `(${finL.map(nm0).join(', ')})` : ''} · 남은 차례: ${FJ.list.filter((sc) => !FJ.fin[sc]).map(nm0).join(' → ') || '없음'}` : `🎯 강제 실행 시작 — 주기와 상관없이 맨 처음 판매자부터: ${FJ.list.map(nm0).join(' → ')}`); }
+    } catch (e0) { try { await releaseLane('aladin'); } catch (x) {} throw e0; }
     try { for (let loop = 0; loop < 300; loop++) { if (stopFlag) throw new Error('멈춤'); const sts = await benchStates(T); /* (1.54.3) '하는 중' 표시가 있어도 진행 문서가 없거나 버렸으면(끝남·버림) 표시를 지우고 평소 차례로 */ for (const [sc0, s0] of Object.entries(sts)) { if (!s0 || !s0.prog) continue; try { const jd = (await C('prd_jobs').doc('bench_' + sc0).get()).data(); if (!jd || jd.done) { s0.prog = null; await C('bench_state').doc(sc0).set({ prog: null }, { merge: true }); } } catch (e) {} } const P0 = RB.plan({ ...cfg, targets: T }, sts, Date.now()); /* (1.57.6) 읽을 판매자(T)만으로 차례 */ const P = RB.order ? RB.order(P0) : P0; /* (1.54.0) 하던 판매자 → 밀린 판매자 → 블록 순서 */
         if (FORCE) { const t0f = Date.parse(FJ.startedAt); const byP = new Map(P.map((x) => [String(x.sc), x])); const FS = cfg.forceSkip || {}; const skipMs = FS.on && +FS.h > 0 ? +FS.h * 3600e3 : 0;
           /* (1.56.3) ⏭ 강제 실행의 '최근 n시간 안에 끝까지 읽은 판매자는 건너뛰기'(웹앱·수집기의 토글 — app_settings/bench.forceSkip) · 기준 = 마지막으로 끝까지 읽은 회차가 끝난 때(okEndAt) */
           const okEnd = (k) => { const s0 = sts[k] || {}; if (s0.okEndAt) return Date.parse(s0.okEndAt); return s0.day && s0.complete !== false && !(s0.lastPartial && s0.endAt && s0.lastPartial.at >= s0.endAt) && s0.endAt ? Date.parse(s0.endAt) : 0; };
           if (skipMs && loop === 0) { const sk = FJ.list.filter((k) => okEnd(k) && Date.now() - okEnd(k) < skipMs); if (sk.length) log(`🎯 강제 실행 ⏭ 최근 ${FS.h}시간 안에 끝까지 읽은 판매자 ${sk.length}명 건너뜀: ${sk.map((k) => `${(byS.get(k) || {}).name || k}(${new Date(okEnd(k) + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')})`).join(', ')}`); }
-          const sc = FJ.list.find((k) => !done.has(k) && !(FJ.fin || {})[k] && !(skipMs && okEnd(k) && Date.now() - okEnd(k) < skipMs) && !(okEnd(k) >= t0f && !(byP.get(k) || {}).inProg)); /* 이번 강제 실행이 시작된 뒤 끝까지 읽은 판매자는 끝난 것 (끝까지 못 읽은 회차는 끝난 것으로 치지 않음) */ if (!sc) { await C('prd_jobs').doc('benchForce').set({ done: true, doneAt: nowIso(), savedAt: Date.now() }, { merge: true }); log(`🎯 강제 실행 끝 — 판매자 ${FJ.list.length}명 모두 이번에 읽음`); break; }
-          const t = byS.get(sc); done.add(sc); log(`🎯 [강제 ${FJ.list.indexOf(sc) + 1}/${FJ.list.length}] ${t.name || sc} — 주기와 상관없이 읽음`); try { await benchOneT(t, !!((sts[String(t.sc)] || {}).prog)); FJ.fin[sc] = nowIso(); await C('prd_jobs').doc('benchForce').set({ fin: { [sc]: FJ.fin[sc] }, savedAt: Date.now() }, { merge: true }).catch(() => {}); } catch (e) { if (e && e.message === '멈춤') throw e; bad.push(t.name || sc); log(`🎯 '${t.name || sc}' 처리 중 오류: ${e && e.message} — 다음 판매자로 넘어감`, 1); } continue; }
+          if (loop > 0) { try { const f2 = ((await C('prd_jobs').doc('benchForce').get()).data() || {}).fin; if (f2) Object.assign(FJ.fin, f2); } catch (e) {} } /* (1.63.6) 다른 PC에서 그사이 버린 판매자도 건너뜀 */
+          const sc = FJ.list.find((k) => !done.has(k) && !(FJ.fin || {})[k] && !(restS.has(k) && !(sts[k] || {}).prog) /* 📅 오늘 쉬는 그룹(하던 회차는 이어서) */ && !(skipMs && okEnd(k) && Date.now() - okEnd(k) < skipMs) && !(okEnd(k) >= t0f && !(byP.get(k) || {}).inProg)); /* 이번 강제 실행이 시작된 뒤 끝까지 읽은 판매자는 끝난 것 (끝까지 못 읽은 회차는 끝난 것으로 치지 않음) */ if (!sc) { await C('prd_jobs').doc('benchForce').set({ done: true, doneAt: nowIso(), savedAt: Date.now() }, { merge: true }); log(`🎯 강제 실행 끝 — 판매자 ${FJ.list.length}명 모두 이번에 읽음`); break; }
+          const t = byS.get(sc); done.add(sc); log(`🎯 [강제 ${FJ.list.indexOf(sc) + 1}/${FJ.list.length}] ${t.name || sc} — 주기와 상관없이 읽음`); try { const r1 = await benchOneT(t, !!((sts[String(t.sc)] || {}).prog)); if (r1 === 'partial') { bad.push(t.name || sc); continue; } FJ.fin[sc] = nowIso(); await C('prd_jobs').doc('benchForce').set({ fin: { [sc]: FJ.fin[sc] }, savedAt: Date.now() }, { merge: true }).catch(() => {}); } catch (e) { if (e && e.message === '멈춤') throw e; bad.push(t.name || sc); log(`🎯 '${t.name || sc}' 처리 중 오류: ${e && e.message} — 다음 판매자로 넘어감`, 1); } continue; }
         const next = P.find((x) => !done.has(x.sc) && (x.due || (FORCE_ALL && !x.fresh))) || (P.find((x) => x.due && done.has(x.sc) && x.g.unit === 'h' && Date.now() - (sts[x.sc].runAt ? Date.parse(sts[x.sc].runAt) : 0) > 3600e3) || null);
         if (loop === 0 && !FORCE) { const due = P.filter((x) => x.due || (FORCE_ALL && !x.fresh)); const fr = P.filter((x) => !x.due && x.fresh); const hm = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' '); if (fr.length) log(`🎯 끝난 지 얼마 안 돼 이번엔 건너뜀(다시 읽지 않음): ${fr.map((x) => `${(byS.get(x.sc) || {}).name || x.sc} ${hm(x.end || x.last)} 끝 → ${hm(x.next)}부터`).join(', ')}`); const pages = due.reduce((a, x) => a + (sts[x.sc].lastPage || sts[x.sc].pages || 0), 0);
           log(`🎯 집중 벤치마킹: 판매자 ${T.length}명 중 지금 할 차례 ${due.length}명${FORCE_ALL ? '(수동 — 모두)' : ''}${pages ? ` · 약 ${pages.toLocaleString()}쪽` : ''} — 순서: ${due.map((x) => `${(byS.get(x.sc) || {}).name || x.sc}(${x.g.name})`).join(' → ') || '없음'}${!due.length ? ` · 다음 차례: ${P.slice().sort((a, b) => a.next - b.next).slice(0, 3).map((x) => `${(byS.get(x.sc) || {}).name || x.sc} ${new Date(x.next + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')}`).join(', ')}` : ''}`); }
@@ -1512,11 +1515,11 @@
       const got = await Promise.allSettled(pgs.map((pg) => PUB.read('shop', benchUrl(sc, pg, ROWS), (g) => ({ items: benchParse(g.doc), last: benchLastPage(g.doc, g.html) }), (g) => benchParse(g.doc).length > 0)));
       let out = null;
       for (let q = 0; q < got.length && !out; q++) { /* prog.page === pgs[q] */
-        if (got[q].status === 'rejected') { const e = got[q].reason || {}; if (e.message === '멈춤') { await saveBk(); throw e; } log(`벤치마킹 '${name}' ${prog.page}쪽 읽기 실패: ${e.message} — 다음에 이 쪽부터`, 1); await saveBk(); return; }
+        if (got[q].status === 'rejected') { const e = got[q].reason || {}; if (e.message === '멈춤') { await saveBk(); throw e; } log(`벤치마킹 '${name}' ${prog.page}쪽 읽기 실패: ${e.message} — 다음에 이 쪽부터`, 1); await saveBk(); return 'partial'; }
         let r = got[q].value; let L = benchParse(r.doc);
         /* (1.54.2) 끝 쪽보다 한참 앞에서 빈 쪽이 오면 '끝'으로 보지 않음 — 로그인 상태로 한 번 더 읽고, 그래도 비면 저장하고 다음에 이 쪽부터(회차를 끝내지 않음 · 나머지를 '안 보임'으로 적지 않게) */
         if (!L.length && lastP && prog.page < lastP - 3) { try { const r2 = await getDoc(benchUrl(sc, prog.page, ROWS)); const L2 = benchParse(r2.doc); if (L2.length) { r = r2; L = L2; } } catch (e) { if (e.message === '멈춤') { await saveBk(); throw e; } }
-          if (!L.length) { log(`벤치마킹 '${name}' ${prog.page}쪽이 비어 있음(끝 쪽 ${lastP}쪽보다 앞) — 회차를 끝내지 않고 저장, 다음에 이 쪽부터`, 1); await saveBk(); return; } }
+          if (!L.length) { log(`벤치마킹 '${name}' ${prog.page}쪽이 비어 있음(끝 쪽 ${lastP}쪽보다 앞) — 회차를 끝내지 않고 저장, 다음에 이 쪽부터`, 1); await saveBk(); return 'partial'; } }
         if (prog.page === 1 || !lastP) { const lp = benchLastPage(r.doc, r.html); if (lp) { if (lp !== lastP && prog.page === 1) log(`🎯 '${name}': 숍 끝 쪽 ${lp.toLocaleString()}쪽 (한 쪽 ${ROWS}개 · 약 ${(lp * ROWS).toLocaleString()}개)`); lastP = Math.max(lp, prog.page); prog.lastPage = lastP; } }
         if (prog.page === 1 && L.length) prog.readFrom1 = true; /* (1.56.3) 이 회차가 1쪽부터 읽었음 */
         if (prog.page === 1) { firstIds = L.map((x) => x.id).join(','); await C('bench_probe').doc(sc).set({ sc, name, at: nowIso(), day, url: benchUrl(sc, 1, ROWS), rows: ROWS, view: L.length && L[0].uc ? 'simple' : 'other', pubMode: PUB.st.shop.mode, pubWhy: PUB.st.shop.last || null, lastPage: lastP || null, n: L.length, withPrice: L.filter((x) => x.p).length, withGrade: L.filter((x) => x.g).length, noGrade: L.filter((x) => x.g0).length, withIsbn: L.filter((x) => x.isbn).length, withCover: L.filter((x) => x.cov).length, withLow: L.filter((x) => x.low).length, sample: L.slice(0, 5), html: String(r.html || '').slice(0, 250000), pc: PC_NAME, ...W() }); }
@@ -2538,13 +2541,15 @@
       for (const m of cand) { const d = m > min ? m - min : m + 1440 - min; if (!best || d < best.d) best = { d, t: AS.hm(m), label: asName(s), tomorrow: m <= min }; } }
     return { known: true, on: true, next: best }; };
   /* (1.57.4) 회차 기록(prd_jobs/autoSched.runs)은 날마다 쌓여 한 문서(1MB) 한도에 닿을 수 있음 → 40일 지난 회차는 달마다 prd_jobs/autoSched_YYYY-MM 문서로 옮겨 보관(지우지 않음 · 옮기기와 빼기를 한 묶음으로 = 둘 다 되거나 둘 다 안 됨) */
-  let schedArchDay = '';
-  async function schedArchive() { const { day } = kstNow(); if (schedArchDay === day || !auth.currentUser) return; const cut = new Date(Date.parse(day + 'T00:00:00Z') - 40 * 864e5).toISOString().slice(0, 10);
-    const old = Object.keys(SCHED_RUNS).filter((k) => { const d = k.split('@')[1] || ''; return d && d < cut; }); schedArchDay = day; if (!old.length) return;
-    try { const byM = {}; for (const k of old.slice(0, 400)) { const m = k.split('@')[1].slice(0, 7); (byM[m] = byM[m] || {})[k] = SCHED_RUNS[k]; }
-      const b = db.batch(); for (const [m, runs] of Object.entries(byM)) b.set(C('prd_jobs').doc('autoSched_' + m), { runs, at: nowIso() }, { merge: true });
-      const del = {}; for (const m of Object.values(byM)) for (const k of Object.keys(m)) del[k] = firebase.firestore.FieldValue.delete(); b.set(SCHED_RUN(), { runs: del }, { merge: true }); await b.commit();
-      log(`⏰ 매일 자동: 40일 지난 회차 기록 ${Object.keys(del).length}개를 달별 보관 문서로 옮김(지우지 않음)`); } catch (e) { schedArchDay = ''; } }
+  /* (1.63.6 전체 점검) 한 문서의 색인 칸 한도(4만 개)에 먼저 닿음: 15분마다·1시간마다 칸이 40일이면 회차 수천 개 × 칸 8개 → 거의 4만 → 넘으면 모든 PC의 자동 수집 확인·기록이 실패
+   *  → 10일 지난 회차는 날마다 prd_jobs/autoSched_YYYY-MM-DD 문서로 옮김(지우지 않음 · 옮기기와 빼기를 한 묶음으로) · 한 번에 최대 3,000개 · 남으면 1시간 뒤 다시 */
+  let schedArchAt = 0;
+  async function schedArchive() { const { day } = kstNow(); if (Date.now() - schedArchAt < 3600e3 || !auth.currentUser) return; schedArchAt = Date.now(); const cut = new Date(Date.parse(day + 'T00:00:00Z') - 10 * 864e5).toISOString().slice(0, 10);
+    const old = Object.keys(SCHED_RUNS).filter((k) => { const d = k.split('@')[1] || ''; return d && d < cut; }); if (!old.length) return;
+    try { const byD = {}; for (const k of old.slice(0, 3000)) { const d = k.split('@')[1].slice(0, 10); (byD[d] = byD[d] || {})[k] = SCHED_RUNS[k]; }
+      const del = {}; for (const m of Object.values(byD)) for (const k of Object.keys(m)) del[k] = firebase.firestore.FieldValue.delete();
+      const b = db.batch(); for (const [d, runs] of Object.entries(byD)) b.set(C('prd_jobs').doc('autoSched_' + d), { runs, at: nowIso() }, { merge: true }); b.set(SCHED_RUN(), { runs: del }, { merge: true }); await b.commit();
+      log(`⏰ 매일 자동: 10일 지난 회차 기록 ${Object.keys(del).length}개를 날짜별 보관 문서로 옮김(지우지 않음)${old.length > 3000 ? ` · 남은 ${old.length - 3000}개는 1시간 뒤` : ''}`); } catch (e) { schedArchAt = Date.now() - 3300e3; log('⏰ 회차 기록 옮기기 실패(5분 뒤 다시): ' + (e.code || e.message), 1); } }
   const schedHM = (iso) => AS.hm(AS.kst(AS.toMs(iso)).min);
   let schedDrawDay = '';
   function schedDraw() { const el = document.getElementById('rnpSched'); if (!el || !AS) return; const S0 = SCHED || { on: false }; const { day } = kstNow(); schedDrawDay = day; const slots = AS.slotsOf(S0); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
@@ -2646,7 +2651,11 @@
   async function extLease() { let ok = false; try { await db.runTransaction(async (tx) => { const s = await tx.get(EXT_RUN()); const L = (s.exists && s.data().lease) || null; const mine = L && L.pc === PC_NAME && L.tab === EXT_S.me; if (L && !mine && Date.now() - (+L.atMs || 0) < 4 * 60000) return; tx.set(EXT_RUN(), { lease: { pc: PC_NAME, tab: EXT_S.me, atMs: Date.now(), at: nowIso() } }, { merge: true }); ok = true; }); } catch (e) {} return ok; }
   /* 오늘 쓴 수 (출처마다 · 한국 날짜) — 하루 최대를 넘지 않게. 날짜별로 남김(cnt.{날짜}.{출처}) */
   /* 오늘 쓴 수: 매 바퀴 시작마다 서버에서 다시 읽음(여러 PC가 번갈아 맡아도 하루 최대를 넘지 않게) · 실제로 보낸 요청 수만큼 셈(eBay 토큰·교보 검색+상품 화면 등) */
-  async function extUsedLoad(force) { const day = extKst(); if (!force && EXT_S.usedDay === day) return EXT_S.used; let u = {}; try { const d = await EXT_RUN().get(); u = ((d.exists && d.data().cnt) || {})[day] || {}; } catch (e) {} EXT_S.used = { ...u }; EXT_S.usedDay = day; return EXT_S.used; }
+  /* (1.63.6 전체 점검) app_settings/ext_run의 날짜별 칸(cnt 쓴 수 · res 성공·실패)은 날마다 늘어 1년쯤이면 한 문서 색인 한도(4만)에 닿음 → 넘으면 외부 정보가 PC·클라우드 모두 조용히 멈춤
+   *  → 15일 지난 날짜 칸은 하루 한 번 지움(오늘·최근 2주만 화면에 씀 · 하루 쓴 수 한도 계산에는 오늘만 씀) */
+  let extPruneDay = ''; async function extPrune(D) { const day = extKst(); if (extPruneDay === day || !D) return; extPruneDay = day; const cut = extKst(Date.now() - 15 * 864e5); const FV = firebase.firestore.FieldValue; const up = {};
+    for (const f of ['cnt', 'res']) { const ks = Object.keys(D[f] || {}).filter((d) => d < cut); if (ks.length) up[f] = Object.fromEntries(ks.map((d) => [d, FV.delete()])); } if (Object.keys(up).length) await EXT_RUN().set(up, { merge: true }).catch(() => {}); }
+  async function extUsedLoad(force) { const day = extKst(); if (!force && EXT_S.usedDay === day) return EXT_S.used; let u = {}; try { const d = await EXT_RUN().get(); if (d.exists) extPrune(d.data()).catch(() => {}); u = ((d.exists && d.data().cnt) || {})[day] || {}; } catch (e) {} EXT_S.used = { ...u }; EXT_S.usedDay = day; return EXT_S.used; }
   const extUsedAdd = (src, n) => { n = Math.max(1, n || 1); const day = extKst(); if (EXT_S.usedDay !== day) { EXT_S.used = {}; EXT_S.usedDay = day; } EXT_S.used[src] = (EXT_S.used[src] || 0) + n; return EXT_RUN().set({ cnt: { [day]: { [src]: firebase.firestore.FieldValue.increment(n) } } }, { merge: true }).catch(() => {}); };
   /* 색인: 출처마다 책을 언제 확인했는지(한국 날짜) — ext_index/{출처}_{0~7} . m.{ISBN} = 'YYYY-MM-DD'(받음) 또는 'E YYYY-MM-DD k'(못 읽음 k번째 — 1·3·7·14·30일 뒤 다시) */
   async function extIdxLoad(force) { const X = EXT(); if (!force && EXT_S.idxAt && Date.now() - EXT_S.idxAt < 60 * 60000) return; const out = {}; for (const src of X.ORDER) { out[src] = new Map(); } try { const qs = await C('ext_index').get(); qs.forEach((d) => { const [src] = d.id.split('_'); const m = (d.data() || {}).m || {}; if (out[src]) Object.entries(m).forEach(([k, v]) => out[src].set(k, v)); }); } catch (e) {} EXT_S.idx = out; EXT_S.idxAt = Date.now(); }
@@ -2731,7 +2740,7 @@
     for (const b of books) { const r0 = (out[b.isbn] = {}); for (const src of all) { if (!cfg.src[src].on || !X.keysReady(src, keys) || !extEligible(src, b, { ...cfg, foreignKr: cfg.foreignKr || !!v.foreignKr })) continue; const r = await extOne(src, b, 'webapp'); r0[src] = r.st; n++; await ref.set({ results: out, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); } }
     await ref.set({ status: 'done', results: out, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`🌐 외부 정보 지금 받기: 책 ${books.length}권 · ${n}번 물음 (웹앱에서 맡김)`); }
   const JOBS = {
-    bench: ['🎯 집중 벤치마킹 — 정한 순서대로 모두 (멈추면 이어서)', () => benchJob({ force: true })], /* (1.60.1) 주기·차례 계산 없이 웹앱 🎯 순서대로 켜진 그룹의 판매자 모두 · 지난 바퀴를 못 끝냈으면(3일 안) 그 판매자부터 */
+    bench: ['🎯 집중 벤치마킹 — 정한 순서대로 모두 (멈추면 이어서)', (o) => benchJob({ force: true, ...(o && o.only ? { only: o.only } : {}) })], /* (1.60.1) 주기·차례 계산 없이 웹앱 🎯 순서대로 켜진 그룹의 판매자 모두 · 지난 바퀴를 못 끝냈으면(3일 안) 그 판매자부터 */
     benchForce: ['🎯 집중 벤치마킹 — 처음 판매자부터 다시 모두', () => benchJob({ force: true, fresh: true })],
     benchDetail: ['집중 벤치마킹 상품만 — 상품 페이지 정보 읽기', () => benchDetailJob()],
     scanNew: ['신규 등록분 수집', () => scan('new')],
@@ -2743,10 +2752,10 @@
     aladinBuy: ['알라딘 구매 내역 (전체)', () => aladinBuyJob()],
     rev6mAll: ['6개월 평가 수 (전체)', () => rev6mJob('all')],
     rev6mStale: ['6개월 평가 수 (오래된 것)', () => rev6mJob('stale')],
-    revAll: ['판매자 평가 전체 수집', async () => { if (!window.__rnAuto && !window.__rnRemote && !confirm('모든 판매자의 평가를 처음 것까지 받습니다. 평가가 많은 판매자는 한 곳에 수천 쪽이라 며칠이 걸릴 수 있습니다. 멈춰도 이어서 할 수 있습니다. 시작할까요?')) return; return reviewJob('all'); }],
+    revAll: ['판매자 평가 전체 수집', async () => { if (!window.__rnAuto && !window.__rnRemote && window.__rnHuman(5000) && !confirm('모든 판매자의 평가를 처음 것까지 받습니다. 평가가 많은 판매자는 한 곳에 수천 쪽이라 며칠이 걸릴 수 있습니다. 멈춰도 이어서 할 수 있습니다. 시작할까요?')) return; return reviewJob('all'); }],
     chain: ['모두 일괄 수집', () => runChain(false)],
     prdChain: ['상품 일괄 수집 (고객 제외)', () => runChain(true)],
-    dynAll: ['구매자 분포 전체 수집', async () => { const n = (await C('prd_books').get()).size; if (!window.__rnRemote && !window.__rnAuto && !confirm(`도서 정보가 있는 책 ${n.toLocaleString()}권 중 아직 안 모았거나 오래된 책을 전부 모읍니다. 한 권에 5~10초라 수천 권이면 하루 넘게 걸릴 수 있습니다. 멈춰도 이어서 합니다. 시작할까요?`)) return 'cancel'; return dynJob(0); }],
+    dynAll: ['구매자 분포 전체 수집', async () => { const human = window.__rnHuman(5000); /* (1.63.6) 확인 창은 사람이 막 누른 때만 · 책 수는 세기만(문서 수만 건을 다 받지 않음) */ let n = 0; if (human && !window.__rnRemote && !window.__rnAuto) { try { n = (await C('prd_books').count().get()).data().count; } catch (e) { n = (await C('prd_books').get()).size; } } if (human && !window.__rnRemote && !window.__rnAuto && !confirm(`도서 정보가 있는 책 ${n.toLocaleString()}권 중 아직 안 모았거나 오래된 책을 전부 모읍니다. 한 권에 5~10초라 수천 권이면 하루 넘게 걸릴 수 있습니다. 멈춰도 이어서 합니다. 시작할까요?`)) return 'cancel'; return dynJob(0); }],
     soldInfo: ['판매완료 상품 정보·이미지', () => soldInfoJob()],
     poolInfo: ['알라딘 구매 풀(미연결) 도서 정보', () => poolInfoJob()],
     photos: ['상품 사진 (표지 없는 상품: 우리 페이지 → 상품명 검색)', () => photosJob()],
@@ -2820,7 +2829,10 @@
     let idle = null; const t = setInterval(() => { const busy = running || imgRunning || (window.__rnCrm && window.__rnCrm.busy()); const u2 = GM_getValue('rnu-ctl-upd', null); if (!u2 || u2.id !== u.id) { clearInterval(t); return; }
       if (busy) { idle = null; return; } idle = idle || Date.now(); if (Date.now() - idle < 60000 || Date.now() - u2.at < 15 * 60000) return; clearInterval(t); safeReload(`🛰 원격 업데이트 — 동기화 확인 ${n}/8`, null); }, 20000); }
   async function ctlWatch() { try { if (window.__rnRoleReady) await Promise.race([window.__rnRoleReady, sleep(15000)]); } catch (e) {} ctlBoot().catch(() => {});
-    CTL().onSnapshot(async (d) => { CTL_DOC = d.exists ? d.data() : null; try { ctlDraw(); } catch (e) {} const c = ((d.exists && d.data().cmds) || {})[PC_NAME]; if (!c || !c.id || !c.cmd) return;
+    /* (1.63.6 전체 점검) pc_ctl.log는 명령마다 덧붙어 끝없이 커짐(1MB 넘으면 원격 조작이 멈춤) → 300줄 넘으면 앞쪽을 달별 보관 문서(crm_system/pc_ctl_log_YYYY-MM)로 옮기고 최근 200줄만 남김(지우지 않음 · 한 묶음) */
+    const ctlTrim = async () => { try { await db.runTransaction(async (tx) => { const s0 = await tx.get(CTL()); const L = (s0.exists && s0.data().log) || []; if (L.length <= 300) return; const old = L.slice(0, L.length - 200); const byM = {}; old.forEach((x) => { const m = String((x && x.at) || nowIso()).slice(0, 7); (byM[m] = byM[m] || []).push(x); });
+        for (const [m, arr] of Object.entries(byM)) tx.set(C('crm_system').doc('pc_ctl_log_' + m), { log: firebase.firestore.FieldValue.arrayUnion(...arr), at: nowIso() }, { merge: true }); tx.set(CTL(), { log: L.slice(-200) }, { merge: true }); }); log(`🛰 원격 조작 기록이 길어 앞쪽을 달별 보관 문서로 옮김 (최근 200줄만 남김)`); } catch (e) {} };
+    CTL().onSnapshot(async (d) => { CTL_DOC = d.exists ? d.data() : null; try { ctlDraw(); } catch (e) {} if (d.exists && (d.data().log || []).length > 300 && !window.__rnCtlTrimAt) { window.__rnCtlTrimAt = 1; setTimeout(() => { ctlTrim().finally(() => { window.__rnCtlTrimAt = 0; }); }, Math.random() * 20000); } const c = ((d.exists && d.data().cmds) || {})[PC_NAME]; if (!c || !c.id || !c.cmd) return;
       const age = Date.now() - Date.parse(c.at || 0); const seen = GM_getValue('rnu-ctl-seen', null);
       if (!ctlLead()) { /* 쉬는 탭: 업데이트만 — 하는 일이 없으니 바로 다시 엶 */ if (c.cmd === 'update' && age < 6 * 3600e3 && sessionStorage.getItem('rn-ctl-upd') !== c.id && !running) { sessionStorage.setItem('rn-ctl-upd', c.id); setTimeout(() => location.reload(), 5000 + Math.random() * 10000); } return; }
       if (seen === c.id) return; GM_setValue('rnu-ctl-seen', c.id);
@@ -2866,10 +2878,10 @@
     const [name, fn] = JOBS[key]; lastRunErr = null; lastRunSt = null;
     if (window.__rnGate && !window.__rnGate(name)) return false; // (1.56.0) 쉬는 탭이면 시작 안 함 (사람이 누른 거면 켤지 물음)
     if (running && curKey === 'explore' && key !== 'explore') { log(`'${name}'을(를) 먼저 하려고 끝없는 탐색 수집을 잠시 멈춥니다 — 끝나면 탐색을 다시 이어감`); GM_setValue('rn-explore-resume', true); stopFlag = true; for (let w = 0; w < 180 && running; w++) await sleep(1000); stopFlag = false; }
-    if (running) { log('이 탭에서 다른 작업 진행 중: ' + running + ' — 끝난 뒤 다시 누르세요 (한 PC에 수집기 하나가 원칙 · 꼭 동시에 해야 하면 새 탭의 [이 탭도 켜기…], 단점 안내 있음)', 1); return; }
+    if (running) { log('이 탭에서 다른 작업 진행 중: ' + running + ' — 끝난 뒤 다시 누르세요 (한 PC에 수집기 하나가 원칙 · 꼭 동시에 해야 하면 새 탭의 [이 탭도 켜기…], 단점 안내 있음)', 1); return false; } /* (1.63.6) 바쁘면 false — ⏰ 자동이 '끝남'으로 잘못 적던 것 */
     curKey = key; FORCE_ALL = !!(opt && opt.manual) && !['chain', 'prdChain'].includes(key); setRunning(name); const tJ = Date.now(); if (FORCE_ALL) log(`수동 실행: '${name}'을(를) 기간 제한 없이 전부 모읍니다 (기존 기록은 그대로 두고 바뀐 것만 덧붙임)`); if (window.__rnStatus) Object.assign(window.__rnStatus, { job: name, jobKey: key, jobStart: tJ, cur: {}, chain: (key === 'chain' || key === 'prdChain') ? window.__rnStatus.chain : null, sub: null }); log(`▶ '${name}' 시작 (수집기 ${VER} · ${PC_NAME})`);
     let res;
-    try { res = await fn(); if (res === 'reload') { ui('새 버전으로 바꾸는 중 — 곧 이어감', 0, 0); } else if (res === 'cancel') { ui('취소함', 0, 0); log(`'${name}' 취소함`); } else if (res === false) { ui('시작 못 함 — 다른 PC가 알라딘 작업 중', 0, 0, '', '그 작업이 끝나면 자동으로 시작합니다 (일시정지를 누르면 취소)'); if (opt && opt.sched) log(`'${name}': 다른 PC가 알라딘 작업 중 — ⏰ 매일 자동이 다음 확인 때 다시`, 1); else { log(`'${name}': 다른 PC가 알라딘 작업 중이라 기다립니다. 끝나면 자동으로 시작합니다`, 1); waitThenRun(key); } } else if (!stopFlag) { ui('완료: ' + name, 1, 1, '', ''); log(name + ' 완료', 0); } }
+    try { res = await fn(opt || {}); if (res === 'reload') { ui('새 버전으로 바꾸는 중 — 곧 이어감', 0, 0); } else if (res === 'cancel') { ui('취소함', 0, 0); log(`'${name}' 취소함`); } else if (res === false) { ui('시작 못 함 — 다른 PC가 알라딘 작업 중', 0, 0, '', '그 작업이 끝나면 자동으로 시작합니다 (일시정지를 누르면 취소)'); if (opt && opt.sched) log(`'${name}': 다른 PC가 알라딘 작업 중 — ⏰ 매일 자동이 다음 확인 때 다시`, 1); else { log(`'${name}': 다른 PC가 알라딘 작업 중이라 기다립니다. 끝나면 자동으로 시작합니다`, 1); waitThenRun(key); } } else if (!stopFlag) { ui('완료: ' + name, 1, 1, '', ''); log(name + ' 완료', 0); } }
     catch (e) { lastRunErr = e.message;
       const paused = e.message === '멈춤';
       ui(paused ? '일시정지됨 — 진행 위치 저장' : '오류로 멈춤', 0, 0, paused ? '' : e.message, '개요 탭의 ▶ 다시 시작(또는 멈춘 작업의 이어하기)을 누르면 멈춘 자리부터 합니다');
@@ -2916,7 +2928,7 @@
    *  예전 문제: ① 맨 앞 하나만 보여서, 하나를 버리면 다음 멈춘 작업이 같은 자리에 떠 '안 지워진' 것처럼 보였음
    *            ② 다른 탭에서 돌고 있는 작업을 버리면, 그 탭이 다음 저장 때 다시 '멈춘 작업'으로 써 넣어 되살아났음 → 돌고 있는 작업은 버리기를 막음
    *  버리기 = '멈춘 자리'만 잊음. 받은 기록은 하나도 지우거나 바꾸지 않음 (다음엔 처음부터 훑되 이미 받은 것은 건너뜀) */
-  const STAGE_JOB = { scanNew: 'scanNew', aladinBuy: 'aladinBuy', buyback: 'buyback', market: 'market', nbMarket: 'nbMarket', soldInfo: 'soldInfo', poolInfo: 'poolInfo', photos: 'photos', usedInfo: 'usedInfo', rev6m: 'rev6mStale', revTop: 'revTop', dynamic: 'dynamic', scanFull: 'scanFull', revAll: 'revAll' };
+  const STAGE_JOB = { bench: 'bench', images: 'images', scanNew: 'scanNew', aladinBuy: 'aladinBuy', buyback: 'buyback', market: 'market', nbMarket: 'nbMarket', soldInfo: 'soldInfo', poolInfo: 'poolInfo', photos: 'photos', usedInfo: 'usedInfo', rev6m: 'rev6mStale', revTop: 'revTop', dynamic: 'dynamic', scanFull: 'scanFull', revAll: 'revAll' };
   let resumeKey = null; let RESUMABLES = [];
   function runningKeys() { const ks = new Set(); const addChain = (k, stage) => { ks.add(k); if (stage && STAGE_JOB[stage]) ks.add(STAGE_JOB[stage]); };
     if (curKey) addChain(curKey, curStage);
@@ -2950,7 +2962,7 @@
     const keys = [k]; if (k === 'chain' || k === 'prdChain') { const st = ((await jobRef(k).get()).data() || {}).stage; if (st && STAGE_JOB[st]) keys.push(STAGE_JOB[st]); } // 일괄이면 일괄 순서표와 '지금 단계'의 자리
     for (const x of keys) { try { const d = (await jobRef(x).get()).data(); if (d && !d.done) await jobRef(x).set({ done: true, discarded: true, discardedAt: Date.now(), discardedBy: PC_NAME }, { merge: true }); LS.set('job_' + x, null); if (/^bench_\d+$/.test(x)) { try { await C('bench_state').doc(x.slice(6)).set({ prog: null }, { merge: true }); } catch (e) {} try { const fr = C('prd_jobs').doc('benchForce'); const fd = (await fr.get()).data(); if (fd && fd.done === false && (fd.list || []).includes(x.slice(6))) { await fr.set({ fin: { [x.slice(6)]: 'skip:' + nowIso() }, savedAt: Date.now() }, { merge: true }); log(`🎯 '${nm}'은(는) 지금 멈춰 있는 강제 실행에서 건너뜁니다 — 이어하기 하면 다음 판매자부터 (다음 강제 실행·자동 수집 땐 처음부터 다시)`); } } catch (e) {} /* (1.63.5) 강제 실행 중 버린 판매자는 이번 강제 실행에서 건너뜀 */ } /* (1.54.3) 벤치마킹 회차를 버리면 '하는 중' 표시도 지움 — 다시 시작해도 그 판매자를 처음부터 다시 읽지 않고 평소 차례대로 */ } catch (e) { return { ok: false, why: e.message }; } }
     log(`'${nm}'의 멈춘 자리만 잊었습니다 (받은 기록은 그대로 · 다음엔 처음부터 훑되 이미 받은 것은 건너뜀)`); await refreshResume(); return { ok: true }; }
-  function resumeJob(k) { if (/^bench_/.test(k)) k = 'bench'; if (!JOBS[k]) return; if (running) return alert(`이 탭은 '${running}' 진행 중입니다`); if (runningKeys().has(k)) return alert(`'${JOBS[k][0]}'은(는) 이미 진행 중입니다`); window.__rnResumeOk && window.__rnResumeOk(); runJob(k); }
+  function resumeJob(k) { const only = /^bench_\d+$/.test(k) ? k.slice(6) : null; if (/^bench_/.test(k)) k = 'bench'; if (!JOBS[k]) return; if (running) { log(`이어하기 못 함: 이 탭은 '${running}' 진행 중입니다`, 1); return { ok: false, why: `이 탭은 '${running}' 진행 중` }; } if (runningKeys().has(k)) { log(`이어하기 못 함: '${JOBS[k][0]}'은(는) 이미 진행 중입니다(다른 PC·탭)`, 1); return { ok: false, why: '이미 진행 중(다른 PC·탭)' }; } window.__rnResumeOk && window.__rnResumeOk(); runJob(k, only ? { only } : undefined); return { ok: true }; } /* (1.63.6) 팝업 대신 기록 줄 · 판매자 한 줄의 이어하기는 그 판매자부터(멈춘 강제 실행이 없으면 그 판매자만) */
   $('#rnpCheck').onclick = () => preflight(false).then((ok) => ok && alert('시작 전 점검: 모두 정상입니다. 자세한 내용은 기록 창에 있습니다.'));
   $('#rnpLogBig').onclick = (e) => { e.preventDefault(); window.__rnJournalToggle && window.__rnJournalToggle(); };
   $('#rnpResume').onclick = () => { if (resumeKey) resumeJob(resumeKey); };

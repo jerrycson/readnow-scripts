@@ -601,7 +601,7 @@ body.kbd .tabs,body.kbd #updpill{display:none!important}
 <div class="toast" id="toast"></div>
 
 <script>window.__pm = {}; /* 속도 기록(⏱): 여는 순간부터 */</script>
-<script>/* 흰 화면 방지: 여는 중 오류가 나고 4초 뒤에도 화면이 비어 있으면 오류 글을 보여 줌 */ (function () { var errs = []; window.addEventListener('error', function (e) { errs.push(String(e.message || e.error || '')); }); window.addEventListener('load', function () { setTimeout(function () { try { var a = document.getElementById('app'); if (a && a.innerHTML.trim()) return; if (!errs.length) return; document.body.insertAdjacentHTML('afterbegin', '<div id="rn-boot-err" style="padding:16px;margin:12px;border:2px solid #B0322A;border-radius:10px;color:#B0322A;font:15px/1.5 system-ui">웹앱을 여는 중 오류가 났습니다:<br><b>' + errs.join('<br>').replace(/</g, '&lt;') + '</b><br>이 글을 Claude에게 보내 주세요. (새로고침해도 같으면 GitHub의 이전 판으로 되돌리면 됩니다)</div>'); } catch (x) {} }, 4000); }); })();</script>
+<script>/* 흰 화면 방지: 여는 중 오류가 나고 4초 뒤에도 화면이 비어 있으면 오류 글을 보여 줌 */ (function () { var errs = []; window.addEventListener('error', function (e) { var t = e.target; errs.push(t && t !== window && (t.src || t.href) ? '파일을 못 받음: ' + (t.src || t.href) : String(e.message || e.error || '')); }, true); /* (1.24.3 전체 점검) 따로 받는 파일(웹앱 본문·공용 파일)이 실패해도 잡음 — 예전엔 흰 화면만 */ window.addEventListener('load', function () { setTimeout(function () { try { var a = document.getElementById('app'); if (a && a.innerHTML.trim()) return; if (!errs.length && typeof shell !== 'undefined') return; if (!errs.length) errs.push('웹앱 본문(readnow-webapp.js)을 아직 못 받음 — 인터넷을 확인하고 새로고침'); document.body.insertAdjacentHTML('afterbegin', '<div id="rn-boot-err" style="padding:16px;margin:12px;border:2px solid #B0322A;border-radius:10px;color:#B0322A;font:15px/1.5 system-ui">웹앱을 여는 중 오류가 났습니다:<br><b>' + errs.join('<br>').replace(/</g, '&lt;') + '</b><br>이 글을 Claude에게 보내 주세요. (새로고침해도 같으면 GitHub의 이전 판으로 되돌리면 됩니다)</div>'); } catch (x) {} }, 4000); }); })();</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -613,11 +613,11 @@ body.kbd .tabs,body.kbd #updpill{display:none!important}
 <script src="../readnow-products-core.js?v=0.14.0"></script>
 <script src="../readnow-ext-core.js?v=0.4.2"></script>
 <script src="../readnow-autosched-core.js?v=0.4.0"></script>
-<script src="../readnow-registry.js?v=0.14.14"></script>
+<script src="../readnow-registry.js?v=0.14.15"></script>
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.1.0"></script>
 <script src="../readnow-register-core.js?v=0.6.0"></script>
-<script>const APP_VER = '1.24.2';</script>
-<script src="readnow-webapp.js?v=1.24.2"></script>
+<script>const APP_VER = '1.24.3';</script>
+<script src="readnow-webapp.js?v=1.24.3"></script>
 </body>
 </html>
