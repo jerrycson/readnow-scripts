@@ -1,7 +1,7 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.60.0의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.60.1의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.60.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.60.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
  * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
@@ -124,6 +124,11 @@
  * 모든 진행(단계 시작·끝, 쪽·항목마다의 진행, 양보·기다림·오류)을 초 단위로 남김.
  * 이 PC: 날짜별로 브라우저에 보관(최근 7일) — 새로고침·멈춤 뒤에도 남음.  Firebase: rn_logs/{PC}_{날짜시각10분} 에 1분마다 묶어서 올림 → 웹앱이나 다른 PC에서도 확인.
  * 화면: 위쪽 [기록] 버튼 → 크게 보는 창 (중요만/전체/오류, 검색, 자동 스크롤, 내려받기). 진행을 늦추지 않게 화면 갱신은 1초에 한 번. */
+/* (1.60.1) 수집기 창들(관제판·상품/고객 패널·작업 기록·⏰ 칸 편집기·등록 창)의 앞뒤 — 누른 창이 맨 앞으로(늘 맨 위로 고정된 창 없음) */
+(function rnZ() { if (window.top !== window || window.__rnFront) return; const SEL = '#rn-ctl, #rnp, #rn-crm, #rn-jw, #rnas, #rnRegFill'; let top = 2147483600;
+  window.__rnFront = (el) => { if (!el) return; const L = [...document.querySelectorAll(SEL)]; L.forEach((e) => { if (!e.style.zIndex) e.style.zIndex = String(++top); });
+    if (top >= 2147483640) { top = 2147483600; L.filter((e) => e !== el).sort((a, b) => +a.style.zIndex - +b.style.zIndex).forEach((e) => (e.style.zIndex = String(++top))); } el.style.zIndex = String(++top); };
+  document.addEventListener('pointerdown', (e) => { const el = e.target && e.target.closest && e.target.closest(SEL); if (el) window.__rnFront(el); }, true); })();
 (function rnJournal() {
   if (window.top !== window || window.__rnLog) return;
   const MAXMEM = 10000; const buf = []; const lt = []; let ltDirty = false; const pend = []; const idbPend = []; let dirty = false; let seq = 0;

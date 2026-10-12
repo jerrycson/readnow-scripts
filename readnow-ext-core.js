@@ -8,7 +8,7 @@
  * 화면 모양이 바뀌어 못 읽으면 '못 읽음'과 함께 받은 화면 일부(probe)를 돌려줌 → 수집기가 ext_probe에 남겨 나중에 읽는 법을 고침. 추측으로 채우지 않음.
  * ISBN이 있는 책 정보(교보·예스24)는 받은 상품 페이지 안에 그 ISBN이 정확히 있을 때만 받아들임(다른 책을 잘못 붙이지 않게). */
 (function (root) {
-  const VERSION = '0.3.0';
+  const VERSION = '0.4.0'; // (0.4.0) DVDPrime 글 화면 읽기(dpPost) — 줄마다 상품·값(사람마다 다른 적는 법)·판매 상태(가운데 줄·판완)·상품 상태 · 판매자·글 날짜·조회 수·댓글 수·택배·직거래·연락 방법
 
   /* ── 키 (웹앱 설정 ⑱에서 넣음 → Firebase app_secrets/ext · 백업 파일엔 넣지 않음) ── */
   const KEYS = [
@@ -255,11 +255,79 @@
       const ps = dpPrices(t); const multi = dpMulti(t); const p = !multi && ps.length === 1 ? ps[0] : null;
       out.push({ id, t, p, st, cat, at: dpDate(dt, now), who, hit, ...(multi ? { multi: true } : {}), ...(ps.length && p == null ? { pt: ps.slice(0, 4) } : {}), url: `https://dvdprime.com/g2/bbs/board.php?bo_table=market&wr_id=${id}` }); }
     return out; }
-  ADP.dvdprime = async ({ title, http, cfg }) => { const q = mediaQuery(title); if (!q) return { skip: '제목 없음' }; const url = `https://dvdprime.com/g2/bbs/board.php?bo_table=market&sca=&sfl=wr_subject&sop=and&stx=${enc(q)}`;
-    const r = await http({ method: 'GET', url }); if (!okStatus(r)) return { ok: false, why: `HTTP ${r.status}` }; const H = String(r.text);
+
+  /* ── (0.4.0) DVDPrime 글 화면(board.php?bo_table=market&wr_id=…) 읽기 — 정범이 준 글 원본 3개로 맞춤
+   *  머리: 제목 h1#writeSubject · 말머리 .view_ca_static · 글쓴이 .sideview_a(data-mb-id = 회원 아이디) 안 span.member(별명) · 등급 title='N Tier' · 조회 #view_hit · 작성 #view_datetime('Updated at …' = 고친 글) · meta article:published_time(처음 쓴 때) · 댓글 #comment_start_num
+   *  본문 #resContents: 줄(<br>·</p>·</div>)마다 상품 한 개 — '이름 : 4,000원 : 판매완료' · '이름 - 38,000원' · '이름 미개봉 5.5'(= 5.5만 원) · '2.5만원' · '1.9'(= 19,000원) · '4천원'
+   *   판매 끝 = 그 줄에 가운데 줄(<s>·<strike>·<del>·line-through)이 있거나 판완·판매완료·거래완료·완판·팔림 · 예약 = 예약(중)
+   *   상품 상태 = 미개봉 · 개봉(품) · 겉비닐 개봉 · 스파인 변색 · 띠지 없음 · 기스·스크래치 / 판 = 한정판·스틸북·풀슬립·렌티큘러·넘버링·초회·아웃박스 · 지역 = 국내정발·북미판·일본판… · 형태 = 4K·블루레이·DVD·3D·n디스크
+   *  값이 없는 줄 = 거래 조건(택배비·무료 조건·직거래 지역·입금순·환불 불가·연락 방법) — 전화번호·메일 같은 연락처 숫자는 남기지 않고 '연락 방법'만(쪽지·문자·전화·댓글·카톡) */
+  const DP_SOLD = /판\s*완|판매\s*완료|거래\s*완료|완\s*판|팔렸|팔림|\bsold\b|\(완료\)|\[완료\]/i;
+  const DP_RSV = /예약\s*(?:중|됨|완료)?(?![xX×불안])/;
+  const DP_COND = [['sealed', /미개봉|새제품|새상품|신품/], ['opened', /(?<!미)개봉(?:품)?|중고/], ['wrapOpened', /겉\s*비닐\s*개봉|비닐\s*개봉/], ['spine', /스파인\s*변색|변색/], ['noObi', /띠지\s*(?:없|x)/i], ['scratch', /기스|스크래치|흠집|찍힘|눌림/], ['noSlip', /슬립\s*(?:없|x)|아웃케이스\s*(?:없|x)/i]];
+  const DP_ED = [['한정판', /한정판|한정반|limited/i], ['스틸북', /스틸북|steelbook/i], ['풀슬립', /풀\s*슬립|full\s*slip/i], ['렌티큘러', /렌티큘러|lenticular/i], ['넘버링', /넘버링|numbered/i], ['초회', /초회|초도/], ['아웃박스', /아웃\s*(?:박스|케이스)/], ['콤보팩', /콤보\s*팩|combo/i], ['감독판', /감독판|director/i], ['일반판', /일반판/]];
+  const DP_REGION = [['국내', /국내\s*정발|정발|국내판/], ['북미', /북미판|미국판|us판/i], ['일본', /일본판|일판/], ['영국', /영국판|uk판/i], ['프랑스', /프랑스판|불판/], ['독일', /독일판/], ['홍콩', /홍콩판/], ['한글자막', /한글\s*자막|한자/]];
+  const DP_FORMAT = [['4K', /4k|uhd/i], ['3D', /\b3d\b/i], ['블루레이', /블루레이|blu-?ray|\bbd\b/i], ['DVD', /dvd|디브이디/i], ['CD', /\bcd\b/i], ['LP', /\blp\b/i]];
+  const dpTags = (t, L) => L.filter(([, re]) => re.test(t)).map(([k]) => k);
+  /* 줄 끝의 값 하나 — 단위가 없으면: 소수(5.5·1.9)는 만 원 · 1,000 이상은 원 · 그 밖(47 로닌의 47 등)은 값이 아님 */
+  function dpLinePrice(line) { let t = String(line || '').replace(DP_SOLD, ' ').replace(/예약\s*(?:중|됨)?/g, ' ').replace(/[\s:：\-–—=~]+$/g, '').trim();
+    const m = t.match(/(?:^|[\s:：\-–—=~(])(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s*(만\s*(\d)\s*천\s*원?|만\s*원?|천\s*원?|원)?\s*(?:택포|택배\s*포함|에\s*판매|씩)?\s*\)?$/); if (!m) return null;
+    const raw = m[0].trim(); const n = +m[1].replace(/,/g, ''); const u = (m[2] || '').replace(/\s/g, ''); let p = null;
+    if (/^만\d천/.test(u)) p = Math.round(n * 10000 + +m[3] * 1000); else if (/^만/.test(u)) p = Math.round(n * 10000); else if (/^천/.test(u)) p = n * 1000; else if (u === '원') p = n;
+    else if (/\./.test(m[1]) && n > 0 && n < 100) p = Math.round(n * 10000); else if (n >= 1000 && !/\./.test(m[1])) p = n;
+    if (p == null || p < 100 || p > 5000000) return null; return { p, raw, name: t.slice(0, t.length - m[0].length + (m[0].length - m[0].trimStart().length)).replace(/[\s:：\-–—=~]+$/g, '').trim() }; }
+  const dpPhoneLike = (t) => /01[016789][\s.\-]?\d{3,4}[\s.\-]?\d{4}|공일[공영]|영일[공영]|[공영일이삼사오육칠팔구]{7,}/.test(String(t || '').replace(/\s/g, ''));
+  const dpMask = (t) => String(t || '').replace(/01[016789][\s.\-]?\d{3,4}[\s.\-]?\d{4}/g, '(번호 가림)').replace(/[공영일이삼사오육칠팔구](?:\s*[공영일이삼사오육칠팔구]){6,}/g, '(번호 가림)').replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '(메일 가림)');
+  function dpPost(html, now) { const H = String(html || ''); const g = (re) => { const m = H.match(re); return m ? m[1] : null; };
+    const id = g(/bo_table=market(?:&amp;|&)wr_id=(\d+)/) || g(/view_recommend_list_(\d+)/); const title = strip(g(/<h1[^>]+id=["']writeSubject["'][^>]*>([\s\S]*?)<\/h1>/i) || '') || null;
+    if (!title && !/id=["']resContents["']/.test(H)) return null;
+    const cat = strip(g(/class=["'][^"']*view_ca_static[^"']*["'][^>]*>([\s\S]*?)<\/a>/i) || '') || null;
+    const nickBox = g(/id=["']view_nickname["'][^>]*>([\s\S]*?)<\/div>/i) || ''; const nick = strip((nickBox.match(/class=['"]member['"][^>]*>([\s\S]*?)<\/span>/i) || [])[1] || '') || null;
+    const mbId = (nickBox.match(/data-mb-id=['"]([^'"]+)['"]/) || [])[1] || null; const tier = toNum((nickBox.match(/title=['"](\d+)\s*Tier['"]/i) || [])[1]);
+    const hits = toNum(strip(g(/id=["']view_hit["'][^>]*>([\s\S]*?)<\/div>/i) || '')); const dtRaw = strip(g(/id=["']view_datetime["'][^>]*>([\s\S]*?)<\/div>/i) || '');
+    const pub = g(/property=["']article:published_time["'][^>]*content=["']([^"']+)["']/i); const mod = g(/property=["']article:modified_time["'][^>]*content=["']([^"']+)["']/i);
+    const comments = toNum(strip(g(/id=["']comment_start_num["'][^>]*>([\s\S]*?)<\/div>/i) || ''));
+    let body = (H.match(/id=["']resContents["'][^>]*>([\s\S]*?)<!--\s*영화평점|id=["']resContents["'][^>]*>([\s\S]*?)<div class=["']relative ad_content/i) || [])[1] || (H.match(/id=["']resContents["'][^>]*>([\s\S]*?)<\/div>\s*<!--/i) || [])[1] || '';
+    const images = (body.match(/<img\b/gi) || []).length;
+    body = body.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<img\b[^>]*>/gi, ' ');
+    /* 줄 나누기 — 가운데 줄 표시는 줄마다 따로 보아야 하므로 태그를 남긴 채로 나눔 */
+    const rawLines = body.split(/<br\s*\/?>|<\/p>|<\/div>|<\/li>|<p\b[^>]*>|<div\b[^>]*>|<li\b[^>]*>/i);
+    const items = []; const terms = [];
+    let depth = 0; for (const rl of rawLines) { const op = (rl.match(/<(?:s|strike|del)\b/gi) || []).length, cl = (rl.match(/<\/(?:s|strike|del)>/gi) || []).length; const struck = depth > 0 || op > 0 || /line-through/i.test(rl); depth = Math.max(0, depth + op - cl);
+      const t = strip(rl).replace(/\s+/g, ' ').trim(); if (!t || t.length < 2) continue;
+      const pr = dpLinePrice(t);
+      if (pr && pr.name && pr.name.length >= 2 && !/택배|배송|반값|편의점|^gs\b|^cu\b|직거래|송장|운임|착불|선불|입금|계좌/i.test(pr.name)) {
+        const sold = struck || DP_SOLD.test(t); const rsv = !sold && DP_RSV.test(t);
+        items.push({ t: clip(pr.name, 120), raw: clip(t, 200), p: pr.p, pr: pr.raw, st: sold ? 'sold' : rsv ? 'rsv' : 'sell', ...(struck ? { strike: true } : {}), cond: dpTags(t, DP_COND), ed: dpTags(t, DP_ED), region: dpTags(t, DP_REGION), fmt: dpTags(t, DP_FORMAT), disc: toNum((t.match(/(\d+)\s*(?:disc|디스크|dvd|bd)\b/i) || [])[1]) || null }); continue; }
+      if (/택배|배송|반값|편의점|직거래|입금|예약\s*[x×불안]|환불|쪽지|문자|연락|전화|카톡|오픈\s*채팅|톡|네고|에눌|교환|포장|송장|일괄|무료/i.test(t) || dpPhoneLike(t)) terms.push(t); }
+    const T = terms.join(' \n '); const fees = []; T.replace(/(반값\s*택배|gs\s*(?:반값|일반)?\s*택배|cu\s*(?:반값|일반)?\s*택배|편의점\s*택배|일반\s*택배|택배(?:비|거래시?\s*배송료)?|배송(?:비|료))[^\d\n]{0,14}(\d{1,3}(?:,\d{3})+|\d+)\s*(천\s*원?|원)?/gi, (m, k, n, u) => { const v = +n.replace(/,/g, '') * (/천/.test(u || '') ? 1000 : 1); if (v >= 500 && v <= 30000) fees.push({ k: k.replace(/\s+/g, ' ').trim(), won: v }); return m; });
+    const free = (T.match(/[^\n]{0,30}(?:택배비|배송비)?\s*무료[^\n]{0,20}/) || [])[0] || null;
+    const direct = /직거래/.test(T) ? { ok: !/직거래\s*(?:x|불가|안)/i.test(T), place: ((T.match(/직거래[^\n]{0,20}?([가-힣]{2,8}(?:역|시|구|동))/) || T.match(/([가-힣]{2,6})\s*(?:자택|근처)?에서\s*(?:직거래|가능)/) || [])[1]) || null } : null;
+    const contact = [['쪽지', /쪽지/], ['문자', /문자/], ['전화', /전화|통화/], ['댓글', /댓글/], ['카톡', /카톡|카카오|오픈\s*채팅/]].filter(([, re]) => re.test(T)).map(([k]) => k); if (!contact.length && dpPhoneLike(T)) contact.push('번호(문자·전화)'); /* '○○○ 연락주세요'처럼 방법 없이 번호만 */
+    const buy = cat === '삽니다' || /삽니다|구매합니다|구합니다|구입합니다/.test(title || '');
+    const sold = items.filter((x) => x.st === 'sold').length;
+    return { id, url: id ? `https://dvdprime.com/g2/bbs/board.php?bo_table=market&wr_id=${id}` : null, title: title ? clip(title, 160) : null, cat, kind: buy ? 'buy' : 'sell',
+      seller: { nick, mbId, tier: tier != null ? tier : null }, hits, comments, pubAt: pub ? pub.replace(' ', 'T') + (/[+Z]/.test(pub) ? '' : '+09:00') : null, modAt: mod ? mod.replace(' ', 'T') + (/[+Z]/.test(mod) ? '' : '+09:00') : null, updated: /updated/i.test(dtRaw), shownAt: dtRaw.replace(/^updated at\s*/i, '') || null,
+      images, items, n: items.length, soldN: sold, sellN: items.length - sold, terms: { fees, free: free ? clip(free.trim(), 60) : null, direct, firstPay: /입금\s*순|선\s*입금|예약\s*[x×불안]/.test(T), noRefund: /환불[이은]?\s*(?:불가|안\s*(?:됨|돼|됩)|x|어렵)/i.test(T), nego: /네고|에눌/.test(T) ? !/(?:네고|에눌)[^\n]{0,10}(?:x|불가|안\s*(?:해|받|됩)|받지\s*않|사절)/i.test(T) : null, bundleFree: /\d+\s*장\s*이상[^\n]{0,20}무료/.test(T), contact, phoneGiven: dpPhoneLike(T), notes: terms.slice(0, 8).map((x) => clip(dpMask(x), 80)) } }; }
+  /* 글 하나에서 우리 상품과 닮은 줄 — 같은 줄이 여럿이면 판매중을 먼저, 그다음 싼 것 */
+  /* 형태(4K·블루레이·DVD·3D)가 우리 상품 제목과 맞는 줄을 먼저 — '살인의 추억 4K'면 4K 줄이 일반판 줄보다 앞 */
+  const dpPick = (post, title, min) => { if (!post || !post.items) return []; const F = dpTags(title, DP_FORMAT); const fit = (x) => (F.length ? F.filter((k) => x.fmt.includes(k)).length - (F.includes('4K') && !x.fmt.includes('4K') ? 1 : 0) - (!F.includes('4K') && x.fmt.includes('4K') ? 1 : 0) : 0);
+    return post.items.map((x) => ({ ...x, sim: simMedia(title, x.t), fit: fit(x) })).filter((x) => x.sim >= (min || 0.6)).sort((a, b) => (a.st === 'sell' ? 0 : 1) - (b.st === 'sell' ? 0 : 1) || b.fit - a.fit || b.sim - a.sim || a.p - b.p); };
+  ADP.dvdprime = async ({ title, http, cfg }) => { const q = mediaQuery(title); if (!q) return { skip: '제목 없음' };
+    /* (0.4.0) 제목+본문으로 찾음 — '블루레이 판매합니다'처럼 제목엔 없고 본문 줄에만 우리 상품이 있는 글이 많음(받은 글 3개 모두 그랬음) · 그 검색이 안 먹으면(글 0개) 제목으로 다시 */
+    const U = (sfl) => `https://dvdprime.com/g2/bbs/board.php?bo_table=market&sca=&sfl=${sfl}&sop=and&stx=${enc(q)}`; let url = U(enc('wr_subject||wr_content'));
+    let r = await http({ method: 'GET', url }); if (!okStatus(r)) return { ok: false, why: `HTTP ${r.status}` }; let H = String(r.text);
+    if (!/id=["']list_row_\d/.test(H)) { const u2 = U('wr_subject'); const r2 = await http({ method: 'GET', url: u2 }); if (okStatus(r2)) { r = r2; H = String(r2.text); url = u2; } }
     if (!/bo_table[=_]market/.test(H) || !/list_search_div|name=["']fsearch["']/.test(H)) return probe(H, /login|로그인/.test(H.slice(0, 20000)) && !/list_row_/.test(H) ? '장터 목록 대신 다른 화면(로그인 등)이 옴' : '장터 목록 화면이 아님', url);
     const all = dpParse(H); const items = all.filter((x) => !x.cat || DP_MEDIA_CAT.includes(x.cat) || x.cat === '삽니다');
-    const L = items.map((x) => ({ ...x, sim: simMedia(title, x.t) })).sort((a, b) => b.sim - a.sim || (a.p || 0) - (b.p || 0)).slice(0, 60); const o = { ok: true, d: { q, url, n: L.length, items: L } }; o.d.cats = all.reduce((m, x) => { const k = x.cat || '?'; m[k] = (m[k] || 0) + 1; return m; }, {}); o.d.buyN = o.d.items.filter((x) => x.st === 'buy').length; o.d.noPrice = o.d.items.filter((x) => x.p == null && x.st !== 'buy').length; o.d.note = '목록 화면엔 값이 없어 제목에 값이 하나만 적힌 글만 값을 씀 — 나머지는 글 수만'; return o; };
+    const L = items.map((x) => ({ ...x, sim: simMedia(title, x.t) })).sort((a, b) => b.sim - a.sim || (a.p || 0) - (b.p || 0)).slice(0, 60); const o = { ok: true, d: { q, url, n: L.length, items: L } }; o.d.cats = all.reduce((m, x) => { const k = x.cat || '?'; m[k] = (m[k] || 0) + 1; return m; }, {}); o.d.buyN = o.d.items.filter((x) => x.st === 'buy').length; o.d.noPrice = o.d.items.filter((x) => x.p == null && x.st !== 'buy').length; o.d.note = '목록 화면엔 값이 없어 제목에 값이 하나만 적힌 글만 값을 씀 — 닮은 글(최대 3개)은 글 화면을 열어 줄마다 값·판매 상태를 읽음';
+    /* (0.4.0) 닮은 글 중 값이 글 안에만 있는 것(여러 개 파는 글 등)은 글 화면을 열어 우리 상품 줄의 값·상태를 읽음 — 한 번에 최대 3개 · 4초 간격 */
+    /* 열 글: ① 제목이 닮았는데 값이 글 안에만 있는 글 ② 제목은 안 닮았지만 본문 검색에 걸린 글(본문 줄에 우리 상품이 있을 수 있음) — 최근 글부터 · 판매완료 제목은 뺌 · 모두 합쳐 최대 4개 */
+    const content = /wr_content/.test(decodeURIComponent(url)); const open = [...L.filter((x) => x.sim >= 0.6 && x.st !== 'buy' && x.st !== 'sold' && (x.multi || x.p == null)), ...(content ? L.filter((x) => x.sim < 0.6 && x.st !== 'sold').sort((a, b) => String(b.at || '').localeCompare(String(a.at || ''))) : [])].filter((x, i, A) => A.indexOf(x) === i).slice(0, 4); let opened = 0;
+    for (const x of open) { await new Promise((res) => setTimeout(res, 4000)); let r2; try { r2 = await http({ method: 'GET', url: x.url }); } catch (e) { break; } if (!okStatus(r2)) break; const P = dpPost(r2.text); if (!P) continue; opened++;
+      const hit = dpPick(P, title, 0.6)[0] || null; x.post = { seller: P.seller.nick, mbId: P.seller.mbId, tier: P.seller.tier, hits: P.hits, comments: P.comments, pubAt: P.pubAt, updated: P.updated, n: P.n, sellN: P.sellN, soldN: P.soldN, terms: { fees: P.terms.fees, free: P.terms.free, direct: P.terms.direct, firstPay: P.terms.firstPay, noRefund: P.terms.noRefund, nego: P.terms.nego, contact: P.terms.contact, phoneGiven: P.terms.phoneGiven } };
+      if (hit) { x.line = hit.raw; x.p = hit.p; x.pr = hit.pr; x.st = P.kind === 'buy' ? 'buy' : hit.st; x.cond = hit.cond; x.ed = hit.ed; x.region = hit.region; x.fmt = hit.fmt; x.lineSim = hit.sim; delete x.multi; delete x.pt; x.sim = hit.sim; /* 닮음 = 그 줄의 닮음(글 제목이 아니라) */ } else { x.post.noLine = true; x.sim = Math.min(x.sim, 0.5); /* 글을 열어 보니 우리 상품 줄이 없음 — 시세에서 뺌 */ } }
+    o.d.opened = opened; o.d.content = content; o.d.items.sort((a, b) => b.sim - a.sim || (a.p || 0) - (b.p || 0)); return o; };
 
   /* ── 외국: eBay 공식 Browse API (미국 eBay · 한국으로 배송되는 즉시 구매 매물만 · 한국까지 배송비 포함) ── */
   const b64 = (s) => (typeof btoa === 'function' ? btoa(s) : Buffer.from(s, 'utf8').toString('base64'));
@@ -346,6 +414,6 @@
   async function run(src, a) { const f = ADP[src]; if (!f) return { ok: false, why: '모르는 출처' }; const s = SOURCES[src]; if (!keysReady(src, a.keys)) return { skip: '키 없음' };
     if (s.grp === 'used' && src !== 'yes24used' && !a.title) return { skip: '제목 없음' }; try { return await f(a); } catch (e) { return { ok: false, why: e.message || String(e) }; } }
 
-  const api = { VERSION, VIA_JOONGMO, eligible, mediaQuery, mediaCore, simMedia, dpParse, _dpDate: (s, n) => dpDate(s, n), keyOf, isIsbnKey, jmParse, KEYS, GROUPS, SOURCES, ORDER, BASIC_ORDER, BASIC_FIELDS, CFG_DEF, cfgOf, keysReady, isKrIsbn, coreTitle, sim, marketQuery, jsonBlobs, findListings, tableKV, meta, strip, ymd, toNum, run, fxRun, toKrw, median, lowQ, dropOutliers, foreignStats, usedStats, mergeBasic, sig, shard, stOf, FX_CUR, _adp: ADP, _pageBook: pageBook };
+  const api = { VERSION, VIA_JOONGMO, eligible, mediaQuery, mediaCore, simMedia, dpParse, dpPost, dpPick, dpLinePrice, _dpDate: (s, n) => dpDate(s, n), keyOf, isIsbnKey, jmParse, KEYS, GROUPS, SOURCES, ORDER, BASIC_ORDER, BASIC_FIELDS, CFG_DEF, cfgOf, keysReady, isKrIsbn, coreTitle, sim, marketQuery, jsonBlobs, findListings, tableKV, meta, strip, ymd, toNum, run, fxRun, toKrw, median, lowQ, dropOutliers, foreignStats, usedStats, mergeBasic, sig, shard, stOf, FX_CUR, _adp: ADP, _pageBook: pageBook };
   if (typeof module === 'object' && module.exports) module.exports = api; root.ReadnowExt = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
