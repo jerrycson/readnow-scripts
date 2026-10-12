@@ -3,7 +3,7 @@
  * 저장·읽기(Firebase)는 쓰는 쪽이 ctx로 넘겨 줌 — 이 파일은 계산과 그리기만. */
 (function (G) {
   'use strict';
-  const VERSION = '0.1.0';
+  const VERSION = '0.1.1';
   /* @@AS_ENGINE_BEGIN — (1.60.0) ⏰ 매일 자동 수집 엔진 (계산만 · Firebase·화면 없음 → 따로 떼어 시험함)
    *  칸(slot) = { id, job:'prd:키'|'crm:키', on, name?, trig, days?, win?, pcs?, gapH?, late?, maxMin?, retry? }
    *   trig.t = 'time'  { times:['HH:MM'…] }            정한 시각 (하루 여러 번) — 그 시각이 지나면 그날 안에 한 번(밀린 회차는 하나로 묶음)
@@ -209,7 +209,18 @@
   /* ↶ 되돌리기: 고치기 전 모습을 쌓아 둠(Ctrl+Z = 바로 전으로 · Ctrl+Shift+Z·Ctrl+Y = 다시) — 저장 전 이 화면의 고침만(저장한 것은 모든 PC에 이미 적용) */
   const asSnap = () => { ED.hist.push(JSON.stringify({ d: ED.draft, sel: ED.sel })); if (ED.hist.length > 100) ED.hist.shift(); ED.fut.length = 0; };
   const asDirtyCalc = () => { ED.dirty = JSON.stringify(ED.draft) !== ED.base; };
+  /* (0.1.1) 누르는 즉시 저장되는 스위치(맨 앞 전체 켜기·끄기, 늘 도는 일)도 Ctrl+Z로 되돌림 — 기록에 '행동'으로 쌓음 */
+  const asActRec = (a) => { ED.hist.push(JSON.stringify({ a })); if (ED.hist.length > 100) ED.hist.shift(); ED.fut.length = 0; };
+  const asBiOf = (k) => ((ctx.builtins && ctx.builtins()) || []).find((x) => x.k === k);
+  const asActNow = (a) => (a.t === 'on' ? !!(ctx.doc() && ctx.doc().on) : !!(asBiOf(a.k) || {}).on);
+  const asActName = (a) => (a.t === 'on' ? '⏰ 매일 자동 수집 전체' : (asBiOf(a.k) || {}).label || a.k);
+  async function asActDo(a) { if (a.t === 'on') return ctx.setOn(a.v); const b = asBiOf(a.k); if (!b || !b.toggle) throw new Error('이 기기에서는 바꿀 수 없음'); return b.toggle(a.v); }
+  async function asUndoAct(redo, from, to) { const o = JSON.parse(from[from.length - 1]); const a = o.a; const want = redo ? a.v : !a.v; /* 되돌리면 → 누르기 전(!v) · 다시 하면 → v */
+    if (asActNow(a) !== !want) { from.pop(); ED.msg = `'${asActName(a)}' — 그사이 다른 곳에서 바꿔 ${redo ? '다시 하지' : '되돌리지'} 않음 (남의 고침을 덮지 않게)`; ED.msgBad = true; asEdDraw(); return; }
+    ED.busyAct = true; try { await asActDo({ ...a, v: want }); from.pop(); to.push(JSON.stringify({ a })); ED.msg = `${redo ? '↷ 다시 함' : '↶ 되돌림'}: ${asActName(a)} ${want ? '켬' : '끔'} — 모든 PC에 바로 적용`; ED.msgBad = false; }
+    catch (er) { ED.msg = '되돌리기 저장 못 함: ' + er.message; ED.msgBad = true; } finally { ED.busyAct = false; } asEdDraw(); }
   function asUndo(redo) { const from = redo ? ED.fut : ED.hist, to = redo ? ED.hist : ED.fut; if (!from.length) { ED.msg = redo ? '다시 할 것이 없음' : '되돌릴 것이 없음'; ED.msgBad = false; asEdDraw(); return; }
+    if (ED.busyAct) return; if (JSON.parse(from[from.length - 1]).a) return asUndoAct(redo, from, to);
     to.push(JSON.stringify({ d: ED.draft, sel: ED.sel })); const o = JSON.parse(from.pop()); ED.draft = o.d; ED.sel = o.sel; ED.opened = o.sel; ED.selBlk = null; asDirtyCalc(); ED.msg = redo ? '↷ 다시 함' : '↶ 되돌림 (저장 전 고침)'; ED.msgBad = false; asEdDraw(); }
   const asDoc = () => ({ on: !!(ctx.doc() && ctx.doc().on), slots: ED.draft || [] });
   function asEdOpen() { if (!ctx.doc()) return ctx.log('⏰ 설정을 아직 못 읽음 — 구글 로그인 확인', 1); ED.open = true; ED.draft = AS.slotsOf(ctx.doc()); ED.base = JSON.stringify(ED.draft); ED.hist = []; ED.fut = []; ED.baseRev = +ctx.doc().rev || 0; ED.dirty = false; ED.sel = null; ED.selBlk = null; ED.msg = ''; ED.conf = false;
@@ -218,7 +229,7 @@
     else if (!runsOnly && ED.dirty && !ED.saving && (+ctx.doc().rev || 0) !== ED.baseRev) { ED.conf = true; }
     /* 끄는 중·확정 단추가 켜진 중·글을 쓰는 중이면 다시 그리지 않음(손에 든 것이 사라지지 않게) — 시간표만(끄는 중엔 그것도 안 함) */
     if (ED.dragging || document.querySelector('#rnas [data-arm="1"]')) { ED.pend = true; return; }
-    const a = document.activeElement; if (a && a.closest && a.closest('#rnas') && /INPUT|SELECT|TEXTAREA/.test(a.tagName)) { asEdDrawTl(); ED.pend = true; return; } ED.pend = false; asEdDraw(); }
+    const a = document.activeElement; if (a && a.closest && a.closest('#rnas') && /INPUT|SELECT|TEXTAREA/.test(a.tagName) && !/^(checkbox|radio|button)$/.test(a.type || '')) { /* 글 쓰는 칸만 — 스위치는 눌러도 화면이 멈추지 않게(0.1.1) */ asEdDrawTl(); ED.pend = true; return; } ED.pend = false; asEdDraw(); }
   const asNewId = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 4);
   const asTouch = () => { asDirtyCalc(); ED.msg = ''; };
   function asEdCss() { if (document.getElementById('rnas-css')) return; const st = document.createElement('style'); st.id = 'rnas-css'; st.textContent = `
@@ -330,7 +341,7 @@
         <div class="as-m"><span class="as-nm">${esc3(asName(s))}</span>${asPar(s.job) ? '<span class="par-tag" title="알라딘을 쓰지 않아 다른 수집과 함께 돎 — 다른 일 때문에 밀리지 않음">동시 진행</span>' : ''}${asMissTag(s)}<span class="as-dur">${asDurTxt(s.job)}</span><div class="as-desc">${esc3(AS.describe(s, byId))}${s.trig.t === 'after' || s.trig.t === 'time' || s.trig.t === 'every' ? '' : ' <small style="color:#8A9690">(조건 칸 — 때를 미리 모름)</small>'}</div><div>${asChips(s, plan, doc)}</div></div>
         <div class="as-a"><button type="button" data-cedit="${esc3(s.id)}" title="고치기">${ED.sel === s.id ? '▲' : '✎'}</button><button type="button" data-cdup="${esc3(s.id)}" title="복제">⧉</button><button type="button" data-cdel="${esc3(s.id)}" title="지우기 (확정 한 번 더)">🗑</button></div></div>
         <div class="as-fw${ED.sel === s.id && ED.opened !== s.id ? '' : ED.sel === s.id ? ' open' : ''}"><div>${ED.sel === s.id ? asFormHtml(s) : ''}</div></div></div>`).join('');
-    ov.innerHTML = `<div class="as-box"><div class="as-hd"><b>⏰ 매일 자동 수집 — 칸 편집</b><label class="sw" title="전체 켜기·끄기 (바로 저장)"><input type="checkbox" id="as_on" ${doc.on ? 'checked' : ''}><span></span></label><span>${doc.on ? '켜짐' : '<b style="color:#F2B544">꺼짐 — 아래 칸은 하지 않음</b>'}</span><span class="sp"></span>${ED.dirty ? '<span class="dirty">저장 안 한 고침 있음</span>' : ''}<button type="button" class="as-save" id="as_save" ${ED.dirty && !V.err.length ? '' : 'disabled'}>💾 저장 (모든 PC에 적용)</button><button type="button" id="as_undo" ${ED.dirty ? '' : 'disabled'} title="저장 전 고친 것을 모두 버림 — 한 단계씩은 Ctrl+Z(다시 Ctrl+Shift+Z)">↺ 모두 되돌리기</button><small style="opacity:.8" title="저장 전 고침에만 — 저장한 것은 모든 PC에 이미 적용">Ctrl+Z 한 단계 ↶ · Ctrl+Shift+Z ↷</small><button type="button" id="as_x">닫기 ✕</button></div>
+    ov.innerHTML = `<div class="as-box"><div class="as-hd"><b>⏰ 매일 자동 수집 — 칸 편집</b><label class="sw" title="전체 켜기·끄기 — 누르는 즉시 모든 PC에 저장(💾 저장과 따로) · Ctrl+Z로 되돌림"><input type="checkbox" id="as_on" ${doc.on ? 'checked' : ''}><span></span></label><span>${doc.on ? '켜짐' : '<b style="color:#F2B544">꺼짐 — 아래 칸은 하지 않음 (스위치를 다시 켜거나 Ctrl+Z)</b>'}</span><span class="sp"></span>${ED.dirty ? '<span class="dirty">저장 안 한 고침 있음</span>' : ''}<button type="button" class="as-save" id="as_save" ${ED.dirty && !V.err.length ? '' : 'disabled'} title="${ED.dirty ? (V.err.length ? '아래 고칠 것을 먼저 풀어야 저장됨' : '고친 칸을 모든 PC에 적용') : '저장할 고침 없음 — 칸을 고치면 켜짐 (스위치들은 누르는 즉시 저장되어 이 단추가 필요 없음)'}">💾 저장 (모든 PC에 적용)</button><button type="button" id="as_undo" ${ED.dirty ? '' : 'disabled'} title="${ED.dirty ? '저장 전 고친 칸을 모두 버림 (한 번 더 눌러 확정) — 한 단계씩은 Ctrl+Z(다시 Ctrl+Shift+Z)' : '버릴 고침 없음 — 바로 저장된 스위치는 Ctrl+Z로 되돌림'}">↺ 모두 되돌리기</button><small style="opacity:.8" title="저장 전 고침에만 — 저장한 것은 모든 PC에 이미 적용">Ctrl+Z 한 단계 ↶ · Ctrl+Shift+Z ↷</small><button type="button" id="as_x">닫기 ✕</button></div>
       ${ED.conf ? `<div class="as-msg bad">⚠ 다른 PC(또는 다른 창)가 그사이 칸을 바꿔 저장했습니다 — 이 화면의 고침을 저장하면 그 고침을 덮게 되어 막아 둠. <button type="button" id="as_reload">다시 불러오기 (내 고침 버림)</button></div>` : ''}
       ${ED.msg ? `<div class="as-msg ${ED.msgBad ? 'bad' : ''}">${esc3(ED.msg)}</div>` : ''}${V.err.length ? `<div class="as-msg bad">고칠 것: ${V.err.map(esc3).join(' · ')}</div>` : ''}${V.warn.length ? `<div class="as-msg warn">${V.warn.map(esc3).join(' · ')}</div>` : ''}
       <div class="as-sec"><h4>🕘 오늘 시간표 <small>블록 길이 = 평균 걸린 시간(끝난 회차는 실제) · 초록 끝 · 주황 하는 중 · 빨강 멈춤 · 점선 = 앞 칸 끝난 뒤(예상) · '정한 시각' 블록은 옆으로 끌어 시각 바꿈 · 켠 칸 하루 사용 약 <b>${AS.fmtMs(load)}</b>${load > 20 * 3600e3 ? ' <b style="color:#B0322A">— 하루를 거의 다 씀</b>' : ''}</small></h4><div class="tl-w">${asTlHtml()}</div></div>
@@ -351,7 +362,9 @@
       ED.draft.forEach((s, i) => { const o = old.find((x) => x.id === s.id); if (!o) ch.push(`＋${nm(s)}`); else if (JSON.stringify(o) !== JSON.stringify(s)) ch.push(`✎${nm(s)}`); else if (old.indexOf(o) !== i) ch.push(`↕${nm(s)}`); }); old.forEach((o) => { if (!ED.draft.some((x) => x.id === o.id)) ch.push(`－${nm(o)}`); });
       ED.saving = true; try { await ctx.save(ED.draft, ED.baseRev, ch.join(', ') || '바뀐 것 없음'); ED.dirty = false; ED.conf = false; ED.baseRev = ED.baseRev + 1; ED.draft = AS.slotsOf({ slots: ED.draft }); ED.base = JSON.stringify(ED.draft); ED.msg = `저장했습니다 — 모든 PC가 다음 확인(1분 안)부터 이대로 (${ch.length}곳 바뀜)`; ED.msgBad = false; }
       catch (er) { if (er.conflict) ED.conf = true; ED.msg = '저장 못 함: ' + er.message; ED.msgBad = true; } finally { ED.saving = false; } asEdDraw(); };
-    $o('#as_on').onchange = (e) => Promise.resolve(ctx.setOn(e.target.checked)).catch((er) => { ED.msg = '저장 실패: ' + er.message; ED.msgBad = true; asEdDraw(); });
+    $o('#as_on').onchange = async (e) => { const cb = e.target; const v = cb.checked; cb.disabled = true; cb.blur();
+      try { await ctx.setOn(v); asActRec({ t: 'on', v }); ED.msg = `⏰ 매일 자동 수집 전체를 ${v ? '켰습니다' : '껐습니다 — 아래 칸들은 다시 켤 때까지 하지 않음'} · 이 스위치는 누르는 즉시 모든 PC에 저장됨(💾 저장 단추와 상관없음) · Ctrl+Z로 되돌림`; ED.msgBad = false; }
+      catch (er) { ED.msg = '저장 실패: ' + er.message; ED.msgBad = true; } asEdDraw(); };
     $o('#as_add').onclick = () => { const c = asCatalog().find((x) => x.job === 'prd:market') || asCatalog()[0]; asAddSlot(c.job); };
     const qi = $o('#as_q'); qi.oninput = () => { ED.catQ = qi.value; clearTimeout(qi._t); qi._t = setTimeout(() => { const p = qi.selectionStart; asEdDraw(); const n = document.querySelector('#as_q'); if (n) { n.focus(); n.setSelectionRange(p, p); } }, 250); };
     all('[data-con]').forEach((cb) => (cb.onchange = () => asEdit(cb.dataset.con, (s) => { s.on = cb.checked; })));
@@ -375,7 +388,7 @@
       { const rw = () => ed((s) => { s.retry = q1('[data-fron]').checked ? { n: num(q1('[data-frn]')) || 1, gap: num(q1('[data-frg]')) || 30 } : null; }); ['[data-fron]', '[data-frg]', '[data-frn]'].forEach((k) => (q1(k).onchange = rw)); }
       { const gd = q1('[data-gd]'); if (gd) gd.ontoggle = () => { ED.gOpen = gd.open ? id : null; }; }
       q1('[data-fclose]').onclick = () => { const fw = F.closest('.as-fw'); if (fw) fw.classList.remove('open'); setTimeout(() => { ED.sel = null; ED.opened = null; asEdDraw(); }, 280); }; }
-    all('[data-bik]').forEach((cb) => (cb.onchange = async () => { const b = ((ctx.builtins && ctx.builtins()) || []).find((x) => x.k === cb.dataset.bik); if (!b || !b.toggle) return; cb.disabled = true; try { await b.toggle(cb.checked); ED.msg = `${b.label} ${cb.checked ? '켬' : '끔'} — 모든 PC에 바로 적용`; ED.msgBad = false; } catch (er) { ED.msg = '저장 못 함: ' + er.message; ED.msgBad = true; } asEdDraw(); }));
+    all('[data-bik]').forEach((cb) => (cb.onchange = async () => { const b = ((ctx.builtins && ctx.builtins()) || []).find((x) => x.k === cb.dataset.bik); if (!b || !b.toggle) return; cb.disabled = true; cb.blur(); try { await b.toggle(cb.checked); asActRec({ t: 'bi', k: b.k, v: cb.checked }); ED.msg = `${b.label} ${cb.checked ? '켬' : '끔'} — 모든 PC에 바로 적용 · Ctrl+Z로 되돌림`; ED.msgBad = false; } catch (er) { ED.msg = '저장 못 함: ' + er.message; ED.msgBad = true; } asEdDraw(); }));
     asDragList(ov); asDragCat(ov); asDragTl(ov); }
   /* 칸 끌기 — 잡은 칸은 손을 따라오고, 지나가는 칸들은 비켜 미끄러짐(.2초) · 놓으면 그 자리 */
   function asDragList(ov) { ov.querySelectorAll('.as-h').forEach((h) => (h.onpointerdown = (e) => { if (e.button > 0) return; e.preventDefault(); const card = h.closest('.as-card'); const box = ov.querySelector('#as_cards'); const cards = [...box.querySelectorAll('.as-card')]; const from = cards.indexOf(card); const R = cards.map((c) => c.getBoundingClientRect()); const gap = 7; const H = R[from].height + gap; const y0 = e.clientY; let to = from;
