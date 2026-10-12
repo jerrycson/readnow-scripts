@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.63.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.63.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2531,7 +2531,7 @@
   /* 개요 화면용: 다음에 저절로 할 일 (정한 시각·간격만 — 조건 칸은 때를 미리 모름) */
   window.__rnSchedNext = () => { if (!SCHED) return { known: false }; if (!SCHED.on) return { known: true, on: false }; const { min } = kstNow(); let best = null;
     for (const s of AS.slotsOf(SCHED)) { if (!s.on) continue; let cand = [];
-      if (s.trig.t === 'time') cand = s.trig.times.map((t) => AS.tMin(t));
+      if (s.trig.t === 'time') cand = s.trig.times.map((t) => AS.tMin(t)); else if (s.trig.t === 'month' && AS.timesToday) cand = AS.timesToday(s.trig, Date.now()).map((t) => AS.tMin(t)).filter((m) => m > min); /* (1.63.1) 매월 정한 날 — 오늘이 고른 날일 때만 */
       else if (s.trig.t === 'every') { const f = s.win ? AS.tMin(s.win.from) : 0; for (let m = f, i = 0; i < 288; m += s.trig.min, i++) { const mm = m % 1440; if (AS.inWin(s, mm)) cand.push(mm); if (m - f >= 1440) break; } }
       for (const m of cand) { const d = m > min ? m - min : m + 1440 - min; if (!best || d < best.d) best = { d, t: AS.hm(m), label: asName(s), tomorrow: m <= min }; } }
     return { known: true, on: true, next: best }; };
