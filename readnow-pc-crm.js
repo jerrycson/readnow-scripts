@@ -1,7 +1,7 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.59.2의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.60.0의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.59.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.60.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -1708,13 +1708,13 @@
   window.addEventListener('pagehide', () => { if (running) { try { const v = JSON.parse(localStorage.getItem(TAB_KEY) || 'null'); if (v && v.tab === TAB_ID) localStorage.removeItem(TAB_KEY); } catch (e) {} } });
   window.addEventListener('storage', async (e) => { if (e.key === TAB_KEY) { if (!e.newValue) await refreshStats(); render(); } });
   async function markCrmComplete() { try { const bj = await loadJob('bulk'); if (bj.status === 'done') GM_setValue('rnu-crm-complete', new Date().toISOString()); } catch (e) {} }
-  window.__rnCrm = { localInfo: async () => { let lines = 0, pops = 0; try { lines = await dbCount('orderLines'); pops = await dbCount('popups'); } catch (e) {} return { lines, pops, complete: !!GM_getValue('rnu-crm-complete', false) }; }, localCount: async () => { try { const a = await dbAll('popups'); return a.length; } catch (e) { return 0; } }, pause: () => { if (running) pauseRequested = true; }, otherBusy: () => !!otherTabBusy(), upload: () => (fbUser ? start('upload') : Promise.resolve()), oldAuto: async () => ({ on: !!settings.autoRun, time: settings.autoTime || '06:00' }), offOldAuto: async () => { if (settings.autoRun) { settings.autoRun = false; await saveSettings(); } }, start: (n, o) => { autoTriggered = true; return start(n, o).finally(() => { autoTriggered = false; markCrmComplete(); }); }, busy: () => running, label: () => currentTask,
+  window.__rnCrm = { localInfo: async () => { let lines = 0, pops = 0; try { lines = await dbCount('orderLines'); pops = await dbCount('popups'); } catch (e) {} return { lines, pops, complete: !!GM_getValue('rnu-crm-complete', false) }; }, localCount: async () => { try { const a = await dbAll('popups'); return a.length; } catch (e) { return 0; } }, pause: () => { if (running) pauseRequested = true; }, otherBusy: () => !!otherTabBusy(), upload: () => (fbUser ? start('upload') : Promise.resolve()), oldAuto: async () => ({ on: !!settings.autoRun, time: settings.autoTime || '06:00' }), offOldAuto: async () => { if (settings.autoRun) { settings.autoRun = false; await saveSettings(); } }, start: (n, o) => { autoTriggered = true; return start(n, o).finally(() => { autoTriggered = false; markCrmComplete(); }); }, tasks: () => ({ ...Object.fromEntries(Object.entries(TASKS).map(([k, v]) => [k, v.label])), bulk: '고객·주문 전체 일괄' }), /* (1.60.0) ⏰ 칸에 넣을 수 있는 고객 쪽 일 */ busy: () => running, label: () => currentTask,
     // (1.38.0) 개요 화면의 '멈춘 작업' 목록에 고객 작업도 함께 (이 PC 안에 저장된 자리)
     resumableInfo: async () => { if (running || otherTabBusy()) return null; const r = await resumable(); if (!r) return null; const j = await loadJob(r); return { key: r, name: r === 'bulk' ? '고객 전체 일괄 수집' : (TASKS[r] ? TASKS[r].label : r), savedAt: j.updatedAt ? Date.parse(j.updatedAt) || 0 : 0, why: j.message || null }; },
     resume: async () => { const r = await resumable(); if (!r) return; window.__rnResumeOk && window.__rnResumeOk(); return start(r); },
     discard: async (t) => { if (running || otherTabBusy()) return { ok: false, why: '고객 작업이 지금 진행 중입니다 — 먼저 일시정지하세요' }; const names = t === 'bulk' ? ['bulk', ...BULK] : [t]; for (const n of names) { const j = await loadJob(n); if (['paused', 'running', 'error'].includes(j.status)) { j.status = 'idle'; j.discardedAt = now(); await saveJob(j); } } log(`'${t === 'bulk' ? '고객 전체 일괄 수집' : (TASKS[t] ? TASKS[t].label : t)}'의 멈춘 자리만 잊었습니다 (받은 기록은 그대로)`); render(); return { ok: true }; } };
   async function start(name, { fresh = false } = {}) {
-    if (running) return;
+    if (running) return; let outcome = 'done'; const tS0 = Date.now(); /* (1.60.0) 끝난 모양을 돌려줌(⏰ 매일 자동이 봄) · 걸린 시간 기록 */
     if (window.__rnGate && !window.__rnGate(name === 'bulk' ? '고객 전체 일괄 수집' : TASKS[name] ? TASKS[name].label : name)) return; // (1.56.0) 쉬는 탭이면 시작 안 함 (사람이 누른 거면 켤지 물음)
     const ob = otherTabBusy();
     if (ob) { alert(`이 PC의 다른 탭(${ob.page === 'worders.aspx' ? '주문조회' : '판매관리'})에서 '${ob.label}' 작업 중입니다.\n그 탭에서 진행 상황을 확인하거나, 끝난 뒤 다시 눌러 주세요.`); return; }
@@ -1754,13 +1754,15 @@
         if (settings.forceFull && name !== 'verify' && name !== 'upload') { settings.forceFull = false; await saveSettings(); log("'처음부터 전체 수집' 설정을 다시 껐습니다."); }
       }
     } catch (e) {
-      const status = e instanceof StopSignal ? 'paused' : 'error';
+      const status = e instanceof StopSignal ? 'paused' : 'error'; outcome = status;
       for (const n of [name, currentTask]) { if (!n) continue; const j = await loadJob(n); if (j.status === 'running') { j.status = status; j.message = e.message; await saveJob(j); } }
       if (name === 'bulk') { const bj = await loadJob('bulk'); bj.status = 'paused'; bj.message = e.message; await saveJob(bj); shareBulk('paused', e.message); }
       log(e.message, status === 'paused' ? 'warn' : 'err'); setNow(e.message);
       if (e.code === 'LOGIN') try { GM_notification({ title: '리드나우 고객 수집기', text: e.message }); } catch (x) {}
     } finally { markTab(false); if (needsLock) await releaseLock(); running = false; pauseRequested = false; currentTask = null; if (name === 'bulk') markCrmComplete();
+      try { window.__rnJobDone && window.__rnJobDone('crm:' + name, Date.now() - tS0, outcome === 'paused' ? 'stop' : outcome); } catch (e) {}
       { const RS = window.__rnStatus || {}; if (RS.job === '고객 전체 일괄 수집') Object.assign(RS, { job: null, chain: null, lastEnd: { name: '고객 전체 일괄 수집', at: Date.now(), ms: Date.now() - (RS.jobStart || Date.now()) } }); RS.sub = null; } if (window.__rnStatus && window.__rnStatus.crm) window.__rnStatus.crm.active = false; await refreshStats(true); render(); } // 작업이 끝났을 때만 전체를 다시 셈
+    return outcome;
   }
   // 웹앱에 보여줄 수집 상태 (crm_system/jobs.lastBulk)
   function shareBulk(state, message) { if (!fdb || !fbUser) return; SYS().doc('jobs').set({ lastBulk: { state, at: now(), day: todayKst(), pcName: PC.name || '', message: message || null }, writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {}); }

@@ -1,7 +1,7 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.59.2의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.60.0의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.59.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.60.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
  * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
@@ -182,6 +182,7 @@
       if (slots) window.__rnLog('수집기', 'info', `Firebase 기록 채움: 덜 올라간 10분 칸 ${slots}개를 이 PC 보관 기록으로 다시 올림 (${lines.toLocaleString()}줄 — 이미 있던 줄은 하나로 합쳐짐)`); } catch (e) { bad++; } finally { bfBusy = false; } return { slots, lines, bad }; }
   setInterval(() => backfill().catch(() => {}), 5 * 60000); setTimeout(() => backfill(true).catch(() => {}), 90000);
   window.__rnLogBackfill = backfill;
+  window.__rnLogDay = (d) => jgetDay(d); /* (1.60.0) ⏰ 일마다 걸린 시간 — 예전 기록에서 채울 때 */
   setInterval(upNow, 60000);
   window.__rnFlush = async () => { try { await jflush(); } catch (e) {} try { await upNow(); } catch (e) {} }; // 탭을 닫기 직전 등: 남은 기록을 이 PC(IndexedDB)와 Firebase에 바로 저장
   /* (1.38.0) 탭끼리 나누는 '지금 상태'와 '최근 기록' — 개요 화면은 어느 탭에서 열어도 이 PC 전체(모든 수집기 탭)를 보여 줌
