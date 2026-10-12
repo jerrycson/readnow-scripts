@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.59.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.59.2의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.59.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.59.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1435,8 +1435,14 @@
   /* (1.56.1) 🎯 강제 실행(benchForce): 주기·'끝난 지 20시간' 규칙과 상관없이 고른 판매자 목록의 맨 처음 판매자부터 차례로 모두 읽음
    *  진행은 서버 prd_jobs/benchForce에 {startedAt, list}로 — 멈췄다 이어하면(멈춘 작업 목록 · 다시 누름 · 3일 안) 이번 강제 실행이 시작된 뒤에 끝난 판매자는 건너뛰고 다음 판매자부터
    *  한 판매자 안에서는 평소처럼: 그 판매자의 회차가 시작한 지 20시간 안이고 아직 안 끝났으면 그 쪽부터 이어 읽고, 끝났으면 새 회차 */
-  async function benchJob(opt) { const FORCE = !!(opt && opt.force); const cfg = (await C('app_settings').doc('bench').get()).data() || {}; BENCH_CFG = cfg; const T = (cfg.targets || []).filter((t) => t && t.sc && t.on !== false && !t.self && String(t.sc) !== '996008'); /* (1.57.6) 우리 숍(북스킹)은 읽지 않음 — 웹앱 우리 카드는 우리 기록으로 셈 */ const RB = (BREG() || {}).BENCH;
-    if (!T.length) { log('집중 벤치마킹: 고른 판매자 없음 — 웹앱 경영 탭 → 🎯 집중 벤치마킹에서 고르세요'); return; }
+  /* (1.60.0) 읽을 판매자 = 따라가는(on) 판매자 − 우리 숍 − 꺼진 그룹의 판매자 (웹앱 🎯 그룹 머리의 켜기·끄기 · '그룹 없음'은 bench.noneOff)
+   *  주기 수집·강제 실행·상품 페이지 정보 모두 이 목록만 — 꺼진 그룹의 판매자는 모두 건너뜀(모은 기록은 그대로) */
+  function benchOffSet(cfg) { const inG = new Set(), off = new Set(); for (const g of (cfg && cfg.groups) || []) { if (!g || !g.id) continue; for (const sc of (g.scs || []).map(String)) { if (inG.has(sc)) continue; inG.add(sc); if (g.off) off.add(sc); } }
+    if (cfg && cfg.noneOff) for (const t of cfg.targets || []) if (t && t.sc && !inG.has(String(t.sc))) off.add(String(t.sc)); return off; }
+  function benchTargets(cfg) { const off = benchOffSet(cfg); return ((cfg && cfg.targets) || []).filter((t) => t && t.sc && t.on !== false && !t.self && String(t.sc) !== '996008' && !off.has(String(t.sc))); }
+  async function benchJob(opt) { const FORCE = !!(opt && opt.force); const cfg = (await C('app_settings').doc('bench').get()).data() || {}; BENCH_CFG = cfg; const T = benchTargets(cfg); /* (1.57.6) 우리 숍(북스킹)은 읽지 않음 — 웹앱 우리 카드는 우리 기록으로 셈 */ const RB = (BREG() || {}).BENCH;
+    { const offN = benchOffSet(cfg).size; if (offN) log(`🎯 꺼진 그룹의 판매자 ${offN}명은 건너뜀 (웹앱 🎯 그룹 머리의 토글)`); }
+    if (!T.length) { log('집중 벤치마킹: 읽을 판매자 없음 — 고른 판매자가 없거나 모든 그룹이 꺼짐 (웹앱 경영 탭 → 🎯 집중 벤치마킹)'); return; }
     if (!RB) { log('집중 벤치마킹: 공용 노선표(readnow-registry.js 0.13.0 이상)가 없어 수집 차례를 못 정함 — 수집기를 새로 고치세요', 1); return; }
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
     const byS = new Map(T.map((t) => [String(t.sc), t])); const done = new Set(); const bad = []; const wantDetail = RB.needsDetail(cfg); BENCH_DEFER_DETAIL = wantDetail; let listDone = false;
@@ -1557,7 +1563,7 @@
       } finally { await save().catch((e) => log(`📖 '${name}' 저장 실패: ${e.message}`, 1)); }
       sumT += tried; sumF += filled; log(`📖 '${name}' 끝: ${filled}/${tried}개 (${Math.round((Date.now() - t0) / 1000)}초)`); }
     log(`📖 상품 페이지 정보 끝 — 판매자 ${T.length}명 · ${sumF.toLocaleString()}/${sumT.toLocaleString()}개 · ${Math.round((Date.now() - tAll) / 60000)}분`); }
-  async function benchDetailJob() { const cfg = (await C('app_settings').doc('bench').get()).data() || {}; BENCH_CFG = cfg; const T = (cfg.targets || []).filter((t) => t && t.sc && t.on !== false && !t.self && String(t.sc) !== '996008'); if (!T.length) { log('집중 벤치마킹: 고른 판매자 없음'); return; }
+  async function benchDetailJob() { const cfg = (await C('app_settings').doc('bench').get()).data() || {}; BENCH_CFG = cfg; const T = benchTargets(cfg); if (!T.length) { log('집중 벤치마킹: 고른 판매자 없음'); return; }
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); return false; } try { log(`📖 집중 벤치마킹으로 모은 상품만 상품 페이지 정보 읽기(설정과 상관없이) — ${T.map((t) => t.name || t.sc).join(' → ')}`); await benchDetailPass(T, { capped: false }); } finally { await releaseLane('aladin'); } }
   let BENCH_DEFER_DETAIL = false; /* (1.57.7) 정범 지정: 한 바퀴(차례가 된 판매자 모두) 숍 목록을 먼저 다 읽고, 상품 페이지 정보는 그 뒤에 첫 판매자부터 따로(benchDetailPass) */
   async function benchDetail(t, now, newIds, F) { const RB = (BREG() || {}).BENCH; const out = { tried: 0, filled: [], newIds }; if (!RB || !RB.needsDetail(BENCH_CFG) || BENCH_DEFER_DETAIL) return out;
@@ -2384,7 +2390,7 @@
    *  웹앱에서 '⏸ 주기 수집 멈춤'(autoOn:false)이면 하지 않음 (일괄 수집 안의 벤치마킹 단계·수동 단추는 그대로) */
   { let bCfg = null, bSt = null, bStAt = 0; C('app_settings').doc('bench').onSnapshot((d) => { bCfg = d.exists ? d.data() : null; }, () => {});
     setInterval(async () => { try { if (running || window.__rnPaused || !auth.currentUser || !bCfg || bCfg.autoOn === false || (window.__rnRest && window.__rnRest())) return; const RB = (BREG() || {}).BENCH; if (!RB) return;
-        const T = (bCfg.targets || []).filter((t) => t && t.sc && t.on !== false && !t.self && String(t.sc) !== '996008'); if (!T.length) return; const bCfgT = { ...bCfg, targets: T }; /* (1.57.6) 우리 숍 뺌 */
+        const T = benchTargets(bCfg); if (!T.length) return; const bCfgT = { ...bCfg, targets: T }; /* (1.57.6) 우리 숍 뺌 */
         if (!bSt || Date.now() - bStAt > 30 * 60000) { bSt = await benchStates(T); bStAt = Date.now(); }
         if (!RB.plan(bCfgT, bSt, Date.now()).some((x) => x.due)) return;
         bSt = await benchStates(T); bStAt = Date.now(); const due = RB.plan(bCfgT, bSt, Date.now()).filter((x) => x.due); if (!due.length) return;
@@ -2705,13 +2711,16 @@
     const want = GM_getValue('rnu-reload-for', null); if (want && verNum(want) <= verNum(VER)) GM_setValue('rnu-reload-for', null);
     ref.onSnapshot((d) => { const v = (d.data() || {}).ver; if (!v || verNum(v) <= verNum(VER) || window.__rnOutdated) return;
       window.__rnOutdated = v; const tried = GM_getValue('rnu-reload-for', null) === v;
-      log(`새 수집기 ${v}가 있습니다 (이 탭은 ${VER}). 지금 작업은 그대로 계속합니다${tried ? ' (이 PC는 아직 동기화 전 — 이 버전으로 계속)' : '. 쉬는 사이나 일괄 수집 단계 사이에 새 버전으로 바꿔 이어갑니다'}`);
-      if (tried) return; let idleSince = null; const seenAt = Date.now();
+      /* (1.59.2) 한 번 새로고침했는데도 옛 판이면(Tampermonkey 동기화가 아직 안 옴) 예전엔 그 판으로 끝까지 버팀 → 이제 30분마다(쉬는 사이에만) 다시 새로고침해 동기화가 왔는지 봄, 같은 판으로 최대 8번 */
+      const RT0 = GM_getValue('rnu-reload-try', null); const nTry = RT0 && RT0.v === v ? +RT0.n || 0 : 0;
+      log(`새 수집기 ${v}가 있습니다 (이 탭은 ${VER}). 지금 작업은 그대로 계속합니다${tried ? (nTry >= 8 ? ' (이 PC의 Tampermonkey에 새 판이 아직 없음 — 8번 다시 열어 봐도 그대로라 더 하지 않음 · 그 PC의 Tampermonkey 동기화를 확인하세요)' : ` (이 PC는 아직 동기화 전 — 30분마다 쉬는 사이에 다시 열어 동기화가 왔는지 확인 ${nTry}/8)`) : '. 쉬는 사이나 일괄 수집 단계 사이에 새 버전으로 바꿔 이어갑니다'}`);
+      if (tried && nTry >= 8) return; let idleSince = null; const seenAt = Date.now();
       const t = setInterval(() => { const busy = running || imgRunning || (window.__rnCrm && window.__rnCrm.busy());
         // (1.38.0) 오래 걸리는 작업 중이면(새 판을 본 지 10분 넘게) 진행 위치 저장 지점에서 멈추고 새로고침해 새 판으로 그 자리부터 이어감
         //   예전: 쉬거나 일괄 단계 사이에서만 바꿔, 몇 시간짜리 단계가 끝날 때까지 옛 판으로 돌았음(10/8: 16:32에 1.37.0을 보고도 계속 1.27.0)
-        if (busy && running && !imgRunning && !(window.__rnCrm && window.__rnCrm.busy()) && !window.__rnPaused && !memReload && !verReload && curKey && curKey !== 'explore' && JOBS[curKey] && Date.now() - seenAt > 10 * 60000) { clearInterval(t); verReload = true; stopFlag = true; log(`새 수집기 ${v}로 바꾸려고 지금 항목까지 저장하고 멈춥니다 — 새로고침 뒤 '${JOBS[curKey][0]}'을(를) 그 자리부터 자동으로 이어감`, 1); return; }
-        if (busy) { idleSince = null; return; } idleSince = idleSince || Date.now(); if (Date.now() - idleSince < 120000) return; clearInterval(t); GM_setValue('rnu-reload-for', v); safeReload('새 버전으로 바꿈', null); }, 10000); }, () => {});
+        if (!tried && busy && running && !imgRunning && !(window.__rnCrm && window.__rnCrm.busy()) && !window.__rnPaused && !memReload && !verReload && curKey && curKey !== 'explore' && JOBS[curKey] && Date.now() - seenAt > 10 * 60000) { clearInterval(t); verReload = true; stopFlag = true; log(`새 수집기 ${v}로 바꾸려고 지금 항목까지 저장하고 멈춥니다 — 새로고침 뒤 '${JOBS[curKey][0]}'을(를) 그 자리부터 자동으로 이어감`, 1); return; }
+        if (busy) { idleSince = null; return; } idleSince = idleSince || Date.now(); if (Date.now() - idleSince < 120000) return; if (tried && Date.now() - ((RT0 && RT0.at) || 0) < 30 * 60000) return;
+        clearInterval(t); GM_setValue('rnu-reload-for', v); GM_setValue('rnu-reload-try', { v, n: nTry + 1, at: Date.now() }); safeReload(tried ? `새 버전 ${v} 동기화 확인 (${nTry + 1}/8)` : '새 버전으로 바꿈', null); }, 10000); }, () => {});
     // 새로고침 뒤 이어가기: 실제로 시작될 때까지 표시를 지우지 않고 15초마다 다시 시도(최대 10분), 사람 확인 없이(무인) 시작
     { const after = GM_getValue('rnu-resume-after-reload', null);
       if (after && JOBS[after]) { let tries = 0; const t = setInterval(() => { tries++;
@@ -2719,6 +2728,45 @@
         if (running || (window.__rnRest && window.__rnRest())) return; /* (1.56.0) 이 PC의 수집기 탭이 이어감 */ if (tries > 40) { clearInterval(t); log(`새로고침 뒤 이어가기 '${JOBS[after][0]}'를 10분 동안 시작하지 못했습니다 — 개요 탭 '멈춘 작업'의 이어하기를 눌러 주세요`, 1); return; }
         clearInterval(t); GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 '${JOBS[after][0]}'을(를) 저장된 자리부터 이어갑니다 (수집기 ${VER})`); window.__rnAuto = true; runJob(after).finally(() => { window.__rnAuto = false; }); }, 15000); } }
   }
+  /* ══════════ (1.59.2) 🛰 원격 조작 — 웹앱(⚙ 관리도구 › ① 도구)이나 다른 PC 수집기에서 이 PC를 골라 ■ 중단 · ▶ 다시 시작 · ⟳ 업데이트
+   *  명령은 Firebase crm_system/pc_ctl 한 문서: cmds.{PC 이름} = { id, cmd, at, by, want(그때 가장 새 판) } · 결과는 acks.{PC 이름} = { id, cmd, state, msg, ver, at } · 보낸·받은 기록은 log에 덧붙임(지우지 않음)
+   *  ■ 중단 = 이 PC의 모든 수집기 탭 일시정지(지금 항목까지 저장 — 개요의 ▶ 다시 시작 또는 원격 ▶로 이어감)
+   *  ⟳ 업데이트 = 하던 작업을 저장 지점에서 멈추고 안전한 새로고침 → Tampermonkey에 있는 판으로 다시 뜸 → 하던 작업을 그 자리부터 이어감.
+   *     새로 뜬 판이 웹앱이 본 가장 새 판보다 낮으면(그 PC의 Tampermonkey 동기화가 아직 안 옴) 15분마다(쉬는 사이) 다시 열어 확인, 최대 8번 — 결과는 웹앱에 그대로 보임
+   *  명령은 6시간 지나면 버림(꺼져 있던 PC가 다음 날 켜지자마자 멈추지 않게) · 한 명령은 한 번만 (같은 id는 다시 안 함) */
+  const CTL = () => C('crm_system').doc('pc_ctl');
+  let ctlReload = null; // 하던 작업이 저장 지점에서 멈추면 runJob이 새로고침
+  let CTL_DOC = null; let ctlDraw = () => {}; // 수집기 화면의 '🛰 PC 원격' 줄(watchPcs)이 씀
+  const ctlLead = () => { try { const r = window.__rnRole ? window.__rnRole() : 'lead'; return r === 'lead' || r === 'force'; } catch (e) { return true; } };
+  const ctlAck = (id, cmd, state, msg) => { log(`🛰 원격 ${({ stop: '■ 중단', resume: '▶ 다시 시작', update: '⟳ 업데이트' })[cmd] || cmd}: ${msg}`, state === 'fail' || state === 'nosync' ? 1 : 0);
+    return CTL().set({ acks: { [PC_NAME]: { id, cmd, state, msg, ver: VER, at: nowIso() } }, log: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), pc: PC_NAME, id, cmd, state, msg: String(msg).slice(0, 200), ver: VER }) }, { merge: true }).catch(() => {}); };
+  window.__rnCtlSend = async (pc, cmd) => { const want = ((await C('crm_system').doc('collector_version').get().catch(() => null)) || { data: () => ({}) }).data() || {}; const id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    await CTL().set({ cmds: { [pc]: { id, cmd, at: nowIso(), by: `${PC_NAME} 수집기`, want: (want && want.ver) || null } }, log: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), pc, id, cmd, state: 'sent', msg: `${PC_NAME} 수집기에서 보냄`, ver: null }) }, { merge: true }); return id; };
+  async function ctlUpdateNow(c) { GM_setValue('rnu-ctl-upd', { id: c.id, from: VER, want: c.want || null, n: 0, at: Date.now() });
+    if (running && curKey && JOBS[curKey] && !imgRunning) { ctlReload = c.id; stopFlag = true; await ctlAck(c.id, 'update', 'stopping', `'${JOBS[curKey][0]}' 하던 중 — 지금 항목까지 저장하고 멈춘 뒤 새로고침, 새 판에서 그 자리부터 이어감`); return; }
+    if (running || imgRunning || (window.__rnCrm && window.__rnCrm.busy())) { try { window.__rnCrm && window.__rnCrm.busy() && window.__rnCrm.pause(); } catch (e) {} if (imgRunning) stopFlag = true;
+      await ctlAck(c.id, 'update', 'stopping', `작업(${running || (imgRunning ? '이미지' : '고객 작업')}) 저장 지점에서 멈추는 중 — 멈추면 새로고침`);
+      for (let w = 0; w < 300 && (running || imgRunning || (window.__rnCrm && window.__rnCrm.busy())); w++) await sleep(1000); }
+    if (running || imgRunning || (window.__rnCrm && window.__rnCrm.busy())) { GM_setValue('rnu-ctl-upd', null); return ctlAck(c.id, 'update', 'fail', '5분 안에 작업이 멈추지 않아 새로고침하지 않음 — 다시 보내거나 그 PC에서 확인'); }
+    await ctlAck(c.id, 'update', 'reloading', `새로고침 중 (지금 ${VER})`); safeReload('🛰 원격 업데이트', null); }
+  async function ctlBoot() { /* 원격 업데이트로 다시 뜬 탭: 판이 바뀌었는지 알림 · 아직 옛 판이면 15분마다 다시 열어 동기화 확인 */
+    const u = GM_getValue('rnu-ctl-upd', null); if (!u || !u.id || !ctlLead()) return; if (Date.now() - (u.at || 0) > 12 * 3600e3) { GM_setValue('rnu-ctl-upd', null); return; }
+    const reached = u.want ? verNum(VER) >= verNum(u.want) : true; const changed = verNum(VER) > verNum(u.from);
+    if (reached || changed && !u.want) { GM_setValue('rnu-ctl-upd', null); return ctlAck(u.id, 'update', 'done', changed ? `새 판 ${VER}로 바뀜 (전 ${u.from}) — 하던 작업은 그 자리부터 이어감` : `다시 열기 끝 (판 ${VER} 그대로 — 이미 가장 새 판)`); }
+    const n = (u.n || 0) + 1; if (n > 8) { GM_setValue('rnu-ctl-upd', null); return ctlAck(u.id, 'update', 'nosync', `8번 다시 열어도 ${VER} — 이 PC의 Tampermonkey에 새 판 ${u.want}이(가) 없음. 그 PC Tampermonkey의 동기화(또는 새 판 붙여넣기)를 확인하세요`); }
+    GM_setValue('rnu-ctl-upd', { ...u, n, at: Date.now() }); await ctlAck(u.id, 'update', 'nosync', `다시 열었지만 아직 ${VER} (새 판 ${u.want}) — 이 PC의 Tampermonkey 동기화를 기다림 · 15분 뒤(쉬는 사이) 다시 열어 확인 ${n}/8`);
+    let idle = null; const t = setInterval(() => { const busy = running || imgRunning || (window.__rnCrm && window.__rnCrm.busy()); const u2 = GM_getValue('rnu-ctl-upd', null); if (!u2 || u2.id !== u.id) { clearInterval(t); return; }
+      if (busy) { idle = null; return; } idle = idle || Date.now(); if (Date.now() - idle < 60000 || Date.now() - u2.at < 15 * 60000) return; clearInterval(t); safeReload(`🛰 원격 업데이트 — 동기화 확인 ${n}/8`, null); }, 20000); }
+  async function ctlWatch() { try { if (window.__rnRoleReady) await Promise.race([window.__rnRoleReady, sleep(15000)]); } catch (e) {} ctlBoot().catch(() => {});
+    CTL().onSnapshot(async (d) => { CTL_DOC = d.exists ? d.data() : null; try { ctlDraw(); } catch (e) {} const c = ((d.exists && d.data().cmds) || {})[PC_NAME]; if (!c || !c.id || !c.cmd) return;
+      const age = Date.now() - Date.parse(c.at || 0); const seen = GM_getValue('rnu-ctl-seen', null);
+      if (!ctlLead()) { /* 쉬는 탭: 업데이트만 — 하는 일이 없으니 바로 다시 엶 */ if (c.cmd === 'update' && age < 6 * 3600e3 && sessionStorage.getItem('rn-ctl-upd') !== c.id && !running) { sessionStorage.setItem('rn-ctl-upd', c.id); setTimeout(() => location.reload(), 5000 + Math.random() * 10000); } return; }
+      if (seen === c.id) return; GM_setValue('rnu-ctl-seen', c.id);
+      if (!(age >= -600000 && age < 6 * 3600e3)) return ctlAck(c.id, c.cmd, 'expired', `${Math.round(age / 3600e3)}시간 지난 명령이라 하지 않음`);
+      try { if (c.cmd === 'stop') { if (window.__rnPaused) return ctlAck(c.id, 'stop', 'done', '이미 일시정지 상태'); window.__rnPauseAll(`🛰 원격 중단 — ${c.by || ''}`); return ctlAck(c.id, 'stop', 'done', `일시정지함 — 하던 작업은 지금 항목까지 저장하고 멈춤${running ? ` ('${running}')` : ''}`); }
+        if (c.cmd === 'resume') { if (!window.__rnPaused) return ctlAck(c.id, 'resume', 'done', '일시정지 상태가 아니었음 (그대로 돎)'); window.__rnResumeOk(); return ctlAck(c.id, 'resume', 'done', '일시정지 풀음 — 매일 자동·요청·이어가기가 다시 돎'); }
+        if (c.cmd === 'update') return ctlUpdateNow(c);
+        return ctlAck(c.id, c.cmd, 'fail', '모르는 명령 (이 수집기 ' + VER + ')'); } catch (e) { return ctlAck(c.id, c.cmd, 'fail', '오류: ' + e.message); } }, () => {}); }
   // (1.26.1) 안전한 새로고침: 바로 location.reload()하면 알라딘이 429(요청 너무 많음)를 돌려줄 때 크롬 오류 화면에 멈춤(그 화면에서는 어떤 스크립트도 못 돎).
   //  ① 서버가 200으로 답할 때까지 기다림(30초 → 1·2·4…15분 간격으로 확인)  ② 새 탭으로 같은 화면을 엶  ③ 새 탭의 수집기가 실제로 떠서 '받았음' 신호를 보내면 이 탭을 닫음
   //  ④ 2분 안에 신호가 없으면(새 탭이 오류 화면) 그 탭을 닫고 ①부터 다시 — 수집기가 떠야만 넘어가므로 오류 화면에 멈추지 않음. 새 탭은 저장된 자리부터 자동으로 이어감
@@ -2767,6 +2815,7 @@
     } finally { if (window.__rnStatus) Object.assign(window.__rnStatus, { job: null, jobKey: null, cur: {}, lastEnd: { name, at: Date.now(), ms: Date.now() - tJ } });
       log(`■ '${name}' 끝남 — ${Math.round((Date.now() - tJ) / 60000)}분${stopFlag ? ' (멈춤)' : ''}`); setRunning(null); curKey = null; FORCE_ALL = false;
       if (memReload) { log(`메모리 정리를 위해 새로고침 → '${name}' 이어가기`); safeReload('메모리 정리', key); return res; }
+      if (ctlReload) { ctlReload = null; log(`🛰 원격 업데이트: '${name}'을(를) 저장하고 멈춤 → 새로고침 뒤 그 자리부터 이어감`); safeReload('🛰 원격 업데이트', key); return res; }
       if (verReload) { verReload = false; if (!window.__rnPaused) { log(`새 수집기 ${window.__rnOutdated}로 바꾸려고 새로고침 → '${name}'을(를) 저장된 자리부터 이어가기`); GM_setValue('rnu-reload-for', window.__rnOutdated); safeReload('새 버전으로 바꿈', key); return res; } }
       if (yieldFor) resumeAfterYield();
       else if (key !== 'explore' && GM_getValue('rn-explore-resume', false)) setTimeout(() => { if (!running && !window.__rnPaused && GM_getValue('rn-explore-resume', false)) { GM_setValue('rn-explore-resume', false); log('앞의 작업이 끝나 끝없는 탐색 수집을 다시 이어갑니다'); runJob('explore'); } }, 8000); }
@@ -2849,6 +2898,17 @@
 
   // 다른 PC 상태: 잠금(고객 수집기 포함) + 각 PC가 30초마다 올리는 진행 상황
   const PCS_SEEN = {};
+  /* (1.59.2) 🛰 PC 원격 — 다른 PC 수집기를 ■ 중단 · ▶ 다시 시작 · ⟳ 업데이트 (누르면 '확정' 단추가 한 번 더 · 4초 안에 다시 눌러야 보냄) */
+  function ctlRows(pcs, now) { const by = new Map(); Object.values(pcs).forEach((s) => { if (!s || !s.pcName || s.tool !== '상품 수집기' || !s.ver || String(s.pcName) === String(PC_NAME)) return; const o = by.get(s.pcName); if (!o || (s.atMs || 0) > o.atMs) by.set(s.pcName, { pc: s.pcName, ver: s.ver, atMs: s.atMs || 0, running: s.running || null }); });
+    const L = [...by.values()].filter((x) => now - x.atMs < 3 * 864e5).sort((a, b) => String(a.pc).localeCompare(String(b.pc))); if (!L.length) return '';
+    const D = CTL_DOC || {}; const esc2 = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    return `<div class="pc" style="background:#F4F8F6"><b>🛰 PC 원격</b> <small style="color:#5B6B66">다른 PC 수집기를 멈추거나 다시 열기 (그 PC가 수집기 1.59.2 이상일 때)</small>${L.map((x) => { const a = (D.acks || {})[x.pc]; const c = (D.cmds || {})[x.pc]; const alive = now - x.atMs < 10 * 60000; const old = verNum(x.ver) < verNum('1.59.2');
+      const st = c && (!a || a.id !== c.id) ? `<span style="color:#A8661B">보냄 · 대답 기다림 (${esc2(({ stop: '중단', resume: '다시 시작', update: '업데이트' })[c.cmd] || c.cmd)})</span>` : a ? `<span style="color:${a.state === 'done' ? '#2F7D4F' : a.state === 'fail' || a.state === 'nosync' || a.state === 'expired' ? '#B0322A' : '#1F5FAF'}">${esc2(a.msg)}</span>` : '';
+      return `<div style="margin-top:4px;padding-top:4px;border-top:1px dashed #DCE5E1"><b>${esc2(x.pc)}</b> · ${esc2(x.ver)} · ${alive ? (x.running ? '작업 중' : '대기') : `신호 ${Math.round((now - x.atMs) / 60000)}분 전`}${old ? ' <small style="color:#B0322A">(옛 판 — 원격 명령을 모름 · 다른 PC가 새 판으로 돌면 쉬는 사이에 스스로 한 번 새로고침)</small>' : ''}
+        <div style="display:flex;gap:4px;margin-top:3px">${[['stop', '■ 중단'], ['resume', '▶ 다시 시작'], ['update', '⟳ 업데이트']].map(([k, l]) => `<button class="b2" style="flex:1;padding:3px 4px;font-size:11px" data-ctl="${esc2(x.pc)}|${k}">${l}</button>`).join('')}</div>${st ? `<div style="font-size:10.5px;margin-top:2px">${st}</div>` : ''}</div>`; }).join('')}</div>`; }
+  document.addEventListener('click', async (e) => { const b = e.target.closest && e.target.closest('#rnpPcs [data-ctl]'); if (!b) return; e.preventDefault(); const [pc, cmd] = b.dataset.ctl.split('|');
+    if (b.dataset.arm !== '1') { const t0 = b.textContent; b.dataset.arm = '1'; b.dataset.t0 = t0; b.style.background = '#B0322A'; b.style.color = '#fff'; b.textContent = '확정'; setTimeout(() => { if (b.isConnected && b.dataset.arm === '1') { b.dataset.arm = ''; b.style.background = ''; b.style.color = ''; b.textContent = b.dataset.t0; } }, 4000); return; }
+    b.dataset.arm = ''; b.disabled = true; b.textContent = '보내는 중…'; try { await window.__rnCtlSend(pc, cmd); log(`🛰 ${pc}에 원격 '${({ stop: '중단', resume: '다시 시작', update: '업데이트' })[cmd]}' 보냄`); } catch (er) { log('🛰 원격 명령 보내기 실패: ' + (er.code || er.message), 1); b.disabled = false; b.textContent = b.dataset.t0; } });
   function watchPcs() {
     let lock = null; const pcs = PCS_SEEN;
     const render = () => {
@@ -2862,8 +2922,9 @@
         const alive = ago <= 3;
         rows.push(`<div class="pc ${s.running && alive ? 'busy' : ''}"><b>${s.pcName}</b>${s.tool ? ` · ${s.tool}` : ''} · ${s.running ? (alive ? '진행 중' : `신호 끊김 (${ago}분 전)`) : `대기 (${ago}분 전)`}${s.running ? `<br>${s.state || s.running}${s.total ? ` ${Number(s.done).toLocaleString()} / ${Number(s.total).toLocaleString()} (${((s.done / s.total) * 100).toFixed(1)}%)` : ''}${s.etaMin != null && alive ? ` · 남은 약 ${fmtDur(s.etaMin)}` : ''}` : ''}</div>`);
       });
-      $('#rnpPcs').innerHTML = rows.join('') || '<div class="pc">다른 PC에서 진행 중인 작업 없음</div>';
+      $('#rnpPcs').innerHTML = (rows.join('') || '<div class="pc">다른 PC에서 진행 중인 작업 없음</div>') + ctlRows(pcs, now);
     };
+    ctlDraw = render;
     LOCK().onSnapshot((d) => { lock = d.exists ? d.data() : null; render(); }, () => {});
     C('rn_status').onSnapshot((qs) => { qs.forEach((d) => (pcs[d.id] = d.data())); render(); }, () => {});
     setInterval(render, 60000);
@@ -2883,7 +2944,7 @@
     const u = await ensureLogin();
     $('#rnpWho').textContent = `Firebase: ${u.email} 로그인됨`;
     await loadSettings(); renderSetup();
-    watchPcs(); await refreshResume(); versionWatch();
+    watchPcs(); await refreshResume(); versionWatch(); ctlWatch();
     publishStatus({ running: null });
     ui('대기 중', 0, 0, '', resumeKey ? '멈춘 작업이 있습니다. 위의 이어하기를 누르세요' : '처음이라면: 등록 파일 가져오기 → 상품 일괄 수집 → 이미지');
     log(`준비됨 · 수집기 ${VER} · 파서 ${P.VERSION}`, 0);
