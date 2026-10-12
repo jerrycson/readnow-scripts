@@ -1,7 +1,7 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.63.2의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.63.3의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.63.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.63.3' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
  * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
@@ -419,7 +419,7 @@
     return { lives, busy, main, mine, paused, kind, last: lives.map((v) => v.lastEnd).filter(Boolean).sort((a, b) => b.at - a.at)[0] || null }; };
   const resList = () => { const P = window.__rnPrd; const out = []; const rk = P && P.runningKeys ? P.runningKeys() : new Set();
     if (crmRes) out.push({ mod: 'crm', key: crmRes.key, name: crmRes.name, meta: `이 PC에 저장된 자리${crmRes.savedAt ? ' · ' + md(crmRes.savedAt) + ' 멈춤' : ''}${crmRes.why ? ' · ' + crmRes.why : ''}`, savedAt: crmRes.savedAt || 0, running: false });
-    ((P && P.resumables && P.resumables()) || []).forEach((r) => out.push({ mod: 'prd', key: r.key, name: r.name, meta: [r.stage ? `단계: ${r.stage}` : '', r.prog, r.by ? `${r.by}에서 ${md(r.savedAt)} 멈춤` : r.savedAt ? md(r.savedAt) + ' 멈춤' : ''].filter(Boolean).join(' · '), savedAt: r.savedAt || 0, running: rk.has(r.key) }));
+    ((P && P.resumables && P.resumables()) || []).forEach((r) => out.push({ mod: 'prd', key: r.key, name: r.name, meta: [r.stage ? `단계: ${r.stage}` : '', r.prog, r.by ? `${r.by}에서 ${md(r.savedAt)} ${/^bench_\d+$/.test(r.key) && rk.has('bench') && Date.now() - (r.savedAt || 0) < 5 * 60000 ? '읽는 중(마지막 적음)' : '멈춤'}` : r.savedAt ? md(r.savedAt) + ' 멈춤' : ''].filter(Boolean).join(' · '), savedAt: r.savedAt || 0, running: rk.has(r.key) || (/^bench_\d+$/.test(r.key) && rk.has('bench') && Date.now() - (r.savedAt || 0) < 5 * 60000) /* (1.63.3) 벤치마킹 판매자: 어느 PC가 벤치마킹을 하는 중이고 이 판매자 자리가 5분 안에 적혔으면 = 지금 읽는 중(예전엔 '멈춤'으로 보여 이어하기·버리기를 눌러도 '진행 중'이라며 안 됐음) */ }));
     return out; };
   // 머리줄 배지: 접어도 보임
   const badge = (S) => { const b = box.querySelector('#rnCtlBadge'); const m = S.main;
@@ -458,7 +458,7 @@
       : `<button class="b-pause" data-a="pause">■ 일시정지<small>${anyBusy ? '지금 항목까지 저장하고 멈춤 (모든 탭)' : '자동 수집도 하지 않게 멈춰 둠'}</small></button>`;
     const allBtn = `<button class="b-all" data-a="all" ${anyBusy || S.paused ? 'disabled' : ''} title="고객·주문부터 구매자 분포까지 켜 둔 단계를 차례로. 단계를 켜고 끄는 곳: 상품·매입 탭">▶ ${chainRes ? '전체 수집 이어서' : '전체 수집 시작'}<small>${chainRes ? esc(chainRes.meta.split(' · ')[0]) + '부터' : '고객·주문 → 상품 → 판매자 … 켜 둔 단계 차례로'}</small></button>`;
     // ③ 멈춘 작업
-    const rs = R.length ? R.map((r) => `<div class="rs"><div class="t"><b>${esc(r.name)}</b><small>${esc(r.meta)}</small></div>${r.running ? '<span class="on">▶ 진행 중</span>' : `<button data-a="res1" data-m="${r.mod}" data-k="${esc(r.key)}" ${anyBusy || S.paused ? 'disabled' : ''} title="${S.paused ? '먼저 다시 시작(일시정지 풀기)' : anyBusy ? '다른 작업이 끝난 뒤' : '멈춘 자리부터 이어서'}">이어하기</button><button class="x" data-a="dis1" data-m="${r.mod}" data-k="${esc(r.key)}" title="멈춘 자리만 잊음 — 받은 기록은 그대로">버리기</button>`}</div>`).join('') : '<div class="mut">없음 — 일시정지하거나 창이 닫혀 멈춘 작업이 생기면 여기에 작업마다 나옵니다.</div>';
+    const rs = R.length ? R.map((r) => `<div class="rs"><div class="t"><b>${esc(r.name)}</b><small>${esc(r.meta)}</small></div>${r.running ? `<span class="on" title="다른 PC(또는 이 PC의 다른 탭)가 지금 이 작업을 하는 중 — 멈추려면 그 PC를 일시정지(🛰 PC 원격 ■)">▶ 진행 중${/^bench_/.test(r.key) && r.meta ? '' : ''}</span>` : `<button data-a="res1" data-m="${r.mod}" data-k="${esc(r.key)}" ${anyBusy || S.paused ? 'disabled' : ''} title="${S.paused ? '먼저 다시 시작(일시정지 풀기)' : anyBusy ? '다른 작업이 끝난 뒤' : '멈춘 자리부터 이어서'}">이어하기</button><button class="x" data-a="dis1" data-m="${r.mod}" data-k="${esc(r.key)}" title="멈춘 자리만 잊음 — 받은 기록은 그대로">버리기</button>`}</div>`).join('') : '<div class="mut">없음 — 일시정지하거나 창이 닫혀 멈춘 작업이 생기면 여기에 작업마다 나옵니다.</div>';
     // ④ 다음 자동 수집
     const sn = window.__rnSchedNext ? window.__rnSchedNext() : { known: false };
     const sched = !sn.known ? '불러오는 중' : !sn.on ? '꺼짐 — 상품·매입 탭 맨 위 \'⏰ 매일 자동 수집\'에서 켬' : sn.next ? `${sn.next.tomorrow ? '내일 ' : ''}${sn.next.t} · ${esc(sn.next.label)}${S.paused ? ' <b style="color:#A8661B">(일시정지 중이라 하지 않음)</b>' : ''}` : '켠 항목 없음';
