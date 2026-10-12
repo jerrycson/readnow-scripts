@@ -1,7 +1,7 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.63.1의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.63.2의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.63.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.63.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
  * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
@@ -483,8 +483,11 @@
       const t = R[0]; if (t) { if (t.mod === 'crm') window.__rnCrm.resume(); else P.resume(t.key); } }
     else if (a.dataset.a === 'all') { if (!P) return alert('수집기가 아직 준비 중입니다. 잠시 뒤 눌러 주세요'); if (stateOf().busy.length) return alert('이미 작업 중입니다'); window.__rnResumeOk && window.__rnResumeOk(); set('ov'); P.startAll(); }
     else if (a.dataset.a === 'res1') { window.__rnResumeOk && window.__rnResumeOk(); if (m === 'crm') window.__rnCrm.resume(); else P.resume(k); }
-    else if (a.dataset.a === 'dis1') { const nm = (a.closest('.rs').querySelector('b') || {}).textContent || k; if (!confirm(`'${nm}'의 멈춘 자리만 잊습니다.\n\n· 이미 받은 기록은 하나도 지우거나 바꾸지 않습니다.\n· 다음에 시작하면 처음부터 훑지만, 이미 받은 것은 건너뛰고 새로 생긴 것만 받습니다.\n\n계속할까요?`)) return;
-      a.disabled = true; a.textContent = '지우는 중'; const r = m === 'crm' ? await window.__rnCrm.discard(k) : await P.discard(k); if (!r || !r.ok) alert((r && r.why) || '버리지 못했습니다'); if (m === 'crm') await pollCrm(); }
+    else if (a.dataset.a === 'dis1') { /* (1.63.2) 팝업 대신 단추 두 번 — 첫 누름은 '확정' 단추로 바뀜(4초) · 못 버리면 까닭을 그 줄 아래에 */ const row = a.closest('.rs'); const nm = (row.querySelector('b') || {}).textContent || k;
+      if (a.dataset.arm !== '1') { a.dataset.arm = '1'; a.dataset.t0 = a.textContent; a.textContent = '확정'; a.title = `'${nm}'의 멈춘 자리만 잊음 — 받은 기록은 그대로, 다음엔 처음부터 훑되 이미 받은 것은 건너뜀`; a.style.background = '#B0322A'; a.style.color = '#fff'; setTimeout(() => { if (a.isConnected && a.dataset.arm === '1') { a.dataset.arm = ''; a.textContent = a.dataset.t0 || '버리기'; a.style.background = ''; a.style.color = ''; } }, 4000); return; }
+      a.dataset.arm = ''; a.disabled = true; a.textContent = '지우는 중'; const r = m === 'crm' ? await window.__rnCrm.discard(k) : await P.discard(k);
+      if (!r || !r.ok) { const why = (r && r.why) || '버리지 못했습니다'; a.disabled = false; a.textContent = a.dataset.t0 || '버리기'; a.style.background = ''; a.style.color = ''; let n = row.querySelector('.rs-why'); if (!n) { n = document.createElement('div'); n.className = 'rs-why'; n.style.cssText = 'flex-basis:100%;font-size:11.5px;color:#B0322A;margin-top:3px'; row.appendChild(n); } n.textContent = '✕ ' + why; try { log('버리기 못 함: ' + why, 1); } catch (e) {} return; }
+      if (m === 'crm') await pollCrm(); }
     else if (a.dataset.a === 'rrf') { await pollCrm(); if (P && P.refreshResume) await P.refreshResume(); }
     else if (a.dataset.a === 'log') { window.__rnJournalToggle && window.__rnJournalToggle(); }
     lastHtml = ''; draw(); });

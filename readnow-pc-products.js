@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.63.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.63.2의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1443,8 +1443,8 @@
     if (cfg && cfg.noneOff) for (const t of cfg.targets || []) if (t && t.sc && !inG.has(String(t.sc))) off.add(String(t.sc)); return off; }
   function benchTargets(cfg) { const off = benchOffSet(cfg); return ((cfg && cfg.targets) || []).filter((t) => t && t.sc && t.on !== false && !t.self && String(t.sc) !== '996008' && !off.has(String(t.sc))); }
   /* (1.60.1) 판매자마다 걸린 시간 기록(⏰ 시간표의 판매자별 칸막이·한 바퀴 예상) — 하던 회차를 이어 읽은 것은 '일부'라 평균에서 뺌 */
-  async function benchOneT(t, resumed) { const tB = Date.now(); try { const r = await benchOne(t); try { window.__rnJobDone && window.__rnJobDone('bench:' + String(t.sc), Date.now() - tB, resumed ? 'part' : 'done'); } catch (x) {} return r; }
-    catch (e) { try { window.__rnJobDone && window.__rnJobDone('bench:' + String(t.sc), Date.now() - tB, e && e.message === '멈춤' ? 'stop' : 'error'); } catch (x) {} throw e; } }
+  async function benchOneT(t, resumed) { const tB = Date.now(); window.__rnBenchCur = String(t.sc); /* (1.63.2) 지금 이 탭이 읽는 판매자 — 버리기 막기는 이 판매자만 */ try { const r = await benchOne(t); try { window.__rnJobDone && window.__rnJobDone('bench:' + String(t.sc), Date.now() - tB, resumed ? 'part' : 'done'); } catch (x) {} return r; }
+    catch (e) { try { window.__rnJobDone && window.__rnJobDone('bench:' + String(t.sc), Date.now() - tB, e && e.message === '멈춤' ? 'stop' : 'error'); } catch (x) {} throw e; } finally { if (window.__rnBenchCur === String(t.sc)) window.__rnBenchCur = null; } }
   async function benchJob(opt) { const FORCE = !!(opt && opt.force); const cfg = (await C('app_settings').doc('bench').get()).data() || {}; BENCH_CFG = cfg; const T = benchTargets(cfg); /* (1.57.6) 우리 숍(북스킹)은 읽지 않음 — 웹앱 우리 카드는 우리 기록으로 셈 */ const RB = (BREG() || {}).BENCH;
     { const offN = benchOffSet(cfg).size; if (offN) log(`🎯 꺼진 그룹의 판매자 ${offN}명은 건너뜀 (웹앱 🎯 그룹 머리의 토글)`); }
     if (!T.length) { log('집중 벤치마킹: 읽을 판매자 없음 — 고른 판매자가 없거나 모든 그룹이 꺼짐 (웹앱 경영 탭 → 🎯 집중 벤치마킹)'); return; }
@@ -2940,7 +2940,11 @@
   }
   async function discardJob(k) { const nm = JOBS[k] ? JOBS[k][0] : /^bench_/.test(k) ? '집중 벤치마킹 ' + k.slice(6) : k;
     if (!JOBS[k] && !/^bench_/.test(k) && !((await jobRef(k).get()).exists)) return { ok: false, why: '모르는 작업' };
-    if (runningKeys().has(k) || (/^bench_/.test(k) && runningKeys().has('bench'))) return { ok: false, why: `'${nm}'은(는) 지금 진행 중입니다 — 먼저 일시정지하고, 멈춘 뒤에 버리세요` };
+    /* (1.63.2) 벤치마킹 판매자 하나의 멈춘 자리 버리기 — 예전엔 어느 PC든 벤치마킹이 돌고 있으면(다른 판매자를 읽는 중이어도) 모두 막혔음.
+     *  이제는 그 판매자를 지금 읽고 있을 때만 막음: 이 PC의 탭이 읽는 중 · 또는 다른 PC가 최근 5분 안에 그 판매자 진행을 적음(bench_state.prog.at) */
+    if (/^bench_\d+$/.test(k)) { const sc = k.slice(6); if (window.__rnBenchCur === sc) return { ok: false, why: `'${nm}'은(는) 이 PC가 지금 읽고 있습니다 — 일시정지한 뒤에 버리세요` };
+      try { const pg = ((await C('bench_state').doc(sc).get()).data() || {}).prog; const at = pg && Date.parse(pg.at || ''); if (at && Date.now() - at < 5 * 60000 && !Object.values(PCS_SEEN).every((x) => !x || !x.running || x.key !== 'bench')) return { ok: false, why: `'${nm}'은(는) 다른 PC가 지금 읽고 있습니다(${new Date(at + 9 * 3600e3).toISOString().slice(11, 16)}에 ${pg.page || '?'}쪽 적음) — 그 PC를 멈춘 뒤(🛰 PC 원격 ■) 버리세요` }; } catch (e) {} }
+    else if (runningKeys().has(k)) return { ok: false, why: `'${nm}'은(는) 지금 진행 중입니다 — 먼저 일시정지하고, 멈춘 뒤에 버리세요` };
     const keys = [k]; if (k === 'chain' || k === 'prdChain') { const st = ((await jobRef(k).get()).data() || {}).stage; if (st && STAGE_JOB[st]) keys.push(STAGE_JOB[st]); } // 일괄이면 일괄 순서표와 '지금 단계'의 자리
     for (const x of keys) { try { const d = (await jobRef(x).get()).data(); if (d && !d.done) await jobRef(x).set({ done: true, discarded: true, discardedAt: Date.now(), discardedBy: PC_NAME }, { merge: true }); LS.set('job_' + x, null); if (/^bench_\d+$/.test(x)) { try { await C('bench_state').doc(x.slice(6)).set({ prog: null }, { merge: true }); } catch (e) {} } /* (1.54.3) 벤치마킹 회차를 버리면 '하는 중' 표시도 지움 — 다시 시작해도 그 판매자를 처음부터 다시 읽지 않고 평소 차례대로 */ } catch (e) { return { ok: false, why: e.message }; } }
     log(`'${nm}'의 멈춘 자리만 잊었습니다 (받은 기록은 그대로 · 다음엔 처음부터 훑되 이미 받은 것은 건너뜀)`); await refreshResume(); return { ok: true }; }
@@ -2948,7 +2952,7 @@
   $('#rnpCheck').onclick = () => preflight(false).then((ok) => ok && alert('시작 전 점검: 모두 정상입니다. 자세한 내용은 기록 창에 있습니다.'));
   $('#rnpLogBig').onclick = (e) => { e.preventDefault(); window.__rnJournalToggle && window.__rnJournalToggle(); };
   $('#rnpResume').onclick = () => { if (resumeKey) resumeJob(resumeKey); };
-  $('#rnpReset').onclick = async () => { if (!resumeKey) return; const r = await discardJob(resumeKey); if (!r.ok) alert(r.why); };
+  $('#rnpReset').onclick = async () => { if (!resumeKey) return; const r = await discardJob(resumeKey); if (!r.ok) log('이어하기 없애기 못 함: ' + r.why, 1); };
   Object.assign(window.__rnPrd, { resumables: () => RESUMABLES, refreshResume, discard: discardJob, resume: resumeJob, runningKeys, imgBusy: () => !!imgRunning, startAll: () => runJob('chain'), pcsHtml: () => ($('#rnpPcs') ? $('#rnpPcs').innerHTML : ''), who: () => ($('#rnpWho') ? $('#rnpWho').textContent : ''), ver: () => VER, outdated: () => window.__rnOutdated || null });
   setInterval(() => { if (!running) refreshResume(); }, 10 * 60000); // 멈춘 작업 문서는 진행 목록이 커서(수백 KB) 자주 읽지 않음 — 작업이 끝날 때·버릴 때·개요의 ↻ 때 바로 다시 읽음
   setTimeout(drawTemp, 2000);
