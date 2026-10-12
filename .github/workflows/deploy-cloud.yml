@@ -42,7 +42,13 @@ jobs:
       - name: Cloud Run 올리기 (빌드 3~6분)
         if: steps.auth.outcome == 'success'
         working-directory: cloud
-        run: gcloud run deploy "$SERVICE" --source . --region "$REGION" --project "$PROJECT" --quiet
+        run: |
+          # 실패하면 마지막 줄들을 알림(annotation)으로 — GitHub 화면·Claude가 로그 파일 없이도 까닭을 봄
+          if ! gcloud run deploy "$SERVICE" --source . --region "$REGION" --project "$PROJECT" --quiet > /tmp/deploy.log 2>&1; then
+            tail -n 25 /tmp/deploy.log | sed 's/^/  /'; grep -iE 'error|denied|permission|not found|failed' /tmp/deploy.log | tail -n 6 | while IFS= read -r l; do echo "::error::$l"; done
+            if grep -q "iam.serviceAccounts.getAccessToken\|generateAccessToken\|workloadIdentityUser" /tmp/deploy.log; then echo "::error::배포 계정을 쓸 권한(GitHub → gh-deployer 묶음)이 아직 없음 — Cloud Shell에서 setup-autodeploy.sh를 다시 실행하세요"; fi
+            exit 1; fi
+          tail -n 5 /tmp/deploy.log
       - name: 올라간 판 확인
         if: steps.auth.outcome == 'success'
         run: |
