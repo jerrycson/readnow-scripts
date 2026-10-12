@@ -31,7 +31,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.12.1'; // (0.12.1) ☁ 클라우드 전체 스위치(cloud_jobs.all === false면 모든 일을 멈춤 — 각 일의 스위치는 그대로 기억) // (0.12.0) 클라우드가 하는 일마다 켜기·끄기(app_settings/cloud_jobs — 웹앱 설정·수집기 칸 편집기의 '☁ 클라우드가 하는 일') · 꺼 둔 일은 손대지 않음 · 🌐 외부 정보 이어 받기는 기본 끔(app_settings/ext.cloud === true일 때만) // (0.11.0) 안전 점검: 작은 오류 번호로 서버가 꺼지던 것 · 비밀을 환경 변수에서 지움 · 알라딘 로그인 실패 상태를 Firestore에 남겨(다시 켜져도) 아이디·비밀번호 문제면 6시간 쉼 · 공용 파일 마지막으로 받은 판으로 계속(문법 검사) · 주문 문서 400개씩 · 열쇠를 같은 시간으로 비교 · 기억 덜어 내기 · 외부 정보 기준을 공용 파일에서 · (0.10.0) 🌐 외부 정보 — PC가 꺼져 있을 때 클라우드가 이어 받음(10분마다 최대 90초)
+const VER = '0.12.2'; // (0.12.2) 🌐 외부 정보 출처별 오늘 성공·실패 수(ext_run.res)·마지막 실패(lastErr) 기록 · GitHub에 올리면 저절로 배포(.github/workflows/deploy-cloud.yml) // (0.12.1) ☁ 클라우드 전체 스위치(cloud_jobs.all === false면 모든 일을 멈춤 — 각 일의 스위치는 그대로 기억) // (0.12.0) 클라우드가 하는 일마다 켜기·끄기(app_settings/cloud_jobs — 웹앱 설정·수집기 칸 편집기의 '☁ 클라우드가 하는 일') · 꺼 둔 일은 손대지 않음 · 🌐 외부 정보 이어 받기는 기본 끔(app_settings/ext.cloud === true일 때만) // (0.11.0) 안전 점검: 작은 오류 번호로 서버가 꺼지던 것 · 비밀을 환경 변수에서 지움 · 알라딘 로그인 실패 상태를 Firestore에 남겨(다시 켜져도) 아이디·비밀번호 문제면 6시간 쉼 · 공용 파일 마지막으로 받은 판으로 계속(문법 검사) · 주문 문서 400개씩 · 열쇠를 같은 시간으로 비교 · 기억 덜어 내기 · 외부 정보 기준을 공용 파일에서 · (0.10.0) 🌐 외부 정보 — PC가 꺼져 있을 때 클라우드가 이어 받음(10분마다 최대 90초)
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -787,7 +787,7 @@ async function extOneC(X, src, b, cfg, keys) { const s = X.SOURCES[src]; const h
   if (calls) extUsedAddC(src, calls);
   if (st !== 'err' && st !== 'mismatch') { extIdxSetC(X, src, b.isbn); EXT_C.errs[src] = 0; }
   else { const k = Math.min(EXT_BACKOFF.length, extIdxErrKC(src, b.isbn) + 1); if (!/^저장 실패/.test(res.why || '')) extIdxSetC(X, src, b.isbn, `E ${extKst()} ${k}`); if (st === 'err') { EXT_C.errs[src] = (EXT_C.errs[src] || 0) + 1; if (res.limit) EXT_C.pauseUntil[src] = Date.now() + 6 * 3600e3; else if (EXT_C.errs[src] >= 5) { EXT_C.pauseUntil[src] = Date.now() + 3600e3; EXT_C.errs[src] = 0; log('외부 정보', s.label, '5번 잇달아 못 읽어 1시간 쉼 —', res.why); } } }
-  EXT_RUN().set({ last: { [src]: { at: nowIso(), ok: st !== 'err', st, why: st === 'err' || st === 'mismatch' ? String(res.why || '').slice(0, 200) : null, isbn: b.isbn, by: 'cloud', how: 'cloud' } } }, { merge: true }).catch(() => {});
+  { const okR = st !== 'err'; const L0 = { at: nowIso(), ok: st !== 'err', st, why: st === 'err' || st === 'mismatch' ? String(res.why || '').slice(0, 200) : null, isbn: b.isbn, by: 'cloud', how: 'cloud' } ; /* (1.24.0 · 클라우드 0.12.2) 출처별 오늘 성공·실패 수(res) + 마지막 실패(lastErr — 성공이 와도 남음) → 웹앱 시장조사 탭 수집 현황에서 '매번 실패'를 바로 봄 */ EXT_RUN().set({ last: { [src]: L0 }, res: { [extKst()]: { [src]: { [okR ? 'ok' : 'err']: FV.increment(1) } } }, ...(okR ? {} : { lastErr: { [src]: L0 } }) }, { merge: true }).catch(() => {}); }
   return { src, st }; }
 async function extFxC(X, keys) { const day = extKst(); const k = new Date(Date.now() + 9 * 3600e3); const hm = k.getUTCHours() * 60 + k.getUTCMinutes();
   const run = await EXT_RUN().get().catch(() => null); const F0 = (run && run.exists ? run.data().fx : null) || {}; const fxDay = F0.day || null; if (fxDay === day) return null; if (hm < 11 * 60 + 30 && F0.at && Date.now() - Date.parse(F0.at) < 6 * 3600e3) return null; if (F0.errAt && Date.now() - Date.parse(F0.errAt) < 3600e3) return null;

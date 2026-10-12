@@ -1,0 +1,52 @@
+# 리드나우 클라우드 자동 배포 — cloud/ 폴더가 바뀐 채로 main에 올라오면 Cloud Run(readnow-cloud · 서울)에 저절로 새 판을 올림
+#  · 비밀번호·열쇠 없음: GitHub가 주는 1회용 신분증(OIDC)을 구글이 확인(Workload Identity Federation) — 이 저장소의 main 가지에서만 통함
+#  · 처음 한 번 준비: Cloud Shell에서  curl -sL https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/cloud/setup-autodeploy.sh | bash
+#  · 기존 설정(비밀·메모리·예약 호출)은 그대로 두고 프로그램만 바꿈 — 비밀(알라딘 아이디·비밀번호)은 Secret Manager에만
+#  · 손으로 다시 올리기: GitHub 저장소 → Actions → '클라우드 자동 배포' → Run workflow
+name: 클라우드 자동 배포 (Cloud Run)
+on:
+  push:
+    branches: [main]
+    paths: ['cloud/**', '.github/workflows/deploy-cloud.yml']
+  workflow_dispatch:
+concurrency: { group: deploy-cloud, cancel-in-progress: false }
+permissions: { contents: read, id-token: write }
+env:
+  PROJECT: readnow-3a385
+  REGION: asia-northeast3
+  SERVICE: readnow-cloud
+  WIF: projects/63884079760/locations/global/workloadIdentityPools/github/providers/readnow-scripts
+  SA: gh-deployer@readnow-3a385.iam.gserviceaccount.com
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: 문법 검사 (깨진 파일은 올리지 않음)
+        run: |
+          for f in cloud/*.js; do node --check "$f"; done
+          echo "VER=$(grep -oP "^const VER = '\K[0-9.]+" cloud/index.js)" >> "$GITHUB_ENV"
+      - id: auth
+        name: 구글 로그인 (열쇠 없이 OIDC)
+        continue-on-error: true
+        uses: google-github-actions/auth@v2
+        with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}' }
+      - name: 아직 준비 전이면 알림만
+        if: steps.auth.outcome != 'success'
+        run: |
+          echo "::warning::클라우드 자동 배포 준비가 아직 안 됨 — Cloud Shell에서 cloud/setup-autodeploy.sh를 한 번 실행하세요 (이번엔 올리지 않음)"
+          echo "### ⚠ 클라우드 자동 배포 준비 전 — Cloud Shell에서 setup-autodeploy.sh 한 번 실행" >> "$GITHUB_STEP_SUMMARY"
+      - if: steps.auth.outcome == 'success'
+        uses: google-github-actions/setup-gcloud@v2
+      - name: Cloud Run 올리기 (빌드 3~6분)
+        if: steps.auth.outcome == 'success'
+        working-directory: cloud
+        run: gcloud run deploy "$SERVICE" --source . --region "$REGION" --project "$PROJECT" --quiet
+      - name: 올라간 판 확인
+        if: steps.auth.outcome == 'success'
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')
+          for i in 1 2 3 4 5 6; do GOT=$(curl -fsS "$URL/status" | grep -oP '"ver":"\K[0-9.]+' || true); [ "$GOT" = "$VER" ] && break; sleep 10; done
+          echo "### ☁ 클라우드 $GOT 올라감 (기대 $VER)" >> "$GITHUB_STEP_SUMMARY"
+          [ "$GOT" = "$VER" ] || { echo "::error::올린 뒤 판이 $GOT — 기대한 $VER 아님"; exit 1; }

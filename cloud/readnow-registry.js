@@ -16,7 +16,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.14.11'; // (0.14.11) 공용 자동 수집 0.3.1(위 시간표·넣을 일 붙박이 · 아래는 페이지 스크롤 · 잡고 끌어 넘기기 · 시간표 접기) // (0.14.10) 공용 자동 수집 0.3.0(네 칸 화면 · ☁ 전체 스위치 · 적용 알림 · 수집기 적용 확인) // (0.14.9) 공용 자동 수집 0.2.0(☁ 클라우드가 하는 일 켜기·끄기 · 시간표 다음날까지·고른 칸 평균 시간·끌어 넘기기) · 🌐 외부 정보 0.4.1(DVDPrime 판매자 연락처 기록) // (0.14.8) 공용 자동 수집 0.1.1(칸 편집기 전체 스위치 뒤 화면 멈춤 고침 · 스위치도 Ctrl+Z) // (0.14.7) 🌐 외부 정보 0.4.0(DVDPrime 글 화면 읽기) · ⏰ 매일 자동 수집 공용 파일 readnow-autosched-core.js 0.1.0(웹앱 설정·수집기가 같은 칸 편집기) // (0.14.6) 판정 엔진 0.15.3(등록일 모름·너무 낮은 목표가는 사람 확인) · 출고 0.5.2(한국어 제목으로 송장 맞춤) · 실행 문 0.1.1(한국 날짜) · 🌐 외부 정보 0.3.0(DVDPrime 장터 · 출처 자격 기준을 공용 파일 한 곳에) // (0.14.5) 판정 엔진 0.15.2 — 같은 설정 합치기를 한 번만(수동 일괄 그룹 계산이 수십 배 빨라짐 · 판정 결과 그대로) · 🌐 외부 정보 칸에 클라우드도 씀(PC가 꺼져 있을 때 이어 받기) · ext_cand
+  const VERSION = '0.14.12'; // (0.14.12) 🎯 벤치 그룹 수집 날(매주 요일 · 매월 날·기간 · 말일) — BENCH.schedOk·schedTxt · 맞지 않는 날은 차례에서 뺌(하던 회차는 이어서) // (0.14.11) 공용 자동 수집 0.3.1(위 시간표·넣을 일 붙박이 · 아래는 페이지 스크롤 · 잡고 끌어 넘기기 · 시간표 접기) // (0.14.10) 공용 자동 수집 0.3.0(네 칸 화면 · ☁ 전체 스위치 · 적용 알림 · 수집기 적용 확인) // (0.14.9) 공용 자동 수집 0.2.0(☁ 클라우드가 하는 일 켜기·끄기 · 시간표 다음날까지·고른 칸 평균 시간·끌어 넘기기) · 🌐 외부 정보 0.4.1(DVDPrime 판매자 연락처 기록) // (0.14.8) 공용 자동 수집 0.1.1(칸 편집기 전체 스위치 뒤 화면 멈춤 고침 · 스위치도 Ctrl+Z) // (0.14.7) 🌐 외부 정보 0.4.0(DVDPrime 글 화면 읽기) · ⏰ 매일 자동 수집 공용 파일 readnow-autosched-core.js 0.1.0(웹앱 설정·수집기가 같은 칸 편집기) // (0.14.6) 판정 엔진 0.15.3(등록일 모름·너무 낮은 목표가는 사람 확인) · 출고 0.5.2(한국어 제목으로 송장 맞춤) · 실행 문 0.1.1(한국 날짜) · 🌐 외부 정보 0.3.0(DVDPrime 장터 · 출처 자격 기준을 공용 파일 한 곳에) // (0.14.5) 판정 엔진 0.15.2 — 같은 설정 합치기를 한 번만(수동 일괄 그룹 계산이 수십 배 빨라짐 · 판정 결과 그대로) · 🌐 외부 정보 칸에 클라우드도 씀(PC가 꺼져 있을 때 이어 받기) · ext_cand
   const MIN = 60e3;
 
   const KINDS = {
@@ -132,10 +132,21 @@
   const benchNeedsDetail = (cfg) => { const f = benchFields(cfg); return BENCH_FIELDS.some((x) => x.grp === 'detail' && f[x.k]); };
   const kstDay = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
   const dayMs = (d) => Date.parse(d + 'T00:00:00+09:00');
+  /* (0.14.12) 그룹 수집 날 — g.sched = { mode: 'w', w: [요일 0=일 … 6=토] } 또는 { mode: 'm', m: [1~31, 32=말일] } · 없으면 매일
+   *  한국 날짜로 그날이 맞으면 그 그룹 판매자를 그날 한 번 읽음(맞지 않는 날은 건너뛰고 다음 맞는 날로) · 하던 회차(하는 중)는 날이 바뀌어도 이어서 끝냄 */
+  const WD = ['일', '월', '화', '수', '목', '금', '토'];
+  const schedNorm = (s) => { if (!s || (s.mode !== 'w' && s.mode !== 'm')) return null; if (s.mode === 'w') return { mode: 'w', w: [...new Set((s.w || []).map(Number).filter((x) => x >= 0 && x <= 6))].sort() }; return { mode: 'm', m: [...new Set((s.m || []).map(Number).filter((x) => x >= 1 && x <= 32))].sort((a, b) => a - b) }; };
+  function schedOk(sched, ms) { const s = schedNorm(sched); if (!s) return true; const d = new Date((ms == null ? Date.now() : ms) + 9 * 3600e3); if (s.mode === 'w') return s.w.includes(d.getUTCDay());
+    const dd = d.getUTCDate(); const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate(); return s.m.includes(dd) || (s.m.includes(32) && dd === last); }
+  /* 날 묶음 글 — [1,2,3,5,32] → '1~3일 · 5일 · 말일' · 요일 → '월·수·금' / '매일' / '주말' */
+  function schedTxt(sched) { const s = schedNorm(sched); if (!s) return '매일'; if (s.mode === 'w') { if (!s.w.length) return '매주 — 고른 요일 없음(안 읽음)'; if (s.w.length === 7) return '매일'; const o = [1, 2, 3, 4, 5, 6, 0].filter((x) => s.w.includes(x)); if (o.join() === '1,2,3,4,5') return '매주 평일'; if (o.join() === '6,0') return '매주 주말'; return '매주 ' + o.map((x) => WD[x]).join('·'); }
+    if (!s.m.length) return '매월 — 고른 날 없음(안 읽음)'; const L = s.m.filter((x) => x <= 31); const out = []; for (let i = 0; i < L.length; i++) { let j = i; while (j + 1 < L.length && L[j + 1] === L[j] + 1) j++; out.push(j - i >= 2 ? `${L[i]}~${L[j]}일` : j > i ? `${L[i]}일 · ${L[j]}일` : `${L[i]}일`); i = j; } if (s.m.includes(32)) out.push('말일'); return '매월 ' + out.join(' · '); }
+  /* 다음 맞는 날 0시(한국) — 오늘이 맞으면 ms 그대로 · 62일 안에 없으면 아주 먼 뒤 */
+  function schedNext(sched, ms) { if (schedOk(sched, ms)) return ms; let d = dayMs(kstDay(ms)); for (let i = 0; i < 62; i++) { d += 864e5; if (schedOk(sched, d)) return d; } return Number.MAX_SAFE_INTEGER; }
   /* 그룹 목록(빈 칸·없는 판매자 정리) — 그룹에 없는 '따라가는' 판매자는 맨 아래 '그룹 없음(1일에 한 번)' */
   function benchGroups(cfg) { const T = ((cfg && cfg.targets) || []).filter((t) => t && t.sc && t.on !== false); const on = new Set(T.map((t) => String(t.sc))); const seen = new Set();
-    const G = ((cfg && cfg.groups) || []).filter((g) => g && g.id).map((g) => ({ id: g.id, name: g.name || '그룹', unit: g.unit === 'h' ? 'h' : 'd', n: Math.max(1, Math.round(+g.n || 1)), scs: (g.scs || []).map(String).filter((sc) => on.has(sc) && !seen.has(sc) && seen.add(sc)) }));
-    const rest = T.map((t) => String(t.sc)).filter((sc) => !seen.has(sc)); if (rest.length) G.push({ id: '_none', name: '그룹 없음', unit: 'd', n: 1, scs: rest, auto: true }); return G; }
+    const G = ((cfg && cfg.groups) || []).filter((g) => g && g.id).map((g) => ({ id: g.id, name: g.name || '그룹', ...(schedNorm(g.sched) ? { unit: 'd', n: 1, sched: schedNorm(g.sched) } : { unit: g.unit === 'h' ? 'h' : 'd', n: Math.max(1, Math.round(+g.n || 1)) }), off: !!g.off, scs: (g.scs || []).map(String).filter((sc) => on.has(sc) && !seen.has(sc) && seen.add(sc)) }));
+    const rest = T.map((t) => String(t.sc)).filter((sc) => !seen.has(sc)); if (rest.length) G.push({ id: '_none', name: '그룹 없음', unit: 'd', n: 1, ...(schedNorm(cfg && cfg.noneSched) ? { sched: schedNorm(cfg.noneSched) } : {}), off: !!(cfg && cfg.noneOff), scs: rest, auto: true }); return G; }
   /* 다음 수집 시각: last = 지난번 시작(ms) · lastDay = 지난번 날짜(예전 기록은 시각이 없음) */
   /* (0.13.4) '다 읽은 지 얼마 안 된 판매자는 다시 읽지 않음' — 기준은 지난 회차가 '끝난' 시각(bench_state.endAt · 없으면 시작 시각)
    *  'n일에 한 번' = 날짜가 n번 바뀌고 + 끝난 지 (n×24 − 4)시간(1일 = 20시간) 지남 · 'n시간에 한 번' = 시작부터 n시간 + 끝난 지 n시간의 절반 지남
@@ -148,14 +159,16 @@
   const benchGapMs = (g) => (g.unit === 'h' ? g.n * 1800e3 : BENCH_DAY_GAP_H(g.n) * 3600e3);
   function benchNext(g, last, lastDay, end) { if (!last && !lastDay && !end) return 0; const fin = end || last; const gap = fin ? fin + benchGapMs(g) : 0;
     if (g.unit === 'h') return Math.max((last || end || dayMs(lastDay)) + g.n * 3600e3 - 60e3, gap); return Math.max(dayMs(lastDay || kstDay(last || end)) + g.n * 864e5, gap); }
+  /* (0.14.12) 수집 날(sched)이 있는 그룹 — 다음 차례를 맞는 날로 미룸 · 처음(0)이어도 오늘이 맞지 않으면 다음 맞는 날 */
+  const benchNextS = (g, last, lastDay, end, now) => { const nx = benchNext(g, last, lastDay, end); if (!g.sched) return nx; return schedNext(g.sched, Math.max(nx, now || Date.now())); }; /* 지난 맞는 날을 놓쳤으면 따라잡지 않음 — 지금부터 다음 맞는 날 */
   /* 지금 할 차례: [{sc, gi, g, rank, due, next}] — rank = 전체 순서(위 그룹 먼저, 그룹 안은 위에서부터) */
   /* (0.13.3) 하던 회차(bench_state.prog — 수집기 1.54.0이 10쪽마다 남김)가 시작 20시간 안이면 '하는 중' → 늘 할 차례
    *  behind = 한 주기 이상 밀린 횟수(예: 1일에 한 번인데 어제 차례를 못 끝냄 = 1) */
   function benchPlan(cfg, states, now) { const G = benchGroups(cfg); const out = []; let rank = 0;
-    G.forEach((g, gi) => g.scs.forEach((sc) => { const st = (states && states[sc]) || {}; const bad = benchRunBad(st); const last = st.runAt ? Date.parse(st.runAt) : null; const end = st.endAt ? Date.parse(st.endAt) : null; const next = benchNext(g, last, st.day || null, end);
+    G.forEach((g, gi) => g.scs.forEach((sc) => { const st = (states && states[sc]) || {}; const bad = benchRunBad(st); const last = st.runAt ? Date.parse(st.runAt) : null; const end = st.endAt ? Date.parse(st.endAt) : null; const next = benchNextS(g, last, st.day || null, end, now);
       const fresh = !!(end || last) && now - (end || last) < benchGapMs(g); /* 끝난 지 얼마 안 됨 — 수동(모두) 실행에서도 건너뜀 */
       const ps = st.prog && st.prog.startedAt ? Date.parse(st.prog.startedAt) : NaN; const inProg = Number.isFinite(ps) && now - ps < 20 * 3600e3 && !(last && last >= ps);
-      const per = g.n * (g.unit === 'h' ? 3600e3 : 864e5); const behind = next <= now && next > 0 ? Math.floor((now - next) / per) : next === 0 ? 1 : 0;
+      const per = g.n * (g.unit === 'h' ? 3600e3 : 864e5); const behind = g.sched ? 0 : next <= now && next > 0 ? Math.floor((now - next) / per) : next === 0 ? 1 : 0; /* 수집 날 그룹은 '밀림' 없음 — 못 한 날은 다음 맞는 날에 */
       out.push({ sc, gi, g, rank: rank++, last, end, next, inProg, behind, bad, fresh: fresh && !inProg, due: inProg || next <= now }); }));
     return out; }
   /* (0.13.3) 할 차례 순서 — ① 하던 회차(멈췄다 다시 시작해도 처음 판매자로 돌아가지 않고 하던 판매자부터 이어서) ② 한 주기 이상 밀린 판매자(지난 차례를 못 끝낸 쪽 먼저)
@@ -165,12 +178,12 @@
   /* 순서표: 지금부터 차례로 했을 때 판매자마다 다음 수집 시작·끝 (durOf(sc) = 걸릴 초) — 겹치면 위 차례가 먼저, 한 번에 하나 */
   function benchSim(cfg, states, now, durOf, horizonH) { const P = benchPlan(cfg, states, now); const end = now + (horizonH || 48) * 3600e3; let t = now; const first = {}; const runs = [];
     const S = P.map((x) => ({ ...x, nx: x.next })); let guard = 0;
-    while (guard++ < 2000 && t < end && Object.keys(first).length < S.length) { const ready = S.filter((x) => x.nx <= t || x.inProg).map((x) => ({ x, k: { ...x, behind: x.nx <= t && x.nx > 0 ? Math.floor((t - x.nx) / (x.g.n * (x.g.unit === 'h' ? 3600e3 : 864e5))) : x.behind } })).sort((a, b) => benchCmp(a.k, b.k)).map((o) => o.x)[0];
+    while (guard++ < 2000 && t < end && Object.keys(first).length < S.length) { const ready = S.filter((x) => x.nx <= t || x.inProg).map((x) => ({ x, k: { ...x, behind: x.g.sched ? 0 : x.nx <= t && x.nx > 0 ? Math.floor((t - x.nx) / (x.g.n * (x.g.unit === 'h' ? 3600e3 : 864e5))) : x.behind } })).sort((a, b) => benchCmp(a.k, b.k)).map((o) => o.x)[0];
       if (!ready) { t = Math.min(...S.map((x) => x.nx)); continue; }
       const d = Math.max(60, +durOf(ready.sc) || 600) * 1000; const r = { sc: ready.sc, start: t, end: t + d, rank: ready.rank, gi: ready.gi }; runs.push(r); if (!first[ready.sc]) first[ready.sc] = r; t += d;
-      ready.inProg = false; ready.nx = benchNext(ready.g, r.start, null, r.end); }
+      ready.inProg = false; ready.nx = benchNextS(ready.g, r.start, null, r.end, r.end); }
     return { plan: P, first, runs }; }
-  const BENCH = { FIELDS: BENCH_FIELDS, FIELDS_DEF: BENCH_FIELDS_DEF, DETAIL_DEF: BENCH_DETAIL_DEF, VIEW_DEF: BENCH_VIEW_DEF, fields: benchFields, needsDetail: benchNeedsDetail, groups: benchGroups, next: benchNext, plan: benchPlan, order: benchOrder, runBad: benchRunBad, sim: benchSim, kstDay };
+  const BENCH = { FIELDS: BENCH_FIELDS, FIELDS_DEF: BENCH_FIELDS_DEF, DETAIL_DEF: BENCH_DETAIL_DEF, VIEW_DEF: BENCH_VIEW_DEF, fields: benchFields, needsDetail: benchNeedsDetail, groups: benchGroups, next: benchNext, plan: benchPlan, order: benchOrder, runBad: benchRunBad, sim: benchSim, kstDay, schedOk, schedTxt, schedNorm, schedNext };
   const DEFAULTS = { KINDS, JOBS, COLLECTIONS, PINS, USES, SETTINGS };
   // Firebase 문서(doc)의 overrides를 기본값 위에 얹음: overrides.kinds.{종류}.{by,prio,leaseMin,retry,waitMin,off} · overrides.pins.{파일}
   function merge(doc) { const o = (doc && doc.overrides) || {}; const K = {}; for (const [k, v] of Object.entries(KINDS)) K[k] = { ...v, ...((o.kinds || {})[k] || {}) };
