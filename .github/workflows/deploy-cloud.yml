@@ -1,6 +1,6 @@
 # 리드나우 클라우드 자동 배포 — cloud/ 폴더가 바뀐 채로 main에 올라오면 Cloud Run(readnow-cloud · 서울)에 저절로 새 판을 올림
 #  · 비밀번호·열쇠 없음: GitHub가 주는 1회용 신분증(OIDC)을 구글이 확인(Workload Identity Federation) — 이 저장소의 main 가지에서만 통함
-#  · 처음 한 번 준비: Cloud Shell에서  curl -sL https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/cloud/setup-autodeploy.sh | bash
+#  · 처음 한 번 준비(2026-10-12 끝남): Cloud Shell에서  curl -sL https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/cloud/setup-autodeploy.sh | bash
 #  · 기존 설정(비밀·메모리·예약 호출)은 그대로 두고 프로그램만 바꿈 — 비밀(알라딘 아이디·비밀번호)은 Secret Manager에만
 #  · 손으로 다시 올리기: GitHub 저장소 → Actions → '클라우드 자동 배포' → Run workflow
 name: 클라우드 자동 배포 (Cloud Run)
