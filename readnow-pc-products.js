@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.61.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.62.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.61.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.62.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2433,9 +2433,16 @@
     const got = {}; for (let i = 0; i < 8; i++) { const d = AS.kst(Date.now() - i * 864e5).day; let rec = null; try { rec = await window.__rnLogDay(d); } catch (e) {} for (const e of (rec && rec.lines) || []) { const p = AS.parseLogLine(e.x); if (!p) continue; const job = byName[p.name]; if (!job) continue; (got[job] = got[job] || []).push({ at: new Date(e.t).toISOString(), ms: p.ms, st: p.st, pc: PC_NAME, how: p.how, src: 'log' }); } }
     for (const [job, L] of Object.entries(got)) await jobStatAdd(job, L.slice(-40)); GM_setValue('rn-jobstats-seed', '1.60.0'); const n = Object.values(got).reduce((a, L) => a + L.length, 0); if (n) log(`⏰ 일마다 걸린 시간: 이 PC 작업 기록(최근 7일)에서 ${n}번을 찾아 채움 (${Object.keys(got).length}가지 일)`); }
   /* (1.60.1) 칸 편집기에 넘기는 것(ctx) — 읽기는 이 PC가 듣고 있는 것 그대로, 쓰기는 asSave 한 곳 */
-  const BIs = { ext: null, cj: null, cloud: null }; C('app_settings').doc('ext').onSnapshot((d) => { BIs.ext = d.exists ? d.data() : {}; try { asEdRefresh(true); } catch (e) {} }, () => {});
+  const BIs = { ext: null, cj: null, cloud: null, ack: null, ackLog: [] }; C('app_settings').doc('ext').onSnapshot((d) => { BIs.ext = d.exists ? d.data() : {}; try { asEdRefresh(true); } catch (e) {} asAck('ext', BIs.ext, () => `외부 정보 ${BIs.ext.on === false ? '끔' : '켬'} · 클라우드 이어 받기 ${BIs.ext.cloud === true ? '켬' : '끔'} 받음`); }, () => {});
+  /* (1.62.0) ✅ 적용 확인 — 이 PC가 설정을 실제로 받으면(듣기에 새 값이 들어오면) 받은 설정의 표지를 prd_system/autoAck.pcs.{PC}에, 바뀐 때만 적용 기록(prd_jobs/autoAck_YYYY-MM)에 한 줄 · 웹앱 ⏰ 자동 수집 페이지·칸 편집기 맨 위에 PC마다 ✓/⏳ */
+  function asAck(kind, data, what) { try { if (!RA || !RA.ackSig || !data) return; const sig = RA.ackSig(kind, data); const gk = 'rn-ack-' + kind; const prev = GM_getValue(gk, ''); const mine = ((((BIs.ack || {}).pcs || {})[PC_NAME] || {})[kind] || {}).sig;
+      if (prev === sig && mine === sig) return; GM_setValue(gk, sig); const at = nowIso(); C('prd_system').doc('autoAck').set({ pcs: { [PC_NAME]: { [kind]: { sig, at, ver: APP_VER_AS } } } }, { merge: true }).catch(() => {});
+      if (prev !== sig) C('prd_jobs').doc('autoAck_' + at.slice(0, 7)).set({ log: firebase.firestore.FieldValue.arrayUnion({ at, pc: PC_NAME, kind, sig, what: String(typeof what === 'function' ? what() : what || '').slice(0, 160) }) }, { merge: true }).catch(() => {}); } catch (e) {} }
+  const APP_VER_AS = ((typeof globalThis !== 'undefined' && globalThis.__RN_FILE_VER) || (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version)) || '?';
+  C('prd_system').doc('autoAck').onSnapshot((d) => { BIs.ack = d.exists ? d.data() : {}; try { asEdRefresh(true); } catch (e) {} }, () => {});
+  C('prd_jobs').doc('autoAck_' + nowIso().slice(0, 7)).onSnapshot((d) => { BIs.ackLog = (d.exists && d.data().log) || []; try { asEdRefresh(true); } catch (e) {} }, () => {});
   /* (1.61.0) ☁ 클라우드가 하는 일 켜기·끄기(app_settings/cloud_jobs) + 클라우드 신호(app_settings/cloud) — 칸 편집기에 보이고 여기서도 바꿈 */
-  C('app_settings').doc('cloud_jobs').onSnapshot((d) => { BIs.cj = d.exists ? d.data() : {}; try { asEdRefresh(true); } catch (e) {} }, () => {});
+  C('app_settings').doc('cloud_jobs').onSnapshot((d) => { BIs.cj = d.exists ? d.data() : {}; try { asEdRefresh(true); } catch (e) {} asAck('cj', BIs.cj, () => { const c = BIs.cj || {}; const off = (RA.CLOUD_JOBS || []).filter((x) => x.k !== 'ext' && c[x.k] === false).map((x) => x.label); return c.all === false ? '☁ 전체 끔 받음' : `☁ ${off.length ? '끈 일: ' + off.join(', ') : '모두 켬'} 받음`; }); }, () => {});
   C('app_settings').doc('cloud').onSnapshot((d) => { BIs.cloud = d.exists ? d.data() : null; }, () => {});
   const asCloudCtx = () => ({ cfg: BIs.cj || {}, beat: BIs.cloud, ext: BIs.ext || {}, extLease: ((EXT_S.lease || {}).pc) || null, set: (k, v) => (k === 'ext' ? C('app_settings').doc('ext').set({ cloud: !!v, at: nowIso(), by: PC_NAME }, { merge: true }) : C('app_settings').doc('cloud_jobs').set({ [k]: !!v, at: nowIso(), by: PC_NAME }, { merge: true })).then(() => log(`☁ 클라우드 '${((RA.CLOUD_JOBS || []).find((x) => x.k === k) || { label: k }).label}' ${v ? '켬' : '끔'}`)) });
   function asSegs(job) { if (!['prd:bench', 'prd:benchForce'].includes(job) || !BENCH_LIVE) return null; const T = benchTargets(BENCH_LIVE);
@@ -2443,7 +2450,7 @@
   function asBuiltins() { const X = EXT(); const on = !!(X && BIs.ext && X.cfgOf(BIs.ext).on);
     return [{ k: 'ext', label: '🌐 외부 정보 (알라딘 밖 기본 정보·국내 중고 시세·외국 시세·도서관·전자책)', desc: `5분마다 최대 4분씩 조금씩 — 출처마다 하루 최대·요청 간격을 지킴 · PC가 꺼지면 ${BIs.ext && BIs.ext.cloud === true ? '클라우드가 이어 받음' : '수집 안 함(☁ 클라우드 이어 받기 꺼짐)'} · 출처별 설정은 웹앱 설정 ⑱`, on, par: true, run: EXT_S.busy ? '이 PC에서 받는 중' : null, toggle: (v) => C('app_settings').doc('ext').set({ on: !!v, at: nowIso(), by: PC_NAME }, { merge: true }) }]; }
   const ASCTX = { doc: () => SCHED, runs: () => SCHED_RUNS, stats: () => JSTATS, catalog: () => asCatalog(), pc: PC_NAME, pcs: () => { try { return Object.values(PCS_SEEN).filter((v) => v && v.pcName && v.tool === '상품 수집기' && Date.now() - (v.atMs || 0) < 14 * 864e5).map((v) => String(v.pcName)); } catch (e) { return []; } },
-    save: (slots, baseRev, what) => asSave(slots, baseRev, what), setOn: (on) => SCHED_REF().set({ on: !!on, at: nowIso(), by: PC_NAME }, { merge: true }).then(() => log(`⏰ 매일 자동 수집 ${on ? '켬' : '끔'}`)), log: (m, e) => log(m, e), segs: asSegs, builtins: asBuiltins, cloud: asCloudCtx, front: (el) => window.__rnFront && window.__rnFront(el) };
+    save: (slots, baseRev, what) => asSave(slots, baseRev, what), setOn: (on) => SCHED_REF().set({ on: !!on, at: nowIso(), by: PC_NAME }, { merge: true }).then(() => log(`⏰ 매일 자동 수집 ${on ? '켬' : '끔'}`)), log: (m, e) => log(m, e), segs: asSegs, builtins: asBuiltins, cloud: asCloudCtx, acks: () => ({ pcs: (BIs.ack || {}).pcs || {}, log: BIs.ackLog || [] }), note: '웹앱 ⏰ 자동 수집 페이지와 같은 편집기 — 어디서 고치든 같은 칸(prd_system/autoSched) · 저장하면 모든 PC에 1분 안에 적용 · 회차마다 한 PC만 함', front: (el) => window.__rnFront && window.__rnFront(el) };
   /* 할 수 있는 일 목록을 Firebase에 알려 둠 → 웹앱 설정의 편집기도 같은 목록(이 수집기 판의 일)을 씀 · 바뀔 때만 씀 */
   async function asPublishCatalog() { try { const jobs = asCatalog().map((c) => ({ job: c.job, label: c.label, g: c.g, d: c.d, ...(c.par ? { par: true } : {}) })); const ref = C('prd_system').doc('autoCatalog'); const cur = (await ref.get()).data() || {};
       if ((cur.ver && verNum(cur.ver) > verNum(VER)) || JSON.stringify(cur.jobs || []) === JSON.stringify(jobs)) return; await ref.set({ jobs, ver: VER, by: PC_NAME, at: nowIso() }); } catch (e) {} }
@@ -2471,7 +2478,7 @@
         try { if (window.__rnCrm && window.__rnCrm.offOldAuto) await window.__rnCrm.offOldAuto(); } catch (e) {}
         if (SET.autoDaily) { try { await saveSet({ autoDaily: false }); } catch (e) {} }
         return; }
-      SCHED = d.data(); window.__rnSchedOn = !!SCHED.on; window.__rnSchedHas = true; if (!SCHED.mig161) asMigrate161(); schedDraw(); asEdRefresh(); }, () => {});
+      SCHED = d.data(); window.__rnSchedOn = !!SCHED.on; window.__rnSchedHas = true; if (!SCHED.mig161) asMigrate161(); schedDraw(); asEdRefresh(); asAck('sched', SCHED, () => `rev ${+SCHED.rev || 0} · ${SCHED.on ? '켬' : '끔'} 받음`); }, () => {});
     SCHED_RUN().onSnapshot((d) => { SCHED_RUNS = (d.exists && d.data().runs) || {}; schedDraw(); schedArchive(); asEdRefresh(true); }, () => {});
     JSTAT_REF().onSnapshot((d) => { JSTATS = (d.exists && d.data().jobs) || {}; schedDraw(); asEdRefresh(true); }, () => {});
     setInterval(() => { if (running || (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) || schedBusy) lastBusyAt = Date.now(); }, 15000);

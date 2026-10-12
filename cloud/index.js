@@ -31,7 +31,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.12.0'; // (0.12.0) 클라우드가 하는 일마다 켜기·끄기(app_settings/cloud_jobs — 웹앱 설정·수집기 칸 편집기의 '☁ 클라우드가 하는 일') · 꺼 둔 일은 손대지 않음 · 🌐 외부 정보 이어 받기는 기본 끔(app_settings/ext.cloud === true일 때만) // (0.11.0) 안전 점검: 작은 오류 번호로 서버가 꺼지던 것 · 비밀을 환경 변수에서 지움 · 알라딘 로그인 실패 상태를 Firestore에 남겨(다시 켜져도) 아이디·비밀번호 문제면 6시간 쉼 · 공용 파일 마지막으로 받은 판으로 계속(문법 검사) · 주문 문서 400개씩 · 열쇠를 같은 시간으로 비교 · 기억 덜어 내기 · 외부 정보 기준을 공용 파일에서 · (0.10.0) 🌐 외부 정보 — PC가 꺼져 있을 때 클라우드가 이어 받음(10분마다 최대 90초)
+const VER = '0.12.1'; // (0.12.1) ☁ 클라우드 전체 스위치(cloud_jobs.all === false면 모든 일을 멈춤 — 각 일의 스위치는 그대로 기억) // (0.12.0) 클라우드가 하는 일마다 켜기·끄기(app_settings/cloud_jobs — 웹앱 설정·수집기 칸 편집기의 '☁ 클라우드가 하는 일') · 꺼 둔 일은 손대지 않음 · 🌐 외부 정보 이어 받기는 기본 끔(app_settings/ext.cloud === true일 때만) // (0.11.0) 안전 점검: 작은 오류 번호로 서버가 꺼지던 것 · 비밀을 환경 변수에서 지움 · 알라딘 로그인 실패 상태를 Firestore에 남겨(다시 켜져도) 아이디·비밀번호 문제면 6시간 쉼 · 공용 파일 마지막으로 받은 판으로 계속(문법 검사) · 주문 문서 400개씩 · 열쇠를 같은 시간으로 비교 · 기억 덜어 내기 · 외부 정보 기준을 공용 파일에서 · (0.10.0) 🌐 외부 정보 — PC가 꺼져 있을 때 클라우드가 이어 받음(10분마다 최대 90초)
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -444,7 +444,7 @@ function watchCmds() { if (cmdUnsub) return; try { cmdUnsub = C('shp_cmds').wher
 const CJ_KEYS = ['confirm', 'fast', 'ship', 'enrich', 'cmds', 'buy', 'repair', 'sweep', 'costs', 'ml', 'learn', 'req'];
 let cjCache = null, cjAt = 0;
 async function cjobs() { if (cjCache && Date.now() - cjAt < 30e3) return cjCache; let d = {}; try { const sn = await C('app_settings').doc('cloud_jobs').get(); d = sn.exists ? sn.data() || {} : {}; } catch (e) { if (cjCache) return cjCache; }
-  const J = {}; CJ_KEYS.forEach((k) => { J[k] = d[k] !== false; }); cjCache = J; cjAt = Date.now(); return J; }
+  const allOn = d.all !== false; const J = { all: allOn }; CJ_KEYS.forEach((k) => { J[k] = allOn && d[k] !== false; }); cjCache = J; cjAt = Date.now(); return J; }
 let fastCfg = null, fastCfgAt = 0;
 async function fastMode() { if (!fastCfg || Date.now() - fastCfgAt > 5 * 60e3) { fastCfgAt = Date.now(); try { fastCfg = ((await C('app_settings').doc('main').get()).data() || {}).shipFast || {}; } catch (e) { fastCfg = fastCfg || {}; } }
   const mode = fastCfg.mode || 'biz'; if (mode === 'off') return { on: false, why: '설정에서 끔' };
@@ -798,7 +798,7 @@ async function extFxC(X, keys) { const day = extKst(); const k = new Date(Date.n
 async function extLeaseC(op) { let ok = false; try { await db.runTransaction(async (tx) => { const s = await tx.get(EXT_RUN()); const L = (s.exists && s.data().lease) || null; if (!L || L.pc !== 'cloud') return; tx.set(EXT_RUN(), { lease: { pc: 'cloud', tab: 'cloud', atMs: op === 'release' ? Date.now() - 5 * 60e3 : Date.now(), at: nowIso() } }, { merge: true }); ok = true; }); } catch (e) {} return ok; }
 /* 이어 받기 한 번 (최대 budgetMs) — PC가 15분 넘게 맡지 않았을 때만 */
 async function extCloud(budgetMs) { const X = await extMod(); if (!X) return { skip: '공용 파일 없음' }; let raw = {}; try { const d = await C('app_settings').doc('ext').get(); raw = d.exists ? d.data() : {}; } catch (e) {} const cfg = X.cfgOf(raw);
-  if (!cfg.on) return { skip: '외부 정보 꺼짐' }; if (raw.cloud !== true) return { skip: '클라우드 이어 받기 꺼짐(기본 · 설정 ⑱ 또는 ☁ 클라우드가 하는 일에서 켬)' }; /* (0.12.0) 기본 끔 — 켜 둔 때만 PC가 꺼져 있을 때 이어 받음 */
+  if (!cfg.on) return { skip: '외부 정보 꺼짐' }; if (!(await cjobs()).all) return { skip: '☁ 클라우드 전체 꺼짐' }; if (raw.cloud !== true) return { skip: '클라우드 이어 받기 꺼짐(기본 · 설정 ⑱ 또는 ☁ 클라우드가 하는 일에서 켬)' }; /* (0.12.0) 기본 끔 — 켜 둔 때만 PC가 꺼져 있을 때 이어 받음 */
   let ok = false, holder = null; try { await db.runTransaction(async (tx) => { const s = await tx.get(EXT_RUN()); const L = (s.exists && s.data().lease) || null; holder = L; if (L && L.pc !== 'cloud' && Date.now() - (+L.atMs || 0) < 15 * 60e3) return; tx.set(EXT_RUN(), { lease: { pc: 'cloud', tab: 'cloud', atMs: Date.now(), at: nowIso() } }, { merge: true }); ok = true; }); } catch (e) { return { skip: '맡기 실패: ' + e.message }; }
   if (!ok) return { skip: `PC ${holder && holder.pc}가 맡는 중` };
   try { return await extCloudRun(X, cfg, budgetMs); } finally { await extLeaseC('release'); } } /* 어떻게 끝나든(오류·책 없음 포함) 맡음을 놓음 — PC가 바로 이어받게 */
