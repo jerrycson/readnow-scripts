@@ -1,7 +1,7 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.60.2의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.61.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.60.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.61.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -13,7 +13,7 @@
  */
 (async function () {
   'use strict';
-  const VER = (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '1.58.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const VER = ((typeof globalThis !== 'undefined' && globalThis.__RN_FILE_VER) || (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version)) || '1.58.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -2105,7 +2105,7 @@
     GM_openInTab('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4#rninv=' + id, { active: false, insert: true }); } // #rninv= : 이 탭이 송장 입력을 맡은 탭 (다른 발송 요청 탭은 끼어들지 않음)
   // 영업일(월~금) 9~16시: 쉬는 동안 shipAutoMin분마다 발송 요청 다시 읽기
   let cloudBeat = null; auth.onAuthStateChanged((u) => { if (u) C('app_settings').doc('cloud').onSnapshot((d) => { cloudBeat = d.exists ? d.data() : null; }, () => {}); });
-  const cloudOn = () => !!(cloudBeat && cloudBeat.at && Date.now() - Date.parse(cloudBeat.at) < 10 * 60000 && cloudBeat.ok !== false); // 클라우드 수집이 살아 있음 (10분 안 신호)
+  const cloudOn = () => !!(cloudBeat && cloudBeat.at && Date.now() - Date.parse(cloudBeat.at) < 10 * 60000 && cloudBeat.ok !== false && !(cloudBeat.jobs && cloudBeat.jobs.ship === false)); // 클라우드 수집이 살아 있고 발송 요청 읽기를 켜 둠 (10분 안 신호 · 1.61.0: ☁ 설정에서 '발송 요청 읽기'를 끄면 PC 칸이 다시 맡음)
   /* (1.60.1) 발송 요청 읽기를 평일 9~16시 15분마다 스스로 하던 것(클라우드가 꺼졌을 때) → ⏰ 매일 자동 수집의 칸에서만 (클라우드가 살아 있으면 그 칸은 저절로 건너뜀) */
 
   async function photosJob() {
@@ -2433,13 +2433,17 @@
     const got = {}; for (let i = 0; i < 8; i++) { const d = AS.kst(Date.now() - i * 864e5).day; let rec = null; try { rec = await window.__rnLogDay(d); } catch (e) {} for (const e of (rec && rec.lines) || []) { const p = AS.parseLogLine(e.x); if (!p) continue; const job = byName[p.name]; if (!job) continue; (got[job] = got[job] || []).push({ at: new Date(e.t).toISOString(), ms: p.ms, st: p.st, pc: PC_NAME, how: p.how, src: 'log' }); } }
     for (const [job, L] of Object.entries(got)) await jobStatAdd(job, L.slice(-40)); GM_setValue('rn-jobstats-seed', '1.60.0'); const n = Object.values(got).reduce((a, L) => a + L.length, 0); if (n) log(`⏰ 일마다 걸린 시간: 이 PC 작업 기록(최근 7일)에서 ${n}번을 찾아 채움 (${Object.keys(got).length}가지 일)`); }
   /* (1.60.1) 칸 편집기에 넘기는 것(ctx) — 읽기는 이 PC가 듣고 있는 것 그대로, 쓰기는 asSave 한 곳 */
-  const BIs = { ext: null }; C('app_settings').doc('ext').onSnapshot((d) => { BIs.ext = d.exists ? d.data() : {}; try { asEdRefresh(true); } catch (e) {} }, () => {});
+  const BIs = { ext: null, cj: null, cloud: null }; C('app_settings').doc('ext').onSnapshot((d) => { BIs.ext = d.exists ? d.data() : {}; try { asEdRefresh(true); } catch (e) {} }, () => {});
+  /* (1.61.0) ☁ 클라우드가 하는 일 켜기·끄기(app_settings/cloud_jobs) + 클라우드 신호(app_settings/cloud) — 칸 편집기에 보이고 여기서도 바꿈 */
+  C('app_settings').doc('cloud_jobs').onSnapshot((d) => { BIs.cj = d.exists ? d.data() : {}; try { asEdRefresh(true); } catch (e) {} }, () => {});
+  C('app_settings').doc('cloud').onSnapshot((d) => { BIs.cloud = d.exists ? d.data() : null; }, () => {});
+  const asCloudCtx = () => ({ cfg: BIs.cj || {}, beat: BIs.cloud, ext: BIs.ext || {}, extLease: ((EXT_S.lease || {}).pc) || null, set: (k, v) => (k === 'ext' ? C('app_settings').doc('ext').set({ cloud: !!v, at: nowIso(), by: PC_NAME }, { merge: true }) : C('app_settings').doc('cloud_jobs').set({ [k]: !!v, at: nowIso(), by: PC_NAME }, { merge: true })).then(() => log(`☁ 클라우드 '${((RA.CLOUD_JOBS || []).find((x) => x.k === k) || { label: k }).label}' ${v ? '켬' : '끔'}`)) });
   function asSegs(job) { if (!['prd:bench', 'prd:benchForce'].includes(job) || !BENCH_LIVE) return null; const T = benchTargets(BENCH_LIVE);
     return T.map((t) => { const d = AS.durations('bench:' + String(t.sc), JSTATS, {}, []); return { label: t.name || String(t.sc), ms: d.n ? d.avg : 15 * 60e3, est: !d.n }; }); }
   function asBuiltins() { const X = EXT(); const on = !!(X && BIs.ext && X.cfgOf(BIs.ext).on);
-    return [{ k: 'ext', label: '🌐 외부 정보 (알라딘 밖 기본 정보·국내 중고 시세·외국 시세·도서관·전자책)', desc: '5분마다 최대 4분씩 조금씩 — 출처마다 하루 최대·요청 간격을 지킴 · PC가 꺼지면 클라우드가 이어 받음 · 출처별 설정은 웹앱 설정 ⑱', on, par: true, run: EXT_S.busy ? '이 PC에서 받는 중' : null, toggle: (v) => C('app_settings').doc('ext').set({ on: !!v, at: nowIso(), by: PC_NAME }, { merge: true }) }]; }
+    return [{ k: 'ext', label: '🌐 외부 정보 (알라딘 밖 기본 정보·국내 중고 시세·외국 시세·도서관·전자책)', desc: `5분마다 최대 4분씩 조금씩 — 출처마다 하루 최대·요청 간격을 지킴 · PC가 꺼지면 ${BIs.ext && BIs.ext.cloud === true ? '클라우드가 이어 받음' : '수집 안 함(☁ 클라우드 이어 받기 꺼짐)'} · 출처별 설정은 웹앱 설정 ⑱`, on, par: true, run: EXT_S.busy ? '이 PC에서 받는 중' : null, toggle: (v) => C('app_settings').doc('ext').set({ on: !!v, at: nowIso(), by: PC_NAME }, { merge: true }) }]; }
   const ASCTX = { doc: () => SCHED, runs: () => SCHED_RUNS, stats: () => JSTATS, catalog: () => asCatalog(), pc: PC_NAME, pcs: () => { try { return Object.values(PCS_SEEN).filter((v) => v && v.pcName && v.tool === '상품 수집기' && Date.now() - (v.atMs || 0) < 14 * 864e5).map((v) => String(v.pcName)); } catch (e) { return []; } },
-    save: (slots, baseRev, what) => asSave(slots, baseRev, what), setOn: (on) => SCHED_REF().set({ on: !!on, at: nowIso(), by: PC_NAME }, { merge: true }).then(() => log(`⏰ 매일 자동 수집 ${on ? '켬' : '끔'}`)), log: (m, e) => log(m, e), segs: asSegs, builtins: asBuiltins, front: (el) => window.__rnFront && window.__rnFront(el) };
+    save: (slots, baseRev, what) => asSave(slots, baseRev, what), setOn: (on) => SCHED_REF().set({ on: !!on, at: nowIso(), by: PC_NAME }, { merge: true }).then(() => log(`⏰ 매일 자동 수집 ${on ? '켬' : '끔'}`)), log: (m, e) => log(m, e), segs: asSegs, builtins: asBuiltins, cloud: asCloudCtx, front: (el) => window.__rnFront && window.__rnFront(el) };
   /* 할 수 있는 일 목록을 Firebase에 알려 둠 → 웹앱 설정의 편집기도 같은 목록(이 수집기 판의 일)을 씀 · 바뀔 때만 씀 */
   async function asPublishCatalog() { try { const jobs = asCatalog().map((c) => ({ job: c.job, label: c.label, g: c.g, d: c.d, ...(c.par ? { par: true } : {}) })); const ref = C('prd_system').doc('autoCatalog'); const cur = (await ref.get()).data() || {};
       if ((cur.ver && verNum(cur.ver) > verNum(VER)) || JSON.stringify(cur.jobs || []) === JSON.stringify(jobs)) return; await ref.set({ jobs, ver: VER, by: PC_NAME, at: nowIso() }); } catch (e) {} }

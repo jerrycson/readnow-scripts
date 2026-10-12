@@ -8,7 +8,7 @@
  * 화면 모양이 바뀌어 못 읽으면 '못 읽음'과 함께 받은 화면 일부(probe)를 돌려줌 → 수집기가 ext_probe에 남겨 나중에 읽는 법을 고침. 추측으로 채우지 않음.
  * ISBN이 있는 책 정보(교보·예스24)는 받은 상품 페이지 안에 그 ISBN이 정확히 있을 때만 받아들임(다른 책을 잘못 붙이지 않게). */
 (function (root) {
-  const VERSION = '0.4.0'; // (0.4.0) DVDPrime 글 화면 읽기(dpPost) — 줄마다 상품·값(사람마다 다른 적는 법)·판매 상태(가운데 줄·판완)·상품 상태 · 판매자·글 날짜·조회 수·댓글 수·택배·직거래·연락 방법
+  const VERSION = '0.4.1'; // (0.4.1) DVDPrime 판매자 연락처(전화·메일·카톡 아이디·오픈채팅)를 그대로 기록 — 판매자 = 매입처 · 한글로 적은 번호도 숫자로 // (0.4.0) DVDPrime 글 화면 읽기(dpPost) — 줄마다 상품·값(사람마다 다른 적는 법)·판매 상태(가운데 줄·판완)·상품 상태 · 판매자·글 날짜·조회 수·댓글 수·택배·직거래·연락 방법
 
   /* ── 키 (웹앱 설정 ⑱에서 넣음 → Firebase app_secrets/ext · 백업 파일엔 넣지 않음) ── */
   const KEYS = [
@@ -277,7 +277,16 @@
     else if (/\./.test(m[1]) && n > 0 && n < 100) p = Math.round(n * 10000); else if (n >= 1000 && !/\./.test(m[1])) p = n;
     if (p == null || p < 100 || p > 5000000) return null; return { p, raw, name: t.slice(0, t.length - m[0].length + (m[0].length - m[0].trimStart().length)).replace(/[\s:：\-–—=~]+$/g, '').trim() }; }
   const dpPhoneLike = (t) => /01[016789][\s.\-]?\d{3,4}[\s.\-]?\d{4}|공일[공영]|영일[공영]|[공영일이삼사오육칠팔구]{7,}/.test(String(t || '').replace(/\s/g, ''));
-  const dpMask = (t) => String(t || '').replace(/01[016789][\s.\-]?\d{3,4}[\s.\-]?\d{4}/g, '(번호 가림)').replace(/[공영일이삼사오육칠팔구](?:\s*[공영일이삼사오육칠팔구]){6,}/g, '(번호 가림)').replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, '(메일 가림)');
+  /* (0.4.1) 판매자 연락처를 그대로 기록 — DVDPrime 판매자는 곧 매입처(연락할 수단이 있어야 함) · 한글로 적은 번호(공일공 구육사삼…)는 숫자로 바꿔 함께 */
+  const DP_KDIG = { 공: '0', 영: '0', 일: '1', 이: '2', 삼: '3', 사: '4', 오: '5', 육: '6', 륙: '6', 칠: '7', 팔: '8', 구: '9' };
+  const dpKNum = (t) => String(t || '').replace(/[공영일이삼사오육륙칠팔구](?:[\s.\-]*[공영일이삼사오육륙칠팔구]){8,}/g, (m) => m.replace(/[공영일이삼사오육륙칠팔구]/g, (c) => DP_KDIG[c]));
+  const dpFmtTel = (d) => (/^02/.test(d) ? `02-${d.slice(2, d.length - 4)}-${d.slice(-4)}` : d.length === 11 ? `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}` : d.length === 10 ? `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}` : d);
+  function dpContacts(text, html) { const T = dpKNum(String(text || '')); const uniq = (a) => [...new Set(a.filter(Boolean))];
+    const phones = uniq((T.match(/(?<!\d)0(?:[ .\-]{0,2}\d){8,10}(?!\d)/g) || []).map((x) => x.replace(/\D/g, '')).filter((d) => /^01[016789]\d{7,8}$|^0(?:2|[3-6][1-5]|70|50\d?)\d{6,8}$/.test(d)).map(dpFmtTel));
+    const emails = uniq((T.replace(/\s*(?:골뱅이|\(at\)|\[at\])\s*/gi, '@').match(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g) || []).map((x) => x.toLowerCase()));
+    const kakao = uniq([...T.matchAll(/(?:카톡|카카오톡?|kakao(?:talk)?)\s*(?:아이디|id)?\s*[:：]?\s*([A-Za-z][A-Za-z0-9_.\-]{2,29})/gi)].map((m) => m[1]).filter((x) => !/^(?:id|talk)$/i.test(x)));
+    const openchat = uniq((String(html || '') + ' ' + T).match(/https?:\/\/open\.kakao\.com\/o\/[A-Za-z0-9]+/g) || []);
+    return { phones, emails, kakao, openchat }; }
   function dpPost(html, now) { const H = String(html || ''); const g = (re) => { const m = H.match(re); return m ? m[1] : null; };
     const id = g(/bo_table=market(?:&amp;|&)wr_id=(\d+)/) || g(/view_recommend_list_(\d+)/); const title = strip(g(/<h1[^>]+id=["']writeSubject["'][^>]*>([\s\S]*?)<\/h1>/i) || '') || null;
     if (!title && !/id=["']resContents["']/.test(H)) return null;
@@ -303,12 +312,13 @@
     const T = terms.join(' \n '); const fees = []; T.replace(/(반값\s*택배|gs\s*(?:반값|일반)?\s*택배|cu\s*(?:반값|일반)?\s*택배|편의점\s*택배|일반\s*택배|택배(?:비|거래시?\s*배송료)?|배송(?:비|료))[^\d\n]{0,14}(\d{1,3}(?:,\d{3})+|\d+)\s*(천\s*원?|원)?/gi, (m, k, n, u) => { const v = +n.replace(/,/g, '') * (/천/.test(u || '') ? 1000 : 1); if (v >= 500 && v <= 30000) fees.push({ k: k.replace(/\s+/g, ' ').trim(), won: v }); return m; });
     const free = (T.match(/[^\n]{0,30}(?:택배비|배송비)?\s*무료[^\n]{0,20}/) || [])[0] || null;
     const direct = /직거래/.test(T) ? { ok: !/직거래\s*(?:x|불가|안)/i.test(T), place: ((T.match(/직거래[^\n]{0,20}?([가-힣]{2,8}(?:역|시|구|동))/) || T.match(/([가-힣]{2,6})\s*(?:자택|근처)?에서\s*(?:직거래|가능)/) || [])[1]) || null } : null;
-    const contact = [['쪽지', /쪽지/], ['문자', /문자/], ['전화', /전화|통화/], ['댓글', /댓글/], ['카톡', /카톡|카카오|오픈\s*채팅/]].filter(([, re]) => re.test(T)).map(([k]) => k); if (!contact.length && dpPhoneLike(T)) contact.push('번호(문자·전화)'); /* '○○○ 연락주세요'처럼 방법 없이 번호만 */
+    const CT = dpContacts(rawLines.map((rl) => strip(rl)).join('\n'), body);
+    const contact = [['쪽지', /쪽지/], ['문자', /문자/], ['전화', /전화|통화/], ['댓글', /댓글/], ['카톡', /카톡|카카오|오픈\s*채팅/]].filter(([, re]) => re.test(T)).map(([k]) => k); if (!contact.length && (dpPhoneLike(T) || CT.phones.length)) contact.push('번호(문자·전화)'); if (CT.emails.length && !contact.includes('메일')) contact.push('메일'); /* '○○○ 연락주세요'처럼 방법 없이 번호만 */
     const buy = cat === '삽니다' || /삽니다|구매합니다|구합니다|구입합니다/.test(title || '');
     const sold = items.filter((x) => x.st === 'sold').length;
     return { id, url: id ? `https://dvdprime.com/g2/bbs/board.php?bo_table=market&wr_id=${id}` : null, title: title ? clip(title, 160) : null, cat, kind: buy ? 'buy' : 'sell',
       seller: { nick, mbId, tier: tier != null ? tier : null }, hits, comments, pubAt: pub ? pub.replace(' ', 'T') + (/[+Z]/.test(pub) ? '' : '+09:00') : null, modAt: mod ? mod.replace(' ', 'T') + (/[+Z]/.test(mod) ? '' : '+09:00') : null, updated: /updated/i.test(dtRaw), shownAt: dtRaw.replace(/^updated at\s*/i, '') || null,
-      images, items, n: items.length, soldN: sold, sellN: items.length - sold, terms: { fees, free: free ? clip(free.trim(), 60) : null, direct, firstPay: /입금\s*순|선\s*입금|예약\s*[x×불안]/.test(T), noRefund: /환불[이은]?\s*(?:불가|안\s*(?:됨|돼|됩)|x|어렵)/i.test(T), nego: /네고|에눌/.test(T) ? !/(?:네고|에눌)[^\n]{0,10}(?:x|불가|안\s*(?:해|받|됩)|받지\s*않|사절)/i.test(T) : null, bundleFree: /\d+\s*장\s*이상[^\n]{0,20}무료/.test(T), contact, phoneGiven: dpPhoneLike(T), notes: terms.slice(0, 8).map((x) => clip(dpMask(x), 80)) } }; }
+      images, items, n: items.length, soldN: sold, sellN: items.length - sold, terms: { fees, free: free ? clip(free.trim(), 60) : null, direct, firstPay: /입금\s*순|선\s*입금|예약\s*[x×불안]/.test(T), noRefund: /환불[이은]?\s*(?:불가|안\s*(?:됨|돼|됩)|x|어렵)/i.test(T), nego: /네고|에눌/.test(T) ? !/(?:네고|에눌)[^\n]{0,10}(?:x|불가|안\s*(?:해|받|됩)|받지\s*않|사절)/i.test(T) : null, bundleFree: /\d+\s*장\s*이상[^\n]{0,20}무료/.test(T), contact, phoneGiven: dpPhoneLike(T) || CT.phones.length > 0, phones: CT.phones, emails: CT.emails, kakao: CT.kakao, openchat: CT.openchat, notes: terms.slice(0, 8).map((x) => clip(x, 120)) } }; }
   /* 글 하나에서 우리 상품과 닮은 줄 — 같은 줄이 여럿이면 판매중을 먼저, 그다음 싼 것 */
   /* 형태(4K·블루레이·DVD·3D)가 우리 상품 제목과 맞는 줄을 먼저 — '살인의 추억 4K'면 4K 줄이 일반판 줄보다 앞 */
   const dpPick = (post, title, min) => { if (!post || !post.items) return []; const F = dpTags(title, DP_FORMAT); const fit = (x) => (F.length ? F.filter((k) => x.fmt.includes(k)).length - (F.includes('4K') && !x.fmt.includes('4K') ? 1 : 0) - (!F.includes('4K') && x.fmt.includes('4K') ? 1 : 0) : 0);
@@ -325,7 +335,7 @@
     /* 열 글: ① 제목이 닮았는데 값이 글 안에만 있는 글 ② 제목은 안 닮았지만 본문 검색에 걸린 글(본문 줄에 우리 상품이 있을 수 있음) — 최근 글부터 · 판매완료 제목은 뺌 · 모두 합쳐 최대 4개 */
     const content = /wr_content/.test(decodeURIComponent(url)); const open = [...L.filter((x) => x.sim >= 0.6 && x.st !== 'buy' && x.st !== 'sold' && (x.multi || x.p == null)), ...(content ? L.filter((x) => x.sim < 0.6 && x.st !== 'sold').sort((a, b) => String(b.at || '').localeCompare(String(a.at || ''))) : [])].filter((x, i, A) => A.indexOf(x) === i).slice(0, 4); let opened = 0;
     for (const x of open) { await new Promise((res) => setTimeout(res, 4000)); let r2; try { r2 = await http({ method: 'GET', url: x.url }); } catch (e) { break; } if (!okStatus(r2)) break; const P = dpPost(r2.text); if (!P) continue; opened++;
-      const hit = dpPick(P, title, 0.6)[0] || null; x.post = { seller: P.seller.nick, mbId: P.seller.mbId, tier: P.seller.tier, hits: P.hits, comments: P.comments, pubAt: P.pubAt, updated: P.updated, n: P.n, sellN: P.sellN, soldN: P.soldN, terms: { fees: P.terms.fees, free: P.terms.free, direct: P.terms.direct, firstPay: P.terms.firstPay, noRefund: P.terms.noRefund, nego: P.terms.nego, contact: P.terms.contact, phoneGiven: P.terms.phoneGiven } };
+      const hit = dpPick(P, title, 0.6)[0] || null; x.post = { seller: P.seller.nick, mbId: P.seller.mbId, tier: P.seller.tier, hits: P.hits, comments: P.comments, pubAt: P.pubAt, updated: P.updated, n: P.n, sellN: P.sellN, soldN: P.soldN, terms: { fees: P.terms.fees, free: P.terms.free, direct: P.terms.direct, firstPay: P.terms.firstPay, noRefund: P.terms.noRefund, nego: P.terms.nego, contact: P.terms.contact, phoneGiven: P.terms.phoneGiven, phones: P.terms.phones, emails: P.terms.emails, kakao: P.terms.kakao, openchat: P.terms.openchat, notes: P.terms.notes } };
       if (hit) { x.line = hit.raw; x.p = hit.p; x.pr = hit.pr; x.st = P.kind === 'buy' ? 'buy' : hit.st; x.cond = hit.cond; x.ed = hit.ed; x.region = hit.region; x.fmt = hit.fmt; x.lineSim = hit.sim; delete x.multi; delete x.pt; x.sim = hit.sim; /* 닮음 = 그 줄의 닮음(글 제목이 아니라) */ } else { x.post.noLine = true; x.sim = Math.min(x.sim, 0.5); /* 글을 열어 보니 우리 상품 줄이 없음 — 시세에서 뺌 */ } }
     o.d.opened = opened; o.d.content = content; o.d.items.sort((a, b) => b.sim - a.sim || (a.p || 0) - (b.p || 0)); return o; };
 
@@ -414,6 +424,6 @@
   async function run(src, a) { const f = ADP[src]; if (!f) return { ok: false, why: '모르는 출처' }; const s = SOURCES[src]; if (!keysReady(src, a.keys)) return { skip: '키 없음' };
     if (s.grp === 'used' && src !== 'yes24used' && !a.title) return { skip: '제목 없음' }; try { return await f(a); } catch (e) { return { ok: false, why: e.message || String(e) }; } }
 
-  const api = { VERSION, VIA_JOONGMO, eligible, mediaQuery, mediaCore, simMedia, dpParse, dpPost, dpPick, dpLinePrice, _dpDate: (s, n) => dpDate(s, n), keyOf, isIsbnKey, jmParse, KEYS, GROUPS, SOURCES, ORDER, BASIC_ORDER, BASIC_FIELDS, CFG_DEF, cfgOf, keysReady, isKrIsbn, coreTitle, sim, marketQuery, jsonBlobs, findListings, tableKV, meta, strip, ymd, toNum, run, fxRun, toKrw, median, lowQ, dropOutliers, foreignStats, usedStats, mergeBasic, sig, shard, stOf, FX_CUR, _adp: ADP, _pageBook: pageBook };
+  const api = { VERSION, VIA_JOONGMO, eligible, mediaQuery, mediaCore, simMedia, dpParse, dpPost, dpPick, dpLinePrice, dpContacts, _dpDate: (s, n) => dpDate(s, n), keyOf, isIsbnKey, jmParse, KEYS, GROUPS, SOURCES, ORDER, BASIC_ORDER, BASIC_FIELDS, CFG_DEF, cfgOf, keysReady, isKrIsbn, coreTitle, sim, marketQuery, jsonBlobs, findListings, tableKV, meta, strip, ymd, toNum, run, fxRun, toKrw, median, lowQ, dropOutliers, foreignStats, usedStats, mergeBasic, sig, shard, stOf, FX_CUR, _adp: ADP, _pageBook: pageBook };
   if (typeof module === 'object' && module.exports) module.exports = api; root.ReadnowExt = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
