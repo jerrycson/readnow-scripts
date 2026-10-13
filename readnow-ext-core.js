@@ -8,7 +8,7 @@
  * 화면 모양이 바뀌어 못 읽으면 '못 읽음'과 함께 받은 화면 일부(probe)를 돌려줌 → 수집기가 ext_probe에 남겨 나중에 읽는 법을 고침. 추측으로 채우지 않음.
  * ISBN이 있는 책 정보(교보·예스24)는 받은 상품 페이지 안에 그 ISBN이 정확히 있을 때만 받아들임(다른 책을 잘못 붙이지 않게). */
 (function (root) {
-  const VERSION = '0.4.2'; // (0.4.2) 못 읽음(HTTP 오류)도 응답 머리를 남김(ext_probe · 알림 줄에 응답 앞부분) · 네이버·eBay 키 앞뒤 빈칸 무시 // (0.4.1) DVDPrime 판매자 연락처(전화·메일·카톡 아이디·오픈채팅)를 그대로 기록 — 판매자 = 매입처 · 한글로 적은 번호도 숫자로 // (0.4.0) DVDPrime 글 화면 읽기(dpPost) — 줄마다 상품·값(사람마다 다른 적는 법)·판매 상태(가운데 줄·판완)·상품 상태 · 판매자·글 날짜·조회 수·댓글 수·택배·직거래·연락 방법
+  const VERSION = '0.4.3'; // (0.4.3) 네이버 책 검색 종료(2026-07-31) — 묻지 않음 · 장터 글은 제목이 닮은 것만 · 못 읽은 화면을 글·자료만 더 많이 남김 // (0.4.2) 못 읽음(HTTP 오류)도 응답 머리를 남김(ext_probe · 알림 줄에 응답 앞부분) · 네이버·eBay 키 앞뒤 빈칸 무시 // (0.4.1) DVDPrime 판매자 연락처(전화·메일·카톡 아이디·오픈채팅)를 그대로 기록 — 판매자 = 매입처 · 한글로 적은 번호도 숫자로 // (0.4.0) DVDPrime 글 화면 읽기(dpPost) — 줄마다 상품·값(사람마다 다른 적는 법)·판매 상태(가운데 줄·판완)·상품 상태 · 판매자·글 날짜·조회 수·댓글 수·택배·직거래·연락 방법
 
   /* ── 키 (웹앱 설정 ⑱에서 넣음 → Firebase app_secrets/ext · 백업 파일엔 넣지 않음) ── */
   const KEYS = [
@@ -40,7 +40,7 @@
     google: { grp: 'basic', label: '구글 북스', kind: 'api', host: 'www.googleapis.com', keys: ['googleBooks'], keyOptional: true, cap: 900, paceMs: 1200 },
     ttb: { grp: 'basic', label: '알라딘 TTB (공식)', kind: 'api', host: 'www.aladin.co.kr', keys: ['aladinTtb'], cap: 4500, paceMs: 800 },
     kakao: { grp: 'basic', label: '카카오 책 검색 (공식)', kind: 'api', host: 'dapi.kakao.com', keys: ['kakaoRest'], cap: 5000, paceMs: 500 },
-    naver: { grp: 'basic', label: '네이버 책 검색 (공식)', kind: 'api', host: 'openapi.naver.com', keys: ['naverId', 'naverSecret'], cap: 5000, paceMs: 500 },
+    naver: { grp: 'basic', label: '네이버 책 검색 (공식 · 2026-07-31 서비스 종료)', ended: '2026-07-31', /* (0.4.3) 네이버가 책 검색 API를 2026-07-31에 끝냄(NAVER API HUB로 옮기지 않음) — 응답 SE05 '존재하지 않는 검색 api' · 묻지 않음 */ kind: 'api', host: 'openapi.naver.com', keys: ['naverId', 'naverSecret'], cap: 5000, paceMs: 500 },
     nl: { grp: 'basic', label: '국립중앙도서관 ISBN 서지 (공식)', kind: 'api', host: 'www.nl.go.kr', keys: ['nlKey'], cap: 3000, paceMs: 800 },
     joongmo: { grp: 'used', label: '중고닷 (통합 검색)', kind: 'page', host: 'www.joongmo.com', keys: [], cap: 600, paceMs: 3000 }, /* (0.2.0) 당근·중고나라·번개장터·헬로마켓·후르츠를 한 번에 — 정범 지정: 중고 검색은 여기 먼저, 없을 때만 각 장터에 직접 */
     yes24used: { grp: 'used', label: '예스24 중고', kind: 'page', host: 'www.yes24.com', keys: [], cap: 400, paceMs: 3000 },
@@ -67,7 +67,7 @@
     gradeMap: { 1000: 'new', 1500: 'new', 2750: '최상', 4000: '상', 5000: '중', 6000: '하' }, // eBay 상태 번호 → 우리 등급 (책: Brand New / Like New / Very Good / Good / Acceptable)
     src: {},               // 출처마다 { on, cap, refreshDays } 덮어쓰기
   };
-  const cfgOf = (c) => { const o = { ...CFG_DEF, ...(c || {}) }; o.src = {}; for (const k of ORDER) { const d = SOURCES[k]; const u = ((c && c.src) || {})[k] || {}; o.src[k] = { on: u.on !== false, cap: Math.max(0, +(u.cap ?? d.cap) || 0), refreshDays: Math.max(1, +(u.refreshDays ?? GROUPS[d.grp].refreshDays) || 1) }; } o.gradeMap = { ...CFG_DEF.gradeMap, ...((c && c.gradeMap) || {}) }; return o; };
+  const cfgOf = (c) => { const o = { ...CFG_DEF, ...(c || {}) }; o.src = {}; for (const k of ORDER) { const d = SOURCES[k]; const u = ((c && c.src) || {})[k] || {}; o.src[k] = { on: u.on !== false && !d.ended, cap: Math.max(0, +(u.cap ?? d.cap) || 0), refreshDays: Math.max(1, +(u.refreshDays ?? GROUPS[d.grp].refreshDays) || 1) }; } o.gradeMap = { ...CFG_DEF.gradeMap, ...((c && c.gradeMap) || {}) }; return o; };
   /* 중고닷이 대신 찾아 주는 장터 — 중고닷에서 같은 책을 찾았으면 이 장터들엔 직접 묻지 않음 */
   const VIA_JOONGMO = ['bunjang', 'joongna', 'daangn'];
   /* 외부 정보 문서 번호: ISBN이 있으면 ISBN · 없으면(DVD·CD 등) 바코드 'B…' · 그것도 없으면 알라딘 상품코드 'U…' — ISBN이 없는 상품은 중고 시세만 봄 */
@@ -124,7 +124,11 @@
   const stOf = (v) => { const s = String(v == null ? '' : v).toLowerCase().trim(); if (!s) return null; if (/schema\.org\/(soldout|outofstock|discontinued)/.test(s)) return 'sold'; if (/schema\.org\/(instock|limitedavailability|preorder)/.test(s)) return 'sell'; if (/^\d+$/.test(s)) return '#' + s; if (/sold|완료|closed|complete|done/.test(s)) return 'sold'; if (/reserv|예약/.test(s)) return 'rsv'; if (/sale|ongoing|판매|selling|active|on_sale/.test(s)) return 'sell'; return clip(s, 12); };
   /* 잘라 둘 화면 일부 (못 읽었을 때 수집기가 ext_probe에 남김 — 읽는 법 고칠 때 씀) */
   const noKey = (u) => (u == null ? null : String(u).replace(/([?&](?:ttbkey|cert_key|key|authKey|authkey|apikey|api_key|serviceKey|client_secret)=)[^&#]*/gi, '$1***')); /* (0.3.0) 남기는 주소에서 연결 키를 가림 — ext_probe에 키가 남지 않게 */
-  const probe = (text, why, url) => ({ ok: false, why, probe: { url: noKey(url), len: String(text || '').length, head: clip(String(text || '').replace(/(ttbkey|cert_key|authKey|serviceKey)=[^&"'\s<]*/gi, '$1=***'), 120000) } });
+  const probeSlim = (t) => String(t || '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<svg[\s\S]*?<\/svg>/gi, '').replace(/<script\b[^>]*\bsrc=[^>]*>\s*<\/script>/gi, '').replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gi, (m, body) => (/__NEXT_DATA__|__next_f|application\/(ld\+)?json|window\.__|__INITIAL|__APOLLO|__NUXT/i.test(m) ? m : '')).replace(/<!--[\s\S]*?-->/g, '').replace(/[ \t]{2,}/g, ' ').replace(/\n\s*\n+/g, '\n');
+  /* (0.4.3) 못 읽은 화면은 글·자료만 남겨 더 많이(최대 28만 자 · 예전 12만) — 꾸밈(style·svg)과 프로그램(script)은 빼고 자료 담은 script(Next·JSON)는 남김 · 예전엔 앞 12만 자만이라 예스24·리디는 메뉴만 담기고 정작 목록은 잘렸음 */
+  /* 너무 길면 앞 3만 자(머리) + 목록이 있을 만한 곳(검색 결과·상품·자료 script가 처음 나오는 곳)부터 25만 자 */
+  const probePick = (t) => { if (t.length <= 280000) return t; const re = /검색\s*결과|searchResult|search-result|goods|product|itemList|item_list|__NEXT_DATA__|__next_f|application\/json/gi; re.lastIndex = 20000; const m = re.exec(t); const st = m ? Math.max(30000, m.index - 2000) : 30000; return t.slice(0, 30000) + '\n<!-- …(중간 생략)… -->\n' + t.slice(st, st + 250000); };
+  const probe = (text, why, url) => ({ ok: false, why, probe: { url: noKey(url), len: String(text || '').length, head: probePick(probeSlim(String(text || '').replace(/(ttbkey|cert_key|authKey|serviceKey)=[^&"'\s<]*/gi, '$1=***'))) } }); /* 한 문서 1MB 한도 — 한글이 섞여도 넘지 않게 28만 자 */
 
   /* ══════════ 출처마다: 묻기 → 읽기 ══════════
    * run({ isbn, title, author, keys, http, cache, cfg }) → { ok:true, d } | { ok:true, none:true } (그 책이 없음) | { ok:false, why, probe? } | { skip: '까닭' }
@@ -184,7 +188,7 @@
     const url = `https://www.yes24.com/Product/Goods/${m[1]}`; const p = await http({ method: 'GET', url }); if (!okStatus(p)) return { ok: false, why: `상품 화면 HTTP ${p.status}` }; const o = pageBook(p.text, isbn, url, 'yes24'); if (!o.ok && !o.mismatch) return probe(p.text, o.why, url); if (o.ok) o.d.id = m[1]; return o; };
 
   /* ── 중고 시세: 장터 글 목록 → [{t 제목, p 값, st 상태(sell·rsv·sold), id, url, at 올린 때, loc 지역, sim 제목 닮음}] ── */
-  const usedOut = (items, q, title, url, cfg) => { const L = items.map((x) => ({ ...x, sim: sim(title, x.t) })).filter((x) => x.t).sort((a, b) => b.sim - a.sim || (a.p || 0) - (b.p || 0)).slice(0, 60); return { ok: true, d: { q, url, n: L.length, items: L } }; };
+  const usedOut = (items, q, title, url, cfg) => { const th = Math.max(0.3, ((cfg && cfg.sim) ?? CFG_DEF.sim) - 0.25); const A = items.map((x) => ({ ...x, sim: sim(title, x.t) })).filter((x) => x.t); const L = A.filter((x) => x.sim >= th).sort((a, b) => b.sim - a.sim || (a.p || 0) - (b.p || 0)).slice(0, 60); return { ok: true, d: { q, url, n: L.length, all: A.length, th, items: L } }; }; /* (0.4.3) 제목이 닮은 글만 남김(닮음 = 설정 '같은 책' 기준 − 0.25, 최소 0.3) — 예전엔 검색 결과 60개를 모두 담아 당근은 책마다 늘 '새로 60개'(대부분 다른 물건)였음 */
   ADP.yes24used = async ({ isbn, title, http, cfg }) => { const url = `https://www.yes24.com/Product/Search?domain=USED&query=${isbn}`; const r = await http({ method: 'GET', url }); if (!okStatus(r)) return probe(r.text, `HTTP ${r.status}${r.text ? ' — ' + clip(String(r.text).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(), 90) : ''}`, url); /* (0.4.2) 못 읽은 화면·응답을 남김(ext_probe) — 까닭을 보고 고치게 */ const H = String(r.text);
     const items = []; const parts = H.split(/<li[^>]+data-goods-no=|<div[^>]+class=["'][^"']*itemUnit/i).slice(1);
     for (const seg0 of parts) { const seg = seg0.slice(0, 8000); const id = (seg.match(/\/Product\/Goods\/(\d+)/) || [])[1]; const nm = strip((seg.match(/class=["'][^"']*gd_name[^"']*["'][^>]*>([\s\S]*?)<\/a>/i) || [])[1] || ''); const pr = toNum(strip((seg.match(/class=["'][^"']*yes_b[^"']*["'][^>]*>([\s\S]*?)<\/em>/i) || [])[1] || ''));
@@ -417,7 +421,7 @@
   const shard = (isbn) => (+String(isbn).slice(-2) || 0) % 8; // 출처별 '언제 봤나' 색인을 8개 문서로 나눔(문서 하나가 1MB를 넘지 않게)
 
   /* (0.3.0) 이 출처로 이 상품을 물을지 — 수집기·클라우드가 같은 기준을 쓰게 여기 한 곳에 (b: { isbn(ISBN 또는 B바코드·U상품코드), title, media }) */
-  function eligible(src, b, cfg) { const s = SOURCES[src]; if (!s || !b) return false; const g = s.grp; const isI = /^97[89]\d{10}$/.test(String(b.isbn || ''));
+  function eligible(src, b, cfg) { const s = SOURCES[src]; if (!s || !b || s.ended) return false; const g = s.grp; const isI = /^97[89]\d{10}$/.test(String(b.isbn || ''));
     if (s.media) return s.media.includes(b.media) && !!b.title; /* 영상·음반 전용 장터(DVDPrime) */
     if (!isI) return g === 'used' && src !== 'yes24used' && !!b.title; /* ISBN 없는 상품: 장터 시세만 */
     if (g === 'foreign' && !(cfg && cfg.foreignKr) && isKrIsbn(b.isbn)) return false; if ((g === 'used' && src !== 'yes24used') || g === 'ebook') return !!b.title; return true; }

@@ -1,12 +1,13 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.63.6의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.63.7의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.63.6' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.63.7' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
  * 답변 칸: 묻고 답하기 = #txtAnswer, 그 밖의 화면 = 마지막으로 누른 입력칸(textarea). 알라딘 '등록' 단추는 사람이 직접 누름 (자동으로 보내지 않음). */
 (function rnPhraseHelper() {
+  if (window.__rnFeat && !window.__rnFeat('phrase')) return; /* (1.63.7) 🧩 */
   if (window.top !== window || !/\/scm\/(wUsedShopC2C|wShopSurvey)/i.test(location.pathname)) return;
   const DEF = {
     greet: ['안녕하세요? 반갑습니다!', '안녕하세요, 북스킹입니다. 문의 주셔서 진심으로 감사드립니다.', '안녕하세요, 고객님. 저희 상품에 관심 가져 주셔서 감사합니다.', '안녕하세요, 고객님. 답변이 늦어 죄송합니다.', '안녕하세요, 북스킹입니다. 기다려 주셔서 감사합니다.', '안녕하세요, 고객님. 소중한 구매평 남겨 주셔서 진심으로 감사드립니다.'],
@@ -85,6 +86,7 @@
  *   → 화면이 바뀌면 공개 확인(대량 등록과 같은 지킴이·짝짓기 — ISBN·코드·판매가·품질·수량)
  * 사진 자동 첨부를 위한 조사: 이 화면이 열릴 때 하루 한 번, 알라딘 화면의 사진 올리기·등록 함수 원문과 사진 올리기 칸 모양을 reg_probe에 기록(읽기만) */
 (function rnRegFill() {
+  if (window.__rnFeat && !window.__rnFeat('reg')) return; /* (1.63.7) 🧩 등록 도우미·자동 등록 */
   /* (1.47.0) 채우는 일을 '틀'(makeFiller)로 묶음 — 사람이 보는 등록 화면(이 탭)과, 창 없이 하는 자동 등록(보이지 않는 틀 안의 등록 화면) 둘 다 같은 것을 씀 */
   const UW = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window; const PC_NAME = (() => { try { return (window.__rnPcName && window.__rnPcName.get()) || GM_getValue('pcName', null) || 'PC'; } catch (e) { return 'PC'; } })(); // 수집기와 같은 이 PC 이름
   const nowIso = () => new Date().toISOString(); const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -318,7 +320,7 @@
  * 어디: 상품 조회/수정(wrecord_edit) · 판매관리·주문확인요청(worders·worder_preparatory_complete) — 화면 안의 우리 상품 링크(상품번호 ItemId)마다
  * 자료(웹앱과 같은 곳): 상품 기록 prd_listings(상품번호 → 우리 상품) · 도서 prd_books(정가·새상품 판매가) · 취소 대조 prd_cancel_hits(웹앱이 쌓음) — 이 PC에 12시간 기억 */
 (function rnPrdMarks() {
-  if (window.top !== window || !/\/scm\/(wrecord_edit|worders|worder_preparatory_complete)\.aspx/i.test(location.pathname)) return;
+  if ((window.__rnFeat && !window.__rnFeat('marks'))) return; /* (1.63.7) 🧩 */ if (window.top !== window || !/\/scm\/(wrecord_edit|worders|worder_preparatory_complete)\.aspx/i.test(location.pathname)) return;
   if (typeof firebase === 'undefined') return; const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const won = (n) => (n > 0 ? Number(n).toLocaleString() : '-');

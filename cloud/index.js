@@ -31,7 +31,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.12.3'; // (0.12.3 전체 점검) 회차가 10분 넘게 멈추면 스스로 다시 켬 · ext_run 날짜 칸 15일 지난 것 지움 // (0.12.2) 🌐 외부 정보 출처별 오늘 성공·실패 수(ext_run.res)·마지막 실패(lastErr) 기록 · GitHub에 올리면 저절로 배포(.github/workflows/deploy-cloud.yml) // (0.12.1) ☁ 클라우드 전체 스위치(cloud_jobs.all === false면 모든 일을 멈춤 — 각 일의 스위치는 그대로 기억) // (0.12.0) 클라우드가 하는 일마다 켜기·끄기(app_settings/cloud_jobs — 웹앱 설정·수집기 칸 편집기의 '☁ 클라우드가 하는 일') · 꺼 둔 일은 손대지 않음 · 🌐 외부 정보 이어 받기는 기본 끔(app_settings/ext.cloud === true일 때만) // (0.11.0) 안전 점검: 작은 오류 번호로 서버가 꺼지던 것 · 비밀을 환경 변수에서 지움 · 알라딘 로그인 실패 상태를 Firestore에 남겨(다시 켜져도) 아이디·비밀번호 문제면 6시간 쉼 · 공용 파일 마지막으로 받은 판으로 계속(문법 검사) · 주문 문서 400개씩 · 열쇠를 같은 시간으로 비교 · 기억 덜어 내기 · 외부 정보 기준을 공용 파일에서 · (0.10.0) 🌐 외부 정보 — PC가 꺼져 있을 때 클라우드가 이어 받음(10분마다 최대 90초)
+const VER = '0.12.4'; // (0.12.4) 💳 Google Cloud 실제 비용 — 결제 계정 예산 알림(Pub/Sub) → /billing → app_settings/costs_bill_YYYY-MM (setup-billing.sh 한 번) // (0.12.3 전체 점검) 회차가 10분 넘게 멈추면 스스로 다시 켬 · ext_run 날짜 칸 15일 지난 것 지움 // (0.12.2) 🌐 외부 정보 출처별 오늘 성공·실패 수(ext_run.res)·마지막 실패(lastErr) 기록 · GitHub에 올리면 저절로 배포(.github/workflows/deploy-cloud.yml) // (0.12.1) ☁ 클라우드 전체 스위치(cloud_jobs.all === false면 모든 일을 멈춤 — 각 일의 스위치는 그대로 기억) // (0.12.0) 클라우드가 하는 일마다 켜기·끄기(app_settings/cloud_jobs — 웹앱 설정·수집기 칸 편집기의 '☁ 클라우드가 하는 일') · 꺼 둔 일은 손대지 않음 · 🌐 외부 정보 이어 받기는 기본 끔(app_settings/ext.cloud === true일 때만) // (0.11.0) 안전 점검: 작은 오류 번호로 서버가 꺼지던 것 · 비밀을 환경 변수에서 지움 · 알라딘 로그인 실패 상태를 Firestore에 남겨(다시 켜져도) 아이디·비밀번호 문제면 6시간 쉼 · 공용 파일 마지막으로 받은 판으로 계속(문법 검사) · 주문 문서 400개씩 · 열쇠를 같은 시간으로 비교 · 기억 덜어 내기 · 외부 정보 기준을 공용 파일에서 · (0.10.0) 🌐 외부 정보 — PC가 꺼져 있을 때 클라우드가 이어 받음(10분마다 최대 90초)
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -630,6 +630,16 @@ async function costDaily(maxDays) { const ST = C('app_settings').doc('costs_auto
     done.push({ day, krw: lines.reduce((a, x) => a + Math.round(x.usd * fx.rate), 0), err: U.err || null }); }
   return { done }; }
 let costNextAt = 0;
+/* ── (0.12.4) 💳 Google Cloud 실제 비용 — 결제 계정 '예산' 알림(Pub/Sub)이 하루 여러 번 이 달 실제 누적 비용(costAmount)을 /billing 으로 밀어 줌
+ *  setup-billing.sh(Cloud Shell에서 한 번)가 예산(이 프로젝트만 · 메일 안 보냄)·주제·밀어 주기 구독을 만듦 → app_settings/costs_bill_YYYY-MM
+ *  { ym, cur, mtd(마지막 값), at, days: { 날짜: { first, last, at } } } — 날마다 처음 값은 그대로 두고(덮어쓰지 않음) 마지막 값만 고침 · 열쇠 = TICK_KEY에서 만든 값(주소에만 · 비밀번호 아님) */
+const billKey = () => (TICK_KEY ? require('crypto').createHash('sha256').update(TICK_KEY + ':billing').digest('hex').slice(0, 32) : '');
+async function billingPush(b) { const m = (b && b.message) || {}; let d = {}; try { d = JSON.parse(Buffer.from(String(m.data || ''), 'base64').toString('utf8') || '{}'); } catch (e) { return { ok: false, err: '내용을 못 읽음' }; }
+  const cost = Number(d.costAmount); if (!Number.isFinite(cost)) return { ok: true, skip: 'costAmount 없음' }; const start = String(d.costIntervalStart || m.publishTime || nowIso()); const ym = new Date(Date.parse(start) + 12 * 3600e3).toISOString().slice(0, 7); /* 달 시작(태평양 0시) → 그 달 */
+  const at = String(m.publishTime || nowIso()); const day = kstDay(Date.parse(at) || Date.now()); const ref = C('app_settings').doc('costs_bill_' + ym);
+  await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.exists ? sn.data() : {}; if (v.at && v.at > at) return; /* 늦게 온 옛 알림은 무시 */ const D = (v.days || {})[day] || {};
+    tx.set(ref, { ym, cat: '데이터 관리', vendor: 'Google Cloud (Firebase)', src: '결제 계정 예산 알림(실제 누적 비용)', cur: String(d.currencyCode || 'KRW'), mtd: cost, at, budget: d.budgetDisplayName || null, budgetAmount: Number(d.budgetAmount) || null, days: { [day]: { ...(D.first == null ? { first: cost } : {}), last: cost, at } }, ...W() }, { merge: true }); });
+  return { ok: true, ym, mtd: cost }; }
 
 /* ── (0.5.8) 개편 1단계 '결과 기록' — 판정 → 실행 → 판매를 한 줄로 잇는 매일 기록 (기계 학습의 재료) ──
  *  ① ml_days/{날짜}_{n}: 하루 한 번(한국 1시 뒤) 판매중 상품 전체의 그날 모습 — 가격·등급·재고 기간·시장(첫 페이지 우리 자리·같은 등급 최저·전체 중고 수·매입가·판매 지수)·
@@ -835,6 +845,7 @@ const server = http.createServer(async (req, res) => {
       if (Date.now() - lastDailyAt > 3 * 3600e3) { out.daily = await dailyJobs().catch((e) => ({ err: e.message })); } // 예비: /daily 예약이 3시간 넘게 없으면(예전 deploy) 여기서 — deploy.sh를 다시 돌리면 /daily가 따로 맡음
       return send(200, out); } finally { tickBusy = false; } }
     if (path === '/daily') { if (!keyOk(req)) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (dailyBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); const out = await dailyJobs(); return send(200, out); }
+    if (path === '/billing') { const k = (String(req.url || '').match(/[?&]k=([A-Za-z0-9]+)/) || [])[1] || ''; const bk = billKey(); if (!bk || k.length !== bk.length || !require('crypto').timingSafeEqual(Buffer.from(k), Buffer.from(bk))) return send(403, { ok: false }); const b = await bodyOf(req); const out = await billingPush(b).catch((e) => ({ ok: false, err: e.message })); if (out.mtd != null) log('💳 실제 비용', out.ym, out.mtd); return send(200, out); } /* (0.12.4) Pub/Sub 밀어 주기 — 2xx면 다시 안 보냄 */
     const reqOff = async () => !(await cjobs()).req; const OFFMSG = { ok: false, off: true, err: '클라우드 설정(☁ 클라우드가 하는 일)에서 \'웹앱이 부르는 일\'을 꺼 둠' };
     if (path === '/kick') { await authUser(req); if (!(await cjobs()).cmds) return send(200, { ok: true, skipped: '맡긴 일 처리를 꺼 둠(☁ 설정)' }); KICK(); if (tickBusy) return send(200, { ok: true, queued: '도는 회차가 바로 처리 (빠른 고리)' }); tickBusy = true; tickAt = Date.now(); try { const out = await serial(() => tick('kick')); return send(200, out); } finally { tickBusy = false; } } // (0.9.0) 회차가 돌고 있으면 기다리지 않고 그 회차의 빠른 고리가 바로 처리
     if (path === '/regaux') { await authUser(req); if (await reqOff()) return send(200, OFFMSG); const b = await bodyOf(req); const out = await serial(() => regAux(b)); return send(200, out); } // (0.9.5) 📥 개별·미등록 등록: 분류·저자·출판사 찾기 (알라딘 팝업 대신)

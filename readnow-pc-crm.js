@@ -1,7 +1,7 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.63.6의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.63.7의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.63.6' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.63.7' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -181,7 +181,7 @@
   }
 
   // ── 주문 상세 팝업: 카드 전체
-  if (/\/scm\/wpopup_order\.aspx/i.test(location.pathname)) {
+  if (/\/scm\/wpopup_order\.aspx/i.test(location.pathname)) { if (window.__rnFeat && !window.__rnFeat('custCard')) return; /* (1.63.7) 🧩 */
     const blk = document.querySelector('[data-custkey]'); if (!blk) return;
     const cid = `aladin_${blk.getAttribute('data-custkey')}`;
     CARD.style(); const box = document.createElement('div'); box.className = 'rncard rnfloat'; box.style.cssText = 'top:6px;right:6px'; box.innerHTML = '<b>리드나우 고객 정보</b><div class="s">불러오는 중</div>'; document.body.appendChild(box);
@@ -195,7 +195,7 @@
 
   // ── 판매관리·주문조회 목록: 주문번호 옆에 고객 표시, 누르면 카드
   if (/\/scm\/(worders|worder_preparatory_complete)\.aspx/i.test(location.pathname)) {
-    (async () => {
+    (async () => { if (window.__rnFeat && !window.__rnFeat('custCard')) return; /* (1.63.7) 🧩 */
       await new Promise((r) => setTimeout(r, 1200));
       const F = CARD.FBx(); if (!F) return; const u = await CARD.user(); if (!u) return;
       const db = F.firestore(); CARD.style();

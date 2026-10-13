@@ -1,7 +1,7 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.63.6의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.63.7의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.63.6' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.63.7' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
  * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
@@ -12,6 +12,30 @@
   window.__rnNote = (msg, kind) => { try { console.warn('[리드나우]', msg); const show = () => { let box = document.getElementById('rn-note-box'); if (!box) { box = document.createElement('div'); box.id = 'rn-note-box'; box.style.cssText = 'position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:2147483647;max-width:min(720px,92vw);display:flex;flex-direction:column;gap:4px;font:13px/1.45 system-ui,sans-serif'; document.body.appendChild(box); }
         if ([...box.children].some((x) => x.dataset.msg === msg)) return; const d = document.createElement('div'); d.dataset.msg = msg; d.style.cssText = `background:${kind === 'warn' ? '#FFF4E0;color:#7A4A00;border:1px solid #E8B860' : '#FDE8E6;color:#8A2420;border:1px solid #E7B4AE'};border-radius:8px;padding:8px 12px;white-space:pre-wrap;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer`; d.textContent = msg + '  (누르면 닫힘)'; d.onclick = () => d.remove(); box.appendChild(d); };
       if (document.body) show(); else document.addEventListener('DOMContentLoaded', show); } catch (e) {} }; })();
+/* ═════════════ (1.63.7) 🧩 이 PC 기능 켜고 끄기 ═════════════
+ *  📥 수집 = 일시정지와 같은 한 스위치(GM 'rnu-paused' · 이 PC의 모든 탭): 끄면 직접 누른 수집·⏰ 자동·웹앱 수집 요청·🌐 외부 정보·맡긴 수집 일(시장 지표·읽기·찾기)을 이 PC는 하지 않음 → 담당 PC 신호도 '쉬는 중'이라 다른 PC가 맡음
+ *  수집 외 기능 = GM 'rnu-feat' { 열쇠: false } (이 PC만 · 기본은 모두 켬) — 화면 기능은 그 화면을 새로 열 때부터, 맡긴 일·바탕 기능은 곧바로 적용
+ *  꺼 둔 맡긴 일(출고 시작·현금 판매·등록)은 이 PC가 받지 않고 대기로 남겨 다른 PC가 받음 */
+(function rnFeatInit() {
+  window.__rnFeats = [
+    ['custCard', '🧑 고객 카드·고객 표시', '주문 상세 팝업의 고객 카드 · 판매관리·주문조회 목록의 주문번호 옆 고객 표시', '화면'],
+    ['monitor', '🎨 가격 감시 색 표시', '상품 조회/수정 목록 줄마다 판정 엔진 묶음 색', '화면'],
+    ['marks', '⚠ 우리 상품 옆 표시', '취소 주문 기록 · 참고 가격(정가·새상품 판매가) · 예스24 중고 링크 (상품 조회/수정·판매관리)', '화면'],
+    ['cash', '💵 현금 판매 띠', '상품 조회/수정의 판매중지 바꾸기·다시 판매중 + 웹앱이 맡긴 현금 판매 판매중지', '화면·맡긴 일'],
+    ['invoice', '🚚 송장 입력', '발송 요청 화면의 송장번호 넣기 · ALPS 파일 단추', '화면'],
+    ['phrase', '💬 응대 문구 도우미', '묻고 답하기·구매평 화면의 문구 판', '화면'],
+    ['reg', '📥 등록 도우미 · 🤖 자동 등록', '상품 등록 화면 채우기 + 웹앱이 맡긴 등록(개별·미등록·대량·분류 찾기)', '화면·맡긴 일'],
+    ['ship', '📦 출고 시작 맡긴 일', '웹앱이 맡긴 주문확인요청 → 발송 요청 넘기기', '맡긴 일'],
+    ['relogin', '🔑 자동 다시 로그인', '알라딘 로그인이 풀리면 네이버로 다시 로그인', '바탕'],
+    ['update', '⟳ 새 판 저절로 맞추기', '다른 PC가 새 수집기로 돌면 쉬는 사이 새로고침해 새 판으로', '바탕'],
+    ['remote', '🛰 원격 조작 받기', '웹앱·다른 PC가 보낸 ■ 중단 · ▶ 다시 시작 · ⟳ 업데이트', '바탕'],
+    ['rules', '🔐 Firebase 규칙 점검', '이 PC 계정으로 쓰는 칸을 시험(6시간마다 · 남는 것 없음)', '바탕'],
+  ];
+  const get = () => { try { const v = GM_getValue('rnu-feat', null); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } };
+  window.__rnFeat = (k) => get()[k] !== false;
+  window.__rnFeatOff = () => window.__rnFeats.map((x) => x[0]).filter((k) => get()[k] === false);
+  window.__rnFeatSet = (patch) => { const v = { ...get(), ...patch }; Object.keys(v).forEach((k) => { if (v[k] !== false) delete v[k]; }); GM_setValue('rnu-feat', v); return v; };
+})();
 /* ═════════════ 이 PC 이름: 한 곳에서 관리 ═════════════
  * 스크립트 저장공간(GM)과 알라딘 사이트의 브라우저 저장공간(localStorage) 두 곳에 함께 둠 → 스크립트를 다시 설치·교체해도 이름이 남음.
  * 고객 쪽(rn-pc)·상품 쪽(pcName)·기록이 모두 같은 이름을 씀. 자동 작업 중에는 묻지 않고, 버튼을 눌렀을 때만 한 번 물음. */
@@ -26,7 +50,7 @@
   const NAVER_URL = (ret) => `https://www.aladin.co.kr/login/wlogin_naver.aspx?returnurl=${encodeURIComponent(ret || 'https://www.aladin.co.kr/scm/wmain.aspx')}&snsAppId=1&SecureOpener=1`;
   window.__rnLoginMethod = () => GM_getValue('rnu-login-method', 'naver');
   window.__rnNaverLogin = async ({ isLoggedIn, log, stopped, ret }) => {
-    const L = (m, lv) => { try { log(m, lv); } catch (e) { window.__rnLog && window.__rnLog('로그인', lv === 'err' ? 'err' : lv ? 'warn' : 'info', m); } }; // 각 모듈의 log가 기록 창에도 남김
+    const L = (m, lv) => { try { log(m, lv); } catch (e) { window.__rnLog && window.__rnLog('로그인', lv === 'err' ? 'err' : lv ? 'warn' : 'info', m); } }; if (window.__rnFeat && !window.__rnFeat('relogin')) { L('알라딘 로그인이 풀렸지만 이 PC는 🧩 \'자동 다시 로그인\'을 꺼 둠 — 직접 로그인해 주세요', 'err'); return false; } // 각 모듈의 log가 기록 창에도 남김
     const busy = GM_getValue('rnu-naver-login', null);
     if (busy && Date.now() - busy.at < 120000) { // 다른 탭·모듈이 이미 하는 중 → 결과만 기다림
       for (let i = 0; i < 24; i++) { await new Promise((r) => setTimeout(r, 5000)); if (await isLoggedIn()) return true; if (stopped && stopped()) return false; }
@@ -392,6 +416,8 @@
   #rn-ov .pb{height:8px;background:#DCE5E1;border-radius:5px;overflow:hidden;margin:3px 0} #rn-ov .pb i{display:block;height:100%;border-radius:5px;transition:width .5s}
   #rn-ov .chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px} #rn-ov .chip{font-size:11px;padding:1px 6px;border-radius:9px;background:#fff;border:1px solid #D7E2DD;color:#8A9692} #rn-ov .chip.done{background:#E3F1E8;border-color:#9CCBAE;color:#2F7D4F} #rn-ov .chip.now{background:${G};border-color:${G};color:#fff;font-weight:700} #rn-ov .chip.off{text-decoration:line-through;opacity:.6} #rn-ov .chip.skip{background:#FFF4E0;color:${AMB}} #rn-ov .chip.fail{background:#FDE8E6;color:${RED}}
   #rn-ov .acts{display:flex;gap:6px;margin-bottom:9px}
+  #rn-ov details.feat>summary{cursor:pointer;list-style:none} #rn-ov details.feat>summary small{font-weight:400;color:#5B6B66;margin-left:4px} #rn-ov .fr{display:block;padding:3px 0;border-top:1px dashed #E3E9E6;font-size:12px;cursor:pointer} #rn-ov .fr small{display:block;color:#6B7A75;font-size:11px;margin-left:20px} #rn-ov .fr.main{background:#F4F8FD;padding:5px 4px;border-radius:6px;border:0;margin:4px 0} #rn-ov .fr .fw{font-size:10px;color:#1F5FAF;border:1px solid #C9D6E8;border-radius:8px;padding:0 5px;margin-left:4px} #rn-ov .fbar{display:flex;gap:5px;align-items:center;margin:6px 0 2px;font-size:12px} #rn-ov .fbar b{flex:1} #rn-ov .fbar button{font-size:11px;padding:2px 7px;border:1px solid #C9D6E8;background:#fff;border-radius:6px;cursor:pointer}
+  #rn-feat-toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:2147483647;background:#1F2A26;color:#fff;padding:8px 14px;border-radius:8px;font:600 12.5px/1.4 system-ui,'Malgun Gothic',sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)}
   #rn-ov .acts button{flex:1;padding:9px 8px;border-radius:9px;font:700 13px system-ui,'Malgun Gothic';cursor:pointer;line-height:1.25}
   #rn-ov .acts button small{display:block;font:400 11px system-ui,'Malgun Gothic';opacity:.85;margin-top:2px}
   #rn-ov .b-pause{background:#fff;color:${AMB};border:1.5px solid ${AMB}} #rn-ov .b-go{background:${G};color:#fff;border:1.5px solid ${G}} #rn-ov .b-all{background:#fff;color:${G};border:1.5px solid ${G}}
@@ -477,6 +503,7 @@
     const pcs = P && P.pcsHtml ? P.pcsHtml() : '';
     const html = `<div class="card now ${S.kind}">${now}</div>
       <div class="acts">${pauseBtn}${allBtn}</div>
+      ${featHtml(S)}
       <div class="card"><div class="k">멈춘 작업 ${R.length ? `(${R.length})` : ''}<span class="sp"></span><a href="#" data-a="rrf" title="다시 불러오기">↻</a></div>${rs}</div>
       <div class="card"><div class="k">⏰ 다음 자동 수집</div><div>${sched}</div></div>
       <div class="card"><div class="k">최근 기록 · 이 PC의 모든 탭<span class="sp"></span><a href="#" data-a="log">크게 보기 ›</a></div><div class="lg">${lg}</div></div>
@@ -484,6 +511,20 @@
     if (html === lastHtml) return; lastHtml = html; ov.innerHTML = html; // 바뀐 것이 있을 때만 다시 그림 (단추를 누르는 중에 사라지지 않게)
     const lgEl = ov.querySelector('.lg'); if (lgEl && GM_getValue('rnu-log-autoscroll', true)) lgEl.scrollTop = lgEl.scrollHeight; }
   let lastHtml = '';
+  /* (1.63.7) 🧩 이 PC 기능 켜고 끄기 — 📥 수집(= 일시정지 스위치) + 수집 외 기능(전체 켜기·전체 끄기) · 바꾸면 곧바로 아래 알림 */
+  function featHtml(S) { const FL = window.__rnFeats || []; const FO = window.__rnFeatOff ? window.__rnFeatOff() : []; const on = FL.length - FO.length;
+    return `<details class="card feat" ${GM_getValue('rnu-feat-open', 0) ? 'open' : ''}><summary class="k">🧩 이 PC 기능 켜고 끄기 <small>${S.paused ? '<b style="color:#B0322A">📥 수집 꺼짐</b>' : '📥 수집 켜짐'} · 수집 외 ${on}/${FL.length} 켜짐</small></summary>
+      <label class="fr main"><input type="checkbox" data-feat="__collect" ${S.paused ? '' : 'checked'}> <b>📥 수집</b><small>끄면 이 PC는 직접 누른 수집·⏰ 자동 수집·웹앱 수집 요청·🌐 외부 정보·맡긴 수집 일(시장 지표·읽기·찾기)을 하지 않음 — 하던 작업은 지금 항목까지 저장하고 멈춤(= 일시정지 · 이 PC의 모든 탭). 담당 PC면 순서대로 다른 PC가 맡음. 다시 켜도 멈춘 작업은 저절로 이어가지 않음(아래 '멈춘 작업'에서 이어하기)</small></label>
+      <div class="fbar"><b>수집 외 기능</b><button type="button" data-fall="1">전체 켜기</button><button type="button" data-fall="0">전체 끄기</button></div>
+      ${FL.map(([k, l, d, w]) => `<label class="fr"><input type="checkbox" data-feat="${esc(k)}" ${FO.includes(k) ? '' : 'checked'}> ${esc(l)}<span class="fw">${esc(w)}</span><small>${esc(d)}</small></label>`).join('')}
+      <div class="mut" style="margin-top:4px">이 PC만 · 화면 기능은 그 화면을 새로 열 때부터, 맡긴 일·바탕 기능은 곧바로 · 꺼 둔 맡긴 일은 대기로 남아 다른 PC가 받음 · 늘 켜짐: 관제판·작업 기록·PC 이름·탭 나누기·담당 PC 신호</div></details>`; }
+  const featToast = (m) => { let t = document.getElementById('rn-feat-toast'); if (!t) { t = document.createElement('div'); t.id = 'rn-feat-toast'; document.body.appendChild(t); } t.textContent = m; t.style.display = ''; clearTimeout(t._t); t._t = setTimeout(() => (t.style.display = 'none'), 3500); };
+  ov.addEventListener('toggle', (e) => { if (e.target.matches && e.target.matches('details.feat')) GM_setValue('rnu-feat-open', e.target.open ? 1 : 0); }, true);
+  ov.addEventListener('change', (e) => { const c = e.target.closest && e.target.closest('[data-feat]'); if (!c) return; const k = c.dataset.feat;
+    if (k === '__collect') { if (c.checked) { window.__rnResumeOk && window.__rnResumeOk(); featToast('📥 수집 켬 — 이 PC가 다시 수집함 (멈춘 작업은 \'멈춘 작업\'에서 이어하기)'); } else { window.__rnPauseAll && window.__rnPauseAll('🧩 수집 끔 (관제판)'); featToast('📥 수집 끔 — 이 PC는 수집하지 않음 (하던 작업은 저장하고 멈춤)'); } }
+    else { window.__rnFeatSet({ [k]: c.checked }); const f = (window.__rnFeats || []).find((x) => x[0] === k) || [k, k]; window.__rnLog && window.__rnLog('수집기', 'info', `🧩 ${f[1]} ${c.checked ? '켬' : '끔'}`); featToast(`🧩 ${f[1]} ${c.checked ? '켬' : '끔'}${/화면/.test(f[3] || '') ? ' — 그 화면을 새로 열 때부터' : ''}`); }
+    lastHtml = ''; draw(); });
+  ov.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-fall]'); if (!b) return; e.preventDefault(); e.stopPropagation(); const on = b.dataset.fall === '1'; const P = {}; (window.__rnFeats || []).forEach((x) => (P[x[0]] = on)); window.__rnFeatSet(P); window.__rnLog && window.__rnLog('수집기', 'info', `🧩 수집 외 기능 전체 ${on ? '켬' : '끔'}`); featToast(`🧩 수집 외 기능 전체 ${on ? '켬' : '끔'} — 화면 기능은 그 화면을 새로 열 때부터`); lastHtml = ''; draw(); }, true);
   ov.addEventListener('click', async (e) => { const a = e.target.closest('[data-a]'); if (!a) return; e.preventDefault(); const P = window.__rnPrd; const k = a.dataset.k, m = a.dataset.m;
     if (a.dataset.a === 'pause') { window.__rnPauseAll && window.__rnPauseAll('관제판에서'); }
     else if (a.dataset.a === 'resume') { const S = stateOf(); if (S.busy.length) return alert('아직 멈추는 중입니다 — 멈춘 뒤에 눌러 주세요'); const R = resList().filter((r) => !r.running).sort((x, y) => (y.savedAt || 0) - (x.savedAt || 0)); window.__rnResumeOk && window.__rnResumeOk();
