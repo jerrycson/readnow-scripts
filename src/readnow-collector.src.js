@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.63.9
+// @version      1.63.10
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/worders.aspx*
 // @match        https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx*
@@ -27,10 +27,10 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.5.2
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.18
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.19
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.4.4
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.5.2
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.5.3
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
@@ -5416,17 +5416,22 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   async function schedMark(due) { /* 건너뛴 회차(늦음·최근에 함)도 적어 둠 — 다시 할 때가 되지 않게 · 이유가 보이게 */ let ok = false;
     await db.runTransaction(async (tx) => { const s = await tx.get(SCHED_RUN()); const r = (s.exists && s.data().runs) || {}; if (r[due.key]) return; const up = { [due.key]: { by: PC_NAME, at: nowIso(), state: due.mark, why: due.why, job: due.slot.job, slot: due.slot.id } }; due.merge.filter((k) => !r[k]).forEach((k) => (up[k] = { by: PC_NAME, at: nowIso(), state: 'merged', into: due.key })); tx.set(SCHED_RUN(), { runs: up }, { merge: true }); ok = true; });
     if (ok) log(`⏰ '${asName(due.slot)}': ${due.why}`); }
-  async function schedTick() { if (!AS || schedBusy || running || window.__rnReloading || window.__rnPaused || !auth.currentUser || (window.__rnRest && window.__rnRest())) return; if (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) return; if (!SCHED || !SCHED.on) return;
+  /* (1.63.10) 자동 회차가 기다린 까닭 기록 — 1분마다 확인할 때 못 시작한 까닭(수동 작업·고객 작업·다른 PC 알라딘 작업·일시 정지 등)을 이어 붙여 두었다가,
+   *  회차를 시작할 때 '정한 시각부터 지금까지 무엇을 기다렸는지'를 회차 기록(waited)에 남김 → 📊 실제 밀림 분석이 까닭을 정확히 보여 줌 (이 PC 메모리만 · 하루치) */
+  const SCHED_WAIT = []; const schedWaitNote = (why) => { const t = Date.now(); const L = SCHED_WAIT; const z = L[L.length - 1]; if (z && z[1] === why && t - z[2] < 150e3) { z[2] = t; return; } L.push([t, why, t]); while (L.length > 600 || (L.length && t - L[0][2] > 864e5)) L.shift(); };
+  const schedWaitSum = (from) => { const M = {}; for (const [a, why, b] of SCHED_WAIT) { if (b < from) continue; M[why] = (M[why] || 0) + Math.max(1, Math.round((b - Math.max(a, from)) / 60e3)); } return Object.entries(M).sort((x, y) => y[1] - x[1]).slice(0, 5).map(([w, m]) => ({ why: w, min: m })); };
+  async function schedTick() { if (!AS || schedBusy || !auth.currentUser) return; if (SCHED && SCHED.on) { const why = running ? `수동 작업 '${(JOBS[running] || [running])[0]}'` : window.__rnReloading ? '새 판 다시 불러오는 중' : window.__rnPaused ? '수집기 일시 정지' : window.__rnRest && window.__rnRest() ? '쉬는 시간' : window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy() ? '고객 작업(이 PC)' : null; if (why) { schedWaitNote(why); return; } }
+    if (running || window.__rnReloading || window.__rnPaused || (window.__rnRest && window.__rnRest())) return; if (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) return; if (!SCHED || !SCHED.on) return;
     const now = Date.now(); const dues = AS.due(SCHED, SCHED_RUNS, { now, pc: PC_NAME, own: asOwn(), crmOk: !!(window.__rnCrm && window.__rnCrm.start), idleMs: now - lastBusyAt, bootAt: BOOT_AT, stats: JSTATS }); if (!dues.length) return; schedBusy = true;
     try { for (const d of dues.filter((x) => x.mark !== 'run' && !(x.slot.job === 'prd:shipRead' && cloudOn()))) await schedMark(d).catch(() => {});
       let due = null; let lk = null;
       for (const d of dues) { if (d.mark !== 'run') continue; if ((SCHED_BACK[d.key] || 0) > Date.now()) continue; const kind = d.slot.job.split(':')[0]; if (asMissing(d.slot)) continue; /* 이 판에 없는 일 — 그 일을 아는 PC가 함 */
         if (kind === 'prd' && PAR_JOBS[d.slot.job.slice(4)]) continue; /* 동시 진행 일은 parTick이 */ if (d.slot.job === 'prd:shipRead' && cloudOn()) continue; /* 클라우드가 살아 있으면 발송 요청은 클라우드가 읽음 — 이 칸은 건너뜀(기록 안 남김) */
-        if (kind === 'crm' && window.__rnCrm.otherBusy && window.__rnCrm.otherBusy()) continue;
-        if (kind === 'prd') { if (!JOBS[d.slot.job.slice(4)]) continue; if (lk === null) lk = (await LOCK().get()).data() || {}; if (laneBusy(lk)) continue; }
+        if (kind === 'crm' && window.__rnCrm.otherBusy && window.__rnCrm.otherBusy()) { schedWaitNote('고객 작업(다른 탭)'); continue; }
+        if (kind === 'prd') { if (!JOBS[d.slot.job.slice(4)]) continue; if (lk === null) lk = (await LOCK().get()).data() || {}; if (laneBusy(lk)) { schedWaitNote('다른 PC·탭이 알라딘 작업 중'); continue; } }
         due = d; break; }
       if (!due) return; const S1 = due.slot; const kind = S1.job.split(':')[0], key2 = S1.job.slice(4); const t0 = Date.now();
-      let ok = false; await db.runTransaction(async (tx) => { const s = await tx.get(SCHED_RUN()); const r = (s.exists && s.data().runs) || {}; if (r[due.key]) return; const up = { [due.key]: { by: PC_NAME, at: nowIso(), st: nowIso(), beat: nowIso(), state: 'running', job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0 } }; due.merge.filter((k) => !r[k]).forEach((k) => (up[k] = { by: PC_NAME, at: nowIso(), state: 'merged', into: due.key })); tx.set(SCHED_RUN(), { runs: up }, { merge: true }); ok = true; });
+      let ok = false; await db.runTransaction(async (tx) => { const s = await tx.get(SCHED_RUN()); const r = (s.exists && s.data().runs) || {}; if (r[due.key]) return; const pl = AS.planOf ? AS.planOf(due.key) : null; const wt = pl && Date.now() - pl > 3 * 60e3 ? schedWaitSum(pl) : []; const up = { [due.key]: { by: PC_NAME, at: nowIso(), st: nowIso(), beat: nowIso(), state: 'running', job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0, ...(wt.length ? { waited: wt } : {}) } }; due.merge.filter((k) => !r[k]).forEach((k) => (up[k] = { by: PC_NAME, at: nowIso(), state: 'merged', into: due.key })); tx.set(SCHED_RUN(), { runs: up }, { merge: true }); ok = true; });
       if (!ok) return; log(`⏰ 매일 자동: '${asName(S1)}' 시작 — ${due.why}`);
       const hb = setInterval(() => SCHED_RUN().set({ runs: { [due.key]: { beat: nowIso() } } }, { merge: true }).catch(() => {}), 5 * 60000);
       let timedOut = false; const tm = S1.maxMin ? setTimeout(() => { timedOut = true; log(`⏰ '${asName(S1)}': 정한 최대 ${S1.maxMin}분이 지나 지금 항목까지 저장하고 멈춤 — 다음 회차에 그 자리부터`, 1); try { if (kind === 'prd') window.__rnPrd.pause(); else window.__rnCrm.pause(); } catch (e) {} }, S1.maxMin * 60e3) : null;
@@ -5434,7 +5439,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       try { if (kind === 'prd') { window.__rnAuto = true; res = await runJob(key2, { sched: true }); err = lastRunErr || (lastRunSt === 'stop' && res !== false ? '멈춤' : null); }
         else { const r0 = await window.__rnCrm.start(key2, { fresh: false }); res = r0 === undefined ? false : r0; if (r0 === 'error') err = '고객 작업 오류 (고객 탭 기록 확인)'; else if (r0 === 'paused') err = '멈춤'; if (tm) clearTimeout(tm); if (!err && !timedOut && r0 !== undefined && !['bulk', 'upload'].includes(key2) && window.__rnCrm.upload) await window.__rnCrm.upload(); } }
       catch (e) { err = e.message; } finally { window.__rnAuto = false; window.__rnAutoSlot = null; clearInterval(hb); if (tm) clearTimeout(tm); }
-      if (res === false) { await SCHED_RUN().set({ runs: { [due.key]: firebase.firestore.FieldValue.delete() } }, { merge: true }); const first = !SCHED_BACK[due.key]; SCHED_BACK[due.key] = Date.now() + 10 * 60e3; if (first) log(`⏰ '${asName(S1)}': 다른 PC·탭이 작업 중이라 10분 뒤 다시 (그사이 1분마다 다시 시도하지 않음)`, 1); return; } /* (1.63.8 점검) 예전엔 1분마다 다시 잡고 지우기를 되풀이(읽기·쓰기 낭비) */
+      if (res === false) { schedWaitNote('다른 PC·탭이 작업 중(시작 못 함)'); await SCHED_RUN().set({ runs: { [due.key]: firebase.firestore.FieldValue.delete() } }, { merge: true }); const first = !SCHED_BACK[due.key]; SCHED_BACK[due.key] = Date.now() + 10 * 60e3; if (first) log(`⏰ '${asName(S1)}': 다른 PC·탭이 작업 중이라 10분 뒤 다시 (그사이 1분마다 다시 시도하지 않음)`, 1); return; } /* (1.63.8 점검) 예전엔 1분마다 다시 잡고 지우기를 되풀이(읽기·쓰기 낭비) */
       const st = timedOut ? 'timeout' : err === '멈춤' ? 'stop' : err ? 'error' : 'done';
       await SCHED_RUN().set({ runs: { [due.key]: { by: PC_NAME, at: nowIso(), st: new Date(t0).toISOString(), state: st, ms: Date.now() - t0, err: err || null, job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0 } } }, { merge: true });
       log(`⏰ 매일 자동: '${asName(S1)}' ${st === 'done' ? '끝' : st === 'timeout' ? '최대 시간이라 멈춤' : '멈춤 — ' + err} (${Math.round((Date.now() - t0) / 60000)}분)`, st === 'done' ? 0 : 1);

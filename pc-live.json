@@ -1,7 +1,7 @@
 {
- "ver": "1.63.9",
+ "ver": "1.63.10",
  "hsig": "a94c363bac6ed2e9",
- "at": "2026-10-13T11:25:17.985Z",
+ "at": "2026-10-13T12:06:05.490Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -41,9 +41,9 @@
   },
   {
    "f": "readnow-registry.js",
-   "v": "0.14.18",
-   "sha": "641f2cc6a7168bba47da7d0d114723f4b6795ad99b65d09c0062dfed0f66ca74",
-   "n": 44916
+   "v": "0.14.19",
+   "sha": "2e4368041a56f657529f1cc402f029615b0466240c1f4c9813c7bd28f3effd2e",
+   "n": 45023
   },
   {
    "f": "readnow-ext-core.js",
@@ -59,9 +59,9 @@
   },
   {
    "f": "readnow-autosched-core.js",
-   "v": "0.5.2",
-   "sha": "3ecad60675d21bf1b248307705b7572bbbbf4cb9da03a8f3aea2296cf271960b",
-   "n": 136905
+   "v": "0.5.3",
+   "sha": "04ebb7ea361cfef880f822376bff8ec790f0772e641a6039ff3e491f97c657e3",
+   "n": 157444
   },
   {
    "f": "readnow-aladin-core.js",
@@ -77,33 +77,33 @@
   },
   {
    "f": "readnow-pc-runtime.js",
-   "v": "1.63.9",
-   "sha": "a6b7c34f5aef66298fb26bdfb847c577f7e5c2cb166af7c909f4e5c5d4b3c8df",
-   "n": 102622
+   "v": "1.63.10",
+   "sha": "f7f71cc3b293ad71493c28d9f89e3e5da4256b4f9f37a00f21bc20e2f277c958",
+   "n": 102625
   },
   {
    "f": "readnow-pc-crm.js",
-   "v": "1.63.9",
-   "sha": "11352a98da4eaddb0e3f9c1990eef85a85d8991ebfd621103b53ebbd9656ef0e",
-   "n": 230120
+   "v": "1.63.10",
+   "sha": "395b74926f62c95fffde535dbe3b8632d216b5b8913a626808a6e98a859b1eca",
+   "n": 230123
   },
   {
    "f": "readnow-pc-products.js",
-   "v": "1.63.9",
-   "sha": "7587cdafc801fbd7db08c6e9ad012cb30a29e8dbf2b1a163ad5fb95e02369afe",
-   "n": 508304
+   "v": "1.63.10",
+   "sha": "84804ae4d1152370beef97296ced1e6e2c241c4fb33cf3437610c2b372e24d9e",
+   "n": 510091
   },
   {
    "f": "readnow-pc-ship.js",
-   "v": "1.63.9",
-   "sha": "f76e01c04fcdb913c7d3cadd01fa60cd0d695fed1ec5382cb4e753061479a875",
-   "n": 15248
+   "v": "1.63.10",
+   "sha": "e3806fbe32e1850b09488cb3ef5cee9b055070cc3aa87f8bd6d6c12a767a8602",
+   "n": 15251
   },
   {
    "f": "readnow-pc-helper.js",
-   "v": "1.63.9",
-   "sha": "f0cf13e3e4fc31e736cc0c49c7a2f7179634545b86c219e956f0b7b8ddc5dd43",
-   "n": 73691
+   "v": "1.63.10",
+   "sha": "a66d8d2c04fb8a7ef62b586387f40106fd728106ad2517af3c0d485c9acce7f0",
+   "n": 73694
   }
  ]
 }
