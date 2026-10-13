@@ -31,7 +31,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.12.5'; // (0.12.5 점검) 공용 파일은 올린 커밋(CODE_SHA)의 것만 · 발송준비시작 '끝남'은 확실할 때만 · 처음 본 때 덮지 않음 · 대기 목록 듣기 재사용·유의 사항 24시간 기억(읽기 줄임) · 끊긴 브라우저 정리 // (0.12.4) 💳 Google Cloud 실제 비용 — 결제 계정 예산 알림(Pub/Sub) → /billing → app_settings/costs_bill_YYYY-MM (setup-billing.sh 한 번) // (0.12.3 전체 점검) 회차가 10분 넘게 멈추면 스스로 다시 켬 · ext_run 날짜 칸 15일 지난 것 지움 // (0.12.2) 🌐 외부 정보 출처별 오늘 성공·실패 수(ext_run.res)·마지막 실패(lastErr) 기록 · GitHub에 올리면 저절로 배포(.github/workflows/deploy-cloud.yml) // (0.12.1) ☁ 클라우드 전체 스위치(cloud_jobs.all === false면 모든 일을 멈춤 — 각 일의 스위치는 그대로 기억) // (0.12.0) 클라우드가 하는 일마다 켜기·끄기(app_settings/cloud_jobs — 웹앱 설정·수집기 칸 편집기의 '☁ 클라우드가 하는 일') · 꺼 둔 일은 손대지 않음 · 🌐 외부 정보 이어 받기는 기본 끔(app_settings/ext.cloud === true일 때만) // (0.11.0) 안전 점검: 작은 오류 번호로 서버가 꺼지던 것 · 비밀을 환경 변수에서 지움 · 알라딘 로그인 실패 상태를 Firestore에 남겨(다시 켜져도) 아이디·비밀번호 문제면 6시간 쉼 · 공용 파일 마지막으로 받은 판으로 계속(문법 검사) · 주문 문서 400개씩 · 열쇠를 같은 시간으로 비교 · 기억 덜어 내기 · 외부 정보 기준을 공용 파일에서 · (0.10.0) 🌐 외부 정보 — PC가 꺼져 있을 때 클라우드가 이어 받음(10분마다 최대 90초)
+const VER = '0.12.6'; // (0.12.6) 주문확인요청 시장 읽기를 먼저·빠른 고리에서도 이어서 (휴대폰 출고 화면 시장이 '읽는 중'에 머물던 것) // (0.12.5 점검) 공용 파일은 올린 커밋(CODE_SHA)의 것만 · 발송준비시작 '끝남'은 확실할 때만 · 처음 본 때 덮지 않음 · 대기 목록 듣기 재사용·유의 사항 24시간 기억(읽기 줄임) · 끊긴 브라우저 정리 // (0.12.4) 💳 Google Cloud 실제 비용 — 결제 계정 예산 알림(Pub/Sub) → /billing → app_settings/costs_bill_YYYY-MM (setup-billing.sh 한 번) // (0.12.3 전체 점검) 회차가 10분 넘게 멈추면 스스로 다시 켬 · ext_run 날짜 칸 15일 지난 것 지움 // (0.12.2) 🌐 외부 정보 출처별 오늘 성공·실패 수(ext_run.res)·마지막 실패(lastErr) 기록 · GitHub에 올리면 저절로 배포(.github/workflows/deploy-cloud.yml) // (0.12.1) ☁ 클라우드 전체 스위치(cloud_jobs.all === false면 모든 일을 멈춤 — 각 일의 스위치는 그대로 기억) // (0.12.0) 클라우드가 하는 일마다 켜기·끄기(app_settings/cloud_jobs — 웹앱 설정·수집기 칸 편집기의 '☁ 클라우드가 하는 일') · 꺼 둔 일은 손대지 않음 · 🌐 외부 정보 이어 받기는 기본 끔(app_settings/ext.cloud === true일 때만) // (0.11.0) 안전 점검: 작은 오류 번호로 서버가 꺼지던 것 · 비밀을 환경 변수에서 지움 · 알라딘 로그인 실패 상태를 Firestore에 남겨(다시 켜져도) 아이디·비밀번호 문제면 6시간 쉼 · 공용 파일 마지막으로 받은 판으로 계속(문법 검사) · 주문 문서 400개씩 · 열쇠를 같은 시간으로 비교 · 기억 덜어 내기 · 외부 정보 기준을 공용 파일에서 · (0.10.0) 🌐 외부 정보 — PC가 꺼져 있을 때 클라우드가 이어 받음(10분마다 최대 90초)
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
@@ -468,7 +468,7 @@ async function fastLoop(p, until, cr, cm, J) { J = J || {}; const FAST = 15000; 
     kickFlag = false; last = Date.now(); loops++; p = curPage(p); if (pageBroken) { try { p = await getPage(); } catch (e) { break; } }
     try { const cm2 = J.cmds === false ? { n: 0, needRead: false, force: new Set() } : await runCmds(p, until + 20000); if (cm2.p) p = curPage(cm2.p); n += cm2.n; let c2; try { c2 = await confirmRead(p); } catch (e) { if (!e.relogin) throw e; await login(p); c2 = await confirmRead(p); }
       if (c2.changed) { changed++; cr = c2; } if (J.ship !== false && (cm2.needRead || (c2.prevTab && c2.tabCounts && c2.prevTab['발송 요청'] !== c2.tabCounts['발송 요청']))) { try { rd = await shipRead(p, Math.min(until + 5000, Date.now() + 20000)); lastDelivAt = Date.now(); } catch (e) { log('빠른 발송 요청 읽기 실패', e.message); } }
-      if (J.enrich !== false && (c2.changed || (cm2.force && cm2.force.size))) { try { await enrichConfirm(p, c2, cm2.force, Math.min(until, Date.now() + 15000)); } catch (e) {} }
+      if (J.enrich !== false) { try { await enrichConfirm(p, c2, cm2.force, Math.min(until, Date.now() + 12000)); } catch (e) {} } /* (0.12.6) 목록이 그대로여도 아직 시장을 못 읽은 상품이 있으면 빠른 고리에서도 이어 읽음(다 읽었으면 바로 끝남) */
       await C('app_settings').doc('cloud').set({ lastConfirmAt, lastLoopAt: nowIso(), ok: true, err: null }, { merge: true }).catch(() => {}); // 신선함 신호 — 웹앱 '읽은 시각'이 15초마다
     } catch (e) { log('빠른 읽기 실패', e.message); if (e.pageTimeout || pageBroken || isClosed(e)) { try { p = await getPage(); continue; } catch (e2) {} } break; } }
   return { cr, rd, n, loops, changed }; }
@@ -484,8 +484,9 @@ async function tick(why) {
     if (!cr && J.confirm) throw new Error(errs.join(' · ') || '주문확인요청을 못 읽음');
     const delivDue = J.ship && (why !== 'schedule' || cm.needRead || (cr && cr.changed) || !lastDelivAt || Date.now() - lastDelivAt > 4.5 * 60e3 || (cr && cr.prevTab && cr.prevTab['발송 요청'] !== cr.tabCounts['발송 요청']));
     const until = t0 + 30000; // (0.9.0) 무거운 일은 30초 안에서 — 나머지 시간은 빠른 고리(15초마다 주문확인요청) · 한 회차는 1분 안에 끝냄 (다음 예약을 건너뛰지 않게) — 못 한 것은 다음 회차에 이어 함
-    let rd = null; if (delivDue) rd = await step('발송 요청', (pp) => shipRead(pp, until));
-    let en = null; if (J.enrich && cr) { try { en = await enrichConfirm(p, cr, cm.force, until - 8000); } catch (e) { en = { err: e.message }; } }
+    /* (0.12.6) 주문확인요청 상품의 시장 읽기(보강)를 발송 요청 읽기보다 먼저 — 예전엔 발송 요청 상품의 유의 사항 다시 읽기가 시간 상자(30초)를 다 써서 보강이 굶었고, 휴대폰 출고 화면 시장이 '읽는 중'에 오래 머물렀음 */
+    let en = null; if (J.enrich && cr) { try { en = await enrichConfirm(p, cr, cm.force, until - 4000); } catch (e) { en = { err: e.message }; } }
+    let rd = null; if (delivDue) rd = await step('발송 요청', (pp) => shipRead(pp, Math.max(until, Date.now() + 8000)));
     if (J.repair) { try { const nr = await repairSweep(); if (nr) log('유의 사항 되살림', nr, '건'); } catch (e) {} } // 6시간에 한 번: 빈 판으로 덮였던 유의 사항을 지난 판에서 되살림
     // (0.9.0) 빠른 고리: 남은 시간 동안 15초마다 ① 주문확인요청을 다시 읽고, 맡긴 일(발송준비시작 등)이 들어오면 기다리지 않고 바로 처리 — 새 주문이 웹앱에 15초 안에, 단추를 누르면 몇 초 안에
     { const fm = J.fast && J.confirm ? await fastMode() : { on: false, why: '설정 ☁에서 끔' }; out0.fastMode = fm.on ? fm.why : '꺼짐 · ' + fm.why; p = curPage(p); if (pageBroken) p = await getPage(); const r2 = await fastLoop(p, fm.on ? t0 + 50000 : Date.now(), cr, cm, J); if (r2.cr) cr = r2.cr; if (r2.rd) rd = r2.rd; cm.n += r2.n; out0.fast = r2.loops; out0.fastChanged = r2.changed; }
@@ -838,10 +839,22 @@ async function extCloudRun(X, cfg, budgetMs) {
 let extNextAt = 0;
 let mlNextAt = 0, learnNextAt = 0, lastDailyAt = Date.now(), dailyBusy = false;
 /* (0.9.0) 무거운 하루 일(비용·결과 기록·배우기)은 주문 읽기(/tick)와 따로 /daily(10분마다 예약)에서 — 예전엔 1분 회차 끝에 붙어 있어, 길어지면 다음 회차(주문 읽기)를 건너뛰었음 */
+/* (0.12.6) 🧹 원인·결과를 따지는 데 쓰지 않는 기계 기록만, 보관 기한이 지나고 '그 뒤에 끝낸 백업'에 이미 들어간 것만 지움 (정범 승인 2026-10-13)
+ *  기준 = min(지금 − 보관 기한, 마지막으로 끝까지 받은 백업 때(app_settings/backup_log.last.at — 어느 기기든·전체든 바뀐 것만이든))
+ *  → 백업을 안 받으면 아무것도 지우지 않음. 지운 수는 app_settings/retain_log 에 날짜별로 남김(지운 문서 이름 앞부분 일부도)
+ *  · ext_probe(못 읽은 화면 사본) 14일 · perf_logs(속도 기록) 90일 · shp_snapshots(발송 요청 목록 판 — 같은 내용이 주문 문서에 있음) 90일 · bench_partial(절반도 못 읽은 회차의 상품 목록 — 통계에 안 씀) 30일 */
+const RETAIN = [['ext_probe', 14], ['perf_logs', 90], ['shp_snapshots', 90], ['bench_partial', 30]]; let retainNextAt = 0;
+async function retainSweep() { const bl = (await C('app_settings').doc('backup_log').get()).data() || {}; const last = bl.last && Date.parse(bl.last.at); if (!last) return { n: 0, skip: '백업 기록 없음 — 지우지 않음' };
+  const out = { n: 0, by: {}, more: false, backupAt: bl.last.at }; const day = kstDay(Date.now());
+  for (const [col, days] of RETAIN) { const cut = new Date(Math.min(Date.now() - days * 864e5, last)).toISOString(); const qs = await C(col).where('at', '<', cut).limit(300).get(); if (qs.empty) continue;
+    const b = db.batch(); qs.docs.forEach((d) => b.delete(d.ref)); await b.commit(); out.n += qs.size; out.by[col] = { n: qs.size, cut, ids: qs.docs.slice(0, 5).map((d) => d.id) }; if (qs.size === 300) out.more = true; }
+  if (out.n) await C('app_settings').doc('retain_log').set({ days: { [day]: FV.arrayUnion({ at: nowIso(), n: out.n, by: out.by, backupAt: out.backupAt }) } }, { merge: true }).catch(() => {});
+  return out; }
 async function dailyJobs() { if (dailyBusy) return { skipped: true }; dailyBusy = true; lastDailyAt = Date.now(); const out = {}; const J = await cjobs(); out.jobs = J;
   try { if (J.costs && Date.now() > costNextAt) { try { const r = await costDaily(4); out.costs = r; costNextAt = r.skip ? Date.now() + 15 * 60e3 : 0; if (r.done && r.done.length) log('비용 기록', JSON.stringify(r.done)); } catch (e) { costNextAt = Date.now() + 30 * 60e3; out.costsErr = e.message; log('비용 기록 실패', e.message); } }
     if (J.ml && Date.now() > mlNextAt) { try { const r = await mlDaily(); out.ml = r.skip ? undefined : r; mlNextAt = Date.now() + (r.skip ? 15 : 60) * 60e3; if (!r.skip) log('결과 기록', JSON.stringify(r).slice(0, 400)); } catch (e) { mlNextAt = Date.now() + 30 * 60e3; out.mlErr = e.message; log('결과 기록 실패', e.message); } }
     if (Date.now() > extNextAt) { try { const r = await extCloud(90e3); extNextAt = Date.now() + (r.skip ? 5 : 1) * 60e3; if (!r.skip) out.ext = { ms: r.ms, tally: r.tally }; else out.ext = r.skip; } catch (e) { extNextAt = Date.now() + 20 * 60e3; out.extErr = e.message; log('외부 정보 이어 받기 실패', e.message); } } /* (0.10.0) PC가 꺼져 있을 때만 */
+    if (J.retain !== false && Date.now() > retainNextAt) { try { const r = await retainSweep(); retainNextAt = Date.now() + (r.more ? 15 : 360) * 60e3; if (r.n) { out.retain = r; log('보관 기한 지난 기계 기록 지움', JSON.stringify(r).slice(0, 300)); } } catch (e) { retainNextAt = Date.now() + 60 * 60e3; out.retainErr = e.message; log('보관 기한 정리 실패', e.message); } }
     if (J.learn && Date.now() > learnNextAt) { try { const r = await mlLearn(); learnNextAt = Date.now() + (r.skip ? 20 : 120) * 60e3; if (!r.skip) { out.learn = r; log('스스로 배우기', JSON.stringify(r).slice(0, 400)); } } catch (e) { learnNextAt = Date.now() + 60 * 60e3; out.learnErr = e.message; log('스스로 배우기 실패', e.message); } }
   } finally { dailyBusy = false; } return out; }
 const server = http.createServer(async (req, res) => {

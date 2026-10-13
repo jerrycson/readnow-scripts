@@ -8,7 +8,7 @@
  * 화면 모양이 바뀌어 못 읽으면 '못 읽음'과 함께 받은 화면 일부(probe)를 돌려줌 → 수집기가 ext_probe에 남겨 나중에 읽는 법을 고침. 추측으로 채우지 않음.
  * ISBN이 있는 책 정보(교보·예스24)는 받은 상품 페이지 안에 그 ISBN이 정확히 있을 때만 받아들임(다른 책을 잘못 붙이지 않게). */
 (function (root) {
-  const VERSION = '0.4.3'; // (0.4.3) 네이버 책 검색 종료(2026-07-31) — 묻지 않음 · 장터 글은 제목이 닮은 것만 · 못 읽은 화면을 글·자료만 더 많이 남김 // (0.4.2) 못 읽음(HTTP 오류)도 응답 머리를 남김(ext_probe · 알림 줄에 응답 앞부분) · 네이버·eBay 키 앞뒤 빈칸 무시 // (0.4.1) DVDPrime 판매자 연락처(전화·메일·카톡 아이디·오픈채팅)를 그대로 기록 — 판매자 = 매입처 · 한글로 적은 번호도 숫자로 // (0.4.0) DVDPrime 글 화면 읽기(dpPost) — 줄마다 상품·값(사람마다 다른 적는 법)·판매 상태(가운데 줄·판완)·상품 상태 · 판매자·글 날짜·조회 수·댓글 수·택배·직거래·연락 방법
+  const VERSION = '0.4.4'; // (0.4.4) 리디 검색 화면 HTML 칸에서 책·저자·소장가 읽기(화면 속 JSON이 없어짐) // (0.4.3) 네이버 책 검색 종료(2026-07-31) — 묻지 않음 · 장터 글은 제목이 닮은 것만 · 못 읽은 화면을 글·자료만 더 많이 남김 // (0.4.2) 못 읽음(HTTP 오류)도 응답 머리를 남김(ext_probe · 알림 줄에 응답 앞부분) · 네이버·eBay 키 앞뒤 빈칸 무시 // (0.4.1) DVDPrime 판매자 연락처(전화·메일·카톡 아이디·오픈채팅)를 그대로 기록 — 판매자 = 매입처 · 한글로 적은 번호도 숫자로 // (0.4.0) DVDPrime 글 화면 읽기(dpPost) — 줄마다 상품·값(사람마다 다른 적는 법)·판매 상태(가운데 줄·판완)·상품 상태 · 판매자·글 날짜·조회 수·댓글 수·택배·직거래·연락 방법
 
   /* ── 키 (웹앱 설정 ⑱에서 넣음 → Firebase app_secrets/ext · 백업 파일엔 넣지 않음) ── */
   const KEYS = [
@@ -374,8 +374,13 @@
     return { ok: true, d: { title: b.bookname || null, loanCnt: toNum(b.loanCnt), cls: b.class_nm || null, clsNo: b.class_no || null, year: b.publication_year || null, hist: un(R.loanHistory, 'loan').map((x) => ({ m: x.month, n: toNum(x.loanCnt), r: toNum(x.ranking) })).slice(-36), grps: un(R.loanGrps, 'loanGrp').slice(0, 12).map((x) => ({ age: x.age, sex: x.gender, n: toNum(x.loanCnt), r: toNum(x.ranking) })), kw: un(R.keywords, 'keyword').slice(0, 15).map((x) => ({ w: x.word, v: toNum(x.weight) })), co: un(R.coLoanBooks, 'book').slice(0, 10).map((x) => ({ t: x.bookname, isbn: x.isbn13, n: toNum(x.loanCnt) })) } }; };
 
   /* ── 리디 (전자책): 검색 화면 안의 책 목록 → 제목이 닮은 첫 책 ── */
+  /* (0.4.4) 리디 검색 화면의 책 칸(HTML) — 화면 속 JSON이 없어져서(2026-10 ext_probe) 칸마다 /books/번호 · 표지 이름(aria-label) · 저자 · '소장 N원'(없으면 '대여 N원')을 읽음 */
+  function ridiHtml(html) { const out = []; const seen = new Set(); for (const seg0 of String(html || '').split(/<li\b/i).slice(1)) { const seg = seg0.split(/<\/li>/i)[0]; const id = (seg.match(/href=["']\/books\/(\d{5,})/) || [])[1]; if (!id || seen.has(id)) continue;
+      const t = decodeEnt((seg.match(/role=["']img["'][^>]*aria-label=["']([^"']+)["']/) || seg.match(/aria-label=["']([^"']+)["'][^>]*role=["']img["']/) || [])[1] || '') || strip((seg.match(/href=["']\/books\/\d+[^"']*["'][^>]*>\s*<span>([\s\S]*?)<\/span>\s*<\/a>/) || [])[1] || ''); if (!t) continue;
+      const au = strip((seg.match(/href=["'](?:\/author\/\d+|\/search\?q=(?!%EC%B6%9C%ED%8C%90%EC%82%AC))[^"']*["'][^>]*>([\s\S]*?)<\/a>/) || [])[1] || '') || null; const pm = strip(seg).replace(/<!--\s*-->/g, '').match(/소장\s*([\d,]+)\s*원/) || strip(seg).match(/대여\s*([\d,]+)\s*원/);
+      seen.add(id); out.push({ b_id: id, title: t, author: au, price: pm ? toNum(pm[1]) : null }); } return out; }
   ADP.ridi = async ({ isbn, title, author, http, cfg }) => { const q = marketQuery(title, author) || isbn; const url = `https://ridibooks.com/search?q=${enc(q)}`; const r = await http({ method: 'GET', url }); if (!okStatus(r)) return probe(r.text, `HTTP ${r.status}${r.text ? ' — ' + clip(String(r.text).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(), 90) : ''}`, url); /* (0.4.2) 못 읽은 화면·응답을 남김(ext_probe) — 까닭을 보고 고치게 */
-    let L = []; for (const b of jsonBlobs(r.text)) { const x = findListings(b); if (x.length > L.length) L = x; } if (!L.length) return NORES.test(r.text) ? { ok: true, none: true } : probe(r.text, '책 목록을 못 찾음', url);
+    let L = []; for (const b of jsonBlobs(r.text)) { const x = findListings(b); if (x.length > L.length) L = x; } if (!L.length) L = ridiHtml(r.text); if (!L.length) return NORES.test(r.text) ? { ok: true, none: true } : probe(r.text, '책 목록을 못 찾음', url);
     const th = (cfg && cfg.sim) ?? CFG_DEF.sim; const C = L.map((o) => ({ id: String(pick(o, ['b_id', 'bookId', 'id']) ?? ''), t: String(pick(o, TK) || ''), p: priceOf(o), au: (() => { const a = pick(o, ['author', 'authors', 'author2']); return Array.isArray(a) ? a.map((y) => (typeof y === 'object' ? y.name : y)).join(', ') : a ? String(a) : null; })() })).map((x) => ({ ...x, sim: sim(title, x.t) })).sort((a, b) => b.sim - a.sim);
     const best = C[0]; if (!best || best.sim < th) return { ok: true, none: true, d: { q, cands: C.slice(0, 5) } }; return { ok: true, d: { q, id: best.id, t: best.t, p: best.p, au: best.au, sim: best.sim, url: best.id ? `https://ridibooks.com/books/${best.id}` : url, cands: C.slice(0, 5) } }; };
 
@@ -428,6 +433,6 @@
   async function run(src, a) { const f = ADP[src]; if (!f) return { ok: false, why: '모르는 출처' }; const s = SOURCES[src]; if (!keysReady(src, a.keys)) return { skip: '키 없음' };
     if (s.grp === 'used' && src !== 'yes24used' && !a.title) return { skip: '제목 없음' }; try { return await f(a); } catch (e) { return { ok: false, why: e.message || String(e) }; } }
 
-  const api = { VERSION, VIA_JOONGMO, eligible, mediaQuery, mediaCore, simMedia, dpParse, dpPost, dpPick, dpLinePrice, dpContacts, _dpDate: (s, n) => dpDate(s, n), keyOf, isIsbnKey, jmParse, KEYS, GROUPS, SOURCES, ORDER, BASIC_ORDER, BASIC_FIELDS, CFG_DEF, cfgOf, keysReady, isKrIsbn, coreTitle, sim, marketQuery, jsonBlobs, findListings, tableKV, meta, strip, ymd, toNum, run, fxRun, toKrw, median, lowQ, dropOutliers, foreignStats, usedStats, mergeBasic, sig, shard, stOf, FX_CUR, _adp: ADP, _pageBook: pageBook };
+  const api = { ridiHtml, VERSION, VIA_JOONGMO, eligible, mediaQuery, mediaCore, simMedia, dpParse, dpPost, dpPick, dpLinePrice, dpContacts, _dpDate: (s, n) => dpDate(s, n), keyOf, isIsbnKey, jmParse, KEYS, GROUPS, SOURCES, ORDER, BASIC_ORDER, BASIC_FIELDS, CFG_DEF, cfgOf, keysReady, isKrIsbn, coreTitle, sim, marketQuery, jsonBlobs, findListings, tableKV, meta, strip, ymd, toNum, run, fxRun, toKrw, median, lowQ, dropOutliers, foreignStats, usedStats, mergeBasic, sig, shard, stOf, FX_CUR, _adp: ADP, _pageBook: pageBook };
   if (typeof module === 'object' && module.exports) module.exports = api; root.ReadnowExt = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.63.8의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.63.9의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.8' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.63.8', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.9' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.63.9', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -371,7 +371,7 @@
     </div>
     <div class="sec">
       <p class="cap">우리 상품 보강 (알라딘 줄)</p>
-      <div class="g2"><button class="b2" data-job="nbMarket" title="알라딘 미등록·세트·새상품 페이지 없는 상품: 바깥 검색(중고) 화면의 따로 등록된 같은 책들로 경쟁·시세">검색 시세 (미등록·세트)</button><button class="b2" data-job="bench" title="웹앱 경영 탭 → 🎯 집중 벤치마킹에서 고른 판매자의 중고샵 목록 전체를 끝까지 읽어, 어제와 견줘 새로 올린 것·사라진 것(팔렸거나 내림)·값 바뀐 것을 기록 (하루 한 번 · 일괄 수집에도 들어 있음)">🎯 집중 벤치마킹</button><button class="b2" data-job="benchForce" title="주기(n시간·n일에 한 번)와 '끝난 지 20시간 안이면 건너뜀' 규칙을 무시하고, 웹앱에서 고른 판매자 목록의 맨 처음 판매자부터 차례로 모두 지금 읽음 · 멈췄다 이어 하면 이번에 이미 읽은 판매자는 건너뜀(3일 안)">🎯 강제: 처음 판매자부터</button><button class="b2" data-job="benchDetail" title="집중 벤치마킹으로 모은 상품(따라가는 판매자의 지금 숍 상품) 중 아직 상품 페이지 정보(ISBN·분류·출간 연월)가 없는 것만 상품 페이지를 열어 읽음 — 웹앱 ⚙ 모을 정보의 '상품 페이지 정보' 켜짐·꺼짐과 상관없이 · 판매자마다 끝까지 · 한 번 읽은 상품·다른 판매자와 같은 책·우리 도서 기록에 있는 책은 열지 않음 · 멈추면 100개마다 저장한 데까지 남음">📖 벤치마킹 상품 페이지 정보</button><span class="rn-bfs" title="켜면 '🎯 강제: 처음 판매자부터'가 이 시간 안에 끝까지 읽은 판매자는 건너뛰고 나머지를 모두 읽음 (웹앱 🎯 자세히의 같은 토글과 하나 — Firebase에 저장)"><label><input type="checkbox" id="rnBfOn"> ⏭ 강제 실행 때 최근</label> <input type="number" id="rnBfH" min="1" max="168" value="20"> <label for="rnBfOn" title="숍 끝까지 다 읽은 회차가 그 시간 안에 끝난 판매자만 건너뜀 — 50% 넘어 쓴 회차라도 뒤쪽을 못 읽었으면 다시 읽음 · 멈춘 판매자는 📍 멈춘 자리부터 이어 읽음">시간 안에 숍 끝까지 다 읽은 판매자 건너뛰기</label></span><button class="b2" data-job="photos" title="새상품 표지가 없는 상품: 우리 상품 페이지의 사진을 전부">우리 상품 사진</button><button class="b2" data-job="usedInfo" title="우리 책 온라인 중고 첫 페이지에서 우리보다 앞에 있는 매물과 바로 뒤 몇 개(설정): 중고상품 구매 유의 사항 글과 사진 — 가격 결정 화면 블록의 ? 표시">경쟁 매물 유의사항·사진</button></div>
+      <div class="g2"><button class="b2" data-job="nbMarket" title="알라딘 미등록·세트·새상품 페이지 없는 상품: 바깥 검색(중고) 화면의 따로 등록된 같은 책들로 경쟁·시세">검색 시세 (미등록·세트)</button><button class="b2" data-job="bench" title="웹앱 경영 탭 → 🎯 집중 벤치마킹에서 고른 판매자의 중고샵 목록 전체를 끝까지 읽어, 어제와 견줘 새로 올린 것·사라진 것(팔렸거나 내림)·값 바뀐 것을 기록 (하루 한 번 · 일괄 수집에도 들어 있음)">🎯 집중 벤치마킹</button><button class="b2" data-job="benchForce" title="주기(n시간·n일에 한 번)와 '끝난 지 20시간 안이면 건너뜀' 규칙을 무시하고, 웹앱에서 고른 판매자 목록의 맨 처음 판매자부터 차례로 모두 지금 읽음 · 멈췄다 이어 하면 이번에 이미 읽은 판매자는 건너뜀(3일 안)">🎯 강제: 처음 판매자부터</button><button class="b2" data-job="benchDetail" title="집중 벤치마킹으로 모은 상품(따라가는 판매자의 지금 숍 상품) 중 아직 상품 페이지 정보(ISBN·분류·출간 연월)가 없는 것만 상품 페이지를 열어 읽음 — 웹앱 ⚙ 모을 정보의 '상품 페이지 정보' 켜짐·꺼짐과 상관없이 · 판매자마다 끝까지 · 한 번 읽은 상품·다른 판매자와 같은 책·우리 도서 기록에 있는 책은 열지 않음 · 멈추면 100개마다 저장한 데까지 남음">📖 벤치마킹 상품 페이지 정보</button><span class="rn-bfs" title="켜면 '🎯 강제: 처음 판매자부터'가 이 시간 안에 끝까지 읽은 판매자는 건너뛰고 나머지를 모두 읽음 (웹앱 🎯 자세히의 같은 토글과 하나 — Firebase에 저장)"><label><input type="checkbox" id="rnBfOn"> ⏭ 강제 실행 때 최근</label> <input type="number" id="rnBfH" min="1" max="168" value="20"> <label for="rnBfOn" title="숍 끝까지 다 읽은 회차가 그 시간 안에 끝난 판매자만 건너뜀 — 50% 넘어 쓴 회차라도 뒤쪽을 못 읽었으면 다시 읽음 · 멈춘 판매자는 📍 멈춘 자리부터 이어 읽음">시간 안에 숍 끝까지 다 읽은 판매자 건너뛰기</label></span><span id="rnBrTxt" style="display:block;font-size:10.5px;color:#5B6B66;margin:2px 0" title="웹앱 🎯 판에서 바꿈 (모든 PC 같음)"></span><button class="b2" data-job="photos" title="새상품 표지가 없는 상품: 우리 상품 페이지의 사진을 전부">우리 상품 사진</button><button class="b2" data-job="usedInfo" title="우리 책 온라인 중고 첫 페이지에서 우리보다 앞에 있는 매물과 바로 뒤 몇 개(설정): 중고상품 구매 유의 사항 글과 사진 — 가격 결정 화면 블록의 ? 표시">경쟁 매물 유의사항·사진</button></div>
     </div>
     <details class="sec" style="margin-top:10px"><summary class="cap" style="cursor:pointer">예비 · 가끔 쓰는 것 (펼치기)</summary>
       <p class="cap" style="margin-top:6px">출고 — 클라우드가 1분마다 하므로 클라우드가 멈췄을 때만</p>
@@ -1434,6 +1434,8 @@
    *  할 차례(due)인 판매자만 위 그룹부터·그룹 안 위에서부터 하나씩 → 한 판매자를 끝낼 때마다 차례를 다시 계산(그사이 짧은 주기 그룹이 차례가 되면 그쪽 먼저)
    *  수동(수집기 단추·'다시 받기'로 FORCE_ALL)은 차례와 상관없이 모두 */
   const BREG = () => window.ReadnowRegistry || globalThis.ReadnowRegistry || null; let BENCH_CFG = {};
+  /* (1.63.9) 📍 이어 읽기·통계 기준(웹앱 🎯 → ⚙ 이어 읽기 기준 · app_settings/bench.resume) — 기본: 마지막 상품 10개 · 순서대로 7개 이상 · 앞뒤 3쪽 · 숍의 50% 넘게 읽어야 통계 */
+  const benchResumeCfg = () => { const r = (BENCH_CFG && BENCH_CFG.resume) || {}; const n = Math.max(3, Math.min(30, Math.round(+r.n || 10))); return { n, match: Math.max(2, Math.min(n, Math.round(+r.match || Math.ceil(n * 0.7)))), pages: Math.max(1, Math.min(10, Math.round(+r.pages || 3))), cover: Math.max(0.1, Math.min(0.95, (+r.cover || 50) / 100)) }; };
   const benchStates = async (T) => { const out = {}; const sts = await Promise.all(T.map((t) => C('bench_state').doc(String(t.sc)).get().then((d) => d.data() || {}).catch(() => ({})))); T.forEach((t, i) => (out[String(t.sc)] = sts[i])); return out; };
   /* (1.56.1) 🎯 강제 실행(benchForce): 주기·'끝난 지 20시간' 규칙과 상관없이 고른 판매자 목록의 맨 처음 판매자부터 차례로 모두 읽음
    *  진행은 서버 prd_jobs/benchForce에 {startedAt, list}로 — 멈췄다 이어하면(멈춘 작업 목록 · 다시 누름 · 3일 안) 이번 강제 실행이 시작된 뒤에 끝난 판매자는 건너뛰고 다음 판매자부터
@@ -1514,19 +1516,19 @@
      *  숍은 등록순이라 그사이 생기는 변화는 '맨 앞에 새로 올림'과 '어디선가 팔려 빠짐'뿐 → 마지막에 읽은 상품 10개는 순서가 그대로 남음(빠진 것만 있을 수 있음)
      *  멈춘 쪽(마지막으로 읽은 쪽)부터 그 앞뒤로 3쪽씩 열어 그 10개가 순서대로 7개 이상 나오는 곳을 찾음 → 마지막으로 읽은 상품이 있는 쪽부터 이어 읽음(이미 읽은 상품은 상품 번호로 걸러 겹치지 않음)
      *  7개 이상이 순서대로 안 나오면(앞뒤 3쪽을 넘게 밀렸거나 많이 팔림) 이어 읽을 기준이 없으므로 이 회차를 여기서 끝냄 → 읽은 양이 숍의 50%를 넘으면 쓰는 회차(못 읽은 뒤쪽은 '잠정 있음'으로 두고 다음 회차에서 확정), 50% 이하면 통계에서 뺌 — 어느 쪽이든 판매자 상세 회차별 기록에 남김 */
-    let anchorStop = false;
-    if (!prog.readDone && prog.page > 1 && prog.items.length) { const A = prog.items.slice(-10).map((x) => String(x[0])); const base = Math.max(1, prog.page - 1); const tried = []; const seen = new Map(); let hit = null; const t0a = Date.now();
-      const order = [0, 1, -1, 2, -2, 3, -3].map((d) => base + d).filter((pg) => pg >= 1 && (!lastP || pg <= lastP + 3));
+    let anchorStop = false; const RCFG = benchResumeCfg(); /* (1.63.9) 웹앱 🎯 설정에서 바꿈 — 마지막 상품 몇 개·순서대로 몇 개 이상·앞뒤 몇 쪽 */
+    if (!prog.readDone && prog.page > 1 && prog.items.length) { const A = prog.items.slice(-RCFG.n).map((x) => String(x[0])); const base = Math.max(1, prog.page - 1); const tried = []; const seen = new Map(); let hit = null; const t0a = Date.now();
+      const order = [0].concat(...Array.from({ length: RCFG.pages }, (_, k) => [k + 1, -(k + 1)])).map((d) => base + d).filter((pg) => pg >= 1 && (!lastP || pg <= lastP + 3));
       const match = () => { const pgs = [...seen.keys()].sort((a, b) => a - b); let best = null;
         for (let i = 0; i < pgs.length; i++) { const L = []; for (let j = i; j < pgs.length && pgs[j] === pgs[i] + (j - i); j++) seen.get(pgs[j]).forEach((id, ix) => L.push([id, pgs[j], ix]));
-          const pos = new Map(L.map((x, k) => [x[0], k])); let k0 = -1, m = 0, last = null; for (const id of A) { const k = pos.get(id); if (k == null || k <= k0) continue; k0 = k; m++; last = L[k]; } if (m >= Math.min(7, A.length) && (!best || m > best.m)) best = { m, page: last[1], ix: last[2] }; }
+          const pos = new Map(L.map((x, k) => [x[0], k])); let k0 = -1, m = 0, last = null; for (const id of A) { const k = pos.get(id); if (k == null || k <= k0) continue; k0 = k; m++; last = L[k]; } if (m >= Math.min(RCFG.match, A.length) && (!best || m > best.m)) best = { m, page: last[1], ix: last[2] }; }
         return best; };
       for (const pg of order) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); } let g; try { g = await PUB.read('shop', benchUrl(sc, pg, ROWS), (x) => ({ items: benchParse(x.doc) }), (x) => benchParse(x.doc).length > 0); } catch (e) { if (e.message === '멈춤') { await saveBk(); throw e; } continue; }
         const L = benchParse(g.doc).map((x) => String(x.id)); seen.set(pg, L); tried.push(pg); if (pg === 1 || !lastP) { const lp = benchLastPage(g.doc, g.html); if (lp) { lastP = Math.max(lp, 1); prog.lastPage = lastP; } }
         hit = match(); if (hit) break; }
-      const R = { at: nowIso(), from: prog.page, base, tried, m: hit ? hit.m : 0, n: A.length, ms: Date.now() - t0a };
+      const R = { at: nowIso(), from: prog.page, base, tried, m: hit ? hit.m : 0, n: A.length, need: RCFG.match, pages: RCFG.pages, ms: Date.now() - t0a };
       if (hit) { R.to = hit.page; R.shift = hit.page - base; prog.page = hit.page; log(`🎯 '${name}': 📍 이어 읽기 자리 확인 — 마지막에 읽은 상품 ${A.length}개 중 ${hit.m}개가 순서대로 ${hit.page}쪽에 있음${R.shift ? ` (멈춘 뒤 ${R.shift > 0 ? `새로 올려 ${R.shift}쪽 뒤로` : `팔려서 ${-R.shift}쪽 앞으로`} 밀림)` : ''} → ${hit.page}쪽부터 이어 읽음 (이미 읽은 상품은 건너뜀)`); }
-      else { R.lost = true; anchorStop = true; prog.anchorLost = R; prog.page = base + 1; log(`🎯 '${name}': 📍 이어 읽을 자리를 못 찾음 — 마지막에 읽은 상품 ${A.length}개가 멈춘 쪽(${base}쪽) 앞뒤 3쪽(${tried.join('·')}쪽)에 순서대로 7개 이상 없음(그사이 많이 올리거나 팔림) → 이 회차는 ${base}쪽까지 읽은 것으로 끝내고 50% 기준을 적용`, 1); }
+      else { R.lost = true; anchorStop = true; prog.anchorLost = R; prog.page = base + 1; log(`🎯 '${name}': 📍 이어 읽을 자리를 못 찾음 — 마지막에 읽은 상품 ${A.length}개가 멈춘 쪽(${base}쪽) 앞뒤 ${RCFG.pages}쪽(${tried.join('·')}쪽)에 순서대로 ${RCFG.match}개 이상 없음(그사이 많이 올리거나 팔림) → 이 회차는 ${base}쪽까지 읽은 것으로 끝내고 ${Math.round(RCFG.cover * 100)}% 기준을 적용`, 1); }
       prog.resumes = (prog.resumes || []).concat([R]).slice(-20); await saveProgress(JN, meta()); }
     if (!prog.readDone && !anchorStop) for (;;) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); }
       if (lastP && prog.page > lastP + 3) break; /* 읽는 동안 새로 올라온 만큼 뒤로 밀릴 수 있어 끝 쪽 + 3쪽까지 */
@@ -1559,7 +1561,7 @@
     { const lastRead = prog.page - 1; const r1 = prog.readFrom1 === true || (prog.readFrom1 === undefined && prog.items.length > 0 && !prog.resumedOld); let ok = false, why = '';
       /* (1.56.4) 정범 결정: 숍의 절반(50%) 넘게 읽었으면 쓰는 회차, 절반 이하에서 그만둔 회차만 버림(통계·비교 기준·'오늘 읽음' 모두에서 빼고 다음엔 1쪽부터 새로) */
       const cov = prog.pagingBroken ? (!lastP || lastP <= 1 ? 1 : 1 / lastP) : lastP ? Math.min(1, lastRead / lastP) : 1; prog.cover = Math.round(cov * 1000) / 1000;
-      if (!prog.items.length) why = '읽은 상품 없음'; else if (!r1) why = '이 회차가 1쪽부터 읽지 않음'; else { ok = cov > 0.5; why = ok ? '' : `숍의 ${Math.round(cov * 100)}%만 읽고 그만둠(끝 쪽 ${lastP || '?'}쪽 중 ${prog.pagingBroken ? 1 : lastRead}쪽)${prog.anchorLost ? ' · 이어 읽을 자리를 못 찾아 끝냄' : ''} — 50% 이하라 통계에서 뺌`; }
+      if (!prog.items.length) why = '읽은 상품 없음'; else if (!r1) why = '이 회차가 1쪽부터 읽지 않음'; else { const CV = benchResumeCfg().cover; ok = cov > CV; prog.coverMin = CV; why = ok ? '' : `숍의 ${Math.round(cov * 100)}%만 읽고 그만둠(끝 쪽 ${lastP || '?'}쪽 중 ${prog.pagingBroken ? 1 : lastRead}쪽)${prog.anchorLost ? ' · 이어 읽을 자리를 못 찾아 끝냄' : ''} — ${Math.round(CV * 100)}% 이하라 통계에서 뺌`; }
       prog.fullRead = ok; prog.fullWhy = why; }
     if (!prog.readDone) { prog.readDone = true; await saveProgress(JN, meta()); } /* (1.52.0) 읽기 끝을 먼저 적어 둠 — 저장 단계에서 멈춰도 다시 읽지 않음 */
     const secPerPage = prog.page > p0 ? Math.round((Date.now() - t0) / (prog.page - p0) / 100) / 10 : st.secPerPage || null; await benchFinish(t, prog, { ...st, secPerPage, lastPage: lastP || null });
@@ -2962,7 +2964,7 @@
   }
   /* (1.56.3) ⏭ 강제 실행 건너뛰기 토글 — app_settings/bench.forceSkip {on, h} (웹앱과 같은 값) */
   { const on = box.querySelector('#rnBfOn'), hh = box.querySelector('#rnBfH'); if (on && hh) { const wr = () => { const h = Math.max(1, Math.min(168, Math.round(+hh.value || 20))); hh.value = h; box.querySelector('.rn-bfs').classList.toggle('on', on.checked); C('app_settings').doc('bench').set({ forceSkip: { on: on.checked, h, by: PC_NAME, at: nowIso() } }, { merge: true }).then(() => log(`⏭ 강제 실행 건너뛰기 ${on.checked ? `켬 — 최근 ${h}시간 안에 끝까지 읽은 판매자는 건너뜀` : '끔 — 처음 판매자부터 모두'}`)).catch((e) => log('건너뛰기 설정 저장 실패: ' + (e.code || e.message), 1)); };
-      on.onchange = wr; hh.onchange = wr; auth.onAuthStateChanged((u) => { if (u) C('app_settings').doc('bench').onSnapshot((d) => { const f = ((d.exists && d.data()) || {}).forceSkip || {}; if (document.activeElement !== hh) hh.value = f.h || 20; on.checked = !!f.on; box.querySelector('.rn-bfs').classList.toggle('on', !!f.on); }, () => {}); }); } }
+      on.onchange = wr; hh.onchange = wr; auth.onAuthStateChanged((u) => { if (u) C('app_settings').doc('bench').onSnapshot((d) => { const f = ((d.exists && d.data()) || {}).forceSkip || {}; if (document.activeElement !== hh) hh.value = f.h || 20; { const r = ((d.exists && d.data()) || {}).resume || {}; const n = r.n || 10; const el = box.querySelector('#rnBrTxt'); if (el) el.textContent = `📍 이어 읽기: 마지막 ${n}개 중 ${r.match || Math.ceil(n * 0.7)}개 이상 · 앞뒤 ${r.pages || 3}쪽 · ${r.cover || 50}% 넘게 읽어야 통계 (웹앱 🎯에서 바꿈)`; } on.checked = !!f.on; box.querySelector('.rn-bfs').classList.toggle('on', !!f.on); }, () => {}); }); } }
   box.querySelectorAll('[data-job]').forEach((b) => (b.onclick = () => { window.__rnResumeOk && window.__rnResumeOk(); return b.dataset.job === 'images' ? images() : runJob(b.dataset.job, { manual: true }); }));
 
   /* (1.38.0) 멈춘 작업 목록 — 어느 PC에서 멈췄든 전부. 개요 화면이 작업마다 [이어하기]·[버리기]로 보여 줌

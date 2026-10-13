@@ -5,7 +5,7 @@
  *   셀 서식(XF)은 원본에서 실제로 등록에 성공했던 줄(19행)의 것을 그대로 씀: ISBN = 텍스트 셀, 판매상태·수량·품질·판매가 = 숫자 셀.
  * 이 파일은 알라딘에 아무것도 바꾸지 않음 — 계산·만들기·읽기만. */
 (function (root) {
-  const VERSION = '0.6.0';
+  const VERSION = '0.7.0';
   // 상품 구분 (알라딘 SelectType / BranchType)
   const BRANCH = { 1: '국내도서', 2: '음반', 3: 'DVD/블루레이', 7: '외국도서' };
   // 상품 관리 코드 아이콘 — 알라딘 상품 등록 도우미 0.1.0과 같은 색 (한 곳)
@@ -58,6 +58,20 @@
     if (R.on === false) return { on: false, why: '날짜 붙이기 꺼짐' }; if (!o.hasStock) return { on: false, why: R.sameGrade === false ? '중복될 우려 상품이 우리 재고에 없음' : `중복될 우려 상품(같은 ${gn} 상태)이 우리 재고에 없음` }; if (!(R.grades || []).includes(g)) return { on: false, why: `${gn}은 날짜 안 붙임` };
     const sk = R.skip || []; for (let i = 0; i < sk.length; i++) { const x = sk[i] || {}; if (!(x.grades || []).includes(g)) continue; if (i === 1 || x.empty) { if (!d) return { on: false, why: `${gn} · 설명 없음 — 같은 상품과 다를 것 없음` }; } else { const w = (x.words || []).find((t) => t && d.includes(t)); if (w) return { on: false, why: `${gn} · 설명에 '${w}' — 같은 상품과 다를 것 없음` }; } }
     return { on: true, why: `${R.sameGrade === false ? '같은 상품' : `같은 ${gn} 상태의 같은 상품`}이 재고에 있고, ${d ? '이번 상품에 상태 설명이 있음(특이 사항)' : '설명은 없지만 빼는 조건(⚙ 날짜 붙이기 ①②)에 들지 않음'}` }; }
+  /* (0.7.0) 상태별 코드 — 사장님 규칙(2026-10-13):
+   *  ① 상 + 유의사항 없음 → 늘 기본 코드(뒤에 아무것도 안 붙임). 서가에서 아무거나 꺼내도 같은 책.
+   *  ② 그 밖(최상·중, 또는 유의사항 있음) → 재고에 상태·유의사항이 '똑같은' 책이 있으면 그 책의 코드를 그대로.
+   *  ③ 아니면, 기본 코드를 다른 책이 쓰고 있을 때만(=구분이 꼭 필요할 때만) _날짜+알파벳. 기본 코드가 비어 있으면 기본 코드.
+   *  '똑같은 유의사항' = 글자 비교(AI 없음): 띄어쓰기·문장부호·대소문자를 빼고, 쉼표·줄바꿈·마침표로 나눈 조각을 순서와 상관없이 같으면 같음.
+   *  재고 책의 유의사항을 모르면(기록 없음) 같다고 보지 않음 — 잘못 같은 코드를 주는 것보다 새 코드가 안전 */
+  function noteKey(t) { const s = String(t || '').normalize('NFKC').toLowerCase(); const parts = s.split(/[\n\r,，.。·•;；\/|]+/).map((x) => x.replace(/[\s\p{P}\p{S}]+/gu, '')).filter(Boolean); return [...new Set(parts)].sort().join('|'); }
+  function decideDate(o, rule) { const R = { ...DATE_RULE_DEFAULT, ...(rule || {}) }; const plain = Array.isArray(R.plain) ? R.plain : [2]; const g = +o.grade; const gn = GRADE[g] || g; const nk = noteKey(o.desc); const pre = String(o.prefix || '');
+    if (R.on === false) return { on: false, why: '날짜 붙이기 꺼짐' };
+    const same = (o.stock || []).filter((x) => x && x.code && (x.code === pre || String(x.code).startsWith(pre + '_'))); const isPlain = (x) => plain.includes(+x.grade) && x.note != null && !noteKey(x.note);
+    if (plain.includes(g) && !nk) { const odd = same.filter((x) => x.code === pre && !(+x.grade === g && (x.note == null || !noteKey(x.note)))); return { on: false, plain: true, why: `${gn} · 유의사항 없음 → 기본 코드 그대로`, warn: odd.length ? `기본 코드 ${pre}를 다른 상태 책(${odd.slice(0, 3).map((x) => (GRADE[+x.grade] || '?') + (x.note ? '·유의사항' : '')).join(', ')})이 쓰는 중 — 그 책 코드를 바꾸면 서가에서 안 섞임` : '' }; }
+    const hit = same.find((x) => +x.grade === g && x.note != null && noteKey(x.note) === nk && !isPlain(x)); if (hit) return { on: false, reuse: hit.code, why: `재고의 ${hit.code}와 상태(${gn})·유의사항이 똑같음 → 같은 코드` };
+    if (!same.some((x) => x.code === pre)) return { on: false, why: same.length ? `기본 코드 ${pre}를 쓰는 재고가 없음 → 기본 코드` : '같은 상품 재고 없음 → 구분할 필요 없어 기본 코드' };
+    const unk = same.some((x) => +x.grade === g && x.note == null); return { on: true, why: `기본 코드를 상태나 유의사항이 다른 같은 상품이 쓰는 중 → _날짜+알파벳으로 구분${unk ? ' (재고 중 유의사항 기록이 없는 같은 상태 책은 비교 못 함)' : ''}` }; }
   // 알라딘 대량등록 판매상태 숫자: 1 판매중 · 2 일시판매중지 · 3 판매중지 (개별 등록 화면의 1·3·15와 다름)
   /* (0.2.0) 상품 번호(ISBN·음반/DVD 바코드) — 한 곳
    *  normCode: 넣은 글자 → 10·13자리(대량 등록 A칸 규칙) · 바코드 뒤 부가기호 5자리(18자리)는 버림 · 12자리 UPC(외국 음반)는 앞에 0을 붙여 13자리 EAN으로
@@ -192,6 +206,6 @@
   // 상품 설명 문구 (알라딘 상품 등록 도우미와 같은 기본값 — 웹앱에서 고친 것은 Firebase에 저장해 모든 PC가 같게)
   const PHRASES_A = ['띠지 있습니다.', '비닐 뜯지 않은 밀봉 제품입니다.', '책등 약간 색바램 있습니다.', '책등 색바램 있습니다.', '겉커버 없습니다.', '표지 빛바램 및 내지 변색 있습니다.', '표지 빛바램 및 내지 변색 많습니다.', '대체적으로 중고감 많습니다.', '10페이지 가량 밑줄 있습니다.', '책머리에 드림도장 있습니다.', '책꼬리에 드림도장 있습니다.', '앞 면지에 드림도장 있습니다.', '책등 하단에 "북카페" 스티커 있습니다.', '도서관 정리 도서 입니다!!', '책등 하단에 "도서관"스티커 있습니다.', '앞표지에 "기증"스티커 있습니다.', '둘레 "도서관"도장 찍혀 있습니다.', '해당 도서는 연/구용이지만 학생용과 동일합니다.'];
   const PHRASES_B = ['', '그 외 상태 양호합니다.', '그 외 상급입니다.'];
-  const api = { VERSION, DATE_RULE_DEFAULT, needDate, BRANCH, CODES, SOURCES, NEW_WORDS, RULES_DEFAULT, BULK_STATE, GRADE, PHRASES_A, PHRASES_B, templateBytes, pageAlerts, normCode, sameCode, matchCode, pageBarcode, auxRun, auxKey, AUX_TTL_D, parseAuthorPopup, parseBrandPopup, ITEM_SIZES, descHtml, topCats, sizeMm, decideCode, withSuffix, yymmdd, buildBulkXls, verifyBulkXls, parseBulkPage, matchPreview, _readRecs: readRecs };
+  const api = { VERSION, DATE_RULE_DEFAULT, needDate, noteKey, decideDate, BRANCH, CODES, SOURCES, NEW_WORDS, RULES_DEFAULT, BULK_STATE, GRADE, PHRASES_A, PHRASES_B, templateBytes, pageAlerts, normCode, sameCode, matchCode, pageBarcode, auxRun, auxKey, AUX_TTL_D, parseAuthorPopup, parseBrandPopup, ITEM_SIZES, descHtml, topCats, sizeMm, decideCode, withSuffix, yymmdd, buildBulkXls, verifyBulkXls, parseBulkPage, matchPreview, _readRecs: readRecs };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowRegister = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
