@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.63.10의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.63.11의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.10' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.63.10', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.11' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.63.11', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1517,17 +1517,19 @@
      *  멈춘 쪽(마지막으로 읽은 쪽)부터 그 앞뒤로 3쪽씩 열어 그 10개가 순서대로 7개 이상 나오는 곳을 찾음 → 마지막으로 읽은 상품이 있는 쪽부터 이어 읽음(이미 읽은 상품은 상품 번호로 걸러 겹치지 않음)
      *  7개 이상이 순서대로 안 나오면(앞뒤 3쪽을 넘게 밀렸거나 많이 팔림) 이어 읽을 기준이 없으므로 이 회차를 여기서 끝냄 → 읽은 양이 숍의 50%를 넘으면 쓰는 회차(못 읽은 뒤쪽은 '잠정 있음'으로 두고 다음 회차에서 확정), 50% 이하면 통계에서 뺌 — 어느 쪽이든 판매자 상세 회차별 기록에 남김 */
     let anchorStop = false; const RCFG = benchResumeCfg(); /* (1.63.9) 웹앱 🎯 설정에서 바꿈 — 마지막 상품 몇 개·순서대로 몇 개 이상·앞뒤 몇 쪽 */
-    if (!prog.readDone && prog.page > 1 && prog.items.length) { const A = prog.items.slice(-RCFG.n).map((x) => String(x[0])); const base = Math.max(1, prog.page - 1); const tried = []; const seen = new Map(); let hit = null; const t0a = Date.now();
+    if (!prog.readDone && prog.page > 1 && prog.items.length) { const A = prog.items.slice(-RCFG.n).map((x) => String(x[0])); const base = Math.max(1, prog.page - 1); const tried = []; const fails = []; const seen = new Map(); let hit = null; const t0a = Date.now();
       const order = [0].concat(...Array.from({ length: RCFG.pages }, (_, k) => [k + 1, -(k + 1)])).map((d) => base + d).filter((pg) => pg >= 1 && (!lastP || pg <= lastP + 3));
       const match = () => { const pgs = [...seen.keys()].sort((a, b) => a - b); let best = null;
         for (let i = 0; i < pgs.length; i++) { const L = []; for (let j = i; j < pgs.length && pgs[j] === pgs[i] + (j - i); j++) seen.get(pgs[j]).forEach((id, ix) => L.push([id, pgs[j], ix]));
           const pos = new Map(L.map((x, k) => [x[0], k])); let k0 = -1, m = 0, last = null; for (const id of A) { const k = pos.get(id); if (k == null || k <= k0) continue; k0 = k; m++; last = L[k]; } if (m >= Math.min(RCFG.match, A.length) && (!best || m > best.m)) best = { m, page: last[1], ix: last[2] }; }
         return best; };
-      for (const pg of order) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); } let g; try { g = await PUB.read('shop', benchUrl(sc, pg, ROWS), (x) => ({ items: benchParse(x.doc) }), (x) => benchParse(x.doc).length > 0); } catch (e) { if (e.message === '멈춤') { await saveBk(); throw e; } continue; }
+      for (const pg of order) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); } let g; try { g = await PUB.read('shop', benchUrl(sc, pg, ROWS), (x) => ({ items: benchParse(x.doc) }), (x) => benchParse(x.doc).length > 0); } catch (e) { if (e.message === '멈춤') { await saveBk(); throw e; } if (!lastP || pg <= lastP) fails.push(pg); continue; } /* (1.63.11 자동 점검) 끝 쪽 안에서 못 읽은 쪽은 따로 셈 */
         const L = benchParse(g.doc).map((x) => String(x.id)); seen.set(pg, L); tried.push(pg); if (pg === 1 || !lastP) { const lp = benchLastPage(g.doc, g.html); if (lp) { lastP = Math.max(lp, 1); prog.lastPage = lastP; } }
         hit = match(); if (hit) break; }
       const R = { at: nowIso(), from: prog.page, base, tried, m: hit ? hit.m : 0, n: A.length, need: RCFG.match, pages: RCFG.pages, ms: Date.now() - t0a };
       if (hit) { R.to = hit.page; R.shift = hit.page - base; prog.page = hit.page; log(`🎯 '${name}': 📍 이어 읽기 자리 확인 — 마지막에 읽은 상품 ${A.length}개 중 ${hit.m}개가 순서대로 ${hit.page}쪽에 있음${R.shift ? ` (멈춘 뒤 ${R.shift > 0 ? `새로 올려 ${R.shift}쪽 뒤로` : `팔려서 ${-R.shift}쪽 앞으로`} 밀림)` : ''} → ${hit.page}쪽부터 이어 읽음 (이미 읽은 상품은 건너뜀)`); }
+      else if (fails.length) { /* (1.63.11 자동 점검) 알라딘 일시 오류(429·화면 오류)로 앞뒤 쪽을 못 읽은 것은 '자리 못 찾음'이 아님 — 회차를 끝내지 않고 저장, 다음에 이 자리부터 다시 찾음 (본 읽기의 '읽기 실패 → 다음에 이 쪽부터'와 같게) */
+        R.fail = fails; prog.resumes = (prog.resumes || []).concat([R]).slice(-20); await saveProgress(JN, meta()); log(`🎯 '${name}': 📍 이어 읽을 자리를 찾는 중 ${fails.join('·')}쪽을 읽지 못함(알라딘 일시 오류) — 회차를 끝내지 않고 저장, 다음에 이 자리부터 다시 찾음`, 1); await saveBk(); return 'partial'; }
       else { R.lost = true; anchorStop = true; prog.anchorLost = R; prog.page = base + 1; log(`🎯 '${name}': 📍 이어 읽을 자리를 못 찾음 — 마지막에 읽은 상품 ${A.length}개가 멈춘 쪽(${base}쪽) 앞뒤 ${RCFG.pages}쪽(${tried.join('·')}쪽)에 순서대로 ${RCFG.match}개 이상 없음(그사이 많이 올리거나 팔림) → 이 회차는 ${base}쪽까지 읽은 것으로 끝내고 ${Math.round(RCFG.cover * 100)}% 기준을 적용`, 1); }
       prog.resumes = (prog.resumes || []).concat([R]).slice(-20); await saveProgress(JN, meta()); }
     if (!prog.readDone && !anchorStop) for (;;) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); }
@@ -2822,7 +2824,7 @@
     const want = GM_getValue('rnu-reload-for', null); if (want && verNum(want) <= verNum(VER)) GM_setValue('rnu-reload-for', null);
     /* (1.63.8) ⚡ 빠른 업데이트(본체의 GitHub 직접 받기)가 새 판을 받아 두면 같은 길로 — 쉬는 사이(또는 긴 작업이면 저장 지점에서) 새로고침해 새 판으로 그 자리부터 */
     let verTimer = null;
-    window.__rnLiveReady = (v) => { try { if (!v || verNum(v) <= verNum(VER)) return; if (window.__rnOutdated === v && verTimer) return; GM_setValue('rnu-reload-for', null); GM_setValue('rnu-reload-try', null); if (verTimer) { clearInterval(verTimer); verTimer = null; } window.__rnOutdated = null; onNewVer(v, '⚡ 빠른 업데이트로 새 판을 받아 둠'); } catch (e) {} };
+    window.__rnLiveReady = (v) => { try { if (!v || verNum(v) <= verNum(VER)) return; if (window.__rnOutdated === v && verTimer) return; { const RT = GM_getValue('rnu-reload-try', null), LV = GM_getValue('rn-live', null); /* (1.63.11 자동 점검) 받아 둔 판으로 이미 새로고침했는데도 이 판이면(시작 실패 등) 다시 0부터 세지 않음 — 전엔 부를 때마다 '같은 판 8번까지'를 지워 끝없이 새로고침·긴 작업을 10분마다 멈춤 */ if (RT && RT.v === v && LV && LV.ver === v && (+RT.at || 0) > (+LV.at || 0)) { if (window.__rnOutdated !== v) onNewVer(v, '⚡ 빠른 업데이트'); return; } } GM_setValue('rnu-reload-for', null); GM_setValue('rnu-reload-try', null); if (verTimer) { clearInterval(verTimer); verTimer = null; } window.__rnOutdated = null; onNewVer(v, '⚡ 빠른 업데이트로 새 판을 받아 둠'); } catch (e) {} };
     ref.onSnapshot((d) => onNewVer((d.data() || {}).ver), () => {});
     function onNewVer(v, src) { if (!v || verNum(v) <= verNum(VER) || window.__rnOutdated) return;
       window.__rnOutdated = v; if (window.__rnFeat && !window.__rnFeat('update')) { log(`새 수집기 ${v}가 있지만 이 PC는 🧩 '새 판 저절로 맞추기'를 꺼 둠 — 직접 새로고침해야 바뀜`, 1); return; } const tried = GM_getValue('rnu-reload-for', null) === v;
