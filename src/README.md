@@ -20,3 +20,5 @@ cp src/readnow-collector.src.js /home/claude/w/readnow-collector.user.js
 cp readnow-*-core.js readnow-registry.js /home/claude/w/ ; cp -r cloud /home/claude/w/
 cd /home/claude/w && node split.js && node release.js
 ```
+- 이번에 안 바꾼 공용 파일(`readnow-core.js` 등)·가격 감시기는 `release.js`가 저장소(`/home/claude/readnow-scripts/`) 사본으로 점검합니다(자동 점검 2026-10-13 — 전엔 옛 대화의 임시 폴더를 가리켜 '파일 없음'으로 멈췄음).
+- 결과물 맞추기: `out/app/*` → `app/`, `out/readnow-collector.user.js`·`out/readnow-pc-*.js`·`out/pc-live.json` → 저장소 맨 위.
