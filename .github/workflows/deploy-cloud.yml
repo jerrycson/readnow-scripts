@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0 (node24 · 전체 점검 2026-10-12: v4는 node20이라 곧 막힘)
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0 (node24 · 전체 점검 2026-10-12: v4는 node20이라 곧 막힘)
       - name: 문법 검사 (깨진 파일은 올리지 않음)
         run: |
           for f in cloud/*.js; do node --check "$f"; done
