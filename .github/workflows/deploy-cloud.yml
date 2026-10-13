@@ -8,7 +8,7 @@ name: 클라우드 자동 배포 (Cloud Run)
 on:
   push:
     branches: [main]
-    paths: ['cloud/**', '.github/workflows/deploy-cloud.yml']
+    paths: ['cloud/**', '.github/workflows/deploy-cloud.yml', 'readnow-*-core.js', 'readnow-registry.js']  # (2026-10-13) 공용 파일이 바뀌어도 다시 올림 — 클라우드는 올린 커밋(CODE_SHA)의 공용 파일만 씀
   workflow_dispatch:
 concurrency: { group: deploy-cloud, cancel-in-progress: false }
 permissions: { contents: read, id-token: write }
@@ -37,7 +37,7 @@ jobs:
         working-directory: cloud
         run: |
           # 실패하면 마지막 줄들을 알림(annotation)으로 — GitHub 화면·Claude가 로그 파일 없이도 까닭을 봄
-          if ! gcloud run deploy "$SERVICE" --source . --region "$REGION" --project "$PROJECT" --quiet > /tmp/deploy.log 2>&1; then
+          if ! gcloud run deploy "$SERVICE" --source . --region "$REGION" --project "$PROJECT" --update-env-vars "CODE_SHA=$GITHUB_SHA" --quiet > /tmp/deploy.log 2>&1; then
             tail -n 25 /tmp/deploy.log | sed 's/^/  /'; grep -iE 'error|denied|permission|not found|failed' /tmp/deploy.log | tail -n 6 | while IFS= read -r l; do echo "::error::$l"; done
             if grep -q "iam.serviceAccounts.getAccessToken\|generateAccessToken\|workloadIdentityUser" /tmp/deploy.log; then echo "::error::배포 계정을 쓸 권한(GitHub → gh-deployer 묶음)이 아직 없음 — Cloud Shell에서 setup-autodeploy.sh를 다시 실행하세요"; fi
             exit 1; fi

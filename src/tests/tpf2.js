@@ -1,0 +1,34 @@
+const { chromium } = require('/home/claude/.npm-global/lib/node_modules/playwright'); const fs = require('fs');
+const FILE = process.argv[2]; const FB = __dirname + '/fb/package/'; const R = __dirname + '/repo/';
+(async () => { const br = await chromium.launch(); const p = await br.newPage({ viewport: { width: 390, height: 800 } }); const errs = [];
+  p.on('pageerror', (e) => errs.push('PAGEERR ' + e.message)); p.on('console', (m) => { if (m.type() === 'error') errs.push('CONSOLE ' + m.text().slice(0, 200)); });
+  await p.route('**/*', (rt) => { const u = rt.request().url();
+    if (u.startsWith('https://www.gstatic.com/firebasejs/')) { const f = FB + u.split('/').pop(); let body = fs.readFileSync(f, 'utf8'); if (/storage-compat/.test(u)) body += `;(function(){var _i=firebase.initializeApp;firebase.initializeApp=function(){var r=_i.apply(this,arguments);var _a=firebase.auth;var o=_a();var fake={email:'jerrycson@gmail.com',uid:'u1',displayName:'테스트',getIdToken:async()=>'x'};o.onAuthStateChanged=function(cb){setTimeout(function(){cb(fake)},10);return function(){}};Object.defineProperty(o,'currentUser',{get:function(){return fake}});try{firebase.auth=function(){return o};Object.assign(firebase.auth,_a)}catch(e){console.error('patch fail',e)}return r}})();`; return rt.fulfill({ body, contentType: 'text/javascript' }); }
+    if (u.startsWith('http://t.test/app/sw.js')) return rt.fulfill({ body: fs.readFileSync('/home/claude/w/sw.js'), contentType: 'text/javascript' }); if (u.startsWith('http://t.test/app/')) return rt.fulfill({ body: fs.readFileSync(FILE), contentType: 'text/html; charset=utf-8' });
+    if (u.startsWith('http://t.test/')) { const f = R + u.replace('http://t.test/', '').split('?')[0]; return fs.existsSync(f) ? rt.fulfill({ body: fs.readFileSync(f), contentType: 'text/javascript' }) : rt.fulfill({ status: 404, body: '' }); }
+    return rt.abort(); });
+  await p.goto('http://t.test/app/' + (process.argv[3] || '')); await p.waitForTimeout(7000);
+  await p.evaluate(async () => { const wait = (ms) => new Promise((r) => setTimeout(r, ms)); await wait(2500);
+    S.pbooks = new Map([['b1', { id: 'b1', title: '사피엔스', isbn13: '9788934972464', aladinItemId: '111', author: '유발 하라리' }], ['b2', { id: 'b2', title: '사피엔스 그래픽 히스토리', isbn13: '9788934990000' }], ['b3', { id: 'b3', title: '코스모스', isbn13: '9788983711892' }]]);
+    S.pur.entries = [{ id: 'old', source: 'app', date: '2026-10-01', seller: { name: '김판매', phone: '010-1', addr: '양주', account: '국민 123 김판매' }, who: 'kim', items: [{ title: '총균쇠', qty: 1 }] }]; S.prodLoaded = true; bump();
+    window.__saved = null; window.__rc = 0; purRemote = async (req, key) => { window.__rc++; return { title: '사피엔스', isbn13: '9788934972464', itemId: '111', at: new Date().toISOString(), src: '테스트', buyback: { '최상': 3000, '상': 2500, '중': 1500 }, priceList: 22000, page1: [{ grade: '상', price: 9000, ship: 0, sellerCode: '11', sellerName: 'a' }, { grade: '중', price: 6000, ship: 0, sellerCode: '12', sellerName: 'b' }, { grade: '최상', price: 12000, ship: 0, sellerCode: '13', sellerName: 'c' }] }; }; savePur = async (x, n) => { window.__saved = x; return 'id1'; }; openPurForm(); await wait(300); });
+  const ti = p.locator('.pit_t').first(); await ti.focus(); await ti.type('사피'); await p.waitForTimeout(400);
+  console.log('SUG', await p.evaluate(() => document.querySelector('.pit-sug').innerText.replace(/\n/g, ' | ')));
+  await p.keyboard.press('ArrowDown'); await p.keyboard.press('Enter'); await p.waitForTimeout(300);
+  await p.waitForTimeout(500); console.log('EXP', await p.evaluate(() => document.querySelector('.pit_e').innerText + ' / rc=' + __rc));
+  await p.selectOption('.pit_g', '중'); await p.waitForTimeout(300); console.log('EXPG', await p.evaluate(() => document.querySelector('.pit_e').innerText + ' / rc=' + __rc));
+  console.log('PICK', await p.evaluate(() => [document.querySelector('.pit_t').value, document.querySelector('.pit_i').value, (document.querySelector('.pit-st') || {}).textContent].join(' / ')));
+  await p.$eval('#pf_add', (b) => b.click()); await p.waitForTimeout(200); const ii = p.locator('.pit_i').nth(1); await ii.fill('8983711892'); await ii.press('Tab'); await p.waitForTimeout(800);
+  console.log('ISBN10', await p.evaluate(() => [document.querySelectorAll('.pit_t')[1].value, document.querySelectorAll('.pit_i')[1].value].join(' / ')));
+  await p.locator('.pit_p').first().fill('10000'); await p.locator('.pit_p').first().press('Tab'); await p.waitForTimeout(200);
+  await p.locator('.pit_p').nth(1).fill('5000'); await p.locator('.pit_p').nth(1).press('Tab'); await p.waitForTimeout(200);
+  await p.locator('.py_a').first().fill('10000'); await p.locator('.py_a').first().press('Tab'); await p.waitForTimeout(200);
+  await p.$eval('#pf_payadd', (b) => b.click()); await p.waitForTimeout(200); console.log('PAYROWS', await p.evaluate(() => [...document.querySelectorAll('.payrow')].map((r) => r.querySelector('.py_m').value + ':' + r.querySelector('.py_a').value).join(', ')), await p.evaluate(() => (document.querySelector('.paysum') || {}).textContent));
+  await p.locator('.payrow').first().locator('.py_x').fill('신한 999'); await p.$$eval('.py_p', (L) => { L[1].click(); }); await p.waitForTimeout(200);
+  await p.fill('#pf_sname', '김판매'); await p.locator('#pf_sname').press('Tab'); await p.waitForTimeout(300);
+  console.log('SELLER', await p.evaluate(() => [$('#pf_sphone').value, $('#pf_saddr').value, $('#pf_sacc').value, $('#pf_who').value].join(' / ')));
+  await p.selectOption('#pf_deal', '직거래'); await p.$eval('#pf_save', (b) => b.click()); await p.waitForTimeout(500);
+  console.log('SAVED', await p.evaluate(() => JSON.stringify({ pays: __saved.pays, pm: __saved.payMethod, acc: __saved.account, deal: __saved.dealType, seller: __saved.seller, items: __saved.items, tot: __saved.expectedTotal, _p: __saved._pays })));
+  console.log('DEAL', await p.evaluate(() => purDealHtml(__saved).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')));
+  await p.evaluate(() => document.querySelector('.verbar') && document.querySelector('.verbar').remove()); console.log('SHEET', JSON.stringify((await p.evaluate(() => (document.querySelector('#sheet.on') || {}).innerText || '-')).slice(0, 300))); console.log(FILE.split('/').pop(), 'body text:', JSON.stringify((await p.evaluate(() => document.body.innerText)).slice(0, 500)));
+  console.log(errs.filter((e) => !/net::ERR|Failed to load resource|googleapis|identitytoolkit/.test(e)).slice(0, 6).join('\n')); await br.close(); })();

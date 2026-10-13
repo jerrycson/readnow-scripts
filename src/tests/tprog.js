@@ -1,0 +1,31 @@
+const { chromium } = require('/home/claude/.npm-global/lib/node_modules/playwright'); const fs = require('fs');
+const FILE = process.argv[2]; const FB = __dirname + '/fb/package/'; const R = __dirname + '/repo/';
+(async () => { const br = await chromium.launch(); const p = await br.newPage({ viewport: { width: 1440, height: 900 } }); const errs = [];
+  p.on('pageerror', (e) => errs.push('PAGEERR ' + e.message)); p.on('console', (m) => { if (m.type() === 'error') errs.push('CONSOLE ' + m.text().slice(0, 200)); });
+  await p.route('**/*', (rt) => { const u = rt.request().url();
+    if (u.startsWith('https://www.gstatic.com/firebasejs/')) { const f = FB + u.split('/').pop(); let body = fs.readFileSync(f, 'utf8'); if (/storage-compat/.test(u)) body += `;(function(){var _i=firebase.initializeApp;firebase.initializeApp=function(){var r=_i.apply(this,arguments);var _a=firebase.auth;var o=_a();var fake={email:'jerrycson@gmail.com',uid:'u1',displayName:'테스트',getIdToken:async()=>'x'};o.onAuthStateChanged=function(cb){setTimeout(function(){cb(fake)},10);return function(){}};Object.defineProperty(o,'currentUser',{get:function(){return fake}});try{firebase.auth=function(){return o};Object.assign(firebase.auth,_a)}catch(e){console.error('patch fail',e)}return r}})();`; return rt.fulfill({ body, contentType: 'text/javascript' }); }
+    if (u.startsWith('http://t.test/app/sw.js')) return rt.fulfill({ body: fs.readFileSync('/home/claude/w/sw.js'), contentType: 'text/javascript' }); if (u.startsWith('http://t.test/app/')) return rt.fulfill({ body: fs.readFileSync(FILE), contentType: 'text/html; charset=utf-8' });
+    if (u.startsWith('http://t.test/')) { const f = R + u.replace('http://t.test/', '').split('?')[0]; return fs.existsSync(f) ? rt.fulfill({ body: fs.readFileSync(f), contentType: 'text/javascript' }) : rt.fulfill({ status: 404, body: '' }); }
+    return rt.abort(); });
+  await p.goto('http://t.test/app/' + (process.argv[3] || '')); await p.waitForTimeout(7000);
+  const P0 = p.evaluate(async () => { const wait = (ms) => new Promise((r) => setTimeout(r, ms)); await wait(1500); const OUT = {};
+    const T0 = Date.now(); const ago = (m) => new Date(T0 - m * 60000).toISOString();
+    const srv = {}, acts = []; for (let i = 0; i < 8; i++) { const k = 'aladin_U' + i; const st = i < 5 ? 'done' : i < 7 ? 'manual' : 'blocked'; srv[k] = { title: '책' + i, approvalState: st, execNote: st === 'blocked' ? '결정 뒤 다른 곳에서 가격이 바뀜' : null, approval: { batchId: 'bX', decision: 'batch', at: ago(120), price: 9000 - i * 100, expectPrice: 10000, by: 'j' } };
+      if (i < 5) acts.push({ key: k, title: '책' + i, usedCode: 'U' + i, batchId: 'bX', from: 10000, to: 9000 - i * 100, at: ago(100 - i * 10), confirmedAt: ago(120), result: String(9000 - i * 100), kst: { hour: 22, dow: 3 }, verify: i < 3 ? { state: 'ok', n: 3, lagLoSec: 300 + i * 60, lagHiSec: 600 + i * 60, seenAt: ago(90 - i * 10) } : i === 3 ? { state: 'wait', n: 1, old: 1, next: ago(-5) } : { state: 'notfound', n: 21, notFound: 21, doneAt: ago(1) } }); }
+    const snapOf = (pairs) => ({ docs: pairs.map(([id, v]) => ({ id, data: () => v })), forEach: (fn) => pairs.forEach(([id, v]) => fn({ id, data: () => v })), size: pairs.length });
+    db.collection = (name) => ({ get: async () => snapOf([]), doc: (id) => ({ id, get: async () => ({ exists: true, data: () => (name === 'prd_system' ? { watchVer: '0.7.0', watchTab: 't', watchPc: 'HOME', watchBeat: new Date().toISOString() } : {}) }), set: async () => {} }),
+      where: (f, op, v) => ({ get: async () => snapOf(name === 'prd_price_actions' ? acts.map((a, i) => ['a' + i, a]) : []), onSnapshot: (cb) => { cb(snapOf(f === 'batchId' ? acts.map((a, i) => ['a' + i, a]) : f === 'approval.batchId' ? Object.entries(srv) : [])); return () => {}; } }), add: async () => ({}) });
+    S.prCfg = { watchVer: '0.7.0', watchTab: 't', watchPc: 'HOME', watchBeat: new Date().toISOString() };
+    const mk = (u, price) => ({ l: { usedCode: u, title: '책' + u.slice(1), price, listingId: 'L' + u, status: '판매중', sku: 'BLK', grade: '상' }, target: price - 1000, reasons: [], page1: [{ r: 1, n: 'A', g: '상', p: 8000, s: 0, lid: 'x', c: 'green' }, { r: 2, n: 'B', g: '최상', p: 9500, s: 0, lid: 'y', c: 'green' }] });
+    S.batchRes = Array.from({ length: 8 }, (_, i) => mk('U' + i, 10000)); S.batchId = 'bX'; S.batchSt = { picks: {}, decided: {}, start: {} }; S.batchMeta = { execLog: [{ at: ago(121), by: 'j', n: 8, N: 12, dropped: [{ why: '판매중이 아님', n: 4 }] }], condLog: [{ at: ago(130), by: 'j', changed: ['기준 대비 %: 0 → -5'] }] }; S.batchT = 'done'; S.prBatches = [{ id: 'bX', name: 'G' }]; S.batchSrvId = null; S.batchActId = null;
+    openBatch(JSON.parse(JSON.stringify({ ...BATCH_DEF, name: 'G' }))); await wait(2600); const sh = document.querySelector('#sheet');
+    document.querySelector('.verbar') && document.querySelector('.verbar').remove(); sh.querySelector('#b_res').scrollIntoView();
+    OUT.prog = (sh.querySelector('.bprog') || {}).innerText; OUT.log = (sh.querySelector('.blogl') || {}).innerText; OUT.chips = [...sh.querySelectorAll('#b_res .card.pq')].map((c) => (c.innerText.match(/공개 [^\n]{0,30}|반영 안 됨[^\n]{0,20}/) || [''])[0]).join(' | ');
+    window.__shot = 1; await new Promise((r) => { window.__go = r; });
+    openPriceMonitor(); await wait(800); OUT.mon = sh.innerText.slice(0, 700); window.__shot = 2; await new Promise((r) => { window.__go = r; });
+    return JSON.stringify(OUT, null, 1); });
+  await p.waitForFunction(() => window.__shot === 1, null, { timeout: 30000 }); await p.screenshot({ path: 'prog.png' }); await p.evaluate(() => window.__go());
+  await p.waitForFunction(() => window.__shot === 2, null, { timeout: 30000 }); await p.screenshot({ path: 'mon.png', fullPage: false }); await p.evaluate(() => window.__go());
+  console.log('PROG', await P0);
+  await p.evaluate(() => document.querySelector('.verbar') && document.querySelector('.verbar').remove()); console.log('SHEET', JSON.stringify((await p.evaluate(() => (document.querySelector('#sheet.on') || {}).innerText || '-')).slice(0, 300))); console.log(FILE.split('/').pop(), 'body text:', JSON.stringify((await p.evaluate(() => document.body.innerText)).slice(0, 500)));
+  console.log(errs.filter((e) => !/net::ERR|Failed to load resource|googleapis|identitytoolkit/.test(e)).slice(0, 6).join('\n')); await br.close(); })();

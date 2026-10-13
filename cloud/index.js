@@ -31,11 +31,14 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.12.4'; // (0.12.4) 💳 Google Cloud 실제 비용 — 결제 계정 예산 알림(Pub/Sub) → /billing → app_settings/costs_bill_YYYY-MM (setup-billing.sh 한 번) // (0.12.3 전체 점검) 회차가 10분 넘게 멈추면 스스로 다시 켬 · ext_run 날짜 칸 15일 지난 것 지움 // (0.12.2) 🌐 외부 정보 출처별 오늘 성공·실패 수(ext_run.res)·마지막 실패(lastErr) 기록 · GitHub에 올리면 저절로 배포(.github/workflows/deploy-cloud.yml) // (0.12.1) ☁ 클라우드 전체 스위치(cloud_jobs.all === false면 모든 일을 멈춤 — 각 일의 스위치는 그대로 기억) // (0.12.0) 클라우드가 하는 일마다 켜기·끄기(app_settings/cloud_jobs — 웹앱 설정·수집기 칸 편집기의 '☁ 클라우드가 하는 일') · 꺼 둔 일은 손대지 않음 · 🌐 외부 정보 이어 받기는 기본 끔(app_settings/ext.cloud === true일 때만) // (0.11.0) 안전 점검: 작은 오류 번호로 서버가 꺼지던 것 · 비밀을 환경 변수에서 지움 · 알라딘 로그인 실패 상태를 Firestore에 남겨(다시 켜져도) 아이디·비밀번호 문제면 6시간 쉼 · 공용 파일 마지막으로 받은 판으로 계속(문법 검사) · 주문 문서 400개씩 · 열쇠를 같은 시간으로 비교 · 기억 덜어 내기 · 외부 정보 기준을 공용 파일에서 · (0.10.0) 🌐 외부 정보 — PC가 꺼져 있을 때 클라우드가 이어 받음(10분마다 최대 90초)
+const VER = '0.12.5'; // (0.12.5 점검) 공용 파일은 올린 커밋(CODE_SHA)의 것만 · 발송준비시작 '끝남'은 확실할 때만 · 처음 본 때 덮지 않음 · 대기 목록 듣기 재사용·유의 사항 24시간 기억(읽기 줄임) · 끊긴 브라우저 정리 // (0.12.4) 💳 Google Cloud 실제 비용 — 결제 계정 예산 알림(Pub/Sub) → /billing → app_settings/costs_bill_YYYY-MM (setup-billing.sh 한 번) // (0.12.3 전체 점검) 회차가 10분 넘게 멈추면 스스로 다시 켬 · ext_run 날짜 칸 15일 지난 것 지움 // (0.12.2) 🌐 외부 정보 출처별 오늘 성공·실패 수(ext_run.res)·마지막 실패(lastErr) 기록 · GitHub에 올리면 저절로 배포(.github/workflows/deploy-cloud.yml) // (0.12.1) ☁ 클라우드 전체 스위치(cloud_jobs.all === false면 모든 일을 멈춤 — 각 일의 스위치는 그대로 기억) // (0.12.0) 클라우드가 하는 일마다 켜기·끄기(app_settings/cloud_jobs — 웹앱 설정·수집기 칸 편집기의 '☁ 클라우드가 하는 일') · 꺼 둔 일은 손대지 않음 · 🌐 외부 정보 이어 받기는 기본 끔(app_settings/ext.cloud === true일 때만) // (0.11.0) 안전 점검: 작은 오류 번호로 서버가 꺼지던 것 · 비밀을 환경 변수에서 지움 · 알라딘 로그인 실패 상태를 Firestore에 남겨(다시 켜져도) 아이디·비밀번호 문제면 6시간 쉼 · 공용 파일 마지막으로 받은 판으로 계속(문법 검사) · 주문 문서 400개씩 · 열쇠를 같은 시간으로 비교 · 기억 덜어 내기 · 외부 정보 기준을 공용 파일에서 · (0.10.0) 🌐 외부 정보 — PC가 꺼져 있을 때 클라우드가 이어 받음(10분마다 최대 90초)
 initializeApp({ projectId: process.env.FB_PROJECT || 'readnow-3a385' });
 const db = getFirestore();
 const FV = FieldValue;
-const RAW = process.env.CORE_BASE || 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/';
+/* (0.12.5 점검 F5) 공용 파일은 '이 판을 올린 바로 그 커밋'의 것만 — 자동 배포가 CODE_SHA(커밋 번호)를 넣어 줌. 예전엔 GitHub main의 최신 파일을 30분마다 받아 바로 돌려서, 검사 없이 올린 파일이 곧장 클라우드에서 돌 수 있었음
+ *  공용 파일이 바뀌면 자동 배포가 클라우드를 다시 올림(.github/workflows/deploy-cloud.yml의 paths) · CODE_SHA가 없으면(손으로 올린 판) 예전처럼 main */
+const CODE_SHA = /^[0-9a-f]{40}$/.test(process.env.CODE_SHA || '') ? process.env.CODE_SHA : null;
+const RAW = process.env.CORE_BASE || `https://raw.githubusercontent.com/jerrycson/readnow-scripts/${CODE_SHA || 'refs/heads/main'}/`;
 const CORES_OPTIONAL = new Set(['readnow-register-core.js']); // 없어도 주문 읽기 등은 그대로 (등록 엔진 번호 맞춤만 글자 비교로)
 const CORES = ['readnow-shipping-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-sellers-core.js', 'readnow-core.js', 'readnow-register-core.js']; // (0.9.3) 등록 엔진 공용 파일: 상품 번호(ISBN·바코드) 맞춤 한 곳 // 출고·상품 파서 + 판매자 분류(웹앱 블록 색과 같은 기준)
 const ALADIN_ID = process.env.ALADIN_ID || '', ALADIN_PW = process.env.ALADIN_PW || '', TICK_KEY = process.env.TICK_KEY || '';
@@ -104,7 +107,7 @@ async function sysSweep() { const { M, R } = await regNow(); const now = Date.no
   return { plan: plan.length, ev: ev.length }; }
 
 /* ── 브라우저 (하나를 계속 씀, 일은 한 번에 하나씩) ── */
-let browser = null, page = null, pageAt = 0; let chain = Promise.resolve(); let tickBusy = false; let tickAt = 0; // 1분 예약이 겹치면(앞 회차가 길면) 건너뜀 — 쌓이지 않게
+let browser = null, page = null, pageAt = 0, browserAt = 0; let chain = Promise.resolve(); let tickBusy = false; let tickAt = 0; // 1분 예약이 겹치면(앞 회차가 길면) 건너뜀 — 쌓이지 않게
 const serial = (fn) => { const p = chain.then(fn, fn); chain = p.catch(() => {}); return p; };
 /* (0.9.1) 알라딘 화면 안의 읽기에 시간 제한 — 예전엔 화면 안 fetch에 제한이 없어, 알라딘(또는 브라우저)이 응답 하나를 붙잡으면 3분 동안 멈췄다가
  *  'Runtime.callFunctionOn timed out' 오류로 회차가 통째로 실패 → 맡긴 일(발송준비시작 등)·주문 읽기가 계속 밀렸음.
@@ -124,7 +127,8 @@ async function dropPage(why) { const old = page; page = null; injectedSrc = null
   if (old) { const closed = await Promise.race([old.close().then(() => true, () => false), sleep(5000).then(() => false)]); if (!closed && browser) { log('브라우저가 답이 없음 — 다시 띄움 (로그인은 저절로 다시)'); try { const pr = browser.process(); if (pr) pr.kill('SIGKILL'); } catch (e) {} try { await Promise.race([browser.close(), sleep(3000)]); } catch (e) {} browser = null; } } }
 async function getPage() {
   if (pageBroken) await dropPage('응답 없음 뒤');
-  if (!browser || !browser.connected) { browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || '/usr/bin/chromium', headless: true, protocolTimeout: 240000, args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--lang=ko-KR'] }); page = null; }
+  if (browser && (!browser.connected || (browserAt && Date.now() - browserAt > 24 * 3600e3 && !page))) { try { const pr = browser.process(); if (pr) pr.kill('SIGKILL'); } catch (e) {} browser = null; } /* (0.12.5 점검 F10) 끊긴 Chromium을 남기지 않음(메모리 2GB 안) · 하루 지난 브라우저는 새로 */
+  if (!browser || !browser.connected) { browserAt = Date.now(); browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH || '/usr/bin/chromium', headless: true, protocolTimeout: 240000, args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--lang=ko-KR', '--disk-cache-size=33554432'] }); page = null; }
   if (page && !page.isClosed() && Date.now() - pageAt > 6 * 3600e3) { try { await page.close(); } catch (e) {} page = null; log('화면 새로 만듦 (6시간마다 — 메모리 정리, 로그인은 유지)'); } // 오래 켜 둔 화면은 메모리가 쌓임
   if (!page || page.isClosed()) { pageAt = Date.now(); page = guardPage(await browser.newPage()); await page.evaluateOnNewDocument(FETCH_GUARD); await page.setBypassCSP(true); /* 기준 파일을 넣으려고 (수집기도 Tampermonkey로 같은 일) */ await page.setUserAgent(UA); await page.setExtraHTTPHeaders({ 'Accept-Language': 'ko-KR,ko;q=0.9' }); page.setDefaultTimeout(60000); page.setDefaultNavigationTimeout(45000); }
   if (!/aladin\.co\.kr/.test(page.url())) { await page.goto(AL + '/', { waitUntil: 'domcontentloaded' }); injectedSrc = null; }
@@ -170,19 +174,21 @@ async function login(p, force) {
    그 뒤 같은 회차에서 상품마다 '보강'(사진·등급·등록일·유의사항·지금 시장 첫 페이지 + 판매자 분류)을 하나씩 채워 넣음 — 채워질 때마다 화면도 그 상품만 채워짐 */
 const CONFIRM_URL = '/scm/worder_preparatory_complete.aspx';
 let lastConfirm = [], lastDelivAt = 0, lastConfirmAt = null; const skipUntil = new Map(), failN = new Map();
+async function firstSeenHave(orders, field) { const out = new Set(); if (!orders.length) return out; try { for (let i = 0; i < orders.length; i += 100) { const sn = await db.getAll(...orders.slice(i, i + 100).map((o) => C('shp_orders').doc(o.orderNo))); sn.forEach((d) => { if (d.exists && d.get(field)) out.add(d.id); }); } } catch (e) { /* 확인을 못 하면 예전처럼 적음 */ } return out; }
 async function confirmRead(p) {
   const R = await p.evaluate(async (u) => { const r = await fetch(u, { credentials: 'include' }); const t = await r.text(); if (/\/login\/|wlogin/i.test(r.url)) return { login: false };
     const d = new DOMParser().parseFromString(t, 'text/html'); if (d.querySelector('input[type="password"]') && !/샵매니저/.test(d.title || '')) return { login: false };
     return { login: true, rc: window.ReadnowShipping.parseDeliveryPage(d) }; }, CONFIRM_URL);
   if (!R.login) throw Object.assign(new Error('로그인 풀림'), { relogin: true });
-  const rc = R.rc; const at = nowIso(); lastConfirmAt = at; lastConfirm = rc.orders;
+  const rc = R.rc; if (!(rc.orders || []).length && !Object.keys(rc.tabCounts || {}).length) throw new Error('주문확인요청 화면을 제대로 못 읽음(탭 숫자 없음) — 아무것도 쓰지 않음'); /* (0.12.5 점검 F9) 빈·이상한 화면이 좋은 기록을 덮지 않게 */ const at = nowIso(); lastConfirmAt = at; lastConfirm = rc.orders;
   const csig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)])); const ref = C('shp_state').doc('confirm');
   // (0.9.0) 같은 목록이면 Firestore를 다시 읽지 않음 (15초마다 읽으므로) — 목록 문서는 바뀐 때만 읽고 씀
   let cc = confirmDoc; if (!cc || cc.sig !== csig || Date.now() - confirmDocAt > 5 * 60e3) { cc = (await ref.get()).data() || null; confirmDocAt = Date.now(); } /* 5분마다는 서버와 맞춤 (PC 수집기가 쓴 경우) */
   try { await enrichMigrate(cc); } catch (e) { log('보강 칸 옮기기 실패 — 다음에 다시 (예전 칸은 그대로 둠)', e.message); }
   const changed = !cc || cc.sig !== csig; const enrich = await enrichOf(rc.orders);
   if (changed) { const bc = db.batch(); bc.set(ref, { at, orders: rc.orders, tabCounts: rc.tabCounts, sig: csig, pc: 'cloud', ...(cc && cc.enrich ? { enrich: cc.enrich } : {}), ...W() }); /* 옮기기 전이면 예전 칸을 지우지 않음 */ // (0.9.0) 보강(enrich)은 문서마다 따로(shp_enrich) — 주문이 많아도 목록 문서가 1MB를 넘지 않게
-    const oOps = rc.orders.map((o) => [C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, confirmSeenAt: at, ...(cc && (cc.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { confirmFirstSeenAt: at }), buyer: o.buyer, orderedAt: o.orderedAt, items: o.items, ...W() }]);
+    const seen1 = await firstSeenHave(rc.orders.filter((o) => !(cc && (cc.orders || []).some((x) => x.orderNo === o.orderNo))), 'confirmFirstSeenAt'); /* (0.12.5 점검 F9) 처음 본 때는 주문 문서에 없을 때만 — 예전엔 목록이 한 번 비면 다시 나타날 때 늦은 시각으로 덮였음 */
+    const oOps = rc.orders.map((o) => [C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, confirmSeenAt: at, ...((cc && (cc.orders || []).some((x) => x.orderNo === o.orderNo)) || seen1.has(o.orderNo) ? {} : { confirmFirstSeenAt: at }), buyer: o.buyer, orderedAt: o.orderedAt, items: o.items, ...W() }]);
     await batchOps(oOps); await bc.commit(); /* (0.11.0) 주문 문서는 400개씩 따로 먼저 — 한 묶음 500개 한도(주문이 많은 날 목록이 멈추던 것) · 목록(sig)은 주문을 다 쓴 뒤에(주문 쓰기가 실패하면 다음 회차에 다시) */ confirmDoc = { sig: csig, tabCounts: rc.tabCounts, orders: rc.orders }; } else confirmDoc = cc;
   return { n: rc.orders.length, changed, enrich, tabCounts: rc.tabCounts, prevTab: cc && cc.tabCounts }; }
 /* (0.9.0) 상품 보강은 상품마다 문서 하나(shp_enrich/{매물번호}) — 예전엔 목록 문서 안 enrich 칸에 3일치를 모아 둬, 주문이 많아지면 문서가 1MB를 넘어 목록 저장이 통째로 실패할 수 있었음
@@ -296,23 +302,27 @@ async function shipRead(p, until) {
   const changed = !cur || cur.sig !== sig; const b = db.batch(); let w = false; let oOps2 = null;
   if (changed) { w = true; b.set(C('shp_state').doc('current'), { at, tabCounts: r.tabCounts, orders: r.orders, sig, pc: 'cloud', excel: null, ...W() }); // 엑셀은 따로(shp_state/excel) — 목록 문서를 가볍게
     b.set(C('shp_snapshots').doc(at.replace(/[:.]/g, '-')), { at, tabCounts: r.tabCounts, orders: r.orders, by: 'cloud', ...W() });
-    oOps2 = r.orders.map((o) => [C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, stage: '발송 요청', lastSeenAt: at, ...(cur && (cur.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { firstSeenAt: at }), buyer: o.buyer, recipient: o.recipient, orderedAt: o.orderedAt, items: o.items, carrier: o.carrier, ...W() }]); }
+    const seen2 = await firstSeenHave(r.orders.filter((o) => !(cur && (cur.orders || []).some((x) => x.orderNo === o.orderNo))), 'firstSeenAt');
+    oOps2 = r.orders.map((o) => [C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, stage: '발송 요청', lastSeenAt: at, ...((cur && (cur.orders || []).some((x) => x.orderNo === o.orderNo)) || seen2.has(o.orderNo) ? {} : { firstSeenAt: at }), buyer: o.buyer, recipient: o.recipient, orderedAt: o.orderedAt, items: o.items, carrier: o.carrier, ...W() }]); }
   else if (cur && !sameMap(cur.tabCounts, r.tabCounts)) { w = true; b.set(C('shp_state').doc('current'), { at, tabCounts: r.tabCounts, pc: 'cloud', ...W() }, { merge: true }); }
   if (excel) { const xr = C('shp_state').doc('excel'); const xo = (await xr.get()).data(); const rows = excel.rows.map((v) => ({ v })); if (!xo || JSON.stringify(xo.rows) !== JSON.stringify(rows)) { w = true; b.set(xr, { at, header: excel.header, rows, pc: 'cloud', ...W() }); b.set(C('shp_excel').doc(at.replace(/[:.]/g, '-')), { at, header: excel.header, rows, by: 'cloud', ...W() }); /* (0.9.6) 바뀐 판마다 따로 보관 — 지금 문서는 덮어써도 옛 판이 남게 */ } }
   if (oOps2) await batchOps(oOps2); if (w) await b.commit(); /* (0.11.0) 주문 문서는 따로 400개씩 먼저 — 목록(sig)은 그 뒤에 */
   // 우리 매물 유의 사항·사진 (24시간에 한 번 — PC 수집기와 같은 기록, 바뀐 판만 쌓음)
   let nInfo = 0; const items = r.orders.flatMap((o) => o.items).filter((i) => i.listingId);
-  const prevs = items.length ? await db.getAll(...items.map((it) => C('prd_used_info').doc(String(it.listingId)))) : []; // 한 번에 읽음 (예전: 한 권씩)
-  for (let ii = 0; ii < items.length; ii++) { const it = items[ii]; if (until && Date.now() > until) break; // 시간 상자: 한 회차가 1분을 넘지 않게 — 남은 것은 다음 회차
-    const ref = C('prd_used_info').doc(String(it.listingId)); let prev = prevs[ii] && prevs[ii].exists ? prevs[ii].data() : undefined; if (looksBlanked(prev)) prev = await repairUsedInfo(it.listingId, prev); const mid = it.grade === '중' && !(prev && prev.note) && (uiNext.get(String(it.listingId)) || 0) <= Date.now(); if (!mid && prev && prev.checkedAt && Date.now() - Date.parse(prev.checkedAt) < 864e5) continue;
-    try { const nx = await refreshUsedInfo(p, it.listingId, prev, at, it.grade || null); if (it.grade === '중') midAfter(it.listingId, it.grade, nx && nx.note); if (nx && (!prev || nx.versions !== prev.versions)) nInfo++; void ref;
+  /* (0.12.5 점검 F8) 24시간 안에 확인한 상품(이 클라우드가 기억)은 다시 읽지 않음 — 예전엔 4~5분마다 발송 요청의 모든 상품 문서를 읽었음 · '중' 상품(유의 사항 기다림)은 그대로 */
+  const needI = items.filter((it) => { const c = uiSeen.get(String(it.listingId)); return it.grade === '중' || !c || Date.now() - c > 864e5; });
+  const prevA = needI.length ? await db.getAll(...needI.map((it) => C('prd_used_info').doc(String(it.listingId)))) : []; const prevM = new Map(needI.map((it, k) => [it, prevA[k]]));
+  for (let ii = 0; ii < items.length; ii++) { const it = items[ii]; if (until && Date.now() > until) break; if (!prevM.has(it)) continue; const prevs = { [ii]: prevM.get(it) }; // 시간 상자: 한 회차가 1분을 넘지 않게 — 남은 것은 다음 회차
+    const ref = C('prd_used_info').doc(String(it.listingId)); let prev = prevs[ii] && prevs[ii].exists ? prevs[ii].data() : undefined; if (looksBlanked(prev)) prev = await repairUsedInfo(it.listingId, prev); const mid = it.grade === '중' && !(prev && prev.note) && (uiNext.get(String(it.listingId)) || 0) <= Date.now(); if (prev && prev.checkedAt) uiSeen.set(String(it.listingId), Date.parse(prev.checkedAt)); if (!mid && prev && prev.checkedAt && Date.now() - Date.parse(prev.checkedAt) < 864e5) continue;
+    try { const nx = await refreshUsedInfo(p, it.listingId, prev, at, it.grade || null); uiSeen.set(String(it.listingId), Date.now()); if (it.grade === '중') midAfter(it.listingId, it.grade, nx && nx.note); if (nx && (!prev || nx.versions !== prev.versions)) nInfo++; void ref;
       await sleep(600); } catch (e) { log('유의 사항 읽기 실패', it.listingId, e.message); } }
   lastDelivAt = Date.now();
   return { deliv: r.orders.length, items: items.length, changed, nInfo, exErr: R.exErr || null }; }
 
 /* ── ③ 웹앱이 맡긴 일 (read · startDelivery · market = 그 주문 책의 시장 다시 읽기) ── */
 async function runCmds(p, deadline) { deadline = deadline || Date.now() + 150000; // (0.9.1) 이 시각이 지나면 새 일을 맡지 않음(남은 일은 대기 그대로 → 다음 회차) — 회차가 Cloud Run 5분 한도를 넘지 않게
-  const qs = await C('shp_cmds').where('status', '==', 'queued').get(); let n = 0, needRead = false; const force = new Set();
+  /* (0.12.5 점검 F8) 대기 목록은 듣고 있는 목록(watchCmds)을 그대로 씀 — 예전엔 1분·15초마다 다시 읽어, PC 몫으로 남은 일이 많으면 읽기가 하루 수만 번 늘었음 · 듣기가 끊겼으면 예전처럼 읽음 */
+  const qs = cmdUnsub && cmdDocs ? { docs: cmdDocs.slice(), size: cmdDocs.length } : await C('shp_cmds').where('status', '==', 'queued').get(); let n = 0, needRead = false; const force = new Set();
   let buy = false; const { M, R } = qs.size ? await regNow() : { M: null, R: null };
   for (const d of qs.docs) { if (Date.now() > deadline) { log('맡긴 일: 이번 회차 시간을 다 씀 — 남은 일은 다음 회차에'); break; } p = curPage(p); const x0 = d.data(); if (!M.canHandle(R, x0.type, 'cloud') || String(x0.cloudSkip || '').includes(` ${VER}가`)) continue; /* (0.6.0) 노선표에서 클라우드가 맡는 종류만 (예전: 이 자리의 목록) */ if (x0.type === 'usedInfo' && x0.cloudTried) continue; /* 클라우드가 이미 못 읽은 것 = PC 몫 */ let v = null;
     await db.runTransaction(async (tx) => { const sn = await tx.get(d.ref); const x = sn.data(); if (!x || x.status !== 'queued') return; tx.update(d.ref, { status: 'running', claim: { pc: 'cloud', at: nowIso() }, uploadedAt: FV.serverTimestamp() }); v = x; });
@@ -336,9 +346,9 @@ async function runCmds(p, deadline) { deadline = deadline || Date.now() + 150000
       // (0.9.1) 답이 끊긴 주문이 있으면 알라딘이 마저 처리할 틈(5초)을 준 뒤 확인 · 지금 화면으로 · 로그인 화면이면 다시 로그인 뒤 한 번 더
       if (Object.values(results).some((r) => r.noReply)) await sleep(5000);
       if (pageBroken) { try { p = await getPage(); } catch (e) {} } p = curPage(p);
-      const readLeft = () => p.evaluate(async (u) => { const r = await fetch(u, { credentials: 'include' }); if (/\/login\/|wlogin/i.test(r.url)) return { ok: false, login: false }; const d = new DOMParser().parseFromString(await r.text(), 'text/html'); const x = window.ReadnowShipping.parseDeliveryPage(d); return { ok: !!(x && x.tabCounts && Object.keys(x.tabCounts).length), left: (x.orders || []).map((o) => o.orderNo) }; }, CONFIRM_URL);
+      const readLeft = () => p.evaluate(async (u) => { const r = await fetch(u, { credentials: 'include' }); if (/\/login\/|wlogin/i.test(r.url)) return { ok: false, login: false }; const d = new DOMParser().parseFromString(await r.text(), 'text/html'); const x = window.ReadnowShipping.parseDeliveryPage(d); const left = (x.orders || []).map((o) => o.orderNo); const tc = (x && x.tabCounts) || {}; /* (0.12.5 점검 F2) '끝남'은 확실할 때만: 주문확인요청 목록을 다 본 경우(목록 주문 수 = 탭 숫자) 또는 그 주문이 발송 요청 목록에 실제로 보일 때 */ let deliv = null; try { const r2 = await fetch('/scm/worder_delivery.aspx?orderstep=4', { credentials: 'include' }); if (!/\/login\/|wlogin/i.test(r2.url)) { const d2 = new DOMParser().parseFromString(await r2.text(), 'text/html'); const y = window.ReadnowShipping.parseDeliveryPage(d2); deliv = (y.orders || []).map((o) => o.orderNo); } } catch (e) {} return { ok: !!Object.keys(tc).length, left, full: tc['주문확인요청'] != null && left.length >= tc['주문확인요청'], deliv }; }, CONFIRM_URL);
       try { let chk = null; for (let at = 0; at < 2; at++) { try { chk = await readLeft(); } catch (e) { if (at === 0 && (isClosed(e) || e.pageTimeout || pageBroken)) { p = await getPage(); continue; } throw e; } if (chk.login === false && at === 0) { await login(p); continue; } break; }
-        for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = !chk || !chk.ok ? 'unknown' : chk.left.includes(ono) ? 'fail' : 'done'; } catch (e) { for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = 'unknown'; }
+        for (const ono of Object.keys(results)) if (results[ono].state === 'sent') { results[ono].state = !chk || !chk.ok ? 'unknown' : chk.left.includes(ono) ? 'fail' : (chk.deliv && chk.deliv.includes(ono)) || chk.full ? 'done' : 'unknown'; results[ono].proof = !chk || !chk.ok ? null : chk.left.includes(ono) ? 'stillConfirm' : chk.deliv && chk.deliv.includes(ono) ? 'inDelivery' : chk.full ? 'confirmFullAbsent' : 'notFound'; } } catch (e) { for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = 'unknown'; }
       for (const [ono, r] of Object.entries(results)) if (!r.gate) await X.finish(db, { kind: 'startDelivery', key: `${d.id}:${ono}` }, r.state === 'done' ? 'done' : r.state === 'fail' ? 'failed' : 'unknown', { msg: r.msg || null, result: { http: r.http || null } }).catch(() => {});
       { const notSent = Object.values(results).filter((r) => r.notSent); // (0.9.1) 보내지 못한 주문(로그인 실패 등)·시간이 모자라 시작 못 한 주문이 있으면 '끝남'으로 닫지 않고 대기로 → 다음 회차(또는 PC)가 이어 함 (끝난 주문은 실행 문이 다시 보내지 않음)
         if (notSent.length || leftOver) { const nErr = (v.cloudErrN || 0) + (notSent.length ? 1 : 0); await d.ref.set({ status: 'queued', claim: null, results, cloudErr: notSent.length ? notSent[0].msg : '시간이 모자라 남은 주문은 다음 회차에', cloudErrN: nErr, cloudErrAt: nowIso(), ...(nErr >= 3 ? { cloudSkip: `클라우드 ${VER}가 3번 보내지 못함 — PC 수집기 몫` } : {}), uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
@@ -360,7 +370,7 @@ async function runCmds(p, deadline) { deadline = deadline || Date.now() + 150000
     else if (v.type === 'read') { await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
     else { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 처리하는 길이 없는 종류 — 노선표 확인`, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('맡긴 일: 처리 길 없음', v.type); }
     } catch (e) { const nErr = (v.cloudErrN || 0) + 1; const msg = String(e.message || e).slice(0, 300);
-      await d.ref.set({ status: 'queued', claim: null, cloudErr: msg, cloudErrN: nErr, cloudErrAt: nowIso(), ...(nErr >= 3 && !e.relogin ? { cloudSkip: `클라우드 ${VER}가 3번 실패 — PC 수집기 몫 (마지막: ${msg.slice(0, 80)})` } : {}), uploadedAt: FV.serverTimestamp() }, { merge: true }).catch(() => {});
+      await d.ref.set({ status: 'queued', claim: null, cloudErr: msg, cloudErrN: nErr, cloudErrAt: nowIso(), ...(nErr >= 3 && (!e.relogin || nErr >= 6) ? { cloudSkip: `클라우드 ${VER}가 3번 실패 — PC 수집기 몫 (마지막: ${msg.slice(0, 80)})` } : {}), uploadedAt: FV.serverTimestamp() }, { merge: true }).catch(() => {});
       log('맡긴 일 실패 — 대기로 되돌림', v.type, d.id, nErr + '번째', msg); if (e.relogin) throw e; if (e.pageTimeout || pageBroken || isClosed(e)) { try { p = await getPage(); } catch (e2) {} } } } // 노선표엔 클라우드 몫인데 이 판에 처리 길이 없으면 '끝남'으로 지우지 않고 대기로 되돌림
   return { n, needRead, force, buy, p };
 }
@@ -435,7 +445,8 @@ async function beat(x) { const at = nowIso(); await C('app_settings').doc('cloud
 // 한 회차(1분마다): ① 주문확인요청 → 맡긴 일 → (필요할 때만) ② 발송 요청 → 상품 보강
 /* (0.9.0) 맡긴 일 듣기: 대기 중인 일이 생기면 바로 깨움 (웹앱이 단추를 누르면 15초를 기다리지 않음) */
 let kickFlag = false, cmdUnsub = null; const KICK = () => { kickFlag = true; };
-function watchCmds() { if (cmdUnsub) return; try { cmdUnsub = C('shp_cmds').where('status', '==', 'queued').onSnapshot((qs) => { if (!qs.empty) kickFlag = true; }, (e) => { cmdUnsub = null; log('맡긴 일 듣기 끊김 — 다음 회차에 다시', e.message); }); } catch (e) { cmdUnsub = null; } }
+let cmdDocs = null, cmdDocsAt = 0; const uiSeen = new Map(); setInterval(() => { const cut = Date.now() - 3 * 864e5; for (const [k, v] of uiSeen) if (v < cut) uiSeen.delete(k); }, 6 * 3600e3).unref();
+function watchCmds() { if (cmdUnsub) return; try { cmdUnsub = C('shp_cmds').where('status', '==', 'queued').onSnapshot((qs) => { cmdDocs = qs.docs; cmdDocsAt = Date.now(); if (!qs.empty) kickFlag = true; }, (e) => { cmdUnsub = null; cmdDocs = null; log('맡긴 일 듣기 끊김 — 다음 회차에 다시', e.message); }); } catch (e) { cmdUnsub = null; } }
 /* 빠른 고리를 언제 돌릴지 (app_settings/main.shipFast · 웹앱 설정 ⑯): 'biz'(기본) = 평일 8~19시 · 'always' = 늘 · 'off' = 안 함(1분마다만)
  *  빠른 고리는 회차(요청)를 1분 가까이 열어 두므로 클라우드 사용 시간이 늘어남 → 비용과 맞바꿈. 그 밖의 시간에도 단추(맡긴 일)는 다음 회차(1분 안)에 처리 */
 /* (0.12.0) 클라우드가 하는 일 켜기·끄기 — app_settings/cloud_jobs { 일: true/false } · 적어 두지 않은 일은 켜짐(외부 정보 이어 받기만 따로 기본 끔: app_settings/ext.cloud)
@@ -840,7 +851,7 @@ const server = http.createServer(async (req, res) => {
   const send = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(obj)); };
   const path = (req.url || '/').split('?')[0];
   try {
-    if (path === '/status' || path === '/') return send(200, { ok: true, ver: VER, cores: coreVer, login: loginFailAt ? 'fail' : 'unknown', hasCred: !!(ALADIN_ID && ALADIN_PW) });
+    if (path === '/status' || path === '/') return send(200, { ok: true, ver: VER, code: CODE_SHA ? CODE_SHA.slice(0, 10) : 'main', cores: coreVer, login: loginFailAt ? 'fail' : 'unknown', hasCred: !!(ALADIN_ID && ALADIN_PW) });
     if (path === '/tick') { if (!keyOk(req)) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (tickBusy) { if (Date.now() - tickAt > 10 * 60e3) { /* (0.12.3 전체 점검) 한 회차가 10분 넘게 안 끝나면(어딘가 응답 없이 멈춤) 스스로 다시 켬 — 예전엔 그 뒤 모든 회차를 '앞 회차가 도는 중'으로 건너뛰어 주문 읽기가 조용히 멈췄음 · 맡은 일은 정리·실행 기록(exec_log)이 지킴 */ console.error('tick 멈춤 10분 — 다시 켬'); try { await C('app_settings').doc('cloud').set({ ok: false, err: '회차가 10분 넘게 멈춰 클라우드를 다시 켬', at: new Date().toISOString() }, { merge: true }); } catch (e) {} setTimeout(() => process.exit(1), 500); } return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); } tickBusy = true; tickAt = Date.now(); try { const out = await serial(() => tick('schedule')); try { if ((await cjobs()).sweep) { const sw = await sysSweep(); if (sw.ev) out.sweep = sw; } } catch (e) { out.sweepErr = e.message; log('맡긴 일 살피기 실패', e.message); }
       if (Date.now() - lastDailyAt > 3 * 3600e3) { out.daily = await dailyJobs().catch((e) => ({ err: e.message })); } // 예비: /daily 예약이 3시간 넘게 없으면(예전 deploy) 여기서 — deploy.sh를 다시 돌리면 /daily가 따로 맡음
       return send(200, out); } finally { tickBusy = false; } }

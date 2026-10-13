@@ -1,0 +1,31 @@
+const { chromium } = require('/home/claude/.npm-global/lib/node_modules/playwright'); const fs = require('fs');
+const FILE = process.argv[2]; const FB = __dirname + '/fb/package/'; const R = __dirname + '/repo/';
+(async () => { const br = await chromium.launch(); const p = await br.newPage({ viewport: { width: 1300, height: 900 } }); const errs = [];
+  p.on('pageerror', (e) => errs.push('PAGEERR ' + e.message)); p.on('console', (m) => { if (m.type() === 'error') errs.push('CONSOLE ' + m.text().slice(0, 200)); });
+  await p.route('**/*', (rt) => { const u = rt.request().url();
+    if (u.startsWith('https://www.gstatic.com/firebasejs/')) { const f = FB + u.split('/').pop(); let body = fs.readFileSync(f, 'utf8'); if (/storage-compat/.test(u)) body += `;(function(){var _i=firebase.initializeApp;firebase.initializeApp=function(){var r=_i.apply(this,arguments);var _a=firebase.auth;var o=_a();var fake={email:'jerrycson@gmail.com',uid:'u1',displayName:'테스트',getIdToken:async()=>'x'};o.onAuthStateChanged=function(cb){setTimeout(function(){cb(fake)},10);return function(){}};Object.defineProperty(o,'currentUser',{get:function(){return fake}});try{firebase.auth=function(){return o};Object.assign(firebase.auth,_a)}catch(e){console.error('patch fail',e)}return r}})();`; return rt.fulfill({ body, contentType: 'text/javascript' }); }
+    if (u.startsWith('http://t.test/app/sw.js')) return rt.fulfill({ body: fs.readFileSync('/home/claude/w/sw.js'), contentType: 'text/javascript' }); if (u.startsWith('http://t.test/app/')) return rt.fulfill({ body: fs.readFileSync(FILE), contentType: 'text/html; charset=utf-8' });
+    if (u.startsWith('http://t.test/')) { const f = R + u.replace('http://t.test/', '').split('?')[0]; return fs.existsSync(f) ? rt.fulfill({ body: fs.readFileSync(f), contentType: 'text/javascript' }) : rt.fulfill({ status: 404, body: '' }); }
+    return rt.abort(); });
+  await p.goto('http://t.test/app/' + (process.argv[3] || '')); await p.waitForTimeout(7000);
+  const P0 = p.evaluate(async () => { const wait = (ms) => new Promise((r) => setTimeout(r, ms)); await wait(1500); const OUT = {};
+    const iso = (h) => new Date(Date.now() - h * 3600e3).toISOString(); const kst = (h) => new Date(Date.now() - h * 3600e3 + 9 * 3600e3).toISOString().slice(0, 16).replace('T', ' ');
+    const acts = [['A1', 9000, 5000, 240, { state: 'ok', lagLoSec: 600, lagHiSec: 1200, n: 3 }], ['A2', 9000, 5500, 239, { state: 'ok', lagLoSec: 1200, lagHiSec: 1800, n: 3 }], ['A3', 4000, 4500, 238, null], ['A4', 7000, 6000, 237, { state: 'wait', n: 1 }]].map(([u, f, t, h, v]) => ({ key: 'aladin_' + u, usedCode: u, title: '책' + u, from: f, to: t, at: iso(h), kind: 'batch', batchId: 'bX', batchName: '6000이하_260630이전_노랑동가', verify: v, pc: 'PC1', by: 'jerrycson@gmail.com' }));
+    const mk = (u, grade, price, active) => { const l = { id: 'aladin_' + u, usedCode: u, title: '책' + u, price, grade, status: active ? '판매중' : '판매완료', active, listingId: 'X' + u, sku: 'BLK', registeredAt: '2026-05-01' }; S.plist.set(l.id, l); };
+    mk('A1', '상', 5000, false); mk('A2', '최상', 5500, false); mk('A3', '중', 4500, true); mk('A4', '상', 6000, true); for (let i = 0; i < 20; i++) mk('Z' + i, '상', 3000, i > 1);
+    S.orders.set('o1', { kind: 'sale', orderNo: 'O1', orderedAt: kst(200), items: [{ aladinUsedCode: 'A1', price: 5000, qty: 1, lineStatus: 'normal' }] });
+    S.orders.set('o2', { kind: 'sale', orderNo: 'O2', orderedAt: kst(100), items: [{ aladinUsedCode: 'Z0', price: 3000, qty: 1, lineStatus: 'normal' }] });
+    S.orders.set('o3', { kind: 'sale', orderNo: 'O3', orderedAt: kst(150), items: [{ aladinUsedCode: 'A3', price: 4500, qty: 1, lineStatus: 'cancelled' }] });
+    S.ordersLoaded = true; S.prodLoaded = true;
+    const shp = [{ orderNo: 'O9', orderedAt: kst(20), items: [{ listingId: 'XA2', price: 5500, qty: 1 }] }];
+    const snap = (L) => ({ docs: L.map((v, i) => ({ id: 'd' + i, data: () => v })), forEach: (f) => L.forEach((v, i) => f({ id: 'd' + i, data: () => v })), size: L.length, empty: !L.length });
+    db.collection = (name) => ({ get: async () => snap(name === 'prd_price_batches' ? [] : []), doc: (id) => ({ id, get: async () => ({ exists: name === 'prd_price_decisions', data: () => ({ approvalState: 'done', approval: { price: 5000 } }) }), onSnapshot: () => () => {} }),
+      where: (f, op, v) => ({ get: async () => snap(name === 'prd_price_actions' ? acts.filter((a) => (f === 'batchId' ? a.batchId === v : a.key === v)) : name === 'shp_orders' ? shp : name === 'prd_price_reviews' ? [{ key: v, at: iso(241), decision: 'batch', price: 5000, by: 'jerrycson@gmail.com', current: 9000 }] : name === 'prd_listing_changes' ? [{ listingKey: v, at: iso(240), source: 'price-watch', batchName: '6000이하_260630이전_노랑동가', changes: { price: { from: 9000, to: 5000 } } }] : []), onSnapshot: () => () => {} }) });
+    S.prBatches = [{ id: 'bX', name: '6000이하_260630이전_노랑동가', decided: { aladin_A1: { price: 5000, at: iso(241) } }, picks: {}, start: { A1: 9000 } }];
+    openProduct('aladin_A1'); await wait(1200); const sh = document.querySelector('#sheet'); OUT.prod = [...sh.querySelectorAll('.card')].filter((c) => /가격 기록|변경 이력/.test(c.innerText)).map((c) => c.innerText.replace(/\s+/g, ' ').slice(0, 400));
+    openGroupPerf('bX'); await wait(1500); OUT.perf = sh.innerText.replace(/\s+/g, ' ').slice(0, 1600);
+    window.__shot = 1; await new Promise((r) => { window.__go = r; });
+    return JSON.stringify(OUT, null, 1); });
+  await p.waitForFunction(() => window.__shot === 1, null, { timeout: 30000 }); await p.evaluate(() => { document.querySelector('.verbar') && document.querySelector('.verbar').remove(); }); await p.screenshot({ path: 'gperf.png', fullPage: false }); await p.evaluate(() => window.__go()); console.log('T', await P0);
+  await p.evaluate(() => document.querySelector('.verbar') && document.querySelector('.verbar').remove()); console.log('SHEET', JSON.stringify((await p.evaluate(() => (document.querySelector('#sheet.on') || {}).innerText || '-')).slice(0, 300))); console.log(FILE.split('/').pop(), 'body text:', JSON.stringify((await p.evaluate(() => document.body.innerText)).slice(0, 500)));
+  console.log(errs.filter((e) => !/net::ERR|Failed to load resource|googleapis|identitytoolkit/.test(e)).slice(0, 6).join('\n')); await br.close(); })();

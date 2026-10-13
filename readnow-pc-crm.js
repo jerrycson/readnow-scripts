@@ -1,7 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.63.7의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.63.8의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.63.7' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.63.8' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.63.8', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -345,7 +346,7 @@
       if (f.result === 'failed' || f.result === 'no-id-field') break;
       if (await isLoggedIn()) { ok = true; break; }
     }
-    try { tab.close(); } catch (e) {}
+    await window.__rnCloseTab(tab);
     GM_deleteValue(LOGIN_FLAG);
     if (!ok) log('자동 로그인이 이번에는 되지 않았습니다.', 'warn');
     else log('다시 로그인했습니다. 수집을 계속합니다.', 'ok');
@@ -2241,3 +2242,5 @@
   }
 })();
 
+
+}]);

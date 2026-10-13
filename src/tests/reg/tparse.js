@@ -1,0 +1,13 @@
+const { JSDOM } = require('jsdom'); const fs = require('fs'); const RG = require('/home/claude/w/readnow-register-core.js');
+const U = '/root/.claude/uploads/2514b938-5524-5e43-ad0a-05319ceb1a3b/';
+const after = new JSDOM(fs.readFileSync(U + 'b3849ff0-____-____________________.html', 'utf8')).window.document; const before = new JSDOM(fs.readFileSync(U + '021a8107-____-________________.html', 'utf8')).window.document;
+const A = RG.parseBulkPage(after), B = RG.parseBulkPage(before);
+console.log('before', JSON.stringify({ key: B.excelKey, tok: B.tokenId, n: B.count, up: B.hasUpload, pv: B.hasPreview }));
+console.log('after', JSON.stringify({ key: A.excelKey, tok: A.tokenId, n: A.count, pv: A.hasPreview }), JSON.stringify(A.items[2]));
+const rows = [{ isbn: '9788961706186', price: 77777, code: 'BLKCMN', grade: 2 }, { isbn: '9788992579629', price: 77777, code: 'BLKCMN', grade: 2 }, { isbn: '9791189088293', price: 77777, code: 'BLKCMN', grade: 2 }, { isbn: '9791167030580', price: 77777, code: 'BLKCMN', grade: 1 }];
+console.log('match', JSON.stringify(RG.matchPreview(A, rows))); rows[1].price = 7000; console.log('mismatch', JSON.stringify(RG.matchPreview(A, rows)));
+rows[1].price = 77777; const dup = [...rows, { isbn: '9788961706186', price: 77777, code: 'BLKCMN', grade: 2 }]; console.log('ourDupNotInPreview', JSON.stringify(RG.matchPreview(A, dup)));
+console.log('subset', JSON.stringify(RG.matchPreview(A, rows.slice(0, 2))));
+console.log('loggedIn', A.loggedIn, B.loggedIn);
+const X = require('xlsx'); const t = RG.templateBytes(); console.log('tpl', t.length, Buffer.compare(Buffer.from(t), fs.readFileSync('v4test.xls')));
+const out = RG.buildBulkXls(t, rows.map((r) => ({ ...r, state: 1, qty: 1, title: 't' })), X.CFB); console.log('verify', JSON.stringify(RG.verifyBulkXls(out, rows.map((r) => ({ ...r, state: 1, qty: 1 })), X)).slice(0, 200));

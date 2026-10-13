@@ -3,7 +3,7 @@
  * 저장·읽기(Firebase)는 쓰는 쪽이 ctx로 넘겨 줌 — 이 파일은 계산과 그리기만. */
 (function (G) {
   'use strict';
-  const VERSION = '0.5.0'; // (0.5.0) 🖥 자동 수집 담당 PC + 부재 시 순서(ownerOf · 편집기 맨 위) · (0.4.0) 📅 매월 정한 날(1~31일·말일 · 그날 정한 시각에 한 번) · 일정 간격 5분까지 · 시간표 주황 선(밀림)에 마우스 설명
+  const VERSION = '0.5.1'; // (0.5.1 점검) 요일 거르기를 '다음' 표시에도 · n분마다 자정 넘김 · 같은 시작·끝 시간 창 막음 · 더 새 판이 저장한 칸을 옛 편집기가 덮지 않음 // (0.5.0) 🖥 자동 수집 담당 PC + 부재 시 순서(ownerOf · 편집기 맨 위) · (0.4.0) 📅 매월 정한 날(1~31일·말일 · 그날 정한 시각에 한 번) · 일정 간격 5분까지 · 시간표 주황 선(밀림)에 마우스 설명
   /* @@AS_ENGINE_BEGIN — (1.60.0) ⏰ 매일 자동 수집 엔진 (계산만 · Firebase·화면 없음 → 따로 떼어 시험함)
    *  칸(slot) = { id, job:'prd:키'|'crm:키', on, name?, trig, days?, win?, pcs?, gapH?, late?, maxMin?, retry? }
    *   trig.t = 'time'  { times:['HH:MM'…] }            정한 시각 (하루 여러 번) — 그 시각이 지나면 그날 안에 한 번(밀린 회차는 하나로 묶음)
@@ -133,9 +133,10 @@
       return plan; }
     /* 다음에 할 때(사람이 읽는 글) */
     function nextOf(s, doc, runs, ctx) { const { day, min } = kst(ctx.now); const t = s.trig; if (!s.on || !doc || !doc.on) return null;
-      if (t.t === 'time') { const nx = t.times.find((x) => tMin(x) > min); return nx ? `오늘 ${nx}` : t.times.length ? `내일 ${t.times[0]}` : null; }
-      if (t.t === 'month') { if (!t.at.length) return null; if (mdOk(t.md, ctx.now)) { const nx = t.at.find((x) => tMin(x) > min); if (nx) return `오늘 ${nx}`; } for (let i = 1; i <= 62; i++) { const ms = dayStart(day) + i * 864e5 + 12 * 3600e3; if (mdOk(t.md, ms)) { const k = kst(ms).day; return `${+k.slice(5, 7)}/${+k.slice(8)} ${t.at[0]}`; } } return null; }
-      if (t.t === 'every') { const f = s.win ? tMin(s.win.from) : 0; const rel = (min - f + 1440) % 1440; const nx = (f + (Math.floor(rel / t.min) + 1) * t.min) % 1440; return inWin(s, nx) ? `${hm(nx)}` : s.win ? `${s.win.from}부터` : hm(nx); }
+      const dOk = (ms) => !s.days || s.days.includes(kst(ms).dow); /* (0.5.0 점검) 요일 거르기도 봄 — 예전엔 쉬는 요일의 시각을 '다음'으로 보였음 */ const dLbl = (i, ms) => (i === 1 ? '내일' : `${+kst(ms).day.slice(5, 7)}/${+kst(ms).day.slice(8)}`);
+      if (t.t === 'time') { if (!t.times.length) return null; if (dOk(ctx.now)) { const nx = t.times.find((x) => tMin(x) > min); if (nx) return `오늘 ${nx}`; } for (let i = 1; i <= 7; i++) { const ms = dayStart(day) + i * 864e5 + 12 * 3600e3; if (dOk(ms)) return `${dLbl(i, ms)} ${t.times[0]}`; } return null; }
+      if (t.t === 'month') { if (!t.at.length) return null; if (mdOk(t.md, ctx.now) && dOk(ctx.now)) { const nx = t.at.find((x) => tMin(x) > min); if (nx) return `오늘 ${nx}`; } for (let i = 1; i <= 62; i++) { const ms = dayStart(day) + i * 864e5 + 12 * 3600e3; if (mdOk(t.md, ms) && dOk(ms)) { const k = kst(ms).day; return `${+k.slice(5, 7)}/${+k.slice(8)} ${t.at[0]}`; } } return null; }
+      if (t.t === 'every') { const f = s.win ? tMin(s.win.from) : 0; const rel = (min - f + 1440) % 1440; let nx = f + (Math.floor(rel / t.min) + 1) * t.min; if (nx >= 1440 && !s.win) nx = 0; /* (0.5.0 점검) 칸은 0시에 새로 시작 — 1440을 나누지 않는 간격이 자정을 넘을 때 */ nx %= 1440; return inWin(s, nx) ? `${hm(nx)}` : s.win ? `${s.win.from}부터` : hm(nx); }
       return TRIG[t.t] ? TRIG[t.t].l.replace(/^\S+\s/, '') + ' 때' : null; }
     /* 사람이 읽는 한 줄 설명 */
     function describe(s, byId) { const t = s.trig; const W = s.win && t.t !== 'time' && t.t !== 'month' ? ` · ${s.win.from}~${s.win.to}` : ''; let a;
@@ -153,6 +154,8 @@
       slots.forEach((s, i) => { const nm = `${i + 1}번 '${s.name || (nameOf ? nameOf(s.job) : s.job)}'`; if (ids.has(s.id)) err.push(`${nm}: 같은 이름표(${s.id})가 둘`); ids.add(s.id);
         if (s.trig.t === 'time' && !s.trig.times.length) err.push(`${nm}: 시각이 하나도 없음`); if (s.trig.t === 'month' && (!s.trig.at.length || !s.trig.md.length)) err.push(`${nm}: 매월 날이나 시각이 없음`);
         if (s.trig.t === 'after') { if (!byId[s.trig.of]) err.push(`${nm}: 이어 할 앞 칸이 없음`); else { let c = s.trig.of, n = 0; while (c && n++ < 50) { if (c === s.id) { err.push(`${nm}: 칸들이 서로 기다리는 고리 — 끝없이 돌게 됨`); break; } const p = byId[c]; c = p && p.trig.t === 'after' ? p.trig.of : null; } } }
+        if (s.win && s.win.from === s.win.to) err.push(`${nm}: 시간 창의 시작과 끝이 같음(${s.win.from}) — 한 번도 돌지 않음`); /* (0.5.0 점검) */
+        if (s.trig.t === 'month' && LEG[s.id]) warn.push(`${nm}: 예전 기본 칸(${s.id})을 '매월'로 두면 옛 수집기(0.3 이하)가 저장할 때 매월 설정을 지울 수 있음 — 칸을 복제해 새 칸에서 매월로 정하는 것이 안전`);
         if (s.trig.t === 'every' && s.trig.min < 15) warn.push(`${nm}: ${s.trig.min}분마다는 잦음 — 알라딘 요청이 많아짐`);
         if (/explore$/.test(s.job) && !s.maxMin) warn.push(`${nm}: 끝없는 탐색은 끝나지 않음 — '최대 시간'을 정하세요(정하지 않으면 다른 칸이 계속 밀림)`); });
       return { err, warn }; }
@@ -578,10 +581,12 @@
   }
   /* 칸 저장 — 수집기·웹앱이 같은 함수로(같은 검사·같은 문서 모양·같은 바꾼 기록)
    *  F = { db, cfgRef(prd_system/autoSched), editsRef(달 'YYYY-MM' → prd_jobs/autoSched_edits_달), arrayUnion, email } · baseRev가 다르면(그사이 다른 곳이 저장) 덮지 않고 conflict */
+  const vnum = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (+x || 0), 0);
   async function saveSlots(F, slots, baseRev, what, by, labelOf) { const clean = slots.map(AS.sanitize).filter(Boolean); const V = AS.validate(clean, labelOf); if (V.err.length) throw new Error(V.err.join(' / '));
     let conflict = false; const now = new Date().toISOString();
-    await F.db.runTransaction(async (tx) => { const s0 = await tx.get(F.cfgRef); const D = s0.exists ? s0.data() : {}; const rev = +D.rev || 0; if (baseRev != null && rev !== baseRev) { conflict = true; return; }
-      tx.set(F.cfgRef, { slots: JSON.parse(JSON.stringify(clean)), items: AS.legacyItems(clean), rev: rev + 1, ver: 2, at: now, by }, { merge: true }); });
+    let tooNew = null; await F.db.runTransaction(async (tx) => { const s0 = await tx.get(F.cfgRef); const D = s0.exists ? s0.data() : {}; const rev = +D.rev || 0; if (baseRev != null && rev !== baseRev) { conflict = true; return; } if (D.engine && vnum(D.engine) > vnum(VERSION)) { tooNew = D.engine; return; } /* (0.5.0 점검) 더 새 판 편집기가 저장한 칸을 옛 편집기가 덮어 새 기능(매월·5분마다 등)을 지우지 않게 */
+      tx.set(F.cfgRef, { slots: JSON.parse(JSON.stringify(clean)), items: AS.legacyItems(clean), rev: rev + 1, ver: 2, engine: VERSION, at: now, by }, { merge: true }); });
+    if (tooNew) throw new Error(`칸 설정이 더 새 판(${tooNew}) 편집기로 저장돼 있어 이 판(${VERSION})으로는 덮지 않음 — 이 기기·수집기를 새로 고친 뒤 고쳐 주세요`);
     if (conflict) { const e = new Error('다른 PC(또는 다른 창)가 그사이 칸을 바꿨습니다 — 다시 불러온 뒤 고쳐 주세요'); e.conflict = true; throw e; }
     try { await F.editsRef(AS.kst(Date.now()).day.slice(0, 7)).set({ log: F.arrayUnion({ at: now, pc: by, email: F.email || null, what: String(what || '').slice(0, 300), n: clean.length }) }, { merge: true }); } catch (e) {}
     return clean; }

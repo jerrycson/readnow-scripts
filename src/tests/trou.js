@@ -1,0 +1,11 @@
+const fs=require('fs');const {JSDOM}=require('jsdom');const s=fs.readFileSync('/home/claude/w/readnow-collector.user.js','utf8');
+const grab=(a)=>{const i=s.indexOf(a);let d=0,j=s.indexOf('{',i);for(let k=j;;k++){if(s[k]=='{')d++;else if(s[k]=='}'){d--;if(!d)return s.slice(i,k+1);}}};
+const PCORE=new JSDOM('',{runScripts:'outside-only'});PCORE.window.eval(fs.readFileSync('repo/readnow-products-core.js','utf8'));const P=PCORE.window.ReadnowProducts;
+let PAGE='';const getDoc=async()=>({doc:new JSDOM(PAGE).window.document});const sleep=async()=>{};const nowIso=()=>new Date().toISOString();const PC_NAME='T';const W=()=>({});
+const store={};const C=()=>({doc:(id)=>({id,set:async(v,o)=>{store[id]={...(store[id]||{}),...v}},collection:()=>({doc:(v)=>({path:id+'/v/'+v})})})});
+const db={batch:()=>{const ops=[];return{set:(r,v)=>ops.push([r,v]),commit:async()=>ops.forEach(([r,v])=>{store[r.path||r.id]=v})}}};
+eval(grab('async function readOurUsed('));
+(async()=>{PAGE='<img id="CoverMainImage" src="//x/c.jpg">';console.log('nobox',(await readOurUsed('1','상',null)).miss);
+PAGE='<div id="usedDecription"></div>';console.log('mid empty',(await readOurUsed('2','중',null)).miss);
+PAGE='<div id="usedDecription"></div>';console.log('keep',(await readOurUsed('3','상',{note:'x'})).miss);
+PAGE='<div id="usedDecription">찢김</div>';console.log('ok',JSON.stringify(await readOurUsed('4','중',null)), store['4'].note);})();

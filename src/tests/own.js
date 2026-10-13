@@ -1,0 +1,14 @@
+const R = require('/home/claude/w/out/readnow-autosched-core.js'); const AS = R.AS; const now = Date.parse('2026-10-13T03:00:00Z');
+const B = (o) => ({ pcs: o });
+const doc = { on: true, owner: { primary: 'NEW', order: ['JS-MAIN', 'HOME'] }, slots: [{ id: 'a', job: 'prd:bench', on: true, trig: { t: 'time', times: ['11:00'] } }, { id: 'b', job: 'prd:bench', on: true, pcs: ['HOME'], trig: { t: 'time', times: ['11:00'] } }] };
+const c = (n, x) => console.log(n, JSON.stringify(x));
+c('primary alive', AS.ownerOf(doc, B({ NEW: { atMs: now - 60e3 }, 'JS-MAIN': { atMs: now } }), now));
+c('primary dead→JS-MAIN', AS.ownerOf(doc, B({ NEW: { atMs: now - 7 * 60e3 }, 'JS-MAIN': { atMs: now }, HOME: { atMs: now } }), now));
+c('primary paused→HOME', AS.ownerOf(doc, B({ NEW: { atMs: now, ok: false }, 'JS-MAIN': { atMs: now - 9e5 }, HOME: { atMs: now } }), now));
+c('outside', AS.ownerOf(doc, B({ X2: { atMs: now }, A1: { atMs: now } }), now));
+c('none', AS.ownerOf(doc, B({}), now));
+c('no primary', AS.ownerOf({ owner: { primary: '' } }, B({}), now));
+const own = AS.ownerOf(doc, B({ NEW: { atMs: now }, HOME: { atMs: now } }), now);
+const d = (pc) => AS.due(doc, {}, { now, pc, own, crmOk: true, idleMs: 0, bootAt: now - 1e7, stats: {} }).map((x) => x.slot.id + ':' + x.mark);
+c('due NEW', d('NEW')); c('due HOME', d('HOME')); c('due JS-MAIN', d('JS-MAIN'));
+c('due no own', AS.due(doc, {}, { now, pc: 'JS-MAIN', crmOk: true, idleMs: 0, bootAt: now - 1e7, stats: {} }).map((x) => x.slot.id));

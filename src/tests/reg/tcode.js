@@ -1,0 +1,6 @@
+const RG = require('/home/claude/w/readnow-register-core.js');
+const T = [[1, 35000, ['국내도서>대학교재/전문서적>관광학']], [1, 20000, ['국내도서>대학교재/전문서적>관광학']], [1, 9000, ['국내도서>고등학교참고서>수학']], [1, 9000, ['국내도서>잡지>여성']], [7, 9000, ['외국도서>잡지']], [1, 9000, ['국내도서>어린이>동화']], [1, 9000, ['국내도서>만화/라이트노벨>일본']], [7, 9000, ['외국도서>소설']], [7, 40000, ['외국도서>소설']], [2, 9000, ['음반>가요']], [3, 50000, ['DVD>영화']], [1, 9000, ['국내도서>소설/시/희곡']], [1, 3000, ['국내도서>소설/시/희곡']], [1, 900, ['국내도서>에세이']], [1, 0, []]];
+for (const [b, p, c] of T) { const r = RG.decideCode({ branch: b, price: p, categories: c.map((x) => ({ path: x.split('>') })) }); console.log(RG.BRANCH[b], p, c[0] || '-', '→', r.code, '|', r.why); }
+console.log(RG.decideCode({ branch: 1, price: 9000, categories: [{ path: ['국내도서', '소설/시/희곡'] }], size: '210*297mm (A4)' }, { pro: { cats: [], minW: 200, minH: 280 } }));
+const d = new Date('2026-10-09T03:00:00Z');
+console.log(RG.withSuffix('BLKCMN', { source: 'hd', grade: 2, desc: '밀봉 제품입니다', now: d }), RG.withSuffix('BLKCMN', { grade: 3, now: d }), RG.withSuffix('BLKCMN', { grade: 3, sameTodayN: 1, now: d }), RG.withSuffix('BLKCMN', { source: 'ms', grade: '중', sameTodayN: 2, now: d }), RG.withSuffix('', { source: 'hd' }), RG.withSuffix('BLKCMN', { grade: 1 }));

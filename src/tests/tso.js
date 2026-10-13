@@ -1,0 +1,12 @@
+const fs=require('fs');const s=fs.readFileSync('/home/claude/w/readnow-collector.user.js','utf8');
+const grab=(a)=>{const i=s.indexOf(a);let d=0,j=s.indexOf('{',i);for(let k=j;;k++){if(s[k]=='{')d++;else if(s[k]=='}'){d--;if(!d)return s.slice(i,k+1);}}};
+const ts=(n)=>({toMillis:()=>n});const T0=1e12;
+let DOCS={x1:{orderNo:'O1',stage:'정산완료',items:[1],uploadedAt:ts(T0)},x2:{orderNo:'O2',stage:'배송중',items:[1,2],uploadedAt:ts(T0+1e6)}};let reads=0;
+const snap=(arr)=>({size:arr.length,forEach:(f)=>arr.forEach(([id,v])=>f({id,data:()=>v}))});
+const fdb={collection:()=>({get:async()=>{const a=Object.entries(DOCS);reads+=a.length;return snap(a)},where:(f,op,t)=>({get:async()=>{const a=Object.entries(DOCS).filter(([,v])=>v.uploadedAt.toMillis()>t.ms);reads+=a.length;return snap(a)}})})};
+const FB={firestore:{Timestamp:{fromMillis:(ms)=>({ms})}}};const META={};const dbGet=async(st,k)=>META[k];const dbPut=async(st,v)=>{META[v._key]=JSON.parse(JSON.stringify(v))};
+const log=console.log,setNow=()=>{};let _svOrders=null,_svAt=0;
+eval(grab('async function serverOrders()'));
+(async()=>{let m=await serverOrders();console.log([...m],reads);reads=0;_svOrders=null;
+DOCS.x2={orderNo:'O2',stage:'정산완료',items:[1,2],uploadedAt:ts(T0+5e6)};DOCS.x3={orderNo:'O3',stage:'',items:[],uploadedAt:ts(T0+6e6)};
+m=await serverOrders();console.log([...m],'reads',reads);})();

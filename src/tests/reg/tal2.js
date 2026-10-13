@@ -1,0 +1,10 @@
+const fs = require('fs'); const HEAD = fs.readFileSync(__dirname + '/h_head.js', 'utf8'); const SETUP = fs.readFileSync(__dirname + '/h_setup.txt', 'utf8'); const SP = require('path').resolve(__dirname, '..'); const VW = +process.env.VW || 1300;
+eval(HEAD.replace(/__dirname/g, 'SP').replace(/\n$/, '') + `
+  await p.setViewportSize({ width: ${VW}, height: 900 }); await p.goto('http://t.test/app/'); await p.waitForTimeout(7000);
+  const r = await p.evaluate(async () => { const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const OUT = {}; try { ${SETUP}
+    { const dc = db.collection; db.collection = (n) => { const c = dc(n); const w = c.where; const Q = () => { const q = w(); q.where = () => Q(); q.orderBy = () => Q(); q.limit = () => Q(); return q; }; c.where = () => Q(); c.orderBy = () => Q(); c.limit = () => Q(); return c; }; }
+    S._shipLive = 1; S.shipC = { orders: [{ orderNo: 'A1', items: [{}] }, { orderNo: 'A2', items: [{}] }], at: Date.now() }; S.qnaAll = [{ questionId: 'q1', body: 'x', answerStatus: '미답변', createdAt: '2026-10-10' }]; S.ship = { orders: [{ orderNo: 'B', items: [{}, {}] }] };
+    S.ordersLoaded = true; S._bizAt = 0; S.tab = 'home'; renderMain(); await wait(1500); document.querySelectorAll('.verbar').forEach((x) => x.remove());
+    OUT.home = [...document.querySelectorAll('.al')].map((b) => { const r = b.getBoundingClientRect(); return [b.className, Math.round(r.top), Math.round(r.height), b.textContent.slice(0, 25)].join(' '); });
+    OUT.fixed = [...document.querySelectorAll('body *')].filter((e) => { const cs = getComputedStyle(e); return (cs.position === 'fixed' || cs.position === 'sticky') && e.offsetHeight && /문의|발송|주문확인/.test(e.textContent || '') && e.textContent.length < 300; }).map((e) => e.tagName + '#' + e.id + '.' + e.className + ' ' + getComputedStyle(e).position + ' ' + e.textContent.slice(0, 60));
+    } catch (e) { OUT.ERR = e.message; } return JSON.stringify(OUT, null, 1); }); console.log(r); await p.screenshot({ path: SP + '/reg/al_${VW}.png' }); await br.close(); })();`);

@@ -1,0 +1,10 @@
+const fs = require('fs'); const { chromium } = require('/home/claude/.npm-global/lib/node_modules/playwright');
+const src = fs.readFileSync('/home/claude/w/readnow-collector.user.js', 'utf8'); const a = src.indexOf('  /* ══════════ ⏰ 매일 자동 수집 (1.34.0 → 1.60.0'); const b0 = src.indexOf('  function asEdRefresh(runsOnly)'); const blockEnd = src.indexOf('\n', b0) + 1;
+const block = src.slice(a, blockEnd); const core = fs.readFileSync('/home/claude/w/readnow-autosched-core.js', 'utf8');
+const wrapped = `(function(){ let running = null, lastRunErr = null, lastRunSt = null, stopFlag = false; window.__rnCrm = { start: async (k) => { RUNS_CALLED.push('crm:' + k); return 'done'; }, busy: () => false, otherBusy: () => false, upload: async () => {}, pause: () => {}, tasks: () => ({ qna: '묻고 답하기', returns: '반품 관리', bulk: '고객·주문 전체 일괄' }) }; window.__rnPrd = { pause: () => { window.__stop = 1; } };
+  const PAR_NOW = {}, PAR_STOP = {}; async function kpipaPar() { RUNS_CALLED.push('par:kpipa'); await new Promise((r) => setTimeout(r, 300)); }
+  const benchTargets = (c) => (c.targets || []).filter((t) => t.on !== false); let BENCH_LIVE = window.BENCH0 || null; const EXT = () => ({ cfgOf: (c) => ({ on: c.on !== false }) }); const EXT_S = { busy: false }; const cloudOn = () => !!window.CLOUD_ON; const VER = '1.60.1'; const verNum = (v) => String(v||'0').split('.').reduce((a,x)=>a*1000+(+x||0),0);
+  async function runJob(k) { RUNS_CALLED.push('prd:' + k); running = k; await new Promise((r) => setTimeout(r, JOB_MS)); running = null; lastRunErr = window.__failNext ? '테스트 오류' : null; window.__failNext = 0; lastRunSt = lastRunErr ? 'error' : 'done'; window.__rnJobDone && window.__rnJobDone('prd:' + k, JOB_MS, lastRunSt); return true; }
+  ${block}
+  window.__T = { get AS() { return AS; }, schedTick, parTick, jobStatSeed, asEdOpen, schedDraw, asSave, get E() { return E; }, get ED() { return E._st(); }, asEdDraw: () => E.draw(), get SCHED() { return SCHED; }, get RUNS() { return SCHED_RUNS; }, get JSTATS() { return JSTATS; }, setBusyAgo: (ms) => { lastBusyAt = Date.now() - ms; } }; })();`;
+module.exports = { wrapped, core, chromium };

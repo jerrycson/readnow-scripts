@@ -1,0 +1,10 @@
+const fs = require('fs'); const a = fs.readFileSync('/home/claude/w/readnow-collector.user.js', 'utf8');
+const i = a.indexOf('  async function benchDetailPass('); const j = a.indexOf('  async function benchDetailJob(');
+const code = a.slice(i, j);
+const store = { 'bench_state/S1': { chunks: 1 }, 'bench_state/S1/c/0': { s: JSON.stringify({ A: [1000, '20261010', '상', 0, 't', 0, null, null, null, null, 0], B: [2000, '20261011', '상', 0, 't', 0, null, '978', 'x', '2020-01', 1], C: [3000, '20261009', '중', 0, 't', 0, '20261010', null, null, null, 0], D: [500, '20261001', '하', 0, 't', 0, null, null, null, null, 2] }), day: '2026-10-11' } };
+const W2 = []; const mk = (path) => ({ get: async () => ({ data: () => store[path] }), set: async (v) => { W2.push([path, v]); store[path] = v; }, collection: (c) => ({ doc: (d) => mk(path + '/' + c + '/' + d) }) });
+const C = (c) => ({ doc: (d) => mk(c + '/' + d) }); const LOG = [];
+const db = { batch: () => { const ops = []; return { set: (r, v) => ops.push(v), commit: async () => W2.push(['batch', ops.length]) }; } };
+const f = new Function('C', 'db', 'log', 'ui', 'nowIso', 'kDayB', 'BREG', 'BENCH_CFG', 'benchBook', 'W', 'stopFlag', code + '; return benchDetailPass;');
+const fn = f(C, db, (m) => LOG.push(m), () => {}, () => 'now', () => '2026-10-11', () => ({ BENCH: { DETAIL_DEF: { max: 300, maxMin: 30 } } }), {}, async (id) => (id === 'A' ? { isbn: '9781', cat: '소설', pubYm: '2021-05' } : null), () => ({}), false);
+fn([{ sc: 'S1', name: '판매1' }], { capped: false }).then(() => { console.log(LOG.join('\n')); const M = JSON.parse(store['bench_state/S1/c/0'].s); console.log(JSON.stringify(M)); console.log(W2.map((x) => x[0]).join(',')); });

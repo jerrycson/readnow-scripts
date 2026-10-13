@@ -1,7 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.63.7의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.63.8의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.7' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.8' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.63.8', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -370,7 +371,7 @@
     </div>
     <div class="sec">
       <p class="cap">우리 상품 보강 (알라딘 줄)</p>
-      <div class="g2"><button class="b2" data-job="nbMarket" title="알라딘 미등록·세트·새상품 페이지 없는 상품: 바깥 검색(중고) 화면의 따로 등록된 같은 책들로 경쟁·시세">검색 시세 (미등록·세트)</button><button class="b2" data-job="bench" title="웹앱 경영 탭 → 🎯 집중 벤치마킹에서 고른 판매자의 중고샵 목록 전체를 끝까지 읽어, 어제와 견줘 새로 올린 것·사라진 것(팔렸거나 내림)·값 바뀐 것을 기록 (하루 한 번 · 일괄 수집에도 들어 있음)">🎯 집중 벤치마킹</button><button class="b2" data-job="benchForce" title="주기(n시간·n일에 한 번)와 '끝난 지 20시간 안이면 건너뜀' 규칙을 무시하고, 웹앱에서 고른 판매자 목록의 맨 처음 판매자부터 차례로 모두 지금 읽음 · 멈췄다 이어 하면 이번에 이미 읽은 판매자는 건너뜀(3일 안)">🎯 강제: 처음 판매자부터</button><button class="b2" data-job="benchDetail" title="집중 벤치마킹으로 모은 상품(따라가는 판매자의 지금 숍 상품) 중 아직 상품 페이지 정보(ISBN·분류·출간 연월)가 없는 것만 상품 페이지를 열어 읽음 — 웹앱 ⚙ 모을 정보의 '상품 페이지 정보' 켜짐·꺼짐과 상관없이 · 판매자마다 끝까지 · 한 번 읽은 상품·다른 판매자와 같은 책·우리 도서 기록에 있는 책은 열지 않음 · 멈추면 100개마다 저장한 데까지 남음">📖 벤치마킹 상품 페이지 정보</button><span class="rn-bfs" title="켜면 '🎯 강제: 처음 판매자부터'가 이 시간 안에 끝까지 읽은 판매자는 건너뛰고 나머지를 모두 읽음 (웹앱 🎯 자세히의 같은 토글과 하나 — Firebase에 저장)"><label><input type="checkbox" id="rnBfOn"> ⏭ 강제 실행 때 최근</label> <input type="number" id="rnBfH" min="1" max="168" value="20"> <label for="rnBfOn">시간 안에 읽은 판매자 건너뛰기</label></span><button class="b2" data-job="photos" title="새상품 표지가 없는 상품: 우리 상품 페이지의 사진을 전부">우리 상품 사진</button><button class="b2" data-job="usedInfo" title="우리 책 온라인 중고 첫 페이지에서 우리보다 앞에 있는 매물과 바로 뒤 몇 개(설정): 중고상품 구매 유의 사항 글과 사진 — 가격 결정 화면 블록의 ? 표시">경쟁 매물 유의사항·사진</button></div>
+      <div class="g2"><button class="b2" data-job="nbMarket" title="알라딘 미등록·세트·새상품 페이지 없는 상품: 바깥 검색(중고) 화면의 따로 등록된 같은 책들로 경쟁·시세">검색 시세 (미등록·세트)</button><button class="b2" data-job="bench" title="웹앱 경영 탭 → 🎯 집중 벤치마킹에서 고른 판매자의 중고샵 목록 전체를 끝까지 읽어, 어제와 견줘 새로 올린 것·사라진 것(팔렸거나 내림)·값 바뀐 것을 기록 (하루 한 번 · 일괄 수집에도 들어 있음)">🎯 집중 벤치마킹</button><button class="b2" data-job="benchForce" title="주기(n시간·n일에 한 번)와 '끝난 지 20시간 안이면 건너뜀' 규칙을 무시하고, 웹앱에서 고른 판매자 목록의 맨 처음 판매자부터 차례로 모두 지금 읽음 · 멈췄다 이어 하면 이번에 이미 읽은 판매자는 건너뜀(3일 안)">🎯 강제: 처음 판매자부터</button><button class="b2" data-job="benchDetail" title="집중 벤치마킹으로 모은 상품(따라가는 판매자의 지금 숍 상품) 중 아직 상품 페이지 정보(ISBN·분류·출간 연월)가 없는 것만 상품 페이지를 열어 읽음 — 웹앱 ⚙ 모을 정보의 '상품 페이지 정보' 켜짐·꺼짐과 상관없이 · 판매자마다 끝까지 · 한 번 읽은 상품·다른 판매자와 같은 책·우리 도서 기록에 있는 책은 열지 않음 · 멈추면 100개마다 저장한 데까지 남음">📖 벤치마킹 상품 페이지 정보</button><span class="rn-bfs" title="켜면 '🎯 강제: 처음 판매자부터'가 이 시간 안에 끝까지 읽은 판매자는 건너뛰고 나머지를 모두 읽음 (웹앱 🎯 자세히의 같은 토글과 하나 — Firebase에 저장)"><label><input type="checkbox" id="rnBfOn"> ⏭ 강제 실행 때 최근</label> <input type="number" id="rnBfH" min="1" max="168" value="20"> <label for="rnBfOn" title="숍 끝까지 다 읽은 회차가 그 시간 안에 끝난 판매자만 건너뜀 — 50% 넘어 쓴 회차라도 뒤쪽을 못 읽었으면 다시 읽음 · 멈춘 판매자는 📍 멈춘 자리부터 이어 읽음">시간 안에 숍 끝까지 다 읽은 판매자 건너뛰기</label></span><button class="b2" data-job="photos" title="새상품 표지가 없는 상품: 우리 상품 페이지의 사진을 전부">우리 상품 사진</button><button class="b2" data-job="usedInfo" title="우리 책 온라인 중고 첫 페이지에서 우리보다 앞에 있는 매물과 바로 뒤 몇 개(설정): 중고상품 구매 유의 사항 글과 사진 — 가격 결정 화면 블록의 ? 표시">경쟁 매물 유의사항·사진</button></div>
     </div>
     <details class="sec" style="margin-top:10px"><summary class="cap" style="cursor:pointer">예비 · 가끔 쓰는 것 (펼치기)</summary>
       <p class="cap" style="margin-top:6px">출고 — 클라우드가 1분마다 하므로 클라우드가 멈췄을 때만</p>
@@ -598,7 +599,7 @@
     }
     myLockPrio = myPrio; myJobLabel = job; myRegKey = regKey;
     lockHeld = true; clearInterval(lockBeat);
-    lockBeat = setInterval(() => { if (!lockHeld) return; const now = Date.now(); LOCK().set({ heartbeatMs: now, writerSchema: WRITER_SCHEMA, pcs: { [PC_ID]: { at: now, tabs: { [TAB_ID]: { at: now, job, prio: myLockPrio } } } } }, { merge: true }).catch(() => {}); JOBREG().set({ [regKey]: { pc: PC_ID, name, at: now, label: job } }, { merge: true }).catch(() => {}); }, 60000);
+    lockBeat = setInterval(() => { if (!lockHeld) return; const now = Date.now(); try { if (running && now - lastPub > 50000) { lastPub = now; publishStatus(); } } catch (e) {} /* (1.63.8 점검) 작업 중이면 1분마다 상태 신호 — 화면을 그리지 않는 단계에서도 다른 PC가 '하는 중'을 앎 */ LOCK().set({ heartbeatMs: now, writerSchema: WRITER_SCHEMA, pcs: { [PC_ID]: { at: now, tabs: { [TAB_ID]: { at: now, job, prio: myLockPrio } } } } }, { merge: true }).catch(() => {}); JOBREG().set({ [regKey]: { pc: PC_ID, name, at: now, label: job } }, { merge: true }).catch(() => {}); }, 60000);
     // 양보 요청(나보다 중요한 작업, 나를 지목했거나 지목 없음) → 진행 위치 저장 후 멈춤 → 끝나면 자동으로 이어감. 묶음 안 PC 수만큼 요청 간격을 늘림
     if (!yieldUnsub) yieldUnsub = LOCK().onSnapshot((d) => { const x = d.exists ? d.data() : null; laneCount = Math.max(1, Object.keys(freshPcs(x, Date.now())).length); const y = x && x.yieldReq;
       if (lockHeld && running && y && Date.now() - (y.at || 0) < 3 * 60000 && !yieldFor && (y.prio ?? 100) > myLockPrio && !(y.pc === PC_ID && y.tab === TAB_ID) && (!y.target || y.target === PC_ID)) { yieldFor = { ...y, key: curKey, myPrio: myLockPrio }; stopFlag = true; log(`${y.pcName || '다른 PC'}의 '${y.tool || '고객 수집'}'(중요도 ${y.prio ?? 100})이 더 중요해 양보합니다 (지금 작업 중요도 ${myLockPrio}). 진행 위치를 저장하고 멈췄다가, 끝나면 자동으로 이어갑니다`, 1); } }, () => {});
@@ -706,7 +707,7 @@
     const tab = GM_openInTab(url, { active: false, insert: true });
     let ok = false;
     for (let i = 0; i < 18; i++) { await sleep(5000); if (stopFlag) break; const f = GM_getValue(LOGIN_FLAG, {}); if (f.result === 'failed' || f.result === 'no-id-field') break; if (await isLoggedIn()) { ok = true; break; } }
-    try { tab.close(); } catch (e) {}
+    await window.__rnCloseTab(tab);
     GM_deleteValue(LOGIN_FLAG);
     GM_setValue(ok ? 'rnp-cred-okAt' : 'rnp-cred-failAt', Date.now()); try { renderCred(); } catch (e) {}
     log(ok ? '다시 로그인했습니다. 계속합니다' : '자동 로그인이 이번에는 되지 않았습니다', !ok);
@@ -1461,18 +1462,18 @@
       const nm0 = (sc) => (byS.get(sc) || {}).name || sc; const finL = FJ.list.filter((sc) => FJ.fin[sc]);
       log(keep ? `🎯 강제 실행 이어서 (${new Date(Date.parse(FJ.startedAt) + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')} 시작한 것) — 이미 끝낸 ${finL.length}명 건너뜀${finL.length ? `(${finL.map(nm0).join(', ')})` : ''} · 남은 차례: ${FJ.list.filter((sc) => !FJ.fin[sc]).map(nm0).join(' → ') || '없음'}` : `🎯 강제 실행 시작 — 주기와 상관없이 맨 처음 판매자부터: ${FJ.list.map(nm0).join(' → ')}`); }
     } catch (e0) { try { await releaseLane('aladin'); } catch (x) {} throw e0; }
-    try { for (let loop = 0; loop < 300; loop++) { if (stopFlag) throw new Error('멈춤'); const sts = await benchStates(T); /* (1.54.3) '하는 중' 표시가 있어도 진행 문서가 없거나 버렸으면(끝남·버림) 표시를 지우고 평소 차례로 */ for (const [sc0, s0] of Object.entries(sts)) { if (!s0 || !s0.prog) continue; try { const jd = (await C('prd_jobs').doc('bench_' + sc0).get()).data(); if (!jd || jd.done) { s0.prog = null; await C('bench_state').doc(sc0).set({ prog: null }, { merge: true }); } } catch (e) {} } const P0 = RB.plan({ ...cfg, targets: T }, sts, Date.now()); /* (1.57.6) 읽을 판매자(T)만으로 차례 */ const P = RB.order ? RB.order(P0) : P0; /* (1.54.0) 하던 판매자 → 밀린 판매자 → 블록 순서 */
+    let STS = null, lastSc = null; try { for (let loop = 0; loop < 300; loop++) { if (stopFlag) throw new Error('멈춤'); /* (1.63.8 점검) 판매자 상태는 처음에 한 번 다 읽고, 그 뒤엔 방금 읽은 판매자만 다시 — 예전엔 판매자 하나 끝날 때마다 모두를 다시 읽어 읽기가 판매자 수의 제곱으로 늘었음 */ if (!STS) STS = await benchStates(T); else if (lastSc) { try { STS[lastSc] = (await C('bench_state').doc(lastSc).get()).data() || {}; } catch (e) {} } const sts = STS; /* (1.54.3) '하는 중' 표시가 있어도 진행 문서가 없거나 버렸으면(끝남·버림) 표시를 지우고 평소 차례로 */ for (const [sc0, s0] of Object.entries(sts)) { if (loop > 0 && sc0 !== lastSc) continue; if (!s0 || !s0.prog) continue; try { const jd = (await C('prd_jobs').doc('bench_' + sc0).get()).data(); if (!jd || jd.done) { s0.prog = null; await C('bench_state').doc(sc0).set({ prog: null }, { merge: true }); } } catch (e) {} } const P0 = RB.plan({ ...cfg, targets: T }, sts, Date.now()); /* (1.57.6) 읽을 판매자(T)만으로 차례 */ const P = RB.order ? RB.order(P0) : P0; /* (1.54.0) 하던 판매자 → 밀린 판매자 → 블록 순서 */
         if (FORCE) { const t0f = Date.parse(FJ.startedAt); const byP = new Map(P.map((x) => [String(x.sc), x])); const FS = cfg.forceSkip || {}; const skipMs = FS.on && +FS.h > 0 ? +FS.h * 3600e3 : 0;
           /* (1.56.3) ⏭ 강제 실행의 '최근 n시간 안에 끝까지 읽은 판매자는 건너뛰기'(웹앱·수집기의 토글 — app_settings/bench.forceSkip) · 기준 = 마지막으로 끝까지 읽은 회차가 끝난 때(okEndAt) */
-          const okEnd = (k) => { const s0 = sts[k] || {}; if (s0.okEndAt) return Date.parse(s0.okEndAt); return s0.day && s0.complete !== false && !(s0.lastPartial && s0.endAt && s0.lastPartial.at >= s0.endAt) && s0.endAt ? Date.parse(s0.endAt) : 0; };
+          const okEnd = (k) => { const s0 = sts[k] || {}; if (s0.completeEndAt) return Date.parse(s0.completeEndAt); /* (1.63.8) ⏭ 기준 = 숍 끝까지 다 읽은 회차만(50% 넘어 쓴 회차라도 뒤쪽을 못 읽었으면 '완료' 아님) */ if (s0.okEndAt) return s0.notRead ? 0 : Date.parse(s0.okEndAt); return s0.day && s0.complete !== false && !(s0.lastPartial && s0.endAt && s0.lastPartial.at >= s0.endAt) && s0.endAt ? Date.parse(s0.endAt) : 0; };
           if (skipMs && loop === 0) { const sk = FJ.list.filter((k) => okEnd(k) && Date.now() - okEnd(k) < skipMs); if (sk.length) log(`🎯 강제 실행 ⏭ 최근 ${FS.h}시간 안에 끝까지 읽은 판매자 ${sk.length}명 건너뜀: ${sk.map((k) => `${(byS.get(k) || {}).name || k}(${new Date(okEnd(k) + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')})`).join(', ')}`); }
           if (loop > 0) { try { const f2 = ((await C('prd_jobs').doc('benchForce').get()).data() || {}).fin; if (f2) Object.assign(FJ.fin, f2); } catch (e) {} } /* (1.63.6) 다른 PC에서 그사이 버린 판매자도 건너뜀 */
           const sc = FJ.list.find((k) => !done.has(k) && !(FJ.fin || {})[k] && !(restS.has(k) && !(sts[k] || {}).prog) /* 📅 오늘 쉬는 그룹(하던 회차는 이어서) */ && !(skipMs && okEnd(k) && Date.now() - okEnd(k) < skipMs) && !(okEnd(k) >= t0f && !(byP.get(k) || {}).inProg)); /* 이번 강제 실행이 시작된 뒤 끝까지 읽은 판매자는 끝난 것 (끝까지 못 읽은 회차는 끝난 것으로 치지 않음) */ if (!sc) { await C('prd_jobs').doc('benchForce').set({ done: true, doneAt: nowIso(), savedAt: Date.now() }, { merge: true }); log(`🎯 강제 실행 끝 — 판매자 ${FJ.list.length}명 모두 이번에 읽음`); break; }
-          const t = byS.get(sc); done.add(sc); log(`🎯 [강제 ${FJ.list.indexOf(sc) + 1}/${FJ.list.length}] ${t.name || sc} — 주기와 상관없이 읽음`); try { const r1 = await benchOneT(t, !!((sts[String(t.sc)] || {}).prog)); if (r1 === 'partial') { bad.push(t.name || sc); continue; } FJ.fin[sc] = nowIso(); await C('prd_jobs').doc('benchForce').set({ fin: { [sc]: FJ.fin[sc] }, savedAt: Date.now() }, { merge: true }).catch(() => {}); } catch (e) { if (e && e.message === '멈춤') throw e; bad.push(t.name || sc); log(`🎯 '${t.name || sc}' 처리 중 오류: ${e && e.message} — 다음 판매자로 넘어감`, 1); } continue; }
+          const t = byS.get(sc); done.add(sc); lastSc = sc; log(`🎯 [강제 ${FJ.list.indexOf(sc) + 1}/${FJ.list.length}] ${t.name || sc} — 주기와 상관없이 읽음`); try { const r1 = await benchOneT(t, !!((sts[String(t.sc)] || {}).prog)); if (r1 === 'partial') { bad.push(t.name || sc); continue; } FJ.fin[sc] = nowIso(); await C('prd_jobs').doc('benchForce').set({ fin: { [sc]: FJ.fin[sc] }, savedAt: Date.now() }, { merge: true }).catch(() => {}); } catch (e) { if (e && e.message === '멈춤') throw e; bad.push(t.name || sc); log(`🎯 '${t.name || sc}' 처리 중 오류: ${e && e.message} — 다음 판매자로 넘어감`, 1); } continue; }
         const next = P.find((x) => !done.has(x.sc) && (x.due || (FORCE_ALL && !x.fresh))) || (P.find((x) => x.due && done.has(x.sc) && x.g.unit === 'h' && Date.now() - (sts[x.sc].runAt ? Date.parse(sts[x.sc].runAt) : 0) > 3600e3) || null);
         if (loop === 0 && !FORCE) { const due = P.filter((x) => x.due || (FORCE_ALL && !x.fresh)); const fr = P.filter((x) => !x.due && x.fresh); const hm = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' '); if (fr.length) log(`🎯 끝난 지 얼마 안 돼 이번엔 건너뜀(다시 읽지 않음): ${fr.map((x) => `${(byS.get(x.sc) || {}).name || x.sc} ${hm(x.end || x.last)} 끝 → ${hm(x.next)}부터`).join(', ')}`); const pages = due.reduce((a, x) => a + (sts[x.sc].lastPage || sts[x.sc].pages || 0), 0);
           log(`🎯 집중 벤치마킹: 판매자 ${T.length}명 중 지금 할 차례 ${due.length}명${FORCE_ALL ? '(수동 — 모두)' : ''}${pages ? ` · 약 ${pages.toLocaleString()}쪽` : ''} — 순서: ${due.map((x) => `${(byS.get(x.sc) || {}).name || x.sc}(${x.g.name})`).join(' → ') || '없음'}${!due.length ? ` · 다음 차례: ${P.slice().sort((a, b) => a.next - b.next).slice(0, 3).map((x) => `${(byS.get(x.sc) || {}).name || x.sc} ${new Date(x.next + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')}`).join(', ')}` : ''}`); }
-        if (!next) break; const t = byS.get(next.sc); done.add(next.sc); { const hm2 = (ms) => (ms ? new Date(ms + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ') : '-'); const why = next.inProg ? `하던 회차 이어서(${(sts[next.sc].prog || {}).page || '?'}쪽부터)` : next.behind ? `지난 차례를 못 끝냄(밀림 ${next.behind}번)` : !next.due && FORCE_ALL ? '수동 실행' : '차례'; log(`🎯 [${done.size}] ${t.name || t.sc} · ${next.g.name}(${next.g.sched && RB.schedTxt ? RB.schedTxt(next.g.sched) : `${next.g.n}${next.g.unit === 'h' ? '시간' : '일'}에 한 번`}) · 왜: ${why} · 지난번 ${hm2(next.last)} 시작 ~ ${hm2(next.end)} 끝`); }
+        if (!next) break; const t = byS.get(next.sc); done.add(next.sc); lastSc = String(next.sc); { const hm2 = (ms) => (ms ? new Date(ms + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ') : '-'); const why = next.inProg ? `하던 회차 이어서(${(sts[next.sc].prog || {}).page || '?'}쪽부터)` : next.behind ? `지난 차례를 못 끝냄(밀림 ${next.behind}번)` : !next.due && FORCE_ALL ? '수동 실행' : '차례'; log(`🎯 [${done.size}] ${t.name || t.sc} · ${next.g.name}(${next.g.sched && RB.schedTxt ? RB.schedTxt(next.g.sched) : `${next.g.n}${next.g.unit === 'h' ? '시간' : '일'}에 한 번`}) · 왜: ${why} · 지난번 ${hm2(next.last)} 시작 ~ ${hm2(next.end)} 끝`); }
         /* (1.52.0) 한 판매자에서 오류가 나도 다음 판매자로 넘어감. 실패한 판매자는 읽은 조각이 남아 있어 다음 실행 때 읽기 없이 저장만 다시 함 */
         try { await benchOneT(t, !!((sts[String(t.sc)] || {}).prog)); } catch (e) { if (e && e.message === '멈춤') throw e; bad.push(t.name || t.sc); log(`🎯 '${t.name || t.sc}' 처리 중 오류: ${e && e.message} — 다음 판매자로 넘어감 (다음 실행 때 이 판매자는 읽은 것을 그대로 두고 저장만 다시 함)`, 1); } }
       if (bad.length) log(`🎯 집중 벤치마킹: 오류 난 판매자 ${bad.length}명 — ${bad.join(', ')}`, 1); listDone = true;
@@ -1482,8 +1483,9 @@
   async function benchOne(t) { const sc = String(t.sc); const name = t.name || sc; const day = kDayB(); const stRef = C('bench_state').doc(sc); const st = (await stRef.get()).data() || {};
     /* (1.53.0) 하루에 여러 번(n시간에 한 번)도 되게: 끝나지 않은 회차는 시작한 지 20시간 안이면 이어서, 아니면 새 회차 (차례는 benchJob이 정함) */
     const JN = 'bench_' + sc; let prog = await loadProgress(JN); const halfDone = (q) => !!(q && q.lastPage && (q.page - 1) / q.lastPage > 0.5); /* (1.56.4) 절반 넘게 읽고 멈춘 회차는 20시간이 지나도 그 쪽부터 이어 읽음(그사이 뒤쪽이 팔린 손실은 감안) */
-    if (prog && halfDone(prog) && prog.startedAt && Date.now() - Date.parse(prog.startedAt) >= 20 * 3600e3) log(`🎯 '${name}': ${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')}에 시작해 ${prog.page - 1}/${prog.lastPage}쪽까지 읽고 멈춘 회차 — 절반을 넘었으니 20시간이 지났어도 ${prog.page}쪽부터 이어 읽음`);
-    if (!prog || !((prog.startedAt && Date.now() - Date.parse(prog.startedAt) < 20 * 3600e3) || halfDone(prog)) || (!Array.isArray(prog.items) && !(prog.blocks > 0))) { prog = { day, page: 1, items: [], blocks: 0, startedAt: nowIso(), sc, name, readDone: false, pagingBroken: false, lastPage: null, rows: await benchRowsPick(sc, name, st) };
+    if (prog && prog.startedAt && Date.now() - Date.parse(prog.startedAt) >= 20 * 3600e3 && !prog.readDone && (prog.page || 1) > 1) log(`🎯 '${name}': ${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')}에 시작해 ${prog.page - 1}${prog.lastPage ? '/' + prog.lastPage : ''}쪽까지 읽고 멈춘 회차 — 시간이 지났어도 📍 이어 읽을 자리를 찾아 이어 읽음`);
+    /* (1.63.8) 정범 결정: 멈춘 까닭·지난 시간과 상관없이 끝나지 않은 회차는 늘 이어 읽음 — 이어 읽을 자리는 아래 '이어 읽기 자리 찾기'(마지막에 읽은 상품 10개의 순서)로 확정 · 못 찾으면 그 회차를 거기서 끝내고 50% 기준 */
+    if (!prog || (!Array.isArray(prog.items) && !(prog.blocks > 0)) || (Array.isArray(prog.items) && !prog.items.length && !(prog.blocks > 0))) { prog = { day, page: 1, items: [], blocks: 0, startedAt: nowIso(), sc, name, readDone: false, pagingBroken: false, lastPage: null, rows: await benchRowsPick(sc, name, st) };
       /* (1.54.2) 새 회차는 진행 문서를 통째로 바꿔 씀 — 진행 저장은 합치기(merge)라, 예전엔 지난 회차의 '숍 읽기 끝남(readDone)'이 남아 있다가 멈췄다 이어 할 때 몇 쪽만 읽고 회차를 끝냈음(나머지 수만 개가 '이번에 안 보임') */
       try { await C('prd_jobs').doc(JN).set({ day, page: 1, blocks: 0, startedAt: prog.startedAt, sc, name, readDone: false, pagingBroken: false, lastPage: null, rows: prog.rows, done: false, by: PC_NAME, pc: PC_ID, savedAt: Date.now(), ...W() }); } catch (e) {} }
     /* (1.54.2) 이어 할 때 '읽기 끝남'인데 숍 끝 쪽까지 못 읽었으면 믿지 않고 그 쪽부터 이어 읽음 (2쪽이 1쪽과 같은 숍은 1쪽만 쓰는 게 맞아 제외) */
@@ -1508,7 +1510,25 @@
      *  진행 저장·이어 하기·빈 쪽·끝 쪽 판단은 예전과 똑같이 쪽마다(처리 순서가 쪽 순서) — 같이 받은 뒤쪽은 앞쪽이 실패하면 버리고 다음에 그 쪽부터 */
     const ROWS = prog.rows || 48; let K = 2, okRun = 0;
     const page48 = (pg, i) => Math.floor(((pg - 1) * ROWS + i) / 48) + 1; /* 배지 상품이 '48개 쪽'으로 몇 쪽인지 — 예전 기록과 같은 뜻으로 */
-    if (!prog.readDone) for (;;) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); }
+    /* (1.63.8) 📍 이어 읽기 자리 찾기 — 멈췄던 회차를 이어 읽을 때, 그사이 앞쪽이 팔리면(상품이 앞으로 당겨짐) 몇 개를 못 보고 지나치고, 새로 올리면(뒤로 밀림) 이미 읽은 쪽을 다시 읽게 됨
+     *  숍은 등록순이라 그사이 생기는 변화는 '맨 앞에 새로 올림'과 '어디선가 팔려 빠짐'뿐 → 마지막에 읽은 상품 10개는 순서가 그대로 남음(빠진 것만 있을 수 있음)
+     *  멈춘 쪽(마지막으로 읽은 쪽)부터 그 앞뒤로 3쪽씩 열어 그 10개가 순서대로 7개 이상 나오는 곳을 찾음 → 마지막으로 읽은 상품이 있는 쪽부터 이어 읽음(이미 읽은 상품은 상품 번호로 걸러 겹치지 않음)
+     *  7개 이상이 순서대로 안 나오면(앞뒤 3쪽을 넘게 밀렸거나 많이 팔림) 이어 읽을 기준이 없으므로 이 회차를 여기서 끝냄 → 읽은 양이 숍의 50%를 넘으면 쓰는 회차(못 읽은 뒤쪽은 '잠정 있음'으로 두고 다음 회차에서 확정), 50% 이하면 통계에서 뺌 — 어느 쪽이든 판매자 상세 회차별 기록에 남김 */
+    let anchorStop = false;
+    if (!prog.readDone && prog.page > 1 && prog.items.length) { const A = prog.items.slice(-10).map((x) => String(x[0])); const base = Math.max(1, prog.page - 1); const tried = []; const seen = new Map(); let hit = null; const t0a = Date.now();
+      const order = [0, 1, -1, 2, -2, 3, -3].map((d) => base + d).filter((pg) => pg >= 1 && (!lastP || pg <= lastP + 3));
+      const match = () => { const pgs = [...seen.keys()].sort((a, b) => a - b); let best = null;
+        for (let i = 0; i < pgs.length; i++) { const L = []; for (let j = i; j < pgs.length && pgs[j] === pgs[i] + (j - i); j++) seen.get(pgs[j]).forEach((id, ix) => L.push([id, pgs[j], ix]));
+          const pos = new Map(L.map((x, k) => [x[0], k])); let k0 = -1, m = 0, last = null; for (const id of A) { const k = pos.get(id); if (k == null || k <= k0) continue; k0 = k; m++; last = L[k]; } if (m >= Math.min(7, A.length) && (!best || m > best.m)) best = { m, page: last[1], ix: last[2] }; }
+        return best; };
+      for (const pg of order) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); } let g; try { g = await PUB.read('shop', benchUrl(sc, pg, ROWS), (x) => ({ items: benchParse(x.doc) }), (x) => benchParse(x.doc).length > 0); } catch (e) { if (e.message === '멈춤') { await saveBk(); throw e; } continue; }
+        const L = benchParse(g.doc).map((x) => String(x.id)); seen.set(pg, L); tried.push(pg); if (pg === 1 || !lastP) { const lp = benchLastPage(g.doc, g.html); if (lp) { lastP = Math.max(lp, 1); prog.lastPage = lastP; } }
+        hit = match(); if (hit) break; }
+      const R = { at: nowIso(), from: prog.page, base, tried, m: hit ? hit.m : 0, n: A.length, ms: Date.now() - t0a };
+      if (hit) { R.to = hit.page; R.shift = hit.page - base; prog.page = hit.page; log(`🎯 '${name}': 📍 이어 읽기 자리 확인 — 마지막에 읽은 상품 ${A.length}개 중 ${hit.m}개가 순서대로 ${hit.page}쪽에 있음${R.shift ? ` (멈춘 뒤 ${R.shift > 0 ? `새로 올려 ${R.shift}쪽 뒤로` : `팔려서 ${-R.shift}쪽 앞으로`} 밀림)` : ''} → ${hit.page}쪽부터 이어 읽음 (이미 읽은 상품은 건너뜀)`); }
+      else { R.lost = true; anchorStop = true; prog.anchorLost = R; prog.page = base + 1; log(`🎯 '${name}': 📍 이어 읽을 자리를 못 찾음 — 마지막에 읽은 상품 ${A.length}개가 멈춘 쪽(${base}쪽) 앞뒤 3쪽(${tried.join('·')}쪽)에 순서대로 7개 이상 없음(그사이 많이 올리거나 팔림) → 이 회차는 ${base}쪽까지 읽은 것으로 끝내고 50% 기준을 적용`, 1); }
+      prog.resumes = (prog.resumes || []).concat([R]).slice(-20); await saveProgress(JN, meta()); }
+    if (!prog.readDone && !anchorStop) for (;;) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); }
       if (lastP && prog.page > lastP + 3) break; /* 읽는 동안 새로 올라온 만큼 뒤로 밀릴 수 있어 끝 쪽 + 3쪽까지 */
       if (PACE.cooling && PACE.cooling() > 0) K = 1;
       const pgs = []; for (let q = 0; q < (lastP ? K : 1); q++) { const pg = prog.page + q; if (lastP && pg > lastP + 3) break; pgs.push(pg); }
@@ -1539,7 +1559,7 @@
     { const lastRead = prog.page - 1; const r1 = prog.readFrom1 === true || (prog.readFrom1 === undefined && prog.items.length > 0 && !prog.resumedOld); let ok = false, why = '';
       /* (1.56.4) 정범 결정: 숍의 절반(50%) 넘게 읽었으면 쓰는 회차, 절반 이하에서 그만둔 회차만 버림(통계·비교 기준·'오늘 읽음' 모두에서 빼고 다음엔 1쪽부터 새로) */
       const cov = prog.pagingBroken ? (!lastP || lastP <= 1 ? 1 : 1 / lastP) : lastP ? Math.min(1, lastRead / lastP) : 1; prog.cover = Math.round(cov * 1000) / 1000;
-      if (!prog.items.length) why = '읽은 상품 없음'; else if (!r1) why = '이 회차가 1쪽부터 읽지 않음'; else { ok = cov > 0.5; why = ok ? '' : `숍의 ${Math.round(cov * 100)}%만 읽고 그만둠(끝 쪽 ${lastP || '?'}쪽 중 ${prog.pagingBroken ? 1 : lastRead}쪽) — 50% 이하라 버림`; }
+      if (!prog.items.length) why = '읽은 상품 없음'; else if (!r1) why = '이 회차가 1쪽부터 읽지 않음'; else { ok = cov > 0.5; why = ok ? '' : `숍의 ${Math.round(cov * 100)}%만 읽고 그만둠(끝 쪽 ${lastP || '?'}쪽 중 ${prog.pagingBroken ? 1 : lastRead}쪽)${prog.anchorLost ? ' · 이어 읽을 자리를 못 찾아 끝냄' : ''} — 50% 이하라 통계에서 뺌`; }
       prog.fullRead = ok; prog.fullWhy = why; }
     if (!prog.readDone) { prog.readDone = true; await saveProgress(JN, meta()); } /* (1.52.0) 읽기 끝을 먼저 적어 둠 — 저장 단계에서 멈춰도 다시 읽지 않음 */
     const secPerPage = prog.page > p0 ? Math.round((Date.now() - t0) / (prog.page - p0) / 100) / 10 : st.secPerPage || null; await benchFinish(t, prog, { ...st, secPerPage, lastPage: lastP || null });
@@ -1594,7 +1614,7 @@
      *  숍 상품 상태(조각)·상품 기록(bench_items)·마지막 온전한 회차는 그대로 → 다음 온전한 회차가 마지막 온전한 회차와 바로 견줌 (그 사이 기간은 spanDays로 나눠 하루 값을 냄) */
     if (!RUN_OK) { const seenN = new Set(prog.items.map((x) => x[0])).size; let dayId = `${sc}_${day}`; { const ex = (await C('bench_days').doc(dayId).get()).data(); if (ex) dayId = `${sc}_${day}_${new Date(Date.parse(prog.startedAt || nowIso()) + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; }
       const PCH = 2500; const pn = Math.ceil(prog.items.length / PCH); for (let k = 0; k < pn; k++) await C('bench_partial').doc(`${dayId}_${k}`).set({ sc, dayId, k, n: Math.min(PCH, prog.items.length - k * PCH), s: JSON.stringify(prog.items.slice(k * PCH, (k + 1) * PCH)), fmt: 'json', at: nowIso(), ...W() }).catch(() => {}); /* 읽은 상품은 버리지 않고 상품 정보로만 보관 — 벤치마킹 통계·비교에는 쓰지 않음 */
-      await C('bench_days').doc(dayId).set({ sc, name: t.name || sc, day, dayId, base: false, partial: true, complete: false, total: seenN, pages: prog.page, runLastPage: prog.lastPage || null, runAt: prog.startedAt || null, at: nowIso(), pc: PC_NAME, strict: 1, cover: prog.cover ?? null, readTo: prog.page - 1, partialChunks: pn, why: `끝까지 확실히 읽지 못한 회차 — ${prog.fullWhy || `끝 쪽 ${prog.lastPage || '?'}쪽`} · 통계·비교 기준에서 뺌(읽은 상품은 bench_partial에 상품 정보로만)`, ...W() });
+      await C('bench_days').doc(dayId).set({ sc, name: t.name || sc, day, dayId, base: false, partial: true, complete: false, total: seenN, pages: prog.page, runLastPage: prog.lastPage || null, runAt: prog.startedAt || null, at: nowIso(), pc: PC_NAME, strict: 1, cover: prog.cover ?? null, readTo: prog.page - 1, partialChunks: pn, resumes: prog.resumes || null, anchorLost: prog.anchorLost || null, why: `끝까지 확실히 읽지 못한 회차 — ${prog.fullWhy || `끝 쪽 ${prog.lastPage || '?'}쪽`} · 통계·비교 기준에서 뺌(읽은 상품은 bench_partial에 상품 정보로만)`, ...W() });
       await C('bench_state').doc(sc).set({ ...(!st.okRunAt && st.day && st.complete !== false && st.runAt ? { okRunAt: st.runAt } : {}), prog: null, partialRuns: firebase.firestore.FieldValue.increment(1), lastPartial: { day, pages: prog.page, lastPage: prog.lastPage || null, seen: seenN, at: nowIso() }, at: nowIso(), ...W() }, { merge: true });
       log(`🎯 '${t.name || sc}': 숍 끝 쪽(${(prog.lastPage || 0).toLocaleString()}쪽)까지 못 읽고 ${prog.page.toLocaleString()}쪽에서 끝난 회차 — 본 ${seenN.toLocaleString()}개만으로는 새로 올림·사라짐을 판단하지 않음(비교 기준·상품 기록 그대로, 통계에서 뺌). 다음 온전한 회차가 마지막 온전한 회차(${st.day || '-'})와 바로 견줌`, 1); return; }
     const okPrev = st.okRunAt || (st.day && st.complete !== false ? st.runAt : null); const spanDays = !st.day ? null : okPrev && prog.startedAt ? Math.max(0, Math.round(((Date.parse(prog.startedAt) - Date.parse(okPrev)) / 864e5) * 100) / 100) : null; /* (1.56.2) 마지막 온전한 회차부터 이 회차까지 며칠어치 변화인지 — 하루 값을 낼 때 나눔 */ const old = new Map(); const nC = st.chunks || 0;
@@ -1633,7 +1653,7 @@
       totalBand: cntBy(all, (v) => band(v[0])), totalGrade: cntBy(all, (v) => v[2] || '?'), addBand: cntBy(add, (x) => band(x.p)), addGrade: cntBy(add, (x) => x.g || '?'), addYear: cntBy(add, (x) => (x.ym ? x.ym.slice(0, 4) : '?')),
       goneBand: cntBy(gone, (x) => band(x.p)), goneGrade: cntBy(gone, (x) => x.g || '?'), goneLife: cntBy(gone.filter((x) => !x.base), (x) => (x.life <= 3 ? '0~3일' : x.life <= 7 ? '4~7일' : x.life <= 14 ? '8~14일' : x.life <= 30 ? '15~30일' : x.life <= 60 ? '31~60일' : '61일~')),
 /* (1.54.0) 💰 판매가 합 — 지금 숍 전체(재고 가치)·배지 보유분·이번 회차 사라진 것·새로 올린 것 (목록은 3,000개까지만 담지만 합은 전부로) */
-      complete: RUN_OK, strict: 1, cover: prog.cover ?? null, readTo: prog.page - 1, spanDays, runLastPage: prog.lastPage || null, /* (1.54.2) 숍 끝 쪽까지 읽은 회차인지 — 웹앱·순서표는 끝까지 못 읽은 회차를 셈에서 빼고 곧바로 다시 읽을 차례로 */
+      complete: RUN_OK, strict: 1, cover: prog.cover ?? null, readTo: prog.page - 1, spanDays, resumes: prog.resumes || null, anchorLost: prog.anchorLost || null, runLastPage: prog.lastPage || null, /* (1.54.2) 숍 끝 쪽까지 읽은 회차인지 — 웹앱·순서표는 끝까지 못 읽은 회차를 셈에서 빼고 곧바로 다시 읽을 차례로 */
       sumNow: all.reduce((a2, v) => a2 + (+v[0] || 0), 0), priceN: all.filter((v) => +v[0] > 0).length, sumLow: all.filter((v) => v[5]).reduce((a2, v) => a2 + (+v[0] || 0), 0), sumGone: gone.reduce((a2, x) => a2 + (+x.p || 0), 0), sumGoneNew: gone.filter((x) => !x.base).reduce((a2, x) => a2 + (+x.p || 0), 0), sumAdd: add.reduce((a2, x) => a2 + (+x.p || 0), 0),
       lowNow: all.filter((v) => v[5]).length, lowOn: lowOn.length, lowOff: lowOff.length, goneLow: gone.filter((x) => x.low).length, goneLowNew: gone.filter((x) => x.low && !x.base).length, addLow: add.filter((x) => x.low).length, lowBand: cntBy(all.filter((v) => v[5]), (v) => band(v[0])), lowOnList: lowOn.slice(0, 1000).map((x) => JR([x.id, T60(x.t), x.p, x.g, x.pg || null])), lowOffList: lowOff.slice(0, 1000).map((x) => JR([x.id, T60(x.t), x.p, x.g])),
       addList: add.slice(0, 3000).map((x) => JR([x.id, T60(x.t), x.p, x.g, x.ym, x.isbn, x.pl, x.low, x.cat || null])), goneList: gone.slice(0, 3000).map((x) => JR([x.id, T60(x.t), x.p, x.g, x.base ? null : x.life, x.first, x.low ? 1 : 0, x.isbn || null, x.cat || null, x.ym || null])), movedList: moved.slice(0, 1000).map((x) => JR([x.id, x.from, x.to])), rowFmt: 'json',
@@ -1644,7 +1664,7 @@
     let dayId = `${sc}_${day}`; { const ex = (await C('bench_days').doc(dayId).get()).data(); if (ex && ex.runAt && prog.startedAt && ex.runAt !== prog.startedAt) dayId = `${sc}_${day}_${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; else if (ex && !ex.runAt && prog.startedAt && ex.at && Date.parse(ex.at) < Date.parse(prog.startedAt)) dayId = `${sc}_${day}_${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; }
     sumD.dayId = dayId; await C('bench_days').doc(dayId).set(sumD);
     const ent = [...now.entries()]; const CH = 2500; /* (1.53.0) 상품마다 ISBN·분류가 붙어 한 조각 2,500개로 (Firebase 문서 1MB 한도) */ const chunks = Math.ceil(ent.length / CH); for (let k = 0; k < chunks; k++) await C('bench_state').doc(sc).collection('c').doc(String(k)).set({ s: JSON.stringify(Object.fromEntries(ent.slice(k * CH, (k + 1) * CH))), n: Math.min(CH, ent.length - k * CH), fmt: 'json', day, at: nowIso() }); /* (1.53.3) 조각을 글자(JSON) 한 칸으로 — 상품마다 목록(값 11개)을 칸으로 두면 Firebase가 칸마다 색인을 만들어 '색인 항목이 너무 많음(too many index entries)'으로 거절했음 */
-    await C('bench_state').doc(sc).set({ sc, name: t.name || sc, day, runAt: prog.startedAt || nowIso(), endAt: nowIso(), runs: firebase.firestore.FieldValue.increment(1), detailNow: sumD.detailNow, total: seenN + notRead, missOnce: miss.length, notRead, pages: prog.page, lastPage: prog.lastPage || st.lastPage || null, chunks, startDay: st.startDay || day, secPerPage: st.secPerPage || null, lowNow: all.filter((v) => v[5]).length, prog: null, complete: RUN_OK, okRunAt: prog.startedAt || nowIso(), okEndAt: nowIso(), at: nowIso(), ...W() }, { merge: true }); /* (1.54.0) 회차 끝 — 하는 중 표시 지움 · (1.54.2) 끝까지 읽었는지 */
+    await C('bench_state').doc(sc).set({ sc, name: t.name || sc, day, runAt: prog.startedAt || nowIso(), endAt: nowIso(), runs: firebase.firestore.FieldValue.increment(1), detailNow: sumD.detailNow, total: seenN + notRead, missOnce: miss.length, notRead, pages: prog.page, lastPage: prog.lastPage || st.lastPage || null, chunks, startDay: st.startDay || day, secPerPage: st.secPerPage || null, lowNow: all.filter((v) => v[5]).length, prog: null, complete: RUN_OK, okRunAt: prog.startedAt || nowIso(), okEndAt: nowIso(), ...(FULL ? { completeEndAt: nowIso() } : {}), at: nowIso(), ...W() }, { merge: true }); /* (1.63.8) completeEndAt = 숍 끝까지 다 읽은 회차가 끝난 때(⏭ 건너뛰기 기준) */ /* (1.54.0) 회차 끝 — 하는 중 표시 지움 · (1.54.2) 끝까지 읽었는지 */
     log(`집중 벤치마킹 '${t.name || sc}': ${seenN.toLocaleString()}개${miss.length ? ` · 이번에 안 보임 ${miss.length}(내일도 없으면 사라짐)` : ''}${back.length ? ` · 어제 놓쳤다 다시 보임 ${back.length}` : ''} · ${base ? '첫 바퀴(오늘부터 새로 올린 것을 셈)' : `새로 올림 ${add.length} · 사라짐 ${gone.length}(최저가였던 것 ${gone.filter((x) => x.low).length}) · 값 바뀜 ${moved.length} · 최저가 표시 지금 ${all.filter((v) => v[5]).length}개(새로 ${lowOn.length} · 잃음 ${lowOff.length})`}`); }
 
 
@@ -1887,7 +1907,8 @@
         await ref.set({ results, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); await sleep(800); } // (1.34.7) 한 건마다 결과·살아 있음 신호
       // (1.34.0) 주문확인요청 화면을 제대로 읽었을 때만 '끝남' — 로그인 화면·읽기 실패로 빈 목록이면 '확인 못함'(웹앱에서 다시 확인)
       let gcDoc = null; try { const gc = await getDoc('https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx'); gcDoc = gc.doc; const x = SH.parseDeliveryPage(gc.doc); const okP = !!(x && x.tabCounts && Object.keys(x.tabCounts).length); const left = new Set((x.orders || []).map((o) => o.orderNo));
-        for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = !okP ? 'unknown' : left.has(ono) ? 'fail' : 'done'; if (!okP) gcDoc = null; } catch (e) { for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = 'unknown'; }
+        const full = okP && x.tabCounts['주문확인요청'] != null && left.size >= x.tabCounts['주문확인요청']; let deliv = null; if (okP && !full) { try { const g2 = await getDoc('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4'); deliv = new Set((SH.parseDeliveryPage(g2.doc).orders || []).map((o) => o.orderNo)); } catch (e) {} } /* (1.63.8 점검) '끝남'은 확실할 때만 — 주문확인요청 목록을 다 봤거나 발송 요청 목록에 실제로 보일 때(클라우드와 같은 기준) */
+        for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = !okP ? 'unknown' : left.has(ono) ? 'fail' : full || (deliv && deliv.has(ono)) ? 'done' : 'unknown'; if (!okP) gcDoc = null; } catch (e) { for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = 'unknown'; }
       for (const [ono, r] of Object.entries(results)) if (!r.gate) await exEnd('startDelivery', `${id}:${ono}`, r.state === 'done' ? 'done' : r.state === 'fail' ? 'failed' : 'unknown', r.msg || null, { http: r.http || null });
       const nd = Object.values(results).filter((r) => r.state === 'done').length; await ref.set({ status: 'done', results, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
       try { await shipLiteRead(SH, gcDoc); } catch (e) {} // (1.34.6) 넘긴 결과를 바로 목록에 — 웹앱에서 주문확인요청에서 빠지고 발송 요청에 들어감
@@ -2420,7 +2441,7 @@
   /* (1.60.1) 계산(엔진)·칸 편집기 화면은 공용 파일 readnow-autosched-core.js 한 곳(웹앱 설정의 편집기와 같은 것) — 여기는 Firebase 읽기·쓰기와 실행만 */
   const RA = (typeof ReadnowAuto !== 'undefined' && ReadnowAuto) || globalThis.ReadnowAuto || window.ReadnowAuto || null; const AS = RA ? RA.AS : null;
   const SCHED_REF = () => C('prd_system').doc('autoSched'); const SCHED_RUN = () => C('prd_jobs').doc('autoSched'); const JSTAT_REF = () => C('prd_system').doc('jobStats');
-  let SCHED = null, SCHED_RUNS = {}, JSTATS = {}; window.__rnSchedOn = false; const BOOT_AT = Date.now(); let lastBusyAt = Date.now();
+  const SCHED_BACK = {}; let SCHED = null, SCHED_RUNS = {}, JSTATS = {}; window.__rnSchedOn = false; const BOOT_AT = Date.now(); let lastBusyAt = Date.now();
   /* (1.63.7) 🖥 자동 수집 담당 PC — 수집기(이 PC의 수집기 탭)가 2분마다 prd_jobs/pcBeat에 신호(살아 있음·쉬는 중 이유)를 적고 같이 읽음
    *  담당·순서 = prd_system/autoSched.owner(⏰ 편집기 맨 위 · 웹앱 ⏰ 페이지에서도) · 판단은 공용 파일 AS.ownerOf 한 곳 */
   let BEATS = {}; const BEAT_REF = () => C('prd_jobs').doc('pcBeat');
@@ -2524,7 +2545,7 @@
     const now = Date.now(); const dues = AS.due(SCHED, SCHED_RUNS, { now, pc: PC_NAME, own: asOwn(), crmOk: !!(window.__rnCrm && window.__rnCrm.start), idleMs: now - lastBusyAt, bootAt: BOOT_AT, stats: JSTATS }); if (!dues.length) return; schedBusy = true;
     try { for (const d of dues.filter((x) => x.mark !== 'run' && !(x.slot.job === 'prd:shipRead' && cloudOn()))) await schedMark(d).catch(() => {});
       let due = null; let lk = null;
-      for (const d of dues) { if (d.mark !== 'run') continue; const kind = d.slot.job.split(':')[0]; if (asMissing(d.slot)) continue; /* 이 판에 없는 일 — 그 일을 아는 PC가 함 */
+      for (const d of dues) { if (d.mark !== 'run') continue; if ((SCHED_BACK[d.key] || 0) > Date.now()) continue; const kind = d.slot.job.split(':')[0]; if (asMissing(d.slot)) continue; /* 이 판에 없는 일 — 그 일을 아는 PC가 함 */
         if (kind === 'prd' && PAR_JOBS[d.slot.job.slice(4)]) continue; /* 동시 진행 일은 parTick이 */ if (d.slot.job === 'prd:shipRead' && cloudOn()) continue; /* 클라우드가 살아 있으면 발송 요청은 클라우드가 읽음 — 이 칸은 건너뜀(기록 안 남김) */
         if (kind === 'crm' && window.__rnCrm.otherBusy && window.__rnCrm.otherBusy()) continue;
         if (kind === 'prd') { if (!JOBS[d.slot.job.slice(4)]) continue; if (lk === null) lk = (await LOCK().get()).data() || {}; if (laneBusy(lk)) continue; }
@@ -2538,7 +2559,7 @@
       try { if (kind === 'prd') { window.__rnAuto = true; res = await runJob(key2, { sched: true }); err = lastRunErr || (lastRunSt === 'stop' && res !== false ? '멈춤' : null); }
         else { const r0 = await window.__rnCrm.start(key2, { fresh: false }); res = r0 === undefined ? false : r0; if (r0 === 'error') err = '고객 작업 오류 (고객 탭 기록 확인)'; else if (r0 === 'paused') err = '멈춤'; if (tm) clearTimeout(tm); if (!err && !timedOut && r0 !== undefined && !['bulk', 'upload'].includes(key2) && window.__rnCrm.upload) await window.__rnCrm.upload(); } }
       catch (e) { err = e.message; } finally { window.__rnAuto = false; window.__rnAutoSlot = null; clearInterval(hb); if (tm) clearTimeout(tm); }
-      if (res === false) { await SCHED_RUN().set({ runs: { [due.key]: firebase.firestore.FieldValue.delete() } }, { merge: true }); log(`⏰ '${asName(S1)}': 다른 PC·탭이 작업 중이라 다음 확인 때 다시`, 1); return; }
+      if (res === false) { await SCHED_RUN().set({ runs: { [due.key]: firebase.firestore.FieldValue.delete() } }, { merge: true }); const first = !SCHED_BACK[due.key]; SCHED_BACK[due.key] = Date.now() + 10 * 60e3; if (first) log(`⏰ '${asName(S1)}': 다른 PC·탭이 작업 중이라 10분 뒤 다시 (그사이 1분마다 다시 시도하지 않음)`, 1); return; } /* (1.63.8 점검) 예전엔 1분마다 다시 잡고 지우기를 되풀이(읽기·쓰기 낭비) */
       const st = timedOut ? 'timeout' : err === '멈춤' ? 'stop' : err ? 'error' : 'done';
       await SCHED_RUN().set({ runs: { [due.key]: { by: PC_NAME, at: nowIso(), st: new Date(t0).toISOString(), state: st, ms: Date.now() - t0, err: err || null, job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0 } } }, { merge: true });
       log(`⏰ 매일 자동: '${asName(S1)}' ${st === 'done' ? '끝' : st === 'timeout' ? '최대 시간이라 멈춤' : '멈춤 — ' + err} (${Math.round((Date.now() - t0) / 60000)}분)`, st === 'done' ? 0 : 1);
@@ -2546,10 +2567,11 @@
     } catch (e) { log('⏰ 매일 자동 확인 실패: ' + (e.code || e.message), 1); } finally { schedBusy = false; } }
   /* 개요 화면용: 다음에 저절로 할 일 (정한 시각·간격만 — 조건 칸은 때를 미리 모름) */
   window.__rnSchedNext = () => { if (!SCHED) return { known: false }; if (!SCHED.on) return { known: true, on: false }; const { min } = kstNow(); let best = null;
-    for (const s of AS.slotsOf(SCHED)) { if (!s.on) continue; let cand = [];
+    const dow = AS.kst(Date.now()).dow, dowT = (dow + 1) % 7; const own = asOwn(); /* (1.63.8 점검) 요일·PC 거르기·담당 PC도 봄 — 이 PC가 하지 않을 칸을 '다음'으로 보이지 않게 */
+    for (const s of AS.slotsOf(SCHED)) { if (!s.on) continue; if (s.pcs && !s.pcs.includes(String(PC_NAME))) continue; if (!s.pcs && own && own.pc && String(own.pc) !== String(PC_NAME)) continue; let cand = [];
       if (s.trig.t === 'time') cand = s.trig.times.map((t) => AS.tMin(t)); else if (s.trig.t === 'month' && AS.timesToday) cand = AS.timesToday(s.trig, Date.now()).map((t) => AS.tMin(t)).filter((m) => m > min); /* (1.63.1) 매월 정한 날 — 오늘이 고른 날일 때만 */
       else if (s.trig.t === 'every') { const f = s.win ? AS.tMin(s.win.from) : 0; for (let m = f, i = 0; i < 288; m += s.trig.min, i++) { const mm = m % 1440; if (AS.inWin(s, mm)) cand.push(mm); if (m - f >= 1440) break; } }
-      for (const m of cand) { const d = m > min ? m - min : m + 1440 - min; if (!best || d < best.d) best = { d, t: AS.hm(m), label: asName(s), tomorrow: m <= min }; } }
+      for (const m of cand) { if (s.days && !s.days.includes(m > min ? dow : dowT)) continue; const d = m > min ? m - min : m + 1440 - min; if (!best || d < best.d) best = { d, t: AS.hm(m), label: asName(s), tomorrow: m <= min }; } }
     return { known: true, on: true, next: best }; };
   /* (1.57.4) 회차 기록(prd_jobs/autoSched.runs)은 날마다 쌓여 한 문서(1MB) 한도에 닿을 수 있음 → 40일 지난 회차는 달마다 prd_jobs/autoSched_YYYY-MM 문서로 옮겨 보관(지우지 않음 · 옮기기와 빼기를 한 묶음으로 = 둘 다 되거나 둘 다 안 됨) */
   /* (1.63.6 전체 점검) 한 문서의 색인 칸 한도(4만 개)에 먼저 닿음: 15분마다·1시간마다 칸이 40일이면 회차 수천 개 × 칸 8개 → 거의 4만 → 넘으면 모든 PC의 자동 수집 확인·기록이 실패
@@ -2791,18 +2813,22 @@
     // ① 아무 작업도 없을 때(2분 이상 쉼) 또는 ② 모두 일괄 수집의 단계와 단계 사이에서만 새로고침 → 새 버전으로 그 자리부터 자동으로 이어감.
     // 같은 버전으로는 한 번만 시도 (동기화 전이라 새로고침해도 예전 버전이면, 그 버전으로 그냥 계속).
     const want = GM_getValue('rnu-reload-for', null); if (want && verNum(want) <= verNum(VER)) GM_setValue('rnu-reload-for', null);
-    ref.onSnapshot((d) => { const v = (d.data() || {}).ver; if (!v || verNum(v) <= verNum(VER) || window.__rnOutdated) return;
+    /* (1.63.8) ⚡ 빠른 업데이트(본체의 GitHub 직접 받기)가 새 판을 받아 두면 같은 길로 — 쉬는 사이(또는 긴 작업이면 저장 지점에서) 새로고침해 새 판으로 그 자리부터 */
+    let verTimer = null;
+    window.__rnLiveReady = (v) => { try { if (!v || verNum(v) <= verNum(VER)) return; if (window.__rnOutdated === v && verTimer) return; GM_setValue('rnu-reload-for', null); GM_setValue('rnu-reload-try', null); if (verTimer) { clearInterval(verTimer); verTimer = null; } window.__rnOutdated = null; onNewVer(v, '⚡ 빠른 업데이트로 새 판을 받아 둠'); } catch (e) {} };
+    ref.onSnapshot((d) => onNewVer((d.data() || {}).ver), () => {});
+    function onNewVer(v, src) { if (!v || verNum(v) <= verNum(VER) || window.__rnOutdated) return;
       window.__rnOutdated = v; if (window.__rnFeat && !window.__rnFeat('update')) { log(`새 수집기 ${v}가 있지만 이 PC는 🧩 '새 판 저절로 맞추기'를 꺼 둠 — 직접 새로고침해야 바뀜`, 1); return; } const tried = GM_getValue('rnu-reload-for', null) === v;
       /* (1.59.2) 한 번 새로고침했는데도 옛 판이면(Tampermonkey 동기화가 아직 안 옴) 예전엔 그 판으로 끝까지 버팀 → 이제 30분마다(쉬는 사이에만) 다시 새로고침해 동기화가 왔는지 봄, 같은 판으로 최대 8번 */
       const RT0 = GM_getValue('rnu-reload-try', null); const nTry = RT0 && RT0.v === v ? +RT0.n || 0 : 0;
       log(`새 수집기 ${v}가 있습니다 (이 탭은 ${VER}). 지금 작업은 그대로 계속합니다${tried ? (nTry >= 8 ? ' (이 PC의 Tampermonkey에 새 판이 아직 없음 — 8번 다시 열어 봐도 그대로라 더 하지 않음 · 그 PC의 Tampermonkey 동기화를 확인하세요)' : ` (이 PC는 아직 동기화 전 — 30분마다 쉬는 사이에 다시 열어 동기화가 왔는지 확인 ${nTry}/8)`) : '. 쉬는 사이나 일괄 수집 단계 사이에 새 버전으로 바꿔 이어갑니다'}`);
       if (tried && nTry >= 8) return; let idleSince = null; const seenAt = Date.now();
-      const t = setInterval(() => { const busy = running || imgRunning || (window.__rnCrm && window.__rnCrm.busy());
+      const t = verTimer = setInterval(() => { const busy = running || imgRunning || (window.__rnCrm && window.__rnCrm.busy());
         // (1.38.0) 오래 걸리는 작업 중이면(새 판을 본 지 10분 넘게) 진행 위치 저장 지점에서 멈추고 새로고침해 새 판으로 그 자리부터 이어감
         //   예전: 쉬거나 일괄 단계 사이에서만 바꿔, 몇 시간짜리 단계가 끝날 때까지 옛 판으로 돌았음(10/8: 16:32에 1.37.0을 보고도 계속 1.27.0)
         if (!tried && busy && running && !imgRunning && !(window.__rnCrm && window.__rnCrm.busy()) && !window.__rnPaused && !memReload && !verReload && curKey && curKey !== 'explore' && JOBS[curKey] && Date.now() - seenAt > 10 * 60000) { clearInterval(t); verReload = true; stopFlag = true; log(`새 수집기 ${v}로 바꾸려고 지금 항목까지 저장하고 멈춥니다 — 새로고침 뒤 '${JOBS[curKey][0]}'을(를) 그 자리부터 자동으로 이어감`, 1); return; }
         if (busy) { idleSince = null; return; } idleSince = idleSince || Date.now(); if (Date.now() - idleSince < 120000) return; if (tried && Date.now() - ((RT0 && RT0.at) || 0) < 30 * 60000) return;
-        clearInterval(t); GM_setValue('rnu-reload-for', v); GM_setValue('rnu-reload-try', { v, n: nTry + 1, at: Date.now() }); safeReload(tried ? `새 버전 ${v} 동기화 확인 (${nTry + 1}/8)` : '새 버전으로 바꿈', null); }, 10000); }, () => {});
+        clearInterval(t); GM_setValue('rnu-reload-for', v); GM_setValue('rnu-reload-try', { v, n: nTry + 1, at: Date.now() }); safeReload(tried ? `새 버전 ${v} 동기화 확인 (${nTry + 1}/8)` : (src ? src + ' — 새 판으로 바꿈' : '새 버전으로 바꿈'), null); }, 10000); }
     // 새로고침 뒤 이어가기: 실제로 시작될 때까지 표시를 지우지 않고 15초마다 다시 시도(최대 10분), 사람 확인 없이(무인) 시작
     { const after = GM_getValue('rnu-resume-after-reload', null);
       if (after && JOBS[after]) { let tries = 0; const t = setInterval(() => { tries++;
@@ -2860,14 +2886,17 @@
   async function safeReload(reason, resumeKey) { window.__rnReloading = Date.now(); /* (1.60.0) 새 탭으로 넘기는 동안 ⏰ 매일 자동이 새 일을 시작하지 않게 */
     if (resumeKey) GM_setValue('rnu-resume-after-reload', resumeKey);
     try { localStorage.setItem('rn-tab-handoff', JSON.stringify({ pwTab: sessionStorage.getItem('pw_tab'), at: Date.now() })); } catch (e) {} // 가격 감시 탭이었으면 새 탭이 이어받음
+    /* (1.63.8) 새로 연 탭이 이어받지 못하면 그 탭을 닫고 '닫혔는지'(tab.closed) 확인 — 못 닫았으면 또 새 탭을 열지 않고 이 탭을 그 자리에서 새로고침(빈 탭이 쌓여 PC가 느려지던 것) */
+    let lastTab = null; const closeTab = async (tb) => { if (!tb) return true; try { tb.close(); } catch (e) {} for (let i = 0; i < 12; i++) { if (tb.closed) return true; await sleep(500); } return !!tb.closed; };
     let wait = 30000; const tStart = Date.now(); log(`[안전한 새로고침] 시작 — 이유: ${reason}${resumeKey ? ` · 새 탭에서 이어갈 작업: '${(JOBS[resumeKey] || [resumeKey])[0]}'` : ''} · 지금 요청 간격 ${PACE.state().gap}ms${PACE.cooling() ? ` · 쉬는 중 ${Math.round(PACE.cooling() / 1000)}초 남음` : ''}`);
     for (let tryN = 1; ; tryN++) {
       let st = 0, em = ''; try { const r = await fetch(location.href, { credentials: 'include', cache: 'no-store' }); st = r.status; } catch (e) { st = 0; em = e.message; } log(`[안전한 새로고침] ${tryN}번째 서버 확인: ${st || '응답 없음'}${em ? ' (' + em + ')' : ''}${st === 429 ? ' — 요청 너무 많음' : ''} · 시작한 지 ${Math.round((Date.now() - tStart) / 60000)}분`);
       if (st === 200) {
         const id = HANDOFF_TAB + '_' + tryN; GM_setValue('rn-handoff', { id, at: Date.now() }); GM_setValue('rn-handoff-ack', null);
-        log(`${reason}: 새 탭으로 다시 엽니다 (${tryN}번째)`); let tab = null; try { tab = GM_openInTab(location.href.replace(/#.*$/, ''), { active: true, insert: true, setParent: true }); } catch (e) {}
-        const t0 = Date.now(); while (Date.now() - t0 < 120000) { await sleep(3000); if (GM_getValue('rn-handoff-ack', null) === id) { window.__rnLeadRelease && window.__rnLeadRelease(); log(`[안전한 새로고침] 새 탭이 이어받았습니다 (${Math.round((Date.now() - t0) / 1000)}초 만에) — 남은 기록을 저장하고 이 탭을 닫습니다 · 전체 ${Math.round((Date.now() - tStart) / 60000)}분 걸림`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} location.replace('about:blank'); return; } }
-        let closed = false; try { if (tab) { tab.close(); closed = true; } } catch (e) {} log(`[안전한 새로고침] 새 탭이 2분 안에 뜨지 않았습니다(알라딘 오류 화면 — 429 등일 가능성) → 그 탭을 ${closed ? '닫음' : '닫지 못함(직접 닫아 주세요)'} · ${Math.round(wait / 6000) / 10}분 기다렸다 다시`, 1); PACE.fail('429');
+        if (lastTab && !lastTab.closed && !(await closeTab(lastTab))) { log(`[안전한 새로고침] 앞서 연 새 탭이 닫히지 않아 새 탭을 또 열지 않고 이 탭을 그 자리에서 새로고침합니다 (탭이 쌓이지 않게)`, 1); if (window.__rnFlush) await window.__rnFlush(); GM_setValue('rn-handoff', { id, at: Date.now() }); location.reload(); return; }
+        log(`${reason}: 새 탭으로 다시 엽니다 (${tryN}번째)`); let tab = null; try { tab = GM_openInTab(location.href.replace(/#.*$/, ''), { active: true, insert: true, setParent: true }); } catch (e) {} lastTab = tab;
+        const t0 = Date.now(); while (Date.now() - t0 < 120000) { await sleep(3000); if (GM_getValue('rn-handoff-ack', null) === id) { window.__rnLeadRelease && window.__rnLeadRelease(); log(`[안전한 새로고침] 새 탭이 이어받았습니다 (${Math.round((Date.now() - t0) / 1000)}초 만에) — 남은 기록을 저장하고 이 탭을 닫습니다 · 전체 ${Math.round((Date.now() - tStart) / 60000)}분 걸림`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} await sleep(1500); /* (1.63.8) 닫기가 막힌 탭(사람이 연 탭)은 빈 화면으로 바꿔 코드가 모두 멈추게 — 새 탭이 확인해 남김 */ GM_setValue('rn-handoff-oldblank', { id, at: Date.now() }); location.replace('about:blank'); return; } }
+        const closed = await closeTab(tab); if (closed) lastTab = null; log(`[안전한 새로고침] 새 탭이 2분 안에 뜨지 않았습니다(알라딘 오류 화면 — 429 등일 가능성) → 그 탭을 ${closed ? '닫고 닫힌 것을 확인함' : '닫지 못함 — 다음엔 새 탭을 또 열지 않고 이 탭을 새로고침'} · ${Math.round(wait / 6000) / 10}분 기다렸다 다시`, 1); PACE.fail('429');
       } else { log(`${reason}: 알라딘이 ${st || '응답 없음'}(${st === 429 ? '요청 너무 많음' : '아직 안 됨'}) — ${Math.round(wait / 6000) / 10}분 뒤 다시 확인`, 1); if (st === 429) PACE.fail('429'); }
       ui(`${reason} — 알라딘이 다시 받아 줄 때까지 기다리는 중`, 0, 0, `${Math.round(wait / 6000) / 10}분 뒤 다시 확인 (${tryN}번째) · 이 탭을 닫지 마세요`);
       await sleep(wait); wait = Math.min(wait * 2, 15 * 60000);
@@ -3047,3 +3076,5 @@
   })();
 })();
 
+
+}]);

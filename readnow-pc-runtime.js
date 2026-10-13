@@ -1,7 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.63.7의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.63.8의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.63.7' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.63.8' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.63.8', function () {
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
  * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
@@ -11,11 +12,25 @@
   window.__rnHuman = (ms) => Date.now() - (window.__rnUserAt || 0) < (ms || 4000);
   window.__rnNote = (msg, kind) => { try { console.warn('[리드나우]', msg); const show = () => { let box = document.getElementById('rn-note-box'); if (!box) { box = document.createElement('div'); box.id = 'rn-note-box'; box.style.cssText = 'position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:2147483647;max-width:min(720px,92vw);display:flex;flex-direction:column;gap:4px;font:13px/1.45 system-ui,sans-serif'; document.body.appendChild(box); }
         if ([...box.children].some((x) => x.dataset.msg === msg)) return; const d = document.createElement('div'); d.dataset.msg = msg; d.style.cssText = `background:${kind === 'warn' ? '#FFF4E0;color:#7A4A00;border:1px solid #E8B860' : '#FDE8E6;color:#8A2420;border:1px solid #E7B4AE'};border-radius:8px;padding:8px 12px;white-space:pre-wrap;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer`; d.textContent = msg + '  (누르면 닫힘)'; d.onclick = () => d.remove(); box.appendChild(d); };
-      if (document.body) show(); else document.addEventListener('DOMContentLoaded', show); } catch (e) {} }; })();
+      if (document.body) show(); else document.addEventListener('DOMContentLoaded', show); } catch (e) {} };
+  /* (1.63.8 점검) 남은 알림 팝업(alert) 모두 → 화면 위 알림 띠(멈추지 않음) — alert는 '확인'을 누를 때까지 탭 전체(잠금 신호·⏰ 자동·실시간 듣기)를 멈췄음 · 확인을 묻는 창(confirm)은 사람이 막 누른 때만 뜸 */
+  try { window.alert = (m) => window.__rnNote(String(m == null ? '' : m), 'warn'); } catch (e) {} })();
+function rnPwEye(filter) { /* (1.63.8) 비밀번호 칸 옆 👁 — 누르고 있는 동안만 보이고 떼면 다시 가림(마우스·손가락 모두) */
+  const add = (inp) => { if (inp._rnEye || (filter && !filter(inp))) return; inp._rnEye = 1; const b = document.createElement('button'); b.type = 'button'; b.className = 'rn-pweye'; b.textContent = '👁'; b.title = '누르고 있는 동안만 비밀번호가 보임 · 떼면 다시 가림'; b.tabIndex = -1; b.setAttribute('aria-label', '비밀번호 잠깐 보기');
+    b.style.cssText = 'margin-left:4px;padding:2px 7px;border:1px solid #C9D3CF;border-radius:6px;background:#fff;cursor:pointer;font-size:14px;line-height:1.2;vertical-align:middle;touch-action:none;user-select:none;-webkit-user-select:none';
+    const show = (e) => { e.preventDefault(); inp.type = 'text'; b.style.background = '#FFF4E0'; }; const hide = () => { if (inp.type !== 'password') inp.type = 'password'; b.style.background = '#fff'; };
+    b.addEventListener('pointerdown', show); ['pointerup', 'pointerleave', 'pointercancel', 'blur'].forEach((ev) => b.addEventListener(ev, hide)); b.addEventListener('click', (e) => e.preventDefault()); b.addEventListener('contextmenu', (e) => e.preventDefault()); window.addEventListener('blur', hide);
+    inp.insertAdjacentElement('afterend', b); };
+  const scan = () => { try { document.querySelectorAll('input[type="password"]').forEach(add); } catch (e) {} }; let t = null;
+  const go = () => { scan(); try { new MutationObserver(() => { clearTimeout(t); t = setTimeout(scan, 150); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {} };
+  if (document.body) go(); else document.addEventListener('DOMContentLoaded', go); }
+rnPwEye((inp) => !!(inp.closest && inp.closest('[id^="rn"], .rncard'))); /* 수집기 화면 안의 칸만(알라딘 로그인 화면 칸은 건드리지 않음) */
 /* ═════════════ (1.63.7) 🧩 이 PC 기능 켜고 끄기 ═════════════
  *  📥 수집 = 일시정지와 같은 한 스위치(GM 'rnu-paused' · 이 PC의 모든 탭): 끄면 직접 누른 수집·⏰ 자동·웹앱 수집 요청·🌐 외부 정보·맡긴 수집 일(시장 지표·읽기·찾기)을 이 PC는 하지 않음 → 담당 PC 신호도 '쉬는 중'이라 다른 PC가 맡음
  *  수집 외 기능 = GM 'rnu-feat' { 열쇠: false } (이 PC만 · 기본은 모두 켬) — 화면 기능은 그 화면을 새로 열 때부터, 맡긴 일·바탕 기능은 곧바로 적용
  *  꺼 둔 맡긴 일(출고 시작·현금 판매·등록)은 이 PC가 받지 않고 대기로 남겨 다른 PC가 받음 */
+/* (1.63.8) 연 탭 닫기 + 닫혔는지 확인(6초) — 못 닫으면 기록에 남김(빈 탭이 쌓이지 않게 눈에 보이게) */
+window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } catch (e) {} for (let i = 0; i < 12; i++) { if (tb.closed) return true; await new Promise((r) => setTimeout(r, 500)); } try { window.__rnLog && window.__rnLog('수집기', 'warn', '연 탭(로그인 등)을 닫지 못함 — 남은 탭이 있으면 직접 닫아 주세요'); } catch (e) {} return false; };
 (function rnFeatInit() {
   window.__rnFeats = [
     ['custCard', '🧑 고객 카드·고객 표시', '주문 상세 팝업의 고객 카드 · 판매관리·주문조회 목록의 주문번호 옆 고객 표시', '화면'],
@@ -60,14 +75,14 @@
     L('알라딘 로그인이 풀려 네이버로 다시 로그인합니다 (네이버 로그인 상태 유지 사용)');
     let tab = GM_openInTab(NAVER_URL(ret), { active: false, insert: true }); let ok = false;
     for (let i = 0; i < 12; i++) { await new Promise((r) => setTimeout(r, 5000)); if (stopped && stopped()) break; if (await isLoggedIn()) { ok = true; break; } } // 최대 60초
-    try { tab.close(); } catch (e) {}
+    await window.__rnCloseTab(tab);
     if (!ok && !(stopped && stopped())) { // 네이버 로그인도 풀림 → 사람에게
       L('네이버 로그인 상태가 풀려 있습니다. 새로 열린 창에서 네이버에 로그인해 주세요 ("로그인 상태 유지"를 켜면 다음부터 자동). 로그인하면 수집이 이어집니다 (최대 30분 기다림)', 'err');
       GM_setValue('rnu-need-naver', Date.now()); try { GM_notification({ title: '리드나우 수집기 — 네이버 로그인 필요', text: '열린 창에서 네이버에 로그인해 주세요 (로그인 상태 유지). 로그인하면 수집이 이어집니다.' }); } catch (e) {}
       try { if (window.firebase && firebase.apps.length && firebase.auth().currentUser) firebase.firestore().collection('rn_status').doc('needlogin_' + ((window.__rnPcName && window.__rnPcName.get()) || 'pc')).set({ need: 'naver', pcName: (window.__rnPcName && window.__rnPcName.get()) || '', at: Date.now() }, { merge: true }).catch(() => {}); } catch (e) {}
       tab = GM_openInTab(NAVER_URL(ret), { active: true, insert: true });
       for (let i = 0; i < 180; i++) { await new Promise((r) => setTimeout(r, 10000)); if (stopped && stopped()) break; if (await isLoggedIn()) { ok = true; break; } }
-      try { tab.close(); } catch (e) {}
+      await window.__rnCloseTab(tab);
       try { if (window.firebase && firebase.apps.length) firebase.firestore().collection('rn_status').doc('needlogin_' + ((window.__rnPcName && window.__rnPcName.get()) || 'pc')).set({ need: null, at: Date.now() }, { merge: true }).catch(() => {}); } catch (e) {}
     }
     GM_deleteValue('rnu-naver-login'); if (ok) GM_deleteValue('rnu-need-naver');
@@ -507,7 +522,7 @@
       <div class="card"><div class="k">멈춘 작업 ${R.length ? `(${R.length})` : ''}<span class="sp"></span><a href="#" data-a="rrf" title="다시 불러오기">↻</a></div>${rs}</div>
       <div class="card"><div class="k">⏰ 다음 자동 수집</div><div>${sched}</div></div>
       <div class="card"><div class="k">최근 기록 · 이 PC의 모든 탭<span class="sp"></span><a href="#" data-a="log">크게 보기 ›</a></div><div class="lg">${lg}</div></div>
-      <div class="card"><div class="k">다른 PC · 판</div>${pcs ? pcs.replace(/class="pc/g, 'class="pc') : '<div class="mut">불러오는 중</div>'}<div class="pc">수집기 v${VER}${od ? ` · <b style="color:${AMB}">새 판 ${esc(od)} 있음</b> — 쉬는 사이(또는 긴 작업이면 저장 지점에서) 저절로 바꿔 그 자리부터 이어감` : ' · 최신'}${P && P.who ? ' · ' + esc(P.who()) : ''}</div></div>`;
+      <div class="card"><div class="k">다른 PC · 판</div>${pcs ? pcs.replace(/class="pc/g, 'class="pc') : '<div class="mut">불러오는 중</div>'}<div class="pc">수집기 v${VER}${(() => { try { const L = window.__rnLiveInfo && window.__rnLiveInfo(); if (!L) return ''; return L.noeval ? ' · ⚡ 빠른 업데이트 안 됨(이 브라우저가 막음 — Tampermonkey 자동 업데이트만)' : L.used === 'live' ? ` · ⚡ 빠른 업데이트로 받은 판 (Tampermonkey 본체 ${esc(L.classic)})` : L.have && L.have !== L.ver ? ` · ⚡ 새 판 ${esc(L.have)} 받아 둠 — 쉬는 사이 바꿈` : ' · ⚡ 빠른 업데이트 켜짐(5분마다 확인)'; } catch (e) { return ''; } })()}${od ? ` · <b style="color:${AMB}">새 판 ${esc(od)} 있음</b> — 쉬는 사이(또는 긴 작업이면 저장 지점에서) 저절로 바꿔 그 자리부터 이어감` : ' · 최신'}${P && P.who ? ' · ' + esc(P.who()) : ''}</div></div>`;
     if (html === lastHtml) return; lastHtml = html; ov.innerHTML = html; // 바뀐 것이 있을 때만 다시 그림 (단추를 누르는 중에 사라지지 않게)
     const lgEl = ov.querySelector('.lg'); if (lgEl && GM_getValue('rnu-log-autoscroll', true)) lgEl.scrollTop = lgEl.scrollHeight; }
   let lastHtml = '';
@@ -547,3 +562,5 @@
   if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
 })();
 
+
+}]);

@@ -1,0 +1,18 @@
+const fs = require('fs'); const { wrapped, core, chromium } = require('./page.js');
+(async () => { const br = await chromium.launch(); const p = await br.newPage({ viewport: { width: 1350, height: 950 } }); const errs = []; p.on('pageerror', (e) => errs.push('PAGEERR ' + e.message + ' ' + (e.stack || '').split('\n').slice(1, 3).join(' '))); p.on('console', (m) => { if (m.type() === 'error') errs.push('CONSOLE ' + m.text()); });
+  await p.setContent('<html><body style="font-family:sans-serif"><div id="rnp" style="width:360px"><div class="sec rnp-sched" id="rnpSched"></div></div></body></html>');
+  await p.addScriptTag({ content: fs.readFileSync(__dirname + '/harness.js', 'utf8') });
+  await p.evaluate(() => { window.JOBS.kpipa = ['출판 판매 통계 (KPIPA 판매 보고서)']; window.JOBS.bench = ['🎯 집중 벤치마킹 — 정한 순서대로 모두']; window.JOBS.shipRead = ['발송 요청 읽기']; window.JOBS.metricsAuto = ['그룹 시장 지표 맡기기'];
+    window.BENCH0 = { targets: [{ sc: '1', name: '알파서점' }, { sc: '2', name: '베타북스' }, { sc: '3', name: '감마' }] };
+    const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); window.DAY = day;
+    FS.docs['prd_system/autoSched'] = { on: true, items: { qna: { on: true, times: ['09:00', '13:00', '17:00'] }, returns: { on: true, times: ['10:00', '16:00'] }, scanDaily: { on: true, times: ['08:00', '20:00'] }, buyback: { on: true, times: ['21:00'] }, aladinBuy: { on: true, times: ['22:00'] }, crmBulk: { on: false, times: ['06:00'] }, chain: { on: false, times: ['17:00'] } } };
+    FS.docs['app_settings/bench'] = { autoOn: true, targets: [{ sc: '1', on: true }] }; FS.docs['app_settings/kpipa'] = {}; FS.docs['app_settings/ext'] = { on: true };
+    FS.docs['prd_system/jobStats'] = { jobs: { 'bench:1': { runs: [{ at: new Date().toISOString(), ms: 40 * 60e3, st: 'done' }] }, 'bench:2': { runs: [{ at: new Date().toISOString(), ms: 20 * 60e3, st: 'done' }] }, 'prd:scanDaily': { runs: [{ at: new Date().toISOString(), ms: 50 * 60e3, st: 'done' }] }, 'prd:kpipa': { runs: [{ at: new Date().toISOString(), ms: 8 * 60e3, st: 'done' }] } } };
+    window.SET = { shipAutoMin: 15 }; });
+  await p.addScriptTag({ content: core }); await p.addScriptTag({ content: wrapped }); await p.waitForTimeout(800);
+  const R = {};
+  R.slots = await p.evaluate(() => (FS.docs['prd_system/autoSched'].slots || []).map((s) => s.id + ':' + s.trig.t + (s.on ? '' : '(off)')).join(', ') + ' | mig ' + JSON.stringify(FS.docs['prd_system/autoSched'].mig161));
+  await p.evaluate(() => __T.asEdOpen()); await p.waitForTimeout(600);
+  const sb = await p.evaluate(() => { const sc = document.querySelector('#rnas .tl-scroll'); sc.scrollIntoView({ block: 'center' }); const r = sc.getBoundingClientRect(); window.__ev = []; ['pointerdown', 'pointermove', 'pointerup'].forEach((t) => sc.addEventListener(t, (e) => __ev.push(t + ':' + sc.scrollLeft), true)); return [r.x + 600, r.y + r.height - 12]; });
+  await p.mouse.move(sb[0], sb[1]); await p.mouse.down(); for (let i = 1; i <= 5; i++) { await p.mouse.move(sb[0] - i * 30, sb[1]); await p.waitForTimeout(12); } console.log(await p.evaluate(() => { const sc = document.querySelector('#rnas .tl-scroll'); const before = sc.scrollLeft; sc.scrollLeft = 700; return [sc.className, before, sc.scrollLeft, getComputedStyle(sc).overflowX]; })); await p.mouse.up();
+  console.log(JSON.stringify(await p.evaluate(() => [__ev, document.querySelector('#rnas .tl-scroll').scrollLeft, document.querySelector('#rnas .tl-scroll').scrollWidth]))); console.log(errs.join('\n')); await br.close(); })();

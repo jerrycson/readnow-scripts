@@ -1,0 +1,13 @@
+// 옛 엔진(0.15.1)과 새 엔진(0.15.2)이 같은 결과를 내는지 무작위 입력으로 비교
+const A = require(process.argv[2]), B = require(process.argv[3]); global.window = global; require(__dirname + '/../repo/readnow-core.js'); const RS = require(__dirname + '/../repo/readnow-sellers-core.js'); const CORE = global.ReadNowCore; console.log('core', !!CORE, Object.keys(CORE).slice(0,5).join(','), 'rs', Object.keys(RS).slice(0,4).join(','));
+let rs = 7; const rnd = () => ((rs = (rs * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff); const G = ['최상', '상', '중'];
+let n = 0, diff = 0;
+for (let i = 0; i < 3000; i++) { const price = 1000 + Math.round(rnd() * 40) * 500; const l = { key: 'aladin_U' + i, usedCode: 'U' + i, price, grade: G[i % 3], sku: ['BLKCMN', 'KHKDVD', 'ORG_PND', 'BLK_BAD'][i % 4], registeredAt: new Date(Date.now() - rnd() * 800 * 864e5).toISOString(), status: '판매중' };
+  const rows = []; for (let k = 0; k < 3 + (i % 9); k++) rows.push({ sellerCode: 2000 + Math.floor(rnd() * 50), sellerName: 'S' + k, grade: G[Math.floor(rnd() * 3)], price: Math.max(500, price + Math.round((rnd() - 0.5) * 8) * 500), ship: rnd() > 0.5 ? 0 : 3000, listingId: 'Q' + k, page: 1 });
+  const sellers = {}; for (let k = 0; k < 50; k++) sellers['sc_' + (2000 + k)] = { id: 'sc_' + (2000 + k), total: k * 10, cls: k % 3 };
+  const crit = { mode: ['valid', 'same', 'top', 'under', 'shipMin'][i % 5], colors: i % 2 ? ['yellow'] : [], pct: [0, -5][i % 2], better: !!(i % 3), coef: { '최상': 1, '상': 0.9, '중': 0.7 }, bb: !!(i % 2), minPrice: 1000, maxDrop: 50, reach: i % 4 === 0, underRank: 2, underScope: 'valid', topNearOn: i % 5 === 0, topNear: 10 };
+  for (const P of [A, B]) P._last = null;
+  const run = (P) => { const settings = P.critSettings(crit); const ctx = { core: CORE, RS, now: '2026-10-11T00:00:00Z', settings, policy: { fee: 2500, freeOver: 15000 }, buyback: { '최상': 900, '상': 700 } }; const d = P.decide({ ...l }, { at: '2026-10-10T00:00:00Z', rows, pagesSeen: 1, lastPage: 1 }, sellers, ctx); const p1 = rows.map((r, j) => ({ r: j + 1, n: r.sellerName, g: r.grade, p: r.price, s: r.ship, c: P.isAladinSide(r, settings) ? 'aladin' : ['green', 'yellow', 'red'][j % 3] })); const ct = P.critTarget(l, p1, d, crit, ctx, { '최상': 900 }); const st = { g: P.groupOf(l.usedCode, { rollout: { treatPct: 30, controlPct: 20 } }), ex: P.isExcluded(l, {}), gl: P.groupOfListing ? P.groupOfListing(l, {}) : null };
+    return JSON.stringify([d, ct, st]).replace(/"v":"0\.15\.[12]"/g, ''); };
+  const a = run(A), b = run(B); global.__last = b.slice(0, 500); n++; if (a !== b) { diff++; if (diff < 3) console.log('DIFF', i, a.slice(0, 300), '\n', b.slice(0, 300)); } }
+console.log('비교', n, '다름', diff, '예시', global.__last);

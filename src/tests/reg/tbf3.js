@@ -1,0 +1,13 @@
+const fs = require('fs'); const store = {}; const col = (n) => (store[n] = store[n] || {});
+const ref = (path) => ({ get: async () => ({ data: () => col(path.c)[path.id] }), set: async (v, o) => { const cur = col(path.c)[path.id] || {}; if (o && o.merge) { const nv = { ...cur }; for (const [k, x] of Object.entries(v)) nv[k] = x && x.AU ? (cur[k] || []).concat(x.AU) : x; col(path.c)[path.id] = nv; } else col(path.c)[path.id] = v; }, collection: (n) => ({ doc: (id) => ref({ c: path.c + '/' + path.id + '/' + n, id }) }) });
+const C = (n) => ({ doc: (id) => ref({ c: n, id }) }); const db = { batch: () => { const ops = []; return { set: (r, v, o) => ops.push(() => r.set(v, o)), commit: async () => { for (const f of ops) await f(); } }; } };
+const firebase = { firestore: { FieldValue: { arrayUnion: (...a) => ({ AU: a }) } } }; const W = () => ({}); const nowIso = () => new Date().toISOString(); const log = (m) => console.log('LOG', m); const PC_NAME = 'PC';
+eval(fs.readFileSync(__dirname + '/bf.js', 'utf8'));
+const it = (id, p, low) => [id, p, '상', 'T' + id, null, null, null, low ? 1 : 0, 1, 'U' + id, 'au', 'cov' + id];
+(async () => { const t = { sc: '9', name: 'X' }; const run = async (day, items) => { await benchFinish(t, { day, page: 3, items }, col('bench_state')['9'] || {}); return col('bench_days')['9_' + day]; };
+  await run('2026-10-08', [it('a', 1000), it('b', 2000), it('c', 3000)]);
+  let d = await run('2026-10-09', [it('a', 1000), it('c', 3000)]); console.log('day2', JSON.stringify({ total: d.total, gone: d.gone, missOnce: d.missOnce }));
+  d = await run('2026-10-10', [it('a', 1000), it('b', 2000)]); console.log('day3', JSON.stringify({ total: d.total, gone: d.gone, missOnce: d.missOnce, back: d.missBack }));
+  d = await run('2026-10-11', [it('a', 1000), it('b', 2000), it('n', 500, 1)]); console.log('day4', JSON.stringify({ total: d.total, gone: d.gone, goneList: d.goneList, add: d.add, back: d.missBack }));
+  console.log('c item', JSON.stringify(col('bench_items')['9_c'])); console.log('n item', JSON.stringify(col('bench_items')['9_n']));
+})();

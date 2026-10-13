@@ -1,0 +1,21 @@
+// 등록 화면 속도 — 상품 40개(선택 대기) · 첫 페이지 15줄
+const fs = require('fs'); const HEAD = fs.readFileSync(__dirname + '/h_head.js', 'utf8'); const SETUP = fs.readFileSync(__dirname + '/h_setup.txt', 'utf8');
+const SP = require('path').resolve(__dirname, '..'); eval(HEAD.replace(/__dirname/g, 'SP').replace(/\n$/, '') + `
+  if (process.env.NOMORPH) await p.addInitScript(() => { try { localStorage.setItem('rn-nomorph', '1'); } catch (e) {} }); await p.goto('http://t.test/app/'); await p.waitForTimeout(7000);
+  const cdp = await p.context().newCDPSession(p); await cdp.send('Profiler.enable'); await cdp.send('Profiler.setSamplingInterval', { interval: 200 });
+  const prof = async (label, fn) => { await cdp.send('Profiler.start'); const t = await fn(); const { profile } = await cdp.send('Profiler.stop'); const self = new Map(); const byId = new Map(profile.nodes.map((n) => [n.id, n])); const dt = profile.timeDeltas; const cnt = new Map(); profile.samples.forEach((id, i) => cnt.set(id, (cnt.get(id) || 0) + (dt[i] || 0))); for (const [id, us] of cnt) { const n = byId.get(id); const k = (n.callFrame.functionName || '(anon)') + ':' + n.callFrame.lineNumber; self.set(k, (self.get(k) || 0) + us); } console.log('TIME', label, t, '\\n   ', [...self.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k, v]) => k + ' ' + (v / 1000).toFixed(0) + 'ms').join('\\n    ')); };
+  await p.evaluate(async () => { const wait = (ms) => new Promise((r) => setTimeout(r, ms)); window.confirm = () => true; window.alert = () => {};
+    ${SETUP}
+    S.app.reg = { ...(S.app.reg || {}), focus: true }; const G = ['최상', '상', '중'];
+    const P15 = []; for (let k = 0; k < 15; k++) P15.push({ sellerCode: 1000 + k, sellerName: '판매자' + k, grade: G[k % 3], price: 5000 + k * 500, ship: k % 2 ? 0 : 3000, listingId: 'q' + k });
+    for (let k = 0; k < 40; k++) { const isbn = k % 2 ? '9791167030580' : '9788977396005'; col('reg_items')['it' + k] = { stage: 'sel', isbn, branch: 1, grade: 2, qty: 1, saleState: 1, descMode: 'none', desc: '', info: { ...INFO[isbn], page1: P15, at: new Date().toISOString() }, createdAt: '2026-10-09T00:' + String(10 + k).slice(-2) + ':00Z' }; }
+    openRegister(); await wait(800); S.regT = 'sel'; regRerender(); await wait(800); window.__rt = []; const o0 = window.openRegister; window.openRegister = function () { const t = performance.now(); const r = o0.apply(this, arguments); window.__rt.push(Math.round(performance.now() - t)); return r; }; });
+  await prof('등록 다시 그림 (선택 대기 40개)', () => p.evaluate(() => { const t0 = performance.now(); openRegister(); return Math.round(performance.now() - t0) + 'ms · 카드 ' + document.querySelectorAll('.pq.bq').length; }));
+  const RT = async () => { await p.waitForTimeout(700); return p.evaluate(() => { const r = window.__rt.join(','); window.__rt = []; return '그리기 ' + r + 'ms'; }); };
+  await prof('등록 다시 그림 2번째', () => p.evaluate(() => { const t0 = performance.now(); openRegister(); return Math.round(performance.now() - t0) + 'ms'; }));
+  await prof('상태 등급 누름 (중)', async () => { const a = await (() => p.evaluate(async () => { const b = document.querySelector('[data-rgg="it3"][data-v="3"]'); const t0 = performance.now(); b.click(); await new Promise((r) => setTimeout(r, 0)); return Math.round(performance.now() - t0) + 'ms'; })); return a + ' · ' + (await RT()); });
+  await p.waitForTimeout(600);
+  await prof('결정 대기로 1개', async () => { const a = await (() => p.evaluate(async () => { const b = document.querySelector('[data-rgto][data-v="pick"]'); if (!b) return '없음'; const t0 = performance.now(); b.click(); await new Promise((r) => setTimeout(r, 0)); return Math.round(performance.now() - t0) + 'ms'; })); return a + ' · ' + (await RT()); });
+  await p.waitForTimeout(600);
+  await prof('탭 바꾸기 결정 대기', async () => { const a = await (() => p.evaluate(async () => { const b = document.querySelector('[data-rgtab="pick"]') || document.querySelector('[data-rgt="pick"]'); if (!b) return '탭 단추 없음 ' + [...document.querySelectorAll('#sheet button')].slice(0, 8).map((x) => Object.keys(x.dataset).join('/')).join(','); const t0 = performance.now(); b.click(); await new Promise((r) => setTimeout(r, 0)); return Math.round(performance.now() - t0) + 'ms'; })); return a + ' · ' + (await RT()); });
+  await br.close(); })();`);

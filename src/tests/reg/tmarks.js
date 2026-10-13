@@ -1,0 +1,11 @@
+const { chromium } = require('/home/claude/.npm-global/lib/node_modules/playwright'); const fs = require('fs'); const SP = '/tmp/claude-0/-home-claude/2514b938-5524-5e43-ad0a-05319ceb1a3b/scratchpad/';
+(async () => { const br = await chromium.launch(); const p = await br.newPage({ viewport: { width: 1300, height: 900 } }); const errs = []; p.on('pageerror', (e) => errs.push(e.message));
+  await p.route('**/*', (rt) => { const u = rt.request().url(); if (/wrecord_edit/.test(u)) return rt.fulfill({ body: fs.readFileSync(SP + 'us/scm.html', 'utf8').replace(/<script[\s\S]*?<\/script>/g, ''), contentType: 'text/html; charset=utf-8' }); return rt.fulfill({ body: '', status: 404 }); });
+  await p.goto('https://www.aladin.co.kr/scm/wrecord_edit.aspx');
+  const res = await p.evaluate(async (code) => { const ids = [...document.querySelectorAll('input.batchChkBox')].map((x) => x.value); const L = {}; ids.slice(0, 3).forEach((id, k) => (L['aladin_U' + k] = { listingId: id, isbn13: '978897739600' + k, bookId: 'B' + k, priceList: 20000 }));
+    const C = { prd_listings: L, prd_books: { B0: { priceSales: 18000 } }, prd_cancel_hits: { aladin_U0: { hits: [{ kind: '품절취소', at: '2026-09-10T10:00', o: '001-A1' }] } } };
+    const q = (n, vals) => ({ get: async () => ({ forEach: (f) => Object.entries(C[n] || {}).filter(([, v]) => vals.map(String).includes(String(v.listingId))).forEach(([id, v]) => f({ id, data: () => v })) }) });
+    const db = { collection: (n) => ({ where: (f, op, vals) => q(n, vals), doc: (id) => ({ get: async () => ({ data: () => (C[n] || {})[id] }) }) }) };
+    window.firebase = { apps: [1], app: () => ({ firestore: () => db, auth: () => ({ currentUser: { email: 'x' } }) }) }; const G = {}; window.GM_getValue = (k, d) => G[k] ?? d; window.GM_setValue = (k, v) => (G[k] = v);
+    new Function(code)(); await new Promise((r) => setTimeout(r, 3500)); return { n: ids.length, marks: [...document.querySelectorAll('.rnpm')].slice(0, 4).map((x) => x.innerText) }; }, fs.readFileSync(SP + 'reg/colfill2.js', 'utf8').slice(fs.readFileSync(SP + 'reg/colfill2.js', 'utf8').indexOf('(function rnPrdMarks')));
+  console.log(JSON.stringify(res, null, 1)); console.log(errs.slice(0, 3)); await br.close(); })();

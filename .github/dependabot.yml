@@ -1,0 +1,12 @@
+# (2026-10-13) GitHub 배포 도구(Actions)의 새 판을 저절로 — Dependabot이 매주 확인해 새 판이 있으면 변경 요청(PR)을 만들고,
+#  '도구 판 자동 반영'(dependabot-automerge.yml)이 바로 합친 뒤 클라우드 자동 배포를 한 번 돌려 실제로 되는지 확인함.
+#  판은 고정 지문(SHA) + 옆 주석의 판 번호로 적혀 있어, Dependabot이 둘 다 같이 바꿈.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday, time: "09:00", timezone: Asia/Seoul }
+    open-pull-requests-limit: 5
+    groups:
+      actions: { patterns: ["*"] }
+    commit-message: { prefix: "배포 도구 판 올림" }

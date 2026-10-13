@@ -1,0 +1,6370 @@
+// ==UserScript==
+// @name         리드나우 수집기
+// @namespace    readnow
+// @version      1.63.8
+// @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
+// @match        https://www.aladin.co.kr/scm/worders.aspx*
+// @match        https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx*
+// @match        https://www.aladin.co.kr/scm/wpopup_order.aspx*
+// @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
+// @match        https://www.aladin.co.kr/scm/wrecord.aspx*
+// @match        https://www.aladin.co.kr/scm/worder_delivery.aspx*
+// @match        https://www.aladin.co.kr/scm/worder_process.aspx*
+// @match        https://www.aladin.co.kr/scm/wUsedShopC2C*
+// @match        https://www.aladin.co.kr/scm/wusedshopc2c*
+// @match        https://www.aladin.co.kr/scm/wShopSurvey*
+// @match        https://www.aladin.co.kr/scm/wshopsurvey*
+// @match        https://www.aladin.co.kr/*login*
+// @match        https://www.aladin.co.kr/*Login*
+// @match        https://*.aladin.co.kr/*login*
+// @match        https://*.aladin.co.kr/*Login*
+// @noframes
+// @updateURL    https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
+// @downloadURL  https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-orders-core.js?v=0.3.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.14.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.1
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.3
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.5.2
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.17
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.4.3
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.6.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.5.1
+// @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
+// @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
+// @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
+// @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js
+// @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_deleteValue
+// @grant        GM_listValues
+// @grant        GM_addValueChangeListener
+// @grant        GM_openInTab
+// @grant        window.close
+// @grant        GM_notification
+// @grant        GM_xmlhttpRequest
+// @connect      readnow-3a385-default-rtdb.asia-southeast1.firebasedatabase.app
+// @connect      readnow-seller-db-default-rtdb.asia-southeast1.firebasedatabase.app
+// @connect      image.aladin.co.kr
+// @connect      www.yes24.com
+// @connect      bnk.kpipa.or.kr
+// @connect      www.aladin.co.kr
+// @connect      search.kyobobook.co.kr
+// @connect      product.kyobobook.co.kr
+// @connect      dapi.kakao.com
+// @connect      openapi.naver.com
+// @connect      www.nl.go.kr
+// @connect      data4library.kr
+// @connect      api.bunjang.co.kr
+// @connect      web.joongna.com
+// @connect      www.daangn.com
+// @connect      api.ebay.com
+// @connect      www.abebooks.com
+// @connect      ridibooks.com
+// @connect      oapi.koreaexim.go.kr
+// @connect      www.koreaexim.go.kr
+// @connect      api.frankfurter.app
+// @connect      api.frankfurter.dev
+// @connect      www.joongmo.com
+// @connect      dvdprime.com
+// @connect      firebasestorage.googleapis.com
+// @connect      search.shopping.naver.com
+// @connect      www.google.com
+// @connect      googleapis.com
+// @connect      firebaseapp.com
+// @connect      script.google.com
+// @connect      script.googleusercontent.com
+// @run-at       document-idle
+// ==/UserScript==
+/* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
+ * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
+ * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
+/* (1.63.6 전체 점검) 팝업 대신 화면 위 알림 띠 — alert()는 사람이 '확인'을 누를 때까지 탭 전체(잠금 신호·⏰ 자동·실시간 듣기)를 멈춰, 사람이 없는 PC에서 다른 PC까지 모두 막혔음
+ *  __rnNote(글, 'err'|'warn') = 위에 띠를 띄우고(누르면 닫힘 · 같은 글은 한 번만) 기록에도 남김 · __rnUserAt = 사람이 마지막으로 누른 때(확인 창은 사람이 막 누른 때만) */
+(function () { const G = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window; try { document.addEventListener('pointerdown', () => { window.__rnUserAt = Date.now(); }, true); document.addEventListener('keydown', () => { window.__rnUserAt = Date.now(); }, true); } catch (e) {}
+  window.__rnHuman = (ms) => Date.now() - (window.__rnUserAt || 0) < (ms || 4000);
+  window.__rnNote = (msg, kind) => { try { console.warn('[리드나우]', msg); const show = () => { let box = document.getElementById('rn-note-box'); if (!box) { box = document.createElement('div'); box.id = 'rn-note-box'; box.style.cssText = 'position:fixed;top:6px;left:50%;transform:translateX(-50%);z-index:2147483647;max-width:min(720px,92vw);display:flex;flex-direction:column;gap:4px;font:13px/1.45 system-ui,sans-serif'; document.body.appendChild(box); }
+        if ([...box.children].some((x) => x.dataset.msg === msg)) return; const d = document.createElement('div'); d.dataset.msg = msg; d.style.cssText = `background:${kind === 'warn' ? '#FFF4E0;color:#7A4A00;border:1px solid #E8B860' : '#FDE8E6;color:#8A2420;border:1px solid #E7B4AE'};border-radius:8px;padding:8px 12px;white-space:pre-wrap;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer`; d.textContent = msg + '  (누르면 닫힘)'; d.onclick = () => d.remove(); box.appendChild(d); };
+      if (document.body) show(); else document.addEventListener('DOMContentLoaded', show); } catch (e) {} };
+  /* (1.63.8 점검) 남은 알림 팝업(alert) 모두 → 화면 위 알림 띠(멈추지 않음) — alert는 '확인'을 누를 때까지 탭 전체(잠금 신호·⏰ 자동·실시간 듣기)를 멈췄음 · 확인을 묻는 창(confirm)은 사람이 막 누른 때만 뜸 */
+  try { window.alert = (m) => window.__rnNote(String(m == null ? '' : m), 'warn'); } catch (e) {} })();
+function rnPwEye(filter) { /* (1.63.8) 비밀번호 칸 옆 👁 — 누르고 있는 동안만 보이고 떼면 다시 가림(마우스·손가락 모두) */
+  const add = (inp) => { if (inp._rnEye || (filter && !filter(inp))) return; inp._rnEye = 1; const b = document.createElement('button'); b.type = 'button'; b.className = 'rn-pweye'; b.textContent = '👁'; b.title = '누르고 있는 동안만 비밀번호가 보임 · 떼면 다시 가림'; b.tabIndex = -1; b.setAttribute('aria-label', '비밀번호 잠깐 보기');
+    b.style.cssText = 'margin-left:4px;padding:2px 7px;border:1px solid #C9D3CF;border-radius:6px;background:#fff;cursor:pointer;font-size:14px;line-height:1.2;vertical-align:middle;touch-action:none;user-select:none;-webkit-user-select:none';
+    const show = (e) => { e.preventDefault(); inp.type = 'text'; b.style.background = '#FFF4E0'; }; const hide = () => { if (inp.type !== 'password') inp.type = 'password'; b.style.background = '#fff'; };
+    b.addEventListener('pointerdown', show); ['pointerup', 'pointerleave', 'pointercancel', 'blur'].forEach((ev) => b.addEventListener(ev, hide)); b.addEventListener('click', (e) => e.preventDefault()); b.addEventListener('contextmenu', (e) => e.preventDefault()); window.addEventListener('blur', hide);
+    inp.insertAdjacentElement('afterend', b); };
+  const scan = () => { try { document.querySelectorAll('input[type="password"]').forEach(add); } catch (e) {} }; let t = null;
+  const go = () => { scan(); try { new MutationObserver(() => { clearTimeout(t); t = setTimeout(scan, 150); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {} };
+  if (document.body) go(); else document.addEventListener('DOMContentLoaded', go); }
+rnPwEye((inp) => !!(inp.closest && inp.closest('[id^="rn"], .rncard'))); /* 수집기 화면 안의 칸만(알라딘 로그인 화면 칸은 건드리지 않음) */
+/* ═════════════ (1.63.7) 🧩 이 PC 기능 켜고 끄기 ═════════════
+ *  📥 수집 = 일시정지와 같은 한 스위치(GM 'rnu-paused' · 이 PC의 모든 탭): 끄면 직접 누른 수집·⏰ 자동·웹앱 수집 요청·🌐 외부 정보·맡긴 수집 일(시장 지표·읽기·찾기)을 이 PC는 하지 않음 → 담당 PC 신호도 '쉬는 중'이라 다른 PC가 맡음
+ *  수집 외 기능 = GM 'rnu-feat' { 열쇠: false } (이 PC만 · 기본은 모두 켬) — 화면 기능은 그 화면을 새로 열 때부터, 맡긴 일·바탕 기능은 곧바로 적용
+ *  꺼 둔 맡긴 일(출고 시작·현금 판매·등록)은 이 PC가 받지 않고 대기로 남겨 다른 PC가 받음 */
+/* (1.63.8) 연 탭 닫기 + 닫혔는지 확인(6초) — 못 닫으면 기록에 남김(빈 탭이 쌓이지 않게 눈에 보이게) */
+window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } catch (e) {} for (let i = 0; i < 12; i++) { if (tb.closed) return true; await new Promise((r) => setTimeout(r, 500)); } try { window.__rnLog && window.__rnLog('수집기', 'warn', '연 탭(로그인 등)을 닫지 못함 — 남은 탭이 있으면 직접 닫아 주세요'); } catch (e) {} return false; };
+(function rnFeatInit() {
+  window.__rnFeats = [
+    ['custCard', '🧑 고객 카드·고객 표시', '주문 상세 팝업의 고객 카드 · 판매관리·주문조회 목록의 주문번호 옆 고객 표시', '화면'],
+    ['monitor', '🎨 가격 감시 색 표시', '상품 조회/수정 목록 줄마다 판정 엔진 묶음 색', '화면'],
+    ['marks', '⚠ 우리 상품 옆 표시', '취소 주문 기록 · 참고 가격(정가·새상품 판매가) · 예스24 중고 링크 (상품 조회/수정·판매관리)', '화면'],
+    ['cash', '💵 현금 판매 띠', '상품 조회/수정의 판매중지 바꾸기·다시 판매중 + 웹앱이 맡긴 현금 판매 판매중지', '화면·맡긴 일'],
+    ['invoice', '🚚 송장 입력', '발송 요청 화면의 송장번호 넣기 · ALPS 파일 단추', '화면'],
+    ['phrase', '💬 응대 문구 도우미', '묻고 답하기·구매평 화면의 문구 판', '화면'],
+    ['reg', '📥 등록 도우미 · 🤖 자동 등록', '상품 등록 화면 채우기 + 웹앱이 맡긴 등록(개별·미등록·대량·분류 찾기)', '화면·맡긴 일'],
+    ['ship', '📦 출고 시작 맡긴 일', '웹앱이 맡긴 주문확인요청 → 발송 요청 넘기기', '맡긴 일'],
+    ['relogin', '🔑 자동 다시 로그인', '알라딘 로그인이 풀리면 네이버로 다시 로그인', '바탕'],
+    ['update', '⟳ 새 판 저절로 맞추기', '다른 PC가 새 수집기로 돌면 쉬는 사이 새로고침해 새 판으로', '바탕'],
+    ['remote', '🛰 원격 조작 받기', '웹앱·다른 PC가 보낸 ■ 중단 · ▶ 다시 시작 · ⟳ 업데이트', '바탕'],
+    ['rules', '🔐 Firebase 규칙 점검', '이 PC 계정으로 쓰는 칸을 시험(6시간마다 · 남는 것 없음)', '바탕'],
+  ];
+  const get = () => { try { const v = GM_getValue('rnu-feat', null); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } };
+  window.__rnFeat = (k) => get()[k] !== false;
+  window.__rnFeatOff = () => window.__rnFeats.map((x) => x[0]).filter((k) => get()[k] === false);
+  window.__rnFeatSet = (patch) => { const v = { ...get(), ...patch }; Object.keys(v).forEach((k) => { if (v[k] !== false) delete v[k]; }); GM_setValue('rnu-feat', v); return v; };
+})();
+/* ═════════════ 이 PC 이름: 한 곳에서 관리 ═════════════
+ * 스크립트 저장공간(GM)과 알라딘 사이트의 브라우저 저장공간(localStorage) 두 곳에 함께 둠 → 스크립트를 다시 설치·교체해도 이름이 남음.
+ * 고객 쪽(rn-pc)·상품 쪽(pcName)·기록이 모두 같은 이름을 씀. 자동 작업 중에는 묻지 않고, 버튼을 눌렀을 때만 한 번 물음. */
+/* ═════════════ 알라딘 다시 로그인: 네이버로 로그인 (기본) ═════════════
+ * 알라딘 아이디 로그인에 자동입력방지가 생겨, 알라딘 로그인 화면의 'SNS 계정으로 로그인 → 네이버'와 같은 길을 씀.
+ * 알라딘 화면의 goNaverLogin()이 여는 주소: /login/wlogin_naver.aspx?returnurl=…&snsAppId=1&SecureOpener=1
+ *  → 네이버 인증(nid.naver.com) → /login/wlogin_naver.aspx?code=…&state=… 로 돌아오며 알라딘 로그인 완료.
+ * 네이버에 '로그인 상태 유지'로 로그인돼 있으면 아이디·비밀번호·자동입력방지 없이 바로 끝남. 네이버 아이디·비밀번호는 수집기가 절대 입력하지 않음.
+ * 네이버 로그인까지 풀렸으면: 보이는 창을 열고 알림 → 사람이 네이버에 한 번 로그인(로그인 상태 유지 체크) → 수집이 이어짐 (최대 30분 기다림) */
+(function rnNaverLoginInit() {
+  if (window.__rnNaverLogin) return;
+  const NAVER_URL = (ret) => `https://www.aladin.co.kr/login/wlogin_naver.aspx?returnurl=${encodeURIComponent(ret || 'https://www.aladin.co.kr/scm/wmain.aspx')}&snsAppId=1&SecureOpener=1`;
+  window.__rnLoginMethod = () => GM_getValue('rnu-login-method', 'naver');
+  window.__rnNaverLogin = async ({ isLoggedIn, log, stopped, ret }) => {
+    const L = (m, lv) => { try { log(m, lv); } catch (e) { window.__rnLog && window.__rnLog('로그인', lv === 'err' ? 'err' : lv ? 'warn' : 'info', m); } }; if (window.__rnFeat && !window.__rnFeat('relogin')) { L('알라딘 로그인이 풀렸지만 이 PC는 🧩 \'자동 다시 로그인\'을 꺼 둠 — 직접 로그인해 주세요', 'err'); return false; } // 각 모듈의 log가 기록 창에도 남김
+    const busy = GM_getValue('rnu-naver-login', null);
+    if (busy && Date.now() - busy.at < 120000) { // 다른 탭·모듈이 이미 하는 중 → 결과만 기다림
+      for (let i = 0; i < 24; i++) { await new Promise((r) => setTimeout(r, 5000)); if (await isLoggedIn()) return true; if (stopped && stopped()) return false; }
+      return false;
+    }
+    GM_setValue('rnu-naver-login', { at: Date.now() });
+    L('알라딘 로그인이 풀려 네이버로 다시 로그인합니다 (네이버 로그인 상태 유지 사용)');
+    let tab = GM_openInTab(NAVER_URL(ret), { active: false, insert: true }); let ok = false;
+    for (let i = 0; i < 12; i++) { await new Promise((r) => setTimeout(r, 5000)); if (stopped && stopped()) break; if (await isLoggedIn()) { ok = true; break; } } // 최대 60초
+    await window.__rnCloseTab(tab);
+    if (!ok && !(stopped && stopped())) { // 네이버 로그인도 풀림 → 사람에게
+      L('네이버 로그인 상태가 풀려 있습니다. 새로 열린 창에서 네이버에 로그인해 주세요 ("로그인 상태 유지"를 켜면 다음부터 자동). 로그인하면 수집이 이어집니다 (최대 30분 기다림)', 'err');
+      GM_setValue('rnu-need-naver', Date.now()); try { GM_notification({ title: '리드나우 수집기 — 네이버 로그인 필요', text: '열린 창에서 네이버에 로그인해 주세요 (로그인 상태 유지). 로그인하면 수집이 이어집니다.' }); } catch (e) {}
+      try { if (window.firebase && firebase.apps.length && firebase.auth().currentUser) firebase.firestore().collection('rn_status').doc('needlogin_' + ((window.__rnPcName && window.__rnPcName.get()) || 'pc')).set({ need: 'naver', pcName: (window.__rnPcName && window.__rnPcName.get()) || '', at: Date.now() }, { merge: true }).catch(() => {}); } catch (e) {}
+      tab = GM_openInTab(NAVER_URL(ret), { active: true, insert: true });
+      for (let i = 0; i < 180; i++) { await new Promise((r) => setTimeout(r, 10000)); if (stopped && stopped()) break; if (await isLoggedIn()) { ok = true; break; } }
+      await window.__rnCloseTab(tab);
+      try { if (window.firebase && firebase.apps.length) firebase.firestore().collection('rn_status').doc('needlogin_' + ((window.__rnPcName && window.__rnPcName.get()) || 'pc')).set({ need: null, at: Date.now() }, { merge: true }).catch(() => {}); } catch (e) {}
+    }
+    GM_deleteValue('rnu-naver-login'); if (ok) GM_deleteValue('rnu-need-naver');
+    GM_setValue(ok ? 'rnu-naver-okAt' : 'rnu-naver-failAt', Date.now());
+    L(ok ? '네이버로 다시 로그인했습니다. 계속합니다' : '네이버 로그인이 되지 않았습니다', ok ? '' : 'err');
+    return ok;
+  };
+})();
+/* (1.38.0) 일시정지 = 이 PC의 모든 수집기 탭에 한 번에 (예전: 누른 탭에서만 멈춤 → 다른 탭에서 돌던 작업은 계속 돌고, 버튼은 3초 뒤 다시 켜져 '안 먹는' 것처럼 보였음)
+ *  상태는 GM 'rnu-paused'(참/거짓) 한 곳. 값이 바뀌면 모든 탭이 바로 알아채고(GM_addValueChangeListener, 없으면 3초마다 확인) 자기 작업을 지금 항목까지 저장하고 멈춤 */
+(function rnPause() {
+  window.__rnPaused = !!GM_getValue('rnu-paused', false);
+  const stopHere = () => { try { window.__rnCrm && window.__rnCrm.pause(); } catch (e) {} try { window.__rnPrd && window.__rnPrd.pause(); } catch (e) {} };
+  const changed = () => { try { window.__rnCtlDraw && window.__rnCtlDraw(); } catch (e) {} };
+  window.__rnPauseInfo = () => GM_getValue('rnu-paused-info', null);
+  window.__rnPauseAll = (why) => { window.__rnPaused = true; GM_setValue('rnu-paused-info', { at: Date.now(), why: why || '사람이 누름' }); GM_setValue('rnu-paused', true); stopHere(); window.__rnLog && window.__rnLog('수집기', 'warn', `■ 일시정지 (${why || '사람이 누름'}) — 이 PC의 모든 수집기 탭(고객·상품·일괄)이 지금 항목까지 저장하고 멈춤. 사람이 다시 시작하기 전에는 자동으로 다시 시작하지 않음`); changed(); };
+  window.__rnResumeOk = () => { if (window.__rnPaused) window.__rnLog && window.__rnLog('수집기', 'info', '▶ 사람이 다시 시작함 (일시정지 풀림)'); window.__rnPaused = false; GM_setValue('rnu-paused', false); changed(); };
+  const onRemote = (v) => { v = !!v; if (v === window.__rnPaused) return; window.__rnPaused = v; if (v) { stopHere(); window.__rnLog && window.__rnLog('수집기', 'warn', '■ 다른 탭에서 일시정지를 눌렀습니다 — 이 탭의 작업도 지금 항목까지 저장하고 멈춤'); } else window.__rnLog && window.__rnLog('수집기', 'info', '▶ 다른 탭에서 다시 시작을 눌렀습니다 (일시정지 풀림)'); changed(); };
+  try { if (typeof GM_addValueChangeListener === 'function') GM_addValueChangeListener('rnu-paused', (k, o, n, remote) => { if (remote) onRemote(n); }); else throw 0; } catch (e) { setInterval(() => onRemote(GM_getValue('rnu-paused', false)), 3000); }
+})();
+/* (1.56.0) 한 PC에 수집기 하나 — 같은 PC(같은 브라우저)에서 수집기 화면(주문조회·판매관리·상품 조회)을 여러 탭·창으로 열어도 '일하는 수집기'는 한 탭뿐
+ *  · 먼저 열린 탭 = 이 PC의 수집기(lead): 매일 자동 수집·웹앱 요청·맡긴 일(등록·송장·시장 지표)·이어가기를 모두 맡음
+ *  · 나중에 열린 탭 = 쉬는 탭(follow): 관제판·기록 창이 접힌 채로 뜨고, 어떤 작업도 저절로 시작하지 않음. 머리줄 아래 옅은 띠에 '이미 이 PC에서 수집기가 일하는 중'을 표시
+ *    수집기 탭을 닫으면 쉬는 탭 중 하나가 저절로 이어받음(그때부터 자동 작업도 맡음)
+ *  · 꼭 필요하면 쉬는 탭에서 [이 탭도 수집기로 켜기] → 단점을 알린 뒤 켬(force): 사람이 직접 누른 작업만 하고, 자동·웹앱 요청·맡긴 일은 계속 원래 탭이 맡음. 새로고침하면 다시 쉬는 탭
+ *  고르는 방법: 브라우저의 Web Locks('rn-collector-lead' — 탭이 닫히거나 멈추면 브라우저가 저절로 풀어 줌). 없는 브라우저면 GM 값 심장박동(5초, 15초 조용하면 넘겨받음)
+ *  안전한 새로고침(새 탭을 열고 옛 탭을 닫음)으로 열린 새 탭은 '이어받을 탭(heir)'으로 표시해, 다른 쉬는 탭이 아니라 그 탭이 수집기를 이어받음 */
+(function rnRole() {
+  const PANEL = window.top === window && /\/scm\/(worders|worder_preparatory_complete|wrecord_edit)\.aspx/i.test(location.pathname);
+  const ME = window.__rnTab || Math.random().toString(36).slice(2, 8); window.__rnTab = ME;
+  const PAGE = location.pathname.split('/').pop();
+  const LK = 'rn-collector-lead', GK = 'rnu-lead', HK = 'rnu-lead-heir';
+  let role = PANEL ? 'wait' : 'other'; let release = null; let beatT = null; let readyRes; const subs = [];
+  window.__rnRoleReady = new Promise((r) => (readyRes = r)); if (!PANEL) readyRes();
+  const L = (lv, m) => { try { window.__rnLog && window.__rnLog('수집기', lv, m); } catch (e) {} };
+  const fire = () => { readyRes(); subs.forEach((f) => { try { f(role); } catch (e) {} }); try { window.__rnCtlDraw && window.__rnCtlDraw(); } catch (e) {} };
+  window.__rnPageName = (p) => (/worders/i.test(p || '') ? '주문조회' : /wrecord_edit/i.test(p || '') ? '상품 조회' : /preparatory/i.test(p || '') ? '판매관리' : p || '다른 화면');
+  window.__rnRole = () => role;
+  window.__rnRoleOn = (f) => subs.push(f);
+  window.__rnLead = () => { const v = GM_getValue(GK, null); return v && Date.now() - (v.at || 0) < 20000 ? v : null; };
+  /* 자동·원격 작업을 건너뛸 탭: 쉬는 탭·확인 중·떠나는 탭, 그리고 '켜 둔' 탭(사람이 누른 것만) */
+  window.__rnRest = () => role === 'wait' || role === 'follow' || role === 'force' || role === 'leaving';
+  const beat = () => { if (role === 'lead') { try { GM_setValue(GK, { tab: ME, page: PAGE, at: Date.now(), since: window.__rnLeadSince || Date.now() }); } catch (e) {} } };
+  const heirOther = () => { const h = GM_getValue(HK, null); return h && h.tab !== ME && Date.now() - (h.at || 0) < 3 * 60000 ? h : null; };
+  const setLead = (how) => { role = 'lead'; window.__rnLeadSince = Date.now(); const h = GM_getValue(HK, null); if (h && h.tab === ME) GM_deleteValue(HK); beat(); clearInterval(beatT); beatT = setInterval(beat, 5000);
+    if (how === 'promote') L('ok', '이 탭이 이제 이 PC의 수집기입니다 (앞서 일하던 수집기 탭이 닫혀 이어받음) — 지금부터 자동 수집·웹앱 요청·맡긴 일도 이 탭이 맡습니다'); fire(); };
+  const setFollow = () => { if (role === 'force') return fire(); role = 'follow'; const v = window.__rnLead();
+    L('info', `이 PC에서는 이미 수집기가 일하는 중${v ? ` (${window.__rnPageName(v.page)} 탭)` : ''} — 이 탭은 쉬는 상태로 엽니다. 저절로 시작하는 작업은 없고, 그 탭을 닫으면 이 탭이 이어받습니다`); fire(); };
+  window.__rnForce = (on) => { if (!PANEL || role === 'lead') return; if (on) { role = 'force'; L('warn', '⚠ 이 탭도 수집기로 켬 (사람이 누름) — 이 PC에 수집기 2개. 자동·웹앱 요청은 원래 탭이 계속 맡고 이 탭은 직접 누른 작업만'); }
+    else { const busy = (window.__rnPrd && window.__rnPrd.busy && window.__rnPrd.busy()) || (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()); if (busy) { alert('이 탭에서 작업이 진행 중입니다. 일시정지로 멈춘 뒤 다시 눌러 주세요'); return; } role = 'follow'; L('info', '이 탭을 다시 쉬는 상태로 돌림'); } fire(); };
+  /* 쉬는 탭에서 사람이 작업 단추를 누르면: 켤지 묻고(단점 안내) 켜면 진행. 저절로 온 요청이면 막고 기록만 (10분에 한 번) */
+  let lastNote = 0;
+  window.__rnForceAsk = () => { const v = window.__rnLead();
+    return confirm(`이 탭도 수집기로 켤까요?\n\n이 PC에서는 이미 ${v ? `'${window.__rnPageName(v.page)}' 탭의 ` : '다른 탭의 '}수집기가 일하고 있습니다. 한 PC에는 수집기 하나가 원칙입니다.\n\n켜면 생기는 단점:\n· 같은 PC·같은 알라딘 아이디로 요청이 두 배로 나가, '요청 너무 많음(429)'·잠시 막힘에 더 빨리 걸립니다. 걸리면 두 탭 모두 느려지고, 다른 PC의 수집까지 늦어질 수 있습니다\n· 두 탭이 같은 종류의 작업을 하면 진행 위치(이어하기 자리)를 서로 덮어쓰거나 같은 쪽을 두 번 읽을 수 있습니다 (작업 잠금이 대부분 막지만 완전하지는 않습니다)\n· 브라우저 메모리·CPU를 두 배로 써서 탭이 느려지거나 멈출 수 있습니다\n· 기록과 진행 상태가 두 탭으로 나뉘어, 무엇이 어디서 도는지 헷갈리기 쉽습니다\n\n켜도 매일 자동 수집·웹앱 요청·맡긴 일(등록·송장·시장 지표)은 원래 탭이 계속 맡고, 이 탭은 사람이 직접 누른 작업만 합니다.\n이 탭을 새로고침하면 다시 쉬는 상태로 돌아갑니다.\n\n그래도 이 탭을 켤까요?`); };
+  window.__rnGate = (what) => { if (role === 'lead' || role === 'other' || role === 'force') return true;
+    let gesture = false; try { gesture = !!(navigator.userActivation && navigator.userActivation.isActive); } catch (e) {}
+    if (gesture && role !== 'leaving') { if (window.__rnForceAsk()) { window.__rnForce(true); return true; } return false; }
+    if (Date.now() - lastNote > 10 * 60000) { lastNote = Date.now(); L('info', `쉬는 탭이라 '${what || '작업'}'을(를) 시작하지 않음 — 이 PC의 수집기 탭이 맡습니다`); } return false; };
+  /* 안전한 새로고침: 옛 탭은 넘겨주며 놓고(떠남), 새 탭은 '이어받을 탭'으로 표시 */
+  window.__rnLeadRelease = () => { if (role !== 'lead') return; role = 'leaving'; clearInterval(beatT); try { const v = GM_getValue(GK, null); if (v && v.tab === ME) GM_deleteValue(GK); } catch (e) {} if (release) { const r = release; release = null; r(); } };
+  window.__rnClaimHeir = () => { try { GM_setValue(HK, { tab: ME, at: Date.now() }); } catch (e) {} };
+  addEventListener('pagehide', () => { if (role === 'lead') { try { const v = GM_getValue(GK, null); if (v && v.tab === ME) GM_deleteValue(GK); } catch (e) {} } });
+  if (!PANEL) return;
+  const hold = () => new Promise((res) => { release = res; });
+  // 넘겨받을 차례가 됐는데 이어받을 탭(heir)이 따로 있으면, 그 탭에 양보하고 다시 줄을 섬
+  const queue = () => navigator.locks.request(LK, () => { if (heirOther()) { setTimeout(queue, 1500); return null; } setLead('promote'); return hold(); }).catch(() => {});
+  const viaGM = () => { // Web Locks가 없는 브라우저: 심장박동
+    const tick = () => { if (role === 'lead') return beat(); if (role === 'leaving') return; const v = GM_getValue(GK, null); const fresh = v && v.tab !== ME && Date.now() - (v.at || 0) < 15000;
+      if (!fresh && !heirOther()) { GM_setValue(GK, { tab: ME, page: PAGE, at: Date.now() }); setTimeout(() => { const w = GM_getValue(GK, null); if (w && w.tab === ME) setLead(role === 'wait' ? 'first' : 'promote'); else if (role === 'wait') setFollow(); }, 800); }
+      else if (role === 'wait') setFollow(); };
+    tick(); setInterval(tick, 5000); };
+  try {
+    if (!navigator.locks || !navigator.locks.request) throw 0;
+    navigator.locks.request(LK, { ifAvailable: true }, (lk) => { if (!lk || heirOther()) { setFollow(); queue(); return null; } setLead('first'); return hold(); }).catch(() => viaGM());
+  } catch (e) { viaGM(); }
+  setTimeout(() => { if (role === 'wait') { L('warn', '수집기 탭 정하기가 5초 안에 끝나지 않아 심장박동 방식으로 바꿉니다'); viaGM(); } }, 5000);
+})();
+(function rnPcName() {
+  const keys = () => { let n = null; try { n = GM_getValue('rnu-pcname', null) || GM_getValue('pcName', null) || (GM_getValue('rn-pc', {}) || {}).name || localStorage.getItem('rnu-pcname'); } catch (e) {} return n && String(n).trim() ? String(n).trim() : null; };
+  const setAll = (n) => { n = String(n || '').trim(); if (!n) return; try { GM_setValue('rnu-pcname', n); GM_setValue('pcName', n); const pc = GM_getValue('rn-pc', null) || { id: Math.random().toString(36).slice(2, 10), name: '' }; if (pc.name !== n) { pc.name = n; GM_setValue('rn-pc', pc); } localStorage.setItem('rnu-pcname', n); } catch (e) {} };
+  const cur = keys(); if (cur) setAll(cur); // 한 곳에만 있어도 모두 맞춤
+  window.__rnPcName = { get: keys, set: setAll, ask: (why) => { const v = keys(); if (v) return v; if (!window.__rnHuman(8000)) { window.__rnNote('이 PC의 이름이 아직 없습니다 — 수집기 개요에서 PC 이름을 정해 주세요 (사람이 없을 때는 묻지 않고 넘어감)', 'warn'); return null; } const n = prompt(`이 PC의 이름을 정해 주세요 (예: JS-MAIN, HOME). ${why || ''}\n한 번만 정하면 됩니다 — 새로고침·스크립트 교체 뒤에도 기억합니다.`); if (n && n.trim()) { setAll(n.trim()); return n.trim(); } return null; } };
+})();
+/* ═════════════ 작업 기록 (두 모듈 공통) ═════════════
+ * 모든 진행(단계 시작·끝, 쪽·항목마다의 진행, 양보·기다림·오류)을 초 단위로 남김.
+ * 이 PC: 날짜별로 브라우저에 보관(최근 7일) — 새로고침·멈춤 뒤에도 남음.  Firebase: rn_logs/{PC}_{날짜시각10분} 에 1분마다 묶어서 올림 → 웹앱이나 다른 PC에서도 확인.
+ * 화면: 위쪽 [기록] 버튼 → 크게 보는 창 (중요만/전체/오류, 검색, 자동 스크롤, 내려받기). 진행을 늦추지 않게 화면 갱신은 1초에 한 번. */
+/* (1.60.1) 수집기 창들(관제판·상품/고객 패널·작업 기록·⏰ 칸 편집기·등록 창)의 앞뒤 — 누른 창이 맨 앞으로(늘 맨 위로 고정된 창 없음) */
+(function rnZ() { if (window.top !== window || window.__rnFront) return; const SEL = '#rn-ctl, #rnp, #rn-crm, #rn-jw, #rnas, #rnRegFill'; let top = 2147483600;
+  window.__rnFront = (el) => { if (!el) return; const L = [...document.querySelectorAll(SEL)]; L.forEach((e) => { if (!e.style.zIndex) e.style.zIndex = String(++top); });
+    if (top >= 2147483640) { top = 2147483600; L.filter((e) => e !== el).sort((a, b) => +a.style.zIndex - +b.style.zIndex).forEach((e) => (e.style.zIndex = String(++top))); } el.style.zIndex = String(++top); };
+  document.addEventListener('pointerdown', (e) => { const el = e.target && e.target.closest && e.target.closest(SEL); if (el) window.__rnFront(el); }, true); })();
+(function rnJournal() {
+  if (window.top !== window || window.__rnLog) return;
+  const MAXMEM = 10000; const buf = []; const lt = []; let ltDirty = false; const pend = []; const idbPend = []; let dirty = false; let seq = 0;
+  const day = (d) => { const k = new Date(d.getTime() + 9 * 3600e3); return k.toISOString().slice(0, 10); };
+  const LSK = (d) => 'rnu-log-' + d;
+  // ── 기록 보관: 이 PC의 IndexedDB('rn-journal')에 날짜별로 덧붙임 — 지우지 않고 계속 쌓음 (내려받기 하면 그때 비움)
+  const JDB = () => new Promise((res, rej) => { const r = indexedDB.open('rn-journal', 1); r.onupgradeneeded = () => r.result.createObjectStore('days', { keyPath: 'day' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  const jtx = async (mode, fn) => { const db = await JDB(); return new Promise((res, rej) => { const t = db.transaction('days', mode); const st = t.objectStore('days'); let out; Promise.resolve(fn(st, (v) => (out = v))).catch(rej); t.oncomplete = () => { db.close(); res(out); }; t.onerror = () => { db.close(); rej(t.error); }; }); };
+  const jget = (k) => jtx('readonly', (st, set) => { const r = st.get(k); r.onsuccess = () => set(r.result || null); });
+  const jkeys = () => jtx('readonly', (st, set) => { const r = st.getAllKeys(); r.onsuccess = () => set(r.result || []); });
+  const jput = (rec) => jtx('readwrite', (st) => { st.put(rec); });
+  const jclear = () => jtx('readwrite', (st) => { st.clear(); });
+  // (1.25.1) 하루치 전체를 20초마다 읽고 다시 쓰던 방식이 오래 돌면 메모리를 크게 씀 → 작은 묶음으로 덧붙이기만 함 (키 '날짜#시각'), 읽을 때 날짜별로 합침
+  async function jflush() { if (!idbPend.length) return; const out = idbPend.splice(0, idbPend.length); const g = {}; out.forEach((e) => { (g[day(new Date(e.t))] = g[day(new Date(e.t))] || []).push(e); });
+    for (const [d, arr] of Object.entries(g)) { try { await jput({ day: `${d}#${String(Date.now()).padStart(15, '0')}-${++seq}`, lines: arr }); } catch (e) { idbPend.unshift(...arr); break; } } }
+  const jgetDay = (d) => jtx('readonly', (st, set) => { const r = st.getAll(IDBKeyRange.bound(d, d + '\uffff')); r.onsuccess = () => set({ day: d, lines: (r.result || []).flatMap((x) => x.lines || []) }); });
+  const jdays = async () => [...new Set((await jkeys()).map((k) => String(k).split('#')[0]))];
+  (async () => { try { // 예전 localStorage 기록(7일치)을 옮겨 담고 지움 · 오늘 기록을 불러와 이어 씀
+    for (let i = 0; i < 30; i++) { const d = day(new Date(Date.now() - i * 864e5)); const raw = localStorage.getItem(LSK(d)); if (!raw) continue; try { const arr = JSON.parse(raw); const rec = (await jget(d)) || { day: d, lines: [] }; if (!rec.lines.length) { rec.lines = arr; await jput(rec); } } catch (e) {} localStorage.removeItem(LSK(d)); }
+  } catch (e) {} })(); // 새로고침하면 '이번 화면'은 비어서 시작 — 오늘 앞선 기록은 '지난 기록'의 오늘 날짜에 있음
+  const pcName = () => (window.__rnPcName && window.__rnPcName.get()) || '이 PC';
+  window.__rnStatus = window.__rnStatus || {};
+  /* (1.43.0) 단계 표시 — 일괄이든 개별 수집이든 '지금 작업 안의 단계'를 차례로 적음 (지난 단계 ✓·걸린 시간, 지금 ▶).
+   *  고객 쪽(progress)·상품 쪽(ui)이 단계 이름을 알리면 여기 한 곳에서 쌓음. 기다림·양보·로그인처럼 잠깐 지나가는 상태는 단계로 치지 않고 '잠깐' 글로만 */
+  const PH_TMP = /^(다른 PC 작업 중|대기 중|기다리|양보|자동 로그인|네이버로 다시 로그인|알라딘 요청 제한|새 버전으로|시작 못 함|취소|오류로 멈춤|완료|일시정지)|기다리는 중|쉬는 중/;
+  window.__rnPhaseReset = (kind, title) => { const S = window.__rnStatus; S.ph = S.ph || {}; S.ph[kind] = { title: title || null, list: [], note: null, start: Date.now() }; };
+  window.__rnPhase = (kind, label, key) => { const S = window.__rnStatus; S.ph = S.ph || {}; let P = S.ph[kind]; if (!P || (key !== undefined && P.key !== key)) { window.__rnPhaseReset(kind, null); P = S.ph[kind]; P.key = key; }
+    const l = String(label || '').replace(/\s+/g, ' ').trim().slice(0, 60); if (!l) return; if (PH_TMP.test(l)) { P.note = l; return; } P.note = null;
+    const last = P.list[P.list.length - 1]; if (last && last.l === l) return; const now = Date.now(); if (last) last.ms = now - last.at;
+    P.list.push({ l, at: now }); if (P.list.length > 40) { P.cut = (P.cut || 0) + 1; P.list.shift(); } };
+  window.__rnLog = (mod, lv, msg) => { const now = new Date(); const e = { t: now.getTime(), m: mod, l: lv, x: String(msg).slice(0, 600) };
+    const last = buf[buf.length - 1]; if (lv === 'detail' && last && last.l === 'detail' && last.m === mod && last.x === e.x) return; // 같은 줄 반복은 생략
+    buf.push(e); if (buf.length > MAXMEM) buf.splice(0, buf.length - MAXMEM); if (lv !== 'detail') { lt.push(e); if (lt.length > 80) lt.shift(); ltDirty = true; } pend.push(e); idbPend.push(e); dirty = true; };
+  // 이 PC 보관 (5초마다), Firebase (1분마다, 10분 단위 문서)
+  setInterval(() => { if (pend.length > 5000) pend.splice(0, pend.length - 5000); jflush().catch(() => {}); }, 20000); addEventListener('beforeunload', () => { jflush(); });
+  /* (1.59.1) Firebase 기록(rn_logs) 빠짐 막기
+   *  ① 올리다 실패한 칸의 줄은 버리지 않고 다음 분에 다시(예전: 실패하면 마지막 3,000줄만 남기고 앞을 버렸고, 한 칸이 계속 실패하면 그 뒤 칸도 모두 막혔음)
+   *  ② 칸마다 몇 줄 올렸는지 이 PC에 적어 두고(rnu-log-upled), 30분마다 이 PC 보관 기록(IndexedDB)과 견주어 덜 올라간 칸을 다시 올림 — 같은 줄은 Firebase가 하나로 합치므로(arrayUnion) 두 번 쌓이지 않음
+   *  ③ 기록 내려받기(이 PC 비우기) 전에 먼저 모두 올림 */
+  const lineOf = (e) => `${new Date(e.t + 9 * 3600e3).toISOString().slice(11, 19)} [${e.m}] ${e.l === 'err' ? '⚠ ' : e.l === 'warn' ? '! ' : e.l === 'detail' ? '· ' : ''}${e.x}`;
+  const slotOf = (t) => new Date(t + 9 * 3600e3).toISOString().slice(0, 15).replace(/[-:T]/g, '') + '0';
+  const UPK = 'rnu-log-upled'; const upLed = () => { try { return GM_getValue(UPK, {}) || {}; } catch (e) { return {}; } };
+  const upLedAdd = (slot, n) => { try { const L = upLed(); L[slot] = (L[slot] || 0) + n; const cut = slotOf(Date.now() - 4 * 864e5); for (const k of Object.keys(L)) if (k < cut) delete L[k]; GM_setValue(UPK, L); } catch (e) {} };
+  const upLedSet = (slot, n) => { try { const L = upLed(); L[slot] = Math.max(L[slot] || 0, n); GM_setValue(UPK, L); } catch (e) {} };
+  async function putSlot(slot, lines) { for (let i = 0; i < lines.length; i += 400) await firebase.firestore().collection('rn_logs').doc(`${pcName()}_${slot}`).set({ pc: pcName(), slot, lines: firebase.firestore.FieldValue.arrayUnion(...lines.slice(i, i + 400)), at: Date.now() }, { merge: true }); }
+  const upOk = () => !!(window.firebase && firebase.apps.length && firebase.auth().currentUser) && !window.__rnLogDenied;
+  const upNow = async () => { if (!pend.length || !upOk()) return; const out = pend.splice(0, pend.length);
+    const groups = new Map(); out.forEach((e) => { const k = slotOf(e.t); (groups.get(k) || groups.set(k, []).get(k)).push(e); }); const failed = [];
+    for (const [slot, es] of groups) { try { await putSlot(slot, es.map(lineOf)); upLedAdd(slot, es.length); } catch (e) { if (/permission/i.test(e.code || e.message)) { window.__rnLogDenied = true; buf.push({ t: Date.now(), m: '기록', l: 'warn', x: 'Firebase에 기록을 못 올림 (규칙에 rn_logs 허용 필요) — 이 PC 안에는 계속 보관합니다' }); return; } failed.push(...es); } }
+    if (failed.length) { pend.unshift(...failed); if (pend.length > 30000) pend.splice(0, pend.length - 30000); /* 그래도 넘치면 오래된 것부터 — 이 PC 보관 기록에서 30분마다 다시 채움 */ } };
+  let bfAt = 0, bfBusy = false;
+  async function backfill(force) { if (bfBusy || !upOk() || (!force && Date.now() - bfAt < 30 * 60000)) return { skip: true }; bfBusy = true; bfAt = Date.now(); let slots = 0, lines = 0, bad = 0;
+    try { await jflush(); const L = upLed(); const lim = force ? Date.now() : Date.now() - 15 * 60000; /* 지금 올리는 중인 칸은 빼고 */ const pendN = {}; pend.forEach((e) => { const k = slotOf(e.t); pendN[k] = (pendN[k] || 0) + 1; });
+      for (const d of [day(new Date(Date.now() - 864e5)), day(new Date())]) { const rec = await jgetDay(d); const G = new Map(); ((rec && rec.lines) || []).forEach((e) => { if (e.t > lim) return; const k = slotOf(e.t); (G.get(k) || G.set(k, []).get(k)).push(e); });
+        for (const [slot, es] of G) { if (es.length <= (L[slot] || 0) + (pendN[slot] || 0)) continue; try { await putSlot(slot, es.map(lineOf)); upLedSet(slot, es.length); slots++; lines += es.length; } catch (e) { bad++; } } }
+      if (slots) window.__rnLog('수집기', 'info', `Firebase 기록 채움: 덜 올라간 10분 칸 ${slots}개를 이 PC 보관 기록으로 다시 올림 (${lines.toLocaleString()}줄 — 이미 있던 줄은 하나로 합쳐짐)`); } catch (e) { bad++; } finally { bfBusy = false; } return { slots, lines, bad }; }
+  setInterval(() => backfill().catch(() => {}), 5 * 60000); setTimeout(() => backfill(true).catch(() => {}), 90000);
+  window.__rnLogBackfill = backfill;
+  window.__rnLogDay = (d) => jgetDay(d); /* (1.60.0) ⏰ 일마다 걸린 시간 — 예전 기록에서 채울 때 */
+  setInterval(upNow, 60000);
+  window.__rnFlush = async () => { try { await jflush(); } catch (e) {} try { await upNow(); } catch (e) {} }; // 탭을 닫기 직전 등: 남은 기록을 이 PC(IndexedDB)와 Firebase에 바로 저장
+  /* (1.38.0) 탭끼리 나누는 '지금 상태'와 '최근 기록' — 개요 화면은 어느 탭에서 열어도 이 PC 전체(모든 수집기 탭)를 보여 줌
+   *  GM 'rnu-live-{탭}' = 그 탭이 지금 하는 일(2초마다) · 'rnu-lt-{탭}' = 그 탭의 중요한 기록 마지막 80줄. 닫힌 탭의 값은 저절로 정리(상태 1분, 기록 12시간) */
+  const TAB = window.__rnTab || Math.random().toString(36).slice(2, 8); window.__rnTab = TAB; // (1.56.0) 수집기 탭 고르기(rnRole)와 같은 이름
+  const page = location.pathname.split('/').pop();
+  const liveNow = () => { const S = window.__rnStatus || {}; let crmBusy = false, crmLabel = null; try { crmBusy = !!(window.__rnCrm && window.__rnCrm.busy()); crmLabel = crmBusy && window.__rnCrm.label ? String(window.__rnCrm.label() || '') : null; } catch (e) {}
+    let imgBusy = false; try { imgBusy = !!(window.__rnPrd && window.__rnPrd.imgBusy && window.__rnPrd.imgBusy()); } catch (e) {}
+    const slim = (o) => (o && typeof o === 'object' ? JSON.parse(JSON.stringify(o)) : o || null);
+    return { tab: TAB, page, role: window.__rnRole ? window.__rnRole() : null, at: Date.now(), busy: !!(S.job || crmBusy || imgBusy), job: S.job || (crmBusy ? '고객·주문: ' + (crmLabel || '수집') : imgBusy ? '이미지 받기' : null), jobKey: S.jobKey || null, jobStart: S.jobStart || null, chain: slim(S.chain), sub: slim(S.sub), cur: slim(S.cur), crm: slim(S.crm), ph: slim(S.ph), crmBusy, lastEnd: S.lastEnd || null, stopping: !!(S.job && window.__rnPaused) }; };
+  const pubLive = () => { try { GM_setValue('rnu-live-' + TAB, liveNow());
+      if (ltDirty) { ltDirty = false; GM_setValue('rnu-lt-' + TAB, lt.slice()); } } catch (e) {} };
+  setInterval(pubLive, 2000); setTimeout(pubLive, 300);
+  addEventListener('beforeunload', () => { try { GM_deleteValue('rnu-live-' + TAB); } catch (e) {} });
+  window.__rnLive = () => { const out = []; try { for (const k of GM_listValues()) { if (!k.startsWith('rnu-live-')) continue; const v = GM_getValue(k, null); if (!v || Date.now() - (v.at || 0) > 60000) { if (!v || Date.now() - (v.at || 0) > 5 * 60000) GM_deleteValue(k); continue; } out.push(v); } } catch (e) { out.push(liveNow()); } return out; };
+  window.__rnLogTail = (n) => { let all = []; try { for (const k of GM_listValues()) { if (!k.startsWith('rnu-lt-')) continue; const v = GM_getValue(k, null) || []; const last = v.length ? v[v.length - 1].t : 0; if (Date.now() - last > 12 * 3600e3) { GM_deleteValue(k); continue; } all = all.concat(v); } } catch (e) { all = buf.filter((e) => e.l !== 'detail'); } all.sort((a, b) => a.t - b.t); return all.slice(-(n || 30)); };
+  // 크게 보는 기록 창
+  const st = document.createElement('style'); st.textContent = `#rn-jw{position:fixed;left:12px;bottom:12px;z-index:2147483646;width:min(760px,calc(100vw - 470px));height:46vh;min-height:180px;background:#fff;border:1px solid #2F5D50;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);display:none;flex-direction:column;font:12px/1.5 Consolas,'Malgun Gothic',monospace;resize:both;overflow:hidden}
+  #rn-jw.on{display:flex} #rn-jw .h{display:flex;gap:6px;align-items:center;padding:6px 8px;background:#2F5D50;color:#fff;font:600 12.5px system-ui,'Malgun Gothic';cursor:move;user-select:none} #rn-jw .h b{flex:1}
+  #rn-jw .h button,#rn-jw .h select,#rn-jw .h input{font:12px system-ui,'Malgun Gothic';border:0;border-radius:5px;padding:3px 7px} #rn-jw .h input{width:120px}
+  #rn-jw .b{flex:1;overflow:auto;padding:6px 8px;white-space:pre-wrap;word-break:break-all} #rn-jw .b div{border-bottom:1px solid #F1F3F2} #rn-jw .detail{color:#5B6B66} #rn-jw .info{color:#1E2B27;font-weight:600} #rn-jw .warn{color:#A8661B;font-weight:600} #rn-jw .err{color:#B0322A;font-weight:700} #rn-jw .ok{color:#2F7D4F;font-weight:600}
+  #rn-jw .ov{padding:7px 10px;background:#F2F6F4;border-bottom:1px solid #D7E2DD;font:12.5px/1.5 system-ui,'Malgun Gothic'} #rn-jw .ov .ol{margin:1px 0} #rn-jw .ov .ol.now{margin-top:5px} #rn-jw .ov .ol.sub{color:#5B6B66;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #rn-jw .pb{height:9px;background:#DCE5E1;border-radius:5px;overflow:hidden;margin:3px 0} #rn-jw .pb i{display:block;height:100%;border-radius:5px;transition:width .5s}
+  #rn-jw .chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px} #rn-jw .chip{font-size:11px;padding:1px 6px;border-radius:9px;background:#fff;border:1px solid #D7E2DD;color:#8A9692} #rn-jw .chip.done{background:#E3F1E8;border-color:#9CCBAE;color:#2F7D4F} #rn-jw .chip.now{background:#2F5D50;border-color:#2F5D50;color:#fff;font-weight:700} #rn-jw .chip.off{text-decoration:line-through;opacity:.6} #rn-jw .chip.skip{background:#FFF4E0;color:#A8661B} #rn-jw .chip.fail{background:#FDE8E6;color:#B0322A}
+  #rn-jw .jt button{background:#24493F;color:#cfe3da;margin-left:2px} #rn-jw .jt button.on{background:#fff;color:#2F5D50;font-weight:700} #rn-jw details.jd{border-bottom:1px solid #E4ECE8} #rn-jw details.jd > summary{cursor:pointer;padding:4px 2px;font:600 12.5px system-ui,'Malgun Gothic';color:#2F5D50} #rn-jw details.jd > summary small{color:#8A9692;font-weight:400}
+  #rn-jw .tm{color:#9AA5A1} #rn-jw .md{display:inline-block;min-width:34px;color:#2F5D50}`;
+  // (1.38.0) 진행 요약(지금 무엇을·전체 중 어디까지)을 만드는 곳은 여기 한 곳 — 기록 창 위쪽과 개요 화면이 같이 씀 (다른 탭의 상태로도 그릴 수 있게 상태를 인자로 받음)
+  const fm = (ms) => { const m = Math.round(ms / 60000); return m < 60 ? `${m}분` : `${Math.floor(m / 60)}시간 ${m % 60}분`; };
+  window.__rnOvHtml = (S, crmBusy) => { S = S || {}; const c = S.chain; const cur = S.cur || {}; const crm = S.crm;
+    const bar = (p, col) => `<div class="pb"><i style="width:${Math.max(0, Math.min(100, p * 100)).toFixed(1)}%;background:${col || '#2F5D50'}"></i></div>`;
+    const curFrac = (x) => (x && x.total ? Math.min(1, (x.done || 0) / x.total) : 0);
+    if (!S.job && !crmBusy) { return `<div class="ol"><b>쉬는 중</b>${S.lastEnd ? ` · 마지막 작업 '${S.lastEnd.name}' ${new Date(S.lastEnd.at).toLocaleTimeString('ko-KR')} 끝 (${fm(S.lastEnd.ms)})` : ''}</div>`; return; }
+    let h = `<div class="ol"><b>${S.job || '고객·주문 수집'}</b> · 시작 ${S.jobStart ? new Date(S.jobStart).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '-'} · ${S.jobStart ? fm(Date.now() - S.jobStart) + '째' : ''}</div>`;
+    if (c && c.order) { const on = c.order.filter((k) => c.on[k]); const di = on.filter((k) => c.res[k] === 'done' || c.res[k] === 'skip-busy' || c.res[k] === 'partial').length; const isCrmJob = S.job === '고객 전체 일괄 수집'; const inCur = c.cur && c.on[c.cur] ? (c.cur === 'crm' || isCrmJob ? curFrac(crm) : curFrac(cur)) : 0; const all = on.length ? (di + inCur) / on.length : 0;
+      h += `<div class="ol">전체 ${di}/${on.length}단계 · ${(all * 100).toFixed(1)}%</div>${bar(all)}<div class="chips">${c.order.map((k, i) => { const st = !c.on[k] ? 'off' : c.res[k] === 'done' ? 'done' : c.res[k] === 'skip-busy' ? 'skip' : c.res[k] === 'fail' ? 'fail' : c.res[k] === 'partial' ? 'skip' : k === c.cur ? 'now' : 'wait';
+        return `<span class="chip ${st}" title="${c.labels[k]}${st === 'off' ? ' (끔)' : st === 'skip' ? (c.res[k] === 'partial' ? ' (정한 시간만큼 하고 다음 단계로 — 나머지는 다음 일괄 때 이어서)' : ' (다른 PC가 하는 중이라 건너뜀)') : ''}">${st === 'done' ? '✓' : st === 'now' ? '▶' : st === 'off' ? '–' : st === 'skip' ? '↷' : st === 'fail' ? '✗' : i + 1} ${c.labels[k]}</span>`; }).join('')}</div>`; }
+    if (S.sub && S.sub.order) { const sb = S.sub; h += `<div class="chips" style="margin-left:14px"><span style="font-size:11px;color:#5B6B66">고객 세부:</span>${sb.order.map((k) => { const st = sb.res[k] === 'done' ? 'done' : k === sb.cur ? 'now' : 'wait'; return `<span class="chip ${st}">${st === 'done' ? '✓' : st === 'now' ? '▶' : ''} ${sb.labels[k]}</span>`; }).join('')}</div>`; }
+    const x = (c && c.cur === 'crm') || (S.job === '고객 전체 일괄 수집') ? crm : cur;
+    { const P = (S.ph || {})[x === crm ? 'crm' : 'prd']; if (P && P.list && P.list.length) { const L = P.list.slice(-12); const hid = P.list.length - L.length + (P.cut || 0);
+      h += `<div class="chips" style="margin-left:${c && c.order ? 14 : 0}px"><span style="font-size:11px;color:#5B6B66">${c && c.order ? '이 단계 안:' : '단계:'}</span>${hid ? `<span class="chip done" title="앞 단계 ${hid}개">… ${hid}</span>` : ''}${L.map((q, i) => { const isNow = i === L.length - 1;
+        return `<span class="chip ${isNow ? 'now' : 'done'}" title="${String(q.l).replace(/"/g, '&quot;')} · ${new Date(q.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 시작${q.ms != null ? ' · ' + fm(q.ms) + ' 걸림' : ''}">${isNow ? '▶' : '✓'} ${String(q.l).replace(/</g, '&lt;')}${!isNow && q.ms != null && q.ms >= 60000 ? ` <small>${fm(q.ms)}</small>` : ''}</span>`; }).join('')}</div>${P.note ? `<div class="ol sub">잠깐: ${String(P.note).replace(/</g, '&lt;')}</div>` : ''}`; } }
+    if (x && (x.state || x.label)) h += `<div class="ol now">지금: <b>${x.state || x.label}</b>${x.total ? ` · ${(+x.done || 0).toLocaleString()} / ${(+x.total).toLocaleString()} (${(curFrac(x) * 100).toFixed(1)}%)` : ''}${x.etaMin != null ? ` · 남은 시간 약 ${fm(x.etaMin * 60000)} (끝 ${new Date(Date.now() + x.etaMin * 60000).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})` : ''}</div>${x.total ? bar(curFrac(x), '#3F7FD1') : ''}${x.sub ? `<div class="ol sub">${String(x.sub).replace(/</g, '&lt;')}</div>` : ''}`;
+    return h; };
+  const mount = () => { document.head.appendChild(st); const w = document.createElement('div'); w.id = 'rn-jw';
+    w.innerHTML = `<div class="h"><b title="이 띠를 잡고 끌어서 옮김 · 두 번 누르면 처음 자리로 · 오른쪽 아래 모서리로 크기 조절">⠿ 작업 기록 — ${pcName()}</b><span class="jt"><button data-jt="today" class="on" title="이 화면을 연(새로고침한) 뒤의 기록">이번 화면</button><button data-jt="hist" title="날짜별로 쌓인 모든 기록 (오늘 포함)">전체 기록</button><button data-jt="pw" title="가격 감시기의 지금 상태와 기록만 따로 (수집기 기록과 섞지 않음 · 이 PC의 감시 탭에서 모아 둠)">🛰 감시</button><button data-jt="pcs" title="다른 PC 수집기의 기록 (각 PC가 1분마다 Firebase에 올린 것 · 1분마다 새로 읽음)">🖥 다른 PC</button></span><select id="rnjF"><option value="imp">중요만</option><option value="all" selected>전체 (항목마다)</option><option value="err">오류·경고만</option></select><input id="rnjQ" placeholder="검색"><label style="font-weight:400"><input type="checkbox" id="rnjA" ${GM_getValue('rnu-log-autoscroll', true) ? 'checked' : ''} title="새 줄이 생기면 맨 아래로 저절로 내려감 — 끄면 올려 둔 자리에 그대로 · 켜고 끈 것은 이 PC에 저장(다음에 열어도 그대로)"> 자동 스크롤</label><button id="rnjD" title="모든 기록(오늘+지난)을 파일로 받고, 이 PC의 기록을 비웁니다">내려받기·비우기</button><button id="rnjX">닫기</button></div><div class="ov" id="rnjO"></div><div class="b" id="rnjB"></div>`;
+    document.body.appendChild(w); let lastDrawn = -1;
+    // 위쪽 초록 띠를 잡고 끌어서 옮김. 위치·크기는 기억 (화면 밖으로 나가지 않게)
+    const place = () => { const g = GM_getValue('rnu-jw-geo', null); if (!g) return; const W = Math.min(g.w || 760, innerWidth - 20), H = Math.min(g.h || 360, innerHeight - 20);
+      w.style.width = W + 'px'; w.style.height = H + 'px'; w.style.left = Math.max(0, Math.min(g.x, innerWidth - 120)) + 'px'; w.style.top = Math.max(0, Math.min(g.y, innerHeight - 40)) + 'px'; w.style.bottom = 'auto'; };
+    const save = () => { const r = w.getBoundingClientRect(); GM_setValue('rnu-jw-geo', { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) }); };
+    place(); addEventListener('resize', place);
+    w.querySelector('.h').addEventListener('mousedown', (ev) => { if (ev.target.closest('button,select,input,label') || ev.button !== 0) return; ev.preventDefault();
+      const r = w.getBoundingClientRect(); const dx = ev.clientX - r.left, dy = ev.clientY - r.top; w.style.bottom = 'auto';
+      const mv = (e) => { w.style.left = Math.max(0, Math.min(e.clientX - dx, innerWidth - 120)) + 'px'; w.style.top = Math.max(0, Math.min(e.clientY - dy, innerHeight - 40)) + 'px'; };
+      const up = () => { removeEventListener('mousemove', mv); removeEventListener('mouseup', up); save(); }; addEventListener('mousemove', mv); addEventListener('mouseup', up); });
+    w.addEventListener('mouseup', (ev) => { if (!ev.target.closest('.h')) save(); }); // 오른쪽 아래 모서리로 크기를 바꾼 뒤에도 기억
+    w.querySelector('.h').addEventListener('dblclick', (ev) => { if (ev.target.closest('button,select,input,label')) return; GM_setValue('rnu-jw-geo', null); w.removeAttribute('style'); }); // 띠를 두 번 누르면 처음 자리로
+    let tab = 'today'; const fmtRow = (e) => `<div class="${e.l}"><span class="tm">${new Date(e.t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span> <span class="md">${e.m}</span> ${String(e.x).replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`;
+    const pass = (e) => { const f = w.querySelector('#rnjF').value, q = w.querySelector('#rnjQ').value.trim(); return (f === 'all' || (f === 'imp' ? e.l !== 'detail' : e.l === 'err' || e.l === 'warn')) && (!q || String(e.x).includes(q)); };
+    const drawHist = async () => { const b = w.querySelector('#rnjB'); b.innerHTML = '<div class="detail">불러오는 중</div>'; let keys = []; try { await jflush(); keys = (await jdays()).sort().reverse(); } catch (e) {}
+      b.innerHTML = keys.map((k) => `<details class="jd" data-day="${k}"><summary>${k}${k === day(new Date()) ? ' (오늘)' : ''} <small>펼쳐서 보기</small></summary><div class="jdb"></div></details>`).join('') || '<div class="detail">쌓인 기록 없음</div>';
+      b.querySelectorAll('details.jd').forEach((d) => (d.ontoggle = async () => { if (!d.open) return; const rec = await jgetDay(d.dataset.day); const L = (rec && rec.lines) || []; const rows = L.filter(pass); d.querySelector('summary small').textContent = `${L.length.toLocaleString()}줄 · 오류 ${L.filter((e) => e.l === 'err').length} · 경고 ${L.filter((e) => e.l === 'warn').length}${rows.length !== L.length ? ` · 거른 결과 ${rows.length.toLocaleString()}줄` : ''}`; d.querySelector('.jdb').innerHTML = rows.slice(-5000).map(fmtRow).join('') || '<div class="detail">없음</div>'; })); };
+    w.querySelectorAll('[data-jt]').forEach((bt) => (bt.onclick = () => { tab = bt.dataset.jt; w.querySelectorAll('[data-jt]').forEach((x) => x.classList.toggle('on', x === bt)); lastDrawn = -1; pwDrawn = -1; if (tab === 'hist') drawHist(); else if (tab === 'pw') drawPw(); else if (tab === 'pcs') drawPcs(true); else draw(); drawOv(); }));
+    const draw = () => { if (!w.classList.contains('on') || tab !== 'today') return; const f = w.querySelector('#rnjF').value, q = w.querySelector('#rnjQ').value.trim();
+      const rows = buf.filter((e) => (f === 'all' || (f === 'imp' ? e.l !== 'detail' : e.l === 'err' || e.l === 'warn')) && (!q || e.x.includes(q))).slice(-3000);
+      const b = w.querySelector('#rnjB'); b.innerHTML = rows.map((e) => `<div class="${e.l}"><span class="tm">${new Date(e.t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span> <span class="md">${e.m}</span> ${e.x.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`).join('') || '<div class="detail">기록 없음</div>';
+      if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; lastDrawn = buf.length; };
+      { const ca = w.querySelector('#rnjA'); if (ca && !ca._sv) { ca._sv = 1; ca.addEventListener('change', () => { GM_setValue('rnu-log-autoscroll', ca.checked); if (ca.checked) { const b2 = w.querySelector('#rnjB'); if (b2) b2.scrollTop = b2.scrollHeight; } }); } } /* (1.57.6) 자동 스크롤 켜고 끔을 저장 */
+    // ── 맨 위 요약: 지금 무엇을, 전체 중 어디까지 (1초마다)
+    const ov = w.querySelector('#rnjO');
+    /* (1.43.0) 이 PC 전체에서 지금 하는 일 — 개요와 같은 기준(일하는 탭이 따로 있어도 그 탭의 단계가 보임). 예전엔 기록 창을 연 탭의 상태만 봐서, 다른 탭·자동 수집이 일할 때 단계 표시가 비었음 */
+    const drawOv = () => { if (!w.classList.contains('on')) return; if (tab === 'pw') { const h = pwOvHtml(); if (ov.innerHTML !== h) ov.innerHTML = h; return; } if (tab === 'pcs') { const h = pcsOvHtml(); if (ov.innerHTML !== h) ov.innerHTML = h; return; } let lives = []; try { lives = window.__rnLive ? window.__rnLive() : []; } catch (e) {} const mine = lives.find((v) => v.tab === TAB); const busy = lives.filter((v) => v.busy); const main = mine && mine.busy ? mine : busy[0] || null;
+      const html = main ? window.__rnOvHtml(main, !!main.crmBusy) + (main.tab !== TAB ? `<div class="ol sub">이 PC의 다른 탭(${main.page === 'worders.aspx' ? '주문조회' : main.page === 'wrecord_edit.aspx' ? '상품 조회' : '판매관리'})에서 진행 중${busy.length > 1 ? ` · 함께 진행 중: ${busy.filter((v) => v !== main).map((v) => String(v.job || '').replace(/</g, '&lt;')).join(', ')}` : ''}</div>` : busy.length > 1 ? `<div class="ol sub">함께 진행 중: ${busy.filter((v) => v !== main).map((v) => String(v.job || '').replace(/</g, '&lt;')).join(', ')}</div>` : '') : window.__rnOvHtml(window.__rnStatus || {}, !!(window.__rnCrm && window.__rnCrm.busy()));
+      if (ov.innerHTML !== html) ov.innerHTML = html; };
+    /* (1.43.0) 🛰 감시 탭: 가격 감시기(따로 도는 스크립트)의 지금 상태와 기록 — 수집기 기록과 섞지 않고 따로. 감시기가 도는 상품 조회 탭이 모아 두면(GM) 이 PC의 어느 탭에서도 봄 */
+    let pwDrawn = -1;
+    const pwOvHtml = () => { const st = GM_getValue('rnu-pw-st', null); const e = (x) => String(x || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      if (!st) return '<div class="ol"><b>가격 감시기 신호 없음</b> — 이 PC에서 가격 감시기가 도는 상품 조회 탭(wrecord_edit)이 열려 있지 않거나, 감시기가 설치되지 않음</div>';
+      const age = Date.now() - (st.at || 0); const off = age > 90000;
+      return `<div class="ol"><b>${off ? '⚪ 감시기 신호 끊김' : '🛰 가격 감시기'}</b>${st.ver ? ` v${e(st.ver)}` : ''} · ${off ? `${Math.round(age / 60000)}분 전 마지막 신호 (감시 탭이 닫혔거나 멈춤)` : '지금'}</div><div class="ol now">${e(st.state) || '-'}</div>${st.prog ? `<div class="ol sub">${e(st.prog)}</div>` : ''}`; };
+    const drawPw = () => { if (!w.classList.contains('on') || tab !== 'pw') return; const L = GM_getValue('rnu-pw-tail', []) || []; const stamp = L.length + ':' + (L.length ? L[L.length - 1].t : 0) + w.querySelector('#rnjF').value + w.querySelector('#rnjQ').value; if (stamp === pwDrawn) return; pwDrawn = stamp;
+      const rows = L.filter(pass).slice(-3000); const b = w.querySelector('#rnjB'); b.innerHTML = rows.map(fmtRow).join('') || '<div class="detail">감시 기록 없음 — 가격 감시기가 이 PC에서 돌면 여기에 쌓입니다 (예전 기록은 가격 감시 탭의 기록 받기)</div>';
+      if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; };
+    setInterval(drawPw, 2000);
+    /* (1.56.0) 🖥 다른 PC 탭: 다른 PC 수집기의 기록 — 각 PC가 1분마다 rn_logs/{PC}_{10분 칸}에 올린 줄을 읽어 PC별로 보여 줌 (이 PC는 빼고)
+     *  기본 최근 3시간 · [하루]로 늘림 · 탭을 보고 있을 때만 1분마다 다시 읽음(안 볼 땐 읽지 않음 → Firebase 읽기 아낌) · 위쪽 칩 = PC마다 마지막 기록 시각·오류 수 */
+    let pcsData = null, pcsSel = GM_getValue('rnu-jw-pc', null), pcsHours = 3, pcsAt = 0, pcsBusy = false, pcsErr = null, pcsDrawn = '';
+    const kslot = (t) => new Date(t + 9 * 3600e3).toISOString().slice(0, 15).replace(/[-:T]/g, '') + '0';
+    const pcsLine = (raw, slot) => { const m = String(raw).match(/^(\d{2}):(\d{2}):(\d{2}) \[([^\]]*)\] (⚠ |! |· )?(.*)$/s); if (!m) return { t: 0, m: '', l: 'info', x: String(raw) };
+      const y = +slot.slice(0, 4), mo = +slot.slice(4, 6), d = +slot.slice(6, 8); const t = Date.UTC(y, mo - 1, d, +m[1], +m[2], +m[3]) - 9 * 3600e3;
+      return { t, m: m[4], l: m[5] === '⚠ ' ? 'err' : m[5] === '! ' ? 'warn' : m[5] === '· ' ? 'detail' : 'info', x: m[6] }; };
+    const pcsLoad = async () => { if (pcsBusy) return; if (!window.firebase || !firebase.apps.length || !firebase.auth().currentUser) { pcsErr = 'Firebase에 아직 로그인되지 않았습니다 (잠시 뒤 저절로 다시)'; return; } pcsBusy = true;
+      try { const ss = await firebase.firestore().collection('rn_logs').where('slot', '>=', kslot(Date.now() - pcsHours * 3600e3)).get(); const by = {};
+        ss.forEach((d) => { const v = d.data() || {}; const pc = v.pc || String(d.id).split('_')[0]; if (!pc || pc === pcName()) return; (by[pc] = by[pc] || []).push(v); });
+        const out = {}; Object.entries(by).forEach(([pc, docs]) => { docs.sort((a, b) => String(a.slot).localeCompare(String(b.slot))); const L = []; docs.forEach((v) => (v.lines || []).forEach((r) => L.push(pcsLine(r, String(v.slot))))); L.sort((a, b) => a.t - b.t);
+          out[pc] = { lines: L, last: L.length ? L[L.length - 1].t : 0, err: L.filter((e) => e.l === 'err').length, warn: L.filter((e) => e.l === 'warn').length }; });
+        pcsData = out; pcsErr = null; pcsAt = Date.now(); if (!pcsSel || !out[pcsSel]) { const ks = Object.keys(out).sort((a, b) => out[b].last - out[a].last); pcsSel = ks[0] || null; } }
+      catch (e) { pcsErr = /permission/i.test(e.code || e.message) ? 'Firebase 규칙이 rn_logs 읽기를 막고 있습니다 (웹앱의 기록 보기와 같은 규칙 필요)' : '기록을 못 읽음: ' + (e.code || e.message); }
+      finally { pcsBusy = false; } };
+    const ago = (t) => { const m = Math.round((Date.now() - t) / 60000); return m < 1 ? '방금' : m < 60 ? `${m}분 전` : `${Math.floor(m / 60)}시간 ${m % 60}분 전`; };
+    const pcsOvHtml = () => { const e = (x) => String(x || '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+      if (pcsErr) return `<div class="ol"><b>🖥 다른 PC</b> · <span style="color:#B0322A">${e(pcsErr)}</span></div>`;
+      if (!pcsData) return '<div class="ol"><b>🖥 다른 PC</b> · 불러오는 중…</div>';
+      const ks = Object.keys(pcsData).sort((a, b) => pcsData[b].last - pcsData[a].last);
+      if (!ks.length) return `<div class="ol"><b>🖥 다른 PC</b> · 최근 ${pcsHours}시간 동안 기록을 올린 다른 PC가 없습니다 ${pcsHours < 24 ? '<button data-pch="24" style="margin-left:6px">하루로 늘리기</button>' : ''}</div>`;
+      return `<div class="ol"><b>🖥 다른 PC</b> · 최근 ${pcsHours}시간 · ${ago(pcsAt)} 읽음 <button data-pch="${pcsHours < 24 ? 24 : 3}" style="margin-left:6px">${pcsHours < 24 ? '하루로 늘리기' : '3시간만'}</button> <button data-pcr="1">↻ 지금 읽기</button></div><div class="chips">${ks.map((k) => { const x = pcsData[k]; const off = Date.now() - x.last > 15 * 60000;
+        return `<span class="chip ${k === pcsSel ? 'now' : off ? '' : 'done'}" data-pc="${e(k)}" style="cursor:pointer" title="마지막 기록 ${x.last ? new Date(x.last).toLocaleString('ko-KR') : '-'} · ${x.lines.length.toLocaleString()}줄">${off ? '⚪' : '🟢'} ${e(k)} · ${x.last ? ago(x.last) : '-'}${x.err ? ` · 오류 ${x.err}` : ''}${x.warn ? ` · 경고 ${x.warn}` : ''}</span>`; }).join('')}</div>`; };
+    const drawPcs = async (load) => { if (!w.classList.contains('on') || tab !== 'pcs') return; const b = w.querySelector('#rnjB');
+      if (load || !pcsData || Date.now() - pcsAt > 60000) { if (!pcsData) b.innerHTML = '<div class="detail">다른 PC의 기록을 불러오는 중…</div>'; await pcsLoad(); drawOv(); }
+      if (tab !== 'pcs') return; const x = pcsData && pcsSel ? pcsData[pcsSel] : null;
+      const stamp = `${pcsSel}|${pcsAt}|${w.querySelector('#rnjF').value}|${w.querySelector('#rnjQ').value}`; if (!load && stamp === pcsDrawn) return; pcsDrawn = stamp;
+      const rows = x ? x.lines.filter(pass).slice(-3000) : []; b.innerHTML = rows.map(fmtRow).join('') || `<div class="detail">${pcsErr ? '' : x ? '거른 결과 없음' : '고를 PC가 없습니다'}</div>`;
+      if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; };
+    ov.addEventListener('click', (ev) => { if (tab !== 'pcs') return; const c = ev.target.closest('[data-pc]'); const hh = ev.target.closest('[data-pch]'); const rr = ev.target.closest('[data-pcr]');
+      if (c) { pcsSel = c.dataset.pc; GM_setValue('rnu-jw-pc', pcsSel); pcsDrawn = ''; drawOv(); drawPcs(false); }
+      else if (hh) { pcsHours = +hh.dataset.pch; pcsData = null; drawOv(); drawPcs(true); } else if (rr) { drawPcs(true); } });
+    setInterval(() => { if (tab === 'pcs') drawPcs(false); }, 5000);
+    setInterval(drawOv, 1000);
+    setInterval(() => { if (buf.length !== lastDrawn) draw(); }, 1000); // 진행을 늦추지 않게 1초에 한 번만 그림
+    ['#rnjF', '#rnjQ'].forEach((q) => (w.querySelector(q).oninput = () => (tab === 'hist' ? drawHist() : tab === 'pw' ? ((pwDrawn = -1), drawPw()) : tab === 'pcs' ? ((pcsDrawn = ''), drawPcs(false)) : draw()))); w.querySelector('#rnjX').onclick = () => { w.classList.remove('on'); GM_setValue('rnu-jw', 0); };
+  // 구글 드라이브로 바로 저장 (설정 ⑨에 Apps Script 주소·열쇠가 있으면). 실패하면 PC로 내려받기
+  const driveSave = (name, content) => new Promise((res) => { const url = GM_getValue('rnu-drive-url', ''), key = GM_getValue('rnu-drive-key', ''); if (!url) return res(null);
+    GM_xmlhttpRequest({ method: 'POST', url, data: JSON.stringify({ key, name, content }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, timeout: 120000, onload: (r) => { try { const j = JSON.parse(r.responseText); res(j && j.ok ? j : null); } catch (e) { res(null); } }, onerror: () => res(null), ontimeout: () => res(null) }); });
+    w.querySelector('#rnjD').onclick = async () => { // 모든 날짜를 한 파일로 받고, 이 PC의 기록을 비움 (Firebase에 올라간 기록은 그대로)
+      if (!confirm('이 PC의 모든 작업 기록(오늘 + 지난 기록)을 파일로 내려받은 뒤, 이 PC에서 비웁니다. 계속할까요?')) return;
+      await jflush(); try { await upNow(); } catch (e) {} const bfr = await backfill(true).catch(() => ({ bad: 1 })); if ((bfr && bfr.bad) || pend.length) { if (!confirm(`Firebase에 아직 못 올린 기록이 있습니다(${pend.length.toLocaleString()}줄${bfr && bfr.bad ? ' · 못 올린 칸 ' + bfr.bad + '개' : ''}). 그래도 이 PC 기록을 비울까요?\n(내려받는 파일에는 모두 들어 있음 · 취소하면 비우지 않음 — 인터넷이 되면 저절로 올라감)`)) return; } /* (1.59.1) 비우기 전에 Firebase에 모두 올림 */ const keys = (await jdays()).sort(); const parts = []; for (const k of keys) { const rec = await jgetDay(k); (rec ? rec.lines : []).forEach((e) => parts.push(`${new Date(e.t).toLocaleString('ko-KR')} [${e.m}] [${e.l}] ${e.x}`)); }
+      const fname = `리드나우-수집기록-${pcName()}-${keys[0] || day(new Date())}~${keys[keys.length - 1] || day(new Date())}.txt`; const drv = await driveSave(fname, parts.join('\n'));
+      if (drv) { window.__rnLog('수집기', 'ok', `작업 기록을 구글 드라이브 '리드나우 수집기록' 폴더에 저장했습니다: ${fname}${drv.url ? ' · ' + drv.url : ''}`); if (drv.url) window.open(drv.url, '_blank'); }
+      else { window.__rnLog('수집기', 'warn', GM_getValue('rnu-drive-url', '') ? '구글 드라이브 저장 실패 (주소·열쇠·배포 권한 확인) — PC의 다운로드 폴더로 내려받습니다' : '구글 드라이브 주소가 설정되지 않아 PC의 다운로드 폴더로 내려받습니다 (웹앱 설정 ⑨)'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([parts.join('\n')], { type: 'text/plain' })); a.download = fname; a.click(); }
+      setTimeout(async () => { await jclear(); buf.length = 0; idbPend.length = 0; window.__rnLog('수집기', 'info', `작업 기록을 내려받고 이 PC의 기록을 비웠습니다 (${keys.length}일치, ${parts.length.toLocaleString()}줄)`); lastDrawn = -1; tab === 'hist' ? drawHist() : draw(); }, 1500); };
+    window.__rnJournalToggle = () => { const on = !w.classList.contains('on'); w.classList.toggle('on', on); GM_setValue('rnu-jw', on ? 1 : 0); lastDrawn = -1; draw(); drawOv(); };
+    (window.__rnRoleReady || Promise.resolve()).then(() => { const r = window.__rnRole ? window.__rnRole() : 'lead'; if (GM_getValue('rnu-jw', 0) && r !== 'follow' && r !== 'wait') window.__rnJournalToggle(); }); }; // (1.56.0) 쉬는 탭은 기록 창을 닫은 채로 (기억해 둔 '열림'은 그대로 둠)
+  if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
+  /* (1.43.0) 가격 감시기 기록 모으기: 감시기 칸(#rn-prc)이 이 화면에 있으면 그 기록 줄·상태를 이 수집기의 GM에 모아 둠(최근 400줄) → 기록 창 🛰 감시 탭.
+   *  감시기 코드는 바꾸지 않음(화면에 쓰는 글을 그대로 옮김). Firebase에는 다시 올리지 않음 — 감시기가 이미 rn_logs에 올림(중복 없게) */
+  (function pwMirror() { let tail = null, dirty = false, seen = null;
+    const ingest = (nodes) => { tail = tail || GM_getValue('rnu-pw-tail', []) || []; seen = seen || new Set(tail.slice(-300).map((e) => e.raw));
+      for (const n of nodes) { const raw = String(n.textContent || '').trim(); if (!raw || seen.has(raw)) continue; seen.add(raw); const x = raw.replace(/^\d{2}:\d{2}:\d{2} \[가격 감시\] /, '');
+        const bad = /B0322A|rgb\(176, 50, 42\)/i.test((n.getAttribute && n.getAttribute('style')) || '') || /^⚠/.test(x); tail.push({ t: Date.now(), m: '감시', l: bad ? 'err' : 'info', x, raw }); }
+      if (tail.length > 400) tail.splice(0, tail.length - 400); if (seen.size > 1000) seen = new Set(tail.map((e) => e.raw)); dirty = true; };
+    const attach = () => { const lg = document.getElementById('pw_log'); if (!lg) return false; ingest([...lg.children].reverse());
+      new MutationObserver((ms) => { const add = []; ms.forEach((m) => m.addedNodes.forEach((x) => add.push(x))); if (add.length) ingest(add.reverse()); }).observe(lg, { childList: true });
+      setInterval(() => { try { const vm = ((document.querySelector('#rn-prc .hd small') || {}).textContent || '').match(/v([\d.]+)/); GM_setValue('rnu-pw-st', { at: Date.now(), state: ((document.getElementById('pw_state') || {}).textContent || '').trim().slice(0, 300), prog: ((document.getElementById('pw_prog') || {}).textContent || '').trim().slice(0, 300), ver: vm ? vm[1] : null, tab: TAB });
+        if (dirty) { dirty = false; GM_setValue('rnu-pw-tail', tail); } } catch (e) {} }, 2000); return true; };
+    if (!attach()) { let n = 0; const t = setInterval(() => { if (attach() || ++n > 60) clearInterval(t); }, 1000); } })();
+  /* (1.52.0) 'Script error. (:0)' = 다른 주소에서 온 알라딘 화면 자체 스크립트(광고·통계 등)의 오류 — 브라우저가 내용을 가려 보내 우리가 고칠 것이 없음 → 기록 창을 덮지 않게 빼고 하루 몇 번 나왔는지만 셈 */
+  window.addEventListener('error', (ev) => { if (/^Script error\.?$/i.test(String(ev.message || '').trim()) && !ev.filename) { window.__rnXerr = (window.__rnXerr || 0) + 1; return; } window.__rnLog('오류', 'err', `${ev.message} (${(ev.filename || '').split('/').pop()}:${ev.lineno})`); });
+  window.addEventListener('unhandledrejection', (ev) => window.__rnLog('오류', 'err', `처리되지 않은 오류: ${ev.reason && ev.reason.message ? ev.reason.message : ev.reason}`));
+  window.__rnLog('수집기', 'info', `탭 열림 · ${location.pathname.split('/').pop()}`);
+})();
+/* ═════════════ 통합 관제판 (1.38.0) ═════════════
+ * 예전: 오른쪽 위에 [▶ 모두][고객·주문][상품·매입][기록][–] 탭만 있고, 일시정지·이어하기·최근 기록이 패널마다 따로 있었음
+ *       (상품 패널의 '최근 기록'은 상품 것만, 일시정지는 누른 탭에서만, 이어하기는 맨 앞 하나만, '▶ 모두'는 무엇을 하는지 안 보임)
+ * 이제: 한 판(관제판)에 ① 머리줄 — 지금 상태(쉬는 중/작업 중/멈추는 중/일시정지)를 접어도 항상 보임
+ *       ② 개요 탭 — 지금 하는 일과 전체 진행, 주 버튼 하나(일시정지 ↔ 다시 시작) + 전체 수집, 멈춘 작업 목록(작업마다 이어하기·버리기),
+ *          다음 자동 수집, 이 PC 모든 탭의 최근 기록, 다른 PC·판 상태
+ *       ③ 고객·주문 / 상품·매입 / 가격 감시 탭 — 개별 수집과 설정 (예전 패널을 그대로 이 판 안에 넣음)
+ *       ④ 기록 — 크게 보는 기록 창
+ * 근거: 큰 회사의 수집·배치 도구(Airflow·Jenkins·Datadog 같은)는 '한 곳에서 상태를 보고 한 버튼으로 멈추는' 관제판 하나를 두고,
+ *       멈춘 작업(대기열)을 목록으로 보여 주며, 기록은 모든 작업을 한 줄기로 모음. 자주 쓰는 것만 앞에, 자세한 것은 탭 안에 (점진적 공개) */
+(function rnCtl() {
+  if (window.top !== window || !/\/scm\/(worders|worder_preparatory_complete|wrecord_edit)\.aspx/i.test(location.pathname)) return;
+  const VER = ((typeof globalThis !== 'undefined' && globalThis.__RN_FILE_VER) || (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version)) || '?';
+  const G = '#2F5D50', AMB = '#A8661B', RED = '#B0322A', BLU = '#3F7FD1';
+  const st = document.createElement('style');
+  st.textContent = `#rn-ctl{position:fixed;top:8px;right:12px;z-index:2147483647;width:420px;max-height:calc(100vh - 16px);display:flex;flex-direction:column;background:#fff;border:1px solid #CFDAD5;border-radius:12px;box-shadow:0 10px 32px rgba(20,40,34,.18);font:13px/1.45 system-ui,'Malgun Gothic',sans-serif;color:#1E2B27;overflow:hidden}
+  #rn-ctl .ch{display:flex;align-items:center;gap:8px;padding:9px 12px;background:${G};color:#fff;cursor:pointer;user-select:none}
+  #rn-ctl .ch b{font-size:13.5px} #rn-ctl .ch small{opacity:.75;font-size:11px} #rn-ctl .ch .sp{flex:1}
+  #rn-ctl .ch .bdg{font:700 11.5px system-ui,'Malgun Gothic';padding:3px 9px;border-radius:10px;background:#fff;color:${G};white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+  #rn-ctl .ch .bdg.busy{background:#DCEBFF;color:#1F4F96} #rn-ctl .ch .bdg.pause{background:#FFE7C2;color:#7A4A10} #rn-ctl .ch .bdg.stop{background:#FFE7C2;color:#7A4A10;animation:rnblink 1s infinite}
+  @keyframes rnblink{50%{opacity:.55}}
+  #rn-ctl .ch .tg{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:6px;width:26px;height:22px;cursor:pointer;font-weight:700}
+  #rn-ctl.min #rn-uni,#rn-ctl.min .cb{display:none}
+  #rn-ctl .rsub{display:flex;align-items:center;gap:8px;padding:6px 12px;background:#EEF4F1;color:#3F524C;border-bottom:1px solid #DCE6E1;font-size:12px;line-height:1.4} #rn-ctl .rsub[hidden]{display:none} #rn-ctl .rsub .tx{flex:1;min-width:0} #rn-ctl .rsub small{display:block;color:#6B7A75;font-size:11px}
+  #rn-ctl .rsub.force{background:#FFF6E6;color:#7A4A10;border-bottom-color:#F0DDBA} #rn-ctl .rsub.force small{color:#8A6A3A} #rn-ctl .rsub.lead{background:#F4F8F6;color:#5B6B66} #rn-ctl .rsub.new{background:#E6F3EA;color:#2F7D4F}
+  #rn-ctl .rsub button{flex:none;padding:4px 9px;border-radius:6px;border:1px solid #9DB5AC;background:#fff;color:#2F5D50;font:600 11.5px system-ui,'Malgun Gothic';cursor:pointer} #rn-ctl .rsub.force button{border-color:#D9B57A;color:#7A4A10}
+  #rn-uni{display:flex;gap:0;border-bottom:1px solid #E1E8E5;background:#F6F9F8;padding:0 6px}
+  #rn-uni button{flex:1;padding:8px 4px 7px;border:0;border-bottom:3px solid transparent;background:transparent;color:#4C5E58;cursor:pointer;font:600 12.5px system-ui,'Malgun Gothic'}
+  #rn-uni button.on{color:${G};border-bottom-color:${G}} #rn-uni button:hover{color:${G}} #rn-uni small{font-weight:400;opacity:.8}
+  #rn-uni .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-left:4px;vertical-align:1px;background:#bbb}
+  #rn-ctl .cb{overflow:auto;flex:1;min-height:0}
+  #rn-ctl #rn-crm,#rn-ctl #rnp,#rn-ctl #rn-prc{position:static !important;top:auto !important;right:auto !important;left:auto !important;width:auto !important;max-height:none !important;box-shadow:none !important;border:0 !important;border-radius:0 !important;overflow:visible !important;z-index:auto !important;margin:0 !important}
+  #rn-ctl #rn-crm>.hd,#rn-ctl #rnp>.hd,#rn-ctl #rn-prc>.hd{display:none !important}
+  #rn-ctl #rn-crm.min .bd,#rn-ctl #rnp.min .bd{display:block !important}
+  #rn-ctl #rn-crm>.bd,#rn-ctl #rnp>.bd{padding-top:8px}
+  #rn-ctl #rn-crm .ctl,#rn-ctl #rnp #rnpCtlStop,#rn-ctl #rnp #rnpCtlResume{display:none !important}
+  #rn-ctl #rnp .rnp-oldlog,#rn-ctl #rnp #rnpLog,#rn-ctl #rnp .fb .pcs{display:none !important}
+  body:not([data-rnu="ov"]) #rn-ov{display:none !important} body:not([data-rnu="prd"]) #rnp{display:none !important} body:not([data-rnu="crm"]) #rn-crm{display:none !important} body:not([data-rnu="prc"]) #rn-prc{display:none !important}
+  #rn-ov{padding:10px 12px 12px}
+  #rn-ov .card{border:1px solid #E1E8E5;border-radius:10px;padding:9px 11px;margin-bottom:9px}
+  #rn-ov .card.now{border-left:5px solid #9AA5A1} #rn-ov .card.now.busy{border-left-color:${BLU}} #rn-ov .card.now.pause,#rn-ov .card.now.stop{border-left-color:${AMB};background:#FFFBF3}
+  #rn-ov .k{font-size:11.5px;color:#5B6B66;font-weight:700;letter-spacing:.02em;margin:0 0 5px;display:flex;align-items:center;gap:6px} #rn-ov .k .sp{flex:1} #rn-ov .k a{font-weight:400;color:${G}}
+  #rn-ov .big{font-size:15px;font-weight:700} #rn-ov .mut{color:#5B6B66;font-size:12px}
+  #rn-ov .ol{margin:1px 0} #rn-ov .ol.now{margin-top:5px} #rn-ov .ol.sub{color:#5B6B66;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #rn-ov .pb{height:8px;background:#DCE5E1;border-radius:5px;overflow:hidden;margin:3px 0} #rn-ov .pb i{display:block;height:100%;border-radius:5px;transition:width .5s}
+  #rn-ov .chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px} #rn-ov .chip{font-size:11px;padding:1px 6px;border-radius:9px;background:#fff;border:1px solid #D7E2DD;color:#8A9692} #rn-ov .chip.done{background:#E3F1E8;border-color:#9CCBAE;color:#2F7D4F} #rn-ov .chip.now{background:${G};border-color:${G};color:#fff;font-weight:700} #rn-ov .chip.off{text-decoration:line-through;opacity:.6} #rn-ov .chip.skip{background:#FFF4E0;color:${AMB}} #rn-ov .chip.fail{background:#FDE8E6;color:${RED}}
+  #rn-ov .acts{display:flex;gap:6px;margin-bottom:9px}
+  #rn-ov details.feat>summary{cursor:pointer;list-style:none} #rn-ov details.feat>summary small{font-weight:400;color:#5B6B66;margin-left:4px} #rn-ov .fr{display:block;padding:3px 0;border-top:1px dashed #E3E9E6;font-size:12px;cursor:pointer} #rn-ov .fr small{display:block;color:#6B7A75;font-size:11px;margin-left:20px} #rn-ov .fr.main{background:#F4F8FD;padding:5px 4px;border-radius:6px;border:0;margin:4px 0} #rn-ov .fr .fw{font-size:10px;color:#1F5FAF;border:1px solid #C9D6E8;border-radius:8px;padding:0 5px;margin-left:4px} #rn-ov .fbar{display:flex;gap:5px;align-items:center;margin:6px 0 2px;font-size:12px} #rn-ov .fbar b{flex:1} #rn-ov .fbar button{font-size:11px;padding:2px 7px;border:1px solid #C9D6E8;background:#fff;border-radius:6px;cursor:pointer}
+  #rn-feat-toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:2147483647;background:#1F2A26;color:#fff;padding:8px 14px;border-radius:8px;font:600 12.5px/1.4 system-ui,'Malgun Gothic',sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+  #rn-ov .acts button{flex:1;padding:9px 8px;border-radius:9px;font:700 13px system-ui,'Malgun Gothic';cursor:pointer;line-height:1.25}
+  #rn-ov .acts button small{display:block;font:400 11px system-ui,'Malgun Gothic';opacity:.85;margin-top:2px}
+  #rn-ov .b-pause{background:#fff;color:${AMB};border:1.5px solid ${AMB}} #rn-ov .b-go{background:${G};color:#fff;border:1.5px solid ${G}} #rn-ov .b-all{background:#fff;color:${G};border:1.5px solid ${G}}
+  #rn-ov .acts button:disabled{opacity:.45;cursor:default}
+  #rn-ov .rs{display:flex;align-items:center;gap:6px;padding:5px 0;border-top:1px solid #F0F3F2} #rn-ov .rs:first-of-type{border-top:0}
+  #rn-ov .rs .t{flex:1;min-width:0} #rn-ov .rs .t b{display:block;font-size:12.5px} #rn-ov .rs .t small{display:block;color:#5B6B66;font-size:11px}
+  #rn-ov .rs button{padding:4px 8px;border-radius:6px;font:600 11.5px system-ui,'Malgun Gothic';cursor:pointer;background:#fff;border:1px solid ${G};color:${G}} #rn-ov .rs button.x{border-color:#D9A9A4;color:${RED}} #rn-ov .rs button:disabled{opacity:.4;cursor:default}
+  #rn-ov .rs .on{font-size:11px;color:${BLU};font-weight:700}
+  #rn-ov .lg{font:11.5px/1.5 Consolas,'Malgun Gothic',monospace;max-height:160px;overflow:auto} #rn-ov .lg div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis} #rn-ov .lg .tm{color:#9AA5A1} #rn-ov .lg .md{color:${G}} #rn-ov .lg .warn{color:${AMB}} #rn-ov .lg .err{color:${RED};font-weight:700} #rn-ov .lg .ok{color:#2F7D4F}
+  #rn-ov .pc{font-size:11.5px;color:#5B6B66;margin:2px 0} #rn-ov .pc.busy{color:${RED}}`;
+  document.head.appendChild(st);
+  const box = document.createElement('div'); box.id = 'rn-ctl';
+  const pc = () => (window.__rnPcName && window.__rnPcName.get()) || '이 PC';
+  box.innerHTML = `<div class="ch" title="눌러서 접기·펼치기"><b>리드나우 수집기</b><small id="rnCtlWho"></small><span class="sp"></span><span class="bdg" id="rnCtlBadge">준비 중</span><button class="tg" id="rnCtlMin" title="접기·펼치기">–</button></div>
+    <div class="rsub" id="rnCtlSub" hidden></div>
+    <div id="rn-uni"><button data-t="ov">개요</button><button data-t="crm">고객·주문</button><button data-t="prd">상품·매입</button><button data-log="1" title="작업 기록 크게 보기 (이 PC의 모든 기록 · 날짜별 · 검색 · 내려받기)">기록</button></div>
+    <div class="cb"><div id="rn-ov"></div></div>`;
+  const bar = box.querySelector('#rn-uni'); const body = box.querySelector('.cb'); const ov = box.querySelector('#rn-ov');
+  const set = (t) => { if (t === 'hide') t = 'ov'; document.body.dataset.rnu = t; GM_setValue('rnu-tab', t); bar.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.t === t)); draw(); };
+  const setMin = (on, keep) => { box.classList.toggle('min', on); if (!keep) GM_setValue('rnu-ctl-min', on ? 1 : 0); box.querySelector('#rnCtlMin').textContent = on ? '+' : '–'; };
+  box.querySelector('.ch').addEventListener('click', () => setMin(!box.classList.contains('min')));
+  bar.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.log) { window.__rnJournalToggle && window.__rnJournalToggle(); return; } if (b.dataset.t) set(b.dataset.t); });
+  // 예전 패널(고객·상품·가격 감시)을 이 판 안으로 옮김 — 패널 안의 단추·기능은 그대로
+  const adopt = () => { ['rn-crm', 'rnp', 'rn-prc'].forEach((id) => { const el = document.getElementById(id); if (el && el.parentElement !== body) body.appendChild(el); }); };
+  const esc = (x) => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const hm = (t) => new Date(t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+  const md = (t) => new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  let crmRes = null; const pollCrm = async () => { try { crmRes = window.__rnCrm && window.__rnCrm.resumableInfo ? await window.__rnCrm.resumableInfo() : null; } catch (e) { crmRes = null; } };
+  setInterval(pollCrm, 10000); setTimeout(pollCrm, 3000);
+  const stateOf = () => { const lives = window.__rnLive ? window.__rnLive() : []; const mine = lives.find((v) => v.tab === window.__rnTab); const busy = lives.filter((v) => v.busy); const main = (mine && mine.busy) ? mine : busy[0] || null;
+    const paused = !!window.__rnPaused; const kind = paused && busy.length ? 'stop' : paused ? 'pause' : busy.length ? 'busy' : 'idle';
+    return { lives, busy, main, mine, paused, kind, last: lives.map((v) => v.lastEnd).filter(Boolean).sort((a, b) => b.at - a.at)[0] || null }; };
+  const resList = () => { const P = window.__rnPrd; const out = []; const rk = P && P.runningKeys ? P.runningKeys() : new Set();
+    if (crmRes) out.push({ mod: 'crm', key: crmRes.key, name: crmRes.name, meta: `이 PC에 저장된 자리${crmRes.savedAt ? ' · ' + md(crmRes.savedAt) + ' 멈춤' : ''}${crmRes.why ? ' · ' + crmRes.why : ''}`, savedAt: crmRes.savedAt || 0, running: false });
+    ((P && P.resumables && P.resumables()) || []).forEach((r) => out.push({ mod: 'prd', key: r.key, name: r.name, meta: [r.stage ? `단계: ${r.stage}` : '', r.prog, r.by ? `${r.by}에서 ${md(r.savedAt)} ${/^bench_\d+$/.test(r.key) && rk.has('bench') && Date.now() - (r.savedAt || 0) < 5 * 60000 ? '읽는 중(마지막 적음)' : '멈춤'}` : r.savedAt ? md(r.savedAt) + ' 멈춤' : ''].filter(Boolean).join(' · '), savedAt: r.savedAt || 0, running: rk.has(r.key) || (/^bench_\d+$/.test(r.key) && rk.has('bench') && Date.now() - (r.savedAt || 0) < 5 * 60000) /* (1.63.3) 벤치마킹 판매자: 어느 PC가 벤치마킹을 하는 중이고 이 판매자 자리가 5분 안에 적혔으면 = 지금 읽는 중(예전엔 '멈춤'으로 보여 이어하기·버리기를 눌러도 '진행 중'이라며 안 됐음) */ }));
+    return out; };
+  // 머리줄 배지: 접어도 보임
+  const badge = (S) => { const b = box.querySelector('#rnCtlBadge'); const m = S.main;
+    const txt = S.kind === 'stop' ? '■ 멈추는 중…' : S.kind === 'pause' ? '■ 일시정지됨' : S.kind === 'busy' ? `▶ ${m && m.job ? m.job : '작업 중'}` : '쉬는 중';
+    b.textContent = txt; b.title = txt; b.className = 'bdg ' + ({ stop: 'stop', pause: 'pause', busy: 'busy', idle: '' })[S.kind];
+    box.querySelector('#rnCtlWho').textContent = `${pc()} · v${VER}`; };
+  /* (1.56.0) 머리줄 아래 옅은 띠: 이 탭이 이 PC의 수집기인지, 쉬는 탭인지 (머리줄은 이름·판·상태로 이미 꽉 차서 따로) */
+  const sub = box.querySelector('#rnCtlSub'); let subHtml = null, promotedAt = 0;
+  const drawSub = (S) => { const r = window.__rnRole ? window.__rnRole() : 'lead'; const pn = window.__rnPageName || ((x) => x); let cls = '', h = '';
+    if (r === 'wait') { h = '<div class="tx">이 PC의 수집기 탭을 확인하는 중…</div>'; }
+    else if (r === 'follow') { const v = window.__rnLead ? window.__rnLead() : null; const lv = v && S.lives.find((x) => x.tab === v.tab);
+      h = `<div class="tx">ⓘ 이 PC에서는 이미 수집기가 일하는 중 — <b>${v ? esc(pn(v.page)) : '다른'} 탭</b>${lv ? (lv.busy ? ` · ▶ ${esc(lv.job || '작업 중')}` : ' · 쉬는 중') : ''}<small>이 탭은 쉬는 상태입니다 (저절로 시작하는 작업 없음 · 보기와 일시정지는 됨). 그 탭을 닫으면 이 탭이 이어받습니다.</small></div><button data-r="force" title="한 PC에 수집기 둘 — 누르면 단점을 먼저 알려 드립니다">이 탭도 켜기…</button>`; }
+    else if (r === 'force') { h = `<div class="tx">⚠ 이 탭도 수집기로 켜 둠 — 이 PC에 수집기 2개<small>매일 자동·웹앱 요청·맡긴 일은 원래 탭이 맡고, 이 탭은 직접 누른 작업만 합니다. 알라딘 요청 제한에 더 빨리 걸릴 수 있어요.</small></div><button data-r="rest">다시 쉬게 하기</button>`; cls = 'force'; }
+    else if (r === 'lead') { const others = S.lives.filter((x) => x.tab !== window.__rnTab && (x.role === 'follow' || x.role === 'force'));
+      if (promotedAt && Date.now() - promotedAt < 60000) { h = '<div class="tx">✓ 앞서 일하던 수집기 탭이 닫혀, 이 탭이 이 PC의 수집기를 이어받았습니다</div>'; cls = 'new'; }
+      else if (others.length) { const f = others.filter((x) => x.role === 'force').length; h = `<div class="tx">이 탭이 이 PC의 수집기 · 다른 수집기 화면 ${others.length}개${f ? ` (그중 ${f}개는 사람이 켜 둠)` : '는 쉬는 중'}</div>`; cls = 'lead'; } }
+    const k = cls + h; if (k === subHtml) return; subHtml = k; sub.className = 'rsub ' + cls; sub.hidden = !h; sub.innerHTML = h; };
+  sub.addEventListener('click', (e) => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (!b) return; if (b.dataset.r === 'force') { if (window.__rnForceAsk && window.__rnForceAsk()) window.__rnForce(true); } else if (b.dataset.r === 'rest') window.__rnForce(false); subHtml = null; draw(); });
+  if (window.__rnRoleOn) window.__rnRoleOn((r) => { if (r === 'lead' && window.__rnLeadSince && Date.now() - window.__rnLeadSince < 3000 && /follow|force/.test(String(lastRole))) promotedAt = Date.now(); if (r === 'follow') setMin(true, true); lastRole = r; subHtml = null; });
+  let lastRole = null;
+  let prevBusy = 0; function draw() { const S = stateOf(); badge(S); drawSub(S);
+    if (S.busy.length < prevBusy && window.__rnPrd && window.__rnPrd.refreshResume) { setTimeout(() => { try { window.__rnPrd.refreshResume(); pollCrm(); } catch (e) {} }, 3000); } prevBusy = S.busy.length; /* 어느 탭의 작업이 끝나거나 멈추면 멈춘 작업 목록을 다시 읽음 */ if (box.classList.contains('min') || document.body.dataset.rnu !== 'ov') return;
+    const P = window.__rnPrd; const R = resList(); const anyBusy = S.busy.length > 0;
+    const pi = window.__rnPauseInfo ? window.__rnPauseInfo() : null;
+    // ① 지금 상태
+    let now = '';
+    if (S.kind === 'stop') now = `<div class="big" style="color:${AMB}">■ 멈추는 중</div><div class="mut">지금 하던 항목을 마치고 진행 위치를 저장하는 중입니다. 몇 초~1분 걸릴 수 있어요. 멈추면 아래 '멈춘 작업'에 나타납니다.</div>${S.main ? `<div class="mut" style="margin-top:4px">멈추는 작업: <b>${esc(S.main.job)}</b>${S.main.tab !== window.__rnTab ? ' (이 PC의 다른 탭)' : ''}</div>` : ''}`;
+    else if (S.kind === 'pause') now = `<div class="big" style="color:${AMB}">■ 일시정지됨</div><div class="mut">${pi && pi.at ? `${md(pi.at)}에 ${esc(pi.why || '')} 멈춤. ` : ''}<b>다시 시작</b>을 누르기 전에는 어떤 작업도 저절로 시작하지 않습니다 (매일 자동 수집 포함).</div>`;
+    else if (S.kind === 'busy') now = `${window.__rnOvHtml ? window.__rnOvHtml(S.main, !!S.main.crmBusy) : esc(S.main.job)}${S.main.tab !== window.__rnTab ? `<div class="mut" style="margin-top:4px">이 PC의 다른 탭(${S.main.page === 'worders.aspx' ? '주문조회' : S.main.page === 'wrecord_edit.aspx' ? '상품 조회' : '판매관리'})에서 진행 중 — 여기서도 멈추고 볼 수 있습니다</div>` : ''}${S.busy.length > 1 ? `<div class="mut">함께 진행 중: ${S.busy.filter((v) => v !== S.main).map((v) => esc(v.job)).join(', ')}</div>` : ''}`;
+    else now = `<div class="big">쉬는 중</div><div class="mut">${S.last ? `마지막 작업: '${esc(S.last.name)}' ${md(S.last.at)} 끝 · ` : ''}${R.length ? `멈춘 작업 ${R.length}개가 아래에 있습니다.` : '멈춘 작업 없음.'}</div>`;
+    // ② 주 버튼
+    const resumeTarget = R.filter((r) => !r.running).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0] || null;
+    const chainRes = R.find((r) => r.key === 'chain');
+    const pauseBtn = S.paused
+      ? `<button class="b-go" data-a="resume">▶ 다시 시작<small>${anyBusy ? '멈추는 중 — 멈춘 뒤 누르세요' : resumeTarget ? `'${esc(resumeTarget.name)}' 이어서` : '일시정지 풀기'}</small></button>`
+      : `<button class="b-pause" data-a="pause">■ 일시정지<small>${anyBusy ? '지금 항목까지 저장하고 멈춤 (모든 탭)' : '자동 수집도 하지 않게 멈춰 둠'}</small></button>`;
+    const allBtn = `<button class="b-all" data-a="all" ${anyBusy || S.paused ? 'disabled' : ''} title="고객·주문부터 구매자 분포까지 켜 둔 단계를 차례로. 단계를 켜고 끄는 곳: 상품·매입 탭">▶ ${chainRes ? '전체 수집 이어서' : '전체 수집 시작'}<small>${chainRes ? esc(chainRes.meta.split(' · ')[0]) + '부터' : '고객·주문 → 상품 → 판매자 … 켜 둔 단계 차례로'}</small></button>`;
+    // ③ 멈춘 작업
+    const rs = R.length ? R.map((r) => `<div class="rs"><div class="t"><b>${esc(r.name)}</b><small>${esc(r.meta)}</small></div>${r.running ? `<span class="on" title="다른 PC(또는 이 PC의 다른 탭)가 지금 이 작업을 하는 중 — 멈추려면 그 PC를 일시정지(🛰 PC 원격 ■)">▶ 진행 중${/^bench_/.test(r.key) && r.meta ? '' : ''}</span>` : `<button data-a="res1" data-m="${r.mod}" data-k="${esc(r.key)}" ${anyBusy || S.paused ? 'disabled' : ''} title="${S.paused ? '먼저 다시 시작(일시정지 풀기)' : anyBusy ? '다른 작업이 끝난 뒤' : '멈춘 자리부터 이어서'}">이어하기</button><button class="x" data-a="dis1" data-m="${r.mod}" data-k="${esc(r.key)}" title="멈춘 자리만 잊음 — 받은 기록은 그대로">버리기</button>`}</div>`).join('') : '<div class="mut">없음 — 일시정지하거나 창이 닫혀 멈춘 작업이 생기면 여기에 작업마다 나옵니다.</div>';
+    // ④ 다음 자동 수집
+    const sn = window.__rnSchedNext ? window.__rnSchedNext() : { known: false };
+    const sched = !sn.known ? '불러오는 중' : !sn.on ? '꺼짐 — 상품·매입 탭 맨 위 \'⏰ 매일 자동 수집\'에서 켬' : sn.next ? `${sn.next.tomorrow ? '내일 ' : ''}${sn.next.t} · ${esc(sn.next.label)}${S.paused ? ' <b style="color:#A8661B">(일시정지 중이라 하지 않음)</b>' : ''}` : '켠 항목 없음';
+    // ⑤ 최근 기록 (이 PC 모든 탭)
+    const tail = (window.__rnLogTail ? window.__rnLogTail(30) : []).filter((e) => !/^탭 열림/.test(e.x)).slice(-10);
+    const lg = tail.length ? tail.map((e) => `<div class="${e.l}" title="${esc(e.x)}"><span class="tm">${hm(e.t)}</span> <span class="md">${esc(e.m)}</span> ${esc(e.x)}</div>`).join('') : '<div class="mut">아직 없음</div>';
+    // ⑥ 다른 PC · 판
+    const od = P && P.outdated ? P.outdated() : null;
+    const pcs = P && P.pcsHtml ? P.pcsHtml() : '';
+    const html = `<div class="card now ${S.kind}">${now}</div>
+      <div class="acts">${pauseBtn}${allBtn}</div>
+      ${featHtml(S)}
+      <div class="card"><div class="k">멈춘 작업 ${R.length ? `(${R.length})` : ''}<span class="sp"></span><a href="#" data-a="rrf" title="다시 불러오기">↻</a></div>${rs}</div>
+      <div class="card"><div class="k">⏰ 다음 자동 수집</div><div>${sched}</div></div>
+      <div class="card"><div class="k">최근 기록 · 이 PC의 모든 탭<span class="sp"></span><a href="#" data-a="log">크게 보기 ›</a></div><div class="lg">${lg}</div></div>
+      <div class="card"><div class="k">다른 PC · 판</div>${pcs ? pcs.replace(/class="pc/g, 'class="pc') : '<div class="mut">불러오는 중</div>'}<div class="pc">수집기 v${VER}${(() => { try { const L = window.__rnLiveInfo && window.__rnLiveInfo(); if (!L) return ''; return L.noeval ? ' · ⚡ 빠른 업데이트 안 됨(이 브라우저가 막음 — Tampermonkey 자동 업데이트만)' : L.used === 'live' ? ` · ⚡ 빠른 업데이트로 받은 판 (Tampermonkey 본체 ${esc(L.classic)})` : L.have && L.have !== L.ver ? ` · ⚡ 새 판 ${esc(L.have)} 받아 둠 — 쉬는 사이 바꿈` : ' · ⚡ 빠른 업데이트 켜짐(5분마다 확인)'; } catch (e) { return ''; } })()}${od ? ` · <b style="color:${AMB}">새 판 ${esc(od)} 있음</b> — 쉬는 사이(또는 긴 작업이면 저장 지점에서) 저절로 바꿔 그 자리부터 이어감` : ' · 최신'}${P && P.who ? ' · ' + esc(P.who()) : ''}</div></div>`;
+    if (html === lastHtml) return; lastHtml = html; ov.innerHTML = html; // 바뀐 것이 있을 때만 다시 그림 (단추를 누르는 중에 사라지지 않게)
+    const lgEl = ov.querySelector('.lg'); if (lgEl && GM_getValue('rnu-log-autoscroll', true)) lgEl.scrollTop = lgEl.scrollHeight; }
+  let lastHtml = '';
+  /* (1.63.7) 🧩 이 PC 기능 켜고 끄기 — 📥 수집(= 일시정지 스위치) + 수집 외 기능(전체 켜기·전체 끄기) · 바꾸면 곧바로 아래 알림 */
+  function featHtml(S) { const FL = window.__rnFeats || []; const FO = window.__rnFeatOff ? window.__rnFeatOff() : []; const on = FL.length - FO.length;
+    return `<details class="card feat" ${GM_getValue('rnu-feat-open', 0) ? 'open' : ''}><summary class="k">🧩 이 PC 기능 켜고 끄기 <small>${S.paused ? '<b style="color:#B0322A">📥 수집 꺼짐</b>' : '📥 수집 켜짐'} · 수집 외 ${on}/${FL.length} 켜짐</small></summary>
+      <label class="fr main"><input type="checkbox" data-feat="__collect" ${S.paused ? '' : 'checked'}> <b>📥 수집</b><small>끄면 이 PC는 직접 누른 수집·⏰ 자동 수집·웹앱 수집 요청·🌐 외부 정보·맡긴 수집 일(시장 지표·읽기·찾기)을 하지 않음 — 하던 작업은 지금 항목까지 저장하고 멈춤(= 일시정지 · 이 PC의 모든 탭). 담당 PC면 순서대로 다른 PC가 맡음. 다시 켜도 멈춘 작업은 저절로 이어가지 않음(아래 '멈춘 작업'에서 이어하기)</small></label>
+      <div class="fbar"><b>수집 외 기능</b><button type="button" data-fall="1">전체 켜기</button><button type="button" data-fall="0">전체 끄기</button></div>
+      ${FL.map(([k, l, d, w]) => `<label class="fr"><input type="checkbox" data-feat="${esc(k)}" ${FO.includes(k) ? '' : 'checked'}> ${esc(l)}<span class="fw">${esc(w)}</span><small>${esc(d)}</small></label>`).join('')}
+      <div class="mut" style="margin-top:4px">이 PC만 · 화면 기능은 그 화면을 새로 열 때부터, 맡긴 일·바탕 기능은 곧바로 · 꺼 둔 맡긴 일은 대기로 남아 다른 PC가 받음 · 늘 켜짐: 관제판·작업 기록·PC 이름·탭 나누기·담당 PC 신호</div></details>`; }
+  const featToast = (m) => { let t = document.getElementById('rn-feat-toast'); if (!t) { t = document.createElement('div'); t.id = 'rn-feat-toast'; document.body.appendChild(t); } t.textContent = m; t.style.display = ''; clearTimeout(t._t); t._t = setTimeout(() => (t.style.display = 'none'), 3500); };
+  ov.addEventListener('toggle', (e) => { if (e.target.matches && e.target.matches('details.feat')) GM_setValue('rnu-feat-open', e.target.open ? 1 : 0); }, true);
+  ov.addEventListener('change', (e) => { const c = e.target.closest && e.target.closest('[data-feat]'); if (!c) return; const k = c.dataset.feat;
+    if (k === '__collect') { if (c.checked) { window.__rnResumeOk && window.__rnResumeOk(); featToast('📥 수집 켬 — 이 PC가 다시 수집함 (멈춘 작업은 \'멈춘 작업\'에서 이어하기)'); } else { window.__rnPauseAll && window.__rnPauseAll('🧩 수집 끔 (관제판)'); featToast('📥 수집 끔 — 이 PC는 수집하지 않음 (하던 작업은 저장하고 멈춤)'); } }
+    else { window.__rnFeatSet({ [k]: c.checked }); const f = (window.__rnFeats || []).find((x) => x[0] === k) || [k, k]; window.__rnLog && window.__rnLog('수집기', 'info', `🧩 ${f[1]} ${c.checked ? '켬' : '끔'}`); featToast(`🧩 ${f[1]} ${c.checked ? '켬' : '끔'}${/화면/.test(f[3] || '') ? ' — 그 화면을 새로 열 때부터' : ''}`); }
+    lastHtml = ''; draw(); });
+  ov.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-fall]'); if (!b) return; e.preventDefault(); e.stopPropagation(); const on = b.dataset.fall === '1'; const P = {}; (window.__rnFeats || []).forEach((x) => (P[x[0]] = on)); window.__rnFeatSet(P); window.__rnLog && window.__rnLog('수집기', 'info', `🧩 수집 외 기능 전체 ${on ? '켬' : '끔'}`); featToast(`🧩 수집 외 기능 전체 ${on ? '켬' : '끔'} — 화면 기능은 그 화면을 새로 열 때부터`); lastHtml = ''; draw(); }, true);
+  ov.addEventListener('click', async (e) => { const a = e.target.closest('[data-a]'); if (!a) return; e.preventDefault(); const P = window.__rnPrd; const k = a.dataset.k, m = a.dataset.m;
+    if (a.dataset.a === 'pause') { window.__rnPauseAll && window.__rnPauseAll('관제판에서'); }
+    else if (a.dataset.a === 'resume') { const S = stateOf(); if (S.busy.length) return alert('아직 멈추는 중입니다 — 멈춘 뒤에 눌러 주세요'); const R = resList().filter((r) => !r.running).sort((x, y) => (y.savedAt || 0) - (x.savedAt || 0)); window.__rnResumeOk && window.__rnResumeOk();
+      const t = R[0]; if (t) { if (t.mod === 'crm') window.__rnCrm.resume(); else P.resume(t.key); } }
+    else if (a.dataset.a === 'all') { if (!P) return alert('수집기가 아직 준비 중입니다. 잠시 뒤 눌러 주세요'); if (stateOf().busy.length) return alert('이미 작업 중입니다'); window.__rnResumeOk && window.__rnResumeOk(); set('ov'); P.startAll(); }
+    else if (a.dataset.a === 'res1') { window.__rnResumeOk && window.__rnResumeOk(); if (m === 'crm') window.__rnCrm.resume(); else { const r = P.resume(k); if (r && r.ok === false) { const row = a.closest('.rs'); let n = row && row.querySelector('.rs-why'); if (row && !n) { n = document.createElement('div'); n.className = 'rs-why'; n.style.cssText = 'flex-basis:100%;font-size:11.5px;color:#B0322A;margin-top:3px'; row.appendChild(n); } if (n) n.textContent = '✕ ' + r.why; return; } } }
+    else if (a.dataset.a === 'dis1') { /* (1.63.2) 팝업 대신 단추 두 번 — 첫 누름은 '확정' 단추로 바뀜(4초) · 못 버리면 까닭을 그 줄 아래에 */ const row = a.closest('.rs'); const nm = (row.querySelector('b') || {}).textContent || k;
+      if (a.dataset.arm !== '1') { a.dataset.arm = '1'; a.dataset.t0 = a.textContent; a.textContent = '확정'; a.title = `'${nm}'의 멈춘 자리만 잊음 — 받은 기록은 그대로, 다음엔 처음부터 훑되 이미 받은 것은 건너뜀`; a.style.background = '#B0322A'; a.style.color = '#fff'; setTimeout(() => { if (a.isConnected && a.dataset.arm === '1') { a.dataset.arm = ''; a.textContent = a.dataset.t0 || '버리기'; a.style.background = ''; a.style.color = ''; } }, 4000); return; }
+      a.dataset.arm = ''; a.disabled = true; a.textContent = '지우는 중'; const r = m === 'crm' ? await window.__rnCrm.discard(k) : await P.discard(k);
+      if (!r || !r.ok) { const why = (r && r.why) || '버리지 못했습니다'; a.disabled = false; a.textContent = a.dataset.t0 || '버리기'; a.style.background = ''; a.style.color = ''; let n = row.querySelector('.rs-why'); if (!n) { n = document.createElement('div'); n.className = 'rs-why'; n.style.cssText = 'flex-basis:100%;font-size:11.5px;color:#B0322A;margin-top:3px'; row.appendChild(n); } n.textContent = '✕ ' + why; try { log('버리기 못 함: ' + why, 1); } catch (e) {} return; }
+      if (m === 'crm') await pollCrm(); }
+    else if (a.dataset.a === 'rrf') { await pollCrm(); if (P && P.refreshResume) await P.refreshResume(); }
+    else if (a.dataset.a === 'log') { window.__rnJournalToggle && window.__rnJournalToggle(); }
+    lastHtml = ''; draw(); });
+  window.__rnCtlDraw = () => { lastHtml = ''; draw(); };
+  const go = () => { document.body.appendChild(box); adopt(); new MutationObserver(adopt).observe(document.body, { childList: true });
+    let saved = GM_getValue('rnu-tab', 'ov'); if (saved === 'hide') saved = 'ov'; set(saved); setMin(!!GM_getValue('rnu-ctl-min', 0)); (window.__rnRoleReady || Promise.resolve()).then(() => { if (window.__rnRole && /^(follow|wait)$/.test(window.__rnRole())) setMin(true, true); }); /* (1.56.0) 쉬는 탭은 접힌 채로 (기억해 둔 접힘·펼침은 그대로) */
+    if (saved === 'prc') setTimeout(() => { if (!bar.querySelector('button[data-t="prc"]')) set('ov'); }, 4000); // 가격 감시기 탭이 안 붙으면 개요로
+    setInterval(draw, 1000); };
+  if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
+})();
+
+/* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
+
+
+(async function () {
+  'use strict';
+  const APP_VER = ((typeof globalThis !== 'undefined' && globalThis.__RN_FILE_VER) || (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version)) || '1.58.0'; // (1.36.0) 판 번호는 맨 위 @version 한 곳 — 고객 쪽·상품 쪽이 같은 값
+  const BASE = 'https://www.aladin.co.kr/scm/';
+  const now = () => new Date().toISOString();
+  const LOGIN_FLAG = 'rn-autologin-pending';
+
+  /* ════════════════════════════════════════════════════════════
+   * A. 로그인 페이지에서 동작하는 부분 (자동 재로그인)
+   *    수집기가 로그인 풀림을 감지해 이 탭을 열었을 때만 동작한다.
+   * ════════════════════════════════════════════════════════════ */
+  const pwInput = [...document.querySelectorAll('input[type="password"]')].find((i) => i.offsetParent !== null || i.getClientRects().length);
+  const flag = GM_getValue(LOGIN_FLAG, null);
+  if (flag && Date.now() - flag.at < 3 * 60 * 1000) {
+    if (pwInput) { await autoFillLogin(pwInput, flag); return; }
+    if (flag.submittedAt) { GM_setValue(LOGIN_FLAG, { ...flag, result: 'maybe-ok', landedAt: Date.now(), landedUrl: location.href }); }
+  }
+  /* ════════════════════════════════════════════════════════════
+   * C. 알라딘 화면의 고객 정보 (웹앱과 같은 내용)
+   *    · 주문 상세 팝업: 고객 카드 전체
+   *    · 판매관리·주문조회 목록: 주문번호 옆에 고객 표시(VIP·주의·블랙리스트·불만족·판매자 일치·재구매), 누르면 카드
+   *    웹앱에 고객 기능이 추가되면 이 카드에도 함께 반영한다.
+   * ════════════════════════════════════════════════════════════ */
+  const RN_APP_URL = 'https://jerrycson.github.io/readnow-scripts/app/';
+  const RN_FB_CONFIG = { apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385', storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15' };
+  const CARD = (() => {
+    const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const won = (n) => (n == null ? '-' : `${Math.round(n).toLocaleString('ko-KR')}원`);
+    const d10 = (s) => (s ? String(s).slice(0, 10) : '-');
+    const CFG0 = { vip: { minValue: 65, maxRisk: 25, minOrders: 3, excludeSellers: true }, caution: { minRisk: 35 } };
+    let cfg = CFG0; let cfgAt = 0;
+    const FBx = () => { const F = (typeof firebase !== 'undefined' && firebase) || window.firebase; if (F && !F.apps.length) F.initializeApp(RN_FB_CONFIG); return F; };
+    const user = () => new Promise((r) => { const F = FBx(); if (!F) return r(null); if (F.auth().currentUser) return r(F.auth().currentUser); let un = null; un = F.auth().onAuthStateChanged((u) => { setTimeout(() => { if (typeof un === 'function') un(); }, 0); r(u); }); });
+    async function loadCfg(db) { if (Date.now() - cfgAt < 5 * 60000) return cfg; try { const d = await db.collection('crm_system').doc('scoring').get(); const x = d.exists ? d.data() : {}; cfg = { vip: { ...CFG0.vip, ...(x.vip || {}) }, caution: { ...CFG0.caution, ...(x.caution || {}) } }; cfgAt = Date.now(); } catch (e) {} return cfg; }
+    const strongSel = (c) => (c.sellerLinks || []).filter((x) => (x.level ? x.level === 'match' : x.strong !== false));
+    function eff(c, k) {
+      const m = (c.flags || {})[k];
+      if (m && (m.on === true || m.on === false)) return { on: m.on, src: 'manual', reason: m.reason || '', by: m.byName || m.by || '' };
+      const sc = c.scores;
+      if (k === 'vip' && sc) { const v = cfg.vip; const on = sc.value >= v.minValue && sc.risk < v.maxRisk && (c.saleOrderCount || 0) >= v.minOrders && !(v.excludeSellers && strongSel(c).length); if (on) return { on, src: 'auto', reason: `가치 ${sc.value}점 · 주의 ${sc.risk}점` }; }
+      if (k === 'caution' && sc && sc.risk >= cfg.caution.minRisk) { const top = (sc.riskParts || []).filter((x) => x.pts > 0).sort((a, b) => b.pts - a.pts).slice(0, 2).map((x) => `${x.label}: ${x.text}`); return { on: true, src: 'auto', reason: `주의 ${sc.risk}점 · ${top.join(' / ')}` }; }
+      if (k === 'blacklist' && c.sheetFlags && c.sheetFlags.blacklist) return { on: true, src: 'sheet', reason: c.sheetFlags.blacklist.reason || '' };
+      return { on: false };
+    }
+    // 여러 고객을 한 번에: 고객 문서 + 구매평 + 메모
+    async function loadBundles(db, cids) {
+      const out = new Map(); const ids = [...new Set(cids.filter(Boolean))]; if (!ids.length) return out;
+      const FP = FBx().firestore.FieldPath.documentId();
+      for (let i = 0; i < ids.length; i += 30) {
+        const part = ids.slice(i, i + 30);
+        const [cs, is, ns] = await Promise.all([db.collection('crm_customers').where(FP, 'in', part).get(), db.collection('crm_interactions').where('customerId', 'in', part).get(), db.collection('crm_notes').where('customerId', 'in', part).get()]);
+        part.forEach((id) => out.set(id, { c: null, reviews: [], qna: [], notes: [] }));
+        cs.forEach((d) => { out.get(d.id).c = { customerId: d.id, ...d.data() }; });
+        is.forEach((d) => { const v = d.data(); const b = out.get(v.customerId); if (!b) return; if (v.type === 'review') b.reviews.push(v); else if (v.type === 'qna') b.qna.push(v); else b.notes.push({ ...v, sheet: true }); });
+        ns.forEach((d) => { const v = d.data(); const b = out.get(v.customerId); if (b) b.notes.push(v); });
+      }
+      await attachSellerScores(db, out);
+      return out;
+    }
+    // 연결된 판매자의 모범·우리 이득 (웹앱·판매자 툴팁과 같은 파일 readnow-sellers-core.js로 계산 → 세 곳 점수가 항상 같음)
+    const RSx = () => (typeof ReadnowSellers !== 'undefined' && ReadnowSellers) || window.ReadnowSellers || globalThis.ReadnowSellers || null;
+    const sellerCache = new Map(); let sThr = null;
+    async function attachSellerScores(db, out) {
+      const RS = RSx(); if (!RS) return;
+      if (!sThr) { try { const d = await db.collection('app_settings').doc('main').get(); sThr = (d.exists && d.data().seller) || {}; } catch (e) { sThr = {}; } }
+      const names = new Set(); out.forEach((b) => ((b && b.c && b.c.sellerLinks) || []).forEach((x) => x.name && names.add(x.name)));
+      const need = [...names].filter((n) => !sellerCache.has(n));
+      for (let i = 0; i < need.length; i += 30) {
+        const part = need.slice(i, i + 30); part.forEach((n) => sellerCache.set(n, null));
+        try { const ss = await db.collection('sellers').where('name', 'in', part).get(); ss.forEach((d) => { const v = { ...d.data(), _id: d.id }; const cur = sellerCache.get(v.name); if (!cur || (d.id.startsWith('sc_') && !String(cur._id).startsWith('sc_'))) sellerCache.set(v.name, v); }); } catch (e) {}
+      }
+      for (const n of names) {
+        const s = sellerCache.get(n); if (!s || s._score) continue;
+        let bought = 0; const L = (s.linkedCustomers || []).filter((l) => RS.linkLevel(l) === 'match').slice(0, 10);
+        if (L.length) { try { const FP = FBx().firestore.FieldPath.documentId(); const cs = await db.collection('crm_customers').where(FP, 'in', L.map((l) => l.customerId)).get(); cs.forEach((d) => (bought += d.data().salesAmount || 0)); } catch (e) {} }
+        s._score = RS.score(s, { bought, thresholds: sThr });
+      }
+      out.forEach((b) => { if (b) b.sellerScore = (name) => { const s = sellerCache.get(name); return s ? s._score : null; }; });
+    }
+    function sellerBadges(b, name) {
+      const RS = RSx(); const x = b && b.sellerScore ? b.sellerScore(name) : null; if (!RS || !x) return '';
+      const q = RS.quadrant(x);
+      return ` <i class="rnsm ${x.mcls}" title="모범: 배울 만한가">${x.mcls === 'bad' ? '✕' : x.mcls === 'good' ? '★' : '☆'} ${RS.MODEL_TXT[x.mcls]}${x.model != null ? ' ' + x.model : ''}</i> <i class="rnsg ${x.gcls}" title="우리 이득: 우리 돈에 이득인가${q ? ' · ' + q : ''}">₩${x.gcls === 'good' ? '＋' : x.gcls === 'bad' ? '－' : '·'} ${(RS.GAIN_SHORT || RS.GAIN_TXT)[x.gcls]} ${x.gain}</i>${q ? `<span class="s" style="display:block;font-weight:normal">${esc(q)}</span>` : ''}`;
+    }
+    const tsMs = (t) => (t && t.toMillis ? t.toMillis() : typeof t === 'string' ? Date.parse(t) || 0 : t && t.seconds ? t.seconds * 1000 : 0);
+    function reviewCounts(b) { const r = { good: 0, mid: 0, bad: 0 }; b.reviews.forEach((x) => { const k = { 만족: 'good', 보통: 'mid', 불만족: 'bad' }[String(x.rating || '').trim()]; if (k) r[k] += 1; }); return r; }
+    function badges(b) {
+      if (!b || !b.c) return '<span class="rnb rnb-none">기록 없음</span>';
+      const c = b.c; const rc = reviewCounts(b); const out = [];
+      if (eff(c, 'blacklist').on) out.push('<span class="rnb rnb-bl">블랙리스트</span>');
+      if (eff(c, 'caution').on) out.push('<span class="rnb rnb-cau">주의</span>');
+      if (eff(c, 'vip').on) out.push('<span class="rnb rnb-vip">VIP</span>');
+      if (rc.bad) out.push(`<span class="rnb rnb-bl">불만족 ${rc.bad}</span>`);
+      if (strongSel(c).length) out.push('<span class="rnb rnb-bl">판매자 정보 일치</span>');
+      else if ((c.otherRecipientCount || 0) >= 3) out.push(`<span class="rnb rnb-cau">수령인 ${c.otherRecipientCount}명</span>`);
+      out.push((c.saleOrderCount || 0) > 1 ? `<span class="rnb rnb-rep">재구매 ${c.saleOrderCount}회</span>` : '<span class="rnb rnb-new">첫 구매</span>');
+      return out.join('');
+    }
+    function cardHtml(b, cid) {
+      if (!b || !b.c) return `<b>리드나우 고객 정보</b><div class="s">처음 주문한 고객이거나 아직 수집 전입니다.</div><div class="act"><a href="${RN_APP_URL}#c=${encodeURIComponent(cid)}" target="_blank">웹앱에서 메모 남기기</a></div>`;
+      const c = b.c; const rc = reviewCounts(b); const sc = c.scores;
+      const fl = [['blacklist', '블랙리스트', 'bl'], ['caution', '주의고객', 'ag'], ['vip', 'VIP', 'vip']].map(([k, l, cls]) => { const e = eff(c, k); return e.on ? `<div class="ban ${cls}">${l} <span class="src">(${{ manual: '직접', auto: '자동', sheet: '구글 시트' }[e.src]}${e.by ? ' · ' + esc(e.by) : ''})</span>${e.reason ? ': ' + esc(e.reason.slice(0, 90)) : ''}</div>` : ''; }).join('');
+      const sl = c.sellerLinks || []; const slm = strongSel(c); const sls = sl.filter((x) => !slm.includes(x));
+      const notes = b.notes.slice().sort((a, x) => tsMs(x.createdAt) - tsMs(a.createdAt)).slice(0, 5);
+      const lowRv = b.reviews.filter((x) => String(x.rating).trim() !== '만족').sort((a, x) => String(x.createdAt || '').localeCompare(String(a.createdAt || ''))).slice(0, 3);
+      return `<b>${esc(c.displayName || '')}</b> <span class="s">${d10(c.firstOrderAt)} ~ ${d10(c.lastOrderAt)}</span>
+        ${fl}
+        ${slm.length ? `<div class="ban bl">판매자 정보 일치: ${slm.map((x) => esc(x.name) + (x.aladinGrade ? ` <i class="gr">${esc(x.aladinGrade)}</i>` : '') + (x.grade === 'fake' ? ' (허위 매물)' : '') + sellerBadges(b, x.name)).join(', ')}</div>` : ''}
+        ${sls.length ? `<div class="ban ag">판매자 일치 의심: ${sls.map((x) => esc(x.name) + sellerBadges(b, x.name)).join(', ')}</div>` : ''}
+        ${(c.otherRecipientCount || 0) >= 3 ? `<div class="ban ag">대행 의심: 다른 수령인 ${c.otherRecipientCount}명</div>` : ''}
+        <div class="n"><div><b>${c.saleOrderCount || 0}</b><span>주문</span></div><div><b>${(c.saleItemQty || 0).toLocaleString()}</b><span>권</span></div><div><b>${(c.salesAmount || 0).toLocaleString()}</b><span>순매출</span></div><div><b>${(c.cancelOrderCount || 0) + (c.returnCount || 0)}</b><span>취소·반품</span></div><div><b>${c.reviewCount || 0}</b><span>구매확정</span></div></div>
+        <div class="s">구매평 <i class="rv g">만족 ${rc.good}</i> <i class="rv m">보통 ${rc.mid}</i> <i class="rv b">불만족 ${rc.bad}</i> · 문의 ${c.qnaCount || b.qna.length || 0}건</div>
+        ${sc ? `<div class="s">점수: 가치 <b style="color:#2F5D50">${sc.value}</b> · 주의 <b style="color:#A8661B">${sc.risk}</b> (${esc(sc.day || '')})</div>` : ''}
+        <div class="s">배송비: 무료배송 ${c.freeShipCount || 0}회(우리 부담) · 고객 부담 ${c.paidShipCount || 0}회 ${won(c.shipPaidTotal || 0)}</div>
+        ${lowRv.length ? `<ul>${lowRv.map((x) => `<li><i class="rv ${String(x.rating).trim() === '불만족' ? 'b' : 'm'}">${esc(x.rating)}</i> ${esc(d10(x.createdAt))} ${esc(x.title || '')}${x.body ? ` “${esc(String(x.body).slice(0, 60))}”` : ''}</li>`).join('')}</ul>` : ''}
+        ${notes.length ? `<ul>${notes.map((n) => `<li>${n.type === 'flag' ? `[${{ vip: 'VIP', caution: '주의', blacklist: '블랙리스트' }[n.flag] || n.flag} ${n.on === true ? '지정' : n.on === false ? '해제' : '자동으로'}] ${esc(n.reason || '')}` : n.sheet ? `[시트] ${esc(n.body || '')}` : esc(n.body || '')} <span class="s">${esc(n.byName || '')}</span></li>`).join('')}</ul>` : ''}
+        <div class="act"><textarea placeholder="메모 (모든 기기에 공유, 지울 수 없음)"></textarea>
+          <div class="ab"><button data-rn="memo">메모 저장</button><button data-rn="vip">${eff(c, 'vip').on ? 'VIP 해제' : 'VIP'}</button><button data-rn="caution">${eff(c, 'caution').on ? '주의 해제' : '주의'}</button><button data-rn="blacklist">${eff(c, 'blacklist').on ? '블랙 해제' : '블랙리스트'}</button></div>
+          <a href="${RN_APP_URL}#c=${encodeURIComponent(c.customerId)}" target="_blank">웹앱에서 전체 보기</a></div>`;
+    }
+    async function write(db, u, cid, kind, payload) {
+      const F = FBx(); const TS = F.firestore.FieldValue.serverTimestamp(); const who = { by: u.email || '', byName: u.displayName || (u.email || '').split('@')[0] };
+      const b = db.batch();
+      if (kind === 'memo') b.set(db.collection('crm_notes').doc(), { customerId: cid, type: 'memo', body: payload.body, ...who, createdAt: TS, writerSchema: 6, via: 'aladin' });
+      else {
+        b.set(db.collection('crm_customers').doc(cid), { flags: { [kind]: { on: payload.on, ...who, at: TS, reason: payload.reason || null } }, uploadedAt: TS, writerSchema: 6 }, { merge: true });
+        b.set(db.collection('crm_notes').doc(), { customerId: cid, type: 'flag', flag: kind, on: payload.on, reason: payload.reason || null, ...who, createdAt: TS, writerSchema: 6, via: 'aladin' });
+      }
+      await b.commit();
+    }
+    // 카드 상자에 동작 연결
+    function bind(box, db, u, cid, b, reload) {
+      box.querySelectorAll('[data-rn]').forEach((btn) => (btn.onclick = async () => {
+        const k = btn.dataset.rn;
+        try {
+          if (k === 'memo') { const t = box.querySelector('textarea').value.trim(); if (!t) return; btn.disabled = true; await write(db, u, cid, 'memo', { body: t }); }
+          else { const cur = b && b.c ? eff(b.c, k).on : false; const r = prompt(`${{ vip: 'VIP', caution: '주의고객', blacklist: '블랙리스트' }[k]} ${cur ? '해제' : '지정'} 사유 (기록으로 영구 보존됩니다)`); if (r === null) return; btn.disabled = true; await write(db, u, cid, k, { on: !cur, reason: r.trim() }); }
+          await reload();
+        } catch (e) { alert('저장 실패: ' + (e.code || e.message)); btn.disabled = false; }
+      }));
+    }
+    const CSS = `.rncard{background:#fff;color:#1E2B28;border:1px solid #D6DDDA;border-top:4px solid #2F5D50;border-radius:8px;box-shadow:0 6px 20px rgba(30,43,40,.2);font:12px/1.5 "Malgun Gothic","Apple SD Gothic Neo",sans-serif;padding:8px 10px;width:290px;max-height:80vh;overflow:auto;text-align:left}
+      .rncard b{font-size:13px} .rncard .x{float:right;border:0;background:none;cursor:pointer;color:#5B6B66;font-size:14px}
+      .rncard .ban{margin:5px -10px 0;padding:5px 10px;font-weight:bold;font-size:11.5px} .rncard .bl{background:#FDECEA;color:#B0322A} .rncard .vip{background:#FBF3DC;color:#8A6D1D} .rncard .ag{background:#FFF4E5;color:#A8661B} .rncard .src{font-weight:normal;font-size:10.5px}
+      .rncard .n{display:grid;grid-template-columns:repeat(5,1fr);text-align:center;margin:6px 0 2px} .rncard .n b{display:block;font-size:12.5px} .rncard .n span{font-size:10px;color:#5B6B66}
+      .rncard ul{margin:5px 0 0;padding:0;list-style:none;max-height:130px;overflow:auto} .rncard li{border-top:1px dashed #D6DDDA;padding:3px 0;font-size:11.5px}
+      .rncard .s{color:#5B6B66;font-size:11px;margin-top:2px} .rncard i.rv{font-style:normal;font-weight:bold;border-radius:4px;padding:0 4px} .rncard i.g{background:#E6EFEB;color:#2F5D50} .rncard i.m{background:#FFF1D6;color:#9A6200} .rncard i.b{background:#FDECEA;color:#B0322A}
+      .rncard i.gr{font-style:normal;background:#3F7FD1;color:#fff;border-radius:4px;padding:0 4px;font-size:10.5px}
+      .rncard i.rnsm{font-style:normal;font-size:10.5px;padding:0 5px;border:1.5px solid #4B4E9E;border-radius:3px;background:#fff;color:#4B4E9E;white-space:nowrap} .rncard i.rnsm.bad{background:#3A3A3A;border-color:#3A3A3A;color:#fff} .rncard i.rnsm.mid,.rncard i.rnsm.na{border-color:#B9BAD6;color:#6E7098}
+      .rncard i.rnsg{font-style:normal;font-size:10.5px;padding:0 6px;border-radius:999px;background:#EEF1F3;color:#56636C;white-space:nowrap} .rncard i.rnsg.good{background:#2F7D4F;color:#fff} .rncard i.rnsg.bad{background:#B0322A;color:#fff}
+      .rncard .act{margin-top:6px;border-top:1px solid #D6DDDA;padding-top:6px} .rncard textarea{width:100%;box-sizing:border-box;min-height:38px;border:1px solid #D6DDDA;border-radius:5px;font:inherit;padding:4px}
+      .rncard .ab{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0} .rncard .ab button{border:1px solid #2F5D50;background:#fff;color:#2F5D50;border-radius:5px;padding:3px 7px;font-size:11px;cursor:pointer} .rncard .ab button:first-child{background:#2F5D50;color:#fff}
+      .rncard a{display:block;text-align:center;padding:4px;border:1px solid #2F5D50;border-radius:5px;color:#2F5D50;text-decoration:none;font-weight:bold}
+      .rnb{display:inline-block;margin:0 0 0 3px;padding:0 5px;border-radius:4px;font:bold 11px "Malgun Gothic",sans-serif;cursor:pointer;vertical-align:middle;white-space:nowrap} .rnb-bl{background:#FDECEA;color:#B0322A} .rnb-cau{background:#FFF4E5;color:#A8661B} .rnb-vip{background:#FBF3DC;color:#8A6D1D} .rnb-rep{background:#E6EFEB;color:#2F5D50} .rnb-new{background:#EEF1F3;color:#56636C} .rnb-none{background:#F3F3F3;color:#999}
+      .rnfloat{position:fixed;z-index:2147483646}`;
+    function style() { if (document.getElementById('rn-card-css')) return; const st = document.createElement('style'); st.id = 'rn-card-css'; st.textContent = CSS; document.head.appendChild(st); }
+    return { esc, FBx, user, loadCfg, loadBundles, badges, cardHtml, bind, style };
+  })();
+
+  // 주문번호 → 알라딘 고객번호: 이 PC에 모아 둔 주문 상세, 없으면 Firebase의 주문 기록
+  async function customerIdsForOrders(db, onos) {
+    const map = new Map(); const need = [];
+    try {
+      const idb = await new Promise((res) => { const r = indexedDB.open('readnow-crm'); r.onsuccess = () => res(r.result); r.onerror = () => res(null); });
+      if (idb && idb.objectStoreNames.contains('popups')) {
+        await Promise.all(onos.map((o) => new Promise((res) => { const q = idb.transaction('popups').objectStore('popups').get(o); q.onsuccess = () => { const p = q.result; if (p && p.customerKey) map.set(o, `aladin_${p.customerKey}`); res(); }; q.onerror = () => res(); })));
+      }
+      if (idb) idb.close();
+    } catch (e) {}
+    onos.forEach((o) => { if (!map.has(o)) need.push(o); });
+    const FP = CARD.FBx().firestore.FieldPath.documentId();
+    for (let i = 0; i < need.length; i += 30) { const s = await db.collection('crm_orders').where(FP, 'in', need.slice(i, i + 30).map((o) => `aladin_${o}`)).get(); s.forEach((d) => { const v = d.data(); if (v.customerId) map.set(v.orderNo, v.customerId); }); }
+    return map;
+  }
+
+  // ── 주문 상세 팝업: 카드 전체
+  if (/\/scm\/wpopup_order\.aspx/i.test(location.pathname)) { if (window.__rnFeat && !window.__rnFeat('custCard')) return; /* (1.63.7) 🧩 */
+    const blk = document.querySelector('[data-custkey]'); if (!blk) return;
+    const cid = `aladin_${blk.getAttribute('data-custkey')}`;
+    CARD.style(); const box = document.createElement('div'); box.className = 'rncard rnfloat'; box.style.cssText = 'top:6px;right:6px'; box.innerHTML = '<b>리드나우 고객 정보</b><div class="s">불러오는 중</div>'; document.body.appendChild(box);
+    const F = CARD.FBx(); if (!F) { box.innerHTML = '<b>리드나우 고객 정보</b><div class="s">Firebase를 불러오지 못했습니다</div>'; return; }
+    const u = await CARD.user(); if (!u) { box.innerHTML = '<b>리드나우 고객 정보</b><div class="s">판매관리·주문조회 화면의 수집기 패널에서 로그인하면 고객 정보가 보입니다.</div>'; return; }
+    const db = F.firestore();
+    const load = async () => { await CARD.loadCfg(db); const m = await CARD.loadBundles(db, [cid]); const b = m.get(cid); box.innerHTML = '<button class="x" title="닫기">×</button>' + CARD.cardHtml(b, cid); box.querySelector('.x').onclick = () => box.remove(); CARD.bind(box, db, u, cid, b, load); };
+    try { await load(); } catch (e) { box.innerHTML = `<b>리드나우 고객 정보</b><div class="s">불러오기 실패: ${CARD.esc(e.code || e.message)}</div>`; }
+    return;
+  }
+
+  // ── 판매관리·주문조회 목록: 주문번호 옆에 고객 표시, 누르면 카드
+  if (/\/scm\/(worders|worder_preparatory_complete)\.aspx/i.test(location.pathname)) {
+    (async () => { if (window.__rnFeat && !window.__rnFeat('custCard')) return; /* (1.63.7) 🧩 */
+      await new Promise((r) => setTimeout(r, 1200));
+      const F = CARD.FBx(); if (!F) return; const u = await CARD.user(); if (!u) return;
+      const db = F.firestore(); CARD.style();
+      const links = [...document.querySelectorAll('a[onclick*="viewOrderDetail"], a[href*="viewOrderDetail"], a[href*="OrderDetail_Popup"], a[onclick*="OrderDetail_Popup"]')];
+      const byOno = new Map(); links.forEach((a) => { const m = (a.getAttribute('onclick') || a.getAttribute('href') || '').match(/(\d{3}-[A-Z]\d{9})/); if (m && /^\d{3}-[A-Z]\d{9}$/.test(a.textContent.trim())) (byOno.get(m[1]) || byOno.set(m[1], []).get(m[1])).push(a); });
+      if (!byOno.size) return;
+      try {
+        await CARD.loadCfg(db);
+        const o2c = await customerIdsForOrders(db, [...byOno.keys()]);
+        const bundles = await CARD.loadBundles(db, [...o2c.values()]);
+        let open = null;
+        for (const [ono, as] of byOno) {
+          const cid = o2c.get(ono); const b = cid ? bundles.get(cid) : null;
+          as.forEach((a) => {
+            if (a.parentNode.querySelector(`.rn-bd[data-ono="${ono}"]`)) return;
+            const span = document.createElement('span'); span.className = 'rn-bd'; span.dataset.ono = ono; span.innerHTML = CARD.badges(b); span.title = '눌러서 리드나우 고객 정보 보기';
+            span.onclick = (ev) => {
+              ev.preventDefault(); ev.stopPropagation(); if (open) open.remove();
+              const box = document.createElement('div'); box.className = 'rncard rnfloat'; const r = span.getBoundingClientRect();
+              box.style.left = Math.min(window.innerWidth - 310, r.left) + 'px'; box.style.top = Math.min(window.innerHeight - 200, r.bottom + 4) + 'px';
+              const draw = async () => { if (cid) { const m = await CARD.loadBundles(db, [cid]); bundles.set(cid, m.get(cid)); } const bb = cid ? bundles.get(cid) : null; box.innerHTML = '<button class="x" title="닫기">×</button>' + CARD.cardHtml(bb, cid || ''); box.querySelector('.x').onclick = () => box.remove(); if (cid) CARD.bind(box, db, u, cid, bb, async () => { await draw(); span.innerHTML = CARD.badges(bundles.get(cid)); }); };
+              draw(); document.body.appendChild(box); open = box;
+            };
+            a.insertAdjacentElement('afterend', span);
+          });
+        }
+        document.addEventListener('click', (e) => { if (open && !open.contains(e.target) && !e.target.closest('.rn-bd')) { open.remove(); open = null; } });
+      } catch (e) { console.warn('[리드나우] 목록 고객 표시 실패', e); }
+    })();
+  }
+
+  if (!/\/scm\/(worders|worder_preparatory_complete|wrecord_edit)\.aspx/i.test(location.pathname) || window.top !== window) return; // 수집 패널: 주문조회·판매관리·상품 조회 화면 (통합 수집기)
+
+  async function autoFillLogin(pw, fl) {
+    if (window.__rnLoginMethod && window.__rnLoginMethod() === 'naver') return;
+    const cred = (GM_getValue('rn-cred', null) || GM_getValue('rnp-cred', null));
+    if (!cred || !cred.id || !cred.pw) return;
+    if (fl.submittedAt && Date.now() - fl.submittedAt < 60000) { // 제출했는데 다시 로그인 화면 = 실패
+      GM_setValue(LOGIN_FLAG, { ...fl, result: 'failed', message: (document.body.innerText.match(/(아이디|비밀번호)[^\n]{0,60}/) || [''])[0] });
+      return;
+    }
+    const form = pw.form || document;
+    const idInput = [...form.querySelectorAll('input[type="text"],input[type="email"],input:not([type])')].find((i) => i.getClientRects().length && i !== pw);
+    if (!idInput) { GM_setValue(LOGIN_FLAG, { ...fl, result: 'no-id-field' }); return; }
+    const setVal = (inp, v) => { const d = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value'); d.set.call(inp, v); inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true })); };
+    setVal(idInput, cred.id); setVal(pw, cred.pw);
+    // '로그인 상태 유지'가 있으면 체크 (끊김 자체를 줄임)
+    [...document.querySelectorAll('input[type="checkbox"]')].forEach((c) => { const lab = (c.id && document.querySelector(`label[for="${c.id}"]`)) || c.closest('label') || c.parentElement; if (lab && /상태\s*유지|자동\s*로그인/.test(lab.textContent) && !c.checked) c.click(); });
+    GM_setValue(LOGIN_FLAG, { ...fl, submittedAt: Date.now() });
+    await new Promise((r) => setTimeout(r, 400));
+    const btn = [...form.querySelectorAll('button,input[type="submit"],input[type="image"],a')].find((b) => /^\s*로그인\s*$/.test(b.textContent || b.value || b.alt || '') || b.type === 'submit' || b.type === 'image');
+    if (btn) btn.click(); else if (pw.form) pw.form.submit(); else pw.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+  }
+
+  /* ════════════════════════════════════════════════════════════
+   * B. 수집기 (주문조회 페이지)
+   * ════════════════════════════════════════════════════════════ */
+  const P = (typeof ReadnowOrders !== 'undefined' && ReadnowOrders) || window.ReadnowOrders || globalThis.ReadnowOrders;
+  if (!P) { window.__rnNote('[리드나우 고객 수집기] 파서 파일(readnow-orders-core.js)을 불러오지 못했습니다. GitHub 주소를 확인해 주세요.'); return; }
+  const NEED_CORE = '0.3.0';
+  const verNum = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
+  if (verNum(P.VERSION) < verNum(NEED_CORE)) window.__rnNote(`[리드나우 고객 수집기] GitHub의 파서 파일이 옛 버전(${P.VERSION})입니다. ${NEED_CORE} 파일로 바꿔 올린 뒤 몇 분 기다렸다가 새로고침해 주세요.`);
+
+  /* ── 저장소 (브라우저 IndexedDB) ── */
+  const STORES = ['orderLines', 'popups', 'returns', 'qnaList', 'qnaDetail', 'reviews', 'jobs', 'issues', 'meta', 'uploaded', 'excelLines', 'sheetRows', 'sellerRaw'];
+  const db = await new Promise((res, rej) => {
+    const r = indexedDB.open('readnow-crm', 4);
+    r.onupgradeneeded = () => { for (const s of STORES) if (!r.result.objectStoreNames.contains(s)) r.result.createObjectStore(s, { keyPath: '_key' }); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    r.onblocked = () => window.__rnNote('[리드나우 고객 수집기] 예전 버전 수집기가 열린 다른 탭이 있어 저장소를 새 버전으로 바꿀 수 없습니다. 주문조회 탭을 모두 닫고 하나만 다시 열어 주세요.');
+  });
+  const reqP = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  const dbGet = (s, k) => reqP(db.transaction(s).objectStore(s).get(k));
+  const dbAll = (s) => reqP(db.transaction(s).objectStore(s).getAll());
+  const dbCount = (s) => reqP(db.transaction(s).objectStore(s).count());
+  const dbPut = (s, objs) => new Promise((res, rej) => {
+    const t = db.transaction(s, 'readwrite'); const st = t.objectStore(s);
+    (Array.isArray(objs) ? objs : [objs]).forEach((o) => st.put(o));
+    t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+  });
+  const dbDelete = (s, keys) => new Promise((res, rej) => {
+    const t = db.transaction(s, 'readwrite'); const st = t.objectStore(s);
+    keys.forEach((k) => st.delete(k)); t.oncomplete = () => res(); t.onerror = () => rej(t.error);
+  });
+  const dbGetMany = async (s, keys) => { const m = new Map(); for (const k of keys) { const v = await dbGet(s, k); if (v) m.set(k, v); } return m; };
+
+  /* ── 설정 (비밀번호는 IndexedDB·백업이 아닌 Tampermonkey 저장소에만) ── */
+  const DEFAULTS = { remoteRun: true, billing: 'paid', dailyWriteCap: 200000, noCapUntil: '2026-12-29', shopSc: '996008', syncTooltip: true, autoRun: false, autoTime: '06:00', delayMin: 1500, delayMax: 3000, forceFull: false, autoLogin: true, stopAfterKnownPages: 2, maxLoginTries: 0, loginRetrySec: 60, autoUpload: true }; // maxLoginTries 0 = 무제한
+  let settings = { ...DEFAULTS, ...((await dbGet('meta', 'settings')) || {}) }; delete settings._key;
+  const saveSettings = () => dbPut('meta', { _key: 'settings', ...settings });
+
+  /* ── 대기: 백그라운드 탭에서도 덜 느려지도록 워커 타이머 사용 (안 되면 일반 타이머) ── */
+  let worker = null; const waiters = new Map(); let wseq = 0;
+  try {
+    worker = new Worker(URL.createObjectURL(new Blob(['onmessage=e=>setTimeout(()=>postMessage(e.data.id),e.data.ms)'], { type: 'text/javascript' })));
+    worker.onmessage = (e) => { const f = waiters.get(e.data); if (f) { waiters.delete(e.data); f(); } };
+  } catch (e) { worker = null; }
+  if (worker) { // 사이트 보안 정책으로 워커가 조용히 막히는 경우 대비: 1초 안에 응답 없으면 일반 타이머 사용
+    const ok = await new Promise((r) => { const id = ++wseq; waiters.set(id, () => r(true)); worker.onerror = () => r(false); worker.postMessage({ id, ms: 1 }); setTimeout(() => r(false), 1000); });
+    if (!ok) { try { worker.terminate(); } catch (e) {} worker = null; waiters.clear(); }
+  }
+  const sleep = (ms) => new Promise((r) => { if (worker) { const id = ++wseq; waiters.set(id, r); worker.postMessage({ id, ms }); } else setTimeout(r, ms); });
+
+  /* ── 요청: 사람 속도 간격, 서버 불안정 시 길게 재시도, 로그인 풀림 시 자동 재로그인 ── */
+  let lastReqAt = 0; const reqTimes = [];
+  class StopSignal extends Error { constructor(code, msg) { super(msg || code); this.code = code; } }
+  const PACE_C = (window.ReadnowProducts || globalThis.ReadnowProducts).makePacer('aladin'); // 상품 수집·가격 감시와 같은 속도 조절 하나 (설정은 상품 수집기 설정의 '알라딘 요청 간격')
+  async function politeWait() { await PACE_C.wait(sleep); lastReqAt = Date.now(); }
+  // (1.39.0) 알라딘 화면 읽기는 공용 '알라딘 창구'(readnow-aladin-core.js) 하나로 — 다시 하기·점검 화면·로그인 풀림·글자 인코딩을 상품 쪽·가격 감시기와 같은 코드로
+  const AL = window.ReadnowAladin || globalThis.ReadnowAladin;
+  const looksLoggedOut = (finalUrl, doc) => AL.looksLoggedOut(finalUrl, doc, { titleOk: /샵매니저/ });
+  const RETRY_WAITS = AL.RETRY_WAITS;
+  const MAX_OUTAGE_MIN = 60; // 서버가 이 시간 넘게 계속 안 되면 일시정지
+  const fetchDoc = AL.makeReader({ pace: PACE_C, sleep, wait: politeWait, beforeEach: () => checkPause(),
+    loggedOut: (fu, doc) => looksLoggedOut(fu, doc),
+    onLoggedOut: async (fu, loginTries) => {
+      const ml = GM_getValue('rnu-maxlogin', 6); const limit = ml > 0 ? ml : Infinity; // 설정 ⑨ (0 = 무제한, 기본 6)
+      if (!settings.autoLogin) throw new StopSignal('LOGIN', '로그인이 풀렸습니다. 직접 로그인한 뒤 이어하기를 눌러 주세요.');
+      if (loginTries > limit) throw new StopSignal('LOGIN', `자동 로그인을 ${limit}번 시도했지만 실패했습니다. 직접 로그인한 뒤 이어하기를 눌러 주세요.`);
+      if (loginTries > 1) { log(`자동 로그인 ${loginTries}번째 시도 전 ${settings.loginRetrySec}초 기다립니다.`, 'warn'); setNow(`자동 로그인 재시도 대기: ${settings.loginRetrySec}초`); await sleep(settings.loginRetrySec * 1000); checkPause(); }
+      PACE_C.fail('login'); await autoRelogin(fu, loginTries); },
+    fatal: (e) => e instanceof StopSignal,
+    maxOutageMin: () => MAX_OUTAGE_MIN, outageError: (m) => new Error(`알라딘 서버가 ${m}분 넘게 응답하지 않아 멈췄습니다. 나중에 이어하기를 눌러 주세요.`),
+    on429: (st) => log(`알라딘이 요청이 너무 많다고 함(${st}) — 이 PC의 모든 수집이 ${Math.round(PACE_C.cooling() / 60000)}분 쉬고 간격 ${PACE_C.state().gap}ms로`, 'warn'),
+    onOk: (ms) => { reqTimes.push(ms + PACE_C.state().gap); if (reqTimes.length > 30) reqTimes.shift(); },
+    onRecover: () => log('서버 연결이 회복되어 계속합니다.', 'ok'),
+    onRetry: (e, w, attempt) => { log(`요청 실패 (${e.name === 'AbortError' ? '응답 시간 초과' : e.message}). ${w}초 뒤 다시 시도합니다.`, 'warn'); setNow(`서버 응답 대기 중: ${w}초 뒤 재시도 (${attempt}번째)`); } });
+
+  async function isLoggedIn() {
+    try { const r = await fetch(BASE + 'worders.aspx?searchType=1&limitDate=1', { credentials: 'include' }); const h = await r.text(); const d = new DOMParser().parseFromString(h, 'text/html'); return r.ok && !looksLoggedOut(r.url, d, h); } catch (e) { return false; }
+  }
+  async function autoRelogin(loginUrl, tryNo = 1) {
+    if (window.__rnLoginMethod && window.__rnLoginMethod() === 'naver') { setNow(`네이버로 다시 로그인 중 (${tryNo}번째)`); const ok = await window.__rnNaverLogin({ isLoggedIn, log: (m, lv) => log(m, lv === 'err' ? 'err' : lv ? 'warn' : 'ok'), stopped: () => pauseRequested, ret: BASE + 'worders.aspx' }); if (!ok && tryNo >= 2) throw new StopSignal('LOGIN', '네이버로 다시 로그인하지 못했습니다. 이 PC 브라우저에서 네이버에 로그인(로그인 상태 유지)한 뒤 이어하기를 눌러 주세요.'); return ok; }
+    const cred = (GM_getValue('rn-cred', null) || GM_getValue('rnp-cred', null));
+    if (!cred || !cred.id || !cred.pw) throw new StopSignal('LOGIN', '로그인이 풀렸습니다. 설정에 아이디·비밀번호를 넣으면 다음부터 자동으로 다시 로그인합니다. 지금은 직접 로그인한 뒤 이어하기를 눌러 주세요.');
+    log(tryNo > 1 ? `자동 로그인 ${tryNo}번째 시도` : '로그인이 풀려 자동으로 다시 로그인합니다.', 'warn'); setNow(`자동 로그인 중 (${tryNo}번째)`);
+    let url = /login/i.test(loginUrl) ? loginUrl : null;
+    if (!url) { try { const r = await fetch(BASE + 'worders.aspx', { credentials: 'include' }); if (/login/i.test(r.url)) url = r.url; } catch (e) {} }
+    url = url || 'https://www.aladin.co.kr/login/wlogin.aspx?returnurl=' + encodeURIComponent(BASE + 'worders.aspx');
+    GM_setValue(LOGIN_FLAG, { at: Date.now() });
+    const tab = GM_openInTab(url, { active: false, insert: true });
+    let ok = false;
+    for (let i = 0; i < 18; i++) { // 최대 90초
+      await sleep(5000);
+      if (pauseRequested) break;
+      const f = GM_getValue(LOGIN_FLAG, {});
+      if (f.result === 'failed' || f.result === 'no-id-field') break;
+      if (await isLoggedIn()) { ok = true; break; }
+    }
+    await window.__rnCloseTab(tab);
+    GM_deleteValue(LOGIN_FLAG);
+    if (!ok) log('자동 로그인이 이번에는 되지 않았습니다.', 'warn');
+    else log('다시 로그인했습니다. 수집을 계속합니다.', 'ok');
+    return ok;
+  }
+
+  /* ── 작업 상태 (이어하기) ── */
+  let running = false; let pauseRequested = false; let currentTask = null;
+  function checkPause() { if (pauseRequested) throw new StopSignal('PAUSED', '일시정지했습니다.'); }
+  async function loadJob(name) { return (await dbGet('jobs', name)) || { _key: name, status: 'idle' }; }
+  const saveJob = (job) => { job.updatedAt = now(); return dbPut('jobs', job); };
+  async function addIssue(type, key, detail) { await dbPut('issues', { _key: `${type}|${key}`, type, key, detail, createdAt: now() }); }
+  const fmtDate = (iso) => (iso ? iso.slice(0, 10) : '?');
+
+  function lastPageOf(doc) {
+    const a = [...doc.querySelectorAll('a[onclick*="Page_Set"]')].map((x) => parseInt((x.getAttribute('onclick').match(/Page_Set\('(\d+)'\)/) || [])[1], 10));
+    const b = [...doc.querySelectorAll('#pagingNavigation a[data-page]')].map((x) => parseInt(x.getAttribute('data-page'), 10));
+    const nums = [...a, ...b].filter(Boolean); return nums.length ? Math.max(...nums) : 1;
+  }
+  // 페이지를 넘기며 수집. 갱신 모드에서는 '이미 다 아는 페이지'가 연속으로 나오면 멈춘다.
+  async function crawlPages(job, makeUrl, onPage, label, expect) {
+    job.page = job.page || 1; job.knownRun = job.knownRun || 0;
+    while (true) {
+      const url = makeUrl(job.page);
+      setNow(`${label} 목록 ${job.page}${job.lastPage ? '/' + job.lastPage : ''}페이지 불러오는 중`);
+      const { doc } = await fetchDoc(url, { expect });
+      if (job.page === 1 || !job.lastPage) job.lastPage = lastPageOf(doc);
+      const r = await onPage(doc, url, job.page);
+      if (job.page > 1 && r.firstKey && r.firstKey === job.prevFirstKey) throw new Error(`${label}: ${job.page}페이지 내용이 앞 페이지와 같습니다. 페이지 넘김 방식 확인이 필요합니다.`);
+      job.prevFirstKey = r.firstKey;
+      progress(`${label} 목록`, job.page, job.lastPage);
+      setNow(`${label} 목록 ${job.page}/${job.lastPage}페이지: ${r.summary || ''}`);
+      if (!r.count) { if (job.page < job.lastPage) await addIssue('EMPTY_PAGE', `${label}|${job.page}`, `${job.page}페이지가 비어 있음`); break; }
+      if (job.mode === 'update') {
+        job.knownRun = r.allKnown ? job.knownRun + 1 : 0;
+        if (job.knownRun >= settings.stopAfterKnownPages) { log(`${label}: 이미 수집된 구간에 도달해 목록 갱신을 마칩니다 (${job.page}페이지).`); break; }
+      }
+      if (job.page >= job.lastPage) break;
+      job.page += 1; await saveJob(job);
+    }
+  }
+  function startJob(job) {
+    const mode = settings.forceFull || !job.fullDoneAt ? 'full' : 'update';
+    Object.assign(job, { mode, phase: 'list', page: 1, lastPage: null, prevFirstKey: null, knownRun: 0, queue: null, qi: 0, startedAt: now(), message: null });
+  }
+  const isFresh = (job) => job.status === 'done' || job.status === 'idle';
+  const listExpect = (doc) => !!doc.querySelector('.total2') || /주문상품이 없습니다|검색 결과가 없/.test(doc.body ? doc.body.textContent : '');
+
+  /* ════════ 1) 전체주문 / 취소주문: 목록 → 주문 상세 ════════ */
+  // 서버(Firebase crm_orders)의 주문 상세 목록 — '이미 받았는지'의 기준. 한 번 읽어 30분 기억 (이 PC 기록은 속도용 보조)
+  let _svOrders = null, _svAt = 0;
+  // (1.34.4) 서버 주문 목록: 처음(또는 7일마다) 한 번만 전부 읽고, 그 뒤엔 '바뀐 주문(uploadedAt)'만 받아 이 PC에 둔 표에 더함
+  //   예전: 주문 수집 때마다(30분마다) crm_orders 전체(수천~수만 건, 상품 줄 포함)를 다시 읽어 느리고 읽기 사용량이 큼. 모든 쓰는 쪽(수집기·클라우드·웹앱)이 uploadedAt을 남김 — 웹앱도 같은 방식.
+  async function serverOrders() { if (_svOrders && Date.now() - _svAt < 5 * 60000) return _svOrders; if (!fdb) { log('Firebase에 로그인되지 않아 이 PC 기록만으로 판단합니다 (구글 로그인 권장)', 'warn'); return null; }
+    const put = (m, v) => { if (v.orderNo) m.set(v.orderNo, { stage: v.stage || '', kind: v.kind, items: (v.items || []).length }); };
+    const ms = (v) => (v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0);
+    try { let c = null; try { c = await dbGet('meta', 'svOrders'); } catch (e) {}
+      const m = new Map(); let max = 0; let full = !c || !c.last || !Array.isArray(c.rows) || Date.now() - (c.fullAt || 0) > 7 * 864e5;
+      if (!full) { c.rows.forEach(([o, st, k, n]) => m.set(o, { stage: st, kind: k, items: n })); max = c.last;
+        setNow('서버 주문 중 바뀐 것만 받는 중'); const ss = await fdb.collection('crm_orders').where('uploadedAt', '>', FB.firestore.Timestamp.fromMillis(c.last - 120000)).get(); // 2분 겹쳐 읽어 시계 차이로 빠지는 것 없게
+        ss.forEach((d) => { const v = d.data(); put(m, v); max = Math.max(max, ms(v)); }); log(`서버 주문 ${m.size.toLocaleString()}건 (바뀐 ${ss.size.toLocaleString()}건만 받음) — 이미 받은 주문은 서버 기준으로 건너뜁니다`); }
+      else { setNow('서버의 주문 상세 목록을 읽는 중 (처음 한 번 전체 — 다음부터는 바뀐 것만)'); (await fdb.collection('crm_orders').get()).forEach((d) => { const v = d.data(); put(m, v); max = Math.max(max, ms(v)); }); log(`서버 주문 ${m.size.toLocaleString()}건 전체 확인 — 이미 받은 주문은 서버 기준으로 건너뜁니다`); }
+      try { await dbPut('meta', { _key: 'svOrders', rows: [...m].map(([o, x]) => [o, x.stage, x.kind, x.items]), last: max || Date.now(), fullAt: full ? Date.now() : c.fullAt }); } catch (e) {}
+      _svOrders = m; _svAt = Date.now(); return m; }
+    catch (e) { log('서버 주문 목록 읽기 실패: ' + e.message + ' — 이 PC 기록만으로 판단', 'warn'); return null; } }
+  const sameLine = (a, b) => a && b && a.shipped?.raw === b.shipped?.raw && a.rowStatus === b.rowStatus && a.cancelQty === b.cancelQty && a.returnReason === b.returnReason && a.price === b.price;
+  async function taskOrderList(name, searchType, kind, label) {
+    const job = await loadJob(name);
+    if (isFresh(job)) { await syncRemoteJob(job); startJob(job); }
+    job.status = 'running'; await saveJob(job);
+    log(`${label} ${job.mode === 'full' ? '전체 수집' : '갱신 수집'} 시작`);
+
+    if (job.phase === 'list') {
+      job.touched = job.touched || [];
+      await crawlPages(job, (p) => `${BASE}worders.aspx?page=${p}&keywordType=0&keyword=&searchType=${searchType}&limitDate=0`, async (doc, url, page) => {
+        const L = P.parseOrderList(doc, url);
+        if (page === 1 && L.total != null) job.total = L.total;
+        const occ = {}; const recs = L.rows.map((r) => {
+          const base = `${kind}|${r.orderNo}|${r.rawTitle}|${r.price}`; occ[base] = (occ[base] || 0) + 1;
+          return { _key: `${base}|${occ[base]}`, kind, ...r, page, collectedAt: now(), parserVersion: P.VERSION };
+        });
+        const old = await dbGetMany('orderLines', recs.map((r) => r._key)); const SV = await serverOrders();
+        let fresh = 0; const touched = new Set();
+        for (const r of recs) {
+          const o = old.get(r._key);
+          if (o) r.firstCollectedAt = o.firstCollectedAt || o.collectedAt; else r.firstCollectedAt = now();
+          const final = kind === 'cancel' || !!(r.shipped && r.shipped.date);
+          const stale = !final && (!o || !o.detailTouchAt || Date.now() - Date.parse(o.detailTouchAt) > 24 * 3600e3); // 출고 전 주문: 목록 줄이 그대로면 하루 한 번만 상세 확인
+          const sv = SV ? SV.get(r.orderNo) : null; const svDone = sv && sv.items && (kind === 'cancel' || /정산완료/.test(sv.stage));
+          if (svDone && (!o || sameLine(o, r))) { r.detailTouchAt = (o && o.detailTouchAt) || now(); } // 서버에 끝난 상세가 있으면 '아는 줄' (이 PC에 없어도)
+          else if (!o || !sameLine(o, r) || stale || (SV && !sv)) { fresh += 1; touched.add(r.orderNo); r.detailTouchAt = now(); } else r.detailTouchAt = o.detailTouchAt || now(); // 서버에 없는 주문은 이 PC에 있어도 '새 줄'
+        }
+        if (recs.length) await dbPut('orderLines', recs);
+        touched.forEach((o) => { if (!job.touched.includes(o)) job.touched.push(o); });
+        const d = recs.map((r) => r.orderedAt).filter(Boolean).sort();
+        return { count: recs.length, firstKey: recs[0] && recs[0]._key, allKnown: fresh === 0,
+          summary: `${fmtDate(d[0])} ~ ${fmtDate(d[d.length - 1])} 주문 ${recs.length}줄, 새로 바뀐 줄 ${fresh}` };
+      }, label, listExpect);
+      job.phase = 'popup'; job.qi = 0; job.queue = null; await saveJob(job);
+    }
+
+    if (job.phase === 'popup') {
+      if (!job.queue) {
+        const lines = (await dbAll('orderLines')).filter((l) => l.kind === kind);
+        const oldest = {}; lines.forEach((l) => { if (!oldest[l.orderNo] || (l.orderedAt || '') < oldest[l.orderNo]) oldest[l.orderNo] = l.orderedAt || ''; });
+        const existing = new Map((await dbAll('popups')).map((p) => [p._key, p]));
+        const recent = new Date(Date.now() - 60 * 864e5).toISOString();
+        const fbStage = await serverOrders(); // 서버 기준
+        const touched = new Set(job.touched || []);
+        job.queue = Object.keys(oldest).filter((o) => {
+          const e = existing.get(o);
+          const f = fbStage ? fbStage.get(o) : null;
+          if (f && f.items && (kind === 'cancel' || /정산완료/.test(f.stage))) return false;          // ① 서버에 상세가 있고 끝난 주문 → 다시 안 엶 (어느 PC든 같은 결과)
+          if (e && Date.now() - Date.parse(e.collectedAt || 0) < 7 * 864e5 && !touched.has(o)) return false; // ② 이 PC가 7일 안에 받아 둔 것 → 올리기 단계에서 서버로 감
+          if (!f || !f.items) { if (!fbStage && e) return false; return true; }                      // ③ 서버에 상세 없음 → 받음 (서버를 못 읽으면: 이 PC에 있으면 건너뜀)
+          if (kind === 'cancel') return false;
+          if (!e) return oldest[o] >= recent;                                                          // ④ 서버에 미정산 상세만 있고 이 PC엔 없음 → 최근 60일 주문만 다시
+          if (kind === 'cancel') return false;                   // 취소 건은 한 번이면 충분
+          if (job.mode === 'full') return !/정산완료/.test(e.stage || '');
+          // 갱신: 새 주문·목록 줄이 바뀐 주문만. 최근 60일 미정산 주문은 정산 단계 확인을 위해 상세를 받은 지 7일 넘었을 때만 (예전엔 매번 전부 다시 받음)
+          return touched.has(o) || (!/정산완료/.test(e.stage || '') && oldest[o] >= recent && Date.now() - Date.parse(e.collectedAt || 0) > (settings.popupRecheckDays ?? 7) * 864e5);
+        }).sort((a, b) => oldest[a].localeCompare(oldest[b]));   // 개인정보가 먼저 지워지는 오래된 주문부터
+        job.qi = 0; await saveJob(job);
+      }
+      while (job.qi < job.queue.length) {
+        const ono = job.queue[job.qi];
+        const url = `${BASE}wpopup_order.aspx?ono=${encodeURIComponent(ono)}`;
+        setNow(`${label} 주문 상세 ${ono} 불러오는 중`);
+        const { doc } = await fetchDoc(url, { expect: (d) => /주문번호/.test(d.body ? d.body.textContent : '') });
+        const p = P.parseOrderPopup(doc, url); popupExtras(doc, p);
+        if (p.orderNo !== ono) await addIssue('POPUP_MISMATCH', ono, `팝업 주문번호가 다름: ${p.orderNo}`);
+        else await savePopup(ono, p);
+        job.qi += 1; if (job.qi % 5 === 0 || job.qi === job.queue.length) await saveJob(job);
+        progress(`${label} 주문 상세`, job.qi, job.queue.length);
+        const who = p.buyer && p.buyer.name ? p.buyer.name : '개인정보 없음';
+        setNow(`${label} 주문 상세 ${ono} (${fmtDate(p.orderedDate)} 주문, ${who}): 상품 ${p.items.length}개, 판매총액 ${p.totalAmount != null ? p.totalAmount.toLocaleString() + '원' : '-'}, ${p.stage || ''}`);
+      }
+    }
+    job.status = 'done'; job.finishedAt = now(); if (job.mode === 'full') job.fullDoneAt = now(); job.touched = []; await saveJob(job); shareJobDone(job);
+    log(`${label} 완료 (목록 ${job.page || 0}페이지, 주문 상세 ${job.queue ? job.queue.length : 0}건)`, 'ok');
+  }
+  // 주문 상세의 배송비 칸: 그 주문에 실제 적용된 배송비(주문 시점 값)와 무료배송 기준·도서산간 배송비 문구
+  function popupExtras(doc, p) {
+    const t = (sel) => { const e = doc.querySelector(sel); return e ? e.textContent.replace(/\s+/g, ' ').trim() : null; };
+    p.freeRuleText = t('#lblPriceType'); const rp = t('#lblDeliveryPriceRP'); p.remoteFee = rp ? parseInt(rp.replace(/[^\d]/g, ''), 10) || null : null;
+  }
+  async function savePopup(ono, p) { // 개인정보가 지워진 뒤 다시 받아도 먼저 확보한 개인정보는 유지
+    const old = await dbGet('popups', ono);
+    const rec = { _key: ono, ...p, collectedAt: now(), parserVersion: P.VERSION };
+    if (old && old.piiAvailable && !p.piiAvailable) {
+      Object.assign(rec, { buyer: old.buyer, recipient: old.recipient, recipientSameAsBuyer: old.recipientSameAsBuyer, shippingRequest: old.shippingRequest,
+        piiAvailable: true, piiCollectedAt: old.piiCollectedAt || old.collectedAt, piiGoneSeenAt: now() });
+    } else if (p.piiAvailable) rec.piiCollectedAt = now();
+    rec.firstCollectedAt = (old && old.firstCollectedAt) || now();
+    if (old && old.orderStatus && old.orderStatus !== p.orderStatus) rec.statusHistory = [...(old.statusHistory || []), { from: old.orderStatus, to: p.orderStatus, seenAt: now() }];
+    else if (old && old.statusHistory) rec.statusHistory = old.statusHistory;
+    await dbPut('popups', rec);
+  }
+
+  /* ════════ 2) 반품: 반품관리(wreturn.aspx)의 모든 상태 탭 ════════ */
+  const RETURN_TABS = [[1, '반품확인요청'], [2, '수거신청/수거중'], [4, '수거완료'], [6, '환불보류'], [5, '반품완료'], [99, '반품취소']];
+  async function taskReturns() {
+    const job = await loadJob('returns');
+    if (isFresh(job)) Object.assign(job, { ti: 0, page: 1, knownRun: 0, tabCounts: {}, startedAt: now(), message: null });
+    job.status = 'running'; await saveJob(job);
+    while (job.ti < RETURN_TABS.length) {
+      const [code, name] = RETURN_TABS[job.ti];
+      const url = `${BASE}wreturn.aspx?returnStatus=${code}&page=${job.page}`;
+      setNow(`반품 [${name}] ${job.page}페이지 불러오는 중`);
+      const { doc } = await fetchDoc(url, { expect: (d) => /반품관리/.test(d.title) || !!d.querySelector('.scm2019_table') });
+      if (job.page === 1) {
+        doc.querySelectorAll('.scm2019_table a[href*="returnStatus="]').forEach((a) => { const c = (a.getAttribute('href').match(/returnStatus=(\d+)/) || [])[1]; const n = (a.textContent.match(/\((\d+)건\)/) || [])[1]; if (c) job.tabCounts[c] = n ? +n : null; });
+      }
+      const rows = P.parseReturnList(doc); let known = 0;
+      for (const r of rows) {
+        const old = await dbGet('returns', r.claimId); if (old && old.status === r.status && old.tab === name) known += 1;
+        const hist = (old && old.history) || [];
+        if (!hist.length || hist[hist.length - 1].status !== r.status) hist.push({ status: r.status, tab: name, seenAt: now() });
+        await dbPut('returns', { _key: r.claimId, ...r, tab: name, history: hist, firstSeenAt: (old && old.firstSeenAt) || now(), lastSeenAt: now(), parserVersion: P.VERSION });
+      }
+      setNow(`반품 [${name}] ${job.page}페이지: ${rows.length}건`);
+      const last = lastPageOf(doc);
+      const finalTab = code === 5 || code === 99; const allKnown = rows.length && known === rows.length;
+      job.knownRun = allKnown ? (job.knownRun || 0) + 1 : 0;
+      if (finalTab && job.fullDoneAt && !settings.forceFull && job.knownRun >= (settings.stopAfterKnownPages || 2)) { log(`반품 [${name}]: 이미 수집된 구간에 도달해 이 탭을 마칩니다 (${job.page}페이지)`); job.ti += 1; job.page = 1; job.knownRun = 0; }
+      else if (rows.length && job.page < last) job.page += 1; else { job.ti += 1; job.page = 1; job.knownRun = 0; }
+      progress('반품 (상태별)', job.ti, RETURN_TABS.length); await saveJob(job);
+    }
+    job.status = 'done'; job.finishedAt = now(); job.fullDoneAt = job.fullDoneAt || now(); job.knownRun = 0; await saveJob(job);
+    const tc = RETURN_TABS.map(([c, n]) => `${n} ${job.tabCounts[c] ?? '?'}`).join(', ');
+    log(`반품 완료 (${tc})`, 'ok');
+  }
+
+  /* ════════ 3) 묻고 답하기: 목록 → 상세 ════════ */
+  async function taskQna() {
+    const job = await loadJob('qna');
+    if (isFresh(job)) { await syncRemoteJob(job); startJob(job); }
+    job.status = 'running'; await saveJob(job);
+    if (job.phase === 'list') {
+      await crawlPages(job, (p) => `${BASE}wUsedShopC2CQnASellerList.aspx?page=${p}`, async (doc) => {
+        const rows = P.parseQnaList(doc).map((r) => ({ _key: r.questionId, ...r, collectedAt: now() }));
+        const det = await dbGetMany('qnaDetail', rows.map((r) => r._key)); const old = await dbGetMany('qnaList', rows.map((r) => r._key));
+        // '아는 줄' = 전에 본 줄과 답변여부가 같고 상세도 받아 둔 줄. 답변 없는 질문·취소된 질문도 상태가 그대로면 아는 줄 (예전엔 답변이 없으면 매번 새 줄로 봐서 끝까지 다 넘겼음)
+        let fresh = 0;
+        for (const r of rows) { const o = old.get(r._key);
+          r.firstCollectedAt = (o && (o.firstCollectedAt || o.collectedAt)) || now();
+          r.answeredHistory = (o && o.answeredHistory) || (o ? [{ v: o.answered ?? null, seenAt: o.firstCollectedAt || o.collectedAt || null }] : []);
+          if (!o || (o.answered ?? null) !== (r.answered ?? null)) { r.answeredHistory = [...r.answeredHistory, { v: r.answered ?? null, seenAt: now() }]; }
+          if (!o || (o.answered ?? null) !== (r.answered ?? null) || !det.has(r._key)) fresh += 1; }
+        if (rows.length) await dbPut('qnaList', rows);
+        return { count: rows.length, firstKey: rows[0] && rows[0]._key, allKnown: fresh === 0, summary: `문의 ${rows.length}건, 새로 바뀐 것 ${fresh}건 (${fmtDate(rows[rows.length - 1]?.createdDate)} ~ ${fmtDate(rows[0]?.createdDate)})` };
+      }, '묻고 답하기');
+      job.phase = 'detail'; job.queue = null; await saveJob(job);
+    }
+    if (job.phase === 'pubstatus') { job.phase = 'detail'; await saveJob(job); } // (1.5.3에서 잘못 넣은 단계 — 남아 있던 작업은 바로 다음 단계로)
+    if (job.phase === 'detail') {
+      if (!job.queue) {
+        const det = new Map((await dbAll('qnaDetail')).map((d) => [d._key, d]));
+        const fix = []; // 예전 기록(상세에 목록 답변여부가 없음)은 지금 목록 값으로 한 번 맞춰 두고 다시 열지 않음
+        job.queue = (await dbAll('qnaList')).filter((q) => { const d = det.get(q._key); if (!d) return true;
+          if (!d.orderNo && !d.itemId && !d.orderRecheck) return true; /* (1.55.1) 주문번호·상품이 둘 다 없이 저장된 예전 문의는 한 번 다시 열어 '관련 주문번호'를 채움 (웹앱이 주문·상품·고객에 이음) */
+          if (!('listStatus' in d)) { fix.push({ ...d, listStatus: q.answered ?? null }); return false; }
+          return (d.listStatus ?? null) !== (q.answered ?? null); }).map((q) => q._key);
+        if (fix.length) await dbPut('qnaDetail', fix);
+        log(`묻고 답하기 상세: 새 질문·답변여부가 바뀐 질문 ${job.queue.length}건만 엽니다`);
+        job.qi = 0; await saveJob(job);
+      }
+      while (job.qi < job.queue.length) {
+        const id = job.queue[job.qi]; const url = `${BASE}wUsedShopC2CAnswer.aspx?questionid=${id}`;
+        setNow(`묻고 답하기 상세 ${id} 불러오는 중`);
+        const { doc } = await fetchDoc(url, { expect: (d) => !!d.querySelector('#divQuestion') });
+        const d = P.parseQnaDetail(doc, url);
+        if (!d.answer) { const ta = doc.querySelector('#txtAnswer'); const v = ta ? String(ta.value || ta.textContent || '').trim() : ''; if (v) d.answer = v; }
+        if (!d.answer) { // 우리 답변은 '수정하기' 화면(method=edit)의 답변 입력칸(#txtAnswer)에 있음
+          const e2 = await fetchDoc(`${BASE}wUsedShopC2CAnswer.aspx?questionid=${id}&method=edit`, { expect: (x) => !!x.querySelector('#divQuestion, #txtAnswer') });
+          const ta = e2.doc.querySelector('#txtAnswer'); const v = ta ? String(ta.value || ta.textContent || '').trim() : ''; if (v) { d.answer = v; d.answerFrom = 'edit'; } }
+        { const o = await dbGet('qnaDetail', id); const ql = await dbGet('qnaList', id); const rec = { _key: id, ...d, listStatus: ql ? ql.answered ?? null : null, collectedAt: now(), parserVersion: P.VERSION, orderRecheck: true };
+          if (o) { rec.firstCollectedAt = o.firstCollectedAt || o.collectedAt || null; for (const k of Object.keys(o)) if ((rec[k] === null || rec[k] === undefined || rec[k] === '') && o[k] !== null && o[k] !== undefined && o[k] !== '') rec[k] = o[k]; // 새로 읽은 값이 비면 먼저 받은 값 유지
+            rec.answerHistory = o.answerHistory || []; if (o.answer && d.answer && o.answer !== d.answer) rec.answerHistory = [...rec.answerHistory, { answer: o.answer, until: now() }]; }
+          else rec.firstCollectedAt = now();
+          await dbPut('qnaDetail', rec); }
+        job.qi += 1; if (job.qi % 5 === 0 || job.qi === job.queue.length) await saveJob(job);
+        progress('묻고 답하기 상세', job.qi, job.queue.length);
+        setNow(`묻고 답하기 ${id} (${fmtDate(d.createdDate)}): ${d.title || '상품 정보 없음'}${d.answer ? ', 답변 있음' : ', 미답변'}`);
+      }
+    }
+    job.status = 'done'; job.finishedAt = now(); if (job.mode === 'full') job.fullDoneAt = now(); await saveJob(job); shareJobDone(job); log('묻고 답하기 완료', 'ok');
+    await uploadQnaNow();
+  }
+  // 묻고 답하기는 수집이 끝나면 바로 Firebase에 올림 (전체 올리기를 기다리지 않음). 답변여부 = 샵매니저 목록 행 5번째 칸 그대로
+  async function uploadQnaNow() {
+    const list = await dbAll('qnaList'); const det = new Map((await dbAll('qnaDetail')).map((d) => [d._key, d]));
+    const cnt = {}; list.forEach((r) => { const k = r.answered == null ? '(빈칸)' : r.answered; cnt[k] = (cnt[k] || 0) + 1; });
+    log(`묻고 답하기 목록 ${list.length}건의 답변여부: ${Object.entries(cnt).map(([k, v]) => `${k} ${v}`).join(', ')}`);
+    if (!fbUser || !fdb) { log('Firebase 로그인이 안 되어 묻고 답하기를 올리지 못했습니다 (구글 로그인 후 다시)', 'err'); return; }
+    const sent = new Map((await dbAll('uploaded')).filter((u) => u._key.startsWith('qnaNow/')).map((u) => [u._key, u.hash]));
+    const todo = [];
+    list.forEach((r) => { const q = det.get(r._key) || {}; const cid = q.customerKey ? `aladin_${q.customerKey}` : null;
+      const data = { type: 'qna', platform: 'aladin', questionId: r._key, answerStatus: r.answered ?? null, authorMasked: q.authorMasked || r.authorMasked || null, body: q.question || r.question || null, createdAt: q.createdDate || r.createdDate || null };
+      if (q._key) Object.assign(data, { customerId: cid, orderId: q.orderNo ? `aladin_${q.orderNo}` : null, itemId: q.itemId ?? null, title: q.title ?? null, condition: q.condition ?? null, answer: q.answer ?? null });
+      Object.keys(data).forEach((k) => { if (data[k] === null || data[k] === undefined || data[k] === '') delete data[k]; }); // 빈 값은 안 보냄 → 서버의 기존 값 유지
+      const h = hashStr(stableStr(data)); if (sent.get('qnaNow/' + r._key) !== h) todo.push({ id: r._key, data, h }); });
+    if (!todo.length) { log('묻고 답하기: 지난번에 올린 것과 같아 올릴 것 없음', 'ok'); return; }
+    const stamp = FB.firestore.FieldValue.serverTimestamp(); let n = 0;
+    for (let i = 0; i < todo.length; i += 300) { const part = todo.slice(i, i + 300); const b = fdb.batch();
+      { const olds = await Promise.all(part.map((t) => fdb.collection('crm_interactions').doc(`aladin_qna_${t.id}`).get().catch(() => null))); const H = []; part.forEach((t, k) => { const od = olds[k]; if (od && od.exists) { const h = crmHistOf('crm_interactions', `aladin_qna_${t.id}`, od.data(), t.data); if (h) H.push(h); } }); if (H.length) await crmHistCommit(H); } // (1.57.2) 답·상태가 바뀌면 옛 값 먼저
+      part.forEach((t) => { b.set(fdb.collection('crm_interactions').doc(`aladin_qna_${t.id}`), { ...t.data, uploadedAt: stamp, uploaderVersion: APP_VER, writerSchema: WRITER_SCHEMA, lastWrittenBy: PC.name || '' }, { merge: true }); n++; });
+      await commitWithRetry(b, part.length); await dbPut('uploaded', part.map((t) => ({ _key: 'qnaNow/' + t.id, hash: t.h, at: now() }))); }
+    log(`묻고 답하기 ${n}건(새것·바뀐 것만)을 Firebase에 올렸습니다 — 전체 ${list.length}건`, 'ok');
+  }
+
+  /* ════════ 4) 구매평 ════════ */
+  async function taskReviews() {
+    const job = await loadJob('reviews');
+    if (isFresh(job)) { await syncRemoteJob(job); startJob(job); }
+    job.status = 'running'; await saveJob(job);
+    await crawlPages(job, (p) => `${BASE}wShopSurveySellerList.aspx?page=${p}`, async (doc) => {
+      const occ = {}; const rows = P.parseReviewList(doc).map((r) => {
+        const b = `${r.orderNo}|${r.title}|${r.createdDate}`; occ[b] = (occ[b] || 0) + 1;
+        return { _key: `${b}|${occ[b]}`, ...r, collectedAt: now() };
+      });
+      const old = await dbGetMany('reviews', rows.map((r) => r._key));
+      rows.forEach((r) => { const o = old.get(r._key); r.firstCollectedAt = (o && (o.firstCollectedAt || o.collectedAt)) || now(); });
+      if (rows.length) await dbPut('reviews', rows);
+      return { count: rows.length, firstKey: rows[0] && rows[0]._key, allKnown: rows.every((r) => old.has(r._key)), summary: `구매평 ${rows.length}건` };
+    }, '구매평');
+    job.status = 'done'; job.finishedAt = now(); if (job.mode === 'full') job.fullDoneAt = now(); await saveJob(job); shareJobDone(job); log('구매평 완료', 'ok');
+  }
+
+  /* ════════ 5) 검증 (자동 수정 없이 '확인 필요'만 기록) ════════ */
+  async function taskVerify() {
+    setNow('수집 결과 검증 중'); progress('검증', 0, 1);
+    const old = (await dbAll('issues')).filter((i) => i.type.startsWith('V_')).map((i) => i._key); if (old.length) await dbDelete('issues', old);
+    const lines = await dbAll('orderLines'); const popups = new Map((await dbAll('popups')).map((p) => [p._key, p]));
+    const byOrder = (kind) => { const m = {}; lines.filter((l) => l.kind === kind).forEach((l) => (m[l.orderNo] = m[l.orderNo] || []).push(l)); return m; };
+    const sale = byOrder('sale'); const cancel = byOrder('cancel'); let n = 0;
+    for (const [ono, ls] of Object.entries(sale)) {
+      const p = popups.get(ono);
+      if (!p) { await addIssue('V_NO_POPUP', ono, '주문 상세를 아직 받지 못함'); n++; continue; }
+      const m = P.matchListToPopup(ls, p);
+      if (m.countMismatch) { await addIssue('V_LINE_COUNT', ono, `목록 ${ls.length}줄 / 상세 ${p.items.length}개 (주문 안 취소 ${p.items.length - (m.activeItemCount ?? p.items.length)}개 제외 시 ${m.activeItemCount ?? p.items.length}개)`); n++; }
+      const sum = ls.reduce((s, l) => s + (l.price || 0) * (l.qty || 1), 0);
+      if (p.totalAmount != null && sum !== p.totalAmount) { await addIssue('V_TOTAL', ono, `판매가 합계 ${sum} / 판매총액 ${p.totalAmount}`); n++; }
+      if (p.orderStatus && p.orderStatus !== '정상') { await addIssue('V_STATUS', ono, `주문상태: ${p.orderStatus}`); n++; }
+      const odd = ls.filter((l) => l.rowStatus && l.rowStatus !== '정상'); if (odd.length) { await addIssue('V_ROW_STATUS', ono, odd.map((l) => `${l.title}: ${l.rowStatus}${l.returnReason ? ' / ' + l.returnReason : ''}`).join('; ')); n++; }
+    }
+    for (const ono of Object.keys(cancel)) if (sale[ono]) { await addIssue('V_CANCEL_OVERLAP', ono, '판매 목록과 취소 목록에 모두 있음 (부분취소 등 확인 필요)'); n++; }
+    // 샵매니저 표시 건수와 비교 (표시 건수가 줄 수인지 수량 합인지 몰라 둘 다 계산)
+    for (const [jobName, grp, label] of [['orders', sale, '판매'], ['cancels', cancel, '취소']]) {
+      const j = await loadJob(jobName); const all = Object.values(grp).flat();
+      const nLines = all.length; const nQty = all.reduce((s, l) => s + (l.qty || 1), 0);
+      if (j.total) await dbPut('meta', { _key: `count_${jobName}`, shown: j.total, lines: nLines, qty: nQty, at: now() });
+      if (j.total && nLines < j.total && nQty < j.total) { await addIssue('V_COUNT', jobName, `${label}: 수집 ${nLines}줄(수량 합 ${nQty}) / 샵매니저 표시 ${j.total}건`); n++; }
+    }
+    await dbPut('meta', { _key: 'lastVerify', at: now(), issues: n });
+    progress('검증', 1, 1); setNow(`검증 끝: 확인 필요 ${n}건`); log(`검증 완료: 확인 필요 ${n}건`, n ? 'warn' : 'ok');
+  }
+
+  /* ════════ 6) Firebase 올리기 (통합 프로젝트 readnow-3a385) ════════
+   * 구조 (ERP 이전 시 orders.items는 order_items 표로 분리):
+   *   crm_customers/{aladin_고객번호}   고객 요약·연락처 목록 (flags·메모는 웹앱에서 관리, 업로더는 건드리지 않음)
+   *   crm_orders/{aladin_주문번호}      주문 + items[] (상품 줄마다 상태: normal/cancelled/returned/…)
+   *   crm_interactions/{id}            묻고 답하기·구매평 (나중에 관리자 메모도 여기)
+   *   crm_orderEvents/{aladin_return_클레임번호}  반품 이력
+   */
+  const FIREBASE_CONFIG = {
+    apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
+    storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15',
+  };
+  const FB = (typeof firebase !== 'undefined' && firebase) || window.firebase || null;
+  let fbUser = null; let fdb = null;
+  if (FB) {
+    try {
+      if (!FB.apps.length) FB.initializeApp(FIREBASE_CONFIG);
+      fdb = FB.firestore();
+      FB.auth().onAuthStateChanged((u) => { fbUser = u; if (u) { watchUsage(); watchLock(); } render(); });
+    } catch (e) { console.error(e); }
+  }
+  // 로그인: 구글 창 방식(기본). 창 방식이 이 환경에서 안 되면 Firebase 전용 이메일·비밀번호 방식 사용.
+  let fbLoggingIn = false;
+  async function fbLogin() {
+    if (!FB) { window.__rnNote('Firebase 파일을 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요.'); return; }
+    if (fbLoggingIn) {
+      if (Date.now() - fbLoggingIn < 40000) { log('로그인 창이 이미 열려 있습니다. 작업표시줄에 새 크롬 창이 떠 있는지 확인해 주세요.', 'warn'); return; }
+      log('앞의 로그인 창을 취소하고 새로 엽니다.', 'warn');
+    }
+    fbLoggingIn = Date.now(); render();
+    const myTry = fbLoggingIn;
+    // 40초 안에 결과가 없으면(창이 안 보이거나 막힌 경우) 다시 시도할 수 있게 풀어 줌
+    setTimeout(() => { if (fbLoggingIn === myTry && !fbUser) { fbLoggingIn = false; render(); log('로그인 창에서 40초 동안 응답이 없습니다. ① 작업표시줄에 뒤로 숨은 크롬 창이 있는지 ② 주소창 오른쪽에 팝업 차단 표시가 있는지 확인한 뒤 다시 눌러 주세요. 계속 안 되면 이 페이지를 새로고침하고 다시 시도하세요.', 'warn'); } }, 40000);
+    const pc = GM_getValue('rn-fbmode', 'google') === 'password' ? GM_getValue('rn-fbpw', null) : null; // 기본은 구글 로그인
+    try {
+      if (pc && pc.email && pc.pw) {
+        log('Firebase 전용 계정으로 로그인하는 중');
+        await FB.auth().signInWithEmailAndPassword(pc.email, pc.pw);
+      } else {
+        log('구글 로그인 창을 여는 중입니다. 뜨는 창에서 계정을 한 번만 골라 주세요.');
+        await FB.auth().signInWithPopup(new FB.auth.GoogleAuthProvider());
+      }
+      log(`Firebase 로그인: ${FB.auth().currentUser.email}`, 'ok');
+    } catch (e) {
+      const c = e.code || '';
+      const why = {
+        'auth/cancelled-popup-request': '로그인 창이 두 번 열리려 해서 앞의 것이 취소됐습니다.',
+        'auth/popup-closed-by-user': '계정을 고르기 전에 로그인 창이 닫혔습니다.',
+        'auth/popup-blocked': '크롬이 로그인 창을 막았습니다. 주소창 오른쪽의 팝업 차단 아이콘에서 www.aladin.co.kr 팝업을 허용해 주세요.',
+        'auth/unauthorized-domain': 'Firebase 콘솔 → Authentication → 설정 → 승인된 도메인에 www.aladin.co.kr 을 추가해야 합니다.',
+        'auth/operation-not-allowed': 'Firebase 콘솔 → Authentication → 로그인 방법에서 이 방식이 꺼져 있습니다.',
+        'auth/invalid-credential': 'Firebase 전용 이메일 또는 비밀번호가 틀립니다.',
+        'auth/network-request-failed': '인터넷 연결 또는 Firebase 접속에 실패했습니다.',
+      }[c];
+      log(`로그인 실패 (${c || e.message})${why ? ': ' + why : ''}`, 'err');
+      if (pc && /invalid-credential|wrong-password|user-not-found|invalid-email/.test(c)) log("설정의 '로그인 방식'을 '구글 계정'으로 바꾸면 구글 로그인 창으로 들어갈 수 있습니다.", 'warn');
+    } finally { if (fbLoggingIn === myTry) fbLoggingIn = false; render(); }
+  }
+
+  const docHash = (d) => hashStr(JSON.stringify({ ...d.data, source: undefined, piiCollectedAt: undefined })); // 수집 시각만 바뀐 문서는 다시 올리지 않음
+  const hashStr = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + ':' + s.length; };
+  const clean = (o) => JSON.parse(JSON.stringify(o)); // undefined 제거
+  const uniq = (arr) => [...new Set(arr.filter(Boolean))];
+
+  /* ── 엑셀·구글 시트 해석 (순수 함수) ── */
+  const isDateLike = (v) => v instanceof Date || /^\d{4}-\d{2}-\d{2}/.test(String(v || ''));
+  function kDate(v) { // "2025-10-26 오후 11:22:23" / Date / 엑셀 날짜 숫자 → "2025-10-26T23:22"
+    if (v == null || v === '') return null;
+    if (v instanceof Date) { const z = (x) => String(x).padStart(2, '0'); return `${v.getFullYear()}-${z(v.getMonth() + 1)}-${z(v.getDate())}` + (v.getHours() || v.getMinutes() ? `T${z(v.getHours())}:${z(v.getMinutes())}` : ''); }
+    if (typeof v === 'number' && v > 30000 && v < 80000) return kDate(new Date(Math.round((v - 25569) * 864e5) + new Date().getTimezoneOffset() * 60000));
+    const s = String(v).trim();
+    let m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(오전|오후)?\s*(\d{1,2}):(\d{2}))?/);
+    if (m) { let h = m[5] != null ? parseInt(m[5], 10) : null; if (h != null && m[4] === '오후' && h < 12) h += 12; if (h != null && m[4] === '오전' && h === 12) h = 0; return `${m[1]}-${m[2]}-${m[3]}` + (h != null ? `T${String(h).padStart(2, '0')}:${m[6]}` : ''); }
+    m = s.match(/^(\d{2,4})\.\s*(\d{1,2})\.\s*(\d{1,2})/); if (m) { const y = m[1].length === 2 ? '20' + m[1] : m[1]; return `${y}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`; }
+    return null;
+  }
+  const numOrNull = (v) => { if (v == null || v === '') return null; if (typeof v === 'number') return v; const n = parseInt(String(v).replace(/[^\d-]/g, ''), 10); return Number.isFinite(n) ? n : null; };
+  const strOrNull = (v) => { if (v == null) return null; const s = String(v).replace(/\u00a0/g, ' ').trim(); return s ? s : null; };
+  const stripUsed = (t) => (t || '').replace(/^\s*\[중고[^\]]*\]\s*/, '').trim();
+  const normTitle = (t) => stripUsed(t).replace(/\s+/g, '').toLowerCase();
+  const zip5 = (v) => { const s = strOrNull(v); return s && /^\d{4,5}$/.test(s.replace(/\.0$/, '')) ? s.replace(/\.0$/, '').padStart(5, '0') : null; };
+  const phonesIn = (s) => (String(s || '').match(/0\d{1,2}-?\d{3,4}-?\d{4}/g) || []).map((x) => x.replace(/\D/g, '').replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, '$1-$2-$3'));
+  const platformOf = (ono, status) => (/^\d{3}-A\d+/.test(ono || '') ? 'aladin' : /^Y/i.test(ono || '') || /yes|예스/i.test(status || '') ? 'yes24' : /입금|직접|무통장/.test(status || '') ? 'direct' : ono ? 'unknown' : 'direct');
+
+  // 판매완료 엑셀: 행마다 열이 어긋났는지 내용으로 판별해 스스로 맞춘다.
+  //  앞 구간(수령인~수수료)은 날짜·금액 칸 위치로, 뒤 구간(우편번호~요청사항)은 우편번호·주소·전화 칸 위치로 각각 맞춤.
+  const isNumLike = (v) => typeof v === 'number' || /^[\d,]+$/.test(String(v ?? '').trim());
+  const isZipLike = (v) => /^\d{4,5}(\.0)?$/.test(String(v ?? '').trim());
+  const isAddrLike = (v) => /(시|도|구|군|로|길)\s/.test(String(v ?? ''));
+  const isPhoneLike = (v) => /0\d{1,2}-\d{3,4}-\d{4}|^--$|^0+-0+-0+$/.test(String(v ?? '').trim());
+  function bestOffset(r, scoreAt, min) { let best = null; for (let o = -2; o <= 3; o++) { const sc = scoreAt(o); if (!best || sc > best.sc) best = { o, sc }; } return best.sc >= min ? best.o : null; }
+  function parseSalesExcel(aoa) {
+    const out = []; const seen = new Set(); let dup = 0; let skipped = 0; let realigned = 0; let manualN = 0; const occ = {};
+    for (let i = 1; i < aoa.length; i++) {
+      const r0 = aoa[i]; if (!r0 || !r0.some((c) => c != null && c !== '')) continue;
+      const r = [...r0, null, null, null, null, null];
+      const o1 = bestOffset(r, (o) => (isDateLike(r[11 + o]) ? 2 : 0) + (isDateLike(r[12 + o]) ? 1 : 0) + (isNumLike(r[13 + o]) ? 1 : 0), 3);
+      const o2 = bestOffset(r, (o) => (isZipLike(r[21 + o]) ? 2 : 0) + (isAddrLike(r[22 + o]) ? 2 : 0) + (isPhoneLike(r[23 + o]) ? 1 : 0) + (isPhoneLike(r[24 + o]) ? 1 : 0), 3);
+      const manual = o1 == null;
+      if (manual && !strOrNull(r[3])) { skipped++; continue; } // 제목도 날짜도 없는 행만 버림
+      const a = o1 ?? o2 ?? 0; const b2 = o2 ?? a;
+      if (a !== 0 || b2 !== 0) realigned++; if (manual) manualN++;
+      const sig = JSON.stringify(r0); if (seen.has(sig)) { dup++; continue; } seen.add(sig);
+      const ono = strOrNull(r[1]); const status = strOrNull(r[0]);
+      const line = { orderNo: ono, platform: platformOf(ono, status), status, sku: strOrNull(r[2]), rawTitle: strOrNull(r[3]), title: stripUsed(r[3]),
+        aladinUsedCode: strOrNull(r[4]), isbnAlt: strOrNull(r[5]), isbn13: strOrNull(r[6]) ? String(r[6]).replace(/\.0$/, '') : null, publisher: strOrNull(r[7]),
+        qty: numOrNull(r[8]) || 1, buyerName: strOrNull(r[9]), recipientName: strOrNull(r[10 + a]), orderedAt: kDate(r[11 + a]), paidAt: kDate(r[12 + a]),
+        price: numOrNull(r[13 + a]), fee: numOrNull(r[15 + a]), memo: strOrNull(r[20 + b2]), zip: zip5(r[21 + b2]), address: strOrNull(r[22 + b2]),
+        phone1: P.normPhone(strOrNull(r[23 + b2]) || ''), phone2: P.normPhone(strOrNull(r[24 + b2]) || ''), shippingRequest: strOrNull(r[25 + b2]), note: strOrNull(r[28 + b2]),
+        alignment: { front: o1, back: o2 }, manual, excelRow: i + 1 };
+      if (manual) { line.price = line.price ?? numOrNull(r[2]) ?? numOrNull(r[13]); if (line.sku && /원$/.test(line.sku)) line.sku = null; }
+      if (line.recipientName && isDateLike(line.recipientName)) line.recipientName = null;
+      const odd = [r[18 + b2], r[19 + b2]].map(strOrNull).filter((x) => x && !/택배|^\d+$/.test(x)); if (odd.length) line.cellNotes = odd; // 택배사·송장 칸에 적힌 메모
+      const k = `${ono || 'noorder-' + line.orderedAt}|${line.isbn13 || line.title}|${line.price}`; occ[k] = (occ[k] || 0) + 1;
+      line._key = `${k}|${occ[k]}`; out.push(line);
+    }
+    return { lines: out, dup, skipped, realigned, manual: manualN };
+  }
+
+  // 구글 시트 (고객 쪽 세 시트만)
+  function parsePurchaseCell(v) { // "제목\n상, 12000원, 1개\n2026.01.08 10:51 등록\n9788988295205  (BLKCMN)"
+    const lines = String(v || '').split(/\n/).map((x) => x.trim()).filter(Boolean); const items = []; let cur = null;
+    for (const l of lines) {
+      let m;
+      if ((m = l.match(/^(최상|상|중|하)\s*,\s*([\d,]+)원\s*,\s*(\d+)개/))) { if (cur) Object.assign(cur, { condition: m[1], price: numOrNull(m[2]), qty: +m[3] }); }
+      else if ((m = l.match(/(\d{4}\.\d{2}\.\d{2}\s+\d{1,2}:\d{2})\s*등록/))) { if (cur) cur.registeredAt = kDate(m[1].replace(/\./g, '-').replace(/-(\d{2}\s)/, '-$1')); }
+      else if ((m = l.match(/^(\d{13})\s*\(([^)]+)\)/))) { if (cur) Object.assign(cur, { isbn13: m[1], sku: m[2].trim() }); }
+      else { cur = { title: stripUsed(l), rawTitle: l }; items.push(cur); }
+    }
+    return items;
+  }
+  function parseCustomerSheets(wbSheets) {
+    const rows = []; const found = [];
+    const S = (name, head) => { const k = Object.keys(wbSheets).find((n) => n.replace(/\s/g, '') === name.replace(/\s/g, '')); if (!k) return null; found.push(k);
+      const aoa = wbSheets[k]; const h = aoa.findIndex((r) => r && String(r[0] || '').trim() === head); return h >= 0 ? aoa.slice(h) : aoa; }; // 제목 행 위의 빈 행 건너뜀
+    const push = (type, sheet, i, rec, raw) => rows.push({ _key: `${type}_${hashStr(JSON.stringify(raw)).split(':')[0]}`, type, sheet, sheetRow: i + 1, ...rec, raw: raw.map((c) => (c instanceof Date ? kDate(c) : c)).filter((c, j, a) => j < 14) });
+    const c = S('고객 취소 목록', '주문일');
+    if (c) c.slice(1).forEach((r, i) => { if (!r || !r.some((x) => x != null && x !== '')) return;
+      const items = parsePurchaseCell(r[3]); if (items[0] && !items[0].isbn13 && r[2]) items[0].isbn13 = String(r[2]).replace(/\.0$/, '');
+      if (items[0] && items[0].price == null) items[0].price = numOrNull(r[4]); if (items[0] && !items[0].sku) items[0].sku = strOrNull(r[5]);
+      const addr = strOrNull(String(r[10] || '').replace(/\s*\n\s*/g, ' ')); const zm = addr && addr.match(/\((\d{5})\)/);
+      push('customerCancel', '고객 취소 목록', i + 1, { date: kDate(r[0]), paidAt: kDate(r[1]), items, buyerName: strOrNull(r[6]), recipientName: strOrNull(r[7]),
+        phones: phonesIn(r[8]), zip: zip5(r[9]) || (zm ? zm[1] : null), address: addr ? addr.replace(/\(\d{5}\)/, '').trim() : null, email: strOrNull(r[11]), note: strOrNull(r[12]) }, r); });
+    const b = S('블랙리스트', '차단 날짜');
+    if (b) b.slice(1).forEach((r, i) => { if (!r || !r.some((x) => x != null && x !== '')) return;
+      push('blacklist', '블랙리스트', i + 1, { date: kDate(r[0]), idMasked: strOrNull(r[1]), items: parsePurchaseCell(r[2]), total: numOrNull(r[3]), reason: strOrNull(r[4]),
+        name: strOrNull(r[5]), email: strOrNull(r[6]), phones: phonesIn(`${r[7] || ''} ${r[8] || ''}`), address: strOrNull(String(r[8] || '').replace(/\s*\n\s*/g, ' ')), extra: strOrNull(r[9]) }, r); });
+    const e = S('기타 고객', '관련 상품');
+    if (e) e.slice(1).forEach((r, i) => { if (!r || !r.some((x) => x != null && x !== '')) return;
+      const emails = String(`${r[6] || ''} ${r[3] || ''}`).match(/[\w.+-]+@[\w-]+\.[\w.]+/g) || [];
+      push('otherCustomer', '기타 고객', i + 1, { items: [{ title: stripUsed(r[0]), rawTitle: strOrNull(r[0]) }], date: kDate(r[1]), scope: strOrNull(r[2]), body: strOrNull(r[3]),
+        idMasked: strOrNull(r[4]), name: strOrNull(r[5]), email: emails[0] || strOrNull(r[6]) }, r); });
+    // 판매자 시트 3개 (전문셀러·개인셀러·허위 매물) → 판매자 기록
+    for (const [sheetName, grade] of [['전문셀러', 'pro'], ['개인셀러', 'personal'], ['허위 매물', 'fake']]) {
+      const k = Object.keys(wbSheets).find((n) => n.replace(/\s/g, '') === sheetName.replace(/\s/g, '')); if (!k) continue; found.push(k);
+      const aoa = wbSheets[k]; const h = aoa.findIndex((r) => r && String(r[0] || '').trim() === '이름'); const body = h >= 0 ? aoa.slice(h + 1) : aoa;
+      body.forEach((r, i) => {
+        if (!r || !strOrNull(r[0])) return;
+        const nm = String(r[0]).split(/\n/)[0].trim();
+        const n = (v) => (v == null || v === '' || v === '-' ? null : typeof v === 'number' ? v : Number.isFinite(parseFloat(String(v).replace(/,/g, ''))) ? parseFloat(String(v).replace(/,/g, '')) : strOrNull(v));
+        const pct = (v) => { const x = n(v); return typeof x === 'number' ? (x > 1 ? x / 100 : x) : null; };
+        const cats = [[2, 3], [4, 5], [6, 7], [8, 9]].map(([a, b]) => (strOrNull(r[a]) ? { name: String(r[a]).trim(), count: n(r[b]) } : null)).filter(Boolean);
+        const comp = strOrNull(r[25]); const parts = comp ? comp.split(/\s*,\s*/) : [];
+        rows.push({ _key: `seller_${hashStr(sheetName + '|' + nm).split(':')[0]}`, type: 'seller', sheet: k, sheetRow: (h >= 0 ? h + 2 : 1) + i, name: nm, grade,
+          stock: n(r[1]), topCategories: cats, freeShipping: n(r[10]), shippingFee: n(r[11]), expectDays: n(r[12]), actualDays: n(r[13]), lowPrice: n(r[14]),
+          rating6m: pct(r[15]), ratingAll: pct(r[16]), reviews6m: n(r[17]), reviewsAll: n(r[18]), neutral6m: n(r[19]), neutralAll: n(r[20]), bad6m: n(r[21]), badAll: n(r[22]),
+          outstockRate: pct(r[23]), notice: strOrNull(r[24]), company: parts[0] || null, owner: parts[1] || null, phone: strOrNull(r[26]), email: strOrNull(r[27]), bizNo: strOrNull(r[28]),
+          mailOrderNo: strOrNull(r[29]), address: strOrNull(r[30]), courier: strOrNull(r[31]), asPhone: strOrNull(r[32]), returnAddress: strOrNull(r[33]), returnGuide: strOrNull(r[34]), remark: strOrNull(r[36]) });
+      });
+    }
+    return { rows, found };
+  }
+
+
+  /* ── 고객 점수: 소매·전자상거래에서 널리 쓰는 RFM(최근성·빈도·금액) + 참여도·거래기간을 '가치 점수'로,
+   *    취소·반품·대행 의심·문의 부담·기록을 '주의 점수'로 계산. 기준을 바꾸면 SCORE_VER를 올림 ── */
+  const SCORE_VER = 2;
+  const SCORE_DEFAULTS = { vip: { minValue: 65, maxRisk: 25, minOrders: 3, excludeSellers: true }, caution: { minRisk: 35 } };
+  let SCORE_RULES = JSON.parse(JSON.stringify(SCORE_DEFAULTS));
+  async function loadScoringConfig() { try { const d = await fdb.collection('crm_system').doc('scoring').get(); if (d.exists) { const x = d.data(); SCORE_RULES = { vip: { ...SCORE_DEFAULTS.vip, ...(x.vip || {}) }, caution: { ...SCORE_DEFAULTS.caution, ...(x.caution || {}) } }; } } catch (e) {} }
+  let sellerLinkMap = new Map(); // customerId → [{name, grade}] (판매자 시트와 연결된 고객)
+  function scoreCustomer(c, todayIso) {
+    const today = todayIso ? new Date(todayIso) : new Date();
+    const days = (iso) => (iso ? Math.floor((today - new Date(String(iso).slice(0, 10))) / 864e5) : null);
+    const won = (n) => `${Math.round(n || 0).toLocaleString()}원`;
+    const V = []; const R = [];
+    const orders = c.saleOrderCount || 0; const amt = c.salesAmount || 0; const last = days(c.lastSaleAt || c.lastOrderAt);
+    // 가치 ① 최근성 (25)
+    let r = 0; if (orders) r = last <= 30 ? 25 : last <= 90 ? 20 : last <= 180 ? 14 : last <= 365 ? 8 : 3;
+    V.push({ k: 'recency', label: '최근성', pts: r, max: 25, text: orders ? `마지막 구매 ${last}일 전` : '구매 없음' });
+    // ② 빈도 (25)
+    const f = orders >= 10 ? 25 : orders >= 5 ? 20 : orders >= 3 ? 15 : orders === 2 ? 10 : orders === 1 ? 5 : 0;
+    V.push({ k: 'frequency', label: '구매 빈도', pts: f, max: 25, text: `구매 주문 ${orders}회` });
+    // ③ 금액 (30)
+    const m = amt >= 300000 ? 30 : amt >= 150000 ? 27 : amt >= 70000 ? 22 : amt >= 30000 ? 16 : amt >= 10000 ? 10 : amt > 0 ? 5 : 0;
+    V.push({ k: 'monetary', label: '누적 매출', pts: m, max: 30, text: `순매출 ${won(amt)}` });
+    // ④ 참여도: 구매확정·평가 비율 (10)
+    const rv = c.reviewCount || 0; const rr = orders ? rv / orders : 0;
+    const e = rr >= 0.5 ? 10 : rr >= 0.25 ? 7 : rv > 0 ? 4 : 0;
+    V.push({ k: 'engagement', label: '구매확정·평가', pts: e, max: 10, text: `평가 ${rv}건${orders ? ` (주문 대비 ${Math.round(rr * 100)}%)` : ''}` });
+    // ⑤ 거래 기간 (10): 재구매 고객만
+    const span = orders >= 2 && c.firstOrderAt && c.lastOrderAt ? Math.floor((new Date(String(c.lastOrderAt).slice(0, 10)) - new Date(String(c.firstOrderAt).slice(0, 10))) / 864e5 / 30) : 0;
+    const t = span >= 12 ? 10 : span >= 6 ? 7 : span >= 3 ? 4 : 0;
+    V.push({ k: 'tenure', label: '거래 기간', pts: t, max: 10, text: orders >= 2 ? `첫 주문부터 ${span}개월` : '재구매 없음' });
+    // 주의 ① 고객 취소율 (35): 판매 전 취소 + 고객 취소 (우리 품절 취소는 제외)
+    const cancels = (c.cancelOrderCount || 0); const crate = cancels / Math.max(1, orders + cancels);
+    // 한 번 취소는 흔한 일이라 가볍게, 반복될수록 무겁게
+    let cp = 0; if (cancels === 1) cp = 5; else if (cancels >= 2) cp = crate >= 0.5 ? (cancels >= 3 ? 35 : 25) : crate >= 0.3 ? 20 : crate >= 0.15 ? 12 : 6; if (cancels >= 5) cp = Math.max(cp, 25);
+    R.push({ k: 'cancel', label: '고객 취소', pts: cp, max: 35, text: `취소 ${cancels}건 (취소율 ${Math.round(crate * 100)}%)` });
+    // ② 반품 (25)
+    const rt = c.returnCount || 0; const rp = rt >= 2 ? 25 : rt === 1 ? 15 : 0;
+    R.push({ k: 'return', label: '반품', pts: rp, max: 25, text: `반품 ${rt}건` });
+    // ③ 대행·되팔이 의심 (20)
+    const oth = c.otherRecipientCount || 0; const ap = oth >= 30 ? 35 : oth >= 10 ? 25 : oth >= 3 ? 12 : 0;
+    R.push({ k: 'agent', label: '대행 의심', pts: ap, max: 35, text: `주문인과 다른 수령인 ${oth}명` });
+    // ④ 문의 부담 (10)
+    const q = c.qnaCount || 0; const qp = q >= 5 && q >= orders ? 10 : q >= 3 && orders === 0 ? 6 : 0;
+    R.push({ k: 'inquiry', label: '문의 부담', pts: qp, max: 10, text: `문의 ${q}건 / 구매 ${orders}회` });
+    // ⑤ 기록된 문제 (10): 구글 시트의 고객 취소·불만 기록
+    const cn = c.cancelNoteCount || 0; const np = cn >= 1 ? 10 : 0;
+    R.push({ k: 'record', label: '기록된 문제', pts: np, max: 10, text: `취소·불만 기록 ${cn}건` });
+    // ⑥ 판매자 연결 (30): 허위 매물 판매자와 연결되면 되팔이·대행 가능성이 매우 큼
+    const sl = (sellerLinkMap.get(c.customerId) || []).filter((x) => x.strong !== false); const hasFake = sl.some((x) => x.grade === 'fake'); // 이메일이 비슷하기만 한 약한 연결은 점수에 넣지 않음
+    const sp = hasFake ? 30 : sl.length ? 15 : 0;
+    R.push({ k: 'seller', label: '판매자 연결', pts: sp, max: 30, text: sl.length ? `판매자 ${sl.map((x) => x.name).slice(0, 3).join(', ')}${hasFake ? ' (허위 매물)' : ''}` : '연결 없음' });
+    const value = V.reduce((s, x) => s + x.pts, 0); const risk = Math.min(100, R.reduce((s, x) => s + x.pts, 0));
+    const top = (arr) => arr.filter((x) => x.pts > 0).sort((a, b) => b.pts - a.pts).slice(0, 3).map((x) => `${x.label}: ${x.text}`);
+    const vipOn = value >= SCORE_RULES.vip.minValue && risk < SCORE_RULES.vip.maxRisk && orders >= SCORE_RULES.vip.minOrders && !(SCORE_RULES.vip.excludeSellers && sl.length);
+    const cauOn = risk >= SCORE_RULES.caution.minRisk;
+    return {
+      scores: { value, risk, valueParts: V, riskParts: R, ver: SCORE_VER, day: today.toISOString().slice(0, 10) },
+      autoFlags: {
+        vip: { on: vipOn, reasons: vipOn ? [`가치 점수 ${value}점 (기준 ${SCORE_RULES.vip.minValue}점 이상), 주의 점수 ${risk}점`, ...top(V)] : [] },
+        caution: { on: cauOn, reasons: cauOn ? [`주의 점수 ${risk}점 (기준 ${SCORE_RULES.caution.minRisk}점 이상)`, ...top(R)] : [] },
+      },
+    };
+  }
+
+  /* ── 고객 요약 계산 (주문·기록 목록 → 고객 문서). 이 PC 데이터로도, Firebase에서 읽은 데이터로도 같은 함수를 씀 ── */
+  function aggregateCustomers(orders, inters) {
+    const agg = {};
+    const get = (cid, plat) => (agg[cid] = agg[cid] || { customerId: cid, platform: plat || null, platformCustomerKey: /^aladin_\d+$/.test(cid) ? cid.slice(7) : null,
+      names: [], emails: [], emailsMasked: [], phones: [], addresses: {}, otherRecipients: [], saleOrderCount: 0, saleItemQty: 0, salesAmount: 0, cancelOrderCount: 0, cancelledItemQty: 0, sellerCancelQty: 0, lastSaleAt: null, cancelNoteCount: 0,
+      returnCount: 0, firstOrderAt: null, lastOrderAt: null, orderIds: [], platforms: [], qnaCount: 0, reviewCount: 0, noteCount: 0, sheetFlags: null });
+    for (const order of orders) {
+      if (!order || !order.customerId) continue;
+      const c = get(order.customerId, order.platform); const buyer = order.buyer || {}; const rc = order.recipient;
+      c.platforms.push(order.platform); c.names.push(buyer.name); c.emails.push(buyer.email); c.emailsMasked.push(buyer.emailMasked); c.phones.push(buyer.phone1, buyer.phone2);
+      if (rc && (rc.sameAsBuyer || (rc.name && rc.name === buyer.name))) c.phones.push(rc.phone1, rc.phone2); // 수령인=주문인이면 주문인 연락처
+      if (rc && rc.address) {
+        const ak = `${rc.zip}|${rc.address}`; const a = c.addresses[ak] = c.addresses[ak] || { zip: rc.zip, address: rc.address, recipientNames: [], recipientPhones: [], useCount: 0, lastUsedAt: null };
+        a.recipientNames.push(rc.sameAsBuyer ? buyer.name : rc.name); a.recipientPhones.push(rc.phone1, rc.phone2);
+        a.useCount += 1; if (!a.lastUsedAt || (order.orderedAt || '') > a.lastUsedAt) a.lastUsedAt = order.orderedAt;
+      }
+      if (rc && rc.name && !rc.sameAsBuyer && rc.name !== buyer.name) c.otherRecipients.push(rc.name); // 주문인과 다른 수령인 (대행·업자 판별 단서)
+      c.orderIds.push(order._id || `${order.platform}_${order.orderNo}`);
+      const items = order.items || [];
+      if (order.kind === 'sale') {
+        c.saleOrderCount += 1;
+        const stp = shipTypeOf(order);
+        if (stp === 'free') c.freeShipCount = (c.freeShipCount || 0) + 1; else if (stp === 'paid' || stp === 'remote') { c.paidShipCount = (c.paidShipCount || 0) + 1; c.shipPaidTotal = (c.shipPaidTotal || 0) + (order.shippingFee || 0); }
+        items.forEach((it) => { if (it.lineStatus === 'normal') { c.saleItemQty += it.qty || 1; c.salesAmount += (it.price || 0) * (it.qty || 1); } else if (it.lineStatus === 'cancelledInOrder') c.sellerCancelQty += it.qty || 1; /* 우리 품절 취소: 고객 책임 아님 */ else if (/cancel/i.test(it.lineStatus || '')) c.cancelledItemQty += it.qty || 1; else if (it.lineStatus === 'returned') c.returnCount += 1; });
+        if (order.orderedAt && (!c.lastSaleAt || order.orderedAt > c.lastSaleAt)) c.lastSaleAt = order.orderedAt;
+      } else { c.cancelOrderCount += 1; c.cancelledItemQty += items.reduce((s, it) => s + (it.qty || 1), 0); }
+      if (order.orderedAt) { if (!c.firstOrderAt || order.orderedAt < c.firstOrderAt) c.firstOrderAt = order.orderedAt; if (!c.lastOrderAt || order.orderedAt > c.lastOrderAt) c.lastOrderAt = order.orderedAt; }
+    }
+    for (const it of inters) {
+      if (!it || !it.customerId) continue; const c = get(it.customerId, it.platform === 'gsheet' ? null : it.platform);
+      if (it.type === 'qna') c.qnaCount += 1; else if (it.type === 'review') c.reviewCount += 1;
+      if (it.platform === 'gsheet') { c.noteCount += 1; if (it.type === 'customerCancelNote') c.cancelNoteCount += 1; if (it.type === 'blacklistNote') c.sheetFlags = { ...(c.sheetFlags || {}), blacklist: { since: it.createdAt || null, reason: it.body || null, sheetRow: it.sheetRow || null } }; }
+    }
+    return Object.values(agg).map((c) => {
+      const phones = uniq(c.phones); const names = uniq(c.names); const other = uniq(c.otherRecipients); const oids = uniq(c.orderIds);
+      const base = { ...c, platforms: uniq(c.platforms), displayName: names[names.length - 1] || null, names, emails: uniq(c.emails), emailsMasked: uniq(c.emailsMasked), phones,
+        phoneKeys: phones.map((x) => x.replace(/\D/g, '')), addresses: Object.values(c.addresses).map((a) => ({ ...a, recipientNames: uniq(a.recipientNames), recipientPhones: uniq(a.recipientPhones) })),
+        otherRecipients: other, otherRecipientCount: other.length, orderIds: oids, orderCount: oids.length,
+        unresolvedKey: !/^aladin_\d+$/.test(c.customerId), sellerLinks: sellerLinkMap.get(c.customerId) || [] };
+      return { ...base, ...scoreCustomer(base) };
+    });
+  }
+  function setSellerLinks(sellers) { sellerLinkMap = new Map(); sellers.forEach((s) => (s.linkedCustomers || []).forEach((l) => { const a = sellerLinkMap.get(l.customerId) || []; a.push({ name: s.name, grade: s.ourGrade || s.grade || null, aladinGrade: s.aladinGrade || null, reasons: l.reasons, level: l.level || null, strong: l.level ? l.level === 'match' : (l.reasons || []).some((r) => r !== '비슷한 이메일') }); sellerLinkMap.set(l.customerId, a); })); }
+  async function loadSellerLinks() { try { const ss = await fdb.collection('sellers').get(); const arr = []; ss.forEach((d) => arr.push(d.data())); setSellerLinks(arr); } catch (e) {} }
+
+  // 이 PC에 주문 데이터가 적으면(다른 PC가 주로 수집한 경우) 고객 연결에 쓸 주문을 Firebase에서 내려받음
+  let serverOrdersCache = [];
+  async function pullServerOrdersIfNeeded() {
+    if (!fdb || !fbUser) return;
+    try {
+      const localN = new Set((await dbAll('orderLines')).map((l) => l.orderNo)).size;
+      let serverN; try { serverN = (await fdb.collection('crm_orders').count().get()).data().count; } catch (e) { serverN = null; }
+      if (serverN != null && serverN <= localN + 50) return;
+      setNow('고객 연결을 위해 Firebase의 주문을 내려받는 중'); const snap = await fdb.collection('crm_orders').get();
+      serverOrdersCache = []; snap.forEach((d) => serverOrdersCache.push({ _id: d.id, ...d.data() }));
+      log(`이 PC의 주문(${localN.toLocaleString()}건)이 Firebase보다 적어, Firebase 주문 ${serverOrdersCache.length.toLocaleString()}건을 함께 써서 고객을 연결합니다.`);
+    } catch (e) { log('Firebase 주문 내려받기 실패: ' + e.message, 'warn'); }
+  }
+  // 배송비 구분: 무료(우리 부담) / 유료(고객 부담) / 도서산간 / 모름(상세를 못 받은 주문)
+  function shipTypeOf(o) {
+    if (o.kind !== 'sale') return null; const f = o.shippingFee;
+    if (f == null) return 'unknown'; if (f === 0) return 'free';
+    if ((o.remoteFee && f >= o.remoteFee) || f >= 6000) return 'remote'; return 'paid';
+  }
+  // 수집 원본 + 엑셀 + 시트 → 올릴 문서들 (순수 계산, 저장소 읽기만)
+  async function buildDocs() {
+    const lines = await dbAll('orderLines'); const popups = new Map((await dbAll('popups')).map((p) => [p._key, p]));
+    const returns = await dbAll('returns'); const qna = await dbAll('qnaDetail'); const reviews = await dbAll('reviews');
+    const excel = await dbAll('excelLines'); const sheetRows = await dbAll('sheetRows'); const sellerRawAll = await dbAll('sellerRaw');
+    const byOrder = {}; lines.forEach((l) => { const k = `${l.kind}|${l.orderNo}`; (byOrder[k] = byOrder[k] || []).push(l); });
+    const saleOrders = new Set(lines.filter((l) => l.kind === 'sale').map((l) => l.orderNo));
+    const scmOrders = new Set(lines.map((l) => l.orderNo));
+    const exByOrder = {}; excel.forEach((x) => { if (x.orderNo) (exByOrder[x.orderNo] = exByOrder[x.orderNo] || []).push(x); });
+    const docs = []; const orderDocs = [];
+    const custIdOf = (p, ono) => (p && p.customerKey ? `aladin_${p.customerKey}` : `aladin_nokey_${ono}`);
+    const retByOrder = {}; returns.forEach((r) => (retByOrder[r.orderNo] = retByOrder[r.orderNo] || []).push(r));
+
+    // ① 샵매니저 주문 (+ 엑셀로 빈 개인정보 채움)
+    for (const [k, ls] of Object.entries(byOrder)) {
+      const [kind, ono] = k.split('|');
+      if (kind === 'cancel' && saleOrders.has(ono)) continue;
+      ls.sort((a, b) => (a.page - b.page) || (a.seq - b.seq));
+      const p = popups.get(ono) || null;
+      const m = p ? P.matchListToPopup(ls, p) : { lines: ls.map((r) => ({ row: r, item: null })) };
+      const cancelLines = kind === 'sale' ? (byOrder[`cancel|${ono}`] || []) : [];
+      const usedCancel = new Set(); const review = [];
+      const items = m.lines.map(({ row, item }, i) => {
+        const it = { lineNo: i + 1, title: row.title, rawTitle: item ? item.raw : row.rawTitle, condition: item ? item.condition : row.condition,
+          option: item ? item.option : null, qty: row.qty, price: row.price, isbn13: item ? item.isbn13 : null, isbnAlt: item ? item.isbnAlt : null,
+          sku: item ? item.sku : null, note: item ? item.note : null, popupCancelQty: item ? item.cancelQty || 0 : 0, listStatus: row.rowStatus, cancelQty: row.cancelQty, returnReason: row.returnReason,
+          lineStatus: kind === 'cancel' ? 'cancelled' : 'normal' };
+        if (kind === 'sale') {
+          if (row.rowStatus && row.rowStatus !== '정상') it.lineStatus = 'check';
+          if (row.cancelQty) it.lineStatus = row.cancelQty >= (row.qty || 1) ? 'cancelled' : 'partialCancelled';
+          const ci = cancelLines.findIndex((c, j) => !usedCancel.has(j) && c.rawTitle === row.rawTitle && c.price === row.price && c.qty === row.qty);
+          if (ci >= 0) { usedCancel.add(ci); it.lineStatus = 'cancelled'; it.cancelledAt = cancelLines[ci].cancelRequestedAt || null; }
+          const rt = (retByOrder[ono] || []).find((r) => r.title === row.title && (!r.sku || !it.sku || r.sku === it.sku));
+          if (rt) { it.returnClaimId = rt.claimId; it.itemId = rt.itemId; if (/완료/.test(rt.status || '')) it.lineStatus = 'returned'; else it.returnStatus = rt.status; }
+        }
+        return it;
+      });
+      cancelLines.forEach((c, j) => { if (!usedCancel.has(j)) review.push(`취소 목록의 '${c.title}' (${c.price}원 × ${c.qty})이 판매 줄과 정확히 맞지 않음`); });
+      if (p && m.countMismatch) review.push(`목록 ${ls.length}줄 / 상세 ${m.activeItemCount ?? p.items.length}개`);
+      if (p && m.leftoverItems && m.leftoverItems.length) m.leftoverItems.forEach((x) => items.push({ lineNo: items.length + 1, title: x.title, rawTitle: x.raw, condition: x.condition, option: x.option, qty: x.qty, cancelQty: x.cancelQty || 0, price: null, isbn13: x.isbn13, isbnAlt: x.isbnAlt, sku: x.sku, note: x.note,
+        lineStatus: x.cancelled ? 'cancelledInOrder' : 'check', fromPopupOnly: true }));
+      if (p && m.leftoverItems && m.leftoverItems.some((x) => !x.cancelled)) review.push('상세에만 있고 취소 표시도 없는 상품이 있음');
+      const first = ls[0];
+      const order = {
+        _id: `aladin_${ono}`, platform: 'aladin', orderNo: ono, kind: kind === 'sale' ? 'sale' : 'cancelledBeforeSale', customerId: custIdOf(p, ono),
+        orderedAt: first.orderedAt || (p && p.orderedDate) || null, paidAt: first.paidAt || null,
+        shippedAt: (p && p.shipped && p.shipped.date) || (first.shipped && first.shipped.date) || null,
+        shippedRaw: (first.shipped && first.shipped.raw) || (p && p.shipped && p.shipped.raw) || null,
+        cancelRequestedAt: kind === 'cancel' ? first.cancelRequestedAt || null : null,
+        stage: p ? p.stage : null, orderStatus: p ? p.orderStatus : null, invoiceNo: p ? p.invoiceNo : null,
+        totalAmount: p ? p.totalAmount : null, fee: p ? p.fee : null, shippingFee: p ? p.shippingFee : null, ...(p && p.freeRuleText ? { freeRuleText: p.freeRuleText } : {}), ...(p && p.remoteFee ? { remoteFee: p.remoteFee } : {}),
+        buyer: p && p.buyer ? { ...p.buyer, emailMasked: first.buyerEmailMasked || null } : { name: first.buyerName || null, email: null, emailMasked: first.buyerEmailMasked || null, phone1: null, phone2: null },
+        recipient: p && p.recipient ? p.recipient : (first.recipient && (first.recipient.address || first.recipient.phone2) ? { name: first.recipient.name, phone1: first.recipient.phone1, phone2: first.recipient.phone2, zip: first.recipient.zip, address: first.recipient.address } : null),
+        recipientSameAsBuyer: p ? p.recipientSameAsBuyer : null,
+        shippingRequest: (p && p.shippingRequest) || (first.recipient && first.recipient.shippingRequest) || null,
+        rowNotes: uniq(ls.map((l) => l.rowNote)),
+        items, reviewNeeded: review, piiSource: p && p.piiAvailable ? 'scm' : null,
+        piiCollectedAt: p ? p.piiCollectedAt || null : null, source: { scmCollectedAt: first.collectedAt, popupCollectedAt: p ? p.collectedAt : null },
+      };
+      // 작은 정보도 보관: 목록에 남은 수령인 이름('상동'이면 주문인과 같음)
+      if (!order.recipient && first.recipientLabel) {
+        if (first.recipientLabel === '상동') { order.recipient = { name: null, phone1: null, phone2: null, zip: null, address: null }; order.recipientSameAsBuyer = true; }
+        else order.recipient = { name: first.recipientLabel, phone1: null, phone2: null, zip: null, address: null };
+        if (order.recipientSameAsBuyer == null) order.recipientSameAsBuyer = first.recipientLabel === '상동' || first.recipientLabel === order.buyer.name;
+      }
+      // 엑셀 병합: 샵매니저가 지운 수령인 정보 채우기, 상품 보조 정보 붙이기
+      const ex = exByOrder[ono] || [];
+      if (ex.length) {
+        const x0 = ex[0];
+        if (!order.recipient || !order.recipient.address) {
+          order.recipient = { name: x0.recipientName, phone1: x0.phone1, phone2: x0.phone2, zip: x0.zip, address: x0.address };
+          order.recipientSameAsBuyer = !!(x0.recipientName && x0.recipientName === (order.buyer.name || x0.buyerName)); order.piiSource = 'excel';
+        }
+        if (!order.shippingRequest) order.shippingRequest = x0.shippingRequest;
+        if (!order.buyer.name) order.buyer.name = x0.buyerName;
+        const used = new Set();
+        order.items.forEach((it) => {
+          const j = ex.findIndex((x, n) => !used.has(n) && normTitle(x.title) === normTitle(it.title) && (x.price == null || it.price == null || x.price === it.price));
+          if (j < 0) return; used.add(j); const x = ex[j];
+          Object.assign(it, { publisher: x.publisher || null, aladinUsedCode: x.aladinUsedCode || null, isbn13: it.isbn13 || x.isbn13, isbnAlt: it.isbnAlt || x.isbnAlt, sku: it.sku || x.sku });
+          if (x.status && x.status !== '정상') it.excelNote = x.status;
+        });
+        ex.forEach((x, n) => { if (!used.has(n)) review.push(`엑셀에만 있는 상품: '${x.title}' ${x.price}원`); });
+        const notes = uniq(ex.flatMap((x) => [x.memo, x.note, ...(x.cellNotes || []), x.status && x.status !== '정상' ? x.status : null]));
+        if (notes.length) order.excelNotes = notes;
+        if (order.kind !== 'sale') review.push('엑셀에는 판매로 기록되어 있으나 샵매니저에서는 취소된 주문');
+        order.source.excel = true;
+      }
+      if (order.recipientSameAsBuyer && order.recipient) { // 주문인=수령인 → 주문인 하나로 통합 (연락처는 주문인 쪽으로)
+        if (!order.buyer.phone1 && !order.buyer.phone2) { order.buyer.phone1 = order.recipient.phone1; order.buyer.phone2 = order.recipient.phone2; }
+        order.recipient = { name: null, phone1: null, phone2: null, zip: order.recipient.zip, address: order.recipient.address, sameAsBuyer: true };
+      }
+      order.itemCount = order.items.length; // 배송비 구분은 배송비 값으로 계산 (따로 저장하지 않아 기존 주문을 다시 올리지 않음)
+      orderDocs.push({ order, pKey: p && p.customerKey ? p.customerKey : null });
+    }
+
+    // 전화번호 → 고객 (엑셀 전용 주문을 기존 고객에 연결하는 데 사용)
+    const phoneToCust = {};
+    const notePhones = (o) => { const r = o.recipient || {}; const same = r.sameAsBuyer || (r.name && r.name === o.buyer.name);
+      [o.buyer.phone1, o.buyer.phone2, same ? r.phone1 : null, same ? r.phone2 : null].filter(Boolean).forEach((ph) => { const k = ph.replace(/\D/g, ''); (phoneToCust[k] = phoneToCust[k] || new Set()).add(o.customerId); }); };
+    orderDocs.forEach(({ order }) => notePhones(order)); serverOrdersCache.forEach((o) => { if (o && o.buyer) notePhones(o); });
+
+    // ② 엑셀에만 있는 주문 (수집 기간 밖, 예스24, 직접 판매)
+    const exOnly = {}; excel.forEach((x) => { if (x.orderNo && scmOrders.has(x.orderNo)) return; const k = x.orderNo || `direct_${(x.orderedAt || '').slice(0, 16)}_${x.recipientName || x.buyerName || ''}`; (exOnly[k] = exOnly[k] || []).push(x); });
+    for (const [k, xs] of Object.entries(exOnly)) {
+      const x0 = xs[0]; const plat = x0.platform === 'unknown' ? 'aladin' : x0.platform;
+      const idBase = String(k).replace(/[\/\s]/g, '_');
+      const same = !!(x0.recipientName && x0.recipientName === x0.buyerName);
+      const phKeys = [x0.phone1, x0.phone2].filter(Boolean).map((p) => p.replace(/\D/g, ''));
+      const cands = [...new Set(phKeys.flatMap((p) => [...(phoneToCust[p] || [])]))];
+      const cid = same && cands.length === 1 ? cands[0] : phKeys.length && same ? `phone_${phKeys[phKeys.length - 1]}` : `excel_nokey_${hashStr(idBase).split(':')[0]}`;
+      const order = { _id: `${plat}_${idBase}`, platform: plat, orderNo: x0.orderNo, kind: 'sale', customerId: cid, orderedAt: x0.orderedAt, paidAt: x0.paidAt, shippedAt: null, shippedRaw: null,
+        stage: null, orderStatus: null, invoiceNo: null, totalAmount: xs.reduce((s, x) => s + (x.price || 0) * (x.qty || 1), 0), fee: xs.reduce((s, x) => s + (x.fee || 0), 0), shippingFee: null,
+        buyer: { name: x0.buyerName, email: null, emailMasked: null, phone1: null, phone2: null },
+        recipient: same ? { name: null, phone1: null, phone2: null, zip: x0.zip, address: x0.address, sameAsBuyer: true } : { name: x0.recipientName, phone1: x0.phone1, phone2: x0.phone2, zip: x0.zip, address: x0.address },
+        recipientSameAsBuyer: same, shippingRequest: x0.shippingRequest,
+        items: xs.map((x, i) => ({ lineNo: i + 1, title: x.title, rawTitle: x.rawTitle, condition: null, qty: x.qty, price: x.price, isbn13: x.isbn13, isbnAlt: x.isbnAlt, sku: x.sku, publisher: x.publisher, aladinUsedCode: x.aladinUsedCode,
+          lineStatus: 'normal', excelNote: x.status && x.status !== '정상' ? x.status : null })),
+        reviewNeeded: [...(plat === 'aladin' ? ['샵매니저 수집 기간 밖의 주문 (엑셀 기록만 있음)'] : []), ...(xs.some((x) => x.manual) ? ['날짜 없이 손으로 적은 엑셀 기록'] : [])], piiSource: 'excel',
+        excelNotes: uniq(xs.flatMap((x) => [x.memo, x.note, ...(x.cellNotes || []), x.status && x.status !== '정상' ? x.status : null])), source: { excel: true } };
+      if (same) order.buyer.phone1 = null;
+      order.itemCount = order.items.length;
+      if (same) { order.recipient.phone1 = null; }
+      // 수령인=주문인이면 연락처를 주문인 쪽으로
+      if (same) { order.buyer.phone1 = x0.phone1; order.buyer.phone2 = x0.phone2; }
+      orderDocs.push({ order, pKey: null });
+    }
+
+    for (const { order } of orderDocs) docs.push({ col: 'crm_orders', id: order._id, data: order });
+
+    // ③ 묻고 답하기·구매평·반품
+    const orderCust = {}; orderDocs.forEach(({ order }) => { if (order.orderNo) orderCust[order.orderNo] = order.customerId; });
+    const qListMap = new Map((await dbAll('qnaList')).map((r) => [r._key, r]));
+    // 답변여부: 샵매니저 묻고 답하기 목록의 행 5번째 칸(관리 버튼 앞)을 그대로 — 예: Yes, 취소된 질문
+    for (const q of qna) {
+      const cid = q.customerKey ? `aladin_${q.customerKey}` : null; const ql = qListMap.get(q._key) || {};
+      docs.push({ col: 'crm_interactions', id: `aladin_qna_${q._key}`, data: { type: 'qna', platform: 'aladin', questionId: q._key, customerId: cid, orderId: q.orderNo ? `aladin_${q.orderNo}` : null,
+        itemId: q.itemId, title: q.title, condition: q.condition, authorMasked: q.authorMasked, body: q.question, answer: q.answer, answerStatus: ql.answered ?? null, createdAt: q.createdDate, source: { scmCollectedAt: q.collectedAt } } });
+    }
+    for (const r of reviews) {
+      const cid = orderCust[r.orderNo] || null; const n = r._key.split('|').pop();
+      docs.push({ col: 'crm_interactions', id: `aladin_review_${r.orderNo}_${hashStr(r._key).split(':')[0]}_${n}`, data: { type: 'review', platform: 'aladin', customerId: cid, orderId: `aladin_${r.orderNo}`,
+        title: r.title, condition: r.condition, rating: r.rating, body: r.comment, authorMasked: r.authorMasked, createdAt: r.createdDate, source: { scmCollectedAt: r.collectedAt } } });
+    }
+    for (const r of returns) {
+      docs.push({ col: 'crm_orderEvents', id: `aladin_return_${r.claimId}`, data: { type: 'return', platform: 'aladin', orderId: `aladin_${r.orderNo}`, customerId: orderCust[r.orderNo] || null,
+        claimId: r.claimId, itemId: r.itemId, title: r.title, condition: r.condition, sku: r.sku, registeredAt: r.registeredAt, price: r.price, qty: r.qty, reason: r.reason, status: r.status, tab: r.tab,
+        requestedAt: r.requestedAt, approvedAt: r.approvedAt, completedAt: r.completedAt, history: r.history, firstSeenAt: r.firstSeenAt, lastSeenAt: r.lastSeenAt } });
+    }
+
+    // ④ 구글 시트 행 → 고객 연결 (확실한 것만 자동, 나머지는 '연결 대기')
+    const idx = { phone: {}, email: {}, local: {}, name: {}, isbn: {}, title: {} };
+    const addIdx = (m, k, cid) => { if (!k) return; (m[k] = m[k] || new Set()).add(cid); };
+    for (const order of [...orderDocs.map((x) => x.order), ...serverOrdersCache.filter((o) => o && o.buyer)]) {
+      const cid = order.customerId; const r = order.recipient || {};
+      [order.buyer.phone1, order.buyer.phone2, r.phone1, r.phone2].filter(Boolean).forEach((p) => addIdx(idx.phone, p.replace(/\D/g, ''), cid));
+      if (order.buyer.email) { addIdx(idx.email, order.buyer.email.toLowerCase(), cid); addIdx(idx.local, order.buyer.email.split('@')[0].toLowerCase(), cid); }
+      if (order.buyer.emailMasked) addIdx(idx.local, order.buyer.emailMasked.split('@')[0].toLowerCase(), cid);
+      [order.buyer.name, r.name].filter(Boolean).forEach((n) => addIdx(idx.name, n.replace(/\(.*\)/, '').trim(), cid));
+      order.items.forEach((it) => { addIdx(idx.isbn, it.isbn13, cid + '|' + (order.orderedAt || '')); addIdx(idx.title, normTitle(it.title), cid + '|' + (order.orderedAt || '')); });
+    }
+    const qnaByTitle = {}; qna.forEach((q) => { if (q.customerKey && q.title) (qnaByTitle[normTitle(q.title)] = qnaByTitle[normTitle(q.title)] || []).push(q); });
+    const pending = [];
+    // ── 판매자: 툴팁 데이터(판매자 번호 SC 기준) + 구글 시트(이름 기준, 우리 분류: 전문·개인·허위 매물)를 이름으로 합침
+    {
+      // 주소 비교: 띄어쓰기·기호를 뺀 전체가 같으면 '일치', 앞부분(시·구·도로명)만 같고 동·호수 등이 다르면 '일치 의심'
+      const normA = (a) => String(a || '').replace(/[\s,.()\-]/g, '').toLowerCase();
+      const addrFull = {}; const addrMap = {};
+      orderDocs.forEach(({ order }) => { const a = normA((order.recipient || {}).address); if (a.length > 12) { (addrFull[a] = addrFull[a] || new Set()).add(order.customerId); (addrMap[a.slice(0, 16)] = addrMap[a.slice(0, 16)] || new Set()).add(order.customerId); } });
+      const addrKeysByPrefix = {}; Object.keys(addrFull).forEach((a) => (addrKeysByPrefix[a.slice(0, 16)] = addrKeysByPrefix[a.slice(0, 16)] || []).push(a));
+      const linkOf = (f) => {
+        const links = new Map(); const addL = (cid, why, level) => { const v = links.get(cid) || { reasons: [], level: 'suspect' }; v.reasons.push(why); if (level === 'match') v.level = 'match'; links.set(cid, v); };
+        [f.phone, f.asPhone].filter(Boolean).forEach((ph) => { const k = String(ph).replace(/\D/g, ''); if (k.length >= 9) (idx.phone[k] || []).forEach((cid) => addL(cid, '전화번호 같음', 'match')); });
+        if (f.email) {
+          (idx.email[String(f.email).toLowerCase()] || []).forEach((cid) => addL(cid, '이메일 같음', 'match'));
+          const lp = String(f.email).split('@')[0].toLowerCase().replace(/\d+$/, '');
+          if (lp.length >= 5) (idx.localStem[lp] || []).forEach((cid) => { if (!links.has(cid) || links.get(cid).level !== 'match') addL(cid, '이메일 앞부분이 비슷함', 'suspect'); });
+        }
+        const ra = normA(f.returnAddress);
+        if (ra.length > 12) {
+          (addrKeysByPrefix[ra.slice(0, 16)] || []).forEach((a) => {
+            const exact = a === ra || (Math.min(a.length, ra.length) >= 25 && (a.startsWith(ra) || ra.startsWith(a)));
+            addrFull[a].forEach((cid) => addL(cid, exact ? '반품 주소 = 우리고객 배송지' : '반품 주소가 우리고객 배송지와 비슷함 (동·호수 등 다름)', exact ? 'match' : 'suspect'));
+          });
+        }
+        if (f.owner) (idx.name[f.owner] || []).forEach((cid) => { if (links.has(cid)) addL(cid, '대표자 이름 같음', links.get(cid).level); });
+        return [...links.entries()].map(([cid, v]) => ({ customerId: cid, reasons: uniq(v.reasons), level: v.level }));
+      };
+      idx.localStem = {}; Object.entries(idx.local).forEach(([k2, set]) => { const st = k2.replace(/[\d*.]+$/, ''); if (st.length >= 5) set.forEach((cid) => addIdx(idx.localStem, st, cid)); });
+      const normName = (n) => String(n || '').split(/\n/)[0].replace(/\s+/g, '').replace(/(전문셀러|파워셀러|골드셀러|실버셀러|새내기셀러)$/, '').toLowerCase();
+      const sheetS = sheetRows.filter((x) => x.type === 'seller'); const sheetByName = new Map(sheetS.map((x) => [normName(x.name), x])); const usedSheet = new Set();
+      for (const raw of sellerRawAll) {
+        const { lean, history } = tooltipSellerDocs(raw); const sh = sheetByName.get(normName(lean.name));
+        if (sh) usedSheet.add(sh._key);
+        const doc = { ...lean, ourGrade: sh ? sh.grade : null, sheet: sh ? { sheet: sh.sheet, sheetRow: sh.sheetRow, remark: sh.remark, rating6m: sh.rating6m, reviews6m: sh.reviews6m, bad6m: sh.bad6m, actualDays: sh.actualDays, lowPrice: sh.lowPrice, stock: sh.stock } : null };
+        doc.linkedCustomers = linkOf({ phone: doc.phone || (sh && sh.phone), asPhone: doc.asPhone || (sh && sh.asPhone), email: doc.email || (sh && sh.email), returnAddress: doc.returnAddress || (sh && sh.returnAddress), owner: doc.owner || (sh && sh.owner) });
+        docs.push({ col: 'sellers', id: `sc_${raw._sc}`, data: doc });
+        docs.push({ col: 'seller_history', id: `sc_${raw._sc}`, data: history });
+      }
+      for (const s of sheetS) {
+        if (usedSheet.has(s._key)) continue;
+        const { _key, importedAt, fileName, type, grade, ...rest } = s;
+        docs.push({ col: 'sellers', id: `sheet_${_key.replace(/^seller_/, '')}`, data: { ...rest, ourGrade: grade, source: 'gsheet', linkedCustomers: linkOf(s) } });
+      }
+    }
+    for (const s of sheetRows.filter((x) => x.type !== 'seller')) {
+      const score = {};
+
+ const why = {}; const add = (cid, n, w) => { score[cid] = (score[cid] || 0) + n; (why[cid] = why[cid] || []).push(w); };
+      const phones = s.phones || []; phones.forEach((p) => (idx.phone[p.replace(/\D/g, '')] || []).forEach((cid) => add(cid, 3, '전화')));
+      const em = (s.email || '').toLowerCase();
+      if (/@[\w-]+\./.test(em)) (idx.email[em] || []).forEach((cid) => add(cid, 3, '이메일'));
+      else if (em.includes('@')) { const lp = em.split('@')[0]; Object.entries(idx.local).forEach(([k, set]) => { if (lp.length >= 4 && (k.startsWith(lp) || lp.startsWith(k.replace(/\*+$/, '')))) set.forEach((cid) => add(cid, 2, '이메일 앞부분')); }); }
+      const nm = s.name || s.buyerName || s.recipientName; if (nm) (idx.name[nm] || []).forEach((cid) => add(cid, 1, '이름'));
+      (s.items || []).forEach((it) => {
+        const hits = [...(it.isbn13 ? idx.isbn[it.isbn13] || [] : []), ...(idx.title[normTitle(it.title)] || [])];
+        new Set(hits.map((h) => h.split('|')[0])).forEach((cid) => add(cid, 2, '구매 상품'));
+      });
+      if (s.idMasked && s.items && s.items[0]) (qnaByTitle[normTitle(s.items[0].title)] || []).forEach((q) => { if (q.authorMasked && s.idMasked.slice(0, 2) === q.authorMasked.slice(0, 2)) add(`aladin_${q.customerKey}`, 3, '문의 기록'); });
+      const ranked = Object.entries(score).sort((a, b) => b[1] - a[1]);
+      let status = 'none'; let cid = null;
+      if (ranked.length && ranked[0][1] >= 3 && (!ranked[1] || ranked[1][1] < ranked[0][1])) { status = 'matched'; cid = ranked[0][0]; }
+      else if (ranked.length) status = 'pending';
+      const cands = ranked.slice(0, 3).map(([c, sc]) => ({ customerId: c, score: sc, reasons: uniq(why[c]) }));
+      const type = { blacklist: 'blacklistNote', customerCancel: 'customerCancelNote', otherCustomer: 'adminNote' }[s.type];
+      docs.push({ col: 'crm_interactions', id: `gsheet_${s._key}`, data: { type, platform: 'gsheet', sheet: s.sheet, sheetRow: s.sheetRow, customerId: cid, matchStatus: status, matchReason: cid ? uniq(why[cid]) : null, candidates: cands,
+        createdAt: s.date, title: s.items && s.items[0] ? s.items[0].title : null, items: s.items, body: s.reason || s.body || s.note || null, scope: s.scope || null,
+        name: nm || null, email: s.email || null, phones, address: s.address || null, idMasked: s.idMasked || null, raw: s.raw } });
+      if (status === 'pending') pending.push(s._key);
+    }
+
+    const inters = docs.filter((d) => d.col === 'crm_interactions').map((d) => d.data);
+    if (docs.some((d) => d.col === 'sellers')) setSellerLinks(docs.filter((d) => d.col === 'sellers').map((d) => d.data));
+    for (const c of aggregateCustomers(orderDocs.map((x) => x.order), inters)) docs.push({ col: 'crm_customers', id: c.customerId, data: c });
+    buildDocs.lastPending = pending.length;
+    return docs.map((d) => ({ ...d, data: clean(d.data) }));
+  }
+
+  /* ── 엑셀·시트 파일 읽기 (브라우저 안에서만) ── */
+  async function readWorkbook(file) {
+    if (typeof XLSX === 'undefined') throw new Error('엑셀 읽기 도구(SheetJS)를 불러오지 못했습니다. 새로고침해 주세요.');
+    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+    const out = {}; wb.SheetNames.forEach((n) => { out[n] = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: null }); });
+    return out;
+  }
+  /* ── 판매자 툴팁 데이터(예전 Realtime Database 내보내기 JSON) → 통합 프로젝트의 판매자 기록 ── */
+  const numK = (v) => { if (v == null || v === '') return null; if (typeof v === 'number') return v; const n = parseFloat(String(v).replace(/[^\d.\-]/g, '')); return Number.isFinite(n) ? n : null; };
+  function tooltipSellerDocs(raw) {
+    const snaps = Object.values(raw.snapshots || {}).sort((a, b) => (a.fetchedAt || 0) - (b.fetchedAt || 0));
+    const last = snaps[snaps.length - 1] || {}; const lastWithRating = [...snaps].reverse().find((x) => x.rating) || {};
+    const lastCats = [...snaps].reverse().find((x) => x.domesticCategories) || {};
+    const quick = Object.values(raw.quickUpdates || {}).sort((a, b) => (a.fetchedAt || 0) - (b.fetchedAt || 0));
+    const lq = quick[quick.length - 1] || null; const co = raw.company || {};
+    const nameParts = String(co.name || '').split(/\s*,\s*/);
+    const pct = (v) => { const n = numK(v); return n == null ? null : n > 1 ? n / 100 : n; };
+    const lean = {
+      sc: raw._sc, name: last.sellerName || null, aladinGrade: last.sellerGrade || null, logo: last.logo || null,
+      totalItems: numK(last.totalItems), domesticBooks: numK(last.domesticBookCount), foreignBooks: numK(last.foreignBookCount), music: numK(last.musicCount), video: numK(last.videoCount),
+      rating: pct(lq && lq.rowRating ? lq.rowRating : lastWithRating.rating), reviewCount: numK(lastWithRating.reviewCount), totalReviewCount: numK(last.totalReviewCount),
+      outstockRate: numK(lastWithRating.outstockRate ?? last.outstockRate), shippingDays: numK(last.shippingDays), freeShipping: numK(last.freeShipping),
+      shippingFee: lq && lq.rowShippingFee != null ? lq.rowShippingFee : numK(last.shippingFee), notices: (last.notices || []).filter((x) => x && x !== '공지 없음').slice(0, 3),
+      categories: (lastCats.domesticCategories || []).map((c) => ({ name: c.name, count: numK(c.count) })).filter((c) => c.count).sort((a, b) => b.count - a.count).slice(0, 8),
+      company: nameParts[0] || null, owner: nameParts[1] || null, phone: co.phone || null, asPhone: co.asPhone || null, email: co.email || null, bizNo: co.bizRegNo || null,
+      mailOrderNo: co.mailOrderNo || null, address: co.address || null, courier: co.courier || null, returnAddress: co.returnAddress || null, notice: co.noticeIntro || null,
+      firstReviewDate: co.firstReviewDate || null, snapshotCount: snaps.length, quickCount: quick.length,
+      lastFetchedAt: Math.max(last.fetchedAt || 0, lq ? lq.fetchedAt || 0 : 0) || null, source: 'tooltip',
+    };
+    const history = {
+      sc: raw._sc,
+      snapshots: snaps.map((x) => ({ t: x.fetchedAt || null, items: numK(x.totalItems), rating: pct(x.rating), reviews: numK(x.reviewCount), total: numK(x.totalReviewCount), outstock: numK(x.outstockRate), fee: numK(x.shippingFee), free: numK(x.freeShipping), grade: x.sellerGrade || null })),
+      quick: quick.slice(-400).map((x) => ({ t: x.fetchedAt || null, rating: pct(x.rowRating), fee: x.rowShippingFee ?? null })),
+    };
+    return { lean, history };
+  }
+  async function importSellerJson(data, file) {
+    const sellers = data.sellers || {}; const now2 = now();
+    const rows = Object.entries(sellers).map(([sc, v]) => ({ _key: sc, _sc: sc, ...v, importedAt: now2, fileName: file.name }));
+    await dbPut('sellerRaw', rows);
+    const summary = `판매자 ${rows.length.toLocaleString()}곳 (스냅샷·평점 기록 포함)`;
+    await dbPut('meta', { _key: 'import_sellerjson', fileName: file.name, at: now2, summary });
+    log(`판매자 툴팁 데이터: ${summary}`, 'ok'); return summary;
+  }
+
+  // 파일 종류를 내용으로 알아봄: 판매완료 엑셀(두 번째 열 '주문번호') / 고객 구글 시트(고객 시트 이름)
+  function detectKind(sheets) {
+    const names = Object.keys(sheets).map((n) => n.replace(/\s/g, ''));
+    if (names.some((n) => ['고객취소목록', '블랙리스트', '기타고객'].includes(n))) return 'sheet';
+    const first = sheets[Object.keys(sheets)[0]] || [];
+    if (first[0] && String(first[0][1] || '').trim() === '주문번호') return 'sales';
+    return null;
+  }
+  async function importSalesSheets(sheets, file) {
+    const first = sheets[Object.keys(sheets)[0]];
+    const { lines, dup, skipped, realigned, manual } = parseSalesExcel(first);
+    const now2 = now(); await dbPut('excelLines', lines.map((l) => ({ ...l, importedAt: now2, fileName: file.name })));
+    const inScm = new Set((await dbAll('orderLines')).map((l) => l.orderNo)); const orders = new Set(lines.map((l) => l.orderNo || 'x'));
+    const only = [...orders].filter((o) => !inScm.has(o)).length;
+    const summary = `${lines.length.toLocaleString()}줄 정리 (어긋난 ${realigned.toLocaleString()}줄 자동 맞춤, 수기 기록 ${manual}줄 보관, 중복 ${dup}줄 제외). 샵매니저에 없던 주문 ${only}건 추가`;
+    await dbPut('meta', { _key: 'import_sales', fileName: file.name, at: now2, summary });
+    log(`판매완료 엑셀: ${summary}`, 'ok'); return summary;
+  }
+  async function importSheetSheets(sheets, file) {
+    const { rows } = parseCustomerSheets(sheets);
+    const now2 = now(); await dbPut('sheetRows', rows.map((r) => ({ ...r, importedAt: now2, fileName: file.name })));
+    const by = {}; rows.forEach((r) => (by[r.sheet] = (by[r.sheet] || 0) + 1));
+    const docs = await buildDocs(); const cnt = { matched: 0, pending: 0, none: 0 }; docs.filter((d) => d.data.platform === 'gsheet').forEach((d) => cnt[d.data.matchStatus]++);
+    const summary = `${Object.entries(by).map(([k, v]) => `${k} ${v}행`).join(', ')}. 고객 자동 연결 ${cnt.matched}건, 연결 대기 ${cnt.pending}건, 후보 없음 ${cnt.none}건`;
+    await dbPut('meta', { _key: 'import_sheet', fileName: file.name, at: now2, summary, pending: cnt.pending + cnt.none });
+    log(`고객 구글 시트: ${summary}`, cnt.pending + cnt.none ? 'warn' : 'ok'); return summary;
+  }
+  // 파일 넣기 → ① 읽기 → ② 이 PC에 정리 → ③ Firebase에 올리기 (로그인되어 있으면 자동)
+  let impBusy = false;
+  function setStep(n, state, text) { const li = $(`.isteps li[data-n="${n}"]`); li.className = state; if (text != null) li.querySelector('small').textContent = text; }
+  async function handleImportFiles(files) {
+    if (impBusy || running) { alert('다른 작업이 진행 중입니다. 끝난 뒤 다시 넣어 주세요.'); return; }
+    files = [...files].filter((f) => /\.(xlsx?|json)$/i.test(f.name));
+    if (!files.length) { alert('.xlsx 엑셀 파일이나 판매자 툴팁 .json 파일만 넣을 수 있습니다.'); return; }
+    impBusy = true; $('.isteps').classList.add('on'); [1, 2, 3].forEach((n) => setStep(n, 'wait', ''));
+    let ok = 0;
+    try {
+      setStep(1, 'doing', files.map((f) => f.name).join(', '));
+      const loaded = [];
+      for (const f of files) {
+        if (/\.json$/i.test(f.name)) { let j = null; try { j = JSON.parse(await f.text()); } catch (e) {} loaded.push({ f, json: j, kind: j && j.sellers && typeof j.sellers === 'object' ? 'sellerjson' : null }); continue; }
+        const sh = await readWorkbook(f); loaded.push({ f, sh, kind: detectKind(sh) });
+      }
+      const allBad = loaded.every((x) => !x.kind);
+      setStep(1, allBad ? 'error' : 'done', loaded.map((x) => `${x.f.name}: ${x.kind === 'sales' ? '판매완료 엑셀' : x.kind === 'sheet' ? '고객·판매자 구글 시트' : x.kind === 'sellerjson' ? '판매자 툴팁 데이터' : '알 수 없는 파일이라 건너뜀'}`).join(' / '));
+      if (allBad) return;
+      setStep(2, 'doing', '정리하는 중'); await pullServerOrdersIfNeeded();
+      const out = [];
+      for (const x of loaded) { if (x.kind === 'sales') { out.push('판매완료 엑셀: ' + await importSalesSheets(x.sh, x.f)); ok++; } if (x.kind === 'sheet') { out.push('고객 구글 시트: ' + await importSheetSheets(x.sh, x.f)); ok++; } if (x.kind === 'sellerjson') { out.push('판매자 툴팁: ' + await importSellerJson(x.json, x.f)); ok++; } }
+      setStep(2, 'done', out.join(' / '));
+      await refreshStats(true); await renderImportStatus();
+    } catch (e) { log('가져오기 실패: ' + e.message, 'err'); setStep(2, 'error', e.message); return; }
+    finally { impBusy = false; render(); }
+    if (!ok) return;
+    if (fbUser && settings.autoUpload) {
+      setStep(3, 'doing', 'Firebase에 올리는 중');
+      const t0 = Date.now(); await start('upload');
+      const lu = await dbGet('meta', 'lastUpload'); const fine = lu && Date.parse(lu.at) >= t0 - 1000;
+      setStep(3, fine ? 'done' : 'error', fine ? `올리기 완료 (${lu.count.toLocaleString()}개). 모든 과정이 끝났습니다.` : '올리기가 중간에 멈췄습니다. 이미 올라간 것은 그대로 있고, 이어하기를 누르면 남은 것부터 올립니다.');
+    } else setStep(3, 'need', fbUser ? "자동 올리기가 꺼져 있습니다. 위의 'Firebase로 올리기'를 눌러 주세요." : "구글 로그인 후 위의 'Firebase로 올리기'를 눌러야 반영됩니다.");
+  }
+  async function renderImportStatus() {
+    const fmt = (m) => (m ? `${m.fileName} (${new Date(m.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })})<br>${m.summary}` : '아직 가져오지 않음');
+    $('.ist-sales').innerHTML = fmt(await dbGet('meta', 'import_sales'));
+    $('.ist-sheet').innerHTML = fmt(await dbGet('meta', 'import_sheet'));
+    $('.ist-sjson').innerHTML = fmt(await dbGet('meta', 'import_sellerjson'));
+  }
+
+
+
+  /* ── Firebase 무료 한도: 하루 쓰기 2만 건, 미국 서부 자정(한국 오후 4시, 서머타임이 끝나면 오후 5시)에 초기화 ── */
+  const FREE_WRITES = 20000; const WRITE_MARGIN = 500;
+  // 유료(Blaze): 무료 한도를 넘어도 계속 쓰되, 코드 실수로 무한히 쓰는 사고를 막는 '하루 안전 상한'에서 멈춤
+  // 무료 크레딧 기간(기본 2026-12-29까지)에는 상한 없이 쓰고, 그 뒤부터 하루 안전 상한 적용
+  const noCapNow = () => settings.billing === 'paid' && settings.noCapUntil && todayKst() <= settings.noCapUntil;
+  const writeCap = () => (settings.billing === 'paid' ? (noCapNow() ? Infinity : Math.max(1000, settings.dailyWriteCap || 200000)) : FREE_WRITES - WRITE_MARGIN);
+  function quotaDay() { return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' }); } // 한도 기준 날짜
+  function nextResetAt() {
+    const la = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+    const mid = new Date(la); mid.setHours(24, 0, 0, 0); return new Date(Date.now() + (mid - la));
+  }
+  function resetText() {
+    const t = nextResetAt(); const mins = Math.max(0, Math.round((t - Date.now()) / 60000));
+    const hm = t.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit' });
+    return `${t.getDate() === new Date().getDate() ? '오늘' : '내일'} ${hm} (${Math.floor(mins / 60)}시간 ${mins % 60}분 뒤)`;
+  }
+  async function writesToday() { const m = await dbGet('meta', 'writes'); const local = m && m.day === quotaDay() ? m.count : 0; return Math.max(local, sharedUsage && sharedUsage.day === quotaDay() ? sharedUsage.writes : 0); }
+  async function addWrites(n) { const day = quotaDay(); const m = await dbGet('meta', 'writes'); const same = m && m.day === day; await dbPut('meta', { _key: 'writes', day, count: (same ? m.count : 0) + n, hitLimit: same ? !!m.hitLimit : false, hitAt: same ? m.hitAt || null : null }); }
+  async function markLimitHit() { const day = quotaDay(); const m = await dbGet('meta', 'writes'); const same = m && m.day === day; await dbPut('meta', { _key: 'writes', day, count: same ? m.count : 0, hitLimit: true, hitAt: now() }); }
+  async function limitHitToday() { const m = await dbGet('meta', 'writes'); return !!(m && m.day === quotaDay() && m.hitLimit) || !!(sharedUsage && sharedUsage.day === quotaDay() && sharedUsage.hitLimit); }
+  // commit이 멈춘 채 대답이 없으면(한도 초과 시 Firebase가 조용히 재시도함) 일정 시간 뒤 일시정지. 일시정지 버튼도 즉시 반영.
+  async function commitWatched(b, limitSec) {
+    let settled = false; let err = null; const pr = b.commit().then(() => { settled = true; }, (e) => { settled = true; err = e; });
+    const t0 = Date.now();
+    while (!settled) {
+      await Promise.race([pr, sleep(1000)]);
+      if (settled) break;
+      if (pauseRequested) throw new StopSignal('PAUSED', '일시정지했습니다. 이어하기를 누르면 남은 것부터 올립니다.');
+      const sec = Math.round((Date.now() - t0) / 1000);
+      if (sec > 5) setNow(`Firebase 응답 기다리는 중 (${sec}초). 한도 초과나 연결 문제일 수 있습니다.`);
+      if (sec >= limitSec) { await markLimitHit(); throw new StopSignal('FBSTALL', `Firebase가 ${limitSec}초 넘게 응답하지 않아 멈췄습니다. 가장 흔한 원인은 오늘 무료 쓰기 한도(2만 건) 초과입니다. 한도 초기화: ${resetText()}. 그 뒤 이어하기를 누르면 남은 것부터 올립니다. 인터넷 연결 문제라면 연결 확인 후 바로 이어하기를 누르세요.`); }
+    }
+    if (err) throw err;
+  }
+
+  /* ════════ 여러 PC에서 안전하게 쓰기 위한 장치 ════════
+   * ① 작업 잠금: 한 번에 한 PC만 수집·올리기 (1분마다 신호, 5분 끊기면 자동 해제)
+   * ② 오늘 사용량·한도 도달을 Firebase에 공유 (모든 PC가 같은 숫자를 봄)
+   * ③ 수집 완료 기록 공유 (어느 PC든 이어서 갱신 수집)
+   * ④ 올릴 때 Firebase의 기존 내용과 합침: 빈 값·일부만 가진 데이터로 기존 정보를 지우지 않음
+   * ⑤ 고객 요약은 Firebase의 전체 주문으로 다시 계산 (PC마다 가진 데이터가 달라도 정확)
+   */
+  const WRITER_SCHEMA = 6; // Firestore 규칙이 이 값 이상만 쓰기를 허용 → 옛 버전 스크립트가 데이터를 덮어쓰는 것을 서버에서 차단
+  const PC = (() => { let v = GM_getValue('rn-pc', null); if (!v) { v = { id: Math.random().toString(36).slice(2, 10), name: '' }; GM_setValue('rn-pc', v); } const n = window.__rnPcName && window.__rnPcName.get(); if (n && v.name !== n) { v.name = n; GM_setValue('rn-pc', v); } return v; })();
+  let autoTriggered = false;
+  const SYS = () => fdb.collection('crm_system');
+  const WEB_OWNED = ['flags', 'memo', 'tags', 'manual', 'confirmed', 'confirmedBy', 'confirmedAt', 'vip', 'blacklist']; // 웹앱이 관리하는 칸: 업로더가 절대 덮지 않음
+  let lockBeat = null; let lockHeld = false;
+  async function acquireLock(task) {
+    if (!FB || !fdb) throw new Error('Firebase 파일을 불러오지 못했습니다. 새로고침해 주세요.');
+    if (!fbUser) throw new StopSignal('FBLOGIN', '여러 PC가 동시에 작업하지 않도록, 수집·올리기 전에 Firebase 로그인이 필요합니다. "구글 로그인"을 눌러 주세요.');
+    if (!PC.name) { const n = (window.__rnPcName && (window.__rnPcName.get() || (autoTriggered ? null : window.__rnPcName.ask('여러 PC 중 어느 PC가 작업 중인지 표시할 때 씁니다.')))); if (!n) throw new StopSignal('PCNAME', '이 PC 이름을 정해야 시작할 수 있습니다 (패널 설정에서 정하기).'); PC.name = n; GM_setValue('rn-pc', PC); }
+    const ref = SYS().doc(GM_getValue('rnu-lockdoc', 'work_lock'));
+    // 고객 수집이 먼저: 상품 수집기(평가 수집 등 몇 시간 걸리는 작업)가 잡고 있으면 양보를 요청하고, 멈추는 대로 자동 시작 (최대 6분 기다림)
+    const deadline = Date.now() + 90 * 1000; let asked = false; let force = false; // 90초 안에 양보가 없으면(예전 버전 상품 수집기) 함께 돌도록 잠금을 넘겨받음
+    for (;;) {
+      try {
+        await fdb.runTransaction(async (tx) => {
+          const s = await tx.get(ref); const d = s.exists ? s.data() : null;
+          if (!force && d && d.holder && d.holder !== PC.id && d.heartbeatMs && Date.now() - d.heartbeatMs < 5 * 60000) {
+            const e = new StopSignal('LOCKED', `다른 PC(${d.pcName})에서 '${d.taskLabel}' 작업 중입니다 (마지막 신호 ${Math.max(0, Math.round((Date.now() - d.heartbeatMs) / 60000))}분 전). 그 PC 작업이 끝나면 다시 눌러 주세요. 그 PC가 꺼졌다면 5분 뒤 자동으로 풀립니다.`); e.info = d; throw e;
+          }
+          tx.set(ref, { writerSchema: WRITER_SCHEMA, holder: PC.id, pcName: PC.name, task, taskLabel: task === 'bulk' ? '전체 일괄 수집' : (TASKS[task] ? TASKS[task].label : task), startedAt: now(), heartbeatMs: Date.now(), by: fbUser.email });
+        });
+        if (asked) log('상품 수집기가 양보했습니다. 고객 수집을 시작합니다', 'ok');
+        break;
+      } catch (e) {
+        const prod = e && e.code === 'LOCKED' && e.info && String(e.info.task || '').startsWith('product_');
+        if (!prod) throw e;
+        if (Date.now() > deadline) { force = true; log(`${e.info.pcName}의 상품 수집기가 응답하지 않습니다 (예전 버전). 고객 수집을 먼저 해야 하므로 지금 함께 시작합니다 — 잠시 두 PC가 동시에 알라딘에 접속합니다`, 'err'); continue; }
+        if (!asked) { asked = true; await ref.set({ yieldReq: { pc: PC.id, pcName: PC.name, tool: '고객 수집기', task, at: Date.now() } }, { merge: true }).catch(() => {});
+          log(`${e.info.pcName}의 상품 수집기('${e.info.taskLabel}')에 양보를 요청했습니다. 그쪽이 진행 위치를 저장하고 멈추면 자동으로 시작합니다 (보통 1분 안)`); }
+        else await ref.set({ yieldReq: { pc: PC.id, pcName: PC.name, tool: '고객 수집기', task, at: Date.now() } }, { merge: true }).catch(() => {});
+        await sleep(8000);
+      }
+    }
+    lockHeld = true; clearInterval(lockBeat);
+    lockBeat = setInterval(() => { if (lockHeld) ref.set({ heartbeatMs: Date.now(), writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {}); }, 60000);
+  }
+  async function releaseLock() {
+    clearInterval(lockBeat); if (!lockHeld || !fdb) return; lockHeld = false;
+    const ref = SYS().doc(GM_getValue('rnu-lockdoc', 'work_lock'));
+    try { await fdb.runTransaction(async (tx) => { const s = await tx.get(ref); if (s.exists && s.data().holder === PC.id) tx.delete(ref); }); } catch (e) {}
+  }
+  let lockInfo = null; let lockUnsub = null;
+  function watchLock() { if (!fdb || lockUnsub) return; lockUnsub = SYS().doc(GM_getValue('rnu-lockdoc', 'work_lock')).onSnapshot((s) => { lockInfo = s.exists ? s.data() : null; render(); }, () => {}); }
+  // ② 공유 사용량
+  let sharedUsage = { day: null, writes: 0, hitLimit: false }; let usageUnsub = null;
+  function watchUsage() {
+    if (!fdb || !fbUser) return; const day = quotaDay(); if (sharedUsage.day === day && usageUnsub) return;
+    if (usageUnsub) usageUnsub(); sharedUsage = { day, writes: 0, hitLimit: false };
+    usageUnsub = SYS().doc(`usage_${day}`).onSnapshot((s) => { const d = s.exists ? s.data() : {}; sharedUsage = { day, writes: d.writes || 0, hitLimit: !!d.hitLimit, hitBy: d.hitBy || null }; render(); }, () => {});
+  }
+  function shareWrites(n) { if (fdb) SYS().doc(`usage_${quotaDay()}`).set({ writes: FB.firestore.FieldValue.increment(n + 1), day: quotaDay(), writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {}); }
+  function shareLimitHit() { if (fdb) SYS().doc(`usage_${quotaDay()}`).set({ hitLimit: true, hitAt: now(), hitBy: PC.name || '', writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {}); }
+  // ③ 수집 완료 기록 공유
+  async function syncRemoteJob(job) {
+    if (!fdb || !fbUser || job.fullDoneAt) return;
+    try { const s = await SYS().doc('jobs').get(); const r = s.exists ? (s.data()[job._key] || null) : null; if (r && r.fullDoneAt) { job.fullDoneAt = r.fullDoneAt; job.fullDoneBy = r.pcName; } } catch (e) {}
+  }
+  function shareJobDone(job) { if (fdb && fbUser) SYS().doc('jobs').set({ writerSchema: WRITER_SCHEMA, [job._key]: { fullDoneAt: job.fullDoneAt || null, lastDoneAt: now(), pcName: PC.name || '', mode: job.mode || null } }, { merge: true }).catch(() => {}); }
+  // ④ 기존 내용과 합치기: 새 값이 비어 있으면 기존 값 유지, 상품 줄은 줄 번호별로 합침, 이름·전화 같은 목록은 합집합
+  function mergeVal(o, n) {
+    if (n === null || n === undefined || n === '') return o === undefined ? n : o;
+    if (Array.isArray(n)) {
+      if (!Array.isArray(o) || !o.length) return n;
+      if (n.length && n[0] && typeof n[0] === 'object' && 'lineNo' in n[0]) {
+        const ob = new Map(o.map((x) => [x && x.lineNo, x])); const out = n.map((x) => mergeVal(ob.get(x.lineNo), x));
+        o.forEach((x) => { if (x && !n.some((y) => y.lineNo === x.lineNo)) out.push(x); }); return out;
+      }
+      if (n.every((x) => x === null || typeof x !== 'object') && o.every((x) => x === null || typeof x !== 'object')) return [...new Set([...o, ...n].filter((x) => x !== null && x !== ''))];
+      return n.length ? n : o;
+    }
+    if (typeof n === 'object') {
+      if (!o || typeof o !== 'object' || Array.isArray(o) || typeof o.toMillis === 'function') return n;
+      const r = { ...o }; for (const k of Object.keys(n)) r[k] = mergeVal(o[k], n[k]); return r;
+    }
+    return n;
+  }
+  const stripMeta = (d) => { const x = { ...d }; delete x.uploadedAt; delete x.uploaderVersion; delete x.lastWrittenBy; delete x.writerSchema; WEB_OWNED.forEach((k) => delete x[k]); return x; };
+  /* (1.57.2) 주문·문의 옛 값 보관 — 이미 있는 문서의 수집 칸이 바뀌면 바뀌기 전 값(바뀐 칸만, 문서 전체는 full)을 crm_hist/{칸}_{번호}_{시각}에 먼저 남김 (덮어써도 옛 상태·금액·송장·답이 사라지지 않게) */
+  const crmHistOf = (col, id, old, neu) => { const o = stripMeta(old || {}); const keys = [...new Set([...Object.keys(o), ...Object.keys(neu || {})])].filter((k) => !['source', 'piiCollectedAt', 'collectedAt', 'uploadedAt'].includes(k) && k in (neu || {}) && JSON.stringify(o[k] ?? null) !== JSON.stringify(neu[k] ?? null) && o[k] != null);
+    if (!keys.length) return null; const prev = {}; keys.forEach((k) => { prev[k] = o[k]; }); const at = new Date().toISOString(); return { ref: fdb.collection('crm_hist').doc(`${col}_${id}_${at.replace(/[^0-9]/g, '').slice(0, 17)}`), data: { col, docId: id, at, keys, prev, by: PC.name || '' } }; };
+  async function crmHistCommit(H) { for (let i = 0; i < H.length; i += 400) { const b = fdb.batch(); H.slice(i, i + 400).forEach((h) => b.set(h.ref, h.data)); await commitWithRetry(b, Math.min(400, H.length - i)); } }
+  async function readExisting(col, ids) {
+    const out = new Map(); const FP = FB.firestore.FieldPath.documentId();
+    for (let i = 0; i < ids.length; i += 30) {
+      const part = ids.slice(i, i + 30);
+      const snap = await fdb.collection(col).where(FP, 'in', part).get();
+      snap.forEach((d) => out.set(d.id, d.data()));
+    }
+    return out;
+  }
+
+  async function commitWithRetry(b, n) {
+    let tries = 0;
+    while (true) {
+      try { await commitWatched(b, 120); await addWrites(n); shareWrites(n); return; }
+      catch (e) {
+        if (e instanceof StopSignal) { if (e.code === 'FBSTALL' || e.code === 'FBQUOTA') shareLimitHit(); throw e; }
+        if (e.code === 'permission-denied') throw new StopSignal('FBPERM', `Firebase가 쓰기를 거부했습니다. ① Firestore 보안 규칙의 이메일과 지금 로그인한 계정(${fbUser.email})이 같은지, ② 이 PC의 수집기가 최신 버전인지 확인해 주세요.`);
+        if (e.code === 'resource-exhausted') { await markLimitHit(); shareLimitHit(); throw new StopSignal('FBQUOTA', `Firebase 무료 쓰기 한도(하루 2만 건)에 도달했습니다. 한도 초기화: ${resetText()}. 그 뒤 이어하기를 누르면 남은 것부터 올립니다.`); }
+        tries += 1; const w = Math.min(300, 10 * tries); log(`올리기 실패 (${e.code || e.message}). ${w}초 뒤 다시 시도합니다.`, 'warn'); await sleep(w * 1000); checkPause();
+      }
+    }
+  }
+  async function guardQuota(n, left) {
+    if (settings.billing === 'paid' && writeCap() !== Infinity && (await writesToday()) + n > writeCap()) { throw new StopSignal('FBCAP', `오늘 쓰기가 설정한 하루 안전 상한(${writeCap().toLocaleString()}건)에 닿아 멈췄습니다. 정상이라면 설정에서 상한을 올리고 이어하기를 누르세요. 평소보다 훨씬 많다면 오류일 수 있으니 알려주세요.`); }
+    if (settings.billing !== 'paid' && (await writesToday()) + n > FREE_WRITES - WRITE_MARGIN) { await markLimitHit(); shareLimitHit(); throw new StopSignal('FBQUOTA', `오늘 무료 쓰기 한도(2만 건)에 거의 다 찼습니다. 한도에 걸려 멈추기 전에 미리 멈췄습니다. 한도 초기화: ${resetText()}. 그 뒤 이어하기를 누르면 남은 ${left.toLocaleString()}개를 올립니다.`); }
+  }
+  async function taskUpload() {
+    if (!FB || !fdb) throw new Error('Firebase 파일을 불러오지 못했습니다. 새로고침해 주세요.');
+    if (!fbUser) throw new StopSignal('FBLOGIN', 'Firebase에 올리려면 먼저 "구글 로그인"을 눌러 주세요.');
+    if (settings.billing !== 'paid' && await limitHitToday() && !(window.__rnHuman(8000) ? confirm(`오늘은 이미 무료 쓰기 한도에 도달한 것으로 보입니다.\n한도 초기화: ${resetText()}\n\n초기화 전에 올리면 다시 2분쯤 기다리다 멈출 가능성이 큽니다. 그래도 지금 시도할까요?\n(인터넷 연결 문제로 멈췄던 경우라면 '확인'을 누르세요)`) : false)) throw new StopSignal('FBQUOTA', `한도 초기화(${resetText()}) 뒤 이어하기를 눌러 주세요.`);
+    const ujob = await loadJob('upload'); ujob.status = 'running'; ujob.startedAt = ujob.startedAt || now(); await saveJob(ujob);
+    setNow('올릴 문서를 계산하는 중'); progress('Firebase 올리기', 0, 1);
+    const docs = (await buildDocs()).filter((d) => d.col !== 'crm_customers'); // 고객 요약은 아래에서 Firebase 전체 데이터로 계산
+    const sent = new Map((await dbAll('uploaded')).map((u) => [u._key, u.hash]));
+    const todo = docs.filter((d) => sent.get(`${d.col}/${d.id}`) !== docHash(d));
+    const pendingCust = new Set(((await dbGet('meta', 'pendingCustomers')) || { ids: [] }).ids); // 지난번에 다 못 한 고객 요약
+    log(`올릴 문서 ${todo.length.toLocaleString()}개 (바뀐 것만), 다시 계산할 고객 요약은 올린 뒤 정해집니다`);
+    const BATCH = 300; let done = 0; let skipped = 0;
+    for (let i = 0; i < todo.length; i += BATCH) {
+      checkPause();
+      const chunk = todo.slice(i, i + BATCH);
+      // Firebase에 이미 있는 내용 읽어서 합치기 (다른 PC가 올린 정보·엑셀로 채운 정보를 지우지 않음)
+      const byCol = {}; chunk.forEach((d) => (byCol[d.col] = byCol[d.col] || []).push(d));
+      const b = fdb.batch(); const stamp = FB.firestore.FieldValue.serverTimestamp(); let n = 0; const wrote = []; const hist = [];
+      for (const [col, ds] of Object.entries(byCol)) {
+        setNow(`Firebase의 기존 내용 확인 중 (${col})`);
+        const ex = await readExisting(col, ds.map((d) => d.id));
+        for (const d of ds) {
+          const old = ex.get(d.id);
+          const merged = old ? mergeVal(stripMeta(old), d.data) : d.data;
+          if (old && old.confirmed) ['customerId', 'matchStatus', 'matchReason', 'candidates'].forEach((k) => { if (k in old) merged[k] = old[k]; }); // 웹앱에서 사람이 확정한 연결은 그대로
+          if (old && d.data.customerId !== undefined && old.customerId && old.customerId !== merged.customerId) pendingCust.add(old.customerId);
+          if (merged.customerId) pendingCust.add(merged.customerId);
+          const cmp = (x) => stableStr(clean({ ...x, source: undefined, piiCollectedAt: undefined }));
+          if (old && cmp(stripMeta(old)) === cmp(merged)) { skipped++; wrote.push(d); continue; } // 이미 같은 내용 (수집 시각만 다른 것 포함)
+          if (old) { const h = crmHistOf(col, d.id, old, merged); if (h) hist.push(h); } // (1.57.2) 바뀐 칸의 옛 값
+          b.set(fdb.collection(col).doc(d.id), { ...merged, uploadedAt: stamp, uploaderVersion: APP_VER, writerSchema: WRITER_SCHEMA, lastWrittenBy: PC.name || '' }, { merge: true }); n++; wrote.push(d);
+        }
+      }
+      if (n) { await guardQuota(n + hist.length, todo.length - done); if (hist.length) await crmHistCommit(hist); /* 옛 값을 먼저 남기고(못 남기면 여기서 멈춰 덮어쓰지 않음) */ await commitWithRetry(b, n); }
+      await dbPut('uploaded', wrote.map((d) => ({ _key: `${d.col}/${d.id}`, hash: docHash(d), at: now() })));
+      await dbPut('meta', { _key: 'pendingCustomers', ids: [...pendingCust] });
+      done += chunk.length; progress('Firebase 올리기 (주문·기록)', done, todo.length); setNow(`올린 문서 ${done.toLocaleString()} / ${todo.length.toLocaleString()} (같은 내용이라 건너뜀 ${skipped.toLocaleString()})`);
+    }
+    // 웹앱에서 연결을 확정·변경한 고객도 요약을 다시 계산
+    let fromApp = [];
+    try { const rq = await SYS().doc('recompute').get(); fromApp = rq.exists ? (rq.data().ids || []) : []; fromApp.forEach((x) => pendingCust.add(x)); } catch (e) {}
+    await recomputeCustomers(pendingCust);
+    if (fromApp.length) SYS().doc('recompute').set({ ids: FB.firestore.FieldValue.arrayRemove(...fromApp), writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {});
+    await dbPut('meta', { _key: 'lastUpload', at: now(), count: todo.length, total: docs.length, by: fbUser.email });
+    ujob.status = 'done'; ujob.finishedAt = now(); ujob.startedAt = null; await saveJob(ujob);
+    log(`Firebase 올리기 완료: 문서 ${todo.length.toLocaleString()}개 확인 (그중 같은 내용 ${skipped.toLocaleString()}개는 건너뜀)${buildDocs.lastPending ? `, 구글 시트 연결 대기 ${buildDocs.lastPending}건은 웹앱에서 확정 예정` : ''}`, 'ok');
+  }
+  // 고객 요약: 그 고객의 모든 주문·기록을 Firebase에서 읽어 다시 계산 (어느 PC에서 올려도 정확)
+  async function recomputeCustomers(set) {
+    const ids = [...set]; if (!ids.length) return; await loadSellerLinks(); await loadScoringConfig();
+    log(`고객 요약 ${ids.length.toLocaleString()}명을 Firebase 전체 데이터로 다시 계산합니다`);
+    let i = 0; let b = fdb.batch(); let n = 0; let doneIds = [];
+    const flush = async () => { if (!n) return; await guardQuota(n, ids.length - i); await commitWithRetry(b, n); const rest = new Set(ids.slice(i)); await dbPut('meta', { _key: 'pendingCustomers', ids: [...rest] }); b = fdb.batch(); n = 0; doneIds = []; };
+    for (; i < ids.length; i++) {
+      checkPause();
+      const cid = ids[i];
+      const [os, is] = await Promise.all([fdb.collection('crm_orders').where('customerId', '==', cid).get(), fdb.collection('crm_interactions').where('customerId', '==', cid).get()]);
+      const orders = []; os.forEach((d) => orders.push({ _id: d.id, ...d.data() })); const inters = []; is.forEach((d) => inters.push(d.data()));
+      const [c] = aggregateCustomers(orders, inters);
+      if (c) { b.set(fdb.collection('crm_customers').doc(cid), { ...clean(c), uploadedAt: FB.firestore.FieldValue.serverTimestamp(), uploaderVersion: APP_VER, writerSchema: WRITER_SCHEMA, lastWrittenBy: PC.name || '' }, { merge: true }); n++; }
+      doneIds.push(cid);
+      if (n >= 300) { i++; await flush(); i--; }
+      if (i % 20 === 0) { progress('고객 요약 다시 계산', i + 1, ids.length); setNow(`고객 요약 ${(i + 1).toLocaleString()} / ${ids.length.toLocaleString()}`); }
+    }
+    await flush(); await dbPut('meta', { _key: 'pendingCustomers', ids: [] });
+    progress('고객 요약 다시 계산', ids.length, ids.length);
+  }
+
+  /* ════════ 7) 문제 주문 상세 다시 받기 (파서가 새로 읽게 된 정보 반영) ════════ */
+  async function taskRecheck() {
+    const job = await loadJob('recheck');
+    if (isFresh(job) || !job.queue) {
+      const iss = (await dbAll('issues')).filter((i) => ['V_LINE_COUNT', 'V_TOTAL', 'V_NO_POPUP'].includes(i.type)).map((i) => i.key);
+      const lines = await dbAll('orderLines'); const cnt = {}; lines.filter((l) => l.kind === 'sale').forEach((l) => (cnt[l.orderNo] = (cnt[l.orderNo] || 0) + 1));
+      const old = (await dbAll('popups')).filter((p) => verNum(p.parserVersion) < verNum(NEED_CORE) && cnt[p._key] != null && p.items.length > cnt[p._key]).map((p) => p._key);
+      Object.assign(job, { queue: [...new Set([...iss, ...old])], qi: 0, startedAt: now() });
+    }
+    job.status = 'running'; await saveJob(job);
+    while (job.qi < job.queue.length) {
+      const ono = job.queue[job.qi]; const url = `${BASE}wpopup_order.aspx?ono=${encodeURIComponent(ono)}`;
+      setNow(`문제 주문 상세 다시 받는 중: ${ono}`);
+      const { doc } = await fetchDoc(url, { expect: (d) => /주문번호/.test(d.body ? d.body.textContent : '') });
+      const p = P.parseOrderPopup(doc, url); popupExtras(doc, p); if (p.orderNo === ono) await savePopup(ono, p);
+      job.qi += 1; if (job.qi % 5 === 0 || job.qi === job.queue.length) await saveJob(job);
+      progress('문제 주문 상세 다시 받기', job.qi, job.queue.length);
+      const c = p.items.filter((i) => i.cancelled).length; setNow(`${ono}: 상품 ${p.items.length}개 중 주문 안 취소 ${c}개`);
+    }
+    job.status = 'done'; job.finishedAt = now(); job.queue = null; await saveJob(job); log('문제 주문 상세 다시 받기 완료', 'ok');
+  }
+
+  /* ════════ 8) Firebase 대조: 올라간 문서 수와 표본 내용 비교 ════════ */
+  const stableStr = (v) => (v === null || typeof v !== 'object') ? JSON.stringify(v) : Array.isArray(v) ? '[' + v.map(stableStr).join(',') + ']'
+    : '{' + Object.keys(v).filter((k) => v[k] !== undefined).sort().map((k) => JSON.stringify(k) + ':' + stableStr(v[k])).join(',') + '}';
+  async function taskFbCheck() {
+    if (!FB || !fdb) throw new Error('Firebase 파일을 불러오지 못했습니다.');
+    if (!fbUser) throw new StopSignal('FBLOGIN', 'Firebase 대조를 하려면 먼저 로그인해 주세요.');
+    setNow('비교할 문서를 계산하는 중'); const docs = await buildDocs(); const byCol = {};
+    docs.forEach((d) => (byCol[d.col] = byCol[d.col] || []).push(d));
+    let bad = 0; const cols = Object.keys(byCol);
+    for (let i = 0; i < cols.length; i++) {
+      const col = cols[i]; let remote;
+      try { remote = (await fdb.collection(col).count().get()).data().count; }
+      catch (e) { remote = (await fdb.collection(col).get()).size; }
+      const local = byCol[col].length; const ok = remote >= local;
+      log(`${col}: 이 PC ${local.toLocaleString()}개 / Firebase ${remote.toLocaleString()}개 ${ok ? '일치' : '부족'}`, ok ? 'ok' : 'err'); if (!ok) bad++;
+      progress('Firebase 대조', i + 1, cols.length + 1);
+    }
+    const sample = docs.slice().sort(() => Math.random() - 0.5).slice(0, 20); let diff = 0;
+    for (const d of sample) {
+      const snap = await fdb.collection(d.col).doc(d.id).get();
+      if (!snap.exists) { diff++; log(`없음: ${d.col}/${d.id}`, 'err'); continue; }
+      const r = snap.data(); delete r.uploadedAt; delete r.uploaderVersion;
+      if (stableStr(clean({ ...r, source: undefined, piiCollectedAt: undefined })) !== stableStr({ ...clean(d.data), source: undefined, piiCollectedAt: undefined })) { diff++; log(`내용 다름: ${d.col}/${d.id} (아직 안 올린 변경일 수 있음)`, 'warn'); }
+    }
+    progress('Firebase 대조', cols.length + 1, cols.length + 1);
+    log(`Firebase 대조 끝: 문서 수 ${bad ? bad + '개 컬렉션 부족' : '모두 일치'}, 표본 20개 중 내용 다름 ${diff}개`, bad || diff ? 'warn' : 'ok');
+    setNow(`Firebase 대조: 문서 수 ${bad ? '부족 있음' : '일치'}, 표본 내용 다름 ${diff}/20`);
+  }
+
+  /* ════════ 9) 고객 요약·점수 전체 재계산 (매일: 최근성 점수는 날짜가 지나면 바뀜) ════════ */
+  async function taskScore() {
+    if (!FB || !fdb) throw new Error('Firebase 파일을 불러오지 못했습니다.');
+    if (!fbUser) throw new StopSignal('FBLOGIN', '점수 계산은 Firebase 로그인 후에 할 수 있습니다.');
+    setNow('Firebase에서 주문·기록을 읽는 중 (약 7천 건 읽기)'); progress('고객 점수 계산', 0, 1); await loadSellerLinks(); await loadScoringConfig();
+    const [os, is] = await Promise.all([fdb.collection('crm_orders').get(), fdb.collection('crm_interactions').get()]);
+    const orders = []; os.forEach((d) => orders.push({ _id: d.id, ...d.data() })); const inters = []; is.forEach((d) => inters.push(d.data()));
+    const custs = aggregateCustomers(orders, inters);
+    const sent = new Map((await dbAll('uploaded')).filter((u) => u._key.startsWith('crm_customers/')).map((u) => [u._key, u.hash]));
+    const hashC = (c) => hashStr(stableStr(clean({ ...c, scores: { ...c.scores, day: undefined } })));
+    const todo = custs.filter((c) => sent.get(`crm_customers/${c.customerId}`) !== hashC(c));
+    log(`고객 ${custs.length.toLocaleString()}명 중 점수·요약이 바뀐 ${todo.length.toLocaleString()}명을 올립니다`);
+    for (let i = 0; i < todo.length; i += 300) {
+      checkPause();
+      const chunk = todo.slice(i, i + 300); const b = fdb.batch();
+      chunk.forEach((c) => b.set(fdb.collection('crm_customers').doc(c.customerId), { ...clean(c), uploadedAt: FB.firestore.FieldValue.serverTimestamp(), uploaderVersion: APP_VER, writerSchema: WRITER_SCHEMA, lastWrittenBy: PC.name || '' }, { merge: true }));
+      await guardQuota(chunk.length, todo.length - i); await commitWithRetry(b, chunk.length);
+      await dbPut('uploaded', chunk.map((c) => ({ _key: `crm_customers/${c.customerId}`, hash: hashC(c), at: now() })));
+      progress('고객 점수 계산', Math.min(todo.length, i + 300), todo.length);
+    }
+    const vip = custs.filter((c) => c.autoFlags.vip.on).length; const cau = custs.filter((c) => c.autoFlags.caution.on).length;
+    await dbPut('meta', { _key: 'lastScore', at: now(), vip, cau });
+    log(`점수 계산 완료: 자동 VIP ${vip}명, 자동 주의고객 ${cau}명 (사람이 직접 정한 표시는 그대로 우선)`, 'ok');
+  }
+
+  /* ════════ 매일 자동 수집 (이 PC에서 켜 둔 경우, 주문조회·판매관리 탭이 열려 있을 때) ════════ */
+  const todayKst = () => { const d = new Date(); const z = (x) => String(x).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; };
+  async function autoRunCheck() {
+    if (window.__rnUniAuto || window.__rnPaused || window.__rnSchedOn || window.__rnSchedHas) return; // (1.34.0) 새 '⏰ 매일 자동 수집'이 맡음 · 통합 수집기의 '매일 자동(모두 일괄)'이 대신 함
+    if (!settings.autoRun || running || otherTabBusy() || (window.__rnRest && window.__rnRest())) return;
+    const [hh, mm] = String(settings.autoTime || '06:00').split(':').map((x) => parseInt(x, 10));
+    const nowD = new Date(); if (nowD.getHours() * 60 + nowD.getMinutes() < hh * 60 + mm) return;
+    const day = todayKst(); const la = await dbGet('meta', 'lastAutoRun'); if (la && la.day === day) return;
+    if (fdb && fbUser) { try { const s = await SYS().doc('jobs').get(); const a = s.exists ? s.data().autoRun : null; if (a && a.day === day) { await dbPut('meta', { _key: 'lastAutoRun', day, skipped: true, by: a.pcName }); log(`오늘 자동 수집은 이미 ${a.pcName}에서 했습니다.`); return; } } catch (e) {} }
+    await dbPut('meta', { _key: 'lastAutoRun', day, at: now() });
+    if (fdb && fbUser) SYS().doc('jobs').set({ autoRun: { day, pcName: PC.name || '', at: now() }, writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {});
+    log(`매일 자동 수집 시작 (${settings.autoTime})`, 'ok'); autoTriggered = true; setTimeout(() => { autoTriggered = false; }, 60000);
+    const r = await resumable(); start(r === 'bulk' ? 'bulk' : 'bulk', { fresh: r !== 'bulk' });
+  }
+
+  /* ════════ 판매자 툴팁 DB 동기화 (툴팁은 예전 Realtime Database에 계속 기록 → 매일 통합 프로젝트로 가져옴) ════════ */
+  // 판매자 툴팁 저장소: 통합 프로젝트(readnow) 안의 Realtime Database (로그인 토큰 필요)
+  const TOOLTIP_DB = 'https://readnow-3a385-default-rtdb.asia-southeast1.firebasedatabase.app';
+  function gmGetJson(url) {
+    return new Promise((res, rej) => GM_xmlhttpRequest({ method: 'GET', url, timeout: 120000, onload: (r) => { try { res(JSON.parse(r.responseText)); } catch (e) { rej(new Error('응답을 읽지 못함')); } }, onerror: () => rej(new Error('연결 실패')), ontimeout: () => rej(new Error('시간 초과')) }));
+  }
+  async function taskSellerSync() {
+    setNow('판매자 툴팁 데이터 받는 중 (약 10MB)'); progress('판매자 툴팁 동기화', 0, 1);
+    if (!fbUser) throw new StopSignal('FBLOGIN', '판매자 툴팁 동기화는 Firebase 로그인 후에 할 수 있습니다.');
+    const token = await FB.auth().currentUser.getIdToken();
+    const data = await gmGetJson(`${TOOLTIP_DB}/sellers.json?auth=${encodeURIComponent(token)}`);
+    if (data && data.error) throw new Error(`판매자 저장소 접근 거부: ${data.error} (저장소 규칙과 로그인 계정 확인)`);
+    if (!data || typeof data !== 'object') throw new Error('판매자 툴팁 데이터가 비어 있습니다');
+    const now2 = now(); const rows = Object.entries(data).map(([sc, v]) => ({ _key: sc, _sc: sc, ...v, importedAt: now2, fileName: 'tooltip-db' }));
+    await dbPut('sellerRaw', rows);
+    await dbPut('meta', { _key: 'import_sellerjson', fileName: '툴팁 DB 자동 동기화', at: now2, summary: `판매자 ${rows.length.toLocaleString()}곳` });
+    progress('판매자 툴팁 동기화', 1, 1); log(`판매자 툴팁 동기화: ${rows.length.toLocaleString()}곳 (다음 올리기 때 바뀐 판매자만 반영)`, 'ok');
+  }
+
+  /* ════════ 우리 가게 배송비 정책 기록 (정책은 수시로 바뀌므로 매일 그때의 값을 남김) ════════ */
+  function parseShopPolicy(html) {
+    let free = (html.match(/이상\s*구매시\s*무료배송,\s*<strong>([^<]+)<\/strong>\s*미만/) || [])[1];
+    let fee = (html.match(/미만\s*주문시\s*배송비\s*<span[^>]*>([\d,]+)<\/span>/) || [])[1];
+    let paidOnly = false;
+    if (!free) { const m = html.match(/무조건\s*유료배송,\s*배송비\s*<span[^>]*>([\d,]+)<\/span>/); if (m) { paidOnly = true; fee = m[1]; } }
+    const n = (v) => (v == null ? null : parseInt(String(v).replace(/[^\d]/g, ''), 10) || 0);
+    return { freeOver: paidOnly ? null : n(free), fee: n(fee), paidOnly };
+  }
+  async function taskShopPolicy() {
+    const sc = settings.shopSc || '996008';
+    setNow(`우리 가게(SC ${sc}) 배송비 정책 확인 중`);
+    const r = await fetch(`https://www.aladin.co.kr/shop/usedshop/wshopitem.aspx?SC=${sc}`, { credentials: 'include' });
+    const html = await r.text(); const pol = parseShopPolicy(html);
+    if (pol.fee == null && pol.freeOver == null) { log('우리 가게 배송비 정책을 읽지 못했습니다 (가게 번호 확인 필요)', 'warn'); return; }
+    const day = todayKst(); const ref = SYS().doc('shopPolicy'); const cur = await ref.get(); const d = cur.exists ? cur.data() : {};
+    const last = (d.history || []).slice(-1)[0];
+    const changed = !last || last.freeOver !== pol.freeOver || last.fee !== pol.fee || !!last.paidOnly !== pol.paidOnly;
+    const upd = { sc, current: { ...pol, day, checkedAt: now() }, writerSchema: WRITER_SCHEMA };
+    if (changed) upd.history = FB.firestore.FieldValue.arrayUnion({ ...pol, from: day, seenAt: now(), by: PC.name || '' });
+    await ref.set(upd, { merge: true });
+    log(`배송비 정책: ${pol.paidOnly ? '무조건 유료' : `${(pol.freeOver || 0).toLocaleString()}원 이상 무료`}, 배송비 ${(pol.fee || 0).toLocaleString()}원${changed ? ' (바뀜, 기록함)' : ''}`, 'ok');
+  }
+  // 툴팁 기록에 남은 우리 가게의 예전 배송비 정책도 역사로 채워 넣음 (처음 한 번)
+  async function seedPolicyFromTooltip() {
+    try {
+      const raw = await dbGet('sellerRaw', settings.shopSc || '996008'); if (!raw) return;
+      const snaps = Object.values(raw.snapshots || {}).sort((a, b) => (a.fetchedAt || 0) - (b.fetchedAt || 0));
+      const n = (v) => (v == null ? null : parseInt(String(v).replace(/[^\d]/g, ''), 10) || 0);
+      const hist = []; snaps.forEach((s) => { const paidOnly = /무조건/.test(s.freeShipping || ''); const p = { freeOver: paidOnly ? null : n(s.freeShipping), fee: n(s.shippingFee), paidOnly, from: new Date(s.fetchedAt).toISOString().slice(0, 10), seenAt: new Date(s.fetchedAt).toISOString(), by: '툴팁 기록' }; const l = hist[hist.length - 1]; if (!l || l.freeOver !== p.freeOver || l.fee !== p.fee) hist.push(p); });
+      if (hist.length) await SYS().doc('shopPolicy').set({ tooltipHistory: hist, writerSchema: WRITER_SCHEMA }, { merge: true });
+    } catch (e) {}
+  }
+
+  /* ── 실행기 ── */
+  const TASKS = {
+    orders: { label: '전체주문', run: () => taskOrderList('orders', 20, 'sale', '전체주문') },
+    cancels: { label: '취소주문', run: () => taskOrderList('cancels', 7, 'cancel', '취소주문') },
+    returns: { label: '반품', run: taskReturns },
+    qna: { label: '묻고 답하기', run: taskQna },
+    reviews: { label: '구매평', run: taskReviews },
+    verify: { label: '검증', run: taskVerify },
+    upload: { label: 'Firebase 올리기', run: async () => { await taskUpload(); currentTask = 'score'; render(); try { await taskScore(); } catch (e) { if (e.code === 'PAUSED') throw e; log(`점수 계산 멈춤: ${e.message}`, 'warn'); } } },
+    recheck: { label: '문제 주문 재확인', run: taskRecheck },
+    score: { label: '고객 점수 계산', run: taskScore },
+    sellerSync: { label: '판매자 툴팁 동기화', run: taskSellerSync },
+    shopPolicy: { label: '배송비 정책 확인', run: async () => { await taskShopPolicy(); await seedPolicyFromTooltip(); } },
+    fbcheck: { label: 'Firebase 대조', run: taskFbCheck },
+  };
+  const BULK = ['shopPolicy', 'orders', 'cancels', 'returns', 'qna', 'reviews', 'verify', 'recheck', 'verify', 'sellerSync'];
+  // 같은 PC의 여러 탭(판매관리·주문조회)이 동시에 작업하지 않게: 브라우저 안 표시(10초마다 갱신, 30초 끊기면 해제)
+  const TAB_ID = Math.random().toString(36).slice(2, 10); let tabBeat = null;
+  const TAB_KEY = 'rn-crm-running';
+  function otherTabBusy() { try { const v = JSON.parse(localStorage.getItem(TAB_KEY) || 'null'); return v && v.tab !== TAB_ID && Date.now() - v.ts < 30000 ? v : null; } catch (e) { return null; } }
+  function markTab(on, label) {
+    clearInterval(tabBeat);
+    if (on) { const w = () => localStorage.setItem(TAB_KEY, JSON.stringify({ tab: TAB_ID, ts: Date.now(), label, page: location.pathname.split('/').pop() })); w(); tabBeat = setInterval(w, 10000); }
+    else { const v = otherTabBusy(); if (!v) localStorage.removeItem(TAB_KEY); }
+  }
+  window.addEventListener('pagehide', () => { if (running) { try { const v = JSON.parse(localStorage.getItem(TAB_KEY) || 'null'); if (v && v.tab === TAB_ID) localStorage.removeItem(TAB_KEY); } catch (e) {} } });
+  window.addEventListener('storage', async (e) => { if (e.key === TAB_KEY) { if (!e.newValue) await refreshStats(); render(); } });
+  async function markCrmComplete() { try { const bj = await loadJob('bulk'); if (bj.status === 'done') GM_setValue('rnu-crm-complete', new Date().toISOString()); } catch (e) {} }
+  window.__rnCrm = { localInfo: async () => { let lines = 0, pops = 0; try { lines = await dbCount('orderLines'); pops = await dbCount('popups'); } catch (e) {} return { lines, pops, complete: !!GM_getValue('rnu-crm-complete', false) }; }, localCount: async () => { try { const a = await dbAll('popups'); return a.length; } catch (e) { return 0; } }, pause: () => { if (running) pauseRequested = true; }, otherBusy: () => !!otherTabBusy(), upload: () => (fbUser ? start('upload') : Promise.resolve()), oldAuto: async () => ({ on: !!settings.autoRun, time: settings.autoTime || '06:00' }), offOldAuto: async () => { if (settings.autoRun) { settings.autoRun = false; await saveSettings(); } }, start: (n, o) => { autoTriggered = true; return start(n, o).finally(() => { autoTriggered = false; markCrmComplete(); }); }, tasks: () => ({ ...Object.fromEntries(Object.entries(TASKS).map(([k, v]) => [k, v.label])), bulk: '고객·주문 전체 일괄' }), /* (1.60.0) ⏰ 칸에 넣을 수 있는 고객 쪽 일 */ busy: () => running, label: () => currentTask,
+    // (1.38.0) 개요 화면의 '멈춘 작업' 목록에 고객 작업도 함께 (이 PC 안에 저장된 자리)
+    resumableInfo: async () => { if (running || otherTabBusy()) return null; const r = await resumable(); if (!r) return null; const j = await loadJob(r); return { key: r, name: r === 'bulk' ? '고객 전체 일괄 수집' : (TASKS[r] ? TASKS[r].label : r), savedAt: j.updatedAt ? Date.parse(j.updatedAt) || 0 : 0, why: j.message || null }; },
+    resume: async () => { const r = await resumable(); if (!r) return; window.__rnResumeOk && window.__rnResumeOk(); return start(r); },
+    discard: async (t) => { if (running || otherTabBusy()) return { ok: false, why: '고객 작업이 지금 진행 중입니다 — 먼저 일시정지하세요' }; const names = t === 'bulk' ? ['bulk', ...BULK] : [t]; for (const n of names) { const j = await loadJob(n); if (['paused', 'running', 'error'].includes(j.status)) { j.status = 'idle'; j.discardedAt = now(); await saveJob(j); } } log(`'${t === 'bulk' ? '고객 전체 일괄 수집' : (TASKS[t] ? TASKS[t].label : t)}'의 멈춘 자리만 잊었습니다 (받은 기록은 그대로)`); render(); return { ok: true }; } };
+  async function start(name, { fresh = false } = {}) {
+    if (running) return; let outcome = 'done'; const tS0 = Date.now(); /* (1.60.0) 끝난 모양을 돌려줌(⏰ 매일 자동이 봄) · 걸린 시간 기록 */
+    if (window.__rnGate && !window.__rnGate(name === 'bulk' ? '고객 전체 일괄 수집' : TASKS[name] ? TASKS[name].label : name)) return; // (1.56.0) 쉬는 탭이면 시작 안 함 (사람이 누른 거면 켤지 물음)
+    const ob = otherTabBusy();
+    if (ob) { (window.__rnHuman(8000) ? alert : (m) => window.__rnNote(m, 'warn'))(`이 PC의 다른 탭(${ob.page === 'worders.aspx' ? '주문조회' : '판매관리'})에서 '${ob.label}' 작업 중입니다.\n그 탭에서 진행 상황을 확인하거나, 끝난 뒤 다시 눌러 주세요.`); return; }
+    markTab(true, name === 'bulk' ? '전체 일괄 수집' : (TASKS[name] ? TASKS[name].label : name));
+    running = true; pauseRequested = false; render();
+    const needsLock = !['verify', 'fbcheck'].includes(name);
+    try {
+      if (needsLock) await acquireLock(name);
+      if (name === 'bulk') {
+        const bj = await loadJob('bulk');
+        if (fresh || bj.status !== 'paused') { Object.assign(bj, { si: 0, startedAt: now(), message: null, preScored: false }); for (const t of BULK) { const j = await loadJob(t); if (j.status !== 'paused') { j.status = 'idle'; await saveJob(j); } } }
+        bj.status = 'running'; await saveJob(bj); shareBulk('running');
+        const RS = window.__rnStatus || {}; const MS = { order: BULK.map((t, i) => String(i)), labels: Object.fromEntries(BULK.map((t, i) => [String(i), TASKS[t] ? TASKS[t].label : t])), on: Object.fromEntries(BULK.map((t, i) => [String(i), true])), res: Object.fromEntries(BULK.slice(0, bj.si).map((t, i) => [String(i), 'done'])), cur: null };
+        const standalone = !RS.job; if (standalone) Object.assign(RS, { job: '고객 전체 일괄 수집', jobStart: Date.now(), chain: MS, sub: null, cur: {} }); else RS.sub = MS;
+        // 수집 전에 한 번: 날짜가 바뀌었거나 지난 계산 뒤 새로 올린 게 있을 때만 (없으면 건너뜀)
+        if (bj.si === 0 && fbUser && !bj.preScored) {
+          const ls = await dbGet('meta', 'lastScore'); const lu = await dbGet('meta', 'lastUpload');
+          const stale = !ls ? false : String(ls.at).slice(0, 10) !== new Date().toISOString().slice(0, 10) || (lu && lu.at > ls.at);
+          if (stale) { currentTask = 'score'; render(); try { await taskScore(); } catch (e) { if (e.code === 'PAUSED' || e.code === 'LOGIN') throw e; log(`수집 전 점수 계산 건너뜀: ${e.message}`, 'warn'); } }
+          else log(ls ? '수집 전 점수 계산: 바뀐 내용이 없어 건너뜁니다.' : '수집 전 점수 계산: 아직 계산 기록이 없어 수집 뒤에 합니다.');
+          bj.preScored = true; await saveJob(bj);
+        }
+        while (bj.si < BULK.length) { currentTask = BULK[bj.si]; render(); { const M2 = (window.__rnStatus || {}).sub || ((window.__rnStatus || {}).chain && (window.__rnStatus || {}).chain.labels && (window.__rnStatus || {}).chain.labels['0'] === (TASKS[BULK[0]] || {}).label ? window.__rnStatus.chain : null); if (M2) M2.cur = String(bj.si); }
+          if (['shopPolicy', 'sellerSync'].includes(currentTask)) { if (currentTask === 'sellerSync' && !settings.syncTooltip) { bj.si += 1; continue; } if (!fbUser && currentTask === 'shopPolicy') { bj.si += 1; continue; } try { await TASKS[currentTask].run(); } catch (e) { if (e instanceof StopSignal) throw e; log(`${TASKS[currentTask].label} 건너뜀: ${e.message}`, 'warn'); } }
+          else await TASKS[currentTask].run();
+          { const M2 = (window.__rnStatus || {}).sub || (window.__rnStatus || {}).chain; if (M2 && M2.res) M2.res[String(bj.si)] = 'done'; }
+          bj.si += 1; await saveJob(bj); }
+        if (settings.autoUpload && fbUser) { currentTask = 'upload'; render(); await taskUpload(); currentTask = 'score'; render(); try { await taskScore(); } catch (e) { if (e.code === 'PAUSED') throw e; log(`수집 뒤 점수 계산 멈춤: ${e.message}`, 'warn'); } }
+        else if (settings.autoUpload) log('구글 로그인이 되어 있지 않아 Firebase 올리기는 건너뛰었습니다.', 'warn');
+        bj.status = 'done'; bj.finishedAt = now(); bj.preScored = false; await saveJob(bj); shareBulk('done');
+        if (settings.forceFull) { settings.forceFull = false; await saveSettings(); }
+        log('일괄 수집이 모두 끝났습니다. 백업 저장을 눌러 파일로 보관해 주세요.', 'ok');
+      } else {
+        currentTask = name; render();
+        if (fresh) { const j = await loadJob(name); if (j.status !== 'paused') { j.status = 'idle'; await saveJob(j); } }
+        await TASKS[name].run();
+        if (settings.forceFull && name !== 'verify' && name !== 'upload') { settings.forceFull = false; await saveSettings(); log("'처음부터 전체 수집' 설정을 다시 껐습니다."); }
+      }
+    } catch (e) {
+      const status = e instanceof StopSignal ? 'paused' : 'error'; outcome = status;
+      for (const n of [name, currentTask]) { if (!n) continue; const j = await loadJob(n); if (j.status === 'running') { j.status = status; j.message = e.message; await saveJob(j); } }
+      if (name === 'bulk') { const bj = await loadJob('bulk'); bj.status = 'paused'; bj.message = e.message; await saveJob(bj); shareBulk('paused', e.message); }
+      log(e.message, status === 'paused' ? 'warn' : 'err'); setNow(e.message);
+      if (e.code === 'LOGIN') try { GM_notification({ title: '리드나우 고객 수집기', text: e.message }); } catch (x) {}
+    } finally { markTab(false); if (needsLock) await releaseLock(); running = false; pauseRequested = false; currentTask = null; if (name === 'bulk') markCrmComplete();
+      try { window.__rnJobDone && window.__rnJobDone('crm:' + name, Date.now() - tS0, outcome === 'paused' ? 'stop' : outcome); } catch (e) {}
+      { const RS = window.__rnStatus || {}; if (RS.job === '고객 전체 일괄 수집') Object.assign(RS, { job: null, chain: null, lastEnd: { name: '고객 전체 일괄 수집', at: Date.now(), ms: Date.now() - (RS.jobStart || Date.now()) } }); RS.sub = null; } if (window.__rnStatus && window.__rnStatus.crm) window.__rnStatus.crm.active = false; await refreshStats(true); render(); } // 작업이 끝났을 때만 전체를 다시 셈
+    return outcome;
+  }
+  // 웹앱에 보여줄 수집 상태 (crm_system/jobs.lastBulk)
+  function shareBulk(state, message) { if (!fdb || !fbUser) return; SYS().doc('jobs').set({ lastBulk: { state, at: now(), day: todayKst(), pcName: PC.name || '', message: message || null }, writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {}); }
+  async function resumable() {
+    const bj = await loadJob('bulk'); if (bj.status === 'paused' || bj.status === 'running') return 'bulk';
+    for (const t of Object.keys(TASKS)) { const j = await loadJob(t); if (['paused', 'running', 'error'].includes(j.status)) return t; }
+    return null;
+  }
+
+  /* ── 백업 ── */
+  async function exportBackup() {
+    if (!confirm('백업 파일에는 고객 이름·연락처·주소가 들어 있습니다.\n구글 드라이브 비공개 폴더에만 보관하고, GitHub 등 공개된 곳에는 절대 올리지 마세요.\n(아이디·비밀번호는 백업에 들어가지 않습니다.)\n\n저장할까요?')) return;
+    const out = { app: 'readnow-crm', appVersion: APP_VER, parserVersion: P.VERSION, exportedAt: now(), stores: {} };
+    for (const s of STORES) out.stores[s] = await dbAll(s);
+    const blob = new Blob([JSON.stringify(out)], { type: 'application/json' });
+    const a = document.createElement('a'); const d = new Date(); const z = (x) => String(x).padStart(2, '0');
+    a.href = URL.createObjectURL(blob); a.download = `readnow-crm-backup-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    log('백업 파일을 저장했습니다.', 'ok');
+  }
+  async function importBackup(file) {
+    const data = JSON.parse(await file.text());
+    if (data.app !== 'readnow-crm') { alert('리드나우 고객 수집기 백업 파일이 아닙니다.'); return; }
+    if (!confirm(`${data.exportedAt} 백업을 불러옵니다. 같은 항목은 백업 내용으로 바뀌고, 없는 항목은 추가됩니다. 계속할까요?`)) return;
+    for (const s of STORES) if (Array.isArray(data.stores[s]) && s !== 'jobs' && s !== 'meta') await dbPut(s, data.stores[s]);
+    await refreshStats(); render(); log('백업을 불러왔습니다.', 'ok');
+  }
+
+  /* ── 화면 ── */
+  const GUIDE = `
+  <h4>수집 중 지킬 것</h4>
+  <p><b>이 탭을 화면에 띄워 두세요.</b> 다른 탭으로 옮기거나 창을 최소화하면 크롬이 속도를 늦춰 몇 시간 작업이 훨씬 길어질 수 있습니다. 가능하면 이 창 하나만 띄워 두세요.</p>
+  <p><b>PC 절전 모드를 꺼 두세요.</b> 절전에 들어가면 수집이 멈춥니다. 깨어나면 이어하기를 누르면 됩니다.</p>
+  <p><b>알라딘에 많이 접속하는 다른 도구와 동시에 돌리지 마세요.</b> '판매자 전체 갱신' 같은 일괄 기능이 해당됩니다.</p>
+  <p><b>브라우저의 쿠키·사이트 데이터 삭제를 하지 마세요.</b> 수집 데이터가 이 브라우저 안에 있어 함께 지워집니다. 끝나면 꼭 백업 저장을 하세요.</p>
+  <h4>멈췄을 때</h4>
+  <p>창을 닫았거나 PC가 꺼졌어도 이 페이지를 다시 열고 <b>이어하기</b>를 누르면 멈춘 곳부터 계속합니다.</p>
+  <p>서버가 불안정하면 5초에서 5분 간격으로 스스로 다시 시도하고, 60분 넘게 안 되면 일시정지합니다.</p>
+  <p>로그인이 풀리면 설정에 넣은 아이디·비밀번호로 자동으로 다시 로그인합니다. 실패하면 설정한 간격(기본 60초)마다 다시 시도하며, 기본값은 성공할 때까지 무제한입니다. 횟수 제한은 설정에서 바꿀 수 있습니다.</p>
+  <h4>처음 수집과 다음 수집</h4>
+  <p>처음에는 모든 페이지를 받습니다. 한 번 끝까지 받은 종류는 다음부터 <b>갱신 수집</b>으로 바뀌어, 새 주문과 바뀐 주문만 받고 이미 받은 구간에 닿으면 멈춥니다. 반품은 양이 적어 매번 전부 확인합니다.</p>
+  <p>반품관리 화면은 진행 중인 반품만 보여주므로, 과거 반품은 전체주문 목록의 상태·반품사유 칸과 주문 상세의 주문상태에서 찾아 검증 단계의 '확인 필요'에 올립니다.</p>
+  <p>처음부터 전부 다시 받고 싶으면 설정에서 '다음 실행은 처음부터 전체 수집'을 켜세요.</p>
+  <h4>Firebase 올리기</h4>
+  <p>'구글 로그인'으로 보안 규칙에 등록한 구글 계정에 로그인한 뒤 'Firebase로 올리기'를 누르면, 바뀐 문서만 골라 통합 프로젝트(readnow)에 올립니다. 로그인은 이 PC에 유지됩니다. 설정에서 '일괄 수집이 끝나면 자동으로 올리기'가 켜져 있으면 일괄 수집 끝에 자동으로 올립니다.</p>
+  <p><b>무료 쓰기 한도는 하루 2만 건</b>이고, 미국 서부 자정 기준이라 <b>한국 시간 오후 4시</b>(미국 서머타임이 끝나는 11월 초부터 3월 중순까지는 <b>오후 5시</b>)에 초기화됩니다. Firebase 칸에 오늘 사용량과 다음 초기화 시각이 표시됩니다. 한도에 가까워지면 미리 멈추고, 초기화 뒤 이어하기를 누르면 남은 것부터 올립니다. Firebase가 2분 넘게 응답하지 않을 때도 멈추고 알려줍니다.</p>
+  <h4>매일 자동 수집</h4>
+  <p>전체 일괄 수집 아래 스위치를 켜고 시각을 정하면, 그 시각 이후 이 PC의 주문조회·판매관리 탭이 열려 있을 때 하루 한 번 자동으로 수집 → 올리기 → 점수 계산까지 합니다. 설정은 바꾸는 즉시 저장됩니다. 여러 PC에서 켜 두어도 하루 한 번만 실행되고, 다른 PC가 이미 했으면 건너뜁니다. 브라우저가 꺼져 있으면 실행되지 않으니, 그 PC에서 알라딘 탭을 열어 두세요.</p>
+  <h4>새 PC에서 처음 할 일 (PC마다 한 번)</h4>
+  <p>구글 로그인, 이 PC 이름, 알라딘 아이디·비밀번호는 PC마다 따로 저장됩니다. 새 PC에서는 패널 맨 위에 주황색 '처음 한 번 해야 할 설정' 칸이 나타나고, 모두 마치면 초록색 한 줄로 바뀝니다.</p>
+  <h4>여러 PC에서 쓸 때</h4>
+  <p>한 번에 한 PC만 수집·올리기를 할 수 있습니다. 다른 PC가 작업 중이면 Firebase 칸에 빨간 글씨로 어느 PC가 무엇을 하는지 보이고, 시작 버튼을 눌러도 기다리라고 알려줍니다. 작업 중인 PC가 꺼지면 5분 뒤 자동으로 풀립니다.</p>
+  <p>올릴 때는 Firebase에 이미 있는 내용과 합칩니다. 이 PC에 없는 정보(다른 PC가 모은 것, 엑셀로 채운 연락처 등)를 빈 값으로 지우지 않습니다. 고객 요약은 Firebase의 전체 주문으로 다시 계산하므로, PC마다 가진 데이터가 달라도 결과가 같습니다.</p>
+  <p>수집을 끝까지 한 번 마쳤다는 기록도 공유되어, 새 PC에서도 처음부터 다시 받지 않고 갱신 수집으로 이어갑니다. 무료 한도 사용량도 모든 PC가 같은 숫자를 봅니다.</p>
+  <h4>보안</h4>
+  <p>백업 파일에는 고객 개인정보가 들어 있습니다. 구글 드라이브 비공개 폴더에만 두고 GitHub에는 올리지 마세요. 아이디·비밀번호는 이 PC의 Tampermonkey 안에만 저장되며 백업 파일에는 들어가지 않습니다.</p>`;
+  const C = { paper: '#FFFFFF', ink: '#1E2B28', sub: '#5B6B66', line: '#D6DDDA', cloth: '#2F5D50', clothSoft: '#E6EFEB', amber: '#A8661B', red: '#B0322A' };
+  const style = document.createElement('style');
+  style.textContent = `
+  #rn-crm{position:fixed;top:12px;right:12px;z-index:2147483646;width:310px;max-height:calc(100vh - 24px);overflow:auto;background:${C.paper};color:${C.ink};border:1px solid ${C.line};border-top:4px solid ${C.cloth};border-radius:8px;box-shadow:0 8px 28px rgba(30,43,40,.16);font:13px/1.45 "Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+  #rn-crm *{box-sizing:border-box;font-family:inherit}
+  #rn-crm .hd{display:flex;align-items:baseline;justify-content:space-between;padding:10px 12px 6px;cursor:pointer;user-select:none}
+  #rn-crm .hd b{font-size:14px} #rn-crm .hd span{color:${C.sub};font-size:11px}
+  #rn-crm .bd{padding:0 12px 10px} #rn-crm.min .bd{display:none}
+  #rn-crm .sec{margin-top:10px} #rn-crm .cap{font-size:11px;color:${C.sub};margin:0 0 4px;letter-spacing:.02em}
+  #rn-crm button{font-size:12px;cursor:pointer;border-radius:5px}
+  #rn-crm button:disabled{opacity:.4;cursor:default}
+  #rn-crm button:focus-visible{outline:2px solid ${C.cloth};outline-offset:1px}
+  /* 1순위: 전체 일괄 수집 */
+  #rn-crm .b1{width:100%;padding:10px;border:0;background:${C.cloth};color:#fff;font-size:14px;font-weight:bold}
+  #rn-crm .b1:hover:not(:disabled){background:#264D42}
+  /* 2순위: 개별 수집 (같은 계열의 옅은 색) */
+  #rn-crm .g2{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:5px}
+  #rn-crm .b2{padding:6px 2px;border:1px solid #C9DDD5;background:${C.clothSoft};color:${C.cloth};font-weight:bold}
+  #rn-crm .b2:hover:not(:disabled){border-color:${C.cloth}}
+  /* 진행 제어: 필요할 때만 보임 */
+  #rn-crm .ctl{display:none;margin-top:6px} #rn-crm .ctl.on{display:block}
+  #rn-crm .ctl button{width:100%;padding:7px;border:1px solid ${C.amber};background:#FFF8EE;color:${C.amber};font-weight:bold}
+  /* 상태 */
+  #rn-crm .st{margin-top:10px;padding:8px 9px;background:#F6F8F7;border:1px solid ${C.line};border-radius:6px}
+  #rn-crm .stt{font-weight:bold;font-size:12.5px}
+  #rn-crm .bar{height:5px;background:#E3E9E6;border-radius:3px;overflow:hidden;margin:6px 0 3px}
+  #rn-crm .bar i{display:block;height:100%;width:0;background:${C.cloth};transition:width .3s}
+  #rn-crm .stn{font-size:11.5px;color:${C.sub}} #rn-crm .now{margin-top:3px;font-size:11.5px;word-break:break-all}
+  #rn-crm .nums{display:grid;grid-template-columns:1fr auto;gap:1px 8px;margin:8px 0 0;font-size:12px}
+  #rn-crm .nums dt{color:${C.sub}} #rn-crm .nums dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+  /* 3순위: 점검·보조 (글자 버튼, 옅게) */
+  #rn-crm .quiet{display:flex;flex-wrap:wrap;gap:2px 10px;padding-top:7px;border-top:1px dashed ${C.line}}
+  #rn-crm .b3{padding:2px 0;border:0;background:none;color:${C.sub};font-size:11.5px;text-decoration:underline;text-underline-offset:2px;text-decoration-color:#C3CCC8}
+  #rn-crm .b3:hover:not(:disabled){color:${C.ink}}
+  #rn-crm .badge{display:inline-block;min-width:16px;padding:0 4px;margin-left:3px;border-radius:8px;background:${C.amber};color:#fff;font-size:10.5px;text-align:center;text-decoration:none}
+  #rn-crm .badge.zero{background:#C3CCC8}
+  /* Firebase */
+  #rn-crm .fb{margin-top:10px;padding:8px 9px;border:1px solid ${C.line};border-radius:6px}
+  #rn-crm .fbs{font-size:12px} #rn-crm .fbl{margin-top:4px;font-size:11.5px} #rn-crm .fbl.busy{padding:5px 7px;border-radius:4px;background:#FDECEA;color:${C.red};font-weight:bold} #rn-crm .fbq{margin-top:5px;padding:5px 7px;border-radius:4px;background:#F6F8F7;font-size:11px;color:${C.sub};line-height:1.5} #rn-crm .fbq b{color:${C.ink}} #rn-crm .fbq.hot{background:#FFF4E5;color:${C.amber}} #rn-crm .fbq.hot b{color:${C.amber}} #rn-crm .fbrow{display:flex;gap:4px;margin-top:6px;align-items:center}
+  #rn-crm .fbrow .bf{flex:1;padding:6px;border:1px solid ${C.line};background:#fff;color:${C.ink}}
+  #rn-crm .fbrow .bf:hover:not(:disabled){border-color:${C.cloth}}
+  /* 아래쪽 메뉴 */
+  #rn-crm .foot span{display:flex;gap:10px} #rn-crm .foot{display:flex;justify-content:space-between;margin-top:10px;padding-top:7px;border-top:1px solid ${C.line}}
+  #rn-crm .log{margin-top:8px;max-height:84px;overflow:auto;font-size:11px;color:${C.sub}}
+  #rn-crm .log p{margin:0 0 2px} #rn-crm .log .warn{color:${C.amber}} #rn-crm .log .err{color:${C.red}} #rn-crm .log .ok{color:${C.cloth}}
+  #rn-crm .pane{display:none;margin-top:8px;font-size:12px;border-top:1px solid ${C.line};padding-top:6px}
+  #rn-crm.showset .set,#rn-crm.showguide .guide,#rn-crm.showiss .iss,#rn-crm.showimp .imp{display:block}
+  #rn-crm .iss h4{margin:8px 0 2px;font-size:12.5px} #rn-crm .iss p{margin:0 0 3px;font-size:11.5px;word-break:break-all}
+  #rn-crm .pane .row{display:flex;gap:4px;margin-top:6px} #rn-crm .pane .row button{flex:1;padding:6px;border:1px solid ${C.line};background:#fff}
+  #rn-crm .set label{display:block;margin-top:5px;color:${C.sub}}
+  #rn-crm .set input[type=text],#rn-crm .set input[type=password],#rn-crm .set input[type=number]{width:100%;padding:4px;border:1px solid ${C.line};border-radius:3px;font-size:12px;color:${C.ink}}
+  #rn-crm .pwst{font-weight:normal;font-size:11px} #rn-crm .pwst.on{color:${C.cloth}} #rn-crm .pwst.off{color:${C.amber}}
+  #rn-crm .set .chk{display:flex;gap:6px;align-items:center;color:${C.ink}}
+  #rn-crm .drop{margin-top:2px;padding:16px 10px;border:2px dashed #B9CFC6;border-radius:8px;background:#F6FAF8;text-align:center;cursor:pointer;transition:background .15s,border-color .15s}
+  #rn-crm .drop b{display:block;color:${C.cloth};font-size:13px} #rn-crm .drop span{display:block;margin-top:3px;font-size:11px;color:${C.sub}}
+  #rn-crm .drop.over{background:${C.clothSoft};border-color:${C.cloth}}
+  #rn-crm .isteps{display:none;margin:8px 0 0;padding:0;list-style:none;counter-reset:st} #rn-crm .isteps.on{display:block}
+  #rn-crm .isteps li{position:relative;padding:3px 0 5px 24px;font-size:12px;color:${C.sub};counter-increment:st}
+  #rn-crm .isteps li::before{content:counter(st);position:absolute;left:0;top:3px;width:17px;height:17px;border-radius:50%;background:#E3E9E6;color:${C.sub};font-size:10.5px;line-height:17px;text-align:center}
+  #rn-crm .isteps li small{display:block;font-size:11px;font-weight:normal;word-break:break-all}
+  #rn-crm .isteps li.doing{color:${C.ink};font-weight:bold} #rn-crm .isteps li.doing::before{background:${C.amber};color:#fff}
+  #rn-crm .isteps li.done{color:${C.ink}} #rn-crm .isteps li.done::before{content:'✓';background:${C.cloth};color:#fff}
+  #rn-crm .isteps li.need{color:${C.amber};font-weight:bold} #rn-crm .isteps li.need::before{content:'!';background:${C.amber};color:#fff}
+  #rn-crm .isteps li.error{color:${C.red}} #rn-crm .isteps li.error::before{content:'×';background:${C.red};color:#fff}
+  #rn-crm .ist p{margin:0 0 5px;font-size:11.5px;color:${C.sub}} #rn-crm .ist b{color:${C.ink}}
+
+#rn-crm .setup{margin-top:4px;border-radius:6px}
+  #rn-crm .setup.todo{padding:8px 9px;border:2px solid ${C.amber};background:#FFF8EE}
+  #rn-crm .setup.todo h5{margin:0 0 4px;font-size:12.5px;color:${C.amber}}
+  #rn-crm .setup.todo p{margin:0 0 5px;font-size:11px;color:${C.sub}}
+  #rn-crm .setup ul{margin:0;padding:0;list-style:none}
+  #rn-crm .setup li{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12px;border-top:1px dashed #EBD9BE}
+  #rn-crm .setup li:first-child{border-top:0}
+  #rn-crm .setup li.ok{color:${C.cloth}} #rn-crm .setup li.no{color:${C.ink};font-weight:bold}
+  #rn-crm .setup li button{padding:2px 8px;border:1px solid ${C.amber};background:#fff;color:${C.amber};font-size:11px}
+  #rn-crm .setup.done{padding:4px 2px;font-size:11px;color:${C.cloth}}
+  #rn-crm .autohelp{display:none;margin-top:6px;padding:8px 9px;background:#F6F8F7;border:1px solid ${C.line};border-radius:6px;font-size:11.5px;line-height:1.55} #rn-crm.showauto .autohelp{display:block} #rn-crm .autohelp ol{margin:4px 0;padding-left:18px} #rn-crm .autohelp p{margin:4px 0} #rn-crm .autohelp code{font-size:10.5px;background:#fff;padding:0 3px;border-radius:3px;word-break:break-all}
+  #rn-crm .auto{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px}
+  #rn-crm .auto input[type=time]{border:1px solid ${C.line};border-radius:4px;padding:2px 4px;font-size:12px;color:${C.ink}}
+  #rn-crm .auto .an{color:${C.sub};font-size:11px;margin-left:auto}
+  #rn-crm .sw{position:relative;display:inline-block;width:32px;height:18px} #rn-crm .sw input{opacity:0;width:0;height:0}
+  #rn-crm .sw span{position:absolute;inset:0;background:#C3CCC8;border-radius:9px;transition:.2s;cursor:pointer}
+  #rn-crm .sw span::before{content:'';position:absolute;left:2px;top:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:.2s}
+  #rn-crm .sw input:checked+span{background:${C.cloth}} #rn-crm .sw input:checked+span::before{transform:translateX(14px)}
+  #rn-crm .guide h4{margin:8px 0 2px;font-size:12.5px} #rn-crm .guide p{margin:0 0 5px}`;
+  document.head.appendChild(style);
+
+  const el = document.createElement('div'); el.id = 'rn-crm';
+  el.innerHTML = `
+  <div class="hd"><b>리드나우 고객 수집</b><span>v${APP_VER} (눌러서 접기)</span></div>
+  <div class="bd">
+    <div class="setup"></div>
+    <div class="sec">
+      <button class="b1" data-a="bulk">전체 일괄 수집</button>
+      <div class="hint" style="font-size:11px;color:#5B6B66;margin:4px 0 0">⏰ 매일 자동 수집(묻고 답하기·반품·고객 일괄 등)은 <b>상품 탭 맨 위</b>에서 켜고 시각을 정합니다.</div>
+      <div class="ctl"><button data-a="pause">일시정지</button></div>
+      <div class="ctl"><button data-a="resume">이어하기</button></div>
+    </div>
+    <div class="sec">
+      <p class="cap">개별 수집</p>
+      <div class="g2">
+        <button class="b2" data-a="orders">전체주문</button><button class="b2" data-a="cancels">취소주문</button><button class="b2" data-a="returns">반품</button>
+        <button class="b2" data-a="qna">묻고 답하기</button><button class="b2" data-a="reviews">구매평</button>
+      </div>
+    </div>
+    <div class="st"><div class="stt">대기 중</div><div class="bar"><i></i></div><div class="stn"></div><div class="now"></div><dl class="nums"></dl></div>
+    <div class="sec quiet">
+      <span class="cap" style="margin:2px 2px 0 0">점검</span><button class="b3" data-a="verify">검증</button><button class="b3" data-a="recheck">문제 주문 재확인</button><button class="b3" data-a="issues">확인 필요<span class="badge zero">0</span></button>
+    </div>
+    <div class="fb"><div class="fbs">Firebase: 확인 중</div>
+      <div class="fbl"></div>
+      <div class="fbq"></div>
+      <div class="fbrow"><button class="bf" data-a="fblogin">구글 로그인</button><button class="bf" data-a="upload">Firebase로 올리기</button></div>
+      <div style="margin-top:3px;display:flex;gap:10px"><button class="b3" data-a="fbcheck">올라간 내용 대조</button><button class="b3" data-a="fbusage">Firebase 실제 사용량 보기</button></div>
+    </div>
+    <div class="foot">
+      <span><button class="b3" data-a="importpane">엑셀·시트 가져오기</button><button class="b3" data-a="export">백업 저장</button><button class="b3" data-a="import">불러오기</button></span>
+      <span><button class="b3" data-a="settings">설정</button> <button class="b3" data-a="guide">사용 안내</button></span>
+    </div>
+    <div class="pane set">
+      <p style="font-size:11.5px;color:#5B6B66;margin:2px 0 6px">알라딘 요청 간격은 상품·고객·가격 감시가 모두 같은 자동 조절 하나를 씁니다 → 상품·매입 탭의 설정 '알라딘 요청 간격'에서 바꿉니다.</p>
+      <label class="chk"><input data-s="forceFull" type="checkbox"> 다음 실행은 처음부터 전체 수집</label>
+      <label class="chk"><input data-s="autoUpload" type="checkbox"> 일괄 수집이 끝나면 Firebase로 자동으로 올리기</label>
+      <label class="chk"><input data-s="autoLogin" type="checkbox"> 로그인이 풀리면 자동으로 다시 로그인</label>
+      <label>자동 로그인 최대 시도 횟수 (0 = 무제한)<input data-s="maxLoginTries" type="number" step="1" min="0"></label>
+      <label>자동 로그인 재시도 간격(초)<input data-s="loginRetrySec" type="number" step="10" min="10"></label>
+      <label>Firebase 요금제</label>
+      <label class="chk"><input type="radio" name="rn-bill" data-bill="paid"> 유료 (Blaze, 사용한 만큼 청구)</label>
+      <label class="chk"><input type="radio" name="rn-bill" data-bill="free"> 무료 (Spark, 하루 2만 건에서 멈춤)</label>
+      <label>유료일 때 하루 쓰기 안전 상한 (건)<input data-s="dailyWriteCap" type="number" step="10000" min="1000"></label>
+      <label>이 날짜까지는 상한 없이 쓰기 (무료 크레딧 기간)<input data-s="noCapUntil" type="date"></label>
+      <label class="chk"><input data-s="remoteRun" type="checkbox"> 핸드폰·웹앱의 수집 요청을 이 PC에서 받기</label>
+      <label class="chk"><input data-s="syncTooltip" type="checkbox"> 매일 판매자 툴팁 데이터도 가져오기</label>
+      <label>우리 가게 판매자 번호(SC, 배송비 정책 확인용)<input data-s="shopSc" type="text"></label>
+      <label>이 PC 이름 (여러 PC 구분용, 예: 사무실-1)<input data-c="pcname" type="text" autocomplete="off"></label>
+      <label>알라딘 아이디<input data-c="id" type="text" autocomplete="off"></label>
+      <p style="margin:3px 0 0;font-size:11px;color:${C.sub}">비밀번호 칸을 비워 두고 저장하면 기존 비밀번호가 유지됩니다. 아이디를 지우고 저장하면 아이디·비밀번호가 모두 삭제됩니다.</p>
+      <label>알라딘 비밀번호 <b class="pwst" data-for="pw"></b><input data-c="pw" type="password" autocomplete="new-password"></label>
+      <label>Firebase 로그인 방식</label>
+      <label class="chk"><input type="radio" name="rn-fbmode" value="google" data-m="google"> 구글 계정 (기본, 권장)</label>
+      <label class="chk"><input type="radio" name="rn-fbmode" value="password" data-m="password"> Firebase 전용 계정 (구글 창이 안 될 때만)</label>
+      <div class="fbpwbox">
+      <label>Firebase 전용 이메일<input data-c="fbemail" type="text" name="rn-fb-x1" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')"></label>
+      <label>Firebase 전용 비밀번호 <b class="pwst" data-for="fbpw"></b><input data-c="fbpw" type="password" name="rn-fb-x2" autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')"></label>
+      </div>
+      <div class="row"><button data-a="saveset">설정 저장</button><button data-a="logintest">자동 로그인 시험</button></div>
+    </div>
+    <div class="pane guide">${GUIDE}</div>
+    <div class="pane iss"></div>
+    <div class="pane imp">
+      <div class="drop" tabindex="0" role="button">
+        <b>파일을 여기에 끌어다 놓으세요</b>
+        <span>또는 눌러서 선택. 판매완료 엑셀, 고객·판매자 구글 시트(.xlsx), 판매자 툴팁 데이터(.json)를 함께 넣어도 됩니다. 어떤 파일인지는 자동으로 알아봅니다.</span>
+      </div>
+      <ol class="isteps">
+        <li data-n="1" class="wait">파일 읽기<small></small></li>
+        <li data-n="2" class="wait">이 PC에 정리 (어긋난 열 맞춤, 고객 연결)<small></small></li>
+        <li data-n="3" class="wait">Firebase에 올리기<small></small></li>
+      </ol>
+      <div class="ist"><p class="cap" style="margin:8px 0 2px">마지막으로 가져온 파일</p>
+        <p><b>판매완료 엑셀</b><br><span class="ist-sales"></span></p>
+        <p><b>고객 구글 시트</b> (구글 시트 → 파일 → 다운로드 → Microsoft Excel)<br><span class="ist-sheet"></span></p>
+        <p><b>판매자 툴팁 데이터</b> (툴팁의 데이터 다운로드 버튼으로 받은 .json)<br><span class="ist-sjson"></span></p>
+      </div>
+    </div>
+    <input class="fx" type="file" accept=".xlsx,.xls,.json" multiple style="display:none">
+    <div class="log"></div>
+    <input type="file" accept=".json" style="display:none">
+  </div>`;
+  document.body.appendChild(el);
+  const $ = (s) => el.querySelector(s);
+  if (localStorage.getItem('rn-crm-min') === '1') el.classList.add('min');
+  $('.hd').onclick = () => { el.classList.toggle('min'); localStorage.setItem('rn-crm-min', el.classList.contains('min') ? '1' : '0'); };
+
+  function log(msg, cls = '') {
+    window.__rnLog && window.__rnLog('고객', cls === 'err' ? 'err' : cls === 'warn' ? 'warn' : cls === 'ok' ? 'ok' : 'info', msg);
+    const p = document.createElement('p'); p.className = cls;
+    p.textContent = `${new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} ${msg}`;
+    $('.log').prepend(p); while ($('.log').children.length > 60) $('.log').lastChild.remove();
+  }
+  function setNow(t) { $('.now').textContent = t; window.__rnLog && window.__rnLog('고객', 'detail', t); if (window.__rnStatus && window.__rnStatus.crm) window.__rnStatus.crm.sub = t; }
+  function progress(label, done, total) {
+    if (window.__rnPhase) window.__rnPhase('crm', label, currentTask || null); // (1.43.0) 단계 표시 — 고객 작업(전체주문·반품 …)이 바뀌면 처음부터
+    if (window.__rnStatus) window.__rnStatus.crm = { active: true, label: (currentTask ? `${TASKS[currentTask].label} · ` : '') + label, done, total, sub: $('.now') ? $('.now').textContent : '' };
+    $('.stt').textContent = (currentTask ? `[${TASKS[currentTask].label}] ` : '') + label;
+    $('.bar i').style.width = (total ? Math.min(100, (done / total) * 100) : 0).toFixed(1) + '%';
+    const avg = reqTimes.length ? reqTimes.reduce((a, b) => a + b, 0) / reqTimes.length : 0;
+    const left = avg && total ? Math.round(((total - done) * avg) / 60000) : null;
+    $('.stn').textContent = `${done.toLocaleString()} / ${(total || 0).toLocaleString()}` + (left != null && total > done ? `, 이 단계 약 ${left}분 남음` : '');
+  }
+  let stats = {};
+  // (1.34.0) 화면을 열 때마다 주문 상세(수만 건) 전체를 읽어 세던 것 → 갯수는 count로, 판매·취소·개인정보 나눔은 작업이 끝났을 때만 새로 셈(그 사이엔 지난 값)
+  async function refreshStats(full) {
+    const nLines = await dbCount('orderLines'), nPops = await dbCount('popups'); let sp = GM_getValue('rnu-stat-split', null);
+    if (full || !sp || sp.lines !== nLines || sp.pops !== nPops) { if (full || !sp) { const lines = await dbAll('orderLines'); const pops = await dbAll('popups'); sp = { lines: nLines, pops: nPops, sale: lines.filter((l) => l.kind === 'sale').length, cancel: lines.filter((l) => l.kind === 'cancel').length, pii: pops.filter((x) => x.piiAvailable).length }; GM_setValue('rnu-stat-split', sp); } }
+    stats = {
+      '판매 상품 줄': sp.sale + (sp.lines !== nLines ? ' (지난 집계)' : ''),
+      '취소 상품 줄': sp.cancel + (sp.lines !== nLines ? ' (지난 집계)' : ''),
+      '주문 상세': nPops,
+      '개인정보 확보한 주문': sp.pii + (sp.pops !== nPops ? ' (지난 집계)' : ''),
+      '반품': await dbCount('returns'),
+      '묻고 답하기 (상세)': `${await dbCount('qnaList')} (${await dbCount('qnaDetail')})`,
+      '구매평': await dbCount('reviews'),
+      '엑셀 줄 / 시트 행': `${(await dbCount('excelLines')).toLocaleString()} / ${await dbCount('sheetRows')}`,
+      'Firebase에 올린 문서': await dbCount('uploaded'),
+    };
+  }
+  const ISSUE_LABEL = { V_NO_POPUP: '주문 상세를 못 받은 주문', V_LINE_COUNT: '목록 줄 수와 상세 상품 수가 다름', V_TOTAL: '판매가 합계와 판매총액이 다름', V_STATUS: '주문상태가 정상이 아님 (과거 반품·취소 흔적)',
+    V_ROW_STATUS: '목록 행 상태가 정상이 아님', V_CANCEL_OVERLAP: '판매 목록과 취소 목록에 모두 있는 주문', V_COUNT: '수집 줄 수가 샵매니저 표시보다 적음', EMPTY_PAGE: '빈 페이지', POPUP_MISMATCH: '상세 주문번호 불일치', RETURN_URL: '반품 페이지 인식 실패', RETURN_PAGES: '반품 목록 여러 페이지' };
+  async function renderIssues() {
+    const iss = await dbAll('issues'); const g = {}; iss.forEach((i) => (g[i.type] = g[i.type] || []).push(i));
+    $('.iss').innerHTML = `<div class="row"><button data-a="issuecsv">전체 목록 파일로 저장 (CSV)</button></div>` + (iss.length ? '' : '<p>확인할 것이 없습니다.</p>') +
+      Object.entries(g).map(([t, a]) => `<h4>${ISSUE_LABEL[t] || t}: ${a.length}건</h4>` + a.slice(0, 15).map((i) => `<p>${i.key}: ${String(i.detail).replace(/</g, '&lt;')}</p>`).join('') + (a.length > 15 ? `<p>… 외 ${a.length - 15}건 (CSV로 전체 확인)</p>` : '')).join('');
+  }
+  async function exportIssuesCsv() {
+    const iss = await dbAll('issues'); const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = '\ufeff' + ['종류,설명,주문번호/대상,내용'].concat(iss.map((i) => [i.type, ISSUE_LABEL[i.type] || '', i.key, i.detail].map(q).join(','))).join('\r\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'readnow-crm-확인필요.csv'; document.body.appendChild(a); a.click(); a.remove();
+  }
+  // 이 PC 준비 상태: PC마다 한 번씩 해야 하는 설정을 빠짐없이 보여줌
+  function renderSetup() {
+    const cred = (GM_getValue('rn-cred', null) || GM_getValue('rnp-cred', null));
+    const items = [
+      { k: 'login', ok: !!fbUser, label: '구글 로그인 (Firebase)', btn: '로그인', why: '여러 PC 잠금·올리기에 필요' },
+      { k: 'pcname', ok: !!PC.name, label: `이 PC 이름${PC.name ? `: ${PC.name}` : ''}`, btn: '정하기', why: '어느 PC가 작업 중인지 구분' },
+      { k: 'cred', ok: !!(cred && cred.id && cred.pw), label: '알라딘 아이디·비밀번호', btn: '넣기', why: '로그인이 풀려도 자동 재로그인' },
+      { k: 'core', ok: verNum(P.VERSION) >= verNum(NEED_CORE), label: `파서 파일 ${P.VERSION}${verNum(P.VERSION) >= verNum(NEED_CORE) ? '' : ` (필요: ${NEED_CORE})`}`, btn: '방법', why: 'GitHub의 파서 파일이 최신이어야 함' },
+    ];
+    if (settings.billing === 'paid' && settings.noCapUntil) {
+      const days = Math.round((new Date(settings.noCapUntil) - new Date(todayKst())) / 864e5);
+      if (days <= 14) items.push({ k: 'cap', ok: false, label: days >= 0 ? `무료 크레딧 기간이 ${days}일 남았습니다 (${settings.noCapUntil}). 그 뒤 하루 쓰기 상한(지금 ${(settings.dailyWriteCap || 200000).toLocaleString()}건)을 정해 주세요` : `크레딧 기간이 끝났습니다. 하루 쓰기 상한 ${(settings.dailyWriteCap || 200000).toLocaleString()}건이 적용 중입니다. 확인 후 설정에서 날짜를 지우세요`, btn: '설정', why: '' });
+    }
+    const box = $('.setup'); const todo = items.filter((x) => !x.ok);
+    if (!todo.length) { box.className = 'setup done'; box.textContent = `✓ 이 PC 준비 완료 (${PC.name}): 로그인·PC 이름·알라딘 계정·파서 파일`; return; }
+    box.className = 'setup todo';
+    box.innerHTML = `<h5>${todo.some((x) => x.k === 'cap') && todo.length === 1 ? '확인이 필요합니다' : `이 PC에서 처음 한 번 해야 할 설정 (${items.filter((x) => x.k !== 'cap').length - todo.filter((x) => x.k !== 'cap').length}/${items.filter((x) => x.k !== 'cap').length})`}</h5><p>PC마다 따로 저장됩니다. 새 PC에서는 이 칸이 다시 나타납니다.</p><ul>` +
+      items.map((x) => `<li class="${x.ok ? 'ok' : 'no'}" title="${x.why}"><span>${x.ok ? '✓' : '○'} ${x.label}</span>${x.ok ? '' : `<button data-a="setup_${x.k}">${x.btn}</button>`}</li>`).join('') + '</ul>';
+  }
+  async function saveSettingsUI(keepOpen) {
+      el.querySelectorAll('[data-s]').forEach((i) => {
+        const k = i.dataset.s; const v = parseFloat(i.value);
+        if (i.type === 'checkbox') settings[k] = i.checked;
+        else if (k.startsWith('delay')) settings[k] = Math.max(500, Math.round(v * 1000) || DEFAULTS[k]);
+        else if (k === 'maxLoginTries') settings[k] = Number.isFinite(v) && v >= 0 ? Math.floor(v) : DEFAULTS[k];
+        else if (k === 'loginRetrySec') settings[k] = Number.isFinite(v) && v >= 10 ? Math.round(v) : DEFAULTS[k];
+        else if (k === 'dailyWriteCap') settings[k] = Number.isFinite(v) && v >= 1000 ? Math.round(v) : DEFAULTS[k];
+        else if (k === 'noCapUntil') settings[k] = i.value || '';
+        else if (k === 'shopSc') settings[k] = String(i.value || '').replace(/\D/g, '') || DEFAULTS[k];
+      });
+      if (settings.delayMax < settings.delayMin) settings.delayMax = settings.delayMin;
+      const pcn = $('[data-c="pcname"]').value.trim(); if (pcn) { PC.name = pcn; GM_setValue('rn-pc', PC); window.__rnPcName && window.__rnPcName.set(pcn); }
+      const id = $('[data-c="id"]').value.trim(); const pw = $('[data-c="pw"]').value; const old = (GM_getValue('rn-cred', null) || GM_getValue('rnp-cred', null));
+      if (id) GM_setValue('rn-cred', { id, pw: pw || (old && old.pw) || '' }); else GM_deleteValue('rn-cred');
+      $('[data-c="pw"]').value = '';
+      const br = el.querySelector('[data-bill]:checked'); if (br) settings.billing = br.dataset.bill;
+      const mr = el.querySelector('[data-m]:checked'); GM_setValue('rn-fbmode', mr ? mr.dataset.m : 'google');
+      const fe = $('[data-c="fbemail"]').value.trim(); const fp = $('[data-c="fbpw"]').value; const ofp = GM_getValue('rn-fbpw', null);
+      if (fe) GM_setValue('rn-fbpw', { email: fe, pw: fp || (ofp && ofp.pw) || '' }); else GM_deleteValue('rn-fbpw');
+      $('[data-c="fbpw"]').value = '';
+      await saveSettings(); log('설정을 저장했습니다.', 'ok'); if (!keepOpen) el.classList.remove('showset'); render();
+  }
+  async function render() {
+    try { renderSetup(); } catch (e) {}
+    /* (1.34.0) 예전 '매일 자동 수집' 스위치는 상품 탭 위 '⏰ 매일 자동 수집'으로 옮김 */
+    $('.nums').innerHTML = Object.entries(stats).map(([k, v]) => `<dt>${k}</dt><dd>${typeof v === 'number' ? v.toLocaleString() : v}</dd>`).join('');
+    el.querySelectorAll('[data-a]').forEach((b) => { const a = b.dataset.a; b.disabled = running ? !['pause', 'guide', 'settings', 'issues', 'importpane', 'fbusage', 'setup_pcname', 'setup_cred', 'setup_core', 'setup_cap', 'autohelp'].includes(a) : a === 'pause'; });
+    const ob = !running && otherTabBusy();
+    if (ob) { el.querySelectorAll('[data-a]').forEach((b) => { if (['bulk', 'orders', 'cancels', 'returns', 'qna', 'reviews', 'verify', 'recheck', 'upload', 'resume'].includes(b.dataset.a)) b.disabled = true; }); }
+    const r = running || ob ? null : await resumable();
+    $('[data-a="pause"]').parentElement.classList.toggle('on', running);
+    $('[data-a="resume"]').parentElement.classList.toggle('on', !running && !!r);
+    $('[data-a="resume"]').disabled = !r;
+    if (r) $('.stt').textContent = `멈춘 작업 있음: ${r === 'bulk' ? '전체 일괄 수집' : TASKS[r].label} — 개요 탭 '멈춘 작업'에서 이어하기`;
+    if (ob) { $('.stt').textContent = `이 PC의 다른 탭(${ob.page === 'worders.aspx' ? '주문조회' : '판매관리'})에서 '${ob.label}' 진행 중`; $('.now').textContent = '진행 상황은 그 탭에서 보입니다. 끝나면 이 탭 숫자도 자동으로 갱신됩니다.'; }
+    const ic = await dbCount('issues'); const bg = $('.badge'); bg.textContent = ic.toLocaleString(); bg.classList.toggle('zero', ic === 0);
+    el.querySelectorAll('[data-s]').forEach((i) => { if (document.activeElement === i) return; const k = i.dataset.s; if (i.type === 'checkbox') i.checked = !!settings[k]; else i.value = k.startsWith('delay') ? settings[k] / 1000 : settings[k] ?? ''; });
+    const cred = (GM_getValue('rn-cred', null) || GM_getValue('rnp-cred', null)); $('[data-c="id"]').value = cred ? cred.id : '';
+    if (document.activeElement !== $('[data-c="pcname"]')) $('[data-c="pcname"]').value = PC.name || '';
+    for (const [key, store] of [['pw', 'rn-cred'], ['fbpw', 'rn-fbpw']]) {
+      const v = GM_getValue(store, null); const has = !!(v && v.pw); const st = $(`.pwst[data-for="${key}"]`); const inp = $(`[data-c="${key}"]`);
+      st.textContent = has ? '(저장되어 있음)' : '(저장 안 됨)'; st.className = 'pwst ' + (has ? 'on' : 'off');
+      inp.placeholder = has ? '●●●●●●●● 저장됨 (바꿀 때만 새로 입력)' : '비밀번호를 입력하세요';
+    }
+    el.querySelectorAll('[data-bill]').forEach((r) => { if (document.activeElement !== r) r.checked = r.dataset.bill === (settings.billing || 'paid'); });
+    const mode = GM_getValue('rn-fbmode', 'google'); el.querySelectorAll('[data-m]').forEach((r) => { if (document.activeElement !== r) r.checked = r.dataset.m === mode; });
+    $('.fbpwbox').style.display = mode === 'password' ? '' : 'none';
+    const fpc = GM_getValue('rn-fbpw', null); if (document.activeElement !== $('[data-c="fbemail"]')) $('[data-c="fbemail"]').value = fpc ? fpc.email : '';
+    { const used = await writesToday(); const hit = settings.billing !== 'paid' && await limitHitToday(); const q = $('.fbq'); q.classList.toggle('hot', hit || (writeCap() !== Infinity && used > writeCap() * 0.7));
+      q.innerHTML = hit ? `<b>오늘 무료 쓰기 한도(2만 건)에 도달한 것으로 보입니다.</b><br>초기화: <b>${resetText()}</b>. 그 뒤 이어하기를 누르세요.`
+        : settings.billing === 'paid' ? `유료(Blaze): 무료 2만 건을 넘으면 사용한 만큼 청구. ${noCapNow() ? `<b>${settings.noCapUntil}까지 상한 없음</b> (크레딧 기간), 그 뒤 하루 ${(settings.dailyWriteCap || 200000).toLocaleString()}건` : `하루 안전 상한 <b>${writeCap().toLocaleString()}건</b>`}<br>오늘 사용량 약 <b>${used.toLocaleString()}건</b> · 날짜 기준 초기화: ${resetText()}` : `무료 쓰기 한도 <b>하루 2만 건</b>. 이 PC가 센 오늘 사용량 약 <b>${used.toLocaleString()}건</b><br><span style="font-size:10.5px">(이 PC에서 올린 것만 셉니다. 다른 PC·예전 버전에서 올린 양은 빠짐)</span><br>다음 초기화: <b>${resetText()}</b>`; }
+    { const L = $('.fbl'); const other = lockInfo && lockInfo.holder && lockInfo.holder !== PC.id && Date.now() - (lockInfo.heartbeatMs || 0) < 5 * 60000;
+      L.classList.toggle('busy', !!other);
+      L.textContent = other ? `지금 다른 PC(${lockInfo.pcName})에서 '${lockInfo.taskLabel}' 작업 중입니다. 끝날 때까지 이 PC에서는 수집·올리기를 시작할 수 없습니다.` : `이 PC: ${PC.name || '(이름 없음, 처음 작업할 때 정합니다)'}`; }
+    $('.fbs').textContent = !FB ? 'Firebase: 불러오기 실패 (새로고침 필요)' : fbUser ? `Firebase: ${fbUser.email} 로그인됨` : 'Firebase: 로그인 안 됨';
+    $('[data-a="fblogin"]').textContent = fbUser ? '로그아웃' : fbLoggingIn ? '로그인 창 대기 중' : (GM_getValue('rn-fbmode', 'google') === 'password' && GM_getValue('rn-fbpw', null) ? 'Firebase 로그인' : '구글 로그인'); if (!running) $('[data-a="fblogin"]').disabled = !FB || fbLoggingIn;
+  }
+
+  el.addEventListener('click', async (ev) => {
+    const b = ev.target.closest('[data-a]'); if (!b || b.disabled) return; const a = b.dataset.a;
+    if (TASKS[a] || a === 'bulk' || a === 'resume') window.__rnResumeOk && window.__rnResumeOk(); // 사람이 시작·이어하기를 누르면 일시정지 풀림
+    if (TASKS[a] || a === 'bulk') {
+      try { const lc = 0; if (false && a === 'bulk' && lc < 1000 && !GM_getValue('rnu-crm-complete', false) && !confirm(`이 PC에는 상세까지 받은 예전 주문이 ${lc}건뿐입니다.\n지금 시작하면 '이미 받은 주문'을 알아보지 못해 처음부터 전부 훑습니다 (몇 시간).\n고객·주문은 평소 기록이 있는 PC(${GM_getValue('rnu-autopc', 'JS-MAIN')})에서 하는 것이 좋습니다.\n\n그래도 이 PC에서 할까요?`)) return; } catch (e) {}
+      const r = await resumable();
+      if (r && !confirm(`멈춘 작업(${r === 'bulk' ? '전체 일괄 수집' : TASKS[r].label})이 있습니다.\n새로 시작하면 그 작업은 처음부터 다시 합니다. 이미 모은 데이터는 지워지지 않습니다.\n\n새로 시작할까요? (취소를 누르고 '이어하기'를 쓰셔도 됩니다)`)) return;
+      if (r) for (const n of ['bulk', ...Object.keys(TASKS)]) { const j = await loadJob(n); if (['paused', 'running', 'error'].includes(j.status)) { j.status = 'idle'; await saveJob(j); } }
+      start(a, { fresh: true });
+    } else if (a === 'fblogin') { if (fbUser) { await FB.auth().signOut(); log('Firebase 로그아웃했습니다.'); } else await fbLogin(); render();
+    } else if (a === 'setup_login') { await fbLogin(); render();
+    } else if (a === 'setup_cap') { el.classList.add('showset'); el.classList.remove('showguide', 'showiss', 'showimp'); const f = $('[data-s="dailyWriteCap"]'); f.scrollIntoView({ block: 'center' }); f.focus();
+    } else if (a === 'setup_pcname' || a === 'setup_cred') { el.classList.add('showset'); el.classList.remove('showguide', 'showiss', 'showimp'); const f = $(a === 'setup_pcname' ? '[data-c="pcname"]' : '[data-c="id"]'); f.scrollIntoView({ block: 'center' }); f.focus();
+    } else if (a === 'setup_core') { alert(`GitHub의 readnow-orders-core.js가 옛 버전(${P.VERSION})입니다.\n\n1) 가장 최근에 받은 readnow-orders-core.js 파일을 github.com/jerrycson/readnow-scripts 에 Add file → Upload files로 올리고 Commit changes\n2) 5분쯤 뒤 이 페이지를 새로고침\n\n필요한 버전: ${NEED_CORE}`);
+    } else if (a === 'autohelp') { el.classList.toggle('showauto');
+    } else if (a === 'fbusage') { window.open(`https://console.firebase.google.com/project/${FIREBASE_CONFIG.projectId}/firestore/databases/-default-/usage`, '_blank');
+    } else if (a === 'pause') { pauseRequested = true; log('지금 요청이 끝나면 멈춥니다.'); window.__rnPauseAll && window.__rnPauseAll('고객 패널에서'); }
+    else if (a === 'resume') { const r = await resumable(); if (r) start(r); }
+    else if (a === 'export') exportBackup();
+    else if (a === 'import') $('input[type=file][accept=".json"]').click();
+    else if (a === 'settings') { el.classList.toggle('showset'); el.classList.remove('showguide', 'showiss'); }
+    else if (a === 'guide') { el.classList.toggle('showguide'); el.classList.remove('showset', 'showiss'); }
+    else if (a === 'issues') { el.classList.toggle('showiss'); el.classList.remove('showset', 'showguide'); if (el.classList.contains('showiss')) renderIssues(); }
+    else if (a === 'issuecsv') exportIssuesCsv();
+    else if (a === 'importpane') { el.classList.toggle('showimp'); el.classList.remove('showset', 'showguide', 'showiss'); if (el.classList.contains('showimp')) renderImportStatus(); }
+    else if (a === 'saveset') { await saveSettingsUI(false);
+    } else if (a === 'logintest') {
+      if (await isLoggedIn()) { alert('지금은 로그인되어 있어 시험할 수 없습니다.\n다른 탭에서 알라딘 로그아웃을 한 뒤 다시 눌러 주세요.'); return; }
+      running = true; render();
+      try { await autoRelogin(''); log((await isLoggedIn()) ? '자동 로그인 시험 성공' : '자동 로그인 시험 실패: 로그인 화면 파일을 보내주시면 맞춰 고치겠습니다.', (await isLoggedIn()) ? 'ok' : 'err'); }
+      catch (e) { log('자동 로그인 시험 실패: ' + e.message, 'err'); }
+      finally { running = false; render(); }
+    }
+  });
+  $('.fx').onchange = (e) => { const fs = [...e.target.files]; e.target.value = ''; if (fs.length) handleImportFiles(fs); };
+  const drop = $('.drop');
+  drop.onclick = () => $('.fx').click();
+  drop.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('.fx').click(); } };
+  ['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); e.stopPropagation(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); e.stopPropagation(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', (e) => { const fs = e.dataTransfer ? [...e.dataTransfer.files] : []; if (fs.length) handleImportFiles(fs); });
+  el.addEventListener('dragover', (e) => e.preventDefault()); el.addEventListener('drop', (e) => e.preventDefault()); // 패널에 잘못 떨어뜨려도 브라우저가 파일을 열지 않게
+
+  el.querySelectorAll('[data-m]').forEach((r) => (r.onchange = () => { $('.fbpwbox').style.display = r.dataset.m === 'password' && r.checked ? '' : 'none'; }));
+  /* ── 핸드폰 등 웹앱에서 보낸 '수집 요청' 받기 ──
+   *  이 PC에 판매관리·주문조회 탭이 열려 있고 로그인되어 있으면 2분마다 '대기 중'을 알리고,
+   *  요청이 오면 먼저 받은 PC 한 대만 전체 일괄 수집을 시작함 */
+  let remoteInit = false; let lastReqSeen = GM_getValue('rn-last-req', null);
+  async function remoteLoop() {
+    if (!fdb || !fbUser || remoteInit) return; remoteInit = true;
+    const beat = () => { if (!settings.remoteRun || !fbUser || (window.__rnRest && window.__rnRest())) return; SYS().doc('collectors').set({ [PC.id]: { pcName: PC.name || PC.id, lastSeen: now(), running: running, page: location.pathname.split('/').pop() }, writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {}); };
+    beat(); setInterval(beat, 120000);
+    SYS().doc('collectRequest').onSnapshot(async (d) => {
+      if (!d.exists || !settings.remoteRun) return; const r = d.data();
+      if (!r || r.state !== 'requested' || r.id === lastReqSeen) return;
+      if (Date.now() - Date.parse(r.requestedAt || 0) > 30 * 60000) return; // 30분 넘은 요청은 무시
+      if (running || otherTabBusy() || (window.__rnRest && window.__rnRest())) return; // (1.56.0) 쉬는 탭은 받지 않음 — 이 PC의 수집기 탭이 받음
+      // 한 대만 받도록: 트랜잭션으로 '받음' 표시
+      let mine = false;
+      try { await fdb.runTransaction(async (tx) => { const cur = await tx.get(SYS().doc('collectRequest')); const c = cur.data() || {}; if (c.id !== r.id || c.state !== 'requested') return; tx.set(SYS().doc('collectRequest'), { state: 'claimed', claimedBy: PC.name || PC.id, claimedAt: now(), writerSchema: WRITER_SCHEMA }, { merge: true }); mine = true; }); } catch (e) { return; }
+      lastReqSeen = r.id; GM_setValue('rn-last-req', r.id);
+      if (!mine) return;
+      log(`${r.byName || '웹앱'}의 수집 요청을 받아 전체 일괄 수집을 시작합니다.`, 'ok'); beat();
+      const rs = await resumable(); await start('bulk', { fresh: rs !== 'bulk' });
+      const bj = await loadJob('bulk'); SYS().doc('collectRequest').set({ state: bj.status === 'done' ? 'done' : 'stopped', finishedAt: now(), message: bj.status === 'done' ? null : bj.message || null, writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {}); beat();
+    }, () => {});
+  }
+  setInterval(() => remoteLoop().catch(() => {}), 5000);
+  /* (1.56.0) 쉬는 탭이 넘긴 웹앱 요청(#rnrun=bulk)을 이 PC의 수집기 탭이 받아 시작 */
+  { const take = async (c) => { if (!c || c.cmd !== 'bulk' || c.done || Date.now() - (c.at || 0) > 120000) return; if (!window.__rnRole || window.__rnRole() !== 'lead') return;
+      GM_setValue('rnu-lead-cmd', { ...c, done: true, by: window.__rnTab }); for (let i = 0; i < 40 && !fbUser; i++) await sleep(500);
+      if (window.__rnPaused) { log('다른 탭으로 온 웹앱 요청: 이 PC는 일시정지 상태라 시작하지 않습니다 (다시 시작을 눌러 주세요)', 'warn'); return; }
+      if (running || otherTabBusy() || (window.__rnPrd && window.__rnPrd.busy && window.__rnPrd.busy())) { log('다른 탭으로 온 웹앱 요청: 이 탭이 이미 작업 중이라 건너뜁니다', 'warn'); return; }
+      log('다른 탭으로 온 웹앱 수집 요청을 이 탭(이 PC의 수집기)에서 시작합니다', 'ok'); autoTriggered = true; const r = await resumable(); await start('bulk', { fresh: r !== 'bulk' }); autoTriggered = false; };
+    try { if (typeof GM_addValueChangeListener === 'function') GM_addValueChangeListener('rnu-lead-cmd', (k, o, n, remote) => { if (remote) take(n).catch(() => {}); }); } catch (e) {} }
+  // 웹앱의 [지금 수집] 버튼으로 열린 경우: 로그인이 준비되면 전체 일괄 수집을 시작(멈춘 게 있으면 이어서), 끝나면 창을 닫음
+  if (/rnrun=bulk/.test(location.hash)) {
+    const closeAfter = /rnclose=1/.test(location.hash); history.replaceState(null, '', location.pathname + location.search);
+    (async () => {
+      for (let i = 0; i < 40 && !fbUser; i++) await sleep(500);
+      await (window.__rnRoleReady || Promise.resolve());
+      if (window.__rnRest && window.__rnRest()) { // (1.56.0) 이 탭이 쉬는 탭이면: 이 PC의 수집기 탭에 넘김 (한 PC에 수집기 하나)
+        GM_setValue('rnu-lead-cmd', { cmd: 'bulk', id: Math.random().toString(36).slice(2, 10), at: Date.now(), from: window.__rnTab });
+        log('웹앱 요청을 이 PC의 수집기 탭에 넘겼습니다 (이 탭은 쉬는 탭)', 'ok'); if (closeAfter) setTimeout(() => { try { window.close(); } catch (e) {} }, 8000); return; }
+      if (running) return; if (window.__rnPaused) { log('웹앱 요청: 이 PC는 일시정지 상태라 시작하지 않습니다 (다시 시작을 눌러 주세요)', 'warn'); return; } if (otherTabBusy()) { log('웹앱 요청: 이 PC의 다른 탭에서 이미 수집 중이라 건너뜁니다.', 'warn'); return; }
+      log('웹앱에서 요청한 수집을 시작합니다.', 'ok');
+      autoTriggered = true; const r = await resumable(); await start('bulk', { fresh: r !== 'bulk' }); autoTriggered = false;
+      const bj = await loadJob('bulk');
+      if (closeAfter && bj.status === 'done') { log('끝나서 10초 뒤 이 창을 닫습니다.', 'ok'); setTimeout(() => { try { window.close(); } catch (e) {} }, 10000); }
+    })();
+  }
+  // 자동 수집 설정: 바꾸는 즉시 저장
+  /* (1.34.0) 예전 매일 자동 스위치 묶음 없앰 — '⏰ 매일 자동 수집'(상품 탭) */
+  // 설정 칸도 바꾸는 즉시 저장 (비밀번호 칸 제외)
+  el.querySelector('.set').addEventListener('change', (e) => { if (e.target.matches('[data-c="pw"],[data-c="fbpw"]')) return; saveSettingsUI(true); });
+  setInterval(() => autoRunCheck().catch(() => {}), 60000); setTimeout(() => autoRunCheck().catch(() => {}), 15000);
+  $('input[type=file][accept=".json"]').onchange = (e) => { const f = e.target.files[0]; if (f) importBackup(f).catch((er) => log('백업 불러오기 실패: ' + er.message, 'err')); e.target.value = ''; };
+  window.addEventListener('beforeunload', (e) => { if (running) { e.preventDefault(); e.returnValue = ''; } });
+
+  for (const n of ['bulk', ...Object.keys(TASKS)]) { const j = await loadJob(n); if (j.status === 'running') { j.status = 'paused'; j.message = '창이 닫혀 중단됨'; await saveJob(j); } }
+  await refreshStats(); render();
+  log(`준비됨 (파서 ${P.VERSION})`);
+  if (!(GM_getValue('rn-cred', null) || GM_getValue('rnp-cred', null))) log('설정에 알라딘 아이디·비밀번호를 넣으면 로그인이 풀려도 자동으로 다시 로그인합니다.', 'warn');
+  /* ═══════════ 리드나우 추가 (고객 수집기 0.15.1): 진행 상황 공유 ═══════════
+   * 30초마다 rn_status/crm_{PC}에 진행 상황을 올림 → 웹앱 위쪽·다른 PC에서 진행률·남은 시간이 보임.
+   * 보기용 기록이라 실패해도 수집에는 영향 없음 */
+  {
+    let last = { label: '', done: 0, total: 0, left: null }; let pubAt = 0; let wasRunning = false;
+    const pub = (force) => {
+      if (!fdb || !fbUser) return; if (!force && Date.now() - pubAt < 30000) return; pubAt = Date.now();
+      const task = running && currentTask && TASKS[currentTask] ? TASKS[currentTask].label : null;
+      fdb.collection('rn_status').doc('crm_' + PC.id).set({ tool: '고객 수집기', pcName: PC.name || PC.id, running: running ? (task || '수집') : null,
+        state: task ? `${task} · ${last.label}` : last.label || '대기', done: running ? last.done : 0, total: running ? last.total : 0, etaMin: running ? last.left : null, atMs: Date.now(), writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {});
+    };
+    const _progress = progress;
+    progress = function (label, done, total) {
+      _progress(label, done, total);
+      const avg = reqTimes.length ? reqTimes.reduce((a, b) => a + b, 0) / reqTimes.length : 0;
+      last = { label, done: done || 0, total: total || 0, left: avg && total ? Math.round(((total - done) * avg) / 60000) : null };
+      pub(false);
+    };
+    setInterval(() => { if (running !== wasRunning) { wasRunning = running; pub(true); } else if (running) pub(false); }, 15000);
+  }
+})();
+
+/* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
+
+/* 원칙
+ *  - 알라딘 페이지를 여는 작업은 고객 수집기와 같은 잠금(crm_system/work_lock)을 쓴다.
+ *    → 두 수집기를 통틀어 한 번에 한 PC, 한 작업만 알라딘을 훑는다.
+ *  - 이미지는 "이미지 줄". 여러 PC가 20권씩 나눠 맡아(임대) 동시에 해도 겹치지 않는다. 알라딘 줄과 별개라 다른 PC는 다른 일을 할 수 있다.
+ *  - 모든 긴 작업은 진행 위치를 수시로 저장하고, 끊기면 그 자리부터 이어 한다.
+ *  - 올릴 때는 합치기만 한다. 빈 값으로 덮지 않고 웹앱 담당 칸은 건드리지 않는다. 바뀐 것만 기록한다.
+ */
+(async function () {
+  'use strict';
+  const VER = ((typeof globalThis !== 'undefined' && globalThis.__RN_FILE_VER) || (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version)) || '1.58.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
+  const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
+  const LOGIN_FLAG = 'rnp-autologin-pending';
+  /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
+  {
+    const pw = [...document.querySelectorAll('input[type="password"]')].find((i) => i.offsetParent !== null || i.getClientRects().length);
+    const fl = GM_getValue(LOGIN_FLAG, null);
+    if (fl && Date.now() - fl.at < 3 * 60 * 1000 && !(window.__rnLoginMethod && window.__rnLoginMethod() === 'naver')) {
+      if (pw) {
+        const cred = (GM_getValue('rnp-cred', null) || GM_getValue('rn-cred', null));
+        if (cred && cred.id && cred.pw) {
+          if (fl.submittedAt && Date.now() - fl.submittedAt < 60000) { GM_setValue(LOGIN_FLAG, { ...fl, result: 'failed' }); return; }
+          const form = pw.form || document;
+          const idInput = [...form.querySelectorAll('input[type="text"],input[type="email"],input:not([type])')].find((i) => i.getClientRects().length && i !== pw);
+          if (!idInput) { GM_setValue(LOGIN_FLAG, { ...fl, result: 'no-id-field' }); return; }
+          const setVal = (inp, v) => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(inp, v); inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true })); };
+          setVal(idInput, cred.id); setVal(pw, cred.pw);
+          [...document.querySelectorAll('input[type="checkbox"]')].forEach((c) => { const lab = (c.id && document.querySelector(`label[for="${c.id}"]`)) || c.closest('label') || c.parentElement; if (lab && /상태\s*유지|자동\s*로그인/.test(lab.textContent) && !c.checked) c.click(); });
+          GM_setValue(LOGIN_FLAG, { ...fl, submittedAt: Date.now() });
+          await new Promise((r) => setTimeout(r, 400));
+          const btn = [...form.querySelectorAll('button,input[type="submit"],input[type="image"],a')].find((b) => /^\s*로그인\s*$/.test(b.textContent || b.value || b.alt || '') || b.type === 'submit' || b.type === 'image');
+          if (btn) btn.click(); else if (pw.form) pw.form.submit();
+        }
+        return;
+      }
+      if (fl.submittedAt) GM_setValue(LOGIN_FLAG, { ...fl, result: 'maybe-ok' });
+    }
+  }
+  if (!/\/scm\/(wrecord_edit|worders|worder_preparatory_complete)\.aspx/i.test(location.pathname) || window.top !== window) return; // 통합 수집기: 상품 조회·주문조회 화면 어디서나
+  const WRITER_SCHEMA = 6;
+  const P = window.ReadnowProducts || globalThis.ReadnowProducts;
+  const PACE = P.makePacer('aladin'); // 알라딘 요청 속도: 이 PC의 모든 탭·스크립트가 같이 씀 (readnow-products-core.js makePacer)
+  if (!P) { window.__rnNote('[리드나우 상품 수집기] 파서 파일(readnow-products-core.js)을 불러오지 못했습니다. GitHub에 올렸는지 확인해 주세요.'); return; }
+  // 공용 파일이 요구 버전보다 '옛것'일 때만 알림 (같거나 더 새것이면 조용히 씀). 요구 버전은 이 한 곳에서만 정함
+  const NEED_FILES = { '상품 파서 readnow-products-core.js': [() => P.VERSION, '0.14.0'], '판매자 파서 readnow-sellers-core.js': [() => (window.ReadnowSellers || globalThis.ReadnowSellers || {}).VERSION, '1.3.0'], '판매자 분류 기준 readnow-core.js': [() => (((typeof unsafeWindow !== 'undefined' && unsafeWindow.ReadNowCore) || window.ReadNowCore || globalThis.ReadNowCore || {}).CORE_VERSION), '1.3.0'], '판정 엔진 readnow-pricing-core.js': [() => (window.ReadnowPricing || globalThis.ReadnowPricing || {}).VERSION, '0.9.1'], '출고 기준 readnow-shipping-core.js': [() => (window.ReadnowShipping || globalThis.ReadnowShipping || {}).VERSION, '0.5.1'], '관리도구 노선표 readnow-registry.js': [() => (window.ReadnowRegistry || globalThis.ReadnowRegistry || {}).VERSION, '0.2.0'] };
+  const verN = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
+  const OLD_FILES = Object.entries(NEED_FILES).map(([k, [g, w]]) => [k, g(), w]).filter(([, v, w]) => verN(v) < verN(w));
+  if (OLD_FILES.length) window.__rnNote(`[리드나우 수집기] GitHub의 공용 파일이 이 수집기보다 옛 버전입니다:\n${OLD_FILES.map(([k, v, w]) => `· ${k}: ${v || '못 읽음'} (필요 ${w} 이상)`).join('\n')}\n새 파일을 올린 뒤 몇 분 뒤 새로고침해 주세요.`);
+  const LS = { get: (k, d) => GM_getValue(k, d), set: (k, v) => GM_setValue(k, v) };
+  const TAB_ID = 't' + Math.random().toString(36).slice(2, 8); // 같은 PC의 탭 구분
+  const PC_ID = LS.get('pcId') || (() => { const id = 'pc_' + Math.random().toString(36).slice(2, 8); LS.set('pcId', id); return id; })();
+  if (!LS.get('pcName') && (GM_getValue('rn-pc', null) || {}).name) LS.set('pcName', GM_getValue('rn-pc').name); // 고객 쪽 PC 이름과 같이 씀
+  const PC_NAME = (window.__rnPcName && window.__rnPcName.get()) || LS.get('pcName', PC_ID);
+
+  // 기본 앱을 써서 같은 브라우저의 고객 수집기와 Firebase 로그인을 공유
+  if (!firebase.apps.length) firebase.initializeApp({
+    apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385',
+    storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15',
+  });
+  const app = firebase.app();
+  const db = app.firestore();
+  const auth = app.auth();
+  const TS = () => firebase.firestore.FieldValue.serverTimestamp();
+  const W = () => ({ uploadedAt: TS(), writerSchema: WRITER_SCHEMA, writer: PC_NAME });
+  const C = (n) => db.collection(n);
+  /* ── 가격 감시 표시 (1.22.0): 상품 조회/수정 목록의 각 줄에 판정 엔진 묶음을 색으로 표시 ── */
+  // 묶음 배정은 판정 엔진(readnow-pricing-core.js)의 groupOf 하나로만 계산 → 웹앱과 같은 결과. 비율 설정은 Firestore prd_system/pricing (없으면 엔진 기본값)
+  const PR = window.ReadnowPricing || globalThis.ReadnowPricing || null;
+  // 색: 초록은 검토에 쓰는 색이라 피함 → 적용 = 파랑, 비교 = 보라. 보관함(일시판매중지)은 관리코드 뒤 3자리로 구분 (기준: 판정 엔진 skuTag)
+  const MON = { treat: ['감시·적용', '#1F5FAF', '#E2ECFA', '판정 엔진이 매일 보고 가격을 맞추는 상품'], control: ['감시·비교', '#6B3FA0', '#EEE6F7', '판정만 기록하고 가격은 절대 안 바꾸는 비교 묶음 (효과 측정용)'], hold: ['가격상승대기 PND', '#8A4B0F', '#FBEBD9', '판매보류풀: 일시판매중지 + 관리코드 뒤 PND. 정한 가격 이상으로 최저가에 설 수 있을 때만 판매중'], retire: ['불용 BAD', '#555555', '#ECECEC', '불용 재고: 일시판매중지 + 관리코드 뒤 BAD (4년 초과, 관리자 승인)'], excluded: ['자동 제외', '#B0322A', '#FDE2E0', '자동 감시 제외 관리코드(KHKDVD 등) — 관리자 확인 필수'] }; // 자동 제외는 빨강 (노랑·초록은 다른 뜻으로 쓰는 색)
+  // 전체 모아보기: 우리 상품 기록(prd_listings) 전체에서 한 묶음만 골라 나란히 정렬 (알라딘 목록은 서버가 쪽으로 나눠 보내 화면에서 전체를 고를 수 없음)
+  let MONALL = null;
+  async function openMonView(k, S0) {
+    const ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:2147483645;background:rgba(0,0,0,.35);display:flex;justify-content:center;align-items:flex-start;padding:30px 10px;overflow:auto';
+    const [lbl, fg, bg, why] = MON[k]; ov.innerHTML = `<div style="background:#fff;border-radius:10px;width:min(1100px,100%);padding:12px;font:13px/1.5 sans-serif;color:#1E2B28"><div style="display:flex;justify-content:space-between;align-items:center"><b style="color:${fg};font-size:16px">${lbl} — 전체 모아보기</b><a href="#" id="mv_x">닫기 ✕</a></div><div style="color:#5B6B66">${why}</div><div id="mv_body">우리 상품 기록 읽는 중…</div></div>`;
+    document.body.appendChild(ov); ov.querySelector('#mv_x').onclick = (e) => { e.preventDefault(); ov.remove(); }; ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+    if (!MONALL) { const m = []; const ss = await C('prd_listings').get(); ss.forEach((d) => m.push({ id: d.id, ...d.data() })); MONALL = m; }
+    const rows = MONALL.filter((l) => PR.groupOfListing(l, S0) === k);
+    let sort = 'reg', q = '';
+    const draw = () => {
+      const f = rows.filter((l) => !q || [l.title, l.usedCode, l.sku, l.isbn13].join(' ').toLowerCase().includes(q.toLowerCase()));
+      const by = { reg: (a, b) => String(b.registeredAt || '').localeCompare(String(a.registeredAt || '')), title: (a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'ko'), priceD: (a, b) => (b.price || 0) - (a.price || 0), priceA: (a, b) => (a.price || 0) - (b.price || 0), sku: (a, b) => String(a.sku || '').localeCompare(String(b.sku || '')) }[sort];
+      f.sort(by);
+      ov.querySelector('#mv_body').innerHTML = `<div style="display:flex;gap:6px;margin:8px 0;flex-wrap:wrap"><input id="mv_q" placeholder="제목·U코드·관리코드·ISBN" value="${q.replace(/"/g, '&quot;')}" style="flex:1;min-width:200px;padding:6px"><select id="mv_s">${[['reg', '최근 등록 순'], ['title', '제목 순'], ['priceD', '비싼 순'], ['priceA', '싼 순'], ['sku', '관리코드 순']].map(([v, t]) => `<option value="${v}" ${v === sort ? 'selected' : ''}>${t}</option>`).join('')}</select><b style="align-self:center">${f.length.toLocaleString()}개</b></div>
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px"><tr style="background:${bg}"><th style="text-align:left;padding:4px">상품명</th><th>관리코드</th><th>등급</th><th style="text-align:right">판매가</th><th>판매상태</th><th>등록일</th><th>바로가기</th></tr>
+        ${f.slice(0, 500).map((l) => `<tr style="border-top:1px solid #E1E1E1"><td style="padding:4px">${String(l.title || l.usedCode).replace(/</g, '&lt;')}<br><small style="color:#5B6B66">${l.usedCode || ''}</small></td><td style="text-align:center">${l.sku || ''}</td><td style="text-align:center">${l.grade || ''}</td><td style="text-align:right">${(l.price || 0).toLocaleString()}</td><td style="text-align:center">${l.status || ''}</td><td style="text-align:center">${String(l.registeredAt || '').slice(0, 10)}</td><td style="text-align:center">${l.listingId ? `<a href="/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=${l.listingId}" target="_blank">정보수정</a> · <a href="/shop/wproduct.aspx?ItemId=${l.listingId}" target="_blank">웹 확인</a>` : ''}</td></tr>`).join('')}</table>${f.length > 500 ? `<div style="color:#5B6B66;margin-top:6px">앞의 500개만 표시 — 검색으로 좁히세요</div>` : ''}<div style="color:#5B6B66;margin-top:6px">우리 상품 기록 기준(마지막 상품 수집 때 상태). 판매가·상태는 샵매니저 화면이 가장 최신입니다.</div>`;
+      const qi = ov.querySelector('#mv_q'); qi.oninput = () => { clearTimeout(qi._t); qi._t = setTimeout(() => { q = qi.value; draw(); const n = ov.querySelector('#mv_q'); n.focus(); n.setSelectionRange(q.length, q.length); }, 200); };
+      ov.querySelector('#mv_s').onchange = (e) => { sort = e.target.value; draw(); };
+    };
+    draw();
+  }
+  async function paintMonitorBadges() {
+    if (!/\/scm\/wrecord_edit\.aspx/i.test(location.pathname) || !PR) return;
+    let cfg = {}; try { await new Promise((r) => { const u = auth.onAuthStateChanged((x) => { u(); r(x); }); }); const d = await C('prd_system').doc('pricing').get(); cfg = d.exists ? d.data() : {}; } catch (e) {}
+    const S0 = { rollout: cfg.rollout || PR.DEFAULTS.rollout, excludeSku: cfg.excludeSku || PR.DEFAULTS.excludeSku, excludeUsed: cfg.excludeUsed || [] };
+    const parsed = P.parseScmList(document); const byId = new Map(parsed.rows.map((r) => [String(r.listingId), r]));
+    let n = { treat: 0, control: 0, hold: 0, retire: 0, excluded: 0 };
+    document.querySelectorAll('input.batchChkBox').forEach((cb) => {
+      const r = byId.get(String(cb.value)); if (!r || !r.usedCode) return; const tr = cb.closest('tr'); if (!tr || tr.querySelector('.rn-mon')) return;
+      const g = PR.groupOfListing(r, S0); if (!MON[g]) return; n[g]++; // 묶음·보관함·제외 판단은 판정 엔진 한 곳
+      const [lbl, fg, bg, why] = MON[g]; tr.style.background = bg;
+      const cell = tr.querySelector(`#priceSalesChg_val_${cb.value}`); const b = document.createElement('div'); b.className = 'rn-mon'; b.dataset.g = g; b.title = why;
+      b.style.cssText = `display:inline-block;margin-top:2px;padding:0 5px;border-radius:8px;font-size:11px;font-weight:700;color:#fff;background:${fg}`; b.textContent = lbl;
+      (cell ? cell.parentNode : tr.lastElementChild).appendChild(b);
+    });
+    const tbl = document.querySelector('input.batchChkBox'); if (!tbl || document.getElementById('rn-mon-legend')) return;
+    const lg = document.createElement('div'); lg.id = 'rn-mon-legend'; lg.style.cssText = 'margin:6px 0;padding:6px 10px;border:1px solid #D6DDDA;border-radius:8px;background:#fff;font-size:12px;color:#1E2B28';
+    const rp = S0.rollout || {}; lg.innerHTML = `<b>가격 감시 범례</b> (판정 엔진 · 적용 ${rp.treatPct || 0}% / 비교 ${rp.controlPct || 0}%) ` + Object.entries(MON).map(([k, [l, fg, bg, why]]) => `<span title="${why}" style="display:inline-block;margin:0 4px;padding:1px 6px;border-radius:8px;background:${bg};border:1px solid ${fg};color:${fg};font-weight:700">${l} <small>이 쪽 ${n[k]}</small> <a href="#" data-monall="${k}" style="color:${fg}">전체 모아보기</a> <a href="#" data-monhere="${k}" style="color:${fg}">이 쪽만</a></span>`).join('') + ' <a href="#" data-monhere="" style="color:#5B6B66">이 쪽 전부 보기</a><br><span style="color:#5B6B66">줄 배경색 = 묶음 · 표시 없는 줄 = 감시 대상 아님 · 알라딘 목록은 알라딘 서버가 25~100개씩 나눠 보내므로, 전체에서 고르기는 \'전체 모아보기\'(우리 상품 기록 기준)로 봅니다</span>';
+    const table = tbl.closest('table'); if (table && table.parentNode) table.parentNode.insertBefore(lg, table);
+    lg.querySelectorAll('[data-monhere]').forEach((a) => (a.onclick = (e) => { e.preventDefault(); const k = a.dataset.monhere; document.querySelectorAll('input.batchChkBox').forEach((cb) => { const tr = cb.closest('tr'); if (!tr) return; const b = tr.querySelector('.rn-mon'); const show = !k || (b && b.dataset.g === k); tr.style.display = show ? '' : 'none'; const sep = tr.nextElementSibling; if (sep && !sep.querySelector('input.batchChkBox')) sep.style.display = show ? '' : 'none'; }); }));
+    lg.querySelectorAll('[data-monall]').forEach((a) => (a.onclick = (e) => { e.preventDefault(); openMonView(a.dataset.monall, S0).catch((er) => alert('모아보기 실패: ' + er.message)); }));
+  }
+  setTimeout(() => { if (window.__rnFeat && !window.__rnFeat('monitor')) return; /* (1.63.7) 🧩 */ paintMonitorBadges().catch(() => {}); }, 800);
+  /* ── 현금 판매 (1.27.2~1.30.0) ──
+   * ① 판매중지 전(빨강): '지금 판매중지로 바꾸기'(상품 조회/수정의 판매상태 바꾸기와 같은 요청) · '이미 했음'
+   * ② 현금 판매 완료(초록, 접힘): '다시 판매중으로 — 반품·교환' (이유·메모 → 알라딘 판매중으로 바꾸고 웹앱 기록에도 남김: 반품 = 그 줄 매출에서 빠짐, 교환·기타 = 매출은 그대로 두고 상품만 다시 판매)
+   * 🧪 테스트(이터널 선샤인만): 판매중으로 → 띠가 다시 빨강으로 나타남 → '지금 판매중지로 바꾸기' → 판매중지 목록으로 가서 그 줄을 표시. 웹앱에는 테스트 신호만 보내고 기록은 바꾸지 않음 — 몇 번이든 반복 */
+  const STOP_TXT = { cash: ['💵 현금 판매 완료', '#2e7d32'], elsewhere: ['다른 판매처에서 판매', '#2e7d32'], lost: ['분실·파손', '#8d6e63'], keep: ['보관·개인 소장', '#546e7a'], check: ['검수·확인 대기', '#b58100'], other: ['기타', '#757575'] };
+  const ST_CODE = { 판매중: 1, 판매대기: 41, 일시판매중지: 3, 판매중지: 15, 판매완료: 18, 판매금지: 16 };
+  const isTestItem = (it) => /이터널\s*선샤인/.test(String(it.title || '').replace(/\s+/g, ' '));
+  const stopListUrl = (kw) => `/scm/wrecord_edit.aspx?chkItemStockStatus=15&chkItemInDate=0&searchCat1=0&searchType=1&keyword=${encodeURIComponent(kw || '')}&ViewRowsCount=100&page=1&SortOrder=6&itemStockStatus=15&categoryId=0`;
+  async function setAladinStatus(listingId, before, to) { // 상품 조회/수정 화면의 판매상태 일괄 변경과 같은 요청
+    const fd = new URLSearchParams({ fn: 'stockstatusbulkchg', stockStatusBefore: String(before), stockStatusToDo: String(to), items: String(listingId) });
+    const rr = await fetch('/scm/wrecord_edit_usedbatch.aspx', { method: 'POST', body: fd, credentials: 'include' }); const txt = await rr.text(); const al = (txt.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || '';
+    if (!rr.ok || /실패|오류|error/i.test(al)) throw new Error(al || ('HTTP ' + rr.status)); return al; }
+  async function statusCodeOf(it) { try { const ld = (await C('prd_listings').doc(it.listingKey || ('aladin_' + it.aladinUsedCode)).get()).data(); if (ld && ST_CODE[ld.status]) return ST_CODE[ld.status]; } catch (er) {} return null; }
+  const sendSignal = (phase, t, extra) => C('shp_cmds').add({ type: 'cashTest', status: 'signal', phase, orderId: t.id, lineNo: t.it.lineNo, title: t.it.title, listingId: t.it.listingId || null, at: nowIso(), createdAt: nowIso(), by: PC_NAME, ...(extra || {}), uploadedAt: TS() }).catch(() => {});
+  // (1.37.0) 현금 판매 판매중지 도우미 — 띠의 단추와 웹앱이 맡긴 일(cashStop)이 같이 씀
+  const cashLidOf = async (t) => { if (t.it.listingId) return String(t.it.listingId); if (t.rowLid) return String(t.rowLid);
+    try { const ld = (await C('prd_listings').doc(t.it.listingKey || ('aladin_' + t.it.aladinUsedCode)).get()).data(); if (ld && ld.listingId) return String(ld.listingId); } catch (er) {} throw new Error('알라딘 상품번호를 못 찾음 — 상품 조회/수정 목록에서 그 줄의 단추로 해 주세요'); };
+  const cashInStopList = async (lid, title) => { const kw = String(title || '').replace(/^\[[^\]]*\]\s*/, '').slice(0, 30); if (!kw) return null; try { const r = await fetch(stopListUrl(kw), { credentials: 'include', cache: 'no-store' }); if (!r.ok) return null; const doc = new DOMParser().parseFromString(await r.text(), 'text/html'); return P.parseScmList(doc).rows.some((x) => String(x.listingId) === String(lid)); } catch (e) { return null; } };
+  const cashUpdLine = (id, lineNo, fn, what) => db.runTransaction(async (tx) => { const ref = C('crm_orders').doc(id); const sn = await tx.get(ref); if (!sn.exists) throw new Error('현금 판매 기록이 없음'); const o = sn.data();
+    const items = JSON.parse(JSON.stringify(o.items || [])); const it = items.find((x) => x.lineNo === lineNo); if (!it) throw new Error('그 줄을 못 찾음'); fn(it);
+    const tot = items.filter((x) => x.lineStatus === 'normal').reduce((s, x) => s + (+x.price || 0) * (+x.qty || 1), 0);
+    tx.update(ref, { items, totalAmount: tot, uploadedAt: TS(), history: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), by: PC_NAME, what }) }); });
+  /* (1.37.0) 웹앱이 맡긴 '현금 판매 → 알라딘 판매중지'(shp_cmds cashStop {orderId, lineNo, listingId, listingKey, usedCode, title}) — 띠의 '지금 판매중지로 바꾸기'와 같은 길, 확인 창 없이
+     판매중지 목록에서 그 상품번호를 찾아야 완료('done'), 못 찾으면 원래 상태를 다른 값으로 한 번씩 더 → 그래도 없으면 '확인 필요'(check — 완료로 적지 않음) */
+  async function cashStopCmd(ref, v) { const key = `${ref.id}#${v.tries || 1}`; /* (1.44.0) 웹앱이 다시 맡길 때(tries+1)마다 새 열쇠 — 예전엔 같은 열쇠라 '확인 못함' 뒤 다시 하지 못해 현금으로 판 책이 알라딘에 판매중으로 남을 수 있었음. 같은 회차를 다시 하는 것은 그대로 막음 */ const gate = await exBegin('cashStop', key, { orderId: v.orderId, lineNo: v.lineNo, listingId: v.listingId || null, title: v.title || null });
+    if (!gate.ok) { await ref.set({ status: 'done', doneAt: nowIso(), by: PC_NAME, result: { state: gate.state === 'done' ? 'skip' : 'check', msg: '실행 문: ' + gate.why }, uploadedAt: TS() }, { merge: true }); return; } // 같은 맡긴 일을 이미 시작했던 것 — 다시 보내지 않고 사람 확인
+    try { await cashStopCmd0(ref, v); } finally { let st = 'unknown', msg = null; try { const r = ((await ref.get()).data() || {}).result || {}; st = r.state === 'done' || r.state === 'skip' ? 'done' : r.state === 'fail' ? 'failed' : 'unknown'; msg = r.msg || null; } catch (e) {} await exEnd('cashStop', key, st, msg); } }
+  async function cashStopCmd0(ref, v) { const t = { id: v.orderId, it: { lineNo: v.lineNo, listingId: v.listingId || null, listingKey: v.listingKey || null, aladinUsedCode: v.usedCode || null, title: v.title || '' } };
+    try { const sn = (await C('crm_orders').doc(v.orderId).get()).data(); const it0 = sn && (sn.items || []).find((x) => x.lineNo === v.lineNo);
+      if (!it0 || it0.released || it0.lineStatus !== 'normal' || (it0.aladinStop && it0.aladinStop.status === 'done')) { await ref.set({ status: 'done', result: { state: 'skip', msg: '이미 처리됐거나 판매 줄이 아님' }, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); return; }
+      const lid = await cashLidOf(t); if (v.usedCode) { /* (1.59.0) 그 상품번호가 정말 이 상품(상품코드)인지 우리 상품 기록으로 맞춰 봄 — 다르면 엉뚱한 책을 판매중지하지 않고 사람 확인 */ let ld = null; try { const d = await C('prd_listings').doc('aladin_' + String(v.usedCode)).get(); ld = d.exists ? d.data() : null; } catch (er) {} if (ld && ld.listingId && String(ld.listingId) !== String(lid)) { await ref.set({ status: 'done', result: { state: 'check', msg: `상품번호가 맞지 않음(맡긴 ${lid} · 상품 기록 ${ld.listingId}) — 판매중지하지 않음, 알라딘에서 확인` }, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); return; } }
+      const before = (await statusCodeOf(t.it)) || 1; let al = await setAladinStatus(lid, before, 15); let ok = await cashInStopList(lid, t.it.title); let usedBefore = before;
+      for (const alt of [1, 3, 41]) { if (ok !== false || alt === before) continue; al = await setAladinStatus(lid, alt, 15).catch((e) => e.message); usedBefore = alt; ok = await cashInStopList(lid, t.it.title); }
+      const st = ok ? 'done' : 'check'; const by = (auth.currentUser && auth.currentUser.email) || PC_NAME;
+      await cashUpdLine(t.id, t.it.lineNo, (it) => { if (it.aladinStop && it.aladinStop.status === 'done') return; it.listingId = it.listingId || lid; it.aladinStop = { status: st, at: nowIso(), by, from: 'collector-auto', before: usedBefore, verified: ok === true, msg: al || null, cmd: ref.id }; }, `알라딘 판매중지로 바꿈(수집기 자동 · 웹앱 저장): ${t.it.title}${ok ? ' · 판매중지 목록에서 확인함' : ' · 판매중지 목록에서 확인 못함(확인 필요)'}${al ? ' · 알라딘: ' + al : ''}`);
+      await ref.set({ status: 'done', result: { state: st, listingId: lid, before: usedBefore, msg: al || null }, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`현금 판매 판매중지(자동): ${t.it.title} — ${ok ? '완료' : '확인 필요'}`, ok ? 0 : 1);
+    } catch (e) { await ref.set({ status: 'done', result: { state: 'fail', msg: e.message }, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }).catch(() => {}); log('현금 판매 판매중지 실패: ' + e.message, 1); } }
+  async function paintCashSold() {
+    try { await new Promise((r) => { const u = auth.onAuthStateChanged((x) => { u(); r(x); }); }); if (!auth.currentUser) return;
+      const onEdit = /\/scm\/wrecord_edit\.aspx/i.test(location.pathname);
+      const [ss, sr] = await Promise.all([C('crm_orders').where('platform', '==', 'cash').get(), onEdit ? C('prd_stop_reasons').get().catch(() => null) : null]);
+      const test = GM_getValue('rn-cash-test', null); // 🧪 테스트 중(판매중으로 돌려 놓음) — 그 상품을 다시 빨강으로
+      const todo = []; const done = []; const sold = new Map(); const soldT = new Map(); // 관리번호 → 판매중지 했는지
+      ss.forEach((d) => { const o = d.data(); (o.items || []).forEach((it) => { if (it.lineStatus !== 'normal' || it.released) return; let ok = !!(it.aladinStop && it.aladinStop.status === 'done');
+        const isT = test && test.id === d.id && test.lineNo === it.lineNo; if (isT) ok = false;
+        const t0 = { id: d.id, o, it, test: isT }; if (it.aladinUsedCode) { sold.set(String(it.aladinUsedCode), ok); soldT.set(String(it.aladinUsedCode), t0); } if (it.listingId) { sold.set('L' + it.listingId, ok); soldT.set('L' + it.listingId, t0); } (ok ? done : todo).push(t0); }); });
+      const reasons = new Map(); if (sr) sr.forEach((d) => { const v = d.data(); if (v.usedCode) reasons.set(String(v.usedCode), v); });
+      // 알라딘 상품번호(listingId): 현금 판매 기록에 없으면 우리 상품 기록 → 이 화면의 그 줄 순서로 찾음
+      const lidOf = cashLidOf;
+      const WHY = { return: '반품', exchange: '교환', other: '기타' };
+      // (1.34.0) 판매중지 확인: 바꾼 뒤 '판매중지' 목록에서 그 상품을 실제로 찾아야 완료 — 못 찾으면 원래 상태를 다른 값으로 한 번씩 더 시도, 그래도 없으면 '확인 필요'(완료로 적지 않음)
+      const inStopList = cashInStopList;
+      // 현금 판매 기록의 한 줄만 바꿈 (트랜잭션: 그 사이 웹앱에서 고친 다른 줄·금액을 덮어쓰지 않음) + 합계 다시 셈
+      const updLine = cashUpdLine;
+      async function doStop(t, b) { if (!t.test && !confirm(`'${t.it.title}'을(를) 알라딘에서 판매중지로 바꿀까요?`)) return; b.disabled = true; b.textContent = '바꾸는 중…';
+        try { const lid = await lidOf(t); const before = t.test ? 1 : (await statusCodeOf(t.it)) || 1; let al = await setAladinStatus(lid, before, 15);
+          if (t.test) { await sendSignal('stop', t, { msg: al || null }); GM_deleteValue('rn-cash-test'); GM_setValue('rn-cash-hl', { listingId: lid, at: Date.now() }); location.href = stopListUrl('이터널 선샤인'); return; }
+          let ok = await inStopList(lid, t.it.title); let usedBefore = before;
+          for (const alt of [1, 3, 41]) { if (ok !== false || alt === before) continue; al = await setAladinStatus(lid, alt, 15).catch((e) => e.message); usedBefore = alt; ok = await inStopList(lid, t.it.title); } // 기록의 원래 상태가 낡았을 때
+          const st = ok ? 'done' : 'check'; const by = (auth.currentUser && auth.currentUser.email) || PC_NAME;
+          await updLine(t.id, t.it.lineNo, (it) => { it.listingId = it.listingId || lid; it.aladinStop = { status: st, at: nowIso(), by, from: 'collector-stop', before: usedBefore, verified: ok === true, msg: al || null }; }, `알라딘 판매중지로 바꿈(수집기): ${t.it.title}${ok ? ' · 판매중지 목록에서 확인함' : ' · 판매중지 목록에서 확인 못함(확인 필요)'}${al ? ' · 알라딘: ' + al : ''}`);
+          if (!ok) { b.disabled = false; b.textContent = '확인 필요 — 다시 시도'; alert(`'${t.it.title}' 판매중지를 보냈지만 판매중지 목록에서 확인하지 못했습니다.\n상품 조회/수정 화면에서 그 상품의 판매 상태를 직접 확인해 주세요. (완료로 적지 않았습니다)`); return; }
+          b.textContent = '판매중지 완료 (목록에서 확인)'; setTimeout(paintCashSold, 1200); } catch (er) { b.disabled = false; b.textContent = '다시 시도'; alert('판매중지 바꾸기 실패: ' + er.message + '\n상품 조회/수정 화면에서 직접 바꿔 주세요.'); } }
+      async function doReopen(t, why, memo, b) { if (!confirm(`'${t.it.title}'을(를) 알라딘에서 다시 판매중으로 바꾸고 웹앱에 '${WHY[why]}'로 기록할까요?${why === 'return' ? '\n(반품: 이 줄은 현금 판매 매출에서 빠짐)' : ''}`)) return;
+        b.disabled = true; b.textContent = '바꾸는 중…';
+        try { const lid = await lidOf(t); const al = await setAladinStatus(lid, 15, 1); const by = (auth.currentUser && auth.currentUser.email) || PC_NAME;
+          await updLine(t.id, t.it.lineNo, (it) => { it.listingId = it.listingId || lid; it.released = true; it.aladinStop = { ...(it.aladinStop || {}), status: 'reopened', reopenedAt: nowIso(), reason: why, memo: memo || null, by, msg: al || null };
+            if (why === 'return') { it.lineStatus = 'returned'; it.returnReason = memo || '현금 판매 반품'; } else it.exchangeNote = memo || WHY[why]; }, `다시 판매중으로(${WHY[why]}): ${t.it.title}${memo ? ' · ' + memo : ''}${al ? ' · 알라딘: ' + al : ''}`);
+          b.textContent = '판매중으로 바꿈 · 기록함'; setTimeout(paintCashSold, 1200); } catch (er) { b.disabled = false; b.textContent = '다시 시도'; alert('실패: ' + er.message); } }
+      async function doTest(t, b) { b.disabled = true; b.textContent = '판매중으로 바꾸는 중…';
+        try { const lid = await lidOf(t); const al = await setAladinStatus(lid, 15, 1); GM_setValue('rn-cash-test', { id: t.id, lineNo: t.it.lineNo, listingId: lid, at: Date.now() }); await sendSignal('reopen', t, { msg: al || null });
+          b.textContent = '판매중으로 바뀜 — 맨 위 빨간 줄에서 다시 판매중지'; window.scrollTo(0, 0); setTimeout(paintCashSold, 600); } catch (er) { b.disabled = false; b.textContent = '다시 시도'; alert('테스트 실패: ' + er.message); } }
+      document.getElementById('rn-cash-bar')?.remove(); document.getElementById('rn-cash-chip')?.remove();
+      const e = (x) => String(x == null ? '' : x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+      const btn = (attr, i, label, bg, fg) => `<button ${attr}="${i}" style="margin-left:6px;border:1px solid ${bg};background:${fg ? bg : '#fff'};color:${fg ? '#fff' : bg};border-radius:6px;padding:2px 9px;cursor:pointer;font-weight:700">${label}</button>`;
+      if (todo.length || done.length) {
+        const bar = document.createElement('div'); bar.id = 'rn-cash-bar';
+        bar.style.cssText = `position:relative;z-index:99990;margin:6px;padding:8px 12px;border:2px solid ${todo.length ? '#B0322A' : '#2e7d32'};border-radius:8px;background:${todo.length ? '#FDE2E0' : '#EEF7EE'};color:#1e2b28;font:13px/1.5 system-ui,sans-serif`;
+        bar.innerHTML = `${todo.length ? `<b style="color:#8a1c14">💵 현금 판매한 상품 ${todo.length}개 — 알라딘에서 판매중지로 바꾸세요</b> <small>(웹앱에서 현금 판매로 기록됨)</small>
+          ${todo.map((t, i) => `<div style="margin-top:4px">${t.test ? '<b style="color:#6B3FA0">🧪 테스트</b> ' : ''}<b>${e(t.it.sku || t.it.aladinUsedCode || '')}</b> ${e(t.it.title)} <small>· ${e(String(t.o.orderedAt || '').slice(0, 10))} ${e((t.o.buyer || {}).name || t.o.payerName || '')}</small>${btn('data-rnstop', i, '지금 판매중지로 바꾸기', '#B0322A', 1)}${t.test ? '' : btn('data-rncs', i, '이미 했음', '#B0322A')}</div>`).join('')}` : ''}
+          ${done.length ? `<details style="margin-top:${todo.length ? 8 : 0}px"${todo.length ? '' : ' open'}><summary style="cursor:pointer"><b style="color:#1d5e22">💵 현금 판매 완료 ${done.length}개</b> <small>— 반품·교환으로 다시 판매할 때 여기서</small></summary>
+          ${done.map((t, i) => `<div style="margin-top:5px;padding-top:4px;border-top:1px dashed #b7d6b7"><b>${e(t.it.sku || t.it.aladinUsedCode || '')}</b> ${e(t.it.title)} <small>· ${e(String(t.o.orderedAt || '').slice(0, 10))} ${e((t.o.buyer || {}).name || t.o.payerName || '')}</small>
+            ${btn('data-rnre', i, '다시 판매중으로 — 반품·교환', '#1F5FAF')}${isTestItem(t.it) ? btn('data-rntest', i, '🧪 테스트: 판매중으로 → 다시 판매중지', '#6B3FA0', 1) : ''}
+            <div data-reform="${i}" style="display:none;margin-top:4px">이유 <select data-rer="${i}"><option value="return">반품 (매출에서 뺌)</option><option value="exchange">교환 (매출 그대로, 돌아온 상품 다시 판매)</option><option value="other">기타 (매출 그대로)</option></select> <input data-rem="${i}" placeholder="메모 (예: 파손 반품, 다른 권으로 교환)" style="width:220px"> ${btn('data-reok', i, '알라딘 판매중으로 바꾸고 기록', '#1F5FAF', 1)}</div></div>`).join('')}</details>` : ''}`;
+        // 평소(판매중지할 것이 없을 때)는 접어 둠: 오른쪽 아래 작은 '💵 n' 단추만 → 누르면 펼침, 띠의 '접기'로 다시 접음. 판매중지할 것이 생기면(빨강) 늘 펼침
+        const quiet = !todo.length && !sessionStorage.getItem('rn-cash-open');
+        if (quiet) { const chip = document.createElement('button'); chip.id = 'rn-cash-chip'; chip.textContent = `💵 현금 판매 ${done.length}`; chip.title = '현금 판매 완료 목록 펼치기 (다시 판매중으로·🧪 테스트)';
+          chip.style.cssText = 'position:fixed;right:12px;bottom:12px;z-index:99990;border:1px solid #2e7d32;background:#EEF7EE;color:#1d5e22;border-radius:14px;padding:3px 10px;font:700 12px system-ui;cursor:pointer;opacity:.85';
+          chip.onclick = () => { sessionStorage.setItem('rn-cash-open', '1'); paintCashSold(); }; document.body.appendChild(chip); }
+        else { if (!todo.length) { const x = document.createElement('button'); x.textContent = '접기'; x.style.cssText = 'float:left;margin-right:10px;font-weight:700;border:1px solid #2e7d32;background:#fff;color:#2e7d32;border-radius:6px;padding:1px 8px;cursor:pointer'; x.onclick = () => { sessionStorage.removeItem('rn-cash-open'); paintCashSold(); }; bar.prepend(x); }
+          document.body.prepend(bar); }
+        bar.querySelectorAll('[data-rnstop]').forEach((b) => (b.onclick = () => doStop(todo[+b.dataset.rnstop], b)));
+        bar.querySelectorAll('[data-rncs]').forEach((b) => (b.onclick = async () => { const t = todo[+b.dataset.rncs]; const items = JSON.parse(JSON.stringify(t.o.items)); const it = items.find((x) => x.lineNo === t.it.lineNo); if (!it) return;
+          it.aladinStop = { status: 'done', at: nowIso(), by: (auth.currentUser && auth.currentUser.email) || PC_NAME, from: 'collector' };
+          b.disabled = true; try { await C('crm_orders').doc(t.id).set({ items, uploadedAt: TS(), history: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), by: PC_NAME, what: '알라딘 판매중지 완료(수집기): ' + it.title }) }, { merge: true }); b.textContent = '완료'; setTimeout(paintCashSold, 800); } catch (er) { b.disabled = false; alert('저장 실패: ' + (er.code || er.message)); } }));
+        bar.querySelectorAll('[data-rnre]').forEach((b) => (b.onclick = () => { const f = bar.querySelector(`[data-reform="${b.dataset.rnre}"]`); f.style.display = f.style.display === 'none' ? '' : 'none'; }));
+        bar.querySelectorAll('[data-reok]').forEach((b) => (b.onclick = () => { const i = b.dataset.reok; doReopen(done[+i], bar.querySelector(`[data-rer="${i}"]`).value, bar.querySelector(`[data-rem="${i}"]`).value.trim(), b); }));
+        bar.querySelectorAll('[data-rntest]').forEach((b) => (b.onclick = () => doTest(done[+b.dataset.rntest], b)));
+      }
+      // 상품 조회/수정 목록: 현금 판매한 상품은 '현금 판매 완료' 표시(판매중지 전이면 빨강), 그 밖의 판매중지 상품은 웹앱에서 정한 이유를 표시 · 🧪 테스트 뒤 판매중지 목록에서 그 줄을 강조
+      if (onEdit) { const parsed = P.parseScmList(document); const byId = new Map(parsed.rows.map((r) => [String(r.listingId), r])); const hl = GM_getValue('rn-cash-hl', null); let hlFound = false;
+        const badge = (tr, txt, bg, cls) => { if (tr.querySelector('.' + cls)) return; const x = document.createElement('div'); x.className = cls; x.textContent = txt; x.style.cssText = `display:inline-block;margin-top:2px;padding:1px 6px;border-radius:8px;font-size:11px;font-weight:700;color:#fff;background:${bg}`; tr.lastElementChild.appendChild(x); };
+        document.querySelectorAll('input.batchChkBox').forEach((cb) => { const r = byId.get(String(cb.value)); if (!r) return; const tr = cb.closest('tr'); if (!tr) return;
+          if (hl && String(cb.value) === hl.listingId) { hlFound = true; tr.style.outline = '3px solid #6B3FA0'; tr.scrollIntoView({ block: 'center' }); badge(tr, '🧪 테스트 확인: 판매중지 목록에 있음 ✓', '#6B3FA0', 'rn-hl'); }
+          const k = sold.has(String(r.usedCode)) ? String(r.usedCode) : sold.has('L' + r.listingId) ? 'L' + r.listingId : null;
+          if (k != null) { const t = soldT.get(k); if (t) t.rowLid = String(cb.value);
+            if (!sold.get(k)) { tr.style.background = '#FDE2E0'; tr.style.outline = tr.style.outline || '2px solid #B0322A'; badge(tr, (t && t.test ? '🧪 테스트 · ' : '') + '💵 현금 판매됨 — 판매중지 하세요', '#B0322A', 'rn-cash'); }
+            else { tr.style.background = '#E8F5E9'; badge(tr, '💵 현금 판매 완료', '#2e7d32', 'rn-cash'); }
+            // 그 줄에서 바로: 판매중지 전 → '지금 판매중지로' · 판매 완료 → '다시 판매중으로 — 반품·교환'(이유) · 이터널 선샤인 → 🧪 테스트
+            if (t && !tr.querySelector('.rn-reb')) { const w = document.createElement('div'); w.className = 'rn-reb'; w.style.cssText = 'margin-top:3px;font:12px system-ui';
+              w.innerHTML = !sold.get(k) ? btn('data-x', 'stop', '지금 판매중지로 바꾸기', '#B0322A', 1)
+                : `${btn('data-x', 're', '다시 판매중으로 — 반품·교환', '#1F5FAF')}${isTestItem(t.it) ? btn('data-x', 'test', '🧪 테스트', '#6B3FA0', 1) : ''}<div data-x="form" style="display:none;margin-top:3px">이유 <select data-x="why"><option value="return">반품 (매출에서 뺌)</option><option value="exchange">교환 (매출 그대로)</option><option value="other">기타 (매출 그대로)</option></select> <input data-x="memo" placeholder="메모" style="width:140px"> ${btn('data-x', 'ok', '알라딘 판매중으로 바꾸고 기록', '#1F5FAF', 1)}</div>`;
+              tr.lastElementChild.appendChild(w); const q = (x) => w.querySelector(`[data-x="${x}"]`);
+              if (q('stop')) q('stop').onclick = (ev) => { ev.preventDefault(); doStop(t, q('stop')); };
+              if (q('re')) q('re').onclick = (ev) => { ev.preventDefault(); const f = q('form'); f.style.display = f.style.display === 'none' ? '' : 'none'; };
+              if (q('ok')) q('ok').onclick = (ev) => { ev.preventDefault(); doReopen(t, q('why').value, q('memo').value.trim(), q('ok')); };
+              if (q('test')) q('test').onclick = (ev) => { ev.preventDefault(); doTest(t, q('test')); }; }
+            return; }
+          const rs = reasons.get(String(r.usedCode)); if (rs && STOP_TXT[rs.reason]) { const [t2, c2] = STOP_TXT[rs.reason]; badge(tr, t2, c2, 'rn-stopr'); } });
+        if (hl) { GM_deleteValue('rn-cash-hl'); if (!hlFound) { const n = document.createElement('div'); n.style.cssText = 'margin:6px;padding:6px 10px;border:2px solid #6B3FA0;border-radius:8px;background:#F6F1FC;font:13px system-ui'; n.textContent = '🧪 테스트: 판매중지로 바꿨지만 이 쪽에서는 그 상품 줄을 못 찾았습니다 (다른 쪽이거나 검색 조건이 다름) — 판매중지 목록에서 직접 확인해 주세요'; document.body.prepend(n); } }
+      }
+    } catch (e) { console.warn('[리드나우] 현금 판매 표시 실패', e); }
+  }
+  setTimeout(() => { if (window.__rnFeat && !window.__rnFeat('cash')) return; /* (1.63.7) 🧩 */ paintCashSold(); }, 1200);
+  // 크롬은 뒤에 숨은 탭의 타이머를 크게 늦춘다 → 워커 타이머로 대기(고객 수집기와 같은 방식). 막히면 일반 타이머
+  let worker = null; let wseq = 0; const waiters = new Map();
+  try {
+    const src = 'onmessage=(e)=>{setTimeout(()=>postMessage(e.data.id),e.data.ms)}';
+    worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+    worker.onmessage = (e) => { const f = waiters.get(e.data); if (f) { waiters.delete(e.data); f(); } };
+  } catch (e) { worker = null; }
+  if (worker) {
+    const ok = await new Promise((r) => { const id = ++wseq; waiters.set(id, () => r(true)); worker.onerror = () => r(false); worker.postMessage({ id, ms: 1 }); setTimeout(() => r(false), 1000); });
+    if (!ok) { try { worker.terminate(); } catch (e) {} worker = null; waiters.clear(); }
+  }
+  const sleep = (ms) => new Promise((r) => { if (worker) { const id = ++wseq; waiters.set(id, r); worker.postMessage({ id, ms }); } else setTimeout(r, ms); });
+  const nowIso = () => new Date().toISOString();
+
+  const DEFAULTS = { keyScheme: 'aladinItemId', reloadEveryFrames: 400, reqMinMs: 700, reqStartMs: 1200, reqMaxMs: 20000, delayMs: 700, fallbackNaver: false, fallbackGoogle: false, previewImages: false, pageTimeoutSec: 25, dynamicParts: false, recheckDays: 7, topN: 50, rev6mDays: 7, nbDays: 7, photoMatch: 0.9, maxLanes: 1, ipGroups: { HOME: 'home' }, scanFullDays: 7, revAllDays: 7, crmAnyPc: false, autoDaily: true, autoHour: 17, autoPc: 'JS-MAIN', autoGraceMin: 30, reqPc: 'JS-MAIN', dynDaily: 0, dynDays: 30, dynScope: 'all', maxLoginTries: 6, prio: {}, usedInfoDays: 30, shipAutoMin: 15, steps: { usedInfo: true, nbMarket: true, soldInfo: true, poolInfo: true, images: true, photos: true, scanFull: true, revAll: true, crm: true, scanNew: true, aladinBuy: true, buyback: true, market: true, rev6m: true, revTop: true, dynamic: true }, autoLogin: true, loginRetrySec: 60 };
+  let SET = { ...DEFAULTS };
+  /* 중요도: 숫자가 클수록 먼저. 알라딘 작업 잠금을 낮은 작업이 쥐고 있으면 높은 작업이 양보를 요청 → 낮은 작업은 진행 위치를 저장하고 멈췄다가, 높은 작업이 끝나면 자동으로 이어감.
+   * 기본값 근거: 돈·고객에 바로 닿는 것(주문·고객 > 새 등록 > 알라딘 팔기·구매 정산) → 가격 판단 재료(시장 지표) → 경쟁 분석(판매자) → 장기 분석(구매자 분포) 순 */
+  const PRIO_DEFAULT = { crm: 100, scanNew: 90, buyback: 80, aladinBuy: 75, scanFull: 70, market: 60, rev6m: 50, revTop: 45, rev6mAll: 40, dynamic: 30, revAll: 20 };
+  const PRIO_KEY = { bench: 'market', usedInfo: 'market', soldInfo: 'market', poolInfo: 'market', photos: 'market', nbMarket: 'market', scanNew: 'scanNew', scanFull: 'scanFull', aladinBuy: 'aladinBuy', buyback: 'buyback', market: 'market', rev6mStale: 'rev6m', rev6m: 'rev6m', rev6mAll: 'rev6mAll', revTop: 'revTop', revAll: 'revAll', dynamic: 'dynamic', dynamic0: 'dynamic', dynAll: 'dynamic', crm: 'crm' };
+  let curStage = null; let myLockPrio = 0;
+  const prioOf = (k) => { if (k === 'explore') return 1; /* 탐색 수집은 가장 낮음 (무엇이든 양보) */ const pk = PRIO_KEY[k] || k; return +((SET.prio || {})[pk] ?? PRIO_DEFAULT[pk] ?? 50); };
+  const curPrio = () => prioOf(curStage || curKey || '');
+
+  /* ───────── 화면 (고객 수집기와 같은 배치·색) ─────────
+   * 위에서부터: 처음 설정 → 큰 버튼(일괄) → 일시정지/이어하기 → 개별 버튼 → 진행 상태 → Firebase·다른 PC 상태 → 기록 → 아래줄(가져오기·설정·안내) */
+  const K = { paper: '#FFFFFF', ink: '#1E2B28', sub: '#5B6B66', line: '#D6DDDA', cloth: '#2F5D50', clothSoft: '#E6EFEB', amber: '#A8661B', red: '#B0322A' };
+  const css = `
+  #rnp{position:fixed;top:12px;right:12px;z-index:2147483646;width:310px;max-height:calc(100vh - 24px);overflow:auto;background:${K.paper};color:${K.ink};border:1px solid ${K.line};border-top:4px solid ${K.cloth};border-radius:8px;box-shadow:0 8px 28px rgba(30,43,40,.16);font:13px/1.45 "Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+  #rnp *{box-sizing:border-box;font-family:inherit}
+  #rnp .hd{display:flex;align-items:baseline;justify-content:space-between;padding:10px 12px 6px;cursor:pointer;user-select:none}
+  #rnp .hd b{font-size:14px} #rnp .hd span{color:${K.sub};font-size:11px}
+  #rnp .bd{padding:0 12px 10px} #rnp.min .bd{display:none}
+  #rnp .sec{margin-top:10px} #rnp .cap{font-size:11px;color:${K.sub};margin:0 0 4px}
+  #rnp .rnp-sched{border:1.5px solid #2F5D50;border-radius:9px;padding:7px 8px;background:#F4F8F6} #rnp .sh2{display:flex;align-items:center;gap:7px;font-size:13px} #rnp .hint2{font-size:10.5px;color:#5B6B66}
+  #rnp .sl{margin-top:5px;display:flex;flex-direction:column;gap:4px} #rnp .sl.dim{opacity:.55} #rnp .sr{display:flex;gap:7px;align-items:flex-start;background:#fff;border:1px solid #DCE5E1;border-radius:7px;padding:5px 6px} #rnp .sr.on{border-color:#9CCBAE}
+  #rnp .sb{flex:1;min-width:0} #rnp .sb b{font-size:12px;display:block} #rnp .sb small{font-size:10.5px;color:#5B6B66;display:block} #rnp .tl{margin-top:2px;font-size:11px;display:flex;flex-wrap:wrap;gap:3px;align-items:center} #rnp .tl a{color:#2F5D50;margin-left:2px}
+  #rnp .ts{border:1px solid #DCE5E1;border-radius:9px;padding:0 6px;background:#fff;white-space:nowrap} #rnp .ts.done{background:#E3F1E8;border-color:#9CCBAE;color:#2F7D4F} #rnp .ts.running{background:#FFF4E5;border-color:#E8C88F} #rnp .ts.error,#rnp .ts.stop,#rnp .ts.timeout,#rnp .ts.lost{background:#FDECEA;border-color:#E3A29B;color:#B0322A} #rnp .ts.missed,#rnp .ts.skipped,#rnp .ts.merged{color:#8A9690} #rnp .ts.late{border-color:#E8C88F;color:#A8661B} #rnp .tw{margin-left:4px;font-size:10px;color:#8A9690;font-weight:400}
+  #rnp .sw2{position:relative;display:inline-block;width:30px;height:17px;flex:0 0 auto;margin-top:1px} #rnp .sw2.big{width:38px;height:21px} #rnp .sw2 input{opacity:0;width:0;height:0} #rnp .sw2 span{position:absolute;inset:0;background:#C9D2CE;border-radius:20px;transition:.15s;cursor:pointer}
+  #rnp .sw2 span:before{content:'';position:absolute;width:13px;height:13px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.15s} #rnp .sw2.big span:before{width:17px;height:17px} #rnp .sw2 input:checked+span{background:#2F5D50} #rnp .sw2 input:checked+span:before{transform:translateX(13px)} #rnp .sw2.big input:checked+span:before{transform:translateX(17px)}
+  #rnp .rn-bench{border:1px dashed #8E6BBF;border-radius:8px;padding:6px;background:#F6F1FC} #rnp .rn-bench .cap{color:#6B3FA0;font-weight:bold} #rnp .rn-bench .b2{background:#EFE6FA;border-color:#D5C2EE;color:#5A3D7A}
+  #rnp button{font-size:12px;cursor:pointer;border-radius:5px}
+  #rnp button:disabled{opacity:.4;cursor:not-allowed}
+  #rnp .b1{width:100%;padding:10px;border:0;background:${K.cloth};color:#fff;font-size:14px;font-weight:bold}
+  #rnp .b1:hover:not(:disabled){background:#264D42}
+  #rnp .b1 small{display:block;font-size:11px;font-weight:normal;opacity:.85}
+  #rnp .rnch-w{display:flex!important;flex-wrap:wrap;justify-content:center;align-items:center;gap:3px 2px;margin-top:5px;opacity:1!important;line-height:1.2}#rnp .rnch{display:inline-block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.32);border-radius:10px;padding:1px 7px;font-size:10.5px;white-space:nowrap}#rnp .rnch-a{opacity:.55;font-size:10px;margin:0 1px}#rnp .rnch-n{font-size:10.5px;opacity:.8;margin-left:4px;white-space:nowrap}#rnp .rnch-0{font-size:11px;background:#FFF3E0;color:#8A4A10;border-radius:8px;padding:2px 8px}#rnp .b1.rnch-off{filter:saturate(.4);opacity:.75}
+  #rnp .g2{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;margin-top:5px}
+  #rnp .b2{padding:7px 2px;border:1px solid #C9DDD5;background:${K.clothSoft};color:${K.cloth};font-weight:bold}
+  #rnp .b2:hover:not(:disabled){border-color:${K.cloth}}
+  #rnp .b2.multi{background:#fff;border-style:dashed}
+  #rnp .b2[data-job="benchForce"]{border:2px solid #D9822B;background:#FFF4E6;color:#8A4A10}
+  #rnp .rn-bfs{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:-2px 0 4px;padding:6px 8px;border:2px dashed #D9822B;border-radius:8px;background:#FFF9F0;color:#8A4A10;font-weight:700;font-size:12px}
+  #rnp .rn-bfs.on{border-style:solid;background:#FFE7C2}
+  #rnp .rn-bfs input[type=number]{width:52px;padding:2px 4px;font-weight:700}
+  #rnp .rn-bfs input[type=checkbox]{width:16px;height:16px;vertical-align:-3px}
+  #rnp .why{margin-top:4px;font-size:11px;color:${K.amber}}
+  #rnp .ctl{display:none;margin-top:6px} #rnp .ctl.on{display:block}
+  #rnp .ctl button{width:100%;padding:7px;border:1px solid ${K.amber};background:#FFF8EE;color:${K.amber};font-weight:bold}
+  #rnp .st{margin-top:10px;padding:8px 9px;background:#F6F8F7;border:1px solid ${K.line};border-radius:6px}
+  #rnp .stt{font-weight:bold;font-size:12.5px}
+  #rnp .bar{height:5px;background:#E3E9E6;border-radius:3px;overflow:hidden;margin:6px 0 3px}
+  #rnp .bar i{display:block;height:100%;width:0;background:${K.cloth};transition:width .3s}
+  #rnp .stn{font-size:11.5px;color:${K.sub}} #rnp .eta{font-size:12px;font-weight:bold;color:${K.cloth}} #rnp .now{margin-top:3px;font-size:11.5px;word-break:break-all}
+  #rnp .next{margin-top:6px;padding:5px 7px;border-radius:4px;background:#FFF4E5;color:${K.amber};font-size:11.5px}
+  #rnp .next:empty{display:none}
+  #rnp .img{margin-top:4px;font-size:11.5px;color:${K.sub}} #rnp .img:empty{display:none}
+  #rnp .fb{margin-top:10px;padding:8px 9px;border:1px solid ${K.line};border-radius:6px}
+  #rnp .fbs{font-size:12px} #rnp .pcs{margin-top:5px} #rnp .pc{padding:5px 7px;border-radius:4px;background:#F6F8F7;font-size:11.5px;margin-top:4px;line-height:1.5}
+  #rnp .pc.busy{background:#FDECEA;color:${K.red}} #rnp .pc.me{background:${K.clothSoft};color:${K.cloth}} #rnp .pc b{font-weight:bold}
+  #rnp .setup{margin-top:4px;border-radius:6px}
+  #rnp .setup.todo{padding:8px 9px;border:2px solid ${K.amber};background:#FFF8EE}
+  #rnp .setup.todo h5{margin:0 0 4px;font-size:12.5px;color:${K.amber}}
+  #rnp .setup ul{margin:0;padding:0;list-style:none}
+  #rnp .setup li{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12px;border-top:1px dashed #EBD9BE} #rnp .setup li:first-child{border-top:0}
+  #rnp .setup li.ok{color:${K.cloth}} #rnp .setup li.no{font-weight:bold}
+  #rnp .setup li button{padding:2px 8px;border:1px solid ${K.amber};background:#fff;color:${K.amber};font-size:11px}
+  #rnp .setup.done{padding:4px 2px;font-size:11px;color:${K.cloth}}
+  #rnp .log{margin-top:8px;max-height:220px;overflow:auto;font-size:11.5px;color:${K.ink};background:#F7F9F8;border:1px solid ${K.line};border-radius:6px;padding:4px 6px}
+  #rnp .log p{margin:0 0 2px} #rnp .log .warn{color:${K.amber}} #rnp .log .ok{color:${K.cloth}}
+  #rnp .foot{display:flex;justify-content:space-between;margin-top:10px;padding-top:7px;border-top:1px solid ${K.line}} #rnp .foot span{display:flex;gap:10px}
+  #rnp .b3{padding:2px 0;border:0;background:none;color:${K.sub};font-size:11.5px;text-decoration:underline;text-underline-offset:2px;text-decoration-color:#C3CCC8}
+  #rnp .b3:hover:not(:disabled){color:${K.ink}}
+  #rnp .pane{display:none;margin-top:8px;font-size:12px;border-top:1px solid ${K.line};padding-top:6px}
+  #rnp.showset .set,#rnp.showimp .imp,#rnp.showguide .guide{display:block}
+  #rnp .set label{display:block;margin-top:5px;color:${K.sub}}
+  #rnp .set input[type=text],#rnp .set input[type=password],#rnp .set input[type=number],#rnp .set select{width:100%;padding:4px;border:1px solid ${K.line};border-radius:3px;font-size:12px;color:${K.ink}}
+  #rnp .set .chk{display:flex;gap:6px;align-items:center;color:${K.ink}}
+  #rnp .cst{margin-top:6px;padding:6px 8px;border-radius:5px;font-size:12px;line-height:1.5}
+  #rnp .cst.ok{background:${K.clothSoft};color:${K.cloth}} #rnp .cst.no{background:#FFF4E5;color:${K.amber}} #rnp .cst.bad{background:#FDECEA;color:${K.red}}
+  #rnp .cst b{font-size:12.5px} #rnp .cst small{display:block;color:${K.sub}}
+  #rnp .set .row{display:flex;gap:4px;margin-top:6px} #rnp .set .row button{flex:1;padding:6px;border:1px solid ${K.line};background:#fff}
+  #rnp .drop{margin-top:2px;padding:16px 10px;border:2px dashed #B9CFC6;border-radius:8px;background:#F6FAF8;text-align:center;cursor:pointer}
+  #rnp .drop b{display:block;color:${K.cloth};font-size:13px} #rnp .drop span{display:block;margin-top:3px;font-size:11px;color:${K.sub}}
+  #rnp .drop.over{background:${K.clothSoft};border-color:${K.cloth}}
+  #rnp .guide h4{margin:8px 0 2px;font-size:12.5px} #rnp .guide p{margin:0 0 5px;font-size:11.5px}`;
+  const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+  const box = document.createElement('div'); box.id = 'rnp';
+  box.innerHTML = `
+  <div class="hd"><b>리드나우 상품 수집</b><span>v${VER} (눌러서 접기)</span></div>
+  <div class="bd">
+    <div class="setup"></div>
+    <div class="sec rnp-sched" id="rnpSched"><div class="hint2">⏰ 매일 자동 수집 — 설정을 불러오는 중 (구글 로그인 필요)</div></div>
+    <div class="sec">
+      <button class="b1" data-job="prdChain">상품 일괄 수집<small class="rnch-w" id="rnpChainTxt">고른 단계를 불러오는 중…</small></button><div id="rnpSteps" style="display:flex;flex-wrap:wrap;gap:2px 8px;font-size:11.5px;margin:4px 0 0"></div><button style="display:none"></button>
+      <div class="ctl" id="rnpCtlStop"><button id="rnpStop">일시정지 (진행 위치 저장)</button></div>
+      <div class="ctl" id="rnpCtlResume"><button id="rnpResume">이어하기</button><button id="rnpReset" style="margin-top:3px;background:#fff;color:#B0322A;border:1px solid #B0322A" title="멈춘 자리를 버리고 다음에 처음부터">이어하기 없애기 (처음부터)</button></div>
+      <div id="rnpTemp" style="margin-top:6px"></div><button class="b3" id="rnpCheck" style="margin-top:4px">시작 전 점검 (대량 수집 전에 한 번)</button>
+    </div>
+    <div class="sec">
+      <p class="cap">개별 수집</p>
+      <div class="g2">
+        <button class="b2" data-job="scanNew">신규 등록분</button><button class="b2" data-job="scanFull">전체 재검토</button>
+        <button class="b2" data-job="market">도서·시장 지표</button><button class="b2 multi" data-job="images" title="여러 PC가 동시에 해도 겹치지 않습니다">이미지 (여러 PC 가능)</button>
+      </div>
+      <div class="why" id="rnpWhy"></div>
+    </div>
+    <div class="sec">
+      <p class="cap">판매자 평가 (알라딘 줄 · 한 번에 한 PC)</p>
+      <div class="g2"><button class="b2" data-job="rev6mAll" title="모든 판매자 숍 첫 화면에서 최근 6개월 평가 수만 빠르게">6개월 평가 수 (전체)</button><button class="b2" data-job="rev6mStale" title="설정한 주기보다 오래된 판매자만">6개월 평가 수 (오래된 것만)</button></div>
+      <div class="g2" style="margin-top:4px"><button class="b2" data-job="revTop" title="최근 6개월 평가·모범·불량·이득·불익 각 상위 판매자(설정의 수)의 새 평가만">상위 판매자 평가 갱신</button><button class="b2" data-job="revAll" title="모든 판매자의 처음 평가까지. 매우 오래 걸립니다">평가 전체 수집</button></div>
+      <button class="b3" id="rnpRevTest" style="margin-top:3px">평가 읽기 시험 (우리 가게 1쪽, 저장 안 함)</button>
+    </div>
+
+    <div class="sec">
+      <p class="cap">매입 대조 (알라딘 줄)</p>
+      <div class="g2"><button class="b2" data-job="buyback" title="알라딘에 팔기: 정산 내역 목록과 접수마다 상세(매입·매입불가·정산액)">알라딘 팔기 정산 내역</button><button class="b2" data-job="aladinBuy" title="알라딘에서 산 모든 주문과 주문마다 책(등급·가격·수량·주문일)을 모음. 이미 받은 주문은 건너뜀">알라딘 구매 내역 (전체)</button><button class="b2" data-job="poolInfo" title="알라딘에서 산 책 중 아직 상품과 연결 안 된 책의 도서 정보·시세·사진">알라딘 풀 도서 정보</button></div>
+    </div>
+    <div class="sec">
+      <p class="cap">우리 상품 보강 (알라딘 줄)</p>
+      <div class="g2"><button class="b2" data-job="nbMarket" title="알라딘 미등록·세트·새상품 페이지 없는 상품: 바깥 검색(중고) 화면의 따로 등록된 같은 책들로 경쟁·시세">검색 시세 (미등록·세트)</button><button class="b2" data-job="bench" title="웹앱 경영 탭 → 🎯 집중 벤치마킹에서 고른 판매자의 중고샵 목록 전체를 끝까지 읽어, 어제와 견줘 새로 올린 것·사라진 것(팔렸거나 내림)·값 바뀐 것을 기록 (하루 한 번 · 일괄 수집에도 들어 있음)">🎯 집중 벤치마킹</button><button class="b2" data-job="benchForce" title="주기(n시간·n일에 한 번)와 '끝난 지 20시간 안이면 건너뜀' 규칙을 무시하고, 웹앱에서 고른 판매자 목록의 맨 처음 판매자부터 차례로 모두 지금 읽음 · 멈췄다 이어 하면 이번에 이미 읽은 판매자는 건너뜀(3일 안)">🎯 강제: 처음 판매자부터</button><button class="b2" data-job="benchDetail" title="집중 벤치마킹으로 모은 상품(따라가는 판매자의 지금 숍 상품) 중 아직 상품 페이지 정보(ISBN·분류·출간 연월)가 없는 것만 상품 페이지를 열어 읽음 — 웹앱 ⚙ 모을 정보의 '상품 페이지 정보' 켜짐·꺼짐과 상관없이 · 판매자마다 끝까지 · 한 번 읽은 상품·다른 판매자와 같은 책·우리 도서 기록에 있는 책은 열지 않음 · 멈추면 100개마다 저장한 데까지 남음">📖 벤치마킹 상품 페이지 정보</button><span class="rn-bfs" title="켜면 '🎯 강제: 처음 판매자부터'가 이 시간 안에 끝까지 읽은 판매자는 건너뛰고 나머지를 모두 읽음 (웹앱 🎯 자세히의 같은 토글과 하나 — Firebase에 저장)"><label><input type="checkbox" id="rnBfOn"> ⏭ 강제 실행 때 최근</label> <input type="number" id="rnBfH" min="1" max="168" value="20"> <label for="rnBfOn" title="숍 끝까지 다 읽은 회차가 그 시간 안에 끝난 판매자만 건너뜀 — 50% 넘어 쓴 회차라도 뒤쪽을 못 읽었으면 다시 읽음 · 멈춘 판매자는 📍 멈춘 자리부터 이어 읽음">시간 안에 숍 끝까지 다 읽은 판매자 건너뛰기</label></span><button class="b2" data-job="photos" title="새상품 표지가 없는 상품: 우리 상품 페이지의 사진을 전부">우리 상품 사진</button><button class="b2" data-job="usedInfo" title="우리 책 온라인 중고 첫 페이지에서 우리보다 앞에 있는 매물과 바로 뒤 몇 개(설정): 중고상품 구매 유의 사항 글과 사진 — 가격 결정 화면 블록의 ? 표시">경쟁 매물 유의사항·사진</button></div>
+    </div>
+    <details class="sec" style="margin-top:10px"><summary class="cap" style="cursor:pointer">예비 · 가끔 쓰는 것 (펼치기)</summary>
+      <p class="cap" style="margin-top:6px">출고 — 클라우드가 1분마다 하므로 클라우드가 멈췄을 때만</p>
+      <div class="g2"><button class="b2" data-job="shipRead" title="판매관리 주문확인요청·발송 요청 탭의 주문을 읽어 웹앱 \'오늘 출고\'로 보냄 (클라우드가 10분 넘게 멈춰 있으면 영업일 9~16시에 15분마다 저절로)">주문확인요청·발송 요청 읽기</button></div>
+    <div class="rn-bench" style="margin-top:8px">
+      <p class="cap">🔭 벤치마킹 · 시장 조사 <span style="font-weight:normal">— 우리 운영과 따로 (남의 책·시장 전체)</span></p>
+      <div class="g2"><button class="b2" data-job="explore" title="우리 책들의 함께 산 책에서 시작해 새 책마다 도서 정보·사진·시장 지표·구매자 분포를 모으고 그 책의 함께 산 책으로 끝없이 넓혀 감 (일괄 수집에는 안 들어감, 다른 작업이 시작되면 잠시 멈췄다 이어감)">끝없는 탐색 수집 ∞</button><button class="b2" data-job="dynAll" title="새상품 페이지의 구매자 연령대·함께 산 책·클릭한 상품 — 안 모은 책 전부">구매자 분포 전체 수집</button></div>
+    </div>
+    </details>
+    <div class="st"><div class="stt" id="rnpState">대기 중</div><div class="bar"><i id="rnpBar"></i></div>
+      <div class="stn" id="rnpCount"></div><div class="eta" id="rnpEta"></div><div class="now" id="rnpSub"></div>
+      <div class="img" id="rnpImg"></div><div class="next" id="rnpNext"></div></div>
+    <div class="fb"><div class="fbs" id="rnpWho">Firebase: 확인 중</div><div class="pcs" id="rnpPcs"></div></div>
+    <div class="rnp-oldlog" style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px"><b>최근 기록</b><a href="#" id="rnpLogBig" style="color:#2F5D50">항목마다 자세히 · 크게 보기 ›</a></div><div class="log" id="rnpLog" style="margin-top:2px"></div>
+    <div class="foot">
+      <span><button class="b3" data-pane="imp">등록 파일 가져오기</button></span>
+      <span><button class="b3" data-pane="set">설정</button><button class="b3" data-pane="guide">사용 안내</button></span>
+    </div>
+    <div class="pane imp">
+      <div class="drop" id="rnpDrop"><b>알라딘 등록 상품 파일(.xls)</b><span>여기에 끌어다 놓거나 눌러서 고르기<br>판매완료 엑셀은 고객 수집기에 넣어 주세요</span></div>
+      <input type="file" id="rnpFile" accept=".xls,.xlsx,.html" style="display:none">
+    </div>
+    <div class="pane set">
+      <label>알라딘 요청 간격 — 자동 조절(1초로 시작 → 잘 되면 이 최소값까지 빨라지고, 실패·로그인 풀림이면 바로 느려짐). 최소(ms)<input type="number" id="rnpDelay" min="300" step="50"></label>
+      <label>요청 간격 최대(ms) — 막힐 때 늦출 수 있는 한계<input type="number" id="rnpDelayMax" min="2000" step="1000"></label>
+      <label>경쟁 매물 유의사항·사진: 다시 확인하는 주기(일) — 0이면 매번 전부<input type="number" id="rnpUsedDays" min="0" step="1"></label>
+      <label>경쟁 매물: 우리 매물 바로 뒤 몇 개까지 볼지 (우리보다 앞 매물은 모두)<input type="number" id="rnpUsedAfter" min="0" step="1"></label>
+      <label>경쟁 매물: 일괄 수집 안에서 쓸 최대 시간(분) — 넘으면 다음 단계로, 나머지는 다음 일괄 때 · 0이면 끝까지<input type="number" id="rnpUsedChain" min="0" step="10"></label>
+      <label>도서·시장 지표를 다시 확인하는 주기(일) — 0이면 매번 전체<input type="number" id="rnpRecheck" min="0" step="1"></label>
+      <label class="chk"><input type="checkbox" id="rnpNaver"> 알라딘에 없을 때 네이버에서 보충(시험)</label>
+      <label class="chk"><input type="checkbox" id="rnpGoogle"> 알라딘에 없을 때 구글에서 보충(시험)</label>
+      <label>도서 기준 키 (바꾸면 이후 "같은 책" 판단 기준이 바뀜)<select id="rnpKey">${P.KEY_SCHEMES.map((k) => `<option>${k}</option>`).join('')}</select></label>
+      <label>이 PC 이름 (고객 수집기와 같은 이름 권장)<input type="text" id="rnpName" autocomplete="off"></label>
+      <div class="cst" id="rnpCredSt"></div>
+      <label>알라딘 아이디<input type="text" id="rnpId" autocomplete="off"></label>
+      <label>알라딘 비밀번호<input type="password" id="rnpPw" autocomplete="new-password"></label>
+      <div class="row"><button id="rnpCredSave">아이디·비밀번호 저장</button></div>
+    </div>
+    <div class="pane guide">
+      <h4>평소 사용</h4><p>상품을 등록한 날은 <b>상품 일괄 수집</b> 한 번이면 됩니다. 새로 등록한 상품을 기록하고, 도서 정보·시장 지표를 확인 주기가 지난 책만 골라 갱신합니다.</p>
+      <h4>멈췄다 이어하기</h4><p>일시정지를 누르면 진행 위치가 Firebase에 저장됩니다. 수집기를 새 버전으로 바꾸고 새로고침해도, 다른 PC에서 눌러도 <b>이어하기</b>로 이어집니다. 일시정지 없이 창을 닫아도 마지막 저장(책 10권·목록 5쪽마다) 이후 몇 건만 다시 합니다.</p>
+      <h4>여러 PC</h4><p>알라딘을 훑는 작업은 고객 수집기와 합쳐 한 번에 한 PC만 합니다. 다른 PC가 작업 중이면 가운데 칸에 빨간색으로 어느 PC가 무엇을 얼마나 했는지, 남은 시간이 보입니다. 이미지는 여러 PC가 동시에 해도 됩니다.</p>
+      <h4>밤새 돌릴 때</h4><p>Windows 절전 모드를 꺼 두세요. 탭은 뒤에 있어도 됩니다.</p>
+    </div>
+  </div>`;
+  document.body.appendChild(box);
+  const $ = (s) => box.querySelector(s);
+  $('.hd').onclick = () => box.classList.toggle('min');
+  box.querySelectorAll('[data-pane]').forEach((b) => (b.onclick = () => { const c = 'show' + b.dataset.pane; const on = !box.classList.contains(c); box.classList.remove('showset', 'showimp', 'showguide'); if (on) box.classList.add(c); }));
+  const logLines = [];
+  function log(m, warn) {
+    window.__rnLog && window.__rnLog('상품', warn ? 'warn' : 'info', m);
+    logLines.unshift({ t: `${new Date().toTimeString().slice(0, 8)} ${m}`, w: warn ? 'warn' : '' }); if (logLines.length > 200) logLines.length = 200;
+    $('#rnpLog').innerHTML = logLines.map((l) => `<p class="${l.w}">${l.t.replace(/</g, '&lt;')}</p>`).join('');
+  }
+  // 진행 표시 + 남은 시간(최근 처리 속도 기준) + 다른 PC에서 볼 수 있게 상태 공유
+  const fmtDur = (min) => { if (!isFinite(min) || min < 0) return ''; if (min < 1) return '1분 미만'; const h = Math.floor(min / 60), m = Math.round(min % 60); return h ? `${h}시간 ${m}분` : `${m}분`; };
+  let rate = { state: null, pts: [] }; let lastPub = 0; let lastUi = {};
+  function ui(state, done, total, sub, next) {
+    window.__rnLog && window.__rnLog('상품', 'detail', `${state}${total ? ` ${(+done || 0).toLocaleString()}/${(+total).toLocaleString()}` : ''}${sub ? ` · ${sub}` : ''}`);
+    $('#rnpState').textContent = state;
+    $('#rnpBar').style.width = total ? Math.min(100, (done / total) * 100).toFixed(1) + '%' : '0';
+    $('#rnpCount').textContent = total ? `${done.toLocaleString()} / ${total.toLocaleString()} (${((done / total) * 100).toFixed(1)}%)` : '';
+    let eta = null;
+    if (total) {
+      if (rate.state !== state) rate = { state, pts: [] };
+      rate.pts.push([Date.now(), done]); if (rate.pts.length > 80) rate.pts.shift();
+      const [t0, d0] = rate.pts[0]; const [t1, d1] = rate.pts[rate.pts.length - 1];
+      if (d1 > d0 && t1 - t0 > 20000) eta = ((total - done) / ((d1 - d0) / (t1 - t0))) / 60000;
+    } else rate = { state: null, pts: [] };
+    $('#rnpEta').textContent = eta != null ? `남은 시간 약 ${fmtDur(eta)} · 끝나는 시각 약 ${new Date(Date.now() + eta * 60000).toTimeString().slice(0, 5)}` : (total ? '남은 시간 계산 중…' : '');
+    $('#rnpSub').textContent = sub || ''; if (next != null) $('#rnpNext').textContent = next;
+    lastUi = { state, done, total, sub: sub || '', etaMin: eta != null ? Math.round(eta) : null };
+    try { if (running && window.__rnPhase) window.__rnPhase('prd', state); } catch (e) {} // (1.43.0) 단계 표시 (작업 중일 때만)
+    if (window.__rnStatus) window.__rnStatus.cur = { ...lastUi };
+    if (auth.currentUser && Date.now() - lastPub > 30000) { lastPub = Date.now(); publishStatus(); }
+  }
+  let curKey = null; let pubKey = null;
+  function publishStatus(extra) {
+    const key = curKey || pubKey; if (!key) return Promise.resolve(); pubKey = key;
+    const G = window.ReadnowRegistry || globalThis.ReadnowRegistry; const gv = (n) => (typeof unsafeWindow !== 'undefined' && unsafeWindow[n]) || window[n] || globalThis[n]; // (1.36.0) 읽은 공용 파일 판을 신호에 실음 → 웹앱 관리도구가 노선표의 판과 비교
+    const cores = G ? G.loadedVers({ ReadNowCore: gv('ReadNowCore'), ReadnowSellers: gv('ReadnowSellers'), ReadnowProducts: gv('ReadnowProducts'), ReadnowPricing: gv('ReadnowPricing'), ReadnowShipping: gv('ReadnowShipping'), ReadnowOrders: gv('ReadnowOrders'), ReadnowAladin: gv('ReadnowAladin'), ReadnowExec: gv('ReadnowExec'), ReadnowRegistry: G, ReadnowRegister: gv('ReadnowRegister'), ReadnowExt: gv('ReadnowExt') }) : null; // (1.43.1) 알라딘 창구·실행 문 판도 · (1.44.0) 등록 엔진 판도 (예전엔 빠져 관리도구에 '?'로 빨갛게)
+    return C('rn_status').doc(`prd_${PC_ID}_${key}`).set({ tool: '상품 수집기', pcName: LS.get('pcName', PC_ID), running: running || null, key, ...lastUi, ...(extra || {}), ver: APP_VER, cores, mods: window.__rnMods || null, ledgerDown: window.__rnLedgerDown || null, /* (1.44.0) 실행 기록을 못 적는 중이면 관리도구에 빨갛게 */ atMs: Date.now(), ...W() }, { merge: true }).catch(() => {});
+  }
+  let running = null; let stopFlag = false;
+  function setRunning(name) {
+    running = name; stopFlag = false; if (name && window.__rnPhaseReset && !['chain', 'prdChain'].includes(curKey)) window.__rnPhaseReset('prd', name); // (1.43.0) 새 작업 = 단계 표시 처음부터 (일괄은 단계마다 아래에서)
+    box.querySelectorAll('[data-job]').forEach((b) => (b.disabled = !!name && b.dataset.job !== 'images'));
+    $('#rnpCtlStop').classList.toggle('on', !!name);
+    $('#rnpWhy').textContent = name ? `'${name}' 진행 중 — 다른 알라딘 작업은 새 탭에서 동시에 할 수 있습니다 (요청 간격은 탭끼리 나눠 씀)` : '';
+    if (!name) refreshResume();
+    publishStatus({ running: name || null });
+  }
+  $('#rnpStop').onclick = () => { stopFlag = true; window.__rnPauseAll && window.__rnPauseAll('상품 패널에서'); log('일시정지 요청: 지금 항목을 마치고 진행 위치를 저장합니다 (이 PC의 모든 탭 함께)'); }; // (1.38.0) 버튼은 개요의 일시정지 하나로 합침 (이 버튼은 숨김)
+
+  /* ───────── 로그인 ───────── */
+  async function ensureLogin() {
+    if (auth.currentUser) return auth.currentUser;
+    await new Promise((r) => { const u = auth.onAuthStateChanged((x) => { u(); r(x); }); });
+    if (auth.currentUser) return auth.currentUser;
+    renderSetup();
+    await new Promise((r) => { const u = auth.onAuthStateChanged((x) => { if (x) { u(); r(x); } }); });
+    return auth.currentUser;
+  }
+  // 처음 한 번 해야 할 설정 (고객 수집기와 같은 모양): 모두 끝나면 초록 한 줄
+  function renderSetup() {
+    const cred = (GM_getValue('rnp-cred', null) || GM_getValue('rn-cred', null));
+    const items = [
+      ['구글 로그인', !!auth.currentUser, 'login'],
+      ['이 PC 이름', !!LS.get('pcName'), 'pcname'],
+      ['알라딘 아이디·비밀번호 (자동 재로그인용)', !!(cred && cred.id && cred.pw), 'cred'],
+    ];
+    const el = $('.setup');
+    if (items.every((x) => x[1])) { el.className = 'setup done'; el.textContent = `✓ 설정 완료 · ${auth.currentUser.email.split('@')[0]} · PC: ${LS.get('pcName')}`; return; }
+    el.className = 'setup todo';
+    el.innerHTML = `<h5>처음 한 번 해야 할 설정</h5><ul>${items.map(([t, ok, k]) => `<li class="${ok ? 'ok' : 'no'}"><span>${ok ? '✓ ' : ''}${t}</span>${ok ? '' : `<button data-fix="${k}">하기</button>`}</li>`).join('')}</ul>`;
+    el.querySelectorAll('[data-fix]').forEach((b) => (b.onclick = () => {
+      const k = b.dataset.fix;
+      if (k === 'login') auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(renderSetup).catch((e) => log('로그인 실패: ' + e.message, 1));
+      if (k === 'pcname') { const n = prompt('이 PC의 이름 (예: JS-MAIN, HOME)', (window.__rnPcName && window.__rnPcName.get()) || ''); if (n && n.trim()) { window.__rnPcName && window.__rnPcName.set(n.trim()); $('#rnpName').value = n.trim(); renderSetup(); } }
+      if (k === 'cred') { box.classList.remove('showimp', 'showguide'); box.classList.add('showset'); $('#rnpId').focus(); }
+    }));
+  }
+
+  /* ───────── 설정 (모든 PC 공유) ───────── */
+  async function loadSettings() {
+    const d = await C('prd_system').doc('settings').get();
+    SET = { ...DEFAULTS, ...(d.exists ? d.data() : {}) };
+    PACE.setCfg({ minMs: SET.reqMinMs, startMs: SET.reqStartMs, maxMs: SET.reqMaxMs }); // 모든 수집·감시가 이 값을 같이 씀
+    $('#rnpDelay').value = SET.reqMinMs; $('#rnpDelayMax').value = SET.reqMaxMs; $('#rnpUsedDays').value = SET.usedInfoDays ?? 30; $('#rnpUsedAfter').value = SET.usedInfoAfter ?? 3; $('#rnpUsedChain').value = SET.usedInfoChainMin ?? 60; $('#rnpRecheck').value = SET.recheckDays; $('#rnpNaver').checked = !!SET.fallbackNaver; $('#rnpGoogle').checked = !!SET.fallbackGoogle; $('#rnpKey').value = SET.keyScheme; $('#rnpName').value = LS.get('pcName', '');
+  }
+  const saveSet = (patch) => { Object.assign(SET, patch); return C('prd_system').doc('settings').set({ ...patch, updatedBy: auth.currentUser.email, ...W() }, { merge: true }); };
+  $('#rnpDelay').onchange = (e) => { const v = Math.max(300, +e.target.value || 600); saveSet({ reqMinMs: v }); PACE.setCfg({ minMs: v }); };
+  $('#rnpDelayMax').onchange = (e) => { const v = Math.max(2000, +e.target.value || 15000); saveSet({ reqMaxMs: v }); PACE.setCfg({ maxMs: v }); };
+  $('#rnpUsedDays').onchange = (e) => saveSet({ usedInfoDays: Math.max(0, Math.round(+e.target.value)) });
+  $('#rnpUsedAfter').onchange = (e) => saveSet({ usedInfoAfter: Math.max(0, Math.round(+e.target.value)) });
+  $('#rnpUsedChain').onchange = (e) => saveSet({ usedInfoChainMin: Math.max(0, Math.round(+e.target.value)) });
+  $('#rnpRecheck').onchange = (e) => saveSet({ recheckDays: Math.max(0, Math.round(+e.target.value)) });
+  $('#rnpNaver').onchange = (e) => saveSet({ fallbackNaver: e.target.checked });
+  $('#rnpGoogle').onchange = (e) => saveSet({ fallbackGoogle: e.target.checked });
+  $('#rnpName').onchange = (e) => { (window.__rnPcName && window.__rnPcName.set($('#rnpName').value)), LS.set('pcName', e.target.value.trim() || PC_ID); renderSetup(); };
+  // 저장 상태를 눈으로 확인: 초록 = 저장 완료(더 넣을 필요 없음), 주황 = 비어 있음, 빨강 = 최근 자동 로그인 실패
+  function renderCred() {
+    { const box = $('#rnpCredSt'); if (box && !document.getElementById('rnpLoginM')) box.insertAdjacentHTML('beforebegin', `<div id="rnpLoginM" style="margin:4px 0;font-size:12px"><b>다시 로그인 방식</b> <label><input type="radio" name="rnpLm" value="naver"> 네이버로 로그인 (권장)</label> <label><input type="radio" name="rnpLm" value="id"> 알라딘 아이디·비밀번호</label><div id="rnpNaverSt" style="color:#5B6B66"></div></div>`);
+      const m = window.__rnLoginMethod ? window.__rnLoginMethod() : 'naver'; document.querySelectorAll('input[name="rnpLm"]').forEach((r) => { r.checked = r.value === m; r.onchange = () => { GM_setValue('rnu-login-method', r.value); renderCred(); }; });
+      const ok = GM_getValue('rnu-naver-okAt', 0), fail = GM_getValue('rnu-naver-failAt', 0), need = GM_getValue('rnu-need-naver', 0); const t = (ms) => new Date(ms).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const st = document.getElementById('rnpNaverSt'); if (st) st.textContent = m !== 'naver' ? '아이디 로그인은 자동입력방지가 생겨 자동으로 안 될 수 있습니다' : need && need > ok ? `⚠ 네이버 로그인 필요 (${t(need)}) — 이 PC 브라우저에서 네이버에 로그인(로그인 상태 유지)` : ok ? `✓ 마지막 네이버 자동 로그인 ${t(ok)}` : '이 PC 브라우저에서 네이버에 한 번 로그인(로그인 상태 유지)해 두면 자동으로 다시 로그인합니다';
+      if (m === 'naver') return; }
+    const c = (GM_getValue('rnp-cred', null) || GM_getValue('rn-cred', null)); const okAt = GM_getValue('rnp-cred-okAt', 0); const failAt = GM_getValue('rnp-cred-failAt', 0);
+    const el = $('#rnpCredSt'); const t = (ms) => new Date(ms).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    if (c && c.id && c.pw) {
+      const bad = failAt && failAt > okAt;
+      el.className = 'cst ' + (bad ? 'bad' : 'ok');
+      el.innerHTML = bad
+        ? `<b>✕ 저장은 되어 있으나 ${t(failAt)} 자동 로그인 실패</b><small>비밀번호가 바뀌었는지 확인하고, 새 비밀번호를 넣어 저장하세요.</small>`
+        : `<b>✓ 아이디 ${c.id} · 비밀번호 저장됨 — 더 넣지 않아도 됩니다</b><small>${okAt ? `마지막 자동 로그인 성공: ${t(okAt)}` : '아직 자동 로그인할 일이 없었습니다'} · 바꿀 때만 새로 입력하세요</small>`;
+      $('#rnpPw').placeholder = '●●●●●● 저장됨 (바꿀 때만 입력)';
+    } else if (c && c.id) {
+      el.className = 'cst no'; el.innerHTML = `<b>! 아이디만 저장됨 — 비밀번호가 비어 있습니다</b><small>비밀번호를 넣고 저장해야 자동 재로그인이 됩니다.</small>`; $('#rnpPw').placeholder = '';
+    } else {
+      el.className = 'cst no'; el.innerHTML = `<b>! 저장된 아이디·비밀번호 없음</b><small>넣지 않으면 로그인이 풀릴 때 수집이 멈춥니다.</small>`; $('#rnpPw').placeholder = '';
+    }
+  }
+  { const c = (GM_getValue('rnp-cred', null) || GM_getValue('rn-cred', null)); $('#rnpId').value = c ? c.id : ''; renderCred(); }
+  $('#rnpCredSave').onclick = () => {
+    const id = $('#rnpId').value.trim(); const pw = $('#rnpPw').value; const old = (GM_getValue('rnp-cred', null) || GM_getValue('rn-cred', null));
+    if (id) { GM_setValue('rnp-cred', { id, pw: pw || (old && old.pw) || '' }); if (pw) GM_deleteValue('rnp-cred-failAt'); } else { GM_deleteValue('rnp-cred'); }
+    $('#rnpPw').value = ''; renderCred(); renderSetup();
+    const c = (GM_getValue('rnp-cred', null) || GM_getValue('rn-cred', null));
+    log(!id ? '아이디·비밀번호 삭제됨' : c && c.pw ? `알라딘 아이디·비밀번호 저장됨 (${id})` : '아이디만 저장됨 — 비밀번호를 넣어 주세요', !(c && c.pw));
+  };
+  $('#rnpKey').onchange = (e) => { if (confirm('도서 기준 키를 바꾸면 이후 "같은 책" 판단 기준이 바뀝니다. 기존 책의 내부 번호와 이미지는 그대로입니다. 바꿀까요?')) saveSet({ keyScheme: e.target.value }); else e.target.value = SET.keyScheme; };
+
+  /* ───────── 잠금: 고객 수집기와 같은 문서(crm_system/work_lock)·같은 규칙 ───────── */
+  // 알라딘을 훑는 작업은 두 수집기를 통틀어 한 번에 하나. 신호가 5분 끊기면 자동으로 풀린다.
+  /* ───────── 알라딘 작업 잠금 (인터넷 주소 묶음별) ─────────
+   * 묶음: 같은 인터넷 주소를 쓰는 PC끼리 (기본: 사무실 = office, HOME = home). 묶음마다 잠금이 따로라 HOME은 사무실과 동시에 돎.
+   * 한 묶음 안에서는 상품 쪽 작업을 '동시에 알라딘 작업할 PC 수'(설정)만큼 함께 돌릴 수 있고, 그때 PC마다 요청 간격을 그 수만큼 늘려 묶음 전체 속도는 그대로(차단 위험 그대로).
+   * 고객 수집은 묶음 안에서 혼자 (가장 중요해 다른 작업이 양보). 같은 작업(예: 시장 지표)은 어느 묶음이든 한 PC만. */
+  const lockGroup = () => { const g = (SET.ipGroups || { HOME: 'home' })[String(PC_NAME || '').toUpperCase()] || (SET.ipGroups || {})[PC_NAME] || 'office'; return g; };
+  const lockDocId = () => (lockGroup() === 'office' ? 'work_lock' : 'work_lock_' + lockGroup());
+  const LOCK = () => C('crm_system').doc(lockDocId());
+  const JOBREG = () => C('crm_system').doc('running_jobs');
+  let lockBeat = null; let lockHeld = false; let yieldUnsub = null; let yieldFor = null; let laneCount = 1; let myJobLabel = null; let myRegKey = null; let lastSame = false;
+  const TAB_FRESH = 5 * 60000;
+  const freshPcs = (d, now) => { const o = Object.fromEntries(Object.entries((d && d.pcs) || {}).filter(([, v]) => v && now - (v.at || 0) < TAB_FRESH));
+    if (d && d.holder && String(d.task || '').startsWith('product_') && !o[d.holder] && d.heartbeatMs && now - d.heartbeatMs < TAB_FRESH) o[d.holder] = { name: d.pcName, at: d.heartbeatMs, prio: d.prio ?? 50, job: String(d.task).slice(8), tabs: d.tabs || {}, legacy: true }; // 1.7.0 전 버전이 잡은 자리
+    return o; };
+  const legacyOther = (d, now) => d && d.holder && d.heartbeatMs && now - d.heartbeatMs < TAB_FRESH && !String(d.task || '').startsWith('product_') && d.holder !== PC_ID; // 고객 수집이 잡고 있음
+  function lockFields(pcs, d) { const arr = Object.entries(pcs); if (!arr.length) return null; const [hid, h] = arr.sort((a, b) => (b[1].prio ?? 0) - (a[1].prio ?? 0))[0];
+    return { writerSchema: WRITER_SCHEMA, holder: hid, pcName: h.name, task: 'product_' + (h.job || ''), taskLabel: '상품 수집기: ' + arr.map(([, v]) => `${v.name}(${Object.values(v.tabs || {}).map((t) => t.job).join('+')})`).join(' · '), prio: Math.max(...arr.map(([, v]) => v.prio ?? 0)), minPrio: Math.min(...arr.map(([, v]) => v.prio ?? 0)), startedAt: (d && d.startedAt) || nowIso(), heartbeatMs: Date.now(), pcs, by: auth.currentUser.email }; }
+  async function acquireLane(lane, label) {
+    if (lane !== 'aladin') return { ok: true };
+    if (!(window.__rnPcName && window.__rnPcName.get())) { const n = window.__rnRemote ? null : window.__rnPcName && window.__rnPcName.ask(''); if (n) $('#rnpName').value = n; }
+    const name = (window.__rnPcName && window.__rnPcName.get()) || LS.get('pcName', PC_ID); const job = (curStage && STEP_LABEL[curStage]) || label || running || ''; /* (1.63.6 전체 점검) '같은 작업은 한 곳만' 열쇠는 이름이 아니라 작업 열쇠로 — 예전엔 일괄 수집 안의 벤치마킹('집중 벤치마킹 판매자')과 ⏰·직접 벤치마킹('🎯 … 정한 순서대로 모두')이 이름이 달라 두 PC가 같은 판매자를 함께 읽어 서로 덮을 수 있었음 */ const regKey = (() => { const k0 = curStage ? (STAGE_JOB[curStage] || curStage) : (curKey || ''); const k = { benchForce: 'bench' }[k0] || k0; return k ? 'job:' + k : job; })(); const myPrio = curPrio(); const maxN = Math.max(1, +SET.maxLanes || 1);
+    const t0 = Date.now(); let asked = false;
+    for (;;) {
+      try {
+        await db.runTransaction(async (tx) => {
+          const s = await tx.get(LOCK()); const d = s.exists ? s.data() : null; const now = Date.now();
+          const rg = await tx.get(JOBREG()); const reg = rg.exists ? rg.data() : {}; const other = reg[regKey] || (regKey !== job ? reg[job] : null); // 같은 작업은 어느 PC든 한 곳만 (예전 판 수집기가 이름으로 적은 것도 봄)
+          if (other && other.pc !== PC_ID && now - (other.at || 0) < TAB_FRESH) { const e = new Error('SAMEJOB'); e.info = { job, holder: other.name }; throw e; }
+          if (legacyOther(d, now)) { const e = new Error('LOCKED'); e.info = d; throw e; }
+          const pcs = freshPcs(d, now); const mine = pcs[PC_ID] || { name, tabs: {} };
+          const tabs = {}; Object.entries(mine.tabs || {}).forEach(([k, v]) => { if (k !== TAB_ID && v && now - (v.at || 0) < TAB_FRESH) tabs[k] = v; });
+          if (Object.values(tabs).some((v) => v.job === job)) { const e = new Error('SAMEJOB'); e.info = { job, holder: '이 PC의 다른 탭' }; throw e; }
+          if (!pcs[PC_ID] && Object.keys(pcs).length >= maxN) { const e = new Error('LOCKED'); e.info = { ...(d || {}), prio: Math.min(...Object.values(pcs).map((v) => v.prio ?? 0)), lowPc: Object.entries(pcs).sort((a, b) => (a[1].prio ?? 0) - (b[1].prio ?? 0))[0][0] }; throw e; }
+          tabs[TAB_ID] = { at: now, job, prio: myPrio };
+          pcs[PC_ID] = { name, at: now, job, prio: Math.max(...Object.values(tabs).map((v) => v.prio ?? 0)), tabs };
+          const low = Object.entries(tabs).some(([k, v]) => k !== TAB_ID && (v.prio ?? 0) < myPrio); // 같은 PC의 다른 탭에 낮은 작업 → 양보 요청
+          tx.set(LOCK(), { ...lockFields(pcs, d), ...(low ? { yieldReq: { prio: myPrio, pc: PC_ID, tab: TAB_ID, target: PC_ID, pcName: name, tool: job, at: now } } : {}) });
+          tx.set(JOBREG(), { [regKey]: { pc: PC_ID, name, at: now, label: job } }, { merge: true });
+        });
+        break;
+      } catch (e) {
+        if (e.message === 'LOCKED') { const hp = e.info.prio ?? 100;
+          if (hp < myPrio && Date.now() - t0 < 6 * 60000) { // 낮은 작업이 자리를 차지 → 가장 낮은 PC에 양보 요청하고 기다림
+            if (!asked) { asked = true; log(`${e.info.pcName || '다른 PC'}의 '${e.info.taskLabel || ''}'(중요도 ${hp})보다 '${job}'(중요도 ${myPrio})이 먼저입니다. 양보를 요청하고 기다립니다`); }
+            await LOCK().set({ yieldReq: { prio: myPrio, pc: PC_ID, tab: TAB_ID, target: e.info.lowPc || null, pcName: name, tool: job, at: Date.now() } }, { merge: true }).catch(() => {});
+            ui(`양보 기다리는 중 — ${e.info.pcName || ''}: ${e.info.taskLabel || ''}`, 0, 0, `${Math.round((Date.now() - t0) / 1000)}초`); await sleep(10000); continue; }
+          return { ok: false, holder: e.info.pcName, job: e.info.taskLabel, minutes: Math.round((Date.now() - (e.info.heartbeatMs || Date.now())) / 60000), prio: hp }; }
+        if (e.message === 'SAMEJOB') { lastSame = true; return { ok: false, holder: e.info.holder === '이 PC의 다른 탭' ? '이 PC의 다른 탭' : e.info.holder, job: e.info.job, minutes: 0, same: true }; }
+        throw e;
+      }
+    }
+    myLockPrio = myPrio; myJobLabel = job; myRegKey = regKey;
+    lockHeld = true; clearInterval(lockBeat);
+    lockBeat = setInterval(() => { if (!lockHeld) return; const now = Date.now(); try { if (running && now - lastPub > 50000) { lastPub = now; publishStatus(); } } catch (e) {} /* (1.63.8 점검) 작업 중이면 1분마다 상태 신호 — 화면을 그리지 않는 단계에서도 다른 PC가 '하는 중'을 앎 */ LOCK().set({ heartbeatMs: now, writerSchema: WRITER_SCHEMA, pcs: { [PC_ID]: { at: now, tabs: { [TAB_ID]: { at: now, job, prio: myLockPrio } } } } }, { merge: true }).catch(() => {}); JOBREG().set({ [regKey]: { pc: PC_ID, name, at: now, label: job } }, { merge: true }).catch(() => {}); }, 60000);
+    // 양보 요청(나보다 중요한 작업, 나를 지목했거나 지목 없음) → 진행 위치 저장 후 멈춤 → 끝나면 자동으로 이어감. 묶음 안 PC 수만큼 요청 간격을 늘림
+    if (!yieldUnsub) yieldUnsub = LOCK().onSnapshot((d) => { const x = d.exists ? d.data() : null; laneCount = Math.max(1, Object.keys(freshPcs(x, Date.now())).length); const y = x && x.yieldReq;
+      if (lockHeld && running && y && Date.now() - (y.at || 0) < 3 * 60000 && !yieldFor && (y.prio ?? 100) > myLockPrio && !(y.pc === PC_ID && y.tab === TAB_ID) && (!y.target || y.target === PC_ID)) { yieldFor = { ...y, key: curKey, myPrio: myLockPrio }; stopFlag = true; log(`${y.pcName || '다른 PC'}의 '${y.tool || '고객 수집'}'(중요도 ${y.prio ?? 100})이 더 중요해 양보합니다 (지금 작업 중요도 ${myLockPrio}). 진행 위치를 저장하고 멈췄다가, 끝나면 자동으로 이어갑니다`, 1); } }, () => {});
+    return { ok: true };
+  }
+  async function releaseLane(lane) {
+    if (lane !== 'aladin') return;
+    clearInterval(lockBeat); if (!lockHeld) return; lockHeld = false; const job = myRegKey || myJobLabel;
+    try {
+      await db.runTransaction(async (tx) => {
+        const s = await tx.get(LOCK()); const rg = await tx.get(JOBREG()); const now = Date.now();
+        if (rg.exists && rg.data()[job] && rg.data()[job].pc === PC_ID) tx.set(JOBREG(), { [job]: firebase.firestore.FieldValue.delete() }, { merge: true });
+        if (!s.exists) return; const d = s.data(); const pcs = freshPcs(d, now); const mine = pcs[PC_ID]; if (!mine) return;
+        const tabs = {}; Object.entries(mine.tabs || {}).forEach(([k, v]) => { if (k !== TAB_ID && v && now - (v.at || 0) < TAB_FRESH) tabs[k] = v; });
+        if (Object.keys(tabs).length) pcs[PC_ID] = { ...mine, tabs, at: now, prio: Math.max(...Object.values(tabs).map((v) => v.prio ?? 0)), job: Object.values(tabs)[0].job }; else delete pcs[PC_ID];
+        if (legacyOther(d, now)) tx.set(LOCK(), { pcs: Object.keys(pcs).length ? pcs : firebase.firestore.FieldValue.delete() }, { merge: true }); // 고객 수집이 잡은 잠금은 건드리지 않음
+        else if (Object.keys(pcs).length) tx.set(LOCK(), lockFields(pcs, d)); else tx.delete(LOCK());
+      });
+    } catch (e) {}
+  }
+  const laneBusy = (d) => { const now = Date.now(); if (!d) return false; if (legacyOther(d, now)) return true; const pcs = freshPcs(d, now); delete pcs[PC_ID]; return Object.keys(pcs).length >= Math.max(1, +SET.maxLanes || 1); };
+  const lockMsg = (l) => (l.holder === '이 PC의 다른 탭' ? `이 PC의 다른 탭에서 '${l.job}'을(를) 이미 하고 있습니다. 같은 작업은 한 탭에서만 합니다` : `다른 PC(${l.holder})에서 '${l.job}' 작업 중입니다 (마지막 신호 ${l.minutes}분 전). 끝난 뒤 다시 누르세요. 이미지 작업은 지금도 가능합니다`);
+
+  /* ───────── 진행 저장 (Firebase + 이 PC) ───────── */
+  const jobRef = (name) => C('prd_jobs').doc(name);
+  // (1.34.1) 큰 목록(수만 개)은 바뀌었을 때만 올림 — 예전엔 5개마다 1MB 가까운 목록 전체를 다시 올림(느림·문서 한도 1MB를 넘으면 저장 실패). 700KB가 넘으면 조각 문서로 나눠 둠
+  const BIG_SENT = new Map(); const bigSig = (v) => `${v.length}|${v[0]}|${v[v.length >> 1]}|${v[v.length - 1]}`;
+  async function saveProgress(name, prog) { if (FORCE_ALL) prog.force = true; LS.set('job_' + name, prog); const out = { ...prog };
+    for (const [k, v] of Object.entries(prog)) if (Array.isArray(v) && v.length > 1000) { delete out[k]; const sig = bigSig(v); if (BIG_SENT.get(name + '|' + k) === sig) continue; // 같은 목록이면 다시 올리지 않음
+      const s = JSON.stringify(v); out[k] = firebase.firestore.FieldValue.delete();
+      if (s.length <= 700000) { out[k + '__J'] = s; out[k + '__C'] = firebase.firestore.FieldValue.delete(); }
+      else { const n = Math.ceil(s.length / 500000); for (let i = 0; i < n; i++) await jobRef(name).collection('big').doc(`${k}_${i}`).set({ s: s.slice(i * 500000, (i + 1) * 500000), at: Date.now() }); out[k + '__C'] = n; out[k + '__J'] = firebase.firestore.FieldValue.delete(); }
+      BIG_SENT.set(name + '|' + k, sig); }
+    await jobRef(name).set({ ...out, done: false, discarded: firebase.firestore.FieldValue.delete(), by: PC_NAME, pc: PC_ID, savedAt: Date.now(), _i: typeof prog.i === 'number' ? prog.i : null, _n: Array.isArray(prog.list) ? prog.list.length : null, ...W() }, { merge: true }); }
+  async function loadProgress(name) { const p0 = await loadProgress0(name); if (p0 && FORCE_ALL && !p0.force && p0.list) { log(`수동 실행: 기간 제한으로 만든 이전 목록 대신 전부로 새 목록을 만듭니다 ('${name}')`); return null; } return p0; }
+  async function loadProgress0(name) { const d = await jobRef(name).get(); if (!d.exists || d.data().done) return null; const x = d.data();
+    for (const k of Object.keys(x)) if (k.endsWith('__J')) { try { x[k.slice(0, -3)] = JSON.parse(x[k]); BIG_SENT.set(name + '|' + k.slice(0, -3), bigSig(x[k.slice(0, -3)])); } catch (e) {} delete x[k]; }
+    for (const k of Object.keys(x)) if (k.endsWith('__C')) { const base = k.slice(0, -3); try { let s = ''; for (let i = 0; i < x[k]; i++) s += ((await jobRef(name).collection('big').doc(`${base}_${i}`).get()).data() || {}).s || ''; x[base] = JSON.parse(s); BIG_SENT.set(name + '|' + base, bigSig(x[base])); } catch (e) {} delete x[k]; }
+    return x; }
+  async function finishJob(name, summary) { const d = await jobRef(name).get().catch(() => null); const del = {}; if (d && d.exists) Object.keys(d.data()).forEach((k) => { if (k.endsWith('__J') || k.endsWith('__C') || k === 'list') del[k] = firebase.firestore.FieldValue.delete(); }); [...BIG_SENT.keys()].filter((x) => x.startsWith(name + '|')).forEach((x) => BIG_SENT.delete(x)); await jobRef(name).set({ ...del, done: true, finishedAt: Date.now(), summary, ...W() }, { merge: true }); LS.set('job_' + name, null); }
+
+  /* ───────── 알라딘 페이지 가져오기: 사람 속도 간격, 서버 불안정 시 길게 재시도, 로그인 풀림 시 자동 재로그인 ───────── */
+  let lastReq = 0;
+  const AL = window.ReadnowAladin || globalThis.ReadnowAladin; // (1.39.0) 알라딘 창구 하나 (readnow-aladin-core.js)
+  const RETRY_WAITS = AL.RETRY_WAITS; const MAX_OUTAGE_MIN = 360; // 새벽 점검(수 시간)도 기다렸다 이어감
+  async function politeWait() { await PACE.wait(sleep, lockHeld ? laneCount : 1); } // 같은 묶음(인터넷 주소)에서 여러 PC가 동시에 돌면 그만큼 간격을 늘림
+
+  const looksLoggedOut = (finalUrl, doc) => AL.looksLoggedOut(finalUrl, doc);
+  const getDoc = AL.makeReader({ pace: PACE, sleep, wait: politeWait, beforeEach: () => { if (stopFlag) throw new Error('멈춤'); },
+    loggedOut: (fu, doc, url) => AL.looksLoggedOut(fu, doc, { url, scmNeedsLogout: true }),
+    onLoggedOut: async (fu, loginTries) => {
+      if (!SET.autoLogin) throw new Error('알라딘 로그인이 풀렸습니다. 직접 로그인한 뒤 같은 버튼을 다시 누르세요');
+      if ((SET.maxLoginTries ?? 6) > 0 && loginTries > (SET.maxLoginTries ?? 6)) { try { GM_notification({ title: '리드나우 수집기', text: '알라딘 다시 로그인 실패 — 수집을 멈췄습니다. 로그인 후 이어하기' }); } catch (e) {} throw new Error(`알라딘 다시 로그인을 ${SET.maxLoginTries ?? 6}번 시도했지만 실패해 멈췄습니다 (진행 위치 저장) — 로그인이 풀렸습니다. 알라딘에 로그인한 뒤 이어하기`); }
+      if (loginTries > 1) { ui('자동 로그인 재시도 대기', 0, 0, `${SET.loginRetrySec}초 뒤 다시 시도`); await sleep(SET.loginRetrySec * 1000); }
+      PACE.fail('login'); await autoRelogin(fu, loginTries); },
+    fatal: (e) => e.message === '멈춤' || /로그인이 풀렸/.test(e.message),
+    maxOutageMin: () => MAX_OUTAGE_MIN, outageError: (m) => new Error(`알라딘 서버가 ${m}분 넘게 응답하지 않아 멈췄습니다. 나중에 같은 버튼으로 이어하세요`),
+    on429: (st) => { log(`알라딘이 요청이 너무 많다고 함(${st}) — 이 PC의 모든 수집이 ${Math.round(PACE.cooling() / 60000)}분 쉬고, 간격을 ${PACE.state().gap}ms로 늘림`, 1); ui('알라딘 요청 제한(429) — 쉬는 중', 0, 0, `${Math.round(PACE.cooling() / 1000)}초 뒤 느린 속도로 이어감`); },
+    onRecover: () => log('서버 연결 회복, 계속합니다'),
+    onRetry: (e, w) => log(`요청 실패(${e.name === 'AbortError' ? '응답 시간 초과' : e.message}). ${w}초 뒤 재시도`, 1) });
+  /* ══════════ (1.54.0) 🔓 공개 페이지는 로그인 쿠키 없이 — 판매자 계정(북스킹)과 대량 읽기를 떼어 놓음 ══════════
+   * 대상(양이 많은 공개 페이지 4종): used 온라인 중고 목록(시장 지표) · prod 상품 페이지(우리 책·벤치마킹 상품 정보) · shop 판매자 숍 목록(벤치마킹) · item 경쟁 매물 페이지(유의사항·사진)
+   * 샵매니저·주문·출고·검색 등 나머지는 예전처럼 로그인 상태.
+   * 빠뜨리지 않는 법 (있는 것만 보지 않음 — 로그인 읽기와 '똑같은지' 직접 대조):
+   *  ① 종류마다 처음 읽을 때, 그리고 300번마다·6시간마다 같은 주소를 로그인 상태와 로그인 없이 둘 다 읽어 '읽어 낸 결과 전체'(파서 결과 JSON)를 견줌
+   *     → 똑같을 때만 그 종류를 로그인 없이 읽음. 하나라도 다르면 그 종류는 로그인 상태로 계속 읽고 다른 칸 이름을 기록에 남김(다음 확인 때 다시 봄)
+   *     → 두 번 읽는 사이 판매자가 값을 바꿔 달라진 경우를 가리려고: 다르면 로그인으로 한 번 더 읽어, 로그인끼리도 다르면 '판단 보류'(로그인 유지)
+   *     예) 숍 목록이 로그인 없이는 '간단히 보기'가 아니거나 장바구니 칸(상품 코드)이 없으면 결과가 달라져 → 로그인 유지
+   *  ② 로그인 없이 읽는 중에도 한 장마다: 로그인·성인 인증 화면으로 가면(19금 책) 그 장만 로그인 상태로 다시 · 내용이 비어 보이면(상품 이름·매물·숍 상품이 없음) 그 장만 로그인 상태로 다시
+   *  ③ 500장마다 기록: 로그인 없이 몇 장 · 19금 등으로 로그인 다시 몇 장 · 비어 보여 다시 몇 장 · 종류별 지금 방식 */
+  const PUB = (() => { const KN = { used: '온라인 중고 목록', prod: '상품 페이지', shop: '판매자 숍 목록', item: '경쟁 매물 페이지' }; const RE_N = 300, RE_MS = 6 * 3600e3;
+    const st = {}; Object.keys(KN).forEach((k) => (st[k] = { mode: 'check', n: 0, at: 0, anon: 0, logged: 0, gate: 0, miss: 0, last: '' })); let tot = 0;
+    const J = (f, g) => { try { return JSON.stringify(f(g)); } catch (e) { return 'ERR ' + e.message; } };
+    const diffKeys = (a, b) => { try { const A = JSON.parse(a), B = JSON.parse(b); const ks = new Set(); const walk = (x, y, pth) => { if (JSON.stringify(x) === JSON.stringify(y)) return; if (x && y && typeof x === 'object' && typeof y === 'object' && ks.size < 8) { const kk = new Set([...Object.keys(x), ...Object.keys(y)]); kk.forEach((k) => walk(x[k], y[k], pth ? pth + '.' + k : k)); } else ks.add(pth || '(전체)'); }; walk(A, B, ''); return [...ks].slice(0, 8).join(', '); } catch (e) { return '?'; } };
+    const report = () => { if (++tot % 500) return; log('🔓 공개 페이지 로그인 없이 읽기 — ' + Object.entries(st).map(([k, s]) => `${KN[k]}: ${s.mode === 'anon' ? '로그인 없이' : s.mode === 'logged' ? '로그인 유지' : '확인 전'} (없이 ${s.anon} · 로그인 ${s.logged}${s.gate ? ` · 19금 등 로그인 다시 ${s.gate}` : ''}${s.miss ? ` · 비어 보여 로그인 다시 ${s.miss}` : ''})`).join(' / ')); };
+    async function read(kind, url, norm, valid) { const s = st[kind]; s.n++; report();
+      const due = s.mode === 'check' || s.n >= RE_N || Date.now() - s.at > RE_MS;
+      if (due) { const L = await getDoc(url); if (!valid(L)) { s.logged++; return L; } // 비교할 거리가 없는 장(빈 쪽·19금 등) — 판단은 다음 장에서
+        let A = null; try { A = await getDoc(url, { cred: 'omit' }); } catch (e) { if (e.message === '멈춤') throw e; }
+        const jl = J(norm, L), ja = A && !A.needLogin ? J(norm, A) : null; s.n = 0; s.at = Date.now();
+        if (ja !== null && ja === jl) { if (s.mode !== 'anon') log(`🔓 ${KN[kind]}: 로그인 없이 읽어도 읽어 낸 내용이 로그인 때와 똑같음을 확인 → 로그인 없이 읽음 (300장·6시간마다 다시 대조)`); s.mode = 'anon'; s.logged++; return L; }
+        let why = ja === null ? (A && A.needLogin ? '로그인 화면으로 감' : '로그인 없이 읽기 실패') : diffKeys(jl, ja);
+        if (ja !== null) { const L2 = await getDoc(url); if (J(norm, L2) !== jl) { if (s.last !== '대조 중 바뀜') log(`🔓 ${KN[kind]}: 대조하는 사이 내용이 바뀜(판매자가 고침 등) — 판단 보류, 다음 대조(300장·6시간 뒤)까지 로그인 상태 유지`); s.mode = 'logged'; s.last = '대조 중 바뀜'; s.logged++; return L2; } }
+        if (s.mode !== 'logged' || s.last !== why) log(`🔒 ${KN[kind]}: 로그인 없이 읽으면 결과가 다름(${why}) → 이 종류는 로그인 상태로 읽음 (빠뜨리지 않게 · ${RE_MS / 3600e3}시간 또는 ${RE_N}장 뒤 다시 대조)`, 1);
+        s.mode = 'logged'; s.last = why; s.logged++; return L; }
+      if (s.mode !== 'anon') { s.logged++; return getDoc(url); }
+      const A = await getDoc(url, { cred: 'omit' });
+      if (A.needLogin) { s.gate++; s.logged++; return getDoc(url); } // 19금 등 — 그 장만 로그인 상태로
+      if (!valid(A)) { s.miss++; s.logged++; return getDoc(url); } // 비어 보임 — 그 장만 로그인 상태로 (진짜 비었으면 로그인도 같음)
+      s.anon++; return A; }
+    return { read, st }; })();
+  /* 종류별 '읽어 낸 내용'(대조용)과 '비어 보이지 않음' 기준 — 실제 저장에 쓰는 같은 파서 */
+  const pubUsed = (url) => PUB.read('used', url, (g) => P.parseUsedPage(g.doc), (g) => { const u = P.parseUsedPage(g.doc); return !!(u && u.listings && u.listings.length); });
+  const pubProd = (url) => PUB.read('prod', url, (g) => P.parseProductPage(g.doc, g.finalUrl), (g) => { const pg = P.parseProductPage(g.doc, g.finalUrl); return !!(pg && pg.title); });
+  const pubItem = (url) => PUB.read('item', url, (g) => P.parseUsedItemInfo(g.doc, null), (g) => { const i = P.parseUsedItemInfo(g.doc, null); return !!(i && i.found); });
+
+  async function isLoggedIn() { try { const r = await fetch('/scm/wmain.aspx', { credentials: 'include' }); const h = await r.text(); return r.ok && /wC2Cuser_logout/.test(h); } catch (e) { return false; } }
+  async function autoRelogin(loginUrl, tryNo) {
+    if (window.__rnLoginMethod && window.__rnLoginMethod() === 'naver') { ui(`네이버로 다시 로그인 중 (${tryNo}번째)`, 0, 0); const ok = await window.__rnNaverLogin({ isLoggedIn, log: (m, lv) => log(m, !!lv), stopped: () => stopFlag, ret: 'https://www.aladin.co.kr/scm/wmain.aspx' }); try { renderCred(); } catch (e) {} if (!ok && tryNo >= 2) throw new Error('네이버로 다시 로그인하지 못했습니다. 이 PC 브라우저에서 네이버에 로그인(로그인 상태 유지)한 뒤 같은 버튼을 다시 누르세요'); return ok; }
+    const cred = (GM_getValue('rnp-cred', null) || GM_getValue('rn-cred', null));
+    if (!cred || !cred.id || !cred.pw) throw new Error('알라딘 로그인이 풀렸습니다. 설정에 아이디·비밀번호를 넣으면 다음부터 자동으로 다시 로그인합니다. 지금은 직접 로그인한 뒤 같은 버튼을 누르세요');
+    log(tryNo > 1 ? `자동 로그인 ${tryNo}번째 시도` : '로그인이 풀려 자동으로 다시 로그인합니다', 1); ui(`자동 로그인 중 (${tryNo}번째)`, 0, 0);
+    const url = /login/i.test(loginUrl) ? loginUrl : 'https://www.aladin.co.kr/login/wlogin.aspx?returnurl=' + encodeURIComponent('https://www.aladin.co.kr/scm/wmain.aspx');
+    GM_setValue(LOGIN_FLAG, { at: Date.now() });
+    const tab = GM_openInTab(url, { active: false, insert: true });
+    let ok = false;
+    for (let i = 0; i < 18; i++) { await sleep(5000); if (stopFlag) break; const f = GM_getValue(LOGIN_FLAG, {}); if (f.result === 'failed' || f.result === 'no-id-field') break; if (await isLoggedIn()) { ok = true; break; } }
+    await window.__rnCloseTab(tab);
+    GM_deleteValue(LOGIN_FLAG);
+    GM_setValue(ok ? 'rnp-cred-okAt' : 'rnp-cred-failAt', Date.now()); try { renderCred(); } catch (e) {}
+    log(ok ? '다시 로그인했습니다. 계속합니다' : '자동 로그인이 이번에는 되지 않았습니다', !ok);
+    if (!ok) try { GM_notification({ title: '리드나우 상품 수집기', text: '알라딘 자동 로그인 실패. 재시도합니다' }); } catch (e) {}
+    return ok;
+  }
+
+  /* ───────── 새상품 페이지를 숨은 창(iframe)으로 열기 ─────────
+   * 구매자 분포·함께 구매는 페이지가 열린 뒤 알라딘 스크립트가 따로 불러온다. 주소를 몰라도,
+   * 같은 사이트 창을 실제로 열어 그 부분이 채워질 때까지 기다렸다가 읽으면 된다. */
+  let frame = null;
+  function loadInFrame(url, readyCheck) {
+    // (1.25.1) 숨은 창 하나에 알라딘 상품 페이지를 수천 번 연달아 열면 그 페이지들의 스크립트·광고가 남아 메모리가 계속 늘어 탭이 'Out of Memory'로 죽음
+    //  → 20번마다 숨은 창을 비우고 없앤 뒤 새로 만듦 (다음 페이지를 열기 직전에 — 앞 페이지는 이미 다 읽은 뒤)
+    frameLoads++;
+    if (frame && frameLoads % 20 === 0) { try { frame.src = 'about:blank'; } catch (e) {} try { frame.remove(); } catch (e) {} frame = null; }
+    return new Promise((resolve) => {
+      if (!frame) { frame = document.createElement('iframe'); frame.style.cssText = 'position:fixed;left:-3000px;top:0;width:1300px;height:2000px;visibility:hidden'; document.body.appendChild(frame); }
+      let done = false; const t0 = Date.now(); let poll = null;
+      const finish = (ok) => { if (done) return; done = true; clearInterval(poll); let doc = null, href = null; try { doc = frame.contentDocument; href = frame.contentWindow.location.href; } catch (e) {} resolve({ ok, doc, href, ms: Date.now() - t0 }); };
+      frame.src = url + (url.includes('?') ? '&' : '?') + 'rnCollect=1';
+      poll = setInterval(() => {
+        let d = null; try { d = frame.contentDocument; } catch (e) {}
+        try { if (d && d.body) frame.contentWindow.scrollTo(0, (d.body.scrollHeight || 0) * ((Date.now() - t0) % 3000 < 1500 ? 0.6 : 1)); } catch (e) {}
+        if (d && d.URL !== 'about:blank' && d.readyState !== 'loading' && readyCheck(d)) finish(true);
+        else if (Date.now() - t0 > SET.pageTimeoutSec * 1000) finish(false);
+      }, 400);
+    });
+  }
+  async function getProductFull(url) {
+    await PACE.wait(sleep, 3 * (lockHeld ? laneCount : 1)); // 숨은 창에 상품 페이지 하나를 열면 그림·스크립트까지 수십 번 요청 → 간격 3배
+    const r = await loadInFrame(url, (d) => {
+      if (!d.querySelector('link[rel="canonical"]')) return false;
+      const k = (d.querySelector('input.hd_ISBN') || {}).value; if (!k) return true; // 상품 아닌 화면
+      const os = d.getElementById(k + '_OrderStatistics'); const rb = d.getElementById(k + '_RelationBuyItem_V2');
+      const filled = (el) => !el || el.children.length > 0 || el.textContent.trim().length > 0;
+      return (filled(os) && filled(rb)) || (Object.keys(P.parseBuyerDist(d) || {}).length > 0 && d.querySelector('a[href*="utm_campaign=relbuy"]'));
+    });
+    if (!r.doc || !r.doc.querySelector('link[rel="canonical"]')) { PACE.fail(r.ok ? 'error' : 'timeout'); return null; } PACE.ok();
+    if (r.href && /wuseditemall/i.test(r.href)) log('새상품 페이지가 중고 페이지로 넘어갔습니다. "온라인중고 바로가기" 스크립트가 숨은 창에서도 작동하는지 확인 필요', 1);
+    if (looksLoggedOut(r.href || '', r.doc)) return null;
+    const p = P.parseProductPage(r.doc, r.href);
+    const k = (r.doc.querySelector('input.hd_ISBN') || {}).value;
+    const os = k && r.doc.getElementById(k + '_OrderStatistics'); const rb = k && r.doc.getElementById(k + '_RelationBuyItem_V2');
+    const bd = os ? P.parseBuyerDist(os) : null; p.buyerDist = bd && Object.keys(bd).length ? bd : (() => { const x = P.parseBuyerDist(r.doc); return x && Object.keys(x).length ? x : null; })();
+    p.relationBuy = rb ? P.parseRelationBuy(rb) : []; if (!p.relationBuy.length) p.relationBuy = P.parseRelationBuy(r.doc);
+    p.clickRelation = P.parseClickRelation(r.doc); if (!p.clickRelation.length) { const bx = r.doc.getElementById('w_jiny_recentContent'); if (bx && bx.querySelector('a') && bx.textContent.trim().length > 30) p.clickRaw = bx.innerHTML.slice(0, 3000); }
+    p.dynamicLoaded = r.ok;
+    return { page: p, finalUrl: r.href };
+  }
+
+  /* ───────── 공통 쓰기 ───────── */
+  async function commitBatches(ops, label) {
+    for (let i = 0; i < ops.length; i += 400) {
+      const b = db.batch(); ops.slice(i, i + 400).forEach((f) => f(b)); await b.commit();
+      if (label) ui(label, Math.min(i + 400, ops.length), ops.length, '올리는 중');
+    }
+  }
+  const LISTING_FIELDS = ['title', 'titleRaw', 'condition', 'grade', 'sku', 'publisher', 'status', 'price', 'priceList', 'qty', 'registeredAt', 'listingId', 'isbn13', 'isbn10', 'aladinCode', 'barcode'];
+  const ACTIVE = ['판매중', '판매대기', '일시판매중지', '판매중지', '판매금지'];
+  let LISTINGS = null; // usedCode → 문서 (한 번 읽고 기기에 보관)
+  /* (1.59.0) 상품 기록을 이 PC(IndexedDB)에 두고 다음부턴 바뀐 것(uploadedAt)만 받음 — 기억 정리로 탭을 새로 열 때마다 상품 수만 건을 통째로 다시 읽던 것(하루 수십만 번 읽기). 하루에 한 번은 통째로 다시 읽어 맞춤 · 모든 쓰는 쪽이 uploadedAt을 남김(웹앱도 같은 방식) */
+  const LCACHE = { name: 'rn-listings-cache', open() { return new Promise((res, rej) => { const r = indexedDB.open(this.name, 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+    async get() { const d = await this.open(); try { return await new Promise((res, rej) => { const q = d.transaction('kv').objectStore('kv').get('v'); q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); }); } finally { d.close(); } },
+    async put(v) { const d = await this.open(); try { await new Promise((res, rej) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, 'v'); t.oncomplete = res; t.onerror = () => rej(t.error); }); } finally { d.close(); } } };
+  const lcMs = (v) => (v && v.uploadedAt && typeof v.uploadedAt.toMillis === 'function' ? v.uploadedAt.toMillis() : 0);
+  const lcRevive = (o) => { for (const k of Object.keys(o)) { const v = o[k]; if (v && typeof v === 'object' && !Array.isArray(v) && typeof v.seconds === 'number' && typeof v.nanoseconds === 'number' && Object.keys(v).length === 2) o[k] = new firebase.firestore.Timestamp(v.seconds, v.nanoseconds); } return o; };
+  async function loadListings(force) {
+    if (LISTINGS && !force) return LISTINGS;
+    ui('기존 상품 기록 읽는 중', 0, 0);
+    let c = null; if (!force) { try { c = await LCACHE.get(); } catch (e) { c = null; } }
+    if (c && Array.isArray(c.rows) && c.last && Date.now() - (c.fullAt || 0) < 24 * 3600e3) { try { const m = new Map(c.rows.map(([id, v]) => [id, lcRevive(v)])); let max = c.last; const ss = await C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(c.last - 120000)).get(); /* 2분 겹쳐 읽음(시계 차이) */ ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); m.set(d.id, v); max = Math.max(max, lcMs(v)); } });
+        LISTINGS = m; log(`기존 상품 ${m.size.toLocaleString()}건 (이 PC 보관본 + 바뀐 ${ss.size.toLocaleString()}건만 받음)`); if (ss.size) LCACHE.put({ rows: [...m], last: max, fullAt: c.fullAt }).catch(() => {}); return m; } catch (e) { log('보관본으로 읽기 실패 — 통째로 다시 읽음: ' + (e.code || e.message), 1); } }
+    const m = new Map(); let max = 0; const ss = await C('prd_listings').get(); ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); m.set(d.id, v); max = Math.max(max, lcMs(v)); } }); /* (1.57.7) 권한 시험 문서는 상품이 아님 */
+    LISTINGS = m; log(`기존 상품 ${m.size.toLocaleString()}건 읽음`); LCACHE.put({ rows: [...m], last: max || Date.now(), fullAt: Date.now() }).catch(() => {}); return m;
+  }
+  // 한 상품 줄을 합치기 규칙으로 올릴 작업 목록 만들기 (빈 값으로 덮지 않음, 바뀐 칸만 이력)
+  function listingOps(row, source, seenAt) {
+    const key = 'aladin_' + row.usedCode; const prev = LISTINGS.get(key);
+    const next = {}; for (const f of LISTING_FIELDS) if (row[f] != null) next[f] = row[f];
+    if (prev && prev.registeredAt && row.registeredYearGuessed) delete next.registeredAt; // 연도 추정값으로 확정값을 덮지 않음
+    const ch = P.diff(prev, next, LISTING_FIELDS);
+    const mt = P.mediaType(row); const doc = { channel: 'aladin', usedCode: row.usedCode, ...next, mediaType: mt.type, mediaWhy: mt.why, ids: row.ids, idWarn: row.idWarn || [], active: ACTIVE.includes(row.status || (prev && prev.status)), lastSeenAt: seenAt, ['seenBy_' + source]: seenAt, ...W() };
+    if (!prev) doc.firstSeenAt = seenAt;
+    if (row.registeredYearGuessed && !(prev && prev.registeredAt)) doc.registeredYearGuessed = true;
+    const ops = [(b) => b.set(C('prd_listings').doc(key), doc, { merge: true })];
+    const real = Object.keys(ch).filter((k) => prev && prev[k] != null);
+    if (real.length) ops.push((b) => b.set(C('prd_listing_changes').doc(), { listingKey: key, at: seenAt, source, changes: Object.fromEntries(real.map((k) => [k, ch[k]])), ...W() }));
+    LISTINGS.set(key, { ...(prev || {}), ...doc });
+    return { ops, isNew: !prev, changed: real.length > 0 };
+  }
+
+  /* ───────── 파일 가져오기 ───────── */
+  const drop = $('#rnpDrop');
+  drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = async (e) => { e.preventDefault(); drop.classList.remove('over'); for (const f of e.dataTransfer.files) await runFile(f); };
+  async function importFile(file) {
+    const buf = await file.arrayBuffer();
+    const head = new TextDecoder('utf-8').decode(buf.slice(0, 2000));
+    const seenAt = nowIso();
+    if (/<html|<table/i.test(head)) { // 알라딘 등록 상품 파일(.xls 이름이지만 HTML 표)
+      const doc = new DOMParser().parseFromString(new TextDecoder('utf-8').decode(buf), 'text/html');
+      const r = P.parseRegExportRows(P.tableToRows(doc));
+      if (r.missingColumns.length) log('없는 칸: ' + r.missingColumns.join(', '), 1);
+      await loadListings();
+      let ops = [], nNew = 0, nCh = 0;
+      for (const row of r.rows) { const x = listingOps(row, 'regExport', seenAt); ops = ops.concat(x.ops); nNew += x.isNew; nCh += x.changed; }
+      await commitBatches(ops, '등록 상품 파일 올리는 중');
+      await C('prd_imports').add({ kind: 'regExport', fileName: file.name, rows: r.rows.length, newRows: nNew, changedRows: nCh, ...W() });
+      log(`등록 상품 파일: ${r.rows.length.toLocaleString()}줄 (신규 ${nNew}, 변경 ${nCh})`);
+      return;
+    }
+    // 판매완료 엑셀은 고객 수집기가 crm_orders에 올린다(상품 줄마다 U코드 aladinUsedCode 포함).
+    // 상품 쪽은 그 기록을 읽어 쓰므로 여기서는 받지 않는다 → 같은 자료를 두 곳에 두지 않음.
+    log(`'${file.name}'은 등록 상품 파일이 아닙니다. 판매완료 엑셀이라면 고객 수집기에 넣어 주세요`, 1);
+  }
+
+  /* ───────── 1. 샵매니저 목록 훑기 ───────── */
+  const STATUS = { 판매중: 1, 판매대기: 41, 일시판매중지: 3, 판매중지: 15, 판매완료: 18, 판매금지: 16 };
+  const listUrl = (code, page) => `/scm/wrecord_edit.aspx?chkItemStockStatus=${code}&chkItemInDate=0&searchCat1=0&searchType=1&keyword=&ViewRowsCount=100&page=${page}&SortOrder=6&itemStockStatus=${code}&categoryId=0`;
+  async function scan(mode) {
+    const lane = await acquireLane('aladin');
+    if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+
+    try {
+      await loadListings();
+      const name = mode === 'new' ? 'scanNew' : mode === 'daily' ? 'scanDaily' : 'scanFull';
+      const statuses = mode === 'new' ? Object.keys(STATUS) : mode === 'daily' ? ['판매중', '일시판매중지', '판매중지'] : ACTIVE; // daily(1.34.0 매일 자동): 세 상태만 · 새등록 상품과, 본 쪽에서 상태가 바뀐 상품을 기록 · 이미 아는 상품만 있는 쪽이 나오면 그 상태는 끝
+      const prog = (await loadProgress(name)) || { si: 0, page: 1, stats: {}, startedAt: nowIso() };
+      if (prog.page > 1 || prog.si > 0) log(`이어서 시작: ${statuses[prog.si]} ${prog.page}쪽부터`);
+      const cursor = (await C('prd_system').doc('cursor').get()).data() || {};
+      const maxKnown = +(cursor.maxListingId || 0);
+      let maxSeen = maxKnown;
+      for (; prog.si < statuses.length; prog.si++, prog.page = 1) {
+        const stName = statuses[prog.si];
+        for (;;) {
+          if (stopFlag) { await saveProgress(name, prog); throw new Error('멈춤'); }
+          const { doc } = await getDoc(listUrl(STATUS[stName], prog.page));
+          const r = P.parseScmList(doc, new Date().getFullYear());
+          const seenAt = nowIso(); let ops = []; let unknown = 0;
+          for (const row of r.rows) {
+            if (!row.usedCode) { log('U코드 없는 줄: ' + row.listingId, 1); continue; }
+            maxSeen = Math.max(maxSeen, +row.listingId);
+            const known = LISTINGS.has('aladin_' + row.usedCode) && LISTINGS.get('aladin_' + row.usedCode).listingId;
+            if (mode === 'new' && known) continue;
+            if (mode === 'daily' && known) { const kl = LISTINGS.get('aladin_' + row.usedCode); if (kl.status === stName && kl.active !== false) continue; prog.stats.changed = (prog.stats.changed || 0) + 1; } // 아는 상품은 상태가 바뀌었을 때만 다시 기록
+            unknown++;
+            const x = listingOps(row, 'scm', seenAt); ops = ops.concat(x.ops);
+            prog.stats[stName] = (prog.stats[stName] || 0) + 1;
+          }
+          if (ops.length) await commitBatches(ops);
+          ui(mode === 'new' ? '신규 등록분 수집' : '전체 재검토', prog.page, r.lastPage, `${stName} · 이번 쪽 새로 기록 ${unknown}건`, '끝나면 "도서 정보·시장 지표 갱신"을 누르세요');
+          // 신규 모드: 등록일 역순이므로, 한 쪽 전체가 이미 아는 상품이고 기준점보다 오래됐으면 이 상태는 끝
+          const pageMax = Math.max(0, ...r.rows.map((x) => +x.listingId));
+          if ((mode === 'new' || mode === 'daily') && unknown === 0 && pageMax && pageMax <= maxKnown) break;
+          if (!r.rows.length && prog.page < r.lastPage) throw new Error(`${stName} ${prog.page}쪽이 비어 있습니다(서버 오류 화면일 수 있음). 같은 버튼으로 이어하세요`);
+          if (prog.page >= r.lastPage || !r.rows.length) break;
+          prog.page++; if (prog.page % 5 === 0) await saveProgress(name, prog);
+        }
+        await saveProgress(name, { ...prog, si: prog.si + 1, page: 1 });
+      }
+      if (mode === 'full') { // 판매중 계열에서 사라진 상품 = 팔렸거나 삭제됨 → 비활성으로 표시(판매완료 대조는 신규 수집·판매완료 엑셀에서)
+        const gone = [...LISTINGS.entries()].filter(([, l]) => l.active && (!l.seenBy_scm || l.seenBy_scm < prog.startedAt));
+        const activeN = [...LISTINGS.values()].filter((l) => l.active).length;
+        // 안전장치: 판매 중 상품의 30% 넘게 한꺼번에 '사라짐'이면 알라딘 화면 오류(로그인 풀림·빈 화면)일 가능성이 커서 표시하지 않음
+        if (activeN >= 50 && gone.length > activeN * 0.3) { log(`전체 재검토: 판매 중 ${activeN.toLocaleString()}개 중 ${gone.length.toLocaleString()}개가 목록에 안 보였습니다. 화면 오류일 수 있어 '사라짐' 표시를 하지 않았습니다 (실제라면 판매관리 화면 확인 후 다시)`, 1); gone.length = 0; }
+        await commitBatches(gone.map(([k]) => (b) => b.set(C('prd_listings').doc(k), { active: false, goneFromActiveAt: nowIso(), goneEvents: firebase.firestore.FieldValue.arrayUnion(nowIso()), ...W() }, { merge: true }) /* (1.57.2) 사라진 때를 덮어쓰지 않고 쌓음 */), '사라진 상품 표시');
+        gone.forEach(([k, l]) => LISTINGS.set(k, { ...l, active: false }));
+        prog.stats.goneFromActive = gone.length;
+      }
+      await C('prd_system').doc('cursor').set({ maxListingId: String(maxSeen), ['last_' + name]: nowIso(), ...W() }, { merge: true });
+      await finishJob(name, prog.stats);
+      log(`${name} 완료 ${JSON.stringify(prog.stats)}`);
+    } finally { await releaseLane('aladin'); }
+  }
+
+  /* ───────── 2. 도서 정보·시장 지표 ───────── */
+  const BOOK_FIXED = ['title', 'subtitle', 'series', 'contributors', 'publisher', 'aladinPublisherId', 'pubDate', 'originalTitle', 'isbn13', 'pages', 'size', 'weightG', 'categories', 'basicExtra'];
+  const METRICS = ['priceList', 'priceSales', 'salesPoint', 'rating', 'commentCount', 'reviewCount', 'availability', 'usedTotal', 'usedTabs', 'usedMins', 'buyback', 'buyerDist', 'relationBuy'];
+  async function resolveBookId(listing) {
+    for (const k of ['usedCode', 'isbn13', 'aladinCode', 'isbn10']) {
+      const v = listing[k]; if (!v) continue;
+      const kind = k === 'usedCode' ? 'usedCode' : k;
+      const d = await C('prd_ids').doc(`${kind}_${v}`).get(); if (d.exists) return d.data().bookId;
+    }
+    return null;
+  }
+  function productUrls(l) {
+    const u = [];
+    if (l.isbn13) u.push(['isbn13', `/shop/wproduct.aspx?ISBN=${l.isbn13}`]);
+    if (l.isbn10) u.push(['isbn10', `/shop/wproduct.aspx?ISBN=${l.isbn10}`]);
+    if (l.aladinCode) u.push(['aladinCode', `/shop/wproduct.aspx?ISBN=${l.aladinCode}`]);
+    if (l.listingId) u.push(['listingPage', `/shop/wproduct.aspx?ItemId=${l.listingId}`]);
+    return u;
+  }
+  // 시장 지표 '마지막 확인 시각' 표: 이 PC에 보관(GM)하고, 그 뒤 바뀐 것(lastCheckedAt 이 더 늦은 것)만 Firebase에서 받음 · 7일마다 한 번 전체로 다시 맞춤
+  async function metricsCheckedMap() { let c = null; try { c = GM_getValue('rnp-mchk', null); } catch (e) {}
+    const build = !c || !c.m || !c.builtAt || Date.now() - c.builtAt > 7 * 864e5;
+    if (build) { const s = await C('prd_book_metrics').get(); c = { m: {}, max: '', builtAt: Date.now() }; s.forEach((d) => { const t = d.data().lastCheckedAt || ''; c.m[d.id] = t; if (t > c.max) c.max = t; }); log(`시장 지표 확인 시각 표를 새로 만듦 (${Object.keys(c.m).length.toLocaleString()}권)`); }
+    else { const s = await C('prd_book_metrics').where('lastCheckedAt', '>', c.max || '').get(); s.forEach((d) => { const t = d.data().lastCheckedAt || ''; c.m[d.id] = t; if (t > c.max) c.max = t; }); if (s.size) log(`시장 지표 확인 시각: 그 뒤 바뀐 ${s.size.toLocaleString()}권만 받음`); }
+    try { GM_setValue('rnp-mchk', c); } catch (e) {} return new Map(Object.entries(c.m)); }
+  async function market() {
+    const lane = await acquireLane('aladin');
+    if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+
+    try {
+      await loadListings();
+      // 대상: 판매 중인 상품의 책. 도서 번호가 없는 상품 먼저, 그다음 오래전에 확인한 책부터
+      const active = [...LISTINGS.values()].filter((l) => l.active && l.usedCode);
+      const soldNoBook = [...LISTINGS.values()].filter((l) => !l.active && l.usedCode && !l.bookId); // 판매완료·내린 상품: 도서 정보·이미지가 아직 없는 것만 (한 번이면 충분)
+      const checked = await metricsCheckedMap(); // (1.34.1) 책마다 '마지막 확인 시각'만 필요 — 예전엔 시장 지표 전체(수만 건·수백 MB)를 매번 읽어 메모리 부족 새로고침이 잦았음
+      const byBook = new Map(); const unresolved = [];
+      const cutoff = !FORCE_ALL && SET.recheckDays > 0 ? new Date(Date.now() - SET.recheckDays * 86400000).toISOString() : null;
+      for (const l of active) { if (l.bookId) { if (!byBook.has(l.bookId)) byBook.set(l.bookId, l); } else unresolved.push(l); }
+      if (cutoff) for (const [bid] of [...byBook]) { const c = checked.get(bid); if (c && c > cutoff) byBook.delete(bid); } // 주기 안에 확인한 책은 건너뜀 → 어느 PC에서 이어도 같은 결과
+      const queue = [...unresolved.map((l) => ({ l, bookId: null })), ...[...byBook.entries()].sort((a, b) => String(checked.get(a[0]) || '').localeCompare(String(checked.get(b[0]) || ''))).map(([bookId, l]) => ({ l, bookId })), ...soldNoBook.map((l) => ({ l, bookId: null }))]; // 순서: 판매 중(번호 없음) → 판매 중 다시 확인 → 판매완료(도서 정보 없음)
+      const prog = (await loadProgress('market')) || { i: 0, total: queue.length, done: 0, fail: 0, startedAt: nowIso() };
+      const doneSet = new Set(LS.get('market_done', []));
+      for (let i = 0; i < queue.length; i++) {
+        if (stopFlag) { await saveProgress('market', prog); LS.set('market_done', [...doneSet]); throw new Error('멈춤'); }
+        const { l } = queue[i]; let { bookId } = queue[i];
+        const tag = bookId || 'aladin_' + l.usedCode; if (doneSet.has(tag)) continue;
+        try { await refreshOne(l, bookId); prog.done++; } catch (e) { prog.fail++; log(`실패 ${l.title || l.usedCode}: ${e.message}`, 1); }
+        doneSet.add(tag);
+        ui('도서 정보·시장 지표 갱신', doneSet.size, queue.length, l.title || l.usedCode, `실패 ${prog.fail}건 · 멈춰도 이어서 계속됩니다`);
+        if (doneSet.size % 10 === 0) { await saveProgress('market', prog); LS.set('market_done', [...doneSet]); }
+      }
+      await finishJob('market', { done: prog.done, fail: prog.fail }); LS.set('market_done', []);
+      log(`시장 지표 갱신 완료 (성공 ${prog.done}, 실패 ${prog.fail})`);
+    } finally { await releaseLane('aladin'); }
+  }
+  async function refreshOne(l, bookId) {
+    const at = nowIso();
+    let page = null, resolvedBy = null, finalUrl = null;
+    for (const [how, url] of productUrls(l)) {
+      // 구매자 분포·함께 구매는 나중에 따로 수집(설정 dynamicParts가 켜졌을 때만 숨은 창 사용)
+      let r = SET.dynamicParts ? await getProductFull(url) : null;
+      if (!r) { const g = await pubProd(url); r = { page: P.parseProductPage(g.doc, g.finalUrl), finalUrl: g.finalUrl }; r.page.dynamicLoaded = false; }
+      if (r.page.aladinItemId && r.page.title) { page = r.page; resolvedBy = how; finalUrl = r.finalUrl; break; }
+    }
+    if (!page) page = await fallbackProviders(l);
+    if (!page) throw new Error('도서 정보를 찾지 못함');
+    const idsAll = P.collectIds([page.isbn13, page.isbnKey, l.isbn13, l.isbn10, l.aladinCode, l.barcode]);
+    const book = { aladinItemId: page.aladinItemId || null, ...idsAll, ids: idsAll.ids };
+    if (!bookId) bookId = (await resolveBookId({ ...l, isbn13: idsAll.isbn13 })) || null;
+    if (!bookId && book.aladinItemId) { const d = await C('prd_ids').doc('itemId_' + book.aladinItemId).get(); if (d.exists) bookId = d.data().bookId; }
+    const isNewBook = !bookId; if (!bookId) bookId = P.newBookId({ ...book, ...idsAll }, SET.keyScheme);
+    const bRef = C('prd_books').doc(bookId); const prevB = (await bRef.get()).data();
+    // 고정형: 처음 한 번 저장, 이후에는 비어 있던 칸만 채움
+    const fixed = {}; for (const f of BOOK_FIXED) if (page[f] != null && (!prevB || prevB[f] == null || (Array.isArray(prevB[f]) && !prevB[f].length))) fixed[f] = page[f];
+    const imgs = {}; for (const k of ['front', 'back', 'spine']) { const src = page.images && page.images[k]; if (src && !(prevB && prevB.images && prevB.images[k] && prevB.images[k].src)) imgs[k] = { src, stored: null }; }
+    const batch = db.batch();
+    if (prevB) { // (1.26.0) 도서 정보가 전과 다르면 그 차이를 시각과 함께 기록 (고정형은 덮어쓰지 않으므로 다르게 보인 값을 따로 남김)
+      const chg = {}; const cmp = (a, b) => JSON.stringify(a ?? null) !== JSON.stringify(b ?? null);
+      for (const f of BOOK_FIXED) if (page[f] != null && prevB[f] != null && cmp(prevB[f], page[f])) chg[f] = { kept: prevB[f], seen: page[f] };
+      const cur = { aladinItemId: book.aladinItemId, isbn13: idsAll.isbn13, isbn10: idsAll.isbn10, aladinCode: idsAll.aladinCode, barcode: idsAll.barcode, productUrl: finalUrl, previewUrls: (page.images && page.images.preview) || null };
+      for (const [f, v] of Object.entries(cur)) if (v != null && prevB[f] != null && cmp(prevB[f], v)) chg[f] = { from: prevB[f], to: v };
+      if (Object.keys(chg).length) batch.set(C('prd_metric_changes').doc(), { bookId, at: nowIso(), kind: 'bookInfo', chg, ...W() });
+    }
+    batch.set(bRef, { bookId, keyScheme: SET.keyScheme, aladinItemId: book.aladinItemId, isbn13: idsAll.isbn13, isbn10: idsAll.isbn10, aladinCode: idsAll.aladinCode, barcode: idsAll.barcode,
+      ids: idsAll.ids, idWarn: idsAll.warn, ...fixed, ...(Object.keys(imgs).length ? { images: imgs, imgStatus: 'pending' } : {}),
+      ...(page.images && page.images.preview && page.images.preview.length ? { previewUrls: page.images.preview } : {}),
+      source: page.fetchedFrom, resolvedBy, productUrl: finalUrl, ...(isNewBook ? { firstSeenAt: at } : {}), lastFetchedAt: at, ...W() }, { merge: true });
+    /* (1.57.2) 이어진 책이 바뀌어도 예전 연결을 bookIds에 쌓아 둠(지금 연결 bookId만 바뀜) */ const AUb = firebase.firestore.FieldValue.arrayUnion(bookId);
+    for (const key of P.lookupKeys(book)) batch.set(C('prd_ids').doc(key), { bookId, bookIds: AUb, ...W() }, { merge: true });
+    if (!l.pool && !l.explore) batch.set(C('prd_ids').doc('usedCode_' + l.usedCode), { bookId, bookIds: AUb, ...W() }, { merge: true });
+    const mtB = P.mediaType({ title: page.title, categories: page.categories, ids: idsAll.ids, isbn13: idsAll.isbn13 });
+    batch.set(bRef, { mediaType: mtB.type, mediaWhy: mtB.why }, { merge: true });
+    if (!l.pool && !l.explore) batch.set(C('prd_listings').doc('aladin_' + l.usedCode), { bookId, mediaType: mtB.type, mediaWhy: mtB.why, ...W() }, { merge: true }); else if (l.pool) batch.set(bRef, { aladinPool: true }, { merge: true }); else batch.set(bRef, { explored: true, exploredAt: at, exploreFrom: l.exploreFrom || null }, { merge: true }); // 탐색 수집 책: 우리 상품·알라딘 구매 풀과 구분
+    await batch.commit();
+    if (!l.pool && !l.explore) LISTINGS.set('aladin_' + l.usedCode, { ...l, bookId });
+    if (page.fetchedFrom !== 'aladin') return; // 대체 출처는 시장 지표 없음
+    // 변동성: 중고 페이지 + 지연 로딩 부분
+    const used = page.aladinItemId ? P.parseUsedPage((await pubUsed(`/shop/UsedShop/wuseditemall.aspx?ItemId=${page.aladinItemId}&TabType=0`)).doc) : null;
+    const buyerDist = page.buyerDist || null;
+    const relationBuy = page.relationBuy && page.relationBuy.length ? page.relationBuy : null;
+    if (SET.dynamicParts && page.dynamicLoaded === false) log(`구매자 분포·함께 구매를 못 읽음: ${page.title}`, 1);
+    const cur = { priceList: page.priceList, priceSales: page.priceSales, salesPoint: page.salesPoint, rating: page.rating, commentCount: page.commentCount, reviewCount: page.reviewCount,
+      availability: page.availability, usedTotal: used ? used.usedTotal : null, usedTabs: used ? used.tabs : null, usedMins: used ? used.mins : null, buyback: used ? used.buyback : null,
+      buyerDist, relationBuy: relationBuy ? relationBuy.map((x) => x.title) : null };
+    Object.keys(cur).forEach((k) => cur[k] == null && delete cur[k]);
+    const mRef = C('prd_book_metrics').doc(bookId); const prevM = (await mRef.get()).data();
+    const ch = P.diff(prevM, cur, METRICS);
+    const rk = P.rankTransitions(prevM && prevM.activeRanks, page.ranks);
+    const b2 = db.batch();
+    b2.set(mRef, { bookId, ...cur, activeRanks: page.ranks, lastCheckedAt: at, dynamicPending: !(buyerDist || relationBuy), checkedBy: PC_NAME, ...(used ? { usedFirstPage: used.listings } : {}), ...W() }, { merge: true });
+    if (Object.keys(ch).length) b2.set(C('prd_metric_changes').doc(), { bookId, at, changes: ch, firstRecord: !prevM, ...W() });
+    // 온라인 중고 첫 페이지 매물의 변화 이력 (1.21.0): 이전 관측과 다른 것만 쌓음 — 덮어쓰는 usedFirstPage와 달리 지워지지 않는 기록
+    /* (1.57.2) 첫 페이지가 조금이라도 달라지면(순서만 바뀐 것 · 비교 칸 밖의 칸까지) 그때의 첫 페이지 전체(page)를 함께 남김 — 바뀐 칸만 적던 예전엔 순서 변화·다른 칸 변화가 남지 않았음. 같으면 아무것도 쓰지 않음 */
+    if (used) { const ld = P.listingsDiff ? P.listingsDiff(prevM && prevM.usedFirstPage, used.listings) : null; const same = JSON.stringify((prevM && prevM.usedFirstPage) || null) === JSON.stringify(used.listings || null);
+      if (ld || !same) b2.set(C('prd_metric_changes').doc(), { bookId, at, kind: 'usedListings', add: ld ? ld.add : [], del: ld ? ld.del : [], chg: ld ? ld.chg : [], orderOnly: !ld, page: JSON.parse(JSON.stringify(used.listings || [])), firstRecord: ld ? ld.first : !(prevM && prevM.usedFirstPage), lastPage: used.lastPage || null, usedTotal: used.usedTotal ?? null, ...W() }); }
+    for (const t of rk.started) b2.set(C('prd_rank_periods').doc(), { bookId, title: t, firstSeenAt: at, lastSeenAt: at, endedSeenAt: null, ...W() });
+    await b2.commit();
+    if (rk.continuing.length || rk.ended.length) { // 이어지는/끝난 순위 기간 갱신
+      const qs = await C('prd_rank_periods').where('bookId', '==', bookId).where('endedSeenAt', '==', null).get();
+      const b3 = db.batch();
+      qs.forEach((d) => { const t = d.data().title; if (rk.continuing.includes(t)) b3.update(d.ref, { lastSeenAt: at }); if (rk.ended.includes(t)) b3.update(d.ref, { endedSeenAt: at }); });
+      await b3.commit();
+    }
+  }
+
+  /* ───────── 대체 출처 (구조만 준비, 설정에서 켜야 동작) ───────── */
+  // 각 출처는 parseProductPage와 같은 모양의 객체(없는 칸은 null)를 돌려주고 fetchedFrom에 출처를 적는다.
+  const PROVIDERS = {
+    naver: { enabled: () => SET.fallbackNaver, async fetch(l) {
+      const q = l.isbn13 || l.isbn10 || l.title; if (!q) return null;
+      const html = await gmText(`https://search.shopping.naver.com/book/search?query=${encodeURIComponent(q)}`);
+      const m = html && html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/); if (!m) return null;
+      try { // 구조가 바뀔 수 있어 찾을 수 있는 칸만 조심스럽게 읽는다(시험 단계)
+        const j = JSON.parse(m[1]); const s = JSON.stringify(j);
+        const img = (s.match(/"(https:\/\/shopping-phinf\.pstatic\.net\/[^"]+)"/) || [])[1];
+        const title = (s.match(/"bookTitle":"([^"]+)"/) || s.match(/"productTitle":"([^"]+)"/) || [])[1];
+        if (!img && !title) return null;
+        return { aladinItemId: null, title: title || null, contributors: [], images: { front: img || null, back: null, spine: null, preview: [] }, isbn13: l.isbn13 || null, fetchedFrom: 'naver', categories: [] };
+      } catch (e) { return null; }
+    } },
+    google: { enabled: () => SET.fallbackGoogle, async fetch(l) {
+      const q = l.isbn13 || l.isbn10; if (!q) return null;
+      const html = await gmText(`https://www.google.com/search?tbm=bks&q=isbn:${q}`);
+      const title = html && (html.match(/<h3[^>]*>([^<]+)<\/h3>/) || [])[1];
+      return title ? { aladinItemId: null, title, contributors: [], images: { front: null, back: null, spine: null, preview: [] }, isbn13: l.isbn13 || null, fetchedFrom: 'google', categories: [] } : null;
+    } },
+  };
+  function gmText(url) { return new Promise((res) => GM_xmlhttpRequest({ method: 'GET', url, timeout: 20000, onload: (r) => res(r.status < 400 ? r.responseText : null), onerror: () => res(null), ontimeout: () => res(null) })); }
+  async function fallbackProviders(l) {
+    for (const [name, p] of Object.entries(PROVIDERS)) {
+      if (!p.enabled()) continue;
+      try { const v = await p.fetch(l); if (v) { log(`${name}에서 보충: ${v.title || l.usedCode}`); return v; } } catch (e) {}
+    }
+    return null;
+  }
+
+  /* ───────── 3. 이미지 (여러 PC 동시, 20권씩 임대) ───────── */
+  const storage = app.storage();
+  let imgRunning = false;
+  function gmBlob(url) { return new Promise((res, rej) => GM_xmlhttpRequest({ method: 'GET', url, responseType: 'blob', timeout: 30000, onload: (r) => (r.status < 400 && r.response ? res(r.response) : rej(new Error('HTTP ' + r.status))), onerror: () => rej(new Error('네트워크')), ontimeout: () => rej(new Error('시간 초과')) })); }
+  async function thumb(blob, w) {
+    const bmp = await createImageBitmap(blob); const h = Math.round(bmp.height * (w / bmp.width));
+    const cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.getContext('2d').drawImage(bmp, 0, 0, w, h);
+    return new Promise((r) => cv.toBlob(r, 'image/webp', 0.8));
+  }
+  async function claimBatch(n) { // 아직 안 된 책 n권을 이 PC가 맡는다(다른 PC와 겹치지 않게 트랜잭션)
+    const cand = await C('prd_books').where('imgStatus', '==', 'pending').limit(n * 3).get();
+    const now = Date.now(); const refs = cand.docs.filter((d) => !(d.data().imgLease && d.data().imgLease.until > now && d.data().imgLease.by !== PC_ID)).slice(0, n).map((d) => d.ref);
+    if (!refs.length) return [];
+    return db.runTransaction(async (tx) => {
+      const docs = await Promise.all(refs.map((r) => tx.get(r))); const mine = [];
+      for (const d of docs) { const x = d.data(); if (x.imgStatus !== 'pending' || (x.imgLease && x.imgLease.until > Date.now() && x.imgLease.by !== PC_ID)) continue; tx.update(d.ref, { imgLease: { by: PC_ID, name: PC_NAME, until: Date.now() + 10 * 60000 } }); mine.push({ id: d.id, ...x }); }
+      return mine;
+    });
+  }
+  function imgPub(done, total, eta, end) {
+    C('rn_status').doc('img_' + PC_ID).set({ tool: '상품 수집기', pcName: LS.get('pcName', PC_ID), running: end ? null : '이미지 가져오기', state: '이미지 가져오기 (이 PC 몫)', done, total, etaMin: eta, atMs: Date.now(), ...W() }, { merge: true }).catch(() => {});
+  }
+  async function images() {
+    if (imgRunning) return; imgRunning = true; $('[data-job="images"]').disabled = true;
+    let done = 0, fail = 0; const imgT0 = Date.now(); let imgPubAt = 0;
+    try {
+      const total = (await C('prd_books').where('imgStatus', '==', 'pending').get()).size;
+      for (;;) {
+        if (stopFlag) break;
+        const batch = await claimBatch(20); if (!batch.length) break;
+        for (const b of batch) {
+          if (Date.now() - imgPubAt > 30000) { imgPubAt = Date.now(); imgPub(done + fail, total, done ? Math.round(((Date.now() - imgT0) / done) * Math.max(0, total - done - fail) / 60000) : null); }
+          const upd = { images: {} }; let ok = true;
+          for (const slot of ['front', 'back', 'spine']) {
+            const im = b.images && b.images[slot]; if (!im || !im.src || im.stored) continue;
+            try {
+              const blob = await gmBlob(im.src); const ext = (im.src.match(/\.(jpe?g|png|gif|webp)(\?|$)/i) || [, 'jpg'])[1].toLowerCase();
+              const base = `img/${b.id}/${slot}`; const meta = { cacheControl: 'public,max-age=31536000,immutable' };
+              await storage.ref(`${base}.${ext}`).put(blob, { ...meta, contentType: blob.type || 'image/' + ext });
+              let t = null; try { t = await thumb(blob, slot === 'spine' ? 60 : 200); if (t) await storage.ref(`${base}_t.webp`).put(t, { ...meta, contentType: 'image/webp' }); } catch (e) { t = null; } // 작은 사진 실패는 원본에 영향 없음
+              upd.images[slot] = { src: im.src, stored: `${base}.${ext}`, thumb: t ? `${base}_t.webp` : null, bytes: blob.size ?? null, storedAt: nowIso() };
+            } catch (e) { ok = false; upd.images[slot] = { src: im.src, stored: null, error: e.message }; }
+          }
+          await C('prd_books').doc(b.id).set({ ...upd, imgStatus: ok ? 'done' : 'error', imgLease: firebase.firestore.FieldValue.delete(), ...W() }, { merge: true });
+          ok ? done++ : fail++;
+          { const left = Math.max(0, total - done - fail); const el = Date.now() - imgT0; const eta = done ? (el / done) * left / 60000 : null; $('#rnpImg').textContent = `이미지(이 PC): 완료 ${done.toLocaleString()} · 실패 ${fail} · 남은 약 ${left.toLocaleString()}권${eta != null ? ` · 약 ${fmtDur(eta)} (이 PC 혼자 기준)` : ''}`; }
+        }
+      }
+      log(`이미지 작업 종료 (이 PC 완료 ${done}, 실패 ${fail}). 다른 PC가 맡은 몫은 그 PC에서 진행됩니다`);
+    } catch (e) { log('이미지 오류: ' + e.message, 1); if (/storage|bucket|403|404/i.test(e.message)) log('Firebase Storage가 아직 만들어지지 않았을 수 있습니다', 1); }
+    finally { imgRunning = false; $('[data-job="images"]').disabled = false; imgPub(0, 0, null, true); }
+  }
+
+  /* ───────── 4. 판매자 평가 (만족도·코멘트·작성자·작성일) ─────────
+   * 저장: seller_reviews/{sc_번호}_{연월}  평가 원본(월별 묶음, 같은 평가를 다시 받아도 중복 안 됨)
+   *       seller_review_daily/{sc_번호}   날짜별 [만족, 보통, 불만족] + 기간 합계(웹앱 추이 그래프)
+   *       sellers/{sc_번호}.reviewStats    최근 7일·1·3·12개월 평가 수 (웹앱 순위)
+   * 상위 판매자(최근 6개월 평가·모범·불량·이득·불익 각 상위 N곳, 설정)는 매일 새 평가만 이어 받음. 처음 받는 판매자는 처음 평가까지 전부.
+   * 전체 수집은 모든 판매자의 처음 평가까지. 판매자마다·쪽마다 진행 위치를 저장해 멈춰도 이어서. */
+  const RSV = window.ReadnowSellers || globalThis.ReadnowSellers || null;
+  const surveyUrl = (sc, page) => `/shop/UsedShop/wshopsurvey.aspx?SC=${sc}&page=${page}`;
+  const rIdx = { good: 0, mid: 1, bad: 2 };
+  async function sellerTargets(mode) {
+    const ss = await C('sellers').get(); const arr = []; ss.forEach((d) => { const v = d.data(); if (v.sc) arr.push({ ...v, id: d.id }); });
+    const recent = (s) => (RSV ? RSV.rev6m(s).n || 0 : 0); const N = Math.max(5, SET.topN || 50);
+    let top = [];
+    if (RSV) {
+      const thr = ((await C('app_settings').doc('main').get()).data() || {}).seller || {};
+      // 우리 책을 사 간 금액(이득 점수용): 판매자와 일치하는 고객들의 순매출
+      const ids = [...new Set(arr.flatMap((s) => (s.linkedCustomers || []).filter((l) => RSV.linkLevel(l) === 'match').map((l) => l.customerId)))];
+      const amt = new Map(); const FP = firebase.firestore.FieldPath.documentId();
+      for (let i = 0; i < ids.length; i += 30) { const q = await C('crm_customers').where(FP, 'in', ids.slice(i, i + 30)).get(); q.forEach((d) => amt.set(d.id, d.data().salesAmount || 0)); }
+      const sc = arr.map((s) => ({ s, x: RSV.score(s, { thresholds: thr, bought: (s.linkedCustomers || []).filter((l) => RSV.linkLevel(l) === 'match').reduce((a, l) => a + (amt.get(l.customerId) || 0), 0) }) }));
+      const pick = (f, cmp) => sc.filter(f).sort(cmp).slice(0, N).map((o) => o.s.id);
+      top = [...new Set([
+        ...arr.filter((s) => recent(s) > 0).sort((a, b) => recent(b) - recent(a)).slice(0, N).map((s) => s.id),
+        ...pick((o) => o.x.mcls === 'good', (a, b) => b.x.model - a.x.model), ...pick((o) => o.x.mcls === 'bad', (a, b) => (a.x.model ?? 0) - (b.x.model ?? 0)),
+        ...pick((o) => o.x.gcls === 'good', (a, b) => b.x.gain - a.x.gain), ...pick((o) => o.x.gcls === 'bad', (a, b) => a.x.gain - b.x.gain)])];
+    }
+    const byId = new Map(arr.map((s) => [s.id, s]));
+    if (mode === 'top') return top.map((id) => byId.get(id)).filter(Boolean);
+    const rest = arr.filter((s) => !top.includes(s.id)).sort((a, b) => (Number(String(b.totalReviewCount || 0).replace(/[^\d]/g, '')) || 0) - (Number(String(a.totalReviewCount || 0).replace(/[^\d]/g, '')) || 0));
+    return [...top.map((id) => byId.get(id)).filter(Boolean), ...rest];
+  }
+  // 한 판매자: 새 평가부터 읽어 내려가다 이미 받은 날짜(또는 기준일) 이전에 닿으면 멈춤
+  async function collectSellerReviews(s, full, pos, onPage) {
+    const dref = C('seller_review_daily').doc(s.id); const cur = (await dref.get()).data() || {};
+    const oldDays = cur.days || {}; const lastKnown = cur.stats && cur.stats.last;
+    let stopBefore;
+    if (full) stopBefore = cur.complete ? lastKnown : null;                                // 전체: 처음 평가까지 (이미 전체면 새것만)
+    else stopBefore = lastKnown || null; // 상위 추적: 새것만. 처음 받는 판매자는 처음 평가까지 전부
+    const days = pos && pos.days ? pos.days : {}; const months = {}; let page = pos && pos.page ? pos.page : 1; let lastPage = null; let reachedEnd = false; let n = 0;
+    const flush = async (final) => {
+      const b = db.batch(); let w = 0;
+      for (const [ym, items] of Object.entries(months)) { for (let i = 0; i < items.length; i += 400) { b.set(C('seller_reviews').doc(`${s.id}_${ym}`), { sc: s.sc, sellerId: s.id, month: ym, items: firebase.firestore.FieldValue.arrayUnion(...items.slice(i, i + 400)), ...W() }, { merge: true }); w++; } delete months[ym]; }
+      // 맨 마지막 날짜는 다음 쪽에 이어질 수 있어 끝날 때만 확정
+      const ks = Object.keys(days).sort(); const keep = final ? null : ks[0];
+      const done = {}; ks.forEach((k) => { if (k !== keep) { done[k] = days[k]; } });
+      if (Object.keys(done).length) { b.set(dref, { sc: s.sc, days: done, ...W() }, { merge: true }); w++; Object.keys(done).forEach((k) => { oldDays[k] = done[k]; delete days[k]; }); }
+      if (w) await b.commit();
+    };
+    for (;;) {
+      if (stopFlag) { await flush(false); return { paused: true, page, days }; }
+      const { doc } = await getDoc(surveyUrl(s.sc, page));
+      const r = RSV.parseSurveyPage(doc); lastPage = r.lastPage;
+      if (!r.rows.length) { reachedEnd = true; break; }
+      let stop = false;
+      for (const x of r.rows) {
+        if (stopBefore && x.d < stopBefore) { stop = true; break; }
+        const v = days[x.d] || [0, 0, 0]; if (x.r) v[rIdx[x.r]] += 1; days[x.d] = v; n++;
+        (months[x.d.slice(0, 7)] = months[x.d.slice(0, 7)] || []).push({ d: x.d, r: x.r, c: x.c, a: x.a });
+      }
+      onPage && onPage(page, lastPage, n);
+      if (stop) break;
+      if (page >= lastPage) { reachedEnd = true; break; }
+      page++;
+      if (page % 10 === 0) { await flush(false); await onPage(page, lastPage, n, { page, days }); }
+    }
+    await flush(true);
+    const complete = !!cur.complete || reachedEnd; // 끝 쪽까지 읽었으면 처음 평가까지 다 받은 것
+    const stats = RSV.reviewStats(oldDays);
+    await dref.set({ sc: s.sc, stats, complete, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), ...W() }, { merge: true });
+    await C('sellers').doc(s.id).set({ reviewStats: { ...stats, complete, at: nowIso() }, ...W() }, { merge: true });
+    return { paused: false, n, stats };
+  }
+  async function reviewJob(mode) {
+    if (!RSV) { log('판매자 점수 파일(readnow-sellers-core.js)을 불러오지 못했습니다', 1); return false; }
+    const lane = await acquireLane('aladin');
+    if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+    const name = mode === 'top' ? 'revTop' : 'revAll';
+    try {
+      let prog = await loadProgress(name);
+      if (!prog || !prog.list) { ui('대상 판매자 고르는 중', 0, 0); const list = (await sellerTargets(mode)).map((s) => s.id); prog = { list, i: 0, pos: null, got: 0, startedAt: nowIso() }; await saveProgress(name, prog); log(`${mode === 'top' ? '상위 판매자' : '전체 판매자'} ${list.length}곳 평가 수집 시작`); }
+      const all = new Map(); (await C('sellers').get()).forEach((d) => all.set(d.id, { ...d.data(), id: d.id }));
+      for (; prog.i < prog.list.length; prog.i++) {
+        const s = all.get(prog.list[prog.i]); if (!s || !s.sc) continue;
+        const res = await collectSellerReviews(s, mode === 'all', prog.pos, async (page, lastPage, n, pos) => {
+          ui(mode === 'top' ? '상위 판매자 평가 갱신' : '판매자 평가 전체 수집', prog.i, prog.list.length, `${s.name || s.sc} · ${page}/${lastPage || '?'}쪽 · 새 평가 ${n}건`, '멈춰도 판매자·쪽 단위로 이어서 합니다');
+          if (pos) { prog.pos = pos; await saveProgress(name, prog); }
+        });
+        if (res.paused) { prog.pos = { page: res.page, days: res.days }; await saveProgress(name, prog); throw new Error('멈춤'); }
+        prog.got += res.n || 0; prog.pos = null;
+        if (prog.i % 5 === 0) await saveProgress(name, prog);
+      }
+      await finishJob(name, { sellers: prog.list.length, reviews: prog.got });
+      log(`판매자 평가 ${mode === 'top' ? '상위 갱신' : '전체 수집'} 완료: ${prog.list.length}곳, 새 평가 ${prog.got.toLocaleString()}건`);
+    } finally { await releaseLane('aladin'); }
+  }
+  // 시험: 우리 가게 평가 1쪽을 읽어 제대로 나뉘는지 기록 칸에 보여줌 (저장 안 함)
+  async function reviewTest() {
+    if (!RSV) return log('판매자 점수 파일을 불러오지 못했습니다', 1);
+    const { doc } = await getDoc(surveyUrl('996008', 1)); const r = RSV.parseSurveyPage(doc);
+    log(`평가 시험: ${r.rows.length}건 읽음, 끝 쪽 ${r.lastPage}`);
+    r.rows.slice(0, 5).reverse().forEach((x) => log(`  ${x.d} · ${({ good: '만족', mid: '보통', bad: '불만족' })[x.r] || '만족도 못 읽음'} · ${x.a || '작성자 못 읽음'} · ${String(x.c || '').slice(0, 40)}`, !x.r || !x.a));
+    if (!r.rows.length) log('평가를 한 건도 못 읽었습니다. 판매자 평가 페이지 원본을 보내 주세요', 1);
+  }
+
+  /* ───────── 4-1. 판매자 최근 6개월 평가 수 (숍 첫 화면의 구매 만족도 표) ─────────
+   * 평가를 하나하나 훑지 않아도 판매량을 가늠할 수 있는 값. 판매자 문서에 넣고 날짜별로 쌓음(seller_rev6m). */
+  async function rev6mJob(mode) {
+    if (!RSV) { log('판매자 점수 파일(readnow-sellers-core.js)을 불러오지 못했습니다', 1); return false; }
+    const lane = await acquireLane('aladin');
+    if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+    const name = mode === 'all' ? 'rev6mAll' : 'rev6mStale';
+    try {
+      let prog = await loadProgress(name);
+      if (!prog || !prog.list) {
+        const cut = FORCE_ALL ? '9999' : new Date(Date.now() - Math.max(1, SET.rev6mDays || 7) * 864e5).toISOString();
+        const arr = []; (await C('sellers').get()).forEach((d) => { const v = d.data(); if (v.sc && String(v.sc) !== '0' && (mode === 'all' || ((!v.rev6mAt || v.rev6mAt < cut) && !(v.rev6mTriedAt && v.rev6mTriedAt >= cut && v.rev6mTriedVer === RSV.VERSION && (!v.rev6mAt || v.rev6mTriedAt > v.rev6mAt))))) arr.push({ id: d.id, sc: v.sc, at: v.rev6mAt || '' }); });
+        arr.sort((a, b) => String(a.at).localeCompare(String(b.at))); // 오래전에 확인한 판매자부터
+        prog = { list: arr.map((x) => `${x.id}|${x.sc}`), i: 0, got: 0, startedAt: nowIso() }; await saveProgress(name, prog); // Firebase는 배열 안의 배열을 저장 못 함 → '아이디|번호' 글자로
+        log(`6개월 평가 수: 판매자 ${arr.length}곳 ${mode === 'all' ? '(전체)' : `(${SET.rev6mDays || 7}일 넘게 확인 안 한 곳)`}`);
+      }
+      let b = db.batch(); let w = 0; const day = nowIso().slice(0, 10);
+      for (; prog.i < prog.list.length; prog.i++) {
+        if (stopFlag) { if (w) await b.commit(); await saveProgress(name, prog); throw new Error('멈춤'); }
+        const [id, sc] = String(prog.list[prog.i]).split('|');
+        const { doc } = await getDoc(`/shop/usedshop/wshopitem.aspx?SC=${sc}`);
+        const r = RSV.parseShopSummary(doc);
+        if (r.status === 'ok' || r.status === 'lt3') { // lt3 = 최근 6개월 평가 3건 미만(알라딘이 '-'로 표시) — 실패가 아니라 '최근 활동 거의 없음'이라는 정보
+          { const sNew = { rev6m: r.rev6m ?? null, rev6mLt3: r.rev6mLt3 ?? null, shopPeriods: r.periods ?? null, shopTotal: r.total ?? null, aladinGrade: r.grade ?? null, isPro: r.isPro ?? null, cancel3m: r.cancel3m ?? null, bizInfo: r.info || null, contactNote: r.infoNote || null };
+            const sSig = JSON.stringify(sNew); const sd = (await C('sellers').doc(id).get().catch(() => null)); const sPrev = sd && sd.exists ? sd.data() : {};
+            if (sPrev.shopSig !== sSig) { b.set(C('seller_history').doc(`${id}_${nowIso().replace(/[:.]/g, '-')}`), { sellerId: id, sc, kind: 'shopSummary', at: nowIso(), ...sNew, ...W() }); w++; } // 숍 화면 내용이 바뀌면 그 판을 시각과 함께 보관 (sellers 문서는 지금 값만)
+            b.set(C('sellers').doc(id), { shopSig: sSig }, { merge: true }); }
+          b.set(C('sellers').doc(id), { rev6m: r.rev6m, rev6mLt3: r.rev6mLt3, rev6mAt: nowIso(), shopPeriods: r.periods, shopTotal: r.total, shopTotalLt3: r.totalLt3, aladinGrade: r.grade, isPro: r.isPro, cancel3m: r.cancel3m, ...(r.info ? { bizInfo: r.info } : {}), ...(r.infoNote ? { contactNote: r.infoNote } : {}), shopAt: nowIso(), ...W() }, { merge: true });
+          if (r.rev6m != null) { b.set(C('seller_rev6m').doc(id), { sc, days: { [day]: r.rev6m }, ...W() }, { merge: true }); w++; }
+          w++; prog.got++; if (r.status === 'lt3') prog.lt3 = (prog.lt3 || 0) + 1;
+          prog.miss = 0;
+        } else { prog.miss = (prog.miss || 0) + 1; log(`SC ${sc}: 숍 화면에서 구매만족도 표를 찾지 못함 (7일 뒤 다시)`, 1); b.set(C('sellers').doc(id), { rev6mTriedAt: nowIso(), rev6mTriedVer: RSV.VERSION, ...W() }, { merge: true }); w++;
+          if (prog.miss >= 15 && prog.got === 0) { if (w) await b.commit(); await saveProgress(name, prog); log(`6개월 평가 수: 처음부터 ${prog.miss}곳 연속으로 못 읽었습니다. 판매자 숍 화면 구조가 바뀐 것 같아 이 단계를 멈춥니다 (판매자 숍 첫 화면 HTML 확인 필요). 나머지 판매자는 건드리지 않았고, 일괄 수집은 다음 단계로 갑니다`, 1); return 'skip'; } }
+        ui(mode === 'all' ? '6개월 평가 수 (전체 판매자)' : '6개월 평가 수 (오래된 것)', prog.i + 1, prog.list.length, `SC ${sc} · ${r.grade || ''} · ${r.rev6m != null ? num6(r.rev6m) + '건' : r.status === 'lt3' ? '최근 6개월 3건 미만' : '못 읽음'}`);
+        if (w >= 40) { await b.commit(); b = db.batch(); w = 0; await saveProgress(name, prog); }
+      }
+      if (w) await b.commit();
+      await finishJob(name, { sellers: prog.list.length, got: prog.got });
+      log(`6개월 평가 수 완료: ${prog.got}/${prog.list.length}곳 (그중 최근 6개월 평가 3건 미만 ${prog.lt3 || 0}곳 — 개인셀러에 많음)`);
+    } finally { await releaseLane('aladin'); }
+  }
+  const num6 = (n) => Number(n).toLocaleString();
+
+  /* ───────── 5. 알라딘 구매 내역 (매입 대조용) ─────────
+   * 2026-03-13까지는 알라딘에서 받은 구매목록 파일로 끝. 그 뒤 주문만 주문/배송 조회에서 모아
+   * 웹앱 매입 탭에서 구글 시트의 알라딘 거래와 맞춰 봄 (시트에 빠진 주문 찾기). */
+  const BUY_FROM = '1990-01-01'; // 알라딘에서 산 모든 주문 (기간 제한 없음) — 알라딘 구매 풀의 근거
+  const BUY_URL = 'https://www.aladin.co.kr/account/wmaininfo.aspx?pType=MyAccount&start=we';
+  function parseBuyList(doc) {
+    const out = [];
+    doc.querySelectorAll('td.td_date').forEach((td) => {
+      const tr = td.closest('tr'); const d = (td.textContent || '').trim(); if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !tr) return;
+      const a = tr.querySelector('td.td_link a'); const ono = a ? (a.textContent || '').trim() : null; if (!ono) return;
+      const item = tr.querySelector('.td_left_item'); const txt = item ? item.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '';
+      const m = txt.match(/총\s*(\d+)\s*종\s*(\d+)\s*권[^,]*,\s*([\d,]+)\s*원/);
+      const note = tr.querySelector('td.td_note'); const recvT = [...tr.querySelectorAll('td.td_date')].map((t) => t.textContent.trim()).find((t) => t && !/^\d{4}-/.test(t));
+      out.push({ ono, date: d, summary: txt.replace(/\s*총\s*\d+\s*종.*$/, ''), kinds: m ? +m[1] : null, qty: m ? +m[2] : null, amount: m ? +m[3].replace(/,/g, '') : null, note: note ? note.textContent.replace(/\s+/g, ' ').trim() : null, recipient: recvT || null });
+    });
+    return out;
+  }
+  async function buyPage(page) {
+    await politeWait();
+    const body = new URLSearchParams({ page: String(page), searchYear: '0', searchMonth: '0', searchType: '0', searchShopType: '0', searchOrderStatus: '0' });
+    const r = await fetch(BUY_URL, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+    const html = await r.text(); const doc = new DOMParser().parseFromString(html, 'text/html');
+    if (looksLoggedOut(r.url, doc)) { await autoRelogin(r.url, 1); return buyPage(page); }
+    return doc;
+  }
+  // (1.34.4) 알라딘 구매 주문 표: 주문번호 → 품목 줄 있음(1)/없음(0). 7일마다 한 번 전체, 그 사이엔 uploadedAt이 바뀐 주문만 (클라우드·이 PC 모두 uploadedAt을 남김)
+  async function aoIndex() { let c = null; try { c = GM_getValue('rnp-aoidx', null); } catch (e) {}
+    const ms = (v) => (v.uploadedAt && v.uploadedAt.toMillis ? v.uploadedAt.toMillis() : 0);
+    const full = !c || !c.m || !c.builtAt || Date.now() - c.builtAt > 7 * 864e5;
+    if (full) { const s = await C('pur_aladin_orders').get(); c = { m: {}, last: 0, builtAt: Date.now() }; s.forEach((d) => { const v = d.data(); c.m[d.id] = v.lines ? 1 : 0; c.last = Math.max(c.last, ms(v)); }); log(`알라딘 구매 주문 표를 새로 만듦 (${s.size.toLocaleString()}건)`); }
+    else { const s = await C('pur_aladin_orders').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis((c.last || 0) - 120000)).get(); s.forEach((d) => { const v = d.data(); c.m[d.id] = v.lines ? 1 : 0; c.last = Math.max(c.last, ms(v)); }); }
+    try { GM_setValue('rnp-aoidx', c); } catch (e) {} return c; }
+  async function aladinBuyJob() {
+    const lane = await acquireLane('aladin');
+    if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+    try {
+      const AX = await aoIndex(); const known = new Set(Object.keys(AX.m)); // (1.34.4) 이 PC에 둔 표 + 그 뒤 바뀐 주문만 받음 (예전: 매번 상세 글 포함 전체 수천 건)
+      const metaRef = C('prd_jobs').doc('aladinBuyMeta'); const meta = (await metaRef.get()).data() || {};
+      const prog = (await loadProgress('aladinBuy')) || { page: 1, got: 0, phase: 'list', startedAt: nowIso() };
+      const visit = async (page) => { const doc = await buyPage(page); const rows = parseBuyList(doc); const keep = rows.filter((x) => x.date >= BUY_FROM); const fresh = keep.filter((x) => !known.has(x.ono));
+        if (fresh.length) { const b = db.batch(); fresh.forEach((x) => { b.set(C('pur_aladin_orders').doc(x.ono), { ...x, collectedAt: nowIso(), ...W() }, { merge: true }); /* (1.57.2) 클라우드가 먼저 적은 상세·메모 기록(lines·noteLog)을 지우지 않게 */ known.add(x.ono); }); await b.commit(); prog.got += fresh.length; }
+        return { rows, keep, fresh, first: rows[0] && rows[0].ono, last: rows.length ? rows[rows.length - 1].date : '' }; };
+      if (prog.phase === 'list') {
+        // ① 앞쪽: 최신 주문부터, 이미 받은 주문만 나오는 쪽에서 멈춤 (멈췄다 이어도 늘 1쪽부터 다시 봄 → 오늘 주문 놓치지 않음)
+        let page = 1, prev = null;
+        for (;;) { if (stopFlag) { await saveProgress('aladinBuy', prog); throw new Error('멈춤'); }
+          const v = await visit(page); ui('알라딘 구매 내역: 새 주문', page, 0, `${page}쪽 · ${v.last}까지 · 새로 받은 주문 ${prog.got}건`);
+          if (!v.rows.length || v.first === prev) break; prev = v.first;
+          if (v.keep.length < v.rows.length) { await metaRef.set({ backfillDone: true, backfillFrom: BUY_FROM }, { merge: true }); meta.backfillDone = true; meta.backfillFrom = BUY_FROM; break; }
+          if (!v.fresh.length) break; page++; }
+        // ② 뒤쪽: 가장 오래된 주문까지 한 번도 끝까지 받은 적 없으면 이어서 채움 (처음 한 번만)
+        // 기준일이 바뀌면(3/14 → 2025-01-01) 그 차이만큼 한 번 더 채움
+        if (!(meta.backfillDone && meta.backfillFrom === BUY_FROM)) { let bp = Math.max(prog.page || 1, page + 1); log(`알라딘 구매 내역: 예전 주문 채우기 (${bp}쪽부터 가장 오래된 주문까지, 처음 한 번만)`);
+          for (;;) { if (stopFlag) { prog.page = bp; await saveProgress('aladinBuy', prog); throw new Error('멈춤'); }
+            const v = await visit(bp); ui('알라딘 구매 내역: 예전 주문 채우기 (처음 한 번)', bp, 0, `${bp}쪽 · ${v.last}까지 · 새로 받은 주문 ${prog.got}건`);
+            if (!v.rows.length || v.first === prev || v.keep.length < v.rows.length) { await metaRef.set({ backfillDone: true, backfillFrom: BUY_FROM, backfillAt: nowIso() }, { merge: true }); break; }
+            prev = v.first; bp++; if (bp % 3 === 0) { prog.page = bp; await saveProgress('aladinBuy', prog); } } }
+        prog.phase = 'detail'; await saveProgress('aladinBuy', prog);
+      }
+      // 주문 상세: 품목·판매자 등 주요 정보를 그대로 보관 (시트에 빠진 주문을 확인할 때 씀)
+      const AX2 = await aoIndex(); const need = Object.keys(AX2.m).filter((k) => !AX2.m[k]); // 품목 줄(제목·가격·수량)이 없는 주문만 — 예전에 요약만 받은 주문은 한 번 더 (클라우드가 그새 받은 것은 빠짐)
+      for (let i = 0; i < need.length; i++) {
+        if (stopFlag) { await saveProgress('aladinBuy', prog); throw new Error('멈춤'); }
+        const { doc } = await getDoc(`https://www.aladin.co.kr/account/wordersinfo.aspx?pType=OrdersInfo&ONO=${encodeURIComponent(need[i])}`);
+        const tables = [...doc.querySelectorAll('table')].map((t) => t.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim()).filter((t) => /\[중고|상품명|판매자|정가|수량/.test(t));
+        const items = [...doc.querySelectorAll('a[href*="wproduct.aspx"]')].map((a) => a.textContent.replace(/\s+/g, ' ').trim()).filter((t) => t.length > 1);
+        const lines = []; doc.querySelectorAll('tr[id^="ordersItem_"]').forEach((tr) => { // 실제 주문 상세 화면: 책 한 줄 = tr#ordersItem_상품번호
+          const sp = tr.querySelector('.td_item span') || tr.querySelector('.td_item a.linkblue'); const raw = sp ? sp.textContent.replace(/\s+/g, ' ').trim() : ''; if (!raw) return;
+          const g = raw.match(/^\[(?:온라인)?중고-([^\]]+)\]\s*/); const title = raw.replace(/^\[[^\]]*\]\s*/, '');
+          const am = (tr.querySelector('.td_amount') || {}).textContent || ''; const q = (am.match(/(\d+)\s*\/\s*\d+/) || am.match(/(\d+)/) || [])[1];
+          const pm = ((tr.querySelector('.td_mileage') || {}).textContent || '').match(/가격\s*:\s*([\d,]+)\s*원/);
+          lines.push({ title, raw, grade: g ? g[1] : null, qty: q ? +q : 1, price: pm ? +pm[1].replace(/,/g, '') : null, itemId: (tr.id.match(/ordersItem_(\d+)/) || [])[1] || null }); });
+        const sellers = [...doc.querySelectorAll('a[href*="wshopitem.aspx"]')].map((a) => ({ name: a.textContent.trim(), sc: (a.href.match(/SC=(\d+)/i) || [])[1] || null }));
+        await C('pur_aladin_orders').doc(need[i]).set({ detailText: tables.join(' | ').slice(0, 6000) || doc.body.textContent.replace(/\s+/g, ' ').slice(0, 3000), items: [...new Set(items)].slice(0, 60), lines: lines.slice(0, 80), sellers, detailAt: nowIso(), ...W() }, { merge: true });
+        ui('알라딘 주문 상세', i + 1, need.length, need[i]);
+      }
+      await finishJob('aladinBuy', { orders: prog.got, details: need.length });
+      log(`알라딘 구매 내역: 주문 ${prog.got}건, 상세 ${need.length}건`);
+    } finally { await releaseLane('aladin'); }
+  }
+
+  const CHAIN_ORDER = ['crm', 'scanNew', 'aladinBuy', 'buyback', 'market', 'nbMarket', 'bench', 'soldInfo', 'poolInfo', 'images', 'photos', 'usedInfo', 'rev6m', 'revTop', 'dynamic', 'scanFull', 'revAll'];
+  const STEP_LABEL = { bench: '집중 벤치마킹 판매자', usedInfo: '경쟁 매물 유의사항·사진', crm: '고객·주문 전체', scanNew: '신규 등록분', aladinBuy: '알라딘 구매 내역', buyback: '알라딘 팔기 정산 내역', market: '도서·시장 지표', rev6m: '6개월 평가 수', revTop: '상위 판매자 평가', dynamic: '구매자 분포·함께 산 책', soldInfo: '판매완료 상품 정보', poolInfo: '알라딘 풀 도서 정보', images: '이미지', photos: '우리 상품 사진', scanFull: '등록 상품 전체 재검토', revAll: '판매자 평가 전체' , nbMarket: '새상품 없는 상품 시세' };
+  /* ───────── 시작 전 점검: 대량 수집을 시작하기 전에 문제를 미리 찾음 ───────── */
+  async function preflight(quiet) {
+    const R = []; const add = (ok, msg, fatal) => { R.push({ ok, msg, fatal }); window.__rnLog && window.__rnLog('점검', ok ? 'ok' : fatal ? 'err' : 'warn', `${ok ? '✓' : fatal ? '✗' : '!'} ${msg}`); };
+    add(!!(window.__rnPcName && window.__rnPcName.get()), `PC 이름: ${(window.__rnPcName && window.__rnPcName.get()) || '없음 — 패널의 PC 이름을 정해 주세요'}`, true);
+    const u = auth.currentUser; const prov = u ? (u.providerData || []).map((x) => (x.providerId === 'password' ? '이메일·비밀번호' : x.providerId === 'google.com' ? '구글' : x.providerId)).join('+') : '';
+    add(!!u, `Firebase 로그인: ${u ? `${u.email} · 방식 ${prov || '?'} · 이메일 인증 ${u.emailVerified ? '됨' : '안 됨'}` : '안 됨'}`, true);
+    { const tests = [['기존 컬렉션 읽기 (prd_jobs)', () => C('prd_jobs').limit(1).get()], ['기록 쓰기 (rn_logs)', () => C('rn_logs').doc('_check').set({ at: Date.now(), by: PC_NAME }, { merge: true })], ['알라딘 팔기 읽기 (pur_buyback)', () => C('pur_buyback').limit(1).get()], ['분류 읽기 (prd_cat_manual)', () => C('prd_cat_manual').limit(1).get()]];
+      const bad = []; for (const [n, f] of tests) { try { await f(); } catch (e) { bad.push(`${n}: ${e.code || e.message}`); } }
+      add(!bad.length, bad.length ? `Firebase 규칙에서 막힘 — ${bad.join(' / ')}` : 'Firebase 규칙: 기존·새 컬렉션 모두 읽기·쓰기 됨', false); }
+    try { const g = await getDoc('https://www.aladin.co.kr/account/wmaininfo.aspx?pType=MyAccount&start=we'); add(!looksLoggedOut(g.finalUrl, g.doc), `알라딘 로그인: ${looksLoggedOut(g.finalUrl, g.doc) ? '풀림 — 자동 재로그인 정보(아이디·비밀번호) 확인' : '됨'}`, false); } catch (e) { add(false, `알라딘 접속: ${e.message}`, false); }
+    try { const v = (await C('crm_system').doc('collector_version').get()).data() || {}; add(!v.ver || verNum(v.ver) <= verNum(VER), `수집기 버전: 이 PC ${VER}${v.ver && verNum(v.ver) > verNum(VER) ? ` · 더 새 버전 ${v.ver} 있음 (쉬는 사이에 바뀜)` : ' (최신)'}`); } catch (e) {}
+    try { const li = await window.__rnCrm.localInfo(); add(true, `고객·주문 기록(이 PC): 상세 ${li.pops.toLocaleString()}건 · 목록 줄 ${li.lines.toLocaleString()} · 고객 일괄 끝까지 ${li.complete ? '한 적 있음' : '없음'} → 고객 단계는 서버 기준으로 이미 받은 주문을 건너뜀`); } catch (e) {}
+    { const m = window.__rnLoginMethod ? window.__rnLoginMethod() : 'naver'; const need = GM_getValue('rnu-need-naver', 0), okAt = GM_getValue('rnu-naver-okAt', 0); add(!(m === 'naver' && need && need > okAt), `다시 로그인 방식: ${m === 'naver' ? '네이버로 로그인' : '알라딘 아이디(자동입력방지 때문에 자동이 안 될 수 있음)'}${m === 'naver' && need && need > okAt ? ' — ⚠ 네이버 로그인 필요' : ''}`, false); }
+    add(!OLD_FILES.length, OLD_FILES.length ? `GitHub 공용 파일이 옛 버전: ${OLD_FILES.map(([k, v, w]) => `${k} ${v || '못 읽음'} (필요 ${w} 이상)`).join(', ')} — 새 파일을 올려야 정확히 읽음` : `공용 파일 버전 맞음 (${Object.entries(NEED_FILES).map(([k, [g]]) => `${k.split(' ')[1]} ${g()}`).join(' · ')})`, true);
+    { const du = GM_getValue('rnu-drive-url', ''); if (!du) add(false, '작업 기록 구글 드라이브 저장: 주소 없음 (웹앱 설정 ⑨ — 없으면 PC로 내려받음)', false);
+      else { const ok = await new Promise((res) => GM_xmlhttpRequest({ method: 'GET', url: du, timeout: 20000, onload: (r) => res(/리드나우 기록 저장 준비됨/.test(r.responseText || '')), onerror: () => res(false), ontimeout: () => res(false) })); add(ok, ok ? '작업 기록 구글 드라이브 저장: 연결됨' : '작업 기록 구글 드라이브 저장: 주소는 있으나 응답 확인 안 됨 (Apps Script에 doGet 추가 후 새 버전으로 다시 배포)', false); } }
+    add(true, `잠금 묶음: ${lockGroup()} · 같은 묶음 동시 PC ${SET.maxLanes || 1}대 · 알라딘 요청 간격 자동 조절 지금 ${PACE.state().gap}ms (최소 ${SET.reqMinMs} · 최대 ${SET.reqMaxMs})`);
+    try { const lk = (await LOCK().get()).data(); const pcs = freshPcs(lk, Date.now()); delete pcs[PC_ID]; const others = Object.values(pcs).map((x) => `${x.name}(${x.job || ''})`); if (legacyOther(lk, Date.now())) others.push(`${lk.pcName}(${lk.taskLabel})`); add(true, `같은 묶음에서 지금 도는 다른 PC: ${others.join(', ') || '없음'}`); } catch (e) {}
+    try { const st = (SET.steps || {}); add(true, `일괄 단계 켬: ${Object.keys(STEP_LABEL).filter((k) => st[k] !== false).map((k) => STEP_LABEL[k]).join(' · ')}`); } catch (e) {}
+    const fatal = R.filter((r) => !r.ok && r.fatal); const warn = R.filter((r) => !r.ok && !r.fatal);
+    log(`시작 전 점검: ${fatal.length ? `✗ 꼭 고칠 것 ${fatal.length}` : '✓ 시작 가능'}${warn.length ? ` · 확인할 것 ${warn.length}` : ''} (자세한 내용은 기록 창)`, fatal.length || warn.length);
+    if (!quiet && (fatal.length || warn.length)) (window.__rnHuman(8000) ? alert : (m) => window.__rnNote(m, fatal.length ? 'err' : 'warn'))(`시작 전 점검\n\n${R.map((r) => `${r.ok ? '✓' : r.fatal ? '✗' : '!'} ${r.msg}`).join('\n')}`);
+    return !fatal.length;
+  }
+  /* ───────── 알라딘 구매 풀: 아직 연결되지 않은(미규명) 책의 도서 정보·시장 지표·이미지 ─────────
+   * 대상: 수집한 알라딘 주문의 책 줄(상품번호 있음) 중 ① 등록·판매 상품과 연결 안 됨 ② 그 책의 도서 정보를 아직 안 받음 (취소·반품 주문 제외)
+   * 방법: 등록 상품과 똑같이 새상품 페이지 → 도서 정보(분류·정가·사진 등) + 온라인 중고 시세. 상품(listing) 기록은 만들지 않음. */
+  async function poolInfoJob() {
+    const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+    try {
+      let prog = await loadProgress('poolInfo');
+      if (!prog || !prog.list) {
+        const linked = new Set(); (await C('pur_matches').get()).forEach((d) => { const m = d.data(); if (m.itemKey && m.kind !== 'none' && String(m.itemKey).startsWith('ao_')) linked.add(m.itemKey); });
+        const have = new Set(); const missCut = FORCE_ALL ? '9999' : new Date(Date.now() - 30 * 864e5).toISOString(); (await C('prd_ids').where(firebase.firestore.FieldPath.documentId(), '>=', 'itemId_').where(firebase.firestore.FieldPath.documentId(), '<', 'itemId`').get()).forEach((d) => { const v = d.data(); if (v.bookId || v.poolLine || (v.poolMissAt && v.poolMissAt > missCut)) have.add(d.id.slice(7)); });
+        const list = []; const seen = new Set();
+        (await C('pur_aladin_orders').get()).forEach((d) => { const o = d.data(); if (/취소|반품|환불/.test(`${o.note || ''} ${o.status || ''}`)) return;
+          (o.lines || []).forEach((x, i) => { if (!x.itemId || linked.has(`ao_${d.id}#${i}`) || have.has(String(x.itemId)) || seen.has(String(x.itemId))) return; seen.add(String(x.itemId)); list.push(`${x.itemId}|${String(x.title || '').slice(0, 60)}`); }); });
+        prog = { list, i: 0, ok: 0, fail: 0, startedAt: nowIso() }; await saveProgress('poolInfo', prog);
+        log(`알라딘 구매 풀(미연결) 도서 정보: ${list.length.toLocaleString()}권 (연결된 책·이미 정보가 있는 책은 뺌)`);
+      }
+      for (; prog.i < prog.list.length; prog.i++) {
+        if (stopFlag) { await saveProgress('poolInfo', prog); throw new Error('멈춤'); }
+        const [itemId, title] = String(prog.list[prog.i]).split('|');
+        try { await refreshOne({ pool: true, listingId: itemId, title }, null); prog.ok++; await C('prd_ids').doc('itemId_' + itemId).set({ poolLine: true, poolInfoAt: nowIso(), ...W() }, { merge: true }); }
+        catch (e) {
+          let alt = null;
+          if (/찾지 못함/.test(e.message) && title) { try { const sr = await getDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=All&SearchWord=${encodeURIComponent(title)}`);
+            const c = P.parseSearchResults(sr.doc).map((r) => ({ ...r, cov: P.nameCoverage(title, r.title) })).filter((r) => r.cov >= (SET.photoMatch ?? 0.9) && String(r.itemId) !== String(itemId)).sort((a, b) => (a.used ? 1 : 0) - (b.used ? 1 : 0) || b.cov - a.cov)[0];
+            if (c) { await refreshOne({ pool: true, listingId: c.itemId, title }, null); alt = c; } } catch (e2) {} }
+          if (alt) { prog.ok++; prog.viaSearch = (prog.viaSearch || 0) + 1; await C('prd_ids').doc('itemId_' + itemId).set({ poolLine: true, poolInfoAt: nowIso(), poolVia: { itemId: alt.itemId, title: alt.title, cov: Math.round(alt.cov * 1000) / 1000 }, ...W() }, { merge: true }); }
+          else { prog.fail++; if (prog.fail <= 30) log(`풀 도서 ${title || itemId}: ${e.message} (상품명 검색 90%↑도 없음 · 30일 뒤 다시)`, 1); await C('prd_ids').doc('itemId_' + itemId).set({ poolMissAt: nowIso(), ...W() }, { merge: true }).catch(() => {}); } }
+        ui('알라딘 구매 풀 도서 정보', prog.i + 1, prog.list.length, `${title || itemId} · 성공 ${prog.ok} · 실패 ${prog.fail}`);
+        if (prog.i % 10 === 0) await saveProgress('poolInfo', prog);
+      }
+      await finishJob('poolInfo', { ok: prog.ok, fail: prog.fail, viaSearch: prog.viaSearch || 0 }); log(`알라딘 구매 풀 도서 정보 완료: 성공 ${prog.ok} (그중 상품명 검색으로 찾음 ${prog.viaSearch || 0}), 실패 ${prog.fail} (이미지는 '이미지' 단계에서)`);
+    } finally { await releaseLane('aladin'); }
+  }
+  /* ───────── 🎯 집중 벤치마킹 (1.46.0): 관리자가 고른 판매자(웹앱 경영 → 집중 벤치마킹 · app_settings/bench.targets)의 알라딘 중고샵 목록 전체를 하루 한 번 끝까지 읽음 ─────────
+   * 화면 (1.48.0): /shop/usedshop/wshopitem.aspx?SC=판매자&ViewType=Simple&ViewRowsCount=48&SortOrder=6&page=N (간단히 보기 · 한 쪽 48개 · 등록순) — 10쪽마다 진행 저장(멈춰도 그 쪽부터 이어감) · 끝 쪽까지(상한 없음)
+   * 한 바퀴가 끝나면 어제 목록과 견줌: 새로 보인 것 = 새로 올린 상품(첫 바퀴는 '처음부터 있던 것'으로만 표시) · 안 보이게 된 것 = 사라짐(팔렸거나 내림) · 값이 바뀐 것
+   * 저장: bench_items/{판매자_상품번호}(처음 본 날·사라진 날·값 바뀜 — 덮어쓰지 않고 덧붙임) · bench_days/{판매자_날짜}(하루 요약 + 새로 올린 것·사라진 것 목록) · bench_state/{판매자}/c/*(지금 목록 — 다음 비교용)
+   *       bench_probe/{판매자}(첫 쪽 화면 일부와 읽은 결과 — 화면 모양이 다르면 웹앱에 '읽기 확인 필요'로 뜸) */
+  const kDayB = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+  /* (1.48.0) 정범이 저장해 준 15개 숍 화면(2026-10-09)으로 맞춤: 숍 기본 화면은 '간단히 보기'(ViewType=Simple) · 한 쪽 24개 또는 48개(화면의 개수 고르기와 같은 값) · 등록순(SortOrder=6)
+   * 48개로 읽으면 쪽 수가 반으로 줄어듦 (예: 우리집은도서관 4,076쪽 → 약 2,038쪽) */
+  const benchUrl = (sc, page, rows) => `/shop/usedshop/wshopitem.aspx?SC=${encodeURIComponent(sc)}&ViewType=Simple&ViewRowsCount=${rows || 48}&SortOrder=6&page=${page}`;
+  /* (1.55.0) ⏱ 한 쪽에 더 많이 — 숍 화면의 개수 고르기는 24·48뿐이지만 주소의 ViewRowsCount를 서버가 더 크게 받아 주면 쪽 수(=요청 수·시간·트래픽)가 그만큼 줄어듦.
+   *  판매자마다 200 → 100 순으로 1쪽을 열어 보고, 48개 쪽들(필요한 만큼)과 상품·값·상태·배지 등 '읽어 낸 내용 전부'가 순서까지 똑같을 때만 그 크기를 씀 — 하나라도 다르면 48개 그대로(빠뜨리지 않게)
+   *  결과는 bench_state.rows에 남기고 7일마다 다시 확인 · 작은 숍(2쪽 이하)은 확인하지 않음 */
+  async function benchRowsPick(sc, name, st) { const R0 = st.rows; if (R0 && R0.size && R0.at && Date.now() - Date.parse(R0.at) < 7 * 864e5) return R0.size; if ((st.lastPage || 0) && st.lastPage <= 2) return 48;
+    const key = (x) => [x.id, x.p, x.g, x.t, x.pl, x.low ? 1 : 0, x.uc || null, x.au || null, x.cov || null]; let pick = 48, why = ''; const t0 = Date.now();
+    for (const S of [200, 100]) { let A; try { A = benchParse((await getDoc(benchUrl(sc, 1, S))).doc); } catch (e) { if (e.message === '멈춤') throw e; why = `${S}개: 읽기 실패 ${e.message}`; continue; }
+      if (A.length <= 48) { why = `${S}개로 열어도 한 쪽 ${A.length}개 (서버가 안 받아 줌)`; continue; }
+      const B = []; try { for (let k = 1; B.length < A.length && k <= Math.ceil(A.length / 48) + 1; k++) B.push(...benchParse((await getDoc(benchUrl(sc, k, 48))).doc)); } catch (e) { if (e.message === '멈춤') throw e; why = `48개 쪽 대조 실패 ${e.message}`; continue; }
+      const same = JSON.stringify(A.map(key)) === JSON.stringify(B.slice(0, A.length).map(key));
+      if (same) { pick = A.length >= S ? S : A.length; why = `${S}개로 열면 한 쪽 ${A.length}개 — 48개 쪽 ${Math.ceil(A.length / 48)}개와 내용이 똑같음`; break; } why = `${S}개 쪽과 48개 쪽 내용이 다름(대조하는 사이 숍이 바뀌었을 수 있음) — 48개 그대로`; }
+    try { await C('bench_state').doc(sc).set({ rows: { size: pick, at: nowIso(), why, sec: Math.round((Date.now() - t0) / 1000) } }, { merge: true }); } catch (e) {}
+    log(`🎯 '${name}': 한 쪽 개수 ${pick}개로 읽음 — ${why}`); return pick; }
+  /* 표지 그림 파일 이름(예: 8963718182_1.jpg → '8963718182') — ISBN처럼 보이지만 늘 ISBN이라는 확인이 없어 ISBN 칸에 넣지 않고 그대로 보관만 함(나중에 우리 상품과 견줘 확인되면 씀) */
+  const coverKey = (src) => (String(src || '').match(/(?:^|\/)([0-9A-Za-z]{8,13})_\d+\.(?:jpe?g|gif|png)/i) || [])[1] || null;
+  /* 숍 화면의 끝 쪽 번호 ('끝' 단추 · 없으면 보이는 쪽 번호 중 가장 큰 것) */
+  const benchLastPage = (doc, html) => { const h = String(html || (doc && doc.documentElement ? doc.documentElement.innerHTML : '')); const m = h.match(/Page_Set\('(\d+)'\)"?[^>]*>\s*끝/); if (m) return +m[1]; let mx = 0; h.replace(/Page_Set\('(\d+)'\)/g, (a, n) => { mx = Math.max(mx, +n); return a; }); return mx || null; };
+  /* 간단히 보기 한 칸: [중고-상] 제목(a.bo) · 지은이 | 출판사 · 정가<span class="">N</span>원→<span class="p1_bold">판매가</span> · 장바구니 네모 chkCart.U… · '최저가' used_label_04 */
+  function benchParseSimple(doc) { const out = []; const seen = new Set();
+    for (const cb of doc.querySelectorAll('input[name^="chkCart.U"]')) { const cell = cb.closest('td[width="25%"]') || cb.closest('td[valign="top"]'); if (!cell) continue; const a = cell.querySelector('a.bo[href*="ItemId="]') || cell.querySelector('a[href*="ItemId="]'); if (!a) continue;
+      const id = (String(a.getAttribute('href') || '').match(/[?&]ItemId=(\d+)/i) || [])[1]; if (!id || seen.has(id)) continue; seen.add(id); const T = (cell.textContent || '').replace(/[\u00a0\s]+/g, ' ');
+      const g = (T.match(/\[\s*중고\s*-\s*(최상|상|중|하)\s*\]/) || [])[1] || null; const pb = cell.querySelector('.p1_bold'); const p = pb ? +String(pb.textContent).replace(/[^\d]/g, '') || null : null;
+      let pl = null; const arrow = [...cell.querySelectorAll('span')].find((x) => !x.className && /^[\d,]+$/.test((x.textContent || '').trim()) && /^\s*원\s*→/.test((x.nextSibling && x.nextSibling.nodeValue) || '')); if (arrow) pl = +arrow.textContent.replace(/[^\d]/g, '');
+      const gw = cell.querySelector('.gw'); const au = gw ? gw.textContent.replace(/[\u00a0\s]+/g, ' ').trim().slice(0, 80) : '';
+      const img = cell.querySelector('img[src*="_"]'); const cov = img ? coverKey(img.getAttribute('src')) : null; const isbn = null; const low = !!cell.querySelector('.used_label_04');
+      out.push({ id, ids: [id], t: (a.textContent || '').replace(/[\u00a0\s]+/g, ' ').trim().slice(0, 120), p, pl, g, isbn, ym: null, low, uc: cb.name.slice(8), au, cov, g0: /\[\s*중고\s*\]/.test(T) && !g }); }
+    return out; }
+  function benchParse(doc) { const S0 = benchParseSimple(doc); if (S0.length) return S0; /* 간단히 보기가 아니면(자세히 보기 등) 예전처럼 상자 단위로 */ const idOf = (a) => (String(a.getAttribute('href') || '').match(/[?&]ItemId=(\d+)/i) || [])[1] || null; const A = [...doc.querySelectorAll('a[href*="ItemId="]')].filter((a) => /wproduct\.aspx/i.test(a.getAttribute('href') || ''));
+    const out = []; const done = new Set(); const txt = (el) => { if (!el) return ''; const w = doc.createTreeWalker(el, 4); const P = []; for (let n = w.nextNode(); n; n = w.nextNode()) P.push(n.nodeValue); return P.join(' ').replace(/[\u00a0\s]+/g, ' ').trim(); }; /* 글 조각 사이에 빈칸 (줄바꿈 태그로 붙은 글자가 섞이지 않게) */
+    for (const a of A) { const id = idOf(a); if (!id || done.has(id)) continue;
+      let box = a.closest('.ss_book_box') || null; if (!box) { for (let el = a.parentElement, k = 0; el && el !== doc.body && k < 14; el = el.parentElement, k++) { const ids = new Set([...el.querySelectorAll('a[href*="ItemId="]')].map(idOf).filter(Boolean)); if (ids.size > 3) break; box = el; if (/[\d,]{3,}\s*원/.test(txt(el)) && el.querySelectorAll('a[href*="ItemId="]').length) break; } }
+      if (!box) continue; const T = txt(box); if (!/[\d,]{3,}\s*원/.test(T)) continue; const bIds = [...new Set([...box.querySelectorAll('a[href*="ItemId="]')].map(idOf).filter(Boolean))]; bIds.forEach((x) => done.add(x));
+      const cnt = new Map(); [...box.querySelectorAll('a[href*="ItemId="]')].forEach((x) => { const i = idOf(x); if (i) cnt.set(i, (cnt.get(i) || 0) + 1 + txt(x).length / 1000); }); const main = [...cnt.entries()].sort((p, q) => q[1] - p[1])[0][0];
+      const title = [...box.querySelectorAll(`a[href*="ItemId=${main}"]`)].map(txt).sort((p, q) => q.length - p.length)[0] || '';
+      const prices = []; T.replace(/(.{0,8}?)([\d,]{3,})\s*원/g, (m0, pre, n) => { prices.push({ v: +n.replace(/,/g, ''), list: /정가/.test(pre) }); return m0; });
+      const used = prices.filter((x) => !x.list && x.v >= 100); const list = prices.find((x) => x.list);
+      const gm = T.match(/\[\s*중고\s*-?\s*(최상|상|중|하)\s*\]/) || T.match(/(?:품질|상태|등급)\s*[:：]?\s*(최상|상|중|하)(?![가-힣])/) || T.match(/(?:^|\s)(최상|상|중|하)\s*(?:등급|급)(?:\s|$)/);
+      const isbn = (box.innerHTML.match(/\b(97[89]\d{10})\b/) || [])[1] || null; const ym = T.match(/(19|20)(\d{2})\s*년\s*(\d{1,2})\s*월/);
+      const low = !!box.querySelector('.used_label_04') || [...box.querySelectorAll('span,em,b,i')].some((e) => /^\s*최저가\s*$/.test(e.textContent || '')); /* (1.48.0) '최저가' 표시 = 온라인 중고 목록 맨 위(그때 같은 상품 경쟁 매물 중 가장 쌈) */
+      out.push({ id: main, ids: bIds, t: title.replace(/^\[중고[^\]]*\]\s*/, '').slice(0, 120), p: used.length ? used[0].v : null, pl: list ? list.v : null, g: gm ? gm[1] : null, isbn, ym: ym ? `${ym[1]}${ym[2]}-${String(ym[3]).padStart(2, '0')}` : null, low }); }
+    return out; }
+  /* (1.53.0) 🎯 집중 벤치마킹 — 그룹·주기(app_settings/bench.groups · 기준은 노선표 readnow-registry.js BENCH 한 곳)
+   *  할 차례(due)인 판매자만 위 그룹부터·그룹 안 위에서부터 하나씩 → 한 판매자를 끝낼 때마다 차례를 다시 계산(그사이 짧은 주기 그룹이 차례가 되면 그쪽 먼저)
+   *  수동(수집기 단추·'다시 받기'로 FORCE_ALL)은 차례와 상관없이 모두 */
+  const BREG = () => window.ReadnowRegistry || globalThis.ReadnowRegistry || null; let BENCH_CFG = {};
+  const benchStates = async (T) => { const out = {}; const sts = await Promise.all(T.map((t) => C('bench_state').doc(String(t.sc)).get().then((d) => d.data() || {}).catch(() => ({})))); T.forEach((t, i) => (out[String(t.sc)] = sts[i])); return out; };
+  /* (1.56.1) 🎯 강제 실행(benchForce): 주기·'끝난 지 20시간' 규칙과 상관없이 고른 판매자 목록의 맨 처음 판매자부터 차례로 모두 읽음
+   *  진행은 서버 prd_jobs/benchForce에 {startedAt, list}로 — 멈췄다 이어하면(멈춘 작업 목록 · 다시 누름 · 3일 안) 이번 강제 실행이 시작된 뒤에 끝난 판매자는 건너뛰고 다음 판매자부터
+   *  한 판매자 안에서는 평소처럼: 그 판매자의 회차가 시작한 지 20시간 안이고 아직 안 끝났으면 그 쪽부터 이어 읽고, 끝났으면 새 회차 */
+  /* (1.60.0) 읽을 판매자 = 따라가는(on) 판매자 − 우리 숍 − 꺼진 그룹의 판매자 (웹앱 🎯 그룹 머리의 켜기·끄기 · '그룹 없음'은 bench.noneOff)
+   *  주기 수집·강제 실행·상품 페이지 정보 모두 이 목록만 — 꺼진 그룹의 판매자는 모두 건너뜀(모은 기록은 그대로) */
+  function benchOffSet(cfg) { const inG = new Set(), off = new Set(); for (const g of (cfg && cfg.groups) || []) { if (!g || !g.id) continue; for (const sc of (g.scs || []).map(String)) { if (inG.has(sc)) continue; inG.add(sc); if (g.off) off.add(sc); } }
+    if (cfg && cfg.noneOff) for (const t of cfg.targets || []) if (t && t.sc && !inG.has(String(t.sc))) off.add(String(t.sc)); return off; }
+  function benchTargets(cfg) { const off = benchOffSet(cfg); return ((cfg && cfg.targets) || []).filter((t) => t && t.sc && t.on !== false && !t.self && String(t.sc) !== '996008' && !off.has(String(t.sc))); }
+  /* (1.60.1) 판매자마다 걸린 시간 기록(⏰ 시간표의 판매자별 칸막이·한 바퀴 예상) — 하던 회차를 이어 읽은 것은 '일부'라 평균에서 뺌 */
+  async function benchOneT(t, resumed) { const tB = Date.now(); window.__rnBenchCur = String(t.sc); /* (1.63.2) 지금 이 탭이 읽는 판매자 — 버리기 막기는 이 판매자만 */ try { const r = await benchOne(t); try { window.__rnJobDone && window.__rnJobDone('bench:' + String(t.sc), Date.now() - tB, r === 'partial' ? 'error' : resumed ? 'part' : 'done'); } catch (x) {} return r; } /* (1.63.6) 쪽을 못 읽어 회차를 못 끝냈으면 'partial' — 끝낸 것으로 치지 않음 */
+    catch (e) { try { window.__rnJobDone && window.__rnJobDone('bench:' + String(t.sc), Date.now() - tB, e && e.message === '멈춤' ? 'stop' : 'error'); } catch (x) {} throw e; } finally { if (window.__rnBenchCur === String(t.sc)) window.__rnBenchCur = null; } }
+  async function benchJob(opt) { const FORCE = !!(opt && opt.force); const cfg = (await C('app_settings').doc('bench').get()).data() || {}; BENCH_CFG = cfg; const T = benchTargets(cfg); /* (1.57.6) 우리 숍(북스킹)은 읽지 않음 — 웹앱 우리 카드는 우리 기록으로 셈 */ const RB = (BREG() || {}).BENCH;
+    { const offN = benchOffSet(cfg).size; if (offN) log(`🎯 꺼진 그룹의 판매자 ${offN}명은 건너뜀 (웹앱 🎯 그룹 머리의 토글)`); }
+    if (!T.length) { log('집중 벤치마킹: 읽을 판매자 없음 — 고른 판매자가 없거나 모든 그룹이 꺼짐 (웹앱 경영 탭 → 🎯 집중 벤치마킹)'); return; }
+    if (!RB) { log('집중 벤치마킹: 공용 노선표(readnow-registry.js 0.13.0 이상)가 없어 수집 차례를 못 정함 — 수집기를 새로 고치세요', 1); return; }
+    /* (1.63.0) 📅 그룹 읽는 날(매주 요일 · 매월 날·기간 — 웹앱 🎯 그룹 머리) — 오늘이 아닌 그룹은 차례에서 빠짐(노선표 0.14.12 BENCH.plan) · 강제 실행 목록에서도 뺌 · 하던 회차는 이어서 */
+    const restS = new Set(); if (RB.schedOk) { const rg = []; for (const g of RB.groups({ ...cfg, targets: T })) if (g.sched && !RB.schedOk(g.sched, Date.now())) { g.scs.forEach((sc) => restS.add(sc)); rg.push(`${g.name}(${RB.schedTxt(g.sched)})`); } if (restS.size) log(`🎯 📅 오늘 읽는 날이 아닌 그룹 ${rg.length}개 · 판매자 ${restS.size}명은 오늘 건너뜀: ${rg.join(', ')}`); }
+    const TF = T.filter((t) => !restS.has(String(t.sc)));
+    const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+    const byS = new Map(T.map((t) => [String(t.sc), t])); const done = new Set(); const bad = []; const wantDetail = RB.needsDetail(cfg); BENCH_DEFER_DETAIL = wantDetail; let listDone = false;
+    let FJ = null; try { /* (1.63.6 전체 점검) 알라딘 차례를 잡은 뒤의 서버 읽기·쓰기가 실패해도 차례를 반드시 놓음 — 예전엔 놓지 않아 다른 PC가 모두 멈췄음 */ if (FORCE) { const fref = C('prd_jobs').doc('benchForce'); const old = (await fref.get()).data(); const keep = !(opt && opt.fresh) && old && old.done === false && old.startedAt && Date.now() - Date.parse(old.startedAt) < 3 * 864e5; /* (1.60.1) fresh = 처음 판매자부터 다시 */
+      const only = opt && opt.only ? String(opt.only) : null; /* (1.63.6) 판매자 한 줄의 이어하기 — 멈춘 강제 실행이 없으면 그 판매자만(다른 판매자를 다시 읽지 않음) */
+      FJ = keep ? old : { startedAt: nowIso(), list: only && byS.has(only) ? [only] : TF.map((t) => String(t.sc)), done: false, by: PC_NAME, ...(only ? { only } : {}) }; if (!keep) await fref.set({ ...FJ, savedAt: Date.now(), ...W() }); else { FJ.list = [...new Set([...(FJ.list || []), ...TF.map((t) => String(t.sc))])].filter((sc) => byS.has(sc)); if (only && FJ.list.includes(only)) FJ.list = [only, ...FJ.list.filter((x) => x !== only)]; }
+      FJ.fin = FJ.fin || {}; /* (1.63.5) 이번 강제 실행에서 끝낸(또는 버리기로 건너뛴) 판매자 — 서버에 하나씩 적어 이어하기 때 확실히 건너뜀 */
+      const nm0 = (sc) => (byS.get(sc) || {}).name || sc; const finL = FJ.list.filter((sc) => FJ.fin[sc]);
+      log(keep ? `🎯 강제 실행 이어서 (${new Date(Date.parse(FJ.startedAt) + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')} 시작한 것) — 이미 끝낸 ${finL.length}명 건너뜀${finL.length ? `(${finL.map(nm0).join(', ')})` : ''} · 남은 차례: ${FJ.list.filter((sc) => !FJ.fin[sc]).map(nm0).join(' → ') || '없음'}` : `🎯 강제 실행 시작 — 주기와 상관없이 맨 처음 판매자부터: ${FJ.list.map(nm0).join(' → ')}`); }
+    } catch (e0) { try { await releaseLane('aladin'); } catch (x) {} throw e0; }
+    let STS = null, lastSc = null; try { for (let loop = 0; loop < 300; loop++) { if (stopFlag) throw new Error('멈춤'); /* (1.63.8 점검) 판매자 상태는 처음에 한 번 다 읽고, 그 뒤엔 방금 읽은 판매자만 다시 — 예전엔 판매자 하나 끝날 때마다 모두를 다시 읽어 읽기가 판매자 수의 제곱으로 늘었음 */ if (!STS) STS = await benchStates(T); else if (lastSc) { try { STS[lastSc] = (await C('bench_state').doc(lastSc).get()).data() || {}; } catch (e) {} } const sts = STS; /* (1.54.3) '하는 중' 표시가 있어도 진행 문서가 없거나 버렸으면(끝남·버림) 표시를 지우고 평소 차례로 */ for (const [sc0, s0] of Object.entries(sts)) { if (loop > 0 && sc0 !== lastSc) continue; if (!s0 || !s0.prog) continue; try { const jd = (await C('prd_jobs').doc('bench_' + sc0).get()).data(); if (!jd || jd.done) { s0.prog = null; await C('bench_state').doc(sc0).set({ prog: null }, { merge: true }); } } catch (e) {} } const P0 = RB.plan({ ...cfg, targets: T }, sts, Date.now()); /* (1.57.6) 읽을 판매자(T)만으로 차례 */ const P = RB.order ? RB.order(P0) : P0; /* (1.54.0) 하던 판매자 → 밀린 판매자 → 블록 순서 */
+        if (FORCE) { const t0f = Date.parse(FJ.startedAt); const byP = new Map(P.map((x) => [String(x.sc), x])); const FS = cfg.forceSkip || {}; const skipMs = FS.on && +FS.h > 0 ? +FS.h * 3600e3 : 0;
+          /* (1.56.3) ⏭ 강제 실행의 '최근 n시간 안에 끝까지 읽은 판매자는 건너뛰기'(웹앱·수집기의 토글 — app_settings/bench.forceSkip) · 기준 = 마지막으로 끝까지 읽은 회차가 끝난 때(okEndAt) */
+          const okEnd = (k) => { const s0 = sts[k] || {}; if (s0.completeEndAt) return Date.parse(s0.completeEndAt); /* (1.63.8) ⏭ 기준 = 숍 끝까지 다 읽은 회차만(50% 넘어 쓴 회차라도 뒤쪽을 못 읽었으면 '완료' 아님) */ if (s0.okEndAt) return s0.notRead ? 0 : Date.parse(s0.okEndAt); return s0.day && s0.complete !== false && !(s0.lastPartial && s0.endAt && s0.lastPartial.at >= s0.endAt) && s0.endAt ? Date.parse(s0.endAt) : 0; };
+          if (skipMs && loop === 0) { const sk = FJ.list.filter((k) => okEnd(k) && Date.now() - okEnd(k) < skipMs); if (sk.length) log(`🎯 강제 실행 ⏭ 최근 ${FS.h}시간 안에 끝까지 읽은 판매자 ${sk.length}명 건너뜀: ${sk.map((k) => `${(byS.get(k) || {}).name || k}(${new Date(okEnd(k) + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')})`).join(', ')}`); }
+          if (loop > 0) { try { const f2 = ((await C('prd_jobs').doc('benchForce').get()).data() || {}).fin; if (f2) Object.assign(FJ.fin, f2); } catch (e) {} } /* (1.63.6) 다른 PC에서 그사이 버린 판매자도 건너뜀 */
+          const sc = FJ.list.find((k) => !done.has(k) && !(FJ.fin || {})[k] && !(restS.has(k) && !(sts[k] || {}).prog) /* 📅 오늘 쉬는 그룹(하던 회차는 이어서) */ && !(skipMs && okEnd(k) && Date.now() - okEnd(k) < skipMs) && !(okEnd(k) >= t0f && !(byP.get(k) || {}).inProg)); /* 이번 강제 실행이 시작된 뒤 끝까지 읽은 판매자는 끝난 것 (끝까지 못 읽은 회차는 끝난 것으로 치지 않음) */ if (!sc) { await C('prd_jobs').doc('benchForce').set({ done: true, doneAt: nowIso(), savedAt: Date.now() }, { merge: true }); log(`🎯 강제 실행 끝 — 판매자 ${FJ.list.length}명 모두 이번에 읽음`); break; }
+          const t = byS.get(sc); done.add(sc); lastSc = sc; log(`🎯 [강제 ${FJ.list.indexOf(sc) + 1}/${FJ.list.length}] ${t.name || sc} — 주기와 상관없이 읽음`); try { const r1 = await benchOneT(t, !!((sts[String(t.sc)] || {}).prog)); if (r1 === 'partial') { bad.push(t.name || sc); continue; } FJ.fin[sc] = nowIso(); await C('prd_jobs').doc('benchForce').set({ fin: { [sc]: FJ.fin[sc] }, savedAt: Date.now() }, { merge: true }).catch(() => {}); } catch (e) { if (e && e.message === '멈춤') throw e; bad.push(t.name || sc); log(`🎯 '${t.name || sc}' 처리 중 오류: ${e && e.message} — 다음 판매자로 넘어감`, 1); } continue; }
+        const next = P.find((x) => !done.has(x.sc) && (x.due || (FORCE_ALL && !x.fresh))) || (P.find((x) => x.due && done.has(x.sc) && x.g.unit === 'h' && Date.now() - (sts[x.sc].runAt ? Date.parse(sts[x.sc].runAt) : 0) > 3600e3) || null);
+        if (loop === 0 && !FORCE) { const due = P.filter((x) => x.due || (FORCE_ALL && !x.fresh)); const fr = P.filter((x) => !x.due && x.fresh); const hm = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' '); if (fr.length) log(`🎯 끝난 지 얼마 안 돼 이번엔 건너뜀(다시 읽지 않음): ${fr.map((x) => `${(byS.get(x.sc) || {}).name || x.sc} ${hm(x.end || x.last)} 끝 → ${hm(x.next)}부터`).join(', ')}`); const pages = due.reduce((a, x) => a + (sts[x.sc].lastPage || sts[x.sc].pages || 0), 0);
+          log(`🎯 집중 벤치마킹: 판매자 ${T.length}명 중 지금 할 차례 ${due.length}명${FORCE_ALL ? '(수동 — 모두)' : ''}${pages ? ` · 약 ${pages.toLocaleString()}쪽` : ''} — 순서: ${due.map((x) => `${(byS.get(x.sc) || {}).name || x.sc}(${x.g.name})`).join(' → ') || '없음'}${!due.length ? ` · 다음 차례: ${P.slice().sort((a, b) => a.next - b.next).slice(0, 3).map((x) => `${(byS.get(x.sc) || {}).name || x.sc} ${new Date(x.next + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')}`).join(', ')}` : ''}`); }
+        if (!next) break; const t = byS.get(next.sc); done.add(next.sc); lastSc = String(next.sc); { const hm2 = (ms) => (ms ? new Date(ms + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ') : '-'); const why = next.inProg ? `하던 회차 이어서(${(sts[next.sc].prog || {}).page || '?'}쪽부터)` : next.behind ? `지난 차례를 못 끝냄(밀림 ${next.behind}번)` : !next.due && FORCE_ALL ? '수동 실행' : '차례'; log(`🎯 [${done.size}] ${t.name || t.sc} · ${next.g.name}(${next.g.sched && RB.schedTxt ? RB.schedTxt(next.g.sched) : `${next.g.n}${next.g.unit === 'h' ? '시간' : '일'}에 한 번`}) · 왜: ${why} · 지난번 ${hm2(next.last)} 시작 ~ ${hm2(next.end)} 끝`); }
+        /* (1.52.0) 한 판매자에서 오류가 나도 다음 판매자로 넘어감. 실패한 판매자는 읽은 조각이 남아 있어 다음 실행 때 읽기 없이 저장만 다시 함 */
+        try { await benchOneT(t, !!((sts[String(t.sc)] || {}).prog)); } catch (e) { if (e && e.message === '멈춤') throw e; bad.push(t.name || t.sc); log(`🎯 '${t.name || t.sc}' 처리 중 오류: ${e && e.message} — 다음 판매자로 넘어감 (다음 실행 때 이 판매자는 읽은 것을 그대로 두고 저장만 다시 함)`, 1); } }
+      if (bad.length) log(`🎯 집중 벤치마킹: 오류 난 판매자 ${bad.length}명 — ${bad.join(', ')}`, 1); listDone = true;
+      /* (1.57.7) 숍 목록 한 바퀴가 끝난 뒤에 상품 페이지 정보 — 이번 바퀴에 읽은 판매자 차례대로(판매자마다 설정의 최대 개수·분) */
+      if (wantDetail && done.size && !stopFlag) { log(`🎯 숍 목록 한 바퀴 끝 — 이제 상품 페이지 정보(ISBN·분류 등)를 첫 판매자부터: ${[...done].map((sc) => (byS.get(sc) || {}).name || sc).join(' → ')}`); await benchDetailPass([...done].map((sc) => byS.get(sc)).filter(Boolean), { capped: true }); }
+    } finally { BENCH_DEFER_DETAIL = false; await releaseLane('aladin'); } }
+  async function benchOne(t) { const sc = String(t.sc); const name = t.name || sc; const day = kDayB(); const stRef = C('bench_state').doc(sc); const st = (await stRef.get()).data() || {};
+    /* (1.53.0) 하루에 여러 번(n시간에 한 번)도 되게: 끝나지 않은 회차는 시작한 지 20시간 안이면 이어서, 아니면 새 회차 (차례는 benchJob이 정함) */
+    const JN = 'bench_' + sc; let prog = await loadProgress(JN); const halfDone = (q) => !!(q && q.lastPage && (q.page - 1) / q.lastPage > 0.5); /* (1.56.4) 절반 넘게 읽고 멈춘 회차는 20시간이 지나도 그 쪽부터 이어 읽음(그사이 뒤쪽이 팔린 손실은 감안) */
+    if (prog && prog.startedAt && Date.now() - Date.parse(prog.startedAt) >= 20 * 3600e3 && !prog.readDone && (prog.page || 1) > 1) log(`🎯 '${name}': ${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ')}에 시작해 ${prog.page - 1}${prog.lastPage ? '/' + prog.lastPage : ''}쪽까지 읽고 멈춘 회차 — 시간이 지났어도 📍 이어 읽을 자리를 찾아 이어 읽음`);
+    /* (1.63.8) 정범 결정: 멈춘 까닭·지난 시간과 상관없이 끝나지 않은 회차는 늘 이어 읽음 — 이어 읽을 자리는 아래 '이어 읽기 자리 찾기'(마지막에 읽은 상품 10개의 순서)로 확정 · 못 찾으면 그 회차를 거기서 끝내고 50% 기준 */
+    if (!prog || (!Array.isArray(prog.items) && !(prog.blocks > 0)) || (Array.isArray(prog.items) && !prog.items.length && !(prog.blocks > 0))) { prog = { day, page: 1, items: [], blocks: 0, startedAt: nowIso(), sc, name, readDone: false, pagingBroken: false, lastPage: null, rows: await benchRowsPick(sc, name, st) };
+      /* (1.54.2) 새 회차는 진행 문서를 통째로 바꿔 씀 — 진행 저장은 합치기(merge)라, 예전엔 지난 회차의 '숍 읽기 끝남(readDone)'이 남아 있다가 멈췄다 이어 할 때 몇 쪽만 읽고 회차를 끝냈음(나머지 수만 개가 '이번에 안 보임') */
+      try { await C('prd_jobs').doc(JN).set({ day, page: 1, blocks: 0, startedAt: prog.startedAt, sc, name, readDone: false, pagingBroken: false, lastPage: null, rows: prog.rows, done: false, by: PC_NAME, pc: PC_ID, savedAt: Date.now(), ...W() }); } catch (e) {} }
+    /* (1.54.2) 이어 할 때 '읽기 끝남'인데 숍 끝 쪽까지 못 읽었으면 믿지 않고 그 쪽부터 이어 읽음 (2쪽이 1쪽과 같은 숍은 1쪽만 쓰는 게 맞아 제외) */
+    if (prog.readDone && !prog.pagingBroken && prog.lastPage && prog.page < prog.lastPage - 3) { log(`🎯 '${name}': '숍 읽기 끝남'으로 적혀 있지만 ${prog.page.toLocaleString()} / ${prog.lastPage.toLocaleString()}쪽까지만 읽었음(예전 판 오류) — 끝으로 보지 않고 ${prog.page.toLocaleString()}쪽부터 이어 읽음`, 1); prog.readDone = false; }
+    /* (1.48.0) 큰 숍(수만 개)도 되게: 읽은 상품을 10쪽마다 조각(prd_jobs/bench_{번호}/bk/{n})으로 덧붙여 저장 — 예전처럼 4쪽마다 전체 목록(수 MB)을 다시 올리지 않음 · 쪽 수 상한(600) 없앰 → 숍 화면의 '끝' 쪽까지 */
+    const bkRef = (k) => C('prd_jobs').doc(JN).collection('bk').doc(String(k)); if (!Array.isArray(prog.items)) prog.items = [];
+    if ((prog.blocks || 0) > 0 && !prog.items.length) { for (let k = 0; k < prog.blocks; k++) { const d = (await bkRef(k).get()).data(); if (d && d.s) { try { prog.items.push(...JSON.parse(d.s)); } catch (e) {} } } log(`🎯 '${name}': 저장해 둔 ${prog.blocks}조각 · ${prog.items.length.toLocaleString()}개를 불러옴`); }
+    let pend = !(prog.blocks > 0) && prog.items.length ? prog.items.slice() : []; const meta = () => { const m = { ...prog }; delete m.items; return m; };
+    const saveBk = async () => { if (pend.length) { await bkRef(prog.blocks || 0).set({ s: JSON.stringify(pend), n: pend.length, at: Date.now() }); prog.blocks = (prog.blocks || 0) + 1; pend = []; } await saveProgress(JN, meta()); try { await stRef.set({ prog: { startedAt: prog.startedAt, page: prog.page, at: nowIso() } }, { merge: true }); } catch (e) {} }; /* (1.54.0) 하는 중 표시(서버) — 멈췄다 다시 시작하면 이 판매자부터 이어서 · 웹앱 순서표도 같은 것을 봄 */
+    const have = new Set(prog.items.map((x) => x[0])); let firstIds = null; let lastP = prog.lastPage || st.lastPage || null;
+    /* 진행 기록: 시작 · 10쪽마다 · 25/50/75/90% · 끝 — 끝 쪽(숍 화면의 '끝' 단추)을 알면 처음부터 정확한 남은 쪽 수 · 쪽당 걸린 시간으로 남은 시간·끝날 시각 */
+    const t0 = Date.now(); const p0 = prog.page; const hm = (ms) => { const d = new Date(Date.now() + ms + 9 * 3600e3); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); };
+    const expOf = () => lastP || st.pages || 0; const spp0 = st.secPerPage ? st.secPerPage * 1000 : null;
+    const eta = () => { const done = prog.page - p0; const per = done >= 3 ? (Date.now() - t0) / done : spp0; if (!per) return null; const exp = expOf(); const left = exp ? Math.max(0, exp - prog.page) : null; return { per, left, ms: left != null ? left * per : null, measured: done >= 3 }; };
+    const marks = new Set(); const say = (force) => { const e = eta(); const exp = expOf(); const pct = exp ? Math.min(99, Math.floor(prog.page / exp * 100)) : null; const ms = [25, 50, 75, 90].find((m) => pct != null && pct >= m && !marks.has(m)); if (!force && !ms && prog.page % 10) return; if (ms) marks.add(ms);
+      log(`🎯 '${name}' ${prog.page}${exp ? ` / ${exp}` : ''}쪽${pct != null ? ` (${pct}%)` : ''} · ${prog.items.length.toLocaleString()}개${e ? ` · 쪽당 ${(e.per / 1000).toFixed(1)}초${e.measured ? '' : '(지난번)'}` : ''}${e && e.ms != null ? ` · 남은 약 ${Math.max(1, Math.round(e.ms / 60000))}분 → ${hm(e.ms)} 끝 예상` : ''}${ms ? ` · ◆ ${ms}% 지남` : ''}`); };
+    log(`🎯 집중 벤치마킹 '${name}' (SC ${sc}) ${prog.page > 1 ? `${prog.page}쪽부터 이어서` : '시작'} — ${expOf() ? `${lastP ? '끝' : '지난번'} ${expOf().toLocaleString()}쪽(한 쪽 48개)` : '처음 읽음 — 1쪽을 읽으면 끝 쪽을 앎'}${expOf() && st.secPerPage ? ` · 예상 약 ${Math.round(Math.max(0, expOf() - prog.page) * st.secPerPage / 60)}분 → ${hm(Math.max(0, expOf() - prog.page) * st.secPerPage * 1000)} 끝 예상` : ''}`);
+    let dupRun = 0;
+    if (prog.readDone) log(`🎯 '${name}': 오늘 숍 읽기는 이미 끝남(${prog.items.length.toLocaleString()}개) — 저장만 다시 함`);
+    /* (1.55.0) ⏱ 기다리는 동안 다음 쪽도 — 쪽마다 시간의 대부분은 알라딘 응답을 기다리는 시간이라, 끝 쪽을 알면 2쪽(30쪽 넘게 탈 없으면 3쪽)을 같이 요청하고 '쪽 순서대로' 처리
+     *  요청 간격 조절기(PACE)는 그대로 거침(요청을 시작하는 간격은 같음) · 알라딘이 '요청이 너무 많다'(쉬는 중)고 하거나 한 쪽이라도 실패하면 이 회차는 한 쪽씩
+     *  진행 저장·이어 하기·빈 쪽·끝 쪽 판단은 예전과 똑같이 쪽마다(처리 순서가 쪽 순서) — 같이 받은 뒤쪽은 앞쪽이 실패하면 버리고 다음에 그 쪽부터 */
+    const ROWS = prog.rows || 48; let K = 2, okRun = 0;
+    const page48 = (pg, i) => Math.floor(((pg - 1) * ROWS + i) / 48) + 1; /* 배지 상품이 '48개 쪽'으로 몇 쪽인지 — 예전 기록과 같은 뜻으로 */
+    /* (1.63.8) 📍 이어 읽기 자리 찾기 — 멈췄던 회차를 이어 읽을 때, 그사이 앞쪽이 팔리면(상품이 앞으로 당겨짐) 몇 개를 못 보고 지나치고, 새로 올리면(뒤로 밀림) 이미 읽은 쪽을 다시 읽게 됨
+     *  숍은 등록순이라 그사이 생기는 변화는 '맨 앞에 새로 올림'과 '어디선가 팔려 빠짐'뿐 → 마지막에 읽은 상품 10개는 순서가 그대로 남음(빠진 것만 있을 수 있음)
+     *  멈춘 쪽(마지막으로 읽은 쪽)부터 그 앞뒤로 3쪽씩 열어 그 10개가 순서대로 7개 이상 나오는 곳을 찾음 → 마지막으로 읽은 상품이 있는 쪽부터 이어 읽음(이미 읽은 상품은 상품 번호로 걸러 겹치지 않음)
+     *  7개 이상이 순서대로 안 나오면(앞뒤 3쪽을 넘게 밀렸거나 많이 팔림) 이어 읽을 기준이 없으므로 이 회차를 여기서 끝냄 → 읽은 양이 숍의 50%를 넘으면 쓰는 회차(못 읽은 뒤쪽은 '잠정 있음'으로 두고 다음 회차에서 확정), 50% 이하면 통계에서 뺌 — 어느 쪽이든 판매자 상세 회차별 기록에 남김 */
+    let anchorStop = false;
+    if (!prog.readDone && prog.page > 1 && prog.items.length) { const A = prog.items.slice(-10).map((x) => String(x[0])); const base = Math.max(1, prog.page - 1); const tried = []; const seen = new Map(); let hit = null; const t0a = Date.now();
+      const order = [0, 1, -1, 2, -2, 3, -3].map((d) => base + d).filter((pg) => pg >= 1 && (!lastP || pg <= lastP + 3));
+      const match = () => { const pgs = [...seen.keys()].sort((a, b) => a - b); let best = null;
+        for (let i = 0; i < pgs.length; i++) { const L = []; for (let j = i; j < pgs.length && pgs[j] === pgs[i] + (j - i); j++) seen.get(pgs[j]).forEach((id, ix) => L.push([id, pgs[j], ix]));
+          const pos = new Map(L.map((x, k) => [x[0], k])); let k0 = -1, m = 0, last = null; for (const id of A) { const k = pos.get(id); if (k == null || k <= k0) continue; k0 = k; m++; last = L[k]; } if (m >= Math.min(7, A.length) && (!best || m > best.m)) best = { m, page: last[1], ix: last[2] }; }
+        return best; };
+      for (const pg of order) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); } let g; try { g = await PUB.read('shop', benchUrl(sc, pg, ROWS), (x) => ({ items: benchParse(x.doc) }), (x) => benchParse(x.doc).length > 0); } catch (e) { if (e.message === '멈춤') { await saveBk(); throw e; } continue; }
+        const L = benchParse(g.doc).map((x) => String(x.id)); seen.set(pg, L); tried.push(pg); if (pg === 1 || !lastP) { const lp = benchLastPage(g.doc, g.html); if (lp) { lastP = Math.max(lp, 1); prog.lastPage = lastP; } }
+        hit = match(); if (hit) break; }
+      const R = { at: nowIso(), from: prog.page, base, tried, m: hit ? hit.m : 0, n: A.length, ms: Date.now() - t0a };
+      if (hit) { R.to = hit.page; R.shift = hit.page - base; prog.page = hit.page; log(`🎯 '${name}': 📍 이어 읽기 자리 확인 — 마지막에 읽은 상품 ${A.length}개 중 ${hit.m}개가 순서대로 ${hit.page}쪽에 있음${R.shift ? ` (멈춘 뒤 ${R.shift > 0 ? `새로 올려 ${R.shift}쪽 뒤로` : `팔려서 ${-R.shift}쪽 앞으로`} 밀림)` : ''} → ${hit.page}쪽부터 이어 읽음 (이미 읽은 상품은 건너뜀)`); }
+      else { R.lost = true; anchorStop = true; prog.anchorLost = R; prog.page = base + 1; log(`🎯 '${name}': 📍 이어 읽을 자리를 못 찾음 — 마지막에 읽은 상품 ${A.length}개가 멈춘 쪽(${base}쪽) 앞뒤 3쪽(${tried.join('·')}쪽)에 순서대로 7개 이상 없음(그사이 많이 올리거나 팔림) → 이 회차는 ${base}쪽까지 읽은 것으로 끝내고 50% 기준을 적용`, 1); }
+      prog.resumes = (prog.resumes || []).concat([R]).slice(-20); await saveProgress(JN, meta()); }
+    if (!prog.readDone && !anchorStop) for (;;) { if (stopFlag) { await saveBk(); throw new Error('멈춤'); }
+      if (lastP && prog.page > lastP + 3) break; /* 읽는 동안 새로 올라온 만큼 뒤로 밀릴 수 있어 끝 쪽 + 3쪽까지 */
+      if (PACE.cooling && PACE.cooling() > 0) K = 1;
+      const pgs = []; for (let q = 0; q < (lastP ? K : 1); q++) { const pg = prog.page + q; if (lastP && pg > lastP + 3) break; pgs.push(pg); }
+      const got = await Promise.allSettled(pgs.map((pg) => PUB.read('shop', benchUrl(sc, pg, ROWS), (g) => ({ items: benchParse(g.doc), last: benchLastPage(g.doc, g.html) }), (g) => benchParse(g.doc).length > 0)));
+      let out = null;
+      for (let q = 0; q < got.length && !out; q++) { /* prog.page === pgs[q] */
+        if (got[q].status === 'rejected') { const e = got[q].reason || {}; if (e.message === '멈춤') { await saveBk(); throw e; } log(`벤치마킹 '${name}' ${prog.page}쪽 읽기 실패: ${e.message} — 다음에 이 쪽부터`, 1); await saveBk(); return 'partial'; }
+        let r = got[q].value; let L = benchParse(r.doc);
+        /* (1.54.2) 끝 쪽보다 한참 앞에서 빈 쪽이 오면 '끝'으로 보지 않음 — 로그인 상태로 한 번 더 읽고, 그래도 비면 저장하고 다음에 이 쪽부터(회차를 끝내지 않음 · 나머지를 '안 보임'으로 적지 않게) */
+        if (!L.length && lastP && prog.page < lastP - 3) { try { const r2 = await getDoc(benchUrl(sc, prog.page, ROWS)); const L2 = benchParse(r2.doc); if (L2.length) { r = r2; L = L2; } } catch (e) { if (e.message === '멈춤') { await saveBk(); throw e; } }
+          if (!L.length) { log(`벤치마킹 '${name}' ${prog.page}쪽이 비어 있음(끝 쪽 ${lastP}쪽보다 앞) — 회차를 끝내지 않고 저장, 다음에 이 쪽부터`, 1); await saveBk(); return 'partial'; } }
+        if (prog.page === 1 || !lastP) { const lp = benchLastPage(r.doc, r.html); if (lp) { if (lp !== lastP && prog.page === 1) log(`🎯 '${name}': 숍 끝 쪽 ${lp.toLocaleString()}쪽 (한 쪽 ${ROWS}개 · 약 ${(lp * ROWS).toLocaleString()}개)`); lastP = Math.max(lp, prog.page); prog.lastPage = lastP; } }
+        if (prog.page === 1 && L.length) prog.readFrom1 = true; /* (1.56.3) 이 회차가 1쪽부터 읽었음 */
+        if (prog.page === 1) { firstIds = L.map((x) => x.id).join(','); await C('bench_probe').doc(sc).set({ sc, name, at: nowIso(), day, url: benchUrl(sc, 1, ROWS), rows: ROWS, view: L.length && L[0].uc ? 'simple' : 'other', pubMode: PUB.st.shop.mode, pubWhy: PUB.st.shop.last || null, lastPage: lastP || null, n: L.length, withPrice: L.filter((x) => x.p).length, withGrade: L.filter((x) => x.g).length, noGrade: L.filter((x) => x.g0).length, withIsbn: L.filter((x) => x.isbn).length, withCover: L.filter((x) => x.cov).length, withLow: L.filter((x) => x.low).length, sample: L.slice(0, 5), html: String(r.html || '').slice(0, 250000), pc: PC_NAME, ...W() }); }
+        if (prog.page === 2 && L.map((x) => x.id).join(',') === firstIds && firstIds) { log(`벤치마킹 '${name}': 2쪽이 1쪽과 같음 — 쪽 넘김 방식이 다름(웹앱에 '읽기 확인 필요') · 1쪽만 씀`, 1); await C('bench_probe').doc(sc).set({ pagingBroken: true }, { merge: true }); prog.pagingBroken = true; out = 'break'; break; }
+        let fresh = 0; L.forEach((x, ix) => { if (have.has(x.id)) return; have.add(x.id); fresh++; const row = [x.id, x.p, x.g, x.t, x.isbn, x.ym, x.pl, x.low ? 1 : 0, page48(prog.page, ix), x.uc || null, x.au || null, x.cov || null]; prog.items.push(row); pend.push(row); });
+        { const e = eta(); const exp = expOf(); ui(`집중 벤치마킹 · ${name}`, prog.page, Math.max(prog.page, exp || prog.page), `${prog.page.toLocaleString()}${exp ? ' / ' + exp.toLocaleString() : ''}쪽(한 쪽 ${ROWS}개${K > 1 ? ` · ${K}쪽씩 같이` : ''}) · 지금까지 ${prog.items.length.toLocaleString()}개${e && e.ms != null ? ` · 남은 약 ${Math.max(1, Math.round(e.ms / 60000))}분 (${hm(e.ms)} 끝 예상)` : ''}`); } say(false);
+        if (!L.length && lastP && prog.page <= lastP) { /* (1.56.3) 끝 쪽 전에서 빈 쪽 — 읽는 동안 팔려 숍이 줄었는지 1쪽을 다시 열어 지금 끝 쪽을 확인 · 줄었으면 끝까지 읽은 것, 아니면 끝까지 못 읽은 회차 */
+          try { const r1 = await getDoc(benchUrl(sc, 1, ROWS)); const lp1 = benchLastPage(r1.doc, r1.html); prog.shrink = { from: lastP, now: lp1 || null, at: prog.page }; if (lp1 && lp1 < prog.page) { log(`🎯 '${name}': 읽는 동안 숍이 줄어 끝 쪽이 ${lastP}쪽 → ${lp1}쪽 — ${prog.page - 1}쪽까지 읽어 끝까지 읽은 것`); lastP = lp1; prog.lastPage = lp1; } else log(`🎯 '${name}': ${prog.page}쪽이 비었는데 지금 끝 쪽은 ${lp1 || '?'}쪽 — 끝까지 못 읽은 회차로 봄`, 1); } catch (e) { if (e.message === '멈춤') { await saveBk(); throw e; } } }
+        if (!L.length) { out = 'break'; break; } /* 빈 쪽 = 끝 */
+        dupRun = fresh ? 0 : dupRun + 1; if (!lastP && dupRun >= 2) { out = 'break'; break; } /* 끝 쪽을 모를 때만: 두 쪽 연속 새 상품이 없으면 끝 (끝 쪽을 알면 앞쪽 상품이 밀려 겹친 쪽이어도 끝까지 감) */
+        if (prog.page % 10 === 0) await saveBk();
+        prog.page++; }
+      if (out === 'break') break;
+      okRun += got.length; if (okRun >= 30 && K < 3 && !(PACE.cooling && PACE.cooling() > 0)) { K++; okRun = 0; } }
+    if (pend.length) { await bkRef(prog.blocks || 0).set({ s: JSON.stringify(pend), n: pend.length, at: Date.now() }); prog.blocks = (prog.blocks || 0) + 1; pend = []; }
+    /* (1.56.3) '끝까지 확실히 읽었나'를 한 곳에서 엄격하게: ① 이 회차가 1쪽부터 읽었고 ② 숍 끝 쪽을 알면 그 쪽까지 읽었고(빈 쪽이면 지금 끝 쪽을 다시 확인) ③ 2쪽이 1쪽과 같은 숍은 끝 쪽이 1쪽일 때만 ④ 끝 쪽을 모르면 빈 쪽·새 상품 없는 쪽까지 — 하나라도 아니면 끝까지 못 읽은 회차(통계·비교 기준 모두 제외, 읽은 상품은 bench_partial에 상품 정보로만) */
+    { const lastRead = prog.page - 1; const r1 = prog.readFrom1 === true || (prog.readFrom1 === undefined && prog.items.length > 0 && !prog.resumedOld); let ok = false, why = '';
+      /* (1.56.4) 정범 결정: 숍의 절반(50%) 넘게 읽었으면 쓰는 회차, 절반 이하에서 그만둔 회차만 버림(통계·비교 기준·'오늘 읽음' 모두에서 빼고 다음엔 1쪽부터 새로) */
+      const cov = prog.pagingBroken ? (!lastP || lastP <= 1 ? 1 : 1 / lastP) : lastP ? Math.min(1, lastRead / lastP) : 1; prog.cover = Math.round(cov * 1000) / 1000;
+      if (!prog.items.length) why = '읽은 상품 없음'; else if (!r1) why = '이 회차가 1쪽부터 읽지 않음'; else { ok = cov > 0.5; why = ok ? '' : `숍의 ${Math.round(cov * 100)}%만 읽고 그만둠(끝 쪽 ${lastP || '?'}쪽 중 ${prog.pagingBroken ? 1 : lastRead}쪽)${prog.anchorLost ? ' · 이어 읽을 자리를 못 찾아 끝냄' : ''} — 50% 이하라 통계에서 뺌`; }
+      prog.fullRead = ok; prog.fullWhy = why; }
+    if (!prog.readDone) { prog.readDone = true; await saveProgress(JN, meta()); } /* (1.52.0) 읽기 끝을 먼저 적어 둠 — 저장 단계에서 멈춰도 다시 읽지 않음 */
+    const secPerPage = prog.page > p0 ? Math.round((Date.now() - t0) / (prog.page - p0) / 100) / 10 : st.secPerPage || null; await benchFinish(t, prog, { ...st, secPerPage, lastPage: lastP || null });
+    for (let k = 0; k < (prog.blocks || 0); k++) await bkRef(k).delete().catch(() => {}); /* 읽는 동안 임시로 둔 조각 — 결과는 bench_state·bench_days·bench_items에 저장됨 */
+    await finishJob(JN, { n: prog.items.length, pages: prog.page });
+    log(`🎯 '${name}' 끝 — ${prog.page.toLocaleString()}쪽 · ${prog.items.length.toLocaleString()}개 · ${Math.round((Date.now() - t0) / 60000)}분 걸림`); }
+  /* (1.53.0) 상품 페이지에서 ISBN·주제 분류·출간 연월 (웹앱 ⚙ 수집 항목에서 켠 것만) — 한 번 읽은 상품은 다시 안 읽음(v[10])
+   *  ① bench_books/{알라딘 상품 번호}(판매자끼리 같이 씀) → ② 우리 도서 기록(prd_ids/itemId_ → prd_books) → ③ 그래도 없으면 상품 페이지를 염(한 개당 약 1~2초)
+   *  한 번 수집에 판매자마다 최대 N개·M분(⚙에서 바꿈) — 새로 올린 것 먼저, 남으면 예전 상품을 조금씩 채움(몇 번에 걸쳐 숍 전체가 채워짐) */
+  const benchBookMem = new Map();
+  async function benchBook(id) { if (benchBookMem.has(id)) return benchBookMem.get(id); const ref = C('bench_books').doc(String(id)); let b = (await ref.get().catch(() => null)); b = b && b.exists ? b.data() : null;
+    if (!b) { try { const m = (await C('prd_ids').doc('itemId_' + id).get()).data(); if (m && m.bookId) { const k = (await C('prd_books').doc(String(m.bookId)).get()).data(); if (k) { const c0 = (k.categories || [])[0]; b = { full: true, bookId: String(m.bookId), id: String(id), isbn: k.isbn13 || null, cat: c0 && c0.path ? c0.path.slice(0, 4).join('>') : null, catCid: c0 && c0.cids ? c0.cids[c0.cids.length - 1] || null : null, pubYm: k.pubDate ? String(k.pubDate).slice(0, 7) : null, src: 'ours', at: nowIso() }; } } } catch (e) {} }
+    if (b && !b.full && b.src === 'page') b = null; /* (1.53.1) 예전(1.53.0)엔 세 가지만 저장 → 상품 페이지 정보 전부로 다시 읽음 */
+    if (!b) { const g = await pubProd(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`); const pg = P.parseProductPage(g.doc, g.finalUrl); const c0 = (pg.categories || [])[0]; const pd = pg.pubDate || null;
+      /* (1.53.1) 상품 페이지에서 읽은 것 전부(우리 책 도서 정보와 같은 파서 · 같은 칸 이름) — 한 번 저장하면 덮어쓰지 않고 영원히 보관 · 판매자끼리 같이 씀 */
+      const page = JSON.parse(JSON.stringify(pg, (k, v) => (v === undefined ? null : v))); b = { id: String(id), isbn: pg.isbn13 || null, cat: c0 && c0.path ? c0.path.slice(0, 4).join('>') : null, catCid: c0 && c0.cids ? c0.cids[c0.cids.length - 1] || null : null, pubYm: pd ? String(pd).replace(/[./]/g, '-').slice(0, 7) : null, title: pg.title || null, page, full: true, src: 'page', at: nowIso() }; }
+    if (b && !b.isbn && !b.cat && !b.pubYm) { benchBookMem.set(id, null); return null; } /* 아무것도 못 읽었으면 저장하지 않음(다음에 다시 시도) */
+    if (b && b.src && !b.saved) { try { await ref.set({ ...b, saved: true, ...W() }, { merge: true }); } catch (e) { try { const { page, ...rest } = b; await ref.set({ ...rest, pageJ: JSON.stringify(page || null).slice(0, 200000), saved: true, ...W() }, { merge: true }); } catch (e2) {} } b.saved = true; } /* 중첩 목록 등으로 거절되면 글자(JSON)로 */
+    benchBookMem.set(id, b); if (benchBookMem.size > 20000) benchBookMem.clear(); return b; }
+  /* (1.57.7) 📖 상품 페이지 정보만 따로 — 판매자의 지금 숍 상품(bench_state 조각) 중 아직 상품 페이지 정보가 없는 것만 엶(한 번 읽은 상품·다른 판매자와 같은 책·우리 도서 기록에 있는 책은 열지 않음 = benchBook)
+   *  capped: 판매자마다 설정의 최대 개수·분(한 바퀴 뒤 자동) · 아니면(수집기 단추) 판매자마다 끝까지 — 멈추면 100개마다 저장한 데까지 남음 · 판매자가 숍 목록을 읽는 중(prog)이면 건너뜀(겹쳐 쓰지 않게) */
+  async function benchDetailPass(T, opt) { opt = opt || {}; const RB = (BREG() || {}).BENCH; if (!RB) return; const D = { ...RB.DETAIL_DEF, ...((BENCH_CFG && BENCH_CFG.detail) || {}) }; const tAll = Date.now(); let sumT = 0, sumF = 0;
+    for (const t of T) { if (stopFlag) throw new Error('멈춤'); const sc = String(t.sc); const name = t.name || sc; const st = (await C('bench_state').doc(sc).get()).data() || {}; if (st.prog) { log(`📖 '${name}': 숍 목록을 읽는 중인 회차가 있어 건너뜀`); continue; } const nC = st.chunks || 0; if (!nC) continue;
+      const parts = []; for (let k = 0; k < nC; k++) { const c = (await C('bench_state').doc(sc).collection('c').doc(String(k)).get()).data(); let M = c && c.m; if (c && c.s) { try { M = JSON.parse(c.s); } catch (e) { M = null; } } parts.push({ k, M: M || {}, dirty: false, day: c && c.day }); }
+      const where = new Map(); parts.forEach((P) => Object.keys(P.M).forEach((id) => where.set(id, P)));
+      const all = [...where.entries()].map(([id, P]) => [id, P.M[id], P]).filter(([, v]) => Array.isArray(v) && !v[6] && v[10] !== 1);
+      const cand = all.filter(([, v]) => v[10] !== 2).sort((a, b) => String(b[1][1]).localeCompare(String(a[1][1]))).concat(all.filter(([, v]) => v[10] === 2)); const lim = opt.capped ? Math.max(0, +D.max || 0) : cand.length; const until = opt.capped ? Date.now() + Math.max(1, +D.maxMin || 30) * 60000 : Infinity;
+      if (!cand.length) { log(`📖 '${name}': 상품 페이지 정보가 없는 상품 없음`); continue; } log(`📖 '${name}' 상품 페이지 정보: 아직 없는 ${cand.length.toLocaleString()}개 중 ${Math.min(lim, cand.length).toLocaleString()}개${opt.capped ? ` (최대 ${D.maxMin}분)` : ''}`);
+      let B = db.batch(), n = 0, tried = 0, filled = 0; const t0 = Date.now(); let lastLog = t0;
+      const save = async () => { if (n) { await B.commit(); B = db.batch(); n = 0; } for (const P of parts) if (P.dirty) { await C('bench_state').doc(sc).collection('c').doc(String(P.k)).set({ s: JSON.stringify(P.M), n: Object.keys(P.M).length, fmt: 'json', day: P.day || kDayB(), at: nowIso() }); P.dirty = false; } };
+      try { for (const [id, v, P] of cand.slice(0, lim)) { if (stopFlag) throw new Error('멈춤'); if (Date.now() > until) { log(`📖 '${name}': ${D.maxMin}분이 되어 여기까지 — 나머지는 다음 바퀴에`); break; } tried++; let b = null; try { b = await benchBook(id); } catch (e) { if (e.message === '멈춤') throw e; }
+          if (b) { v[7] = b.isbn || null; v[8] = b.cat || null; v[9] = b.pubYm || null; v[10] = 1; filled++; B.set(C('bench_items').doc(`${sc}_${id}`), { sc, id, isbn: v[7], cat: v[8], pubYm: v[9], detailAt: nowIso(), ...W() }, { merge: true }); n++; } else v[10] = 2; P.dirty = true;
+          if (tried % 100 === 0) await save(); if (Date.now() - lastLog > 30000) { lastLog = Date.now(); log(`📖 '${name}' ${tried}/${Math.min(lim, cand.length)}`); ui(`상품 페이지 정보 · ${name}`, tried, Math.min(lim, cand.length), `ISBN·분류 ${tried}/${Math.min(lim, cand.length)}`); } }
+      } finally { await save().catch((e) => log(`📖 '${name}' 저장 실패: ${e.message}`, 1)); }
+      sumT += tried; sumF += filled; log(`📖 '${name}' 끝: ${filled}/${tried}개 (${Math.round((Date.now() - t0) / 1000)}초)`); }
+    log(`📖 상품 페이지 정보 끝 — 판매자 ${T.length}명 · ${sumF.toLocaleString()}/${sumT.toLocaleString()}개 · ${Math.round((Date.now() - tAll) / 60000)}분`); }
+  async function benchDetailJob() { const cfg = (await C('app_settings').doc('bench').get()).data() || {}; BENCH_CFG = cfg; const T = benchTargets(cfg); if (!T.length) { log('집중 벤치마킹: 고른 판매자 없음'); return; }
+    const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); return false; } try { log(`📖 집중 벤치마킹으로 모은 상품만 상품 페이지 정보 읽기(설정과 상관없이) — ${T.map((t) => t.name || t.sc).join(' → ')}`); await benchDetailPass(T, { capped: false }); } finally { await releaseLane('aladin'); } }
+  let BENCH_DEFER_DETAIL = false; /* (1.57.7) 정범 지정: 한 바퀴(차례가 된 판매자 모두) 숍 목록을 먼저 다 읽고, 상품 페이지 정보는 그 뒤에 첫 판매자부터 따로(benchDetailPass) */
+  async function benchDetail(t, now, newIds, F) { const RB = (BREG() || {}).BENCH; const out = { tried: 0, filled: [], newIds }; if (!RB || !RB.needsDetail(BENCH_CFG) || BENCH_DEFER_DETAIL) return out;
+    const D = { ...RB.DETAIL_DEF, ...((BENCH_CFG && BENCH_CFG.detail) || {}) }; const name = t.name || t.sc; const t0 = Date.now(); const until = t0 + Math.max(1, +D.maxMin || 30) * 60000; let lastLog = t0;
+    const C0 = [...now.entries()].filter(([, v]) => !v[6] && v[10] !== 1); /* 못 읽은 것(2)은 맨 뒤에서 다시 시도 */ const cand = C0.filter(([id]) => newIds.has(id)).concat(C0.filter(([id, v]) => !newIds.has(id) && v[10] !== 2).sort((a, b) => String(b[1][1]).localeCompare(String(a[1][1]))), C0.filter(([id, v]) => !newIds.has(id) && v[10] === 2)).slice(0, Math.max(0, +D.max || 0));
+    if (!cand.length) return out; log(`🎯 '${name}' 상품 페이지 정보 읽기(도서 정보 전부): ${cand.length.toLocaleString()}개 (새로 올린 것 ${cand.filter(([id]) => newIds.has(id)).length} · 아직 안 읽은 상품 ${C0.length.toLocaleString()}개 중) · 최대 ${D.maxMin}분`);
+    for (const [id, v] of cand) { if (stopFlag) throw new Error('멈춤'); if (Date.now() > until) { log(`🎯 '${name}' 상품 정보 더 읽기: ${D.maxMin}분이 되어 여기까지(${out.tried}개) — 나머지는 다음 수집 때`); break; }
+      out.tried++; let b = null; try { b = await benchBook(id); } catch (e) { if (e.message === '멈춤') throw e; }
+      if (b) { v[7] = b.isbn || null; v[8] = b.cat || null; v[9] = b.pubYm || null; v[10] = 1; out.filled.push(id); } else v[10] = 2;
+      if (Date.now() - lastLog > 30000) { lastLog = Date.now(); log(`🎯 '${name}' 상품 정보 더 읽기 ${out.tried}/${cand.length}`); ui(`집중 벤치마킹 · ${name} · 상품 정보`, out.tried, cand.length, `ISBN·분류 ${out.tried}/${cand.length}`); } }
+    log(`🎯 '${name}' 상품 정보 더 읽기 끝: ${out.filled.length}/${out.tried}개 (${Math.round((Date.now() - t0) / 1000)}초)`); return out; }
+  async function benchFinish(t, prog, st) { const RUN_OK = prog.fullRead === true; /* (1.56.3) 엄격한 기준 한 곳(benchOne의 fullRead) — 예전 느슨한 기준(끝 쪽 3쪽 전·끝 쪽 모름이면 끝으로 봄)은 버림 */ const sc = String(t.sc); const day = prog.day; const dayN = day.replace(/-/g, '');
+    /* (1.56.2) 끝까지 못 읽은 회차(예: 1%만 읽음)는 '비교 기준'을 바꾸지 않음 — 예전엔 못 본 99%를 '안 보임'으로 적고, 앞 회차에 한 번 안 보였던 것은 '사라짐'으로 확정해 버려
+     *  다음 온전한 회차에서 그 상품들이 '새로 올림'으로 다시 잡히고(부풀림), 사라짐·사라진 날도 틀어졌음. 이제는 회차 기록만 '끝까지 못 읽음'으로 남기고(통계에서 빠짐),
+     *  숍 상품 상태(조각)·상품 기록(bench_items)·마지막 온전한 회차는 그대로 → 다음 온전한 회차가 마지막 온전한 회차와 바로 견줌 (그 사이 기간은 spanDays로 나눠 하루 값을 냄) */
+    if (!RUN_OK) { const seenN = new Set(prog.items.map((x) => x[0])).size; let dayId = `${sc}_${day}`; { const ex = (await C('bench_days').doc(dayId).get()).data(); if (ex) dayId = `${sc}_${day}_${new Date(Date.parse(prog.startedAt || nowIso()) + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; }
+      const PCH = 2500; const pn = Math.ceil(prog.items.length / PCH); for (let k = 0; k < pn; k++) await C('bench_partial').doc(`${dayId}_${k}`).set({ sc, dayId, k, n: Math.min(PCH, prog.items.length - k * PCH), s: JSON.stringify(prog.items.slice(k * PCH, (k + 1) * PCH)), fmt: 'json', at: nowIso(), ...W() }).catch(() => {}); /* 읽은 상품은 버리지 않고 상품 정보로만 보관 — 벤치마킹 통계·비교에는 쓰지 않음 */
+      await C('bench_days').doc(dayId).set({ sc, name: t.name || sc, day, dayId, base: false, partial: true, complete: false, total: seenN, pages: prog.page, runLastPage: prog.lastPage || null, runAt: prog.startedAt || null, at: nowIso(), pc: PC_NAME, strict: 1, cover: prog.cover ?? null, readTo: prog.page - 1, partialChunks: pn, resumes: prog.resumes || null, anchorLost: prog.anchorLost || null, why: `끝까지 확실히 읽지 못한 회차 — ${prog.fullWhy || `끝 쪽 ${prog.lastPage || '?'}쪽`} · 통계·비교 기준에서 뺌(읽은 상품은 bench_partial에 상품 정보로만)`, ...W() });
+      await C('bench_state').doc(sc).set({ ...(!st.okRunAt && st.day && st.complete !== false && st.runAt ? { okRunAt: st.runAt } : {}), prog: null, partialRuns: firebase.firestore.FieldValue.increment(1), lastPartial: { day, pages: prog.page, lastPage: prog.lastPage || null, seen: seenN, at: nowIso() }, at: nowIso(), ...W() }, { merge: true });
+      log(`🎯 '${t.name || sc}': 숍 끝 쪽(${(prog.lastPage || 0).toLocaleString()}쪽)까지 못 읽고 ${prog.page.toLocaleString()}쪽에서 끝난 회차 — 본 ${seenN.toLocaleString()}개만으로는 새로 올림·사라짐을 판단하지 않음(비교 기준·상품 기록 그대로, 통계에서 뺌). 다음 온전한 회차가 마지막 온전한 회차(${st.day || '-'})와 바로 견줌`, 1); return; }
+    const okPrev = st.okRunAt || (st.day && st.complete !== false ? st.runAt : null); const spanDays = !st.day ? null : okPrev && prog.startedAt ? Math.max(0, Math.round(((Date.parse(prog.startedAt) - Date.parse(okPrev)) / 864e5) * 100) / 100) : null; /* (1.56.2) 마지막 온전한 회차부터 이 회차까지 며칠어치 변화인지 — 하루 값을 낼 때 나눔 */ const old = new Map(); const nC = st.chunks || 0;
+    for (let k = 0; k < nC; k++) { const c = (await C('bench_state').doc(sc).collection('c').doc(String(k)).get()).data(); let M = c && c.m; if (c && c.s) { try { M = JSON.parse(c.s); } catch (e) { M = null; } } if (M) for (const [id, v] of Object.entries(M)) old.set(id, v); } /* (1.53.3) 새 모양 s(글자) · 예전 모양 m 둘 다 읽음 */ /* v = [값, 처음 본 날(YYYYMMDD), 상태, 처음부터 있던 것(1), 제목 앞 40자] */
+    const RB = (BREG() || {}).BENCH; const F = RB ? RB.fields(BENCH_CFG) : { price: true, grade: true, title: true, low: true, priceList: true, byline: true, usedCode: true, cover: true, page: true }; /* (1.53.0) 웹앱 ⚙ 수집 항목에서 끈 정보는 모으지 않음 */
+    const base = !st.day; const now = new Map(); const add = [], gone = [], moved = []; const dd = (a) => Math.max(0, Math.round((Date.parse(day) - Date.parse(`${String(a).slice(0, 4)}-${String(a).slice(4, 6)}-${String(a).slice(6, 8)}`)) / 864e5));
+    const lowOn = [], lowOff = []; /* (1.48.0) '최저가' 표시가 켜지고 꺼진 때 — 덮어쓰지 않고 쌓음 */ const gradeChg = []; /* (1.57.2) 등급·제목이 바뀐 매물 — 지금 목록은 새 값으로 바뀌므로 옛 값을 bench_items에 쌓음 */
+    /* (1.48.0) 숍 전체를 읽는 데 몇 시간 걸려, 그동안 앞쪽 상품이 팔리면 뒤 상품이 한 칸씩 당겨져 몇 개는 못 보고 지나감 → 한 번 안 보인 것은 '안 보임 1번'(v[6] = 처음 안 보인 날)으로 두고,
+     *   다음 바퀴에도 안 보이면 그때 '사라짐'(사라진 날 = 처음 안 보인 날)으로 셈 · 다시 보이면 놓친 것(돌아옴)으로만 셈 — 사라짐이 하루 늦게 확정되는 대신 잘못 센 사라짐이 없음 */
+    const back = [];
+    /* v = [0 값, 1 처음 본 날, 2 상태, 3 처음부터 있던 것, 4 제목 앞 40자, 5 배지, 6 처음 안 보인 날, 7 ISBN, 8 주제 분류, 9 출간 연월, 10 상품 페이지 읽음(1)·못 읽음(2)] — (1.53.0) 7~10 추가 · 예전 것을 그대로 이어 받음 */
+    const carry = (o) => [o ? o[7] ?? null : null, o ? o[8] ?? null : null, o ? o[9] ?? null : null, o ? o[10] || 0 : 0];
+    for (const [id, p0, g0, ti0, isbn, ym, pl, low0, pg0] of prog.items) { const p = F.price ? p0 : null, g = F.grade ? g0 : null, ti = F.title ? ti0 : '', low = F.low ? low0 : 0, pg = F.page ? pg0 : null; const o = old.get(id); const L1 = low ? 1 : 0; if (o) { if (o[6]) back.push(id); now.set(id, [p, o[1], g, o[3] || 0, String(ti || o[4] || '').slice(0, 40), L1, 0, ...carry(o)]); if (p && o[0] && p !== o[0]) moved.push({ id, from: o[0], to: p }); if ((g && o[2] && g !== o[2]) || (ti && o[4] && String(ti).slice(0, 40) !== o[4])) gradeChg.push({ id, g0: o[2] || null, g, t0: o[4] || null, t: String(ti || '').slice(0, 40) || null }); if (L1 && !o[5]) lowOn.push({ id, p, g, pg, t: ti }); if (!L1 && o[5]) lowOff.push({ id, p, g, pg, t: ti }); } else { now.set(id, [p, dayN, g, base ? 1 : 0, String(ti || '').slice(0, 40), L1, 0, null, null, null, 0]); if (!base) add.push({ id, t: ti, p, g, isbn, ym, pl: F.priceList ? pl : null, low: L1 }); if (L1) lowOn.push({ id, p, g, pg, t: ti, first: true }); } }
+    /* (1.56.5) 숍을 다 못 읽은 회차(절반 넘게 읽어 쓰는 회차): 못 읽은 쪽의 상품은 '못 본 것'일 뿐 — 안 보임·사라짐으로 적지 않고 지난 상태 그대로 둠(팔리지 않은 것으로 셈).
+     *  사라짐은 숍을 끝까지 다 읽은 회차에서 실제로 안 보일 때만 셈(그때부터 평소처럼: 한 번 안 보임 → 다음 온전한 회차에도 없으면 사라짐) */
+    const FULL = prog.cover == null || prog.cover >= 1; let notRead = 0;
+    if (!FULL) for (const [id, o] of old) { if (now.has(id)) continue; now.set(id, o.slice()); notRead++; }
+    const miss = []; for (const [id, o] of old) { if (now.has(id)) continue; if (o[6]) gone.push({ id, p: o[0], g: o[2], first: o[1], life: dd(o[1]) - dd(o[6]), base: !!o[3], t: o[4] || null, low: !!o[5], missDay: o[6], isbn: o[7] || null, cat: o[8] || null, ym: o[9] || null }); else { miss.push(id); now.set(id, [o[0], o[1], o[2], o[3] || 0, o[4] || '', o[5] || 0, dayN, ...carry(o)]); } }
+    const dt = await benchDetail(t, now, new Set(add.map((x) => x.id)), F); add.forEach((x) => { const v = now.get(x.id); if (v) { x.isbn = v[7] || x.isbn || null; x.cat = v[8] || null; x.ym = v[9] || x.ym || null; } });
+    const seenN = now.size - miss.length - notRead; /* (1.56.5) 이번에 실제로 본 상품 수 (못 읽은 쪽 상품은 빼고) */ const ymd = (a) => `${String(a).slice(0, 4)}-${String(a).slice(4, 6)}-${String(a).slice(6, 8)}`;
+    const AU = firebase.firestore.FieldValue.arrayUnion; let B = db.batch(), n = 0, wN = 0, wT = Date.now(), wL = Date.now(); const flush = async () => { if (n) { await B.commit(); wN += n; B = db.batch(); n = 0; if (Date.now() - wL > 30000) { wL = Date.now(); log(`🎯 '${t.name || sc}' 저장 중 — 상품 기록 ${wN.toLocaleString()}건 (${Math.round((Date.now() - wT) / 1000)}초)`); ui(`집중 벤치마킹 · ${t.name || sc} · 저장 중`, wN, wN, `상품 기록 ${wN.toLocaleString()}건 저장함`); } } };
+    const byId = new Map(prog.items.map((x) => [x[0], x]));
+    for (const id of base ? [...now.keys()] : add.map((x) => x.id)) { const x = byId.get(id); const v = now.get(id) || []; B.set(C('bench_items').doc(`${sc}_${id}`), { sc, id, title: F.title ? x[3] || '' : '', price: F.price ? x[1] ?? null : null, grade: F.grade ? x[2] || null : null, isbn: v[7] || x[4] || null, cat: v[8] || null, coverKey: F.cover ? x[11] || null : null, pubYm: v[9] || x[5] || null, priceList: F.priceList ? x[6] ?? null : null, usedCode: F.usedCode ? x[9] || null : null, byline: F.byline ? x[10] || null : null, firstDay: day, firstPage: F.page ? x[8] || null : null, base, ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    for (const id of dt.filled) { if (base || dt.newIds.has(id)) continue; const v = now.get(id); B.set(C('bench_items').doc(`${sc}_${id}`), { sc, id, isbn: v[7] || null, cat: v[8] || null, pubYm: v[9] || null, detailAt: nowIso(), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    for (const x of gone) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, goneDay: ymd(x.missDay), goneConfirmDay: day, lifeDays: x.base ? null : x.life, ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    const nowI = prog.startedAt || nowIso(); /* (1.52.0) 같은 날 저장을 다시 해도 같은 기록이 두 번 쌓이지 않게 '읽기 시작 시각'으로 고정 */ for (const x of lowOn) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, lowNow: true, lowEvents: AU({ d: day, at: nowI, on: true, p: x.p ?? null, g: x.g || null, page: x.pg || null }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    for (const x of lowOff) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, lowNow: false, lowEvents: AU({ d: day, at: nowI, on: false, p: x.p ?? null, g: x.g || null, page: x.pg || null }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    for (const x of gone.filter((y) => y.low)) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { lowEvents: AU({ d: day, at: nowI, gone: true, p: x.p ?? null }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    for (const x of moved) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, prices: AU({ d: day, p: x.to, from: x.from }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    for (const x of gradeChg) { B.set(C('bench_items').doc(`${sc}_${x.id}`), { sc, id: x.id, infoEvents: AU({ d: day, ...(x.g !== x.g0 ? { g0: x.g0, g: x.g } : {}), ...(x.t !== x.t0 ? { t0: x.t0, t: x.t } : {}) }), ...W() }, { merge: true }); if (++n >= 400) await flush(); }
+    await flush(); if (wN) log(`🎯 '${t.name || sc}' 상품 기록 ${wN.toLocaleString()}건 저장 끝 (${Math.round((Date.now() - wT) / 1000)}초)`);
+    const band = (p) => (!p ? '?' : p < 3000 ? '~3천' : p < 6000 ? '3~6천' : p < 10000 ? '6천~1만' : p < 20000 ? '1~2만' : p < 40000 ? '2~4만' : '4만~'); const cntBy = (L, f) => L.reduce((m, x) => { const k = f(x); m[k] = (m[k] || 0) + 1; return m; }, {});
+    /* (1.52.0) Firebase는 '목록 안의 목록'을 저장하지 못함(Nested arrays are not supported) → 한 줄을 글자(JSON)로 바꿔 담음 · 웹앱은 글자·목록 둘 다 읽음 */
+    const JR = (a) => JSON.stringify(a.map((v) => (v === undefined ? null : v))); const T60 = (t) => (t ? String(t).slice(0, 60) : null); const cat2 = (c) => String(c || '').split('>').slice(0, 3).join('>');
+    const all = [...now.values()].filter((v) => !v[6]); const sumD = { sc, name: t.name || sc, day, base, notRead, full: FULL, total: seenN + notRead, seen: seenN, missOnce: miss.length, missBack: back.length, add: add.length, gone: gone.length, goneNew: gone.filter((x) => !x.base).length, moved: moved.length, pages: prog.page,
+      totalBand: cntBy(all, (v) => band(v[0])), totalGrade: cntBy(all, (v) => v[2] || '?'), addBand: cntBy(add, (x) => band(x.p)), addGrade: cntBy(add, (x) => x.g || '?'), addYear: cntBy(add, (x) => (x.ym ? x.ym.slice(0, 4) : '?')),
+      goneBand: cntBy(gone, (x) => band(x.p)), goneGrade: cntBy(gone, (x) => x.g || '?'), goneLife: cntBy(gone.filter((x) => !x.base), (x) => (x.life <= 3 ? '0~3일' : x.life <= 7 ? '4~7일' : x.life <= 14 ? '8~14일' : x.life <= 30 ? '15~30일' : x.life <= 60 ? '31~60일' : '61일~')),
+/* (1.54.0) 💰 판매가 합 — 지금 숍 전체(재고 가치)·배지 보유분·이번 회차 사라진 것·새로 올린 것 (목록은 3,000개까지만 담지만 합은 전부로) */
+      complete: RUN_OK, strict: 1, cover: prog.cover ?? null, readTo: prog.page - 1, spanDays, resumes: prog.resumes || null, anchorLost: prog.anchorLost || null, runLastPage: prog.lastPage || null, /* (1.54.2) 숍 끝 쪽까지 읽은 회차인지 — 웹앱·순서표는 끝까지 못 읽은 회차를 셈에서 빼고 곧바로 다시 읽을 차례로 */
+      sumNow: all.reduce((a2, v) => a2 + (+v[0] || 0), 0), priceN: all.filter((v) => +v[0] > 0).length, sumLow: all.filter((v) => v[5]).reduce((a2, v) => a2 + (+v[0] || 0), 0), sumGone: gone.reduce((a2, x) => a2 + (+x.p || 0), 0), sumGoneNew: gone.filter((x) => !x.base).reduce((a2, x) => a2 + (+x.p || 0), 0), sumAdd: add.reduce((a2, x) => a2 + (+x.p || 0), 0),
+      lowNow: all.filter((v) => v[5]).length, lowOn: lowOn.length, lowOff: lowOff.length, goneLow: gone.filter((x) => x.low).length, goneLowNew: gone.filter((x) => x.low && !x.base).length, addLow: add.filter((x) => x.low).length, lowBand: cntBy(all.filter((v) => v[5]), (v) => band(v[0])), lowOnList: lowOn.slice(0, 1000).map((x) => JR([x.id, T60(x.t), x.p, x.g, x.pg || null])), lowOffList: lowOff.slice(0, 1000).map((x) => JR([x.id, T60(x.t), x.p, x.g])),
+      addList: add.slice(0, 3000).map((x) => JR([x.id, T60(x.t), x.p, x.g, x.ym, x.isbn, x.pl, x.low, x.cat || null])), goneList: gone.slice(0, 3000).map((x) => JR([x.id, T60(x.t), x.p, x.g, x.base ? null : x.life, x.first, x.low ? 1 : 0, x.isbn || null, x.cat || null, x.ym || null])), movedList: moved.slice(0, 1000).map((x) => JR([x.id, x.from, x.to])), rowFmt: 'json',
+      addCat: cntBy(add.filter((x) => x.cat), (x) => cat2(x.cat)), goneCat: cntBy(gone.filter((x) => x.cat), (x) => cat2(x.cat)), detailNow: [...now.values()].filter((v) => v[10] === 1).length, detailRun: dt.tried, detailOk: dt.filled.length, runAt: prog.startedAt || null, fieldsOff: Object.keys(F).filter((k) => !F[k]), at: nowIso(), pc: PC_NAME, ...W() };
+    /* (1.53.0) Firebase 문서 한 개는 1MB까지 — 목록이 길면 긴 목록부터 줄이고 '일부만' 표시(숫자 합계는 그대로 정확) */
+    { const sz = () => new TextEncoder().encode(JSON.stringify(sumD)).length; const Ls = ['addList', 'goneList', 'lowOnList', 'lowOffList', 'movedList']; let g = 0; while (sz() > 900000 && g++ < 40) { const k = Ls.slice().sort((a, b) => sumD[b].length - sumD[a].length)[0]; sumD[k] = sumD[k].slice(0, Math.floor(sumD[k].length * 0.8)); sumD.trunc = { ...(sumD.trunc || {}), [k]: sumD[k].length }; } }
+    /* (1.53.0) 하루에 여러 번 읽으면 하루 요약도 회차마다 따로(덮어쓰지 않음): 그날 첫 회차 = {판매자_날짜} · 다음 회차 = {판매자_날짜_시분} */
+    let dayId = `${sc}_${day}`; { const ex = (await C('bench_days').doc(dayId).get()).data(); if (ex && ex.runAt && prog.startedAt && ex.runAt !== prog.startedAt) dayId = `${sc}_${day}_${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; else if (ex && !ex.runAt && prog.startedAt && ex.at && Date.parse(ex.at) < Date.parse(prog.startedAt)) dayId = `${sc}_${day}_${new Date(Date.parse(prog.startedAt) + 9 * 3600e3).toISOString().slice(11, 16).replace(':', '')}`; }
+    sumD.dayId = dayId; await C('bench_days').doc(dayId).set(sumD);
+    const ent = [...now.entries()]; const CH = 2500; /* (1.53.0) 상품마다 ISBN·분류가 붙어 한 조각 2,500개로 (Firebase 문서 1MB 한도) */ const chunks = Math.ceil(ent.length / CH); for (let k = 0; k < chunks; k++) await C('bench_state').doc(sc).collection('c').doc(String(k)).set({ s: JSON.stringify(Object.fromEntries(ent.slice(k * CH, (k + 1) * CH))), n: Math.min(CH, ent.length - k * CH), fmt: 'json', day, at: nowIso() }); /* (1.53.3) 조각을 글자(JSON) 한 칸으로 — 상품마다 목록(값 11개)을 칸으로 두면 Firebase가 칸마다 색인을 만들어 '색인 항목이 너무 많음(too many index entries)'으로 거절했음 */
+    await C('bench_state').doc(sc).set({ sc, name: t.name || sc, day, runAt: prog.startedAt || nowIso(), endAt: nowIso(), runs: firebase.firestore.FieldValue.increment(1), detailNow: sumD.detailNow, total: seenN + notRead, missOnce: miss.length, notRead, pages: prog.page, lastPage: prog.lastPage || st.lastPage || null, chunks, startDay: st.startDay || day, secPerPage: st.secPerPage || null, lowNow: all.filter((v) => v[5]).length, prog: null, complete: RUN_OK, okRunAt: prog.startedAt || nowIso(), okEndAt: nowIso(), ...(FULL ? { completeEndAt: nowIso() } : {}), at: nowIso(), ...W() }, { merge: true }); /* (1.63.8) completeEndAt = 숍 끝까지 다 읽은 회차가 끝난 때(⏭ 건너뛰기 기준) */ /* (1.54.0) 회차 끝 — 하는 중 표시 지움 · (1.54.2) 끝까지 읽었는지 */
+    log(`집중 벤치마킹 '${t.name || sc}': ${seenN.toLocaleString()}개${miss.length ? ` · 이번에 안 보임 ${miss.length}(내일도 없으면 사라짐)` : ''}${back.length ? ` · 어제 놓쳤다 다시 보임 ${back.length}` : ''} · ${base ? '첫 바퀴(오늘부터 새로 올린 것을 셈)' : `새로 올림 ${add.length} · 사라짐 ${gone.length}(최저가였던 것 ${gone.filter((x) => x.low).length}) · 값 바뀜 ${moved.length} · 최저가 표시 지금 ${all.filter((v) => v[5]).length}개(새로 ${lowOn.length} · 잃음 ${lowOff.length})`}`); }
+
+
+  async function runChain(onlyPrd) { const DOC = onlyPrd ? 'prdChain' : 'chain'; const NAME = onlyPrd ? '상품 일괄 수집' : '모두 일괄 수집';
+      if (!(await preflight(!!window.__rnRemote || !!window.__rnAuto))) { log('시작 전 점검에서 꼭 고칠 것이 있어 시작하지 않았습니다', 1); return 'cancel'; }
+      const prev = (await C('prd_jobs').doc(DOC).get()).data();
+      const ORDER0 = CHAIN_ORDER; // 수집기가 하는 모든 것 (단계마다 켜고 끔) — (1.63.0) 단추 글·체크 목록과 같은 차례 한 곳
+      const ORDER = onlyPrd ? ORDER0.filter((k) => k !== 'crm') : ORDER0;
+      const on = (k) => (SET.steps || {})[k] !== false;
+      let st = prev && !prev.done && ORDER.includes(prev.stage) ? prev.stage : ORDER[0];
+      const CS = window.__rnStatus.chain = { order: ORDER, labels: STEP_LABEL, on: Object.fromEntries(ORDER.map((k) => [k, on(k)])), res: Object.fromEntries(ORDER.slice(0, ORDER.indexOf(st)).map((k) => [k, 'done'])), cur: null };
+      await C('prd_jobs').doc(DOC).set({ done: false, stage: st, by: LS.get('pcName', PC_ID), savedAt: Date.now(), ...W() }, { merge: true });
+      const RUN = { crm: async () => { if (!window.__rnCrm) { log('고객 수집 모듈이 없어 건너뜀', 1); return; }
+        const li = await window.__rnCrm.localInfo(); if (false && !li.complete && li.pops < 1000 && !(SET.crmAnyPc)) { log(`고객·주문: 이 PC(${PC_NAME})는 고객 일괄 수집을 끝까지 한 적이 없고 상세까지 받은 주문이 ${li.pops}건뿐이라(목록 줄 ${li.lines}), 하면 이미 받은 주문을 못 알아보고 전부 다시 엽니다 → 건너뜀. 고객·주문은 기록이 있는 PC(${SET.autoPc || 'JS-MAIN'})가 맡습니다`, 1); return 'skip'; } ui('고객·주문 전체 일괄 수집', 0, 0, '고객 탭에서 진행 상황을 볼 수 있습니다'); await window.__rnCrm.start('bulk', { fresh: true }); },
+        scanNew: () => scan('new'), aladinBuy: () => aladinBuyJob(), buyback: () => buybackJob(), market: () => market(), rev6m: () => rev6mJob('stale'), revTop: () => reviewJob('top'), dynamic: () => dynJob(SET.dynDaily || 0),
+        soldInfo: async () => { const r = await soldInfoJob(); return r; }, poolInfo: () => poolInfoJob(), photos: () => photosJob(), usedInfo: () => usedInfoJob(), nbMarket: () => nbMarketJob(), bench: () => benchJob({ force: true }), images: async () => { await images(); }, scanFull: () => scan('full'), revAll: () => reviewJob('all') };
+      for (let i = ORDER.indexOf(st); i < ORDER.length; i++) {
+        const k = ORDER[i]; if (!on(k)) { log(`일괄 수집: '${STEP_LABEL[k]}' 끔 → 건너뜀`); continue; }
+        if (k === 'scanFull' || k === 'revAll') { const days = k === 'scanFull' ? (SET.scanFullDays ?? 7) : (SET.revAllDays ?? 7); const jd = (await jobRef(k).get()).data() || {}; if (jd.done && jd.finishedAt && Date.now() - jd.finishedAt < days * 864e5) { log(`일괄 수집: '${STEP_LABEL[k]}'은(는) ${Math.round((Date.now() - jd.finishedAt) / 864e5 * 10) / 10}일 전에 했음 (${days}일마다) → 건너뜀`); CS.res[k] = 'done'; continue; } }
+        const tS = Date.now(); CS.cur = k; window.__rnStatus.cur = {}; window.__rnPhaseReset && window.__rnPhaseReset(k === 'crm' ? 'crm' : 'prd', STEP_LABEL[k]); log(`[일괄 ${i + 1}/${ORDER.length}] ▶ '${STEP_LABEL[k]}' 시작`);
+        curStage = k; lastSame = false; let rr; try { rr = await RUN[k](); } catch (e) { if (e && e.message === '멈춤') throw e; log(`[일괄] '${STEP_LABEL[k]}' 오류: ${e && e.message} — 이 단계는 실패로 두고 다음 단계로 갑니다 (진행 위치는 저장돼 다음에 이어감)`, 1); rr = 'error'; } finally { curStage = null; }
+        log(`[일괄 ${i + 1}/${ORDER.length}] ${rr === false ? '■ 시작 못 함' : stopFlag ? '■ 멈춤' : rr === 'partial' ? '◐ 정한 시간만큼 함 (나머지는 다음 일괄 때 이어서)' : '✓ 끝'} '${STEP_LABEL[k]}' (${Math.round((Date.now() - tS) / 60000)}분)`);
+        if (window.__rnPaused || stopFlag) { CS.res[k] = 'wait'; CS.cur = null; log(`[일괄] '${STEP_LABEL[k]}' 중 일시정지 — 다음 단계로 넘어가지 않고 여기서 멈춤 (이어하기로 이 단계부터)`); throw new Error('멈춤'); }
+        CS.res[k] = rr === 'error' ? 'fail' : rr === 'partial' ? 'partial' : rr === 'skip' ? 'skip-busy' : rr === false ? (lastSame ? 'skip-busy' : 'fail') : stopFlag ? 'wait' : 'done'; CS.cur = null;
+        if (rr === false && lastSame) { log(`일괄 수집: '${STEP_LABEL[k]}'은(는) 다른 PC가 하고 있어 건너뛰고 다음 단계로`); lastSame = false; continue; } // 같은 작업을 다른 PC(예: HOME)가 하는 중
+        if (rr === 'error') continue;
+        if (rr === false) return false;
+        if (stopFlag) throw new Error('멈춤');
+        if (ORDER[i + 1]) await C('prd_jobs').doc(DOC).set({ stage: ORDER[i + 1], savedAt: Date.now() }, { merge: true });
+        if (ORDER[i + 1] && window.__rnOutdated && GM_getValue('rnu-reload-for', null) !== window.__rnOutdated && !(window.__rnCrm && window.__rnCrm.busy())) { log(`단계 사이: 새 수집기 ${window.__rnOutdated}로 바꿔 '${STEP_LABEL[ORDER[i + 1]]}'부터 이어갑니다`); GM_setValue('rnu-reload-for', window.__rnOutdated); safeReload('새 버전으로 바꿈', onlyPrd ? 'prdChain' : 'chain'); return 'reload'; }
+      }
+      await finishJob(DOC, { finishedBy: PC_NAME });
+  }
+
+  /* ───────── 우리 상품 사진: 새상품 페이지가 없거나 표지 사진이 없을 때 ─────────
+   * 우리 중고 상품 페이지(wproduct.aspx?ItemId=우리 상품번호)의 사진을 전부: 위쪽 표지 영역 + '중고상품 구매 유의 사항' 안 사진
+   * 저장: Storage img/listing/{U코드}/{순서}.jpg (+작은 사진), prd_listings.photos — 이미 받은 상품은 다시 안 받음
+   * 우리 상품 페이지가 없거나 사진이 없으면: 상품명 검색에서 이름이 90% 이상 같은 상품의 사진 → 그래도 없으면 건너뜀 (검색 결과 화면 확인 후 연결 예정) */
+  /* ───────── 경쟁 매물 유의사항·사진 (1.25.0) ─────────
+   * 대상: 판매 중인 우리 책마다 온라인 중고 첫 페이지(prd_book_metrics.usedFirstPage)의 다른 판매자 매물 '전부'(우리 매물 빼고, 알라딘측 포함). 가격 감시 중인 책 먼저
+   * 내용: 매물 페이지의 '중고상품 구매 유의 사항' 글 전체와 사진 — 새상품 표지와 다른 사진(판매자 실사진)이 있는지
+   * 저장: prd_used_info/{매물번호} = 지금 내용 요약 + 확인 시각, prd_used_info/{매물번호}/v/{순번} = 내용이 바뀔 때마다 그 판 그대로 쌓음
+   *       (데이터 철칙: 한 번 들어온 내용은 덮어쓰지 않고 보관 — 같으면 판을 늘리지 않고 확인 시각만)
+   * 다시 확인 주기: 설정 '경쟁 매물 유의사항·사진: 다시 확인하는 주기(일)'(기본 30일, 0 = 매번)
+   * 진행 위치 저장(중단·재개), 알라딘 작업 잠금·요청 속도 자동 조절 공유, 저장 권한이 없으면 시작하지 않음 */
+  async function usedInfoJob() {
+    try { await C('prd_used_info').doc('_check').set({ check: true, at: nowIso(), ...W() }, { merge: true }); } catch (e) { log(`경쟁 매물 유의사항: 저장 권한 없음(prd_used_info) — Firestore 규칙에 허용 필요 (${e.code || e.message})`, 1); return false; }
+    const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+    try {
+      let prog = await loadProgress('usedInfo');
+      if (prog && prog.list && prog.v !== 2) { log(`경쟁 매물 유의사항·사진: 예전 방식 목록(첫 페이지 매물 전부 ${prog.list.length.toLocaleString()}개, ${prog.i.toLocaleString()}번째까지 함)을 새 기준(우리보다 앞·바로 뒤 매물만)으로 다시 만듭니다 — 이미 본 매물은 ${SET.usedInfoDays ?? 30}일 동안 건너뜀`); prog = null; }
+      if (!prog || !prog.list) {
+        await loadListings();
+        const PRx = window.ReadnowPricing || globalThis.ReadnowPricing || null; let pcfg = {}; try { const d = await C('prd_system').doc('pricing').get(); pcfg = d.exists ? d.data() : {}; } catch (e) {}
+        const S0 = { rollout: pcfg.rollout || (PRx && PRx.DEFAULTS.rollout), excludeSku: pcfg.excludeSku || (PRx && PRx.DEFAULTS.excludeSku), excludeUsed: pcfg.excludeUsed || [] };
+        const books = new Map();
+        for (const [, l] of LISTINGS) { if (!l.active || !l.bookId) continue; const b = books.get(l.bookId) || { ours: new Set(), mon: false }; b.ours.add(l.usedCode); if (PRx) { const g = PRx.groupOfListing(l, S0); if (g === 'treat' || g === 'control') b.mon = true; } books.set(l.bookId, b); }
+        const seen = new Map(); (await C('prd_used_info').get()).forEach((d) => { if (d.id !== '_check') seen.set(d.id, d.data().checkedAt || d.data().at || ''); });
+        const days = FORCE_ALL ? 0 : SET.usedInfoDays ?? 30; const cut = days > 0 ? new Date(Date.now() - days * 864e5).toISOString() : '9999';
+        const items = []; const ids = [...books.keys()];
+        for (let k = 0; k < ids.length; k += 10) { const part = ids.slice(k, k + 10); const snaps = await Promise.all(part.map((id) => C('prd_book_metrics').doc(id).get()));
+          snaps.forEach((d, n) => { const m = d.data(); if (!m || !m.usedFirstPage) return; const b = books.get(part[n]);
+            // (1.38.0) 가격에 영향을 주는 매물만: 첫 페이지에서 우리 첫 매물보다 앞에 있는 매물 + 바로 뒤 몇 개(설정, 기본 3). 우리 매물이 첫 페이지에 없으면 맨 앞 몇 개(기본 5)
+            //   예전: 첫 페이지 다른 판매자 매물 전부(10/8 기준 17만 개, 1초에 1개 → 47시간) — 일괄 수집이 이 단계에서 이틀 가까이 멈춰 있었음
+            const rows = m.usedFirstPage.filter((r) => r && r.listingId && !r.soldOut); const ourIx = rows.findIndex((r) => String(r.sellerCode) === '996008' || b.ours.has(r.usedCode));
+            const lim = ourIx >= 0 ? ourIx + 1 + (SET.usedInfoAfter ?? 3) : (SET.usedInfoTopN ?? 5);
+            rows.slice(0, lim).filter((r) => String(r.sellerCode) !== '996008' && !b.ours.has(r.usedCode)).forEach((r) => { if (seen.has(String(r.listingId)) && seen.get(String(r.listingId)) > cut) return; items.push({ lid: String(r.listingId), bookId: part[n], sc: r.sellerCode || null, name: r.sellerName || null, mon: b.mon ? 1 : 0 }); }); }); }
+        const uniq = [...new Map(items.map((x) => [x.lid, x])).values()].sort((a, b) => b.mon - a.mon);
+        prog = { v: 2, list: uniq, i: 0, ok: 0, same: 0, changed: 0, none: 0, fail: 0, startedAt: nowIso() }; await saveProgress('usedInfo', prog);
+        log(`경쟁 매물 유의사항·사진: 우리보다 앞·바로 뒤 ${SET.usedInfoAfter ?? 3}개 매물(우리가 없으면 맨 앞 ${SET.usedInfoTopN ?? 5}개) ${uniq.length.toLocaleString()}개 (가격 감시 중인 책 ${uniq.filter((x) => x.mon).length.toLocaleString()}개 먼저, ${days > 0 ? days + '일 안에 본 것은 건너뜀' : '매번 전부'})`);
+      }
+      const covers = new Map(); const tBud = Date.now(); const budMin = curStage === 'usedInfo' ? (SET.usedInfoChainMin ?? 60) : 0; // (1.38.0) 일괄 수집 안에서는 정한 분(기본 60분)만 하고 다음 단계로 — 나머지는 저장해 두었다가 다음 일괄 때 이어서
+      for (; prog.i < prog.list.length; prog.i++) {
+        if (stopFlag) { await saveProgress('usedInfo', prog); throw new Error('멈춤'); }
+        if (budMin > 0 && Date.now() - tBud > budMin * 60000) { await saveProgress('usedInfo', prog); log(`경쟁 매물 유의사항·사진: 일괄 수집 안에서 정한 ${budMin}분을 다 써서 다음 단계로 갑니다 (${prog.i.toLocaleString()} / ${prog.list.length.toLocaleString()} — 나머지는 다음 일괄 때 이 자리부터)`); return 'partial'; }
+        const x = prog.list[prog.i]; const at = nowIso();
+        if (!covers.has(x.bookId)) { try { const b = (await C('prd_books').doc(x.bookId).get()).data() || {}; covers.set(x.bookId, (b.images && b.images.front && (b.images.front.src || b.images.front.stored)) || null); } catch (e) { covers.set(x.bookId, null); } }
+        try {
+          const g = await pubItem(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${x.lid}`);
+          const info = P.parseUsedItemInfo(g.doc, covers.get(x.bookId));
+          const ref = C('prd_used_info').doc(x.lid); const prev = (await ref.get()).data();
+          const sig = JSON.stringify([info.note, info.photos.map((p) => p.file)]);
+          const ver = { note: info.note || null, hasNote: info.hasNote, photos: info.photos.map((p) => ({ src: p.src, where: p.where, file: p.file })), sellerPhotoCount: info.sellerPhotoCount, photoDiff: info.photoDiff, coverKnown: info.coverKnown, found: info.found, sig, at };
+          if (prev && prev.sig === sig) { await ref.set({ checkedAt: at }, { merge: true }); prog.same++; } // 같은 내용: 판을 늘리지 않고 확인 시각만
+          else if (prev && (prev.note || (prev.photos || []).length) && (!info.found || (!info.note && !info.photos.length))) { await ref.set({ lastMissAt: at }, { merge: true }); prog.same++; } // (1.34.0) 화면을 못 읽어 빈 내용이면 있던 유의 사항을 덮지 않음
+          else {
+            const n = (prev && prev.versions) || 0; const b = db.batch();
+            b.set(ref.collection('v').doc(String(n + 1).padStart(4, '0')), { ...ver, listingId: x.lid, ...W() }); // 바뀐 판은 따로 쌓음 (이전 판은 그대로 남음)
+            b.set(ref, { listingId: x.lid, bookId: x.bookId, sellerCode: x.sc, sellerName: x.name, ...ver, versions: n + 1, firstAt: (prev && prev.firstAt) || at, checkedAt: at, ...W() }, { merge: true });
+            await b.commit(); if (prev) prog.changed++; else if (info.found) prog.ok++; else prog.none++;
+          }
+        } catch (e) { if (e && e.message === '멈춤') throw e; prog.fail++; }
+        ui('경쟁 매물 유의사항·사진', prog.i + 1, prog.list.length, `새로 ${prog.ok} · 바뀜 ${prog.changed} · 같음 ${prog.same} · 페이지 없음 ${prog.none} · 실패 ${prog.fail}`);
+        if (prog.i % 5 === 0) await saveProgress('usedInfo', prog);
+      }
+      await finishJob('usedInfo', { ok: prog.ok, changed: prog.changed, same: prog.same, none: prog.none, fail: prog.fail });
+      log(`경쟁 매물 유의사항·사진 완료: 새로 ${prog.ok} · 바뀜 ${prog.changed} · 같음 ${prog.same} · 페이지 없음 ${prog.none} · 실패 ${prog.fail}`);
+    } finally { await releaseLane('aladin'); }
+  }
+
+  /* ───────── 발송 요청 읽기 = 오늘 출고 (1.27.0) ─────────
+   * 판매관리 ② 발송 요청 탭(worder_delivery.aspx?orderstep=4)의 주문을 모두 읽어 웹앱 '오늘 출고' 화면에 보냄 (서가 순서 정렬은 웹앱·공용 파일 readnow-shipping-core.js)
+   * 저장: shp_state/current(지금 목록) · shp_snapshots(목록이 바뀔 때마다 그 판을 시각과 함께) · shp_orders/{주문번호}(처음 본 시각·마지막 본 시각·수령인·상품)
+   * 상품마다 우리 매물 페이지의 '중고상품 구매 유의 사항' 글·사진도 함께 읽어 prd_used_info에 판으로 쌓음(하루 지난 것만 다시)
+   * 영업일 9~16시에는 쉬는 동안 설정한 분(shipAutoMin, 기본 15분)마다 저절로 다시 읽음 (주문이 모이는 대로 웹앱 목록이 늘어남) */
+  /* (1.34.5) 우리 매물 구매 유의 사항·사진 한 건 읽기 → prd_used_info (바뀐 판만 v/ 에 쌓음, 덮어써 지우지 않음)
+   *  · 화면에 '유의 사항' 칸(#usedDecription)이 없으면 쓰지 않음 (다른 화면·읽기 실패) — 예전엔 위쪽 표지 사진만 보고 '읽음'으로 쳐 빈 판을 쌓기도 했음
+   *  · 있던 유의 사항을 빈 것으로 바꾸지 않음 · '중' 상품인데 글이 비면 잘못 읽은 것으로 보고 쓰지 않음(한 번 더 읽어 봄) */
+  async function readOurUsed(lid, grade, prev, at) { at = at || nowIso(); const ref = C('prd_used_info').doc(String(lid));
+    let info = null, box = false;
+    for (let t = 0; t < 2; t++) { const pg = await getDoc(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${lid}${t ? '&_=' + Date.now() : ''}`); info = P.parseUsedItemInfo(pg.doc, null); box = !!pg.doc.getElementById('usedDecription');
+      if (box && (info.hasNote || grade !== '중')) break; await sleep(1500); }
+    const miss = (why) => ref.set({ lastMissAt: at, lastMissWhy: why, lastMissBy: PC_NAME }, { merge: true }).catch(() => {}).then(() => ({ wrote: false, miss: why, prev }));
+    if (!box) return miss('상품 화면에 유의 사항 칸이 없음');
+    if (!info.hasNote && prev && prev.note) return miss('빈 내용 — 있던 유의 사항 그대로 둠');
+    if (!info.hasNote && grade === '중') return miss("'중' 상품인데 유의 사항 글이 비어 있음");
+    const sig = JSON.stringify([info.note, info.photos.map((x) => x.file)]);
+    if (prev && prev.sig === sig) { await ref.set({ checkedAt: at }, { merge: true }); return { wrote: false, same: true, note: prev.note }; }
+    const nv = ((prev && prev.versions) || 0) + 1; const b = db.batch(); const ver = { note: info.note || null, hasNote: info.hasNote, photos: info.photos.map((x) => ({ src: x.src, where: x.where, file: x.file })), sellerPhotoCount: info.sellerPhotoCount, photoDiff: info.photoDiff, found: true, sig, at };
+    b.set(ref.collection('v').doc(String(nv).padStart(4, '0')), { ...ver, listingId: String(lid), ...W() }); b.set(ref, { listingId: String(lid), sellerCode: '996008', ours: true, ...ver, versions: nv, firstAt: (prev && prev.firstAt) || at, checkedAt: at, ...W() }, { merge: true }); await b.commit();
+    return { wrote: true, note: info.note || null }; }
+  /* (1.34.6) 출고 목록 빠른 반영: 주문확인요청(①)·발송 요청(②) 화면을 읽은 그대로 Firebase에 — 발송준비시작 직후·웹앱이 '다시 읽기'를 맡겼을 때 바로 씀
+   *  (예전: 발송준비시작을 눌러도 목록은 다음 '발송 요청 읽기'(다른 작업 중이면 끝난 뒤)나 클라우드 다음 회차까지 그대로 → 웹앱에 계속 주문확인요청으로 남음)
+   *  상품 보강(enrich)·엑셀·유의 사항은 건드리지 않음 (전체 '발송 요청 읽기'가 따로 함) */
+  async function saveConfirmState(rc, at) { const cc = (await C('shp_state').doc('confirm').get()).data(); const csig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)]));
+    if (!cc || cc.sig !== csig) { const bc = db.batch(); bc.set(C('shp_state').doc('confirm'), { at, orders: rc.orders, tabCounts: rc.tabCounts, sig: csig, pc: PC_NAME, enrich: (cc && cc.enrich) || {}, ...W() });
+      for (const o of rc.orders) bc.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, confirmSeenAt: at, ...(cc && (cc.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { confirmFirstSeenAt: at }), buyer: o.buyer, orderedAt: o.orderedAt, items: o.items, ...W() }, { merge: true });
+      await bc.commit(); return true; } await C('shp_state').doc('confirm').set({ at, tabCounts: rc.tabCounts, ...W() }, { merge: true }); return false; }
+  async function saveDelivLite(r, at) { const cur = (await C('shp_state').doc('current').get()).data(); const sig = JSON.stringify(r.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId), o.deliveryNo]));
+    if (cur && cur.sig === sig) { await C('shp_state').doc('current').set({ at, tabCounts: r.tabCounts, pc: PC_NAME, ...W() }, { merge: true }); return false; }
+    const b = db.batch(); b.set(C('shp_state').doc('current'), { at, tabCounts: r.tabCounts, orders: r.orders, sig, pc: PC_NAME, ...W() }, { merge: true }); // 엑셀은 그대로 둠
+    b.set(C('shp_snapshots').doc(at.replace(/[:.]/g, '-')), { at, tabCounts: r.tabCounts, orders: r.orders, ...W() });
+    for (const o of r.orders) b.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, stage: '발송 요청', lastSeenAt: at, ...(cur && (cur.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { firstSeenAt: at }), buyer: o.buyer, recipient: o.recipient, orderedAt: o.orderedAt, items: o.items, carrier: o.carrier, ...W() }, { merge: true });
+    await b.commit(); return true; }
+  async function shipLiteRead(SH, gcDoc) { const at = nowIso(); const out = {};
+    try { const rc = SH.parseDeliveryPage(gcDoc || (await getDoc('https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx')).doc); if (rc && rc.tabCounts && Object.keys(rc.tabCounts).length) { out.confirm = rc.orders.length; await saveConfirmState(rc, at); } } catch (e) { log('주문확인요청 빠른 읽기 실패: ' + e.message, 1); }
+    try { const r = SH.parseDeliveryPage((await getDoc('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4')).doc); if (r && r.tabCounts && Object.keys(r.tabCounts).length) { out.deliv = r.orders.length; await saveDelivLite(r, at); } } catch (e) { log('발송 요청 빠른 읽기 실패: ' + e.message, 1); }
+    if (out.confirm != null || out.deliv != null) log(`출고 목록 바로 반영: 주문확인요청 ${out.confirm ?? '?'}건 · 발송 요청 ${out.deliv ?? '?'}건`); return out; }
+  async function shipReadJob() {
+    const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (!SH) { log('출고 기준 파일(readnow-shipping-core.js)을 못 불러옴', 1); return false; }
+    try { await C('shp_state').doc('_check').set({ check: true, at: nowIso(), ...W() }, { merge: true }); } catch (e) { log(`발송 요청 읽기: 저장 권한 없음(shp_state) — Firestore 규칙에 허용 필요 (${e.code || e.message})`, 1); return false; }
+    const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); return false; }
+    try {
+      ui('발송 요청 읽기', 0, 1, '판매관리 → 발송 요청');
+      const g = await getDoc('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4'); const r = SH.parseDeliveryPage(g.doc); const at = nowIso();
+      const want = r.tabCounts['발송 요청']; if (want != null && want > r.orders.length) log(`발송 요청 ${want}건인데 이 쪽에서 ${r.orders.length}건만 읽힘 — 여러 쪽으로 나뉜 경우 (그때 화면을 저장해 보내 주시면 다음 쪽 읽기를 넣겠습니다)`, 1);
+      const items = r.orders.flatMap((o) => o.items).filter((i) => i.listingId); let nInfo = 0;
+      for (let k = 0; k < items.length; k++) { const it = items[k]; if (stopFlag) throw new Error('멈춤');
+        const ref = C('prd_used_info').doc(String(it.listingId)); const prev = (await ref.get()).data();
+        const midNo = it.grade === '중' && !(prev && prev.note); // (1.34.5) '중' 상품인데 유의 사항이 없으면 잘못 읽은 것 → 하루 기다리지 않고 다시 읽음
+        if (!midNo && prev && prev.checkedAt && Date.now() - Date.parse(prev.checkedAt) < 864e5) continue;
+        try { const r1 = await readOurUsed(it.listingId, it.grade, prev, at); if (r1.wrote) nInfo++; } catch (e) { if (e.message === '멈춤') throw e; }
+        ui('발송 요청 읽기', k + 1, items.length, `우리 매물 유의 사항·사진: ${it.title}`); }
+      const sig = JSON.stringify(r.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId), o.deliveryNo])); const cur = (await C('shp_state').doc('current').get()).data();
+      const excel = await fetchShipExcel(SH).catch((e) => { log('발송 요청 엑셀 받기 실패: ' + e.message, 1); return null; }); // ALPS 업로드 파일 재료 (알라딘 엑셀 29칸 그대로)
+      // ① 주문확인요청(worder_preparatory_complete.aspx) — 웹앱에서 상품마다 시장 지표를 보고 '발송준비시작'을 누르도록 (같은 줄 구조라 같은 읽기 함수)
+      try { const gc = await getDoc('https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx'); const rc = SH.parseDeliveryPage(gc.doc); const cc = (await C('shp_state').doc('confirm').get()).data();
+        const csig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)]));
+        if (!cc || cc.sig !== csig) { const bc = db.batch(); bc.set(C('shp_state').doc('confirm'), { at, orders: rc.orders, tabCounts: rc.tabCounts, sig: csig, pc: PC_NAME, enrich: (cc && cc.enrich) || {}, ...W() }); // 클라우드가 채운 상품 보강(enrich)은 그대로 둠
+          for (const o of rc.orders) bc.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, confirmSeenAt: at, ...(cc && (cc.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { confirmFirstSeenAt: at }), buyer: o.buyer, orderedAt: o.orderedAt, items: o.items, ...W() }, { merge: true });
+          await bc.commit(); } else await C('shp_state').doc('confirm').set({ at, ...W() }, { merge: true });
+        log(`주문확인요청 읽기: ${rc.orders.length}건`);
+        try { const ms = await marketSnapPC(rc.orders); if (ms.n) log(`주문 들어온 책의 지금 시장: ${ms.n}권 읽음${ms.fail ? ` · 실패 ${ms.fail}` : ''}${ms.left ? ` · 남은 ${ms.left}권은 다음에` : ''}`); } catch (e) { log('주문 시장 읽기 실패: ' + e.message, 1); }
+      } catch (e) { log('주문확인요청 읽기 실패: ' + e.message, 1); }
+      const b = db.batch(); b.set(C('shp_state').doc('current'), { at, tabCounts: r.tabCounts, orders: r.orders, sig, pc: PC_NAME, excel: excel ? { at, header: excel.header, rows: excel.rows.map((v) => ({ v })) } : (cur && cur.excel) || null, ...W() });
+      if (!cur || cur.sig !== sig) b.set(C('shp_snapshots').doc(at.replace(/[:.]/g, '-')), { at, tabCounts: r.tabCounts, orders: r.orders, ...W() }); // 목록이 바뀔 때마다 그 판을 보관
+      if (excel) { const xrows = excel.rows.map((v) => ({ v })); const prevX = cur && cur.excel; if (!prevX || JSON.stringify(prevX.rows || null) !== JSON.stringify(xrows)) b.set(C('shp_excel').doc(at.replace(/[:.]/g, '-')), { at, header: excel.header, rows: xrows, by: PC_NAME, ...W() }); } // (1.57.2) 발송 요청 엑셀도 바뀐 판마다 따로 보관
+      for (const o of r.orders) b.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, stage: '발송 요청', lastSeenAt: at, ...(cur && (cur.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { firstSeenAt: at }), buyer: o.buyer, recipient: o.recipient, orderedAt: o.orderedAt, items: o.items, carrier: o.carrier, ...W() }, { merge: true });
+      await b.commit(); window.__rnShipAt = Date.now();
+      log(`발송 요청 읽기: 주문 ${r.orders.length}건 · 상품 ${items.length}권 · 주문확인요청 ${r.tabCounts['주문확인요청'] ?? '?'}건${nInfo ? ` · 우리 매물 유의 사항 새로/바뀜 ${nInfo}` : ''}${!cur || cur.sig !== sig ? ' (목록 바뀜 — 판 보관)' : ' (바뀐 것 없음)'}`);
+    } finally { await releaseLane('aladin'); }
+  }
+  /* 주문 들어온 책의 지금 시장 (1.33.0, 클라우드 readnow-cloud 0.3.0과 같은 기록 shp_market/{주문번호}__{매물번호})
+     주문확인요청에 새로 들어온 주문의 상품마다 온라인 중고 첫 페이지 1번만 읽어 '주문 시점 시장'으로 따로 남김 — 이미 있으면 다시 읽지 않음(서버 기준)
+     기존 시장 지표(prd_book_metrics)는 건드리지 않고, 문서는 없을 때만 만듦(트랜잭션) · 한 번에 최대 15권 · 우리 기록에 책 번호가 없으면 제목 검색(이름 90% 이상, 새상품) */
+  const mktSkip = new Map();
+  async function marketSnapPC(orders) { const byLid = new Map(); // (1.34.0) 주문 책 몇 권 때문에 상품 기록 전체(수만 건)를 읽던 것 → 그 책들만 찾아 읽음
+    const todo = []; for (const o of orders || []) for (const it of o.items || []) if (it.listingId) todo.push({ o, it, id: `${o.orderNo}__${it.listingId}` }); let n = 0, fail = 0;
+    if (LISTINGS && LISTINGS.size) { for (const [k, l] of LISTINGS) if (l.listingId) byLid.set(String(l.listingId), [k, l]); }
+    else { const ids = [...new Set(todo.map((t) => String(t.it.listingId)))]; for (let i = 0; i < ids.length; i += 15) { const part = ids.slice(i, i + 15); const vals = [...part, ...part.map(Number).filter((x) => x === x)];
+      try { (await C('prd_listings').where('listingId', 'in', vals).get()).forEach((d) => { const l = d.data(); byLid.set(String(l.listingId), [d.id, l]); }); } catch (e) {} } }
+    for (const t of todo) { if (n >= 15) break; if ((mktSkip.get(t.id) || 0) > Date.now()) continue; const ref = C('shp_market').doc(t.id); if ((await ref.get()).exists) continue;
+      try { n++; const hit = byLid.get(String(t.it.listingId)); let itemId = null, via = 'ours'; const bookId = hit ? hit[1].bookId || null : null;
+        if (bookId) { const b = (await C('prd_books').doc(bookId).get()).data(); itemId = b && b.aladinItemId ? String(b.aladinItemId) : null; }
+        if (!itemId && t.it.title) { const q = String(t.it.title).replace(/^\[[^\]]*\]\s*/, ''); const sr = await getDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=All&SearchWord=${encodeURIComponent(q)}`);
+          const c = P.parseSearchResults(sr.doc).filter((x) => !x.used).map((x) => ({ itemId: x.itemId, cov: P.nameCoverage(q, x.title) })).filter((x) => x.cov >= 0.9).sort((a, b) => b.cov - a.cov)[0]; if (c) { itemId = String(c.itemId); via = 'search'; } }
+        if (!itemId) { mktSkip.set(t.id, Date.now() + 3600e3); continue; }
+        const u = P.parseUsedPage((await pubUsed(`/shop/UsedShop/wuseditemall.aspx?ItemId=${itemId}&TabType=0`)).doc);
+        const doc = { orderNo: t.o.orderNo, listingId: String(t.it.listingId), listingKey: hit ? hit[0] : null, bookId, aladinItemId: itemId, via, title: t.it.title || null, orderedAt: t.o.orderedAt || null, at: nowIso(), page1: u.listings || [], usedTotal: u.usedTotal ?? null, mins: u.mins || null, buyback: u.buyback || null, lastPage: u.lastPage || 1, by: PC_NAME, ...W() };
+        await db.runTransaction(async (tx) => { const sn = await tx.get(ref); if (!sn.exists) tx.set(ref, doc); }); } catch (e) { if (e.message === '멈춤') throw e; fail++; } }
+    return { n, fail, left: Math.max(0, todo.length - n) }; }
+  // 알라딘 발송 요청 엑셀(판매관리의 '엑셀 다운로드'와 같은 요청) — 알라딘이 주는 .xls는 HTML 표라 그대로 읽음
+  async function fetchShipExcel(SH) { const fd = new URLSearchParams({ status: '4', keywordType: '0', keyword: '', filterType: '0', limitDate: '0', dnb: '0', page: '' });
+    const rr = await fetch('https://www.aladin.co.kr/scm/worder_excel.aspx', { method: 'POST', body: fd, credentials: 'include' }); if (!rr.ok) throw new Error('HTTP ' + rr.status);
+    const ex = SH.parseAladinOrderExcel(new DOMParser().parseFromString(await rr.text(), 'text/html')); if (!ex) throw new Error('엑셀 표를 못 찾음'); return ex; }
+  // 송장 입력 맡기기 (1.28.0): 웹앱(또는 발송 요청 화면)에서 맡긴 송장 입력(shp_invoices · status 'queued')을 이 PC가 맡아 발송 요청 화면을 새 탭으로 열어 처리 — 여러 PC·탭이 있어도 한 곳만 맡음(트랜잭션)
+  // 웹앱이 맡긴 일 (1.29.0, shp_cmds · status 'queued'): read = 발송 요청·주문확인요청 지금 다시 읽기 / startDelivery = 주문마다 알라딘 '발송준비시작'(worder_process.aspx?cmd=StartDelivery — 주문확인요청 화면의 그 단추와 같은 요청) → 주문확인요청에서 빠졌는지 확인 → 다시 읽기
+  // 그룹 시장 지표 갱신 (1.30.0): 웹앱 수동 일괄 처리 그룹·감시 묶음의 '이 그룹 시장 지표 갱신'(shp_cmds type 'metrics', keys = 상품 키) — 이 PC가 맡은 것을 차례로, 진행은 그 일 문서에 저장해 끊겨도 이어 함
+  async function metricsReqJob() { await loadListings(); const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); return false; }
+    try { const qs = await C('shp_cmds').where('status', '==', 'running').get(); const mine = qs.docs.filter((d) => { const v = d.data(); return v.type === 'metrics' && v.claim && v.claim.pc === PC_NAME; });
+      for (const d of mine) { const v = d.data(); const keys = v.keys || []; let i = v.i || 0, ok = v.ok || 0, fail = v.fail || 0; const seenBook = new Set();
+        for (; i < keys.length; i++) { if (stopFlag) { await d.ref.set({ i, ok, fail, uploadedAt: TS() }, { merge: true }); throw new Error('멈춤'); }
+          const l = LISTINGS.get(keys[i]); if (!l) { fail++; continue; } if (l.bookId && seenBook.has(l.bookId)) continue; if (l.bookId) seenBook.add(l.bookId);
+          try { await refreshOne(l, l.bookId || null); ok++; } catch (e) { fail++; log(`시장 지표 실패 ${l.title || l.usedCode}: ${e.message}`, 1); }
+          ui(`그룹 시장 지표: ${v.label || ''}`, i + 1, keys.length, l.title || l.usedCode, `실패 ${fail}`); if (i % 5 === 4) await d.ref.set({ i: i + 1, ok, fail, uploadedAt: TS() }, { merge: true }); }
+        await d.ref.set({ status: 'done', i, ok, fail, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
+        if (v.batchId) await C('prd_price_batches').doc(v.batchId).set({ lastMetricsAt: nowIso(), lastMetricsN: ok, ...W() }, { merge: true }).catch(() => {});
+        log(`그룹 시장 지표 갱신 끝: ${v.label || ''} 성공 ${ok} · 실패 ${fail}`); }
+    } finally { await releaseLane('aladin'); } }
+  // 5분마다: 맡아 둔 그룹 시장 지표가 남았으면 이어서 · 한 시간마다: '매일 자동'을 켠 그룹(수동 일괄 처리 그룹·감시 묶음)이 24시간 지났으면 스스로 맡김
+  setInterval(async () => { try { if (running || window.__rnPaused || !auth.currentUser || (window.__rnRest && window.__rnRest())) return; const qs = await C('shp_cmds').where('status', '==', 'running').get();
+    if (qs.docs.some((d) => { const v = d.data(); return v.type === 'metrics' && v.claim && v.claim.pc === PC_NAME; })) runJob('metricsReq'); } catch (e) {} }, 5 * 60000);
+  /* (1.60.1) 그룹 시장 지표 맡기기 — 예전엔 한 시간마다 스스로 돌던 것 → ⏰ 매일 자동 수집의 칸(기본: 1시간마다)에서만 · 일(JOBS.metricsAuto) */
+  async function metricsAutoJob() { let nQ = 0; const day = 864e5; const PRC = window.ReadnowPricing || globalThis.ReadnowPricing;
+    const pc0 = (await C('prd_system').doc('pricing').get()).data() || {}; const off = pc0.batchOff || {}; // (1.34.9) 웹앱에서 끈 그룹(감시·적용 꺼짐)·보관한 그룹은 매일 자동 시장 지표를 맡기지 않음
+    const bs = await C('prd_price_batches').get(); for (const d of bs.docs) { const b = d.data(); if (!b.autoMetrics || b.archived || off[d.id] || !b.lastKeys || !b.lastKeys.length) continue; if (b.lastMetricsReqAt && Date.now() - Date.parse(b.lastMetricsReqAt) < day) continue;
+      await d.ref.set({ lastMetricsReqAt: nowIso() }, { merge: true }); await C('shp_cmds').add({ type: 'metrics', keys: b.lastKeys, label: '그룹: ' + (b.name || d.id), batchId: d.id, status: 'queued', createdAt: nowIso(), by: PC_NAME + ' (매일 자동)', uploadedAt: TS() }); nQ++; }
+    const pc = (await C('prd_system').doc('pricing').get()).data() || {}; const gm = pc.groupMetrics || {}; if (Object.values(gm).some((x) => x && x.auto)) await loadListings();
+    for (const g of ['treat', 'control']) { const x = gm[g] || {}; if (!x.auto || (x.reqAt && Date.now() - Date.parse(x.reqAt) < day) || !PRC) continue; const keys = [...LISTINGS.entries()].filter(([, l]) => l.active && PRC.groupOfListing(l, pc) === g).map(([k]) => k);
+      await C('prd_system').doc('pricing').set({ groupMetrics: { [g]: { reqAt: nowIso() } } }, { merge: true }); /* (1.59.0) 바꾸는 칸만 · 일은 2,000개씩 나눠 맡김(한 문서가 1MB 가까이 커져 듣는 모든 곳이 매번 받던 것) */ const per = 2000, parts = Math.max(1, Math.ceil(keys.length / per)); for (let i = 0; i < parts; i++) await C('shp_cmds').add({ type: 'metrics', keys: keys.slice(i * per, (i + 1) * per), label: (g === 'treat' ? '감시·적용 묶음' : '감시·비교 묶음') + (parts > 1 ? ` (${i + 1}/${parts})` : ''), status: 'queued', createdAt: nowIso(), by: PC_NAME + ' (매일 자동)', uploadedAt: TS() }); nQ++; }
+    log(nQ ? `그룹 시장 지표: 24시간 지난 '매일 자동' 그룹 ${nQ}건을 시장 지표 일로 맡김` : '그룹 시장 지표: 맡길 그룹 없음 (매일 자동을 켠 그룹이 모두 24시간 안에 받음)'); return true; }
+  let cmdUnsub = null; auth.onAuthStateChanged((u) => { if (cmdUnsub) { cmdUnsub(); cmdUnsub = null; } if (!u) return; // (1.34.0) 새로 들어온 일만 · PC 몫이 아닌 일은 트랜잭션 없이 바로 넘김 · 다시 로그인해도 듣기는 하나만
+    if (!regUnsub) regUnsub = C('app_settings').doc('sys_registry').onSnapshot((d) => { REGDOC = d.exists ? d.data() : {}; }, () => {}); // (1.36.0) 노선표 (Firebase 기준 — 웹앱에서 멈춘 종류·맡는 곳이 바로 반영)
+    let back = 5000; const sub = () => { if (!auth.currentUser) return; cmdUnsub = C('shp_cmds').where('status', '==', 'queued').onSnapshot((ss) => { back = 5000; ss.docChanges().forEach((c) => { if (c.type === 'removed') return; const x = c.doc.data() || {}; if (!pcCan(x.type)) return; const id = c.doc.id; runCmd(id).catch((e) => { log('맡긴 일 실패: ' + (e.code || e.message) + ' — 8초 뒤 한 번 더', 1); setTimeout(() => runCmd(id).catch(() => {}), 8000); }); }); },
+      (e) => { log(`맡긴 일 듣기가 끊김(${e.code || e.message}) — ${Math.round(back / 1000)}초 뒤 다시 들음`, 1); cmdUnsub = null; setTimeout(() => { if (!cmdUnsub) sub(); }, back); back = Math.min(back * 2, 5 * 60000); }); }; sub(); }); /* (1.59.0) 듣기 오류는 끝이라(Firestore) 다시 붙음 — 예전엔 한 번 끊기면 다시 로그인할 때까지 웹앱이 맡긴 일을 받지 않았음 */
+  /* (1.36.0) 관리도구 노선표: PC가 맡는 일 = 노선표(readnow-registry.js 기본값 + Firebase app_settings/sys_registry)에서 'PC가 맡을 수 있음'이고 멈춤이 아닌 종류만.
+     예전 목록(CMD_NOT_PC)과 달리 모르는 종류는 맡지 않음 — 예전엔 모르는 종류를 '끝남'으로 적어 일이 사라질 수 있었음. 노선표 파일을 못 읽었을 때만 예전 목록으로 */
+  let REGDOC = null, regUnsub = null; const REGF = () => window.ReadnowRegistry || globalThis.ReadnowRegistry || null;
+  const PC_KNOWN_OLD = new Set(['read', 'startDelivery', 'usedInfo', 'c2bAdd', 'lookup', 'metrics', 'cashStop', 'extLookup', 'extTest']);
+  const pcCan = (type) => { const G = REGF(); if (!G) return PC_KNOWN_OLD.has(type); return G.canHandle(G.merge(REGDOC || {}), type, 'pc'); };
+  /* (1.63.7) 🧩 맡긴 일 거르기 — 수집 일은 📥 수집이 켜졌을 때만, 출고 시작·현금 판매·등록은 그 기능을 켰을 때만(끄면 대기로 남겨 다른 PC가) */
+  const cmdMine = (t) => { const f = (k) => !window.__rnFeat || window.__rnFeat(k); if (t === 'startDelivery') return f('ship'); if (t === 'cashStop') return f('cash'); if (/^reg/.test(String(t))) return f('reg'); return !window.__rnPaused; };
+  async function runCmd(id) { const ref = C('shp_cmds').doc(id); let v = null; if ((window.__rnRest && window.__rnRest())) return; // (1.56.0) 맡긴 일은 이 PC의 수집기 탭만
+    await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const x = sn.data(); if (!x || x.status !== 'queued' || !pcCan(x.type) || !cmdMine(x.type) || String(x.pcSkip || '').includes(` ${APP_VER}에`)) return; /* 노선표에서 PC 몫인 종류만 (1.36.0) */ tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, uploadedAt: TS() }); v = x; });
+    if (!v) return;
+    if (v.type === 'startDelivery') { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; const results = {};
+      for (const ono of v.orderNos || []) { const gate = await exBegin('startDelivery', `${id}:${ono}`, { ono }); if (!gate.ok) { results[ono] = { state: gate.state === 'done' ? 'done' : 'unknown', at: nowIso(), msg: '실행 문: ' + gate.why, gate: gate.state }; continue; } results[ono] = { state: 'sent', at: nowIso() };
+        try { const rr = await fetch(`https://www.aladin.co.kr/scm/worder_process.aspx?cmd=StartDelivery&ono=${encodeURIComponent(ono)}`, { credentials: 'include' }); const tx2 = await rr.text(); const al = (tx2.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || null;
+          results[ono] = { state: rr.ok && !/실패|오류|불가|잘못|없습니다|않습니다|error/i.test(al || '') ? 'sent' : 'fail', at: nowIso(), http: rr.status, msg: al }; } catch (e) { results[ono] = { state: 'fail', at: nowIso(), msg: e.message }; }
+        await ref.set({ results, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); await sleep(800); } // (1.34.7) 한 건마다 결과·살아 있음 신호
+      // (1.34.0) 주문확인요청 화면을 제대로 읽었을 때만 '끝남' — 로그인 화면·읽기 실패로 빈 목록이면 '확인 못함'(웹앱에서 다시 확인)
+      let gcDoc = null; try { const gc = await getDoc('https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx'); gcDoc = gc.doc; const x = SH.parseDeliveryPage(gc.doc); const okP = !!(x && x.tabCounts && Object.keys(x.tabCounts).length); const left = new Set((x.orders || []).map((o) => o.orderNo));
+        const full = okP && x.tabCounts['주문확인요청'] != null && left.size >= x.tabCounts['주문확인요청']; let deliv = null; if (okP && !full) { try { const g2 = await getDoc('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4'); deliv = new Set((SH.parseDeliveryPage(g2.doc).orders || []).map((o) => o.orderNo)); } catch (e) {} } /* (1.63.8 점검) '끝남'은 확실할 때만 — 주문확인요청 목록을 다 봤거나 발송 요청 목록에 실제로 보일 때(클라우드와 같은 기준) */
+        for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = !okP ? 'unknown' : left.has(ono) ? 'fail' : full || (deliv && deliv.has(ono)) ? 'done' : 'unknown'; if (!okP) gcDoc = null; } catch (e) { for (const ono of Object.keys(results)) if (results[ono].state === 'sent') results[ono].state = 'unknown'; }
+      for (const [ono, r] of Object.entries(results)) if (!r.gate) await exEnd('startDelivery', `${id}:${ono}`, r.state === 'done' ? 'done' : r.state === 'fail' ? 'failed' : 'unknown', r.msg || null, { http: r.http || null });
+      const nd = Object.values(results).filter((r) => r.state === 'done').length; await ref.set({ status: 'done', results, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
+      try { await shipLiteRead(SH, gcDoc); } catch (e) {} // (1.34.6) 넘긴 결과를 바로 목록에 — 웹앱에서 주문확인요청에서 빠지고 발송 요청에 들어감
+      log(`발송준비시작: ${nd} / ${Object.keys(results).length}건 (웹앱에서 맡김)`, nd === Object.keys(results).length ? 0 : 1); }
+    else if (v.type === 'usedInfo') { const results = {}; // (1.34.5) 웹앱·클라우드가 맡긴 '중' 상품 유의 사항 다시 읽기 — 바로 처리(한두 건이라 짧음)
+      for (const lid of v.listingIds || []) { try { const prev = (await C('prd_used_info').doc(String(lid)).get()).data(); const r = await readOurUsed(lid, v.grade || null, prev);
+          results[lid] = r.miss ? { ok: false, why: r.miss, at: nowIso() } : { ok: true, note: !!r.note, at: nowIso() }; } catch (e) { results[lid] = { ok: false, why: e.message, at: nowIso() }; } }
+      await ref.set({ status: 'done', results, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`유의 사항 다시 읽기: ${Object.values(results).filter((r) => r.ok).length} / ${Object.keys(results).length}건`); return; }
+    else if (v.type === 'c2bAdd') { await c2bAddCmd(ref, v); return; }
+    else if (v.type === 'cashStop') { await cashStopCmd(ref, v); return; } // (1.37.0) 현금 판매 → 알라딘 판매중지 자동 // (1.35.0) 알라딘 매입: 팔기 장바구니에 담기
+    else if (v.type === 'lookup') { await lookupCmd(ref, v); return; }
+    else if (v.type === 'extLookup' || v.type === 'extTest') { await extCmd(ref, v); return; } // (1.57.0) 🌐 외부 정보 — 알라딘과 상관없음
+    else if (v.type === 'regBulk' || v.type === 'regBulkMock') { await regBulkCmd(ref, v.type === 'regBulkMock' ? { ...v, mock: true } : v); return; } /* (1.50.0) 🧷 모의 등록은 종류를 따로(regBulkMock·regOneMock) — 예전 판 수집기는 모르는 종류라 받지 않음(실수로 올리지 않게) */
+    else if ((v.type === 'regOne' || v.type === 'regOneMock') && v.auto) { if (v.type === 'regOneMock') v = { ...v, mock: true }; if (!window.__rnRegAuto) { await ref.set({ status: 'queued', claim: null, pcSkip: `수집기 ${APP_VER}에 자동 등록 모듈이 없음`, uploadedAt: TS() }, { merge: true }); return; } log(`🤖 자동 등록 맡음: ${v.title || v.itemId}`); try { await window.__rnRegAuto(ref, v, id); } catch (e) { log('자동 등록 오류: ' + e.message, 1); } return; } // (1.47.0) 창 없이 개별·미등록 등록 // (1.44.0) 📥 알라딘 대량 등록
+    else if (v.type === 'regAux') { const RG = RGF(); let out; try { if (!RG || !RG.auxRun) throw new Error('등록 엔진 공용 파일 0.3.0이 아님 — 수집기 새로고침'); const val = await RG.auxRun(v.op, v.a || {}); out = { v: val }; await C('reg_aux').doc(RG.auxKey(v.op, v.a || {})).set({ op: v.op, a: v.a || {}, v: val, at: nowIso(), by: PC_NAME, ...W() }).catch(() => {}); } catch (e) { out = { err: e.message }; } await ref.set({ status: 'done', ...out, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); return; } // (1.45.0) 📥 분류·저자·출판사 찾기 (클라우드가 안 될 때)
+    else if (v.type === 'metrics' && (v.keys || []).length && v.keys.length <= 3) { /* (1.57.1) 웹앱 상품 상세의 '시장 지표 다시 읽기'(책 1~3권) — 긴 작업 중이어도 기다리지 않고 바로(사진 가격 조회처럼 짧음 · 알라딘 읽기 속도 조절은 같이 씀) */
+      let ok = 0, fail = 0; const why = []; try { await loadListings(); } catch (e) {}
+      for (const k of v.keys) { let l = LISTINGS && LISTINGS.get(k); if (!l) { try { const d = await C('prd_listings').doc(k).get(); if (d.exists) l = d.data(); } catch (e) {} } if (!l) { fail++; why.push(`${k}: 상품 기록 없음`); continue; }
+        try { await refreshOne(l, l.bookId || null); ok++; } catch (e) { fail++; why.push(`${l.title || k}: ${e.message}`); } await ref.set({ ok, fail, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); }
+      await ref.set({ status: 'done', ok, fail, why: why.slice(0, 5), doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`시장 지표 바로 읽기(${v.label || ''}): 성공 ${ok} · 실패 ${fail}`, fail ? 1 : 0); return; }
+    else if (v.type === 'metrics') { log(`그룹 시장 지표 갱신 맡음: ${v.label || ''} ${(v.keys || []).length}개`); if (!running) runJob('metricsReq'); else log('다른 작업 중 — 끝나면 이어서 (5분마다 확인)'); return; }
+    else if (v.type === 'read') { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (SH) try { await shipLiteRead(SH, null); } catch (e) {} await ref.set({ status: 'done', doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); }
+    else { await ref.set({ status: 'queued', claim: null, pcSkip: `수집기 ${APP_VER}에 처리 길이 없는 종류 — 노선표 확인`, uploadedAt: TS() }, { merge: true }); log(`맡긴 일 '${v.type}': 이 수집기 판에 처리하는 길이 없어 대기로 되돌림 (노선표 확인)`, 1); return; } // (1.36.0) 예전: 모르는 종류도 '끝남' // (1.34.6) '다시 읽기'는 목록부터 바로(몇 초), 전체 읽기(유의 사항·엑셀)는 이어서
+    window.__rnShipAt = 0; if (!running) runJob('shipRead'); else log('다른 작업 중이라 발송 요청 다시 읽기는 끝난 뒤에 (15분마다 저절로)'); }
+  /* 사진으로 가격 매기기 (1.31.0, 웹앱 '사진 가격' 화면 · shp_cmds type 'lookup'):
+     isbns = 바코드로 읽은 ISBN → 새상품 페이지(wproduct.aspx?ISBN=) → 알라딘 상품번호 → 온라인 중고 첫 페이지 / itemIds = 고른 후보 상품번호 / queries = 책등 제목 → 알라딘 검색 후보
+     결과는 그 일 문서(items · cands)에 바로 쓰고, 책마다 prd_lookups에도 한 줄씩 쌓음(덮어쓰지 않음 — 같은 책을 다시 찍으면 웹앱이 24시간 안 기록을 먼저 씀). 다른 작업 중이어도 바로 처리(책 몇 권이라 짧음) */
+  /* (1.40.0) 실행도구의 한 문 (readnow-exec-core.js): 알라딘을 바꾸는 일은 모두 exGate를 지나감 — 시작을 먼저 적고(같은 일이 이미 끝났거나 하는 중이면 안 함), 끝나면 결과를 적음 */
+  const EXC = () => window.ReadnowExec || globalThis.ReadnowExec;
+  const exBegin = async (kind, key, detail) => { const X = EXC(); if (!X) return { ok: true, none: true }; try { const r = await X.begin(db, { kind, key, by: PC_NAME, detail: detail || null }); window.__rnLedgerDown = null; return r; } catch (e) { window.__rnLedgerDown = { at: nowIso(), msg: e.code || e.message }; const perm = /permission/i.test(e.code || e.message); log(`⚠ 실행 기록을 못 적음(${kind}) — ${e.code || e.message}${perm ? ' (Firestore 규칙에 exec_log 허용 필요) · 일은 예전처럼 하고 기록만 빠짐' : ' · 잠깐 문제일 수 있어 이번엔 하지 않음(두 번 실행 막기) — 다시 맡기면 다시'}`, 1); return perm ? { ok: true, none: true } : { ok: false, state: 'ledger', why: '실행 기록을 못 적어 이번엔 하지 않음(두 번 실행 막기): ' + (e.code || e.message) }; } }; // 규칙이 없을 때(권한)만 기록 없이 함 · (1.59.0) 잠깐 문제(연결·충돌)면 하지 않음 — 기록 없이 하면 다시 맡겼을 때 두 번 실행될 수 있음
+  const exEnd = (kind, key, status, msg, result) => { const X = EXC(); if (!X) return Promise.resolve(); return X.finish(db, { kind, key }, status, { msg, result }).catch((e) => log(`실행 결과를 못 적음(${kind}): ${e.code || e.message}`, 1)); };
+  const lookDoc = (url) => AL.quick(url, { pace: PACE, sleep }); // 일시정지·작업 줄과 상관없이 짧게 (책 몇 권) — (1.39.0) 알라딘 창구: 속도 조절을 같이 쓰고 점검 화면은 오류로
+  /* (1.42.0) 출고 실시간 (PC): 알라딘 화면이 열린 PC가 15초마다 ① 주문확인요청을 한 번 읽어 바뀐 때만 씀 — 클라우드 사용료 없이 실시간
+   *  · 한 PC 안에서는 한 탭만(GM 'rnu-shipfast', 40초 신호) · 다른 작업·일시정지와 상관없이 (읽기 한 번, 속도 조절은 같이 씀)
+   *  · 바뀌지 않으면 목록 문서는 건드리지 않고 작은 신호(shp_state/fast)만 — 웹앱 '읽은 시각'과 클라우드가 봄(PC가 읽는 동안 클라우드는 빠른 고리를 쉼 = 비용 절약)
+   *  · ② 발송 요청 수가 바뀌면 발송 요청도 바로 읽음 · 뒤에 숨은 탭에서도 느려지지 않게 일꾼 타이머(sleep) */
+  (function shipFastPc() { const ME = Math.random().toString(36).slice(2, 8); const KEY = 'rnu-shipfast'; let lastSig = null, lastDeliv = null, busy = false, fails = 0;
+    const leader = () => { const v = GM_getValue(KEY, null); if (!v || v.tab === ME || Date.now() - v.at > 40000) { GM_setValue(KEY, { tab: ME, at: Date.now() }); return true; } return false; };
+    addEventListener('beforeunload', () => { const v = GM_getValue(KEY, null); if (v && v.tab === ME) GM_deleteValue(KEY); });
+    window.__rnShipFast = () => ({ leader: (GM_getValue(KEY, null) || {}).tab === ME, lastSig: !!lastSig, fails });
+    (async () => { await sleep(10000); for (;;) { await sleep(15000); if (busy || !auth.currentUser || !leader()) continue; busy = true;
+        try { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (!SH) continue; const g = await lookDoc('https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx'); const rc = SH.parseDeliveryPage(g.doc);
+          if (!rc || !rc.tabCounts || !Object.keys(rc.tabCounts).length) { fails++; continue; } fails = 0; const at = nowIso(); const sig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)]));
+          let ch = false; if (sig !== lastSig) { ch = await saveConfirmState(rc, at); lastSig = sig; if (ch) log(`출고 실시간(PC): 주문확인요청 ${rc.orders.length}건으로 바뀜 — 웹앱에 바로`); }
+          const dv = rc.tabCounts['발송 요청']; if (lastDeliv != null && dv !== lastDeliv) { try { await shipLiteRead(SH, g.doc); } catch (e) {} } lastDeliv = dv;
+          await C('shp_state').doc('fast').set({ pc: PC_NAME, at, n: rc.orders.length, changed: ch, ver: APP_VER }, { merge: true }); }
+        catch (e) { fails++; } finally { busy = false; } } })(); })();
+  async function lookupBook(url, code) { const g = await lookDoc(url); const p = P.parseProductPage(g.doc, g.finalUrl); if (!p.aladinItemId) throw new Error('알라딘에서 이 책을 못 찾음');
+    const RG = RGF(); const barcode = RG ? RG.pageBarcode(g.doc) : null; if (code && !(RG ? RG.matchCode({ isbn13: p.isbn13, barcode }, code) : String(p.isbn13 || '') === String(code))) throw Object.assign(new Error(`알라딘이 다른 상품(${p.title || p.aladinItemId})으로 연결함`), { wrong: true }); /* (1.44.1) 찾던 번호와 다른 상품이면 쓰지 않음 (음반·DVD 바코드는 엉뚱한 책으로 갈 때가 있음) */
+    const u = P.parseUsedPage((await lookDoc(`/shop/UsedShop/wuseditemall.aspx?ItemId=${p.aladinItemId}&TabType=0`)).doc);
+    return { itemId: p.aladinItemId, isbn13: p.isbn13 || null, barcode, title: p.title || null, subtitle: p.subtitle || null, author: (p.contributors || []).slice(0, 2).map((c) => c.name).join(', ') || null, publisher: p.publisher || null, pubDate: p.pubDate || null,
+      cover: (p.images && p.images.front) || null, priceList: p.priceList ?? null, priceSales: p.priceSales ?? null, availability: p.availability || null, usedTotal: u.usedTotal ?? null, buyback: u.buyback || null, mins: u.mins || null, page1: u.listings || [], lastPage: u.lastPage || 1, at: nowIso(),
+      /* (1.44.0) 등록 엔진: 클라우드 /lookup(0.9.2)과 같은 칸 — 상품 관리 코드 판정·카드 */ categories: (p.categories || []).map((c) => ({ path: c.path || [], cids: c.cids || [] })), salesPoint: p.salesPoint ?? null, ranks: p.ranks || [], reviewCount: p.reviewCount ?? null, commentCount: p.commentCount ?? null, rating: p.rating ?? null, size: p.size || null, pages: p.pages || null, originalTitle: p.originalTitle || null, series: p.series || null }; }
+  async function lookupCmd(ref, v) { const isb = v.isbns || [], ids = v.itemIds || [], qs = v.queries || []; const tot = isb.length + ids.length + qs.length; let n = 0; const items = {}, cands = {}, errs = {};
+    log(`사진 가격: 알라딘에서 ${tot}건 읽기 (웹앱에서 맡김)`);
+    const prog = () => ref.set({ n, tot, items, cands, errs, uploadedAt: TS() }, { merge: true }).catch(() => {});
+    const keep = async (key, r) => { items[key] = r; try { await C('prd_lookups').add({ key, isbn13: r.isbn13, itemId: r.itemId, ...r, by: PC_NAME, cmdId: ref.id, ...W() }); } catch (e) {} };
+    const TGT = { 1: 'Book', 2: 'Music', 3: 'DVD', 7: 'Foreign' }[+v.branch || 1] || 'Book';
+    for (const isbn of isb) { try { let r = null, why = null; try { r = await lookupBook(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(isbn)}`, isbn); } catch (e) { why = e.message; }
+        if (!r) for (const tgt of [...new Set([TGT, 'All'])]) { /* 번호로 검색해 앞 3개 중 번호가 맞는 상품 (클라우드 0.9.3과 같은 순서) */ const sr = await lookDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=${tgt}&SearchWord=${encodeURIComponent(isbn)}`); for (const c of P.parseSearchResults(sr.doc).filter((x) => !x.used).slice(0, 3)) { try { r = await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(c.itemId)}`, isbn); break; } catch (e) {} } if (r) break; }
+        if (r) await keep(isbn, r); else errs[isbn] = (why && /다른 상품/.test(why) ? why + ' — 이 번호의 상품을 찾지 못함 (상품명으로 찾아 고르세요)' : '알라딘에서 이 번호(ISBN·바코드)의 상품을 못 찾음'); } catch (e) { errs[isbn] = e.message; } n++; await prog(); }
+    for (const id of ids) { try { await keep('id_' + id, await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`)); } catch (e) { errs['id_' + id] = e.message; } n++; await prog(); }
+    for (const q of qs) { try { const sr = await lookDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=${TGT}&SearchWord=${encodeURIComponent(q)}`); /* (1.44.0) 등록 엔진: 상품 구분에 맞춰 찾음 */
+        cands[q] = P.parseSearchResults(sr.doc).filter((r) => !r.used).slice(0, 8).map((r) => ({ itemId: r.itemId, title: r.title, img: r.img || null, cov: Math.round(P.nameCoverage(q, r.title) * 1000) / 1000, channels: r.channels || null })); } catch (e) { errs['q_' + q] = e.message; } n++; await prog(); }
+    await ref.set({ status: 'done', n, tot, items, cands, errs, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
+    log(`사진 가격: ${Object.keys(items).length}권 · 검색 ${Object.keys(cands).length}건 끝${Object.keys(errs).length ? ` · 실패 ${Object.keys(errs).length}` : ''}`, Object.keys(errs).length ? 1 : 0); }
+  /* (1.44.0) 📥 알라딘 대량 등록 (웹앱 '상품 등록'의 일괄 확정 → shp_cmds type 'regBulk' · rows [{isbn, state, qty, grade, price, title, code, desc, regItem}] · 200줄까지)
+   *  돈이 걸린 일 — 한 단계라도 어긋나면 알라딘에 등록하지 않고 멈춤:
+   *   ⓪ 한 번에 하나(모든 PC): 등록 자리(prd_system/reg_lane)를 잡은 일만 · 다른 등록이 하는 중이면 '차례 기다림'(held)으로 두고 그 일이 끝나면 이어서
+   *   ① 실행도구의 한 문(exec_log)에 '시작'을 적을 수 있을 때만 (기록 칸을 못 쓰면 하지 않음 — 같은 일을 두 번 등록하지 않게)
+   *   ② 엑셀 = 알라딘 원본 양식(공용 파일 readnow-register-core.js 안)에 줄만 넣어 만듦 → 다시 읽어 넣은 값과 같은지 확인
+   *   ③ 등록 전 우리 상품 조회의 가장 최근 상품 번호(기준)를 적어 둠 — 등록 뒤 '새로 생긴 상품'만 찾으려고 (못 읽으면 멈춤)
+   *   ④ 대량 등록 화면에 올림 → 미리보기를 읽어 넣은 줄과 ISBN·판매가·코드·품질·수량·판매상태가 하나도 다르지 않고 다른 줄도 없을 때만
+   *   ⑤ '보냄'을 먼저 Firebase에 적고(못 적으면 보내지 않음) 우리 줄만 골라 '등록완료'와 같은 요청 → 한 번 보낸 일은 자동으로 다시 하지 않음
+   *   ⑥ 공개 확인(한 PC·한 탭만, 3분마다): 상품 조회(최신순)에서 기준보다 새로 올라온(새등록) 상품 중 ISBN·코드·판매가·품질·수량이 맞는 것 → '알라딘에 보임'(U코드)
+   *      상품 번호는 한 번만 짝지음(reg_claims) — 손으로 같이 등록한 다른 상품을 우리 것으로 잘못 잡지 않게 · 90분 안에 못 찾으면 '결과 모름'
+   *   ⑦ 보이면 '신규 등록분 수집'으로 상품 목록에 넣고 그 상품들의 시장 지표를 맡김(등록 뒤 나머지 수집)
+   *   지킴이: 탭이 중간에 닫혀 '하는 중'으로 15분 넘게 조용하면 — 보내기 전이면 '멈춤(등록 안 함)'으로(다시 맡길 수 있음), 보낸 뒤면 공개 확인으로 */
+  const RGF = () => window.ReadnowRegister || globalThis.ReadnowRegister || null;
+  const BULK_URL = 'https://www.aladin.co.kr/scm/UsedItemBulkReg.aspx';
+  const REG_LIST_CODE = { 1: 1, 2: 3, 3: 15 }; // 대량 등록 판매상태(1 판매중·2 일시판매중지·3 판매중지) → 상품 조회 상태 번호
+  const REG_ME = () => PC_NAME + ':' + TAB_ID; const REG_LANE = () => C('prd_system').doc('reg_lane'); const REG_LANE_STALE = 20 * 60000;
+  const regNotSent = (m) => Object.assign(new Error(m), { notSent: true });
+  const regIsbnEq = (a, b) => { a = String(a || '').replace(/[^0-9Xx]/g, '').toUpperCase(); b = String(b || '').replace(/[^0-9Xx]/g, '').toUpperCase(); if (!a || !b) return false; if (a === b) return true; const t = (x) => (x.length === 10 ? '978' + x.slice(0, 9) : x.length === 13 && x.startsWith('978') ? x : null); const k = (x) => (x ? x.slice(0, 12) : null); return !!t(a) && !!t(b) && k(t(a)) === k(t(b)); };
+  async function regNewest(codes, beat) { let base = 0; for (const code of [...new Set([1, ...codes])]) { if (beat) await beat(); const g = await lookDoc(listUrl(code, 1)); if (looksLoggedOut(g.finalUrl, g.doc)) throw regNotSent('알라딘 로그인이 풀림 — 샵매니저에 로그인한 뒤 웹앱에서 다시 맡기기'); const r = P.parseScmList(g.doc, new Date().getFullYear()); base = Math.max(base, ...r.rows.map((x) => +x.listingId || 0)); }
+    const cur = +(((await C('prd_system').doc('cursor').get()).data() || {}).maxListingId || 0); if (!base && !cur) throw regNotSent('상품 조회 목록을 읽지 못해 등록 전 기준을 못 정함 — 등록하지 않음'); return Math.max(base, cur); }
+  async function regItemsSet(rows, results, extra) { try { const b = db.batch(); let n = 0; for (const r of rows) { if (!r.regItem) continue; const x = results[r.regItem]; if (!x) continue; b.set(C('reg_items').doc(r.regItem), { result: x, ...(extra || {}), ...W() }, { merge: true }); n++; } if (n) await b.commit(); } catch (e) { log('등록 결과를 상품 줄에 못 적음: ' + (e.code || e.message), 1); } }
+  async function regLane(cmdId, op) { const ref = REG_LANE(); let res = { ok: false, holder: null }; await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.exists ? sn.data() : {}; const fresh = v.cmd && Date.now() - Date.parse(v.at || 0) < REG_LANE_STALE;
+      if (op === 'take') { if (fresh && v.cmd !== cmdId) { res = { ok: false, holder: v.cmd }; return; } tx.set(ref, { cmd: cmdId, by: REG_ME(), at: nowIso() }); res = { ok: true }; }
+      else if (op === 'beat') { if (v.cmd === cmdId) tx.set(ref, { at: nowIso() }, { merge: true }); res = { ok: true }; }
+      else if (op === 'free') { if (v.cmd === cmdId) tx.set(ref, { cmd: null, by: null, at: nowIso(), last: cmdId }); res = { ok: true }; } }); return res; }
+  async function regHeldToQueued(ref, prev) { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data() || {}; if (v.status !== 'held' || (prev !== undefined && v.prev !== prev)) return; tx.update(ref, { status: 'queued', claim: null, heldMsg: null, releasedAt: nowIso(), uploadedAt: TS() }); }); } /* 트랜잭션: 그사이 웹앱에서 '맡김 취소'했으면 되살리지 않음 */
+  async function regReleaseNext(cmdId) { try { const qs = await C('shp_cmds').where('status', '==', 'held').get(); for (const d of qs.docs) { const v = d.data(); if ((v.type === 'regBulk' || v.type === 'regBulkMock') && v.prev === cmdId) await regHeldToQueued(d.ref, cmdId).catch(() => {}); } } catch (e) {} }
+  async function regBulkCmd(ref, v) { const RG = RGF(); const X = EXC(); const rows = Array.isArray(v.rows) ? v.rows : []; const results = {}; const t0 = Date.now(); let laneOk = false;
+    const st = (step, extra) => Promise.all([ref.set({ step, beatAt: nowIso(), ...(extra || {}), uploadedAt: TS() }, { merge: true }).catch(() => {}), laneOk ? regLane(ref.id, 'beat').catch(() => {}) : null]);
+    const stop = async (msg, extra, state) => { rows.forEach((r) => (results[r.regItem] = { state: state || 'fail', at: nowIso(), msg })); try { await ref.set({ status: 'fail', msg, results, sent: false, doneAt: nowIso(), by: PC_NAME, ...(extra || {}), uploadedAt: TS() }, { merge: true }); } catch (e) { log('멈춤을 적지 못함: ' + (e.code || e.message), 1); } await regItemsSet(rows, results); log(`📥 대량 등록 멈춤 (알라딘에 등록하지 않음): ${msg}`, 1); };
+    log(`📥 대량 등록 맡음: ${rows.length}줄 · ${v.qty || rows.length}부 · 판매가 합계 ${(+v.sum || 0).toLocaleString()}원`);
+    if (!RG || typeof XLSX === 'undefined' || !XLSX.CFB) return stop('공용 파일 readnow-register-core.js 또는 엑셀 도구(SheetJS)를 못 읽음 — 수집기 탭을 새로고침');
+    if (!rows.length || rows.length > 200) return stop(`줄 수가 이상함 (${rows.length}) — 한 번에 1~200줄`);
+    if (!X) return stop('실행도구 공용 파일(readnow-exec-core.js)이 없음 — 돈이 걸린 일이라 기록 없이 하지 않음');
+    try { const ln = await regLane(ref.id, 'take'); if (!ln.ok) { await ref.set({ status: 'held', prev: ln.holder, claim: null, heldMsg: '다른 등록이 하는 중 — 끝나면 이어서 (한 번에 하나)', uploadedAt: TS() }, { merge: true }); log('📥 다른 대량 등록이 하는 중 — 끝나면 이어서'); return; } laneOk = true; }
+    catch (e) { return stop('등록 자리(prd_system/reg_lane)를 못 잡음 — ' + (e.code || e.message)); }
+    let sent = false, base = 0; const xend = (s, m, r) => exEnd('regBulk', ref.id, s, m, r);
+    try {
+      let gate; try { gate = await X.begin(db, { kind: 'regBulk', key: ref.id, by: PC_NAME, detail: { n: rows.length, qty: v.qty || null, sum: v.sum || null }, staleMin: 120 }); } catch (e) { return await stop(`실행 기록(exec_log)을 못 적어 하지 않음 — ${e.code || e.message}${/permission/i.test(e.code || e.message) ? ' (Firestore 규칙에 exec_log 허용 필요)' : ''}`); }
+      if (!gate.ok) { if (gate.state === 'done' && v.verify && v.verify.base) { await ref.set({ status: 'verify', msg: '이미 등록한 일 — 공개 확인만 이어감', uploadedAt: TS() }, { merge: true }); return; }
+        return await stop('실행 문이 막음: ' + gate.why + ' — 이미 등록됐을 수 있음, 알라딘 상품 조회에서 확인한 뒤 관리도구에서 닫기', { gate: gate.state }, 'unknown'); }
+      const codes = [...new Set(rows.map((r) => REG_LIST_CODE[+r.state || 1] || 1))];
+      await st(2); const bytes = RG.buildBulkXls(RG.templateBytes(), rows, XLSX.CFB); const vr = RG.verifyBulkXls(bytes, rows, XLSX); if (!vr.ok) throw regNotSent('만든 엑셀을 다시 읽으니 넣은 값과 다름: ' + vr.bad.slice(0, 3).join(' / '));
+      base = await regNewest(codes, () => st(2));
+      await st(3, { base, codes }); const g0 = await lookDoc(BULK_URL); const p0 = RG.parseBulkPage(g0.doc); if (looksLoggedOut(g0.finalUrl, g0.doc) || !p0.loggedIn) throw regNotSent('알라딘 로그인이 풀림 — 샵매니저에 로그인한 뒤 웹앱에서 다시 맡기기'); if (!p0.hasUpload || !p0.excelKey) throw regNotSent('대량 등록 화면에서 올리기 칸(excelKey)을 못 찾음 — 알라딘 화면이 바뀌었을 수 있음');
+      const fd = new FormData(); fd.append('excelFileInputText', `readnow_${ref.id}.xls`); fd.append('excelFileInput', new Blob([bytes], { type: 'application/vnd.ms-excel' }), `readnow_${ref.id}.xls`); fd.append('x', '31'); fd.append('y', '11'); fd.append('excelAction', '1'); fd.append('excelKey', p0.excelKey);
+      await PACE.wait(sleep); await st(3); const ac = new AbortController(); const tmo = setTimeout(() => ac.abort(), 120000); let r1; try { r1 = await fetch(BULK_URL, { method: 'POST', body: fd, credentials: 'include', signal: ac.signal }); } catch (e) { throw regNotSent('올리기 응답 없음(2분) — 등록하지 않음: ' + e.message); } finally { clearTimeout(tmo); } const h1 = await r1.text(); const d1 = new DOMParser().parseFromString(h1, 'text/html'); const p1 = RG.parseBulkPage(d1);
+      await st(4, { upload: { http: r1.status, n: p1.count, alerts: p1.alerts.slice(0, 5), token: p1.tokenId || null } });
+      if (!r1.ok) throw regNotSent(`올리기 실패 (HTTP ${r1.status})`); if (!p1.hasPreview || !p1.tokenId) throw regNotSent('올린 뒤 미리보기가 없음' + (p1.alerts.length ? ' — 알라딘: ' + p1.alerts.slice(0, 3).join(' / ') : ' (파일을 받지 않았을 수 있음)'));
+      const m = RG.matchPreview(p1, rows); if (!m.ok) throw regNotSent(`미리보기가 넣은 것과 다름 — 등록하지 않음${m.miss.length ? ` · 빠진 ISBN ${m.miss.slice(0, 5).join(', ')}` : ''}${m.diff.length ? ' · 다름: ' + m.diff.slice(0, 3).join(' / ') : ''}${m.extra.length ? ` · 넣지 않은 줄 ${m.extra.length}개가 미리보기에 있음` : ''}${p1.alerts.length ? ' · 알라딘: ' + p1.alerts.slice(0, 2).join(' / ') : ''}`);
+      if (v.mock) { /* (1.50.0) 🧷 모의 등록: 엑셀 만들기·올리기·미리보기 대조까지 했으니 여기서 멈춤 — '등록 완료'는 누르지 않음(알라딘에 안 올라감) · 상품은 결정 대기로 */
+        const msg = `알라딘에 보내지 않음 · 엑셀 ${rows.length}줄 만들기·올리기·미리보기 대조 모두 맞음 (미리보기 ${p1.count}줄)`; rows.forEach((r) => (results[r.regItem] = { state: 'mock', at: nowIso(), msg }));
+        await ref.set({ status: 'done', mock: true, step: 4, msg: '🧷 모의 등록 — ' + msg, results, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }).catch(() => {});
+        try { const b = db.batch(); rows.forEach((r) => r.regItem && b.set(C('reg_items').doc(r.regItem), { stage: 'pick', cmdId: null, final: null, confirmedAt: null, result: null, mockResult: { at: nowIso(), ok: true, msg, kind: 'bulk' }, ...W() }, { merge: true })); await b.commit(); } catch (e) { log('모의 결과를 상품 줄에 못 적음: ' + (e.code || e.message), 1); }
+        await xend('failed', '🧷 모의 등록 — 보내지 않음', { n: rows.length, mock: true }); log(`🧷 대량 모의 등록 끝: ${rows.length}줄 — 미리보기 대조까지 맞음, 알라딘에 보내지 않음`); return; }
+      const q = new URLSearchParams(); m.pairs.forEach((pk) => q.append('chk_' + pk, pk)); q.append('x', '52'); q.append('y', '14'); q.append('regItemAction', '1'); q.append('tokenId', p1.tokenId);
+      /* 보냄 표시는 트랜잭션: 이 일이 아직 '하는 중'이고 이 탭이 맡았고 등록 자리도 이 일일 때만 — 지킴이가 그사이 '멈춤'으로 바꿨거나 다른 곳이 맡았으면 보내지 않음 */
+      let mine = false; try { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const lane = await tx.get(REG_LANE()); const cv = sn.data() || {}; const lv = lane.exists ? lane.data() : {}; if (cv.status !== 'running' || (cv.claim || {}).tab !== TAB_ID || lv.cmd !== ref.id) return;
+          tx.update(ref, { step: 5, sent: true, sentAt: nowIso(), beatAt: nowIso(), preview: { n: p1.count }, verify: { base, codes, until: new Date(Date.now() + 90 * 60000).toISOString(), tries: 0 }, uploadedAt: TS() }); tx.set(REG_LANE(), { at: nowIso() }, { merge: true }); mine = true; }); }
+      catch (e) { throw regNotSent('보내기 전 기록(보냄 표시)을 못 적음 — 두 번 등록을 막으려고 보내지 않음: ' + (e.code || e.message)); }
+      if (!mine) { laneOk = false; log('📥 이 일이 그사이 멈춤 처리됐거나 다른 곳이 맡음 — 등록을 보내지 않음', 1); return; }
+      await PACE.wait(sleep); sent = true; const regAt = nowIso(); let h2 = '', http2 = null, al2 = [];
+      try { const r2 = await fetch(BULK_URL + '?' + q.toString(), { credentials: 'include' }); http2 = r2.status; h2 = await r2.text(); al2 = RG.pageAlerts(h2); } catch (e) { al2 = ['응답을 못 받음: ' + e.message]; } /* 화면 자체 안내 알림(등록할 상품이 없습니다 등 늘 있는 글)은 빼고 서버가 넣은 알림만 */
+      const bad = http2 !== 200 || al2.some((a) => /실패|오류|불가|잘못|없습니다|초과|error/i.test(a)) || (/로그인|wlogin/i.test(h2.slice(0, 3000)) && !/wC2Cuser_logout/.test(h2)); const stt = bad ? 'unknown' : 'registered';
+      rows.forEach((r, i) => (results[r.regItem] = { state: stt, at: nowIso(), pkid: m.pairs[i], msg: bad ? `알라딘 답: ${al2.slice(0, 2).join(' / ') || 'HTTP ' + http2} — 공개 확인으로 판단` : null }));
+      await ref.set({ status: 'verify', step: 6, regAt, reg: { http: http2, alerts: al2.slice(0, 5) }, results, by: PC_NAME, ms: Date.now() - t0, uploadedAt: TS() }, { merge: true }).catch((e) => log('등록 결과를 못 적음(공개 확인이 이어서 적음): ' + (e.code || e.message), 1));
+      await regItemsSet(rows, results); await xend(bad ? 'unknown' : 'done', al2.slice(0, 2).join(' / ') || null, { n: rows.length, http: http2, base });
+      log(`📥 대량 등록 ${bad ? '보냄(알라딘 답 확인 필요)' : '완료'}: ${rows.length}줄 — 이제 상품 조회에서 공개 확인 (3분마다, 90분까지)`, bad ? 1 : 0); setTimeout(() => regVerifyAll().catch(() => {}), 60000);
+    } catch (e) { if (!sent) { await xend('failed', e.message, null); return await stop(e.message); }
+      rows.forEach((r) => (results[r.regItem] = results[r.regItem] || { state: 'unknown', at: nowIso(), msg: '등록 요청 뒤 오류: ' + e.message }));
+      await ref.set({ status: 'verify', step: 6, results, msg: '등록 요청 뒤 오류 — 공개 확인으로 판단: ' + e.message, uploadedAt: TS() }, { merge: true }).catch(() => {});
+      await xend('unknown', e.message, { base }); log('📥 대량 등록: 등록 요청 뒤 오류 — ' + e.message, 1); }
+    finally { if (laneOk) { await regLane(ref.id, 'free').catch(() => {}); await regReleaseNext(ref.id); } } }
+  /* 공개 확인·지킴이 — 3분마다 · 읽기만(알라딘을 바꾸지 않음) · 한 일은 한 곳만(lease) */
+  let regVerBusy = false;
+  async function regLease(ref) { let ok = false; await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data() || {}; const L = v.lease || {}; if (L.by && L.by !== REG_ME() && Date.parse(L.until || 0) > Date.now()) return; tx.set(ref, { lease: { by: REG_ME(), until: new Date(Date.now() + 6 * 60000).toISOString() } }, { merge: true }); ok = true; }); return ok; }
+  async function regVerifyAll() { if (regVerBusy || !auth.currentUser || !RGF() || (window.__rnRest && window.__rnRest())) return; regVerBusy = true; const X = EXC();
+    try { // ① 지킴이: '하는 중'·'멈춘 일(sweep)'인데 15분 넘게 조용함
+      for (const stName of ['running', 'stuck']) { const qs = await C('shp_cmds').where('status', '==', stName).get(); for (const d of qs.docs) { const v = d.data(); if (!['regBulk', 'regOne', 'regBulkMock', 'regOneMock'].includes(v.type)) continue; const quiet = Date.now() - Math.max(Date.parse(v.beatAt || 0) || 0, Date.parse((v.claim || {}).at || 0) || 0, Date.parse(v.createdAt || 0) || 0) > 15 * 60000; if (!quiet || !(await regLease(d.ref))) continue;
+          if (v.sent) { await d.ref.set({ status: 'verify', msg: '수집기 탭이 등록 요청 뒤 멈춤 — 공개 확인으로 판단', verify: { ...(v.verify || {}), base: (v.verify || {}).base || v.base || 0, codes: (v.verify || {}).codes || v.codes || [1], until: new Date(Date.now() + 90 * 60000).toISOString() }, uploadedAt: TS() }, { merge: true }); log('📥 지킴이: 등록 요청 뒤 멈춘 일 → 공개 확인으로', 1); }
+          else { const res = {}; (v.rows || []).forEach((r) => (res[r.regItem] = { state: 'fail', at: nowIso(), msg: '수집기 탭이 중간에 멈춤 — 알라딘에 등록하지 않음' })); await d.ref.set({ status: 'fail', sent: false, msg: '수집기 탭이 등록 요청 전에 멈춤(탭 닫힘·새로고침) — 알라딘에 등록하지 않음 · 다시 맡길 수 있음', results: res, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
+            if (X && v.type === 'regBulk') await X.finish(db, { kind: 'regBulk', key: d.id }, 'failed', { msg: '보내기 전에 멈춤 (지킴이)' }).catch(() => {}); await regItemsSet(v.rows || [], res); log('📥 지킴이: 보내기 전에 멈춘 등록 → 멈춤(등록 안 함)', 1); }
+          await regLane(d.id, 'free').catch(() => {}); await regReleaseNext(d.id); } }
+      // ② 차례 기다림: 앞 일이 끝났으면(또는 사라졌으면) 대기로
+      { const qs = await C('shp_cmds').where('status', '==', 'held').get(); for (const d of qs.docs) { const v = d.data(); if (v.type !== 'regBulk') continue; const pv = v.prev ? (await C('shp_cmds').doc(v.prev).get()).data() : null; if (!pv || ['verify', 'done', 'fail', 'cancelled'].includes(pv.status)) await regHeldToQueued(d.ref, v.prev).catch(() => {}); } }
+      // ③ 공개 확인
+      const qs = await C('shp_cmds').where('status', '==', 'verify').get(); for (const d of qs.docs) { const v = d.data(); if (!['regBulk', 'regOne', 'regBulkMock', 'regOneMock'].includes(v.type)) continue; if (!(await regLease(d.ref))) continue; await regVerifyOne(d.ref, v); }
+      const q2 = await C('shp_cmds').where('post', '==', 'need').get(); for (const d of q2.docs) { const v = d.data(); if (!['regBulk', 'regOne', 'regBulkMock', 'regOneMock'].includes(v.type) || v.status !== 'done') continue; if (!(await regLease(d.ref))) continue; await regPostCollect(d.ref, v.rows || [], v.results || {}); } }
+    catch (e) { log('공개 확인 실패: ' + (e.code || e.message), 1); } finally { regVerBusy = false; } }
+  async function regClaim(lid, cmdId, regItem) { let ok = false; const ref = C('reg_claims').doc(String(lid)); await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && !(v.cmd === cmdId && v.regItem === regItem)) return; tx.set(ref, { cmd: cmdId, regItem, at: nowIso(), by: PC_NAME }); ok = true; }); return ok; }
+  async function regVerifyOne(ref, v) { const rows = v.rows || []; const results = { ...(v.results || {}) }; const vf = v.verify || {}; const base = +vf.base || 0;
+    const pend = rows.filter((r) => !results[r.regItem] || results[r.regItem].state !== 'live'); if (!pend.length) { await ref.set({ status: 'done', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); return; }
+    if (!base) { rows.forEach((r) => { if (!results[r.regItem] || results[r.regItem].state !== 'live') results[r.regItem] = { ...(results[r.regItem] || {}), state: 'unknown', at: nowIso(), msg: '등록 전 기준이 없어 공개 확인을 못 함 — 알라딘 상품 조회에서 확인' }; }); await ref.set({ results, status: 'done', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); await regItemsSet(rows, results); return; }
+    const found = []; const codes = vf.codes && vf.codes.length ? vf.codes : [...new Set(rows.map((r) => REG_LIST_CODE[+r.state || 1] || 1))];
+    for (const code of codes) for (let pg = 1; pg <= 6; pg++) { const g = await lookDoc(listUrl(code, pg)); if (looksLoggedOut(g.finalUrl, g.doc)) throw new Error('알라딘 로그인이 풀림'); const L = P.parseScmList(g.doc, new Date().getFullYear()).rows; const nw = L.filter((x) => +x.listingId > base); found.push(...nw.map((x) => ({ ...x, code }))); if (nw.length < L.length || !L.length) break; }
+    const used = new Set(Object.values(results).map((x) => x && x.listingId).filter(Boolean).map(String)); let hit = 0; const G = RGF().GRADE;
+    for (const r of pend) { const want = { sku: r.code, price: Math.round(+r.price), grade: G[+r.grade || 2], qty: Math.max(1, +r.qty || 1), code: REG_LIST_CODE[+r.state || 1] || 1 };
+      const cands = found.filter((x) => !used.has(String(x.listingId)) && String(x.sku || '') === want.sku && +x.price === want.price && x.grade === want.grade && +x.qty === want.qty && x.code === want.code)
+        .map((x) => ({ x, isb: r.isbn && (x.isbn13 || x.isbn10) ? regIsbnEq(x.isbn13 || x.isbn10, r.isbn) || regIsbnEq(x.isbn10, r.isbn) : null, /* 미등록 상품(ISBN 없음)은 상품명으로만 */ s: P.nameCoverage ? P.nameCoverage(r.title || '', x.title || '') : 0 }))
+        .filter((c) => c.isb === true || (c.isb === null && c.s >= 0.6)).sort((a, b) => (b.isb === true) - (a.isb === true) || b.s - a.s); /* ISBN이 보이면 ISBN이 같아야 · 안 보이면 상품명이 60% 넘게 같아야 */
+      for (const c of cands) { if (!(await regClaim(c.x.listingId, ref.id, r.regItem).catch(() => false))) continue; used.add(String(c.x.listingId)); hit++; results[r.regItem] = { ...(results[r.regItem] || {}), state: 'live', at: nowIso(), usedCode: c.x.usedCode || null, listingId: String(c.x.listingId), by: c.isb ? 'isbn' : 'title', msg: null }; break; } }
+    const left = rows.filter((r) => !results[r.regItem] || results[r.regItem].state !== 'live').length; const over = vf.until && Date.now() > Date.parse(vf.until);
+    if (over && left) rows.forEach((r) => { const x = results[r.regItem]; if (!x || x.state !== 'live') results[r.regItem] = { ...(x || {}), state: 'unknown', at: nowIso(), msg: '90분 안에 상품 조회에서 못 찾음 — 알라딘 상품 조회(코드·판매가)로 확인' }; });
+    const done = !left || over; await ref.set({ results, status: done ? 'done' : 'verify', ...(done ? { doneAt: nowIso() } : {}), verify: { ...vf, tries: (vf.tries || 0) + 1, lastAt: nowIso(), by: PC_NAME, foundNew: found.length }, post: hit ? 'need' : v.post || null, uploadedAt: TS() }, { merge: true });
+    await regItemsSet(rows, results); if (hit) log(`📥 공개 확인: ${hit}개가 알라딘에 보임 (남은 ${left}개)`);
+    if (hit || v.post === 'need') await regPostCollect(ref, rows, results); }
+  /* 등록 뒤 나머지 수집: 신규 등록분 수집(상품 목록에 넣음) → 그 상품들 시장 지표를 맡김. 다른 작업 중이면 다음 확인 때 */
+  async function regPostCollect(ref, rows, results) { if (running) { await ref.set({ post: 'need' }, { merge: true }).catch(() => {}); return; }
+    const had = new Set(((await ref.get()).data() || {}).postKeys || []); const keys = rows.map((r) => results[r.regItem]).filter((x) => x && x.state === 'live' && x.usedCode).map((x) => 'aladin_' + x.usedCode).filter((k) => !had.has(k)); if (!keys.length) { await ref.set({ post: 'done' }, { merge: true }).catch(() => {}); return; }
+    await ref.set({ post: 'done', postAt: nowIso(), postKeys: firebase.firestore.FieldValue.arrayUnion(...keys) }, { merge: true }); /* 먼저 적어 두 번 맡기지 않음 */
+    await runJob('scanNew'); await C('shp_cmds').add({ type: 'metrics', keys, label: '📥 등록 뒤 시장 지표 (' + keys.length + '개)', status: 'queued', createdAt: nowIso(), by: PC_NAME + ' (등록 뒤 자동)', uploadedAt: TS() }).catch(() => {});
+    log(`📥 등록 뒤 나머지 수집: 신규 등록분 수집 끝 → 시장 지표 ${keys.length}개 맡김`); }
+  setInterval(() => { regVerifyAll().catch(() => {}); }, 3 * 60000);
+  /* (1.35.0) 알라딘 매입 — 웹앱 '알라딘 매입' 화면이 맡긴 '팔기 장바구니에 담기' (shp_cmds type 'c2bAdd' · items [{usedCode, isbn13, title, grade, ...}])
+     책마다: ① 팔기 장바구니(wc2b_sales.aspx)에 이미 있으면 'already'
+             ② 매입가 조회 화면(wc2b_search.aspx?KeyWord=ISBN)을 이 일 전용 숨은 창에 열어 그 책 줄을 찾음(ISBN13으로) — 없으면 'notFound', '팔기 장바구니에 추가' 단추가 없으면 'notBuyable'
+             ③ 그 줄의 '팔기 장바구니에 추가'를 누름 = 알라딘 화면의 단추 그대로(주소를 짐작해 따로 보내지 않음). 뜨는 알림·확인 창은 글만 받아 적고 닫음(확인 창은 '아니오' — 장바구니 화면으로 넘어가지 않음)
+             ④ 장바구니를 다시 읽어 들어갔는지 확인 → 'added', 아니면 'failed'(알림 글을 함께)
+     결과는 그 일 문서(results · n)와 prd_system/buyback(cart.관리번호)에 — 웹앱 화면이 바로 보여 줌. 장바구니까지만: 매입 신청(판매 확정)은 하지 않음.
+     요청 간격은 이 PC의 알라딘 요청 속도 조절(PACE)을 같이 씀 */
+  const C2B_SEARCH = (isbn) => `https://www.aladin.co.kr/shop/usedshop/wc2b_search.aspx?ActionType=1&SearchTarget=All&KeyWord=${encodeURIComponent(isbn)}`;
+  const C2B_CART = 'https://www.aladin.co.kr/shop/usedshop/wc2b_sales.aspx?search=1';
+  async function c2bCartRead() { await PACE.wait(); const g = await lookDoc(C2B_CART); if (looksLoggedOut(g.finalUrl, g.doc)) throw new Error('알라딘 로그인이 풀림 — 로그인한 뒤 웹앱에서 다시 담기');
+    const list = P.parseC2BCart(g.doc); const set = new Set(); list.forEach((x) => { if (x.isbn13) set.add(x.isbn13); }); return { list, set }; }
+  function c2bFrame(url) { return new Promise((resolve) => { let f = document.getElementById('rn-c2b-frame'); if (f) { try { f.src = 'about:blank'; } catch (e) {} f.remove(); }
+    f = document.createElement('iframe'); f.id = 'rn-c2b-frame'; f.style.cssText = 'position:fixed;left:-3000px;top:0;width:1300px;height:2000px;visibility:hidden'; document.body.appendChild(f);
+    const t0 = Date.now(); let done = false; let iv = null; const fin = (ok) => { if (done) return; done = true; clearInterval(iv); let d = null; try { d = f.contentDocument; } catch (e) {} resolve({ ok, f, doc: d }); };
+    f.src = url; iv = setInterval(() => { let d = null; try { d = f.contentDocument; } catch (e) {} if (d && d.URL !== 'about:blank' && d.readyState === 'complete' && (d.querySelector('#searchResult') || Date.now() - t0 > 8000)) fin(true); else if (Date.now() - t0 > 45000) fin(false); }, 400); }); }
+  async function c2bAddOne(it, cartSet) { const isbn = String(it.isbn13 || ''); if (!/^97[89]\d{10}$/.test(isbn)) return { state: 'failed', msg: 'ISBN13이 없음' };
+    if (cartSet.has(isbn)) return { state: 'already', msg: '이미 팔기 장바구니에 있음' };
+    await PACE.wait(); const fr = await c2bFrame(C2B_SEARCH(isbn)); const d = fr.doc; if (!fr.ok || !d) return { state: 'failed', msg: '매입가 조회 화면을 못 엶(시간 초과)' };
+    if (looksLoggedOut(d.URL, d)) return { state: 'failed', msg: '알라딘 로그인이 풀림' };
+    const rows = P.parseC2BSearch(d); const i10 = (() => { if (!/^978/.test(isbn)) return null; const b = isbn.slice(3, 12); let t = 0; for (let k = 0; k < 9; k++) t += (+b[k]) * (10 - k); const c = (11 - (t % 11)) % 11; return b + (c === 10 ? 'X' : String(c)); })(); const row = rows.find((r) => r.isbn13 === isbn) || rows.find((r) => !r.isbn13 && i10 && String(r.isbn10 || '').toUpperCase() === i10) || null; /* (1.59.0) ISBN13이 없는 줄은 ISBN10이 맞을 때만 — 결과가 한 줄이라고 맞춰 보지 않고 담지 않음 */
+    if (!row) return { state: 'notFound', msg: rows.length ? `검색 결과 ${rows.length}줄 중 이 ISBN이 없음` : '매입가 조회 결과 없음' };
+    const c2b = { price: row.price || null, title: row.title || null, isbn10: row.isbn10 || null };
+    if (!row.canSell) return { state: 'notBuyable', msg: row.note || '알라딘이 사지 않는 책', c2b };
+    const chk = [...d.querySelectorAll('#searchResult input.chk[isbn]')].find((x) => x.getAttribute('isbn') === row.isbn10) || null; const tr = chk ? chk.closest('tr') : null;
+    const btn = (tr && tr.querySelector('.c2b_add')) || d.querySelector(`.c2b_add[isbn="${row.isbn10}"]`); if (!btn) return { state: 'notBuyable', msg: '추가 단추를 못 찾음', c2b };
+    const msgs = []; const w = fr.f.contentWindow; try { w.alert = (m) => { msgs.push(String(m || '')); }; w.confirm = (m) => { msgs.push(String(m || '')); return false; }; w.open = () => null; } catch (e) {}
+    const q0 = (d.querySelector('.ItemQtySum') || {}).textContent || ''; (btn.querySelector('a') || btn).click();
+    const t0 = Date.now(); while (Date.now() - t0 < 8000) { await sleep(400); let q1 = ''; try { q1 = (fr.f.contentDocument.querySelector('.ItemQtySum') || {}).textContent || ''; } catch (e) {} if (msgs.length || (q1 && q1 !== q0)) break; }
+    await sleep(1200); let after = null; try { after = await c2bCartRead(); } catch (e) { return { state: 'failed', msg: '담은 뒤 장바구니를 못 읽음: ' + e.message + (msgs.length ? ' · 알림: ' + msgs.join(' / ').slice(0, 200) : ''), c2b }; }
+    after.set.forEach((x) => cartSet.add(x)); const msg = msgs.join(' / ').slice(0, 300) || null;
+    return after.set.has(isbn) ? { state: 'added', msg, c2b, cartN: after.list.length } : { state: 'failed', msg: msg || '단추를 눌렀지만 장바구니에 없음', c2b, cartN: after.list.length }; }
+  async function c2bAddCmd(ref, v) { const items = v.items || []; const results = {}; let n = 0; log(`알라딘 매입: 팔기 장바구니에 ${items.length}권 담기 (웹앱에서 맡김)`);
+    const bbSet = (code, r) => C('prd_system').doc('buyback').set({ cart: { [code]: r } }, { merge: true }).catch(() => {});
+    let cart = null; try { cart = await c2bCartRead(); } catch (e) { for (const it of items) { results[it.usedCode] = { state: 'failed', at: nowIso(), msg: e.message, by: PC_NAME }; await bbSet(it.usedCode, results[it.usedCode]); } await ref.set({ status: 'done', results, n: items.length, doneAt: nowIso(), err: e.message, uploadedAt: TS() }, { merge: true }); log('알라딘 매입: ' + e.message, 1); return; }
+    let cartN = cart.list.length;
+    for (const it of items) { let r; const xk = `${ref.id}:${it.usedCode}`; const gate = await exBegin('c2bAdd', xk, { usedCode: it.usedCode, isbn13: it.isbn13 || null });
+      if (!gate.ok) r = { state: gate.state === 'done' ? 'already' : 'failed', msg: '실행 문: ' + gate.why };
+      else { try { r = await c2bAddOne(it, cart.set); } catch (e) { r = { state: 'failed', msg: e.message }; } await exEnd('c2bAdd', xk, ['added', 'already'].includes(r.state) ? 'done' : 'failed', `${r.state}${r.msg ? ' · ' + r.msg : ''}`); }
+      if (r.cartN != null) cartN = r.cartN; delete r.cartN; r = { ...r, at: nowIso(), by: PC_NAME, isbn13: it.isbn13 || null }; results[it.usedCode] = r; n++;
+      await bbSet(it.usedCode, r); await ref.set({ results, n, cartN, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); }
+    try { const f = document.getElementById('rn-c2b-frame'); if (f) { f.src = 'about:blank'; f.remove(); } } catch (e) {}
+    const ok = Object.values(results).filter((r) => ['added', 'already'].includes(r.state)).length; await ref.set({ status: 'done', results, n, cartN, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
+    log(`알라딘 매입: 장바구니 ${ok} / ${items.length}권 (지금 장바구니 ${cartN}권)`, ok === items.length ? 0 : 1); }
+  { let invUn = null, back = 5000; const sub = () => { if (!auth.currentUser || invUn) return; invUn = C('shp_invoices').where('status', '==', 'queued').onSnapshot((ss) => { back = 5000; ss.forEach((d) => claimInvoice(d.id).catch((e) => log('송장 입력 맡기 실패: ' + (e.code || e.message), 1))); }, (e) => { log(`송장 듣기가 끊김(${e.code || e.message}) — 다시 들음`, 1); invUn = null; setTimeout(sub, back); back = Math.min(back * 2, 5 * 60000); }); }; auth.onAuthStateChanged((u) => { if (!u) { if (invUn) { invUn(); invUn = null; } return; } sub(); }); } /* (1.59.0) 끊기면 다시 붙음 · 다시 로그인해도 하나만 */
+  async function claimInvoice(id) { const ref = C('shp_invoices').doc(id); let ok = false; if ((window.__rnRest && window.__rnRest())) return;
+    await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data(); if (!v || v.status !== 'queued') return; tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, uploadedAt: TS() }); ok = true; });
+    if (!ok) return; GM_setValue('rn-inv-active', { id, at: Date.now() }); log(`송장 입력 맡음 (${id}) — 발송 요청 화면을 새 탭으로 엽니다`);
+    GM_openInTab('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4#rninv=' + id, { active: false, insert: true }); } // #rninv= : 이 탭이 송장 입력을 맡은 탭 (다른 발송 요청 탭은 끼어들지 않음)
+  // 영업일(월~금) 9~16시: 쉬는 동안 shipAutoMin분마다 발송 요청 다시 읽기
+  let cloudBeat = null; auth.onAuthStateChanged((u) => { if (u) C('app_settings').doc('cloud').onSnapshot((d) => { cloudBeat = d.exists ? d.data() : null; }, () => {}); });
+  const cloudOn = () => !!(cloudBeat && cloudBeat.at && Date.now() - Date.parse(cloudBeat.at) < 10 * 60000 && cloudBeat.ok !== false && !(cloudBeat.jobs && cloudBeat.jobs.ship === false)); // 클라우드 수집이 살아 있고 발송 요청 읽기를 켜 둠 (10분 안 신호 · 1.61.0: ☁ 설정에서 '발송 요청 읽기'를 끄면 PC 칸이 다시 맡음)
+  /* (1.60.1) 발송 요청 읽기를 평일 9~16시 15분마다 스스로 하던 것(클라우드가 꺼졌을 때) → ⏰ 매일 자동 수집의 칸에서만 (클라우드가 살아 있으면 그 칸은 저절로 건너뜀) */
+
+  async function photosJob() {
+    const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+    try {
+      await loadListings();
+      let prog = await loadProgress('photos');
+      if (!prog || !prog.list) {
+        const B = new Map(); (await C('prd_books').get()).forEach((d) => { const v = d.data(); B.set(d.id, !!(v.images && v.images.front && (v.images.front.src || v.images.front.stored))); });
+        const retry = new Date(Date.now() - 14 * 864e5).toISOString();
+        const list = [...LISTINGS.entries()].filter(([, l]) => l.listingId && l.usedCode && (!l.bookId || !B.get(l.bookId)) && (FORCE_ALL || !(l.photosAt && (l.photosStatus === 'done' || l.photosAt > retry))))
+          .sort((a, b) => (b[1].active ? 1 : 0) - (a[1].active ? 1 : 0)).map(([k]) => k);
+        prog = { list, i: 0, ok: 0, none: 0, nopage: 0, imgs: 0, startedAt: nowIso() }; await saveProgress('photos', prog);
+        log(`우리 상품 사진: 표지 사진이 없는 상품 ${list.length.toLocaleString()}개 (판매 중 먼저)`);
+      }
+      for (; prog.i < prog.list.length; prog.i++) {
+        if (stopFlag) { await saveProgress('photos', prog); throw new Error('멈춤'); }
+        const l = LISTINGS.get(prog.list[prog.i]); if (!l) continue; const at = nowIso();
+        let ph = [], status = 'none';
+        try { const g = await getDoc(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${l.listingId}`); const can = (g.doc.querySelector('link[rel="canonical"]') || {}).href || '';
+          if (!new RegExp(`ItemId=${l.listingId}\\b`).test(can) && !/\[중고\]/.test(g.doc.title || '')) status = 'nopage'; else ph = P.parseUsedItemPhotos(g.doc); }
+        catch (e) { status = 'nopage'; }
+        let match = null;
+        if (!ph.length && l.title) { // ③ 상품명 검색: 검색어(상품명)가 이름에 90% 이상 들어 있는 상품 — 같은 비율이면 우리 가게(996008) 상품, 그다음 검색 순서
+          try { const q = String(l.title).replace(/^\[중고\]\s*/, '').replace(/\((최상|상|중|하)[^)]*\)\s*$/, '').trim(); const sr = await getDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=All&SearchWord=${encodeURIComponent(q)}`);
+            const th = SET.photoMatch ?? 0.9; const cands = P.parseSearchResults(sr.doc).filter((r) => r.itemId !== String(l.listingId)).map((r, i) => ({ ...r, cov: P.nameCoverage(q, r.title), ours: /scm996008/.test(r.img), i })).filter((r) => r.cov >= th).sort((a, b) => b.cov - a.cov || (b.ours ? 1 : 0) - (a.ours ? 1 : 0) || a.i - b.i);
+            for (const c of cands) { try { const g2 = await getDoc(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${c.itemId}`); ph = P.parseUsedItemPhotos(g2.doc); } catch (e) { ph = []; }
+              if (!ph.length && c.img) ph = [{ src: c.img, big: c.img.replace(/\/(coversum|cover150|cover200|cover|cover300)\//, '/cover500/'), where: 'search', file: c.img.split('/').pop() }];
+              if (ph.length) { match = { itemId: c.itemId, title: c.title, coverage: Math.round(c.cov * 1000) / 1000, ours: c.ours, query: q, candidates: cands.length }; break; } }
+            if (!match) log(`${l.title}: 상품명 검색에서 이름이 ${Math.round(th * 100)}% 이상 같은 상품의 사진이 없어 건너뜀 (후보 ${cands.length}개)`); } catch (e) { log(`${l.title}: 상품명 검색 실패 (${e.message})`, 1); } }
+        const saved = [];
+        for (let k = 0; k < ph.length; k++) { const x = ph[k]; let blob = null, used = null;
+          for (const u of [x.big, x.src].filter(Boolean)) { try { blob = await gmBlob(u); used = u; break; } catch (e) {} }
+          if (!blob) { saved.push({ src: x.src, where: x.where, stored: null, error: '받기 실패' }); continue; }
+          const ext = (used.match(/\.(jpe?g|png|gif|webp)(\?|$)/i) || [, 'jpg'])[1].toLowerCase(); const base = `img/listing/${l.usedCode}/${k + 1}`; const meta = { cacheControl: 'public,max-age=31536000,immutable' };
+          try { await storage.ref(`${base}.${ext}`).put(blob, { ...meta, contentType: blob.type || 'image/' + ext }); let t = null; try { t = await thumb(blob, 200); if (t) await storage.ref(`${base}_t.webp`).put(t, { ...meta, contentType: 'image/webp' }); } catch (e) { t = null; } // 작은 사진 실패는 원본 저장에 영향 없음
+            saved.push({ src: used, where: x.where, file: x.file, stored: `${base}.${ext}`, thumb: t ? `${base}_t.webp` : null, bytes: blob.size ?? null }); prog.imgs++; } catch (e) { saved.push({ src: used, where: x.where, stored: null, error: e.message }); } }
+        if (saved.some((x) => x.stored)) { status = 'done'; prog.ok++; } else if (status === 'nopage') prog.nopage++; else prog.none++;
+        await C('prd_listings').doc(prog.list[prog.i]).set({ photos: saved, photosAt: at, photosStatus: status, photosFrom: match ? 'search' : saved.length ? 'mine' : null, ...(match ? { photosMatch: match } : {}), ...W() }, { merge: true });
+        l.photosAt = at; l.photosStatus = status;
+        ui('우리 상품 사진', prog.i + 1, prog.list.length, `${l.title || l.usedCode} · 사진 ${saved.filter((x) => x.stored).length}장 · 받은 상품 ${prog.ok} · 사진 없음 ${prog.none} · 페이지 없음 ${prog.nopage}`);
+        if (prog.i % 5 === 0) await saveProgress('photos', prog);
+      }
+      await finishJob('photos', { ok: prog.ok, none: prog.none, nopage: prog.nopage, imgs: prog.imgs });
+      log(`상품 사진 완료: ${prog.ok}개 상품 사진 ${prog.imgs}장 (우리 페이지 또는 상품명 검색 90%↑) · 끝내 사진 없음 ${prog.none + prog.nopage} (건너뜀 — 외부 정보로 개선 예정)`);
+    } finally { await releaseLane('aladin'); }
+  }
+
+  /* ───────── 검색 시세: 알라딘 미등록·세트·새상품 페이지 없는 상품 (1.37.0 — 예전 '새상품 없는 상품 시세') ─────────
+   * 왜: 미등록 상품(정보를 직접 써서 등록 — 번호 칸이 ISBN이 아닌 상품코드)·세트 상품은 '전체 중고' 상세에 다른 판매자가 붙지 않아 단독처럼 보이지만,
+   *     같은 책을 다른 판매자들이 각자 따로 등록해 둠 → 바깥 검색 화면(SearchTarget=Used)에 따로따로 나오고, 그 화면에서 바로 가격(판매자 중고 최저가)이 보임
+   * 대상: 판매 중 + (미등록 · 세트(파서 setInfo) · 도서 정보 없음). 검색어 = 파서 searchQueryOf(앞 [..]·'/' 뒤·끝 (..) 뗌)
+   * 같은 상품 = 이름 일치(설정 photoMatch, 기본 90%) + 권 번호 같음(sameVolume — '한국사론 1' ≠ '한국사론 10'). 우리 가게 상품(사진 주소 scm996008)은 경쟁에서 뺌(우리끼리 경쟁 안 함)
+   * 저장: prd_market_nobook/{상품} — src 'usedSearch' · rows(상품마다 번호·이름·일치·우리 여부·판매자/알라딘/매장 최저가·개수) · 시세(marketNoBook) · 후보가 바뀔 때만 판(v)을 통째로 보관 · 시세가 바뀔 때만 history
+   *       기본 7일에 한 번 다시 봄 (설정 nbDays) — 웹앱 시장 블록·관찰 도구·수동 일괄 처리가 이 rows로 '첫 페이지' 대신 비교 */
+  async function nbMarketJob() {
+    const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+    try {
+      await loadListings();
+      let prog = await loadProgress('nbMarket');
+      if (!prog || !prog.list) {
+        const have = new Map(); (await C('prd_market_nobook').get()).forEach((d) => have.set(d.id, d.data().at || ''));
+        const cut = FORCE_ALL ? '9999' : new Date(Date.now() - Math.max(1, SET.nbDays || 7) * 864e5).toISOString();
+        const want = (l) => l.usedCode && l.title && !['video', 'music'].includes(l.mediaType) && (!l.bookId || P.isUnregistered(l) || P.setInfo(l.title).set); /* 영상·음반은 빼고 (1.38.0) */ const haveV = new Map(); (await C('prd_market_nobook').get()).forEach((d) => haveV.set(d.id, d.data().src || ''));
+        const list = [...LISTINGS.entries()].filter(([k, l]) => want(l) && (l.active || !l.bookId) && (!have.get(k) || have.get(k) < cut || haveV.get(k) !== 'usedSearch')).sort((a, b) => (b[1].active ? 1 : 0) - (a[1].active ? 1 : 0)).map(([k]) => k); // 예전 방식(전체 검색)으로 본 것은 새 방식으로 다시
+        prog = { list, i: 0, ok: 0, none: 0, startedAt: nowIso() }; await saveProgress('nbMarket', prog);
+        log(`검색 시세(미등록·세트·새상품 없음): ${list.length.toLocaleString()}개 (판매 중 먼저, ${SET.nbDays || 7}일 안에 본 것은 건너뜀)`);
+      }
+      for (; prog.i < prog.list.length; prog.i++) {
+        if (stopFlag) { await saveProgress('nbMarket', prog); throw new Error('멈춤'); }
+        const key = prog.list[prog.i]; const l = LISTINGS.get(key); if (!l) continue;
+        const qy = P.searchQueryOf(l.title);
+        try {
+          if (!qy) throw new Error('검색어를 만들 수 없음');
+          const sr = await getDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Used&SearchWord=${encodeURIComponent(qy)}`);
+          const th = SET.photoMatch ?? 0.9; const all = P.parseSearchResults(sr.doc).map((r) => ({ ...r, cov: Math.round(P.nameCoverage(qy, r.title) * 1000) / 1000, vol: P.sameVolume(qy, r.title) }));
+          const cands = all.filter((r) => r.cov >= 0.5).slice(0, 30).map((r) => ({ ...r, match: r.cov >= th && r.vol && !(l.bookId && String(r.itemId) === String(l.bookId)) })); // 같은 상품 = 이름 일치 + 권 번호 같음 (세트의 새책 상세 = 첫 페이지에 이미 있으니 뺌)
+          const M = P.marketNoBook(cands.map((r) => ({ ...r, cov: r.match ? r.cov : 0 })), { match: th, selfItemId: null, ourPrice: l.price });
+          const ref = C('prd_market_nobook').doc(key); const old = (await ref.get()).data(); const sig = `${M.median}|${M.low}|${M.n}`;
+          const cSig = JSON.stringify(cands.map((x) => [x.itemId, x.price, x.title])); if (!old || old.candSig !== cSig) await ref.collection('v').doc(nowIso().replace(/[:.]/g, '-')).set({ at: nowIso(), query: qy, cands, market: { median: M.median, low: M.low, n: M.n }, ...W() }); // 후보 목록이 바뀌면 그 판을 통째로 보관
+          await ref.set({ usedCode: l.usedCode, listingId: l.listingId || null, title: l.title, query: qy, at: nowIso(), src: 'usedSearch', unreg: P.isUnregistered(l), set: P.setInfo(l.title), cands, candSig: cSig, market: { ...M, points: M.points.map((x) => ({ v: x.v, ch: x.ch, itemId: x.itemId, ours: !!x.ours })) },
+            ...(old && old.sig === sig ? {} : { sig, history: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), median: M.median, low: M.low, n: M.n, our: l.price ?? null }) }), ...W() }, { merge: true });
+          M.n ? prog.ok++ : prog.none++;
+          ui('검색 시세 (미등록·세트)', prog.i + 1, prog.list.length, `${l.title} · ${M.n ? `시세 ${M.median.toLocaleString()}원 (${M.n}개, 신뢰도 ${M.conf})` : '비교할 상품 없음'}`);
+        } catch (e) { prog.none++; if (prog.none < 20) log(`시세 ${l.title}: ${e.message}`, 1); }
+        if (prog.i % 5 === 0) await saveProgress('nbMarket', prog);
+      }
+      await finishJob('nbMarket', { ok: prog.ok, none: prog.none }); log(`검색 시세 완료: 경쟁 상품 잡힘 ${prog.ok} · 경쟁 상품 없음 ${prog.none}`);
+    } finally { await releaseLane('aladin'); }
+  }
+
+  /* ───────── 임시: 판매완료 상품의 도서 정보·이미지 한꺼번에 ─────────
+   * 판매완료·내린 상품 중 도서 정보가 없는 것을 전부 → 끝나면 이미지까지. 끝나면 버튼은 '특별 작업' 안으로 숨음. */
+  async function soldInfoJob() {
+    const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+    try {
+      await loadListings();
+      let prog = await loadProgress('soldInfo');
+      if (!prog || !prog.list) { const list = [...LISTINGS.entries()].filter(([, l]) => !l.active && l.usedCode && !l.bookId).map(([k]) => k); prog = { list, i: 0, ok: 0, fail: 0, startedAt: nowIso() }; await saveProgress('soldInfo', prog); log(`판매완료 상품 정보: 도서 정보가 없는 ${list.length.toLocaleString()}개를 모읍니다 (끝나면 이미지까지)`); }
+      for (; prog.i < prog.list.length; prog.i++) {
+        if (stopFlag) { await saveProgress('soldInfo', prog); throw new Error('멈춤'); }
+        const l = LISTINGS.get(prog.list[prog.i]); if (!l || l.bookId) continue;
+        try { await refreshOne(l, null); prog.ok++; } catch (e) { prog.fail++; if (prog.fail < 20) log(`${l.title || l.usedCode}: ${e.message}`, 1); }
+        ui('판매완료 상품 정보 (임시 작업)', prog.i + 1, prog.list.length, `성공 ${prog.ok} · 실패 ${prog.fail}`, '멈춰도 이어서 합니다');
+        if (prog.i % 10 === 0) await saveProgress('soldInfo', prog);
+      }
+      await finishJob('soldInfo', { ok: prog.ok, fail: prog.fail }); log(`판매완료 상품 정보 완료: 성공 ${prog.ok}, 실패 ${prog.fail}. 이어서 이미지를 받습니다`);
+    } finally { await releaseLane('aladin'); }
+    if (!stopFlag && !curStage) await images();
+    drawTemp();
+  }
+  async function drawTemp() { const el = $('#rnpTemp'); if (!el) return; const d = (await jobRef('soldInfo').get()).data(); const done = d && d.done && d.summary;
+    el.innerHTML = done ? `<details><summary style="cursor:pointer;color:#5B6B66">특별 작업 (판매완료 상품 정보는 끝남 · ${new Date(d.finishedAt).toLocaleDateString('ko-KR')})</summary><button class="b3" data-job="soldInfo" style="margin-top:4px">판매완료 상품 정보·이미지 다시 (새로 생긴 것만)</button></details>`
+      : `<button class="b2" data-job="soldInfo" style="width:100%;border-style:dashed" title="임시 작업: 끝나면 이 버튼은 아래 '특별 작업' 안으로 숨습니다">⭐ 임시: 판매완료 상품 정보·이미지 한꺼번에</button>`;
+    el.querySelectorAll('[data-job]').forEach((b) => (b.onclick = () => { window.__rnResumeOk && window.__rnResumeOk(); runJob(b.dataset.job, { manual: true }); })); }
+
+  /* ───────── 6. 알라딘에 중고팔기 내역 (매입·매입불가) ─────────
+   * 목록(쪽마다) → 접수번호 → 상세. 매입이 끝난 접수는 다시 안 열고, 진행 중인 접수만 다시 봄.
+   * 저장: pur_buyback/{접수번호} — 처음 받은 내용은 그대로 두고, 진행 상태가 바뀌면 그 상태를 기록에 덧붙임(snapshots). */
+  const C2B_LIST = (page) => `https://www.aladin.co.kr/account/wc2binfo.aspx?pType=C2BOrderList&page=${page}&c2bsalesType=-1&SearchYear=0&SearchMonth=0&C2BSearchActive=0&C2BSearchWord=`;
+  const C2B_DETAIL = (no) => `https://www.aladin.co.kr/account/wc2binfo.aspx?pType=c2borderinfo&c2bsalesno=${no}`;
+  const isFinal = (o) => !!(o && (o.doneDate || /매입완료|정산완료|완료|취소/.test(o.status || '')) && (o.items || []).every((x) => x.result));
+  async function buybackJob() {
+    const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+    try {
+      const have = new Map(); (await C('pur_buyback').get()).forEach((d) => have.set(d.id, d.data()));
+      const prog = (await loadProgress('buyback')) || { page: 1, list: [], phase: 'list', i: 0, got: 0, upd: 0 };
+      if (prog.phase === 'list') {
+        for (;;) {
+          if (stopFlag) { await saveProgress('buyback', prog); throw new Error('멈춤'); }
+          const { doc } = await getDoc(C2B_LIST(prog.page)); const r = P.parseC2BList(doc);
+          if (!r.orders.length) break;
+          const fresh = r.orders.filter((no) => !have.has(no) || !isFinal(have.get(no)) || have.get(no).settledAmount === undefined); // 정산액을 아직 안 계산한 예전 기록은 한 번만 다시
+          prog.list.push(...fresh.filter((no) => !prog.list.includes(no)));
+          ui('알라딘 팔기 내역: 목록', prog.page, r.lastPage, `${prog.page}/${r.lastPage}쪽 · 볼 접수 ${prog.list.length}건`);
+          // 이미 끝난 접수만 나오는 쪽이 이어지면 그 뒤는 예전 기록 → 멈춤
+          if (!fresh.length && prog.page > 1 && r.orders.every((no) => have.has(no))) break;
+          if (prog.page >= r.lastPage) break; prog.page++; await saveProgress('buyback', prog);
+        }
+        prog.phase = 'detail'; prog.i = 0; await saveProgress('buyback', prog);
+      }
+      for (; prog.i < prog.list.length; prog.i++) {
+        if (stopFlag) { await saveProgress('buyback', prog); throw new Error('멈춤'); }
+        const no = prog.list[prog.i]; const { doc } = await getDoc(C2B_DETAIL(no)); const x = P.parseC2BDetail(doc);
+        const paid = x.items.filter((it) => it.result === 'bought').reduce((a, it) => a + (it.buyPrice || 0), 0);
+        const ship = String((x.head || {})['발송방법'] || ''); const boxes = Math.max(1, Math.ceil((x.reqN || 1) / 20)); const conv = /편의점/.test(ship);
+        const shipFee = !x.doneDate ? 0 : conv ? boxes * (paid >= 10000 ? 1700 : 3000) : /택배/.test(ship) ? (paid >= 10000 ? 0 : boxes * 1500) : 0;
+        const m = String((x.head || {})['판매금액'] || '').match(/([\d,]+)\s*원\s*매입/); const buyStated = m ? +m[1].replace(/,/g, '') : null;
+        const cur = { orderNo: no, date: x.date, type: x.type, shipDate: x.shipDate, doneDate: x.doneDate, status: x.status, settle: x.settle, discardPolicy: x.discardPolicy, buyer: x.buyer, reqN: x.reqN, reqAmount: x.reqAmount, items: x.items, head: x.head, paidAmount: x.doneDate ? paid : 0,
+          buyStated, shipMethod: ship || null, shipFee, shipFeeBoxes: boxes, settledAmount: x.doneDate && /정산\s*완료/.test(x.status || '') ? (buyStated ?? paid) - shipFee : 0 }; // 실제 정산액 = 매입 금액 − 배송비 차감
+        const old = have.get(no); const sig = JSON.stringify([cur.status, cur.doneDate, cur.items.map((it) => it.result + ':' + (it.buyPrice || '')), cur.settledAmount]);
+        if (old && old.sig === sig) continue; // 같은 내용이면 기록하지 않음
+        /* (1.57.2) 상태가 바뀔 때마다 그때의 전체 내용(책마다 결과·매입가, 정산·금액)을 snapshots에 — 예전 기록에 전체 내용이 없으면 바꾸기 전 내용을 먼저 한 번 남김 */
+        const full = (v, at0, tag) => JSON.parse(JSON.stringify({ at: at0, status: v.status || null, doneDate: v.doneDate || null, paid: v.paidAmount ?? null, results: (v.items || []).map((it) => it.result || '-').join(''), items: v.items || [], /* 책마다 받은 칸 그대로 */ settle: v.settle ?? null, reqAmount: v.reqAmount ?? null, buyStated: v.buyStated ?? null, settledAmount: v.settledAmount ?? null, shipFee: v.shipFee ?? null, ...(tag ? { tag } : {}) }));
+        const snapAdd = []; if (old && !(old.snapshots || []).some((x) => x && x.items)) snapAdd.push(full(old, old.lastSeenAt || old.firstSeenAt || null, 'before-1.57.2')); snapAdd.push(full(cur, nowIso()));
+        await C('pur_buyback').doc(no).set({ ...(old ? {} : { firstSeenAt: nowIso() }), ...cur, sig, source: 'collector', lastSeenAt: nowIso(), snapshots: firebase.firestore.FieldValue.arrayUnion(...snapAdd), ...W() }, { merge: true });
+        old ? prog.upd++ : prog.got++;
+        ui('알라딘 팔기 내역: 상세', prog.i + 1, prog.list.length, `${no} · ${x.status || ''} · ${x.reqN}권`);
+        if (prog.i % 5 === 0) await saveProgress('buyback', prog);
+      }
+      await finishJob('buyback', { newOrders: prog.got, updated: prog.upd });
+      log(`알라딘 팔기 내역: 새 접수 ${prog.got}건, 상태 바뀐 접수 ${prog.upd}건`);
+    } finally { await releaseLane('aladin'); }
+  }
+
+  /* ───────── 7. 구매자 분포 · 함께 산 책 · 클릭한 상품 (따로 모으기) ─────────
+   * 새상품 페이지를 화면 밖 창에서 열고 아래까지 내려 지연 로딩되는 칸을 읽음. 하루에 정해진 권수만(설정), 판매 중인 책부터. */
+  // 책 한 권의 구매자 분포·함께 산 책·함께 클릭한 책 (숨은 창) — 구매자 분포 수집과 탐색 수집이 같이 씀. 바뀐 것만 시각과 함께 덧붙임
+  async function dynOne(bookId, item) {
+    const r = await getProductFull(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${item}`);
+    const p = r && r.page; const upd = { dynTriedAt: nowIso(), dynLoaded: !!(p && p.dynamicLoaded) };
+    if (p) { if (p.buyerDist) upd.buyerDist = p.buyerDist; if (p.relationBuy && p.relationBuy.length) { upd.relationBuy = p.relationBuy.map((x) => x.title); upd.relationBuyIds = p.relationBuy; } if (p.clickRelation && p.clickRelation.length) upd.clickRelation = p.clickRelation; if (p.clickRaw) upd.clickRaw = p.clickRaw; }
+    if (upd.buyerDist || upd.relationBuyIds || upd.clickRelation) upd.dynAt = nowIso();
+    if (upd.buyerDist || upd.relationBuy || upd.clickRelation) { const hsig = JSON.stringify([upd.buyerDist || null, upd.relationBuy || null, upd.clickRelation || null]); /* (1.57.2) 함께 클릭한 책만 바뀌어도 기록에 남김 */ const hRef = C('prd_dyn_history').doc(bookId); const hPrev = (await hRef.get().catch(() => null)); const hp = hPrev && hPrev.exists ? hPrev.data() : null;
+      if (!hp || hp.lastSig !== hsig) await hRef.set({ bookId, lastSig: hsig, snaps: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), buyerDist: upd.buyerDist || null, relationBuy: upd.relationBuy || null, relationBuyIds: upd.relationBuyIds || null, clickRelation: upd.clickRelation || null, clickRaw: upd.clickRaw || null }), lastCheckedAt: nowIso(), ...W() }, { merge: true }).catch(() => {});
+      else await hRef.set({ lastCheckedAt: nowIso() }, { merge: true }).catch(() => {}); }
+    await C('prd_book_metrics').doc(bookId).set({ ...upd, dynamicPending: !(upd.buyerDist || upd.relationBuyIds), ...W() }, { merge: true });
+    return { p, upd };
+  }
+  /* ───────── 끝없는 탐색 수집 (1.27.0) — 버튼으로만, 일괄 수집에는 들어가지 않음 ─────────
+   * 우리 책들의 '함께 산 책·함께 클릭한 책'에서 시작해, 새로 만난 책마다 지금까지 모으는 모든 정보를 모으고(새상품 페이지의 도서 정보·사진·분야·평점, 온라인 중고 시장 지표, 구매자 분포),
+   * 그 책의 '함께 산 책'을 다시 대기열에 넣어 멈출 때까지 끝없이 넓혀 감. 처음 보는 판매자는 판매자 목록에 넣어 판매자 수집(6개월 평가 수·평가)이 이어서 모음
+   * 대기열: prd_explore/{알라딘 상품번호} (todo → done/fail, 어디서 왔는지·몇 단계째인지) — Firebase에 있으므로 멈춰도·새로고침해도·다른 PC에서도 그대로 이어감
+   * 탐색으로 모은 책은 prd_books에 explored 표시 (우리 상품·알라딘 구매 풀과 구분). 나중에 그 책을 매입하면 같은 도서 기록을 그대로 씀
+   * 다른 작업(일괄·개별 버튼·자동)이 시작되면 스스로 멈추고, 그 작업이 끝나면 자동으로 다시 이어감 */
+  async function exploreJob() {
+    try { await C('prd_explore').doc('_check').set({ check: true, at: nowIso(), ...W() }, { merge: true }); } catch (e) { log(`탐색 수집: 저장 권한 없음(prd_explore) — Firestore 규칙에 허용 필요 (${e.code || e.message})`, 1); return false; }
+    const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+    const ST = window.__rnExplore = window.__rnExplore || { n: 0, newB: 0, known: 0, fail: 0, added: 0, sellers: 0 };
+    const sellerSeen = new Set(); try { (await C('sellers').get()).forEach((d) => sellerSeen.add(d.id)); } catch (e) {}
+    const enqueue = async (ids, from, depth) => { let a = 0; for (const x of ids) { const id = String(x.aladinItemId || x.itemId || x); if (!/^\d+$/.test(id)) continue; const ref = C('prd_explore').doc(id); const ex = await ref.get().catch(() => null); if (ex && ex.exists) continue;
+      await ref.set({ itemId: id, title: x.title || null, from: from || null, depth: depth || 0, status: 'todo', addedAt: nowIso(), ...W() }); a++; } ST.added += a; return a; };
+    try {
+      if ((await C('prd_explore').where('status', '==', 'todo').limit(1).get()).empty) { // 대기열이 비면: 우리 책들의 함께 산 책·함께 클릭한 책으로 다시 채움
+        ui('탐색 수집: 시작 목록 만드는 중', 0, 0, '우리 책들의 함께 산 책·함께 클릭한 책');
+        const seeds = new Map(); (await C('prd_book_metrics').get()).forEach((d) => { const m = d.data(); [...(m.relationBuyIds || []), ...(m.clickRelation || [])].forEach((x) => { if (x && x.aladinItemId && !seeds.has(x.aladinItemId)) seeds.set(x.aladinItemId, { aladinItemId: x.aladinItemId, title: x.title || null, from: d.id }); }); });
+        const done = new Set(); (await C('prd_explore').get()).forEach((d) => done.add(d.id));
+        const todo = [...seeds.values()].filter((x) => !done.has(String(x.aladinItemId)));
+        for (let k = 0; k < todo.length; k += 400) { const b = db.batch(); todo.slice(k, k + 400).forEach((x) => b.set(C('prd_explore').doc(String(x.aladinItemId)), { itemId: String(x.aladinItemId), title: x.title, from: x.from, depth: 1, status: 'todo', addedAt: nowIso(), ...W() })); await b.commit(); }
+        log(`탐색 수집: 시작 목록 ${todo.length.toLocaleString()}권 (우리 책들의 함께 산 책·함께 클릭한 책 중 아직 안 본 것)`);
+        if (!todo.length) { log('탐색 수집: 더 넓힐 책이 없습니다 (모두 봤음)'); return; }
+      }
+      const dynCut = new Date(Date.now() - Math.max(1, SET.dynDays || 30) * 864e5).toISOString();
+      for (;;) {
+        const qs = await C('prd_explore').where('status', '==', 'todo').limit(30).get(); if (qs.empty) { log('탐색 수집: 대기열을 다 봤습니다 — 다음 실행 때 다시 채움'); break; }
+        for (const d of qs.docs) {
+          if (stopFlag) throw new Error('멈춤');
+          const x = d.data(); const itemId = x.itemId; let bookId = null, kind = 'new', title = x.title || itemId, isbn = '';
+          try {
+            const idDoc = await C('prd_ids').doc('itemId_' + itemId).get();
+            if (idDoc.exists) { bookId = idDoc.data().bookId; kind = 'known'; ST.known++; }
+            else { await refreshOne({ explore: true, listingId: itemId, title: x.title || null, exploreFrom: x.from || null }, null); const id2 = await C('prd_ids').doc('itemId_' + itemId).get(); bookId = id2.exists ? id2.data().bookId : null; ST.newB++; }
+            let rel = [];
+            if (bookId) {
+              const bk = (await C('prd_books').doc(bookId).get()).data() || {}; title = bk.title || title; isbn = bk.isbn13 || bk.isbn10 || '';
+              let m = (await C('prd_book_metrics').doc(bookId).get()).data() || {};
+              if (!(m.dynAt && m.dynAt > dynCut)) { await dynOne(bookId, itemId); m = (await C('prd_book_metrics').doc(bookId).get()).data() || {}; }
+              rel = [...(m.relationBuyIds || []), ...(m.clickRelation || [])];
+              const newSellers = (m.usedFirstPage || []).filter((r) => r && r.sellerCode && String(r.sellerCode) !== '0' && !sellerSeen.has('sc_' + r.sellerCode));
+              for (const r of newSellers) { sellerSeen.add('sc_' + r.sellerCode); await C('sellers').doc('sc_' + r.sellerCode).set({ sc: String(r.sellerCode), name: r.sellerName || null, discoveredAt: nowIso(), discoveredBy: 'explore', ...W() }, { merge: true }); ST.sellers++; }
+            }
+            const a = await enqueue(rel, bookId || itemId, (x.depth || 0) + 1);
+            await d.ref.set({ status: 'done', kind, bookId, doneAt: nowIso(), relCount: rel.length, addedNext: a }, { merge: true }); ST.n++;
+          } catch (e) { if (e && e.message === '멈춤') throw e; ST.fail++; await d.ref.set({ status: 'fail', error: String(e.message || e).slice(0, 200), doneAt: nowIso() }, { merge: true }).catch(() => {}); }
+          ui('끝없는 탐색 수집', 0, 0, `${title} (ISBN ${isbn || '없음'}) · ${kind === 'known' ? '이미 있는 책' : '새 책'} · ${x.depth || 0}단계`, `이번에 본 책 ${ST.n.toLocaleString()} · 새 책 ${ST.newB.toLocaleString()} · 대기열에 더함 ${ST.added.toLocaleString()} · 새 판매자 ${ST.sellers} · 실패 ${ST.fail} — 멈춤을 누를 때까지 계속`);
+        }
+      }
+    } finally { await releaseLane('aladin'); }
+  }
+
+  async function dynJob(limit) {
+    const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+    try {
+      let prog = await loadProgress('dynamic');
+      if (!prog || !prog.list) { await loadListings();
+        const cut = FORCE_ALL ? '9999' : new Date(Date.now() - Math.max(1, SET.dynDays || 30) * 864e5).toISOString(); // 한 번 모은 책은 이 기간(기본 30일) 동안 건너뜀 (수동 실행은 전부)
+        const M = new Map(); (await C('prd_book_metrics').get()).forEach((d) => M.set(d.id, d.data()));
+        const B = new Map(), pool = new Set(); (await C('prd_books').get()).forEach((d) => { const v = d.data(); if (v.aladinItemId) { B.set(d.id, v.aladinItemId); if (v.aladinPool) pool.add(d.id); } });
+        const act = new Set(); LISTINGS.forEach((l) => { if (l.bookId && ACTIVE.includes(l.status)) act.add(l.bookId); });
+        const scope = SET.dynScope || 'all'; const rank = (id) => (act.has(id) ? 0 : pool.has(id) ? 1 : 2); // 범위(설정): 판매 중만 / 판매 중 + 알라딘 구매 풀(기본) / 판매완료까지 전부
+        [...B.keys()].forEach((id) => { const r = rank(id); if ((scope === 'active' && r > 0) || (scope === 'active_pool' && r > 1)) B.delete(id); });
+        const retry = cut; // 정보가 없던 책도 같은 기간(기본 30일) 뒤에만 다시
+        const ids = [...B.keys()].filter((id) => { const m = M.get(id); if (!m) return true; if (m.dynAt) return m.dynAt < cut; return !m.dynTriedAt || m.dynTriedAt < retry; }).sort((a, b) => rank(a) - rank(b));
+        prog = { list: (limit ? ids.slice(0, limit) : ids).map((id) => `${id}|${B.get(id)}`), i: 0, got: 0, miss: 0 }; await saveProgress('dynamic', prog);
+        log(`구매자 분포·함께 산 책 [범위: ${scope === 'active' ? '판매 중' : scope === 'all' ? '판매완료까지 전부' : '판매 중 + 알라딘 구매 풀'}]: 대상 책 ${B.size.toLocaleString()}권 중 모을 책 ${prog.list.length.toLocaleString()}권 ${limit ? `(이번엔 ${limit}권까지)` : '(전부)'} · 이미 모은 ${(B.size - prog.list.length).toLocaleString()}권은 ${SET.dynDays || 30}일 동안 건너뜀`);
+        if (!prog.list.length) log(B.size ? '모을 책이 없습니다 (모두 최근에 모음)' : '도서 정보가 있는 책이 없습니다 — 먼저 도서·시장 지표(또는 판매완료 상품 정보)를 돌려 주세요', 1);
+      }
+      for (; prog.i < prog.list.length; prog.i++) {
+        if (stopFlag) { await saveProgress('dynamic', prog); throw new Error('멈춤'); }
+        const [bookId, item] = String(prog.list[prog.i]).split('|');
+        const { p, upd } = await dynOne(bookId, item);
+        if (upd.buyerDist || upd.relationBuyIds || upd.clickRelation) prog.got++; else prog.miss++;
+        ui('구매자 분포·함께 산 책', prog.i + 1, prog.list.length, `${p && p.title ? p.title : bookId} (ISBN ${(p && (p.isbn13 || p.isbn10)) || '없음'})${p && p.buyerDist ? '' : ' — 분포 없음'} · 읽음 ${prog.got} · 비어 있음 ${prog.miss}`);
+        if (prog.i % 5 === 0) await saveProgress('dynamic', prog);
+      }
+      await finishJob('dynamic', { got: prog.got, miss: prog.miss });
+      log(`구매자 분포·함께 산 책: ${prog.got}권 읽음, ${prog.miss}권은 정보 없음`);
+    } finally { await releaseLane('aladin'); }
+  }
+
+  /* ───────── 8. 매일 자동 일괄 수집 · 웹앱 수집 요청 ─────────
+   * 매일: 설정 시각이 지나면 알라딘 화면이 열린 PC 중 한 대만(먼저 잡은 PC) 일괄 수집을 시작. prd_jobs/auto 에 날짜를 잡아 겹치지 않게.
+   * 웹앱: prd_jobs/request 에 요청이 들어오면 비어 있는 PC 한 대가 받아서 실행. */
+  const today = () => { const d = new Date(Date.now() + 9 * 3600e3); return d.toISOString().slice(0, 10); };
+  async function claimDoc(id, field, value) { let ok = false; await db.runTransaction(async (tx) => { const ref = C('prd_jobs').doc(id); const s = await tx.get(ref); const d = s.exists ? s.data() : {}; if (d[field] === value) return; tx.set(ref, { [field]: value, by: PC_NAME, pc: PC_ID, at: nowIso() }, { merge: true }); ok = true; }); return ok; }
+  setInterval(() => { try { const v = lockDocId(); if (GM_getValue('rnu-lockdoc', null) !== v) GM_setValue('rnu-lockdoc', v); } catch (e) {} }, 5000); /* 바뀔 때만 씀 (같은 값을 5초마다 써서 모든 탭에 알림이 가던 것) */ setTimeout(() => { try { GM_setValue('rnu-lockdoc', lockDocId()); } catch (e) {} }, 1500);
+  setTimeout(() => { try { GM_setValue('rnu-autopc', SET.autoPc || 'JS-MAIN'); } catch (e) {} }, 2000);
+  setTimeout(() => { try { GM_setValue('rnu-maxlogin', SET.maxLoginTries ?? 6); GM_setValue('rnu-drive-url', SET.driveLogUrl || ''); GM_setValue('rnu-drive-key', SET.driveLogKey || ''); } catch (e) {} }, 2500);
+  window.__rnUniAuto = true;
+  setInterval(async () => {
+    try { window.__rnUniAuto = !!SET.autoDaily || !!window.__rnSchedOn; if (window.__rnSchedOn || (SCHED && SCHED.items)) return; /* (1.34.0) 새 '⏰ 매일 자동 수집'이 있으면 그쪽만 */ if ((window.__rnRest && window.__rnRest()) || running || !auth.currentUser || !SET.autoDaily || window.__rnPaused) return;
+      const kst = new Date(Date.now() + 9 * 3600e3); const mins = kst.getUTCHours() * 60 + kst.getUTCMinutes(); const start = (SET.autoHour ?? 17) * 60;
+      const mine = String(PC_NAME || '').toUpperCase() === String(SET.autoPc || 'JS-MAIN').toUpperCase();
+      if (mins < start + (mine ? 0 : (SET.autoGraceMin ?? 30))) return; // 지정 PC가 먼저, 다른 PC는 기다렸다가
+      const lk = (await LOCK().get()).data(); if (laneBusy(lk)) return; // 이 묶음에 자리가 없으면 나중에
+      const ch = (await C('prd_jobs').doc('chain').get()).data() || {};
+      if (ch.done && ch.finishedAt && Date.now() - ch.finishedAt < 24 * 3600e3) { if (await claimDoc('auto', 'date', today())) { await C('prd_jobs').doc('auto').set({ skipped: true, reason: '24시간 안에 모두 일괄 수집 완료' }, { merge: true }); log(`오늘 자동 수집 건너뜀 — ${Math.round((Date.now() - ch.finishedAt) / 3600e3)}시간 전에 모두 일괄 수집을 끝냄 (${ch.summary && ch.summary.finishedBy || ''})`); } return; }
+      if (!(await claimDoc('auto', 'date', today()))) return;
+      log(`매일 자동 '모두 일괄 수집' 시작 (${today()} · ${mine ? '지정 PC' : `지정 PC ${SET.autoPc}가 안 해서 이 PC가 맡음`})`);
+      window.__rnAuto = true; const r = await runJob('chain'); window.__rnAuto = false; if (r === false) { await C('prd_jobs').doc('auto').set({ date: null }, { merge: true }); log('자동 수집을 시작하지 못해 다음 확인 때 다시 시도합니다', 1); }
+    } catch (e) {}
+  }, 10 * 60000); // 10분마다 확인 (시작 시각 전후·다른 PC 작업 중이면 다음 확인 때)
+  /* (1.60.1) 🎯 집중 벤치마킹의 시각 정해 저절로 돌던 '주기 수집'(3분마다 확인)은 없앰 — 이제 ⏰ 매일 자동 수집의 칸(웹앱 설정에서도 같은 편집기)에서 정한 때만, 웹앱 🎯에서 정한 순서대로 켜진 그룹의 판매자를 모두 읽음
+   *  판매자 순서·켜고 끄기를 보기 위해 설정만 듣고 있음(⏰ 시간표의 판매자별 칸막이) */
+  let BENCH_LIVE = null; C('app_settings').doc('bench').onSnapshot((d) => { BENCH_LIVE = d.exists ? d.data() : null; try { asEdRefresh(true); } catch (e) {} }, () => {});
+  C('prd_jobs').doc('request').onSnapshot(async (d) => { try {
+    const r = d.exists ? d.data() : null; if (!r || !r.job || r.handled || running || window.__rnPaused || (window.__rnRest && window.__rnRest()) || typeof JOBS === 'undefined' || !JOBS[r.job] || Date.now() - (r.atMs || 0) > 30 * 60000) return;
+    const own0 = asOwn(); const mine = own0 ? String(own0.pc || '') !== String(PC_NAME) /* (1.63.7) 담당 PC를 정했으면 요청·맡긴 일은 담당이 아닌 PC가 먼저(담당은 자동 수집에 집중 · 2분 안에 아무도 안 받으면 담당이) */ : String(PC_NAME || '').toUpperCase() === String(SET.reqPc || 'JS-MAIN').toUpperCase(); if (!mine && Date.now() - (r.atMs || 0) < 2 * 60000) { setTimeout(() => d.ref.get().then((x) => x.exists && !x.data().handled && d.ref.set({ ping: Date.now() }, { merge: true })), 2 * 60000 + 2000); return; } // 지정 PC가 2분 안에 안 받으면 다른 PC가
+    try { let ok = false; await db.runTransaction(async (tx) => { const s = await tx.get(d.ref); const v = s.data() || {}; if (v.handled) return; tx.set(d.ref, { handled: true, handledBy: PC_NAME, handledAt: nowIso() }, { merge: true }); ok = true; });
+      if (ok) { log(`웹앱 요청으로 '${JOBS[r.job][0]}' 시작 (${r.byName || r.by || ''})`); window.__rnRemote = true; const pr = runJob(r.job); setTimeout(() => { window.__rnRemote = false; }, 3000); await pr; } } catch (e) {}
+  } catch (e) {} }, () => {});
+
+  /* ══════════ ⏰ 매일 자동 수집 (1.34.0 → 1.60.0 편집기) ══════════
+   * 켜 두면(맨 위 스위치) 칸마다 정한 조건(시각·간격·다른 칸 뒤·오래되면·PC가 쉬면·켠 날 처음)에 그 일을 저절로 함 — 끌 때까지 매일.
+   * 설정은 Firebase(prd_system/autoSched.slots — 칸 목록, 순서 = 우선순위) 한 곳 → 모든 PC가 같은 설정을 보고, 회차마다 한 PC만 맡음(prd_jobs/autoSched.runs 에 회차를 먼저 잡은 PC).
+   * 같은 때 여러 칸이 할 때가 되면 위 칸부터 하나씩. 앞 칸이 막혀 있으면(다른 PC가 알라딘 작업 중·고객 탭 바쁨) 건너뛰고 다음 칸.
+   * 주문(주문확인요청·발송 요청)과 알라딘 구매 첫 쪽은 클라우드가 늘 하므로 여기 없음. 고객 쪽 일(묻고 답하기·반품·고객 일괄)은 주문조회·판매관리 화면 탭에서만 돎.
+   * (1.60.0) 편집기: 칸을 끌어 순서 바꾸기(움직임 보임) · 시간표에서 시각 블록을 끌어 시각 바꾸기 · 칸 더하기(모든 수집 일 — 앞으로 생기는 일도 저절로 목록에 나옴)·고치기·복제·지우기 · 일마다 평균 걸린 시간
+   *  옛 수집기(1.59 이하)는 items(예전 일곱 칸)만 읽음 → 예전 칸을 예전과 같은 모양(정한 시각·다른 조건 없음)으로 둘 때만 items도 켜 둠(그 밖엔 꺼서 옛 수집기가 다르게 하지 않게) */
+  /* (1.60.1) 계산(엔진)·칸 편집기 화면은 공용 파일 readnow-autosched-core.js 한 곳(웹앱 설정의 편집기와 같은 것) — 여기는 Firebase 읽기·쓰기와 실행만 */
+  const RA = (typeof ReadnowAuto !== 'undefined' && ReadnowAuto) || globalThis.ReadnowAuto || window.ReadnowAuto || null; const AS = RA ? RA.AS : null;
+  const SCHED_REF = () => C('prd_system').doc('autoSched'); const SCHED_RUN = () => C('prd_jobs').doc('autoSched'); const JSTAT_REF = () => C('prd_system').doc('jobStats');
+  const SCHED_BACK = {}; let SCHED = null, SCHED_RUNS = {}, JSTATS = {}; window.__rnSchedOn = false; const BOOT_AT = Date.now(); let lastBusyAt = Date.now();
+  /* (1.63.7) 🖥 자동 수집 담당 PC — 수집기(이 PC의 수집기 탭)가 2분마다 prd_jobs/pcBeat에 신호(살아 있음·쉬는 중 이유)를 적고 같이 읽음
+   *  담당·순서 = prd_system/autoSched.owner(⏰ 편집기 맨 위 · 웹앱 ⏰ 페이지에서도) · 판단은 공용 파일 AS.ownerOf 한 곳 */
+  let BEATS = {}; const BEAT_REF = () => C('prd_jobs').doc('pcBeat');
+  function asOwn() { try { return SCHED && SCHED.owner && SCHED.owner.primary && AS && AS.ownerOf ? AS.ownerOf(SCHED, BEATS, Date.now()) : null; } catch (e) { return null; } }
+  function asOwnMine() { const o = asOwn(); return !o || String(o.pc || '') === String(PC_NAME); }
+  async function pcBeat() { if (!auth.currentUser || !PC_NAME || (window.__rnRest && window.__rnRest()) || window.__rnReloading) return; const why = window.__rnPaused ? '📥 수집 끔(일시정지)' : '';
+    try { await BEAT_REF().set({ pcs: { [PC_NAME]: { atMs: Date.now(), at: nowIso(), ver: VER, ok: !window.__rnPaused, off: (window.__rnFeatOff && window.__rnFeatOff()) || [], ...(why ? { why } : {}) } } }, { merge: true }); const d = await BEAT_REF().get(); const prevOwn = (asOwn() || {}).pc; BEATS = d.exists ? d.data() : {}; const o = asOwn(); if (o && prevOwn !== undefined && prevOwn !== o.pc && o.pc === PC_NAME) log(`🖥 자동 수집을 이 PC가 맡음 — ${o.why}`); try { asEdRefresh(true); } catch (e) {} } catch (e) {} }
+  setTimeout(pcBeat, 12000); setInterval(pcBeat, 2 * 60000);
+  const kstNow = () => (RA ? RA.kstNow() : { day: '', min: 0 }); const esc3 = (t) => (RA ? RA.esc(t) : String(t == null ? '' : t));
+  const AS_META = RA ? RA.META : {}; const CRM_LBL = RA ? RA.CRM_LBL : {};
+  const PAR_JOBS = { kpipa: kpipaPar }; /* (1.60.1) 동시 진행 일 — 알라딘을 쓰지 않아 다른 수집과 함께 돎(따로 돌리는 함수) */
+  function asCatalog() { const L = []; const crm = { ...CRM_LBL, ...((window.__rnCrm && window.__rnCrm.tasks && window.__rnCrm.tasks()) || {}) };
+    for (const [k, l] of Object.entries(crm)) L.push({ job: 'crm:' + k, label: l });
+    for (const k of Object.keys(JOBS)) L.push({ job: 'prd:' + k, label: JOBS[k][0], ...(PAR_JOBS[k] ? { par: true } : {}) });
+    return L.map((x) => { const m = AS_META[x.job] || ['기타', '']; return { ...x, g: m[0], d: m[1] }; }); }
+  const asLabel = (job) => { const c = asCatalog().find((x) => x.job === job); return c ? c.label : job; };
+  let E = null; /* 칸 편집기(공용 파일) — 수집기 화면 위에 창으로 */
+  const asName = (s) => (E ? E.name(s) : (s && (s.name || asLabel(s.job))) || '');
+  const asMissing = (s) => !!s && !asCatalog().some((c) => c.job === s.job);
+  const asAvgMs = (job) => (E ? E.avg(job) : null);
+  /* ── 일마다 걸린 시간 기록 (prd_system/jobStats) — 어디서 돌렸든(매일 자동·직접 누름·웹앱 요청) 끝날 때마다 덧붙임 · 일마다 최근 40번 ── */
+  async function jobStatAdd(job, list) { if (!auth.currentUser || !list.length) return; try { await db.runTransaction(async (tx) => { const s = await tx.get(JSTAT_REF()); const J = ((s.exists && s.data().jobs) || {})[job] || {}; const old = J.runs || [];
+      const add = list.filter((e) => !old.some((o) => Math.abs(AS.toMs(o.at) - AS.toMs(e.at)) < 3 * 60e3)); if (!add.length) return; const runs = [...old, ...add].sort((a, b) => AS.toMs(a.at) - AS.toMs(b.at)).slice(-40);
+      tx.set(JSTAT_REF(), { jobs: { [job]: { runs, label: asLabel(job), n: (J.n || 0) + add.length, at: nowIso() } } }, { merge: true }); }); } catch (e) {} }
+  window.__rnJobDone = (job, ms, st, how) => { if (!job || !(ms >= 0) || !['done', 'stop', 'error', 'timeout', 'part'].includes(st)) return; jobStatAdd(job, [{ at: nowIso(), ms: Math.round(ms), st, pc: PC_NAME, how: how || (window.__rnAutoSlot ? 'sched' : window.__rnAuto ? 'auto' : window.__rnRemote ? 'web' : 'manual'), src: 'job' }]); };
+  /* 예전 걸린 시간 채우기 — 이 PC 작업 기록(최근 7일)의 '■ … 끝남 — N분'·'⏰ … 끝 (N분)' 줄에서 (PC마다 한 번 · 분 단위라 '기록으로 어림') */
+  /* (1.60.1) 🎯 판매자마다 걸린 시간 — 마지막 회차(bench_state의 시작·끝, 끝까지 읽은 것만)로 처음 한 번 채움 */
+  async function benchStatSeed() { if (GM_getValue('rn-jobstats-seed-bench', '') === '1.60.1') return; let n = 0; try { const qs = await C('bench_state').get(); for (const d of qs.docs) { const v = d.data() || {}; const a = Date.parse(v.runAt || ''), b = Date.parse(v.endAt || ''); if (!(a > 0 && b > a) || v.complete === false || b - a > 12 * 3600e3 || b - a < 30e3) continue; await jobStatAdd('bench:' + d.id, [{ at: v.endAt, ms: b - a, st: 'done', pc: v.by || '', how: 'state', src: 'state' }]); n++; } GM_setValue('rn-jobstats-seed-bench', '1.60.1'); if (n) log(`🎯 판매자마다 걸린 시간: 마지막 회차 기록으로 ${n}명을 채움(⏰ 시간표 칸막이·한 바퀴 예상)`); } catch (e) {} }
+  async function jobStatSeed() { benchStatSeed().catch(() => {}); if (GM_getValue('rn-jobstats-seed', '') === '1.60.0' || !window.__rnLogDay) return; const byName = {}; for (const c of asCatalog()) byName[c.label] = c.job; ['qna:묻고 답하기', 'returns:반품 관리', 'scanDaily:상품 조회/수정 (판매중·일시판매중지·판매중지)', 'buyback:알라딘 팔기 정산 내역', 'aladinBuy:알라딘 구매 내역 (내가 산 것)', 'crmBulk:고객·주문 전체 일괄', 'chain:모두 일괄 수집 (고객 + 상품 전체)'].forEach((x) => { const [id, l] = x.split(':'); byName[l] = (AS.LEG[id] || {}).job; });
+    const got = {}; for (let i = 0; i < 8; i++) { const d = AS.kst(Date.now() - i * 864e5).day; let rec = null; try { rec = await window.__rnLogDay(d); } catch (e) {} for (const e of (rec && rec.lines) || []) { const p = AS.parseLogLine(e.x); if (!p) continue; const job = byName[p.name]; if (!job) continue; (got[job] = got[job] || []).push({ at: new Date(e.t).toISOString(), ms: p.ms, st: p.st, pc: PC_NAME, how: p.how, src: 'log' }); } }
+    for (const [job, L] of Object.entries(got)) await jobStatAdd(job, L.slice(-40)); GM_setValue('rn-jobstats-seed', '1.60.0'); const n = Object.values(got).reduce((a, L) => a + L.length, 0); if (n) log(`⏰ 일마다 걸린 시간: 이 PC 작업 기록(최근 7일)에서 ${n}번을 찾아 채움 (${Object.keys(got).length}가지 일)`); }
+  /* (1.60.1) 칸 편집기에 넘기는 것(ctx) — 읽기는 이 PC가 듣고 있는 것 그대로, 쓰기는 asSave 한 곳 */
+  const BIs = { ext: null, cj: null, cloud: null, ack: null, ackLog: [] }; C('app_settings').doc('ext').onSnapshot((d) => { BIs.ext = d.exists ? d.data() : {}; try { asEdRefresh(true); } catch (e) {} asAck('ext', BIs.ext, () => `외부 정보 ${BIs.ext.on === false ? '끔' : '켬'} · 클라우드 이어 받기 ${BIs.ext.cloud === true ? '켬' : '끔'} 받음`); }, () => {});
+  /* (1.62.0) ✅ 적용 확인 — 이 PC가 설정을 실제로 받으면(듣기에 새 값이 들어오면) 받은 설정의 표지를 prd_system/autoAck.pcs.{PC}에, 바뀐 때만 적용 기록(prd_jobs/autoAck_YYYY-MM)에 한 줄 · 웹앱 ⏰ 자동 수집 페이지·칸 편집기 맨 위에 PC마다 ✓/⏳ */
+  function asAck(kind, data, what) { try { if (!RA || !RA.ackSig || !data) return; const sig = RA.ackSig(kind, data); const gk = 'rn-ack-' + kind; const prev = GM_getValue(gk, ''); const mine = ((((BIs.ack || {}).pcs || {})[PC_NAME] || {})[kind] || {}).sig;
+      if (prev === sig && mine === sig) return; GM_setValue(gk, sig); const at = nowIso(); C('prd_system').doc('autoAck').set({ pcs: { [PC_NAME]: { [kind]: { sig, at, ver: APP_VER_AS } } } }, { merge: true }).catch(() => {});
+      if (prev !== sig) C('prd_jobs').doc('autoAck_' + at.slice(0, 7)).set({ log: firebase.firestore.FieldValue.arrayUnion({ at, pc: PC_NAME, kind, sig, what: String(typeof what === 'function' ? what() : what || '').slice(0, 160) }) }, { merge: true }).catch(() => {}); } catch (e) {} }
+  const APP_VER_AS = ((typeof globalThis !== 'undefined' && globalThis.__RN_FILE_VER) || (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version)) || '?';
+  C('prd_system').doc('autoAck').onSnapshot((d) => { BIs.ack = d.exists ? d.data() : {}; try { asEdRefresh(true); } catch (e) {} }, () => {});
+  C('prd_jobs').doc('autoAck_' + nowIso().slice(0, 7)).onSnapshot((d) => { BIs.ackLog = (d.exists && d.data().log) || []; try { asEdRefresh(true); } catch (e) {} }, () => {});
+  /* (1.61.0) ☁ 클라우드가 하는 일 켜기·끄기(app_settings/cloud_jobs) + 클라우드 신호(app_settings/cloud) — 칸 편집기에 보이고 여기서도 바꿈 */
+  C('app_settings').doc('cloud_jobs').onSnapshot((d) => { BIs.cj = d.exists ? d.data() : {}; try { asEdRefresh(true); } catch (e) {} asAck('cj', BIs.cj, () => { const c = BIs.cj || {}; const off = (RA.CLOUD_JOBS || []).filter((x) => x.k !== 'ext' && c[x.k] === false).map((x) => x.label); return c.all === false ? '☁ 전체 끔 받음' : `☁ ${off.length ? '끈 일: ' + off.join(', ') : '모두 켬'} 받음`; }); }, () => {});
+  C('app_settings').doc('cloud').onSnapshot((d) => { BIs.cloud = d.exists ? d.data() : null; }, () => {});
+  const asCloudCtx = () => ({ cfg: BIs.cj || {}, beat: BIs.cloud, ext: BIs.ext || {}, extLease: ((EXT_S.lease || {}).pc) || null, set: (k, v) => (k === 'ext' ? C('app_settings').doc('ext').set({ cloud: !!v, at: nowIso(), by: PC_NAME }, { merge: true }) : C('app_settings').doc('cloud_jobs').set({ [k]: !!v, at: nowIso(), by: PC_NAME }, { merge: true })).then(() => log(`☁ 클라우드 '${((RA.CLOUD_JOBS || []).find((x) => x.k === k) || { label: k }).label}' ${v ? '켬' : '끔'}`)) });
+  function asSegs(job) { if (!['prd:bench', 'prd:benchForce'].includes(job) || !BENCH_LIVE) return null; const T = benchTargets(BENCH_LIVE);
+    return T.map((t) => { const d = AS.durations('bench:' + String(t.sc), JSTATS, {}, []); return { label: t.name || String(t.sc), ms: d.n ? d.avg : 15 * 60e3, est: !d.n }; }); }
+  function asBuiltins() { const X = EXT(); const on = !!(X && BIs.ext && X.cfgOf(BIs.ext).on);
+    return [{ k: 'ext', label: '🌐 외부 정보 (알라딘 밖 기본 정보·국내 중고 시세·외국 시세·도서관·전자책)', desc: `5분마다 최대 4분씩 조금씩 — 출처마다 하루 최대·요청 간격을 지킴 · PC가 꺼지면 ${BIs.ext && BIs.ext.cloud === true ? '클라우드가 이어 받음' : '수집 안 함(☁ 클라우드 이어 받기 꺼짐)'} · 출처별 설정은 웹앱 설정 ⑱`, on, par: true, run: EXT_S.busy ? '이 PC에서 받는 중' : null, toggle: (v) => C('app_settings').doc('ext').set({ on: !!v, at: nowIso(), by: PC_NAME }, { merge: true }) }]; }
+  const ASCTX = { doc: () => SCHED, runs: () => SCHED_RUNS, stats: () => JSTATS, catalog: () => asCatalog(), pc: PC_NAME, pcs: () => { try { return Object.values(PCS_SEEN).filter((v) => v && v.pcName && v.tool === '상품 수집기' && Date.now() - (v.atMs || 0) < 14 * 864e5).map((v) => String(v.pcName)); } catch (e) { return []; } },
+    beats: () => BEATS, setOwner: (o) => SCHED_REF().set({ owner: { primary: String(o.primary || '').slice(0, 40), order: (o.order || []).map((x) => String(x).slice(0, 40)).slice(0, 12), at: nowIso(), by: PC_NAME } }, { merge: true }).then(() => log(`🖥 자동 수집 담당 PC: ${o.primary || '정하지 않음'}${o.order && o.order.length ? ' → ' + o.order.join(' → ') : ''}`)),
+    save: (slots, baseRev, what) => asSave(slots, baseRev, what), setOn: (on) => SCHED_REF().set({ on: !!on, at: nowIso(), by: PC_NAME }, { merge: true }).then(() => log(`⏰ 매일 자동 수집 ${on ? '켬' : '끔'}`)), log: (m, e) => log(m, e), segs: asSegs, builtins: asBuiltins, cloud: asCloudCtx, acks: () => ({ pcs: (BIs.ack || {}).pcs || {}, log: BIs.ackLog || [] }), note: '웹앱 ⏰ 자동 수집 페이지와 같은 편집기 — 어디서 고치든 같은 칸(prd_system/autoSched) · 저장하면 모든 PC에 1분 안에 적용 · 회차마다 한 PC만 함', front: (el) => window.__rnFront && window.__rnFront(el) };
+  /* 할 수 있는 일 목록을 Firebase에 알려 둠 → 웹앱 설정의 편집기도 같은 목록(이 수집기 판의 일)을 씀 · 바뀔 때만 씀 */
+  async function asPublishCatalog() { try { const jobs = asCatalog().map((c) => ({ job: c.job, label: c.label, g: c.g, d: c.d, ...(c.par ? { par: true } : {}) })); const ref = C('prd_system').doc('autoCatalog'); const cur = (await ref.get()).data() || {};
+      if ((cur.ver && verNum(cur.ver) > verNum(VER)) || JSON.stringify(cur.jobs || []) === JSON.stringify(jobs)) return; await ref.set({ jobs, ver: VER, by: PC_NAME, at: nowIso() }); } catch (e) {} }
+  /* (1.60.1) 예전에 따로 스스로 돌던 자동 일을 칸으로 옮김 (한 번만 · 모든 PC 중 처음 새 판이 함) — 🎯 벤치마킹 주기 수집 · 📚 출판 통계 · 📦 발송 요청 읽기 · 그룹 시장 지표 */
+  async function asMigrate161() { if (!SCHED || SCHED.mig161) return; try { const bc = (await C('app_settings').doc('bench').get()).data() || {}; const kp = (await C('app_settings').doc('kpipa').get()).data() || {};
+      await db.runTransaction(async (tx) => { const s0 = await tx.get(SCHED_REF()); const D = s0.exists ? s0.data() : {}; if (D.mig161) return; const L = AS.slotsOf(D); const has = (j) => L.some((x) => x.job === j); const add = [];
+        if (!has('prd:bench')) add.push({ id: 'bench', job: 'prd:bench', on: bc.autoOn !== false && (bc.targets || []).some((t) => t && t.on !== false), name: '🎯 집중 벤치마킹', trig: { t: 'time', times: ['01:00'] } });
+        if (!has('prd:kpipa')) add.push({ id: 'kpipa', job: 'prd:kpipa', on: kp.auto !== false, trig: { t: 'time', times: ['14:40'] } });
+        if (!has('prd:shipRead')) add.push({ id: 'shipRead', job: 'prd:shipRead', on: (SET.shipAutoMin ?? 15) > 0, name: '📦 발송 요청 읽기 (클라우드가 꺼졌을 때만)', trig: { t: 'every', min: Math.max(10, SET.shipAutoMin || 15) }, win: { from: '09:00', to: '16:00' }, days: [1, 2, 3, 4, 5] });
+        if (!has('prd:metricsAuto')) add.push({ id: 'metricsAuto', job: 'prd:metricsAuto', on: true, trig: { t: 'every', min: 60 } });
+        const slots = [...L, ...add.map(AS.sanitize)]; tx.set(SCHED_REF(), { slots: JSON.parse(JSON.stringify(slots)), items: AS.legacyItems(slots), rev: (+D.rev || 0) + 1, ver: 2, mig161: { at: nowIso(), by: PC_NAME, added: add.map((x) => x.id) } }, { merge: true }); });
+      log('⏰ 매일 자동: 예전에 따로 스스로 돌던 자동 일(🎯 벤치마킹 주기 수집·📚 출판 통계·📦 발송 요청 읽기·그룹 시장 지표)을 칸으로 옮김 — 이제 칸 편집기에서만 켜고 끄고 시각을 정함'); } catch (e) { log('⏰ 예전 자동 일 옮기기 실패: ' + (e.code || e.message), 1); } }
+  async function schedInit() {
+    if (!AS) { const el = document.getElementById('rnpSched'); if (el) el.innerHTML = '<div class="hint2" style="color:#B0322A">⏰ 매일 자동 수집: 공용 파일 readnow-autosched-core.js를 못 읽어 멈춤 — GitHub에 올렸는지 확인하고 새로고침</div>'; log('⏰ 매일 자동 수집: 공용 파일 readnow-autosched-core.js를 못 읽어 자동 수집을 하지 않음 — GitHub에 올렸는지 확인', 1); return; }
+    E = RA.createEditor(ASCTX); setTimeout(asPublishCatalog, 20000);
+    SCHED_REF().onSnapshot(async (d) => {
+      if (!d.exists) { // 처음: 예전 자동 설정을 옮겨 담음 (예전 스위치는 끔 — 이제 여기 한 곳에서만)
+        for (let i = 0; i < 10 && !(window.__rnCrm && window.__rnCrm.oldAuto); i++) await new Promise((r) => setTimeout(r, 500));
+        let crmOld = null; try { crmOld = window.__rnCrm && window.__rnCrm.oldAuto ? await window.__rnCrm.oldAuto() : null; } catch (e) {}
+        const items = {}; AS.LEGACY.forEach((it) => { items[it.id] = { on: !it.off, times: it.def }; });
+        if (crmOld && crmOld.on) items.crmBulk = { on: true, times: AS.normTimes([crmOld.time || '06:00']) };
+        if (SET.autoDaily) items.chain = { on: true, times: [`${String(SET.autoHour ?? 17).padStart(2, '0')}:00`] };
+        const on = !!((crmOld && crmOld.on) || SET.autoDaily);
+        try { await SCHED_REF().set({ on, items, createdAt: nowIso(), by: PC_NAME, migrated: { crm: crmOld, chain: !!SET.autoDaily } }); } catch (e) {}
+        try { if (window.__rnCrm && window.__rnCrm.offOldAuto) await window.__rnCrm.offOldAuto(); } catch (e) {}
+        if (SET.autoDaily) { try { await saveSet({ autoDaily: false }); } catch (e) {} }
+        return; }
+      SCHED = d.data(); window.__rnSchedOn = !!SCHED.on; window.__rnSchedHas = true; if (!SCHED.mig161) asMigrate161(); schedDraw(); asEdRefresh(); asAck('sched', SCHED, () => `rev ${+SCHED.rev || 0} · ${SCHED.on ? '켬' : '끔'} 받음`); }, () => {});
+    SCHED_RUN().onSnapshot((d) => { SCHED_RUNS = (d.exists && d.data().runs) || {}; schedDraw(); schedArchive(); asEdRefresh(true); }, () => {});
+    JSTAT_REF().onSnapshot((d) => { JSTATS = (d.exists && d.data().jobs) || {}; schedDraw(); asEdRefresh(true); }, () => {});
+    setInterval(() => { if (running || (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) || schedBusy) lastBusyAt = Date.now(); }, 15000);
+    setInterval(schedTick, 60000); setTimeout(schedTick, 15000); setInterval(parTick, 60000); setTimeout(parTick, 20000); setInterval(() => { const d = kstNow().day; if (d !== schedDrawDay) schedDraw(); }, 60000);
+    setTimeout(() => jobStatSeed().catch(() => {}), 60000); }
+  /* (1.60.1) 동시 진행 칸(알라딘을 쓰지 않는 일 — 출판 통계)은 다른 일이 돌고 있어도 따로 함 · 한 번에 하나 */
+  let parBusy = false;
+  async function parTick() { if (parBusy || window.__rnReloading || window.__rnPaused || !auth.currentUser || (window.__rnRest && window.__rnRest()) || !SCHED || !SCHED.on || !AS) return;
+    const dues = AS.due(SCHED, SCHED_RUNS, { now: Date.now(), pc: PC_NAME, own: asOwn(), crmOk: false, idleMs: 0, bootAt: BOOT_AT, stats: JSTATS }).filter((d) => d.mark === 'run' && PAR_JOBS[d.slot.job.slice(4)] && d.slot.job.startsWith('prd:')); const due = dues[0]; if (!due) return; parBusy = true;
+    try { const S1 = due.slot; let ok = false; await db.runTransaction(async (tx) => { const s0 = await tx.get(SCHED_RUN()); const r = (s0.exists && s0.data().runs) || {}; if (r[due.key]) return; const up = { [due.key]: { by: PC_NAME, at: nowIso(), st: nowIso(), beat: nowIso(), state: 'running', job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0, par: true } }; due.merge.filter((k) => !r[k]).forEach((k) => (up[k] = { by: PC_NAME, at: nowIso(), state: 'merged', into: due.key })); tx.set(SCHED_RUN(), { runs: up }, { merge: true }); ok = true; });
+      if (!ok) return; const t0 = Date.now(); log(`⏰ 매일 자동(동시 진행): '${asName(S1)}' 시작 — ${due.why}`); const hb = setInterval(() => SCHED_RUN().set({ runs: { [due.key]: { beat: nowIso() } } }, { merge: true }).catch(() => {}), 5 * 60000);
+      const tm = S1.maxMin ? setTimeout(() => { PAR_STOP[S1.job.slice(4)] = true; }, S1.maxMin * 60e3) : null; let err = null;
+      try { await PAR_JOBS[S1.job.slice(4)](); } catch (e) { err = e.message; } finally { clearInterval(hb); if (tm) clearTimeout(tm); }
+      const st = err === '멈춤' ? 'stop' : err ? 'error' : 'done'; await SCHED_RUN().set({ runs: { [due.key]: { by: PC_NAME, at: nowIso(), st: new Date(t0).toISOString(), state: st, ms: Date.now() - t0, err: err || null, job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0, par: true } } }, { merge: true });
+      try { window.__rnJobDone && window.__rnJobDone(S1.job, Date.now() - t0, st, 'sched'); } catch (e) {}
+      log(`⏰ 매일 자동(동시 진행): '${asName(S1)}' ${st === 'done' ? '끝' : '멈춤 — ' + err} (${Math.round((Date.now() - t0) / 60000)}분)`, st === 'done' ? 0 : 1); } catch (e) { log('⏰ 동시 진행 확인 실패: ' + (e.code || e.message), 1); } finally { parBusy = false; } }
+  let schedBusy = false;
+  async function schedMark(due) { /* 건너뛴 회차(늦음·최근에 함)도 적어 둠 — 다시 할 때가 되지 않게 · 이유가 보이게 */ let ok = false;
+    await db.runTransaction(async (tx) => { const s = await tx.get(SCHED_RUN()); const r = (s.exists && s.data().runs) || {}; if (r[due.key]) return; const up = { [due.key]: { by: PC_NAME, at: nowIso(), state: due.mark, why: due.why, job: due.slot.job, slot: due.slot.id } }; due.merge.filter((k) => !r[k]).forEach((k) => (up[k] = { by: PC_NAME, at: nowIso(), state: 'merged', into: due.key })); tx.set(SCHED_RUN(), { runs: up }, { merge: true }); ok = true; });
+    if (ok) log(`⏰ '${asName(due.slot)}': ${due.why}`); }
+  async function schedTick() { if (!AS || schedBusy || running || window.__rnReloading || window.__rnPaused || !auth.currentUser || (window.__rnRest && window.__rnRest())) return; if (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) return; if (!SCHED || !SCHED.on) return;
+    const now = Date.now(); const dues = AS.due(SCHED, SCHED_RUNS, { now, pc: PC_NAME, own: asOwn(), crmOk: !!(window.__rnCrm && window.__rnCrm.start), idleMs: now - lastBusyAt, bootAt: BOOT_AT, stats: JSTATS }); if (!dues.length) return; schedBusy = true;
+    try { for (const d of dues.filter((x) => x.mark !== 'run' && !(x.slot.job === 'prd:shipRead' && cloudOn()))) await schedMark(d).catch(() => {});
+      let due = null; let lk = null;
+      for (const d of dues) { if (d.mark !== 'run') continue; if ((SCHED_BACK[d.key] || 0) > Date.now()) continue; const kind = d.slot.job.split(':')[0]; if (asMissing(d.slot)) continue; /* 이 판에 없는 일 — 그 일을 아는 PC가 함 */
+        if (kind === 'prd' && PAR_JOBS[d.slot.job.slice(4)]) continue; /* 동시 진행 일은 parTick이 */ if (d.slot.job === 'prd:shipRead' && cloudOn()) continue; /* 클라우드가 살아 있으면 발송 요청은 클라우드가 읽음 — 이 칸은 건너뜀(기록 안 남김) */
+        if (kind === 'crm' && window.__rnCrm.otherBusy && window.__rnCrm.otherBusy()) continue;
+        if (kind === 'prd') { if (!JOBS[d.slot.job.slice(4)]) continue; if (lk === null) lk = (await LOCK().get()).data() || {}; if (laneBusy(lk)) continue; }
+        due = d; break; }
+      if (!due) return; const S1 = due.slot; const kind = S1.job.split(':')[0], key2 = S1.job.slice(4); const t0 = Date.now();
+      let ok = false; await db.runTransaction(async (tx) => { const s = await tx.get(SCHED_RUN()); const r = (s.exists && s.data().runs) || {}; if (r[due.key]) return; const up = { [due.key]: { by: PC_NAME, at: nowIso(), st: nowIso(), beat: nowIso(), state: 'running', job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0 } }; due.merge.filter((k) => !r[k]).forEach((k) => (up[k] = { by: PC_NAME, at: nowIso(), state: 'merged', into: due.key })); tx.set(SCHED_RUN(), { runs: up }, { merge: true }); ok = true; });
+      if (!ok) return; log(`⏰ 매일 자동: '${asName(S1)}' 시작 — ${due.why}`);
+      const hb = setInterval(() => SCHED_RUN().set({ runs: { [due.key]: { beat: nowIso() } } }, { merge: true }).catch(() => {}), 5 * 60000);
+      let timedOut = false; const tm = S1.maxMin ? setTimeout(() => { timedOut = true; log(`⏰ '${asName(S1)}': 정한 최대 ${S1.maxMin}분이 지나 지금 항목까지 저장하고 멈춤 — 다음 회차에 그 자리부터`, 1); try { if (kind === 'prd') window.__rnPrd.pause(); else window.__rnCrm.pause(); } catch (e) {} }, S1.maxMin * 60e3) : null;
+      let res, err = null; window.__rnAutoSlot = due.key;
+      try { if (kind === 'prd') { window.__rnAuto = true; res = await runJob(key2, { sched: true }); err = lastRunErr || (lastRunSt === 'stop' && res !== false ? '멈춤' : null); }
+        else { const r0 = await window.__rnCrm.start(key2, { fresh: false }); res = r0 === undefined ? false : r0; if (r0 === 'error') err = '고객 작업 오류 (고객 탭 기록 확인)'; else if (r0 === 'paused') err = '멈춤'; if (tm) clearTimeout(tm); if (!err && !timedOut && r0 !== undefined && !['bulk', 'upload'].includes(key2) && window.__rnCrm.upload) await window.__rnCrm.upload(); } }
+      catch (e) { err = e.message; } finally { window.__rnAuto = false; window.__rnAutoSlot = null; clearInterval(hb); if (tm) clearTimeout(tm); }
+      if (res === false) { await SCHED_RUN().set({ runs: { [due.key]: firebase.firestore.FieldValue.delete() } }, { merge: true }); const first = !SCHED_BACK[due.key]; SCHED_BACK[due.key] = Date.now() + 10 * 60e3; if (first) log(`⏰ '${asName(S1)}': 다른 PC·탭이 작업 중이라 10분 뒤 다시 (그사이 1분마다 다시 시도하지 않음)`, 1); return; } /* (1.63.8 점검) 예전엔 1분마다 다시 잡고 지우기를 되풀이(읽기·쓰기 낭비) */
+      const st = timedOut ? 'timeout' : err === '멈춤' ? 'stop' : err ? 'error' : 'done';
+      await SCHED_RUN().set({ runs: { [due.key]: { by: PC_NAME, at: nowIso(), st: new Date(t0).toISOString(), state: st, ms: Date.now() - t0, err: err || null, job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0 } } }, { merge: true });
+      log(`⏰ 매일 자동: '${asName(S1)}' ${st === 'done' ? '끝' : st === 'timeout' ? '최대 시간이라 멈춤' : '멈춤 — ' + err} (${Math.round((Date.now() - t0) / 60000)}분)`, st === 'done' ? 0 : 1);
+      lastBusyAt = Date.now(); /* 실제로 일을 했을 때만 '쉼'을 다시 셈 */
+    } catch (e) { log('⏰ 매일 자동 확인 실패: ' + (e.code || e.message), 1); } finally { schedBusy = false; } }
+  /* 개요 화면용: 다음에 저절로 할 일 (정한 시각·간격만 — 조건 칸은 때를 미리 모름) */
+  window.__rnSchedNext = () => { if (!SCHED) return { known: false }; if (!SCHED.on) return { known: true, on: false }; const { min } = kstNow(); let best = null;
+    const dow = AS.kst(Date.now()).dow, dowT = (dow + 1) % 7; const own = asOwn(); /* (1.63.8 점검) 요일·PC 거르기·담당 PC도 봄 — 이 PC가 하지 않을 칸을 '다음'으로 보이지 않게 */
+    for (const s of AS.slotsOf(SCHED)) { if (!s.on) continue; if (s.pcs && !s.pcs.includes(String(PC_NAME))) continue; if (!s.pcs && own && own.pc && String(own.pc) !== String(PC_NAME)) continue; let cand = [];
+      if (s.trig.t === 'time') cand = s.trig.times.map((t) => AS.tMin(t)); else if (s.trig.t === 'month' && AS.timesToday) cand = AS.timesToday(s.trig, Date.now()).map((t) => AS.tMin(t)).filter((m) => m > min); /* (1.63.1) 매월 정한 날 — 오늘이 고른 날일 때만 */
+      else if (s.trig.t === 'every') { const f = s.win ? AS.tMin(s.win.from) : 0; for (let m = f, i = 0; i < 288; m += s.trig.min, i++) { const mm = m % 1440; if (AS.inWin(s, mm)) cand.push(mm); if (m - f >= 1440) break; } }
+      for (const m of cand) { if (s.days && !s.days.includes(m > min ? dow : dowT)) continue; const d = m > min ? m - min : m + 1440 - min; if (!best || d < best.d) best = { d, t: AS.hm(m), label: asName(s), tomorrow: m <= min }; } }
+    return { known: true, on: true, next: best }; };
+  /* (1.57.4) 회차 기록(prd_jobs/autoSched.runs)은 날마다 쌓여 한 문서(1MB) 한도에 닿을 수 있음 → 40일 지난 회차는 달마다 prd_jobs/autoSched_YYYY-MM 문서로 옮겨 보관(지우지 않음 · 옮기기와 빼기를 한 묶음으로 = 둘 다 되거나 둘 다 안 됨) */
+  /* (1.63.6 전체 점검) 한 문서의 색인 칸 한도(4만 개)에 먼저 닿음: 15분마다·1시간마다 칸이 40일이면 회차 수천 개 × 칸 8개 → 거의 4만 → 넘으면 모든 PC의 자동 수집 확인·기록이 실패
+   *  → 10일 지난 회차는 날마다 prd_jobs/autoSched_YYYY-MM-DD 문서로 옮김(지우지 않음 · 옮기기와 빼기를 한 묶음으로) · 한 번에 최대 3,000개 · 남으면 1시간 뒤 다시 */
+  let schedArchAt = 0;
+  async function schedArchive() { const { day } = kstNow(); if (Date.now() - schedArchAt < 3600e3 || !auth.currentUser) return; schedArchAt = Date.now(); const cut = new Date(Date.parse(day + 'T00:00:00Z') - 10 * 864e5).toISOString().slice(0, 10);
+    const old = Object.keys(SCHED_RUNS).filter((k) => { const d = k.split('@')[1] || ''; return d && d < cut; }); if (!old.length) return;
+    try { const byD = {}; for (const k of old.slice(0, 3000)) { const d = k.split('@')[1].slice(0, 10); (byD[d] = byD[d] || {})[k] = SCHED_RUNS[k]; }
+      const del = {}; for (const m of Object.values(byD)) for (const k of Object.keys(m)) del[k] = firebase.firestore.FieldValue.delete();
+      const b = db.batch(); for (const [d, runs] of Object.entries(byD)) b.set(C('prd_jobs').doc('autoSched_' + d), { runs, at: nowIso() }, { merge: true }); b.set(SCHED_RUN(), { runs: del }, { merge: true }); await b.commit();
+      log(`⏰ 매일 자동: 10일 지난 회차 기록 ${Object.keys(del).length}개를 날짜별 보관 문서로 옮김(지우지 않음)${old.length > 3000 ? ` · 남은 ${old.length - 3000}개는 1시간 뒤` : ''}`); } catch (e) { schedArchAt = Date.now() - 3300e3; log('⏰ 회차 기록 옮기기 실패(5분 뒤 다시): ' + (e.code || e.message), 1); } }
+  const schedHM = (iso) => AS.hm(AS.kst(AS.toMs(iso)).min);
+  let schedDrawDay = '';
+  function schedDraw() { const el = document.getElementById('rnpSched'); if (!el || !AS) return; const S0 = SCHED || { on: false }; const { day } = kstNow(); schedDrawDay = day; const slots = AS.slotsOf(S0); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
+    const plan = AS.dayPlan(S0, SCHED_RUNS, { now: Date.now() }, asAvgMs);
+    /* (1.60.1) 한눈에: 지금 하는 자동 일 · 다음 · 켜진 칸 수 */ const runK = Object.entries(SCHED_RUNS).filter(([k, r]) => r && r.state === 'running' && !AS.isLost(r, Date.now()) && k.split('@')[1] === day).map(([k, r]) => `${asName(byId[r.slot || k.split('@')[0]] || { job: r.job || '' })}${r.par ? '(동시)' : ''} · ${r.by || ''}`); const nx = window.__rnSchedNext ? window.__rnSchedNext() : null;
+    const live = `<div class="hint2" style="margin:3px 0;padding:4px 6px;border-radius:6px;background:${runK.length ? '#FFF4E5' : '#EEF4F1'};color:#1E2B28;font-size:11.5px">${runK.length ? `▶ 지금 자동으로 하는 중: <b>${esc3(runK.join(' / '))}</b>` : '⏸ 지금 자동으로 하는 일 없음'}${nx && nx.next ? ` · 다음 <b>${nx.next.tomorrow ? '내일 ' : ''}${esc3(nx.next.t)}</b> ${esc3(nx.next.label)}` : ''} · 켜진 칸 ${slots.filter((x) => x.on).length}/${slots.length}${(() => { const b = asBuiltins().filter((x) => x.on); return b.length ? ` · 늘 도는 일 ${b.map((x) => esc3(x.label.split(' (')[0])).join('·')}` : ''; })()}</div>`;
+    const rows = slots.map((s, ix) => `<div class="sr${s.on ? ' on' : ''}"><label class="sw2"><input type="checkbox" data-sk="${esc3(s.id)}" ${s.on ? 'checked' : ''}><span></span></label><div class="sb"><b>${ix + 1}. ${esc3(asName(s))}${E ? E.missTag(s) : ''}${PAR_JOBS[s.job.slice(4)] ? ' <i style="font-style:normal;background:#3F7FD1;color:#fff;border-radius:6px;padding:0 4px;font-size:10px">동시</i>' : ''}</b><small>${esc3(AS.describe(s, byId))} · ${E ? E.durTxt(s.job) : ''}</small><div class="tl">${E ? E.chips(s, plan, S0) : ''}</div></div></div>`).join('');
+    el.innerHTML = `<div class="sh2"><label class="sw2 big"><input type="checkbox" id="rnpSchedOn" ${S0.on ? 'checked' : ''}><span></span></label><b>⏰ 매일 자동 수집</b><small class="tw">오늘 ${+day.slice(5, 7)}/${+day.slice(8, 10)}</small><button class="b2" id="rnpSchedEd" style="margin-left:auto;padding:3px 9px;font-size:11.5px;width:auto">✏ 칸 편집</button></div>
+      ${live}<div class="hint2">${S0.on ? '켜짐 — 끌 때까지 매일' : '꺼짐 — 켜면 아래 켠 칸을 매일'} · 위 칸이 먼저 · ✓ 끝 ▶ 하는 중 ⌛ 시각 지남(곧 함) ⚠ 멈춤 ⤼ 건너뜀 (마우스를 올리면 이유)</div><div class="sl${S0.on ? '' : ' dim'}">${rows || '<div class="hint2">칸 없음 — ✏ 칸 편집에서 더하세요</div>'}</div>`;
+    el.querySelector('#rnpSchedOn').onchange = (e) => SCHED_REF().set({ on: e.target.checked, at: nowIso(), by: PC_NAME }, { merge: true }).then(() => log(`⏰ 매일 자동 수집 ${e.target.checked ? '켬' : '끔'}`)).catch((er) => log('저장 실패: ' + er.message, 1));
+    el.querySelectorAll('[data-sk]').forEach((cb) => (cb.onchange = () => asSaveQuick((L) => { const s = L.find((x) => x.id === cb.dataset.sk); if (s) s.on = cb.checked; }, `'${asName(byId[cb.dataset.sk])}' ${cb.checked ? '켬' : '끔'}`)));
+    el.querySelector('#rnpSchedEd').onclick = () => asEdOpen(); }
+  /* 저장 — 칸 목록 전체를 한 번에(rev로 다른 곳의 저장과 겹치지 않게) + 옛 수집기용 items + 바꾼 기록(달마다 문서에 덧붙임) */
+  async function asSave(slots, baseRev, what) { await RA.saveSlots({ db, cfgRef: SCHED_REF(), editsRef: (m) => C('prd_jobs').doc('autoSched_edits_' + m), arrayUnion: (...x) => firebase.firestore.FieldValue.arrayUnion(...x), email: (auth.currentUser || {}).email || null }, slots, baseRev, what, PC_NAME, asLabel); log(`⏰ 매일 자동 칸 저장: ${what || ''}`); }
+  async function asSaveQuick(fn, what) { try { const L = AS.slotsOf(SCHED); fn(L); await asSave(L, +((SCHED || {}).rev) || 0, what); } catch (e) { log('⏰ 저장 실패: ' + e.message, 1); schedDraw(); } }
+  { let inited = false; auth.onAuthStateChanged((u) => { if (u && !inited) { inited = true; schedInit(); } }); }
+  function asEdOpen() { if (!E) return log('⏰ 칸 편집기 공용 파일(readnow-autosched-core.js)을 못 읽음 — GitHub에 올렸는지 확인 후 새로고침', 1); E.open(); }
+  function asEdRefresh(runsOnly) { if (E) E.refresh(runsOnly); }
+  /* ───────── 실행 ───────── */
+  /* ───────── (1.56.0) 📚 출판 판매 통계 — 출판유통통합전산망(KPIPA) 출판산업 통계 → 판매 통계 → 판매 보고서 ─────────
+   *  로그인 없이 누구나 보는 공개 표. 일별 · 도서유형별(지금은 종이책만 공개)과 판매채널별(오프라인 대형·지역, 온라인) 각각 부수·종수·매출총액
+   *  기간: 웹앱 설정(app_settings/kpipa.days, 기본 730일=2년). 이미 받은 날은 건너뛰고 빠진 날만 + 최근 7일은 늘 다시 읽음(공표 뒤 고쳐질 수 있어서)
+   *  받는 법: 그 화면을 한 번 열어 보안 표(CSRF)를 받고 → 화면이 쓰는 것과 같은 조회(POST …/adiStatsSaleReport/search)를 31일씩 · 요청 사이 3~5초
+   *  저장: mkt_kpipa/{YYYYMMDD} = { date, onOff:{series:{오프라인(대형서점):{qty,titles,amt},…}}, bookType:{series:{종이책:{…}}} } — 값이 같으면 쓰지 않음, 달라지면 옛 값을 history에 남기고 바꿈(지우지 않음)
+   *  자동: 하루 한 번 14:30 뒤(그 전엔 전날 자료가 아직 없음) 이 PC의 수집기 탭이 · 여러 PC면 먼저 맡은 한 대만 */
+  const KP_PAGE = 'https://bnk.kpipa.or.kr/home/v3/addition/adiStatsSaleReport';
+  const kpReq = (o) => new Promise((res, rej) => GM_xmlhttpRequest({ timeout: 60000, ...o, onload: (r) => res(r), onerror: () => rej(new Error('연결 실패')), ontimeout: () => rej(new Error('응답 없음(60초)')) }));
+  const kpYmd = (t) => new Date(t + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '');
+  const kpAdd = (ymd, n) => kpYmd(Date.UTC(+ymd.slice(0, 4), +ymd.slice(4, 6) - 1, +ymd.slice(6, 8)) - 9 * 3600e3 + n * 864e5);
+  /* 화면이 돌려주는 조각(HTML)의 첫 표: 머리 1줄 = 묶음 이름(오프라인(대형서점)…/종이책), 머리 2줄 = 부수·종수·금액, 몸 = 날짜마다 한 줄 ("26년 10월05일") */
+  function kpParse(html) { const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html'); const t = doc.querySelector('table'); if (!t) return null;
+    const hr = t.querySelectorAll('thead tr'); if (hr.length < 2) return null; const groups = []; hr[0].querySelectorAll('th').forEach((th) => { if (th.getAttribute('rowspan')) return; const n = +th.getAttribute('colspan') || 1; for (let i = 0; i < n; i++) groups.push(th.textContent.trim()); });
+    const subs = [...hr[1].querySelectorAll('th')].map((th) => th.textContent.trim()); if (!groups.length || groups.length !== subs.length) return null;
+    const key = (s) => (/부수/.test(s) ? 'qty' : /종수/.test(s) ? 'titles' : /금액/.test(s) ? 'amt' : s);
+    const rows = []; t.querySelectorAll('tbody tr').forEach((tr) => { const th = tr.querySelector('th'); const m = th && th.textContent.match(/(\d{2,4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/); if (!m) return;
+      const y = m[1].length === 2 ? 2000 + +m[1] : +m[1]; const date = `${y}${String(m[2]).padStart(2, '0')}${String(m[3]).padStart(2, '0')}`; const tds = [...tr.querySelectorAll('td')]; if (tds.length !== subs.length) return;
+      const series = {}; tds.forEach((td, i) => { const v = +String(td.textContent).replace(/[^\d.-]/g, ''); (series[groups[i]] = series[groups[i]] || {})[key(subs[i])] = Number.isFinite(v) ? v : null; }); rows.push({ date, series }); });
+    const cm = (html.match(/cMonth\s*=\s*"(\d{8})"/g) || []).length; return { rows, groups: [...new Set(groups)], cMonth: cm }; }
+  let kpTok = null;
+  async function kpToken() { const r = await kpReq({ method: 'GET', url: KP_PAGE }); if (r.status >= 400) throw new Error(`판매 보고서 화면을 못 엶 (HTTP ${r.status})`); const m = String(r.responseText || '').match(/m_sCsrf\s*=\s*"([^"]+)"/); if (!m) throw new Error('화면에서 보안 표(CSRF)를 못 찾음 — 화면 모양이 바뀌었을 수 있음'); kpTok = m[1]; return kpTok; }
+  async function kpFetch(type, from, to) { for (let tryN = 0; tryN < 2; tryN++) { if (!kpTok || tryN) await kpToken();
+      const body = new URLSearchParams({ rdoSearchType: type, rdoSearchPeriod: 'date', txtFromDate: from, txtToDate: to, _csrf: kpTok }).toString();
+      const r = await kpReq({ method: 'POST', url: KP_PAGE + '/search', data: body, headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-CSRF-TOKEN': kpTok, 'X-Requested-With': 'XMLHttpRequest', Referer: KP_PAGE } });
+      const p = r.status < 400 ? kpParse(r.responseText || '') : null; if (p && p.rows.length) return p;
+      if (tryN) throw new Error(`표를 못 받음 (HTTP ${r.status}${r.status < 400 ? ' · 응답 앞부분: ' + String(r.responseText || '').replace(/\s+/g, ' ').slice(0, 160) : ''})`); }
+    return null; }
+  const uiMain = (...a) => ui(...a); const PAR_NOW = {}, PAR_STOP = {}; /* (1.60.1) 동시 진행 일의 지금 상태·멈춤 */
+  async function kpipaPar() { PAR_STOP.kpipa = false; PAR_NOW.kpipa = '시작'; try { return await kpipaJob({ par: true }); } finally { PAR_NOW.kpipa = null; } }
+  async function kpipaJob(opt) { const PARm = !!(opt && opt.par); const ui = PARm ? (a) => { PAR_NOW.kpipa = String(a || ''); } : uiMain; const stopNow = () => (PARm ? PAR_STOP.kpipa : stopFlag); /* (1.60.1) 동시 진행이면 진행 표시를 앞 작업과 섞지 않음 */
+    const cfg = (await C('app_settings').doc('kpipa').get().catch(() => null))?.data?.() || {}; const days = Math.max(5, Math.min(1900, +cfg.days || 730));
+    const now = Date.now(); const kh = new Date(now + 9 * 3600e3).getUTCHours() * 60 + new Date(now + 9 * 3600e3).getUTCMinutes();
+    const end = kpAdd(kpYmd(now), kh >= 14 * 60 + 30 ? -1 : -2); const start = kpAdd(end, -(days - 1));
+    ui('출판 판매 통계: 이미 받은 날 확인', 0, 0); const have = new Map(); (await C('mkt_kpipa').where(firebase.firestore.FieldPath.documentId(), '>=', start).get()).forEach((d) => have.set(d.id, d.data()));
+    const recent = kpAdd(end, -6); const plan = [];
+    for (const type of ['onOff', 'bookType']) { const need = []; for (let d = start; d <= end; d = kpAdd(d, 1)) { const x = have.get(d); if (!x || !x[type] || d >= recent) need.push(d); }
+      // 이어진 날짜끼리 31일 이하 묶음으로 (화면 규칙: 5~31일) — 5일보다 짧으면 앞으로 늘려 5일
+      let i = 0; while (i < need.length) { let j = i; while (j + 1 < need.length && need[j + 1] === kpAdd(need[j], 1) && j - i < 30) j++; let from = need[i]; const to = need[j]; let n = j - i + 1; if (n < 5) { from = kpAdd(to, -4); n = 5; } plan.push({ type, from, to }); i = j + 1; } }
+    log(`📚 출판 판매 통계: ${start.slice(0, 4)}-${start.slice(4, 6)}-${start.slice(6)} ~ ${end.slice(0, 4)}-${end.slice(4, 6)}-${end.slice(6)} (${days}일) · 이미 ${have.size}일 있음 · 받을 묶음 ${plan.length}개 (31일씩, 판매채널별·도서유형별)`);
+    let wrote = 0, same = 0, changed = 0, rowsN = 0; const seen = new Set(have.keys()); const groupsSeen = { onOff: new Set(), bookType: new Set() };
+    for (let k = 0; k < plan.length; k++) { if (stopNow()) throw new Error('멈춤'); const c = plan[k]; ui('출판 판매 통계 (KPIPA)', k, plan.length, `${c.type === 'onOff' ? '판매채널별' : '도서유형별'} ${c.from}~${c.to}`);
+      let p; try { p = await kpFetch(c.type, c.from, c.to); } catch (e) { log(`📚 ${c.type === 'onOff' ? '판매채널별' : '도서유형별'} ${c.from}~${c.to}: ${e.message}`, 1); if (k === 0) throw e; continue; }
+      if (p.cMonth && p.cMonth !== p.rows.length) log(`📚 ${c.from}~${c.to}: 표의 날짜 ${p.rows.length}줄 · 그래프 날짜 ${p.cMonth}개 — 수가 달라 표 기준으로 저장`, 1);
+      p.groups.forEach((g) => groupsSeen[c.type].add(g)); rowsN += p.rows.length;
+      for (const r of p.rows) { const ref = C('mkt_kpipa').doc(r.date); const old = have.get(r.date) || {}; const prev = old[c.type] && old[c.type].series; const sig = JSON.stringify(r.series);
+        if (prev && JSON.stringify(prev) === sig) { same++; continue; }
+        const up = { date: `${r.date.slice(0, 4)}-${r.date.slice(4, 6)}-${r.date.slice(6)}`, [c.type]: { series: r.series, at: nowIso() }, ...W() };
+        if (prev) { up.history = firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), type: c.type, old: prev }); changed++; } else wrote++;
+        await ref.set(up, { merge: true }); have.set(r.date, { ...old, [c.type]: { series: r.series } }); seen.add(r.date); }
+      await sleep(3000 + Math.random() * 2000); }
+    const st = { lastRunAt: nowIso(), lastDay: end, from: start, days: seen.size, groups: { onOff: [...groupsSeen.onOff], bookType: [...groupsSeen.bookType] }, by: PC_NAME, wrote, changed };
+    await C('app_settings').doc('kpipa').set({ status: st }, { merge: true }).catch(() => {});
+    if (groupsSeen.bookType.size > 1 || [...groupsSeen.bookType].some((g) => g !== '종이책')) log(`📚 도서유형에 새 묶음이 보입니다: ${[...groupsSeen.bookType].join(', ')} (전자책·오디오북 공개 시작일 수 있음 — 그대로 함께 저장함)`, 1);
+    log(`📚 출판 판매 통계 끝: 받은 날 ${rowsN}줄 · 새로 ${wrote} · 고쳐진 날 ${changed}(옛 값은 history에) · 같아서 건너뜀 ${same} · 모은 날 모두 ${seen.size}일`); }
+  /* 하루 한 번 자동 (14:30 뒤 · 이 PC의 수집기 탭 · 여러 PC면 먼저 맡은 한 대) — 웹앱 설정에서 끌 수 있음(auto:false) */
+  /* (1.60.1) 출판 판매 통계를 하루 한 번(14:35 뒤) 스스로 받던 것 → ⏰ 매일 자동 수집의 칸에서만 · 알라딘을 쓰지 않아 다른 수집과 함께 돎(동시 진행) */
+  /* ───────── (1.57.0) 🌐 외부 정보 엔진 — 공용 파일 readnow-ext-core.js(묻는 법·읽는 법·계산)를 이 PC가 돌림 ─────────
+   *  무엇: 우리 책(판매중·일시판매중지, ISBN 있는 것)마다 알라딘 밖 정보를 출처별로 모음 — 기본 정보(교보·예스24·구글 북스·알라딘 TTB·카카오·네이버·국립중앙도서관) ·
+   *        국내 중고 시세(예스24 중고·번개장터·중고나라·당근) · 외국 시세(eBay·AbeBooks — 기본은 외국 책만) · 도서관 대출(정보나루) · 전자책(리디) · 환율(날마다)
+   *  언제: 저절로 — 5분마다 깨어 4분까지 일함(이 PC의 수집기 탭 한 개 · 여러 PC면 한 대만: app_settings/ext_run.lease) · 알라딘 작업과 따로라 알라딘 일을 막지 않음
+   *  차례: 판매가 높은 책부터(돈이 큰 책 먼저) · 출처마다 '다시 볼 날'이 지난 책만 · 출처마다 하루 최대 수(설정 ⑱) · 요청 사이 간격(출처마다)
+   *  쓰기: 같은 내용이면 다시 쓰지 않고 '확인한 때(chk)'만 · 바뀌면 옛 값을 ext_hist에 남긴 뒤 바꿈 · 못 읽으면 그 출처의 err만(받아 둔 값은 그대로) + 화면 일부를 ext_probe에(하루 한 번)
+   *  웹앱이 맡기는 일: shp_cmds 'extLookup'(책 몇 권 지금 받기) · 'extTest'(연결 시험) — 다른 작업 중이어도 바로 */
+  /* ───────── (1.57.3) Firebase 규칙 자동 점검 (PC) — 노선표에서 'PC가 쓰는 칸' 모두를 이 PC 계정으로: 시험 문서를 만들고 같은 묶음에서 바로 지움(남는 것 없음)
+   *  수집기 판·노선표 판이 바뀐 첫 실행(1분 뒤) · 그 밖엔 하루 한 번 · 결과 rn_status/perm_{PC} → 막히면 웹앱 '오늘 확인할 것'에 빨간 줄 + 이 기록 창에 경고 */
+  async function pcPermProbe() { try { if ((window.__rnFeat && !window.__rnFeat('rules')) || !auth.currentUser || (window.__rnRest && window.__rnRest())) return; const R = REGF(); if (!R || !R.COLLECTIONS) return; const key = `${VER}|${R.VERSION}|${auth.currentUser.email || ''}`; const last = GM_getValue('rnu-perm', null); if (last && last.key === key && Date.now() - (last.t || 0) < 24 * 3600e3) return;
+      const deny = (e) => /permission|insufficient/i.test(String((e && (e.code || e.message)) || e)); const cols = Object.entries(R.COLLECTIONS).filter(([, v]) => (v.w || []).includes('pc')).map(([k]) => k); const bad = [];
+      for (const col of cols) { const ref = C(col).doc('_permprobe_' + Math.random().toString(36).slice(2, 10)); try { const b = db.batch(); b.set(ref, { probe: true, at: nowIso() }); b.delete(ref); await b.commit(); } catch (e) { if (deny(e)) bad.push(col); /* (1.57.7) '따로 만들고 지우기' 다시 하기 없앰 — 시험 문서가 진짜 기록 칸에 남을 수 있었음 */ } }
+      GM_setValue('rnu-perm', { key, t: Date.now(), bad }); await C('rn_status').doc('perm_' + PC_NAME).set({ pc: PC_NAME, ver: VER, reg: R.VERSION, email: auth.currentUser.email || null, at: nowIso(), n: cols.length, bad }).catch(() => {});
+      if (bad.length) log(`⚠ Firebase 규칙이 막는 칸 ${bad.length}개: ${bad.join(', ')} — 이 칸의 기록이 저장되지 않음 · 웹앱 '오늘 확인할 것'의 빨간 줄을 누르면 고치는 법`, 1); else log(`🔐 Firebase 규칙 점검: PC가 쓰는 칸 ${cols.length}개 모두 열림`); } catch (e) {} }
+  setTimeout(() => pcPermProbe(), 60000); setInterval(() => pcPermProbe(), 6 * 3600e3);
+  const EXT = () => window.ReadnowExt || globalThis.ReadnowExt;
+  const extHttp = (o) => new Promise((res, rej) => GM_xmlhttpRequest({ method: o.method || 'GET', url: o.url, headers: o.headers || {}, data: o.data, anonymous: true /* 이 브라우저의 로그인 쿠키(예스24 판매자 계정 등)를 보내지 않음 — 외부 정보 읽기는 손님으로 */, timeout: 30000, onload: (r) => res({ status: r.status, text: r.responseText || '' }), onerror: () => rej(new Error('연결 실패 (@connect에 없는 주소이거나 네트워크)')), ontimeout: () => rej(new Error('응답 없음(30초)')) }));
+  const extKst = (ms) => new Date((ms || Date.now()) + 9 * 3600e3).toISOString().slice(0, 10);
+  const EXT_S = { keys: null, keysAt: 0, cfg: null, cfgAt: 0, cache: {}, next: {}, idx: {}, idxAt: 0, cand: null, candAt: 0, cur: {}, errs: {}, pauseUntil: {}, busy: false, me: 'x' + Math.random().toString(36).slice(2, 7), used: {}, usedDay: null };
+  async function extKeys(force) { if (!force && EXT_S.keys && Date.now() - EXT_S.keysAt < 10 * 60000) return EXT_S.keys; let k = {}; try { const d = await C('app_secrets').doc('ext').get(); k = (d.exists && d.data().keys) || {}; } catch (e) { log('🌐 외부 연결 키를 못 읽음: ' + (e.code || e.message) + (/permission/i.test(e.code || e.message) ? ' — Firebase 규칙에 app_secrets 읽기 허용 필요' : ''), 1); } EXT_S.keys = k; EXT_S.keysAt = Date.now(); return k; }
+  async function extCfg(force) { const X = EXT(); if (!force && EXT_S.cfg && Date.now() - EXT_S.cfgAt < 5 * 60000) return EXT_S.cfg; let c = {}; try { const d = await C('app_settings').doc('ext').get(); c = d.exists ? d.data() : {}; } catch (e) {} EXT_S.cfg = X.cfgOf(c); EXT_S.cfgAt = Date.now(); return EXT_S.cfg; }
+  const EXT_RUN = () => C('app_settings').doc('ext_run');
+  /* 맡은 PC 한 대: 4분 넘게 신호가 없으면 다른 PC가 이어받음 */
+  async function extLease() { let ok = false; try { await db.runTransaction(async (tx) => { const s = await tx.get(EXT_RUN()); const L = (s.exists && s.data().lease) || null; const mine = L && L.pc === PC_NAME && L.tab === EXT_S.me; if (L && !mine && Date.now() - (+L.atMs || 0) < 4 * 60000) return; tx.set(EXT_RUN(), { lease: { pc: PC_NAME, tab: EXT_S.me, atMs: Date.now(), at: nowIso() } }, { merge: true }); ok = true; }); } catch (e) {} return ok; }
+  /* 오늘 쓴 수 (출처마다 · 한국 날짜) — 하루 최대를 넘지 않게. 날짜별로 남김(cnt.{날짜}.{출처}) */
+  /* 오늘 쓴 수: 매 바퀴 시작마다 서버에서 다시 읽음(여러 PC가 번갈아 맡아도 하루 최대를 넘지 않게) · 실제로 보낸 요청 수만큼 셈(eBay 토큰·교보 검색+상품 화면 등) */
+  /* (1.63.6 전체 점검) app_settings/ext_run의 날짜별 칸(cnt 쓴 수 · res 성공·실패)은 날마다 늘어 1년쯤이면 한 문서 색인 한도(4만)에 닿음 → 넘으면 외부 정보가 PC·클라우드 모두 조용히 멈춤
+   *  → 15일 지난 날짜 칸은 하루 한 번 지움(오늘·최근 2주만 화면에 씀 · 하루 쓴 수 한도 계산에는 오늘만 씀) */
+  let extPruneDay = ''; async function extPrune(D) { const day = extKst(); if (extPruneDay === day || !D) return; extPruneDay = day; const cut = extKst(Date.now() - 15 * 864e5); const FV = firebase.firestore.FieldValue; const up = {};
+    for (const f of ['cnt', 'res']) { const ks = Object.keys(D[f] || {}).filter((d) => d < cut); if (ks.length) up[f] = Object.fromEntries(ks.map((d) => [d, FV.delete()])); } if (Object.keys(up).length) await EXT_RUN().set(up, { merge: true }).catch(() => {}); }
+  async function extUsedLoad(force) { const day = extKst(); if (!force && EXT_S.usedDay === day) return EXT_S.used; let u = {}; try { const d = await EXT_RUN().get(); if (d.exists) extPrune(d.data()).catch(() => {}); u = ((d.exists && d.data().cnt) || {})[day] || {}; } catch (e) {} EXT_S.used = { ...u }; EXT_S.usedDay = day; return EXT_S.used; }
+  const extUsedAdd = (src, n) => { n = Math.max(1, n || 1); const day = extKst(); if (EXT_S.usedDay !== day) { EXT_S.used = {}; EXT_S.usedDay = day; } EXT_S.used[src] = (EXT_S.used[src] || 0) + n; return EXT_RUN().set({ cnt: { [day]: { [src]: firebase.firestore.FieldValue.increment(n) } } }, { merge: true }).catch(() => {}); };
+  /* 색인: 출처마다 책을 언제 확인했는지(한국 날짜) — ext_index/{출처}_{0~7} . m.{ISBN} = 'YYYY-MM-DD'(받음) 또는 'E YYYY-MM-DD k'(못 읽음 k번째 — 1·3·7·14·30일 뒤 다시) */
+  async function extIdxLoad(force) { const X = EXT(); if (!force && EXT_S.idxAt && Date.now() - EXT_S.idxAt < 60 * 60000) return; const out = {}; for (const src of X.ORDER) { out[src] = new Map(); } try { const qs = await C('ext_index').get(); qs.forEach((d) => { const [src] = d.id.split('_'); const m = (d.data() || {}).m || {}; if (out[src]) Object.entries(m).forEach(([k, v]) => out[src].set(k, v)); }); } catch (e) {} EXT_S.idx = out; EXT_S.idxAt = Date.now(); }
+  const extIdxSet = (src, isbn, val) => { const X = EXT(); const v = val || extKst(); (EXT_S.idx[src] = EXT_S.idx[src] || new Map()).set(isbn, v); return C('ext_index').doc(`${src}_${X.shard(isbn)}`).set({ m: { [isbn]: v }, ...W() }, { merge: true }).catch(() => {}); };
+  const EXT_BACKOFF = [1, 3, 7, 14, 30];
+  const extIdxErrK = (src, isbn) => { const v = (EXT_S.idx[src] || new Map()).get(isbn); const m = String(v || '').match(/^E (\d{4}-\d\d-\d\d) (\d+)$/); return m ? +m[2] : 0; };
+  /* 한 출처·한 책의 결과 쓰기 — 같으면 확인 시각만 · 바뀌면 옛 값을 ext_hist에 남긴 뒤 · 받아 둔 값이 있는데 '그 책 없음'이 한 번 나오면 바로 바꾸지 않고(잠깐 안 보인 것일 수 있음) 두 번 잇달아 나올 때 바꿈 */
+  const extBytes = (x) => { try { return new TextEncoder().encode(JSON.stringify(x)).length; } catch (e) { return JSON.stringify(x).length * 3; } }; /* (1.59.0) 글자 수가 아니라 바이트로(한글은 3바이트) — 출처 하나 150KB까지(한 문서에 출처가 여럿이라 합쳐 1MB 안) */
+  async function extSave(src, b, res) { const X = EXT(); const col = X.GROUPS[X.SOURCES[src].grp].col; const ref = C(col).doc(b.isbn); const now = nowIso(); const FV = firebase.firestore.FieldValue;
+    if (res.skip) return 'skip'; const snap = await ref.get(); const cur = snap.exists ? snap.data() : null; const prev = cur && cur.src ? cur.src[src] : null;
+    if (!res.ok) { const err = { at: now, why: String(res.why || '').slice(0, 300), by: PC_NAME, ...(res.mismatch ? { mismatch: true } : {}) }; if (cur) await ref.update({ [`src.${src}.err`]: err, uploadedAt: TS() }); else await ref.set({ isbn: b.isbn, title: b.title || null, src: { [src]: { err } }, ...W() }, { merge: true });
+      if (res.probe) { const pid = `${src}_${extKst().replace(/-/g, '')}`; const pr = C('ext_probe').doc(pid); try { const ex = await pr.get(); if (!ex.exists) await pr.set({ src, isbn: b.isbn, title: b.title || null, why: res.why, url: res.probe.url, len: res.probe.len, head: res.probe.head, at: now, by: PC_NAME, ...W() }); } catch (e) {} }
+      return res.mismatch ? 'mismatch' : 'err'; }
+    let d = res.d ?? null; if (d) { d = JSON.parse(JSON.stringify(d)); /* Firebase는 undefined를 받지 않음 */ let g = 0; while (extBytes(d) > 150000 && g++ < 12) { if (Array.isArray(d.items) && d.items.length > 5) d.items = d.items.slice(0, Math.ceil(d.items.length / 2)); else if (d.kv) d.kv = null; else break; d.trunc = true; } } const sg = X.sig({ none: !!res.none, d });
+    if (prev && prev.sig === sg) { await ref.update({ [`src.${src}.chk`]: now, [`src.${src}.err`]: FV.delete(), [`src.${src}.noneAt`]: FV.delete(), uploadedAt: TS() }); return 'same'; }
+    if (res.none && prev && prev.d && !prev.none && !prev.noneAt) { await ref.update({ [`src.${src}.noneAt`]: now, [`src.${src}.chk`]: now, [`src.${src}.err`]: FV.delete(), uploadedAt: TS() }); return 'none1'; }
+    if (prev && prev.at) { const hid = `${col}_${b.isbn}_${src}_${String(prev.at).replace(/[^0-9]/g, '').slice(0, 14)}`; const hr = C('ext_hist').doc(hid); try { const ex = await hr.get(); if (!ex.exists) await hr.set({ col, isbn: b.isbn, src, at: prev.at, chk: prev.chk || null, none: !!prev.none, d: prev.d ?? null, sig: prev.sig || null, ...W() }); } catch (e) { log(`🌐 옛 값 보관 실패(${src} ${b.isbn}) — 바꾸지 않음: ${e.message}`, 1); return 'err'; } }
+    const obj = { at: now, chk: now, sig: sg, none: !!res.none, d, by: PC_NAME, q: (d && d.q) || null };
+    if (cur) await ref.update({ [`src.${src}`]: obj, ...(b.title && !cur.title ? { title: b.title } : {}), uploadedAt: TS() }); else await ref.set({ isbn: b.isbn, title: b.title || null, author: b.author || null, src: { [src]: obj }, ...W() }, { merge: true }); /* (1.59.0·0.11.0) 같은 책을 다른 출처가 막 만들었으면 그 출처 칸을 지우지 않게 */
+    return prev ? 'changed' : 'new'; }
+  /* 한 책 한 출처: 묻고 → 쓰고 → 색인·오늘 쓴 수·마지막 결과
+   *  간격은 사이트(host)마다 — 예스24와 예스24 중고는 한 사이트로 셈 · 자리를 먼저 잡고 기다려 두 일(자동·웹앱 맡김)이 동시에 같은 사이트를 묻지 않게 · 한 번에 여러 화면을 여는 출처(검색 → 상품)는 화면 사이도 쉼 */
+  async function extOne(src, b, why) { const X = EXT(); const keys = await extKeys(); const cfg = await extCfg(); const s = X.SOURCES[src]; const h = s.host;
+    /* (1.57.4) 정범 지정: 중고 검색은 중고닷 먼저 — 중고닷이 이 책을 아직 안 봤으면 기다리고, 중고닷에서 같은 책을 찾았으면 당근·중고나라·번개장터엔 직접 묻지 않음(찾지 못했거나 중고닷을 못 읽었을 때만 직접) */
+    if (X.VIA_JOONGMO && X.VIA_JOONGMO.includes(src) && cfg.src.joongmo && cfg.src.joongmo.on && why !== 'test') { let jm = null; try { const d = await C('ext_used').doc(b.isbn).get(); jm = d.exists && d.data().src ? d.data().src.joongmo : null; } catch (e) {}
+      if (!jm) return { src, st: 'skip', why: '중고닷 먼저' }; if (jm.d && X.usedStats(jm.d, cfg.sim, cfg.usedMinPrice).match > 0) { extIdxSet(src, b.isbn); return { src, st: 'viaJm', why: '중고닷에서 찾음' }; } }
+    const at = Math.max(Date.now(), EXT_S.next[h] || 0); EXT_S.next[h] = at + s.paceMs * (0.8 + Math.random() * 0.4); if (at > Date.now()) await sleep(at - Date.now());
+    let calls = 0; const http = async (o) => { calls++; if (calls > 1) await sleep(Math.min(s.paceMs, 1500)); return extHttp(o); };
+    const res = await X.run(src, { isbn: b.isbn, title: b.title, author: b.author, keys, http, cache: EXT_S.cache, cfg }); if (calls > 1) EXT_S.next[h] = Math.max(EXT_S.next[h] || 0, Date.now() + s.paceMs);
+    if (res.skip) return { src, st: 'skip', why: res.skip }; let st; try { st = await extSave(src, b, res); } catch (e) { st = 'err'; res.ok = false; res.why = '저장 실패: ' + (e.code || e.message); }
+    if (calls) extUsedAdd(src, calls);
+    if (st !== 'err' && st !== 'mismatch') { extIdxSet(src, b.isbn); EXT_S.errs[src] = 0; }
+    else { const k = Math.min(EXT_BACKOFF.length, extIdxErrK(src, b.isbn) + 1); if (!/^저장 실패/.test(res.why || '')) extIdxSet(src, b.isbn, `E ${extKst()} ${k}`); /* 같은 책을 날마다 다시 묻지 않게 1·3·7·14·30일 뒤 */
+      if (st === 'err') { EXT_S.errs[src] = (EXT_S.errs[src] || 0) + 1; if (res.limit) EXT_S.pauseUntil[src] = Date.now() + 6 * 3600e3; else if (EXT_S.errs[src] >= 5) { EXT_S.pauseUntil[src] = Date.now() + 3600e3; EXT_S.errs[src] = 0; log(`🌐 ${s.label}: 5번 잇달아 못 읽어 1시간 쉼 — ${res.why}`, 1); } } }
+    { const okR = st !== 'err'; const L0 = { at: nowIso(), ok: st !== 'err', st, why: st === 'err' || st === 'mismatch' ? String(res.why || '').slice(0, 200) : null, isbn: b.isbn, by: PC_NAME, how: why || 'auto' } ; /* (1.24.0 · 클라우드 0.12.2) 출처별 오늘 성공·실패 수(res) + 마지막 실패(lastErr — 성공이 와도 남음) → 웹앱 시장조사 탭 수집 현황에서 '매번 실패'를 바로 봄 */ EXT_RUN().set({ last: { [src]: L0 }, res: { [extKst()]: { [src]: { [okR ? 'ok' : 'err']: firebase.firestore.FieldValue.increment(1) } } }, ...(okR ? {} : { lastErr: { [src]: L0 } }) }, { merge: true }).catch(() => {}); }
+    /* (1.57.4) 무엇을 받았는지 한 줄씩(작은 글자 기록 · 웹앱 시장조사 탭 '자동으로 채우기 현황'의 기록에 보임) */
+    try { window.__rnLog && window.__rnLog('상품', 'detail', `🌐 ${s.label} ${b.isbn} 『${String(b.title || '').slice(0, 40)}』 → ${{ new: '새로', changed: '바뀜(옛 값 보관)', same: '같음', err: '못 읽음', mismatch: '다른 책', none1: '없음(한 번)' }[st] || st}${res.d && res.d.n != null ? ` ${res.d.n}개` : ''}${st === 'err' || st === 'mismatch' ? ' — ' + String(res.why || '').slice(0, 80) : ''}${why === 'webapp' ? ' (웹앱에서 맡김)' : why === 'test' ? ' (시험)' : ''}`); } catch (e) {}
+    return { src, st, why: res.why || null, n: res.d && (res.d.n ?? null), none: !!res.none }; }
+  /* 할 책 목록: 판매중·일시판매중지 + ISBN · 판매가 높은 순 · 6시간마다 다시 만듦 */
+  /* (1.59.1) 다른 작업(집중 벤치마킹·일괄 등)이 도는 중이라 상품 기록을 아직 안 읽었을 때: 예전엔 빈 목록 → 외부 정보가 그 작업이 끝날 때까지(밤새) 아무 말 없이 쉼.
+   *  이제 ① 이 PC 보관본(IndexedDB — 서버 읽기 없음) ② 클라우드가 만든 책 목록(ext_cand) 순서로 써서 작업 중에도 계속함 · 둘 다 없을 때만 쉬고, 쉰다고 기록에 남김 */
+  async function extCandsLite() { try { const c = await LCACHE.get(); if (c && Array.isArray(c.rows) && c.rows.length) return { from: '이 PC 보관본', L: c.rows.map(([, v]) => v) }; } catch (e) {}
+    try { const m = await C('ext_cand').doc('meta').get(); const M = m.exists ? m.data() : null; if (M && M.v === 2 && M.n && M.parts) { const L = []; for (let i = 0; i < M.parts; i++) { const d = await C('ext_cand').doc('p' + i).get(); if (d.exists) { try { L.push(...JSON.parse(d.data().J || '[]')); } catch (e) {} } } if (L.length === M.n) return { from: '클라우드 책 목록', rows: L.map((r) => ({ isbn: r[0], p: r[1], title: r[2] || null, author: r[3] || null, media: r[4] || null })) }; } } catch (e) {}
+    return null; }
+  async function extCands() { if (EXT_S.cand && Date.now() - EXT_S.candAt < 6 * 3600e3) return EXT_S.cand; let src = LISTINGS;
+    if (!src) { if (running) { const lite = await extCandsLite(); if (!lite) return EXT_S.cand || []; if (lite.rows) { EXT_S.cand = lite.rows; EXT_S.candAt = Date.now() - 5 * 3600e3; /* 1시간 뒤 다시 만듦(작업이 끝났으면 진짜 목록으로) */ log(`🌐 외부 정보: 다른 작업 중이라 ${lite.from}(${lite.rows.length.toLocaleString()}권)으로 이어 감`); return EXT_S.cand; } src = new Map(lite.L.map((v, i) => [i, v])); log(`🌐 외부 정보: 다른 작업 중이라 ${lite.from}으로 이어 감`); } else { await loadListings(); src = LISTINGS; } }
+    const seen = new Map();
+    const X = EXT(); for (const l of src.values()) { const isbn = X.keyOf ? X.keyOf(l) : String(l.isbn13 || '').replace(/[^0-9]/g, ''); if (!isbn) continue; const isI = /^97[89]\d{10}$/.test(isbn); if (!isI && !['video', 'music'].includes(l.mediaType)) continue; /* (1.57.4) ISBN 없는 DVD·블루레이·CD도 중고 시세(중고닷)는 봄 */ const st = String(l.status || ''); if (!/판매중/.test(st) || /판매중지/.test(st) && !/일시/.test(st)) continue; const p = +l.price || 0; const o = seen.get(isbn); if (!o || p > o.p) seen.set(isbn, { isbn, media: l.mediaType || null, title: String(l.title || '').replace(/^\[중고[^\]]*\]\s*/, '') || null, author: l.author || null, p }); }
+    EXT_S.cand = [...seen.values()].sort((a, b) => b.p - a.p); EXT_S.candAt = src === LISTINGS ? Date.now() : Date.now() - 5 * 3600e3; return EXT_S.cand; }
+  const extDue = (src, isbn, cfg) => { const v = (EXT_S.idx[src] || new Map()).get(isbn); if (!v) return true; const m = String(v).match(/^E (\d{4}-\d\d-\d\d) (\d+)$/); if (m) return Date.now() - Date.parse(m[1] + 'T00:00:00+09:00') >= EXT_BACKOFF[Math.min(EXT_BACKOFF.length, +m[2]) - 1] * 864e5; return Date.now() - Date.parse(v + 'T00:00:00+09:00') >= cfg.src[src].refreshDays * 864e5; };
+  const extEligible = (src, b, cfg) => { const X = EXT(); if (X.eligible) return X.eligible(src, b, cfg); /* (1.59.0) 공용 파일 0.3.0부터 기준이 공용 파일에 — 영상·음반 전용 장터(DVDPrime) 포함 */ const g = X.SOURCES[src].grp; if (!/^97[89]\d{10}$/.test(String(b.isbn || ''))) return g === 'used' && src !== 'yes24used' && !!b.title; /* ISBN 없는 상품: 장터 시세만 */ if (g === 'foreign' && !cfg.foreignKr && X.isKrIsbn(b.isbn)) return false; if ((g === 'used' && src !== 'yes24used') || g === 'ebook') return !!b.title; return true; };
+  /* 환율: 하루 한 번(한국 11:30 뒤 — 수출입은행 고시 뒤) · ext_fx/{고시일} (이미 있으면 안 씀) */
+  async function extFx(force) { const X = EXT(); const day = extKst(); const k = new Date(Date.now() + 9 * 3600e3); const hm = k.getUTCHours() * 60 + k.getUTCMinutes();
+    const run = await EXT_RUN().get().catch(() => null); const F0 = (run && run.exists ? run.data().fx : null) || {}; const fxDay = F0.day || null; if (!force && fxDay === day) return null; /* 11:30 전(오늘 고시 전)엔 6시간에 한 번만 · 실패했으면 1시간 뒤 다시 */ if (!force && hm < 11 * 60 + 30 && F0.at && Date.now() - Date.parse(F0.at) < 6 * 3600e3) return null; if (!force && F0.errAt && Date.now() - Date.parse(F0.errAt) < 3600e3) return null;
+    const r = await X.fxRun({ keys: await extKeys(), http: extHttp, day }); if (!r.ok) { await EXT_RUN().set({ fx: { err: r.why, errAt: nowIso() } }, { merge: true }).catch(() => {}); log('🌐 환율을 못 받음: ' + r.why, 1); return r; }
+    const ref = C('ext_fx').doc(r.date || day); const ex = await ref.get(); if (!ex.exists) await ref.set({ date: r.date || day, rates: r.rates, src: r.src, warn: r.warn || null, at: nowIso(), by: PC_NAME, ...W() });
+    await EXT_RUN().set({ fx: { day: hm >= 11 * 60 + 30 ? day : fxDay || null, date: r.date, src: r.src, usd: r.rates.USD, at: nowIso(), err: null } }, { merge: true }).catch(() => {}); return r; }
+  /* 한 바퀴(최대 4분): 출처마다 차례가 온 책 하나씩 돌아가며 */
+  async function extFill(cfg) { const X = EXT(); const keys = await extKeys(); await extIdxLoad(); await extUsedLoad(); const C0 = await extCands(); if (!C0.length) return null; const t0 = Date.now(); const tally = {};
+    const srcs = X.ORDER.filter((s) => cfg.src[s].on && X.keysReady(s, keys)); let guard = 0; const done = new Set(); const skipRun = {};
+    let leaseAt = Date.now(); while (Date.now() - t0 < 4 * 60000 && guard++ < 5000) { if (window.__rnPaused || (window.__rnRest && window.__rnRest()) || !auth.currentUser) break; if (Date.now() - leaseAt > 60000) { if (!(await extLease())) break; leaseAt = Date.now(); } let did = false;
+      for (const src of srcs) { if (done.has(src) || (EXT_S.pauseUntil[src] || 0) > Date.now() || (EXT_S.used[src] || 0) >= cfg.src[src].cap || (EXT_S.next[X.SOURCES[src].host] || 0) > Date.now()) continue;
+        let i = EXT_S.cur[src] || 0, b = null; for (let n = 0; n < C0.length; n++, i++) { const x = C0[i % C0.length]; if (extEligible(src, x, cfg) && extDue(src, x.isbn, cfg)) { b = x; i++; break; } } EXT_S.cur[src] = i % C0.length; if (!b) { done.add(src); continue; } /* 이번 바퀴엔 이 출처로 할 책이 없음 — 다시 훑지 않음 */
+        const r = await extOne(src, b, 'auto'); did = true; const t = (tally[src] = tally[src] || {}); t[r.st] = (t[r.st] || 0) + 1; skipRun[src] = r.st === 'skip' ? (skipRun[src] || 0) + 1 : 0; if (skipRun[src] >= 20) done.add(src); /* (1.58.0) 중고닷이 아직 안 본 책만 남으면 이번 바퀴엔 그만 — 책마다 기록을 한 번씩 읽어 읽기 수가 수천 번 나던 것 */ if (Date.now() - t0 > 4 * 60000) break; }
+      if (!did) { if (srcs.every((s) => done.has(s) || (EXT_S.pauseUntil[s] || 0) > Date.now() || (EXT_S.used[s] || 0) >= cfg.src[s].cap)) break; await sleep(400); } }
+    const parts = Object.entries(tally).map(([s, t]) => `${X.SOURCES[s].label} ${Object.entries(t).map(([k, v]) => `${{ new: '새로', changed: '바뀜', same: '같음', err: '못 읽음', skip: '건너뜀', mismatch: '다른 책', none1: '없음(한 번 — 다음에 확인)', viaJm: '중고닷에서 찾아 직접 안 물음' }[k] || k} ${v}`).join('·')}`);
+    if (parts.length) log(`🌐 외부 정보 ${Math.round((Date.now() - t0) / 1000)}초: ${parts.join(' / ')}`); return tally; }
+  async function extTick() { if (EXT_S.busy || !auth.currentUser || window.__rnPaused || (window.__rnRest && window.__rnRest())) return; const X = EXT(); if (!X) return; EXT_S.busy = true;
+    try { const cfg = await extCfg(); if (!cfg.on) return; if (!asOwnMine()) return; /* (1.63.7) 담당 PC(또는 임시로 맡은 PC)만 */ if (!(await extLease())) return; await extUsedLoad(true); await extFx().catch((e) => log('🌐 환율: ' + e.message, 1)); const r = await extFill(cfg);
+      if (r == null) { /* (1.59.1) 할 책 목록이 없어 이번엔 못 함 — 맡음을 바로 놓아(클라우드·다른 PC가 이어받게) 쉰다고 한 시간에 한 번 남김(기록이 비는 까닭이 보이게) */ try { await db.runTransaction(async (tx) => { const s0 = await tx.get(EXT_RUN()); const L = (s0.exists && s0.data().lease) || null; if (L && L.pc === PC_NAME && L.tab === EXT_S.me) tx.set(EXT_RUN(), { lease: { ...L, atMs: Date.now() - 5 * 60000 } }, { merge: true }); }); } catch (e) {}
+        if (Date.now() - (EXT_S.idleLogAt || 0) > 3600e3) { EXT_S.idleLogAt = Date.now(); log('🌐 외부 정보: 상품 기록을 아직 못 읽어(다른 작업 중 · 보관본 없음) 이번엔 쉼 — 맡음을 놓아 클라우드·다른 PC가 이어받게 함'); } } } catch (e) { log('🌐 외부 정보 오류: ' + (e.message || e), 1); } finally { EXT_S.busy = false; } }
+  setTimeout(() => extTick(), 2 * 60000); setInterval(() => extTick(), 5 * 60000);
+  /* 웹앱이 맡긴 일 — extLookup: { books:[{isbn,title,author}], srcs?:[출처] } · extTest: { srcs?:[출처] } (하루 최대와 상관없이 바로) */
+  const EXT_TEST_BOOKS = { kr: { isbn: '9788937460449', title: '데미안', author: '헤르만 헤세' }, en: { isbn: '9780141439518', title: 'Pride and Prejudice', author: 'Jane Austen' } };
+  async function extCmd(ref, v) { const X = EXT(); if (!X) { await ref.set({ status: 'queued', claim: null, pcSkip: `수집기 ${APP_VER}에 외부 정보 공용 파일(readnow-ext-core.js)이 없음`, uploadedAt: TS() }, { merge: true }); return; }
+    const keys = await extKeys(true); const cfg = await extCfg(true); await extUsedLoad(true); const out = {}; const all = X.ORDER.filter((s) => !v.srcs || v.srcs.includes(s));
+    if (v.type === 'extTest') { for (const src of all) { if (!X.keysReady(src, keys)) { out[src] = { ok: false, st: 'nokey', why: '키 없음' }; continue; } const g = X.SOURCES[src].grp; let b = g === 'foreign' ? EXT_TEST_BOOKS.en : EXT_TEST_BOOKS.kr; if (X.SOURCES[src].media) { /* (1.59.0) 영상·음반 전용 장터(DVDPrime)는 우리 영상 상품 하나로 시험 (없으면 건너뜀) */ let m = null; const okL = (l) => l && X.SOURCES[src].media.includes(l.mediaType) && l.title && String(l.status || '') === '판매중' && X.keyOf(l); let L0 = LISTINGS ? [...LISTINGS.values()] : null; if (!L0) { try { L0 = (await C('prd_listings').where('mediaType', 'in', X.SOURCES[src].media).limit(30).get()).docs.map((d) => d.data()); } catch (e) { L0 = []; } } const hit = L0.find(okL); if (hit) m = { isbn: X.keyOf(hit), title: String(hit.title).replace(/^\[중고[^\]]*\]\s*/, ''), author: null, media: hit.mediaType }; if (!m) { out[src] = { ok: false, st: 'nocase', why: '시험할 판매중 영상·음반 상품이 없음 — 시험하지 못함' }; continue; } b = m; } const r = await extOne(src, b, 'test'); out[src] = { ok: r.st !== 'err', st: r.st, why: r.why || null, n: r.n ?? null, none: r.none, isbn: b.isbn };
+        await ref.set({ results: out, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); }
+      if (!v.srcs || v.srcs.includes('fx')) { const r = await extFx(true).catch((e) => ({ ok: false, why: e.message })); out.fx = r && r.ok ? { ok: true, st: 'ok', why: `${r.src} ${r.date} · 1달러 ${Math.round(r.rates.USD).toLocaleString()}원${r.warn ? ' · (수출입은행: ' + r.warn + ')' : ''}` } : { ok: false, st: 'err', why: (r && r.why) || '?' }; }
+      await EXT_RUN().set({ test: { at: nowIso(), by: PC_NAME, r: out } }, { merge: true }).catch(() => {}); await ref.set({ status: 'done', results: out, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`🌐 외부 연결 시험: ${Object.entries(out).map(([k, r]) => `${(X.SOURCES[k] || { label: '환율' }).label} ${r.ok ? '✓' : '✗'}`).join(' · ')}`); return; }
+    const books = (v.books || []).filter((b) => b && /^(97[89]\d{10}|[BU][0-9A-Za-z_-]{3,40})$/.test(String(b.isbn || ''))).slice(0, 20).map((b) => ({ isbn: b.isbn, title: b.title || null, author: b.author || null, media: b.media || null })); /* (1.57.4) ISBN 없는 상품(B바코드·U상품코드)도 */ let n = 0;
+    for (const b of books) { const r0 = (out[b.isbn] = {}); for (const src of all) { if (!cfg.src[src].on || !X.keysReady(src, keys) || !extEligible(src, b, { ...cfg, foreignKr: cfg.foreignKr || !!v.foreignKr })) continue; const r = await extOne(src, b, 'webapp'); r0[src] = r.st; n++; await ref.set({ results: out, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); } }
+    await ref.set({ status: 'done', results: out, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`🌐 외부 정보 지금 받기: 책 ${books.length}권 · ${n}번 물음 (웹앱에서 맡김)`); }
+  const JOBS = {
+    bench: ['🎯 집중 벤치마킹 — 정한 순서대로 모두 (멈추면 이어서)', (o) => benchJob({ force: true, ...(o && o.only ? { only: o.only } : {}) })], /* (1.60.1) 주기·차례 계산 없이 웹앱 🎯 순서대로 켜진 그룹의 판매자 모두 · 지난 바퀴를 못 끝냈으면(3일 안) 그 판매자부터 */
+    benchForce: ['🎯 집중 벤치마킹 — 처음 판매자부터 다시 모두', () => benchJob({ force: true, fresh: true })],
+    benchDetail: ['집중 벤치마킹 상품만 — 상품 페이지 정보 읽기', () => benchDetailJob()],
+    scanNew: ['신규 등록분 수집', () => scan('new')],
+    scanFull: ['전체 재검토', () => scan('full')],
+    scanDaily: ['상품 조회 (판매중·일시판매중지·판매중지) 새로·바뀐 것', () => scan('daily')],
+    market: ['도서 정보·시장 지표', () => market()],
+    revTop: ['상위 판매자 평가 갱신', () => reviewJob('top')],
+    dynamic0: ['구매자 분포 (하루치)', () => dynJob(SET.dynDaily || 300)],
+    aladinBuy: ['알라딘 구매 내역 (전체)', () => aladinBuyJob()],
+    rev6mAll: ['6개월 평가 수 (전체)', () => rev6mJob('all')],
+    rev6mStale: ['6개월 평가 수 (오래된 것)', () => rev6mJob('stale')],
+    revAll: ['판매자 평가 전체 수집', async () => { if (!window.__rnAuto && !window.__rnRemote && window.__rnHuman(5000) && !confirm('모든 판매자의 평가를 처음 것까지 받습니다. 평가가 많은 판매자는 한 곳에 수천 쪽이라 며칠이 걸릴 수 있습니다. 멈춰도 이어서 할 수 있습니다. 시작할까요?')) return; return reviewJob('all'); }],
+    chain: ['모두 일괄 수집', () => runChain(false)],
+    prdChain: ['상품 일괄 수집 (고객 제외)', () => runChain(true)],
+    dynAll: ['구매자 분포 전체 수집', async () => { const human = window.__rnHuman(5000); /* (1.63.6) 확인 창은 사람이 막 누른 때만 · 책 수는 세기만(문서 수만 건을 다 받지 않음) */ let n = 0; if (human && !window.__rnRemote && !window.__rnAuto) { try { n = (await C('prd_books').count().get()).data().count; } catch (e) { n = (await C('prd_books').get()).size; } } if (human && !window.__rnRemote && !window.__rnAuto && !confirm(`도서 정보가 있는 책 ${n.toLocaleString()}권 중 아직 안 모았거나 오래된 책을 전부 모읍니다. 한 권에 5~10초라 수천 권이면 하루 넘게 걸릴 수 있습니다. 멈춰도 이어서 합니다. 시작할까요?`)) return 'cancel'; return dynJob(0); }],
+    soldInfo: ['판매완료 상품 정보·이미지', () => soldInfoJob()],
+    poolInfo: ['알라딘 구매 풀(미연결) 도서 정보', () => poolInfoJob()],
+    photos: ['상품 사진 (표지 없는 상품: 우리 페이지 → 상품명 검색)', () => photosJob()],
+    usedInfo: ['경쟁 매물 유의사항·사진', () => usedInfoJob()],
+    explore: ['끝없는 탐색 수집', () => exploreJob()],
+    metricsReq: ['그룹 시장 지표 갱신', () => metricsReqJob()],
+    metricsAuto: ['그룹 시장 지표 맡기기 (매일 자동을 켠 그룹)', () => metricsAutoJob()],
+    shipRead: ['발송 요청 읽기 (오늘 출고)', () => shipReadJob()],
+    nbMarket: ['새상품 없는 상품 시세', () => nbMarketJob()],
+    buyback: ['알라딘 팔기 내역', () => buybackJob()],
+    dynamic: ['구매자 분포·함께 산 책', () => dynJob(SET.dynDaily || 0)],
+    kpipa: ['출판 판매 통계 (KPIPA 판매 보고서)', () => kpipaJob()],
+  };
+  /* ───────── 버전 맞추기: 다른 PC가 더 새 수집기로 돌기 시작하면, 이 PC는 지금 항목까지 저장하고 멈춘 뒤 새로고침해 새 버전으로 이어감 ─────────
+   * (동기화로 스크립트 파일은 바뀌어도, 이미 열려 있던 탭은 새로고침 전까지 예전 코드로 돎) */
+  const verNum = (v) => String(v || '0').split('.').map((x) => +x || 0).reduce((a, x) => a * 1000 + x, 0);
+  window.__rnOutdated = false;
+  async function versionWatch() {
+    const ref = C('crm_system').doc('collector_version');
+    try { await db.runTransaction(async (tx) => { const d = (await tx.get(ref)).data() || {}; if (verNum(VER) > verNum(d.ver)) tx.set(ref, { ver: VER, by: PC_NAME, at: nowIso() }); }); } catch (e) {}
+    // 더 새 버전이 생겨도 이 PC의 작업은 멈추지 않음. 하던 작업은 이 버전으로 끝까지 계속하고,
+    // ① 아무 작업도 없을 때(2분 이상 쉼) 또는 ② 모두 일괄 수집의 단계와 단계 사이에서만 새로고침 → 새 버전으로 그 자리부터 자동으로 이어감.
+    // 같은 버전으로는 한 번만 시도 (동기화 전이라 새로고침해도 예전 버전이면, 그 버전으로 그냥 계속).
+    const want = GM_getValue('rnu-reload-for', null); if (want && verNum(want) <= verNum(VER)) GM_setValue('rnu-reload-for', null);
+    /* (1.63.8) ⚡ 빠른 업데이트(본체의 GitHub 직접 받기)가 새 판을 받아 두면 같은 길로 — 쉬는 사이(또는 긴 작업이면 저장 지점에서) 새로고침해 새 판으로 그 자리부터 */
+    let verTimer = null;
+    window.__rnLiveReady = (v) => { try { if (!v || verNum(v) <= verNum(VER)) return; if (window.__rnOutdated === v && verTimer) return; GM_setValue('rnu-reload-for', null); GM_setValue('rnu-reload-try', null); if (verTimer) { clearInterval(verTimer); verTimer = null; } window.__rnOutdated = null; onNewVer(v, '⚡ 빠른 업데이트로 새 판을 받아 둠'); } catch (e) {} };
+    ref.onSnapshot((d) => onNewVer((d.data() || {}).ver), () => {});
+    function onNewVer(v, src) { if (!v || verNum(v) <= verNum(VER) || window.__rnOutdated) return;
+      window.__rnOutdated = v; if (window.__rnFeat && !window.__rnFeat('update')) { log(`새 수집기 ${v}가 있지만 이 PC는 🧩 '새 판 저절로 맞추기'를 꺼 둠 — 직접 새로고침해야 바뀜`, 1); return; } const tried = GM_getValue('rnu-reload-for', null) === v;
+      /* (1.59.2) 한 번 새로고침했는데도 옛 판이면(Tampermonkey 동기화가 아직 안 옴) 예전엔 그 판으로 끝까지 버팀 → 이제 30분마다(쉬는 사이에만) 다시 새로고침해 동기화가 왔는지 봄, 같은 판으로 최대 8번 */
+      const RT0 = GM_getValue('rnu-reload-try', null); const nTry = RT0 && RT0.v === v ? +RT0.n || 0 : 0;
+      log(`새 수집기 ${v}가 있습니다 (이 탭은 ${VER}). 지금 작업은 그대로 계속합니다${tried ? (nTry >= 8 ? ' (이 PC의 Tampermonkey에 새 판이 아직 없음 — 8번 다시 열어 봐도 그대로라 더 하지 않음 · 그 PC의 Tampermonkey 동기화를 확인하세요)' : ` (이 PC는 아직 동기화 전 — 30분마다 쉬는 사이에 다시 열어 동기화가 왔는지 확인 ${nTry}/8)`) : '. 쉬는 사이나 일괄 수집 단계 사이에 새 버전으로 바꿔 이어갑니다'}`);
+      if (tried && nTry >= 8) return; let idleSince = null; const seenAt = Date.now();
+      const t = verTimer = setInterval(() => { const busy = running || imgRunning || (window.__rnCrm && window.__rnCrm.busy());
+        // (1.38.0) 오래 걸리는 작업 중이면(새 판을 본 지 10분 넘게) 진행 위치 저장 지점에서 멈추고 새로고침해 새 판으로 그 자리부터 이어감
+        //   예전: 쉬거나 일괄 단계 사이에서만 바꿔, 몇 시간짜리 단계가 끝날 때까지 옛 판으로 돌았음(10/8: 16:32에 1.37.0을 보고도 계속 1.27.0)
+        if (!tried && busy && running && !imgRunning && !(window.__rnCrm && window.__rnCrm.busy()) && !window.__rnPaused && !memReload && !verReload && curKey && curKey !== 'explore' && JOBS[curKey] && Date.now() - seenAt > 10 * 60000) { clearInterval(t); verReload = true; stopFlag = true; log(`새 수집기 ${v}로 바꾸려고 지금 항목까지 저장하고 멈춥니다 — 새로고침 뒤 '${JOBS[curKey][0]}'을(를) 그 자리부터 자동으로 이어감`, 1); return; }
+        if (busy) { idleSince = null; return; } idleSince = idleSince || Date.now(); if (Date.now() - idleSince < 120000) return; if (tried && Date.now() - ((RT0 && RT0.at) || 0) < 30 * 60000) return;
+        clearInterval(t); GM_setValue('rnu-reload-for', v); GM_setValue('rnu-reload-try', { v, n: nTry + 1, at: Date.now() }); safeReload(tried ? `새 버전 ${v} 동기화 확인 (${nTry + 1}/8)` : (src ? src + ' — 새 판으로 바꿈' : '새 버전으로 바꿈'), null); }, 10000); }
+    // 새로고침 뒤 이어가기: 실제로 시작될 때까지 표시를 지우지 않고 15초마다 다시 시도(최대 10분), 사람 확인 없이(무인) 시작
+    { const after = GM_getValue('rnu-resume-after-reload', null);
+      if (after && JOBS[after]) { let tries = 0; const t = setInterval(() => { tries++;
+        if (window.__rnPaused) { clearInterval(t); log(`새로고침 뒤 이어가기 '${JOBS[after][0]}': 일시정지 상태라 이어가지 않음 (개요 탭의 ▶ 다시 시작으로 계속)`, 1); return; }
+        if (running || (window.__rnRest && window.__rnRest())) return; /* (1.56.0) 이 PC의 수집기 탭이 이어감 */ if (tries > 40) { clearInterval(t); log(`새로고침 뒤 이어가기 '${JOBS[after][0]}'를 10분 동안 시작하지 못했습니다 — 개요 탭 '멈춘 작업'의 이어하기를 눌러 주세요`, 1); return; }
+        clearInterval(t); GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 '${JOBS[after][0]}'을(를) 저장된 자리부터 이어갑니다 (수집기 ${VER})`); window.__rnAuto = true; runJob(after).finally(() => { window.__rnAuto = false; }); }, 15000); } }
+  }
+  /* ══════════ (1.59.2) 🛰 원격 조작 — 웹앱(⚙ 관리도구 › ① 도구)이나 다른 PC 수집기에서 이 PC를 골라 ■ 중단 · ▶ 다시 시작 · ⟳ 업데이트
+   *  명령은 Firebase crm_system/pc_ctl 한 문서: cmds.{PC 이름} = { id, cmd, at, by, want(그때 가장 새 판) } · 결과는 acks.{PC 이름} = { id, cmd, state, msg, ver, at } · 보낸·받은 기록은 log에 덧붙임(지우지 않음)
+   *  ■ 중단 = 이 PC의 모든 수집기 탭 일시정지(지금 항목까지 저장 — 개요의 ▶ 다시 시작 또는 원격 ▶로 이어감)
+   *  ⟳ 업데이트 = 하던 작업을 저장 지점에서 멈추고 안전한 새로고침 → Tampermonkey에 있는 판으로 다시 뜸 → 하던 작업을 그 자리부터 이어감.
+   *     새로 뜬 판이 웹앱이 본 가장 새 판보다 낮으면(그 PC의 Tampermonkey 동기화가 아직 안 옴) 15분마다(쉬는 사이) 다시 열어 확인, 최대 8번 — 결과는 웹앱에 그대로 보임
+   *  명령은 6시간 지나면 버림(꺼져 있던 PC가 다음 날 켜지자마자 멈추지 않게) · 한 명령은 한 번만 (같은 id는 다시 안 함) */
+  const CTL = () => C('crm_system').doc('pc_ctl');
+  let ctlReload = null; // 하던 작업이 저장 지점에서 멈추면 runJob이 새로고침
+  let CTL_DOC = null; let ctlDraw = () => {}; // 수집기 화면의 '🛰 PC 원격' 줄(watchPcs)이 씀
+  const ctlLead = () => { try { const r = window.__rnRole ? window.__rnRole() : 'lead'; return r === 'lead' || r === 'force'; } catch (e) { return true; } };
+  const ctlAck = (id, cmd, state, msg) => { log(`🛰 원격 ${({ stop: '■ 중단', resume: '▶ 다시 시작', update: '⟳ 업데이트' })[cmd] || cmd}: ${msg}`, state === 'fail' || state === 'nosync' ? 1 : 0);
+    return CTL().set({ acks: { [PC_NAME]: { id, cmd, state, msg, ver: VER, at: nowIso() } }, log: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), pc: PC_NAME, id, cmd, state, msg: String(msg).slice(0, 200), ver: VER }) }, { merge: true }).catch(() => {}); };
+  window.__rnCtlSend = async (pc, cmd) => { const want = ((await C('crm_system').doc('collector_version').get().catch(() => null)) || { data: () => ({}) }).data() || {}; const id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    await CTL().set({ cmds: { [pc]: { id, cmd, at: nowIso(), by: `${PC_NAME} 수집기`, want: (want && want.ver) || null } }, log: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), pc, id, cmd, state: 'sent', msg: `${PC_NAME} 수집기에서 보냄`, ver: null }) }, { merge: true }); return id; };
+  async function ctlUpdateNow(c) { GM_setValue('rnu-ctl-upd', { id: c.id, from: VER, want: c.want || null, n: 0, at: Date.now() });
+    if (running && curKey && JOBS[curKey] && !imgRunning) { ctlReload = c.id; stopFlag = true; await ctlAck(c.id, 'update', 'stopping', `'${JOBS[curKey][0]}' 하던 중 — 지금 항목까지 저장하고 멈춘 뒤 새로고침, 새 판에서 그 자리부터 이어감`); return; }
+    if (running || imgRunning || (window.__rnCrm && window.__rnCrm.busy())) { try { window.__rnCrm && window.__rnCrm.busy() && window.__rnCrm.pause(); } catch (e) {} if (imgRunning) stopFlag = true;
+      await ctlAck(c.id, 'update', 'stopping', `작업(${running || (imgRunning ? '이미지' : '고객 작업')}) 저장 지점에서 멈추는 중 — 멈추면 새로고침`);
+      for (let w = 0; w < 300 && (running || imgRunning || (window.__rnCrm && window.__rnCrm.busy())); w++) await sleep(1000); }
+    if (running || imgRunning || (window.__rnCrm && window.__rnCrm.busy())) { GM_setValue('rnu-ctl-upd', null); return ctlAck(c.id, 'update', 'fail', '5분 안에 작업이 멈추지 않아 새로고침하지 않음 — 다시 보내거나 그 PC에서 확인'); }
+    await ctlAck(c.id, 'update', 'reloading', `새로고침 중 (지금 ${VER})`); safeReload('🛰 원격 업데이트', null); }
+  async function ctlBoot() { /* 원격 업데이트로 다시 뜬 탭: 판이 바뀌었는지 알림 · 아직 옛 판이면 15분마다 다시 열어 동기화 확인 */
+    const u = GM_getValue('rnu-ctl-upd', null); if (!u || !u.id || !ctlLead()) return; if (Date.now() - (u.at || 0) > 12 * 3600e3) { GM_setValue('rnu-ctl-upd', null); return; }
+    const reached = u.want ? verNum(VER) >= verNum(u.want) : true; const changed = verNum(VER) > verNum(u.from);
+    if (reached || changed && !u.want) { GM_setValue('rnu-ctl-upd', null); return ctlAck(u.id, 'update', 'done', changed ? `새 판 ${VER}로 바뀜 (전 ${u.from}) — 하던 작업은 그 자리부터 이어감` : `다시 열기 끝 (판 ${VER} 그대로 — 이미 가장 새 판)`); }
+    const n = (u.n || 0) + 1; if (n > 8) { GM_setValue('rnu-ctl-upd', null); return ctlAck(u.id, 'update', 'nosync', `8번 다시 열어도 ${VER} — 이 PC의 Tampermonkey에 새 판 ${u.want}이(가) 없음. 그 PC Tampermonkey의 동기화(또는 새 판 붙여넣기)를 확인하세요`); }
+    GM_setValue('rnu-ctl-upd', { ...u, n, at: Date.now() }); await ctlAck(u.id, 'update', 'nosync', `다시 열었지만 아직 ${VER} (새 판 ${u.want}) — 이 PC의 Tampermonkey 동기화를 기다림 · 15분 뒤(쉬는 사이) 다시 열어 확인 ${n}/8`);
+    let idle = null; const t = setInterval(() => { const busy = running || imgRunning || (window.__rnCrm && window.__rnCrm.busy()); const u2 = GM_getValue('rnu-ctl-upd', null); if (!u2 || u2.id !== u.id) { clearInterval(t); return; }
+      if (busy) { idle = null; return; } idle = idle || Date.now(); if (Date.now() - idle < 60000 || Date.now() - u2.at < 15 * 60000) return; clearInterval(t); safeReload(`🛰 원격 업데이트 — 동기화 확인 ${n}/8`, null); }, 20000); }
+  async function ctlWatch() { try { if (window.__rnRoleReady) await Promise.race([window.__rnRoleReady, sleep(15000)]); } catch (e) {} ctlBoot().catch(() => {});
+    /* (1.63.6 전체 점검) pc_ctl.log는 명령마다 덧붙어 끝없이 커짐(1MB 넘으면 원격 조작이 멈춤) → 300줄 넘으면 앞쪽을 달별 보관 문서(crm_system/pc_ctl_log_YYYY-MM)로 옮기고 최근 200줄만 남김(지우지 않음 · 한 묶음) */
+    const ctlTrim = async () => { try { await db.runTransaction(async (tx) => { const s0 = await tx.get(CTL()); const L = (s0.exists && s0.data().log) || []; if (L.length <= 300) return; const old = L.slice(0, L.length - 200); const byM = {}; old.forEach((x) => { const m = String((x && x.at) || nowIso()).slice(0, 7); (byM[m] = byM[m] || []).push(x); });
+        for (const [m, arr] of Object.entries(byM)) tx.set(C('crm_system').doc('pc_ctl_log_' + m), { log: firebase.firestore.FieldValue.arrayUnion(...arr), at: nowIso() }, { merge: true }); tx.set(CTL(), { log: L.slice(-200) }, { merge: true }); }); log(`🛰 원격 조작 기록이 길어 앞쪽을 달별 보관 문서로 옮김 (최근 200줄만 남김)`); } catch (e) {} };
+    CTL().onSnapshot(async (d) => { CTL_DOC = d.exists ? d.data() : null; try { ctlDraw(); } catch (e) {} if (d.exists && (d.data().log || []).length > 300 && !window.__rnCtlTrimAt) { window.__rnCtlTrimAt = 1; setTimeout(() => { ctlTrim().finally(() => { window.__rnCtlTrimAt = 0; }); }, Math.random() * 20000); } const c = ((d.exists && d.data().cmds) || {})[PC_NAME]; if (!c || !c.id || !c.cmd) return;
+      const age = Date.now() - Date.parse(c.at || 0); const seen = GM_getValue('rnu-ctl-seen', null);
+      if (!ctlLead()) { /* 쉬는 탭: 업데이트만 — 하는 일이 없으니 바로 다시 엶 */ if (c.cmd === 'update' && age < 6 * 3600e3 && sessionStorage.getItem('rn-ctl-upd') !== c.id && !running) { sessionStorage.setItem('rn-ctl-upd', c.id); setTimeout(() => location.reload(), 5000 + Math.random() * 10000); } return; }
+      if (seen === c.id) return; GM_setValue('rnu-ctl-seen', c.id);
+      if (window.__rnFeat && !window.__rnFeat('remote')) return ctlAck(c.id, c.cmd, 'fail', '이 PC는 🧩 \'원격 조작 받기\'를 꺼 둠 — 그 PC의 수집기 개요에서 켜야 받음');
+      if (!(age >= -600000 && age < 6 * 3600e3)) return ctlAck(c.id, c.cmd, 'expired', `${Math.round(age / 3600e3)}시간 지난 명령이라 하지 않음`);
+      try { if (c.cmd === 'stop') { if (window.__rnPaused) return ctlAck(c.id, 'stop', 'done', '이미 일시정지 상태'); window.__rnPauseAll(`🛰 원격 중단 — ${c.by || ''}`); return ctlAck(c.id, 'stop', 'done', `일시정지함 — 하던 작업은 지금 항목까지 저장하고 멈춤${running ? ` ('${running}')` : ''}`); }
+        if (c.cmd === 'resume') { if (!window.__rnPaused) return ctlAck(c.id, 'resume', 'done', '일시정지 상태가 아니었음 (그대로 돎)'); window.__rnResumeOk(); return ctlAck(c.id, 'resume', 'done', '일시정지 풀음 — 매일 자동·요청·이어가기가 다시 돎'); }
+        if (c.cmd === 'update') return ctlUpdateNow(c);
+        return ctlAck(c.id, c.cmd, 'fail', '모르는 명령 (이 수집기 ' + VER + ')'); } catch (e) { return ctlAck(c.id, c.cmd, 'fail', '오류: ' + e.message); } }, () => {}); }
+  // (1.26.1) 안전한 새로고침: 바로 location.reload()하면 알라딘이 429(요청 너무 많음)를 돌려줄 때 크롬 오류 화면에 멈춤(그 화면에서는 어떤 스크립트도 못 돎).
+  //  ① 서버가 200으로 답할 때까지 기다림(30초 → 1·2·4…15분 간격으로 확인)  ② 새 탭으로 같은 화면을 엶  ③ 새 탭의 수집기가 실제로 떠서 '받았음' 신호를 보내면 이 탭을 닫음
+  //  ④ 2분 안에 신호가 없으면(새 탭이 오류 화면) 그 탭을 닫고 ①부터 다시 — 수집기가 떠야만 넘어가므로 오류 화면에 멈추지 않음. 새 탭은 저장된 자리부터 자동으로 이어감
+  const HANDOFF_TAB = Math.random().toString(36).slice(2, 10);
+  async function safeReload(reason, resumeKey) { window.__rnReloading = Date.now(); /* (1.60.0) 새 탭으로 넘기는 동안 ⏰ 매일 자동이 새 일을 시작하지 않게 */
+    if (resumeKey) GM_setValue('rnu-resume-after-reload', resumeKey);
+    try { localStorage.setItem('rn-tab-handoff', JSON.stringify({ pwTab: sessionStorage.getItem('pw_tab'), at: Date.now() })); } catch (e) {} // 가격 감시 탭이었으면 새 탭이 이어받음
+    /* (1.63.8) 새로 연 탭이 이어받지 못하면 그 탭을 닫고 '닫혔는지'(tab.closed) 확인 — 못 닫았으면 또 새 탭을 열지 않고 이 탭을 그 자리에서 새로고침(빈 탭이 쌓여 PC가 느려지던 것) */
+    let lastTab = null; const closeTab = async (tb) => { if (!tb) return true; try { tb.close(); } catch (e) {} for (let i = 0; i < 12; i++) { if (tb.closed) return true; await sleep(500); } return !!tb.closed; };
+    let wait = 30000; const tStart = Date.now(); log(`[안전한 새로고침] 시작 — 이유: ${reason}${resumeKey ? ` · 새 탭에서 이어갈 작업: '${(JOBS[resumeKey] || [resumeKey])[0]}'` : ''} · 지금 요청 간격 ${PACE.state().gap}ms${PACE.cooling() ? ` · 쉬는 중 ${Math.round(PACE.cooling() / 1000)}초 남음` : ''}`);
+    for (let tryN = 1; ; tryN++) {
+      let st = 0, em = ''; try { const r = await fetch(location.href, { credentials: 'include', cache: 'no-store' }); st = r.status; } catch (e) { st = 0; em = e.message; } log(`[안전한 새로고침] ${tryN}번째 서버 확인: ${st || '응답 없음'}${em ? ' (' + em + ')' : ''}${st === 429 ? ' — 요청 너무 많음' : ''} · 시작한 지 ${Math.round((Date.now() - tStart) / 60000)}분`);
+      if (st === 200) {
+        const id = HANDOFF_TAB + '_' + tryN; GM_setValue('rn-handoff', { id, at: Date.now() }); GM_setValue('rn-handoff-ack', null);
+        if (lastTab && !lastTab.closed && !(await closeTab(lastTab))) { log(`[안전한 새로고침] 앞서 연 새 탭이 닫히지 않아 새 탭을 또 열지 않고 이 탭을 그 자리에서 새로고침합니다 (탭이 쌓이지 않게)`, 1); if (window.__rnFlush) await window.__rnFlush(); GM_setValue('rn-handoff', { id, at: Date.now() }); location.reload(); return; }
+        log(`${reason}: 새 탭으로 다시 엽니다 (${tryN}번째)`); let tab = null; try { tab = GM_openInTab(location.href.replace(/#.*$/, ''), { active: true, insert: true, setParent: true }); } catch (e) {} lastTab = tab;
+        const t0 = Date.now(); while (Date.now() - t0 < 120000) { await sleep(3000); if (GM_getValue('rn-handoff-ack', null) === id) { window.__rnLeadRelease && window.__rnLeadRelease(); log(`[안전한 새로고침] 새 탭이 이어받았습니다 (${Math.round((Date.now() - t0) / 1000)}초 만에) — 남은 기록을 저장하고 이 탭을 닫습니다 · 전체 ${Math.round((Date.now() - tStart) / 60000)}분 걸림`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} await sleep(1500); /* (1.63.8) 닫기가 막힌 탭(사람이 연 탭)은 빈 화면으로 바꿔 코드가 모두 멈추게 — 새 탭이 확인해 남김 */ GM_setValue('rn-handoff-oldblank', { id, at: Date.now() }); location.replace('about:blank'); return; } }
+        const closed = await closeTab(tab); if (closed) lastTab = null; log(`[안전한 새로고침] 새 탭이 2분 안에 뜨지 않았습니다(알라딘 오류 화면 — 429 등일 가능성) → 그 탭을 ${closed ? '닫고 닫힌 것을 확인함' : '닫지 못함 — 다음엔 새 탭을 또 열지 않고 이 탭을 새로고침'} · ${Math.round(wait / 6000) / 10}분 기다렸다 다시`, 1); PACE.fail('429');
+      } else { log(`${reason}: 알라딘이 ${st || '응답 없음'}(${st === 429 ? '요청 너무 많음' : '아직 안 됨'}) — ${Math.round(wait / 6000) / 10}분 뒤 다시 확인`, 1); if (st === 429) PACE.fail('429'); }
+      ui(`${reason} — 알라딘이 다시 받아 줄 때까지 기다리는 중`, 0, 0, `${Math.round(wait / 6000) / 10}분 뒤 다시 확인 (${tryN}번째) · 이 탭을 닫지 마세요`);
+      await sleep(wait); wait = Math.min(wait * 2, 15 * 60000);
+    }
+  }
+  // 새 탭 쪽: 안전한 새로고침으로 열린 탭이면 '받았음' 신호
+  { const h = GM_getValue('rn-handoff', null); if (h && h.id && Date.now() - h.at < 10 * 60000) { window.__rnClaimHeir && window.__rnClaimHeir(); GM_setValue('rn-handoff-ack', h.id); GM_setValue('rn-handoff', null); const rk = GM_getValue('rnu-resume-after-reload', null); log(`[안전한 새로고침] 이 탭이 새로 열려 이어받음 (옛 탭 신호 ${h.id}, ${Math.round((Date.now() - h.at) / 1000)}초 전)${rk ? ` · 곧 '${(JOBS[rk] || [rk])[0]}' 이어가기` : ''}`); } }
+  // (1.25.1) 메모리 지킴이: 오래 도는 작업 중 이 탭의 메모리가 한계의 65%를 넘거나 숨은 창으로 연 페이지가 SET.reloadEveryFrames(400)개를 넘으면
+  //  진행 위치를 저장하고 멈춘 뒤 탭을 새로고침해, 같은 작업을 그 자리부터 자동으로 이어감 (새로고침하면 탭 메모리가 처음으로 돌아감)
+  let frameLoads = 0, memReload = false, verReload = false;
+  setInterval(() => {
+    if (!running || memReload) return; const m = performance && performance.memory; const ratio = m && m.jsHeapSizeLimit ? m.usedJSHeapSize / m.jsHeapSizeLimit : 0;
+    if (ratio > 0.65 || frameLoads >= (SET.reloadEveryFrames || 400)) { memReload = true; stopFlag = true; log(`메모리 정리: ${ratio > 0.65 ? `메모리 ${Math.round(ratio * 100)}% 사용` : `숨은 창으로 연 페이지 ${frameLoads}개`} (메모리 ${m ? Math.round(m.usedJSHeapSize / 1048576) + 'MB / 한계 ' + Math.round(m.jsHeapSizeLimit / 1048576) + 'MB' : '모름'}) — 진행 위치를 저장하고 새로고침한 뒤 그 자리부터 이어갑니다`, 1); }
+  }, 30000);
+  // (1.26.0) 수동 실행(개별 수집 버튼을 사람이 누름): 기간 설정(○일 안에 본 것은 건너뜀)을 적용하지 않고 전부 다시 모음.
+  //   일괄 수집·자동 실행·새로고침 뒤 이어가기는 지금처럼 기간 설정을 따름. 다시 모아도 기존 기록은 덮어쓰지 않고, 바뀐 것만 시각과 함께 덧붙임
+  let FORCE_ALL = false;
+  let lastRunErr = null, lastRunSt = null; // (1.60.0) lastRunSt = 끝난 모양(done·stop·error) — ⏰ 매일 자동이 봄
+  async function runJob(key, opt) {
+    const [name, fn] = JOBS[key]; lastRunErr = null; lastRunSt = null;
+    if (window.__rnGate && !window.__rnGate(name)) return false; // (1.56.0) 쉬는 탭이면 시작 안 함 (사람이 누른 거면 켤지 물음)
+    if (running && curKey === 'explore' && key !== 'explore') { log(`'${name}'을(를) 먼저 하려고 끝없는 탐색 수집을 잠시 멈춥니다 — 끝나면 탐색을 다시 이어감`); GM_setValue('rn-explore-resume', true); stopFlag = true; for (let w = 0; w < 180 && running; w++) await sleep(1000); stopFlag = false; }
+    if (running) { log('이 탭에서 다른 작업 진행 중: ' + running + ' — 끝난 뒤 다시 누르세요 (한 PC에 수집기 하나가 원칙 · 꼭 동시에 해야 하면 새 탭의 [이 탭도 켜기…], 단점 안내 있음)', 1); return false; } /* (1.63.6) 바쁘면 false — ⏰ 자동이 '끝남'으로 잘못 적던 것 */
+    curKey = key; FORCE_ALL = !!(opt && opt.manual) && !['chain', 'prdChain'].includes(key); setRunning(name); const tJ = Date.now(); if (FORCE_ALL) log(`수동 실행: '${name}'을(를) 기간 제한 없이 전부 모읍니다 (기존 기록은 그대로 두고 바뀐 것만 덧붙임)`); if (window.__rnStatus) Object.assign(window.__rnStatus, { job: name, jobKey: key, jobStart: tJ, cur: {}, chain: (key === 'chain' || key === 'prdChain') ? window.__rnStatus.chain : null, sub: null }); log(`▶ '${name}' 시작 (수집기 ${VER} · ${PC_NAME})`);
+    let res;
+    try { res = await fn(opt || {}); if (res === 'reload') { ui('새 버전으로 바꾸는 중 — 곧 이어감', 0, 0); } else if (res === 'cancel') { ui('취소함', 0, 0); log(`'${name}' 취소함`); } else if (res === false) { ui('시작 못 함 — 다른 PC가 알라딘 작업 중', 0, 0, '', '그 작업이 끝나면 자동으로 시작합니다 (일시정지를 누르면 취소)'); if (opt && opt.sched) log(`'${name}': 다른 PC가 알라딘 작업 중 — ⏰ 매일 자동이 다음 확인 때 다시`, 1); else { log(`'${name}': 다른 PC가 알라딘 작업 중이라 기다립니다. 끝나면 자동으로 시작합니다`, 1); waitThenRun(key); } } else if (!stopFlag) { ui('완료: ' + name, 1, 1, '', ''); log(name + ' 완료', 0); } }
+    catch (e) { lastRunErr = e.message;
+      const paused = e.message === '멈춤';
+      ui(paused ? '일시정지됨 — 진행 위치 저장' : '오류로 멈춤', 0, 0, paused ? '' : e.message, '개요 탭의 ▶ 다시 시작(또는 멈춘 작업의 이어하기)을 누르면 멈춘 자리부터 합니다');
+      if (!paused) log('오류: ' + e.message, 1);
+    } finally { if (window.__rnStatus) Object.assign(window.__rnStatus, { job: null, jobKey: null, cur: {}, lastEnd: { name, at: Date.now(), ms: Date.now() - tJ } });
+      lastRunSt = res === 'reload' ? 'stop' : lastRunErr ? (lastRunErr === '멈춤' ? 'stop' : 'error') : stopFlag ? 'stop' : 'done';
+      try { if (res !== false && res !== 'cancel' && window.__rnJobDone) window.__rnJobDone('prd:' + key, Date.now() - tJ, lastRunSt); } catch (e) {} /* (1.60.0) ⏰ 일마다 걸린 시간 기록 */
+      log(`■ '${name}' 끝남 — ${Math.round((Date.now() - tJ) / 60000)}분${stopFlag ? ' (멈춤)' : ''}`); setRunning(null); curKey = null; FORCE_ALL = false;
+      if (memReload) { log(`메모리 정리를 위해 새로고침 → '${name}' 이어가기`); safeReload('메모리 정리', key); return res; }
+      if (ctlReload) { ctlReload = null; log(`🛰 원격 업데이트: '${name}'을(를) 저장하고 멈춤 → 새로고침 뒤 그 자리부터 이어감`); safeReload('🛰 원격 업데이트', key); return res; }
+      if (verReload) { verReload = false; if (!window.__rnPaused) { log(`새 수집기 ${window.__rnOutdated}로 바꾸려고 새로고침 → '${name}'을(를) 저장된 자리부터 이어가기`); GM_setValue('rnu-reload-for', window.__rnOutdated); safeReload('새 버전으로 바꿈', key); return res; } }
+      if (yieldFor) resumeAfterYield();
+      else if (key !== 'explore' && GM_getValue('rn-explore-resume', false)) setTimeout(() => { if (!running && !window.__rnPaused && GM_getValue('rn-explore-resume', false)) { GM_setValue('rn-explore-resume', false); log('앞의 작업이 끝나 끝없는 탐색 수집을 다시 이어갑니다'); runJob('explore'); } }, 8000); }
+    return res;
+  }
+  window.__rnPrd = { runJob: (k) => runJob(k), busy: () => !!running, pause: () => { if (running || imgRunning) stopFlag = true; } };
+  let waitTimer = null;
+  function waitThenRun(key) {
+    clearInterval(waitTimer); const t0 = Date.now(); $('#rnpCtlStop') && ($('#rnpCtlStop').style.display = '');
+    waitTimer = setInterval(async () => {
+      if (stopFlag || window.__rnPaused) { clearInterval(waitTimer); stopFlag = false; ui('기다리기 취소 (일시정지)', 0, 0); return; }
+      if (Date.now() - t0 > 6 * 3600e3) { clearInterval(waitTimer); log('6시간 기다렸지만 알라딘 작업이 끝나지 않아 취소했습니다', 1); return; }
+      try { const lk = (await LOCK().get()).data(); if (laneBusy(lk)) { ui(`기다리는 중 — ${lk.pcName || '다른 PC'}: ${lk.taskLabel || ''}`, 0, 0, `${Math.round((Date.now() - t0) / 60000)}분째`, '끝나면 자동으로 시작합니다 (일시정지를 누르면 취소)'); return; }
+        clearInterval(waitTimer); if (!running) { log('알라딘 작업이 끝났습니다. 시작합니다'); runJob(key); } } catch (e) {}
+    }, 60000);
+  }
+  // 양보 뒤 자동 이어가기: 잠금이 풀리고(고객 수집 끝) 새 양보 요청이 없으면 멈춘 작업을 다시 시작
+  function resumeAfterYield() {
+    const y = yieldFor; ui(`양보 중 — '${y.tool || '고객 수집'}'이 끝나면 자동으로 이어감`, 0, 0, `${y.pcName || ''}`);
+    const t0 = Date.now(); let saw = false;
+    const t = setInterval(async () => {
+      try { const d = await LOCK().get(); const x = d.exists ? d.data() : null; const fresh = x && x.holder && Date.now() - (x.heartbeatMs || 0) < 5 * 60000;
+        const higher = fresh && (legacyOther(x, Date.now()) || (laneBusy(x) && Object.values(freshPcs(x, Date.now())).some((v) => (v.prio ?? 0) >= y.myPrio)));
+        if (higher) { saw = true; return; } if (!saw && Date.now() - t0 < 3 * 60000) return; // 양보받은 작업이 잠금을 잡는 것을 본 뒤(또는 3분 뒤)에
+        clearInterval(t); const key = y.key; yieldFor = null; stopFlag = false; if (window.__rnPaused) { log('양보가 끝났지만 일시정지 상태라 이어가지 않습니다'); return; } log('더 중요한 작업이 끝났습니다. 멈췄던 작업을 이어갑니다'); if (key && JOBS[key]) runJob(key); } catch (e) {}
+    }, 60000);
+  }
+  /* (1.56.3) ⏭ 강제 실행 건너뛰기 토글 — app_settings/bench.forceSkip {on, h} (웹앱과 같은 값) */
+  { const on = box.querySelector('#rnBfOn'), hh = box.querySelector('#rnBfH'); if (on && hh) { const wr = () => { const h = Math.max(1, Math.min(168, Math.round(+hh.value || 20))); hh.value = h; box.querySelector('.rn-bfs').classList.toggle('on', on.checked); C('app_settings').doc('bench').set({ forceSkip: { on: on.checked, h, by: PC_NAME, at: nowIso() } }, { merge: true }).then(() => log(`⏭ 강제 실행 건너뛰기 ${on.checked ? `켬 — 최근 ${h}시간 안에 끝까지 읽은 판매자는 건너뜀` : '끔 — 처음 판매자부터 모두'}`)).catch((e) => log('건너뛰기 설정 저장 실패: ' + (e.code || e.message), 1)); };
+      on.onchange = wr; hh.onchange = wr; auth.onAuthStateChanged((u) => { if (u) C('app_settings').doc('bench').onSnapshot((d) => { const f = ((d.exists && d.data()) || {}).forceSkip || {}; if (document.activeElement !== hh) hh.value = f.h || 20; on.checked = !!f.on; box.querySelector('.rn-bfs').classList.toggle('on', !!f.on); }, () => {}); }); } }
+  box.querySelectorAll('[data-job]').forEach((b) => (b.onclick = () => { window.__rnResumeOk && window.__rnResumeOk(); return b.dataset.job === 'images' ? images() : runJob(b.dataset.job, { manual: true }); }));
+
+  /* (1.38.0) 멈춘 작업 목록 — 어느 PC에서 멈췄든 전부. 개요 화면이 작업마다 [이어하기]·[버리기]로 보여 줌
+   *  예전 문제: ① 맨 앞 하나만 보여서, 하나를 버리면 다음 멈춘 작업이 같은 자리에 떠 '안 지워진' 것처럼 보였음
+   *            ② 다른 탭에서 돌고 있는 작업을 버리면, 그 탭이 다음 저장 때 다시 '멈춘 작업'으로 써 넣어 되살아났음 → 돌고 있는 작업은 버리기를 막음
+   *  버리기 = '멈춘 자리'만 잊음. 받은 기록은 하나도 지우거나 바꾸지 않음 (다음엔 처음부터 훑되 이미 받은 것은 건너뜀) */
+  const STAGE_JOB = { bench: 'bench', images: 'images', scanNew: 'scanNew', aladinBuy: 'aladinBuy', buyback: 'buyback', market: 'market', nbMarket: 'nbMarket', soldInfo: 'soldInfo', poolInfo: 'poolInfo', photos: 'photos', usedInfo: 'usedInfo', rev6m: 'rev6mStale', revTop: 'revTop', dynamic: 'dynamic', scanFull: 'scanFull', revAll: 'revAll' };
+  let resumeKey = null; let RESUMABLES = [];
+  function runningKeys() { const ks = new Set(); const addChain = (k, stage) => { ks.add(k); if (stage && STAGE_JOB[stage]) ks.add(STAGE_JOB[stage]); };
+    if (curKey) addChain(curKey, curStage);
+    try { (window.__rnLive ? window.__rnLive() : []).forEach((v) => { if (v.busy && v.jobKey) addChain(v.jobKey, v.chain && v.chain.cur); }); } catch (e) {}
+    Object.values(PCS_SEEN).forEach((x) => { if (x && x.running && x.key && Date.now() - (x.atMs || 0) < 3 * 60000) ks.add(x.key); });
+    return ks; }
+  async function refreshResume() {
+    try {
+      const qs = await C('prd_jobs').where('done', '==', false).get(); const list = {};
+      qs.forEach((d) => { if ((JOBS[d.id] || /^bench_/.test(d.id)) && d.id !== 'explore') list[d.id] = d.data(); }); /* (1.48.0) 집중 벤치마킹은 판매자마다 bench_{번호} */
+      const hide = new Set(); ['chain', 'prdChain'].forEach((c) => { const st = list[c] && list[c].stage; if (st && STAGE_JOB[st]) hide.add(STAGE_JOB[st]); }); // 일괄의 '지금 단계' 자리는 일괄 안에 묶어 보여 줌
+      const pr = (j) => (j && j._n ? `${(+j._i || 0).toLocaleString()} / ${(+j._n).toLocaleString()}` : '');
+      const nameOf = (k) => (JOBS[k] ? JOBS[k][0] : /^bench_/.test(k) ? `🎯 집중 벤치마킹 · ${(list[k] && list[k].name) || k.slice(6)}` : k);
+      /* (1.48.0) 멈춘 자리 전부를 보여 줌 — 일괄의 '지금 단계' 자리도 따로 한 줄(└)로 · 줄마다 이어하기·버리기 */
+      const keys = [...new Set(['chain', 'prdChain', ...Object.keys(JOBS), ...Object.keys(list)])].filter((k) => list[k]);
+      RESUMABLES = keys.map((k) => { const j = list[k]; const st = j.stage; const sj = st && STAGE_JOB[st] ? list[STAGE_JOB[st]] : null; const sub = hide.has(k);
+        return { key: k, name: (sub ? '└ 일괄 안 단계: ' : '') + nameOf(k), by: j.by || '', savedAt: j.savedAt || 0, stage: st ? (STEP_LABEL[st] || st) : null, prog: sj ? pr(sj) : j.page ? `${j.page}쪽 · ${(Array.isArray(j.items) ? j.items.length : 0).toLocaleString()}개` : pr(j), sub }; });
+      resumeKey = RESUMABLES.length ? RESUMABLES[0].key : null;
+      $('#rnpCtlResume').classList.remove('on'); // 예전 버튼 자리 — 개요로 옮김
+    } catch (e) {}
+    try { window.__rnCtlDraw && window.__rnCtlDraw(); } catch (e) {}
+    return RESUMABLES;
+  }
+  async function discardJob(k) { const nm = JOBS[k] ? JOBS[k][0] : /^bench_/.test(k) ? '집중 벤치마킹 ' + k.slice(6) : k;
+    if (!JOBS[k] && !/^bench_/.test(k) && !((await jobRef(k).get()).exists)) return { ok: false, why: '모르는 작업' };
+    /* (1.63.2) 벤치마킹 판매자 하나의 멈춘 자리 버리기 — 예전엔 어느 PC든 벤치마킹이 돌고 있으면(다른 판매자를 읽는 중이어도) 모두 막혔음.
+     *  이제는 그 판매자를 지금 읽고 있을 때만 막음: 이 PC의 탭이 읽는 중 · 또는 다른 PC가 최근 5분 안에 그 판매자 진행을 적음(bench_state.prog.at) */
+    if (/^bench_\d+$/.test(k)) { const sc = k.slice(6); if (window.__rnBenchCur === sc) return { ok: false, why: `'${nm}'은(는) 이 PC가 지금 읽고 있습니다 — 일시정지한 뒤에 버리세요` };
+      try { const pg = ((await C('bench_state').doc(sc).get()).data() || {}).prog; const at = pg && Date.parse(pg.at || ''); if (at && Date.now() - at < 5 * 60000 && !Object.values(PCS_SEEN).every((x) => !x || !x.running || x.key !== 'bench')) return { ok: false, why: `'${nm}'은(는) 다른 PC가 지금 읽고 있습니다(${new Date(at + 9 * 3600e3).toISOString().slice(11, 16)}에 ${pg.page || '?'}쪽 적음) — 그 PC를 멈춘 뒤(🛰 PC 원격 ■) 버리세요` }; } catch (e) {} }
+    else if (runningKeys().has(k)) return { ok: false, why: `'${nm}'은(는) 지금 진행 중입니다 — 먼저 일시정지하고, 멈춘 뒤에 버리세요` };
+    const keys = [k]; if (k === 'chain' || k === 'prdChain') { const st = ((await jobRef(k).get()).data() || {}).stage; if (st && STAGE_JOB[st]) keys.push(STAGE_JOB[st]); } // 일괄이면 일괄 순서표와 '지금 단계'의 자리
+    for (const x of keys) { try { const d = (await jobRef(x).get()).data(); if (d && !d.done) await jobRef(x).set({ done: true, discarded: true, discardedAt: Date.now(), discardedBy: PC_NAME }, { merge: true }); LS.set('job_' + x, null); if (/^bench_\d+$/.test(x)) { try { await C('bench_state').doc(x.slice(6)).set({ prog: null }, { merge: true }); } catch (e) {} try { const fr = C('prd_jobs').doc('benchForce'); const fd = (await fr.get()).data(); if (fd && fd.done === false && (fd.list || []).includes(x.slice(6))) { await fr.set({ fin: { [x.slice(6)]: 'skip:' + nowIso() }, savedAt: Date.now() }, { merge: true }); log(`🎯 '${nm}'은(는) 지금 멈춰 있는 강제 실행에서 건너뜁니다 — 이어하기 하면 다음 판매자부터 (다음 강제 실행·자동 수집 땐 처음부터 다시)`); } } catch (e) {} /* (1.63.5) 강제 실행 중 버린 판매자는 이번 강제 실행에서 건너뜀 */ } /* (1.54.3) 벤치마킹 회차를 버리면 '하는 중' 표시도 지움 — 다시 시작해도 그 판매자를 처음부터 다시 읽지 않고 평소 차례대로 */ } catch (e) { return { ok: false, why: e.message }; } }
+    log(`'${nm}'의 멈춘 자리만 잊었습니다 (받은 기록은 그대로 · 다음엔 처음부터 훑되 이미 받은 것은 건너뜀)`); await refreshResume(); return { ok: true }; }
+  function resumeJob(k) { const only = /^bench_\d+$/.test(k) ? k.slice(6) : null; if (/^bench_/.test(k)) k = 'bench'; if (!JOBS[k]) return; if (running) { log(`이어하기 못 함: 이 탭은 '${running}' 진행 중입니다`, 1); return { ok: false, why: `이 탭은 '${running}' 진행 중` }; } if (runningKeys().has(k)) { log(`이어하기 못 함: '${JOBS[k][0]}'은(는) 이미 진행 중입니다(다른 PC·탭)`, 1); return { ok: false, why: '이미 진행 중(다른 PC·탭)' }; } window.__rnResumeOk && window.__rnResumeOk(); runJob(k, only ? { only } : undefined); return { ok: true }; } /* (1.63.6) 팝업 대신 기록 줄 · 판매자 한 줄의 이어하기는 그 판매자부터(멈춘 강제 실행이 없으면 그 판매자만) */
+  $('#rnpCheck').onclick = () => preflight(false).then((ok) => ok && alert('시작 전 점검: 모두 정상입니다. 자세한 내용은 기록 창에 있습니다.'));
+  $('#rnpLogBig').onclick = (e) => { e.preventDefault(); window.__rnJournalToggle && window.__rnJournalToggle(); };
+  $('#rnpResume').onclick = () => { if (resumeKey) resumeJob(resumeKey); };
+  $('#rnpReset').onclick = async () => { if (!resumeKey) return; const r = await discardJob(resumeKey); if (!r.ok) log('이어하기 없애기 못 함: ' + r.why, 1); };
+  Object.assign(window.__rnPrd, { resumables: () => RESUMABLES, refreshResume, discard: discardJob, resume: resumeJob, runningKeys, imgBusy: () => !!imgRunning, startAll: () => runJob('chain'), pcsHtml: () => ($('#rnpPcs') ? $('#rnpPcs').innerHTML : ''), who: () => ($('#rnpWho') ? $('#rnpWho').textContent : ''), ver: () => VER, outdated: () => window.__rnOutdated || null });
+  setInterval(() => { if (!running) refreshResume(); }, 10 * 60000); // 멈춘 작업 문서는 진행 목록이 커서(수백 KB) 자주 읽지 않음 — 작업이 끝날 때·버릴 때·개요의 ↻ 때 바로 다시 읽음
+  setTimeout(drawTemp, 2000);
+  /* (1.63.0) '상품 일괄 수집' 단추 글 = 아래에서 체크한 단계만, 실제 도는 차례대로 작은 칩 → 칩 (전체 해제면 '고른 단계 없음') · 체크를 바꾸면 바로 */
+  const drawChainBtn = () => { const sm = $('#rnpChainTxt'); if (!sm) return; const st = SET.steps || {}; const L = CHAIN_ORDER.filter((k) => k !== 'crm' && STEP_LABEL[k] && st[k] !== false); const all = CHAIN_ORDER.filter((k) => k !== 'crm' && STEP_LABEL[k]).length; const b = sm.closest('button');
+    if (b) b.classList.toggle('rnch-off', !L.length);
+    sm.innerHTML = L.length ? L.map((k) => `<span class="rnch">${STEP_LABEL[k]}</span>`).join('<span class="rnch-a">›</span>') + `<span class="rnch-n">${L.length === all ? `전체 ${all}단계` : `${L.length}/${all}단계`}</span>` : '<span class="rnch-0">고른 단계 없음 — 아래에서 할 것을 체크하세요</span>'; };
+  const drawSteps = () => { const el = $('#rnpSteps'); if (!el) return; drawChainBtn(); const ORD = [...CHAIN_ORDER.filter((k) => STEP_LABEL[k]), ...Object.keys(STEP_LABEL).filter((k) => !CHAIN_ORDER.includes(k))]; el.innerHTML = '<span style="color:#5B6B66">이번에 할 것:</span> <a href="#" data-stepall="1" style="color:#2F5D50">전체 선택</a> · <a href="#" data-stepall="0" style="color:#2F5D50">전체 해제</a><br>' + ORD.map((k) => [k, STEP_LABEL[k]]).map(([k, l]) => `<label style="white-space:nowrap"><input type="checkbox" data-step="${k}" ${(SET.steps || {})[k] !== false ? 'checked' : ''}> ${l}</label>`).join('');
+    el.querySelectorAll('[data-stepall]').forEach((a) => (a.onclick = (ev) => { ev.preventDefault(); const on = a.dataset.stepall === '1'; SET.steps = Object.fromEntries(Object.keys(STEP_LABEL).map((k) => [k, on])); C('prd_system').doc('settings').set({ steps: SET.steps }, { merge: true }).catch(() => {}); log(`일괄 수집 단계 ${on ? '전체 선택' : '전체 해제'} (모든 PC에 적용)`); drawSteps(); }));
+    el.querySelectorAll('[data-step]').forEach((c) => (c.onchange = () => { SET.steps = { ...(SET.steps || {}), [c.dataset.step]: c.checked }; C('prd_system').doc('settings').set({ steps: SET.steps }, { merge: true }).catch(() => {}); log(`일괄 수집 '${STEP_LABEL[c.dataset.step]}' ${c.checked ? '켬' : '끔'} (모든 PC에 적용)`); drawChainBtn(); })); };
+  setTimeout(drawSteps, 1500); setInterval(drawSteps, 60000);
+  $('#rnpRevTest').onclick = () => { if (running) return log('다른 작업 진행 중', 1); reviewTest().catch((e) => log('시험 실패: ' + e.message, 1)); };
+
+  // 다른 PC 상태: 잠금(고객 수집기 포함) + 각 PC가 30초마다 올리는 진행 상황
+  const PCS_SEEN = {};
+  /* (1.59.2) 🛰 PC 원격 — 다른 PC 수집기를 ■ 중단 · ▶ 다시 시작 · ⟳ 업데이트 (누르면 '확정' 단추가 한 번 더 · 4초 안에 다시 눌러야 보냄) */
+  function ctlRows(pcs, now) { const by = new Map(); Object.values(pcs).forEach((s) => { if (!s || !s.pcName || s.tool !== '상품 수집기' || !s.ver || String(s.pcName) === String(PC_NAME)) return; const o = by.get(s.pcName); if (!o || (s.atMs || 0) > o.atMs) by.set(s.pcName, { pc: s.pcName, ver: s.ver, atMs: s.atMs || 0, running: s.running || null }); });
+    const L = [...by.values()].filter((x) => now - x.atMs < 3 * 864e5).sort((a, b) => String(a.pc).localeCompare(String(b.pc))); if (!L.length) return '';
+    const D = CTL_DOC || {}; const esc2 = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    return `<div class="pc" style="background:#F4F8F6"><b>🛰 PC 원격</b> <small style="color:#5B6B66">다른 PC 수집기를 멈추거나 다시 열기 (그 PC가 수집기 1.59.2 이상일 때)</small>${L.map((x) => { const a = (D.acks || {})[x.pc]; const c = (D.cmds || {})[x.pc]; const alive = now - x.atMs < 10 * 60000; const old = verNum(x.ver) < verNum('1.59.2');
+      const st = c && (!a || a.id !== c.id) ? `<span style="color:#A8661B">보냄 · 대답 기다림 (${esc2(({ stop: '중단', resume: '다시 시작', update: '업데이트' })[c.cmd] || c.cmd)})</span>` : a ? `<span style="color:${a.state === 'done' ? '#2F7D4F' : a.state === 'fail' || a.state === 'nosync' || a.state === 'expired' ? '#B0322A' : '#1F5FAF'}">${esc2(a.msg)}</span>` : '';
+      return `<div style="margin-top:4px;padding-top:4px;border-top:1px dashed #DCE5E1"><b>${esc2(x.pc)}</b> · ${esc2(x.ver)} · ${alive ? (x.running ? '작업 중' : '대기') : `신호 ${Math.round((now - x.atMs) / 60000)}분 전`}${old ? ' <small style="color:#B0322A">(옛 판 — 원격 명령을 모름 · 다른 PC가 새 판으로 돌면 쉬는 사이에 스스로 한 번 새로고침)</small>' : ''}
+        <div style="display:flex;gap:4px;margin-top:3px">${[['stop', '■ 중단'], ['resume', '▶ 다시 시작'], ['update', '⟳ 업데이트']].map(([k, l]) => `<button class="b2" style="flex:1;padding:3px 4px;font-size:11px" data-ctl="${esc2(x.pc)}|${k}">${l}</button>`).join('')}</div>${st ? `<div style="font-size:10.5px;margin-top:2px">${st}</div>` : ''}</div>`; }).join('')}</div>`; }
+  document.addEventListener('click', async (e) => { const b = e.target.closest && e.target.closest('#rnpPcs [data-ctl]'); if (!b) return; e.preventDefault(); const [pc, cmd] = b.dataset.ctl.split('|');
+    if (b.dataset.arm !== '1') { const t0 = b.textContent; b.dataset.arm = '1'; b.dataset.t0 = t0; b.style.background = '#B0322A'; b.style.color = '#fff'; b.textContent = '확정'; setTimeout(() => { if (b.isConnected && b.dataset.arm === '1') { b.dataset.arm = ''; b.style.background = ''; b.style.color = ''; b.textContent = b.dataset.t0; } }, 4000); return; }
+    b.dataset.arm = ''; b.disabled = true; b.textContent = '보내는 중…'; try { await window.__rnCtlSend(pc, cmd); log(`🛰 ${pc}에 원격 '${({ stop: '중단', resume: '다시 시작', update: '업데이트' })[cmd]}' 보냄`); } catch (er) { log('🛰 원격 명령 보내기 실패: ' + (er.code || er.message), 1); b.disabled = false; b.textContent = b.dataset.t0; } });
+  function watchPcs() {
+    let lock = null; const pcs = PCS_SEEN;
+    const render = () => {
+      const rows = [];
+      const now = Date.now();
+      if (lock && lock.holder && now - (lock.heartbeatMs || 0) < 5 * 60000 && lock.holder !== PC_ID) rows.push(`<div class="pc busy"><b>${lock.pcName}</b>에서 알라딘 작업 중: ${lock.taskLabel || lock.task}<br>마지막 신호 ${Math.round((now - lock.heartbeatMs) / 60000)}분 전</div>`);
+      Object.entries(pcs).forEach(([id, s]) => {
+        if (id === `prd_${PC_ID}_${pubKey}` || id === 'img_' + PC_ID || id === 'prd_' + PC_ID) return;
+        const ago = Math.round((now - (s.atMs || 0)) / 60000);
+        if (!s.running && ago > 60) return;
+        const alive = ago <= 3;
+        rows.push(`<div class="pc ${s.running && alive ? 'busy' : ''}"><b>${s.pcName}</b>${s.tool ? ` · ${s.tool}` : ''} · ${s.running ? (alive ? '진행 중' : `신호 끊김 (${ago}분 전)`) : `대기 (${ago}분 전)`}${s.running ? `<br>${s.state || s.running}${s.total ? ` ${Number(s.done).toLocaleString()} / ${Number(s.total).toLocaleString()} (${((s.done / s.total) * 100).toFixed(1)}%)` : ''}${s.etaMin != null && alive ? ` · 남은 약 ${fmtDur(s.etaMin)}` : ''}` : ''}</div>`);
+      });
+      $('#rnpPcs').innerHTML = (rows.join('') || '<div class="pc">다른 PC에서 진행 중인 작업 없음</div>') + ctlRows(pcs, now);
+    };
+    ctlDraw = render;
+    LOCK().onSnapshot((d) => { lock = d.exists ? d.data() : null; render(); }, () => {});
+    C('rn_status').onSnapshot((qs) => { qs.forEach((d) => (pcs[d.id] = d.data())); render(); }, () => {});
+    setInterval(render, 60000);
+  }
+
+  // 등록 파일 가져오기: 끌어다 놓기 또는 눌러서 고르기
+  $('#rnpDrop').onclick = () => $('#rnpFile').click();
+  $('#rnpFile').onchange = async (e) => { for (const f of e.target.files) await runFile(f); e.target.value = ''; };
+  async function runFile(f) {
+    if (running) { log('다른 작업 진행 중: ' + running, 1); return; }
+    setRunning('파일 가져오기');
+    try { await importFile(f); ui('완료: 파일 가져오기', 1, 1, f.name, ''); } catch (e) { ui('오류로 멈춤', 0, 0, e.message); log('오류: ' + e.message, 1); } finally { setRunning(null); }
+  }
+
+  (async () => {
+    renderSetup();
+    const u = await ensureLogin();
+    $('#rnpWho').textContent = `Firebase: ${u.email} 로그인됨`;
+    await loadSettings(); renderSetup();
+    watchPcs(); await refreshResume(); versionWatch(); ctlWatch();
+    publishStatus({ running: null });
+    ui('대기 중', 0, 0, '', resumeKey ? '멈춘 작업이 있습니다. 위의 이어하기를 누르세요' : '처음이라면: 등록 파일 가져오기 → 상품 일괄 수집 → 이미지');
+    log(`준비됨 · 수집기 ${VER} · 파서 ${P.VERSION}`, 0);
+  })();
+})();
+
+/* ══════════ 송장 입력 (1.28.0): 발송 요청 화면(worder_delivery.aspx?orderstep=4)에서 주문마다 송장번호를 넣고 알라딘의 '입력완료'(deliveryNoComplete)를 누름 ══════════
+ * 한 번에 한 주문 → 화면이 다시 열리면 결과 확인 → 다음 주문 (진행은 shp_invoices/{id}.items[].state 에 저장: todo → sent → done / fail / missing)
+ * 알라딘 화면의 기능을 그대로 씀(새로 만든 요청 없음). 확인 창은 '예'로, 알림 글은 기록으로 남김
+ * 이 화면에는 ALPS 업로드 파일 받기 · ALPS 운송장 목록 넣기 단추도 있음 (웹앱 오늘 출고 화면과 같은 기능, 기준은 readnow-shipping-core.js 한 곳) */
+(async function rnInvoiceRunner() {
+  'use strict'; if (window.__rnFeat && !window.__rnFeat('invoice')) return; /* (1.63.7) 🧩 */
+  if (window.top !== window || !/\/scm\/(worder_delivery|worder_process)\.aspx/i.test(location.pathname)) return;
+  const act = GM_getValue('rn-inv-active', null); const DELIV = 'https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4';
+  if (/worder_process/i.test(location.pathname)) { if (act) setTimeout(() => { location.href = DELIV; }, 2500); return; } // 입력완료 뒤 거치는 화면이면 발송 요청으로 돌아감
+  const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (!SH || !SH.matchInvoices) return;
+  if (!firebase.apps.length) firebase.initializeApp({ apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385', storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15' });
+  const db = firebase.app().firestore(); const auth = firebase.app().auth(); const TS = () => firebase.firestore.FieldValue.serverTimestamp(); const PCN = GM_getValue('pcName', '') || (GM_getValue('rn-pc', {}) || {}).name || '';
+  const nowIso = () => new Date().toISOString(); const e = (x) => String(x == null ? '' : x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const box = document.createElement('div'); box.id = 'rn-inv-box'; box.style.cssText = 'position:fixed;right:10px;bottom:10px;z-index:99999;width:340px;max-height:60vh;overflow:auto;background:#fff;border:2px solid #2F5D50;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.25);font:12.5px/1.5 system-ui,sans-serif;color:#1E2B28;padding:10px';
+  document.body.appendChild(box); const say = (h) => { box.innerHTML = `<b style="color:#2F5D50">리드나우 · 송장 입력</b><div style="margin-top:4px">${h}</div>`; };
+  await new Promise((r) => { const u = auth.onAuthStateChanged((x) => { u(); r(x); }); });
+  if (!auth.currentUser) { say('수집기에서 구글 로그인 후 다시 열어 주세요'); return; }
+  const pageOrders = () => SH.parseDeliveryPage(document).orders;
+  const xlsxDown = (aoa, name) => { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Sheet1'); XLSX.writeFile(wb, name); };
+  const ymdhm = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16).replace(/[-:T]/g, '').replace(/^(\d{8})/, '$1_');
+  function idle(msg) {
+    say(`${msg ? `<div style="margin-bottom:6px">${msg}</div>` : ''}<button id="rn-alps-up" style="width:100%;margin:2px 0;padding:6px;border:1px solid #2F5D50;border-radius:6px;background:#2F5D50;color:#fff;cursor:pointer">① ALPS 업로드 파일 받기</button>
+      <label style="display:block;margin-top:6px">② 출력한 운송장 목록 넣기 (ALPS 통합관리 운송장출력 → 엑셀)<input type="file" id="rn-alps-wb" accept=".xlsx,.xls,.csv" style="width:100%"></label><div id="rn-inv-res"></div>`);
+    box.querySelector('#rn-alps-up').onclick = async () => { const fd = new URLSearchParams({ status: '4', keywordType: '0', keyword: '', filterType: '0', limitDate: '0', dnb: '0', page: '' });
+      try { const rr = await fetch('https://www.aladin.co.kr/scm/worder_excel.aspx', { method: 'POST', body: fd, credentials: 'include' }); const ex = SH.parseAladinOrderExcel(new DOMParser().parseFromString(await rr.text(), 'text/html'));
+        if (!ex || !ex.rows.length) return alert('발송 요청 주문이 없습니다'); xlsxDown(SH.alpsUploadAoa(ex), `ALPS업로드_${ymdhm()}.xlsx`); } catch (er) { alert('실패: ' + er.message); } };
+    box.querySelector('#rn-alps-wb').onchange = async (ev) => { const f = ev.target.files[0]; if (!f) return; const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' }); const aoa = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false });
+      const W = SH.parseAlpsWaybills(aoa); if (!W) return alert('ALPS 운송장 목록 파일이 아닙니다 (운송장번호·수하인명 칸이 없음)'); const M = SH.matchInvoices(pageOrders(), W); const okA = M.byOrder.filter((x) => x.status === 'ok'); const parL = M.byOrder.filter((x) => x.status === 'partial'); let okL = okA; // (1.34.0) '일부만 맞음'은 확인하고 따로
+      const res = box.querySelector('#rn-inv-res'); res.innerHTML = `<div style="margin-top:6px">맞춤: <b>${okL.length}</b>건 · 확인 필요 ${M.byOrder.length - okL.length}건 · ALPS에만 있음 ${M.extra.length}줄</div>
+        ${M.byOrder.map((x) => `<div style="color:${x.status === 'ok' ? '#2e7d32' : x.status === 'partial' ? '#b58100' : '#B0322A'}">${e(x.recipient)} · ${e(x.invoice || '-')} · ${{ ok: '맞음', partial: '일부 상품만 맞음', many: '운송장 여럿', none: '못 찾음' }[x.status]}</div>`).join('')}
+        ${okL.length ? `<button id="rn-inv-one" style="margin-top:6px;padding:5px 8px">1건 먼저 입력해 보기</button> <button id="rn-inv-all" style="padding:5px 8px;background:#2F5D50;color:#fff;border:0;border-radius:5px">맞은 ${okL.length}건 모두 입력</button>` : ''}${parL.length ? ` <button id="rn-inv-par" style="padding:5px 8px">일부만 맞은 ${parL.length}건 확인하고 넣기</button>` : ''}`;
+      const start = async (limit) => { if (!confirm(`알라딘 발송 요청에 송장번호 ${limit ? 1 : okL.length}건을 입력하고 '입력완료'를 누릅니다. 진행할까요?`)) return;
+        const ref = db.collection('shp_invoices').doc(); await ref.set({ createdAt: nowIso(), by: auth.currentUser.email, from: 'collector', fileName: f.name, limit: limit || 0, status: 'running', claim: { pc: PCN, at: nowIso() },
+          items: okL.map((x) => ({ orderNo: x.orderNo, invoice: x.invoice, recipient: x.recipient, match: x.status, state: 'todo' })), skipped: M.byOrder.filter((x) => !okL.includes(x)).map((x) => ({ orderNo: x.orderNo, recipient: x.recipient, status: x.status, invoices: x.invoices })), extra: M.extra.map((w) => ({ invoice: w.invoice, name: w.name, title: w.title, sku: w.sku })), uploadedAt: TS() });
+        GM_setValue('rn-inv-active', { id: ref.id, at: Date.now() }); try { sessionStorage.setItem('rn-inv-tab', ref.id); } catch (e) {} step(ref.id); };
+      const o1 = box.querySelector('#rn-inv-one'); if (o1) o1.onclick = () => start(1); const oa = box.querySelector('#rn-inv-all'); if (oa) oa.onclick = () => start(0);
+      const op = box.querySelector('#rn-inv-par'); if (op) op.onclick = () => { if (!confirm(`상품 일부만 맞은 주문 ${parL.length}건 — 같은 수령인의 다른 상자 송장일 수 있습니다:\n${parL.slice(0, 12).map((x) => `· ${x.recipient} ${x.orderNo} → ${x.invoice || '-'}`).join('\n')}\n\n하나하나 확인했으면 '확인'`)) return; okL = parL; Promise.resolve(start(0)).finally(() => { okL = okA; }); }; };
+  }
+  async function step(id) {
+    const ref = db.collection('shp_invoices').doc(id); const v = (await ref.get()).data();
+    if (!v || ['done', 'stopped', 'paused'].includes(v.status)) { GM_deleteValue('rn-inv-active'); return idle(v ? `지난 송장 입력: ${({ done: '끝남', stopped: '멈춤', paused: '첫 건 확인 대기' })[v.status]}` : ''); }
+    { const SHx = window.ReadnowShipping || globalThis.ReadnowShipping; let pg = null; try { pg = SHx ? SHx.parseDeliveryPage(document) : null; } catch (er) {} // (1.34.7) 화면을 제대로 읽었을 때만 판단 — 알라딘 오류·점검 화면이면 '끝남/없음'으로 잘못 처리하던 것
+      if (!pg || !pg.tabCounts || !Object.keys(pg.tabCounts).length) { const k = +(sessionStorage.getItem('rn-inv-bad') || 0) + 1; sessionStorage.setItem('rn-inv-bad', String(k)); if (k <= 5) { say(`발송 요청 화면을 제대로 못 읽음 — ${k * 5}초 뒤 다시 엶 (${k}/5)`); setTimeout(() => { location.href = DELIV; }, k * 5000); return; } sessionStorage.removeItem('rn-inv-bad'); await ref.set({ status: 'paused', pausedAt: nowIso(), pauseWhy: '발송 요청 화면을 5번 못 읽음', uploadedAt: TS() }, { merge: true }); GM_deleteValue('rn-inv-active'); return idle('발송 요청 화면을 5번 못 읽어 멈춤 — 알라딘 화면을 확인한 뒤 웹앱에서 다시 시작'); }
+      sessionStorage.removeItem('rn-inv-bad'); }
+    const items = v.items.map((x) => ({ ...x })); const pres = new Map(pageOrders().map((o) => [o.orderNo, o])); const alertMsg = sessionStorage.getItem('rnInvAlert'); sessionStorage.removeItem('rnInvAlert');
+    const EXI = window.ReadnowExec || globalThis.ReadnowExec; const exKey = (x) => `${id}:${x.orderNo}:${x.invoice}`; // (1.40.0) 실행도구의 한 문 — 입력완료 전 시작을 적고, 다시 열린 화면에서 결과를 적음
+    for (const x of items) if (x.state === 'sent') { const o = pres.get(x.orderNo);
+      if (!o || (o.deliveryNo && o.deliveryNo === x.invoice)) { x.state = 'done'; x.doneAt = nowIso(); if (alertMsg) x.note = alertMsg; }
+      else { x.tries = (x.tries || 0) + 1; x.err = alertMsg || '입력 뒤에도 발송 요청에 그대로 있음'; x.state = x.tries >= 2 ? 'fail' : 'todo'; }
+      if (EXI) await EXI.finish(db, { kind: 'invoice', key: exKey(x) }, x.state === 'done' ? 'done' : 'failed', { msg: x.state === 'done' ? (alertMsg || null) : x.err }).catch(() => {}); }
+    const save = (extra) => ref.set({ items, ...(extra || {}), uploadedAt: TS() }, { merge: true });
+    const doneN = items.filter((x) => x.state === 'done').length;
+    if (v.limit && doneN >= v.limit) { await save({ status: 'paused', pausedAt: nowIso() }); GM_deleteValue('rn-inv-active'); return idle(`첫 ${doneN}건 입력 끝 — 배송&구매확정전 탭에서 송장번호가 맞게 들어갔는지 확인한 뒤, 웹앱 오늘 출고 화면에서 '나머지 계속'을 누르세요.`); }
+    let next = null; for (const x of items) { if (x.state && x.state !== 'todo') continue; if (!pres.has(x.orderNo)) { x.state = 'missing'; x.err = '발송 요청에 없음 (이미 입력됐거나 취소)'; continue; } next = x; break; }
+    if (!next) { const c = (k) => items.filter((x) => x.state === k).length; await save({ status: 'done', doneAt: nowIso() }); GM_deleteValue('rn-inv-active');
+      try { GM_notification({ title: '리드나우 — 송장 입력 끝', text: `입력 ${c('done')} · 실패 ${c('fail')} · 없음 ${c('missing')}` }); } catch (er) {}
+      idle(`<b>송장 입력 끝</b>: 입력 ${c('done')} · 실패 ${c('fail')} · 발송 요청에 없음 ${c('missing')}`); if (v.from !== 'collector') setTimeout(() => window.close(), 8000); return; }
+    const inp = document.getElementById('deliveryNo.' + next.orderNo); if (!inp) { next.state = 'fail'; next.err = '송장번호 칸을 못 찾음'; await save(); return step(id); }
+    say(`송장 입력 중 ${doneN + 1} / ${items.length}<br>${e(next.recipient)} · ${e(next.orderNo)} → <b>${e(next.invoice)}</b><br><button id="rn-inv-stop" style="margin-top:6px">멈추기</button>`);
+    box.querySelector('#rn-inv-stop').onclick = async () => { GM_deleteValue('rn-inv-active'); await ref.set({ status: 'stopped', stoppedAt: nowIso(), uploadedAt: TS() }, { merge: true }); location.reload(); };
+    await new Promise((r) => setTimeout(r, 1500)); if (!GM_getValue('rn-inv-active', null)) return;
+    // (1.34.7) 넣기 직전에 서버 상태를 다시 확인(트랜잭션) — 웹앱에서 '멈추기'를 눌렀으면 넣지 않음 (예전: 멈춤을 'running'으로 덮어써 계속 넣었음)
+    next.state = 'sent'; next.sentAt = nowIso(); let go = false; try { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const cur = sn.data(); if (!cur || ['stopped', 'done', 'paused'].includes(cur.status)) return; tx.set(ref, { items, status: 'running', uploadedAt: TS() }, { merge: true }); go = true; }); } catch (er) { go = false; }
+    if (!go) { GM_deleteValue('rn-inv-active'); return idle('송장 입력 멈춤 (웹앱에서 멈추기)'); }
+    if (EXI) { let g = null; try { g = await EXI.begin(db, { kind: 'invoice', key: exKey(next), by: PCN, detail: { orderNo: next.orderNo, invoice: next.invoice } }); } catch (er) { g = /permission/i.test(er.code || er.message) ? { ok: true, none: true } : { ok: false, state: 'ledger', why: '실행 기록을 못 적어 이번엔 넣지 않음: ' + (er.code || er.message) }; } // 규칙 문제(권한)면 막지 않음 · (1.59.0) 잠깐 문제면 이번엔 넣지 않음
+      if (!g.ok) { next.state = g.state === 'done' ? 'done' : 'fail'; next.err = '실행 문: ' + g.why; await save(); return step(id); } }
+    inp.value = next.invoice;
+    const sc = document.createElement('script'); sc.textContent = `(function(){ window.confirm = function(){ return true; }; window.alert = function(m){ try { sessionStorage.setItem('rnInvAlert', String(m)); } catch (e) {} }; deliveryNoComplete(${JSON.stringify(next.orderNo)}); })();`;
+    document.body.appendChild(sc);
+    setTimeout(() => { if (/worder_delivery/.test(location.pathname)) location.href = DELIV; }, 20000); // 화면이 안 바뀌면 다시 열어 결과 확인
+  }
+  { const hm = location.hash.match(/rninv=([\w-]+)/); if (hm) { try { sessionStorage.setItem('rn-inv-tab', hm[1]); } catch (e) {} history.replaceState(null, '', location.pathname + location.search); } }
+  const mine = (id) => { try { return sessionStorage.getItem('rn-inv-tab') === id; } catch (e) { return false; } }; // (1.34.0) 맡은 탭에서만 진행 — 사람이 다른 발송 요청 탭을 새로 열어도 두 탭이 같이 입력하지 않음
+  if (act && Date.now() - act.at < 3 * 3600e3) { if (mine(act.id)) step(act.id); else idle('다른 탭에서 송장 입력 중 — 그 탭이 진행합니다'); } else { if (act) GM_deleteValue('rn-inv-active'); idle(''); }
+})();
+/* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
+ * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
+ * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
+ * 답변 칸: 묻고 답하기 = #txtAnswer, 그 밖의 화면 = 마지막으로 누른 입력칸(textarea). 알라딘 '등록' 단추는 사람이 직접 누름 (자동으로 보내지 않음). */
+(function rnPhraseHelper() {
+  if (window.__rnFeat && !window.__rnFeat('phrase')) return; /* (1.63.7) 🧩 */
+  if (window.top !== window || !/\/scm\/(wUsedShopC2C|wShopSurvey)/i.test(location.pathname)) return;
+  const DEF = {
+    greet: ['안녕하세요? 반갑습니다!', '안녕하세요, 북스킹입니다. 문의 주셔서 진심으로 감사드립니다.', '안녕하세요, 고객님. 저희 상품에 관심 가져 주셔서 감사합니다.', '안녕하세요, 고객님. 답변이 늦어 죄송합니다.', '안녕하세요, 북스킹입니다. 기다려 주셔서 감사합니다.', '안녕하세요, 고객님. 소중한 구매평 남겨 주셔서 진심으로 감사드립니다.'],
+    body: ['문의하신 상품은 현재 재고가 있어 바로 구매하실 수 있습니다.', '확인해 보니 문의하신 상품은 아쉽게도 현재 품절되었습니다.', '상품 상태는 등록된 등급과 상품 설명에 적힌 내용과 같습니다.', '직접 확인한 결과 말씀하신 부분(낙서·밑줄·변색 등)은 없으며 상태 양호합니다.', '확인 결과 일부 사용감이 있어 상품 설명에 자세히 적어 두었습니다.', '영업일 오후 2시까지 주문하시면 당일 출고를 원칙으로 하고 있습니다.', '택배는 롯데택배로 보내 드리며, 출고 후 송장번호로 배송 조회가 가능합니다.', '저희(북스킹) 상품끼리는 한 상자에 묶어 보내 드립니다.', '주문 취소는 출고 전까지 알라딘 주문 내역에서 바로 하실 수 있습니다.', '반품·교환은 상품을 받으신 날로부터 7일 안에 신청하실 수 있습니다.', '불편을 드려 대단히 죄송합니다. 확인하는 대로 신속하게 처리해 드리겠습니다.', '말씀해 주신 의견은 상품 검수에 꼭 반영하겠습니다.', '만족스러운 거래가 되셨다니 저희도 정말 기쁩니다.', '부득이하게 중고상품의 경우 각 상품마다 품질 정보가 상이하며 매입 후 별도의 상품번호로 재고 관리가 진행되고 있어 교환 불가한점 안내드리며, 알라딘 부담으로 반품접수 하였습니다.'],
+    close: ['오늘도 좋은 하루 보내세요!', '또 궁금하신 점 있으면 언제든 편하게 문의주세요!', '감사합니다.', '북스킹을 이용해 주셔서 감사합니다.', '앞으로도 더 좋은 상품과 서비스로 보답하겠습니다.', '다시 한번 불편을 드려 죄송합니다.', '즐거운 독서 되세요!'] };
+  const PARTS = [['greet', '① 인사말'], ['body', '② 내용'], ['close', '③ 마무리']];
+  const LKEY = 'rn-phrases'; let P = null; try { P = GM_getValue(LKEY, null); } catch (e) {}
+  const okP = (x) => x && PARTS.every(([k]) => Array.isArray(x[k]));
+  if (!okP(P)) P = JSON.parse(JSON.stringify(DEF));
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // ── 답변 칸 찾기: 묻고 답하기 = #txtAnswer, 그 밖 = 마지막으로 누른 textarea
+  let lastTa = null; document.addEventListener('focusin', (e) => { if (e.target && e.target.tagName === 'TEXTAREA' && !e.target.closest('#rn-ph')) lastTa = e.target; }, true);
+  document.addEventListener('focusout', (e) => { const t = e.target; if (t && t.tagName === 'TEXTAREA' && !t.closest('#rn-ph')) { t._rnPos = t.selectionStart; t._rnEnd = t.selectionEnd; } }, true); // 커서 자리 기억 (문구를 누르는 순간 입력칸에서 커서가 빠져도 그 자리에 넣음)
+  const target = () => (lastTa && document.contains(lastTa) ? lastTa : null) || document.querySelector('#txtAnswer') || [...document.querySelectorAll('textarea')].find((t) => !t.closest('#rn-ph') && t.getClientRects().length) || null;
+  function insert(text) { const ta = target(); if (!ta) { flash('답변 입력칸을 찾지 못했습니다 — 입력칸을 한 번 누른 뒤 문구를 누르세요'); return; }
+    const v = ta.value; const act = document.activeElement === ta; const s = Math.min(v.length, act ? ta.selectionStart : ta._rnPos ?? v.length); const e2 = Math.min(v.length, Math.max(s, act ? ta.selectionEnd : ta._rnEnd ?? s));
+    const before = v.slice(0, s), after = v.slice(e2); const pre = before && !/\n$/.test(before) ? '\n' : ''; const post = after && !/^\n/.test(after) ? '\n' : '';
+    ta.value = before + pre + text + post + after; const pos = (before + pre + text).length; ta._rnPos = ta._rnEnd = pos + post.length;
+    ta.dispatchEvent(new Event('input', { bubbles: true })); ta.dispatchEvent(new Event('change', { bubbles: true })); try { ta.focus(); ta.setSelectionRange(ta._rnPos, ta._rnPos); } catch (e) {} flash(''); }
+  // ── 저장: 이 PC 사본(GM) + Firebase 한 곳
+  let fs = null, user = null;
+  let seeded = ['nx1']; /* (1.46.0) 웹앱이 한 번만 넣은 기본 문구 표시 — 저장할 때 같이 남김(지운 문구가 다시 들어오지 않게) */
+  const saveAll = () => { try { GM_setValue(LKEY, P); } catch (e) {} if (fs && user) fs.collection('app_settings').doc('qna_phrases').set({ ...P, seeded, at: new Date().toISOString(), by: user.email || '', from: 'collector' }).catch((e) => flash('Firebase 저장 실패 (이 PC에만 저장됨): ' + (e.code || e.message))); };
+  try { if (window.firebase) { if (!firebase.apps.length) firebase.initializeApp({ apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385', storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15' });
+    fs = firebase.firestore(); firebase.auth().onAuthStateChanged((u) => { user = u; if (!u) return; fs.collection('app_settings').doc('qna_phrases').onSnapshot((d) => { if (!d.exists) { saveAll(); return; } const x = d.data(); if (Array.isArray(x.seeded)) seeded = x.seeded; if (okP(x)) { P = { greet: x.greet, body: x.body, close: x.close }; try { GM_setValue(LKEY, P); } catch (e) {} draw(); } }, () => {}); }); } } catch (e) {}
+  // ── 화면
+  const st = document.createElement('style'); st.textContent = `#rn-ph{position:fixed;right:14px;top:90px;z-index:2147483640;width:340px;max-height:calc(100vh - 110px);display:flex;flex-direction:column;background:#fff;border:1px solid #2F5D50;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);font:12.5px/1.45 system-ui,'Malgun Gothic',sans-serif;color:#1E2B27}
+  #rn-ph .hd{display:flex;align-items:center;gap:6px;padding:7px 10px;background:#2F5D50;color:#fff;border-radius:9px 9px 0 0;cursor:move;user-select:none} #rn-ph .hd b{flex:1} #rn-ph .hd button{border:0;border-radius:5px;background:#24493F;color:#fff;padding:2px 8px;cursor:pointer}
+  #rn-ph .bd{overflow:auto;padding:6px 8px} #rn-ph.min .bd{display:none} #rn-ph h4{margin:8px 0 3px;font-size:12.5px;color:#2F5D50;display:flex;justify-content:space-between} #rn-ph h4 small{font-weight:400;color:#8A9692}
+  #rn-ph .ls{max-height:130px;overflow-y:auto;border:1px solid #D7E2DD;border-radius:6px;padding:2px} #rn-ph .it{display:flex;align-items:center;gap:4px;padding:3px 5px;border-bottom:1px dashed #EEF2F0;cursor:grab} #rn-ph .it:hover{background:#EEF6F2}
+  #rn-ph .it .tx{flex:1;cursor:pointer} #rn-ph .it .ed,#rn-ph .it .dl{font-size:11px;cursor:pointer;padding:0 3px} #rn-ph .it .ed{color:#1F5FAF} #rn-ph .it .dl{color:#B0322A} #rn-ph .it.over{box-shadow:inset 0 3px 0 #2F5D50} #rn-ph .it.under{box-shadow:inset 0 -3px 0 #2F5D50} #rn-ph .it.dragging{opacity:.45} #rn-ph .dh{cursor:grab;color:#8A9692;padding:0 3px 0 0;touch-action:none;user-select:none;font-size:13px} #rn-ph .it{cursor:default}
+  #rn-ph .it input{flex:1;border:1px solid #2F5D50;border-radius:4px;padding:2px 4px;font:inherit} #rn-ph .ad{display:flex;gap:4px;margin-top:3px} #rn-ph .ad input{flex:1;border:1px solid #C9D6D0;border-radius:5px;padding:3px 6px;font:inherit} #rn-ph .ad button,#rn-ph .ft button{border:0;border-radius:5px;background:#2F5D50;color:#fff;padding:3px 9px;cursor:pointer;font:inherit}
+  #rn-ph .ft{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px} #rn-ph .ft button.g{background:#EEF2F0;color:#2F5D50} #rn-ph .msg{color:#A8661B;font-size:11.5px;min-height:14px;margin-top:4px}`;
+  document.head.appendChild(st);
+  const box = document.createElement('div'); box.id = 'rn-ph'; if (GM_getValue('rn-ph-min', 0)) box.classList.add('min');
+  let msgT = null; function flash(t) { const m = box.querySelector('.msg'); if (!m) return; m.textContent = t; clearTimeout(msgT); if (t) msgT = setTimeout(() => (m.textContent = ''), 6000); }
+  let drag = null;
+  function draw() { const open = !box.classList.contains('min');
+    box.innerHTML = `<div class="hd"><b>✍ 고객 응대 문구</b><button data-a="min">${open ? '접기' : '펼치기'}</button></div><div class="bd">
+      <div class="hint" style="color:#5B6B66">누르면 답변 칸에 한 줄로 들어감 (① → ② → ③ 차례로) · 왼쪽 ⠿ 를 잡고 위아래로 끌면 순서 바꿈 · 모든 PC·웹앱 공유</div>
+      ${PARTS.map(([k, l]) => `<h4>${l} <small>${P[k].length}개</small></h4><div class="ls" data-k="${k}">${P[k].map((t, i) => `<div class="it" data-k="${k}" data-i="${i}"><span class="dh" title="잡고 위아래로 끌어 순서 바꾸기">⠿</span><span class="tx" title="누르면 답변 칸에 넣기">${esc(t)}</span><span class="ed">수정</span><span class="dl">삭제</span></div>`).join('') || '<div class="it"><i style="color:#8A9692">문구 없음 — 아래에 넣기</i></div>'}</div>
+        <div class="ad"><input data-new="${k}" placeholder="새 ${l.slice(2)} 문구"><button data-add="${k}">넣기</button></div>`).join('')}
+      <div class="ft"><button class="g" data-a="clear" title="답변 칸 비우기">답변 칸 비우기</button><button class="g" data-a="reset" title="기본 문구를 빠진 것만 다시 넣음 (지금 문구는 그대로)">기본 문구 다시 넣기</button></div><div class="msg"></div></div>`;
+    box.querySelectorAll('.it[data-i]').forEach((el) => { const k = el.dataset.k, i = +el.dataset.i;
+      el.querySelector('.tx').onmousedown = (ev) => ev.preventDefault(); // 입력칸의 커서를 빼앗지 않음
+      el.querySelector('.tx').onclick = () => insert(P[k][i]);
+      el.querySelector('.dl').onclick = (ev) => { ev.stopPropagation(); if (!confirm(`이 문구를 지울까요?\n\n${P[k][i]}`)) return; P[k].splice(i, 1); saveAll(); draw(); };
+      el.querySelector('.ed').onclick = (ev) => { ev.stopPropagation(); el.innerHTML = `<input value="${esc(P[k][i])}"><span class="ed">저장</span><span class="dl">취소</span>`; const inp = el.querySelector('input'); inp.focus(); inp.select();
+        const ok = () => { const v = inp.value.trim(); if (v) { P[k][i] = v; saveAll(); } draw(); }; el.querySelector('.ed').onclick = ok; el.querySelector('.dl').onclick = () => draw(); inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); ok(); } if (e.key === 'Escape') draw(); }; };
+      // (1.34.3) 왼쪽 ⠿ 를 잡고 위아래로 끌면 순서가 바뀜 (마우스·터치 모두) — 놓는 자리에 초록 줄이 보임
+      const dh = el.querySelector('.dh'); if (dh) dh.onpointerdown = (e) => { e.preventDefault(); const list = el.parentElement; const rows = () => [...list.querySelectorAll('.it[data-i]')]; el.classList.add('dragging'); try { dh.setPointerCapture(e.pointerId); } catch (x) {} let to = i;
+        const mv = (ev) => { const R = rows(); R.forEach((r) => r.classList.remove('over', 'under')); let tgt = R.length - 1; for (let j = 0; j < R.length; j++) { const b = R[j].getBoundingClientRect(); if (ev.clientY < b.top + b.height / 2) { tgt = j; break; } tgt = j + 1; }
+          to = tgt; if (to < R.length) R[to].classList.add('over'); else R[R.length - 1].classList.add('under'); const lb = list.getBoundingClientRect(); if (ev.clientY < lb.top + 14) list.scrollTop -= 8; else if (ev.clientY > lb.bottom - 14) list.scrollTop += 8; };
+        const up = () => { dh.removeEventListener('pointermove', mv); dh.removeEventListener('pointerup', up); dh.removeEventListener('pointercancel', up); el.classList.remove('dragging'); rows().forEach((r) => r.classList.remove('over', 'under'));
+          let dst = to > i ? to - 1 : to; if (dst !== i && dst >= 0) { const [m] = P[k].splice(i, 1); P[k].splice(dst, 0, m); saveAll(); } draw(); };
+        dh.addEventListener('pointermove', mv); dh.addEventListener('pointerup', up); dh.addEventListener('pointercancel', up); }; });
+    box.querySelectorAll('[data-add]').forEach((b) => (b.onclick = () => { const k = b.dataset.add; const inp = box.querySelector(`[data-new="${k}"]`); const v = inp.value.trim(); if (!v) return; P[k].push(v); saveAll(); draw(); }));
+    box.querySelectorAll('[data-new]').forEach((inp) => (inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); box.querySelector(`[data-add="${inp.dataset.new}"]`).click(); } }));
+    box.querySelector('[data-a="min"]').onclick = () => { box.classList.toggle('min'); GM_setValue('rn-ph-min', box.classList.contains('min') ? 1 : 0); draw(); };
+    const cl = box.querySelector('[data-a="clear"]'); if (cl) cl.onclick = () => { const ta = target(); if (!ta) return flash('답변 입력칸을 찾지 못했습니다'); if (ta.value && !confirm('답변 칸의 글을 모두 지울까요?')) return; ta.value = ''; ta._rnPos = 0; ta.dispatchEvent(new Event('input', { bubbles: true })); };
+    const rs = box.querySelector('[data-a="reset"]'); if (rs) rs.onclick = () => { let n = 0; PARTS.forEach(([k]) => DEF[k].forEach((t) => { if (!P[k].includes(t)) { P[k].push(t); n++; } })); saveAll(); draw(); flash(n ? `기본 문구 ${n}개를 다시 넣었습니다` : '빠진 기본 문구가 없습니다'); };
+    // 띠를 잡고 옮김 (자리 기억)
+    box.querySelector('.hd').onmousedown = (ev) => { if (ev.target.closest('button')) return; ev.preventDefault(); const r = box.getBoundingClientRect(); const dx = ev.clientX - r.left, dy = ev.clientY - r.top;
+      const mv = (e) => { box.style.left = Math.max(0, Math.min(e.clientX - dx, innerWidth - 80)) + 'px'; box.style.top = Math.max(0, Math.min(e.clientY - dy, innerHeight - 40)) + 'px'; box.style.right = 'auto'; };
+      const up = () => { removeEventListener('mousemove', mv); removeEventListener('mouseup', up); const q = box.getBoundingClientRect(); GM_setValue('rn-ph-pos', { x: Math.round(q.left), y: Math.round(q.top) }); }; addEventListener('mousemove', mv); addEventListener('mouseup', up); }; }
+  const mount = () => { document.body.appendChild(box); const pos = GM_getValue('rn-ph-pos', null); if (pos) { box.style.left = Math.min(pos.x, innerWidth - 80) + 'px'; box.style.top = Math.min(pos.y, innerHeight - 40) + 'px'; box.style.right = 'auto'; } draw(); };
+  if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
+})();
+/* ══════════ (1.45.0) 📥 개별·미등록 등록 — 알라딘 '상품 등록' 화면(wrecord.aspx)을 웹앱에서 정한 대로 채움 ══════════
+ * 웹앱 📥 등록 카드에서 '알라딘 등록 화면 채워서 열기'를 누르면 이 화면이 #rnreg=상품줄번호 로 열림 → 이 스크립트가 Firebase(reg_items)의 계획(plan)대로 채움:
+ *   미등록: 상품 구분 · 'ISBN 없는 상품' 체크(확인 창 자동) · 분류(최대 3) · 상품명·원제·부제 · 지은이·옮긴이·출판사(알라딘 번호로 — 팝업 없이) 또는 직접 입력 · 19세 · 쪽수 · 규격 · 출간일 · 정가
+ *   공통(개별·미등록): 상품 관리 코드 · 품질(최상·상·중 — 품질 팝업이 하는 것과 같은 요청으로 팝업 없이) · 판매가 · 판매상태 · 수량 · 상품 설명(편집기)
+ *   팝업이 하는 일은 저장해 둔 실제 팝업 화면(품질·저자·출판사·분류)의 스크립트를 그대로 따라 함 — 짐작으로 칸을 만들지 않음
+ * 채운 뒤 오른쪽 위 판에서 칸마다 ✓ · 사진(대표·보조·설명 사진)은 아직 직접 첨부(사진 폴더에서 맞는 파일 이름을 판에 보여 줌)
+ * '등록완료'(판의 단추): 실행 문(exec_log)에 시작을 적을 수 있을 때만 → 등록 전 상품 조회 최근 번호(기준) → 맡긴 일 regOne(보냄 표시) → 알라딘 화면의 등록 함수 그대로
+ *   → 화면이 바뀌면 공개 확인(대량 등록과 같은 지킴이·짝짓기 — ISBN·코드·판매가·품질·수량)
+ * 사진 자동 첨부를 위한 조사: 이 화면이 열릴 때 하루 한 번, 알라딘 화면의 사진 올리기·등록 함수 원문과 사진 올리기 칸 모양을 reg_probe에 기록(읽기만) */
+(function rnRegFill() {
+  if (window.__rnFeat && !window.__rnFeat('reg')) return; /* (1.63.7) 🧩 등록 도우미·자동 등록 */
+  /* (1.47.0) 채우는 일을 '틀'(makeFiller)로 묶음 — 사람이 보는 등록 화면(이 탭)과, 창 없이 하는 자동 등록(보이지 않는 틀 안의 등록 화면) 둘 다 같은 것을 씀 */
+  const UW = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window; const PC_NAME = (() => { try { return (window.__rnPcName && window.__rnPcName.get()) || GM_getValue('pcName', null) || 'PC'; } catch (e) { return 'PC'; } })(); // 수집기와 같은 이 PC 이름
+  const nowIso = () => new Date().toISOString(); const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  if (typeof firebase === 'undefined') return;
+  if (!firebase.apps.length) firebase.initializeApp({ apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385', storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15' });
+  const db = firebase.app().firestore(); const auth = firebase.app().auth(); const TS = () => firebase.firestore.FieldValue.serverTimestamp(); const C = (n) => db.collection(n);
+  const RG = () => window.ReadnowRegister || globalThis.ReadnowRegister || null; const XC = () => window.ReadnowExec || globalThis.ReadnowExec || null; const PR = () => window.ReadnowProducts || globalThis.ReadnowProducts || null;
+  const KEY_PEND = 'rn-reg-pending'; const TAB = Math.random().toString(36).slice(2, 8);
+  const whenAuth = () => new Promise((res) => { if (auth.currentUser) return res(auth.currentUser); const un = auth.onAuthStateChanged((u) => { if (u) { un(); res(u); } }); setTimeout(() => res(auth.currentUser), 15000); });
+  const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const ERR_RE = /실패|오류|입력해|선택해|확인해|없습니다|불가|잘못/;
+  /* 사진 받기: 웹앱이 사진 폴더에서 Firebase 저장소(reg_photos/…)에 올려 둔 것 → 이 PC로 (알라딘 화면에 넣을 파일) */
+  async function getPhoto(x) { if (!x || !x.path) throw new Error('저장소 경로 없음'); const url = await firebase.storage().ref(x.path).getDownloadURL();
+    const blob = await new Promise((res, rej) => GM_xmlhttpRequest({ method: 'GET', url, responseType: 'blob', timeout: 60000, onload: (r) => (r.status === 200 ? res(r.response) : rej(new Error('HTTP ' + r.status))), onerror: () => rej(new Error('받기 실패')), ontimeout: () => rej(new Error('시간 초과')) }));
+    return new File([blob], x.name || 'photo.jpg', { type: blob.type || 'image/jpeg' }); }
+  function makeFiller(doc, W0, opt) { opt = opt || {};
+    const $ = (id) => doc.getElementById(id);
+    const fire = (el) => { if (!el) return; ['input', 'change', 'keyup', 'blur'].forEach((t) => { try { el.dispatchEvent(new Event(t, { bubbles: true })); } catch (e) {} }); };
+    const setV = (id, v) => { const el = $(id); if (!el) return false; el.removeAttribute && el.removeAttribute('readonly'); el.value = v == null ? '' : String(v); fire(el); return true; };
+    const selectVal = (el, want) => { if (!el) return false; const w = String(want); const o = [...el.options].find((op) => op.value === w || +op.value === +w || op.text.trim() === w || (+op.text.trim() === +w && w !== '')); if (!o) return false; el.value = o.value; fire(el); return true; };
+    async function readyEditor() { for (let i = 0; i < 80; i++) { if (W0.EditorManager && W0.Editor && $('frmRecord')) return true; await sleep(250); } return false; }
+    async function quality(plan) { /* 품질 팝업(wc2c_itemsales.aspx)의 frmsubmit과 같은 일 — 같은 추천가 요청 → 같은 칸 */
+      const ps = $('priceStd') && $('priceStd').value; if (!(+ps > 0)) throw new Error('정가가 없어 품질을 정할 수 없음');
+      const r = await fetch(`/shop/usedshop/c2c_sales_ajax.aspx?method=recomPriceSales&priceStd=${encodeURIComponent(ps)}&itemQuailty=${+plan.grade}`, { credentials: 'include' }); const j = JSON.parse(await r.text());
+      setV('QualityType', String(+plan.grade)); /* (1.49.0) 품질 창의 '상태 부연 설명'은 입력 칸이 없어 건드리지 않음 · 창 아래 확인 질문(ISBN이 맞습니까 · 정가가 맞습니까)은 '예'와 같음 = 정가 그대로(priceStd)·추천가 요청 */ const pS = $('priceSales'); if (pS) { pS.readOnly = false; pS.value = j.PriceSales; } setV('QualityTypeKOR', j.QualityTypeDesc || ''); const g = $('Guaranted'); if (g) g.checked = true;
+      try { W0.PercentPriceSales(); W0.calcSummaryC2C(); } catch (e) {} return j; }
+    /* 대학교장터(등록 화면의 '대학교장터 상품으로 등록하기' 칸들 — 저장해 둔 실제 화면 그대로): 체크 → SetIsUniv() · 카테고리는 팝업이 부르는 UnivCategory_Selected(번호, 경로) · 학부·학과(필수)·사용년도·과목명·사용학년·사용학기·교수명 */
+    function univ(plan, ok) { const u = plan.univ; if (!u || !u.on) return; const ck = $('chkIsUniv'); if (ck && !ck.checked) { ck.checked = true; fire(ck); try { W0.SetIsUniv(); } catch (e) {} } ok('대학교장터', !!(ck && ck.checked));
+      if (u.catId) { let d0 = false; try { W0.UnivCategory_Selected(String(u.catId), String(u.catNav || '')); d0 = true; } catch (e) { d0 = setV('UnivCategoryId', u.catId); } ok('대학교장터 카테고리', d0, u.catNav || u.catId); } else ok('대학교장터 카테고리', false, '고르지 않음');
+      ok('학부·학과', !!String(u.dept || '').trim() && setV('UnivColleage', String(u.dept).slice(0, 20)), u.dept);
+      [['CourseYear', u.year, 4], ['Course', u.course, 20], ['CourseGrade', u.grade, 1], ['CourseTerm', u.term, 10], ['ProfessorName', u.prof, 20]].forEach(([id, v, n]) => { if (v != null && v !== '') setV(id, String(v).slice(0, n)); });
+      const sv = $('chkSaveUnivInfo'); if (sv) sv.checked = false; /* 알라딘 계정의 '대학교장터 기본 등록정보'는 건드리지 않음 (우리 기본값은 웹앱 등록 설정에) */ }
+    async function fill(plan) { const out = []; const ok = (k, v, note) => out.push({ k, ok: !!v, note: note || '' });
+      if (!(await readyEditor())) throw new Error('알라딘 등록 화면이 다 열리지 않음 (편집기 없음 — 로그인이 풀렸을 수 있음)');
+      const nativeConfirm = W0.confirm; W0.confirm = () => true; // 'ISBN 없는 상품' 확인 창 등 — 채우는 동안만 '확인'
+      try {
+        if (plan.method === 'new') { const N = plan.new || {};
+          const rb = $('SelectType' + plan.branch); if (rb) { rb.checked = true; try { W0.fn_formSet(+plan.branch); } catch (e) {} } ok('상품 구분', rb && rb.checked);
+          univ(plan, ok);
+          const ai = $('autoIsbn'); if (ai && !ai.checked) ai.click(); ok('ISBN 없는 상품', ai && ai.checked);
+          (N.cats || []).slice(0, 3).forEach((c, i) => { let done = false; try { if (typeof W0.setCategory === 'function') { W0.setCategory(i, +c.cid, c.path, !!c.mag); done = true; } } catch (e) {} ok(`분류 ${i + 1}`, done, c.path); });
+          ok('상품명', setV('title', String(N.title || '').slice(0, 100))); if (N.titleOrigin) ok('원제', setV('titleOrigin', N.titleOrigin)); if (N.subtitle) ok('부제', setV('itemSubTitle', N.subtitle));
+          if (N.customAuthor || N.customPublisher || !N.author || !N.publisher) { const ck = $('chkCustomAuthor'); if (ck && !ck.checked) ck.click(); ok('저자 직접 입력', setV('custom_authorNm0', N.customAuthor || (N.author && N.author.name) || '')); ok('출판사 직접 입력', setV('custom_makingCompany', N.customPublisher || (N.publisher && N.publisher.name) || '')); }
+          else { let a1 = false; try { W0.setBookInfo(0, N.author.id, N.author.name); a1 = true; } catch (e) {} ok('지은이', a1, N.author.name);
+            if (N.translator && N.translator.id) { ok('옮긴이', setV('authorInfoId1', N.translator.id) && setV('authorInfoNm1', N.translator.name), N.translator.name); }
+            ok('출판사', setV('makingCompany', N.publisher.name) && setV('makingCompanyId', N.publisher.id), N.publisher.name); }
+          const ad = $('chkAgeAdultLevel'); if (ad) { ad.checked = !!N.adult; fire(ad); }
+          if (N.pages) ok('쪽수', setV('ItemPage', +N.pages));
+          if (N.sizeSel) { const s0 = $('selItemSize'); const r0 = selectVal(s0, N.sizeSel); try { W0.selItemSize_Change(s0); } catch (e) {} if (+N.sizeSel === 19) setV('size', N.sizeText || ''); ok('규격', r0, (s0 && s0.options[s0.selectedIndex] || {}).text); }
+          if (N.pubDate) { const [y, mo, d] = String(N.pubDate).split('-').map((x) => +x); const r1 = $('noPubDate1'); if (r1) r1.checked = true; ok('출간일', selectVal($('pubY'), y) && selectVal($('pubM'), mo) && selectVal($('pubD'), d), N.pubDate); } else { const r0 = $('noPubDate0'); if (r0) r0.checked = true; }
+          ok('정가', setV('priceStd', +plan.priceStd));
+        } else { univ(plan, ok); if (plan.priceStd && !(+($('priceStd') || {}).value > 0)) ok('정가', setV('priceStd', +plan.priceStd)); }
+        ok('관리 코드', setV('supItemCode', plan.code), plan.code);
+        try { const j = await quality(plan); ok('품질', true, `${j.QualityTypeDesc || ''} · ISBN·정가 확인 '예'`); } catch (e) { ok('품질', false, e.message); }
+        ok('판매가', setV('priceSales', +plan.price), (+plan.price).toLocaleString() + '원'); try { W0.calcSummaryC2C(); } catch (e) {}
+        const st = $('stockState'); ok('판매상태', selectVal(st, { 1: 1, 2: 3, 3: 15 }[+plan.saleState || 1])); try { W0.stockStatusChg(); } catch (e) {}
+        ok('수량', setV('stockCount', Math.max(1, +plan.qty || 1)));
+        if (plan.descHtml) { let d0 = false; try { W0.EditorManager.loadContent(plan.descHtml); d0 = true; } catch (e) {} ok('상품 설명', d0); }
+      } finally { W0.confirm = nativeConfirm; }
+      return out; }
+    /* 사진 한 장: 알라딘 화면의 사진 단추와 같은 imgUp2(칸, 6, 0)를 부른 뒤 → 생긴 '파일 고르기' 칸(숨은 imgUploader 틀 · 새 창 · 화면 안)에 파일을 넣고 바뀜을 알림 → 그 칸(mainCover·zoomCoverN)에 사진 주소가 들어올 때까지 기다림
+     *  파일 고르기 창은 사람이 누를 때만 뜨므로 여기서는 열리지 않음. 칸이 안 채워지면 ✗ (그 사진만 직접) */
+    /* (1.52.0) 사진 올리기 — 정범이 저장해 준 알라딘 사진 창 2개(2026-10-09) 그대로:
+     *  ① 대표·추가 사진 창 /scm/upload/imgUpPopup.aspx : 폼 fSCMImgUploader(multipart) → 같은 주소로 보냄 · 칸 SCMImg(파일) · Action=1 · targetO=칸 이름(mainCover·zoomCoverN) · branchType=6
+     *     → 알라딘이 돌려주는 화면이 window.opener(등록 화면)의 그 칸·그림을 채움(창 안 함수 pd(id) = opener.document.getElementById(id))
+     *  ② 편집기(설명 안) 사진 창 /scm/upload/wimage_upload_scm.aspx : 폼 Myform(multipart) → 같은 주소 · 칸 uploadFile(파일) · action=1 · imgalign=1(왼쪽 · 창 기본값) · 가로 570픽셀 이하
+     *     → 돌려주는 화면이 opener.InsertHtml(그림)을 불러 편집기에 넣음 (등록 화면: function InsertHtml(img){ EditorManager.pasteContent(img); })
+     *  방법: 창을 띄우지 않고 그 폼과 똑같은 내용을 직접 보냄(fetch · 같은 알라딘 로그인) → 돌려받은 화면을 보이지 않는 빈 틀에 그대로 그리되 그 틀의 opener를 등록 화면으로 정해 둠
+     *  → 사람이 창에서 올렸을 때와 똑같이 알라딘 화면 스크립트가 칸을 채움. 예전(1.50~1.51)엔 틀이 새 화면으로 넘어가며 opener가 사라져 안 들어갔음
+     *  돌려받은 화면은 처음 몇 번 reg_probe/{mainImg·editorImg}에 남김(안 맞으면 그걸로 고침) */
+    const sniffText = async (r) => { const buf = await r.arrayBuffer(); const ct = String(r.headers.get('content-type') || ''); let cs = (ct.match(/charset=([\w-]+)/i) || [])[1]; let t = new TextDecoder(cs || 'utf-8').decode(buf); if (!cs) { const m = t.slice(0, 2000).match(/charset=["']?([\w-]+)/i); if (m && !/utf-?8/i.test(m[1])) { try { t = new TextDecoder(m[1]).decode(buf); } catch (e) {} } } return t; };
+    const runAsPopup = async (html, url) => { const fr = doc.createElement('iframe'); fr.style.cssText = 'position:fixed;left:-4000px;top:0;width:560px;height:480px;border:0;opacity:0;pointer-events:none'; doc.body.appendChild(fr); const w = fr.contentWindow; const d = fr.contentDocument; const errs = [];
+      try { try { w.opener = W0; } catch (e) {} w.onerror = (m) => { errs.push(String(m).slice(0, 200)); return true; }; w.alert = (m) => errs.push('(알림) ' + String(m).slice(0, 200)); w.close = () => {}; try { w.resizeTo = () => {}; } catch (e) {}
+        d.open(); try { w.opener = W0; } catch (e) {} const base = `<base href="${String(url).replace(/"/g, '')}">`; d.write(/<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + base) : base + html); d.close(); } catch (e) { errs.push('그리기 오류: ' + e.message); }
+      await sleep(1500); setTimeout(() => { try { fr.remove(); } catch (e) {} }, 8000); return errs; };
+    let probeN = 0; const probeUp = async (kind, data) => { if (probeN++ > 6) return; try { await C('reg_probe').doc(kind).set({ last: { at: nowIso(), pc: PC_NAME, ...data }, pc: PC_NAME, ...W() }, { merge: true }); } catch (e) {} };
+    /* 편집기 사진은 가로 570픽셀 이하만 받음(창 안내) → 넓으면 줄여서 JPEG로 (세로는 비율대로) · 이름 확장자도 jpg로 */
+    async function fitWidth(file, maxW) { try { const bmp = await createImageBitmap(file); if (bmp.width <= maxW && /\.(jpe?g|png|gif)$/i.test(file.name)) { bmp.close && bmp.close(); return file; } const r = Math.min(1, maxW / bmp.width); const cv = doc.createElement('canvas'); cv.width = Math.round(bmp.width * r); cv.height = Math.round(bmp.height * r); cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height); bmp.close && bmp.close();
+      const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.9)); return new File([blob], String(file.name || 'photo').replace(/\.[^.]*$/, '') + '.jpg', { type: 'image/jpeg' }); } catch (e) { return file; } }
+    async function postUpload(kind, url, fields, fileKey, file) { const fd = new FormData(); for (const [k, v] of Object.entries(fields)) fd.append(k, v); fd.append(fileKey, file, file.name || 'photo.jpg');
+      const r = await fetch(url, { method: 'POST', body: fd, credentials: 'include' }); const html = await sniffText(r); if (!r.ok) throw new Error('알라딘이 받지 않음 HTTP ' + r.status);
+      if (/로그인|login/i.test(html) && /<form[^>]+login/i.test(html)) throw new Error('알라딘 로그인이 풀림'); const errs = await runAsPopup(html, r.url || url); return { html, errs }; }
+    async function attachOne(field, file) { const inp0 = $(field); if (!inp0) return { ok: false, why: '사진 칸 없음' }; const before = inp0.value; const imgEl = $(field + 'img'); const src0 = imgEl ? imgEl.getAttribute('src') : null; let res = null, why = '';
+      try { res = await postUpload('mainImg', '/scm/upload/imgUpPopup.aspx', { Action: '1', targetO: field, branchType: '6' }, 'SCMImg', file); } catch (e) { why = e.message; }
+      for (let i = 0; i < 20 && res; i++) { const v = ($(field) || {}).value; const s2 = imgEl ? imgEl.getAttribute('src') : null; if ((v && v !== before) || (s2 && s2 !== src0 && !/space/i.test(s2))) { await probeUp('mainImg', { field, ok: true, value: v || null, src: s2 || null, html: res.html.slice(0, 30000), errs: res.errs }); return { ok: true, where: '직접 올림' }; } await sleep(300); }
+      if (res) await probeUp('mainImg', { field, ok: false, html: res.html.slice(0, 30000), errs: res.errs });
+      const old = await attachOneOld(field, file); if (old.ok) return old; return { ok: false, why: `${why || '올렸지만 칸이 안 채워짐'}${res && res.errs.length ? ' · ' + res.errs.join(' / ').slice(0, 160) : ''} — 돌려받은 화면을 reg_probe/mainImg에 남김` }; }
+    /* 예전 방식(사진 단추 imgUp2를 불러 생긴 파일 칸에 넣기) — 직접 올리기가 안 될 때만 */
+    async function attachOneOld(field, file) { const inp0 = $(field); if (!inp0) return { ok: false, why: '사진 칸 없음' }; const before = inp0.value; let popup = null;
+      const nOpen = W0.open; W0.open = function () { popup = nOpen.apply(W0, arguments); return popup; };
+      try { if (typeof W0.imgUp2 !== 'function') return { ok: false, why: '알라딘 사진 단추 함수(imgUp2)가 없음' }; W0.imgUp2(field, 6, 0); } catch (e) { return { ok: false, why: 'imgUp2 오류: ' + e.message }; } finally { W0.open = nOpen; }
+      let fi = null, where = ''; for (let i = 0; i < 40 && !fi; i++) { await sleep(250); try { const fr = $('imgUploader'); const d = fr && fr.contentDocument; const x = d && d.querySelector('input[type=file]'); if (x && !x.dataset.rnUsed) { fi = x; where = '숨은 틀'; } } catch (e) {}
+        if (!fi && popup) { try { const x = popup.document.querySelector('input[type=file]'); if (x) { fi = x; where = '새 창'; } } catch (e) {} } if (!fi) { const x = [...doc.querySelectorAll('input[type=file]')].find((y) => !y.dataset.rnUsed); if (x) { fi = x; where = '화면'; } } }
+      if (!fi) return { ok: false, why: '사진 올리기 칸을 찾지 못함' };
+      try { const DT = (fi.ownerDocument.defaultView && fi.ownerDocument.defaultView.DataTransfer) || DataTransfer; const dt = new DT(); dt.items.add(file); fi.files = dt.files; fi.dataset.rnUsed = '1'; ['input', 'change'].forEach((t) => fi.dispatchEvent(new Event(t, { bubbles: true }))); } catch (e) { return { ok: false, why: '파일을 넣지 못함: ' + e.message }; }
+      for (let i = 0; i < 80; i++) { await sleep(500); const v = ($(field) || {}).value; if (v && v !== before) { try { if (popup && !popup.closed) popup.close(); } catch (e) {} return { ok: true, where }; } if (i === 8 && fi.form && !fi.form.dataset.rnSent) { fi.form.dataset.rnSent = '1'; try { fi.form.submit(); } catch (e) {} } }
+      return { ok: false, why: `올렸지만 칸에 사진이 들어오지 않음 (${where})` }; }
+    /* 사진 목록 (웹앱 카드의 사진 칸 그대로): 대표 → mainCover · 추가 1~8 → zoomCover0~7 · 설명 안 사진 → 편집기(자동 넣기 없음 — 받아서 편집기 사진 넣기로) · (1.48.0) 예전 계획(subs·desc 이름만)도 읽음 */
+    function photoTodo(plan) { const im = plan.images || {}; const out = []; if (im.main && im.main.path) out.push({ field: 'mainCover', x: im.main, label: '대표(기본) 이미지' });
+      (im.zoom || []).forEach((x, i) => { if (x && x.path) out.push({ field: 'zoomCover' + i, x, label: '추가 이미지 ' + (i + 1) }); }); (im.subs || []).filter((x) => x && x.path).slice(0, 2).forEach((x, i) => out.push({ field: 'zoomCover' + i, x, label: '추가 이미지 ' + (i + 1) }));
+      (im.desc || []).filter((x) => x && x.path).forEach((x, i) => out.push({ field: null, x, label: '설명 안 사진 ' + (i + 1) })); return out; }
+    /* (1.50.0) 설명 안 사진(편집기): 사람이 편집기 '사진' 단추를 누르면 뜨는 창(알라딘 편집기 설정 popPageUrl = /scm/upload/wimage_upload_scm.aspx)을
+     *  보이지 않는 틀로 열고(그 창의 opener = 이 등록 화면) → 파일 칸에 사진을 넣고 → 그 창의 올리기 단추·폼을 누름 → 올린 뒤 화면의 '넣기·확인' 단추(InsertHtml 부르는 것)를 누름
+     *  → 편집기 글에 새 <img>가 들어왔는지 확인. 창 모양은 처음 보는 것이라 화면을 reg_probe/editorImg에 남김(안 맞으면 그걸로 고침) · 안 들어가면 ✗ → 자동 등록은 보내지 않음 */
+    async function editorPhoto(file, label) { const getC = () => { try { return W0.Editor.getContent(); } catch (e) { return ''; } }; const nImg = (h) => (String(h || '').match(/<img\b/gi) || []).length; const n0 = nImg(getC());
+      let got = null; const nIns = W0.InsertHtml; W0.InsertHtml = function (img) { got = String(img || ''); try { return nIns.apply(W0, arguments); } catch (e) { try { W0.EditorManager.pasteContent(img); } catch (e2) { try { W0.EditorManager.pasteContentBottom(img); } catch (e3) {} } } };
+      let res = null, why = ''; const f2 = await fitWidth(file, 570);
+      try { try { res = await postUpload('editorImg', '/scm/upload/wimage_upload_scm.aspx', { action: '1', imgalign: '1' }, 'uploadFile', f2); } catch (e) { why = e.message; }
+        for (let i = 0; i < 20 && res; i++) { if (got || nImg(getC()) > n0) { await probeUp('editorImg', { ok: true, inserted: (got || '').slice(0, 2000), html: res.html.slice(0, 30000), errs: res.errs }); return { ok: true, note: label }; } await sleep(300); }
+        /* 알라딘 화면 스크립트가 넣지 않았을 때: 돌려받은 화면 안의 올린 그림 주소(image.aladin.co.kr …)를 찾으면 그 그림을 편집기에 넣음 */
+        if (res) { const m = res.html.match(/https?:\/\/[\w.-]*aladin\.co\.kr\/[^"'\s<>()]+\.(?:jpe?g|png|gif)/i); if (m) { try { W0.InsertHtml(`<img src="${m[0]}">`); } catch (e) {} if (nImg(getC()) > n0) { await probeUp('editorImg', { ok: true, via: 'url', url: m[0], html: res.html.slice(0, 30000), errs: res.errs }); return { ok: true, note: label + ' (주소로 넣음)' }; } }
+          await probeUp('editorImg', { ok: false, html: res.html.slice(0, 30000), errs: res.errs }); } }
+      finally { W0.InsertHtml = nIns; }
+      const old = await editorPhotoOld(file, label); if (old.ok) return old; return { ok: false, why: `${why || '올렸지만 편집기에 안 들어감'}${res && res.errs.length ? ' · ' + res.errs.join(' / ').slice(0, 160) : ''} — 돌려받은 화면을 reg_probe/editorImg에 남김` }; }
+    async function editorPhotoOld(file, label) { const before = (() => { try { return W0.Editor.getContent(); } catch (e) { return ''; } })(); const nImg = (h) => (String(h || '').match(/<img\b/gi) || []).length; const n0 = nImg(before); const trace = [];
+      let got = null; const nIns = W0.InsertHtml; W0.InsertHtml = function (img) { got = String(img || ''); trace.push('InsertHtml'); try { return nIns.apply(W0, arguments); } catch (e) { try { W0.EditorManager.pasteContentBottom(img); } catch (e2) {} } };
+      const fr = doc.createElement('iframe'); fr.style.cssText = 'position:fixed;left:-4000px;top:0;width:560px;height:480px;border:0;opacity:0;pointer-events:none'; const ld = () => new Promise((res) => { const t = setTimeout(() => res(false), 30000); fr.addEventListener('load', () => { clearTimeout(t); res(true); }, { once: true }); });
+      let p = ld(); fr.src = '/scm/upload/wimage_upload_scm.aspx'; doc.body.appendChild(fr); const probe = async (stage, dd) => { try { await C('reg_probe').doc('editorImg').set({ [stage]: { at: nowIso(), html: dd && dd.documentElement ? dd.documentElement.outerHTML.slice(0, 60000) : null, trace }, pc: PC_NAME }, { merge: true }); } catch (e) {} };
+      try { if (!(await p)) return { ok: false, why: '편집기 사진 창이 열리지 않음' }; const w = fr.contentWindow; try { w.opener = W0; } catch (e) {} const d = fr.contentDocument; await probe('open', d);
+        const fi = d.querySelector('input[type=file]'); if (!fi) return { ok: false, why: '편집기 사진 창에 파일 칸이 없음 (화면을 reg_probe에 남김)' };
+        try { const dt = new DataTransfer(); dt.items.add(file); fi.files = dt.files; } catch (e) { return { ok: false, why: '파일을 넣지 못함: ' + e.message }; } ['input', 'change'].forEach((t) => fi.dispatchEvent(new Event(t, { bubbles: true }))); trace.push('file');
+        await sleep(800); const clickable = (dd, rx) => [...dd.querySelectorAll('button,input[type=button],input[type=submit],input[type=image],a,img,span')].find((el) => rx.test((el.getAttribute('onclick') || '') + ' ' + (el.value || '') + ' ' + (el.textContent || '') + ' ' + (el.alt || '') + ' ' + (el.title || '')));
+        if (!got && nImg((() => { try { return W0.Editor.getContent(); } catch (e) { return ''; } })()) <= n0) { const up = clickable(d, /upload|올리기|업로드|첨부|확인|등록|submit/i); p = ld(); if (up) { up.click(); trace.push('click:' + (up.value || up.textContent || up.alt || '').trim().slice(0, 20)); } else { const f = fi.form; if (f) { f.submit(); trace.push('form.submit'); } } await Promise.race([p, sleep(20000)]); }
+        for (let i = 0; i < 3 && !got; i++) { await sleep(700); let d2 = null; try { d2 = fr.contentDocument; } catch (e) {} if (!d2) break; if (i === 0) await probe('after', d2); const ins = clickable(d2, /InsertHtml|opener|넣기|삽입|적용|확인/); if (ins) { trace.push('click2:' + (ins.value || ins.textContent || '').trim().slice(0, 20)); try { fr.contentWindow.opener = W0; } catch (e) {} ins.click(); } else break; }
+        for (let i = 0; i < 20; i++) { const h = (() => { try { return W0.Editor.getContent(); } catch (e) { return ''; } })(); if (nImg(h) > n0) return { ok: true, note: label }; await sleep(300); }
+        await probe('fail', (() => { try { return fr.contentDocument; } catch (e) { return null; } })()); return { ok: false, why: `편집기 글에 사진이 안 들어감 (${trace.join(' → ') || '단계 없음'}) — 창 화면을 reg_probe/editorImg에 남김` }; }
+      finally { W0.InsertHtml = nIns; setTimeout(() => { try { fr.remove(); } catch (e) {} }, 1500); } }
+    async function attachImages(plan) { const out = []; for (const t of photoTodo(plan)) { if (!t.field) { let r; try { const f = await getPhoto(t.x); r = await editorPhoto(f, t.x.name); } catch (e) { r = { ok: false, why: e.message }; } out.push({ k: t.label, ok: r.ok, note: r.ok ? t.x.name : `${t.x.name} — ${r.why}`, photo: true }); continue; } let r; try { const f = await getPhoto(t.x); r = await attachOne(t.field, f); } catch (e) { r = { ok: false, why: e.message }; } out.push({ k: t.label, ok: r.ok, note: r.ok ? t.x.name : `${t.x.name} — ${r.why}`, photo: true }); } return out; }
+    async function newestListing(code) { const P = PR(); const r = await fetch(`/scm/wrecord_edit.aspx?chkItemStockStatus=${code}&chkItemInDate=0&searchCat1=0&searchType=1&keyword=&ViewRowsCount=100&page=1&SortOrder=6&itemStockStatus=${code}&categoryId=0`, { credentials: 'include' }); const d = new DOMParser().parseFromString(await r.text(), 'text/html'); return Math.max(0, ...P.parseScmList(d, new Date().getFullYear()).rows.map((x) => +x.listingId || 0)); }
+    /* 보내기 전 기록: 실행 문(exec_log) 시작 → 등록 전 상품 조회 최근 번호(공개 확인 기준) → 맡긴 일 regOne '보냄' + 상품 줄 '확정' (한 번에) — 못 적으면 보내지 않음 */
+    async function prep(itemId, it, plan, rep, cmdIdIn) { const X = XC(); if (!X) throw new Error('실행 문 공용 파일이 없음 — 기록 없이 등록하지 않음');
+      const tries = (it.tries || 0) + 1; const execKey = `${itemId}#${tries}`; let g; try { g = await X.begin(db, { kind: 'regOne', key: execKey, by: PC_NAME, detail: { title: plan.title || null, price: plan.price, auto: !!cmdIdIn } }); } catch (e) { throw new Error('실행 기록(exec_log)을 못 적어 등록하지 않음 — ' + (e.code || e.message)); }
+      if (!g.ok) throw new Error('실행 문이 막음: ' + g.why);
+      const sc = { 1: 1, 2: 3, 3: 15 }[+plan.saleState || 1]; let base = 0; try { base = Math.max(await newestListing(1), sc !== 1 ? await newestListing(sc) : 0); } catch (e) {} const cur = +(((await C('prd_system').doc('cursor').get()).data() || {}).maxListingId || 0); base = Math.max(base, cur);
+      const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const cmdId = cmdIdIn || `ro_${itemId}_${tries}`; const row = { isbn: plan.isbn || '', state: +plan.saleState || 1, qty: Math.max(1, +plan.qty || 1), grade: +plan.grade || 2, price: Math.round(+plan.price), title: String(plan.title || '').slice(0, 100), code: plan.code, desc: '', regItem: itemId };
+      const ref = C('shp_cmds').doc(cmdId); const b = db.batch();
+      b.set(ref, { type: 'regOne', method: plan.method, itemId, auto: !!cmdIdIn, status: 'running', claim: { pc: PC_NAME, tab: TAB, at: nowIso() }, step: 5, sent: true, sentAt: nowIso(), beatAt: nowIso(), rows: [row], n: 1, qty: row.qty, sum: row.price * row.qty, day: today, regDay: today, verify: base ? { base, codes: [sc], until: new Date(Date.now() + 90 * 60000).toISOString(), tries: 0 } : null, fill: rep.map((x) => `${x.ok ? '✓' : '✗'} ${x.k}`).join(' · ').slice(0, 900), ...(cmdIdIn ? {} : { createdAt: nowIso(), by: PC_NAME }), uploadedAt: TS() }, { merge: true });
+      b.set(C('reg_items').doc(itemId), { stage: 'done', via: plan.method, cmdId, tries, day: today, confirmedAt: nowIso(), confirmedBy: PC_NAME, result: null, final: { isbn: row.isbn, price: row.price, code: row.code, grade: row.grade, qty: row.qty, state: row.state, desc: '', title: row.title }, uploadedAt: TS() }, { merge: true });
+      await b.commit(); // 못 적으면 여기서 멈춤 — 등록하지 않음
+      return { cmdId, execKey, ref, X }; }
+    /* 알림·확인 창: 사람이 보는 화면은 기록하고 그대로 띄움 · 자동(틀 안)은 기록만 — 확인 창은 '등록·저장하시겠습니까'만 예, 그 밖(중복 경고 등)은 아니오(보내지 않음) */
+    function hook(sink, auto) { const nA = W0.alert, nC = W0.confirm;
+      W0.alert = function (msg) { sink.push(String(msg).slice(0, 200)); if (!auto) return nA.call(W0, msg); };
+      W0.confirm = function (msg) { const m = String(msg); if (!auto) { sink.push('(확인) ' + m.slice(0, 200)); return nC.call(W0, msg); } const yes = /(등록|저장|진행)\s*하시겠습니까/.test(m) && !/중복|이미|다시/.test(m); sink.push((yes ? '(확인✓) ' : '(확인✗) ') + m.slice(0, 200)); return yes; }; } /* (1.59.0) 자동으로 '예'를 누른 확인 창(✓)과 '아니오'(✗)를 나눠 남김 — ✓가 있으면 알라딘에 보냈을 수 있음 */
+    return { fill, attachImages, attachOne, photoTodo, prep, hook, $ }; }
+  window.__rnRegMake = makeFiller;
+  /* ── 창 없이 하는 자동 등록 (웹앱 '🤖 자동 등록' → 맡긴 일 regOne auto): 보이지 않는 틀 안에 알라딘 등록 화면을 열고 같은 방법으로 채움 → 못 채운 칸이 하나라도 있으면 보내지 않음 → 보냄 → 화면이 바뀌면 공개 확인 ── */
+  let autoChain = Promise.resolve(); /* 한 PC에서 하나씩 (틀이 여럿 동시에 열리지 않게) — 기다리는 일은 1분마다 '살아 있음'(beatAt)을 남겨 지킴이가 멈춘 일로 보지 않게 */
+  window.__rnRegAuto = (ref, v, id) => { const hb = setInterval(() => ref.set({ beatAt: nowIso(), waitMsg: '이 PC의 앞 자동 등록이 끝나길 기다림' }, { merge: true }).catch(() => {}), 60000);
+    const p = autoChain.then(() => { clearInterval(hb); return regAutoOne(ref, v, id); }).catch((e) => console.warn('[리드나우] 자동 등록', e)).finally(() => clearInterval(hb)); autoChain = p; return p; };
+  async function regAutoOne(ref, v, id) { const itemId = v.itemId; await ref.set({ beatAt: nowIso(), waitMsg: null, step: 1 }, { merge: true }).catch(() => {}); const sn = await C('reg_items').doc(itemId).get().catch(() => null); const it = sn && sn.exists ? sn.data() : null;
+    const notSent = async (msg, extra) => { await ref.set({ status: 'fail', sent: false, msg: (v.mock ? '🧷 모의 등록 — ' : '자동 등록 — 보내지 않음: ') + msg, doneAt: nowIso(), ...(extra || {}), uploadedAt: TS() }, { merge: true }).catch(() => {}); await C('reg_items').doc(itemId).set(v.mock ? { mockResult: { at: nowIso(), ok: false, msg: '못 채움 — ' + String(msg).slice(0, 200), fill: (extra && extra.fill) || null, kind: 'auto' }, autoCmd: null, uploadedAt: TS() } : { lookErr: '🤖 자동 등록 멈춤: ' + String(msg).slice(0, 200), autoCmd: null, uploadedAt: TS() }, { merge: true }).catch(() => {}); };
+    if (!it || !it.plan) return notSent('등록 계획이 없음 — 웹앱에서 다시');
+    if (it.stage !== 'pick' || (it.cmdId && it.cmdId !== id)) return notSent('결정 대기가 아님(이미 등록을 보냈거나 옮겨짐)');
+    const plan = it.plan; const url = plan.method === 'one' ? `/scm/wrecord.aspx?ISBN=${encodeURIComponent(plan.isbn)}` : '/scm/wrecord.aspx';
+    const fr = document.createElement('iframe'); fr.id = 'rnRegAuto_' + TAB + '_' + Date.now().toString(36); fr.style.cssText = 'position:fixed;left:-5000px;top:0;width:1280px;height:1000px;border:0;opacity:0;pointer-events:none'; fr.setAttribute('aria-hidden', 'true');
+    const loaded = (ms) => new Promise((res) => { const t = setTimeout(() => res(false), ms); fr.addEventListener('load', () => { clearTimeout(t); res(true); }, { once: true }); });
+    const p0 = loaded(60000); fr.src = url; document.body.appendChild(fr); const clean = () => setTimeout(() => { try { fr.remove(); } catch (e) {} }, 3000);
+    try { if (!(await p0)) return await notSent('알라딘 등록 화면이 1분 안에 열리지 않음'); await sleep(1500);
+      const uf = UW.document.getElementById(fr.id); const W = uf && uf.contentWindow; const d = fr.contentDocument; if (!W || !d || !/wrecord\.aspx/i.test(String(W.location.pathname))) return await notSent('등록 화면이 아님(로그인이 풀렸을 수 있음)');
+      const F = makeFiller(d, W, { auto: true }); let rep; try { rep = await F.fill(plan); /* (1.49.0) 사진 칸(대표·추가)의 사진도 넣음 — 넣은 뒤 칸에 사진 주소가 들어왔는지 확인(attachOne) · 하나라도 안 되면 아래에서 보내지 않음 · 설명 안 사진(편집기)은 자동으로 못 넣음 */ const todo = F.photoTodo(plan); if (todo.length) { /* (1.50.0) 설명 안 사진(편집기)도 넣음 — editorPhoto */ await ref.set({ beatAt: nowIso(), step: 2, waitMsg: `사진 ${todo.length}장 넣는 중` }, { merge: true }).catch(() => {}); rep.push(...(await F.attachImages(plan))); } } catch (e) { return await notSent('채우지 못함: ' + e.message); }
+      const bad = rep.filter((x) => !x.ok); const fillTxt = rep.map((x) => `${x.ok ? '✓' : '✗'} ${x.k}${x.note && !x.ok ? ' (' + x.note + ')' : ''}`).join(' · ').slice(0, 900);
+      if (bad.length) return await notSent('못 채운 칸 ' + bad.map((x) => x.k + (x.note ? ` (${x.note})` : '')).join(', ') + ' — 카드에서 고치거나 \'채워서 열기\'로 직접', { fill: fillTxt });
+      if (v.mock) { /* (1.50.0) 🧷 모의 등록: 모든 칸·사진을 채웠으니 여기서 멈춤 — 실행 문·보냄 기록도 만들지 않고, 알라딘 '등록'은 누르지 않음 */ const msg = `알라딘에 보내지 않음 · ${rep.length}칸 모두 채움`; await ref.set({ status: 'done', mock: true, sent: false, step: 4, fill: fillTxt, msg: '🧷 모의 등록 — ' + msg, results: { [itemId]: { state: 'mock', at: nowIso(), msg } }, doneAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {});
+        await C('reg_items').doc(itemId).set({ mockResult: { at: nowIso(), ok: true, msg, fill: fillTxt, kind: 'auto' }, autoCmd: null, lookErr: null, uploadedAt: TS() }, { merge: true }).catch(() => {}); return; }
+      let P; try { P = await F.prep(itemId, it, plan, rep, id); } catch (e) { return await notSent(e.message, { fill: fillTxt }); }
+      const al = []; F.hook(al, true); const nav = loaded(30000); try { W.frmRecord_submit_C2C(false, '6', plan.method === 'one'); } catch (e) { al.push('보내기 함수 오류: ' + e.message); }
+      const went = await nav; const errA = al.some((a) => ERR_RE.test(a) || /^\(확인[✗)]/.test(a)); const accepted = al.some((a) => /^\(확인✓\)/.test(a));
+      if (!went && al.length && !accepted) { /* (1.59.0) '등록하시겠습니까'에 예를 눌렀으면(보냈을 수 있음) 화면이 30초 안에 안 바뀌어도 '막음'으로 되돌리지 않음 — 되돌리면 다음 자동 등록이 같은 책을 또 올릴 수 있었음 → 아래 '보냄'으로 두고 지킴이가 공개 확인 */ /* 화면이 그대로 + 알림 = 알라딘이 막음 → 보내지 않음으로 되돌림 */
+        await P.ref.set({ status: 'fail', sent: false, msg: '알라딘이 입력을 막음: ' + al.join(' / ').slice(0, 300), results: { [itemId]: { state: 'fail', at: nowIso(), msg: al.join(' / ').slice(0, 200) } }, doneAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {});
+        await C('reg_items').doc(itemId).set({ stage: 'pick', cmdId: null, final: null, autoCmd: null, lookErr: '🤖 알라딘 등록 화면: ' + al.join(' / ').slice(0, 200), uploadedAt: TS() }, { merge: true }).catch(() => {});
+        await P.X.finish(db, { kind: 'regOne', key: P.execKey }, 'failed', { msg: al.join(' / ') }).catch(() => {}); return; }
+      if (!went) return; /* 알림 없이 화면이 그대로 = 아직 모름 → '보냄'으로 둠(지킴이가 15분 뒤 공개 확인) — 되돌리면 두 번 등록될 수 있어서 */
+      const ok = !errA; await P.ref.set({ status: 'verify', step: 6, regAt: nowIso(), reg: { alerts: al.slice(0, 5), auto: true }, results: { [itemId]: { state: ok ? 'registered' : 'unknown', at: nowIso(), msg: ok ? null : '알라딘 알림: ' + al.slice(0, 2).join(' / ') } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
+      await C('reg_items').doc(itemId).set({ result: { state: ok ? 'registered' : 'unknown', at: nowIso() }, autoCmd: null, uploadedAt: TS() }, { merge: true }).catch(() => {});
+      await P.X.finish(db, { kind: 'regOne', key: P.execKey }, ok ? 'done' : 'unknown', { msg: al.join(' / ') || null }).catch(() => {});
+    } finally { clean(); } }
+  if (window.top !== window || !/\/scm\/wrecord(_edit)?\.aspx/i.test(location.pathname)) return;
+  const onRecord = /\/scm\/wrecord\.aspx/i.test(location.pathname); const W0 = UW;
+  /* ── ① 보낸 뒤 화면이 바뀌었으면: 그 일을 공개 확인으로 (보낸 뒤 10분 안 · 이 PC) ── */
+  (async () => { const pd = GM_getValue(KEY_PEND, null); if (!pd || Date.now() - pd.at > 10 * 60000 || pd.url === location.href && Date.now() - pd.at < 4000) return; await whenAuth(); if (!auth.currentUser) return;
+    GM_deleteValue(KEY_PEND); const ref = C('shp_cmds').doc(pd.cmdId); const ok = !(pd.alerts || []).some((a) => ERR_RE.test(a));
+    await ref.set({ status: 'verify', step: 6, regAt: pd.sentAt || nowIso(), reg: { alerts: (pd.alerts || []).slice(0, 5), after: location.pathname }, results: { [pd.itemId]: { state: ok ? 'registered' : 'unknown', at: nowIso(), msg: ok ? null : '알라딘 알림: ' + (pd.alerts || []).slice(0, 2).join(' / ') } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
+    await C('reg_items').doc(pd.itemId).set({ result: { state: ok ? 'registered' : 'unknown', at: nowIso() }, uploadedAt: TS() }, { merge: true }).catch(() => {});
+    const X = XC(); if (X) await X.finish(db, { kind: 'regOne', key: pd.execKey }, ok ? 'done' : 'unknown', { msg: (pd.alerts || []).join(' / ') || null }).catch(() => {}); })();
+  if (!onRecord) return;
+  /* ── ② 조사 (하루 한 번 · 읽기만): 사진 올리기·등록 함수 원문과 사진 칸 모양 → reg_probe (자동 첨부가 안 맞을 때 고치는 자료) ── */
+  (async () => { const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); if (GM_getValue('rn-reg-probe', '') === day) return; await sleep(4000); await whenAuth(); if (!auth.currentUser) return;
+    const src = {}; ['imgUp2', 'imgRemove', 'frmRecord_submit', 'frmRecord_submit_C2C', 'setCategory', 'setBookInfo', 'checkAutoIsbn2', 'catPopUp', 'authorSearch', 'openBrand', 'fn_formSet', 'stockStatusChg', 'checkOver1Digit', 'SetIsUniv', 'UnivCategory_Selected', 'FindUnivCategory_Show'].forEach((k) => { try { const f = W0[k]; if (typeof f === 'function') src[k] = String(f).slice(0, 20000); } catch (e) {} });
+    let up = null; try { const fr = document.getElementById('imgUploader'); const d = fr && (fr.contentDocument || (fr.contentWindow && fr.contentWindow.document)); up = { src: fr ? fr.getAttribute('src') : null, html: d && d.documentElement ? d.documentElement.outerHTML.slice(0, 30000) : null }; } catch (e) { up = { err: e.message }; }
+    const files = [...document.querySelectorAll('input[type=file]')].map((x) => x.outerHTML.slice(0, 300)); const scripts = [...document.querySelectorAll('script[src]')].map((x) => x.src).slice(0, 40);
+    try { await C('reg_probe').doc('wrecord_' + day + '_' + TAB).set({ at: nowIso(), pc: PC_NAME, url: location.href, src, uploader: up, files, scripts, uploadedAt: TS() }); GM_setValue('rn-reg-probe', day); } catch (e) {} })();
+  const m = location.hash.match(/rnreg=([\w-]+)/); if (!m) return; const itemId = m[1];
+  /* ── ③ 판 (사람이 보는 등록 화면) ── */
+  const box = document.createElement('div'); box.id = 'rnRegFill'; box.style.cssText = 'position:fixed;right:12px;top:12px;z-index:2147483646;width:360px;max-height:92vh;overflow:auto;background:#fff;border:2px solid #2F5D50;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.25);font:13px/1.5 system-ui,"Malgun Gothic",sans-serif;color:#1E2B28';
+  const paint = (html) => { box.innerHTML = `<div style="background:#2F5D50;color:#fff;padding:8px 12px;font-weight:800;display:flex;justify-content:space-between"><span>📥 리드나우 등록 도우미</span><span id="rnRfX" style="cursor:pointer">✕</span></div><div style="padding:10px 12px">${html}</div>`; const x = box.querySelector('#rnRfX'); if (x) x.onclick = () => (box.style.display = 'none'); };
+  const mount = () => { if (!box.isConnected) document.body.appendChild(box); }; if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
+  paint('Firebase에서 등록 계획을 읽는 중…'); const F = makeFiller(document, W0, {});
+  async function submit(it, plan, rep) { const P = await F.prep(itemId, it, plan, rep, null);
+    const pend = { cmdId: P.cmdId, itemId, execKey: P.execKey, at: Date.now(), sentAt: nowIso(), url: location.href, alerts: [] }; GM_setValue(KEY_PEND, pend);
+    const sink = { push: (msg) => { try { const p = GM_getValue(KEY_PEND, null); if (p) { p.alerts = [...(p.alerts || []), msg]; GM_setValue(KEY_PEND, p); } } catch (e) {} } }; F.hook(sink, false);
+    W0.frmRecord_submit_C2C(false, '6', plan.method === 'one');
+    /* 화면이 그대로면(알라딘이 입력을 막음 = 보내지 않음) 5초 뒤: 알림 글을 보여 주고 이 일은 '보내지 않음'으로 — 다시 고쳐서 누를 수 있게 */
+    setTimeout(async () => { const p = GM_getValue(KEY_PEND, null); if (!p || p.cmdId !== P.cmdId) return; const al = p.alerts || []; if (!al.length) return; // 알림 없이 기다리는 중이면 화면이 바뀔 때 처리
+      if (al.some((a) => /등록되었|완료/.test(a))) return; GM_deleteValue(KEY_PEND);
+      await P.ref.set({ status: 'fail', sent: false, msg: '알라딘이 입력을 막음: ' + al.join(' / ').slice(0, 300), results: { [itemId]: { state: 'fail', at: nowIso(), msg: al.join(' / ').slice(0, 200) } }, doneAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {});
+      await C('reg_items').doc(itemId).set({ stage: 'pick', cmdId: null, final: null, lookErr: '알라딘 등록 화면: ' + al.join(' / ').slice(0, 200), uploadedAt: TS() }, { merge: true }).catch(() => {});
+      await P.X.finish(db, { kind: 'regOne', key: P.execKey }, 'failed', { msg: al.join(' / ') }).catch(() => {});
+      paint(`<b style="color:#B0322A">알라딘이 등록을 막았습니다</b><div style="margin:6px 0">${al.map(esc).join('<br>')}</div><div>알라딘에 등록되지 않았습니다. 화면에서 고친 뒤 알라딘의 '등록완료'를 직접 누르거나, 웹앱에서 고쳐 다시 여세요.</div>`); }, 5000); }
+  (async () => { await whenAuth(); if (!auth.currentUser) return paint('Firebase 로그인이 안 됨 — 수집기 탭에서 로그인한 뒤 다시 여세요');
+    const sn = await C('reg_items').doc(itemId).get().catch(() => null); const it = sn && sn.exists ? sn.data() : null; if (!it || !it.plan) return paint('등록 계획을 찾지 못함 — 웹앱에서 다시 \'채워서 열기\'');
+    if (it.stage === 'done') return paint('이미 등록을 보낸 상품입니다 (웹앱 확정 탭에서 결과 확인) — 다시 채우지 않음');
+    const plan = it.plan; let rep = []; try { rep = await F.fill(plan); } catch (e) { return paint(`<b style="color:#B0322A">채우지 못함</b><div>${esc(e.message)}</div>`); }
+    /* (1.48.0) 사진: 자동으로 넣지 않음 — 칸마다 사진을 보여 주고 '받기'(이 PC에 내려받기 → 알라딘 '찾아보기'에서 고름) · '넣기 (시험)'(한 칸만 자동 시도) */
+    const todo = F.photoTodo(plan); let photoState = {};
+    const photoHtml = () => todo.length ? `<div style="background:#F4F8FE;border:1px solid #B9CCEB;border-radius:8px;padding:6px 8px;margin:6px 0"><b>📷 사진 ${todo.length}장</b> <small style="color:#5B6B66">받기 → 아래 알라딘 사진 칸의 '찾아보기'에서 고름</small>${todo.map((t, i) => `<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b>${esc(t.label)}</b> <small style="color:#5B6B66">${esc(t.x.name)}${t.field ? ' → ' + esc(t.field) : ' → 편집기 사진 넣기'}</small>${photoState[i] ? ` <small style="color:${photoState[i].ok ? '#2F5D50' : '#B0322A'}">${esc(photoState[i].msg)}</small>` : ''}</span><button data-rnpdl="${i}" style="border:1px solid #2F5D50;background:#fff;color:#2F5D50;border-radius:6px;padding:2px 8px;cursor:pointer">받기</button>${t.field ? `<button data-rnpput="${i}" style="border:1px solid #9FB3AC;background:#fff;color:#5B6B66;border-radius:6px;padding:2px 6px;cursor:pointer" title="이 칸에 자동으로 넣어 봄 (시험 — 안 되면 받기로)">넣기</button>` : ''}</div>`).join('')}</div>` : (plan.method === 'new' ? '<div style="color:#A8661B;margin:6px 0">미등록 상품은 대표 이미지가 필수 — 웹앱 카드의 사진 칸에 끌어 놓거나, 화면 아래 \'대표 이미지\'에서 직접 첨부</div>' : '');
+    const draw = () => { const bad = rep.filter((x) => !x.ok);
+      paint(`<div style="font-weight:800;font-size:14px">${esc(plan.method === 'new' ? '미등록 상품 등록' : '개별 등록')}${plan.univ && plan.univ.on ? ' · 🎓 대학교장터' : ''} · ${esc(plan.title || '')}</div>
+      <div style="margin:4px 0;color:#5B6B66">${esc(plan.code)} · ${(+plan.price).toLocaleString()}원 · ${esc({ 1: '최상', 2: '상', 3: '중' }[+plan.grade])} · ${+plan.qty || 1}부</div>
+      <div style="margin:6px 0">${rep.map((x) => `<div style="color:${x.ok ? '#2F5D50' : '#B0322A'}">${x.ok ? '✓' : '✗'} ${esc(x.k)}${x.note ? ` <small style="color:#5B6B66">${esc(x.note)}</small>` : ''}</div>`).join('')}</div>
+      ${photoHtml()}${bad.length ? `<div style="color:#B0322A;margin:4px 0">✗ 칸은 화면에서 직접 확인·입력</div>` : ''}
+      <button id="rnRfGo" style="width:100%;margin-top:6px;padding:10px;border:0;border-radius:8px;background:#B0322A;color:#fff;font-weight:800;font-size:14px;cursor:pointer">확인했음 → 등록완료 (기록 남기고 알라딘에 보냄)</button>
+      <div style="color:#5B6B66;font-size:11.5px;margin-top:4px">알라딘의 '등록완료'를 직접 눌러도 등록되지만, 그러면 웹앱이 결과를 모릅니다 — 이 단추로 누르세요.</div>`);
+      box.querySelectorAll('[data-rnpdl]').forEach((b) => (b.onclick = async () => { const t = todo[+b.dataset.rnpdl]; b.disabled = true; try { const f = await getPhoto(t.x); const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = (t.field ? t.field + '_' : 'desc_') + (t.x.name || 'photo.jpg').replace(/\.[^.]+$/, '') + '.jpg'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 3000); photoState[+b.dataset.rnpdl] = { ok: true, msg: '받음' }; } catch (e) { photoState[+b.dataset.rnpdl] = { ok: false, msg: e.message }; } draw(); }));
+      box.querySelectorAll('[data-rnpput]').forEach((b) => (b.onclick = async () => { const i = +b.dataset.rnpput; const t = todo[i]; b.disabled = true; b.textContent = '넣는 중'; let r; try { r = await F.attachOne(t.field, await getPhoto(t.x)); } catch (e) { r = { ok: false, why: e.message }; } photoState[i] = { ok: r.ok, msg: r.ok ? '들어감' : '안 됨 — 받기로: ' + r.why }; draw(); }));
+      const go = box.querySelector('#rnRfGo'); go.onclick = async () => { go.disabled = true; go.textContent = '보내는 중…'; try { await submit(it, plan, rep); go.textContent = '보냄 — 알라딘 화면 결과를 기다리는 중'; } catch (e) { go.disabled = false; go.textContent = '확인했음 → 등록완료'; alert('등록하지 않음: ' + e.message); } }; };
+    draw();
+  })();
+})();
+/* ══════════ (1.47.0) 알라딘 화면의 우리 상품 옆에: ⚠ 취소 주문 기록 · 참고 가격(정가·알라딘 새상품 판매가) · 예스24 중고 링크 ══════════
+ * 어디: 상품 조회/수정(wrecord_edit) · 판매관리·주문확인요청(worders·worder_preparatory_complete) — 화면 안의 우리 상품 링크(상품번호 ItemId)마다
+ * 자료(웹앱과 같은 곳): 상품 기록 prd_listings(상품번호 → 우리 상품) · 도서 prd_books(정가·새상품 판매가) · 취소 대조 prd_cancel_hits(웹앱이 쌓음) — 이 PC에 12시간 기억 */
+(function rnPrdMarks() {
+  if ((window.__rnFeat && !window.__rnFeat('marks'))) return; /* (1.63.7) 🧩 */ if (window.top !== window || !/\/scm\/(wrecord_edit|worders|worder_preparatory_complete)\.aspx/i.test(location.pathname)) return;
+  if (typeof firebase === 'undefined') return; const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const won = (n) => (n > 0 ? Number(n).toLocaleString() : '-');
+  const CK = 'rn-prdmarks-cache'; let cache = {}; try { cache = GM_getValue(CK, {}) || {}; } catch (e) {} const fresh = (x) => x && Date.now() - x.t < 12 * 3600e3;
+  (async () => { await sleep(1800); if (!firebase.apps.length) return; const auth = firebase.app().auth(); for (let i = 0; i < 30 && !auth.currentUser; i++) await sleep(1000); if (!auth.currentUser) return; const db = firebase.app().firestore();
+    const st = document.createElement('style'); st.textContent = '.rnpm{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap;margin-left:6px;font:11px/1.4 system-ui,"Malgun Gothic",sans-serif;vertical-align:middle}.rnpm .ref{color:#7A8A85}.rnpm .ref s{color:#8E9C98}.rnpm a.y24{color:#1F5FAF;text-decoration:none;border:1px solid #B9CCEB;border-radius:6px;padding:0 5px}.rnpm .cx{background:#B0322A;color:#fff;border-radius:6px;padding:0 6px;font-weight:700;cursor:help}.rnpm .cx.pre{background:#A8661B}'; document.head.appendChild(st);
+    const run = async () => { const anchors = new Map(); /* 상품번호(listingId) → 그 상품 이름 칸 */
+      document.querySelectorAll('input.batchChkBox').forEach((cb) => { const tr = cb.closest('tr'); const a = tr && (tr.querySelector('a.name2') || tr.querySelector('a')); if (a && cb.value && !anchors.has(cb.value)) anchors.set(String(cb.value), a); });
+      document.querySelectorAll('a[href*="wproduct.aspx?ItemId="], a[href*="wproduct.aspx?itemid="]').forEach((a) => { const m = (a.getAttribute('href') || '').match(/ItemId=(\d+)/i); if (m && !anchors.has(m[1]) && a.textContent.trim().length > 1) anchors.set(m[1], a); });
+      const ids = [...anchors.keys()].filter((id) => !anchors.get(id).parentNode.querySelector(`.rnpm[data-l="${id}"]`)).slice(0, 200); if (!ids.length) return;
+      const need = ids.filter((id) => !fresh(cache[id]));
+      for (let i = 0; i < need.length; i += 10) { const part = need.slice(i, i + 10); const vals = [...part, ...part.map(Number).filter((x) => Number.isFinite(x))]; let qs = null; try { qs = await db.collection('prd_listings').where('listingId', 'in', vals.slice(0, 10)).get(); } catch (e) {}
+        const got = new Map(); if (qs) qs.forEach((d) => { const v = d.data(); got.set(String(v.listingId), { key: d.id, isbn: v.isbn13 || null, bookId: v.bookId || null, pl: v.priceList || null, title: v.title || '' }); });
+        if (got.size < part.length) { try { const q2 = await db.collection('prd_listings').where('listingId', 'in', part.map(Number).filter(Number.isFinite).slice(0, 10)).get(); q2.forEach((d) => { const v = d.data(); if (!got.has(String(v.listingId))) got.set(String(v.listingId), { key: d.id, isbn: v.isbn13 || null, bookId: v.bookId || null, pl: v.priceList || null, title: v.title || '' }); }); } catch (e) {} }
+        for (const id of part) { const x = got.get(id) || { key: null }; if (x.bookId) { try { const b = (await db.collection('prd_books').doc(String(x.bookId)).get()).data() || {}; x.pl = x.pl || b.priceList || null; x.ps = b.priceSales || null; x.isbn = x.isbn || b.isbn13 || null; } catch (e) {} }
+          if (x.key) { try { const c = (await db.collection('prd_cancel_hits').doc(x.key).get()).data(); x.cx = c && c.hits ? c.hits.map((h) => ({ kind: h.kind, at: h.at, o: h.o })) : null; } catch (e) {} } cache[id] = { ...x, t: Date.now() }; } }
+      try { const keep = {}; Object.entries(cache).filter(([, v]) => fresh(v)).slice(-3000).forEach(([k, v]) => (keep[k] = v)); cache = keep; GM_setValue(CK, cache); } catch (e) {}
+      for (const id of ids) { const x = cache[id]; const a = anchors.get(id); if (!x || !a || !a.parentNode) continue; const q = x.isbn || (x.title || a.textContent || '').replace(/^\[중고[^\]]*\]\s*/, '').trim();
+        const so = (x.cx || []).filter((h) => h.kind === '품절취소'); const other = (x.cx || []).filter((h) => h.kind !== '품절취소');
+        const sp = document.createElement('span'); sp.className = 'rnpm'; sp.dataset.l = id;
+        sp.innerHTML = `${so.length ? `<span class="cx" title="품절취소 ${so.length}번 (주문을 받고 서가에서 못 찾아 취소) — 지금도 판매중이면 서가 확인: ${esc(so.map((h) => h.at.slice(0, 10) + ' ' + h.o).join(', '))}">⚠ 품절취소 ${so.length}</span>` : ''}${other.length ? `<span class="cx pre" title="${esc(other.map((h) => h.kind + ' ' + h.at.slice(0, 10) + ' ' + h.o).join(', '))}">취소 ${other.length}</span>` : ''}${x.pl || x.ps ? `<span class="ref" title="참고 — 알라딘 새상품(공장에서 바로 온 새책)의 정가·판매가">정가 <s>${won(x.pl)}</s> · 새상품 ${won(x.ps)}</span>` : ''}${q ? `<a class="y24" target="_blank" rel="noopener" href="https://www.yes24.com/Product/Search?domain=USED&query=${encodeURIComponent(q)}" title="예스24 중고 검색">예스24↗</a>` : ''}`;
+        if (sp.innerHTML) a.insertAdjacentElement('afterend', sp); } };
+    try { await run(); } catch (e) { console.warn('[리드나우] 상품 표시 실패', e); }
+    let t = null; new MutationObserver(() => { clearTimeout(t); t = setTimeout(() => run().catch(() => {}), 1500); }).observe(document.body, { childList: true, subtree: true }); })();
+})();

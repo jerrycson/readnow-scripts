@@ -6,13 +6,13 @@
  * 이 파일이 바뀌어 새 워커가 켜지면, 열려 있던 웹앱 화면을 모두 새로 엶.
  * 자료(Firebase 기록)는 여기서 다루지 않음 — Firebase가 따로 실시간으로 받음.
  * 문제가 생기면: 주소 끝에 ?nosw=1 을 붙여 열면 이 워커를 끄고 저장본을 지움. */
-const CACHE = 'rn-app-v4'; /* sw 1.24.3 — 판 번호 붙은 파일은 저장본만 ·  웹앱 본문(readnow-webapp.js?v=판)은 새 판을 받으면 옛 판 사본을 지움(1.5MB씩 쌓이지 않게) */
+const CACHE = 'rn-app-v5'; /* sw 1.24.5 — 새 워커가 켜져도 화면을 곧바로 다시 열지 않음(알림 → 쉬는 때) · sw 1.24.3 — 판 번호 붙은 파일은 저장본만 ·  웹앱 본문(readnow-webapp.js?v=판)은 새 판을 받으면 옛 판 사본을 지움(1.5MB씩 쌓이지 않게) */
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil((async () => {
   const ks = await caches.keys(); const upgraded = ks.some((k) => /^rn-app-/.test(k) && k !== CACHE);
   for (const k of ks) if (k !== CACHE) await caches.delete(k);
   await self.clients.claim();
-  if (upgraded) self.clients.matchAll({ type: 'window' }).then((cs) => cs.forEach((c) => c.navigate(c.url).catch(() => {}))); // 옛 판 화면을 새 판으로 — 켜지기를 기다리지 않고 (기다리면 새로 여는 요청이 막힘)
+  if (upgraded) self.clients.matchAll({ type: 'window' }).then((cs) => cs.forEach((c) => { try { c.postMessage({ type: 'rn-newsw' }); } catch (e) {} })); // (1.24.5 점검 L7) 예전엔 열린 화면을 곧바로 다시 열어 출고·가격 일괄 확정 중에도 끊겼음 → 화면에 알리고, 화면이 쉬는 때(상세를 안 열었을 때)만 다시 엶
 })()));
 const isShell = (u) => u.origin === self.location.origin && /\/app\/(index\.html)?$/.test(u.pathname) && !u.searchParams.has('vc') && !u.searchParams.has('nosw');
 const isLib = (u) => (u.hostname === 'www.gstatic.com' && u.pathname.startsWith('/firebasejs/')) || (u.origin === self.location.origin && /\/readnow-[a-z-]+\.js$/.test(u.pathname)) || u.hostname === 'cdnjs.cloudflare.com' || u.hostname === 'cdn.jsdelivr.net';

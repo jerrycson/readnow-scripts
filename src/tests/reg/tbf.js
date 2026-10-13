@@ -1,0 +1,12 @@
+const fs = require('fs'); const store = {}; const col = (n) => (store[n] = store[n] || {});
+const ref = (path) => ({ get: async () => ({ data: () => col(path.c)[path.id] }), set: async (v, o) => { col(path.c)[path.id] = o && o.merge ? { ...(col(path.c)[path.id] || {}), ...v } : v; }, collection: (n) => ({ doc: (id) => ref({ c: path.c + '/' + path.id + '/' + n, id }) }) });
+const C = (n) => ({ doc: (id) => ref({ c: n, id }) }); const db = { batch: () => { const ops = []; return { set: (r, v, o) => ops.push(() => r.set(v, o)), commit: async () => { for (const f of ops) await f(); } }; } };
+const firebase = { firestore: { FieldValue: { arrayUnion: (...a) => ({ AU: a }) } } }; const W = () => ({}); const nowIso = () => new Date().toISOString(); const log = (m) => console.log('LOG', m); const PC_NAME = 'PC';
+eval(fs.readFileSync(__dirname + '/bf.js', 'utf8'));
+(async () => { const t = { sc: '9', name: 'X' };
+  await benchFinish(t, { day: '2026-10-08', page: 3, items: [['a', 1000, '상', 'A'], ['b', 2000, '중', 'B']] }, {});
+  const st1 = col('bench_state')['9']; await benchFinish(t, { day: '2026-10-09', page: 3, items: [['a', 1200, '상', 'A'], ['c', 5000, '최상', 'C']] }, st1);
+  const d = col('bench_days')['9_2026-10-09']; console.log(JSON.stringify({ add: d.add, gone: d.gone, moved: d.moved, addList: d.addList, goneList: d.goneList, life: d.goneLife }));
+  console.log(JSON.stringify(col('bench_items')));
+  const st2 = col('bench_state')['9']; await benchFinish(t, { day: '2026-10-12', page: 3, items: [['a', 1200, '상', 'A']] }, st2); const d3 = col('bench_days')['9_2026-10-12']; console.log(JSON.stringify({ gone: d3.goneList, life: d3.goneLife }));
+})();

@@ -1,0 +1,10 @@
+const fs=require('fs');const s=fs.readFileSync('/home/claude/w/readnow-collector.user.js','utf8');
+const grab=(a)=>{const i=s.indexOf(a);let d=0,j=s.indexOf('{',i);for(let k=j;;k++){if(s[k]=='{')d++;else if(s[k]=='}'){d--;if(!d)return s.slice(i,k+1);}}};
+const ts=(n)=>({toMillis:()=>n});
+let DOCS={a:{lines:[1],uploadedAt:ts(100)},b:{uploadedAt:ts(200)}};let reads=0;
+const snap=(arr)=>({size:arr.length,forEach:(f)=>arr.forEach(([id,v])=>f({id,data:()=>v}))});
+const C=()=>({get:async()=>{const a=Object.entries(DOCS);reads+=a.length;return snap(a)},where:(f,op,t)=>({get:async()=>{const a=Object.entries(DOCS).filter(([,v])=>v.uploadedAt.toMillis()>t.ms);reads+=a.length;return snap(a)}})});
+const firebase={firestore:{Timestamp:{fromMillis:(ms)=>({ms})}}};let GM={};const GM_getValue=(k,d)=>GM[k]??d,GM_setValue=(k,v)=>GM[k]=JSON.parse(JSON.stringify(v));const log=console.log;
+eval(grab('async function aoIndex()'));
+(async()=>{let c=await aoIndex();console.log('full',c.m,reads);reads=0;
+DOCS.b={lines:[2],uploadedAt:ts(300000)};DOCS.c={uploadedAt:ts(300001)};c=await aoIndex();console.log('inc',c.m,'reads',reads);})();

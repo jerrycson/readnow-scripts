@@ -1,0 +1,25 @@
+const fs = require('fs'); const { wrapped, core, chromium } = require('./page.js');
+(async () => { const br = await chromium.launch(); const p = await br.newPage({ viewport: { width: 1350, height: 950 } }); const errs = []; p.on('pageerror', (e) => errs.push('PAGEERR ' + e.message + ' ' + (e.stack || '').split('\n').slice(1, 3).join(' '))); p.on('console', (m) => { if (m.type() === 'error') errs.push('CONSOLE ' + m.text()); });
+  await p.setContent('<html><body style="font-family:sans-serif"><div id="rnp" style="width:360px"><div class="sec rnp-sched" id="rnpSched"></div></div></body></html>');
+  await p.addScriptTag({ content: fs.readFileSync(__dirname + '/harness.js', 'utf8') });
+  await p.evaluate(() => { window.JOBS.kpipa = ['출판 판매 통계 (KPIPA 판매 보고서)']; window.JOBS.bench = ['🎯 집중 벤치마킹 — 정한 순서대로 모두']; window.JOBS.shipRead = ['발송 요청 읽기']; window.JOBS.metricsAuto = ['그룹 시장 지표 맡기기'];
+    window.BENCH0 = { targets: [{ sc: '1', name: '알파서점' }, { sc: '2', name: '베타북스' }, { sc: '3', name: '감마' }] };
+    const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); window.DAY = day;
+    FS.docs['prd_system/autoSched'] = { on: true, items: { qna: { on: true, times: ['09:00', '13:00', '17:00'] }, returns: { on: true, times: ['10:00', '16:00'] }, scanDaily: { on: true, times: ['08:00', '20:00'] }, buyback: { on: true, times: ['21:00'] }, aladinBuy: { on: true, times: ['22:00'] }, crmBulk: { on: false, times: ['06:00'] }, chain: { on: false, times: ['17:00'] } } };
+    FS.docs['app_settings/bench'] = { autoOn: true, targets: [{ sc: '1', on: true }] }; FS.docs['app_settings/kpipa'] = {}; FS.docs['app_settings/ext'] = { on: true };
+    FS.docs['prd_system/jobStats'] = { jobs: { 'bench:1': { runs: [{ at: new Date().toISOString(), ms: 40 * 60e3, st: 'done' }] }, 'bench:2': { runs: [{ at: new Date().toISOString(), ms: 20 * 60e3, st: 'done' }] }, 'prd:scanDaily': { runs: [{ at: new Date().toISOString(), ms: 50 * 60e3, st: 'done' }] }, 'prd:kpipa': { runs: [{ at: new Date().toISOString(), ms: 8 * 60e3, st: 'done' }] } } };
+    window.SET = { shipAutoMin: 15 }; });
+  await p.addScriptTag({ content: core }); await p.addScriptTag({ content: wrapped }); await p.waitForTimeout(800);
+  const R = {};
+  R.slots = await p.evaluate(() => (FS.docs['prd_system/autoSched'].slots || []).map((s) => s.id + ':' + s.trig.t + (s.on ? '' : '(off)')).join(', ') + ' | mig ' + JSON.stringify(FS.docs['prd_system/autoSched'].mig161));
+  await p.evaluate(() => __T.asEdOpen()); await p.waitForTimeout(800);
+  await p.screenshot({ path: __dirname + '/quad.png' });
+  R.layout = await p.evaluate(() => { const q = (c) => { const e = document.querySelector('#rnas .' + c); if (!e) return null; const r = e.getBoundingClientRect(); return [Math.round(r.x), Math.round(r.y), Math.round(r.width), Math.round(r.height)]; }; return { tl: q('q-tl'), cat: q('q-cat'), list: q('q-list'), bi: q('q-bi'), ov: [document.getElementById('rnas').scrollHeight, document.getElementById('rnas').clientHeight] }; });
+  R.ack = await p.evaluate(() => ({ doc: JSON.stringify(FS.docs['prd_system/autoAck'] || null).slice(0, 400), logKeys: Object.keys(FS.docs).filter((k) => /autoAck_/.test(k)), html: (document.querySelector('#rnas .as-ack') || {}).innerText }));
+  // 클라우드 전체 끄기
+  await p.evaluate(() => document.querySelector('#rnas .q-bi').scrollTop = 9999); await p.waitForTimeout(100);
+  const m = await p.$('#rnas label:has([data-bik="cj.all"])'); await m.scrollIntoViewIfNeeded(); await m.click(); await p.waitForTimeout(700);
+  R.master = await p.evaluate(() => ({ cj: JSON.stringify(FS.docs['app_settings/cloud_jobs']), toast: (document.getElementById('rnas-toast') || {}).textContent, dim: document.querySelectorAll('#rnas .bi.dim').length, ack: (document.querySelector('#rnas .as-ack') || {}).innerText }));
+  await p.keyboard.press('Control+z'); await p.waitForTimeout(700); R.undo = await p.evaluate(() => JSON.stringify(FS.docs['app_settings/cloud_jobs']));
+  await p.setViewportSize({ width: 800, height: 900 }); await p.waitForTimeout(400); await p.screenshot({ path: __dirname + '/quad_n.png' });
+  console.log(JSON.stringify(R, null, 1)); console.log(errs.join('\n')); await br.close(); })();

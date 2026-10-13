@@ -1,0 +1,12 @@
+const P = require('./repo/readnow-pricing-core.js');
+const l = { grade: '상', price: 5000 };
+const pg = (topOurs) => topOurs ? [{ c: 'ours', g: '상', p: 5000 }, { c: 'green', g: '상', p: 6000 }, { c: 'green', g: '최상', p: 7000 }] : [{ c: 'green', g: '상', p: 4800 }, { c: 'ours', g: '상', p: 5000 }, { c: 'green', g: '상', p: 6000 }];
+const run = (c, top) => { const r = P.critTarget(l, pg(top), null, { mode: 'same', better: true, ...c }, {}, null); return r.t + ' | ' + r.reasons.slice(-1)[0]; };
+console.log('plain(top)      ', run({}, true));
+console.log('keepTop(top)    ', run({ keepTop: true }, true));
+console.log('keepLowest(top) ', run({ keepLowest: true }, true));
+console.log('keepTop(nottop) ', run({ keepTop: true }, false));
+console.log('dir down        ', run({ dir: 'down' }, true));
+console.log('dir up(nottop)  ', run({ dir: 'up' }, false));
+console.log('maxRise 10      ', run({ maxRise: 10 }, true));
+console.log('keepTop+minPrice', run({ keepTop: true, minPrice: 5500 }, true));

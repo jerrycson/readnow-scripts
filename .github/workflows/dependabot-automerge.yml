@@ -1,0 +1,18 @@
+# (2026-10-13) 배포 도구 판 자동 반영 — Dependabot이 만든 'GitHub Actions 판 올림' 변경 요청만 저절로 합침
+#  · 합친 뒤 '클라우드 자동 배포'를 한 번 돌려 새 판 도구로 실제 배포가 되는지 확인(실패하면 Actions에 빨간 실패로 남음 — 지금 돌고 있는 클라우드는 그대로)
+#  · 다른 사람·다른 종류의 변경 요청은 건드리지 않음
+name: 배포 도구 판 자동 반영
+on: pull_request
+permissions: { contents: write, pull-requests: write, actions: write }
+jobs:
+  merge:
+    if: github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: GitHub Actions 판 올림만 합침
+        if: startsWith(github.head_ref, 'dependabot/github_actions/')  # 가지 이름으로 종류를 앎 — 다른 도구(판이 곧 막힐 수 있는 것)를 더 쓰지 않음
+        env: { PR: '${{ github.event.pull_request.html_url }}', GH_TOKEN: '${{ secrets.GITHUB_TOKEN }}' }
+        run: |
+          gh pr merge "$PR" --squash --delete-branch
+          gh workflow run deploy-cloud.yml --ref main -R "$GITHUB_REPOSITORY"
+          echo "### ✓ 배포 도구 판을 올리고 클라우드 배포를 한 번 돌림 (결과는 Actions의 '클라우드 자동 배포')" >> "$GITHUB_STEP_SUMMARY"

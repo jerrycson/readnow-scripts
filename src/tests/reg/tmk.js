@@ -1,0 +1,28 @@
+const fs = require('fs'); const HEAD = fs.readFileSync(__dirname + '/h_head.js', 'utf8'); const SETUP = fs.readFileSync(__dirname + '/h_setup.txt', 'utf8');
+const SP = require('path').resolve(__dirname, '..'); const MOB = process.argv[3] === 'mob'; eval(HEAD.replace(/__dirname/g, 'SP').replace(/\n$/, '') + `
+  ${MOB ? "await p.setViewportSize({ width: 390, height: 844 });" : ''}
+  await p.goto('http://t.test/app/'); await p.waitForTimeout(6000);
+  const r = await p.evaluate(async () => { const wait = (ms) => new Promise((r) => setTimeout(r, ms)); const OUT = {};
+    try { ${SETUP}
+      indexedDB.deleteDatabase('rn-ext'); S.mk.loaded = false; S.mk._db = null; S.mk.meta = {}; Object.values(S.mk.docs).forEach((m) => m.clear());
+      const now = Date.now(); const TSm = (ms) => ({ toMillis: () => ms, toDate: () => new Date(ms) });
+      const EXT = { ext_used: {}, ext_basic: {}, ext_foreign: {}, ext_lib: {}, ext_ebook: {} }; let reads = 0;
+      const L = []; for (let i = 0; i < 12; i++) { const isbn = '97889' + String(10000000 + i); L.push({ id: 'L' + i, title: '[중고] 책 ' + i, isbn13: isbn, price: 10000 + i * 1000, grade: '상', active: true, bookId: 'b' + i, priceList: 20000 });
+        EXT.ext_used[isbn] = { isbn, uploadedAt: TSm(now - 1000 * (20 - i)), src: { joongmo: { at: '2026-10-10T00:00:00Z', d: { items: [{ t: '책 ' + i, p: 8000 + i * 600, sim: 1, st: 'sell' }, { t: '책 ' + i, p: 9000, sim: 1, st: 'sold' }] } } } };
+        EXT.ext_lib[isbn] = { isbn, uploadedAt: TSm(now - 500), src: { lib: { at: '2026-10-10T00:00:00Z', d: { loanCnt: i * 13, cls: '문학' } } } };
+        if (i % 3 === 0) EXT.ext_basic[isbn] = { isbn, uploadedAt: TSm(now - 300), src: { yes24: { at: '2026-10-10T00:00:00Z', d: { salesIndex: 1000 * i + 5, priceList: i === 3 ? 22000 : 20000 } }, ttb: { at: '2026-10-10T00:00:00Z', d: { ebook: [{ p: 7000 }] } } } }; }
+      S.plist = new Map(L.map((l) => [l.id, l])); S.prodLoaded = true;
+      const mk = (n) => { const q = { w: null, lim: 500, aft: null, where(f, op, v) { q.w = v.toMillis(); return q; }, orderBy() { return q; }, limit(x) { q.lim = x; return q; }, startAfter(d) { q.aft = d; return q; }, get: async () => { reads++; let a = Object.entries(EXT[n]).map(([id, v]) => ({ id, v })).filter((x) => x.v.uploadedAt.toMillis() >= (q.w || 0)).sort((a, b) => a.v.uploadedAt.toMillis() - b.v.uploadedAt.toMillis()); if (q.aft) a = a.slice(a.findIndex((x) => x.id === q.aft.id) + 1); a = a.slice(0, q.lim); const docs = a.map((x) => ({ id: x.id, data: () => x.v })); return { empty: !docs.length, size: docs.length, docs, forEach: (f) => docs.forEach(f) }; } }; return q; };
+      const oc = db.collection; db.collection = (n) => (EXT[n] ? { where: (...a) => mk(n).where(...a), doc: (id) => ({ get: async () => ({ exists: !!EXT[n][id], data: () => EXT[n][id] }) }) } : n === 'rn_logs' ? { where: () => ({ where: () => ({ get: async () => ({ forEach: (f) => [{ pc: 'PC1', slot: '202610111200', lines: ['12:00:01 [상품] · 🌐 중고닷 9788910000001 『책 1』 → 새로 2개', '12:00:05 [상품] 다른 줄', '12:01:00 [상품] · 🌐 교보 9788910000002 『책 2』 → 못 읽음 — HTTP 500'] }].forEach((v) => f({ data: () => v })) }) }) }) } : oc(n));
+      S.tab = 'market'; renderTabs(); renderMain(); await wait(2500);
+      const m = document.querySelector('#main'); OUT.tabs = document.querySelector('#tabs').innerText.replace(/\\s+/g, ' '); OUT.txt = m.innerText.replace(/\\s+/g, ' ').slice(0, 1500); OUT.reads1 = reads; OUT.cards = m.querySelectorAll('.mk-card').length; OUT.firstSec = (m.querySelector('details.sec summary') || {}).textContent;
+      /* 두 번째 받기: 바뀐 것만 */ EXT.ext_used['978891' + '0000005'] && 0; const k5 = L[5].isbn13; EXT.ext_used[k5] = { ...EXT.ext_used[k5], uploadedAt: TSm(now + 5000), src: { joongmo: { at: 'x', d: { items: [{ t: 'x', p: 1000, sim: 1, st: 'sell' }] } } } }; reads = 0; await mkSync(true); await wait(500); OUT.reads2 = reads; OUT.k5min = (mkRows().find((r) => r.k === k5).used || {}).min;
+      /* 다시 열기 = 기기 보관본에서 */ S.mk.loaded = false; Object.values(S.mk.docs).forEach((mm) => mm.clear()); S.mk.at = 0; reads = 0; await mkSync(true); OUT.reloadN = S.mk.docs.used.size + '/' + S.mk.docs.lib.size; OUT.reads3 = reads;
+      m.querySelector('[data-mkopen="usedHi"]').click(); await wait(500); const sh = document.querySelector('#sheet'); OUT.list = sh.innerText.replace(/\\s+/g, ' ').slice(0, 700); OUT.sorts = sh.querySelectorAll('[data-lvs]').length;
+      sh.querySelectorAll('[data-lvs]')[2].click(); await wait(200); OUT.list2 = [...sh.querySelectorAll('.list .item')].slice(0, 3).map((b) => b.innerText.replace(/\\s+/g, ' ').slice(0, 50)).join(' | ');
+      history.back(); await wait(500); renderMain(); await wait(300);
+      S.sec.mk_run = true; S.mk.logOpen = true; renderMain(); await wait(1500); const d = document.querySelector('.mk-logd'); if (d) { d.open = true; await wait(800); } OUT.run = (document.querySelector('[data-sec="mk_run"]') || {}).innerText.replace(/\\s+/g, ' ').slice(0, 900);
+    } catch (e) { OUT.ERR = e.message + ' ' + e.stack.split(String.fromCharCode(10)).slice(0, 3).join(' / '); }
+    return JSON.stringify(OUT, null, 1); });
+  console.log(r); console.log('PAGEERR', JSON.stringify(errs.filter((e) => /PAGEERR/.test(e)).slice(0, 5)));
+  await p.evaluate(() => { document.querySelectorAll('.verbar').forEach((x) => x.remove()); S.sec.mk_run = false; renderMain(); }); await p.waitForTimeout(600); await p.evaluate(() => window.scrollTo(0, 0)); await p.screenshot({ path: SP + '/reg/mk_${MOB ? 'm' : 'pc'}.png' }); await br.close(); })();`);

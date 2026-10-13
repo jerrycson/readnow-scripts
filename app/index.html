@@ -142,7 +142,7 @@ details summary{cursor:pointer;color:var(--cloth);font-weight:600;font-size:13px
 .rn2{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--soft);color:var(--cloth);text-align:center;font-size:12px;line-height:22px;font-weight:700}
 /* 순위 패널 */
 #rank{display:none}
-body.withrank.rankopen #rank{display:block;position:fixed;top:0;right:0;bottom:0;width:min(340px,88vw);z-index:9;background:var(--bg);border-left:1px solid var(--line);overflow:auto;padding:calc(12px + env(safe-area-inset-top,0)) 12px 90px;box-shadow:-8px 0 24px rgba(0,0,0,.12)}
+body.withrank.rankopen #rank,body.rkpop.rankopen #rank{display:block;position:fixed;top:0;right:0;bottom:0;width:min(340px,88vw);z-index:9;background:var(--bg);border-left:1px solid var(--line);overflow:auto;padding:calc(12px + env(safe-area-inset-top,0)) 12px 90px;box-shadow:-8px 0 24px rgba(0,0,0,.12)}
 .rkh{display:flex;justify-content:space-between;align-items:center;margin:0 2px 8px}.rkx{border:0;background:none;color:var(--cloth);font-weight:700}
 .rk{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
 .rk h4{margin:0 0 6px;font-size:13.5px}.rk ol{list-style:none;margin:0;padding:0}
@@ -335,7 +335,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .pq-stepset{display:inline-flex;align-items:center;gap:3px;font-size:12.5px;color:var(--sub)}.pq-stepset input{width:48px;padding:4px}
 @media(max-width:640px){.pq-g2{margin-left:0;padding-left:0;border-left:0}}
 
-.shp-head{position:sticky;top:0;z-index:5;background:var(--bg,#F4F6F5);padding:6px 0 8px;border-bottom:1px solid var(--line,#D6DDDA)}.shp-head2{padding:2px 0 6px;border-bottom:1px solid var(--line,#D6DDDA)}@media (max-width:760px){.shp-head{padding:2px 0 5px}.shp-head .sh{padding:4px 8px!important;min-height:0}.shp-head .sh .t{font-size:15px}.shp-tabs{margin:3px 6px 0;gap:4px}.shp-tabs button{padding:6px 4px!important;font-size:12.5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.shp-tabs .lg{display:none}.shp-head2 .shp-sum{font-size:12px}.shp-head2 .shp-sort{flex-wrap:nowrap;overflow-x:auto;padding:0 6px;-webkit-overflow-scrolling:touch}.shp-head2 .shp-sort .hint{display:none}.shp-head2 .shp-sort button{white-space:nowrap;padding:3px 10px}}#sheet button{touch-action:manipulation}/* (1.24.1) 핸드폰 출고: 붙박이 머리는 제목·탭 한 줄만(합계·보기·정렬은 함께 올라감) · 탭 글자 줄임 · 두 번 누름 확대 지연 없앰 */.shp-sum{font-size:13px;margin:4px 8px 0}
+.shp-head{position:sticky;top:0;z-index:5;background:var(--bg,#F4F6F5);padding:6px 0 8px;border-bottom:1px solid var(--line,#D6DDDA)}.shp-head2{padding:2px 0 6px;border-bottom:1px solid var(--line,#D6DDDA)}@media (max-width:760px){.shp-head{padding:2px 0 5px}.shp-head .sh{padding:4px 8px!important;min-height:0}.shp-head .sh .t{font-size:15px}.shp-tabs{margin:3px 6px 0;gap:4px}.shp-tabs button{padding:6px 4px!important;font-size:12.5px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.shp-tabs .wlg{display:none}.shp-head2 .shp-sum{font-size:12px}.shp-head2 .shp-sort{flex-wrap:nowrap;overflow-x:auto;padding:0 6px;-webkit-overflow-scrolling:touch}.shp-head2 .shp-sort .hint{display:none}.shp-head2 .shp-sort button{white-space:nowrap;padding:3px 10px}}#sheet button{touch-action:manipulation}/* (1.24.1) 핸드폰 출고: 붙박이 머리는 제목·탭 한 줄만(합계·보기·정렬은 함께 올라감) · 탭 글자 줄임 · 두 번 누름 확대 지연 없앰 */.shp-sum{font-size:13px;margin:4px 8px 0}
 .shp-o{padding:10px}.shp-oh{font-size:14px;margin-bottom:6px}.shp-n{display:inline-block;min-width:22px;text-align:center;background:#1E2B28;color:#fff;border-radius:10px;font-size:12px;padding:1px 6px}
 .shp-it{display:flex;gap:10px;padding:8px 0;border-top:1px dashed var(--line,#D6DDDA)}
 .shp-code{display:block;color:#fff;font-size:11px;font-weight:800;border-radius:3px;margin-bottom:3px;padding:1px 0;letter-spacing:.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -612,12 +612,12 @@ body.kbd .tabs,body.kbd #updpill{display:none!important}
 <script src="../readnow-shipping-core.js?v=0.5.2"></script>
 <script src="../readnow-products-core.js?v=0.14.0"></script>
 <script src="../readnow-ext-core.js?v=0.4.3"></script>
-<script src="../readnow-autosched-core.js?v=0.5.0"></script>
-<script src="../readnow-registry.js?v=0.14.16"></script>
+<script src="../readnow-autosched-core.js?v=0.5.1"></script>
+<script src="../readnow-registry.js?v=0.14.17"></script>
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.1.0"></script>
 <script src="../readnow-register-core.js?v=0.6.0"></script>
-<script>const APP_VER = '1.24.4';</script>
-<script src="readnow-webapp.js?v=1.24.4"></script>
+<script>const APP_VER = '1.24.5';</script>
+<script src="readnow-webapp.js?v=1.24.5"></script>
 </body>
 </html>

@@ -1,0 +1,15 @@
+const fs = require('fs'); const s = fs.readFileSync('/home/claude/w/readnow-collector.user.js', 'utf8');
+const pick = (a, b) => s.slice(s.indexOf(a), s.indexOf(b, s.indexOf(a)));
+const code = pick('  const ST_CODE = {', '  const sendSignal') + pick('  const cashLidOf', '  async function paintCashSold');
+const docs = { 'crm_orders/o1': { items: [{ lineNo: 1, title: '[중고] 책A', lineStatus: 'normal', aladinStop: { status: 'todo' }, aladinUsedCode: 'UA', price: 5000, qty: 1 }] }, 'prd_listings/aladin_UA': { listingId: '777', status: '판매중' } };
+const ref = (k) => ({ id: k.split('/')[1], k, get: async () => ({ exists: !!docs[k], data: () => docs[k] }), set: async (v) => { docs[k] = { ...(docs[k] || {}), ...v }; } });
+const C = (c) => ({ doc: (id) => ref(c + '/' + id) });
+const db = { runTransaction: async (fn) => fn({ get: (r) => r.get(), update: (r, v) => { docs[r.k] = { ...docs[r.k], ...v }; } }) };
+let inStop = process.argv[2] === 'fail' ? false : true; const calls = [];
+global.fetch = async (u, o) => { calls.push(String(u).slice(0, 60) + (o && o.body ? ' ' + o.body : '')); if (/usedbatch/.test(u)) return { ok: true, text: async () => "<script>alert('변경되었습니다')</script>" }; return { ok: true, text: async () => '<html></html>' }; };
+global.DOMParser = class { parseFromString() { return {}; } };
+const P = { parseScmList: () => ({ rows: inStop ? [{ listingId: '777' }] : [] }) };
+const f = new Function('C', 'db', 'P', 'nowIso', 'TS', 'PC_NAME', 'auth', 'firebase', 'log', 'location', code + '; return cashStopCmd;');
+const cmd = f(C, db, P, () => '2026-10-08T07:00:00Z', () => 'TS', 'JS-MAIN', { currentUser: { email: 'x@y' } }, { firestore: { FieldValue: { arrayUnion: (x) => [x] } } }, (...a) => console.log('LOG', ...a), { pathname: '/scm/' });
+(async () => { const r = ref('shp_cmds/cs_o1_1'); await cmd(r, { orderId: 'o1', lineNo: 1, usedCode: 'UA', title: '[중고] 책A' }); console.log(JSON.stringify(docs['shp_cmds/cs_o1_1'].result), JSON.stringify(docs['crm_orders/o1'].items[0].aladinStop)); console.log(calls.join('\n'));
+  await cmd(r, { orderId: 'o1', lineNo: 1, usedCode: 'UA', title: '[중고] 책A' }); console.log('again', JSON.stringify(docs['shp_cmds/cs_o1_1'].result)); })();

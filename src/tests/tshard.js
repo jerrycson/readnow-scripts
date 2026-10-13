@@ -1,0 +1,28 @@
+const { chromium } = require('/home/claude/.npm-global/lib/node_modules/playwright'); const fs = require('fs');
+const FILE = process.argv[2]; const FB = __dirname + '/fb/package/'; const R = __dirname + '/repo/';
+(async () => { const br = await chromium.launch(); const p = await br.newPage({ viewport: { width: 390, height: 800 } }); const errs = [];
+  p.on('pageerror', (e) => errs.push('PAGEERR ' + e.message)); p.on('console', (m) => { if (m.type() === 'error') errs.push('CONSOLE ' + m.text().slice(0, 200)); });
+  await p.route('**/*', (rt) => { const u = rt.request().url();
+    if (u.startsWith('https://www.gstatic.com/firebasejs/')) { const f = FB + u.split('/').pop(); let body = fs.readFileSync(f, 'utf8'); if (/storage-compat/.test(u)) body += `;(function(){var _i=firebase.initializeApp;firebase.initializeApp=function(){var r=_i.apply(this,arguments);var _a=firebase.auth;var o=_a();var fake={email:'jerrycson@gmail.com',uid:'u1',displayName:'테스트',getIdToken:async()=>'x'};o.onAuthStateChanged=function(cb){setTimeout(function(){cb(fake)},10);return function(){}};Object.defineProperty(o,'currentUser',{get:function(){return fake}});try{firebase.auth=function(){return o};Object.assign(firebase.auth,_a)}catch(e){console.error('patch fail',e)}return r}})();`; return rt.fulfill({ body, contentType: 'text/javascript' }); }
+    if (u.startsWith('http://t.test/app/sw.js')) return rt.fulfill({ body: fs.readFileSync('/home/claude/w/sw.js'), contentType: 'text/javascript' }); if (u.startsWith('http://t.test/app/')) return rt.fulfill({ body: fs.readFileSync(FILE), contentType: 'text/html; charset=utf-8' });
+    if (u.startsWith('http://t.test/')) { const f = R + u.replace('http://t.test/', '').split('?')[0]; return fs.existsSync(f) ? rt.fulfill({ body: fs.readFileSync(f), contentType: 'text/javascript' }) : rt.fulfill({ status: 404, body: '' }); }
+    return rt.abort(); });
+  await p.goto('http://t.test/app/' + (process.argv[3] || '')); await p.waitForTimeout(7000);
+  console.log('SH', await p.evaluate(async () => { const wait = (ms) => new Promise((r) => setTimeout(r, ms)); await wait(1500); const OUT = {}; const store = {}; const FV = firebase.firestore.FieldValue;
+    const isDel = (v) => v && v._delegate && v._delegate._methodName === 'FieldValue.delete';
+    const merge = (cur, v) => { const o = { ...(cur || {}) }; for (const [k, x] of Object.entries(v)) { if (isDel(x)) delete o[k]; else if (x && typeof x === 'object' && !Array.isArray(x) && !x._delegate && o[k] && typeof o[k] === 'object') o[k] = merge(o[k], x); else if (x && x._delegate) o[k] = 'TS'; else o[k] = x; } return o; };
+    const snap = (pairs) => { const docs = pairs.map(([id, v]) => ({ id, data: () => v, ref: { delete: async () => { delete store[id]; } } })); return { docs, forEach: (f) => docs.forEach(f), size: docs.length }; };
+    db.collection = (name) => ({ get: async () => snap(name === 'prd_price_batches' ? Object.entries(store) : []), doc: (id) => ({ id, get: async () => (name === 'prd_price_batches' ? { exists: !!store[id], id, data: () => store[id] } : { exists: true, data: () => ({ watchVer: '0.6.0' }) }), set: async (v) => { if (name === 'prd_price_batches') store[id] = merge(store[id], v); }, delete: async () => { delete store[id]; } }),
+      where: (f, op, v) => ({ get: async () => snap(name === 'prd_price_batches' ? Object.entries(store).filter(([, x]) => x[f] === v) : []), onSnapshot: (cb) => { cb({ forEach: () => {} }); return () => {}; } }), add: async () => ({}) });
+    db.runTransaction = async (fn) => fn({ get: async () => ({ data: () => ({}) }), set: () => {} });
+    const picks = {}; for (let i = 0; i < 100; i++) picks['aladin_P' + i] = { price: 9000, at: '2026-10-07T00:00:00Z', by: 'x' };
+    store.gA = { name: 'GA', cond: { name: 'GA' }, picks, decided: { aladin_D1: { price: 1, at: '2026-10-07T00:00:00Z', from: 2 } }, start: { P1: 10000 } };
+    S.prBatches = undefined; batchSlots(); await wait(300); const g = S.prBatches.find((x) => x.id === 'gA'); OUT.assembled = [S.prBatches.length, Object.keys(g.picks).length, Object.keys(g.decided).length, g._legacy].join(',');
+    await batchMigrate(g); const shards = Object.keys(store).filter((k) => k.includes('~s')); OUT.afterMig = `shards=${shards.length} mainPicks=${Object.keys(store.gA.picks || {}).length} shardPicks=${shards.reduce((a, k) => a + Object.keys(store[k].picks || {}).length, 0)}`;
+    const g2 = await batchLoadOne('gA'); OUT.reload = [Object.keys(g2.picks).length, Object.keys(g2.decided).length, g2.start.P1, g2._legacy].join(',');
+    await batchSave('gA', { picks: { aladin_P0: FV.delete(), aladin_NEW: { price: 5 } }, lastRunAt: 'now' }); const g3 = await batchLoadOne('gA'); OUT.saved = [Object.keys(g3.picks).length, !!g3.picks.aladin_NEW, !!g3.picks.aladin_P0, store.gA.lastRunAt].join(',');
+    S.prBatches = undefined; batchSlots(); await wait(300); OUT.slots = S.prBatches.map((x) => x.id).join(',');
+    window.alert = () => {}; await batchDelete([{ id: 'gA', name: 'GA' }]); OUT.afterDel = Object.keys(store).length;
+    return JSON.stringify(OUT, null, 1); }));
+  await p.evaluate(() => document.querySelector('.verbar') && document.querySelector('.verbar').remove()); console.log('SHEET', JSON.stringify((await p.evaluate(() => (document.querySelector('#sheet.on') || {}).innerText || '-')).slice(0, 300))); console.log(FILE.split('/').pop(), 'body text:', JSON.stringify((await p.evaluate(() => document.body.innerText)).slice(0, 500)));
+  console.log(errs.filter((e) => !/net::ERR|Failed to load resource|googleapis|identitytoolkit/.test(e)).slice(0, 6).join('\n')); await br.close(); })();
