@@ -1,8 +1,10 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.63.15의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.64.0의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.63.15' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.63.15', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.64.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.64.0', function () {
+/* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
+globalThis.__rnPubHome = (() => { try { return window.top === window && /^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search); } catch (e) { return false; } })();
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
  * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
@@ -111,7 +113,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
  *  고르는 방법: 브라우저의 Web Locks('rn-collector-lead' — 탭이 닫히거나 멈추면 브라우저가 저절로 풀어 줌). 없는 브라우저면 GM 값 심장박동(5초, 15초 조용하면 넘겨받음)
  *  안전한 새로고침(새 탭을 열고 옛 탭을 닫음)으로 열린 새 탭은 '이어받을 탭(heir)'으로 표시해, 다른 쉬는 탭이 아니라 그 탭이 수집기를 이어받음 */
 (function rnRole() {
-  const PANEL = window.top === window && /\/scm\/(worders|worder_preparatory_complete|wrecord_edit)\.aspx/i.test(location.pathname);
+  const PANEL = (window.top === window && /\/scm\/(worders|worder_preparatory_complete|wrecord_edit)\.aspx/i.test(location.pathname)) || !!globalThis.__rnPubHome;
   const ME = window.__rnTab || Math.random().toString(36).slice(2, 8); window.__rnTab = ME;
   const PAGE = location.pathname.split('/').pop();
   const LK = 'rn-collector-lead', GK = 'rnu-lead', HK = 'rnu-lead-heir';
@@ -395,7 +397,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
  * 근거: 큰 회사의 수집·배치 도구(Airflow·Jenkins·Datadog 같은)는 '한 곳에서 상태를 보고 한 버튼으로 멈추는' 관제판 하나를 두고,
  *       멈춘 작업(대기열)을 목록으로 보여 주며, 기록은 모든 작업을 한 줄기로 모음. 자주 쓰는 것만 앞에, 자세한 것은 탭 안에 (점진적 공개) */
 (function rnCtl() {
-  if (window.top !== window || !/\/scm\/(worders|worder_preparatory_complete|wrecord_edit)\.aspx/i.test(location.pathname)) return;
+  if (!globalThis.__rnPubHome && (window.top !== window || !/\/scm\/(worders|worder_preparatory_complete|wrecord_edit)\.aspx/i.test(location.pathname))) return;
   const VER = ((typeof globalThis !== 'undefined' && globalThis.__RN_FILE_VER) || (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version)) || '?';
   const G = '#2F5D50', AMB = '#A8661B', RED = '#B0322A', BLU = '#3F7FD1';
   const st = document.createElement('style');
