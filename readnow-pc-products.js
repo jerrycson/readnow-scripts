@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.63.14의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.63.15의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.14' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.63.14', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.15' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.63.15', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -591,7 +591,7 @@
           tabs[TAB_ID] = { at: now, job, prio: myPrio };
           pcs[PC_ID] = { name, at: now, job, prio: Math.max(...Object.values(tabs).map((v) => v.prio ?? 0)), tabs };
           const low = Object.entries(tabs).some(([k, v]) => k !== TAB_ID && (v.prio ?? 0) < myPrio); // 같은 PC의 다른 탭에 낮은 작업 → 양보 요청
-          tx.set(LK(), { ...lockFields(pcs, d), ...(low ? { yieldReq: { prio: myPrio, pc: PC_ID, tab: TAB_ID, target: PC_ID, pcName: name, tool: job, at: now } } : {}) });
+          tx.set(LK(), { ...lockFields(pcs, d), ...(d && d.coolUntil && d.coolUntil > now ? { coolUntil: d.coolUntil, coolBy: d.coolBy || null } : {}), /* (1.63.15 자동 점검) 함께 쉬는 중(429)이면 그대로 — 예전엔 새 PC가 줄에 들어오며 문서를 통째로 써서 쉬는 시각이 지워졌고, 모든 PC가 곧바로 다시 읽었음 */ ...(low ? { yieldReq: { prio: myPrio, pc: PC_ID, tab: TAB_ID, target: PC_ID, pcName: name, tool: job, at: now } } : {}) });
           tx.set(JOBREG(), { [regK]: { pc: PC_ID, name, at: now, label: job, ...(pubL ? { pub: true } : {}) } }, { merge: true });
         });
         break;
@@ -2735,7 +2735,10 @@
         const id = `zx_${pg}_${String(ty.v || 'base').replace(/[^\w-]/g, '')}_${per}_${to.slice(0, 6)}`; const ref = C('mkt_kpipa').doc(id);
         if (!T || !T.length) { failN++; await ref.set({ page: pg, name: pgName, typeKey, typeVal: ty.v, typeLabel: ty.label, period: per, from, to, lastMissAt: nowIso(), lastMissWhy: why.slice(0, 200), params: JSON.stringify(body).replace(/"_csrf":"[^"]*"/, '').slice(0, 2000), ...W() }, { merge: true }).catch(() => {}); log(`📚 더 가져오기 '${pgName}' ${ty.label}·${per === 'month' ? '월별' : '일별'}: ${why}`, 1); await sleep(2500); continue; }
         const prev = (await ref.get().catch(() => null))?.data?.(); const sig = JSON.stringify(T);
-        if (prev && prev.tables && JSON.stringify(prev.tables) === sig) { same++; } else { await ref.set({ page: pg, name: pgName, title: F.title, typeKey, typeVal: ty.v, typeLabel: ty.label, period: per, from, to, tables: T, at: nowIso(), lastMissWhy: null, ...(prev && prev.tables ? { history: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), from: prev.from || null, to: prev.to || null, tables: JSON.stringify(prev.tables).slice(0, 200000) }) } : {}), ...W() }, { merge: true }); saved++; }
+        if (prev && prev.tables && JSON.stringify(prev.tables) === sig) { same++; } else { try { const hE = prev && prev.tables ? { at: nowIso(), from: prev.from || null, to: prev.to || null, tables: JSON.stringify(prev.tables).slice(0, 200000) } : null; let hist = hE ? firebase.firestore.FieldValue.arrayUnion(hE) : null;
+            /* (1.63.15 자동 점검) 문서 하나는 1MB까지 — 일별 표는 달마다 한 문서에 날마다 옛 표가 history로 쌓여 며칠 만에 넘침(그 뒤로 저장이 실패해 남은 화면도 못 받았음). 넘칠 듯하면 쌓인 history를 같은 모음의 보관 문서(zx_…_h시각, archiveOf)로 옮기고(지우지 않음) 새로 시작 */
+            if (hE) { const by = (x) => new TextEncoder().encode(x).length; if (by(JSON.stringify(prev.history || [])) + by(hE.tables) + by(sig) > 700000) { await C('mkt_kpipa').doc(`${id}_h${Date.now()}`).set({ archiveOf: id, name: pgName, typeLabel: ty.label, period: per, history: prev.history || [], at: nowIso(), ...W() }); hist = [hE]; log(`📚 '${pgName}' ${ty.label}: 지난 표 기록이 커서 보관 문서로 옮김(${id}_h…)`); } }
+            await ref.set({ page: pg, name: pgName, title: F.title, typeKey, typeVal: ty.v, typeLabel: ty.label, period: per, from, to, tables: T, at: nowIso(), lastMissWhy: null, ...(hist ? { history: hist } : {}), ...W() }, { merge: true }); saved++; } catch (e) { failN++; log(`📚 더 가져오기 '${pgName}' ${ty.label}: 저장 실패 — ${e.message}`, 1); await ref.set({ lastMissAt: nowIso(), lastMissWhy: ('저장 실패: ' + e.message).slice(0, 200) }, { merge: true }).catch(() => {}); } }
         ui('출판 통계 더 가져오기', 0, 0, `${pgName} · ${ty.label} · ${per === 'month' ? '월별' : '일별'}`); await sleep(3000 + Math.random() * 2000); } }
     log(`📚 KPIPA 더 가져오기: 새로·바뀐 표 ${saved} · 같아서 건너뜀 ${same}${failN ? ` · 못 읽음 ${failN}(까닭은 mkt_kpipa/zx_… 문서)` : ''}`, failN && !saved ? 1 : 0); return { saved, same, failN }; }
   /* 하루 한 번 자동 (14:30 뒤 · 이 PC의 수집기 탭 · 여러 PC면 먼저 맡은 한 대) — 웹앱 설정에서 끌 수 있음(auto:false) */

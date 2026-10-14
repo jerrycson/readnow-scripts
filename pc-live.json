@@ -1,7 +1,7 @@
 {
- "ver": "1.63.14",
+ "ver": "1.63.15",
  "hsig": "a94c363bac6ed2e9",
- "at": "2026-10-14T12:50:35.077Z",
+ "at": "2026-10-14T13:02:09.701Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -41,15 +41,15 @@
   },
   {
    "f": "readnow-registry.js",
-   "v": "0.14.21",
-   "sha": "b3fd75d30ef1f171663d5b8e350b4876f938a857e1e7616751b3a60e07a69a54",
-   "n": 45206
+   "v": "0.14.22",
+   "sha": "1f94a6df79435d45b88716a2cfab5ca0cec0fc75d3f4900ea8cb8d2843c8c8b7",
+   "n": 45282
   },
   {
    "f": "readnow-ext-core.js",
-   "v": "0.4.5",
-   "sha": "73de6dacd6ab4b70975bb6596dc977cb1d6708421ae1d0f5cdb703dd15d93d61",
-   "n": 96554
+   "v": "0.4.6",
+   "sha": "3a0202141458f32ab74cb0fa4564f12fe3654201a30d47ea99c3fe02fbbabebc",
+   "n": 97850
   },
   {
    "f": "readnow-register-core.js",
@@ -77,32 +77,32 @@
   },
   {
    "f": "readnow-pc-runtime.js",
-   "v": "1.63.14",
-   "sha": "1a2193b497b3944687789c8096bc66351d0e008441866489ffcb72fcffe73b73",
+   "v": "1.63.15",
+   "sha": "e891ce83b51c28667e35de99e23a2227cc21fdda4d836ac4e2777a0171c95c49",
    "n": 102708
   },
   {
    "f": "readnow-pc-crm.js",
-   "v": "1.63.14",
-   "sha": "5a24eda6fcca39ed3f145c17fd384b7dc1b89a89bc60d7e73b200be1169231a2",
+   "v": "1.63.15",
+   "sha": "b471f92b2e48803c1078eed20fee53dba12b78ebf91a56dcd70045ff05d1f809",
    "n": 230123
   },
   {
    "f": "readnow-pc-products.js",
-   "v": "1.63.14",
-   "sha": "8c2fd2e2b0cf2cd03b388419df508671f38ec043d6342d2e3a1e4db80ca60772",
-   "n": 531701
+   "v": "1.63.15",
+   "sha": "57d20f8b060831d27ca572f9374d6e6b19d18e04a002c4ccb51b5c3281f4a881",
+   "n": 533161
   },
   {
    "f": "readnow-pc-ship.js",
-   "v": "1.63.14",
-   "sha": "e1576ef54bbe575b499a62ec911ba6b1f4581a30199c09018e077092ae8d1bd1",
+   "v": "1.63.15",
+   "sha": "58bad0a45ddfdcab047c459724908fe50127bad586467ded4fd87067dc5dddc5",
    "n": 15251
   },
   {
    "f": "readnow-pc-helper.js",
-   "v": "1.63.14",
-   "sha": "3a0c53a25320e8e9e4de0216e1b330f12594c233e2141b3f7dfe625ee9947de9",
+   "v": "1.63.15",
+   "sha": "eb50114f23fdf296ddb33216dddb0af3e11737d0802bc0683ea5766228a1304d",
    "n": 73694
   }
  ]
