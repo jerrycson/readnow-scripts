@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.63.13의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.63.14의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.13' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.63.13', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.63.14' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.63.14', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1981,7 +1981,7 @@
     window.__rnShipFast = () => ({ leader: (GM_getValue(KEY, null) || {}).tab === ME, lastSig: !!lastSig, fails });
     (async () => { await sleep(10000); for (;;) { await sleep(15000); if (busy || !auth.currentUser || !leader()) continue; busy = true;
         try { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (!SH) continue; const g = await lookDoc('https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx'); const rc = SH.parseDeliveryPage(g.doc);
-          if (!rc || !rc.tabCounts || !Object.keys(rc.tabCounts).length) { fails++; continue; } fails = 0; const at = nowIso(); const sig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)]));
+          if (!rc || !rc.tabCounts || !Object.keys(rc.tabCounts).length) { fails++; continue; } if (rc.tabCounts['주문확인요청'] > 0 && (!rc.orders.length || rc.orders.every((o) => !(o.items || []).length))) { fails++; if (fails === 1 || fails % 40 === 0) log(`⚠ 출고 실시간(PC): 주문확인요청 탭은 ${rc.tabCounts['주문확인요청']}건인데 주문·상품을 못 읽음 — 알라딘 화면 모양이 바뀐 듯 · 빈 목록을 쓰지 않음`, 1); continue; } /* (1.63.14) */ fails = 0; const at = nowIso(); const sig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)]));
           let ch = false; if (sig !== lastSig) { ch = await saveConfirmState(rc, at); lastSig = sig; if (ch) log(`출고 실시간(PC): 주문확인요청 ${rc.orders.length}건으로 바뀜 — 웹앱에 바로`); }
           const dv = rc.tabCounts['발송 요청']; if (lastDeliv != null && dv !== lastDeliv) { try { await shipLiteRead(SH, g.doc); } catch (e) {} } lastDeliv = dv;
           await C('shp_state').doc('fast').set({ pc: PC_NAME, at, n: rc.orders.length, changed: ch, ver: APP_VER }, { merge: true }); try { await mktBackup(rc.orders); } catch (e) {} }

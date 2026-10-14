@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.63.13
+// @version      1.63.14
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/worders.aspx*
 // @match        https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx*
@@ -4854,7 +4854,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     window.__rnShipFast = () => ({ leader: (GM_getValue(KEY, null) || {}).tab === ME, lastSig: !!lastSig, fails });
     (async () => { await sleep(10000); for (;;) { await sleep(15000); if (busy || !auth.currentUser || !leader()) continue; busy = true;
         try { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (!SH) continue; const g = await lookDoc('https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx'); const rc = SH.parseDeliveryPage(g.doc);
-          if (!rc || !rc.tabCounts || !Object.keys(rc.tabCounts).length) { fails++; continue; } fails = 0; const at = nowIso(); const sig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)]));
+          if (!rc || !rc.tabCounts || !Object.keys(rc.tabCounts).length) { fails++; continue; } if (rc.tabCounts['주문확인요청'] > 0 && (!rc.orders.length || rc.orders.every((o) => !(o.items || []).length))) { fails++; if (fails === 1 || fails % 40 === 0) log(`⚠ 출고 실시간(PC): 주문확인요청 탭은 ${rc.tabCounts['주문확인요청']}건인데 주문·상품을 못 읽음 — 알라딘 화면 모양이 바뀐 듯 · 빈 목록을 쓰지 않음`, 1); continue; } /* (1.63.14) */ fails = 0; const at = nowIso(); const sig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)]));
           let ch = false; if (sig !== lastSig) { ch = await saveConfirmState(rc, at); lastSig = sig; if (ch) log(`출고 실시간(PC): 주문확인요청 ${rc.orders.length}건으로 바뀜 — 웹앱에 바로`); }
           const dv = rc.tabCounts['발송 요청']; if (lastDeliv != null && dv !== lastDeliv) { try { await shipLiteRead(SH, g.doc); } catch (e) {} } lastDeliv = dv;
           await C('shp_state').doc('fast').set({ pc: PC_NAME, at, n: rc.orders.length, changed: ch, ver: APP_VER }, { merge: true }); try { await mktBackup(rc.orders); } catch (e) {} }
