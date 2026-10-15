@@ -8,7 +8,7 @@
 // ==========================================================================
 (function (root) {
   'use strict';
-  const VERSION = '0.5.2';
+  const VERSION = '0.6.0'; // (0.6.0) planConfirm — 오늘 출고 확정 목록 계산(웹앱 '출고 확정' 단추와 클라우드 출고 시각 자동 확정이 같은 기준) 
   const T = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
   const toInt = (s) => { const n = parseInt(String(s || '').replace(/[^\d-]/g, ''), 10); return isNaN(n) ? null : n; };
 
@@ -159,6 +159,16 @@
     return out;
   }
 
-  const API = { VERSION, parseDeliveryPage, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays };
+  /* (0.6.0) 📦 오늘 출고 확정 목록 — 발송 요청(shp_state/current.orders)에서 오늘 출고 계획(shp_plan/{날}: ex 뺀 주문 · exItems 뺀 상품 · moveTo 다른 날로 · add 더한 주문)과
+   *  지난 계획에서 오늘보다 뒤 날로 옮긴 주문(carry: { 주문번호: 옮긴 날 })을 반영 → { ents:[{id, orderNo, ex}], orders, items, total, out }
+   *  ents는 shp_days/{날}.entries 모양 · 상품을 모두 뺀 주문은 들어가지 않음 · 금액 = 남은 상품 판매가 × 수량 */
+  function planConfirm(o) { const orders = (o && o.orders) || []; const plan = (o && o.plan) || {}; const carry = (o && o.carry) || {}; const exO = plan.ex || {}; const exI = plan.exItems || {}; const mv = { ...carry, ...(plan.moveTo || {}) };
+    const isOut = (x) => !!exO[x.orderNo] || !!mv[x.orderNo]; const inc = orders.filter((x) => !isOut(x)); const out = orders.filter(isOut);
+    const keep = inc.map((x) => ({ ...x, items: (x.items || []).filter((it) => !(exI[x.orderNo] || []).includes(it.title)) })).filter((x) => x.items.length);
+    const ents = keep.map((x) => ({ id: 'aladin_' + x.orderNo, orderNo: x.orderNo, ex: exI[x.orderNo] || [] }));
+    (plan.add || []).filter((ono) => !inc.some((x) => x.orderNo === ono) && !ents.some((e) => e.orderNo === ono)).forEach((ono) => ents.push({ id: 'aladin_' + ono, orderNo: ono, ex: [] }));
+    const items = keep.flatMap((x) => x.items); const total = items.reduce((a, i) => a + (+i.price || 0) * (+i.qty || 1), 0);
+    return { ents, orders: keep, items: items.length, total, out: out.length }; }
+  const API = { VERSION, planConfirm, parseDeliveryPage, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; root.ReadnowShipping = API;
 })(typeof window !== 'undefined' ? window : globalThis);

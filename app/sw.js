@@ -38,3 +38,8 @@ self.addEventListener('fetch', (e) => {
     const r = await net; return r || new Response('오프라인 — 저장된 파일이 없습니다', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   })());
 });
+/* (1.29.0) 📦 출고 알림(웹 푸시) — 클라우드가 출고 시각에 보냄 · 웹앱이 닫혀 있어도 휴대폰·PC 기본 알림으로 · 누르면 웹앱 오늘 출고 ② 발송 요청 탭(열린 창이 있으면 그 창을 앞으로) */
+self.addEventListener('push', (e) => { let d = {}; try { d = e.data ? e.data.json() : {}; } catch (x) { d = { title: '리드나우', body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || '리드나우 출고', { body: d.body || '', tag: d.tag || 'rn-ship', renotify: true, requireInteraction: !!d.sticky, data: { url: d.url || './?go=deliv' }, icon: d.icon || undefined })); });
+self.addEventListener('notificationclick', (e) => { e.notification.close(); const url = new URL((e.notification.data && e.notification.data.url) || './?go=deliv', self.registration.scope).href;
+  e.waitUntil((async () => { const cs = await self.clients.matchAll({ type: 'window', includeUncontrolled: true }); for (const c of cs) { if (/\/app\//.test(c.url)) { try { await c.focus(); c.postMessage({ type: 'rn-go', go: 'deliv' }); return; } catch (x) {} } } await self.clients.openWindow(url); })()); });
