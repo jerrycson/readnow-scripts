@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.68.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.68.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.68.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.68.0', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.68.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.68.1', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -737,7 +737,7 @@
   async function netFlush() { if (!auth.currentUser || !PC_NAME) return; const J = NETM.jobs; const keys = Object.keys(J); const H = PUBONLY ? HELPER : null; if (!keys.length && !H) return; NETM.jobs = {};
     const inc = firebase.firestore.FieldValue.increment; const jobs = {}; keys.forEach((k) => (jobs[k] = { pages: inc(J[k].pages), chars: inc(J[k].chars) }));
     const dayK = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const pc = { jobs, route: PUBONLY ? 'tether' : 'office', at: nowIso(), ver: VER };
-    if (H && H.today && H.today.key === dayK) pc.helper = { tether: H.today.tether, wifi: H.today.wifi, groups: H.today.groups, blocked: H.today.blocked, month: H.month, todayTiers: H.today.tiers || null, capGB: H.capGB, capBytes: H.capBytes || null, ok: true, tetherOk: !!(H.tether && H.tether.ok), tetherIp: H.tether ? H.tether.ip : null, why: H.tether ? H.tether.why : null, ver: H.ver, at: H.at, defaultWarn: H.defaultWarn || null };
+    if (H && H.today && H.today.key === dayK) pc.helper = { tether: H.today.tether, wifi: H.today.wifi, groups: H.today.groups, blocked: H.today.blocked, month: H.month, todayTiers: H.today.tiers || null, capGB: H.capGB, capBytes: H.capBytes || null, ok: true, tetherOk: !!(H.tether && H.tether.ok), tetherIp: H.tether ? H.tether.ip : null, tetherIface: H.tether ? H.tether.iface || null : null, tetherDesc: H.tether ? H.tether.desc || null : null, wifiIface: H.wifi ? H.wifi.iface || null : null, wifiSsid: H.wifi ? H.wifi.ssid || null : null, /* (1.68.1 · 도우미 1.2.0) 어느 연결로 나가는지 이름까지 */ why: H.tether ? H.tether.why : null, ver: H.ver, at: H.at, defaultWarn: H.defaultWarn || null };
     try { await C('prd_jobs').doc('net_' + dayK).set({ day: dayK, pcs: { [PC_NAME]: pc }, ...W() }, { merge: true }); } catch (e) { keys.forEach((k) => { const o = (NETM.jobs[k] = NETM.jobs[k] || { pages: 0, chars: 0 }); o.pages += J[k].pages; o.chars += J[k].chars; }); } }
   setInterval(netFlush, 5 * 60e3); addEventListener('beforeunload', () => { try { netFlush(); } catch (e) {} });
   window.__rnPub = { diag: () => ({ pubOnly: PUBONLY, anonOn: pubAnonOn(), ...ANON, tgate: TGATE, bud: BUD ? { left: BUD.left, used: BUD.used, free: BUD.free, alert: BUD.alert, B: BUD.B, mk: BUD.mk } : null, metc: { ...METC }, extOk: extLoggerOk(), net: JSON.parse(JSON.stringify(NETM.jobs)) }), read: (u) => getDoc(u), flush: () => netFlush() }; /* (1.64.0) 🔓 상태 보기(관제판·시험용) */

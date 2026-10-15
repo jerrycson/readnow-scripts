@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.68.0
+// @version      1.68.1
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/worders.aspx*
 // @match        https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx*
@@ -3620,7 +3620,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   async function netFlush() { if (!auth.currentUser || !PC_NAME) return; const J = NETM.jobs; const keys = Object.keys(J); const H = PUBONLY ? HELPER : null; if (!keys.length && !H) return; NETM.jobs = {};
     const inc = firebase.firestore.FieldValue.increment; const jobs = {}; keys.forEach((k) => (jobs[k] = { pages: inc(J[k].pages), chars: inc(J[k].chars) }));
     const dayK = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const pc = { jobs, route: PUBONLY ? 'tether' : 'office', at: nowIso(), ver: VER };
-    if (H && H.today && H.today.key === dayK) pc.helper = { tether: H.today.tether, wifi: H.today.wifi, groups: H.today.groups, blocked: H.today.blocked, month: H.month, todayTiers: H.today.tiers || null, capGB: H.capGB, capBytes: H.capBytes || null, ok: true, tetherOk: !!(H.tether && H.tether.ok), tetherIp: H.tether ? H.tether.ip : null, why: H.tether ? H.tether.why : null, ver: H.ver, at: H.at, defaultWarn: H.defaultWarn || null };
+    if (H && H.today && H.today.key === dayK) pc.helper = { tether: H.today.tether, wifi: H.today.wifi, groups: H.today.groups, blocked: H.today.blocked, month: H.month, todayTiers: H.today.tiers || null, capGB: H.capGB, capBytes: H.capBytes || null, ok: true, tetherOk: !!(H.tether && H.tether.ok), tetherIp: H.tether ? H.tether.ip : null, tetherIface: H.tether ? H.tether.iface || null : null, tetherDesc: H.tether ? H.tether.desc || null : null, wifiIface: H.wifi ? H.wifi.iface || null : null, wifiSsid: H.wifi ? H.wifi.ssid || null : null, /* (1.68.1 · 도우미 1.2.0) 어느 연결로 나가는지 이름까지 */ why: H.tether ? H.tether.why : null, ver: H.ver, at: H.at, defaultWarn: H.defaultWarn || null };
     try { await C('prd_jobs').doc('net_' + dayK).set({ day: dayK, pcs: { [PC_NAME]: pc }, ...W() }, { merge: true }); } catch (e) { keys.forEach((k) => { const o = (NETM.jobs[k] = NETM.jobs[k] || { pages: 0, chars: 0 }); o.pages += J[k].pages; o.chars += J[k].chars; }); } }
   setInterval(netFlush, 5 * 60e3); addEventListener('beforeunload', () => { try { netFlush(); } catch (e) {} });
   window.__rnPub = { diag: () => ({ pubOnly: PUBONLY, anonOn: pubAnonOn(), ...ANON, tgate: TGATE, bud: BUD ? { left: BUD.left, used: BUD.used, free: BUD.free, alert: BUD.alert, B: BUD.B, mk: BUD.mk } : null, metc: { ...METC }, extOk: extLoggerOk(), net: JSON.parse(JSON.stringify(NETM.jobs)) }), read: (u) => getDoc(u), flush: () => netFlush() }; /* (1.64.0) 🔓 상태 보기(관제판·시험용) */
