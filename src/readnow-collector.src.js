@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.70.4
+// @version      1.70.5
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/worders.aspx*
 // @match        https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx*
@@ -32,10 +32,10 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.6.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.27
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.28
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.4.7
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.7.2
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.7.3
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
@@ -3172,6 +3172,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   #rnp .bd{padding:0 12px 10px} #rnp.min .bd{display:none}
   #rnp .sec{margin-top:10px} #rnp .cap{font-size:11px;color:${K.sub};margin:0 0 4px}
   #rnp .rnp-sched{border:1.5px solid #2F5D50;border-radius:9px;padding:7px 8px;background:#F4F8F6} #rnp .sh2{display:flex;align-items:center;gap:7px;font-size:13px} #rnp .hint2{font-size:10.5px;color:#5B6B66}
+  #rnp .role{margin:5px 0;padding:7px 9px;border-radius:9px;font-size:12.5px;line-height:1.45} #rnp .role.lg{background:#1F4F96;color:#fff;border:2px solid #3F7FD1;box-shadow:0 2px 8px rgba(31,79,150,.25)} #rnp .role.lg small{opacity:.9} #rnp .role.of{background:#EEF4F1;color:#1E2B28;border:1px solid #CFDAD5} #rnp .role .ok{color:#9BF0B8;font-weight:700} #rnp .role .no{color:#FFC9C2;font-weight:700} #rnp .rg{display:flex;flex-direction:column;gap:4px;padding:6px;border-radius:9px;border:1px solid #DCE5E1} #rnp .rg.pub{background:#EEF4FF;border-color:#B9CDEB} #rnp .rg.login{background:#FBF8F1;border-color:#E6D9B8} #rnp .rg.ext{background:#F5F1FB;border-color:#D6CBEA} #rnp .rg.dim{opacity:.55} #rnp .rgh{font-weight:700;font-size:12px;color:#1E2B28} #rnp .rgh small{font-weight:400;color:#6B7A75} #rnp .rgs{font-size:11px;color:#5B6B66;margin-top:-2px}
   #rnp .sl{margin-top:5px;display:flex;flex-direction:column;gap:4px} #rnp .sl.dim{opacity:.55} #rnp .sr{display:flex;gap:7px;align-items:flex-start;background:#fff;border:1px solid #DCE5E1;border-radius:7px;padding:5px 6px} #rnp .sr.on{border-color:#9CCBAE}
   #rnp .sb{flex:1;min-width:0} #rnp .sb b{font-size:12px;display:block} #rnp .sb small{font-size:10.5px;color:#5B6B66;display:block} #rnp .tl{margin-top:2px;font-size:11px;display:flex;flex-wrap:wrap;gap:3px;align-items:center} #rnp .tl a{color:#2F5D50;margin-left:2px}
   #rnp .ts{border:1px solid #DCE5E1;border-radius:9px;padding:0 6px;background:#fff;white-space:nowrap} #rnp .ts.done{background:#E3F1E8;border-color:#9CCBAE;color:#2F7D4F} #rnp .ts.running{background:#FFF4E5;border-color:#E8C88F} #rnp .ts.error,#rnp .ts.stop,#rnp .ts.timeout,#rnp .ts.lost{background:#FDECEA;border-color:#E3A29B;color:#B0322A} #rnp .ts.missed,#rnp .ts.skipped,#rnp .ts.merged{color:#8A9690} #rnp .ts.late{border-color:#E8C88F;color:#A8661B} #rnp .tw{margin-left:4px;font-size:10px;color:#8A9690;font-weight:400}
@@ -5646,9 +5647,18 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const plan = AS.dayPlan(S0, SCHED_RUNS, { now: Date.now() }, asAvgMs);
     /* (1.60.1) 한눈에: 지금 하는 자동 일 · 다음 · 켜진 칸 수 */ const runK = Object.entries(SCHED_RUNS).filter(([k, r]) => r && r.state === 'running' && !AS.isLost(r, Date.now()) && k.split('@')[1] === day).map(([k, r]) => `${asName(byId[r.slot || k.split('@')[0]] || { job: r.job || '' })}${r.par ? '(동시)' : ''} · ${r.by || ''}`); const nx = window.__rnSchedNext ? window.__rnSchedNext() : null;
     const live = `<div class="hint2" style="margin:3px 0;padding:4px 6px;border-radius:6px;background:${runK.length ? '#FFF4E5' : '#EEF4F1'};color:#1E2B28;font-size:11.5px">${runK.length ? `▶ 지금 자동으로 하는 중: <b>${esc3(runK.join(' / '))}</b>` : '⏸ 지금 자동으로 하는 일 없음'}${nx && nx.next ? ` · 다음 <b>${nx.next.tomorrow ? '내일 ' : ''}${esc3(nx.next.t)}</b> ${esc3(nx.next.label)}` : ''} · 켜진 칸 ${slots.filter((x) => x.on).length}/${slots.length}${(() => { const b = asBuiltins().filter((x) => x.on); return b.length ? ` · 늘 도는 일 ${b.map((x) => esc3(x.label.split(' (')[0])).join('·')}` : ''; })()}</div>`;
-    const rows = slots.map((s, ix) => `<div class="sr${s.on ? ' on' : ''}"><label class="sw2"><input type="checkbox" data-sk="${esc3(s.id)}" ${s.on ? 'checked' : ''}><span></span></label><div class="sb"><b>${ix + 1}. ${esc3(asName(s))}${E ? E.missTag(s) : ''}${PAR_JOBS[s.job.slice(4)] ? ' <i style="font-style:normal;background:#3F7FD1;color:#fff;border-radius:6px;padding:0 4px;font-size:10px">동시</i>' : ''}</b><small>${esc3(AS.describe(s, byId))} · ${E ? E.durTxt(s.job) : ''}</small><div class="tl">${E ? E.chips(s, plan, S0) : ''}</div></div></div>`).join('');
+    const rowOf = (s, ix) => `<div class="sr${s.on ? ' on' : ''}"><label class="sw2"><input type="checkbox" data-sk="${esc3(s.id)}" ${s.on ? 'checked' : ''}><span></span></label><div class="sb"><b>${ix + 1}. ${esc3(asName(s))}${E ? E.missTag(s) : ''}${PAR_JOBS[s.job.slice(4)] ? ' <i style="font-style:normal;background:#3F7FD1;color:#fff;border-radius:6px;padding:0 4px;font-size:10px">동시</i>' : ''}</b><small>${esc3(AS.describe(s, byId))} · ${E ? E.durTxt(s.job) : ''}</small><div class="tl">${E ? E.chips(s, plan, S0) : ''}</div></div></div>`;
+    /* (1.70.5) 맡는 곳마다 뚜렷하게 — 로거: 🌐 이 PC가 하는 일(비로그인 알라딘 · 외부 정보) / 🏢 다른 PC·클라우드가 하는 일(흐리게) · 사무실 PC: 🔐 로그인 일 / 🌐 로거가 하는 일 / 🔎 외부 정보 */
+    const clsOf = (s) => { try { return AS.classOf ? AS.classOf(s.job) : AS.isPubJob(s.job) ? 'pub' : 'login'; } catch (e) { return 'login'; } }; const ix0 = new Map(slots.map((s, i) => [s.id, i]));
+    const grpHtml = (title, sub, list, cls, dim, keep) => list.length || keep ? `<div class="rg ${cls}${dim ? ' dim' : ''}"><div class="rgh">${title} <small>${list.length}칸</small></div>${sub ? `<div class="rgs">${sub}</div>` : ''}${list.map((s) => rowOf(s, ix0.get(s.id))).join('') || '<div class="hint2">아직 없음 — ✏ 칸 편집에서 🌐 일을 더하세요</div>'}</div>` : '';
+    const L0 = slots.filter((s) => clsOf(s) === 'login'), P0 = slots.filter((s) => clsOf(s) === 'pub'), X0 = slots.filter((s) => clsOf(s) === 'ext');
+    const budTxt = BUD && BUD.left ? `오늘 남은 몫 주요 ${(Math.max(0, BUD.left.main) / 1073741824).toFixed(2)}GB · 일반 ${(Math.max(0, BUD.left.gen) / 1073741824).toFixed(2)}GB` : '';
+    const role = PUBONLY ? `<div class="role lg">🌐 <b>로거 (LOGGER)</b> — 이 PC는 알라딘에 로그인하지 않는 일만 · 알라딘은 테더링으로만${TGATE && TGATE.ok ? ' <span class="ok">● 테더링 확인됨</span>' : ` <span class="no">● ${esc3((TGATE && TGATE.why) || '테더링 확인 전')}</span>`}${budTxt ? `<br><small>${budTxt}</small>` : ''}</div>`
+      : `<div class="role of">🏢 <b>사무실 PC${asOwnMine && asOwnMine() ? ' — 담당 PC(로그인 일을 먼저 맡음)' : ''}</b> — 🔐 로그인 일 · 🔎 외부 정보 · 🌐 비로그인 알라딘 일은 로거가 함(로거가 없을 때만 손으로)</div>`;
+    const rows = PUBONLY ? grpHtml('🌐 이 PC(로거)가 하는 일', '비로그인 알라딘 일(주요·일반 몫 안에서) + 🔎 외부 정보', P0.concat(X0), 'pub', false, true) + grpHtml('🏢 다른 PC·클라우드가 하는 일', '로그인 일 — 이 PC는 하지 않음(보기만)', L0, 'login', true)
+      : grpHtml('🔐 로그인 일 — 사무실 PC·클라우드', '', L0, 'login') + grpHtml('🌐 로거가 하는 일', '이 PC는 자동으로 하지 않음(로거가 없을 때만)', P0, 'pub', true) + grpHtml('🔎 외부 정보 — 사무실 PC·클라우드·로거가 나눠 함', '', X0, 'ext');
     el.innerHTML = `<div class="sh2"><label class="sw2 big"><input type="checkbox" id="rnpSchedOn" ${S0.on ? 'checked' : ''}><span></span></label><b>⏰ 매일 자동 수집</b><small class="tw">오늘 ${+day.slice(5, 7)}/${+day.slice(8, 10)}</small><button class="b2" id="rnpSchedEd" style="margin-left:auto;padding:3px 9px;font-size:11.5px;width:auto">✏ 칸 편집</button></div>
-      ${live}<div class="hint2">${S0.on ? '켜짐 — 끌 때까지 매일' : '꺼짐 — 켜면 아래 켠 칸을 매일'} · 위 칸이 먼저 · ✓ 끝 ▶ 하는 중 ⌛ 시각 지남(곧 함) ⚠ 멈춤 ⤼ 건너뜀 (마우스를 올리면 이유)</div><div class="sl${S0.on ? '' : ' dim'}">${rows || '<div class="hint2">칸 없음 — ✏ 칸 편집에서 더하세요</div>'}</div>`;
+      ${role}${live}<div class="hint2">${S0.on ? '켜짐 — 끌 때까지 매일' : '꺼짐 — 켜면 아래 켠 칸을 매일'} · 위 칸이 먼저 · ✓ 끝 ▶ 하는 중 ⌛ 시각 지남(곧 함) ⚠ 멈춤 ⤼ 건너뜀 (마우스를 올리면 이유)</div><div class="sl${S0.on ? '' : ' dim'}">${rows || '<div class="hint2">칸 없음 — ✏ 칸 편집에서 더하세요</div>'}</div>`;
     el.querySelector('#rnpSchedOn').onchange = (e) => SCHED_REF().set({ on: e.target.checked, at: nowIso(), by: PC_NAME }, { merge: true }).then(() => log(`⏰ 매일 자동 수집 ${e.target.checked ? '켬' : '끔'}`)).catch((er) => log('저장 실패: ' + er.message, 1));
     el.querySelectorAll('[data-sk]').forEach((cb) => (cb.onchange = () => asSaveQuick((L) => { const s = L.find((x) => x.id === cb.dataset.sk); if (s) s.on = cb.checked; }, `'${asName(byId[cb.dataset.sk])}' ${cb.checked ? '켬' : '끔'}`)));
     el.querySelector('#rnpSchedEd').onclick = () => asEdOpen(); }

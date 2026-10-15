@@ -16,7 +16,7 @@
  *   · tetherIface/wifiIface: 자동으로 못 고를 때만 이름을 적음(예: "이더넷 3", "Wi-Fi") — 상태 화면에 후보 이름이 나옴
  */
 'use strict';
-const VERSION = '1.4.1';
+const VERSION = '1.4.2';
 const http = require('http'), https = require('https'), net = require('net'), dns = require('dns'), os = require('os'), fs = require('fs'), path = require('path'), dgram = require('dgram'), cp = require('child_process');
 
 const HOME = process.env.RN_TEST_HOME || __dirname; const ROOT = path.resolve(HOME, '..'); // D:\ReadNow\local → D:\ReadNow
@@ -193,7 +193,7 @@ function readBody(req, max, cb) { const bufs = []; let n = 0, bad = false; req.o
 function imgApi(u, req, res) { const J = (code, o) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(o)); };
   if (u.pathname === '/img-stat') { const M = imgIndex(); let b = 0; for (const v of M.values()) b += v; return J(200, { ok: true, dir: IMG_DIR, count: M.size, bytes: b, run: IMGST }); }
   if (req.method === 'OPTIONS' || req.headers['x-rn-img'] !== '1' || req.method !== 'POST') return J(403, { ok: false, err: '수집기만 쓸 수 있음' });
-  if (u.pathname === '/img-have') return readBody(req, 20 * 1048576, (e, b) => { if (e) return J(400, { ok: false, err: e.message }); let L = []; try { L = JSON.parse(b.toString('utf8')).names || []; } catch (x) { return J(400, { ok: false, err: 'bad json' }); } const M = imgIndex(); J(200, { ok: true, missing: L.filter((n) => { const k = imgName(n); return k && !M.has(k); }) }); });
+  if (u.pathname === '/img-have') return readBody(req, 20 * 1048576, (e, b) => { if (e) return J(400, { ok: false, err: e.message }); let L = []; try { L = JSON.parse(b.toString('utf8')).names || []; } catch (x) { return J(400, { ok: false, err: 'bad json' }); } const M = imgIndex(); J(200, { ok: true, missing: L.filter((n) => { const k = imgName(n); return k && !M.has(k) && !M.has('readnow-photos/' + k); }) }); /* (1.4.2) 웹앱 ② 사진 내려받기(📁)가 만든 readnow-photos 폴더째 images에 넣어도 그 안의 것은 건너뜀 */ });
   if (u.pathname === '/img-put') { const k = imgName(u.searchParams.get('name')); if (!k) return J(400, { ok: false, err: '이름이 이상함' }); return readBody(req, 40 * 1048576, (e, b) => { if (e) return J(400, { ok: false, err: e.message }); const f = path.join(IMG_DIR, ...k.split('/')); if (!f.startsWith(IMG_DIR + path.sep)) return J(400, { ok: false, err: 'bad path' });
       if (fs.existsSync(f)) { IMGST.skip++; return J(200, { ok: true, skip: true }); } try { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f + '.tmp', b); fs.renameSync(f + '.tmp', f); } catch (er) { return J(500, { ok: false, err: er.message }); }
       const M = imgIndex(); M.set(k, b.length); IMGST.put++; IMGST.bytes += b.length; IMGST.last = { name: k, at: kst() }; J(200, { ok: true, size: b.length }); }); }
