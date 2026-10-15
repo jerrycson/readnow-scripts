@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "웹앱 1.33.3 판 번호 맞춤",
+ "since": "2026-10-15T13:57:37Z",
+ "beat": "2026-10-15T13:57:37Z",
  "ask": null,
  "last": {
   "who": "chat",
