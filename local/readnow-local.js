@@ -16,7 +16,7 @@
  *   · tetherIface/wifiIface: 자동으로 못 고를 때만 이름을 적음(예: "이더넷 3", "Wi-Fi") — 상태 화면에 후보 이름이 나옴
  */
 'use strict';
-const VERSION = '1.0.1';
+const VERSION = '1.1.0';
 const http = require('http'), https = require('https'), net = require('net'), dns = require('dns'), os = require('os'), fs = require('fs'), path = require('path'), dgram = require('dgram'), cp = require('child_process');
 
 const HOME = process.env.RN_TEST_HOME || __dirname; const ROOT = path.resolve(HOME, '..'); // D:\ReadNow\local → D:\ReadNow
@@ -98,7 +98,15 @@ let ifSig = JSON.stringify(ifaces()); setInterval(() => { const s = JSON.stringi
 let U = null; const uPath = (m) => path.join(NET_DIR, `usage-${m}.json`);
 function uLoad(m) { try { return JSON.parse(fs.readFileSync(uPath(m), 'utf8')); } catch (e) { return { month: m, days: {}, total: { tether: 0, wifi: 0 } }; } }
 function uCur() { const m = month(); if (!U || U.month !== m) { if (U) uSave(); U = uLoad(m); } return U; }
-function addBytes(route, group, n) { if (!n) return; const u = uCur(); const d = day(); const D = (u.days[d] = u.days[d] || { tether: 0, wifi: 0, groups: {}, blocked: 0 }); D[route] = (D[route] || 0) + n; const gk = route + ':' + group; D.groups[gk] = (D.groups[gk] || 0) + n; u.total[route] = (u.total[route] || 0) + n; uDirty = true; }
+function addBytes(route, group, n) { if (!n) return; const u = uCur(); const d = day(); const D = (u.days[d] = u.days[d] || { tether: 0, wifi: 0, groups: {}, blocked: 0 }); D[route] = (D[route] || 0) + n; const gk = route + ':' + group; D.groups[gk] = (D.groups[gk] || 0) + n; u.total[route] = (u.total[route] || 0) + n; uDirty = true; if (route === 'tether') addTetherPend(n); }
+/* (1.1.0) 📶 테더링을 주요/일반/기타로 나눠 셈 — 수집기가 30초마다 /meter?main=글자&gen=글자 로 '그동안 읽은 알라딘 화면 크기'를 부류별로 알려 줌
+ *  10초마다 그동안 늘어난 테더링 바이트를 그 사이 알려 온 글자 몫대로 나눔 · 알려 온 것이 없으면(쉬는 중·크롬 자체·광고 등) '기타' · 45초 넘게 지난 알림은 버림
+ *  여러 탭·여러 일이 함께 돌아도 글자 몫대로 나뉨 · 한 달 합(total.tiers)과 날마다(days[날].tiers)를 사용량 파일에 함께 남김 */
+let PEND_T = 0; const MET = []; function addTetherPend(n) { PEND_T += n; }
+function meterAdd(q) { const m = Math.max(0, +q.main || 0), g = Math.max(0, +q.gen || 0); if (m + g > 0) MET.push({ at: Date.now(), main: m, gen: g }); }
+function meterSplit() { if (!PEND_T) { while (MET.length && Date.now() - MET[0].at > 45e3) MET.shift(); return; } const n = PEND_T; PEND_T = 0; while (MET.length && Date.now() - MET[0].at > 45e3) MET.shift(); const fresh = MET; /* 최근 45초 안의 알림으로 몫을 나눔(알림은 30초마다 — 그 사이 10초 창들도 같은 몫으로) */ const cm = fresh.reduce((a, x) => a + x.main, 0), cg = fresh.reduce((a, x) => a + x.gen, 0);
+  const add = (k, v) => { if (!v) return; const u = uCur(); const d = day(); const D = (u.days[d] = u.days[d] || { tether: 0, wifi: 0, groups: {}, blocked: 0 }); D.tiers = D.tiers || {}; D.tiers[k] = (D.tiers[k] || 0) + v; u.total.tiers = u.total.tiers || {}; u.total.tiers[k] = (u.total.tiers[k] || 0) + v; uDirty = true; };
+  if (cm + cg <= 0) return add('other', n); const a = Math.round(n * cm / (cm + cg)); add('main', a); add('gen', n - a); }
 function addBlocked(host, why) { const u = uCur(); const d = day(); const D = (u.days[d] = u.days[d] || { tether: 0, wifi: 0, groups: {}, blocked: 0 }); D.blocked = (D.blocked || 0) + 1; D.lastBlocked = { host, why, at: kst() }; uDirty = true; }
 let uDirty = false; function uSave() { if (!U) return; try { const p = uPath(U.month); fs.writeFileSync(p + '.tmp', JSON.stringify(U)); fs.renameSync(p + '.tmp', p); uDirty = false; } catch (e) { log('사용량 저장 실패', e.message); } }
 setInterval(() => { if (uDirty) uSave(); }, 30e3);
@@ -106,7 +114,7 @@ const capBytes = () => Math.round((+CFG.capGB || 48) * 1073741824 * Math.min(100
 const capped = () => (uCur().total.tether || 0) >= capBytes();
 /* 연결마다 늘어난 만큼만 더함(오래 열린 연결도 10초마다) */
 const live = new Set(); function track(sock, route, group) { const e = { sock, route, group, r: 0, w: 0 }; live.add(e); const flush = () => { const r = sock.bytesRead || 0, w = sock.bytesWritten || 0; addBytes(route, group, (r - e.r) + (w - e.w)); e.r = r; e.w = w; }; e.flush = flush; sock.once('close', () => { flush(); live.delete(e); }); }
-setInterval(() => { for (const e of live) e.flush(); }, 10e3);
+setInterval(() => { for (const e of live) e.flush(); meterSplit(); }, 10e3);
 
 /* ── 길마다 연결 열기 (막힘 기본) ── */
 function gate(host) { const route = routeOf(host); if (route === 'tether') { if (!ST.tether.ok) return { err: '테더링 확인 안 됨 — ' + (ST.tether.why || '') }; if (capped()) return { err: `테더링 한 달 상한(${CFG.capGB}GB) 도달 — 다음 달까지 닫음` }; return { route, local: ST.tether.localIp }; } if (!ST.wifi.localIp) return { err: '와이파이 연결이 없음' }; return { route, local: ST.wifi.localIp }; }
@@ -115,15 +123,16 @@ function openUp(host, port, cb) { const g = gate(host); if (g.err) return cb(new
   lookup4(host, (e, ip) => { if (e) return cb(e, null, g); const s = net.connect({ host: ip, port: +port, localAddress: g.local, family: 4 }); let done = false; s.once('connect', () => { if (done) return; done = true; track(s, g.route, groupOf(host)); cb(null, s, g); }); s.once('error', (er) => { if (done) return; done = true; cb(er, null, g); }); s.setTimeout(30000, () => { if (!done) { done = true; s.destroy(); cb(new Error('연결 시간 초과'), null, g); } }); }); }
 
 /* ── 상태 화면·API ── */
-function status() { const u = uCur(); const d = u.days[day()] || { tether: 0, wifi: 0, groups: {}, blocked: 0 }; return { ok: true, ver: VERSION, at: kst(), track: { ...TRK }, tether: ST.tether, wifi: ST.wifi, cand: ST.cand, capGB: +CFG.capGB || 48, capBytes: capBytes(), capped: capped(), month: { key: u.month, tether: u.total.tether || 0, wifi: u.total.wifi || 0 }, today: { key: day(), tether: d.tether || 0, wifi: d.wifi || 0, groups: d.groups || {}, blocked: d.blocked || 0, lastBlocked: d.lastBlocked || null }, days: Object.fromEntries(Object.entries(u.days).map(([k, v]) => [k, { tether: v.tether || 0, wifi: v.wifi || 0, groups: v.groups || {} }])), startedAt: ST.startedAt, updAt: UPD.at, updMsg: UPD.msg, defaultWarn: ST.defaultWarn || null }; }
+function status() { const u = uCur(); const d = u.days[day()] || { tether: 0, wifi: 0, groups: {}, blocked: 0 }; return { ok: true, ver: VERSION, at: kst(), track: { ...TRK }, tether: ST.tether, wifi: ST.wifi, cand: ST.cand, capGB: +CFG.capGB || 48, capBytes: capBytes(), capped: capped(), month: { key: u.month, tether: u.total.tether || 0, wifi: u.total.wifi || 0, tiers: u.total.tiers || {} }, today: { key: day(), tether: d.tether || 0, wifi: d.wifi || 0, tiers: d.tiers || {}, groups: d.groups || {}, blocked: d.blocked || 0, lastBlocked: d.lastBlocked || null }, days: Object.fromEntries(Object.entries(u.days).map(([k, v]) => [k, { tether: v.tether || 0, wifi: v.wifi || 0, groups: v.groups || {} }])), startedAt: ST.startedAt, updAt: UPD.at, updMsg: UPD.msg, defaultWarn: ST.defaultWarn || null }; }
 const gb = (b) => (b / 1073741824).toFixed(2) + 'GB';
 function statusHtml() { const s = status(); const pct = Math.min(100, s.month.tether / (s.capGB * 1073741824) * 100);
   return `<!doctype html><meta charset="utf-8"><title>리드나우 로컬 도우미</title><style>body{font-family:system-ui,'Malgun Gothic';margin:20px;max-width:760px}b.ok{color:#1F6F4A}b.no{color:#B0322A}.bar{height:14px;background:#eee;border-radius:7px;overflow:hidden}.bar i{display:block;height:100%;background:${pct > 90 ? '#B0322A' : '#3F7FD1'};width:${pct}%}td{padding:2px 8px}</style>
   <h2>리드나우 로컬 도우미 ${VERSION}</h2><p>알라딘 길(테더링): ${s.tether.ok ? `<b class="ok">✓ 확인됨</b> — ${s.tether.iface} · 공인 IP ${s.tether.ip}` : `<b class="no">✗ 막아 둠</b> — ${s.tether.why}`}<br>우리 서비스 길(와이파이): ${s.wifi.iface || '없음'} · 공인 IP ${s.wifi.ip || '?'}</p>
-  <p>이번 달 테더링 ${gb(s.month.tether)} / ${s.capGB}GB${s.capped ? ' <b class="no">상한 — 닫힘</b>' : ''}</p><div class="bar"><i></i></div><p>오늘: 테더링 ${gb(s.today.tether)} · 와이파이 ${gb(s.today.wifi)} · 막은 요청 ${s.today.blocked}${s.today.lastBlocked ? ` (마지막: ${s.today.lastBlocked.host} — ${s.today.lastBlocked.why})` : ''}</p>
+  <p>이번 달 테더링 ${gb(s.month.tether)} / ${s.capGB}GB${s.capped ? ' <b class="no">상한 — 닫힘</b>' : ''}</p><div class="bar"><i></i></div><p>이번 달 나눔: 주요 ${gb((s.month.tiers || {}).main || 0)} · 일반 ${gb((s.month.tiers || {}).gen || 0)} · 기타 ${gb((s.month.tiers || {}).other || 0)} <small style="color:#777">(수집기가 알려 준 일 부류로 · 1.1.0부터)</small></p><p>오늘: 테더링 ${gb(s.today.tether)} · 와이파이 ${gb(s.today.wifi)} · 막은 요청 ${s.today.blocked}${s.today.lastBlocked ? ` (마지막: ${s.today.lastBlocked.host} — ${s.today.lastBlocked.why})` : ''}</p>
   <table>${Object.entries(s.today.groups).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<tr><td>${k}</td><td align=right>${(v / 1048576).toFixed(1)}MB</td></tr>`).join('')}</table>${s.defaultWarn ? `<p><b class="no">⚠ ${s.defaultWarn}</b></p>` : ''}<p style="color:#777">연결 후보: ${s.cand.join(' · ')}<br>업데이트: ${s.updMsg || '-'} · 30초마다 새로고침</p><script>setTimeout(()=>location.reload(),30000)</script>`; }
 function api(req, res) { const u = new URL(req.url, 'http://rn.local'); const H = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Private-Network': 'true', 'Cache-Control': 'no-store' };
   if (req.method === 'OPTIONS') { res.writeHead(204, { ...H, 'Access-Control-Allow-Methods': 'GET', 'Access-Control-Allow-Headers': '*' }); return res.end(); }
+  if (u.pathname === '/meter') { meterAdd({ main: u.searchParams.get('main'), gen: u.searchParams.get('gen') }); res.writeHead(200, { ...H, 'Content-Type': 'application/json; charset=utf-8' }); return res.end('{"ok":true}'); }
   if (u.pathname === '/status') { res.writeHead(200, { ...H, 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify(status())); }
   if (u.pathname === '/recheck') { checkTether('api').then(() => { res.writeHead(200, { ...H, 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(status())); }); return; }
   if (u.pathname === '/start') { const go = 'https://www.aladin.co.kr/shop/usedshop/wshopitem.aspx?SC=996008&rnPub=1'; res.writeHead(200, { ...H, 'Content-Type': 'text/html; charset=utf-8' }); return res.end(`<!doctype html><meta charset="utf-8"><title>리드나우 공개 수집 — 준비 중</title><body style="font-family:system-ui,'Malgun Gothic';margin:30px"><h2>리드나우 공개 수집</h2><p id="m">테더링 확인을 기다리는 중…</p><p style="color:#777">테더링이 확인되면 알라딘 공개 화면(수집기)으로 저절로 넘어갑니다. 확인되지 않으면 알라딘에는 아무 요청도 보내지 않습니다.</p><script>async function t(){try{const s=await (await fetch('/status',{cache:'no-store'})).json();if(s.tether.ok&&!s.capped){document.getElementById('m').textContent='✓ 테더링 확인 — 이동합니다';location.replace(${JSON.stringify(go)});return}document.getElementById('m').textContent='✗ '+(s.capped?'이번 달 테더링 상한 도달':s.tether.why)+' — 20초마다 다시 봄'}catch(e){document.getElementById('m').textContent='도우미 응답 없음 — 20초마다 다시 봄'}setTimeout(t,20000)}t()</script>`); }
