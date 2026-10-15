@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "웹앱 1.33.3 판 번호 맞춤",
- "since": "2026-10-15T13:57:37Z",
- "beat": "2026-10-15T13:57:37Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "수집기 1.71.3 (9ddb369)",
-  "at": "2026-10-15T13:57:23Z"
+  "done": "웹앱 1.33.3 · 수집기 1.71.3 (9e4d2f7)",
+  "at": "2026-10-15T13:57:44Z"
  }
 }
