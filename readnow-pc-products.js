@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.70.5의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.71.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.70.5' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.70.5', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.71.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.71.0', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -65,6 +65,8 @@
     storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15',
   });
   const app = firebase.app();
+  /* (1.71.0) 🛡 로거 크롬: 로그인을 알라딘 쪽 저장소에 두지 않음 — 로그인되면 Tampermonkey 저장소(rn-fbuser)에 사본을 두고 Firebase는 메모리 보관(NONE)으로 옮김(IndexedDB 기록이 지워짐) · 다음에 열 때 실행기가 사본을 잠깐 넣어 다시 로그인됨 */
+  if (globalThis.__rnPubChrome) { try { const A0 = app.auth(); A0.onIdTokenChanged((u) => { if (!u) return; try { GM_setValue('rn-fbuser', { key: 'firebase:authUser:' + app.options.apiKey + ':' + app.name, value: u.toJSON(), at: Date.now() }); } catch (e) {} if (!window.__rnPersNone) { window.__rnPersNone = 1; setTimeout(() => A0.setPersistence(firebase.auth.Auth.Persistence.NONE).catch(() => { window.__rnPersNone = 0; }), 1500); } }); } catch (e) {} }
   /* (1.70.4) 🔑 로그인 넘겨받기 — 로거 크롬의 웹앱에서 로그인한 기록(rn-authxfer, 10분 안)을 이 탭(알라딘)의 Firebase 저장소에 넣고 새로고침 */
   if (globalThis.__rnPubHome) setTimeout(() => { try { if (app.auth().currentUser) { GM_deleteValue('rn-authxfer'); return; } const X = GM_getValue('rn-authxfer', null); if (!X || !X.value || Date.now() - (X.at || 0) > 10 * 60e3) return; GM_deleteValue('rn-authxfer');
       const rq = indexedDB.open('firebaseLocalStorageDb', 1); rq.onupgradeneeded = () => { try { rq.result.createObjectStore('firebaseLocalStorage', { keyPath: 'fbase_key' }); } catch (e) {} };
@@ -899,7 +901,7 @@
   const ACTIVE = ['판매중', '판매대기', '일시판매중지', '판매중지', '판매금지'];
   let LISTINGS = null; // usedCode → 문서 (한 번 읽고 기기에 보관)
   /* (1.59.0) 상품 기록을 이 PC(IndexedDB)에 두고 다음부턴 바뀐 것(uploadedAt)만 받음 — 기억 정리로 탭을 새로 열 때마다 상품 수만 건을 통째로 다시 읽던 것(하루 수십만 번 읽기). 하루에 한 번은 통째로 다시 읽어 맞춤 · 모든 쓰는 쪽이 uploadedAt을 남김(웹앱도 같은 방식) */
-  const LCACHE = { name: 'rn-listings-cache', open() { return new Promise((res, rej) => { const r = indexedDB.open(this.name, 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  const LCACHE = globalThis.__rnPubChrome ? { get: async () => { try { return GM_getValue('rn-lcache', null); } catch (e) { return null; } }, put: async (v) => { try { GM_setValue('rn-lcache', JSON.parse(JSON.stringify(v))); } catch (e) {} } } /* (1.71.0) 로거 크롬: 우리 상품 목록 캐시를 알라딘 쪽 IndexedDB가 아니라 Tampermonkey 저장소에 */ : { name: 'rn-listings-cache', open() { return new Promise((res, rej) => { const r = indexedDB.open(this.name, 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
     async get() { const d = await this.open(); try { return await new Promise((res, rej) => { const q = d.transaction('kv').objectStore('kv').get('v'); q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); }); } finally { d.close(); } },
     async put(v) { const d = await this.open(); try { await new Promise((res, rej) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, 'v'); t.oncomplete = res; t.onerror = () => rej(t.error); }); } finally { d.close(); } } };
   const lcMs = (v) => (v && v.uploadedAt && typeof v.uploadedAt.toMillis === 'function' ? v.uploadedAt.toMillis() : 0);
@@ -2603,7 +2605,7 @@
   function asOwn() { try { return SCHED && SCHED.owner && SCHED.owner.primary && AS && AS.ownerOf ? AS.ownerOf(SCHED, BEATS, Date.now()) : null; } catch (e) { return null; } }
   function asOwnMine() { const o = asOwn(); return !o || String(o.pc || '') === String(PC_NAME); }
   async function pcBeat() { if (!auth.currentUser || !PC_NAME || (window.__rnRest && window.__rnRest()) || window.__rnReloading) return; const why = PUBONLY ? '🌐 공개 전용 PC(로그인 안 함 — 담당이 될 수 없음)' : window.__rnPaused ? '📥 수집 끔(일시정지)' : '';
-    try { await BEAT_REF().set({ pcs: { [PC_NAME]: { atMs: Date.now(), at: nowIso(), ver: VER, ok: !window.__rnPaused && !PUBONLY, ...(PUBONLY ? { pubOnly: true } : {}), off: (window.__rnFeatOff && window.__rnFeatOff()) || [], ...(why ? { why } : {}) } } }, { merge: true }); const d = await BEAT_REF().get(); const prevOwn = (asOwn() || {}).pc; BEATS = d.exists ? d.data() : {}; const o = asOwn(); if (o && prevOwn !== undefined && prevOwn !== o.pc && o.pc === PC_NAME) log(`🖥 자동 수집을 이 PC가 맡음 — ${o.why}`); try { asEdRefresh(true); } catch (e) {} } catch (e) {} }
+    try { await BEAT_REF().set({ pcs: { [PC_NAME]: { atMs: Date.now(), at: nowIso(), ver: VER, ok: !window.__rnPaused && !PUBONLY, ...(PUBONLY ? { pubOnly: true, gate: { ok: !!TGATE.ok, why: TGATE.ok ? null : String(TGATE.why || '').slice(0, 160) }, helperAt: HELPER_AT ? new Date(HELPER_AT).toISOString() : null } : {}), /* (1.71.0) 로거 알라딘 길(테더링) 상태 — 클라우드 로거 지킴이가 봄 */ off: (window.__rnFeatOff && window.__rnFeatOff()) || [], ...(why ? { why } : {}) } } }, { merge: true }); const d = await BEAT_REF().get(); const prevOwn = (asOwn() || {}).pc; BEATS = d.exists ? d.data() : {}; const o = asOwn(); if (o && prevOwn !== undefined && prevOwn !== o.pc && o.pc === PC_NAME) log(`🖥 자동 수집을 이 PC가 맡음 — ${o.why}`); try { asEdRefresh(true); } catch (e) {} } catch (e) {} }
   setTimeout(pcBeat, 12000); setInterval(pcBeat, 2 * 60000);
   const kstNow = () => (RA ? RA.kstNow() : { day: '', min: 0 }); const esc3 = (t) => (RA ? RA.esc(t) : String(t == null ? '' : t));
   const AS_META = RA ? RA.META : {}; const CRM_LBL = RA ? RA.CRM_LBL : {};
