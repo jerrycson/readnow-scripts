@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.71.2의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.71.3의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.71.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.71.2', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.71.3' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.71.3', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2747,7 +2747,7 @@
   setTimeout(async function fix1015() { try { if (!PUBONLY || GM_getValue('rn-fix1015', 0)) return; if (new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) === '2026-10-15' && !fix1015.n) window.__rnResumePending = Date.now(); /* 확인하는 동안 ⏰가 새 칸을 잡지 않게 */ if (!SCHED || !AS || !auth.currentUser) { if (!fix1015.n || fix1015.n < 20) { fix1015.n = (fix1015.n || 0) + 1; setTimeout(fix1015, 15000); } else window.__rnResumePending = 0; return; }
       const day = AS.kst(Date.now()).day; if (day !== '2026-10-15') { GM_setValue('rn-fix1015', 1); window.__rnResumePending = 0; return; } const a0 = Date.parse('2026-10-15T13:05:30Z'), a1 = Date.parse('2026-10-15T13:07:30Z');
       const hit = Object.entries(SCHED_RUNS || {}).find(([k, r]) => k.includes('@2026-10-15@') && r && r.state === 'stop' && r.job === 'prd:bench' && Date.parse(r.at) >= a0 && Date.parse(r.at) <= a1); GM_setValue('rn-fix1015', 1); if (!hit) { window.__rnResumePending = 0; return; }
-      const [key, r] = hit; for (let i = 0; i < 40 && (running || schedBusy); i++) await sleep(15000); window.__rnResumePending = 0; if (running) return; log(`⏰ 22:06 새 판 새로고침으로 끊겼던 '${(JOBS.bench || ['🎯'])[0]}' (${r.why || key}) 회차를 저장된 자리부터 이어감`, 1);
+      const [key, r] = hit; for (let i = 0; i < 240 && (running || schedBusy); i++) { window.__rnResumePending = Date.now(); await sleep(15000); } /* 새로고침에 끊긴 다른 일이 먼저 이어지고 있으면 그것이 끝날 때까지(최대 1시간) — 그동안 ⏰는 새 칸을 잡지 않음 */ window.__rnResumePending = 0; if (running) return; log(`⏰ 22:06 새 판 새로고침으로 끊겼던 '${(JOBS.bench || ['🎯'])[0]}' (${r.why || key}) 회차를 저장된 자리부터 이어감`, 1);
       await window.__rnSchedResume({ key, slot: r.slot, job: 'prd:bench', k: 'bench', why: r.why || '', tries: r.tries || 0, t0: Date.parse(r.st) || Date.now(), pre: +r.ms || 0, at: Date.now() }); } catch (e) { window.__rnResumePending = 0; } }, 3000);
   async function schedTick() { if (!AS || schedBusy || !auth.currentUser) return; if (SCHED && SCHED.on) { const why = running ? `수동 작업 '${(JOBS[running] || [running])[0]}'` : window.__rnReloading ? '새 판 다시 불러오는 중' : window.__rnPaused ? '수집기 일시 정지' : window.__rnRest && window.__rnRest() ? '쉬는 시간' : window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy() ? '고객 작업(이 PC)' : null; if (why) { schedWaitNote(why); return; } }
     if (running || window.__rnReloading || window.__rnPaused || (window.__rnRest && window.__rnRest())) return; if (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) return; if (!SCHED || !SCHED.on) return;
