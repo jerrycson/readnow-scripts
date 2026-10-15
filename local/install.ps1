@@ -4,7 +4,8 @@
 # 하는 일: ① Node.js 확인(없으면 설치) ② D:\ReadNow\local 에 도우미 받기 ③ 로그온하면 저절로 켜짐(꺼지면 5초 뒤 다시)
 #          ④ '리드나우 공개 수집' 전용 크롬 — 이 크롬만 도우미를 거침(알라딘은 테더링으로만, 우리 서비스는 와이파이로 · 도우미가 꺼지면 이 크롬은 아무 데도 못 나감)
 #             따로 된 프로필(알라딘 로그인 기록 없음)·WebRTC 새는 길 막음 · 바탕화면·시작 프로그램에
-#          ⑤ 절전 끔(24시간)
+#          ⑤ 절전 끔(24시간) · USB 선택적 절전 끔
+#          ⑥ (1.5.0) 화면 오른쪽 작은 도우미 창 · 다시 켜지기 예약 작업(로그온·잠금 해제·절전 깨어남·5분마다)
 #          이 PC의 기본 크롬·엣지는 건드리지 않음(기본 크롬에 알라딘 로그인이 남아 있어도 테더링과 이어지지 않게) · 다시 실행해도 됨(덮어씀) · 되돌리기: uninstall.ps1
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
@@ -58,11 +59,34 @@ try { $s = Invoke-RestMethod -Uri 'http://127.0.0.1:8899/status' -TimeoutSec 5; 
 Say "전용 크롬 바로가기"
 $chrome = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe", "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $chrome) { Warn '크롬을 못 찾음 — 크롬을 설치한 뒤 이 줄을 다시 실행해 주세요' } else {
-  $cargs = "--user-data-dir=`"$Root\chrome-pub`" --proxy-server=`"http://127.0.0.1:8899`" --force-webrtc-ip-handling-policy=disable_non_proxied_udp --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --no-first-run --no-default-browser-check http://127.0.0.1:8899/start"
+  $cargs = "--user-data-dir=`"$Root\chrome-pub`" --proxy-server=`"http://127.0.0.1:8899`" --force-webrtc-ip-handling-policy=disable_non_proxied_udp --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --hide-crash-restore-bubble --no-first-run --no-default-browser-check"
+  <# (도우미 1.5.0) 화면 나누기: 공개 수집 크롬은 왼쪽(화면 폭 − 380), 오른쪽에 작은 도우미 창(380 폭) · 크롬이 비정상 종료돼도 '복구' 말풍선 없이 바로 #>
+  $pps = Join-Path $Root 'local\start-pub.ps1'
+  [IO.File]::WriteAllText($pps, @"
+Add-Type -AssemblyName System.Windows.Forms
+`$a = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+`$w = [Math]::Max(800, `$a.Width - 380)
+`$pf = '$Root\chrome-pub\Default\Preferences'
+if (Test-Path `$pf) { try { `$t = [IO.File]::ReadAllText(`$pf); `$n = `$t -replace '"exit_type":"Crashed"', '"exit_type":"Normal"' -replace '"exited_cleanly":false', '"exited_cleanly":true'; if (`$n -ne `$t) { [IO.File]::WriteAllText(`$pf, `$n, (New-Object Text.UTF8Encoding `$false)) } } catch {} }
+Start-Process -FilePath '$chrome' -ArgumentList ('$($cargs.Replace("'", "''"))' + " --window-position=`$(`$a.X),`$(`$a.Y) --window-size=`$w,`$(`$a.Height) http://127.0.0.1:8899/start")
+"@, (New-Object Text.UTF8Encoding $true))
   $pcmd = Join-Path $Root 'local\start-pub.cmd'
-  [IO.File]::WriteAllText($pcmd, "@echo off`r`n:w`r`ncurl -s -o nul http://127.0.0.1:8899/status || (timeout /t 3 /nobreak >nul & goto w)`r`nstart `"`" `"$chrome`" $cargs`r`n")
+  [IO.File]::WriteAllText($pcmd, "@echo off`r`n:w`r`ncurl -s -o nul http://127.0.0.1:8899/status || (timeout /t 3 /nobreak >nul & goto w)`r`npowershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$pps`"`r`n")
+  $hps = Join-Path $Root 'local\start-helperwin.ps1'
+  [IO.File]::WriteAllText($hps, @"
+Add-Type -AssemblyName System.Windows.Forms
+`$a = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+`$x = `$a.X + `$a.Width - 380
+Start-Process -FilePath '$chrome' -ArgumentList ("--user-data-dir=```"$Root\chrome-helper```" --app=http://127.0.0.1:8899/mini --no-first-run --no-default-browser-check --hide-crash-restore-bubble --window-position=`$x,`$(`$a.Y) --window-size=380,560")
+"@, (New-Object Text.UTF8Encoding $true))
+  $hcmd = Join-Path $Root 'local\start-helperwin.cmd'
+  [IO.File]::WriteAllText($hcmd, "@echo off`r`n:w`r`ncurl -s -o nul http://127.0.0.1:8899/status || (timeout /t 3 /nobreak >nul & goto w)`r`npowershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$hps`"`r`n")
+  New-Item -ItemType Directory -Force -Path (Join-Path $Root 'chrome-helper') | Out-Null
   foreach ($where in @([Environment]::GetFolderPath('Desktop'), $startup)) {
-    $l = $sh.CreateShortcut((Join-Path $where '리드나우 공개 수집.lnk')); $l.TargetPath = $pcmd; $l.WorkingDirectory = (Join-Path $Root 'local'); $l.IconLocation = "$chrome,0"; $l.WindowStyle = 3; $l.Save() }
+    $l = $sh.CreateShortcut((Join-Path $where '리드나우 공개 수집.lnk')); $l.TargetPath = $pcmd; $l.WorkingDirectory = (Join-Path $Root 'local'); $l.IconLocation = "$chrome,0"; $l.WindowStyle = 7; $l.Save() }
+  $l = $sh.CreateShortcut((Join-Path $startup '리드나우 도우미 창.lnk')); $l.TargetPath = $hcmd; $l.WorkingDirectory = (Join-Path $Root 'local'); $l.IconLocation = "$chrome,0"; $l.WindowStyle = 7; $l.Save()
+  $l = $sh.CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) '리드나우 도우미 창.lnk')); $l.TargetPath = $hcmd; $l.WorkingDirectory = (Join-Path $Root 'local'); $l.IconLocation = "$chrome,0"; $l.WindowStyle = 7; $l.Save()
+  Ok "도우미 창: 화면 오른쪽에 작게(380 폭 · http://127.0.0.1:8899/mini · 따로 된 프로필 $Root\chrome-helper) — 시작 프로그램 · 닫히면 도우미가 다시 엶"
   Ok "바탕화면·시작 프로그램에 '리드나우 공개 수집' — 따로 된 크롬(프로필 $Root\chrome-pub · WebRTC UDP 막음 · 가려져도 늦추지 않음)"
 }
 
@@ -100,10 +124,40 @@ foreach (`$n in (`$names | Select-Object -Unique)) { Get-NetIPInterface -Interfa
   Ok "크롬 정책: 알라딘 로그인·샵매니저·내 계정·주문·장바구니 화면 막음(이 PC의 크롬 전체 · 크롬을 다시 켜면 적용 · chrome://policy 에서 확인)" 
 }
 
+# 4-4) (도우미 1.5.0) 🔁 다시 켜지기 — 로그온·잠금 해제·절전에서 깨어날 때와 5분마다, 도우미·공개 수집 크롬·도우미 창 중 꺼진 것을 다시 켬(이 사용자 화면에서 · 관리자 아니어도 됨)
+Say '다시 켜지기(로그온·잠금 해제·절전 깨어남·5분마다)'
+$ens = Join-Path $Root 'local\ensure.ps1'
+[IO.File]::WriteAllText($ens, @"
+`$L = '$Root\local'
+`$n = @(Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue | Where-Object { `$_.CommandLine -like '*readnow-local.js*' }).Count
+if (`$n -eq 0) { Start-Process wscript.exe -ArgumentList ('"' + (Join-Path `$L 'run-local.vbs') + '"'); Start-Sleep -Seconds 8 }
+`$a = @(Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction SilentlyContinue)
+`$paused = `$false; try { `$s = Invoke-RestMethod -Uri 'http://127.0.0.1:8899/status' -TimeoutSec 5; if (`$s.pubWatch -and `$s.pubWatch.pauseUntil -and (`$s.pubWatch.pauseUntil -gt [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds())) { `$paused = `$true } } catch {}
+if (-not `$paused) {
+  if (@(`$a | Where-Object { `$_.CommandLine -like '*chrome-pub*' }).Count -eq 0) { Start-Process cmd.exe -ArgumentList '/c', (Join-Path `$L 'start-pub.cmd') -WindowStyle Hidden }
+  if (@(`$a | Where-Object { `$_.CommandLine -like '*chrome-helper*' }).Count -eq 0 -and (Test-Path (Join-Path `$L 'start-helperwin.cmd'))) { Start-Process cmd.exe -ArgumentList '/c', (Join-Path `$L 'start-helperwin.cmd') -WindowStyle Hidden }
+}
+"@, (New-Object Text.UTF8Encoding $true))
+$ensv = Join-Path $Root 'local\ensure.vbs'
+[IO.File]::WriteAllText($ensv, "CreateObject(`"WScript.Shell`").Run `"powershell.exe -NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"`"$ens`"`"`", 0, False`r`n")
+try {
+  $act = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument "`"$ensv`""
+  $tl = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"; $tr = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)
+  $cls = Get-CimClass -ClassName MSFT_TaskEventTrigger -Namespace Root/Microsoft/Windows/TaskScheduler
+  $tw = New-CimInstance -CimClass $cls -ClientOnly; $tw.Enabled = $true; $tw.Subscription = '<QueryList><Query Id="0" Path="System"><Select Path="System">*[System[Provider[@Name=''Microsoft-Windows-Power-Troubleshooter''] and EventID=1]]</Select></Query></QueryList>'; $tw.Delay = 'PT20S'
+  $cls2 = Get-CimClass -ClassName MSFT_TaskSessionStateChangeTrigger -Namespace Root/Microsoft/Windows/TaskScheduler
+  $tu = New-CimInstance -CimClass $cls2 -ClientOnly; $tu.Enabled = $true; $tu.StateChange = 8; $tu.Delay = 'PT10S'  <# 8 = 잠금 해제 #>
+  $set = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
+  $pr = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive -RunLevel Limited
+  Register-ScheduledTask -TaskName 'ReadNow-Ensure' -Action $act -Trigger @($tl, $tr, $tw, $tu) -Settings $set -Principal $pr -Force | Out-Null
+  Ok "예약 작업 ReadNow-Ensure — 로그온·잠금 해제·절전 깨어남(20초 뒤)·5분마다 도우미·공개 수집 크롬·도우미 창 확인(도우미 '쉬기' 중이면 크롬은 그대로)"
+} catch { Warn ("다시 켜지기 예약 작업을 못 만듦: " + $_.Exception.Message + " — 시작 프로그램 바로가기와 도우미 지킴이(4분)는 그대로 됨") }
+
 # 5) 24시간 — 절전 끔
 Say '절전 끔(전원 연결 시)'
+powercfg /setacvalueindex SCHEME_CURRENT 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0 2>$null; powercfg /setactive SCHEME_CURRENT 2>$null <# (도우미 1.5.0) USB 선택적 절전 끔 — 휴대폰 테더링 USB가 잠들어 끊기지 않게 #>
 powercfg /change standby-timeout-ac 0 2>$null; $e1 = $LASTEXITCODE; powercfg /change hibernate-timeout-ac 0 2>$null; $e2 = $LASTEXITCODE; powercfg /change monitor-timeout-ac 30 2>$null
-if ($e1 -eq 0 -and $e2 -eq 0) { Ok '잠자기·최대 절전 끔 · 화면만 30분 뒤 끔' } else { Warn '절전 설정을 못 바꿈 — 설정 → 시스템 → 전원에서 "절전 모드: 안 함"으로 직접 바꿔 주세요' }
+if ($e1 -eq 0 -and $e2 -eq 0) { Ok '잠자기·최대 절전 끔 · USB 선택적 절전 끔(테더링 끊김 막음) · 화면만 30분 뒤 끔' } else { Warn '절전 설정을 못 바꿈 — 설정 → 시스템 → 전원에서 "절전 모드: 안 함"으로 직접 바꿔 주세요' }
 
 Write-Host ''
 Write-Host '설치 끝. 다음:' -ForegroundColor Green
