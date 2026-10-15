@@ -64,9 +64,11 @@ if (globalThis.__rnX) (function rnxReader() { const tok = (location.search.match
   /* (1.69.0) 🛡 로거 크롬 잠금 — '리드나우 공개 수집' 크롬(중고매장 첫 화면#rnPub을 한 번이라도 연 크롬 = GM rn-pubChrome)은
    *  ① 알라딘 로그인 영역(scm·account·login·order·member·장바구니·로그아웃) 요청을 fetch·XHR에서 모두 막음 ② 첫 화면이 아닌 알라딘 화면에서는 수집기를 하나도 돌리지 않음(로그인 화면 자동 채우기 포함)
    *  예전 첫 화면(우리 숍 목록?rnPub=1)으로 열리면 새 첫 화면으로 바로 옮김 */
+  /* (1.70.2) 도우미 첫 화면(http://127.0.0.1:8899/start)에서는 '이 크롬에 수집기가 있음(판)'만 알리고 끝 — 도우미가 없으면 설치 안내를 보여 줌 · 이 크롬을 로거 크롬으로 기억 */
+  if (/^(127\\.0\\.0\\.1|localhost)$/.test(location.hostname) && location.port === '8899') { try { document.documentElement.setAttribute('data-rn-collector', CLASSIC); sv('rn-pubChrome', Date.now()); } catch (e) {} return; }
   try { const onAl = /(^|\\.)aladin\\.co\\.kr$/i.test(location.hostname); const legacy = onAl && /^\\/shop\\/usedshop\\/wshopitem\\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search);
     if (legacy && window.top === window) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx#rnPub'); return; }
-    const home = onAl && window.top === window && /^\\/usedstore\\/wgate\\.aspx$/i.test(location.pathname) && /^#rnPub\\b/.test(location.hash);
+    const home = onAl && window.top === window && /^\\/usedstore\\/wgate\\.aspx$/i.test(location.pathname) && (/^#rnPub\\b/.test(location.hash) || !!gv('rn-pubChrome', false)); /* (1.70.2) # 표시가 사라져도 로거 크롬(도우미 첫 화면을 연 크롬)이면 첫 화면 */ if (home && !/^#rnPub\\b/.test(location.hash)) { try { history.replaceState(null, '', location.pathname + location.search + '#rnPub'); } catch (e) {} }
     if (home) sv('rn-pubChrome', Date.now()); const pc = home || !!gv('rn-pubChrome', false); G.__rnPubChrome = pc;
     if (pc) { const BAD = /^https?:\\/\\/[^/]*aladin\\.co\\.kr\\/(scm|account|login|order|member|cart|basket|ucl)\\b|aladin\\.co\\.kr\\/[^?#]*(wlogin|logout|wbasket|wmaininfo|wordersinfo|wc2binfo)/i; const abs = (u) => { try { return new URL(String(u && u.url || u), location.href).href; } catch (e) { return String(u); } };
       const note = (u) => { G.__rnPubBlocked = (G.__rnPubBlocked || 0) + 1; G.__rnPubBlockedLast = u; try { console.warn('[리드나우] 🛡 로거 크롬: 로그인 영역 요청 막음', u); } catch (e) {} };
