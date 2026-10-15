@@ -3,6 +3,15 @@
 새 대화·자동 점검은 **이 파일 → README.md → 웹앱 `UPDATE_LOG`(src/app.html)** 순서로 읽고 시작합니다.
 작업을 끝낼 때마다 아래 '정한 규칙'·'남은 일'을 고칩니다(지난 내용은 지우지 말고 고쳐 씀).
 
+## 동시 작업 규칙 (사장님 지시 2026-10-15 22:42 — 대화 세션과 예약 점검이 서로 덮지 않게)
+- 같은 저장소를 고치는 쪽은 둘 이상일 수 있음: 사장님과 실시간으로 하는 **대화 세션(chat)**, 매일 21:49 **전체 점검(auto-check)**, 주간 백업(backup) 등. 결과물은 늘 '방금 올라온 최신 판'을 녹여 내야 함.
+- 순서표 = `work-lock` 가지의 LOCK.json · 도구 `bash src/tools/worklock.sh get|take|beat|ask|clearask|release` (git push로만 바꿈 — 동시에 잡으면 하나만 성공).
+- 고치기 전에 `take <누구> "<하는 일>"` · 10분마다 `beat` · push까지 끝나면 `release <누구> "<한 일 · 커밋>"`. 30분 넘게 beat가 없으면 죽은 것으로 보고 넘겨받음.
+- **대화 세션이 먼저**: 점검이 잡고 있으면 대화 세션은 `ask chat "<까닭>"`을 남기고 사장님께 '점검이 ○○ 하는 중 — 마무리하면 바로 이어서 함'을 알림(그사이 읽기·준비만). 점검은 커밋 전·10분마다 `get`으로 ask를 보고, 있으면 지금 고치던 것만 마무리해 push·release한 뒤 대화 세션이 놓을 때까지 5분마다 get하며 읽기만 함(놓이면 다시 take · git pull 뒤 이어감). 대화 세션이 20분 넘게 못 받으면 최신을 pull해 녹여 내며 진행.
+- 점검이 잡고 있는데 대화 세션이 할 일이 점검과 다른 파일이면 기다리지 않고 해도 됨(push 전 rebase만 지킴).
+- **push 전에는 언제나** `git pull --rebase`(또는 fetch 후 비교). 다른 쪽이 같은 원본(src/app.html·src/readnow-collector.src.js·src/split.js·공용 파일·cloud/index.js·local/)을 바꿨으면: 내 바뀜을 diff로 떼어 최신 위에 다시 얹고 → /home/claude/w 를 최신으로 다시 맞춘 뒤 → 판 번호는 최신보다 하나 위로(같은 번호를 두 쪽이 쓰지 않음) → 빌드·release.js·시험을 다시 → push. 남의 바뀜을 덮어쓰거나 되돌리지 않음.
+- 보고에는 '그사이 다른 쪽이 올린 것(커밋)과 어떻게 녹였는지'를 한 줄 적음.
+
 ## 구성
 - 웹앱 `src/app.html` → `app/` · 수집기(Tampermonkey) `src/readnow-collector.src.js` → 맨 위 `readnow-collector.user.js` + `readnow-pc-*.js` + `pc-live.json`(⚡ 5분마다 확인하는 빠른 업데이트)
 - 공용 파일 `readnow-*-core.js` · 판 목록 `readnow-registry.js`(PINS = 웹앱·수집기·클라우드가 쓰는 공용 파일 판)
@@ -62,6 +71,7 @@
 - **🛡 로거 전체 점검 (2026-10-15 밤, 수집기 1.69.0 · 도우미 1.3.0 · 자동 수집 0.7.1)**: 로거 크롬(GM rn-pubChrome) = 로그인 영역 fetch·XHR 차단(split.js 실행기) · 첫 화면(usedstore/wgate.aspx#rnPub) 말고 알라딘 화면에서는 모듈 안 돌림 · 고객 수집기 start/remoteLoop/autoRunCheck 끔 · getDoc/lookDoc 공개 주소만 · autoRelogin·네이버 로그인 거절 · PUB_CMDS에서 usedInfo 뺌 · PUB_KEYS에서 soldInfo·photos 뺌 · 맡긴 metrics/lookup은 1~10분 무작위(아이디 해시) 늦춰 받음 · 🔀 섞어 읽기(맡긴 읽기 40~50%, 그룹 지표 30%, market 15% — SET.mixMarket) · 도우미: 테더링 주소 DNS = 테더링(1.1.1.1·8.8.8.8) · /start no-referrer · 설치(관리자): ReadNow-TetherMetric 예약 작업 + hosts에 알라딘 0.0.0.0. 남은 낮은 위험: 수집기 패널이 알라딘 화면 DOM 안에 있음(알라딘 자체 스크립트가 읽을 수는 있음 — 닫힌 Shadow DOM으로 옮기는 것은 다음 후보).
 - **🛡 로거 화면 숨김·잠금 (2026-10-15 밤, 수집기 1.70.0 · 도우미 1.4.0 · 자동 수집 0.7.2)**: split.js 실행기가 로거 첫 화면에서 닫힌 Shadow DOM(G.__rnSR)을 만들고 모듈은 globalThis.__rnMount/__rnHead/__rnById/__rnQ/__rnQA/__rnOn/__rnAE로 붙이고 찾음(다른 곳은 문서 그대로) · 탭 상태는 #rn-ctl[data-rnu] · 로거 크롬의 로그인·scm·account·order 화면은 바로 첫 화면으로 · 설치(관리자) 크롬 정책 URLBlocklist · 숨은 창 표시는 #rnCollect. 사람 할 일: 사진 이미 받은 것은 D:\ReadNow\images 안에 img·pur_photos…째.
 - **🛡 로거 2차 점검 (2026-10-15 밤, 수집기 1.71.0 · 도우미 1.4.3 · 클라우드 0.13.1 · 웹앱 1.33.0)**: ① 로거 크롬(G.__rnPubChrome)에서 알라딘 사이트 저장소에 흔적 없음 — 실행기(split.js)가 rn/rnu/rnp/pw_ localStorage·sessionStorage 키와 IDB rn-journal·readnow-crm·rn-listings-cache를 지움 · 작업 기록 JDB=메모리 Map · LCACHE=GM rn-lcache · PC 이름 localStorage 안 씀 · CRM 모듈 시작 안 함 · 구글 로그인 = onIdTokenChanged마다 GM rn-fbuser에 toJSON, 1.5초 뒤 setPersistence(NONE) → 다음 화면에서 실행기가 firebaseLocalStorageDb에 잠깐 넣어 되살림(실제 SDK로 경쟁 상황까지 시험) ② pcBeat에 gate{ok,why}·helperAt(로거만) ③ 클라우드 loggerWatchTick(5분): 로거 beat 15분+ → down, gate.ok=false(없으면 net helper.tetherOk=false) 10분+ → tether · 1시간에 한 번 푸시(ship_notify.devices, 비면 전체) · 풀리면 정상 한 번 · app_settings/logger_watch.st · 웹앱 loggerWatchBanner(onSnapshot, 위 빨간 띠, 1시간 숨김 rn-lgwarn-hide) ④ 도우미 pubWatch(2분): chrome.exe 중 명령줄 *chrome-pub* 없음 2번 연속 → start-pub.cmd 실행(1시간 4번 상한) · POST /pubwatch?k=PICK_KEY&min=60|0 · 설정 pubWatch:false로 끔. 남은 작은 것: firebase-heartbeat-database(appId만), firebaseLocalStorageDb 이름 자체(흔한 Firebase 이름 · 비어 있음).
+- **⏰ 하던 칸 이어가기 (수집기 1.71.2 · 2026-10-15 밤)**: 정한 칸을 하는 중 새로고침(verReload·memReload·ctlReload — safeReload(이유, key))이면 schedExec가 회차를 'stop'으로 끝내지 않고 GM rnu-resume-slot{key,slot,job,k,why,tries,t0,pre}에 적고 회차 기록에 reload·beat만 → 새 탭의 이어가기(3초마다, ⏰ 설정·로그인·로거 테더링 확인 뒤)가 window.__rnSchedResume로 같은 회차 이어감(최대 시간 = maxMin − pre) · 이어가기 대기(window.__rnResumePending) 동안 schedTick은 새 칸 안 잡음 · 이어가기 10분 못 하면 GM 키를 지워 ⏰가 막히지 않게 · 한 번만 fix1015: 10/15 22:05:30~22:07:30 UTC13시에 멈춤으로 끝난 로거 prd:bench 회차를 이어 줌(그날만). 원인: 22:06 1.71.0 빠른 업데이트 → 회차 '■ 멈춤' → 새 탭 schedTick(15초)이 이어가기(15초 간격)보다 먼저 늦은 일반 칸(구매자 분포 14:00 등)을 잡음.
 - **📷 사진 보관 (1.70.0)**: 로거 수집기 imgMirror(6시간) — 저장소 REST 목록(맨 위 폴더 delimiter) → 도우미 /img-have → 없는 것만 받아 /img-put(X-RN-Img 머리 필수·CORS 없음·덮지 않음) · ppt_photo_data는 at 뒤(GM rn-imgm-ppt) · 상태 prd_system/imgMirror. 저장소 규칙이 목록 읽기를 막으면 err에 적힘.
 - **💬 대화 기록 보관 (2026-10-15 결정)**: 지난 claude.ai 대화와 이 작업 대화를 **비공개** 저장소(jerrycson/readnow-chats — 이 저장소는 공개라 넣지 않음)에 날마다. 비밀번호·키·카드번호는 [가림]. 새 대화는 시작할 때 그 저장소의 INDEX.md를 먼저 읽음.
 

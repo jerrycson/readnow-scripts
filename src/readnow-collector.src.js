@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.71.1
+// @version      1.71.2
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/worders.aspx*
 // @match        https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx*
@@ -5612,8 +5612,37 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       const fj = (await C('prd_jobs').doc('benchForce').get()).data(); if (!fj || fj.done) return; const left = (fj.list || []).filter((k) => !(fj.fin || {})[k]); if (left.length < 2) return;
       const lkp = (await LOCKP().get()).data(); if (laneBusy(lkp, true)) return;
       log(`🌐 남는 PC 돕기: ${mainB[1].name || '다른 PC'}가 도는 🎯 한 바퀴에 같이 들어감 — 남은 판매자 ${left.length}명 중 아무도 안 읽는 판매자부터`); window.__rnHelper = true; try { await runJob('benchHelp'); } finally { window.__rnHelper = false; } } catch (e) {} }, 120e3);
+  /* (1.71.2) 정한 칸 하나 돌리기 — 새로 시작한 회차와 새로고침 뒤 이어가는 회차가 같이 씀 · pre = 새로고침 전에 이미 돈 시간(ms) */
+  async function schedExec(S1, due, t0, pre) { const kind = S1.job.split(':')[0], key2 = S1.job.slice(4); const tRun = Date.now();
+      const hb = setInterval(() => SCHED_RUN().set({ runs: { [due.key]: { beat: nowIso() } } }, { merge: true }).catch(() => {}), 5 * 60000);
+      let timedOut = false; const tm = S1.maxMin ? setTimeout(() => { timedOut = true; log(`⏰ '${asName(S1)}': 정한 최대 ${S1.maxMin}분이 지나 지금 항목까지 저장하고 멈춤 — 다음 회차에 그 자리부터`, 1); try { if (kind === 'prd') window.__rnPrd.pause(); else window.__rnCrm.pause(); } catch (e) {} }, Math.max(60e3, S1.maxMin * 60e3 - pre)) : null;
+      let res, err = null; window.__rnAutoSlot = due.key;
+      try { if (kind === 'prd') { window.__rnAuto = true; res = await runJob(key2, { sched: true }); err = lastRunErr || (lastRunSt === 'stop' && res !== false ? '멈춤' : null); }
+        else { const r0 = await window.__rnCrm.start(key2, { fresh: false }); res = r0 === undefined ? false : r0; if (r0 === 'error') err = '고객 작업 오류 (고객 탭 기록 확인)'; else if (r0 === 'paused') err = '멈춤'; if (tm) clearTimeout(tm); if (!err && !timedOut && r0 !== undefined && !['bulk', 'upload'].includes(key2) && window.__rnCrm.upload) await window.__rnCrm.upload(); } }
+      catch (e) { err = e.message; } finally { window.__rnAuto = false; window.__rnAutoSlot = null; clearInterval(hb); if (tm) clearTimeout(tm); }
+      if (res === false) { schedWaitNote('다른 PC·탭이 작업 중(시작 못 함)'); await SCHED_RUN().set({ runs: { [due.key]: firebase.firestore.FieldValue.delete() } }, { merge: true }); const first = !SCHED_BACK[due.key]; SCHED_BACK[due.key] = Date.now() + 10 * 60e3; if (first) log(`⏰ '${asName(S1)}': 다른 PC·탭이 작업 중이라 10분 뒤 다시 (그사이 1분마다 다시 시도하지 않음)`, 1); return; } /* (1.63.8 점검) 예전엔 1분마다 다시 잡고 지우기를 되풀이(읽기·쓰기 낭비) */
+      /* (1.71.2) 새 판·메모리 정리·원격 업데이트로 새로고침하느라 멈춘 것이면 이 회차를 '멈춤'으로 끝내지 않음 — 새 탭이 같은 회차로 그 자리부터 이어감(그동안 다른 칸이 끼어들지 않음)
+       *  예전: '■ 멈춤'으로 적혀 오늘 그 칸은 끝난 것이 되고, 새 탭에서는 ⏰가 이어가기(15초 뒤)보다 먼저 다음 칸(늦은 일반 칸)을 잡아 벤치마킹이 끊김(10/15 22:06) */
+      if (kind === 'prd' && window.__rnReloading && GM_getValue('rnu-resume-after-reload', null) === key2) { GM_setValue('rnu-resume-slot', { key: due.key, slot: S1.id, job: S1.job, k: key2, why: due.why, tries: due.tries || 0, t0, pre: pre + (Date.now() - tRun), at: Date.now() }); await SCHED_RUN().set({ runs: { [due.key]: { beat: nowIso(), reload: nowIso(), by: PC_NAME } } }, { merge: true }).catch(() => {}); log(`⏰ '${asName(S1)}' (${due.why}): 새로고침 뒤 새 탭에서 이 회차 그대로 이어감 — 끝난 것으로 적지 않음`); return; }
+      if (err === '멈춤' && BUD_STOP && BUD_STOP === key2) err = `오늘 ${AS.TIER[tierOfKey(key2)].l} 몫(이월 포함)을 다 써 저장하고 멈춤 — 다음에 그 자리부터`; /* (1.67.0) */
+      const st = timedOut ? 'timeout' : /^멈춤$|몫/.test(err || '') ? 'stop' : err ? 'error' : 'done';
+      await SCHED_RUN().set({ runs: { [due.key]: { by: PC_NAME, at: nowIso(), st: new Date(t0).toISOString(), state: st, ms: pre + (Date.now() - tRun), err: err || null, job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0 } } }, { merge: true });
+      log(`⏰ 매일 자동: '${asName(S1)}' ${st === 'done' ? '끝' : st === 'timeout' ? '최대 시간이라 멈춤' : '멈춤 — ' + err} (${Math.round((pre + Date.now() - tRun) / 60000)}분)`, st === 'done' ? 0 : 1);
+      lastBusyAt = Date.now(); /* 실제로 일을 했을 때만 '쉼'을 다시 셈 */
+  }
+  /* (1.71.2) 새로고침 뒤 같은 회차 이어가기 — 회차 기록(running·beat)을 그대로 두고 그 칸으로 다시 돌림(일반 칸이 끼어들지 않음 · 최대 시간은 앞서 돈 시간만큼 빼고) */
+  window.__rnSchedResume = async (rs) => { const S1 = (AS && AS.slotsOf ? AS.slotsOf(SCHED) : []).find((x) => x.id === rs.slot) || { id: rs.slot, job: rs.job, maxMin: 0 }; if (schedBusy) { for (let i = 0; i < 20 && schedBusy; i++) await sleep(1500); } schedBusy = true;
+    try { await SCHED_RUN().set({ runs: { [rs.key]: { beat: nowIso(), state: 'running', by: PC_NAME, resumedAt: nowIso() } } }, { merge: true }); await schedExec(S1, { key: rs.key, why: rs.why + ' · 새로고침 뒤 이어감', tries: rs.tries || 0, merge: [] }, rs.t0 || Date.now(), +rs.pre || 0); }
+    catch (e) { log('⏰ 이어가기 실패: ' + (e.code || e.message), 1); } finally { schedBusy = false; } };
+  /* (1.71.2) 한 번만: 10/15 22:06 새 판(1.71.0) 새로고침 때 '멈춤'으로 끝나 버린 오늘 🎯 집중 벤치마킹 회차를 같은 회차로 이어감(그 뒤 늦은 일반 칸이 끼어들었던 것) — 로거 · 그날만 · 그 시각에 멈춘 기록만 */
+  setTimeout(async function fix1015() { try { if (!PUBONLY || GM_getValue('rn-fix1015', 0)) return; if (new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) === '2026-10-15' && !fix1015.n) window.__rnResumePending = Date.now(); /* 확인하는 동안 ⏰가 새 칸을 잡지 않게 */ if (!SCHED || !AS || !auth.currentUser) { if (!fix1015.n || fix1015.n < 20) { fix1015.n = (fix1015.n || 0) + 1; setTimeout(fix1015, 15000); } else window.__rnResumePending = 0; return; }
+      const day = AS.kst(Date.now()).day; if (day !== '2026-10-15') { GM_setValue('rn-fix1015', 1); window.__rnResumePending = 0; return; } const a0 = Date.parse('2026-10-15T13:05:30Z'), a1 = Date.parse('2026-10-15T13:07:30Z');
+      const hit = Object.entries(SCHED_RUNS || {}).find(([k, r]) => k.includes('@2026-10-15@') && r && r.state === 'stop' && r.job === 'prd:bench' && Date.parse(r.at) >= a0 && Date.parse(r.at) <= a1); GM_setValue('rn-fix1015', 1); if (!hit) { window.__rnResumePending = 0; return; }
+      const [key, r] = hit; for (let i = 0; i < 40 && (running || schedBusy); i++) await sleep(15000); window.__rnResumePending = 0; if (running) return; log(`⏰ 22:06 새 판 새로고침으로 끊겼던 '${(JOBS.bench || ['🎯'])[0]}' (${r.why || key}) 회차를 저장된 자리부터 이어감`, 1);
+      await window.__rnSchedResume({ key, slot: r.slot, job: 'prd:bench', k: 'bench', why: r.why || '', tries: r.tries || 0, t0: Date.parse(r.st) || Date.now(), pre: +r.ms || 0, at: Date.now() }); } catch (e) { window.__rnResumePending = 0; } }, 3000);
   async function schedTick() { if (!AS || schedBusy || !auth.currentUser) return; if (SCHED && SCHED.on) { const why = running ? `수동 작업 '${(JOBS[running] || [running])[0]}'` : window.__rnReloading ? '새 판 다시 불러오는 중' : window.__rnPaused ? '수집기 일시 정지' : window.__rnRest && window.__rnRest() ? '쉬는 시간' : window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy() ? '고객 작업(이 PC)' : null; if (why) { schedWaitNote(why); return; } }
     if (running || window.__rnReloading || window.__rnPaused || (window.__rnRest && window.__rnRest())) return; if (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) return; if (!SCHED || !SCHED.on) return;
+    if (window.__rnResumePending && Date.now() - window.__rnResumePending < 12 * 60e3) { schedWaitNote('새로고침 뒤 하던 일 이어가기 먼저'); return; } /* (1.71.2) 이어가기가 남아 있으면 새 칸을 잡지 않음 */
     const now = Date.now(); const dues = AS.due(SCHED, SCHED_RUNS, { now, pc: PC_NAME, own: asOwn(), anyPc: (job) => (pubHelpOn() || PUBONLY) && String(job || '').startsWith('prd:') && isPubKey(String(job).slice(4)), pubAll: PUBONLY, bud: PUBONLY ? BUD : null, mainBusy: PUBONLY && !!running && isPubKey(running) && tierOfKey(running) === 'main', crmOk: !!(window.__rnCrm && window.__rnCrm.start), idleMs: now - lastBusyAt, bootAt: BOOT_AT, stats: JSTATS }).filter((d) => (!PUBONLY || (TGATE.ok && String(d.slot.job || '').startsWith('prd:') && isPubKey(String(d.slot.job).slice(4)))) && !(pubPcMode() && String(d.slot.job || '').startsWith('prd:') && isPubKey(String(d.slot.job).slice(4)))); /* (1.64.0) 공개 전용 PC = 공개 일만 · (1.65.0) 테더링 확인 뒤에만 · (1.66.0) 공개 전용 PC가 있으면 사무실 PC는 공개 일을 빼고 */ if (!dues.length) return; schedBusy = true;
     try { for (const d of dues.filter((x) => x.mark !== 'run' && !(x.slot.job === 'prd:shipRead' && cloudOn()))) await schedMark(d).catch(() => {});
       let due = null; let lk = null, lkp = null;
@@ -5625,18 +5654,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       if (!due) return; const S1 = due.slot; const kind = S1.job.split(':')[0], key2 = S1.job.slice(4); const t0 = Date.now();
       let ok = false; await db.runTransaction(async (tx) => { const s = await tx.get(SCHED_RUN()); const r = (s.exists && s.data().runs) || {}; if (r[due.key]) return; const pl = AS.planOf ? AS.planOf(due.key) : null; const wt = pl && Date.now() - pl > 3 * 60e3 ? schedWaitSum(pl) : []; const up = { [due.key]: { by: PC_NAME, at: nowIso(), st: nowIso(), beat: nowIso(), state: 'running', job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0, ...(wt.length ? { waited: wt } : {}) } }; due.merge.filter((k) => !r[k]).forEach((k) => (up[k] = { by: PC_NAME, at: nowIso(), state: 'merged', into: due.key })); tx.set(SCHED_RUN(), { runs: up }, { merge: true }); ok = true; });
       if (!ok) return; log(`⏰ 매일 자동: '${asName(S1)}' 시작 — ${due.why}`);
-      const hb = setInterval(() => SCHED_RUN().set({ runs: { [due.key]: { beat: nowIso() } } }, { merge: true }).catch(() => {}), 5 * 60000);
-      let timedOut = false; const tm = S1.maxMin ? setTimeout(() => { timedOut = true; log(`⏰ '${asName(S1)}': 정한 최대 ${S1.maxMin}분이 지나 지금 항목까지 저장하고 멈춤 — 다음 회차에 그 자리부터`, 1); try { if (kind === 'prd') window.__rnPrd.pause(); else window.__rnCrm.pause(); } catch (e) {} }, S1.maxMin * 60e3) : null;
-      let res, err = null; window.__rnAutoSlot = due.key;
-      try { if (kind === 'prd') { window.__rnAuto = true; res = await runJob(key2, { sched: true }); err = lastRunErr || (lastRunSt === 'stop' && res !== false ? '멈춤' : null); }
-        else { const r0 = await window.__rnCrm.start(key2, { fresh: false }); res = r0 === undefined ? false : r0; if (r0 === 'error') err = '고객 작업 오류 (고객 탭 기록 확인)'; else if (r0 === 'paused') err = '멈춤'; if (tm) clearTimeout(tm); if (!err && !timedOut && r0 !== undefined && !['bulk', 'upload'].includes(key2) && window.__rnCrm.upload) await window.__rnCrm.upload(); } }
-      catch (e) { err = e.message; } finally { window.__rnAuto = false; window.__rnAutoSlot = null; clearInterval(hb); if (tm) clearTimeout(tm); }
-      if (res === false) { schedWaitNote('다른 PC·탭이 작업 중(시작 못 함)'); await SCHED_RUN().set({ runs: { [due.key]: firebase.firestore.FieldValue.delete() } }, { merge: true }); const first = !SCHED_BACK[due.key]; SCHED_BACK[due.key] = Date.now() + 10 * 60e3; if (first) log(`⏰ '${asName(S1)}': 다른 PC·탭이 작업 중이라 10분 뒤 다시 (그사이 1분마다 다시 시도하지 않음)`, 1); return; } /* (1.63.8 점검) 예전엔 1분마다 다시 잡고 지우기를 되풀이(읽기·쓰기 낭비) */
-      if (err === '멈춤' && BUD_STOP && BUD_STOP === key2) err = `오늘 ${AS.TIER[tierOfKey(key2)].l} 몫(이월 포함)을 다 써 저장하고 멈춤 — 다음에 그 자리부터`; /* (1.67.0) */
-      const st = timedOut ? 'timeout' : /^멈춤$|몫/.test(err || '') ? 'stop' : err ? 'error' : 'done';
-      await SCHED_RUN().set({ runs: { [due.key]: { by: PC_NAME, at: nowIso(), st: new Date(t0).toISOString(), state: st, ms: Date.now() - t0, err: err || null, job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0 } } }, { merge: true });
-      log(`⏰ 매일 자동: '${asName(S1)}' ${st === 'done' ? '끝' : st === 'timeout' ? '최대 시간이라 멈춤' : '멈춤 — ' + err} (${Math.round((Date.now() - t0) / 60000)}분)`, st === 'done' ? 0 : 1);
-      lastBusyAt = Date.now(); /* 실제로 일을 했을 때만 '쉼'을 다시 셈 */
+      await schedExec(S1, due, t0, 0);
     } catch (e) { log('⏰ 매일 자동 확인 실패: ' + (e.code || e.message), 1); } finally { schedBusy = false; } }
   /* 개요 화면용: 다음에 저절로 할 일 (정한 시각·간격만 — 조건 칸은 때를 미리 모름) */
   window.__rnSchedNext = () => { if (!SCHED) return { known: false }; if (!SCHED.on) return { known: true, on: false }; const { min } = kstNow(); let best = null;
@@ -5967,10 +5985,10 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
         clearInterval(t); GM_setValue('rnu-reload-for', v); GM_setValue('rnu-reload-try', { v, n: nTry + 1, at: Date.now() }); safeReload(tried ? `새 버전 ${v} 동기화 확인 (${nTry + 1}/8)` : (src ? src + ' — 새 판으로 바꿈' : '새 버전으로 바꿈'), null); }, 10000); }
     // 새로고침 뒤 이어가기: 실제로 시작될 때까지 표시를 지우지 않고 15초마다 다시 시도(최대 10분), 사람 확인 없이(무인) 시작
     { const after = GM_getValue('rnu-resume-after-reload', null);
-      if (after && JOBS[after]) { let tries = 0; const t = setInterval(() => { tries++;
-        if (window.__rnPaused) { clearInterval(t); log(`새로고침 뒤 이어가기 '${JOBS[after][0]}': 일시정지 상태라 이어가지 않음 (개요 탭의 ▶ 다시 시작으로 계속)`, 1); return; }
-        if (running || (window.__rnRest && window.__rnRest())) return; /* (1.56.0) 이 PC의 수집기 탭이 이어감 */ if (tries > 40) { clearInterval(t); log(`새로고침 뒤 이어가기 '${JOBS[after][0]}'를 10분 동안 시작하지 못했습니다 — 개요 탭 '멈춘 작업'의 이어하기를 눌러 주세요`, 1); return; }
-        clearInterval(t); GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 '${JOBS[after][0]}'을(를) 저장된 자리부터 이어갑니다 (수집기 ${VER})`); window.__rnAuto = true; runJob(after).finally(() => { window.__rnAuto = false; }); }, 15000); } }
+      if (after && JOBS[after]) { let tries = 0; window.__rnResumePending = Date.now(); const t = setInterval(() => { tries++;
+        if (window.__rnPaused) { clearInterval(t); window.__rnResumePending = 0; log(`새로고침 뒤 이어가기 '${JOBS[after][0]}': 일시정지 상태라 이어가지 않음 (개요 탭의 ▶ 다시 시작으로 계속)`, 1); return; }
+        if (running || (window.__rnRest && window.__rnRest())) return; /* (1.56.0) 이 PC의 수집기 탭이 이어감 */ if (tries > 200) { clearInterval(t); window.__rnResumePending = 0; GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 이어가기 '${JOBS[after][0]}'를 10분 동안 시작하지 못했습니다 — 개요 탭 '멈춘 작업'의 이어하기를 눌러 주세요`, 1); return; }
+        if (!AS || !SCHED || !auth.currentUser) return; try { if (PUBONLY && !TGATE.ok) return; } catch (e) {} /* (1.71.2) ⏰ 설정·로그인·(로거) 테더링 확인을 기다림 */ clearInterval(t); window.__rnResumePending = 0; const rs = GM_getValue('rnu-resume-slot', null); GM_setValue('rnu-resume-slot', null); if (rs && rs.k === after && Date.now() - (rs.at || 0) < 30 * 60e3 && window.__rnSchedResume) { GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 ⏰ '${JOBS[after][0]}' (${rs.why})을(를) 같은 회차로 저장된 자리부터 이어갑니다 (수집기 ${VER})`); window.__rnSchedResume(rs); return; } GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 '${JOBS[after][0]}'을(를) 저장된 자리부터 이어갑니다 (수집기 ${VER})`); window.__rnAuto = true; runJob(after).finally(() => { window.__rnAuto = false; }); }, 3000); } }
   }
   /* ══════════ (1.59.2) 🛰 원격 조작 — 웹앱(⚙ 관리도구 › ① 도구)이나 다른 PC 수집기에서 이 PC를 골라 ■ 중단 · ▶ 다시 시작 · ⟳ 업데이트
    *  명령은 Firebase crm_system/pc_ctl 한 문서: cmds.{PC 이름} = { id, cmd, at, by, want(그때 가장 새 판) } · 결과는 acks.{PC 이름} = { id, cmd, state, msg, ver, at } · 보낸·받은 기록은 log에 덧붙임(지우지 않음)
