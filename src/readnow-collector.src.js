@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.68.1
+// @version      1.68.2
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/worders.aspx*
 // @match        https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx*
@@ -16,6 +16,7 @@
 // @match        https://www.aladin.co.kr/scm/wshopsurvey*
 // @match        https://www.aladin.co.kr/*login*
 // @include      /^https:\/\/www\.aladin\.co\.kr\/shop\/usedshop\/wshopitem\.aspx\?.*rnPub=1/
+// @match        https://www.aladin.co.kr/usedstore/wgate.aspx*
 // @match        https://www.aladin.co.kr/*Login*
 // @match        https://*.aladin.co.kr/*login*
 // @match        https://*.aladin.co.kr/*Login*
@@ -85,7 +86,8 @@
 // @run-at       document-idle
 // ==/UserScript==
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
-globalThis.__rnPubHome = (() => { try { return window.top === window && /^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search); } catch (e) { return false; } })();
+/* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
+globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx#rnPub'); return false; } return /^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && /^#rnPub\b/.test(location.hash); } catch (e) { return false; } })();
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
  * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
