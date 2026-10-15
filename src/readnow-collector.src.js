@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.70.3
+// @version      1.70.4
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/worders.aspx*
 // @match        https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx*
@@ -18,6 +18,7 @@
 // @include      /^https:\/\/www\.aladin\.co\.kr\/shop\/usedshop\/wshopitem\.aspx\?.*rnPub=1/
 // @match        https://www.aladin.co.kr/usedstore/wgate.aspx*
 // @match        http://127.0.0.1:8899/start*
+// @match        https://jerrycson.github.io/readnow-scripts/app/*
 // @match        https://www.aladin.co.kr/*Login*
 // @match        https://*.aladin.co.kr/*login*
 // @match        https://*.aladin.co.kr/*Login*
@@ -2953,6 +2954,11 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15',
   });
   const app = firebase.app();
+  /* (1.70.4) 🔑 로그인 넘겨받기 — 로거 크롬의 웹앱에서 로그인한 기록(rn-authxfer, 10분 안)을 이 탭(알라딘)의 Firebase 저장소에 넣고 새로고침 */
+  if (globalThis.__rnPubHome) setTimeout(() => { try { if (app.auth().currentUser) { GM_deleteValue('rn-authxfer'); return; } const X = GM_getValue('rn-authxfer', null); if (!X || !X.value || Date.now() - (X.at || 0) > 10 * 60e3) return; GM_deleteValue('rn-authxfer');
+      const rq = indexedDB.open('firebaseLocalStorageDb', 1); rq.onupgradeneeded = () => { try { rq.result.createObjectStore('firebaseLocalStorage', { keyPath: 'fbase_key' }); } catch (e) {} };
+      rq.onsuccess = () => { try { const db = rq.result; const tx = db.transaction('firebaseLocalStorage', 'readwrite'); tx.objectStore('firebaseLocalStorage').put({ fbase_key: X.key, value: X.value }); tx.oncomplete = () => { db.close(); try { window.__rnLog && window.__rnLog('수집기', 'info', '🔑 웹앱의 로그인(' + (X.value.email || '') + ')을 넘겨받음 — 새로고침'); } catch (e) {} setTimeout(() => location.reload(), 800); }; } catch (e) {} }; } catch (e) {} }, 4000);
+  setInterval(() => { try { if (globalThis.__rnPubHome && !app.auth().currentUser) { const X = GM_getValue('rn-authxfer', null); if (X && Date.now() - (X.at || 0) < 10 * 60e3 && !window.__rnXferReload) { window.__rnXferReload = 1; location.reload(); } } } catch (e) {} }, 5000);
   try { if (globalThis.__rnPubHome) app.auth().getRedirectResult().then((r) => { if (r && r.user) setTimeout(() => { try { window.__rnLog && window.__rnLog('수집기', 'info', '🔑 구글 로그인 됨(이 탭에서)'); } catch (e) {} }, 2000); }).catch((e) => setTimeout(() => { try { window.__rnLog && window.__rnLog('수집기', 'warn', '이 탭 로그인 실패: ' + (e.code || e.message)); } catch (x) {} }, 2000)); } catch (e) {} /* (1.70.3) '이 탭에서 로그인'으로 돌아왔을 때 */
   const db = app.firestore();
   const auth = app.auth();

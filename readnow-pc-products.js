@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.70.3의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.70.4의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.70.3' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.70.3', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.70.4' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.70.4', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -65,6 +65,11 @@
     storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15',
   });
   const app = firebase.app();
+  /* (1.70.4) 🔑 로그인 넘겨받기 — 로거 크롬의 웹앱에서 로그인한 기록(rn-authxfer, 10분 안)을 이 탭(알라딘)의 Firebase 저장소에 넣고 새로고침 */
+  if (globalThis.__rnPubHome) setTimeout(() => { try { if (app.auth().currentUser) { GM_deleteValue('rn-authxfer'); return; } const X = GM_getValue('rn-authxfer', null); if (!X || !X.value || Date.now() - (X.at || 0) > 10 * 60e3) return; GM_deleteValue('rn-authxfer');
+      const rq = indexedDB.open('firebaseLocalStorageDb', 1); rq.onupgradeneeded = () => { try { rq.result.createObjectStore('firebaseLocalStorage', { keyPath: 'fbase_key' }); } catch (e) {} };
+      rq.onsuccess = () => { try { const db = rq.result; const tx = db.transaction('firebaseLocalStorage', 'readwrite'); tx.objectStore('firebaseLocalStorage').put({ fbase_key: X.key, value: X.value }); tx.oncomplete = () => { db.close(); try { window.__rnLog && window.__rnLog('수집기', 'info', '🔑 웹앱의 로그인(' + (X.value.email || '') + ')을 넘겨받음 — 새로고침'); } catch (e) {} setTimeout(() => location.reload(), 800); }; } catch (e) {} }; } catch (e) {} }, 4000);
+  setInterval(() => { try { if (globalThis.__rnPubHome && !app.auth().currentUser) { const X = GM_getValue('rn-authxfer', null); if (X && Date.now() - (X.at || 0) < 10 * 60e3 && !window.__rnXferReload) { window.__rnXferReload = 1; location.reload(); } } } catch (e) {} }, 5000);
   try { if (globalThis.__rnPubHome) app.auth().getRedirectResult().then((r) => { if (r && r.user) setTimeout(() => { try { window.__rnLog && window.__rnLog('수집기', 'info', '🔑 구글 로그인 됨(이 탭에서)'); } catch (e) {} }, 2000); }).catch((e) => setTimeout(() => { try { window.__rnLog && window.__rnLog('수집기', 'warn', '이 탭 로그인 실패: ' + (e.code || e.message)); } catch (x) {} }, 2000)); } catch (e) {} /* (1.70.3) '이 탭에서 로그인'으로 돌아왔을 때 */
   const db = app.firestore();
   const auth = app.auth();
