@@ -62,7 +62,7 @@ if (-not $chrome) { Warn '크롬을 못 찾음 — 크롬을 설치한 뒤 이 �
   $pcmd = Join-Path $Root 'local\start-pub.cmd'
   [IO.File]::WriteAllText($pcmd, "@echo off`r`n:w`r`ncurl -s -o nul http://127.0.0.1:8899/status || (timeout /t 3 /nobreak >nul & goto w)`r`nstart `"`" `"$chrome`" $cargs`r`n")
   foreach ($where in @([Environment]::GetFolderPath('Desktop'), $startup)) {
-    $l = $sh.CreateShortcut((Join-Path $where '리드나우 공개 수집.lnk')); $l.TargetPath = $pcmd; $l.WorkingDirectory = (Join-Path $Root 'local'); $l.IconLocation = "$chrome,0"; $l.WindowStyle = 7; $l.Save() }
+    $l = $sh.CreateShortcut((Join-Path $where '리드나우 공개 수집.lnk')); $l.TargetPath = $pcmd; $l.WorkingDirectory = (Join-Path $Root 'local'); $l.IconLocation = "$chrome,0"; $l.WindowStyle = 3; $l.Save() }
   Ok "바탕화면·시작 프로그램에 '리드나우 공개 수집' — 따로 된 크롬(프로필 $Root\chrome-pub · WebRTC UDP 막음 · 가려져도 늦추지 않음)"
 }
 

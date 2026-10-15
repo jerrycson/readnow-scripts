@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.70.2의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.70.3의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.70.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.70.2', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.70.3' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.70.3', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -65,6 +65,7 @@
     storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15',
   });
   const app = firebase.app();
+  try { if (globalThis.__rnPubHome) app.auth().getRedirectResult().then((r) => { if (r && r.user) setTimeout(() => { try { window.__rnLog && window.__rnLog('수집기', 'info', '🔑 구글 로그인 됨(이 탭에서)'); } catch (e) {} }, 2000); }).catch((e) => setTimeout(() => { try { window.__rnLog && window.__rnLog('수집기', 'warn', '이 탭 로그인 실패: ' + (e.code || e.message)); } catch (x) {} }, 2000)); } catch (e) {} /* (1.70.3) '이 탭에서 로그인'으로 돌아왔을 때 */
   const db = app.firestore();
   const auth = app.auth();
   const TS = () => firebase.firestore.FieldValue.serverTimestamp();
@@ -497,7 +498,11 @@
     el.innerHTML = `<h5>처음 한 번 해야 할 설정</h5><ul>${items.map(([t, ok, k]) => `<li class="${ok ? 'ok' : 'no'}"><span>${ok ? '✓ ' : ''}${t}</span>${ok ? '' : `<button data-fix="${k}">하기</button>`}</li>`).join('')}</ul>`;
     el.querySelectorAll('[data-fix]').forEach((b) => (b.onclick = () => {
       const k = b.dataset.fix;
-      if (k === 'login') auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(renderSetup).catch((e) => log('로그인 실패: ' + e.message + (/popup/i.test(e.code || e.message) ? ' — 주소창 오른쪽의 팝업 차단 표시를 눌러 이 사이트 팝업을 허용한 뒤 다시' : ''), 1));
+      if (k === 'login') { /* (1.70.3) 로그인 창: 누른 동안 단추를 잠가 여러 번 열지 않음(여러 번 누르면 서로 취소돼 창이 안 뜨던 것) · 15초 안에 안 끝나면 '이 탭에서 로그인'(창 없이 이 탭이 구글로 갔다가 돌아옴)을 보여 줌 */
+        if (window.__rnLoginBusy) { log('🔑 로그인 창이 이미 열려 있음 — 작업 표시줄에서 \'Google 계정으로 로그인\' 크롬 창을 찾거나, 아래 \'이 탭에서 로그인\'을 누르세요', 1); return; }
+        window.__rnLoginBusy = 1; b.disabled = true; b.textContent = '로그인 창 여는 중…'; const li = b.closest('li'); const addRedirect = (why) => { if (!li || li.querySelector('[data-redir]')) return; li.insertAdjacentHTML('beforeend', `<div style="flex-basis:100%;font-size:11.5px;margin-top:4px;color:#7A4A10">${why} <button data-redir="1">이 탭에서 로그인</button></div>`); li.querySelector('[data-redir]').onclick = () => { log('🔑 이 탭이 구글 로그인 화면으로 갔다가 돌아옵니다'); auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()).catch((e) => log('로그인 실패: ' + e.message, 1)); }; };
+        const tw = setTimeout(() => addRedirect('로그인 창이 안 보이면(작업 표시줄에 숨었거나 막힘) →'), 15000);
+        auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(() => { log('🔑 구글 로그인 됨'); renderSetup(); }).catch((e) => { const c = String(e.code || ''); log('로그인 실패: ' + e.message, 1); addRedirect(/popup-blocked/.test(c) ? '크롬이 로그인 창을 막음 →' : /popup-closed|cancelled/.test(c) ? '로그인 창이 닫혔거나 취소됨 →' : '창으로 로그인이 안 되면 →'); }).finally(() => { window.__rnLoginBusy = 0; clearTimeout(tw); b.disabled = false; b.textContent = '하기'; }); }
       if (k === 'pcname') { const n = prompt('이 PC의 이름 (예: JS-MAIN, HOME)', (window.__rnPcName && window.__rnPcName.get()) || ''); if (n && n.trim()) { window.__rnPcName && window.__rnPcName.set(n.trim()); $('#rnpName').value = n.trim(); renderSetup(); } }
       if (k === 'cred') { box.classList.remove('showimp', 'showguide'); box.classList.add('showset'); $('#rnpId').focus(); }
     }));
