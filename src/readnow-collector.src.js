@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.70.0
+// @version      1.70.1
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/worders.aspx*
 // @match        https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx*
@@ -3372,10 +3372,11 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   // 처음 한 번 해야 할 설정 (고객 수집기와 같은 모양): 모두 끝나면 초록 한 줄
   function renderSetup() {
     const cred = (GM_getValue('rnp-cred', null) || GM_getValue('rn-cred', null));
+    if (PUBONLY && !auth.currentUser && !window.__rnPubTabSet) { window.__rnPubTabSet = 1; setTimeout(() => { try { const b = globalThis.__rnQ('#rn-uni button[data-t="prd"]'); if (b) b.click(); const c = globalThis.__rnById('rn-ctl'); if (c && c.classList.contains('min')) { const t = c.querySelector('.ch .tg'); if (t) t.click(); } } catch (e) {} }, 1500); } /* (1.70.1) 로거: 구글 로그인 전이면 상품 탭(맨 위 '처음 한 번 해야 할 설정')을 열어 둠 */
     const items = [
-      ['구글 로그인', !!auth.currentUser, 'login'],
+      ['구글 로그인 (우리 Firebase — 알라딘과 무관)', !!auth.currentUser, 'login'],
       ['이 PC 이름', !!LS.get('pcName'), 'pcname'],
-      ['알라딘 아이디·비밀번호 (자동 재로그인용)', !!(cred && cred.id && cred.pw), 'cred'],
+      ...(PUBONLY ? [] : [['알라딘 아이디·비밀번호 (자동 재로그인용)', !!(cred && cred.id && cred.pw), 'cred']]), /* (1.70.1) 로거는 알라딘 계정을 묻지도 받지도 않음 */
     ];
     const el = $('.setup');
     if (items.every((x) => x[1])) { el.className = 'setup done'; el.textContent = `✓ 설정 완료 · ${auth.currentUser.email.split('@')[0]} · PC: ${LS.get('pcName')}`; return; }
@@ -3383,7 +3384,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     el.innerHTML = `<h5>처음 한 번 해야 할 설정</h5><ul>${items.map(([t, ok, k]) => `<li class="${ok ? 'ok' : 'no'}"><span>${ok ? '✓ ' : ''}${t}</span>${ok ? '' : `<button data-fix="${k}">하기</button>`}</li>`).join('')}</ul>`;
     el.querySelectorAll('[data-fix]').forEach((b) => (b.onclick = () => {
       const k = b.dataset.fix;
-      if (k === 'login') auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(renderSetup).catch((e) => log('로그인 실패: ' + e.message, 1));
+      if (k === 'login') auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then(renderSetup).catch((e) => log('로그인 실패: ' + e.message + (/popup/i.test(e.code || e.message) ? ' — 주소창 오른쪽의 팝업 차단 표시를 눌러 이 사이트 팝업을 허용한 뒤 다시' : ''), 1));
       if (k === 'pcname') { const n = prompt('이 PC의 이름 (예: JS-MAIN, HOME)', (window.__rnPcName && window.__rnPcName.get()) || ''); if (n && n.trim()) { window.__rnPcName && window.__rnPcName.set(n.trim()); $('#rnpName').value = n.trim(); renderSetup(); } }
       if (k === 'cred') { box.classList.remove('showimp', 'showguide'); box.classList.add('showset'); $('#rnpId').focus(); }
     }));
@@ -3430,7 +3431,8 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     }
   }
   { const c = (GM_getValue('rnp-cred', null) || GM_getValue('rn-cred', null)); $('#rnpId').value = c ? c.id : ''; renderCred(); }
-  $('#rnpCredSave').onclick = () => {
+  if (PUBONLY) { ['#rnpCredSt', '#rnpId', '#rnpPw', '#rnpCredSave', '#rnpLoginM', '#rnpNaverSt'].forEach((q) => { const e = $(q); if (!e) return; const w = e.closest('label') || e.closest('.row') || e; w.style.display = 'none'; }); const pa = $('#rnpPubAnon'); if (pa) { pa.checked = true; pa.disabled = true; pa.title = '로거는 설정과 상관없이 늘 로그인 없이 읽음'; } } /* (1.70.1) 로거: 알라딘 계정 칸 숨김 · 🔓 늘 켬 */
+  $('#rnpCredSave').onclick = () => { if (PUBONLY) return log('🛡 로거에는 알라딘 계정을 넣지 않습니다', 1);
     const id = $('#rnpId').value.trim(); const pw = $('#rnpPw').value; const old = (GM_getValue('rnp-cred', null) || GM_getValue('rn-cred', null));
     if (id) { GM_setValue('rnp-cred', { id, pw: pw || (old && old.pw) || '' }); if (pw) GM_deleteValue('rnp-cred-failAt'); } else { GM_deleteValue('rnp-cred'); }
     $('#rnpPw').value = ''; renderCred(); renderSetup();
