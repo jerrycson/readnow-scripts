@@ -16,7 +16,7 @@
  *   · tetherIface/wifiIface: 자동으로 못 고를 때만 이름을 적음(예: "이더넷 3", "Wi-Fi") — 상태 화면에 후보 이름이 나옴
  */
 'use strict';
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const http = require('http'), https = require('https'), net = require('net'), dns = require('dns'), os = require('os'), fs = require('fs'), path = require('path'), dgram = require('dgram'), cp = require('child_process');
 
 const HOME = process.env.RN_TEST_HOME || __dirname; const ROOT = path.resolve(HOME, '..'); // D:\ReadNow\local → D:\ReadNow
@@ -35,23 +35,29 @@ loadCfg(); setInterval(loadCfg, 60e3);
 /* ── 길 정하기: 와이파이로 보낼 곳(우리 서비스)만 적고, 나머지는 모두 테더링 ── */
 const WIFI_HOSTS = [
   // Firebase·Google(로그인·저장소·스크립트 라이브러리) — 알라딘과 무관
-  'googleapis.com', 'firebaseio.com', 'firebaseapp.com', 'firebasedatabase.app', 'web.app', 'gstatic.com', 'google.com', 'googleusercontent.com', 'gvt1.com', 'gvt2.com', 'withgoogle.com', 'run.app', 'cloudfunctions.net',
+  /* (1.0.1 점검) google.com 통째가 아니라 꼭 필요한 주소만 — 알라딘 화면이 부르는 구글 쪽 주소(검색·광고·통계)가 와이파이로 나가지 않게 */
+  'googleapis.com', 'firebaseio.com', 'firebaseapp.com', 'firebasedatabase.app', 'web.app', 'gstatic.com', 'accounts.google.com', 'apis.google.com', 'chromewebstore.google.com', 'clients1.google.com', 'clients2.google.com', 'clients4.google.com', 'googleusercontent.com', 'gvt1.com', 'gvt2.com', 'withgoogle.com', 'run.app', 'cloudfunctions.net',
   // GitHub(웹앱·수집기·공용 파일)·CDN·Tampermonkey
   'github.com', 'githubusercontent.com', 'github.io', 'githubassets.com', 'cdnjs.cloudflare.com', 'jsdelivr.net', 'unpkg.com', 'tampermonkey.net',
   // 외부 정보 출처(알라딘 아님)
-  'bunjang.co.kr', 'ebay.com', 'frankfurter.app', 'frankfurter.dev', 'kpipa.or.kr', 'kakao.com', 'data4library.kr', 'dvdprime.com', 'koreaexim.go.kr', 'naver.com', 'kyobobook.co.kr', 'ridibooks.com', 'joongna.com', 'abebooks.com', 'daangn.com', 'joongmo.com', 'nl.go.kr', 'yes24.com',
+  /* (1.0.1 점검) 카카오·네이버도 통째가 아니라 쓰는 주소만(dapi.kakao.com · openapi/쇼핑 검색) */
+  'bunjang.co.kr', 'ebay.com', 'ebayimg.com', 'frankfurter.app', 'frankfurter.dev', 'kpipa.or.kr', 'dapi.kakao.com', 'data4library.kr', 'dvdprime.com', 'koreaexim.go.kr', 'openapi.naver.com', 'search.shopping.naver.com', 'kyobobook.co.kr', 'ridibooks.com', 'joongna.com', 'abebooks.com', 'daangn.com', 'joongmo.com', 'nl.go.kr', 'yes24.com',
   // Windows·크롬 자체 업데이트
   'microsoft.com', 'windowsupdate.com', 'msftconnecttest.com', 'live.com', 'office.com', 'chromium.org',
 ];
+/* (1.0.1 점검) 통계·광고 추적은 아예 막음(어느 길로도 안 나감) — 알라딘 화면에 심긴 통계가 이 PC를 다른 기록과 잇지 못하게 · 테더링 데이터도 아낌 */
+const TRACK_HOSTS = ['google-analytics.com', 'googletagmanager.com', 'doubleclick.net', 'googlesyndication.com', 'googleadservices.com', 'adservice.google.com', 'analytics.google.com', 'facebook.com', 'facebook.net', 'criteo.com', 'criteo.net', 'wcs.naver.net', 'wcs.naver.com', 'lcs.naver.com', 'nlog.naver.com', 'pixel.kakao.com', 'track.tiara.kakao.com', 'stat.tiara.kakao.com', 'hotjar.com', 'clarity.ms', 'scorecardresearch.com', 'adnxs.com', 'mobon.net', 'dable.io', 'acecounter.com', 'logger.co.kr'];
+const TRK = { n: 0, last: null };
 const ALADIN = /(^|\.)aladin\.co\.kr$|(^|\.)aladin\.kr$/i; // 알라딘은 목록과 상관없이 무조건 테더링
 const hostMatch = (h, list) => list.some((d) => h === d || h.endsWith('.' + d));
+const isTrack = (host) => { const h = String(host || '').toLowerCase().replace(/\.$/, ''); return !ALADIN.test(h) && hostMatch(h, TRACK_HOSTS); };
 function routeOf(host) { const h = String(host || '').toLowerCase().replace(/\.$/, ''); if (ALADIN.test(h)) return 'tether'; if (hostMatch(h, WIFI_HOSTS) || hostMatch(h, CFG.extraWifiHosts || [])) return 'wifi'; return 'tether'; }
 function groupOf(host) { const h = String(host || '').toLowerCase();
   if (ALADIN.test(h)) return 'aladin';
   if (hostMatch(h, ['googleapis.com', 'firebaseio.com', 'firebaseapp.com', 'firebasedatabase.app', 'web.app', 'run.app', 'cloudfunctions.net'])) return 'firebase';
-  if (hostMatch(h, ['google.com', 'gstatic.com', 'googleusercontent.com', 'withgoogle.com', 'gvt1.com', 'gvt2.com'])) return 'google';
+  if (hostMatch(h, ['accounts.google.com', 'apis.google.com', 'chromewebstore.google.com', 'clients1.google.com', 'clients2.google.com', 'clients4.google.com', 'gstatic.com', 'googleusercontent.com', 'withgoogle.com', 'gvt1.com', 'gvt2.com'])) return 'google';
   if (hostMatch(h, ['github.com', 'githubusercontent.com', 'github.io', 'githubassets.com', 'cdnjs.cloudflare.com', 'jsdelivr.net', 'unpkg.com', 'tampermonkey.net'])) return 'update';
-  if (hostMatch(h, ['bunjang.co.kr', 'ebay.com', 'frankfurter.app', 'frankfurter.dev', 'kpipa.or.kr', 'kakao.com', 'data4library.kr', 'dvdprime.com', 'koreaexim.go.kr', 'naver.com', 'kyobobook.co.kr', 'ridibooks.com', 'joongna.com', 'abebooks.com', 'daangn.com', 'joongmo.com', 'nl.go.kr', 'yes24.com'])) return 'ext';
+  if (hostMatch(h, ['bunjang.co.kr', 'ebay.com', 'ebayimg.com', 'frankfurter.app', 'frankfurter.dev', 'kpipa.or.kr', 'dapi.kakao.com', 'data4library.kr', 'dvdprime.com', 'koreaexim.go.kr', 'openapi.naver.com', 'search.shopping.naver.com', 'kyobobook.co.kr', 'ridibooks.com', 'joongna.com', 'abebooks.com', 'daangn.com', 'joongmo.com', 'nl.go.kr', 'yes24.com'])) return 'ext';
   if (hostMatch(h, ['microsoft.com', 'windowsupdate.com', 'msftconnecttest.com', 'live.com', 'office.com', 'chromium.org'])) return 'system';
   return routeOf(h) === 'tether' ? 'other_tether' : 'other'; }
 
@@ -109,7 +115,7 @@ function openUp(host, port, cb) { const g = gate(host); if (g.err) return cb(new
   lookup4(host, (e, ip) => { if (e) return cb(e, null, g); const s = net.connect({ host: ip, port: +port, localAddress: g.local, family: 4 }); let done = false; s.once('connect', () => { if (done) return; done = true; track(s, g.route, groupOf(host)); cb(null, s, g); }); s.once('error', (er) => { if (done) return; done = true; cb(er, null, g); }); s.setTimeout(30000, () => { if (!done) { done = true; s.destroy(); cb(new Error('연결 시간 초과'), null, g); } }); }); }
 
 /* ── 상태 화면·API ── */
-function status() { const u = uCur(); const d = u.days[day()] || { tether: 0, wifi: 0, groups: {}, blocked: 0 }; return { ok: true, ver: VERSION, at: kst(), tether: ST.tether, wifi: ST.wifi, cand: ST.cand, capGB: +CFG.capGB || 48, capBytes: capBytes(), capped: capped(), month: { key: u.month, tether: u.total.tether || 0, wifi: u.total.wifi || 0 }, today: { key: day(), tether: d.tether || 0, wifi: d.wifi || 0, groups: d.groups || {}, blocked: d.blocked || 0, lastBlocked: d.lastBlocked || null }, days: Object.fromEntries(Object.entries(u.days).map(([k, v]) => [k, { tether: v.tether || 0, wifi: v.wifi || 0, groups: v.groups || {} }])), startedAt: ST.startedAt, updAt: UPD.at, updMsg: UPD.msg, defaultWarn: ST.defaultWarn || null }; }
+function status() { const u = uCur(); const d = u.days[day()] || { tether: 0, wifi: 0, groups: {}, blocked: 0 }; return { ok: true, ver: VERSION, at: kst(), track: { ...TRK }, tether: ST.tether, wifi: ST.wifi, cand: ST.cand, capGB: +CFG.capGB || 48, capBytes: capBytes(), capped: capped(), month: { key: u.month, tether: u.total.tether || 0, wifi: u.total.wifi || 0 }, today: { key: day(), tether: d.tether || 0, wifi: d.wifi || 0, groups: d.groups || {}, blocked: d.blocked || 0, lastBlocked: d.lastBlocked || null }, days: Object.fromEntries(Object.entries(u.days).map(([k, v]) => [k, { tether: v.tether || 0, wifi: v.wifi || 0, groups: v.groups || {} }])), startedAt: ST.startedAt, updAt: UPD.at, updMsg: UPD.msg, defaultWarn: ST.defaultWarn || null }; }
 const gb = (b) => (b / 1073741824).toFixed(2) + 'GB';
 function statusHtml() { const s = status(); const pct = Math.min(100, s.month.tether / (s.capGB * 1073741824) * 100);
   return `<!doctype html><meta charset="utf-8"><title>리드나우 로컬 도우미</title><style>body{font-family:system-ui,'Malgun Gothic';margin:20px;max-width:760px}b.ok{color:#1F6F4A}b.no{color:#B0322A}.bar{height:14px;background:#eee;border-radius:7px;overflow:hidden}.bar i{display:block;height:100%;background:${pct > 90 ? '#B0322A' : '#3F7FD1'};width:${pct}%}td{padding:2px 8px}</style>
@@ -121,7 +127,7 @@ function api(req, res) { const u = new URL(req.url, 'http://rn.local'); const H 
   if (u.pathname === '/status') { res.writeHead(200, { ...H, 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify(status())); }
   if (u.pathname === '/recheck') { checkTether('api').then(() => { res.writeHead(200, { ...H, 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(status())); }); return; }
   if (u.pathname === '/start') { const go = 'https://www.aladin.co.kr/shop/usedshop/wshopitem.aspx?SC=996008&rnPub=1'; res.writeHead(200, { ...H, 'Content-Type': 'text/html; charset=utf-8' }); return res.end(`<!doctype html><meta charset="utf-8"><title>리드나우 공개 수집 — 준비 중</title><body style="font-family:system-ui,'Malgun Gothic';margin:30px"><h2>리드나우 공개 수집</h2><p id="m">테더링 확인을 기다리는 중…</p><p style="color:#777">테더링이 확인되면 알라딘 공개 화면(수집기)으로 저절로 넘어갑니다. 확인되지 않으면 알라딘에는 아무 요청도 보내지 않습니다.</p><script>async function t(){try{const s=await (await fetch('/status',{cache:'no-store'})).json();if(s.tether.ok&&!s.capped){document.getElementById('m').textContent='✓ 테더링 확인 — 이동합니다';location.replace(${JSON.stringify(go)});return}document.getElementById('m').textContent='✗ '+(s.capped?'이번 달 테더링 상한 도달':s.tether.why)+' — 20초마다 다시 봄'}catch(e){document.getElementById('m').textContent='도우미 응답 없음 — 20초마다 다시 봄'}setTimeout(t,20000)}t()</script>`); }
-  if (u.pathname === '/route') { const h = u.searchParams.get('host') || ''; res.writeHead(200, { ...H, 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify({ host: h, route: routeOf(h), group: groupOf(h), gate: gate(h).err || 'ok' })); }
+  if (u.pathname === '/route') { const h = u.searchParams.get('host') || ''; res.writeHead(200, { ...H, 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify({ host: h, route: isTrack(h) ? 'blocked(track)' : routeOf(h), group: groupOf(h), gate: gate(h).err || 'ok' })); }
   res.writeHead(200, { ...H, 'Content-Type': 'text/html; charset=utf-8' }); res.end(statusHtml()); }
 const isSelf = (host) => /^(rn\.local|localhost|127\.0\.0\.1)(:\d+)?$/i.test(String(host || ''));
 
@@ -130,6 +136,7 @@ const server = http.createServer((req, res) => {
   let u; try { u = new URL(req.url.startsWith('http') ? req.url : 'http://' + (req.headers.host || 'rn.local') + req.url); } catch (e) { res.writeHead(400); return res.end('bad url'); }
   if (isSelf(u.host) || !req.url.startsWith('http')) return api(req, res); // 상태 화면(직접 열거나 rn.local로)
   const host = u.hostname, port = u.port || 80;
+  if (isTrack(host)) { TRK.n++; TRK.last = host; res.writeHead(204); return res.end(); }
   openUp(host, port, (e, s, g) => { if (e) { addBlocked(host, e.message); res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8', 'X-ReadNow-Block': encodeURIComponent(e.message) }); return res.end('리드나우 로컬 도우미: ' + e.message); }
     const hdr = { ...req.headers }; delete hdr['proxy-connection']; delete hdr['proxy-authorization'];
     const up = http.request({ createConnection: () => s, host, port, method: req.method, path: u.pathname + u.search, headers: hdr }, (r) => { res.writeHead(r.statusCode, r.headers); r.pipe(res); });
@@ -137,6 +144,7 @@ const server = http.createServer((req, res) => {
 });
 server.on('connect', (req, cs, head) => { const m = String(req.url).match(/^\[?([^\]]+?)\]?:(\d+)$/); if (!m) { cs.end('HTTP/1.1 400 Bad Request\r\n\r\n'); return; } const [, host, port] = m;
   if (isSelf(host)) { cs.end('HTTP/1.1 403 Forbidden\r\n\r\n'); return; }
+  if (isTrack(host)) { TRK.n++; TRK.last = host; cs.end('HTTP/1.1 403 Forbidden\r\n\r\n'); return; }
   openUp(host, port, (e, s) => { if (e) { addBlocked(host, e.message); try { cs.end(`HTTP/1.1 502 Bad Gateway\r\nX-ReadNow-Block: ${encodeURIComponent(e.message)}\r\n\r\n`); } catch (x) {} return; }
     cs.write('HTTP/1.1 200 Connection Established\r\n\r\n'); if (head && head.length) s.write(head); s.pipe(cs); cs.pipe(s);
     const kill = () => { try { s.destroy(); } catch (x) {} try { cs.destroy(); } catch (x) {} }; s.on('error', kill); cs.on('error', kill); s.on('close', kill); cs.on('close', kill); });

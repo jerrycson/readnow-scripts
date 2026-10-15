@@ -58,12 +58,12 @@ try { $s = Invoke-RestMethod -Uri 'http://127.0.0.1:8899/status' -TimeoutSec 5; 
 Say "전용 크롬 바로가기"
 $chrome = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe", "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $chrome) { Warn '크롬을 못 찾음 — 크롬을 설치한 뒤 이 줄을 다시 실행해 주세요' } else {
-  $cargs = "--user-data-dir=`"$Root\chrome-pub`" --proxy-server=`"http://127.0.0.1:8899`" --force-webrtc-ip-handling-policy=disable_non_proxied_udp --blink-settings=imagesEnabled=false --no-first-run --no-default-browser-check http://127.0.0.1:8899/start"
+  $cargs = "--user-data-dir=`"$Root\chrome-pub`" --proxy-server=`"http://127.0.0.1:8899`" --force-webrtc-ip-handling-policy=disable_non_proxied_udp --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --blink-settings=imagesEnabled=false --no-first-run --no-default-browser-check http://127.0.0.1:8899/start"
   $pcmd = Join-Path $Root 'local\start-pub.cmd'
   [IO.File]::WriteAllText($pcmd, "@echo off`r`n:w`r`ncurl -s -o nul http://127.0.0.1:8899/status || (timeout /t 3 /nobreak >nul & goto w)`r`nstart `"`" `"$chrome`" $cargs`r`n")
   foreach ($where in @([Environment]::GetFolderPath('Desktop'), $startup)) {
     $l = $sh.CreateShortcut((Join-Path $where '리드나우 공개 수집.lnk')); $l.TargetPath = $pcmd; $l.WorkingDirectory = (Join-Path $Root 'local'); $l.IconLocation = "$chrome,0"; $l.WindowStyle = 7; $l.Save() }
-  Ok "바탕화면·시작 프로그램에 '리드나우 공개 수집' — 따로 된 크롬(프로필 $Root\chrome-pub · 사진 끔 · WebRTC UDP 막음)"
+  Ok "바탕화면·시작 프로그램에 '리드나우 공개 수집' — 따로 된 크롬(프로필 $Root\chrome-pub · 사진 끔 · WebRTC UDP 막음 · 가려져도 늦추지 않음)"
 }
 
 # 5) 24시간 — 절전 끔

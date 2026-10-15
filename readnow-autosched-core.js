@@ -3,7 +3,7 @@
  * 저장·읽기(Firebase)는 쓰는 쪽이 ctx로 넘겨 줌 — 이 파일은 계산과 그리기만. */
 (function (G) {
   'use strict';
-  const VERSION = '0.5.5'; // (0.5.5) 시간표 줄마다 옅은 시각 숫자 · 좁은 블록 옆에 시각 // (0.5.4) 🌐 공개 읽기 일은 남는 PC도 맡음(ctx.anyPc) // (0.5.3) 만지는 쪽 크게(위 시간표 ↔ 아래 칸 목록 2/3) · 실제 밀림 분석(지난 회차 기록으로 늦게 시작·겹침·건너뜀·멈춤 + 고칠 곳 추천) // (0.5.2) 회차가 많으면 지금 가까운 것만 · 시간표 이름 누르면 그 칸 하루 걸린 시간 합 · 칸 끌 때 화면 끝에서 저절로 굴림 // (0.5.1 점검) 요일 거르기를 '다음' 표시에도 · n분마다 자정 넘김 · 같은 시작·끝 시간 창 막음 · 더 새 판이 저장한 칸을 옛 편집기가 덮지 않음 // (0.5.0) 🖥 자동 수집 담당 PC + 부재 시 순서(ownerOf · 편집기 맨 위) · (0.4.0) 📅 매월 정한 날(1~31일·말일 · 그날 정한 시각에 한 번) · 일정 간격 5분까지 · 시간표 주황 선(밀림)에 마우스 설명
+  const VERSION = '0.5.6'; // (0.5.6) 공개 전용 PC(ctx.pubAll)는 PC를 정해 둔 칸도 공개 일이면 맡음 // (0.5.5) 시간표 줄마다 옅은 시각 숫자 · 좁은 블록 옆에 시각 // (0.5.4) 🌐 공개 읽기 일은 남는 PC도 맡음(ctx.anyPc) // (0.5.3) 만지는 쪽 크게(위 시간표 ↔ 아래 칸 목록 2/3) · 실제 밀림 분석(지난 회차 기록으로 늦게 시작·겹침·건너뜀·멈춤 + 고칠 곳 추천) // (0.5.2) 회차가 많으면 지금 가까운 것만 · 시간표 이름 누르면 그 칸 하루 걸린 시간 합 · 칸 끌 때 화면 끝에서 저절로 굴림 // (0.5.1 점검) 요일 거르기를 '다음' 표시에도 · n분마다 자정 넘김 · 같은 시작·끝 시간 창 막음 · 더 새 판이 저장한 칸을 옛 편집기가 덮지 않음 // (0.5.0) 🖥 자동 수집 담당 PC + 부재 시 순서(ownerOf · 편집기 맨 위) · (0.4.0) 📅 매월 정한 날(1~31일·말일 · 그날 정한 시각에 한 번) · 일정 간격 5분까지 · 시간표 주황 선(밀림)에 마우스 설명
   /* @@AS_ENGINE_BEGIN — (1.60.0) ⏰ 매일 자동 수집 엔진 (계산만 · Firebase·화면 없음 → 따로 떼어 시험함)
    *  칸(slot) = { id, job:'prd:키'|'crm:키', on, name?, trig, days?, win?, pcs?, gapH?, late?, maxMin?, retry? }
    *   trig.t = 'time'  { times:['HH:MM'…] }            정한 시각 (하루 여러 번) — 그 시각이 지나면 그날 안에 한 번(밀린 회차는 하나로 묶음)
@@ -94,7 +94,7 @@
     function due(doc, runs, ctx) { const slots = slotsOf(doc); if (!doc || !doc.on) return []; const now = ctx.now; const { day, min, dow } = kst(now); const out = []; const R = runs || {};
       const last = lastDoneMap(R, ctx.stats, slots); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
       slots.forEach((s, idx) => { if (!s.on) return; const kind = s.job.split(':')[0];
-        if (s.days && !s.days.includes(dow)) return; if (s.pcs && !s.pcs.includes(String(ctx.pc))) return; if (!s.pcs && ctx.own && String(ctx.own.pc || '') !== String(ctx.pc) && !(ctx.anyPc && ctx.anyPc(s.job))) return; /* (0.5.0) 담당 PC(또는 임시로 맡은 PC)만 · (0.5.4) 🌐 공개 읽기 일은 '남는 PC 돕기'를 켠 PC도 (먼저 잡은 PC가 함 — 회차 기록 트랜잭션) */ if (kind === 'crm' && !ctx.crmOk) return;
+        if (s.days && !s.days.includes(dow)) return; if (s.pcs && !s.pcs.includes(String(ctx.pc)) && !(ctx.pubAll && ctx.anyPc && ctx.anyPc(s.job))) return; /* (0.5.6) 공개 전용 PC는 PC를 정해 둔 칸이라도 공개 일이면 함 */ if (!s.pcs && ctx.own && String(ctx.own.pc || '') !== String(ctx.pc) && !(ctx.anyPc && ctx.anyPc(s.job))) return; /* (0.5.0) 담당 PC(또는 임시로 맡은 PC)만 · (0.5.4) 🌐 공개 읽기 일은 '남는 PC 돕기'를 켠 PC도 (먼저 잡은 PC가 함 — 회차 기록 트랜잭션) */ if (kind === 'crm' && !ctx.crmOk) return;
         const mine = todayRuns(R, s.id, day); const busy = mine.some(([, r]) => r && r.state === 'running' && !isLost(r, now));
         /* 다시 하기(멈춘 회차) — 먼저 봄 */
         if (s.retry && !busy) { for (const [k, r] of mine) { if (!r || !['error', 'timeout', 'lost'].includes(r.state) && !(r.state === 'running' && isLost(r, now))) continue; const base = k.replace(/~r\d+$/, ''); const n = (+(k.match(/~r(\d+)$/) || [])[1] || 0) + 1; if (n > s.retry.n) continue; const nk = `${base}~r${n}`; if (R[nk]) continue; if (now - toMs(r.at) < s.retry.gap * 60e3) continue; out.push({ slot: s, idx, key: nk, mark: 'run', why: `멈춘 회차 다시 (${n}/${s.retry.n})`, merge: [], tries: n }); return; } }
