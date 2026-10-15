@@ -33,7 +33,7 @@ $ver = & $node -v; Ok "Node.js $ver ($node)"
 
 # 3) 도우미 받기 (+ 문법 검사)
 Say '도우미 받기'
-$js = Join-Path $Root 'local\readnow-local.js'; $tmp = "$js.dl"
+$js = Join-Path $Root 'local\readnow-local.js'; $tmp = (Join-Path $Root 'local\readnow-local.dl.js')
 Invoke-WebRequest -UseBasicParsing -Uri "$RAW/readnow-local.js" -OutFile $tmp
 & $node --check $tmp; if ($LASTEXITCODE -ne 0) { throw '받은 도우미 파일 검사 실패 — 잠시 뒤 다시 실행해 주세요' }
 Move-Item -Force $tmp $js
