@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.69.0의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.70.0의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.69.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.69.0', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.70.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.70.0', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -161,7 +161,7 @@
       .rncard a{display:block;text-align:center;padding:4px;border:1px solid #2F5D50;border-radius:5px;color:#2F5D50;text-decoration:none;font-weight:bold}
       .rnb{display:inline-block;margin:0 0 0 3px;padding:0 5px;border-radius:4px;font:bold 11px "Malgun Gothic",sans-serif;cursor:pointer;vertical-align:middle;white-space:nowrap} .rnb-bl{background:#FDECEA;color:#B0322A} .rnb-cau{background:#FFF4E5;color:#A8661B} .rnb-vip{background:#FBF3DC;color:#8A6D1D} .rnb-rep{background:#E6EFEB;color:#2F5D50} .rnb-new{background:#EEF1F3;color:#56636C} .rnb-none{background:#F3F3F3;color:#999}
       .rnfloat{position:fixed;z-index:2147483646}`;
-    function style() { if (document.getElementById('rn-card-css')) return; const st = document.createElement('style'); st.id = 'rn-card-css'; st.textContent = CSS; document.head.appendChild(st); }
+    function style() { if (globalThis.__rnById('rn-card-css')) return; const st = document.createElement('style'); st.id = 'rn-card-css'; st.textContent = CSS; document.head.appendChild(st); }
     return { esc, FBx, user, loadCfg, loadBundles, badges, cardHtml, bind, style };
   })();
 
@@ -1907,7 +1907,7 @@
   #rn-crm .sw span::before{content:'';position:absolute;left:2px;top:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:.2s}
   #rn-crm .sw input:checked+span{background:${C.cloth}} #rn-crm .sw input:checked+span::before{transform:translateX(14px)}
   #rn-crm .guide h4{margin:8px 0 2px;font-size:12.5px} #rn-crm .guide p{margin:0 0 5px}`;
-  document.head.appendChild(style);
+  globalThis.__rnHead(style);
 
   const el = document.createElement('div'); el.id = 'rn-crm';
   el.innerHTML = `
@@ -1991,7 +1991,7 @@
     <div class="log"></div>
     <input type="file" accept=".json" style="display:none">
   </div>`;
-  document.body.appendChild(el);
+  globalThis.__rnMount(el);
   const $ = (s) => el.querySelector(s);
   if (localStorage.getItem('rn-crm-min') === '1') el.classList.add('min');
   $('.hd').onclick = () => { el.classList.toggle('min'); localStorage.setItem('rn-crm-min', el.classList.contains('min') ? '1' : '0'); };
@@ -2097,18 +2097,18 @@
     if (r) $('.stt').textContent = `멈춘 작업 있음: ${r === 'bulk' ? '전체 일괄 수집' : TASKS[r].label} — 개요 탭 '멈춘 작업'에서 이어하기`;
     if (ob) { $('.stt').textContent = `이 PC의 다른 탭(${ob.page === 'worders.aspx' ? '주문조회' : '판매관리'})에서 '${ob.label}' 진행 중`; $('.now').textContent = '진행 상황은 그 탭에서 보입니다. 끝나면 이 탭 숫자도 자동으로 갱신됩니다.'; }
     const ic = await dbCount('issues'); const bg = $('.badge'); bg.textContent = ic.toLocaleString(); bg.classList.toggle('zero', ic === 0);
-    el.querySelectorAll('[data-s]').forEach((i) => { if (document.activeElement === i) return; const k = i.dataset.s; if (i.type === 'checkbox') i.checked = !!settings[k]; else i.value = k.startsWith('delay') ? settings[k] / 1000 : settings[k] ?? ''; });
+    el.querySelectorAll('[data-s]').forEach((i) => { if (globalThis.__rnAE() === i) return; const k = i.dataset.s; if (i.type === 'checkbox') i.checked = !!settings[k]; else i.value = k.startsWith('delay') ? settings[k] / 1000 : settings[k] ?? ''; });
     const cred = (GM_getValue('rn-cred', null) || GM_getValue('rnp-cred', null)); $('[data-c="id"]').value = cred ? cred.id : '';
-    if (document.activeElement !== $('[data-c="pcname"]')) $('[data-c="pcname"]').value = PC.name || '';
+    if (globalThis.__rnAE() !== $('[data-c="pcname"]')) $('[data-c="pcname"]').value = PC.name || '';
     for (const [key, store] of [['pw', 'rn-cred'], ['fbpw', 'rn-fbpw']]) {
       const v = GM_getValue(store, null); const has = !!(v && v.pw); const st = $(`.pwst[data-for="${key}"]`); const inp = $(`[data-c="${key}"]`);
       st.textContent = has ? '(저장되어 있음)' : '(저장 안 됨)'; st.className = 'pwst ' + (has ? 'on' : 'off');
       inp.placeholder = has ? '●●●●●●●● 저장됨 (바꿀 때만 새로 입력)' : '비밀번호를 입력하세요';
     }
-    el.querySelectorAll('[data-bill]').forEach((r) => { if (document.activeElement !== r) r.checked = r.dataset.bill === (settings.billing || 'paid'); });
-    const mode = GM_getValue('rn-fbmode', 'google'); el.querySelectorAll('[data-m]').forEach((r) => { if (document.activeElement !== r) r.checked = r.dataset.m === mode; });
+    el.querySelectorAll('[data-bill]').forEach((r) => { if (globalThis.__rnAE() !== r) r.checked = r.dataset.bill === (settings.billing || 'paid'); });
+    const mode = GM_getValue('rn-fbmode', 'google'); el.querySelectorAll('[data-m]').forEach((r) => { if (globalThis.__rnAE() !== r) r.checked = r.dataset.m === mode; });
     $('.fbpwbox').style.display = mode === 'password' ? '' : 'none';
-    const fpc = GM_getValue('rn-fbpw', null); if (document.activeElement !== $('[data-c="fbemail"]')) $('[data-c="fbemail"]').value = fpc ? fpc.email : '';
+    const fpc = GM_getValue('rn-fbpw', null); if (globalThis.__rnAE() !== $('[data-c="fbemail"]')) $('[data-c="fbemail"]').value = fpc ? fpc.email : '';
     { const used = await writesToday(); const hit = settings.billing !== 'paid' && await limitHitToday(); const q = $('.fbq'); q.classList.toggle('hot', hit || (writeCap() !== Infinity && used > writeCap() * 0.7));
       q.innerHTML = hit ? `<b>오늘 무료 쓰기 한도(2만 건)에 도달한 것으로 보입니다.</b><br>초기화: <b>${resetText()}</b>. 그 뒤 이어하기를 누르세요.`
         : settings.billing === 'paid' ? `유료(Blaze): 무료 2만 건을 넘으면 사용한 만큼 청구. ${noCapNow() ? `<b>${settings.noCapUntil}까지 상한 없음</b> (크레딧 기간), 그 뒤 하루 ${(settings.dailyWriteCap || 200000).toLocaleString()}건` : `하루 안전 상한 <b>${writeCap().toLocaleString()}건</b>`}<br>오늘 사용량 약 <b>${used.toLocaleString()}건</b> · 날짜 기준 초기화: ${resetText()}` : `무료 쓰기 한도 <b>하루 2만 건</b>. 이 PC가 센 오늘 사용량 약 <b>${used.toLocaleString()}건</b><br><span style="font-size:10.5px">(이 PC에서 올린 것만 셉니다. 다른 PC·예전 버전에서 올린 양은 빠짐)</span><br>다음 초기화: <b>${resetText()}</b>`; }

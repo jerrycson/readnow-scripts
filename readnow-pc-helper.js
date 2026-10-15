@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.69.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.70.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.69.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.69.0', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.70.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.70.0', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -24,7 +24,7 @@
   document.addEventListener('focusout', (e) => { const t = e.target; if (t && t.tagName === 'TEXTAREA' && !t.closest('#rn-ph')) { t._rnPos = t.selectionStart; t._rnEnd = t.selectionEnd; } }, true); // 커서 자리 기억 (문구를 누르는 순간 입력칸에서 커서가 빠져도 그 자리에 넣음)
   const target = () => (lastTa && document.contains(lastTa) ? lastTa : null) || document.querySelector('#txtAnswer') || [...document.querySelectorAll('textarea')].find((t) => !t.closest('#rn-ph') && t.getClientRects().length) || null;
   function insert(text) { const ta = target(); if (!ta) { flash('답변 입력칸을 찾지 못했습니다 — 입력칸을 한 번 누른 뒤 문구를 누르세요'); return; }
-    const v = ta.value; const act = document.activeElement === ta; const s = Math.min(v.length, act ? ta.selectionStart : ta._rnPos ?? v.length); const e2 = Math.min(v.length, Math.max(s, act ? ta.selectionEnd : ta._rnEnd ?? s));
+    const v = ta.value; const act = globalThis.__rnAE() === ta; const s = Math.min(v.length, act ? ta.selectionStart : ta._rnPos ?? v.length); const e2 = Math.min(v.length, Math.max(s, act ? ta.selectionEnd : ta._rnEnd ?? s));
     const before = v.slice(0, s), after = v.slice(e2); const pre = before && !/\n$/.test(before) ? '\n' : ''; const post = after && !/^\n/.test(after) ? '\n' : '';
     ta.value = before + pre + text + post + after; const pos = (before + pre + text).length; ta._rnPos = ta._rnEnd = pos + post.length;
     ta.dispatchEvent(new Event('input', { bubbles: true })); ta.dispatchEvent(new Event('change', { bubbles: true })); try { ta.focus(); ta.setSelectionRange(ta._rnPos, ta._rnPos); } catch (e) {} flash(''); }

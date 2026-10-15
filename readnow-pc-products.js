@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.69.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.70.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.69.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.69.0', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.70.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.70.0', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -80,7 +80,7 @@
   async function openMonView(k, S0) {
     const ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:2147483645;background:rgba(0,0,0,.35);display:flex;justify-content:center;align-items:flex-start;padding:30px 10px;overflow:auto';
     const [lbl, fg, bg, why] = MON[k]; ov.innerHTML = `<div style="background:#fff;border-radius:10px;width:min(1100px,100%);padding:12px;font:13px/1.5 sans-serif;color:#1E2B28"><div style="display:flex;justify-content:space-between;align-items:center"><b style="color:${fg};font-size:16px">${lbl} — 전체 모아보기</b><a href="#" id="mv_x">닫기 ✕</a></div><div style="color:#5B6B66">${why}</div><div id="mv_body">우리 상품 기록 읽는 중…</div></div>`;
-    document.body.appendChild(ov); ov.querySelector('#mv_x').onclick = (e) => { e.preventDefault(); ov.remove(); }; ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+    globalThis.__rnMount(ov); ov.querySelector('#mv_x').onclick = (e) => { e.preventDefault(); ov.remove(); }; ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
     if (!MONALL) { const m = []; const ss = await C('prd_listings').get(); ss.forEach((d) => m.push({ id: d.id, ...d.data() })); MONALL = m; }
     const rows = MONALL.filter((l) => PR.groupOfListing(l, S0) === k);
     let sort = 'reg', q = '';
@@ -110,7 +110,7 @@
       b.style.cssText = `display:inline-block;margin-top:2px;padding:0 5px;border-radius:8px;font-size:11px;font-weight:700;color:#fff;background:${fg}`; b.textContent = lbl;
       (cell ? cell.parentNode : tr.lastElementChild).appendChild(b);
     });
-    const tbl = document.querySelector('input.batchChkBox'); if (!tbl || document.getElementById('rn-mon-legend')) return;
+    const tbl = document.querySelector('input.batchChkBox'); if (!tbl || globalThis.__rnById('rn-mon-legend')) return;
     const lg = document.createElement('div'); lg.id = 'rn-mon-legend'; lg.style.cssText = 'margin:6px 0;padding:6px 10px;border:1px solid #D6DDDA;border-radius:8px;background:#fff;font-size:12px;color:#1E2B28';
     const rp = S0.rollout || {}; lg.innerHTML = `<b>가격 감시 범례</b> (판정 엔진 · 적용 ${rp.treatPct || 0}% / 비교 ${rp.controlPct || 0}%) ` + Object.entries(MON).map(([k, [l, fg, bg, why]]) => `<span title="${why}" style="display:inline-block;margin:0 4px;padding:1px 6px;border-radius:8px;background:${bg};border:1px solid ${fg};color:${fg};font-weight:700">${l} <small>이 쪽 ${n[k]}</small> <a href="#" data-monall="${k}" style="color:${fg}">전체 모아보기</a> <a href="#" data-monhere="${k}" style="color:${fg}">이 쪽만</a></span>`).join('') + ' <a href="#" data-monhere="" style="color:#5B6B66">이 쪽 전부 보기</a><br><span style="color:#5B6B66">줄 배경색 = 묶음 · 표시 없는 줄 = 감시 대상 아님 · 알라딘 목록은 알라딘 서버가 25~100개씩 나눠 보내므로, 전체에서 고르기는 \'전체 모아보기\'(우리 상품 기록 기준)로 봅니다</span>';
     const table = tbl.closest('table'); if (table && table.parentNode) table.parentNode.insertBefore(lg, table);
@@ -190,7 +190,7 @@
       async function doTest(t, b) { b.disabled = true; b.textContent = '판매중으로 바꾸는 중…';
         try { const lid = await lidOf(t); const al = await setAladinStatus(lid, 15, 1); GM_setValue('rn-cash-test', { id: t.id, lineNo: t.it.lineNo, listingId: lid, at: Date.now() }); await sendSignal('reopen', t, { msg: al || null });
           b.textContent = '판매중으로 바뀜 — 맨 위 빨간 줄에서 다시 판매중지'; window.scrollTo(0, 0); setTimeout(paintCashSold, 600); } catch (er) { b.disabled = false; b.textContent = '다시 시도'; alert('테스트 실패: ' + er.message); } }
-      document.getElementById('rn-cash-bar')?.remove(); document.getElementById('rn-cash-chip')?.remove();
+      globalThis.__rnById('rn-cash-bar')?.remove(); globalThis.__rnById('rn-cash-chip')?.remove();
       const e = (x) => String(x == null ? '' : x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
       const btn = (attr, i, label, bg, fg) => `<button ${attr}="${i}" style="margin-left:6px;border:1px solid ${bg};background:${fg ? bg : '#fff'};color:${fg ? '#fff' : bg};border-radius:6px;padding:2px 9px;cursor:pointer;font-weight:700">${label}</button>`;
       if (todo.length || done.length) {
@@ -338,7 +338,7 @@
   #rnp .drop b{display:block;color:${K.cloth};font-size:13px} #rnp .drop span{display:block;margin-top:3px;font-size:11px;color:${K.sub}}
   #rnp .drop.over{background:${K.clothSoft};border-color:${K.cloth}}
   #rnp .guide h4{margin:8px 0 2px;font-size:12.5px} #rnp .guide p{margin:0 0 5px;font-size:11.5px}`;
-  const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+  const st = document.createElement('style'); st.textContent = css; globalThis.__rnHead(st);
   const box = document.createElement('div'); box.id = 'rnp';
   box.innerHTML = `
   <div class="hd"><b>리드나우 상품 수집</b><span>v${VER} (눌러서 접기)</span></div>
@@ -419,7 +419,7 @@
       <h4>밤새 돌릴 때</h4><p>Windows 절전 모드를 꺼 두세요. 탭은 뒤에 있어도 됩니다.</p>
     </div>
   </div>`;
-  document.body.appendChild(box);
+  globalThis.__rnMount(box);
   const $ = (s) => box.querySelector(s);
   $('.hd').onclick = () => box.classList.toggle('min');
   box.querySelectorAll('[data-pane]').forEach((b) => (b.onclick = () => { const c = 'show' + b.dataset.pane; const on = !box.classList.contains(c); box.classList.remove('showset', 'showimp', 'showguide'); if (on) box.classList.add(c); }));
@@ -522,10 +522,10 @@
   $('#rnpName').onchange = (e) => { (window.__rnPcName && window.__rnPcName.set($('#rnpName').value)), LS.set('pcName', e.target.value.trim() || PC_ID); renderSetup(); };
   // 저장 상태를 눈으로 확인: 초록 = 저장 완료(더 넣을 필요 없음), 주황 = 비어 있음, 빨강 = 최근 자동 로그인 실패
   function renderCred() {
-    { const box = $('#rnpCredSt'); if (box && !document.getElementById('rnpLoginM')) box.insertAdjacentHTML('beforebegin', `<div id="rnpLoginM" style="margin:4px 0;font-size:12px"><b>다시 로그인 방식</b> <label><input type="radio" name="rnpLm" value="naver"> 네이버로 로그인 (권장)</label> <label><input type="radio" name="rnpLm" value="id"> 알라딘 아이디·비밀번호</label><div id="rnpNaverSt" style="color:#5B6B66"></div></div>`);
+    { const box = $('#rnpCredSt'); if (box && !globalThis.__rnById('rnpLoginM')) box.insertAdjacentHTML('beforebegin', `<div id="rnpLoginM" style="margin:4px 0;font-size:12px"><b>다시 로그인 방식</b> <label><input type="radio" name="rnpLm" value="naver"> 네이버로 로그인 (권장)</label> <label><input type="radio" name="rnpLm" value="id"> 알라딘 아이디·비밀번호</label><div id="rnpNaverSt" style="color:#5B6B66"></div></div>`);
       const m = window.__rnLoginMethod ? window.__rnLoginMethod() : 'naver'; document.querySelectorAll('input[name="rnpLm"]').forEach((r) => { r.checked = r.value === m; r.onchange = () => { GM_setValue('rnu-login-method', r.value); renderCred(); }; });
       const ok = GM_getValue('rnu-naver-okAt', 0), fail = GM_getValue('rnu-naver-failAt', 0), need = GM_getValue('rnu-need-naver', 0); const t = (ms) => new Date(ms).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-      const st = document.getElementById('rnpNaverSt'); if (st) st.textContent = m !== 'naver' ? '아이디 로그인은 자동입력방지가 생겨 자동으로 안 될 수 있습니다' : need && need > ok ? `⚠ 네이버 로그인 필요 (${t(need)}) — 이 PC 브라우저에서 네이버에 로그인(로그인 상태 유지)` : ok ? `✓ 마지막 네이버 자동 로그인 ${t(ok)}` : '이 PC 브라우저에서 네이버에 한 번 로그인(로그인 상태 유지)해 두면 자동으로 다시 로그인합니다';
+      const st = globalThis.__rnById('rnpNaverSt'); if (st) st.textContent = m !== 'naver' ? '아이디 로그인은 자동입력방지가 생겨 자동으로 안 될 수 있습니다' : need && need > ok ? `⚠ 네이버 로그인 필요 (${t(need)}) — 이 PC 브라우저에서 네이버에 로그인(로그인 상태 유지)` : ok ? `✓ 마지막 네이버 자동 로그인 ${t(ok)}` : '이 PC 브라우저에서 네이버에 한 번 로그인(로그인 상태 유지)해 두면 자동으로 다시 로그인합니다';
       if (m === 'naver') return; }
     const c = (GM_getValue('rnp-cred', null) || GM_getValue('rn-cred', null)); const okAt = GM_getValue('rnp-cred-okAt', 0); const failAt = GM_getValue('rnp-cred-failAt', 0);
     const el = $('#rnpCredSt'); const t = (ms) => new Date(ms).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -716,6 +716,31 @@
   let HELPER = null, HELPER_AT = 0, TGATE = { ok: !PUBONLY, why: PUBONLY ? '로컬 도우미 확인 전' : '' };
   const helperGet1 = (url) => new Promise((res) => { try { GM_xmlhttpRequest({ method: 'GET', url, timeout: 8000, anonymous: true, onload: (r) => { try { res(r.status === 200 ? JSON.parse(r.responseText) : null); } catch (e) { res(null); } }, onerror: () => res(null), ontimeout: () => res(null) }); } catch (e) { res(null); } });
   const helperGet = async () => (await helperGet1('http://rn.local/status')) || (await helperGet1('http://127.0.0.1:8899/status')); /* (1.66.0) 프록시를 통한 이름이 막히면 도우미에 바로 */
+  /* ══════════ (1.70.0) 📷 사진 보관 — 로거 PC(D:\ReadNow\images)에 Firebase 사진을 새것만 받아 둠 ══════════
+   *  · 로거의 수집기만 · 알라딘과 무관(Firebase 저장소·사진 칸 → 와이파이) · 6시간마다(켜진 뒤 3분부터) · 이미 있는 파일은 건너뜀(도우미가 이름으로 확인) — 끊겨도 다음에 이어서
+   *  · 저장소(img/·pur_photos/·ppt_photos/·disposals/ 등 맨 위 폴더 모두)는 저장소와 같은 길로 · 사진 가격 조회 칸(ppt_photo_data)은 ppt_photo_data/문서.jpg(마지막으로 받은 시각부터)
+   *  · 진행은 prd_system/imgMirror(웹앱 ⑪에 보임) */
+  const IMGM = { state: 'idle', at: null, endAt: null, list: 0, miss: 0, got: 0, fail: 0, bytes: 0, err: null, cur: null };
+  const gmReq = (o) => new Promise((res) => { try { GM_xmlhttpRequest({ ...o, timeout: o.timeout || 90000, onload: (r) => res(r), onerror: () => res(null), ontimeout: () => res(null) }); } catch (e) { res(null); } });
+  const IMG_B = 'readnow-3a385.firebasestorage.app'; const HLP = 'http://127.0.0.1:8899';
+  const imgRep = (fin) => C('prd_system').doc('imgMirror').set({ ...IMGM, pc: PC_NAME, fin: !!fin, uploadedAt: TS() }, { merge: true }).catch(() => {});
+  async function imgMirror(force) {
+    if (!PUBONLY || IMGM.state === 'run' || !auth.currentUser) return; const last = GM_getValue('rn-imgm-last', 0); if (!force && Date.now() - last < 6 * 3600e3) return;
+    const st0 = await gmReq({ method: 'GET', url: HLP + '/img-stat', anonymous: true, timeout: 20000 }); if (!st0 || st0.status !== 200) { IMGM.err = '도우미(1.4.0 이상)에 사진 보관 길이 없음 — 도우미가 새 판으로 바뀌면 저절로'; return; }
+    Object.assign(IMGM, { state: 'run', at: nowIso(), endAt: null, list: 0, miss: 0, got: 0, fail: 0, bytes: 0, err: null, cur: null }); imgRep();
+    const tok = async () => 'Firebase ' + (await auth.currentUser.getIdToken()); const J = (r) => { try { return r.response && typeof r.response === 'object' ? r.response : JSON.parse(r.responseText); } catch (e) { return null; } };
+    try { let tops = []; { const r = await gmReq({ method: 'GET', url: `https://firebasestorage.googleapis.com/v0/b/${IMG_B}/o?delimiter=${encodeURIComponent('/')}&maxResults=1000`, headers: { Authorization: await tok() } }); const j = r && r.status === 200 ? J(r) : null; tops = (j && j.prefixes) || []; if (!tops.length) tops = ['img/', 'pur_photos/', 'ppt_photos/', 'disposals/']; if (!r || r.status !== 200) IMGM.err = `저장소 맨 위 목록을 못 읽음(${r ? r.status : '연결'}) — 아는 폴더만`; }
+      const names = []; for (const p of tops) { let pt = ''; for (let g = 0; g < 1000; g++) { const r = await gmReq({ method: 'GET', url: `https://firebasestorage.googleapis.com/v0/b/${IMG_B}/o?prefix=${encodeURIComponent(p)}&maxResults=1000${pt ? '&pageToken=' + encodeURIComponent(pt) : ''}`, headers: { Authorization: await tok() } }); if (!r || r.status !== 200) { IMGM.err = `${p} 목록을 못 읽음(${r ? r.status : '연결'}) — 저장소 규칙에 목록 읽기 허용이 필요할 수 있음`; break; } const j = J(r) || {}; (j.items || []).forEach((x) => x && x.name && names.push(x.name)); if (!j.nextPageToken) break; pt = j.nextPageToken; } }
+      IMGM.list = names.length; const miss = []; for (let k = 0; k < names.length; k += 5000) { const r = await gmReq({ method: 'POST', url: HLP + '/img-have', anonymous: true, headers: { 'X-RN-Img': '1', 'Content-Type': 'application/json' }, data: JSON.stringify({ names: names.slice(k, k + 5000) }) }); const j = r && r.status === 200 ? J(r) : null; if (!j) throw new Error('도우미에 있는 사진을 못 물어봄'); miss.push(...(j.missing || [])); }
+      IMGM.miss = miss.length; imgRep();
+      const put = async (name, blob) => { const r = await gmReq({ method: 'POST', url: HLP + '/img-put?name=' + encodeURIComponent(name), anonymous: true, headers: { 'X-RN-Img': '1', 'Content-Type': 'application/octet-stream' }, data: blob, timeout: 120000 }); const j = r && r.status === 200 ? J(r) : null; if (!j || !j.ok) throw new Error((j && j.err) || '도우미에 못 씀'); IMGM.got++; IMGM.bytes += blob.size || 0; };
+      let ix = 0; const worker = async () => { while (ix < miss.length) { const name = miss[ix++]; IMGM.cur = name; try { const r = await gmReq({ method: 'GET', url: `https://firebasestorage.googleapis.com/v0/b/${IMG_B}/o/${encodeURIComponent(name)}?alt=media`, headers: { Authorization: await tok() }, responseType: 'blob', timeout: 120000 }); if (!r || r.status !== 200 || !r.response) throw new Error('받기 실패 ' + (r ? r.status : '연결')); await put(name, r.response); } catch (e) { IMGM.fail++; if (IMGM.fail <= 5) log(`📷 사진 보관 실패 ${name}: ${e.message}`, 1); } if ((IMGM.got + IMGM.fail) % 200 === 0) imgRep(); } };
+      await Promise.all([worker(), worker(), worker(), worker()]);
+      /* 사진 가격 조회 칸(Firestore) — 마지막으로 받은 시각(at) 뒤 것만 */ let lastAt = GM_getValue('rn-imgm-ppt', ''); for (let g = 0; g < 500; g++) { let q = C('ppt_photo_data').orderBy('at').limit(100); if (lastAt) q = q.where('at', '>', lastAt); const qs = await q.get(); if (qs.empty) break;
+        for (const d of qs.docs) { const v = d.data() || {}; if (v.data) { try { const b64 = String(v.data).replace(/^data:[^,]+,/, ''); const bin = atob(b64); const u8 = new Uint8Array(bin.length); for (let t = 0; t < bin.length; t++) u8[t] = bin.charCodeAt(t); await put(`ppt_photo_data/${d.id}.jpg`, new Blob([u8], { type: 'image/jpeg' })); } catch (e) { IMGM.fail++; } } if (v.at) { lastAt = v.at; GM_setValue('rn-imgm-ppt', lastAt); } } if (qs.size < 100) break; }
+      GM_setValue('rn-imgm-last', Date.now()); log(`📷 사진 보관: 저장소 ${IMGM.list}개 중 새로 ${IMGM.got}개 받음${IMGM.fail ? ` · 실패 ${IMGM.fail}` : ''} (D:\\ReadNow\\images)`);
+    } catch (e) { IMGM.err = e.message; log('📷 사진 보관 멈춤: ' + e.message, 1); } finally { IMGM.state = 'idle'; IMGM.endAt = nowIso(); IMGM.cur = null; imgRep(true); } }
+  if (PUBONLY) { setTimeout(() => imgMirror().catch(() => {}), 3 * 60e3); setInterval(() => imgMirror().catch(() => {}), 30 * 60e3); window.__rnImgMirror = (f) => imgMirror(f !== false); }
   function tgateCalc(H) { if (!PUBONLY) return { ok: true, why: '' }; if (aladinLoggedHere()) { if (!window.__rnLoginWarned) { window.__rnLoginWarned = 1; try { window.__rnNote('🛡 이 크롬(리드나우 공개 수집)에 알라딘 로그인이 되어 있습니다 — 로거는 알라딘에 로그인하면 안 됩니다. 알라딘에서 로그아웃하고 이 탭을 새로 고칠 때까지 알라딘 일을 모두 멈춥니다', 'err'); } catch (e) {} } return { ok: false, why: '이 크롬에 알라딘 로그인 흔적(로그아웃 링크) — 로그아웃한 뒤 새로 고침' }; } if (!H || !H.ok) return { ok: false, why: '로컬 도우미가 답하지 않음 — 바탕화면 \'리드나우 공개 수집\' 크롬으로 열었는지, 도우미가 켜져 있는지(http://127.0.0.1:8899)' };
     if (!H.tether || !H.tether.ok) return { ok: false, why: '테더링 확인 안 됨 — ' + ((H.tether && H.tether.why) || '') }; if (H.capped) return { ok: false, why: `이번 달 테더링 상한(${H.capGB}GB) 도달 — 다음 달까지 알라딘 일을 쉼` };
     return { ok: true, why: '' }; } /* (1.67.0) 하루 몫은 이제 부류(주요/일반)마다 — 아래 BUD(⏰ 공용 파일 AS.budget) · 여기는 테더링 확인·한 달 상한만 */
@@ -746,7 +771,7 @@
     if (H && H.today && H.today.key === dayK) pc.helper = { tether: H.today.tether, wifi: H.today.wifi, groups: H.today.groups, blocked: H.today.blocked, month: H.month, todayTiers: H.today.tiers || null, capGB: H.capGB, capBytes: H.capBytes || null, ok: true, tetherOk: !!(H.tether && H.tether.ok), tetherIp: H.tether ? H.tether.ip : null, tetherIface: H.tether ? H.tether.iface || null : null, tetherDesc: H.tether ? H.tether.desc || null : null, wifiIface: H.wifi ? H.wifi.iface || null : null, wifiSsid: H.wifi ? H.wifi.ssid || null : null, /* (1.68.1 · 도우미 1.2.0) 어느 연결로 나가는지 이름까지 */ why: H.tether ? H.tether.why : null, ver: H.ver, at: H.at, defaultWarn: H.defaultWarn || null };
     try { await C('prd_jobs').doc('net_' + dayK).set({ day: dayK, pcs: { [PC_NAME]: pc }, ...W() }, { merge: true }); } catch (e) { keys.forEach((k) => { const o = (NETM.jobs[k] = NETM.jobs[k] || { pages: 0, chars: 0 }); o.pages += J[k].pages; o.chars += J[k].chars; }); } }
   setInterval(netFlush, 5 * 60e3); addEventListener('beforeunload', () => { try { netFlush(); } catch (e) {} });
-  window.__rnPub = { diag: () => ({ pubOnly: PUBONLY, anonOn: pubAnonOn(), ...ANON, tgate: TGATE, bud: BUD ? { left: BUD.left, used: BUD.used, free: BUD.free, alert: BUD.alert, B: BUD.B, mk: BUD.mk } : null, metc: { ...METC }, extOk: extLoggerOk(), mix: { ...MIX, pool: MIXP.length }, net: JSON.parse(JSON.stringify(NETM.jobs)) }), read: (u) => getDoc(u), flush: () => netFlush() }; /* (1.64.0) 🔓 상태 보기(관제판·시험용) */
+  window.__rnPub = { diag: () => ({ pubOnly: PUBONLY, anonOn: pubAnonOn(), ...ANON, tgate: TGATE, bud: BUD ? { left: BUD.left, used: BUD.used, free: BUD.free, alert: BUD.alert, B: BUD.B, mk: BUD.mk } : null, metc: { ...METC }, extOk: extLoggerOk(), img: { ...IMGM }, mix: { ...MIX, pool: MIXP.length }, net: JSON.parse(JSON.stringify(NETM.jobs)) }), read: (u) => getDoc(u), flush: () => netFlush() }; /* (1.64.0) 🔓 상태 보기(관제판·시험용) */
   /* ══════════ (1.54.0) 🔓 공개 페이지는 로그인 쿠키 없이 — 판매자 계정(북스킹)과 대량 읽기를 떼어 놓음 ══════════
    * 대상(양이 많은 공개 페이지 4종): used 온라인 중고 목록(시장 지표) · prod 상품 페이지(우리 책·벤치마킹 상품 정보) · shop 판매자 숍 목록(벤치마킹) · item 경쟁 매물 페이지(유의사항·사진)
    * 샵매니저·주문·출고·검색 등 나머지는 예전처럼 로그인 상태.
@@ -815,10 +840,11 @@
     if (frame && frameLoads % 20 === 0) { try { frame.src = 'about:blank'; } catch (e) {} try { frame.remove(); } catch (e) {} frame = null; }
     return new Promise((resolve) => {
       if (frame && (frame.dataset.cl === '1') !== pubAnonOn()) { try { frame.remove(); } catch (e) {} frame = null; } /* (1.64.0) 설정이 바뀌면 숨은 창을 새로 */
-      if (!frame) { frame = document.createElement('iframe'); if (pubAnonOn()) { frame.setAttribute('credentialless', ''); frame.dataset.cl = '1'; } /* (1.64.0) 🔓 숨은 창도 쿠키 없이(크롬 credentialless) */ frame.style.cssText = 'position:fixed;left:-3000px;top:0;width:1300px;height:2000px;visibility:hidden'; document.body.appendChild(frame); }
+      if (frame && frame.dataset.u === String(url).split('#')[0]) { try { frame.remove(); } catch (e) {} frame = null; } /* (1.70.0) 같은 주소를 다시 열 때는 새 창으로(# 뒤만 같으면 다시 읽지 않으므로) */
+      if (!frame) { frame = document.createElement('iframe'); if (pubAnonOn()) { frame.setAttribute('credentialless', ''); frame.dataset.cl = '1'; } /* (1.64.0) 🔓 숨은 창도 쿠키 없이(크롬 credentialless) */ frame.style.cssText = 'position:fixed;left:-3000px;top:0;width:1300px;height:2000px;visibility:hidden'; globalThis.__rnMount(frame); } /* (1.70.0) 로거 첫 화면이면 숨은 창도 그림자 칸 안 */
       let done = false; const t0 = Date.now(); let poll = null;
       const finish = (ok) => { if (done) return; done = true; clearInterval(poll); let doc = null, href = null; try { doc = frame.contentDocument; href = frame.contentWindow.location.href; } catch (e) {} resolve({ ok, doc, href, ms: Date.now() - t0 }); };
-      frame.src = url + (url.includes('?') ? '&' : '?') + 'rnCollect=1';
+      frame.dataset.u = String(url).split('#')[0]; frame.src = String(url).split('#')[0] + '#rnCollect'; /* (1.70.0) 표시는 # 뒤로 — 예전 ?rnCollect=1은 알라딘 서버 기록에 남는 낯선 표시였음 */
       poll = setInterval(() => {
         let d = null; try { d = frame.contentDocument; } catch (e) {}
         try { if (d && d.body) frame.contentWindow.scrollTo(0, (d.body.scrollHeight || 0) * ((Date.now() - t0) % 3000 < 1500 ? 0.6 : 1)); } catch (e) {}
@@ -2210,7 +2236,7 @@
   const C2B_CART = 'https://www.aladin.co.kr/shop/usedshop/wc2b_sales.aspx?search=1';
   async function c2bCartRead() { await PACE.wait(); const g = await lookDoc(C2B_CART); if (looksLoggedOut(g.finalUrl, g.doc)) throw new Error('알라딘 로그인이 풀림 — 로그인한 뒤 웹앱에서 다시 담기');
     const list = P.parseC2BCart(g.doc); const set = new Set(); list.forEach((x) => { if (x.isbn13) set.add(x.isbn13); }); return { list, set }; }
-  function c2bFrame(url) { return new Promise((resolve) => { let f = document.getElementById('rn-c2b-frame'); if (f) { try { f.src = 'about:blank'; } catch (e) {} f.remove(); }
+  function c2bFrame(url) { return new Promise((resolve) => { let f = globalThis.__rnById('rn-c2b-frame'); if (f) { try { f.src = 'about:blank'; } catch (e) {} f.remove(); }
     f = document.createElement('iframe'); f.id = 'rn-c2b-frame'; f.style.cssText = 'position:fixed;left:-3000px;top:0;width:1300px;height:2000px;visibility:hidden'; document.body.appendChild(f);
     const t0 = Date.now(); let done = false; let iv = null; const fin = (ok) => { if (done) return; done = true; clearInterval(iv); let d = null; try { d = f.contentDocument; } catch (e) {} resolve({ ok, f, doc: d }); };
     f.src = url; iv = setInterval(() => { let d = null; try { d = f.contentDocument; } catch (e) {} if (d && d.URL !== 'about:blank' && d.readyState === 'complete' && (d.querySelector('#searchResult') || Date.now() - t0 > 8000)) fin(true); else if (Date.now() - t0 > 45000) fin(false); }, 400); }); }
@@ -2239,7 +2265,7 @@
       else { try { r = await c2bAddOne(it, cart.set); } catch (e) { r = { state: 'failed', msg: e.message }; } await exEnd('c2bAdd', xk, ['added', 'already'].includes(r.state) ? 'done' : 'failed', `${r.state}${r.msg ? ' · ' + r.msg : ''}`); }
       if (r.cartN != null) cartN = r.cartN; delete r.cartN; r = { ...r, at: nowIso(), by: PC_NAME, isbn13: it.isbn13 || null }; results[it.usedCode] = r; n++;
       await bbSet(it.usedCode, r); await ref.set({ results, n, cartN, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); }
-    try { const f = document.getElementById('rn-c2b-frame'); if (f) { f.src = 'about:blank'; f.remove(); } } catch (e) {}
+    try { const f = globalThis.__rnById('rn-c2b-frame'); if (f) { f.src = 'about:blank'; f.remove(); } } catch (e) {}
     const ok = Object.values(results).filter((r) => ['added', 'already'].includes(r.state)).length; await ref.set({ status: 'done', results, n, cartN, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
     log(`알라딘 매입: 장바구니 ${ok} / ${items.length}권 (지금 장바구니 ${cartN}권)`, ok === items.length ? 0 : 1); }
   { let invUn = null, back = 5000; const sub = () => { if (PUBONLY || !auth.currentUser || invUn) return; /* (1.64.0) 송장 = 로그인 일 */ invUn = C('shp_invoices').where('status', '==', 'queued').onSnapshot((ss) => { back = 5000; ss.forEach((d) => claimInvoice(d.id).catch((e) => log('송장 입력 맡기 실패: ' + (e.code || e.message), 1))); }, (e) => { log(`송장 듣기가 끊김(${e.code || e.message}) — 다시 들음`, 1); invUn = null; setTimeout(sub, back); back = Math.min(back * 2, 5 * 60000); }); }; auth.onAuthStateChanged((u) => { if (!u) { if (invUn) { invUn(); invUn = null; } return; } sub(); }); } /* (1.59.0) 끊기면 다시 붙음 · 다시 로그인해도 하나만 */
@@ -2622,7 +2648,7 @@
         const slots = [...L, ...add.map(AS.sanitize)]; tx.set(SCHED_REF(), { slots: JSON.parse(JSON.stringify(slots)), items: AS.legacyItems(slots), rev: (+D.rev || 0) + 1, ver: 2, mig161: { at: nowIso(), by: PC_NAME, added: add.map((x) => x.id) } }, { merge: true }); });
       log('⏰ 매일 자동: 예전에 따로 스스로 돌던 자동 일(🎯 벤치마킹 주기 수집·📚 출판 통계·📦 발송 요청 읽기·그룹 시장 지표)을 칸으로 옮김 — 이제 칸 편집기에서만 켜고 끄고 시각을 정함'); } catch (e) { log('⏰ 예전 자동 일 옮기기 실패: ' + (e.code || e.message), 1); } }
   async function schedInit() {
-    if (!AS) { const el = document.getElementById('rnpSched'); if (el) el.innerHTML = '<div class="hint2" style="color:#B0322A">⏰ 매일 자동 수집: 공용 파일 readnow-autosched-core.js를 못 읽어 멈춤 — GitHub에 올렸는지 확인하고 새로고침</div>'; log('⏰ 매일 자동 수집: 공용 파일 readnow-autosched-core.js를 못 읽어 자동 수집을 하지 않음 — GitHub에 올렸는지 확인', 1); return; }
+    if (!AS) { const el = globalThis.__rnById('rnpSched'); if (el) el.innerHTML = '<div class="hint2" style="color:#B0322A">⏰ 매일 자동 수집: 공용 파일 readnow-autosched-core.js를 못 읽어 멈춤 — GitHub에 올렸는지 확인하고 새로고침</div>'; log('⏰ 매일 자동 수집: 공용 파일 readnow-autosched-core.js를 못 읽어 자동 수집을 하지 않음 — GitHub에 올렸는지 확인', 1); return; }
     E = RA.createEditor(ASCTX); setTimeout(asPublishCatalog, 20000);
     SCHED_REF().onSnapshot(async (d) => {
       if (!d.exists) { // 처음: 예전 자동 설정을 옮겨 담음 (예전 스위치는 끔 — 이제 여기 한 곳에서만)
@@ -2715,7 +2741,7 @@
       log(`⏰ 매일 자동: 10일 지난 회차 기록 ${Object.keys(del).length}개를 날짜별 보관 문서로 옮김(지우지 않음)${old.length > 3000 ? ` · 남은 ${old.length - 3000}개는 1시간 뒤` : ''}`); } catch (e) { schedArchAt = Date.now() - 3300e3; log('⏰ 회차 기록 옮기기 실패(5분 뒤 다시): ' + (e.code || e.message), 1); } }
   const schedHM = (iso) => AS.hm(AS.kst(AS.toMs(iso)).min);
   let schedDrawDay = '';
-  function schedDraw() { const el = document.getElementById('rnpSched'); if (!el || !AS) return; const S0 = SCHED || { on: false }; const { day } = kstNow(); schedDrawDay = day; const slots = AS.slotsOf(S0); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
+  function schedDraw() { const el = globalThis.__rnById('rnpSched'); if (!el || !AS) return; const S0 = SCHED || { on: false }; const { day } = kstNow(); schedDrawDay = day; const slots = AS.slotsOf(S0); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
     const plan = AS.dayPlan(S0, SCHED_RUNS, { now: Date.now() }, asAvgMs);
     /* (1.60.1) 한눈에: 지금 하는 자동 일 · 다음 · 켜진 칸 수 */ const runK = Object.entries(SCHED_RUNS).filter(([k, r]) => r && r.state === 'running' && !AS.isLost(r, Date.now()) && k.split('@')[1] === day).map(([k, r]) => `${asName(byId[r.slot || k.split('@')[0]] || { job: r.job || '' })}${r.par ? '(동시)' : ''} · ${r.by || ''}`); const nx = window.__rnSchedNext ? window.__rnSchedNext() : null;
     const live = `<div class="hint2" style="margin:3px 0;padding:4px 6px;border-radius:6px;background:${runK.length ? '#FFF4E5' : '#EEF4F1'};color:#1E2B28;font-size:11.5px">${runK.length ? `▶ 지금 자동으로 하는 중: <b>${esc3(runK.join(' / '))}</b>` : '⏸ 지금 자동으로 하는 일 없음'}${nx && nx.next ? ` · 다음 <b>${nx.next.tomorrow ? '내일 ' : ''}${esc3(nx.next.t)}</b> ${esc3(nx.next.label)}` : ''} · 켜진 칸 ${slots.filter((x) => x.on).length}/${slots.length}${(() => { const b = asBuiltins().filter((x) => x.on); return b.length ? ` · 늘 도는 일 ${b.map((x) => esc3(x.label.split(' (')[0])).join('·')}` : ''; })()}</div>`;
@@ -3147,7 +3173,7 @@
   /* (1.56.3) ⏭ 강제 실행 건너뛰기 토글 — app_settings/bench.forceSkip {on, h} (웹앱과 같은 값) */
   { const c = box.querySelector('#rnPubHelp'); if (c) { c.checked = pubHelpOn(); c.onchange = () => { GM_setValue('rn-pubHelp', c.checked); log(`🌐 남는 PC 돕기: ${c.checked ? '켬 — 놀 때 다른 PC의 🎯 한 바퀴·⏰ 공개 읽기 일을 나눠 함' : '끔 — 이 PC는 직접 시킨 일·담당 일만'}`); try { window.__rnToast && window.__rnToast(`🌐 남는 PC 돕기 ${c.checked ? '켬' : '끔'}`); } catch (e) {} }; } }
   { const on = box.querySelector('#rnBfOn'), hh = box.querySelector('#rnBfH'); if (on && hh) { const wr = () => { const h = Math.max(1, Math.min(168, Math.round(+hh.value || 20))); hh.value = h; box.querySelector('.rn-bfs').classList.toggle('on', on.checked); C('app_settings').doc('bench').set({ forceSkip: { on: on.checked, h, by: PC_NAME, at: nowIso() } }, { merge: true }).then(() => log(`⏭ 강제 실행 건너뛰기 ${on.checked ? `켬 — 최근 ${h}시간 안에 끝까지 읽은 판매자는 건너뜀` : '끔 — 처음 판매자부터 모두'}`)).catch((e) => log('건너뛰기 설정 저장 실패: ' + (e.code || e.message), 1)); };
-      on.onchange = wr; hh.onchange = wr; auth.onAuthStateChanged((u) => { if (u) C('app_settings').doc('bench').onSnapshot((d) => { const f = ((d.exists && d.data()) || {}).forceSkip || {}; if (document.activeElement !== hh) hh.value = f.h || 20; { const r = ((d.exists && d.data()) || {}).resume || {}; const n = r.n || 10; const el = box.querySelector('#rnBrTxt'); if (el) el.textContent = `📍 이어 읽기: 마지막 ${n}개 중 ${r.match || Math.ceil(n * 0.7)}개 이상 · 앞뒤 ${r.pages || 3}쪽 · ${r.cover || 50}% 넘게 읽어야 통계 (웹앱 🎯에서 바꿈)`; } on.checked = !!f.on; box.querySelector('.rn-bfs').classList.toggle('on', !!f.on); }, () => {}); }); } }
+      on.onchange = wr; hh.onchange = wr; auth.onAuthStateChanged((u) => { if (u) C('app_settings').doc('bench').onSnapshot((d) => { const f = ((d.exists && d.data()) || {}).forceSkip || {}; if (globalThis.__rnAE() !== hh) hh.value = f.h || 20; { const r = ((d.exists && d.data()) || {}).resume || {}; const n = r.n || 10; const el = box.querySelector('#rnBrTxt'); if (el) el.textContent = `📍 이어 읽기: 마지막 ${n}개 중 ${r.match || Math.ceil(n * 0.7)}개 이상 · 앞뒤 ${r.pages || 3}쪽 · ${r.cover || 50}% 넘게 읽어야 통계 (웹앱 🎯에서 바꿈)`; } on.checked = !!f.on; box.querySelector('.rn-bfs').classList.toggle('on', !!f.on); }, () => {}); }); } }
   box.querySelectorAll('[data-job]').forEach((b) => (b.onclick = () => { window.__rnResumeOk && window.__rnResumeOk(); return b.dataset.job === 'images' ? images() : runJob(b.dataset.job, { manual: true }); }));
 
   /* (1.38.0) 멈춘 작업 목록 — 어느 PC에서 멈췄든 전부. 개요 화면이 작업마다 [이어하기]·[버리기]로 보여 줌
@@ -3216,7 +3242,7 @@
       const st = c && (!a || a.id !== c.id) ? `<span style="color:#A8661B">보냄 · 대답 기다림 (${esc2(({ stop: '중단', resume: '다시 시작', update: '업데이트' })[c.cmd] || c.cmd)})</span>` : a ? `<span style="color:${a.state === 'done' ? '#2F7D4F' : a.state === 'fail' || a.state === 'nosync' || a.state === 'expired' ? '#B0322A' : '#1F5FAF'}">${esc2(a.msg)}</span>` : '';
       return `<div style="margin-top:4px;padding-top:4px;border-top:1px dashed #DCE5E1"><b>${esc2(x.pc)}</b> · ${esc2(x.ver)} · ${alive ? (x.running ? '작업 중' : '대기') : `신호 ${Math.round((now - x.atMs) / 60000)}분 전`}${old ? ' <small style="color:#B0322A">(옛 판 — 원격 명령을 모름 · 다른 PC가 새 판으로 돌면 쉬는 사이에 스스로 한 번 새로고침)</small>' : ''}
         <div style="display:flex;gap:4px;margin-top:3px">${[['stop', '■ 중단'], ['resume', '▶ 다시 시작'], ['update', '⟳ 업데이트']].map(([k, l]) => `<button class="b2" style="flex:1;padding:3px 4px;font-size:11px" data-ctl="${esc2(x.pc)}|${k}">${l}</button>`).join('')}</div>${st ? `<div style="font-size:10.5px;margin-top:2px">${st}</div>` : ''}</div>`; }).join('')}</div>`; }
-  document.addEventListener('click', async (e) => { const b = e.target.closest && e.target.closest('#rnpPcs [data-ctl]'); if (!b) return; e.preventDefault(); const [pc, cmd] = b.dataset.ctl.split('|');
+  globalThis.__rnOn('click', async (e) => { const b = e.target.closest && e.target.closest('#rnpPcs [data-ctl]'); if (!b) return; e.preventDefault(); const [pc, cmd] = b.dataset.ctl.split('|');
     if (b.dataset.arm !== '1') { const t0 = b.textContent; b.dataset.arm = '1'; b.dataset.t0 = t0; b.style.background = '#B0322A'; b.style.color = '#fff'; b.textContent = '확정'; setTimeout(() => { if (b.isConnected && b.dataset.arm === '1') { b.dataset.arm = ''; b.style.background = ''; b.style.color = ''; b.textContent = b.dataset.t0; } }, 4000); return; }
     b.dataset.arm = ''; b.disabled = true; b.textContent = '보내는 중…'; try { await window.__rnCtlSend(pc, cmd); log(`🛰 ${pc}에 원격 '${({ stop: '중단', resume: '다시 시작', update: '업데이트' })[cmd]}' 보냄`); } catch (er) { log('🛰 원격 명령 보내기 실패: ' + (er.code || er.message), 1); b.disabled = false; b.textContent = b.dataset.t0; } });
   function watchPcs() {

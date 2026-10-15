@@ -10,3 +10,4 @@ Write-Host '되돌리기 끝 — 자료 폴더는 그대로 두었습니다. 다
 # (1.3.0) 이 PC 잠금 되돌리기
 try { Unregister-ScheduledTask -TaskName 'ReadNow-TetherMetric' -Confirm:$false -ErrorAction SilentlyContinue } catch {}
 try { $h = "$env:SystemRoot\System32\drivers\etc\hosts"; $l = Get-Content $h | Where-Object { $_ -notmatch '# ReadNow-Lock' }; [IO.File]::WriteAllLines($h, $l); ipconfig /flushdns | Out-Null } catch {}
+try { $pk = 'HKLM:\SOFTWARE\Policies\Google\Chrome\URLBlocklist'; if (Test-Path $pk) { foreach ($n in (Get-Item $pk).Property) { $v = (Get-ItemProperty -Path $pk -Name $n).$n; if ($v -like 'aladin.co.kr/*') { Remove-ItemProperty -Path $pk -Name $n } } } } catch {}

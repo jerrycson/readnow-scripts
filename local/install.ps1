@@ -50,7 +50,7 @@ $vbs = Join-Path $Root 'local\run-local.vbs'
 $startup = [Environment]::GetFolderPath('Startup'); $sh = New-Object -ComObject WScript.Shell
 $lk = $sh.CreateShortcut((Join-Path $startup 'ReadNow-Local.lnk')); $lk.TargetPath = 'wscript.exe'; $lk.Arguments = "`"$vbs`""; $lk.WorkingDirectory = (Join-Path $Root 'local'); $lk.Save()
 $running = Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*readnow-local.js*' }
-if (-not $running) { Start-Process wscript.exe -ArgumentList "`"$vbs`"" }
+if ($running) { $running | ForEach-Object { try { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop } catch {} }; Ok '켜져 있던 도우미를 끔 — 5초 뒤 새 판으로 다시 켜짐'; Start-Sleep -Seconds 7 } else { Start-Process wscript.exe -ArgumentList "`"$vbs`"" } <# (1.3.1) 예전엔 켜져 있으면 그대로 둬 새로 받은 판이 바로 안 쓰였음 #>
 Start-Sleep -Seconds 3
 try { $s = Invoke-RestMethod -Uri 'http://127.0.0.1:8899/status' -TimeoutSec 5; Ok "도우미 켜짐 (판 $($s.ver)) — 테더링: $(if ($s.tether.ok) { '확인됨 ' + $s.tether.ip } else { '막아 둠 — ' + $s.tether.why })" } catch { Warn '도우미 응답을 아직 못 받음 — 몇 초 뒤 http://127.0.0.1:8899 를 열어 보세요' }
 
@@ -91,6 +91,13 @@ foreach (`$n in (`$names | Select-Object -Unique)) { Get-NetIPInterface -Interfa
   $new = @($old) + ($names | ForEach-Object { "0.0.0.0 $_ $mark" })
   [IO.File]::WriteAllLines($hosts, $new); ipconfig /flushdns | Out-Null
   Ok "hosts: 알라딘 주소 $($names.Count)개를 이 PC의 다른 프로그램에서 막음 (공개 수집 크롬은 도우미로 테더링만)"
+  # ③ (1.4.0) 크롬 정책: 이 PC의 크롬은 알라딘 로그인·판매관리(샵매니저)·내 계정·주문·장바구니 화면을 아예 열지 못함(사람이 실수로 눌러도) — 공개 화면은 그대로
+  $pk = 'HKLM:\SOFTWARE\Policies\Google\Chrome\URLBlocklist'; New-Item -Path $pk -Force | Out-Null
+  $old = (Get-Item $pk).Property | Where-Object { $_ -match '^\d+$' }; $have = @(); foreach ($n in $old) { $have += (Get-ItemProperty -Path $pk -Name $n).$n }
+  $blk = @('aladin.co.kr/login', 'aladin.co.kr/scm', 'aladin.co.kr/account', 'aladin.co.kr/order', 'aladin.co.kr/shop/basket', 'aladin.co.kr/shop/wbasket.aspx', 'aladin.co.kr/m/mlogin', 'aladin.co.kr/m/maccount', 'aladin.co.kr/m/mscm')
+  $i = 1; foreach ($n in $old) { if ([int]$n -ge $i) { $i = [int]$n + 1 } }
+  foreach ($b in $blk) { if ($have -notcontains $b) { New-ItemProperty -Path $pk -Name "$i" -Value $b -PropertyType String -Force | Out-Null; $i++ } }
+  Ok "크롬 정책: 알라딘 로그인·샵매니저·내 계정·주문·장바구니 화면 막음(이 PC의 크롬 전체 · 크롬을 다시 켜면 적용 · chrome://policy 에서 확인)" 
 }
 
 # 5) 24시간 — 절전 끔
