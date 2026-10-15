@@ -16,7 +16,7 @@
  *   · tetherIface/wifiIface: 자동으로 못 고를 때만 이름을 적음(예: "이더넷 3", "Wi-Fi") — 상태 화면에 후보 이름이 나옴
  */
 'use strict';
-const VERSION = '1.1.0';
+const VERSION = '1.1.1';
 const http = require('http'), https = require('https'), net = require('net'), dns = require('dns'), os = require('os'), fs = require('fs'), path = require('path'), dgram = require('dgram'), cp = require('child_process');
 
 const HOME = process.env.RN_TEST_HOME || __dirname; const ROOT = path.resolve(HOME, '..'); // D:\ReadNow\local → D:\ReadNow
@@ -65,12 +65,21 @@ function groupOf(host) { const h = String(host || '').toLowerCase();
 const VIRT = /vEthernet|VirtualBox|VMware|Hyper-V|Loopback|WSL|Bluetooth|TAP|Tailscale|ZeroTier|VPN|Npcap|Docker/i;
 const WIFI_NAME = /Wi-?Fi|WLAN|무선|Wireless/i;
 const T_FILE = process.env.RN_TEST_FILE || null; const T = () => (T_FILE ? JSON.parse(fs.readFileSync(T_FILE, 'utf8')) : null); const T_IF = T_FILE ? 1 : null; /* 시험용(RN_TEST_FILE이 있을 때만 — 연결·공인 IP·주소를 흉내) */
-function ifaces() { if (T_IF) return T().ifaces.map((x) => ({ ...x, virt: VIRT.test(x.name) })); const L = []; const N = os.networkInterfaces(); for (const [name, arr] of Object.entries(N)) for (const a of arr || []) { if (a.family !== 'IPv4' && a.family !== 4) continue; if (a.internal || /^169\.254\./.test(a.address)) continue; L.push({ name, ip: a.address, virt: VIRT.test(name) }); } return L; }
+/* (1.1.1) 연결 이름만으로 고르면 '와이파이 대신 유선 랜(이더넷)'인 PC에서 이더넷이 둘(랜·USB 테더링)이 되어 아무것도 못 고르던 문제 →
+ *  윈도우 장치 설명(Get-NetAdapter의 InterfaceDescription: 'Remote NDIS'·'Apple Mobile Device Ethernet' 등)과 휴대폰 테더링 주소대(아이폰 172.20.10.x · 안드로이드 192.168.42.x 등)로 테더링을 먼저 알아봄 · 남은 하나는 와이파이든 유선이든 '우리 서비스 길' */
+const TETHER_DESC = /Remote NDIS|RNDIS|Apple Mobile Device|iPhone|Android|SAMSUNG Mobile|Mobile USB|USB.*(Ethernet|Tether|NCM)|NCM/i;
+const TETHER_IP = /^172\.20\.10\.|^192\.168\.42\.|^192\.168\.(?:43|44|49)\./;
+let DESC = {}; function loadDesc() { if (T_IF || process.platform !== 'win32') return; cp.exec('powershell -NoProfile -NonInteractive -Command "Get-NetAdapter | Select-Object Name,InterfaceDescription | ConvertTo-Json -Compress"', { timeout: 20000, windowsHide: true }, (e, out) => { if (e) return; try { const j = JSON.parse(out); const D = {}; (Array.isArray(j) ? j : [j]).forEach((x) => { if (x && x.Name) D[x.Name] = x.InterfaceDescription || ''; }); DESC = D; } catch (er) {} }); }
+loadDesc(); setInterval(loadDesc, 60e3);
+const isTetherLike = (x) => TETHER_DESC.test(x.desc || '') || TETHER_IP.test(x.ip || '');
+function ifaces() { if (T_IF) return T().ifaces.map((x) => ({ ...x, virt: VIRT.test(x.name) && !TETHER_DESC.test(x.desc || '') })); const L = []; const N = os.networkInterfaces(); for (const [name, arr] of Object.entries(N)) for (const a of arr || []) { if (a.family !== 'IPv4' && a.family !== 4) continue; if (a.internal || /^169\.254\./.test(a.address)) continue; const desc = DESC[name] || ''; L.push({ name, ip: a.address, desc, virt: (VIRT.test(name) || VIRT.test(desc)) && !TETHER_DESC.test(desc) }); } return L; }
 function pickIfaces() { const L = ifaces(); const real = L.filter((x) => !x.virt); const by = (n) => L.find((x) => x.name === n);
   let wifi = CFG.wifiIface ? by(CFG.wifiIface) : null, tether = CFG.tetherIface ? by(CFG.tetherIface) : null; let why = '';
+  if (!tether) { const t = real.filter((x) => isTetherLike(x) && (!wifi || x.name !== wifi.name)); if (t.length === 1) tether = t[0]; } /* (1.1.1) 장치 설명·주소대로 먼저 */
+  if (!wifi && tether) { const w = real.filter((x) => x.name !== tether.name); const ww = w.filter((x) => WIFI_NAME.test(x.name)); if (w.length === 1) wifi = w[0]; else if (ww.length === 1) wifi = ww[0]; }
   if (!wifi) { const w = real.filter((x) => WIFI_NAME.test(x.name) && (!tether || x.name !== tether.name)); if (w.length === 1) wifi = w[0]; }
-  if (!tether) { const t = real.filter((x) => (!wifi || x.name !== wifi.name) && !WIFI_NAME.test(x.name)); if (t.length === 1) tether = t[0]; else if (t.length > 1) why = `테더링 후보가 여럿(${t.map((x) => x.name).join(', ')}) — readnow-local.json의 tetherIface에 이름을 적어 주세요`; else why = '테더링 연결이 없음(휴대폰을 USB로 꽂고 USB 테더링을 켜세요)'; }
-  if (!wifi) { const w = real.filter((x) => !tether || x.name !== tether.name); if (w.length === 1) wifi = w[0]; else if (!why) why = `와이파이를 못 고름(${real.map((x) => x.name).join(', ') || '연결 없음'}) — readnow-local.json의 wifiIface에 이름을 적어 주세요`; }
+  if (!tether) { const t = real.filter((x) => (!wifi || x.name !== wifi.name) && !WIFI_NAME.test(x.name)); if (t.length === 1) tether = t[0]; else if (t.length > 1) why = `테더링 후보가 여럿(${t.map((x) => x.name).join(', ')}) — readnow-local.json의 tetherIface에 이름을 적어 주세요`; else why = real.length ? `테더링 연결을 못 찾음(지금 연결: ${real.map((x) => x.name + (x.desc ? ' [' + x.desc + ']' : '')).join(', ')}) — 휴대폰을 USB로 꽂고 휴대폰 설정에서 USB 테더링을 켜세요` : '이 PC에 인터넷 연결이 하나도 없음 — 와이파이(또는 랜선)와 USB 테더링을 확인하세요'; }
+  if (!wifi) { const w = real.filter((x) => !tether || x.name !== tether.name); if (w.length === 1) wifi = w[0]; else if (!why) why = real.length > 1 ? `우리 서비스 길(와이파이·유선)을 못 고름(${real.map((x) => x.name).join(', ')}) — readnow-local.json의 wifiIface에 이름을 적어 주세요` : '테더링 말고 다른 인터넷(와이파이·유선)이 없음 — 우리 서비스(Firebase·GitHub)는 와이파이로만 나가므로 와이파이(또는 랜선)를 연결하세요'; }
   if (wifi && tether && wifi.ip === tether.ip) { why = '와이파이와 테더링이 같은 연결로 보임'; tether = null; }
   return { wifi, tether, all: L, why }; }
 
@@ -79,7 +88,7 @@ function publicIp(localAddress) { if (T_IF) return Promise.resolve(T().pubip[loc
 const ST = { tether: { ok: false, why: '아직 확인 전', ip: null, iface: null, localIp: null, at: null }, wifi: { ip: null, iface: null, localIp: null }, cand: [], startedAt: kst() };
 let checking = false;
 async function checkTether(reason) { if (checking) return; checking = true; try {
-    const P = pickIfaces(); ST.cand = P.all.map((x) => `${x.name}(${x.ip})${x.virt ? '·가상' : ''}`); ST.wifi.iface = P.wifi ? P.wifi.name : null; ST.wifi.localIp = P.wifi ? P.wifi.ip : null;
+    const P = pickIfaces(); ST.cand = P.all.map((x) => `${x.name}(${x.ip}${x.desc ? ' · ' + x.desc : ''})${x.virt ? '·가상' : ''}${isTetherLike(x) ? '·테더링으로 보임' : ''}`); ST.wifi.iface = P.wifi ? P.wifi.name : null; ST.wifi.localIp = P.wifi ? P.wifi.ip : null;
     if (!P.tether || !P.wifi) { setTether(false, P.why || '연결을 못 고름', null, P.tether); return; }
     const [ipT, ipW] = await Promise.all([publicIp(P.tether.ip), publicIp(P.wifi.ip)]); ST.wifi.ip = ipW;
     if (!ipT) { setTether(false, `테더링(${P.tether.name})으로 인터넷이 안 됨`, null, P.tether); return; }
