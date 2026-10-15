@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.71.0
+// @version      1.71.1
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/worders.aspx*
 // @match        https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx*
@@ -32,10 +32,10 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.6.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.28
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.29
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.4.7
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.7.3
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.7.4
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
@@ -89,7 +89,7 @@
 // ==/UserScript==
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
-globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx#rnPub'); return false; } return /^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && /^#rnPub\b/.test(location.hash); } catch (e) { return false; } })();
+globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return /^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR); /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
  * 알라딘 작업 잠금은 하나(crm_system/work_lock): 고객 수집이 먼저(상품 쪽 긴 작업은 양보 후 자동으로 이어감). */
@@ -272,7 +272,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   // ── 기록 보관: 이 PC의 IndexedDB('rn-journal')에 날짜별로 덧붙임 — 지우지 않고 계속 쌓음 (내려받기 하면 그때 비움)
   /* (1.71.0) 로거 크롬: 작업 기록을 알라딘 쪽 저장소(IndexedDB)에 두지 않고 이 탭 메모리에만(서버 기록 rn_logs는 그대로) — 알라딘 화면 스크립트가 읽을 수 있는 곳에 흔적을 남기지 않게 */
   const JMEM = globalThis.__rnPubChrome ? new Map() : null; const JDB = () => (JMEM ? Promise.resolve({ __mem: 1, close() {} }) : new Promise((res, rej) => { const r = indexedDB.open('rn-journal', 1); r.onupgradeneeded = () => r.result.createObjectStore('days', { keyPath: 'day' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }));
-  const jtx = async (mode, fn) => { if (JMEM) { let out; const st = { get: (k) => { const q = { result: JMEM.get(k) }; setTimeout(() => q.onsuccess && q.onsuccess()); return q; }, getAllKeys: () => { const q = { result: [...JMEM.keys()] }; setTimeout(() => q.onsuccess && q.onsuccess()); return q; }, getAll: (rg) => { const q = { result: [...JMEM.entries()].filter(([k]) => !rg || (k >= rg.lower && k <= rg.upper)).map(([, v]) => v) }; setTimeout(() => q.onsuccess && q.onsuccess()); return q; }, put: (rec) => { JMEM.set(rec.day, rec); }, clear: () => JMEM.clear() }; await fn(st, (v) => (out = v)); await new Promise((r) => setTimeout(r, 0)); return out; } const db = await JDB(); return new Promise((res, rej) => { const t = db.transaction('days', mode); const st = t.objectStore('days'); let out; Promise.resolve(fn(st, (v) => (out = v))).catch(rej); t.oncomplete = () => { db.close(); res(out); }; t.onerror = () => { db.close(); rej(t.error); }; }); };
+  const jtx = async (mode, fn) => { if (JMEM) { let out; const st = { get: (k) => { const q = { result: JMEM.get(k) }; setTimeout(() => q.onsuccess && q.onsuccess()); return q; }, getAllKeys: () => { const q = { result: [...JMEM.keys()] }; setTimeout(() => q.onsuccess && q.onsuccess()); return q; }, getAll: (rg) => { const q = { result: [...JMEM.entries()].filter(([k]) => !rg || (k >= rg.lower && k <= rg.upper)).map(([, v]) => v) }; setTimeout(() => q.onsuccess && q.onsuccess()); return q; }, put: (rec) => { JMEM.set(rec.day, rec); if (JMEM.size > 6000) { const it = JMEM.keys(); for (let k = JMEM.size - 5000; k > 0; k--) JMEM.delete(it.next().value); } }, /* (1.71.1 자동 점검) 메모리 기록은 최근 묶음 5천~6천 개(20초 묶음 ≈ 하루 넘게)까지 — 24시간 켜 둔 로거 탭이 기록으로 메모리를 끝없이 쓰지 않게(서버 rn_logs에는 다 있음) */ clear: () => JMEM.clear() }; await fn(st, (v) => (out = v)); await new Promise((r) => setTimeout(r, 0)); return out; } const db = await JDB(); return new Promise((res, rej) => { const t = db.transaction('days', mode); const st = t.objectStore('days'); let out; Promise.resolve(fn(st, (v) => (out = v))).catch(rej); t.oncomplete = () => { db.close(); res(out); }; t.onerror = () => { db.close(); rej(t.error); }; }); };
   const jget = (k) => jtx('readonly', (st, set) => { const r = st.get(k); r.onsuccess = () => set(r.result || null); });
   const jkeys = () => jtx('readonly', (st, set) => { const r = st.getAllKeys(); r.onsuccess = () => set(r.result || []); });
   const jput = (rec) => jtx('readwrite', (st) => { st.put(rec); });
@@ -2958,6 +2958,17 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const app = firebase.app();
   /* (1.71.0) 🛡 로거 크롬: 로그인을 알라딘 쪽 저장소에 두지 않음 — 로그인되면 Tampermonkey 저장소(rn-fbuser)에 사본을 두고 Firebase는 메모리 보관(NONE)으로 옮김(IndexedDB 기록이 지워짐) · 다음에 열 때 실행기가 사본을 잠깐 넣어 다시 로그인됨 */
   if (globalThis.__rnPubChrome) { try { const A0 = app.auth(); A0.onIdTokenChanged((u) => { if (!u) return; try { GM_setValue('rn-fbuser', { key: 'firebase:authUser:' + app.options.apiKey + ':' + app.name, value: u.toJSON(), at: Date.now() }); } catch (e) {} if (!window.__rnPersNone) { window.__rnPersNone = 1; setTimeout(() => A0.setPersistence(firebase.auth.Auth.Persistence.NONE).catch(() => { window.__rnPersNone = 0; }), 1500); } }); } catch (e) {} }
+  /* (1.71.1 자동 점검) 🛡 로거 로그인 되살리기를 모듈에서도 — ⚡ 빠른 업데이트는 모듈만 바꾸고 Tampermonkey 본체(실행기)는 Tampermonkey 업데이트 때까지 옛 판이라,
+   *  옛 실행기(1.70.x)에서는 위의 '메모리로 옮김' 뒤 새로고침하면 아무도 되살리지 않아 로거가 로그아웃된 채 멈췄음
+   *  → 첫 로그인 상태가 '없음'이면 rn-fbuser를 알라딘 쪽 저장소에 잠깐 넣음(Firebase가 1초 안에 알아채 로그인 → 위에서 다시 메모리로) · 5초 안에 안 되면 새로고침
+   *  → 되살리기는 3분에 한 번 · 3번 연속 안 되면 멈추고 알림 · 이 화면에서 로그인됐다가 로그아웃되면(직접 로그아웃·열쇠 막힘) rn-fbuser도 지움(로그아웃이 다음 화면에서 되살아나지 않게) */
+  if (globalThis.__rnPubHome) (function rnAuthKeep() { try { const A = app.auth(); let had = false, init = false, busy = false;
+    A.onIdTokenChanged((u) => { try { if (u) { had = true; GM_deleteValue('rn-fbuser-try'); } else if (had) { had = false; GM_deleteValue('rn-fbuser'); } } catch (e) {} });
+    const restore = () => { try { if (busy || !init || A.currentUser) return; const U = GM_getValue('rn-fbuser', null); if (!U || !U.key || !U.value) return; const T = GM_getValue('rn-fbuser-try', null) || { at: 0, n: 0 }; if (Date.now() - (T.at || 0) < 3 * 60e3) return;
+        if ((T.n || 0) >= 3) { if (!T.told) { GM_setValue('rn-fbuser-try', { ...T, told: 1 }); window.__rnNote && window.__rnNote('🔑 저장해 둔 구글 로그인으로 3번 다시 로그인하지 못했습니다 — 수집기의 구글 로그인을 다시 해 주세요(또는 이 크롬의 웹앱에서 로그인)', 'warn'); } return; }
+        GM_setValue('rn-fbuser-try', { at: Date.now(), n: (T.n || 0) + 1 }); busy = true; const rq = indexedDB.open('firebaseLocalStorageDb', 1); rq.onupgradeneeded = () => { try { rq.result.createObjectStore('firebaseLocalStorage', { keyPath: 'fbase_key' }); } catch (e) {} }; rq.onerror = () => { busy = false; };
+        rq.onsuccess = () => { const db = rq.result; try { const tx = db.transaction('firebaseLocalStorage', 'readwrite'); tx.objectStore('firebaseLocalStorage').put({ fbase_key: U.key, value: U.value }); tx.oncomplete = () => { db.close(); try { window.__rnLog && window.__rnLog('수집기', 'info', '🔑 저장해 둔 구글 로그인으로 다시 로그인'); } catch (e) {} setTimeout(() => { busy = false; if (!A.currentUser) location.reload(); }, 5000); }; tx.onerror = () => { db.close(); busy = false; }; } catch (e) { try { db.close(); } catch (x) {} busy = false; } }; } catch (e) { busy = false; } };
+    A.onAuthStateChanged(() => { if (!init) { init = true; setTimeout(restore, 300); } }); setInterval(restore, 30e3); } catch (e) {} })();
   /* (1.70.4) 🔑 로그인 넘겨받기 — 로거 크롬의 웹앱에서 로그인한 기록(rn-authxfer, 10분 안)을 이 탭(알라딘)의 Firebase 저장소에 넣고 새로고침 */
   if (globalThis.__rnPubHome) setTimeout(() => { try { if (app.auth().currentUser) { GM_deleteValue('rn-authxfer'); return; } const X = GM_getValue('rn-authxfer', null); if (!X || !X.value || Date.now() - (X.at || 0) > 10 * 60e3) return; GM_deleteValue('rn-authxfer');
       const rq = indexedDB.open('firebaseLocalStorageDb', 1); rq.onupgradeneeded = () => { try { rq.result.createObjectStore('firebaseLocalStorage', { keyPath: 'fbase_key' }); } catch (e) {} };

@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.71.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.71.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.71.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.71.0', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.71.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.71.1', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -67,6 +67,17 @@
   const app = firebase.app();
   /* (1.71.0) 🛡 로거 크롬: 로그인을 알라딘 쪽 저장소에 두지 않음 — 로그인되면 Tampermonkey 저장소(rn-fbuser)에 사본을 두고 Firebase는 메모리 보관(NONE)으로 옮김(IndexedDB 기록이 지워짐) · 다음에 열 때 실행기가 사본을 잠깐 넣어 다시 로그인됨 */
   if (globalThis.__rnPubChrome) { try { const A0 = app.auth(); A0.onIdTokenChanged((u) => { if (!u) return; try { GM_setValue('rn-fbuser', { key: 'firebase:authUser:' + app.options.apiKey + ':' + app.name, value: u.toJSON(), at: Date.now() }); } catch (e) {} if (!window.__rnPersNone) { window.__rnPersNone = 1; setTimeout(() => A0.setPersistence(firebase.auth.Auth.Persistence.NONE).catch(() => { window.__rnPersNone = 0; }), 1500); } }); } catch (e) {} }
+  /* (1.71.1 자동 점검) 🛡 로거 로그인 되살리기를 모듈에서도 — ⚡ 빠른 업데이트는 모듈만 바꾸고 Tampermonkey 본체(실행기)는 Tampermonkey 업데이트 때까지 옛 판이라,
+   *  옛 실행기(1.70.x)에서는 위의 '메모리로 옮김' 뒤 새로고침하면 아무도 되살리지 않아 로거가 로그아웃된 채 멈췄음
+   *  → 첫 로그인 상태가 '없음'이면 rn-fbuser를 알라딘 쪽 저장소에 잠깐 넣음(Firebase가 1초 안에 알아채 로그인 → 위에서 다시 메모리로) · 5초 안에 안 되면 새로고침
+   *  → 되살리기는 3분에 한 번 · 3번 연속 안 되면 멈추고 알림 · 이 화면에서 로그인됐다가 로그아웃되면(직접 로그아웃·열쇠 막힘) rn-fbuser도 지움(로그아웃이 다음 화면에서 되살아나지 않게) */
+  if (globalThis.__rnPubHome) (function rnAuthKeep() { try { const A = app.auth(); let had = false, init = false, busy = false;
+    A.onIdTokenChanged((u) => { try { if (u) { had = true; GM_deleteValue('rn-fbuser-try'); } else if (had) { had = false; GM_deleteValue('rn-fbuser'); } } catch (e) {} });
+    const restore = () => { try { if (busy || !init || A.currentUser) return; const U = GM_getValue('rn-fbuser', null); if (!U || !U.key || !U.value) return; const T = GM_getValue('rn-fbuser-try', null) || { at: 0, n: 0 }; if (Date.now() - (T.at || 0) < 3 * 60e3) return;
+        if ((T.n || 0) >= 3) { if (!T.told) { GM_setValue('rn-fbuser-try', { ...T, told: 1 }); window.__rnNote && window.__rnNote('🔑 저장해 둔 구글 로그인으로 3번 다시 로그인하지 못했습니다 — 수집기의 구글 로그인을 다시 해 주세요(또는 이 크롬의 웹앱에서 로그인)', 'warn'); } return; }
+        GM_setValue('rn-fbuser-try', { at: Date.now(), n: (T.n || 0) + 1 }); busy = true; const rq = indexedDB.open('firebaseLocalStorageDb', 1); rq.onupgradeneeded = () => { try { rq.result.createObjectStore('firebaseLocalStorage', { keyPath: 'fbase_key' }); } catch (e) {} }; rq.onerror = () => { busy = false; };
+        rq.onsuccess = () => { const db = rq.result; try { const tx = db.transaction('firebaseLocalStorage', 'readwrite'); tx.objectStore('firebaseLocalStorage').put({ fbase_key: U.key, value: U.value }); tx.oncomplete = () => { db.close(); try { window.__rnLog && window.__rnLog('수집기', 'info', '🔑 저장해 둔 구글 로그인으로 다시 로그인'); } catch (e) {} setTimeout(() => { busy = false; if (!A.currentUser) location.reload(); }, 5000); }; tx.onerror = () => { db.close(); busy = false; }; } catch (e) { try { db.close(); } catch (x) {} busy = false; } }; } catch (e) { busy = false; } };
+    A.onAuthStateChanged(() => { if (!init) { init = true; setTimeout(restore, 300); } }); setInterval(restore, 30e3); } catch (e) {} })();
   /* (1.70.4) 🔑 로그인 넘겨받기 — 로거 크롬의 웹앱에서 로그인한 기록(rn-authxfer, 10분 안)을 이 탭(알라딘)의 Firebase 저장소에 넣고 새로고침 */
   if (globalThis.__rnPubHome) setTimeout(() => { try { if (app.auth().currentUser) { GM_deleteValue('rn-authxfer'); return; } const X = GM_getValue('rn-authxfer', null); if (!X || !X.value || Date.now() - (X.at || 0) > 10 * 60e3) return; GM_deleteValue('rn-authxfer');
       const rq = indexedDB.open('firebaseLocalStorageDb', 1); rq.onupgradeneeded = () => { try { rq.result.createObjectStore('firebaseLocalStorage', { keyPath: 'fbase_key' }); } catch (e) {} };
