@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "수집기 1.71.3 — 끊긴 벤치마킹 이어 주기 기다림 늘림",
+ "since": "2026-10-15T13:57:16Z",
+ "beat": "2026-10-15T13:57:16Z",
  "ask": null,
  "last": {
   "who": "chat",
