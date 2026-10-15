@@ -3,7 +3,7 @@
 #   irm https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/install.ps1 | iex
 # 하는 일: ① Node.js 확인(없으면 설치) ② D:\ReadNow\local 에 도우미 받기 ③ 로그온하면 저절로 켜짐(꺼지면 5초 뒤 다시)
 #          ④ '리드나우 공개 수집' 전용 크롬 — 이 크롬만 도우미를 거침(알라딘은 테더링으로만, 우리 서비스는 와이파이로 · 도우미가 꺼지면 이 크롬은 아무 데도 못 나감)
-#             따로 된 프로필(알라딘 로그인 기록 없음)·사진 끔·WebRTC 새는 길 막음 · 바탕화면·시작 프로그램에
+#             따로 된 프로필(알라딘 로그인 기록 없음)·WebRTC 새는 길 막음 · 바탕화면·시작 프로그램에
 #          ⑤ 절전 끔(24시간)
 #          이 PC의 기본 크롬·엣지는 건드리지 않음(기본 크롬에 알라딘 로그인이 남아 있어도 테더링과 이어지지 않게) · 다시 실행해도 됨(덮어씀) · 되돌리기: uninstall.ps1
 $ErrorActionPreference = 'Stop'
@@ -58,12 +58,39 @@ try { $s = Invoke-RestMethod -Uri 'http://127.0.0.1:8899/status' -TimeoutSec 5; 
 Say "전용 크롬 바로가기"
 $chrome = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe", "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $chrome) { Warn '크롬을 못 찾음 — 크롬을 설치한 뒤 이 줄을 다시 실행해 주세요' } else {
-  $cargs = "--user-data-dir=`"$Root\chrome-pub`" --proxy-server=`"http://127.0.0.1:8899`" --force-webrtc-ip-handling-policy=disable_non_proxied_udp --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --blink-settings=imagesEnabled=false --no-first-run --no-default-browser-check http://127.0.0.1:8899/start"
+  $cargs = "--user-data-dir=`"$Root\chrome-pub`" --proxy-server=`"http://127.0.0.1:8899`" --force-webrtc-ip-handling-policy=disable_non_proxied_udp --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --no-first-run --no-default-browser-check http://127.0.0.1:8899/start"
   $pcmd = Join-Path $Root 'local\start-pub.cmd'
   [IO.File]::WriteAllText($pcmd, "@echo off`r`n:w`r`ncurl -s -o nul http://127.0.0.1:8899/status || (timeout /t 3 /nobreak >nul & goto w)`r`nstart `"`" `"$chrome`" $cargs`r`n")
   foreach ($where in @([Environment]::GetFolderPath('Desktop'), $startup)) {
     $l = $sh.CreateShortcut((Join-Path $where '리드나우 공개 수집.lnk')); $l.TargetPath = $pcmd; $l.WorkingDirectory = (Join-Path $Root 'local'); $l.IconLocation = "$chrome,0"; $l.WindowStyle = 7; $l.Save() }
-  Ok "바탕화면·시작 프로그램에 '리드나우 공개 수집' — 따로 된 크롬(프로필 $Root\chrome-pub · 사진 끔 · WebRTC UDP 막음 · 가려져도 늦추지 않음)"
+  Ok "바탕화면·시작 프로그램에 '리드나우 공개 수집' — 따로 된 크롬(프로필 $Root\chrome-pub · WebRTC UDP 막음 · 가려져도 늦추지 않음)"
+}
+
+# 4-3) (도우미 1.3.0) 🛡 이 PC 잠금 — 관리자 권한일 때만
+#  ① 윈도우 기본 길을 와이파이로: 테더링 연결의 우선순위를 뒤로(InterfaceMetric 9000) — 도우미를 거치지 않는 프로그램(윈도우 업데이트·드롭박스 등)이 테더링 데이터를 쓰지 않게
+#     휴대폰을 다시 꽂거나 다른 USB 구멍에 꽂아 연결 이름이 바뀌어도 1분마다 다시 맞추는 예약 작업 'ReadNow-TetherMetric'(SYSTEM)
+#  ② 이 PC의 다른 브라우저·프로그램이 알라딘에 아예 닿지 못하게 hosts에 알라딘 주소를 0.0.0.0으로 — 공개 수집 크롬은 도우미가 따로 주소를 찾아(hosts를 보지 않음) 테더링으로만 나감
+$isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+Say '이 PC 잠금(테더링을 기본 길에서 빼기 · 다른 프로그램은 알라딘 못 감)'
+if (-not $isAdmin) { Warn '관리자 권한이 아니라 건너뜀 — 시작 단추 오른쪽 클릭 → "터미널(관리자)"에서 맨 위 한 줄을 한 번 더 실행해 주세요' } else {
+  $ms = Join-Path $Root 'local\tether-metric.ps1'
+  [IO.File]::WriteAllText($ms, @"
+`$f = '$Root\local\tether-iface.txt'
+`$names = @(); if (Test-Path `$f) { `$n = (Get-Content `$f -Raw).Trim(); if (`$n) { `$names += `$n } }
+Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { `$_.InterfaceDescription -match 'Remote NDIS|RNDIS|Apple Mobile Device|SAMSUNG Mobile|Android' } | ForEach-Object { `$names += `$_.Name }
+foreach (`$n in (`$names | Select-Object -Unique)) { Get-NetIPInterface -InterfaceAlias `$n -ErrorAction SilentlyContinue | Where-Object { `$_.InterfaceMetric -lt 9000 } | ForEach-Object { Set-NetIPInterface -InterfaceIndex `$_.ifIndex -AddressFamily `$_.AddressFamily -InterfaceMetric 9000 -ErrorAction SilentlyContinue } }
+"@, (New-Object Text.UTF8Encoding $true))
+  $act = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$ms`""
+  $t1 = New-ScheduledTaskTrigger -AtStartup; $t2 = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 1)
+  Register-ScheduledTask -TaskName 'ReadNow-TetherMetric' -Action $act -Trigger @($t1, $t2) -User 'SYSTEM' -RunLevel Highest -Force | Out-Null
+  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ms
+  Ok "예약 작업 ReadNow-TetherMetric — 테더링은 1분마다 기본 길에서 뒤로(9000)"
+  $hosts = "$env:SystemRoot\System32\drivers\etc\hosts"; $mark = '# ReadNow-Lock'
+  $names = @('aladin.co.kr','www.aladin.co.kr','m.aladin.co.kr','image.aladin.co.kr','ttb.aladin.co.kr','blog.aladin.co.kr','ebook.aladin.co.kr','used.aladin.co.kr','search.aladin.co.kr','api.aladin.co.kr','mapi.aladin.co.kr','event.aladin.co.kr','tv.aladin.co.kr','aladin.kr','www.aladin.kr')
+  $old = Get-Content $hosts -ErrorAction SilentlyContinue | Where-Object { $_ -notmatch [regex]::Escape($mark) }
+  $new = @($old) + ($names | ForEach-Object { "0.0.0.0 $_ $mark" })
+  [IO.File]::WriteAllLines($hosts, $new); ipconfig /flushdns | Out-Null
+  Ok "hosts: 알라딘 주소 $($names.Count)개를 이 PC의 다른 프로그램에서 막음 (공개 수집 크롬은 도우미로 테더링만)"
 }
 
 # 5) 24시간 — 절전 끔

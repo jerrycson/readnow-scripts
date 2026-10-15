@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.68.2의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.69.0의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.68.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.68.2', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.69.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.69.0', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -329,6 +329,7 @@
     try { const r = await fetch(BASE + 'worders.aspx?searchType=1&limitDate=1', { credentials: 'include' }); const h = await r.text(); const d = new DOMParser().parseFromString(h, 'text/html'); return r.ok && !looksLoggedOut(r.url, d, h); } catch (e) { return false; }
   }
   async function autoRelogin(loginUrl, tryNo = 1) {
+    if (globalThis.__rnPubHome || globalThis.__rnPubChrome) throw new Error('🛡 로거 크롬은 알라딘에 로그인하지 않음'); /* (1.69.0) */
     if (window.__rnLoginMethod && window.__rnLoginMethod() === 'naver') { setNow(`네이버로 다시 로그인 중 (${tryNo}번째)`); const ok = await window.__rnNaverLogin({ isLoggedIn, log: (m, lv) => log(m, lv === 'err' ? 'err' : lv ? 'warn' : 'ok'), stopped: () => pauseRequested, ret: BASE + 'worders.aspx' }); if (!ok && tryNo >= 2) throw new StopSignal('LOGIN', '네이버로 다시 로그인하지 못했습니다. 이 PC 브라우저에서 네이버에 로그인(로그인 상태 유지)한 뒤 이어하기를 눌러 주세요.'); return ok; }
     const cred = (GM_getValue('rn-cred', null) || GM_getValue('rnp-cred', null));
     if (!cred || !cred.id || !cred.pw) throw new StopSignal('LOGIN', '로그인이 풀렸습니다. 설정에 아이디·비밀번호를 넣으면 다음부터 자동으로 다시 로그인합니다. 지금은 직접 로그인한 뒤 이어하기를 눌러 주세요.');
@@ -1615,7 +1616,7 @@
 
   /* ════════ 매일 자동 수집 (이 PC에서 켜 둔 경우, 주문조회·판매관리 탭이 열려 있을 때) ════════ */
   const todayKst = () => { const d = new Date(); const z = (x) => String(x).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; };
-  async function autoRunCheck() {
+  async function autoRunCheck() { if (globalThis.__rnPubHome) return; /* (1.69.0) 로거 크롬: 고객·주문 수집(로그인 일) 안 함 */
     if (window.__rnUniAuto || window.__rnPaused || window.__rnSchedOn || window.__rnSchedHas) return; // (1.34.0) 새 '⏰ 매일 자동 수집'이 맡음 · 통합 수집기의 '매일 자동(모두 일괄)'이 대신 함
     if (!settings.autoRun || running || otherTabBusy() || (window.__rnRest && window.__rnRest())) return;
     const [hh, mm] = String(settings.autoTime || '06:00').split(':').map((x) => parseInt(x, 10));
@@ -1715,6 +1716,7 @@
     resume: async () => { const r = await resumable(); if (!r) return; window.__rnResumeOk && window.__rnResumeOk(); return start(r); },
     discard: async (t) => { if (running || otherTabBusy()) return { ok: false, why: '고객 작업이 지금 진행 중입니다 — 먼저 일시정지하세요' }; const names = t === 'bulk' ? ['bulk', ...BULK] : [t]; for (const n of names) { const j = await loadJob(n); if (['paused', 'running', 'error'].includes(j.status)) { j.status = 'idle'; j.discardedAt = now(); await saveJob(j); } } log(`'${t === 'bulk' ? '고객 전체 일괄 수집' : (TASKS[t] ? TASKS[t].label : t)}'의 멈춘 자리만 잊었습니다 (받은 기록은 그대로)`); render(); return { ok: true }; } };
   async function start(name, { fresh = false } = {}) {
+    if (globalThis.__rnPubHome) { log('🛡 로거(공개 수집 크롬)에서는 고객·주문 수집을 하지 않습니다 — 로그인한 사무실 PC에서', 'warn'); return 'skip'; } /* (1.69.0) */
     if (running) return; let outcome = 'done'; const tS0 = Date.now(); /* (1.60.0) 끝난 모양을 돌려줌(⏰ 매일 자동이 봄) · 걸린 시간 기록 */
     if (window.__rnGate && !window.__rnGate(name === 'bulk' ? '고객 전체 일괄 수집' : TASKS[name] ? TASKS[name].label : name)) return; // (1.56.0) 쉬는 탭이면 시작 안 함 (사람이 누른 거면 켤지 물음)
     const ob = otherTabBusy();
@@ -2166,7 +2168,7 @@
    *  요청이 오면 먼저 받은 PC 한 대만 전체 일괄 수집을 시작함 */
   let remoteInit = false; let lastReqSeen = GM_getValue('rn-last-req', null);
   async function remoteLoop() {
-    if (!fdb || !fbUser || remoteInit) return; remoteInit = true;
+    if (!fdb || !fbUser || remoteInit || globalThis.__rnPubHome) return; remoteInit = true; /* (1.69.0) 로거는 '수집 요청'을 받지도, 받을 PC로 알리지도 않음 */
     const beat = () => { if (!settings.remoteRun || !fbUser || (window.__rnRest && window.__rnRest())) return; SYS().doc('collectors').set({ [PC.id]: { pcName: PC.name || PC.id, lastSeen: now(), running: running, page: location.pathname.split('/').pop() }, writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {}); };
     beat(); setInterval(beat, 120000);
     SYS().doc('collectRequest').onSnapshot(async (d) => {

@@ -1,7 +1,7 @@
 {
- "ver": "1.68.2",
+ "ver": "1.69.0",
  "hsig": "c7621bd4a0d5881d",
- "at": "2026-10-15T09:44:21.485Z",
+ "at": "2026-10-15T10:21:44.491Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -41,9 +41,9 @@
   },
   {
    "f": "readnow-registry.js",
-   "v": "0.14.25",
-   "sha": "f12f12a8c32334cadbe3549b8233e6f96f88eac391a79a13a09e6407d72b5e1f",
-   "n": 45599
+   "v": "0.14.26",
+   "sha": "c80b566746ade99f49ec92ec2158c8bf8d9a43a3ccbe71c551f09b30485648d5",
+   "n": 45632
   },
   {
    "f": "readnow-ext-core.js",
@@ -59,9 +59,9 @@
   },
   {
    "f": "readnow-autosched-core.js",
-   "v": "0.7.0",
-   "sha": "5993370c901de9bb3113d43e5a3884baedcd8b238f48aa9e44b47df3df31f0b3",
-   "n": 186187
+   "v": "0.7.1",
+   "sha": "3ebd5bf7adbcd763762b6ccd229658f83848f85e5082fbac8874cea8414ff47f",
+   "n": 186362
   },
   {
    "f": "readnow-aladin-core.js",
@@ -77,32 +77,32 @@
   },
   {
    "f": "readnow-pc-runtime.js",
-   "v": "1.68.2",
-   "sha": "e7817cf28ff8e58d96be711e24dc685c60b8870259bfccc9c2fc0fa5978560aa",
-   "n": 105092
+   "v": "1.69.0",
+   "sha": "3a59b11a07c165167af7ae58798a67de453bf7ff9866e1cb4e8671185ac2fba5",
+   "n": 105248
   },
   {
    "f": "readnow-pc-crm.js",
-   "v": "1.68.2",
-   "sha": "94f1211953f4c50df1032be3cc83931537d263baa961695dd98d3a1325638630",
-   "n": 230164
+   "v": "1.69.0",
+   "sha": "3a345e32906133bea91ab3efba441889e647e39808cdd58a63f4fe0220602345",
+   "n": 230748
   },
   {
    "f": "readnow-pc-products.js",
-   "v": "1.68.2",
-   "sha": "0c9a6f4dbc2b824c944f8065a9371382fd0ab20449ea8eba0607ef0a96281e96",
-   "n": 559386
+   "v": "1.69.0",
+   "sha": "c0bbf3e98cd9a5f2bed4221fa844eba57dc5c6741b6b57e248730ac9cc44717c",
+   "n": 562799
   },
   {
    "f": "readnow-pc-ship.js",
-   "v": "1.68.2",
-   "sha": "848cfa0ca279b6a8f6a295875202d26b30eba6c7bd5291eedf275033074303d2",
+   "v": "1.69.0",
+   "sha": "fa4fbe0f22bdaf9a7576d9d3b46ec257acc8b6a959626dcc2a3fda220aded06d",
    "n": 15248
   },
   {
    "f": "readnow-pc-helper.js",
-   "v": "1.68.2",
-   "sha": "26cc9ee539d4548647e8277dbda74b6d19de7766fa139849f2aa48c51bc8d33b",
+   "v": "1.69.0",
+   "sha": "f32836da62d1bd9864c79756c0ec81fcc1dc14fe6ff24d8859cbaf87802818c3",
    "n": 73691
   }
  ]
