@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.77.2
+// @version      1.77.3
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -499,6 +499,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   window.addEventListener('error', (ev) => { if (/^Script error\.?$/i.test(String(ev.message || '').trim()) && !ev.filename) { window.__rnXerr = (window.__rnXerr || 0) + 1; return; } window.__rnLog('오류', 'err', `${ev.message} (${(ev.filename || '').split('/').pop()}:${ev.lineno})`); });
   window.addEventListener('unhandledrejection', (ev) => window.__rnLog('오류', 'err', `처리되지 않은 오류: ${ev.reason && ev.reason.message ? ev.reason.message : ev.reason}`));
   window.__rnLog('수집기', 'info', `탭 열림 · ${location.pathname.split('/').pop()}`);
+  try { if (document.wasDiscarded) window.__rnLog('수집기', 'warn', '⚠ 크롬이 이 탭을 메모리 절약으로 내려놓았다가 다시 열었음 — 그동안 수집이 멈춰 있었음. 크롬 설정 → 성능 → 메모리 절약 → \'항상 활성 상태로 유지할 사이트\'에 aladin.co.kr 추가'); } catch (e) {} /* (1.77.3) HOME 탭이 22:24~23:23 소리 없이 멈춘 일 — 까닭을 기록에 남김 */
 })();
 /* ═════════════ 통합 관제판 (1.38.0) ═════════════
  * 예전: 오른쪽 위에 [▶ 모두][고객·주문][상품·매입][기록][–] 탭만 있고, 일시정지·이어하기·최근 기록이 패널마다 따로 있었음
@@ -5096,7 +5097,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const PUB_CMDS = new Set(['lookup', 'metrics', 'extLookup', 'extTest']); /* (1.69.0) usedInfo(우리 매물 페이지 다시 읽기)는 뺌 — 새로 올린 우리 매물을 익명 IP가 곧바로 여는 것은 로거를 드러냄 → 로그인한 사무실 PC·클라우드가 함 */ /* (1.64.0) 공개 전용 PC가 맡는 맡긴 일(로그인 없이 되는 것만) */
   const pcCan = (type) => { const extT = type === 'extLookup' || type === 'extTest'; if (PUBONLY && (!PUB_CMDS.has(type) || (!TGATE.ok && !extT))) return false; /* (1.67.0) 외부 정보는 와이파이 — 테더링과 상관없이 로거가 받음 */ if (PUBONLY && !extT && BUD && !(BUD.left.main > 0) && !(BUD.free)) return false; /* 맡긴 비로그인 일 = 주요 몫 — 몫이 없으면 받지 않음 */ /* (1.66.0) 테더링 확인 전에는 맡지 않음(다른 PC가 받게) */ if (pubPcMode() && type === 'metrics') return false; /* 묶음 시장 지표(대량)는 공개 전용 PC */ const G = REGF(); if (!G) return PC_KNOWN_OLD.has(type); return G.canHandle(G.merge(REGDOC || {}), type, 'pc'); };
   /* (1.63.7) 🧩 맡긴 일 거르기 — 수집 일은 📥 수집이 켜졌을 때만, 출고 시작·현금 판매·등록은 그 기능을 켰을 때만(끄면 대기로 남겨 다른 PC가) */
-  const cmdMine = (t) => { const f = (k) => !window.__rnFeat || window.__rnFeat(k); if (t === 'startDelivery') return f('ship'); if (t === 'cashStop') return f('cash'); if (/^reg/.test(String(t))) return f('reg'); return !window.__rnPaused; };
+  const cmdMine = (t) => { const f = (k) => !window.__rnFeat || window.__rnFeat(k); if (t === 'startDelivery') return f('ship'); if (t === 'cashStop') return f('cash'); if (t === 'regLookup') return true; /* (1.77.3) 등록 조회(샵매니저 등록 검색)는 읽기만 하는 사람의 요청 — 📥 수집 끔·등록 기능 끔이어도 로그인한 PC면 받음(사무실 PC·HOME) */ if (/^reg/.test(String(t))) return f('reg'); return !window.__rnPaused; };
   async function runCmd(id) { const ref = C('shp_cmds').doc(id); let v = null; if ((window.__rnRest && window.__rnRest())) return; // (1.56.0) 맡긴 일은 이 PC의 수집기 탭만
     await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const x = sn.data(); if (!x || x.status !== 'queued' || !pcCan(x.type) || !cmdMine(x.type) || String(x.pcSkip || '').includes(` ${APP_VER}에`)) return; /* 노선표에서 PC 몫인 종류만 (1.36.0) */ tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, uploadedAt: TS() }); v = x; });
     if (!v) return;

@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.77.2의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.77.3의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.77.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.77.2', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.77.3' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.77.3', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2169,7 +2169,7 @@
   const PUB_CMDS = new Set(['lookup', 'metrics', 'extLookup', 'extTest']); /* (1.69.0) usedInfo(우리 매물 페이지 다시 읽기)는 뺌 — 새로 올린 우리 매물을 익명 IP가 곧바로 여는 것은 로거를 드러냄 → 로그인한 사무실 PC·클라우드가 함 */ /* (1.64.0) 공개 전용 PC가 맡는 맡긴 일(로그인 없이 되는 것만) */
   const pcCan = (type) => { const extT = type === 'extLookup' || type === 'extTest'; if (PUBONLY && (!PUB_CMDS.has(type) || (!TGATE.ok && !extT))) return false; /* (1.67.0) 외부 정보는 와이파이 — 테더링과 상관없이 로거가 받음 */ if (PUBONLY && !extT && BUD && !(BUD.left.main > 0) && !(BUD.free)) return false; /* 맡긴 비로그인 일 = 주요 몫 — 몫이 없으면 받지 않음 */ /* (1.66.0) 테더링 확인 전에는 맡지 않음(다른 PC가 받게) */ if (pubPcMode() && type === 'metrics') return false; /* 묶음 시장 지표(대량)는 공개 전용 PC */ const G = REGF(); if (!G) return PC_KNOWN_OLD.has(type); return G.canHandle(G.merge(REGDOC || {}), type, 'pc'); };
   /* (1.63.7) 🧩 맡긴 일 거르기 — 수집 일은 📥 수집이 켜졌을 때만, 출고 시작·현금 판매·등록은 그 기능을 켰을 때만(끄면 대기로 남겨 다른 PC가) */
-  const cmdMine = (t) => { const f = (k) => !window.__rnFeat || window.__rnFeat(k); if (t === 'startDelivery') return f('ship'); if (t === 'cashStop') return f('cash'); if (/^reg/.test(String(t))) return f('reg'); return !window.__rnPaused; };
+  const cmdMine = (t) => { const f = (k) => !window.__rnFeat || window.__rnFeat(k); if (t === 'startDelivery') return f('ship'); if (t === 'cashStop') return f('cash'); if (t === 'regLookup') return true; /* (1.77.3) 등록 조회(샵매니저 등록 검색)는 읽기만 하는 사람의 요청 — 📥 수집 끔·등록 기능 끔이어도 로그인한 PC면 받음(사무실 PC·HOME) */ if (/^reg/.test(String(t))) return f('reg'); return !window.__rnPaused; };
   async function runCmd(id) { const ref = C('shp_cmds').doc(id); let v = null; if ((window.__rnRest && window.__rnRest())) return; // (1.56.0) 맡긴 일은 이 PC의 수집기 탭만
     await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const x = sn.data(); if (!x || x.status !== 'queued' || !pcCan(x.type) || !cmdMine(x.type) || String(x.pcSkip || '').includes(` ${APP_VER}에`)) return; /* 노선표에서 PC 몫인 종류만 (1.36.0) */ tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, uploadedAt: TS() }); v = x; });
     if (!v) return;
