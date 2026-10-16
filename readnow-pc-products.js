@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.72.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.72.2의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.72.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.72.1', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.72.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.72.2', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2094,7 +2094,8 @@
       for (const [ono, r] of Object.entries(results)) if (!r.gate) await exEnd('startDelivery', `${id}:${ono}`, r.state === 'done' ? 'done' : r.state === 'fail' ? 'failed' : 'unknown', r.msg || null, { http: r.http || null });
       const nd = Object.values(results).filter((r) => r.state === 'done').length; await ref.set({ status: 'done', results, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
       try { await shipLiteRead(SH, gcDoc); } catch (e) {} // (1.34.6) 넘긴 결과를 바로 목록에 — 웹앱에서 주문확인요청에서 빠지고 발송 요청에 들어감
-      log(`발송준비시작: ${nd} / ${Object.keys(results).length}건 (웹앱에서 맡김)`, nd === Object.keys(results).length ? 0 : 1); }
+      { const all = Object.values(results); const nO = all.filter((r) => r.gate && r.state !== 'done').length; const bad = all.length - nd - nO; /* (1.72.2) 같은 주문을 클라우드·다른 PC가 이미 맡아 하는 중(실행 문이 막음)이면 실패가 아님 — 예전엔 '! 0 / 1건'으로 적혀 실패처럼 보였음(10/15 JS-MAIN·MJ-MAIN) */
+        log(`발송준비시작: ${nd} / ${all.length}건${nO ? ` · 다른 곳(클라우드·다른 PC)이 이미 맡아 함 ${nO}건` : ''}${bad ? ` · 확인 못 함·실패 ${bad}건(웹앱 출고 화면에서 상태 확인)` : ''} (웹앱에서 맡김)`, bad ? 1 : 0); } }
     else if (v.type === 'usedInfo') { const results = {}; // (1.34.5) 웹앱·클라우드가 맡긴 '중' 상품 유의 사항 다시 읽기 — 바로 처리(한두 건이라 짧음)
       for (const lid of v.listingIds || []) { try { const prev = (await C('prd_used_info').doc(String(lid)).get()).data(); const r = await readOurUsed(lid, v.grade || null, prev);
           results[lid] = r.miss ? { ok: false, why: r.miss, at: nowIso() } : { ok: true, note: !!r.note, at: nowIso() }; } catch (e) { results[lid] = { ok: false, why: e.message, at: nowIso() }; } }
@@ -3033,9 +3034,9 @@
     const res = await X.run(src, { isbn: b.isbn, title: b.title, author: b.author, keys, http, render: extRender, cache: EXT_S.cache, cfg }); if (calls > 1) EXT_S.next[h] = Math.max(EXT_S.next[h] || 0, Date.now() + s.paceMs);
     if (res.skip) return { src, st: 'skip', why: res.skip }; let st; try { st = await extSave(src, b, res); } catch (e) { st = 'err'; res.ok = false; res.why = '저장 실패: ' + (e.code || e.message); }
     if (calls) extUsedAdd(src, calls);
-    if (st !== 'err' && st !== 'mismatch') { extIdxSet(src, b.isbn); EXT_S.errs[src] = 0; }
+    if (st !== 'err' && st !== 'mismatch') { extIdxSet(src, b.isbn); EXT_S.errs[src] = 0; if (EXT_S.pauseN) EXT_S.pauseN[src] = 0; }
     else { const k = Math.min(EXT_BACKOFF.length, extIdxErrK(src, b.isbn) + 1); if (!/^저장 실패/.test(res.why || '')) extIdxSet(src, b.isbn, `E ${extKst()} ${k}`); /* 같은 책을 날마다 다시 묻지 않게 1·3·7·14·30일 뒤 */
-      if (st === 'err') { EXT_S.errs[src] = (EXT_S.errs[src] || 0) + 1; if (res.limit) EXT_S.pauseUntil[src] = Date.now() + 6 * 3600e3; else if (EXT_S.errs[src] >= 5) { EXT_S.pauseUntil[src] = Date.now() + 3600e3; EXT_S.errs[src] = 0; log(`🌐 ${s.label}: 5번 잇달아 못 읽어 1시간 쉼 — ${res.why}`, 1); } } }
+      if (st === 'err') { EXT_S.errs[src] = (EXT_S.errs[src] || 0) + 1; if (res.limit) EXT_S.pauseUntil[src] = Date.now() + 6 * 3600e3; else if (EXT_S.errs[src] >= 5) { EXT_S.pauseN = EXT_S.pauseN || {}; const pn = EXT_S.pauseN[src] = Math.min(5, (EXT_S.pauseN[src] || 0) + 1); const ph = Math.min(24, 2 ** (pn - 1)); EXT_S.pauseUntil[src] = Date.now() + ph * 3600e3; EXT_S.errs[src] = 0; /* (1.72.2 · 클라우드 0.13.4) 계속 실패하는 출처는 쉬는 시간을 1→2→4→8→16시간으로 늘림(한 번이라도 되면 다시 1시간부터) */ log(`🌐 ${s.label}: 5번 잇달아 못 읽어 ${Math.round((EXT_S.pauseUntil[src] - Date.now()) / 3600e3)}시간 쉼 — ${res.why}`, 1); } } }
     { const okR = st !== 'err'; const L0 = { at: nowIso(), ok: st !== 'err', st, why: st === 'err' || st === 'mismatch' ? String(res.why || '').slice(0, 200) : null, isbn: b.isbn, by: PC_NAME, how: why || 'auto' } ; /* (1.24.0 · 클라우드 0.12.2) 출처별 오늘 성공·실패 수(res) + 마지막 실패(lastErr — 성공이 와도 남음) → 웹앱 시장조사 탭 수집 현황에서 '매번 실패'를 바로 봄 */ EXT_RUN().set({ last: { [src]: L0 }, res: { [extKst()]: { [src]: { [okR ? 'ok' : 'err']: firebase.firestore.FieldValue.increment(1) } } }, ...(okR ? {} : { lastErr: { [src]: L0 } }) }, { merge: true }).catch(() => {}); }
     /* (1.57.4) 무엇을 받았는지 한 줄씩(작은 글자 기록 · 웹앱 시장조사 탭 '자동으로 채우기 현황'의 기록에 보임) */
     try { window.__rnLog && window.__rnLog('상품', 'detail', `🌐 ${s.label} ${b.isbn} 『${String(b.title || '').slice(0, 40)}』 → ${{ new: '새로', changed: '바뀜(옛 값 보관)', same: '같음', err: '못 읽음', mismatch: '다른 책', none1: '없음(한 번)' }[st] || st}${res.d && res.d.n != null ? ` ${res.d.n}개` : ''}${st === 'err' || st === 'mismatch' ? ' — ' + String(res.why || '').slice(0, 80) : ''}${why === 'webapp' ? ' (웹앱에서 맡김)' : why === 'test' ? ' (시험)' : ''}`); } catch (e) {}
