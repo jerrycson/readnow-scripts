@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "일괄 정렬·예스24·개요",
- "since": "2026-10-16T04:41:27Z",
- "beat": "2026-10-16T04:41:27Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "1.74.0/1.36.0 배포",
-  "at": "2026-10-16T04:36:49Z"
+  "done": "1.74.1/1.36.1 배포",
+  "at": "2026-10-16T04:45:15Z"
  }
 }
