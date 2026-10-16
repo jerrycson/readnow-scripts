@@ -1,1 +1,1 @@
-regq=8800312881548&br=3&asCode=1
+regq=8800312881548&br=3&asCode=1&r=2
