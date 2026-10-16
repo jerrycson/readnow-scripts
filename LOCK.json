@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "도우미 1.5.1 스스로 갖추기(설치 다시 실행 없애기)",
+ "since": "2026-10-16T00:08:32Z",
+ "beat": "2026-10-16T00:08:32Z",
  "ask": null,
  "last": {
   "who": "chat",
