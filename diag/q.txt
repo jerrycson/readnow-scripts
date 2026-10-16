@@ -1,2 +1,2 @@
-kpbtest=1&r=11
-kpstat=1&doc=app_settings/cloud_login&r=11
+kpq=40&kpcap=2500&kpper=120000&r=12
+kpstat=1&r=12
