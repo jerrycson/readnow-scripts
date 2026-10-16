@@ -1,2 +1,1 @@
-kpq=40&kpcap=2500&kpper=120000&r=12
-kpstat=1&r=12
+@kpin kpin/20261016-133310.json
