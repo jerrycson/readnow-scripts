@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "앞으로 시간표 내일까지",
+ "since": "2026-10-16T04:59:12Z",
+ "beat": "2026-10-16T04:59:12Z",
  "ask": null,
  "last": {
   "who": "chat",
