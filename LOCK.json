@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "로그 분석·섞어 읽기·보류 주문·테더링 남은 양·실시간 반영·사진 이어받기",
+ "since": "2026-10-16T00:48:25Z",
+ "beat": "2026-10-16T00:48:25Z",
  "ask": null,
  "last": {
   "who": "chat",
