@@ -1,2 +1,2 @@
-rawget=POST%20https%3A%2F%2Fbnk.kpipa.or.kr%2Fhome%2Fv3%2Fhelpdesk%2FhlpBbsNoticeBoardList%3FtabIdx%3D%26cPostType%3D%26txtSearchText%3D%26pageIndex%3D2%26recordCountPerPage%3D15%7Chttps%3A%2F%2Fwww.kpipa.or.kr%2Fp%2Fg3_1%3Fpage%3D2%7Chttps%3A%2F%2Fwww.kpipa.or.kr%2Fp%2Fg3_2&r=7
-rawget=https%3A%2F%2Fwww.kpipa.or.kr%2Fp%2Fg3_5%7Chttps%3A%2F%2Fe.kpipa.or.kr%2Fconsult%2FonlinefaqConsultList.do%3Fboard_id%3D10%26type_id%3D1%26search_cond%3D%26search_text%3D%26pageInfo.page%3D2&r=7
+kpbtest=1&r=8
+kpkey=1&kpstat=1&doc=app_settings/cloud,app_settings/cloud_login&r=8
