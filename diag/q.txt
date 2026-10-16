@@ -1,1 +1,4 @@
-egress=1&doc=prd_jobs/pcBeat,prd_jobs/autoSched,app_settings/cloud_login&r=16
+egress=1&doc=app_settings/cloud_login,prd_jobs/pcBeat&r=1
+regq=%EB%8B%A4%ED%81%AC%EB%82%98%EC%9D%B4%ED%8A%B8&br=7
+regq=%EC%9E%91%EB%B3%84%ED%95%98%EC%A7%80%20%EC%95%8A%EB%8A%94%EB%8B%A4&br=1
+logs=1&r=1
