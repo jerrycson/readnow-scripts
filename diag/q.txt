@@ -1,1 +1,1 @@
-kpstat=1&doc=app_settings/cloud_login,app_settings/cloud&r=13
+doc=prd_jobs/pcBeat,prd_jobs/net_2026-10-16,prd_system/autoSched&r=14
