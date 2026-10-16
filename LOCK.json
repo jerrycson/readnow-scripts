@@ -1,8 +1,8 @@
 {
  "holder": "auto-check",
- "what": "전체 점검: 판 번호·설명서",
+ "what": "전체 점검: 보고서·PROJECT_STATE",
  "since": "2026-10-16T13:04:52Z",
- "beat": "2026-10-16T13:10:53Z",
+ "beat": "2026-10-16T13:14:51Z",
  "ask": null,
  "last": {
   "who": "chat",
