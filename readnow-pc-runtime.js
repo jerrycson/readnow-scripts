@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.76.0의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.76.1의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.76.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.76.0', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.76.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.76.1', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -494,6 +494,16 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const txt = S.kind === 'stop' ? '■ 멈추는 중…' : S.kind === 'pause' ? '■ 일시정지됨' : S.kind === 'busy' ? `▶ ${m && m.job ? m.job : '작업 중'}` : '쉬는 중';
     b.textContent = txt; b.title = txt; b.className = 'bdg ' + ({ stop: 'stop', pause: 'pause', busy: 'busy', idle: '' })[S.kind];
     box.querySelector('#rnCtlWho').textContent = `${pc()} · v${VER}`; };
+  /* (1.76.1) 🧩 한 크롬에 수집기가 두 개 깔렸는지 — 사장님 10/16: '수집기는 이미 업데이트했는데 샵매니저에 빨간 경고창(본체 1.70.2 · 모듈 1.72.0)이 계속 뜸'
+   *  까닭: Tampermonkey에 예전에 붙여 넣은 옛 수집기(다른 이름·사본)가 함께 켜져 있으면 그 옛 것이 자기 판과 모듈 판이 다르다고 경고를 띄움(새 것은 멀쩡) · 옛 것은 고칠 수 없으니 새 것이 알아채 안내
+   *  방법: 화면에 '리드나우 수집기' 머리 칸(#rn-ctl)이 둘 이상이고 판이 다르면 → 옛 것의 빨간 경고를 이 안내로 바꿈(지우는 단계까지) · 같은 판 둘이면 '같은 것 두 개' 안내 */
+  const dupChk = () => { try { if (globalThis.__rnSR) return; const L = [...document.querySelectorAll('#rn-ctl')]; if (L.length < 2) return; const vs = L.map((b) => { const t = (b.querySelector('#rnCtlWho') || {}).textContent || ''; const m = t.match(/v(\d+\.\d+\.\d+)/); return m ? m[1] : '?'; }); const old = [...new Set(vs.filter((v) => v !== VER))];
+      const key = vs.slice().sort().join(','); if (window.__rnDupShown === key) return; window.__rnDupShown = key;
+      document.querySelectorAll('div').forEach((d) => { if (d !== box && /모듈 판이 맞지 않음/.test(d.textContent || '') && d.style && d.style.position === 'fixed' && (d.textContent || '').length < 900) d.style.display = 'none'; });
+      const n = document.createElement('div'); n.style.cssText = 'position:fixed;right:10px;bottom:52px;z-index:2147483646;max-width:min(420px,92vw);background:#7A3E00;color:#fff;padding:8px 12px;border-radius:8px;font:600 12px/1.55 system-ui,Malgun Gothic,sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.25)';
+      n.innerHTML = `🧩 이 크롬에 리드나우 수집기가 <b>${L.length}개</b> 켜져 있습니다 (${vs.map((v) => 'v' + v).join(' · ')}) — 빨간 경고는 ${old.length ? '옛 것(v' + old.join(', v') + ')' : '같은 것 하나'}가 띄운 것이고, 새 판 v${VER}은 정상입니다.<br>지우는 법: ① 크롬 오른쪽 위 Tampermonkey 아이콘 → <b>대시보드</b> ② '리드나우 수집기'가 여러 줄이면 <b>판(버전) 칸이 ${old.length ? old.join('·') : '같은'}인 줄</b>의 휴지통(삭제) 누름 — <b>v${VER} 줄은 남김</b> ③ 이 화면 새로고침 → 오른쪽 위 수집기 칸이 하나(v${VER})만 보이면 끝<br><button style="margin-top:4px;padding:2px 8px;border-radius:5px;border:0;cursor:pointer">닫기</button>`;
+      n.querySelector('button').onclick = () => n.remove(); document.body.appendChild(n); window.__rnLog && window.__rnLog('수집기', 'warn', `🧩 이 크롬에 수집기 ${L.length}개(${vs.join(', ')}) — 옛 것을 Tampermonkey에서 지워야 함`); } catch (e) {} };
+  setTimeout(dupChk, 8000); setTimeout(dupChk, 45000);
   /* (1.56.0) 머리줄 아래 옅은 띠: 이 탭이 이 PC의 수집기인지, 쉬는 탭인지 (머리줄은 이름·판·상태로 이미 꽉 차서 따로) */
   const sub = box.querySelector('#rnCtlSub'); let subHtml = null, promotedAt = 0;
   const drawSub = (S) => { const r = window.__rnRole ? window.__rnRole() : 'lead'; const pn = window.__rnPageName || ((x) => x); let cls = '', h = '';

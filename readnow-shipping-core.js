@@ -8,7 +8,7 @@
 // ==========================================================================
 (function (root) {
   'use strict';
-  const VERSION = '0.6.0'; // (0.6.0) planConfirm — 오늘 출고 확정 목록 계산(웹앱 '출고 확정' 단추와 클라우드 출고 시각 자동 확정이 같은 기준) 
+  const VERSION = '0.7.0'; // (0.7.0) 🇰🇷 법정 공휴일 미리 넣음·택배 수거 달력(pickup off/on)·실제 발송 묶음(pickupRun)·③ 배송&구매확정전 화면 읽기(parseShippedPage — 그날 출고 = 발송일이 그날인 주문) // (0.6.0) planConfirm — 오늘 출고 확정 목록 계산(웹앱 '출고 확정' 단추와 클라우드 출고 시각 자동 확정이 같은 기준) 
   const T = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
   const toInt = (s) => { const n = parseInt(String(s || '').replace(/[^\d-]/g, ''), 10); return isNaN(n) ? null : n; };
 
@@ -49,6 +49,16 @@
     return { orders, tabCounts };
   }
 
+  // ── (0.7.0) ③ 배송&구매확정전 화면(worder_delivery_complete.aspx?orderstep=5 · 쪽 = &page=N · 한 쪽 50주문) — 송장을 넣어 이 탭으로 옮겨 온 차례(맨 위 = 가장 최근)
+  //    사장님 10/16 기준: 그날 출고별 매출 = 어제 마지막으로 옮겨 온 주문(A) 다음부터 오늘 마지막(C)까지 = 이 화면의 발송일이 그날인 주문 · 발송일은 아래 줄(oList{n}b)의 'MM-DD' 칸
+  //    today = 'YYYY-MM-DD'(한국 날짜) — 발송일에 해를 붙일 때 기준(오늘보다 뒤면 지난해)
+  function parseShippedPage(doc, today) { const R = parseDeliveryPage(doc); const td = String(today || ymd(new Date())); const Y = +td.slice(0, 4);
+    const byNo = new Map(); for (const tr of doc.querySelectorAll('tr[id^="oList"]')) { if (!/^oList\d+$/.test(tr.id)) continue; const a = tr.querySelector('a[onclick*="viewOrderDetail"]'); if (!a) continue; const no = T(a); if (byNo.has(no)) continue; const sub = doc.getElementById(tr.id + 'b'); const sc = sub ? [...sub.children].filter((x) => x.tagName === 'TD').map((x) => T(x)) : []; const md = sc.find((x) => /^\d{2}-\d{2}$/.test(x)) || null;
+      const oc = [...tr.children].map((x) => x.innerHTML.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').trim()).find((x) => /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(x)) || null; byNo.set(no, { md, oc }); }
+    R.orders.forEach((o, i) => { const x = byNo.get(o.orderNo) || {}; o.pos = i; if (!o.orderedAt && x.oc) o.orderedAt = x.oc; let sd = null; if (x.md) { sd = Y + '-' + x.md; if (sd > td) sd = (Y - 1) + '-' + x.md; } o.shipDay = sd; });
+    let last = 1; for (const a of doc.querySelectorAll('a[onclick*="Page_Set"]')) { const m = (a.getAttribute('onclick') || '').match(/Page_Set\('?(\d+)/); if (m) last = Math.max(last, +m[1]); }
+    return { ...R, lastPage: last }; }
+
   // ── 서가 (= 실제 책장 한 칸) ── 정범 지정 2026-10-05, 2026-10-06 바로잡음: 서가는 각각 따로, 단 BLK·YLW·GRY·GRN 한 줄만 한 서가에 섞여 꽂혀 있으므로
   //    서가 안에서는 관리코드를 가리지 않고 이름 철자 순으로 섞어 늘어놓음. 서가 이름(name)은 화면에 그대로 씀. 순서를 바꾸려면 여기만
   const SHELF_ORDER = [
@@ -82,8 +92,20 @@
 
   // ── 영업일 ── 주말 + 설정한 휴일(웹앱 설정에서 날짜를 넣음)은 출고하지 않음
   const ymd = (d) => new Date(d.getTime() + 9 * 3600e3).toISOString().slice(0, 10); // 한국 날짜
-  function isBizDay(d, holidays) { const k = ymd(d); const wd = new Date(k + 'T12:00:00Z').getUTCDay(); /* 한국 날짜의 요일 (실행 기기 시간대와 무관) */ return wd !== 0 && wd !== 6 && !(holidays || []).includes(k); }
-  function nextBizDay(d, holidays) { let x = new Date(d.getTime()); do { x = new Date(x.getTime() + 864e5); } while (!isBizDay(x, holidays)); return x; }
+  /* (0.7.0) 🇰🇷 법정 공휴일·대체공휴일·선거일 — 미리 넣어 둠(택배사가 수거하지 않는 날). 택배사가 연휴 앞뒤로 더 쉬는 날은 웹앱 '📅 택배 수거 달력'에서 사람이 표시(pickup 'off'), 공휴일인데 수거하면 'on'
+   *  출처: 인사혁신처 공휴일 고시 기준(kholidayz.com 2026·2027 표와 대조 · 2026-10-16) · 해마다 끝에 다음 해를 더함 */
+  const KR_HOLIDAYS = {
+    '2025-01-01': '신정', '2025-01-27': '임시공휴일', '2025-01-28': '설날 연휴', '2025-01-29': '설날', '2025-01-30': '설날 연휴', '2025-03-01': '삼일절', '2025-03-03': '대체공휴일(삼일절)', '2025-05-05': '어린이날·부처님오신날', '2025-05-06': '대체공휴일', '2025-06-03': '대통령 선거', '2025-06-06': '현충일', '2025-08-15': '광복절', '2025-10-03': '개천절', '2025-10-05': '추석 연휴', '2025-10-06': '추석', '2025-10-07': '추석 연휴', '2025-10-08': '대체공휴일(추석)', '2025-10-09': '한글날', '2025-12-25': '성탄절',
+    '2026-01-01': '신정', '2026-02-16': '설날 연휴', '2026-02-17': '설날', '2026-02-18': '설날 연휴', '2026-03-01': '삼일절', '2026-03-02': '대체공휴일(삼일절)', '2026-05-01': '노동절', '2026-05-05': '어린이날', '2026-05-24': '부처님오신날', '2026-05-25': '대체공휴일(부처님오신날)', '2026-06-03': '지방선거', '2026-06-06': '현충일', '2026-07-17': '제헌절', '2026-08-15': '광복절', '2026-08-17': '대체공휴일(광복절)', '2026-09-24': '추석 연휴', '2026-09-25': '추석', '2026-09-26': '추석 연휴', '2026-10-03': '개천절', '2026-10-05': '대체공휴일(개천절)', '2026-10-09': '한글날', '2026-12-25': '성탄절',
+    '2027-01-01': '신정', '2027-02-06': '설날 연휴', '2027-02-07': '설날', '2027-02-08': '설날 연휴', '2027-02-09': '대체공휴일(설날)', '2027-03-01': '삼일절', '2027-05-01': '노동절', '2027-05-03': '대체공휴일(노동절)', '2027-05-05': '어린이날', '2027-05-13': '부처님오신날', '2027-06-06': '현충일', '2027-07-17': '제헌절', '2027-07-19': '대체공휴일(제헌절)', '2027-08-15': '광복절', '2027-08-16': '대체공휴일(광복절)', '2027-09-14': '추석 연휴', '2027-09-15': '추석', '2027-09-16': '추석 연휴', '2027-10-03': '개천절', '2027-10-04': '대체공휴일(개천절)', '2027-10-09': '한글날', '2027-10-11': '대체공휴일(한글날)', '2027-12-25': '성탄절', '2027-12-27': '대체공휴일(성탄절)' };
+  const holName = (k) => KR_HOLIDAYS[k] || null;
+  /* 영업일(= 택배사가 수거하는 날) — pickup = { 'YYYY-MM-DD': 'off'(수거 없음) | 'on'(수거함) } 사람이 달력에 표시한 것이 먼저 · 그다음 주말·법정 공휴일·설정의 휴일 목록 */
+  function isBizDay(d, holidays, pickup) { const k = ymd(d); const pk = pickup && pickup[k]; if (pk === 'off') return false; if (pk === 'on') return true; const wd = new Date(k + 'T12:00:00Z').getUTCDay(); /* 한국 날짜의 요일 (실행 기기 시간대와 무관) */ return wd !== 0 && wd !== 6 && !KR_HOLIDAYS[k] && !(holidays || []).includes(k); }
+  function nextBizDay(d, holidays, pickup) { let x = new Date(d.getTime()); for (let i = 0; i < 60; i++) { x = new Date(x.getTime() + 864e5); if (isBizDay(x, holidays, pickup)) break; } return x; }
+  const dayKeyAdd = (k, n) => new Date(Date.parse(k + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+  /* (0.7.0) 📦 실제 발송 묶음 — 수거하는 날 k: 바로 앞의 수거 없는 날들(주말·연휴·택배 휴무)에 송장을 넣은 것까지 그날 한꺼번에 나감 → [앞 쉬는 날들…, k] · 수거 없는 날이면 그날이 들어갈 다음 수거일 */
+  function pickupRun(k, opt) { const o = opt || {}; const isP = (x) => isBizDay(new Date(x + 'T12:00:00+09:00'), o.holidays, o.pickup); if (!isP(k)) { let n = k; for (let i = 0; i < 60 && !isP(n); i++) n = dayKeyAdd(n, 1); return { pickup: false, to: n, days: [k] }; }
+    const days = [k]; let p = dayKeyAdd(k, -1); for (let i = 0; i < 60 && !isP(p); i++) { days.unshift(p); p = dayKeyAdd(p, -1); } return { pickup: true, to: k, days }; }
   // 출고 마감: 기본 14:00. opt.cutTime('HH:MM') = 평소 마감, opt.dayCut = { 'YYYY-MM-DD': 'HH:MM' } 그날만 다른 마감(수기 입력)
   const DEFAULT_CUT = '14:00';
   const cutMin = (v) => { if (v == null || v === '') return null; const m = String(v).trim().match(/^(\d{1,2})(?::?(\d{2}))?$/); return m && +m[1] < 24 && +(m[2] || 0) < 60 ? +m[1] * 60 + +(m[2] || 0) : null; };
@@ -92,7 +114,8 @@
   // 주문의 출고일(출고 묶음): 영업일이고 그날 마감 전 주문 → 그날, 아니면 다음 영업일
   function dueShipDay(orderedAt, opt) { const o = opt || {}; if (orderedAt == null || orderedAt === '') return null; const t = new Date(String(orderedAt).replace(' ', 'T') + (/[+Z]/.test(String(orderedAt)) ? '' : '+09:00')); if (isNaN(t.getTime())) return null; /* (0.5.2) 날짜를 못 읽으면 null(예전엔 오류로 멈춤) */
     const k = ymd(t); const hm = new Date(t.getTime() + 9 * 3600e3).toISOString().slice(11, 16); const mins = +hm.slice(0, 2) * 60 + +hm.slice(3, 5);
-    return isBizDay(t, o.holidays) && mins < cutOf(k, o) ? k : ymd(nextBizDay(t, o.holidays)); }
+    if (o.daily) return mins < cutOf(k, o) ? k : dayKeyAdd(k, 1); /* (0.7.0) 송장 넣는 날 기준(사장님: 주말·휴일에도 송장은 넣음 — 택배 수거만 쉼) = 날마다 마감 전이면 그날, 뒤면 다음 날 */
+    return isBizDay(t, o.holidays, o.pickup) && mins < cutOf(k, o) ? k : ymd(nextBizDay(t, o.holidays, o.pickup)); }
 
   // ── 알라딘 발송 요청 엑셀(worder_excel.aspx, status=4) → ALPS 일괄주문접수(사용자파일 '알라딘') 업로드 파일 ──
   // 정범이 ALPS에 올려 성공한 파일(판매완료20260925-ALPS업로드성공.xlsx)과 같은 29칸·같은 순서. 숫자 칸은 그 파일처럼 숫자로
@@ -169,6 +192,6 @@
     (plan.add || []).filter((ono) => !inc.some((x) => x.orderNo === ono) && !ents.some((e) => e.orderNo === ono)).forEach((ono) => ents.push({ id: 'aladin_' + ono, orderNo: ono, ex: [] }));
     const items = keep.flatMap((x) => x.items); const total = items.reduce((a, i) => a + (+i.price || 0) * (+i.qty || 1), 0);
     return { ents, orders: keep, items: items.length, total, out: out.length }; }
-  const API = { VERSION, planConfirm, parseDeliveryPage, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays };
+  const API = { VERSION, planConfirm, parseDeliveryPage, parseShippedPage, KR_HOLIDAYS, holName, pickupRun, dayKeyAdd, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; root.ReadnowShipping = API;
 })(typeof window !== 'undefined' ? window : globalThis);
