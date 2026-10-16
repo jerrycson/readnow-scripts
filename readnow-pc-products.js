@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.73.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.73.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.73.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.73.0', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.73.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.73.1', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -805,11 +805,13 @@
   let BUD = null, BUD_STOP = null; const METC = { main: 0, gen: 0 };
   const tierOfKey = (k) => { const j = 'prd:' + String(k || '').replace(/^job:/, '').split('#')[0]; const jj = { 'prd:benchForce': 'prd:bench', 'prd:benchHelp': 'prd:bench', 'prd:benchDetail': 'prd:bench' }[j] || j; try { const L = AS && SCHED ? AS.slotsOf(SCHED) : []; const s0 = L.find((x) => x.job === j) || L.find((x) => x.job === jj); return s0 && s0.tier === 'gen' ? 'gen' : 'main'; } catch (e) { return 'main'; } };
   const budLeft = (k) => (BUD ? BUD.left[tierOfKey(k)] : Infinity);
-  const extLoggerOk = () => PUBONLY && (!AS || !SCHED || AS.budgetOf(SCHED).extIdle); /* (1.68.0) 로거도 외부 정보를 늘 함께(와이파이 · 알라딘과 무관 — 테더링 일과 동시에 돌아도 서로 막지 않음) */
+  const helperVerOk = (v) => { const n = (x) => String(x || '0').split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); return HELPER && n(HELPER.ver) >= n(v); };
+  const extLoggerOk = () => PUBONLY && helperVerOk('1.6.0') && (!AS || !SCHED || AS.budgetOf(SCHED).extIdle); /* (1.73.1) 도우미 1.6.0 전에는 예스24·중고닷 등이 테더링으로 나가므로 로거는 외부 정보를 하지 않음(도우미가 1시간 안에 스스로 업데이트) */ /* (1.68.0) 로거도 외부 정보를 늘 함께(와이파이 · 알라딘과 무관 — 테더링 일과 동시에 돌아도 서로 막지 않음) */
   /* (1.68.0) 🛡 로거 크롬에 알라딘 로그인 흔적(이 탭 화면의 로그아웃 링크)이 보이면 모든 알라딘 일을 멈춤 — 로거와 북스킹 계정이 이어지는 가장 큰 위험 */
   const aladinLoggedHere = () => { if (!PUBONLY) return false; try { return [...document.querySelectorAll('a[href]')].some((a) => /logout/i.test(a.getAttribute('href') || '') && !(a.closest && a.closest('[id^="rn"], .rncard'))); } catch (e) { return false; } };
   const meterSend = () => { const m = Math.round(METC.main), g0 = Math.round(METC.gen); if (!(m + g0)) return; METC.main = 0; METC.gen = 0; helperGet1(`http://127.0.0.1:8899/meter?main=${m}&gen=${g0}`).then((r) => { if (!r) { METC.main += m; METC.gen += g0; } }); };
   function budTick(H) { if (!PUBONLY || !AS || !AS.budget || !H || !H.ok) { BUD = null; return; } const b = AS.budget(SCHED || {}, H, Date.now()); const was = BUD; BUD = b; if (!b) return;
+    if (b.strict && was && was.strict && was.strict.room > 0 && !(b.strict.room > 0)) log(`📏 오늘 테더링이 하루 몫 ${(b.strict.share / 1073741824).toFixed(2)}GB에 닿음(기타 포함 ${(b.strict.used / 1073741824).toFixed(2)}GB) — 테더링 쓰는 일을 모두 저장하고 멈춤 · 내일 0시에 새 몫(남은 양 ÷ 남은 날) · 그동안은 ✨ 쉴 때 하는 일(테더링 없음 — 외부 조회)`, 1); /* (1.74.0) */
     for (const k of ['main', 'gen']) if (was && was.left[k] > 0 && !(b.left[k] > 0)) log(`📶 오늘 ${AS.TIER[k].l} 업무 몫(이월 포함)을 다 씀 — ${AS.TIER[k].l} 칸은 내일(새 몫이 쌓이면)까지 건너뜀${k === 'main' ? ' · 일반 업무가 제 몫으로 이어 함' : ''}`, 1);
     if (running && isPubKey(running) && !(budLeft(running) > 0) && BUD_STOP !== running) { BUD_STOP = running; log(`📶 '${(JOBS[running] || [running])[0]}': 오늘 ${AS.TIER[tierOfKey(running)].l} 몫을 다 써 지금 항목까지 저장하고 멈춤 — 다음에 그 자리부터`, 1); try { window.__rnPrd.pause(); } catch (e) {} }
     if (!running) BUD_STOP = null; }
@@ -3022,14 +3024,27 @@
   const extKst = (ms) => new Date((ms || Date.now()) + 9 * 3600e3).toISOString().slice(0, 10);
   /* (1.66.0) 바깥 사이트 화면 그려 읽기 — 보이지 않는 탭으로 열고 리더(맨 위 rnxReader)의 답을 기다림 · 한 번에 하나만(탭이 쌓이지 않게) */
   let EXT_RQ = Promise.resolve();
-  const extRender = (url, opt) => { const job = EXT_RQ.then(() => new Promise((res) => { const tok = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); const o = opt || {}; const max = Math.min(60000, o.max || 20000);
+  /* (1.73.1) 🖼 탭 없이 그려 읽기 — 로컬 도우미 1.6.0의 /render(크롬을 화면 없이 띄워 그 주소를 그림 · 그 화면의 모든 요청은 와이파이 · 알라딘 막음)로 HTML을 받아 리더와 같은 규칙으로 글 링크를 뽑음
+   *  로거: 늘 도우미로만(탭을 열면 그 화면의 광고·글꼴·이미지 주소가 테더링으로 나가 테더링을 낭비했음 — 도우미가 없거나 실패하면 탭을 열지 않고 실패로 둠) · 사무실 PC: 도우미가 있으면 도우미, 없으면 예전처럼 탭 */
+  let RENDER_HELPER = null; /* null 모름 · true 됨 · false 없음(10분 기억) */ let RENDER_HELPER_AT = 0;
+  const extRenderHelper = (url, opt) => new Promise((res) => { const o = opt || {}; const wait = Math.min(30000, Math.max(6000, o.max || 12000));
+    GM_xmlhttpRequest({ method: 'POST', url: `http://127.0.0.1:8899/render?url=${encodeURIComponent(url)}&wait=${wait}`, headers: { 'X-RN-Render': '1' }, anonymous: true, timeout: wait + 45000,
+      onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {} if (r.status === 404 || !j) { res({ ok: false, nohelper: true, why: '도우미에 화면 없이 그려 읽기가 없음(도우미 1.6.0 필요)' }); return; } if (!j.ok) { res({ ok: false, why: '도우미 그리기: ' + (j.why || r.status) }); return; }
+        try { const doc = new DOMParser().parseFromString(j.html, 'text/html'); let re; try { re = new RegExp(o.re, o.reFlags || ''); } catch (e) { return res({ ok: false, why: '링크 모양이 잘못됨' }); } const none = o.none ? new RegExp(o.none) : null;
+          const abs = (a) => { try { return new URL(a.getAttribute('href'), url).href; } catch (e) { return ''; } };
+          const txt = (el) => { const out = []; try { const w = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) { const v = n.nodeValue.replace(/\s+/g, ' ').trim(); if (v && !(n.parentElement && /^(SCRIPT|STYLE|NOSCRIPT)$/.test(n.parentElement.tagName))) out.push(v); } } catch (e) {} return out.join('\n'); };
+          const box = (a) => { let el = a, best = a; for (let k = 0; k < 6 && el && el.parentElement; k++) { el = el.parentElement; const n = el.querySelectorAll('a[href]').length; const tx = el.textContent || ''; if (tx.length > 1500 || [...el.querySelectorAll('a[href]')].filter((x) => re.test(abs(x))).length > 2) break; best = el; if (/\d[\d,]*\s*원/.test(tx) && n <= 6) break; } return best; };
+          const L = [...doc.querySelectorAll('a[href]')].filter((a) => re.test(abs(a))).slice(0, 300).map((a) => ({ h: abs(a), t: (txt(a) || a.getAttribute('title') || a.getAttribute('aria-label') || '').slice(0, 400), c: txt(box(a)).slice(0, 700) }));
+          const body = (doc.body && doc.body.textContent) || ''; res({ ok: true, links: L, none: !L.length && !!(none && none.test(body)), html: o.html ? j.html.slice(0, 1500000) : null, url, via: 'helper', ms: j.ms }); } catch (e) { res({ ok: false, why: '그린 화면 읽기 실패: ' + e.message }); } },
+      onerror: () => res({ ok: false, nohelper: true, why: '도우미에 닿지 못함' }), ontimeout: () => res({ ok: false, why: '도우미 그리기 시간 초과' }) }); });
+  const extRender = (url, opt) => { const job = EXT_RQ.then(async () => { if (PUBONLY || RENDER_HELPER !== false || Date.now() - RENDER_HELPER_AT > 10 * 60e3) { const r = await extRenderHelper(url, opt); if (r.nohelper) { RENDER_HELPER = false; RENDER_HELPER_AT = Date.now(); } else RENDER_HELPER = true; if (r.ok || PUBONLY || !r.nohelper) return r; /* 로거는 탭을 절대 열지 않음 */ } return extRenderTab(url, opt); }); EXT_RQ = job.catch(() => {}); return job; };
+  const extRenderTab = (url, opt) => new Promise((res) => { const tok = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); const o = opt || {}; const max = Math.min(60000, o.max || 20000);
       try { GM_setValue('rnx_q_' + tok, { re: o.re, reFlags: o.reFlags || '', none: o.none || null, html: !!o.html, max, at: Date.now() }); } catch (e) { return res({ ok: false, why: '저장소 쓰기 실패' }); }
       let tab = null, done = false, lid = null; const fin = (v) => { if (done) return; done = true; try { if (lid != null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(lid); } catch (e) {} try { tab && tab.close && tab.close(); } catch (e) {} try { GM_deleteValue('rnx_q_' + tok); GM_deleteValue('rnx_r_' + tok); } catch (e) {} res(v); };
       try { lid = GM_addValueChangeListener('rnx_r_' + tok, (k, ov, nv) => { if (nv) fin(nv); }); } catch (e) {}
       const u = url + (url.includes('?') ? '&' : '?') + 'rnx=' + tok; try { tab = GM_openInTab(u, { active: false, insert: true, setParent: true }); } catch (e) { return fin({ ok: false, why: '탭을 못 엶: ' + e.message }); }
       const poll = setInterval(() => { if (done) return clearInterval(poll); let v = null; try { v = GM_getValue('rnx_r_' + tok, null); } catch (e) {} if (v) { clearInterval(poll); fin(v); } }, 1500); /* 값 듣기가 안 되는 환경 대비 */
-      setTimeout(() => { clearInterval(poll); fin({ ok: false, why: `화면 읽기 시간 초과(${Math.round((max + 20000) / 1000)}초)` }); }, max + 20000); }));
-    EXT_RQ = job.catch(() => {}); return job; };
+      setTimeout(() => { clearInterval(poll); fin({ ok: false, why: `화면 읽기 시간 초과(${Math.round((max + 20000) / 1000)}초)` }); }, max + 20000); });
   const EXT_S = { keys: null, keysAt: 0, cfg: null, cfgAt: 0, cache: {}, next: {}, idx: {}, idxAt: 0, cand: null, candAt: 0, cur: {}, errs: {}, pauseUntil: {}, busy: false, me: 'x' + Math.random().toString(36).slice(2, 7), used: {}, usedDay: null };
   async function extKeys(force) { if (!force && EXT_S.keys && Date.now() - EXT_S.keysAt < 10 * 60000) return EXT_S.keys; let k = {}; try { const d = await C('app_secrets').doc('ext').get(); k = (d.exists && d.data().keys) || {}; } catch (e) { log('🌐 외부 연결 키를 못 읽음: ' + (e.code || e.message) + (/permission/i.test(e.code || e.message) ? ' — Firebase 규칙에 app_secrets 읽기 허용 필요' : ''), 1); } EXT_S.keys = k; EXT_S.keysAt = Date.now(); return k; }
   async function extCfg(force) { const X = EXT(); if (!force && EXT_S.cfg && Date.now() - EXT_S.cfgAt < 5 * 60000) return EXT_S.cfg; let c = {}; try { const d = await C('app_settings').doc('ext').get(); c = d.exists ? d.data() : {}; } catch (e) {} EXT_S.cfg = X.cfgOf(c); EXT_S.cfgAt = Date.now(); return EXT_S.cfg; }

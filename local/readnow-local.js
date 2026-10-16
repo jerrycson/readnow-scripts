@@ -16,7 +16,7 @@
  *   · tetherIface/wifiIface: 자동으로 못 고를 때만 이름을 적음(예: "이더넷 3", "Wi-Fi") — 상태 화면에 후보 이름이 나옴
  */
 'use strict';
-const VERSION = '1.5.2';
+const VERSION = '1.6.0'; // (1.6.0) 외부 사이트(예스24·중고닷·국립중앙도서관 등) 와이파이 · 와이파이 전용 길(8897 — 알라딘 막음) · /render 화면 없이 그려 읽기(탭 대신 · 와이파이로)
 const http = require('http'), https = require('https'), net = require('net'), dns = require('dns'), os = require('os'), fs = require('fs'), path = require('path'), dgram = require('dgram'), cp = require('child_process');
 
 const HOME = process.env.RN_TEST_HOME || __dirname; const ROOT = path.resolve(HOME, '..'); // D:\ReadNow\local → D:\ReadNow
@@ -41,9 +41,11 @@ const WIFI_HOSTS = [
   'github.com', 'githubusercontent.com', 'github.io', 'githubassets.com', 'cdnjs.cloudflare.com', 'jsdelivr.net', 'unpkg.com', 'tampermonkey.net',
   // 외부 정보 출처(알라딘 아님)
   /* (1.0.1 점검) 카카오·네이버도 통째가 아니라 쓰는 주소만(dapi.kakao.com · openapi/쇼핑 검색) */
-  'bunjang.co.kr', 'ebay.com', 'ebayimg.com', 'frankfurter.app', 'frankfurter.dev', 'kpipa.or.kr', 'dapi.kakao.com', 'data4library.kr', 'dvdprime.com', 'koreaexim.go.kr', 'openapi.naver.com', 'search.shopping.naver.com', 'kyobobook.co.kr', 'ridibooks.com', 'joongna.com', 'abebooks.com', 'daangn.com', 'joongmo.com', 'nl.go.kr', 'yes24.com',
+  'bunjang.co.kr', 'yes24.com', 'joongmo.com', 'nl.go.kr', 'karrotmarket.com', 'kakaocdn.net', 'ridicdn.net', 'ebay.com', 'ebayimg.com', 'frankfurter.app', 'frankfurter.dev', 'kpipa.or.kr', 'dapi.kakao.com', 'data4library.kr', 'dvdprime.com', 'koreaexim.go.kr', 'openapi.naver.com', 'search.shopping.naver.com', 'kyobobook.co.kr', 'ridibooks.com', 'joongna.com', 'abebooks.com', 'daangn.com', 'joongmo.com', 'nl.go.kr', 'yes24.com',
   // Windows·크롬 자체 업데이트
   'microsoft.com', 'windowsupdate.com', 'msftconnecttest.com', 'live.com', 'office.com', 'chromium.org',
+  // (1.6.0) 크롬이 스스로 부르는 주소(안전 확인·알림·확장 업데이트) — 알라딘과 무관
+  'safebrowsing.google.com', 'android.clients.google.com', 'mtalk.google.com', 'update.googleapis.com', 'edgedl.me.gvt1.com', 'optimizationguide-pa.googleapis.com',
 ];
 /* (1.0.1 점검) 통계·광고 추적은 아예 막음(어느 길로도 안 나감) — 알라딘 화면에 심긴 통계가 이 PC를 다른 기록과 잇지 못하게 · 테더링 데이터도 아낌 */
 const TRACK_HOSTS = ['google-analytics.com', 'googletagmanager.com', 'doubleclick.net', 'googlesyndication.com', 'googleadservices.com', 'adservice.google.com', 'analytics.google.com', 'facebook.com', 'facebook.net', 'criteo.com', 'criteo.net', 'wcs.naver.net', 'wcs.naver.com', 'lcs.naver.com', 'nlog.naver.com', 'pixel.kakao.com', 'track.tiara.kakao.com', 'stat.tiara.kakao.com', 'hotjar.com', 'clarity.ms', 'scorecardresearch.com', 'adnxs.com', 'mobon.net', 'dable.io', 'acecounter.com', 'logger.co.kr'];
@@ -59,7 +61,7 @@ function groupOf(host) { const h = String(host || '').toLowerCase();
   if (hostMatch(h, ['googleapis.com', 'firebaseio.com', 'firebaseapp.com', 'firebasedatabase.app', 'web.app', 'run.app', 'cloudfunctions.net'])) return 'firebase';
   if (hostMatch(h, ['accounts.google.com', 'apis.google.com', 'chromewebstore.google.com', 'clients1.google.com', 'clients2.google.com', 'clients4.google.com', 'gstatic.com', 'googleusercontent.com', 'withgoogle.com', 'gvt1.com', 'gvt2.com'])) return 'google';
   if (hostMatch(h, ['github.com', 'githubusercontent.com', 'github.io', 'githubassets.com', 'cdnjs.cloudflare.com', 'jsdelivr.net', 'unpkg.com', 'tampermonkey.net'])) return 'update';
-  if (hostMatch(h, ['bunjang.co.kr', 'ebay.com', 'ebayimg.com', 'frankfurter.app', 'frankfurter.dev', 'kpipa.or.kr', 'dapi.kakao.com', 'data4library.kr', 'dvdprime.com', 'koreaexim.go.kr', 'openapi.naver.com', 'search.shopping.naver.com', 'kyobobook.co.kr', 'ridibooks.com', 'joongna.com', 'abebooks.com', 'daangn.com', 'joongmo.com', 'nl.go.kr', 'yes24.com'])) return 'ext';
+  if (hostMatch(h, ['bunjang.co.kr', 'yes24.com', 'joongmo.com', 'nl.go.kr', 'karrotmarket.com', 'ridicdn.net', 'ebay.com', 'ebayimg.com', 'frankfurter.app', 'frankfurter.dev', 'kpipa.or.kr', 'dapi.kakao.com', 'data4library.kr', 'dvdprime.com', 'koreaexim.go.kr', 'openapi.naver.com', 'search.shopping.naver.com', 'kyobobook.co.kr', 'ridibooks.com', 'joongna.com', 'abebooks.com', 'daangn.com', 'joongmo.com', 'nl.go.kr', 'yes24.com'])) return 'ext';
   if (hostMatch(h, ['microsoft.com', 'windowsupdate.com', 'msftconnecttest.com', 'live.com', 'office.com', 'chromium.org'])) return 'system';
   return routeOf(h) === 'tether' ? 'other_tether' : 'other'; }
 
@@ -175,7 +177,7 @@ function resolveVia(local, host, cb) { const sys = dns.getServers().filter((x) =
 function lookup4(host, cb, g) { if (net.isIPv4(host)) return cb(null, host); if (T_IF) { const D = T().dns; return D[host] ? cb(null, D[host]) : cb(new Error('주소 없음')); }
   if (g && g.route === 'tether') { const c = DNSC.get(host); if (c && Date.now() - c.at < 300e3) return cb(null, c.ip); return resolveVia(g.local, host, (e, ip) => { if (!e) DNSC.set(host, { ip, at: Date.now() }); cb(e, ip); }); }
   dns.lookup(host, { family: 4 }, (e, a) => cb(e, a)); }
-function openUp(host, port, cb) { const g = gate(host); if (g.err) return cb(new Error(g.err), null, g);
+function openUp(host, port, cb, mode) { const g = mode === 'wifi' ? (ALADIN.test(String(host || '').toLowerCase().replace(/\.$/, '')) || hostMatch(String(host || '').toLowerCase(), TETHER_FORCE) ? { err: '와이파이 전용 길에서는 알라딘을 열지 않음' } : !ST.wifi.localIp ? { err: '와이파이 연결이 없음' } : { route: 'wifi', local: ST.wifi.localIp }) : gate(host); /* (1.6.0) mode 'wifi' = 화면 없이 그려 읽는 외부 사이트 — 그 화면이 부르는 모든 주소(광고·글꼴·이미지)를 와이파이로 · 알라딘은 막음 */ if (g.err) return cb(new Error(g.err), null, g);
   lookup4(host, (e, ip) => { if (e) return cb(e, null, g); const s = net.connect({ host: ip, port: +port, localAddress: g.local, family: 4 }); let done = false; s.once('connect', () => { if (done) return; done = true; track(s, g.route, groupOf(host), g.phone); cb(null, s, g); }); s.once('error', (er) => { if (done) return; done = true; cb(er, null, g); }); s.setTimeout(30000, () => { if (!done) { done = true; s.destroy(); cb(new Error('연결 시간 초과'), null, g); } }); }, g); }
 
 /* (1.4.3) 🐕 공개 수집 크롬 지킴이 — 로거 크롬(chrome-pub 프로필)이 꺼져(실수로 닫음·크롬 충돌·윈도우 업데이트 뒤) 4분 넘게 없으면 start-pub.cmd로 다시 띄움
@@ -244,7 +246,7 @@ function afetch(u, req, res) { const J = (code, msg, extra) => { res.writeHead(c
   try { go(TU, null); } catch (e) { if (!res.headersSent) J(500, '엔진 받기 오류 ' + e.message); } }
 function engineHtml() { return `<!doctype html><meta charset="utf-8"><meta name="referrer" content="no-referrer"><title>리드나우 로거 엔진</title><style>body{font:14px/1.6 system-ui,'Malgun Gothic';margin:16px;background:#F6F8F7;color:#1E2A26}</style><h2 style="margin:0 0 6px">🧪 리드나우 로거 엔진</h2><p id="m" style="color:#555">수집기가 이 화면에서 돕니다(알라딘 화면을 열지 않음 — 도우미가 테더링으로 받아 넘겨줌). 수집기 칸이 오른쪽 위에 뜨지 않으면: 이 크롬의 Tampermonkey에 리드나우 수집기 1.72.0 이상이 있는지 확인.</p><script>setTimeout(()=>{if(!document.documentElement.getAttribute('data-rn-engine'))document.getElementById('m').innerHTML='<b style=color:#B0322A>✗ 이 크롬에서 수집기가 엔진으로 돌지 않음</b> — Tampermonkey·수집기 판(1.72.0 이상)을 확인'},6000)</script>`; }
 /* ── 상태 화면·API ── */
-function status() { const u = uCur(); const d = u.days[day()] || { tether: 0, wifi: 0, groups: {}, blocked: 0 }; return { ok: true, ver: VERSION, at: kst(), track: { ...TRK }, tether: ST.tether, aladin: ST.aladin || null, dnsNote: ST.dnsNote || null, wifi: ST.wifi, cand: ST.cand, list: ST.list || [], fixed: { tether: CFG.tetherIface || null, wifi: CFG.wifiIface || null }, capGB: capGBTotal(), capBytes: capBytes(), capped: capped(), phones: phonesList(), helperWin: { alive: HWIN.alive, msg: HWIN.msg }, pubWatch: { on: PW.on, alive: PW.alive, msg: PW.msg, at: PW.at, pauseUntil: PW.pauseUntil || null, restartsHour: PW.restarts.filter((t) => Date.now() - t < 3600e3).length }, month: { key: u.month, tether: u.total.tether || 0, wifi: u.total.wifi || 0, tiers: u.total.tiers || {} }, today: { key: day(), tether: d.tether || 0, wifi: d.wifi || 0, tiers: d.tiers || {}, groups: d.groups || {}, blocked: d.blocked || 0, lastBlocked: d.lastBlocked || null }, days: Object.fromEntries(Object.entries(u.days).map(([k, v]) => [k, { tether: v.tether || 0, wifi: v.wifi || 0, groups: v.groups || {} }])), startedAt: ST.startedAt, updAt: UPD.at, updMsg: UPD.msg, setup: { ...(SETUP.r || {}), msg: SETUP.msg, ran: SETUP.at }, defaultWarn: ST.defaultWarn || null }; }
+function status() { const u = uCur(); const d = u.days[day()] || { tether: 0, wifi: 0, groups: {}, blocked: 0 }; return { ok: true, ver: VERSION, at: kst(), render: { n: RENDER.n, fail: RENDER.fail, last: RENDER.last, port: RENDER_PORT }, track: { ...TRK }, tether: ST.tether, aladin: ST.aladin || null, dnsNote: ST.dnsNote || null, wifi: ST.wifi, cand: ST.cand, list: ST.list || [], fixed: { tether: CFG.tetherIface || null, wifi: CFG.wifiIface || null }, capGB: capGBTotal(), capBytes: capBytes(), capped: capped(), phones: phonesList(), helperWin: { alive: HWIN.alive, msg: HWIN.msg }, pubWatch: { on: PW.on, alive: PW.alive, msg: PW.msg, at: PW.at, pauseUntil: PW.pauseUntil || null, restartsHour: PW.restarts.filter((t) => Date.now() - t < 3600e3).length }, month: { key: u.month, tether: u.total.tether || 0, wifi: u.total.wifi || 0, tiers: u.total.tiers || {} }, today: { key: day(), tether: d.tether || 0, wifi: d.wifi || 0, tiers: d.tiers || {}, groups: d.groups || {}, blocked: d.blocked || 0, lastBlocked: d.lastBlocked || null }, days: Object.fromEntries(Object.entries(u.days).map(([k, v]) => [k, { tether: v.tether || 0, wifi: v.wifi || 0, groups: v.groups || {} }])), startedAt: ST.startedAt, updAt: UPD.at, updMsg: UPD.msg, setup: { ...(SETUP.r || {}), msg: SETUP.msg, ran: SETUP.at }, defaultWarn: ST.defaultWarn || null }; }
 const esc = (x) => String(x == null ? '' : x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 /* (1.2.0) 🔌 연결 고르기 표 — 연결마다 이름·와이파이 이름·장치 설명·주소, 지금 맡은 일, [테더링으로] [우리 서비스 길로] · 맨 아래 [둘 다 자동으로]
  *  테더링으로 보이지 않는 연결을 테더링으로 고르면 바로 하지 않고 옆에 '정말 테더링' 단추가 한 번 더 나옴(잘못 고르면 알라딘이 사무실 인터넷으로 나갈 수 있음 — 공인 IP가 같으면 어차피 막힘) */
@@ -285,9 +287,22 @@ function statusHtml() { const s = status(); const pct = Math.min(100, s.month.te
   <script>(function(){const K=${JSON.stringify(PICK_KEY)};const m=document.getElementById('pwm');const go=async(min)=>{try{const x=await fetch('/pubwatch?k='+K+'&min='+min,{method:'POST'});if(!x.ok)throw new Error(await x.text());m.textContent=min?'✓ 1시간 쉼 — 그동안 크롬이 꺼져도 띄우지 않음':'✓ 다시 지킴 — 꺼져 있으면 곧 띄움';setTimeout(()=>location.reload(),1500)}catch(e){m.textContent='✗ '+e.message}};document.getElementById('pw1').onclick=()=>go(60);document.getElementById('pw0').onclick=()=>go(0)})();</script>${setupLine(s)}<p style="color:#777">업데이트: ${s.updMsg || '-'} · 30초마다 새로고침</p><script>setTimeout(()=>location.reload(),30000)</script>`; }
 /* (1.4.4 자동 점검) 🛡 다른 출처 허락(CORS *·Private-Network)을 없앰 — 예전엔 알라딘 화면을 포함한 아무 웹 페이지나 http://127.0.0.1:8899/status 를 읽어
  *  사무실 와이파이 공인 IP·와이파이 이름·테더링 IP를 알 수 있었음(로거와 사무실을 잇는 정보). 수집기는 GM_xmlhttpRequest(확장 권한)로, 도우미 첫 화면은 같은 출처로 읽으므로 허락이 필요 없음 */
+/* (1.6.0) 🖼 화면 없이 그려 읽기 — 수집기가 예스24·번개장터처럼 목록을 스크립트로 그리는 외부 사이트를 탭으로 열던 것 대신
+ *  이 PC의 크롬을 화면 없이(headless) 띄워 그 주소를 그린 뒤 HTML만 돌려줌 · 그 화면의 모든 요청은 와이파이 전용 길(알라딘은 막음) → 테더링 0
+ *  수집기만(X-RN-Render 머리 · POST · CORS 없음) · 한 번에 하나 · 알라딘 주소는 거절 */
+const RENDER = { busy: false, n: 0, fail: 0, last: null };
+function renderApi(u, req, res, H) { const J = (c, o) => { res.writeHead(c, { ...H, 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(o)); };
+  if (req.method !== 'POST' || req.headers['x-rn-render'] !== '1' || /^https?:/i.test(req.headers.origin || '')) return J(403, { ok: false, why: '수집기만' }); /* 웹 페이지는 이 머리를 붙이려면 미리 묻기(OPTIONS)가 필요한데 도우미가 막음 · Tampermonkey(chrome-extension 출처)만 */
+  const url = u.searchParams.get('url') || ''; let t; try { t = new URL(url); } catch (e) { return J(400, { ok: false, why: '주소가 이상함' }); } if (!/^https?:$/.test(t.protocol) || ALADIN.test(t.hostname) || isSelf(t.host)) return J(400, { ok: false, why: '외부 사이트만' });
+  const chrome = [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.LOCALAPPDATA].filter(Boolean).map((b) => path.join(b, 'Google', 'Chrome', 'Application', 'chrome.exe')).find((f) => fs.existsSync(f)); if (!chrome) return J(500, { ok: false, why: '크롬을 못 찾음' });
+  if (RENDER.busy) return J(429, { ok: false, why: '다른 화면을 그리는 중' }); RENDER.busy = true; const wait = Math.max(3000, Math.min(30000, +u.searchParams.get('wait') || 12000)); const t0 = Date.now();
+  const args = ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-sync', '--disable-background-networking', '--mute-audio', '--blink-settings=imagesEnabled=false', '--window-size=1280,6000', `--proxy-server=http://127.0.0.1:${RENDER_PORT}`, '--force-webrtc-ip-handling-policy=disable_non_proxied_udp', `--user-data-dir=${path.join(HOME, 'chrome-render')}`, `--virtual-time-budget=${wait}`, '--dump-dom', t.href];
+  cp.execFile(chrome, args, { windowsHide: true, timeout: wait + 30000, maxBuffer: 30 * 1048576 }, (e, out) => { RENDER.busy = false; const html = String(out || ''); RENDER.last = { url: t.href, at: kst(), ms: Date.now() - t0, len: html.length, err: e && !html ? e.message : null };
+    if (!html) { RENDER.fail++; return J(502, { ok: false, why: '그리기 실패: ' + ((e && e.message) || '빈 화면').slice(0, 200) }); } RENDER.n++; J(200, { ok: true, html: html.slice(0, 3000000), ms: Date.now() - t0 }); }); }
 function api(req, res) { const u = new URL(req.url, 'http://rn.local'); if (/^\/img-/.test(u.pathname)) return imgApi(u, req, res); const H = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
   if (req.method === 'OPTIONS') { res.writeHead(403, H); return res.end(); }
   if (u.pathname === '/meter') { meterAdd({ main: u.searchParams.get('main'), gen: u.searchParams.get('gen') }); res.writeHead(200, { ...H, 'Content-Type': 'application/json; charset=utf-8' }); return res.end('{"ok":true}'); }
+  if (u.pathname === '/render') return renderApi(u, req, res, H);
   if (u.pathname === '/status') { res.writeHead(200, { ...H, 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify(status())); }
   if (u.pathname === '/pick') { const org = req.headers.origin || ''; if (req.method !== 'POST' || (org && !/^http:\/\/(127\.0\.0\.1|localhost|rn\.local)(:\d+)?$/.test(org)) || u.searchParams.get('k') !== PICK_KEY) { res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('상태 화면에서만 고를 수 있음'); }
     const role = u.searchParams.get('role'), name = u.searchParams.get('name') || ''; if (!['tether', 'wifi'].includes(role)) { res.writeHead(400); return res.end('bad'); } pickSet(role, name).then(() => { res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(status())); }); return; }
@@ -331,24 +346,26 @@ function imgApi(u, req, res) { const J = (code, o) => { res.writeHead(code, { 'C
 const isSelf = (host) => /^(rn\.local|localhost|127\.0\.0\.1)(:\d+)?$/i.test(String(host || ''));
 
 /* ── 프록시 ── */
-const server = http.createServer((req, res) => {
+const mkProxy = (mode) => { const server = http.createServer((req, res) => {
   let u; try { u = new URL(req.url.startsWith('http') ? req.url : 'http://' + (req.headers.host || 'rn.local') + req.url); } catch (e) { res.writeHead(400); return res.end('bad url'); }
-  if (isSelf(u.host) || !req.url.startsWith('http')) return api(req, res); // 상태 화면(직접 열거나 rn.local로)
+  if (isSelf(u.host) || !req.url.startsWith('http')) { if (mode === 'wifi') { res.writeHead(403); return res.end(); } return api(req, res); } // 상태 화면(직접 열거나 rn.local로)
   const host = u.hostname, port = u.port || 80;
   if (isTrack(host)) { TRK.n++; TRK.last = host; res.writeHead(204); return res.end(); }
-  openUp(host, port, (e, s, g) => { if (e) { addBlocked(host, e.message); res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8', 'X-ReadNow-Block': encodeURIComponent(e.message) }); return res.end('리드나우 로컬 도우미: ' + e.message); }
+  openUp(host, port, (e, s, g) => { if (e) { if (mode !== 'wifi') addBlocked(host, e.message); res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8', 'X-ReadNow-Block': encodeURIComponent(e.message) }); return res.end('리드나우 로컬 도우미: ' + e.message); }
     const hdr = { ...req.headers }; delete hdr['proxy-connection']; delete hdr['proxy-authorization'];
     const up = http.request({ createConnection: () => s, host, port, method: req.method, path: u.pathname + u.search, headers: hdr }, (r) => { res.writeHead(r.statusCode, r.headers); r.pipe(res); });
-    up.on('error', (er) => { try { res.writeHead(502); res.end(er.message); } catch (x) {} }); req.pipe(up); });
+    up.on('error', (er) => { try { res.writeHead(502); res.end(er.message); } catch (x) {} }); req.pipe(up); }, mode);
 });
 server.on('connect', (req, cs, head) => { const m = String(req.url).match(/^\[?([^\]]+?)\]?:(\d+)$/); if (!m) { cs.end('HTTP/1.1 400 Bad Request\r\n\r\n'); return; } const [, host, port] = m;
   if (isSelf(host)) { cs.end('HTTP/1.1 403 Forbidden\r\n\r\n'); return; }
   if (isTrack(host)) { TRK.n++; TRK.last = host; cs.end('HTTP/1.1 403 Forbidden\r\n\r\n'); return; }
   openUp(host, port, (e, s) => { if (e) { addBlocked(host, e.message); try { cs.end(`HTTP/1.1 502 Bad Gateway\r\nX-ReadNow-Block: ${encodeURIComponent(e.message)}\r\n\r\n`); } catch (x) {} return; }
     cs.write('HTTP/1.1 200 Connection Established\r\n\r\n'); if (head && head.length) s.write(head); s.pipe(cs); cs.pipe(s);
-    const kill = () => { try { s.destroy(); } catch (x) {} try { cs.destroy(); } catch (x) {} }; s.on('error', kill); cs.on('error', kill); s.on('close', kill); cs.on('close', kill); });
+    const kill = () => { try { s.destroy(); } catch (x) {} try { cs.destroy(); } catch (x) {} }; s.on('error', kill); cs.on('error', kill); s.on('close', kill); cs.on('close', kill); }, mode);
 });
-server.on('clientError', (e, sock) => { try { sock.end('HTTP/1.1 400 Bad Request\r\n\r\n'); } catch (x) {} });
+server.on('clientError', (e, sock) => { try { sock.end('HTTP/1.1 400 Bad Request\r\n\r\n'); } catch (x) {} }); return server; };
+const server = mkProxy('main'); const RENDER_PORT = (+CFG.port || 8899) - 2; const serverW = mkProxy('wifi');
+serverW.listen(RENDER_PORT, '127.0.0.1', () => log(`와이파이 전용 길 127.0.0.1:${RENDER_PORT} (화면 없이 그려 읽기용 · 알라딘 막음)`)); serverW.on('error', (e) => log('와이파이 전용 길을 못 켬:', e.message));
 /* 테더링 길이 닫히면(확인 실패·상한) 열려 있던 테더링 연결도 바로 끊음 — 오래 열린 연결로 새지 않게 */
 setInterval(() => { if (ST.tether.ok && !capped()) return; for (const e of live) if (e.route === 'tether') { try { e.sock.destroy(); } catch (x) {} } }, 3000);
 
