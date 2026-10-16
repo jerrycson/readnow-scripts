@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "외부 정보 실패 셈·쉼 늘리기·발송준비시작 한 PC",
- "since": "2026-10-16T01:08:56Z",
- "beat": "2026-10-16T01:08:56Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "1.72.1·1.34.2·0.8.1·1.5.2 · fc9d29f",
-  "at": "2026-10-16T01:07:13Z"
+  "done": "1.72.2 · 5253ebf",
+  "at": "2026-10-16T01:10:50Z"
  }
 }
