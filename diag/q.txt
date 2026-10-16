@@ -1,2 +1,2 @@
-rawget=https://www.kpipa.or.kr/p/g3_1|https://www.kpipa.or.kr/p/g3_2|https://www.kpipa.or.kr/p/g3_5&r=6
-rawget=https://bnk.kpipa.or.kr/home/v3/helpdesk/hlpBbsNoticeBoardList?pageIndex=2|https://bnk.kpipa.or.kr/home/v3/helpdesk/hlpBbsNoticeBoardDetailView/seq_20260929103816549173|https://e.kpipa.or.kr/consult/onlinefaqConsultList.do?board_id=10&type_id=1&r=6
+rawget=POST%20https%3A%2F%2Fbnk.kpipa.or.kr%2Fhome%2Fv3%2Fhelpdesk%2FhlpBbsNoticeBoardList%3FtabIdx%3D%26cPostType%3D%26txtSearchText%3D%26pageIndex%3D2%26recordCountPerPage%3D15%7Chttps%3A%2F%2Fwww.kpipa.or.kr%2Fp%2Fg3_1%3Fpage%3D2%7Chttps%3A%2F%2Fwww.kpipa.or.kr%2Fp%2Fg3_2&r=7
+rawget=https%3A%2F%2Fwww.kpipa.or.kr%2Fp%2Fg3_5%7Chttps%3A%2F%2Fe.kpipa.or.kr%2Fconsult%2FonlinefaqConsultList.do%3Fboard_id%3D10%26type_id%3D1%26search_cond%3D%26search_text%3D%26pageInfo.page%3D2&r=7
