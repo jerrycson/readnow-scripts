@@ -16,7 +16,7 @@
  *   · tetherIface/wifiIface: 자동으로 못 고를 때만 이름을 적음(예: "이더넷 3", "Wi-Fi") — 상태 화면에 후보 이름이 나옴
  */
 'use strict';
-const VERSION = '1.6.3'; // (1.6.3) 네이버 도서 표지(pstatic.net) 와이파이
+const VERSION = '1.6.4'; // (1.6.4 자동 점검) 도우미 화면·API는 이 PC 이름(127.0.0.1·localhost·rn.local)으로 부른 것만(DNS 다시 묶기 막음) · 와이파이 전용 길은 이 PC·사내망 주소를 열지 않음(0.0.0.0 포함) · 엔진 막는 주소에 login 든 모든 주소·내 알라딘·우리 숍 번호 // (1.6.3) (1.6.3) 네이버 도서 표지(pstatic.net) 와이파이
 // (1.6.2) // (1.6.2) 교보·리디·중고나라·애이비북스·당근이 테더링으로 나가던 것 → 와이파이 · 📱 남은 테더링을 통신사 기준 남은 양(사장님이 적은 값)으로 표시 · 일별(벤치마킹 등) 실제 테더링 바이트
 // (1.6.1) (1.6.1) 🧹 멈춘 스크립트 오류 창(Windows Script Host) 저절로 닫기 · 다시 켜지기 예약 작업이 실제 파일을 가리키는지 30분마다 확인·고침
 // (이전) // (1.6.0) 외부 사이트(예스24·중고닷·국립중앙도서관 등) 와이파이 · 와이파이 전용 길(8897 — 알라딘 막음) · /render 화면 없이 그려 읽기(탭 대신 · 와이파이로)
@@ -179,11 +179,12 @@ const RESV = new Map(); function resvFor(local, servers) { const k = (local || '
 const DNSC = new Map(); const goodIp = (a) => net.isIPv4(a) && !/^(0\.|127\.|10\.|192\.168\.|169\.254\.)/.test(a);
 function resolveVia(local, host, cb) { const sys = dns.getServers().filter((x) => net.isIPv4(x) && !/^127\./.test(x)); const plans = [[local, ['1.1.1.1', '8.8.8.8', '1.0.0.1']], [local, sys], [null, ['1.1.1.1', '8.8.8.8']]].filter(([, sv]) => sv.length); let i = 0, why = [];
   const next = () => { if (i >= plans.length) return cb(new Error('테더링으로 주소를 못 찾음(' + why.join(' · ') + ')')); const [lo, sv] = plans[i++]; resvFor(lo, sv).resolve4(host, (e, a) => { const ok = (a || []).filter(goodIp); if (!e && ok.length) { if (i > 1) ST.dnsNote = `DNS ${i}번째 길(${lo ? '테더링' : '기본 길'} · ${sv[0]})로 찾음`; return cb(null, ok[0]); } why.push((lo ? '테더링' : '기본') + ' ' + sv[0] + ' ' + (e ? e.code : '쓸 수 없는 답')); next(); }); }; next(); }
+const PRIV_IP = /^(0\.|10\.|127\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|22[4-9]\.|2[3-5]\d\.)/;
 function lookup4(host, cb, g) { if (net.isIPv4(host)) return cb(null, host); if (T_IF) { const D = T().dns; return D[host] ? cb(null, D[host]) : cb(new Error('주소 없음')); }
   if (g && g.route === 'tether') { const c = DNSC.get(host); if (c && Date.now() - c.at < 300e3) return cb(null, c.ip); return resolveVia(g.local, host, (e, ip) => { if (!e) DNSC.set(host, { ip, at: Date.now() }); cb(e, ip); }); }
   dns.lookup(host, { family: 4 }, (e, a) => cb(e, a)); }
 function openUp(host, port, cb, mode) { const g = mode === 'wifi' ? (ALADIN.test(String(host || '').toLowerCase().replace(/\.$/, '')) || hostMatch(String(host || '').toLowerCase(), TETHER_FORCE) ? { err: '와이파이 전용 길에서는 알라딘을 열지 않음' } : !ST.wifi.localIp ? { err: '와이파이 연결이 없음' } : { route: 'wifi', local: ST.wifi.localIp }) : gate(host); /* (1.6.0) mode 'wifi' = 화면 없이 그려 읽는 외부 사이트 — 그 화면이 부르는 모든 주소(광고·글꼴·이미지)를 와이파이로 · 알라딘은 막음 */ if (g.err) return cb(new Error(g.err), null, g);
-  lookup4(host, (e, ip) => { if (e) return cb(e, null, g); const s = net.connect({ host: ip, port: +port, localAddress: g.local, family: 4 }); let done = false; s.once('connect', () => { if (done) return; done = true; track(s, g.route, groupOf(host), g.phone); cb(null, s, g); }); s.once('error', (er) => { if (done) return; done = true; cb(er, null, g); }); s.setTimeout(30000, () => { if (!done) { done = true; s.destroy(); cb(new Error('연결 시간 초과'), null, g); } }); }, g); }
+  lookup4(host, (e, ip) => { if (e) return cb(e, null, g); if (mode === 'wifi' && PRIV_IP.test(String(ip))) return cb(new Error('와이파이 전용 길에서는 이 PC·사내망 주소를 열지 않음'), null, g); /* (자동 점검 2026-10-16) 그려 읽는 바깥 화면이 0.0.0.0:8899(도우미)·사무실 공유기 같은 사내 주소를 부르지 못하게 */ const s = net.connect({ host: ip, port: +port, localAddress: g.local, family: 4 }); let done = false; s.once('connect', () => { if (done) return; done = true; track(s, g.route, groupOf(host), g.phone); cb(null, s, g); }); s.once('error', (er) => { if (done) return; done = true; cb(er, null, g); }); s.setTimeout(30000, () => { if (!done) { done = true; s.destroy(); cb(new Error('연결 시간 초과'), null, g); } }); }, g); }
 
 /* (1.4.3) 🐕 공개 수집 크롬 지킴이 — 로거 크롬(chrome-pub 프로필)이 꺼져(실수로 닫음·크롬 충돌·윈도우 업데이트 뒤) 4분 넘게 없으면 start-pub.cmd로 다시 띄움
  *  · 1시간에 4번까지(계속 죽으면 더 띄우지 않고 상태 화면에 경고) · 상태 화면에서 '1시간 쉬기'(일부러 닫아 둘 때) · 설정 readnow-local.json "pubWatch": false 로 끔 */
@@ -243,11 +244,11 @@ function phonesList() { const P = phonesCfg(); const now = ST.list || []; const 
  *  엔진: 수집기는 도우미 화면(http://127.0.0.1:8899/engine — 우리 화면, 알라딘 스크립트가 하나도 없음)에서 돌고, 알라딘 화면은 도우미가 테더링으로 받아(쿠키 없이 · 크롬이 주소창으로 연 것과 같은 머리) 글만 넘겨줌
  *  → 알라딘 쪽에서는 쿠키 없는 방문자가 화면(HTML)만 받아 가는 것으로 보이고, 우리 코드·저장소·Firebase 주소는 알라딘 화면과 섞이지 않음
  *  /afetch?u=알라딘주소&ua=브라우저UA : GET만 · 알라딘 주소만 · 로그인 영역 막음 · 'X-RN-Engine: 1' 머리가 있어야 함(다른 웹 페이지는 이 머리를 붙이면 사전 확인에서 막힘) · 같은 출처만 · 테더링 문(gate)·사용량·휴대폰 그대로 */
-const ENG_BAD = /^\/(scm|account|login|order|member|cart|basket|ucl)\b|(wlogin|logout|wbasket|wmaininfo|wordersinfo|wc2binfo)/i;
+const ENG_BAD = /^\/(scm|account|login|order|member|cart|basket|ucl)\b|(login|logout|wbasket|wmaininfo|wordersinfo|wc2binfo|myaladin|scm996008)/i; /* (자동 점검 2026-10-16) m.aladin의 /m/mlogin.aspx 등 'login'이 든 모든 주소 · 내 알라딘 */ const ENG_BAD_Q = /[?&]SC=996008(&|$)/i; /* 우리 숍 번호 */
 const zlib = require('zlib');
 function afetch(u, req, res) { const J = (code, msg, extra) => { res.writeHead(code, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-RN-Err': encodeURIComponent(msg), ...(extra || {}) }); res.end(msg); };
   const org = req.headers.origin || ''; if (req.method !== 'GET' || req.headers['x-rn-engine'] !== '1' || (org && !/^http:\/\/(127\.0\.0\.1|localhost|rn\.local)(:\d+)?$/.test(org))) return J(403, '엔진 화면에서만');
-  let TU; try { TU = new URL(u.searchParams.get('u') || ''); } catch (e) { return J(400, '주소가 이상함'); } if (TU.protocol !== 'https:' || !ALADIN.test(TU.hostname)) return J(403, '알라딘 주소만'); if (ENG_BAD.test(TU.pathname)) { addBlocked(TU.hostname, '엔진: 로그인 영역'); return J(403, '🛡 로그인 영역 요청 막음'); }
+  let TU; try { TU = new URL(u.searchParams.get('u') || ''); } catch (e) { return J(400, '주소가 이상함'); } if (TU.protocol !== 'https:' || !ALADIN.test(TU.hostname)) return J(403, '알라딘 주소만'); if (ENG_BAD.test(TU.pathname) || ENG_BAD_Q.test(TU.search)) { addBlocked(TU.hostname, '엔진: 로그인 영역'); return J(403, '🛡 로그인 영역 요청 막음'); }
   const ua = String(u.searchParams.get('ua') || '').slice(0, 300) || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'; const kind = u.searchParams.get('k') === 'xhr' ? 'xhr' : 'nav';
   let hops = 0; const t0 = Date.now();
   const go = (url, referer) => { const g = gate(url.hostname); if (g.err) return J(503, g.err); if (T_IF && T().afetch) { const F = T().afetch[url.href] || T().afetch['*']; if (!F) return J(404, '시험: 없는 주소'); res.writeHead(200, { 'Content-Type': F.ct || 'text/html; charset=utf-8', 'X-RN-Status': String(F.status || 200), 'X-RN-Final-Url': encodeURIComponent(F.final || url.href), 'Cache-Control': 'no-store' }); return res.end(F.body || ''); }
@@ -321,7 +322,7 @@ function renderApi(u, req, res, H) { const J = (c, o) => { res.writeHead(c, { ..
   const args = ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-sync', '--disable-background-networking', '--mute-audio', '--blink-settings=imagesEnabled=false', '--window-size=1280,6000', `--proxy-server=http://127.0.0.1:${RENDER_PORT}`, '--force-webrtc-ip-handling-policy=disable_non_proxied_udp', `--user-data-dir=${path.join(HOME, 'chrome-render')}`, `--virtual-time-budget=${wait}`, '--dump-dom', t.href];
   cp.execFile(chrome, args, { windowsHide: true, timeout: wait + 30000, maxBuffer: 30 * 1048576 }, (e, out) => { RENDER.busy = false; const html = String(out || ''); RENDER.last = { url: t.href, at: kst(), ms: Date.now() - t0, len: html.length, err: e && !html ? e.message : null };
     if (!html) { RENDER.fail++; return J(502, { ok: false, why: '그리기 실패: ' + ((e && e.message) || '빈 화면').slice(0, 200) }); } RENDER.n++; J(200, { ok: true, html: html.slice(0, 3000000), ms: Date.now() - t0 }); }); }
-function api(req, res) { const u = new URL(req.url, 'http://rn.local'); if (/^\/img-/.test(u.pathname)) return imgApi(u, req, res); if (/^\/jrn-/.test(u.pathname)) return jrnApi(u, req, res); const H = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
+function api(req, res) { if (!isSelf(req.headers.host)) { res.writeHead(403, { 'Cache-Control': 'no-store' }); return res.end(); } /* (자동 점검 2026-10-16) DNS 다시 묶기(rebinding)로 남의 이름을 127.0.0.1에 붙인 웹 페이지가 같은 출처처럼 도우미를 부르지 못하게 — 수집기·도우미 화면은 늘 127.0.0.1·localhost·rn.local로 부름 */ const u = new URL(req.url, 'http://rn.local'); if (/^\/img-/.test(u.pathname)) return imgApi(u, req, res); if (/^\/jrn-/.test(u.pathname)) return jrnApi(u, req, res); const H = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
   if (req.method === 'OPTIONS') { res.writeHead(403, H); return res.end(); }
   if (u.pathname === '/bud') { try { const j = JSON.parse(u.searchParams.get('d') || '{}'); BUDI = { at: Date.now(), ...Object.fromEntries(Object.entries(j).filter(([k, v]) => /^[a-zA-Z]{1,12}$/.test(k) && (typeof v === 'number' || typeof v === 'boolean' || (typeof v === 'string' && v.length < 40)))) }; } catch (e) {} res.writeHead(200, { ...H, 'Content-Type': 'application/json; charset=utf-8' }); return res.end('{"ok":true}'); } /* (1.6.2) 수집기가 계산한 '통신사 기준 남은 양·오늘 몫'(표시용) */
   if (u.pathname === '/meter') { meterAdd({ main: u.searchParams.get('main'), gen: u.searchParams.get('gen'), jobs: u.searchParams.get('jobs') }); res.writeHead(200, { ...H, 'Content-Type': 'application/json; charset=utf-8' }); return res.end('{"ok":true}'); }
@@ -380,7 +381,7 @@ function imgApi(u, req, res) { const J = (code, o) => { res.writeHead(code, { 'C
       if (fs.existsSync(f)) { IMGST.skip++; return J(200, { ok: true, skip: true }); } try { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f + '.tmp', b); fs.renameSync(f + '.tmp', f); } catch (er) { return J(500, { ok: false, err: er.message }); }
       const M = imgIndex(); M.set(k, b.length); IMGST.put++; IMGST.bytes += b.length; IMGST.last = { name: k, at: kst() }; J(200, { ok: true, size: b.length }); }); }
   return J(404, { ok: false }); }
-const isSelf = (host) => /^(rn\.local|localhost|127\.0\.0\.1)(:\d+)?$/i.test(String(host || ''));
+const isSelf = (host) => /^(rn\.local|localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]|::1)(:\d+)?$/i.test(String(host || '').replace(/\.$/, '')); /* (자동 점검 2026-10-16) 0.0.0.0·::1도 이 PC — 프록시가 바깥으로 넘기지 않음 */
 
 /* ── 프록시 ── */
 const mkProxy = (mode) => { const server = http.createServer((req, res) => {
