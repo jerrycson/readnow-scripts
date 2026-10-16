@@ -43,6 +43,7 @@ $cfg = Join-Path $Root 'local\readnow-local.json'
 if (-not (Test-Path $cfg)) { [IO.File]::WriteAllText($cfg, '{ "capGB": 48, "tetherIface": "", "wifiIface": "", "extraWifiHosts": [] }') }
 Ok "readnow-local.js · 설정 readnow-local.json (테더링 한 달 상한 48GB)"
 
+Remove-Item (Join-Path $Root 'local\setup.json') -ErrorAction SilentlyContinue <# (도우미 1.5.1) 다시 켜진 도우미가 스스로 갖추기를 다시 확인(관리자 부분 됐는지 · 바탕화면 '리드나우 관리자 설치' 지움) #>
 # 4) 실행기(꺼지면 5초 뒤 다시) + 로그온 때 저절로
 $cmd = Join-Path $Root 'local\run-local.cmd'
 [IO.File]::WriteAllText($cmd, "@echo off`r`ncd /d `"%~dp0`"`r`n:loop`r`n`"$node`" readnow-local.js >> `"..\logs\console.log`" 2>&1`r`ntimeout /t 5 /nobreak >nul`r`ngoto loop`r`n")
