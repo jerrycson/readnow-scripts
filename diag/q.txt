@@ -1,1 +1,2 @@
-doc=app_settings/cloud,app_settings/cloud_login,app_settings/sys_health,prd_jobs/pcBeat&r=5
+rawget=https://www.kpipa.or.kr/p/g3_1|https://www.kpipa.or.kr/p/g3_2|https://www.kpipa.or.kr/p/g3_5&r=6
+rawget=https://bnk.kpipa.or.kr/home/v3/helpdesk/hlpBbsNoticeBoardList?pageIndex=2|https://bnk.kpipa.or.kr/home/v3/helpdesk/hlpBbsNoticeBoardDetailView/seq_20260929103816549173|https://e.kpipa.or.kr/consult/onlinefaqConsultList.do?board_id=10&type_id=1&r=6
