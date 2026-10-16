@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.76.4의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.77.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.76.4' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.76.4', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.77.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.77.0', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2194,6 +2194,7 @@
     else if (v.type === 'c2bAdd') { await c2bAddCmd(ref, v); return; }
     else if (v.type === 'cashStop') { await cashStopCmd(ref, v); return; } // (1.37.0) 현금 판매 → 알라딘 판매중지 자동 // (1.35.0) 알라딘 매입: 팔기 장바구니에 담기
     else if (v.type === 'lookup') { await lookupCmd(ref, v); return; }
+    else if (v.type === 'regLookup') { await regLookupCmd(ref, v); return; } /* (1.77.0) 📥 등록 조회 = 샵매니저 등록 검색(로그인 PC만 — 로거는 pcCan에서 거름) */
     else if (v.type === 'extLookup' || v.type === 'extTest') { await extCmd(ref, v); return; } // (1.57.0) 🌐 외부 정보 — 알라딘과 상관없음
     else if (v.type === 'regBulk' || v.type === 'regBulkMock') { await regBulkCmd(ref, v.type === 'regBulkMock' ? { ...v, mock: true } : v); return; } /* (1.50.0) 🧷 모의 등록은 종류를 따로(regBulkMock·regOneMock) — 예전 판 수집기는 모르는 종류라 받지 않음(실수로 올리지 않게) */
     else if ((v.type === 'regOne' || v.type === 'regOneMock') && v.auto) { if (v.type === 'regOneMock') v = { ...v, mock: true }; if (!window.__rnRegAuto) { await ref.set({ status: 'queued', claim: null, pcSkip: `수집기 ${APP_VER}에 자동 등록 모듈이 없음`, uploadedAt: TS() }, { merge: true }); return; } log(`🤖 자동 등록 맡음: ${v.title || v.itemId}`); try { await window.__rnRegAuto(ref, v, id); } catch (e) { log('자동 등록 오류: ' + e.message, 1); } return; } // (1.47.0) 창 없이 개별·미등록 등록 // (1.44.0) 📥 알라딘 대량 등록
@@ -2244,6 +2245,21 @@
     return { itemId: p.aladinItemId, isbn13: p.isbn13 || null, barcode, title: p.title || null, subtitle: p.subtitle || null, author: (p.contributors || []).slice(0, 2).map((c) => c.name).join(', ') || null, publisher: p.publisher || null, pubDate: p.pubDate || null,
       cover: (p.images && p.images.front) || null, priceList: p.priceList ?? null, priceSales: p.priceSales ?? null, availability: p.availability || null, usedTotal: u.usedTotal ?? null, buyback: u.buyback || null, mins: u.mins || null, page1: u.listings || [], lastPage: u.lastPage || 1, at: nowIso(),
       /* (1.44.0) 등록 엔진: 클라우드 /lookup(0.9.2)과 같은 칸 — 상품 관리 코드 판정·카드 */ categories: (p.categories || []).map((c) => ({ path: c.path || [], cids: c.cids || [] })), salesPoint: p.salesPoint ?? null, ranks: p.ranks || [], reviewCount: p.reviewCount ?? null, commentCount: p.commentCount ?? null, rating: p.rating ?? null, size: p.size || null, pages: p.pages || null, originalTitle: p.originalTitle || null, series: p.series || null }; }
+  /* (1.77.0) 📥 등록 조회 — 사장님 10/16: '알라딘 검색이 아니라 샵매니저 상품등록의 알라딘 등록 검색으로' · 클라우드 0.16.0과 같은 순서
+   *  상품명 → 등록 검색(NAME) 후보(등록 코드 포함) · 번호 → 등록 검색(ISBN): 1개면 그 상품 상세, 여러 개(판·에디션)면 후보 · 등록 검색에 없으면 예전처럼 상품 페이지(ISBN=)·공개 검색 */
+  async function regLookupCmd(ref, v) { const isb = v.isbns || [], ids = v.itemIds || [], qs = v.queries || []; const tot = isb.length + ids.length + qs.length; let n = 0; const items = {}, cands = {}, errs = {}; const br = +v.branch || 1;
+    log(`📥 등록 조회: ${tot}건 (샵매니저 등록 검색)`); const prog = () => ref.set({ n, tot, items, cands, errs, uploadedAt: TS() }, { merge: true }).catch(() => {});
+    const keep = async (key, r) => { items[key] = r; try { await C('prd_lookups').add({ key, isbn13: r.isbn13, itemId: r.itemId, ...r, by: PC_NAME, cmdId: ref.id, ...W() }); } catch (e) {} };
+    const get = async (url, init) => { const r = await fetch('https://www.aladin.co.kr' + url, { credentials: 'include', cache: 'no-store', ...(init || {}) }); return { url: r.url, text: await r.text() }; };
+    const scm = async (q, kind) => { const R = await P.scmSearch(q, kind, br, get, 2); if (!R.login) throw new Error('샵매니저 로그인이 풀림 — 이 PC에서 알라딘 샵매니저에 로그인해 주세요'); return R.rows.slice(0, 20).map((x) => ({ ...x, cov: Math.round(P.nameCoverage(q, x.title) * 1000) / 1000, scm: true })); };
+    for (const isbn of isb) { try { const L = await scm(isbn, 'ISBN'); if (L.length === 1) { const r = await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(L[0].itemId)}`); r.scmCode = L[0].code; await keep(isbn, r); }
+        else if (L.length > 1) { cands[isbn] = L; errs[isbn] = `샵매니저 등록 검색에 이 번호의 상품이 ${L.length}개(판·에디션) — 맞는 상품을 누르세요`; }
+        else { let r = null, why = null; try { r = await lookupBook(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(isbn)}`, isbn); } catch (e) { why = e.message; } if (r) await keep(isbn, r); else errs[isbn] = '샵매니저 등록 검색·상품 페이지 모두 이 번호(ISBN·바코드)의 상품을 못 찾음 — 상품명으로 찾아 보세요' + (why ? ` (${why})` : ''); } }
+      catch (e) { errs[isbn] = e.message; } n++; await prog(); await sleep(500); }
+    for (const id of ids) { try { await keep('id_' + id, await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`)); } catch (e) { errs['id_' + id] = e.message; } n++; await prog(); }
+    for (const q of qs) { try { cands[q] = await scm(q, 'NAME'); } catch (e) { errs['q_' + q] = e.message; } n++; await prog(); await sleep(500); }
+    await ref.set({ status: 'done', n, tot, items, cands, errs, via: 'scm', doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
+    log(`📥 등록 조회: ${Object.keys(items).length}권 · 후보 ${Object.keys(cands).length}건 끝${Object.keys(errs).length ? ` · 확인 ${Object.keys(errs).length}` : ''}`, 0); }
   async function lookupCmd(ref, v) { const isb = v.isbns || [], ids = v.itemIds || [], qs = v.queries || []; const tot = isb.length + ids.length + qs.length; let n = 0; const items = {}, cands = {}, errs = {};
     log(`사진 가격: 알라딘에서 ${tot}건 읽기 (웹앱에서 맡김)`); if (PUBONLY) await mixRead(1 + Math.floor(Math.random() * 2)); /* (1.69.0) 🔀 */
     const prog = () => ref.set({ n, tot, items, cands, errs, uploadedAt: TS() }, { merge: true }).catch(() => {});

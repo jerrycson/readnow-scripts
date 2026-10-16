@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.14.0';
+  const VERSION = '0.15.0'; // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -414,6 +414,21 @@
       const id = b.getAttribute('itemid') || (((a && a.getAttribute('href')) || '').match(/ItemId=(\d+)/) || [])[1] || null; const src = img ? img.getAttribute('src') || '' : '';
       const ck = b.querySelector('input[name^="chkCart."]'); return { itemId: id, title: a ? txt(a) : '', href: a ? a.getAttribute('href') : null, img: /^\/\//.test(src) ? 'https:' + src : src, used: /\[중고\]/.test(b.textContent || ''), channels: searchChannels(b), cart: ck ? ck.getAttribute('name').replace('chkCart.', '') : null, ours: /scm996008/.test(src) }; }).filter((x) => x.itemId && x.title); // (0.14.0) cart = 장바구니 상품코드 · ours = 사진 주소가 우리 판매자(scm996008…)
   }
+  // (0.15.0) 샵매니저 상품등록의 '알라딘 등록 상품 검색' 창(/scm/wpopup_sISBN.aspx?ISBN=검색어&SearchISBNType=ISBN|NAME&BranchType=1 국내도서·2 음반·3 DVD/블루레이·7 외국도서 — 로그인 필요) 결과
+  //  줄마다 submitParent2('코드', '상품번호', '제목') — 코드 = 등록 화면 wrecord.aspx?ISBN=에 넣는 값(책은 ISBN10, DVD 등은 'D492939320' 같은 알라딘 코드) · 사장님 10/16: 등록 조회는 이 검색으로
+  function parseScmSearch(doc) { const rows = [];
+    for (const t of doc.querySelectorAll('table[onclick*="submitParent2"]')) { const m = (t.getAttribute('onclick') || '').match(/submitParent2\('([^']*)',\s*'(\d+)'/); if (!m) continue;
+      const td = [...t.querySelectorAll('td')].find((x) => /정가\s*:/.test(x.textContent || '') && !x.querySelector('table')); if (!td) continue; const first = [...td.childNodes].find((n) => n.nodeType === 3 && n.textContent.trim()); const title = (first ? first.textContent : '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+      const gw = td.querySelector('.gw'); const pm = (td.textContent || '').match(/정가\s*:\s*([\d,]+)/); const img = t.querySelector('img[src*="_1."], img[src*="cover"]'); const src = img ? img.getAttribute('src') || '' : '';
+      if (rows.some((r) => r.itemId === m[2])) continue; rows.push({ code: m[1], itemId: m[2], title, by: gw ? txt(gw) : null, priceList: pm ? toInt(pm[1]) : null, img: /^\/\//.test(src) ? 'https:' + src : /^https?:/.test(src) ? src : /^\//.test(src) ? 'https://www.aladin.co.kr' + src : null }); }
+    let last = 1; for (const x of doc.querySelectorAll('[onclick*="Page_Set"]')) { const mm = (x.getAttribute('onclick') || '').match(/Page_Set\('?(\d+)/); if (mm) last = Math.max(last, +mm[1]); }
+    return { rows, last }; }
+  /* (0.15.0) 샵매니저 등록 검색을 실제로 부름(로그인된 알라딘 화면 안에서만 — 로거는 부르지 않음) · 1쪽 GET → 더 있으면 2쪽은 그 화면 양식(frmBrand) 그대로 POST · get(url, init) = fetch 대신(수집기는 GM 요청) */
+  async function scmSearch(q, kind, branch, get, pages) { const u = '/scm/wpopup_sISBN.aspx?ISBN=' + encodeURIComponent(q) + '&SearchISBNType=' + (kind === 'ISBN' ? 'ISBN' : 'NAME') + '&BranchType=' + (+branch || 1); const g = get || (async (url, init) => { const r = await fetch(url, { credentials: 'include', cache: 'no-store', ...(init || {}) }); return { url: r.url, text: await r.text() }; });
+    const r1 = await g(u); if (/\/login\/|wlogin/i.test(r1.url || '')) return { login: false, rows: [] }; const d1 = new DOMParser().parseFromString(r1.text, 'text/html'); const R = parseScmSearch(d1); let rows = R.rows;
+    for (let pg = 2; pg <= Math.min(R.last, pages || 2); pg++) { try { const f = d1.querySelector('form#frmBrand'); if (!f) break; const fd = new URLSearchParams(); f.querySelectorAll('input').forEach((i) => { if (!i.name || (i.type === 'radio' && !i.checked)) return; fd.set(i.name, i.value || ''); }); fd.set('page', String(pg)); fd.set('BranchType', String(+branch || 1)); if (kind === 'ISBN') fd.set('ISBN', q); else { fd.set('Key', q); fd.set('KeyWord', q); }
+        const r2 = await g('/scm/wpopup_sISBN.aspx', { method: 'POST', body: fd.toString(), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }); const R2 = parseScmSearch(new DOMParser().parseFromString(r2.text, 'text/html')); const have = new Set(rows.map((x) => x.itemId)); const add = R2.rows.filter((x) => !have.has(x.itemId)); if (!add.length) break; rows = rows.concat(add); } catch (e) { break; } }
+    return { login: true, rows, last: R.last }; }
   // 검색 결과 상품 칸 아래 작은 표(table.usedtable02): 머리 줄 = 알라딘 중고 / ○○점(알라딘 매장) / 판매자 중고 (개수), 아래 줄 = 각 최저가 ('-' = 없음)
   function searchChannels(box) {
     const t = box.querySelector('table.usedtable02'); if (!t) return null; const rows = [...t.querySelectorAll('tr')]; if (rows.length < 2) return null;
@@ -697,7 +712,7 @@
     VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
-    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
+    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
     parseUsedItemInfo, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
