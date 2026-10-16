@@ -1,1 +1,1 @@
-scmreg=1&r=4
+doc=app_settings/cloud,app_settings/cloud_login,app_settings/sys_health,prd_jobs/pcBeat&r=5
