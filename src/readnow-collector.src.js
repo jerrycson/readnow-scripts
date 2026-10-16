@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.76.2
+// @version      1.76.3
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -24,10 +24,10 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.44
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.45
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.13.2
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.13.3
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
@@ -3890,7 +3890,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   async function soldInfer(force) { if (PUBONLY || !auth.currentUser) return; const LR = C('app_settings').doc('sold_infer'); let first = false;
     try { let go = false; await db.runTransaction(async (tx) => { const d = (await tx.get(LR)).data() || {}; first = !d.u1016; if (!force && !first && d.at && Date.now() - Date.parse(d.at) < 55 * 60e3) return; if (d.lease && d.lease.pc !== PC_NAME && Date.now() - (+d.lease.ms || 0) < 15 * 60e3) return; tx.set(LR, { lease: { pc: PC_NAME, ms: Date.now() } }, { merge: true }); go = true; }); if (!go) return; } catch (e) { return; }
     const grp = first ? 'u1016' : 'auto_' + nowIso().slice(0, 10); const since = first ? '2026-08-01' : new Date(Date.now() + 9 * 3600e3 - 30 * 864e5).toISOString().slice(0, 10);
-    try { LISTINGS = null; await loadListings(); const L = LISTINGS; const byIsbn = new Map(); for (const [k, l] of L) { if (!l || l.active === false || !l.isbn13) continue; (byIsbn.get(l.isbn13) || byIsbn.set(l.isbn13, []).get(l.isbn13)).push(k); }
+    try { await loadListings('inc'); const L = LISTINGS; const byIsbn = new Map(); const took = new Map(); /* (자동 점검 2026-10-16) 이미 어느 상품을 판매 끝으로 고른 주문 줄은 다시 고르지 않음 — 1시간마다 30일 주문을 다시 훑으며 앞에서 고른 상품이 판매완료가 되면 같은 ISBN의 다음 판매중 상품을 또 고르던 것 */ for (const [k, l] of L) { const so = l && l.soldInfer; if (so && so.how === 'isbn' && so.order && so.order.orderId && so.order.isbn) { const tk = so.order.orderId + '|' + so.order.isbn; took.set(tk, (took.get(tk) || 0) + Math.max(1, +l.qty || 1)); } } for (const [k, l] of L) { if (!l || l.active === false || !l.isbn13) continue; (byIsbn.get(l.isbn13) || byIsbn.set(l.isbn13, []).get(l.isbn13)).push(k); }
       const qs = await C('crm_orders').where('orderedAt', '>=', since).get(); const ords = []; qs.forEach((d) => { const o = d.data(); if (o && o.kind === 'sale' && o.platform !== 'cash' && SHIPPED_ST.test(String(o.status || o.stage || ''))) ords.push({ id: d.id, ...o }); }); ords.sort((a, b) => kMsC(a.orderedAt) - kMsC(b.orderedAt));
       const used = new Set(); const certain = [], inferred = [], skipped = []; const FV = firebase.firestore.FieldValue; const at = nowIso();
       for (const o of ords) { const om = kMsC(o.orderedAt); for (const it of o.items || []) { if (it.lineStatus !== 'normal') continue; const q = Math.max(1, +it.qty || 1); const ord = { orderId: o.id, orderNo: o.orderNo || null, orderedAt: o.orderedAt || null, st: o.status || o.stage || null, title: it.title || null, isbn: it.isbn13 || null, price: it.price ?? null, grade: lineGradeC(it) || null, qty: q };
@@ -3900,9 +3900,10 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
           const after = cand.filter(([, l]) => (kMsC(l.lastSeenAt) || kMsC(l.registeredAt)) >= om); cand = cand.filter(([, l]) => (kMsC(l.lastSeenAt) || kMsC(l.registeredAt)) < om);
           if (!cand.length) { if (after.length) skipped.push({ ord, why: `같은 ISBN 판매중 ${after.length}개는 주문 뒤에도 판매중으로 보임 — 다른 권으로 보고 그대로 둠`, keep: after.map(([k]) => k) }); continue; }
           const rank = ([, l]) => (ord.price != null && +l.price === +ord.price ? 0 : 2) + (ord.grade && String(l.grade || '') === ord.grade ? 0 : 1);
-          cand.sort((a, b) => rank(a) - rank(b) || kMsC(a[1].registeredAt) - kMsC(b[1].registeredAt)); let need = q;
+          const tk0 = o.id + '|' + it.isbn13; const cr = took.get(tk0) || 0; const tookN = Math.min(cr, q); took.set(tk0, cr - tookN); if (tookN >= q) continue; /* 앞 회차에 이 주문 줄로 이미 고른 수만큼 빼고 모자란 만큼만 고름(같은 주문의 같은 ISBN 줄이 둘이면 앞 줄부터 씀) */
+          cand.sort((a, b) => rank(a) - rank(b) || kMsC(a[1].registeredAt) - kMsC(b[1].registeredAt)); let need = q - tookN;
           for (const [k, l] of cand) { if (need <= 0) break; used.add(k); need -= Math.max(1, +l.qty || 1); inferred.push({ k, l, ord, n: cand.length, rank: rank([k, l]), why: `주문 줄에 상품 코드가 없어 같은 ISBN 판매중 ${cand.length}개(주문 전에 마지막으로 본 것) 중 ${rank([k, l]) === 0 ? '판매가·등급이 같은' : rank([k, l]) === 1 ? '판매가가 같은' : rank([k, l]) === 2 ? '등급이 같은' : '먼저 등록한'} 것을 고름` }); } } }
-      const ops = []; const rec = (x, how) => { const v = { active: false, status: '판매완료', soldInfer: { at, by: PC_NAME, how, group: grp, order: x.ord, ...(x.why ? { why: x.why, cand: x.n } : {}) }, soldInferLog: FV.arrayUnion({ at, how, group: grp, orderId: x.ord.orderId }), ...W() }; ops.push((b) => b.set(C('prd_listings').doc(x.k), v, { merge: true }));
+      const ops = []; const rec = (x, how) => { const v = { active: false, status: '판매완료', soldInferPrev: { active: x.l.active ?? null, status: x.l.status ?? null, at }, /* (자동 점검 2026-10-16) 알라딘에서 읽은 상태를 덮기 전 값 보관(모은 자료를 덮지 않음) */ soldInfer: { at, by: PC_NAME, how, group: grp, order: x.ord, ...(x.why ? { why: x.why, cand: x.n } : {}) }, soldInferLog: FV.arrayUnion({ at, how, group: grp, orderId: x.ord.orderId }), ...W() }; ops.push((b) => b.set(C('prd_listings').doc(x.k), v, { merge: true }));
         if (how === 'isbn') ops.push((b) => b.set(C('prd_unclear').doc(x.k), { listingId: x.k, group: grp, at, by: PC_NAME, title: x.l.title || null, isbn: x.l.isbn13 || null, grade: x.l.grade || null, price: x.l.price ?? null, registeredAt: x.l.registeredAt || null, lastSeenAt: x.l.lastSeenAt || null, sku: x.l.sku || null, order: x.ord, why: x.why, cand: x.n, rank: x.rank, ...W() }, { merge: true })); };
       certain.forEach((x) => rec(x, 'code')); inferred.forEach((x) => rec(x, 'isbn'));
       if (ops.length) await commitBatches(ops, '주문으로 판매 끝 반영'); certain.concat(inferred).forEach((x) => L.set(x.k, { ...x.l, active: false, status: '판매완료' }));
@@ -3942,7 +3943,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   async function loadListings(force) {
     if (LISTINGS && !force) return LISTINGS;
     ui('기존 상품 기록 읽는 중', 0, 0);
-    let c = null; if (!force) { try { c = await LCACHE.get(); } catch (e) { c = null; } }
+    let c = null; if (!force || force === 'inc') { try { c = await LCACHE.get(); } catch (e) { c = null; } }
     if (c && Array.isArray(c.rows) && c.last && Date.now() - (c.fullAt || 0) < 24 * 3600e3) { try { const m = new Map(c.rows.map(([id, v]) => [id, lcRevive(v)])); let max = c.last; const ss = await C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(c.last - 120000)).get(); /* 2분 겹쳐 읽음(시계 차이) */ ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); m.set(d.id, v); max = Math.max(max, lcMs(v)); } });
         LISTINGS = m; log(`기존 상품 ${m.size.toLocaleString()}건 (이 PC 보관본 + 바뀐 ${ss.size.toLocaleString()}건만 받음)`); if (ss.size) LCACHE.put({ rows: [...m], last: max, fullAt: c.fullAt }).catch(() => {}); return m; } catch (e) { log('보관본으로 읽기 실패 — 통째로 다시 읽음: ' + (e.code || e.message), 1); } }
     const m = new Map(); let max = 0; const ss = await C('prd_listings').get(); ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); m.set(d.id, v); max = Math.max(max, lcMs(v)); } }); /* (1.57.7) 권한 시험 문서는 상품이 아님 */
@@ -4107,18 +4108,19 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   }
   /* (1.75.0) 📚 도서 정보는 알라딘 밖에서 먼저(사장님 10/16 지시): 교보문고 → 예스24 → 둘 다 없을 때만 알라딘
    *  ext_basic/{ISBN}(외부 정보가 모아 둔 것)을 먼저 보고, 없으면(live) 그 자리에서 교보·예스24를 읽어 저장(와이파이 — 로거도 도우미가 와이파이로) */
-  async function extBasicFor(isbn, live) { const X = EXT(); if (!X || !/^97[89]\d{10}$/.test(String(isbn || ''))) return null; const ref = C('ext_basic').doc(String(isbn)); let doc = null; try { const d = await ref.get(); doc = d.exists ? d.data() : null; } catch (e) {}
+  async function extBasicFor(isbn, live, st) { const X = EXT(); if (!X || !/^97[89]\d{10}$/.test(String(isbn || ''))) return null; const ref = C('ext_basic').doc(String(isbn)); let doc = null; try { const d = await ref.get(); doc = d.exists ? d.data() : null; } catch (e) {}
     const BO = ['kyobo', 'yes24', 'naverbook']; /* (1.76.0) 교보 > 예스24 > 네이버 */ const okOf = (D) => BO.filter((k) => D && D.src && D.src[k] && D.src[k].d && D.src[k].d.title);
-    if (live && !okOf(doc).length) { for (const src of BO) { try { const h0 = X.SOURCES[src].host; const at0 = Math.max(Date.now(), EXT_S.next[h0] || 0); EXT_S.next[h0] = at0 + X.SOURCES[src].paceMs * (0.8 + Math.random() * 0.4); if (at0 > Date.now()) await sleep(at0 - Date.now()); extUsedAdd(src, 2); const keys = await extKeys(); const res = await X.run(src, { isbn: String(isbn), title: '', author: '', keys, http: extHttp, render: extRender, cache: EXT_S.cache, cfg: await extCfg() }); if (res && res.ok && !res.none) { await extSave(src, { isbn: String(isbn) }, res); extIdxSet(src, String(isbn)); const d2 = await ref.get(); doc = d2.exists ? d2.data() : doc; if (okOf(doc).length) break; } } catch (e) {} } }
+    if (live && !okOf(doc).length) { const cfgB = await extCfg().catch(() => null); let nNone = 0; for (const src of BO) { try { /* (자동 점검 2026-10-16) 출처별 하루 상한(cap)·쉼(pauseUntil·키 문제)을 지킴 — 로거 와이파이 도서 정보(biTick)가 거의 쉬지 않고 돌아 하루 상한(500)을 몇십 배 넘겨 사무실 와이파이 IP가 막힐 수 있었음 */ const cap = cfgB && cfgB.src && cfgB.src[src] && cfgB.src[src].cap; if ((EXT_S.pauseUntil[src] || 0) > Date.now() || (cap != null && (EXT_S.used[src] || 0) >= cap) || (EXT_S.authPause && EXT_S.authPause[src] != null)) continue; const h0 = X.SOURCES[src].host; const at0 = Math.max(Date.now(), EXT_S.next[h0] || 0); EXT_S.next[h0] = at0 + X.SOURCES[src].paceMs * (0.8 + Math.random() * 0.4); if (at0 > Date.now()) await sleep(at0 - Date.now()); extUsedAdd(src, 2); const keys = await extKeys(); const res = await X.run(src, { isbn: String(isbn), title: '', author: '', keys, http: extHttp, render: extRender, cache: EXT_S.cache, cfg: await extCfg() }); if (res && res.ok && !res.none) { await extSave(src, { isbn: String(isbn) }, res); extIdxSet(src, String(isbn)); EXT_S.errs[src] = 0; const d2 = await ref.get(); doc = d2.exists ? d2.data() : doc; if (okOf(doc).length) break; } else if (res && res.ok && res.none) nNone++; else if (res && !res.skip && !res.auth) { EXT_S.errs[src] = (EXT_S.errs[src] || 0) + 1; if (res.limit) EXT_S.pauseUntil[src] = Date.now() + 6 * 3600e3; else if (EXT_S.errs[src] >= 5) { EXT_S.pauseUntil[src] = Date.now() + 3600e3; EXT_S.errs[src] = 0; log(`📚 ${X.SOURCES[src].label || src}: 도서 정보 5번 잇달아 못 읽어 1시간 쉼 — ${String(res.why || '').slice(0, 80)}`, 1); } } } catch (e) {} } if (st) st.allNone = nNone === BO.length; }
+    else if (st) st.allNone = !live;
     const have = okOf(doc); if (!have.length) return null; const M = X.mergeBasic(doc, BO); const o = (M && M.v) || {}; const cov = have.map((k) => doc.src[k].d.cover).find(Boolean) || null; const reviews = {}; for (const k of have) { const d = doc.src[k].d; if (d.rating != null || d.reviewN != null || d.ratingN != null) reviews[k] = { rating: d.rating ?? null, ratingMax: d.ratingMax ?? null, ratingN: d.ratingN ?? null, reviewN: d.reviewN ?? null }; } return { ...o, cover: cov, from: (M && M.from) || null, srcs: have, reviews }; }
   const extToPage = (E, l) => { const C0 = []; String(E.authors || '').split(/\s*[,·]\s*/).filter(Boolean).forEach((n) => C0.push({ name: n, role: '지은이' })); String(E.translators || '').split(/\s*[,·]\s*/).filter(Boolean).forEach((n) => C0.push({ name: n, role: '옮긴이' })); return { title: E.title || null, subtitle: E.sub || null, series: E.series || null, contributors: C0.length ? C0 : null, publisher: E.publisher || null, pubDate: E.pubDate || null, isbn13: l.isbn13 || null, pages: E.pages ?? null, size: E.size || null, weightG: E.weightG ?? null, images: E.cover ? { front: E.cover } : null, fetchedFrom: E.srcs[0], infoFrom: E.from || null }; };
   async function refreshOne(l, bookId, opt) {
     const at = nowIso();
     let page = null, resolvedBy = null, finalUrl = null;
     /* (1.75.0) 도서 정보만 필요한 일(알라딘 구매 풀·판매완료 상품 정보)은 교보·예스24에서 찾으면 알라딘을 열지 않음 · 시장 지표가 필요한 일은 알라딘을 읽되 도서 칸은 외부 값을 먼저 씀 */
-    const EB = l.isbn13 ? await extBasicFor(l.isbn13, !!(l.pool || (opt && opt.infoOnly))).catch(() => null) : null;
+    const EBS = {}; const EB = l.isbn13 ? await extBasicFor(l.isbn13, !!(l.pool || (opt && opt.infoOnly)), EBS).catch(() => null) : null;
     if (EB && (l.pool || (opt && opt.infoOnly))) { page = extToPage(EB, l); resolvedBy = 'ext:' + EB.srcs[0]; }
-    if (!page && opt && opt.extOnly) throw Object.assign(new Error('교보·예스24·네이버에 없음 — 알라딘 도서 정보는 사무실 PC가'), { noext: true }); /* (1.76.0) 로거(와이파이)는 알라딘을 절대 열지 않음 */
+    if (!page && opt && opt.extOnly) { if (!EBS.allNone) throw Object.assign(new Error('교보·예스24·네이버가 지금 답하지 않음(상한·쉼·오류) — 나중에 다시'), { extTmp: true }); throw Object.assign(new Error('교보·예스24·네이버에 없음 — 알라딘 도서 정보는 사무실 PC가'), { noext: true }); } /* (자동 점검 2026-10-16) 세 곳이 모두 '없음'이라고 답했을 때만 '없음'(120일 건너뜀) — 잠깐 막히거나 오류면 표시하지 않고 다음에 다시 */ /* (1.76.0) 로거(와이파이)는 알라딘을 절대 열지 않음 */
     if (!page) for (const [how, url] of productUrls(l)) {
       // 구매자 분포·함께 구매는 나중에 따로 수집(설정 dynamicParts가 켜졌을 때만 숨은 창 사용)
       let r = SET.dynamicParts ? await getProductFull(url) : null;
@@ -6245,7 +6247,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
    *  차례: ① 가장 최근 등록 상품 300개 ② 정보를 아직 안 모은 판매중 ③ 정보를 아직 안 모은 판매완료 ④ 알라딘 정보만 있는 판매중(평점·리뷰 수·옮긴이·표지 보강) ⑤ 같은 판매완료 — 한 번 모은 상품은 120일 뒤 다시 */
   const BI = { busy: false, q: [], qAt: 0, n: 0, ok: 0, none: 0, err: 0, imgs: 0, last: null, why: null };
   const biFresh = (l) => { const x = l && l.bookInfoExt; return !!(x && x.at && Date.now() - Date.parse(x.at) < 120 * 864e5); };
-  async function biQueue() { LISTINGS = null; await loadListings(); const all = [...LISTINGS.entries()].filter(([, l]) => l && l.isbn13 && /^97[89]\d{10}$/.test(String(l.isbn13)) && !biFresh(l)); const rg = (l) => kMsC(l.registeredAt) || 0; const seen = new Set(); const out = []; const add = (arr, tag) => { for (const [k] of arr) if (!seen.has(k)) { seen.add(k); out.push([k, tag]); } };
+  async function biQueue() { await loadListings('inc'); /* (자동 점검 2026-10-16) LISTINGS = null로 비운 채 기다리면 그사이 벤치마킹·refreshOne이 LISTINGS.get에서 멈출 수 있었음 → 보관본+바뀐 것만 다시 읽어 다 되면 바꿔 끼움 */ const all = [...LISTINGS.entries()].filter(([, l]) => l && l.isbn13 && /^97[89]\d{10}$/.test(String(l.isbn13)) && !biFresh(l)); const rg = (l) => kMsC(l.registeredAt) || 0; const seen = new Set(); const out = []; const add = (arr, tag) => { for (const [k] of arr) if (!seen.has(k)) { seen.add(k); out.push([k, tag]); } };
     const all0 = [...LISTINGS.entries()].filter(([, l]) => l).sort((a, b) => rg(b[1]) - rg(a[1])).slice(0, 300).map(([k]) => k); const top = new Set(all0); add(all.filter(([k]) => top.has(k)), '최근 등록 300');
     add(all.filter(([, l]) => l.active !== false && !l.bookId), '판매중 · 정보 없음'); add(all.filter(([, l]) => l.active === false && !l.bookId), '판매완료 · 정보 없음'); add(all.filter(([, l]) => l.active !== false), '판매중 · 외부 보강'); add(all.filter(([, l]) => l.active === false), '판매완료 · 외부 보강');
     BI.q = out; BI.qAt = Date.now(); return out; }
@@ -6254,9 +6256,10 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       await ref.set({ ...upd, imgStatus: ok ? 'done' : 'error', imgLease: firebase.firestore.FieldValue.delete(), ...W() }, { merge: true }); if (ok) BI.imgs++; return ok; } catch (e) { return false; } }
   async function biTick() { if (!PUBONLY || BI.busy || !auth.currentUser || window.__rnPaused) return; if (!helperVerOk('1.6.3')) { BI.why = '도우미 1.6.3을 기다림(교보·네이버 표지를 와이파이로 보내는 판)'; return; } if (!EXT()) { BI.why = '외부 정보 공용 파일 없음'; return; } BI.busy = true; BI.why = null;
     try { if (!BI.q.length || Date.now() - BI.qAt > 30 * 60e3) await biQueue(); const t0 = Date.now();
-      while (BI.q.length && Date.now() - t0 < 4 * 60e3) { if (window.__rnPaused) break; const [k, tag] = BI.q.shift(); const l = LISTINGS.get(k); if (!l || biFresh(l)) continue; BI.n++; let mark;
+      const biSrcOk = async () => { const cf = await extCfg().catch(() => null); return ['kyobo', 'yes24', 'naverbook'].some((s0) => (EXT_S.pauseUntil[s0] || 0) <= Date.now() && !(EXT_S.authPause && EXT_S.authPause[s0] != null) && !(cf && cf.src && cf.src[s0] && cf.src[s0].cap != null && (EXT_S.used[s0] || 0) >= cf.src[s0].cap)); }; /* (자동 점검 2026-10-16) 세 출처가 모두 상한·쉼이면 이번 차례는 그만(빈 읽기로 차례만 넘기지 않게) */
+      while (BI.q.length && Date.now() - t0 < 4 * 60e3) { if (window.__rnPaused) break; if (!(await biSrcOk())) { BI.why = '교보·예스24·네이버 모두 오늘 상한 또는 쉬는 중 — 풀리면 이어서'; break; } const [k, tag] = BI.q.shift(); const l = LISTINGS.get(k); if (!l || biFresh(l)) continue; BI.n++; let mark;
         try { await refreshOne(l, l.bookId || null, { infoOnly: true, extOnly: true }); const bid = (LISTINGS.get(k) || {}).bookId || l.bookId; mark = { at: nowIso(), ok: true, tag, by: PC_NAME }; BI.ok++; if (bid) await biImg(bid); }
-        catch (e) { if (e && e.noext) { mark = { at: nowIso(), none: true, tag, by: PC_NAME }; BI.none++; } else { BI.err++; mark = null; if (BI.err < 30) log(`📚 도서 정보(외부): ${l.title || k} — ${e.message}`, 1); } }
+        catch (e) { if (e && e.noext) { mark = { at: nowIso(), none: true, tag, by: PC_NAME }; BI.none++; } else if (e && e.extTmp) { BI.tmp = (BI.tmp || 0) + 1; mark = null; } else { BI.err++; mark = null; if (BI.err < 30) log(`📚 도서 정보(외부): ${l.title || k} — ${e.message}`, 1); } }
         if (mark) { try { await C('prd_listings').doc(k).set({ bookInfoExt: mark, ...W() }, { merge: true }); LISTINGS.set(k, { ...(LISTINGS.get(k) || l), bookInfoExt: mark }); } catch (e) {} } BI.last = { k, tag, title: l.title || null, at: nowIso() };
         if (BI.n % 50 === 0) log(`📚 로거 와이파이 도서 정보: ${BI.n}권 — 외부에서 찾음 ${BI.ok} · 셋 다 없음 ${BI.none} · 오류 ${BI.err} · 표지 ${BI.imgs} · 남은 차례 ${BI.q.length}권 (지금: ${tag})`); }
     } catch (e) { BI.why = e.message; log('📚 로거 와이파이 도서 정보 오류(다음에 이어서): ' + e.message, 1); } finally { BI.busy = false; } }
