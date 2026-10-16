@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.74.4
+// @version      1.74.5
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -24,10 +24,10 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.6.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.39
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.40
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.4.9
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.11.2
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.11.3
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
@@ -3926,7 +3926,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     try {
       await loadListings();
       const name = mode === 'new' ? 'scanNew' : mode === 'daily' ? 'scanDaily' : 'scanFull';
-      const statuses = mode === 'new' ? Object.keys(STATUS) : mode === 'daily' ? ['판매중', '일시판매중지', '판매중지'] : ACTIVE; // daily(1.34.0 매일 자동): 세 상태만 · 새등록 상품과, 본 쪽에서 상태가 바뀐 상품을 기록 · 이미 아는 상품만 있는 쪽이 나오면 그 상태는 끝
+      const statuses = mode === 'new' ? Object.keys(STATUS) : mode === 'daily' ? ['판매중', '일시판매중지', '판매중지', '판매완료'] : ACTIVE; /* (1.74.5) 판매완료도 — 팔린 상품이 판매중 목록에서 사라질 뿐이라 매일 확인에서 못 잡고 전체 재검토 때까지 판매중으로 남았음(예: 9788976774057 · 마지막 확인 10/05) · 판매완료 목록 첫 쪽에서 상태가 바뀐 것만 기록하고 아는 것만 나오면 멈춤 */ // daily(1.34.0 매일 자동): 세 상태만 · 새등록 상품과, 본 쪽에서 상태가 바뀐 상품을 기록 · 이미 아는 상품만 있는 쪽이 나오면 그 상태는 끝
       const prog = (await loadProgress(name)) || { si: 0, page: 1, stats: {}, startedAt: nowIso() };
       if (prog.page > 1 || prog.si > 0) log(`이어서 시작: ${statuses[prog.si]} ${prog.page}쪽부터`);
       const cursor = (await C('prd_system').doc('cursor').get()).data() || {};
