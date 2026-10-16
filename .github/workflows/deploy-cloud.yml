@@ -51,7 +51,13 @@ jobs:
         run: |
           URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')
           mkdir -p /tmp/o; n=0
-          while IFS= read -r Q || [ -n "$Q" ]; do [ -z "$Q" ] && continue; n=$((n+1)); curl -sS -m 280 -H "Authorization: Bearer $IDT" "$URL/diag?$Q" > /tmp/o/r$n.json || echo '{"ok":false,"err":"curl"}' > /tmp/o/r$n.json; echo "q$n bytes $(wc -c < /tmp/o/r$n.json)"; done < diag/q.txt
+          # (2026-10-16) '@kpin 파일' 줄 = 📰 출판 정보 요약 넣기(암호문 diag/파일 → 클라우드 /kp-in) · 'Rate exceeded'(클라우드가 바쁨)면 20초 뒤 다시(4번까지)
+          while IFS= read -r Q || [ -n "$Q" ]; do [ -z "$Q" ] && continue; n=$((n+1))
+            for t in 1 2 3 4; do
+              if [ "${Q#@kpin }" != "$Q" ]; then F="diag/${Q#@kpin }"; F=${F//../}; curl -sS -m 280 -X POST -H "Authorization: Bearer $IDT" -H 'content-type: application/json' --data-binary @"$F" "$URL/kp-in" > /tmp/o/r$n.json || echo '{"ok":false,"err":"curl"}' > /tmp/o/r$n.json
+              else curl -sS -m 280 -H "Authorization: Bearer $IDT" "$URL/diag?$Q" > /tmp/o/r$n.json || echo '{"ok":false,"err":"curl"}' > /tmp/o/r$n.json; fi
+              grep -q '^Rate exceeded' /tmp/o/r$n.json || break; sleep 20; done
+            echo "q$n bytes $(wc -c < /tmp/o/r$n.json)"; done < diag/q.txt
           tar czf /tmp/o.tgz -C /tmp/o .; openssl rand -hex 32 > /tmp/k; openssl enc -aes-256-cbc -pbkdf2 -salt -in /tmp/o.tgz -out /tmp/o.enc -pass file:/tmp/k
           openssl pkeyutl -encrypt -pubin -inkey diag/pub.pem -pkeyopt rsa_padding_mode:oaep -in /tmp/k -out /tmp/k.enc; rm -f /tmp/k /tmp/o.tgz; rm -rf /tmp/o
           git config user.email "actions@github.com"; git config user.name "diag"; git checkout -q --orphan diag-out; git rm -rfq --cached . ; cp /tmp/o.enc out.enc; cp /tmp/k.enc out.key; echo "$GITHUB_SHA" > for.txt
