@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "앞으로 시간표 내일까지",
- "since": "2026-10-16T04:59:12Z",
- "beat": "2026-10-16T04:59:12Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "1.74.1/1.36.1 배포",
-  "at": "2026-10-16T04:45:15Z"
+  "done": "0.11.1 배포",
+  "at": "2026-10-16T05:00:28Z"
  }
 }
