@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.73.1
+// @version      1.74.0
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -24,10 +24,10 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.6.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.35
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.36
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.4.8
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.10.1
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.11.0
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
@@ -2918,7 +2918,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
 (async function () {
   'use strict';
   const VER = ((typeof globalThis !== 'undefined' && globalThis.__RN_FILE_VER) || (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version)) || '1.58.0'; // (1.36.0) 예전엔 '1.27.0'에 멈춰 있었음 — 표시만이 아니라 'PC끼리 새 판 맞추기'(crm_system/collector_version)도 1.27.0으로 비교해 멈춰 있었음. 이제 맨 위 @version 한 곳
-  let REQ_PEND = 0, MET_PEND = 0, SHIP_PEND = 0, IDLE_YIELD = null; /* (1.73.0) 💤 쉬는 칸 양보·미뤄 둔 요청 — 맨 앞에 두어 먼저 오는 알림도 씀 */
+  let REQ_PEND = 0, MET_PEND = 0, SHIP_PEND = 0, PREEMPT = null, PROG_NOW = null; /* (1.73.0) 💤 쉬는 칸 양보·미뤄 둔 요청 — 맨 앞에 두어 먼저 오는 알림도 씀 */
   const APP_VER = VER; // (1.42.0) 상품 쪽에 APP_VER가 없어(고객 쪽 안에만 있었음) 상태 신호·맡긴 일 받기가 'APP_VER is not defined'로 멈추던 것 — 같은 값을 여기에도
   const LOGIN_FLAG = 'rnp-autologin-pending';
   /* ── 로그인 페이지: 이 수집기가 로그인 풀림을 감지해 연 탭에서만 자동 입력 (고객 수집기와 같은 방식) ── */
@@ -3356,7 +3356,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   // 진행 표시 + 남은 시간(최근 처리 속도 기준) + 다른 PC에서 볼 수 있게 상태 공유
   const fmtDur = (min) => { if (!isFinite(min) || min < 0) return ''; if (min < 1) return '1분 미만'; const h = Math.floor(min / 60), m = Math.round(min % 60); return h ? `${h}시간 ${m}분` : `${m}분`; };
   let rate = { state: null, pts: [] }; let lastPub = 0; let lastUi = {};
-  function ui(state, done, total, sub, next) {
+  function ui(state, done, total, sub, next) { if (total > 0) PROG_NOW = { i: Math.max(0, +done || 0), n: +total, l: String(state || '').slice(0, 60), at: Date.now() }; /* (1.74.0) 회차 진행 수치(지난 시간표) */
     window.__rnLog && window.__rnLog('상품', 'detail', `${state}${total ? ` ${(+done || 0).toLocaleString()}/${(+total).toLocaleString()}` : ''}${sub ? ` · ${sub}` : ''}`);
     $('#rnpState').textContent = state;
     $('#rnpBar').style.width = total ? Math.min(100, (done / total) * 100).toFixed(1) + '%' : '0';
@@ -4967,7 +4967,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     } finally { await releaseLane('aladin'); } }
   // 5분마다: 맡아 둔 그룹 시장 지표가 남았으면 이어서 · 한 시간마다: '매일 자동'을 켠 그룹(수동 일괄 처리 그룹·감시 묶음)이 24시간 지났으면 스스로 맡김
   setInterval(async () => { try { if (running || window.__rnPaused || !auth.currentUser || (window.__rnRest && window.__rnRest())) return; const qs = await C('shp_cmds').where('status', '==', 'running').get();
-    if (qs.docs.some((d) => { const v = d.data(); return v.type === 'metrics' && v.claim && v.claim.pc === PC_NAME; })) runJob('metricsReq'); } catch (e) {} }, 5 * 60000);
+    if (qs.docs.some((d) => { const v = d.data(); return v.type === 'metrics' && v.claim && v.claim.pc === PC_NAME; })) { if (SCHED && SCHED.on) MET_PEND = MET_PEND || Date.now(); else runJob('metricsReq'); } } catch (e) {} }, 5 * 60000); /* (1.74.0) ⏰를 켰으면 차례 6으로 */
   /* (1.60.1) 그룹 시장 지표 맡기기 — 예전엔 한 시간마다 스스로 돌던 것 → ⏰ 매일 자동 수집의 칸(기본: 1시간마다)에서만 · 일(JOBS.metricsAuto) */
   async function metricsAutoJob() { let nQ = 0; const day = 864e5; const PRC = window.ReadnowPricing || globalThis.ReadnowPricing;
     const pc0 = (await C('prd_system').doc('pricing').get()).data() || {}; const off = pc0.batchOff || {}; // (1.34.9) 웹앱에서 끈 그룹(감시·적용 꺼짐)·보관한 그룹은 매일 자동 시장 지표를 맡기지 않음
@@ -5022,10 +5022,10 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       for (const k of v.keys) { await mixMaybe(); let l = LISTINGS && LISTINGS.get(k); if (!l) { try { const d = await C('prd_listings').doc(k).get(); if (d.exists) l = d.data(); } catch (e) {} } if (!l) { fail++; why.push(`${k}: 상품 기록 없음`); continue; }
         try { await refreshOne(l, l.bookId || null); ok++; } catch (e) { fail++; why.push(`${l.title || k}: ${e.message}`); } await ref.set({ ok, fail, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); }
       await ref.set({ status: 'done', ok, fail, why: why.slice(0, 5), doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`시장 지표 바로 읽기(${v.label || ''}): 성공 ${ok} · 실패 ${fail}`, fail ? 1 : 0); return; }
-    else if (v.type === 'metrics') { log(`그룹 시장 지표 갱신 맡음: ${v.label || ''} ${(v.keys || []).length}개`); if (!running) runJob('metricsReq'); else { MET_PEND = Date.now(); log('다른 작업 중 — 끝나면 바로 이어서 (💤 쉬는 칸이면 양보)'); } return; }
+    else if (v.type === 'metrics') { log(`그룹 시장 지표 갱신 맡음: ${v.label || ''} ${(v.keys || []).length}개`); if (SCHED && SCHED.on) { MET_PEND = MET_PEND || Date.now(); log('그룹 시장 지표 — ⏰ 차례 6(정한 시각·조건 칸 뒤)으로 곧 이어서'); } else if (!running) runJob('metricsReq'); else { MET_PEND = Date.now(); log('다른 작업 중 — 끝나면 바로 이어서'); } return; }
     else if (v.type === 'read') { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (SH) try { await shipLiteRead(SH, null); } catch (e) {} await ref.set({ status: 'done', doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); }
     else { await ref.set({ status: 'queued', claim: null, pcSkip: `수집기 ${APP_VER}에 처리 길이 없는 종류 — 노선표 확인`, uploadedAt: TS() }, { merge: true }); log(`맡긴 일 '${v.type}': 이 수집기 판에 처리하는 길이 없어 대기로 되돌림 (노선표 확인)`, 1); return; } // (1.36.0) 예전: 모르는 종류도 '끝남' // (1.34.6) '다시 읽기'는 목록부터 바로(몇 초), 전체 읽기(유의 사항·엑셀)는 이어서
-    window.__rnShipAt = 0; if (!running) runJob('shipRead'); else { SHIP_PEND = Date.now(); log('다른 작업 중이라 발송 요청 다시 읽기는 끝난 뒤 바로 (💤 쉬는 칸이면 양보)'); } }
+    window.__rnShipAt = 0; if (!running && !schedBusy) runCtx('urgent', 'shipRead'); else { SHIP_PEND = Date.now(); log('발송 요청 다시 읽기 — 하던 자동 일을 지금 항목까지 저장하고 비키게 한 뒤 바로'); } }
   /* 사진으로 가격 매기기 (1.31.0, 웹앱 '사진 가격' 화면 · shp_cmds type 'lookup'):
      isbns = 바코드로 읽은 ISBN → 새상품 페이지(wproduct.aspx?ISBN=) → 알라딘 상품번호 → 온라인 중고 첫 페이지 / itemIds = 고른 후보 상품번호 / queries = 책등 제목 → 알라딘 검색 후보
      결과는 그 일 문서(items · cands)에 바로 쓰고, 책마다 prd_lookups에도 한 줄씩 쌓음(덮어쓰지 않음 — 같은 책을 다시 찍으면 웹앱이 24시간 안 기록을 먼저 씀). 다른 작업 중이어도 바로 처리(책 몇 권이라 짧음) */
@@ -5571,7 +5571,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   setTimeout(pcBeat, 12000); setInterval(pcBeat, 2 * 60000);
   const kstNow = () => (RA ? RA.kstNow() : { day: '', min: 0 }); const esc3 = (t) => (RA ? RA.esc(t) : String(t == null ? '' : t));
   const AS_META = RA ? RA.META : {}; const CRM_LBL = RA ? RA.CRM_LBL : {};
-  const PAR_JOBS = { kpipa: kpipaPar }; /* (1.60.1) 동시 진행 일 — 알라딘을 쓰지 않아 다른 수집과 함께 돎(따로 돌리는 함수) */
+  const PAR_JOBS = { kpipa: kpipaPar, extBurst: () => extBurstPar() }; /* (1.60.1) 동시 진행 일 — 알라딘을 쓰지 않아 다른 수집과 함께 돎(따로 돌리는 함수) */
   function asCatalog() { const L = []; const crm = { ...CRM_LBL, ...((window.__rnCrm && window.__rnCrm.tasks && window.__rnCrm.tasks()) || {}) };
     for (const [k, l] of Object.entries(crm)) L.push({ job: 'crm:' + k, label: l });
     for (const k of Object.keys(JOBS)) L.push({ job: 'prd:' + k, label: JOBS[k][0], ...(PAR_JOBS[k] ? { par: true } : {}) });
@@ -5609,12 +5609,12 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     return T.map((t) => { const d = AS.durations('bench:' + String(t.sc), JSTATS, {}, []); return { label: t.name || String(t.sc), ms: d.n ? d.avg : 15 * 60e3, est: !d.n }; }); }
   function asBuiltins() { const X = EXT(); const on = !!(X && BIs.ext && X.cfgOf(BIs.ext).on);
     return [{ k: 'ext', cls: 'ext', label: '🔎 외부 정보 (알라딘 밖 기본 정보·국내 중고 시세·외국 시세·도서관·전자책)', desc: `5분마다 최대 4분씩 조금씩 — 출처마다 하루 최대·요청 간격을 지킴 · PC가 꺼지면 ${BIs.ext && BIs.ext.cloud === true ? '클라우드가 이어 받음' : '수집 안 함(☁ 클라우드 이어 받기 꺼짐)'} · 출처별 설정은 웹앱 설정 ⑱`, on, par: true, run: EXT_S.busy ? '이 PC에서 받는 중' : null, toggle: (v) => C('app_settings').doc('ext').set({ on: !!v, at: nowIso(), by: PC_NAME }, { merge: true }) },
-      { k: 'handoff', cls: 'login', label: '🔁 로거가 못 한 일 넘겨받기 (19금 등 로그인해야 보이는 책의 시장 지표)', desc: `로거가 로그인 없이 못 읽은 책을 대기열(prd_handoff)에 남기면 로그인한 사무실 담당 PC가 다른 칸보다 먼저 받아 읽음 · 기본 켬${AH.ho ? ` · 지금 대기 ${AH.ho.todo}건` : ''}`, on: !(SCHED && SCHED.handoffOff), run: running === 'handoff' ? '이 PC에서 하는 중' : null, toggle: (v) => SCHED_REF().set({ handoffOff: !v, at: nowIso(), by: PC_NAME }, { merge: true }) }]; }
+      { k: 'handoff', cls: 'login', label: '🔁 로거가 못 한 일 넘겨받기 (19금 등 로그인해야 보이는 책의 시장 지표)', desc: `로거가 로그인 없이 못 읽은 책을 대기열(prd_handoff)에 남기면 로그인한 사무실 담당 PC가 정한 시각·조건 칸 다음 차례(6)로 받아 읽음 · 기본 켬${AH.ho ? ` · 지금 대기 ${AH.ho.todo}건` : ''}`, on: !(SCHED && SCHED.handoffOff), run: running === 'handoff' ? '이 PC에서 하는 중' : null, toggle: (v) => SCHED_REF().set({ handoffOff: !v, at: nowIso(), by: PC_NAME }, { merge: true }) }]; }
   /* (1.72.3) 편집기 📋·🤖 자료 — 외부 정보 날마다 성공·실패 · 넘겨받을 일 · 섞어 읽기 · 쉬는 출처 (그릴 때만 · 2~3분에 한 번 읽음) */
   const AH = { xr: null, xrAt: 0, ho: null, hoAt: 0 };
   const asExtRun = () => { if (Date.now() - AH.xrAt > 120e3) { AH.xrAt = Date.now(); EXT_RUN().get().then((d) => { AH.xr = d.exists ? d.data() : {}; asEdRefresh(true); }).catch(() => {}); } return AH.xr; };
   const asHandoff = () => { if (Date.now() - AH.hoAt > 180e3) { AH.hoAt = Date.now(); const t0 = new Date(Date.parse(kstNow().day + 'T00:00:00+09:00')).toISOString(); const C0 = C('prd_handoff'); Promise.all([C0.where('status', '==', 'todo').limit(2000).get(), C0.where('doneAt', '>=', t0).limit(2000).get(), C0.where('at', '>=', t0).limit(2000).get()]).then(([a, b2, c]) => { AH.ho = { todo: a.size, doneToday: b2.docs.filter((d) => (d.data() || {}).status === 'done').length, gateToday: c.size, on: !(SCHED && SCHED.handoffOff) }; asEdRefresh(true); }).catch(() => {}); } return AH.ho; };
-  const ASCTX = { extRun: () => asExtRun(), extLabel: (k) => { const X = EXT(); return (X && X.SOURCES && X.SOURCES[k] && X.SOURCES[k].label) || k; }, handoff: () => asHandoff(), autoInfo: () => ({ mix: mixRate(), extPaused: Object.entries(EXT_S.pauseUntil || {}).filter(([, t]) => t > Date.now()).map(([k, t]) => { const X = EXT(); return `${(X && X.SOURCES && X.SOURCES[k] && X.SOURCES[k].label) || k}(${Math.ceil((t - Date.now()) / 3600e3)}시간)`; }) }), doc: () => SCHED, runs: () => SCHED_RUNS, stats: () => JSTATS, catalog: () => asCatalog(), pc: PC_NAME, pcs: () => { try { return Object.values(PCS_SEEN).filter((v) => v && v.pcName && v.tool === '상품 수집기' && Date.now() - (v.atMs || 0) < 14 * 864e5).map((v) => String(v.pcName)); } catch (e) { return []; } },
+  const ASCTX = { saveRest: (r) => SCHED_REF().set({ rest: r, at: nowIso(), by: PC_NAME }, { merge: true }).then(() => log(`✨ 쉴 때 하는 일 저장`)), extRun: () => asExtRun(), extLabel: (k) => { const X = EXT(); return (X && X.SOURCES && X.SOURCES[k] && X.SOURCES[k].label) || k; }, handoff: () => asHandoff(), autoInfo: () => ({ mix: mixRate(), extPaused: Object.entries(EXT_S.pauseUntil || {}).filter(([, t]) => t > Date.now()).map(([k, t]) => { const X = EXT(); return `${(X && X.SOURCES && X.SOURCES[k] && X.SOURCES[k].label) || k}(${Math.ceil((t - Date.now()) / 3600e3)}시간)`; }) }), doc: () => SCHED, runs: () => SCHED_RUNS, stats: () => JSTATS, catalog: () => asCatalog(), pc: PC_NAME, pcs: () => { try { return Object.values(PCS_SEEN).filter((v) => v && v.pcName && v.tool === '상품 수집기' && Date.now() - (v.atMs || 0) < 14 * 864e5).map((v) => String(v.pcName)); } catch (e) { return []; } },
     beats: () => BEATS, setOwner: (o) => SCHED_REF().set({ owner: { primary: String(o.primary || '').slice(0, 40), order: (o.order || []).map((x) => String(x).slice(0, 40)).slice(0, 12), at: nowIso(), by: PC_NAME } }, { merge: true }).then(() => log(`🖥 자동 수집 담당 PC: ${o.primary || '정하지 않음'}${o.order && o.order.length ? ' → ' + o.order.join(' → ') : ''}`)),
     save: (slots, baseRev, what) => asSave(slots, baseRev, what), net: () => (PUBONLY && HELPER ? HELPER : null), logger: () => ({ name: PUBPC.name || (PUBONLY ? PC_NAME : null), since: PUBPC.since }), isLogger: () => PUBONLY, /* (1.68.0) */ loggerCtl: async (cmd) => { if (PUBONLY) { if (cmd === 'stop') window.__rnPauseAll('⏰ 편집기에서 로거 중단 — 하던 일 저장'); else window.__rnResumeOk(); try { BEATS = BEATS || {}; } catch (e) {} return 'local'; } const nm = PUBPC.name; if (!nm) throw new Error('로거 PC 이름이 아직 없음(설정)'); if (!window.__rnCtlSend) throw new Error('원격 명령을 못 씀'); await window.__rnCtlSend(nm, cmd); return 'remote'; }, /* (1.72.0) 🌐 로거 ■ 중단 · ▶ 다시 시작 */ /* (1.67.0) 📶 로거에서만 바로 · 다른 PC는 웹앱에서 */ setBudget: (patch) => RA.saveBudget({ cfgRef: SCHED_REF(), editsRef: (m) => C('prd_jobs').doc('autoSched_edits_' + m), arrayUnion: (...x) => firebase.firestore.FieldValue.arrayUnion(...x), email: (auth.currentUser || {}).email || null }, patch, PC_NAME), setOn: (on) => SCHED_REF().set({ on: !!on, at: nowIso(), by: PC_NAME }, { merge: true }).then(() => log(`⏰ 매일 자동 수집 ${on ? '켬' : '끔'}`)), log: (m, e) => log(m, e), segs: asSegs, builtins: asBuiltins, cloud: asCloudCtx, acks: () => ({ pcs: (BIs.ack || {}).pcs || {}, log: BIs.ackLog || [] }), note: '웹앱 ⏰ 자동 수집 페이지와 같은 편집기 — 어디서 고치든 같은 칸(prd_system/autoSched) · 저장하면 모든 PC에 1분 안에 적용 · 회차마다 한 PC만 함', front: (el) => window.__rnFront && window.__rnFront(el) };
   /* 할 수 있는 일 목록을 Firebase에 알려 둠 → 웹앱 설정의 편집기도 같은 목록(이 수집기 판의 일)을 씀 · 바뀔 때만 씀 */
@@ -5652,7 +5652,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     setTimeout(() => jobStatSeed().catch(() => {}), 60000); }
   /* (1.60.1) 동시 진행 칸(알라딘을 쓰지 않는 일 — 출판 통계)은 다른 일이 돌고 있어도 따로 함 · 한 번에 하나 */
   let parBusy = false;
-  async function parTick() { if (parBusy || window.__rnReloading || window.__rnPaused || !auth.currentUser || (window.__rnRest && window.__rnRest()) || !SCHED || !SCHED.on || !AS) return;
+  async function parTick() { if (RESTX.busy && SCHED && SCHED.on && AS) { try { const dd = AS.due(SCHED, SCHED_RUNS, { now: Date.now(), pc: PC_NAME, own: asOwn(), anyPc: extLoggerOk() ? (job) => AS.classOf && AS.classOf(job) === 'ext' : null, pubAll: PUBONLY && extLoggerOk(), crmOk: false, idleMs: 0, bootAt: BOOT_AT, stats: JSTATS }).filter((d) => d.mark === 'run' && PAR_JOBS[d.slot.job.slice(4)]); if (dd.length && !PAR_STOP[RESTX.k]) { PAR_STOP[RESTX.k] = true; log(`✨ 쉴 때 외부 조회 '${(JOBS[RESTX.k] || [RESTX.k])[0]}' 자리 내줌 — 정한 칸 '${asName(dd[0].slot)}' 먼저`); } } catch (e) {} return; } /* (1.74.0) */ if (parBusy || window.__rnReloading || window.__rnPaused || !auth.currentUser || (window.__rnRest && window.__rnRest()) || !SCHED || !SCHED.on || !AS) return;
     const dues = AS.due(SCHED, SCHED_RUNS, { now: Date.now(), pc: PC_NAME, own: asOwn(), anyPc: extLoggerOk() ? (job) => AS.classOf && AS.classOf(job) === 'ext' : null, pubAll: PUBONLY && extLoggerOk(), crmOk: false, idleMs: 0, bootAt: BOOT_AT, stats: JSTATS }).filter((d) => d.mark === 'run' && PAR_JOBS[d.slot.job.slice(4)] && d.slot.job.startsWith('prd:')); const due = dues[0]; if (!due) return; parBusy = true; /* (1.68.0) 로거도 🔎 외부 정보 칸(KPIPA 등)을 맡을 수 있음 — 회차마다 한 곳만(기록 열쇠) */
     try { const S1 = due.slot; let ok = false; await db.runTransaction(async (tx) => { const s0 = await tx.get(SCHED_RUN()); const r = (s0.exists && s0.data().runs) || {}; if (r[due.key]) return; const up = { [due.key]: { by: PC_NAME, at: nowIso(), st: nowIso(), beat: nowIso(), state: 'running', job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0, par: true } }; due.merge.filter((k) => !r[k]).forEach((k) => (up[k] = { by: PC_NAME, at: nowIso(), state: 'merged', into: due.key })); tx.set(SCHED_RUN(), { runs: up }, { merge: true }); ok = true; });
       if (!ok) return; const t0 = Date.now(); log(`⏰ 매일 자동(동시 진행): '${asName(S1)}' 시작 — ${due.why}`); const hb = setInterval(() => SCHED_RUN().set({ runs: { [due.key]: { beat: nowIso() } } }, { merge: true }).catch(() => {}), 5 * 60000);
@@ -5678,8 +5678,8 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       const lkp = (await LOCKP().get()).data(); if (laneBusy(lkp, true)) return;
       log(`🌐 남는 PC 돕기: ${mainB[1].name || '다른 PC'}가 도는 🎯 한 바퀴에 같이 들어감 — 남은 판매자 ${left.length}명 중 아무도 안 읽는 판매자부터`); window.__rnHelper = true; try { await runJob('benchHelp'); } finally { window.__rnHelper = false; } } catch (e) {} }, 120e3);
   /* (1.71.2) 정한 칸 하나 돌리기 — 새로 시작한 회차와 새로고침 뒤 이어가는 회차가 같이 씀 · pre = 새로고침 전에 이미 돈 시간(ms) */
-  async function schedExec(S1, due, t0, pre) { const kind = S1.job.split(':')[0], key2 = S1.job.slice(4); const tRun = Date.now();
-      const hb = setInterval(() => SCHED_RUN().set({ runs: { [due.key]: { beat: nowIso() } } }, { merge: true }).catch(() => {}), 5 * 60000);
+  async function schedExec(S1, due, t0, pre) { const kind = S1.job.split(':')[0], key2 = S1.job.slice(4); const tRun = Date.now(); CUR_SEG = tRun; PROG_NOW = null; const progOf = () => (PROG_NOW && PROG_NOW.at >= tRun ? { prog: { i: PROG_NOW.i, n: PROG_NOW.n, l: PROG_NOW.l } } : {}); /* (1.74.0) 진행 수치 */
+      const hb = setInterval(() => SCHED_RUN().set({ runs: { [due.key]: { beat: nowIso(), ...progOf() } } }, { merge: true }).catch(() => {}), 5 * 60000);
       let timedOut = false; const tm = S1.maxMin ? setTimeout(() => { timedOut = true; log(`⏰ '${asName(S1)}': 정한 최대 ${S1.maxMin}분이 지나 지금 항목까지 저장하고 멈춤 — 다음 회차에 그 자리부터`, 1); try { if (kind === 'prd') window.__rnPrd.pause(); else window.__rnCrm.pause(); } catch (e) {} }, Math.max(60e3, S1.maxMin * 60e3 - pre)) : null;
       let res, err = null; window.__rnAutoSlot = due.key;
       try { if (kind === 'prd') { window.__rnAuto = true; res = await runJob(key2, { sched: true }); err = lastRunErr || (lastRunSt === 'stop' && res !== false ? '멈춤' : null); }
@@ -5691,9 +5691,13 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       if (kind === 'prd' && window.__rnPaused && !window.__rnReloading && (err === '멈춤' || lastRunSt === 'stop')) { GM_setValue('rnu-resume-slot-paused', { key: due.key, slot: S1.id, job: S1.job, k: key2, why: due.why, tries: due.tries || 0, t0, pre: pre + (Date.now() - tRun), at: Date.now() }); await SCHED_RUN().set({ runs: { [due.key]: { beat: nowIso(), paused: nowIso(), by: PC_NAME } } }, { merge: true }).catch(() => {}); log(`⏰ '${asName(S1)}' (${due.why}): 일시정지 — 하던 자리를 저장하고 이 회차는 끝내지 않음 · ▶ 다시 시작하면 같은 회차로 그 자리부터`); lastBusyAt = Date.now(); return; } /* (1.72.0) ■ 중단(일시정지)도 새로고침처럼 이어감 */
       if (kind === 'prd' && window.__rnReloading && GM_getValue('rnu-resume-after-reload', null) === key2) { GM_setValue('rnu-resume-slot', { key: due.key, slot: S1.id, job: S1.job, k: key2, why: due.why, tries: due.tries || 0, t0, pre: pre + (Date.now() - tRun), at: Date.now() }); await SCHED_RUN().set({ runs: { [due.key]: { beat: nowIso(), reload: nowIso(), by: PC_NAME } } }, { merge: true }).catch(() => {}); log(`⏰ '${asName(S1)}' (${due.why}): 새로고침 뒤 새 탭에서 이 회차 그대로 이어감 — 끝난 것으로 적지 않음`); return; }
       if (err === '멈춤' && BUD_STOP && BUD_STOP === key2) err = `오늘 ${AS.TIER[tierOfKey(key2)].l} 몫(이월 포함)을 다 써 저장하고 멈춤 — 다음에 그 자리부터`; /* (1.67.0) */
-      const yd = IDLE_YIELD && IDLE_YIELD.key === due.key ? IDLE_YIELD : null; IDLE_YIELD = null; if (yd && !timedOut && (err === '멈춤' || lastRunSt === 'stop' || !err)) err = `💤 양보 — ${yd.why} 먼저 (다음 틈에 그 자리부터)`; /* (1.73.0) */
+      const pe = PREEMPT && PREEMPT.key === due.key ? PREEMPT : null; if (pe) PREEMPT = null; CUR_SEG = 0; const stoppedHere = err === '멈춤' || lastRunSt === 'stop';
+      if (pe && !timedOut && stoppedHere && pe.rank <= 5) { /* (1.74.0) 정한 시각·조건 칸이 자리를 내줌 → 같은 회차로 이어가기 표 · 회차 기록 'yield' */ const ms = pre + (Date.now() - tRun); const y = { key: due.key, slot: S1.id, job: S1.job, k: key2, why: due.why, tries: due.tries || 0, t0, pre: ms, pt: (AS.planOf && AS.planOf(due.key)) || t0, rank: pe.rank, day: AS.keyParts(due.key).day, name: asName(S1), at: Date.now() };
+        YSTK_SET([...YSTK().filter((x) => x.key !== due.key), y]); await SCHED_RUN().set({ runs: { [due.key]: { state: 'yield', by: PC_NAME, beat: nowIso(), at: nowIso(), ms, yieldAt: nowIso(), ...progOf(), yields: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), why: pe.why, ms }) } } }, { merge: true }).catch(() => {});
+        log(`⏸ '${asName(S1)}' 자리 내줌 (${Math.round(ms / 60000)}분 함) — ${pe.why} 먼저 · 끝나면 같은 회차로 이어감`); lastBusyAt = Date.now(); return; }
+      const yd = pe && stoppedHere && !timedOut ? pe : null; if (yd) err = `💤 양보 — ${yd.why} 먼저 (다음 틈에 그 자리부터)`; /* (1.73.0) 💤 쉬는 칸 */
       const st = yd && /^💤/.test(err || '') ? 'stop' : timedOut ? 'timeout' : /^멈춤$|몫/.test(err || '') ? 'stop' : err ? 'error' : 'done';
-      await SCHED_RUN().set({ runs: { [due.key]: { by: PC_NAME, at: nowIso(), st: new Date(t0).toISOString(), state: st, ms: pre + (Date.now() - tRun), err: err || null, job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0, ...(yd && /^💤/.test(err || '') ? { yield: true } : {}) } } }, { merge: true });
+      await SCHED_RUN().set({ runs: { [due.key]: { by: PC_NAME, at: nowIso(), st: new Date(t0).toISOString(), state: st, ms: pre + (Date.now() - tRun), err: err || null, job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0, ...progOf(), ...(yd && /^💤/.test(err || '') ? { yield: true } : {}) } } }, { merge: true });
       log(`⏰ 매일 자동: '${asName(S1)}' ${st === 'done' ? '끝' : st === 'timeout' ? '최대 시간이라 멈춤' : '멈춤 — ' + err} (${Math.round((pre + Date.now() - tRun) / 60000)}분)`, st === 'done' ? 0 : 1);
       lastBusyAt = Date.now(); /* 실제로 일을 했을 때만 '쉼'을 다시 셈 */
   }
@@ -5734,35 +5738,96 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   async function handoffDue() { try { const own = asOwn(); if (own && own.pc && String(own.pc) !== String(PC_NAME)) return false; if (Date.now() - HO_AT > 10 * 60e3) { HO_AT = Date.now(); const qs = await C('prd_handoff').where('status', '==', 'todo').limit(300).get(); HO_N = qs.size; } return HO_N > 0; } catch (e) { return false; } }
   /* (1.73.0) 지금 할 차례인 칸 — schedTick과 💤 양보 확인이 같이 씀 */
   function schedDues(now, idleMs) { return AS.due(SCHED, SCHED_RUNS, { now, pc: PC_NAME, own: asOwn(), anyPc: (job) => (pubHelpOn() || PUBONLY) && String(job || '').startsWith('prd:') && isPubKey(String(job).slice(4)), pubAll: PUBONLY, bud: PUBONLY ? BUD : null, mainBusy: PUBONLY && !!running && isPubKey(running) && tierOfKey(running) === 'main', crmOk: !!(window.__rnCrm && window.__rnCrm.start), idleMs, bootAt: BOOT_AT, stats: JSTATS }).filter((d) => (!PUBONLY || (TGATE.ok && String(d.slot.job || '').startsWith('prd:') && isPubKey(String(d.slot.job).slice(4)))) && !(pubPcMode() && String(d.slot.job || '').startsWith('prd:') && isPubKey(String(d.slot.job).slice(4)))); } /* (1.64.0) 공개 전용 PC = 공개 일만 · (1.65.0) 테더링 확인 뒤에만 · (1.66.0) 공개 전용 PC가 있으면 사무실 PC는 공개 일을 빼고 */
-  /* (1.73.0) 💤 PC가 쉬면 칸 = 빈틈 채우기 — 하는 중에 먼저 할 일이 생기면 지금 자리까지 저장하고 양보(일의 이어 읽기 자리는 일마다 저장돼 다음 틈에 그 자리부터)
-   *  먼저 할 일: 할 차례가 된 다른 칸(정한 시각·간격·오래되면·다른 칸 뒤 …) · 🔁 로거가 못 한 일(사무실 담당 PC) · 웹앱 요청(prd_jobs/request) · 맡긴 그룹 시장 지표 · 발송 요청 다시 읽기 */
-  setInterval(() => { try { const k = window.__rnAutoSlot; if (!k || !/@i\d{4}$/.test(k) || IDLE_YIELD || !AS || !SCHED || !SCHED.on || window.__rnPaused || window.__rnReloading) return; const now = Date.now(); let why = null;
-      const d = schedDues(now, 0).find((x) => x.mark === 'run' && !x.idle && x.key !== k && !((SCHED_BACK[x.key] || 0) > now) && !asMissing(x.slot) && !(x.slot.job === 'prd:shipRead' && cloudOn()) && (x.slot.job.startsWith('crm:') ? !!(window.__rnCrm && window.__rnCrm.start) : !!JOBS[x.slot.job.slice(4)] && !PAR_JOBS[x.slot.job.slice(4)]));
-      if (d) why = `'${asName(d.slot)}' 칸 차례(${d.why})`; else if (!PUBONLY && !SCHED.handoffOff && HO_N > 0) why = `🔁 로거가 못 한 일 ${HO_N}건`; else if (REQ_PEND) why = '웹앱 요청'; else if (MET_PEND) why = '맡긴 그룹 시장 지표'; else if (SHIP_PEND) why = '발송 요청 다시 읽기';
-      if (!why) return; IDLE_YIELD = { key: k, why, at: now }; log(`💤 쉬는 칸 양보: ${why} — 지금 자리까지 저장하고 멈춘 뒤 그 일을 먼저 (멈춘 자리는 다음 틈에 이어감)`); const kind = String((SCHED_RUNS[k] || {}).job || '').split(':')[0]; try { if (kind === 'crm') window.__rnCrm.pause(); else window.__rnPrd.pause(); } catch (e) {} } catch (e) {} }, 15000);
-  /* (1.73.0) 다른 일 하는 중이라 미뤄 둔 요청 — 손이 비면 바로(예전: 웹앱 요청은 하는 일이 있으면 그냥 넘겨 30분 뒤 사라질 수 있었음 · 맡긴 시장 지표는 5분마다만) */
+  /* (1.74.0) ⏰ 차례 정하기(사장님 10/16) — 로거·사무실 PC 모두 같은 규칙
+   *  0 사람이 누른 일(수집기 단추·웹앱에서 사람이 누른 요청) — 끼어들지 않음(다른 일을 모두 비키게 함)
+   *  1 주문·출고 짧은 요청(발송 요청 다시 읽기) — 사람 일 말고는 모두 비키게 함
+   *  2 정한 시각(시각·간격·매월) — 시각이 오면 하던 일(사람 일 빼고)을 지금 항목까지 저장하고 바로 시작 · 같이 기다리면 이른 시각부터, 같은 시각이면 칸 순서
+   *    → 비킨 칸은 '자리 내줌(yield)'으로 적고, 앞 일이 끝나면 같은 회차로 그 자리부터 이어감(최대 시간은 앞서 돈 만큼 빼고)
+   *  5 조건 칸(다른 칸 뒤·오래되면·켠 날 처음·멈춘 회차 다시) — 칸 순서 · 로거는 주요가 할 차례면 일반이 기다림
+   *  6 자동 요청(🔁 로거가 못 한 일 넘겨받기 · 맡긴 그룹 시장 지표)
+   *  7 💤 PC가 쉬면 칸   8 ✨ 쉴 때 하는 일(시간표 밖 · 목록 순서 · 로거 알라딘 목록 맨 끝은 끝없는 탐색) */
+  let PREEMPT_HIT = false; let RUN_CTX = null; /* 칸이 아닌 자동 일: 'urgent' · 'req6' · 'rest:<일>' · 'manualReq' */ let CUR_SEG = 0; /* 지금 칸 회차의 이번 토막 시작 */
+  const YSTK = () => { try { const L = GM_getValue('rnu-yield-stack', []); return Array.isArray(L) ? L : []; } catch (e) { return []; } };
+  const YSTK_SET = (L) => { try { GM_setValue('rnu-yield-stack', L); } catch (e) {} };
+  const keyTimed = (k) => { const t = (AS.keyParts(k).tag || '').replace(/~r\d+$/, ''); return /^\d{2}:\d{2}$/.test(t) || /^e\d{4}$/.test(t); };
+  const rankOfKey = (k) => (/@i\d{4}$/.test(k) ? 7 : !/~r\d+$/.test(k) && keyTimed(k) ? 2 : 5);
+  const dueSyncOk = (d, now) => d.mark === 'run' && !((SCHED_BACK[d.key] || 0) > now) && !asMissing(d.slot) && !(d.slot.job === 'prd:shipRead' && cloudOn()) && (d.slot.job.startsWith('crm:') ? !!(window.__rnCrm && window.__rnCrm.start) : !!JOBS[d.slot.job.slice(4)] && !PAR_JOBS[d.slot.job.slice(4)]);
+  async function dueLaneOk(d, C0) { const kind = d.slot.job.split(':')[0]; if (kind === 'crm' && window.__rnCrm.otherBusy && window.__rnCrm.otherBusy()) { schedWaitNote('고객 작업(다른 탭)'); return false; }
+    if (kind === 'prd') { const pubJ = isPubKey(d.slot.job.slice(4)); if (pubJ) { if (C0.lkp === undefined) C0.lkp = (await LOCKP().get()).data() || {}; if (laneBusy(C0.lkp, true)) { schedWaitNote('🌐 공개 읽기 줄이 다 참(다른 PC들)'); return false; } } else { if (C0.lk === undefined) C0.lk = (await LOCK().get()).data() || {}; if (laneBusy(C0.lk)) { schedWaitNote('다른 PC·탭이 알라딘 작업 중'); return false; } } } return true; }
+  /* 끼어들기 확인(15초마다) — 지금 하는 일보다 앞 차례 일이 생기면 지금 항목까지 저장하고 비킴 */
+  setInterval(() => { try { if (PREEMPT || !AS || !SCHED || !SCHED.on || window.__rnPaused || window.__rnReloading) return; const k = window.__rnAutoSlot; if (!running && !k) return; const now = Date.now();
+      const cur = k ? { rank: rankOfKey(k), st: CUR_SEG || now } : RUN_CTX === 'urgent' ? { rank: 1 } : RUN_CTX === 'req6' ? { rank: 6 } : RUN_CTX && RUN_CTX.startsWith('rest:') ? { rank: 8 } : { rank: 0 }; if (cur.rank === 0) return; let why = null;
+      if (REQ_PEND) why = '웹앱에서 사람이 누른 요청'; else if (SHIP_PEND && cur.rank > 1) why = '발송 요청 다시 읽기';
+      if (!why && cur.rank >= 2) { const ds = schedDues(now, 0).filter((d) => d.key !== k && dueSyncOk(d, now)); const t = ds.find((d) => d.cls === 0 && (cur.rank > 2 || (d.pt || 0) > cur.st)); if (t) why = `정한 시각 '${asName(t.slot)}' (${t.why})`;
+        if (!why && cur.rank > 2) { const st = YSTK().find((y) => y.key !== k && y.day === AS.kst(now).day && (cur.rank > (y.rank || 5))); if (st && cur.rank > 5) why = `자리 내주고 기다리던 '${st.name || st.job}' 이어가기`; }
+        if (!why && cur.rank > 5) { const c = ds.find((d) => d.cls === 1); if (c) why = `'${asName(c.slot)}' 칸 차례(${c.why})`; }
+        if (!why && cur.rank > 6) { if (!PUBONLY && !SCHED.handoffOff && HO_N > 0 && Date.now() > HO_BACK) why = `🔁 로거가 못 한 일 ${HO_N}건`; else if (MET_PEND) why = '맡긴 그룹 시장 지표'; }
+        if (!why && cur.rank > 7) { const c = ds.find((d) => d.cls === 2); if (c) why = `💤 '${asName(c.slot)}'`; }
+        if (!why && cur.rank === 8 && RUN_CTX) { const e = restEarlier(RUN_CTX.slice(5)); if (e) why = `✨ 쉴 때 하는 일 — 앞 순서 '${(JOBS[e.slice(4)] || [e])[0]}'를 다시 볼 때`; } }
+      if (!why) return; PREEMPT = { key: k || null, ctx: RUN_CTX, why, at: now, rank: cur.rank }; PREEMPT_HIT = true; const nm = k ? asName((AS.slotsOf(SCHED).find((x) => x.id === (SCHED_RUNS[k] || {}).slot) || { job: (SCHED_RUNS[k] || {}).job || '' })) : (JOBS[running] || [running || ''])[0];
+      log(`${cur.rank === 7 ? '💤' : cur.rank === 8 ? '✨' : '⏸'} '${nm}' 자리 내줌: ${why} 먼저 — 지금 항목까지 저장하고 멈춤${cur.rank <= 5 ? ' · 끝나면 같은 회차로 그 자리부터 이어감' : ' · 멈춘 자리는 다음에 이어감'}`);
+      const kind = k ? String((SCHED_RUNS[k] || {}).job || '').split(':')[0] : 'prd'; try { if (kind === 'crm') window.__rnCrm.pause(); else window.__rnPrd.pause(); } catch (e) {} } catch (e) {} }, 15000);
+  /* (1.73.0) 다른 일 하는 중이라 미뤄 둔 요청 — 손이 비면 바로 · (1.74.0) 사람 요청·발송 요청만 여기서(맡긴 시장 지표는 차례 6이라 ⏰가 칸들 뒤에) */
   const OTHER_PEND = () => !!(REQ_PEND || MET_PEND || SHIP_PEND);
   setInterval(async () => { try { if (running || schedBusy || window.__rnPaused || window.__rnReloading || (window.__rnRest && window.__rnRest()) || !auth.currentUser) return;
-      if (REQ_PEND) { REQ_PEND = 0; const d = await C('prd_jobs').doc('request').get(); await reqHandle(d); return; }
-      if (MET_PEND) { MET_PEND = 0; log('미뤄 둔 그룹 시장 지표를 이어서'); runJob('metricsReq'); return; }
-      if (SHIP_PEND) { SHIP_PEND = 0; window.__rnShipAt = 0; runJob('shipRead'); return; } } catch (e) {} }, 20000);
-  async function schedTick() { if (!AS || schedBusy || !auth.currentUser) return; if (SCHED && SCHED.on) { const why = running ? `수동 작업 '${(JOBS[running] || [running])[0]}'` : window.__rnReloading ? '새 판 다시 불러오는 중' : window.__rnPaused ? '수집기 일시 정지' : window.__rnRest && window.__rnRest() ? '쉬는 시간' : window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy() ? '고객 작업(이 PC)' : null; if (why) { schedWaitNote(why); return; } }
+      if (REQ_PEND) { REQ_PEND = 0; PREEMPT = null; const d = await C('prd_jobs').doc('request').get(); await reqHandle(d); return; }
+      if (SHIP_PEND) { SHIP_PEND = 0; PREEMPT = null; window.__rnShipAt = 0; await runCtx('urgent', 'shipRead'); return; }
+      if (MET_PEND && !(SCHED && SCHED.on)) { MET_PEND = 0; runJob('metricsReq'); return; } } catch (e) {} }, 20000);
+  async function runCtx(ctx, key, opt) { RUN_CTX = ctx; try { return await runJob(key, opt); } finally { RUN_CTX = null; if (PREEMPT && !PREEMPT.key) PREEMPT = null; lastBusyAt = Date.now(); } }
+  /* 자리 내준 회차 이어가기 */
+  async function yieldResume(y) { const L = YSTK().filter((x) => x.key !== y.key); YSTK_SET(L); const S1 = AS.slotsOf(SCHED).find((x) => x.id === y.slot) || { id: y.slot, job: y.job, maxMin: 0 };
+    await SCHED_RUN().set({ runs: { [y.key]: { beat: nowIso(), state: 'running', by: PC_NAME, resumedAt: nowIso(), resumes: firebase.firestore.FieldValue.arrayUnion(nowIso()) } } }, { merge: true }); log(`⏰ 자리 내줬던 '${asName(S1)}' (${y.why}) 회차를 같은 회차로 그 자리부터 이어감`);
+    await schedExec(S1, { key: y.key, why: y.why + ' · 자리 내준 뒤 이어감', tries: y.tries || 0, merge: [] }, y.t0 || Date.now(), +y.pre || 0); }
+  /* 날이 바뀐 자리 내줌·기록만 남은 자리 내줌 정리 */
+  let YCLEAN_AT = 0;
+  async function yieldClean() { if (Date.now() - YCLEAN_AT < 5 * 60e3) return; YCLEAN_AT = Date.now(); const day = AS.kst(Date.now()).day; const L = YSTK(); const keep = L.filter((y) => y.day === day); const drop = L.filter((y) => y.day !== day);
+    const up = {}; drop.forEach((y) => (up[y.key] = { state: 'stop', at: nowIso(), err: '멈춤 — 자리 내주고 기다리는 동안 날이 바뀜(저장한 자리는 다음 회차가 이어 씀)', ms: +y.pre || 0 }));
+    Object.entries(SCHED_RUNS || {}).forEach(([k, r]) => { if (r && r.state === 'yield' && String(r.by || '') === String(PC_NAME) && !keep.some((y) => y.key === k)) up[k] = { state: 'stop', at: nowIso(), err: '멈춤 — 자리 내준 기록만 남음(이 PC의 이어가기 표가 없음)' }; });
+    if (drop.length) YSTK_SET(keep); if (Object.keys(up).length) await SCHED_RUN().set({ runs: up }, { merge: true }).catch(() => {}); }
+  /* (1.74.0) ✨ 쉴 때 하는 일 — 정한 시각·조건 칸·요청이 하나도 없을 때(차례 8) · 목록 순서 · 끝낸 일은 1시간 뒤 다시 봄 · 로거 알라딘 목록 맨 끝은 끝없는 탐색(받침) */
+  const REST_ST = () => { try { return GM_getValue('rnu-rest-st', {}) || {}; } catch (e) { return {}; } }; const REST_SET = (j, v) => { const o = REST_ST(); o[j] = { ...(o[j] || {}), ...v }; try { GM_setValue('rnu-rest-st', o); } catch (e) {} };
+  const tetherLeft = () => PUBONLY && TGATE.ok && (!BUD || BUD.left.main > 0 || BUD.left.gen > 0);
+  const restListMain = () => { if (!AS || !AS.restOf || !SCHED) return []; const R0 = AS.restOf(SCHED); if (!R0.on) return []; if (PUBONLY) return tetherLeft() ? [...R0.lgA, AS.REST_SAFETY] : []; return R0.ofA.filter((j) => !(pubPcMode() && isPubKey(j.slice(4)))); };
+  const restListExt = () => { if (!AS || !AS.restOf || !SCHED) return []; const R0 = AS.restOf(SCHED); if (!R0.on) return []; if (PUBONLY) return helperVerOk('1.6.0') ? (tetherLeft() ? R0.lgE : R0.lgN) : []; return R0.ofE; };
+  const restEligible = (j, now) => { const k = j.slice(4); if (!JOBS[k]) return false; const st = REST_ST()[j] || {}; if ((st.backAt || 0) > now) return false; if (st.doneAt && now - st.doneAt < (j === AS.REST_SAFETY ? 10 : 60) * 60e3) return false; if (PUBONLY && isPubKey(k) && !(budLeft(k) > 0)) return false; return true; };
+  const restEarlier = (j) => { const L = restListMain(); const i = L.indexOf(j); if (i <= 0) return null; const now = Date.now(); return L.slice(0, i).find((x) => !PAR_JOBS[x.slice(4)] && restEligible(x, now)) || null; };
+  async function restRun(j, par) { const k = j.slice(4); const day = AS.kst(Date.now()).day; const key = `rest_${k}@${day}@r${AS.hm4(AS.kst(Date.now()).min)}`; const t0 = Date.now(); if (SCHED_RUNS[key]) return;
+    await SCHED_RUN().set({ runs: { [key]: { by: PC_NAME, at: nowIso(), st: nowIso(), beat: nowIso(), state: 'running', job: j, slot: 'rest', rest: true, why: '✨ 쉴 때 하는 일', ...(par ? { par: true } : {}) } } }, { merge: true }).catch(() => {});
+    log(`✨ 쉴 때 하는 일: '${(JOBS[k] || [k])[0]}' 시작${par ? ' (외부 조회 · 함께 돎)' : ''}`); if (!par) PROG_NOW = null; const progOf = () => (par ? (PAR_NOW[k] ? { prog: { l: String(PAR_NOW[k]).slice(0, 60) } } : {}) : PROG_NOW && PROG_NOW.at >= t0 ? { prog: { i: PROG_NOW.i, n: PROG_NOW.n, l: PROG_NOW.l } } : {}); const hb = setInterval(() => SCHED_RUN().set({ runs: { [key]: { beat: nowIso(), ...progOf() } } }, { merge: true }).catch(() => {}), 5 * 60000); let res, err = null;
+    try { if (par) { RESTX.busy = true; RESTX.k = k; res = await PAR_JOBS[k](); } else res = await runCtx('rest:' + j, k, { sched: true }); if (!par) err = lastRunErr || (lastRunSt === 'stop' && res !== false ? '멈춤' : null); } catch (e) { err = e.message; } finally { clearInterval(hb); if (par) { RESTX.busy = false; RESTX.k = null; } }
+    if (res === false || ['nolease', 'nohelper', 'off'].includes(res)) { REST_SET(j, { backAt: Date.now() + 10 * 60e3 }); await SCHED_RUN().set({ runs: { [key]: firebase.firestore.FieldValue.delete() } }, { merge: true }).catch(() => {}); return; }
+    const ms = Date.now() - t0; const st = err === '멈춤' ? 'stop' : err ? 'error' : 'done'; if (st === 'done') REST_SET(j, { doneAt: Date.now(), backAt: 0 }); else if (st === 'error') REST_SET(j, { backAt: Date.now() + 30 * 60e3 });
+    const pg = progOf(); await SCHED_RUN().set({ runs: { [key]: { by: PC_NAME, at: nowIso(), st: new Date(t0).toISOString(), state: st, ms, err: err || null, job: j, slot: 'rest', rest: true, why: '✨ 쉴 때 하는 일', ...pg, ...(st === 'stop' ? { yield: true } : {}), ...(par ? { par: true } : {}) } } }, { merge: true }).catch(() => {});
+    log(`✨ 쉴 때 하는 일: '${(JOBS[k] || [k])[0]}' ${st === 'done' ? '끝 — 1시간 뒤 새로 할 것이 있는지 다시 봄' : st === 'stop' ? '자리 내줌(멈춘 자리는 다음에 이어감)' : '멈춤 — ' + err + ' · 30분 뒤 다시'} (${Math.round(ms / 60000)}분)`, st === 'error' ? 1 : 0); lastBusyAt = Date.now(); }
+  async function restMainTick(C0) { const now = Date.now(); const L = restListMain(); for (const j of L) { if (PAR_JOBS[j.slice(4)] || !restEligible(j, now)) continue; if (!(await dueLaneOk({ slot: { job: j } }, C0))) { REST_SET(j, { backAt: now + 10 * 60e3 }); return; } await restRun(j, false); return; } }
+  const RESTX = { busy: false, k: null };
+  setInterval(async () => { try { if (RESTX.busy || parBusy || !AS || !SCHED || !SCHED.on || !auth.currentUser || window.__rnPaused || window.__rnReloading || (window.__rnRest && window.__rnRest())) return; const now = Date.now(); const L = restListExt(); const j = L.find((x) => PAR_JOBS[x.slice(4)] && restEligible(x, now)); if (j) await restRun(j, true); } catch (e) {} }, 30000);
+  setInterval(() => { try { if (!RESTX.busy || !RESTX.k) return; const L = restListExt(); const i = L.indexOf('prd:' + RESTX.k); const now = Date.now(); if (i < 0) { PAR_STOP[RESTX.k] = true; return; } if (L.slice(0, i).some((x) => PAR_JOBS[x.slice(4)] && restEligible(x, now))) { PAR_STOP[RESTX.k] = true; log(`✨ 쉴 때 외부 조회: 앞 순서 일을 다시 볼 때라 '${(JOBS[RESTX.k] || [RESTX.k])[0]}' 자리 내줌`); } } catch (e) {} }, 60000);
+  async function schedTick() { if (!AS || schedBusy || !auth.currentUser) return; if (SCHED && SCHED.on) { const why = running ? `${RUN_CTX ? '' : '수동 작업 '}'${(JOBS[running] || [running])[0]}'` : window.__rnReloading ? '새 판 다시 불러오는 중' : window.__rnPaused ? '수집기 일시 정지' : window.__rnRest && window.__rnRest() ? '쉬는 시간' : window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy() ? '고객 작업(이 PC)' : null; if (why) { schedWaitNote(why); return; } }
     if (running || window.__rnReloading || window.__rnPaused || (window.__rnRest && window.__rnRest())) return; if (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) return; if (!SCHED || !SCHED.on) return;
     if (window.__rnResumePending && Date.now() - window.__rnResumePending < 12 * 60e3) { schedWaitNote('새로고침 뒤 하던 일 이어가기 먼저'); return; } if (GM_getValue('rnu-resume-slot-paused', null) || GM_getValue('rnu-resume-manual', null)) { schedWaitNote('일시정지 전에 하던 일 이어가기 먼저'); return; } /* (1.71.2) 이어가기가 남아 있으면 새 칸을 잡지 않음 */
-    if (!PUBONLY && !SCHED.handoffOff && Date.now() > HO_BACK && await handoffDue()) { schedBusy = true; HO_BACK = Date.now() + 10 * 60e3; try { log(`🔁 로거가 못 한 일(19금 등) ${HO_N}건 — 다른 칸보다 먼저 넘겨받음 (저절로 · ⏰ 늘 도는 일에서 끌 수 있음)`); window.__rnAuto = true; const r = await runJob('handoff'); if (r !== false) HO_AT = 0; } catch (e) {} finally { window.__rnAuto = false; schedBusy = false; lastBusyAt = Date.now(); } return; } /* (1.72.3) 사무실 담당 PC가 최우선으로 */
-    const now = Date.now(); let dues = schedDues(now, now - lastBusyAt); if (OTHER_PEND()) dues = dues.filter((d) => !d.idle); /* (1.73.0) 웹앱 요청·맡긴 시장 지표·발송 요청이 기다리면 💤 쉬는 칸은 잡지 않음 */ if (!dues.length) return; schedBusy = true;
-    try { for (const d of dues.filter((x) => x.mark !== 'run' && !(x.slot.job === 'prd:shipRead' && cloudOn()))) await schedMark(d).catch(() => {});
-      let due = null; let lk = null, lkp = null;
-      for (const d of dues) { if (d.mark !== 'run') continue; if ((SCHED_BACK[d.key] || 0) > Date.now()) continue; const kind = d.slot.job.split(':')[0]; if (asMissing(d.slot)) continue; /* 이 판에 없는 일 — 그 일을 아는 PC가 함 */
-        if (kind === 'prd' && PAR_JOBS[d.slot.job.slice(4)]) continue; /* 동시 진행 일은 parTick이 */ if (d.slot.job === 'prd:shipRead' && cloudOn()) continue; /* 클라우드가 살아 있으면 발송 요청은 클라우드가 읽음 — 이 칸은 건너뜀(기록 안 남김) */
-        if (kind === 'crm' && window.__rnCrm.otherBusy && window.__rnCrm.otherBusy()) { schedWaitNote('고객 작업(다른 탭)'); continue; }
-        if (kind === 'prd') { if (!JOBS[d.slot.job.slice(4)]) continue; const pubJ = isPubKey(d.slot.job.slice(4)); if (pubJ) { if (lkp === null) lkp = (await LOCKP().get()).data() || {}; if (laneBusy(lkp, true)) { schedWaitNote('🌐 공개 읽기 줄이 다 참(다른 PC들)'); continue; } } else { if (lk === null) lk = (await LOCK().get()).data() || {}; if (laneBusy(lk)) { schedWaitNote('다른 PC·탭이 알라딘 작업 중'); continue; } } }
-        due = d; break; }
-      if (!due) return; const S1 = due.slot; const kind = S1.job.split(':')[0], key2 = S1.job.slice(4); const t0 = Date.now();
-      let ok = false; await db.runTransaction(async (tx) => { const s = await tx.get(SCHED_RUN()); const r = (s.exists && s.data().runs) || {}; if (r[due.key]) return; const pl = AS.planOf ? AS.planOf(due.key) : null; const wt = pl && Date.now() - pl > 3 * 60e3 ? schedWaitSum(pl) : []; const up = { [due.key]: { by: PC_NAME, at: nowIso(), st: nowIso(), beat: nowIso(), state: 'running', job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0, ...(wt.length ? { waited: wt } : {}) } }; due.merge.filter((k) => !r[k]).forEach((k) => (up[k] = { by: PC_NAME, at: nowIso(), state: 'merged', into: due.key })); tx.set(SCHED_RUN(), { runs: up }, { merge: true }); ok = true; });
-      if (!ok) return; log(`⏰ 매일 자동: '${asName(S1)}' 시작 — ${due.why}`);
-      await schedExec(S1, due, t0, 0);
-    } catch (e) { log('⏰ 매일 자동 확인 실패: ' + (e.code || e.message), 1); } finally { schedBusy = false; } }
+    if (REQ_PEND || SHIP_PEND) { schedWaitNote('웹앱 요청·발송 요청 먼저'); return; } /* (1.74.0) 차례 0·1 */
+    schedBusy = true; PREEMPT = null;
+    try { await yieldClean(); const now = Date.now(); const dues = schedDues(now, now - lastBusyAt); const day = AS.kst(now).day;
+      for (const d of dues.filter((x) => x.mark !== 'run' && !(x.slot.job === 'prd:shipRead' && cloudOn()))) await schedMark(d).catch(() => {});
+      const C0 = {}; const ok = dues.filter((d) => dueSyncOk(d, now)); const stk = YSTK().filter((y) => y.day === day);
+      /* 차례 2: 정한 시각 + 자리 내준 정한 시각 회차 — 이른 시각부터 */
+      const A = [...ok.filter((d) => d.cls === 0).map((d) => ({ d, pt: d.pt || 0 })).sort((a, b) => a.pt - b.pt), ...stk.filter((y) => (y.rank || 5) === 2).map((y) => ({ y, pt: y.pt || 0 })).sort((a, b) => a.pt - b.pt)]; /* 지금 할 차례인 정한 시각이 먼저(그 일 때문에 자리를 내준 것이므로), 그다음 자리 내준 회차(이른 시각부터) */
+      /* 차례 5: 자리 내준 조건 회차 먼저, 그다음 조건 칸(칸 순서) */
+      const B = [...stk.filter((y) => (y.rank || 5) !== 2).map((y) => ({ y })), ...ok.filter((d) => d.cls === 1).map((d) => ({ d }))];
+      for (const c of [...A, ...B]) { if (c.y) { await yieldResume(c.y); return; } if (await dueLaneOk(c.d, C0)) { await schedStart(c.d); return; } }
+      /* 차례 6: 자동 요청 */
+      if (!PUBONLY && !SCHED.handoffOff && Date.now() > HO_BACK && await handoffDue()) { HO_BACK = Date.now() + 10 * 60e3; log(`🔁 로거가 못 한 일(19금 등) ${HO_N}건 — 넘겨받음 (차례 6 · 정한 시각 칸이 오면 비킴 · ⏰ 늘 도는 일에서 끌 수 있음)`); window.__rnAuto = true; try { const r = await runCtx('req6', 'handoff'); if (r !== false) HO_AT = 0; } finally { window.__rnAuto = false; } return; }
+      if (MET_PEND) { MET_PEND = 0; log('맡긴 그룹 시장 지표를 이어서 (차례 6)'); await runCtx('req6', 'metricsReq'); return; }
+      /* 차례 7: 💤 PC가 쉬면 */
+      for (const d of ok.filter((x) => x.cls === 2)) if (await dueLaneOk(d, C0)) { await schedStart(d); return; }
+      /* 차례 8: ✨ 쉴 때 하는 일 */
+      await restMainTick(C0);
+    } catch (e) { log('⏰ 매일 자동 확인 실패: ' + (e.code || e.message), 1); } finally { schedBusy = false; if (PREEMPT_HIT) { PREEMPT_HIT = false; setTimeout(schedTick, 2500); } /* 자리를 내줬으면 1분을 기다리지 않고 바로 다음 차례 */ } }
+  async function schedStart(due) { const S1 = due.slot; const t0 = Date.now();
+    let ok = false; await db.runTransaction(async (tx) => { const s = await tx.get(SCHED_RUN()); const r = (s.exists && s.data().runs) || {}; if (r[due.key]) return; const pl = AS.planOf ? AS.planOf(due.key) : null; const wt = pl && Date.now() - pl > 3 * 60e3 ? schedWaitSum(pl) : []; const up = { [due.key]: { by: PC_NAME, at: nowIso(), st: nowIso(), beat: nowIso(), state: 'running', job: S1.job, slot: S1.id, why: due.why, tries: due.tries || 0, ...(wt.length ? { waited: wt } : {}) } }; due.merge.filter((k) => !r[k]).forEach((k) => (up[k] = { by: PC_NAME, at: nowIso(), state: 'merged', into: due.key })); tx.set(SCHED_RUN(), { runs: up }, { merge: true }); ok = true; });
+    if (!ok) return; log(`⏰ 매일 자동: '${asName(S1)}' 시작 — ${due.why}`);
+    await schedExec(S1, due, t0, 0); }
   /* 개요 화면용: 다음에 저절로 할 일 (정한 시각·간격만 — 조건 칸은 때를 미리 모름) */
   window.__rnSchedNext = () => { if (!SCHED) return { known: false }; if (!SCHED.on) return { known: true, on: false }; const { min } = kstNow(); let best = null;
     const dow = AS.kst(Date.now()).dow, dowT = (dow + 1) % 7; const own = asOwn(); /* (1.63.8 점검) 요일·PC 거르기·담당 PC도 봄 — 이 PC가 하지 않을 칸을 '다음'으로 보이지 않게 */
@@ -5953,7 +6018,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   async function extCfg(force) { const X = EXT(); if (!force && EXT_S.cfg && Date.now() - EXT_S.cfgAt < 5 * 60000) return EXT_S.cfg; let c = {}; try { const d = await C('app_settings').doc('ext').get(); c = d.exists ? d.data() : {}; } catch (e) {} EXT_S.cfg = X.cfgOf(c); EXT_S.cfgAt = Date.now(); return EXT_S.cfg; }
   const EXT_RUN = () => C('app_settings').doc('ext_run');
   /* 맡은 PC 한 대: 4분 넘게 신호가 없으면 다른 PC가 이어받음 */
-  async function extLease() { let ok = false; try { await db.runTransaction(async (tx) => { const s = await tx.get(EXT_RUN()); const L = (s.exists && s.data().lease) || null; const mine = L && L.pc === PC_NAME && L.tab === EXT_S.me; if (L && !mine && Date.now() - (+L.atMs || 0) < 4 * 60000) return; tx.set(EXT_RUN(), { lease: { pc: PC_NAME, tab: EXT_S.me, atMs: Date.now(), at: nowIso() } }, { merge: true }); ok = true; }); } catch (e) {} return ok; }
+  async function extLease() { let ok = false; try { await db.runTransaction(async (tx) => { const s = await tx.get(EXT_RUN()); const L = (s.exists && s.data().lease) || null; const mine = L && L.pc === PC_NAME && L.tab === EXT_S.me; const steal = PUBONLY && helperVerOk('1.6.0') && L && !L.pub; /* (1.74.0) 로거(도우미로 탭 없이 그림 · 와이파이)가 살아 있으면 로거가 먼저 — 사무실 PC가 외부 화면 탭을 열지 않게 */ if (L && !mine && !steal && Date.now() - (+L.atMs || 0) < 4 * 60000) return; tx.set(EXT_RUN(), { lease: { pc: PC_NAME, tab: EXT_S.me, atMs: Date.now(), at: nowIso(), pub: !!PUBONLY } }, { merge: true }); ok = true; }); } catch (e) {} return ok; }
   /* 오늘 쓴 수 (출처마다 · 한국 날짜) — 하루 최대를 넘지 않게. 날짜별로 남김(cnt.{날짜}.{출처}) */
   /* 오늘 쓴 수: 매 바퀴 시작마다 서버에서 다시 읽음(여러 PC가 번갈아 맡아도 하루 최대를 넘지 않게) · 실제로 보낸 요청 수만큼 셈(eBay 토큰·교보 검색+상품 화면 등) */
   /* (1.63.6 전체 점검) app_settings/ext_run의 날짜별 칸(cnt 쓴 수 · res 성공·실패)은 날마다 늘어 1년쯤이면 한 문서 색인 한도(4만)에 닿음 → 넘으면 외부 정보가 PC·클라우드 모두 조용히 멈춤
@@ -6022,13 +6087,18 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   /* 한 바퀴(최대 4분): 출처마다 차례가 온 책 하나씩 돌아가며 */
   async function extFill(cfg) { const X = EXT(); const keys = await extKeys(); await extIdxLoad(); await extUsedLoad(); const C0 = await extCands(); if (!C0.length) return null; const t0 = Date.now(); const tally = {};
     const srcs = X.ORDER.filter((s) => cfg.src[s].on && X.keysReady(s, keys) && !(PUBONLY && /aladin/i.test(X.SOURCES[s].host || ''))); /* (1.67.0) 로거는 알라딘 TTB(계정 키로 알라딘에 묻는 것)를 쓰지 않음 — 계정과 이어지지 않게 */ let guard = 0; const done = new Set(); const skipRun = {};
-    let leaseAt = Date.now(); while (Date.now() - t0 < 4 * 60000 && guard++ < 5000) { if (window.__rnPaused || (window.__rnRest && window.__rnRest()) || !auth.currentUser) break; if (Date.now() - leaseAt > 60000) { if (!(await extLease())) break; leaseAt = Date.now(); } let did = false;
+    let leaseAt = Date.now(); while (Date.now() - t0 < 4 * 60000 && guard++ < 5000) { if (EXT_S.burst && PAR_STOP.extBurst) break; /* (1.74.0) 몰아 받기 멈춤 */ if (window.__rnPaused || (window.__rnRest && window.__rnRest()) || !auth.currentUser) break; if (Date.now() - leaseAt > 60000) { if (!(await extLease())) break; leaseAt = Date.now(); } let did = false;
       for (const src of srcs) { if (done.has(src) || (EXT_S.pauseUntil[src] || 0) > Date.now() || (EXT_S.used[src] || 0) >= cfg.src[src].cap || (EXT_S.next[X.SOURCES[src].host] || 0) > Date.now()) continue;
         let i = EXT_S.cur[src] || 0, b = null; for (let n = 0; n < C0.length; n++, i++) { const x = C0[i % C0.length]; if (extEligible(src, x, cfg) && extDue(src, x.isbn, cfg)) { b = x; i++; break; } } EXT_S.cur[src] = i % C0.length; if (!b) { done.add(src); continue; } /* 이번 바퀴엔 이 출처로 할 책이 없음 — 다시 훑지 않음 */
         const r = await extOne(src, b, 'auto'); did = true; const t = (tally[src] = tally[src] || {}); t[r.st] = (t[r.st] || 0) + 1; skipRun[src] = r.st === 'skip' ? (skipRun[src] || 0) + 1 : 0; if (skipRun[src] >= 20) done.add(src); /* (1.58.0) 중고닷이 아직 안 본 책만 남으면 이번 바퀴엔 그만 — 책마다 기록을 한 번씩 읽어 읽기 수가 수천 번 나던 것 */ if (Date.now() - t0 > 4 * 60000) break; }
       if (!did) { if (srcs.every((s) => done.has(s) || (EXT_S.pauseUntil[s] || 0) > Date.now() || (EXT_S.used[s] || 0) >= cfg.src[s].cap)) break; await sleep(400); } }
     const parts = Object.entries(tally).map(([s, t]) => `${X.SOURCES[s].label} ${Object.entries(t).map(([k, v]) => `${{ new: '새로', changed: '바뀜', same: '같음', err: '못 읽음', skip: '건너뜀', mismatch: '다른 책', none1: '없음(한 번 — 다음에 확인)', viaJm: '중고닷에서 찾아 직접 안 물음' }[k] || k} ${v}`).join('·')}`);
     if (parts.length) log(`🌐 외부 정보 ${Math.round((Date.now() - t0) / 1000)}초: ${parts.join(' / ')}`); return tally; }
+  /* (1.74.0) 🔎 외부 정보 몰아 받기 — 평소 5분마다 4분씩 받던 것을 쉴 때 쉬지 않고(출처마다 하루 최대·요청 간격은 그대로) · 더 받을 것이 없거나(모든 출처 하루 최대·할 책 없음) 맡음을 못 받으면 끝 */
+  async function extBurstPar() { const X = EXT(); if (!X) throw new Error('외부 정보 공용 파일 없음'); PAR_STOP.extBurst = false; PAR_NOW.extBurst = '시작'; const cfg = await extCfg(); if (!cfg.on) return 'off'; if (PUBONLY && !helperVerOk('1.6.0')) return 'nohelper'; let n = 0;
+    try { for (let i = 0; i < 300; i++) { if (PAR_STOP.extBurst) { PAR_STOP.extBurst = false; throw new Error('멈춤'); } if (window.__rnPaused || (window.__rnRest && window.__rnRest())) throw new Error('멈춤'); if (EXT_S.busy) { await sleep(5000); continue; } EXT_S.busy = true; EXT_S.burst = true; let got = 0;
+        try { if (!(await extLease())) return n ? 'done' : 'nolease'; await extUsedLoad(true); await extFx().catch(() => {}); const r = await extFill(cfg); if (!r) return 'none'; got = Object.values(r).reduce((a, t) => a + Object.entries(t || {}).filter(([k]) => !['skip', 'cap', 'wait'].includes(k)).reduce((x, [, v]) => x + (+v || 0), 0), 0); } finally { EXT_S.busy = false; EXT_S.burst = false; }
+        n += got; PAR_NOW.extBurst = `${i + 1}바퀴 · ${n}번 물음`; if (!got) return n ? 'done' : 'none'; } return 'done'; } finally { PAR_NOW.extBurst = null; } }
   async function extTick() { if (EXT_S.busy || !auth.currentUser || window.__rnPaused || (window.__rnRest && window.__rnRest())) return; const X = EXT(); if (!X) return; EXT_S.busy = true;
     try { const cfg = await extCfg(); if (!cfg.on) return; if (!asOwnMine() && !extLoggerOk()) return; /* (1.63.7) 담당 PC(또는 임시로 맡은 PC)만 · (1.67.0) 로거는 테더링 일을 쉬는 동안(사무실 PC가 맡고 있으면 맡음 표가 그 PC에 있어 그대로) */ if (!(await extLease())) return; await extUsedLoad(true); await extFx().catch((e) => log('🌐 환율: ' + e.message, 1)); const r = await extFill(cfg);
       if (r == null) { /* (1.59.1) 할 책 목록이 없어 이번엔 못 함 — 맡음을 바로 놓아(클라우드·다른 PC가 이어받게) 쉰다고 한 시간에 한 번 남김(기록이 비는 까닭이 보이게) */ try { await db.runTransaction(async (tx) => { const s0 = await tx.get(EXT_RUN()); const L = (s0.exists && s0.data().lease) || null; if (L && L.pc === PC_NAME && L.tab === EXT_S.me) tx.set(EXT_RUN(), { lease: { ...L, atMs: Date.now() - 5 * 60000 } }, { merge: true }); }); } catch (e) {}
@@ -6076,6 +6146,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     buyback: ['알라딘 팔기 내역', () => buybackJob()],
     dynamic: ['구매자 분포·함께 산 책', () => dynJob(SET.dynDaily || 0)],
     kpipa: ['출판 판매 통계 (KPIPA 판매 보고서)', () => kpipaJob()],
+    extBurst: ['🔎 외부 정보 몰아 받기 (출처 하루 최대까지 · 쉴 때)', () => extBurstPar()],
   };
   /* ───────── 버전 맞추기: 다른 PC가 더 새 수집기로 돌기 시작하면, 이 PC는 지금 항목까지 저장하고 멈춘 뒤 새로고침해 새 버전으로 이어감 ─────────
    * (동기화로 스크립트 파일은 바뀌어도, 이미 열려 있던 탭은 새로고침 전까지 예전 코드로 돎) */
@@ -6196,7 +6267,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   async function runJob(key, opt) {
     const [name, fn] = JOBS[key]; lastRunErr = null; lastRunSt = null;
     if (window.__rnGate && !window.__rnGate(name)) return false; // (1.56.0) 쉬는 탭이면 시작 안 함 (사람이 누른 거면 켤지 물음)
-    if (running && curKey === 'explore' && key !== 'explore') { log(`'${name}'을(를) 먼저 하려고 끝없는 탐색 수집을 잠시 멈춥니다 — 끝나면 탐색을 다시 이어감`); GM_setValue('rn-explore-resume', true); stopFlag = true; for (let w = 0; w < 180 && running; w++) await sleep(1000); stopFlag = false; }
+    if (running && curKey === 'explore' && key !== 'explore') { const autoEx = !!((RUN_CTX && RUN_CTX.startsWith('rest:')) || window.__rnAutoSlot); log(`'${name}'을(를) 먼저 하려고 끝없는 탐색 수집을 잠시 멈춥니다 — ${autoEx ? '탐색은 ⏰가 차례대로 다시 잡음' : '끝나면 탐색을 다시 이어감'}`); if (!autoEx) GM_setValue('rn-explore-resume', true); /* (1.74.0) ✨·⏰가 돌린 탐색은 ⏰가 다시 잡음(사람 일처럼 이어 돌면 정한 시각 칸이 못 끼어듦) */ stopFlag = true; for (let w = 0; w < 180 && running; w++) await sleep(1000); stopFlag = false; }
     if (running) { log('이 탭에서 다른 작업 진행 중: ' + running + ' — 끝난 뒤 다시 누르세요 (한 PC에 수집기 하나가 원칙 · 꼭 동시에 해야 하면 새 탭의 [이 탭도 켜기…], 단점 안내 있음)', 1); return false; } /* (1.63.6) 바쁘면 false — ⏰ 자동이 '끝남'으로 잘못 적던 것 */
     curKey = key; FORCE_ALL = !!(opt && opt.manual) && !['chain', 'prdChain'].includes(key); setRunning(name); const tJ = Date.now(); if (FORCE_ALL) log(`수동 실행: '${name}'을(를) 기간 제한 없이 전부 모읍니다 (기존 기록은 그대로 두고 바뀐 것만 덧붙임)`); if (window.__rnStatus) Object.assign(window.__rnStatus, { job: name, jobKey: key, jobStart: tJ, cur: {}, chain: (key === 'chain' || key === 'prdChain') ? window.__rnStatus.chain : null, sub: null }); log(`▶ '${name}' 시작 (수집기 ${VER} · ${PC_NAME})`);
     let res;
