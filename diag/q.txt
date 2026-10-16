@@ -1,1 +1,1 @@
-@kpq kpq=30&kpcap=3000&kpper=150000&r=20261016133756
+kpstat=1&doc=app_settings/cloud_login,app_settings/cloud&r=13
