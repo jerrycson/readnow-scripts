@@ -16,7 +16,8 @@
  *   · tetherIface/wifiIface: 자동으로 못 고를 때만 이름을 적음(예: "이더넷 3", "Wi-Fi") — 상태 화면에 후보 이름이 나옴
  */
 'use strict';
-const VERSION = '1.6.2'; // (1.6.2) 교보·리디·중고나라·애이비북스·당근이 테더링으로 나가던 것 → 와이파이 · 📱 남은 테더링을 통신사 기준 남은 양(사장님이 적은 값)으로 표시 · 일별(벤치마킹 등) 실제 테더링 바이트
+const VERSION = '1.6.3'; // (1.6.3) 네이버 도서 표지(pstatic.net) 와이파이
+// (1.6.2) // (1.6.2) 교보·리디·중고나라·애이비북스·당근이 테더링으로 나가던 것 → 와이파이 · 📱 남은 테더링을 통신사 기준 남은 양(사장님이 적은 값)으로 표시 · 일별(벤치마킹 등) 실제 테더링 바이트
 // (1.6.1) (1.6.1) 🧹 멈춘 스크립트 오류 창(Windows Script Host) 저절로 닫기 · 다시 켜지기 예약 작업이 실제 파일을 가리키는지 30분마다 확인·고침
 // (이전) // (1.6.0) 외부 사이트(예스24·중고닷·국립중앙도서관 등) 와이파이 · 와이파이 전용 길(8897 — 알라딘 막음) · /render 화면 없이 그려 읽기(탭 대신 · 와이파이로)
 const http = require('http'), https = require('https'), net = require('net'), dns = require('dns'), os = require('os'), fs = require('fs'), path = require('path'), dgram = require('dgram'), cp = require('child_process');
@@ -43,8 +44,8 @@ const WIFI_HOSTS = [
   'github.com', 'githubusercontent.com', 'github.io', 'githubassets.com', 'cdnjs.cloudflare.com', 'jsdelivr.net', 'unpkg.com', 'tampermonkey.net',
   // 외부 정보 출처(알라딘 아님)
   /* (1.0.1 점검) 카카오·네이버도 통째가 아니라 쓰는 주소만(dapi.kakao.com · openapi/쇼핑 검색) */
-  /* (1.6.2) 빠져 있어 테더링으로 나가던 외부 정보 출처: 교보문고(기본 정보)·리디·중고나라·애이비북스·당근(daangn.com) */ 'kyobobook.co.kr', 'ridibooks.com', 'joongna.com', 'abebooks.com', 'daangn.com',
-  'bunjang.co.kr', 'yes24.com', 'joongmo.com', 'nl.go.kr', 'karrotmarket.com', 'kakaocdn.net', 'ridicdn.net', 'ebay.com', 'ebayimg.com', 'frankfurter.app', 'frankfurter.dev', 'kpipa.or.kr', 'dapi.kakao.com', 'data4library.kr', 'dvdprime.com', 'koreaexim.go.kr', 'openapi.naver.com', 'search.shopping.naver.com', 'kyobobook.co.kr', 'ridibooks.com', 'joongna.com', 'abebooks.com', 'daangn.com', 'joongmo.com', 'nl.go.kr', 'yes24.com',
+  /* (1.6.2) 빠져 있어 테더링으로 나가던 외부 정보 출처: 교보문고(기본 정보)·리디·중고나라·애이비북스·당근(daangn.com) */ 'kyobobook.co.kr', 'pstatic.net', /* (1.6.3) 네이버 도서 표지 */ 'ridibooks.com', 'joongna.com', 'abebooks.com', 'daangn.com',
+  'bunjang.co.kr', 'yes24.com', 'joongmo.com', 'nl.go.kr', 'karrotmarket.com', 'kakaocdn.net', 'ridicdn.net', 'ebay.com', 'ebayimg.com', 'frankfurter.app', 'frankfurter.dev', 'kpipa.or.kr', 'dapi.kakao.com', 'data4library.kr', 'dvdprime.com', 'koreaexim.go.kr', 'openapi.naver.com', 'search.shopping.naver.com', 'kyobobook.co.kr', 'pstatic.net', 'ridibooks.com', 'joongna.com', 'abebooks.com', 'daangn.com', 'joongmo.com', 'nl.go.kr', 'yes24.com',
   // Windows·크롬 자체 업데이트
   'microsoft.com', 'windowsupdate.com', 'msftconnecttest.com', 'live.com', 'office.com', 'chromium.org',
   // (1.6.0) 크롬이 스스로 부르는 주소(안전 확인·알림·확장 업데이트) — 알라딘과 무관

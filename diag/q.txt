@@ -1,2 +1,1 @@
-regq=%EC%9D%B4%ED%84%B0%EB%84%90%20%EC%84%A0%EC%83%A4%EC%9D%B8&br=3
-doc=app_settings/sold_infer,app_settings/deposit
+regitems=40
