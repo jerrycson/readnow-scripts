@@ -1,4 +1,4 @@
-# 리드나우 로컬 도우미 — 스스로 갖추기 (도우미 1.5.1부터 도우미가 직접 받아 한 번 실행 · 사람이 할 일 없음 · 관리자 권한 필요 없음)
+﻿# 리드나우 로컬 도우미 — 스스로 갖추기 (도우미 1.5.1부터 도우미가 직접 받아 한 번 실행 · 사람이 할 일 없음 · 관리자 권한 필요 없음)
 # 설치(install.ps1)를 다시 실행하지 않아도, 새 판에 필요한 것을 이 PC에 맞춥니다. 다시 실행해도 같은 결과(덮어씀).
 #  ① 공개 수집 크롬 시작 파일을 화면 나누기 판으로(왼쪽 = 화면 폭 − 380 · '복구' 말풍선 없이) + 지금 떠 있는 공개 수집 크롬 창도 그 자리로 옮김(다시 켜지 않음 → 하던 수집 안 끊김)
 #  ② 도우미 창(오른쪽 380 폭) 시작 파일·시작 프로그램·바탕화면 바로가기
@@ -12,6 +12,9 @@ $R = [ordered]@{ v = $Ver; at = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss'); pub 
 $utf8b = New-Object Text.UTF8Encoding $true
 $chrome = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe", "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 $sh = New-Object -ComObject WScript.Shell
+# (도우미 1.6.1) 고침: 예전 판은 바로가기 변수($l)가 PowerShell에서 대소문자 구분 없이 $L(폴더)을 덮어써 예약 작업이 'C:\WINDOWS\system32\System.__ComObject\ensure.vbs'를 가리켰음
+#  → 5분마다 'Windows Script Host — 스크립트 파일을 찾을 수 없습니다' 창이 뜨고 다시 켜지기(ReadNow-Ensure)가 실제로는 한 번도 안 돎. 그 창(멈춰 있는 wscript)을 닫고 예약 작업을 바른 경로로 다시 만듦
+Get-CimInstance Win32_Process -Filter "Name='wscript.exe' OR Name='cscript.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*__ComObject*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 $startup = [Environment]::GetFolderPath('Startup'); $desk = [Environment]::GetFolderPath('Desktop')
 
 if ($chrome) {
@@ -28,7 +31,7 @@ Start-Process -FilePath '$chrome' -ArgumentList ('$($cargs.Replace("'", "''"))' 
 "@, $utf8b)
   $pcmd = Join-Path $L 'start-pub.cmd'
   [IO.File]::WriteAllText($pcmd, "@echo off`r`n:w`r`ncurl -s -o nul http://127.0.0.1:8899/status || (timeout /t 3 /nobreak >nul & goto w)`r`npowershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$pps`"`r`n")
-  foreach ($where in @($desk, $startup)) { $l = $sh.CreateShortcut((Join-Path $where '리드나우 공개 수집.lnk')); $l.TargetPath = $pcmd; $l.WorkingDirectory = $L; $l.IconLocation = "$chrome,0"; $l.WindowStyle = 7; $l.Save() }
+  foreach ($where in @($desk, $startup)) { $lnk = $sh.CreateShortcut((Join-Path $where '리드나우 공개 수집.lnk')); $lnk.TargetPath = $pcmd; $lnk.WorkingDirectory = $L; $lnk.IconLocation = "$chrome,0"; $lnk.WindowStyle = 7; $lnk.Save() }
   $R.pub = 'ok'
   # ② 도우미 창
   New-Item -ItemType Directory -Force -Path (Join-Path $Root 'chrome-helper') | Out-Null
@@ -41,7 +44,7 @@ Start-Process -FilePath '$chrome' -ArgumentList ("--user-data-dir=```"$Root\chro
 "@, $utf8b)
   $hcmd = Join-Path $L 'start-helperwin.cmd'
   [IO.File]::WriteAllText($hcmd, "@echo off`r`n:w`r`ncurl -s -o nul http://127.0.0.1:8899/status || (timeout /t 3 /nobreak >nul & goto w)`r`npowershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$hps`"`r`n")
-  foreach ($where in @($desk, $startup)) { $l = $sh.CreateShortcut((Join-Path $where '리드나우 도우미 창.lnk')); $l.TargetPath = $hcmd; $l.WorkingDirectory = $L; $l.IconLocation = "$chrome,0"; $l.WindowStyle = 7; $l.Save() }
+  foreach ($where in @($desk, $startup)) { $lnk = $sh.CreateShortcut((Join-Path $where '리드나우 도우미 창.lnk')); $lnk.TargetPath = $hcmd; $lnk.WorkingDirectory = $L; $lnk.IconLocation = "$chrome,0"; $lnk.WindowStyle = 7; $lnk.Save() }
   $R.helperWin = 'ok'
   # ① 지금 떠 있는 공개 수집 크롬 창을 왼쪽 자리로(최대화면 풀고) — 크롬을 다시 켜지 않음
   try {
@@ -107,8 +110,10 @@ $R.adminMiss = $miss; $R.admin = ($miss.Count -eq 0)
 $adm = Join-Path $L 'admin-install.cmd'; $alk = Join-Path $desk '리드나우 관리자 설치.lnk'
 if ($miss.Count -gt 0) {
   [IO.File]::WriteAllText($adm, "@echo off`r`npowershell -NoProfile -Command `"Start-Process powershell -Verb RunAs -ArgumentList '-NoProfile -ExecutionPolicy Bypass -NoExit -Command irm https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/install.ps1 | iex'`"`r`n")
-  $l = $sh.CreateShortcut($alk); $l.TargetPath = $adm; $l.WorkingDirectory = $L; $l.IconLocation = "$env:SystemRoot\System32\imageres.dll,73"; $l.Save()
+  $lnk = $sh.CreateShortcut($alk); $lnk.TargetPath = $adm; $lnk.WorkingDirectory = $L; $lnk.IconLocation = "$env:SystemRoot\System32\imageres.dll,73"; $lnk.Save()
 } elseif (Test-Path $alk) { Remove-Item $alk -Force -ErrorAction SilentlyContinue }
 
+# 예약 작업이 실제로 있는 파일을 가리키는지 확인(가리키는 파일이 없으면 ensure = $null → 도우미가 다시 실행)
+try { $ta = (Get-ScheduledTask -TaskName 'ReadNow-Ensure' -ErrorAction Stop).Actions[0].Arguments.Trim('"'); $R.ensurePath = $ta; if (-not (Test-Path $ta)) { $R.ensureWhy = '예약 작업 경로에 파일 없음: ' + $ta; $R.ensure = $null } } catch {}
 [IO.File]::WriteAllText((Join-Path $L 'setup.json'), ($R | ConvertTo-Json -Compress), (New-Object Text.UTF8Encoding $false))
 $R | ConvertTo-Json -Compress

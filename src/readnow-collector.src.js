@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.74.3
+// @version      1.74.4
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -278,25 +278,39 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   globalThis.__rnOn('pointerdown', (e) => { const el = e.target && e.target.closest && e.target.closest(SEL); if (el) window.__rnFront(el); }, true); })();
 (function rnJournal() {
   if (window.top !== window || window.__rnLog) return;
-  const MAXMEM = 10000; const buf = []; const lt = []; let ltDirty = false; const pend = []; const idbPend = []; let dirty = false; let seq = 0;
+  const MAXMEM = 30000; const buf = []; let bufN = 0; /* (1.74.4) 화면이 그린 뒤 새 줄이 왔는지 — 예전엔 buf.length로 봐서 1만 줄이 차면 길이가 그대로라 '이번 화면'이 멈춰 보였음 */ const lt = []; let ltDirty = false; const pend = []; const idbPend = []; let dirty = false; let seq = 0;
   const day = (d) => { const k = new Date(d.getTime() + 9 * 3600e3); return k.toISOString().slice(0, 10); };
   const LSK = (d) => 'rnu-log-' + d;
   // ── 기록 보관: 이 PC의 IndexedDB('rn-journal')에 날짜별로 덧붙임 — 지우지 않고 계속 쌓음 (내려받기 하면 그때 비움)
   /* (1.71.0) 로거 크롬: 작업 기록을 알라딘 쪽 저장소(IndexedDB)에 두지 않고 이 탭 메모리에만(서버 기록 rn_logs는 그대로) — 알라딘 화면 스크립트가 읽을 수 있는 곳에 흔적을 남기지 않게 */
   const JMEM = globalThis.__rnPubChrome ? new Map() : null; const JDB = () => (JMEM ? Promise.resolve({ __mem: 1, close() {} }) : new Promise((res, rej) => { const r = indexedDB.open('rn-journal', 1); r.onupgradeneeded = () => r.result.createObjectStore('days', { keyPath: 'day' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }));
   const jtx = async (mode, fn) => { if (JMEM) { let out; const st = { get: (k) => { const q = { result: JMEM.get(k) }; setTimeout(() => q.onsuccess && q.onsuccess()); return q; }, getAllKeys: () => { const q = { result: [...JMEM.keys()] }; setTimeout(() => q.onsuccess && q.onsuccess()); return q; }, getAll: (rg) => { const q = { result: [...JMEM.entries()].filter(([k]) => !rg || (k >= rg.lower && k <= rg.upper)).map(([, v]) => v) }; setTimeout(() => q.onsuccess && q.onsuccess()); return q; }, put: (rec) => { JMEM.set(rec.day, rec); if (JMEM.size > 6000) { const it = JMEM.keys(); for (let k = JMEM.size - 5000; k > 0; k--) JMEM.delete(it.next().value); } }, /* (1.71.1 자동 점검) 메모리 기록은 최근 묶음 5천~6천 개(20초 묶음 ≈ 하루 넘게)까지 — 24시간 켜 둔 로거 탭이 기록으로 메모리를 끝없이 쓰지 않게(서버 rn_logs에는 다 있음) */ clear: () => JMEM.clear() }; await fn(st, (v) => (out = v)); await new Promise((r) => setTimeout(r, 0)); return out; } const db = await JDB(); return new Promise((res, rej) => { const t = db.transaction('days', mode); const st = t.objectStore('days'); let out; Promise.resolve(fn(st, (v) => (out = v))).catch(rej); t.oncomplete = () => { db.close(); res(out); }; t.onerror = () => { db.close(); rej(t.error); }; }); };
+  /* (1.74.4) 📜 로거 기록을 이 PC 디스크(로컬 도우미 D:\\ReadNow\\journal)에 보관 — 예전엔 탭 메모리에만 있어 새로고침·크롬 다시 켜기 때마다 '전체 기록'이 통째로 사라졌음
+   *  알라딘 화면은 읽을 수 없는 곳(도우미 · X-RN-Jrn 머리) · 못 보내면 버리지 않고 모아 두었다 다시 보냄 · 도우미가 없으면 Firebase(rn_logs)에서 읽어 보여 줌 */
+  const HJ = (pth, body) => new Promise((res) => { try { GM_xmlhttpRequest({ method: 'POST', url: 'http://127.0.0.1:8899' + pth, headers: { 'X-RN-Jrn': '1', 'Content-Type': 'application/json' }, data: JSON.stringify(body || {}), anonymous: true, timeout: 30000, onload: (r) => { try { const j = JSON.parse(r.responseText); res(r.status === 200 && j && j.ok ? j : null); } catch (e) { res(null); } }, onerror: () => res(null), ontimeout: () => res(null) }); } catch (e) { res(null); } });
+  const hjPc = () => encodeURIComponent((window.__rnPcName && window.__rnPcName.get()) || 'LOGGER'); const hjPend = [];
+  async function hjSend(chunks) { if (chunks) hjPend.push(...chunks); if (!hjPend.length) return true; const out = hjPend.splice(0, hjPend.length); const r = await HJ('/jrn-put?pc=' + hjPc(), { chunks: out }); if (!r) { hjPend.unshift(...out); if (hjPend.length > 4000) hjPend.splice(0, hjPend.length - 4000); return false; } return true; }
+  async function rnLogsDay(d) { try { if (!(window.firebase && firebase.apps.length && firebase.auth().currentUser)) return []; const a = d.replace(/-/g, ''); const pc = (window.__rnPcName && window.__rnPcName.get()) || ''; const ss = await firebase.firestore().collection('rn_logs').where(firebase.firestore.FieldPath.documentId(), '>=', pc + '_' + a).where(firebase.firestore.FieldPath.documentId(), '<=', pc + '_' + a + '\uf8ff').get(); const out = [];
+      ss.forEach((x) => { for (const ln of (x.data().lines || [])) { const m = String(ln).match(/^(\d\d):(\d\d):(\d\d) \[([^\]]*)\] (⚠ |! |· )?([\s\S]*)$/); if (!m) continue; out.push({ t: Date.parse(`${d}T${m[1]}:${m[2]}:${m[3]}+09:00`), m: m[4], l: m[5] === '⚠ ' ? 'err' : m[5] === '! ' ? 'warn' : m[5] === '· ' ? 'detail' : 'info', x: m[6] }); } }); return out.sort((p, q) => p.t - q.t); } catch (e) { return []; } }
   const jget = (k) => jtx('readonly', (st, set) => { const r = st.get(k); r.onsuccess = () => set(r.result || null); });
   const jkeys = () => jtx('readonly', (st, set) => { const r = st.getAllKeys(); r.onsuccess = () => set(r.result || []); });
   const jput = (rec) => jtx('readwrite', (st) => { st.put(rec); });
-  const jclear = () => jtx('readwrite', (st) => { st.clear(); });
+  const jclear = async () => { await jtx('readwrite', (st) => { st.clear(); }); if (JMEM) await HJ('/jrn-clear?pc=' + hjPc()); /* 도우미는 지우지 않고 보관함으로 옮김 */ };
   // (1.25.1) 하루치 전체를 20초마다 읽고 다시 쓰던 방식이 오래 돌면 메모리를 크게 씀 → 작은 묶음으로 덧붙이기만 함 (키 '날짜#시각'), 읽을 때 날짜별로 합침
   async function jflush() { if (!idbPend.length) return; const out = idbPend.splice(0, idbPend.length); const g = {}; out.forEach((e) => { (g[day(new Date(e.t))] = g[day(new Date(e.t))] || []).push(e); });
-    for (const [d, arr] of Object.entries(g)) { try { await jput({ day: `${d}#${String(Date.now()).padStart(15, '0')}-${++seq}`, lines: arr }); } catch (e) { idbPend.unshift(...arr); break; } } }
+    for (const [d, arr] of Object.entries(g)) { try { await jput({ day: `${d}#${String(Date.now()).padStart(15, '0')}-${++seq}`, lines: arr }); } catch (e) { idbPend.unshift(...arr); break; } }
+    if (JMEM) await hjSend(Object.entries(g).map(([d, lines]) => ({ d, lines }))); }
   const jgetDay = (d) => jtx('readonly', (st, set) => { const r = st.getAll(IDBKeyRange.bound(d, d + '\uffff')); r.onsuccess = () => set({ day: d, lines: (r.result || []).flatMap((x) => x.lines || []) }); });
-  const jdays = async () => [...new Set((await jkeys()).map((k) => String(k).split('#')[0]))];
+  const jgetDayL = jgetDay; const jdaysL = async () => [...new Set((await jkeys()).map((k) => String(k).split('#')[0]))];
+  const jmerge = (A, B) => { const seen = new Set(); const out = []; for (const e of [...A, ...B]) { const k = e.t + '|' + e.m + '|' + e.x; if (seen.has(k)) continue; seen.add(k); out.push(e); } return out.sort((p, q) => p.t - q.t); };
+  const jgetDayX = async (d) => { const loc = await jgetDayL(d); if (!JMEM) return loc; const h = await HJ('/jrn-day?pc=' + hjPc() + '&d=' + d); let L = jmerge((h && h.lines) || [], (loc && loc.lines) || []); if (!h) { const fb = await rnLogsDay(d); L = jmerge(fb, L); } return { day: d, lines: L }; };
+  const jdays = async () => { const L = await jdaysL(); if (!JMEM) return L; const h = await HJ('/jrn-days?pc=' + hjPc()); const S = new Set([...L, ...((h && h.days) || [])]); if (!h) for (let i = 0; i < 7; i++) S.add(day(new Date(Date.now() - i * 864e5))); return [...S]; };
   (async () => { try { // 예전 localStorage 기록(7일치)을 옮겨 담고 지움 · 오늘 기록을 불러와 이어 씀
     for (let i = 0; i < 30; i++) { const d = day(new Date(Date.now() - i * 864e5)); const raw = localStorage.getItem(LSK(d)); if (!raw) continue; try { const arr = JSON.parse(raw); const rec = (await jget(d)) || { day: d, lines: [] }; if (!rec.lines.length) { rec.lines = arr; await jput(rec); } } catch (e) {} localStorage.removeItem(LSK(d)); }
-  } catch (e) {} })(); // 새로고침하면 '이번 화면'은 비어서 시작 — 오늘 앞선 기록은 '지난 기록'의 오늘 날짜에 있음
+  } catch (e) {} })(); // (1.74.4) 새로고침해도 '오늘 기록'은 오늘 0시부터 이어서(jPrefill)
+  /* (1.74.4) '오늘 기록'은 새로고침·크롬 다시 켜기 뒤에도 오늘 0시부터 이어서 — 보관된 오늘 줄을 화면 앞에 다시 채움(다시 보관·업로드하지 않음 · 같은 줄은 하나로) */
+  const jPrefill = async (tries) => { try { const td = day(new Date()); const rec = await jgetDayX(td); const L = (rec && rec.lines) || []; if (!L.length && JMEM && tries > 0) return setTimeout(() => jPrefill(tries - 1), 15000); const have = new Set(buf.map((e) => e.t + '|' + e.x)); const add = L.filter((e) => e && e.t && day(new Date(e.t)) === td && !have.has(e.t + '|' + e.x)); if (!add.length) return; buf.unshift(...add); buf.sort((p, q) => p.t - q.t); if (buf.length > MAXMEM) buf.splice(0, buf.length - MAXMEM); bufN++; } catch (e) {} };
+  setTimeout(() => jPrefill(8), 4000);
   const pcName = () => (window.__rnPcName && window.__rnPcName.get()) || '이 PC';
   window.__rnStatus = window.__rnStatus || {};
   /* (1.43.0) 단계 표시 — 일괄이든 개별 수집이든 '지금 작업 안의 단계'를 차례로 적음 (지난 단계 ✓·걸린 시간, 지금 ▶).
@@ -309,7 +323,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     P.list.push({ l, at: now }); if (P.list.length > 40) { P.cut = (P.cut || 0) + 1; P.list.shift(); } };
   window.__rnLog = (mod, lv, msg) => { const now = new Date(); const e = { t: now.getTime(), m: mod, l: lv, x: String(msg).slice(0, 600) };
     const last = buf[buf.length - 1]; if (lv === 'detail' && last && last.l === 'detail' && last.m === mod && last.x === e.x) return; // 같은 줄 반복은 생략
-    buf.push(e); if (buf.length > MAXMEM) buf.splice(0, buf.length - MAXMEM); if (lv !== 'detail') { lt.push(e); if (lt.length > 80) lt.shift(); ltDirty = true; } pend.push(e); idbPend.push(e); dirty = true; };
+    buf.push(e); bufN++; if (buf.length > MAXMEM) buf.splice(0, buf.length - MAXMEM); if (lv !== 'detail') { lt.push(e); if (lt.length > 80) lt.shift(); ltDirty = true; } pend.push(e); idbPend.push(e); dirty = true; };
   // 이 PC 보관 (5초마다), Firebase (1분마다, 10분 단위 문서)
   setInterval(() => { if (pend.length > 5000) pend.splice(0, pend.length - 5000); jflush().catch(() => {}); }, 20000); addEventListener('beforeunload', () => { jflush(); });
   /* (1.59.1) Firebase 기록(rn_logs) 빠짐 막기
@@ -330,12 +344,12 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   let bfAt = 0, bfBusy = false;
   async function backfill(force) { if (bfBusy || !upOk() || (!force && Date.now() - bfAt < 30 * 60000)) return { skip: true }; bfBusy = true; bfAt = Date.now(); let slots = 0, lines = 0, bad = 0;
     try { await jflush(); const L = upLed(); const lim = force ? Date.now() : Date.now() - 15 * 60000; /* 지금 올리는 중인 칸은 빼고 */ const pendN = {}; pend.forEach((e) => { const k = slotOf(e.t); pendN[k] = (pendN[k] || 0) + 1; });
-      for (const d of [day(new Date(Date.now() - 864e5)), day(new Date())]) { const rec = await jgetDay(d); const G = new Map(); ((rec && rec.lines) || []).forEach((e) => { if (e.t > lim) return; const k = slotOf(e.t); (G.get(k) || G.set(k, []).get(k)).push(e); });
+      for (const d of [day(new Date(Date.now() - 864e5)), day(new Date())]) { const rec = await jgetDayX(d); const G = new Map(); ((rec && rec.lines) || []).forEach((e) => { if (e.t > lim) return; const k = slotOf(e.t); (G.get(k) || G.set(k, []).get(k)).push(e); });
         for (const [slot, es] of G) { if (es.length <= (L[slot] || 0) + (pendN[slot] || 0)) continue; try { await putSlot(slot, es.map(lineOf)); upLedSet(slot, es.length); slots++; lines += es.length; } catch (e) { bad++; } } }
       if (slots) window.__rnLog('수집기', 'info', `Firebase 기록 채움: 덜 올라간 10분 칸 ${slots}개를 이 PC 보관 기록으로 다시 올림 (${lines.toLocaleString()}줄 — 이미 있던 줄은 하나로 합쳐짐)`); } catch (e) { bad++; } finally { bfBusy = false; } return { slots, lines, bad }; }
   setInterval(() => backfill().catch(() => {}), 5 * 60000); setTimeout(() => backfill(true).catch(() => {}), 90000);
   window.__rnLogBackfill = backfill;
-  window.__rnLogDay = (d) => jgetDay(d); /* (1.60.0) ⏰ 일마다 걸린 시간 — 예전 기록에서 채울 때 */
+  window.__rnLogDay = (d) => jgetDayX(d); /* (1.60.0) ⏰ 일마다 걸린 시간 — 예전 기록에서 채울 때 */
   setInterval(upNow, 60000);
   window.__rnFlush = async () => { try { await jflush(); } catch (e) {} try { await upNow(); } catch (e) {} }; // 탭을 닫기 직전 등: 남은 기록을 이 PC(IndexedDB)와 Firebase에 바로 저장
   /* (1.38.0) 탭끼리 나누는 '지금 상태'와 '최근 기록' — 개요 화면은 어느 탭에서 열어도 이 PC 전체(모든 수집기 탭)를 보여 줌
@@ -380,7 +394,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     if (x && (x.state || x.label)) h += `<div class="ol now">지금: <b>${x.state || x.label}</b>${x.total ? ` · ${(+x.done || 0).toLocaleString()} / ${(+x.total).toLocaleString()} (${(curFrac(x) * 100).toFixed(1)}%)` : ''}${x.etaMin != null ? ` · 남은 시간 약 ${fm(x.etaMin * 60000)} (끝 ${new Date(Date.now() + x.etaMin * 60000).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})` : ''}</div>${x.total ? bar(curFrac(x), '#3F7FD1') : ''}${x.sub ? `<div class="ol sub">${String(x.sub).replace(/</g, '&lt;')}</div>` : ''}`;
     return h; };
   const mount = () => { globalThis.__rnHead(st); const w = document.createElement('div'); w.id = 'rn-jw';
-    w.innerHTML = `<div class="h"><b title="이 띠를 잡고 끌어서 옮김 · 두 번 누르면 처음 자리로 · 오른쪽 아래 모서리로 크기 조절">⠿ 작업 기록 — ${pcName()}</b><span class="jt"><button data-jt="today" class="on" title="이 화면을 연(새로고침한) 뒤의 기록">이번 화면</button><button data-jt="hist" title="날짜별로 쌓인 모든 기록 (오늘 포함)">전체 기록</button><button data-jt="pw" title="가격 감시기의 지금 상태와 기록만 따로 (수집기 기록과 섞지 않음 · 이 PC의 감시 탭에서 모아 둠)">🛰 감시</button><button data-jt="pcs" title="다른 PC 수집기의 기록 (각 PC가 1분마다 Firebase에 올린 것 · 1분마다 새로 읽음)">🖥 다른 PC</button></span><select id="rnjF"><option value="imp">중요만</option><option value="all" selected>전체 (항목마다)</option><option value="err">오류·경고만</option></select><input id="rnjQ" placeholder="검색"><label style="font-weight:400"><input type="checkbox" id="rnjA" ${GM_getValue('rnu-log-autoscroll', true) ? 'checked' : ''} title="새 줄이 생기면 맨 아래로 저절로 내려감 — 끄면 올려 둔 자리에 그대로 · 켜고 끈 것은 이 PC에 저장(다음에 열어도 그대로)"> 자동 스크롤</label><button id="rnjD" title="모든 기록(오늘+지난)을 파일로 받고, 이 PC의 기록을 비웁니다">내려받기·비우기</button><button id="rnjX">닫기</button></div><div class="ov" id="rnjO"></div><div class="b" id="rnjB"></div>`;
+    w.innerHTML = `<div class="h"><b title="이 띠를 잡고 끌어서 옮김 · 두 번 누르면 처음 자리로 · 오른쪽 아래 모서리로 크기 조절">⠿ 작업 기록 — ${pcName()}</b><span class="jt"><button data-jt="today" class="on" title="오늘(0시부터) 기록 — 새로고침·크롬 다시 켜기 뒤에도 이어서 보임 · 날이 바뀌면 '전체 기록'의 그날 칸으로">오늘 기록</button><button data-jt="hist" title="날짜별로 쌓인 모든 기록 (오늘 포함)">전체 기록</button><button data-jt="pw" title="가격 감시기의 지금 상태와 기록만 따로 (수집기 기록과 섞지 않음 · 이 PC의 감시 탭에서 모아 둠)">🛰 감시</button><button data-jt="pcs" title="다른 PC 수집기의 기록 (각 PC가 1분마다 Firebase에 올린 것 · 1분마다 새로 읽음)">🖥 다른 PC</button></span><select id="rnjF"><option value="imp">중요만</option><option value="all" selected>전체 (항목마다)</option><option value="err">오류·경고만</option></select><input id="rnjQ" placeholder="검색"><label style="font-weight:400"><input type="checkbox" id="rnjA" ${GM_getValue('rnu-log-autoscroll', true) ? 'checked' : ''} title="새 줄이 생기면 맨 아래로 저절로 내려감 — 끄면 올려 둔 자리에 그대로 · 켜고 끈 것은 이 PC에 저장(다음에 열어도 그대로)"> 자동 스크롤</label><button id="rnjD" title="모든 기록(오늘+지난)을 파일로 받고, 이 PC의 기록을 비웁니다">내려받기·비우기</button><button id="rnjX">닫기</button></div><div class="ov" id="rnjO"></div><div class="b" id="rnjB"></div>`;
     globalThis.__rnMount(w); let lastDrawn = -1;
     // 위쪽 초록 띠를 잡고 끌어서 옮김. 위치·크기는 기억 (화면 밖으로 나가지 않게)
     const place = () => { const g = GM_getValue('rnu-jw-geo', null); if (!g) return; const W = Math.min(g.w || 760, innerWidth - 20), H = Math.min(g.h || 360, innerHeight - 20);
@@ -397,12 +411,12 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const pass = (e) => { const f = w.querySelector('#rnjF').value, q = w.querySelector('#rnjQ').value.trim(); return (f === 'all' || (f === 'imp' ? e.l !== 'detail' : e.l === 'err' || e.l === 'warn')) && (!q || String(e.x).includes(q)); };
     const drawHist = async () => { const b = w.querySelector('#rnjB'); b.innerHTML = '<div class="detail">불러오는 중</div>'; let keys = []; try { await jflush(); keys = (await jdays()).sort().reverse(); } catch (e) {}
       b.innerHTML = keys.map((k) => `<details class="jd" data-day="${k}"><summary>${k}${k === day(new Date()) ? ' (오늘)' : ''} <small>펼쳐서 보기</small></summary><div class="jdb"></div></details>`).join('') || '<div class="detail">쌓인 기록 없음</div>';
-      b.querySelectorAll('details.jd').forEach((d) => (d.ontoggle = async () => { if (!d.open) return; const rec = await jgetDay(d.dataset.day); const L = (rec && rec.lines) || []; const rows = L.filter(pass); d.querySelector('summary small').textContent = `${L.length.toLocaleString()}줄 · 오류 ${L.filter((e) => e.l === 'err').length} · 경고 ${L.filter((e) => e.l === 'warn').length}${rows.length !== L.length ? ` · 거른 결과 ${rows.length.toLocaleString()}줄` : ''}`; d.querySelector('.jdb').innerHTML = rows.slice(-5000).map(fmtRow).join('') || '<div class="detail">없음</div>'; })); };
+      b.querySelectorAll('details.jd').forEach((d) => (d.ontoggle = async () => { if (!d.open) return; const rec = await jgetDayX(d.dataset.day); const L = (rec && rec.lines) || []; const rows = L.filter(pass); d.querySelector('summary small').textContent = `${L.length.toLocaleString()}줄 · 오류 ${L.filter((e) => e.l === 'err').length} · 경고 ${L.filter((e) => e.l === 'warn').length}${rows.length !== L.length ? ` · 거른 결과 ${rows.length.toLocaleString()}줄` : ''}`; d.querySelector('.jdb').innerHTML = rows.slice(-5000).map(fmtRow).join('') || '<div class="detail">없음</div>'; })); };
     w.querySelectorAll('[data-jt]').forEach((bt) => (bt.onclick = () => { tab = bt.dataset.jt; w.querySelectorAll('[data-jt]').forEach((x) => x.classList.toggle('on', x === bt)); lastDrawn = -1; pwDrawn = -1; if (tab === 'hist') drawHist(); else if (tab === 'pw') drawPw(); else if (tab === 'pcs') drawPcs(true); else draw(); drawOv(); }));
     const draw = () => { if (!w.classList.contains('on') || tab !== 'today') return; const f = w.querySelector('#rnjF').value, q = w.querySelector('#rnjQ').value.trim();
-      const rows = buf.filter((e) => (f === 'all' || (f === 'imp' ? e.l !== 'detail' : e.l === 'err' || e.l === 'warn')) && (!q || e.x.includes(q))).slice(-3000);
+      const td = day(new Date()); const rows = buf.filter((e) => day(new Date(e.t)) === td && (f === 'all' || (f === 'imp' ? e.l !== 'detail' : e.l === 'err' || e.l === 'warn')) && (!q || e.x.includes(q))).slice(-3000);
       const b = w.querySelector('#rnjB'); b.innerHTML = rows.map((e) => `<div class="${e.l}"><span class="tm">${new Date(e.t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span> <span class="md">${e.m}</span> ${e.x.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`).join('') || '<div class="detail">기록 없음</div>';
-      if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; lastDrawn = buf.length; };
+      if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; lastDrawn = bufN; };
       { const ca = w.querySelector('#rnjA'); if (ca && !ca._sv) { ca._sv = 1; ca.addEventListener('change', () => { GM_setValue('rnu-log-autoscroll', ca.checked); if (ca.checked) { const b2 = w.querySelector('#rnjB'); if (b2) b2.scrollTop = b2.scrollHeight; } }); } } /* (1.57.6) 자동 스크롤 켜고 끔을 저장 */
     // ── 맨 위 요약: 지금 무엇을, 전체 중 어디까지 (1초마다)
     const ov = w.querySelector('#rnjO');
@@ -454,20 +468,20 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       else if (hh) { pcsHours = +hh.dataset.pch; pcsData = null; drawOv(); drawPcs(true); } else if (rr) { drawPcs(true); } });
     setInterval(() => { if (tab === 'pcs') drawPcs(false); }, 5000);
     setInterval(drawOv, 1000);
-    setInterval(() => { if (buf.length !== lastDrawn) draw(); }, 1000); // 진행을 늦추지 않게 1초에 한 번만 그림
+    setInterval(() => { if (bufN !== lastDrawn) draw(); }, 1000); // 진행을 늦추지 않게 1초에 한 번만 그림
     ['#rnjF', '#rnjQ'].forEach((q) => (w.querySelector(q).oninput = () => (tab === 'hist' ? drawHist() : tab === 'pw' ? ((pwDrawn = -1), drawPw()) : tab === 'pcs' ? ((pcsDrawn = ''), drawPcs(false)) : draw()))); w.querySelector('#rnjX').onclick = () => { w.classList.remove('on'); GM_setValue('rnu-jw', 0); };
   // 구글 드라이브로 바로 저장 (설정 ⑨에 Apps Script 주소·열쇠가 있으면). 실패하면 PC로 내려받기
   const driveSave = (name, content) => new Promise((res) => { const url = GM_getValue('rnu-drive-url', ''), key = GM_getValue('rnu-drive-key', ''); if (!url) return res(null);
     GM_xmlhttpRequest({ method: 'POST', url, data: JSON.stringify({ key, name, content }), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, timeout: 120000, onload: (r) => { try { const j = JSON.parse(r.responseText); res(j && j.ok ? j : null); } catch (e) { res(null); } }, onerror: () => res(null), ontimeout: () => res(null) }); });
     w.querySelector('#rnjD').onclick = async () => { // 모든 날짜를 한 파일로 받고, 이 PC의 기록을 비움 (Firebase에 올라간 기록은 그대로)
       if (!confirm('이 PC의 모든 작업 기록(오늘 + 지난 기록)을 파일로 내려받은 뒤, 이 PC에서 비웁니다. 계속할까요?')) return;
-      await jflush(); try { await upNow(); } catch (e) {} const bfr = await backfill(true).catch(() => ({ bad: 1 })); if ((bfr && bfr.bad) || pend.length) { if (!confirm(`Firebase에 아직 못 올린 기록이 있습니다(${pend.length.toLocaleString()}줄${bfr && bfr.bad ? ' · 못 올린 칸 ' + bfr.bad + '개' : ''}). 그래도 이 PC 기록을 비울까요?\n(내려받는 파일에는 모두 들어 있음 · 취소하면 비우지 않음 — 인터넷이 되면 저절로 올라감)`)) return; } /* (1.59.1) 비우기 전에 Firebase에 모두 올림 */ const keys = (await jdays()).sort(); const parts = []; for (const k of keys) { const rec = await jgetDay(k); (rec ? rec.lines : []).forEach((e) => parts.push(`${new Date(e.t).toLocaleString('ko-KR')} [${e.m}] [${e.l}] ${e.x}`)); }
+      await jflush(); try { await upNow(); } catch (e) {} const bfr = await backfill(true).catch(() => ({ bad: 1 })); if ((bfr && bfr.bad) || pend.length) { if (!confirm(`Firebase에 아직 못 올린 기록이 있습니다(${pend.length.toLocaleString()}줄${bfr && bfr.bad ? ' · 못 올린 칸 ' + bfr.bad + '개' : ''}). 그래도 이 PC 기록을 비울까요?\n(내려받는 파일에는 모두 들어 있음 · 취소하면 비우지 않음 — 인터넷이 되면 저절로 올라감)`)) return; } /* (1.59.1) 비우기 전에 Firebase에 모두 올림 */ const keys = (await jdays()).sort(); const parts = []; for (const k of keys) { const rec = await jgetDayX(k); (rec ? rec.lines : []).forEach((e) => parts.push(`${new Date(e.t).toLocaleString('ko-KR')} [${e.m}] [${e.l}] ${e.x}`)); }
       const fname = `리드나우-수집기록-${pcName()}-${keys[0] || day(new Date())}~${keys[keys.length - 1] || day(new Date())}.txt`; const drv = await driveSave(fname, parts.join('\n'));
       if (drv) { window.__rnLog('수집기', 'ok', `작업 기록을 구글 드라이브 '리드나우 수집기록' 폴더에 저장했습니다: ${fname}${drv.url ? ' · ' + drv.url : ''}`); if (drv.url) window.open(drv.url, '_blank'); }
       else { window.__rnLog('수집기', 'warn', GM_getValue('rnu-drive-url', '') ? '구글 드라이브 저장 실패 (주소·열쇠·배포 권한 확인) — PC의 다운로드 폴더로 내려받습니다' : '구글 드라이브 주소가 설정되지 않아 PC의 다운로드 폴더로 내려받습니다 (웹앱 설정 ⑨)'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([parts.join('\n')], { type: 'text/plain' })); a.download = fname; a.click(); }
       setTimeout(async () => { await jclear(); buf.length = 0; idbPend.length = 0; window.__rnLog('수집기', 'info', `작업 기록을 내려받고 이 PC의 기록을 비웠습니다 (${keys.length}일치, ${parts.length.toLocaleString()}줄)`); lastDrawn = -1; tab === 'hist' ? drawHist() : draw(); }, 1500); };
     window.__rnJournalToggle = () => { const on = !w.classList.contains('on'); w.classList.toggle('on', on); GM_setValue('rnu-jw', on ? 1 : 0); lastDrawn = -1; draw(); drawOv(); };
-    (window.__rnRoleReady || Promise.resolve()).then(() => { const r = window.__rnRole ? window.__rnRole() : 'lead'; if (GM_getValue('rnu-jw', 0) && r !== 'follow' && r !== 'wait') window.__rnJournalToggle(); }); }; // (1.56.0) 쉬는 탭은 기록 창을 닫은 채로 (기억해 둔 '열림'은 그대로 둠)
+    (window.__rnRoleReady || Promise.resolve()).then(() => { const r = window.__rnRole ? window.__rnRole() : 'lead'; if ((GM_getValue('rnu-jw', 0) || globalThis.__rnPubChrome) && r !== 'follow' && r !== 'wait' && !w.classList.contains('on')) window.__rnJournalToggle(); /* (1.74.4) 로거는 크롬이 열리고 수집기가 돌면 기록 창을 늘 연 채로 시작 */ }); }; // (1.56.0) 쉬는 탭은 기록 창을 닫은 채로 (기억해 둔 '열림'은 그대로 둠)
   if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
   /* (1.43.0) 가격 감시기 기록 모으기: 감시기 칸(#rn-prc)이 이 화면에 있으면 그 기록 줄·상태를 이 수집기의 GM에 모아 둠(최근 400줄) → 기록 창 🛰 감시 탭.
    *  감시기 코드는 바꾸지 않음(화면에 쓰는 글을 그대로 옮김). Firebase에는 다시 올리지 않음 — 감시기가 이미 rn_logs에 올림(중복 없게) */
