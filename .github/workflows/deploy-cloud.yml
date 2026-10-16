@@ -27,7 +27,9 @@ jobs:
         with: { fetch-depth: 2 }
       - name: 무엇이 바뀌었나 (배포 · 진단)
         run: |
-          CH=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo ALL)
+          # (자동 점검 2026-10-16) 한 번에 여러 커밋을 올리면 HEAD~1과만 비교해 앞 커밋의 cloud/ 바뀜을 놓치고 배포를 건너뛰던 것 → 올리기 전 커밋(event.before)과 비교 · 못 받으면 ALL(배포)
+          B="${{ github.event.before }}"
+          if [ -n "$B" ] && [ "$B" != 0000000000000000000000000000000000000000 ] && { git cat-file -e "$B^{commit}" 2>/dev/null || git fetch -q --depth=1 origin "$B" 2>/dev/null; }; then CH=$(git diff --name-only "$B" HEAD 2>/dev/null || echo ALL); else CH=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo ALL); fi
           if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] || [ "$CH" = ALL ] || echo "$CH" | grep -qE '^(cloud/|\.github/workflows/deploy-cloud\.yml|readnow-[a-z]+-core\.js|readnow-registry\.js)'; then echo "DO_DEPLOY=1" >> "$GITHUB_ENV"; fi
           if echo "$CH" | grep -q '^diag/q\.txt$'; then echo "DO_DIAG=1" >> "$GITHUB_ENV"; fi
       - name: 문법 검사 (깨진 파일은 올리지 않음)
