@@ -56,10 +56,14 @@ jobs:
           # (2026-10-16) '@kpin 파일' 줄 = 📰 출판 정보 요약 넣기(암호문 diag/파일 → 클라우드 /kp-in) · 'Rate exceeded'(클라우드가 바쁨)면 20초 뒤 다시(4번까지)
           while IFS= read -r Q || [ -n "$Q" ]; do [ -z "$Q" ] && continue; n=$((n+1))
             for t in 1 2 3 4; do
-              if [ "${Q#@kpin }" != "$Q" ]; then F="diag/${Q#@kpin }"; F=${F//../}; curl -sS -m 280 -X POST -H "Authorization: Bearer $IDT" -H 'content-type: application/json' --data-binary @"$F" "$URL/kp-in" > /tmp/o/r$n.json || echo '{"ok":false,"err":"curl"}' > /tmp/o/r$n.json
+              if [ "${Q#@kpq }" != "$Q" ]; then mkdir -p /tmp/kq; curl -sS -m 280 -H "Authorization: Bearer $IDT" "$URL/diag?${Q#@kpq }" > /tmp/kq/r$n.json || echo '{"ok":false,"err":"curl"}' > /tmp/kq/r$n.json; echo '{"ok":true,"kq":"kp-out 가지로"}' > /tmp/o/r$n.json; grep -q '^Rate exceeded' /tmp/kq/r$n.json || break; sleep 20; continue
+              elif [ "${Q#@kpin }" != "$Q" ]; then F="diag/${Q#@kpin }"; F=${F//../}; curl -sS -m 280 -X POST -H "Authorization: Bearer $IDT" -H 'content-type: application/json' --data-binary @"$F" "$URL/kp-in" > /tmp/o/r$n.json || echo '{"ok":false,"err":"curl"}' > /tmp/o/r$n.json
               else curl -sS -m 280 -H "Authorization: Bearer $IDT" "$URL/diag?$Q" > /tmp/o/r$n.json || echo '{"ok":false,"err":"curl"}' > /tmp/o/r$n.json; fi
               grep -q '^Rate exceeded' /tmp/o/r$n.json || break; sleep 20; done
             echo "q$n bytes $(wc -c < /tmp/o/r$n.json)"; done < diag/q.txt
+          # (2026-10-16) '@kpq …' 줄 = 📰 요약할 출판 정보 글(공개 KPIPA 글만) — Claude 예약 작업용 열쇠(diag/kps_pub.pem · 개인 열쇠는 예약 작업 안에만)로 암호화해 kp-out 가지에
+          if [ -d /tmp/kq ]; then tar czf /tmp/q.tgz -C /tmp/kq .; openssl rand -hex 32 > /tmp/qk; openssl enc -aes-256-cbc -pbkdf2 -salt -in /tmp/q.tgz -out /tmp/q.enc -pass file:/tmp/qk; openssl pkeyutl -encrypt -pubin -inkey diag/kps_pub.pem -pkeyopt rsa_padding_mode:oaep -in /tmp/qk -out /tmp/qk.enc; rm -f /tmp/qk /tmp/q.tgz; rm -rf /tmp/kq
+            git config user.email "actions@github.com"; git config user.name "diag"; B=$(git rev-parse HEAD); git checkout -q --orphan kp-out; git rm -rfq --cached . ; cp /tmp/q.enc out.enc; cp /tmp/qk.enc out.key; echo "$GITHUB_SHA" > for.txt; git add -f out.enc out.key for.txt; git commit -qm "kq $GITHUB_SHA"; git push -qf origin HEAD:kp-out; git checkout -q -f "$B"; fi
           tar czf /tmp/o.tgz -C /tmp/o .; openssl rand -hex 32 > /tmp/k; openssl enc -aes-256-cbc -pbkdf2 -salt -in /tmp/o.tgz -out /tmp/o.enc -pass file:/tmp/k
           openssl pkeyutl -encrypt -pubin -inkey diag/pub.pem -pkeyopt rsa_padding_mode:oaep -in /tmp/k -out /tmp/k.enc; rm -f /tmp/k /tmp/o.tgz; rm -rf /tmp/o
           git config user.email "actions@github.com"; git config user.name "diag"; git checkout -q --orphan diag-out; git rm -rfq --cached . ; cp /tmp/o.enc out.enc; cp /tmp/k.enc out.key; echo "$GITHUB_SHA" > for.txt
