@@ -93,6 +93,8 @@
 - **로거 테더링 주요 비율 (사장님 10/16 21시)**: 무제한 요금제로 바꾸기 전까지 **임시 100%**(autosched 0.13.1 tempMain) — **사장님이 무제한 요금제로 바꿨다고 하면 잊지 말고 알리고 tempMain:false로 정상화(확정 50%)**.
 - **지역 통계 뺄 고객 (1.40.0)**: app_settings/region_excl.ids — 대행(윤준호 등) · 지역 통계만에서 뺌.
 
+- **📰 출판 정보 게시판 (2026-10-16 · 클라우드 0.15.x · 웹앱 1.41.0)**: 클라우드 kpb가 KPIPA 5곳(g3_1 조사연구보고서·g3_2 KPIPA 출판 보고서·g3_5 글로벌출판동향·bnk 출판전산망 알림판·qa 출판산업 Q&A) 글·첨부를 mkt_kpipa_posts·저장소 kpipa/에 모음(처음 8분마다 이어 받기 → 뒤엔 6시간마다 · 상태 app_settings/kpb v4). 같은 내용 첨부는 pdf>hwpx>hwp·단면>펼침면 하나만. 요약 = 예약 작업 '리드나우 출판 정보 요약'(매일 05:47 · @kpq→kp-out 가지(diag/kps_pub.pem · 개인 열쇠는 예약 작업 설명 안에만) → 요약 → src/tools/kpin.sh → @kpin → /kp-in(클라우드 열쇠 diag/kpin_pub.pem · 개인 열쇠 app_secrets/kpin)). 그림만 있는 PDF(KPIPA 출판산업 동향 등)는 글자를 못 꺼냄 → 제안: 클라우드 Vision OCR.
+
 ## 남은 일 / 지켜볼 것
 - (자동 점검 2026-10-16 · 수집기 1.76.3 · 자동 수집 0.13.3 · 클라우드 0.15.4 · 웹앱 1.41.1 · 노선표 0.14.45 · 도우미 1.6.4) **끝남**: 로거 와이파이 도서 정보 출처별 하루 상한·쉼(사무실 와이파이 IP 막힘 위험) · 잠깐 실패를 '없음'(120일)으로 안 적음 · biQueue 목록 비움 · 🧾 soldInfer가 같은 주문 줄로 회차마다 상품을 더 고르던 것(이미 고른 수 빼기 · soldInferPrev 보관) · 📶 하루 몫에 기타(일반 넘침 → 주요에서도 뺌) · 📦 shipTabRead tabEntries로 '출고 확정' 뒤에도 이어 합침 · oldAuto.entries 보관 · 밤 shp_state 안 읽음 · 쌓인 권수 · 도우미 Host 확인(DNS rebinding)·와이파이 전용 길 사내 주소 막음·엔진/로거 잠금 주소(login 전부·myaladin·SC=996008) · officeMem 끈 뒤 사본 지움 · 진단 push_subs·키 문서 제외 · 배포 작업 여러 커밋 비교(event.before). 보고서 src/audits/2026-10-16.md
   - 지켜볼 것: 첫 회차에서 soldInfer가 이미 여러 권 잘못 판매완료로 바꾼 상품(같은 주문 줄 soldInfer.order가 같은 상품 여럿) — 06:30 전체 확인 뒤 판매중으로 돌아오는지 · 로거 기록 '📚 … 1시간 쉼'·'모두 오늘 상한' 빈도 · 배포 작업 첫 여러 커밋 push에서 DO_DEPLOY가 맞게 서는지
