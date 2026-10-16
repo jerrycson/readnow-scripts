@@ -16,7 +16,7 @@
  *   · tetherIface/wifiIface: 자동으로 못 고를 때만 이름을 적음(예: "이더넷 3", "Wi-Fi") — 상태 화면에 후보 이름이 나옴
  */
 'use strict';
-const VERSION = '1.5.1';
+const VERSION = '1.5.2';
 const http = require('http'), https = require('https'), net = require('net'), dns = require('dns'), os = require('os'), fs = require('fs'), path = require('path'), dgram = require('dgram'), cp = require('child_process');
 
 const HOME = process.env.RN_TEST_HOME || __dirname; const ROOT = path.resolve(HOME, '..'); // D:\ReadNow\local → D:\ReadNow
@@ -362,7 +362,7 @@ function selfUpdate() { if (CFG.selfUpdate === false) return; getText(RAW, (e, s
     const n = (x) => x.split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); if (n(v) <= n(VERSION)) { UPD.msg = `최신(${VERSION})`; return; }
     const tmp = path.join(HOME, 'readnow-local.new.js'); fs.writeFileSync(tmp, src); const chk = cp.spawnSync(process.execPath, ['--check', tmp]); if (chk.status !== 0) { UPD.msg = `새 판 ${v} 검사 실패 — 그대로 둠`; log(UPD.msg); return; }
     try { fs.copyFileSync(__filename, path.join(HOME, `readnow-local.${VERSION}.bak.js`)); fs.renameSync(tmp, __filename); log(`새 판 ${v}로 바꿈 — 다시 켭니다`); uSave(); setTimeout(() => process.exit(0), 500); } catch (er) { UPD.msg = '바꾸기 실패 ' + er.message; log(UPD.msg); } }); }
-if (!T_IF) setTimeout(selfUpdate, 60e3); setInterval(selfUpdate, 6 * 3600e3);
+if (!T_IF) setTimeout(selfUpdate, 60e3); setInterval(selfUpdate, 3600e3); /* (1.5.2) 6시간 → 1시간마다 새 판 확인(새 판이 늦게 와 🧰 같은 고침이 반나절 늦던 것 · 확인은 GitHub 파일 하나 — 와이파이로 · 테더링 안 씀) */
 process.on('uncaughtException', (e) => { log('오류(계속 돎):', e && e.stack ? e.stack.split('\n').slice(0, 3).join(' | ') : e); });
 ['SIGINT', 'SIGTERM'].forEach((s) => process.on(s, () => { uSave(); process.exit(0); }));
 module.exports = { routeOf, groupOf, pickIfaces, status, _ST: ST, _setCfg: (c) => { CFG = { ...DEF, ...c }; } };

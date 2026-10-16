@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.72.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.72.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.72.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.72.0', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.72.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.72.1', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -729,14 +729,34 @@
     onRetry: (e, w) => log(`요청 실패(${e.name === 'AbortError' ? '응답 시간 초과' : e.message}). ${w}초 뒤 재시도`, 1) });
   /* (1.69.0) 🔀 섞어 읽기(로거) — 맡긴 시장 지표·사진 가격 읽기 사이사이에 '다른 책' 화면을 끼워 읽음: 이 익명 방문자가 보는 책이 우리 책·우리 주문 책만으로 모이지 않게
    *  다른 책 = 지금까지 읽은 공개 화면에 걸린 책 링크(함께 산 책·같은 분야·중고매장 첫 화면 등)에서 무작위 · 읽은 결과는 쓰지 않음(데이터만 조금) · 테더링 확인·몫·속도 조절은 그대로 따름 */
-  const MIXP = []; const MIXS = new Set(); const MIX = { n: 0, at: null };
+  const MIXP = []; const MIXS = new Set(); const MIX = { n: 0, at: null, saved: 0, fail: 0 };
+  /* (1.72.1) 로그인 없이 못 보는(19금) 책 기억 — 이 PC(GM) · 14일 */ let AGM = null; const agm = () => { if (!AGM) { try { AGM = GM_getValue('rn-anon-gate', {}) || {}; } catch (e) { AGM = {}; } } return AGM; };
+  const anonGateGet = (k) => { const m = agm(); return !!m[k] && Date.now() - m[k] < 14 * 864e5; };
+  const anonGateSet = (k) => { try { const m = agm(); m[k] = Date.now(); const ks = Object.keys(m); if (ks.length > 3000) ks.sort((a, b) => m[a] - m[b]).slice(0, ks.length - 3000).forEach((x) => delete m[x]); GM_setValue('rn-anon-gate', m); } catch (e) {} };
   function mixHarvest(doc) { try { const L = [...doc.querySelectorAll('a[href*="wproduct.aspx?ItemId="]')].map((a) => (String(a.getAttribute('href') || '').match(/ItemId=(\d{5,})/i) || [])[1]).filter(Boolean); for (const id of L.sort(() => Math.random() - 0.5).slice(0, 12)) { if (MIXS.has(id)) continue; MIXS.add(id); MIXP.push(id); if (MIXP.length > 400) MIXS.delete(MIXP.shift()); } } catch (e) {} }
-  async function mixRead(n) { if (!PUBONLY) return; if (!MIXP.length) { try { mixHarvest(document); } catch (e) {} } for (let k = 0; k < (n || 1) && MIXP.length; k++) { const id = MIXP.splice(Math.floor(Math.random() * MIXP.length), 1)[0]; MIXS.delete(id); try { await getDoc(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${id}`); MIX.n++; MIX.at = nowIso(); } catch (e) { if (e.message === '멈춤') throw e; } } }
-  const mixMaybe = (p) => (PUBONLY && Math.random() < (p == null ? 0.4 : p) ? mixRead(1) : Promise.resolve());
+  /* (1.72.1) 🔀 섞어 읽은 다른 책도 버리지 않고 모음 — 끝없는 탐색 수집과 같은 정보(새상품 화면의 도서 정보·사진·분야·평점 + 온라인 중고 시장 지표)를 저장(prd_books에 탐색 표시 · 나중에 그 책이 우리 재고로 들어오면 같은 도서 기록을 그대로 씀)
+   *  다른 책 = 먼저 탐색 대기열(prd_explore — 우리 책들의 함께 산 책·함께 클릭한 책에서 넓혀 간 책) 중 아직 안 본 것, 없으면 지금까지 읽은 화면에 걸린 책 링크 · 우리 재고 책이면 건너뜀(섞는 뜻이 없음)
+   *  섞어 읽은 책은 대기열에 mixAt만 적음 — 탐색 수집이 나중에 구매자 분포·함께 산 책을 채우고 더 넓혀 감(그때는 이미 있는 책이라 도서 화면을 다시 읽지 않음) */
+  let MIXQ = [], MIXQ_AT = 0, OURB = null, OURB_N = -1;
+  const mixRate = () => { const v = +(SET.mixMarket ?? 0.3); return Number.isFinite(v) ? Math.max(0, Math.min(0.5, v)) : 0.3; };
+  const ourBook = (bid) => { if (!bid || !LISTINGS) return false; if (!OURB || OURB_N !== LISTINGS.size) { OURB = new Set(); for (const l of LISTINGS.values()) if (l && l.bookId) OURB.add(l.bookId); OURB_N = LISTINGS.size; } return OURB.has(bid); };
+  async function mixPick() { if (!MIXQ.length && Date.now() - MIXQ_AT > 10 * 60e3) { MIXQ_AT = Date.now(); try { const qs = await C('prd_explore').where('status', '==', 'todo').limit(80).get(); MIXQ = qs.docs.filter((d) => d.id !== '_check' && !(d.data() || {}).mixAt).map((d) => ({ id: String(d.data().itemId || d.id), ref: d.ref, title: d.data().title || null, from: d.data().from || null })).sort(() => Math.random() - 0.5); } catch (e) {} }
+    if (MIXQ.length) return MIXQ.shift(); if (!MIXP.length) { try { mixHarvest(document); } catch (e) {} } if (!MIXP.length) return null; const id = MIXP.splice(Math.floor(Math.random() * MIXP.length), 1)[0]; MIXS.delete(id); return { id, ref: null, title: null, from: null }; }
+  async function mixOne(x) { let bookId = null; try { const idDoc = await C('prd_ids').doc('itemId_' + x.id).get(); if (idDoc.exists) bookId = idDoc.data().bookId || null; } catch (e) {}
+    if (bookId && ourBook(bookId)) { if (x.ref) x.ref.set({ mixAt: nowIso(), mixSkip: 'ours' }, { merge: true }).catch(() => {}); return false; }
+    try { await refreshOne({ explore: true, listingId: x.id, title: x.title, exploreFrom: x.from || 'mix' }, bookId); MIX.saved++; if (x.ref) x.ref.set({ mixAt: nowIso() }, { merge: true }).catch(() => {}); }
+    catch (e) { if (e.message === '멈춤' || e.tgate) throw e; MIX.fail++; if (x.ref) x.ref.set({ mixAt: nowIso(), mixErr: String(e.message || e).slice(0, 120) }, { merge: true }).catch(() => {}); }
+    MIX.n++; MIX.at = nowIso(); return true; }
+  async function mixRead(n) { if (!PUBONLY) return; for (let k = 0, g = 0; k < (n || 1) && g < 4; g++) { const x = await mixPick(); if (!x) return; if (await mixOne(x)) k++; } }
+  const mixMaybe = (p) => (PUBONLY && Math.random() < (p == null ? mixRate() : Math.min(p, mixRate())) ? mixRead(1) : Promise.resolve());
   async function getDoc(url, opt) { tgateCheck(); if (PUBONLY && !isPubUrl(url)) throw new Error('🛡 로거: 공개 화면이 아닌 알라딘 주소는 읽지 않음 — ' + String(url).slice(0, 80)); /* (1.69.0) 로그인 영역·우리 숍 관리 화면은 로거가 절대 부르지 않음 */ if (!((PUBONLY || pubAnonOn()) && isPubUrl(url))) { const L = await getDocRaw(url, opt); netAdd((L && L.html || '').length); return L; }
     const A = await getDocRaw(url, { ...(opt || {}), cred: 'omit' }); anonNote(); netAdd((A && A.html || '').length); if (PUBONLY && A && A.doc) mixHarvest(A.doc);
     if (A.needLogin) { ANON.gate++; throw Object.assign(new Error('로그인 없이는 못 보는 화면(19금 등) — 계정과 떼어 두는 중이라 이 장은 건너뜀'), { needLogin: true }); }
-    if (!/알라딘/.test(A.doc.title || '') && !A.doc.querySelector('link[rel="canonical"]')) throw new Error('로그인 없이 읽은 화면이 알라딘 화면 같지 않음(막힘·오류 화면일 수 있음) — 빈 결과로 쓰지 않음');
+    if (!/알라딘/.test(A.doc.title || '') && !A.doc.querySelector('link[rel="canonical"]')) { const h = String(A.html || '');
+      /* (1.72.1) 19금(성인 인증) 상품: 로그인 없이 열면 알라딘이 짧은 '성인 인증·로그인으로 보내는' 화면을 줌(제목에 '알라딘'이 없어 예전엔 '알라딘 화면 같지 않음' 실패로 셈 — 로거에서 매일 수십 권) → 19금 건너뜀으로 셈 */
+      if (/wlogin\.aspx|login\.aspx|성인\s*인증|19세\s*(미만|이상)|청소년\s*(유해|이용불가)|adult/i.test(h)) { ANON.gate++; throw Object.assign(new Error('로그인 없이는 못 보는 화면(19금 등) — 계정과 떼어 두는 중이라 이 장은 건너뜀'), { needLogin: true }); }
+      if (!ANON.oddShown || ANON.oddShown < 3) { ANON.oddShown = (ANON.oddShown || 0) + 1; log(`🔎 알라딘 화면 같지 않은 응답(${ANON.oddShown}/3 · 까닭 찾기용) ${String(url).slice(0, 80)} — 앞부분: ${h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)}`, 1); }
+      throw new Error('로그인 없이 읽은 화면이 알라딘 화면 같지 않음(막힘·오류 화면일 수 있음) — 빈 결과로 쓰지 않음'); }
     if (/wshopitem\.aspx/i.test(url) && /ViewType=Simple/i.test(url) && !A.doc.querySelector('input[name^="chkCart.U"]') && [...A.doc.querySelectorAll('a[href*="ItemId="]')].some((a) => /wproduct\.aspx/i.test(a.getAttribute('href') || ''))) { ANON.view++; throw Object.assign(new Error('로그인 없이 읽은 숍 목록에 장바구니 칸이 없음(보이는 모양이 다름) — 사라진 상품으로 잘못 세지 않게 이 장은 쓰지 않음 · 설정 🔓에서 끄면 예전처럼 로그인으로 읽음'), { anonView: true }); }
     return A; }
   /* ══════════ (1.65.0) 📶 로컬 도우미(테더링 길) 확인 · 데이터 사용량 기록 ══════════
@@ -790,7 +810,8 @@
     for (const k of ['main', 'gen']) if (was && was.left[k] > 0 && !(b.left[k] > 0)) log(`📶 오늘 ${AS.TIER[k].l} 업무 몫(이월 포함)을 다 씀 — ${AS.TIER[k].l} 칸은 내일(새 몫이 쌓이면)까지 건너뜀${k === 'main' ? ' · 일반 업무가 제 몫으로 이어 함' : ''}`, 1);
     if (running && isPubKey(running) && !(budLeft(running) > 0) && BUD_STOP !== running) { BUD_STOP = running; log(`📶 '${(JOBS[running] || [running])[0]}': 오늘 ${AS.TIER[tierOfKey(running)].l} 몫을 다 써 지금 항목까지 저장하고 멈춤 — 다음에 그 자리부터`, 1); try { window.__rnPrd.pause(); } catch (e) {} }
     if (!running) BUD_STOP = null; }
-  async function helperTick() { meterSend(); const H = await helperGet(); HELPER = H; HELPER_AT = Date.now(); budTick(H); const g = tgateCalc(H); if (g.ok !== TGATE.ok || (!g.ok && g.why !== TGATE.why)) if (g.ok && !PUBPC.since) { try { saveSet({ pubPcSince: nowIso(), pubPcName: PC_NAME }); log('🌐 공개 전용 PC 등록 — 이제 사무실 PC는 대량 공개 일(벤치마킹·시장 지표 등)을 하지 않음'); } catch (e) {} } log(g.ok ? `📶 테더링 확인됨 — 알라딘 일을 함 (공인 IP ${H && H.tether ? H.tether.ip : '?'}${BUD ? ` · 남은 몫 주요 ${(Math.max(0, BUD.left.main) / 1073741824).toFixed(2)}GB · 일반 ${(Math.max(0, BUD.left.gen) / 1073741824).toFixed(2)}GB` : ''})` : `🛡 알라딘 일을 멈춤 — ${g.why}`, !g.ok); TGATE = g; }
+  async function helperTick() { meterSend(); const H = await helperGet(); HELPER = H; HELPER_AT = Date.now(); budTick(H); const g = tgateCalc(H); if (g.ok !== TGATE.ok || (!g.ok && g.why !== TGATE.why)) if (g.ok && !PUBPC.since) { try { saveSet({ pubPcSince: nowIso(), pubPcName: PC_NAME }); log('🌐 공개 전용 PC 등록 — 이제 사무실 PC는 대량 공개 일(벤치마킹·시장 지표 등)을 하지 않음'); } catch (e) {} } const ipNow = H && H.tether ? H.tether.ip : '?'; /* (1.72.1) 30초마다 같은 줄을 적던 것(하루 수천 줄) → 상태·공인 IP가 바뀔 때와 1시간에 한 번만 */
+    if (g.ok !== TGATE.ok || g.why !== TGATE.why || ipNow !== helperTick.ip || Date.now() - (helperTick.at || 0) > 3600e3) { helperTick.ip = ipNow; helperTick.at = Date.now(); log(g.ok ? `📶 테더링 확인됨 — 알라딘 일을 함 (공인 IP ${ipNow}${BUD ? ` · 오늘 남은 몫 주요 ${(Math.max(0, BUD.left.main) / 1073741824).toFixed(2)}GB · 일반 ${(Math.max(0, BUD.left.gen) / 1073741824).toFixed(2)}GB${BUD.base ? ` · 통신사 기준 이번 달 남은 ${(Math.max(0, BUD.monthLeft) / 1073741824).toFixed(1)}GB` : ''}` : ''})` : `🛡 알라딘 일을 멈춤 — ${g.why}`, !g.ok); } TGATE = g; }
   if (PUBONLY) { setTimeout(helperTick, 1500); setInterval(helperTick, 30000); }
   const tgateCheck = () => { if (PUBONLY && !TGATE.ok) throw Object.assign(new Error('🛡 ' + TGATE.why), { tgate: true }); if (PUBONLY && BUD) { const k = netJob(); if (isPubKey(k)) { const t = tierOfKey(k); if (BUD.left[t] < -0.1 * BUD.perDay[t]) throw Object.assign(new Error(`📶 오늘 ${AS.TIER[t].l} 몫을 다 씀 — 읽지 않음`), { tgate: true, bud: true }); } } };
   window.__rnTgate = () => ({ ...TGATE, helper: HELPER, at: HELPER_AT });
@@ -799,7 +820,7 @@
   async function netFlush() { if (!auth.currentUser || !PC_NAME) return; const J = NETM.jobs; const keys = Object.keys(J); const H = PUBONLY ? HELPER : null; if (!keys.length && !H) return; NETM.jobs = {};
     const inc = firebase.firestore.FieldValue.increment; const jobs = {}; keys.forEach((k) => (jobs[k] = { pages: inc(J[k].pages), chars: inc(J[k].chars) }));
     const dayK = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const pc = { jobs, route: PUBONLY ? 'tether' : 'office', at: nowIso(), ver: VER };
-    if (H && H.today && H.today.key === dayK) pc.helper = { tether: H.today.tether, wifi: H.today.wifi, groups: H.today.groups, blocked: H.today.blocked, month: H.month, todayTiers: H.today.tiers || null, capGB: H.capGB, capBytes: H.capBytes || null, ok: true, tetherOk: !!(H.tether && H.tether.ok), tetherIp: H.tether ? H.tether.ip : null, tetherIface: H.tether ? H.tether.iface || null : null, tetherDesc: H.tether ? H.tether.desc || null : null, wifiIface: H.wifi ? H.wifi.iface || null : null, wifiSsid: H.wifi ? H.wifi.ssid || null : null, /* (1.68.1 · 도우미 1.2.0) 어느 연결로 나가는지 이름까지 */ why: H.tether ? H.tether.why : null, ver: H.ver, at: H.at, defaultWarn: H.defaultWarn || null, phone: H.tether ? H.tether.phoneName || null : null, phones: Array.isArray(H.phones) ? H.phones.map((p) => ({ name: p.name, capGB: p.capGB, used: p.used, active: !!p.active, off: !!p.off, connected: !!p.connected })) : null }; /* (1.72.0) 📱📱 휴대폰별 */
+    if (H && H.today && H.today.key === dayK) pc.helper = { tether: H.today.tether, wifi: H.today.wifi, groups: H.today.groups, blocked: H.today.blocked, month: H.month, todayTiers: H.today.tiers || null, capGB: H.capGB, capBytes: H.capBytes || null, ok: true, tetherOk: !!(H.tether && H.tether.ok), tetherIp: H.tether ? H.tether.ip : null, tetherIface: H.tether ? H.tether.iface || null : null, tetherDesc: H.tether ? H.tether.desc || null : null, wifiIface: H.wifi ? H.wifi.iface || null : null, wifiSsid: H.wifi ? H.wifi.ssid || null : null, /* (1.68.1 · 도우미 1.2.0) 어느 연결로 나가는지 이름까지 */ why: H.tether ? H.tether.why : null, ver: H.ver, at: H.at, defaultWarn: H.defaultWarn || null, phone: H.tether ? H.tether.phoneName || null : null, phones: Array.isArray(H.phones) ? H.phones.map((p) => ({ id: p.id != null ? String(p.id) : null, name: p.name, capGB: p.capGB, used: p.used, active: !!p.active, off: !!p.off, connected: !!p.connected })) : null, days: H.days && H.month ? Object.fromEntries(Object.entries(H.days).filter(([k]) => String(k).slice(0, 7) === H.month.key).map(([k, v]) => [k, { tether: +(v && v.tether) || 0 }])) : null }; /* (1.72.0) 📱📱 휴대폰별 · (1.72.1) 휴대폰 id·이달 날마다 테더링(통신사 기준 남은 양 셈에 씀) */
     try { await C('prd_jobs').doc('net_' + dayK).set({ day: dayK, pcs: { [PC_NAME]: pc }, ...W() }, { merge: true }); } catch (e) { keys.forEach((k) => { const o = (NETM.jobs[k] = NETM.jobs[k] || { pages: 0, chars: 0 }); o.pages += J[k].pages; o.chars += J[k].chars; }); } }
   setInterval(netFlush, 5 * 60e3); addEventListener('beforeunload', () => { try { netFlush(); } catch (e) {} });
   window.__rnPub = { diag: () => ({ pubOnly: PUBONLY, anonOn: pubAnonOn(), ...ANON, tgate: TGATE, bud: BUD ? { left: BUD.left, used: BUD.used, free: BUD.free, alert: BUD.alert, B: BUD.B, mk: BUD.mk } : null, metc: { ...METC }, extOk: extLoggerOk(), img: { ...IMGM }, mix: { ...MIX, pool: MIXP.length }, net: JSON.parse(JSON.stringify(NETM.jobs)) }), read: (u) => getDoc(u), flush: () => netFlush() }; /* (1.64.0) 🔓 상태 보기(관제판·시험용) */
@@ -1078,13 +1099,14 @@
         if (stopFlag) { await saveProgress('market', prog); LS.set('market_done', [...doneSet]); throw new Error('멈춤'); }
         const { l } = queue[i]; let { bookId } = queue[i];
         const tag = bookId || 'aladin_' + l.usedCode; if (doneSet.has(tag)) continue;
-        try { await refreshOne(l, bookId); prog.done++; } catch (e) { prog.fail++; log(`실패 ${l.title || l.usedCode}: ${e.message}`, 1); } await mixMaybe(+(SET.mixMarket ?? 0.15)); /* (1.69.0) 🔀 로거: 우리 책 시장 지표 사이 15%쯤 다른 책 — 이 방문자가 보는 책이 우리 재고와 겹치는 비율을 낮춤 */
+        if (PUBONLY && anonGateGet(tag)) { prog.gate = (prog.gate || 0) + 1; doneSet.add(tag); continue; } /* (1.72.1) 로거: 19금이라 로그인 없이 못 보는 책은 14일 동안 다시 읽지 않음(테더링 아낌) */
+        try { await refreshOne(l, bookId); prog.done++; } catch (e) { if (e.needLogin && PUBONLY) { anonGateSet(tag); prog.gate = (prog.gate || 0) + 1; } else { prog.fail++; log(`실패 ${l.title || l.usedCode}: ${e.message}`, 1); } } await mixMaybe(); /* (1.69.0) 🔀 로거: 우리 책 시장 지표 사이사이 다른 책(설정 ⑨ 섞어 읽기 비율 · 기본 30%) — 이 방문자가 보는 책이 우리 재고와 겹치는 비율을 낮춤 · (1.72.1) 읽은 다른 책도 탐색 수집처럼 저장 */
         doneSet.add(tag);
         ui('도서 정보·시장 지표 갱신', doneSet.size, queue.length, l.title || l.usedCode, `실패 ${prog.fail}건 · 멈춰도 이어서 계속됩니다`);
         if (doneSet.size % 10 === 0) { await saveProgress('market', prog); LS.set('market_done', [...doneSet]); }
       }
       await finishJob('market', { done: prog.done, fail: prog.fail }); LS.set('market_done', []);
-      log(`시장 지표 갱신 완료 (성공 ${prog.done}, 실패 ${prog.fail})`);
+      log(`시장 지표 갱신 완료 (성공 ${prog.done}, 실패 ${prog.fail}${prog.gate ? `, 19금이라 로그인 없이 못 봐 건너뜀 ${prog.gate}` : ''}${PUBONLY && MIX.n ? ` · 🔀 섞어 읽은 다른 책 ${MIX.n}권(저장 ${MIX.saved})` : ''})`);
     } finally { await releaseLane('aladin'); }
   }
   async function refreshOne(l, bookId) {
@@ -2027,7 +2049,7 @@
       for (const d of mine) { const v = d.data(); const keys = v.keys || []; let i = v.i || 0, ok = v.ok || 0, fail = v.fail || 0; const seenBook = new Set();
         for (; i < keys.length; i++) { if (stopFlag) { await d.ref.set({ i, ok, fail, uploadedAt: TS() }, { merge: true }); throw new Error('멈춤'); }
           const l = LISTINGS.get(keys[i]); if (!l) { fail++; continue; } if (l.bookId && seenBook.has(l.bookId)) continue; if (l.bookId) seenBook.add(l.bookId);
-          try { await refreshOne(l, l.bookId || null); ok++; } catch (e) { fail++; log(`시장 지표 실패 ${l.title || l.usedCode}: ${e.message}`, 1); } await mixMaybe(0.3); /* (1.69.0) 🔀 로거: 사이사이 다른 책 */
+          try { await refreshOne(l, l.bookId || null); ok++; } catch (e) { fail++; log(`시장 지표 실패 ${l.title || l.usedCode}: ${e.message}`, 1); } await mixMaybe(); /* (1.69.0) 🔀 로거: 사이사이 다른 책 (설정 비율) */
           ui(`그룹 시장 지표: ${v.label || ''}`, i + 1, keys.length, l.title || l.usedCode, `실패 ${fail}`); if (i % 5 === 4) await d.ref.set({ i: i + 1, ok, fail, uploadedAt: TS() }, { merge: true }); }
         await d.ref.set({ status: 'done', i, ok, fail, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
         if (v.batchId) await C('prd_price_batches').doc(v.batchId).set({ lastMetricsAt: nowIso(), lastMetricsN: ok, ...W() }, { merge: true }).catch(() => {});
@@ -2086,7 +2108,7 @@
     else if (v.type === 'regAux') { const RG = RGF(); let out; try { if (!RG || !RG.auxRun) throw new Error('등록 엔진 공용 파일 0.3.0이 아님 — 수집기 새로고침'); const val = await RG.auxRun(v.op, v.a || {}); out = { v: val }; await C('reg_aux').doc(RG.auxKey(v.op, v.a || {})).set({ op: v.op, a: v.a || {}, v: val, at: nowIso(), by: PC_NAME, ...W() }).catch(() => {}); } catch (e) { out = { err: e.message }; } await ref.set({ status: 'done', ...out, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); return; } // (1.45.0) 📥 분류·저자·출판사 찾기 (클라우드가 안 될 때)
     else if (v.type === 'metrics' && (v.keys || []).length && v.keys.length <= 3) { /* (1.57.1) 웹앱 상품 상세의 '시장 지표 다시 읽기'(책 1~3권) — 긴 작업 중이어도 기다리지 않고 바로(사진 가격 조회처럼 짧음 · 알라딘 읽기 속도 조절은 같이 씀) */
       let ok = 0, fail = 0; const why = []; try { await loadListings(); } catch (e) {} if (PUBONLY) await mixRead(1 + Math.floor(Math.random() * 2)); /* (1.69.0) 🔀 */
-      for (const k of v.keys) { await mixMaybe(0.5); let l = LISTINGS && LISTINGS.get(k); if (!l) { try { const d = await C('prd_listings').doc(k).get(); if (d.exists) l = d.data(); } catch (e) {} } if (!l) { fail++; why.push(`${k}: 상품 기록 없음`); continue; }
+      for (const k of v.keys) { await mixMaybe(); let l = LISTINGS && LISTINGS.get(k); if (!l) { try { const d = await C('prd_listings').doc(k).get(); if (d.exists) l = d.data(); } catch (e) {} } if (!l) { fail++; why.push(`${k}: 상품 기록 없음`); continue; }
         try { await refreshOne(l, l.bookId || null); ok++; } catch (e) { fail++; why.push(`${l.title || k}: ${e.message}`); } await ref.set({ ok, fail, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); }
       await ref.set({ status: 'done', ok, fail, why: why.slice(0, 5), doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`시장 지표 바로 읽기(${v.label || ''}): 성공 ${ok} · 실패 ${fail}`, fail ? 1 : 0); return; }
     else if (v.type === 'metrics') { log(`그룹 시장 지표 갱신 맡음: ${v.label || ''} ${(v.keys || []).length}개`); if (!running) runJob('metricsReq'); else log('다른 작업 중 — 끝나면 이어서 (5분마다 확인)'); return; }
@@ -2135,7 +2157,7 @@
     const prog = () => ref.set({ n, tot, items, cands, errs, uploadedAt: TS() }, { merge: true }).catch(() => {});
     const keep = async (key, r) => { items[key] = r; try { await C('prd_lookups').add({ key, isbn13: r.isbn13, itemId: r.itemId, ...r, by: PC_NAME, cmdId: ref.id, ...W() }); } catch (e) {} };
     const TGT = { 1: 'Book', 2: 'Music', 3: 'DVD', 7: 'Foreign' }[+v.branch || 1] || 'Book';
-    for (const isbn of isb) { await mixMaybe(0.4); try { let r = null, why = null; try { r = await lookupBook(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(isbn)}`, isbn); } catch (e) { why = e.message; }
+    for (const isbn of isb) { await mixMaybe(); try { let r = null, why = null; try { r = await lookupBook(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(isbn)}`, isbn); } catch (e) { why = e.message; }
         if (!r) for (const tgt of [...new Set([TGT, 'All'])]) { /* 번호로 검색해 앞 3개 중 번호가 맞는 상품 (클라우드 0.9.3과 같은 순서) */ const sr = await lookDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=${tgt}&SearchWord=${encodeURIComponent(isbn)}`); for (const c of P.parseSearchResults(sr.doc).filter((x) => !x.used).slice(0, 3)) { try { r = await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(c.itemId)}`, isbn); break; } catch (e) {} } if (r) break; }
         if (r) await keep(isbn, r); else errs[isbn] = (why && /다른 상품/.test(why) ? why + ' — 이 번호의 상품을 찾지 못함 (상품명으로 찾아 고르세요)' : '알라딘에서 이 번호(ISBN·바코드)의 상품을 못 찾음'); } catch (e) { errs[isbn] = e.message; } n++; await prog(); }
     for (const id of ids) { try { await keep('id_' + id, await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`)); } catch (e) { errs['id_' + id] = e.message; } n++; await prog(); }
@@ -2694,7 +2716,7 @@
         if (SET.autoDaily) { try { await saveSet({ autoDaily: false }); } catch (e) {} }
         return; }
       SCHED = d.data(); window.__rnSchedOn = !!SCHED.on; window.__rnSchedHas = true; if (PUBONLY && HELPER) budTick(HELPER); /* (1.67.0) 📶 몫 설정이 바뀌면 바로 */ if (!SCHED.mig161) asMigrate161(); schedDraw(); asEdRefresh(); asAck('sched', SCHED, () => `rev ${+SCHED.rev || 0} · ${SCHED.on ? '켬' : '끔'} 받음`); }, () => {});
-    SCHED_RUN().onSnapshot((d) => { SCHED_RUNS = (d.exists && d.data().runs) || {}; schedDraw(); schedArchive(); asEdRefresh(true); }, () => {});
+    SCHED_RUN().onSnapshot((d) => { SCHED_RUNS = (d.exists && d.data().runs) || {}; window.__rnSchedRunsAt = Date.now(); schedDraw(); schedArchive(); asEdRefresh(true); }, () => {});
     JSTAT_REF().onSnapshot((d) => { JSTATS = (d.exists && d.data().jobs) || {}; schedDraw(); asEdRefresh(true); }, () => {});
     setInterval(() => { if (running || (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) || schedBusy) lastBusyAt = Date.now(); }, 15000);
     setInterval(schedTick, 60000); setTimeout(schedTick, 15000); setInterval(parTick, 60000); setTimeout(parTick, 20000); setInterval(() => { const d = kstNow().day; if (d !== schedDrawDay) schedDraw(); }, 60000);
@@ -2749,6 +2771,22 @@
   window.__rnSchedResume = async (rs) => { const S1 = (AS && AS.slotsOf ? AS.slotsOf(SCHED) : []).find((x) => x.id === rs.slot) || { id: rs.slot, job: rs.job, maxMin: 0 }; if (schedBusy) { for (let i = 0; i < 20 && schedBusy; i++) await sleep(1500); } schedBusy = true;
     try { await SCHED_RUN().set({ runs: { [rs.key]: { beat: nowIso(), state: 'running', by: PC_NAME, resumedAt: nowIso() } } }, { merge: true }); await schedExec(S1, { key: rs.key, why: rs.why + ' · 새로고침 뒤 이어감', tries: rs.tries || 0, merge: [] }, rs.t0 || Date.now(), +rs.pre || 0); }
     catch (e) { log('⏰ 이어가기 실패: ' + (e.code || e.message), 1); } finally { schedBusy = false; } };
+  /* (1.72.1) 🔁 예기치 않게 끊긴 회차 이어가기 — Tampermonkey 업데이트·크롬/PC 다시 켜짐·절전 깨어남·탭 닫힘처럼 '안전한 새로고침'을 거치지 않고 끊기면
+   *  그 회차는 Firebase에 '하는 중'(이 PC 이름)으로 남아 25분 뒤 '신호 끊김'이 되고 그날은 다시 하지 않았음(10/16 08:58 로거: 07:00 도서 정보·시장 지표가 Tampermonkey 업데이트로 끊긴 뒤 멈춤)
+   *  → 이 PC의 수집기 탭이 뜨면(쉬는 탭 아님) 이 PC 이름으로 '하는 중'에 남은 회차(마지막 신호 6시간 안)를 찾아 같은 회차로 저장된 자리부터 이어감 · 그동안 ⏰는 새 칸을 잡지 않음
+   *  · 정식 이어가기(안전한 새로고침·■ 중단)가 남아 있으면 그쪽이 맡음 · 동시 진행 칸은 제외 */
+  window.__rnResumePending = window.__rnResumePending || Date.now();
+  setTimeout(async function orphanResume() { orphanResume.n = (orphanResume.n || 0) + 1; const again = () => { if (orphanResume.n < 48) { window.__rnResumePending = Date.now(); setTimeout(orphanResume, 15000); } else if (!GM_getValue('rnu-resume-after-reload', null)) window.__rnResumePending = 0; };
+    try { if (GM_getValue('rnu-resume-after-reload', null)) return; /* 정식 이어가기(안전한 새로고침)가 맡음 — 그쪽이 대기 표시를 지움 */ if (GM_getValue('rnu-resume-slot', null) || GM_getValue('rnu-resume-slot-paused', null) || GM_getValue('rnu-resume-manual', null)) { window.__rnResumePending = 0; return; } /* ■ 중단해 둔 일은 ▶ 다시 시작이 이어감 */
+      if (window.__rnPaused) { window.__rnResumePending = 0; return; } if (window.__rnReloading || (window.__rnRest && window.__rnRest())) { if (window.__rnRest && window.__rnRest()) { window.__rnResumePending = 0; return; } return again(); }
+      if (!AS || !SCHED || !auth.currentUser || !window.__rnSchedRunsAt) return again(); try { if (PUBONLY && !TGATE.ok) return again(); } catch (e) {}
+      if (running || schedBusy) { window.__rnResumePending = 0; return; }
+      const now = Date.now(); const L = Object.entries(SCHED_RUNS || {}).filter(([k, r]) => r && r.state === 'running' && String(r.by || '') === String(PC_NAME) && r.job && !PAR_JOBS[String(r.job).slice(4)] && now - AS.toMs(r.beat || r.at) < 6 * 3600e3).sort((a, b) => AS.toMs(b[1].st || b[1].at) - AS.toMs(a[1].st || a[1].at));
+      window.__rnResumePending = 0; if (!L.length) return; const [key, r] = L[0]; const k = String(r.job).slice(4); if (String(r.job).startsWith('prd:') && !JOBS[k]) return;
+      for (const [k2, r2] of L.slice(1)) await SCHED_RUN().set({ runs: { [k2]: { state: 'stop', at: nowIso(), err: '멈춤 — 새로고침으로 끊김(더 최근 회차를 이어감)' } } }, { merge: true }).catch(() => {});
+      const st = AS.toMs(r.st || r.at) || now; const pre = Math.max(0, AS.toMs(r.beat || r.at) - st);
+      log(`⏰ 새로고침·다시 켜짐으로 끊겼던 '${(JOBS[k] || [k])[0]}' (${r.why || key}) 회차를 같은 회차로 저장된 자리부터 이어감`, 1);
+      await window.__rnSchedResume({ key, slot: r.slot || key.split('@')[0], job: r.job, k, why: (r.why || '') + ' · 끊긴 뒤', tries: r.tries || 0, t0: st, pre, at: now }); } catch (e) { window.__rnResumePending = 0; } }, 8000);
   /* (1.72.0) ▶ 다시 시작(일시정지 풀림) → ■ 중단 때 저장해 둔 정한 칸 회차를 같은 회차로 그 자리부터 · 사람이 누른 일(정한 칸이 아닌 것)도 그 일부터 이어감 · 날이 바뀌었으면 이어가지 않음(그 회차는 '멈춤'으로 끝냄) */
   setInterval(async () => { try { if (window.__rnPaused || running || schedBusy || window.__rnReloading) return; const rs = GM_getValue('rnu-resume-slot-paused', null); const mj = GM_getValue('rnu-resume-manual', null);
       if (rs) { GM_setValue('rnu-resume-slot-paused', null); const kday = String(rs.key || '').split('@')[1]; if (kday && AS && kday !== AS.kst(Date.now()).day) { await SCHED_RUN().set({ runs: { [rs.key]: { by: PC_NAME, at: nowIso(), state: 'stop', err: '멈춤 — 일시정지 중 날이 바뀜', ms: +rs.pre || 0 } } }, { merge: true }).catch(() => {}); log(`⏰ 일시정지해 둔 '${(JOBS[rs.k] || [rs.k])[0]}' 회차는 날이 바뀌어 이어가지 않음 — 저장한 자리는 다음 회차가 이어 씀`, 1); return; }
@@ -3111,6 +3149,7 @@
     { const after = GM_getValue('rnu-resume-after-reload', null);
       if (after && JOBS[after]) { let tries = 0; window.__rnResumePending = Date.now(); const t = setInterval(() => { tries++;
         if (window.__rnPaused) { clearInterval(t); window.__rnResumePending = 0; log(`새로고침 뒤 이어가기 '${JOBS[after][0]}': 일시정지 상태라 이어가지 않음 (개요 탭의 ▶ 다시 시작으로 계속)`, 1); return; }
+        if (running && curKey === after && tries > 2) { clearInterval(t); window.__rnResumePending = 0; GM_setValue('rnu-resume-after-reload', null); return; } /* (1.72.1) 다른 길(⏰ 같은 회차 이어가기)로 이미 그 일이 다시 도는 중 — 끝난 뒤 '10분 동안 시작하지 못함' 경고를 잘못 적던 것 */
         if (running || (window.__rnRest && window.__rnRest())) return; /* (1.56.0) 이 PC의 수집기 탭이 이어감 */ if (tries > 200) { clearInterval(t); window.__rnResumePending = 0; GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 이어가기 '${JOBS[after][0]}'를 10분 동안 시작하지 못했습니다 — 개요 탭 '멈춘 작업'의 이어하기를 눌러 주세요`, 1); return; }
         if (!AS || !SCHED || !auth.currentUser) return; try { if (PUBONLY && !TGATE.ok) return; } catch (e) {} /* (1.71.2) ⏰ 설정·로그인·(로거) 테더링 확인을 기다림 */ clearInterval(t); window.__rnResumePending = 0; const rs = GM_getValue('rnu-resume-slot', null); GM_setValue('rnu-resume-slot', null); if (rs && rs.k === after && Date.now() - (rs.at || 0) < 30 * 60e3 && window.__rnSchedResume) { GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 ⏰ '${JOBS[after][0]}' (${rs.why})을(를) 같은 회차로 저장된 자리부터 이어갑니다 (수집기 ${VER})`); window.__rnSchedResume(rs); return; } GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 '${JOBS[after][0]}'을(를) 저장된 자리부터 이어갑니다 (수집기 ${VER})`); window.__rnAuto = true; runJob(after).finally(() => { window.__rnAuto = false; }); }, 3000); } }
   }
