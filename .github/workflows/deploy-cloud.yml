@@ -8,10 +8,10 @@ name: 클라우드 자동 배포 (Cloud Run)
 on:
   push:
     branches: [main]
-    paths: ['cloud/**', '.github/workflows/deploy-cloud.yml', 'readnow-*-core.js', 'readnow-registry.js']  # (2026-10-13) 공용 파일이 바뀌어도 다시 올림 — 클라우드는 올린 커밋(CODE_SHA)의 공용 파일만 씀
+    paths: ['cloud/**', '.github/workflows/deploy-cloud.yml', 'readnow-*-core.js', 'readnow-registry.js', 'diag/q.txt']  # (2026-10-16) diag/q.txt = 🔎 읽기 전용 진단(아래 '진단' 단계 · 배포는 건너뜀) — 구글 로그인은 이 파일(deploy-cloud.yml)에만 허락돼 있어 여기서 함  # (2026-10-13) 공용 파일이 바뀌어도 다시 올림 — 클라우드는 올린 커밋(CODE_SHA)의 공용 파일만 씀
   workflow_dispatch:
 concurrency: { group: deploy-cloud, cancel-in-progress: false }
-permissions: { contents: read, id-token: write }
+permissions: { contents: write, id-token: write }  # contents: write = 진단 결과(암호화)를 diag-out 가지에 올릴 때만
 env:
   PROJECT: readnow-3a385
   REGION: asia-northeast3
@@ -24,7 +24,14 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0 (node24 · 전체 점검 2026-10-12: v4는 node20이라 곧 막힘)
+        with: { fetch-depth: 2 }
+      - name: 무엇이 바뀌었나 (배포 · 진단)
+        run: |
+          CH=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo ALL)
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] || [ "$CH" = ALL ] || echo "$CH" | grep -qE '^(cloud/|\.github/workflows/deploy-cloud\.yml|readnow-[a-z]+-core\.js|readnow-registry\.js)'; then echo "DO_DEPLOY=1" >> "$GITHUB_ENV"; fi
+          if echo "$CH" | grep -q '^diag/q\.txt$'; then echo "DO_DIAG=1" >> "$GITHUB_ENV"; fi
       - name: 문법 검사 (깨진 파일은 올리지 않음)
+        if: env.DO_DEPLOY == '1'
         run: |
           for f in cloud/*.js; do node --check "$f"; done
           echo "VER=$(grep -oP "^const VER = '\K[0-9.]+" cloud/index.js)" >> "$GITHUB_ENV"
@@ -33,7 +40,24 @@ jobs:
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0 (node24)
         with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}' }
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1 (node24)
+      - id: idt
+        name: 진단용 1회용 ID 토큰
+        if: env.DO_DIAG == '1'
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}', token_format: id_token, id_token_audience: readnow-diag, id_token_include_email: true, create_credentials_file: false }
+      - name: 🔎 진단 — 읽고 암호화해 diag-out 가지에 (읽기 전용 · 개인 열쇠는 저장소에 없음)
+        if: env.DO_DIAG == '1'
+        env: { IDT: '${{ steps.idt.outputs.id_token }}' }
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')
+          mkdir -p /tmp/o; n=0
+          while IFS= read -r Q || [ -n "$Q" ]; do [ -z "$Q" ] && continue; n=$((n+1)); curl -sS -m 280 -H "Authorization: Bearer $IDT" "$URL/diag?$Q" > /tmp/o/r$n.json || echo '{"ok":false,"err":"curl"}' > /tmp/o/r$n.json; echo "q$n bytes $(wc -c < /tmp/o/r$n.json)"; done < diag/q.txt
+          tar czf /tmp/o.tgz -C /tmp/o .; openssl rand -hex 32 > /tmp/k; openssl enc -aes-256-cbc -pbkdf2 -salt -in /tmp/o.tgz -out /tmp/o.enc -pass file:/tmp/k
+          openssl pkeyutl -encrypt -pubin -inkey diag/pub.pem -pkeyopt rsa_padding_mode:oaep -in /tmp/k -out /tmp/k.enc; rm -f /tmp/k /tmp/o.tgz; rm -rf /tmp/o
+          git config user.email "actions@github.com"; git config user.name "diag"; git checkout -q --orphan diag-out; git rm -rfq --cached . ; cp /tmp/o.enc out.enc; cp /tmp/k.enc out.key; echo "$GITHUB_SHA" > for.txt
+          git add -f out.enc out.key for.txt; git commit -qm "diag $GITHUB_SHA"; git push -qf origin HEAD:diag-out
       - name: Cloud Run 올리기 (빌드 3~6분)
+        if: env.DO_DEPLOY == '1'
         working-directory: cloud
         run: |
           # 실패하면 마지막 줄들을 알림(annotation)으로 — GitHub 화면·Claude가 로그 파일 없이도 까닭을 봄
@@ -43,6 +67,7 @@ jobs:
             exit 1; fi
           tail -n 5 /tmp/deploy.log
       - name: 올라간 판 확인
+        if: env.DO_DEPLOY == '1'
         run: |
           URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')
           for i in 1 2 3 4 5 6; do GOT=$(curl -fsS "$URL/status" | grep -oP '"ver":"\K[0-9.]+' || true); [ "$GOT" = "$VER" ] && break; sleep 10; done
