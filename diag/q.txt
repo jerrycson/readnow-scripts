@@ -1,1 +1,1 @@
-doc=prd_jobs/autoSched,prd_jobs/bench_state,prd_jobs/benchForce&r=15
+egress=1&doc=prd_jobs/pcBeat,prd_jobs/autoSched,app_settings/cloud_login&r=16
