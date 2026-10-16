@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "주소 확인·등록 조회·HOME·출고 건수·지역 고객 수",
+ "since": "2026-10-16T14:22:29Z",
+ "beat": "2026-10-16T14:22:29Z",
  "ask": null,
  "last": {
   "who": "chat",
