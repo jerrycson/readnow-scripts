@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "벤치 끝 쪽 다음 쪽",
- "since": "2026-10-17T15:23:52Z",
- "beat": "2026-10-17T15:23:52Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "벤치 멈춤 고침",
-  "at": "2026-10-17T14:06:17Z"
+  "done": "1.78.5",
+  "at": "2026-10-17T15:23:58Z"
  }
 }
