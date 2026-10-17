@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "무한 도서 정보 확장·표지 통계·벤치마킹 월요일까지 무제한",
- "since": "2026-10-17T08:19:20Z",
- "beat": "2026-10-17T08:19:20Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
   "done": "",
-  "at": "2026-10-17T08:04:35Z"
+  "at": "2026-10-17T09:01:35Z"
  }
 }
