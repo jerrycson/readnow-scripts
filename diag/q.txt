@@ -1,1 +1,1 @@
-samp=bench_books,mkt_kpipa_posts,prd_books,prd_explore,pur_entries,pur_aladin_list,pur_existing,prd_market_nobook,prd_lookups,ext_basic,pur_buyback,prd_market_watch,shp_market&extidx=1
+doc=bench_books/403888108,pur_aladin_list/chunk_0
