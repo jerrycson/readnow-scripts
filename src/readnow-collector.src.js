@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.78.4
+// @version      1.78.5
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -4733,7 +4733,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       const got = await Promise.allSettled(pgs.map((pg) => T120(PUB.read('shop', benchUrl(sc, pg, ROWS), (g) => ({ items: benchParse(g.doc), last: benchLastPage(g.doc, g.html) }), (g) => benchParse(g.doc).length > 0))));
       let out = null;
       for (let q = 0; q < got.length && !out; q++) { /* prog.page === pgs[q] */
-        if (got[q].status === 'rejected') { const e = got[q].reason || {}; if (e.message === '멈춤') { await saveBk(); throw e; } log(`벤치마킹 '${name}' ${prog.page}쪽 읽기 실패: ${e.message} — 다음에 이 쪽부터`, 1); await saveBk(); return 'partial'; }
+        if (got[q].status === 'rejected') { const e = got[q].reason || {}; if (e.message === '멈춤') { await saveBk(); throw e; } if (lastP && prog.page > lastP) { out = 'break'; break; } /* (1.78.5) 끝 쪽 다음 쪽(빈 쪽)은 알라딘이 다른 모양으로 줘 '읽기 실패'로 셌음(10/17 한성서적 132/131쪽·봄바람77 117/116쪽) → 끝까지 읽은 것 */ log(`벤치마킹 '${name}' ${prog.page}쪽 읽기 실패: ${e.message} — 다음에 이 쪽부터`, 1); await saveBk(); return 'partial'; }
         let r = got[q].value; let L = benchParse(r.doc);
         /* (1.54.2) 끝 쪽보다 한참 앞에서 빈 쪽이 오면 '끝'으로 보지 않음 — 로그인 상태로 한 번 더 읽고, 그래도 비면 저장하고 다음에 이 쪽부터(회차를 끝내지 않음 · 나머지를 '안 보임'으로 적지 않게) */
         if (!L.length && lastP && prog.page < lastP - 3) { try { const r2 = await getDoc(benchUrl(sc, prog.page, ROWS)); const L2 = benchParse(r2.doc); if (L2.length) { r = r2; L = L2; } } catch (e) { if (e.message === '멈춤') { await saveBk(); throw e; } }
