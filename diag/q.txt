@@ -1,1 +1,1 @@
-cmds=regLookup&n=12
+cmds=regLookup&n=14
