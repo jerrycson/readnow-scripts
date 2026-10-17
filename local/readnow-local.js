@@ -16,7 +16,7 @@
  *   · tetherIface/wifiIface: 자동으로 못 고를 때만 이름을 적음(예: "이더넷 3", "Wi-Fi") — 상태 화면에 후보 이름이 나옴
  */
 'use strict';
-const VERSION = '1.6.5'; // (1.6.5) 🔒 다른 출처(알라딘 화면 등)에서 온 요청을 시각·출처와 함께 기록(D:\\ReadNow\\sec) · /status sec // (1.6.4 자동 점검) 도우미 화면·API는 이 PC 이름(127.0.0.1·localhost·rn.local)으로 부른 것만(DNS 다시 묶기 막음) · 와이파이 전용 길은 이 PC·사내망 주소를 열지 않음(0.0.0.0 포함) · 엔진 막는 주소에 login 든 모든 주소·내 알라딘·우리 숍 번호 // (1.6.3) (1.6.3) 네이버 도서 표지(pstatic.net) 와이파이
+const VERSION = '1.6.6'; // (1.6.6) 스스로 갖추기 한 번 더 — 크롬 정책 TabDiscardingExceptions(사용자 정책: 알라딘·웹앱·도우미 주소는 메모리 절약으로 잠재우지 않음) // (1.6.5) 🔒 다른 출처(알라딘 화면 등)에서 온 요청을 시각·출처와 함께 기록(D:\\ReadNow\\sec) · /status sec // (1.6.4 자동 점검) 도우미 화면·API는 이 PC 이름(127.0.0.1·localhost·rn.local)으로 부른 것만(DNS 다시 묶기 막음) · 와이파이 전용 길은 이 PC·사내망 주소를 열지 않음(0.0.0.0 포함) · 엔진 막는 주소에 login 든 모든 주소·내 알라딘·우리 숍 번호 // (1.6.3) (1.6.3) 네이버 도서 표지(pstatic.net) 와이파이
 // (1.6.2) // (1.6.2) 교보·리디·중고나라·애이비북스·당근이 테더링으로 나가던 것 → 와이파이 · 📱 남은 테더링을 통신사 기준 남은 양(사장님이 적은 값)으로 표시 · 일별(벤치마킹 등) 실제 테더링 바이트
 // (1.6.1) (1.6.1) 🧹 멈춘 스크립트 오류 창(Windows Script Host) 저절로 닫기 · 다시 켜지기 예약 작업이 실제 파일을 가리키는지 30분마다 확인·고침
 // (이전) // (1.6.0) 외부 사이트(예스24·중고닷·국립중앙도서관 등) 와이파이 · 와이파이 전용 길(8897 — 알라딘 막음) · /render 화면 없이 그려 읽기(탭 대신 · 와이파이로)
@@ -216,7 +216,7 @@ setTimeout(selfSetup, 20e3);
 /* (1.5.1) 🧰 스스로 갖추기 2 — 설치를 다시 실행하지 않아도 되게: 판마다 한 번 GitHub의 local/self-setup.ps1을 받아 실행(관리자 필요 없음)
  *  공개 수집 크롬 시작 파일을 화면 나누기 판으로 + 지금 떠 있는 창도 왼쪽으로 옮김(다시 켜지 않음) · 도우미 창 바로가기 · ReadNow-Ensure(로그온·잠금 해제·절전 깨어남·5분 — 되는 만큼) · USB·잠자기 절전 끔
  *  관리자 부분(hosts·크롬 정책·테더링 뒤로)은 확인만 → setup.json → /status·/mini에 표시. 실패하면 6시간 뒤 다시 */
-const SETUP = { at: null, r: null, msg: null }; const SETUP_V = '1.6.1'; /* (1.6.1) 예전 self-setup이 예약 작업을 잘못된 경로(System.__ComObject)로 만들었으므로 한 번 다시 */
+const SETUP = { at: null, r: null, msg: null }; const SETUP_V = '1.6.6'; /* (1.6.6) 탭 잠재우기 예외 정책을 넣으려고 한 번 다시 */ /* (1.6.1) 예전 self-setup이 예약 작업을 잘못된 경로(System.__ComObject)로 만들었으므로 한 번 다시 */
 function setupRead() { try { SETUP.r = JSON.parse(fs.readFileSync(path.join(HOME, 'setup.json'), 'utf8').replace(/^﻿/, '')); } catch (e) {} return SETUP.r; }
 function selfSetup2() { if (T_IF || process.platform !== 'win32') return; const r = setupRead(); if (r && r.v === SETUP_V && r.ensure) return;
   getText(RAW.replace(/readnow-local\.js$/, 'self-setup.ps1'), (e, src) => { if (e || !/ReadNow-Ensure/.test(src || '')) { SETUP.msg = '받기 실패 ' + (e ? e.message : '내용 이상'); return; }

@@ -8,7 +8,7 @@
 param([string]$Root = $(if (Test-Path 'D:\ReadNow') { 'D:\ReadNow' } else { Join-Path $env:USERPROFILE 'ReadNow' }), [string]$Ver = '')
 $ErrorActionPreference = 'Continue'
 $L = Join-Path $Root 'local'
-$R = [ordered]@{ v = $Ver; at = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss'); pub = $null; moved = $null; helperWin = $null; ensure = $null; ensureWhy = $null; usb = $null; sleep = $null; admin = $null; adminMiss = @() }
+$R = [ordered]@{ v = $Ver; at = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss'); pub = $null; moved = $null; helperWin = $null; ensure = $null; ensureWhy = $null; usb = $null; sleep = $null; tabs = $null; admin = $null; adminMiss = @() }
 $utf8b = New-Object Text.UTF8Encoding $true
 $chrome = @("$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe", "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
 $sh = New-Object -ComObject WScript.Shell
@@ -96,6 +96,16 @@ if (-not $R.ensure) { & schtasks /Query /TN ReadNow-Ensure 2>$null | Out-Null; i
 $R.usb = ($u -eq 0)
 & powercfg /change standby-timeout-ac 0 2>$null; $e1 = $LASTEXITCODE; & powercfg /change hibernate-timeout-ac 0 2>$null; $e2 = $LASTEXITCODE
 $R.sleep = ($e1 -eq 0 -and $e2 -eq 0)
+
+# ④-2 (도우미 1.6.6) 크롬 '메모리 절약'이 수집기 탭을 잠재우지 않게 — 크롬 정책 TabDiscardingExceptions(사용자 정책 · 관리자 필요 없음) = '항상 활성 상태로 유지할 사이트'
+#   공개 수집 크롬에만 해당되는 것이 아니라 이 Windows 사용자의 모든 크롬 프로필에 적용(쓰지 않는 크롬에도 들어가지만 해는 없음) · 크롬을 다시 켜면 적용
+try {
+  $tk = 'HKCU:\SOFTWARE\Policies\Google\Chrome\TabDiscardingExceptions'; New-Item -Path $tk -Force | Out-Null
+  $tw = @('[*.]aladin.co.kr', 'jerrycson.github.io', '127.0.0.1', 'localhost', 'rn.local'); $th = @(); $tm = 0
+  foreach ($n in (Get-Item $tk).Property) { $th += (Get-ItemProperty -Path $tk -Name $n).$n; if ($n -match '^\d+$' -and [int]$n -gt $tm) { $tm = [int]$n } }
+  foreach ($w in $tw) { if ($th -notcontains $w) { $tm++; New-ItemProperty -Path $tk -Name "$tm" -Value $w -PropertyType String -Force | Out-Null } }
+  $R.tabs = $true
+} catch { $R.tabs = $false }
 
 # ⑤ 관리자 부분 확인만(바꾸지 않음)
 $miss = @()
