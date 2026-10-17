@@ -1,1 +1,2 @@
-logs=1&pc=LOGGER&from=202610142300&to=202610151930
+ebay=1&doc=app_settings/ext,app_settings/ext_run
+notechk=60&lim=500
