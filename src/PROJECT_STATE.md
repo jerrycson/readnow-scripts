@@ -96,6 +96,8 @@
 - **📰 출판 정보 게시판 (2026-10-16 · 클라우드 0.15.x · 웹앱 1.41.0)**: 클라우드 kpb가 KPIPA 5곳(g3_1 조사연구보고서·g3_2 KPIPA 출판 보고서·g3_5 글로벌출판동향·bnk 출판전산망 알림판·qa 출판산업 Q&A) 글·첨부를 mkt_kpipa_posts·저장소 kpipa/에 모음(처음 8분마다 이어 받기 → 뒤엔 6시간마다 · 상태 app_settings/kpb v4). 같은 내용 첨부는 pdf>hwpx>hwp·단면>펼침면 하나만. 요약 = 예약 작업 '리드나우 출판 정보 요약'(매일 05:47 · @kpq→kp-out 가지(diag/kps_pub.pem · 개인 열쇠는 예약 작업 설명 안에만) → 요약 → src/tools/kpin.sh → @kpin → /kp-in(클라우드 열쇠 diag/kpin_pub.pem · 개인 열쇠 app_secrets/kpin)). 그림만 있는 PDF(KPIPA 출판산업 동향 등)는 글자를 못 꺼냄 → 제안: 클라우드 Vision OCR.
 
 ## 남은 일 / 지켜볼 것
+- (2026-10-17 18시 · 웹앱 1.45.2) **끝남 — 등록 후보를 골라도 아무 일 없음(사장님 17:41)**: 원인 = regLookup이 S.regLk.busy면 조용히 return — 휴대폰(JS-PHONE)에서 어린왕자 고른 조회를 HOME이 2분 43초(08:34:13→08:37:04) 붙잡는 사이 고른 달러구트·데미안·작별하지 않는다가 버려짐(진단 cmds). 고침: S.regLkQ 대기열 → 끝나면 이어서 · 카드에 regPickStatus(✓ 고름·조회 중 n초·이어서·↻ 이 상품으로 조회) · pcFirst raceMs 40초(PC가 받고 40초 넘으면 클라우드도 함께, 먼저 온 답). 수집기 1.78.1: app_settings/ext.src.kakao.cap 5000 → 25000 한 번(capMig1017). 클라우드 0.16.9 진단 cmds(종류별 최근 맡긴 일).
+  - 지켜볼 것: HOME 등록 조회가 왜 2분 넘게 걸리는지(lookupBook ItemId — HOME 자동 일과 겹침?) · 1.45.2 뒤 등록 조회 시간.
 - (2026-10-17 17:30 · 웹앱 1.45.0 · 수집기 1.78.0 · 외부 공용 0.6.2 · 자동 수집 0.13.6 · 클라우드 0.16.8) **끝남 — 사장님 17:17 '더 늘리는 방안 전부' + 17:18 '로거 벤치마킹 월요일까지 한도 상관없이'**:
   - 자동 수집 0.13.6: TEMP_FREE_UNTIL = 2026-10-20 00:00 KST(하루 몫 풂 · 이번 달 남은 양 안에서) · 날마다 `${slot}@${day}@xfree` 한 번 더(몫 때문에 멈춘 판매자 마저). **10/20 0시 뒤 이 코드 지울 것.**
   - 무한 차례 biExtra: 서버 커서 app_settings/bi_x {pool: books|bench|kpipa|nl, cur, nlTop, lap, lapAsk, rest, mode: on|slow|off, cover, office} · bxClaim(낙관적 트랜잭션) · prd_books(33,468)·bench_books(172 · isbn 대부분 null)·kpipa(891 · isbns 대부분 빈)·국중 날짜별(seoji start/end_publish_date · ebook_yn=N · 30일 뒤부터 거꾸로 2000년까지 · nlTop으로 새 날 먼저 · 미래 출간은 다른 출처 안 물음).
