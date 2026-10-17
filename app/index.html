@@ -595,6 +595,47 @@ body{word-break:keep-all;overflow-wrap:break-word}
 @supports (-webkit-touch-callout:none){@media (max-width:760px){input:not([type=checkbox]):not([type=radio]):not([type=range]),select,textarea{font-size:16px!important}}}
 @media (pointer:coarse){.qph-row .dh,.rgpb .dh,.phx-h,.alh{position:relative}.qph-row .dh::before,.rgpb .dh::before,.phx-h::before,.alh::before{content:'';position:absolute;inset:-8px -4px}}
 body.kbd .tabs,body.kbd #updpill{display:none!important}
+
+.bghead{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:0 0 8px}.bgname{font-size:18px}.bgcnt{font-weight:800;color:var(--cloth)}.bglinks{font-size:12px}
+.bwatch{margin:6px 0;border:1px solid var(--line);border-radius:12px;padding:4px 10px}.bwatch>summary{cursor:pointer;padding:4px 0}.bwatch[open]>summary{margin-bottom:6px}
+/* (1.43.0) 🎛 수동 일괄 처리 개편 — 단계 표시 · 조건을 갈래별 칸으로 · 아래 고정 줄(개수·계산) · 결과 단계 알약 · ⚡ 빠르게 고르기 줄 */
+.bstepper{display:flex;align-items:center;gap:0;margin:10px 12px 4px;padding:8px 10px;background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow-x:auto}
+.bst{display:inline-flex;align-items:center;gap:6px;border:0;background:none;padding:4px 6px;cursor:pointer;color:var(--sub);font-weight:700;font-size:13px;white-space:nowrap;border-radius:10px}
+.bst-n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);font-size:12px;background:var(--paper)}
+.bst.now{color:var(--cloth)}.bst.now .bst-n{background:var(--cloth);border-color:var(--cloth);color:#fff;box-shadow:0 0 0 4px var(--soft)}
+.bst.done{color:var(--ink)}.bst.done .bst-n{border-color:var(--cloth);color:var(--cloth)}
+.bst-ln{flex:1;min-width:14px;height:2px;background:var(--line);margin:0 4px}
+.bgrp-card .bgrp-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}.bgrp-list{display:flex;gap:6px;overflow-x:auto;padding:6px 0 2px;scrollbar-width:thin}.bgrp-list .btn{white-space:nowrap;border-radius:18px}.bgrp-list .btn.on{background:var(--cloth);color:#fff;border-color:var(--cloth)}
+.bformd{border-radius:14px}.bformd>summary{font-size:15px}
+.bform .bsec-h{display:flex;align-items:center;gap:8px;margin:14px 0 4px;padding:6px 10px;background:var(--soft);border-radius:10px;font-size:13.5px}.bform .bsec-h:first-child{margin-top:4px}
+.bform .bsec-h small{color:var(--sub);font-weight:400;font-size:12px}.bsec-i{font-size:16px}
+.bform .brow{display:flex;gap:6px 8px;align-items:center;flex-wrap:wrap;padding:6px 10px;margin:0;border-bottom:1px dashed var(--line)}.bform .brow:last-child{border-bottom:0}
+.bform .brow>label:first-child{flex:0 0 106px;min-width:0;color:var(--ink);font-size:13px}
+.bform input,.bform select{border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}.bform input:focus,.bform select:focus{outline:2px solid var(--tap);outline-offset:0;border-color:var(--tap)}
+.bform .rchip{border-radius:16px;padding:3px 9px}.bform .rchip:has(input:checked){background:var(--soft);border-color:var(--cloth);color:var(--cloth2);font-weight:700}
+.bmore{margin:8px 0;border:1px solid var(--line);border-radius:12px;padding:4px 6px}.bmore>summary{cursor:pointer;padding:6px 4px}
+.bfoot{position:sticky;bottom:0;z-index:4;margin:10px -12px -12px;padding:10px 12px;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(6px);border-top:1px solid var(--line);border-radius:0 0 14px 14px}
+.bfoot .bcount{margin:0 0 8px;background:var(--soft);color:var(--ink);font-weight:600}
+.btabs{gap:6px;padding:6px;background:var(--bg);border-radius:14px}.btabs button{border-radius:12px;padding:6px 12px;background:var(--paper)}.btabs button b{margin-left:2px}
+.bpline{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;padding:8px 10px;border:1px solid #C9DAF3;background:#F2F7FF;border-radius:12px}
+.bpline .bp-l{font-weight:800;color:#1F5FAF;font-size:13px;margin-right:2px}.bpline .hint{font-size:12.5px}.bpline input[type=number]{width:62px;padding:4px 6px;border:1px solid #9DB8E0;border-radius:8px}
+.bpline .seg button{padding:4px 10px}.bp-same{display:inline-flex;gap:4px;align-items:center;font-size:12.5px;padding:3px 8px;border:1px solid #9DB8E0;border-radius:14px;background:#fff;cursor:pointer}
+@media (max-width:640px){.bform .brow{flex-wrap:wrap}.bform .brow>label:first-child{flex:1 1 100%}.bst-t{display:none}.bst.now .bst-t{display:inline}}
+@media (prefers-color-scheme:dark){.bpline{background:#16253A;border-color:#2B4466}.bp-same{background:transparent}}
+
+/* (1.43.0) 📥 상품 등록 개편 — 설정 세 칸을 한 줄 알약으로(누르면 그 칸만 넓게) · 넣고 조회 칸 강조 · 후보 고르기 카드 격자 */
+.rgsetrow{display:flex;flex-wrap:wrap;gap:8px;margin:10px 12px 0}.rgsetrow>.card{margin:0!important;flex:1 1 240px;min-width:0;border-radius:14px}
+.rgsetrow>.card:not([open])>summary{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rgsetrow>.card[open]{flex-basis:100%}
+.rgsearch{border:2px solid var(--cloth);border-radius:16px;box-shadow:0 6px 18px -12px rgba(47,93,80,.5)}.rgsearch-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin:0 0 8px}.rgsearch-h b{font-size:15px}
+.rgsearch #rg_in{border-radius:12px;border:2px solid var(--line)!important}.rgsearch #rg_in:focus{border-color:var(--cloth)!important;outline:0;box-shadow:0 0 0 4px var(--soft)}
+.rgcandc{display:block!important}.rgcandc>*{width:auto;max-width:none}.rgcandc .rgtop{margin-bottom:4px;display:flex;gap:10px;align-items:flex-start}.rgcandc .rgtopm{flex:1;min-width:0}.rgcandc .rgwarn{display:inline-block;margin-top:6px;padding:4px 10px;border-radius:8px}.rgcand-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin:10px 0 6px}
+.rgcands{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.rgcand{display:flex;gap:10px;align-items:flex-start;text-align:left;padding:8px;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);cursor:pointer;font:inherit}
+.rgcand:hover{border-color:var(--cloth);box-shadow:0 4px 14px -8px rgba(0,0,0,.35)}.rgcand img{width:46px;height:64px;object-fit:cover;border-radius:4px;flex:none;background:var(--bg)}
+.rgcand-noimg{width:46px;height:64px;display:grid;place-items:center;background:var(--bg);border-radius:4px;flex:none}
+.rgcand-b{display:flex;flex-direction:column;gap:2px;min-width:0}.rgcand-b>b{font-size:13.5px;line-height:1.35}.rgcand-b small{color:var(--sub);font-size:12px}
+.rgcand-m{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--sub)}.rgcand-code{font-family:ui-monospace,monospace;background:var(--bg);padding:0 5px;border-radius:4px}
+.rgcand-cov{padding:0 6px;border-radius:8px;background:var(--bg)}.rgcand-cov.hi{background:var(--soft);color:var(--cloth2);font-weight:700}.rgcand-new{margin-top:8px}
 </style>
 </head>
 <body>
@@ -618,7 +659,7 @@ body.kbd .tabs,body.kbd #updpill{display:none!important}
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.1.0"></script>
 <script src="../readnow-register-core.js?v=0.7.0"></script>
-<script>const APP_VER = '1.42.8';</script>
-<script src="readnow-webapp.js?v=1.42.8"></script>
+<script>const APP_VER = '1.43.0';</script>
+<script src="readnow-webapp.js?v=1.43.0"></script>
 </body>
 </html>
