@@ -26,7 +26,7 @@ const wrapMod = (k, code) => `;(globalThis.__rnModQ = globalThis.__rnModQ || [])
 MODS.forEach(([k, f, what], i) => { const txt = `/* ${f} — 리드나우 수집기 ${ver}의 ${what}\n * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.\n * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */\n${stamp(k)}${wrapMod(k, parts[i])}`; fs.writeFileSync(path.join(OUT, f), txt); });
 // 본체: 머리(@require에 알라딘 창구·모듈 5개를 판 번호로) + 모듈이 다 왔는지 확인
 const lastReq = [...header.matchAll(/\/\/ @require[^\n]*\n/g)].pop(); // 모듈은 맨 뒤(Firebase·엑셀 프로그램을 다 받은 뒤)에 — 모듈이 불리자마자 firebase를 씀
-let head = header.slice(0, lastReq.index + lastReq[0].length).replace(/[\s\S]*$/, (m) => m + `// @require      ${RAW}readnow-aladin-core.js?v=0.2.0\n` + `// @require      ${RAW}readnow-exec-core.js?v=0.1.1\n` + `// @require      ${RAW}readnow-pc-boot.js?v=${ver}\n` + MODS.map(([, f]) => `// @require      ${RAW}${f}?v=${ver}\n`).join('')) + header.slice(lastReq.index + lastReq[0].length);
+let head = header.slice(0, lastReq.index + lastReq[0].length).replace(/[\s\S]*$/, (m) => m + `// @require      ${RAW}readnow-aladin-core.js?v=0.2.1\n` + `// @require      ${RAW}readnow-exec-core.js?v=0.1.1\n` + `// @require      ${RAW}readnow-pc-boot.js?v=${ver}\n` + MODS.map(([, f]) => `// @require      ${RAW}${f}?v=${ver}\n`).join('')) + header.slice(lastReq.index + lastReq[0].length);
 if (!/readnow-pc-runtime\.js/.test(head)) throw new Error('@require 넣기 실패');
 if (!/@connect\s+raw\.githubusercontent\.com/.test(head)) head = head.replace(/(\/\/ @connect[^\n]*\n)/, '// @connect      raw.githubusercontent.com\n$1');
 /* (1.63.8) ⚡ 머리 서명 — 판 번호·GitHub 파일 줄을 뺀 머리(맞는 화면·권한·바깥 프로그램). 새 판의 머리가 다르면(권한·화면이 바뀐 판) 빠른 업데이트로는 못 바꾸고 Tampermonkey 업데이트를 기다림 */

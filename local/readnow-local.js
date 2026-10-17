@@ -16,7 +16,7 @@
  *   · tetherIface/wifiIface: 자동으로 못 고를 때만 이름을 적음(예: "이더넷 3", "Wi-Fi") — 상태 화면에 후보 이름이 나옴
  */
 'use strict';
-const VERSION = '1.6.7'; // (1.6.7 자동 점검) /meter·/bud는 수집기 머리(X-RN-Meter)가 있어야 받음 · 스스로 갖추기: 탭 잠재우기 예외를 사용자 정책에 못 넣으면(관리자만 쓸 수 있는 Windows) 관리자 부분으로 확인 // (1.6.6) 스스로 갖추기 한 번 더 — 크롬 정책 TabDiscardingExceptions(사용자 정책: 알라딘·웹앱·도우미 주소는 메모리 절약으로 잠재우지 않음) // (1.6.5) 🔒 다른 출처(알라딘 화면 등)에서 온 요청을 시각·출처와 함께 기록(D:\\ReadNow\\sec) · /status sec // (1.6.4 자동 점검) 도우미 화면·API는 이 PC 이름(127.0.0.1·localhost·rn.local)으로 부른 것만(DNS 다시 묶기 막음) · 와이파이 전용 길은 이 PC·사내망 주소를 열지 않음(0.0.0.0 포함) · 엔진 막는 주소에 login 든 모든 주소·내 알라딘·우리 숍 번호 // (1.6.3) (1.6.3) 네이버 도서 표지(pstatic.net) 와이파이
+const VERSION = '1.6.8'; // (1.6.8) 한 번만 공개 수집 크롬 다시 띄우기(10/17 멈춘 벤치마킹 풀기 · 10/18 12시까지) // (1.6.7 자동 점검) /meter·/bud는 수집기 머리(X-RN-Meter)가 있어야 받음 · 스스로 갖추기: 탭 잠재우기 예외를 사용자 정책에 못 넣으면(관리자만 쓸 수 있는 Windows) 관리자 부분으로 확인 // (1.6.6) 스스로 갖추기 한 번 더 — 크롬 정책 TabDiscardingExceptions(사용자 정책: 알라딘·웹앱·도우미 주소는 메모리 절약으로 잠재우지 않음) // (1.6.5) 🔒 다른 출처(알라딘 화면 등)에서 온 요청을 시각·출처와 함께 기록(D:\\ReadNow\\sec) · /status sec // (1.6.4 자동 점검) 도우미 화면·API는 이 PC 이름(127.0.0.1·localhost·rn.local)으로 부른 것만(DNS 다시 묶기 막음) · 와이파이 전용 길은 이 PC·사내망 주소를 열지 않음(0.0.0.0 포함) · 엔진 막는 주소에 login 든 모든 주소·내 알라딘·우리 숍 번호 // (1.6.3) (1.6.3) 네이버 도서 표지(pstatic.net) 와이파이
 // (1.6.2) // (1.6.2) 교보·리디·중고나라·애이비북스·당근이 테더링으로 나가던 것 → 와이파이 · 📱 남은 테더링을 통신사 기준 남은 양(사장님이 적은 값)으로 표시 · 일별(벤치마킹 등) 실제 테더링 바이트
 // (1.6.1) (1.6.1) 🧹 멈춘 스크립트 오류 창(Windows Script Host) 저절로 닫기 · 다시 켜지기 예약 작업이 실제 파일을 가리키는지 30분마다 확인·고침
 // (이전) // (1.6.0) 외부 사이트(예스24·중고닷·국립중앙도서관 등) 와이파이 · 와이파이 전용 길(8897 — 알라딘 막음) · /render 화면 없이 그려 읽기(탭 대신 · 와이파이로)
@@ -200,6 +200,12 @@ function pubWatch() { PW.on = CFG.pubWatch !== false; if (T_IF || process.platfo
     const hcmd = path.join(HOME, 'start-helperwin.cmd'); if (CFG.helperWin === false || !fs.existsSync(hcmd)) { HWIN.alive = null; HWIN.msg = CFG.helperWin === false ? '꺼 둠(설정)' : 'start-helperwin.cmd 없음(설치를 다시)'; return; }
     if (nH > 0) { HWIN.alive = true; HWIN.miss = 0; HWIN.msg = '열려 있음'; } else { HWIN.alive = false; HWIN.miss++; if (paused) HWIN.msg = '닫혀 있음 — 쉬는 중'; else if (HWIN.miss < 2) HWIN.msg = '닫혀 있음 — 2분 뒤 다시 엶'; else launch(hcmd, HWIN, '도우미 창'); } }); }
 setTimeout(pubWatch, 60e3); setInterval(pubWatch, 120e3);
+/* (1.6.8) 🔁 한 번만: 공개 수집 크롬 다시 띄우기 — 10/17 19:12 수집기 벤치마킹이 알라딘 응답을 받다 멈춘 채 '하는 중'으로 남아(원격 업데이트·중단도 그 일이 끝나야 들어서 안 먹음) 다시 열어야만 풀림
+ *  새 수집기(1.78.4 — 응답 시한·멈춤 지킴이)가 다시 뜨면서 멈췄던 벤치마킹 회차를 저장된 자리부터 이어감 · 10/18 12시까지만(그 뒤엔 하지 않음) · 한 번 한 표시(kick-1017.done) */
+function pubKickOnce() { try { if (T_IF || process.platform !== 'win32' || CFG.pubWatch === false) return; if (Date.now() > Date.parse('2026-10-18T12:00:00+09:00')) return; const f = path.join(HOME, 'kick-1017.done'); if (fs.existsSync(f)) return; fs.writeFileSync(f, kst());
+    const ps = path.join(HOME, 'kick-pub.ps1'); fs.writeFileSync(ps, "Get-CimInstance Win32_Process -Filter \"Name='chrome.exe'\" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like '*chrome-pub*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }\r\n");
+    cp.exec(`powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${ps}"`, { timeout: 30000, windowsHide: true }, (e) => { log('🔁 공개 수집 크롬을 한 번 다시 띄움(멈춘 벤치마킹 풀기 · 새 수집기로) — 2~4분 안에 지킴이가 다시 켬' + (e ? ' · 끄기 오류 ' + e.message.slice(0, 80) : '')); }); } catch (e) {} }
+setTimeout(pubKickOnce, 90e3);
 /* (1.5.0) 🧰 스스로 갖추기 — 설치를 다시 하지 않아도(도우미는 6시간마다 스스로 업데이트) 새 판에 필요한 파일·예약 작업을 만듦: 도우미 창(start-helperwin.*) · 다시 켜지기(ensure.* + 5분마다 예약 작업 ReadNow-Ensure — 이 사용자 것, 관리자 필요 없음)
  *  이미 있으면 건드리지 않음(설치가 만든 것이 먼저) · 로그온·잠금 해제·절전 깨어남 때 바로 켜기는 설치를 다시 하면 더해짐 */
 function selfSetup() { if (T_IF || process.platform !== 'win32') return; try {

@@ -4,7 +4,7 @@
  * 쓰는 곳: 리드나우 수집기(PC) · 가격 감시기. 브라우저 전용(fetch·DOMParser). 판은 노선표(readnow-registry.js PINS)에 적힘.
  * 이 파일은 알라딘에 아무것도 바꾸지 않음 — 읽기(GET)만. */
 (function (root) {
-  const VERSION = '0.2.0';
+  const VERSION = '0.2.1'; // (0.2.1) 응답 시한이 몸통 받기까지(멈춘 연결에서 영원히 기다리지 않게) · 짧은 조회에도 30초 시한
   const RETRY_WAITS = [5, 15, 45, 120, 300]; // 초. 이후로는 5분 간격
   const LOGOUT_LINK = 'a[href*="wC2Cuser_logout"]';
   // 글자 인코딩: 응답 머리(content-type)의 charset → 없으면 화면 안 <meta charset> (euc-kr 화면도 바르게)
@@ -35,11 +35,12 @@
         if (o.beforeEach) o.beforeEach();
         await wait(); const t0 = Date.now();
         try {
+          /* (0.2.1) 시한(30초)이 몸통 받기까지 덮음 — 예전엔 머리만 받으면 시한을 풀어, 몸통을 받다 연결이 멈추면(테더링 끊김 등) 영원히 기다림 → 10/17 19:12 로거 벤치마킹이 왕공주 621쪽에서 멈춘 채 4시간 */
           const ac = new AbortController(); const to = setTimeout(() => ac.abort(), (o.timeoutSec || 30) * 1000);
-          let r; try { r = await fetch(url, { credentials: anon ? 'omit' : 'include', signal: ac.signal }); } finally { clearTimeout(to); }
+          let r, buf; try { r = await fetch(url, { credentials: anon ? 'omit' : 'include', signal: ac.signal }); buf = r.ok ? await r.arrayBuffer() : null; } finally { clearTimeout(to); }
           if (!r.ok) { if ((r.status === 429 || r.status === 503) && o.on429) { pace.fail(pace.kindOf ? pace.kindOf(r.status) : '429'); o.on429(r.status); throw Object.assign(new Error('서버 응답 ' + r.status + ' (요청이 너무 많음 — 쉬었다가 느리게)'), { status: r.status, counted: true }); }
             throw Object.assign(new Error('서버 응답 ' + r.status + (r.status === 429 ? ' (요청이 너무 많음 — 쉬었다가 느리게)' : '')), { status: r.status }); }
-          const html = decode(await r.arrayBuffer(), r.headers.get('content-type')); const doc = new DOMParser().parseFromString(html, 'text/html');
+          const html = decode(buf, r.headers.get('content-type')); const doc = new DOMParser().parseFromString(html, 'text/html');
           if (o.maintenance !== false && isMaintenance(doc)) throw new Error('알라딘 점검 중');
           if (anon && (looksLoggedOut(r.url, doc) || /adult/i.test(r.url || ''))) { pace.ok(); return { needLogin: true, doc, html, url: r.url, finalUrl: r.url }; } // 로그인 없이는 못 보는 페이지(19금 등)
           if (o.loggedOut(r.url, doc, url, html)) { loginTries++; await o.onLoggedOut(r.url, loginTries); continue; }
@@ -56,9 +57,10 @@
       }
     }; }
   // 짧은 조회(책 몇 권 · 사람이 맡긴 일): 한 번만, 속도 조절은 같이 씀, 점검 화면이면 오류
-  async function quick(url, o) { o = o || {}; const u = new URL(url, 'https://www.aladin.co.kr').href; if (o.pace) await o.pace.wait(o.sleep); const r = await fetch(u, { credentials: 'include' });
+  async function quick(url, o) { o = o || {}; const u = new URL(url, 'https://www.aladin.co.kr').href; if (o.pace) await o.pace.wait(o.sleep); const ac = new AbortController(); const to = setTimeout(() => ac.abort(), (o.timeoutSec || 30) * 1000); let r, buf; /* (0.2.1) 시한 30초(몸통까지) */
+    try { r = await fetch(u, { credentials: 'include', signal: ac.signal }); buf = r.ok ? await r.arrayBuffer() : null; } catch (e) { if (o.pace) o.pace.fail(e.name === 'AbortError' ? 'timeout' : 'error'); throw e.name === 'AbortError' ? new Error('알라딘이 30초 안에 답하지 않음') : e; } finally { clearTimeout(to); }
     if (!r.ok) { if (o.pace) o.pace.fail(o.pace.kindOf ? o.pace.kindOf(r.status) : 'error'); throw Object.assign(new Error('서버 응답 ' + r.status), { status: r.status }); }
-    const html = decode(await r.arrayBuffer(), r.headers.get('content-type')); const doc = new DOMParser().parseFromString(html, 'text/html'); if (isMaintenance(doc)) throw new Error('알라딘 점검 중'); if (o.pace) o.pace.ok(); return { doc, html, finalUrl: r.url }; }
+    const html = decode(buf, r.headers.get('content-type')); const doc = new DOMParser().parseFromString(html, 'text/html'); if (isMaintenance(doc)) throw new Error('알라딘 점검 중'); if (o.pace) o.pace.ok(); return { doc, html, finalUrl: r.url }; }
   const api = { VERSION, RETRY_WAITS, decode, isMaintenance, looksLoggedOut, makeReader, quick };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowAladin = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

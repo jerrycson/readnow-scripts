@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.78.3
+// @version      1.78.4
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -24,7 +24,7 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.53
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.54
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.13.6
@@ -3381,7 +3381,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   // 진행 표시 + 남은 시간(최근 처리 속도 기준) + 다른 PC에서 볼 수 있게 상태 공유
   const fmtDur = (min) => { if (!isFinite(min) || min < 0) return ''; if (min < 1) return '1분 미만'; const h = Math.floor(min / 60), m = Math.round(min % 60); return h ? `${h}시간 ${m}분` : `${m}분`; };
   let rate = { state: null, pts: [] }; let lastPub = 0; let lastUi = {};
-  function ui(state, done, total, sub, next) { if (total > 0) PROG_NOW = { i: Math.max(0, +done || 0), n: +total, l: String(state || '').slice(0, 60), at: Date.now() }; /* (1.74.0) 회차 진행 수치(지난 시간표) */
+  function ui(state, done, total, sub, next) { window.__rnUiAt = Date.now(); /* (1.78.4) 작업 멈춤 지킴이가 봄 */ if (total > 0) PROG_NOW = { i: Math.max(0, +done || 0), n: +total, l: String(state || '').slice(0, 60), at: Date.now() }; /* (1.74.0) 회차 진행 수치(지난 시간표) */
     window.__rnLog && window.__rnLog('상품', 'detail', `${state}${total ? ` ${(+done || 0).toLocaleString()}/${(+total).toLocaleString()}` : ''}${sub ? ` · ${sub}` : ''}`);
     $('#rnpState').textContent = state;
     $('#rnpBar').style.width = total ? Math.min(100, (done / total) * 100).toFixed(1) + '%' : '0';
@@ -3655,7 +3655,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     maxOutageMin: () => MAX_OUTAGE_MIN, outageError: (m) => new Error(`알라딘 서버가 ${m}분 넘게 응답하지 않아 멈췄습니다. 나중에 같은 버튼으로 이어하세요`),
     on429: (st) => { log(`알라딘이 요청이 너무 많다고 함(${st}) — 이 PC의 모든 수집이 ${Math.round(PACE.cooling() / 60000)}분 쉬고, 간격을 ${PACE.state().gap}ms로 늘림`, 1); ui('알라딘 요청 제한(429) — 쉬는 중', 0, 0, `${Math.round(PACE.cooling() / 1000)}초 뒤 느린 속도로 이어감`); if (lockHeld && LREF === LOCKP) { const cu = Date.now() + Math.max(60e3, PACE.cooling()); PUB_COOL = cu; LOCKP().set({ coolUntil: cu, coolBy: PC_NAME, coolAt: nowIso() }, { merge: true }).catch(() => {}); log(`🌐 같은 인터넷 주소의 공개 읽기 줄 PC 모두 ${Math.round((cu - Date.now()) / 60000)}분 함께 쉼 — 로그인 줄(주문·출고)은 그대로`, 1); } },
     onRecover: () => log('서버 연결 회복, 계속합니다'),
-    onRetry: (e, w) => log(`요청 실패(${e.name === 'AbortError' ? '응답 시간 초과' : e.message}). ${w}초 뒤 재시도`, 1) });
+    onRetry: (e, w) => (window.__rnUiAt = Date.now(), log(`요청 실패(${e.name === 'AbortError' ? '응답 시간 초과' : e.message}). ${w}초 뒤 재시도`, 1)) });
   /* (1.69.0) 🔀 섞어 읽기(로거) — 맡긴 시장 지표·사진 가격 읽기 사이사이에 '다른 책' 화면을 끼워 읽음: 이 익명 방문자가 보는 책이 우리 책·우리 주문 책만으로 모이지 않게
    *  다른 책 = 지금까지 읽은 공개 화면에 걸린 책 링크(함께 산 책·같은 분야·중고매장 첫 화면 등)에서 무작위 · 읽은 결과는 쓰지 않음(데이터만 조금) · 테더링 확인·몫·속도 조절은 그대로 따름 */
   const MIXP = []; const MIXS = new Set(); const MIX = { n: 0, at: null, saved: 0, fail: 0 };
@@ -4729,7 +4729,8 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       if (lastP && prog.page > lastP + 3) break; /* 읽는 동안 새로 올라온 만큼 뒤로 밀릴 수 있어 끝 쪽 + 3쪽까지 */
       if (PACE.cooling && PACE.cooling() > 0) K = 1;
       const pgs = []; for (let q = 0; q < (lastP ? K : 1); q++) { const pg = prog.page + q; if (lastP && pg > lastP + 3) break; pgs.push(pg); }
-      const got = await Promise.allSettled(pgs.map((pg) => PUB.read('shop', benchUrl(sc, pg, ROWS), (g) => ({ items: benchParse(g.doc), last: benchLastPage(g.doc, g.html) }), (g) => benchParse(g.doc).length > 0)));
+      const T120 = (p) => Promise.race([p, new Promise((_, rj) => setTimeout(() => rj(new Error('2분 안에 답이 없음(연결 멈춤)')), 120e3))]); /* (1.78.4) 한 쪽이 멈추면 회차 전체가 영원히 기다리던 것(10/17 왕공주 621쪽) — 2분 넘으면 그 쪽부터 다음에 */
+      const got = await Promise.allSettled(pgs.map((pg) => T120(PUB.read('shop', benchUrl(sc, pg, ROWS), (g) => ({ items: benchParse(g.doc), last: benchLastPage(g.doc, g.html) }), (g) => benchParse(g.doc).length > 0))));
       let out = null;
       for (let q = 0; q < got.length && !out; q++) { /* prog.page === pgs[q] */
         if (got[q].status === 'rejected') { const e = got[q].reason || {}; if (e.message === '멈춤') { await saveBk(); throw e; } log(`벤치마킹 '${name}' ${prog.page}쪽 읽기 실패: ${e.message} — 다음에 이 쪽부터`, 1); await saveBk(); return 'partial'; }
@@ -6527,6 +6528,12 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       await sleep(wait); wait = Math.min(wait * 2, 15 * 60000);
     }
   }
+  /* (1.78.4) 🐕 작업 멈춤 지킴이 — 10/17 19:12 로거 벤치마킹이 왕공주 621쪽에서 멈춘 채(알라딘 응답 몸통을 받다 연결이 멈춤 → 시한 없음) 4시간 동안 '하는 중'으로 남아 다른 일·이어 하기가 모두 막혔던 것
+   *  자동 일(⏰ 매일 자동·쉴 때 하는 일)이 '하는 중'인데 30분 넘게 진행 표시가 한 번도 바뀌지 않으면(알라딘 쉬는 중·일시정지·새로고침 중 제외) → 기록을 남기고 안전한 새로고침
+   *  → 새 탭이 '하는 중'으로 남은 그 회차를 저장된 자리부터 이어감(⏰ 같은 회차 이어가기) · 같은 회차에서 3번 넘게 되풀이되면 더 하지 않음(기록만) */
+  setInterval(() => { try { if (!running || !curKey || window.__rnPaused || window.__rnReloading) return; const at = window.__rnUiAt || 0; if (!at || Date.now() - at < 30 * 60e3) return; if (PACE.cooling && PACE.cooling() > 0) return;
+      const k = 'rnu-stall-kick'; const v = GM_getValue(k, null) || {}; const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const n = v.day === day && v.job === curKey ? +v.n || 0 : 0; if (n >= 3) { if (!window.__rnStallNoted) { window.__rnStallNoted = 1; log(`🐕 '${(JOBS[curKey] || [curKey])[0]}'이(가) 또 30분 넘게 멈춤 — 오늘 이미 3번 다시 열어 더 하지 않음(직접 확인 필요)`, 1); } return; }
+      GM_setValue(k, { day, job: curKey, n: n + 1, at: Date.now() }); log(`🐕 작업 멈춤: '${(JOBS[curKey] || [curKey])[0]}'이(가) ${Math.round((Date.now() - at) / 60000)}분 동안 진행이 없음(알라딘 응답을 받다 연결이 멈춘 듯) — 안전한 새로고침 뒤 그 회차를 저장된 자리부터 이어감 (오늘 ${n + 1}/3)`, 1); safeReload('🐕 멈춘 작업 다시 열기', null); } catch (e) {} }, 60e3);
   // 새 탭 쪽: 안전한 새로고침으로 열린 탭이면 '받았음' 신호
   { const h = GM_getValue('rn-handoff', null); if (h && h.id && Date.now() - h.at < 10 * 60000) { window.__rnClaimHeir && window.__rnClaimHeir(); GM_setValue('rn-handoff-ack', h.id); GM_setValue('rn-handoff', null); const rk = GM_getValue('rnu-resume-after-reload', null); log(`[안전한 새로고침] 이 탭이 새로 열려 이어받음 (옛 탭 신호 ${h.id}, ${Math.round((Date.now() - h.at) / 1000)}초 전)${rk ? ` · 곧 '${(JOBS[rk] || [rk])[0]}' 이어가기` : ''}`); } }
   // (1.25.1) 메모리 지킴이: 오래 도는 작업 중 이 탭의 메모리가 한계의 65%를 넘거나 숨은 창으로 연 페이지가 SET.reloadEveryFrames(400)개를 넘으면
