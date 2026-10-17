@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.78.0
+// @version      1.78.1
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -6184,7 +6184,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       setTimeout(() => { clearInterval(poll); fin({ ok: false, why: `화면 읽기 시간 초과(${Math.round((max + 20000) / 1000)}초)` }); }, max + 20000); });
   const EXT_S = { keys: null, keysAt: 0, cfg: null, cfgAt: 0, cache: {}, next: {}, idx: {}, idxAt: 0, cand: null, candAt: 0, cur: {}, errs: {}, pauseUntil: {}, busy: false, me: 'x' + Math.random().toString(36).slice(2, 7), used: {}, usedDay: null };
   async function extKeys(force) { if (!force && EXT_S.keys && Date.now() - EXT_S.keysAt < 10 * 60000) return EXT_S.keys; let k = {}; try { const d = await C('app_secrets').doc('ext').get(); k = (d.exists && d.data().keys) || {}; } catch (e) { log('🌐 외부 연결 키를 못 읽음: ' + (e.code || e.message) + (/permission/i.test(e.code || e.message) ? ' — Firebase 규칙에 app_secrets 읽기 허용 필요' : ''), 1); } EXT_S.keys = k; EXT_S.keysAt = Date.now(); return k; }
-  async function extCfg(force) { const X = EXT(); if (!force && EXT_S.cfg && Date.now() - EXT_S.cfgAt < 5 * 60000) return EXT_S.cfg; let c = {}; try { const d = await C('app_settings').doc('ext').get(); c = d.exists ? d.data() : {}; } catch (e) {} EXT_S.cfg = X.cfgOf(c); EXT_S.capBase = {}; for (const s0 of EXT_RAMP) if (EXT_S.cfg.src[s0]) { EXT_S.capBase[s0] = EXT_S.cfg.src[s0].cap; const k = Math.max(0, Math.min(10, +((EXT_S.ramp || {})[s0] || {}).k || 0)); if (k) EXT_S.cfg.src[s0].cap = Math.round(EXT_S.cfg.src[s0].cap * (1 + 0.1 * k)); } EXT_S.cfgAt = Date.now(); return EXT_S.cfg; }
+  async function extCfg(force) { const X = EXT(); if (!force && EXT_S.cfg && Date.now() - EXT_S.cfgAt < 5 * 60000) return EXT_S.cfg; let c = {}; try { const d = await C('app_settings').doc('ext').get(); c = d.exists ? d.data() : {}; } catch (e) {} if (c && !c.capMig1017 && c.src && c.src.kakao && +c.src.kakao.cap === 5000) { /* (1.78.1) 한 번만: 설정 ⑱에 예전 기본값(카카오 5,000)이 그대로 적혀 있어 새 기본 25,000(공식 쿼터 30,000)이 안 먹던 것 → 25,000으로(사장님 10/17 '전부 진행') · 사람이 다른 값을 적어 두었으면 그대로 */ try { await C('app_settings').doc('ext').set({ src: { kakao: { cap: 25000 } }, capMig1017: { at: nowIso(), by: PC_NAME, from: 5000 } }, { merge: true }); c.src.kakao.cap = 25000; c.capMig1017 = true; log('🌐 카카오 책 검색 하루 상한 5,000 → 25,000 (공식 쿼터 30,000)'); } catch (e) {} } EXT_S.cfg = X.cfgOf(c); EXT_S.capBase = {}; for (const s0 of EXT_RAMP) if (EXT_S.cfg.src[s0]) { EXT_S.capBase[s0] = EXT_S.cfg.src[s0].cap; const k = Math.max(0, Math.min(10, +((EXT_S.ramp || {})[s0] || {}).k || 0)); if (k) EXT_S.cfg.src[s0].cap = Math.round(EXT_S.cfg.src[s0].cap * (1 + 0.1 * k)); } EXT_S.cfgAt = Date.now(); return EXT_S.cfg; }
   /* (1.78.0) 📈 화면 읽기 출처(교보·예스24·네이버) 하루 상한 천천히 올리기 — 사장님 10/17 '더 늘리는 방안 전부'
    *  전날 상한까지 다 썼고(95% 이상) 그날 그 출처가 막힘·잇단 오류로 쉰 적이 없으면 다음 날 +10%(설정 ⑱의 상한 기준 · 최대 2배)
    *  잇단 오류(5번)·'너무 많이 물음'으로 쉬게 되면 그 자리에서 −30%(한 칸 = 10%씩 3칸) · 기록 ext_run.ramp.{출처} = { k(칸), errDay, day } */
