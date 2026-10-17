@@ -123,6 +123,11 @@ foreach (`$n in (`$names | Select-Object -Unique)) { Get-NetIPInterface -Interfa
   $i = 1; foreach ($n in $old) { if ([int]$n -ge $i) { $i = [int]$n + 1 } }
   foreach ($b in $blk) { if ($have -notcontains $b) { New-ItemProperty -Path $pk -Name "$i" -Value $b -PropertyType String -Force | Out-Null; $i++ } }
   Ok "크롬 정책: 알라딘 로그인·샵매니저·내 계정·주문·장바구니 화면 막음(이 PC의 크롬 전체 · 크롬을 다시 켜면 적용 · chrome://policy 에서 확인)" 
+  # (도우미 1.6.7 자동 점검) 크롬 '메모리 절약'이 수집기 탭을 잠재우지 않게 — TabDiscardingExceptions(컴퓨터 정책 HKLM · 사용자 정책 HKCU는 관리자만 쓸 수 있어 스스로 갖추기가 못 넣을 수 있음)
+  $tdk = 'HKLM:\SOFTWARE\Policies\Google\Chrome\TabDiscardingExceptions'; New-Item -Path $tdk -Force | Out-Null
+  $tdh = @(); $tdm = 0; foreach ($n in (Get-Item $tdk).Property) { $tdh += (Get-ItemProperty -Path $tdk -Name $n).$n; if ($n -match '^\d+$' -and [int]$n -gt $tdm) { $tdm = [int]$n } }
+  foreach ($w in @('[*.]aladin.co.kr', 'jerrycson.github.io', '127.0.0.1', 'localhost', 'rn.local')) { if ($tdh -notcontains $w) { $tdm++; New-ItemProperty -Path $tdk -Name "$tdm" -Value $w -PropertyType String -Force | Out-Null } }
+  Ok "크롬 정책: 알라딘·웹앱·도우미 탭은 메모리 절약으로 잠재우지 않음(크롬을 다시 켜면 적용)"
 }
 
 # 4-4) (도우미 1.5.0) 🔁 다시 켜지기 — 로그온·잠금 해제·절전에서 깨어날 때와 5분마다, 도우미·공개 수집 크롬·도우미 창 중 꺼진 것을 다시 켬(이 사용자 화면에서 · 관리자 아니어도 됨)

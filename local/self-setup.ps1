@@ -105,7 +105,8 @@ try {
   foreach ($n in (Get-Item $tk).Property) { $th += (Get-ItemProperty -Path $tk -Name $n).$n; if ($n -match '^\d+$' -and [int]$n -gt $tm) { $tm = [int]$n } }
   foreach ($w in $tw) { if ($th -notcontains $w) { $tm++; New-ItemProperty -Path $tk -Name "$tm" -Value $w -PropertyType String -Force | Out-Null } }
   $R.tabs = $true
-} catch { $R.tabs = $false }
+} catch { $R.tabs = $false; $R.tabsWhy = $_.Exception.Message }
+# (도우미 1.6.7 자동 점검) HKCU\SOFTWARE\Policies는 Windows 기본 권한에서 관리자만 쓸 수 있어 위가 실패할 수 있음 → 그때는 관리자 부분(HKLM)에 있는지 아래 ⑤에서 확인
 
 # ⑤ 관리자 부분 확인만(바꾸지 않음)
 $miss = @()
@@ -114,6 +115,7 @@ if (-not (Select-String -Path $hosts -Pattern 'ReadNow-Lock' -SimpleMatch -Quiet
 $pk = 'HKLM:\SOFTWARE\Policies\Google\Chrome\URLBlocklist'
 $hv = @(); if (Test-Path $pk) { foreach ($n in (Get-Item $pk).Property) { $hv += (Get-ItemProperty -Path $pk -Name $n).$n } }
 if ($hv -notcontains 'aladin.co.kr/login') { $miss += '크롬 정책(로그인·샵매니저 화면 막기)' }
+if (-not $R.tabs) { $tdk = 'HKLM:\SOFTWARE\Policies\Google\Chrome\TabDiscardingExceptions'; $tdv = @(); if (Test-Path $tdk) { foreach ($n in (Get-Item $tdk).Property) { $tdv += (Get-ItemProperty -Path $tdk -Name $n).$n } }; if ($tdv -contains '[*.]aladin.co.kr') { $R.tabs = 'hklm' } else { $miss += '크롬 탭 잠재우기 예외' } }
 & schtasks /Query /TN ReadNow-TetherMetric 2>$null | Out-Null; if ($LASTEXITCODE -ne 0) { $miss += '테더링 뒤로 예약 작업' }
 $R.adminMiss = $miss; $R.admin = ($miss.Count -eq 0)
 # 관리자 부분이 빠져 있으면 바탕화면에 '리드나우 관리자 설치'(두 번 클릭 → 윈도우가 '변경을 허용할까요?' → 예 → 설치 한 줄이 관리자로 돎) · 다 돼 있으면 지움

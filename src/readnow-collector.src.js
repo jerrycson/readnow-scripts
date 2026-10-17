@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.78.2
+// @version      1.78.3
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -3696,7 +3696,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
    *  · 한 달 테더링 상한(도우미 설정, 기본 48GB)의 97%를 남은 날로 나눈 것이 '오늘 몫' — 넘으면 내일 0시까지 쉼
    *  · 모든 PC: 알라딘 화면을 읽을 때마다 작업별로 장 수·글자 수를 세어 5분마다 prd_jobs/net_날짜에 더함(웹앱 📶 데이터 사용량) · 공개 전용 PC는 도우미가 잰 실제 바이트(테더링·와이파이·묶음별)도 함께 */
   let HELPER = null, HELPER_AT = 0, TGATE = { ok: !PUBONLY, why: PUBONLY ? '로컬 도우미 확인 전' : '' };
-  const helperGet1 = (url) => new Promise((res) => { try { GM_xmlhttpRequest({ method: 'GET', url, timeout: 8000, anonymous: true, onload: (r) => { try { res(r.status === 200 ? JSON.parse(r.responseText) : null); } catch (e) { res(null); } }, onerror: () => res(null), ontimeout: () => res(null) }); } catch (e) { res(null); } });
+  const helperGet1 = (url, hdr) => new Promise((res) => { try { GM_xmlhttpRequest({ method: 'GET', url, timeout: 8000, anonymous: true, headers: hdr || {}, onload: (r) => { try { res(r.status === 200 ? JSON.parse(r.responseText) : null); } catch (e) { res(null); } }, onerror: () => res(null), ontimeout: () => res(null) }); } catch (e) { res(null); } });
   const helperGet = async () => (await helperGet1('http://rn.local/status')) || (await helperGet1('http://127.0.0.1:8899/status')); /* (1.66.0) 프록시를 통한 이름이 막히면 도우미에 바로 */
   /* ══════════ (1.70.0) 📷 사진 보관 — 로거 PC(D:\ReadNow\images)에 Firebase 사진을 새것만 받아 둠 ══════════
    *  · 로거의 수집기만 · 알라딘과 무관(Firebase 저장소·사진 칸 → 와이파이) · 6시간마다(켜진 뒤 3분부터) · 이미 있는 파일은 건너뜀(도우미가 이름으로 확인) — 끊겨도 다음에 이어서
@@ -3738,9 +3738,9 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   /* (1.68.0) 🛡 로거 크롬에 알라딘 로그인 흔적(이 탭 화면의 로그아웃 링크)이 보이면 모든 알라딘 일을 멈춤 — 로거와 북스킹 계정이 이어지는 가장 큰 위험 */
   const aladinLoggedHere = () => { if (!PUBONLY) return false; try { return [...document.querySelectorAll('a[href]')].some((a) => /logout/i.test(a.getAttribute('href') || '') && !(a.closest && a.closest('[id^="rn"], .rncard'))); } catch (e) { return false; } };
   const jobKeyOf = (k) => { const j = String(k || '').replace(/^job:/, '').split('#')[0]; return ({ benchForce: 'bench', benchHelp: 'bench', benchDetail: 'bench' }[j] || j).replace(/[^A-Za-z0-9_]/g, '').slice(0, 30) || 'etc'; };
-  const meterSend = () => { const m = Math.round(METC.main), g0 = Math.round(METC.gen); if (!(m + g0)) return; METC.main = 0; METC.gen = 0; const J = { ...METJ }; for (const k of Object.keys(METJ)) delete METJ[k]; const js = Object.entries(J).map(([k, v]) => `${k}:${Math.round(v)}`).join(','); helperGet1(`http://127.0.0.1:8899/meter?main=${m}&gen=${g0}&jobs=${encodeURIComponent(js)}`).then((r) => { if (!r) { METC.main += m; METC.gen += g0; for (const [k, v] of Object.entries(J)) METJ[k] = (METJ[k] || 0) + v; } }); };
+  const meterSend = () => { const m = Math.round(METC.main), g0 = Math.round(METC.gen); if (!(m + g0)) return; METC.main = 0; METC.gen = 0; const J = { ...METJ }; for (const k of Object.keys(METJ)) delete METJ[k]; const js = Object.entries(J).map(([k, v]) => `${k}:${Math.round(v)}`).join(','); helperGet1(`http://127.0.0.1:8899/meter?main=${m}&gen=${g0}&jobs=${encodeURIComponent(js)}`, { 'X-RN-Meter': '1' }) /* (1.78.3 자동 점검) 도우미 1.6.7은 이 머리가 있어야 받음 — 웹 페이지(알라딘 화면 등)가 몫 나눔을 흐트러뜨리지 못하게 */.then((r) => { if (!r) { METC.main += m; METC.gen += g0; for (const [k, v] of Object.entries(J)) METJ[k] = (METJ[k] || 0) + v; } }); };
   /* (1.75.0) 📱 도우미 화면에 통신사 기준 남은 양·오늘 몫을 보여 주게 계산 결과를 알림(표시만) */
-  const budSend = (b) => { try { if (!b || !b.base) return; const st = b.strict || {}; const d = { E: Math.round(b.base.E * 0.97), usedS: Math.round(b.base.usedS), remainGB: b.base.remainGB, baseAt: b.base.at ? new Date(Date.parse(b.base.at) + 9 * 3600e3).toISOString().slice(5, 16).replace('-', '/').replace('T', ' ') : b.base.day, share: Math.round(st.share || b.dayB || 0), nLeft: st.nLeft || 0, ml: Math.round(Math.max(0, b.left.main)), gl: Math.round(Math.max(0, b.left.gen)), pct: st.pct || 50, over: !!st.over }; helperGet1('http://127.0.0.1:8899/bud?d=' + encodeURIComponent(JSON.stringify(d))); } catch (e) {} };
+  const budSend = (b) => { try { if (!b || !b.base) return; const st = b.strict || {}; const d = { E: Math.round(b.base.E * 0.97), usedS: Math.round(b.base.usedS), remainGB: b.base.remainGB, baseAt: b.base.at ? new Date(Date.parse(b.base.at) + 9 * 3600e3).toISOString().slice(5, 16).replace('-', '/').replace('T', ' ') : b.base.day, share: Math.round(st.share || b.dayB || 0), nLeft: st.nLeft || 0, ml: Math.round(Math.max(0, b.left.main)), gl: Math.round(Math.max(0, b.left.gen)), pct: st.pct || 50, over: !!st.over }; helperGet1('http://127.0.0.1:8899/bud?d=' + encodeURIComponent(JSON.stringify(d)), { 'X-RN-Meter': '1' }); } catch (e) {} };
   function budTick(H) { if (!PUBONLY || !AS || !AS.budget || !H || !H.ok) { BUD = null; return; } const b = AS.budget(SCHED || {}, H, Date.now()); const was = BUD; BUD = b; if (!b) return; budSend(b);
     if (b.strict && was && was.strict && was.strict.room > 0 && !(b.strict.room > 0)) log(`📏 오늘 테더링이 하루 몫 ${(b.strict.share / 1073741824).toFixed(2)}GB에 닿음(기타 포함 ${(b.strict.used / 1073741824).toFixed(2)}GB) — 테더링 쓰는 일을 모두 저장하고 멈춤 · 내일 0시에 새 몫(남은 양 ÷ 남은 날) · 그동안은 ✨ 쉴 때 하는 일(테더링 없음 — 외부 조회)`, 1); /* (1.74.0) */
     for (const k of ['main', 'gen']) if (was && was.left[k] > 0 && !(b.left[k] > 0)) log(`📶 오늘 ${AS.TIER[k].l} 업무 몫(이월 포함)을 다 씀 — ${AS.TIER[k].l} 칸은 내일(새 몫이 쌓이면)까지 건너뜀${k === 'main' ? ' · 일반 업무가 제 몫으로 이어 함' : ''}`, 1);
@@ -6322,7 +6322,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       for (const d of docs) { const isbn = String(d.EA_ISBN || '').replace(/[^0-9]/g, ''); if (!/^97[89]\d{10}$/.test(isbn)) continue; const b = { isbn, title: d.TITLE || null, author: d.AUTHOR || null, tag: BX_TAG.nl, future: day > bxYmd(new Date(Date.now() + 9 * 3600e3)) }; /* 아직 안 나온 책은 다른 출처에 묻지 않음(120일 뒤 다시 — 그땐 나와 있음) */ try { const res = await X.run('nl', { isbn, keys, http: async () => ({ status: 200, text: JSON.stringify({ docs: [d] }) }), render: extRender, cache: {}, cfg: await extCfg() }); if (res && res.ok && res.d) { await extSave('nl', b, res); b.nlOk = true; b.cover = res.d.cover || null; } } catch (e) {} out.push(b); }
       if (docs.length < size || page * size >= (+j.TOTAL_COUNT || 0)) break; }
     return out; }
-  const BX_COVER_OK = /(^|\.)(kyobobook\.co\.kr|pstatic\.net|kakaocdn\.net|daumcdn\.net|yes24\.com|nl\.go\.kr)$/i; /* 로거: 와이파이 길(도우미 WIFI_HOSTS)에 있는 표지 주소만 · 알라딘은 어디서도 안 받음 */
+  const BX_COVER_OK = /(^|\.)(kyobobook\.co\.kr|pstatic\.net|kakaocdn\.net|yes24\.com|nl\.go\.kr)$/i; /* (1.78.3 자동 점검) daumcdn.net 뺌 — 도우미 와이파이 목록에 없어 테더링으로 받았음(알라딘 화면도 부를 수 있는 주소라 와이파이에 넣지 않음) */ /* 로거: 와이파이 길(도우미 WIFI_HOSTS)에 있는 표지 주소만 · 알라딘은 어디서도 안 받음 */
   async function bxCover(isbn, url) { try { if (!url || /aladin/i.test(url)) return false; let host = ''; try { host = new URL(url).hostname; } catch (e) { return false; } if (PUBONLY && !BX_COVER_OK.test(host)) return false;
       const ref = C('ext_basic').doc(isbn); const cur = await ref.get(); if (cur.exists && cur.data().img && cur.data().img.stored) return false; /* 이미 받은 표지는 다시 받지 않음 */
       const blob = await gmBlob(url); if (!blob || blob.size < 500) return false; const ext = ((blob.type || '').match(/image\/(jpe?g|png|gif|webp)/) || [, 'jpg'])[1].replace('jpeg', 'jpg'); const path = `img/ext/${isbn}.${ext}`; /* 수집기가 이미 쓰는 img/ 아래(저장소 규칙이 허용한 곳) */
