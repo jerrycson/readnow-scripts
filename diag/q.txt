@@ -1,1 +1,1 @@
-uifix=395261040,393831184&g=%EC%A4%91
+samp=bench_books,mkt_kpipa_posts,prd_books,prd_explore,pur_entries,pur_aladin_list,pur_existing,prd_market_nobook,prd_lookups,ext_basic,pur_buyback,prd_market_watch,shp_market&extidx=1
