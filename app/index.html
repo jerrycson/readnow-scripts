@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#2F5D50">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<script>/* (1.44.0) 📱 휴대폰 앱 — 화면마다 따로 설치하는 앱(바탕화면 아이콘): ?go=화면 → 그 화면의 설치 파일(m/화면.webmanifest · 아이콘·색) · 이 아이콘의 '시작 화면'을 바꿔 두었으면(📱 앱 설정) 그 화면으로 */
+(function () { try { var K = ['home', 'confirm', 'deliv', 'reg', 'ppt', 'batch', 'products', 'orders', 'search', 'mgr']; var C = { home: '#2F5D50', confirm: '#B0322A', deliv: '#A8661B', reg: '#1F5FAF', ppt: '#6B3FA0', batch: '#1F7A6E', products: '#3B6E2F', orders: '#8A4B00', search: '#4A4F8A', mgr: '#333B39' };
+  var q = new URLSearchParams(location.search); var g = q.get('go') || 'home'; if (K.indexOf(g) < 0) g = 'home';
+  var sa = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+  if (sa && !q.get('st')) { var o = null; try { o = localStorage.getItem('rn-start:' + g); } catch (e) {} if (o && o !== g && K.indexOf(o) >= 0) { location.replace(location.pathname + (o === 'home' ? '?st=1' : '?go=' + o + '&st=1') + location.hash); return; } }
+  var l = document.createElement('link'); l.rel = 'manifest'; l.href = 'm/' + g + '.webmanifest'; document.head.appendChild(l);
+  var a = document.createElement('link'); a.rel = 'apple-touch-icon'; a.href = 'm/' + g + '-180.png'; document.head.appendChild(a);
+  var t = document.querySelector('meta[name=theme-color]'); if (t) t.content = C[g]; window.__rnAppKey = g; } catch (e) {} })();</script>
 <title>리드나우(북스킹)</title>
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" media="print" onload="this.media='all'"><!-- 글꼴 파일이 화면 그리기를 막지 않게 (받으면 바로 바뀜) · Firestore 연결을 미리 염 -->
 <style>
@@ -640,6 +648,15 @@ body.kbd .tabs,body.kbd #updpill{display:none!important}
 .rgcand-b{display:flex;flex-direction:column;gap:2px;min-width:0}.rgcand-b>b{font-size:13.5px;line-height:1.35}.rgcand-b small{color:var(--sub);font-size:12px}
 .rgcand-m{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--sub)}.rgcand-code{font-family:ui-monospace,monospace;background:var(--bg);padding:0 5px;border-radius:4px}
 .rgcand-cov{padding:0 6px;border-radius:8px;background:var(--bg)}.rgcand-cov.hi{background:var(--soft);color:var(--cloth2);font-weight:700}.rgcand-new{margin-top:8px}
+
+/* (1.44.0) 📱 휴대폰 앱 */
+#ptr{position:fixed;left:50%;top:-40px;z-index:9997;width:38px;height:38px;border-radius:50%;background:var(--paper);box-shadow:0 2px 10px rgba(0,0,0,.25);display:grid;place-items:center;font-size:20px;color:var(--cloth);transform:translate(-50%,0);transition:transform .15s ease,opacity .15s;opacity:0;pointer-events:none}#ptr.on{opacity:1;transition:none}#ptr.go{background:var(--cloth);color:#fff}
+#netwarn{position:fixed;left:8px;right:8px;top:calc(8px + env(safe-area-inset-top,0));z-index:9996;background:#333B39;color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.3)}
+.sheet{overscroll-behavior:contain}button,.btn,.rchip,label{touch-action:manipulation}
+@media (pointer:coarse){.btn.sm{min-height:36px}.rchip{min-height:32px}}
+#scanov{position:fixed;inset:0;z-index:10000;background:#000}#scanov video{width:100%;height:100%;object-fit:cover}.scan-box{position:absolute;left:10%;right:10%;top:35%;height:22%;border:3px solid #fff;border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
+.scan-bar{position:absolute;left:0;right:0;bottom:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0));background:rgba(0,0,0,.6);color:#fff;display:flex;gap:10px;align-items:center}.scan-bar .hint{color:#ddd}.scan-bar .btn{margin-left:auto}
+.appl{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}.appi{display:flex;gap:10px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:12px}.appi img{width:44px;height:44px;border-radius:10px}.appi-b{flex:1;min-width:0;display:flex;flex-direction:column}
 </style>
 </head>
 <body>
@@ -663,7 +680,7 @@ body.kbd .tabs,body.kbd #updpill{display:none!important}
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.1.0"></script>
 <script src="../readnow-register-core.js?v=0.7.0"></script>
-<script>const APP_VER = '1.43.2';</script>
-<script src="readnow-webapp.js?v=1.43.2"></script>
+<script>const APP_VER = '1.44.0';</script>
+<script src="readnow-webapp.js?v=1.44.0"></script>
 </body>
 </html>

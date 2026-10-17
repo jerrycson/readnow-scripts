@@ -1,0 +1,87 @@
+{
+ "id": "/readnow-scripts/app/?go=search",
+ "name": "고객 (리드나우)",
+ "short_name": "고객",
+ "start_url": "/readnow-scripts/app/?go=search",
+ "scope": "/readnow-scripts/app/",
+ "display": "standalone",
+ "display_override": [
+  "standalone"
+ ],
+ "orientation": "any",
+ "background_color": "#ffffff",
+ "theme_color": "#4A4F8A",
+ "lang": "ko",
+ "dir": "ltr",
+ "description": "리드나우 — 고객 화면으로 바로 열림",
+ "icons": [
+  {
+   "src": "search-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "search-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "search-512m.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ],
+ "shortcuts": [
+  {
+   "name": "주문확인요청 (리드나우)",
+   "short_name": "주문확인",
+   "url": "/readnow-scripts/app/?go=confirm",
+   "icons": [
+    {
+     "src": "confirm-192.png",
+     "sizes": "192x192",
+     "type": "image/png"
+    }
+   ]
+  },
+  {
+   "name": "오늘 출고 (리드나우)",
+   "short_name": "오늘 출고",
+   "url": "/readnow-scripts/app/?go=deliv",
+   "icons": [
+    {
+     "src": "deliv-192.png",
+     "sizes": "192x192",
+     "type": "image/png"
+    }
+   ]
+  },
+  {
+   "name": "상품 등록 (리드나우)",
+   "short_name": "상품 등록",
+   "url": "/readnow-scripts/app/?go=reg",
+   "icons": [
+    {
+     "src": "reg-192.png",
+     "sizes": "192x192",
+     "type": "image/png"
+    }
+   ]
+  },
+  {
+   "name": "사진 가격 (리드나우)",
+   "short_name": "사진 가격",
+   "url": "/readnow-scripts/app/?go=ppt",
+   "icons": [
+    {
+     "src": "ppt-192.png",
+     "sizes": "192x192",
+     "type": "image/png"
+    }
+   ]
+  }
+ ]
+}
