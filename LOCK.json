@@ -1,12 +1,12 @@
 {
- "holder": "auto-check",
- "what": "커밋 직전",
- "since": "2026-10-17T12:57:28Z",
- "beat": "2026-10-17T13:01:35Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "chat",
-  "done": "",
-  "at": "2026-10-17T09:17:42Z"
+  "who": "auto-check",
+  "done": "전체 점검 2026-10-17: 고침 3fe2099·7ab746c·보고 73b01d1 — main push가 권한으로 막혀 가지 auto-check-2026-10-17에만 있음(합쳐야 적용)",
+  "at": "2026-10-17T13:04:35Z"
  }
 }
