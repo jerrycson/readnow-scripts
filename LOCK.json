@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "auto-check",
+ "what": "전체 점검 2026-10-17: 도우미 와이파이 목록·/meter 보호·클라우드 로그인 쉼·예스24 셈 등",
+ "since": "2026-10-17T12:57:28Z",
+ "beat": "2026-10-17T12:57:28Z",
  "ask": null,
  "last": {
   "who": "chat",
