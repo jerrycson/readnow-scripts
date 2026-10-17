@@ -618,11 +618,15 @@ body.kbd .tabs,body.kbd #updpill{display:none!important}
 .bfoot .bcount{margin:0 0 8px;background:var(--soft);color:var(--ink);font-weight:600}
 .btabs{gap:6px;padding:6px;background:var(--bg);border-radius:14px}.btabs button{border-radius:12px;padding:6px 12px;background:var(--paper)}.btabs button b{margin-left:2px}
 .bpline{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;padding:8px 10px;border:1px solid #C9DAF3;background:#F2F7FF;border-radius:12px}
-.bpline .bp-l{font-weight:800;color:#1F5FAF;font-size:13px;margin-right:2px}.bpline .hint{font-size:12.5px}.bpline input[type=number]{width:62px;padding:4px 6px;border:1px solid #9DB8E0;border-radius:8px}
+.bpline{color:#1B2B44}.bpline .bp-l{font-weight:800;color:#1F5FAF;font-size:13px;margin-right:2px}.bpline .hint{font-size:12.5px;color:#33445E}.bpline .seg{background:#fff;border:1px solid #9DB8E0}.bpline .seg button{color:#1B2B44}.bpline .seg button.on{background:#1F5FAF;color:#fff}.bp-same{color:#1B2B44;font-weight:700}.bp-same input{accent-color:#1F5FAF}.bpline input[type=number]{width:62px;padding:4px 6px;border:1px solid #9DB8E0;border-radius:8px}
 .bpline .seg button{padding:4px 10px}.bp-same{display:inline-flex;gap:4px;align-items:center;font-size:12.5px;padding:3px 8px;border:1px solid #9DB8E0;border-radius:14px;background:#fff;cursor:pointer}
 @media (max-width:640px){.bform .brow{flex-wrap:wrap}.bform .brow>label:first-child{flex:1 1 100%}.bst-t{display:none}.bst.now .bst-t{display:inline}}
-@media (prefers-color-scheme:dark){.bpline{background:#16253A;border-color:#2B4466}.bp-same{background:transparent}}
 
+.rgcand{position:relative}.rgcand-no{position:absolute;top:6px;right:8px;font-size:11px;color:var(--sub);font-weight:700}
+.rgpager{display:flex;align-items:center;justify-content:center;gap:6px;margin:10px 0 2px;flex-wrap:wrap}.rgpg-nav{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--paper);font-size:20px;line-height:1;cursor:pointer;color:var(--ink)}.rgpg-nav:disabled{opacity:.3;cursor:default}
+.rgpg-dots{display:inline-flex;gap:4px;flex-wrap:wrap;justify-content:center}.rgpg-dot{min-width:28px;height:28px;border-radius:14px;border:1px solid var(--line);background:var(--paper);font-size:12px;font-weight:700;cursor:pointer;color:var(--sub);padding:0 6px}.rgpg-dot.on{background:var(--cloth);border-color:var(--cloth);color:#fff}.rgpg-cnt{color:var(--sub);margin-left:4px}
+.pblk.nocls{border:1.5px dashed #8A9692;color:var(--ink)!important;position:relative;padding-right:118px}.pblk.nocls::after{content:attr(data-nc);position:absolute;right:4px;font-weight:800;font-size:10.5px;color:#7A4B00;background:#FFF4D6;border-radius:3px;padding:0 4px}
+.pbx.ncx{border:2px dashed #8A9692;border-radius:6px;padding:4px}.pbx-h.nch{background:#FFF4D6;color:#5A3A00;font-size:12px;padding:4px 6px;border-radius:4px;margin-bottom:4px;white-space:normal}
 /* (1.43.0) 📥 상품 등록 개편 — 설정 세 칸을 한 줄 알약으로(누르면 그 칸만 넓게) · 넣고 조회 칸 강조 · 후보 고르기 카드 격자 */
 .rgsetrow{display:flex;flex-wrap:wrap;gap:8px;margin:10px 12px 0}.rgsetrow>.card{margin:0!important;flex:1 1 240px;min-width:0;border-radius:14px}
 .rgsetrow>.card:not([open])>summary{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rgsetrow>.card[open]{flex-basis:100%}
@@ -659,7 +663,7 @@ body.kbd .tabs,body.kbd #updpill{display:none!important}
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.1.0"></script>
 <script src="../readnow-register-core.js?v=0.7.0"></script>
-<script>const APP_VER = '1.43.0';</script>
-<script src="readnow-webapp.js?v=1.43.0"></script>
+<script>const APP_VER = '1.43.1';</script>
+<script src="readnow-webapp.js?v=1.43.1"></script>
 </body>
 </html>
