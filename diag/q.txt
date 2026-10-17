@@ -1,1 +1,1 @@
-scmreg=/scm/wrecord_edit.aspx%3FchkItemStockStatus%3D0%26chkItemInDate%3D0%26searchCat1%3D0%26searchType%3D1%26keyword%3D%25EC%259A%2594%25EA%25B0%2580%25ED%2595%25B4%25EB%25B6%2580%25ED%2595%2599%26ViewRowsCount%3D100%26page%3D1%26SortOrder%3D6%26itemStockStatus%3D0%26categoryId%3D0
+scmreg=/scm/wrecord.aspx%3Faction%3D2%26bookid%3D0%26UpdateItemId%3D395261040
