@@ -1,7 +1,7 @@
 {
  "ver": "1.77.7",
  "hsig": "8559039d5a96110b",
- "at": "2026-10-17T08:03:02.258Z",
+ "at": "2026-10-17T08:22:18.028Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -41,9 +41,9 @@
   },
   {
    "f": "readnow-registry.js",
-   "v": "0.14.50",
-   "sha": "b97f30bcf8b183365603e41afd1d6529a6f71986149fcbcfd9d96951efe3a649",
-   "n": 49954
+   "v": "0.14.51",
+   "sha": "da61d2093e58de2be4bcb1c62f4d93b4675099fba621ea456ac10e07510d8cac",
+   "n": 50035
   },
   {
    "f": "readnow-ext-core.js",
@@ -59,9 +59,9 @@
   },
   {
    "f": "readnow-autosched-core.js",
-   "v": "0.13.5",
-   "sha": "c3e05dd71f1fb39822de4ab8720016327a20803df111858d1b93509cb8dc8b3a",
-   "n": 264437
+   "v": "0.13.6",
+   "sha": "89f9ac1d0b717c0bac042abaa3284cbb9eb6bba08ef03d55e8f5c5081e09ec2c",
+   "n": 264831
   },
   {
    "f": "readnow-aladin-core.js",
