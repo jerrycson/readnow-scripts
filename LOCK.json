@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "등록 조회 속도·조회 순서",
- "since": "2026-10-17T09:13:13Z",
- "beat": "2026-10-17T09:13:13Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
   "done": "",
-  "at": "2026-10-17T09:01:35Z"
+  "at": "2026-10-17T09:17:42Z"
  }
 }
