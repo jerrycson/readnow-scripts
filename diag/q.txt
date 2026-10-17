@@ -1,2 +1,4 @@
-mktchk=%ED%95%B4%EB%A6%AC%20%ED%8F%AC%ED%84%B0&n=4
-mktchk=*&n=12
+mktchk=%ED%95%B4%EB%A6%AC%20%ED%8F%AC%ED%84%B0%EC%99%80%20%EB%A7%88%EB%B2%95%EC%82%AC%EC%9D%98%20%EB%8F%8C&n=4
+mktchk=*&n=25&lim=300
+logs=1&pc=LOGGER&from=202610170000
+doc=prd_jobs/pcBeat
