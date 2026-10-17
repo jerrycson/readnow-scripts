@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "로거 벤치마킹 멈춤 고침 · 자동 점검 가지 합치기",
+ "since": "2026-10-17T14:02:52Z",
+ "beat": "2026-10-17T14:02:52Z",
  "ask": null,
  "last": {
   "who": "auto-check",
