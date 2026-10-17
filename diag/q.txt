@@ -1,1 +1,1 @@
-scmreg=/scm/wrecord.aspx%3Faction%3D2%26bookid%3D0%26UpdateItemId%3D395261040
+uifix=395261040,393831184&g=%EC%A4%91
