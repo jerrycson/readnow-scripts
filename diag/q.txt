@@ -1,1 +1,2 @@
-kpocr=100
+mktchk=%ED%95%B4%EB%A6%AC%20%ED%8F%AC%ED%84%B0&n=4
+mktchk=*&n=12
