@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.15.1'; // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
+  const VERSION = '0.15.2'; // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -673,7 +673,12 @@
     const cfg = () => ({ ...PACER_DEFAULTS, ...(rd('rnPacer:cfg') || {}) });
     const st = () => { const c = cfg(); const x = rd(K) || {}; if (!(x.gap > 0)) x.gap = c.startMs; x.gap = Math.min(c.maxMs, Math.max(c.minMs, x.gap)); return x; };
     return {
-      async wait(sleep, mult = 1) { for (;;) { const x = st(); const cool = (x.coolUntil || 0) - Date.now(); if (cool > 0) { await sleep(Math.min(cool, 4000)); continue; } const gap = x.gap * (mult || 1) * (0.85 + Math.random() * 0.3); const w = (x.last || 0) + gap - Date.now(); if (w > 0) { await sleep(Math.min(w, 4000)); continue; } x.last = Date.now(); wr(K, x); return; } },
+      /* (0.15.2) prio = 사람이 기다리는 조회(등록 조회·사진 가격) — 간격(막히지 않게)은 그대로 지키되 다음 차례를 먼저 받음
+       *  예전: 같은 PC에서 자동 수집(전체 재검토 등)이 계속 돌면 조회는 최대 4초씩 자다 깨는 사이 매번 자리를 빼앗겨 두 화면 읽기에 2분 43초(10/17 HOME)
+       *  이제: 조회가 '기다리는 중' 표시(prioAt)를 남기고 짧게(0.15초) 깨어 바로 받음 · 다른 요청은 그 표시가 5초 안이면 양보 */
+      async wait(sleep, mult = 1, prio = false) { for (;;) { const x = st(); const now = Date.now(); const cool = (x.coolUntil || 0) - now; if (cool > 0) { await sleep(Math.min(cool, prio ? 1000 : 4000)); continue; }
+          if (!prio && x.prioAt && now - x.prioAt < 5000) { await sleep(300); continue; } if (prio && (!x.prioAt || now - x.prioAt > 1000)) { x.prioAt = now; wr(K, x); }
+          const gap = x.gap * (mult || 1) * (0.85 + Math.random() * 0.3); const w = (x.last || 0) + gap - now; if (w > 0) { await sleep(Math.min(w, prio ? 150 : 4000)); continue; } x.last = now; if (prio) x.prioAt = 0; wr(K, x); return; } },
       ok() { const c = cfg(); const x = st(); x.ok = (x.ok || 0) + 1; if (x.ok >= c.upEvery) { x.gap = Math.max(c.minMs, Math.round(x.gap * c.upMul)); x.ok = 0; x.n429 = 0; } wr(K, x); },
       fail(kind) { const c = cfg(); const x = st(); x.ok = 0; x.gap = Math.min(c.maxMs, Math.round(x.gap * (kind === '429' ? c.tooManyMul : kind === 'login' ? c.loginMul : c.failMul))); x.failAt = Date.now(); x.failKind = kind || 'error';
         if (kind === '429') { x.n429 = (x.n429 || 0) + 1; x.coolUntil = Date.now() + Math.min(10, x.n429) * 60000; } wr(K, x); },
