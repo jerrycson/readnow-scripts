@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.77.3의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.77.4의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.77.3' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.77.3', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.77.4' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.77.4', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2764,7 +2764,7 @@
   function asOwn() { try { return SCHED && SCHED.owner && SCHED.owner.primary && AS && AS.ownerOf ? AS.ownerOf(SCHED, BEATS, Date.now()) : null; } catch (e) { return null; } }
   function asOwnMine() { const o = asOwn(); return !o || String(o.pc || '') === String(PC_NAME); }
   async function pcBeat() { if (!auth.currentUser || !PC_NAME || (window.__rnRest && window.__rnRest()) || window.__rnReloading) return; const why = PUBONLY ? '🌐 공개 전용 PC(로그인 안 함 — 담당이 될 수 없음)' : window.__rnPaused ? '📥 수집 끔(일시정지)' : '';
-    try { await BEAT_REF().set({ pcs: { [PC_NAME]: { atMs: Date.now(), at: nowIso(), ver: VER, ok: !window.__rnPaused && !PUBONLY, paused: !!window.__rnPaused, ...(PUBONLY ? { pubOnly: true, gate: { ok: !!TGATE.ok, why: TGATE.ok ? null : String(TGATE.why || '').slice(0, 160) }, helperAt: HELPER_AT ? new Date(HELPER_AT).toISOString() : null } : {}), /* (1.71.0) 로거 알라딘 길(테더링) 상태 — 클라우드 로거 지킴이가 봄 */ off: (window.__rnFeatOff && window.__rnFeatOff()) || [], ...(why ? { why } : {}) } } }, { merge: true }); const d = await BEAT_REF().get(); const prevOwn = (asOwn() || {}).pc; BEATS = d.exists ? d.data() : {}; const o = asOwn(); if (o && prevOwn !== undefined && prevOwn !== o.pc && o.pc === PC_NAME) log(`🖥 자동 수집을 이 PC가 맡음 — ${o.why}`); try { asEdRefresh(true); } catch (e) {} } catch (e) {} }
+    try { await BEAT_REF().set({ pcs: { [PC_NAME]: { atMs: Date.now(), at: nowIso(), ver: VER, ok: !window.__rnPaused && !PUBONLY, paused: !!window.__rnPaused, ...(PUBONLY ? { pubOnly: true, gate: { ok: !!TGATE.ok, why: TGATE.ok ? null : String(TGATE.why || '').slice(0, 160) }, helperAt: HELPER_AT ? new Date(HELPER_AT).toISOString() : null, jrn: window.__rnJrn ? { okAt: window.__rnJrn.okAt ? new Date(window.__rnJrn.okAt).toISOString() : null, failAt: window.__rnJrn.failAt ? new Date(window.__rnJrn.failAt).toISOString() : null, pend: window.__rnJrn.pend || 0 } : null } : {}), /* (1.71.0) 로거 알라딘 길(테더링) 상태 — 클라우드 로거 지킴이가 봄 */ off: (window.__rnFeatOff && window.__rnFeatOff()) || [], ...(why ? { why } : {}) } } }, { merge: true }); const d = await BEAT_REF().get(); const prevOwn = (asOwn() || {}).pc; BEATS = d.exists ? d.data() : {}; const o = asOwn(); if (o && prevOwn !== undefined && prevOwn !== o.pc && o.pc === PC_NAME) log(`🖥 자동 수집을 이 PC가 맡음 — ${o.why}`); try { asEdRefresh(true); } catch (e) {} } catch (e) {} }
   setTimeout(pcBeat, 12000); setInterval(pcBeat, 2 * 60000);
   const kstNow = () => (RA ? RA.kstNow() : { day: '', min: 0 }); const esc3 = (t) => (RA ? RA.esc(t) : String(t == null ? '' : t));
   const AS_META = RA ? RA.META : {}; const CRM_LBL = RA ? RA.CRM_LBL : {};
