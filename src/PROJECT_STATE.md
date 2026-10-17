@@ -96,6 +96,9 @@
 - **📰 출판 정보 게시판 (2026-10-16 · 클라우드 0.15.x · 웹앱 1.41.0)**: 클라우드 kpb가 KPIPA 5곳(g3_1 조사연구보고서·g3_2 KPIPA 출판 보고서·g3_5 글로벌출판동향·bnk 출판전산망 알림판·qa 출판산업 Q&A) 글·첨부를 mkt_kpipa_posts·저장소 kpipa/에 모음(처음 8분마다 이어 받기 → 뒤엔 6시간마다 · 상태 app_settings/kpb v4). 같은 내용 첨부는 pdf>hwpx>hwp·단면>펼침면 하나만. 요약 = 예약 작업 '리드나우 출판 정보 요약'(매일 05:47 · @kpq→kp-out 가지(diag/kps_pub.pem · 개인 열쇠는 예약 작업 설명 안에만) → 요약 → src/tools/kpin.sh → @kpin → /kp-in(클라우드 열쇠 diag/kpin_pub.pem · 개인 열쇠 app_secrets/kpin)). 그림만 있는 PDF(KPIPA 출판산업 동향 등)는 글자를 못 꺼냄 → 제안: 클라우드 Vision OCR.
 
 ## 남은 일 / 지켜볼 것
+- (2026-10-17 · 웹앱 1.43.0 · 수집기 1.77.4 · 클라우드 0.16.5) **끝남**: 등록 조회 후보가 안 보이던 것(정보 없는 줄 = 미등록으로 그림 → method 없으면 후보 카드) · 주문확인요청 시장 줄 전부 빨강(화면 안 분류 실패 → 서버 Node 분류 nodeCls · 웹앱 shipSellerFetch) · 오늘 출고 ②·③ 고객 아이콘 · 관리도구 늘 켜 둘 PC(logger_watch.alwaysOn 체크) · 🔒 로거 보안 문서(LOGGER_SEC 26개 — 로거에 장치 더할 때마다 여기 한 줄) · 다른 PC 기록 3만 줄·pcBeat.jrn · 수동 일괄 개편+유효 최저가 기준 빠르게 고르기 · 상품 등록 개편 · 1.35.0 주석 글자 노출 고침.
+  - 유의 사항 빠짐 조사: 해리 포터(399243534)·게으른 자를 위한 변명(371797264)은 알라딘 상품 화면 자체에 '구매 유의 사항' 칸이 없음(우리 매물 기록에도 note 없음) — 읽기 실패가 아니라 등록 때 유의 사항이 없던 매물. 사장님 확인 기다림.
+  - 사장님 결정 기다림: 웹앱 요청 배정 순서(켜진 PC 먼저: 본인 PC → 쉬는 PC → 자동 수집 아닌 일 → 가장 짧은 일 · 없으면 클라우드 · 출고 과정은 클라우드 먼저) — 지금 방식 설명을 보냈음.
 - (2026-10-16 23:4x · 웹앱 1.42.3 · 수집기 1.77.3 · 클라우드 0.16.2) **끝남**: 클라우드 고정 주소 8.230.4.53(사장님 Cloud Shell 실행 · 진단 egress 확인) · 주소 바뀌면 로그인 쉬는 시간 건너뜀(cloud_login.ip) · 📥 등록 조회 = 클라우드 25초 안 샵매니저 결과 없으면(serial 뒤 대기·로그인 막힘·공개 검색) 로그인 PC(사무실·HOME)에도 regLookup — 먼저 온 SCM 결과 · 수집기 regLookup은 수집 끔·등록 끔이어도 받음 · 🖥 지킴이 alwaysOn(기본 HOME) 10분+ 신호 없음 푸시 · HOME 22:24~23:23 탭 멈춤(크롬 메모리 절약 의심 — document.wasDiscarded 기록) · 출고 실제 발송 = 건수(권수) · 지역 통계 고객 수(qcu·ccu·rcu·달마다) · 🔤 그림 PDF OCR(kpbOcrTick · Vision files:annotate · app_settings/kpb_ocr).
   - 제안 재검토: '@require 고정'은 하지 않음 — 옛 사본 수집기가 경고 없이 옛 코드로 돌아 숨어 버림(1.76.1 dupChk가 이미 잡음) · 머리가 바뀌어 모든 PC Tampermonkey 재설치가 필요해짐.
   - 지켜볼 것: 새 주소로 알라딘 로그인 되는지(진단 loginnow) · Vision API 처음 켜기(serviceusage enable 결과 kpb_ocr.enRes).
