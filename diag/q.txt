@@ -1,1 +1,1 @@
-doc=app_settings/ext
+regitems=25
