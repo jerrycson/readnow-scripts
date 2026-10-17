@@ -1,1 +1,1 @@
-doc=bench_books/403888108,pur_aladin_list/chunk_0
+doc=app_settings/ext
