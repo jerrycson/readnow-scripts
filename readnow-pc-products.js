@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.77.5의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.77.6의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.77.5' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.77.5', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.77.6' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.77.6', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2049,6 +2049,7 @@
     let info = null, box = false;
     for (let t = 0; t < 2; t++) { const pg = await getDoc(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${lid}${t ? '&_=' + Date.now() : ''}`); info = P.parseUsedItemInfo(pg.doc, null); box = !!pg.doc.getElementById('usedDecription');
       if (box && (info.hasNote || grade !== '중')) break; await sleep(1500); }
+    if ((!box || !info.hasNote) && !PUBONLY && P.parseScmEditNote) { try { const sg = await getDoc(`https://www.aladin.co.kr/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=${lid}`); const sc = P.parseScmEditNote(sg.doc); if (sc && sc.found) { const top = (info && info.photos ? info.photos : []).filter((x) => x.where === 'top'); info = { ...(info || {}), note: sc.note, hasNote: sc.hasNote, photos: [...top, ...sc.photos], sellerPhotoCount: sc.photos.length, photoDiff: sc.photos.length > 0 || !!(info && info.photoDiff) }; box = true; } } catch (e) {} } /* (1.77.6) 공개 화면에 안 보이면(주문 중 비공개 등) 샵매니저 상품 수정 화면(bookDesc)에서 — 클라우드 0.16.7과 같은 길 · 로거는 로그인 화면을 열지 않음 */
     const miss = (why) => ref.set({ lastMissAt: at, lastMissWhy: why, lastMissBy: PC_NAME }, { merge: true }).catch(() => {}).then(() => ({ wrote: false, miss: why, prev }));
     if (!box) return miss('상품 화면에 유의 사항 칸이 없음');
     if (!info.hasNote && prev && prev.note) return miss('빈 내용 — 있던 유의 사항 그대로 둠');

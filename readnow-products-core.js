@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.15.0'; // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
+  const VERSION = '0.15.1'; // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -518,6 +518,11 @@
       out.push({ isbn10: chk.getAttribute('isbn') || null, isbn13, title, canSell: !!add, price, note: add ? null : (t.match(/(매입\s*불가[^.]*|판매\s*불가[^.]*|매입하지 않[^.]*)/) || [])[1] || '팔기 장바구니에 추가 단추 없음' }); }
     return out; }
   function parseC2BCart(d) { return [...d.querySelectorAll('tr.item[pkid]')].map((tr) => { const t = txt(tr.querySelector('.c2b_td_int')); return { pkid: tr.getAttribute('pkid'), itemId: tr.getAttribute('itemid') || null, isbn13: (t.match(/ISBN13\s*:\s*(97[89]\d{10})/) || [])[1] || null, isbn10: (t.match(/ISBN10\s*:\s*([0-9A-Z]{10})/) || [])[1] || null, title: txt(tr.querySelector('.c2b_bbb strong')) || null, priceStd: toInt(txt(tr.querySelector('.pricestd'))), grade: /균일가/.test(txt(tr.querySelector('.c2b_td_u'))) ? '균일가' : null, gradeOpts: [...tr.querySelectorAll('.c2b_td_u li')].map((li) => txt(li)).filter(Boolean), c2bPrice: toInt(txt(tr.querySelector('.c2bprice'))) }; }); }
+  /* (0.15.1) 샵매니저 상품 수정 화면(/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=매물번호 · 로그인)의 구매 유의 사항 = textarea#bookDesc(HTML) — 2026-10-17 실제 화면에서 확인
+   *  공개 상품 화면은 주문이 들어온 동안 '비공개'가 되거나 유의 사항 칸이 안 보일 수 있어, 우리 매물은 이 화면이 확실한 출처 · 글은 공개 화면(#usedDecription)과 같은 방식(txtBr)으로 꺼냄 */
+  function parseScmEditNote(d) { const ta = d.getElementById ? d.getElementById('bookDesc') : null; if (!ta) return { found: false }; const html = ta.value != null && ta.value !== '' ? ta.value : ta.textContent || ''; const box = d.createElement('div'); box.innerHTML = html; const note = txtBr(box);
+    const photos = [...box.querySelectorAll('img')].map((im) => { const src = im.getAttribute('src') || ''; const abs = /^\/\//.test(src) ? 'https:' + src : src; return { src: abs, big: null, where: 'desc', file: String(abs).split('?')[0].split('/').pop() }; }).filter((x) => x.src);
+    return { found: true, note, hasNote: !!(note && note.replace(/\s/g, '').length), photos, src: 'scm' }; }
   function parseUsedItemInfo(d, newCoverFile) {
     const box = d.getElementById ? d.getElementById('usedDecription') : null;
     const note = box ? txtBr(box) : '';
@@ -713,7 +718,7 @@
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
     parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
-    parseUsedItemInfo, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
+    parseUsedItemInfo, parseScmEditNote, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
 })(typeof window !== 'undefined' ? window : this);
