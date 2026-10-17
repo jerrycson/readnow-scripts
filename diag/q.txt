@@ -1,1 +1,1 @@
-cmds=regLookup&n=14
+logs=1&pc=HOME&from=2026-10-17T16&to=2026-10-17T18~
