@@ -1,1 +1,2 @@
-doc=app_settings/cloud,app_settings/cloud_login
+doc=app_settings/cloud
+#2
