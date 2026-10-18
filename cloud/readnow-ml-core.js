@@ -6,7 +6,7 @@
  *   → ④ 새 모델이 지금 모델보다 3번 연속 확실히 나으면(로그 손실 1% 넘게 낮음) 승격. 처음 '지금 모델'은 기준선(자리 1위 여부·등급별 평균 판매율)
  * 쓰는 곳: 웹앱 전략도구의 조언 금액(그림자 표시), 앞으로 판정 엔진의 '권당 하루 기대 순이익'. 알라딘에 아무것도 바꾸지 않음 — 계산만. */
 (function (root) {
-  const VERSION = '0.2.0'; // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
+  const VERSION = '0.2.1'; // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
   const HORIZON_D = 7; // 7일 안에 팔렸나
   const GR = ['최상', '상', '중'];
   /* rawRow: 하루 모습 한 줄 (클라우드 ml_days ML_VER 1과 같은 칸) — l = 상품(prd_listings), m = 시장 지표(prd_book_metrics), a = 마지막 가격 변경 {at, from, batchId}, wg = 감시 그룹, nowMs = 그날 끝 */
@@ -47,7 +47,8 @@
    *   ps 새상품 판매가 · pl 정가 · av 새상품 판매 상태(onSale·절판·품절·일시품절) · days 등록부터 주문까지 일 · tot 전체 중고 수 · sp 판매지수
    * 유효 상품 = 짙은 초록·초록 판매자 + 알라딘측(파랑) — 북스킹(우리) 줄은 뺌. 동급 유효 최저가 = 같은 등급의 유효 상품 중 가장 싼 판매가
    * 돌려줌: { ver, ref 비교 기준가, refHow, ratio (우리 − 기준)/기준, score −2(많이 싸게)…+2(많이 비싸게 받음), verdict 짧은 말, why 근거 한 줄, missed 더 받을 수 있었던 어림 금액, feat 그때 값 } */
-  const SALE_EVAL_VER = 'v0-rule';
+  const SALE_EVAL_VER = 'v0.1-rule'; /* (0.2.1) 동급이 없으면 '더 높은 등급인데 더 싼'·'더 낮은 등급인데 더 비싼' 유효 최저가와 먼저 견줌(정범님 10/18) */
+  const GRANK = { 최상: 3, 상: 2, 중: 1, 하: 0 };
   const GCOEF = { 최상: 1, 상: 0.9, 중: 0.75 };
   function evalSale(x) { x = x || {}; const p = +x.p || 0; const g = x.g || ''; const rows = Array.isArray(x.rows) ? x.rows : [];
     const VALID = { dkgreen: 1, green: 1, aladin: 1 }; const oth = rows.filter((r) => r && r.p > 0 && !r.so && !r.srch && r.c !== 'ours' && !(x.lid && String(r.lid || '') === String(x.lid)));
@@ -57,11 +58,15 @@
       rankValid: valid.filter((r) => r.p < p).length + 1, ps: x.ps || null, pl: x.pl || null, av: x.av || null, days: x.days ?? null, tot: x.tot ?? null, sp: x.sp ?? null };
     const out = { ver: SALE_EVAL_VER, feat, ref: null, refHow: '', ratio: null, score: null, verdict: '평가 못 함', why: '', missed: 0 };
     if (!p) { out.why = '판매가 없음'; return out; }
-    let ref = null, how = '';
-    if (effSame) { ref = effSame; how = '동급 유효 최저가'; }
-    else if (valid.length && GCOEF[g]) { const conv = valid.map((r) => (GCOEF[r.g] ? r.p / GCOEF[r.g] * GCOEF[g] : null)).filter((v) => v > 0); if (conv.length) { ref = Math.round(Math.min(...conv)); how = '다른 등급 유효 최저가를 등급 환산(최상 1·상 0.9·중 0.75)'; } }
+    let ref = null, how = '', kind = null, refG = null;
+    const gr0 = GRANK[g]; const minOf = (L) => L.reduce((m, r) => (!m || r.p < m.p ? r : m), null);
+    const hiMin = gr0 != null ? minOf(valid.filter((r) => GRANK[r.g] != null && GRANK[r.g] > gr0)) : null; const loMin = gr0 != null ? minOf(valid.filter((r) => GRANK[r.g] != null && GRANK[r.g] < gr0)) : null;
+    if (effSame) { ref = effSame; how = '동급 유효 최저가'; kind = 'same'; refG = g; }
+    else if (hiMin && hiMin.p < p) { ref = hiMin.p; refG = hiMin.g; kind = 'hi'; how = `더 높은 등급(${hiMin.g}) 유효 최저가 — 우리보다 쌈`; } /* 더 좋은 책이 더 쌌는데도 우리 것이 팔림 → 비싸게 받음 */
+    else if (loMin && loMin.p > p) { ref = loMin.p; refG = loMin.g; kind = 'lo'; how = `더 낮은 등급(${loMin.g}) 유효 최저가 — 우리보다 비쌈`; } /* 더 나쁜 책도 우리보다 비쌌음 → 싸게 팔림 */
+    else if (valid.length && GCOEF[g]) { kind = 'conv'; const conv = valid.map((r) => (GCOEF[r.g] ? r.p / GCOEF[r.g] * GCOEF[g] : null)).filter((v) => v > 0); if (conv.length) { ref = Math.round(Math.min(...conv)); how = '다른 등급 유효 최저가를 등급 환산(최상 1·상 0.9·중 0.75)'; } }
     const notes = []; const soldOut = x.av && x.av !== 'onSale';
-    if (ref) { const r = (p - ref) / ref; out.ref = ref; out.refHow = how; out.ratio = Math.round(r * 1000) / 1000;
+    if (ref) { const r = (p - ref) / ref; out.ref = ref; out.refHow = how; out.refKind = kind; out.refG = refG; feat.refKind = kind; feat.refG = refG; out.ratio = Math.round(r * 1000) / 1000;
       out.score = r <= -0.15 ? -2 : r < -0.03 ? -1 : r <= 0.03 ? 0 : r <= 0.2 ? 1 : 2;
       if (out.score < 0) { const cap = feat.nextAbove && how === '동급 유효 최저가' ? feat.nextAbove : ref; out.missed = Math.max(0, Math.floor((Math.min(cap, ref) - 10 - p) / 10) * 10); }
       out.verdict = ['많이 싸게 팔림', '조금 싸게 팔림', '적정 — 최저가와 비슷', '잘 받음', '아주 잘 받음'][out.score + 2];
@@ -70,7 +75,7 @@
       if (out.score <= 0 && feat.days != null && feat.days <= 3) notes.push(`등록 ${feat.days}일 만에 팔림 — 값을 더 올려도 됐을 신호`);
       if (out.score < 0 && feat.days != null && feat.days >= 180) notes.push(`${feat.days}일 묵은 재고 — 싸게 판 것이 손해만은 아님`);
       if (out.score >= 1 && same.length && feat.rankValid > 1) notes.push(`더 싼 유효 매물 ${feat.rankValid - 1}개가 있었는데도 팔림`); }
-    else if (x.ps > 0) { const sh = p / x.ps; out.ref = x.ps; out.refHow = '새상품 판매가'; out.ratio = Math.round((sh - 1) * 1000) / 1000;
+    else if (x.ps > 0) { const sh = p / x.ps; out.ref = x.ps; out.refHow = '새상품 판매가'; out.refKind = 'new'; feat.refKind = 'new'; out.ratio = Math.round((sh - 1) * 1000) / 1000;
       out.score = valid.length === 0 && oth.length === 0 ? (sh < 0.35 ? -1 : 0) : 0; out.verdict = oth.length === 0 ? '단독 매물' : '유효 매물 없음';
       notes.push(`비교할 유효 매물이 없어 새상품 판매가의 ${(sh * 100).toFixed(0)}%로 봄`); if (out.score < 0) notes.push('단독인데 새상품가의 35% 아래 — 더 받을 여지'); }
     else { out.why = '그때 시장 자료(첫 페이지)·새상품가가 없어 평가 못 함'; return out; }
