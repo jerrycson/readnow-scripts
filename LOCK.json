@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "출고 카드 판매가 평가·순위 차트",
- "since": "2026-10-18T11:53:18Z",
- "beat": "2026-10-18T11:53:18Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "호칭 정범님",
-  "at": "2026-10-18T11:39:04Z"
+  "done": "출고 카드 판매가 평가·조회 기록·순위 20",
+  "at": "2026-10-18T12:10:52Z"
  }
 }
