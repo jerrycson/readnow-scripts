@@ -1,1 +1,1 @@
-benchdump=big
+perf=80
