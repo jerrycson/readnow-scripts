@@ -1,1 +1,3 @@
-perf=600
+rate=prd_book_metrics,prd_listings,prd_books,crm_orders,crm_customers,crm_interactions&mins=60
+recentDel=1
+perf=60
