@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "auto-check",
+ "what": "자동 점검: sw.js 원본·Firebase 저장본 전환·조회 기록·매입 연결 보관본",
+ "since": "2026-10-18T13:03:17Z",
+ "beat": "2026-10-18T13:03:17Z",
  "ask": null,
  "last": {
   "who": "chat",
