@@ -699,6 +699,33 @@ body.kbd .tabs,body.kbd #updpill{display:none!important}
 #scanov{position:fixed;inset:0;z-index:10000;background:#000}#scanov video{width:100%;height:100%;object-fit:cover}.scan-box{position:absolute;left:10%;right:10%;top:35%;height:22%;border:3px solid #fff;border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
 .scan-bar{position:absolute;left:0;right:0;bottom:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom,0));background:rgba(0,0,0,.6);color:#fff;display:flex;gap:10px;align-items:center}.scan-bar .hint{color:#ddd}.scan-bar .btn{margin-left:auto}
 .appl{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}.appi{display:flex;gap:10px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:12px}.appi img{width:44px;height:44px;border-radius:10px}.appi-b{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* ══════════ (1.51.0) 🎨 한 모양 규칙 — 사장님 10/18 '같은 기능은 같은 모양 · 일관성'
+ *  ① 직사각형 단추(.btn) = 일을 함: 꽉 찬 초록 = 이 화면의 주된 일 · 초록 테두리(ghost) = 보조 일 · 빨강 = 지우기·되돌릴 수 없는 일 · ⚡알라딘 표 = 샵매니저에 실제로 반영
+ *  ② 둥근 알약(.regbtn·.rchip·.rgbk-b·.rgm1·.rglive-tg·.segb) = 고르기·켜고 끄기 — 고른 것은 늘 꽉 찬 초록
+ *  ③ 탭·구분 칸(.seg·.btabs·.rgsub) = 볼 화면 고르기 — 고른 탭은 늘 꽉 찬 초록 (예전엔 파랑·연초록이 섞임)
+ *  ④ 글자 단추(.linkbtn) = 가벼운 이동·작은 일 — 초록 글자, 올리면 밑줄
+ *  ⑤ 모든 단추: 올리면 살짝 진해짐 · 누르면 살짝 눌림 · 못 누르면 흐림+금지 표시 · 키보드 초점은 초록 테두리 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;border-radius:10px;cursor:pointer;transition:filter .12s,background-color .12s,box-shadow .12s;line-height:1.25}
+.btn.sm{min-height:32px;border-radius:8px;padding:5px 12px;font-size:13px}
+.btn:not(:disabled):hover{filter:brightness(1.08)}.btn.ghost:not(:disabled):hover{background:var(--soft);filter:none}
+.btn:disabled,button:disabled{opacity:.45;cursor:not-allowed}
+.btn.warn{background:#fff;color:var(--sub);border:1.5px solid var(--line)}
+.btn.bdanger,.btn.ghost.bdanger{background:#fff}.btn.ghost.bdanger:not(:disabled):hover{background:#FDEDEB}
+.linkbtn{color:var(--cloth);text-decoration:none;border-bottom:1px dotted currentColor;cursor:pointer}.linkbtn:hover{text-decoration:none;border-bottom-style:solid;color:#1E3F36}
+.regbtn,.rgbk-b,.rgm1 button,.rglive-tg,.segb button{border-radius:999px!important;cursor:pointer;transition:background-color .12s,color .12s,border-color .12s}
+.regbtn:not(.on):hover,.rgbk-b:not(.all):hover{border-color:var(--cloth);background:var(--soft)}
+.rgm1{border-radius:999px!important}
+label.rchip{border-radius:999px;cursor:pointer}label.rchip:has(input:checked){background:var(--soft);border-color:var(--cloth);color:#1E3F36;font-weight:700}
+.seg button,.btabs button,.rgsub button{cursor:pointer;transition:background-color .12s,color .12s}
+.seg button.on:not(.bl),.btabs button.on,.rgsub button.on{background:var(--cloth)!important;color:#fff!important}
+.seg button:not(.on):hover,.btabs button:not(.on):hover{background:var(--soft)}
+button:focus-visible,.btn:focus-visible,a:focus-visible{outline:2px solid var(--cloth);outline-offset:2px}
+.btn:not(:disabled):active,.regbtn:active,.rgbk-b:active,.seg button:active{transform:translateY(1px)}
+.card>h3:first-child{margin-top:0}
+#rntip{position:fixed;z-index:10001;display:none;max-width:min(360px,calc(100vw - 16px));background:#1E2B28;color:#fff;font-size:12.5px;line-height:1.45;padding:7px 10px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;opacity:0;transform:translateY(2px);transition:opacity .12s,transform .12s;white-space:pre-line}
+#rntip.on{opacity:1;transform:none}#rntip .k{margin-top:3px;font-size:11.5px;color:#BFE3D4}
+@media (prefers-reduced-motion:reduce){#rntip,.btn,.regbtn{transition:none}}
 </style>
 </head>
 <body>
@@ -722,7 +749,7 @@ body.kbd .tabs,body.kbd #updpill{display:none!important}
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.1.0"></script>
 <script src="../readnow-register-core.js?v=0.7.1"></script>
-<script>const APP_VER = '1.51.0';</script>
-<script src="readnow-webapp.js?v=1.51.0"></script>
+<script>const APP_VER = '1.52.0';</script>
+<script src="readnow-webapp.js?v=1.52.0"></script>
 </body>
 </html>
