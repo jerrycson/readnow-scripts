@@ -6,7 +6,7 @@
  * 이 파일이 바뀌어 새 워커가 켜지면, 열려 있던 웹앱 화면을 모두 새로 엶.
  * 자료(Firebase 기록)는 여기서 다루지 않음 — Firebase가 따로 실시간으로 받음.
  * 문제가 생기면: 주소 끝에 ?nosw=1 을 붙여 열면 이 워커를 끄고 저장본을 지움. */
-const CACHE = 'rn-app-v5'; /* sw 1.24.5 — 새 워커가 켜져도 화면을 곧바로 다시 열지 않음(알림 → 쉬는 때) · sw 1.24.3 — 판 번호 붙은 파일은 저장본만 ·  웹앱 본문(readnow-webapp.js?v=판)은 새 판을 받으면 옛 판 사본을 지움(1.5MB씩 쌓이지 않게) */
+const CACHE = 'rn-app-v5'; /* sw 1.53.0 js-profiling 머리글 */ /* sw 1.24.5 — 새 워커가 켜져도 화면을 곧바로 다시 열지 않음(알림 → 쉬는 때) · sw 1.24.3 — 판 번호 붙은 파일은 저장본만 ·  웹앱 본문(readnow-webapp.js?v=판)은 새 판을 받으면 옛 판 사본을 지움(1.5MB씩 쌓이지 않게) */
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil((async () => {
   const ks = await caches.keys(); const upgraded = ks.some((k) => /^rn-app-/.test(k) && k !== CACHE);
@@ -14,6 +14,8 @@ self.addEventListener('activate', (e) => e.waitUntil((async () => {
   await self.clients.claim();
   if (upgraded) self.clients.matchAll({ type: 'window' }).then((cs) => cs.forEach((c) => { try { c.postMessage({ type: 'rn-newsw' }); } catch (e) {} })); // (1.24.5 점검 L7) 예전엔 열린 화면을 곧바로 다시 열어 출고·가격 일괄 확정 중에도 끊겼음 → 화면에 알리고, 화면이 쉬는 때(상세를 안 열었을 때)만 다시 엶
 })()));
+/* (sw 1.53.0) 웹앱 화면에 'Document-Policy: js-profiling'을 붙임 — 크롬 내장 샘플링 프로파일러(JS Self-Profiling)로 실제 기기에서 멈춘 동안 어떤 코드가 시간을 쓰는지 기록(사장님 10/18 상품 탭 멈춤) · GitHub Pages는 머리글을 못 바꿔 워커가 붙임 */
+const addDP = (r) => { try { const h = new Headers(r.headers); h.set('Document-Policy', 'js-profiling'); return new Response(r.body, { status: r.status, statusText: r.statusText, headers: h }); } catch (x) { return r; } };
 const isShell = (u) => u.origin === self.location.origin && /\/app\/(index\.html)?$/.test(u.pathname) && !u.searchParams.has('vc') && !u.searchParams.has('nosw');
 const isLib = (u) => (u.hostname === 'www.gstatic.com' && u.pathname.startsWith('/firebasejs/')) || (u.origin === self.location.origin && /\/readnow-[a-z-]+\.js$/.test(u.pathname)) || u.hostname === 'cdnjs.cloudflare.com' || u.hostname === 'cdn.jsdelivr.net';
 self.addEventListener('fetch', (e) => {
@@ -28,8 +30,8 @@ self.addEventListener('fetch', (e) => {
           const vcmp = (x, y) => { const A = String(x).split('.').map(Number), B = String(y).split('.').map(Number); for (let i = 0; i < 3; i++) { if ((A[i] || 0) !== (B[i] || 0)) return (A[i] || 0) - (B[i] || 0); } return 0; };
           if (nv && ov && vcmp(nv, ov) < 0) return r;
           await c.put(key, r.clone()).catch(() => {}); if (nv) await c.put(new Request(u.origin + '/__rn_ver'), new Response(nv)).catch(() => {}); if (hit && nv && ov && nv !== ov) { const cs = await self.clients.matchAll({ type: 'window' }); cs.forEach((cl) => cl.postMessage({ type: 'rn-newver', ver: nv, from: ov })); } return r; }).catch(() => null);
-      if (hit) { e.waitUntil(net); return hit; }
-      const r2 = await net; return r2 || new Response('오프라인 — 저장된 웹앱이 없습니다', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+      if (hit) { e.waitUntil(net); return addDP(hit.clone()); }
+      const r2 = await net; return r2 ? addDP(r2.clone()) : new Response('오프라인 — 저장된 웹앱이 없습니다', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
     }
     const hit = await c.match(key);
     if (hit && u.origin === self.location.origin && u.searchParams.has('v')) return hit; /* (sw 1.24.3 전체 점검) 판 번호가 붙은 파일(웹앱 본문·공용 파일)은 같은 주소면 내용이 같음 → 다시 받지 않음(예전엔 열 때마다 3MB를 다시 받아 덮어 써 브라우저가 저장한 컴파일 결과가 버려졌음) */
