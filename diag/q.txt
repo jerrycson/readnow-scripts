@@ -1,1 +1,1 @@
-samp=prd_market_nobook,prd_price_batches,prd_price_decisions,prd_price_actions,prd_dyn_history,crm_qna,prd_unclear,ext_docs,prd_stop_reasons,bench_state
+doc=app_settings/pc_live,prd_jobs/pclive_log
