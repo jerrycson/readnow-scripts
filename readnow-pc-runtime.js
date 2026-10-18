@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.84.4의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.84.5의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.84.4' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.84.4', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.84.5' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.84.5', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -365,7 +365,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       if (load || !pcsData || Date.now() - pcsAt > 60000) { if (!pcsData) b.innerHTML = '<div class="detail">다른 PC의 기록을 불러오는 중…</div>'; await pcsLoad(); drawOv(); }
       if (tab !== 'pcs') return; const x = pcsData && pcsSel ? pcsData[pcsSel] : null;
       const stamp = `${pcsSel}|${pcsAt}|${w.querySelector('#rnjF').value}|${w.querySelector('#rnjQ').value}`; if (!load && stamp === pcsDrawn) return; pcsDrawn = stamp;
-      const all0 = x ? x.lines.filter(pass) : []; const rows = all0.slice(-30000); /* (1.77.4) 3,000줄 → 3만 줄 — 로거는 한 시간에 3천 줄 넘게 써서 '다른 PC'에서 1시간치만 보였음(사장님 10/17) */ b.innerHTML = (all0.length > rows.length ? `<div class="detail">앞의 ${(all0.length - rows.length).toLocaleString()}줄은 생략 — 웹앱 ⚙ 기록 → 기록 내려받기로 전부 받을 수 있음</div>` : '') + rows.map(fmtRow).join('') || `<div class="detail">${pcsErr ? '' : x ? '거른 결과 없음' : '고를 PC가 없습니다'}</div>`;
+      const all0 = x ? x.lines.filter(pass) : []; const rows = all0.slice(-30000); /* (1.77.4) 3,000줄 → 3만 줄 — 로거는 한 시간에 3천 줄 넘게 써서 '다른 PC'에서 1시간치만 보였음(정범님 10/17) */ b.innerHTML = (all0.length > rows.length ? `<div class="detail">앞의 ${(all0.length - rows.length).toLocaleString()}줄은 생략 — 웹앱 ⚙ 기록 → 기록 내려받기로 전부 받을 수 있음</div>` : '') + rows.map(fmtRow).join('') || `<div class="detail">${pcsErr ? '' : x ? '거른 결과 없음' : '고를 PC가 없습니다'}</div>`;
       if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; };
     ov.addEventListener('click', (ev) => { if (tab !== 'pcs') return; const c = ev.target.closest('[data-pc]'); const hh = ev.target.closest('[data-pch]'); const rr = ev.target.closest('[data-pcr]');
       if (c) { pcsSel = c.dataset.pc; GM_setValue('rnu-jw-pc', pcsSel); pcsDrawn = ''; drawOv(); drawPcs(false); }
@@ -495,7 +495,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const txt = S.kind === 'stop' ? '■ 멈추는 중…' : S.kind === 'pause' ? '■ 일시정지됨' : S.kind === 'busy' ? `▶ ${m && m.job ? m.job : '작업 중'}` : '쉬는 중';
     b.textContent = txt; b.title = txt; b.className = 'bdg ' + ({ stop: 'stop', pause: 'pause', busy: 'busy', idle: '' })[S.kind];
     box.querySelector('#rnCtlWho').textContent = `${pc()} · v${VER}`; };
-  /* (1.76.1) 🧩 한 크롬에 수집기가 두 개 깔렸는지 — 사장님 10/16: '수집기는 이미 업데이트했는데 샵매니저에 빨간 경고창(본체 1.70.2 · 모듈 1.72.0)이 계속 뜸'
+  /* (1.76.1) 🧩 한 크롬에 수집기가 두 개 깔렸는지 — 정범님 10/16: '수집기는 이미 업데이트했는데 샵매니저에 빨간 경고창(본체 1.70.2 · 모듈 1.72.0)이 계속 뜸'
    *  까닭: Tampermonkey에 예전에 붙여 넣은 옛 수집기(다른 이름·사본)가 함께 켜져 있으면 그 옛 것이 자기 판과 모듈 판이 다르다고 경고를 띄움(새 것은 멀쩡) · 옛 것은 고칠 수 없으니 새 것이 알아채 안내
    *  방법: 화면에 '리드나우 수집기' 머리 칸(#rn-ctl)이 둘 이상이고 판이 다르면 → 옛 것의 빨간 경고를 이 안내로 바꿈(지우는 단계까지) · 같은 판 둘이면 '같은 것 두 개' 안내 */
   const dupChk = () => { try { if (globalThis.__rnSR) return; const L = [...document.querySelectorAll('#rn-ctl')]; if (L.length < 2) return; const vs = L.map((b) => { const t = (b.querySelector('#rnCtlWho') || {}).textContent || ''; const m = t.match(/v(\d+\.\d+\.\d+)/); return m ? m[1] : '?'; }); const old = [...new Set(vs.filter((v) => v !== VER))];

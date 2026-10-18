@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.84.4
+// @version      1.84.5
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -24,7 +24,7 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.15.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.56
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.57
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.13.6
@@ -461,7 +461,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       if (load || !pcsData || Date.now() - pcsAt > 60000) { if (!pcsData) b.innerHTML = '<div class="detail">다른 PC의 기록을 불러오는 중…</div>'; await pcsLoad(); drawOv(); }
       if (tab !== 'pcs') return; const x = pcsData && pcsSel ? pcsData[pcsSel] : null;
       const stamp = `${pcsSel}|${pcsAt}|${w.querySelector('#rnjF').value}|${w.querySelector('#rnjQ').value}`; if (!load && stamp === pcsDrawn) return; pcsDrawn = stamp;
-      const all0 = x ? x.lines.filter(pass) : []; const rows = all0.slice(-30000); /* (1.77.4) 3,000줄 → 3만 줄 — 로거는 한 시간에 3천 줄 넘게 써서 '다른 PC'에서 1시간치만 보였음(사장님 10/17) */ b.innerHTML = (all0.length > rows.length ? `<div class="detail">앞의 ${(all0.length - rows.length).toLocaleString()}줄은 생략 — 웹앱 ⚙ 기록 → 기록 내려받기로 전부 받을 수 있음</div>` : '') + rows.map(fmtRow).join('') || `<div class="detail">${pcsErr ? '' : x ? '거른 결과 없음' : '고를 PC가 없습니다'}</div>`;
+      const all0 = x ? x.lines.filter(pass) : []; const rows = all0.slice(-30000); /* (1.77.4) 3,000줄 → 3만 줄 — 로거는 한 시간에 3천 줄 넘게 써서 '다른 PC'에서 1시간치만 보였음(정범님 10/17) */ b.innerHTML = (all0.length > rows.length ? `<div class="detail">앞의 ${(all0.length - rows.length).toLocaleString()}줄은 생략 — 웹앱 ⚙ 기록 → 기록 내려받기로 전부 받을 수 있음</div>` : '') + rows.map(fmtRow).join('') || `<div class="detail">${pcsErr ? '' : x ? '거른 결과 없음' : '고를 PC가 없습니다'}</div>`;
       if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; };
     ov.addEventListener('click', (ev) => { if (tab !== 'pcs') return; const c = ev.target.closest('[data-pc]'); const hh = ev.target.closest('[data-pch]'); const rr = ev.target.closest('[data-pcr]');
       if (c) { pcsSel = c.dataset.pc; GM_setValue('rnu-jw-pc', pcsSel); pcsDrawn = ''; drawOv(); drawPcs(false); }
@@ -591,7 +591,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const txt = S.kind === 'stop' ? '■ 멈추는 중…' : S.kind === 'pause' ? '■ 일시정지됨' : S.kind === 'busy' ? `▶ ${m && m.job ? m.job : '작업 중'}` : '쉬는 중';
     b.textContent = txt; b.title = txt; b.className = 'bdg ' + ({ stop: 'stop', pause: 'pause', busy: 'busy', idle: '' })[S.kind];
     box.querySelector('#rnCtlWho').textContent = `${pc()} · v${VER}`; };
-  /* (1.76.1) 🧩 한 크롬에 수집기가 두 개 깔렸는지 — 사장님 10/16: '수집기는 이미 업데이트했는데 샵매니저에 빨간 경고창(본체 1.70.2 · 모듈 1.72.0)이 계속 뜸'
+  /* (1.76.1) 🧩 한 크롬에 수집기가 두 개 깔렸는지 — 정범님 10/16: '수집기는 이미 업데이트했는데 샵매니저에 빨간 경고창(본체 1.70.2 · 모듈 1.72.0)이 계속 뜸'
    *  까닭: Tampermonkey에 예전에 붙여 넣은 옛 수집기(다른 이름·사본)가 함께 켜져 있으면 그 옛 것이 자기 판과 모듈 판이 다르다고 경고를 띄움(새 것은 멀쩡) · 옛 것은 고칠 수 없으니 새 것이 알아채 안내
    *  방법: 화면에 '리드나우 수집기' 머리 칸(#rn-ctl)이 둘 이상이고 판이 다르면 → 옛 것의 빨간 경고를 이 안내로 바꿈(지우는 단계까지) · 같은 판 둘이면 '같은 것 두 개' 안내 */
   const dupChk = () => { try { if (globalThis.__rnSR) return; const L = [...document.querySelectorAll('#rn-ctl')]; if (L.length < 2) return; const vs = L.map((b) => { const t = (b.querySelector('#rnCtlWho') || {}).textContent || ''; const m = t.match(/v(\d+\.\d+\.\d+)/); return m ? m[1] : '?'; }); const old = [...new Set(vs.filter((v) => v !== VER))];
@@ -3763,7 +3763,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     if (H && H.today && H.today.key === dayK) pc.helper = { tether: H.today.tether, wifi: H.today.wifi, groups: H.today.groups, blocked: H.today.blocked, month: H.month, todayTiers: H.today.tiers || null, todayJobs: H.today.jobs || null, /* (1.75.0) 일별 실제 테더링(벤치마킹 등) */ capGB: H.capGB, capBytes: H.capBytes || null, ok: true, tetherOk: !!(H.tether && H.tether.ok), tetherIp: H.tether ? H.tether.ip : null, tetherIface: H.tether ? H.tether.iface || null : null, tetherDesc: H.tether ? H.tether.desc || null : null, wifiIface: H.wifi ? H.wifi.iface || null : null, wifiSsid: H.wifi ? H.wifi.ssid || null : null, /* (1.68.1 · 도우미 1.2.0) 어느 연결로 나가는지 이름까지 */ why: H.tether ? H.tether.why : null, ver: H.ver, at: H.at, defaultWarn: H.defaultWarn || null, phone: H.tether ? H.tether.phoneName || null : null, phones: Array.isArray(H.phones) ? H.phones.map((p) => ({ id: p.id != null ? String(p.id) : null, name: p.name, capGB: p.capGB, used: p.used, active: !!p.active, off: !!p.off, connected: !!p.connected })) : null, days: H.days && H.month ? Object.fromEntries(Object.entries(H.days).filter(([k]) => String(k).slice(0, 7) === H.month.key).map(([k, v]) => [k, { tether: +(v && v.tether) || 0 }])) : null }; /* (1.72.0) 📱📱 휴대폰별 · (1.72.1) 휴대폰 id·이달 날마다 테더링(통신사 기준 남은 양 셈에 씀) */
     try { await C('prd_jobs').doc('net_' + dayK).set({ day: dayK, pcs: { [PC_NAME]: pc }, ...W() }, { merge: true }); } catch (e) { keys.forEach((k) => { const o = (NETM.jobs[k] = NETM.jobs[k] || { pages: 0, chars: 0 }); o.pages += J[k].pages; o.chars += J[k].chars; }); } }
   setInterval(netFlush, 5 * 60e3); addEventListener('beforeunload', () => { try { netFlush(); } catch (e) {} });
-  /* ══ (1.79.0) 📊 수집 분석 기록 — 사장님 10/18 '하루에 PC마다·분류마다 몇 가지를 성공·실패·부분으로 모았나, 부분은 어떻게 마저 모으나'
+  /* ══ (1.79.0) 📊 수집 분석 기록 — 정범님 10/18 '하루에 PC마다·분류마다 몇 가지를 성공·실패·부분으로 모았나, 부분은 어떻게 마저 모으나'
    *  window.__rnCS.add(분류, 결과, 수, 까닭) → 2분마다 prd_jobs/cs_{한국 날짜}.pcs.{PC}.c.{분류}.{결과} += 수 · 실패·부분·건너뜀의 까닭은 .w.{분류}.{까닭} += 1(숫자는 #로 묶어 같은 까닭끼리)
    *  결과: ok(성공) · fail(실패) · part(부분 — 다음에 이어서) · none(어디에도 없음) · skip(건너뜀 — 멈춤·19금·이미 있음) · n(모은 항목 수) · p(읽은 쪽) · b(바이트) · ms(걸린 시간)
    *  웹앱 관리 도구 → 📊 수집 분석이 이 기록과 예전 기록(작업 회차 jobStats·autoSched · 쪽 수 net_ · 외부 출처 ext_run · 벤치마킹 bench_days)을 함께 보여 줌 */
@@ -3893,7 +3893,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     async put(v) { const d = await this.open(); try { await new Promise((res, rej) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, 'v'); t.oncomplete = res; t.onerror = () => rej(t.error); }); } finally { d.close(); } } };
   const lcMs = (v) => (v && v.uploadedAt && typeof v.uploadedAt.toMillis === 'function' ? v.uploadedAt.toMillis() : 0);
   const lcRevive = (o) => { for (const k of Object.keys(o)) { const v = o[k]; if (v && typeof v === 'object' && !Array.isArray(v) && typeof v.seconds === 'number' && typeof v.nanoseconds === 'number' && Object.keys(v).length === 2) o[k] = new firebase.firestore.Timestamp(v.seconds, v.nanoseconds); } return o; };
-  /* ══ (1.76.0) 🧾 주문으로 판매 끝 반영 (사장님 10/16) ══
+  /* ══ (1.76.0) 🧾 주문으로 판매 끝 반영 (정범님 10/16) ══
    *  알라딘 판매관리의 ③ 배송&구매확정전 · ④ 구매확정&정산대기 · ⑤ 정산완료에 있는 주문(= 주문 상태 출고완료/집하 · 집하/수령확인 · 배송완료/정산완료)의 상품은
    *  관리자가 처리하지 않아도 판매 끝(active:false · status 판매완료)으로 — 상품 목록을 다시 훑기 전이라도
    *  ① 주문 줄에 알라딘 중고 상품 코드가 있으면 그 상품(확실) ② 없으면(판매완료 엑셀을 올리기 전 주문) 같은 ISBN의 판매중 상품 중 '주문 전에 마지막으로 본' 것에서 고름:
@@ -4125,7 +4125,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       log(`시장 지표 갱신 완료 (성공 ${prog.done}, 실패 ${prog.fail}${prog.gate ? `, 19금이라 로그인 없이 못 봐 건너뜀 ${prog.gate}` : ''}${PUBONLY && MIX.n ? ` · 🔀 섞어 읽은 다른 책 ${MIX.n}권(저장 ${MIX.saved})` : ''})`);
     } finally { await releaseLane('aladin'); }
   }
-  /* (1.75.0) 📚 도서 정보는 알라딘 밖에서 먼저(사장님 10/16 지시): 교보문고 → 예스24 → 둘 다 없을 때만 알라딘
+  /* (1.75.0) 📚 도서 정보는 알라딘 밖에서 먼저(정범님 10/16 지시): 교보문고 → 예스24 → 둘 다 없을 때만 알라딘
    *  ext_basic/{ISBN}(외부 정보가 모아 둔 것)을 먼저 보고, 없으면(live) 그 자리에서 교보·예스24를 읽어 저장(와이파이 — 로거도 도우미가 와이파이로) */
   async function extBasicFor(isbn, live, st) { const X = EXT(); if (!X || !/^97[89]\d{10}$/.test(String(isbn || ''))) return null; const ref = C('ext_basic').doc(String(isbn)); let doc = null; try { const d = await ref.get(); doc = d.exists ? d.data() : null; } catch (e) {}
     const BO = ['kyobo', 'yes24', 'naverbook']; /* (1.76.0) 교보 > 예스24 > 네이버 */ const okOf = (D) => BO.filter((k) => D && D.src && D.src[k] && D.src[k].d && D.src[k].d.title);
@@ -5128,7 +5128,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const PUB_CMDS = new Set(['lookup', 'metrics', 'extLookup', 'extTest']); /* (1.69.0) usedInfo(우리 매물 페이지 다시 읽기)는 뺌 — 새로 올린 우리 매물을 익명 IP가 곧바로 여는 것은 로거를 드러냄 → 로그인한 사무실 PC·클라우드가 함 */ /* (1.64.0) 공개 전용 PC가 맡는 맡긴 일(로그인 없이 되는 것만) */
   const pcCan = (type) => { const extT = type === 'extLookup' || type === 'extTest'; if (PUBONLY && (!PUB_CMDS.has(type) || (!TGATE.ok && !extT))) return false; /* (1.67.0) 외부 정보는 와이파이 — 테더링과 상관없이 로거가 받음 */ if (PUBONLY && !extT && BUD && !(BUD.left.main > 0) && !(BUD.free)) return false; /* 맡긴 비로그인 일 = 주요 몫 — 몫이 없으면 받지 않음 */ /* (1.66.0) 테더링 확인 전에는 맡지 않음(다른 PC가 받게) */ if (pubPcMode() && type === 'metrics') return false; /* 묶음 시장 지표(대량)는 공개 전용 PC */ const G = REGF(); if (!G) return PC_KNOWN_OLD.has(type); return G.canHandle(G.merge(REGDOC || {}), type, 'pc'); };
   /* (1.63.7) 🧩 맡긴 일 거르기 — 수집 일은 📥 수집이 켜졌을 때만, 출고 시작·현금 판매·등록은 그 기능을 켰을 때만(끄면 대기로 남겨 다른 PC가) */
-  /* (1.77.5) PC끼리 누가 받나(사장님 10/17): ① 요청한 기기가 이 PC(웹앱이 dev에 기기 이름) → 바로 ② 쉬는 PC 0.7초 ③ 자동 수집이 아닌 일(사람이 누른 일) 하는 PC 1.6초 ④ 자동 수집 중인 PC 2.6초 + 남은 시간이 길수록 더 늦게(최대 +6초) — 먼저 받는 PC가 맡고(대기 → 처리 중은 한 번만) 나머지는 그냥 지나감 */
+  /* (1.77.5) PC끼리 누가 받나(정범님 10/17): ① 요청한 기기가 이 PC(웹앱이 dev에 기기 이름) → 바로 ② 쉬는 PC 0.7초 ③ 자동 수집이 아닌 일(사람이 누른 일) 하는 PC 1.6초 ④ 자동 수집 중인 PC 2.6초 + 남은 시간이 길수록 더 늦게(최대 +6초) — 먼저 받는 PC가 맡고(대기 → 처리 중은 한 번만) 나머지는 그냥 지나감 */
   const claimDelay = (x) => { try { if (x && x.dev && String(x.dev).trim().toUpperCase() === String(PC_NAME || '').trim().toUpperCase()) return 0; const busy = !!running || !!(window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()); if (!busy) return 700; if (!window.__rnAuto) return 1600; const m = lastUi && lastUi.etaMin != null ? +lastUi.etaMin : 60; return 2600 + Math.min(6000, Math.max(0, m) * 100); } catch (e) { return 1000; } };
   /* (1.83.0) ☁ 클라우드 이상 띠가 매일 뜨던 까닭(진단 10/18): ① '유의 사항 다시 읽기'(usedInfo)는 클라우드가 느린 일로 회차 끝에만 처리하는데 PC는 20초만 기다려 거의 늘 '클라우드 이상'으로 적음(오늘 6번 모두 이것) ② 클라우드가 살아 있어도 다른 단계(조회·보강)를 하는 중이면 20초를 넘김
    *  → usedInfo는 클라우드 먼저에서 뺌(PC가 바로) · 발송준비시작·현금 판매 중지는 클라우드 신호(app_settings/cloud.at)가 2분 안에 있으면 45초까지 기다리고, 그래도 늦으면 PC가 처리하되 '느림'으로만 적음(띠 없음) · 신호가 끊긴 때만 '클라우드 이상' 띠 */
@@ -5205,7 +5205,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const leader = () => { const v = GM_getValue(KEY, null); if (!v || v.tab === ME || Date.now() - v.at > 40000) { GM_setValue(KEY, { tab: ME, at: Date.now() }); return true; } return false; };
     addEventListener('beforeunload', () => { const v = GM_getValue(KEY, null); if (v && v.tab === ME) GM_deleteValue(KEY); });
     window.__rnShipFast = () => ({ leader: (GM_getValue(KEY, null) || {}).tab === ME, lastSig: !!lastSig, fails });
-    (async () => { if (PUBONLY) return; /* (1.64.0) 주문 읽기 = 로그인 일 */ await sleep(10000); for (;;) { await sleep(15000); if (busy || !auth.currentUser || !leader()) continue; if (await cloudFresh()) continue; /* (1.77.5) 출고 과정은 클라우드 먼저(사장님 10/17) — 클라우드 빠른 고리가 45초 안에 읽었으면 PC는 쉬고, 클라우드가 멈추면 바로 이 PC가 15초마다 */ busy = true;
+    (async () => { if (PUBONLY) return; /* (1.64.0) 주문 읽기 = 로그인 일 */ await sleep(10000); for (;;) { await sleep(15000); if (busy || !auth.currentUser || !leader()) continue; if (await cloudFresh()) continue; /* (1.77.5) 출고 과정은 클라우드 먼저(정범님 10/17) — 클라우드 빠른 고리가 45초 안에 읽었으면 PC는 쉬고, 클라우드가 멈추면 바로 이 PC가 15초마다 */ busy = true;
         try { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (!SH) continue; const g = await lookDoc('https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx'); const rc = SH.parseDeliveryPage(g.doc);
           if (!rc || !rc.tabCounts || !Object.keys(rc.tabCounts).length) { fails++; continue; } if (rc.tabCounts['주문확인요청'] > 0 && (!rc.orders.length || rc.orders.every((o) => !(o.items || []).length))) { fails++; if (fails === 1 || fails % 40 === 0) log(`⚠ 출고 실시간(PC): 주문확인요청 탭은 ${rc.tabCounts['주문확인요청']}건인데 주문·상품을 못 읽음 — 알라딘 화면 모양이 바뀐 듯 · 빈 목록을 쓰지 않음`, 1); continue; } /* (1.63.14) */ fails = 0; const at = nowIso(); const sig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)]));
           let ch = false; if (sig !== lastSig) { ch = await saveConfirmState(rc, at); lastSig = sig; if (ch) log(`출고 실시간(PC): 주문확인요청 ${rc.orders.length}건으로 바뀜 — 웹앱에 바로`); }
@@ -5218,7 +5218,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     return { itemId: p.aladinItemId, isbn13: p.isbn13 || null, barcode, title: p.title || null, subtitle: p.subtitle || null, author: (p.contributors || []).slice(0, 2).map((c) => c.name).join(', ') || null, publisher: p.publisher || null, pubDate: p.pubDate || null,
       cover: (p.images && p.images.front) || null, priceList: p.priceList ?? null, priceSales: p.priceSales ?? null, availability: p.availability || null, usedTotal: u.usedTotal ?? null, buyback: u.buyback || null, mins: u.mins || null, page1: u.listings || [], lastPage: u.lastPage || 1, at: nowIso(),
       /* (1.44.0) 등록 엔진: 클라우드 /lookup(0.9.2)과 같은 칸 — 상품 관리 코드 판정·카드 */ categories: (p.categories || []).map((c) => ({ path: c.path || [], cids: c.cids || [] })), salesPoint: p.salesPoint ?? null, ranks: p.ranks || [], reviewCount: p.reviewCount ?? null, commentCount: p.commentCount ?? null, rating: p.rating ?? null, size: p.size || null, pages: p.pages || null, originalTitle: p.originalTitle || null, series: p.series || null }; }
-  /* (1.77.0) 📥 등록 조회 — 사장님 10/16: '알라딘 검색이 아니라 샵매니저 상품등록의 알라딘 등록 검색으로' · 클라우드 0.16.0과 같은 순서
+  /* (1.77.0) 📥 등록 조회 — 정범님 10/16: '알라딘 검색이 아니라 샵매니저 상품등록의 알라딘 등록 검색으로' · 클라우드 0.16.0과 같은 순서
    *  상품명 → 등록 검색(NAME) 후보(등록 코드 포함) · 번호 → 등록 검색(ISBN): 1개면 그 상품 상세, 여러 개(판·에디션)면 후보 · 등록 검색에 없으면 예전처럼 상품 페이지(ISBN=)·공개 검색 */
   async function regLookupCmd(ref, v) { const isb = v.isbns || [], ids = v.itemIds || [], qs = v.queries || []; const tot = isb.length + ids.length + qs.length; let n = 0; const items = {}, cands = {}, errs = {}; const br = +v.branch || 1;
     LOOK_PRIO++; try { log(`📥 등록 조회: ${tot}건 (샵매니저 등록 검색)`); const prog = () => ref.set({ n, tot, items, cands, errs, uploadedAt: TS() }, { merge: true }).catch(() => {});
@@ -5370,7 +5370,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     log(`📥 등록 뒤 나머지 수집: 신규 등록분 수집 끝 → 시장 지표 ${keys.length}개 맡김`); }
   setInterval(() => { regVerifyAll().catch(() => {}); }, 3 * 60000);
   /* ══════════ (1.81.0) 🗑 웹앱에서 지운 등록 상품 → 알라딘에서도 삭제 (shp_cmds regDel) · 🔎 샵매니저에서 지운 최근 상품 → 웹앱에 바로 '삭제' ══════════
-   *  사장님 10/18: '시험한 것·관리자가 지운 것이 샵매니저는 물론 웹앱에도 바로' — 매우 심각한 사안
+   *  정범님 10/18: '시험한 것·관리자가 지운 것이 샵매니저는 물론 웹앱에도 바로' — 매우 심각한 사안
    *  ① regDel {items:[{regItem, listingId, usedCode, title, listingKey}]}: 지금 상태를 샵매니저 목록(최신순)에서 상품 번호로 찾음 → 상품 조회/수정 화면의 판매상태 일괄 변경과 같은 요청으로 '삭제'(17, 공용 상품 파일의 SCM_STATUS)
    *     → 다시 목록을 훑어 어느 상태에도 없을 때만 '지움'으로 · prd_listings(active false · status '삭제') · reg_items(aladinDel) — 실행 문(exec_log)으로 같은 일을 두 번 보내지 않음
    *  ② 10분마다(한 PC·한 탭 — 임대): 최근 14일 등록 상품의 상품 번호가 샵매니저 어느 상태 목록에도 없으면 '삭제'로 (30% 넘게 한꺼번에 사라지면 화면 오류로 보고 안 씀) */
@@ -5385,7 +5385,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     try { const qs = await C('reg_items').where('result.listingId', '==', String(l.listingId)).get(); qs.docs.forEach((d) => B.push(d.ref.set({ aladinGone: { at, how, listingId: String(l.listingId) }, ...W() }, { merge: true }).catch(() => {}))); } catch (e) {}
     if (l.regItem) B.push(C('reg_items').doc(l.regItem).set({ aladinGone: { at, how, listingId: String(l.listingId) }, ...W() }, { merge: true }).catch(() => {}));
     await Promise.all(B); }
-  /* (1.84.0) 🗑 상품 찾기 — 샵매니저 상품 조회/수정의 실제 검색(사장님이 쓰던 주소: searchType=2 = ISBN · 3 = 관리 코드 · 1 = 상품명)으로 상태 목록마다 찾아 상품 번호가 같은 줄을 고름
+  /* (1.84.0) 🗑 상품 찾기 — 샵매니저 상품 조회/수정의 실제 검색(정범님이 쓰던 주소: searchType=2 = ISBN · 3 = 관리 코드 · 1 = 상품명)으로 상태 목록마다 찾아 상품 번호가 같은 줄을 고름
    *  ISBN으로 찾았는데 어느 상태에도 없으면 '없음'(확실) · 상품명으로만 찾은 것은 없어도 '모름'(지웠다고 쓰지 않음) */
   const delSearchUrl = (code, t, kw, pg) => `/scm/wrecord_edit.aspx?chkItemStockStatus=${code}&chkItemInDate=0&searchCat1=0&searchType=${t}&keyword=${encodeURIComponent(kw)}&ViewRowsCount=100&page=${pg}&SortOrder=6&itemStockStatus=${code}&categoryId=0`;
   async function delFind(it) { const lid = String(it.listingId); const isbn = String(it.isbn || '').replace(/[^0-9Xx]/g, ''); const t = isbn && /^(\d{9}[\dXx]|\d{13})$/.test(isbn) ? 2 : 1; const kw = t === 2 ? isbn : String(it.title || '').replace(/^\[[^\]]*\]\s*/, '').replace(/\s*\([^)]*\)\s*$/, '').slice(0, 20).trim(); if (!kw) return { found: null, sure: false, why: '찾을 말(ISBN·상품명)이 없음' };
@@ -6007,7 +6007,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   async function handoffDue() { try { const own = asOwn(); if (own && own.pc && String(own.pc) !== String(PC_NAME)) return false; if (Date.now() - HO_AT > 10 * 60e3) { HO_AT = Date.now(); const qs = await C('prd_handoff').where('status', '==', 'todo').limit(300).get(); HO_N = qs.size; } return HO_N > 0; } catch (e) { return false; } }
   /* (1.73.0) 지금 할 차례인 칸 — schedTick과 💤 양보 확인이 같이 씀 */
   function schedDues(now, idleMs) { return AS.due(SCHED, SCHED_RUNS, { now, pc: PC_NAME, own: asOwn(), anyPc: (job) => (pubHelpOn() || PUBONLY) && String(job || '').startsWith('prd:') && isPubKey(String(job).slice(4)), pubAll: PUBONLY, bud: PUBONLY ? BUD : null, mainBusy: PUBONLY && !!running && isPubKey(running) && tierOfKey(running) === 'main', crmOk: !!(window.__rnCrm && window.__rnCrm.start), idleMs, bootAt: BOOT_AT, stats: JSTATS }).filter((d) => (!PUBONLY || (TGATE.ok && String(d.slot.job || '').startsWith('prd:') && isPubKey(String(d.slot.job).slice(4)))) && !(pubPcMode() && String(d.slot.job || '').startsWith('prd:') && isPubKey(String(d.slot.job).slice(4)))); } /* (1.64.0) 공개 전용 PC = 공개 일만 · (1.65.0) 테더링 확인 뒤에만 · (1.66.0) 공개 전용 PC가 있으면 사무실 PC는 공개 일을 빼고 */
-  /* (1.74.0) ⏰ 차례 정하기(사장님 10/16) — 로거·사무실 PC 모두 같은 규칙
+  /* (1.74.0) ⏰ 차례 정하기(정범님 10/16) — 로거·사무실 PC 모두 같은 규칙
    *  0 사람이 누른 일(수집기 단추·웹앱에서 사람이 누른 요청) — 끼어들지 않음(다른 일을 모두 비키게 함)
    *  1 주문·출고 짧은 요청(발송 요청 다시 읽기) — 사람 일 말고는 모두 비키게 함
    *  2 정한 시각(시각·간격·매월) — 시각이 오면 하던 일(사람 일 빼고)을 지금 항목까지 저장하고 바로 시작 · 같이 기다리면 이른 시각부터, 같은 시각이면 칸 순서
@@ -6205,7 +6205,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
    *  일별(최근 한 달)·월별(최근 13개월)로 조회해 ③ 돌려받은 표를 그대로(머리·줄 글자) 저장 — 숫자만 골라내지 않고 화면의 표 전부(데이터 수집 철칙: 버리지 않음)
    *  저장: mkt_kpipa/zx_화면_종류_기간_YYYYMM { page, title, typeKey, typeVal, typeLabel, period, from, to, tables:[{caption, head:[줄], rows:[줄]}] } — 같으면 안 씀, 바뀌면 옛 표를 history에
    *        mkt_kpipa/zx_probe_화면 = 알아낸 화면 모양(조회 주소·칸 이름·고르기) — 못 읽은 화면도 무엇이 문제인지 보고 고칠 수 있게 */
-  const KP_X = [/* (1.74.3) 분야별 판매(주제분류별 판매량 통계)는 kpipaCtg가 주제분류마다 · 분야별 판매 순위는 사장님 10/16 '빼고' — 더 받지 않음(받아 둔 것은 그대로) */ ['adiStatsSaleTrend', '판매 동향'], ['adiStatsSaleReader', '독자(구매자) 판매']];
+  const KP_X = [/* (1.74.3) 분야별 판매(주제분류별 판매량 통계)는 kpipaCtg가 주제분류마다 · 분야별 판매 순위는 정범님 10/16 '빼고' — 더 받지 않음(받아 둔 것은 그대로) */ ['adiStatsSaleTrend', '판매 동향'], ['adiStatsSaleReader', '독자(구매자) 판매']];
   const kpTxt = (el) => String((el && el.textContent) || '').replace(/\s+/g, ' ').trim();
   function kpForm(html) { const doc = new DOMParser().parseFromString(html, 'text/html'); const radios = {}, selects = {}, inputs = {};
     doc.querySelectorAll('input[type=radio][name]').forEach((r) => { const lab = (r.id && doc.querySelector(`label[for="${r.id}"]`)) || r.closest('label'); (radios[r.name] = radios[r.name] || []).push({ v: r.value, label: kpTxt(lab) || r.value, on: r.checked || r.hasAttribute('checked') }); });
@@ -6219,7 +6219,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     doc.querySelectorAll('table').forEach((t) => { const head = [], rows = []; const hr = t.querySelectorAll('thead tr'); hr.forEach((tr) => { const cells = []; tr.querySelectorAll('th,td').forEach((c) => { const n = Math.min(20, +c.getAttribute('colspan') || 1); for (let i = 0; i < n; i++) cells.push(kpTxt(c)); }); head.push(cells.join('\t')); });
       (t.querySelectorAll('tbody tr').length ? t.querySelectorAll('tbody tr') : t.querySelectorAll('tr')).forEach((tr) => { if (tr.closest('thead')) return; const cells = [...tr.querySelectorAll('th,td')].map(kpTxt); if (cells.some(Boolean)) rows.push(cells.join('\t')); });
       if (rows.length) out.push({ caption: kpTxt(t.querySelector('caption')).slice(0, 120), head: head.slice(0, 4), rows: rows.slice(0, 1500) }); }); return out; }
-  /* (1.74.3) 📚 주제분류별 판매량 통계(사장님 10/16) — 도서별(bookType)·판매채널별(saleType) × 전체·1단계 주제분류 21개·2단계 주제분류 × 날짜(일별)
+  /* (1.74.3) 📚 주제분류별 판매량 통계(정범님 10/16) — 도서별(bookType)·판매채널별(saleType) × 전체·1단계 주제분류 21개·2단계 주제분류 × 날짜(일별)
    *  화면(adiStatsCtgSaleCnt): POST …/search { rdoSearchType, rdoSearchPeriod:'date', txtFromDate, txtToDate(YYYYMMDD · 5~31일), searchCtg(분류 번호 · 빈칸 = 전체), depth('1depth'|'2depth') } · 2단계 목록 = POST …/ctlgSearch(같은 값 · 1단계 번호)
    *  저장: mkt_kpipa_ctg/{YYYYMM}_{도서별|판매채널별}_{top|1단계번호} { month, type, grp, d: { 분류번호: { 'YYYYMMDD': 계열 } }, names } — 달마다 한 번 묻고 한 번 씀 · 같으면 안 씀 · 바뀐 날은 옛 값을 h(이력)에
    *  어디까지 받았는지: app_settings/kpipa_ctg.cov['종류|분류'] = { lo, hi }(YYYYMM) · 이번 달(과 1~7일엔 지난달)은 늘 다시 · 멈추면 다음에 그 자리부터 */
@@ -6313,8 +6313,8 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       setTimeout(() => { clearInterval(poll); fin({ ok: false, why: `화면 읽기 시간 초과(${Math.round((max + 20000) / 1000)}초)` }); }, max + 20000); });
   const EXT_S = { keys: null, keysAt: 0, cfg: null, cfgAt: 0, cache: {}, next: {}, idx: {}, idxAt: 0, cand: null, candAt: 0, cur: {}, errs: {}, pauseUntil: {}, busy: false, me: 'x' + Math.random().toString(36).slice(2, 7), used: {}, usedDay: null };
   async function extKeys(force) { if (!force && EXT_S.keys && Date.now() - EXT_S.keysAt < 10 * 60000) return EXT_S.keys; let k = {}; try { const d = await C('app_secrets').doc('ext').get(); k = (d.exists && d.data().keys) || {}; } catch (e) { log('🌐 외부 연결 키를 못 읽음: ' + (e.code || e.message) + (/permission/i.test(e.code || e.message) ? ' — Firebase 규칙에 app_secrets 읽기 허용 필요' : ''), 1); } EXT_S.keys = k; EXT_S.keysAt = Date.now(); return k; }
-  async function extCfg(force) { const X = EXT(); if (!force && EXT_S.cfg && Date.now() - EXT_S.cfgAt < 5 * 60000) return EXT_S.cfg; let c = {}; try { const d = await C('app_settings').doc('ext').get(); c = d.exists ? d.data() : {}; } catch (e) {} if (c && !c.capMig1017 && c.src && c.src.kakao && +c.src.kakao.cap === 5000) { /* (1.78.1) 한 번만: 설정 ⑱에 예전 기본값(카카오 5,000)이 그대로 적혀 있어 새 기본 25,000(공식 쿼터 30,000)이 안 먹던 것 → 25,000으로(사장님 10/17 '전부 진행') · 사람이 다른 값을 적어 두었으면 그대로 */ try { await C('app_settings').doc('ext').set({ src: { kakao: { cap: 25000 } }, capMig1017: { at: nowIso(), by: PC_NAME, from: 5000 } }, { merge: true }); c.src.kakao.cap = 25000; c.capMig1017 = true; log('🌐 카카오 책 검색 하루 상한 5,000 → 25,000 (공식 쿼터 30,000)'); } catch (e) {} } EXT_S.cfg = X.cfgOf(c); EXT_S.capBase = {}; for (const s0 of EXT_RAMP) if (EXT_S.cfg.src[s0]) { EXT_S.capBase[s0] = EXT_S.cfg.src[s0].cap; const k = Math.max(0, Math.min(10, +((EXT_S.ramp || {})[s0] || {}).k || 0)); if (k) EXT_S.cfg.src[s0].cap = Math.round(EXT_S.cfg.src[s0].cap * (1 + 0.1 * k)); } EXT_S.cfgAt = Date.now(); return EXT_S.cfg; }
-  /* (1.78.0) 📈 화면 읽기 출처(교보·예스24·네이버) 하루 상한 천천히 올리기 — 사장님 10/17 '더 늘리는 방안 전부'
+  async function extCfg(force) { const X = EXT(); if (!force && EXT_S.cfg && Date.now() - EXT_S.cfgAt < 5 * 60000) return EXT_S.cfg; let c = {}; try { const d = await C('app_settings').doc('ext').get(); c = d.exists ? d.data() : {}; } catch (e) {} if (c && !c.capMig1017 && c.src && c.src.kakao && +c.src.kakao.cap === 5000) { /* (1.78.1) 한 번만: 설정 ⑱에 예전 기본값(카카오 5,000)이 그대로 적혀 있어 새 기본 25,000(공식 쿼터 30,000)이 안 먹던 것 → 25,000으로(정범님 10/17 '전부 진행') · 사람이 다른 값을 적어 두었으면 그대로 */ try { await C('app_settings').doc('ext').set({ src: { kakao: { cap: 25000 } }, capMig1017: { at: nowIso(), by: PC_NAME, from: 5000 } }, { merge: true }); c.src.kakao.cap = 25000; c.capMig1017 = true; log('🌐 카카오 책 검색 하루 상한 5,000 → 25,000 (공식 쿼터 30,000)'); } catch (e) {} } EXT_S.cfg = X.cfgOf(c); EXT_S.capBase = {}; for (const s0 of EXT_RAMP) if (EXT_S.cfg.src[s0]) { EXT_S.capBase[s0] = EXT_S.cfg.src[s0].cap; const k = Math.max(0, Math.min(10, +((EXT_S.ramp || {})[s0] || {}).k || 0)); if (k) EXT_S.cfg.src[s0].cap = Math.round(EXT_S.cfg.src[s0].cap * (1 + 0.1 * k)); } EXT_S.cfgAt = Date.now(); return EXT_S.cfg; }
+  /* (1.78.0) 📈 화면 읽기 출처(교보·예스24·네이버) 하루 상한 천천히 올리기 — 정범님 10/17 '더 늘리는 방안 전부'
    *  전날 상한까지 다 썼고(95% 이상) 그날 그 출처가 막힘·잇단 오류로 쉰 적이 없으면 다음 날 +10%(설정 ⑱의 상한 기준 · 최대 2배)
    *  잇단 오류(5번)·'너무 많이 물음'으로 쉬게 되면 그 자리에서 −30%(한 칸 = 10%씩 3칸) · 기록 ext_run.ramp.{출처} = { k(칸), errDay, day } */
   const EXT_RAMP = ['kyobo', 'yes24', 'naverbook'];
@@ -6384,7 +6384,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   async function extCands() { if (EXT_S.cand && Date.now() - EXT_S.candAt < 6 * 3600e3) return EXT_S.cand; let src = LISTINGS;
     if (!src) { if (running) { const lite = await extCandsLite(); if (!lite) return EXT_S.cand || []; if (lite.rows) { EXT_S.cand = lite.rows; EXT_S.candAt = Date.now() - 5 * 3600e3; /* 1시간 뒤 다시 만듦(작업이 끝났으면 진짜 목록으로) */ log(`🌐 외부 정보: 다른 작업 중이라 ${lite.from}(${lite.rows.length.toLocaleString()}권)으로 이어 감`); return EXT_S.cand; } src = new Map(lite.L.map((v, i) => [i, v])); log(`🌐 외부 정보: 다른 작업 중이라 ${lite.from}으로 이어 감`); } else { await loadListings(); src = LISTINGS; } }
     const seen = new Map();
-    const X = EXT(); for (const l of src.values()) { const isbn = X.keyOf ? X.keyOf(l) : String(l.isbn13 || '').replace(/[^0-9]/g, ''); if (!isbn) continue; const isI = /^97[89]\d{10}$/.test(isbn); if (!isI && !['video', 'music'].includes(l.mediaType)) continue; /* (1.57.4) ISBN 없는 DVD·블루레이·CD도 중고 시세(중고닷)는 봄 */ const st = String(l.status || ''); const sold = !isI ? false : (l.active === false || /판매완료/.test(st)); /* (1.77.7) 판매완료도 — 기본 정보(교보·예스24·네이버·구글·국중·카카오)만 · 판매중 다음 차례 · 사장님 10/17 */ if (!sold && (!/판매중/.test(st) || /판매중지/.test(st) && !/일시/.test(st))) continue; const p = +l.price || 0; const o = seen.get(isbn); if (o && !o.sold && sold) continue; if (!o || (o.sold && !sold) || p > o.p) seen.set(isbn, { isbn, media: l.mediaType || null, title: String(l.title || '').replace(/^\[중고[^\]]*\]\s*/, '') || null, author: l.author || null, p, ...(sold ? { sold: true } : {}) }); }
+    const X = EXT(); for (const l of src.values()) { const isbn = X.keyOf ? X.keyOf(l) : String(l.isbn13 || '').replace(/[^0-9]/g, ''); if (!isbn) continue; const isI = /^97[89]\d{10}$/.test(isbn); if (!isI && !['video', 'music'].includes(l.mediaType)) continue; /* (1.57.4) ISBN 없는 DVD·블루레이·CD도 중고 시세(중고닷)는 봄 */ const st = String(l.status || ''); const sold = !isI ? false : (l.active === false || /판매완료/.test(st)); /* (1.77.7) 판매완료도 — 기본 정보(교보·예스24·네이버·구글·국중·카카오)만 · 판매중 다음 차례 · 정범님 10/17 */ if (!sold && (!/판매중/.test(st) || /판매중지/.test(st) && !/일시/.test(st))) continue; const p = +l.price || 0; const o = seen.get(isbn); if (o && !o.sold && sold) continue; if (!o || (o.sold && !sold) || p > o.p) seen.set(isbn, { isbn, media: l.mediaType || null, title: String(l.title || '').replace(/^\[중고[^\]]*\]\s*/, '') || null, author: l.author || null, p, ...(sold ? { sold: true } : {}) }); }
     EXT_S.cand = [...seen.values()].sort((a, b) => (a.sold ? 1 : 0) - (b.sold ? 1 : 0) || b.p - a.p); EXT_S.candAt = src === LISTINGS ? Date.now() : Date.now() - 5 * 3600e3; return EXT_S.cand; }
   const extDue = (src, isbn, cfg) => { const v = (EXT_S.idx[src] || new Map()).get(isbn); if (!v) return true; const m = String(v).match(/^E (\d{4}-\d\d-\d\d) (\d+)$/); if (m) return Date.now() - Date.parse(m[1] + 'T00:00:00+09:00') >= EXT_BACKOFF[Math.min(EXT_BACKOFF.length, +m[2]) - 1] * 864e5; return Date.now() - Date.parse(v + 'T00:00:00+09:00') >= cfg.src[src].refreshDays * 864e5; };
   const extEligible = (src, b, cfg) => { const X = EXT(); if (b && b.sold && (X.SOURCES[src] || {}).grp !== 'basic') return false; /* (1.77.7) 판매완료 책은 기본 정보만(시세·해외·전자책은 판매중만) */ if (X.eligible) return X.eligible(src, b, cfg); /* (1.59.0) 공용 파일 0.3.0부터 기준이 공용 파일에 — 영상·음반 전용 장터(DVDPrime) 포함 */ const g = X.SOURCES[src].grp; if (!/^97[89]\d{10}$/.test(String(b.isbn || ''))) return g === 'used' && src !== 'yes24used' && !!b.title; /* ISBN 없는 상품: 장터 시세만 */ if (g === 'foreign' && !cfg.foreignKr && X.isKrIsbn(b.isbn)) return false; if ((g === 'used' && src !== 'yes24used') || g === 'ebook') return !!b.title; return true; };
@@ -6405,7 +6405,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const parts = Object.entries(tally).map(([s, t]) => `${X.SOURCES[s].label} ${Object.entries(t).map(([k, v]) => `${{ new: '새로', changed: '바뀜', same: '같음', err: '못 읽음', skip: '건너뜀', mismatch: '다른 책', none1: '없음(한 번 — 다음에 확인)', viaJm: '중고닷에서 찾아 직접 안 물음' }[k] || k} ${v}`).join('·')}`);
     if (parts.length) log(`🌐 외부 정보 ${Math.round((Date.now() - t0) / 1000)}초: ${parts.join(' / ')}`); return tally; }
   /* (1.74.0) 🔎 외부 정보 몰아 받기 — 평소 5분마다 4분씩 받던 것을 쉴 때 쉬지 않고(출처마다 하루 최대·요청 간격은 그대로) · 더 받을 것이 없거나(모든 출처 하루 최대·할 책 없음) 맡음을 못 받으면 끝 */
-  /* ══ (1.76.0) 📚 로거 와이파이 일: 하루 종일 도서 정보(외부 — 교보 > 예스24 > 네이버)와 표지 사진 — 사장님 10/16
+  /* ══ (1.76.0) 📚 로거 와이파이 일: 하루 종일 도서 정보(외부 — 교보 > 예스24 > 네이버)와 표지 사진 — 정범님 10/16
    *  로거는 베일 속에(알라딘이 절대 알 수 없게): 이 일은 알라딘 주소를 하나도 열지 않음(도서 정보·표지 모두 외부 · 셋 다 없으면 'none'으로 적고 알라딘 도서 정보는 사무실 PC의 판매완료 상품 정보·도서 정보 일이 맡음)
    *  도우미 1.6.3부터만(교보·네이버 표지가 와이파이로 나가는 판) · 테더링 일(벤치마킹)과 따로 동시에 돎
    *  차례: ① 가장 최근 등록 상품 300개 ② 정보를 아직 안 모은 판매중 ③ 정보를 아직 안 모은 판매완료 ④ 알라딘 정보만 있는 판매중(평점·리뷰 수·옮긴이·표지 보강) ⑤ 같은 판매완료 — 한 번 모은 상품은 120일 뒤 다시 */
@@ -6418,7 +6418,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   async function biImg(bookId) { try { const ref = C('prd_books').doc(String(bookId)); let b = null; await db.runTransaction(async (tx) => { const d = await tx.get(ref); const x = d.exists ? d.data() : null; if (!x || x.imgStatus !== 'pending' || (x.imgLease && x.imgLease.until > Date.now() && x.imgLease.by !== PC_ID)) return; const srcs = ['front', 'back', 'spine'].map((k) => x.images && x.images[k] && !x.images[k].stored ? x.images[k].src : null).filter(Boolean); if (!srcs.length || srcs.some((u) => /aladin/i.test(u))) return; tx.update(ref, { imgLease: { by: PC_ID, name: PC_NAME, until: Date.now() + 10 * 60000 } }); b = { id: d.id, ...x }; }); if (!b) return false;
       const upd = { images: {} }; let ok = true; for (const slot of ['front', 'back', 'spine']) { const im = b.images && b.images[slot]; if (!im || !im.src || im.stored) continue; try { const blob = await gmBlob(im.src); const ext = (im.src.match(/\.(jpe?g|png|gif|webp)(\?|$)/i) || [, 'jpg'])[1].toLowerCase(); const base = `img/${b.id}/${slot}`; const meta = { cacheControl: 'public,max-age=31536000,immutable' }; await storage.ref(`${base}.${ext}`).put(blob, { ...meta, contentType: blob.type || 'image/' + ext }); let t = null; try { t = await thumb(blob, slot === 'spine' ? 60 : 200); if (t) await storage.ref(`${base}_t.webp`).put(t, { ...meta, contentType: 'image/webp' }); } catch (e) { t = null; } upd.images[slot] = { src: im.src, stored: `${base}.${ext}`, thumb: t ? `${base}_t.webp` : null, bytes: blob.size ?? null, storedAt: nowIso(), by: 'logger-wifi' }; } catch (e) { ok = false; upd.images[slot] = { src: im.src, stored: null, error: e.message }; } }
       await ref.set({ ...upd, imgStatus: ok ? 'done' : 'error', imgLease: firebase.firestore.FieldValue.delete(), ...W() }, { merge: true }); if (ok) BI.imgs++; return ok; } catch (e) { return false; } }
-  /* ══ (1.77.7 → 1.78.0) ♾ 무한 도서 정보 — 사장님 10/17 '외부 출처로 판매중·판매완료 중 정보를 안 모은 것부터 무한히' · 17:17 '더 늘리는 방안 전부'
+  /* ══ (1.77.7 → 1.78.0) ♾ 무한 도서 정보 — 정범님 10/17 '외부 출처로 판매중·판매완료 중 정보를 안 모은 것부터 무한히' · 17:17 '더 늘리는 방안 전부'
    *  차례: (우리 상품 — 위 biQueue ①~⑤가 먼저) → ⑥ 우리가 아는 모든 책(prd_books 3만여 권 — 알라딘 구매 풀·탐색·함께 산 책 포함) → ⑦ 벤치마킹 판매자의 책(bench_books) → ⑧ 출판사 새 책 소식(mkt_kpipa_posts의 ISBN)
    *        → ⑨ 국립중앙도서관 ISBN 서지(날짜별 · 오늘 쪽부터 거꾸로 · 새로 생긴 날은 늘 먼저 — 끝이 없는 차례) → 다 돌면 ⑥부터 다시(120일 지난 것만)
    *  출처: 교보 > 예스24 > 네이버 > 구글 북스 > 국립중앙도서관 > 카카오 (알라딘 TTB 제외 · 네이버 API 종료) — 한 책은 처음 찾은 출처에서 끝 · 출처마다 하루 상한·요청 간격·쉼을 그대로 지킴
@@ -6459,7 +6459,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       window.__rnCS && (window.__rnCS.add('cover', 'ok'), window.__rnCS.add('cover', 'b', blob.size)); await C('app_settings').doc('ext_cover_stat').set({ n: FV.increment(1), bytes: FV.increment(blob.size), at: nowIso(), days: { [day]: { n: FV.increment(1), bytes: FV.increment(blob.size) } } }, { merge: true }); BX.cov++; BX.covB += blob.size; return true; } catch (e) { if (!BX.covErr) { BX.covErr = e.message; log('🖼 표지 저장 못 함(다음 표지에서 다시): ' + e.message, 1); } return false; } }
   /* 이 책을 최근에 물었나: ext_basic/{ISBN}.bx(무한 차례가 적은 것) 또는 출처 기록(우리 상품 차례가 받은 것) */
   const bxFresh = (v) => { if (!v) return false; const now = Date.now(); const bx = v.bx; if (bx && bx.at && now - Date.parse(bx.at) < (bx.ok ? 120 : 30) * 864e5) return true; const S0 = v.src || {}; return BX_SRC.some((s0) => { const e = S0[s0]; const t = e && (e.chk || e.at); return e && e.d && !e.none && t && now - Date.parse(t) < 120 * 864e5; }); };
-  async function biExtra(t0, lim, api) { const X = EXT(); const cf = await bxCfg(); if (cf.mode === 'off') { BX.why = '사장님이 멈춤(웹앱 설정)'; return; } if ((+cf.rest || 0) > Date.now()) { BX.why = '모든 책을 최근에 물어 봄 — ' + new Date(+cf.rest + 9 * 3600e3).toISOString().slice(11, 16) + '에 다시'; return; }
+  async function biExtra(t0, lim, api) { const X = EXT(); const cf = await bxCfg(); if (cf.mode === 'off') { BX.why = '정범님이 멈춤(웹앱 설정)'; return; } if ((+cf.rest || 0) > Date.now()) { BX.why = '모든 책을 최근에 물어 봄 — ' + new Date(+cf.rest + 9 * 3600e3).toISOString().slice(11, 16) + '에 다시'; return; }
     const cfg = await extCfg(); const keys = await extKeys(); await extUsedLoad(true); let usedAt = Date.now(); const L0 = api ? BX_API : BX_SRC;
     const okSrc = (s0) => cfg.src[s0] && cfg.src[s0].on && X.SOURCES[s0] && !X.SOURCES[s0].ended && X.keysReady(s0, keys) && (EXT_S.pauseUntil[s0] || 0) <= Date.now() && !(EXT_S.authPause && EXT_S.authPause[s0] != null && X.keySig && EXT_S.authPause[s0] === X.keySig(s0, keys)) && (EXT_S.used[s0] || 0) < cfg.src[s0].cap;
     let empty = 0; while (Date.now() - t0 < lim && !window.__rnPaused) { if (Date.now() - usedAt > 10 * 60e3) { await extUsedLoad(true); usedAt = Date.now(); } /* 다른 PC가 쓴 하루 사용량도 반영 */ const S0 = L0.filter(okSrc); if (!S0.length) { BX.why = `${api ? '공식 API 출처(구글·국중·카카오)' : '기본 정보 출처(교보·예스24·네이버·구글·국중·카카오)'}가 모두 오늘 상한 또는 쉬는 중 — 풀리면 이어서`; return; } BX.why = null;
@@ -6569,7 +6569,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     let verTimer = null;
     window.__rnLiveReady = (v) => { try { if (!v || verNum(v) <= verNum(VER)) return; if (window.__rnOutdated === v && verTimer) return; { const RT = GM_getValue('rnu-reload-try', null), LV = GM_getValue('rn-live', null); /* (1.63.11 자동 점검) 받아 둔 판으로 이미 새로고침했는데도 이 판이면(시작 실패 등) 다시 0부터 세지 않음 — 전엔 부를 때마다 '같은 판 8번까지'를 지워 끝없이 새로고침·긴 작업을 10분마다 멈춤 */ if (RT && RT.v === v && LV && LV.ver === v && (+RT.at || 0) > (+LV.at || 0)) { if (window.__rnOutdated !== v) onNewVer(v, '⚡ 빠른 업데이트'); return; } } GM_setValue('rnu-reload-for', null); GM_setValue('rnu-reload-try', null); if (verTimer) { clearInterval(verTimer); verTimer = null; } window.__rnOutdated = null; onNewVer(v, '⚡ 빠른 업데이트로 새 판을 받아 둠'); } catch (e) {} };
     ref.onSnapshot((d) => onNewVer(((d.data() || {})[HK] || {}).ver), () => {});
-    /* (1.83.0) ⚡ 새 판 즉시 — 사장님 10/18 '템퍼몽키가 바로 반영되지 않아': 예전엔 5분마다 pc-live.json을 보고(GitHub 원본 주소는 캐시가 5분까지 옛 파일) + 쉬는 2분을 기다려 10분 넘게 걸리기도 함
+    /* (1.83.0) ⚡ 새 판 즉시 — 정범님 10/18 '템퍼몽키가 바로 반영되지 않아': 예전엔 5분마다 pc-live.json을 보고(GitHub 원본 주소는 캐시가 5분까지 옛 파일) + 쉬는 2분을 기다려 10분 넘게 걸리기도 함
      *  → GitHub에 올라오면 자동 작업이 클라우드 /pclive로 app_settings/pc_live {ver, commit}를 적음 → 켜진 수집기가 바로 '커밋 주소'(캐시 없음)에서 같은 파일·지문을 받아 둠 → 쉬는 사이(45초) 새로고침 · 머리가 바뀐 판은 예전처럼 Tampermonkey 업데이트 */
     (() => { let lastC = null; const RB = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/'; const sha = async (t) => { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); };
       const go = async (v) => { if (!v || !v.commit || !v.ver || v.commit === lastC || verNum(v.ver) <= verNum(VER)) return; lastC = v.commit; const info = window.__rnLiveInfo ? window.__rnLiveInfo() : null; if (!info || !info.hsig || info.noeval || GM_getValue('rn-live-off', false)) return;
