@@ -1,1 +1,2 @@
-recentUp=prd_listings&mins=90
+recentUp=prd_listings&mins=120
+perf=40
