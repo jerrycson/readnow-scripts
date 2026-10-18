@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "1.56.0 올림",
- "since": "2026-10-18T12:40:00Z",
- "beat": "2026-10-18T13:01:32Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "출고 카드 판매가 평가·조회 기록·순위 20",
-  "at": "2026-10-18T12:10:52Z"
+  "done": "",
+  "at": "2026-10-18T13:02:06Z"
  }
 }
