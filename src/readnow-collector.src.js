@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.84.0
+// @version      1.84.1
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -3971,6 +3971,10 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const ch = P.diff(prev, next, LISTING_FIELDS);
     const mt = P.mediaType(row); const doc = { channel: 'aladin', usedCode: row.usedCode, ...next, mediaType: mt.type, mediaWhy: mt.why, ids: row.ids, idWarn: row.idWarn || [], active: ACTIVE.includes(row.status || (prev && prev.status)), lastSeenAt: seenAt, ['seenBy_' + source]: seenAt, ...W() };
     if (!prev) doc.firstSeenAt = seenAt;
+    /* (1.84.1) 바뀐 칸이 없으면 '봤음' 표시만 — 전체 재검토가 2만여 상품을 통째로 다시 적어(10/18 1시간 9,633건 · 문서 전체) 웹앱들이 그만큼 받아 풀던 것. 상태·가격 등 값이 하나라도 다르면 예전처럼 전체 */
+    if (prev && !Object.keys(ch).length && prev.mediaType === mt.type && prev.active === doc.active && prev.usedCode && JSON.stringify(prev.ids || null) === JSON.stringify(doc.ids || null) && JSON.stringify(prev.idWarn || []) === JSON.stringify(doc.idWarn || []) && !(row.registeredYearGuessed && !prev.registeredAt)) {
+      const slim = { lastSeenAt: seenAt, ['seenBy_' + source]: seenAt, ...W() }; LISTINGS.set(key, { ...prev, ...slim }); return { ops: [(b) => b.set(C('prd_listings').doc(key), slim, { merge: true })], isNew: false, changed: false };
+    }
     if (row.registeredYearGuessed && !(prev && prev.registeredAt)) doc.registeredYearGuessed = true;
     const ops = [(b) => b.set(C('prd_listings').doc(key), doc, { merge: true })];
     const real = Object.keys(ch).filter((k) => prev && prev[k] != null);
