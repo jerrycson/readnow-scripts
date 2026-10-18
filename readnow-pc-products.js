@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.80.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.81.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.80.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.80.0', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.81.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.81.0', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2215,6 +2215,7 @@
     else if (v.type === 'c2bAdd') { await c2bAddCmd(ref, v); return; }
     else if (v.type === 'cashStop') { await cashStopCmd(ref, v); return; } // (1.37.0) 현금 판매 → 알라딘 판매중지 자동 // (1.35.0) 알라딘 매입: 팔기 장바구니에 담기
     else if (v.type === 'lookup') { LOOK_PRIO++; try { await lookupCmd(ref, v); } finally { LOOK_PRIO--; } return; } /* (1.78.2) 사진 가격 조회도 사람이 기다림 — 알라딘 차례 먼저 */
+    else if (v.type === 'regDel') { await regDelCmd(ref, v); return; } /* (1.81.0) 🗑 웹앱에서 지운 등록 상품 → 알라딘 삭제 */
     else if (v.type === 'regLookup') { await regLookupCmd(ref, v); return; } /* (1.77.0) 📥 등록 조회 = 샵매니저 등록 검색(로그인 PC만 — 로거는 pcCan에서 거름) */
     else if (v.type === 'extLookup' || v.type === 'extTest') { await extCmd(ref, v); return; } // (1.57.0) 🌐 외부 정보 — 알라딘과 상관없음
     else if (v.type === 'regBulk' || v.type === 'regBulkMock') { await regBulkCmd(ref, v.type === 'regBulkMock' ? { ...v, mock: true } : v); return; } /* (1.50.0) 🧷 모의 등록은 종류를 따로(regBulkMock·regOneMock) — 예전 판 수집기는 모르는 종류라 받지 않음(실수로 올리지 않게) */
@@ -2237,8 +2238,9 @@
   const exBegin = async (kind, key, detail) => { const X = EXC(); if (!X) return { ok: true, none: true }; try { const r = await X.begin(db, { kind, key, by: PC_NAME, detail: detail || null }); window.__rnLedgerDown = null; return r; } catch (e) { window.__rnLedgerDown = { at: nowIso(), msg: e.code || e.message }; const perm = /permission/i.test(e.code || e.message); log(`⚠ 실행 기록을 못 적음(${kind}) — ${e.code || e.message}${perm ? ' (Firestore 규칙에 exec_log 허용 필요) · 일은 예전처럼 하고 기록만 빠짐' : ' · 잠깐 문제일 수 있어 이번엔 하지 않음(두 번 실행 막기) — 다시 맡기면 다시'}`, 1); return perm ? { ok: true, none: true } : { ok: false, state: 'ledger', why: '실행 기록을 못 적어 이번엔 하지 않음(두 번 실행 막기): ' + (e.code || e.message) }; } }; // 규칙이 없을 때(권한)만 기록 없이 함 · (1.59.0) 잠깐 문제(연결·충돌)면 하지 않음 — 기록 없이 하면 다시 맡겼을 때 두 번 실행될 수 있음
   const exEnd = (kind, key, status, msg, result) => { const X = EXC(); if (!X) return Promise.resolve(); return X.finish(db, { kind, key }, status, { msg, result }).catch((e) => log(`실행 결과를 못 적음(${kind}): ${e.code || e.message}`, 1)); };
   let LOOK_PRIO = 0; /* (1.78.2) 사람이 기다리는 조회(등록 조회·사진 가격)가 도는 동안 알라딘 요청 차례를 먼저 받음(속도 간격은 그대로) */ const PACE_P = { ...PACE, wait: (s0, m) => PACE.wait(s0, m || 1, true) };
-  const lookDoc = async (url) => { tgateCheck(); const PC0 = LOOK_PRIO > 0 ? PACE_P : PACE; if (PUBONLY && !isPubUrl(url)) throw new Error('🛡 로거: 공개 화면이 아닌 알라딘 주소는 읽지 않음 — ' + String(url).slice(0, 80)); if (!((PUBONLY || pubAnonOn()) && isPubUrl(url))) { const q = await AL.quick(url, { pace: PC0, sleep }); netAdd((q && q.html || '').length); return q; } /* (1.64.0) 공개 화면은 쿠키 없이 */ await PC0.wait(sleep); const u = new URL(url, 'https://www.aladin.co.kr').href; const r = await fetch(u, { credentials: 'omit' }); if (!r.ok) { PACE.fail(PACE.kindOf ? PACE.kindOf(r.status) : 'error'); throw Object.assign(new Error('서버 응답 ' + r.status), { status: r.status }); }
-    const html = AL.decode(await r.arrayBuffer(), r.headers.get('content-type')); const doc = new DOMParser().parseFromString(html, 'text/html'); if (AL.isMaintenance(doc)) throw new Error('알라딘 점검 중'); if (AL.looksLoggedOut(r.url, doc)) throw Object.assign(new Error('로그인 없이는 못 보는 화면(19금 등)'), { needLogin: true }); if (!/알라딘/.test(doc.title || '') && !doc.querySelector('link[rel="canonical"]')) throw new Error('로그인 없이 읽은 화면이 알라딘 화면 같지 않음 — 빈 결과로 쓰지 않음'); PACE.ok(); netAdd(html.length); if (PUBONLY) mixHarvest(doc); return { doc, html, finalUrl: r.url }; }; // 일시정지·작업 줄과 상관없이 짧게 (책 몇 권) — (1.39.0) 알라딘 창구: 속도 조절을 같이 쓰고 점검 화면은 오류로
+  const lookDoc = async (url) => { try { return await lookDoc0(url); } catch (e) { if (PUBONLY || !e.needLogin) throw e; /* (1.81.0) 🔞 19금: 로그인 PC는 쿠키를 붙여 다시 읽음 — 예전엔 공개 화면을 쿠키 없이 읽다 성인 인증 화면에서 그대로 실패해 등록 조회가 안 됐음(10/18 9788926326701) */ const q = await AL.quick(url, { pace: LOOK_PRIO > 0 ? PACE_P : PACE, sleep }); netAdd((q && q.html || '').length); return q; } };
+  const lookDoc0 = async (url) => { tgateCheck(); const PC0 = LOOK_PRIO > 0 ? PACE_P : PACE; if (PUBONLY && !isPubUrl(url)) throw new Error('🛡 로거: 공개 화면이 아닌 알라딘 주소는 읽지 않음 — ' + String(url).slice(0, 80)); if (!((PUBONLY || pubAnonOn()) && isPubUrl(url))) { const q = await AL.quick(url, { pace: PC0, sleep }); netAdd((q && q.html || '').length); return q; } /* (1.64.0) 공개 화면은 쿠키 없이 */ await PC0.wait(sleep); const u = new URL(url, 'https://www.aladin.co.kr').href; const r = await fetch(u, { credentials: 'omit' }); if (!r.ok) { PACE.fail(PACE.kindOf ? PACE.kindOf(r.status) : 'error'); throw Object.assign(new Error('서버 응답 ' + r.status), { status: r.status }); }
+    const html = AL.decode(await r.arrayBuffer(), r.headers.get('content-type')); const doc = new DOMParser().parseFromString(html, 'text/html'); if (AL.isMaintenance(doc)) throw new Error('알라딘 점검 중'); if (AL.looksLoggedOut(r.url, doc)) throw Object.assign(new Error('로그인 없이는 못 보는 화면(19금 등)'), { needLogin: true }); if (!/알라딘/.test(doc.title || '') && !doc.querySelector('link[rel="canonical"]')) { if (/wlogin\.aspx|login\.aspx|성인\s*인증|19세\s*(미만|이상)|청소년\s*(유해|이용불가)|adult/i.test(r.url + ' ' + html.slice(0, 20000))) throw Object.assign(new Error('로그인 없이는 못 보는 화면(19금 등)'), { needLogin: true }); throw new Error('로그인 없이 읽은 화면이 알라딘 화면 같지 않음 — 빈 결과로 쓰지 않음'); } PACE.ok(); netAdd(html.length); if (PUBONLY) mixHarvest(doc); return { doc, html, finalUrl: r.url }; }; // 일시정지·작업 줄과 상관없이 짧게 (책 몇 권) — (1.39.0) 알라딘 창구: 속도 조절을 같이 쓰고 점검 화면은 오류로
   /* (1.42.0) 출고 실시간 (PC): 알라딘 화면이 열린 PC가 15초마다 ① 주문확인요청을 한 번 읽어 바뀐 때만 씀 — 클라우드 사용료 없이 실시간
    *  · 한 PC 안에서는 한 탭만(GM 'rnu-shipfast', 40초 신호) · 다른 작업·일시정지와 상관없이 (읽기 한 번, 속도 조절은 같이 씀)
    *  · 바뀌지 않으면 목록 문서는 건드리지 않고 작은 신호(shp_state/fast)만 — 웹앱 '읽은 시각'과 클라우드가 봄(PC가 읽는 동안 클라우드는 빠른 고리를 쉼 = 비용 절약)
@@ -2262,7 +2264,7 @@
           const dv = rc.tabCounts['발송 요청']; if (lastDeliv != null && dv !== lastDeliv) { try { await shipLiteRead(SH, g.doc); } catch (e) {} } lastDeliv = dv;
           await C('shp_state').doc('fast').set({ pc: PC_NAME, at, n: rc.orders.length, changed: ch, ver: APP_VER }, { merge: true }); try { await mktBackup(rc.orders); } catch (e) {} }
         catch (e) { fails++; } finally { busy = false; } } })(); })();
-  async function lookupBook(url, code) { const g = await lookDoc(url); const p = P.parseProductPage(g.doc, g.finalUrl); if (!p.aladinItemId) throw new Error('알라딘에서 이 책을 못 찾음');
+  async function lookupBook(url, code) { let g = await lookDoc(url); let p = P.parseProductPage(g.doc, g.finalUrl); if (!p.aladinItemId && !PUBONLY && /성인\s*인증|19세|청소년\s*(유해|이용불가)|wlogin\.aspx|adult/i.test(String(g.finalUrl || '') + ' ' + String(g.html || (g.doc && g.doc.documentElement ? g.doc.documentElement.outerHTML : '')).slice(0, 30000))) { /* (1.81.0) 🔞 알라딘 제목이 붙은 성인 인증 화면 — 로그인한 채로 다시 */ g = await AL.quick(url, { pace: PACE_P, sleep }); p = P.parseProductPage(g.doc, g.finalUrl); } if (!p.aladinItemId) throw new Error('알라딘에서 이 책을 못 찾음');
     const RG = RGF(); const barcode = RG ? RG.pageBarcode(g.doc) : null; if (code && !(RG ? RG.matchCode({ isbn13: p.isbn13, barcode }, code) : String(p.isbn13 || '') === String(code))) throw Object.assign(new Error(`알라딘이 다른 상품(${p.title || p.aladinItemId})으로 연결함`), { wrong: true }); /* (1.44.1) 찾던 번호와 다른 상품이면 쓰지 않음 (음반·DVD 바코드는 엉뚱한 책으로 갈 때가 있음) */
     const u = P.parseUsedPage((await lookDoc(`/shop/UsedShop/wuseditemall.aspx?ItemId=${p.aladinItemId}&TabType=0`)).doc);
     return { itemId: p.aladinItemId, isbn13: p.isbn13 || null, barcode, title: p.title || null, subtitle: p.subtitle || null, author: (p.contributors || []).slice(0, 2).map((c) => c.name).join(', ') || null, publisher: p.publisher || null, pubDate: p.pubDate || null,
@@ -2419,6 +2421,51 @@
     await runJob('scanNew'); await C('shp_cmds').add({ type: 'metrics', keys, label: '📥 등록 뒤 시장 지표 (' + keys.length + '개)', status: 'queued', createdAt: nowIso(), by: PC_NAME + ' (등록 뒤 자동)', uploadedAt: TS() }).catch(() => {});
     log(`📥 등록 뒤 나머지 수집: 신규 등록분 수집 끝 → 시장 지표 ${keys.length}개 맡김`); }
   setInterval(() => { regVerifyAll().catch(() => {}); }, 3 * 60000);
+  /* ══════════ (1.81.0) 🗑 웹앱에서 지운 등록 상품 → 알라딘에서도 삭제 (shp_cmds regDel) · 🔎 샵매니저에서 지운 최근 상품 → 웹앱에 바로 '삭제' ══════════
+   *  사장님 10/18: '시험한 것·관리자가 지운 것이 샵매니저는 물론 웹앱에도 바로' — 매우 심각한 사안
+   *  ① regDel {items:[{regItem, listingId, usedCode, title, listingKey}]}: 지금 상태를 샵매니저 목록(최신순)에서 상품 번호로 찾음 → 상품 조회/수정 화면의 판매상태 일괄 변경과 같은 요청으로 '삭제'(17, 공용 상품 파일의 SCM_STATUS)
+   *     → 다시 목록을 훑어 어느 상태에도 없을 때만 '지움'으로 · prd_listings(active false · status '삭제') · reg_items(aladinDel) — 실행 문(exec_log)으로 같은 일을 두 번 보내지 않음
+   *  ② 10분마다(한 PC·한 탭 — 임대): 최근 14일 등록 상품의 상품 번호가 샵매니저 어느 상태 목록에도 없으면 '삭제'로 (30% 넘게 한꺼번에 사라지면 화면 오류로 보고 안 씀) */
+  const REG_ST = { 1: '판매중', 3: '일시판매중지', 15: '판매중지', 41: '판매대기', 18: '판매완료', 16: '판매금지' };
+  async function regScanLids(minLid, maxPages) { const seen = new Map(); const ok = {}; const yr = new Date().getFullYear();
+    for (const code of Object.keys(REG_ST).map(Number)) { ok[code] = false; for (let pg = 1; pg <= (maxPages || 30); pg++) { const g = await lookDoc(listUrl(code, pg)); if (looksLoggedOut(g.finalUrl, g.doc)) throw new Error('알라딘 로그인이 풀림 — 샵매니저에 로그인해 주세요'); const R = P.parseScmList(g.doc, yr); const L = R.rows || [];
+        if (!L.length && pg < (R.lastPage || 1)) throw new Error(`${REG_ST[code]} ${pg}쪽이 비어 있음(오류 화면일 수 있음) — 판단하지 않음`); L.forEach((x) => { if (x.listingId) seen.set(String(x.listingId), { code, usedCode: x.usedCode || null }); });
+        const mn = L.length ? Math.min(...L.map((x) => +x.listingId || Infinity)) : 0; if (!L.length || mn <= minLid || pg >= (R.lastPage || 1)) { ok[code] = true; break; } } }
+    return { seen, ok, all: Object.values(ok).every(Boolean) }; }
+  async function regMarkDeleted(l, how, extra) { const at = nowIso(); const key = l.listingKey || (l.usedCode ? 'aladin_' + l.usedCode : null) || l.id; const B = [];
+    if (key) B.push(C('prd_listings').doc(key).set({ active: false, status: '삭제', deletedAt: at, deletedHow: how, goneFromActiveAt: at, goneEvents: firebase.firestore.FieldValue.arrayUnion(at), ...(extra || {}), ...W() }, { merge: true }).catch((e) => log('상품 목록에 삭제를 못 적음: ' + (e.code || e.message), 1)));
+    try { const qs = await C('reg_items').where('result.listingId', '==', String(l.listingId)).get(); qs.docs.forEach((d) => B.push(d.ref.set({ aladinGone: { at, how, listingId: String(l.listingId) }, ...W() }, { merge: true }).catch(() => {}))); } catch (e) {}
+    if (l.regItem) B.push(C('reg_items').doc(l.regItem).set({ aladinGone: { at, how, listingId: String(l.listingId) }, ...W() }, { merge: true }).catch(() => {}));
+    await Promise.all(B); }
+  async function regDelCmd(ref, v) { ref = regTrailRef(ref, v, true); const items = (Array.isArray(v.items) ? v.items : []).filter((x) => x && x.listingId).slice(0, 200); const res = { ...(v.results || {}) }; const key = `${ref.id}#${v.tries || 1}`;
+    const gate = await exBegin('regDel', key, { n: items.length }); if (!gate.ok) { await ref.set({ status: 'fail', msg: '같은 삭제를 이미 시작했던 일 — 알라딘 상품 조회에서 확인 (' + (gate.why || '') + ')', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); return; }
+    let st = 'failed', why = null; LOOK_PRIO++;
+    try { if (!items.length) throw new Error('지울 상품 번호가 없음'); const minLid = Math.min(...items.map((x) => +x.listingId)) - 1;
+      await ref.set({ step: 1, msg: `샵매니저 목록에서 ${items.length}개의 지금 상태 찾는 중` }, { merge: true });
+      const A = await regScanLids(minLid, 60); if (!A.all) throw new Error('샵매니저 목록을 끝까지 못 훑음 — 지우지 않음');
+      const by = new Map(); for (const it of items) { const s = A.seen.get(String(it.listingId)); if (!s) { res[it.regItem || it.listingId] = { state: 'gone', at: nowIso(), msg: '이미 샵매니저 어느 목록에도 없음(지워진 상품)', listingId: String(it.listingId) }; await regMarkDeleted(it, '이미 샵매니저에 없음(웹앱 삭제 때 확인)'); continue; } if (s.code === 18) { res[it.regItem || it.listingId] = { state: 'skip', at: nowIso(), msg: '판매완료 상품 — 지우지 않음(주문 기록)', listingId: String(it.listingId) }; continue; } (by.get(s.code) || by.set(s.code, []).get(s.code)).push(it); }
+      for (const [code, L] of by) { await ref.set({ step: 2, msg: `${REG_ST[code]} ${L.length}개 → 삭제 요청`, results: res }, { merge: true }); await PACE_P.wait(sleep);
+        const fd = new URLSearchParams({ fn: 'stockstatusbulkchg', stockStatusBefore: String(code), stockStatusToDo: '17', items: L.map((x) => String(x.listingId)).join(',') });
+        const rr = await fetch('https://www.aladin.co.kr/scm/wrecord_edit_usedbatch.aspx', { method: 'POST', body: fd, credentials: 'include' }); const txt = await rr.text(); const al = (txt.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || '';
+        L.forEach((x) => (res[x.regItem || x.listingId] = { state: 'sent', at: nowIso(), msg: `삭제 요청 HTTP ${rr.status}${al ? ' · ' + al : ''}`, listingId: String(x.listingId) })); if (!rr.ok || /실패|오류|error/i.test(al)) throw new Error('알라딘이 삭제를 거절: ' + (al || 'HTTP ' + rr.status)); await sleep(1500); }
+      await ref.set({ step: 3, msg: '다시 훑어 정말 지워졌는지 확인', results: res }, { merge: true }); const B2 = await regScanLids(minLid, 60); if (!B2.all) throw new Error('확인 훑기를 끝까지 못 함 — 알라딘 상품 조회에서 확인');
+      let nOk = 0, nBad = 0; for (const [, L] of by) for (const it of L) { const s = B2.seen.get(String(it.listingId)); if (!s) { res[it.regItem || it.listingId] = { state: 'deleted', at: nowIso(), msg: '알라딘에서 지움 (어느 목록에도 없음 확인)', listingId: String(it.listingId) }; await regMarkDeleted(it, '웹앱에서 지움 → 알라딘 삭제 (' + PC_NAME + ')', { deletedBy: v.by || null }); nOk++; } else { res[it.regItem || it.listingId] = { state: 'fail', at: nowIso(), msg: `아직 ${REG_ST[s.code]} 목록에 있음 — 알라딘이 지우지 않음`, listingId: String(it.listingId) }; nBad++; } }
+      st = nBad ? 'failed' : 'done'; why = `지움 ${nOk} · 못 지움 ${nBad}`;
+      await ref.set({ status: nBad ? 'fail' : 'done', step: 4, msg: `알라딘에서 지움 ${nOk}개${nBad ? ` · 못 지움 ${nBad}개` : ''}${Object.values(res).filter((x) => x.state === 'gone').length ? ` · 이미 없던 것 ${Object.values(res).filter((x) => x.state === 'gone').length}개` : ''}`, results: res, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true });
+      log(`🗑 웹앱 삭제 → 알라딘: ${why}`, nBad ? 1 : 0); }
+    catch (e) { why = e.message; await ref.set({ status: 'fail', msg: e.message, results: res, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }).catch(() => {}); log('🗑 알라딘 삭제 멈춤: ' + e.message, 1); }
+    finally { LOOK_PRIO--; await exEnd('regDel', key, st, why); } }
+  let regGoneAt = 0;
+  async function regGoneSweep(force) { if (PUBONLY || !auth.currentUser || (!force && Date.now() - regGoneAt < 10 * 60000)) return; regGoneAt = Date.now(); const ref = C('prd_system').doc('reg_gone'); if (!(await regLease(ref).catch(() => false))) return; if (!force) { const d0 = (await ref.get().catch(() => null)); const la = d0 && d0.exists ? Date.parse((d0.data() || {}).lastAt || 0) : 0; if (Date.now() - la < 9 * 60000) return; } /* PC 여러 대가 겹쳐 훑지 않게 */
+    const since = new Date(Date.now() + 9 * 3600e3 - 14 * 864e5).toISOString().slice(0, 10); const qs = await C('prd_listings').where('registeredAt', '>=', since).get(); const rec = qs.docs.map((d) => ({ id: d.id, listingKey: d.id, ...d.data() })).filter((l) => l.listingId && l.active !== false && l.status !== '삭제');
+    if (!rec.length) return; const minLid = Math.min(...rec.map((l) => +l.listingId)) - 1; const A = await regScanLids(minLid, 30); if (!A.all) { log('🔎 최근 등록 상품 확인: 샵매니저 목록을 끝까지 못 훑음 — 이번엔 판단하지 않음', 1); return; }
+    if (!A.seen.size) return; const gone = rec.filter((l) => !A.seen.has(String(l.listingId)));
+    await ref.set({ lastAt: nowIso(), by: PC_NAME, n: rec.length, gone: gone.length, ...W() }, { merge: true }).catch(() => {});
+    if (!gone.length) return; if (gone.length > Math.max(10, rec.length * 0.3)) { log(`🔎 최근 등록 ${rec.length}개 중 ${gone.length}개가 샵매니저 목록에 없음 — 너무 많아 화면 오류일 수 있어 '삭제'로 쓰지 않음`, 1); return; }
+    for (const l of gone) await regMarkDeleted(l, '샵매니저 목록에 없음 — 샵매니저에서 지운 상품 (10분마다 확인)');
+    log(`🔎 샵매니저에서 지운 최근 등록 상품 ${gone.length}개를 웹앱 상품 목록에 '삭제'로: ${gone.slice(0, 5).map((l) => l.title || l.usedCode).join(', ')}${gone.length > 5 ? ' …' : ''}`, 1); }
+  setInterval(() => { if (!regVerBusy) regGoneSweep().catch((e) => log('최근 등록 상품 확인 실패: ' + (e.code || e.message), 1)); }, 2 * 60000);
+  setTimeout(() => regGoneSweep(true).catch(() => {}), 90000);
   /* (1.35.0) 알라딘 매입 — 웹앱 '알라딘 매입' 화면이 맡긴 '팔기 장바구니에 담기' (shp_cmds type 'c2bAdd' · items [{usedCode, isbn13, title, grade, ...}])
      책마다: ① 팔기 장바구니(wc2b_sales.aspx)에 이미 있으면 'already'
              ② 매입가 조회 화면(wc2b_search.aspx?KeyWord=ISBN)을 이 일 전용 숨은 창에 열어 그 책 줄을 찾음(ISBN13으로) — 없으면 'notFound', '팔기 장바구니에 추가' 단추가 없으면 'notBuyable'
