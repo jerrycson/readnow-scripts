@@ -1,1 +1,1 @@
-doc=app_settings/pc_live,prd_jobs/pclive_log
+perf=600
