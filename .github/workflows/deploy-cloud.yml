@@ -8,7 +8,7 @@ name: 클라우드 자동 배포 (Cloud Run)
 on:
   push:
     branches: [main]
-    paths: ['cloud/**', '.github/workflows/deploy-cloud.yml', 'readnow-*-core.js', 'readnow-registry.js', 'diag/q.txt']  # (2026-10-16) diag/q.txt = 🔎 읽기 전용 진단(아래 '진단' 단계 · 배포는 건너뜀) — 구글 로그인은 이 파일(deploy-cloud.yml)에만 허락돼 있어 여기서 함  # (2026-10-13) 공용 파일이 바뀌어도 다시 올림 — 클라우드는 올린 커밋(CODE_SHA)의 공용 파일만 씀
+    paths: ['cloud/**', '.github/workflows/deploy-cloud.yml', 'readnow-*-core.js', 'readnow-registry.js', 'diag/q.txt', 'pc-live.json']  # (2026-10-16) diag/q.txt = 🔎 읽기 전용 진단(아래 '진단' 단계 · 배포는 건너뜀) — 구글 로그인은 이 파일(deploy-cloud.yml)에만 허락돼 있어 여기서 함  # (2026-10-13) 공용 파일이 바뀌어도 다시 올림 — 클라우드는 올린 커밋(CODE_SHA)의 공용 파일만 씀
   workflow_dispatch:
 concurrency: { group: deploy-cloud, cancel-in-progress: false }
 permissions: { contents: write, id-token: write }  # contents: write = 진단 결과(암호화)를 diag-out 가지에 올릴 때만
@@ -32,6 +32,7 @@ jobs:
           if [ -n "$B" ] && [ "$B" != 0000000000000000000000000000000000000000 ] && { git cat-file -e "$B^{commit}" 2>/dev/null || git fetch -q --depth=1 origin "$B" 2>/dev/null; }; then CH=$(git diff --name-only "$B" HEAD 2>/dev/null || echo ALL); else CH=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo ALL); fi
           if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] || [ "$CH" = ALL ] || echo "$CH" | grep -qE '^(cloud/|\.github/workflows/deploy-cloud\.yml|readnow-[a-z]+-core\.js|readnow-registry\.js)'; then echo "DO_DEPLOY=1" >> "$GITHUB_ENV"; fi
           if echo "$CH" | grep -q '^diag/q\.txt$'; then echo "DO_DIAG=1" >> "$GITHUB_ENV"; fi
+          if echo "$CH" | grep -q '^pc-live\.json$'; then echo "DO_PCLIVE=1" >> "$GITHUB_ENV"; fi  # (2026-10-18) ⚡ 수집기 새 판 → 클라우드 /pclive → 켜진 PC가 바로
       - name: 문법 검사 (깨진 파일은 올리지 않음)
         if: env.DO_DEPLOY == '1'
         run: |
@@ -44,7 +45,7 @@ jobs:
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1 (node24)
       - id: idt
         name: 진단용 1회용 ID 토큰
-        if: env.DO_DIAG == '1'
+        if: env.DO_DIAG == '1' || env.DO_PCLIVE == '1'
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}', token_format: id_token, id_token_audience: readnow-diag, id_token_include_email: true, create_credentials_file: false }
       - name: 🔎 진단 — 읽고 암호화해 diag-out 가지에 (읽기 전용 · 개인 열쇠는 저장소에 없음)
@@ -85,3 +86,10 @@ jobs:
           for i in 1 2 3 4 5 6; do GOT=$(curl -fsS "$URL/status" | grep -oP '"ver":"\K[0-9.]+' || true); [ "$GOT" = "$VER" ] && break; sleep 10; done
           echo "### ☁ 클라우드 $GOT 올라감 (기대 $VER)" >> "$GITHUB_STEP_SUMMARY"
           [ "$GOT" = "$VER" ] || { echo "::error::올린 뒤 판이 $GOT — 기대한 $VER 아님"; exit 1; }
+      - name: ⚡ 수집기 새 판 알림 (pc-live.json이 바뀌었을 때 — 켜진 PC가 몇 초 안에 받음)
+        if: env.DO_PCLIVE == '1'
+        env: { IDT: '${{ steps.idt.outputs.id_token }}' }
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')
+          V=$(python3 -c "import json;print(json.load(open('pc-live.json'))['ver'])")
+          for t in 1 2 3 4; do R=$(curl -sS -m 60 -X POST -H "Authorization: Bearer $IDT" "$URL/pclive?ver=$V&commit=$GITHUB_SHA" || true); echo "$R"; echo "$R" | grep -q '"ok":true' && break; sleep 20; done
