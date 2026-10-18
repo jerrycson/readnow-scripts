@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "웹앱 상세 페이지 속도",
- "since": "2026-10-18T00:09:47Z",
- "beat": "2026-10-18T00:09:47Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "kpsum",
-  "done": "실패 — 이번 회차는 요약 재료 열쇠를 임시 파일로 쓰는 단계가 권한 검사에 막혀 0개 넣음",
-  "at": "2026-10-17T20:50:22Z"
+  "who": "chat",
+  "done": "1.46.1",
+  "at": "2026-10-18T00:28:38Z"
  }
 }
