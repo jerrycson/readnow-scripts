@@ -726,7 +726,27 @@ button:focus-visible,.btn:focus-visible,a:focus-visible{outline:2px solid var(--
 #rntip{position:fixed;z-index:10001;display:none;max-width:min(360px,calc(100vw - 16px));background:#1E2B28;color:#fff;font-size:12.5px;line-height:1.45;padding:7px 10px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.25);pointer-events:none;opacity:0;transform:translateY(2px);transition:opacity .12s,transform .12s;white-space:pre-line}
 #rntip.on{opacity:1;transform:none}#rntip .k{margin-top:3px;font-size:11.5px;color:#BFE3D4}
 @media (prefers-reduced-motion:reduce){#rntip,.btn,.regbtn{transition:none}}
-.sev-pct{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:9px;font-weight:800;font-size:13px;vertical-align:middle}.sev-pct.pos{background:#E3F4E8;color:#1F6F4A}.sev-pct.neg{background:#FBE3E1;color:#B0322A}.sev-pct.zero{background:#EEF1F0;color:#5B6B66}.sev-pct.na{background:none;color:#8A9692;font-weight:400;font-size:10.5px}.sev{font-size:10.5px;color:#7A8783;margin-top:2px;line-height:1.45}.sev-av{color:#9A5A00;font-weight:600}.sev-ev.s-2,.sev-ev.s-1{color:#9A4A44}.sev-ev.s1,.sev-ev.s2{color:#3E7A5A}.sev-fb{display:inline-flex;gap:2px;margin-left:6px;vertical-align:middle}.sev-fb button{font-size:10px;padding:0 5px;border:1px solid #D5DCDA;background:#fff;color:#7A8783;border-radius:8px;line-height:16px;cursor:pointer}.sev-fb button.on{background:#2F5D50;color:#fff;border-color:#2F5D50}
+.sev-pct{display:inline-block;padding:2px 9px;border-radius:12px;font-weight:900;font-size:16px;line-height:1.3;cursor:help;white-space:nowrap}.sev-pct.pos{background:#DDF2E4;color:#17643F}.sev-pct.neg{background:#FBE0DD;color:#AE2C24}.sev-pct.zero{background:#EEF1F0;color:#5B6B66}.sev-pct.na{background:none;color:#8A9692;font-weight:500;font-size:12px;border:1px dashed #C9D2CF}
+/* (1.56.0 · 정범님 10/18) 출고 카드 상품 칸 다시 정돈 — ① 판매가 칸(가장 크게: 판매가 · 차이 % · 권수 / 아랫줄 새상품 판매가·판매 상태) ② 평가 상자는 따로(점선 테두리 · 연한 바탕) ③ 휴대폰은 판매가 → 시장 블록 → 평가 순 */
+.shp-pr{background:#F2F7F4;border:1px solid #D8E5DE;border-left:6px solid #2F5D50;border-radius:8px;padding:8px 12px;margin:2px 0 6px}
+.shp-pm{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px}
+.shp-pl{font-size:12px;font-weight:700;color:#5B6B66;letter-spacing:.5px}
+.shp-pr .shp-p{float:none!important;margin:0!important;font-size:27px!important;font-weight:900!important;color:#10322A;line-height:1.1;letter-spacing:-.3px}
+.shp-pr .shp-p .pq-u{font-size:15px!important}
+.shp-pm .gsq{display:inline-block;font-size:17px;line-height:1.2;padding:2px 8px;border-radius:4px;color:#fff;font-weight:900;background:#8d8d8d}.shp-pm .gsq.g최상{background:#e8457c}.shp-pm .gsq.g상{background:#2e9d5b}.shp-pm .gsq.g중{background:#8d8d8d}
+.shp-pm .shp-q{margin-left:auto;font-size:15px!important;font-weight:800;color:#5B6B66}.shp-pm .shp-q.many{color:#fff;background:#C62828;border-radius:6px;padding:1px 8px;font-size:17px!important}
+.shp-psub{margin-top:5px;font-size:14px;color:#33413D;display:flex;flex-wrap:wrap;gap:2px 0;align-items:center}.shp-psub>i{font-style:normal;color:#A9B5B1;margin:0 7px}.shp-psub b{font-weight:800}.shp-psub [data-tip]{cursor:help}
+.sev-on{color:#4E7A66}.sev-av{color:#fff;background:#B5651D;border-radius:5px;padding:1px 7px;font-size:13.5px}
+.shp-it>.shp-sev{grid-area:sev;min-width:0}
+.sev-box{border:1px dashed #BFCBC7;background:#FAFBFB;border-radius:8px;padding:6px 10px;font-size:12.5px;color:#55635F;line-height:1.45}
+.sev-h{font-size:11.5px;font-weight:800;color:#6E7C78;margin-bottom:2px}.sev-h small{font-weight:400;color:#97A39F;margin-left:4px}
+.sev-ev{font-weight:700;color:#3F4B48}.sev-ev small{font-weight:400;color:#6E7C78;font-size:12px}.sev-ev.s-2,.sev-ev.s-1{color:#9A3E37}.sev-ev.s1,.sev-ev.s2{color:#2F6E4E}
+.sev-fb{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:6px}.sev-fb small{font-size:11.5px;color:#7A8783;margin-right:2px}
+.sev-fb button{font-size:13px;padding:4px 12px;min-height:30px;border:1px solid #C9D3D0;background:#fff;color:#55635F;border-radius:15px;cursor:pointer;font-weight:600}.sev-fb button:hover{border-color:#2F5D50;color:#2F5D50}.sev-fb button.on{background:#2F5D50;color:#fff;border-color:#2F5D50}
+.shp-it{grid-template-areas:"code gt blk" "img note blk" "img etc blk" "img sev blk" "img . blk" "oth oth oth"!important;grid-template-rows:auto auto auto auto 1fr auto!important}
+.shp-it.noblk{grid-template-areas:"code gt" "img note" "img etc" "img sev" "img ." "oth oth"!important}
+@media(max-width:760px){.shp-it{grid-template-areas:"code" "gt" "img" "note" "etc" "blk" "sev" "oth"!important;grid-template-rows:none!important}.shp-it.noblk{grid-template-areas:"code" "gt" "img" "note" "etc" "sev" "oth"!important}.shp-pr{padding:9px 10px}.shp-pm{gap:4px 8px}.shp-pl{font-size:11px}.shp-pr .shp-p{font-size:28px!important}.shp-pm .shp-q{font-size:14px!important}.sev-fb button{flex:1 1 0;min-height:36px;font-size:14px}.sev-pct{font-size:17px}}
+.psev .shp-pr{margin-top:0}
 </style>
 </head>
 <body>
@@ -750,7 +770,7 @@ button:focus-visible,.btn:focus-visible,a:focus-visible{outline:2px solid var(--
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.2.0"></script>
 <script src="../readnow-register-core.js?v=0.7.1"></script>
-<script>const APP_VER = '1.55.0';</script>
-<script src="readnow-webapp.js?v=1.55.0"></script>
+<script>const APP_VER = '1.56.0';</script>
+<script src="readnow-webapp.js?v=1.56.0"></script>
 </body>
 </html>
