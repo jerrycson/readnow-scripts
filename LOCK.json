@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "수집 분석 페이지",
- "since": "2026-10-18T05:03:30Z",
- "beat": "2026-10-18T05:03:30Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "1.78.6",
-  "at": "2026-10-18T03:32:12Z"
+  "done": "수집 분석",
+  "at": "2026-10-18T05:12:17Z"
  }
 }
