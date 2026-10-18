@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "등록 3차(삭제 안전·표시·복제·실시간 적용·매입처)",
- "since": "2026-10-18T07:45:19Z",
- "beat": "2026-10-18T07:45:19Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "등록 2차 8가지 끝",
-  "at": "2026-10-18T07:15:20Z"
+  "done": "등록 3차 끝",
+  "at": "2026-10-18T07:49:52Z"
  }
 }
