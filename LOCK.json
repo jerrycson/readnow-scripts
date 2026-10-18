@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "등록 2차 8가지(삭제 반영·19세·개별·진행 상세)",
- "since": "2026-10-18T07:02:38Z",
- "beat": "2026-10-18T07:02:38Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "",
-  "at": "2026-10-18T06:23:46Z"
+  "done": "등록 2차 8가지 끝",
+  "at": "2026-10-18T07:15:20Z"
  }
 }
