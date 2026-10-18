@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "벤치마킹 전체 점검",
- "since": "2026-10-18T10:48:01Z",
- "beat": "2026-10-18T10:48:01Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
   "done": "",
-  "at": "2026-10-18T10:33:25Z"
+  "at": "2026-10-18T11:05:55Z"
  }
 }
