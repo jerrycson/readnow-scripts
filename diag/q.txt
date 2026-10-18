@@ -1,1 +1,1 @@
-sizes=prd_book_metrics,prd_books,prd_listings,sellers,bench_state,prd_listing_changes,prd_price_actions,shp_cmds,reg_items,prd_market_nobook&n=300
+sizes=prd_book_metrics,prd_books,prd_listings,sellers,bench_state,prd_listing_changes,prd_price_actions,shp_cmds,reg_items,prd_market_nobook,prd_price_decisions,prd_price_batches&n=300

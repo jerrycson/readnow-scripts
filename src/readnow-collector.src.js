@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.83.0
+// @version      1.84.0
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -5373,32 +5373,59 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     try { const qs = await C('reg_items').where('result.listingId', '==', String(l.listingId)).get(); qs.docs.forEach((d) => B.push(d.ref.set({ aladinGone: { at, how, listingId: String(l.listingId) }, ...W() }, { merge: true }).catch(() => {}))); } catch (e) {}
     if (l.regItem) B.push(C('reg_items').doc(l.regItem).set({ aladinGone: { at, how, listingId: String(l.listingId) }, ...W() }, { merge: true }).catch(() => {}));
     await Promise.all(B); }
-  async function regDelCmd(ref, v) { ref = regTrailRef(ref, v, true); const items = (Array.isArray(v.items) ? v.items : []).filter((x) => x && x.listingId).slice(0, 200); const res = { ...(v.results || {}) }; const key = `${ref.id}#${v.tries || 1}`;
-    const gate = await exBegin('regDel', key, { n: items.length }); if (!gate.ok) { await ref.set({ status: 'fail', msg: '같은 삭제를 이미 시작했던 일 — 알라딘 상품 조회에서 확인 (' + (gate.why || '') + ')', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); return; }
-    let st = 'failed', why = null; LOOK_PRIO++;
-    try { if (!items.length) throw new Error('지울 상품 번호가 없음'); if (items.some((x) => !x.regItem)) throw new Error('등록 줄 번호 없이 맡긴 삭제 — 하지 않음'); const minLid = Math.min(...items.map((x) => +x.listingId)) - 1;
-      await ref.set({ step: 1, msg: `샵매니저 목록에서 ${items.length}개의 지금 상태 찾는 중` }, { merge: true });
-      const A = await regScanLids(minLid, 60); if (!A.all) throw new Error('샵매니저 목록을 끝까지 못 훑음 — 지우지 않음');
-      /* (1.82.0) 🛡 상품이 곧 생명 — 이 등록이 만든 그 상품이라는 것이 모두 맞을 때만 지움(하나라도 어긋나면 지우지 않고 '거절'): ① 등록 때 공개 확인이 이 상품 번호를 이 등록 줄에 짝지은 기록(reg_claims) ② 상품 번호가 그 등록을 시작하기 전 가장 최근 번호(기준)보다 큼 ③ 샵매니저 줄의 U코드·관리 코드·등록일이 이 등록과 같음 */
-      const refuse = (it, why) => { res[it.regItem || it.listingId] = { state: 'refused', at: nowIso(), msg: '지우지 않음 — ' + why, listingId: String(it.listingId) }; };
+  /* (1.84.0) 🗑 상품 찾기 — 샵매니저 상품 조회/수정의 실제 검색(사장님이 쓰던 주소: searchType=2 = ISBN · 3 = 관리 코드 · 1 = 상품명)으로 상태 목록마다 찾아 상품 번호가 같은 줄을 고름
+   *  ISBN으로 찾았는데 어느 상태에도 없으면 '없음'(확실) · 상품명으로만 찾은 것은 없어도 '모름'(지웠다고 쓰지 않음) */
+  const delSearchUrl = (code, t, kw, pg) => `/scm/wrecord_edit.aspx?chkItemStockStatus=${code}&chkItemInDate=0&searchCat1=0&searchType=${t}&keyword=${encodeURIComponent(kw)}&ViewRowsCount=100&page=${pg}&SortOrder=6&itemStockStatus=${code}&categoryId=0`;
+  async function delFind(it) { const lid = String(it.listingId); const isbn = String(it.isbn || '').replace(/[^0-9Xx]/g, ''); const t = isbn && /^(\d{9}[\dXx]|\d{13})$/.test(isbn) ? 2 : 1; const kw = t === 2 ? isbn : String(it.title || '').replace(/^\[[^\]]*\]\s*/, '').replace(/\s*\([^)]*\)\s*$/, '').slice(0, 20).trim(); if (!kw) return { found: null, sure: false, why: '찾을 말(ISBN·상품명)이 없음' };
+    const yr = new Date().getFullYear(); let complete = true;
+    for (const code of Object.keys(REG_ST).map(Number)) { for (let pg = 1; pg <= 5; pg++) { const g = await lookDoc(delSearchUrl(code, t, kw, pg)); if (looksLoggedOut(g.finalUrl, g.doc)) throw new Error('알라딘 로그인이 풀림 — 샵매니저에 로그인해 주세요'); const R = P.parseScmList(g.doc, yr); const L = R.rows || [];
+        const hit = L.find((x) => String(x.listingId) === lid); if (hit) return { found: { code, row: hit }, sure: true }; if (!L.length || pg >= (R.lastPage || 1)) break; if (pg === 5) complete = false; } }
+    return { found: null, sure: t === 2 && complete, why: t === 2 ? (complete ? 'ISBN으로 모든 상태 목록을 찾아도 없음' : '검색 결과가 너무 많아 끝까지 못 봄') : '상품명으로만 찾음 — 없다고 단정하지 않음' }; }
+  async function regDelCmd(ref, v) { ref = regTrailRef(ref, v, true); const mode = v.mode === 'listing' ? 'listing' : 'reg'; const items = (Array.isArray(v.items) ? v.items : []).filter((x) => x && x.listingId).slice(0, 200); const res = { ...(v.results || {}) }; const key = `${ref.id}#${v.tries || 1}`; const kOf = (it) => it.regItem || it.listingKey || it.listingId;
+    const gate = await exBegin('regDel', key, { n: items.length, mode }); if (!gate.ok) { await ref.set({ status: 'fail', msg: '같은 삭제를 이미 시작했던 일 — 알라딘 상품 조회에서 확인 (' + (gate.why || '') + ')', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); return; }
+    let st = 'failed', why = null; LOOK_PRIO++; const sentL = [];
+    try { if (!items.length) throw new Error('지울 상품 번호가 없음'); if (mode === 'reg' && items.some((x) => !x.regItem)) throw new Error('등록 줄 번호 없이 맡긴 삭제 — 하지 않음'); if (mode === 'listing' && items.some((x) => !x.usedCode)) throw new Error('U코드 없이 맡긴 상품 삭제 — 하지 않음');
+      /* 🛡 상품이 곧 생명 — 지우기 직전 대조(하나라도 어긋나면 지우지 않고 '거절'):
+       *  등록 삭제(reg): ① 등록 때 공개 확인이 이 상품 번호를 이 등록 줄에 짝지은 기록(reg_claims) ② 상품 번호 > 그 등록을 시작하기 전 번호 ③ 샵매니저 줄의 U코드·관리 코드·등록일(확정한 날 이후)
+       *  상품 삭제(listing — 수동 일괄 처리에서 고른 상품): 샵매니저 줄의 상품 번호·U코드가 고른 상품과 같고, 관리 코드 앞부분·판매가(고를 때 값과 다르면 거절 — 그사이 바뀐 상품)가 같음 */
+      const refuse = (it, w) => { res[kOf(it)] = { state: 'refused', at: nowIso(), msg: '지우지 않음 — ' + w, listingId: String(it.listingId) }; };
       const cmdBase = {}; const okItems = [];
-      for (const it of items) { const lid = String(it.listingId); let cl = null; try { const d = await C('reg_claims').doc(lid).get(); cl = d.exists ? d.data() : null; } catch (e) {}
-        if (!cl || cl.regItem !== it.regItem || (it.cmdId && cl.cmd && cl.cmd !== it.cmdId)) { refuse(it, `등록 때 이 상품 번호(${lid})를 이 등록 줄에 짝지은 기록이 없음 — 예전에 등록한 다른 상품일 수 있음`); continue; }
-        if (it.cmdId) { if (!(it.cmdId in cmdBase)) { try { const cd = (await C('shp_cmds').doc(it.cmdId).get()).data() || {}; cmdBase[it.cmdId] = +((cd.verify || {}).base || cd.base || 0); } catch (e) { cmdBase[it.cmdId] = 0; } } const b = cmdBase[it.cmdId]; if (b && !(+lid > b)) { refuse(it, `상품 번호 ${lid}가 이 등록을 시작하기 전 번호(${b})보다 작음 — 이전 상품`); continue; } }
-        okItems.push(it); }
-      const by = new Map(); for (const it of okItems) { const s = A.seen.get(String(it.listingId)); if (s && s.row) { const r = s.row; const base = String(it.code || '').split('_')[0]; const why = []; if (it.usedCode && r.usedCode && String(r.usedCode) !== String(it.usedCode)) why.push(`U코드 ${r.usedCode} ≠ ${it.usedCode}`); if (base && r.sku && String(r.sku).split('_')[0] !== base) why.push(`관리 코드 ${r.sku} ≠ ${it.code}`); if (it.confDay && r.registeredAt && !r.registeredYearGuessed && String(r.registeredAt).slice(0, 10) < String(it.confDay)) why.push(`샵매니저 등록일 ${String(r.registeredAt).slice(0, 10)}이 확정한 날 ${it.confDay}보다 앞`); if (why.length) { refuse(it, '샵매니저 줄이 이 등록과 다름: ' + why.join(' · ')); continue; } }
-        if (!s) { res[it.regItem || it.listingId] = { state: 'gone', at: nowIso(), msg: '이미 샵매니저 어느 목록에도 없음(지워진 상품)', listingId: String(it.listingId) }; await regMarkDeleted(it, '이미 샵매니저에 없음(웹앱 삭제 때 확인)'); continue; } if (s.code === 18) { res[it.regItem || it.listingId] = { state: 'skip', at: nowIso(), msg: '판매완료 상품 — 지우지 않음(주문 기록)', listingId: String(it.listingId) }; continue; } (by.get(s.code) || by.set(s.code, []).get(s.code)).push(it); }
+      if (mode === 'reg') for (const it of items) { const lid = String(it.listingId); let cl = null; try { const d = await C('reg_claims').doc(lid).get(); cl = d.exists ? d.data() : null; } catch (e) {}
+          if (!cl || cl.regItem !== it.regItem || (it.cmdId && cl.cmd && cl.cmd !== it.cmdId)) { refuse(it, `등록 때 이 상품 번호(${lid})를 이 등록 줄에 짝지은 기록이 없음 — 예전에 등록한 다른 상품일 수 있음`); continue; }
+          if (it.cmdId) { if (!(it.cmdId in cmdBase)) { try { const cd = (await C('shp_cmds').doc(it.cmdId).get()).data() || {}; cmdBase[it.cmdId] = +((cd.verify || {}).base || cd.base || 0); } catch (e) { cmdBase[it.cmdId] = 0; } } const b = cmdBase[it.cmdId]; if (b && !(+lid > b)) { refuse(it, `상품 번호 ${lid}가 이 등록을 시작하기 전 번호(${b})보다 작음 — 이전 상품`); continue; } }
+          okItems.push(it); }
+      else okItems.push(...items);
+      const by = new Map(); let k0 = 0;
+      for (const it of okItems) { k0++; await ref.set({ step: 1, msg: `${k0}/${okItems.length} '${String(it.title || it.usedCode || '').slice(0, 24)}' 샵매니저에서 찾는 중`, results: res }, { merge: true });
+        const F = await delFind(it); const s = F.found;
+        if (!s) { if (F.sure) { res[kOf(it)] = { state: 'gone', at: nowIso(), msg: '이미 샵매니저 어느 목록에도 없음 — ' + F.why, listingId: String(it.listingId) }; await regMarkDeleted(it, '이미 샵매니저에 없음(웹앱 삭제 때 확인)'); } else res[kOf(it)] = { state: 'unknown', at: nowIso(), msg: '샵매니저에서 찾지 못함 — ' + F.why + ' · 지우지 않음', listingId: String(it.listingId) }; continue; }
+        const r = s.row; const base = String(it.code || it.sku || '').split('_')[0]; const w = [];
+        if (it.usedCode && r.usedCode && String(r.usedCode) !== String(it.usedCode)) w.push(`U코드 ${r.usedCode} ≠ ${it.usedCode}`); if (mode === 'listing' && !r.usedCode) w.push('샵매니저 줄에 U코드가 없음');
+        if (base && r.sku && String(r.sku).split('_')[0] !== base) w.push(`관리 코드 ${r.sku} ≠ ${it.code || it.sku}`);
+        if (mode === 'reg' && it.confDay && r.registeredAt && !r.registeredYearGuessed && String(r.registeredAt).slice(0, 10) < String(it.confDay)) w.push(`샵매니저 등록일 ${String(r.registeredAt).slice(0, 10)}이 확정한 날 ${it.confDay}보다 앞`);
+        if (mode === 'listing' && it.price != null && r.price != null && +r.price !== +it.price) w.push(`판매가가 고를 때(${it.price})와 다름(${r.price}) — 그사이 바뀐 상품`);
+        if (s.code === 18) w.push('판매완료 상품 — 주문 기록 때문에 지우지 않음');
+        if (w.length) { refuse(it, '샵매니저 줄이 고른 상품과 다름: ' + w.join(' · ')); continue; }
+        it._before = REG_ST[s.code]; (by.get(s.code) || by.set(s.code, []).get(s.code)).push(it); }
       for (const [code, L] of by) { await ref.set({ step: 2, msg: `${REG_ST[code]} ${L.length}개 → 삭제 요청`, results: res }, { merge: true }); await PACE_P.wait(sleep);
         const fd = new URLSearchParams({ fn: 'stockstatusbulkchg', stockStatusBefore: String(code), stockStatusToDo: '17', items: L.map((x) => String(x.listingId)).join(',') });
         const rr = await fetch('https://www.aladin.co.kr/scm/wrecord_edit_usedbatch.aspx', { method: 'POST', body: fd, credentials: 'include' }); const txt = await rr.text(); const al = (txt.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || '';
-        L.forEach((x) => (res[x.regItem || x.listingId] = { state: 'sent', at: nowIso(), msg: `삭제 요청 HTTP ${rr.status}${al ? ' · ' + al : ''}`, listingId: String(x.listingId) })); if (!rr.ok || /실패|오류|error/i.test(al)) throw new Error('알라딘이 삭제를 거절: ' + (al || 'HTTP ' + rr.status)); await sleep(1500); }
-      await ref.set({ step: 3, msg: '다시 훑어 정말 지워졌는지 확인', results: res }, { merge: true }); const B2 = await regScanLids(minLid, 60); if (!B2.all) throw new Error('확인 훑기를 끝까지 못 함 — 알라딘 상품 조회에서 확인');
-      let nOk = 0, nBad = 0; for (const [, L] of by) for (const it of L) { const s = B2.seen.get(String(it.listingId)); if (!s) { res[it.regItem || it.listingId] = { state: 'deleted', at: nowIso(), msg: '알라딘에서 지움 (어느 목록에도 없음 확인)', listingId: String(it.listingId) }; await regMarkDeleted(it, '웹앱에서 지움 → 알라딘 삭제 (' + PC_NAME + ')', { deletedBy: v.by || null }); nOk++; } else { res[it.regItem || it.listingId] = { state: 'fail', at: nowIso(), msg: `아직 ${REG_ST[s.code]} 목록에 있음 — 알라딘이 지우지 않음`, listingId: String(it.listingId) }; nBad++; } }
-      const nRef = Object.values(res).filter((x) => x.state === 'refused').length; st = nBad || nRef ? 'failed' : 'done'; why = `지움 ${nOk} · 못 지움 ${nBad} · 거절 ${nRef}`;
-      await ref.set({ status: nBad || nRef ? 'fail' : 'done', step: 4, msg: `알라딘에서 지움 ${nOk}개${nBad ? ` · 못 지움 ${nBad}개` : ''}${nRef ? ` · 🛡 이 등록의 상품인지 확실하지 않아 지우지 않음 ${nRef}개` : ''}${Object.values(res).filter((x) => x.state === 'gone').length ? ` · 이미 없던 것 ${Object.values(res).filter((x) => x.state === 'gone').length}개` : ''}`, results: res, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true });
-      log(`🗑 웹앱 삭제 → 알라딘: ${why}`, nBad ? 1 : 0); }
-    catch (e) { why = e.message; await ref.set({ status: 'fail', msg: e.message, results: res, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }).catch(() => {}); log('🗑 알라딘 삭제 멈춤: ' + e.message, 1); }
+        L.forEach((x) => { res[kOf(x)] = { state: 'sent', at: nowIso(), msg: `삭제 요청 HTTP ${rr.status}${al ? ' · ' + al : ''}`, listingId: String(x.listingId), before: x._before }; sentL.push(x); }); if (!rr.ok || /실패|오류|error/i.test(al)) throw new Error('알라딘이 삭제를 거절: ' + (al || 'HTTP ' + rr.status)); await sleep(1500); }
+      let nOk = 0, nBad = 0, k1 = 0; for (const [, L] of by) for (const it of L) { k1++; await ref.set({ step: 3, msg: `${k1}/${sentL.length} 다시 찾아 정말 지워졌는지 확인`, results: res }, { merge: true }); const F2 = await delFind(it);
+        if (!F2.found && F2.sure) { res[kOf(it)] = { state: 'deleted', at: nowIso(), msg: '알라딘에서 지움 (ISBN으로 모든 상태 목록에 없음 확인)', listingId: String(it.listingId), before: it._before }; await regMarkDeleted(it, `웹앱에서 지움 → 알라딘 삭제 (${PC_NAME})`, { deletedBy: v.by || null, deletedCmd: ref.id, deletedFrom: it._before || null }); await delChangeLog(it, ref.id, v, 'deleted'); nOk++; }
+        else if (!F2.found) { res[kOf(it)] = { state: 'sent', at: nowIso(), msg: '삭제 요청은 됨 — 상품명으로만 찾을 수 있어 사라졌는지 확인 못 함(샵매니저에서 확인)', listingId: String(it.listingId), before: it._before }; nBad++; }
+        else { res[kOf(it)] = { state: 'fail', at: nowIso(), msg: `아직 ${REG_ST[F2.found.code]} 목록에 있음 — 알라딘이 지우지 않음`, listingId: String(it.listingId) }; nBad++; } }
+      const nRef = Object.values(res).filter((x) => x.state === 'refused').length; const nUnk = Object.values(res).filter((x) => x.state === 'unknown').length; st = nBad || nRef || nUnk ? 'failed' : 'done'; why = `지움 ${nOk} · 못 지움·확인 못 함 ${nBad} · 거절 ${nRef} · 못 찾음 ${nUnk}`;
+      await ref.set({ status: nBad || nRef || nUnk ? 'fail' : 'done', step: 4, msg: `알라딘에서 지움 ${nOk}개${nBad ? ` · 못 지움·확인 못 함 ${nBad}개` : ''}${nRef ? ` · 🛡 고른 상품과 달라 지우지 않음 ${nRef}개` : ''}${nUnk ? ` · 샵매니저에서 못 찾음 ${nUnk}개` : ''}${Object.values(res).filter((x) => x.state === 'gone').length ? ` · 이미 없던 것 ${Object.values(res).filter((x) => x.state === 'gone').length}개` : ''}`, results: res, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true });
+      log(`🗑 웹앱 삭제 → 알라딘: ${why}`, nBad || nRef ? 1 : 0); }
+    catch (e) { why = e.message; const sent = Object.values(res).some((x) => x.state === 'sent'); await ref.set({ status: sent ? 'delcheck' : 'fail', msg: (sent ? '삭제 요청 뒤 오류 — 10분마다 다시 찾아 지워졌는지 확인함: ' : '') + e.message, results: res, doneAt: sent ? null : nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }).catch(() => {}); log('🗑 알라딘 삭제 멈춤: ' + e.message, 1); }
     finally { LOOK_PRIO--; await exEnd('regDel', key, st, why); } }
+  /* 삭제가 남긴 상품 변경 이력(prd_listing_changes) — 지우지 않음 · 언제·누가·어느 맡긴 일·어느 PC·지우기 전 상태 */
+  async function delChangeLog(it, cmd, v, what) { const key = it.listingKey || (it.usedCode ? 'aladin_' + it.usedCode : null); if (!key) return; try { await C('prd_listing_changes').add({ listingKey: key, at: nowIso(), source: 'delete', field: 'status', from: it._before || null, to: '삭제', what, by: v.by || null, pc: PC_NAME, cmd, why: v.why || null, mode: v.mode || 'reg', ...W() }); } catch (e) { log('삭제 이력을 못 적음: ' + (e.code || e.message), 1); } }
+  /* 삭제 요청 뒤 확인을 못 끝낸 일(delcheck) — 10분마다 다시 찾아 결과를 매듭 */
+  async function delCheckSweep() { let qs; try { qs = await C('shp_cmds').where('status', '==', 'delcheck').get(); } catch (e) { return; } for (const d of qs.docs) { const v = d.data() || {}; if (v.type !== 'regDel' || !(await regLease(d.ref).catch(() => false))) continue; const res = { ...(v.results || {}) }; let left = 0;
+      for (const it of v.items || []) { const k = it.regItem || it.listingKey || it.listingId; const r0 = res[k] || {}; if (r0.state !== 'sent') continue; try { const F = await delFind(it); if (!F.found && F.sure) { res[k] = { ...r0, state: 'deleted', at: nowIso(), msg: '알라딘에서 지움 (다시 찾아 확인)' }; await regMarkDeleted(it, `웹앱에서 지움 → 알라딘 삭제 (${PC_NAME} 확인)`, { deletedBy: v.by || null, deletedCmd: d.id, deletedFrom: r0.before || null }); await delChangeLog({ ...it, _before: r0.before }, d.id, v, 'deleted'); } else if (F.found) { res[k] = { ...r0, state: 'fail', at: nowIso(), msg: `아직 ${REG_ST[F.found.code]} 목록에 있음 — 알라딘이 지우지 않음` }; } else left++; } catch (e) { left++; } }
+      const bad = Object.values(res).some((x) => ['fail', 'refused', 'unknown'].includes(x.state)); await d.ref.set({ results: res, status: left ? 'delcheck' : bad ? 'fail' : 'done', ...(left ? {} : { doneAt: nowIso() }), msg: left ? `아직 확인 못 한 것 ${left}개 — 10분 뒤 다시` : '다시 찾아 확인 끝', uploadedAt: TS() }, { merge: true }).catch(() => {}); } }
   let regGoneAt = 0;
   async function regGoneSweep(force) { if (PUBONLY || !auth.currentUser || (!force && Date.now() - regGoneAt < 10 * 60000)) return; regGoneAt = Date.now(); const ref = C('prd_system').doc('reg_gone'); if (!(await regLease(ref).catch(() => false))) return; if (!force) { const d0 = (await ref.get().catch(() => null)); const la = d0 && d0.exists ? Date.parse((d0.data() || {}).lastAt || 0) : 0; if (Date.now() - la < 9 * 60000) return; } /* PC 여러 대가 겹쳐 훑지 않게 */
     const since = new Date(Date.now() + 9 * 3600e3 - 14 * 864e5).toISOString().slice(0, 10); const qs = await C('prd_listings').where('registeredAt', '>=', since).get(); const rec = qs.docs.map((d) => ({ id: d.id, listingKey: d.id, ...d.data() })).filter((l) => l.listingId && l.active !== false && l.status !== '삭제');
@@ -5406,9 +5433,10 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     if (!A.seen.size) return; const gone = rec.filter((l) => !A.seen.has(String(l.listingId)));
     await ref.set({ lastAt: nowIso(), by: PC_NAME, n: rec.length, gone: gone.length, ...W() }, { merge: true }).catch(() => {});
     if (!gone.length) return; if (gone.length > Math.max(10, rec.length * 0.3)) { log(`🔎 최근 등록 ${rec.length}개 중 ${gone.length}개가 샵매니저 목록에 없음 — 너무 많아 화면 오류일 수 있어 '삭제'로 쓰지 않음`, 1); return; }
-    for (const l of gone) await regMarkDeleted(l, '샵매니저 목록에 없음 — 샵매니저에서 지운 상품 (10분마다 확인)');
+    for (const l of gone) { await regMarkDeleted(l, '샵매니저 목록에 없음 — 샵매니저에서 지운 상품 (10분마다 확인)', { deletedFrom: l.status || null }); await delChangeLog({ ...l, listingKey: l.id, _before: l.status || null }, null, { by: null, why: '샵매니저 모든 상태 목록에 없음(최근 14일 등록 확인)', mode: 'sweep' }, 'gone'); }
     log(`🔎 샵매니저에서 지운 최근 등록 상품 ${gone.length}개를 웹앱 상품 목록에 '삭제'로: ${gone.slice(0, 5).map((l) => l.title || l.usedCode).join(', ')}${gone.length > 5 ? ' …' : ''}`, 1); }
   setInterval(() => { if (!regVerBusy) regGoneSweep().catch((e) => log('최근 등록 상품 확인 실패: ' + (e.code || e.message), 1)); }, 2 * 60000);
+  setInterval(() => { if (!PUBONLY && auth.currentUser) delCheckSweep().catch(() => {}); }, 10 * 60000);
   setTimeout(() => regGoneSweep(true).catch(() => {}), 90000);
   /* (1.35.0) 알라딘 매입 — 웹앱 '알라딘 매입' 화면이 맡긴 '팔기 장바구니에 담기' (shp_cmds type 'c2bAdd' · items [{usedCode, isbn13, title, grade, ...}])
      책마다: ① 팔기 장바구니(wc2b_sales.aspx)에 이미 있으면 'already'
