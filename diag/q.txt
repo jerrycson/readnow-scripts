@@ -1,2 +1,1 @@
-doc=app_settings/cloud,app_settings/cloud_jobs
-logs=1&pc=CLOUD&from=202610182140&to=202610182210
+doc=app_settings/cloud,app_settings/cloud_login
