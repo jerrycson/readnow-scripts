@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.78.6의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.79.0의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.78.6' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.78.6', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.79.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.79.0', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -1516,6 +1516,7 @@
     if (fromApp.length) SYS().doc('recompute').set({ ids: FB.firestore.FieldValue.arrayRemove(...fromApp), writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {});
     await dbPut('meta', { _key: 'lastUpload', at: now(), count: todo.length, total: docs.length, by: fbUser.email });
     ujob.status = 'done'; ujob.finishedAt = now(); ujob.startedAt = null; await saveJob(ujob);
+    try { window.__rnCS && (window.__rnCS.add('crm_upload', 'ok', Math.max(0, todo.length - skipped)), window.__rnCS.add('crm_upload', 'skip', skipped, '같은 내용(이미 올림)')); } catch (e) {} /* (1.79.0) 📊 */
     log(`Firebase 올리기 완료: 문서 ${todo.length.toLocaleString()}개 확인 (그중 같은 내용 ${skipped.toLocaleString()}개는 건너뜀)${buildDocs.lastPending ? `, 구글 시트 연결 대기 ${buildDocs.lastPending}건은 웹앱에서 확정 예정` : ''}`, 'ok');
   }
   // 고객 요약: 그 고객의 모든 주문·기록을 Firebase에서 읽어 다시 계산 (어느 PC에서 올려도 정확)
