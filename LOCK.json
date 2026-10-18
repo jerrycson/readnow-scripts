@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "웹앱 상세 페이지 속도",
+ "since": "2026-10-18T00:09:47Z",
+ "beat": "2026-10-18T00:09:47Z",
  "ask": null,
  "last": {
   "who": "kpsum",
