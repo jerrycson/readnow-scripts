@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "4차: 상품 탭 병목·클라우드·TM 반영·삭제·툴팁",
- "since": "2026-10-18T08:13:55Z",
- "beat": "2026-10-18T08:13:55Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "등록 3차 끝",
-  "at": "2026-10-18T07:49:52Z"
+  "done": "4차 끝",
+  "at": "2026-10-18T08:42:24Z"
  }
 }
