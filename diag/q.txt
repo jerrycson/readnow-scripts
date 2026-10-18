@@ -1,2 +1,1 @@
-recentUp=shp_enrich&mins=6
-doc=app_settings/cloud
+doc=shp_enrich/400090532,shp_enrich/396311218,shp_enrich/389245905
