@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.78.5
+// @version      1.78.6
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -2208,7 +2208,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   async function recomputeCustomers(set) {
     const ids = [...set]; if (!ids.length) return; await loadSellerLinks(); await loadScoringConfig();
     log(`고객 요약 ${ids.length.toLocaleString()}명을 Firebase 전체 데이터로 다시 계산합니다`);
-    let i = 0; let b = fdb.batch(); let n = 0; let doneIds = [];
+    let i = 0; let b = fdb.batch(); let n = 0; let doneIds = []; let skipSame = 0;
     const flush = async () => { if (!n) return; await guardQuota(n, ids.length - i); await commitWithRetry(b, n); const rest = new Set(ids.slice(i)); await dbPut('meta', { _key: 'pendingCustomers', ids: [...rest] }); b = fdb.batch(); n = 0; doneIds = []; };
     for (; i < ids.length; i++) {
       checkPause();
@@ -2216,13 +2216,15 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       const [os, is] = await Promise.all([fdb.collection('crm_orders').where('customerId', '==', cid).get(), fdb.collection('crm_interactions').where('customerId', '==', cid).get()]);
       const orders = []; os.forEach((d) => orders.push({ _id: d.id, ...d.data() })); const inters = []; is.forEach((d) => inters.push(d.data()));
       const [c] = aggregateCustomers(orders, inters);
-      if (c) { b.set(fdb.collection('crm_customers').doc(cid), { ...clean(c), uploadedAt: FB.firestore.FieldValue.serverTimestamp(), uploaderVersion: APP_VER, writerSchema: WRITER_SCHEMA, lastWrittenBy: PC.name || '' }, { merge: true }); n++; }
+      if (c) { const nv = clean(c); let same = false; try { const cur = (await fdb.collection('crm_customers').doc(cid).get()).data(); if (cur) { const canon = (x) => JSON.stringify(x, (k, v) => (v && typeof v === 'object' && !Array.isArray(v) && !(v.toMillis) ? Object.keys(v).sort().reduce((o, kk) => { o[kk] = v[kk]; return o; }, {}) : v)); same = Object.keys(nv).every((k) => canon(nv[k] ?? null) === canon(cur[k] ?? null)); } } catch (e) {}
+        /* (1.78.6) 다시 계산한 결과가 Firebase에 있는 것과 같으면 쓰지 않음 — 예전엔 같아도 모두 다시 써서(uploadedAt 바뀜) 웹앱이 열 때마다 고객 4,700여 명을 다시 받았음(10/18 휴대폰 15초 · 그동안 다른 읽기도 밀림) */
+        if (!same) { b.set(fdb.collection('crm_customers').doc(cid), { ...nv, uploadedAt: FB.firestore.FieldValue.serverTimestamp(), uploaderVersion: APP_VER, writerSchema: WRITER_SCHEMA, lastWrittenBy: PC.name || '' }, { merge: true }); n++; } else skipSame = (skipSame || 0) + 1; }
       doneIds.push(cid);
       if (n >= 300) { i++; await flush(); i--; }
       if (i % 20 === 0) { progress('고객 요약 다시 계산', i + 1, ids.length); setNow(`고객 요약 ${(i + 1).toLocaleString()} / ${ids.length.toLocaleString()}`); }
     }
     await flush(); await dbPut('meta', { _key: 'pendingCustomers', ids: [] });
-    progress('고객 요약 다시 계산', ids.length, ids.length);
+    progress('고객 요약 다시 계산', ids.length, ids.length); if (skipSame) log(`고객 요약: ${skipSame.toLocaleString()}명은 바뀐 것이 없어 다시 쓰지 않음(웹앱이 다시 받지 않게)`);
   }
 
   /* ════════ 7) 문제 주문 상세 다시 받기 (파서가 새로 읽게 된 정보 반영) ════════ */
