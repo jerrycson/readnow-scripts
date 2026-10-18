@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.79.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.80.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.79.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.79.0', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.80.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.80.0', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2218,7 +2218,7 @@
     else if (v.type === 'regLookup') { await regLookupCmd(ref, v); return; } /* (1.77.0) 📥 등록 조회 = 샵매니저 등록 검색(로그인 PC만 — 로거는 pcCan에서 거름) */
     else if (v.type === 'extLookup' || v.type === 'extTest') { await extCmd(ref, v); return; } // (1.57.0) 🌐 외부 정보 — 알라딘과 상관없음
     else if (v.type === 'regBulk' || v.type === 'regBulkMock') { await regBulkCmd(ref, v.type === 'regBulkMock' ? { ...v, mock: true } : v); return; } /* (1.50.0) 🧷 모의 등록은 종류를 따로(regBulkMock·regOneMock) — 예전 판 수집기는 모르는 종류라 받지 않음(실수로 올리지 않게) */
-    else if ((v.type === 'regOne' || v.type === 'regOneMock') && v.auto) { if (v.type === 'regOneMock') v = { ...v, mock: true }; if (!window.__rnRegAuto) { await ref.set({ status: 'queued', claim: null, pcSkip: `수집기 ${APP_VER}에 자동 등록 모듈이 없음`, uploadedAt: TS() }, { merge: true }); return; } log(`🤖 자동 등록 맡음: ${v.title || v.itemId}`); try { await window.__rnRegAuto(ref, v, id); } catch (e) { log('자동 등록 오류: ' + e.message, 1); } return; } // (1.47.0) 창 없이 개별·미등록 등록 // (1.44.0) 📥 알라딘 대량 등록
+    else if ((v.type === 'regOne' || v.type === 'regOneMock') && v.auto) { if (v.type === 'regOneMock') v = { ...v, mock: true }; if (!window.__rnRegAuto) { await ref.set({ status: 'queued', claim: null, pcSkip: `수집기 ${APP_VER}에 자동 등록 모듈이 없음`, uploadedAt: TS() }, { merge: true }); return; } log(`🤖 자동 등록 맡음: ${v.title || v.itemId}`); try { await window.__rnRegAuto(regTrailRef(ref, v, true), v, id); } catch (e) { log('자동 등록 오류: ' + e.message, 1); } return; } // (1.47.0) 창 없이 개별·미등록 등록 // (1.44.0) 📥 알라딘 대량 등록
     else if (v.type === 'regAux') { const RG = RGF(); let out; try { if (!RG || !RG.auxRun) throw new Error('등록 엔진 공용 파일 0.3.0이 아님 — 수집기 새로고침'); const val = await RG.auxRun(v.op, v.a || {}); out = { v: val }; await C('reg_aux').doc(RG.auxKey(v.op, v.a || {})).set({ op: v.op, a: v.a || {}, v: val, at: nowIso(), by: PC_NAME, ...W() }).catch(() => {}); } catch (e) { out = { err: e.message }; } await ref.set({ status: 'done', ...out, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); return; } // (1.45.0) 📥 분류·저자·출판사 찾기 (클라우드가 안 될 때)
     else if (v.type === 'metrics' && (v.keys || []).length && v.keys.length <= 3) { /* (1.57.1) 웹앱 상품 상세의 '시장 지표 다시 읽기'(책 1~3권) — 긴 작업 중이어도 기다리지 않고 바로(사진 가격 조회처럼 짧음 · 알라딘 읽기 속도 조절은 같이 씀) */
       let ok = 0, fail = 0; const why = []; try { await loadListings(); } catch (e) {} if (PUBONLY) await mixRead(1 + Math.floor(Math.random() * 2)); /* (1.69.0) 🔀 */
@@ -2325,7 +2325,15 @@
       else if (op === 'free') { if (v.cmd === cmdId) tx.set(ref, { cmd: null, by: null, at: nowIso(), last: cmdId }); res = { ok: true }; } }); return res; }
   async function regHeldToQueued(ref, prev) { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data() || {}; if (v.status !== 'held' || (prev !== undefined && v.prev !== prev)) return; tx.update(ref, { status: 'queued', claim: null, heldMsg: null, releasedAt: nowIso(), uploadedAt: TS() }); }); } /* 트랜잭션: 그사이 웹앱에서 '맡김 취소'했으면 되살리지 않음 */
   async function regReleaseNext(cmdId) { try { const qs = await C('shp_cmds').where('status', '==', 'held').get(); for (const d of qs.docs) { const v = d.data(); if ((v.type === 'regBulk' || v.type === 'regBulkMock') && v.prev === cmdId) await regHeldToQueued(d.ref, cmdId).catch(() => {}); } } catch (e) {} }
-  async function regBulkCmd(ref, v) { const RG = RGF(); const X = EXC(); const rows = Array.isArray(v.rows) ? v.rows : []; const results = {}; const t0 = Date.now(); let laneOk = false;
+  /* (1.80.0) 등록 진행 기록(trail): 단계·상태가 바뀔 때마다 {때·PC·단계·상태·한 줄}을 맡긴 일 문서에 덧붙임 → 웹앱 '📡 등록 진행'이 전 과정을 시간순으로 보여 줌 (같은 단계·상태가 이어지면 한 번만) */
+  const REG_TR_STEP = ['맡김', 'PC가 받음', '엑셀 만들기', '알라딘에 올림', '미리보기 대조', '등록 완료', '공개 확인'];
+  function regTrailRef(r0, v0, one) { let last = v0 && Array.isArray(v0.trail) && v0.trail.length ? (() => { const t = v0.trail[v0.trail.length - 1]; return `${t.s}|${t.st}|${t.m}`; })() : ''; const r = Object.create(r0);
+    r.set = (d, o) => { let t = null; try { if (d && (d.step != null || d.status)) { const res = d.results || null; const nLive = res ? Object.values(res).filter((x) => x && x.state === 'live').length : null; const nRes = res ? Object.keys(res).length : null;
+        let m = String(d.msg || d.heldMsg || '').slice(0, 160); if (!m && d.verify) m = `공개 확인 ${d.verify.tries || 1}번째 · 새로 보인 상품 ${d.verify.foundNew || 0}개${nLive != null ? ` · 알라딘에 보임 ${nLive}/${nRes}` : ''}`; if (!m && d.upload) m = `올림 HTTP ${d.upload.http} · 미리보기 ${d.upload.n}줄${(d.upload.alerts || []).length ? ' · 알림: ' + d.upload.alerts.join(' / ').slice(0, 100) : ''}`; if (!m && d.reg) m = `등록 완료 누름 HTTP ${d.reg.http}${(d.reg.alerts || []).length ? ' · 알림: ' + d.reg.alerts.join(' / ').slice(0, 100) : ''}`; if (!m && d.base != null) m = `등록 전 기준 상품 번호 ${d.base}`; if (!m && d.step != null && !one) m = REG_TR_STEP[d.step] || ''; if (!m && d.fill) m = '채운 칸: ' + String(d.fill).slice(0, 140);
+        const k = `${d.step ?? ''}|${d.status || ''}|${m}`; if (k !== last) { last = k; t = { at: nowIso(), pc: PC_NAME, s: d.step ?? null, st: d.status || null, m, ms: null }; } } } catch (e) {}
+      return r0.set(t ? { ...d, trail: firebase.firestore.FieldValue.arrayUnion(t) } : d, o); };
+    return r; }
+  async function regBulkCmd(ref, v) { const RG = RGF(); const X = EXC(); const rows = Array.isArray(v.rows) ? v.rows : []; const results = {}; const t0 = Date.now(); let laneOk = false; ref = regTrailRef(ref, v); try { await ref.set({ step: v.step || 0, msg: `${PC_NAME} 수집기가 받음 · ${rows.length}줄 · ${v.qty || rows.length}부` }, { merge: true }); } catch (e) {}
     const st = (step, extra) => Promise.all([ref.set({ step, beatAt: nowIso(), ...(extra || {}), uploadedAt: TS() }, { merge: true }).catch(() => {}), laneOk ? regLane(ref.id, 'beat').catch(() => {}) : null]);
     const stop = async (msg, extra, state) => { rows.forEach((r) => (results[r.regItem] = { state: state || 'fail', at: nowIso(), msg })); try { await ref.set({ status: 'fail', msg, results, sent: false, doneAt: nowIso(), by: PC_NAME, ...(extra || {}), uploadedAt: TS() }, { merge: true }); } catch (e) { log('멈춤을 적지 못함: ' + (e.code || e.message), 1); } await regItemsSet(rows, results); log(`📥 대량 등록 멈춤 (알라딘에 등록하지 않음): ${msg}`, 1); };
     log(`📥 대량 등록 맡음: ${rows.length}줄 · ${v.qty || rows.length}부 · 판매가 합계 ${(+v.sum || 0).toLocaleString()}원`);
@@ -2388,7 +2396,7 @@
       const q2 = await C('shp_cmds').where('post', '==', 'need').get(); for (const d of q2.docs) { const v = d.data(); if (!['regBulk', 'regOne', 'regBulkMock', 'regOneMock'].includes(v.type) || v.status !== 'done') continue; if (!(await regLease(d.ref))) continue; await regPostCollect(d.ref, v.rows || [], v.results || {}); } }
     catch (e) { log('공개 확인 실패: ' + (e.code || e.message), 1); } finally { regVerBusy = false; } }
   async function regClaim(lid, cmdId, regItem) { let ok = false; const ref = C('reg_claims').doc(String(lid)); await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && !(v.cmd === cmdId && v.regItem === regItem)) return; tx.set(ref, { cmd: cmdId, regItem, at: nowIso(), by: PC_NAME }); ok = true; }); return ok; }
-  async function regVerifyOne(ref, v) { const rows = v.rows || []; const results = { ...(v.results || {}) }; const vf = v.verify || {}; const base = +vf.base || 0;
+  async function regVerifyOne(ref, v) { ref = regTrailRef(ref, v); const rows = v.rows || []; const results = { ...(v.results || {}) }; const vf = v.verify || {}; const base = +vf.base || 0;
     const pend = rows.filter((r) => !results[r.regItem] || results[r.regItem].state !== 'live'); if (!pend.length) { await ref.set({ status: 'done', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); return; }
     if (!base) { rows.forEach((r) => { if (!results[r.regItem] || results[r.regItem].state !== 'live') results[r.regItem] = { ...(results[r.regItem] || {}), state: 'unknown', at: nowIso(), msg: '등록 전 기준이 없어 공개 확인을 못 함 — 알라딘 상품 조회에서 확인' }; }); await ref.set({ results, status: 'done', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); await regItemsSet(rows, results); return; }
     const found = []; const codes = vf.codes && vf.codes.length ? vf.codes : [...new Set(rows.map((r) => REG_LIST_CODE[+r.state || 1] || 1))];

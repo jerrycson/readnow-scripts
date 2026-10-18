@@ -5,7 +5,7 @@
  *   셀 서식(XF)은 원본에서 실제로 등록에 성공했던 줄(19행)의 것을 그대로 씀: ISBN = 텍스트 셀, 판매상태·수량·품질·판매가 = 숫자 셀.
  * 이 파일은 알라딘에 아무것도 바꾸지 않음 — 계산·만들기·읽기만. */
 (function (root) {
-  const VERSION = '0.7.0';
+  const VERSION = '0.7.1';
   // 상품 구분 (알라딘 SelectType / BranchType)
   const BRANCH = { 1: '국내도서', 2: '음반', 3: 'DVD/블루레이', 7: '외국도서' };
   // 상품 관리 코드 아이콘 — 알라딘 상품 등록 도우미 0.1.0과 같은 색 (한 곳)
@@ -30,15 +30,16 @@
   function sizeMm(sizeText) { const m = String(sizeText || '').match(/(\d{2,4})\s*[*x×]\s*(\d{2,4})/i); return m ? { w: +m[1], h: +m[2] } : null; }
   /* decideCode({ branch, price, categories, size }, rules) → { code, why } */
   function decideCode(x, rules) { const R = Object.assign({}, RULES_DEFAULT, rules || {}); const br = +x.branch || 1; const p = +x.price || 0; const tc = topCats(x.categories); const has = (L) => tc.some((t) => (L || []).includes(t));
-    if ((br === 1 || br === 7) && p > R.luxOver) return { code: 'PNKLUX', why: `${BRANCH[br]} · ${R.luxOver.toLocaleString()}원 초과` };
+    /* (0.7.1) 정범 10/18: 값이 PNKLUX(고가/절판) 기준을 넘으면 상품 구분과 상관없이 무조건 PNKLUX가 먼저 · 그다음 같은 급(서로 겹치지 않는 조건): REDFGN·ORGCMC·BLUPRO·BLUWKB·KHKDVD·KHKCPD · 그다음 잡지·어린이 · 마지막 값 구간 */
+    if (p > R.luxOver) return { code: 'PNKLUX', why: `${R.luxOver.toLocaleString()}원 초과 — 무조건 먼저(${BRANCH[br] || ''})` };
+    if (br === 7) return { code: 'REDFGN', why: '외국도서' };
+    if (has(R.cmc)) return { code: 'ORGCMC', why: '만화/라이트노벨 분류' };
     if (br === 1) { const sz = sizeMm(x.size); const pro = R.pro || {}; if (pro.minW && pro.minH && sz) { if (sz.w >= pro.minW && sz.h >= pro.minH) return { code: 'BLUPRO', why: `책 크기 ${sz.w}×${sz.h}mm (기준 ${pro.minW}×${pro.minH} 이상)` }; } else if (has(pro.cats)) return { code: 'BLUPRO', why: `분류 ${tc.filter((t) => pro.cats.includes(t)).join('·')}` }; }
     if (br === 1 && has(R.wkb)) return { code: 'BLUWKB', why: '참고서 분류' };
+    if (br === 3) return { code: 'KHKDVD', why: 'DVD/블루레이' };
+    if (br === 2) return { code: 'KHKCPD', why: '음반' };
     if (has(R.mgz)) return { code: 'NAVMGZ', why: '잡지 분류' };
     if (br === 1 && has(R.chd)) return { code: 'SKYCHD', why: '유아·어린이·전집 분류' };
-    if (has(R.cmc)) return { code: 'ORGCMC', why: '만화/라이트노벨 분류' };
-    if (br === 7) return { code: 'REDFGN', why: '외국도서' };
-    if (br === 2) return { code: 'KHKCPD', why: '음반' };
-    if (br === 3) return { code: 'KHKDVD', why: 'DVD/블루레이' };
     if (p > R.cmnOver) return { code: 'BLKCMN', why: `${R.cmnOver.toLocaleString()}원 초과 ~ ${R.luxOver.toLocaleString()}원 이하` };
     if (p > R.notOver) return { code: 'YLWNOT', why: `${R.notOver.toLocaleString()}원 초과 ~ ${R.cmnOver.toLocaleString()}원 이하` };
     if (p > 0) return { code: 'GRYPNY', why: `${R.notOver.toLocaleString()}원 이하` };
