@@ -1,1 +1,1 @@
-perf=200
+doc=prd_system/jobStats,prd_jobs/net_2026-10-01,prd_jobs/net_2026-10-08,prd_jobs/net_2026-10-17,prd_jobs/autoSched,app_settings/ext_run
