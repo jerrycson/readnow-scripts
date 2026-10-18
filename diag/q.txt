@@ -1,1 +1,2 @@
-recentUp=shp_enrich&mins=15
+recentUp=shp_enrich&mins=6
+doc=app_settings/cloud
