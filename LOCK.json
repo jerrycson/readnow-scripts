@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "고객 요약 같은 내용 안 쓰기",
- "since": "2026-10-18T03:31:33Z",
- "beat": "2026-10-18T03:31:33Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "1.46.1",
-  "at": "2026-10-18T00:28:38Z"
+  "done": "1.78.6",
+  "at": "2026-10-18T03:32:12Z"
  }
 }
