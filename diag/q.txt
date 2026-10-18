@@ -1,3 +1,1 @@
-dump=listings
-dump=orders&since=2025-01-01
-samp=prd_listings,prd_book_metrics,prd_books,prd_listing_changes,prd_lookups,sellers,prd_matches,shp_cmds,reg_items,bench_items,mkt_obs,prd_relinks
+perf=400
