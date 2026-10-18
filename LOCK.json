@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "호칭 정범님",
- "since": "2026-10-18T11:38:50Z",
- "beat": "2026-10-18T11:38:50Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "",
-  "at": "2026-10-18T11:05:55Z"
+  "done": "호칭 정범님",
+  "at": "2026-10-18T11:39:04Z"
  }
 }
