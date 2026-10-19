@@ -1,4 +1,4 @@
-// ReadNow Core Library — 1.4.1 (판매자 분류의 유일한 기준: sellerBg → evaluateBackground·classifySellerDoc 가 모두 이것만 씀)
+// ReadNow Core Library — 1.4.2 (판매자 분류의 유일한 기준: sellerBg → evaluateBackground·classifySellerDoc 가 모두 이것만 씀)
 // 여러 Tampermonkey 스크립트(중고가 검토 도우미, 판매자 정보 툴팁, 앞으로 만들 판매가 자동 결정 시스템 등)가
 // @require 로 함께 가져다 쓰는 공용 로직 모음입니다.
 //
@@ -392,6 +392,8 @@
   function classifySellerDoc(doc, RS) {
     if (!doc) return { cls: 'unknown', bg: null, why: '판매자 기록 없음 (아직 안 모음)', font: [], info: null };
     const info = sellerInfoFromDoc(doc, RS);
+    /* (1.4.2 · 정범님 10/19 '부자의 언어 — 전부 무효 빨강인데 실제는 아님') 최근 6개월 평가 수를 한 번도 모으지 않은 판매자(기록은 있지만 숍 화면을 안 읽음)는 '비활동(무효)'이 아니라 '모름' — 예전엔 평가 없음 = 무효 빨강으로 칠했음 */
+    if ((doc.ourGrade || doc.grade) !== 'fake') { const r6 = RS && RS.rev6m ? RS.rev6m(doc) : null; const has = r6 ? (r6.n != null || r6.lt3) : (doc.rev6m != null || doc.rev6mLt3 || (doc.reviewCount != null && doc.reviewCount !== '')); if (!has) return { cls: 'unknown', bg: null, why: '최근 6개월 평가 수를 아직 안 모음 — 무효가 아니라 모름 (수집기가 숍 화면을 읽으면 칠해짐)', font: [], info, nodata: true }; }
     const sb = sellerBg(info, { fake: (doc.ourGrade || doc.grade) === 'fake' });
     const b = evaluateBackground(info, NaN);
     return { cls: sb.cls, bg: sb.bg, why: sb.why, font: b.fontReasons || [], info };
@@ -440,6 +442,6 @@
     sellerLegend,
     sellerInfoFromDoc,
     classifySellerDoc,
-    CORE_VERSION: '1.4.1',
+    CORE_VERSION: '1.4.2',
   };
 })(typeof unsafeWindow !== 'undefined' ? unsafeWindow : window);

@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.84.7의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.84.8의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.84.7' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.84.7', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.84.8' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.84.8', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1481,6 +1481,8 @@
         const cut = FORCE_ALL ? '9999' : new Date(Date.now() - Math.max(1, SET.rev6mDays || 7) * 864e5).toISOString();
         const arr = []; (await C('sellers').get()).forEach((d) => { const v = d.data(); if (v.sc && String(v.sc) !== '0' && (mode === 'all' || ((!v.rev6mAt || v.rev6mAt < cut) && !(v.rev6mTriedAt && v.rev6mTriedAt >= cut && v.rev6mTriedVer === RSV.VERSION && (!v.rev6mAt || v.rev6mTriedAt > v.rev6mAt))))) arr.push({ id: d.id, sc: v.sc, at: v.rev6mAt || '' }); });
         arr.sort((a, b) => String(a.at).localeCompare(String(b.at))); // 오래전에 확인한 판매자부터
+        /* (1.84.8 · 정범님 10/19) 모으기 줄(app_settings/seller_queue — 클라우드·웹앱이 시장 줄에서 '판매자 기록 없음·6개월 평가 안 모음'을 만나면 넣음)을 맨 앞에 — 기록이 없던 판매자도 숍 화면을 읽어 판매자 기록을 만듦 */
+        try { const qd = (await C('app_settings').doc('seller_queue').get()).data() || {}; const have = new Set(arr.map((x) => String(x.sc))); const qL = [...new Set((qd.sc || []).map(String))].filter((sc) => sc && sc !== '0' && sc !== '996008'); const front = qL.map((sc) => ({ id: 'sc_' + sc, sc, at: '0', q: 1 })); const keep = arr.filter((x) => !qL.includes(String(x.sc))); arr.length = 0; arr.push(...front, ...keep); if (qL.length) log(`6개월 평가 수: 모으기 줄 ${qL.length}곳을 먼저 (기록 없던 판매자 ${qL.filter((sc) => !have.has(sc)).length}곳 포함)`); } catch (e) { log('모으기 줄 읽기 실패: ' + e.message, 1); }
         prog = { list: arr.map((x) => `${x.id}|${x.sc}`), i: 0, got: 0, startedAt: nowIso() }; await saveProgress(name, prog); // Firebase는 배열 안의 배열을 저장 못 함 → '아이디|번호' 글자로
         log(`6개월 평가 수: 판매자 ${arr.length}곳 ${mode === 'all' ? '(전체)' : `(${SET.rev6mDays || 7}일 넘게 확인 안 한 곳)`}`);
       }
@@ -1495,7 +1497,8 @@
             const sSig = JSON.stringify(sNew); const sd = (await C('sellers').doc(id).get().catch(() => null)); const sPrev = sd && sd.exists ? sd.data() : {};
             if (sPrev.shopSig !== sSig) { b.set(C('seller_history').doc(`${id}_${nowIso().replace(/[:.]/g, '-')}`), { sellerId: id, sc, kind: 'shopSummary', at: nowIso(), ...sNew, ...W() }); w++; } // 숍 화면 내용이 바뀌면 그 판을 시각과 함께 보관 (sellers 문서는 지금 값만)
             b.set(C('sellers').doc(id), { shopSig: sSig }, { merge: true }); }
-          b.set(C('sellers').doc(id), { rev6m: r.rev6m, rev6mLt3: r.rev6mLt3, rev6mAt: nowIso(), shopPeriods: r.periods, shopTotal: r.total, shopTotalLt3: r.totalLt3, aladinGrade: r.grade, isPro: r.isPro, cancel3m: r.cancel3m, ...(r.info ? { bizInfo: r.info } : {}), ...(r.infoNote ? { contactNote: r.infoNote } : {}), shopAt: nowIso(), ...W() }, { merge: true });
+          b.set(C('app_settings').doc('seller_queue'), { sc: firebase.firestore.FieldValue.arrayRemove(String(sc)) }, { merge: true }); /* (1.84.8) 모으기 줄에서 뺌 */
+          b.set(C('sellers').doc(id), { sc: String(sc), rev6m: r.rev6m, rev6mLt3: r.rev6mLt3, rev6mAt: nowIso(), shopPeriods: r.periods, shopTotal: r.total, shopTotalLt3: r.totalLt3, aladinGrade: r.grade, isPro: r.isPro, cancel3m: r.cancel3m, ...(r.info ? { bizInfo: r.info } : {}), ...(r.infoNote ? { contactNote: r.infoNote } : {}), shopAt: nowIso(), ...W() }, { merge: true });
           if (r.rev6m != null) { b.set(C('seller_rev6m').doc(id), { sc, days: { [day]: r.rev6m }, ...W() }, { merge: true }); w++; }
           w++; prog.got++; if (r.status === 'lt3') prog.lt3 = (prog.lt3 || 0) + 1;
           prog.miss = 0;
