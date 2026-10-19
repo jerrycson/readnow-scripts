@@ -1,4 +1,1 @@
-logs=1&pc=HOME&from=2026-10-19&to=~
-logs=1&pc=JS-MAIN&from=2026-10-19T08&to=~
-perf=600
-doc=prd_jobs/pcBeat,prd_system/autoSched
+doc=prd_system/autoSched,app_settings/badge_study,prd_jobs/pcBeat
