@@ -1,1 +1,1 @@
-doc=prd_system/autoSched,app_settings/badge_study,prd_jobs/pcBeat
+doc=app_settings/badge_study
