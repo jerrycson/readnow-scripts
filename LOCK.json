@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "우리 최저가배지 비율 지금 기준",
+ "since": "2026-10-19T21:40:38Z",
+ "beat": "2026-10-19T21:40:38Z",
  "ask": null,
  "last": {
   "who": "chat",
