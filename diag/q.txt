@@ -1,1 +1,2 @@
 rgt=wnew&rgs=OffShopOnline&rgp=1
+doc=app_settings/value_model
