@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.84.8의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.84.9의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.84.8' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.84.8', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.84.9' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.84.9', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2962,6 +2962,13 @@
         if (!L.some((x) => x.job === 'prd:deposit')) add.push({ id: 'deposit', job: 'prd:deposit', on: true, name: '💰 알라딘 예치금(환급액) 내역', trig: { t: 'every', min: 60 } }); /* (1.76.0) */
         const slots = [...L, ...add.map(AS.sanitize).filter(Boolean)]; tx.set(SCHED_REF(), { ...(add.length ? { slots: JSON.parse(JSON.stringify(slots)), items: AS.legacyItems(slots), rev: (+D.rev || 0) + 1 } : {}), mig175: D.mig175 || { at: nowIso(), by: PC_NAME, added: add.map((x) => x.id) }, mig176: { at: nowIso(), by: PC_NAME, added: add.map((x) => x.id) } }, { merge: true }); });
       log('⏰ 시간표 칸 한 번 넣기: 🧾 상품 전체 확인(매일 06:30) · 💰 알라딘 예치금(1시간마다) — 없을 때만 · 지우면 다시 넣지 않음'); } catch (e) { log('⏰ 상품 전체 확인 칸 넣기 실패(다음에 다시): ' + (e.code || e.message), 1); } }
+  /* (1.84.9 · 정범님 10/19 '중요한 것은 건드리지 말고 알아서 추가') 📊 판매중 시장 지표를 7일 안으로 — 07:00 '도서 정보·시장 지표' 칸이 꺼져 있어 판매중 15,708권 중 9,083권이 7일 넘게 묵었음(10/19 진단)
+   *  기존 칸은 그대로 두고 새 칸 하나만: 2시간마다(06:00~23:30) 오래된 책부터 이어 읽기(진행 저장·이어 하기는 그 일 그대로 · 테더링 일반 몫 안에서) — 지우면 다시 넣지 않음 */
+  async function asMigrate1849() { if (!SCHED || SCHED.mig1849) return; try {
+      await db.runTransaction(async (tx) => { const s0 = await tx.get(SCHED_REF()); const D = s0.exists ? s0.data() : {}; if (D.mig1849) return; const L = AS.slotsOf(D); const add = [];
+        if (!L.some((x) => x.id === 'marketKeep')) add.push({ id: 'marketKeep', job: 'prd:market', on: true, name: '📊 판매중 시장 지표 새로 읽기 (7일 안 유지)', trig: { t: 'every', min: 120 }, win: { from: '06:00', to: '23:30' } });
+        const slots = [...L, ...add.map(AS.sanitize).filter(Boolean)]; tx.set(SCHED_REF(), { ...(add.length ? { slots: JSON.parse(JSON.stringify(slots)), items: AS.legacyItems(slots), rev: (+D.rev || 0) + 1 } : {}), mig1849: { at: nowIso(), by: PC_NAME, added: add.map((x) => x.id) } }, { merge: true }); });
+      log('⏰ 시간표 칸 한 번 넣기: 📊 판매중 시장 지표 새로 읽기(2시간마다 06:00~23:30) — 없을 때만 · 지우면 다시 넣지 않음'); } catch (e) { log('⏰ 시장 지표 칸 넣기 실패(다음에 다시): ' + (e.code || e.message), 1); } }
   async function asMigrate161() { if (!SCHED || SCHED.mig161) return; try { const bc = (await C('app_settings').doc('bench').get()).data() || {}; const kp = (await C('app_settings').doc('kpipa').get()).data() || {};
       await db.runTransaction(async (tx) => { const s0 = await tx.get(SCHED_REF()); const D = s0.exists ? s0.data() : {}; if (D.mig161) return; const L = AS.slotsOf(D); const has = (j) => L.some((x) => x.job === j); const add = [];
         if (!has('prd:bench')) add.push({ id: 'bench', job: 'prd:bench', on: bc.autoOn !== false && (bc.targets || []).some((t) => t && t.on !== false), name: '🎯 집중 벤치마킹', trig: { t: 'time', times: ['01:00'] } });
@@ -2985,7 +2992,7 @@
         try { if (window.__rnCrm && window.__rnCrm.offOldAuto) await window.__rnCrm.offOldAuto(); } catch (e) {}
         if (SET.autoDaily) { try { await saveSet({ autoDaily: false }); } catch (e) {} }
         return; }
-      SCHED = d.data(); window.__rnSchedOn = !!SCHED.on; window.__rnSchedHas = true; if (PUBONLY && HELPER) budTick(HELPER); /* (1.67.0) 📶 몫 설정이 바뀌면 바로 */ if (!SCHED.mig161) asMigrate161(); if ((!SCHED.mig175 || !SCHED.mig176) && !PUBONLY) asMigrate175(); schedDraw(); asEdRefresh(); asAck('sched', SCHED, () => `rev ${+SCHED.rev || 0} · ${SCHED.on ? '켬' : '끔'} 받음`); }, () => {});
+      SCHED = d.data(); window.__rnSchedOn = !!SCHED.on; window.__rnSchedHas = true; if (PUBONLY && HELPER) budTick(HELPER); /* (1.67.0) 📶 몫 설정이 바뀌면 바로 */ if (!SCHED.mig161) asMigrate161(); if ((!SCHED.mig175 || !SCHED.mig176) && !PUBONLY) asMigrate175(); if (!SCHED.mig1849 && !PUBONLY) asMigrate1849(); schedDraw(); asEdRefresh(); asAck('sched', SCHED, () => `rev ${+SCHED.rev || 0} · ${SCHED.on ? '켬' : '끔'} 받음`); }, () => {});
     SCHED_RUN().onSnapshot((d) => { SCHED_RUNS = (d.exists && d.data().runs) || {}; window.__rnSchedRunsAt = Date.now(); schedDraw(); schedArchive(); asEdRefresh(true); }, () => {});
     JSTAT_REF().onSnapshot((d) => { JSTATS = (d.exists && d.data().jobs) || {}; schedDraw(); asEdRefresh(true); }, () => {});
     setInterval(() => { if (running || (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) || schedBusy) lastBusyAt = Date.now(); }, 15000);
