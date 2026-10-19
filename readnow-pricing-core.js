@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.15.3'; // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
+  const VERSION = '0.16.0'; // (0.16.0) 정범님 10/19: 재고 기간 할인(T2 5~10% … T7 70%)을 없앰 — 우리 판매 자료(10/08~10/18 · 상품·일 17만)로 판매 확률은 등록 30일 뒤 약 1.2~1.5‰로 내려간 뒤 1년까지 거의 그대로이고, 수요 낮은 책은 값을 내려도 판매가 늘지 않음 → 기간에 따라 깎을 근거가 없음 · 오래된 재고의 값은 판매가치 엔진(ml-core valueOf: 수요×자리 · 알라딘 매입 검토)이 맡음 · 단계(T1~T8)는 남김(기준 판매자 색 넓히기·불용 판정에 씀) // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -33,12 +33,12 @@
     tierBounds: [90, 180, 365, 548, 730, 1095, 1460],
     tiers: {
       T1: { name: '신규 재고', colors: ['dkgreen', 'green'], disc: [0, 0] },
-      T2: { name: '정상 재고', colors: ['dkgreen', 'green'], disc: [0.05, 0.10] },
-      T3: { name: '둔화 재고', colors: ['dkgreen', 'green'], disc: [0.11, 0.20] },
-      T4: { name: '장기 재고', colors: ['dkgreen', 'green', 'yellow'], disc: [0.11, 0.20] },
-      T5: { name: '체화 재고', colors: ['dkgreen', 'green', 'yellow'], disc: [0.15, 0.30] },
-      T6: { name: '부동 재고', colors: ['dkgreen', 'green', 'yellow'], disc: [0.50, 0.50] },
-      T7: { name: '청산 재고', colors: ['dkgreen', 'green', 'yellow', 'orange'], disc: [0.70, 0.70] },
+      T2: { name: '정상 재고', colors: ['dkgreen', 'green'], disc: [0, 0] },
+      T3: { name: '둔화 재고', colors: ['dkgreen', 'green'], disc: [0, 0] },
+      T4: { name: '장기 재고', colors: ['dkgreen', 'green', 'yellow'], disc: [0, 0] },
+      T5: { name: '체화 재고', colors: ['dkgreen', 'green', 'yellow'], disc: [0, 0] },
+      T6: { name: '부동 재고', colors: ['dkgreen', 'green', 'yellow'], disc: [0, 0] },
+      T7: { name: '청산 재고', colors: ['dkgreen', 'green', 'yellow', 'orange'], disc: [0, 0] },
       T8: { name: '불용 재고', colors: [], disc: [0, 0] },
     },
     discPick: 'low', // 범위 중 어느 값을 쓸지: 'low'(작은 할인) / 'high'. 판매 자료가 쌓이면 학습값으로 바꿈
@@ -325,7 +325,7 @@
 
     if (base != null && ref.price && base < ref.price * 0.5) { block.push('배송비 차이로 목표가가 기준 판매가의 절반 아래 — 사람 확인'); R.push(`기준 판매가 ${ref.price.toLocaleString()}원인데 배송비 차이를 빼면 ${Number(base).toLocaleString()}원 — 너무 낮아 자동으로 바꾸지 않음`); } /* (0.15.3) 예: 기준 1,500원·배송비 0 vs 우리 배송비 2,500원 → 10원 */
     // 7. 재고 기간 할인 (보호·희소는 할인 없음). 추격자가 기준이면 '맨 위 동가'보다 더 내리지 않음
-    let d = T.disc[S.discPick === 'high' ? 1 : 0];
+    let d = 0; /* (0.16.0) 재고 기간 할인 없앰(근거 없음) — 예전 설정(disc)이 남아 있어도 쓰지 않음 */
     if (listing.protect || rare) d = 0;
     const chased = ctx.chase && ref.sellerCode && (ctx.chase[ref.sellerCode] || {}).active;
     if (chased && d > 0) { R.push(`기준 판매자가 추격자(${ref.sellerName || ref.sellerCode}) — 할인 없이 동가 유지 (가격 싸움 피함)`); d = 0; }

@@ -6,7 +6,7 @@
  *   → ④ 새 모델이 지금 모델보다 3번 연속 확실히 나으면(로그 손실 1% 넘게 낮음) 승격. 처음 '지금 모델'은 기준선(자리 1위 여부·등급별 평균 판매율)
  * 쓰는 곳: 웹앱 전략도구의 조언 금액(그림자 표시), 앞으로 판정 엔진의 '권당 하루 기대 순이익'. 알라딘에 아무것도 바꾸지 않음 — 계산만. */
 (function (root) {
-  const VERSION = '0.4.0'; // (0.4.0) 🧠 valueRec — 등록·매입 때 판매가치 엔진으로 추천가·판매 확률·매입 판단(살 이유·사지 말 이유) 한 곳 // (0.3.0) 🧠 판매가치 엔진 v1(VALUE) — 수요(Sales Point)×자리(첫 페이지 순위)×값(동급 최저 대비)의 하루 판매 확률 표를 우리 판매 자료로 매일 배움 · 희소/희귀 분류 · 상품마다 전략과 기대 판매 // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
+  const VERSION = '0.5.0'; // (0.5.0) 정범님 10/19 '정가가 고객의 첫 기준' — 정가 대비 우리 값 칸(<35%·35~50%·50%+)을 수요×자리 칸 안에서 배움(cells3 · 줄이 적으면 수요×자리 값으로 당김) · valueOf·valueRec가 씀 // (0.4.0) 🧠 valueRec — 등록·매입 때 판매가치 엔진으로 추천가·판매 확률·매입 판단(살 이유·사지 말 이유) 한 곳 // (0.3.0) 🧠 판매가치 엔진 v1(VALUE) — 수요(Sales Point)×자리(첫 페이지 순위)×값(동급 최저 대비)의 하루 판매 확률 표를 우리 판매 자료로 매일 배움 · 희소/희귀 분류 · 상품마다 전략과 기대 판매 // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
   const HORIZON_D = 7; // 7일 안에 팔렸나
   const GR = ['최상', '상', '중'];
   /* rawRow: 하루 모습 한 줄 (클라우드 ml_days ML_VER 1과 같은 칸) — l = 상품(prd_listings), m = 시장 지표(prd_book_metrics), a = 마지막 가격 변경 {at, from, batchId}, wg = 감시 그룹, nowMs = 그날 끝 */
@@ -92,18 +92,23 @@
    *   SP 1,000~4,999: 1~3위 하루 7~8‰ vs 4위 밖 1.4‰ · SP 5,000+: 1~3위 10~12‰ vs 4위 밖 0.6‰ · SP 200 미만은 자리가 거의 상관없음(0.5~1.2‰)
    * ② 동급 최저가보다 비쌀수록 판매 확률이 떨어짐(같거나 쌈 2.45‰ → +30~100% 0.95‰ → +100%↑ 0.45‰) ③ 수요 있는데 공급이 적은 책(SP 200+ · 중고 0~2개)은 87%가 팔림
    * 모델 = 칸 표(수요 단계 × 자리) + 값 보정(동급 최저 대비) — 칸마다 판매 수·상품·일 수를 그대로 두고(누구나 검산) 적은 칸은 전체 평균 쪽으로 당김(베이즈 수축) · 매일 밤 클라우드가 다시 배움 */
-  const VDEF = { spEdges: [50, 200, 1000, 5000], usedEdges: [2, 9, 29, 99], posTop: 3, ratioEdges: [1.0001, 1.10, 1.30, 2.0], prior: 2000, maxDrop: 40, highDemandBand: 2,
+  const VDEF = { spEdges: [50, 200, 1000, 5000], usedEdges: [2, 9, 29, 99], posTop: 3, ratioEdges: [1.0001, 1.10, 1.30, 2.0], prior: 2000, maxDrop: 40, listEdges: [0.35, 0.5], highDemandBand: 2,
     rareDemandBand: 2, rareSupplyBand: 1, scarceSupplyBand: 0, scarceDemandMax: 1, commonDemandBand: 3, commonSupplyBand: 4 };
   const band = (v, edges) => { if (v == null || !Number.isFinite(+v)) return null; let i = 0; while (i < edges.length && +v >= edges[i] + (edges === VDEF.usedEdges ? 1 : 0)) i++; return i; };
   const spBand = (sp, c) => { if (sp == null) return null; const E = (c || VDEF).spEdges; let i = 0; while (i < E.length && sp >= E[i]) i++; return i; };
   const usedBand = (u, c) => { if (u == null) return null; const E = (c || VDEF).usedEdges; let i = 0; while (i < E.length && u > E[i]) i++; return i; };
   const posBand = (rank, c) => (rank == null ? null : rank <= ((c || VDEF).posTop) ? 0 : 1);
+  const listBand = (p, list, c) => { if (!p || !list || list <= 0) return null; const r = p / list, E = (c || VDEF).listEdges || VDEF.listEdges; let i = 0; while (i < E.length && r >= E[i]) i++; return i; };
   const ratioBand = (p, sameMin, c) => { if (!p || !sameMin) return null; const r = p / sameMin, E = (c || VDEF).ratioEdges; let i = 0; while (i < E.length && r > E[i]) i++; return i; };
   /* valueTrain(obs) — obs: [{sp, used, rank, price, sameMin, y(0/1 그날 팔림)}] → 모델 { cells: {'d|p': [판매, 상품·일]}, ratio: {'r': [판매, n]}, all, n, pos } */
-  function valueTrain(obs, c) { c = { ...VDEF, ...(c || {}) }; const cells = {}, ratio = {}, demand = {}; let n = 0, pos = 0;
+  function valueTrain(obs, c) { c = { ...VDEF, ...(c || {}) }; const cells = {}, ratio = {}, demand = {}, cells3 = {}; let n = 0, pos = 0;
     for (const o of obs) { const d = spBand(o.sp, c), p = posBand(o.rank, c); if (d == null || p == null) continue; n++; pos += o.y ? 1 : 0; const k = d + '|' + p; (cells[k] = cells[k] || [0, 0]); cells[k][0] += o.y ? 1 : 0; cells[k][1]++; (demand[d] = demand[d] || [0, 0]); demand[d][0] += o.y ? 1 : 0; demand[d][1]++;
+      const lb = listBand(o.price, o.list, c); if (lb != null) { const k3 = k + '|' + lb; (cells3[k3] = cells3[k3] || [0, 0]); cells3[k3][0] += o.y ? 1 : 0; cells3[k3][1]++; }
       const r = ratioBand(o.price, o.sameMin, c); if (r != null) { (ratio[r] = ratio[r] || [0, 0]); ratio[r][0] += o.y ? 1 : 0; ratio[r][1]++; } }
-    return { kind: 'value-cells', ver: VERSION, cfg: c, cells, ratio, demand, all: n ? pos / n : 0, n, pos }; }
+    return { kind: 'value-cells', ver: VERSION, cfg: c, cells, cells3, ratio, demand, all: n ? pos / n : 0, n, pos }; }
+  /* (0.5.0) 수요×자리×정가 대비 칸 — 줄이 적으면 수요×자리 값으로 당김(같은 사전) · 표가 없거나 정가를 모르면 수요×자리 값 그대로 */
+  function valueRate3(M, d, p, lb) { const base = valueRate(M, d, p); if (base == null || lb == null || p == null || !M || !M.cells3) return base; const pr = (M.cfg && M.cfg.prior) || VDEF.prior; const c = M.cells3[d + '|' + p + '|' + lb] || [0, 0]; return (c[0] + pr * base) / (c[1] + pr); }
+  const LBL = ['정가의 35% 미만', '정가의 35~50%', '정가의 50% 이상'];
   // 칸의 하루 판매 확률(수축): (판매 + 사전 × 그 수요 단계 평균) ÷ (상품·일 + 사전)
   function valueRate(M, d, p) { if (!M || d == null) return null; const pr = (M.cfg && M.cfg.prior) || VDEF.prior; const dm = M.demand && M.demand[d] ? (M.demand[d][0] + pr * M.all) / (M.demand[d][1] + pr) : M.all; if (p == null) return dm; const c = M.cells[d + '|' + p] || [0, 0]; return (c[0] + pr * dm) / (c[1] + pr); }
   function ratioMult(M, rb) { if (!M || rb == null || !M.ratio) return 1; const pr = (M.cfg && M.cfg.prior) || VDEF.prior; const base = M.all || 1e-9; const c = M.ratio[rb] || [0, 0]; const r = (c[0] + pr * base) / (c[1] + pr); const r0c = M.ratio[0] || [0, 0]; const r0 = (r0c[0] + pr * base) / (r0c[1] + pr); return r0 ? r / r0 : 1; }
@@ -118,8 +123,8 @@
     else if (u != null && u <= c.scarceSupplyBand && (d == null || d <= c.scarceDemandMax)) { cls = 'rare'; why = `시장에 거의 없음(${out.supplyLabel})${sold ? ' · 새상품 ' + x.avail : ''} — 지금 찾는 사람은 적지만(${out.demandLabel}) 만든 수 자체가 적은 책`; }
     else if (d != null && u != null && d >= c.commonDemandBand && u >= c.commonSupplyBand) { cls = 'mass'; why = `찾는 사람도 많고(${out.demandLabel}) 매물도 많음(${out.supplyLabel}) — 자리 싸움`; }
     out.rarity = { cls, label: { scarce: '희소', rare: '희귀(적게 남음)', mass: '대중', normal: '보통' }[cls], why, score: x.sp != null && x.used != null ? Math.round((x.sp + 1) / (x.used + 1) * 10) / 10 : null };
-    const p = posBand(x.rank, c); const rb = ratioBand(x.price, x.sameMin, c); const rNow = valueRate(M, d, p), rTop = valueRate(M, d, 0); const mNow = ratioMult(M, rb);
-    out.p = { now: rNow, top: rTop, pos: p, ratioBand: rb, ratioMult: mNow };
+    const p = posBand(x.rank, c); const rb = ratioBand(x.price, x.sameMin, c); const lbNow = listBand(x.price, x.list, c); const rNow = valueRate3(M, d, p, lbNow), rTop0 = valueRate3(M, d, 0, lbNow); let rTop = rTop0; const mNow = ratioMult(M, rb);
+    out.p = { now: rNow, top: rTop, pos: p, ratioBand: rb, ratioMult: mNow, listBand: lbNow, listPct: x.price && x.list ? Math.round(x.price / x.list * 100) : null };
     let kind = 'keep', label = '그대로', swhy = '', target = null;
     if (cls === 'rare') { kind = 'collector'; label = '기다림(희귀)'; swhy = '만든 수가 적은 책 — 싸게 내놓지 않음 · 동급 최저 아래로 내리지 않고 찾는 사람을 기다림 · 상태·판매자 허위 여부를 더 꼼꼼히'; target = x.sameMin && x.price < x.sameMin ? x.sameMin : null; }
     else if (cls === 'scarce') { kind = 'premium'; label = '올려도 됨(희소)'; swhy = '찾는 사람에 비해 매물이 적어 87%가 팔리는 칸 — 1위일 필요 없음 · 위 등급 최저가 근처까지 받아도 됨'; target = null; }
@@ -127,6 +132,7 @@
       else { kind = 'top3'; label = '3위 안으로'; swhy = `찾는 사람이 많은데 4위 밖 — 1~3위면 하루 판매 확률이 ${(rTop && rNow ? rTop / rNow : 0).toFixed(1)}배 · 1위일 필요는 없고 3위 값 바로 아래면 됨`; target = x.third ? Math.max(1, x.third - (x.third >= 10000 ? 500 : x.third >= 1000 ? 50 : 10)) : x.sameMin || null; const pr0 = +x.price || 0; if (target && pr0 && rTop != null && rNow != null && (target < pr0 * (1 - (c.maxDrop != null ? c.maxDrop : 40) / 100) || rTop * target <= rNow * pr0)) { kind = 'far'; label = '3위가 너무 멂(값 지킴)'; swhy = `3위 값(${target.toLocaleString()}원)이 지금 값보다 ${Math.round((1 - target / pr0) * 100)}% 낮음 — 3위로 가면 판매 확률은 ${(rTop / rNow).toFixed(1)}배지만 기대 매출(확률×값)이 ${rTop * target <= rNow * pr0 ? '오히려 줄어듦' : '최대 인하 폭(' + (c.maxDrop != null ? c.maxDrop : 40) + '%)을 넘음'} · 상태·등급이 더 나은지 확인하고 지금 값 유지`; target = null; }
         else if (target && x.bb && target <= x.bb) { kind = 'buyback'; label = '알라딘에 팔기 검토'; swhy += ` — 3위 값(${target.toLocaleString()}원)이 알라딘 매입가(${x.bb.toLocaleString()}원) 이하: 시장보다 알라딘 매입이 나음`; } } }
     else { kind = 'margin'; label = '값 지킴(자리 무관)'; swhy = `찾는 사람이 적은 책은 1위여도 판매 확률이 거의 같음(1~3위 ${((rTop || 0) * 1000).toFixed(1)}‰ vs 밖 ${((valueRate(M, d, 1) || 0) * 1000).toFixed(1)}‰) — 값을 내려 자리를 잡는 것은 마진만 깎음`; }
+    if (target && x.list) { rTop = valueRate3(M, d, 0, listBand(target, x.list, c)); out.p.top = rTop; }
     out.strategy = { kind, label, why: swhy, target };
     const pr = +x.price || 0; out.rev = { now: rNow != null ? rNow * pr : null, top: target && rTop != null ? rTop * target : null }; out.gain = out.rev.now != null && out.rev.top != null ? out.rev.top - out.rev.now : null;
     return out; }
@@ -151,7 +157,8 @@
     if (price == null && opt.fallback && opt.fallback.t != null) { price = opt.fallback.t; how = `비교할 매물이 없어 기존 판정 엔진 추천가 — ${opt.fallback.why || ''}`.trim(); }
     R.push(how || '판정 재료 부족 — 시장 매물·Sales Point가 없음');
     R.push(`수요: ${base.demandLabel}(Sales Point ${x.sp ?? '-'}) · 공급: ${base.supplyLabel}(알라딘 중고 ${x.used ?? '-'}개)${base.rarity.why ? ' · ' + base.rarity.label + ': ' + base.rarity.why : ''}`);
-    let rank = null, p = null; if (price != null) { rank = rows.filter((w) => w.p < price).length + 1; const pb = posBand(rank, c); p = valueRate(M, d, pb); if (p != null) R.push(`이 값이면 첫 페이지 ${rank}위 → 하루 판매 확률 ${(p * 1000).toFixed(1)}‰(같은 수요·자리 우리 상품의 실제 판매) · 90일 안 ${Math.round((1 - Math.pow(1 - p, 90)) * 100)}% · 1년 안 ${Math.round((1 - Math.pow(1 - p, 365)) * 100)}%`); }
+    let rank = null, p = null; if (price != null) { rank = rows.filter((w) => w.p < price).length + 1; const pb = posBand(rank, c); const lb = listBand(price, x.list, c); p = valueRate3(M, d, pb, lb);
+      if (lb != null && M && M.cells3 && d != null) { const rs = [0, 1, 2].map((b) => valueRate3(M, d, pb, b)); R.push(`정가 대비 ${Math.round(price / x.list * 100)}%(${LBL[lb]}) — 같은 수요·자리에서 하루 판매 확률: ${rs.map((v, b) => `${LBL[b].replace('정가의 ', '')} ${((v || 0) * 1000).toFixed(1)}‰`).join(' · ')}`); } if (p != null) R.push(`이 값이면 첫 페이지 ${rank}위 → 하루 판매 확률 ${(p * 1000).toFixed(1)}‰(같은 수요·자리 우리 상품의 실제 판매) · 90일 안 ${Math.round((1 - Math.pow(1 - p, 90)) * 100)}% · 1년 안 ${Math.round((1 - Math.pow(1 - p, 365)) * 100)}%`); }
     if (x.bb && price != null && price <= x.bb) R.push(`⚠ 추천가(${price.toLocaleString()}원)가 알라딘 매입가(${(+x.bb).toLocaleString()}원) 이하 — 등록보다 알라딘에 파는 것이 나음`);
     const sv = (n) => (p == null ? null : 1 - Math.pow(1 - p, n));
     const out = { ver: VERSION, price, how, reasons: R, strat, rarity: base.rarity, demandLabel: base.demandLabel, supplyLabel: base.supplyLabel, d, u: base.u, sp: x.sp ?? null, used: x.used ?? null, rank, p, sell90: sv(90), sell180: sv(180), sell365: sv(365), expDays: p ? Math.round(1 / p) : null, sameMin, anyMin, third };
@@ -175,6 +182,6 @@
     else if (profit365 != null) { if (profit365 > 0 && (out.sell365 || 0) >= 0.5) { verdict = 'buy'; label = '매입 추천'; } else if (profit365 > 0) { verdict = 'maybe'; label = '조건부 — 남지만 오래 걸림'; } else { verdict = 'skip'; label = '매입 비추천'; } }
     out.buy = { verdict, label, profit365, net, cost, costFrom, fee, pro, con };
     return out; }
-  const api = { VERSION, VDEF, valueRec, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue };
+  const api = { VERSION, VDEF, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowML = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
