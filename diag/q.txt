@@ -1,2 +1,2 @@
-metcov=1
-doc=app_settings/seller_queue
+mlx=all&since=2024-01-01
+doc=prd_system/autoSched
