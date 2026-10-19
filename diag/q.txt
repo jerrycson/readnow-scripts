@@ -1,1 +1,2 @@
-badgeNow=1
+doc=app_settings/badge_study,app_settings/write_watch
+rate=prd_listings&mins=60
