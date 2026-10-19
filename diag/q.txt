@@ -1,3 +1,1 @@
-doc=app_settings/write_watch
-rate=prd_listings&mins=30
-recentUp=prd_listings
+bbstat=1
