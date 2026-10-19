@@ -1,1 +1,1 @@
-doc=app_settings/badge_study,prd_jobs/pcBeat
+bbstat=1
