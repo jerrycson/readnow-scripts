@@ -1,1 +1,1 @@
-mlx=sales
+doc=app_settings/value_model
