@@ -1,1 +1,4 @@
-doc=app_settings/sp_obs,app_settings/sp_panel
+doc=app_settings/value_model
+rgt=wnew&rgs=OffShopOnline&rgp=1
+rgt=only1&rgk=1&rgp=2
+bstudy=1
