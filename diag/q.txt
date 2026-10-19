@@ -1,3 +1,1 @@
-rate=prd_listings,prd_listing_changes,prd_book_metrics,crm_orders&mins=60
-rate=prd_listings&mins=1440
-doc=app_settings/badge_study,app_settings/write_watch,app_settings/costs_bill_2026-10
+badgeNow=1
