@@ -100,6 +100,15 @@
 - **📰 출판 정보 게시판 (2026-10-16 · 클라우드 0.15.x · 웹앱 1.41.0)**: 클라우드 kpb가 KPIPA 5곳(g3_1 조사연구보고서·g3_2 KPIPA 출판 보고서·g3_5 글로벌출판동향·bnk 출판전산망 알림판·qa 출판산업 Q&A) 글·첨부를 mkt_kpipa_posts·저장소 kpipa/에 모음(처음 8분마다 이어 받기 → 뒤엔 6시간마다 · 상태 app_settings/kpb v4). 같은 내용 첨부는 pdf>hwpx>hwp·단면>펼침면 하나만. 요약 = 예약 작업 '리드나우 출판 정보 요약'(매일 05:47 · @kpq→kp-out 가지(diag/kps_pub.pem · 개인 열쇠는 예약 작업 설명 안에만) → 요약 → src/tools/kpin.sh → @kpin → /kp-in(클라우드 열쇠 diag/kpin_pub.pem · 개인 열쇠 app_secrets/kpin)). 그림만 있는 PDF(KPIPA 출판산업 동향 등)는 글자를 못 꺼냄 → 제안: 클라우드 Vision OCR.
 
 ## 남은 일 / 지켜볼 것
+- (2026-10-19 15:30 · 웹앱 1.59.0~1.60.0 · ml-core 0.4.0 · 클라우드 0.18.0~0.19.0 · 노선표 0.14.62 · 수집기 1.86.0) **진행 — 정범님 14:43 처리B**:
+  - 🧠 valueRec(ml-core 한 곳) = 등록·매입 판단: 전략별 팔 값(희귀→동급 유효 최저 동가 · 희소→max(동급 유효 최저, 3번째) · 수요 높음→3번째 stepDown(동급 유효 최저 60% 아래면 동가) · 수요 낮음/모름→동급 유효 최저 동가 · 매물 없음→opt.fallback) · 하루/90/180/365일 판매 확률(상수 위험률 — 나이 효과 아직 없음) · buy {verdict buy/maybe/skip/aladin, profit365 = sell365×(팔 값×(1−수수료)) − 매입가(안 팔린 몫 0), pro/con}. 웹앱 vrEval(d, 등급, {cost, fb}) · vrHtml(reg/buy/mini).
+  - 등록: regCfg.recMode('value' 기본 · 'crit' 예전) — regCalc가 x.target = ev.price, x.critTarget = 예전 추천가(참고 줄) · 카드 priceBar 아래 🧠 상자 · ⚙ 조건 맨 위 '추천가 방식'.
+  - 매입: 📷 사진 가격 카드 🧠 상자(상 기준)·팔 값 최상/상/중 · 한눈에 표 🧠 판단 열 · purApplyMarket이 it.expected = 판매가치 팔 값 + it.val(판단·이유) · 매입 기록 품목 🧠 배지.
+  - 클라우드 0.18.0: valueFactors(app_settings/value_factors · ml_value_factors) · freeShipStats(app_settings/freeship_stats — 고객 정보 없음) · spPanelTick(app_settings/sp_panel · sp_daily — TTB, 4시 뒤 10분마다 60권, SP 단계마다 50 + 절판·품절 50).
+  - 웹앱 가격 판정 상세 ⑥ 요인별 판매율 ⑦ 무료배송 채우기 + 재고 ÷ 판매 권당가 ⑧ SP 표본 진행 · 벤치마킹 종합 비교 'sratio' 열.
+  - 🔭 벤치마킹 조회(1.60.0 · 클라우드 0.19.0 benchLookTick 2분마다 50초 · bench_lookup·bench_lookup_items): cand(TTB ItemSearch/ItemList + blPre 일반 조건 · 직배송/우주점은 usedList) → market(전체중고 첫 페이지 · 최저가 판매자 색·판매자 알라딘 등급·우리 색·상태) → plat(extOneC — yes24used·bunjang·joongna·daangn·naverbook · ext_used에 쌓임) → done · watch(n일마다 · hist에 바뀐 값만). 쿠팡 = 못 읽음 표시. 진단 blt=검색어(읽기만).
+  - 수집기 1.86.0: 알라딘 전체중고 화면(wuseditemall · 로거 PC 빼고)에 🧠 판매가치·매입 판단 상자(rnValueBox · @require ml-core 0.4.0 · split.js PAGES에 wuseditemall 추가).
+  - 다음: 벤치마킹 조회 실제 첫 그룹 결과 확인(TTB 키·19금·플랫폼 하루 몫) · SP 표본 30일 뒤 '1건 = 몇 점' 확정 · 판매 확률에 등록 뒤 나이 효과 · 요인 표가 쌓이면 판매가치 칸을 분류·제작 형식으로 나눔.
 - (2026-10-19 14:55 · 웹앱 1.58.1 · 클라우드 0.17.20) **끝남 — 정범님 14:43 처리A**: 경영 탭 🧭 전략·🧠 가격 판정 상세 카드를 ① 오늘 확인할 것 바로 아래로 · ⑤ 판정 기준 = VCFG_DEF(뜻·영향·근거) + S.vDraft 저장 전 미리 보기(몇 권이 어떻게 바뀌나) + 💾 저장 두 번 눌러 확인 → app_settings/value_cfg(hist arrayUnion) · ④ 한 달 기대 매출 차이 합계 · '3위 안으로' 그룹 추천가 = critTarget mode 'under' · underScope any · underRank 3 · maxDrop = value_cfg.maxDrop · critOff false · ctrlPct 50 · valueLearn이 오늘 하루 모습을 뺌.
   - **확인(진단 pact=44)**: 최근 44일 실제 가격 반영 3,924건은 전부 수동 일괄 그룹(10/07 '6000이하_260630이전_노랑동가' 3,405건 — 내림 1,975·올림 1,426 · 10/09 '관찰 근소한 차이로 1위를 놓침' 517건 내림 · 1건) — 자동 반영 없음(prd_system/pricing rollout treatPct 0 · 감시 그룹 0). 판정 엔진의 재고 기간 할인(T2~T7)은 '엔진 추천가'에만 들어가고 승인해야 반영됨. 1.58.0 답에서 '자동 인하가 진행 중'처럼 말한 것은 틀림 — 정정함.
   - SP 첫 분석(ml_days 12일 · 시장 지표 다시 읽은 6,481쌍): 9일 동안 SP 그대로 — SP<50 99% · 50~199 91% · 200~999 67% · 1k~5k 32% · 오를 때 가운데 +40~70점(가설 1권≈50점) · 내린 책 하루 0.2~1.1%.

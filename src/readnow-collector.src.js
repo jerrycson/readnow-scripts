@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.85.1
+// @version      1.86.0
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -27,6 +27,7 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.62
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.1
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.4.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.13.6
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
@@ -7274,3 +7275,27 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     try { await run(); } catch (e) { console.warn('[리드나우] 상품 표시 실패', e); }
     let t = null; new MutationObserver(() => { clearTimeout(t); t = setTimeout(() => run().catch(() => {}), 1500); }).observe(document.body, { childList: true, subtree: true }); })();
 })();
+  /* ══════════ (1.86.0) 🧠 판매가치 판정 — 알라딘 전체중고 화면(웹앱 등록·매입·벤치마킹과 같은 계산: 공용 파일 readnow-ml-core.js valueRec)
+   *  정범님 10/19 '매입·등록에 평가 시스템 · 살 이유와 사지 말 이유' — 웹앱 기능은 알라딘 화면 쪽에도(정범님 원칙)
+   *  이 화면의 첫 페이지 매물 + 상품 화면(Sales Point·새상품 상태) + Firebase의 배운 표(app_settings/value_model·value_cfg)·판매자 기록 → 오른쪽 아래 상자: 판단·팔 값(최상·상·중)·1년 안 팔릴 확률·살 이유·사지 말 이유 · 로거(공개 전용) PC에서는 띄우지 않음 */
+(async function rnValueBox() { try {
+    if (window.top !== window || globalThis.__rnPubHome || globalThis.__rnPubChrome || !/\/shop\/usedshop\/wuseditemall\.aspx/i.test(location.pathname)) return; /* 로거(공개 전용) PC에서는 띄우지 않음 */ const ML = window.ReadnowML, P = window.ReadnowProducts, PRC = window.ReadnowPricing, RNC = window.ReadNowCore, RSx = window.ReadnowSellers; if (!ML || !ML.valueRec || !P || !window.firebase) return;
+    if (!firebase.apps.length) firebase.initializeApp({ apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385', storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15' });
+    const user = await new Promise((res) => { const un = firebase.auth().onAuthStateChanged((u) => { un(); res(u); }); setTimeout(() => res(null), 8000); }); if (!user) return; const fs = firebase.firestore();
+    const id = (location.search.match(/ItemId=(\d+)/i) || [])[1]; if (!id) return; const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); const won = (n) => (n == null ? '-' : Math.round(n).toLocaleString() + '원');
+    const u = P.parseUsedPage(document); const prodR = await fetch('/shop/wproduct.aspx?ItemId=' + id, { credentials: 'omit' }).then((r) => r.text()).catch(() => ''); const b = prodR ? P.parseProductPage(new DOMParser().parseFromString(prodR, 'text/html'), location.origin + '/shop/wproduct.aspx?ItemId=' + id) : {};
+    const [vm, vc, main] = await Promise.all(['value_model', 'value_cfg', 'main'].map((k) => fs.collection('app_settings').doc(k).get().then((d) => (d.exists ? d.data() : null)).catch(() => null)));
+    const codes = [...new Set((u.listings || []).map((r) => r.sellerCode).filter((c) => c && String(c) !== '0' && String(c) !== '996008'))].slice(0, 30); const sd = {}; await Promise.all(codes.map((c) => fs.collection('sellers').doc('sc_' + c).get().then((d) => { if (d.exists) sd[c] = d.data(); }).catch(() => {})));
+    const rows = (u.listings || []).filter((r) => r.price > 0).map((r) => { const ours = String(r.sellerCode) === '996008'; let c = 'unknown'; try { c = ours ? 'ours' : PRC && PRC.isAladinSide(r) ? 'aladin' : sd[r.sellerCode] && RNC ? RNC.classifySellerDoc(sd[r.sellerCode], RSx).cls : 'unknown'; } catch (e) {} return { p: r.price, g: r.grade || null, c, so: r.soldOut ? 1 : 0 }; });
+    let stock = 0, sold = null; const isbn = b.isbn13 || null; if (isbn) { try { const qs = await fs.collection('prd_listings').where('isbn13', '==', isbn).get(); let n = 0; qs.forEach((d) => { const v = d.data(); if (v.active) stock++; else if (/판매완료/.test(String(v.status || ''))) n++; }); if (n) sold = { n }; } catch (e) {} }
+    const unitCost = main && main.costPerBook != null ? +main.costPerBook : null; const fee = main && main.feeRate != null ? +main.feeRate : 0.1; const avail = b.availability && b.availability !== 'onSale' ? b.availability : '';
+    const ev = (g) => ML.valueRec({ grade: g, sp: b.salesPoint ?? null, used: u.usedTotal ?? null, avail, bb: u.buyback && u.buyback[g] != null ? +u.buyback[g] || null : null, list: b.priceList ?? null, sales: b.priceSales ?? null, rows, stock, sold }, vm, vc, { stepDown: PRC && PRC.stepDown, feeRate: fee, unitCost });
+    const E = { 최상: ev('최상'), 상: ev('상'), 중: ev('중') }; const e = E['상']; const B = e.buy || {}; const VC = { buy: ['#1F6F4A', '#E3F4E8'], maybe: ['#8A6A00', '#FFF4D6'], skip: ['#9A2A22', '#FDE2DF'], aladin: ['#22508A', '#E3EEFA'] }[B.verdict] || ['#5B6B66', '#EEF1F0']; const pc = (v) => (v == null ? '-' : Math.round(v * 100) + '%');
+    const st = document.createElement('style'); st.textContent = '#rn-vr{position:fixed;right:14px;bottom:14px;z-index:2147483600;width:330px;max-height:70vh;overflow:auto;background:#fff;border:1px solid #2F5D50;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);font:12.5px/1.5 system-ui,"Malgun Gothic",sans-serif;color:#1E2B27}#rn-vr .hd{display:flex;gap:6px;align-items:center;padding:6px 10px;background:#2F5D50;color:#fff;border-radius:9px 9px 0 0;cursor:pointer}#rn-vr .bd{padding:7px 10px}#rn-vr.min .bd{display:none}#rn-vr .v{display:inline-block;padding:1px 9px;border-radius:9px;font-weight:800}#rn-vr ul{margin:2px 0 4px 16px;padding:0}#rn-vr .g{display:flex;gap:10px;margin:4px 0}#rn-vr small{color:#6B7B76}';
+    document.head.appendChild(st); const box = document.createElement('div'); box.id = 'rn-vr'; try { if (GM_getValue('rn-vr-min', 0)) box.classList.add('min'); } catch (e0) {}
+    box.innerHTML = `<div class="hd"><b style="flex:1">🧠 판매가치 · 매입 판단</b><span class="v" style="color:${VC[0]};background:${VC[1]}">${esc(B.label || '판단 보류')}</span></div><div class="bd"><div><b>${esc(e.demandLabel)}</b>(SP ${esc(b.salesPoint ?? '-')}) · <b>${esc(e.supplyLabel)}</b>(중고 ${esc(u.usedTotal ?? '-')}개)${e.rarity && e.rarity.cls !== 'normal' ? ` · <b>${esc(e.rarity.label)}</b>` : ''}</div>
+      <div class="g">${['최상', '상', '중'].map((g) => `<span>${g} <b>${won(E[g].price)}</b></span>`).join('')}</div><div><small>팔 값 = 판매가치 추천가 · 상 기준: 하루 ${e.p != null ? (e.p * 1000).toFixed(1) + '‰' : '-'} · 1년 안 ${pc(e.sell365)}${B.profit365 != null ? ` · 1년 기대 이익 <b style="color:${B.profit365 >= 0 ? '#1F6F4A' : '#9A2A22'}">${won(B.profit365)}</b>(${esc(B.costFrom || '')} ${won(B.cost)})` : ''}</small></div>
+      <div><small>${esc(e.how || '')}</small></div>${(B.pro || []).length ? `<b style="color:#1F6F4A">👍 살 이유</b><ul>${B.pro.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}${(B.con || []).length ? `<b style="color:#9A2A22">👎 사지 말 이유</b><ul>${B.con.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+      <small>${vm ? `배운 표 ${esc(String(vm.trainedAt || '').slice(0, 10))}` : '배운 표 없음(기본)'}${stock ? ` · 우리 재고 ${stock}권` : ''} · 웹앱 🧠 가격 판정 상세와 같은 계산</small></div>`;
+    box.querySelector('.hd').onclick = () => { box.classList.toggle('min'); try { GM_setValue('rn-vr-min', box.classList.contains('min') ? 1 : 0); } catch (e1) {} }; document.body.appendChild(box);
+} catch (e) { console.warn('[리드나우] 판매가치 상자 실패', e); } })();
