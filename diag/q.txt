@@ -1,1 +1,1 @@
-mlx=out
+mlx=days&from=2026-10-08&to=2026-10-12
