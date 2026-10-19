@@ -6,7 +6,7 @@
  *   → ④ 새 모델이 지금 모델보다 3번 연속 확실히 나으면(로그 손실 1% 넘게 낮음) 승격. 처음 '지금 모델'은 기준선(자리 1위 여부·등급별 평균 판매율)
  * 쓰는 곳: 웹앱 전략도구의 조언 금액(그림자 표시), 앞으로 판정 엔진의 '권당 하루 기대 순이익'. 알라딘에 아무것도 바꾸지 않음 — 계산만. */
 (function (root) {
-  const VERSION = '0.3.0'; // (0.3.0) 🧠 판매가치 엔진 v1(VALUE) — 수요(Sales Point)×자리(첫 페이지 순위)×값(동급 최저 대비)의 하루 판매 확률 표를 우리 판매 자료로 매일 배움 · 희소/희귀 분류 · 상품마다 전략과 기대 판매 // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
+  const VERSION = '0.4.0'; // (0.4.0) 🧠 valueRec — 등록·매입 때 판매가치 엔진으로 추천가·판매 확률·매입 판단(살 이유·사지 말 이유) 한 곳 // (0.3.0) 🧠 판매가치 엔진 v1(VALUE) — 수요(Sales Point)×자리(첫 페이지 순위)×값(동급 최저 대비)의 하루 판매 확률 표를 우리 판매 자료로 매일 배움 · 희소/희귀 분류 · 상품마다 전략과 기대 판매 // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
   const HORIZON_D = 7; // 7일 안에 팔렸나
   const GR = ['최상', '상', '중'];
   /* rawRow: 하루 모습 한 줄 (클라우드 ml_days ML_VER 1과 같은 칸) — l = 상품(prd_listings), m = 시장 지표(prd_book_metrics), a = 마지막 가격 변경 {at, from, batchId}, wg = 감시 그룹, nowMs = 그날 끝 */
@@ -130,6 +130,51 @@
     out.strategy = { kind, label, why: swhy, target };
     const pr = +x.price || 0; out.rev = { now: rNow != null ? rNow * pr : null, top: target && rTop != null ? rTop * target : null }; out.gain = out.rev.now != null && out.rev.top != null ? out.rev.top - out.rev.now : null;
     return out; }
-  const api = { VERSION, VDEF, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue };
+  /* (0.4.0) 🧠 valueRec(x, M, cfg, opt) — 아직 우리 가격이 없는 책(등록·매입 조회)에 판매가치 엔진을 씀. 웹앱 등록 카드·매입 도구가 같은 한 곳
+   *  x = { grade, sp, used, avail(새상품 상태 글), bb(그 등급 알라딘 매입가), list(정가), sales(새책 판매가), rows: 첫 페이지 [{p, g, c(판매자 분류: ours·aladin·dkgreen·green·yellow·orange·red·unknown), so(품절)}],
+   *        cost(권당 매입가 · 없으면 opt.unitCost), stock(우리 지금 재고 같은 책 권수), sold({ n, days, avg } 우리 같은 책 판매 이력), factors([{ k, label, rate, n, base }] 확정된 요인 판매율) }
+   *  opt = { stepDown(p) 한 가격 단위 아래, feeRate 수수료율, unitCost 평균 권당 매입가, fallback({ t, why }) 비교 매물이 없을 때 기존 엔진 추천가 }
+   *  돌려줌 { price, how, reasons[], strat, rarity, demandLabel, supplyLabel, p(하루 판매 확률), sell90/180/365, expDays, rank, buy: { verdict(buy·maybe·skip·aladin), label, profit365, net, cost, costFrom, pro[], con[] } } */
+  function valueRec(x, M, cfg, opt) { const c = { ...VDEF, ...((M && M.cfg) || {}), ...(cfg || {}) }; x = x || {}; opt = opt || {}; const R = [];
+    const step = opt.stepDown || ((p) => Math.max(10, p - (p >= 10000 ? 500 : p >= 1000 ? 50 : 10)));
+    const rows = (x.rows || []).filter((w) => w && w.c !== 'ours' && +w.p > 0 && !w.so).map((w) => ({ ...w, p: +w.p })).sort((a, b) => a.p - b.p);
+    const VALID = new Set(['aladin', 'dkgreen', 'green']); const sameV = rows.filter((w) => w.g === x.grade && VALID.has(w.c)); const sameMin = sameV.length ? sameV[0].p : null; const anyMin = rows.length ? rows[0].p : null;
+    const base = valueOf({ price: null, grade: x.grade, sp: x.sp, used: x.used, avail: x.avail, rank: null, sameMin, third: rows.length ? rows[Math.min(2, rows.length - 1)].p : null, bb: x.bb, list: x.list }, M, cfg);
+    const d = base.d; const cls = base.rarity.cls; let price = null, how = '', strat = 'keep';
+    const third = rows.length >= c.posTop ? rows[c.posTop - 1].p : null;
+    if (cls === 'rare') { strat = 'collector'; if (sameMin) { price = sameMin; how = `💠 희귀 — 같은 등급 유효 최저가 ${sameMin.toLocaleString()}원과 동가(더 싸게 내놓지 않음)`; } }
+    else if (cls === 'scarce') { strat = 'premium'; const hi = sameMin || anyMin; if (hi) { price = Math.max(hi, third || 0); how = `💎 희소 — 찾는 사람이 매물보다 많아 1위일 필요 없음: ${third && third > (sameMin || 0) ? `첫 페이지 ${c.posTop}번째 값 ${third.toLocaleString()}원` : `같은 등급 유효 최저가 ${hi.toLocaleString()}원과 동가`}`; } }
+    else if (d != null && d >= c.highDemandBand) { strat = 'top3'; if (third) { price = step(third); how = `🎯 수요 높음 — 첫 페이지에서 우리를 뺀 매물 중 ${c.posTop}번째로 싼 ${third.toLocaleString()}원보다 한 단위 아래(1~${c.posTop}위 자리 · 1위일 필요 없음)`; if (sameMin && price < sameMin * 0.6) { price = sameMin; how = `🎯 수요 높음 — ${c.posTop}번째 값(${third.toLocaleString()}원)이 같은 등급 유효 최저가의 60% 아래(무효·싼 등급 매물)라 같은 등급 유효 최저가 ${sameMin.toLocaleString()}원과 동가`; } }
+      else if (rows.length) { price = sameMin || rows[rows.length - 1].p; how = `🎯 수요 높음 — 첫 페이지 매물이 ${rows.length}개뿐이라 이 값이면 1~${c.posTop}위: ${sameMin ? '같은 등급 유효 최저가와 동가' : '가장 비싼 매물과 동가'}`; } }
+    else if (d == null) { strat = 'keep'; if (sameMin || anyMin) { price = sameMin || anyMin; how = `수요 모름(Sales Point 없음) — 기본: ${sameMin ? '같은 등급 유효 최저가' : '첫 페이지 최저가'} ${price.toLocaleString()}원과 동가 · Sales Point가 읽히면 다시 판정`; } }
+    else { strat = 'margin'; if (sameMin || anyMin) { price = sameMin || anyMin; how = `💰 수요 낮음 — 자리가 판매를 거의 안 바꿈: ${sameMin ? '같은 등급 유효 최저가' : '첫 페이지 최저가'} ${price.toLocaleString()}원과 동가(더 싸게 내도 판매가 늘지 않아 마진만 줄어듦)`; } }
+    if (price == null && opt.fallback && opt.fallback.t != null) { price = opt.fallback.t; how = `비교할 매물이 없어 기존 판정 엔진 추천가 — ${opt.fallback.why || ''}`.trim(); }
+    R.push(how || '판정 재료 부족 — 시장 매물·Sales Point가 없음');
+    R.push(`수요: ${base.demandLabel}(Sales Point ${x.sp ?? '-'}) · 공급: ${base.supplyLabel}(알라딘 중고 ${x.used ?? '-'}개)${base.rarity.why ? ' · ' + base.rarity.label + ': ' + base.rarity.why : ''}`);
+    let rank = null, p = null; if (price != null) { rank = rows.filter((w) => w.p < price).length + 1; const pb = posBand(rank, c); p = valueRate(M, d, pb); if (p != null) R.push(`이 값이면 첫 페이지 ${rank}위 → 하루 판매 확률 ${(p * 1000).toFixed(1)}‰(같은 수요·자리 우리 상품의 실제 판매) · 90일 안 ${Math.round((1 - Math.pow(1 - p, 90)) * 100)}% · 1년 안 ${Math.round((1 - Math.pow(1 - p, 365)) * 100)}%`); }
+    if (x.bb && price != null && price <= x.bb) R.push(`⚠ 추천가(${price.toLocaleString()}원)가 알라딘 매입가(${(+x.bb).toLocaleString()}원) 이하 — 등록보다 알라딘에 파는 것이 나음`);
+    const sv = (n) => (p == null ? null : 1 - Math.pow(1 - p, n));
+    const out = { ver: VERSION, price, how, reasons: R, strat, rarity: base.rarity, demandLabel: base.demandLabel, supplyLabel: base.supplyLabel, d, u: base.u, sp: x.sp ?? null, used: x.used ?? null, rank, p, sell90: sv(90), sell180: sv(180), sell365: sv(365), expDays: p ? Math.round(1 / p) : null, sameMin, anyMin, third };
+    /* 매입 판단 — 1년 기대 이익 = 1년 안 팔릴 확률 × (추천가 − 수수료) − 매입가 (안 팔린 몫은 0으로 봄: 폐기·알라딘 매입은 따로 '알라딘에 바로 팔기'로 비교) */
+    const fee = opt.feeRate != null ? +opt.feeRate : 0.1; const cost = x.cost != null && x.cost !== '' ? +x.cost : opt.unitCost != null ? +opt.unitCost : null; const costFrom = x.cost != null && x.cost !== '' ? '이 책 매입가' : opt.unitCost != null ? '평균 권당 매입가' : null;
+    const pro = [], con = []; const net = price != null ? price * (1 - fee) : null; const profit365 = net != null && out.sell365 != null && cost != null ? out.sell365 * net - cost : null;
+    if (d != null && d >= c.highDemandBand) pro.push(`찾는 사람이 많음 — Sales Point ${x.sp}(${base.demandLabel}) · 이 수요의 우리 책은 1~${c.posTop}위면 하루 ${((valueRate(M, d, 0) || 0) * 1000).toFixed(1)}‰ 팔림`);
+    else if (d != null && d <= 0) con.push(`찾는 사람이 거의 없음 — Sales Point ${x.sp ?? 0} · 이 수요의 우리 책은 하루 ${((valueRate(M, d, null) || 0) * 1000).toFixed(1)}‰(1년 안 ${Math.round((1 - Math.pow(1 - (valueRate(M, d, null) || 0), 365)) * 100)}%)`);
+    if (cls === 'scarce') pro.push('💎 희소 — 매물보다 찾는 사람이 많음 · 우리 판매로 확인한 칸(SP 200~999 & 중고 0~2개)은 87% 팔림');
+    if (cls === 'rare') con.push('💠 희귀(적게 남음)이지만 찾는 사람이 적음 — 적게 남았다고 팔리지 않음(SP 50 미만 & 중고 0~2개는 19%만 팔림) · 매입가가 낮을 때만');
+    if (x.used != null && x.used >= 100) (d != null && d >= 3 ? pro : con).push(`알라딘 중고가 ${x.used}개 — ${d != null && d >= 3 ? '많이 나도는 만큼 찾는 사람도 많음' : '매물이 많아 값 경쟁이 셈'}`);
+    if (/절판|품절/.test(String(x.avail || ''))) pro.push(`새상품 ${String(x.avail).match(/절판|품절/)[0]} — 새책으로 살 수 없음`);
+    if (x.bb && cost != null && x.bb * 1 > cost) pro.push(`알라딘 매입가 ${(+x.bb).toLocaleString()}원 > 매입가 ${Math.round(cost).toLocaleString()}원 — 안 팔려도 알라딘에 팔아 남김`);
+    if (x.bb && price != null && price <= x.bb) con.push(`시장 값(${price.toLocaleString()}원)이 알라딘 매입가 이하 — 사면 바로 알라딘에 파는 쪽`);
+    if (anyMin != null && anyMin <= 1000) con.push(`첫 페이지 최저가 ${anyMin.toLocaleString()}원 — 1,000원 이하 경쟁`);
+    if (x.stock) con.push(`우리 재고에 같은 책 ${x.stock}권 — 같은 책끼리 경쟁`);
+    if (x.sold && x.sold.n) pro.push(`우리가 이 책을 ${x.sold.n}권 판 적 있음${x.sold.avg ? ` · 평균 ${Math.round(x.sold.avg).toLocaleString()}원` : ''}${x.sold.days != null ? ` · 마지막 판매 ${x.sold.days}일 전` : ''}`);
+    (x.factors || []).forEach((f) => { if (!(f.n >= 30) || f.rate == null || f.base == null) return; const r = f.rate / f.base; const t = `${f.label} — 우리 판매율 ${Math.round(f.rate * 100)}%(전체 ${Math.round(f.base * 100)}% · ${f.n.toLocaleString()}권)`; if (r >= 1.25) pro.push(t); else if (r <= 0.75) con.push(t); });
+    let verdict = 'maybe', label = '판단 보류';
+    if (x.bb && cost != null && x.bb >= cost && (price == null || price <= x.bb * 1.2)) { verdict = 'aladin'; label = '사서 알라딘에 바로 팔기'; }
+    else if (profit365 != null) { if (profit365 > 0 && (out.sell365 || 0) >= 0.5) { verdict = 'buy'; label = '매입 추천'; } else if (profit365 > 0) { verdict = 'maybe'; label = '조건부 — 남지만 오래 걸림'; } else { verdict = 'skip'; label = '매입 비추천'; } }
+    out.buy = { verdict, label, profit365, net, cost, costFrom, fee, pro, con };
+    return out; }
+  const api = { VERSION, VDEF, valueRec, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowML = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
