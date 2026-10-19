@@ -7,12 +7,13 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '1.3.0';
+  const VERSION = '1.3.1'; // (1.3.1) 숫자 글자 형식 다시 씀(빠르게)
   const DEFAULT_THRESHOLDS = { modelHigh: 70, modelLow: 35, gainHigh: 60, gainLow: 40 };
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const numK = (v) => { if (v == null || v === '') return null; if (typeof v === 'number') return Number.isFinite(v) ? v : null; const n = parseFloat(String(v).replace(/[^\d.\-]/g, '')); return Number.isFinite(n) ? n : null; };
   const won = (n) => (n == null ? '-' : Math.round(n).toLocaleString('ko-KR') + '원');
-  const numTxt = (n) => (n == null ? '-' : Math.round(n).toLocaleString('ko-KR'));
+  const NF_KO = (() => { try { return new Intl.NumberFormat('ko-KR'); } catch (e) { return null; } })(); /* (1.3.1) 숫자 글자 — 만든 형식을 다시 씀(toLocaleString은 부를 때마다 형식을 새로 만들어 웹앱 기기 기록에서 가장 오래 걸린 함수 중 하나) */
+  const numTxt = (n) => (n == null ? '-' : NF_KO ? NF_KO.format(Math.round(n)) : Math.round(n).toLocaleString('ko-KR'));
 
   // 판매자 기록(웹앱 sellers 문서 / 툴팁 정보) → 계산용 값
   //  평점: 비율(0.985). 품절 취소율: 비율. 툴팁 기록(sc 있음)은 퍼센트 숫자로 저장돼 있어 100으로 나눔
