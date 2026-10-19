@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "1.58.0 판매가치 엔진",
+ "since": "2026-10-19T04:30:32Z",
+ "beat": "2026-10-19T04:30:32Z",
  "ask": null,
  "last": {
   "who": "auto-check",
