@@ -1,2 +1,1 @@
-doc=app_settings/badge_study,app_settings/write_watch
-rate=prd_listings&mins=60
+doc=app_settings/badge_study,prd_jobs/pcBeat
