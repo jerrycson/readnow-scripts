@@ -1,1 +1,2 @@
-doc=app_settings/sp_panel,app_settings/freeship_stats
+blt=철학
+doc=app_settings/sp_panel,app_settings/freeship_stats,app_settings/value_factors
