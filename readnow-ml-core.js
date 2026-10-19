@@ -6,7 +6,7 @@
  *   → ④ 새 모델이 지금 모델보다 3번 연속 확실히 나으면(로그 손실 1% 넘게 낮음) 승격. 처음 '지금 모델'은 기준선(자리 1위 여부·등급별 평균 판매율)
  * 쓰는 곳: 웹앱 전략도구의 조언 금액(그림자 표시), 앞으로 판정 엔진의 '권당 하루 기대 순이익'. 알라딘에 아무것도 바꾸지 않음 — 계산만. */
 (function (root) {
-  const VERSION = '0.2.2'; // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
+  const VERSION = '0.3.0'; // (0.3.0) 🧠 판매가치 엔진 v1(VALUE) — 수요(Sales Point)×자리(첫 페이지 순위)×값(동급 최저 대비)의 하루 판매 확률 표를 우리 판매 자료로 매일 배움 · 희소/희귀 분류 · 상품마다 전략과 기대 판매 // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
   const HORIZON_D = 7; // 7일 안에 팔렸나
   const GR = ['최상', '상', '중'];
   /* rawRow: 하루 모습 한 줄 (클라우드 ml_days ML_VER 1과 같은 칸) — l = 상품(prd_listings), m = 시장 지표(prd_book_metrics), a = 마지막 가격 변경 {at, from, batchId}, wg = 감시 그룹, nowMs = 그날 끝 */
@@ -86,6 +86,50 @@
     else { out.why = '그때 시장 자료(첫 페이지)·새상품가가 없어 평가 못 함'; return out; }
     if (soldOut) notes.push(`새상품 ${x.av} — 희소${out.score != null && out.score <= 0 ? ', 더 받을 여지' : ''}`);
     out.why = notes.join(' · '); return out; }
-  const api = { VERSION, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue };
+
+  /* ══ (0.3.0) 🧠 판매가치 엔진 v1 — VALUE (정범님 10/19 '가격 판정이 사업의 근간 · 근거로 스스로 배우는 도구')
+   * 근거(10/19 분석 · 우리 판매중 상품의 하루 모습 17만 상품·일 + 판매 260건 · 판매완료 9,657권): ① 수요(Sales Point)가 높을수록 첫 페이지 '자리'가 판매를 좌우 —
+   *   SP 1,000~4,999: 1~3위 하루 7~8‰ vs 4위 밖 1.4‰ · SP 5,000+: 1~3위 10~12‰ vs 4위 밖 0.6‰ · SP 200 미만은 자리가 거의 상관없음(0.5~1.2‰)
+   * ② 동급 최저가보다 비쌀수록 판매 확률이 떨어짐(같거나 쌈 2.45‰ → +30~100% 0.95‰ → +100%↑ 0.45‰) ③ 수요 있는데 공급이 적은 책(SP 200+ · 중고 0~2개)은 87%가 팔림
+   * 모델 = 칸 표(수요 단계 × 자리) + 값 보정(동급 최저 대비) — 칸마다 판매 수·상품·일 수를 그대로 두고(누구나 검산) 적은 칸은 전체 평균 쪽으로 당김(베이즈 수축) · 매일 밤 클라우드가 다시 배움 */
+  const VDEF = { spEdges: [50, 200, 1000, 5000], usedEdges: [2, 9, 29, 99], posTop: 3, ratioEdges: [1.0001, 1.10, 1.30, 2.0], prior: 2000, maxDrop: 40, highDemandBand: 2,
+    rareDemandBand: 2, rareSupplyBand: 1, scarceSupplyBand: 0, scarceDemandMax: 1, commonDemandBand: 3, commonSupplyBand: 4 };
+  const band = (v, edges) => { if (v == null || !Number.isFinite(+v)) return null; let i = 0; while (i < edges.length && +v >= edges[i] + (edges === VDEF.usedEdges ? 1 : 0)) i++; return i; };
+  const spBand = (sp, c) => { if (sp == null) return null; const E = (c || VDEF).spEdges; let i = 0; while (i < E.length && sp >= E[i]) i++; return i; };
+  const usedBand = (u, c) => { if (u == null) return null; const E = (c || VDEF).usedEdges; let i = 0; while (i < E.length && u > E[i]) i++; return i; };
+  const posBand = (rank, c) => (rank == null ? null : rank <= ((c || VDEF).posTop) ? 0 : 1);
+  const ratioBand = (p, sameMin, c) => { if (!p || !sameMin) return null; const r = p / sameMin, E = (c || VDEF).ratioEdges; let i = 0; while (i < E.length && r > E[i]) i++; return i; };
+  /* valueTrain(obs) — obs: [{sp, used, rank, price, sameMin, y(0/1 그날 팔림)}] → 모델 { cells: {'d|p': [판매, 상품·일]}, ratio: {'r': [판매, n]}, all, n, pos } */
+  function valueTrain(obs, c) { c = { ...VDEF, ...(c || {}) }; const cells = {}, ratio = {}, demand = {}; let n = 0, pos = 0;
+    for (const o of obs) { const d = spBand(o.sp, c), p = posBand(o.rank, c); if (d == null || p == null) continue; n++; pos += o.y ? 1 : 0; const k = d + '|' + p; (cells[k] = cells[k] || [0, 0]); cells[k][0] += o.y ? 1 : 0; cells[k][1]++; (demand[d] = demand[d] || [0, 0]); demand[d][0] += o.y ? 1 : 0; demand[d][1]++;
+      const r = ratioBand(o.price, o.sameMin, c); if (r != null) { (ratio[r] = ratio[r] || [0, 0]); ratio[r][0] += o.y ? 1 : 0; ratio[r][1]++; } }
+    return { kind: 'value-cells', ver: VERSION, cfg: c, cells, ratio, demand, all: n ? pos / n : 0, n, pos }; }
+  // 칸의 하루 판매 확률(수축): (판매 + 사전 × 그 수요 단계 평균) ÷ (상품·일 + 사전)
+  function valueRate(M, d, p) { if (!M || d == null) return null; const pr = (M.cfg && M.cfg.prior) || VDEF.prior; const dm = M.demand && M.demand[d] ? (M.demand[d][0] + pr * M.all) / (M.demand[d][1] + pr) : M.all; if (p == null) return dm; const c = M.cells[d + '|' + p] || [0, 0]; return (c[0] + pr * dm) / (c[1] + pr); }
+  function ratioMult(M, rb) { if (!M || rb == null || !M.ratio) return 1; const pr = (M.cfg && M.cfg.prior) || VDEF.prior; const base = M.all || 1e-9; const c = M.ratio[rb] || [0, 0]; const r = (c[0] + pr * base) / (c[1] + pr); const r0c = M.ratio[0] || [0, 0]; const r0 = (r0c[0] + pr * base) / (r0c[1] + pr); return r0 ? r / r0 : 1; }
+  /* valueOf(x, M) — x: {price, grade, sp, used, avail, rank, sameMin, third(첫 페이지 3번째로 싼 다른 매물 값), bb(알라딘 매입가), list}
+   * → { demand, supply, rarity{cls, label, why}, strategy{kind, label, why, target}, p{now, top}, rev{now, top}, gain(하루 기대 매출 차이) } */
+  function valueOf(x, M, cfg) { const c = { ...VDEF, ...((M && M.cfg) || {}), ...(cfg || {}) }; x = x || {}; const d = spBand(x.sp, c), u = usedBand(x.used, c); const out = { d, u, sp: x.sp ?? null, used: x.used ?? null };
+    const DL = ['수요 매우 낮음', '수요 낮음', '수요 보통', '수요 높음', '수요 매우 높음'], UL = ['공급 0~2', '공급 3~9', '공급 10~29', '공급 30~99', '공급 100+'];
+    out.demandLabel = d == null ? '수요 모름' : DL[d]; out.supplyLabel = u == null ? '공급 모름' : UL[u];
+    const sold = /절판|품절/.test(String(x.avail || ''));
+    let cls = 'normal', why = '';
+    if (d != null && u != null && ((d >= c.rareDemandBand && u <= c.rareSupplyBand) || (d >= 3 && u <= 2))) { cls = 'scarce'; why = `찾는 사람(${out.demandLabel} · SP ${x.sp})에 비해 시장에 적음(${out.supplyLabel})`; }
+    else if (u != null && u <= c.scarceSupplyBand && (d == null || d <= c.scarceDemandMax)) { cls = 'rare'; why = `시장에 거의 없음(${out.supplyLabel})${sold ? ' · 새상품 ' + x.avail : ''} — 지금 찾는 사람은 적지만(${out.demandLabel}) 만든 수 자체가 적은 책`; }
+    else if (d != null && u != null && d >= c.commonDemandBand && u >= c.commonSupplyBand) { cls = 'mass'; why = `찾는 사람도 많고(${out.demandLabel}) 매물도 많음(${out.supplyLabel}) — 자리 싸움`; }
+    out.rarity = { cls, label: { scarce: '희소', rare: '희귀(적게 남음)', mass: '대중', normal: '보통' }[cls], why, score: x.sp != null && x.used != null ? Math.round((x.sp + 1) / (x.used + 1) * 10) / 10 : null };
+    const p = posBand(x.rank, c); const rb = ratioBand(x.price, x.sameMin, c); const rNow = valueRate(M, d, p), rTop = valueRate(M, d, 0); const mNow = ratioMult(M, rb);
+    out.p = { now: rNow, top: rTop, pos: p, ratioBand: rb, ratioMult: mNow };
+    let kind = 'keep', label = '그대로', swhy = '', target = null;
+    if (cls === 'rare') { kind = 'collector'; label = '기다림(희귀)'; swhy = '만든 수가 적은 책 — 싸게 내놓지 않음 · 동급 최저 아래로 내리지 않고 찾는 사람을 기다림 · 상태·판매자 허위 여부를 더 꼼꼼히'; target = x.sameMin && x.price < x.sameMin ? x.sameMin : null; }
+    else if (cls === 'scarce') { kind = 'premium'; label = '올려도 됨(희소)'; swhy = '찾는 사람에 비해 매물이 적어 87%가 팔리는 칸 — 1위일 필요 없음 · 위 등급 최저가 근처까지 받아도 됨'; target = null; }
+    else if (d != null && d >= c.highDemandBand) { if (p === 0) { kind = 'hold'; label = '자리 지킴'; swhy = `찾는 사람이 많은 책은 1~3위 자리가 판매를 좌우(1~3위 ${((rTop || 0) * 1000).toFixed(1)}‰/일 vs 4위 밖 ${((valueRate(M, d, 1) || 0) * 1000).toFixed(1)}‰) — 지금 자리면 더 내리지 않음`; }
+      else { kind = 'top3'; label = '3위 안으로'; swhy = `찾는 사람이 많은데 4위 밖 — 1~3위면 하루 판매 확률이 ${(rTop && rNow ? rTop / rNow : 0).toFixed(1)}배 · 1위일 필요는 없고 3위 값 바로 아래면 됨`; target = x.third ? Math.max(1, x.third - (x.third >= 10000 ? 500 : x.third >= 1000 ? 50 : 10)) : x.sameMin || null; const pr0 = +x.price || 0; if (target && pr0 && rTop != null && rNow != null && (target < pr0 * (1 - (c.maxDrop != null ? c.maxDrop : 40) / 100) || rTop * target <= rNow * pr0)) { kind = 'far'; label = '3위가 너무 멂(값 지킴)'; swhy = `3위 값(${target.toLocaleString()}원)이 지금 값보다 ${Math.round((1 - target / pr0) * 100)}% 낮음 — 3위로 가면 판매 확률은 ${(rTop / rNow).toFixed(1)}배지만 기대 매출(확률×값)이 ${rTop * target <= rNow * pr0 ? '오히려 줄어듦' : '최대 인하 폭(' + (c.maxDrop != null ? c.maxDrop : 40) + '%)을 넘음'} · 상태·등급이 더 나은지 확인하고 지금 값 유지`; target = null; }
+        else if (target && x.bb && target <= x.bb) { kind = 'buyback'; label = '알라딘에 팔기 검토'; swhy += ` — 3위 값(${target.toLocaleString()}원)이 알라딘 매입가(${x.bb.toLocaleString()}원) 이하: 시장보다 알라딘 매입이 나음`; } } }
+    else { kind = 'margin'; label = '값 지킴(자리 무관)'; swhy = `찾는 사람이 적은 책은 1위여도 판매 확률이 거의 같음(1~3위 ${((rTop || 0) * 1000).toFixed(1)}‰ vs 밖 ${((valueRate(M, d, 1) || 0) * 1000).toFixed(1)}‰) — 값을 내려 자리를 잡는 것은 마진만 깎음`; }
+    out.strategy = { kind, label, why: swhy, target };
+    const pr = +x.price || 0; out.rev = { now: rNow != null ? rNow * pr : null, top: target && rTop != null ? rTop * target : null }; out.gain = out.rev.now != null && out.rev.top != null ? out.rev.top - out.rev.now : null;
+    return out; }
+  const api = { VERSION, VDEF, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowML = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
