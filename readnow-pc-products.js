@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.87.1의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.87.2의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.87.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.87.1', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.87.2' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.87.2', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1043,7 +1043,7 @@
     if (!prev) doc.firstSeenAt = seenAt;
     /* (1.84.1) 바뀐 칸이 없으면 '봤음' 표시만 — 전체 재검토가 2만여 상품을 통째로 다시 적어(10/18 1시간 9,633건 · 문서 전체) 웹앱들이 그만큼 받아 풀던 것. 상태·가격 등 값이 하나라도 다르면 예전처럼 전체 */
     if (prev && !Object.keys(ch).length && prev.mediaType === mt.type && prev.active === doc.active && prev.usedCode && JSON.stringify(prev.ids || null) === JSON.stringify(doc.ids || null) && JSON.stringify(prev.idWarn || []) === JSON.stringify(doc.idWarn || []) && !(row.registeredYearGuessed && !prev.registeredAt)) {
-      const slim = { lastSeenAt: seenAt, ['seenBy_' + source]: seenAt, ...W() }; LISTINGS.set(key, { ...prev, ...slim }); return { ops: [(b) => b.set(C('prd_listings').doc(key), slim, { merge: true })], isNew: false, changed: false };
+      const slim = { lastSeenAt: seenAt, ['seenBy_' + source]: seenAt, ...W() }; LISTINGS.set(key, { ...prev, ...slim }); return { ops: [(b) => b.set(C('prd_listings').doc(key), slim, { merge: true })], isNew: false, changed: false, slim: true };
     }
     if (row.registeredYearGuessed && !(prev && prev.registeredAt)) doc.registeredYearGuessed = true;
     const ops = [(b) => b.set(C('prd_listings').doc(key), doc, { merge: true })];
@@ -1109,7 +1109,7 @@
             if (mode === 'new' && known) continue;
             if (mode === 'daily' && known) { const kl = LISTINGS.get('aladin_' + row.usedCode); if (kl.status === stName && (kl.active !== false) === ACTIVE.includes(stName)) continue; /* (1.87.0) 판매완료는 active:false가 맞는 상태 — 예전 조건(active !== false)이 판매완료 상품을 늘 '바뀜'으로 봐서 매일 회차마다 판매완료 9,700여 개를 끝 쪽까지 다시 적었음(10/16~19 하루 21만~23만 번 쓰기 · 모든 PC·웹앱이 그만큼 다시 받아 느려짐) */ prog.stats.changed = (prog.stats.changed || 0) + 1; } // 아는 상품은 상태가 바뀌었을 때만 다시 기록
             unknown++;
-            const x = listingOps(row, 'scm', seenAt); ops = ops.concat(x.ops);
+            const x = listingOps(row, 'scm', seenAt); if (mode === 'full' && x.slim && !(LISTINGS.get('aladin_' + row.usedCode) || {}).soldBy) { /* 웹앱이 판매 처리한 상품(soldBy)은 '다시 판매중으로 보임' 확인에 lastSeenAt이 필요해 예전처럼 적음 */ (prog.seenU = prog.seenU || []).push(row.usedCode); } else ops = ops.concat(x.ops); /* (1.87.2) 전체 재검토: 바뀐 칸이 없는 상품은 '봤음'도 적지 않음 — 이번 회차에 본 상품 번호는 진행 기록(seenU)에만 두고 사라짐 판단에 씀(예전엔 1만 5천여 개를 매일 06:30마다 다시 적어 모든 PC·웹앱이 그만큼 다시 받았음) */
             prog.stats[stName] = (prog.stats[stName] || 0) + 1;
           }
           if (ops.length) await commitBatches(ops);
@@ -1124,7 +1124,7 @@
         await saveProgress(name, { ...prog, si: prog.si + 1, page: 1 });
       }
       if (mode === 'full') { // 판매중 계열에서 사라진 상품 = 팔렸거나 삭제됨 → 비활성으로 표시(판매완료 대조는 신규 수집·판매완료 엑셀에서)
-        const gone = [...LISTINGS.entries()].filter(([, l]) => l.active && (!l.seenBy_scm || l.seenBy_scm < prog.startedAt));
+        const seenU = new Set(prog.seenU || []); const gone = [...LISTINGS.entries()].filter(([, l]) => l.active && !seenU.has(l.usedCode) && (!l.seenBy_scm || l.seenBy_scm < prog.startedAt));
         const activeN = [...LISTINGS.values()].filter((l) => l.active).length;
         // 안전장치: 판매 중 상품의 30% 넘게 한꺼번에 '사라짐'이면 알라딘 화면 오류(로그인 풀림·빈 화면)일 가능성이 커서 표시하지 않음
         if (activeN >= 50 && gone.length > activeN * 0.3) { log(`전체 재검토: 판매 중 ${activeN.toLocaleString()}개 중 ${gone.length.toLocaleString()}개가 목록에 안 보였습니다. 화면 오류일 수 있어 '사라짐' 표시를 하지 않았습니다 (실제라면 판매관리 화면 확인 후 다시)`, 1); gone.length = 0; }
