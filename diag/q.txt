@@ -1,1 +1,1 @@
-doc=app_settings/value_model
+pact=45
