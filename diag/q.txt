@@ -1,1 +1,1 @@
-bbstat=1
+doc=app_settings/buyback_stats,app_settings/write_watch
