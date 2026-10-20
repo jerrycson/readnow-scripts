@@ -1,1 +1,1 @@
-skuchk=1
+logs=1&pc=HOME&from=202610202130&to=~
