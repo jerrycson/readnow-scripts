@@ -58,6 +58,7 @@ jobs:
           while IFS= read -r Q || [ -n "$Q" ]; do [ -z "$Q" ] && continue; n=$((n+1))
             for t in 1 2 3 4; do
               if [ "${Q#@kpq }" != "$Q" ]; then mkdir -p /tmp/kq; curl -sS -m 280 -H "Authorization: Bearer $IDT" "$URL/diag?${Q#@kpq }" > /tmp/kq/r$n.json || echo '{"ok":false,"err":"curl"}' > /tmp/kq/r$n.json; echo '{"ok":true,"kq":"kp-out 가지로"}' > /tmp/o/r$n.json; grep -q '^Rate exceeded' /tmp/kq/r$n.json || break; sleep 20; continue
+              elif [ "${Q#@health}" != "$Q" ]; then curl -sS -m 280 -H "Authorization: Bearer $IDT" "$URL/diag?health=1${Q#@health}" > /tmp/health.json || echo '{"ok":false,"err":"curl"}' > /tmp/health.json; echo '{"ok":true,"health":"diag-out 가지 health.json(평문)"}' > /tmp/o/r$n.json; grep -q '^Rate exceeded' /tmp/health.json || break; sleep 20; continue
               elif [ "${Q#@kpin }" != "$Q" ]; then F="diag/${Q#@kpin }"; F=${F//../}; curl -sS -m 280 -X POST -H "Authorization: Bearer $IDT" -H 'content-type: application/json' --data-binary @"$F" "$URL/kp-in" > /tmp/o/r$n.json || echo '{"ok":false,"err":"curl"}' > /tmp/o/r$n.json
               else curl -sS -m 280 -H "Authorization: Bearer $IDT" "$URL/diag?$Q" > /tmp/o/r$n.json || echo '{"ok":false,"err":"curl"}' > /tmp/o/r$n.json; fi
               grep -q '^Rate exceeded' /tmp/o/r$n.json || break; sleep 20; done
@@ -68,6 +69,7 @@ jobs:
           tar czf /tmp/o.tgz -C /tmp/o .; openssl rand -hex 32 > /tmp/k; openssl enc -aes-256-cbc -pbkdf2 -salt -in /tmp/o.tgz -out /tmp/o.enc -pass file:/tmp/k
           openssl pkeyutl -encrypt -pubin -inkey diag/pub.pem -pkeyopt rsa_padding_mode:oaep -in /tmp/k -out /tmp/k.enc; rm -f /tmp/k /tmp/o.tgz; rm -rf /tmp/o
           git config user.email "actions@github.com"; git config user.name "diag"; git checkout -q --orphan diag-out; git rm -rfq --cached . ; cp /tmp/o.enc out.enc; cp /tmp/k.enc out.key; echo "$GITHUB_SHA" > for.txt
+          if [ -f /tmp/health.json ]; then cp /tmp/health.json health.json; git add -f health.json; fi  # (2026-10-21) '@health' 줄 = 🔁 3시간 점검용 숫자 요약(평문 — 고객·제목·이름 없이 숫자와 오류 틀만 · 예약 점검이 열쇠 없이 읽음)
           git add -f out.enc out.key for.txt; git commit -qm "diag $GITHUB_SHA"; git push -qf origin HEAD:diag-out
       - name: Cloud Run 올리기 (빌드 3~6분)
         if: env.DO_DEPLOY == '1'
