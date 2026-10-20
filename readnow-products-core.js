@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.15.2'; // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
+  const VERSION = '0.16.0'; // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -458,6 +458,8 @@
     const our = o.ourPrice != null ? +o.ourPrice : null; const pos = our != null && keep.length ? keep.filter((v) => v < our).length / keep.length : null;
     return { n: keep.length, nAll: vals.length, outliers: out, median: med, p25, p75, low: keep.length ? keep[0] : null, high: keep.length ? keep[keep.length - 1] : null, cv, conf, ourPrice: our, ourVsMedian: our != null && med ? our / med - 1 : null, cheaperShare: pos, points: pts };
   }
+  /* (0.16.0) 바깥 중고 검색(SearchTarget=Used) 결과 → 같은 상품 후보(이름 일치·권 번호 같음 = match) — 수집기 '새상품 없는 상품 시세'와 📥 등록 조회(기본값 판매가 ②)가 같이 씀 */
+  function usedSearchRows(doc, qy, th, selfItemId) { const t = th ?? 0.9; return parseSearchResults(doc).map((r) => ({ ...r, cov: Math.round(nameCoverage(qy, r.title) * 1000) / 1000, vol: sameVolume(qy, r.title) })).filter((r) => r.cov >= 0.5).slice(0, 30).map((r) => ({ itemId: r.itemId, title: r.title, img: r.img || null, cov: r.cov, vol: r.vol, ours: !!r.ours, channels: r.channels || null, match: r.cov >= t && r.vol && !(selfItemId && String(r.itemId) === String(selfItemId)) })); }
   // 검색어가 상품 이름에 얼마나 들어 있나 (0~1): 띄어쓰기·문장부호를 빼고, 검색어 글자가 순서대로 몇 개 들어 있는지(최장 공통 부분수열) ÷ 검색어 길이
   /* (0.14.0) 세트 상품 알아보기 — 기계 학습·관찰 도구·가격 판단에서 상품을 가르는 중요한 기준 (정범 2026-10-08)
    *  강함(strong, 거의 늘 세트): [세트]·(세트)·【세트】 · 끝 쪽 '1~10'·'1-10'·'Ⅰ~Ⅴ'(권·편·부·집 붙어도) · 전10권 · 총 10권 · 10권 세트·일괄·묶음 · 상·하권 · (1+2)
@@ -554,8 +556,14 @@
       const buy = c[c.length - 1] || ''; const req = c[c.length - 2] || ''; const num = (t) => { const m = String(t).match(/([\d,]+)\s*원/); return m ? +m[1].replace(/,/g, '') : null; };
       const result = /매입\s*불가|불가|반송|폐기/.test(buy) ? 'discard' : num(buy) != null ? 'bought' : null;
       items.push({ no: +c[0], title: c[1], isbn13: i13, isbn10: i10, code: (ids.match(/K\d+/) || [])[0] || null, req, reqPrice: num(req), reqGrade: (req.match(/^([^\d]+)/) || [])[1] || null, buy: buy || null, buyPrice: num(buy), result }); });
+    /* (0.16.0) 정범님 10/20: '매입불가 상품 내역' 표(번호·상품명·ISBN·불가사유 — 4칸)도 읽음 · 예전엔 5칸 줄만 읽어 매입 불가 책이 빠졌음 → 통계가 매입률을 부풀림 */
+    const rejected = []; d.querySelectorAll('table').forEach((tb) => { const cap = txt(tb.querySelector('caption')); const ttl = (() => { let p = tb.closest('div'); for (let k = 0; k < 4 && p; k++) { const pv = p.previousElementSibling; const t0 = pv ? txt(pv) : ''; if (/매입\s*불가\s*상품\s*내역|매입\s*상품\s*내역/.test(t0)) return t0; p = p.parentElement; } return ''; })();
+      if (!/매입\s*불가/.test(cap) && !/^매입\s*불가\s*상품\s*내역/.test(ttl)) return;
+      tb.querySelectorAll('tr').forEach((tr) => { const c = [...tr.children].map(txt); if (c.length < 4 || !/^\d+$/.test(c[0])) return; const ids = String(c[2] || '').replace(/\s/g, ''); const i13 = (ids.match(/^(97[89]\d{10})/) || [])[1] || null; const rest = i13 ? ids.slice(13) : ids;
+        rejected.push({ no: +c[0], title: c[1], isbn13: i13, isbn10: i13 ? (rest.match(/^[\dX]{10}/) || [])[0] || null : null, code: (ids.match(/K\d+/) || [])[0] || null, req: null, reqPrice: null, reqGrade: null, buy: c[3] || null, buyPrice: null, result: 'rejected', reason: c[3] || null, sec: 'rej' }); }); });
+    rejected.forEach((r) => items.push(r));
     const tot = (head['판매금액'] || '').match(/총\s*(\d+)\s*권,\s*([\d,]+)\s*원/);
-    return { head, items, date: head['신청일'] || null, type: head['판매타입'] || null, shipDate: head['발송일'] || null, doneDate: head['매입완료일'] || null, status: head['상태'] || head['신청 상태'] || head['신청상태'] || null, settle: head['정산방법'] || null, discardPolicy: head['매입불가처리'] || null, buyer: head['매입처'] || null, reqN: tot ? +tot[1] : items.length, reqAmount: tot ? +tot[2].replace(/,/g, '') : null };
+    return { head, items, date: head['신청일'] || null, type: head['판매타입'] || null, shipDate: head['발송일'] || null, doneDate: head['매입완료일'] || null, status: head['상태'] || head['신청 상태'] || head['신청상태'] || null, settle: head['정산방법'] || null, discardPolicy: head['매입불가처리'] || null, buyer: head['매입처'] || null, reqN: tot ? +tot[1] : items.length, reqAmount: tot ? +tot[2].replace(/,/g, '') : null, nRejected: rejected.length, rejV: 1 };
   }
 
   // ---------- 상품 유형: 책 / 영상(DVD·블루레이·VHS) / 음반(CD·LP) / 기타 상품 ----------
@@ -722,7 +730,7 @@
     VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
-    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
+    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
     parseUsedItemInfo, parseScmEditNote, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;

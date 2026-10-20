@@ -572,7 +572,7 @@ mark.hl{background:#FFE58A;color:inherit;border-radius:2px;padding:0 1px}
 .rgpbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid #E3EAE7;border-bottom:1px solid #E3EAE7}.rgpbar .rgpv{background:transparent;border-color:#E3EAE7}.rgpbar .rgpv b{font-size:16px;color:#6F7D79;font-weight:500}.rgpbar .rgpv,.rgpbar .rgspb{opacity:.85}.rgspb{display:flex;flex-direction:column;justify-content:center;padding:3px 10px;border:1px solid #E3EAE7;border-radius:8px;line-height:1.15}.rgspb small{font-size:10px;color:#6B7A75}.rgspb b{font-size:16px;color:#5B6B66;font-weight:600}.rgpgap{flex:1;min-width:8px}
 .rgourwrap{display:flex;justify-content:flex-end;padding:0 0 6px} /* (1.13.3) 따라 내려오던 것(sticky) 없앰 — 화면을 내리면 시장 지표 맨 위 줄을 가렸음 */.rgbulkx.armed{background:#B0322A;color:#fff;border-color:#B0322A}
 @media(max-width:760px){.pq.bq.rgc{display:flex;flex-direction:column;gap:8px}.pq.bq.rgc>.pq-l{display:contents}.pq.bq.rgc>.pq-l>*{order:5}.pq.bq.rgc>.pq-l>.rgtop{order:1}.pq.bq.rgc>.pq-l>.rgpbar{order:2}.pq.bq.rgc>.pq-r{order:3;max-height:none;overflow:visible}.rgtop{flex-wrap:wrap}.rgtop .rgtopm{flex:1 1 180px;min-width:0}.rgtop .rgacts{order:9;width:100%;justify-content:flex-end;flex-wrap:wrap}.rgttl,.rgttl>b{font-size:16px;word-break:keep-all;overflow-wrap:anywhere}.rgourwrap{justify-content:stretch}.rgourwrap .rgour{width:100%}}
-.rgour{display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:4px 10px;border:2px solid #2F5D50;border-radius:10px;background:#F1F6F4;min-width:170px}.rgour.miss{border-color:#C0392B;background:#FDF3F1}.rgourl{font-size:11px;color:#2F5D50;font-weight:700}.rgourl i{font-style:normal;font-size:10px;color:#fff;background:#C0392B;border-radius:4px;padding:0 4px;margin-left:4px}
+.rgour{display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:4px 10px;border:2px solid #2F5D50;border-radius:10px;background:#F1F6F4;min-width:170px}.rgour.fbk{border:3px solid #B0322A;background:#FFF1EF;animation:rgfbk 1.6s ease-in-out infinite}@keyframes rgfbk{50%{box-shadow:0 0 0 4px rgba(176,50,42,.25)}}.rgfbk{align-self:stretch;background:#B0322A;color:#fff;border-radius:6px;padding:3px 7px;font-weight:700;font-size:12.5px;line-height:1.35}.rgfbk small{font-weight:400;opacity:.92}.rgfbkn{display:inline-block;background:#B0322A;color:#fff;border-radius:8px;padding:2px 8px;font-weight:700;font-size:12px;margin-left:6px}.rgour.miss{border-color:#C0392B;background:#FDF3F1}.rgourl{font-size:11px;color:#2F5D50;font-weight:700}.rgourl i{font-style:normal;font-size:10px;color:#fff;background:#C0392B;border-radius:4px;padding:0 4px;margin-left:4px}
 .rgourv{border:0;background:none;font:inherit;font-size:24px;font-weight:900;color:#1E2B28;cursor:pointer;padding:0;line-height:1.1}.rgourv small{font-size:13px;font-weight:700;margin-left:2px}.rgourv:hover{text-decoration:underline dotted}.rgourv[disabled]{cursor:default;text-decoration:none}.rgourin{font-size:20px;font-weight:800;width:130px;text-align:right;padding:2px 6px}.rgourb{display:flex;gap:4px;align-items:center}.rgours{font-size:11px;color:#5B6B66}
 .rgsubline{font-size:11.5px;color:#6B7A75;line-height:1.55}.rgwarn{color:#B0322A;font-size:12px;background:#FDF3F1;border-radius:6px;padding:3px 8px}
 .rgsec{border:1px solid #E3EAE7;border-radius:10px;padding:6px 8px;background:#FCFDFC}.rgsh{font-size:12.5px;font-weight:800;color:#2F5D50;margin-bottom:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
@@ -765,14 +765,14 @@ button:focus-visible,.btn:focus-visible,a:focus-visible{outline:2px solid var(--
 <script src="../readnow-core.js?v=1.4.2"></script>
 <script src="../readnow-pricing-core.js?v=0.16.0"></script>
 <script src="../readnow-shipping-core.js?v=0.7.0"></script>
-<script src="../readnow-products-core.js?v=0.15.2"></script>
+<script src="../readnow-products-core.js?v=0.16.0"></script>
 <script src="../readnow-ext-core.js?v=0.6.2"></script>
 <script src="../readnow-autosched-core.js?v=0.14.0"></script>
-<script src="../readnow-registry.js?v=0.14.68"></script>
+<script src="../readnow-registry.js?v=0.14.69"></script>
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
-<script src="../readnow-ml-core.js?v=0.6.0"></script>
+<script src="../readnow-ml-core.js?v=0.7.0"></script>
 <script src="../readnow-register-core.js?v=0.7.1"></script>
-<script>const APP_VER = '1.65.0';</script>
-<script src="readnow-webapp.js?v=1.65.0"></script>
+<script>const APP_VER = '1.66.0';</script>
+<script src="readnow-webapp.js?v=1.66.0"></script>
 </body>
 </html>

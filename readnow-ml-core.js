@@ -6,7 +6,7 @@
  *   → ④ 새 모델이 지금 모델보다 3번 연속 확실히 나으면(로그 손실 1% 넘게 낮음) 승격. 처음 '지금 모델'은 기준선(자리 1위 여부·등급별 평균 판매율)
  * 쓰는 곳: 웹앱 전략도구의 조언 금액(그림자 표시), 앞으로 판정 엔진의 '권당 하루 기대 순이익'. 알라딘에 아무것도 바꾸지 않음 — 계산만. */
 (function (root) {
-  const VERSION = '0.6.0'; // (0.6.0) 알라딘 매입 기대값(bbExpect — 우리 실제 매입 기록의 등급별 지급 비율 · 유의 사항에 하자가 있으면 매입 없음) · 하자 표시(defectOf) // (0.5.1) rawRow: 첫 페이지 못 읽으면 자리 null · top(맨 윗줄이 우리 = 최저가배지) // (0.5.0) 정범님 10/19 '정가가 고객의 첫 기준' — 정가 대비 우리 값 칸(<35%·35~50%·50%+)을 수요×자리 칸 안에서 배움(cells3 · 줄이 적으면 수요×자리 값으로 당김) · valueOf·valueRec가 씀 // (0.4.0) 🧠 valueRec — 등록·매입 때 판매가치 엔진으로 추천가·판매 확률·매입 판단(살 이유·사지 말 이유) 한 곳 // (0.3.0) 🧠 판매가치 엔진 v1(VALUE) — 수요(Sales Point)×자리(첫 페이지 순위)×값(동급 최저 대비)의 하루 판매 확률 표를 우리 판매 자료로 매일 배움 · 희소/희귀 분류 · 상품마다 전략과 기대 판매 // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
+  const VERSION = '0.7.0'; // (0.7.0) 기대 매입가에 매입될 확률(bbAccept — 매입불가 상품 내역까지 읽은 실측) // (0.6.0) 알라딘 매입 기대값(bbExpect — 우리 실제 매입 기록의 등급별 지급 비율 · 유의 사항에 하자가 있으면 매입 없음) · 하자 표시(defectOf) // (0.5.1) rawRow: 첫 페이지 못 읽으면 자리 null · top(맨 윗줄이 우리 = 최저가배지) // (0.5.0) 정범님 10/19 '정가가 고객의 첫 기준' — 정가 대비 우리 값 칸(<35%·35~50%·50%+)을 수요×자리 칸 안에서 배움(cells3 · 줄이 적으면 수요×자리 값으로 당김) · valueOf·valueRec가 씀 // (0.4.0) 🧠 valueRec — 등록·매입 때 판매가치 엔진으로 추천가·판매 확률·매입 판단(살 이유·사지 말 이유) 한 곳 // (0.3.0) 🧠 판매가치 엔진 v1(VALUE) — 수요(Sales Point)×자리(첫 페이지 순위)×값(동급 최저 대비)의 하루 판매 확률 표를 우리 판매 자료로 매일 배움 · 희소/희귀 분류 · 상품마다 전략과 기대 판매 // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
   const HORIZON_D = 7; // 7일 안에 팔렸나
   const GR = ['최상', '상', '중'];
   /* rawRow: 하루 모습 한 줄 (클라우드 ml_days ML_VER 1과 같은 칸) — l = 상품(prd_listings), m = 시장 지표(prd_book_metrics), a = 마지막 가격 변경 {at, from, batchId}, wg = 감시 그룹, nowMs = 그날 끝 */
@@ -15,11 +15,14 @@
    *  → 기대 매입가 = 견적 × 등급별 지급 비율(클라우드가 매일 다시 셈: app_settings/buyback_stats → setBuyback) · 유의 사항에 낙서·필기·밑줄·얼룩·찢김 같은 하자가 있으면 매입 없음(null)
    *  ⚠ 견적이 있는 책 자체가 시장 지표의 38%뿐(33,493권 중 12,850권) — 견적 없는 책은 처음부터 매입 출구가 없음 */
   const BB_PAY = { 최상: 0.86, 상: 1.0, 중: 0.99 }; let BBS = null;
-  function setBuyback(doc) { BBS = doc && doc.byGrade ? doc : null; }
+  function setBuyback(doc) { BBS = doc && (doc.byGrade || doc.byOur) ? doc : null; }
+  /* (0.7.0) 정범님 10/20: 매입불가 상품 내역까지 읽어 다시 셈 — 기대 매입가 = 견적 × 지급 비율 × 매입될 확률
+   *  매입될 확률 = 우리 상태별 실측(15권 넘으면) → 전체 실측(buyback_stats.accept = 매입 ÷ 신청) → 없으면 BB_ACC(2026-10-20 실측 627 ÷ 928권) */
+  const BB_ACC = 0.676; function bbAccept(grade) { const o = BBS && BBS.byOur && BBS.byOur[grade]; if (o && o.bought + o.rejected >= 15 && o.accept != null) return { p: o.accept, src: `우리 ${grade} ${o.bought}/${o.bought + o.rejected}권` }; if (BBS && BBS.accept != null) return { p: BBS.accept, src: `전체 ${BBS.bought}/${BBS.reqN}권` }; return { p: BB_ACC, src: '10/20 실측 627/928권' }; }
   const DEFECT_RX = /낙서|필기|밑줄|형광펜|공부\s*(한\s*)?흔적|줄\s*긋|줄\s*그|메모\s*(있|흔적)|얼룩|물\s*(먹|젖)|곰팡|찢|파손|훼손|낱장|떨어짐|분리|제본\s*(불량|풀림)|냄새/;
   const HEAVY_RX = /전반|전체|절반|대부분|상당|많|다수|곳곳|군데군데|여러\s*(쪽|장|페이지|곳)|심함|심한/;
   function defectOf(t) { t = String(t || '').replace(/\s+/g, ' '); if (!t || !DEFECT_RX.test(t)) return null; const pg = (t.match(/(\d+)\s*(쪽|장|페이지|p)/i) || [])[1]; return { heavy: HEAVY_RX.test(t) || (pg != null && +pg > 3), text: t.slice(0, 120) }; }
-  function bbExpect(quote, grade, cond) { if (!(+quote > 0)) return null; if (defectOf(cond)) return null; const g = BBS && BBS.byGrade && BBS.byGrade[grade]; const f = g && g.n >= 10 && g.pay > 0 ? g.pay : BB_PAY[grade] || 1; return Math.round(+quote * f / 10) * 10; }
+  function bbExpect(quote, grade, cond) { if (!(+quote > 0)) return null; if (defectOf(cond)) return null; const g = BBS && BBS.byGrade && BBS.byGrade[grade]; const f = g && g.n >= 10 && g.pay > 0 ? g.pay : BB_PAY[grade] || 1; return Math.round(+quote * f * bbAccept(grade).p / 10) * 10; }
   function rawRow(l, m, a, wg, nowMs) { m = m || {}; const P1 = m.usedFirstPage || []; const oth = P1.filter((r) => String(r.sellerCode) !== '996008' && r.usedCode !== l.usedCode && r.price > 0);
     const sameMin = oth.filter((r) => r.grade === l.grade).reduce((x, r) => Math.min(x, r.price), Infinity); const minAll = oth.reduce((x, r) => Math.min(x, r.price), Infinity); const rank = l.price && P1.length ? oth.filter((r) => r.price < l.price).length + 1 : null; /* (0.5.1) 첫 페이지를 못 읽었으면 자리 모름(예전엔 1위) */ const live = P1.filter((r) => r.price > 0 && !r.soldOut); const top = live.length ? (live[0].usedCode ? (live[0].usedCode === l.usedCode ? 1 : 0) : (String(live[0].sellerCode) === '996008' && +live[0].price === +l.price ? 1 : 0)) : null; /* (0.5.1) 최저가배지 = 첫 페이지 맨 윗줄이 우리 */
     return { key: l.id, price: l.price ?? null, grade: GR.indexOf(l.grade), shelf: String(l.sku || '').slice(0, 6), age: l.registeredAt ? Math.round((nowMs - Date.parse(String(l.registeredAt).slice(0, 10) + 'T00:00:00+09:00')) / 864e5) : null,
@@ -194,6 +197,6 @@
     else if (profit365 != null) { if (profit365 > 0 && (out.sell365 || 0) >= 0.5) { verdict = 'buy'; label = '매입 추천'; } else if (profit365 > 0) { verdict = 'maybe'; label = '조건부 — 남지만 오래 걸림'; } else { verdict = 'skip'; label = '매입 비추천'; } }
     out.buy = { verdict, label, profit365, net, cost, costFrom, fee, pro, con };
     return out; }
-  const api = { VERSION, VDEF, setBuyback, bbExpect, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue };
+  const api = { VERSION, VDEF, setBuyback, bbExpect, bbAccept, BB_ACC, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowML = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.87.3의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.88.0의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.87.3' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.87.3', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.88.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.88.0', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -356,7 +356,7 @@
     const user = await new Promise((res) => { const un = firebase.auth().onAuthStateChanged((u) => { un(); res(u); }); setTimeout(() => res(null), 8000); }); if (!user) return; const fs = firebase.firestore();
     const id = (location.search.match(/ItemId=(\d+)/i) || [])[1]; if (!id) return; const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); const won = (n) => (n == null ? '-' : Math.round(n).toLocaleString() + '원');
     const u = P.parseUsedPage(document); const prodR = await fetch('/shop/wproduct.aspx?ItemId=' + id, { credentials: 'omit' }).then((r) => r.text()).catch(() => ''); const b = prodR ? P.parseProductPage(new DOMParser().parseFromString(prodR, 'text/html'), location.origin + '/shop/wproduct.aspx?ItemId=' + id) : {};
-    const [vm, vc, main] = await Promise.all(['value_model', 'value_cfg', 'main'].map((k) => fs.collection('app_settings').doc(k).get().then((d) => (d.exists ? d.data() : null)).catch(() => null)));
+    const [vm, vc, main, bbs] = await Promise.all(['value_model', 'value_cfg', 'main', 'buyback_stats'].map((k) => fs.collection('app_settings').doc(k).get().then((d) => (d.exists ? d.data() : null)).catch(() => null))); if (bbs && ML.setBuyback) ML.setBuyback(bbs); /* (1.88.0) 기대 매입가에 매입될 확률(실측) */
     const codes = [...new Set((u.listings || []).map((r) => r.sellerCode).filter((c) => c && String(c) !== '0' && String(c) !== '996008'))].slice(0, 30); const sd = {}; await Promise.all(codes.map((c) => fs.collection('sellers').doc('sc_' + c).get().then((d) => { if (d.exists) sd[c] = d.data(); }).catch(() => {})));
     const rows = (u.listings || []).filter((r) => r.price > 0).map((r) => { const ours = String(r.sellerCode) === '996008'; let c = 'unknown'; try { c = ours ? 'ours' : PRC && PRC.isAladinSide(r) ? 'aladin' : sd[r.sellerCode] && RNC ? RNC.classifySellerDoc(sd[r.sellerCode], RSx).cls : 'unknown'; } catch (e) {} return { p: r.price, g: r.grade || null, c, so: r.soldOut ? 1 : 0 }; });
     let stock = 0, sold = null; const isbn = b.isbn13 || null; if (isbn) { try { const qs = await fs.collection('prd_listings').where('isbn13', '==', isbn).get(); let n = 0; qs.forEach((d) => { const v = d.data(); if (v.active) stock++; else if (/판매완료/.test(String(v.status || ''))) n++; }); if (n) sold = { n }; } catch (e) {} }

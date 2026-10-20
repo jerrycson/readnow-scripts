@@ -1,1 +1,1 @@
-bbdump=2
+doc=app_settings/buyback_stats

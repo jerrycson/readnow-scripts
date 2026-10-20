@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.87.3의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.88.0의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.87.3' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.87.3', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.88.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.88.0', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2292,9 +2292,11 @@
       /* (1.44.0) 등록 엔진: 클라우드 /lookup(0.9.2)과 같은 칸 — 상품 관리 코드 판정·카드 */ categories: (p.categories || []).map((c) => ({ path: c.path || [], cids: c.cids || [] })), salesPoint: p.salesPoint ?? null, ranks: p.ranks || [], reviewCount: p.reviewCount ?? null, commentCount: p.commentCount ?? null, rating: p.rating ?? null, size: p.size || null, pages: p.pages || null, originalTitle: p.originalTitle || null, series: p.series || null }; }
   /* (1.77.0) 📥 등록 조회 — 정범님 10/16: '알라딘 검색이 아니라 샵매니저 상품등록의 알라딘 등록 검색으로' · 클라우드 0.16.0과 같은 순서
    *  상품명 → 등록 검색(NAME) 후보(등록 코드 포함) · 번호 → 등록 검색(ISBN): 1개면 그 상품 상세, 여러 개(판·에디션)면 후보 · 등록 검색에 없으면 예전처럼 상품 페이지(ISBN=)·공개 검색 */
-  async function regLookupCmd(ref, v) { const isb = v.isbns || [], ids = v.itemIds || [], qs = v.queries || []; const tot = isb.length + ids.length + qs.length; let n = 0; const items = {}, cands = {}, errs = {}; const br = +v.branch || 1;
-    LOOK_PRIO++; try { log(`📥 등록 조회: ${tot}건 (샵매니저 등록 검색)`); const prog = () => ref.set({ n, tot, items, cands, errs, uploadedAt: TS() }, { merge: true }).catch(() => {});
-    const keep = async (key, r) => { items[key] = r; try { await C('prd_lookups').add({ key, isbn13: r.isbn13, itemId: r.itemId, ...r, by: PC_NAME, cmdId: ref.id, ...W() }); } catch (e) {} };
+  async function regLookupCmd(ref, v) { const isb = v.isbns || [], ids = v.itemIds || [], qs = v.queries || []; const tot = isb.length + ids.length + qs.length; let n = 0; const items = {}, cands = {}, errs = {}, srch = {}; const br = +v.branch || 1;
+    /* (1.88.0) 📥 기본값 판매가 ②: 첫 페이지(시장표)가 비었거나 상품명 조회면 바깥 중고 검색(SearchTarget=Used)의 같은 상품 후보를 같이 (products-core 0.16.0 usedSearchRows · 클라우드 0.23.0과 같음) */
+    const usedS = async (title, self) => { const qy = P.usedSearchRows ? P.searchQueryOf(title) : null; if (!qy) return null; try { const g = await lookDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Used&SearchWord=${encodeURIComponent(qy)}`); return { q: qy, at: nowIso(), rows: P.usedSearchRows(g.doc, qy, 0.9, self || null) }; } catch (e) { return null; } };
+    LOOK_PRIO++; try { log(`📥 등록 조회: ${tot}건 (샵매니저 등록 검색)`); const prog = () => ref.set({ n, tot, items, cands, srch, errs, uploadedAt: TS() }, { merge: true }).catch(() => {});
+    const keep = async (key, r) => { if (!(r.page1 || []).length && r.title) { const x = await usedS(r.title, r.itemId); if (x) r.srch = x; } items[key] = r; try { await C('prd_lookups').add({ key, isbn13: r.isbn13, itemId: r.itemId, ...r, by: PC_NAME, cmdId: ref.id, ...W() }); } catch (e) {} };
     const get = async (url, init) => { const r = await fetch('https://www.aladin.co.kr' + url, { credentials: 'include', cache: 'no-store', ...(init || {}) }); return { url: r.url, text: await r.text() }; };
     const scm = async (q, kind) => { const R = await P.scmSearch(q, kind, br, get, 10); if (!R.login) throw new Error('샵매니저 로그인이 풀림 — 이 PC에서 알라딘 샵매니저에 로그인해 주세요'); return R.rows.slice(0, 200).map((x) => ({ ...x, cov: Math.round(P.nameCoverage(q, x.title) * 1000) / 1000, scm: true })); };
     /* (1.78.2) 가볍고 빠른 것부터: 고른 상품(번호 확정 — 화면 2장) → 번호(ISBN) → 상품명(등록 검색 여러 쪽 · 사람이 골라야 함) */
@@ -2303,8 +2305,8 @@
         else if (L.length > 1) { cands[isbn] = L; errs[isbn] = `샵매니저 등록 검색에 이 번호의 상품이 ${L.length}개(판·에디션) — 맞는 상품을 누르세요`; }
         else { let r = null, why = null; try { r = await lookupBook(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(isbn)}`, isbn); } catch (e) { why = e.message; } if (r) await keep(isbn, r); else errs[isbn] = '샵매니저 등록 검색·상품 페이지 모두 이 번호(ISBN·바코드)의 상품을 못 찾음 — 상품명으로 찾아 보세요' + (why ? ` (${why})` : ''); } }
       catch (e) { errs[isbn] = e.message; } n++; await prog(); await sleep(500); }
-    for (const q of qs) { try { cands[q] = await scm(q, 'NAME'); } catch (e) { errs['q_' + q] = e.message; } n++; await prog(); await sleep(500); }
-    await ref.set({ status: 'done', n, tot, items, cands, errs, via: 'scm', doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
+    for (const q of qs) { try { cands[q] = await scm(q, 'NAME'); } catch (e) { errs['q_' + q] = e.message; } { const x = await usedS(q, null); if (x) srch[q] = x; } n++; await prog(); await sleep(500); }
+    await ref.set({ status: 'done', n, tot, items, cands, srch, errs, via: 'scm', doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
     log(`📥 등록 조회: ${Object.keys(items).length}권 · 후보 ${Object.keys(cands).length}건 끝${Object.keys(errs).length ? ` · 확인 ${Object.keys(errs).length}` : ''}`, 0); try { const CS = window.__rnCS; if (CS) { CS.add('lookup_reg', 'ok', Object.keys(items).length); CS.add('lookup_reg', 'part', Object.keys(cands).length); Object.entries(errs).forEach(([k, m]) => { if (!cands[k]) CS.add('lookup_reg', 'fail', 1, m); }); } } catch (e) {} } finally { LOOK_PRIO--; } }
   async function lookupCmd(ref, v) { const isb = v.isbns || [], ids = v.itemIds || [], qs = v.queries || []; const tot = isb.length + ids.length + qs.length; let n = 0; const items = {}, cands = {}, errs = {};
     log(`사진 가격: 알라딘에서 ${tot}건 읽기 (웹앱에서 맡김)`); if (PUBONLY) await mixRead(1 + Math.floor(Math.random() * 2)); /* (1.69.0) 🔀 */
@@ -2695,11 +2697,12 @@
     el.querySelectorAll('[data-job]').forEach((b) => (b.onclick = () => { window.__rnResumeOk && window.__rnResumeOk(); runJob(b.dataset.job, { manual: true }); })); }
 
   /* ───────── 6. 알라딘에 중고팔기 내역 (매입·매입불가) ─────────
+   * (1.88.0) 상세의 '매입 상품 내역'(5칸)과 '매입불가 상품 내역'(4칸 — 불가 사유) 둘 다 읽음 (products-core 0.16.0)
    * 목록(쪽마다) → 접수번호 → 상세. 매입이 끝난 접수는 다시 안 열고, 진행 중인 접수만 다시 봄.
    * 저장: pur_buyback/{접수번호} — 처음 받은 내용은 그대로 두고, 진행 상태가 바뀌면 그 상태를 기록에 덧붙임(snapshots). */
   const C2B_LIST = (page) => `https://www.aladin.co.kr/account/wc2binfo.aspx?pType=C2BOrderList&page=${page}&c2bsalesType=-1&SearchYear=0&SearchMonth=0&C2BSearchActive=0&C2BSearchWord=`;
   const C2B_DETAIL = (no) => `https://www.aladin.co.kr/account/wc2binfo.aspx?pType=c2borderinfo&c2bsalesno=${no}`;
-  const isFinal = (o) => !!(o && (o.doneDate || /매입완료|정산완료|완료|취소/.test(o.status || '')) && (o.items || []).every((x) => x.result));
+  const isFinal = (o) => !!(o && (o.doneDate || /매입완료|정산완료|완료|취소/.test(o.status || '')) && (o.items || []).every((x) => x.result) && (o.rejV === 1 || (o.reqN || 0) <= (o.items || []).length)); /* (1.88.0) 정범님 10/20: '매입불가 상품 내역'을 안 읽었던 끝난 접수는 한 번 다시 열어 불가 책·사유를 덧붙임(예전 내용은 snapshots에 그대로) */
   async function buybackJob() {
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
     try {
@@ -2726,9 +2729,9 @@
         const ship = String((x.head || {})['발송방법'] || ''); const boxes = Math.max(1, Math.ceil((x.reqN || 1) / 20)); const conv = /편의점/.test(ship);
         const shipFee = !x.doneDate ? 0 : conv ? boxes * (paid >= 10000 ? 1700 : 3000) : /택배/.test(ship) ? (paid >= 10000 ? 0 : boxes * 1500) : 0;
         const m = String((x.head || {})['판매금액'] || '').match(/([\d,]+)\s*원\s*매입/); const buyStated = m ? +m[1].replace(/,/g, '') : null;
-        const cur = { orderNo: no, date: x.date, type: x.type, shipDate: x.shipDate, doneDate: x.doneDate, status: x.status, settle: x.settle, discardPolicy: x.discardPolicy, buyer: x.buyer, reqN: x.reqN, reqAmount: x.reqAmount, items: x.items, head: x.head, paidAmount: x.doneDate ? paid : 0,
+        const cur = { orderNo: no, date: x.date, type: x.type, shipDate: x.shipDate, doneDate: x.doneDate, status: x.status, settle: x.settle, discardPolicy: x.discardPolicy, buyer: x.buyer, reqN: x.reqN, reqAmount: x.reqAmount, items: x.items, nRejected: x.nRejected || 0, rejV: x.rejV || null, head: x.head, paidAmount: x.doneDate ? paid : 0,
           buyStated, shipMethod: ship || null, shipFee, shipFeeBoxes: boxes, settledAmount: x.doneDate && /정산\s*완료/.test(x.status || '') ? (buyStated ?? paid) - shipFee : 0 }; // 실제 정산액 = 매입 금액 − 배송비 차감
-        const old = have.get(no); const sig = JSON.stringify([cur.status, cur.doneDate, cur.items.map((it) => it.result + ':' + (it.buyPrice || '')), cur.settledAmount]);
+        const old = have.get(no); const sig = JSON.stringify([cur.status, cur.doneDate, cur.items.map((it) => it.result + ':' + (it.buyPrice || '') + (it.reason ? ':' + it.reason : '')), cur.settledAmount]);
         if (old && old.sig === sig) continue; // 같은 내용이면 기록하지 않음
         /* (1.57.2) 상태가 바뀔 때마다 그때의 전체 내용(책마다 결과·매입가, 정산·금액)을 snapshots에 — 예전 기록에 전체 내용이 없으면 바꾸기 전 내용을 먼저 한 번 남김 */
         const full = (v, at0, tag) => JSON.parse(JSON.stringify({ at: at0, status: v.status || null, doneDate: v.doneDate || null, paid: v.paidAmount ?? null, results: (v.items || []).map((it) => it.result || '-').join(''), items: v.items || [], /* 책마다 받은 칸 그대로 */ settle: v.settle ?? null, reqAmount: v.reqAmount ?? null, buyStated: v.buyStated ?? null, settledAmount: v.settledAmount ?? null, shipFee: v.shipFee ?? null, ...(tag ? { tag } : {}) }));
