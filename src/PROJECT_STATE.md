@@ -111,6 +111,15 @@
 - **📰 출판 정보 게시판 (2026-10-16 · 클라우드 0.15.x · 웹앱 1.41.0)**: 클라우드 kpb가 KPIPA 5곳(g3_1 조사연구보고서·g3_2 KPIPA 출판 보고서·g3_5 글로벌출판동향·bnk 출판전산망 알림판·qa 출판산업 Q&A) 글·첨부를 mkt_kpipa_posts·저장소 kpipa/에 모음(처음 8분마다 이어 받기 → 뒤엔 6시간마다 · 상태 app_settings/kpb v4). 같은 내용 첨부는 pdf>hwpx>hwp·단면>펼침면 하나만. 요약 = 예약 작업 '리드나우 출판 정보 요약'(매일 05:47 · @kpq→kp-out 가지(diag/kps_pub.pem · 개인 열쇠는 예약 작업 설명 안에만) → 요약 → src/tools/kpin.sh → @kpin → /kp-in(클라우드 열쇠 diag/kpin_pub.pem · 개인 열쇠 app_secrets/kpin)). 그림만 있는 PDF(KPIPA 출판산업 동향 등)는 글자를 못 꺼냄 → 제안: 클라우드 Vision OCR.
 
 ## 남은 일 / 지켜볼 것
+- (2026-10-20 23:10 · 웹앱 1.73.0 · 수집기 1.89.5 · 클라우드 0.27.1 · products-core 0.17.0 · 노선표 0.14.76 · 감시기 0.10.14 · 머리 8559 그대로) **정범님 21:44 등록 개선**
+  - REG_REQ one·new에서 desc 뺌(알라딘 상품 설명 = choice) · 추가 이미지 8칸 맞음(zoomCover0~7) · regNew 미등록 sizeSel 기본 19(규격외) · 출간일 REG_ERA(ad·dangi +2333·bul +544 · new.pubEra·pubRaw · 미등록 만들 때마다 서기).
+  - 줄바꿈: regJoin(p, nl) · localStorage rn-reg-nl(기본 켬) · reg_items.descNl · 입력하는 대로 rgjt 갱신. 일괄 적용: localStorage rn-reg-bulk(이 기기) · 모음 main.reg.bulkLib(모든 기기)·rn-reg-bulklib(이 기기).
+  - 등록 설정: 미등록은 사진 빼고 new 전체 + price(REG_PS_NEW_SKIP pubEra·pubRaw) · 기본 설정으로 붙일 땐 title·subtitle·titleOrigin 뺌.
+  - 검색: products-core scmSmart(상품명 검색을 낱말 묶음으로 최대 7번 · 모든 낱말이 title+by에 들어가면 all) — 수집기 regLookupCmd·클라우드 lookup이 NAME일 때 씀 · 웹앱 auto 고르기에 all 하나.
+  - 빨간 알림: regReqList(대량·개별·미등록 묶음 · 누르면 regGo) · regAutoQueue의 alert도 이것으로.
+  - 진행: regSessProgHtml(종류별 바) · regSessCtl pause(queued·held→paused · regDel 찾는 단계 pauseReq)/resume(paused→queued · regDel tries+1)/stop(cancelled + 등록 줄 되돌림) · CMD_ACTIVE에 paused · 수집기 regDelCmd 찾는 단계마다 pauseReq·stopReq 확인 · regCmdDiff → regDoneFx(가운데 큰 알림)·세션 justdone·카드 fxf-done/del.
+  - 상품 상세: prd_notes(노트 · 숨기기만) · 🗑 샵매니저에서 삭제…(ask → prdDelReview(null) 직접 입력) · 상세 '샵매니저 삭제 진행'.
+  - 제안(정범님 답 기다림): 상품 탭 목록에 '🗑 삭제 고르기' 모드(수동 일괄 처리 그룹 화면과 같은 3단계).
 - (2026-10-20 22:30 · 웹앱 1.72.0 · 수집기 1.89.4 · 클라우드 0.27.0 · 노선표 0.14.75 · 머리 8559 그대로) **정범님 21:44 SKU 개편·예스24 연결 창**
   - 🏷 SKU 새 모양 = 알라딘 관리코드(prd_listings.sku · 등록 줄은 final.code/code) 앞 3자리 + 고유 5칸(PNKa0001). 저장은 5칸만(sku_map c · reg_items.rnSkus · free) — 클라우드 skuTick seq.migV<2면 RN 떼기 한 번. registry skuOf(5칸)·skuCore·skuPre('___')·skuFull. 웹앱 skuCoresL·skuFullOf·skuOfL(관리코드 바뀌면 앞 3자리 따라감). 조합 수 57,898,646(서가 곱하지 않음).
   - 🟦 예스24 판매관리 응답 받기: 머리 안 바꾸는 길 — 웹앱 p_y24 단추가 https://uscm.yes24.com/Common/Body?rnx=y24cap01 로 열고, 수집기 boot의 기존 @include rnx로 깨어남(split.js G.__rnY24cap · __rnX에서 뺌 · PAGES 문). 그 창에서 받은 것 → GM rn-y24q → 대표 알라딘 탭이 y24_probe·crm_y24_raw.

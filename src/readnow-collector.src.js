@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.4
+// @version      1.89.5
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -20,11 +20,11 @@
 // @downloadURL  https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-orders-core.js?v=0.3.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.1
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.16.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.17.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.75
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.76
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.8.2
@@ -5274,7 +5274,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
         else if (L.length > 1) { cands[isbn] = L; errs[isbn] = `샵매니저 등록 검색에 이 번호의 상품이 ${L.length}개(판·에디션) — 맞는 상품을 누르세요`; }
         else { let r = null, why = null; try { r = await lookupBook(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(isbn)}`, isbn); } catch (e) { why = e.message; } if (r) await keep(isbn, r); else errs[isbn] = '샵매니저 등록 검색·상품 페이지 모두 이 번호(ISBN·바코드)의 상품을 못 찾음 — 상품명으로 찾아 보세요' + (why ? ` (${why})` : ''); } }
       catch (e) { errs[isbn] = e.message; } n++; await prog(); await sleep(500); }
-    for (const q of qs) { try { cands[q] = await scm(q, 'NAME'); } catch (e) { errs['q_' + q] = e.message; } { const x = await usedS(q, null); if (x) srch[q] = x; } n++; await prog(); await sleep(500); }
+    for (const q of qs) { try { cands[q] = P.scmSmart ? await (async () => { const R = await P.scmSmart(q, br, get, 10); if (!R.login) throw new Error('샵매니저 로그인이 풀림 — 이 PC에서 알라딘 샵매니저에 로그인해 주세요'); return R.rows.slice(0, 200).map((x) => ({ ...x, cov: Math.round(P.nameCoverage(q, x.title) * 1000) / 1000, scm: true })); })() : await scm(q, 'NAME'); /* (1.89.5) 상품명·지은이 낱말 일부 섞어도(products-core 0.17.0 scmSmart) */ } catch (e) { errs['q_' + q] = e.message; } { const x = await usedS(q, null); if (x) srch[q] = x; } n++; await prog(); await sleep(500); }
     await ref.set({ status: 'done', n, tot, items, cands, srch, errs, via: 'scm', doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
     log(`📥 등록 조회: ${Object.keys(items).length}권 · 후보 ${Object.keys(cands).length}건 끝${Object.keys(errs).length ? ` · 확인 ${Object.keys(errs).length}` : ''}`, 0); try { const CS = window.__rnCS; if (CS) { CS.add('lookup_reg', 'ok', Object.keys(items).length); CS.add('lookup_reg', 'part', Object.keys(cands).length); Object.entries(errs).forEach(([k, m]) => { if (!cands[k]) CS.add('lookup_reg', 'fail', 1, m); }); } } catch (e) {} } finally { LOOK_PRIO--; } }
   async function lookupCmd(ref, v) { const isb = v.isbns || [], ids = v.itemIds || [], qs = v.queries || []; const tot = isb.length + ids.length + qs.length; let n = 0; const items = {}, cands = {}, errs = {};
@@ -5451,7 +5451,8 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
           okItems.push(it); }
       else okItems.push(...items);
       const by = new Map(); let k0 = 0;
-      for (const it of okItems) { k0++; await ref.set({ step: 1, msg: `${k0}/${okItems.length} '${String(it.title || it.usedCode || '').slice(0, 24)}' 샵매니저에서 찾는 중`, results: res }, { merge: true });
+      for (const it of okItems) { k0++; { /* (1.89.5) ⏸·⏹ 웹앱 요청(정범님 10/20) — 찾는 단계는 아직 알라딘에 아무것도 안 보냈으므로 다음 상품 전에 멈춤 · 다시 시작하면 처음부터 다시 찾음(읽기만) */ const cur = ((await ref.get().catch(() => null)) || { data: () => ({}) }).data() || {}; if (cur.pauseReq || cur.stopReq) { const stop = !!cur.stopReq; await ref.set({ status: stop ? 'cancelled' : 'paused', step: 1, msg: `${stop ? '⏹ 중단' : '⏸ 일시정지'} — ${k0 - 1}/${okItems.length} 찾은 뒤 멈춤 · 알라딘에는 아무것도 보내지 않음`, results: res, pauseReq: null, stopReq: null, claim: null, ...(stop ? { doneAt: nowIso() } : { pausedAt: nowIso() }), uploadedAt: TS() }, { merge: true }); st = 'cancelled'; why = stop ? '중단' : '일시정지'; log(`🗑 알라딘 삭제 ${why} (웹앱 요청 · ${k0 - 1}/${okItems.length} 찾음 · 보낸 것 없음)`); return; } }
+        await ref.set({ step: 1, msg: `${k0}/${okItems.length} '${String(it.title || it.usedCode || '').slice(0, 24)}' 샵매니저에서 찾는 중`, results: res }, { merge: true });
         const F = await delFind(it); const s = F.found;
         if (!s) { if (F.sure) { res[kOf(it)] = { state: 'gone', at: nowIso(), msg: '이미 샵매니저 어느 목록에도 없음 — ' + F.why, listingId: String(it.listingId) }; await regMarkDeleted(it, '이미 샵매니저에 없음(웹앱 삭제 때 확인)'); } else res[kOf(it)] = { state: 'unknown', at: nowIso(), msg: '샵매니저에서 찾지 못함 — ' + F.why + ' · 지우지 않음', listingId: String(it.listingId) }; continue; }
         const r = s.row; const base = String(it.code || it.sku || '').split('_')[0]; const w = [];

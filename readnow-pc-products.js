@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.4의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.5의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.4' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.4', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.5' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.5', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2313,7 +2313,7 @@
         else if (L.length > 1) { cands[isbn] = L; errs[isbn] = `샵매니저 등록 검색에 이 번호의 상품이 ${L.length}개(판·에디션) — 맞는 상품을 누르세요`; }
         else { let r = null, why = null; try { r = await lookupBook(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(isbn)}`, isbn); } catch (e) { why = e.message; } if (r) await keep(isbn, r); else errs[isbn] = '샵매니저 등록 검색·상품 페이지 모두 이 번호(ISBN·바코드)의 상품을 못 찾음 — 상품명으로 찾아 보세요' + (why ? ` (${why})` : ''); } }
       catch (e) { errs[isbn] = e.message; } n++; await prog(); await sleep(500); }
-    for (const q of qs) { try { cands[q] = await scm(q, 'NAME'); } catch (e) { errs['q_' + q] = e.message; } { const x = await usedS(q, null); if (x) srch[q] = x; } n++; await prog(); await sleep(500); }
+    for (const q of qs) { try { cands[q] = P.scmSmart ? await (async () => { const R = await P.scmSmart(q, br, get, 10); if (!R.login) throw new Error('샵매니저 로그인이 풀림 — 이 PC에서 알라딘 샵매니저에 로그인해 주세요'); return R.rows.slice(0, 200).map((x) => ({ ...x, cov: Math.round(P.nameCoverage(q, x.title) * 1000) / 1000, scm: true })); })() : await scm(q, 'NAME'); /* (1.89.5) 상품명·지은이 낱말 일부 섞어도(products-core 0.17.0 scmSmart) */ } catch (e) { errs['q_' + q] = e.message; } { const x = await usedS(q, null); if (x) srch[q] = x; } n++; await prog(); await sleep(500); }
     await ref.set({ status: 'done', n, tot, items, cands, srch, errs, via: 'scm', doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
     log(`📥 등록 조회: ${Object.keys(items).length}권 · 후보 ${Object.keys(cands).length}건 끝${Object.keys(errs).length ? ` · 확인 ${Object.keys(errs).length}` : ''}`, 0); try { const CS = window.__rnCS; if (CS) { CS.add('lookup_reg', 'ok', Object.keys(items).length); CS.add('lookup_reg', 'part', Object.keys(cands).length); Object.entries(errs).forEach(([k, m]) => { if (!cands[k]) CS.add('lookup_reg', 'fail', 1, m); }); } } catch (e) {} } finally { LOOK_PRIO--; } }
   async function lookupCmd(ref, v) { const isb = v.isbns || [], ids = v.itemIds || [], qs = v.queries || []; const tot = isb.length + ids.length + qs.length; let n = 0; const items = {}, cands = {}, errs = {};
@@ -2490,7 +2490,8 @@
           okItems.push(it); }
       else okItems.push(...items);
       const by = new Map(); let k0 = 0;
-      for (const it of okItems) { k0++; await ref.set({ step: 1, msg: `${k0}/${okItems.length} '${String(it.title || it.usedCode || '').slice(0, 24)}' 샵매니저에서 찾는 중`, results: res }, { merge: true });
+      for (const it of okItems) { k0++; { /* (1.89.5) ⏸·⏹ 웹앱 요청(정범님 10/20) — 찾는 단계는 아직 알라딘에 아무것도 안 보냈으므로 다음 상품 전에 멈춤 · 다시 시작하면 처음부터 다시 찾음(읽기만) */ const cur = ((await ref.get().catch(() => null)) || { data: () => ({}) }).data() || {}; if (cur.pauseReq || cur.stopReq) { const stop = !!cur.stopReq; await ref.set({ status: stop ? 'cancelled' : 'paused', step: 1, msg: `${stop ? '⏹ 중단' : '⏸ 일시정지'} — ${k0 - 1}/${okItems.length} 찾은 뒤 멈춤 · 알라딘에는 아무것도 보내지 않음`, results: res, pauseReq: null, stopReq: null, claim: null, ...(stop ? { doneAt: nowIso() } : { pausedAt: nowIso() }), uploadedAt: TS() }, { merge: true }); st = 'cancelled'; why = stop ? '중단' : '일시정지'; log(`🗑 알라딘 삭제 ${why} (웹앱 요청 · ${k0 - 1}/${okItems.length} 찾음 · 보낸 것 없음)`); return; } }
+        await ref.set({ step: 1, msg: `${k0}/${okItems.length} '${String(it.title || it.usedCode || '').slice(0, 24)}' 샵매니저에서 찾는 중`, results: res }, { merge: true });
         const F = await delFind(it); const s = F.found;
         if (!s) { if (F.sure) { res[kOf(it)] = { state: 'gone', at: nowIso(), msg: '이미 샵매니저 어느 목록에도 없음 — ' + F.why, listingId: String(it.listingId) }; await regMarkDeleted(it, '이미 샵매니저에 없음(웹앱 삭제 때 확인)'); } else res[kOf(it)] = { state: 'unknown', at: nowIso(), msg: '샵매니저에서 찾지 못함 — ' + F.why + ' · 지우지 않음', listingId: String(it.listingId) }; continue; }
         const r = s.row; const base = String(it.code || it.sku || '').split('_')[0]; const w = [];

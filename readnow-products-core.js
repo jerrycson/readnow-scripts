@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.16.0'; // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
+  const VERSION = '0.17.0'; // (0.17.0) scmSmart — 상품명·지은이 낱말 일부를 섞어 쳐도 찾음(정범님 10/20 '톨레 지금 순간') // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -429,6 +429,21 @@
     for (let pg = 2; pg <= Math.min(R.last, pages || 2); pg++) { try { const f = d1.querySelector('form#frmBrand'); if (!f) break; const fd = new URLSearchParams(); f.querySelectorAll('input').forEach((i) => { if (!i.name || (i.type === 'radio' && !i.checked)) return; fd.set(i.name, i.value || ''); }); fd.set('page', String(pg)); fd.set('BranchType', String(+branch || 1)); if (kind === 'ISBN') fd.set('ISBN', q); else { fd.set('Key', q); fd.set('KeyWord', q); }
         const r2 = await g('/scm/wpopup_sISBN.aspx', { method: 'POST', body: fd.toString(), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }); const R2 = parseScmSearch(new DOMParser().parseFromString(r2.text, 'text/html')); const have = new Set(rows.map((x) => x.itemId)); const add = R2.rows.filter((x) => !have.has(x.itemId)); if (!add.length) break; rows = rows.concat(add); } catch (e) { break; } }
     return { login: true, rows, last: R.last }; }
+  /* (0.17.0) 📥 등록 검색 똑똑하게(정범님 10/20 21:44): '톨레 지금 순간' · '지금 이 순간 톨레' · '순간을 살아라 에크하'처럼 상품명 낱말 일부 + 지은이 이름 일부를 아무 차례로 쳐도 찾음
+   *  샵매니저 등록 검색은 상품명만 봄 → ① 친 그대로 ② 낱말 하나씩 뺀 묶음(긴 묶음부터) ③ 긴 낱말 하나씩 — 차례로 찾아 후보를 모으고, 모든 낱말이 '상품명 + 지은이·출판사' 안에 (띄어쓰기 없이 부분으로) 다 들어 있는 후보가 나오면 멈춤
+   *  후보마다 all(모든 낱말 들어 있음)·hit(들어 있는 낱말 비율) — 모든 낱말이 맞는 후보를 맨 앞에. 찾기 횟수는 많아야 7번(알라딘 부담) */
+  const smTok = (q) => String(q || '').split(/[\s,·/|]+/).map((w) => w.toLowerCase().replace(/[\p{P}\p{S}]/gu, '')).filter((w) => w.length >= 1);
+  const smNorm = (x) => String(x || '').toLowerCase().replace(/[\s\p{P}\p{S}]/gu, '');
+  function smHit(toks, row) { const h = smNorm((row.title || '') + ' ' + (row.by || '')); let k = 0; for (const w of toks) if (h.includes(w)) k++; return toks.length ? k / toks.length : 0; }
+  function smVariants(toks) { const n = toks.length; const out = []; const seen = new Set(); const add = (L) => { const q = L.join(' '); if (q && !seen.has(q)) { seen.add(q); out.push(q); } };
+    for (let k = n - 1; k >= 1; k--) { const C = []; const rec = (i, acc) => { if (acc.length === k) { C.push(acc.slice()); return; } for (let j = i; j < n; j++) { acc.push(toks[j]); rec(j + 1, acc); acc.pop(); } }; rec(0, []);
+      C.sort((a, b) => b.join('').length - a.join('').length); C.forEach((L) => { if (k > 1 || L[0].length >= 2) add(L); }); if (out.length > 12) break; }
+    return out; }
+  async function scmSmart(q, branch, get, pages) { const toks = smTok(q); const R0 = await scmSearch(q, 'NAME', branch, get, pages); if (!R0.login) return R0; const by = new Map(); const put = (rows, via) => rows.forEach((r) => { if (!by.has(r.itemId)) by.set(r.itemId, { ...r, via }); });
+    put(R0.rows, q); const tries = [q]; const full = () => [...by.values()].some((r) => smHit(toks, r) === 1);
+    if (toks.length >= 2 && !full()) { for (const v of smVariants(toks)) { if (tries.length >= 7) break; tries.push(v); try { const R = await scmSearch(v, 'NAME', branch, get, Math.min(pages || 2, 5)); if (!R.login) break; put(R.rows, v); } catch (e) {} if (full()) break; } }
+    const rows = [...by.values()].map((r, i) => { const hit = smHit(toks, r); return { ...r, hit: Math.round(hit * 100) / 100, all: hit === 1, _i: i }; }); rows.sort((a, b) => (b.all - a.all) || (b.hit - a.hit) || (a._i - b._i)); rows.forEach((r) => delete r._i);
+    return { login: true, rows, last: R0.last, tries, nAll: rows.filter((r) => r.all).length }; }
   // 검색 결과 상품 칸 아래 작은 표(table.usedtable02): 머리 줄 = 알라딘 중고 / ○○점(알라딘 매장) / 판매자 중고 (개수), 아래 줄 = 각 최저가 ('-' = 없음)
   function searchChannels(box) {
     const t = box.querySelector('table.usedtable02'); if (!t) return null; const rows = [...t.querySelectorAll('tr')]; if (rows.length < 2) return null;
@@ -730,7 +745,7 @@
     VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
-    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
+    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, scmSmart, smHit, smTok, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
     parseUsedItemInfo, parseScmEditNote, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
