@@ -1,0 +1,31 @@
+{
+  "v": 1,
+  "updated": "2026-10-20",
+  "rule": "조언·제안·반박은 명망 있는 외부 연구(학술지·정부/공공 통계·업계 보고서)를 근거로 — 정범님 10/20. 근거가 없으면 '근거 못 찾음'을 밝히고 우리 실측으로만 말함.",
+  "items": [
+    { "id": "lynn1991", "topic": ["희귀", "희소성"], "kind": "학술지 (메타분석)", "authors": "Michael Lynn", "year": 1991, "title": "Scarcity effects on value: A quantitative review of the commodity theory literature", "venue": "Psychology & Marketing 8(1):43–57", "url": "https://doi.org/10.1002/mar.4220080105",
+      "finding": "상품 이론(Brock 1968)을 시험한 연구들의 메타분석 — 소유할 수 있고 쓸모 있고 남에게 넘길 수 있는 것은 드물수록 더 원하게 되고 가치가 오른다.",
+      "use": "절판·품절·한정판 같은 '드묾' 표시가 값을 올릴 이론 근거. 다만 얼마나 오르는지는 품목마다 달라 우리 자료(🎁 희귀 요소 연구)로 직접 잰다." },
+    { "id": "balachander2009", "topic": ["한정판", "특전"], "kind": "학술지", "authors": "Subramanian Balachander, Axel Stock", "year": 2009, "title": "Limited Edition Products: When and When Not to Offer Them", "venue": "Marketing Science 28(2):336–355", "url": "https://doi.org/10.1287/mksc.1080.0401",
+      "finding": "한정판은 독점성을 원하는 소비자가 더 지불해 직접 이익을 올리지만, 경쟁 브랜드끼리 모두 내면 가격 경쟁이 세져 이익이 줄 수 있다(게임 이론 모형).",
+      "use": "한정판·특전본에 웃돈을 붙일 수 있는 근거. 같은 한정판 매물이 시장에 많아지면(공급 단계↑) 웃돈이 줄어든다고 보고 매물 수와 함께 판단." },
+    { "id": "hughes2022", "topic": ["희귀", "특별판"], "kind": "학술지", "authors": "Jonathan E. Hughes", "year": 2022, "title": "Demand for Rarity: Evidence from a Collectible Good", "venue": "Journal of Industrial Economics 70(1):147–167", "url": "https://ideas.repec.org/a/bla/jindec/v70y2022i1p147-167.html",
+      "finding": "수집용 카드에서 뽑힐 확률(실제 수량)을 맞춰도 '희귀' 표시만으로 값이 오른다 — 같은 카드를 다른 희귀도로 다시 찍은 경우로 잰 하한이 레어 +56%, 미식 레어 +107%. 기능이 같은 특별 인쇄(포일)도 큰 웃돈.",
+      "use": "같은 책이라도 '특별판·초판·한정' 같은 표시 자체에 값이 붙는다는 근거. 우리 판정에서 특전·한정 표기가 있으면 동급 최저가에 맞춰 내리지 않는 쪽(희귀 전략)의 근거." },
+    { "id": "ghazi2024", "topic": ["희귀", "상태"], "kind": "학술지", "authors": "Soroush Ghazi, Mark Schneider", "year": 2024, "title": "Market value of rarity: A theory of fair value and evidence from rare baseball cards", "venue": "Journal of Economic Behavior & Organization 219:318–339", "url": "https://ideas.repec.org/a/eee/jeborg/v219y2024icp318-339.html",
+      "finding": "희귀 야구카드 경매 4,000건 넘게 — 비슷한 것들 사이에서 몇 번째로 드문가(순위의 로그)와 등급 매긴 회사만으로 로그 가격 변동의 60%를 설명. 희귀 가치는 거듭제곱 법칙을 따른다.",
+      "use": "같은 책 안에서 '드묾의 순위'(남은 매물 수·상태 순위)가 값을 크게 정한다는 근거 — 판매가치 엔진의 공급 단계·희귀 판정과 같은 방향." },
+    { "id": "ellison2018", "topic": ["중고책", "희귀", "온라인"], "kind": "워킹페이퍼 (NBER)", "authors": "Glenn Ellison, Sara Fisher Ellison", "year": 2018, "title": "Match Quality, Search, and the Internet Market for Used Books", "venue": "NBER Working Paper 24197", "url": "https://www.nber.org/papers/w24197",
+      "finding": "335권 표본: 같은 중고책의 온라인 평균 값 약 $20 vs 오프라인 약 $11. 절판·덜 알려진 책일수록 온라인 값이 높고 흩어짐도 큼(찾는 사람과 잘 맞춰짐). 판매자 매출은 온라인이 약 80% 많음(값과 팔릴 확률 둘 다).",
+      "use": "드문 중고책은 싸게 내지 않고 찾는 사람을 기다리는 전략('기다림(희귀)')의 근거 — 단, 흔한 책은 경쟁 효과로 값이 내려감." },
+    { "id": "raghubir2004", "topic": ["사은품", "특전"], "kind": "학술지", "authors": "Priya Raghubir", "year": 2004, "title": "Free Gift with Purchase: Promoting or Discounting the Brand?", "venue": "Journal of Consumer Psychology 14(1–2):181–186", "url": "https://marketingprofs.com/short-articles/247/partner-your-product-with-care",
+      "finding": "구매 사은품으로 준 물건은 소비자가 그 물건의 가치를 낮게 보고, 나중에 낼 값도 낮게 기대한다(그 물건에 제값이 없다는 신호). 본 상품이 비싼 것으로 알려져 있으면 덜하다.",
+      "use": "흔한 사은품·증정품은 웃돈 근거가 약함 — 웃돈은 '한정·수집 대상'인 특전(일련번호·한정 엽서·사인 등)에서만 기대. 🎁 연구에서 '특전·부록'과 '한정판·사인'을 따로 잰다." },
+    { "id": "dobrynskaya2020", "topic": ["미개봉", "박스", "한정"], "kind": "워킹페이퍼 (HSE) → 학술지(Research in International Business and Finance, 2022)", "authors": "Victoria Dobrynskaya, Julia Kishilova", "year": 2020, "title": "LEGO – The Toy of Smart Investors", "venue": "HSE Working Paper WP BRP 80/FE/2020", "url": "https://wp.hse.ru/data/2020/09/16/1583081489/80FE2020.pdf",
+      "finding": "공장 봉지 그대로인 '새' 레고 세트의 2차 시장 값은 1987–2015년 연평균 약 11% 올랐고(세트 하나 평균 18.5%), 드물게 만든(작은·아주 큰·한정) 세트가 더 빨리 오른다.",
+      "use": "공장 포장 그대로(미개봉)와 적게 만든 것이 시간이 갈수록 값이 오르는 근거 — 미개봉 책·박스판은 서둘러 싸게 내지 않는다. 책 시장 크기는 우리 자료로 확인." },
+    { "id": "wyburn2012", "topic": ["상태", "수집"], "kind": "학술지", "authors": "John Wyburn, Paul Roach", "year": 2012, "title": "An Hedonic Analysis of American Collectable Comic-Book Prices", "venue": "Journal of Cultural Economics 36(4):309–326", "url": "https://doi.org/10.1007/s10824-012-9166-6",
+      "finding": "수집용 만화책 1,100권을 속성별(헤도닉) 회귀로 분석 — 속성마다 값이 붙지만 모든 경우에 맞는 하나의 가격 규칙은 얻기 어렵다.",
+      "use": "남의 시장 숫자를 그대로 쓰지 않고 우리 시장(알라딘 중고)에서 속성별 웃돈을 직접 재야 하는 이유 — 🎁 희귀 요소 연구가 매일 다시 잼." }
+  ]
+}

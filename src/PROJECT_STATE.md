@@ -105,6 +105,11 @@
 - **📰 출판 정보 게시판 (2026-10-16 · 클라우드 0.15.x · 웹앱 1.41.0)**: 클라우드 kpb가 KPIPA 5곳(g3_1 조사연구보고서·g3_2 KPIPA 출판 보고서·g3_5 글로벌출판동향·bnk 출판전산망 알림판·qa 출판산업 Q&A) 글·첨부를 mkt_kpipa_posts·저장소 kpipa/에 모음(처음 8분마다 이어 받기 → 뒤엔 6시간마다 · 상태 app_settings/kpb v4). 같은 내용 첨부는 pdf>hwpx>hwp·단면>펼침면 하나만. 요약 = 예약 작업 '리드나우 출판 정보 요약'(매일 05:47 · @kpq→kp-out 가지(diag/kps_pub.pem · 개인 열쇠는 예약 작업 설명 안에만) → 요약 → src/tools/kpin.sh → @kpin → /kp-in(클라우드 열쇠 diag/kpin_pub.pem · 개인 열쇠 app_secrets/kpin)). 그림만 있는 PDF(KPIPA 출판산업 동향 등)는 글자를 못 꺼냄 → 제안: 클라우드 Vision OCR.
 
 ## 남은 일 / 지켜볼 것
+- (2026-10-20 12:00 · 웹앱 1.67.0 · 클라우드 0.24.0 · ml-core 0.8.0 · 수집기 1.88.1 · 노선표 0.14.70) **정범님 10:00 뒷부분**:
+  - 🎯 벤치 사라짐 = 판매 표본: 클라우드 benchObs(판매자마다 45일 안 온전한 회차 기간 합 = 지켜본 날 · 지금 목록 y0 · goneDay 45일 안 y1 · 무게 = 본 날 수(lifeDays) · 지금 목록 15만 넘으면 표본 비율로) → valueTrain(w·y) · value_model = 합친 표(benchUse 기본 켬) + oursOnly·benchOnly·benchSt 늘 따로 · 웹앱 판매가치 ② 아래 🎯 단추(value_cfg.benchUse + retrainAt).
+  - 🎁 희귀 요소: ml-core extrasOf(박스·공장 비닐 그대로·OPP·특전/부록·한정판·사인 · 없음/분실 = 빠짐 · 배송 박스 뺌) · 클라우드 extrasStudy(prd_used_info 경쟁 매물 유의 사항 × 지금 첫 페이지 값 → 같은 책·같은 등급 가운데 값 대비 로그 비율 차이 · 부트스트랩 95% · n≥30·구간이 0 안 걸치면 sure) · 우리 상품 판매완료 비율 · ml_sales 달마다 몫 → app_settings/extras_study · 시장조사 탭 🎁.
+  - 📑 근거 자료: research/evidence.json(저장소 · 공개 논문 서지·요지·쓰는 법) → 시장조사 탭 📑. 새 근거는 이 파일에 덧붙임(지우지 않음).
+  - 지켜볼 것: 첫 extras_study의 요소별 n(미개봉·한정·사인은 적을 수 있음 — 표본 부족이면 '확인 안 됨'으로 둠) · value_model.benchSt(판매자·시장 지표 붙은 상품 수 · 벤치만 평균 판매율이 우리와 너무 다르면 따로 보기).
 - (2026-10-20 11:00 · 웹앱 1.66.0 · 클라우드 0.23.0 · 수집기 1.88.0 · products-core 0.16.0 · ml-core 0.7.0 · 노선표 0.14.69 · 감시기 0.10.13) **정범님 10:00**:
   - 🟥 등록 기본값 판매가: 엔진 추천가가 없으면 ① 시장표 매물 최저가 ② 시장표 없으면 바깥 중고 검색(이름 일치 90%·권 번호 같음) 최저가 ③ 정가 × 2 — 카드 빨간 깜빡임·탭 위 빨간 판·확정 확인 목록 · 결정 대기로 옮기면 priceFb로 저장(직접 고칠 때까지 알림) · ⚙ 가격·등록 조건 fbA/fbB/fbC/fbMult/fbMatch(app_settings/main.reg). 조회(수집기 regLookupCmd·클라우드 /lookup)가 page1이 비었거나 상품명 조회면 srch(usedSearchRows)를 같이 실음.
   - 🏷 알라딘 매입: 예전 결론('보낸 책 모두 매입')은 틀렸음 — parseC2BDetail이 5칸 줄만 읽어 '매입불가 상품 내역'(4칸)을 빠뜨림. 끝난 접수 40건 신청 928권 중 매입 627권(67.6%). products-core 0.16.0이 불가 표(사유)도 읽고, 수집기 1.88.0 isFinal이 rejV 없는 끝난 접수를 한 번 다시 엶(사무실 PC · 예전 내용은 snapshots). 클라우드 buybackStats v2(매입 ÷ 신청 · 사유 · 우리 상태별 — 팔기 장바구니 기록 prd_system/buyback.cart → 상품 grade) · ml-core bbExpect에 매입될 확률. 신청은 거의 '균일가'(직접등록팔기)라 알라딘 등급별(최상·상·중) 매입률은 이 기록으로 못 셈 → 우리 상태별로.
