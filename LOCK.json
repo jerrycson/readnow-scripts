@@ -1,12 +1,12 @@
 {
- "holder": "auto-check",
- "what": "자동 점검: push",
- "since": "2026-10-20T13:08:24Z",
- "beat": "2026-10-20T13:20:03Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "chat",
-  "done": "웹앱 1.73.0 · 수집기 1.89.5 · 클라우드 0.27.1 (SKU 개편·등록 개선)",
-  "at": "2026-10-20T13:07:16Z"
+  "who": "auto-check",
+  "done": "자동 점검 끝: 클라우드 0.27.2 · 수집기 1.89.7 · 웹앱 1.73.2 · 보고서 (5a57100·a02b732·b872a62)",
+  "at": "2026-10-20T13:24:47Z"
  }
 }
