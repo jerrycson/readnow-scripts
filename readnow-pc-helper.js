@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.88.4의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.88.5의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.88.4' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.88.4', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.88.5' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.88.5', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -338,7 +338,7 @@
         if (got.size < part.length) { try { const q2 = await db.collection('prd_listings').where('listingId', 'in', part.map(Number).filter(Number.isFinite).slice(0, 10)).get(); q2.forEach((d) => { const v = d.data(); if (!got.has(String(v.listingId))) got.set(String(v.listingId), { key: d.id, isbn: v.isbn13 || null, bookId: v.bookId || null, pl: v.priceList || null, title: v.title || '' }); }); } catch (e) {} }
         for (const id of part) { const x = got.get(id) || { key: null }; if (x.bookId) { try { const b = (await db.collection('prd_books').doc(String(x.bookId)).get()).data() || {}; x.pl = x.pl || b.priceList || null; x.ps = b.priceSales || null; x.isbn = x.isbn || b.isbn13 || null; } catch (e) {} }
           if (x.key) { try { const c = (await db.collection('prd_cancel_hits').doc(x.key).get()).data(); x.cx = c && c.hits ? c.hits.map((h) => ({ kind: h.kind, at: h.at, o: h.o })) : null; } catch (e) {} } cache[id] = { ...x, t: Date.now() }; } }
-      try { const keep = {}; Object.entries(cache).filter(([, v]) => fresh(v)).slice(-3000).forEach(([k, v]) => (keep[k] = v)); cache = keep; GM_setValue(CK, cache); } catch (e) {}
+      if (need.length) try { const keep = {}; Object.entries(cache).filter(([, v]) => fresh(v)).slice(-3000).forEach(([k, v]) => (keep[k] = v)); cache = keep; GM_setValue(CK, cache); } catch (e) {} /* (1.88.5) 새로 받은 것이 있을 때만 저장(예전: 화면이 바뀔 때마다 최대 3천 개 묶음을 통째로 저장 → 모든 탭에 알림) */
       for (const id of ids) { const x = cache[id]; const a = anchors.get(id); if (!x || !a || !a.parentNode) continue; const q = x.isbn || (x.title || a.textContent || '').replace(/^\[중고[^\]]*\]\s*/, '').trim();
         const so = (x.cx || []).filter((h) => h.kind === '품절취소'); const other = (x.cx || []).filter((h) => h.kind !== '품절취소');
         const sp = document.createElement('span'); sp.className = 'rnpm'; sp.dataset.l = id;
