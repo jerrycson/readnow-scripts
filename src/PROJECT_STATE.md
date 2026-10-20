@@ -111,6 +111,8 @@
 - **📰 출판 정보 게시판 (2026-10-16 · 클라우드 0.15.x · 웹앱 1.41.0)**: 클라우드 kpb가 KPIPA 5곳(g3_1 조사연구보고서·g3_2 KPIPA 출판 보고서·g3_5 글로벌출판동향·bnk 출판전산망 알림판·qa 출판산업 Q&A) 글·첨부를 mkt_kpipa_posts·저장소 kpipa/에 모음(처음 8분마다 이어 받기 → 뒤엔 6시간마다 · 상태 app_settings/kpb v4). 같은 내용 첨부는 pdf>hwpx>hwp·단면>펼침면 하나만. 요약 = 예약 작업 '리드나우 출판 정보 요약'(매일 05:47 · @kpq→kp-out 가지(diag/kps_pub.pem · 개인 열쇠는 예약 작업 설명 안에만) → 요약 → src/tools/kpin.sh → @kpin → /kp-in(클라우드 열쇠 diag/kpin_pub.pem · 개인 열쇠 app_secrets/kpin)). 그림만 있는 PDF(KPIPA 출판산업 동향 등)는 글자를 못 꺼냄 → 제안: 클라우드 Vision OCR.
 
 ## 남은 일 / 지켜볼 것
+- (자동 점검 2026-10-20 · 클라우드 0.27.2 · 수집기 1.89.7 · 웹앱 1.73.2) **끝남**: skuTick이 3분마다 prd_listings 전체(2.5만)를 select로 읽던 것(하루 ~1,220만 읽기) → 인스턴스 기억 SKU_LS + uploadedAt 바뀐 것만 · 6시간마다/새로 켜질 때 통째 · 실패 시 통째 · y24ShopTick 그대로인 매물을 매시간 다시 쓰던 것('시' 비교) → 날짜 비교(하루 한 번 lastSeenAt) · 수집기 rnY24 drain이 줄이 비어도 10초마다 platforms 읽던 것. 보고서 src/audits/2026-10-20.md
+  - 지켜볼 것: 다음 진단에서 skuTick 기록 '🏷 SKU' 간격·'바뀐 상품만 받기 실패' 없음 · reg_items 문서 수(3분마다 전체 select — 수천이면 같은 방식으로) · y24_listings 하루 쓰기 수 · 예약 점검은 운영 수치를 못 읽음(diag 개인 열쇠가 대화 세션에만 — 점검 전용 열쇠 제안) · 예약 점검에 readnow-chats 저장소가 없음(3시간 점검 보고·대화 보관 못 함).
 - (2026-10-20 23:10 · 웹앱 1.73.0 · 수집기 1.89.5 · 클라우드 0.27.1 · products-core 0.17.0 · 노선표 0.14.76 · 감시기 0.10.14 · 머리 8559 그대로) **정범님 21:44 등록 개선**
   - REG_REQ one·new에서 desc 뺌(알라딘 상품 설명 = choice) · 추가 이미지 8칸 맞음(zoomCover0~7) · regNew 미등록 sizeSel 기본 19(규격외) · 출간일 REG_ERA(ad·dangi +2333·bul +544 · new.pubEra·pubRaw · 미등록 만들 때마다 서기).
   - 줄바꿈: regJoin(p, nl) · localStorage rn-reg-nl(기본 켬) · reg_items.descNl · 입력하는 대로 rgjt 갱신. 일괄 적용: localStorage rn-reg-bulk(이 기기) · 모음 main.reg.bulkLib(모든 기기)·rn-reg-bulklib(이 기기).

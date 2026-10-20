@@ -26,6 +26,7 @@
       "use": "공장 포장 그대로(미개봉)와 적게 만든 것이 시간이 갈수록 값이 오르는 근거 — 미개봉 책·박스판은 서둘러 싸게 내지 않는다. 책 시장 크기는 우리 자료로 확인." },
     { "id": "wyburn2012", "topic": ["상태", "수집"], "kind": "학술지", "authors": "John Wyburn, Paul Roach", "year": 2012, "title": "An Hedonic Analysis of American Collectable Comic-Book Prices", "venue": "Journal of Cultural Economics 36(4):309–326", "url": "https://doi.org/10.1007/s10824-012-9166-6",
       "finding": "수집용 만화책 1,100권을 속성별(헤도닉) 회귀로 분석 — 속성마다 값이 붙지만 모든 경우에 맞는 하나의 가격 규칙은 얻기 어렵다.",
-      "use": "남의 시장 숫자를 그대로 쓰지 않고 우리 시장(알라딘 중고)에서 속성별 웃돈을 직접 재야 하는 이유 — 🎁 희귀 요소 연구가 매일 다시 잼." }
+      "use": "남의 시장 숫자를 그대로 쓰지 않고 우리 시장(알라딘 중고)에서 속성별 웃돈을 직접 재야 하는 이유 — 🎁 희귀 요소 연구가 매일 다시 잼." },
+    {"id": "gcp-firestore-pricing", "topic": ["운영 비용", "Firestore 읽기"], "kind": "공식 문서 (Google Cloud)", "authors": "Google Cloud", "year": 2026, "title": "Firestore pricing", "venue": "cloud.google.com", "url": "https://cloud.google.com/firestore/pricing", "finding": "Firestore는 질의가 돌려준 문서마다 읽기 한 번으로 셈한다(일부 칸만 고르는 select도 문서 수만큼). 실시간 받기(onSnapshot)도 바뀐 문서마다 읽기로 셈한다.", "use": "(자동 점검 2026-10-20) 클라우드 SKU 부여가 3분마다 상품 2만 5천여 건을 select로 읽던 것 = 하루 약 1,200만 읽기로 셈한 근거 · 같은 문서를 회차마다 다시 적으면 웹앱 기기 수만큼 읽기가 늘어나는 근거."}
   ]
 }
