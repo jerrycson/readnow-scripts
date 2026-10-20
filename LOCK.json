@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "3시간 점검 숫자 요약(health)",
+ "since": "2026-10-20T22:59:12Z",
+ "beat": "2026-10-20T22:59:12Z",
  "ask": null,
  "last": {
   "who": "kpsum",
