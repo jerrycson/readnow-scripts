@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "벤치 표본 상품 잇기·희귀 요소 낱말 바로잡기",
- "since": "2026-10-20T01:47:26Z",
- "beat": "2026-10-20T01:47:26Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "웹앱 1.67.1·클라우드 0.24.0·수집기 1.88.2·ml-core 0.8.1·products-core 0.16.0",
-  "at": "2026-10-20T01:32:54Z"
+  "done": "클라우드 0.24.2·ml-core 0.8.2·웹앱 1.67.3·수집기 1.88.3",
+  "at": "2026-10-20T01:48:29Z"
  }
 }
