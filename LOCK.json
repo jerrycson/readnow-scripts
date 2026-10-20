@@ -1,8 +1,8 @@
 {
  "holder": "auto-check",
- "what": "자동 점검: SKU 읽기 줄이기·예스24 다시 쓰기 — 빌드 중",
+ "what": "자동 점검: push",
  "since": "2026-10-20T13:08:24Z",
- "beat": "2026-10-20T13:14:59Z",
+ "beat": "2026-10-20T13:20:03Z",
  "ask": null,
  "last": {
   "who": "chat",
