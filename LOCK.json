@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "등록 기본가·알라딘 매입불가 기록",
+ "since": "2026-10-20T01:02:03Z",
+ "beat": "2026-10-20T01:02:03Z",
  "ask": null,
  "last": {
   "who": "chat",
