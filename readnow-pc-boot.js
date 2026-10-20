@@ -1,11 +1,12 @@
-/* readnow-pc-boot.js — 리드나우 수집기 1.89.3의 시작 코드(화면마다 할 일: 로거 잠금·알라딘 쪽 저장소 비우기·닫힌 그림자 칸·바깥 사이트 리더·도우미 첫 화면 표시·웹앱 로그인 넘기기)
+/* readnow-pc-boot.js — 리드나우 수집기 1.89.4의 시작 코드(화면마다 할 일: 로거 잠금·알라딘 쪽 저장소 비우기·닫힌 그림자 칸·바깥 사이트 리더·도우미 첫 화면 표시·웹앱 로그인 넘기기)
  * 본체(로더)가 받아 둔 판/이 판을 고른 뒤 부름 · 빠른 업데이트로 바뀜 (1.72.0) */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { boot: '1.89.3' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { boot: '1.89.4' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 globalThis.__rnBoot = function (BI) { const G = globalThis; const CLASSIC = BI.classic; const gv = (k, d) => { try { return GM_getValue(k, d); } catch (e) { return d; } }; const sv = (k, v) => { try { GM_setValue(k, v); } catch (e) {} };
 /* (1.66.0) 🧭 바깥 사이트 화면 그려 읽기(리더) — 중고닷·번개장터·중고나라·당근·예스24 중고 검색이 화면을 연 뒤 글을 따로 불러오는 방식이라 받은 화면엔 글이 없음
  *  수집기(알라딘 탭)가 그 검색 주소에 ?rnx=표를 붙여 보이지 않는 탭으로 열면, 이 스크립트가 그 탭에서만 '리더'로 깨어나(다른 일은 하나도 안 함)
  *  글 링크가 다 뜰 때까지(같은 수로 2초) 기다렸다가 링크 주소·링크 글·그 글을 담은 칸 글(값·상태)을 GM 저장소로 돌려주고 탭을 닫음 · 사람이 그냥 연 그 사이트에선 깨어나지 않음(?rnx= 없으면) */
-G.__rnX = (() => { try { return window.top === window && !/(^|\.)aladin\.co\.kr$/i.test(location.hostname) && /[?&]rnx=[a-z0-9]{6,}/i.test(location.search); } catch (e) { return false; } })();
+G.__rnY24cap = (() => { try { return window.top === window && /^uscm\.yes24\.com$/i.test(location.hostname) && /[?&]rnx=y24[a-z0-9]{3,}/i.test(location.search); } catch (e) { return false; } })(); /* (1.89.4) 🟦 예스24 판매관리를 머리(@match)를 바꾸지 않고 — 웹앱의 '예스24 판매관리 열기'(주소 끝 ?rnx=y24…)로 열면 이미 있는 @include(rnx)로 수집기가 깨어나 서버 응답을 받음(그 탭을 닫을 때까지 · 화면을 옮겨도 계속) */
+G.__rnX = (() => { try { return !G.__rnY24cap && window.top === window && !/(^|\.)aladin\.co\.kr$/i.test(location.hostname) && /[?&]rnx=[a-z0-9]{6,}/i.test(location.search); } catch (e) { return false; } })();
 if (G.__rnX) { (function rnxReader() { const tok = (location.search.match(/[?&]rnx=([a-z0-9]+)/i) || [])[1]; let q = null; try { q = GM_getValue('rnx_q_' + tok, null); } catch (e) {}
   const put = (v) => { try { GM_setValue('rnx_r_' + tok, { ...v, at: Date.now(), url: location.href }); } catch (e) {} setTimeout(() => { try { window.close(); } catch (e) {} }, 400); };
   if (!q) return put({ ok: false, why: '맡긴 표가 없음(시간이 지났거나 다른 PC)' });
