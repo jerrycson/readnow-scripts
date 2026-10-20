@@ -1,2 +1,1 @@
-viasrch=90
-doc=shp_enrich/385340557
+rate=prd_metric_changes,prd_book_metrics&mins=1440
