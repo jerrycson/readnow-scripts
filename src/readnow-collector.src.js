@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.7
+// @version      1.89.8
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -7374,4 +7374,25 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     catch (e) { try { window.__rnLog && window.__rnLog('예스24', 'warn', '예스24 응답 올리기 실패: ' + (e.code || e.message)); } catch (x) {} }
     finally { try { const q2 = qGet(); GM_setValue(QK, q2.slice(Math.min(ok, q.length))); } catch (e) {} busy = false; if (ok) try { window.__rnLog && window.__rnLog('예스24', 'detail', `예스24 응답 ${ok}개를 Firebase에 올림(y24_probe · crm_y24_raw)`); } catch (e) {} } };
   setTimeout(drain, 15000); setInterval(() => drain().catch(() => {}), 10000);
+})();
+/* (1.89.8) 🏷 정범님 10/20: 샵매니저 '상품 조회/수정' 목록의 우리 상품 관리코드 아래에 우리 SKU를 작게(관리코드 앞 3자리 + 고유 5칸 · 같은 상품 실물이 여럿이면 '외 n')
+ *  자료 = app_settings/sku_seq(mapN) + sku_map_0…N (웹앱 상품 상세와 같은 것) · 이 PC Tampermonkey 저장소에 1시간 보관(rn-skuc — 화면을 열 때마다 다시 읽지 않게) · 로그인한 샵매니저 화면에서만(로거는 열지 않음)
+ *  관리코드를 그 화면에서 바꾸면 앞 3자리가 바로 따라 바뀜(2초마다 견줌) */
+(function rnSkuScm() { if (window.top !== window) return; const G = globalThis; if (!/(^|\.)aladin\.co\.kr$/i.test(location.hostname) || G.__rnPubChrome || !/^\/scm\/wrecord_edit\.aspx/i.test(location.pathname)) return;
+  const CK = 'rn-skuc'; let M = null, loading = false, tries = 0;
+  const RG = () => (typeof ReadnowRegistry !== 'undefined' ? ReadnowRegistry : G.ReadnowRegistry || null);
+  const full = (mg, c) => { const R = RG(); return R && R.skuFull ? R.skuFull(mg, c) || c : c; };
+  const load = async () => { if (M || loading) return; try { const c = GM_getValue(CK, null); if (c && c.at && Date.now() - c.at < 3600e3 && c.m) { M = c.m; return; } } catch (e) {}
+    if (!(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return; loading = true;
+    try { const fs = firebase.firestore(); const seq = (await fs.collection('app_settings').doc('sku_seq').get()).data() || {}; const n = +seq.mapN || 0; const m = {};
+      for (let i = 0; i <= n; i++) { const d = (await fs.collection('app_settings').doc('sku_map_' + i).get()).data() || {}; for (const [k, v] of Object.entries(d.m || {})) { const u = String(k).replace(/^aladin_/, ''); const cs = ((v && v.c) || []).map((x) => String(x).replace(/^RN(?=[a-z0-9]{5}$)/, '')).filter(Boolean); if (cs.length) m[u] = cs.join(','); } }
+      M = m; try { GM_setValue(CK, { at: Date.now(), m }); } catch (e) {} }
+    catch (e) { try { window.__rnLog && window.__rnLog('SKU', 'warn', '샵매니저 SKU 표시: 코드를 못 읽음 — ' + (e.code || e.message)); } catch (x) {} } finally { loading = false; } };
+  const draw = () => { if (!M) return; document.querySelectorAll('input.batchChkBox').forEach((cb) => { const lid = cb.value; const tr = cb.closest('tr'); if (!tr) return; const mgEl = tr.querySelector(`#supCodeChg_val_${CSS.escape(lid)}`); if (!mgEl) return;
+      const um = (tr.children[1] ? tr.children[1].textContent : tr.textContent).match(/U\d{6,}/); const cs = um && M[um[0]] ? M[um[0]].split(',') : null; const mg = (mgEl.textContent || '').trim();
+      let el = tr.querySelector('.rn-sku'); if (!cs) { if (el) el.remove(); return; } const txt = '🏷 ' + full(mg, cs[0]) + (cs.length > 1 ? ` 외 ${cs.length - 1}` : '');
+      if (!el) { el = document.createElement('div'); el.className = 'rn-sku'; el.style.cssText = 'font-size:10.5px;color:#2F5D50;font-family:Consolas,monospace;margin-top:2px;white-space:nowrap'; mgEl.insertAdjacentElement('afterend', el); }
+      if (el.textContent !== txt) { el.textContent = txt; el.title = '리드나우 SKU(실물 한 권마다 하나 · 앞 3자리 = 관리코드 서가)' + (cs.length > 1 ? ' · ' + cs.map((c) => full(mg, c)).join(', ') : ''); } }); };
+  const tick = () => { if (!M) { if (tries++ < 60) load().then(draw).catch(() => {}); return; } draw(); };
+  setTimeout(tick, 1500); setInterval(tick, 2000);
 })();
