@@ -1,2 +1,7 @@
-doc=app_settings/mkt_trend_state
-logs=1&pc=CLOUD&from=202610202350&to=~
+doc=app_settings/write_watch,prd_jobs/pcBeat,app_settings/sku_seq,app_settings/y24_state,app_settings/value_model,app_settings/buyback_stats
+logs=1&pc=HOME&from=202610201800&to=~
+logs=1&pc=JS-MAIN&from=202610201800&to=~
+logs=1&pc=LOGGER&from=202610201800&to=~
+logs=1&pc=CLOUD&from=202610201800&to=~
+perf=300
+rate=prd_listings,prd_book_metrics,crm_orders,crm_customers,bench_items,prd_seen,prd_listing_changes,sellers,ext_used&mins=180
