@@ -1,7 +1,7 @@
 {
- "ver": "1.89.5",
+ "ver": "1.89.6",
  "hsig": "8559039d5a96110b",
- "at": "2026-10-20T13:03:19.236Z",
+ "at": "2026-10-20T13:09:05.586Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -41,9 +41,9 @@
   },
   {
    "f": "readnow-registry.js",
-   "v": "0.14.76",
-   "sha": "e462ea02120595c81ab66c5fcbd45df73998e013e494eda5d96c9966cf629f10",
-   "n": 58040
+   "v": "0.14.77",
+   "sha": "94df9c9ea9a6ff73c593525e4a7880f0ee8bed325fa87b8058d47c63857e06a4",
+   "n": 58438
   },
   {
    "f": "readnow-ext-core.js",
@@ -83,38 +83,38 @@
   },
   {
    "f": "readnow-pc-boot.js",
-   "v": "1.89.5",
-   "sha": "cefbd050b193059970d361529209d02e573c90aa2a27f2c79c67efdda5174968",
+   "v": "1.89.6",
+   "sha": "22de4e29f6cfee57980dfd4a6e5a7386f944f7c84b05abf19c99cec842b8209e",
    "n": 23136
   },
   {
    "f": "readnow-pc-runtime.js",
-   "v": "1.89.5",
-   "sha": "2137b73c7013ef71fa12705b7999cfc15b70c13d17a212a9de1d1a83664ab211",
+   "v": "1.89.6",
+   "sha": "fe5a5154ec08f0beb7887e2555daac672a1a7895e2e93d018acf528315f20c4e",
    "n": 128673
   },
   {
    "f": "readnow-pc-crm.js",
-   "v": "1.89.5",
-   "sha": "28b0fe129d0dfaef8eccdea7c914d31c6f22ea7208d6e4770482d2825ab34f55",
+   "v": "1.89.6",
+   "sha": "cc4409004337269f6208409119d9f22b9bfa85b397b06e7e1eb2ca9f5e96e09a",
    "n": 233967
   },
   {
    "f": "readnow-pc-products.js",
-   "v": "1.89.5",
-   "sha": "9ab215e532828f4925cec7704650ce8db94c88da93f1d13934f68b983e64dee6",
+   "v": "1.89.6",
+   "sha": "ac680d72df499140fc435b877714500d786492fa19a48bbf5a1479ebf0eabcc9",
    "n": 769471
   },
   {
    "f": "readnow-pc-ship.js",
-   "v": "1.89.5",
-   "sha": "46ece407e4f5d2b3c0a0b5edf2c1bdfe78377765404893dcd43f66cf4697cc14",
+   "v": "1.89.6",
+   "sha": "35ba1de28a1a5723516bccde0b08e40ae8c1a53d5b5986a2462f7c5b8947175f",
    "n": 15248
   },
   {
    "f": "readnow-pc-helper.js",
-   "v": "1.89.5",
-   "sha": "97bdbc8dc16594de8e0cbb09e9511d998af6a5ce3ca7795c85d475f70518dc9e",
+   "v": "1.89.6",
+   "sha": "56c55e7795d911517dc7dc7df785d3ef7fbeb681c6359219df6fb250dc2e3cda",
    "n": 89937
   }
  ]
