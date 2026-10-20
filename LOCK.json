@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "autoSched 문서 넘침",
- "since": "2026-10-20T09:50:55Z",
- "beat": "2026-10-20T09:50:55Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "1.89.2 머리 되돌림 · 3시간 점검 예약",
-  "at": "2026-10-20T09:41:50Z"
+  "done": "클라우드 0.26.1 · 수집기 1.89.3",
+  "at": "2026-10-20T10:00:18Z"
  }
 }
