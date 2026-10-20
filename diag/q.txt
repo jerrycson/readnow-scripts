@@ -1,1 +1,1 @@
-doc=app_settings/buyback_stats,app_settings/write_watch
+doc=pur_buyback/20261016000102,pur_buyback/20261013000340
