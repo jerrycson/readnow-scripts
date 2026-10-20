@@ -1,12 +1,12 @@
 {
- "holder": "kpsum",
- "what": "출판 정보 요약",
- "since": "2026-10-20T20:48:46Z",
- "beat": "2026-10-20T20:48:46Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "chat",
-  "done": "웹앱 1.76.2",
-  "at": "2026-10-20T15:22:19Z"
+  "who": "kpsum",
+  "done": "요약 0개 — 열쇠 파일 쓰기가 권한 검사에 막혀 중단",
+  "at": "2026-10-20T20:49:48Z"
  }
 }
