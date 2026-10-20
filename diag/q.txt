@@ -1,1 +1,2 @@
-rate=prd_metric_changes,prd_book_metrics&mins=1440
+doc=app_settings/mkt_trend_state
+logs=1&pc=CLOUD&from=202610202350&to=~
