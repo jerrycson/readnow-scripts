@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "세션 완료·간단 직접 입력·출간일",
- "since": "2026-10-20T06:00:36Z",
- "beat": "2026-10-20T06:00:36Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "웹앱 1.68.1·수집기 1.88.4",
-  "at": "2026-10-20T04:23:38Z"
+  "done": "웹앱 1.69.0",
+  "at": "2026-10-20T06:03:23Z"
  }
 }
