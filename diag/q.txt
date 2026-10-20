@@ -1,2 +1,2 @@
-logs=1&pc=HOME&from=202610201840&to=~
-logs=1&pc=LOGGER&from=202610201840&to=~
+logs=1&pc=LOGGER&from=202610200000&to=202610201850
+doc=app_settings/bench
