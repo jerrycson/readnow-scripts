@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.88.10
+// @version      1.89.0
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -14,6 +14,7 @@
 // @match        http://localhost:8899/*
 // @match        http://rn.local/*
 // @match        https://jerrycson.github.io/*
+// @match        https://uscm.yes24.com/*
 // @include      /^https?:\/\/[^\/]+\/.*[?&]rnx=[a-z0-9]{6,}/
 // @noframes
 // @updateURL    https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
