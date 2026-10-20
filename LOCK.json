@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "등록 기본가·알라딘 매입불가 기록",
- "since": "2026-10-20T01:02:03Z",
- "beat": "2026-10-20T01:02:03Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "웹앱 1.65.0·클라우드 0.22.0·ml-core 0.6.0·수집기 1.87.3",
-  "at": "2026-10-19T22:57:08Z"
+  "done": "웹앱 1.67.1·클라우드 0.24.0·수집기 1.88.2·ml-core 0.8.1·products-core 0.16.0",
+  "at": "2026-10-20T01:32:54Z"
  }
 }
