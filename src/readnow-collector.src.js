@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.88.6
+// @version      1.88.7
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -115,8 +115,8 @@ globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false;
   window.__rnPerfNow = () => { const m = performance.memory || {}; const ivs = [...P.iv.entries()].filter(([, r]) => r.n).sort((a, b) => b[1].ms - a[1].ms).slice(0, 5); const gms = [...P.gm.entries()].sort((a, b) => b[1].b - a[1].b).slice(0, 5); const ivAll = [...P.iv.values()].reduce((a, r) => a + r.ms, 0); const gmN = [...P.gm.values()].reduce((a, r) => a + r.n, 0), gmB = [...P.gm.values()].reduce((a, r) => a + r.b, 0);
     let tabs = 0; try { for (const k of GM_listValues()) if (/^rnu-live-/.test(k)) { const v = GM_getValue(k, null); if (v && Date.now() - (v.at || 0) < 60000) tabs++; } } catch (e) {}
     return { min: Math.round((Date.now() - P.t0) / 60000), role: window.__rnRole ? window.__rnRole() : '-', page: location.pathname.split('/').pop(), heap: m.usedJSHeapSize ? mb(m.usedJSHeapSize) : null, lim: m.jsHeapSizeLimit ? mb(m.jsHeapSizeLimit) : null, dom: document.getElementsByTagName('*').length, lt: { n: P.lt.n, s: +(P.lt.ms / 1000).toFixed(1), max: Math.round(P.lt.max) }, iv: { n: P.iv.size, s: +(ivAll / 1000).toFixed(1), top: ivs.map(([k, r]) => `${k} — ${r.n}번 ${(r.ms / 1000).toFixed(1)}초 최대 ${Math.round(r.max)}ms${r.c > 1 ? ` ×${r.c}` : ''}`) }, gm: { n: gmN, b: gmB, top: gms.map(([k, r]) => `${k} ${r.n}번 ${kb(r.b)}`) }, tabs, lf: [...(P.lf || new Map()).entries()].sort((a, b) => b[1].ms - a[1].ms).slice(0, 6).map(([k, r]) => `${k} — ${r.n}번 ${(r.ms / 1000).toFixed(1)}초 최대 ${Math.round(r.max)}ms${r.lay > 50 ? ` (그리기 강제 ${(r.lay / 1000).toFixed(1)}초)` : ''}`), jw: !!(document.getElementById('rn-jw') && document.getElementById('rn-jw').classList.contains('on')) }; };
-  const rep = () => { try { const x = window.__rnPerfNow(); window.__rnPerfLast = { ...x, at: Date.now() }; const line = `⏱ 5분 성능 [${x.role} · ${x.page}${x.jw ? ' · 기록 창 열림' : ''}] 힙 ${x.heap ?? '?'}/${x.lim ?? '?'}MB · 화면 요소 ${x.dom.toLocaleString()} · 긴 작업 ${x.lt.n}번 ${x.lt.s}초(최대 ${x.lt.max}ms) · 되풀이 타이머 ${x.iv.n}개 ${x.iv.s}초 · GM 쓰기 ${x.gm.n}번 ${kb(x.gm.b)} · 이 PC 수집기 탭 ${x.tabs}개 ‖ 타이머 상위: ${x.iv.top.join(' | ') || '-'} ‖ GM 상위: ${x.gm.top.join(' | ') || '-'} ‖ 막은 스크립트 상위: ${x.lf.join(' | ') || '-'}`;
-      window.__rnLog && window.__rnLog('성능', x.lt.s > 30 || (x.heap && x.lim && x.heap / x.lim > 0.6) ? 'warn' : 'detail', line); P.iv.forEach((r) => { r.n = 0; r.ms = 0; r.max = 0; }); P.gm.clear(); P.lf && P.lf.clear(); P.lt = { n: 0, ms: 0, max: 0 }; P.t0 = Date.now(); } catch (e) {} };
+  const rep = () => { try { const x = window.__rnPerfNow(); window.__rnPerfLast = { ...x, at: Date.now() }; const line = `⏱ 5분 성능 [${x.role} · ${x.page}${x.jw ? ' · 기록 창 열림' : ''}] 힙 ${x.heap ?? '?'}/${x.lim ?? '?'}MB · 화면 요소 ${x.dom.toLocaleString()} · 긴 작업 ${x.lt.n}번 ${x.lt.s}초(최대 ${x.lt.max}ms) · 되풀이 타이머 ${x.iv.n}개 ${x.iv.s}초 · GM 쓰기 ${x.gm.n}번 ${kb(x.gm.b)} · 이 PC 수집기 탭 ${x.tabs}개 ‖ 타이머 상위: ${x.iv.top.join(' | ') || '-'} ‖ GM 상위: ${x.gm.top.join(' | ') || '-'}`;
+      window.__rnLog && window.__rnLog('성능', x.lt.s > 30 || (x.heap && x.lim && x.heap / x.lim > 0.6) ? 'warn' : 'detail', line); if (x.lf.length) x.lf.forEach((t, i) => window.__rnLog('성능', 'detail', `⏱ 화면을 막은 스크립트 ${i + 1}위 [${x.role} · ${x.page}] ${t}`.slice(0, 590))); /* (1.88.7) 한 줄 600자 한도로 잘리던 것 → 순위마다 한 줄 */ P.iv.forEach((r) => { r.n = 0; r.ms = 0; r.max = 0; }); P.gm.clear(); P.lf && P.lf.clear(); P.lt = { n: 0, ms: 0, max: 0 }; P.t0 = Date.now(); } catch (e) {} };
   setTimeout(rep, 60000); setInterval(rep, 5 * 60000); })();
 /* 리드나우 수집기 1.0.0 — 고객 수집기(0.16.1)와 상품 수집기(0.8.1)를 하나로 합친 것.
  * 화면 오른쪽 위 탭으로 '고객'과 '상품·판매자·매입'을 바꿔 봄. 로그인·PC 이름·알라딘 아이디는 한 번만 넣으면 둘 다 씀.
@@ -3922,7 +3922,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
    *  처음 한 번(u1016)은 8월부터의 주문 전부(코드 없는 줄 589개 포함) · 그 뒤 1시간마다 최근 30일 · 여러 PC가 겹치지 않게 app_settings/sold_infer 표 */
   const SHIPPED_ST = /출고완료|집하|수령확인|배송완료|정산완료|구매확정/; const lineGradeC = (it) => it.condition || ((/\[중고-([^\]]+)\]/.exec(it.rawTitle || it.title || '') || [])[1]) || '';
   const kMsC = (v) => { if (!v) return 0; if (v.toMillis) return v.toMillis(); const s0 = String(v); if (/^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d)?$/.test(s0)) return Date.parse(s0 + (s0.length === 16 ? ':00' : '') + '+09:00') || 0; if (/^\d{4}-\d\d-\d\d$/.test(s0)) return Date.parse(s0 + 'T00:00:00+09:00') || 0; return Date.parse(s0) || 0; };
-  async function soldInfer(force) { if (PUBONLY || !auth.currentUser) return; const LR = C('app_settings').doc('sold_infer'); let first = false;
+  async function soldInfer(force) { if (PUBONLY || !auth.currentUser || (!force && window.__rnRest && window.__rnRest())) return; /* (1.88.6) 쉬는 탭은 하지 않음(상품 2만 5천 건을 탭마다 메모리에 올리던 것) */ const LR = C('app_settings').doc('sold_infer'); let first = false;
     try { let go = false; await db.runTransaction(async (tx) => { const d = (await tx.get(LR)).data() || {}; first = !d.u1016; if (!force && !first && d.at && Date.now() - Date.parse(d.at) < 55 * 60e3) return; if (d.lease && d.lease.pc !== PC_NAME && Date.now() - (+d.lease.ms || 0) < 15 * 60e3) return; tx.set(LR, { lease: { pc: PC_NAME, ms: Date.now() } }, { merge: true }); go = true; }); if (!go) return; } catch (e) { return; }
     const grp = first ? 'u1016' : 'auto_' + nowIso().slice(0, 10); const since = first ? '2026-08-01' : new Date(Date.now() + 9 * 3600e3 - 30 * 864e5).toISOString().slice(0, 10);
     try { await loadListings('inc'); const L = LISTINGS; const byIsbn = new Map(); const took = new Map(); /* (자동 점검 2026-10-16) 이미 어느 상품을 판매 끝으로 고른 주문 줄은 다시 고르지 않음 — 1시간마다 30일 주문을 다시 훑으며 앞에서 고른 상품이 판매완료가 되면 같은 ISBN의 다음 판매중 상품을 또 고르던 것 */ for (const [k, l] of L) { const so = l && l.soldInfer; if (so && so.how === 'isbn' && so.order && so.order.orderId && so.order.isbn) { const tk = so.order.orderId + '|' + so.order.isbn; took.set(tk, (took.get(tk) || 0) + Math.max(1, +l.qty || 1)); } } for (const [k, l] of L) { if (!l || l.active === false || !l.isbn13) continue; (byIsbn.get(l.isbn13) || byIsbn.set(l.isbn13, []).get(l.isbn13)).push(k); }
@@ -3975,14 +3975,17 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       await SR.set({ balance: P1.balance, at, by: PC_NAME, start, pages: last, refunds: rf, ...(first ? { fullAt: at } : {}), balHist: FV.arrayUnion({ at, balance: P1.balance }), ...W() }, { merge: true }); await finishJob('deposit', { saved, pages: page }).catch(() => {});
       log(`💰 알라딘 예치금: 총잔액 ${P1.balance.toLocaleString()}원 · 새 내역 ${saved}줄${first ? ' (처음 — 1년치)' : ''} · 환급신청 ${rf.length}건`); return 'done';
     } finally { await releaseLane('aladin'); } }
+  let LIST_LAST = 0, LIST_FULL = 0, LC_PUT_AT = 0; /* (1.88.6) 정범님 10/20 크롬 느림 실측: 일마다 이 PC 보관본(상품 2만 5천 건)을 IndexedDB에서 통째로 읽고(수 초 화면 멈춤) 바뀐 게 있으면 통째로 다시 씀(또 수 초) → 이미 메모리에 있으면 서버에서 바뀐 것만 받아 합치고, 보관본은 30분에 한 번만 다시 씀 */
+  const lcPut = (m, last, fullAt, now) => { if (!now && Date.now() - LC_PUT_AT < 30 * 60e3) return; LC_PUT_AT = Date.now(); LCACHE.put({ rows: [...m], last, fullAt }).catch(() => {}); };
   async function loadListings(force) {
     if (LISTINGS && !force) return LISTINGS;
+    if (LISTINGS && force === 'inc' && LIST_LAST && Date.now() - LIST_FULL < 24 * 3600e3) { try { let max = LIST_LAST; const ss = await C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(LIST_LAST - 120000)).get(); ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); LISTINGS.set(d.id, v); max = Math.max(max, lcMs(v)); } }); LIST_LAST = max; if (ss.size) lcPut(LISTINGS, max, LIST_FULL); return LISTINGS; } catch (e) {} }
     ui('기존 상품 기록 읽는 중', 0, 0);
     let c = null; if (!force || force === 'inc') { try { c = await LCACHE.get(); } catch (e) { c = null; } }
     if (c && Array.isArray(c.rows) && c.last && Date.now() - (c.fullAt || 0) < 24 * 3600e3) { try { const m = new Map(c.rows.map(([id, v]) => [id, lcRevive(v)])); let max = c.last; const ss = await C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(c.last - 120000)).get(); /* 2분 겹쳐 읽음(시계 차이) */ ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); m.set(d.id, v); max = Math.max(max, lcMs(v)); } });
-        LISTINGS = m; log(`기존 상품 ${m.size.toLocaleString()}건 (이 PC 보관본 + 바뀐 ${ss.size.toLocaleString()}건만 받음)`); if (ss.size) LCACHE.put({ rows: [...m], last: max, fullAt: c.fullAt }).catch(() => {}); return m; } catch (e) { log('보관본으로 읽기 실패 — 통째로 다시 읽음: ' + (e.code || e.message), 1); } }
+        LISTINGS = m; LIST_LAST = max; LIST_FULL = c.fullAt || Date.now(); log(`기존 상품 ${m.size.toLocaleString()}건 (이 PC 보관본 + 바뀐 ${ss.size.toLocaleString()}건만 받음)`); if (ss.size > 300) lcPut(m, max, c.fullAt); return m; } catch (e) { log('보관본으로 읽기 실패 — 통째로 다시 읽음: ' + (e.code || e.message), 1); } }
     const m = new Map(); let max = 0; const ss = await C('prd_listings').get(); ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); m.set(d.id, v); max = Math.max(max, lcMs(v)); } }); /* (1.57.7) 권한 시험 문서는 상품이 아님 */
-    LISTINGS = m; log(`기존 상품 ${m.size.toLocaleString()}건 읽음`); LCACHE.put({ rows: [...m], last: max || Date.now(), fullAt: Date.now() }).catch(() => {}); return m;
+    LISTINGS = m; LIST_LAST = max || Date.now(); LIST_FULL = Date.now(); log(`기존 상품 ${m.size.toLocaleString()}건 읽음`); lcPut(m, max || Date.now(), Date.now(), true); return m;
   }
   // 한 상품 줄을 합치기 규칙으로 올릴 작업 목록 만들기 (빈 값으로 덮지 않음, 바뀐 칸만 이력)
   function listingOps(row, source, seenAt) {
@@ -5476,8 +5479,8 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     if (!gone.length) return; if (gone.length > Math.max(10, rec.length * 0.3)) { log(`🔎 최근 등록 ${rec.length}개 중 ${gone.length}개가 샵매니저 목록에 없음 — 너무 많아 화면 오류일 수 있어 '삭제'로 쓰지 않음`, 1); return; }
     for (const l of gone) { await regMarkDeleted(l, '샵매니저 목록에 없음 — 샵매니저에서 지운 상품 (10분마다 확인)', { deletedFrom: l.status || null }); await delChangeLog({ ...l, listingKey: l.id, _before: l.status || null }, null, { by: null, why: '샵매니저 모든 상태 목록에 없음(최근 14일 등록 확인)', mode: 'sweep' }, 'gone'); }
     log(`🔎 샵매니저에서 지운 최근 등록 상품 ${gone.length}개를 웹앱 상품 목록에 '삭제'로: ${gone.slice(0, 5).map((l) => l.title || l.usedCode).join(', ')}${gone.length > 5 ? ' …' : ''}`, 1); }
-  setInterval(() => { if (!regVerBusy) regGoneSweep().catch((e) => log('최근 등록 상품 확인 실패: ' + (e.code || e.message), 1)); }, 2 * 60000);
-  setInterval(() => { if (!PUBONLY && auth.currentUser) delCheckSweep().catch(() => {}); }, 10 * 60000);
+  setInterval(() => { if (!regVerBusy && !(window.__rnRest && window.__rnRest())) regGoneSweep().catch((e) => log('최근 등록 상품 확인 실패: ' + (e.code || e.message), 1)); }, 2 * 60000);
+  setInterval(() => { if (!PUBONLY && auth.currentUser && !(window.__rnRest && window.__rnRest())) delCheckSweep().catch(() => {}); }, 10 * 60000);
   setTimeout(() => regGoneSweep(true).catch(() => {}), 90000);
   /* (1.35.0) 알라딘 매입 — 웹앱 '알라딘 매입' 화면이 맡긴 '팔기 장바구니에 담기' (shp_cmds type 'c2bAdd' · items [{usedCode, isbn13, title, grade, ...}])
      책마다: ① 팔기 장바구니(wc2b_sales.aspx)에 이미 있으면 'already'
