@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "수집기 크롬 느림",
+ "since": "2026-10-20T06:24:18Z",
+ "beat": "2026-10-20T06:24:18Z",
  "ask": null,
  "last": {
   "who": "chat",
