@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.6
+// @version      1.89.7
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -7365,7 +7365,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const mask = (v, k) => { if (v == null) return v; if (Array.isArray(v)) return v.slice(0, 5).map((x) => mask(x, k)); if (typeof v === 'object') { const o = {}; for (const [kk, vv] of Object.entries(v)) o[kk] = /name|nm$|^nm|tel|phone|hp|mobile|addr|zip|post|email|mail|receiv|recv|buyer|orderer|ordrNm|custNm|memo|msg|request|account|bank|ssn|birth|ip$/i.test(kk) && (typeof vv === 'string' || typeof vv === 'number') ? '＊' : mask(vv, kk); return o; } if (typeof v === 'string' && /^01[016789]-?\d{3,4}-?\d{4}$/.test(v)) return '＊'; return v; };
   const shape = (v, d) => { if (d > 6) return '…'; if (Array.isArray(v)) return v.length ? [shape(v[0], d + 1)] : []; if (v && typeof v === 'object') { const o = {}; Object.keys(v).slice(0, 80).forEach((k) => (o[k] = shape(v[k], d + 1))); return o; } return v === null ? 'null' : typeof v; };
   const sid = (sig) => sig.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 140) || 'root';
-  let busy = false; const drain = async () => { if (busy) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead') return; if (!(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return; let off = false; try { const d = await firebase.firestore().collection('app_settings').doc('platforms').get(); off = !!(((d.exists && d.data()) || {}).y24 || {}).off; } catch (e) {} if (off) return;
+  let busy = false; const drain = async () => { if (busy) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead') return; if (!(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return; if (!qGet().length) return; /* (1.89.7 자동 점검) 줄이 비었으면 Firebase를 묻지 않음 — 예전엔 일하는 탭마다 10초마다 app_settings/platforms를 읽었음(PC마다 하루 약 8,600읽기) */ let off = false; try { const d = await firebase.firestore().collection('app_settings').doc('platforms').get(); off = !!(((d.exists && d.data()) || {}).y24 || {}).off; } catch (e) {} if (off) return;
     const q = qGet(); if (!q.length) return; busy = true; const fs = firebase.firestore(); const FV = firebase.firestore.FieldValue; let ok = 0;
     try { for (const r of q) { let parsed = null; if (r.json && r.body) { try { parsed = JSON.parse(r.body); } catch (e) {} } const pid = sid(r.sig); const sample = parsed != null ? JSON.stringify(mask(parsed)).slice(0, 60000) : r.body ? String(r.body).replace(/01[016789]-?\d{3,4}-?\d{4}/g, '＊').slice(0, 20000) : null;
         await fs.collection('y24_probe').doc(pid).set({ sig: r.sig, n: FV.increment(1), lastAt: new Date(r.at).toISOString(), lastUrl: r.url.replace(/(name|nm|tel|hp|addr)=[^&]*/gi, '$1=＊').slice(0, 500), page: r.page, status: r.status, ctype: r.ctype, req: r.req ? String(r.req).replace(/(name|nm|tel|hp|addr|passw\w*|pwd)=[^&]*/gi, '$1=＊').slice(0, 2000) : null, shape: parsed != null ? JSON.stringify(shape(parsed, 0)).slice(0, 20000) : null, sample, bytes: r.body ? r.body.length : 0, by: (window.__rnPcName && window.__rnPcName.get()) || null, uploadedAt: FV.serverTimestamp() }, { merge: true });

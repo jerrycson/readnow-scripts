@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.6의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.7의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.6' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.6', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.7' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.7', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -393,7 +393,7 @@
   const mask = (v, k) => { if (v == null) return v; if (Array.isArray(v)) return v.slice(0, 5).map((x) => mask(x, k)); if (typeof v === 'object') { const o = {}; for (const [kk, vv] of Object.entries(v)) o[kk] = /name|nm$|^nm|tel|phone|hp|mobile|addr|zip|post|email|mail|receiv|recv|buyer|orderer|ordrNm|custNm|memo|msg|request|account|bank|ssn|birth|ip$/i.test(kk) && (typeof vv === 'string' || typeof vv === 'number') ? '＊' : mask(vv, kk); return o; } if (typeof v === 'string' && /^01[016789]-?\d{3,4}-?\d{4}$/.test(v)) return '＊'; return v; };
   const shape = (v, d) => { if (d > 6) return '…'; if (Array.isArray(v)) return v.length ? [shape(v[0], d + 1)] : []; if (v && typeof v === 'object') { const o = {}; Object.keys(v).slice(0, 80).forEach((k) => (o[k] = shape(v[k], d + 1))); return o; } return v === null ? 'null' : typeof v; };
   const sid = (sig) => sig.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 140) || 'root';
-  let busy = false; const drain = async () => { if (busy) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead') return; if (!(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return; let off = false; try { const d = await firebase.firestore().collection('app_settings').doc('platforms').get(); off = !!(((d.exists && d.data()) || {}).y24 || {}).off; } catch (e) {} if (off) return;
+  let busy = false; const drain = async () => { if (busy) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead') return; if (!(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return; if (!qGet().length) return; /* (1.89.7 자동 점검) 줄이 비었으면 Firebase를 묻지 않음 — 예전엔 일하는 탭마다 10초마다 app_settings/platforms를 읽었음(PC마다 하루 약 8,600읽기) */ let off = false; try { const d = await firebase.firestore().collection('app_settings').doc('platforms').get(); off = !!(((d.exists && d.data()) || {}).y24 || {}).off; } catch (e) {} if (off) return;
     const q = qGet(); if (!q.length) return; busy = true; const fs = firebase.firestore(); const FV = firebase.firestore.FieldValue; let ok = 0;
     try { for (const r of q) { let parsed = null; if (r.json && r.body) { try { parsed = JSON.parse(r.body); } catch (e) {} } const pid = sid(r.sig); const sample = parsed != null ? JSON.stringify(mask(parsed)).slice(0, 60000) : r.body ? String(r.body).replace(/01[016789]-?\d{3,4}-?\d{4}/g, '＊').slice(0, 20000) : null;
         await fs.collection('y24_probe').doc(pid).set({ sig: r.sig, n: FV.increment(1), lastAt: new Date(r.at).toISOString(), lastUrl: r.url.replace(/(name|nm|tel|hp|addr)=[^&]*/gi, '$1=＊').slice(0, 500), page: r.page, status: r.status, ctype: r.ctype, req: r.req ? String(r.req).replace(/(name|nm|tel|hp|addr|passw\w*|pwd)=[^&]*/gi, '$1=＊').slice(0, 2000) : null, shape: parsed != null ? JSON.stringify(shape(parsed, 0)).slice(0, 20000) : null, sample, bytes: r.body ? r.body.length : 0, by: (window.__rnPcName && window.__rnPcName.get()) || null, uploadedAt: FV.serverTimestamp() }, { merge: true });
