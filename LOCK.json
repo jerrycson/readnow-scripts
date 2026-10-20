@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "3시간 점검 숫자 요약(health)",
- "since": "2026-10-20T22:59:12Z",
- "beat": "2026-10-20T22:59:12Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "kpsum",
-  "done": "요약 0개 — 열쇠 파일 쓰기가 권한 검사에 막혀 중단",
-  "at": "2026-10-20T20:49:48Z"
+  "who": "chat",
+  "done": "클라우드 0.29.1 (3시간 점검 숫자 요약)",
+  "at": "2026-10-20T23:39:32Z"
  }
 }
