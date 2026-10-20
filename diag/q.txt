@@ -1,3 +1,1 @@
-cmds=regDel&n=10
-cmds=regBulk&n=6
-regitems=40
+ttl=성경 모음집
