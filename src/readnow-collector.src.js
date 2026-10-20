@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.2
+// @version      1.89.3
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -6163,12 +6163,12 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   /* (1.63.6 전체 점검) 한 문서의 색인 칸 한도(4만 개)에 먼저 닿음: 15분마다·1시간마다 칸이 40일이면 회차 수천 개 × 칸 8개 → 거의 4만 → 넘으면 모든 PC의 자동 수집 확인·기록이 실패
    *  → 10일 지난 회차는 날마다 prd_jobs/autoSched_YYYY-MM-DD 문서로 옮김(지우지 않음 · 옮기기와 빼기를 한 묶음으로) · 한 번에 최대 3,000개 · 남으면 1시간 뒤 다시 */
   let schedArchAt = 0;
-  async function schedArchive() { const { day } = kstNow(); if (Date.now() - schedArchAt < 3600e3 || !auth.currentUser) return; schedArchAt = Date.now(); const cut = new Date(Date.parse(day + 'T00:00:00Z') - 10 * 864e5).toISOString().slice(0, 10);
+  async function schedArchive() { const { day } = kstNow(); if (Date.now() - schedArchAt < 3600e3 || !auth.currentUser) return; schedArchAt = Date.now(); const cut = new Date(Date.parse(day + 'T00:00:00Z') - 2 * 864e5).toISOString().slice(0, 10); /* (1.89.3) 10일 → 2일: 회차 기록이 한 문서(prd_jobs/autoSched)에 10일치 쌓여 Firebase 문서 한도(색인 항목 수)를 넘어 10/20 17:00부터 모든 PC의 ⏰ 매일 자동이 'too many index entries'로 멈췄음 — 지난 것은 날짜별 보관 문서로(지우지 않음) */
     const old = Object.keys(SCHED_RUNS).filter((k) => { const d = k.split('@')[1] || ''; return d && d < cut; }); if (!old.length) return;
     try { const byD = {}; for (const k of old.slice(0, 3000)) { const d = k.split('@')[1].slice(0, 10); (byD[d] = byD[d] || {})[k] = SCHED_RUNS[k]; }
       const del = {}; for (const m of Object.values(byD)) for (const k of Object.keys(m)) del[k] = firebase.firestore.FieldValue.delete();
       const b = db.batch(); for (const [d, runs] of Object.entries(byD)) b.set(C('prd_jobs').doc('autoSched_' + d), { runs, at: nowIso() }, { merge: true }); b.set(SCHED_RUN(), { runs: del }, { merge: true }); await b.commit();
-      log(`⏰ 매일 자동: 10일 지난 회차 기록 ${Object.keys(del).length}개를 날짜별 보관 문서로 옮김(지우지 않음)${old.length > 3000 ? ` · 남은 ${old.length - 3000}개는 1시간 뒤` : ''}`); } catch (e) { schedArchAt = Date.now() - 3300e3; log('⏰ 회차 기록 옮기기 실패(5분 뒤 다시): ' + (e.code || e.message), 1); } }
+      log(`⏰ 매일 자동: 2일 지난 회차 기록 ${Object.keys(del).length}개를 날짜별 보관 문서로 옮김(지우지 않음)${old.length > 3000 ? ` · 남은 ${old.length - 3000}개는 1시간 뒤` : ''}`); } catch (e) { schedArchAt = Date.now() - 3300e3; log('⏰ 회차 기록 옮기기 실패(5분 뒤 다시): ' + (e.code || e.message), 1); } }
   const schedHM = (iso) => AS.hm(AS.kst(AS.toMs(iso)).min);
   let schedDrawDay = '';
   function schedDraw() { const el = globalThis.__rnById('rnpSched'); if (!el || !AS) return; const S0 = SCHED || { on: false }; const { day } = kstNow(); schedDrawDay = day; const slots = AS.slotsOf(S0); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
