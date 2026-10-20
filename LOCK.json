@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "세션 완료·간단 직접 입력·출간일",
+ "since": "2026-10-20T06:00:36Z",
+ "beat": "2026-10-20T06:00:36Z",
  "ask": null,
  "last": {
   "who": "chat",
