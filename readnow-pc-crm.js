@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.0의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.1의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.0' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.0', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.1' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.1', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -856,7 +856,7 @@
     const orders = c.saleOrderCount || 0; const amt = c.salesAmount || 0; const last = days(c.lastSaleAt || c.lastOrderAt);
     // 가치 ① 최근성 (25)
     let r = 0; if (orders) r = last <= 30 ? 25 : last <= 90 ? 20 : last <= 180 ? 14 : last <= 365 ? 8 : 3;
-    V.push({ k: 'recency', label: '최근성', pts: r, max: 25, text: orders ? `마지막 구매 ${last}일 전` : '구매 없음' });
+    V.push({ k: 'recency', label: '최근성', pts: r, max: 25, text: orders ? `마지막 구매 ${String(c.lastSaleAt || c.lastOrderAt || '').slice(0, 10)}` : '구매 없음' }); /* (1.89.1) '며칠 전'은 날마다 바뀌어 고객 4,700여 명을 PC마다 하루 한 번 통째로 다시 썼음(🚨 쓰기 감시 crm_customers) → 날짜로 적음(며칠 전은 보는 쪽이 셈) */
     // ② 빈도 (25)
     const f = orders >= 10 ? 25 : orders >= 5 ? 20 : orders >= 3 ? 15 : orders === 2 ? 10 : orders === 1 ? 5 : 0;
     V.push({ k: 'frequency', label: '구매 빈도', pts: f, max: 25, text: `구매 주문 ${orders}회` });
@@ -1604,8 +1604,13 @@
     const custs = aggregateCustomers(orders, inters);
     const sent = new Map((await dbAll('uploaded')).filter((u) => u._key.startsWith('crm_customers/')).map((u) => [u._key, u.hash]));
     const hashC = (c) => hashStr(stableStr(clean({ ...c, scores: { ...c.scores, day: undefined } })));
-    const todo = custs.filter((c) => sent.get(`crm_customers/${c.customerId}`) !== hashC(c));
-    log(`고객 ${custs.length.toLocaleString()}명 중 점수·요약이 바뀐 ${todo.length.toLocaleString()}명을 올립니다`);
+    const todo0 = custs.filter((c) => sent.get(`crm_customers/${c.customerId}`) !== hashC(c));
+    /* (1.89.1) 이 PC가 전에 올린 것과 다를 때도 Firebase에 지금 있는 것과 같으면 쓰지 않음 — PC마다 기억이 달라(다른 PC가 이미 올림) 같은 내용을 PC 수만큼 다시 썼음 */
+    const todo = []; const canon = (x) => JSON.stringify(x, (k, v) => (v && typeof v === 'object' && !Array.isArray(v) && !v.toMillis ? Object.keys(v).sort().reduce((o, kk) => { o[kk] = v[kk]; return o; }, {}) : v)); const FPid = FB.firestore.FieldPath.documentId(); const sameSkip = [];
+    for (let i = 0; i < todo0.length; i += 30) { const part = todo0.slice(i, i + 30); let cur = new Map(); try { const qs = await fdb.collection('crm_customers').where(FPid, 'in', part.map((c) => c.customerId)).get(); qs.forEach((d) => cur.set(d.id, d.data())); } catch (e) { cur = null; }
+      for (const c of part) { const nv = clean(c); const o = cur && cur.get(c.customerId); const same = o && Object.keys(nv).every((k) => k === 'scores' ? canon({ ...(nv.scores || {}), day: null }) === canon({ ...(o.scores || {}), day: null }) : canon(nv[k] ?? null) === canon(o[k] ?? null)); if (same) sameSkip.push(c); else todo.push(c); } }
+    if (sameSkip.length) await dbPut('uploaded', sameSkip.map((c) => ({ _key: `crm_customers/${c.customerId}`, hash: hashC(c), at: now() })));
+    log(`고객 ${custs.length.toLocaleString()}명 중 점수·요약이 바뀐 ${todo.length.toLocaleString()}명을 올립니다${sameSkip.length ? ` (Firebase에 이미 같은 내용 ${sameSkip.length.toLocaleString()}명은 건너뜀)` : ''}`);
     for (let i = 0; i < todo.length; i += 300) {
       checkPause();
       const chunk = todo.slice(i, i + 300); const b = fdb.batch();
