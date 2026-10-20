@@ -1,2 +1,3 @@
-recentDel=1
-perf=300
+cmds=regDel&n=10
+cmds=regBulk&n=6
+regitems=40
