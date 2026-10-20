@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.88.8의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.88.9의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.88.8' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.88.8', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.88.9' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.88.9', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -371,5 +371,37 @@
       <small>${vm ? `배운 표 ${esc(String(vm.trainedAt || '').slice(0, 10))}` : '배운 표 없음(기본)'}${stock ? ` · 우리 재고 ${stock}권` : ''} · 웹앱 🧠 가격 판정 상세와 같은 계산</small></div>`;
     box.querySelector('.hd').onclick = () => { box.classList.toggle('min'); try { GM_setValue('rn-vr-min', box.classList.contains('min') ? 1 : 0); } catch (e1) {} }; document.body.appendChild(box);
 } catch (e) { console.warn('[리드나우] 판매가치 상자 실패', e); } })();
+/* ══════════ 예스24 (1.88.9) — 정범님 10/20: 두 번째 판매 플랫폼 예스24를 기존 틀에 녹임 · 언제든 통으로 들어낼 수 있게 이 한 덩어리(rnY24 — 이 파일 맨 끝 · 다른 코드와 섞지 않음) + y24_·crm_y24_ 모음에만
+ *  1단계 = 🔭 탐색·원문 수집: 예스24 판매관리(uscm.yes24.com)는 화면이 서버에서 자료(JSON)를 따로 받아 그림 → 그 응답을 그대로 가로채 모음(화면 글 긁기보다 정확·튼튼)
+ *   · 예스24 화면 탭: 응답마다 {길(주소·방식), 보낸 조건, 받은 원문}을 이 PC의 Tampermonkey 저장소 줄(rn-y24q)에 넣음 — 이 화면은 Firebase에 로그인하지 않음(예스24 쪽 저장소에 우리 흔적·열쇠를 남기지 않음)
+ *   · 이 PC의 일하는 수집기 탭(알라딘): 10초마다 그 줄을 비워 Firebase에 → y24_probe/{길}(몇 번·마지막 때·칸 모양·고객 정보를 가린 표본) + crm_y24_raw(원문 그대로 · 지우지 않음 · crm_ 이라 진단에서 읽지 않음)
+ *   · 로그인·비밀번호·회원정보 길은 원문을 남기지 않음(길 이름만) · 끄기: app_settings/platforms.y24.off = true(웹앱 설정) 또는 이 모듈을 빼면 끝 */
+(function rnY24() { if (window.top !== window) return; const G = globalThis; const onY = /^uscm\.yes24\.com$/i.test(location.hostname); const QK = 'rn-y24q'; const SECRET = /login|logout|passw|pwd|auth|cert|token|member\/(info|modify)|sellerinfo/i;
+  const qGet = () => { try { const v = GM_getValue(QK, []); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+  if (onY) { /* ── 예스24 화면: 응답 가로채기 */
+    const W = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window; let n = 0, lastSig = ''; const badge = document.createElement('div'); badge.style.cssText = 'position:fixed;right:8px;bottom:8px;z-index:2147483646;background:#1F5FAF;color:#fff;font:12px/1.4 system-ui,"Malgun Gothic";padding:4px 9px;border-radius:12px;opacity:.88;pointer-events:none'; const show = () => { badge.textContent = `🟦 리드나우 예스24 · 받은 응답 ${n}개${lastSig ? ' · ' + lastSig.slice(0, 40) : ''}`; if (!badge.isConnected && document.body) document.body.appendChild(badge); };
+    const push = (rec) => { try { const q = qGet(); let bytes = q.reduce((a, x) => a + (x.body ? x.body.length : 0), 0); q.push(rec); while (q.length > 80 || bytes > 6e6) { const x = q.shift(); bytes -= x && x.body ? x.body.length : 0; } GM_setValue(QK, q); n++; lastSig = rec.sig; show(); } catch (e) {} };
+    const take = (method, url, reqBody, status, ctype, text) => { try { const u = new URL(url, location.href); if (!/yes24\.com$/i.test(u.hostname)) return; if (/\.(js|css|png|jpe?g|gif|svg|woff2?|ico)$/i.test(u.pathname)) return; const sig = (method || 'GET').toUpperCase() + ' ' + u.pathname; const sec = SECRET.test(u.pathname); const isJ = /json/i.test(ctype || '') || /^\s*[\[{]/.test(String(text || '').slice(0, 2));
+        push({ sig, url: u.pathname + (u.search || ''), page: location.pathname, at: Date.now(), status, ctype: String(ctype || '').slice(0, 60), req: sec ? null : String(reqBody == null ? '' : typeof reqBody === 'string' ? reqBody : (() => { try { return reqBody instanceof URLSearchParams ? reqBody.toString() : JSON.stringify(reqBody); } catch (e) { return '[?]'; } })()).slice(0, 4000), json: isJ, body: sec ? null : String(text || '').slice(0, 1500000) }); } catch (e) {} };
+    try { const XP = W.XMLHttpRequest.prototype; const oOpen = XP.open, oSend = XP.send; XP.open = function (m, u) { this.__rnY = { m, u: String(u) }; return oOpen.apply(this, arguments); }; XP.send = function (b) { const x = this; const meta = x.__rnY; if (meta) x.addEventListener('loadend', () => { try { const ct = x.getResponseHeader('content-type') || ''; let t = ''; if (x.responseType === '' || x.responseType === 'text') t = x.responseText; else if (x.responseType === 'json') t = JSON.stringify(x.response); take(meta.m, meta.u, b, x.status, ct, t); } catch (e) {} }); return oSend.apply(this, arguments); }; } catch (e) {}
+    try { const oF = W.fetch; if (oF) W.fetch = function (input, init) { const p = oF.apply(this, arguments); try { const url = typeof input === 'string' ? input : input && input.url; const m = (init && init.method) || (input && input.method) || 'GET'; const b = init && init.body; p.then((r) => { try { const ct = r.headers.get('content-type') || ''; if (/json|text|html/i.test(ct)) r.clone().text().then((t) => take(m, url, b, r.status, ct, t)).catch(() => {}); } catch (e) {} }).catch(() => {}); } catch (e) {} return p; }; } catch (e) {}
+    if (document.body) show(); else document.addEventListener('DOMContentLoaded', show);
+    try { window.__rnLog && window.__rnLog('예스24', 'info', `예스24 판매관리 화면(${location.pathname}) — 응답 받기 켬 · 일하는 수집기 탭(알라딘)이 Firebase로 옮김`); } catch (e) {}
+    return; }
+  /* ── 알라딘 쪽 일하는 수집기 탭: 줄을 비워 Firebase로 */
+  if (!/(^|\.)aladin\.co\.kr$/i.test(location.hostname) || G.__rnPubChrome) return;
+  const mask = (v, k) => { if (v == null) return v; if (Array.isArray(v)) return v.slice(0, 5).map((x) => mask(x, k)); if (typeof v === 'object') { const o = {}; for (const [kk, vv] of Object.entries(v)) o[kk] = /name|nm$|^nm|tel|phone|hp|mobile|addr|zip|post|email|mail|receiv|recv|buyer|orderer|ordrNm|custNm|memo|msg|request|account|bank|ssn|birth|ip$/i.test(kk) && (typeof vv === 'string' || typeof vv === 'number') ? '＊' : mask(vv, kk); return o; } if (typeof v === 'string' && /^01[016789]-?\d{3,4}-?\d{4}$/.test(v)) return '＊'; return v; };
+  const shape = (v, d) => { if (d > 6) return '…'; if (Array.isArray(v)) return v.length ? [shape(v[0], d + 1)] : []; if (v && typeof v === 'object') { const o = {}; Object.keys(v).slice(0, 80).forEach((k) => (o[k] = shape(v[k], d + 1))); return o; } return v === null ? 'null' : typeof v; };
+  const sid = (sig) => sig.replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 140) || 'root';
+  let busy = false; const drain = async () => { if (busy) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead') return; if (!(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return; let off = false; try { const d = await firebase.firestore().collection('app_settings').doc('platforms').get(); off = !!(((d.exists && d.data()) || {}).y24 || {}).off; } catch (e) {} if (off) return;
+    const q = qGet(); if (!q.length) return; busy = true; const fs = firebase.firestore(); const FV = firebase.firestore.FieldValue; let ok = 0;
+    try { for (const r of q) { let parsed = null; if (r.json && r.body) { try { parsed = JSON.parse(r.body); } catch (e) {} } const pid = sid(r.sig); const sample = parsed != null ? JSON.stringify(mask(parsed)).slice(0, 60000) : r.body ? String(r.body).replace(/01[016789]-?\d{3,4}-?\d{4}/g, '＊').slice(0, 20000) : null;
+        await fs.collection('y24_probe').doc(pid).set({ sig: r.sig, n: FV.increment(1), lastAt: new Date(r.at).toISOString(), lastUrl: r.url.replace(/(name|nm|tel|hp|addr)=[^&]*/gi, '$1=＊').slice(0, 500), page: r.page, status: r.status, ctype: r.ctype, req: r.req ? String(r.req).replace(/(name|nm|tel|hp|addr|passw\w*|pwd)=[^&]*/gi, '$1=＊').slice(0, 2000) : null, shape: parsed != null ? JSON.stringify(shape(parsed, 0)).slice(0, 20000) : null, sample, bytes: r.body ? r.body.length : 0, by: (window.__rnPcName && window.__rnPcName.get()) || null, uploadedAt: FV.serverTimestamp() }, { merge: true });
+        if (r.body) { const parts = []; for (let i = 0; i < r.body.length; i += 280000) parts.push(r.body.slice(i, i + 280000)); const base = fs.collection('crm_y24_raw').doc(); for (let i = 0; i < parts.length; i++) await (i ? fs.collection('crm_y24_raw').doc(base.id + '_' + i) : base).set({ sig: r.sig, url: r.url, page: r.page, at: new Date(r.at).toISOString(), req: r.req || null, part: i, parts: parts.length, body: parts[i], by: (window.__rnPcName && window.__rnPcName.get()) || null, uploadedAt: FV.serverTimestamp() }); }
+        ok++; } }
+    catch (e) { try { window.__rnLog && window.__rnLog('예스24', 'warn', '예스24 응답 올리기 실패: ' + (e.code || e.message)); } catch (x) {} }
+    finally { try { const q2 = qGet(); GM_setValue(QK, q2.slice(Math.min(ok, q.length))); } catch (e) {} busy = false; if (ok) try { window.__rnLog && window.__rnLog('예스24', 'detail', `예스24 응답 ${ok}개를 Firebase에 올림(y24_probe · crm_y24_raw)`); } catch (e) {} } };
+  setTimeout(drain, 15000); setInterval(() => drain().catch(() => {}), 10000);
+})();
 
 }]);
