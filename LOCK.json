@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "수집기 크롬 느림",
- "since": "2026-10-20T06:24:18Z",
- "beat": "2026-10-20T06:24:23Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "웹앱 1.69.0",
-  "at": "2026-10-20T06:03:23Z"
+  "done": "수집기 1.89.0 · 웹앱 1.71.1 · 클라우드 0.26.0",
+  "at": "2026-10-20T07:26:29Z"
  }
 }
