@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "상세 프리즈·등록 필수·팝업 닫기·탭 정돈",
+ "since": "2026-10-20T03:22:01Z",
+ "beat": "2026-10-20T03:22:01Z",
  "ask": null,
  "last": {
   "who": "chat",
