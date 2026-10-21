@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "편집 실패 고침·사진·재고 품목·로거 나누기",
+ "since": "2026-10-21T13:32:16Z",
+ "beat": "2026-10-21T13:32:16Z",
  "ask": null,
  "last": {
   "who": "auto-check",
