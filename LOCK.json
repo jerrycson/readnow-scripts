@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "단축키 Alt1/2·Q/W",
- "since": "2026-10-21T05:56:08Z",
- "beat": "2026-10-21T05:56:08Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "등록 개선 1차 끝",
-  "at": "2026-10-21T05:48:04Z"
+  "done": "단축키 끝",
+  "at": "2026-10-21T05:56:27Z"
  }
 }
