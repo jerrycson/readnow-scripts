@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.18
+// @version      1.89.19
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -587,14 +587,30 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   globalThis.__rnHead(st);
   const box = document.createElement('div'); box.id = 'rn-ctl';
   const pc = () => (window.__rnPcName && window.__rnPcName.get()) || '이 PC';
-  box.innerHTML = `<div class="ch" title="눌러서 접기·펼치기"><b>리드나우 수집기</b><small id="rnCtlWho"></small><span class="sp"></span><span class="bdg" id="rnCtlBadge">준비 중</span><button class="tg" id="rnCtlMin" title="접기·펼치기">–</button></div>
+  box.innerHTML = `<div class="ch" title="눌러서 접기·펼치기"><b>리드나우 수집기</b><small id="rnCtlWho"></small><span class="sp"></span><span class="bdg" id="rnCtlBadge">준비 중</span><button class="tg" id="rnCtlMin" title="접기·펼치기">–</button><button class="tg" id="rnCtlIco" title="작게(오른쪽 아래 아이콘으로) — 아이콘을 누르면 다시">▁</button></div>
     <div class="rsub" id="rnCtlSub" hidden></div>
     <div id="rn-uni"><button data-t="ov">개요</button><button data-t="crm">고객·주문</button><button data-t="prd">상품·매입</button><button data-log="1" title="작업 기록 크게 보기 (이 PC의 모든 기록 · 날짜별 · 검색 · 내려받기)">기록</button></div>
     <div class="cb"><div id="rn-ov"></div></div>`;
   const bar = box.querySelector('#rn-uni'); const body = box.querySelector('.cb'); const ov = box.querySelector('#rn-ov');
   const set = (t) => { if (t === 'hide') t = 'ov'; box.dataset.rnu = t; /* (1.70.0) 알라딘 화면의 body에 표시를 남기지 않음 — 수집기 칸에만 */ GM_setValue('rnu-tab', t); bar.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.t === t)); draw(); };
   const setMin = (on, keep) => { box.classList.toggle('min', on); if (!keep) GM_setValue('rnu-ctl-min', on ? 1 : 0); box.querySelector('#rnCtlMin').textContent = on ? '+' : '–'; };
-  box.querySelector('.ch').addEventListener('click', () => setMin(!box.classList.contains('min')));
+  /* (1.89.19) 정범님 10/21: 머리 칸을 끌어 원하는 곳으로 옮기고 그 자리를 이 PC에 기억 — 일하는 수집기(활성)와 쉬는 수집기(비활성) 자리를 따로 · ▁ 단추 = 오른쪽 아래 반투명 아이콘으로(누르면 다시) · 아이콘은 오른쪽 아래에 다른 것이 있으면 그 위로 */
+  const roleK = () => (window.__rnRest && window.__rnRest() ? 'rest' : 'act'); let posRole = null, dragMoved = false;
+  const clampPos = (p) => { const w = box.offsetWidth || 420, h = Math.min(box.offsetHeight || 60, 60); return { left: Math.max(0, Math.min(window.innerWidth - Math.min(w, 120), p.left)), top: Math.max(0, Math.min(window.innerHeight - h, p.top)) }; };
+  const posApply = (force) => { const k = roleK(); if (!force && k === posRole) return; posRole = k; const p = GM_getValue('rnu-pos-' + k, null); if (p && p.left != null) { const q = clampPos(p); box.style.left = q.left + 'px'; box.style.top = q.top + 'px'; box.style.right = 'auto'; } else { box.style.left = ''; box.style.top = ''; box.style.right = ''; } icoApply(); };
+  const posSave = () => { const r = box.getBoundingClientRect(); GM_setValue('rnu-pos-' + roleK(), { left: Math.round(r.left), top: Math.round(r.top), at: Date.now() }); try { window.__rnLog && window.__rnLog('수집기', 'detail', `📌 수집기 자리 저장(${roleK() === 'act' ? '일하는 수집기' : '쉬는 수집기'})`); } catch (e) {} };
+  { const ch = box.querySelector('.ch'); let sx = 0, sy = 0, bl = 0, bt = 0, on = false;
+    ch.addEventListener('pointerdown', (e) => { if (e.button !== 0 || e.target.closest('button')) return; const r = box.getBoundingClientRect(); sx = e.clientX; sy = e.clientY; bl = r.left; bt = r.top; on = true; dragMoved = false; try { ch.setPointerCapture(e.pointerId); } catch (er) {} });
+    ch.addEventListener('pointermove', (e) => { if (!on) return; const dx = e.clientX - sx, dy = e.clientY - sy; if (!dragMoved && Math.abs(dx) + Math.abs(dy) < 6) return; dragMoved = true; const q = clampPos({ left: bl + dx, top: bt + dy }); box.style.left = q.left + 'px'; box.style.top = q.top + 'px'; box.style.right = 'auto'; ch.style.cursor = 'grabbing'; });
+    ch.addEventListener('pointerup', () => { if (!on) return; on = false; ch.style.cursor = ''; if (dragMoved) posSave(); });
+    ch.addEventListener('dblclick', (e) => { if (e.target.closest('button')) return; GM_setValue('rnu-pos-' + roleK(), null); posApply(true); }); ch.title = '눌러서 접기·펼치기 · 끌어서 옮기기(자리 기억 — 일하는/쉬는 수집기 따로) · 두 번 누르면 원래 자리'; }
+  box.querySelector('.ch').addEventListener('click', (e) => { if (dragMoved) { dragMoved = false; return; } if (e.target.closest('#rnCtlIco')) return; setMin(!box.classList.contains('min')); });
+  /* ▁ 아이콘으로 작게 */
+  const ico = document.createElement('div'); ico.id = 'rn-ctl-ico'; ico.title = '리드나우 수집기 — 누르면 다시 펼침'; ico.textContent = 'RN'; ico.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:2147483646;width:38px;height:38px;border-radius:50%;background:rgba(47,93,80,.55);color:#fff;font:800 13px/38px system-ui,Malgun Gothic,sans-serif;text-align:center;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25);display:none;user-select:none';
+  const icoK = () => 'rnu-ico-' + roleK(); const icoPlace = () => { if (ico.style.display === 'none') return; let bottom = 14; const seen = new Set(); for (let y = window.innerHeight - 20; y > window.innerHeight - 320; y -= 24) for (const x of [window.innerWidth - 24, window.innerWidth - 60]) { let L = []; try { L = document.elementsFromPoint(x, y); } catch (e) {} for (const el of L) { if (el === ico || el === document.body || el === document.documentElement || box.contains(el) || seen.has(el)) continue; seen.add(el); let f = el; for (let d = 0; f && d < 4 && f !== document.body; d++, f = f.parentElement) { if (getComputedStyle(f).position === 'fixed') { const r = f.getBoundingClientRect(); if (r.height < window.innerHeight * 0.6) bottom = Math.max(bottom, window.innerHeight - r.top + 8); break; } } } } ico.style.bottom = Math.min(bottom, window.innerHeight - 50) + 'px'; }; /* 오른쪽 아래 몇 점만 살펴 고정된 것(알림·칩 등)이 있으면 그 위로 — 화면 전체를 훑지 않음 */
+  const icoApply = () => { const on = !!GM_getValue(icoK(), 0); box.style.display = on ? 'none' : ''; ico.style.display = on ? 'block' : 'none'; icoPlace(); };
+  ico.onclick = () => { GM_setValue(icoK(), 0); icoApply(); }; box.querySelector('#rnCtlIco').onclick = (e) => { e.stopPropagation(); GM_setValue(icoK(), 1); icoApply(); };
+  setInterval(() => { posApply(false); icoPlace(); }, 2000); window.addEventListener('resize', () => posApply(true));
   bar.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.log) { window.__rnJournalToggle && window.__rnJournalToggle(); return; } if (b.dataset.t) set(b.dataset.t); });
   // 예전 패널(고객·상품·가격 감시)을 이 판 안으로 옮김 — 패널 안의 단추·기능은 그대로
   const adopt = () => { ['rn-crm', 'rnp', 'rn-prc'].forEach((id) => { const el = globalThis.__rnById(id); if (el && el.parentElement !== body) body.appendChild(el); }); };
@@ -706,7 +722,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     else if (a.dataset.a === 'log') { window.__rnJournalToggle && window.__rnJournalToggle(); }
     lastHtml = ''; draw(); });
   window.__rnCtlDraw = () => { lastHtml = ''; draw(); };
-  const go = () => { globalThis.__rnMount(box); adopt(); new MutationObserver(adopt).observe(document.body, { childList: true }); if (globalThis.__rnSR) new MutationObserver(adopt).observe(globalThis.__rnSR, { childList: true });
+  const go = () => { globalThis.__rnMount(box); try { globalThis.__rnMount(ico); } catch (e) { document.body.appendChild(ico); } adopt(); (window.__rnRoleReady || Promise.resolve()).then(() => posApply(true)); posApply(true); new MutationObserver(adopt).observe(document.body, { childList: true }); if (globalThis.__rnSR) new MutationObserver(adopt).observe(globalThis.__rnSR, { childList: true });
     let saved = GM_getValue('rnu-tab', 'ov'); if (saved === 'hide') saved = 'ov'; set(saved); setMin(!!GM_getValue('rnu-ctl-min', 0)); (window.__rnRoleReady || Promise.resolve()).then(() => { if (window.__rnRole && /^(follow|wait)$/.test(window.__rnRole())) setMin(true, true); }); /* (1.56.0) 쉬는 탭은 접힌 채로 (기억해 둔 접힘·펼침은 그대로) */
     if (saved === 'prc') setTimeout(() => { if (!bar.querySelector('button[data-t="prc"]')) set('ov'); }, 4000); // 가격 감시기 탭이 안 붙으면 개요로
     setInterval(draw, 1000); };
