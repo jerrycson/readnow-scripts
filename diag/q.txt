@@ -1,2 +1,1 @@
-doc=app_settings/pur_seller_bf
-purchk=1
+@health&hours=6
