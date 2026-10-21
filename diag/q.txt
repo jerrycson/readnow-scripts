@@ -1,1 +1,2 @@
-@health&hours=3
+recentUp=prd_listings&mins=240
+health=1&hours=24
