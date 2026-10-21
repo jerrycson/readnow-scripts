@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.26의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.27의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.26' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.26', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.27' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.27', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1055,6 +1055,7 @@
     const m = new Map(); let max = 0; const ss = await C('prd_listings').get(); ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); m.set(d.id, v); max = Math.max(max, lcMs(v)); } }); /* (1.57.7) 권한 시험 문서는 상품이 아님 */
     LISTINGS = m; LIST_LAST = max || Date.now(); LIST_FULL = Date.now(); log(`기존 상품 ${m.size.toLocaleString()}건 읽음`); lcPut(m, max || Date.now(), Date.now(), true); return m;
   }
+  const stabJ = (v) => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().filter((kk) => x[kk] !== undefined).map((kk) => [kk, x[kk]])) : x)); let LOPS_WHY = {}; /* (1.89.27) 칸 순서·undefined 칸과 상관없는 비교 */
   // 한 상품 줄을 합치기 규칙으로 올릴 작업 목록 만들기 (빈 값으로 덮지 않음, 바뀐 칸만 이력)
   function listingOps(row, source, seenAt) {
     const key = 'aladin_' + row.usedCode; const prev = LISTINGS.get(key);
@@ -1064,7 +1065,8 @@
     const mt = P.mediaType(row); const doc = { channel: 'aladin', usedCode: row.usedCode, ...next, mediaType: mt.type, mediaWhy: mt.why, ids: row.ids, idWarn: row.idWarn || [], active: ACTIVE.includes(row.status || (prev && prev.status)), lastSeenAt: seenAt, ['seenBy_' + source]: seenAt, ...W() };
     if (!prev) doc.firstSeenAt = seenAt;
     /* (1.84.1) 바뀐 칸이 없으면 '봤음' 표시만 — 전체 재검토가 2만여 상품을 통째로 다시 적어(10/18 1시간 9,633건 · 문서 전체) 웹앱들이 그만큼 받아 풀던 것. 상태·가격 등 값이 하나라도 다르면 예전처럼 전체 */
-    if (prev && !Object.keys(ch).length && prev.mediaType === mt.type && prev.active === doc.active && prev.usedCode && JSON.stringify(prev.ids || null) === JSON.stringify(doc.ids || null) && JSON.stringify(prev.idWarn || []) === JSON.stringify(doc.idWarn || []) && !(row.registeredYearGuessed && !prev.registeredAt)) {
+    const why = !prev ? 'new' : Object.keys(ch).length ? 'f:' + Object.keys(ch).sort().join(',') : prev.mediaType !== mt.type ? 'mediaType' : prev.active !== doc.active ? 'active' : !prev.usedCode ? 'usedCode' : stabJ(prev.ids || null) !== stabJ(doc.ids || null) ? 'ids' : stabJ(prev.idWarn || []) !== stabJ(doc.idWarn || []) ? 'idWarn' : row.registeredYearGuessed && !prev.registeredAt ? 'regYear' : null; /* (1.89.27) 왜 통째로 다시 적는지 셈 — 회차 끝 기록에 남김 */ LOPS_WHY[why || 'slim'] = (LOPS_WHY[why || 'slim'] || 0) + 1;
+    if (!why) { /* (1.89.27) 비교를 칸 순서와 상관없이(stabJ) — Firestore가 돌려주는 묶음(ids 안의 {raw,value,kind…})은 칸 이름 순으로 정렬돼 와서, 화면에서 읽은 순서와 JSON 글자가 늘 달랐음 → '바뀐 것 없음'이 한 번도 성립하지 않아 매일 06:30 전체 재검토가 1만 5천여 상품을 통째로 다시 적었음(10/22 06:30~06:40 15,657건) */
       const slim = { lastSeenAt: seenAt, ['seenBy_' + source]: seenAt, ...W() }; LISTINGS.set(key, { ...prev, ...slim }); return { ops: [(b) => b.set(C('prd_listings').doc(key), slim, { merge: true })], isNew: false, changed: false, slim: true };
     }
     if (row.registeredYearGuessed && !(prev && prev.registeredAt)) doc.registeredYearGuessed = true;
@@ -1109,7 +1111,7 @@
     if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
 
     try {
-      await loadListings();
+      await loadListings(); LOPS_WHY = {};
       const name = mode === 'new' ? 'scanNew' : mode === 'daily' ? 'scanDaily' : 'scanFull';
       const statuses = mode === 'new' ? Object.keys(STATUS) : mode === 'daily' ? ['판매중', '일시판매중지', '판매중지', '판매완료'] : ACTIVE; /* (1.74.5) 판매완료도 — 팔린 상품이 판매중 목록에서 사라질 뿐이라 매일 확인에서 못 잡고 전체 재검토 때까지 판매중으로 남았음(예: 9788976774057 · 마지막 확인 10/05) · 판매완료 목록 첫 쪽에서 상태가 바뀐 것만 기록하고 아는 것만 나오면 멈춤 */ // daily(1.34.0 매일 자동): 세 상태만 · 새등록 상품과, 본 쪽에서 상태가 바뀐 상품을 기록 · 이미 아는 상품만 있는 쪽이 나오면 그 상태는 끝
       const prog = (await loadProgress(name)) || { si: 0, page: 1, stats: {}, startedAt: nowIso() };
@@ -1155,6 +1157,7 @@
         prog.stats.goneFromActive = gone.length;
       }
       await C('prd_system').doc('cursor').set({ maxListingId: String(maxSeen), ['last_' + name]: nowIso(), ...W() }, { merge: true });
+      { const wy = Object.entries(LOPS_WHY).sort((x, y) => y[1] - x[1]); if (wy.length) { prog.stats.writeWhy = Object.fromEntries(wy.slice(0, 12)); log(`${name} 기록 사유: ${wy.slice(0, 8).map(([k, n]) => `${k === 'slim' ? '바뀐 것 없음(안 적음)' : k} ${n.toLocaleString()}`).join(' · ')}`); } } /* (1.89.27) 다음 회차부터 왜 적었는지 숫자로 남김 — 점검이 바로 봄 */
       await finishJob(name, prog.stats);
       log(`${name} 완료 ${JSON.stringify(prog.stats)}`);
     } finally { await releaseLane('aladin'); }
