@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.22의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.23의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.22' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.22', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.23' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.23', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1204,13 +1204,13 @@
         const { l } = queue[i]; let { bookId } = queue[i];
         const tag = bookId || 'aladin_' + l.usedCode; if (doneSet.has(tag)) continue;
         if (PUBONLY && anonGateGet(tag)) { prog.gate = (prog.gate || 0) + 1; doneSet.add(tag); continue; } /* (1.72.1) 로거: 19금이라 로그인 없이 못 보는 책은 14일 동안 다시 읽지 않음(테더링 아낌) */
-        try { await refreshOne(l, bookId); prog.done++; } catch (e) { if (e.needLogin && PUBONLY) { anonGateSet(tag); prog.gate = (prog.gate || 0) + 1; handoffPut({ kind: 'market', tag, bookId: bookId || null, usedCode: l.usedCode || null, title: l.title || null, why: '19금 — 로그인 없이는 못 보는 화면' }); } else { prog.fail++; log(`실패 ${l.title || l.usedCode}: ${e.message}`, 1); } } await mixMaybe(); /* (1.69.0) 🔀 로거: 우리 책 시장 지표 사이사이 다른 책(설정 ⑨ 섞어 읽기 비율 · 기본 30%) — 이 방문자가 보는 책이 우리 재고와 겹치는 비율을 낮춤 · (1.72.1) 읽은 다른 책도 탐색 수집처럼 저장 */
+        try { await refreshOne(l, bookId); prog.done++; } catch (e) { if (e.needLogin && PUBONLY) { anonGateSet(tag); prog.gate = (prog.gate || 0) + 1; handoffPut({ kind: 'market', tag, bookId: bookId || null, usedCode: l.usedCode || null, title: l.title || null, why: '19금 — 로그인 없이는 못 보는 화면' }); } else if (e && e.hidden) { prog.hid = (prog.hid || 0) + 1; /* (1.89.23 · 3시간 점검 10/21) 알라딘 비공개 상품: 이 PC가 3일 동안 다시 묻지 않으므로(알라딘에 안 감) 실패로 세거나 회차마다 '실패' 줄을 남기지 않음 — JS-MAIN 6시간에 같은 책 3~6번씩 경고 */ } else { prog.fail++; log(`실패 ${l.title || l.usedCode}: ${e.message}`, 1); } } await mixMaybe(); /* (1.69.0) 🔀 로거: 우리 책 시장 지표 사이사이 다른 책(설정 ⑨ 섞어 읽기 비율 · 기본 30%) — 이 방문자가 보는 책이 우리 재고와 겹치는 비율을 낮춤 · (1.72.1) 읽은 다른 책도 탐색 수집처럼 저장 */
         doneSet.add(tag);
         ui('도서 정보·시장 지표 갱신', doneSet.size, queue.length, l.title || l.usedCode, `실패 ${prog.fail}건 · 멈춰도 이어서 계속됩니다`);
         if (doneSet.size % 10 === 0) { await saveProgress('market', prog); LS.set('market_done', [...doneSet]); }
       }
       await finishJob('market', { done: prog.done, fail: prog.fail }); LS.set('market_done', []);
-      log(`시장 지표 갱신 완료 (성공 ${prog.done}, 실패 ${prog.fail}${prog.gate ? `, 19금이라 로그인 없이 못 봐 건너뜀 ${prog.gate}` : ''}${PUBONLY && MIX.n ? ` · 🔀 섞어 읽은 다른 책 ${MIX.n}권(저장 ${MIX.saved})` : ''})`);
+      log(`시장 지표 갱신 완료 (성공 ${prog.done}, 실패 ${prog.fail}${prog.hid ? `, 알라딘 비공개라 건너뜀 ${prog.hid}` : ''}${prog.gate ? `, 19금이라 로그인 없이 못 봐 건너뜀 ${prog.gate}` : ''}${PUBONLY && MIX.n ? ` · 🔀 섞어 읽은 다른 책 ${MIX.n}권(저장 ${MIX.saved})` : ''})`);
     } finally { await releaseLane('aladin'); }
   }
   /* (1.75.0) 📚 도서 정보는 알라딘 밖에서 먼저(정범님 10/16 지시): 교보문고 → 예스24 → 둘 다 없을 때만 알라딘

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.22
+// @version      1.89.23
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -4181,13 +4181,13 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
         const { l } = queue[i]; let { bookId } = queue[i];
         const tag = bookId || 'aladin_' + l.usedCode; if (doneSet.has(tag)) continue;
         if (PUBONLY && anonGateGet(tag)) { prog.gate = (prog.gate || 0) + 1; doneSet.add(tag); continue; } /* (1.72.1) 로거: 19금이라 로그인 없이 못 보는 책은 14일 동안 다시 읽지 않음(테더링 아낌) */
-        try { await refreshOne(l, bookId); prog.done++; } catch (e) { if (e.needLogin && PUBONLY) { anonGateSet(tag); prog.gate = (prog.gate || 0) + 1; handoffPut({ kind: 'market', tag, bookId: bookId || null, usedCode: l.usedCode || null, title: l.title || null, why: '19금 — 로그인 없이는 못 보는 화면' }); } else { prog.fail++; log(`실패 ${l.title || l.usedCode}: ${e.message}`, 1); } } await mixMaybe(); /* (1.69.0) 🔀 로거: 우리 책 시장 지표 사이사이 다른 책(설정 ⑨ 섞어 읽기 비율 · 기본 30%) — 이 방문자가 보는 책이 우리 재고와 겹치는 비율을 낮춤 · (1.72.1) 읽은 다른 책도 탐색 수집처럼 저장 */
+        try { await refreshOne(l, bookId); prog.done++; } catch (e) { if (e.needLogin && PUBONLY) { anonGateSet(tag); prog.gate = (prog.gate || 0) + 1; handoffPut({ kind: 'market', tag, bookId: bookId || null, usedCode: l.usedCode || null, title: l.title || null, why: '19금 — 로그인 없이는 못 보는 화면' }); } else if (e && e.hidden) { prog.hid = (prog.hid || 0) + 1; /* (1.89.23 · 3시간 점검 10/21) 알라딘 비공개 상품: 이 PC가 3일 동안 다시 묻지 않으므로(알라딘에 안 감) 실패로 세거나 회차마다 '실패' 줄을 남기지 않음 — JS-MAIN 6시간에 같은 책 3~6번씩 경고 */ } else { prog.fail++; log(`실패 ${l.title || l.usedCode}: ${e.message}`, 1); } } await mixMaybe(); /* (1.69.0) 🔀 로거: 우리 책 시장 지표 사이사이 다른 책(설정 ⑨ 섞어 읽기 비율 · 기본 30%) — 이 방문자가 보는 책이 우리 재고와 겹치는 비율을 낮춤 · (1.72.1) 읽은 다른 책도 탐색 수집처럼 저장 */
         doneSet.add(tag);
         ui('도서 정보·시장 지표 갱신', doneSet.size, queue.length, l.title || l.usedCode, `실패 ${prog.fail}건 · 멈춰도 이어서 계속됩니다`);
         if (doneSet.size % 10 === 0) { await saveProgress('market', prog); LS.set('market_done', [...doneSet]); }
       }
       await finishJob('market', { done: prog.done, fail: prog.fail }); LS.set('market_done', []);
-      log(`시장 지표 갱신 완료 (성공 ${prog.done}, 실패 ${prog.fail}${prog.gate ? `, 19금이라 로그인 없이 못 봐 건너뜀 ${prog.gate}` : ''}${PUBONLY && MIX.n ? ` · 🔀 섞어 읽은 다른 책 ${MIX.n}권(저장 ${MIX.saved})` : ''})`);
+      log(`시장 지표 갱신 완료 (성공 ${prog.done}, 실패 ${prog.fail}${prog.hid ? `, 알라딘 비공개라 건너뜀 ${prog.hid}` : ''}${prog.gate ? `, 19금이라 로그인 없이 못 봐 건너뜀 ${prog.gate}` : ''}${PUBONLY && MIX.n ? ` · 🔀 섞어 읽은 다른 책 ${MIX.n}권(저장 ${MIX.saved})` : ''})`);
     } finally { await releaseLane('aladin'); }
   }
   /* (1.75.0) 📚 도서 정보는 알라딘 밖에서 먼저(정범님 10/16 지시): 교보문고 → 예스24 → 둘 다 없을 때만 알라딘
