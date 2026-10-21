@@ -1,1 +1,1 @@
-scmform=/scm/wrecord.aspx?action=2%26bookid=0%26UpdateItemId=404935090
+peread=404935090&pepub=404935090&shopread=1
