@@ -1,2 +1,1 @@
-doc=prd_system/autoSched
-peupdry=404935090
+@health&hours=6
