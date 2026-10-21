@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "쓰기 폭주(전체 재검토) 고침",
- "since": "2026-10-21T22:53:08Z",
- "beat": "2026-10-21T22:53:08Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "kpsum",
-  "done": "요약 0개 — 열쇠 파일 쓰기가 권한 검사에 막혀 이번 회차 못 함",
-  "at": "2026-10-21T20:50:01Z"
+  "who": "chat",
+  "done": "쓰기 폭주(전체 재검토) 고침",
+  "at": "2026-10-21T22:53:16Z"
  }
 }
