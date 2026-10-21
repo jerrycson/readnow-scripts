@@ -1,1 +1,2 @@
-@health&hours=15
+logs=1&pc=LOGGER&from=2026-10-21T09&to=~
+doc=prd_jobs/pcBeat
