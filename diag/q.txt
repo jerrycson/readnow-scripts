@@ -1,1 +1,2 @@
-regitems=400
+authchk=7048575
+authchk=347322
