@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.19의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.20의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.19' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.19', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.20' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.20', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1597,7 +1597,8 @@
           const pm = ((tr.querySelector('.td_mileage') || {}).textContent || '').match(/가격\s*:\s*([\d,]+)\s*원/);
           lines.push({ title, raw, grade: g ? g[1] : null, qty: q ? +q : 1, price: pm ? +pm[1].replace(/,/g, '') : null, itemId: (tr.id.match(/ordersItem_(\d+)/) || [])[1] || null }); });
         const sellers = [...doc.querySelectorAll('a[href*="wshopitem.aspx"]')].map((a) => ({ name: a.textContent.trim(), sc: (a.href.match(/SC=(\d+)/i) || [])[1] || null }));
-        await C('pur_aladin_orders').doc(need[i]).set({ detailText: tables.join(' | ').slice(0, 6000) || doc.body.textContent.replace(/\s+/g, ' ').slice(0, 3000), items: [...new Set(items)].slice(0, 60), lines: lines.slice(0, 80), sellers, detailAt: nowIso(), ...W() }, { merge: true });
+        const group = [...doc.querySelectorAll('#divGroupOrderList tr')].map((tr) => { const td = tr.querySelectorAll('td'); if (td.length < 4) return null; const o = (td[0].textContent || '').trim(); if (!/^\d{3}-[A-Z]\d+/.test(o)) return null; const t2 = td[2].innerText || td[2].textContent || ''; const m = t2.match(/총\s*(\d+)\s*종\s*(\d+)\s*권[^,]*,\s*([\d,]+)\s*원/); return { ono: o, seller: (td[1].textContent || '').replace(/\s+/g, ' ').trim(), items: t2.split(/\n|총\s*\d+\s*종/)[0].replace(/\s+/g, ' ').trim().slice(0, 120), kinds: m ? +m[1] : null, qty: m ? +m[2] : null, amount: m ? +m[3].replace(/,/g, '') : null, status: (td[3].textContent || '').replace(/\s+/g, ' ').trim() }; }).filter(Boolean); /* (1.89.20) 🛒 판매자별 나뉜 주문 표 — 이 주문의 판매자(클라우드 0.30.0과 같은 방법) */ const gMe = group.find((x) => x.ono === need[i]);
+        await C('pur_aladin_orders').doc(need[i]).set({ group: group.slice(0, 30), ...(gMe ? { seller: { name: gMe.seller, direct: /^알라딘$/.test(gMe.seller), store: /^중고매장\s/.test(gMe.seller) }, sellerAt: nowIso() } : {}), detailText: tables.join(' | ').slice(0, 6000) || doc.body.textContent.replace(/\s+/g, ' ').slice(0, 3000), items: [...new Set(items)].slice(0, 60), lines: lines.slice(0, 80), sellers, detailAt: nowIso(), ...W() }, { merge: true });
         ui('알라딘 주문 상세', i + 1, need.length, need[i]);
       }
       await finishJob('aladinBuy', { orders: prog.got, details: need.length });

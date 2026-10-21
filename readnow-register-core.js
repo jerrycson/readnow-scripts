@@ -5,7 +5,7 @@
  *   셀 서식(XF)은 원본에서 실제로 등록에 성공했던 줄(19행)의 것을 그대로 씀: ISBN = 텍스트 셀, 판매상태·수량·품질·판매가 = 숫자 셀.
  * 이 파일은 알라딘에 아무것도 바꾸지 않음 — 계산·만들기·읽기만. */
 (function (root) {
-  const VERSION = '0.7.1';
+  const VERSION = '0.7.2'; // (0.7.2) 저자·출판사 검색 결과에 그 줄 글 전부(info) — 동명이인 툴팁
   // 상품 구분 (알라딘 SelectType / BranchType)
   const BRANCH = { 1: '국내도서', 2: '음반', 3: 'DVD/블루레이', 7: '외국도서' };
   // 상품 관리 코드 아이콘 — 알라딘 상품 등록 도우미 0.1.0과 같은 색 (한 곳)
@@ -181,8 +181,8 @@
    *   author {name, type(1 지은이·3 옮긴이…), branch} → 저자 검색 팝업과 같은 요청 → [{ id, name, work }]
    *   brand  {name, branch} → 출판사 검색 팝업과 같은 요청 → [{ id, name }]
    *  알라딘 화면은 읽기만 함(아무것도 바꾸지 않음) */
-  function parseAuthorPopup(doc) { const out = []; doc.querySelectorAll('img[onclick*="submitParent"], a[href*="submitParent"]').forEach((el) => { const s = el.getAttribute('onclick') || el.getAttribute('href') || ''; const m = s.match(/submitParent\(\s*'?(\d+)'?\s*,\s*'([^']*)'/); if (!m) return; const td = el.closest('td'); let work = ''; if (td) { const t = td.textContent.replace(/\s+/g, ' '); const k = t.indexOf(m[2]); const seg = k >= 0 ? t.slice(k + m[2].length) : t; const w = seg.match(/:\s*<([^>]{1,80})>/); work = w ? w[1] : ''; } if (!out.some((x) => x.id === m[1])) out.push({ id: m[1], name: m[2], work }); }); return out; }
-  function parseBrandPopup(doc) { const out = []; doc.querySelectorAll('a[href*="submitParent"]').forEach((a) => { const m = (a.getAttribute('href') || '').match(/submitParent\(\s*'?(\d+)'?\s*,\s*'([^']*)'/); if (m && !out.some((x) => x.id === m[1])) out.push({ id: m[1], name: m[2] }); }); return out; }
+  function parseAuthorPopup(doc) { const out = []; doc.querySelectorAll('img[onclick*="submitParent"], a[href*="submitParent"]').forEach((el) => { const s = el.getAttribute('onclick') || el.getAttribute('href') || ''; const m = s.match(/submitParent\(\s*'?(\d+)'?\s*,\s*'([^']*)'/); if (!m) return; const td = el.closest('td'); let work = ''; if (td) { const t = td.textContent.replace(/\s+/g, ' '); const k = t.indexOf(m[2]); const seg = k >= 0 ? t.slice(k + m[2].length) : t; const w = seg.match(/:\s*<([^>]{1,80})>/); work = w ? w[1] : ''; } if (!out.some((x) => x.id === m[1])) { const tr = el.closest('tr'); out.push({ id: m[1], name: m[2], work, info: tr ? tr.textContent.replace(/\s+/g, ' ').trim().slice(0, 400) : '' }); } }); return out; } /* (0.7.2) info = 저자 검색 팝업의 그 줄 글 전부(동명이인 가리기 — 웹앱 툴팁) */
+  function parseBrandPopup(doc) { const out = []; doc.querySelectorAll('a[href*="submitParent"]').forEach((a) => { const m = (a.getAttribute('href') || '').match(/submitParent\(\s*'?(\d+)'?\s*,\s*'([^']*)'/); if (m && !out.some((x) => x.id === m[1])) { const tr = a.closest('tr'); out.push({ id: m[1], name: m[2], info: tr ? tr.textContent.replace(/\s+/g, ' ').trim().slice(0, 400) : '' }); } }); return out; }
   async function auxRun(op, a, opt) { a = a || {}; const F = (opt && opt.fetch) || fetch; const DP = (opt && opt.DOMParser) || (typeof DOMParser !== 'undefined' ? DOMParser : null); const br = [1, 2, 3, 7].includes(+a.branch) ? +a.branch : 1;
     const form = (o) => Object.entries(o).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
     if (op === 'cat') { const r = await F('/scm/wpopup_category.aspx/GetCategoryData', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json; charset=utf-8' }, body: JSON.stringify({ to: +a.to || 0, cid: +a.cid || 0, branchType: br }) }); if (!r.ok) throw new Error('분류 읽기 실패 HTTP ' + r.status);

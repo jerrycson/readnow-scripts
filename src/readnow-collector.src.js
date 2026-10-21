@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.19
+// @version      1.89.20
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -24,9 +24,9 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.84
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.85
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.3
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.1
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.8.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.16.1
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
@@ -4574,7 +4574,8 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
           const pm = ((tr.querySelector('.td_mileage') || {}).textContent || '').match(/가격\s*:\s*([\d,]+)\s*원/);
           lines.push({ title, raw, grade: g ? g[1] : null, qty: q ? +q : 1, price: pm ? +pm[1].replace(/,/g, '') : null, itemId: (tr.id.match(/ordersItem_(\d+)/) || [])[1] || null }); });
         const sellers = [...doc.querySelectorAll('a[href*="wshopitem.aspx"]')].map((a) => ({ name: a.textContent.trim(), sc: (a.href.match(/SC=(\d+)/i) || [])[1] || null }));
-        await C('pur_aladin_orders').doc(need[i]).set({ detailText: tables.join(' | ').slice(0, 6000) || doc.body.textContent.replace(/\s+/g, ' ').slice(0, 3000), items: [...new Set(items)].slice(0, 60), lines: lines.slice(0, 80), sellers, detailAt: nowIso(), ...W() }, { merge: true });
+        const group = [...doc.querySelectorAll('#divGroupOrderList tr')].map((tr) => { const td = tr.querySelectorAll('td'); if (td.length < 4) return null; const o = (td[0].textContent || '').trim(); if (!/^\d{3}-[A-Z]\d+/.test(o)) return null; const t2 = td[2].innerText || td[2].textContent || ''; const m = t2.match(/총\s*(\d+)\s*종\s*(\d+)\s*권[^,]*,\s*([\d,]+)\s*원/); return { ono: o, seller: (td[1].textContent || '').replace(/\s+/g, ' ').trim(), items: t2.split(/\n|총\s*\d+\s*종/)[0].replace(/\s+/g, ' ').trim().slice(0, 120), kinds: m ? +m[1] : null, qty: m ? +m[2] : null, amount: m ? +m[3].replace(/,/g, '') : null, status: (td[3].textContent || '').replace(/\s+/g, ' ').trim() }; }).filter(Boolean); /* (1.89.20) 🛒 판매자별 나뉜 주문 표 — 이 주문의 판매자(클라우드 0.30.0과 같은 방법) */ const gMe = group.find((x) => x.ono === need[i]);
+        await C('pur_aladin_orders').doc(need[i]).set({ group: group.slice(0, 30), ...(gMe ? { seller: { name: gMe.seller, direct: /^알라딘$/.test(gMe.seller), store: /^중고매장\s/.test(gMe.seller) }, sellerAt: nowIso() } : {}), detailText: tables.join(' | ').slice(0, 6000) || doc.body.textContent.replace(/\s+/g, ' ').slice(0, 3000), items: [...new Set(items)].slice(0, 60), lines: lines.slice(0, 80), sellers, detailAt: nowIso(), ...W() }, { merge: true });
         ui('알라딘 주문 상세', i + 1, need.length, need[i]);
       }
       await finishJob('aladinBuy', { orders: prog.got, details: need.length });
