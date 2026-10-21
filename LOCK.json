@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "ISBN 삭제 상품 확인·작업대 혼선·작가 툴팁",
- "since": "2026-10-21T06:13:18Z",
- "beat": "2026-10-21T06:13:18Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "단축키 끝",
-  "at": "2026-10-21T05:56:27Z"
+  "done": "끝",
+  "at": "2026-10-21T06:38:00Z"
  }
 }
