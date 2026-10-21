@@ -1,1 +1,2 @@
-@health&hours=6
+scmform=/scm/wrecord.aspx?action=2%26bookid=0%26UpdateItemId=404935090
+scmform=/scm/NoticeEdit.aspx
