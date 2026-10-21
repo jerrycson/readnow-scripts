@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.16의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.17의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.16' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.16', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.17' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.17', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -753,13 +753,19 @@
     MIX.n++; MIX.at = nowIso(); return true; }
   async function mixRead(n) { if (!PUBONLY) return; for (let k = 0, g = 0; k < (n || 1) && g < 4; g++) { const x = await mixPick(); if (!x) return; if (await mixOne(x)) k++; } }
   const mixMaybe = (p) => (PUBONLY && Math.random() < (p == null ? mixRate() : Math.min(p, mixRate())) ? mixRead(1) : Promise.resolve());
-  async function getDoc(url, opt) { tgateCheck(); if (PUBONLY && !isPubUrl(url)) throw new Error('🛡 로거: 공개 화면이 아닌 알라딘 주소는 읽지 않음 — ' + String(url).slice(0, 80)); /* (1.69.0) 로그인 영역·우리 숍 관리 화면은 로거가 절대 부르지 않음 */ if ((window.__rnForceLogin && !PUBONLY) || !((PUBONLY || pubAnonOn()) && isPubUrl(url))) { const L = await getDocRaw(url, opt); /* (1.72.3) 🔁 로거가 못 한 일(19금) 넘겨받기 중에는 사무실 PC가 로그인 상태로 읽음 */ netAdd((L && L.html || '').length); return L; }
+  /* (1.89.17) 3시간 점검 10/21: 알라딘이 '비공개 상태입니다'(상품을 숨김 — 리커버·절판 등)를 주는 책을 '알라딘 화면 같지 않음' 실패로 세고 몇 시간마다 다시 읽었음(HOME 하루 59번) → 비공개로 기록하고 3일 동안 다시 묻지 않음(이 PC 저장) */
+  const HID_K = 'rn-alHidden'; const hidKey = (u) => { const m = String(u || '').match(/[?&](?:ISBN|ItemId)=([0-9Xx]+)/i); return m ? m[1].toUpperCase() : null; };
+  const hidGet = (u) => { try { const k = hidKey(u); if (!k) return false; const M = GM_getValue(HID_K, {}) || {}; return !!(M[k] && Date.now() - M[k] < 3 * 864e5); } catch (e) { return false; } };
+  const hidSet = (u) => { try { const k = hidKey(u); if (!k) return; const M = GM_getValue(HID_K, {}) || {}; M[k] = Date.now(); for (const [x, t] of Object.entries(M)) if (Date.now() - t > 3 * 864e5) delete M[x]; GM_setValue(HID_K, M); } catch (e) {} };
+  const hidErr = () => Object.assign(new Error('알라딘에서 비공개된 상품(판매 화면 없음) — 3일 뒤 다시 봄'), { hidden: true });
+  async function getDoc(url, opt) { tgateCheck(); if (hidGet(url)) throw hidErr(); if (PUBONLY && !isPubUrl(url)) throw new Error('🛡 로거: 공개 화면이 아닌 알라딘 주소는 읽지 않음 — ' + String(url).slice(0, 80)); /* (1.69.0) 로그인 영역·우리 숍 관리 화면은 로거가 절대 부르지 않음 */ if ((window.__rnForceLogin && !PUBONLY) || !((PUBONLY || pubAnonOn()) && isPubUrl(url))) { const L = await getDocRaw(url, opt); /* (1.72.3) 🔁 로거가 못 한 일(19금) 넘겨받기 중에는 사무실 PC가 로그인 상태로 읽음 */ netAdd((L && L.html || '').length); return L; }
     const A = await getDocRaw(url, { ...(opt || {}), cred: 'omit' }); anonNote(); netAdd((A && A.html || '').length); if (PUBONLY && A && A.doc) mixHarvest(A.doc);
     const viaLogin = async () => { ANON.login = (ANON.login || 0) + 1; const L = await getDocRaw(url, opt); netAdd((L && L.html || '').length); return L; }; /* (1.89.1) 정범님 10/20 '이 PC는 로그인 해도 되잖아' — 로그인할 수 있는 사무실 PC는 19금 등 로그인이 필요한 화면을 그 자리에서 로그인 상태로 다시 읽음(예전: 건너뛰고 며칠 동안 같은 책을 되풀이 실패) · 로거(PUBONLY)만 건너뛰고 사무실 PC로 넘김 */
     if (A.needLogin) { if (!PUBONLY) return viaLogin(); ANON.gate++; throw Object.assign(new Error('로그인 없이는 못 보는 화면(19금 등) — 계정과 떼어 두는 중이라 이 장은 건너뜀'), { needLogin: true }); }
     if (!/알라딘/.test(A.doc.title || '') && !A.doc.querySelector('link[rel="canonical"]')) { const h = String(A.html || '');
       /* (1.72.1) 19금(성인 인증) 상품: 로그인 없이 열면 알라딘이 짧은 '성인 인증·로그인으로 보내는' 화면을 줌(제목에 '알라딘'이 없어 예전엔 '알라딘 화면 같지 않음' 실패로 셈 — 로거에서 매일 수십 권) → 19금 건너뜀으로 셈 */
       if (/wlogin\.aspx|login\.aspx|성인\s*인증|19세\s*(미만|이상)|청소년\s*(유해|이용불가)|adult/i.test(h)) { if (!PUBONLY) return viaLogin(); ANON.gate++; throw Object.assign(new Error('로그인 없이는 못 보는 화면(19금 등) — 계정과 떼어 두는 중이라 이 장은 건너뜀'), { needLogin: true }); }
+      if (/비공개\s*상태입니다/.test(h)) { hidSet(url); throw hidErr(); }
       if (!ANON.oddShown || ANON.oddShown < 3) { ANON.oddShown = (ANON.oddShown || 0) + 1; log(`🔎 알라딘 화면 같지 않은 응답(${ANON.oddShown}/3 · 까닭 찾기용) ${String(url).slice(0, 80)} — 앞부분: ${h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)}`, 1); }
       throw new Error('로그인 없이 읽은 화면이 알라딘 화면 같지 않음(막힘·오류 화면일 수 있음) — 빈 결과로 쓰지 않음'); }
     if (/wshopitem\.aspx/i.test(url) && /ViewType=Simple/i.test(url) && !A.doc.querySelector('input[name^="chkCart.U"]') && [...A.doc.querySelectorAll('a[href*="ItemId="]')].some((a) => /wproduct\.aspx/i.test(a.getAttribute('href') || ''))) { ANON.view++; throw Object.assign(new Error('로그인 없이 읽은 숍 목록에 장바구니 칸이 없음(보이는 모양이 다름) — 사라진 상품으로 잘못 세지 않게 이 장은 쓰지 않음 · 설정 🔓에서 끄면 예전처럼 로그인으로 읽음'), { anonView: true }); }
@@ -1208,7 +1214,7 @@
   const extToPage = (E, l) => { const C0 = []; String(E.authors || '').split(/\s*[,·]\s*/).filter(Boolean).forEach((n) => C0.push({ name: n, role: '지은이' })); String(E.translators || '').split(/\s*[,·]\s*/).filter(Boolean).forEach((n) => C0.push({ name: n, role: '옮긴이' })); return { title: E.title || null, subtitle: E.sub || null, series: E.series || null, contributors: C0.length ? C0 : null, publisher: E.publisher || null, pubDate: E.pubDate || null, isbn13: l.isbn13 || null, pages: E.pages ?? null, size: E.size || null, weightG: E.weightG ?? null, images: E.cover ? { front: E.cover } : null, fetchedFrom: E.srcs[0], infoFrom: E.from || null }; };
   /* (1.79.0) 📊 상품·책 한 권 읽기 결과를 분류별로 셈 — 시장 지표(우리 상품) · 판매완료 상품 정보 · 알라딘 구매 풀 · 탐색 · 섞어 읽기 · (외부 도서 정보는 biTick이 따로 셈) */
   async function refreshOne(l, bookId, opt) { const cat = l && l.explore ? (l.exploreFrom === 'mix' ? 'mix' : 'explore') : l && l.pool ? 'pool' : opt && opt.extOnly ? null : opt && opt.infoOnly ? 'info' : 'metrics'; const CS = window.__rnCS;
-    try { const r = await refreshOne0(l, bookId, opt); if (cat && CS) CS.add(cat, 'ok'); return r; } catch (e) { if (cat && CS) { const m = String((e && e.message) || e); const kind = m === '멈춤' || (e && e.tgate) ? 'skip' : e && e.needLogin ? 'skip' : e && e.noext ? 'none' : e && e.extTmp ? 'part' : 'fail'; CS.add(cat, kind, 1, kind === 'skip' && e && e.needLogin ? '19금 — 로그인 없이는 못 봄(사무실 PC로 넘김)' : m); } throw e; } }
+    try { const r = await refreshOne0(l, bookId, opt); if (cat && CS) CS.add(cat, 'ok'); return r; } catch (e) { if (cat && CS) { const m = String((e && e.message) || e); const kind = m === '멈춤' || (e && e.tgate) ? 'skip' : e && e.needLogin ? 'skip' : e && (e.noext || e.hidden) ? 'none' : e && e.extTmp ? 'part' : 'fail'; CS.add(cat, kind, 1, kind === 'skip' && e && e.needLogin ? '19금 — 로그인 없이는 못 봄(사무실 PC로 넘김)' : m); } throw e; } }
   async function refreshOne0(l, bookId, opt) {
     const at = nowIso();
     let page = null, resolvedBy = null, finalUrl = null;
