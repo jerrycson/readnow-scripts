@@ -1,2 +1,4 @@
-cmds=regOne&n=6
-cmds=regBulk&n=4
+cmds=regOne&n=3
+cmds=regBulk&n=3
+logs=1&pc=MJ-MAIN&from=202610211150&to=~
+doc=prd_jobs/pcBeat
