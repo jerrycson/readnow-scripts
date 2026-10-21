@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "로거 테더링 100GB·와이파이 일만",
- "since": "2026-10-21T00:07:52Z",
- "beat": "2026-10-21T00:07:52Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "클라우드 0.29.1 (3시간 점검 숫자 요약)",
-  "at": "2026-10-20T23:39:32Z"
+  "done": "로거 100GB·나눠 맡기 끝",
+  "at": "2026-10-21T00:15:34Z"
  }
 }
