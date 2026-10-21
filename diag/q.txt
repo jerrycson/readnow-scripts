@@ -1,3 +1,2 @@
-scmrow=1
-purchk=1
 doc=app_settings/pur_seller_bf
+purchk=1
