@@ -1,2 +1,2 @@
 doc=prd_jobs/pcBeat
-logs=1&pc=LOGGER&from=202610211200&to=~
+logs=1&pc=LOGGER&from=202610211300&to=~
