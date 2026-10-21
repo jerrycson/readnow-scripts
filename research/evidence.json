@@ -154,6 +154,21 @@
    "url": "https://doi.org/10.1287/mnsc.40.8.999",
    "finding": "재고가 정해져 있고 수요가 들쭉날쭉할 때 이익을 가장 크게 하는 값은 '남은 재고에 비해 수요가 얼마나 빨리 오는가'에 따라 움직여야 한다 — 남은 물량이 수요에 비해 적으면 값을 올리고, 많으면 내린다.",
    "use": "시장 전체 매물 수(공급)와 사라지는 속도(수요)를 같이 보는 📈 시장 신호의 바탕 — 공급 과잉·안 도는 책은 값을 내려 회전, 희소·잘 도는 책은 값을 올림."
+  },
+  {
+   "id": "webdev-longtasks",
+   "topic": [
+    "속도",
+    "화면"
+   ],
+   "kind": "업계 자료",
+   "authors": "Google Chrome 팀 (web.dev)",
+   "year": 2024,
+   "title": "Are long JavaScript tasks delaying your Time to Interactive? (Long tasks)",
+   "venue": "web.dev",
+   "url": "https://web.dev/articles/long-tasks-devtools",
+   "finding": "50ms가 넘는 자바스크립트 작업(긴 작업)은 그동안 화면이 누름·입력에 반응하지 못하게 막는다 — 긴 작업을 잘게 나누거나 줄이는 것이 반응 속도를 높이는 핵심.",
+   "use": "(자동 점검 2026-10-21) 수집기 5분 성능 줄의 '긴 작업 N번 S초'를 볼 때 기준 — 샵매니저 화면에서 5분에 108초가 막히면 수집·화면 모두 늦어짐 → 2초마다 모든 줄을 다시 그리는 코드는 바뀐 줄만으로."
   }
  ]
 }
