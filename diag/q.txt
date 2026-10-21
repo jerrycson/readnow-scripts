@@ -1,1 +1,1 @@
-@health&hours=6
+@health&hours=3
