@@ -1,1 +1,1 @@
-doc=prd_listings/aladin_U055983315
+@health&hours=24
