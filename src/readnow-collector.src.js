@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.17
+// @version      1.89.18
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -24,11 +24,11 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.83
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.84
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.8.2
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.16.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.16.1
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
@@ -5875,7 +5875,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   /* (1.63.7) 🖥 자동 수집 담당 PC — 수집기(이 PC의 수집기 탭)가 2분마다 prd_jobs/pcBeat에 신호(살아 있음·쉬는 중 이유)를 적고 같이 읽음
    *  담당·순서 = prd_system/autoSched.owner(⏰ 편집기 맨 위 · 웹앱 ⏰ 페이지에서도) · 판단은 공용 파일 AS.ownerOf 한 곳 */
   let BEATS = {}; const BEAT_REF = () => C('prd_jobs').doc('pcBeat');
-  const spreadOn = () => { try { return !PUBONLY && !!(SCHED && SCHED.owner && SCHED.owner.primary && SCHED.owner.spread !== false); } catch (e) { return false; } }; /* (1.89.11) 🔀 owner.spread — 정하지 않으면 켬 */
+  const spreadOn = () => { try { return !PUBONLY && !!(SCHED && SCHED.owner && SCHED.owner.primary && SCHED.owner.spread === true); } catch (e) { return false; } }; /* (1.89.11) 🔀 owner.spread — 정하지 않으면 켬 */
   function asOwn() { try { return SCHED && SCHED.owner && SCHED.owner.primary && AS && AS.ownerOf ? AS.ownerOf(SCHED, BEATS, Date.now()) : null; } catch (e) { return null; } }
   function asOwnMine() { const o = asOwn(); return !o || String(o.pc || '') === String(PC_NAME); }
   async function pcBeat() { if (!auth.currentUser || !PC_NAME || (window.__rnRest && window.__rnRest()) || window.__rnReloading) return; const why = PUBONLY ? '🌐 공개 전용 PC(로그인 안 함 — 담당이 될 수 없음)' : window.__rnPaused ? '📥 수집 끔(일시정지)' : '';
@@ -5928,7 +5928,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const asExtRun = () => { if (Date.now() - AH.xrAt > 120e3) { AH.xrAt = Date.now(); EXT_RUN().get().then((d) => { AH.xr = d.exists ? d.data() : {}; asEdRefresh(true); }).catch(() => {}); } return AH.xr; };
   const asHandoff = () => { if (Date.now() - AH.hoAt > 180e3) { AH.hoAt = Date.now(); const t0 = new Date(Date.parse(kstNow().day + 'T00:00:00+09:00')).toISOString(); const C0 = C('prd_handoff'); Promise.all([C0.where('status', '==', 'todo').limit(2000).get(), C0.where('doneAt', '>=', t0).limit(2000).get(), C0.where('at', '>=', t0).limit(2000).get()]).then(([a, b2, c]) => { AH.ho = { todo: a.size, doneToday: b2.docs.filter((d) => (d.data() || {}).status === 'done').length, gateToday: c.size, on: !(SCHED && SCHED.handoffOff) }; asEdRefresh(true); }).catch(() => {}); } return AH.ho; };
   const ASCTX = { loadRunsDay: (d) => C('prd_jobs').doc('autoSched_' + d).get().then((x) => (x.exists && x.data().runs) || {}), saveRest: (r) => SCHED_REF().set({ rest: r, at: nowIso(), by: PC_NAME }, { merge: true }).then(() => log(`✨ 쉴 때 하는 일 저장`)), extRun: () => asExtRun(), extLabel: (k) => { const X = EXT(); return (X && X.SOURCES && X.SOURCES[k] && X.SOURCES[k].label) || k; }, handoff: () => asHandoff(), autoInfo: () => ({ mix: mixRate(), extPaused: Object.entries(EXT_S.pauseUntil || {}).filter(([, t]) => t > Date.now()).map(([k, t]) => { const X = EXT(); return `${(X && X.SOURCES && X.SOURCES[k] && X.SOURCES[k].label) || k}(${Math.ceil((t - Date.now()) / 3600e3)}시간)`; }) }), doc: () => SCHED, runs: () => SCHED_RUNS, stats: () => JSTATS, catalog: () => asCatalog(), pc: PC_NAME, pcs: () => { try { return Object.values(PCS_SEEN).filter((v) => v && v.pcName && v.tool === '상품 수집기' && Date.now() - (v.atMs || 0) < 14 * 864e5).map((v) => String(v.pcName)); } catch (e) { return []; } },
-    beats: () => BEATS, setOwner: (o) => SCHED_REF().set({ owner: { primary: String(o.primary || '').slice(0, 40), order: (o.order || []).map((x) => String(x).slice(0, 40)).slice(0, 12), rot: !!o.rot, spread: o.spread !== false, at: nowIso(), by: PC_NAME } }, { merge: true }).then(() => log(`🖥 자동 수집 담당 PC: ${o.primary || '정하지 않음'}${o.order && o.order.length ? ' → ' + o.order.join(' → ') : ''}`)),
+    beats: () => BEATS, setOwner: (o) => SCHED_REF().set({ owner: { primary: String(o.primary || '').slice(0, 40), order: (o.order || []).map((x) => String(x).slice(0, 40)).slice(0, 12), rot: !!o.rot, spread: o.spread === true, at: nowIso(), by: PC_NAME } }, { merge: true }).then(() => log(`🖥 자동 수집 담당 PC: ${o.primary || '정하지 않음'}${o.order && o.order.length ? ' → ' + o.order.join(' → ') : ''}`)),
     save: (slots, baseRev, what) => asSave(slots, baseRev, what), net: () => (PUBONLY && HELPER ? HELPER : null), logger: () => ({ name: PUBPC.name || (PUBONLY ? PC_NAME : null), since: PUBPC.since }), isLogger: () => PUBONLY, /* (1.68.0) */ loggerCtl: async (cmd) => { if (PUBONLY) { if (cmd === 'stop') window.__rnPauseAll('⏰ 편집기에서 로거 중단 — 하던 일 저장'); else window.__rnResumeOk(); try { BEATS = BEATS || {}; } catch (e) {} return 'local'; } const nm = PUBPC.name; if (!nm) throw new Error('로거 PC 이름이 아직 없음(설정)'); if (!window.__rnCtlSend) throw new Error('원격 명령을 못 씀'); await window.__rnCtlSend(nm, cmd); return 'remote'; }, /* (1.72.0) 🌐 로거 ■ 중단 · ▶ 다시 시작 */ /* (1.67.0) 📶 로거에서만 바로 · 다른 PC는 웹앱에서 */ setBudget: (patch) => RA.saveBudget({ cfgRef: SCHED_REF(), editsRef: (m) => C('prd_jobs').doc('autoSched_edits_' + m), arrayUnion: (...x) => firebase.firestore.FieldValue.arrayUnion(...x), email: (auth.currentUser || {}).email || null }, patch, PC_NAME), setOn: (on) => SCHED_REF().set({ on: !!on, at: nowIso(), by: PC_NAME }, { merge: true }).then(() => log(`⏰ 매일 자동 수집 ${on ? '켬' : '끔'}`)), log: (m, e) => log(m, e), segs: asSegs, builtins: asBuiltins, cloud: asCloudCtx, acks: () => ({ pcs: (BIs.ack || {}).pcs || {}, log: BIs.ackLog || [] }), note: '웹앱 ⏰ 자동 수집 페이지와 같은 편집기 — 어디서 고치든 같은 칸(prd_system/autoSched) · 저장하면 모든 PC에 1분 안에 적용 · 회차마다 한 PC만 함', front: (el) => window.__rnFront && window.__rnFront(el) };
   /* 할 수 있는 일 목록을 Firebase에 알려 둠 → 웹앱 설정의 편집기도 같은 목록(이 수집기 판의 일)을 씀 · 바뀔 때만 씀 */
   async function asPublishCatalog() { try { const jobs = asCatalog().map((c) => ({ job: c.job, label: c.label, g: c.g, d: c.d, ...(c.par ? { par: true } : {}) })); const ref = C('prd_system').doc('autoCatalog'); const cur = (await ref.get()).data() || {};
