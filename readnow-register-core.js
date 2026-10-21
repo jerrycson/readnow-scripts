@@ -5,7 +5,7 @@
  *   셀 서식(XF)은 원본에서 실제로 등록에 성공했던 줄(19행)의 것을 그대로 씀: ISBN = 텍스트 셀, 판매상태·수량·품질·판매가 = 숫자 셀.
  * 이 파일은 알라딘에 아무것도 바꾸지 않음 — 계산·만들기·읽기만. */
 (function (root) {
-  const VERSION = '0.7.3'; // (0.7.3) aprof — 알라딘 작가 파일(이름·소개·사진) // // (0.7.2) 저자·출판사 검색 결과에 그 줄 글 전부(info) — 동명이인 툴팁
+  const VERSION = '0.7.4'; // (0.7.4) 저자 검색 결과마다 그 저자 글만(예전엔 모든 줄에 첫 저자 대표작·칸 전체 글) // // (0.7.3) aprof — 알라딘 작가 파일(이름·소개·사진) // // (0.7.2) 저자·출판사 검색 결과에 그 줄 글 전부(info) — 동명이인 툴팁
   // 상품 구분 (알라딘 SelectType / BranchType)
   const BRANCH = { 1: '국내도서', 2: '음반', 3: 'DVD/블루레이', 7: '외국도서' };
   // 상품 관리 코드 아이콘 — 알라딘 상품 등록 도우미 0.1.0과 같은 색 (한 곳)
@@ -181,7 +181,12 @@
    *   author {name, type(1 지은이·3 옮긴이…), branch} → 저자 검색 팝업과 같은 요청 → [{ id, name, work }]
    *   brand  {name, branch} → 출판사 검색 팝업과 같은 요청 → [{ id, name }]
    *  알라딘 화면은 읽기만 함(아무것도 바꾸지 않음) */
-  function parseAuthorPopup(doc) { const out = []; doc.querySelectorAll('img[onclick*="submitParent"], a[href*="submitParent"]').forEach((el) => { const s = el.getAttribute('onclick') || el.getAttribute('href') || ''; const m = s.match(/submitParent\(\s*'?(\d+)'?\s*,\s*'([^']*)'/); if (!m) return; const td = el.closest('td'); let work = ''; if (td) { const t = td.textContent.replace(/\s+/g, ' '); const k = t.indexOf(m[2]); const seg = k >= 0 ? t.slice(k + m[2].length) : t; const w = seg.match(/:\s*<([^>]{1,80})>/); work = w ? w[1] : ''; } if (!out.some((x) => x.id === m[1])) { const tr = el.closest('tr'); out.push({ id: m[1], name: m[2], work, info: tr ? tr.textContent.replace(/\s+/g, ' ').trim().slice(0, 400) : '' }); } }); return out; } /* (0.7.2) info = 저자 검색 팝업의 그 줄 글 전부(동명이인 가리기 — 웹앱 툴팁) */
+  function parseAuthorPopup(doc) { /* (0.7.4) 정범님 10/21 '신성우 — 코드만 다르고 모두 같은 정보': 팝업은 한 칸(td)에 저자 여럿이 이어 붙어 있어, 예전엔 그 칸 글 전부·첫 대표작을 모든 줄에 붙였음 → 고르기 단추부터 다음 고르기 단추 앞까지의 글만 그 저자 것 */
+    const isM = (el) => el && el.nodeType === 1 && /submitParent/.test((el.getAttribute('onclick') || '') + (el.getAttribute('href') || '')); const out = []; const marks = [...doc.querySelectorAll('img[onclick*="submitParent"], a[href*="submitParent"], a[onclick*="submitParent"]')]; if (!marks.length) return out;
+    const root = marks[0].closest('table') || doc.body; const W = doc.createTreeWalker(root, 5 /* ELEMENT|TEXT */); let cur = null; const seen = new Set();
+    let buf = ''; /* 알라딘 팝업: '- 이름 : 소개·<대표작> [선택하기 그림] [자세히보기 그림] <br>' — 소개는 고르기 그림 앞에 있음 → 앞 고르기 그림부터 이 고르기 그림까지의 글 = 이 저자 */
+    for (let n = W.currentNode; n; n = W.nextNode()) { if (n.nodeType === 1 && isM(n)) { const s0 = n.getAttribute('onclick') || n.getAttribute('href') || ''; const m = s0.match(/submitParent\(\s*'?(\d+)'?\s*,\s*'([^']*)'/); if (!m) continue; if (!seen.has(m[1])) { seen.add(m[1]); out.push({ id: m[1], name: m[2], txt: buf }); } buf = ''; continue; } if (n.nodeType === 3 && !(n.parentNode && /^(SCRIPT|STYLE)$/.test(n.parentNode.nodeName))) buf += ' ' + n.nodeValue; }
+    return out.map((x) => { const t = x.txt.replace(/\s+/g, ' ').trim().replace(/^[\s\-–:]+/, '').replace(new RegExp('^' + x.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*'), '').trim(); const w = t.match(/<([^>]{1,80})>/); const info = t.replace(new RegExp('^' + x.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*:\\s*'), '').trim(); return { id: x.id, name: x.name, work: w ? w[1] : '', info: info.slice(0, 400) }; }); }
   function parseBrandPopup(doc) { const out = []; doc.querySelectorAll('a[href*="submitParent"]').forEach((a) => { const m = (a.getAttribute('href') || '').match(/submitParent\(\s*'?(\d+)'?\s*,\s*'([^']*)'/); if (m && !out.some((x) => x.id === m[1])) { const tr = a.closest('tr'); out.push({ id: m[1], name: m[2], info: tr ? tr.textContent.replace(/\s+/g, ' ').trim().slice(0, 400) : '' }); } }); return out; }
   async function auxRun(op, a, opt) { a = a || {}; const F = (opt && opt.fetch) || fetch; const DP = (opt && opt.DOMParser) || (typeof DOMParser !== 'undefined' ? DOMParser : null); const br = [1, 2, 3, 7].includes(+a.branch) ? +a.branch : 1;
     const form = (o) => Object.entries(o).map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
@@ -200,7 +205,7 @@
       if (!list.length && DP) { const d = new DP().parseFromString(html, 'text/html'); d.querySelectorAll('a[href*="CID="], a[onclick*="CID"], a[onclick*="Category"]').forEach((x) => { const m = (x.getAttribute('href') || '').match(/CID=(\d+)/i) || (x.getAttribute('onclick') || '').match(/(\d{2,})/); if (m) add(m[1], x.textContent); }); }
       return { list: list.slice(0, 500), sub: !!a.cid, raw: list.length ? null : html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\s+/g, ' ').slice(0, 3000) }; }
     throw new Error('모르는 일: ' + op); }
-  const auxKey = (op, a) => { a = a || {}; const br = [1, 2, 3, 7].includes(+a.branch) ? +a.branch : 1; const k = op === 'cat' ? `cat_${br}_${+a.to || 0}_${+a.cid || 0}` : op === 'univcat' ? `univcat_${+a.cid || 0}` : `${op}_${br}_${op === 'author' ? (+a.type || 1) + '_' : ''}${String(a.name || '').trim().toLowerCase()}`; return k.replace(/[\/#?\[\]*.]/g, '_').slice(0, 300); };
+  const auxKey = (op, a) => { a = a || {}; const br = [1, 2, 3, 7].includes(+a.branch) ? +a.branch : 1; const k = op === 'cat' ? `cat_${br}_${+a.to || 0}_${+a.cid || 0}` : op === 'univcat' ? `univcat_${+a.cid || 0}` : `${op}${op === 'author' ? '2' : ''}_${br}_${op === 'author' ? (+a.type || 1) + '_' : ''}${String(a.name || '').trim().toLowerCase()}`; return k.replace(/[\/#?\[\]*.]/g, '_').slice(0, 300); };
   const AUX_TTL_D = { cat: 30, author: 7, brand: 7, univcat: 30, aprof: 30 }; // Firebase 보관 기록을 다시 쓰는 기간 (분류는 거의 안 바뀜)
   /* 알라딘 등록 화면 크기 목록 (wrecord.aspx 'selItemSize'와 같은 값) — 19 규격외면 크기 칸에 직접 */
   const ITEM_SIZES = [[1, '210*297mm (A4)'], [2, '148*210mm (A5)'], [3, '152*223mm (A5신)'], [4, '112*152mm (A6)'], [5, '188*257mm (B5)'], [6, '128*188mm (B6)'], [7, '124*176mm (B6신)'], [8, '176*248mm (B18)'], [9, '103*182mm (B40)'], [18, '256*365mm (8절)'], [19, '규격외']];
