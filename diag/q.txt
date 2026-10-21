@@ -1,4 +1,1 @@
-logs=1&pc=JS-MAIN&from=2026-10-21T11
-logs=1&pc=MJ-MAIN&from=2026-10-21T11
-logs=1&pc=HOME&from=2026-10-21T11
-doc=app_settings/sku_seq
+scmform=/scm/wrecord_edit.aspx?chkItemStockStatus=1
