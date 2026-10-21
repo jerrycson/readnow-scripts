@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.23
+// @version      1.89.24
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -7419,20 +7419,21 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
  *  자료 = app_settings/sku_seq(mapN) + sku_map_0…N (웹앱 상품 상세와 같은 것) · 이 PC Tampermonkey 저장소에 1시간 보관(rn-skuc — 화면을 열 때마다 다시 읽지 않게) · 로그인한 샵매니저 화면에서만(로거는 열지 않음)
  *  관리코드를 그 화면에서 바꾸면 앞 3자리가 바로 따라 바뀜(2초마다 견줌) */
 (function rnSkuScm() { const G = globalThis; /* (1.89.22) 틀(iframe) 안에서 연 상품 조회/수정 화면도 */ if (!/(^|\.)aladin\.co\.kr$/i.test(location.hostname) || G.__rnPubChrome || !/^\/scm\/wrecord_edit\.aspx/i.test(location.pathname)) return;
-  const CK = 'rn-skuc'; let M = null, loading = false, tries = 0, lastTry = 0, miss = 0, refAt = 0, logged = false;
+  const CK = 'rn-skuc'; let LID = {}; let M = null, loading = false, tries = 0, lastTry = 0, miss = 0, refAt = 0, logged = false;
   const RG = () => (typeof ReadnowRegistry !== 'undefined' ? ReadnowRegistry : G.ReadnowRegistry || null);
   const full = (mg, c) => { const R = RG(); return R && R.skuFull ? R.skuFull(mg, c) || c : c; };
-  const load = async (force) => { if ((M && !force) || loading) return; if (!force) { try { const c = GM_getValue(CK, null); if (c && c.at && Date.now() - c.at < 3600e3 && c.m && Object.keys(c.m).length) { M = c.m; return; } } catch (e) {} }
+  const load = async (force) => { if ((M && !force) || loading) return; if (!force) { try { const c = GM_getValue(CK, null); if (c && c.at && Date.now() - c.at < 3600e3 && c.m && Object.keys(c.m).length && c.lid && Object.keys(c.lid).length) { M = c.m; LID = c.lid; return; } } catch (e) {} }
     /* (1.89.22) 정범님 10/21 '적용 안 됨' — 예전엔 로그인이 아직 안 돌아왔으면(화면 열고 2분 안) 그냥 그만둠 → 로그인이 돌아올 때까지 기다림 · 빈 자료는 저장하지 않음 · 목록에 없는 U코드가 보이면 5분에 한 번 다시 읽음 */
     const F = (typeof firebase !== 'undefined' && firebase) || G.firebase; if (!(F && F.apps && F.apps.length)) return; const au = F.auth(); if (!au.currentUser) { await new Promise((r) => { const u = au.onAuthStateChanged((x) => { u(); r(x); }); setTimeout(r, 15000); }); if (!au.currentUser) return; } loading = true;
     try { const fs = F.firestore(); const seq = (await fs.collection('app_settings').doc('sku_seq').get()).data() || {}; const n = +seq.mapN || 0; const m = {};
       for (let i = 0; i <= n; i++) { const d = (await fs.collection('app_settings').doc('sku_map_' + i).get()).data() || {}; for (const [k, v] of Object.entries(d.m || {})) { const u = String(k).replace(/^aladin_/, ''); const cs = ((v && v.c) || []).map((x) => String(x).replace(/^RN(?=[a-z0-9]{5}$)/, '')).filter(Boolean); if (cs.length) m[u] = cs.join(','); } }
-      M = m; refAt = Date.now(); if (Object.keys(m).length) { try { GM_setValue(CK, { at: Date.now(), m }); } catch (e) {} } if (!logged) { logged = true; try { window.__rnLog && window.__rnLog('SKU', 'info', `샵매니저 SKU 표시: 코드 ${Object.keys(m).length}개 읽음`); } catch (x) {} } }
+      const lid = {}; for (let i = 0; i < 4; i++) { const d = (await fs.collection('app_settings').doc('sku_lid_' + i).get()).data() || {}; Object.assign(lid, d.m || {}); } /* (1.89.24) 정범님 10/21: 목록 둘째 칸이 ISBN인 줄(ISBN 있는 책)은 U코드가 안 보여 못 찾았음 → 상품 번호(체크칸 값) → U코드 표(클라우드 0.31.2) */
+      M = m; LID = lid; refAt = Date.now(); if (Object.keys(m).length) { try { GM_setValue(CK, { at: Date.now(), m, lid }); } catch (e) {} } if (!logged) { logged = true; try { window.__rnLog && window.__rnLog('SKU', 'info', `샵매니저 SKU 표시: 코드 ${Object.keys(m).length}개 · 상품 번호 표 ${Object.keys(lid).length}개 읽음`); } catch (x) {} } }
     catch (e) { try { window.__rnLog && window.__rnLog('SKU', 'warn', '샵매니저 SKU 표시: 코드를 못 읽음 — ' + (e.code || e.message)); } catch (x) {} } finally { loading = false; } };
   const draw = () => { if (!M) return; document.querySelectorAll('input.batchChkBox').forEach((cb) => { const lid = cb.value; const tr = cb.closest('tr'); if (!tr) return; const mgEl = tr.querySelector(`#supCodeChg_val_${CSS.escape(lid)}`); if (!mgEl) return;
-      const um = (tr.children[1] ? tr.children[1].textContent : tr.textContent).match(/U\d{6,}/); const cs = um && M[um[0]] ? M[um[0]].split(',') : null; if (um && !cs) miss++; const mg = (mgEl.textContent || '').trim();
+      const um = (tr.children[1] ? tr.children[1].textContent : tr.textContent).match(/U\d{6,}/); const uc = (um && um[0]) || LID[lid] || null; const cs = uc && M[uc] ? M[uc].split(',') : null; if (!cs) miss++; const mg = (mgEl.textContent || '').trim();
       let el = tr.querySelector('.rn-sku'); if (!cs) { if (el) el.remove(); return; } const txt = '🏷 ' + full(mg, cs[0]) + (cs.length > 1 ? ` 외 ${cs.length - 1}` : '');
-      if (!el) { el = document.createElement('div'); el.className = 'rn-sku'; el.style.cssText = 'font-size:10.5px;color:#2F5D50;font-family:Consolas,monospace;margin-top:2px;white-space:nowrap'; mgEl.insertAdjacentElement('afterend', el); }
+      if (!el) { el = document.createElement('div'); el.className = 'rn-sku'; el.style.cssText = 'font-size:10px;color:#2F5D50;font-family:Consolas,monospace;margin-top:2px;line-height:1.2;word-break:break-all;text-align:center'; const host = mgEl.parentElement && mgEl.parentElement.tagName === 'DIV' && /overflow\s*:\s*hidden/i.test(mgEl.parentElement.getAttribute('style') || '') ? mgEl.parentElement : mgEl; host.insertAdjacentElement('afterend', el); } /* (1.89.24) 관리코드 칸은 폭 55px에 넘치면 잘림 → 그 칸 밖(아래)에 */
       if (el.textContent !== txt) { el.textContent = txt; el.title = '리드나우 SKU(실물 한 권마다 하나 · 앞 3자리 = 관리코드 서가)' + (cs.length > 1 ? ' · ' + cs.map((c) => full(mg, c)).join(', ') : ''); } }); };
   const tick = () => { if (!M) { const now = Date.now(); if (now - lastTry > (tries < 30 ? 2000 : 15000)) { lastTry = now; tries++; load().then(draw).catch(() => {}); } return; } miss = 0; draw(); if (miss && Date.now() - refAt > 5 * 60e3 && !loading) { refAt = Date.now(); load(true).then(draw).catch(() => {}); } };
   setTimeout(tick, 1500); setInterval(tick, 2000);
