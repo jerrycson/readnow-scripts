@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "로거 와이파이 도서 정보 멈춤 진단",
+ "since": "2026-10-21T01:27:03Z",
+ "beat": "2026-10-21T01:27:03Z",
  "ask": null,
  "last": {
   "who": "chat",
