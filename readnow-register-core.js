@@ -5,7 +5,7 @@
  *   셀 서식(XF)은 원본에서 실제로 등록에 성공했던 줄(19행)의 것을 그대로 씀: ISBN = 텍스트 셀, 판매상태·수량·품질·판매가 = 숫자 셀.
  * 이 파일은 알라딘에 아무것도 바꾸지 않음 — 계산·만들기·읽기만. */
 (function (root) {
-  const VERSION = '0.7.2'; // (0.7.2) 저자·출판사 검색 결과에 그 줄 글 전부(info) — 동명이인 툴팁
+  const VERSION = '0.7.3'; // (0.7.3) aprof — 알라딘 작가 파일(이름·소개·사진) // // (0.7.2) 저자·출판사 검색 결과에 그 줄 글 전부(info) — 동명이인 툴팁
   // 상품 구분 (알라딘 SelectType / BranchType)
   const BRANCH = { 1: '국내도서', 2: '음반', 3: 'DVD/블루레이', 7: '외국도서' };
   // 상품 관리 코드 아이콘 — 알라딘 상품 등록 도우미 0.1.0과 같은 색 (한 곳)
@@ -191,6 +191,8 @@
       const url = op === 'author' ? '/scm/wpopup_author.aspx' : '/scm/wpopup_brand.aspx'; const body = op === 'author' ? form({ branchType: br, curBook: 0, authorType: +a.type || 1, action: 1, authorNm: name }) : form({ branchType: br, searchFlag: 'company', brandName: name, action: 1 });
       const r = await F(url, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body }); if (!r.ok) throw new Error((op === 'author' ? '저자' : '출판사') + ' 검색 실패 HTTP ' + r.status);
       const doc = new DP().parseFromString(await r.text(), 'text/html'); if (!doc.querySelector('form')) throw new Error('검색 화면이 아님 (로그인이 풀렸을 수 있음)'); return op === 'author' ? parseAuthorPopup(doc) : parseBrandPopup(doc); }
+    if (op === 'aprof') { /* (0.7.3) 알라딘 작가 파일(공개 화면) — 이름·소개·사진(없으면 대표작 표지) · 동명이인 가리기 툴팁 */ const id = String(a.name || '').replace(/^@/, '').replace(/\D/g, ''); if (!id) return null; const r = await F('/author/wauthor_overview.aspx?AuthorSearch=@' + id, { credentials: 'omit' }); if (!r.ok) throw new Error('작가 파일 HTTP ' + r.status); const h = await r.text(); const og = (k) => { const m = h.match(new RegExp('property=["\']og:' + k + '["\'][^>]*content=["\']([^"\']*)', 'i')) || h.match(new RegExp('content=["\']([^"\']*)["\'][^>]*property=["\']og:' + k + '["\']', 'i')); return m ? m[1].replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim() : null; };
+      const t = og('title'); return { id, name: t ? t.replace(/\s*저자의 프로필과 대표작.*$/, '').trim() : null, desc: og('description'), img: og('image'), url: 'https://www.aladin.co.kr/author/wauthor_overview.aspx?AuthorSearch=@' + id }; }
     if (op === 'univcat') { /* (0.5.0) 대학교장터 카테고리 — 등록 화면의 '카테고리 찾기' 팝업(/scm/usedshop/popup/FindUnivCategory.aspx)과 같은 화면을 읽기만. 팝업은 고르면 opener.UnivCategory_Selected(번호, '경로')를 부름 → 그 부름들을 모음 */
       const r = await F('/scm/usedshop/popup/FindUnivCategory.aspx?selectedCID=' + (+a.cid || 0), { credentials: 'include' }); if (!r.ok) throw new Error('대학교장터 카테고리 읽기 실패 HTTP ' + r.status); const html = await r.text();
       const list = []; const seen = new Set(); const add = (id, nav) => { id = String(id); nav = String(nav || '').replace(/<[^>]+>/g, '').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim(); if (!/^\d+$/.test(id) || +id <= 0 || !nav || seen.has(id)) return; seen.add(id); list.push({ id, nav }); };
@@ -199,7 +201,7 @@
       return { list: list.slice(0, 500), sub: !!a.cid, raw: list.length ? null : html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/\s+/g, ' ').slice(0, 3000) }; }
     throw new Error('모르는 일: ' + op); }
   const auxKey = (op, a) => { a = a || {}; const br = [1, 2, 3, 7].includes(+a.branch) ? +a.branch : 1; const k = op === 'cat' ? `cat_${br}_${+a.to || 0}_${+a.cid || 0}` : op === 'univcat' ? `univcat_${+a.cid || 0}` : `${op}_${br}_${op === 'author' ? (+a.type || 1) + '_' : ''}${String(a.name || '').trim().toLowerCase()}`; return k.replace(/[\/#?\[\]*.]/g, '_').slice(0, 300); };
-  const AUX_TTL_D = { cat: 30, author: 7, brand: 7, univcat: 30 }; // Firebase 보관 기록을 다시 쓰는 기간 (분류는 거의 안 바뀜)
+  const AUX_TTL_D = { cat: 30, author: 7, brand: 7, univcat: 30, aprof: 30 }; // Firebase 보관 기록을 다시 쓰는 기간 (분류는 거의 안 바뀜)
   /* 알라딘 등록 화면 크기 목록 (wrecord.aspx 'selItemSize'와 같은 값) — 19 규격외면 크기 칸에 직접 */
   const ITEM_SIZES = [[1, '210*297mm (A4)'], [2, '148*210mm (A5)'], [3, '152*223mm (A5신)'], [4, '112*152mm (A6)'], [5, '188*257mm (B5)'], [6, '128*188mm (B6)'], [7, '124*176mm (B6신)'], [8, '176*248mm (B18)'], [9, '103*182mm (B40)'], [18, '256*365mm (8절)'], [19, '규격외']];
   /* 상품 설명 HTML (등록 화면 편집기에 넣는 것) — 줄마다 <br>, 글자는 안전하게 */

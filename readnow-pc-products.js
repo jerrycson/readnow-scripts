@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.20의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.21의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.20' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.20', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.21' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.21', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -262,6 +262,15 @@
     } catch (e) { console.warn('[리드나우] 현금 판매 표시 실패', e); }
   }
   setTimeout(() => { if (window.__rnFeat && !window.__rnFeat('cash')) return; /* (1.63.7) 🧩 */ paintCashSold(); }, 1200);
+  /* (1.89.21) 🛒 정범님 10/21: 알라딘 판매자 숍 화면(wshopitem.aspx?SC=)에 '우리가 이 판매자에게 산 주문' — 웹앱 판매자 상세와 같은 자료(pur_aladin_orders.seller · 이름이 같은 판매자) · 로거(공개 전용)는 하지 않음 */
+  async function paintSellerBuys() { try { if (PUBONLY || window.top !== window || !/\/shop\/usedshop\/wshopitem\.aspx/i.test(location.pathname)) return; const sc = (location.search.match(/[?&]SC=(\d+)/i) || [])[1]; if (!sc || sc === '996008') return; await new Promise((r) => { const u = auth.onAuthStateChanged((x) => { u(); r(x); }); }); if (!auth.currentUser) return;
+      const sd = (await C('sellers').doc('sc_' + sc).get()).data() || null; const nm = String((sd && sd.name) || '').trim(); if (!nm) return; const qs = await C('pur_aladin_orders').where('seller.name', '==', nm).get(); if (qs.empty) return;
+      const L = qs.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))); const sum = L.reduce((x, o) => x + (+o.amount || 0), 0); const nb = L.reduce((x, o) => x + (+o.qty || (o.lines || []).length || 0), 0); let same = 0; try { same = (await C('sellers').where('name', '==', nm).limit(3).get()).size; } catch (e) {}
+      const esc2 = (x) => String(x == null ? '' : x).replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';');
+      const box = document.createElement('div'); box.id = 'rn-selbuys'; box.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:2147483645;max-width:min(460px,92vw);max-height:46vh;overflow:auto;background:#fff;border:2px solid #2F5D50;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);font:12.5px/1.45 system-ui,Malgun Gothic,sans-serif;color:#1E2B27';
+      box.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#2F5D50;color:#fff;cursor:pointer" data-x="1"><b>🛒 우리가 이 판매자에게 산 주문</b><span style="flex:1"></span><span>${L.length}건 · ${nb}권 · ${sum.toLocaleString()}원</span><span>▾</span></div><div data-b="1" style="padding:6px 10px;display:none">${same > 1 ? '<div style="color:#B0322A;margin-bottom:4px">⚠ 같은 이름의 판매자가 여럿 — 이름으로만 이어 붙여 다른 판매자 주문이 섞였을 수 있음</div>' : ''}${L.slice(0, 40).map((o) => `<div style="padding:3px 0;border-bottom:1px solid #EEF2F0"><b>${esc2(o.date || '')}</b> <a href="/account/wordersinfo.aspx?pType=OrdersInfo&ONO=${encodeURIComponent(o.id)}" target="_blank">${esc2(o.id)}</a> · ${(+o.amount || 0).toLocaleString()}원<br><small>${(o.lines || []).slice(0, 4).map((x) => esc2((x.grade ? '[' + x.grade + '] ' : '') + String(x.title || '').slice(0, 36) + (x.price != null ? ' ' + (+x.price).toLocaleString() + '원' : ''))).join(' · ') || esc2(o.summary || '')}</small></div>`).join('')}${L.length > 40 ? `<div style="color:#5B6B66">최근 40건만 · 전체 ${L.length}건(웹앱 판매자 상세)</div>` : ''}</div>`;
+      box.querySelector('[data-x]').onclick = () => { const b = box.querySelector('[data-b]'); b.style.display = b.style.display === 'none' ? '' : 'none'; }; document.body.appendChild(box); } catch (e) {} }
+  setTimeout(() => { if (window.__rnFeat && !window.__rnFeat('prd')) return; paintSellerBuys(); }, 1800);
   // 크롬은 뒤에 숨은 탭의 타이머를 크게 늦춘다 → 워커 타이머로 대기(고객 수집기와 같은 방식). 막히면 일반 타이머
   let worker = null; let wseq = 0; const waiters = new Map();
   try {

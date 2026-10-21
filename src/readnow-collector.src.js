@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.20
+// @version      1.89.21
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -24,9 +24,9 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.85
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.86
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.3
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.2
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.8.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.16.1
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
@@ -3239,6 +3239,15 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     } catch (e) { console.warn('[리드나우] 현금 판매 표시 실패', e); }
   }
   setTimeout(() => { if (window.__rnFeat && !window.__rnFeat('cash')) return; /* (1.63.7) 🧩 */ paintCashSold(); }, 1200);
+  /* (1.89.21) 🛒 정범님 10/21: 알라딘 판매자 숍 화면(wshopitem.aspx?SC=)에 '우리가 이 판매자에게 산 주문' — 웹앱 판매자 상세와 같은 자료(pur_aladin_orders.seller · 이름이 같은 판매자) · 로거(공개 전용)는 하지 않음 */
+  async function paintSellerBuys() { try { if (PUBONLY || window.top !== window || !/\/shop\/usedshop\/wshopitem\.aspx/i.test(location.pathname)) return; const sc = (location.search.match(/[?&]SC=(\d+)/i) || [])[1]; if (!sc || sc === '996008') return; await new Promise((r) => { const u = auth.onAuthStateChanged((x) => { u(); r(x); }); }); if (!auth.currentUser) return;
+      const sd = (await C('sellers').doc('sc_' + sc).get()).data() || null; const nm = String((sd && sd.name) || '').trim(); if (!nm) return; const qs = await C('pur_aladin_orders').where('seller.name', '==', nm).get(); if (qs.empty) return;
+      const L = qs.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))); const sum = L.reduce((x, o) => x + (+o.amount || 0), 0); const nb = L.reduce((x, o) => x + (+o.qty || (o.lines || []).length || 0), 0); let same = 0; try { same = (await C('sellers').where('name', '==', nm).limit(3).get()).size; } catch (e) {}
+      const esc2 = (x) => String(x == null ? '' : x).replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';');
+      const box = document.createElement('div'); box.id = 'rn-selbuys'; box.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:2147483645;max-width:min(460px,92vw);max-height:46vh;overflow:auto;background:#fff;border:2px solid #2F5D50;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);font:12.5px/1.45 system-ui,Malgun Gothic,sans-serif;color:#1E2B27';
+      box.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#2F5D50;color:#fff;cursor:pointer" data-x="1"><b>🛒 우리가 이 판매자에게 산 주문</b><span style="flex:1"></span><span>${L.length}건 · ${nb}권 · ${sum.toLocaleString()}원</span><span>▾</span></div><div data-b="1" style="padding:6px 10px;display:none">${same > 1 ? '<div style="color:#B0322A;margin-bottom:4px">⚠ 같은 이름의 판매자가 여럿 — 이름으로만 이어 붙여 다른 판매자 주문이 섞였을 수 있음</div>' : ''}${L.slice(0, 40).map((o) => `<div style="padding:3px 0;border-bottom:1px solid #EEF2F0"><b>${esc2(o.date || '')}</b> <a href="/account/wordersinfo.aspx?pType=OrdersInfo&ONO=${encodeURIComponent(o.id)}" target="_blank">${esc2(o.id)}</a> · ${(+o.amount || 0).toLocaleString()}원<br><small>${(o.lines || []).slice(0, 4).map((x) => esc2((x.grade ? '[' + x.grade + '] ' : '') + String(x.title || '').slice(0, 36) + (x.price != null ? ' ' + (+x.price).toLocaleString() + '원' : ''))).join(' · ') || esc2(o.summary || '')}</small></div>`).join('')}${L.length > 40 ? `<div style="color:#5B6B66">최근 40건만 · 전체 ${L.length}건(웹앱 판매자 상세)</div>` : ''}</div>`;
+      box.querySelector('[data-x]').onclick = () => { const b = box.querySelector('[data-b]'); b.style.display = b.style.display === 'none' ? '' : 'none'; }; document.body.appendChild(box); } catch (e) {} }
+  setTimeout(() => { if (window.__rnFeat && !window.__rnFeat('prd')) return; paintSellerBuys(); }, 1800);
   // 크롬은 뒤에 숨은 탭의 타이머를 크게 늦춘다 → 워커 타이머로 대기(고객 수집기와 같은 방식). 막히면 일반 타이머
   let worker = null; let wseq = 0; const waiters = new Map();
   try {
@@ -7238,7 +7247,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const notSent = async (msg, extra) => { await ref.set({ status: 'fail', sent: false, msg: (v.mock ? '🧷 모의 등록 — ' : '자동 등록 — 보내지 않음: ') + msg, doneAt: nowIso(), ...(extra || {}), uploadedAt: TS() }, { merge: true }).catch(() => {}); await C('reg_items').doc(itemId).set(v.mock ? { mockResult: { at: nowIso(), ok: false, msg: '못 채움 — ' + String(msg).slice(0, 200), fill: (extra && extra.fill) || null, kind: 'auto' }, autoCmd: null, uploadedAt: TS() } : { lookErr: '🤖 자동 등록 멈춤: ' + String(msg).slice(0, 200), autoCmd: null, uploadedAt: TS() }, { merge: true }).catch(() => {}); };
     if (!it || !it.plan) return notSent('등록 계획이 없음 — 웹앱에서 다시');
     if (it.stage !== 'pick' || (it.cmdId && it.cmdId !== id)) return notSent('결정 대기가 아님(이미 등록을 보냈거나 옮겨짐)');
-    const plan = it.plan; const url = plan.method === 'one' ? `/scm/wrecord.aspx?ISBN=${encodeURIComponent(plan.isbn)}` : '/scm/wrecord.aspx';
+    const plan = it.plan; const plItem = plan.itemId || (it.info && it.info.itemId) || it.itemId || null; const url = plan.method === 'one' ? (plItem ? `/scm/wrecord.aspx?ItemId=${encodeURIComponent(plItem)}` : `/scm/wrecord.aspx?ISBN=${encodeURIComponent(plan.isbn)}`) : '/scm/wrecord.aspx'; /* (1.89.21) 정범님 10/21: 알라딘 상품 번호로 먼저 엶 — ISBN13으로는 알라딘 서버 오류가 나는 상품(시구루이 15·고려시대의 불화·한국주역대전·천하무적 잡학상식 — 알라딘 등록 화면의 ISBN 칸이 옛 ISBN10이거나 상품 화면에서 ISBN이 지워짐)도 그대로 열림 */
     const fr = document.createElement('iframe'); fr.id = 'rnRegAuto_' + TAB + '_' + Date.now().toString(36); fr.style.cssText = 'position:fixed;left:-5000px;top:0;width:1280px;height:1000px;border:0;opacity:0;pointer-events:none'; fr.setAttribute('aria-hidden', 'true');
     const loaded = (ms) => new Promise((res) => { const t = setTimeout(() => res(false), ms); fr.addEventListener('load', () => { clearTimeout(t); res(true); }, { once: true }); });
     const p0 = loaded(60000); fr.src = url; document.body.appendChild(fr); const clean = () => setTimeout(() => { try { fr.remove(); } catch (e) {} }, 3000);
@@ -7247,7 +7256,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
        *  → 오류 화면이면 ISBN10(978만)·알라딘 상품 ISBN(plan.isbn10)으로 다시 열어 봄 · 그래도 오류면 아래에서 '알라딘 서버 오류'로 멈춤(보내지 않음) */
       if (plan.method === 'one') { const errPg = () => { try { const dd = fr.contentDocument; const t = String((dd && dd.body && dd.body.innerText) || ''); return !!dd && !dd.getElementById('frmRecord') && /오류가\s*발생/.test(t); } catch (e) { return false; } };
         const i13 = String(plan.isbn || '').replace(/[^0-9Xx]/g, ''); const to10 = (x) => { if (!/^978\d{10}$/.test(x)) return null; const b9 = x.slice(3, 12); let sm = 0; for (let k = 0; k < 9; k++) sm += (10 - k) * +b9[k]; const c = (11 - (sm % 11)) % 11; return b9 + (c === 10 ? 'X' : String(c)); };
-        const alts = [plan.isbn10, plan.alIsbn, to10(i13)].map((x) => String(x || '').trim()).filter((x, k, A) => x && x !== i13 && A.indexOf(x) === k);
+        const alts = [plItem ? i13 : null, plan.isbn10, plan.alIsbn, to10(i13)].map((x) => String(x || '').trim()).filter((x, k, A) => x && (plItem || x !== i13) && A.indexOf(x) === k);
         for (const alt of alts) { if (!errPg()) break; await ref.set({ beatAt: nowIso(), waitMsg: `알라딘 등록 화면 오류 — ISBN ${alt}로 다시 엶` }, { merge: true }).catch(() => {}); const pA = loaded(60000); fr.src = `/scm/wrecord.aspx?ISBN=${encodeURIComponent(alt)}`; if (!(await pA)) break; await sleep(1500); }
         if (errPg()) { let t = ''; try { t = String(fr.contentDocument.body.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 120); } catch (e) {} return await notSent(`알라딘 서버 오류 — 이 책(ISBN ${i13})의 등록 화면을 알라딘이 못 엶${alts.length ? `(ISBN10 ${alts.join('·')}로도)` : ''}: ${t} — PC·계정 문제가 아님 · 대량 등록으로 올리면 됨`); } }
       const uf = UW.document.getElementById(fr.id); const W = uf && uf.contentWindow; const d = fr.contentDocument; if (!W || !d || !/wrecord\.aspx/i.test(String(W.location.pathname))) return await notSent('등록 화면이 아님(로그인이 풀렸을 수 있음)');

@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.20의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.21의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.20' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.20', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.21' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.21', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -243,7 +243,7 @@
     const notSent = async (msg, extra) => { await ref.set({ status: 'fail', sent: false, msg: (v.mock ? '🧷 모의 등록 — ' : '자동 등록 — 보내지 않음: ') + msg, doneAt: nowIso(), ...(extra || {}), uploadedAt: TS() }, { merge: true }).catch(() => {}); await C('reg_items').doc(itemId).set(v.mock ? { mockResult: { at: nowIso(), ok: false, msg: '못 채움 — ' + String(msg).slice(0, 200), fill: (extra && extra.fill) || null, kind: 'auto' }, autoCmd: null, uploadedAt: TS() } : { lookErr: '🤖 자동 등록 멈춤: ' + String(msg).slice(0, 200), autoCmd: null, uploadedAt: TS() }, { merge: true }).catch(() => {}); };
     if (!it || !it.plan) return notSent('등록 계획이 없음 — 웹앱에서 다시');
     if (it.stage !== 'pick' || (it.cmdId && it.cmdId !== id)) return notSent('결정 대기가 아님(이미 등록을 보냈거나 옮겨짐)');
-    const plan = it.plan; const url = plan.method === 'one' ? `/scm/wrecord.aspx?ISBN=${encodeURIComponent(plan.isbn)}` : '/scm/wrecord.aspx';
+    const plan = it.plan; const plItem = plan.itemId || (it.info && it.info.itemId) || it.itemId || null; const url = plan.method === 'one' ? (plItem ? `/scm/wrecord.aspx?ItemId=${encodeURIComponent(plItem)}` : `/scm/wrecord.aspx?ISBN=${encodeURIComponent(plan.isbn)}`) : '/scm/wrecord.aspx'; /* (1.89.21) 정범님 10/21: 알라딘 상품 번호로 먼저 엶 — ISBN13으로는 알라딘 서버 오류가 나는 상품(시구루이 15·고려시대의 불화·한국주역대전·천하무적 잡학상식 — 알라딘 등록 화면의 ISBN 칸이 옛 ISBN10이거나 상품 화면에서 ISBN이 지워짐)도 그대로 열림 */
     const fr = document.createElement('iframe'); fr.id = 'rnRegAuto_' + TAB + '_' + Date.now().toString(36); fr.style.cssText = 'position:fixed;left:-5000px;top:0;width:1280px;height:1000px;border:0;opacity:0;pointer-events:none'; fr.setAttribute('aria-hidden', 'true');
     const loaded = (ms) => new Promise((res) => { const t = setTimeout(() => res(false), ms); fr.addEventListener('load', () => { clearTimeout(t); res(true); }, { once: true }); });
     const p0 = loaded(60000); fr.src = url; document.body.appendChild(fr); const clean = () => setTimeout(() => { try { fr.remove(); } catch (e) {} }, 3000);
@@ -252,7 +252,7 @@
        *  → 오류 화면이면 ISBN10(978만)·알라딘 상품 ISBN(plan.isbn10)으로 다시 열어 봄 · 그래도 오류면 아래에서 '알라딘 서버 오류'로 멈춤(보내지 않음) */
       if (plan.method === 'one') { const errPg = () => { try { const dd = fr.contentDocument; const t = String((dd && dd.body && dd.body.innerText) || ''); return !!dd && !dd.getElementById('frmRecord') && /오류가\s*발생/.test(t); } catch (e) { return false; } };
         const i13 = String(plan.isbn || '').replace(/[^0-9Xx]/g, ''); const to10 = (x) => { if (!/^978\d{10}$/.test(x)) return null; const b9 = x.slice(3, 12); let sm = 0; for (let k = 0; k < 9; k++) sm += (10 - k) * +b9[k]; const c = (11 - (sm % 11)) % 11; return b9 + (c === 10 ? 'X' : String(c)); };
-        const alts = [plan.isbn10, plan.alIsbn, to10(i13)].map((x) => String(x || '').trim()).filter((x, k, A) => x && x !== i13 && A.indexOf(x) === k);
+        const alts = [plItem ? i13 : null, plan.isbn10, plan.alIsbn, to10(i13)].map((x) => String(x || '').trim()).filter((x, k, A) => x && (plItem || x !== i13) && A.indexOf(x) === k);
         for (const alt of alts) { if (!errPg()) break; await ref.set({ beatAt: nowIso(), waitMsg: `알라딘 등록 화면 오류 — ISBN ${alt}로 다시 엶` }, { merge: true }).catch(() => {}); const pA = loaded(60000); fr.src = `/scm/wrecord.aspx?ISBN=${encodeURIComponent(alt)}`; if (!(await pA)) break; await sleep(1500); }
         if (errPg()) { let t = ''; try { t = String(fr.contentDocument.body.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 120); } catch (e) {} return await notSent(`알라딘 서버 오류 — 이 책(ISBN ${i13})의 등록 화면을 알라딘이 못 엶${alts.length ? `(ISBN10 ${alts.join('·')}로도)` : ''}: ${t} — PC·계정 문제가 아님 · 대량 등록으로 올리면 됨`); } }
       const uf = UW.document.getElementById(fr.id); const W = uf && uf.contentWindow; const d = fr.contentDocument; if (!W || !d || !/wrecord\.aspx/i.test(String(W.location.pathname))) return await notSent('등록 화면이 아님(로그인이 풀렸을 수 있음)');
