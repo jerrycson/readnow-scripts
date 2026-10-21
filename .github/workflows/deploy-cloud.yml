@@ -10,6 +10,10 @@ on:
     branches: [main]
     paths: ['cloud/**', '.github/workflows/deploy-cloud.yml', 'readnow-*-core.js', 'readnow-registry.js', 'diag/q.txt', 'pc-live.json']  # (2026-10-16) diag/q.txt = 🔎 읽기 전용 진단(아래 '진단' 단계 · 배포는 건너뜀) — 구글 로그인은 이 파일(deploy-cloud.yml)에만 허락돼 있어 여기서 함  # (2026-10-13) 공용 파일이 바뀌어도 다시 올림 — 클라우드는 올린 커밋(CODE_SHA)의 공용 파일만 씀
   workflow_dispatch:
+    inputs:
+      health_only: { description: '숫자 요약만(배포 안 함)', type: boolean, default: false }
+  schedule:
+    - cron: '41 * * * *'  # (2026-10-22) 매시 41분 🔁 숫자 요약(@health 3시간·24시간)을 health-out 가지에 평문으로 — 예약 점검 세션이 push 없이 읽기만(예약 세션의 권한 검사가 진단 push를 막아 06:15 점검이 숫자를 못 본 것 · 쓰기 폭주를 못 잡은 까닭)
 concurrency: { group: deploy-cloud, cancel-in-progress: false }
 permissions: { contents: write, id-token: write }  # contents: write = 진단 결과(암호화)를 diag-out 가지에 올릴 때만
 env:
@@ -28,6 +32,7 @@ jobs:
       - name: 무엇이 바뀌었나 (배포 · 진단)
         run: |
           # (자동 점검 2026-10-16) 한 번에 여러 커밋을 올리면 HEAD~1과만 비교해 앞 커밋의 cloud/ 바뀜을 놓치고 배포를 건너뛰던 것 → 올리기 전 커밋(event.before)과 비교 · 못 받으면 ALL(배포)
+          if [ "$GITHUB_EVENT_NAME" = schedule ] || [ "${{ inputs.health_only }}" = true ]; then echo "DO_HEALTH=1" >> "$GITHUB_ENV"; exit 0; fi  # (2026-10-22) 숫자 요약만 — 배포·진단 안 함
           B="${{ github.event.before }}"
           if [ -n "$B" ] && [ "$B" != 0000000000000000000000000000000000000000 ] && { git cat-file -e "$B^{commit}" 2>/dev/null || git fetch -q --depth=1 origin "$B" 2>/dev/null; }; then CH=$(git diff --name-only "$B" HEAD 2>/dev/null || echo ALL); else CH=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo ALL); fi
           if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] || [ "$CH" = ALL ] || echo "$CH" | grep -qE '^(cloud/|\.github/workflows/deploy-cloud\.yml|readnow-[a-z]+-core\.js|readnow-registry\.js)'; then echo "DO_DEPLOY=1" >> "$GITHUB_ENV"; fi
@@ -45,7 +50,7 @@ jobs:
       - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1 (node24)
       - id: idt
         name: 진단용 1회용 ID 토큰
-        if: env.DO_DIAG == '1' || env.DO_PCLIVE == '1'
+        if: env.DO_DIAG == '1' || env.DO_PCLIVE == '1' || env.DO_HEALTH == '1'
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}', token_format: id_token, id_token_audience: readnow-diag, id_token_include_email: true, create_credentials_file: false }
       - name: 🔎 진단 — 읽고 암호화해 diag-out 가지에 (읽기 전용 · 개인 열쇠는 저장소에 없음)
@@ -71,6 +76,15 @@ jobs:
           git config user.email "actions@github.com"; git config user.name "diag"; git checkout -q --orphan diag-out; git rm -rfq --cached . ; cp /tmp/o.enc out.enc; cp /tmp/k.enc out.key; echo "$GITHUB_SHA" > for.txt
           if [ -f /tmp/health.json ]; then cp /tmp/health.json health.json; git add -f health.json; fi  # (2026-10-21) '@health' 줄 = 🔁 3시간 점검용 숫자 요약(평문 — 고객·제목·이름 없이 숫자와 오류 틀만 · 예약 점검이 열쇠 없이 읽음)
           git add -f out.enc out.key for.txt; git commit -qm "diag $GITHUB_SHA"; git push -qf origin HEAD:diag-out
+      - name: 🔁 숫자 요약 → health-out 가지 (평문 · 고객·제목 없이 숫자·오류 틀만)
+        if: env.DO_HEALTH == '1'
+        env: { IDT: '${{ steps.idt.outputs.id_token }}' }
+        run: |
+          URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')
+          mkdir -p /tmp/h
+          for H in 3 24; do for t in 1 2 3 4; do curl -sS -m 280 -H "Authorization: Bearer $IDT" "$URL/diag?health=1&hours=$H" > /tmp/h/health$H.json || echo '{"ok":false,"err":"curl"}' > /tmp/h/health$H.json; grep -q '^Rate exceeded' /tmp/h/health$H.json || break; sleep 20; done; echo "health$H bytes $(wc -c < /tmp/h/health$H.json)"; done
+          date -u +%Y-%m-%dT%H:%M:%SZ > /tmp/h/at.txt
+          git config user.email "actions@github.com"; git config user.name "health"; git checkout -q --orphan health-out; git rm -rfq --cached . ; cp /tmp/h/* .; git add -f health3.json health24.json at.txt; git commit -qm "health $(cat /tmp/h/at.txt)"; git push -qf origin HEAD:health-out
       - name: Cloud Run 올리기 (빌드 3~6분)
         if: env.DO_DEPLOY == '1'
         working-directory: cloud
