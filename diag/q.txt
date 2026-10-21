@@ -1,1 +1,1 @@
-doc=prd_jobs/autoSched
+doc=prd_system/autoSched
