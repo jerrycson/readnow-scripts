@@ -1,1 +1,1 @@
-@health&hours=24
+logs=1&pc=HOME&from=202610210000
