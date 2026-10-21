@@ -1,12 +1,12 @@
 {
- "holder": "auto-check",
- "what": "보고서 올림",
- "since": "2026-10-21T12:56:53Z",
- "beat": "2026-10-21T13:05:40Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "chat",
-  "done": "상품 상세 편집·샵매니저 반영·카드 개편",
-  "at": "2026-10-21T12:47:35Z"
+  "who": "auto-check",
+  "done": "자동 점검 2026-10-21: 클라우드 0.32.3(2b9cd2c) · 보고서",
+  "at": "2026-10-21T13:05:44Z"
  }
 }
