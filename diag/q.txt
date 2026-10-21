@@ -1,1 +1,1 @@
-@health&from=202610211400&hours=8
+@health&hours=24
