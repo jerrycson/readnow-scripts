@@ -1,2 +1,2 @@
-recentUp=prd_listings&mins=240
-health=1&hours=24
+logs=1&pc=HOME&from=202610220620&to=202610220700
+recentUp=prd_listing_changes&mins=120
