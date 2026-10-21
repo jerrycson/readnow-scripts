@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.13
+// @version      1.89.14
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -7220,6 +7220,13 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const loaded = (ms) => new Promise((res) => { const t = setTimeout(() => res(false), ms); fr.addEventListener('load', () => { clearTimeout(t); res(true); }, { once: true }); });
     const p0 = loaded(60000); fr.src = url; document.body.appendChild(fr); const clean = () => setTimeout(() => { try { fr.remove(); } catch (e) {} }, 3000);
     try { if (!(await p0)) return await notSent('알라딘 등록 화면이 1분 안에 열리지 않음'); await sleep(1500);
+      /* (1.89.14) 정범님 10/21: 9788990554536(천하무적 잡학상식)은 알라딘이 wrecord.aspx?ISBN=13자리에서 서버 오류('개체 참조가 개체의 인스턴스로 설정되지 않았습니다') — PC·계정과 상관없음(HOME·JS-MAIN·MJ-MAIN 모두 · 10/20에도 2건)
+       *  → 오류 화면이면 ISBN10(978만)·알라딘 상품 ISBN(plan.isbn10)으로 다시 열어 봄 · 그래도 오류면 아래에서 '알라딘 서버 오류'로 멈춤(보내지 않음) */
+      if (plan.method === 'one') { const errPg = () => { try { const dd = fr.contentDocument; const t = String((dd && dd.body && dd.body.innerText) || ''); return !!dd && !dd.getElementById('frmRecord') && /오류가\s*발생/.test(t); } catch (e) { return false; } };
+        const i13 = String(plan.isbn || '').replace(/[^0-9Xx]/g, ''); const to10 = (x) => { if (!/^978\d{10}$/.test(x)) return null; const b9 = x.slice(3, 12); let sm = 0; for (let k = 0; k < 9; k++) sm += (10 - k) * +b9[k]; const c = (11 - (sm % 11)) % 11; return b9 + (c === 10 ? 'X' : String(c)); };
+        const alts = [plan.isbn10, plan.alIsbn, to10(i13)].map((x) => String(x || '').trim()).filter((x, k, A) => x && x !== i13 && A.indexOf(x) === k);
+        for (const alt of alts) { if (!errPg()) break; await ref.set({ beatAt: nowIso(), waitMsg: `알라딘 등록 화면 오류 — ISBN ${alt}로 다시 엶` }, { merge: true }).catch(() => {}); const pA = loaded(60000); fr.src = `/scm/wrecord.aspx?ISBN=${encodeURIComponent(alt)}`; if (!(await pA)) break; await sleep(1500); }
+        if (errPg()) { let t = ''; try { t = String(fr.contentDocument.body.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 120); } catch (e) {} return await notSent(`알라딘 서버 오류 — 이 책(ISBN ${i13})의 등록 화면을 알라딘이 못 엶${alts.length ? `(ISBN10 ${alts.join('·')}로도)` : ''}: ${t} — PC·계정 문제가 아님 · 대량 등록으로 올리면 됨`); } }
       const uf = UW.document.getElementById(fr.id); const W = uf && uf.contentWindow; const d = fr.contentDocument; if (!W || !d || !/wrecord\.aspx/i.test(String(W.location.pathname))) return await notSent('등록 화면이 아님(로그인이 풀렸을 수 있음)');
       const F = makeFiller(d, W, { auto: true }); let rep; try { rep = await F.fill(plan); /* (1.49.0) 사진 칸(대표·추가)의 사진도 넣음 — 넣은 뒤 칸에 사진 주소가 들어왔는지 확인(attachOne) · 하나라도 안 되면 아래에서 보내지 않음 · 설명 안 사진(편집기)은 자동으로 못 넣음 */ const todo = F.photoTodo(plan); if (todo.length) { /* (1.50.0) 설명 안 사진(편집기)도 넣음 — editorPhoto */ await ref.set({ beatAt: nowIso(), step: 2, waitMsg: `사진 ${todo.length}장 넣는 중` }, { merge: true }).catch(() => {}); rep.push(...(await F.attachImages(plan))); } } catch (e) { return await notSent('채우지 못함: ' + e.message); }
       const bad = rep.filter((x) => !x.ok); const fillTxt = rep.map((x) => `${x.ok ? '✓' : '✗'} ${x.k}${x.note && !x.ok ? ' (' + x.note + ')' : ''}`).join(' · ').slice(0, 900);
