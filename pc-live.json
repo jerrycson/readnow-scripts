@@ -1,7 +1,7 @@
 {
- "ver": "1.89.24",
+ "ver": "1.89.25",
  "hsig": "8559039d5a96110b",
- "at": "2026-10-21T12:14:12.628Z",
+ "at": "2026-10-21T12:34:43.151Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -41,9 +41,9 @@
   },
   {
    "f": "readnow-registry.js",
-   "v": "0.14.87",
-   "sha": "db1a993ec1abd03160c1f2b1e523a9b8b83725a2b9902617cfab378659c6fe4f",
-   "n": 59419
+   "v": "0.14.88",
+   "sha": "18b92f959ebec243a09bc378ad0335f353046fb68ed70d5655c48c9af242bae5",
+   "n": 60715
   },
   {
    "f": "readnow-ext-core.js",
@@ -83,38 +83,38 @@
   },
   {
    "f": "readnow-pc-boot.js",
-   "v": "1.89.24",
-   "sha": "0572ace461209c46e6d8fa85be0f4d280b2c49689eebd0357c6202af9fcc6fb5",
+   "v": "1.89.25",
+   "sha": "ef918fd35d73d38325ee2c04b998eac80c17335738bc475c83cf4c52a23f30e3",
    "n": 23138
   },
   {
    "f": "readnow-pc-runtime.js",
-   "v": "1.89.24",
-   "sha": "791d472e18b4cce0ec8b44f0efcabffdaa5412bd9e96bc7547657f5fa315e13a",
+   "v": "1.89.25",
+   "sha": "8e26fec9e253aba3943a7b6789aae1f7dd624af642d85b0cc7158bc14178596f",
    "n": 133659
   },
   {
    "f": "readnow-pc-crm.js",
-   "v": "1.89.24",
-   "sha": "23c3b161ae0867d2764cac1691d2c9f9eb6a5c6f9de497443b163dd777a905bb",
+   "v": "1.89.25",
+   "sha": "d2876e9a860d221a341b75c998b7b588c397bf6d3dbfbabc95f632030314f4c4",
    "n": 234065
   },
   {
    "f": "readnow-pc-products.js",
-   "v": "1.89.24",
-   "sha": "7c864085dd43e25e01ad18f25e3f863a970764dbd4ec6e41d7278cc5506397e9",
+   "v": "1.89.25",
+   "sha": "8d2503e60d3d6bb9b8830890da7ba73352c92cc8714bbbd21a45a42d6eae60a9",
    "n": 778161
   },
   {
    "f": "readnow-pc-ship.js",
-   "v": "1.89.24",
-   "sha": "83d6fd681fd7c86bf3ee1fc4d3d48449f01ad0538eb0a38d6e5f56e64ee8cea7",
+   "v": "1.89.25",
+   "sha": "7f9701bedc72dbea1f3de46960bf2106044d786f99d5952be0e4b776b147be12",
    "n": 15344
   },
   {
    "f": "readnow-pc-helper.js",
-   "v": "1.89.24",
-   "sha": "f0ca07629b30e3d19a5327e6d564efd5f3db472281cb4448e64c1bde97a07ae4",
+   "v": "1.89.25",
+   "sha": "b8bf4812db67f2d6e65626e7ee012ae8bc3c9ba1a70b41c50b2a3c9c31054e2f",
    "n": 99035
   }
  ]
