@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.14
+// @version      1.89.15
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -5165,7 +5165,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const pcCan = (type) => { const extT = type === 'extLookup' || type === 'extTest'; if (PUBONLY && (!PUB_CMDS.has(type) || (!TGATE.ok && !extT))) return false; /* (1.67.0) 외부 정보는 와이파이 — 테더링과 상관없이 로거가 받음 */ if (PUBONLY && !extT && BUD && !(BUD.left.main > 0) && !(BUD.free)) return false; /* 맡긴 비로그인 일 = 주요 몫 — 몫이 없으면 받지 않음 */ /* (1.66.0) 테더링 확인 전에는 맡지 않음(다른 PC가 받게) */ if (pubPcMode() && type === 'metrics') return false; /* 묶음 시장 지표(대량)는 공개 전용 PC */ const G = REGF(); if (!G) return PC_KNOWN_OLD.has(type); return G.canHandle(G.merge(REGDOC || {}), type, 'pc'); };
   /* (1.63.7) 🧩 맡긴 일 거르기 — 수집 일은 📥 수집이 켜졌을 때만, 출고 시작·현금 판매·등록은 그 기능을 켰을 때만(끄면 대기로 남겨 다른 PC가) */
   /* (1.77.5) PC끼리 누가 받나(정범님 10/17): ① 요청한 기기가 이 PC(웹앱이 dev에 기기 이름) → 바로 ② 쉬는 PC 0.7초 ③ 자동 수집이 아닌 일(사람이 누른 일) 하는 PC 1.6초 ④ 자동 수집 중인 PC 2.6초 + 남은 시간이 길수록 더 늦게(최대 +6초) — 먼저 받는 PC가 맡고(대기 → 처리 중은 한 번만) 나머지는 그냥 지나감 */
-  const claimDelay = (x) => { try { if (x && x.dev && String(x.dev).trim().toUpperCase() === String(PC_NAME || '').trim().toUpperCase()) return 0; const busy = !!running || !!(window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()); if (!busy) return 700; if (!window.__rnAuto) return 1600; const m = lastUi && lastUi.etaMin != null ? +lastUi.etaMin : 60; return 2600 + Math.min(6000, Math.max(0, m) * 100); } catch (e) { return 1000; } };
+  const claimDelay = (x) => { try { if (x && x.dev && String(x.dev).trim().toUpperCase() === String(PC_NAME || '').trim().toUpperCase()) return 0; if (x && x.dev && /^reg/.test(String(x.type || ''))) { const B = ((BEATS || {}).pcs || {})[String(x.dev).trim().toUpperCase()] || ((BEATS || {}).pcs || {})[String(x.dev).trim()]; if (B && Date.now() - (+B.atMs || 0) < 3 * 60e3 && !B.paused) return 15000; } /* (1.89.15) 정범님 10/21: 등록은 웹앱을 누른 PC의 수집기가 먼저(살아 있으면 다른 PC는 15초 기다림 — 그 PC가 안 받으면 그때 다른 PC) */ const busy = !!running || !!(window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()); if (!busy) return 700; if (!window.__rnAuto) return 1600; const m = lastUi && lastUi.etaMin != null ? +lastUi.etaMin : 60; return 2600 + Math.min(6000, Math.max(0, m) * 100); } catch (e) { return 1000; } };
   /* (1.83.0) ☁ 클라우드 이상 띠가 매일 뜨던 까닭(진단 10/18): ① '유의 사항 다시 읽기'(usedInfo)는 클라우드가 느린 일로 회차 끝에만 처리하는데 PC는 20초만 기다려 거의 늘 '클라우드 이상'으로 적음(오늘 6번 모두 이것) ② 클라우드가 살아 있어도 다른 단계(조회·보강)를 하는 중이면 20초를 넘김
    *  → usedInfo는 클라우드 먼저에서 뺌(PC가 바로) · 발송준비시작·현금 판매 중지는 클라우드 신호(app_settings/cloud.at)가 2분 안에 있으면 45초까지 기다리고, 그래도 늦으면 PC가 처리하되 '느림'으로만 적음(띠 없음) · 신호가 끊긴 때만 '클라우드 이상' 띠 */
   const CLOUD_FIRST = new Set(['startDelivery', 'cashStop']); let CLOUD_GRACE = 45000; let cloudSt = null, cloudStAt = 0;
@@ -7204,7 +7204,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     /* 알림·확인 창: 사람이 보는 화면은 기록하고 그대로 띄움 · 자동(틀 안)은 기록만 — 확인 창은 '등록·저장하시겠습니까'만 예, 그 밖(중복 경고 등)은 아니오(보내지 않음) */
     function hook(sink, auto) { const nA = W0.alert, nC = W0.confirm;
       W0.alert = function (msg) { sink.push(String(msg).slice(0, 200)); if (!auto) return nA.call(W0, msg); };
-      W0.confirm = function (msg) { const m = String(msg); if (!auto) { sink.push('(확인) ' + m.slice(0, 200)); return nC.call(W0, msg); } const yes = /(등록|저장|진행)\s*하시겠습니까/.test(m) && !/중복|이미|다시/.test(m); sink.push((yes ? '(확인✓) ' : '(확인✗) ') + m.slice(0, 200)); return yes; }; } /* (1.59.0) 자동으로 '예'를 누른 확인 창(✓)과 '아니오'(✗)를 나눠 남김 — ✓가 있으면 알라딘에 보냈을 수 있음 */
+      W0.confirm = function (msg) { const m = String(msg); if (!auto) { sink.push('(확인) ' + m.slice(0, 200)); return nC.call(W0, msg); } const lowP = /시중가\s*대비[\s\S]{0,20}판매가가\s*\d+%\s*미만/.test(m); /* (1.89.15) 정범님 10/21: 웹앱에서 정한 판매가가 정가(시중가)의 20% 미만이면 알라딘이 '다시 확인' 창을 띄움 — 대량 등록에는 이 확인이 없어 같은 값으로 올라감 · 판매가는 웹앱에서 정범님이 정한 값이므로 '확인'(기록에 남김) */ const yes = lowP || (/(등록|저장|진행)\s*하시겠습니까/.test(m) && !/중복|이미|다시/.test(m)); sink.push((yes ? '(확인✓) ' : '(확인✗) ') + m.slice(0, 200)); return yes; }; } /* (1.59.0) 자동으로 '예'를 누른 확인 창(✓)과 '아니오'(✗)를 나눠 남김 — ✓가 있으면 알라딘에 보냈을 수 있음 */
     return { fill, attachImages, attachOne, photoTodo, prep, hook, $ }; }
   window.__rnRegMake = makeFiller;
   /* ── 창 없이 하는 자동 등록 (웹앱 '🤖 자동 등록' → 맡긴 일 regOne auto): 보이지 않는 틀 안에 알라딘 등록 화면을 열고 같은 방법으로 채움 → 못 채운 칸이 하나라도 있으면 보내지 않음 → 보냄 → 화면이 바뀌면 공개 확인 ── */

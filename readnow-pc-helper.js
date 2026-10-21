@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.14의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.15의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.14' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.14', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.15' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.15', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -232,7 +232,7 @@
     /* 알림·확인 창: 사람이 보는 화면은 기록하고 그대로 띄움 · 자동(틀 안)은 기록만 — 확인 창은 '등록·저장하시겠습니까'만 예, 그 밖(중복 경고 등)은 아니오(보내지 않음) */
     function hook(sink, auto) { const nA = W0.alert, nC = W0.confirm;
       W0.alert = function (msg) { sink.push(String(msg).slice(0, 200)); if (!auto) return nA.call(W0, msg); };
-      W0.confirm = function (msg) { const m = String(msg); if (!auto) { sink.push('(확인) ' + m.slice(0, 200)); return nC.call(W0, msg); } const yes = /(등록|저장|진행)\s*하시겠습니까/.test(m) && !/중복|이미|다시/.test(m); sink.push((yes ? '(확인✓) ' : '(확인✗) ') + m.slice(0, 200)); return yes; }; } /* (1.59.0) 자동으로 '예'를 누른 확인 창(✓)과 '아니오'(✗)를 나눠 남김 — ✓가 있으면 알라딘에 보냈을 수 있음 */
+      W0.confirm = function (msg) { const m = String(msg); if (!auto) { sink.push('(확인) ' + m.slice(0, 200)); return nC.call(W0, msg); } const lowP = /시중가\s*대비[\s\S]{0,20}판매가가\s*\d+%\s*미만/.test(m); /* (1.89.15) 정범님 10/21: 웹앱에서 정한 판매가가 정가(시중가)의 20% 미만이면 알라딘이 '다시 확인' 창을 띄움 — 대량 등록에는 이 확인이 없어 같은 값으로 올라감 · 판매가는 웹앱에서 정범님이 정한 값이므로 '확인'(기록에 남김) */ const yes = lowP || (/(등록|저장|진행)\s*하시겠습니까/.test(m) && !/중복|이미|다시/.test(m)); sink.push((yes ? '(확인✓) ' : '(확인✗) ') + m.slice(0, 200)); return yes; }; } /* (1.59.0) 자동으로 '예'를 누른 확인 창(✓)과 '아니오'(✗)를 나눠 남김 — ✓가 있으면 알라딘에 보냈을 수 있음 */
     return { fill, attachImages, attachOne, photoTodo, prep, hook, $ }; }
   window.__rnRegMake = makeFiller;
   /* ── 창 없이 하는 자동 등록 (웹앱 '🤖 자동 등록' → 맡긴 일 regOne auto): 보이지 않는 틀 안에 알라딘 등록 화면을 열고 같은 방법으로 채움 → 못 채운 칸이 하나라도 있으면 보내지 않음 → 보냄 → 화면이 바뀌면 공개 확인 ── */

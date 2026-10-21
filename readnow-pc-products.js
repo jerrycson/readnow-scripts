@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.14의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.15의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.14' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.14', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.15' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.15', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2204,7 +2204,7 @@
   const pcCan = (type) => { const extT = type === 'extLookup' || type === 'extTest'; if (PUBONLY && (!PUB_CMDS.has(type) || (!TGATE.ok && !extT))) return false; /* (1.67.0) 외부 정보는 와이파이 — 테더링과 상관없이 로거가 받음 */ if (PUBONLY && !extT && BUD && !(BUD.left.main > 0) && !(BUD.free)) return false; /* 맡긴 비로그인 일 = 주요 몫 — 몫이 없으면 받지 않음 */ /* (1.66.0) 테더링 확인 전에는 맡지 않음(다른 PC가 받게) */ if (pubPcMode() && type === 'metrics') return false; /* 묶음 시장 지표(대량)는 공개 전용 PC */ const G = REGF(); if (!G) return PC_KNOWN_OLD.has(type); return G.canHandle(G.merge(REGDOC || {}), type, 'pc'); };
   /* (1.63.7) 🧩 맡긴 일 거르기 — 수집 일은 📥 수집이 켜졌을 때만, 출고 시작·현금 판매·등록은 그 기능을 켰을 때만(끄면 대기로 남겨 다른 PC가) */
   /* (1.77.5) PC끼리 누가 받나(정범님 10/17): ① 요청한 기기가 이 PC(웹앱이 dev에 기기 이름) → 바로 ② 쉬는 PC 0.7초 ③ 자동 수집이 아닌 일(사람이 누른 일) 하는 PC 1.6초 ④ 자동 수집 중인 PC 2.6초 + 남은 시간이 길수록 더 늦게(최대 +6초) — 먼저 받는 PC가 맡고(대기 → 처리 중은 한 번만) 나머지는 그냥 지나감 */
-  const claimDelay = (x) => { try { if (x && x.dev && String(x.dev).trim().toUpperCase() === String(PC_NAME || '').trim().toUpperCase()) return 0; const busy = !!running || !!(window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()); if (!busy) return 700; if (!window.__rnAuto) return 1600; const m = lastUi && lastUi.etaMin != null ? +lastUi.etaMin : 60; return 2600 + Math.min(6000, Math.max(0, m) * 100); } catch (e) { return 1000; } };
+  const claimDelay = (x) => { try { if (x && x.dev && String(x.dev).trim().toUpperCase() === String(PC_NAME || '').trim().toUpperCase()) return 0; if (x && x.dev && /^reg/.test(String(x.type || ''))) { const B = ((BEATS || {}).pcs || {})[String(x.dev).trim().toUpperCase()] || ((BEATS || {}).pcs || {})[String(x.dev).trim()]; if (B && Date.now() - (+B.atMs || 0) < 3 * 60e3 && !B.paused) return 15000; } /* (1.89.15) 정범님 10/21: 등록은 웹앱을 누른 PC의 수집기가 먼저(살아 있으면 다른 PC는 15초 기다림 — 그 PC가 안 받으면 그때 다른 PC) */ const busy = !!running || !!(window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()); if (!busy) return 700; if (!window.__rnAuto) return 1600; const m = lastUi && lastUi.etaMin != null ? +lastUi.etaMin : 60; return 2600 + Math.min(6000, Math.max(0, m) * 100); } catch (e) { return 1000; } };
   /* (1.83.0) ☁ 클라우드 이상 띠가 매일 뜨던 까닭(진단 10/18): ① '유의 사항 다시 읽기'(usedInfo)는 클라우드가 느린 일로 회차 끝에만 처리하는데 PC는 20초만 기다려 거의 늘 '클라우드 이상'으로 적음(오늘 6번 모두 이것) ② 클라우드가 살아 있어도 다른 단계(조회·보강)를 하는 중이면 20초를 넘김
    *  → usedInfo는 클라우드 먼저에서 뺌(PC가 바로) · 발송준비시작·현금 판매 중지는 클라우드 신호(app_settings/cloud.at)가 2분 안에 있으면 45초까지 기다리고, 그래도 늦으면 PC가 처리하되 '느림'으로만 적음(띠 없음) · 신호가 끊긴 때만 '클라우드 이상' 띠 */
   const CLOUD_FIRST = new Set(['startDelivery', 'cashStop']); let CLOUD_GRACE = 45000; let cloudSt = null, cloudStAt = 0;
