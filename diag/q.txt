@@ -1,3 +1,1 @@
-extprobe=yes24|9788937479601,9788990562449,9788935208265
-extprobe=kyobo|9788996995906,9788954640718
-# 1792546255
+extprobe=raw|https://www.yes24.com/Product/Search?domain=BOOK&query=9788937479601 https://www.yes24.com/product/search?domain=BOOK&query=9788937479601 https://m.yes24.com/Search?query=9788937479601 https://www.yes24.com/Product/Search?domain=ALL&query=9788937479601
