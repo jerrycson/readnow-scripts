@@ -1,5 +1,2 @@
-cmds=regOne&n=3
-cmds=regBulk&n=3
-logs=1&pc=MJ-MAIN&from=202610211050&to=~
-logs=1&pc=HOME&from=202610211050&to=~
-logs=1&pc=JS-MAIN&from=202610211050&to=~
+cmds=regOne&n=6
+cmds=regBulk&n=4
