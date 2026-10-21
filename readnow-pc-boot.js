@@ -1,6 +1,6 @@
-/* readnow-pc-boot.js — 리드나우 수집기 1.89.12의 시작 코드(화면마다 할 일: 로거 잠금·알라딘 쪽 저장소 비우기·닫힌 그림자 칸·바깥 사이트 리더·도우미 첫 화면 표시·웹앱 로그인 넘기기)
+/* readnow-pc-boot.js — 리드나우 수집기 1.89.13의 시작 코드(화면마다 할 일: 로거 잠금·알라딘 쪽 저장소 비우기·닫힌 그림자 칸·바깥 사이트 리더·도우미 첫 화면 표시·웹앱 로그인 넘기기)
  * 본체(로더)가 받아 둔 판/이 판을 고른 뒤 부름 · 빠른 업데이트로 바뀜 (1.72.0) */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { boot: '1.89.12' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { boot: '1.89.13' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
 globalThis.__rnBoot = function (BI) { const G = globalThis; const CLASSIC = BI.classic; const gv = (k, d) => { try { return GM_getValue(k, d); } catch (e) { return d; } }; const sv = (k, v) => { try { GM_setValue(k, v); } catch (e) {} };
 /* (1.66.0) 🧭 바깥 사이트 화면 그려 읽기(리더) — 중고닷·번개장터·중고나라·당근·예스24 중고 검색이 화면을 연 뒤 글을 따로 불러오는 방식이라 받은 화면엔 글이 없음
  *  수집기(알라딘 탭)가 그 검색 주소에 ?rnx=표를 붙여 보이지 않는 탭으로 열면, 이 스크립트가 그 탭에서만 '리더'로 깨어나(다른 일은 하나도 안 함)

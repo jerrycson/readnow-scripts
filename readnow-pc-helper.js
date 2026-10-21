@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.12의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.13의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.12' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.12', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.13' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.13', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -108,7 +108,8 @@
     const fire = (el) => { if (!el) return; ['input', 'change', 'keyup', 'blur'].forEach((t) => { try { el.dispatchEvent(new Event(t, { bubbles: true })); } catch (e) {} }); };
     const setV = (id, v) => { const el = $(id); if (!el) return false; el.removeAttribute && el.removeAttribute('readonly'); el.value = v == null ? '' : String(v); fire(el); return true; };
     const selectVal = (el, want) => { if (!el) return false; const w = String(want); const o = [...el.options].find((op) => op.value === w || +op.value === +w || op.text.trim() === w || (+op.text.trim() === +w && w !== '')); if (!o) return false; el.value = o.value; fire(el); return true; };
-    async function readyEditor() { for (let i = 0; i < 80; i++) { if (W0.EditorManager && W0.Editor && $('frmRecord')) return true; await sleep(250); } return false; }
+    async function readyEditor() { for (let i = 0; i < 160; i++) { if (W0.EditorManager && W0.Editor && $('frmRecord')) return true; await sleep(250); } return false; } /* (1.89.13) 20초 → 40초 */
+    const edDiag = () => { try { const t = String((doc.body && doc.body.innerText) || '').replace(/\s+/g, ' ').trim(); return `화면 '${String(doc.title || '').slice(0, 40)}' · 등록 양식 ${$('frmRecord') ? '있음' : '없음'} · EditorManager ${W0.EditorManager ? '있음' : '없음'} · Editor ${W0.Editor ? '있음' : '없음'} · ISBN 칸 ${$('ISBN') || $('isbn') ? '있음' : '없음'} · 글자 ${t.length}자: ${t.slice(0, 140)}`; } catch (e) { return '화면 확인 실패 ' + e.message; } }; /* (1.89.13) 정범님 10/21: 왜 안 열렸는지 남김 */
     async function quality(plan) { /* 품질 팝업(wc2c_itemsales.aspx)의 frmsubmit과 같은 일 — 같은 추천가 요청 → 같은 칸 */
       const ps = $('priceStd') && $('priceStd').value; if (!(+ps > 0)) throw new Error('정가가 없어 품질을 정할 수 없음');
       const r = await fetch(`/shop/usedshop/c2c_sales_ajax.aspx?method=recomPriceSales&priceStd=${encodeURIComponent(ps)}&itemQuailty=${+plan.grade}`, { credentials: 'include' }); const j = JSON.parse(await r.text());
@@ -121,7 +122,7 @@
       [['CourseYear', u.year, 4], ['Course', u.course, 20], ['CourseGrade', u.grade, 1], ['CourseTerm', u.term, 10], ['ProfessorName', u.prof, 20]].forEach(([id, v, n]) => { if (v != null && v !== '') setV(id, String(v).slice(0, n)); });
       const sv = $('chkSaveUnivInfo'); if (sv) sv.checked = false; /* 알라딘 계정의 '대학교장터 기본 등록정보'는 건드리지 않음 (우리 기본값은 웹앱 등록 설정에) */ }
     async function fill(plan) { const out = []; const ok = (k, v, note) => out.push({ k, ok: !!v, note: note || '' });
-      if (!(await readyEditor())) throw new Error('알라딘 등록 화면이 다 열리지 않음 (편집기 없음 — 로그인이 풀렸을 수 있음)');
+      if (!(await readyEditor())) throw new Error('알라딘 등록 화면이 다 열리지 않음 (편집기 없음) — ' + edDiag());
       const nativeConfirm = W0.confirm; W0.confirm = () => true; // 'ISBN 없는 상품' 확인 창 등 — 채우는 동안만 '확인'
       try {
         if (plan.method === 'new') { const N = plan.new || {};

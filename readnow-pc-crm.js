@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.12의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.13의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.12' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.12', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.13' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.13', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -2188,7 +2188,7 @@
       if (running || otherTabBusy() || (window.__rnRest && window.__rnRest())) return; // (1.56.0) 쉬는 탭은 받지 않음 — 이 PC의 수집기 탭이 받음
       // 한 대만 받도록: 트랜잭션으로 '받음' 표시
       let mine = false;
-      try { await fdb.runTransaction(async (tx) => { const cur = await tx.get(SYS().doc('collectRequest')); const c = cur.data() || {}; if (c.id !== r.id || c.state !== 'requested') return; tx.set(SYS().doc('collectRequest'), { state: 'claimed', claimedBy: PC.name || PC.id, claimedAt: now(), writerSchema: WRITER_SCHEMA }, { merge: true }); mine = true; }); } catch (e) { return; }
+      try { await fdb.runTransaction(async (tx) => { mine = false; /* (1.89.13) 트랜잭션이 다시 돌면 앞 시도의 값이 남지 않게 */ const cur = await tx.get(SYS().doc('collectRequest')); const c = cur.data() || {}; if (c.id !== r.id || c.state !== 'requested') return; tx.set(SYS().doc('collectRequest'), { state: 'claimed', claimedBy: PC.name || PC.id, claimedAt: now(), writerSchema: WRITER_SCHEMA }, { merge: true }); mine = true; }); } catch (e) { return; }
       lastReqSeen = r.id; GM_setValue('rn-last-req', r.id);
       if (!mine) return;
       log(`${r.byName || '웹앱'}의 수집 요청을 받아 전체 일괄 수집을 시작합니다.`, 'ok'); beat();
