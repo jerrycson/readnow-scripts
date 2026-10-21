@@ -111,6 +111,16 @@
 - **📰 출판 정보 게시판 (2026-10-16 · 클라우드 0.15.x · 웹앱 1.41.0)**: 클라우드 kpb가 KPIPA 5곳(g3_1 조사연구보고서·g3_2 KPIPA 출판 보고서·g3_5 글로벌출판동향·bnk 출판전산망 알림판·qa 출판산업 Q&A) 글·첨부를 mkt_kpipa_posts·저장소 kpipa/에 모음(처음 8분마다 이어 받기 → 뒤엔 6시간마다 · 상태 app_settings/kpb v4). 같은 내용 첨부는 pdf>hwpx>hwp·단면>펼침면 하나만. 요약 = 예약 작업 '리드나우 출판 정보 요약'(매일 05:47 · @kpq→kp-out 가지(diag/kps_pub.pem · 개인 열쇠는 예약 작업 설명 안에만) → 요약 → src/tools/kpin.sh → @kpin → /kp-in(클라우드 열쇠 diag/kpin_pub.pem · 개인 열쇠 app_secrets/kpin)). 그림만 있는 PDF(KPIPA 출판산업 동향 등)는 글자를 못 꺼냄 → 제안: 클라우드 Vision OCR.
 
 ## 남은 일 / 지켜볼 것
+- (2026-10-22 새벽 · 웹앱 1.78.1 · 수집기 1.89.26 · 노선표 0.14.89 · 클라우드 0.32.4) **정범님 22:30 목록 + 22:35 '자는 동안 끝까지 · 정밀 시험'**:
+  - 🐞 '샵매니저엔 반영됐는데 웹앱은 실패(빨강)' 원인 = 클라우드 prdEditRun의 save()가 trail이 빈 채 `FV.arrayUnion()`(인자 0개 → 던짐) → 일이 다시 잡힘 → 실행 문(exec) '이미 함'을 칸마다 fail로 덮어씀. 고침: arrayUnion은 trail이 있을 때만 · 실행 문이 done/busy면 status verify(확인만). shopCfg fin도 같게. 웹앱 ck: run id(cmd id)가 바뀌면 처음부터 · fail/unk는 6초 뒤 사라짐.
+  - 웹앱 시험 도구(w/pw fbstub)의 onSnapshot이 'removed'를 안 내서 끝난 일이 'verify'로 남아 보였음 → 스텁을 실제처럼(added/modified/removed) 고침. 실제 Firestore는 활성(status in) 쿼리에서 빠질 때 removed를 보내고 recent 쿼리(createdAt ISO)에 done이 남으므로 앱은 맞음.
+  - 📦 재고 품목 보기(openStockView · 상품 탭 📚 바로 아래 #pstockbtn · 홈 카드 stockView): 판매중+일시판매중지 · 채널 알라딘/예스24(02·08)/둘 다 · 구분 = 알라딘 categories[0].path[0] · 분야 = path[1] · 없으면 '도서(분류 모름)'/MT_LABEL · 🗑 한 개/여러 개 → prdDelReview('__prd') · 예스24는 보기만. 예전 '재고 품목 (판매중)' 목록 = 상품 탭 재고 현황 '재고 품목 수 (SKU)'(openProdDrill 'pd:act:new').
+  - 📷 사진: 웹앱이 reg_photos/edit/<lid>/ 에 올림 → prdEdit ch.imgs {covers:{mainCover|zoomCover0~7:{path,name}|{rm:1}}, descUp:[{path,key}]} · 유의 사항 글에는 <img data-rnup=key> 자리 → 클라우드/PC가 imgUpPopup.aspx(SCMImg·targetO)·wimage_upload_scm.aspx(uploadFile · InsertHtml 가로채기)로 올린 뒤 실제 주소로 바꿈 · 하나라도 못 올리면 저장 안 함. 진단 peupdry(올리기만 · 저장 안 함).
+  - PC 대신 받기: 수집기 prdEditPc(같은 알고리즘 · 숨은 iframe 수정 화면) · 노선표 prdEdit by ['cloud','pc'] · CLOUD_FIRST.
+  - 🐞 HOME 14:19~17:35 공백 원인 = 1.89.18 탭이 판매완료(비공개) 상품 공개 화면을 읽다 '로그인 풀림 → 네이버 다시 로그인'을 1분마다 되풀이 → 1.89.26: 공개 화면 URL에서 로그아웃처럼 보여도 실제 로그인 상태면 그 상품만 hidSet 하고 건너뜀.
+  - ⏸ 예스24 가게 읽기(y24ShopTick — 우리 북스퀸 목록 매시 동기화)를 한 번 멈춤(pf.y24.req1021 · off:true) — 정범님 '나중에 한다는데 왜 돌리냐'. 다시: 예스24 카드 ▶.
+  - 🖥 로거 쉼(SSD AS · 며칠): 클라우드 loggerAwayMig(한 번 · 트랜잭션) — prd_system/autoSched 슬롯 metricsReq(smv9hvb3baa) · market 화·목·토(smv9huden7a) · dynamic(smv6l50oupn) · poolInfo(smv9hwkhrn6) · explore(smv6laalfir) 켬 · 예전 상태 loggerAway1021.prev. **로거가 돌아오면 prev로 되돌리고 테더링 공개 일 계획(PUB_LATER) 다시 보기.** 벤치마킹은 로거 전용이라 그대로 멈춤.
+  - 하지 않은 것(정범님 지시): 출고·매입·등록 진행 칸 시계진행바(정범님이 말할 때까지).
 - (자동 점검 2026-10-21 · 클라우드 0.32.3) **끝남**: 진단 '@health&hours=24' = 칸별 24시간 바뀐 문서 수(rateH)·PC 공백 앞뒤 시각(gapList)·pcBeat gate·학습 문서 숫자(learn) — 예약 점검이 열쇠 없이 읽음. 보고서 src/audits/2026-10-21.md
   - 첫 기준 숫자(24시간): prd_listings 15,684 · prd_metric_changes 1,049 · sellers 316 · ext_used 290 · shp_cmds 179 · crm_customers 145 · bench_items 0 · 쓰기 경보 없음.
   - 지켜볼 것: **LOGGER 10:21부터 멈춤(1.89.1 옛 머리 · 테더링 못 찾음 — 정범님 손 필요)** · HOME 14:19~17:35 공백 · JS-MAIN 샵매니저 화면 긴 작업 5분 108초(rnSkuScm 2초 다시 그리기·5분 통째 다시 받기 의심 — 성능 줄로 확인 뒤) · prd_listings 하루 1.57만(전체 60%)을 누가 고치는지(writer — 평문 요약에 넣는 것은 메일 노출 우려로 막힘 → 암호 진단 recentUp) · MJ-MAIN 1.89.21 모듈 판 안 맞음.

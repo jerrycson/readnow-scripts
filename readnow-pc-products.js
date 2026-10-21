@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.25의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.26의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.25' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.25', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.26' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.26', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -726,14 +726,17 @@
   const PUB_URL = /^(?:https?:\/\/www\.aladin\.co\.kr)?\/(?:shop\/wproduct\.aspx|shop\/usedshop\/(?:wuseditemall|wshopitem|wshopsurvey)\.aspx|search\/wsearchresult\.aspx)/i;
   const pubAnonOn = () => SET.pubAnon !== false; const isPubUrl = (u) => PUB_URL.test(String(u || ''));
   const ANON = { n: 0, gate: 0, view: 0, at: Date.now() }; const anonNote = () => { if (++ANON.n % 500 === 0) log(`🔓 로그인 없이 읽은 공개 화면 ${ANON.n}장 (19금 등 건너뜀 ${ANON.gate} · 숍 목록 모양 다름 ${ANON.view})`); };
-  const getDocRaw = AL.makeReader({ pace: PACE, sleep, wait: politeWait, beforeEach: () => { if (stopFlag) throw new Error('멈춤'); },
-    loggedOut: (fu, doc, url) => AL.looksLoggedOut(fu, doc, { url, scmNeedsLogout: true }),
+  let LO_URL = null; const getDocRaw = AL.makeReader({ pace: PACE, sleep, wait: politeWait, beforeEach: () => { if (stopFlag) throw new Error('멈춤'); },
+    loggedOut: (fu, doc, url) => { const lo = AL.looksLoggedOut(fu, doc, { url, scmNeedsLogout: true }); LO_URL = lo ? url : null; return lo; },
     onLoggedOut: async (fu, loginTries) => {
+      /* (1.89.26) 정범님 10/21 HOME 14:03~14:19 '로그인 풀림 → 네이버로 다시 로그인'이 1분마다 되풀이되다 3시간 기록이 끊김 — 주문이 들어와 비공개가 된 우리 매물 화면(공개 상품 화면)이 로그인 화면처럼 보인 것을 '로그인 풀림'으로 봄
+       *  → 공개 상품 화면에서 이렇게 보이는데 샵매니저는 로그인 그대로면, 다시 로그인하지 않고 그 화면만 '비공개'로 3일 건너뜀 */
+      if (LO_URL && isPubUrl(LO_URL) && (await isLoggedIn())) { hidSet(LO_URL); throw hidErr(); }
       if (!SET.autoLogin) throw new Error('알라딘 로그인이 풀렸습니다. 직접 로그인한 뒤 같은 버튼을 다시 누르세요');
       if ((SET.maxLoginTries ?? 6) > 0 && loginTries > (SET.maxLoginTries ?? 6)) { try { GM_notification({ title: '리드나우 수집기', text: '알라딘 다시 로그인 실패 — 수집을 멈췄습니다. 로그인 후 이어하기' }); } catch (e) {} throw new Error(`알라딘 다시 로그인을 ${SET.maxLoginTries ?? 6}번 시도했지만 실패해 멈췄습니다 (진행 위치 저장) — 로그인이 풀렸습니다. 알라딘에 로그인한 뒤 이어하기`); }
       if (loginTries > 1) { ui('자동 로그인 재시도 대기', 0, 0, `${SET.loginRetrySec}초 뒤 다시 시도`); await sleep(SET.loginRetrySec * 1000); }
       PACE.fail('login'); await autoRelogin(fu, loginTries); },
-    fatal: (e) => e.message === '멈춤' || /로그인이 풀렸/.test(e.message),
+    fatal: (e) => e.message === '멈춤' || /로그인이 풀렸/.test(e.message) || !!e.hidden,
     maxOutageMin: () => MAX_OUTAGE_MIN, outageError: (m) => new Error(`알라딘 서버가 ${m}분 넘게 응답하지 않아 멈췄습니다. 나중에 같은 버튼으로 이어하세요`),
     on429: (st) => { log(`알라딘이 요청이 너무 많다고 함(${st}) — 이 PC의 모든 수집이 ${Math.round(PACE.cooling() / 60000)}분 쉬고, 간격을 ${PACE.state().gap}ms로 늘림`, 1); ui('알라딘 요청 제한(429) — 쉬는 중', 0, 0, `${Math.round(PACE.cooling() / 1000)}초 뒤 느린 속도로 이어감`); if (lockHeld && LREF === LOCKP) { const cu = Date.now() + Math.max(60e3, PACE.cooling()); PUB_COOL = cu; LOCKP().set({ coolUntil: cu, coolBy: PC_NAME, coolAt: nowIso() }, { merge: true }).catch(() => {}); log(`🌐 같은 인터넷 주소의 공개 읽기 줄 PC 모두 ${Math.round((cu - Date.now()) / 60000)}분 함께 쉼 — 로그인 줄(주문·출고)은 그대로`, 1); } },
     onRecover: () => log('서버 연결 회복, 계속합니다'),
@@ -2223,11 +2226,11 @@
   const claimDelay = (x) => { try { if (x && x.dev && String(x.dev).trim().toUpperCase() === String(PC_NAME || '').trim().toUpperCase()) return 0; if (x && x.dev && /^reg/.test(String(x.type || ''))) { const B = ((BEATS || {}).pcs || {})[String(x.dev).trim().toUpperCase()] || ((BEATS || {}).pcs || {})[String(x.dev).trim()]; if (B && Date.now() - (+B.atMs || 0) < 3 * 60e3 && !B.paused) return 15000; } /* (1.89.15) 정범님 10/21: 등록은 웹앱을 누른 PC의 수집기가 먼저(살아 있으면 다른 PC는 15초 기다림 — 그 PC가 안 받으면 그때 다른 PC) */ const busy = !!running || !!(window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()); if (!busy) return 700; if (!window.__rnAuto) return 1600; const m = lastUi && lastUi.etaMin != null ? +lastUi.etaMin : 60; return 2600 + Math.min(6000, Math.max(0, m) * 100); } catch (e) { return 1000; } };
   /* (1.83.0) ☁ 클라우드 이상 띠가 매일 뜨던 까닭(진단 10/18): ① '유의 사항 다시 읽기'(usedInfo)는 클라우드가 느린 일로 회차 끝에만 처리하는데 PC는 20초만 기다려 거의 늘 '클라우드 이상'으로 적음(오늘 6번 모두 이것) ② 클라우드가 살아 있어도 다른 단계(조회·보강)를 하는 중이면 20초를 넘김
    *  → usedInfo는 클라우드 먼저에서 뺌(PC가 바로) · 발송준비시작·현금 판매 중지는 클라우드 신호(app_settings/cloud.at)가 2분 안에 있으면 45초까지 기다리고, 그래도 늦으면 PC가 처리하되 '느림'으로만 적음(띠 없음) · 신호가 끊긴 때만 '클라우드 이상' 띠 */
-  const CLOUD_FIRST = new Set(['startDelivery', 'cashStop']); let CLOUD_GRACE = 45000; let cloudSt = null, cloudStAt = 0;
+  const CLOUD_FIRST = new Set(['startDelivery', 'cashStop', 'prdEdit']); /* (1.89.26) 상품 정보 수정도 클라우드 먼저 */ let CLOUD_GRACE = 45000; let cloudSt = null, cloudStAt = 0;
   const cloudAlive = async () => { if (!cloudSt || Date.now() - cloudStAt > 20000) { cloudStAt = Date.now(); try { cloudSt = (await C('app_settings').doc('cloud').get()).data() || {}; } catch (e) { cloudSt = cloudSt || {}; } } const at = Date.parse(cloudSt.at || 0) || 0; return { alive: Date.now() - at < 150e3 && cloudSt.ok !== false, ageS: Math.round((Date.now() - at) / 1000), err: cloudSt.err || null }; }; /* (1.77.5) 출고 과정(발송준비시작·현금 판매 중지·유의 사항 다시 읽기)은 클라우드 먼저 */
   const cmdMine = (t) => { const f = (k) => !window.__rnFeat || window.__rnFeat(k); if (t === 'startDelivery') return f('ship'); if (t === 'cashStop') return f('cash'); if (/^reg/.test(String(t))) return f('reg'); return !window.__rnPaused; };
   /* (1.88.4) 정범님 10/20 'JS-MAIN: 웹앱이 맡긴 일을 받았다는 표시가 기록에 전혀 없음' — 맡은 순간과 끝난 순간을 기록 창에 한 줄씩(종류·이름·걸린 시간) */
-  const CMD_KO = { startDelivery: '발송준비시작', usedInfo: '유의 사항 다시 읽기', c2bAdd: '알라딘 팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지', lookup: '사진 가격 조회', regDel: '등록 상품 삭제', regLookup: '📥 등록 조회', extLookup: '🌐 외부 정보', extTest: '🌐 외부 정보 시험', metrics: '시장 지표 다시 읽기', regBulk: '📦 대량 등록', regBulkMock: '🧷 모의 대량 등록', regOne: '🤖 개별·미등록 등록', regOneMock: '🧷 모의 개별 등록' };
+  const CMD_KO = { startDelivery: '발송준비시작', usedInfo: '유의 사항 다시 읽기', c2bAdd: '알라딘 팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지', prdEdit: '✏ 상품 정보 수정', lookup: '사진 가격 조회', regDel: '등록 상품 삭제', regLookup: '📥 등록 조회', extLookup: '🌐 외부 정보', extTest: '🌐 외부 정보 시험', metrics: '시장 지표 다시 읽기', regBulk: '📦 대량 등록', regBulkMock: '🧷 모의 대량 등록', regOne: '🤖 개별·미등록 등록', regOneMock: '🧷 모의 개별 등록' };
   async function runCmd(id) { await runCmd0(id); const c = window.__rnCmdCur; if (c && c.id === id) { window.__rnCmdCur = null; log(`✅ 웹앱이 맡긴 일 끝: ${CMD_KO[c.type] || c.type}${c.label ? ' · ' + c.label : ''} (${Math.round((Date.now() - c.t0) / 1000)}초)`); } }
   async function runCmd0(id) { const ref = C('shp_cmds').doc(id); let v = null; if ((window.__rnRest && window.__rnRest())) return; // (1.56.0) 맡긴 일은 이 PC의 수집기 탭만
     { const x0 = (await ref.get()).data(); if (x0 && x0.status === 'queued' && CLOUD_FIRST.has(x0.type) && !x0.cloudTried) { const age = Date.now() - (Date.parse(x0.createdAt || 0) || Date.now()); const ca = await cloudAlive(); CLOUD_GRACE = ca.alive ? 45000 : 3000; if (age < CLOUD_GRACE) { setTimeout(() => runCmd(id).catch(() => {}), CLOUD_GRACE - age + 300 + claimDelay(x0)); return; } } } /* (1.77.5) 출고·돈 일은 클라우드 먼저 — 20초 안에 클라우드가 안 받으면 이 PC가 받음(아래 pcFallback 표시 → 웹앱 '클라우드 이상' 알림) */
@@ -2256,6 +2259,7 @@
           results[lid] = r.miss ? { ok: false, why: r.miss, at: nowIso() } : { ok: true, note: !!r.note, at: nowIso() }; } catch (e) { results[lid] = { ok: false, why: e.message, at: nowIso() }; } }
       await ref.set({ status: 'done', results, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`유의 사항 다시 읽기: ${Object.values(results).filter((r) => r.ok).length} / ${Object.keys(results).length}건`); return; }
     else if (v.type === 'c2bAdd') { await c2bAddCmd(ref, v); return; }
+    else if (v.type === 'prdEdit') { if (typeof window.__rnPrdEdit !== 'function') { await ref.set({ status: 'queued', claim: null, pcSkip: `PC 수집기 ${APP_VER}에 상품 수정 길이 아직 안 열림(상품 조회·등록 화면이 열린 탭만)`, uploadedAt: TS() }, { merge: true }); return; } await window.__rnPrdEdit(ref, v, id); return; } /* (1.89.26) ✏ 상품 정보 수정 — 클라우드가 못 받을 때 */
     else if (v.type === 'cashStop') { await cashStopCmd(ref, v); return; } // (1.37.0) 현금 판매 → 알라딘 판매중지 자동 // (1.35.0) 알라딘 매입: 팔기 장바구니에 담기
     else if (v.type === 'lookup') { LOOK_PRIO++; try { await lookupCmd(ref, v); } finally { LOOK_PRIO--; } return; } /* (1.78.2) 사진 가격 조회도 사람이 기다림 — 알라딘 차례 먼저 */
     else if (v.type === 'regDel') { await regDelCmd(ref, v); return; } /* (1.81.0) 🗑 웹앱에서 지운 등록 상품 → 알라딘 삭제 */
