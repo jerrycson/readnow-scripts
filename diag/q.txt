@@ -1,2 +1,1 @@
-logs=1&pc=JS-MAIN&from=202610220900&to=202610221000
-logs=1&pc=HOME&from=202610220900&to=202610221000
+cmds=regOne&n=2
