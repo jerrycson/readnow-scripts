@@ -1,12 +1,12 @@
 {
- "holder": "auto-check",
- "what": "보고 커밋",
- "since": "2026-10-22T13:04:46Z",
- "beat": "2026-10-22T13:17:37Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "chat",
-  "done": "웹앱 1.78.18",
-  "at": "2026-10-22T12:44:00Z"
+  "who": "auto-check",
+  "done": "클라우드 0.33.5 f8f6f1f · 수집기 1.89.34·웹앱 1.78.19 ac9f4e3 · 보고",
+  "at": "2026-10-22T13:17:44Z"
  }
 }
