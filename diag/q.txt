@@ -1,1 +1,5 @@
-@health&hours=24
+cmds=regOne&n=6
+regitems=12
+logs=1&pc=JS-MAIN&from=202610220830&to=202610220925
+logs=1&pc=HOME&from=202610220830&to=202610220925
+logs=1&pc=MJ-MAIN&from=202610220830&to=202610220925
