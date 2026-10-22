@@ -1,12 +1,12 @@
 {
- "holder": "auto3h",
- "what": "3시간 점검 00:13 — 시장 지표 확인 때 prd_listings 같은 값 다시 쓰기 막기",
- "since": "2026-10-22T15:20:54Z",
- "beat": "2026-10-22T15:20:54Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "auto-check",
-  "done": "클라우드 0.33.5 f8f6f1f · 수집기 1.89.34·웹앱 1.78.19 ac9f4e3 · 보고",
-  "at": "2026-10-22T13:17:44Z"
+  "who": "auto3h",
+  "done": "수집기 1.89.35·웹앱 1.78.21 d13a9dc",
+  "at": "2026-10-22T15:21:57Z"
  }
 }
