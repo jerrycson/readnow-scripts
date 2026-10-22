@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "1.78.11",
- "since": "2026-10-22T07:33:09Z",
- "beat": "2026-10-22T07:33:09Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
   "done": "",
-  "at": "2026-10-22T07:22:10Z"
+  "at": "2026-10-22T07:33:16Z"
  }
 }
