@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "1.78.12",
+ "since": "2026-10-22T07:49:39Z",
+ "beat": "2026-10-22T07:49:39Z",
  "ask": null,
  "last": {
   "who": "chat",
