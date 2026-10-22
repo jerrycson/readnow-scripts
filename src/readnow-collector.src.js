@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.30
+// @version      1.89.31
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -7167,7 +7167,10 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
           if (N.pages) ok('쪽수', setV('ItemPage', +N.pages));
           if (N.sizeSel) { const s0 = $('selItemSize'); const r0 = selectVal(s0, N.sizeSel); try { W0.selItemSize_Change(s0); } catch (e) {} if (+N.sizeSel === 19) setV('size', N.sizeText || ''); ok('규격', r0, (s0 && s0.options[s0.selectedIndex] || {}).text); }
           if (N.pubDate) { const [y, mo, d] = String(N.pubDate).split('-').map((x) => +x); const r1 = $('noPubDate1'); if (r1) r1.checked = true; ok('출간일', selectVal($('pubY'), y) && selectVal($('pubM'), mo) && selectVal($('pubD'), d), N.pubDate); } else { const r0 = $('noPubDate0'); if (r0) r0.checked = true; }
-          ok('정가', setV('priceStd', +plan.priceStd));
+          /* (1.89.31) 정범님 10/22: 외국도서 칸(언어·바인딩·에디션)과 외화 정가 — 저장해 둔 실제 화면(외국도서) 그대로: selLanguageCode · ItemBinding · ItemEdition · priceUnit(1 $ · 2 € · 3 £ · 4 ¥100 · 5 위안 · 6 원) + priceStdForeign → 화면이 원으로 바꾼 값(priceStdForeignResult)을 품질 계산용 priceStd에 */
+          if (+plan.branch === 7) { if (N.lang) ok('언어', selectVal($('selLanguageCode'), +N.lang), String(N.lang)); if (N.binding) ok('바인딩', setV('ItemBinding', String(N.binding).slice(0, 60)), N.binding); if (N.edition) ok('에디션', setV('ItemEdition', String(N.edition).slice(0, 60)), N.edition);
+            const u = +N.priceUnit || 6; const rb2 = $('priceUnit' + u); if (rb2) { rb2.checked = true; fire(rb2); try { rb2.click(); } catch (e) {} } const pf = $('priceStdForeign'); let r2 = false; if (pf) { r2 = setV('priceStdForeign', +plan.priceStd); try { W0.priceStdForeignValid(pf); } catch (e) {} } const won = +String(($('priceStdForeignResult') || {}).value || '').replace(/[^\d]/g, '') || (u === 6 ? +plan.priceStd : 0); if (won > 0) setV('priceStd', won); ok('정가', r2 && won > 0, `${plan.priceStd} (단위 ${u}) → ${won}원`); }
+          else ok('정가', setV('priceStd', +plan.priceStd));
         } else { univ(plan, ok); if (plan.priceStd && !(+($('priceStd') || {}).value > 0)) ok('정가', setV('priceStd', +plan.priceStd)); }
         ok('관리 코드', setV('supItemCode', plan.code), plan.code);
         try { const j = await quality(plan); ok('품질', true, `${j.QualityTypeDesc || ''} · ISBN·정가 확인 '예'`); } catch (e) { ok('품질', false, e.message); }
