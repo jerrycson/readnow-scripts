@@ -1,6 +1,6 @@
 {
  "v": 1,
- "updated": "2026-10-21",
+ "updated": "2026-10-22",
  "rule": "조언·제안·반박은 명망 있는 외부 연구(학술지·정부/공공 통계·업계 보고서)를 근거로 — 정범님 10/20. 근거가 없으면 '근거 못 찾음'을 밝히고 우리 실측으로만 말함.",
  "items": [
   {
@@ -169,6 +169,36 @@
    "url": "https://web.dev/articles/long-tasks-devtools",
    "finding": "50ms가 넘는 자바스크립트 작업(긴 작업)은 그동안 화면이 누름·입력에 반응하지 못하게 막는다 — 긴 작업을 잘게 나누거나 줄이는 것이 반응 속도를 높이는 핵심.",
    "use": "(자동 점검 2026-10-21) 수집기 5분 성능 줄의 '긴 작업 N번 S초'를 볼 때 기준 — 샵매니저 화면에서 5분에 108초가 막히면 수집·화면 모두 늦어짐 → 2초마다 모든 줄을 다시 그리는 코드는 바뀐 줄만으로."
+  },
+  {
+   "id": "chrome-loaf",
+   "topic": [
+    "속도",
+    "화면"
+   ],
+   "kind": "업계 자료",
+   "authors": "Google Chrome 팀 (developer.chrome.com)",
+   "year": 2024,
+   "title": "Long Animation Frames API",
+   "venue": "Chrome for Developers",
+   "url": "https://developer.chrome.com/docs/web-platform/long-animation-frames",
+   "finding": "긴 화면 그림(50ms 넘는 프레임)마다 그 안에서 돈 스크립트의 파일·함수 이름·부른 곳(invoker)·시간을 알려 줌 — 긴 작업(longtask)이 '얼마나'만 알려 주는 것과 달리 '누구 것'을 찾게 해 줌.",
+   "use": "(자동 점검 2026-10-22) 클라우드 0.33.5부터 점검 숫자 요약 perfScripts가 이 기록의 24시간 합계 — 샵매니저 상품 조회 화면의 긴 작업을 함수 이름으로 찾음(HOME: IndexedDB 읽기 끝 처리 311초/99번 · 알라딘 자체 jQuery 69초 · clarity.js 65초)."
+  },
+  {
+   "id": "gh-cron-delay",
+   "topic": [
+    "운영",
+    "점검"
+   ],
+   "kind": "업계 자료",
+   "authors": "GitHub Docs · GitHub Community",
+   "year": 2025,
+   "title": "Troubleshooting workflows — scheduled workflows may be delayed or dropped during periods of high load",
+   "venue": "docs.github.com · github.com/orgs/community/discussions/185355",
+   "url": "https://docs.github.com/en/enterprise-cloud@latest/actions/monitoring-and-troubleshooting-workflows/troubleshooting-workflows/about-troubleshooting-workflows",
+   "finding": "GitHub Actions의 schedule(cron)은 부하가 높을 때 늦어지거나 아예 건너뛸 수 있음 — 정시 실행을 보장하지 않음.",
+   "use": "(자동 점검 2026-10-22) 매시 41분 숫자 요약(health-out)이 10/22 16:57~22:00 사이 한 번만 돎 → 점검이 숫자를 볼 때는 '마지막 시각(at.txt)'을 먼저 보고, 오래됐으면 workflow_dispatch(health_only)로 새로 받음."
   }
  ]
 }
