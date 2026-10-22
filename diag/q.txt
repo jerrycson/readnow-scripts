@@ -1,1 +1,1 @@
-alpv=https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Book%26SearchWord=%EC%82%AC%ED%94%BC%EC%97%94%EC%8A%A4|https://m.aladin.co.kr/m/msearch.aspx?SearchWord=%EC%82%AC%ED%94%BC%EC%97%94%EC%8A%A4
+alpvh=https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=403189088|https://www.aladin.co.kr/shop/UsedShop/wuseditemall.aspx?ItemId=403189088%26TabType=0|https://m.aladin.co.kr/m/mproduct.aspx?ItemId=403189088
