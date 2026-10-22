@@ -1,1 +1,2 @@
-doc=prd_system/autoSched
+logs=1&pc=HOME&from=202610220650&to=202610220830
+logs=1&pc=MJ-MAIN&from=202610220650&to=202610220830
