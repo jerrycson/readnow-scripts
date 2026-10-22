@@ -1,1 +1,1 @@
-@kpq kpq=25&kpcap=3000&kpper=150000&r=20261022204929
+@kpin kpin/20261022-205327.json
