@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "알라딘 화면 단추 통일·슬롯5·매입처/부가 삭제·사진 순서",
- "since": "2026-10-22T12:33:05Z",
- "beat": "2026-10-22T12:33:05Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "",
-  "at": "2026-10-22T11:43:58Z"
+  "done": "웹앱 1.78.18",
+  "at": "2026-10-22T12:44:00Z"
  }
 }
