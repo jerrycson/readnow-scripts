@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "1.78.14",
- "since": "2026-10-22T10:46:49Z",
- "beat": "2026-10-22T10:46:49Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "auto3h",
-  "done": "수집기 1.89.32 판매자 평가 수 쓰기 줄임 · 8f529c3",
-  "at": "2026-10-22T09:20:04Z"
+  "who": "chat",
+  "done": "",
+  "at": "2026-10-22T10:46:54Z"
  }
 }
