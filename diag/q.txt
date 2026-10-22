@@ -1,1 +1,1 @@
-cmds=regOne&n=12
+doc=prd_system/autoSched
