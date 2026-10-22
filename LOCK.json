@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "auto-check",
+ "what": "전체 점검 — 숫자 요약에 긴 작업 원인·SKU 표시 다시 받기",
+ "since": "2026-10-22T13:04:46Z",
+ "beat": "2026-10-22T13:04:46Z",
  "ask": null,
  "last": {
   "who": "chat",
