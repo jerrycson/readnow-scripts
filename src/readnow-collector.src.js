@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.31
+// @version      1.89.33
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -4489,18 +4489,19 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
         log(`6개월 평가 수: 판매자 ${arr.length}곳 ${mode === 'all' ? '(전체)' : `(${SET.rev6mDays || 7}일 넘게 확인 안 한 곳)`}`);
       }
       let b = db.batch(); let w = 0; const day = nowIso().slice(0, 10);
+      const qSet = new Set(); try { const qd = (await C('app_settings').doc('seller_queue').get()).data() || {}; (qd.sc || []).forEach((x) => qSet.add(String(x))); } catch (e) { qSet.add('*'); } // (1.89.32) 모으기 줄에 지금 든 판매자 — 읽기 실패하면 예전처럼 모두 지움
       for (; prog.i < prog.list.length; prog.i++) {
         if (stopFlag) { if (w) await b.commit(); await saveProgress(name, prog); throw new Error('멈춤'); }
         const [id, sc] = String(prog.list[prog.i]).split('|');
         const { doc } = await getDoc(`/shop/usedshop/wshopitem.aspx?SC=${sc}`);
-        const r = RSV.parseShopSummary(doc);
+        const r = RSV.parseShopSummary(doc); let shopSigNow = null; // (1.89.32 3시간 점검) shopSig를 아래 sellers 쓰기 한 번에 함께 — 전엔 같은 문서를 따로 두 번 써 판매자마다 쓰기가 한 번 더 났음
         if (r.status === 'ok' || r.status === 'lt3') { // lt3 = 최근 6개월 평가 3건 미만(알라딘이 '-'로 표시) — 실패가 아니라 '최근 활동 거의 없음'이라는 정보
           { const sNew = { rev6m: r.rev6m ?? null, rev6mLt3: r.rev6mLt3 ?? null, shopPeriods: r.periods ?? null, shopTotal: r.total ?? null, aladinGrade: r.grade ?? null, isPro: r.isPro ?? null, cancel3m: r.cancel3m ?? null, bizInfo: r.info || null, contactNote: r.infoNote || null };
             const sSig = JSON.stringify(sNew); const sd = (await C('sellers').doc(id).get().catch(() => null)); const sPrev = sd && sd.exists ? sd.data() : {};
             if (sPrev.shopSig !== sSig) { b.set(C('seller_history').doc(`${id}_${nowIso().replace(/[:.]/g, '-')}`), { sellerId: id, sc, kind: 'shopSummary', at: nowIso(), ...sNew, ...W() }); w++; } // 숍 화면 내용이 바뀌면 그 판을 시각과 함께 보관 (sellers 문서는 지금 값만)
-            b.set(C('sellers').doc(id), { shopSig: sSig }, { merge: true }); }
-          b.set(C('app_settings').doc('seller_queue'), { sc: firebase.firestore.FieldValue.arrayRemove(String(sc)) }, { merge: true }); /* (1.84.8) 모으기 줄에서 뺌 */
-          b.set(C('sellers').doc(id), { sc: String(sc), rev6m: r.rev6m, rev6mLt3: r.rev6mLt3, rev6mAt: nowIso(), shopPeriods: r.periods, shopTotal: r.total, shopTotalLt3: r.totalLt3, aladinGrade: r.grade, isPro: r.isPro, cancel3m: r.cancel3m, ...(r.info ? { bizInfo: r.info } : {}), ...(r.infoNote ? { contactNote: r.infoNote } : {}), shopAt: nowIso(), ...W() }, { merge: true });
+            shopSigNow = sSig; }
+          if (qSet.has('*') || qSet.has(String(sc))) { b.set(C('app_settings').doc('seller_queue'), { sc: firebase.firestore.FieldValue.arrayRemove(String(sc)) }, { merge: true }); qSet.delete(String(sc)); w++; } /* (1.84.8) 모으기 줄에서 뺌 · (1.89.32 3시간 점검) 줄에 있던 판매자만 — 전엔 판매자마다 같은 설정 문서를 지워 쓰기가 한 번씩 더 났음 */
+          b.set(C('sellers').doc(id), { ...(shopSigNow ? { shopSig: shopSigNow } : {}), sc: String(sc), rev6m: r.rev6m, rev6mLt3: r.rev6mLt3, rev6mAt: nowIso(), shopPeriods: r.periods, shopTotal: r.total, shopTotalLt3: r.totalLt3, aladinGrade: r.grade, isPro: r.isPro, cancel3m: r.cancel3m, ...(r.info ? { bizInfo: r.info } : {}), ...(r.infoNote ? { contactNote: r.infoNote } : {}), shopAt: nowIso(), ...W() }, { merge: true });
           if (r.rev6m != null) { b.set(C('seller_rev6m').doc(id), { sc, days: { [day]: r.rev6m }, ...W() }, { merge: true }); w++; }
           w++; prog.got++; if (r.status === 'lt3') prog.lt3 = (prog.lt3 || 0) + 1;
           prog.miss = 0;
