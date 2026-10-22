@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "웹앱 1.78.17 · 클라우드 0.33.4",
- "since": "2026-10-22T11:43:41Z",
- "beat": "2026-10-22T11:43:41Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
   "done": "",
-  "at": "2026-10-22T11:02:43Z"
+  "at": "2026-10-22T11:43:58Z"
  }
 }
