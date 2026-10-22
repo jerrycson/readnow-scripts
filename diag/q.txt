@@ -1,1 +1,1 @@
-alpvh=https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=403189088|https://www.aladin.co.kr/shop/UsedShop/wuseditemall.aspx?ItemId=403189088%26TabType=0|https://m.aladin.co.kr/m/mproduct.aspx?ItemId=403189088|https://m.aladin.co.kr/m/museditemall.aspx?ItemId=403189088
+@kpin kpin/aud_20261022-114748.json
