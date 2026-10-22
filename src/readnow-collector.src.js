@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.27
+// @version      1.89.28
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -7309,7 +7309,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const plan = it.plan; const plItem = plan.itemId || (it.info && it.info.itemId) || it.itemId || null; const url = plan.method === 'one' ? (plItem ? `/scm/wrecord.aspx?ItemId=${encodeURIComponent(plItem)}` : `/scm/wrecord.aspx?ISBN=${encodeURIComponent(plan.isbn)}`) : '/scm/wrecord.aspx'; /* (1.89.21) 정범님 10/21: 알라딘 상품 번호로 먼저 엶 — ISBN13으로는 알라딘 서버 오류가 나는 상품(시구루이 15·고려시대의 불화·한국주역대전·천하무적 잡학상식 — 알라딘 등록 화면의 ISBN 칸이 옛 ISBN10이거나 상품 화면에서 ISBN이 지워짐)도 그대로 열림 */
     const fr = document.createElement('iframe'); fr.id = 'rnRegAuto_' + TAB + '_' + Date.now().toString(36); fr.style.cssText = 'position:fixed;left:-5000px;top:0;width:1280px;height:1000px;border:0;opacity:0;pointer-events:none'; fr.setAttribute('aria-hidden', 'true');
     const loaded = (ms) => new Promise((res) => { const t = setTimeout(() => res(false), ms); fr.addEventListener('load', () => { clearTimeout(t); res(true); }, { once: true }); });
-    const p0 = loaded(60000); fr.src = url; document.body.appendChild(fr); const clean = () => setTimeout(() => { try { fr.remove(); } catch (e) {} }, 3000);
+    const p0 = loaded(60000); fr.src = url; document.body.appendChild(fr); let keepMs = 3000; const clean = () => setTimeout(() => { try { fr.remove(); } catch (e) {} }, keepMs); /* (1.89.28) 답을 못 받았으면 틀을 10분 더 둠 — 예전엔 3초 뒤 지워 늦게 오는 알라딘 답(화면 바뀜)을 끊었음 */
     try { if (!(await p0)) return await notSent('알라딘 등록 화면이 1분 안에 열리지 않음'); await sleep(1500);
       /* (1.89.14) 정범님 10/21: 9788990554536(천하무적 잡학상식)은 알라딘이 wrecord.aspx?ISBN=13자리에서 서버 오류('개체 참조가 개체의 인스턴스로 설정되지 않았습니다') — PC·계정과 상관없음(HOME·JS-MAIN·MJ-MAIN 모두 · 10/20에도 2건)
        *  → 오류 화면이면 ISBN10(978만)·알라딘 상품 ISBN(plan.isbn10)으로 다시 열어 봄 · 그래도 오류면 아래에서 '알라딘 서버 오류'로 멈춤(보내지 않음) */
@@ -7325,14 +7325,22 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       if (v.mock) { /* (1.50.0) 🧷 모의 등록: 모든 칸·사진을 채웠으니 여기서 멈춤 — 실행 문·보냄 기록도 만들지 않고, 알라딘 '등록'은 누르지 않음 */ const msg = `알라딘에 보내지 않음 · ${rep.length}칸 모두 채움`; await ref.set({ status: 'done', mock: true, sent: false, step: 4, fill: fillTxt, msg: '🧷 모의 등록 — ' + msg, results: { [itemId]: { state: 'mock', at: nowIso(), msg } }, doneAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {});
         await C('reg_items').doc(itemId).set({ mockResult: { at: nowIso(), ok: true, msg, fill: fillTxt, kind: 'auto' }, autoCmd: null, lookErr: null, uploadedAt: TS() }, { merge: true }).catch(() => {}); return; }
       let P; try { P = await F.prep(itemId, it, plan, rep, id); } catch (e) { return await notSent(e.message, { fill: fillTxt }); }
-      const al = []; F.hook(al, true); const nav = loaded(30000); try { W.frmRecord_submit_C2C(false, '6', plan.method === 'one'); } catch (e) { al.push('보내기 함수 오류: ' + e.message); }
-      const went = await nav; const errA = al.some((a) => ERR_RE.test(a) || /^\(확인[✗)]/.test(a)); const accepted = al.some((a) => /^\(확인✓\)/.test(a));
+      /* (1.89.28) 정범님 10/22: 미등록 2개가 '보냄' 뒤 30초 안에 화면이 안 바뀌어 그대로 멈춤(알라딘엔 안 올라감 · 15분 뒤 지킴이 → 공개 확인 90분) — 수집기 탭이 뒤에 있으면 크롬이 숨은 틀의 타이머를 늦춰 알라딘 보내기 스크립트가 30초를 넘김
+       *  → 3분까지 기다림(20초마다 살아 있음·'답 기다림 n초') · 알림만 뜨고 화면이 안 바뀌면 5초 뒤 바로 판단 · 3분 넘으면 알림·틀 주소를 남기고 바로 공개 확인으로(15분 지킴이를 안 기다림) · 틀은 10분 더 둠 */
+      const al = []; F.hook(al, true); const tS = Date.now(); const navP = loaded(180000); let navDone = null; navP.then((x) => (navDone = x));
+      await P.ref.set({ beatAt: nowIso(), waitMsg: '알라딘에 보냄 — 답(화면 바뀜)을 기다림', uploadedAt: TS() }, { merge: true }).catch(() => {});
+      const hb2 = setInterval(() => P.ref.set({ beatAt: nowIso(), waitMsg: `알라딘에 보냄 — 답을 기다림 ${Math.round((Date.now() - tS) / 1000)}초 (3분까지)`, uploadedAt: TS() }, { merge: true }).catch(() => {}), 20000);
+      try { W.frmRecord_submit_C2C(false, '6', plan.method === 'one'); } catch (e) { al.push('보내기 함수 오류: ' + e.message); }
+      let alAt = 0; while (navDone === null) { await sleep(500); if (al.length && !al.some((a) => /^\(확인✓\)/.test(a))) { alAt = alAt || Date.now(); if (Date.now() - alAt > 5000) break; } }
+      clearInterval(hb2); const went = navDone === true; const errA = al.some((a) => ERR_RE.test(a) || /^\(확인[✗)]/.test(a)); const accepted = al.some((a) => /^\(확인✓\)/.test(a));
       if (!went && al.length && !accepted) { /* (1.59.0) '등록하시겠습니까'에 예를 눌렀으면(보냈을 수 있음) 화면이 30초 안에 안 바뀌어도 '막음'으로 되돌리지 않음 — 되돌리면 다음 자동 등록이 같은 책을 또 올릴 수 있었음 → 아래 '보냄'으로 두고 지킴이가 공개 확인 */ /* 화면이 그대로 + 알림 = 알라딘이 막음 → 보내지 않음으로 되돌림 */
         await P.ref.set({ status: 'fail', sent: false, msg: '알라딘이 입력을 막음: ' + al.join(' / ').slice(0, 300), results: { [itemId]: { state: 'fail', at: nowIso(), msg: al.join(' / ').slice(0, 200) } }, doneAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {});
         await C('reg_items').doc(itemId).set({ stage: 'pick', cmdId: null, final: null, autoCmd: null, lookErr: '🤖 알라딘 등록 화면: ' + al.join(' / ').slice(0, 200), uploadedAt: TS() }, { merge: true }).catch(() => {});
         await P.X.finish(db, { kind: 'regOne', key: P.execKey }, 'failed', { msg: al.join(' / ') }).catch(() => {}); return; }
-      if (!went) return; /* 알림 없이 화면이 그대로 = 아직 모름 → '보냄'으로 둠(지킴이가 15분 뒤 공개 확인) — 되돌리면 두 번 등록될 수 있어서 */
-      const ok = !errA; await P.ref.set({ status: 'verify', step: 6, regAt: nowIso(), reg: { alerts: al.slice(0, 5), auto: true }, results: { [itemId]: { state: ok ? 'registered' : 'unknown', at: nowIso(), msg: ok ? null : '알라딘 알림: ' + al.slice(0, 2).join(' / ') } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
+      if (!went) { keepMs = 10 * 60000; let fu = '', ft = ''; try { fu = String(fr.contentWindow.location.pathname || ''); ft = String((fr.contentDocument.body || {}).innerText || '').replace(/\s+/g, ' ').trim().slice(0, 160); } catch (e) {} /* (1.89.28) 3분 안에 답이 없음 = 아직 모름 → 되돌리지 않고(두 번 등록 막음) 바로 공개 확인으로 · 알림·틀 화면을 남겨 까닭을 봄 */
+        await P.ref.set({ status: 'verify', step: 6, regAt: nowIso(), waitMsg: null, msg: `알라딘에 보냈지만 ${Math.round((Date.now() - tS) / 1000)}초 동안 답(화면 바뀜)이 없음 — 등록됐는지 공개 확인으로 판단 (90분까지)`, reg: { alerts: al.slice(0, 5), auto: true, noNav: true, after: fu || null, text: ft || null }, results: { [itemId]: { state: 'unknown', at: nowIso(), msg: '보낸 뒤 답 없음 — 공개 확인 중' } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
+        log(`🤖 자동 등록: 알라딘에 보냈지만 ${Math.round((Date.now() - tS) / 1000)}초 동안 답이 없음 — 공개 확인으로${al.length ? ' · 알림: ' + al.join(' / ').slice(0, 120) : ''}`, 1); return; }
+      const ok = !errA; await P.ref.set({ status: 'verify', step: 6, regAt: nowIso(), waitMsg: null, msg: null, reg: { alerts: al.slice(0, 5), auto: true }, results: { [itemId]: { state: ok ? 'registered' : 'unknown', at: nowIso(), msg: ok ? null : '알라딘 알림: ' + al.slice(0, 2).join(' / ') } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
       await C('reg_items').doc(itemId).set({ result: { state: ok ? 'registered' : 'unknown', at: nowIso() }, autoCmd: null, uploadedAt: TS() }, { merge: true }).catch(() => {});
       await P.X.finish(db, { kind: 'regOne', key: P.execKey }, ok ? 'done' : 'unknown', { msg: al.join(' / ') || null }).catch(() => {});
     } finally { clean(); } }
