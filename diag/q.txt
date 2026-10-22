@@ -1,1 +1,1 @@
-skusum=2026-10-02
+doc=app_settings/reg_quick
