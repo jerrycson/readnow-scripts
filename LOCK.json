@@ -1,12 +1,12 @@
 {
- "holder": "auto3h",
- "what": "판매자 6개월 평가 수 쓰기 줄이기(같은 문서 두 번·모으기 줄 매번 지우기)",
- "since": "2026-10-22T09:16:24Z",
- "beat": "2026-10-22T09:18:12Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "chat",
-  "done": "",
-  "at": "2026-10-22T07:49:45Z"
+  "who": "auto3h",
+  "done": "수집기 1.89.32 판매자 평가 수 쓰기 줄임 · 8f529c3",
+  "at": "2026-10-22T09:20:04Z"
  }
 }
