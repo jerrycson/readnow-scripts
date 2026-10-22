@@ -1,12 +1,12 @@
 {
- "holder": "kpsum",
- "what": "출판 정보 요약 — 3회차",
- "since": "2026-10-22T20:49:27Z",
- "beat": "2026-10-22T21:05:25Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "auto3h",
-  "done": "수집기 1.89.35·웹앱 1.78.21 d13a9dc",
-  "at": "2026-10-22T15:21:57Z"
+  "who": "kpsum",
+  "done": "요약 75개 넣음 · 남은 약 400개(표시 상한)",
+  "at": "2026-10-22T21:07:26Z"
  }
 }
