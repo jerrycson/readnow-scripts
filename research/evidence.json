@@ -495,6 +495,27 @@
      "why": "제목만 있는 품목 찾기"
     }
    ]
+  },
+  {
+   "id": "firestore-map-order-2026-10",
+   "topic": [
+    "Firebase",
+    "쓰기 비용"
+   ],
+   "kind": "공식 문서 + 우리 실측",
+   "authors": "Google Cloud",
+   "year": 2026,
+   "title": "Firestore 지원 데이터 형식 — 맵(Map)은 키 순으로 정렬",
+   "venue": "Google Cloud Firestore 문서 'Supported data types'",
+   "url": "https://docs.cloud.google.com/firestore/docs/concepts/data-types",
+   "finding": "Firestore는 맵 값을 키 순으로 다룸(정렬 규칙 '키 다음 값'). 우리 실측: 서버에서 받은 묶음 칸은 칸 이름 순으로 돌아와, 화면에서 만든 묶음과 JSON 글자 비교가 늘 '다름' — 10/22 상품 기록 하루 1.5만 건(고침 뒤 3,925) · 10/23 시장 지표 변화 하루 15,545건(시장 지표 5,878번의 2.6배)",
+   "use": "서버에서 받은 값과 새로 만든 값을 견줄 때는 칸 순서를 무시하는 비교(stabJ)만 씀 — '바뀐 것만 적기' 조건마다 확인",
+   "applied": [
+    {
+     "where": "수집기 1.89.27 상품 기록 · 1.89.44 시장 지표 변화·도서 정보 변화 · 가격 감시기 0.10.17",
+     "why": "바뀐 것 없이 다시 적던 쓰기 줄이기"
+    }
+   ]
   }
  ]
 }
