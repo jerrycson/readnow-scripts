@@ -1,12 +1,12 @@
 {
- "holder": "auto-check",
- "what": "보고서 쓰기",
- "since": "2026-10-23T12:55:04Z",
- "beat": "2026-10-23T13:05:22Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "chat",
-  "done": "",
-  "at": "2026-10-23T09:27:57Z"
+  "who": "auto-check",
+  "done": "전체 점검 10/23 끝 · 7260fb1(수집기 1.89.44·감시기 0.10.17·웹앱 1.78.41) · f899bab(보고)",
+  "at": "2026-10-23T13:07:11Z"
  }
 }
