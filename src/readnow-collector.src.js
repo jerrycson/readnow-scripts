@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.41
+// @version      1.89.42
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -24,10 +24,10 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.92
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.93
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.4
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.16.1
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
@@ -4267,7 +4267,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const ch = P.diff(prevM, cur, METRICS);
     const rk = P.rankTransitions(prevM && prevM.activeRanks, page.ranks);
     const b2 = db.batch();
-    b2.set(mRef, { bookId, ...cur, activeRanks: page.ranks, lastCheckedAt: at, dynamicPending: !(buyerDist || relationBuy), checkedBy: PC_NAME, ...(used ? { usedFirstPage: used.listings } : {}), ...W() }, { merge: true });
+    b2.set(mRef, { bookId, ...cur, activeRanks: page.ranks, lastCheckedAt: at, dynamicPending: !(buyerDist || relationBuy), checkedBy: PC_NAME, ...(used ? { usedFirstPage: used.listings, usedAt: at } : {}), ...W() }, { merge: true }); /* (1.89.42) usedAt = 첫 쪽을 실제로 읽은 때(⚡ 전략 실행이 오래된 첫 쪽을 새것으로 보지 않게) */
     if (Object.keys(ch).length) b2.set(C('prd_metric_changes').doc(), { bookId, at, changes: ch, firstRecord: !prevM, ...W() });
     // 온라인 중고 첫 페이지 매물의 변화 이력 (1.21.0): 이전 관측과 다른 것만 쌓음 — 덮어쓰는 usedFirstPage와 달리 지워지지 않는 기록
     /* (1.57.2) 첫 페이지가 조금이라도 달라지면(순서만 바뀐 것 · 비교 칸 밖의 칸까지) 그때의 첫 페이지 전체(page)를 함께 남김 — 바뀐 칸만 적던 예전엔 순서 변화·다른 칸 변화가 남지 않았음. 같으면 아무것도 쓰지 않음 */

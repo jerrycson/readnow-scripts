@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.41의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.42의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.41' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.41', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.42' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.42', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1290,7 +1290,7 @@
     const ch = P.diff(prevM, cur, METRICS);
     const rk = P.rankTransitions(prevM && prevM.activeRanks, page.ranks);
     const b2 = db.batch();
-    b2.set(mRef, { bookId, ...cur, activeRanks: page.ranks, lastCheckedAt: at, dynamicPending: !(buyerDist || relationBuy), checkedBy: PC_NAME, ...(used ? { usedFirstPage: used.listings } : {}), ...W() }, { merge: true });
+    b2.set(mRef, { bookId, ...cur, activeRanks: page.ranks, lastCheckedAt: at, dynamicPending: !(buyerDist || relationBuy), checkedBy: PC_NAME, ...(used ? { usedFirstPage: used.listings, usedAt: at } : {}), ...W() }, { merge: true }); /* (1.89.42) usedAt = 첫 쪽을 실제로 읽은 때(⚡ 전략 실행이 오래된 첫 쪽을 새것으로 보지 않게) */
     if (Object.keys(ch).length) b2.set(C('prd_metric_changes').doc(), { bookId, at, changes: ch, firstRecord: !prevM, ...W() });
     // 온라인 중고 첫 페이지 매물의 변화 이력 (1.21.0): 이전 관측과 다른 것만 쌓음 — 덮어쓰는 usedFirstPage와 달리 지워지지 않는 기록
     /* (1.57.2) 첫 페이지가 조금이라도 달라지면(순서만 바뀐 것 · 비교 칸 밖의 칸까지) 그때의 첫 페이지 전체(page)를 함께 남김 — 바뀐 칸만 적던 예전엔 순서 변화·다른 칸 변화가 남지 않았음. 같으면 아무것도 쓰지 않음 */
