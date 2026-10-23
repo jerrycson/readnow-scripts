@@ -1,1 +1,1 @@
-stratrun=1
+stratrun=2
