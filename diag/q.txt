@@ -1,1 +1,1 @@
-doc=prd_system/autoSched,prd_system/settings,prd_jobs/autoSched,app_settings/cloud_jobs&health=1&hours=3&logs=1&pc=LOGGER&from=202610232100&to=202610232200
+doc=prd_system/autoSched&logs=1&pc=LOGGER&from=202610232150&to=202610232359
