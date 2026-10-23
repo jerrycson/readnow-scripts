@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.36
+// @version      1.89.37
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -5388,7 +5388,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       await PACE.wait(sleep); await st(3); const ac = new AbortController(); const tmo = setTimeout(() => ac.abort(), 120000); let r1; try { r1 = await fetch(BULK_URL, { method: 'POST', body: fd, credentials: 'include', signal: ac.signal }); } catch (e) { throw regNotSent('올리기 응답 없음(2분) — 등록하지 않음: ' + e.message); } finally { clearTimeout(tmo); } const h1 = await r1.text(); const d1 = new DOMParser().parseFromString(h1, 'text/html'); const p1 = RG.parseBulkPage(d1);
       await st(4, { upload: { http: r1.status, n: p1.count, alerts: p1.alerts.slice(0, 5), token: p1.tokenId || null } });
       if (!r1.ok) throw regNotSent(`올리기 실패 (HTTP ${r1.status})`); if (!p1.hasPreview || !p1.tokenId) throw regNotSent('올린 뒤 미리보기가 없음' + (p1.alerts.length ? ' — 알라딘: ' + p1.alerts.slice(0, 3).join(' / ') : ' (파일을 받지 않았을 수 있음)'));
-      const m = RG.matchPreview(p1, rows); if (!m.ok) throw regNotSent(`미리보기가 넣은 것과 다름 — 등록하지 않음${m.miss.length ? ` · 빠진 ISBN ${m.miss.slice(0, 5).join(', ')}` : ''}${m.diff.length ? ' · 다름: ' + m.diff.slice(0, 3).join(' / ') : ''}${m.extra.length ? ` · 넣지 않은 줄 ${m.extra.length}개가 미리보기에 있음` : ''}${p1.alerts.length ? ' · 알라딘: ' + p1.alerts.slice(0, 2).join(' / ') : ''}`);
+      const m = RG.matchPreview(p1, rows); if (!m.ok) { await ref.set({ badMiss: m.miss.slice(0, 200), badDiff: m.diff.slice(0, 50), badExtra: m.extra.length, uploadedAt: TS() }, { merge: true }).catch(() => {}); } /* (1.89.37) 웹앱이 문제 상품을 정확히 짚게 — 빠진 ISBN·다른 줄 전부 */ if (!m.ok) throw regNotSent(`미리보기가 넣은 것과 다름 — 등록하지 않음${m.miss.length ? ` · 빠진 ISBN ${m.miss.slice(0, 5).join(', ')}` : ''}${m.diff.length ? ' · 다름: ' + m.diff.slice(0, 3).join(' / ') : ''}${m.extra.length ? ` · 넣지 않은 줄 ${m.extra.length}개가 미리보기에 있음` : ''}${p1.alerts.length ? ' · 알라딘: ' + p1.alerts.slice(0, 2).join(' / ') : ''}`);
       if (v.mock) { /* (1.50.0) 🧷 모의 등록: 엑셀 만들기·올리기·미리보기 대조까지 했으니 여기서 멈춤 — '등록 완료'는 누르지 않음(알라딘에 안 올라감) · 상품은 결정 대기로 */
         const msg = `알라딘에 보내지 않음 · 엑셀 ${rows.length}줄 만들기·올리기·미리보기 대조 모두 맞음 (미리보기 ${p1.count}줄)`; rows.forEach((r) => (results[r.regItem] = { state: 'mock', at: nowIso(), msg }));
         await ref.set({ status: 'done', mock: true, step: 4, msg: '🧷 모의 등록 — ' + msg, results, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }).catch(() => {});
