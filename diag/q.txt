@@ -1,1 +1,1 @@
-logs=1&pc=MJ-MAIN&from=202610231530&to=202610231900
+stratrun=1
