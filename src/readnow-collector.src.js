@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.38
+// @version      1.89.39
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -521,7 +521,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     if (!attach()) { let n = 0; const t = setInterval(() => { if (attach() || ++n > 60) clearInterval(t); }, 1000); } })();
   /* (1.52.0) 'Script error. (:0)' = 다른 주소에서 온 알라딘 화면 자체 스크립트(광고·통계 등)의 오류 — 브라우저가 내용을 가려 보내 우리가 고칠 것이 없음 → 기록 창을 덮지 않게 빼고 하루 몇 번 나왔는지만 셈 */
   window.addEventListener('error', (ev) => { if (/^Script error\.?$/i.test(String(ev.message || '').trim()) && !ev.filename) { window.__rnXerr = (window.__rnXerr || 0) + 1; return; } window.__rnLog('오류', 'err', `${ev.message} (${(ev.filename || '').split('/').pop()}:${ev.lineno})`); });
-  window.addEventListener('unhandledrejection', (ev) => window.__rnLog('오류', 'err', `처리되지 않은 오류: ${ev.reason && ev.reason.message ? ev.reason.message : ev.reason}`));
+  window.addEventListener('unhandledrejection', (ev) => { const r = ev.reason; const st = r && r.stack ? String(r.stack).split('\n').slice(1, 5).map((x) => x.trim().replace(/https?:\/\/[^\s)]*\/([^/\s)]+)/g, '$1')).join(' ← ') : ''; window.__rnLog('오류', 'err', `처리되지 않은 오류: ${r && r.message ? r.message : r}${st ? ' · 어디서: ' + st.slice(0, 300) : ''} · ${location.pathname}`); }); /* (1.89.39) 3시간 점검 10/23 'Maximum call stack' — 어느 함수인지 남김(파일·줄) */
   window.__rnLog('수집기', 'info', `탭 열림 · ${location.pathname.split('/').pop()}`);
   try { if (document.wasDiscarded) window.__rnLog('수집기', 'warn', '⚠ 크롬이 이 탭을 메모리 절약으로 내려놓았다가 다시 열었음 — 그동안 수집이 멈춰 있었음. 크롬 설정 → 성능 → 메모리 절약 → \'항상 활성 상태로 유지할 사이트\'에 aladin.co.kr 추가'); } catch (e) {} /* (1.77.3) HOME 탭이 22:24~23:23 소리 없이 멈춘 일 — 까닭을 기록에 남김 */
 })();
