@@ -1,1 +1,1 @@
-logs=1&pc=LOGGER&from=202610232220&to=202610232359
+health=1&hours=3&n=4&doc=rn_status/pc_LOGGER
