@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "등록 진행바·취소 · 매입 고치기 버그 · 벤치마킹 · 네이밍 · 키워드 · 메모리",
- "since": "2026-10-23T03:47:17Z",
- "beat": "2026-10-23T03:47:17Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "웹앱 1.78.24",
-  "at": "2026-10-23T01:44:42Z"
+  "done": "",
+  "at": "2026-10-23T04:36:00Z"
  }
 }
