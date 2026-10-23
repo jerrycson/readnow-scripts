@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.44의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.45의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.44' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.44', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.45' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.45', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1179,15 +1179,15 @@
     if (l.isbn13) u.push(['isbn13', `/shop/wproduct.aspx?ISBN=${l.isbn13}`]);
     if (l.isbn10) u.push(['isbn10', `/shop/wproduct.aspx?ISBN=${l.isbn10}`]);
     if (l.aladinCode) u.push(['aladinCode', `/shop/wproduct.aspx?ISBN=${l.aladinCode}`]);
-    if (l.listingId) u.push(['listingPage', `/shop/wproduct.aspx?ItemId=${l.listingId}`]);
+    if (l.listingId && !(PUBONLY && !l.pool && !l.explore)) u.push(['listingPage', `/shop/wproduct.aspx?ItemId=${l.listingId}`]); /* (1.89.44 자동 점검 · 🌐 로거) 로거는 우리 매물 화면(우리 상품 번호)을 열지 않음 — ISBN·알라딘 코드가 없는 우리 상품은 사무실 PC로 넘김(아래 ownPage) */
     return u;
   }
   // 시장 지표 '마지막 확인 시각' 표: 이 PC에 보관(GM)하고, 그 뒤 바뀐 것(lastCheckedAt 이 더 늦은 것)만 Firebase에서 받음 · 7일마다 한 번 전체로 다시 맞춤
   async function metricsCheckedMap() { let c = null; try { c = GM_getValue('rnp-mchk', null); } catch (e) {}
-    const build = !c || !c.m || !c.builtAt || Date.now() - c.builtAt > 7 * 864e5;
+    const build = !c || !c.m || !c.builtAt || Date.now() - c.builtAt > 7 * 864e5; let chg = 0;
     if (build) { const s = await C('prd_book_metrics').get(); c = { m: {}, max: '', builtAt: Date.now() }; s.forEach((d) => { const t = d.data().lastCheckedAt || ''; c.m[d.id] = t; if (t > c.max) c.max = t; }); log(`시장 지표 확인 시각 표를 새로 만듦 (${Object.keys(c.m).length.toLocaleString()}권)`); }
-    else { const s = await C('prd_book_metrics').where('lastCheckedAt', '>', c.max || '').get(); s.forEach((d) => { const t = d.data().lastCheckedAt || ''; c.m[d.id] = t; if (t > c.max) c.max = t; }); if (s.size) log(`시장 지표 확인 시각: 그 뒤 바뀐 ${s.size.toLocaleString()}권만 받음`); }
-    try { GM_setValue('rnp-mchk', c); } catch (e) {} return new Map(Object.entries(c.m)); }
+    else { const s = await C('prd_book_metrics').where('lastCheckedAt', '>', c.max || '').get(); s.forEach((d) => { const t = d.data().lastCheckedAt || ''; c.m[d.id] = t; if (t > c.max) c.max = t; }); chg = s.size; if (s.size) log(`시장 지표 확인 시각: 그 뒤 바뀐 ${s.size.toLocaleString()}권만 받음`); }
+    if (build || chg) { try { GM_setValue('rnp-mchk', c); } catch (e) {} } return new Map(Object.entries(c.m)); } /* (1.89.44 자동 점검 · 🪶) 바뀐 책이 없으면 표(약 1.4MB)를 다시 쓰지 않음 — JS-MAIN 하루 17번·24MB */
   async function market() {
     const lane = await acquireLane('aladin');
     if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
@@ -1210,7 +1210,7 @@
         const { l } = queue[i]; let { bookId } = queue[i];
         const tag = bookId || 'aladin_' + l.usedCode; if (doneSet.has(tag)) continue;
         if (PUBONLY && anonGateGet(tag)) { prog.gate = (prog.gate || 0) + 1; doneSet.add(tag); continue; } /* (1.72.1) 로거: 19금이라 로그인 없이 못 보는 책은 14일 동안 다시 읽지 않음(테더링 아낌) */
-        try { await refreshOne(l, bookId); prog.done++; } catch (e) { if (e.needLogin && PUBONLY) { anonGateSet(tag); prog.gate = (prog.gate || 0) + 1; handoffPut({ kind: 'market', tag, bookId: bookId || null, usedCode: l.usedCode || null, title: l.title || null, why: '19금 — 로그인 없이는 못 보는 화면' }); } else if (e && e.hidden) { prog.hid = (prog.hid || 0) + 1; /* (1.89.23 · 3시간 점검 10/21) 알라딘 비공개 상품: 이 PC가 3일 동안 다시 묻지 않으므로(알라딘에 안 감) 실패로 세거나 회차마다 '실패' 줄을 남기지 않음 — JS-MAIN 6시간에 같은 책 3~6번씩 경고 */ } else { prog.fail++; log(`실패 ${l.title || l.usedCode}: ${e.message}`, 1); } } await mixMaybe(); /* (1.69.0) 🔀 로거: 우리 책 시장 지표 사이사이 다른 책(설정 ⑨ 섞어 읽기 비율 · 기본 30%) — 이 방문자가 보는 책이 우리 재고와 겹치는 비율을 낮춤 · (1.72.1) 읽은 다른 책도 탐색 수집처럼 저장 */
+        try { await refreshOne(l, bookId); prog.done++; } catch (e) { if (e.needLogin && PUBONLY) { anonGateSet(tag); prog.gate = (prog.gate || 0) + 1; handoffPut({ kind: 'market', tag, bookId: bookId || null, usedCode: l.usedCode || null, title: l.title || null, why: e.ownPage ? '우리 매물 화면으로만 찾을 수 있는 책 — 로거는 우리 매물 화면을 열지 않음' : '19금 — 로그인 없이는 못 보는 화면' }); } else if (e && e.hidden) { prog.hid = (prog.hid || 0) + 1; /* (1.89.23 · 3시간 점검 10/21) 알라딘 비공개 상품: 이 PC가 3일 동안 다시 묻지 않으므로(알라딘에 안 감) 실패로 세거나 회차마다 '실패' 줄을 남기지 않음 — JS-MAIN 6시간에 같은 책 3~6번씩 경고 */ } else { prog.fail++; log(`실패 ${l.title || l.usedCode}: ${e.message}`, 1); } } await mixMaybe(); /* (1.69.0) 🔀 로거: 우리 책 시장 지표 사이사이 다른 책(설정 ⑨ 섞어 읽기 비율 · 기본 30%) — 이 방문자가 보는 책이 우리 재고와 겹치는 비율을 낮춤 · (1.72.1) 읽은 다른 책도 탐색 수집처럼 저장 */
         doneSet.add(tag);
         ui('도서 정보·시장 지표 갱신', doneSet.size, queue.length, l.title || l.usedCode, `실패 ${prog.fail}건 · 멈춰도 이어서 계속됩니다`);
         if (doneSet.size % 10 === 0) { await saveProgress('market', prog); LS.set('market_done', [...doneSet]); }
@@ -1229,7 +1229,7 @@
   const extToPage = (E, l) => { const C0 = []; String(E.authors || '').split(/\s*[,·]\s*/).filter(Boolean).forEach((n) => C0.push({ name: n, role: '지은이' })); String(E.translators || '').split(/\s*[,·]\s*/).filter(Boolean).forEach((n) => C0.push({ name: n, role: '옮긴이' })); return { title: E.title || null, subtitle: E.sub || null, series: E.series || null, contributors: C0.length ? C0 : null, publisher: E.publisher || null, pubDate: E.pubDate || null, isbn13: l.isbn13 || null, pages: E.pages ?? null, size: E.size || null, weightG: E.weightG ?? null, images: E.cover ? { front: E.cover } : null, fetchedFrom: E.srcs[0], infoFrom: E.from || null }; };
   /* (1.79.0) 📊 상품·책 한 권 읽기 결과를 분류별로 셈 — 시장 지표(우리 상품) · 판매완료 상품 정보 · 알라딘 구매 풀 · 탐색 · 섞어 읽기 · (외부 도서 정보는 biTick이 따로 셈) */
   async function refreshOne(l, bookId, opt) { const cat = l && l.explore ? (l.exploreFrom === 'mix' ? 'mix' : 'explore') : l && l.pool ? 'pool' : opt && opt.extOnly ? null : opt && opt.infoOnly ? 'info' : 'metrics'; const CS = window.__rnCS;
-    try { const r = await refreshOne0(l, bookId, opt); if (cat && CS) CS.add(cat, 'ok'); return r; } catch (e) { if (cat && CS) { const m = String((e && e.message) || e); const kind = m === '멈춤' || (e && e.tgate) ? 'skip' : e && e.needLogin ? 'skip' : e && (e.noext || e.hidden) ? 'none' : e && e.extTmp ? 'part' : 'fail'; CS.add(cat, kind, 1, kind === 'skip' && e && e.needLogin ? '19금 — 로그인 없이는 못 봄(사무실 PC로 넘김)' : m); } throw e; } }
+    try { const r = await refreshOne0(l, bookId, opt); if (cat && CS) CS.add(cat, 'ok'); return r; } catch (e) { if (cat && CS) { const m = String((e && e.message) || e); const kind = m === '멈춤' || (e && e.tgate) ? 'skip' : e && e.needLogin ? 'skip' : e && (e.noext || e.hidden) ? 'none' : e && e.extTmp ? 'part' : 'fail'; CS.add(cat, kind, 1, kind === 'skip' && e && e.needLogin ? (e.ownPage ? '우리 매물 화면만 남음 — 로거는 안 엶(사무실 PC로 넘김)' : '19금 — 로그인 없이는 못 봄(사무실 PC로 넘김)') : m); } throw e; } }
   async function refreshOne0(l, bookId, opt) {
     const at = nowIso();
     let page = null, resolvedBy = null, finalUrl = null;
@@ -1244,6 +1244,7 @@
       if (r.page.aladinItemId && r.page.title) { page = r.page; resolvedBy = how; finalUrl = r.finalUrl; break; }
     }
     if (!page) page = await fallbackProviders(l);
+    if (!page && PUBONLY && l.listingId && !l.pool && !l.explore) throw Object.assign(new Error('우리 매물 화면으로만 찾을 수 있는 책 — 로거는 열지 않음(사무실 PC로 넘김)'), { needLogin: true, ownPage: true }); /* (1.89.44 자동 점검) */
     if (!page) throw new Error('도서 정보를 찾지 못함');
     if (EB && page.fetchedFrom === 'aladin') { const EP = extToPage(EB, l); const used0 = {}; for (const f of ['title', 'subtitle', 'series', 'contributors', 'publisher', 'pubDate', 'pages', 'size', 'weightG']) if (EP[f] != null && EP[f] !== '') { if (page[f] != null) used0[f] = page[f]; page[f] = EP[f]; } if (EP.images && EP.images.front) page.images = { ...(page.images || {}), front: EP.images.front }; page.infoFrom = { ...(EB.from || {}), _aladinSeen: used0 }; } /* 도서 칸 = 교보·예스24 먼저(알라딘 값은 비교용으로 남김) · 표지도 외부 먼저 */
     const idsAll = P.collectIds([page.isbn13, page.isbnKey, l.isbn13, l.isbn10, l.aladinCode, l.barcode]);
@@ -1257,7 +1258,7 @@
     const imgs = {}; for (const k of ['front', 'back', 'spine']) { const src = page.images && page.images[k]; if (src && !(prevB && prevB.images && prevB.images[k] && prevB.images[k].src)) imgs[k] = { src, stored: null }; }
     const batch = db.batch();
     if (prevB) { // (1.26.0) 도서 정보가 전과 다르면 그 차이를 시각과 함께 기록 (고정형은 덮어쓰지 않으므로 다르게 보인 값을 따로 남김)
-      const chg = {}; const cmp = (a, b) => JSON.stringify(a ?? null) !== JSON.stringify(b ?? null);
+      const chg = {}; const cmp = (a, b) => stabJ(a ?? null) !== stabJ(b ?? null); /* (1.89.44 자동 점검) 칸 순서와 상관없이 — Firestore가 돌려준 묶음(categories·contributors 안 {…})은 칸 이름 순 */
       for (const f of BOOK_FIXED) if (page[f] != null && prevB[f] != null && cmp(prevB[f], page[f]) && !(page.infoFrom && page.infoFrom[f] && !(prevB.infoFrom && prevB.infoFrom[f]))) chg[f] = { kept: prevB[f], seen: page[f] }; /* (1.75.0) 예전에 알라딘 값으로 적힌 칸을 외부 값과 견준 차이는 '바뀜'이 아님(출처가 다를 뿐) — 매번 기록하지 않음 */
       const cur = { aladinItemId: book.aladinItemId, isbn13: idsAll.isbn13, isbn10: idsAll.isbn10, aladinCode: idsAll.aladinCode, barcode: idsAll.barcode, productUrl: finalUrl, previewUrls: (page.images && page.images.preview) || null };
       for (const [f, v] of Object.entries(cur)) if (v != null && prevB[f] != null && cmp(prevB[f], v)) chg[f] = { from: prevB[f], to: v };
@@ -1287,14 +1288,14 @@
       buyerDist, relationBuy: relationBuy ? relationBuy.map((x) => x.title) : null };
     Object.keys(cur).forEach((k) => cur[k] == null && delete cur[k]);
     const mRef = C('prd_book_metrics').doc(bookId); const prevM = (await mRef.get()).data();
-    const ch = P.diff(prevM, cur, METRICS);
+    const ch = P.diff(prevM, cur, METRICS); for (const k of Object.keys(ch)) if (stabJ(ch[k].from) === stabJ(ch[k].to)) delete ch[k]; /* (1.89.44 자동 점검) 묶음 칸(usedTabs·usedMins·buyback·buyerDist)은 Firestore에서 칸 이름 순으로 돌아와 화면에서 만든 묶음과 JSON 글자가 늘 달라, 바뀐 것 없이도 책을 읽을 때마다 '바뀜' 기록을 남겼음(10/23 24시간 prd_metric_changes 15,545 · 시장 지표 5,878의 2.6배) → 칸 순서와 상관없이 같으면 뺌 */
     const rk = P.rankTransitions(prevM && prevM.activeRanks, page.ranks);
     const b2 = db.batch();
     b2.set(mRef, { bookId, ...cur, activeRanks: page.ranks, lastCheckedAt: at, dynamicPending: !(buyerDist || relationBuy), checkedBy: PC_NAME, ...(used ? { usedFirstPage: used.listings, usedAt: at } : {}), ...W() }, { merge: true }); /* (1.89.42) usedAt = 첫 쪽을 실제로 읽은 때(⚡ 전략 실행이 오래된 첫 쪽을 새것으로 보지 않게) */
     if (Object.keys(ch).length) b2.set(C('prd_metric_changes').doc(), { bookId, at, changes: ch, firstRecord: !prevM, ...W() });
     // 온라인 중고 첫 페이지 매물의 변화 이력 (1.21.0): 이전 관측과 다른 것만 쌓음 — 덮어쓰는 usedFirstPage와 달리 지워지지 않는 기록
     /* (1.57.2) 첫 페이지가 조금이라도 달라지면(순서만 바뀐 것 · 비교 칸 밖의 칸까지) 그때의 첫 페이지 전체(page)를 함께 남김 — 바뀐 칸만 적던 예전엔 순서 변화·다른 칸 변화가 남지 않았음. 같으면 아무것도 쓰지 않음 */
-    if (used) { const ld = P.listingsDiff ? P.listingsDiff(prevM && prevM.usedFirstPage, used.listings) : null; const same = JSON.stringify((prevM && prevM.usedFirstPage) || null) === JSON.stringify(used.listings || null);
+    if (used) { const ld = P.listingsDiff ? P.listingsDiff(prevM && prevM.usedFirstPage, used.listings) : null; const same = stabJ((prevM && prevM.usedFirstPage) || null) === stabJ(used.listings || null); /* (1.89.44 자동 점검) 서버에서 받은 매물 줄은 칸 이름 순 → 늘 '다름'이라 순서도 안 바뀐 첫 쪽을 회차마다 '장면'(orderOnly)으로 쌓았음 · 줄 순서는 그대로 견줌 */
       if (ld || !same) b2.set(C('prd_metric_changes').doc(), { bookId, at, kind: 'usedListings', add: ld ? ld.add : [], del: ld ? ld.del : [], chg: ld ? ld.chg : [], orderOnly: !ld, page: JSON.parse(JSON.stringify(used.listings || [])), firstRecord: ld ? ld.first : !(prevM && prevM.usedFirstPage), lastPage: used.lastPage || null, usedTotal: used.usedTotal ?? null, ...W() }); }
     for (const t of rk.started) b2.set(C('prd_rank_periods').doc(), { bookId, title: t, firstSeenAt: at, lastSeenAt: at, endedSeenAt: null, ...W() });
     await b2.commit();
