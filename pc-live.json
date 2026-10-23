@@ -1,7 +1,7 @@
 {
  "ver": "1.89.44",
  "hsig": "8559039d5a96110b",
- "at": "2026-10-23T13:03:45.633Z",
+ "at": "2026-10-23T13:39:05.765Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -41,9 +41,9 @@
   },
   {
    "f": "readnow-registry.js",
-   "v": "0.14.94",
-   "sha": "91e3062703dd77a45b9abe0649ab0827b06c4c93fa16cdbbfb9d818fa30141bb",
-   "n": 61994
+   "v": "0.14.95",
+   "sha": "c3320291acfe20e2e69d17952392d06f7b3b2c7237559ddb08ccea008f07dd09",
+   "n": 62057
   },
   {
    "f": "readnow-ext-core.js",
@@ -65,9 +65,9 @@
   },
   {
    "f": "readnow-autosched-core.js",
-   "v": "0.17.0",
-   "sha": "c21ba32683e45ba2099b6a31728c3cc9962b061e41d0546550c655837a4ea78c",
-   "n": 270878
+   "v": "0.18.0",
+   "sha": "2eeb4858b117efdc366796b3a6d60f9ab210b6837cacf45007f1dedee070d42c",
+   "n": 272852
   },
   {
    "f": "readnow-aladin-core.js",
@@ -102,8 +102,8 @@
   {
    "f": "readnow-pc-products.js",
    "v": "1.89.44",
-   "sha": "5b527c5070aae2b069f52e4e1bfaf135551676ae215d91edc2551ecd62953708",
-   "n": 793032
+   "sha": "08080d35873a7a2fb7ae0719570ca2cc28998d91e985cec67549287aaa66e546",
+   "n": 791320
   },
   {
    "f": "readnow-pc-ship.js",

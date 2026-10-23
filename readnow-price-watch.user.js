@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.17
+// @version      0.10.16
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -202,7 +202,7 @@
     const b = db.batch();
     b.set(wRef, { bookId: l.bookId, at: now, rows: used.listings.map((r) => ({ k: P.listingKey(r), ...r })), firstSeen, gone: gone.filter((x, i, a) => a.findIndex((y) => y.k === x.k) === i), lastPage: used.lastPage || 1, buyback: used.buyback || null, ...W() });
     /* (0.10.3) 첫 페이지가 조금이라도 달라지면(순서만 · 비교 칸 밖의 칸 · 알라딘 매입가 · 끝 쪽) 그때의 첫 페이지 전체(page)·매입가를 함께 남김 — 예전엔 바뀐 칸 6개만 적어 순서·매입가 변화가 사라졌음. 같으면 쓰지 않음 */
-    const prevRows = prevW.rows ? prevW.rows.map(({ k, page, firstSeenAt, ...r }) => r) : null; const stabJ = (v) => JSON.stringify(v, (kk, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.keys(x).sort().filter((q) => x[q] !== undefined).map((q) => [q, x[q]])) : x)); /* (0.10.17 자동 점검) 칸 순서와 상관없이 — Firestore가 돌려준 줄·매입가 묶음은 칸 이름 순이라 늘 '다름'이었음(같은 첫 쪽을 볼 때마다 장면 기록) */ const same = !!prevW.rows && stabJ(prevRows) === stabJ(used.listings) && stabJ(prevW.buyback ?? null) === stabJ(used.buyback ?? null) && (prevW.lastPage || 1) === (used.lastPage || 1);
+    const prevRows = prevW.rows ? prevW.rows.map(({ k, page, firstSeenAt, ...r }) => r) : null; const same = !!prevW.rows && JSON.stringify(prevRows) === JSON.stringify(used.listings) && JSON.stringify(prevW.buyback ?? null) === JSON.stringify(used.buyback ?? null) && (prevW.lastPage || 1) === (used.lastPage || 1);
     if (ld || !same) b.set(C('prd_metric_changes').doc(), { bookId: l.bookId, at: now, kind: 'usedListings', source: 'price-watch', add: ld ? ld.add : [], del: ld ? ld.del : [], chg: ld ? ld.chg : [], orderOnly: !ld, page: JSON.parse(JSON.stringify(used.listings || [])), buyback: used.buyback || null, prevBuyback: prevW.buyback ?? null, firstRecord: ld ? ld.first : !prevW.rows, lastPage: used.lastPage || null, prevLastPage: prevW.lastPage ?? null, ...W() });
     await b.commit();
     const mine = used.listings.find((r) => r.usedCode && r.usedCode === l.usedCode) || null; // 우리 매물은 상품코드로만 찾음 (같은 책 여러 권일 때 다른 권과 헷갈리지 않게)
