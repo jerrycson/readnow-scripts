@@ -1,6 +1,6 @@
 {
  "v": 1,
- "updated": "2026-10-22",
+ "updated": "2026-10-23",
  "rule": "조언·제안·반박은 명망 있는 외부 연구(학술지·정부/공공 통계·업계 보고서)를 근거로 — 정범님 10/20. 근거가 없으면 '근거 못 찾음'을 밝히고 우리 실측으로만 말함.",
  "items": [
   {
@@ -199,6 +199,51 @@
    "url": "https://docs.github.com/en/enterprise-cloud@latest/actions/monitoring-and-troubleshooting-workflows/troubleshooting-workflows/about-troubleshooting-workflows",
    "finding": "GitHub Actions의 schedule(cron)은 부하가 높을 때 늦어지거나 아예 건너뛸 수 있음 — 정시 실행을 보장하지 않음.",
    "use": "(자동 점검 2026-10-22) 매시 41분 숫자 요약(health-out)이 10/22 16:57~22:00 사이 한 번만 돎 → 점검이 숫자를 볼 때는 '마지막 시각(at.txt)'을 먼저 보고, 오래됐으면 workflow_dispatch(health_only)로 새로 받음."
+  },
+  {
+   "id": "bookstore-buyback-reed",
+   "topic": [
+    "매입",
+    "가격"
+   ],
+   "kind": "업계 자료",
+   "authors": "Reed College Bookstore",
+   "year": 2025,
+   "title": "Buyback — Making It Work For You",
+   "venue": "bookstore.reed.edu",
+   "url": "https://bookstore.reed.edu/site_buyback.info.asp",
+   "finding": "다음 학기에 쓸 책은 새책 값의 25~35%를 주고 되삼 · 캠퍼스에서 안 쓰는 책(도매상에 넘길 책)은 0~25%.",
+   "use": "(2026-10-23 새 매입 기록 ★ 추천 매입가 제안) 업계는 되팔 값의 일부만 주고 사며, 다시 팔 확실성이 낮을수록 더 낮게 — 우리는 '1년 안 팔릴 확률'로 책마다 그 확실성을 계산해 반영."
+  },
+  {
+   "id": "bookstore-buyback-milwaukee",
+   "topic": [
+    "매입",
+    "가격"
+   ],
+   "kind": "언론",
+   "authors": "OnMilwaukee (Boswell Book Company · Re-Booked 인터뷰)",
+   "year": 2012,
+   "title": "Where to sell your used books",
+   "venue": "onmilwaukee.com",
+   "url": "https://onmilwaukee.com/articles/bookselling",
+   "finding": "Boswell은 자기 판매가의 약 25%(적립금), Re-Booked는 정가의 15~25%(적립금)를 주고 중고책을 삼.",
+   "use": "(2026-10-23) 추천 매입가 목표 마진 50%(기대 회수액의 절반) 제안의 비교 기준 — 업계 관행(판매가의 15~35%)보다 덜 보수적인 까닭은 우리가 책마다 팔릴 확률·알라딘 매입가(못 팔 때 회수)를 계산하기 때문."
+  },
+  {
+   "id": "newsvendor-wiki",
+   "topic": [
+    "매입",
+    "재고"
+   ],
+   "kind": "교과서",
+   "authors": "Wikipedia (Arrow·Harris·Marschak 1951 이후 표준 재고 모형)",
+   "year": 2025,
+   "title": "Newsvendor model",
+   "venue": "en.wikipedia.org",
+   "url": "https://en.wikipedia.org/wiki/Newsvendor_model",
+   "finding": "수요가 불확실한 상품은 '팔리면 남는 돈'과 '안 팔리면 잃는 돈(잔존가치 빼고)'의 비율(임계 비율)로 얼마나 사들일지 정함 — 안 팔린 몫은 잔존가치(salvage)로 회수.",
+   "use": "(2026-10-23) 추천 매입가의 기대 회수액 = 팔릴 확률 × 판매 순수입 + 못 팔 확률 × 알라딘 매입가(잔존가치) 구조의 근거."
   }
  ]
 }
