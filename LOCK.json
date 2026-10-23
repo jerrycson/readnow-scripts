@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "미키7 이동·사진 3장·상품명 고른 책 개별·재고 품목 그룹",
- "since": "2026-10-23T05:20:16Z",
- "beat": "2026-10-23T05:20:16Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
   "done": "",
-  "at": "2026-10-23T05:00:00Z"
+  "at": "2026-10-23T05:26:27Z"
  }
 }
