@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "등록 버그·매입 개편·새 매입 기록·플랫폼 이름",
- "since": "2026-10-23T01:06:04Z",
- "beat": "2026-10-23T01:06:04Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "kpsum",
-  "done": "요약 75개 넣음 · 남은 약 400개(표시 상한)",
-  "at": "2026-10-22T21:07:26Z"
+  "who": "chat",
+  "done": "웹앱 1.78.22~23",
+  "at": "2026-10-23T01:30:33Z"
  }
 }
