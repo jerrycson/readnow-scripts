@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.39
+// @version      1.89.40
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -20,11 +20,11 @@
 // @downloadURL  https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-orders-core.js?v=0.3.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.1
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.18.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.90
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.91
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.4
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.8.2
@@ -4648,7 +4648,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
         try { await refreshOne({ pool: true, listingId: itemId, title }, null); prog.ok++; await C('prd_ids').doc('itemId_' + itemId).set({ poolLine: true, poolInfoAt: nowIso(), ...W() }, { merge: true }); }
         catch (e) {
           let alt = null;
-          if (/찾지 못함/.test(e.message) && title) { try { const sr = await getDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=All&SearchWord=${encodeURIComponent(title)}`);
+          if (/찾지 못함/.test(e.message) && title) { try { const sr = await getDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=All&SearchWord=${encodeURIComponent((P.aladinQ && P.aladinQ(title)) || title)}`);
             const c = P.parseSearchResults(sr.doc).map((r) => ({ ...r, cov: P.nameCoverage(title, r.title) })).filter((r) => r.cov >= (SET.photoMatch ?? 0.9) && String(r.itemId) !== String(itemId)).sort((a, b) => (a.used ? 1 : 0) - (b.used ? 1 : 0) || b.cov - a.cov)[0];
             if (c) { await refreshOne({ pool: true, listingId: c.itemId, title }, null); alt = c; } } catch (e2) {} }
           if (alt) { prog.ok++; prog.viaSearch = (prog.viaSearch || 0) + 1; await C('prd_ids').doc('itemId_' + itemId).set({ poolLine: true, poolInfoAt: nowIso(), poolVia: { itemId: alt.itemId, title: alt.title, cov: Math.round(alt.cov * 1000) / 1000 }, ...W() }, { merge: true }); }
@@ -5303,11 +5303,11 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
    *  상품명 → 등록 검색(NAME) 후보(등록 코드 포함) · 번호 → 등록 검색(ISBN): 1개면 그 상품 상세, 여러 개(판·에디션)면 후보 · 등록 검색에 없으면 예전처럼 상품 페이지(ISBN=)·공개 검색 */
   async function regLookupCmd(ref, v) { const isb = v.isbns || [], ids = v.itemIds || [], qs = v.queries || []; const tot = isb.length + ids.length + qs.length; let n = 0; const items = {}, cands = {}, errs = {}, srch = {}; const br = +v.branch || 1;
     /* (1.88.0) 📥 기본값 판매가 ②: 첫 페이지(시장표)가 비었거나 상품명 조회면 바깥 중고 검색(SearchTarget=Used)의 같은 상품 후보를 같이 (products-core 0.16.0 usedSearchRows · 클라우드 0.23.0과 같음) */
-    const usedS = async (title, self) => { const qy = P.usedSearchRows ? P.searchQueryOf(title) : null; if (!qy) return null; try { const g = await lookDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Used&SearchWord=${encodeURIComponent(qy)}`); return { q: qy, at: nowIso(), rows: P.usedSearchRows(g.doc, qy, 0.9, self || null) }; } catch (e) { return null; } };
+    const usedS = async (title, self) => { const qy = P.usedSearchRows ? (P.aladinQ || P.searchQueryOf)(title) : null; /* (1.89.40) 기호·부제 뺀 검색어(products-core 0.19.0) */ if (!qy) return null; try { const g = await lookDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Used&SearchWord=${encodeURIComponent(qy)}`); return { q: qy, at: nowIso(), rows: P.usedSearchRows(g.doc, qy, 0.9, self || null) }; } catch (e) { return null; } };
     LOOK_PRIO++; try { log(`📥 등록 조회: ${tot}건 (샵매니저 등록 검색)`); const prog = () => ref.set({ n, tot, items, cands, srch, errs, uploadedAt: TS() }, { merge: true }).catch(() => {});
     const keep = async (key, r) => { if (!(r.page1 || []).length && r.title) { const x = await usedS(r.title, r.itemId); if (x) r.srch = x; } items[key] = r; try { await C('prd_lookups').add({ key, isbn13: r.isbn13, itemId: r.itemId, ...r, by: PC_NAME, cmdId: ref.id, ...W() }); } catch (e) {} };
     const get = async (url, init) => { const r = await fetch('https://www.aladin.co.kr' + url, { credentials: 'include', cache: 'no-store', ...(init || {}) }); return { url: r.url, text: await r.text() }; };
-    const scm = async (q, kind) => { const R = await P.scmSearch(q, kind, br, get, 10); if (!R.login) throw new Error('샵매니저 로그인이 풀림 — 이 PC에서 알라딘 샵매니저에 로그인해 주세요'); return R.rows.slice(0, 200).map((x) => ({ ...x, cov: Math.round(P.nameCoverage(q, x.title) * 1000) / 1000, scm: true })); };
+    const scm = async (q, kind) => { const R = await P.scmSearch(q, kind, br, get, 10); if (!R.login) throw new Error('샵매니저 로그인이 풀림 — 이 PC에서 알라딘 샵매니저에 로그인해 주세요'); const qc = (P.aladinQ && P.aladinQ(q)) || q; return R.rows.slice(0, 200).map((x) => ({ ...x, cov: Math.round(P.nameCoverage(qc, x.title) * 1000) / 1000, scm: true })); };
     /* (1.78.2) 가볍고 빠른 것부터: 고른 상품(번호 확정 — 화면 2장) → 번호(ISBN) → 상품명(등록 검색 여러 쪽 · 사람이 골라야 함) */
     for (const id of ids) { try { await keep('id_' + id, await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`)); } catch (e) { errs['id_' + id] = e.message; } n++; await prog(); }
     for (const isbn of isb) { try { const L = await scm(isbn, 'ISBN'); if (L.length === 1) { const r = await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(L[0].itemId)}`); r.scmCode = L[0].code; await keep(isbn, r); }
@@ -5326,8 +5326,8 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
         if (!r) for (const tgt of [...new Set([TGT, 'All'])]) { /* 번호로 검색해 앞 3개 중 번호가 맞는 상품 (클라우드 0.9.3과 같은 순서) */ const sr = await lookDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=${tgt}&SearchWord=${encodeURIComponent(isbn)}`); for (const c of P.parseSearchResults(sr.doc).filter((x) => !x.used).slice(0, 3)) { try { r = await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(c.itemId)}`, isbn); break; } catch (e) {} } if (r) break; }
         if (r) await keep(isbn, r); else errs[isbn] = (why && /다른 상품/.test(why) ? why + ' — 이 번호의 상품을 찾지 못함 (상품명으로 찾아 고르세요)' : '알라딘에서 이 번호(ISBN·바코드)의 상품을 못 찾음'); } catch (e) { errs[isbn] = e.message; } n++; await prog(); }
     for (const id of ids) { try { await keep('id_' + id, await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`)); } catch (e) { errs['id_' + id] = e.message; } n++; await prog(); }
-    for (const q of qs) { try { const sr = await lookDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=${TGT}&SearchWord=${encodeURIComponent(q)}`); /* (1.44.0) 등록 엔진: 상품 구분에 맞춰 찾음 */
-        cands[q] = P.parseSearchResults(sr.doc).filter((r) => !r.used).slice(0, 8).map((r) => ({ itemId: r.itemId, title: r.title, img: r.img || null, cov: Math.round(P.nameCoverage(q, r.title) * 1000) / 1000, channels: r.channels || null })); } catch (e) { errs['q_' + q] = e.message; } n++; await prog(); }
+    for (const q of qs) { let qq = q; /* (1.89.40) 정범님 10/23 알라딘 검색엔 글자·숫자만 · 0건이면 뒤 낱말 빼고 다시(products-core aladinQTries) */ try { let sr = null; for (const t of (P.aladinQTries && P.aladinQTries(q)) || [q]) { qq = t; sr = await lookDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=${TGT}&SearchWord=${encodeURIComponent(t)}`); if (P.parseSearchResults(sr.doc).some((r) => !r.used)) break; } if (!sr) sr = await lookDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=${TGT}&SearchWord=${encodeURIComponent(q)}`); /* (1.44.0) 등록 엔진: 상품 구분에 맞춰 찾음 */
+        cands[q] = P.parseSearchResults(sr.doc).filter((r) => !r.used).slice(0, 50).map((r) => ({ itemId: r.itemId, title: r.title, img: r.img || null, cov: Math.round(P.nameCoverage(qq, r.title) * 1000) / 1000, channels: r.channels || null })); } catch (e) { errs['q_' + q] = e.message; } n++; await prog(); }
     try { const CS = window.__rnCS; if (CS) { CS.add('lookup_ppt', 'ok', Object.keys(items).length); CS.add('lookup_ppt', 'part', Object.keys(cands).length); Object.entries(errs).forEach(([k, m]) => { if (!cands[k]) CS.add('lookup_ppt', 'fail', 1, m); }); } } catch (e) {} /* (1.79.0) 📊 사진 가격 조회 */
     await ref.set({ status: 'done', n, tot, items, cands, errs, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
     log(`사진 가격: ${Object.keys(items).length}권 · 검색 ${Object.keys(cands).length}건 끝${Object.keys(errs).length ? ` · 실패 ${Object.keys(errs).length}` : ''}`, Object.keys(errs).length ? 1 : 0); }
@@ -5678,7 +5678,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       for (; prog.i < prog.list.length; prog.i++) {
         if (stopFlag) { await saveProgress('nbMarket', prog); throw new Error('멈춤'); }
         const key = prog.list[prog.i]; const l = LISTINGS.get(key); if (!l) continue;
-        const qy = P.searchQueryOf(l.title);
+        const qy = (P.aladinQ || P.searchQueryOf)(l.title);
         try {
           if (!qy) throw new Error('검색어를 만들 수 없음');
           const sr = await getDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Used&SearchWord=${encodeURIComponent(qy)}`);

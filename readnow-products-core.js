@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.18.0'; // (0.18.0) resolveItemId — 주문 때 시장을 읽을 알라딘 상품을 ISBN으로 확인(이름 검색으로 다른 판을 잡던 것 · 정범님 10/20 빌리 배스게이트) // (0.17.0) scmSmart — 상품명·지은이 낱말 일부를 섞어 쳐도 찾음(정범님 10/20 '톨레 지금 순간') // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
+  const VERSION = '0.19.0'; // (0.19.0) aladinQ — 알라딘 상품명 검색어 다듬기(정범님 10/23: 앞뒤 괄호와 그 안 · 부제(: 뒤) · 글자·숫자 아닌 기호 모두 뺌) // (0.18.0) resolveItemId — 주문 때 시장을 읽을 알라딘 상품을 ISBN으로 확인(이름 검색으로 다른 판을 잡던 것 · 정범님 10/20 빌리 배스게이트) // (0.17.0) scmSmart — 상품명·지은이 낱말 일부를 섞어 쳐도 찾음(정범님 10/20 '톨레 지금 순간') // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -439,7 +439,7 @@
     for (let k = n - 1; k >= 1; k--) { const C = []; const rec = (i, acc) => { if (acc.length === k) { C.push(acc.slice()); return; } for (let j = i; j < n; j++) { acc.push(toks[j]); rec(j + 1, acc); acc.pop(); } }; rec(0, []);
       C.sort((a, b) => b.join('').length - a.join('').length); C.forEach((L) => { if (k > 1 || L[0].length >= 2) add(L); }); if (out.length > 12) break; }
     return out; }
-  async function scmSmart(q, branch, get, pages) { const toks = smTok(q); const R0 = await scmSearch(q, 'NAME', branch, get, pages); if (!R0.login) return R0; const by = new Map(); const put = (rows, via) => rows.forEach((r) => { if (!by.has(r.itemId)) by.set(r.itemId, { ...r, via }); });
+  async function scmSmart(q0, branch, get, pages) { const q = aladinQ(q0) || String(q0 || '').trim(); /* (0.19.0) 기호·앞뒤 괄호·부제 뺀 검색어로 */ const toks = smTok(q); const R0 = await scmSearch(q, 'NAME', branch, get, pages); if (!R0.login) return R0; const by = new Map(); const put = (rows, via) => rows.forEach((r) => { if (!by.has(r.itemId)) by.set(r.itemId, { ...r, via }); });
     put(R0.rows, q); const tries = [q]; const full = () => [...by.values()].some((r) => smHit(toks, r) === 1);
     if (toks.length >= 2 && !full()) { for (const v of smVariants(toks)) { if (tries.length >= 7) break; tries.push(v); try { const R = await scmSearch(v, 'NAME', branch, get, Math.min(pages || 2, 5)); if (!R.login) break; put(R.rows, v); } catch (e) {} if (full()) break; } }
     const rows = [...by.values()].map((r, i) => { const hit = smHit(toks, r); return { ...r, hit: Math.round(hit * 100) / 100, all: hit === 1, _i: i }; }); rows.sort((a, b) => (b.all - a.all) || (b.hit - a.hit) || (a._i - b._i)); rows.forEach((r) => delete r._i);
@@ -449,7 +449,7 @@
    *  ② ISBN이 없을 때만 상품명 — 이름 90%↑ 후보가 딱 하나일 때만(여럿이면 판을 정할 수 없어 읽지 않음)
    *  get(url) → { doc } · 돌려줌 { itemId, how: 'isbn'|'title1', isbnOk } 또는 { err } */
   const isbnN = (x) => String(x || '').replace(/[^0-9Xx]/g, '').toUpperCase();
-  async function resolveItemId(o) { const get = o.get; const isbn = isbnN(o.isbn); const title = String(o.title || '').replace(/^\[[^\]]*\]\s*/, '').trim();
+  async function resolveItemId(o) { const get = o.get; const isbn = isbnN(o.isbn); const title = aladinQ(o.title) || String(o.title || '').replace(/^\[[^\]]*\]\s*/, '').trim();
     if (isbn.length >= 10) { let cands = []; try { const sr = await get('/search/wsearchresult.aspx?SearchTarget=All&SearchWord=' + encodeURIComponent(isbn)); cands = parseSearchResults(sr.doc).filter((x) => !x.used); } catch (e) { return { err: 'ISBN 검색 실패: ' + e.message }; }
       for (const c of cands.slice(0, 4)) { try { const g = await get('/shop/wproduct.aspx?ItemId=' + c.itemId); const b = parseProductPage(g.doc, g.url); const bi = isbnN(b && b.isbn13); if (bi && (bi === isbn || bi.slice(-10, -1) === isbn.slice(-10, -1))) return { itemId: String(c.itemId), how: 'isbn', isbnOk: true }; } catch (e) {} }
       return { err: `ISBN ${isbn}으로 알라딘 상품을 못 찾음(후보 ${cands.length}개 중 ISBN이 같은 것 없음) — 이름이 같은 다른 판일 수 있어 시장을 읽지 않음` }; }
@@ -512,6 +512,21 @@
   // (0.14.0) 검색어: [중고]·앞 [..] 떼고, '/' 뒤(저자·출판사) 떼고, 끝 (..) 떼기 — 정범이 확인한 방법('포스트모더니즘 : 이합 핫산의 문화 및 문학 이론')
   function searchQueryOf(title) { let t = String(title || '').replace(/^\[중고[^\]]*\]\s*/, '').replace(/^(\s*\[[^\]]*\]\s*)+/, ''); t = t.split(/\s*\/\s*/)[0]; for (let i = 0; i < 3; i++) t = t.replace(/\s*[\(（][^()（）]*[\)）]\s*$/, ''); return t.replace(/\s+/g, ' ').trim(); }
   // (0.14.0) 권 번호가 같은지: '한국사론 1'과 '한국사론 10'은 이름 일치가 높아도 다른 책 — 연도(1800~2099)는 빼고, 제목 본문(앞 [..]·'/' 뒤·끝 (..) 뺀 것)의 숫자들이 같아야 같은 상품
+  /* (0.19.0) 🔎 알라딘 상품명 검색어 — 정범님 10/23 '상품명은 통째로 검색하지 말고 앞뒤의 대·중·소괄호와 그 안을 빼고 · 글자와 숫자 말고 기호는 넣지 말고 · : 뒤 부제·설명은 빼고'
+   *  ① 유니코드 정규화(NFKC — 전각 괄호·숫자 → 보통 글자) ② [중고 …] 뗌 ③ 앞·뒤 괄호 묶음을 그 안 글자째(여러 겹·닫히지 않은 끝 괄호도) ④ 부제 자름: ':' '：' '=' '/' '|' 와 띄어 쓴 ' - ' ' – ' ' — ' ' ~ ' 뒤 (앞쪽이 2글자 이상일 때만)
+   *  ⑤ 가운데 괄호는 기호만 빼고 안 글자는 둠(예: '해리 포터 (1) 마법사의 돌' → 1을 지킴) ⑥ 글자·숫자·띄어쓰기만 남김 — 단 영문 낱말 안의 - ' + # . &는 둠(X-Men · Harry's · C++) ⑦ 빈 결과면 기호만 뺀 원래 제목
+   *  알라딘 검색 연구(진단 srchlab)는 PROJECT_STATE '알라딘 검색 규칙'에 */
+  const AQ_O = '\\(\\[\\{<〈《「『【〔', AQ_C = '\\)\\]\\}>〉》」』】〕';
+  const AQ_LEAD = new RegExp('^\\s*[' + AQ_O + '][^' + AQ_C + ']*[' + AQ_C + ']\\s*'), AQ_TAIL = new RegExp('\\s*[' + AQ_O + '][^' + AQ_O + ']*[' + AQ_C + ']\\s*$'), AQ_OPEN = new RegExp('\\s*[' + AQ_O + '][^' + AQ_C + ']*$');
+  /* 낱말 안의 영문 기호는 둠 — 진단 srchlab(10/23): 'X-Men' 정확 · 'X Men' 엉뚱 / "Harry's" 정확 · 'Harrys' 해리 포터 / 'C++ 기초' 67건 정확 · 'C 기초' 1,630건 */
+  const aqTok = (w) => /^[A-Za-z0-9][A-Za-z0-9\-'+.#&]*$/.test(w) && /[A-Za-z]/.test(w) ? w.replace(/[^A-Za-z0-9+#]+$/, '') : w.replace(/[^\p{L}\p{N}]+/gu, ' ');
+  const aqClean = (x) => String(x || '').replace(/[’‘`´]/g, "'").split(/\s+/).map((w) => aqTok(w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}+#]+$/gu, ''))).join(' ').replace(/\s+/g, ' ').trim();
+  function aladinQ(title) { const raw = String(title || ''); if (/^[\d\s\-Xx]{10,20}$/.test(raw.trim()) && /\d{3}/.test(raw)) return raw.replace(/[^\dXx]/g, ''); /* ISBN·바코드는 붙여서 */ let t = raw.normalize('NFKC').replace(/^\s*\[중고[^\]]*\]\s*/, '');
+    for (let i = 0; i < 6; i++) { const u = t.replace(AQ_LEAD, '').replace(AQ_TAIL, '').replace(AQ_OPEN, ''); if (u === t || !aqClean(u)) break; t = u; }
+    const cut = t.split(/\s*[:：=|]\s*|\s+[-–—~]\s+|\s*\/\s+|\s+\/\s*|(?<![A-Za-z0-9])\/|\/(?![A-Za-z0-9])/); if (cut.length > 1 && aqClean(cut[0]).replace(/\s/g, '').length >= 2) t = cut[0];
+    return aqClean(t) || aqClean(raw); }
+  /* (0.19.0) 알라딘 검색은 낱말이 모두 들어간 상품만 냄(진단: '미키7 미키 반즈 장편소설' 0건 · '미키7' 56건) → 0건이면 뒤 낱말부터 하나씩 빼서 다시(최대 4번) */
+  function aladinQTries(title) { const q = aladinQ(title); const w = q.split(' ').filter(Boolean); const out = q ? [q] : []; for (let n = w.length - 1; n >= 1 && out.length < 4; n--) { const v = w.slice(0, n).join(' '); if (v.replace(/\s/g, '').length >= 2) out.push(v); } return out; }
   function sameVolume(a, b) { const nums = (x) => (searchQueryOf(x).match(/\d+/g) || []).map(Number).filter((n) => !(n >= 1800 && n <= 2099)).sort((p, q) => p - q).join(','); return nums(a) === nums(b); }
   function nameCoverage(query, title) { const n = (x) => String(x || '').toLowerCase().replace(/[\s\p{P}\p{S}]/gu, ''); const q = n(query), t = n(title); if (!q.length) return 0;
     const dp = new Array(t.length + 1).fill(0); for (let i = 1; i <= q.length; i++) { let prev = 0; for (let j = 1; j <= t.length; j++) { const tmp = dp[j]; dp[j] = q[i - 1] === t[j - 1] ? prev + 1 : Math.max(dp[j], dp[j - 1]); prev = tmp; } } return dp[t.length] / q.length; }
@@ -758,7 +773,7 @@
     VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
-    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, scmSmart, resolveItemId, isbnN, smHit, smTok, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
+    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, scmSmart, aladinQ, aladinQTries, resolveItemId, isbnN, smHit, smTok, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
     parseUsedItemInfo, parseScmEditNote, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
