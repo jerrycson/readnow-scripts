@@ -1,7 +1,7 @@
 {
  "v": 1,
  "updated": "2026-10-23",
- "rule": "조언·제안·반박은 명망 있는 외부 연구(학술지·정부/공공 통계·업계 보고서)를 근거로 — 정범님 10/20. 근거가 없으면 '근거 못 찾음'을 밝히고 우리 실측으로만 말함.",
+ "rule": "조언·제안·반박은 명망 있는 외부 연구(학술지·정부/공공 통계·업계 보고서)를 근거로 — 정범님 10/20. 근거가 없으면 '근거 못 찾음'을 밝히고 우리 실측으로만 말함. · 근거마다 \"적용한 곳\"(웹앱 화면·판)과 왜를 함께 적음(정범님 10/23).",
  "items": [
   {
    "id": "lynn1991",
@@ -16,7 +16,17 @@
    "venue": "Psychology & Marketing 8(1):43–57",
    "url": "https://doi.org/10.1002/mar.4220080105",
    "finding": "상품 이론(Brock 1968)을 시험한 연구들의 메타분석 — 소유할 수 있고 쓸모 있고 남에게 넘길 수 있는 것은 드물수록 더 원하게 되고 가치가 오른다.",
-   "use": "절판·품절·한정판 같은 '드묾' 표시가 값을 올릴 이론 근거. 다만 얼마나 오르는지는 품목마다 달라 우리 자료(🎁 희귀 요소 연구)로 직접 잰다."
+   "use": "절판·품절·한정판 같은 '드묾' 표시가 값을 올릴 이론 근거. 다만 얼마나 오르는지는 품목마다 달라 우리 자료(🎁 희귀 요소 연구)로 직접 잰다.",
+   "applied": [
+    {
+     "where": "시장조사 › 🎁 희귀 요소 연구",
+     "why": "희소 표시가 값을 올리는지 우리 판매 기록으로 직접 재는 연구의 이론 바탕"
+    },
+    {
+     "where": "판매가치 배지 💎 희소·💠 희귀",
+     "why": "배지 툴팁의 근거"
+    }
+   ]
   },
   {
    "id": "balachander2009",
@@ -31,7 +41,13 @@
    "venue": "Marketing Science 28(2):336–355",
    "url": "https://doi.org/10.1287/mksc.1080.0401",
    "finding": "한정판은 독점성을 원하는 소비자가 더 지불해 직접 이익을 올리지만, 경쟁 브랜드끼리 모두 내면 가격 경쟁이 세져 이익이 줄 수 있다(게임 이론 모형).",
-   "use": "한정판·특전본에 웃돈을 붙일 수 있는 근거. 같은 한정판 매물이 시장에 많아지면(공급 단계↑) 웃돈이 줄어든다고 보고 매물 수와 함께 판단."
+   "use": "한정판·특전본에 웃돈을 붙일 수 있는 근거. 같은 한정판 매물이 시장에 많아지면(공급 단계↑) 웃돈이 줄어든다고 보고 매물 수와 함께 판단.",
+   "applied": [
+    {
+     "where": "시장조사 › 🎁 희귀 요소 연구 (한정판·특전)",
+     "why": "같은 한정판 매물 수가 많으면 웃돈을 낮춰 봄"
+    }
+   ]
   },
   {
    "id": "hughes2022",
@@ -46,7 +62,13 @@
    "venue": "Journal of Industrial Economics 70(1):147–167",
    "url": "https://ideas.repec.org/a/bla/jindec/v70y2022i1p147-167.html",
    "finding": "수집용 카드에서 뽑힐 확률(실제 수량)을 맞춰도 '희귀' 표시만으로 값이 오른다 — 같은 카드를 다른 희귀도로 다시 찍은 경우로 잰 하한이 레어 +56%, 미식 레어 +107%. 기능이 같은 특별 인쇄(포일)도 큰 웃돈.",
-   "use": "같은 책이라도 '특별판·초판·한정' 같은 표시 자체에 값이 붙는다는 근거. 우리 판정에서 특전·한정 표기가 있으면 동급 최저가에 맞춰 내리지 않는 쪽(희귀 전략)의 근거."
+   "use": "같은 책이라도 '특별판·초판·한정' 같은 표시 자체에 값이 붙는다는 근거. 우리 판정에서 특전·한정 표기가 있으면 동급 최저가에 맞춰 내리지 않는 쪽(희귀 전략)의 근거.",
+   "applied": [
+    {
+     "where": "시장조사 › 🎁 희귀 요소 연구",
+     "why": "희귀할수록 값이 오르는 정도를 품목별로 따로 재는 근거"
+    }
+   ]
   },
   {
    "id": "ghazi2024",
@@ -61,7 +83,13 @@
    "venue": "Journal of Economic Behavior & Organization 219:318–339",
    "url": "https://ideas.repec.org/a/eee/jeborg/v219y2024icp318-339.html",
    "finding": "희귀 야구카드 경매 4,000건 넘게 — 비슷한 것들 사이에서 몇 번째로 드문가(순위의 로그)와 등급 매긴 회사만으로 로그 가격 변동의 60%를 설명. 희귀 가치는 거듭제곱 법칙을 따른다.",
-   "use": "같은 책 안에서 '드묾의 순위'(남은 매물 수·상태 순위)가 값을 크게 정한다는 근거 — 판매가치 엔진의 공급 단계·희귀 판정과 같은 방향."
+   "use": "같은 책 안에서 '드묾의 순위'(남은 매물 수·상태 순위)가 값을 크게 정한다는 근거 — 판매가치 엔진의 공급 단계·희귀 판정과 같은 방향.",
+   "applied": [
+    {
+     "where": "시장조사 › 🎁 희귀 요소 연구 (상태)",
+     "why": "상태·희귀성을 함께 보는 근거"
+    }
+   ]
   },
   {
    "id": "ellison2018",
@@ -77,7 +105,17 @@
    "venue": "NBER Working Paper 24197",
    "url": "https://www.nber.org/papers/w24197",
    "finding": "335권 표본: 같은 중고책의 온라인 평균 값 약 $20 vs 오프라인 약 $11. 절판·덜 알려진 책일수록 온라인 값이 높고 흩어짐도 큼(찾는 사람과 잘 맞춰짐). 판매자 매출은 온라인이 약 80% 많음(값과 팔릴 확률 둘 다).",
-   "use": "드문 중고책은 싸게 내지 않고 찾는 사람을 기다리는 전략('기다림(희귀)')의 근거 — 단, 흔한 책은 경쟁 효과로 값이 내려감."
+   "use": "드문 중고책은 싸게 내지 않고 찾는 사람을 기다리는 전략('기다림(희귀)')의 근거 — 단, 흔한 책은 경쟁 효과로 값이 내려감.",
+   "applied": [
+    {
+     "where": "판매가치 💎 희소 배지 · 🔭 벤치마킹 희소 점수",
+     "why": "드문 책은 기다려 팔고 흔한 책은 경쟁가로"
+    },
+    {
+     "where": "희소 전략 제안(일시정지 탭 대기) — 10/23 대화",
+     "why": "시장 매물이 우리뿐이거나 소수일 때 값을 내리지 않고 기다리는 근거"
+    }
+   ]
   },
   {
    "id": "raghubir2004",
@@ -92,7 +130,13 @@
    "venue": "Journal of Consumer Psychology 14(1–2):181–186",
    "url": "https://marketingprofs.com/short-articles/247/partner-your-product-with-care",
    "finding": "구매 사은품으로 준 물건은 소비자가 그 물건의 가치를 낮게 보고, 나중에 낼 값도 낮게 기대한다(그 물건에 제값이 없다는 신호). 본 상품이 비싼 것으로 알려져 있으면 덜하다.",
-   "use": "흔한 사은품·증정품은 웃돈 근거가 약함 — 웃돈은 '한정·수집 대상'인 특전(일련번호·한정 엽서·사인 등)에서만 기대. 🎁 연구에서 '특전·부록'과 '한정판·사인'을 따로 잰다."
+   "use": "흔한 사은품·증정품은 웃돈 근거가 약함 — 웃돈은 '한정·수집 대상'인 특전(일련번호·한정 엽서·사인 등)에서만 기대. 🎁 연구에서 '특전·부록'과 '한정판·사인'을 따로 잰다.",
+   "applied": [
+    {
+     "where": "ml-core 유의 사항 특전·사은품 읽기 → 🎁 희귀 요소 연구",
+     "why": "특전·사은품이 값에 주는 영향을 따로 재는 근거"
+    }
+   ]
   },
   {
    "id": "dobrynskaya2020",
@@ -108,7 +152,13 @@
    "venue": "HSE Working Paper WP BRP 80/FE/2020",
    "url": "https://wp.hse.ru/data/2020/09/16/1583081489/80FE2020.pdf",
    "finding": "공장 봉지 그대로인 '새' 레고 세트의 2차 시장 값은 1987–2015년 연평균 약 11% 올랐고(세트 하나 평균 18.5%), 드물게 만든(작은·아주 큰·한정) 세트가 더 빨리 오른다.",
-   "use": "공장 포장 그대로(미개봉)와 적게 만든 것이 시간이 갈수록 값이 오르는 근거 — 미개봉 책·박스판은 서둘러 싸게 내지 않는다. 책 시장 크기는 우리 자료로 확인."
+   "use": "공장 포장 그대로(미개봉)와 적게 만든 것이 시간이 갈수록 값이 오르는 근거 — 미개봉 책·박스판은 서둘러 싸게 내지 않는다. 책 시장 크기는 우리 자료로 확인.",
+   "applied": [
+    {
+     "where": "🎁 희귀 요소 연구 (미개봉·박스)",
+     "why": "공장 비닐 그대로·박스가 값을 올리는지 재는 근거"
+    }
+   ]
   },
   {
    "id": "wyburn2012",
@@ -123,7 +173,13 @@
    "venue": "Journal of Cultural Economics 36(4):309–326",
    "url": "https://doi.org/10.1007/s10824-012-9166-6",
    "finding": "수집용 만화책 1,100권을 속성별(헤도닉) 회귀로 분석 — 속성마다 값이 붙지만 모든 경우에 맞는 하나의 가격 규칙은 얻기 어렵다.",
-   "use": "남의 시장 숫자를 그대로 쓰지 않고 우리 시장(알라딘 중고)에서 속성별 웃돈을 직접 재야 하는 이유 — 🎁 희귀 요소 연구가 매일 다시 잼."
+   "use": "남의 시장 숫자를 그대로 쓰지 않고 우리 시장(알라딘 중고)에서 속성별 웃돈을 직접 재야 하는 이유 — 🎁 희귀 요소 연구가 매일 다시 잼.",
+   "applied": [
+    {
+     "where": "🎁 희귀 요소 연구 (상태·수집품)",
+     "why": "상태 등급별 값 차이를 따로 보는 근거"
+    }
+   ]
   },
   {
    "id": "gcp-firestore-pricing",
@@ -138,7 +194,13 @@
    "venue": "cloud.google.com",
    "url": "https://cloud.google.com/firestore/pricing",
    "finding": "Firestore는 질의가 돌려준 문서마다 읽기 한 번으로 셈한다(일부 칸만 고르는 select도 문서 수만큼). 실시간 받기(onSnapshot)도 바뀐 문서마다 읽기로 셈한다.",
-   "use": "(자동 점검 2026-10-20) 클라우드 SKU 부여가 3분마다 상품 2만 5천여 건을 select로 읽던 것 = 하루 약 1,200만 읽기로 셈한 근거 · 같은 문서를 회차마다 다시 적으면 웹앱 기기 수만큼 읽기가 늘어나는 근거."
+   "use": "(자동 점검 2026-10-20) 클라우드 SKU 부여가 3분마다 상품 2만 5천여 건을 select로 읽던 것 = 하루 약 1,200만 읽기로 셈한 근거 · 같은 문서를 회차마다 다시 적으면 웹앱 기기 수만큼 읽기가 늘어나는 근거.",
+   "applied": [
+    {
+     "where": "🔁 3시간·매일 점검 · 🚨 쓰기 감시",
+     "why": "읽기·쓰기 수를 비용으로 셈해 줄이는 기준"
+    }
+   ]
   },
   {
    "id": "gallego1994",
@@ -153,7 +215,13 @@
    "venue": "Management Science 40(8):999–1020",
    "url": "https://doi.org/10.1287/mnsc.40.8.999",
    "finding": "재고가 정해져 있고 수요가 들쭉날쭉할 때 이익을 가장 크게 하는 값은 '남은 재고에 비해 수요가 얼마나 빨리 오는가'에 따라 움직여야 한다 — 남은 물량이 수요에 비해 적으면 값을 올리고, 많으면 내린다.",
-   "use": "시장 전체 매물 수(공급)와 사라지는 속도(수요)를 같이 보는 📈 시장 신호의 바탕 — 공급 과잉·안 도는 책은 값을 내려 회전, 희소·잘 도는 책은 값을 올림."
+   "use": "시장 전체 매물 수(공급)와 사라지는 속도(수요)를 같이 보는 📈 시장 신호의 바탕 — 공급 과잉·안 도는 책은 값을 내려 회전, 희소·잘 도는 책은 값을 올림.",
+   "applied": [
+    {
+     "where": "📈 시장 신호 · 가격 판정 엔진",
+     "why": "공급(매물 수)과 수요(사라지는 속도)로 값을 올리고 내림"
+    }
+   ]
   },
   {
    "id": "webdev-longtasks",
@@ -168,7 +236,13 @@
    "venue": "web.dev",
    "url": "https://web.dev/articles/long-tasks-devtools",
    "finding": "50ms가 넘는 자바스크립트 작업(긴 작업)은 그동안 화면이 누름·입력에 반응하지 못하게 막는다 — 긴 작업을 잘게 나누거나 줄이는 것이 반응 속도를 높이는 핵심.",
-   "use": "(자동 점검 2026-10-21) 수집기 5분 성능 줄의 '긴 작업 N번 S초'를 볼 때 기준 — 샵매니저 화면에서 5분에 108초가 막히면 수집·화면 모두 늦어짐 → 2초마다 모든 줄을 다시 그리는 코드는 바뀐 줄만으로."
+   "use": "(자동 점검 2026-10-21) 수집기 5분 성능 줄의 '긴 작업 N번 S초'를 볼 때 기준 — 샵매니저 화면에서 5분에 108초가 막히면 수집·화면 모두 늦어짐 → 2초마다 모든 줄을 다시 그리는 코드는 바뀐 줄만으로.",
+   "applied": [
+    {
+     "where": "🔁 점검 · ⏱ 성능 줄(긴 작업)",
+     "why": "화면을 막는 긴 작업을 찾아 줄이는 기준"
+    }
+   ]
   },
   {
    "id": "chrome-loaf",
@@ -183,7 +257,13 @@
    "venue": "Chrome for Developers",
    "url": "https://developer.chrome.com/docs/web-platform/long-animation-frames",
    "finding": "긴 화면 그림(50ms 넘는 프레임)마다 그 안에서 돈 스크립트의 파일·함수 이름·부른 곳(invoker)·시간을 알려 줌 — 긴 작업(longtask)이 '얼마나'만 알려 주는 것과 달리 '누구 것'을 찾게 해 줌.",
-   "use": "(자동 점검 2026-10-22) 클라우드 0.33.5부터 점검 숫자 요약 perfScripts가 이 기록의 24시간 합계 — 샵매니저 상품 조회 화면의 긴 작업을 함수 이름으로 찾음(HOME: IndexedDB 읽기 끝 처리 311초/99번 · 알라딘 자체 jQuery 69초 · clarity.js 65초)."
+   "use": "(자동 점검 2026-10-22) 클라우드 0.33.5부터 점검 숫자 요약 perfScripts가 이 기록의 24시간 합계 — 샵매니저 상품 조회 화면의 긴 작업을 함수 이름으로 찾음(HOME: IndexedDB 읽기 끝 처리 311초/99번 · 알라딘 자체 jQuery 69초 · clarity.js 65초).",
+   "applied": [
+    {
+     "where": "🔁 점검 숫자 요약 perfScripts",
+     "why": "긴 작업을 스크립트 이름으로 찾음"
+    }
+   ]
   },
   {
    "id": "gh-cron-delay",
@@ -198,7 +278,13 @@
    "venue": "docs.github.com · github.com/orgs/community/discussions/185355",
    "url": "https://docs.github.com/en/enterprise-cloud@latest/actions/monitoring-and-troubleshooting-workflows/troubleshooting-workflows/about-troubleshooting-workflows",
    "finding": "GitHub Actions의 schedule(cron)은 부하가 높을 때 늦어지거나 아예 건너뛸 수 있음 — 정시 실행을 보장하지 않음.",
-   "use": "(자동 점검 2026-10-22) 매시 41분 숫자 요약(health-out)이 10/22 16:57~22:00 사이 한 번만 돎 → 점검이 숫자를 볼 때는 '마지막 시각(at.txt)'을 먼저 보고, 오래됐으면 workflow_dispatch(health_only)로 새로 받음."
+   "use": "(자동 점검 2026-10-22) 매시 41분 숫자 요약(health-out)이 10/22 16:57~22:00 사이 한 번만 돎 → 점검이 숫자를 볼 때는 '마지막 시각(at.txt)'을 먼저 보고, 오래됐으면 workflow_dispatch(health_only)로 새로 받음.",
+   "applied": [
+    {
+     "where": "🔁 3시간 점검 · 숫자 요약 시각",
+     "why": "예약 실행이 늦거나 빠질 때 마지막 시각을 먼저 봄"
+    }
+   ]
   },
   {
    "id": "bookstore-buyback-reed",
@@ -213,7 +299,13 @@
    "venue": "bookstore.reed.edu",
    "url": "https://bookstore.reed.edu/site_buyback.info.asp",
    "finding": "다음 학기에 쓸 책은 새책 값의 25~35%를 주고 되삼 · 캠퍼스에서 안 쓰는 책(도매상에 넘길 책)은 0~25%.",
-   "use": "(2026-10-23 새 매입 기록 ★ 추천 매입가 제안) 업계는 되팔 값의 일부만 주고 사며, 다시 팔 확실성이 낮을수록 더 낮게 — 우리는 '1년 안 팔릴 확률'로 책마다 그 확실성을 계산해 반영."
+   "use": "(2026-10-23 새 매입 기록 ★ 추천 매입가 제안) 업계는 되팔 값의 일부만 주고 사며, 다시 팔 확실성이 낮을수록 더 낮게 — 우리는 '1년 안 팔릴 확률'로 책마다 그 확실성을 계산해 반영.",
+   "applied": [
+    {
+     "where": "매입 › 새 매입·고치기 › ★ 추천 매입가 (ⓘ 근거)",
+     "why": "추천 매입가 = 기대 회수액 × 35% (미국 서점 최고 매입 비율)"
+    }
+   ]
   },
   {
    "id": "bookstore-buyback-milwaukee",
@@ -228,7 +320,13 @@
    "venue": "onmilwaukee.com",
    "url": "https://onmilwaukee.com/articles/bookselling",
    "finding": "Boswell은 자기 판매가의 약 25%(적립금), Re-Booked는 정가의 15~25%(적립금)를 주고 중고책을 삼.",
-   "use": "(2026-10-23) 추천 매입가 목표 마진 50%(기대 회수액의 절반) 제안의 비교 기준 — 업계 관행(판매가의 15~35%)보다 덜 보수적인 까닭은 우리가 책마다 팔릴 확률·알라딘 매입가(못 팔 때 회수)를 계산하기 때문."
+   "use": "(2026-10-23) 추천 매입가 목표 마진 50%(기대 회수액의 절반) 제안의 비교 기준 — 업계 관행(판매가의 15~35%)보다 덜 보수적인 까닭은 우리가 책마다 팔릴 확률·알라딘 매입가(못 팔 때 회수)를 계산하기 때문.",
+   "applied": [
+    {
+     "where": "매입 › ★ 추천 매입가 (ⓘ 근거)",
+     "why": "미국 독립서점 매입 비율 15~25% — 35%가 가장 높은 쪽임을 보임"
+    }
+   ]
   },
   {
    "id": "newsvendor-wiki",
@@ -243,7 +341,123 @@
    "venue": "en.wikipedia.org",
    "url": "https://en.wikipedia.org/wiki/Newsvendor_model",
    "finding": "수요가 불확실한 상품은 '팔리면 남는 돈'과 '안 팔리면 잃는 돈(잔존가치 빼고)'의 비율(임계 비율)로 얼마나 사들일지 정함 — 안 팔린 몫은 잔존가치(salvage)로 회수.",
-   "use": "(2026-10-23) 추천 매입가의 기대 회수액 = 팔릴 확률 × 판매 순수입 + 못 팔 확률 × 알라딘 매입가(잔존가치) 구조의 근거."
+   "use": "(2026-10-23) 추천 매입가의 기대 회수액 = 팔릴 확률 × 판매 순수입 + 못 팔 확률 × 알라딘 매입가(잔존가치) 구조의 근거.",
+   "applied": [
+    {
+     "where": "매입 › ★ 추천 매입가 · 기대 회수액",
+     "why": "팔리면 판매 순수입, 못 팔면 알라딘 매입가로 회수하는 계산 틀"
+    }
+   ]
+  },
+  {
+   "id": "sears1994",
+   "topic": [
+    "화면",
+    "입력 속도"
+   ],
+   "kind": "학회 논문 (HCI)",
+   "authors": "Andrew Sears, Ben Shneiderman",
+   "year": 1994,
+   "title": "Split menus: effectively using selection frequency to organize menus",
+   "venue": "ACM Transactions on Computer-Human Interaction 1(1):27–51",
+   "url": "https://www.cs.umd.edu/~ben/papers/Sears1994Split.pdf",
+   "finding": "자주 고른 몇 항목을 메뉴 맨 위에 따로 두면(분할 메뉴) 고르는 시간이 줄고 사용자도 더 좋아한다(현장 실험).",
+   "use": "자주 쓴 값을 단추로 맨 앞에 두는 방식의 근거.",
+   "applied": [
+    {
+     "where": "상품 등록 › 많이 쓴 출판사·분류 단추",
+     "why": "많이 쓴 차례 4개를 단추로"
+    },
+    {
+     "where": "매입 › 새 매입·고치기 › 플랫폼·판매자·결제·거래 방식 자주 쓴 칩 (1.78.25)",
+     "why": "자주 쓴 값을 한 번 눌러 지정"
+    }
+   ]
+  },
+  {
+   "id": "racklify-titles",
+   "topic": [
+    "상품명",
+    "등록"
+   ],
+   "kind": "업계 안내서",
+   "authors": "Racklify",
+   "year": null,
+   "title": "How To Write Marketplace Product Titles (Amazon, eBay, Shopify)",
+   "venue": "racklify.com",
+   "url": "https://racklify.com/encyclopedia/how-to-write-marketplace-product-titles-amazon-ebay-shopify/",
+   "finding": "오픈마켓 상품명은 정해진 순서(브랜드·이름·수량·특징)로 짧고 일관되게 짓는 것이 검색·클릭에 낫다.",
+   "use": "상품명 앞·뒤 문구를 틀로 붙이는 방식의 근거.",
+   "applied": [
+    {
+     "where": "상품 등록 › 상품명 아래 앞·뒤 문구 한 줄",
+     "why": "[세트]·(전 n권) 같은 문구를 정해진 자리에"
+    }
+   ]
+  },
+  {
+   "id": "godatafeed-titles",
+   "topic": [
+    "상품명",
+    "등록"
+   ],
+   "kind": "업계 안내서",
+   "authors": "GoDataFeed",
+   "year": null,
+   "title": "Title optimization formulas for Amazon",
+   "venue": "godatafeed.com",
+   "url": "https://godatafeed.com/blog/title-optimization-formulas-for-amazon",
+   "finding": "카테고리마다 상품명 조립 공식(브랜드+모델+핵심 속성+수량)을 정해 두면 일관성과 검색 노출이 좋아진다.",
+   "use": "상품명 조립 틀·(전 n권) 자동 붙이기 제안의 근거.",
+   "applied": [
+    {
+     "where": "상품 등록 › 앞·뒤 문구 · (전 n권) 자동 제안",
+     "why": "권수 실수 없이 일정한 상품명"
+    }
+   ]
+  },
+  {
+   "id": "bebold-sku",
+   "topic": [
+    "SKU",
+    "관리 코드"
+   ],
+   "kind": "업계 안내서",
+   "authors": "BeBold Digital",
+   "year": null,
+   "title": "How to create a Seller SKU on Amazon",
+   "venue": "bebolddigital.com",
+   "url": "https://www.bebolddigital.com/blog/how-to-create-seller-sku-on-amazon",
+   "finding": "판매자 관리 코드(SKU)는 짧고 영문·숫자만, 뜻이 바뀔 수 있는 정보는 넣지 않는 것이 기본 권장.",
+   "use": "우리 SKU(R+숫자) 규칙의 근거.",
+   "applied": [
+    {
+     "where": "🏷 SKU(R 코드) 부여 — 클라우드 skuTick · 상품 카드",
+     "why": "R+숫자만, 종류 글자는 넣지 않음"
+    }
+   ]
+  },
+  {
+   "id": "nber-digest-usedbooks",
+   "topic": [
+    "중고책",
+    "온라인",
+    "희귀"
+   ],
+   "kind": "연구 요약 (NBER Digest)",
+   "authors": "NBER",
+   "year": 2018,
+   "title": "Competition and Search in Internet Markets for Used Books",
+   "venue": "NBER Digest, March 2018",
+   "url": "https://www.nber.org/digest/mar18/competition-and-search-internet-markets-used-books",
+   "finding": "온라인 중고책 시장에서 흔한 책은 값이 내려가고 드문 책은 찾는 사람이 생겨 값이 오른다 — 판매자는 드문 책을 비싸게 두고 기다린다.",
+   "use": "Ellison & Ellison 2018 논문의 쉬운 요약 — 희소 전략 설명에 씀.",
+   "applied": [
+    {
+     "where": "희소 전략 제안 (10/23) · 💎 희소 배지",
+     "why": "시장에 매물이 적을 때 기다리는 전략"
+    }
+   ]
   }
  ]
 }
