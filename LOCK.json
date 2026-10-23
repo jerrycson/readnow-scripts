@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "1.78.24 매입 검토 고침",
- "since": "2026-10-23T01:44:38Z",
- "beat": "2026-10-23T01:44:38Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "웹앱 1.78.22~23",
-  "at": "2026-10-23T01:30:33Z"
+  "done": "웹앱 1.78.24",
+  "at": "2026-10-23T01:44:42Z"
  }
 }
