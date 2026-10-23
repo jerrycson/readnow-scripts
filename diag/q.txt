@@ -1,4 +1,1 @@
-doc=prd_system/settings,app_settings/write_watch,prd_jobs/pcBeat
-recentUp=prd_metric_changes&mins=60
-logs=1&pc=LOGGER&from=202610232100
-perf=600
+doc=prd_metric_changes/KgdqscU772XNio5Ns0xO,prd_metric_changes/acYYVdfEBLUwE6TOrpsh,prd_metric_changes/2gCr6qzCfBo7DMldst62,prd_metric_changes/kvqgw6jqrdTQxd1pGiql,prd_metric_changes/HUPSruYKrXC5WxFjjhax
