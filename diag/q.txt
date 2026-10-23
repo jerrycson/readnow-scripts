@@ -1,1 +1,1 @@
-cmds=regBulk&regitems=200
+@kpin kpin/aud_20261023-062905.json
