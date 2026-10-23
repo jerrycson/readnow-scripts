@@ -1,1 +1,1 @@
-@kpin kpin/aud_20261023-091554.json
+stratrun=3
