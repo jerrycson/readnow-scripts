@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "등록 실패 처리·확정 세션·탭 숫자·사진 확대·모음 실시간 저장",
- "since": "2026-10-23T04:51:03Z",
- "beat": "2026-10-23T04:51:03Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
   "done": "",
-  "at": "2026-10-23T04:36:00Z"
+  "at": "2026-10-23T05:00:00Z"
  }
 }
