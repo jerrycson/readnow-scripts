@@ -1,1 +1,1 @@
-access=2
+access=3&logs=1&pc=LOGGER&from=202610232150&to=202610232359
