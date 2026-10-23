@@ -1,1 +1,1 @@
-cartjs=1
+cmds=regBulk&regitems=200
