@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "auto-check",
+ "what": "전체 점검 10/23: 시장 지표 변화 기록 헛쓰기 고침·로거 점검",
+ "since": "2026-10-23T12:55:04Z",
+ "beat": "2026-10-23T12:55:04Z",
  "ask": null,
  "last": {
   "who": "chat",
