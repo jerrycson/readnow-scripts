@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "등록 문구 폴더·도서 정보 검색",
- "since": "2026-10-24T15:05:02Z",
- "beat": "2026-10-24T15:05:02Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "auto-fable",
-  "done": "격일 정밀 점검(Fable) 끝 — 7a00a23·0318f2a·dd4efab·af507b6 (수집기 1.89.58 · 클라우드 0.35.5 · 도우미 1.8.9 · 웹앱 1.78.71)",
-  "at": "2026-10-24T14:13:43Z"
+  "who": "chat",
+  "done": "도서 정보 검색·로거 창",
+  "at": "2026-10-24T15:11:44Z"
  }
 }
