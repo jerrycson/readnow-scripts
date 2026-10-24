@@ -2200,6 +2200,76 @@
     }
    },
    "cat": "출판 통계"
+  },
+  {
+   "id": "firestore-query-cursors-2026",
+   "topic": [
+    "Firestore",
+    "백업",
+    "바뀐 것만 받기"
+   ],
+   "kind": "공식 문서 (Google Firebase)",
+   "authors": "Google Firebase 문서",
+   "year": 2026,
+   "title": "Paginate data with query cursors (Cloud Firestore)",
+   "venue": "Firebase Documentation",
+   "url": "https://firebase.google.com/docs/firestore/query-data/query-cursors",
+   "finding": "값으로 자르는 startAfter(값)는 같은 값을 가진 문서를 건너뛸 수 있으므로, 쪽 넘기기는 마지막 문서 스냅샷으로 startAfter(doc)를 쓰라고 안내함. 정렬 칸 값이 여럿 같을 때(같은 밀리초 uploadedAt) 값 기준 '>'로 이어 받으면 나머지 문서가 빠짐.",
+   "use": "💾 로거 자동 백업 '바뀐 것만' 받기: uploadedAt > 기준 대신 >= + 마지막 문서 뒤부터(startAfter 스냅샷)로 바꿈(수집기 1.89.57). 한 묶음 commit의 serverTimestamp는 모두 같은 값이라 실제로 빠졌을 문서가 있었음.",
+   "applied": [
+    "수집기 1.89.57 dataBackup — src/readnow-collector.src.js inc 질의"
+   ],
+   "one": "쪽 넘기기는 값이 아니라 마지막 문서 스냅샷으로",
+   "sent": "Firestore는 같은 정렬 값이 여럿일 때 값으로 자르면 문서가 빠질 수 있어 마지막 문서 스냅샷으로 이어 받으라고 안내한다.",
+   "page": "무엇을 봤나: Firestore 공식 문서의 쪽 넘기기(query cursors) 안내.\n\n내용: startAt/startAfter에 값을 넣으면 그 값과 같은 문서가 여럿일 때 경계가 모호해지며, 문서 스냅샷을 넣으면 그 문서 바로 뒤부터 정확히 이어진다.\n\n우리 적용: 자동 백업의 바뀐 것만 받기(uploadedAt 순)에서 한 묶음 commit(최대 500건)의 serverTimestamp가 모두 같은 밀리초라 '>' 기준 이어 받기가 나머지를 건너뛰던 것을 '>=' + 스냅샷 startAfter로 고침. 경계 문서 몇 개는 두 번 적히지만(덧붙임 JSONL) 빠지는 것은 없다.\n\n한계: 공식 문서는 일반 안내이며 우리 누락 수는 실측하지 않음(이론상 묶음 쓰기마다 생김).",
+   "rel": "자료를 지우지 않는 원칙에서 백업 누락은 가장 큰 위험 — 바뀐 것만 받기의 정확성 근거.",
+   "prio": {
+    "score": 62,
+    "why": "공식 문서 — 백업 누락 방지에 바로 적용",
+    "c": {
+     "research": 10,
+     "reputable": 18,
+     "biz": 10,
+     "app": 16,
+     "now": 8
+    }
+   },
+   "cat": "기술 근거"
+  },
+  {
+   "id": "fail-closed-design-2026",
+   "topic": [
+    "보안 설계",
+    "로거",
+    "fail-closed"
+   ],
+   "kind": "표준·공공 지침 (NIST)",
+   "authors": "NIST (미국 국립표준기술연구소)",
+   "year": 2020,
+   "title": "Security and Privacy Controls for Information Systems and Organizations (SP 800-53 Rev. 5) — SC-24 Fail in Known State",
+   "venue": "NIST Special Publication 800-53 Rev. 5",
+   "url": "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final",
+   "finding": "보안 통제 SC-24 '알려진 상태로 실패(fail in known state)': 구성 요소가 실패할 때 보호가 유지되는 알려진(안전한) 상태로 멈추게 설계하라는 지침 — 보안 기능은 fail-secure/fail-closed가 기본.",
+   "use": "로거 도우미: 테더링 공인 IP가 휴대폰 망인지 확인(ip-api)을 못 하면 '막지 않음'이던 것을 '전에 확인된 IP만 통과, 아니면 막음'으로(도우미 1.8.9) · GitHub 거울 내려받기도 서비스 길이 없으면 쉬게(기본 길=테더링으로 새지 않게).",
+   "applied": [
+    "도우미 1.8.9 — local/readnow-local.js checkTether·getBuf·ghMirror"
+   ],
+   "one": "보안 장치는 실패할 때 막힌 상태로",
+   "sent": "NIST SP 800-53의 SC-24는 구성 요소가 실패할 때 보호가 유지되는 알려진 상태로 멈추게 설계하라고 요구한다.",
+   "page": "무엇을 봤나: 미국 연방 정보시스템 보안 통제 목록(NIST SP 800-53 Rev.5)의 SC-24.\n\n내용: 실패 시 보안 상태를 잃지 않도록(알려진 안전 상태로) 설계·검증. 네트워크 경계 장치가 판정을 못 하면 통과시키지 말고 막는 fail-closed가 이 원칙의 흔한 적용.\n\n우리 적용: 로거의 '알라딘은 휴대폰 망으로만' 문에서 망 종류 확인이 실패(응답 없음·429)하면 전에 휴대폰 망으로 확인된 IP(mobile-ips.json)만 통과시키고 처음 보는 IP는 막음(10분 뒤 재확인). 확인된 IP는 6시간 캐시+파일 기억이라 평소엔 막히지 않음.\n\n한계: 일반 보안 지침이며 로거 상황을 직접 다룬 자료는 아님.",
+   "rel": "로거의 최우선 목표(알라딘이 로거와 사무실의 연결을 모르게)를 지키는 설계 원칙.",
+   "prio": {
+    "score": 58,
+    "why": "공공 표준 — 로거 안전장치 설계 근거",
+    "c": {
+     "research": 10,
+     "reputable": 18,
+     "biz": 8,
+     "app": 14,
+     "now": 8
+    }
+   },
+   "cat": "기술 근거"
   }
  ]
 }
