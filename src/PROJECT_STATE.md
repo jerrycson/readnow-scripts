@@ -118,6 +118,7 @@
 
 ## 남은 일 / 지켜볼 것
 - (2026-10-24 03:25 · 3시간 점검 · 웹앱 1.78.45) 🪶 시장 지표 첫 쪽 줄(usedFirstPage · 약 74만 줄)을 slimDoc에서 packRow로 한 덩어리 같은 모양으로 다시 만듦(칸 순서가 ROW_K와 같을 때만 · 값·칸·순서 그대로) — node 시험 74만 줄 147→135MB. 숫자: 03:14 rate180 상품·시장 지표 0(밤) · LOGGER 22:29부터 꺼짐(알려진 것) · JS-MAIN/HOME 긴 작업 91초/74초(기록 창 열림 — 알려진 것).
+- (2026-10-24 12:20 · 3시간 점검 · 웹앱 1.78.48) 🪶 시장 지표(pmetrics)에서 웹앱이 안 읽는 bookId(=id)·dynamicPending·dynLoaded·checkedBy·writer·writerSchema를 SLIM_M에 더함 + slimIdbOnce(st, map, v) — v로 그 기록만 다시(pmetrics는 rn-slim4-) · 시험 3.7만 개 약 2.6MB↓.
 - (2026-10-24 09:30 · 3시간 점검 · 웹앱 1.78.47) 🪶 우리 상품 기록(plist)에서 웹앱이 안 읽는 seenBy_*·goneEvents를 뺌(SLIM_L · pfx 앞머리 빼기 · deTsTop·slimDoc 함께) + slimIdbOnce('plist') — 웹앱은 prd_listings를 쓰지 않아 서버 그대로 · 시험 2.55만 개 24.3→20.6MB.
 - (2026-10-24 06:30 · 3시간 점검 · 웹앱 1.78.46) 🪶 판매가치 캐시(S._valC): valOf가 희소성(rarity)·전략(strategy) 판정을 판정 글(why)·값이 같으면 valShare로 한 물건 함께 씀(캐시의 _vw · 3만 넘으면 새로) — 읽기만 하는 물건 · 시험 2.5만 개 22→16~18MB · JSON 같음 확인.
 - (2026-10-24 00:40 · 3시간 점검 · 수집기 1.89.45 · 가격 감시기 0.10.18 · 웹앱 1.78.44) **22:39 a1cc19d(대화 세션)가 21:48 2c9515c 사본에서 만들어 22:00 자동 점검 7260fb1의 고침을 통째로 되돌렸던 것 되살림**(stabJ 시장 지표 변화 헛쓰기 — 22:50까지 3시간 변화 3,112건 = 시장 지표 1,230번의 2.5배로 그대로였음 · 로거 우리 매물 화면 안 엶 · rnp-mchk · 웹앱 ids·rn-slim3 · 감시기 0.10.17→0.10.16 뒤로 간 것). 올리기 전 `git log origin/main`·`git diff <내 기준> origin/main -- src/` 확인 다시 강조. 🪶 받은 문서 delete → deTsTop(처음부터 칸 빼고 Object.fromEntries)·slimDoc도 새로 만듦 — V8에서 delete한 물건은 사전 모양(node 시험 시장 지표 3.7만 개 345→294MB). 다음 회차: 1.89.45가 돈 뒤 rate180 prd_metric_changes ÷ prd_book_metrics가 1 언저리로 내려왔는지 확인.
