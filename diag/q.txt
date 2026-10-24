@@ -1,1 +1,1 @@
-@kpin kpin/aud_20261024-092404.json
+cmds=regOne&n=4
