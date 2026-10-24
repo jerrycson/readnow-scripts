@@ -1,12 +1,12 @@
 {
- "holder": "auto-fable",
- "what": "격일 점검: 빌드·시험 중",
- "since": "2026-10-24T13:39:49Z",
- "beat": "2026-10-24T13:57:53Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "chat",
-  "done": "등록 재설계·저자 화면·시장조사·자동 백업·deepscan 끝",
-  "at": "2026-10-24T13:14:00Z"
+  "who": "auto-fable",
+  "done": "격일 정밀 점검(Fable) 끝 — 7a00a23·0318f2a·dd4efab·af507b6 (수집기 1.89.58 · 클라우드 0.35.5 · 도우미 1.8.9 · 웹앱 1.78.71)",
+  "at": "2026-10-24T14:13:43Z"
  }
 }
