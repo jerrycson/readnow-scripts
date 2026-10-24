@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "auto-fable",
+ "what": "격일 정밀 점검(Fable): 도우미 fail-closed·백업 inc 누락·클라우드 공개 확인·웹앱 홈 카드·메모리",
+ "since": "2026-10-24T13:39:49Z",
+ "beat": "2026-10-24T13:39:49Z",
  "ask": null,
  "last": {
   "who": "chat",
