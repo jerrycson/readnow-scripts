@@ -1,12 +1,12 @@
 {
- "holder": "kpsum",
- "what": "출판 정보 요약",
- "since": "2026-10-24T20:48:53Z",
- "beat": "2026-10-24T21:00:02Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "auto3h",
-  "done": "3시간 점검 00:14 — 1.89.59·1.78.74",
-  "at": "2026-10-24T15:21:35Z"
+  "who": "kpsum",
+  "done": "요약 75개 넣음(3회) · 남은 약 400",
+  "at": "2026-10-24T21:01:24Z"
  }
 }
