@@ -1,2 +1,2 @@
-doc=shp_cmds/TYwSbYcReS5lBrOBNUgE
-# 1792843399
+cmdsince=2026-10-24T11:00&types=regBulk
+# 1792843990
