@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.55
+// @version      1.89.56
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -3795,7 +3795,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       GM_setValue('rn-imgm-last', Date.now()); log(`📷 사진 보관: 저장소 ${IMGM.list}개 중 새로 ${IMGM.got}개 받음${IMGM.fail ? ` · 실패 ${IMGM.fail}` : ''} (D:\\ReadNow\\images)`);
     } catch (e) { IMGM.err = e.message; log('📷 사진 보관 멈춤: ' + e.message, 1); } finally { IMGM.state = 'idle'; IMGM.endAt = nowIso(); IMGM.cur = null; imgRep(true); } }
   if (PUBONLY) { setTimeout(() => imgMirror().catch(() => {}), 3 * 60e3); setInterval(() => imgMirror().catch(() => {}), 30 * 60e3); window.__rnImgMirror = (f) => imgMirror(f !== false); }
-  /* ══════════ (1.89.55) 💾 자료 보관 — 정범님 10/24 '로거에서 매일 자동 백업 · 처음엔 전부, 다음부턴 바뀐 것만' ══════════
+  /* ══════════ (1.89.55·1.89.56) 💾 자료 보관 — 정범님 10/24 '로거에서 매일 자동 백업 · 처음엔 전부, 다음부턴 바뀐 것만' ══════════
    *  · 로거의 수집기만(PUBONLY) · 하루 한 번(한국 02시 뒤) · Firestore(이더넷 — 도우미가 Firebase는 서비스 길로) → 도우미(1.8.8) D:\ReadNow\backup\firestore\<칸>\<날짜>-full|inc.jsonl
    *  · 칸 목록 = 클라우드가 하루 한 번 적는 prd_system/fbCols(모든 최상위 칸 · app_secrets 뺌) — 없으면 아래 목록 · 아래 칸(log·v·big)도
    *  · 처음(또는 30일마다) = 칸 전부(문서 번호 순 · 끊기면 이어서) · 그 밖 = uploadedAt이 지난번 뒤인 것만 · 사진(ppt_photo_data)은 📷 사진 보관이 따로 받으므로 뺌
@@ -3815,17 +3815,20 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const save = () => { GM_setValue('rn-bk', ST); gmReq({ method: 'POST', url: `${HLP}/bk-state?pc=${encodeURIComponent(PC_NAME)}`, anonymous: true, headers: { 'X-RN-Bk': '1', 'Content-Type': 'application/json' }, data: JSON.stringify({ ...ST, at: nowIso() }), timeout: 20000 }); };
     const FBn = (typeof firebase !== 'undefined' && firebase) || window.firebase; const FP = FBn.firestore.FieldPath.documentId(); const MAXD = 400000; const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     try { let cols = BK_COLS0; try { const d = await C('prd_system').doc('fbCols').get(); const L = d.exists && (d.data() || {}).cols; if (Array.isArray(L) && L.length) cols = [...new Set([...L, ...BK_COLS0])]; } catch (e) {}
-      const jobs = [...cols.filter((c) => !BK_SKIP.has(c)).sort().map((c) => ({ c, g: false })), ...BK_SUB.map((c) => ({ c, g: true }))]; BKX.cols = jobs.length; if (!ST.read || ST.read.day !== day) ST.read = { day, n: 0 }; let left = MAXD - ST.read.n;
+      const jobs = [...cols.filter((c) => !BK_SKIP.has(c)).sort().map((c) => ({ c, g: false })), ...BK_SUB.map((c) => ({ c, g: true }))]; const fullNow = []; BKX.cols = jobs.length; if (!ST.read || ST.read.day !== day) ST.read = { day, n: 0 }; let left = MAXD - ST.read.n;
       for (const jb of jobs) { if (left <= 0) break; const key = (jb.g ? 'g_' : '') + jb.c; const cs = ST.cols[key] || (ST.cols[key] = {}); BKX.col = key; let base; try { base = jb.g ? db.collectionGroup(jb.c) : C(jb.c); } catch (e) { BKX.errs[key] = String(e.code || e.message).slice(0, 120); continue; }
         const full = !cs.full || Date.now() - Date.parse(cs.full) > 30 * 864e5 || !!cs.after; const kind = full ? 'full' : 'inc'; if (jb.g && !full) { BKX.done++; continue; } /* 아래 칸은 바뀐 것만 묻는 색인이 없어 30일마다 전부만 */
         try { for (let g = 0; g < 100000 && left > 0; g++) { let q; if (full) { q = jb.g ? base.orderBy(FP).limit(300) : base.orderBy(FP).limit(300); if (cs.after) q = q.startAfter(jb.g ? cs.after : cs.after); }
             else { q = base.where('uploadedAt', '>', FBn.firestore.Timestamp.fromMillis(+cs.ts || 0)).orderBy('uploadedAt').limit(300); }
             const qs = await q.get(); if (qs.empty) break; const lines = []; let mx = +cs.ts || 0; qs.forEach((d) => { const v = d.data() || {}; const u = v.uploadedAt && typeof v.uploadedAt.toMillis === 'function' ? v.uploadedAt.toMillis() : 0; if (u > mx) mx = u; lines.push({ id: d.id, path: d.ref.path, d: bkSer(v) }); });
-            await put(key, kind, lines); BKX.docs += lines.length; left -= lines.length; ST.read.n += lines.length; if (full) { cs.after = jb.g ? qs.docs[qs.docs.length - 1].ref.path : qs.docs[qs.docs.length - 1].id; if (mx > (+cs.tsF || 0)) cs.tsF = mx; } else cs.ts = mx; save(); if (g % 10 === 9) bkRep(); if (qs.size < 300) break; await sleep(150); }
-          if (left > 0 || !full) { if (full) { cs.full = nowIso(); cs.after = null; cs.ts = Math.max(+cs.ts || 0, +cs.tsF || 0); cs.tsF = 0; BKX.full++; } cs.at = nowIso(); } BKX.done++; save();
+            if (full && g === 0 && cs.after) cs.resumed = true; await put(key, kind, lines); BKX.docs += lines.length; left -= lines.length; ST.read.n += lines.length; if (full) { cs.after = jb.g ? qs.docs[qs.docs.length - 1].ref.path : qs.docs[qs.docs.length - 1].id; if (mx > (+cs.tsF || 0)) cs.tsF = mx; } else cs.ts = mx; save(); if (g % 10 === 9) bkRep(); if (qs.size < 300) break; await sleep(150); }
+          if (left > 0 || !full) { if (full) { cs.full = nowIso(); cs.after = null; cs.ts = Math.max(+cs.ts || 0, +cs.tsF || 0); cs.tsF = 0; BKX.full++; if (!jb.g && !cs.resumed) fullNow.push(jb.c); cs.resumed = false; } cs.at = nowIso(); } BKX.done++; save();
         } catch (e) { BKX.errs[key] = String(e.code || e.message).slice(0, 120); /* 이 칸만 건너뜀(권한·색인 없음 등) — 다음 날 다시 */ }
         await sleep(100); }
-      if (left > 0) ST.day = day; /* 오늘 몫을 다 쓰지 않고 끝 = 오늘 일 끝(못 한 칸은 내일 다시) */ save(); log(`💾 자료 보관: 칸 ${BKX.done}/${BKX.cols} · 문서 ${BKX.docs.toLocaleString()}개(${(BKX.bytes / 1048576).toFixed(1)}MB)${BKX.full ? ` · 처음/30일 전부 ${BKX.full}칸` : ''}${Object.keys(BKX.errs).length ? ` · 못 한 칸 ${Object.keys(BKX.errs).length}` : ''}${left <= 0 ? ' · 오늘 몫(40만) 다 씀 — 내일 이어서' : ''} (D:\\ReadNow\\backup)`);
+      if (left > 0) { ST.day = day; /* 오늘 몫을 다 쓰지 않고 끝 = 오늘 일 끝(못 한 칸은 내일 다시) */
+        /* 백업 기록(app_settings/backup_log) — 토요일 백업 알림이 봄 · 클라우드 오래된 기록 정리는 last.cols에 든 칸만 지움 → 이번에 처음부터 끝까지 '전부' 받은 칸만 적음(바뀐 것만 받은 칸은 uploadedAt 없는 문서가 빠졌을 수 있어 적지 않음) */
+        const last = { at: nowIso(), startAt: BKX.at, cols: fullNow, kind: fullNow.length ? 'auto-full' : 'auto-inc', by: 'logger-auto', dev: PC_NAME, root: 'D:\\ReadNow\\backup', id: 'auto_' + day }; await C('app_settings').doc('backup_log').set({ last, runs: FBn.firestore.FieldValue.arrayUnion({ at: last.at, kind: last.kind, dev: PC_NAME, id: last.id, n: BKX.docs }) }, { merge: true }).catch(() => {}); }
+      save(); log(`💾 자료 보관: 칸 ${BKX.done}/${BKX.cols} · 문서 ${BKX.docs.toLocaleString()}개(${(BKX.bytes / 1048576).toFixed(1)}MB)${BKX.full ? ` · 처음/30일 전부 ${BKX.full}칸` : ''}${Object.keys(BKX.errs).length ? ` · 못 한 칸 ${Object.keys(BKX.errs).length}` : ''}${left <= 0 ? ' · 오늘 몫(40만) 다 씀 — 내일 이어서' : ''} (D:\\ReadNow\\backup)`);
     } catch (e) { BKX.err = e.message; log('💾 자료 보관 멈춤: ' + e.message, 1); } finally { BKX.state = 'idle'; BKX.endAt = nowIso(); BKX.col = null; bkRep(true); } }
   if (PUBONLY) { setTimeout(() => dataBackup().catch(() => {}), 6 * 60e3); setInterval(() => dataBackup().catch(() => {}), 60 * 60e3); window.__rnDataBackup = (f) => dataBackup(f !== false); }
   function tgateCalc(H) { if (!PUBONLY) return { ok: true, why: '' }; if (aladinLoggedHere()) { if (!window.__rnLoginWarned) { window.__rnLoginWarned = 1; try { window.__rnNote('🛡 이 크롬(리드나우 공개 수집)에 알라딘 로그인이 되어 있습니다 — 로거는 알라딘에 로그인하면 안 됩니다. 알라딘에서 로그아웃하고 이 탭을 새로 고칠 때까지 알라딘 일을 모두 멈춥니다', 'err'); } catch (e) {} } return { ok: false, why: '이 크롬에 알라딘 로그인 흔적(로그아웃 링크) — 로그아웃한 뒤 새로 고침' }; } if (!H || !H.ok) return { ok: false, why: '로컬 도우미가 답하지 않음 — 바탕화면 \'리드나우 공개 수집\' 크롬으로 열었는지, 도우미가 켜져 있는지(http://127.0.0.1:8899)' };
