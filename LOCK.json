@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "등록 재설계 끝 · 시장조사",
- "since": "2026-10-24T12:22:27Z",
- "beat": "2026-10-24T12:38:21Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "",
-  "at": "2026-10-24T12:18:12Z"
+  "done": "등록 재설계·저자 화면·시장조사·자동 백업·deepscan 끝",
+  "at": "2026-10-24T13:14:00Z"
  }
 }
