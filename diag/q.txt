@@ -1,1 +1,1 @@
-health=1&hours=2&n=4&doc=rn_status/pc_LOGGER&logs=1&pc=LOGGER&from=202610241400
+ipinfo=118.235.12.147,125.186.15.250
