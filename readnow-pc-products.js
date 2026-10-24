@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.48의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.49의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.48' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.48', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.49' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.49', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -789,7 +789,7 @@
    *  · 모든 PC: 알라딘 화면을 읽을 때마다 작업별로 장 수·글자 수를 세어 5분마다 prd_jobs/net_날짜에 더함(웹앱 📶 데이터 사용량) · 공개 전용 PC는 도우미가 잰 실제 바이트(테더링·와이파이·묶음별)도 함께 */
   let HELPER = null, HELPER_AT = 0, TGATE = { ok: !PUBONLY, why: PUBONLY ? '로컬 도우미 확인 전' : '' };
   const helperGet1 = (url, hdr) => new Promise((res) => { try { GM_xmlhttpRequest({ method: 'GET', url, timeout: 8000, anonymous: true, headers: hdr || {}, onload: (r) => { try { res(r.status === 200 ? JSON.parse(r.responseText) : null); } catch (e) { res(null); } }, onerror: () => res(null), ontimeout: () => res(null) }); } catch (e) { res(null); } });
-  const helperGet = async () => (await helperGet1('http://rn.local/status')) || (await helperGet1('http://127.0.0.1:8899/status')); /* (1.66.0) 프록시를 통한 이름이 막히면 도우미에 바로 */
+  const helperGet = async () => (await helperGet1('http://rn.local/status?c=1')) || (await helperGet1('http://127.0.0.1:8899/status?c=1')); /* (1.89.49) c=1 = 수집기가 살아 있다는 신호(도우미 1.8.6 멈춤 지킴이가 봄) */ /* (1.66.0) 프록시를 통한 이름이 막히면 도우미에 바로 */
   /* ══════════ (1.70.0) 📷 사진 보관 — 로거 PC(D:\ReadNow\images)에 Firebase 사진을 새것만 받아 둠 ══════════
    *  · 로거의 수집기만 · 알라딘과 무관(Firebase 저장소·사진 칸 → 와이파이) · 6시간마다(켜진 뒤 3분부터) · 이미 있는 파일은 건너뜀(도우미가 이름으로 확인) — 끊겨도 다음에 이어서
    *  · 저장소(img/·pur_photos/·ppt_photos/·disposals/ 등 맨 위 폴더 모두)는 저장소와 같은 길로 · 사진 가격 조회 칸(ppt_photo_data)은 ppt_photo_data/문서.jpg(마지막으로 받은 시각부터)
@@ -931,7 +931,7 @@
     return new Promise((resolve) => {
       if (frame && (frame.dataset.cl === '1') !== pubAnonOn()) { try { frame.remove(); } catch (e) {} frame = null; } /* (1.64.0) 설정이 바뀌면 숨은 창을 새로 */
       if (frame && frame.dataset.u === String(url).split('#')[0]) { try { frame.remove(); } catch (e) {} frame = null; } /* (1.70.0) 같은 주소를 다시 열 때는 새 창으로(# 뒤만 같으면 다시 읽지 않으므로) */
-      if (!frame) { frame = document.createElement('iframe'); if (pubAnonOn()) { frame.setAttribute('credentialless', ''); frame.dataset.cl = '1'; } /* (1.64.0) 🔓 숨은 창도 쿠키 없이(크롬 credentialless) */ frame.style.cssText = 'position:fixed;left:-3000px;top:0;width:1300px;height:2000px;visibility:hidden'; globalThis.__rnMount(frame); } /* (1.70.0) 로거 첫 화면이면 숨은 창도 그림자 칸 안 */
+      if (!frame) { frame = document.createElement('iframe'); frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms'); /* (1.89.49) 정범님 10/24 17:47: 숨은 창의 19금 상품 화면이 '19세 이상만…' 알림창을 띄워 탭 전체가 멈췄음(17:19~) → 숨은 창은 알림·확인 창을 못 띄움(sandbox에 allow-modals 없음) · 읽기는 그대로 */ if (pubAnonOn()) { frame.setAttribute('credentialless', ''); frame.dataset.cl = '1'; } /* (1.64.0) 🔓 숨은 창도 쿠키 없이(크롬 credentialless) */ frame.style.cssText = 'position:fixed;left:-3000px;top:0;width:1300px;height:2000px;visibility:hidden'; globalThis.__rnMount(frame); } /* (1.70.0) 로거 첫 화면이면 숨은 창도 그림자 칸 안 */
       let done = false; const t0 = Date.now(); let poll = null;
       const finish = (ok) => { if (done) return; done = true; clearInterval(poll); let doc = null, href = null; try { doc = frame.contentDocument; href = frame.contentWindow.location.href; } catch (e) {} resolve({ ok, doc, href, ms: Date.now() - t0 }); };
       frame.dataset.u = String(url).split('#')[0]; frame.src = String(url).split('#')[0] + '#rnCollect'; /* (1.70.0) 표시는 # 뒤로 — 예전 ?rnCollect=1은 알라딘 서버 기록에 남는 낯선 표시였음 */
