@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "벤치 이어 읽기",
+ "since": "2026-10-24T07:25:02Z",
+ "beat": "2026-10-24T07:25:02Z",
  "ask": null,
  "last": {
   "who": "chat",
