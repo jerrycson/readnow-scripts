@@ -24,10 +24,12 @@ if ($chrome) {
   [IO.File]::WriteAllText($pps, @"
 Add-Type -AssemblyName System.Windows.Forms
 `$a = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
-`$w = [Math]::Max(800, `$a.Width - 380)
+`$m = 96; `$x = `$a.X + `$m; `$y = `$a.Y; `$w = [Math]::Max(800, `$a.Width - 380 - `$m); `$h = `$a.Height
+`$wf = '$Root\local\pub-window.json'
+if (Test-Path `$wf) { try { `$j = Get-Content `$wf -Raw | ConvertFrom-Json; if (`$j.w -ge 400 -and `$j.h -ge 300 -and `$j.x -ge (`$a.X - 60) -and `$j.x -lt (`$a.X + `$a.Width - 200) -and `$j.y -ge (`$a.Y - 60) -and `$j.y -lt (`$a.Y + `$a.Height - 150)) { `$x = `$j.x; `$y = `$j.y; `$w = `$j.w; `$h = `$j.h } } catch {} }
 `$pf = '$Root\chrome-pub\Default\Preferences'
 if (Test-Path `$pf) { try { `$t = [IO.File]::ReadAllText(`$pf); `$n = `$t -replace '"exit_type":"Crashed"', '"exit_type":"Normal"' -replace '"exited_cleanly":false', '"exited_cleanly":true'; if (`$n -ne `$t) { [IO.File]::WriteAllText(`$pf, `$n, (New-Object Text.UTF8Encoding `$false)) } } catch {} }
-Start-Process -FilePath '$chrome' -ArgumentList ('$($cargs.Replace("'", "''"))' + " --window-position=`$(`$a.X),`$(`$a.Y) --window-size=`$w,`$(`$a.Height) http://127.0.0.1:8899/start")
+Start-Process -FilePath '$chrome' -ArgumentList ('$($cargs.Replace("'", "''"))' + " --window-position=`$x,`$y --window-size=`$w,`$h http://127.0.0.1:8899/start")
 "@, $utf8b)
   $pcmd = Join-Path $L 'start-pub.cmd'
   [IO.File]::WriteAllText($pcmd, "@echo off`r`n:w`r`ncurl -s -o nul http://127.0.0.1:8899/status || (timeout /t 3 /nobreak >nul & goto w)`r`npowershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$pps`"`r`n")
@@ -50,9 +52,11 @@ Start-Process -FilePath '$chrome' -ArgumentList ("--user-data-dir=```"$Root\chro
   try {
     Add-Type -AssemblyName System.Windows.Forms
     Add-Type -Namespace RnW -Name U -MemberDefinition '[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c); [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr h, int x, int y, int w, int hh, bool r);' -ErrorAction SilentlyContinue
-    $a = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea; $w = [Math]::Max(800, $a.Width - 380)
+    $a = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea; $m = 96; $x = $a.X + $m; $y = $a.Y; $w = [Math]::Max(800, $a.Width - 380 - $m); $h = $a.Height
+    # (도우미 1.8.7) 정범님 10/24: 왼쪽에 바탕화면 아이콘 한 줄이 보이게(96px) · 정범님이 창 크기를 바꾸면 도우미가 pub-window.json에 저장 → 다음에 그 크기로 · 저장된 크기가 있으면 옮기지 않음
+    $wf = Join-Path $L 'pub-window.json'; $keep = Test-Path $wf
     $ids = @(Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" | Where-Object { $_.CommandLine -like '*chrome-pub*' } | ForEach-Object { $_.ProcessId })
-    $n = 0; if ($ids.Count -gt 0) { foreach ($p in (Get-Process -Id $ids -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 })) { [RnW.U]::ShowWindow($p.MainWindowHandle, 9) | Out-Null; [RnW.U]::MoveWindow($p.MainWindowHandle, $a.X, $a.Y, $w, $a.Height, $true) | Out-Null; $n++ } }
+    $n = 0; if ($ids.Count -gt 0 -and -not $keep) { foreach ($p in (Get-Process -Id $ids -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 })) { [RnW.U]::ShowWindow($p.MainWindowHandle, 9) | Out-Null; [RnW.U]::MoveWindow($p.MainWindowHandle, $x, $y, $w, $h, $true) | Out-Null; $n++ } }
     $R.moved = $n
   } catch { $R.moved = 'fail: ' + $_.Exception.Message }
 } else { $R.pub = 'no-chrome' }
