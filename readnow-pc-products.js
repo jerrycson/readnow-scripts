@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.58의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.59의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.58' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.58', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.59' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.59', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1316,9 +1316,10 @@
     if (!l.pool && !l.explore && (idsChanged || l.bookId !== bookId)) batch.set(C('prd_ids').doc('usedCode_' + l.usedCode), { bookId, bookIds: AUb, ...W() }, { merge: true });
 
     /* (1.89.35 3시간 점검) 시장 지표 확인 때마다 우리 상품 문서에 같은 bookId·종류를 다시 적던 것(3시간 prd_listings 349번 ≈ prd_book_metrics 346번 · 실제 바뀜 6) → 이어진 책·종류가 바뀐 때만 적음 */
-    if (!l.pool && !l.explore) { if (l.bookId !== bookId || l.mediaType !== mtB.type || JSON.stringify(l.mediaWhy ?? null) !== JSON.stringify(mtB.why ?? null)) batch.set(C('prd_listings').doc('aladin_' + l.usedCode), { bookId, mediaType: mtB.type, mediaWhy: mtB.why, ...W() }, { merge: true }); } else if (l.pool) batch.set(bRef, { aladinPool: true }, { merge: true }); else batch.set(bRef, { explored: true, exploredAt: at, exploreFrom: l.exploreFrom || null }, { merge: true }); // 탐색 수집 책: 우리 상품·알라딘 구매 풀과 구분
+    const lNeed = !l.pool && !l.explore && (l.bookId !== bookId || l.mediaType !== mtB.type); /* (1.89.59 3시간 점검) 판정 까닭(mediaWhy) 글자만 다를 때는 안 적음 — 상품 목록 줄(전체 재검토 listingOps)에는 알라딘 분류가 없어 까닭이 늘 'ISBN이 있음', 여기(상품 화면)는 '알라딘 분류: …'라 같은 책·같은 종류인데도 읽을 때마다 상품 기록을 다시 적었음(10/24 20:50~23:53 상품 기록 2,968 ≈ 시장 지표 2,848 — 거의 1:1 · 웹앱은 종류를 RP.mediaType으로 스스로 셈) · 책 연결·종류가 바뀌면 그대로 적음(까닭 함께) */
+    if (!l.pool && !l.explore) { if (lNeed) batch.set(C('prd_listings').doc('aladin_' + l.usedCode), { bookId, mediaType: mtB.type, mediaWhy: mtB.why, ...W() }, { merge: true }); } else if (l.pool) batch.set(bRef, { aladinPool: true }, { merge: true }); else batch.set(bRef, { explored: true, exploredAt: at, exploreFrom: l.exploreFrom || null }, { merge: true }); // 탐색 수집 책: 우리 상품·알라딘 구매 풀과 구분
     await batch.commit();
-    if (!l.pool && !l.explore) LISTINGS.set('aladin_' + l.usedCode, { ...l, bookId, mediaType: mtB.type, mediaWhy: mtB.why });
+    if (lNeed) LISTINGS.set('aladin_' + l.usedCode, { ...l, bookId, mediaType: mtB.type, mediaWhy: mtB.why }); /* (1.89.59) 적은 때만 보관본도 — 서버 기록과 같게 */
     if (page.fetchedFrom !== 'aladin') return; // 대체 출처는 시장 지표 없음
     // 변동성: 중고 페이지 + 지연 로딩 부분
     const used = page.aladinItemId ? P.parseUsedPage((await pubUsed(`/shop/UsedShop/wuseditemall.aspx?ItemId=${page.aladinItemId}&TabType=0`)).doc) : null;
