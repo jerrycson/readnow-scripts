@@ -1,2 +1,1 @@
-logs=1&pc=LOGGER&from=202610241715
-# 1792830911
+health=1&hours=1&n=1&logs=1&pc=LOGGER&from=202610241710
