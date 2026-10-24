@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.56의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.57의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.56' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.56', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.57' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.57', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -838,11 +838,13 @@
       const jobs = [...cols.filter((c) => !BK_SKIP.has(c)).sort().map((c) => ({ c, g: false })), ...BK_SUB.map((c) => ({ c, g: true }))]; const fullNow = []; BKX.cols = jobs.length; if (!ST.read || ST.read.day !== day) ST.read = { day, n: 0 }; let left = MAXD - ST.read.n;
       for (const jb of jobs) { if (left <= 0) break; const key = (jb.g ? 'g_' : '') + jb.c; const cs = ST.cols[key] || (ST.cols[key] = {}); BKX.col = key; let base; try { base = jb.g ? db.collectionGroup(jb.c) : C(jb.c); } catch (e) { BKX.errs[key] = String(e.code || e.message).slice(0, 120); continue; }
         const full = !cs.full || Date.now() - Date.parse(cs.full) > 30 * 864e5 || !!cs.after; const kind = full ? 'full' : 'inc'; if (jb.g && !full) { BKX.done++; continue; } /* 아래 칸은 바뀐 것만 묻는 색인이 없어 30일마다 전부만 */
-        try { for (let g = 0; g < 100000 && left > 0; g++) { let q; if (full) { q = jb.g ? base.orderBy(FP).limit(300) : base.orderBy(FP).limit(300); if (cs.after) q = q.startAfter(jb.g ? cs.after : cs.after); }
-            else { q = base.where('uploadedAt', '>', FBn.firestore.Timestamp.fromMillis(+cs.ts || 0)).orderBy('uploadedAt').limit(300); }
-            const qs = await q.get(); if (qs.empty) break; const lines = []; let mx = +cs.ts || 0; qs.forEach((d) => { const v = d.data() || {}; const u = v.uploadedAt && typeof v.uploadedAt.toMillis === 'function' ? v.uploadedAt.toMillis() : 0; if (u > mx) mx = u; lines.push({ id: d.id, path: d.ref.path, d: bkSer(v) }); });
-            if (full && g === 0 && cs.after) cs.resumed = true; await put(key, kind, lines); BKX.docs += lines.length; left -= lines.length; ST.read.n += lines.length; if (full) { cs.after = jb.g ? qs.docs[qs.docs.length - 1].ref.path : qs.docs[qs.docs.length - 1].id; if (mx > (+cs.tsF || 0)) cs.tsF = mx; } else cs.ts = mx; save(); if (g % 10 === 9) bkRep(); if (qs.size < 300) break; await sleep(150); }
-          if (left > 0 || !full) { if (full) { cs.full = nowIso(); cs.after = null; cs.ts = Math.max(+cs.ts || 0, +cs.tsF || 0); cs.tsF = 0; BKX.full++; if (!jb.g && !cs.resumed) fullNow.push(jb.c); cs.resumed = false; } cs.at = nowIso(); } BKX.done++; save();
+        const LIM = jb.c === 'big' ? 40 : 300; /* (1.89.57 격일 점검) big(문서 하나 500KB 조각)은 300개면 한 쪽이 150MB → 도우미 60MB 상한에 걸려 날마다 실패·날마다 다시 읽음 → 40개(≤20MB) */
+        if (full && !cs.after) cs.fullStart = Date.now(); /* (1.89.57) 전부 받기가 여러 날 걸리면 그사이 바뀐 문서가 '바뀐 것만'에서 빠짐 → 전부 받기를 시작한 때를 다음 '바뀐 것만'의 기준으로 */
+        try { let lastSnap = null; for (let g = 0; g < 100000 && left > 0; g++) { let q; if (full) { q = jb.g ? base.orderBy(FP).limit(LIM) : base.orderBy(FP).limit(LIM); if (cs.after) q = q.startAfter(jb.g ? cs.after : cs.after); }
+            else { q = base.where('uploadedAt', '>=', FBn.firestore.Timestamp.fromMillis(+cs.ts || 0)).orderBy('uploadedAt').limit(LIM); if (lastSnap) q = q.startAfter(lastSnap); } /* (1.89.57) '>'로 묻고 쪽마다 기준을 마지막 uploadedAt으로 올리면 같은 밀리초(한 묶음 commit의 serverTimestamp)의 나머지 문서가 빠짐 → '>=' + 마지막 문서 뒤부터(startAfter) · 경계 문서 몇 개는 두 번 적힘(덧붙임 · id로 거름) */
+            const qs = await q.get(); if (qs.empty) break; lastSnap = qs.docs[qs.docs.length - 1]; const lines = []; let mx = +cs.ts || 0; qs.forEach((d) => { const v = d.data() || {}; const u = v.uploadedAt && typeof v.uploadedAt.toMillis === 'function' ? v.uploadedAt.toMillis() : 0; if (u > mx) mx = u; lines.push({ id: d.id, path: d.ref.path, d: bkSer(v) }); });
+            if (full && g === 0 && cs.after) cs.resumed = true; await put(key, kind, lines); BKX.docs += lines.length; left -= lines.length; ST.read.n += lines.length; if (full) { cs.after = jb.g ? qs.docs[qs.docs.length - 1].ref.path : qs.docs[qs.docs.length - 1].id; if (mx > (+cs.tsF || 0)) cs.tsF = mx; } else cs.ts = mx; save(); if (g % 10 === 9) bkRep(); if (qs.size < LIM) break; await sleep(150); }
+          if (left > 0 || !full) { if (full) { cs.full = nowIso(); cs.after = null; cs.ts = Math.min(Math.max(+cs.ts || 0, +cs.tsF || 0), +cs.fullStart || Infinity); cs.tsF = 0; cs.fullStart = null; BKX.full++; if (!jb.g && !cs.resumed) fullNow.push(jb.c); cs.resumed = false; } cs.at = nowIso(); } BKX.done++; save();
         } catch (e) { BKX.errs[key] = String(e.code || e.message).slice(0, 120); /* 이 칸만 건너뜀(권한·색인 없음 등) — 다음 날 다시 */ }
         await sleep(100); }
       if (left > 0) { ST.day = day; /* 오늘 몫을 다 쓰지 않고 끝 = 오늘 일 끝(못 한 칸은 내일 다시) */
@@ -990,6 +992,7 @@
     });
     if (!r.doc || !r.doc.querySelector('link[rel="canonical"]')) { PACE.fail(r.ok ? 'error' : 'timeout'); return null; } PACE.ok();
     if (r.href && /wuseditemall/i.test(r.href)) log('새상품 페이지가 중고 페이지로 넘어갔습니다. "온라인중고 바로가기" 스크립트가 숨은 창에서도 작동하는지 확인 필요', 1);
+    if (PUBONLY && r.href && /\/login\/|wlogin|adult|account\//i.test(r.href)) { log(`🛡 숨은 창이 로그인·성인인증 주소로 넘어감(19금?) — 로거는 그 화면을 읽지 않음: ${String(r.href).slice(0, 90)}`, 1); return null; } /* (1.89.57 격일 점검) 1.89.49 sandbox로 19금 alert가 조용히 넘어가면 그 뒤 스크립트가 로그인 화면으로 옮길 수 있음 — 실제로 생기는지 기록으로 봄 */
     if (looksLoggedOut(r.href || '', r.doc)) return null;
     const p = P.parseProductPage(r.doc, r.href);
     const k = (r.doc.querySelector('input.hd_ISBN') || {}).value;
@@ -1300,15 +1303,17 @@
       for (const [f, v] of Object.entries(cur)) if (v != null && prevB[f] != null && cmp(prevB[f], v)) chg[f] = { from: prevB[f], to: v };
       if (Object.keys(chg).length) batch.set(C('prd_metric_changes').doc(), { bookId, at: nowIso(), kind: 'bookInfo', chg, ...W() });
     }
-    batch.set(bRef, { bookId, keyScheme: SET.keyScheme, aladinItemId: book.aladinItemId, isbn13: idsAll.isbn13, isbn10: idsAll.isbn10, aladinCode: idsAll.aladinCode, barcode: idsAll.barcode,
+    const mtB = P.mediaType({ title: page.title, categories: page.categories, ids: idsAll.ids, isbn13: idsAll.isbn13 }); /* (1.89.57) 종류 판정을 앞으로 옮겨 책 문서를 한 번만 적음(전엔 같은 묶음에서 두 번 set) */
+    batch.set(bRef, { bookId, keyScheme: SET.keyScheme, aladinItemId: book.aladinItemId, isbn13: idsAll.isbn13, isbn10: idsAll.isbn10, aladinCode: idsAll.aladinCode, barcode: idsAll.barcode, mediaType: mtB.type, mediaWhy: mtB.why,
       ids: idsAll.ids, idWarn: idsAll.warn, ...fixed, ...(Object.keys(imgs).length ? { images: imgs, imgStatus: 'pending' } : {}),
       ...(page.images && page.images.preview && page.images.preview.length ? { previewUrls: page.images.preview } : {}),
       source: page.fetchedFrom, resolvedBy, productUrl: finalUrl, ...(page.infoFrom ? { infoFrom: JSON.parse(JSON.stringify(page.infoFrom)) } : {}), ...(EB && EB.reviews && Object.keys(EB.reviews).length ? { extReviews: EB.reviews, extReviewsAt: at } : {}), /* (1.76.0) 상품평·리뷰 수 — 교보·예스24·네이버(점수 만점이 달라 출처마다) */ ...(isNewBook ? { firstSeenAt: at } : {}), lastFetchedAt: at, ...W() }, { merge: true });
     /* (1.57.2) 이어진 책이 바뀌어도 예전 연결을 bookIds에 쌓아 둠(지금 연결 bookId만 바뀜) */ const AUb = firebase.firestore.FieldValue.arrayUnion(bookId);
-    for (const key of P.lookupKeys(book)) batch.set(C('prd_ids').doc(key), { bookId, bookIds: AUb, ...W() }, { merge: true });
-    if (!l.pool && !l.explore) batch.set(C('prd_ids').doc('usedCode_' + l.usedCode), { bookId, bookIds: AUb, ...W() }, { merge: true });
-    const mtB = P.mediaType({ title: page.title, categories: page.categories, ids: idsAll.ids, isbn13: idsAll.isbn13 });
-    batch.set(bRef, { mediaType: mtB.type, mediaWhy: mtB.why }, { merge: true });
+    /* (1.89.57 격일 점검) 번호 색인(prd_ids)을 책을 읽을 때마다 번호마다 다시 적던 것(10/24 21:10~22:40 로거 9,220번 = 책 2,444권 × 약 4 · 바뀐 것 없음) → 새 책 · 번호(ISBN·알라딘 코드·바코드·ids)가 전과 다름 · 색인 틀(keyScheme)이 다름 · 우리 상품의 연결(bookId)이 바뀜 때만 */
+    const idsChanged = isNewBook || !prevB || prevB.keyScheme !== SET.keyScheme || stabJ(prevB.ids ?? null) !== stabJ(idsAll.ids ?? null) || ['isbn13', 'isbn10', 'aladinCode', 'barcode'].some((f) => (prevB[f] ?? null) !== (idsAll[f] ?? null)) || (prevB.aladinItemId ?? null) !== (book.aladinItemId ?? null);
+    if (idsChanged) for (const key of P.lookupKeys(book)) batch.set(C('prd_ids').doc(key), { bookId, bookIds: AUb, ...W() }, { merge: true });
+    if (!l.pool && !l.explore && (idsChanged || l.bookId !== bookId)) batch.set(C('prd_ids').doc('usedCode_' + l.usedCode), { bookId, bookIds: AUb, ...W() }, { merge: true });
+
     /* (1.89.35 3시간 점검) 시장 지표 확인 때마다 우리 상품 문서에 같은 bookId·종류를 다시 적던 것(3시간 prd_listings 349번 ≈ prd_book_metrics 346번 · 실제 바뀜 6) → 이어진 책·종류가 바뀐 때만 적음 */
     if (!l.pool && !l.explore) { if (l.bookId !== bookId || l.mediaType !== mtB.type || JSON.stringify(l.mediaWhy ?? null) !== JSON.stringify(mtB.why ?? null)) batch.set(C('prd_listings').doc('aladin_' + l.usedCode), { bookId, mediaType: mtB.type, mediaWhy: mtB.why, ...W() }, { merge: true }); } else if (l.pool) batch.set(bRef, { aladinPool: true }, { merge: true }); else batch.set(bRef, { explored: true, exploredAt: at, exploreFrom: l.exploreFrom || null }, { merge: true }); // 탐색 수집 책: 우리 상품·알라딘 구매 풀과 구분
     await batch.commit();
@@ -2479,7 +2484,7 @@
   window.__rnRegVerifyNow = (id) => { const seq = [6, 15, 30, 60, 90, 120, 180, 240, 300, 420, 600].map((x) => x * 1000); let i = 0; const go = async () => { let st = null; try { const d = await C('shp_cmds').doc(id).get(); const v = d.data() || {}; st = v.status; if (st === 'verify' && (await regLease(d.ref))) await regVerifyOne(d.ref, v); st = ((await C('shp_cmds').doc(id).get()).data() || {}).status; } catch (e) {} if (st === 'verify' && ++i < seq.length) setTimeout(go, seq[i] - seq[i - 1]); }; setTimeout(go, seq[0]); };
   let regVerBusy = false;
   async function regLease(ref) { let ok = false; await db.runTransaction(async (tx) => { ok = false; /* (1.89.13) 트랜잭션이 다시 돌면 앞 시도의 값이 남지 않게 */ const sn = await tx.get(ref); const v = sn.data() || {}; const L = v.lease || {}; if (L.by && L.by !== REG_ME() && Date.parse(L.until || 0) > Date.now()) return; tx.set(ref, { lease: { by: REG_ME(), until: new Date(Date.now() + 6 * 60000).toISOString() } }, { merge: true }); ok = true; }); return ok; }
-  async function regVerifyAll() { if (regVerBusy && Date.now() - (regVerifyAll.at || 0) > 10 * 60e3) { regVerBusy = false; log('📥 공개 확인이 10분 넘게 끝나지 않아 다시 시작(멈춘 요청을 버림)', 1); } /* (1.89.53) 10/24 20:06 17줄이 42분 동안 확인 0번 — 한 번 멈춘 확인이 '하는 중' 표시를 쥐고 있어 다음 확인이 모두 건너뛰던 것 */ if (regVerBusy || !auth.currentUser || !RGF() || (window.__rnRest && window.__rnRest())) return; regVerBusy = true; regVerifyAll.at = Date.now(); const X = EXC();
+  async function regVerifyAll() { if (PUBONLY) return; /* (1.89.57 격일 점검) 🌐 로거는 샵매니저 상품 조회(/scm/)를 못 읽는데도 3분마다 verify 일을 6분씩 잡고 실패해(10/24 18:50~22:10 '공개 확인 실패: 🛡 로거' 17번) 사무실 PC·클라우드가 그동안 확인을 못 함 — 로거는 아예 안 함 */ if (regVerBusy && Date.now() - (regVerifyAll.at || 0) > 10 * 60e3) { regVerBusy = false; log('📥 공개 확인이 10분 넘게 끝나지 않아 다시 시작(멈춘 요청을 버림)', 1); } /* (1.89.53) 10/24 20:06 17줄이 42분 동안 확인 0번 — 한 번 멈춘 확인이 '하는 중' 표시를 쥐고 있어 다음 확인이 모두 건너뛰던 것 */ if (regVerBusy || !auth.currentUser || !RGF() || (window.__rnRest && window.__rnRest())) return; regVerBusy = true; regVerifyAll.at = Date.now(); const X = EXC();
     try { // ① 지킴이: '하는 중'·'멈춘 일(sweep)'인데 15분 넘게 조용함
       for (const stName of ['running', 'stuck']) { const qs = await C('shp_cmds').where('status', '==', stName).get(); for (const d of qs.docs) { const v = d.data(); if (v.type === 'regDel') { /* (1.89.30) 멈춘 삭제도 매듭 — 보낸 것이 있으면 다시 찾기(delcheck)로, 없으면 '못 함'(다시 삭제를 누르면 됨) */ const quietD = Date.now() - Math.max(Date.parse(v.beatAt || 0) || 0, Date.parse((v.claim || {}).at || 0) || 0, Date.parse(v.createdAt || 0) || 0) > 15 * 60000; if (stName !== 'stuck' && !quietD) continue; if (!(await regLease(d.ref))) continue; const res = { ...(v.results || {}) }; const sent = Object.values(res).some((x) => x.state === 'sent'); if (sent) await d.ref.set({ status: 'delcheck', msg: '삭제를 맡은 수집기 탭이 멈춤 — 보낸 것은 다시 찾아 지워졌는지 확인', uploadedAt: TS() }, { merge: true }); else { (v.items || []).forEach((it) => { const k = it.regItem || it.listingKey || it.listingId; if (!res[k]) res[k] = { state: 'fail', at: nowIso(), msg: '수집기 탭이 삭제 전에 멈춤 — 알라딘은 그대로 · 다시 삭제를 누르면 됨', listingId: String(it.listingId || '') }; }); await d.ref.set({ status: 'fail', results: res, msg: '수집기 탭이 삭제 전에 멈춤 — 알라딘은 그대로', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); await delItemsSync(d.id, v, res); } continue; } if (!['regBulk', 'regOne', 'regBulkMock', 'regOneMock'].includes(v.type)) continue; const quiet = Date.now() - Math.max(Date.parse(v.beatAt || 0) || 0, Date.parse((v.claim || {}).at || 0) || 0, Date.parse(v.createdAt || 0) || 0) > (/^regOne/.test(v.type) ? 4 : 15) * 60000; /* (1.89.29) 정범님 10/22 '실시간과 거리가 멂': 개별·미등록은 30초마다 살아 있음을 남기므로 4분 조용하면 멈춘 것 (대량은 엑셀 올림이 길어 15분) */ if (!quiet || !(await regLease(d.ref))) continue;
           if (v.sent) { await d.ref.set({ status: 'verify', msg: '수집기 탭이 등록 요청 뒤 멈춤 — 공개 확인으로 판단', verify: { ...(v.verify || {}), base: (v.verify || {}).base || v.base || 0, codes: (v.verify || {}).codes || v.codes || [1], until: new Date(Date.now() + 90 * 60000).toISOString() }, uploadedAt: TS() }, { merge: true }); log('📥 지킴이: 등록 요청 뒤 멈춘 일 → 공개 확인으로', 1); }
