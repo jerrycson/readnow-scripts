@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.57
+// @version      1.89.58
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -4276,16 +4276,17 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const fixed = {}; for (const f of BOOK_FIXED) if (page[f] != null && (!prevB || prevB[f] == null || (Array.isArray(prevB[f]) && !prevB[f].length))) fixed[f] = page[f];
     const imgs = {}; for (const k of ['front', 'back', 'spine']) { const src = page.images && page.images[k]; if (src && !(prevB && prevB.images && prevB.images[k] && prevB.images[k].src)) imgs[k] = { src, stored: null }; }
     const batch = db.batch();
-    if (prevB) { // (1.26.0) 도서 정보가 전과 다르면 그 차이를 시각과 함께 기록 (고정형은 덮어쓰지 않으므로 다르게 보인 값을 따로 남김)
+    const seenNow = {}; if (prevB) { // (1.26.0) 도서 정보가 전과 다르면 그 차이를 시각과 함께 기록 (고정형은 덮어쓰지 않으므로 다르게 보인 값을 따로 남김)
       const chg = {}; const cmp = (a, b) => stabJ(a ?? null) !== stabJ(b ?? null); /* (1.89.44 자동 점검) 칸 순서와 상관없이 — Firestore가 돌려준 묶음(categories·contributors 안 {…})은 칸 이름 순 */
-      for (const f of BOOK_FIXED) if (page[f] != null && prevB[f] != null && cmp(prevB[f], page[f]) && !(page.infoFrom && page.infoFrom[f] && !(prevB.infoFrom && prevB.infoFrom[f]))) chg[f] = { kept: prevB[f], seen: page[f] }; /* (1.75.0) 예전에 알라딘 값으로 적힌 칸을 외부 값과 견준 차이는 '바뀜'이 아님(출처가 다를 뿐) — 매번 기록하지 않음 */
+      const seenPrev = (prevB.seenInfo && typeof prevB.seenInfo === 'object') ? prevB.seenInfo : {}; /* (1.89.58 격일 점검) 고정형 칸은 처음 값을 지키므로 '지금 화면 값 ≠ 지킨 값'은 다음 읽기에도 그대로 → 책을 읽을 때마다 같은 차이를 또 기록했음(10/24 21~22시 로거 2,444권 중 1,899권 · 크기 '180*254mm'↔'180*254*19mm', 무게, 지은이 표기처럼 화면·출처 차이) → 마지막으로 본 값(prd_books.seenInfo)과 다를 때만 기록 */
+      for (const f of BOOK_FIXED) if (page[f] != null && prevB[f] != null && cmp(prevB[f], page[f]) && !(page.infoFrom && page.infoFrom[f] && !(prevB.infoFrom && prevB.infoFrom[f]))) { if (cmp(seenPrev[f] ?? null, page[f])) { chg[f] = { kept: prevB[f], seen: page[f] }; seenNow[f] = page[f]; } } /* (1.75.0) 예전에 알라딘 값으로 적힌 칸을 외부 값과 견준 차이는 '바뀜'이 아님(출처가 다를 뿐) — 매번 기록하지 않음 */
       const cur = { aladinItemId: book.aladinItemId, isbn13: idsAll.isbn13, isbn10: idsAll.isbn10, aladinCode: idsAll.aladinCode, barcode: idsAll.barcode, productUrl: finalUrl, previewUrls: (page.images && page.images.preview) || null };
       for (const [f, v] of Object.entries(cur)) if (v != null && prevB[f] != null && cmp(prevB[f], v)) chg[f] = { from: prevB[f], to: v };
       if (Object.keys(chg).length) batch.set(C('prd_metric_changes').doc(), { bookId, at: nowIso(), kind: 'bookInfo', chg, ...W() });
     }
     const mtB = P.mediaType({ title: page.title, categories: page.categories, ids: idsAll.ids, isbn13: idsAll.isbn13 }); /* (1.89.57) 종류 판정을 앞으로 옮겨 책 문서를 한 번만 적음(전엔 같은 묶음에서 두 번 set) */
     batch.set(bRef, { bookId, keyScheme: SET.keyScheme, aladinItemId: book.aladinItemId, isbn13: idsAll.isbn13, isbn10: idsAll.isbn10, aladinCode: idsAll.aladinCode, barcode: idsAll.barcode, mediaType: mtB.type, mediaWhy: mtB.why,
-      ids: idsAll.ids, idWarn: idsAll.warn, ...fixed, ...(Object.keys(imgs).length ? { images: imgs, imgStatus: 'pending' } : {}),
+      ids: idsAll.ids, idWarn: idsAll.warn, ...fixed, ...(Object.keys(seenNow).length ? { seenInfo: { ...((prevB && prevB.seenInfo) || {}), ...JSON.parse(JSON.stringify(seenNow)) } } : {}), ...(Object.keys(imgs).length ? { images: imgs, imgStatus: 'pending' } : {}),
       ...(page.images && page.images.preview && page.images.preview.length ? { previewUrls: page.images.preview } : {}),
       source: page.fetchedFrom, resolvedBy, productUrl: finalUrl, ...(page.infoFrom ? { infoFrom: JSON.parse(JSON.stringify(page.infoFrom)) } : {}), ...(EB && EB.reviews && Object.keys(EB.reviews).length ? { extReviews: EB.reviews, extReviewsAt: at } : {}), /* (1.76.0) 상품평·리뷰 수 — 교보·예스24·네이버(점수 만점이 달라 출처마다) */ ...(isNewBook ? { firstSeenAt: at } : {}), lastFetchedAt: at, ...W() }, { merge: true });
     /* (1.57.2) 이어진 책이 바뀌어도 예전 연결을 bookIds에 쌓아 둠(지금 연결 bookId만 바뀜) */ const AUb = firebase.firestore.FieldValue.arrayUnion(bookId);
