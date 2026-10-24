@@ -1,2 +1,2 @@
-cmdsince=2026-10-24T10:30&types=register,regOne
-# 1792843232
+cmdsince=2026-10-24T10:00
+# 1792843269
