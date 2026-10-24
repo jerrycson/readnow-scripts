@@ -1,1 +1,2 @@
-cmds=regOne&n=4
+cmds=register&n=3
+# 1792842917
