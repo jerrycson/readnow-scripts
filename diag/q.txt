@@ -1,3 +1,4 @@
-deepscan=1&depth=2&maxn=70
-logs=1&pc=LOGGER&from=202610241157
-# 1792846623
+deepscan=1&depth=2&maxn=60
+doc=prd_system/imgMirror
+doc=prd_system/dataBackup
+# 1792847009
