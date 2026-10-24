@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "등록 재설계(기등록)",
+ "since": "2026-10-24T12:22:27Z",
+ "beat": "2026-10-24T12:22:27Z",
  "ask": null,
  "last": {
   "who": "chat",
