@@ -1,2 +1,6 @@
-deepscan=/scm/wrecord_edit.aspx|/scm/UsedItemBulkReg.aspx|/scm/worder_delivery.aspx?orderstep=4|/scm/worder_delivery_complete.aspx?orderstep=5|/scm/worder_delivery_completed.aspx?orderstep=6|/scm/wsettlement_c2c.aspx|/scm/usedshop/wfavorite.aspx|/scm/wmain_login.aspx?start=we|/scm/worders.aspx?searchType=8|/scm/wShopSurveySellerList.aspx&depth=1&maxn=40
-# 1792847524
+doc=prd_metric_changes/ueqygt96AO1edGLfT5gU,prd_metric_changes/9Wspbh3mfARIR9nZs4b1,prd_metric_changes/3uoZH4JSqRIfNf7pWnZg,prd_metric_changes/CVgsgyRvx8XL0FOLFqZr,prd_metric_changes/UM1PSodUadsyzTGHV8JA,prd_metric_changes/jlUFE1AP8bOWWudiYZgJ,prd_metric_changes/s5Gk7adgdDuxaFn9rFl7,prd_metric_changes/rXnk0UYFVTcH71puwa5C
+doc=prd_listings/aladin_U255876315,prd_listings/aladin_U255881152,prd_listings/aladin_U255886122,prd_listings/aladin_U255888364,prd_listings/aladin_U255888528,prd_listings/aladin_U255889503
+recentUp=prd_books&mins=240
+recentUp=prd_ids&mins=240
+logs=1&pc=LOGGER&from=202610242210&to=202610242300
+# 1792849597
