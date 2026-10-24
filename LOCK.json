@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "이름·벤치 순서",
- "since": "2026-10-24T07:00:33Z",
- "beat": "2026-10-24T07:00:33Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
   "done": "",
-  "at": "2026-10-24T06:56:35Z"
+  "at": "2026-10-24T07:03:25Z"
  }
 }
