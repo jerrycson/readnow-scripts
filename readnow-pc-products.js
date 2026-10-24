@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.45의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.46의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.45' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.45', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.46' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.46', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -3612,7 +3612,7 @@
   /* (1.78.0) 사무실 PC도 밤(한국 0~7시)·쉴 때 무한 차례를 나눠 맡음 — 공식 API 출처만(외부 화면 탭을 열지 않음) · 웹앱 설정에서 끌 수 있음 */
   if (!PUBONLY) setInterval(async () => { try { if (BX.busyO || window.__rnPaused || !auth.currentUser || running || parBusy || RESTX.busy || EXT_S.busy || !EXT()) return; const h = new Date(Date.now() + 9 * 3600e3).getUTCHours(); if (h >= 7) return; const cf = await bxCfg(); if (cf.office === false || cf.mode === 'off') return; BX.busyO = true; try { await biExtra(Date.now(), 4 * 60e3, true); } finally { BX.busyO = false; } } catch (e) { BX.busyO = false; } }, 60e3);
   async function biTick() { if (!PUBONLY || BI.busy || !auth.currentUser || window.__rnPaused) return; if (!helperVerOk('1.6.3')) { BI.why = '도우미 1.6.3을 기다림(교보·네이버 표지를 와이파이로 보내는 판)'; return; } if (!EXT()) { BI.why = '외부 정보 공용 파일 없음'; return; } BI.busy = true; BI.why = null;
-    try { if (!BI.q.length || Date.now() - BI.qAt > 30 * 60e3) await biQueue(); const t0 = Date.now();
+    try { if ((!BI.q.length && Date.now() - (BI.qAt || 0) > 5 * 60e3) || Date.now() - (BI.qAt || 0) > 30 * 60e3) await biQueue(); /* (1.89.46) 차례가 비면 20초마다 2.5만 개를 다시 훑던 것(1.2초 막힘) → 5분에 한 번 */ const t0 = Date.now();
       const biSrcOk = async () => { const cf = await extCfg().catch(() => null); return ['kyobo', 'yes24', 'naverbook'].some((s0) => (EXT_S.pauseUntil[s0] || 0) <= Date.now() && !(EXT_S.authPause && EXT_S.authPause[s0] != null) && !(cf && cf.src && cf.src[s0] && cf.src[s0].cap != null && (EXT_S.used[s0] || 0) >= cf.src[s0].cap)); }; /* (자동 점검 2026-10-16) 세 출처가 모두 상한·쉼이면 이번 차례는 그만(빈 읽기로 차례만 넘기지 않게) */
       const lim = (biFocus() ? 10 : 4) * 60e3; BI.focus = biFocus();
       while (BI.q.length && Date.now() - t0 < lim) { if (window.__rnPaused) break; if (!(await biSrcOk())) { BI.why = '교보·예스24·네이버 모두 오늘 상한 또는 쉬는 중 — 풀리면 이어서'; break; } const [k, tag] = BI.q.shift(); const l = LISTINGS.get(k); if (!l || biFresh(l)) continue; BI.n++; let mark;

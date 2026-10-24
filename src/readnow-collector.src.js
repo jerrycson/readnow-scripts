@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.45
+// @version      1.89.46
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -6589,7 +6589,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   /* (1.78.0) 사무실 PC도 밤(한국 0~7시)·쉴 때 무한 차례를 나눠 맡음 — 공식 API 출처만(외부 화면 탭을 열지 않음) · 웹앱 설정에서 끌 수 있음 */
   if (!PUBONLY) setInterval(async () => { try { if (BX.busyO || window.__rnPaused || !auth.currentUser || running || parBusy || RESTX.busy || EXT_S.busy || !EXT()) return; const h = new Date(Date.now() + 9 * 3600e3).getUTCHours(); if (h >= 7) return; const cf = await bxCfg(); if (cf.office === false || cf.mode === 'off') return; BX.busyO = true; try { await biExtra(Date.now(), 4 * 60e3, true); } finally { BX.busyO = false; } } catch (e) { BX.busyO = false; } }, 60e3);
   async function biTick() { if (!PUBONLY || BI.busy || !auth.currentUser || window.__rnPaused) return; if (!helperVerOk('1.6.3')) { BI.why = '도우미 1.6.3을 기다림(교보·네이버 표지를 와이파이로 보내는 판)'; return; } if (!EXT()) { BI.why = '외부 정보 공용 파일 없음'; return; } BI.busy = true; BI.why = null;
-    try { if (!BI.q.length || Date.now() - BI.qAt > 30 * 60e3) await biQueue(); const t0 = Date.now();
+    try { if ((!BI.q.length && Date.now() - (BI.qAt || 0) > 5 * 60e3) || Date.now() - (BI.qAt || 0) > 30 * 60e3) await biQueue(); /* (1.89.46) 차례가 비면 20초마다 2.5만 개를 다시 훑던 것(1.2초 막힘) → 5분에 한 번 */ const t0 = Date.now();
       const biSrcOk = async () => { const cf = await extCfg().catch(() => null); return ['kyobo', 'yes24', 'naverbook'].some((s0) => (EXT_S.pauseUntil[s0] || 0) <= Date.now() && !(EXT_S.authPause && EXT_S.authPause[s0] != null) && !(cf && cf.src && cf.src[s0] && cf.src[s0].cap != null && (EXT_S.used[s0] || 0) >= cf.src[s0].cap)); }; /* (자동 점검 2026-10-16) 세 출처가 모두 상한·쉼이면 이번 차례는 그만(빈 읽기로 차례만 넘기지 않게) */
       const lim = (biFocus() ? 10 : 4) * 60e3; BI.focus = biFocus();
       while (BI.q.length && Date.now() - t0 < lim) { if (window.__rnPaused) break; if (!(await biSrcOk())) { BI.why = '교보·예스24·네이버 모두 오늘 상한 또는 쉬는 중 — 풀리면 이어서'; break; } const [k, tag] = BI.q.shift(); const l = LISTINGS.get(k); if (!l || biFresh(l)) continue; BI.n++; let mark;
