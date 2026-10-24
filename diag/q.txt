@@ -1,2 +1,14 @@
-deepscan=/scm/wrecord_edit.aspx|/scm/UsedItemBulkReg.aspx|/scm/worder_delivery.aspx?orderstep=4|/scm/worder_delivery_complete.aspx?orderstep=5|/scm/worder_delivery_completed.aspx?orderstep=6|/scm/wsettlement_c2c.aspx|/scm/usedshop/wfavorite.aspx|/scm/wmain_login.aspx?start=we|/scm/worders.aspx?searchType=8|/scm/wShopSurveySellerList.aspx&depth=1&maxn=40
-# 1792847524
+recentUp=prd_listings&mins=240
+recentUp=prd_book_metrics&mins=240
+recentUp=prd_metric_changes&mins=240
+logs=1&pc=LOGGER&from=202610241850&to=202610242210
+logs=1&pc=LOGGER&from=202610232130&to=202610240400
+logs=1&pc=JS-MAIN&from=202610241850&to=202610242210
+logs=1&pc=HOME&from=202610241850&to=202610242210
+doc=app_settings/write_watch
+doc=prd_jobs/pcBeat
+doc=prd_system/dataBackup
+doc=app_settings/backup_log
+doc=prd_system/autoSched
+perf=400
+# 1792849378
