@@ -118,6 +118,7 @@
 
 ## 남은 일 / 지켜볼 것
 - (2026-10-24 03:25 · 3시간 점검 · 웹앱 1.78.45) 🪶 시장 지표 첫 쪽 줄(usedFirstPage · 약 74만 줄)을 slimDoc에서 packRow로 한 덩어리 같은 모양으로 다시 만듦(칸 순서가 ROW_K와 같을 때만 · 값·칸·순서 그대로) — node 시험 74만 줄 147→135MB. 숫자: 03:14 rate180 상품·시장 지표 0(밤) · LOGGER 22:29부터 꺼짐(알려진 것) · JS-MAIN/HOME 긴 작업 91초/74초(기록 창 열림 — 알려진 것).
+- (2026-10-24 15:20 · 3시간 점검 · 웹앱 1.78.49) 🪶 도서 정보(pbooks) SLIM_B에 aladinPublisherId·mediaType·mediaWhy(웹앱은 l.mediaType·RP.mediaType만)·explored·exploredAt·exploreFrom·writer·writerSchema, 우리 상품 SLIM_L에 writer·writerSchema 더함 + pbooks·plist slimIdbOnce v=4 · 시험 3.3만 권 29.5→24.7MB.
 - (2026-10-24 12:20 · 3시간 점검 · 웹앱 1.78.48) 🪶 시장 지표(pmetrics)에서 웹앱이 안 읽는 bookId(=id)·dynamicPending·dynLoaded·checkedBy·writer·writerSchema를 SLIM_M에 더함 + slimIdbOnce(st, map, v) — v로 그 기록만 다시(pmetrics는 rn-slim4-) · 시험 3.7만 개 약 2.6MB↓.
 - (2026-10-24 09:30 · 3시간 점검 · 웹앱 1.78.47) 🪶 우리 상품 기록(plist)에서 웹앱이 안 읽는 seenBy_*·goneEvents를 뺌(SLIM_L · pfx 앞머리 빼기 · deTsTop·slimDoc 함께) + slimIdbOnce('plist') — 웹앱은 prd_listings를 쓰지 않아 서버 그대로 · 시험 2.55만 개 24.3→20.6MB.
 - (2026-10-24 06:30 · 3시간 점검 · 웹앱 1.78.46) 🪶 판매가치 캐시(S._valC): valOf가 희소성(rarity)·전략(strategy) 판정을 판정 글(why)·값이 같으면 valShare로 한 물건 함께 씀(캐시의 _vw · 3만 넘으면 새로) — 읽기만 하는 물건 · 시험 2.5만 개 22→16~18MB · JSON 같음 확인.
