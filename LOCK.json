@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "휴대폰 상한",
- "since": "2026-10-24T07:25:02Z",
- "beat": "2026-10-24T07:59:44Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
   "done": "",
-  "at": "2026-10-24T07:03:25Z"
+  "at": "2026-10-24T08:00:18Z"
  }
 }
