@@ -1,1 +1,1 @@
-doc=prd_system/autoSched&logs=1&pc=LOGGER&from=202610241625
+health=1&hours=1&n=1&logs=1&pc=LOGGER&from=202610241618
