@@ -1,2 +1,1 @@
-cmds=regOne&n=3
-# 1792842944
+cmdsince=2026-10-24T10:30&types=register,regOne
