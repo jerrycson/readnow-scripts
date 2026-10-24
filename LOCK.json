@@ -1,12 +1,12 @@
 {
- "holder": "auto3h",
- "what": "3시간 점검 18:14 — 주문·고객 기기 보관 안 쓰는 칸 빼기(메모리)",
- "since": "2026-10-24T09:21:02Z",
- "beat": "2026-10-24T09:21:02Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "chat",
-  "done": "",
-  "at": "2026-10-24T08:53:02Z"
+  "who": "auto3h",
+  "done": "웹앱 1.78.58 주문·고객 안 쓰는 칸 빼기 (0e02957)",
+  "at": "2026-10-24T09:22:50Z"
  }
 }
