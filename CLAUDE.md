@@ -18,3 +18,5 @@
 6. **🪶 점검마다 메모리 줄이기 (정범님 지시 2026-10-23 12:46)** — 3시간 점검·매일 전체 점검은 회차마다 웹앱 기능을 지키면서 메모리 사용을 눈에 띄게 줄이는 고침을 최소 하나 내고, 보고에 '메모리: 무엇을·얼마나'를 적는다(자세한 후보는 src/PROJECT_STATE.md '점검마다 메모리 대폭 줄이기').
 
 7. **🗓 점검 일정 (정범님 지시 2026-10-23 16:41)** — 3시간 점검(Opus) 하루 7번 · 매일 전체 점검(Opus) **일·월·수·금** 21:49 · 격일 정밀 점검(**Fable 5.1**) **화·목·토** 21:49. 매일·격일 점검의 코드 범위 = 바로 앞 점검 뒤 커밋 전부(토요일은 한 주 전체). 모든 점검은 끝나기 전에 readnow-chats `audits/3h/PENDING.md` 맨 위에 요약 칸(`## <날짜 시각> <점검 이름>`)을 덧붙인다. 자세한 것은 readnow-chats `audits/routines/README.md`.
+
+8. **💬 claude.ai 대화 받기 (2026-10-24)** — 예약 작업 세션에는 claude.ai 대화 읽기 도구(recent_chats·read_conversation)가 없어 10/16 뒤 자동 저장이 멈춰 있었음. 그 도구가 있는 대화·작업 세션은 정범님 메시지에 처음 답할 때(하루 한 번) `recent_chats`로 readnow-chats `claude-ai/INDEX.md`에 없는 대화를 받아 `claude-ai/`에 저장하고 INDEX를 고친 뒤 push(가리개 sanitize.py). 작업 중 정범님께 보낸 글(SendUserMessage)·물음·첨부 글 원문도 `tools/codesess.py`가 보관함.
