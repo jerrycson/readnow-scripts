@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.67
+// @version      1.89.68
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -219,7 +219,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const stopHere = () => { try { window.__rnCrm && window.__rnCrm.pause(); } catch (e) {} try { window.__rnPrd && window.__rnPrd.pause(); } catch (e) {} };
   const changed = () => { try { window.__rnCtlDraw && window.__rnCtlDraw(); } catch (e) {} };
   window.__rnPauseInfo = () => GM_getValue('rnu-paused-info', null);
-  window.__rnPauseAll = (why) => { window.__rnPaused = true; GM_setValue('rnu-paused-info', { at: Date.now(), why: why || '사람이 누름' }); GM_setValue('rnu-paused', true); stopHere(); window.__rnLog && window.__rnLog('수집기', 'warn', `■ 일시정지 (${why || '사람이 누름'}) — 이 PC의 모든 수집기 탭(고객·상품·일괄)이 지금 항목까지 저장하고 멈춤. 사람이 다시 시작하기 전에는 자동으로 다시 시작하지 않음`); changed(); };
+  window.__rnPauseAll = (why) => { window.__rnPaused = true; let keys = []; try { const P0 = window.__rnPrd; keys = P0 && P0.runningKeys ? [...P0.runningKeys()] : []; } catch (e) {} GM_setValue('rnu-paused-info', { at: Date.now(), why: why || '사람이 누름', keys }); /* (1.89.68) 멈출 때 이 PC가 하던 일 — '다시 시작'은 이것만 이어감 */ GM_setValue('rnu-paused', true); stopHere(); window.__rnLog && window.__rnLog('수집기', 'warn', `■ 일시정지 (${why || '사람이 누름'}) — 이 PC의 모든 수집기 탭(고객·상품·일괄)이 지금 항목까지 저장하고 멈춤. 사람이 다시 시작하기 전에는 자동으로 다시 시작하지 않음`); changed(); };
   window.__rnResumeOk = () => { if (window.__rnPaused) window.__rnLog && window.__rnLog('수집기', 'info', '▶ 사람이 다시 시작함 (일시정지 풀림)'); window.__rnPaused = false; GM_setValue('rnu-paused', false); changed(); };
   const onRemote = (v) => { v = !!v; if (v === window.__rnPaused) return; window.__rnPaused = v; if (v) { stopHere(); window.__rnLog && window.__rnLog('수집기', 'warn', '■ 다른 탭에서 일시정지를 눌렀습니다 — 이 탭의 작업도 지금 항목까지 저장하고 멈춤'); } else window.__rnLog && window.__rnLog('수집기', 'info', '▶ 다른 탭에서 다시 시작을 눌렀습니다 (일시정지 풀림)'); changed(); };
   try { if (typeof GM_addValueChangeListener === 'function') GM_addValueChangeListener('rnu-paused', (k, o, n, remote) => { if (remote) onRemote(n); }); else throw 0; } catch (e) { setInterval(() => onRemote(GM_getValue('rnu-paused', false)), 3000); }
@@ -625,9 +625,12 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const stateOf = () => { const lives = window.__rnLive ? window.__rnLive() : []; const mine = lives.find((v) => v.tab === window.__rnTab); const busy = lives.filter((v) => v.busy); const main = (mine && mine.busy) ? mine : busy[0] || null;
     const paused = !!window.__rnPaused; const kind = paused && busy.length ? 'stop' : paused ? 'pause' : busy.length ? 'busy' : 'idle';
     return { lives, busy, main, mine, paused, kind, last: lives.map((v) => v.lastEnd).filter(Boolean).sort((a, b) => b.at - a.at)[0] || null }; };
+  /* (1.89.68) 정범님 10/25 20:23 'HOME에서 중단 → 시작만 눌렀는데 집중 벤치마킹이 시작됨': 예전 '▶ 다시 시작'은 멈춘 작업 목록에서 '가장 최근에 저장된 것'을 이어갔는데, 그 목록에 로거가 읽는 중인 벤치마킹 판매자 자리(쪽마다 저장 → 늘 가장 최근)가 섞여 있어 HOME이 로거의 벤치마킹을 이어받았음
+   *  → '다시 시작' = 일시정지를 풀고, 멈출 때 이 PC가 하던 일만 그 자리부터(없으면 풀기만 — 그다음은 ⏰ 차례대로) · 로그인 PC의 멈춘 작업 목록에는 다른 PC의 공개 일(벤치마킹 등) 자리를 보이지 않음(로거 몫 — 버리면 로거가 처음부터 다시 읽음) */
+  const resTarget = (R) => { const pi = window.__rnPauseInfo ? window.__rnPauseInfo() : null; const ks = new Set((pi && pi.keys) || []); if (!ks.size) return null; return R.filter((r) => !r.running && (ks.has(r.key) || (ks.has('bench') && /^bench_/.test(r.key)) || (r.mod === 'crm' && [...ks].some((k) => /crm/i.test(k)))) && (!r.by || r.by === pc())).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0] || null; };
   const resList = () => { const P = window.__rnPrd; const out = []; const rk = P && P.runningKeys ? P.runningKeys() : new Set();
     if (crmRes) out.push({ mod: 'crm', key: crmRes.key, name: crmRes.name, meta: `이 PC에 저장된 자리${crmRes.savedAt ? ' · ' + md(crmRes.savedAt) + ' 멈춤' : ''}${crmRes.why ? ' · ' + crmRes.why : ''}`, savedAt: crmRes.savedAt || 0, running: false });
-    ((P && P.resumables && P.resumables()) || []).forEach((r) => out.push({ mod: 'prd', key: r.key, name: r.name, meta: [r.stage ? `단계: ${r.stage}` : '', r.prog, r.by ? `${r.by}에서 ${md(r.savedAt)} ${/^bench_\d+$/.test(r.key) && rk.has('bench') && Date.now() - (r.savedAt || 0) < 5 * 60000 ? '읽는 중(마지막 적음)' : '멈춤'}` : r.savedAt ? md(r.savedAt) + ' 멈춤' : ''].filter(Boolean).join(' · '), savedAt: r.savedAt || 0, running: rk.has(r.key) || (/^bench_\d+$/.test(r.key) && rk.has('bench') && Date.now() - (r.savedAt || 0) < 5 * 60000) /* (1.63.3) 벤치마킹 판매자: 어느 PC가 벤치마킹을 하는 중이고 이 판매자 자리가 5분 안에 적혔으면 = 지금 읽는 중(예전엔 '멈춤'으로 보여 이어하기·버리기를 눌러도 '진행 중'이라며 안 됐음) */ }));
+    ((P && P.resumables && P.resumables()) || []).filter((r) => globalThis.__rnPubHome || !(window.__rnIsPubKey && window.__rnIsPubKey(r.key) && r.by && r.by !== pc())).forEach((r) => out.push({ mod: 'prd', key: r.key, name: r.name, by: r.by || null, meta: [r.stage ? `단계: ${r.stage}` : '', r.prog, r.by ? `${r.by}에서 ${md(r.savedAt)} ${/^bench_\d+$/.test(r.key) && rk.has('bench') && Date.now() - (r.savedAt || 0) < 5 * 60000 ? '읽는 중(마지막 적음)' : '멈춤'}` : r.savedAt ? md(r.savedAt) + ' 멈춤' : ''].filter(Boolean).join(' · '), savedAt: r.savedAt || 0, running: rk.has(r.key) || (/^bench_\d+$/.test(r.key) && rk.has('bench') && Date.now() - (r.savedAt || 0) < 5 * 60000) /* (1.63.3) 벤치마킹 판매자: 어느 PC가 벤치마킹을 하는 중이고 이 판매자 자리가 5분 안에 적혔으면 = 지금 읽는 중(예전엔 '멈춤'으로 보여 이어하기·버리기를 눌러도 '진행 중'이라며 안 됐음) */ }));
     return out; };
   // 머리줄 배지: 접어도 보임
   const badge = (S) => { const b = box.querySelector('#rnCtlBadge'); const m = S.main;
@@ -669,7 +672,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     else if (S.kind === 'busy') now = `${window.__rnOvHtml ? window.__rnOvHtml(S.main, !!S.main.crmBusy) : esc(S.main.job)}${S.main.tab !== window.__rnTab ? `<div class="mut" style="margin-top:4px">이 PC의 다른 탭(${S.main.page === 'worders.aspx' ? '주문조회' : S.main.page === 'wrecord_edit.aspx' ? '상품 조회' : '판매관리'})에서 진행 중 — 여기서도 멈추고 볼 수 있습니다</div>` : ''}${S.busy.length > 1 ? `<div class="mut">함께 진행 중: ${S.busy.filter((v) => v !== S.main).map((v) => esc(v.job)).join(', ')}</div>` : ''}`;
     else now = `<div class="big">쉬는 중</div><div class="mut">${S.last ? `마지막 작업: '${esc(S.last.name)}' ${md(S.last.at)} 끝 · ` : ''}${R.length ? `멈춘 작업 ${R.length}개가 아래에 있습니다.` : '멈춘 작업 없음.'}</div>`;
     // ② 주 버튼
-    const resumeTarget = R.filter((r) => !r.running).sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0] || null;
+    const resumeTarget = resTarget(R);
     const chainRes = R.find((r) => r.key === 'chain');
     const pauseBtn = S.paused
       ? `<button class="b-go" data-a="resume">▶ 다시 시작<small>${anyBusy ? '멈추는 중 — 멈춘 뒤 누르세요' : resumeTarget ? `'${esc(resumeTarget.name)}' 이어서` : '일시정지 풀기'}</small></button>`
@@ -712,8 +715,8 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   ov.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-fall]'); if (!b) return; e.preventDefault(); e.stopPropagation(); const on = b.dataset.fall === '1'; const P = {}; (window.__rnFeats || []).forEach((x) => (P[x[0]] = on)); window.__rnFeatSet(P); window.__rnLog && window.__rnLog('수집기', 'info', `🧩 수집 외 기능 전체 ${on ? '켬' : '끔'}`); featToast(`🧩 수집 외 기능 전체 ${on ? '켬' : '끔'} — 화면 기능은 그 화면을 새로 열 때부터`); lastHtml = ''; draw(); }, true);
   ov.addEventListener('click', async (e) => { const a = e.target.closest('[data-a]'); if (!a) return; e.preventDefault(); const P = window.__rnPrd; const k = a.dataset.k, m = a.dataset.m;
     if (a.dataset.a === 'pause') { window.__rnPauseAll && window.__rnPauseAll('관제판에서'); }
-    else if (a.dataset.a === 'resume') { const S = stateOf(); if (S.busy.length) return alert('아직 멈추는 중입니다 — 멈춘 뒤에 눌러 주세요'); const R = resList().filter((r) => !r.running).sort((x, y) => (y.savedAt || 0) - (x.savedAt || 0)); window.__rnResumeOk && window.__rnResumeOk();
-      const t = R[0]; if (t) { if (t.mod === 'crm') window.__rnCrm.resume(); else P.resume(t.key); } }
+    else if (a.dataset.a === 'resume') { const S = stateOf(); if (S.busy.length) return alert('아직 멈추는 중입니다 — 멈춘 뒤에 눌러 주세요'); const t = resTarget(resList()); window.__rnResumeOk && window.__rnResumeOk();
+      if (t) { if (t.mod === 'crm') window.__rnCrm.resume(); else P.resume(t.key); } }
     else if (a.dataset.a === 'all') { if (!P) return alert('수집기가 아직 준비 중입니다. 잠시 뒤 눌러 주세요'); if (stateOf().busy.length) return alert('이미 작업 중입니다'); window.__rnResumeOk && window.__rnResumeOk(); set('ov'); P.startAll(); }
     else if (a.dataset.a === 'res1') { window.__rnResumeOk && window.__rnResumeOk(); if (m === 'crm') window.__rnCrm.resume(); else { const r = P.resume(k); if (r && r.ok === false) { const row = a.closest('.rs'); let n = row && row.querySelector('.rs-why'); if (row && !n) { n = document.createElement('div'); n.className = 'rs-why'; n.style.cssText = 'flex-basis:100%;font-size:11.5px;color:#B0322A;margin-top:3px'; row.appendChild(n); } if (n) n.textContent = '✕ ' + r.why; return; } } }
     else if (a.dataset.a === 'dis1') { /* (1.63.2) 팝업 대신 단추 두 번 — 첫 누름은 '확정' 단추로 바뀜(4초) · 못 버리면 까닭을 그 줄 아래에 */ const row = a.closest('.rs'); const nm = (row.querySelector('b') || {}).textContent || k;
@@ -3878,7 +3881,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   if (PUBONLY) { setTimeout(helperTick, 1500); setInterval(helperTick, 30000); }
   let BFD = null; if (PUBONLY) auth.onAuthStateChanged((u) => { if (u && !BFD) { BFD = {}; C('prd_jobs').doc('benchForce').onSnapshot((d) => { BFD = (d.exists && d.data()) || {}; }, () => {}); } }); /* (1.89.67) 오늘 벤치마킹 한 바퀴가 끝났는지(강제 실행 = ⏰ 0시 칸의 한 바퀴) */
   const benchDoneToday = () => { const x = BFD || {}; const t = Date.parse(x.doneAt || '') || 0; const d0 = Date.parse(new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) + 'T00:00:00+09:00'); return !!(x.done && t >= d0); };
-  window.__rnBenchDoneToday = () => benchDoneToday();
+  window.__rnBenchDoneToday = () => benchDoneToday(); window.__rnIsPubKey = (k) => { const x = String(k || ''); return /^bench/.test(x) || isPubKey(x.split('#')[0]); };
   const tgateCheck = () => { if (PUBONLY && !TGATE.ok) throw Object.assign(new Error('🛡 ' + TGATE.why), { tgate: true }); if (benchOnly() && !isBenchKey(netJob())) throw Object.assign(new Error('🎯 이번 달(11/1 전) 로거는 집중 벤치마킹만 알라딘을 읽음 — 이 일은 사무실 PC·클라우드 몫'), { tgate: true, benchOnly: true }); if (PUBONLY) { const k = netJob(); if (isPubKey(k) && tierOfKey(k) === 'gen' && !isBenchKey(k) && !benchDoneToday()) throw Object.assign(new Error('🎯 오늘 집중 벤치마킹 한 바퀴가 아직 안 끝남 — 일반 업무는 그 뒤 남은 테더링으로만(정범님 10/25)'), { tgate: true, bud: true, benchFirst: true }); if (BUD && isPubKey(k)) { const t = tierOfKey(k); if (t === 'gen' ? !(BUD.left.gen > 0) : BUD.left[t] < -0.1 * BUD.perDay[t]) throw Object.assign(new Error(`📶 오늘 ${AS.TIER[t].l} 몫을 다 씀 — 읽지 않음`), { tgate: true, bud: true }); } } }; /* (1.89.67) 정범님 10/25 '하루 중 집중 벤치마킹을 먼저 쓰고 그다음 다른 일 · 일반 업무에 테더링이 새지 않게': ① 일반(gen) 몫 일은 오늘 벤치마킹 한 바퀴가 끝난 뒤에만 ② 일반은 몫이 0이 되는 순간 바로 멈춤(예전엔 하루 몫의 10%까지 넘겨 읽음) — 요청마다 이 관문을 지남 */
   window.__rnTgate = () => ({ ...TGATE, helper: HELPER, at: HELPER_AT });
   const NETM = { jobs: {}, n: 0 }; const netJob = () => String(curKey || (curStage ? (STAGE_JOB[curStage] || curStage) : '') || 'etc').replace(/[.\/#$\[\]]/g, '_').slice(0, 40);

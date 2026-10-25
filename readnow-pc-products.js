@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.67의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.68의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.67' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.67', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.68' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.68', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -898,7 +898,7 @@
   if (PUBONLY) { setTimeout(helperTick, 1500); setInterval(helperTick, 30000); }
   let BFD = null; if (PUBONLY) auth.onAuthStateChanged((u) => { if (u && !BFD) { BFD = {}; C('prd_jobs').doc('benchForce').onSnapshot((d) => { BFD = (d.exists && d.data()) || {}; }, () => {}); } }); /* (1.89.67) 오늘 벤치마킹 한 바퀴가 끝났는지(강제 실행 = ⏰ 0시 칸의 한 바퀴) */
   const benchDoneToday = () => { const x = BFD || {}; const t = Date.parse(x.doneAt || '') || 0; const d0 = Date.parse(new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) + 'T00:00:00+09:00'); return !!(x.done && t >= d0); };
-  window.__rnBenchDoneToday = () => benchDoneToday();
+  window.__rnBenchDoneToday = () => benchDoneToday(); window.__rnIsPubKey = (k) => { const x = String(k || ''); return /^bench/.test(x) || isPubKey(x.split('#')[0]); };
   const tgateCheck = () => { if (PUBONLY && !TGATE.ok) throw Object.assign(new Error('🛡 ' + TGATE.why), { tgate: true }); if (benchOnly() && !isBenchKey(netJob())) throw Object.assign(new Error('🎯 이번 달(11/1 전) 로거는 집중 벤치마킹만 알라딘을 읽음 — 이 일은 사무실 PC·클라우드 몫'), { tgate: true, benchOnly: true }); if (PUBONLY) { const k = netJob(); if (isPubKey(k) && tierOfKey(k) === 'gen' && !isBenchKey(k) && !benchDoneToday()) throw Object.assign(new Error('🎯 오늘 집중 벤치마킹 한 바퀴가 아직 안 끝남 — 일반 업무는 그 뒤 남은 테더링으로만(정범님 10/25)'), { tgate: true, bud: true, benchFirst: true }); if (BUD && isPubKey(k)) { const t = tierOfKey(k); if (t === 'gen' ? !(BUD.left.gen > 0) : BUD.left[t] < -0.1 * BUD.perDay[t]) throw Object.assign(new Error(`📶 오늘 ${AS.TIER[t].l} 몫을 다 씀 — 읽지 않음`), { tgate: true, bud: true }); } } }; /* (1.89.67) 정범님 10/25 '하루 중 집중 벤치마킹을 먼저 쓰고 그다음 다른 일 · 일반 업무에 테더링이 새지 않게': ① 일반(gen) 몫 일은 오늘 벤치마킹 한 바퀴가 끝난 뒤에만 ② 일반은 몫이 0이 되는 순간 바로 멈춤(예전엔 하루 몫의 10%까지 넘겨 읽음) — 요청마다 이 관문을 지남 */
   window.__rnTgate = () => ({ ...TGATE, helper: HELPER, at: HELPER_AT });
   const NETM = { jobs: {}, n: 0 }; const netJob = () => String(curKey || (curStage ? (STAGE_JOB[curStage] || curStage) : '') || 'etc').replace(/[.\/#$\[\]]/g, '_').slice(0, 40);
