@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.65의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.66의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.65' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.65', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.66' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.66', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2338,7 +2338,7 @@
     const nOk = Object.values(res).filter((x) => !x.e).length; await flush({ status: 'done', doneAt: nowIso(), by: PC_NAME, n: items.length, nOk, nCh, bad, ms: Date.now() - t0 });
     const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const inc = firebase.firestore.FieldValue.increment; C('prd_system').doc('qtychk').set({ days: { [day]: { n: inc(nOk), ch: inc(nCh), bad: inc(bad), cmds: inc(1) } }, last: { at: nowIso(), pc: PC_NAME, n: nOk, ch: nCh, bad }, ...W() }, { merge: true }).catch(() => {});
     log(`🔢 정보수정 확인 ${v.label || ''}: ${nOk}/${items.length}개 읽음 · 우리 기록과 달라 고친 상품 ${nCh}개${bad ? ` · 못 읽음 ${bad}개` : ''} (${Math.round((Date.now() - t0) / 1000)}초)`, bad ? 1 : 0); }
-  async function qchkNext() { if (QCHK.busy || Date.now() < (QCHK.offUntil || 0) || PUBONLY || pubPcMode() || !auth.currentUser || window.__rnPaused || (window.__rnRest && window.__rnRest())) return; /* 한 PC 안에서는 한 탭만(GM 'rnu-qchk' · 40초 신호) */ try { const g = GM_getValue('rnu-qchk', null); if (g && g.tab !== TAB_ID && Date.now() - (g.at || 0) < 40e3) return; } catch (e) {} QCHK.busy = true; const gBeat = () => { try { GM_setValue('rnu-qchk', { tab: TAB_ID, at: Date.now() }); } catch (e) {} }; gBeat(); const gT = setInterval(gBeat, 15e3);
+  async function qchkNext() { if (QCHK.busy || Date.now() < (QCHK.offUntil || 0) || PUBONLY || !auth.currentUser || window.__rnPaused || (window.__rnRest && window.__rnRest())) return; /* 한 PC 안에서는 한 탭만(GM 'rnu-qchk' · 40초 신호) */ try { const g = GM_getValue('rnu-qchk', null); if (g && g.tab !== TAB_ID && Date.now() - (g.at || 0) < 40e3) return; } catch (e) {} QCHK.busy = true; const gBeat = () => { try { GM_setValue('rnu-qchk', { tab: TAB_ID, at: Date.now() }); } catch (e) {} }; gBeat(); const gT = setInterval(gBeat, 15e3);
     try { for (let round = 0; round < 500; round++) { if (window.__rnPaused) return; let ref = null, v = null;
         const q = await C('qty_chk').where('status', '==', 'queued').limit(5).get(); let cand = q.docs; if (!cand.length) { const r = await C('qty_chk').where('status', '==', 'running').limit(20).get(); cand = r.docs.filter((d) => Date.now() - (Date.parse((d.data() || {}).beatAt || 0) || 0) > 10 * 60e3); /* 10분 넘게 신호가 없는 묶음 = 맡은 PC가 꺼짐 → 다른 PC가 남은 것부터 */ } if (!cand.length) return;
         const d0 = cand[Math.floor(Math.random() * cand.length)];
@@ -2346,7 +2346,7 @@
         if (!v) continue; if ((v.tries || 0) >= 6) { await ref.set({ status: 'fail', msg: '6번 맡았는데 끝나지 않음 — 그대로 둠', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); continue; }
         if ((await qtyChkCmd(ref, v, ref.id)) === 'stop') return; } }
     catch (e) { log('🔢 정보수정 확인 멈춤: ' + e.message, 1); } finally { QCHK.busy = false; clearInterval(gT); try { const g = GM_getValue('rnu-qchk', null); if (g && g.tab === TAB_ID) GM_deleteValue('rnu-qchk'); } catch (e) {} } }
-  async function qchkBoot() { if (PUBONLY || pubPcMode() || !auth.currentUser) return; let mine = false; const ref = C('prd_system').doc('qtychk');
+  async function qchkBoot() { if (PUBONLY || !auth.currentUser) return; let mine = false; const ref = C('prd_system').doc('qtychk');
     await db.runTransaction(async (tx) => { mine = false; const x = (await tx.get(ref)).data() || {}; if (x.full1) return; tx.set(ref, { full1: { at: nowIso(), by: PC_NAME, ver: APP_VER } }, { merge: true }); mine = true; });
     if (mine) { await loadListings('inc'); const L = [...LISTINGS].filter(([, l]) => l.active && l.listingId).map(([k, l]) => [k, String(l.listingId)]); const r = await qchkQueue(L, '전체 다시 세기(처음 한 번)', 'full1'); await ref.set({ full1: { n: r.items, cmds: r.cmds } }, { merge: true }); log(`🔢 정범님 10/25: 판매 중 상품 ${r.items.toLocaleString()}개 전체를 정보수정 화면으로 다시 세기 시작 — ${r.cmds}묶음을 로그인한 PC들이 나눠 함`); }
     setTimeout(() => qchkNext(), 5000); }
