@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.61의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.62의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.61' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.61', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.62' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.62', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1083,7 +1083,7 @@
       log(`💰 알라딘 예치금: 총잔액 ${P1.balance.toLocaleString()}원 · 새 내역 ${saved}줄${first ? ' (처음 — 1년치)' : ''} · 환급신청 ${rf.length}건`); return 'done';
     } finally { await releaseLane('aladin'); } }
   let LIST_LAST = 0, LIST_FULL = 0, LC_PUT_AT = 0; /* (1.88.6) 정범님 10/20 크롬 느림 실측: 일마다 이 PC 보관본(상품 2만 5천 건)을 IndexedDB에서 통째로 읽고(수 초 화면 멈춤) 바뀐 게 있으면 통째로 다시 씀(또 수 초) → 이미 메모리에 있으면 서버에서 바뀐 것만 받아 합치고, 보관본은 30분에 한 번만 다시 씀 */
-  const lcPut = (m, last, fullAt, now) => { const t0 = Math.max(LC_PUT_AT, LCACHE.atGet ? LCACHE.atGet() : 0); if (!now && Date.now() - t0 < 30 * 60e3) return; LC_PUT_AT = Date.now(); if (LCACHE.atSet) LCACHE.atSet(LC_PUT_AT); LCACHE.put({ rows: [...m], last, fullAt }).catch(() => {}); };
+  const lcPut = (m, last, fullAt, now) => { const t0 = Math.max(LC_PUT_AT, LCACHE.atGet ? LCACHE.atGet() : 0); if (!now && Date.now() - t0 < (LCACHE.atGet ? 60 : 30) * 60e3) return; /* (1.89.62 3시간 점검 · 🪶) 로거 크롬(Tampermonkey 보관본 · 한 번에 약 13MB 글자)은 60분에 한 번 — 다시 열 때는 보관본 뒤 바뀐 것만 서버에서 받으므로 기능 같음 · 10/24 14:10~10/25 14:17 LOGGER 'rn-*' 146번 약 1GB */ LC_PUT_AT = Date.now(); if (LCACHE.atSet) LCACHE.atSet(LC_PUT_AT); LCACHE.put({ rows: [...m], last, fullAt }).catch(() => {}); };
   async function loadListings(force) {
     if (LISTINGS && !force) return LISTINGS;
     if (LISTINGS && force === 'inc' && LIST_LAST && Date.now() - LIST_FULL < 24 * 3600e3) { try { let max = LIST_LAST; const ss = await C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(LIST_LAST - 120000)).get(); ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); LISTINGS.set(d.id, v); max = Math.max(max, lcMs(v)); } }); LIST_LAST = max; if (ss.size) lcPut(LISTINGS, max, LIST_FULL); return LISTINGS; } catch (e) {} }
