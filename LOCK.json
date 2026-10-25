@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "기등록 시험모드·수량 정보수정 기준",
+ "since": "2026-10-25T09:33:59Z",
+ "beat": "2026-10-25T09:33:59Z",
  "ask": null,
  "last": {
   "who": "auto3h",
