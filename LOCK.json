@@ -1,12 +1,12 @@
 {
- "holder": "auto3h",
- "what": "수집기 1.89.60 커밋",
- "since": "2026-10-24T21:18:03Z",
- "beat": "2026-10-25T00:19:54Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "kpsum",
-  "done": "요약 75개 넣음(3회) · 남은 약 400",
-  "at": "2026-10-24T21:01:24Z"
+  "who": "auto3h",
+  "done": "수집기 1.89.60 · 웹앱 1.78.76 7db15e4 (GM job_* 큰 목록 빼기)",
+  "at": "2026-10-25T00:20:04Z"
  }
 }
