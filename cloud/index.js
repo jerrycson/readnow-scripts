@@ -31,7 +31,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.35.11'; // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
+const VER = '0.35.12'; // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
 // // (0.35.5 격일 정밀 점검) ☁ 공개 확인: 읽기 실패 길도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂 · 상품 조회 HTTP 오류 = 읽기 실패 · deepscan 바꾸는 말 쿼리까지 · 진단 mchg
 // // (0.35.3) deepscan을 화면마다 따로 읽기(한 번에 60초 넘던 것) // (0.35.2) 진단 deepscan — 샵매니저 메뉴 깊이 2까지 · 북스킹 숍 · 우리 상품 화면 · 온라인 중고 목록을 읽기만(GET · 고객 정보 가림)
 // // (0.35.1) 💾 하루 한 번 prd_system/fbCols(모든 최상위 칸 이름 · app_secrets 뺌) — 로거 수집기 자료 보관이 칸 목록으로 씀
@@ -405,7 +405,7 @@ async function shipRead(p, until) {
 /* ── ③ 웹앱이 맡긴 일 (read · startDelivery · market = 그 주문 책의 시장 다시 읽기) ── */
 /* (0.12.9) 맡긴 일 두 갈래 — 급한 일(발송준비시작·판매중지·현금 판매중지·다시 읽기)은 회차 맨 앞, 느린 일(우리 매물 유의 사항 다시 읽기·시장 지표·알라딘 구매)은 시장 읽기 뒤 남은 시간에만
  *  예전엔 휴대폰이 맡긴 '중 상품 유의 사항 다시 읽기'가 쌓이면 회차 맨 앞에서 2분까지 써서 주문확인요청 다시 읽기·시장 읽기가 밀렸음 */
-const CMD_SLOW = new Set(['usedInfo', 'market', 'aladinBuy']); const cmdUrgent = (t) => !CMD_SLOW.has(t), cmdSlow = (t) => CMD_SLOW.has(t);
+const CMD_SLOW = new Set(['usedInfo', 'market', 'aladinBuy', 'vatRead']); const cmdUrgent = (t) => !CMD_SLOW.has(t), cmdSlow = (t) => CMD_SLOW.has(t);
 async function runCmds(p, deadline, only) { deadline = deadline || Date.now() + 150000; // (0.9.1) 이 시각이 지나면 새 일을 맡지 않음(남은 일은 대기 그대로 → 다음 회차) — 회차가 Cloud Run 5분 한도를 넘지 않게
   /* (0.12.5 점검 F8) 대기 목록은 듣고 있는 목록(watchCmds)을 그대로 씀 — 예전엔 1분·15초마다 다시 읽어, PC 몫으로 남은 일이 많으면 읽기가 하루 수만 번 늘었음 · 듣기가 끊겼으면 예전처럼 읽음 */
   const qs = cmdUnsub && cmdDocs ? { docs: cmdDocs.slice(), size: cmdDocs.length } : await C('shp_cmds').where('status', '==', 'queued').get(); let n = 0, needRead = false; const force = new Set();
@@ -457,6 +457,7 @@ async function runCmds(p, deadline, only) { deadline = deadline || Date.now() + 
     else if (v.type === 'prdEdit') { await prdEditRun(p, d.ref, v); }
     else if (v.type === 'cart') { await cartRun(p, d.ref, v); }
     else if (v.type === 'shopCfg') { await shopCfgRun(p, d.ref, v); }
+    else if (v.type === 'vatRead') { await vatReadRun(d.ref, v); }
     else if (v.type === 'read') { await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); needRead = true; }
     else { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 처리하는 길이 없는 종류 — 노선표 확인`, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('맡긴 일: 처리 길 없음', v.type); }
     } catch (e) { const nErr = (v.cloudErrN || 0) + 1; const msg = String(e.message || e).slice(0, 300);
@@ -592,6 +593,20 @@ const shopReadAll = (p) => p.evaluate(async (a) => { const get = async (u) => { 
   return { ok: true, delivery: del, notices }; }, { D: SHOP_D, T: SHOP_T });
 async function shopSave(p, cur, extra) { const ref = C('app_settings').doc('shop_cfg'); const old = (await ref.get()).data() || {}; const same = JSON.stringify({ d: old.delivery, n: old.notices }) === JSON.stringify({ d: cur.delivery, n: cur.notices });
   await ref.set({ delivery: cur.delivery, notices: cur.notices, at: nowIso(), ...(same ? {} : { hist: FV.arrayUnion({ at: nowIso(), delivery: old.delivery || null, notices: old.notices || null, why: (extra && extra.why) || '읽음' }) }), ...W() }, { merge: true }); }
+/* (0.35.12) 🧾 부가가치세 조회 읽기 (shp_cmds type 'vatRead') — 정범님 10/25 22:50 '부가가치세 조회의 월별 금액으로 웹앱 매출 맞춰 보기'
+ *  샵매니저 메뉴에서 글자 '부가가치세'가 든 링크를 찾아 GET으로만 읽고(바꾸는 말이 든 주소는 열지 않음), 표에서 '년·월'이 있는 줄의 숫자 칸을 그대로 app_settings/vat_monthly에 둠(머리 글자 함께 — 어느 칸이 무엇인지 웹앱이 보여 줌) · 고객 정보 없음 */
+async function vatReadRun(ref, v) { const at = nowIso(); const pg = await browser.newPage(); try { await pg.goto(AL + '/scm/wmain.aspx', { waitUntil: 'domcontentloaded', timeout: 90000 }); if (/\/login\/|wlogin/i.test(pg.url())) { await pg.close(); return ref.set({ status: 'queued', claim: null, cloudErr: '로그인 풀림 — 다음 회차에', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
+  const r = await pg.evaluate(async (extra) => { const BAD = /del|remove|cancel|save|proc|update|insert|confirm|apply|send|logout|pay|refund|excel|down/i; const get = async (u) => { const x = await fetch(u, { credentials: 'include', cache: 'no-store' }); const h = await x.text(); return { url: x.url, d: new DOMParser().parseFromString(h, 'text/html') }; };
+    const cand = new Map(); for (const st of ['/scm/wmain.aspx', '/scm/']) { try { const g = await get(st); for (const a of g.d.querySelectorAll('a[href]')) { const t = (a.textContent || '').replace(/\s+/g, ''); const h = a.getAttribute('href') || ''; if (!/부가가치세|부가세/.test(t)) continue; let u; try { u = new URL(h, location.origin + '/scm/'); } catch (e) { continue; } if (u.origin !== location.origin || BAD.test(u.pathname + u.search)) continue; cand.set(u.pathname + u.search, t.slice(0, 40)); } } catch (e) {} }
+    (extra || []).forEach((u) => { if (/^\/scm\//.test(u) && !BAD.test(u)) cand.set(u, '지정'); });
+    const out = []; for (const [u, t] of [...cand].slice(0, 4)) { try { const g = await get(u); const tabs = []; for (const tb of g.d.querySelectorAll('table')) { const rows = [...tb.querySelectorAll('tr')].map((tr) => [...tr.children].map((c) => (c.textContent || '').replace(/\s+/g, ' ').trim())); if (rows.length < 2) continue; const head = rows.find((r0) => r0.some((c) => /금액|매출|과세|부가|공급|합계|월/.test(c)) && !r0.some((c) => /\d{4}[.\-년]\s*\d{1,2}/.test(c))) || null; const data = rows.filter((r0) => r0.some((c) => /(\d{4})\s*[.\-년\/]\s*(\d{1,2})/.test(c)) && r0.some((c) => /^-?[\d,]+(원)?$/.test(c))); if (data.length) tabs.push({ head, data: data.slice(0, 60) }); }
+        out.push({ u, t, title: (g.d.title || '').trim().slice(0, 60), tabs, forms: [...g.d.querySelectorAll('select')].map((s0) => ({ n: s0.name || s0.id || '', o: [...s0.options].slice(0, 20).map((o) => o.value) })).slice(0, 6) }); } catch (e) { out.push({ u, t, err: String(e.message || e).slice(0, 100) }); } }
+    return { cand: [...cand.keys()], out }; }, Array.isArray(v.urls) ? v.urls : []);
+  await pg.close(); const months = {}; let head = null, src = null;
+  for (const o of r.out || []) for (const tb of o.tabs || []) for (const row of tb.data) { const mc = row.find((c) => /(\d{4})\s*[.\-년\/]\s*(\d{1,2})/.test(c)); const m = mc.match(/(\d{4})\s*[.\-년\/]\s*(\d{1,2})/); const k = `${m[1]}-${String(m[2]).padStart(2, '0')}`; const nums = row.map((c) => (/^-?[\d,]+(원)?$/.test(c) ? +c.replace(/[^\d-]/g, '') : null)); if (!months[k]) { months[k] = { cells: row.slice(0, 12), nums: nums.slice(0, 12) }; if (!head && tb.head) head = tb.head.slice(0, 12); if (!src) src = o.u; } }
+  const n = Object.keys(months).length; await C('app_settings').doc('vat_monthly').set({ at, src, head, months, cand: (r.cand || []).slice(0, 6), pages: (r.out || []).map((o) => ({ u: o.u, t: o.t, title: o.title || null, tables: (o.tabs || []).length, forms: o.forms || [], err: o.err || null })), ...W() }, { merge: true });
+  await ref.set({ status: 'done', result: { months: n, src, cand: (r.cand || []).length }, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); log(`🧾 부가가치세 조회: 달 ${n}개 · 화면 ${(r.cand || []).length}개`); }
+  catch (e) { try { await pg.close(); } catch (x) {} throw e; } }
 async function shopCfgRun(p, ref, v) { const at = () => nowIso(); const tr = []; const note = (m) => tr.push({ at: at(), m: String(m).slice(0, 200), pc: 'cloud' }); const fin = (st, msg, more) => ref.set({ status: st, msg: msg || null, doneAt: at(), ...(tr.length ? { trail: FV.arrayUnion(...tr) } : {}), ...(more || {}), uploadedAt: FV.serverTimestamp() }, { merge: true });
   let cur = await shopReadAll(p); if (cur.login === false) { await login(p); cur = await shopReadAll(p); } if (!cur.ok) return fin('fail', '알라딘 가게 설정 화면을 못 읽음(로그인)'); note('지금 설정 읽음');
   if (v.op === 'read' || (!v.delivery && !v.notice)) { await shopSave(p, cur); return fin('done', '읽음'); }

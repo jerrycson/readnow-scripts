@@ -1,0 +1,18 @@
+const SP = '/tmp/claude-0/-home-claude/2514b938-5524-5e43-ad0a-05319ceb1a3b/scratchpad/';
+require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  const errs = []; p.on('pageerror', (e) => errs.push(e.message)); const r = {};
+  await p.evaluate(async () => { const P = (rt, n, g, so, b) => ({ '최근 6개월': { rating: rt, count: n, good: g, soso: so, bad: b }, '전체 기간': { rating: 0.98, count: 5000 } });
+    S.sellers.set('me', { id: 'me', sc: '996008', aladinGrade: '전문셀러', isPro: true, cancel3m: 0.0125, shopPeriods: P(0.987, 820, 800, 15, 5), shopAt: '2026-10-25T10:00:00Z' });
+    for (let i = 0; i < 40; i++) S.sellers.set('s' + i, { id: 's' + i, sc: String(1000 + i), cancel3m: 0.005 + i * 0.001, shopPeriods: P(0.95 + i * 0.001, 50 + i * 30, 40, 5, 5) });
+    S.sellersLoaded = true; bump('s');
+    const now = new Date().toISOString(); S.qnaAll = [{ body: '띠지 있나요?', createdAt: now }, { body: '미개봉 맞나요? 비닐 있나요', createdAt: now }, { body: '몇 쇄인가요 개정판인가요', createdAt: now }, { body: '밑줄 있나요', createdAt: '2026-01-01T00:00:00Z' }, { body: '조금 깎아 주실 수 있나요', createdAt: now }];
+    await db.collection('app_settings').doc('vat_monthly').set({ at: now, src: '/scm/wvat.aspx', head: ['기간', '과세 매출', '부가세'], months: { '2026-09': { cells: ['2026-09', '1,000,000', '90,909'], nums: [null, 1000000, 90909] }, '2026-10': { cells: ['2026-10', '500,000', '45,454'], nums: [null, 500000, 45454] } } });
+    localStorage.removeItem('rn-home'); S.homeAdmin = { widgets: ['shopPerf', 'qnaTopic'] }; S.tab = 'home'; renderTabs(); renderMain(); });
+  await p.waitForTimeout(1500);
+  r.shop = await p.evaluate(() => { const w = [...document.querySelectorAll('#main .card, #main section, #main .wcard')].map((x) => x.innerText).join('\n'); return w; });
+  console.log(r.shop.replace(/\s+/g, ' ').slice(0, 900));
+  await p.evaluate(() => { const g = document.querySelector('.gaus'); if (g) g.closest('.card, section, div').scrollIntoView(); }); await p.screenshot({ path: SP + 't82a.png', clip: { x: 0, y: 0, width: 1100, height: 700 } });
+  await p.evaluate(() => { S._userAt = Date.now(); S.tab = 'biz'; S.sec = S.sec || {}; S.sec.bz_vat = true; renderTabs(); renderMain(); }); await p.waitForTimeout(1500); for (let i = 0; i < 10 && !(await p.evaluate(() => /2026-10/.test((document.querySelector('[data-sec="bz_vat"]') || {}).textContent || ''))); i++) await p.waitForTimeout(500);
+  r.vat = await p.evaluate(() => (document.querySelector('[data-sec="bz_vat"]') || {}).textContent || 'NONE'); console.log('dbg', await p.evaluate(() => JSON.stringify({ tab: S.tab, sec: (document.querySelector('[data-sec="bz_vat"]') || {}).outerHTML.slice(0, 300), sv: S.sec.bz_vat, m: document.querySelector('#main').innerText.slice(0, 80) }))); console.log('vat', r.vat.replace(/\s+/g, ' ').slice(0, 400));
+  const ok = /[SABCD]/.test(r.shop) && /98.7%/.test(r.shop) && /띠지·특전/.test(r.shop) && /2026-10/.test(r.vat) && !errs.length; console.log('errs', errs.join(' | ')); console.log(ok ? '✓ t82 통과' : '❌ t82 실패');
+});
