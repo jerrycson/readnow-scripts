@@ -1,12 +1,12 @@
 {
- "holder": "auto3h",
- "what": "3시간 점검 12:14 — 로거 상품 보관본(rn-lcache) 쓰기 줄이기",
- "since": "2026-10-25T03:19:13Z",
- "beat": "2026-10-25T03:19:13Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "auto3h",
-  "done": "수집기 1.89.60 · 웹앱 1.78.76 7db15e4 (GM job_* 큰 목록 빼기)",
-  "at": "2026-10-25T00:20:04Z"
+  "done": "수집기 1.89.61 · 웹앱 1.78.77 0f6d7d4 (rn-lcache 글자 하나·공유 간격)",
+  "at": "2026-10-25T03:20:18Z"
  }
 }
