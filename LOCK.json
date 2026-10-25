@@ -1,8 +1,8 @@
 {
  "holder": "auto-check",
- "what": "매일 정밀 점검(Fable) — 로거 rn-lcache 44MB 쓰기 간격 · 웹앱 norm 캐시·navStack·homeSum·vrEval 메모리 · 설명서",
+ "what": "빌드·시험 중(웹앱 1.78.112 · 수집기 1.89.82)",
  "since": "2026-10-25T15:09:22Z",
- "beat": "2026-10-25T15:09:22Z",
+ "beat": "2026-10-25T15:14:42Z",
  "ask": null,
  "last": {
   "who": "auto-check",
