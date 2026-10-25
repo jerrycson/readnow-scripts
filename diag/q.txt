@@ -1,3 +1,2 @@
-logs=1&pc=LOGGER&from=202610252120
-doc=prd_system/oneshot
-# 1792930997
+@health&hours=24
+# auto-check 1792932725
