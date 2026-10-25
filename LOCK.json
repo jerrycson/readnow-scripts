@@ -1,12 +1,12 @@
 {
- "holder": "auto3h",
- "what": "3시간 점검 15:14 — 로거 rn-lcache 간격 60분(🪶)",
- "since": "2026-10-25T06:18:18Z",
- "beat": "2026-10-25T06:19:06Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "auto3h",
-  "done": "수집기 1.89.61 · 웹앱 1.78.77 0f6d7d4 (rn-lcache 글자 하나·공유 간격)",
-  "at": "2026-10-25T03:20:18Z"
+  "done": "수집기 1.89.62 · 웹앱 1.78.78 6891d7b (로거 rn-lcache 60분)",
+  "at": "2026-10-25T06:19:15Z"
  }
 }
