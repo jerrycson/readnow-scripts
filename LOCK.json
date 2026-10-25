@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "auto3h",
+ "what": "웹앱 1.78.83 🪶 상품 기록 안 쓰는 칸(soldInferPrev·soldInferLog) 빼기",
+ "since": "2026-10-25T09:22:05Z",
+ "beat": "2026-10-25T09:22:05Z",
  "ask": null,
  "last": {
   "who": "chat",
