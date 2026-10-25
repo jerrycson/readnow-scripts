@@ -1,7 +1,7 @@
 {
  "ver": "1.89.82",
  "hsig": "8559039d5a96110b",
- "at": "2026-10-25T15:14:45.067Z",
+ "at": "2026-10-25T15:23:16.014Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -102,8 +102,8 @@
   {
    "f": "readnow-pc-products.js",
    "v": "1.89.82",
-   "sha": "18cfe3b8be87e2160586d3311687b02100dcdde7de6d0e1c82d7953ae5cc4dbd",
-   "n": 843305
+   "sha": "a390de53f3197beba48ea9c968248506b869d4c7e7039e2c55f53eb256690b55",
+   "n": 843272
   },
   {
    "f": "readnow-pc-ship.js",
