@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.60
+// @version      1.89.61
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -3995,7 +3995,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const ACTIVE = ['판매중', '판매대기', '일시판매중지', '판매중지', '판매금지'];
   let LISTINGS = null; // usedCode → 문서 (한 번 읽고 기기에 보관)
   /* (1.59.0) 상품 기록을 이 PC(IndexedDB)에 두고 다음부턴 바뀐 것(uploadedAt)만 받음 — 기억 정리로 탭을 새로 열 때마다 상품 수만 건을 통째로 다시 읽던 것(하루 수십만 번 읽기). 하루에 한 번은 통째로 다시 읽어 맞춤 · 모든 쓰는 쪽이 uploadedAt을 남김(웹앱도 같은 방식) */
-  const LCACHE = globalThis.__rnPubChrome ? { get: async () => { try { return GM_getValue('rn-lcache', null); } catch (e) { return null; } }, put: async (v) => { try { GM_setValue('rn-lcache', JSON.parse(JSON.stringify(v))); } catch (e) {} } } /* (1.71.0) 로거 크롬: 우리 상품 목록 캐시를 알라딘 쪽 IndexedDB가 아니라 Tampermonkey 저장소에 */ : { name: 'rn-listings-cache', open() { return new Promise((res, rej) => { const r = indexedDB.open(this.name, 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  const LCACHE = globalThis.__rnPubChrome ? { get: async () => { try { const v = GM_getValue('rn-lcache', null); return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }, put: async (v) => { try { GM_setValue('rn-lcache', JSON.stringify(v)); } catch (e) {} }, atGet: () => { try { return +GM_getValue('rn-lcache-at', 0) || 0; } catch (e) { return 0; } }, atSet: (t) => { try { GM_setValue('rn-lcache-at', t); } catch (e) {} } } /* (1.89.61 3시간 점검 · 🪶 메모리) 보관본을 JSON 글자 하나로 담음 — 전엔 JSON.parse(JSON.stringify(v))로 상품 2만여 건 물건을 한 벌 더 만들어 넘기고 Tampermonkey·성능 계측이 그걸 또 글자로 바꿨음(쓸 때마다 수 MB~10여 MB 사본 2~3벌) · 읽는 값은 똑같음(예전 물건으로 담긴 것도 그대로 읽음) · 30분 간격을 이 PC의 모든 수집기 탭·숨은 창이 함께 지킴(atGet/atSet — 10/25 09:10~12:14 로거 'rn-*' 3시간 14번 약 75MB · 혼자면 최대 6번) */ /* (1.71.0) 로거 크롬: 우리 상품 목록 캐시를 알라딘 쪽 IndexedDB가 아니라 Tampermonkey 저장소에 */ : { name: 'rn-listings-cache', open() { return new Promise((res, rej) => { const r = indexedDB.open(this.name, 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
     async get() { const d = await this.open(); try { return await new Promise((res, rej) => { const q = d.transaction('kv').objectStore('kv').get('v'); q.onsuccess = () => res(q.result || null); q.onerror = () => rej(q.error); }); } finally { d.close(); } },
     async put(v) { const d = await this.open(); try { await new Promise((res, rej) => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, 'v'); t.oncomplete = res; t.onerror = () => rej(t.error); }); } finally { d.close(); } } };
   const lcMs = (v) => (v && v.uploadedAt && typeof v.uploadedAt.toMillis === 'function' ? v.uploadedAt.toMillis() : 0);
@@ -4063,7 +4063,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       log(`💰 알라딘 예치금: 총잔액 ${P1.balance.toLocaleString()}원 · 새 내역 ${saved}줄${first ? ' (처음 — 1년치)' : ''} · 환급신청 ${rf.length}건`); return 'done';
     } finally { await releaseLane('aladin'); } }
   let LIST_LAST = 0, LIST_FULL = 0, LC_PUT_AT = 0; /* (1.88.6) 정범님 10/20 크롬 느림 실측: 일마다 이 PC 보관본(상품 2만 5천 건)을 IndexedDB에서 통째로 읽고(수 초 화면 멈춤) 바뀐 게 있으면 통째로 다시 씀(또 수 초) → 이미 메모리에 있으면 서버에서 바뀐 것만 받아 합치고, 보관본은 30분에 한 번만 다시 씀 */
-  const lcPut = (m, last, fullAt, now) => { if (!now && Date.now() - LC_PUT_AT < 30 * 60e3) return; LC_PUT_AT = Date.now(); LCACHE.put({ rows: [...m], last, fullAt }).catch(() => {}); };
+  const lcPut = (m, last, fullAt, now) => { const t0 = Math.max(LC_PUT_AT, LCACHE.atGet ? LCACHE.atGet() : 0); if (!now && Date.now() - t0 < 30 * 60e3) return; LC_PUT_AT = Date.now(); if (LCACHE.atSet) LCACHE.atSet(LC_PUT_AT); LCACHE.put({ rows: [...m], last, fullAt }).catch(() => {}); };
   async function loadListings(force) {
     if (LISTINGS && !force) return LISTINGS;
     if (LISTINGS && force === 'inc' && LIST_LAST && Date.now() - LIST_FULL < 24 * 3600e3) { try { let max = LIST_LAST; const ss = await C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(LIST_LAST - 120000)).get(); ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); LISTINGS.set(d.id, v); max = Math.max(max, lcMs(v)); } }); LIST_LAST = max; if (ss.size) lcPut(LISTINGS, max, LIST_FULL); return LISTINGS; } catch (e) {} }
