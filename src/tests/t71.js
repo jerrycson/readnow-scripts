@@ -1,0 +1,32 @@
+const SP = '/tmp/claude-0/-home-claude/2514b938-5524-5e43-ad0a-05319ceb1a3b/scratchpad/';
+require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  const errs = []; p.on('pageerror', (e) => errs.push(e.message));
+  await p.evaluate(async () => { S.regItems = S.regItems || new Map(); S.uinfo = S.uinfo || new Map(); const t = new Date().toISOString();
+    const Ls = [{ id: 'LX1', listingId: '7001', title: '월가', isbn13: '9790000000011', aladinItemId: '9001', grade: '상', qty: 3, status: '판매중', active: true, sku: 'BLKCMN', price: 9000, usedCode: 'U1' },
+      { id: 'LX9', listingId: '7009', title: '스토너', isbn13: '9790000000035', aladinItemId: '9003', grade: '상', qty: 5, status: '판매중', active: true, sku: 'BLKCMN', price: 9000, usedCode: 'U9' }];
+    Ls.forEach((l) => { S.plist.set(l.id, l); S.uinfo.set(l.listingId, { none: true }); }); S.ver++;
+    const mk = async (k, isbn, iid, g, ex) => { const doc = { stage: 'pick', isbn, info: { title: '시험 ' + k, isbn13: isbn, itemId: iid, categories: [1], page1: [], priceList: 20000, at: t }, grade: g, qty: 1, price: 9000, by: S.user.email, ws: regWsCur(), createdAt: t, descMode: 'manual', descParts: { a: '', b: '', c: '' }, ...ex }; await db.collection('reg_items').doc(k).set(doc); S.regItems.set(k, { id: k, ...doc }); };
+    await mk('m1', '9790000000011', '9001', 2, { mock: true }); await mk('r1', '9790000000035', '9003', 2, { test: true });
+    S.regT = 'pick'; openRegister(); });
+  await p.waitForTimeout(2500);
+  const kinds = await p.evaluate(() => ['m1', 'r1'].map((id) => { const K = regDupKind(S.regItems.get(id)); return id + ':' + (K && K.k); }).join(' ')); console.log('kinds', kinds);
+  const before = await p.evaluate(async () => (await db.collection('shp_cmds').get()).size);
+  const r = await p.evaluate(async () => JSON.stringify(await regDupProcess(['m1', 'r1']))); console.log('process', r);
+  await p.waitForTimeout(800);
+  const cm = await p.evaluate(async () => (await db.collection('shp_cmds').get()).docs.map((d) => d.data()).filter((x) => x.type === 'prdEdit').map((x) => JSON.stringify({ lk: x.listingKey, ch: x.ch, before: x.before, qtyAdd: x.qtyAdd, qtyWeb: x.qtyWeb, regItem: x.regItem })));
+  console.log('cmds before', before, 'prdEdit cmds', cm);
+  console.log('m1', await p.evaluate(() => JSON.stringify(S.regItems.get('m1').post)));
+  console.log('r1', await p.evaluate(() => JSON.stringify(S.regItems.get('r1').post)));
+  await p.evaluate(() => { S.regT = 'post'; regRerender(); }); await p.waitForTimeout(1000);
+  console.log('post', await p.evaluate(() => [...document.querySelectorAll('.rgpost2')].map((x) => x.dataset.rgcid + ': ' + x.querySelector('.rgp-ban').textContent.trim() + ' | ' + x.querySelector('[data-rgpprint]').textContent).join('\n  ')));
+  // admin qty section
+  await p.evaluate(() => { localStorage.setItem('rn-device', 'JS-MAIN'); S.devOk = true; S.sec.mg_qchk = true; openMgr(); }); await p.waitForTimeout(3000);
+  console.log('qsec', await p.evaluate(() => { const d = document.querySelector('[data-sec="mg_qchk"]'); return d ? d.innerText.replace(/\s+/g, ' ').slice(0, 500) : 'NONE'; }));
+  await p.evaluate(() => document.querySelector('[data-qchkall]').click()); await p.waitForTimeout(300);
+  console.log('armed', await p.evaluate(() => document.querySelector('[data-qchkall]').textContent));
+  await p.evaluate(() => document.querySelector('[data-qchkall]').click()); await p.waitForTimeout(2000);
+  console.log('qty_chk docs', await p.evaluate(async () => (await db.collection('qty_chk').get()).docs.map((d) => JSON.stringify(d.data().items) + ' ' + d.data().status).join(' ; ')));
+  console.log('qsec2', await p.evaluate(() => { const d = document.querySelector('[data-sec="mg_qchk"]'); return d ? d.innerText.replace(/\s+/g, ' ').slice(0, 200) : 'NONE'; }));
+  await p.screenshot({ path: SP + 't71.png', fullPage: false });
+  console.log('errors', errs);
+});

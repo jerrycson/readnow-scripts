@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.64의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.65의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.64' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.64', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.65' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.65', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -261,6 +261,9 @@
     if (!g.ok) { if (g.state === 'done' || g.state === 'busy') return ref.set({ status: 'verify', pubNext: new Date(Date.now() + 5000).toISOString(), uploadedAt: TS() }, { merge: true }).catch(() => {}); keys.forEach((k) => mark(k, 'fail', '실행 문: ' + g.why)); return save({ status: 'fail', msg: '실행 문: ' + g.why, doneAt: at() }); }
     const fin = async (st, msg) => { if (X) await X.finish(db, { kind: 'prdEdit', key: id }, st, { msg }).catch(() => {}); };
     const cur = await peReadPc(lid); if (!cur.ok || cur.uid !== lid) { const why = cur.login === false ? '로그인 풀림' : cur.why || '다른 상품 화면'; keys.forEach((k) => mark(k, 'fail', why)); await save({ status: 'fail', msg: why, doneAt: at() }); return fin('failed', why); }
+    if (v.qtyAdd != null && 'qty' in ch) { /* (1.89.65) 정범님 10/25 기등록 수량 늘리기: 웹앱 기록(샵매니저 목록 숫자)이 아니라 정보수정 화면의 지금 수량 + 늘릴 수 */ const add = Math.round(+v.qtyAdd); if (cur.qty == null || !(add > 0)) { mark('qty', 'fail', '정보수정 화면의 지금 수량을 못 읽어 늘리지 않음'); delete ch.qty; }
+      else { const q0 = +cur.qty; ch.qty = q0 + add; v.before = { ...(v.before || {}), qty: q0 }; trail.push({ at: at(), k: 'qty', st: 'base', m: `정보수정 화면 지금 수량 ${q0} + ${add} → ${q0 + add}${v.qtyWeb != null && +v.qtyWeb !== q0 ? ` (웹앱 기록은 ${v.qtyWeb}였음)` : ''}`, pc: PC_NAME }); await ref.set({ ch: { qty: ch.qty }, before: { qty: q0 }, qtyBase: { q0, to: ch.qty, web: v.qtyWeb ?? null, at: at(), by: PC_NAME } }, { merge: true }).catch(() => {});
+        if (v.regItem) await C('reg_items').doc(String(v.regItem)).set({ post: { from: q0, to: q0 + add, base: 'edit', baseAt: at() }, history: firebase.firestore.FieldValue.arrayUnion({ at: at(), by: PC_NAME, what: `♻ 정보수정 화면 수량 ${q0} → ${q0 + add}${v.qtyWeb != null && +v.qtyWeb !== q0 ? ` (웹앱 기록 ${v.qtyWeb}과 달라 정보수정 화면 기준)` : ''}` }), uploadedAt: TS() }, { merge: true }).catch(() => {}); } }
     const J = async (r) => { const t = await r.text(); try { const j = JSON.parse(t); return { ok: !!j.result, msg: j.result ? null : `${j.errorCode || ''} ${j.errorMsg || ''}`.trim() || '실패' }; } catch (e) { return { ok: false, msg: /wlogin/i.test(r.url) ? '로그인 풀림' : '응답을 못 읽음' }; } };
     const H = { 'X-Requested-With': 'XMLHttpRequest' }; const HP = { ...H, 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' };
     for (const k of ['price', 'qty', 'code', 'state']) { if (!(k in ch)) continue; let r; try { if (k === 'price') r = await J(await fetch(`/scm/ajaxCmd.aspx?cmd=chg.pricesales&ItemId=${encodeURIComponent(lid)}&priceSales=${Math.round(ch.price)}&_=${Date.now()}`, { credentials: 'include', headers: H }));

@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.64의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.65의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.64' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.64', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.65' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.65', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -833,7 +833,7 @@
    *  · 처음(또는 30일마다) = 칸 전부(문서 번호 순 · 끊기면 이어서) · 그 밖 = uploadedAt이 지난번 뒤인 것만 · 사진(ppt_photo_data)은 📷 사진 보관이 따로 받으므로 뺌
    *  · 진행은 prd_system/dataBackup(웹앱 설정 ⑪) · 하루 최대 40만 문서 읽기(넘으면 다음 날 이어서) */
   const BKX = { state: 'idle', at: null, endAt: null, col: null, cols: 0, done: 0, docs: 0, bytes: 0, full: 0, err: null, errs: {} };
-  const BK_COLS0 = ['app_devices', 'app_settings', 'app_summary', 'acc_deposit', 'acc_refund', 'bench_partial', 'cloud_log', 'crm_customers', 'crm_hist', 'crm_interactions', 'crm_notes', 'crm_order_ops', 'crm_orders', 'crm_returns', 'crm_system', 'dec_snapshots', 'exec_log', 'ext_basic', 'ext_ebook', 'ext_foreign', 'ext_fx', 'ext_hist', 'ext_lib', 'ext_probe', 'ext_used', 'mkt_kpipa', 'mkt_kpipa_ctg', 'mkt_kpipa_posts', 'ml_days', 'ml_eval', 'ml_models', 'ml_outcomes', 'ml_sales', 'ml_shadow', 'ml_value_models', 'perf_logs', 'ppt_sessions', 'prd_book_metrics', 'prd_books', 'prd_cat_manual', 'prd_dyn_history', 'prd_explore', 'prd_handoff', 'prd_ids', 'prd_imports', 'prd_jobs', 'prd_listing_changes', 'prd_listings', 'prd_lookups', 'prd_market_nobook', 'prd_market_watch', 'prd_metric_changes', 'prd_price_actions', 'prd_price_batches', 'prd_price_decisions', 'prd_price_reviews', 'prd_rank_periods', 'prd_stop_reasons', 'prd_system', 'prd_unclear', 'prd_used_info', 'pur_aladin_list', 'pur_aladin_orders', 'pur_archive', 'pur_buyback', 'pur_disposals', 'pur_entries', 'pur_entry_state', 'pur_existing', 'pur_heonot', 'pur_matches', 'reg_claims', 'reg_items', 'reg_note', 'rn_logs', 'rn_status', 'seller_history', 'seller_rev6m', 'seller_review_daily', 'seller_reviews', 'sellers', 'shp_cmds', 'shp_days', 'shp_enrich', 'shp_excel', 'shp_invoices', 'shp_market', 'shp_orders', 'shp_plan', 'shp_snapshots', 'shp_state', 'strategy_weeks'];
+  const BK_COLS0 = ['qty_chk', 'app_devices', 'app_settings', 'app_summary', 'acc_deposit', 'acc_refund', 'bench_partial', 'cloud_log', 'crm_customers', 'crm_hist', 'crm_interactions', 'crm_notes', 'crm_order_ops', 'crm_orders', 'crm_returns', 'crm_system', 'dec_snapshots', 'exec_log', 'ext_basic', 'ext_ebook', 'ext_foreign', 'ext_fx', 'ext_hist', 'ext_lib', 'ext_probe', 'ext_used', 'mkt_kpipa', 'mkt_kpipa_ctg', 'mkt_kpipa_posts', 'ml_days', 'ml_eval', 'ml_models', 'ml_outcomes', 'ml_sales', 'ml_shadow', 'ml_value_models', 'perf_logs', 'ppt_sessions', 'prd_book_metrics', 'prd_books', 'prd_cat_manual', 'prd_dyn_history', 'prd_explore', 'prd_handoff', 'prd_ids', 'prd_imports', 'prd_jobs', 'prd_listing_changes', 'prd_listings', 'prd_lookups', 'prd_market_nobook', 'prd_market_watch', 'prd_metric_changes', 'prd_price_actions', 'prd_price_batches', 'prd_price_decisions', 'prd_price_reviews', 'prd_rank_periods', 'prd_stop_reasons', 'prd_system', 'prd_unclear', 'prd_used_info', 'pur_aladin_list', 'pur_aladin_orders', 'pur_archive', 'pur_buyback', 'pur_disposals', 'pur_entries', 'pur_entry_state', 'pur_existing', 'pur_heonot', 'pur_matches', 'reg_claims', 'reg_items', 'reg_note', 'rn_logs', 'rn_status', 'seller_history', 'seller_rev6m', 'seller_review_daily', 'seller_reviews', 'sellers', 'shp_cmds', 'shp_days', 'shp_enrich', 'shp_excel', 'shp_invoices', 'shp_market', 'shp_orders', 'shp_plan', 'shp_snapshots', 'shp_state', 'strategy_weeks'];
   const BK_SKIP = new Set(['app_secrets', 'ppt_photo_data']); const BK_SUB = ['log', 'v', 'big'];
   const bkSer = (v) => { if (v == null || typeof v !== 'object') return v; if (Array.isArray(v)) return v.map(bkSer); if (typeof v.toMillis === 'function') return { __ts: v.toMillis() }; if (typeof v.toBase64 === 'function') return { __b64: v.toBase64() }; if (v.firestore && typeof v.path === 'string') return { __ref: v.path }; if (typeof v.latitude === 'number' && typeof v.longitude === 'number' && typeof v.isEqual === 'function') return { __geo: [v.latitude, v.longitude] }; const o = {}; for (const k of Object.keys(v)) o[k] = bkSer(v[k]); return o; };
   const bkRep = (fin) => C('prd_system').doc('dataBackup').set({ ...BKX, errs: Object.fromEntries(Object.entries(BKX.errs).slice(0, 30)), pc: PC_NAME, fin: !!fin, uploadedAt: TS() }, { merge: false }).catch(() => {});
@@ -1027,8 +1027,10 @@
       if (label) ui(label, Math.min(i + 400, ops.length), ops.length, '올리는 중');
     }
   }
-  const LISTING_FIELDS = ['title', 'titleRaw', 'condition', 'grade', 'sku', 'publisher', 'status', 'price', 'priceList', 'qty', 'registeredAt', 'listingId', 'isbn13', 'isbn10', 'aladinCode', 'barcode'];
+  const LISTING_FIELDS = ['title', 'titleRaw', 'condition', 'grade', 'sku', 'publisher', 'status', 'price', 'priceList', 'qty', 'qtyList', 'registeredAt', 'listingId', 'isbn13', 'isbn10', 'aladinCode', 'barcode'];
   const ACTIVE = ['판매중', '판매대기', '일시판매중지', '판매중지', '판매금지'];
+  /* (1.89.65) 🔢 정보수정 확인(qtyChk) — 아래 qtyChkCmd 설명 */ const QCHK = { busy: false }; const QCHK_Q = new Map(); const QST = { 1: '판매중', 41: '판매대기', 3: '일시판매중지', 15: '판매중지', 18: '판매완료', 16: '판매금지' };
+  const qHash = (k) => [...String(k)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
   let LISTINGS = null; // usedCode → 문서 (한 번 읽고 기기에 보관)
   /* (1.59.0) 상품 기록을 이 PC(IndexedDB)에 두고 다음부턴 바뀐 것(uploadedAt)만 받음 — 기억 정리로 탭을 새로 열 때마다 상품 수만 건을 통째로 다시 읽던 것(하루 수십만 번 읽기). 하루에 한 번은 통째로 다시 읽어 맞춤 · 모든 쓰는 쪽이 uploadedAt을 남김(웹앱도 같은 방식) */
   const LCACHE = globalThis.__rnPubChrome ? { get: async () => { try { const v = GM_getValue('rn-lcache', null); return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }, put: async (v) => { try { GM_setValue('rn-lcache', JSON.stringify(v)); } catch (e) {} }, atGet: () => { try { return +GM_getValue('rn-lcache-at', 0) || 0; } catch (e) { return 0; } }, atSet: (t) => { try { GM_setValue('rn-lcache-at', t); } catch (e) {} } } /* (1.89.61 3시간 점검 · 🪶 메모리) 보관본을 JSON 글자 하나로 담음 — 전엔 JSON.parse(JSON.stringify(v))로 상품 2만여 건 물건을 한 벌 더 만들어 넘기고 Tampermonkey·성능 계측이 그걸 또 글자로 바꿨음(쓸 때마다 수 MB~10여 MB 사본 2~3벌) · 읽는 값은 똑같음(예전 물건으로 담긴 것도 그대로 읽음) · 30분 간격을 이 PC의 모든 수집기 탭·숨은 창이 함께 지킴(atGet/atSet — 10/25 09:10~12:14 로거 'rn-*' 3시간 14번 약 75MB · 혼자면 최대 6번) */ /* (1.71.0) 로거 크롬: 우리 상품 목록 캐시를 알라딘 쪽 IndexedDB가 아니라 Tampermonkey 저장소에 */ : { name: 'rn-listings-cache', open() { return new Promise((res, rej) => { const r = indexedDB.open(this.name, 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
@@ -1116,6 +1118,10 @@
     const key = 'aladin_' + row.usedCode; const prev = LISTINGS.get(key);
     const next = {}; for (const f of LISTING_FIELDS) if (row[f] != null) next[f] = row[f];
     if (prev && prev.registeredAt && row.registeredYearGuessed) delete next.registeredAt; // 연도 추정값으로 확정값을 덮지 않음
+    /* (1.89.65) 정범님 10/25 '샵매니저 목록의 수량은 반영이 안 될 때가 많음 — 정보수정 화면을 봐야 함': 이미 아는 상품의 수량(qty)은 목록 숫자로 덮지 않음 → 정보수정 화면 확인(맡긴 일 qtyChk)만 qty를 고침
+     *  목록 숫자는 qtyList로 따로(우리 수량과 다를 때만) · 목록 숫자가 바뀌었거나 판매 상태가 바뀐 상품, 새로 본 상품은 정보수정 확인 차례에 넣음(QCHK_Q) */
+    if (prev && row.qty != null) { const lq = +row.qty; delete next.qty; if (prev.qtyList != null || lq !== +prev.qty) next.qtyList = lq; if (prev.qtyList != null ? lq !== +prev.qtyList : lq !== +prev.qty) QCHK_Q.set(key, String(row.listingId || prev.listingId || '')); }
+    if (prev ? (row.status && prev.status && row.status !== prev.status) : true) QCHK_Q.set(key, String(row.listingId || (prev && prev.listingId) || ''));
     const ch = P.diff(prev, next, LISTING_FIELDS);
     const mt = P.mediaType(row); const doc = { channel: 'aladin', usedCode: row.usedCode, ...next, mediaType: mt.type, mediaWhy: mt.why, ids: row.ids, idWarn: row.idWarn || [], active: ACTIVE.includes(row.status || (prev && prev.status)), lastSeenAt: seenAt, ['seenBy_' + source]: seenAt, ...W() };
     if (!prev) doc.firstSeenAt = seenAt;
@@ -1213,6 +1219,7 @@
       }
       await C('prd_system').doc('cursor').set({ maxListingId: String(maxSeen), ['last_' + name]: nowIso(), ...W() }, { merge: true });
       { const wy = Object.entries(LOPS_WHY).sort((x, y) => y[1] - x[1]); if (wy.length) { prog.stats.writeWhy = Object.fromEntries(wy.slice(0, 12)); log(`${name} 기록 사유: ${wy.slice(0, 8).map(([k, n]) => `${k === 'slim' ? '바뀐 것 없음(안 적음)' : k} ${n.toLocaleString()}`).join(' · ')}`); } } /* (1.89.27) 다음 회차부터 왜 적었는지 숫자로 남김 — 점검이 바로 봄 */
+      try { const add = new Map(QCHK_Q); QCHK_Q.clear(); if (mode === 'full') { const dw = new Date(Date.now() + 9 * 3600e3).getUTCDay(); for (const [k, l] of LISTINGS) if (l.active && l.listingId && qHash(k) % 7 === dw) add.set(k, String(l.listingId)); } /* (1.89.65) 매일 전체 확인 뒤 판매 중 상품의 1/7(요일로 나눔 — 한 주에 모두)을 정보수정 화면으로 다시 셈 */ const nq = await qchkQueue([...add].filter(([, lid]) => lid), mode === 'full' ? '매일 확인(1/7 · 바뀐 것)' : '바뀐·새 상품', name); if (nq.items) { prog.stats.qtyChk = nq.items; log(`🔢 정보수정 화면으로 다시 셀 상품 ${nq.items.toLocaleString()}개를 맡김(${nq.cmds}묶음) — 로그인한 PC가 나눠 함`); } } catch (e) { log('🔢 정보수정 확인 맡기기 실패: ' + e.message, 1); }
       await finishJob(name, prog.stats);
       log(`${name} 완료 ${JSON.stringify(prog.stats)}`);
     } finally { await releaseLane('aladin'); }
@@ -2301,6 +2308,50 @@
   const cmdMine = (t) => { const f = (k) => !window.__rnFeat || window.__rnFeat(k); if (t === 'startDelivery') return f('ship'); if (t === 'cashStop') return f('cash'); if (/^reg/.test(String(t))) return f('reg'); return !window.__rnPaused; };
   /* (1.88.4) 정범님 10/20 'JS-MAIN: 웹앱이 맡긴 일을 받았다는 표시가 기록에 전혀 없음' — 맡은 순간과 끝난 순간을 기록 창에 한 줄씩(종류·이름·걸린 시간) */
   const CMD_KO = { startDelivery: '발송준비시작', usedInfo: '유의 사항 다시 읽기', c2bAdd: '알라딘 팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지', prdEdit: '✏ 상품 정보 수정', lookup: '사진 가격 조회', regDel: '등록 상품 삭제', regLookup: '📥 등록 조회', extLookup: '🌐 외부 정보', extTest: '🌐 외부 정보 시험', metrics: '시장 지표 다시 읽기', regBulk: '📦 대량 등록', regBulkMock: '🧷 모의 대량 등록', regOne: '🤖 개별·미등록 등록', regOneMock: '🧷 모의 개별 등록' };
+  /* ══ (1.89.65) 🔢 정보수정 화면으로 판매 상품 수량·판매가·관리코드·판매 상태 확인 (맡긴 일 qtyChk) ══
+   *  정범님 10/25 '엔진이 수량을 셀 때 샵매니저 목록을 보는 게 잘못 — 목록은 수량 반영이 안 될 때가 많으니 정보수정에 들어가 확인. 지금 당장 로그인 PC들이 재고 전체를 다시 세고, 앞으로 판매 중 상품 정보는 반드시 정보수정 화면에서'
+   *  · 맡긴 일 칸은 qty_chk(shp_cmds가 아님 — 웹앱들이 듣는 맡긴 일 칸에 수백 묶음을 넣지 않게) · 한 묶음 = 상품 40개 · 로그인한 PC가 한 번에 한 묶음씩(여러 PC가 나눠 함) · 상품마다 정보수정 화면(wrecord.aspx?action=2&UpdateItemId=)을 읽어 우리 기록과 다른 칸만 고침 + 변경 이력(prd_listing_changes source 'editPage')
+   *  · 같은 값이면 아무것도 적지 않음(웹앱들이 다시 받지 않게) · 5개마다 진행(res)을 남겨 끊겨도 다른 PC가 남은 것부터 · 로그인이 풀리면 대기로 되돌림
+   *  · 맡기는 때: ① 이 판이 처음 켜질 때 한 번 판매 중 상품 전체(가장 먼저 켜진 로그인 PC가 · prd_system/qtychk.full1) ② 웹앱 관리도구 '🔢 지금 전체 다시 세기' ③ 매일 상품 전체 확인 뒤 1/7 + 목록 숫자·상태가 바뀐 상품·새 상품 */
+  async function qEditRead(lid) { const r = await fetch('https://www.aladin.co.kr/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=' + encodeURIComponent(lid), { credentials: 'include', cache: 'no-store' }); if (/\/login\/|wlogin/i.test(r.url)) return { login: false };
+    let d = new DOMParser().parseFromString(await r.text(), 'text/html'); try { if (!d.getElementById('frmRecord')) return { ok: false, why: '정보수정 화면에 양식이 없음(지운 상품일 수 있음)' };
+      const v = (id) => { const e = d.getElementById(id); return e ? (e.tagName === 'SELECT' ? (e.querySelector('option[selected]') || e.options[e.selectedIndex] || {}).value : e.value != null && e.value !== '' ? e.value : e.textContent) : null; }; const n = (x) => (x == null || String(x).trim() === '' || !isFinite(+x) ? null : +x);
+      return { ok: true, uid: String((d.querySelector('input[name="UpdateItemId"]') || {}).value || ''), qty: n(v('stockCount')), price: n(v('priceSales')), code: v('supItemCode'), state: n(v('stockState')) }; } finally { d = null; } }
+  async function qchkQueue(pairs, label, why, by) { const per = 40; const parts = []; for (let i = 0; i < pairs.length; i += per) parts.push(pairs.slice(i, i + per)); const now = nowIso(); const tag = now.slice(5, 16).replace('T', ' ');
+    await commitBatches(parts.map((pt, j) => (b) => b.set(C('qty_chk').doc(), { status: 'queued', claim: null, items: pt.map(([k, lid]) => ({ k, lid: String(lid) })), label: `${label} ${j + 1}/${parts.length} (${tag})`, why: why || null, createdAt: now, by: by || PC_NAME, dev: null, uploadedAt: TS() })));
+    return { cmds: parts.length, items: pairs.length }; }
+  async function qtyChkCmd(ref, v, id) { await loadListings('inc'); const items = (v.items || []).filter((x) => x && x.k && x.lid); const res = { ...(v.res || {}) }; let nCh = 0, bad = 0, errRun = 0, k5 = 0; const t0 = Date.now();
+    const flush = (extra) => ref.set({ res, beatAt: nowIso(), ...(extra || {}), uploadedAt: TS() }, { merge: true }).catch(() => {});
+    for (const it of items) { if (res[it.k]) continue;
+      if (window.__rnPaused) { await flush({ status: 'queued', claim: null, tries: v.tries || 0, msg: `${PC_NAME} 수집기 멈춤 — 남은 것은 다른 PC가 이어 함` }); return 'stop'; }
+      let r; try { r = await qEditRead(it.lid); } catch (e) { r = { ok: false, why: e.message, net: true }; }
+      if (r.login === false) { QCHK.offUntil = Date.now() + 30 * 60e3; await flush({ status: 'queued', claim: null, tries: v.tries || 0, msg: `${PC_NAME} 알라딘 로그인 풀림 — 남은 것은 대기로(로그인한 PC가 이어 함)` }); log('🔢 정보수정 확인: 알라딘 로그인이 풀려 이 묶음을 대기로 되돌림', 1); return 'stop'; }
+      if (!r.ok || r.uid !== String(it.lid)) { if (r.net || r.ok) errRun++; /* 양식 없음(지운 상품 등)은 확실한 답이라 '연달아 못 읽음'에 세지 않음 */ if (r.net && errRun < 4) { await sleep(3000 * errRun); continue; } res[it.k] = { e: String(r.why || `다른 상품 화면(${r.uid || '?'})`).slice(0, 80) }; bad++; if (errRun >= 8) { await flush({ status: 'queued', claim: null, msg: `${PC_NAME}: 정보수정 화면을 연달아 못 읽음 — 대기로 되돌림` }); return 'stop'; } await sleep(1500); continue; }
+      errRun = 0; const l = LISTINGS.get(it.k) || {}; const up = {}, chg = {};
+      if (r.qty != null && (l.qty == null || +l.qty !== r.qty)) { up.qty = r.qty; chg.qty = { from: l.qty ?? null, to: r.qty }; }
+      if (r.price > 0 && +l.price !== r.price) { up.price = r.price; chg.price = { from: l.price ?? null, to: r.price }; }
+      if (r.code != null && String(r.code).trim() && String(l.sku || '') !== String(r.code).trim()) { up.sku = String(r.code).trim(); chg.sku = { from: l.sku ?? null, to: up.sku }; }
+      const stn = QST[r.state]; if (stn && l.status !== stn) { up.status = stn; up.active = ACTIVE.includes(stn); chg.status = { from: l.status ?? null, to: stn }; }
+      res[it.k] = Object.keys(chg).length ? { q: r.qty, ch: Object.fromEntries(Object.entries(chg).map(([f, c]) => [f, [c.from, c.to]])) } : { q: r.qty };
+      if (Object.keys(up).length) { const at = nowIso(); try { await C('prd_listings').doc(it.k).set({ ...up, editChkAt: at, editChkBy: PC_NAME, ...W() }, { merge: true }); await C('prd_listing_changes').add({ listingKey: it.k, at, source: 'editPage', changes: chg, cmd: id, pc: PC_NAME, ...W() }); LISTINGS.set(it.k, { ...l, ...up }); nCh++; } catch (e) { res[it.k].e = '기록 못 함: ' + e.message; } }
+      if (++k5 % 5 === 0) await flush(); await sleep(600); }
+    const nOk = Object.values(res).filter((x) => !x.e).length; await flush({ status: 'done', doneAt: nowIso(), by: PC_NAME, n: items.length, nOk, nCh, bad, ms: Date.now() - t0 });
+    const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const inc = firebase.firestore.FieldValue.increment; C('prd_system').doc('qtychk').set({ days: { [day]: { n: inc(nOk), ch: inc(nCh), bad: inc(bad), cmds: inc(1) } }, last: { at: nowIso(), pc: PC_NAME, n: nOk, ch: nCh, bad }, ...W() }, { merge: true }).catch(() => {});
+    log(`🔢 정보수정 확인 ${v.label || ''}: ${nOk}/${items.length}개 읽음 · 우리 기록과 달라 고친 상품 ${nCh}개${bad ? ` · 못 읽음 ${bad}개` : ''} (${Math.round((Date.now() - t0) / 1000)}초)`, bad ? 1 : 0); }
+  async function qchkNext() { if (QCHK.busy || Date.now() < (QCHK.offUntil || 0) || PUBONLY || pubPcMode() || !auth.currentUser || window.__rnPaused || (window.__rnRest && window.__rnRest())) return; /* 한 PC 안에서는 한 탭만(GM 'rnu-qchk' · 40초 신호) */ try { const g = GM_getValue('rnu-qchk', null); if (g && g.tab !== TAB_ID && Date.now() - (g.at || 0) < 40e3) return; } catch (e) {} QCHK.busy = true; const gBeat = () => { try { GM_setValue('rnu-qchk', { tab: TAB_ID, at: Date.now() }); } catch (e) {} }; gBeat(); const gT = setInterval(gBeat, 15e3);
+    try { for (let round = 0; round < 500; round++) { if (window.__rnPaused) return; let ref = null, v = null;
+        const q = await C('qty_chk').where('status', '==', 'queued').limit(5).get(); let cand = q.docs; if (!cand.length) { const r = await C('qty_chk').where('status', '==', 'running').limit(20).get(); cand = r.docs.filter((d) => Date.now() - (Date.parse((d.data() || {}).beatAt || 0) || 0) > 10 * 60e3); /* 10분 넘게 신호가 없는 묶음 = 맡은 PC가 꺼짐 → 다른 PC가 남은 것부터 */ } if (!cand.length) return;
+        const d0 = cand[Math.floor(Math.random() * cand.length)];
+        await db.runTransaction(async (tx) => { v = null; const sn = await tx.get(d0.ref); const x = sn.data(); if (!x || (x.status !== 'queued' && !(x.status === 'running' && Date.now() - (Date.parse(x.beatAt || 0) || 0) > 10 * 60e3))) return; tx.update(d0.ref, { status: 'running', claim: { pc: PC_NAME, at: nowIso() }, beatAt: nowIso(), tries: (x.tries || 0) + 1, uploadedAt: TS() }); v = x; ref = d0.ref; });
+        if (!v) continue; if ((v.tries || 0) >= 6) { await ref.set({ status: 'fail', msg: '6번 맡았는데 끝나지 않음 — 그대로 둠', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); continue; }
+        if ((await qtyChkCmd(ref, v, ref.id)) === 'stop') return; } }
+    catch (e) { log('🔢 정보수정 확인 멈춤: ' + e.message, 1); } finally { QCHK.busy = false; clearInterval(gT); try { const g = GM_getValue('rnu-qchk', null); if (g && g.tab === TAB_ID) GM_deleteValue('rnu-qchk'); } catch (e) {} } }
+  async function qchkBoot() { if (PUBONLY || pubPcMode() || !auth.currentUser) return; let mine = false; const ref = C('prd_system').doc('qtychk');
+    await db.runTransaction(async (tx) => { mine = false; const x = (await tx.get(ref)).data() || {}; if (x.full1) return; tx.set(ref, { full1: { at: nowIso(), by: PC_NAME, ver: APP_VER } }, { merge: true }); mine = true; });
+    if (mine) { await loadListings('inc'); const L = [...LISTINGS].filter(([, l]) => l.active && l.listingId).map(([k, l]) => [k, String(l.listingId)]); const r = await qchkQueue(L, '전체 다시 세기(처음 한 번)', 'full1'); await ref.set({ full1: { n: r.items, cmds: r.cmds } }, { merge: true }); log(`🔢 정범님 10/25: 판매 중 상품 ${r.items.toLocaleString()}개 전체를 정보수정 화면으로 다시 세기 시작 — ${r.cmds}묶음을 로그인한 PC들이 나눠 함`); }
+    setTimeout(() => qchkNext(), 5000); }
+  auth.onAuthStateChanged((u) => { if (u) setTimeout(() => qchkBoot().catch((e) => log('🔢 정보수정 확인 시작 실패: ' + e.message, 1)), 60e3 + Math.random() * 30e3); });
+  setInterval(() => qchkNext(), 3 * 60e3);
   async function runCmd(id) { await runCmd0(id); const c = window.__rnCmdCur; if (c && c.id === id) { window.__rnCmdCur = null; log(`✅ 웹앱이 맡긴 일 끝: ${CMD_KO[c.type] || c.type}${c.label ? ' · ' + c.label : ''} (${Math.round((Date.now() - c.t0) / 1000)}초)`); } }
   async function runCmd0(id) { const ref = C('shp_cmds').doc(id); let v = null; if ((window.__rnRest && window.__rnRest())) return; // (1.56.0) 맡긴 일은 이 PC의 수집기 탭만
     { const x0 = (await ref.get()).data(); if (x0 && x0.status === 'queued' && CLOUD_FIRST.has(x0.type) && !x0.cloudTried) { const age = Date.now() - (Date.parse(x0.createdAt || 0) || Date.now()); const ca = await cloudAlive(); CLOUD_GRACE = ca.alive ? 45000 : 3000; if (age < CLOUD_GRACE) { setTimeout(() => runCmd(id).catch(() => {}), CLOUD_GRACE - age + 300 + claimDelay(x0)); return; } } } /* (1.77.5) 출고·돈 일은 클라우드 먼저 — 20초 안에 클라우드가 안 받으면 이 PC가 받음(아래 pcFallback 표시 → 웹앱 '클라우드 이상' 알림) */
