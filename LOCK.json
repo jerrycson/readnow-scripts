@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "기등록·라벨·도서정보검색·탭순서·테더링",
- "since": "2026-10-25T10:11:11Z",
- "beat": "2026-10-25T10:11:11Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
   "done": "",
-  "at": "2026-10-25T09:47:05Z"
+  "at": "2026-10-25T10:34:50Z"
  }
 }
