@@ -1,0 +1,16 @@
+require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  const errs = []; p.on('pageerror', (e) => errs.push(e.message)); const r = {};
+  await p.evaluate(async () => { const of = window.fetch; window.fetch = async (u, o) => { u = String(u); if (/googleapis\.com\/books/.test(u)) return new Response(JSON.stringify({ items: [{ volumeInfo: { title: 'The Name of the Rose', authors: ['Umberto Eco'], publisher: 'Harcourt', publishedDate: '1983-06-01', pageCount: 512, categories: ['Fiction'], industryIdentifiers: [{ type: 'ISBN_13', identifier: '9780156001311' }] } }] })); if (/openlibrary\.org/.test(u)) return new Response(JSON.stringify({ docs: [] })); return of(u, o); };
+    window.regAux = async (op, a) => ({ list: a.to === 0 ? [{ cid: 1, name: '외국도서' }] : a.to === 1 ? [{ cid: 10, name: '역사' }, { cid: 11, name: '소설/시/희곡' }] : a.to === 2 ? [{ cid: 20, name: 'Fiction 일반' }] : [], done: a.to >= 2 });
+    S.regItems = S.regItems || new Map(); const t = new Date().toISOString(); const doc = { stage: 'pick', method: 'new', branch: 7, q: 'name of the rose', qty: 1, price: 9000, grade: 2, by: S.user.email, ws: regWsCur(), createdAt: t, new: {} }; await db.collection('reg_items').doc('n7').set(doc); S.regItems.set('n7', { id: 'n7', ...doc });
+    S.regT = 'pick'; S.regSub = S.regSub || {}; S.regSub.pick = 'new'; openRegister(); });
+  await p.waitForTimeout(2000); await p.evaluate(() => { S.regT = 'pick'; regRerender(); }); await p.waitForTimeout(800);
+  r.panel = await p.evaluate(() => !!document.querySelector('[data-raq="n7"]'));
+  await p.evaluate(() => { const i = document.querySelector('[data-raq="n7"]'); i.value = 'The Name of the Rose'; i.dispatchEvent(new Event('input', { bubbles: true })); }); await p.waitForTimeout(2500);
+  r.cand = await p.evaluate(() => (S._ra.n7 || {}).list && S._ra.n7.list.length);
+  await p.evaluate(() => document.querySelector('[data-raapply="n7"]').click()); await p.waitForTimeout(1200);
+  r.fill = await p.evaluate(() => { const N = regNew(S.regItems.get('n7')); return N.customAuthor + '|' + N.customPublisher + '|' + N.pubDate + '|' + N.pages; });
+  await p.evaluate(() => document.querySelector('[data-racat="n7"]').click()); await p.waitForTimeout(2000);
+  r.cat = await p.evaluate(() => (S._rgCat && S._rgCat.path || []).map((x) => x.name).join(' > '));
+  console.log(JSON.stringify(r), 'errs', errs.join(' | ')); const ok = r.panel && r.cand >= 1 && /Umberto Eco\|Harcourt\|1983-06-01\|512/.test(r.fill) && /외국도서 > 소설/.test(r.cat) && !errs.length; console.log(ok ? '✓ t84 통과' : '❌ t84 실패');
+});

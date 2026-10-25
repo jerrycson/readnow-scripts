@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.78
+// @version      1.89.79
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -7306,7 +7306,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
           if (+plan.branch === 7) { if (N.lang) ok('언어', selectVal($('selLanguageCode'), +N.lang), String(N.lang)); if (N.binding) ok('바인딩', setV('ItemBinding', String(N.binding).slice(0, 60)), N.binding); if (N.edition) ok('에디션', setV('ItemEdition', String(N.edition).slice(0, 60)), N.edition);
             const u = +N.priceUnit || 6; const rb2 = $('priceUnit' + u); if (rb2) { rb2.checked = true; fire(rb2); try { rb2.click(); } catch (e) {} } const pf = $('priceStdForeign'); let r2 = false; if (pf) { r2 = setV('priceStdForeign', +plan.priceStd); try { W0.priceStdForeignValid(pf); } catch (e) {} } const won = +String(($('priceStdForeignResult') || {}).value || '').replace(/[^\d]/g, '') || (u === 6 ? +plan.priceStd : 0); if (won > 0) setV('priceStd', won); ok('정가', r2 && won > 0, `${plan.priceStd} (단위 ${u}) → ${won}원`); }
           else ok('정가', setV('priceStd', +plan.priceStd));
-        } else { univ(plan, ok); if (plan.priceStd && !(+($('priceStd') || {}).value > 0)) ok('정가', setV('priceStd', +plan.priceStd)); }
+        } else { univ(plan, ok); if (plan.priceStd && !(+($('priceStd') || {}).value > 0)) ok('정가', setV('priceStd', +plan.priceStd)); (plan.cats || []).slice(0, 3).forEach((c, i) => { let done = false; try { if (typeof W0.setCategory === 'function') { W0.setCategory(i, +c.cid, c.path, !!c.mag); done = true; } } catch (e) {} ok(`분류 ${i + 1}(알라딘에 분류 없는 상품)`, done, c.path); }); } /* (1.89.79) 정범님 10/25: 분류가 없는 개별 상품은 웹앱에서 고른(🔎 자동 맞춤) 분류를 등록 화면 분류 칸에 넣음 */
         ok('관리 코드', setV('supItemCode', plan.code), plan.code);
         try { const j = await quality(plan); ok('품질', true, `${j.QualityTypeDesc || ''} · ISBN·정가 확인 '예'`); } catch (e) { ok('품질', false, e.message); }
         ok('판매가', setV('priceSales', +plan.price), (+plan.price).toLocaleString() + '원'); try { W0.calcSummaryC2C(); } catch (e) {}
