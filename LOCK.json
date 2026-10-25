@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "auto-check",
+ "what": "매일 전체 점검 — 클라우드 숫자 요약 보강·웹앱 버그",
+ "since": "2026-10-25T13:02:27Z",
+ "beat": "2026-10-25T13:02:27Z",
  "ask": null,
  "last": {
   "who": "chat",
