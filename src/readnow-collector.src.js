@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.82
+// @version      1.89.83
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -4095,7 +4095,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       log(`💰 알라딘 예치금: 총잔액 ${P1.balance.toLocaleString()}원 · 새 내역 ${saved}줄${first ? ' (처음 — 1년치)' : ''} · 환급신청 ${rf.length}건`); return 'done';
     } finally { await releaseLane('aladin'); } }
   let LIST_LAST = 0, LIST_FULL = 0, LC_PUT_AT = 0; /* (1.88.6) 정범님 10/20 크롬 느림 실측: 일마다 이 PC 보관본(상품 2만 5천 건)을 IndexedDB에서 통째로 읽고(수 초 화면 멈춤) 바뀐 게 있으면 통째로 다시 씀(또 수 초) → 이미 메모리에 있으면 서버에서 바뀐 것만 받아 합치고, 보관본은 30분에 한 번만 다시 씀 */
-  const lcPut = (m, last, fullAt, now) => { const t0 = Math.max(LC_PUT_AT, LCACHE.atGet ? LCACHE.atGet() : 0); if (!now && Date.now() - t0 < (LCACHE.atGet ? 60 : 30) * 60e3) return; /* (1.89.62 3시간 점검 · 🪶) 로거 크롬(Tampermonkey 보관본 · 한 번에 약 13MB 글자)은 60분에 한 번 — 다시 열 때는 보관본 뒤 바뀐 것만 서버에서 받으므로 기능 같음 · 10/24 14:10~10/25 14:17 LOGGER 'rn-*' 146번 약 1GB */ LC_PUT_AT = Date.now(); if (LCACHE.atSet) LCACHE.atSet(LC_PUT_AT); LCACHE.put({ rows: [...m], last, fullAt }).catch(() => {}); };
+  const lcPut = (m, last, fullAt, now) => { const t0 = Math.max(LC_PUT_AT, LCACHE.atGet ? LCACHE.atGet() : 0); if (!now && Date.now() - t0 < (LCACHE.atGet ? 240 : 30) * 60e3) return; /* (1.89.83 자동 점검 · 🔬 매일 정밀 점검 · 🪶) 로거 보관본은 240분에 한 번 — 1.89.76 계측으로 10/25 하루 LOGGER 'rn-*' 약 1GB·24번의 주인이 rn-lcache(한 번에 약 44MB 글자 · 상품 2.58만 건 전체 문서)임을 확인(21~24시 3번 131MB ≈ 44MB×3 · 24시 뒤 rn-lcache 44,442KB 1번) → 하루 약 6번 260MB. 다시 열 때 보관본 뒤 바뀐 것만 받으므로 기능 같음(4시간 묵은 보관본 = 새로고침 때 서버에서 수백~2천 건 더 받음 · 메모리 정리 새로고침 하루 23번) */ /* (1.89.62 3시간 점검 · 🪶) 로거 크롬(Tampermonkey 보관본 · 한 번에 약 13MB 글자)은 60분에 한 번 — 다시 열 때는 보관본 뒤 바뀐 것만 서버에서 받으므로 기능 같음 · 10/24 14:10~10/25 14:17 LOGGER 'rn-*' 146번 약 1GB */ LC_PUT_AT = Date.now(); if (LCACHE.atSet) LCACHE.atSet(LC_PUT_AT); LCACHE.put({ rows: [...m], last, fullAt }).catch(() => {}); };
   async function loadListings(force) {
     if (LISTINGS && !force) return LISTINGS;
     if (LISTINGS && force === 'inc' && LIST_LAST && Date.now() - LIST_FULL < 24 * 3600e3) { try { let max = LIST_LAST; const ss = await C('prd_listings').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(LIST_LAST - 120000)).get(); ss.forEach((d) => { if (!/^_perm/.test(d.id)) { const v = d.data(); LISTINGS.set(d.id, v); max = Math.max(max, lcMs(v)); } }); LIST_LAST = max; if (ss.size) lcPut(LISTINGS, max, LIST_FULL); return LISTINGS; } catch (e) {} }
