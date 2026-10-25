@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.84의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.85의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.84' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.84', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.85' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.85', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -505,12 +505,12 @@
 /* ══════════ (1.89.78) 🔐 잠금 백업 다리 — 정범님 10/25 22:58 '알라딘 로그인 정보까지 모든 정보를 백업 · 암호는 내가 정함'
  *  웹앱 화면(jerrycson.github.io)에서만 · 웹앱 ⚙ 설정 🔐 잠금 백업의 단추를 사람이 직접 누른 뒤 15초 안의 요청에만 답함(isTrusted 누름 — 다른 스크립트가 몰래 꺼내 가지 못하게)
  *  get = 이 PC Tampermonkey 저장소 전부(rn-cred 포함)를 같은 화면의 웹앱에 넘김 → 웹앱이 정범님 암호로 잠가 이 기기에만 내려받음(어디에도 올리지 않음) · put = 잠금 백업에서 되돌리기(같은 이름 덮음) */
-(function rnVault() { if (window.top !== window || !/^jerrycson\.github\.io$/i.test(location.hostname)) return; let lastGet = 0, lastPut = 0;
-  document.addEventListener('click', (e) => { if (!e.isTrusted || !e.target || !e.target.closest) return; if (e.target.closest('[data-rnvault]')) lastGet = Date.now(); if (e.target.closest('[data-vltput]')) lastPut = Date.now(); }, true);
-  const say = (m) => { try { window.postMessage(m, location.origin); } catch (e) {} }; const hi = () => say({ __rnVaultHi: 1, ver: (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || null });
-  window.addEventListener('message', (e) => { if (e.source !== window || e.origin !== location.origin || !e.data || typeof e.data !== 'object') return; const d = e.data; if (d.__rnVaultPing) return hi(); if (!d.__rnVault) return;
-    try { if (d.__rnVault === 'get') { if (Date.now() - lastGet > 15000) return say({ __rnVaultRe: 1, id: d.id, err: '사람이 단추를 누른 요청이 아님' }); const out = {}; for (const k of GM_listValues()) { try { out[k] = GM_getValue(k, null); } catch (x) {} } return say({ __rnVaultRe: 1, id: d.id, data: out }); }
-      if (d.__rnVault === 'put') { if (Date.now() - lastPut > 15000) return say({ __rnVaultRe: 1, id: d.id, err: '사람이 단추를 누른 요청이 아님' }); let n = 0; for (const [k, v] of Object.entries(d.data || {})) { try { GM_setValue(k, v); n++; } catch (x) {} } return say({ __rnVaultRe: 1, id: d.id, n }); } } catch (x) { say({ __rnVaultRe: 1, id: d.id, err: String(x.message || x) }); } });
+(function rnVault() { if (window.top !== window || !/^jerrycson\.github\.io$/i.test(location.hostname) || !/^\/readnow-scripts\/app\//.test(location.pathname)) return; let lastGet = 0, lastPut = 0; const UW = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window; /* (1.89.85 검토) 웹앱 주소에서만 · 정확한 단추만 · 한 번 쓰면 닫힘 · 답은 웹앱이 건넨 전용 통로(MessageChannel)로만 */
+  document.addEventListener('click', (e) => { if (!e.isTrusted || !e.target || !e.target.closest) return; if (e.target.closest('button#vlt_make')) lastGet = Date.now(); if (e.target.closest('button[data-vltput]')) lastPut = Date.now(); }, true);
+  const say = (m) => { try { window.postMessage(m, location.origin); } catch (e) {} }; const hi = () => say({ __rnVaultHi: 1, ver: (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || null }); /* 인사(판 번호)만 화면 전체로 · 저장소 내용은 전용 통로로만 */
+  window.addEventListener('message', (e) => { if ((e.source !== window && e.source !== UW) || e.origin !== location.origin || !e.data || typeof e.data !== 'object') return; const d = e.data; if (d.__rnVaultPing) return hi(); if (!d.__rnVault) return; const port = e.ports && e.ports[0]; if (!port) return; const re = (m) => { try { port.postMessage({ __rnVaultRe: 1, id: d.id, ...m }); port.close(); } catch (x) {} };
+    try { if (d.__rnVault === 'get') { if (Date.now() - lastGet > 15000) return re({ err: '사람이 🔐 단추를 누른 요청이 아님' }); lastGet = 0; const out = {}; for (const k of GM_listValues()) { try { out[k] = GM_getValue(k, null); } catch (x) {} } return re({ data: out }); }
+      if (d.__rnVault === 'put') { if (Date.now() - lastPut > 15000) return re({ err: '사람이 ↩ 단추를 누른 요청이 아님' }); lastPut = 0; let n = 0; for (const [k, v] of Object.entries(d.data || {})) { try { GM_setValue(k, v); n++; } catch (x) {} } return re({ n }); } } catch (x) { re({ err: String(x.message || x) }); } });
   hi(); setTimeout(hi, 3000); })();
 
 }]);

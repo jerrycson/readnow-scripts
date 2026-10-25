@@ -16,7 +16,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   console.log('dlp', await p.evaluate(() => (document.getElementById('dlp') || {}).innerText));
   const meta = await p.evaluate(async () => idbGet('meta', 'bkf_meta')); console.log('meta', JSON.stringify(meta));
   // 다시: 바뀐 것만
-  await p.evaluate(async () => { await db.collection('bench_items').doc('222_4').set({ sc: '222', id: '4', title: '새 책', firstDay: '2026-10-25', uploadedAt: firebase.firestore.Timestamp.fromMillis(5000) }); S.bkFocus = null; await bkFocusLoad(); });
+  await p.evaluate(async () => { await db.collection('bench_items').doc('222_4').set({ sc: '222', id: '4', title: '새 책', firstDay: '2026-10-25', uploadedAt: firebase.firestore.Timestamp.fromMillis(Date.now()) }); S.bkFocus = null; await bkFocusLoad(); });
   await p.waitForTimeout(800);
   const meta2 = await p.evaluate(async () => idbGet('meta', 'bkf_meta')); console.log('meta2', JSON.stringify(meta2), 'n', await p.evaluate(() => S.bkFocus.n + '/' + S.bkFocus.m.size + ' delta ' + S.bkFocus.delta));
   const ok = cards.length >= 2 && /사라짐 1개 \(마지막 10-10\)/.test(cards.join()) && /남의 책/.test(cards.join()) && meta && meta.done && meta2.deltas === 1 && !errs.length && /🎯 집중벤치 2/.test(lens);
