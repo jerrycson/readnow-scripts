@@ -1,0 +1,6 @@
+require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  const r = await p.evaluate(async () => { const b64 = (u8) => { let s0 = ''; for (let i = 0; i < u8.length; i += 0x8000) s0 += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s0); }; const p1 = 'secret1234';
+    const data = { rnVault: 1, at: new Date().toISOString(), dev: 'X', from: 'collector', parts: { gm: { 'rn-cred': 'abc' } }, gmDrop: [] }; const iter = 600000, salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)); const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(p1), 'PBKDF2', false, ['deriveKey']); const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(data)))); const env = { rnlock: 1, v: 1, kdf: 'PBKDF2-SHA256', iter, salt: b64(salt), iv: b64(iv), ct: b64(ct) }; const d = await vaultUnlock(JSON.parse(JSON.stringify(env)), p1); return d.parts.gm['rn-cred']; });
+  console.log(r === 'abc' ? '✓ t87 통과' : '❌ t87 실패 ' + r);
+});

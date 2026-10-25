@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.85의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.86의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.85' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.85', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.86' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.86', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -512,5 +512,19 @@
     try { if (d.__rnVault === 'get') { if (Date.now() - lastGet > 15000) return re({ err: '사람이 🔐 단추를 누른 요청이 아님' }); lastGet = 0; const out = {}; for (const k of GM_listValues()) { try { out[k] = GM_getValue(k, null); } catch (x) {} } return re({ data: out }); }
       if (d.__rnVault === 'put') { if (Date.now() - lastPut > 15000) return re({ err: '사람이 ↩ 단추를 누른 요청이 아님' }); lastPut = 0; let n = 0; for (const [k, v] of Object.entries(d.data || {})) { try { GM_setValue(k, v); n++; } catch (x) {} } return re({ n }); } } catch (x) { re({ err: String(x.message || x) }); } });
   hi(); setTimeout(hi, 3000); })();
+/* ══════════ (1.89.86) 🔐 이 PC 잠금 백업(알라딘 화면에서) — 정범님 10/25 22:58 '알라딘 로그인 정보까지 전부 · 암호는 내가 정함'
+ *  웹앱 화면(github.io)에는 수집기 본체가 올라가지 않아(머리를 바꿔야 함) 웹앱 🔐 단추로는 이 PC 수집기 저장소를 못 꺼냄 → 알라딘 화면에서 Tampermonkey 아이콘 › '🔐 이 PC 잠금 백업 만들기'
+ *  암호는 브라우저 기본 입력 창(알라딘 화면 글자 칸이 아님)으로 두 번 · PBKDF2-SHA256 60만 번 → AES-GCM(웹앱 🔐 잠금 백업과 같은 파일 모양 — 웹앱에서 열어 보고 고치기 가능) · 2MB 넘는 임시 보관본(rn-lcache 등)은 뺌 · 파일은 이 PC 다운로드 폴더에만 */
+(function rnVaultMenu() { if (window.top !== window || !/(^|\.)aladin\.co\.kr$/i.test(location.hostname) || typeof GM_registerMenuCommand !== 'function') return;
+  const b64 = (u8) => { let s0 = ''; for (let i = 0; i < u8.length; i += 0x8000) s0 += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s0); };
+  const make = async () => { try { const p1 = prompt('🔐 이 PC 잠금 백업 — 암호(8자 이상 · 잊으면 못 엶 · 어디에도 저장하지 않음)'); if (p1 == null) return; if (p1.length < 8) return alert('암호는 8자 이상'); const p2 = prompt('암호를 한 번 더'); if (p2 !== p1) return alert('두 암호가 다름 — 다시 해 주세요');
+      const gm = {}, drop = []; for (const k of GM_listValues()) { let v; try { v = GM_getValue(k, null); } catch (e) { continue; } let n0 = 0; try { n0 = (typeof v === 'string' ? v : JSON.stringify(v)).length; } catch (e) {} if (n0 > 2e6) { drop.push(`${k}(${Math.round(n0 / 1048576)}MB)`); continue; } gm[k] = v; }
+      let pc = ''; try { pc = (window.__rnPcName && window.__rnPcName()) || GM_getValue('rn-pc-name', '') || ''; } catch (e) {}
+      const data = { rnVault: 1, at: new Date().toISOString(), dev: pc || null, from: 'collector', ver: (GM_info && GM_info.script && GM_info.script.version) || null, parts: { gm }, gmDrop: drop };
+      const iter = 600000, salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12)); const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(p1), 'PBKDF2', false, ['deriveKey']); const key = await crypto.subtle.deriveKey({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+      const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(JSON.stringify(data)))); const env = { rnlock: 1, v: 1, kdf: 'PBKDF2-SHA256', iter, salt: b64(salt), iv: b64(iv), ct: b64(ct), at: data.at, dev: data.dev };
+      const blob = new Blob([JSON.stringify(env)], { type: 'application/octet-stream' }); const url = URL.createObjectURL(blob); const host = document.createElement('div'); const sr = host.attachShadow({ mode: 'closed' }); const a = document.createElement('a'); a.href = url; a.download = `readnow-lock-PC-${(pc || 'pc').replace(/[^\w가-힣-]/g, '')}-${new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 16).replace(/[:T]/g, '-')}.rnlock`; sr.appendChild(a); document.documentElement.appendChild(host); a.click(); setTimeout(() => { URL.revokeObjectURL(url); host.remove(); }, 5000);
+      alert(`🔐 잠금 백업을 내려받았습니다 — 수집기 저장소 ${Object.keys(gm).length}칸${drop.length ? ` (큰 임시 보관본 ${drop.length}개 뺌)` : ''}\n웹앱 ⚙ 설정 › 🔐 잠금 백업 › '열어 보기·고치기'에서 같은 암호로 열 수 있습니다.`); } catch (e) { alert('잠금 백업 실패: ' + (e.message || e)); } };
+  try { GM_registerMenuCommand('🔐 이 PC 잠금 백업 만들기(알라딘 로그인 정보 포함)', make); } catch (e) {} })();
 
 }]);
