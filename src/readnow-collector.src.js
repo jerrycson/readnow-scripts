@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.74
+// @version      1.89.75
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -5748,7 +5748,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       if (!prog || !prog.list) {
         const B = new Map(); (await C('prd_books').get()).forEach((d) => { const v = d.data(); B.set(d.id, !!(v.images && v.images.front && (v.images.front.src || v.images.front.stored))); });
         const retry = new Date(Date.now() - 14 * 864e5).toISOString();
-        const list = [...LISTINGS.entries()].filter(([, l]) => l.listingId && l.usedCode && (!l.bookId || !B.get(l.bookId)) && (FORCE_ALL || !(l.photosAt && (l.photosStatus === 'done' || l.photosAt > retry))))
+        const list = [...LISTINGS.entries()].filter(([, l]) => l.listingId && l.usedCode && (!l.bookId || !B.get(l.bookId)) && !(l.photosAt && (l.photosStatus === 'done' || (!FORCE_ALL && l.photosAt > retry)))) /* (1.89.75 자동 점검) 수동 실행은 14일 기다림만 건너뜀 — 이미 받은(done) 상품은 다시 받지 않음. 전엔 수동 실행이 사진을 받은 상품까지 전부 다시 받아 10/25 하루 판매 중 상품 5,817개(JS-MAIN 5,184 · HOME 633)의 알라딘 화면·사진 받기·저장소 올리기·상품 기록 쓰기를 되풀이했음('기존 기록은 그대로 두고 바뀐 것만'과 어긋남) */
           .sort((a, b) => (b[1].active ? 1 : 0) - (a[1].active ? 1 : 0)).map(([k]) => k);
         prog = { list, i: 0, ok: 0, none: 0, nopage: 0, imgs: 0, startedAt: nowIso() }; await saveProgress('photos', prog);
         log(`우리 상품 사진: 표지 사진이 없는 상품 ${list.length.toLocaleString()}개 (판매 중 먼저)`);
