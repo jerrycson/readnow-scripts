@@ -1,0 +1,18 @@
+const SP = '/tmp/claude-0/-home-claude/2514b938-5524-5e43-ad0a-05319ceb1a3b/scratchpad/';
+require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  const errs = []; p.on('pageerror', (e) => errs.push(e.message)); const r = {};
+  await p.evaluate(() => { S.plist.set('DP1', { id: 'DP1', listingId: '91', title: '미끼 상품', sku: 'DUPES', status: '판매중', active: true, price: 99000, qty: 1, registeredAt: '2026-10-01' }); S.prodLoaded = true; });
+  r.sku = await p.evaluate(() => skuOfL(S.plist.get('DP1')).join(','));
+  await p.evaluate(() => openDupes()); await p.waitForTimeout(800); r.dupes = await p.evaluate(() => /미끼 상품/.test(document.querySelector('#sheet').innerText));
+  await p.evaluate(() => history.back()); await p.waitForTimeout(500);
+  await p.evaluate(() => { S.tab = 'products'; renderTabs(); renderMain(); }); await p.waitForTimeout(1200);
+  await p.evaluate(() => { const b = document.getElementById('pstockbtn'); if (b) b.scrollIntoView(); }); await p.screenshot({ path: SP + 't81a.png', clip: { x: 0, y: 0, width: 1000, height: 300 } });
+  r.shine = await p.evaluate(() => !!document.querySelector('#pstockbtn .shine'));
+  await p.evaluate(() => { const q = document.getElementById('q'); q.value = '테스트'; q.dispatchEvent(new Event('input', { bubbles: true })); document.activeElement && document.activeElement.blur(); }); await p.keyboard.press('Escape'); await p.waitForTimeout(200); r.esc1 = await p.evaluate(() => document.getElementById('q').value); await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+  r.esc = await p.evaluate(() => document.getElementById('q').value === '');
+  await p.evaluate(() => { S.tab = 'settings'; renderTabs(); renderMain(); }); await p.waitForTimeout(1200);
+  r.shop = await p.evaluate(() => { const a = [...document.querySelectorAll('#main .card, #main .shopcfg-card')]; const i = a.findIndex((x) => /휴대폰 앱/.test(x.textContent) && x.classList.contains('card')); return a[i + 1] && a[i + 1].classList.contains('shopcfg-card'); });
+  await p.evaluate(() => { const c = document.querySelector('.shopcfg-card'); c.scrollIntoView(); }); await p.screenshot({ path: SP + 't81b.png', clip: { x: 0, y: 0, width: 1000, height: 260 } });
+  await p.evaluate(() => { localStorage.removeItem('rn-reg-dev'); }); await p.evaluate(async () => { await regSaveCfg({ focus: false }); }); r.dev = await p.evaluate(() => JSON.parse(localStorage.getItem('rn-reg-dev') || '{}').focus === false && regCfg().focus === false);
+  console.log(JSON.stringify(r), 'errs', errs.join(' | ')); const ok = r.sku === 'DUPES' && r.dupes && r.shine && r.esc && r.shop && r.dev && !errs.length; console.log(ok ? '✓ t81 통과' : '❌ t81 실패');
+});

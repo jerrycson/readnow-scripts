@@ -31,7 +31,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.35.10'; // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
+const VER = '0.35.11'; // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
 // // (0.35.5 격일 정밀 점검) ☁ 공개 확인: 읽기 실패 길도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂 · 상품 조회 HTTP 오류 = 읽기 실패 · deepscan 바꾸는 말 쿼리까지 · 진단 mchg
 // // (0.35.3) deepscan을 화면마다 따로 읽기(한 번에 60초 넘던 것) // (0.35.2) 진단 deepscan — 샵매니저 메뉴 깊이 2까지 · 북스킹 숍 · 우리 상품 화면 · 온라인 중고 목록을 읽기만(GET · 고객 정보 가림)
 // // (0.35.1) 💾 하루 한 번 prd_system/fbCols(모든 최상위 칸 이름 · app_secrets 뺌) — 로거 수집기 자료 보관이 칸 목록으로 씀
@@ -1564,10 +1564,10 @@ async function skuTick() { if (skuBusy) return; const R = await regMod(); if (!R
     for (const x of needReg) { try { await db.runTransaction(async (tx) => { const it = (await tx.get(x.ref)).data() || {}; const have = Array.isArray(it.rnSkus) ? it.rnSkus : []; const k = Math.max(1, Math.min(50, +it.qty || 1)) - have.length; if (k <= 0) return; const d = (await tx.get(SKU_REF())).data() || {}; const free = (d.free || []).slice(); let n = +d.n || 0; const add = []; while (!d.noReuse && add.length < k && free.length) add.push(free.shift()); while (add.length < k) { n++; add.push(R.skuOf(n)); } tx.set(SKU_REF(), { n, free, at: new Date().toISOString() }, { merge: true }); tx.set(x.ref, { rnSkus: [...have, ...add] }, { merge: true }); }); } catch (e) { log('등록 줄 SKU 실패', e.message); } }
     /* ② 상품 — 아직 코드가 없는 것만 · 등록일 순 */
     /* (0.27.2 자동 점검) 3분마다 상품 2만 5천여 건을 통째로 읽었음(select도 문서마다 1읽기 → 하루 약 1,200만 읽기) → 이 인스턴스가 기억해 두고 지난번 뒤 바뀐 상품(uploadedAt)만 받음 · 6시간마다(그리고 새로 켜질 때) 한 번 통째로 */
-    const SL = SKU_LS; const qAt = Date.now(); const putL = (d) => { if (/^_perm/.test(d.id)) return; const v = d.data() || {}; SL.m.set(d.id, { key: d.id, u: String(v.usedCode || d.id.replace(/^aladin_/, '')), lid: v.listingId != null ? String(v.listingId) : null, at: String(v.registeredAt || '9999'), qty: +v.qty || 0 }); };
+    const SL = SKU_LS; const qAt = Date.now(); const putL = (d) => { if (/^_perm/.test(d.id)) return; const v = d.data() || {}; SL.m.set(d.id, { key: d.id, u: String(v.usedCode || d.id.replace(/^aladin_/, '')), lid: v.listingId != null ? String(v.listingId) : null, at: String(v.registeredAt || '9999'), qty: +v.qty || 0, dupes: /^\s*DUPES/i.test(String(v.sku || '')) }); }; /* (0.35.11) 관리코드 DUPES = 미끼 상품 — SKU를 주지 않음 */
     let inc = !!SL.fullAt && qAt - SL.fullAt < 6 * 3600e3;
-    if (inc) { try { const ls = await C('prd_listings').where('uploadedAt', '>', new Date(SL.cur - 5 * 60e3)).select('usedCode', 'listingId', 'registeredAt', 'qty', 'status').get(); ls.forEach(putL); } catch (e) { inc = false; log('🏷 SKU: 바뀐 상품만 받기 실패 — 통째로 읽음', e.message); } }
-    if (!inc) { const ls = await C('prd_listings').select('usedCode', 'listingId', 'registeredAt', 'qty', 'status').get(); SL.m = new Map(); ls.forEach(putL); SL.fullAt = qAt; }
+    if (inc) { try { const ls = await C('prd_listings').where('uploadedAt', '>', new Date(SL.cur - 5 * 60e3)).select('usedCode', 'listingId', 'registeredAt', 'qty', 'status', 'sku').get(); ls.forEach(putL); } catch (e) { inc = false; log('🏷 SKU: 바뀐 상품만 받기 실패 — 통째로 읽음', e.message); } }
+    if (!inc) { const ls = await C('prd_listings').select('usedCode', 'listingId', 'registeredAt', 'qty', 'status', 'sku').get(); SL.m = new Map(); ls.forEach(putL); SL.fullAt = qAt; }
     SL.cur = qAt; const L = [...SL.m.values()];
     /* (0.31.2) 정범님 10/21 '샵매니저 SKU가 안 뜸' — 샵매니저 상품 조회 목록의 둘째 칸은 ISBN이 있는 책이면 ISBN(U코드가 아님)이라 수집기가 그 줄의 상품을 못 찾았음
      *  → 상품 번호(목록 체크칸 값) → U코드 표를 app_settings/sku_lid_{0..3}.m[상품 번호] = U코드 로 둠(바뀐 것만 씀) */
@@ -1580,7 +1580,7 @@ async function skuTick() { if (skuBusy) return; const R = await regMod(); if (!R
         if (add.length) { const c2 = (e.c || []).concat(add); await C('app_settings').doc('sku_map_' + ci).set({ m: { [pq.lid]: { ...e, c: c2, how: String(e.how || 'new') + ' +dup', at: at0 } }, at: at0 }, { merge: true }); MAP.set(pq.lid, { ...e, c: c2 }); add.forEach((c) => used.add(c)); }
         await C('reg_items').doc(rid).set({ post: { skuMerged: { at: at0, c: add } } }, { merge: true }); nm++; }
       if (nm) log(`🏷 SKU: 기등록(수량 늘림) ${nm}건 — 새 실물의 코드를 그 상품에 덧붙임`); } catch (e) { log('🏷 SKU 기등록 덧붙이기 실패', e.message); }
-    const need = L.filter((x) => !MAP.has(x.key)); if (!need.length) return; need.sort((a, b) => a.at.localeCompare(b.at));
+    const need = L.filter((x) => !MAP.has(x.key) && !x.dupes); if (!need.length) return; need.sort((a, b) => a.at.localeCompare(b.at));
     const rel = new Map(); (await C('prd_relinks').get()).forEach((d) => { const v = d.data() || {}; if (!v.rejected && v.from && v.to) rel.set(String(v.to), String(v.from)); });
     const claim = new Map(); (await C('reg_claims').get()).forEach((d) => { const v = d.data() || {}; if (v.regItem) claim.set(d.id, v.regItem); });
     const sold = new Map(); if (need.length > 200) { (await C('crm_orders').get()).forEach((d) => { const o = d.data() || {}; if (o.kind && o.kind !== 'sale') return; (o.items || []).forEach((it) => { const u = it.aladinUsedCode ? String(it.aladinUsedCode) : null; if (!u || /cancel|return/i.test(String(it.lineStatus || ''))) return; sold.set(u, (sold.get(u) || 0) + Math.max(1, +it.qty || 1)); }); }); }
