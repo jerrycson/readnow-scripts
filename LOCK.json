@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "기등록·라벨·도서정보검색·탭순서·테더링",
+ "since": "2026-10-25T10:11:11Z",
+ "beat": "2026-10-25T10:11:11Z",
  "ask": null,
  "last": {
   "who": "chat",
