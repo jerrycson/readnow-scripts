@@ -1,0 +1,24 @@
+require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  const errs = []; p.on('pageerror', (e) => errs.push(e.message));
+  await p.evaluate(async () => { S.pbooks.set('b1', { title: '책 하나', isbn13: '9790000000101', aladinItemId: 'I1', categories: [{ path: ['국내도서', '소설'] }] });
+    S.plist.set('LB1', { id: 'LB1', listingId: '71', bookId: 'b1', title: '책 하나', status: '판매중', active: true, qty: 1, price: 9000 });
+    S.bench = { targets: [{ sc: '111', name: '딱따구리', on: true }, { sc: '222', name: '책방B', on: true }] };
+    const B = db.collection('bench_items'); await B.doc('111_1').set({ sc: '111', id: '1', title: '책 하나 (개정판)', price: 7000, grade: '상', firstDay: '2026-10-01', lowNow: true, uploadedAt: firebase.firestore.Timestamp.fromMillis(1000) });
+    await B.doc('111_2').set({ sc: '111', id: '2', isbn: '9790000000101', title: '책 하나', firstDay: '2026-09-20', goneDay: '2026-10-10', lowEvents: [{ d: 1 }, { d: 2 }], uploadedAt: firebase.firestore.Timestamp.fromMillis(2000) });
+    await B.doc('222_3').set({ sc: '222', id: '3', title: '남의 책', byline: '누구 (지은이)', firstDay: '2026-10-02', goneDay: '2026-10-20', uploadedAt: firebase.firestore.Timestamp.fromMillis(3000) });
+    openBookSearch(); });
+  await p.waitForTimeout(1200);
+  await p.evaluate(() => document.querySelector('[data-bkl="focus"]').click()); await p.waitForTimeout(2500);
+  const lens = await p.evaluate(() => [...document.querySelectorAll('.bk-lens .regbtn')].map((b) => b.innerText.replace(/\s+/g, ' ')).join(' | '));
+  console.log('lens', lens);
+  const cards = await p.evaluate(() => [...document.querySelectorAll('.bk-card')].map((x) => x.innerText.replace(/\s+/g, ' ').slice(0, 300)));
+  console.log('focus cards', cards.length, cards.join('\n'));
+  console.log('dlp', await p.evaluate(() => (document.getElementById('dlp') || {}).innerText));
+  const meta = await p.evaluate(async () => idbGet('meta', 'bkf_meta')); console.log('meta', JSON.stringify(meta));
+  // 다시: 바뀐 것만
+  await p.evaluate(async () => { await db.collection('bench_items').doc('222_4').set({ sc: '222', id: '4', title: '새 책', firstDay: '2026-10-25', uploadedAt: firebase.firestore.Timestamp.fromMillis(5000) }); S.bkFocus = null; await bkFocusLoad(); });
+  await p.waitForTimeout(800);
+  const meta2 = await p.evaluate(async () => idbGet('meta', 'bkf_meta')); console.log('meta2', JSON.stringify(meta2), 'n', await p.evaluate(() => S.bkFocus.n + '/' + S.bkFocus.m.size + ' delta ' + S.bkFocus.delta));
+  const ok = cards.length >= 2 && /사라짐 1개 \(마지막 10-10\)/.test(cards.join()) && /남의 책/.test(cards.join()) && meta && meta.done && meta2.deltas === 1 && !errs.length && /🎯 집중벤치 2/.test(lens);
+  console.log('errs', errs.join(' | ')); console.log(ok ? '✓ t78 통과' : '❌ t78 실패');
+});
