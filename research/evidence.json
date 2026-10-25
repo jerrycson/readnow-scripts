@@ -1,6 +1,6 @@
 {
  "v": 2,
- "updated": "2026-10-25",
+ "updated": "2026-10-26",
  "rule": "조언·제안·반박은 명망 있는 외부 연구(학술지·정부/공공 통계·업계 보고서)를 근거로 — 정범님 10/20. 근거가 없으면 '근거 못 찾음'을 밝히고 우리 실측으로만 말함. · 근거마다 \"적용한 곳\"(웹앱 화면·판)과 왜를 함께 적음(정범님 10/23). · (정범님 10/24) 중고책 관련 자료를 모두 모음 — 근거마다 한줄 요약·한 문장 요약·1쪽 요약·우리와의 관련성 · 우선순위 점수(연구·명망·우리 사업·웹앱·바로 효과 각 20점)",
  "items": [
   {
@@ -2297,6 +2297,55 @@
    "one": "듣는 문서는 바뀔 때마다 기기마다 통째로 다시 읽힘 · 개수는 count로",
    "addedBy": "자동 전체 점검 2026-10-25",
    "at": "2026-10-25"
+  },
+  {
+   "id": "webdev-memory-detached-dom-2026",
+   "topic": [
+    "웹앱 메모리",
+    "웹앱 속도"
+   ],
+   "kind": "공식 기술 문서 (Google Chrome 개발자 문서)",
+   "authors": "Google (Chrome DevTools · web.dev)",
+   "year": 2026,
+   "title": "Fix memory problems · Memory terminology (detached DOM trees · retained size · shallow size)",
+   "venue": "developer.chrome.com / web.dev 공식 문서",
+   "url": "https://developer.chrome.com/docs/devtools/memory-problems",
+   "urls": [
+    "https://developer.chrome.com/docs/devtools/memory-problems/memory-101",
+    "https://web.dev/articles/detached-window-memory-leaks"
+   ],
+   "finding": "자바스크립트가 참조를 쥐고 있는 '떼어 낸 DOM 트리(detached DOM tree)'는 화면에서 사라져도 가비지 컬렉션이 되지 않아 메모리 누수의 대표 원인 · 한 물건의 '보유 크기(retained size)'는 그것이 붙잡고 있는 다른 물건까지 포함 — 큰 배열·Map을 가리키는 참조 하나가 수십 MB를 묶어 둠. 캐시는 상한(크기·수)과 비우는 때를 정해야 함.",
+   "use": "① 웹앱 뒤로 가기 쌓기(navStack)가 다시 그릴 함수가 있는 화면의 떼어 둔 DOM(한 화면 0.5~5MB · 최대 30개)을 쥐고 있던 것 → 쓰지 않으니 쥐지 않음(웹앱 1.78.112). ② norm() 캐시가 한 번 쓰고 버리는 150~400자 검색 열쇠를 10만 칸까지 담던 것 → 48자 넘는 글은 캐시 안 함(1.78.112 · node 시험 146→16MB). ③ 같은 큰 배열을 memo 열쇠에 바뀌는 값(ver·size)을 넣어 여러 벌 10분씩 겹쳐 두는 곳(prodAllRows·bkRows·mktCnt·stkAl — 보고 ④ 제안)도 같은 원리.",
+   "applied": [
+    "웹앱 1.78.112 — navStack frag · norm 캐시"
+   ],
+   "one": "떼어 낸 DOM·큰 배열을 가리키는 참조 하나가 수십 MB를 묶음 — 캐시는 상한과 비우는 때를",
+   "addedBy": "🔬 매일 정밀 점검(Fable) 2026-10-26",
+   "at": "2026-10-26"
+  },
+  {
+   "id": "luca-yelp-reviews-revenue-2016",
+   "topic": [
+    "평판·고객",
+    "판매 전략",
+    "사업 제반"
+   ],
+   "kind": "학술 연구 (Harvard Business School Working Paper 12-016 · SSRN)",
+   "authors": "Michael Luca (Harvard Business School)",
+   "year": 2016,
+   "title": "Reviews, Reputation, and Revenue: The Case of Yelp.com",
+   "venue": "Harvard Business School Working Paper 12-016 (2011 · 2016 개정) · SSRN",
+   "url": "https://papers.ssrn.com/abstract=1928601",
+   "urls": [
+    "https://www.library.hbs.edu/working-knowledge/the-yelp-factor-are-consumer-reviews-good-for-business",
+    "https://www.harvardmagazine.com/print/33472?page=all"
+   ],
+   "finding": "음식점 Yelp 평점이 한 별(1점) 오르면 매출이 5~9% 늘었음(독립 음식점 · 체인은 영향 없음) — 소비자는 평가 수가 많을수록 평균 평점에 더 반응하고, 평점은 '남이 본 품질 신호'로 작동.",
+   "use": "① 🏅 우리 가게 성적 카드(1.78.107 — 만족도·품절취소율·6개월 평가 수 등급 S~D)를 한 주 전과 견준 추세로 보고, 등급이 내려가면 홈 '오늘 확인할 것'에 띄우기(📋 사업 제반 개선안 · 제안) ② 벤치마킹 판매자 비교에서 평가 수가 적은 판매자의 평점은 약하게 보기(소비자 반응이 평가 수에 비례) — 판매자 점수 설정 참고.",
+   "applied": [],
+   "one": "평점 1점 ↑ ≈ 매출 5~9% ↑(독립 가게) · 평가 수가 많을수록 평점 영향 커짐",
+   "addedBy": "🔬 매일 정밀 점검(Fable) 2026-10-26",
+   "at": "2026-10-26"
   }
  ]
 }
