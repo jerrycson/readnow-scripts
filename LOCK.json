@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "라벨 테스트 인쇄",
- "since": "2026-10-25T08:56:11Z",
- "beat": "2026-10-25T08:56:11Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "라벨 인쇄",
-  "at": "2026-10-25T08:46:43Z"
+  "done": "",
+  "at": "2026-10-25T08:59:01Z"
  }
 }
