@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.73
+// @version      1.89.74
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -3692,7 +3692,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const jobRef = (name) => C('prd_jobs').doc(name);
   // (1.34.1) 큰 목록(수만 개)은 바뀌었을 때만 올림 — 예전엔 5개마다 1MB 가까운 목록 전체를 다시 올림(느림·문서 한도 1MB를 넘으면 저장 실패). 700KB가 넘으면 조각 문서로 나눠 둠
   const BIG_SENT = new Map(); const bigSig = (v) => `${v.length}|${v[0]}|${v[v.length >> 1]}|${v[v.length - 1]}`;
-  async function saveProgress(name, prog) { if (FORCE_ALL) prog.force = true; { const loc = {}; for (const [k, v] of Object.entries(prog)) loc[k] = Array.isArray(v) && v.length > 1000 ? { n: v.length } : v; LS.set('job_' + name, loc); } /* (1.89.60 3시간 점검 · 🪶 메모리) 이 PC 사본(Tampermonkey job_*)은 어디서도 읽지 않음(이어 하기는 Firebase prd_jobs에서) — 그런데 저장 때마다 큰 목록(상품 키 수천~수만 개 · 약 0.5MB)째 다시 써서 10/25 05:40~08:42 JS-MAIN이 198번 약 98MB를 Tampermonkey 저장소에 씀 → 큰 목록은 개수만 남김 */ const out = { ...prog };
+  async function saveProgress(name, prog) { if (FORCE_ALL) prog.force = true; { const loc = {}; for (const [k, v] of Object.entries(prog)) loc[k] = Array.isArray(v) ? { n: v.length } : v && typeof v === 'object' ? { keys: Object.keys(v).length } : v; LS.set('job_' + name, loc); } /* (1.89.74 자동 점검 · 🪶) 이 사본은 읽는 곳이 없으므로 목록·묶음은 크기만 — 1.89.60 뒤에도 10/24 21:50~10/25 21:50 JS-MAIN GM job_* 543번 약 265MB(1천 개 이하 목록·큰 묶음이 그대로 들어감) */ /* (1.89.60 3시간 점검 · 🪶 메모리) 이 PC 사본(Tampermonkey job_*)은 어디서도 읽지 않음(이어 하기는 Firebase prd_jobs에서) — 그런데 저장 때마다 큰 목록(상품 키 수천~수만 개 · 약 0.5MB)째 다시 써서 10/25 05:40~08:42 JS-MAIN이 198번 약 98MB를 Tampermonkey 저장소에 씀 → 큰 목록은 개수만 남김 */ const out = { ...prog };
     for (const [k, v] of Object.entries(prog)) if (Array.isArray(v) && v.length > 1000) { delete out[k]; const sig = bigSig(v); if (BIG_SENT.get(name + '|' + k) === sig) continue; // 같은 목록이면 다시 올리지 않음
       const s = JSON.stringify(v); out[k] = firebase.firestore.FieldValue.delete();
       if (s.length <= 700000) { out[k + '__J'] = s; out[k + '__C'] = firebase.firestore.FieldValue.delete(); }
