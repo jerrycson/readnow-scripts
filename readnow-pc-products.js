@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.87의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.88의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.87' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.87', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.88' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.88', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -3931,11 +3931,16 @@
     for (let tryN = 1; ; tryN++) {
       let st = 0, em = ''; try { const r = await fetch(location.href, { credentials: 'include', cache: 'no-store' }); st = r.status; } catch (e) { st = 0; em = e.message; } log(`[안전한 새로고침] ${tryN}번째 서버 확인: ${st || '응답 없음'}${em ? ' (' + em + ')' : ''}${st === 429 ? ' — 요청 너무 많음' : ''} · 시작한 지 ${Math.round((Date.now() - tStart) / 60000)}분`);
       if (st === 200) {
-        const id = HANDOFF_TAB + '_' + tryN; GM_setValue('rn-handoff', { id, at: Date.now() }); GM_setValue('rn-handoff-ack', null);
+        const id = HANDOFF_TAB + '_' + tryN; GM_setValue('rn-handoff', { id, at: Date.now() }); /* (1.89.88 3시간 점검) '받았음'을 id별 칸(rn-handoff-ack-<id>)으로 — 예전엔 PC 공용 한 칸이라 이 PC의 탭 둘 이상이 동시에 안전한 새로고침하면 서로 null로 지우거나 덮어, 새 탭이 이어받았는데도 '2분 안에 안 뜸'으로 보고 그 새 탭을 닫았음(10/26 0~3시 로거 113번) · 기다리는 id를 줄(rn-handoff-q)에 올려 새 탭이 아직 아무도 안 받은 것을 받음(주소에 표시를 붙이지 않음 — 알라딘 화면 스크립트가 주소를 읽을 수 있어 로거 드러남 위험) */
+        const ackOk = () => { try { return !!GM_getValue('rn-handoff-ack-' + id, null) || GM_getValue('rn-handoff-ack', null) === id; } catch (e) { return false; } };
+        try { for (const k of GM_listValues()) if (/^rn-handoff-ack-/.test(k)) { const v = +GM_getValue(k, 0) || 0; if (Date.now() - v > 15 * 60e3) GM_deleteValue(k); } } catch (e) {}
+        const hq = (fn) => { try { const q = (GM_getValue('rn-handoff-q', null) || []).filter((x) => x && x.id && Date.now() - (x.at || 0) < 10 * 60000); GM_setValue('rn-handoff-q', fn(q)); } catch (e) {} };
+        hq((q) => [...q.filter((x) => x.id !== id), { id, at: Date.now() }]); const unq = () => hq((q) => q.filter((x) => x.id !== id));
         if (lastTab && !lastTab.closed && !(await closeTab(lastTab))) { log(`[안전한 새로고침] 앞서 연 새 탭이 닫히지 않아 새 탭을 또 열지 않고 이 탭을 그 자리에서 새로고침합니다 (탭이 쌓이지 않게)`, 1); if (window.__rnFlush) await window.__rnFlush(); GM_setValue('rn-handoff', { id, at: Date.now() }); location.reload(); return; }
         log(`${reason}: 새 탭으로 다시 엽니다 (${tryN}번째)`); let tab = null; try { tab = GM_openInTab(location.href.replace(/#.*$/, ''), { active: true, insert: true, setParent: true }); } catch (e) {} lastTab = tab;
-        const t0 = Date.now(); while (Date.now() - t0 < 120000) { await sleep(3000); if (GM_getValue('rn-handoff-ack', null) === id) { window.__rnLeadRelease && window.__rnLeadRelease(); log(`[안전한 새로고침] 새 탭이 이어받았습니다 (${Math.round((Date.now() - t0) / 1000)}초 만에) — 남은 기록을 저장하고 이 탭을 닫습니다 · 전체 ${Math.round((Date.now() - tStart) / 60000)}분 걸림`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} await sleep(1500); /* (1.63.8) 닫기가 막힌 탭(사람이 연 탭)은 빈 화면으로 바꿔 코드가 모두 멈추게 — 새 탭이 확인해 남김 */ GM_setValue('rn-handoff-oldblank', { id, at: Date.now() }); location.replace('about:blank'); return; } }
-        const closed = await closeTab(tab); if (closed) lastTab = null; log(`[안전한 새로고침] 새 탭이 2분 안에 뜨지 않았습니다(알라딘 오류 화면 — 429 등일 가능성) → 그 탭을 ${closed ? '닫고 닫힌 것을 확인함' : '닫지 못함 — 다음엔 새 탭을 또 열지 않고 이 탭을 새로고침'} · ${Math.round(wait / 6000) / 10}분 기다렸다 다시`, 1); PACE.fail('429');
+        const t0 = Date.now(); while (Date.now() - t0 < 120000) { await sleep(3000); if (ackOk()) { unq(); try { GM_deleteValue('rn-handoff-ack-' + id); } catch (e) {} window.__rnLeadRelease && window.__rnLeadRelease(); log(`[안전한 새로고침] 새 탭이 이어받았습니다 (${Math.round((Date.now() - t0) / 1000)}초 만에) — 남은 기록을 저장하고 이 탭을 닫습니다 · 전체 ${Math.round((Date.now() - tStart) / 60000)}분 걸림`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} await sleep(1500); /* (1.63.8) 닫기가 막힌 탭(사람이 연 탭)은 빈 화면으로 바꿔 코드가 모두 멈추게 — 새 탭이 확인해 남김 */ GM_setValue('rn-handoff-oldblank', { id, at: Date.now() }); location.replace('about:blank'); return; } }
+        if (ackOk()) { unq(); try { GM_deleteValue('rn-handoff-ack-' + id); } catch (e) {} window.__rnLeadRelease && window.__rnLeadRelease(); log(`[안전한 새로고침] 새 탭이 이어받았습니다 (2분 끝에 확인) — 이 탭을 닫습니다`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} await sleep(1500); GM_setValue('rn-handoff-oldblank', { id, at: Date.now() }); location.replace('about:blank'); return; }
+        unq(); const closed = await closeTab(tab); if (closed) lastTab = null; log(`[안전한 새로고침] 새 탭이 2분 안에 뜨지 않았습니다(알라딘 오류 화면 — 429 등일 가능성) → 그 탭을 ${closed ? '닫고 닫힌 것을 확인함' : '닫지 못함 — 다음엔 새 탭을 또 열지 않고 이 탭을 새로고침'} · ${Math.round(wait / 6000) / 10}분 기다렸다 다시`, 1); PACE.fail('429');
       } else { log(`${reason}: 알라딘이 ${st || '응답 없음'}(${st === 429 ? '요청 너무 많음' : '아직 안 됨'}) — ${Math.round(wait / 6000) / 10}분 뒤 다시 확인`, 1); if (st === 429) PACE.fail('429'); }
       ui(`${reason} — 알라딘이 다시 받아 줄 때까지 기다리는 중`, 0, 0, `${Math.round(wait / 6000) / 10}분 뒤 다시 확인 (${tryN}번째) · 이 탭을 닫지 마세요`);
       await sleep(wait); wait = Math.min(wait * 2, 15 * 60000);
@@ -3948,7 +3953,9 @@
       const k = 'rnu-stall-kick'; const v = GM_getValue(k, null) || {}; const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const n = v.day === day && v.job === curKey ? +v.n || 0 : 0; if (n >= 3) { if (!window.__rnStallNoted) { window.__rnStallNoted = 1; log(`🐕 '${(JOBS[curKey] || [curKey])[0]}'이(가) 또 30분 넘게 멈춤 — 오늘 이미 3번 다시 열어 더 하지 않음(직접 확인 필요)`, 1); } return; }
       GM_setValue(k, { day, job: curKey, n: n + 1, at: Date.now() }); log(`🐕 작업 멈춤: '${(JOBS[curKey] || [curKey])[0]}'이(가) ${Math.round((Date.now() - at) / 60000)}분 동안 진행이 없음(알라딘 응답을 받다 연결이 멈춘 듯) — 안전한 새로고침 뒤 그 회차를 저장된 자리부터 이어감 (오늘 ${n + 1}/3)`, 1); safeReload('🐕 멈춘 작업 다시 열기', null); } catch (e) {} }, 60e3);
   // 새 탭 쪽: 안전한 새로고침으로 열린 탭이면 '받았음' 신호
-  { const h = GM_getValue('rn-handoff', null); if (h && h.id && Date.now() - h.at < 10 * 60000) { window.__rnClaimHeir && window.__rnClaimHeir(); GM_setValue('rn-handoff-ack', h.id); GM_setValue('rn-handoff', null); const rk = GM_getValue('rnu-resume-after-reload', null); log(`[안전한 새로고침] 이 탭이 새로 열려 이어받음 (옛 탭 신호 ${h.id}, ${Math.round((Date.now() - h.at) / 1000)}초 전)${rk ? ` · 곧 '${(JOBS[rk] || [rk])[0]}' 이어가기` : ''}`); } }
+  { /* (1.89.88 3시간 점검) 기다리는 줄(rn-handoff-q)에서 아직 아무도 '받았음'을 안 보낸 가장 앞 것을 받음 — 공용 칸(rn-handoff)이 다른 탭 것으로 덮였어도 제 몫을 받음 · 줄이 비면 예전처럼 공용 칸 */
+    let q = []; try { q = (GM_getValue('rn-handoff-q', null) || []).filter((x) => x && x.id && Date.now() - (x.at || 0) < 10 * 60000 && !GM_getValue('rn-handoff-ack-' + x.id, null)); } catch (e) {}
+    const h0 = GM_getValue('rn-handoff', null); const h = q.length ? q[0] : h0; if (q.length) { try { GM_setValue('rn-handoff-q', (GM_getValue('rn-handoff-q', null) || []).filter((x) => x && x.id !== h.id)); } catch (e) {} } if (h && h.id && Date.now() - h.at < 10 * 60000) { window.__rnClaimHeir && window.__rnClaimHeir(); GM_setValue('rn-handoff-ack-' + h.id, Date.now()); GM_setValue('rn-handoff-ack', h.id); if (!h0 || h0.id === h.id) GM_setValue('rn-handoff', null); const rk = GM_getValue('rnu-resume-after-reload', null); log(`[안전한 새로고침] 이 탭이 새로 열려 이어받음 (옛 탭 신호 ${h.id}, ${Math.round((Date.now() - h.at) / 1000)}초 전)${rk ? ` · 곧 '${(JOBS[rk] || [rk])[0]}' 이어가기` : ''}`); } }
   // (1.25.1) 메모리 지킴이: 오래 도는 작업 중 이 탭의 메모리가 한계의 65%를 넘거나 숨은 창으로 연 페이지가 SET.reloadEveryFrames(400)개를 넘으면
   //  진행 위치를 저장하고 멈춘 뒤 탭을 새로고침해, 같은 작업을 그 자리부터 자동으로 이어감 (새로고침하면 탭 메모리가 처음으로 돌아감)
   let frameLoads = 0, memReload = false, verReload = false;
