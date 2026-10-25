@@ -1,1 +1,1 @@
-@kpin kpin/aud_20261025-192326.json
+@kpq kpq=25&kpcap=3000&kpper=150000&r=20261025204908
