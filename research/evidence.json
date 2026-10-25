@@ -1,6 +1,6 @@
 {
  "v": 2,
- "updated": "2026-10-24",
+ "updated": "2026-10-25",
  "rule": "조언·제안·반박은 명망 있는 외부 연구(학술지·정부/공공 통계·업계 보고서)를 근거로 — 정범님 10/20. 근거가 없으면 '근거 못 찾음'을 밝히고 우리 실측으로만 말함. · 근거마다 \"적용한 곳\"(웹앱 화면·판)과 왜를 함께 적음(정범님 10/23). · (정범님 10/24) 중고책 관련 자료를 모두 모음 — 근거마다 한줄 요약·한 문장 요약·1쪽 요약·우리와의 관련성 · 우선순위 점수(연구·명망·우리 사업·웹앱·바로 효과 각 20점)",
  "items": [
   {
@@ -2270,6 +2270,33 @@
     }
    },
    "cat": "기술 근거"
+  },
+  {
+   "id": "firestore-billing-listen-count-2026",
+   "topic": [
+    "Firebase 비용",
+    "읽기·쓰기 줄이기",
+    "웹앱 속도"
+   ],
+   "kind": "공식 기술 문서 (Google Cloud)",
+   "authors": "Google (Firebase·Cloud Firestore 문서)",
+   "year": 2026,
+   "title": "Cloud Firestore pricing · Get realtime updates · Best practices",
+   "venue": "firebase.google.com / cloud.google.com 공식 문서",
+   "url": "https://cloud.google.com/firestore/pricing",
+   "urls": [
+    "https://firebase.google.com/docs/firestore/query-data/listen",
+    "https://firebase.google.com/docs/firestore/best-practices",
+    "https://firebase.google.com/docs/firestore/real-time_queries_at_scale"
+   ],
+   "finding": "실시간 듣기(onSnapshot)는 결과에 들어오거나 바뀐 문서마다 읽기 1번으로 셈 — 한 칸만 merge로 고쳐도 듣는 기기마다 그 문서 전체를 다시 받음. 개수 세기(count 모으기)는 색인 항목 최대 1,000개당 읽기 1번이라 목록을 통째로 읽는 것보다 훨씬 쌈.",
+   "use": "① 수집기가 '봤음' 표시만(lastSeenAt) 상품 기록에 다시 적어도 웹앱마다 그 상품 문서를 통째로 다시 받음 → '봤음'만 적는 쓰기를 줄이는 것이 웹앱 메모리·읽기를 함께 줄임(보고 ④ 제안). ② 웹앱 🔢 판매 상품 수량 칸: 대기 묶음 수백 개를 1분마다 읽던 것을 count()로(웹앱 1.78.97).",
+   "applied": [
+    "웹앱 1.78.97 — qchkLoad count()"
+   ],
+   "one": "듣는 문서는 바뀔 때마다 기기마다 통째로 다시 읽힘 · 개수는 count로",
+   "addedBy": "자동 전체 점검 2026-10-25",
+   "at": "2026-10-25"
   }
  ]
 }
