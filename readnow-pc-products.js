@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.62의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.63의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.62' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.62', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.63' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.63', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -871,13 +871,17 @@
   const meterSend = () => { const m = Math.round(METC.main), g0 = Math.round(METC.gen); if (!(m + g0)) return; METC.main = 0; METC.gen = 0; const J = { ...METJ }; for (const k of Object.keys(METJ)) delete METJ[k]; const js = Object.entries(J).map(([k, v]) => `${k}:${Math.round(v)}`).join(','); helperGet1(`http://127.0.0.1:8899/meter?main=${m}&gen=${g0}&jobs=${encodeURIComponent(js)}`, { 'X-RN-Meter': '1' }) /* (1.78.3 자동 점검) 도우미 1.6.7은 이 머리가 있어야 받음 — 웹 페이지(알라딘 화면 등)가 몫 나눔을 흐트러뜨리지 못하게 */.then((r) => { if (!r) { METC.main += m; METC.gen += g0; for (const [k, v] of Object.entries(J)) METJ[k] = (METJ[k] || 0) + v; } }); };
   /* (1.75.0) 📱 도우미 화면에 통신사 기준 남은 양·오늘 몫을 보여 주게 계산 결과를 알림(표시만) */
   const budSend = (b) => { try { if (!b || !b.base) return; const st = b.strict || {}; const d = { E: Math.round(b.base.E * 0.97), usedS: Math.round(b.base.usedS), remainGB: b.base.remainGB, baseAt: b.base.at ? new Date(Date.parse(b.base.at) + 9 * 3600e3).toISOString().slice(5, 16).replace('-', '/').replace('T', ' ') : b.base.day, share: Math.round(st.share || b.dayB || 0), nLeft: st.nLeft || 0, ml: Math.round(Math.max(0, b.left.main)), gl: Math.round(Math.max(0, b.left.gen)), pct: st.pct || 50, over: !!st.over }; helperGet1('http://127.0.0.1:8899/bud?d=' + encodeURIComponent(JSON.stringify(d)), { 'X-RN-Meter': '1' }); } catch (e) {} };
-  function budTick(H) { if (!PUBONLY || !AS || !AS.budget || !H || !H.ok) { BUD = null; return; } const b = AS.budget(SCHED || {}, H, Date.now()); const was = BUD; BUD = b; if (!b) return; budSend(b);
+  function budTick(H) { if (!PUBONLY || !AS || !AS.budget || !H || !H.ok) { BUD = null; return; } const b = AS.budget(SCHED || {}, H, Date.now()); const was = BUD; BUD = b; if (!b) return;
+    /* (1.89.63) 🛡 정범님 10/25: 일반 몫이 하루 37.7GB로 셈되어 ✨ 끝없는 탐색이 하루에 테더링 28GB를 씀(이번 달 남은 51.3 → 22.7GB) — 계산이 어떻든 일반 몫은 '오늘 0시 기준 이번 달 남은 양 ÷ 남은 날 − 주요 몫 − 오늘 쓴 일반' 을 넘지 않게 */
+    try { const kd0 = new Date(Date.now() + 9 * 3600e3); const nL = Math.max(1, new Date(Date.UTC(kd0.getUTCFullYear(), kd0.getUTCMonth() + 1, 0)).getUTCDate() - kd0.getUTCDate() + 1); /* 남은 날은 계산 결과를 믿지 않고 오늘 날짜로 */ const usedT = b.strict ? +b.strict.used || 0 : 0; const dayCap = Math.max(0, (+b.monthLeft || 0) + usedT) / nL; const mainCap = b.strict ? +b.strict.main || 0 : 0; const ugT = b.strict ? +b.strict.ug || 0 : 0; const genCap = Math.max(0, dayCap - mainCap - ugT);
+      if (b.left && b.left.gen > genCap + 1048576) { const g0 = b.left.gen; b.left.gen = genCap; b.genClamp = { from: g0, to: genCap, dayCap, nL }; if (!budTick._cl || Date.now() - budTick._cl > 3 * 3600e3) { budTick._cl = Date.now(); log(`🛡 일반 몫 바로잡음: ${(g0 / 1073741824).toFixed(2)}GB → ${(genCap / 1073741824).toFixed(2)}GB (오늘 하루 몫 = 이번 달 남은 ${((+b.monthLeft + usedT) / 1073741824).toFixed(1)}GB ÷ 남은 ${nL}일 = ${(dayCap / 1073741824).toFixed(2)}GB · 주요 ${(mainCap / 1073741824).toFixed(2)}GB 먼저) — ✨ 끝없는 탐색이 벤치마킹 몫까지 쓰지 않게`, 1); } } } catch (e) {}
+    budSend(b);
     if (b.strict && was && was.strict && was.strict.room > 0 && !(b.strict.room > 0)) log(`📏 오늘 테더링이 하루 몫 ${(b.strict.share / 1073741824).toFixed(2)}GB에 닿음(기타 포함 ${(b.strict.used / 1073741824).toFixed(2)}GB) — 테더링 쓰는 일을 모두 저장하고 멈춤 · 내일 0시에 새 몫(남은 양 ÷ 남은 날) · 그동안은 ✨ 쉴 때 하는 일(테더링 없음 — 외부 조회)`, 1); /* (1.74.0) */
     for (const k of ['main', 'gen']) if (was && was.left[k] > 0 && !(b.left[k] > 0)) log(`📶 오늘 ${AS.TIER[k].l} 업무 몫(이월 포함)을 다 씀 — ${AS.TIER[k].l} 칸은 내일(새 몫이 쌓이면)까지 건너뜀${k === 'main' ? ' · 일반 업무가 제 몫으로 이어 함' : ''}`, 1);
     if (running && isPubKey(running) && !(budLeft(running) > 0) && BUD_STOP !== running) { BUD_STOP = running; log(`📶 '${(JOBS[running] || [running])[0]}': 오늘 ${AS.TIER[tierOfKey(running)].l} 몫을 다 써 지금 항목까지 저장하고 멈춤 — 다음에 그 자리부터`, 1); try { window.__rnPrd.pause(); } catch (e) {} }
     if (!running) BUD_STOP = null; }
   async function helperTick() { meterSend(); const H = await helperGet(); HELPER = H; HELPER_AT = Date.now(); budTick(H); const g = tgateCalc(H); if (g.ok !== TGATE.ok || (!g.ok && g.why !== TGATE.why)) if (g.ok && !PUBPC.since) { try { saveSet({ pubPcSince: nowIso(), pubPcName: PC_NAME }); log('🌐 공개 전용 PC 등록 — 이제 사무실 PC는 대량 공개 일(벤치마킹·시장 지표 등)을 하지 않음'); } catch (e) {} } const ipNow = H && H.tether ? H.tether.ip : '?'; /* (1.72.1) 30초마다 같은 줄을 적던 것(하루 수천 줄) → 상태·공인 IP가 바뀔 때와 1시간에 한 번만 */
-    if (g.ok !== TGATE.ok || g.why !== TGATE.why || ipNow !== helperTick.ip || Date.now() - (helperTick.at || 0) > 3600e3) { helperTick.ip = ipNow; helperTick.at = Date.now(); log(g.ok ? `📶 테더링 확인됨 — 알라딘 일을 함 (공인 IP ${ipNow}${BUD ? ` · 오늘 남은 몫 주요 ${(Math.max(0, BUD.left.main) / 1073741824).toFixed(2)}GB · 일반 ${(Math.max(0, BUD.left.gen) / 1073741824).toFixed(2)}GB${BUD.base ? ` · 통신사 기준 이번 달 남은 ${(Math.max(0, BUD.monthLeft) / 1073741824).toFixed(1)}GB` : ''}` : ''})` : `🛡 알라딘 일을 멈춤 — ${g.why}`, !g.ok); } TGATE = g; }
+    if (g.ok !== TGATE.ok || g.why !== TGATE.why || ipNow !== helperTick.ip || Date.now() - (helperTick.at || 0) > 3600e3) { helperTick.ip = ipNow; helperTick.at = Date.now(); log(g.ok ? `📶 테더링 확인됨 — 알라딘 일을 함${BUD && BUD.strict ? ` [하루 몫 ${(BUD.strict.share / 1073741824).toFixed(2)}GB · 남은 ${BUD.strict.nLeft}일 · 오늘 씀 ${(BUD.strict.used / 1073741824).toFixed(2)}GB${BUD.genClamp ? ' · 일반 몫 바로잡음' : ''}]` : ''} (공인 IP ${ipNow}${BUD ? ` · 오늘 남은 몫 주요 ${(Math.max(0, BUD.left.main) / 1073741824).toFixed(2)}GB · 일반 ${(Math.max(0, BUD.left.gen) / 1073741824).toFixed(2)}GB${BUD.base ? ` · 통신사 기준 이번 달 남은 ${(Math.max(0, BUD.monthLeft) / 1073741824).toFixed(1)}GB` : ''}` : ''})` : `🛡 알라딘 일을 멈춤 — ${g.why}`, !g.ok); } TGATE = g; }
   if (PUBONLY) { setTimeout(helperTick, 1500); setInterval(helperTick, 30000); }
   const tgateCheck = () => { if (PUBONLY && !TGATE.ok) throw Object.assign(new Error('🛡 ' + TGATE.why), { tgate: true }); if (PUBONLY && BUD) { const k = netJob(); if (isPubKey(k)) { const t = tierOfKey(k); if (BUD.left[t] < -0.1 * BUD.perDay[t]) throw Object.assign(new Error(`📶 오늘 ${AS.TIER[t].l} 몫을 다 씀 — 읽지 않음`), { tgate: true, bud: true }); } } };
   window.__rnTgate = () => ({ ...TGATE, helper: HELPER, at: HELPER_AT });
@@ -1872,7 +1876,7 @@
     /* (1.55.0) ⏱ 기다리는 동안 다음 쪽도 — 쪽마다 시간의 대부분은 알라딘 응답을 기다리는 시간이라, 끝 쪽을 알면 2쪽(30쪽 넘게 탈 없으면 3쪽)을 같이 요청하고 '쪽 순서대로' 처리
      *  요청 간격 조절기(PACE)는 그대로 거침(요청을 시작하는 간격은 같음) · 알라딘이 '요청이 너무 많다'(쉬는 중)고 하거나 한 쪽이라도 실패하면 이 회차는 한 쪽씩
      *  진행 저장·이어 하기·빈 쪽·끝 쪽 판단은 예전과 똑같이 쪽마다(처리 순서가 쪽 순서) — 같이 받은 뒤쪽은 앞쪽이 실패하면 버리고 다음에 그 쪽부터 */
-    const ROWS = prog.rows || 48; let K = 2, okRun = 0;
+    const ROWS = prog.rows || 48; let K = 2, okRun = 0; const BENCH_LAT = [];
     const page48 = (pg, i) => Math.floor(((pg - 1) * ROWS + i) / 48) + 1; /* 배지 상품이 '48개 쪽'으로 몇 쪽인지 — 예전 기록과 같은 뜻으로 */
     /* (1.63.8) 📍 이어 읽기 자리 찾기 — 멈췄던 회차를 이어 읽을 때, 그사이 앞쪽이 팔리면(상품이 앞으로 당겨짐) 몇 개를 못 보고 지나치고, 새로 올리면(뒤로 밀림) 이미 읽은 쪽을 다시 읽게 됨
      *  숍은 등록순이라 그사이 생기는 변화는 '맨 앞에 새로 올림'과 '어디선가 팔려 빠짐'뿐 → 마지막에 읽은 상품 10개는 순서가 그대로 남음(빠진 것만 있을 수 있음)
@@ -1901,7 +1905,7 @@
       if (PACE.cooling && PACE.cooling() > 0) K = 1;
       const pgs = []; for (let q = 0; q < (lastP ? K : 1); q++) { const pg = prog.page + q; if (lastP && pg > lastP + 3) break; pgs.push(pg); }
       const T120 = (p) => Promise.race([p, new Promise((_, rj) => setTimeout(() => rj(new Error('2분 안에 답이 없음(연결 멈춤)')), 120e3))]); /* (1.78.4) 한 쪽이 멈추면 회차 전체가 영원히 기다리던 것(10/17 왕공주 621쪽) — 2분 넘으면 그 쪽부터 다음에 */
-      const got = await Promise.allSettled(pgs.map((pg) => T120(PUB.read('shop', benchUrl(sc, pg, ROWS), (g) => ({ items: benchParse(g.doc), last: benchLastPage(g.doc, g.html) }), (g) => benchParse(g.doc).length > 0))));
+      const tB0 = Date.now(); const got = await Promise.allSettled(pgs.map((pg) => T120(PUB.read('shop', benchUrl(sc, pg, ROWS), (g) => ({ items: benchParse(g.doc), last: benchLastPage(g.doc, g.html) }), (g) => benchParse(g.doc).length > 0))));
       let out = null;
       for (let q = 0; q < got.length && !out; q++) { /* prog.page === pgs[q] */
         if (got[q].status === 'rejected') { const e = got[q].reason || {}; if (e.message === '멈춤') { await saveBk(); throw e; } if (lastP && (prog.page > lastP || ((e.anonView || /장바구니 칸이 없음/.test(e.message || '')) && prog.page >= lastP - 2 && (prog.lastLen == null || prog.lastLen < ROWS)))) { if (prog.page <= lastP) log(`🎯 '${name}': ${prog.page}쪽(끝 쪽 ${lastP}쪽 근처)이 상품 칸이 없는 다른 모양 — 그사이 팔려 쪽 수가 줄어 끝을 넘은 것으로 봄 → 숍 끝까지 읽은 것으로 마무리 (못 본 상품은 '이번에 안 보임'으로 두고 다음 회차에서 확정)`); out = 'break'; break; } /* (1.84.2) 끝 쪽 자신(또는 1~2쪽 앞)이 다른 모양이면 끝 — 쪽당 48개(웹앱 추정)·50개(실제) 차이와 그사이 팔린 만큼 끝 쪽이 앞당겨져, 끝 쪽을 '읽기 실패'로 세어 회차를 못 끝내던 것(10/18 딱따구리 1204/1204쪽·왕공주 892쪽 · 곰돌이책방 10/16부터 1423/1424쪽에 멈춤) */ /* (1.78.5) 끝 쪽 다음 쪽(빈 쪽)은 알라딘이 다른 모양으로 줘 '읽기 실패'로 셌음(10/17 한성서적 132/131쪽·봄바람77 117/116쪽) → 끝까지 읽은 것 */ log(`벤치마킹 '${name}' ${prog.page}쪽 읽기 실패: ${e.message} — 다음에 이 쪽부터`, 1); await saveBk(); return 'partial'; }
@@ -1923,7 +1927,13 @@
         if (prog.page % 10 === 0) await saveBk();
         prog.page++; }
       if (out === 'break') break;
-      okRun += got.length; if (okRun >= 30 && K < 3 && !(PACE.cooling && PACE.cooling() > 0)) { K++; okRun = 0; } }
+      { /* (1.89.63) 정범님 10/25 '집중 벤치마킹이 비정상적으로 오래 걸림': 처음 70쪽을 쪽당 2초로 몰아 읽은 뒤 알라딘 답이 쪽당 15~20초로 느려졌는데, 예전엔 잘 읽힌다고 같이 읽는 쪽 수(K)를 2→3으로 더 늘렸음
+         *  → 몰아 읽지 않음: 쪽당 최소 3초(평소 4~5초) · 답이 느려지면(쪽당 8초 넘음) K를 줄이고, 아주 느리면(15초 넘음) 1분 쉬었다 한 쪽씩 · 빨라지면 천천히 다시 늘림 */
+        const msB = Date.now() - tB0; const per = msB / Math.max(1, got.length); BENCH_LAT.push(per); if (BENCH_LAT.length > 6) BENCH_LAT.shift(); const avg = BENCH_LAT.reduce((a, x) => a + x, 0) / BENCH_LAT.length;
+        if (avg > 15000 && BENCH_LAT.length >= 3) { if (!BENCH_LAT.cool || Date.now() - BENCH_LAT.cool > 10 * 60e3) { BENCH_LAT.cool = Date.now(); log(`🎯 '${name}': 알라딘 답이 느려짐(최근 쪽당 ${(avg / 1000).toFixed(1)}초) — 몰아 읽지 않게 1분 쉬고 한 쪽씩 읽음`, 1); K = 1; okRun = 0; BENCH_LAT.length = 0; await new Promise((z) => setTimeout(z, 60e3)); } else { K = 1; okRun = 0; } }
+        else if (avg > 8000) { if (K > 1) { K--; log(`🎯 '${name}': 알라딘 답이 느려 같이 읽는 쪽을 ${K}쪽으로 줄임(최근 쪽당 ${(avg / 1000).toFixed(1)}초)`); } okRun = 0; }
+        else { okRun += got.length; if (okRun >= 30 && K < 3 && avg < 5000 && !(PACE.cooling && PACE.cooling() > 0)) { K++; okRun = 0; } }
+        const minMs = 3000 * got.length; if (msB < minMs) await new Promise((z) => setTimeout(z, minMs - msB)); } }
     if (pend.length) { await bkRef(prog.blocks || 0).set({ s: JSON.stringify(pend), n: pend.length, at: Date.now() }); prog.blocks = (prog.blocks || 0) + 1; pend = []; }
     /* (1.56.3) '끝까지 확실히 읽었나'를 한 곳에서 엄격하게: ① 이 회차가 1쪽부터 읽었고 ② 숍 끝 쪽을 알면 그 쪽까지 읽었고(빈 쪽이면 지금 끝 쪽을 다시 확인) ③ 2쪽이 1쪽과 같은 숍은 끝 쪽이 1쪽일 때만 ④ 끝 쪽을 모르면 빈 쪽·새 상품 없는 쪽까지 — 하나라도 아니면 끝까지 못 읽은 회차(통계·비교 기준 모두 제외, 읽은 상품은 bench_partial에 상품 정보로만) */
     { const lastRead = prog.page - 1; const r1 = prog.readFrom1 === true || (prog.readFrom1 === undefined && prog.items.length > 0 && !prog.resumedOld); let ok = false, why = '';
@@ -3203,11 +3213,11 @@
     if (kind === 'prd') { const pubJ = isPubKey(d.slot.job.slice(4)); if (pubJ) { if (C0.lkp === undefined) C0.lkp = (await LOCKP().get()).data() || {}; if (laneBusy(C0.lkp, true)) { schedWaitNote('🌐 공개 읽기 줄이 다 참(다른 PC들)'); return false; } } else { if (C0.lk === undefined) C0.lk = (await LOCK().get()).data() || {}; if (laneBusy(C0.lk)) { schedWaitNote('다른 PC·탭이 알라딘 작업 중'); return false; } } } return true; }
   /* 끼어들기 확인(15초마다) — 지금 하는 일보다 앞 차례 일이 생기면 지금 항목까지 저장하고 비킴 */
   setInterval(() => { try { if (PREEMPT || !AS || !SCHED || !SCHED.on || window.__rnPaused || window.__rnReloading) return; const k = window.__rnAutoSlot; if (!running && !k) return; const now = Date.now();
-      const cur = k ? { rank: rankOfKey(k), st: CUR_SEG || now } : RUN_CTX === 'urgent' ? { rank: 1 } : RUN_CTX === 'req6' ? { rank: 6 } : RUN_CTX && RUN_CTX.startsWith('rest:') ? { rank: 8 } : { rank: 0 }; if (cur.rank === 0) return; let why = null;
+      const cur = k ? { rank: rankOfKey(k), st: CUR_SEG || now } : RUN_CTX === 'urgent' ? { rank: 1 } : RUN_CTX === 'req6' ? { rank: 6 } : RUN_CTX && RUN_CTX.startsWith('rest:') ? { rank: 8 } : running === 'explore' ? { rank: 8 } : { rank: 0 }; if (cur.rank === 0) return; /* (1.89.63) 정범님 10/25: 새로고침 뒤 '끝없는 탐색'이 사람 일(차례 0)로 이어져 아무것도 비키게 하지 못해, 00:05 벤치마킹이 16:36까지 못 돎 → 끝없는 탐색은 늘 ✨ 쉴 때 하는 일(차례 8) */ const sameBench = (d) => d.slot.job === 'prd:benchResume' && jobKeyOf(running || '') === 'bench'; /* 벤치마킹 중이면 '못 끝낸 판매자 이어 읽기'(같은 일)가 끼어들지 않음 — 매시 멈췄다 다시 불러오던 것 */ let why = null;
       if (REQ_PEND) why = '웹앱에서 사람이 누른 요청'; else if (SHIP_PEND && cur.rank > 1) why = '발송 요청 다시 읽기';
-      if (!why && cur.rank >= 2) { const ds = schedDues(now, 0).filter((d) => d.key !== k && dueSyncOk(d, now)); const t = ds.find((d) => d.cls === 0 && (cur.rank > 2 || (d.pt || 0) > cur.st)); if (t) why = `정한 시각 '${asName(t.slot)}' (${t.why})`;
+      if (!why && cur.rank >= 2) { const ds = schedDues(now, 0).filter((d) => d.key !== k && dueSyncOk(d, now)); const t = ds.find((d) => d.cls === 0 && !sameBench(d) && (cur.rank > 2 || (d.pt || 0) > cur.st)); if (t) why = `정한 시각 '${asName(t.slot)}' (${t.why})`;
         if (!why && cur.rank > 2) { const st = YSTK().find((y) => y.key !== k && y.day === AS.kst(now).day && (cur.rank > (y.rank || 5))); if (st && cur.rank > 5) why = `자리 내주고 기다리던 '${st.name || st.job}' 이어가기`; }
-        if (!why && cur.rank > 5) { const c = ds.find((d) => d.cls === 1); if (c) why = `'${asName(c.slot)}' 칸 차례(${c.why})`; }
+        if (!why && cur.rank > 5) { const c = ds.find((d) => d.cls === 1 && !sameBench(d)); if (c) why = `'${asName(c.slot)}' 칸 차례(${c.why})`; }
         if (!why && cur.rank > 6) { if (!PUBONLY && !SCHED.handoffOff && HO_N > 0 && Date.now() > HO_BACK) why = `🔁 로거가 못 한 일 ${HO_N}건`; else if (MET_PEND) why = '맡긴 그룹 시장 지표'; }
         if (!why && cur.rank > 7) { const c = ds.find((d) => d.cls === 2); if (c) why = `💤 '${asName(c.slot)}'`; }
         if (!why && cur.rank === 8 && RUN_CTX) { const e = restEarlier(RUN_CTX.slice(5)); if (e) why = `✨ 쉴 때 하는 일 — 앞 순서 '${(JOBS[e.slice(4)] || [e])[0]}'를 다시 볼 때`; } }
@@ -3772,7 +3782,8 @@
         clearInterval(t); GM_setValue('rnu-reload-for', v); GM_setValue('rnu-reload-try', { v, n: nTry + 1, at: Date.now() }); safeReload(tried ? `새 버전 ${v} 동기화 확인 (${nTry + 1}/8)` : (src ? src + ' — 새 판으로 바꿈' : '새 버전으로 바꿈'), null); }, 10000); }
     // 새로고침 뒤 이어가기: 실제로 시작될 때까지 표시를 지우지 않고 15초마다 다시 시도(최대 10분), 사람 확인 없이(무인) 시작
     { const after = GM_getValue('rnu-resume-after-reload', null);
-      if (after && JOBS[after]) { let tries = 0; window.__rnResumePending = Date.now(); const t = setInterval(() => { tries++;
+      if (after && JOBS[after] && (after === 'explore' || String(GM_getValue('rnu-resume-ctx', '') || '').startsWith('rest:')) && !GM_getValue('rnu-resume-slot', null)) { GM_setValue('rnu-resume-after-reload', null); GM_setValue('rnu-resume-ctx', null); log(`새로고침 뒤 '${JOBS[after][0]}'는 ✨ 쉴 때 하는 일이라 바로 잇지 않음 — ⏰가 차례(정한 시각 칸 먼저)대로 다시 고름 (1.89.63)`); }
+      else if (after && JOBS[after]) { let tries = 0; window.__rnResumePending = Date.now(); const t = setInterval(() => { tries++;
         if (window.__rnPaused) { clearInterval(t); window.__rnResumePending = 0; log(`새로고침 뒤 이어가기 '${JOBS[after][0]}': 일시정지 상태라 이어가지 않음 (개요 탭의 ▶ 다시 시작으로 계속)`, 1); return; }
         if (running && curKey === after && tries > 2) { clearInterval(t); window.__rnResumePending = 0; GM_setValue('rnu-resume-after-reload', null); return; } /* (1.72.1) 다른 길(⏰ 같은 회차 이어가기)로 이미 그 일이 다시 도는 중 — 끝난 뒤 '10분 동안 시작하지 못함' 경고를 잘못 적던 것 */
         if (running || (window.__rnRest && window.__rnRest())) return; /* (1.56.0) 이 PC의 수집기 탭이 이어감 */ if (tries > 200) { clearInterval(t); window.__rnResumePending = 0; GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 이어가기 '${JOBS[after][0]}'를 10분 동안 시작하지 못했습니다 — 개요 탭 '멈춘 작업'의 이어하기를 눌러 주세요`, 1); return; }
@@ -3826,7 +3837,7 @@
   //  ④ 2분 안에 신호가 없으면(새 탭이 오류 화면) 그 탭을 닫고 ①부터 다시 — 수집기가 떠야만 넘어가므로 오류 화면에 멈추지 않음. 새 탭은 저장된 자리부터 자동으로 이어감
   const HANDOFF_TAB = Math.random().toString(36).slice(2, 10);
   async function safeReload(reason, resumeKey) { window.__rnReloading = Date.now(); /* (1.60.0) 새 탭으로 넘기는 동안 ⏰ 매일 자동이 새 일을 시작하지 않게 */
-    if (resumeKey) GM_setValue('rnu-resume-after-reload', resumeKey);
+    if (resumeKey) { GM_setValue('rnu-resume-after-reload', resumeKey); GM_setValue('rnu-resume-ctx', RUN_CTX || (window.__rnAutoSlot ? 'slot' : null)); }
     try { localStorage.setItem('rn-tab-handoff', JSON.stringify({ pwTab: sessionStorage.getItem('pw_tab'), at: Date.now() })); } catch (e) {} // 가격 감시 탭이었으면 새 탭이 이어받음
     /* (1.63.8) 새로 연 탭이 이어받지 못하면 그 탭을 닫고 '닫혔는지'(tab.closed) 확인 — 못 닫았으면 또 새 탭을 열지 않고 이 탭을 그 자리에서 새로고침(빈 탭이 쌓여 PC가 느려지던 것) */
     let lastTab = null; const closeTab = async (tb) => { if (!tb) return true; try { tb.close(); } catch (e) {} for (let i = 0; i < 12; i++) { if (tb.closed) return true; await sleep(500); } return !!tb.closed; };
