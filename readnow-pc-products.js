@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.63의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.64의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.63' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.63', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.64' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.64', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -47,7 +47,13 @@
   const WRITER_SCHEMA = 6;
   const PUBONLY = !!globalThis.__rnPubHome; /* (1.64.0) 🌐 공개 전용 PC — 로그인 줄 일·로그인·주문 읽기를 하지 않음 */
   const P = window.ReadnowProducts || globalThis.ReadnowProducts;
-  const PACE = P.makePacer('aladin'); // 알라딘 요청 속도: 이 PC의 모든 탭·스크립트가 같이 씀 (readnow-products-core.js makePacer)
+  const PACE_RAW = P.makePacer('aladin'); // 알라딘 요청 속도: 이 PC의 모든 탭·스크립트가 같이 씀 (readnow-products-core.js makePacer)
+  /* (1.89.64) 🐞 정범님 10/25 '집중 벤치마킹이 이렇게 오래 걸린 적 없음' — 진짜 까닭: 테더링이 잠깐 끊기거나 응답 시간 초과가 나면 '알라딘이 막았다'와 똑같이 요청 간격을 2배씩 늘려 20초(최대)까지 올라가고,
+   *  돌아오는 데는 성공 20번마다 10%씩이라 수백 쪽 동안 쪽당 20초로 읽었음(16:39~17:25 · 새로고침하자 다시 쪽당 1~2초)
+   *  → 연결 끊김·시간 초과·일반 오류는 간격을 3초 넘게 늘리지 않음(다시 시도 대기는 따로 있음) · 알라딘이 '요청이 너무 많음'(429·503)이라고 한 때만 30분 동안 예전처럼 20초까지 */
+  let PACE_429_AT = 0; const paceCapFor = () => (Date.now() - PACE_429_AT < 30 * 60e3 ? 20000 : 3000);
+  try { PACE_RAW.setCfg({ maxMs: paceCapFor() }); } catch (e) {}
+  const PACE = { ...PACE_RAW, fail(kind) { if (kind === '429') PACE_429_AT = Date.now(); try { PACE_RAW.setCfg({ maxMs: paceCapFor() }); } catch (e) {} return PACE_RAW.fail(kind); }, ok() { try { if (PACE_429_AT && Date.now() - PACE_429_AT > 30 * 60e3) { PACE_429_AT = 0; PACE_RAW.setCfg({ maxMs: 3000 }); } } catch (e) {} return PACE_RAW.ok(); } };
   if (!P) { window.__rnNote('[리드나우 상품 수집기] 파서 파일(readnow-products-core.js)을 불러오지 못했습니다. GitHub에 올렸는지 확인해 주세요.'); return; }
   // 공용 파일이 요구 버전보다 '옛것'일 때만 알림 (같거나 더 새것이면 조용히 씀). 요구 버전은 이 한 곳에서만 정함
   const NEED_FILES = { '상품 파서 readnow-products-core.js': [() => P.VERSION, '0.14.0'], '판매자 파서 readnow-sellers-core.js': [() => (window.ReadnowSellers || globalThis.ReadnowSellers || {}).VERSION, '1.3.0'], '판매자 분류 기준 readnow-core.js': [() => (((typeof unsafeWindow !== 'undefined' && unsafeWindow.ReadNowCore) || window.ReadNowCore || globalThis.ReadNowCore || {}).CORE_VERSION), '1.3.0'], '판정 엔진 readnow-pricing-core.js': [() => (window.ReadnowPricing || globalThis.ReadnowPricing || {}).VERSION, '0.9.1'], '출고 기준 readnow-shipping-core.js': [() => (window.ReadnowShipping || globalThis.ReadnowShipping || {}).VERSION, '0.5.1'], '관리도구 노선표 readnow-registry.js': [() => (window.ReadnowRegistry || globalThis.ReadnowRegistry || {}).VERSION, '0.2.0'] };
@@ -608,6 +614,12 @@
    *  · 🎯 집중 벤치마킹은 판매자 단위로 나눠 읽음(prd_jobs/bclaim_판매자 — 먼저 잡은 PC만) → 여러 PC가 한 바퀴를 같이 돎 */
   const PUB_JOBS = new Set((() => { try { const A0 = globalThis.ReadnowAuto; if (A0 && A0.AS && A0.AS.PUB_KEYS) return A0.AS.PUB_KEYS; } catch (e) {} return ['bench', 'benchForce', 'benchHelp', 'benchDetail']; })()); /* (1.67.0) 기준은 ⏰ 공용 파일(AS.PUB_KEYS) 한 곳 — 공용 파일이 없을 때만 이 목록 */
   const isPubKey = (k) => PUB_JOBS.has(String(k || '').replace(/^job:/, '').split('#')[0]);
+  /* (1.89.64) 🎯 정범님 10/25 '이번 달엔 로거가 알라딘 관련 업무를 집중 벤치마킹 외엔 하지 않게 · 나머지는 쉬지 않고 와이파이 업무' — 11/1 0시(한국)까지
+   *  로거의 알라딘(테더링) 일은 벤치마킹 계열(🎯 집중 벤치마킹·강제·이어 읽기·돕기)만 · 끝없는 탐색·섞어 읽기·시장 지표·맡긴 알라딘 일은 하지 않음(사무실 PC·클라우드가 함)
+   *  벤치마킹 밖의 시간은 와이파이 일(외부 정보·도서 정보 외부 보강 등 — 테더링을 다 썼을 때 목록)을 쉬는 시간 없이 */
+  const BENCH_ONLY_UNTIL = Date.parse('2026-11-01T00:00:00+09:00');
+  const benchOnly = () => !!PUBONLY && Date.now() < BENCH_ONLY_UNTIL;
+  const isBenchKey = (k) => /^bench/.test(String(k || '').replace(/^(job:|prd:)/, '').split('#')[0]);
   /* (1.66.0) 🌐 공개 전용 PC가 생기면(테더링이 한 번이라도 확인되면 prd_system/settings.pubPcSince) 대량 공개 일(PUB_JOBS 전부)은 그 PC만 —
    *  사무실 PC가 사무실 IP(북스킹 계정이 로그인하는 IP)로 벤치마킹·시장 지표를 읽으면 쿠키가 없어도 IP로 이어질 수 있어서. 그 PC가 쉬는 동안에도 사무실 PC가 대신하지 않음(기다림)
    *  · 끄기: 웹앱 설정 → '대량 공개 일은 공개 전용 PC만' (pubPcMode='off') · 출고 시장 받쳐 주기·주문 상품 유의 사항(맡긴 일 usedInfo) 같은 가벼운 일은 그대로 */
@@ -763,7 +775,7 @@
     try { await refreshOne({ explore: true, listingId: x.id, title: x.title, exploreFrom: x.from || 'mix' }, bookId); MIX.saved++; if (x.ref) x.ref.set({ mixAt: nowIso() }, { merge: true }).catch(() => {}); }
     catch (e) { if (e.message === '멈춤' || e.tgate) throw e; MIX.fail++; if (x.ref) x.ref.set({ mixAt: nowIso(), mixErr: String(e.message || e).slice(0, 120) }, { merge: true }).catch(() => {}); }
     MIX.n++; MIX.at = nowIso(); return true; }
-  async function mixRead(n) { if (!PUBONLY) return; for (let k = 0, g = 0; k < (n || 1) && g < 4; g++) { const x = await mixPick(); if (!x) return; if (await mixOne(x)) k++; } }
+  async function mixRead(n) { if (!PUBONLY || benchOnly()) return; for (let k = 0, g = 0; k < (n || 1) && g < 4; g++) { const x = await mixPick(); if (!x) return; if (await mixOne(x)) k++; } }
   const mixMaybe = (p) => (PUBONLY && Math.random() < (p == null ? mixRate() : Math.min(p, mixRate())) ? mixRead(1) : Promise.resolve());
   /* (1.89.17) 3시간 점검 10/21: 알라딘이 '비공개 상태입니다'(상품을 숨김 — 리커버·절판 등)를 주는 책을 '알라딘 화면 같지 않음' 실패로 세고 몇 시간마다 다시 읽었음(HOME 하루 59번) → 비공개로 기록하고 3일 동안 다시 묻지 않음(이 PC 저장) */
   const HID_K = 'rn-alHidden'; const hidKey = (u) => { const m = String(u || '').match(/[?&](?:ISBN|ItemId)=([0-9Xx]+)/i); return m ? m[1].toUpperCase() : null; };
@@ -883,7 +895,7 @@
   async function helperTick() { meterSend(); const H = await helperGet(); HELPER = H; HELPER_AT = Date.now(); budTick(H); const g = tgateCalc(H); if (g.ok !== TGATE.ok || (!g.ok && g.why !== TGATE.why)) if (g.ok && !PUBPC.since) { try { saveSet({ pubPcSince: nowIso(), pubPcName: PC_NAME }); log('🌐 공개 전용 PC 등록 — 이제 사무실 PC는 대량 공개 일(벤치마킹·시장 지표 등)을 하지 않음'); } catch (e) {} } const ipNow = H && H.tether ? H.tether.ip : '?'; /* (1.72.1) 30초마다 같은 줄을 적던 것(하루 수천 줄) → 상태·공인 IP가 바뀔 때와 1시간에 한 번만 */
     if (g.ok !== TGATE.ok || g.why !== TGATE.why || ipNow !== helperTick.ip || Date.now() - (helperTick.at || 0) > 3600e3) { helperTick.ip = ipNow; helperTick.at = Date.now(); log(g.ok ? `📶 테더링 확인됨 — 알라딘 일을 함${BUD && BUD.strict ? ` [하루 몫 ${(BUD.strict.share / 1073741824).toFixed(2)}GB · 남은 ${BUD.strict.nLeft}일 · 오늘 씀 ${(BUD.strict.used / 1073741824).toFixed(2)}GB${BUD.genClamp ? ' · 일반 몫 바로잡음' : ''}]` : ''} (공인 IP ${ipNow}${BUD ? ` · 오늘 남은 몫 주요 ${(Math.max(0, BUD.left.main) / 1073741824).toFixed(2)}GB · 일반 ${(Math.max(0, BUD.left.gen) / 1073741824).toFixed(2)}GB${BUD.base ? ` · 통신사 기준 이번 달 남은 ${(Math.max(0, BUD.monthLeft) / 1073741824).toFixed(1)}GB` : ''}` : ''})` : `🛡 알라딘 일을 멈춤 — ${g.why}`, !g.ok); } TGATE = g; }
   if (PUBONLY) { setTimeout(helperTick, 1500); setInterval(helperTick, 30000); }
-  const tgateCheck = () => { if (PUBONLY && !TGATE.ok) throw Object.assign(new Error('🛡 ' + TGATE.why), { tgate: true }); if (PUBONLY && BUD) { const k = netJob(); if (isPubKey(k)) { const t = tierOfKey(k); if (BUD.left[t] < -0.1 * BUD.perDay[t]) throw Object.assign(new Error(`📶 오늘 ${AS.TIER[t].l} 몫을 다 씀 — 읽지 않음`), { tgate: true, bud: true }); } } };
+  const tgateCheck = () => { if (PUBONLY && !TGATE.ok) throw Object.assign(new Error('🛡 ' + TGATE.why), { tgate: true }); if (benchOnly() && !isBenchKey(netJob())) throw Object.assign(new Error('🎯 이번 달(11/1 전) 로거는 집중 벤치마킹만 알라딘을 읽음 — 이 일은 사무실 PC·클라우드 몫'), { tgate: true, benchOnly: true }); if (PUBONLY && BUD) { const k = netJob(); if (isPubKey(k)) { const t = tierOfKey(k); if (BUD.left[t] < -0.1 * BUD.perDay[t]) throw Object.assign(new Error(`📶 오늘 ${AS.TIER[t].l} 몫을 다 씀 — 읽지 않음`), { tgate: true, bud: true }); } } };
   window.__rnTgate = () => ({ ...TGATE, helper: HELPER, at: HELPER_AT });
   const NETM = { jobs: {}, n: 0 }; const netJob = () => String(curKey || (curStage ? (STAGE_JOB[curStage] || curStage) : '') || 'etc').replace(/[.\/#$\[\]]/g, '_').slice(0, 40);
   const netAdd = (chars) => { const k = netJob(); const J = (NETM.jobs[k] = NETM.jobs[k] || { pages: 0, chars: 0 }); J.pages++; J.chars += chars || 0; NETM.n++; if (PUBONLY && isPubKey(k)) { const w = Math.max(2000, chars || 0); METC[tierOfKey(k)] += w; const jk = jobKeyOf(k); METJ[jk] = (METJ[jk] || 0) + w; } /* (1.67.0) 부류별 글자 — 도우미가 실제 바이트를 이 몫대로 나눔(숨은 창은 글자 수를 몰라 한 장 2천 자로 셈) */ };
@@ -1927,13 +1939,12 @@
         if (prog.page % 10 === 0) await saveBk();
         prog.page++; }
       if (out === 'break') break;
-      { /* (1.89.63) 정범님 10/25 '집중 벤치마킹이 비정상적으로 오래 걸림': 처음 70쪽을 쪽당 2초로 몰아 읽은 뒤 알라딘 답이 쪽당 15~20초로 느려졌는데, 예전엔 잘 읽힌다고 같이 읽는 쪽 수(K)를 2→3으로 더 늘렸음
-         *  → 몰아 읽지 않음: 쪽당 최소 3초(평소 4~5초) · 답이 느려지면(쪽당 8초 넘음) K를 줄이고, 아주 느리면(15초 넘음) 1분 쉬었다 한 쪽씩 · 빨라지면 천천히 다시 늘림 */
+      { /* (1.89.63·64) 답이 느려지면(쪽당 8초 넘음) 같이 읽는 쪽 수(K)를 줄이고, 아주 느리면(15초 넘음) 1분 쉬었다 한 쪽씩 · 빨라지면(쪽당 5초 안) 다시 늘림 · (1.89.64) 쪽당 최소 3초는 없앰 — 느렸던 진짜 까닭은 요청 간격(PACE)이 20초로 묶인 것이었음 */
         const msB = Date.now() - tB0; const per = msB / Math.max(1, got.length); BENCH_LAT.push(per); if (BENCH_LAT.length > 6) BENCH_LAT.shift(); const avg = BENCH_LAT.reduce((a, x) => a + x, 0) / BENCH_LAT.length;
         if (avg > 15000 && BENCH_LAT.length >= 3) { if (!BENCH_LAT.cool || Date.now() - BENCH_LAT.cool > 10 * 60e3) { BENCH_LAT.cool = Date.now(); log(`🎯 '${name}': 알라딘 답이 느려짐(최근 쪽당 ${(avg / 1000).toFixed(1)}초) — 몰아 읽지 않게 1분 쉬고 한 쪽씩 읽음`, 1); K = 1; okRun = 0; BENCH_LAT.length = 0; await new Promise((z) => setTimeout(z, 60e3)); } else { K = 1; okRun = 0; } }
         else if (avg > 8000) { if (K > 1) { K--; log(`🎯 '${name}': 알라딘 답이 느려 같이 읽는 쪽을 ${K}쪽으로 줄임(최근 쪽당 ${(avg / 1000).toFixed(1)}초)`); } okRun = 0; }
         else { okRun += got.length; if (okRun >= 30 && K < 3 && avg < 5000 && !(PACE.cooling && PACE.cooling() > 0)) { K++; okRun = 0; } }
-        const minMs = 3000 * got.length; if (msB < minMs) await new Promise((z) => setTimeout(z, minMs - msB)); } }
+      } }
     if (pend.length) { await bkRef(prog.blocks || 0).set({ s: JSON.stringify(pend), n: pend.length, at: Date.now() }); prog.blocks = (prog.blocks || 0) + 1; pend = []; }
     /* (1.56.3) '끝까지 확실히 읽었나'를 한 곳에서 엄격하게: ① 이 회차가 1쪽부터 읽었고 ② 숍 끝 쪽을 알면 그 쪽까지 읽었고(빈 쪽이면 지금 끝 쪽을 다시 확인) ③ 2쪽이 1쪽과 같은 숍은 끝 쪽이 1쪽일 때만 ④ 끝 쪽을 모르면 빈 쪽·새 상품 없는 쪽까지 — 하나라도 아니면 끝까지 못 읽은 회차(통계·비교 기준 모두 제외, 읽은 상품은 bench_partial에 상품 정보로만) */
     { const lastRead = prog.page - 1; const r1 = prog.readFrom1 === true || (prog.readFrom1 === undefined && prog.items.length > 0 && !prog.resumedOld); let ok = false, why = '';
@@ -2279,7 +2290,7 @@
   let REGDOC = null, regUnsub = null; const REGF = () => window.ReadnowRegistry || globalThis.ReadnowRegistry || null;
   const PC_KNOWN_OLD = new Set(['read', 'startDelivery', 'usedInfo', 'c2bAdd', 'lookup', 'metrics', 'cashStop', 'extLookup', 'extTest']);
   const PUB_CMDS = new Set(['lookup', 'metrics', 'extLookup', 'extTest']); /* (1.69.0) usedInfo(우리 매물 페이지 다시 읽기)는 뺌 — 새로 올린 우리 매물을 익명 IP가 곧바로 여는 것은 로거를 드러냄 → 로그인한 사무실 PC·클라우드가 함 */ /* (1.64.0) 공개 전용 PC가 맡는 맡긴 일(로그인 없이 되는 것만) */
-  const pcCan = (type) => { const extT = type === 'extLookup' || type === 'extTest'; if (PUBONLY && (!PUB_CMDS.has(type) || (!TGATE.ok && !extT))) return false; /* (1.67.0) 외부 정보는 와이파이 — 테더링과 상관없이 로거가 받음 */ if (PUBONLY && !extT && BUD && !(BUD.left.main > 0) && !(BUD.free)) return false; /* 맡긴 비로그인 일 = 주요 몫 — 몫이 없으면 받지 않음 */ /* (1.66.0) 테더링 확인 전에는 맡지 않음(다른 PC가 받게) */ if (pubPcMode() && type === 'metrics') return false; /* 묶음 시장 지표(대량)는 공개 전용 PC */ const G = REGF(); if (!G) return PC_KNOWN_OLD.has(type); return G.canHandle(G.merge(REGDOC || {}), type, 'pc'); };
+  const pcCan = (type) => { const extT = type === 'extLookup' || type === 'extTest'; if (PUBONLY && (!PUB_CMDS.has(type) || (!TGATE.ok && !extT))) return false; if (benchOnly() && !extT) return false; /* (1.89.64) 이번 달 로거는 맡긴 알라딘 일을 받지 않음 */ /* (1.67.0) 외부 정보는 와이파이 — 테더링과 상관없이 로거가 받음 */ if (PUBONLY && !extT && BUD && !(BUD.left.main > 0) && !(BUD.free)) return false; /* 맡긴 비로그인 일 = 주요 몫 — 몫이 없으면 받지 않음 */ /* (1.66.0) 테더링 확인 전에는 맡지 않음(다른 PC가 받게) */ if (pubPcMode() && type === 'metrics') return false; /* 묶음 시장 지표(대량)는 공개 전용 PC */ const G = REGF(); if (!G) return PC_KNOWN_OLD.has(type); return G.canHandle(G.merge(REGDOC || {}), type, 'pc'); };
   /* (1.63.7) 🧩 맡긴 일 거르기 — 수집 일은 📥 수집이 켜졌을 때만, 출고 시작·현금 판매·등록은 그 기능을 켰을 때만(끄면 대기로 남겨 다른 PC가) */
   /* (1.77.5) PC끼리 누가 받나(정범님 10/17): ① 요청한 기기가 이 PC(웹앱이 dev에 기기 이름) → 바로 ② 쉬는 PC 0.7초 ③ 자동 수집이 아닌 일(사람이 누른 일) 하는 PC 1.6초 ④ 자동 수집 중인 PC 2.6초 + 남은 시간이 길수록 더 늦게(최대 +6초) — 먼저 받는 PC가 맡고(대기 → 처리 중은 한 번만) 나머지는 그냥 지나감 */
   const claimDelay = (x) => { try { if (x && x.dev && String(x.dev).trim().toUpperCase() === String(PC_NAME || '').trim().toUpperCase()) return 0; if (x && x.dev) { /* (1.89.29) 정범님 10/22 '자기 기기가 자기 업무를 최우선' — 등록만이 아니라 웹앱이 맡긴 모든 일: 누른 기기 이름과 같은 PC가 살아 있으면 그 PC가 먼저(다른 PC는 15초 기다림) */ const B = ((BEATS || {}).pcs || {})[String(x.dev).trim().toUpperCase()] || ((BEATS || {}).pcs || {})[String(x.dev).trim()]; if (B && Date.now() - (+B.atMs || 0) < 3 * 60e3 && !B.paused) return 15000; } /* (1.89.15) 정범님 10/21: 등록은 웹앱을 누른 PC의 수집기가 먼저(살아 있으면 다른 PC는 15초 기다림 — 그 PC가 안 받으면 그때 다른 PC) */ const busy = !!running || !!(window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()); if (!busy) return 700; if (!window.__rnAuto) return 1600; const m = lastUi && lastUi.etaMin != null ? +lastUi.etaMin : 60; return 2600 + Math.min(6000, Math.max(0, m) * 100); } catch (e) { return 1000; } };
@@ -3208,7 +3219,7 @@
   const YSTK_SET = (L) => { try { GM_setValue('rnu-yield-stack', L); } catch (e) {} };
   const keyTimed = (k) => { const t = (AS.keyParts(k).tag || '').replace(/~r\d+$/, ''); return /^\d{2}:\d{2}$/.test(t) || /^e\d{4}$/.test(t); };
   const rankOfKey = (k) => (/@i\d{4}$/.test(k) ? 7 : !/~r\d+$/.test(k) && keyTimed(k) ? 2 : 5);
-  const dueSyncOk = (d, now) => d.mark === 'run' && !((SCHED_BACK[d.key] || 0) > now) && !asMissing(d.slot) && !(d.slot.job === 'prd:shipRead' && cloudOn()) && (d.slot.job.startsWith('crm:') ? !!(window.__rnCrm && window.__rnCrm.start) : !!JOBS[d.slot.job.slice(4)] && !PAR_JOBS[d.slot.job.slice(4)]);
+  const dueSyncOk = (d, now) => !(benchOnly() && isPubKey(d.slot.job.slice(4)) && !isBenchKey(d.slot.job)) && d.mark === 'run' && !((SCHED_BACK[d.key] || 0) > now) && !asMissing(d.slot) && !(d.slot.job === 'prd:shipRead' && cloudOn()) && (d.slot.job.startsWith('crm:') ? !!(window.__rnCrm && window.__rnCrm.start) : !!JOBS[d.slot.job.slice(4)] && !PAR_JOBS[d.slot.job.slice(4)]);
   async function dueLaneOk(d, C0) { const kind = d.slot.job.split(':')[0]; if (kind === 'crm' && window.__rnCrm.otherBusy && window.__rnCrm.otherBusy()) { schedWaitNote('고객 작업(다른 탭)'); return false; }
     if (kind === 'prd') { const pubJ = isPubKey(d.slot.job.slice(4)); if (pubJ) { if (C0.lkp === undefined) C0.lkp = (await LOCKP().get()).data() || {}; if (laneBusy(C0.lkp, true)) { schedWaitNote('🌐 공개 읽기 줄이 다 참(다른 PC들)'); return false; } } else { if (C0.lk === undefined) C0.lk = (await LOCK().get()).data() || {}; if (laneBusy(C0.lk)) { schedWaitNote('다른 PC·탭이 알라딘 작업 중'); return false; } } } return true; }
   /* 끼어들기 확인(15초마다) — 지금 하는 일보다 앞 차례 일이 생기면 지금 항목까지 저장하고 비킴 */
@@ -3244,7 +3255,7 @@
   /* (1.74.0) ✨ 쉴 때 하는 일 — 정한 시각·조건 칸·요청이 하나도 없을 때(차례 8) · 목록 순서 · 끝낸 일은 1시간 뒤 다시 봄 · 로거 알라딘 목록 맨 끝은 끝없는 탐색(받침) */
   const REST_ST = () => { try { return GM_getValue('rnu-rest-st', {}) || {}; } catch (e) { return {}; } }; const REST_SET = (j, v) => { const o = REST_ST(); o[j] = { ...(o[j] || {}), ...v }; try { GM_setValue('rnu-rest-st', o); } catch (e) {} };
   const biFocus = () => !!PUBONLY && !tetherLeft(); /* (1.77.7) 🎯 와이파이 집중: 로거의 테더링(알라딘 길)이 끊겼거나 남은 양이 없을 때 — 쉬는 시간 없이 외부 도서 정보만 */
-  const tetherLeft = () => PUBONLY && TGATE.ok && (!BUD || BUD.left.main > 0 || BUD.left.gen > 0);
+  const tetherLeft = () => PUBONLY && TGATE.ok && !benchOnly() && (!BUD || BUD.left.main > 0 || BUD.left.gen > 0); /* (1.89.64) 벤치마킹 전용 기간에는 '테더링 남음'으로 보지 않음 → 쉴 때 일은 와이파이 목록(테더링을 다 썼을 때)·와이파이 집중 */
   const restListMain = () => { if (!AS || !AS.restOf || !SCHED) return []; const R0 = AS.restOf(SCHED); if (!R0.on) return []; if (PUBONLY) return tetherLeft() ? [...R0.lgA, AS.REST_SAFETY].filter((j) => isPubKey(String(j).slice(4))) : []; /* (1.76.0) 로거 테더링은 벤치마킹만 — 쉴 때 일도 벤치마킹 계열만 */ return R0.ofA.filter((j) => !(pubPcMode() && isPubKey(j.slice(4)))); };
   const restListExt = () => { if (!AS || !AS.restOf || !SCHED) return []; const R0 = AS.restOf(SCHED); if (!R0.on) return []; if (PUBONLY) return helperVerOk('1.6.0') ? (tetherLeft() ? R0.lgE : R0.lgN) : []; return R0.ofE; };
   const restEligible = (j, now) => { const k = j.slice(4); if (!JOBS[k]) return false; const st = REST_ST()[j] || {}; if ((st.backAt || 0) > now) return false; if (st.doneAt && now - st.doneAt < (j === AS.REST_SAFETY ? 10 : biFocus() ? 5 : 60) * 60e3) return false; /* (1.77.7) 로거 테더링이 끊긴 동안(와이파이 집중)은 5분만 쉬고 다시 */ if (PUBONLY && isPubKey(k) && !(budLeft(k) > 0)) return false; return true; };
