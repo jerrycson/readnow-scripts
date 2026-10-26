@@ -31,7 +31,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.35.37'; // (0.35.28 2시간 점검) 성능 요약에 웹앱 판별 [긴 멈춤 수·합초·힙 최고](byVer) — 고친 판이 실제로 나아졌는지 가름 // (0.35.27 2시간 점검) 숫자 요약에 웹앱 성능 기록 요약(perfSum — 긴 멈춤 합·gcLike·기기·화면별 힙·pSelf 상위·mem top) // (0.35.21 2시간 점검) 상품 변경 기록 내역에 상태 from→to·되풀이 상위 상품 // (0.35.20 2시간 점검) 숫자 요약 who에 상품 변경 기록 내역(출처·PC·바뀐 칸·되풀이) // (0.35.17 2시간 점검) 📈 실패 회차 동안 요약을 못 쓴 책 한 번 다시 셈 // (0.35.16 2시간 점검) 📈 시장 흐름 요약 16→128칸(문서 색인 한도) · 실패 회차가 겹쳐 쌓은 사라진 매물 바로잡음 // (0.35.15 2시간 점검) 📈 시장 흐름 모음 시도 시각·실패 까닭을 상태 문서·숫자 요약에 // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
+const VER = '0.35.38'; // (0.35.28 2시간 점검) 성능 요약에 웹앱 판별 [긴 멈춤 수·합초·힙 최고](byVer) — 고친 판이 실제로 나아졌는지 가름 // (0.35.27 2시간 점검) 숫자 요약에 웹앱 성능 기록 요약(perfSum — 긴 멈춤 합·gcLike·기기·화면별 힙·pSelf 상위·mem top) // (0.35.21 2시간 점검) 상품 변경 기록 내역에 상태 from→to·되풀이 상위 상품 // (0.35.20 2시간 점검) 숫자 요약 who에 상품 변경 기록 내역(출처·PC·바뀐 칸·되풀이) // (0.35.17 2시간 점검) 📈 실패 회차 동안 요약을 못 쓴 책 한 번 다시 셈 // (0.35.16 2시간 점검) 📈 시장 흐름 요약 16→128칸(문서 색인 한도) · 실패 회차가 겹쳐 쌓은 사라진 매물 바로잡음 // (0.35.15 2시간 점검) 📈 시장 흐름 모음 시도 시각·실패 까닭을 상태 문서·숫자 요약에 // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
 // // (0.35.5 격일 정밀 점검) ☁ 공개 확인: 읽기 실패 길도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂 · 상품 조회 HTTP 오류 = 읽기 실패 · deepscan 바꾸는 말 쿼리까지 · 진단 mchg
 // // (0.35.3) deepscan을 화면마다 따로 읽기(한 번에 60초 넘던 것) // (0.35.2) 진단 deepscan — 샵매니저 메뉴 깊이 2까지 · 북스킹 숍 · 우리 상품 화면 · 온라인 중고 목록을 읽기만(GET · 고객 정보 가림)
 // // (0.35.1) 💾 하루 한 번 prd_system/fbCols(모든 최상위 칸 이름 · app_secrets 뺌) — 로거 수집기 자료 보관이 칸 목록으로 씀
@@ -146,22 +146,97 @@ let injectedSrc = null;
 async function ensureCores(p) { const src = await cores(); const has = await p.evaluate(() => !!(window.ReadnowShipping && window.ReadnowProducts && window.ReadnowPricing && window.ReadNowCore)).catch(() => false); if (!has || injectedSrc !== src) { await p.addScriptTag({ content: src }); injectedSrc = src; } }
 
 /* ── 로그인 (PC 수집기의 자동 로그인과 같은 방식: 보이는 아이디 칸 + 비밀번호 칸 + 로그인 단추) ── */
-let lastDialog = null, probeAt = 0; /* (0.12.11) 마지막 경고창 */ let loginFailAt = 0, loginFailMsg = null, loginFailN = 0; // (0.9.0) 실패 쉬는 시간: 1번째 3분 → 2번째 10분 → 그 뒤 30분 (예전: 한 번만 실패해도 30분 동안 주문을 못 읽었음)
-let loginKind = null, loginStLoaded = false; /* (0.11.0) 실패 상태를 Firestore(app_settings/cloud_login)에 남겨 다시 켜져도(배포·재시작) 쉬는 시간을 지킴 · 아이디·비밀번호·자동입력(보안 문자) 때문이면 6시간 쉼 — 계정 잠김 막기 */
-const loginRest = () => (loginKind === 'cred' ? 360 : loginKind === 'alert' ? (loginFailN <= 1 ? 10 : 60) : loginFailN <= 1 ? 3 : loginFailN === 2 ? 10 : 30) * 60e3; /* (0.12.12) 알라딘 경고창으로 막히면 10분 → 그 뒤 1시간마다만 시도(막힌 계정에 자꾸 들어가 잠김이 길어지지 않게) · 웹앱 클라우드 시험은 바로 */
-async function loginStLoad() { if (loginStLoaded) return; loginStLoaded = true; try { const d = await C('app_settings').doc('cloud_login').get(); const v = d.exists ? d.data() : null; if (v && v.failAt) { loginFailAt = +v.failAt || 0; loginFailN = +v.failN || 0; loginFailMsg = v.msg || null; loginKind = v.kind || null; loginFailIp = v.ip || null; loginIpSkipAt = +v.ipSkipAt || 0; } } catch (e) {} }
-let loginFailIp = null, loginIpSkipAt = 0, egIp = null, egAt = 0; /* (0.16.2) 막혔을 때의 나가는 주소 — 주소가 바뀌면 쉬는 시간은 그 옛 주소의 것이라 무시 */
+let lastDialog = null, probeAt = 0; /* (0.12.11) 마지막 경고창 */ let loginFailAt = 0, loginFailMsg = null; /* /status 보기용(마지막 실패 때·까닭) — 쉬는 시간은 이제 계정 문서(app_settings/aladin_login) 규칙 하나로 */
+let egIp = null, egAt = 0; /* (0.16.2) 나가는 주소(진단 loginnow) */
 async function egressIp() { if (egIp && Date.now() - egAt < 10 * 60e3) return egIp; try { const r = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(10000) }); const j = await r.json(); if (j && j.ip) { egIp = j.ip; egAt = Date.now(); } } catch (e) {} return egIp; }
-const loginStSave = async () => { if (loginFailAt) await egressIp(); return C('app_settings').doc('cloud_login').set({ failAt: loginFailAt || 0, failN: loginFailN || 0, msg: loginFailMsg || null, kind: loginKind || null, ip: loginFailAt ? (egIp || null) : null, ipSkipAt: loginIpSkipAt || 0, at: new Date().toISOString() }).catch(() => {}); };
-async function loggedIn(p) { return p.evaluate(async () => { try { const r = await fetch('/scm/worders.aspx?searchType=1&limitDate=1', { credentials: 'include' }); const h = await r.text(); if (/\/login\/|wlogin/i.test(r.url)) return false; const d = new DOMParser().parseFromString(h, 'text/html'); return !(d.querySelector('input[type="password"]') && !/샵매니저/.test(d.title || '')); } catch (e) { return false; } }); }
-async function login(p, force) {
-  if (await loggedIn(p)) { if (loginFailAt) { loginFailAt = 0; loginFailN = 0; loginFailMsg = null; loginKind = null; loginStSave(); } return true; }
+/* ══ (정범님 10/26) 🔑 알라딘 로그인 — 사람처럼 (PC 수집기와 같은 규칙 · 계정 단위) ══
+ *  예전: 배포(새 컨테이너)마다 새로 로그인(10/20~26 배포 약 119번) · 실패 쉬는 시간은 클라우드 혼자(app_settings/cloud_login) · 10/26 막힘 뒤 0.35.35는 아예 로그인 안 함(holdOff)
+ *  이제: ① 세션 이어 쓰기 — 로그인에 성공하면 알라딘 쿠키(aladin.co.kr 것만)를 app_secrets/aladin_session에(진단·백업이 읽지 않는 비공개 칸) · 새 브라우저가 켜지면 먼저 그 쿠키를 넣어 보고 살아 있으면 로그인하지 않음
+ *   ② 세션이 정말 풀렸을 때만 계정 문서(app_settings/aladin_login)의 규칙대로(정범님 10/26 23:46): 기기마다 각자(계정 전체 차례 없음 · 23:53) · 5~20초 알아차림 · 한 번 · 안 되면(42FB도 같음) 1~10분 무작위 뒤 다시
+ *     · 데이터센터 자리라 2시간 안에 42FB가 있었고 그 뒤 어느 PC도 새 로그인에 성공하지 않았으면 기다림(PC가 먼저 성공하면 그때부터) · 모든 시도 = 계정 문서 tries(200) + 하루 요약 days/{날짜}
+ *   ③ 로그인 안 된 동안 로그인이 필요한 맡긴 일은 받지 않음(runCmds scmOk) — 로그인된 PC가 맡음 */
+const RN_LOGIN_RULE = (function () { /* ⟦알라딘 로그인 규칙 — 수집기·클라우드에 글자 하나까지 같은 글(시험 t_login이 견줌) · 순수 함수만(저장·네트워크 없음)⟧
+ *  계정 상태 문서 = Firestore app_settings/aladin_login (모든 PC·클라우드가 같이 봄)
+ *   { tries:[{at,who,net,ok,how,why,code,blocked}](최근 cfg.keep개 · 기본 200) · next:{기기: 다음 시도 때(ms)} · dev:{기기:{in,at,how}} · net:{기기: 공인 IP 앞 두 마디}
+ *     · blk:{'기기·망':{first,last,n,okAt}}(42FB 막힘이 기기·망별로 얼마나 갔나) · holdUntil·holdWhy(정범님이 켤 때만 — 자동으로는 넣지 않음) · cfg:{바꿀 수 있는 값} }
+ *  하루 요약 = app_settings/aladin_login/days/{KST 날짜} { c:{'기기·망·방법·결과·경고':수}, eps:[닫힌 막힘 {who,net,first,okAt,n}] }
+ *  사람처럼(정범님 10/26 23:46 · 23:53): ① 한 회사에 사람이 여럿이듯 기기마다 각자 필요할 때 따로 시도(계정 전체 차례 없음 · 같은 기기 안의 여러 탭은 한 탭만 — 수집기 GM 표시) ② 진짜 풀린 것을 확인한 뒤 5~20초 알아차리는 시간 → 한 번
+ *   ③ 안 되면(42FB 경고도 같음) 그 기기는 1~10분 사이 무작위(매번 새로) 뒤 다시 — 그 기기에 로그인이 필요한 일이 남아 있는 동안만 · 단계 간격·하루 상한·다음 날 9시 쉼 없음
+ *   ④ 클라우드(데이터센터 IP): 2시간 안에 42FB가 있었고 그 뒤 어느 PC도 새 로그인에 성공하지 않았으면 기다림 → PC가 성공하면 그때부터 ①~③ */
+  const DEF = { retrySec: [60, 600], noticeSec: [5, 20], keep: 200, dcWaitMin: 120, credBadMin: 360 }; /* credBadMin = '아이디·비밀번호가 틀림·자동입력 방지' 글이 뜬 때만(계정 잠김 막기 — 클라우드 0.11.0부터 있던 안전장치 · 42FB와 다름) */
+  const num = (v, lo, hi, d) => { const n = +v; return Number.isFinite(n) && n >= lo && n <= hi ? n : d; };
+  const pair = (v, lo, hi, d) => (Array.isArray(v) && v.length === 2 && +v[0] >= lo && +v[1] >= +v[0] && +v[1] <= hi ? v.map(Number) : d);
+  function cfgOf(doc) { const c = (doc && doc.cfg) || {}; return { retrySec: pair(c.retrySec, 10, 3600, DEF.retrySec), noticeSec: pair(c.noticeSec, 0, 120, DEF.noticeSec), keep: Math.round(num(c.keep, 20, 400, DEF.keep)), dcWaitMin: num(c.dcWaitMin, 0, 1440, DEF.dcWaitMin), credBadMin: num(c.credBadMin, 0, 1440, DEF.credBadMin) }; }
+  const kstDay = (ms) => new Date(+ms + 9 * 3600e3).toISOString().slice(0, 10);
+  const kstHm = (ms) => { const k = new Date(+ms + 9 * 3600e3); return `${k.getUTCMonth() + 1}/${k.getUTCDate()} ${String(k.getUTCHours()).padStart(2, '0')}:${String(k.getUTCMinutes()).padStart(2, '0')}`; };
+  const between = (a, rnd) => Math.round((a[0] + (Number.isFinite(rnd) ? Math.min(1, Math.max(0, rnd)) : Math.random()) * (a[1] - a[0])) * 1000);
+  /* 계정 새 로그인 막힘 경고 — 정범님이 본 글: '로그인 과정에 문제가 발생하였습니다.(에러코드:42FB6013-…)' (같은 뜻 = 에러코드 42FB로 시작) */
+  const BLOCK_RE = /로그인\s*과정에\s*문제|에러\s*코드\s*[:：]?\s*42FB|\b42FB[0-9A-F]{2,}/i;
+  const isBlock = (msg) => BLOCK_RE.test(String(msg || ''));
+  const codeOf = (msg) => { const m = String(msg || '').match(/에러\s*코드\s*[:：]?\s*([0-9A-F]{4,}(?:-[0-9A-F]+)?)/i) || String(msg || '').match(/\b(42FB[0-9A-F]{2,})/i); return m ? m[1].toUpperCase().slice(0, 24) : isBlock(msg) ? '42FB' : null; };
+  /* 지금 이 기기(who)가 새 로그인을 해도 되나 → { ok:true, cfg } | { ok:false, kind:'hold'|'retry'|'dcwait', until, why }
+   *  o.force = 사람이 직접 누른 시험(다시 시도 때만 건너뜀) · o.dc = 데이터센터(클라우드) — ④ 규칙 */
+  function decide(doc, who, now, o) { o = o || {}; const c = cfgOf(doc);
+    if (doc && +doc.holdUntil > now) return { ok: false, kind: 'hold', until: +doc.holdUntil, why: doc.holdWhy || '정범님이 켠 계정 새 로그인 쉼' };
+    const nx = +((doc && doc.next) || {})[who] || 0; if (!o.force && nx > now) return { ok: false, kind: 'retry', until: nx, why: `${who} 지난 시도가 안 됨 — 다음 시도 ${kstHm(nx)}(1~10분 무작위)` };
+    if (o.dc && c.dcWaitMin > 0) { const T = (doc && doc.tries) || []; let bi = -1; for (let i = T.length - 1; i >= 0; i--) if (T[i] && T[i].blocked && now - (+T[i].at || 0) < c.dcWaitMin * 60e3) { bi = i; break; }
+      if (bi >= 0 && !T.slice(bi + 1).some((t) => t && t.ok && t.who !== who)) return { ok: false, kind: 'dcwait', until: +T[bi].at + c.dcWaitMin * 60e3, why: `${kstHm(+T[bi].at)} ${T[bi].who}에 42FB 경고 뒤 아직 어느 PC도 새 로그인에 성공하지 않음 — 데이터센터(클라우드)는 PC가 먼저 성공할 때까지 기다림` }; }
+    return { ok: true, cfg: c }; }
+  /* 로그인 한 번 결과 → 계정 문서 고침(patch)과 하루 요약 고침(day) — r = { ok, how, why, blocked, net, credBad } · rnd = 0~1 무작위(다음 시도 간격) */
+  function record(doc, who, now, r, rnd) { const c = cfgOf(doc); const net = r.net || ((doc && doc.net) || {})[who] || null; const code = r.ok ? null : codeOf(r.why);
+    const t = { at: now, who, net, ok: !!r.ok, how: r.how || null, why: r.why ? String(r.why).slice(0, 200) : null, code }; if (r.blocked) t.blocked = true; if (r.credBad) t.credBad = true;
+    const tries = [...((doc && doc.tries) || []), t].slice(-c.keep); const nextAt = r.ok ? 0 : r.credBad && c.credBadMin > 0 ? now + c.credBadMin * 60e3 : now + between(c.retrySec, rnd);
+    const p = { tries, lastTry: t, next: { [who]: nextAt } };
+    if (doc && doc.lock) p.lock = null; /* 예전 판(차례 표)이 남긴 것 정리 */
+    const bk = `${who}·${net || '?'}`; const B = ((doc && doc.blk) || {})[bk]; let closed = null;
+    if (r.blocked) p.blk = { [bk]: B && !B.okAt ? { ...B, last: now, n: (+B.n || 0) + 1 } : { first: now, last: now, n: 1, okAt: null } };
+    else if (r.ok) { const open = Object.entries((doc && doc.blk) || {}).filter(([k, v]) => k.split('·')[0] === who && v && !v.okAt); if (open.length) { p.blk = {}; for (const [k, v] of open) { p.blk[k] = { ...v, okAt: now }; closed = closed || []; closed.push({ who, net: k.split('·').slice(1).join('·'), first: +v.first, okAt: now, n: +v.n || 0, min: Math.round((now - +v.first) / 60e3) }); } } }
+    const res = r.ok ? 'ok' : r.blocked ? 'blocked' : 'fail';
+    return { patch: p, nextAt, day: { id: kstDay(now), key: [who, net || '?', r.how || '?', res, code || '-'].join('·'), closed } }; }
+  /* 로그인 판단을 해도 되는 화면인가 — 사람이 아는 방식만: ⓐ 샵매니저(/scm/)를 열었는데 로그인 화면으로 넘어감·로그인 칸이 뜸 ⓑ 로그인이 필요한 곳(내 계정·주문·팔기 장바구니)이 로그인 주소로 넘어감
+   *  공개 화면(상품·중고 목록·숍 목록 — /scm/ 밖)은 로그인 판단에 쓰지 않음 → 'gate'(그 화면만 로그인 필요 — 19금 등) 또는 false */
+  const LOGIN_URL = /\/login\/|wlogin|wC2CUser_Login/i;
+  const AUTH_URL = /^(?:https?:\/\/[^\/]+)?\/(?:scm|account|order|mypage)\/|wbasket|wc2b_sales/i;
+  const SCM_URL = /^(?:https?:\/\/[^\/]+)?\/scm\//i;
+  function judge(url, finalUrl, hasPw, hasLogout, title, o) { o = o || {}; url = String(url || ''); finalUrl = String(finalUrl || url);
+    if (LOGIN_URL.test(finalUrl) && !LOGIN_URL.test(url)) return AUTH_URL.test(url) ? 'suspect' : 'gate';
+    if (!SCM_URL.test(url)) return false;
+    if (hasPw && !hasLogout && !(o.titleOk || /샵매니저/).test(title || '')) return 'suspect';
+    if (o.scmNeedsLogout && !hasLogout) return 'suspect';
+    return false; }
+  const net2 = (ip) => { const m = String(ip || '').match(/^(\d{1,3})\.(\d{1,3})\./); return m ? `${m[1]}.${m[2]}` : null; };
+  return { DEF, cfgOf, kstDay, kstHm, between, isBlock, codeOf, decide, record, judge, net2, LOGIN_URL, AUTH_URL, SCM_URL };
+})();
+const ALG = () => C('app_settings').doc('aladin_login');
+async function algTx(fn) { let out = null; await db.runTransaction(async (tx) => { out = null; const sn = await tx.get(ALG()); const d = sn.exists ? sn.data() || {} : {}; out = fn(d) || {}; if (out.patch) tx.set(ALG(), out.patch, { merge: true }); }); return out; }
+let algWait = { until: 0, why: '' }; let algDevIn = null, algDevAt = 0; const algDev = (inn, how) => { const now = Date.now(); if (algDevIn === inn && now - algDevAt < 30 * 60e3) return; algDevIn = inn; algDevAt = now; ALG().set({ dev: { cloud: { in: inn, at: now, how: how || null } } }, { merge: true }).catch(() => {}); };
+/* 하루 요약(부지런한 통계) — app_settings/aladin_login/days/{KST 날짜}: 기기·망·방법·결과·경고 코드별 수 + 닫힌 막힘(42FB 처음 → 그 기기가 다시 성공) */
+const algDay = (day) => { if (!day) return; ALG().collection('days').doc(day.id).set({ c: { [day.key]: FV.increment(1) }, at: Date.now(), ...(day.closed ? { eps: FV.arrayUnion(...day.closed) } : {}) }, { merge: true }).catch(() => {}); };
+/* 기기마다 망(공인 IP 앞 두 마디) — PC 수집기가 몇 시간마다 부르는 /px/me.gif에서 알게 됨(바뀔 때만 적음) · 클라우드는 나가는 주소 */
+const algNetSeen = new Map(); const algNet = (dev, ip) => { const n = RN_LOGIN_RULE.net2(ip); if (!n || !dev || algNetSeen.get(dev) === n) return; algNetSeen.set(dev, n); ALG().set({ net: { [dev]: n } }, { merge: true }).catch(() => {}); };
+/* 세션 이어 쓰기 — 쿠키는 aladin.co.kr 것만 · 값은 로그에 남기지 않음 */
+const SESS = () => C('app_secrets').doc('aladin_session'); let sessTriedBr = null, sessSavedAt = 0;
+const ckPick = (c) => { const o = { name: c.name, value: c.value, domain: c.domain, path: c.path || '/', httpOnly: !!c.httpOnly, secure: !!c.secure }; if (c.expires && c.expires > 0) o.expires = c.expires; if (c.sameSite) o.sameSite = c.sameSite; return o; };
+async function sessSave(p) { try { const L = await p.cookies('https://www.aladin.co.kr/', 'https://www.aladin.co.kr/scm/', 'https://www.aladin.co.kr/login/'); const seen = new Set(); const ck = L.filter((c) => { const k = c.name + '|' + c.domain + '|' + c.path; if (seen.has(k) || !/(^|\.)aladin\.co\.kr$/i.test(String(c.domain || '').replace(/^\./, ''))) return false; seen.add(k); return true; }).map(ckPick); if (!ck.length) return; await SESS().set({ cookies: ck, n: ck.length, at: Date.now(), by: 'cloud', ver: VER }); sessSavedAt = Date.now(); } catch (e) { log('세션 저장 실패', e.message); } }
+async function sessRestore(p) { const d = (await SESS().get()).data(); if (!d || !Array.isArray(d.cookies) || !d.cookies.length) return false; await p.setCookie(...d.cookies.map(ckPick)); const ok = await loggedIn0(p); log(ok ? `저장해 둔 알라딘 세션으로 이어 씀(${d.cookies.length}개 · ${Math.round((Date.now() - (+d.at || 0)) / 60e3)}분 전 저장) — 새로 로그인하지 않음` : '저장해 둔 알라딘 세션이 풀려 있음'); return ok; }
+async function loggedIn0(p) { return p.evaluate(async () => { try { const r = await fetch('/scm/worders.aspx?searchType=1&limitDate=1', { credentials: 'include' }); const h = await r.text(); if (/\/login\/|wlogin/i.test(r.url)) return false; const d = new DOMParser().parseFromString(h, 'text/html'); return !(d.querySelector('input[type="password"]') && !/샵매니저/.test(d.title || '')); } catch (e) { return false; } }); }
+async function loggedIn(p) { const ok = await loggedIn0(p); if (ok) { algDev(true, 'check'); if (Date.now() - sessSavedAt > 3 * 3600e3) { sessSavedAt = Date.now(); sessSave(p); } } return ok; } /* 살아 있으면 3시간마다 쿠키를 새로 저장(알라딘이 쿠키를 바꿔도 새 컨테이너가 이어 쓰게) */
+let algSeedDone = false;
+async function login(p, force) { if (!algSeedDone) { algSeedDone = true; if (typeof algSeed1027 === "function") await algSeed1027(); } /* (0.35.38) 첫 로그인 판단 전에 예전 42FB 기록 옮김 */
+  if (await loggedIn(p)) return true;
+  if (sessTriedBr !== browser) { sessTriedBr = browser; try { if (await sessRestore(p)) { algDev(true, 'session'); return true; } } catch (e) { log('세션 이어 쓰기 실패', e.message); } } /* 새 브라우저마다 한 번 */
   if (!ALADIN_ID || !ALADIN_PW) throw new Error('알라딘 아이디·비밀번호 비밀(ALADIN_ID·ALADIN_PW)이 없음');
-  { /* (0.35.35) 🚨 정범님 10/26 22:56 알라딘 계정 새 로그인 막힘(42FB6013 · 사람 시크릿 창도 막힘) — 클라우드는 스스로 로그인하지 않음(1시간마다 다시 시도하던 것도) · 풀기 = app_settings/cloud_login.holdOff = true(정범님 결정 뒤) */ let hs = {}; try { hs = (await C('app_settings').doc('cloud_login').get()).data() || {}; } catch (e) {} if (!hs.holdOff) throw new Error('🚨 알라딘 로그인 쉼(정범님 10/26 — 계정 새 로그인 막힘 · 클라우드는 스스로 로그인하지 않음)'); }
-  await loginStLoad(); if (!force && loginFailAt && Date.now() - loginFailAt < loginRest() && loginKind !== 'cred') { const ip = await egressIp(); if (ip && ip !== loginFailIp && Date.now() - loginIpSkipAt >= 60 * 60e3) { log('나가는 주소가 바뀜', loginFailIp || '(모름)', '→', ip, '— 쉬는 시간 건너뛰고 로그인(1시간에 한 번)'); loginFailAt = 0; loginIpSkipAt = Date.now(); } } /* (0.16.11 자동 점검) 주소가 바뀌어도 건너뛰기는 1시간에 한 번 · 실패 횟수(failN)는 이어 셈 — 예전엔 배포·재시작마다 주소가 바뀌면 막힌 계정에 쉼 없이 다시 들어갔음 */ if (!force && loginFailAt && Date.now() - loginFailAt < loginRest()) throw new Error(`로그인 실패 뒤 ${Math.round(loginRest() / 60e3)}분 쉬는 중 (계정 잠김 방지, ${loginFailN}번째): ` + (loginFailMsg || ''));
-  log('알라딘 로그인'); lastDialog = null;
-  await p.goto(AL + '/login/wlogin.aspx?returnurl=' + encodeURIComponent(AL + '/scm/worders.aspx'), { waitUntil: 'domcontentloaded' });
-  const ok = await p.evaluate((id, pw) => {
+  algDev(false, 'out'); if (!force && Date.now() < algWait.until) throw Object.assign(new Error(`알라딘 로그인 쉼 — ${algWait.why}`), { loginWait: true, until: algWait.until }); /* 1분 회차마다 계정 문서를 다시 읽지 않게(다음 시도 때까지 · PC 성공 기다림은 2분마다 다시 봄) */
+  try { algNet('cloud', await egressIp()); } catch (e) {}
+  /* 이 기기(클라우드)가 지금 해도 되나 — 기기마다 각자(계정 전체 차례 없음 · 정범님 10/26 23:53): 클라우드의 다음 시도 때 · 데이터센터 기다림(④) · 정범님이 켠 계정 쉼 */
+  const d = await algTx((doc) => RN_LOGIN_RULE.decide(doc, 'cloud', Date.now(), { force, dc: true }));
+  if (!d.ok) { loginFailMsg = d.why; algWait = { until: d.kind === 'dcwait' ? Date.now() + 2 * 60e3 : Math.min(d.until || 0, Date.now() + 10 * 60e3), why: d.why }; throw Object.assign(new Error(`알라딘 로그인 쉼 — ${d.why}${d.until ? ` · ${RN_LOGIN_RULE.kstHm(d.until)}부터 다시 해 봄` : ''}`), { loginWait: true, until: d.until || 0 }); }
+  const w = RN_LOGIN_RULE.between((d.cfg || RN_LOGIN_RULE.cfgOf(null)).noticeSec); log('알라딘 로그인이 풀림 —', Math.round(w / 1000), '초 뒤 한 번 로그인(5~20초 무작위)'); await sleep(w);
+  if (await loggedIn(p)) return true;
+  log('알라딘 로그인'); lastDialog = null; const t1 = Date.now(); let ok = false, why = null, credBad = false;
+  try {
+    await p.goto(AL + '/login/wlogin.aspx?returnurl=' + encodeURIComponent(AL + '/scm/worders.aspx'), { waitUntil: 'domcontentloaded' });
+    const sent = await p.evaluate((id, pw) => {
     const pwI = [...document.querySelectorAll('input[type="password"]')].find((i) => i.getClientRects().length); if (!pwI) return 'no-pw';
     const form = pwI.form || document; const idI = [...form.querySelectorAll('input[type="text"],input[type="email"],input:not([type])')].find((i) => i.getClientRects().length && i !== pwI); if (!idI) return 'no-id';
     const setVal = (inp, v) => { const d = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value'); d.set.call(inp, v); inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true })); };
@@ -170,12 +245,21 @@ async function login(p, force) {
     const btn = [...form.querySelectorAll('button,input[type="submit"],input[type="image"],a')].find((b) => /^\s*로그인\s*$/.test(b.textContent || b.value || b.alt || '') || b.type === 'submit' || b.type === 'image');
     if (btn) btn.click(); else if (pwI.form) pwI.form.submit(); else return 'no-btn'; return 'sent';
   }, ALADIN_ID, ALADIN_PW);
-  if (ok !== 'sent') { loginFailAt = Date.now(); loginFailN++; loginKind = 'page'; loginFailMsg = '로그인 화면 모양이 다름 (' + ok + ')'; loginStSave(); throw new Error(loginFailMsg); }
-  await p.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {}); await sleep(1500);
-  if (!/aladin\.co\.kr/.test(p.url())) await p.goto(AL + '/', { waitUntil: 'domcontentloaded' });
-  await ensureCores(p);
-  if (!(await loggedIn(p))) { const dlg = lastDialog && lastDialog.msg ? `알라딘 경고창: ${lastDialog.msg}` : ''; const msg = dlg || await p.evaluate(() => (document.body.innerText.match(/(아이디|비밀번호|보안|인증|자동입력)[^\n]{0,80}/) || [''])[0]).catch(() => ''); loginFailAt = Date.now(); loginFailN++; loginKind = dlg ? 'alert' : /(아이디|비밀번호)[^\n]{0,40}(잘못|일치하지|틀렸|틀립|확인해|다시 입력|오류)|자동\s*입력\s*방지|보안\s*문자|캡차|captcha/i.test(msg || '') ? 'cred' : 'other'; /* 진짜 아이디·비밀번호 오류 글·자동입력 방지일 때만 6시간 — 로그인 화면의 칸 이름('아이디 찾기')만으로는 아님 */ loginFailMsg = msg || '로그인 뒤에도 샵매니저가 열리지 않음'; loginStSave(); throw new Error('알라딘 로그인 실패: ' + loginFailMsg + (loginKind === 'cred' ? ' — 아이디·비밀번호·보안 문자 문제로 보여 6시간 쉼(계정 잠김 막기). 비밀을 고친 뒤 웹앱 설정의 클라우드 시험으로 바로 다시' : '')); }
-  loginFailAt = 0; loginFailN = 0; loginFailMsg = null; loginKind = null; loginStSave(); log('로그인 됨'); return true;
+    if (sent !== 'sent') why = '로그인 화면 모양이 다름 (' + sent + ')';
+    else { await p.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {}); await sleep(1500);
+      if (!/aladin\.co\.kr/.test(p.url())) await p.goto(AL + '/', { waitUntil: 'domcontentloaded' });
+      await ensureCores(p);
+      if (await loggedIn0(p)) ok = true;
+      else { const dlg = lastDialog && lastDialog.msg && lastDialog.at >= t1 ? `알라딘 경고창: ${lastDialog.msg}` : ''; const msg = dlg || await p.evaluate(() => (document.body.innerText.match(/(아이디|비밀번호|보안|인증|자동입력)[^\n]{0,80}/) || [''])[0]).catch(() => '');
+        credBad = !dlg && /(아이디|비밀번호)[^\n]{0,40}(잘못|일치하지|틀렸|틀립|확인해|다시 입력|오류)|자동\s*입력\s*방지|보안\s*문자|캡차|captcha/i.test(msg || ''); /* 진짜 아이디·비밀번호 오류 글·자동입력 방지일 때만 — 로그인 화면의 칸 이름('아이디 찾기')만으로는 아님 */
+        why = msg || '로그인 뒤에도 샵매니저가 열리지 않음'; } }
+  } catch (e) { why = String(e.message || e).slice(0, 160); }
+  const blocked = !ok && !!(lastDialog && lastDialog.at >= t1 && RN_LOGIN_RULE.isBlock(lastDialog.msg));
+  let R = null; await algTx((doc) => { R = RN_LOGIN_RULE.record(doc, 'cloud', Date.now(), { ok, how: 'cred', why: ok ? null : blocked ? lastDialog.msg : why, blocked, credBad, net: RN_LOGIN_RULE.net2(egIp) }, Math.random()); return { patch: R.patch }; }).catch((e) => log('계정 로그인 문서 쓰기 실패', e.message)); if (R) algDay(R.day);
+  if (!ok) algWait = { until: (R && R.nextAt) || Date.now() + RN_LOGIN_RULE.between(RN_LOGIN_RULE.DEF.retrySec), why: (blocked ? '알라딘 경고 42FB' : why || '방금 로그인 실패') + ' — 다음 시도 때를 기다림' };
+  if (ok) { loginFailAt = 0; loginFailMsg = null; algDev(true, 'login'); await sessSave(p); log('로그인 됨 — 세션 저장(다음 컨테이너가 이어 씀)'); return true; }
+  loginFailAt = Date.now(); loginFailMsg = why; algDev(false, 'fail');
+  throw Object.assign(new Error('알라딘 로그인 실패: ' + why + (blocked ? ' — 계정 새 로그인 막힘(42FB) · 같은 규칙으로 1~10분 무작위 뒤 다시(PC가 먼저 성공할 때까지 클라우드는 기다림)' : credBad ? ' — 아이디·비밀번호·보안 문자 문제로 보여 6시간 쉼(계정 잠김 막기). 비밀을 고친 뒤 웹앱 설정의 클라우드 시험으로 다시' : '')), { loginWait: true });
 }
 
 /* ── ① 주문확인요청: 1분마다 이것부터 (알라딘 요청 1번) ──
@@ -2187,6 +2271,8 @@ setTimeout(sim1026d, 45e3);
 /* (0.35.36) 22:59 HOME이 누른 발송준비시작 3건을 로그인 안 된 클라우드가 맡아 '확인 못 함'으로 끝낸 것 → 같은 주문으로 다시 맡김(로그인된 PC가 맡음 · 이미 발송 요청으로 넘어간 주문은 PC가 목록에서 확인) · 한 번만 */
 async function redo1026() { try { const src = C('shp_cmds').doc('Olm15QTPrsxOicERTkew'); const ref = C('shp_cmds').doc('redo_1026_2259'); await db.runTransaction(async (tx) => { const [a, b] = await Promise.all([tx.get(src), tx.get(ref)]); if (b.exists || !a.exists) return; const v = a.data() || {}; if (v.type !== 'startDelivery') return; const res = v.results || {}; const ons = (v.orderNos || []).filter((o) => !res[o] || res[o].state !== 'done'); if (!ons.length) return; const { claim, results, doneAt, beatAt, status, ...rest } = v; tx.set(ref, { ...rest, orderNos: ons, status: 'queued', createdAt: nowIso(), redoOf: src.id, redoWhy: '클라우드가 로그인 안 된 채 맡아 확인 못 함(10/26 22:59) — 로그인된 PC가 다시', uploadedAt: FV.serverTimestamp() }); void claim; void results; void doneAt; void beatAt; void status; }); } catch (e) { log('redo1026: ' + e.message, 1); } }
 setTimeout(redo1026, 20e3);
+/* (0.35.38) 계정 문서(app_settings/aladin_login)가 처음 생길 때, 예전 클라우드 기록(cloud_login)의 마지막 42FB 실패를 시도 기록으로 옮김 — 새 컨테이너가 바로 데이터센터 자리에서 두드리지 않고 규칙 ④(PC가 먼저 성공하거나 2시간)를 따르게 · 한 번만 */
+async function algSeed1027() { try { const old = (await C('app_settings').doc('cloud_login').get()).data() || {}; await db.runTransaction(async (tx) => { const ref = C('app_settings').doc('aladin_login'); const d = (await tx.get(ref)).data() || {}; if (d.seed1027 || (d.tries || []).length) { if (!d.seed1027) tx.set(ref, { seed1027: nowIso() }, { merge: true }); return; } const t = old.failAt && /42FB|로그인\s*과정에\s*문제/.test(String(old.msg || '')) ? [{ at: +old.failAt, who: 'cloud', net: '8.230', ok: false, how: 'cloud', why: String(old.msg || '').slice(0, 200), code: '42FB6013', blocked: true }] : []; tx.set(ref, { tries: t, seed1027: nowIso() }, { merge: true }); }); } catch (e) { log('algSeed1027: ' + e.message, 1); } }
 /* (0.35.33) 🚨 정범님 10/26 21:23 '유심2를 잘 인식하지 않는 것 같다': 아침 sim1026 요청의 fromLeft:0이 합쳐 쓰기로 남아, 21:22·21:23 유심을 두 번 바꿀 때 두 유심의 이번 달 남은 양이 모두 0GB로 적혀 로거 테더링 일이 멈춤
  *  → 바로잡음(한 번만 · sim1026c): 지금 유심 2(새 · 10/26부터) = 120GB ÷ 31 × 6일 = 23.23GB에서 오늘 유심 2로 쓴 양 뺌(유심 바꾼 뒤 거의 0) · 유심 1(예전) = 10/26 04:42 로거 기록 '통신사 기준 이번 달 남은 18.1GB'에서 그 뒤 쓴 양 약 0.2GB를 뺀 17.9GB(추정 — 정확한 값은 통신사 앱) · simReq.fromLeft 비움 */
 async function sim1026c() { try { const ref = C('prd_system').doc('autoSched'); let did = false; await db.runTransaction(async (tx) => { const d = (await tx.get(ref)).data() || {}; if (d.sim1026c) return; const b = d.budget || {}; const o = b.ovr || {}; const s2 = 23.23; const nov = { ...o, remainGB: s2, capGB: Math.round((s2 + (+o.dayUsedGB || 0)) * 100) / 100, sim: 's2', by: '유심 2(새) 바로잡음(10-26 · 남은 23.23GB = 120÷31×6 · 하루 3.87GB) — 21:22 잘못 적힌 0GB 고침' }; tx.set(ref, { budget: { ovr: nov, simReq: { fromLeft: null }, sim: { left: { '2026-10': { s1: { gb: 17.9, at: nowIso(), est: '10/26 04:42 기록 18.1GB − 그 뒤 약 0.2GB' }, s2: FV.delete() } } } }, sim1026c: { at: nowIso(), prevOvr: o, prevLeft: ((b.sim || {}).left || {})['2026-10'] || null } }, { merge: true }); did = true; }); if (did) log('📶 유심 남은 양 바로잡음 — 유심 2 23.23GB · 유심 1 17.9GB'); } catch (e) { log('sim1026c: ' + e.message, 1); } }
@@ -2454,7 +2540,7 @@ const server = http.createServer(async (req, res) => {
       return send(200, out); } finally { tickBusy = false; } }
     if (path === '/daily') { if (!keyOk(req)) return send(403, { ok: false, err: '열쇠가 맞지 않음' }); if (dailyBusy) return send(200, { ok: true, skipped: '앞 회차가 아직 도는 중' }); for (let w = 0; w < 25 && tickBusy; w++) await sleep(2000); /* (0.12.9) 1분 회차(주문 읽기)가 도는 중이면 끝나길 기다렸다가 — CPU 1개를 나눠 쓰며 회차를 길게 만들지 않게 */ const out = await dailyJobs(); return send(200, out); }
     if (path === '/px/me.gif') { /* (10/26) 우리 기기 등록 — 웹앱(모든 기기)·PC 수집기(알라딘 화면 안)·클라우드가 켜질 때·몇 시간마다 부름 → 그 IP(해시)·쿠키 열쇠를 7일 동안 '우리 기기'로 */
-      const q = new URL(req.url, 'http://x').searchParams; const dev = String(q.get('d') || '').replace(/[^\w가-힣 .\-()]/g, '').slice(0, 40) || '?'; const now = Date.now(); const J = pxJudge({ lid: 'me', ua: req.headers['user-agent'] || 'x', ref: '', ip: pxIp(req), cookie: req.headers.cookie }, { now, hash: pxHash, isSelf: () => false, seen: new Map() });
+      const q = new URL(req.url, 'http://x').searchParams; const dev = String(q.get('d') || '').replace(/[^\w가-힣 .\-()]/g, '').slice(0, 40) || '?'; const now = Date.now(); if (dev !== '?') algNet(dev, pxIp(req)); /* (정범님 10/26) 🔑 기기마다 망(공인 IP 앞 두 마디)을 로그인 통계에 */ const J = pxJudge({ lid: 'me', ua: req.headers['user-agent'] || 'x', ref: '', ip: pxIp(req), cookie: req.headers.cookie }, { now, hash: pxHash, isSelf: () => false, seen: new Map() });
       const exp = new Date(now + PX_SELF_DAYS * 864e5).toISOString(); PXSELF.set(J.ipk, Date.parse(exp)); PXSELF.set('c' + J.key, Date.parse(exp));
       const one = (id, kind) => C('px_self').doc(id).set({ kind, dev, devs: FieldValue.arrayUnion(dev), at: new Date(now).toISOString(), exp, n: FieldValue.increment(1), mobile: /Mobile|Android|iPhone/i.test(String(req.headers['user-agent'] || '')), uploadedAt: FieldValue.serverTimestamp() }, { merge: true }).catch(() => {});
       await Promise.race([Promise.all([one(J.ipk, 'ip'), one('c' + J.key, J.had ? 'cookie' : 'cookieNew')]), sleep(2500)]);
