@@ -1,4 +1,5 @@
-doc=app_settings/cloud
-doc=app_settings/qna_notify
-rawget=https://market.aladin.co.kr/m/join/mProvision.aspx?pType=4
-# 6478
+doc=app_settings/cloud_login
+logs=1&pc=JS-MAIN&from=202610260000
+logs=1&pc=MJ-MAIN&from=202610260000
+logs=1&pc=HOME&from=202610260000
+# 18526
