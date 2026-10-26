@@ -1,3 +1,2 @@
-doc=app_settings/peRecheck1026
-logs=1&pc=LOGGER&from=202610261200
-# 23030
+regfind=321321
+# 22018
