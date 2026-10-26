@@ -1,2 +1,3 @@
-peread=404865678
-# 1416
+doc=app_settings/regDelRecheck1026
+regfind=321321
+# 31184
