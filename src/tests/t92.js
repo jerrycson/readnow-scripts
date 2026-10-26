@@ -1,0 +1,6 @@
+require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  const errs = []; p.on('pageerror', (e) => errs.push(e.message));
+  const r = await p.evaluate(async () => { await db.collection('prd_system').doc('autoSched').set({ budget: { sim: { cur: 's2', list: { s1: { name: '유심 1', gb: 120 }, s2: { name: '유심 2', gb: 120 } }, left: { '2026-10': { s1: { gb: 0 } } } }, ovr: { mk: '2026-10', from: '2026-10-26', remainGB: 23.23, sim: 's2' } } }, { merge: true }); S.auto.cfg = (await db.collection('prd_system').doc('autoSched').get()).data(); simChip();
+    const b = document.getElementById('hsim'); const o = { shown: b.style.display !== 'none', txt: b.textContent }; b.click(); await new Promise((r) => setTimeout(r, 200)); const pop = document.querySelector('.rn-ipop'); o.pop = !!pop && /유심 1/.test(pop.textContent); const s1 = pop && pop.querySelector('[data-simset="s1"]'); s1.click(); await new Promise((r) => setTimeout(r, 400)); const d = (await db.collection('prd_system').doc('autoSched').get()).data(); o.req = d.budget.simReq && d.budget.simReq.to; S.auto.cfg = d; simChip(); o.txt2 = b.textContent; return o; });
+  console.log(JSON.stringify(r), errs.join('|')); console.log(r.shown && /유심 2/.test(r.txt) && r.pop && r.req === 's1' && /⏳/.test(r.txt2) && !errs.length ? '✓ t92 통과' : '❌ t92 실패');
+});
