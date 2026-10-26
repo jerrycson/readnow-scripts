@@ -1,1 +1,4 @@
-@kpin kpin/aud_20261026-091905.json
+logs=1&pc=HOME&from=202610261700
+doc=prd_jobs/pcBeat
+doc=prd_jobs/photos
+# 4690
