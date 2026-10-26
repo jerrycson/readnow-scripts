@@ -1,12 +1,12 @@
 {
- "holder": "auto3h",
- "what": "2시간 점검 06:13 — 웹앱 계산 기억 자료 종류 표 보강(🪶)",
- "since": "2026-10-26T21:17:38Z",
- "beat": "2026-10-26T21:17:38Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "kpsum",
-  "done": "요약 75개 넣음(3회 · 481f345·a901f35·b94baef) · 남은 약 325개(표시는 400+)",
-  "at": "2026-10-26T21:07:14Z"
+  "who": "auto3h",
+  "done": "웹앱 1.78.162 (2시간 점검 06:13 · 🪶 MEMO_DEPS 5개 · c65d7ee)",
+  "at": "2026-10-26T21:18:32Z"
  }
 }
