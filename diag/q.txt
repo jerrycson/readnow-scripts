@@ -1,4 +1,2 @@
-logs=1&pc=HOME&from=202610261700
-doc=prd_jobs/pcBeat
-doc=prd_jobs/photos
-# 4690
+lphotos=사랑의 꿈
+# 21045
