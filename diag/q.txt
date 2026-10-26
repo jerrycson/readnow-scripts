@@ -1,3 +1,4 @@
 doc=prd_system/autoSched
-logs=1&pc=LOGGER&from=202610262120
-# 16884
+logs=1&pc=LOGGER&from=202610262125
+pagetext=terms1026
+# 13352
