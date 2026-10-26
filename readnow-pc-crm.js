@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.104의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.105의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.104' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.104', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.105' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.105', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -331,6 +331,7 @@
     try { const r = await fetch(BASE + 'worders.aspx?searchType=1&limitDate=1', { credentials: 'include' }); const h = await r.text(); const d = new DOMParser().parseFromString(h, 'text/html'); return r.ok && !looksLoggedOut(r.url, d, h); } catch (e) { return false; }
   }
   async function autoRelogin(loginUrl, tryNo = 1) {
+    /* (1.89.105) 🚨 정범님 10/26 22:56 알라딘 계정 새 로그인 막힘(42FB6013 · 사람 시크릿 창도 막힘): JS-MAIN이 오늘 '로그인이 풀렸다'고 잘못 보고 네이버로 다시 로그인을 약 300번(04~08시 · 21~23시 1분마다) 되풀이 — 막힘의 가장 유력한 원인(🟡 추정 · 확정은 알라딘만 앎) → 자동으로 다시 로그인하는 것을 모두 멈춤(사람이 직접 로그인한 뒤에만) */ throw new StopSignal('LOGIN', '🚨 자동 다시 로그인 멈춤(알라딘 로그인 막힘 중 · 정범님 10/26) — 이 일은 건너뜀 · 로그인이 정말 풀렸으면 사람이 직접 로그인');
     if (globalThis.__rnPubHome || globalThis.__rnPubChrome) throw new Error('🛡 로거 크롬은 알라딘에 로그인하지 않음'); /* (1.69.0) */
     if (window.__rnLoginMethod && window.__rnLoginMethod() === 'naver') { setNow(`네이버로 다시 로그인 중 (${tryNo}번째)`); const ok = await window.__rnNaverLogin({ isLoggedIn, log: (m, lv) => log(m, lv === 'err' ? 'err' : lv ? 'warn' : 'ok'), stopped: () => pauseRequested, ret: BASE + 'worders.aspx' }); if (!ok && tryNo >= 2) throw new StopSignal('LOGIN', '네이버로 다시 로그인하지 못했습니다. 이 PC 브라우저에서 네이버에 로그인(로그인 상태 유지)한 뒤 이어하기를 눌러 주세요.'); return ok; }
     const cred = (GM_getValue('rn-cred', null) || GM_getValue('rnp-cred', null));

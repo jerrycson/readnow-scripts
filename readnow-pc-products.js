@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.104의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.105의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.104' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.104', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.105' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.105', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -976,7 +976,7 @@
   const pubItem = (url) => PUB.read('item', url, (g) => P.parseUsedItemInfo(g.doc, null), (g) => { const i = P.parseUsedItemInfo(g.doc, null); return !!(i && i.found); });
 
   async function isLoggedIn() { try { const r = await fetch('/scm/wmain.aspx', { credentials: 'include' }); const h = await r.text(); return r.ok && /wC2Cuser_logout/.test(h); } catch (e) { return false; } }
-  async function autoRelogin(loginUrl, tryNo) { if (PUBONLY) throw new Error('🛡 로거는 알라딘에 로그인하지 않음 — 로그인이 필요한 화면은 건너뜀'); /* (1.69.0) */
+  async function autoRelogin(loginUrl, tryNo) { /* (1.89.105) 🚨 정범님 10/26 22:56 알라딘 계정 새 로그인 막힘(42FB6013 · 사람 시크릿 창도 막힘): JS-MAIN이 오늘 '로그인이 풀렸다'고 잘못 보고 네이버로 다시 로그인을 약 300번(04~08시 · 21~23시 1분마다) 되풀이 — 막힘의 가장 유력한 원인(🟡 추정 · 확정은 알라딘만 앎) → 자동으로 다시 로그인하는 것을 모두 멈춤(사람이 직접 로그인한 뒤에만) */ throw new Error('🚨 자동 다시 로그인 멈춤(알라딘 로그인 막힘 중 · 정범님 10/26) — 이 화면은 건너뜀'); if (PUBONLY) throw new Error('🛡 로거는 알라딘에 로그인하지 않음 — 로그인이 필요한 화면은 건너뜀'); /* (1.69.0) */
     if (PUBONLY) throw new Error('🌐 공개 전용 PC — 알라딘에 로그인하지 않음');
     if (window.__rnLoginMethod && window.__rnLoginMethod() === 'naver') { ui(`네이버로 다시 로그인 중 (${tryNo}번째)`, 0, 0); const ok = await window.__rnNaverLogin({ isLoggedIn, log: (m, lv) => log(m, !!lv), stopped: () => stopFlag, ret: 'https://www.aladin.co.kr/scm/wmain.aspx' }); try { renderCred(); } catch (e) {} if (!ok && tryNo >= 2) throw new Error('네이버로 다시 로그인하지 못했습니다. 이 PC 브라우저에서 네이버에 로그인(로그인 상태 유지)한 뒤 같은 버튼을 다시 누르세요'); return ok; }
     const cred = (GM_getValue('rnp-cred', null) || GM_getValue('rn-cred', null));

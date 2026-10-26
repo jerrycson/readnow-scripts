@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.104
+// @version      1.89.105
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -185,7 +185,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   if (window.__rnNaverLogin) return;
   const NAVER_URL = (ret) => `https://www.aladin.co.kr/login/wlogin_naver.aspx?returnurl=${encodeURIComponent(ret || 'https://www.aladin.co.kr/scm/wmain.aspx')}&snsAppId=1&SecureOpener=1`;
   window.__rnLoginMethod = () => GM_getValue('rnu-login-method', 'naver');
-  window.__rnNaverLogin = async ({ isLoggedIn, log, stopped, ret }) => {
+  window.__rnNaverLogin = async ({ isLoggedIn, log, stopped, ret }) => { try { log('🚨 네이버 자동 다시 로그인 멈춤(알라딘 로그인 막힘 중 · 정범님 10/26)', 'err'); } catch (e) {} return false; /* (1.89.105) 위와 같음 */
     const L = (m, lv) => { try { log(m, lv); } catch (e) { window.__rnLog && window.__rnLog('로그인', lv === 'err' ? 'err' : lv ? 'warn' : 'info', m); } }; if (globalThis.__rnPubHome || globalThis.__rnPubChrome) { L('🛡 로거 크롬은 알라딘에 로그인하지 않음', 1); return false; } /* (1.69.0) */ if (window.__rnFeat && !window.__rnFeat('relogin')) { L('알라딘 로그인이 풀렸지만 이 PC는 🧩 \'자동 다시 로그인\'을 꺼 둠 — 직접 로그인해 주세요', 'err'); return false; } // 각 모듈의 log가 기록 창에도 남김
     const busy = GM_getValue('rnu-naver-login', null);
     if (busy && Date.now() - busy.at < 120000) { // 다른 탭·모듈이 이미 하는 중 → 결과만 기다림
@@ -1063,6 +1063,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     try { const r = await fetch(BASE + 'worders.aspx?searchType=1&limitDate=1', { credentials: 'include' }); const h = await r.text(); const d = new DOMParser().parseFromString(h, 'text/html'); return r.ok && !looksLoggedOut(r.url, d, h); } catch (e) { return false; }
   }
   async function autoRelogin(loginUrl, tryNo = 1) {
+    /* (1.89.105) 🚨 정범님 10/26 22:56 알라딘 계정 새 로그인 막힘(42FB6013 · 사람 시크릿 창도 막힘): JS-MAIN이 오늘 '로그인이 풀렸다'고 잘못 보고 네이버로 다시 로그인을 약 300번(04~08시 · 21~23시 1분마다) 되풀이 — 막힘의 가장 유력한 원인(🟡 추정 · 확정은 알라딘만 앎) → 자동으로 다시 로그인하는 것을 모두 멈춤(사람이 직접 로그인한 뒤에만) */ throw new StopSignal('LOGIN', '🚨 자동 다시 로그인 멈춤(알라딘 로그인 막힘 중 · 정범님 10/26) — 이 일은 건너뜀 · 로그인이 정말 풀렸으면 사람이 직접 로그인');
     if (globalThis.__rnPubHome || globalThis.__rnPubChrome) throw new Error('🛡 로거 크롬은 알라딘에 로그인하지 않음'); /* (1.69.0) */
     if (window.__rnLoginMethod && window.__rnLoginMethod() === 'naver') { setNow(`네이버로 다시 로그인 중 (${tryNo}번째)`); const ok = await window.__rnNaverLogin({ isLoggedIn, log: (m, lv) => log(m, lv === 'err' ? 'err' : lv ? 'warn' : 'ok'), stopped: () => pauseRequested, ret: BASE + 'worders.aspx' }); if (!ok && tryNo >= 2) throw new StopSignal('LOGIN', '네이버로 다시 로그인하지 못했습니다. 이 PC 브라우저에서 네이버에 로그인(로그인 상태 유지)한 뒤 이어하기를 눌러 주세요.'); return ok; }
     const cred = (GM_getValue('rn-cred', null) || GM_getValue('rnp-cred', null));
@@ -3963,7 +3964,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const pubItem = (url) => PUB.read('item', url, (g) => P.parseUsedItemInfo(g.doc, null), (g) => { const i = P.parseUsedItemInfo(g.doc, null); return !!(i && i.found); });
 
   async function isLoggedIn() { try { const r = await fetch('/scm/wmain.aspx', { credentials: 'include' }); const h = await r.text(); return r.ok && /wC2Cuser_logout/.test(h); } catch (e) { return false; } }
-  async function autoRelogin(loginUrl, tryNo) { if (PUBONLY) throw new Error('🛡 로거는 알라딘에 로그인하지 않음 — 로그인이 필요한 화면은 건너뜀'); /* (1.69.0) */
+  async function autoRelogin(loginUrl, tryNo) { /* (1.89.105) 🚨 정범님 10/26 22:56 알라딘 계정 새 로그인 막힘(42FB6013 · 사람 시크릿 창도 막힘): JS-MAIN이 오늘 '로그인이 풀렸다'고 잘못 보고 네이버로 다시 로그인을 약 300번(04~08시 · 21~23시 1분마다) 되풀이 — 막힘의 가장 유력한 원인(🟡 추정 · 확정은 알라딘만 앎) → 자동으로 다시 로그인하는 것을 모두 멈춤(사람이 직접 로그인한 뒤에만) */ throw new Error('🚨 자동 다시 로그인 멈춤(알라딘 로그인 막힘 중 · 정범님 10/26) — 이 화면은 건너뜀'); if (PUBONLY) throw new Error('🛡 로거는 알라딘에 로그인하지 않음 — 로그인이 필요한 화면은 건너뜀'); /* (1.69.0) */
     if (PUBONLY) throw new Error('🌐 공개 전용 PC — 알라딘에 로그인하지 않음');
     if (window.__rnLoginMethod && window.__rnLoginMethod() === 'naver') { ui(`네이버로 다시 로그인 중 (${tryNo}번째)`, 0, 0); const ok = await window.__rnNaverLogin({ isLoggedIn, log: (m, lv) => log(m, !!lv), stopped: () => stopFlag, ret: 'https://www.aladin.co.kr/scm/wmain.aspx' }); try { renderCred(); } catch (e) {} if (!ok && tryNo >= 2) throw new Error('네이버로 다시 로그인하지 못했습니다. 이 PC 브라우저에서 네이버에 로그인(로그인 상태 유지)한 뒤 같은 버튼을 다시 누르세요'); return ok; }
     const cred = (GM_getValue('rnp-cred', null) || GM_getValue('rn-cred', null));
