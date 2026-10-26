@@ -1,1 +1,4 @@
-@kpin kpin/aud_20261026-133225.json
+doc=app_settings/ship_auto
+shpauto=6
+doc=prd_jobs/cloudBeat
+# 23316
