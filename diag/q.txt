@@ -1,1 +1,3 @@
-@kpin kpin/aud_20261026-052209.json
+doc=app_settings/ship_auto
+doc=shp_state/confirm
+# 18500
