@@ -1,5 +1,4 @@
-doc=app_settings/cloud_login
-logs=1&pc=JS-MAIN&from=202610260000
-logs=1&pc=MJ-MAIN&from=202610260000
-logs=1&pc=HOME&from=202610260000
-# 18526
+logs=1&pc=JS-MAIN&from=202610200000
+logs=1&pc=HOME&from=202610200000
+logs=1&pc=MJ-MAIN&from=202610200000
+# 28732
