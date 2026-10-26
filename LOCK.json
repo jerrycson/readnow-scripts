@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "auto3h",
+ "what": "웹앱 출고 화면 주문·고객 색인 메모리(2시간 점검)",
+ "since": "2026-10-26T05:20:02Z",
+ "beat": "2026-10-26T05:20:02Z",
  "ask": null,
  "last": {
   "who": "chat",
