@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.94의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.95의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.94' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.94', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.95' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.95', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2328,7 +2328,7 @@
   const cloudAlive = async () => { if (!cloudSt || Date.now() - cloudStAt > 20000) { cloudStAt = Date.now(); try { cloudSt = (await C('app_settings').doc('cloud').get()).data() || {}; } catch (e) { cloudSt = cloudSt || {}; } } const at = Date.parse(cloudSt.at || 0) || 0; return { alive: Date.now() - at < 150e3 && cloudSt.ok !== false, ageS: Math.round((Date.now() - at) / 1000), err: cloudSt.err || null }; }; /* (1.77.5) 출고 과정(발송준비시작·현금 판매 중지·유의 사항 다시 읽기)은 클라우드 먼저 */
   const cmdMine = (t) => { const f = (k) => !window.__rnFeat || window.__rnFeat(k); if (t === 'startDelivery') return f('ship'); if (t === 'cashStop') return f('cash'); if (/^reg/.test(String(t))) return f('reg'); return !window.__rnPaused; };
   /* (1.88.4) 정범님 10/20 'JS-MAIN: 웹앱이 맡긴 일을 받았다는 표시가 기록에 전혀 없음' — 맡은 순간과 끝난 순간을 기록 창에 한 줄씩(종류·이름·걸린 시간) */
-  const CMD_KO = { startDelivery: '발송준비시작', usedInfo: '유의 사항 다시 읽기', c2bAdd: '알라딘 팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지', prdEdit: '✏ 상품 정보 수정', lookup: '사진 가격 조회', regDel: '등록 상품 삭제', regLookup: '📥 등록 조회', extLookup: '🌐 외부 정보', extTest: '🌐 외부 정보 시험', metrics: '시장 지표 다시 읽기', regBulk: '📦 대량 등록', regBulkMock: '🧷 모의 대량 등록', regOne: '🤖 개별·미등록 등록', regOneMock: '🧷 모의 개별 등록' };
+  const CMD_KO = { startDelivery: '발송준비시작', usedInfo: '유의 사항 다시 읽기', c2bAdd: '알라딘 팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지', prdEdit: '✏ 상품 정보 수정', qnaReply: '💬 묻고 답하기 답변', lookup: '사진 가격 조회', regDel: '등록 상품 삭제', regLookup: '📥 등록 조회', extLookup: '🌐 외부 정보', extTest: '🌐 외부 정보 시험', metrics: '시장 지표 다시 읽기', regBulk: '📦 대량 등록', regBulkMock: '🧷 모의 대량 등록', regOne: '🤖 개별·미등록 등록', regOneMock: '🧷 모의 개별 등록' };
   /* ══ (1.89.65) 🔢 정보수정 화면으로 판매 상품 수량·판매가·관리코드·판매 상태 확인 (맡긴 일 qtyChk) ══
    *  정범님 10/25 '엔진이 수량을 셀 때 샵매니저 목록을 보는 게 잘못 — 목록은 수량 반영이 안 될 때가 많으니 정보수정에 들어가 확인. 지금 당장 로그인 PC들이 재고 전체를 다시 세고, 앞으로 판매 중 상품 정보는 반드시 정보수정 화면에서'
    *  · 맡긴 일 칸은 qty_chk(shp_cmds가 아님 — 웹앱들이 듣는 맡긴 일 칸에 수백 묶음을 넣지 않게) · 한 묶음 = 상품 40개 · 로그인한 PC가 한 번에 한 묶음씩(여러 PC가 나눠 함) · 상품마다 정보수정 화면(wrecord.aspx?action=2&UpdateItemId=)을 읽어 우리 기록과 다른 칸만 고침 + 변경 이력(prd_listing_changes source 'editPage')
@@ -2404,6 +2404,7 @@
     else if (v.type === 'prdEdit') { if (typeof window.__rnPrdEdit !== 'function') { await ref.set({ status: 'queued', claim: null, pcSkip: `PC 수집기 ${APP_VER}에 상품 수정 길이 아직 안 열림(상품 조회·등록 화면이 열린 탭만)`, uploadedAt: TS() }, { merge: true }); return; } await window.__rnPrdEdit(ref, v, id); return; } /* (1.89.26) ✏ 상품 정보 수정 — 클라우드가 못 받을 때 */
     else if (v.type === 'cashStop') { await cashStopCmd(ref, v); return; } // (1.37.0) 현금 판매 → 알라딘 판매중지 자동 // (1.35.0) 알라딘 매입: 팔기 장바구니에 담기
     else if (v.type === 'lookup') { LOOK_PRIO++; try { await lookupCmd(ref, v); } finally { LOOK_PRIO--; } return; } /* (1.78.2) 사진 가격 조회도 사람이 기다림 — 알라딘 차례 먼저 */
+    else if (v.type === 'qnaReply') { await qnaReplyCmd(ref, v); return; } /* (10/26) 💬 웹앱에서 쓴 묻고 답하기 답변 → 샵매니저 */
     else if (v.type === 'regDel') { await regDelCmd(ref, v); return; } /* (1.81.0) 🗑 웹앱에서 지운 등록 상품 → 알라딘 삭제 */
     else if (v.type === 'regLookup') { await regLookupCmd(ref, v); return; } /* (1.77.0) 📥 등록 조회 = 샵매니저 등록 검색(로그인 PC만 — 로거는 pcCan에서 거름) */
     else if (v.type === 'extLookup' || v.type === 'extTest') { await extCmd(ref, v); return; } // (1.57.0) 🌐 외부 정보 — 알라딘과 상관없음
@@ -2756,6 +2757,82 @@
     try { const f = globalThis.__rnById('rn-c2b-frame'); if (f) { f.src = 'about:blank'; f.remove(); } } catch (e) {}
     const ok = Object.values(results).filter((r) => ['added', 'already'].includes(r.state)).length; await ref.set({ status: 'done', results, n, cartN, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
     log(`알라딘 매입: 장바구니 ${ok} / ${items.length}권 (지금 장바구니 ${cartN}권)`, ok === items.length ? 0 : 1); }
+  /* ══════════ (10/26) 💬 웹앱에서 쓴 묻고 답하기 답변 → 샵매니저 (맡긴 일 qnaReply · 로그인한 PC만) ══════════
+   *  정범님 10/26 '웹앱 문의 모음에서 문의를 눌러 직접 답변 — 입력하면 실시간으로 샵매니저 묻고 답하기에'
+   *  ① 지금 답을 읽음(상세 화면 · 답이 없으면 수정 화면의 답변 칸) → 이미 같은 글이면 보내지 않고 '확인됨'
+   *     웹앱이 본 답(prevAnswer)과 지금 알라딘 답이 다르면(그사이 알라딘에서 누가 답하거나 고침) 덮어쓰지 않고 실패 + 지금 답을 돌려줌
+   *  ② 답변 화면(새 답 = questionid=…, 고치기 = &method=edit)을 받아 그 화면의 양식(form1)을 그대로 — 이름 있는 칸 전부 + 답변 칸(txtAnswer)만 바꿈 + 등록 이미지 단추(btnAnswerAddEdit) 값 —
+   *     양식이 보내는 곳(샵매니저)으로 보냄(qrBuildPost · 정범님이 보낸 실제 화면 10/26으로 확인) · 고치기는 화면에 지금 답의 번호(hidAnswerId)가 있을 때만(없으면 새 답이 하나 더 생길 수 있어 안 보냄) · 응답의 알림 글을 받아 적음
+   *  ③ 상세 화면을 다시 읽어(parseQnaDetail) 답이 들어갔는지 확인 → done / 아니면 fail(까닭 + 화면의 양식·단추 목록 probe — 다음에 맞추려고)
+   *  ④ 확인되면 crm_interactions/aladin_qna_{번호}에 answer·answeredAt·answeredBy (옛 답은 crm_hist에 먼저 — 지우지 않음)
+   *  실행 문(exec_log)에 시작을 적을 수 있을 때만 · 같은 맡김(문서·차례)은 두 번 보내지 않음 */
+  const QR_URL = (id, edit) => `https://www.aladin.co.kr/scm/wUsedShopC2CAnswer.aspx?questionid=${encodeURIComponent(id)}${edit ? '&method=edit' : ''}`;
+  const qrLoose = (s) => String(s == null ? '' : s).replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (m, k) => ({ amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'", nbsp: ' ' }[k])).replace(/\s+/g, ''); /* 상세 화면 글(parseQnaDetail)은 &amp; 같은 글자 표시가 남을 수 있어 풀어서 비교 */ /* 줄 바꿈·띄어쓰기만 다른 것은 같은 답(알라딘 화면은 <br>·공백을 바꿔 보여 줌) */
+  const qrTaVal = (ta) => (ta ? String(ta.value != null && ta.value !== '' ? ta.value : ta.textContent || '').trim() : '');
+  async function qrRead(id) { const PO = window.ReadnowOrders || globalThis.ReadnowOrders; if (!PO || !PO.parseQnaDetail) throw new Error('readnow-orders-core.js가 없음 — 수집기 새로고침');
+    const g = await getDoc(QR_URL(id)); if (AL.looksLoggedOut(g.finalUrl || g.url, g.doc, { titleOk: /샵매니저/ })) throw Object.assign(new Error('알라딘 로그인이 풀림'), { login: true });
+    if (!g.doc.querySelector('#divQuestion')) throw new Error('답변 화면에 질문 칸(#divQuestion)이 없음 — 지운 질문이거나 화면이 바뀜');
+    const d = PO.parseQnaDetail(g.doc, QR_URL(id)); let ans = d.answer || qrTaVal(g.doc.querySelector('#txtAnswer')) || null; let from = d.answer ? 'detail' : ans ? 'ta' : null;
+    if (!ans) { try { const e2 = await getDoc(QR_URL(id, true)); const v = qrTaVal(e2.doc.querySelector('#txtAnswer')); if (v) { ans = v; from = 'edit'; } } catch (e) {} }
+    return { d, ans, from }; }
+  /* 화면에서 답변 칸과 '등록/수정' 단추 찾기 — 글자·이름으로 점수를 매겨 가장 그럴듯한 것 하나(취소·삭제·목록·차단·검색은 빼고) · 못 찾으면 null + 화면 목록(probe) */
+  function qrFindForm(doc) { const ta = doc.querySelector('#txtAnswer') || doc.querySelector('textarea[id*="Answer" i], textarea[name*="Answer" i]') || null;
+    const lab = (el) => [el.tagName === 'INPUT' ? el.value || '' : el.textContent || '', el.getAttribute('alt') || '', el.getAttribute('title') || '', ...[...el.querySelectorAll('img[alt]')].map((i) => i.getAttribute('alt'))].join(' ').replace(/\s+/g, ' ').trim();
+    const sig = (el) => [el.id || '', el.getAttribute('name') || '', el.getAttribute('onclick') || '', el.getAttribute('href') || '', el.getAttribute('src') || '', ...[...el.querySelectorAll('img[src]')].map((i) => i.getAttribute('src'))].join(' ');
+    const BAD = /취소|삭제|목록|닫기|차단|검색|로그아웃|이전|다음|인쇄|도움말|메인|홈|전체\s*보기/; const BADS = /logout|delete|\bdel|cancel|list\.aspx|search|block|print|close\(/i;
+    const all = [...doc.querySelectorAll('input[type=submit],input[type=button],input[type=image],button,a[href],a[onclick],img[onclick],span[onclick],div[onclick]')];
+    const fm = ta ? ta.closest('form') : null; const ti = ta ? all.findIndex((el) => ta.compareDocumentPosition(el) & 4) : -1;
+    const C0 = all.map((el, i) => { const l = lab(el), s = sig(el); let sc = 0;
+      if (/답변/.test(l) && /등록|저장|수정|하기|완료/.test(l)) sc += 6; else if (/^(등록|저장|수정|확인|등록하기|저장하기|수정하기|수정완료|등록완료)$/.test(l)) sc += 5; else if (/등록|저장|수정/.test(l)) sc += 3;
+      if (/answer|reply|save|regist|submit|btn_?ok|update|modify|btnreg|btn_reg|confirm/i.test(s)) sc += 2; if (/__doPostBack|WebForm_DoPostBack|submit\(/.test(s) || el.type === 'submit' || el.type === 'image') sc += 1;
+      if (BAD.test(l)) sc -= 20; if (BADS.test(s)) sc -= 8; if (el.tagName === 'A' && /^(https?:|\/|[\w.]+\.aspx)/i.test(el.getAttribute('href') || '') && !/__doPostBack/.test(el.getAttribute('href') || '')) sc -= 6; /* 다른 화면으로 가는 링크(수정 화면으로 가는 '수정' 링크 등)는 보내기 단추가 아님 */
+      if (fm && el.closest('form') === fm) sc += 1; if (ti >= 0 && i >= ti) sc += 1; return { el, i, l: l.slice(0, 40), s: s.slice(0, 120), sc, near: ti >= 0 ? Math.abs(i - ti) : 999 }; });
+    const ok = C0.filter((x) => x.sc >= 4).sort((a, b) => b.sc - a.sc || a.near - b.near); const btn = ok.length ? ok[0].el : null;
+    const probe = { url: String(doc.URL || '').slice(0, 160), title: String(doc.title || '').slice(0, 60), forms: [...doc.forms].slice(0, 5).map((f) => ({ id: f.id || '', name: f.getAttribute('name') || '', action: String(f.getAttribute('action') || '').slice(0, 100), method: f.getAttribute('method') || '' })),
+      tas: [...doc.querySelectorAll('textarea')].slice(0, 5).map((t) => ({ id: t.id || '', name: t.getAttribute('name') || '', max: t.maxLength > 0 ? t.maxLength : null, len: qrTaVal(t).length })),
+      btns: C0.filter((x) => x.sc > -5).sort((a, b) => b.sc - a.sc).slice(0, 20).map((x) => ({ tag: x.el.tagName, l: x.l, s: x.s, sc: x.sc })), pick: btn ? (ok[0].l || ok[0].s).slice(0, 60) : null };
+    return { ta, btn, probe }; }
+  async function qnaReplyCmd(ref, v) { const id = String(v.questionId || '').replace(/\D/g, ''); const text = String(v.text || '').replace(/\r/g, '').trim(); const t0 = Date.now(); const ex = (s) => ref.set({ ...s, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {});
+    const fail = async (msg, more) => { await ref.set({ status: 'fail', msg, doneAt: nowIso(), by: PC_NAME, ms: Date.now() - t0, ...(more || {}), uploadedAt: TS() }, { merge: true }); log(`💬 묻고 답하기 답변 실패 (문의 ${id}): ${msg}`, 1); };
+    if (!id || !text) return fail('문의 번호나 답변 글이 없음');
+    const done = async (now, how, extra) => { const at = nowIso(); const qref = C('crm_interactions').doc(`aladin_qna_${id}`);
+      try { const od = (await qref.get()).data() || {}; if (od.answer && qrLoose(od.answer) !== qrLoose(now)) await C('crm_hist').doc(`crm_interactions_aladin_qna_${id}_${at.replace(/[^0-9]/g, '').slice(0, 17)}`).set({ col: 'crm_interactions', docId: `aladin_qna_${id}`, at, keys: ['answer', 'answerStatus'], prev: { answer: od.answer, answerStatus: od.answerStatus ?? null }, by: PC_NAME, why: '웹앱에서 답변 고침' });
+        await qref.set({ answer: now, answerStatus: 'Yes', answeredAt: at, answeredBy: v.by || null, answeredVia: 'webapp', answeredPc: PC_NAME, answerCmd: ref.id, ...W() }, { merge: true }); } catch (e) { log('💬 답변은 샵매니저에 들어갔지만 문의 기록에 못 적음: ' + (e.code || e.message), 1); }
+      await ref.set({ status: 'done', step: 'ok', result: { state: 'ok', how, answer: now, ...(extra || {}) }, msg: how === 'same' ? '샵매니저에 이미 같은 답변이 있음 — 다시 보내지 않음' : '샵매니저 묻고 답하기에 답변이 들어간 것을 확인함', doneAt: at, by: PC_NAME, ms: Date.now() - t0, uploadedAt: TS() }, { merge: true });
+      log(`💬 묻고 답하기 답변 ${how === 'same' ? '이미 같음' : '등록 확인'} (문의 ${id}${v.title ? ' · ' + String(v.title).slice(0, 30) : ''}, ${Math.round((Date.now() - t0) / 1000)}초)`); };
+    let cur; await ex({ step: 'read', msg: `${PC_NAME}: 샵매니저의 지금 답변을 읽는 중` });
+    try { cur = await qrRead(id); } catch (e) { return fail((e.login ? `${PC_NAME}의 알라딘 로그인이 풀림 — 로그인한 뒤 웹앱에서 다시 하기` : '답변 화면을 못 읽음: ' + e.message) + ' (아무것도 보내지 않음)'); }
+    if (cur.ans && qrLoose(cur.ans) === qrLoose(text)) return done(cur.ans, 'same');
+    const prev = v.prevAnswer == null ? '' : String(v.prevAnswer); if (qrLoose(cur.ans || '') !== qrLoose(prev)) return fail(cur.ans ? (prev ? '그사이 샵매니저의 답변이 바뀜 — 덮어쓰지 않음(웹앱에서 지금 답을 보고 다시)' : '그사이 샵매니저에 답변이 생김 — 덮어쓰지 않음(웹앱에서 지금 답을 보고 고치기로 다시)') : '웹앱이 본 답변이 샵매니저에서 없어짐 — 덮어쓰지 않음(웹앱에서 다시)', { result: { state: 'changed', answer: cur.ans || null } });
+    const xk = `${ref.id}:${v.tries || 1}`; const gate = await exBegin('qnaReply', xk, { id, n: text.length, edit: !!cur.ans });
+    if (!gate.ok) { if (gate.state === 'done') { try { const c2 = await qrRead(id); if (c2.ans && qrLoose(c2.ans) === qrLoose(text)) return done(c2.ans, 'same'); } catch (e) {} } return fail('실행 문: ' + (gate.why || '같은 답변을 이미 보낸 기록이 있음') + ' — 샵매니저 묻고 답하기에서 확인'); }
+    let st = 'failed', why = null;
+    try { await ex({ step: 'open', msg: `${PC_NAME}: 답변 ${cur.ans ? '수정' : '등록'} 화면을 읽는 중` }); await PACE.wait(sleep);
+      const pg = QR_URL(id, !!cur.ans); const r0 = await fetch(pg, { credentials: 'include', cache: 'no-store' }); if (!r0.ok) throw new Error('답변 화면 응답 ' + r0.status);
+      const d = new DOMParser().parseFromString(await r0.text(), 'text/html'); if (AL.looksLoggedOut(r0.url, d, { titleOk: /샵매니저/ })) throw new Error('알라딘 로그인이 풀림 (아무것도 보내지 않음)');
+      const P0 = qrBuildPost(d, pg, text); if (P0.why) { why = P0.why; await fail(why + ' (아무것도 보내지 않음)', { probe: qrFindForm(d).probe }); return; }
+      if (cur.ans && !P0.answerId) { why = '수정 화면에 지금 답의 번호(hidAnswerId)가 없음 — 그대로 보내면 고치기가 아니라 새 답이 하나 더 생길 수 있어 보내지 않음'; await fail(why, { probe: qrFindForm(d).probe }); return; }
+      await ex({ step: 'send', msg: `${PC_NAME}: 알라딘 답변 화면의 '${P0.btn}' 단추와 같은 요청을 보냄`, pick: P0.btn }); await PACE.wait(sleep);
+      const r1 = await fetch(P0.action, { method: 'POST', credentials: 'include', cache: 'no-store', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }, body: P0.body });
+      const h1 = await r1.text(); const msgs = [...h1.matchAll(/alert\(\s*['"]([^'"]{1,200})['"]/g)].map((m) => m[1]).filter((m) => m !== '답변 내용을 입력하세요.').slice(0, 6); /* 화면의 빈 칸 검사 글(함수 안 글)은 뺌 */
+      await ex({ step: 'verify', msg: `${PC_NAME}: 답변이 들어갔는지 상세 화면을 다시 읽는 중 (보낸 응답 HTTP ${r1.status})`, alerts: msgs, http: r1.status });
+      let c3 = null; for (let k = 0; k < 3 && !(c3 && c3.ans && qrLoose(c3.ans) === qrLoose(text)); k++) { if (k) await sleep(2500); try { c3 = await qrRead(id); } catch (e) { why = '확인 읽기 실패: ' + e.message; } }
+      if (c3 && c3.ans && qrLoose(c3.ans) === qrLoose(text)) { st = 'done'; await done(c3.ans, cur.ans ? 'edit' : 'new', { alerts: msgs, pick: P0.btn, http: r1.status }); }
+      else { why = why || `보냈지만(HTTP ${r1.status}) 상세 화면에 이 답변이 보이지 않음${msgs.length ? ' · 알라딘 알림: ' + msgs.join(' / ').slice(0, 200) : ''}`; await fail(why, { probe: qrFindForm(d).probe, alerts: msgs, http: r1.status, result: { state: 'notSeen', answer: (c3 && c3.ans) || null } }); } }
+    catch (e) { why = e.message; await fail(e.message); }
+    finally { await exEnd('qnaReply', xk, st, st === 'done' ? null : why); } }
+  /* 알라딘 답변 화면(form1 · ASP.NET)을 받은 그대로 보내는 요청으로 — 양식의 이름 있는 칸을 모두 그대로 모으고 답변 칸(txtAnswer)만 바꾼 뒤, 등록 이미지 단추(btnAnswerAddEdit)를 누른 것과 같은 값(.x·.y)을 붙임
+   *  (정범님이 보낸 실제 화면 10/26: form1 post → 같은 주소 · hidden __VIEWSTATE·__VIEWSTATEGENERATOR·IsAnswerEmail·hidAnswerId · textarea txtAnswer · input type=image btnAnswerAddEdit — 화면 검사는 빈 칸이면 '답변 내용을 입력하세요.'뿐) */
+  function qrBuildPost(doc, pageUrl, text) { const ta = doc.querySelector('textarea[name="txtAnswer"]') || doc.querySelector('#txtAnswer'); if (!ta || !ta.getAttribute('name')) return { why: '답변 화면에서 답변 칸(txtAnswer)을 못 찾음' };
+    const form = ta.closest('form'); if (!form) return { why: '답변 칸이 양식(form) 안에 없음' };
+    const btn = form.querySelector('input[name="btnAnswerAddEdit"]') || (() => { const b = qrFindForm(doc).btn; return b && b.getAttribute('name') && b.closest('form') === form && /^(image|submit)$/i.test(b.getAttribute('type') || '') ? b : null; })(); if (!btn) return { why: '답변 화면에서 등록 단추(btnAnswerAddEdit)를 못 찾음' };
+    const max = +ta.getAttribute('maxlength') || 0; if (max > 0 && text.length > max) return { why: `답변이 너무 김 — ${text.length}자 (알라딘 답변 칸 최대 ${max}자)` };
+    const B = new URLSearchParams(); for (const el of form.querySelectorAll('input[name],select[name],textarea[name]')) { if (el.disabled) continue; const n = el.getAttribute('name'); const ty = String(el.getAttribute('type') || '').toLowerCase();
+      if (el === ta) { B.append(n, text); continue; } if (el.tagName === 'SELECT') { [...el.options].filter((o) => o.selected).forEach((o) => B.append(n, o.value)); continue; } if (el.tagName === 'TEXTAREA') { B.append(n, el.value); continue; }
+      if (['image', 'submit', 'button', 'reset', 'file'].includes(ty)) continue; if ((ty === 'checkbox' || ty === 'radio') && !el.hasAttribute('checked')) continue; B.append(n, el.getAttribute('value') ?? (ty === 'checkbox' || ty === 'radio' ? 'on' : '')); }
+    const bn = btn.getAttribute('name'); if (String(btn.getAttribute('type') || '').toLowerCase() === 'image') { B.append(bn + '.x', '10'); B.append(bn + '.y', '10'); } else B.append(bn, btn.getAttribute('value') || '');
+    const action = new URL(form.getAttribute('action') || pageUrl, pageUrl).href; if (!/^https:\/\/www\.aladin\.co\.kr\/scm\//i.test(action)) return { why: '양식이 보내는 곳이 샵매니저가 아님: ' + action.slice(0, 80) };
+    const aid = form.querySelector('input[name="hidAnswerId"]'); return { action, body: B.toString(), btn: bn, answerId: aid ? String(aid.getAttribute('value') || '').trim() : '', n: [...B.keys()].length }; }
   { let invUn = null, back = 5000; const sub = () => { if (PUBONLY || !auth.currentUser || invUn) return; /* (1.64.0) 송장 = 로그인 일 */ invUn = C('shp_invoices').where('status', '==', 'queued').onSnapshot((ss) => { back = 5000; ss.forEach((d) => claimInvoice(d.id).catch((e) => log('송장 입력 맡기 실패: ' + (e.code || e.message), 1))); }, (e) => { log(`송장 듣기가 끊김(${e.code || e.message}) — 다시 들음`, 1); invUn = null; setTimeout(sub, back); back = Math.min(back * 2, 5 * 60000); }); }; auth.onAuthStateChanged((u) => { if (!u) { if (invUn) { invUn(); invUn = null; } return; } sub(); }); } /* (1.59.0) 끊기면 다시 붙음 · 다시 로그인해도 하나만 */
   async function claimInvoice(id) { const ref = C('shp_invoices').doc(id); let ok = false; if ((window.__rnRest && window.__rnRest())) return;
     await db.runTransaction(async (tx) => { ok = false; /* (1.89.13) 트랜잭션이 다시 돌면 앞 시도의 값이 남지 않게 */ const sn = await tx.get(ref); const v = sn.data(); if (!v || v.status !== 'queued') return; tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, uploadedAt: TS() }); ok = true; });
