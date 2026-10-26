@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.99
+// @version      1.89.100
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -20,15 +20,15 @@
 // @downloadURL  https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-orders-core.js?v=0.3.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.2
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.2
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.1
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.108
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.109
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.4
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.2
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.18.7
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.18.8
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
@@ -1417,9 +1417,13 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     try {
       if (!FB.apps.length) FB.initializeApp(FIREBASE_CONFIG);
       fdb = FB.firestore();
-      FB.auth().onAuthStateChanged((u) => { fbUser = u; if (u) { watchUsage(); watchLock(); } render(); });
+      FB.auth().onAuthStateChanged((u) => { fbUser = u; if (u) { watchUsage(); watchLock(); pxSelfPingPc(); } render(); });
+      /* (10/26 밤) 🔬 상품 조회수 실험 — 이 PC를 '우리 기기'로 클라우드에 알림(/px/me.gif · 7일 · 알라딘 화면 안에서 부르므로 손님 화면과 같은 쿠키 칸) → 이 PC에서 알라딘 상품 화면·샵매니저를 열어도 사람 조회에서 빠짐 · 같은 PC의 알라딘 탭끼리 한 시간에 한 번만 */
+      setInterval(() => { if (fbUser) pxSelfPingPc(); }, 15 * 60e3);
     } catch (e) { console.error(e); }
   }
+  function pxSelfPingPc() { try { if (window.top !== window || !fdb) return; let t = 0; try { t = +localStorage.getItem('rnPxSelfAt') || 0; } catch (e) {} if (Date.now() - t < 60 * 60e3) return; try { localStorage.setItem('rnPxSelfAt', String(Date.now())); } catch (e) {}
+    fdb.collection('app_settings').doc('main').get().then((d) => { const cu = String(((d.exists && d.data()) || {}).cloudUrl || '').replace(/\/+$/, ''); if (!/^https:\/\//.test(cu)) return; const im = new Image(); im.referrerPolicy = 'no-referrer'; im.src = `${cu}/px/me.gif?d=${encodeURIComponent((window.__rnPcName && window.__rnPcName.get()) || 'PC')}&_=${Date.now()}`; }).catch(() => {}); } catch (e) {} }
   // 로그인: 구글 창 방식(기본). 창 방식이 이 환경에서 안 되면 Firebase 전용 이메일·비밀번호 방식 사용.
   let fbLoggingIn = false;
   async function fbLogin() {
@@ -3391,7 +3395,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     </div>
     <div class="sec">
       <p class="cap">우리 상품 보강 (알라딘 줄)</p>
-      <div class="g2"><button class="b2" data-job="nbMarket" title="알라딘 미등록·세트·새상품 페이지 없는 상품: 바깥 검색(중고) 화면의 따로 등록된 같은 책들로 경쟁·시세">검색 시세 (미등록·세트)</button><button class="b2" data-job="bench" title="웹앱 경영 탭 → 🎯 집중 벤치마킹에서 고른 판매자의 중고샵 목록 전체를 끝까지 읽어, 어제와 견줘 새로 올린 것·사라진 것(팔렸거나 내림)·값 바뀐 것을 기록 (하루 한 번 · 일괄 수집에도 들어 있음)">🎯 집중 벤치마킹</button><button class="b2" data-job="benchForce" title="주기(n시간·n일에 한 번)와 '끝난 지 20시간 안이면 건너뜀' 규칙을 무시하고, 웹앱에서 고른 판매자 목록의 맨 처음 판매자부터 차례로 모두 지금 읽음 · 멈췄다 이어 하면 이번에 이미 읽은 판매자는 건너뜀(3일 안)">🎯 강제: 처음 판매자부터</button><button class="b2" data-job="benchDetail" title="집중 벤치마킹으로 모은 상품(따라가는 판매자의 지금 숍 상품) 중 아직 상품 페이지 정보(ISBN·분류·출간 연월)가 없는 것만 상품 페이지를 열어 읽음 — 웹앱 ⚙ 모을 정보의 '상품 페이지 정보' 켜짐·꺼짐과 상관없이 · 판매자마다 끝까지 · 한 번 읽은 상품·다른 판매자와 같은 책·우리 도서 기록에 있는 책은 열지 않음 · 멈추면 100개마다 저장한 데까지 남음">📖 벤치마킹 상품 페이지 정보</button><span class="rn-bfs" title="켜면 '🎯 강제: 처음 판매자부터'가 이 시간 안에 끝까지 읽은 판매자는 건너뛰고 나머지를 모두 읽음 (웹앱 🎯 자세히의 같은 토글과 하나 — Firebase에 저장)"><label><input type="checkbox" id="rnBfOn"> ⏭ 강제 실행 때 최근</label> <input type="number" id="rnBfH" min="1" max="168" value="20"> <label for="rnBfOn" title="숍 끝까지 다 읽은 회차가 그 시간 안에 끝난 판매자만 건너뜀 — 50% 넘어 쓴 회차라도 뒤쪽을 못 읽었으면 다시 읽음 · 멈춘 판매자는 📍 멈춘 자리부터 이어 읽음">시간 안에 숍 끝까지 다 읽은 판매자 건너뛰기</label></span><span id="rnBrTxt" style="display:block;font-size:10.5px;color:#5B6B66;margin:2px 0" title="웹앱 🎯 판에서 바꿈 (모든 PC 같음)"></span><label style="display:block;font-size:11px;margin:3px 0" title="이 PC가 놀고 있을 때: 다른 PC가 도는 🎯 한 바퀴에 같이 들어가 판매자를 나눠 읽고, ⏰ 매일 자동의 공개 읽기 일(벤치마킹·시장 지표·탐색 등)을 담당 PC 대신 맡음 — 로그인이 필요한 일(주문·출고·상품 조회·고객)은 담당 PC만 (이 PC에만 적용)"><input type="checkbox" id="rnPubHelp"> 🌐 남는 PC 돕기 (공개 읽기 나눠 하기 · 이 PC)</label><button class="b2" data-job="photos" title="새상품 표지가 없는 상품: 우리 상품 페이지의 사진을 전부">우리 상품 사진</button><button class="b2" data-job="usedInfo" title="우리 책 온라인 중고 첫 페이지에서 우리보다 앞에 있는 매물과 바로 뒤 몇 개(설정): 중고상품 구매 유의 사항 글과 사진 — 가격 결정 화면 블록의 ? 표시">경쟁 매물 유의사항·사진</button></div>
+      <div class="g2"><button class="b2" data-job="nbMarket" title="알라딘 미등록·세트·새상품 페이지 없는 상품: 바깥 검색(중고) 화면의 따로 등록된 같은 책들로 경쟁·시세">검색 시세 (미등록·세트)</button><button class="b2" data-job="bench" title="웹앱 경영 탭 → 🎯 집중 벤치마킹에서 고른 판매자의 중고샵 목록 전체를 끝까지 읽어, 어제와 견줘 새로 올린 것·사라진 것(팔렸거나 내림)·값 바뀐 것을 기록 (하루 한 번 · 일괄 수집에도 들어 있음)">🎯 집중 벤치마킹</button><button class="b2" data-job="benchForce" title="주기(n시간·n일에 한 번)와 '끝난 지 20시간 안이면 건너뜀' 규칙을 무시하고, 웹앱에서 고른 판매자 목록의 맨 처음 판매자부터 차례로 모두 지금 읽음 · 멈췄다 이어 하면 이번에 이미 읽은 판매자는 건너뜀(3일 안)">🎯 강제: 처음 판매자부터</button><button class="b2" data-job="benchDetail" title="집중 벤치마킹으로 모은 상품(따라가는 판매자의 지금 숍 상품) 중 아직 상품 페이지 정보(ISBN·분류·출간 연월)가 없는 것만 상품 페이지를 열어 읽음 — 웹앱 ⚙ 모을 정보의 '상품 페이지 정보' 켜짐·꺼짐과 상관없이 · 판매자마다 끝까지 · 한 번 읽은 상품·다른 판매자와 같은 책·우리 도서 기록에 있는 책은 열지 않음 · 멈추면 100개마다 저장한 데까지 남음">📖 벤치마킹 상품 페이지 정보</button><span class="rn-bfs" title="켜면 '🎯 강제: 처음 판매자부터'가 이 시간 안에 끝까지 읽은 판매자는 건너뛰고 나머지를 모두 읽음 (웹앱 🎯 자세히의 같은 토글과 하나 — Firebase에 저장)"><label><input type="checkbox" id="rnBfOn"> ⏭ 강제 실행 때 최근</label> <input type="number" id="rnBfH" min="1" max="168" value="20"> <label for="rnBfOn" title="숍 끝까지 다 읽은 회차가 그 시간 안에 끝난 판매자만 건너뜀 — 50% 넘어 쓴 회차라도 뒤쪽을 못 읽었으면 다시 읽음 · 멈춘 판매자는 📍 멈춘 자리부터 이어 읽음">시간 안에 숍 끝까지 다 읽은 판매자 건너뛰기</label></span><span id="rnBrTxt" style="display:block;font-size:10.5px;color:#5B6B66;margin:2px 0" title="웹앱 🎯 판에서 바꿈 (모든 PC 같음)"></span><label style="display:block;font-size:11px;margin:3px 0" title="이 PC가 놀고 있을 때: 다른 PC가 도는 🎯 한 바퀴에 같이 들어가 판매자를 나눠 읽고, ⏰ 매일 자동의 공개 읽기 일(벤치마킹·시장 지표·탐색 등)을 담당 PC 대신 맡음 — 로그인이 필요한 일(주문·출고·상품 조회·고객)은 담당 PC만 (이 PC에만 적용)"><input type="checkbox" id="rnPubHelp"> 🌐 남는 PC 돕기 (공개 읽기 나눠 하기 · 이 PC)</label><button class="b2" data-job="photos" title="새상품 표지가 없는 상품: 우리 상품 페이지의 사진을 전부">우리 상품 사진</button><button class="b2" data-job="previews" title="📖 알라딘 미리보기(책 처음 몇 쪽 샘플 사진)만 — 제품 사진과 따로 미리보기 칸에. 이미 있는 상품은 건너뜀 · 예전에 받아 둔 것은 옮기기만 · 같은 책은 한 번만 받음">📖 미리보기만</button><button class="b2" data-job="usedInfo" title="우리 책 온라인 중고 첫 페이지에서 우리보다 앞에 있는 매물과 바로 뒤 몇 개(설정): 중고상품 구매 유의 사항 글과 사진 — 가격 결정 화면 블록의 ? 표시">경쟁 매물 유의사항·사진</button></div>
     </div>
     <details class="sec" style="margin-top:10px"><summary class="cap" style="cursor:pointer">예비 · 가끔 쓰는 것 (펼치기)</summary>
       <p class="cap" style="margin-top:6px">출고 — 클라우드가 1분마다 하므로 클라우드가 멈췄을 때만</p>
@@ -5316,7 +5320,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const cloudAlive = async () => { if (!cloudSt || Date.now() - cloudStAt > 20000) { cloudStAt = Date.now(); try { cloudSt = (await C('app_settings').doc('cloud').get()).data() || {}; } catch (e) { cloudSt = cloudSt || {}; } } const at = Date.parse(cloudSt.at || 0) || 0; return { alive: Date.now() - at < 150e3 && cloudSt.ok !== false, ageS: Math.round((Date.now() - at) / 1000), err: cloudSt.err || null }; }; /* (1.77.5) 출고 과정(발송준비시작·현금 판매 중지·유의 사항 다시 읽기)은 클라우드 먼저 */
   const cmdMine = (t) => { const f = (k) => !window.__rnFeat || window.__rnFeat(k); if (t === 'startDelivery') return f('ship'); if (t === 'cashStop') return f('cash'); if (/^reg/.test(String(t))) return f('reg'); return !window.__rnPaused; };
   /* (1.88.4) 정범님 10/20 'JS-MAIN: 웹앱이 맡긴 일을 받았다는 표시가 기록에 전혀 없음' — 맡은 순간과 끝난 순간을 기록 창에 한 줄씩(종류·이름·걸린 시간) */
-  const CMD_KO = { startDelivery: '발송준비시작', usedInfo: '유의 사항 다시 읽기', c2bAdd: '알라딘 팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지', prdEdit: '✏ 상품 정보 수정', qnaReply: '💬 묻고 답하기 답변', lookup: '사진 가격 조회', regDel: '등록 상품 삭제', regLookup: '📥 등록 조회', extLookup: '🌐 외부 정보', extTest: '🌐 외부 정보 시험', metrics: '시장 지표 다시 읽기', regBulk: '📦 대량 등록', regBulkMock: '🧷 모의 대량 등록', regOne: '🤖 개별·미등록 등록', regOneMock: '🧷 모의 개별 등록' };
+  const CMD_KO = { startDelivery: '발송준비시작', usedInfo: '유의 사항 다시 읽기', c2bAdd: '알라딘 팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지', prdEdit: '✏ 상품 정보 수정', qnaReply: '💬 묻고 답하기 답변', pageText: '📄 알라딘 안내 글 읽기', lookup: '사진 가격 조회', regDel: '등록 상품 삭제', regLookup: '📥 등록 조회', extLookup: '🌐 외부 정보', extTest: '🌐 외부 정보 시험', metrics: '시장 지표 다시 읽기', regBulk: '📦 대량 등록', regBulkMock: '🧷 모의 대량 등록', regOne: '🤖 개별·미등록 등록', regOneMock: '🧷 모의 개별 등록' };
   /* ══ (1.89.65) 🔢 정보수정 화면으로 판매 상품 수량·판매가·관리코드·판매 상태 확인 (맡긴 일 qtyChk) ══
    *  정범님 10/25 '엔진이 수량을 셀 때 샵매니저 목록을 보는 게 잘못 — 목록은 수량 반영이 안 될 때가 많으니 정보수정에 들어가 확인. 지금 당장 로그인 PC들이 재고 전체를 다시 세고, 앞으로 판매 중 상품 정보는 반드시 정보수정 화면에서'
    *  · 맡긴 일 칸은 qty_chk(shp_cmds가 아님 — 웹앱들이 듣는 맡긴 일 칸에 수백 묶음을 넣지 않게) · 한 묶음 = 상품 40개 · 로그인한 PC가 한 번에 한 묶음씩(여러 PC가 나눠 함) · 상품마다 정보수정 화면(wrecord.aspx?action=2&UpdateItemId=)을 읽어 우리 기록과 다른 칸만 고침 + 변경 이력(prd_listing_changes source 'editPage')
@@ -5392,6 +5396,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     else if (v.type === 'prdEdit') { if (typeof window.__rnPrdEdit !== 'function') { await ref.set({ status: 'queued', claim: null, pcSkip: `PC 수집기 ${APP_VER}에 상품 수정 길이 아직 안 열림(상품 조회·등록 화면이 열린 탭만)`, uploadedAt: TS() }, { merge: true }); return; } await window.__rnPrdEdit(ref, v, id); return; } /* (1.89.26) ✏ 상품 정보 수정 — 클라우드가 못 받을 때 */
     else if (v.type === 'cashStop') { await cashStopCmd(ref, v); return; } // (1.37.0) 현금 판매 → 알라딘 판매중지 자동 // (1.35.0) 알라딘 매입: 팔기 장바구니에 담기
     else if (v.type === 'lookup') { LOOK_PRIO++; try { await lookupCmd(ref, v); } finally { LOOK_PRIO--; } return; } /* (1.78.2) 사진 가격 조회도 사람이 기다림 — 알라딘 차례 먼저 */
+    else if (v.type === 'pageText') { await pageTextCmd(ref, v); return; } /* (10/26) 📄 알라딘 안내 글(약관 등) 읽기 — 정범님 '알라딘 규약 살펴봐' · 대화 세션이 원문 조항을 확인 */
     else if (v.type === 'qnaReply') { await qnaReplyCmd(ref, v); return; } /* (10/26) 💬 웹앱에서 쓴 묻고 답하기 답변 → 샵매니저 */
     else if (v.type === 'regDel') { await regDelCmd(ref, v); return; } /* (1.81.0) 🗑 웹앱에서 지운 등록 상품 → 알라딘 삭제 */
     else if (v.type === 'regLookup') { await regLookupCmd(ref, v); return; } /* (1.77.0) 📥 등록 조회 = 샵매니저 등록 검색(로그인 PC만 — 로거는 pcCan에서 거름) */
@@ -5780,6 +5785,12 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       tas: [...doc.querySelectorAll('textarea')].slice(0, 5).map((t) => ({ id: t.id || '', name: t.getAttribute('name') || '', max: t.maxLength > 0 ? t.maxLength : null, len: qrTaVal(t).length })),
       btns: C0.filter((x) => x.sc > -5).sort((a, b) => b.sc - a.sc).slice(0, 20).map((x) => ({ tag: x.el.tagName, l: x.l, s: x.s, sc: x.sc })), pick: btn ? (ok[0].l || ok[0].s).slice(0, 60) : null };
     return { ta, btn, probe }; }
+  /* (10/26) 📄 알라딘 안내 글 읽기(pageText) — 알라딘 공개 안내·약관 주소만(www·market·blog·m · scm 아님) · 글만 남김(한 주소 8만 자까지 · 최대 3개) */
+  async function pageTextCmd(ref, v) { const results = {}; const ok = (u) => /^https:\/\/(www|market|blog|m)\.aladin\.co\.kr\/[^\s]*$/.test(u) && !/\/scm\//i.test(u);
+    for (const u of (v.urls || []).slice(0, 3)) { const k = String(Object.keys(results).length); if (!ok(String(u))) { results[k] = { url: String(u).slice(0, 200), ok: false, why: '허용 안 된 주소' }; continue; }
+      try { const g = await getDoc(String(u)); const d = g.doc; d.querySelectorAll('script,style,noscript').forEach((x) => x.remove()); const t = String((d.body || d.documentElement).textContent || '').replace(/[ \t\u00a0]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim(); results[k] = { url: String(u), ok: true, len: t.length, text: t.slice(0, 80000), title: String(d.title || '').slice(0, 200) }; }
+      catch (e) { results[k] = { url: String(u), ok: false, why: String(e.message || e).slice(0, 200) }; } }
+    await ref.set({ status: 'done', results, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`📄 알라딘 안내 글 읽기: ${Object.values(results).filter((r) => r.ok).length} / ${Object.keys(results).length}개`); }
   async function qnaReplyCmd(ref, v) { const id = String(v.questionId || '').replace(/\D/g, ''); const text = String(v.text || '').replace(/\r/g, '').trim(); const t0 = Date.now(); const ex = (s) => ref.set({ ...s, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {});
     const fail = async (msg, more) => { await ref.set({ status: 'fail', msg, doneAt: nowIso(), by: PC_NAME, ms: Date.now() - t0, ...(more || {}), uploadedAt: TS() }, { merge: true }); log(`💬 묻고 답하기 답변 실패 (문의 ${id}): ${msg}`, 1); };
     if (!id || !text) return fail('문의 번호나 답변 글이 없음');
@@ -5879,6 +5890,65 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       }
       await finishJob('photos', { ok: prog.ok, none: prog.none, nopage: prog.nopage, imgs: prog.imgs, skip: prog.skip || 0 });
       log(`상품 사진 완료: ${prog.ok}개 상품 사진 ${prog.imgs}장 (우리 페이지 또는 상품명 검색 90%↑) · 끝내 사진 없음 ${prog.none + prog.nopage} (건너뜀 — 외부 정보로 개선 예정)`);
+    } finally { await releaseLane('aladin'); }
+  }
+
+  /* ───────── 📖 미리보기만 모으기 (정범님 10/26 — 옵션: ⏰ 자동 수집 편집기 일 목록·🧭 관리도구 '지금 한 번'·이 패널 단추로만, 시간표 칸에는 넣지 않음) ─────────
+   * 미리보기 = 알라딘 '미리보기'(letslook — 새상품 책의 처음 몇 쪽 샘플 사진) · 우리 '제품 사진'(photos[])과 따로 prd_listings/{상품}.previews[] 에 둠
+   *   previews = [{src(알라딘 원 주소), file, stored(저장소 경로), thumb, bytes, n(쪽 차례), at, from: 'photos'(예전 사진 받기가 받아 둔 것) | 'page'(이 일이 받음) | 'book'(같은 책 다른 매물이 받은 것을 경로만 함께 씀), of?}]
+   *   + previewsAt · previewsStatus(done·none·nopage) · previewsFrom · previewsBook(같은 책 열쇠)
+   * 차례(상품마다): ① 서버 기록을 다시 읽어 이미 미리보기 칸이 있으면 건너뜀 ② 예전 photos[] 안에 받아 둔 미리보기가 있으면 그것을 옮겨 적음(다시 받지 않음 · photos[]·저장소 파일은 그대로)
+   *   ③ 같은 책(도서 번호·ISBN)의 다른 매물이 이미 받았으면 저장 경로만 함께 씀(다시 받지 않음) ④ 없으면 우리 매물 화면(wproduct.aspx?ItemId=매물번호)에서 미리보기만 받아 img/preview/{같은 책 열쇠}/{차례}.jpg
+   * 로그인 일(사무실 PC): 우리 매물 화면만 골라 여는 일이라 사진 받기(photos)와 같은 까닭으로 로거(공개 일 PUB_KEYS)에 넣지 않음 — 자동 수집 0.7.1 규칙 · 로거 테더링 몫도 쓰지 않음
+   * 쓰기: 상품마다 한 번 · ②③은 화면을 열지 않아 빠르므로 3초 간격(클라우드 쓰기 감시 prd_listings 한 시간 2,500건 한도 안으로) */
+  const pvStat = (prog, st) => C('app_settings').doc('previews_job').set({ status: st, i: prog.i, n: prog.list ? prog.list.length : null, page: prog.page, moved: prog.moved, shared: prog.shared, none: prog.none, nopage: prog.nopage, imgs: prog.imgs, skip: prog.skip || 0, startedAt: prog.startedAt || null, at: nowIso(), pc: PC_NAME, ...W() }, { merge: true }).catch(() => {}); /* 🧭 관리도구가 읽는 작은 상태(진행 문서 prd_jobs/previews는 상품 목록째라 큼) */
+  const pvBookKey = (l) => (l && (l.bookId ? String(l.bookId) : l.isbn13 ? 'isbn_' + l.isbn13 : null)) || null;
+  async function previewsJob() {
+    if (!P.parseUsedItemPreviews || !P.previewsOf) { log('📖 미리보기: 공용 파일(readnow-products-core.js)이 옛 판이라 시작하지 않음 — 수집기를 새로 고친 뒤 다시', 1); return false; }
+    const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
+    try {
+      await loadListings();
+      let prog = await loadProgress('previews');
+      const retry = new Date(Date.now() - 14 * 864e5).toISOString();
+      const settled = (v) => !!(v && v.previewsAt && (['done', 'none', 'shared'].includes(v.previewsStatus) || (v.previewsStatus === 'nopage' && !FORCE_ALL && v.previewsAt > retry)));
+      if (!prog || !prog.list) {
+        const list = [...LISTINGS.entries()].filter(([, l]) => l.listingId && l.usedCode && !settled(l)).sort((a, b) => (b[1].active ? 1 : 0) - (a[1].active ? 1 : 0)).map(([k]) => k);
+        prog = { list, i: 0, page: 0, moved: 0, shared: 0, none: 0, nopage: 0, imgs: 0, skip: 0, startedAt: nowIso() }; await saveProgress('previews', prog);
+        log(`📖 미리보기만 모으기: 아직 미리보기 칸이 없는 우리 상품 ${list.length.toLocaleString()}개 (판매 중 먼저)`);
+      }
+      pvStat(prog, 'running');
+      const BOOK = new Map(); for (const [k, l] of LISTINGS) { const bk = pvBookKey(l); if (!bk || BOOK.has(bk)) continue; const pv = P.previewsOf(l).filter((x) => x.stored); if (pv.length) BOOK.set(bk, { key: k, pv }); } /* 같은 책의 받아 둔 미리보기(서버 기록) */
+      const slim = (x) => Object.fromEntries(Object.entries(x).filter(([, v]) => v !== undefined));
+      for (; prog.i < prog.list.length; prog.i++) {
+        if (stopFlag) { await saveProgress('previews', prog); await pvStat(prog, 'stopped'); throw new Error('멈춤'); }
+        if (prog.i % 50 === 0) pvStat(prog, 'running');
+        const key = prog.list[prog.i]; let l = LISTINGS.get(key); if (!l) continue;
+        try { const sn = await C('prd_listings').doc(key).get(); if (sn.exists) { l = { ...l, ...sn.data() }; LISTINGS.set(key, l); } } catch (e) {} /* 서버 기록으로 확인 — 다른 PC·클라우드가 방금 채웠을 수 있음 */
+        if (settled(l) || (Array.isArray(l.previews) && l.previews.length)) { prog.skip++; continue; }
+        const at = nowIso(); const bk = pvBookKey(l); let doc = null;
+        const old = P.previewsFromPhotos(l.photos, l.photosAt);
+        if (old.length) { doc = { previews: old, previewsAt: at, previewsStatus: 'done', previewsFrom: 'photos', previewsBook: bk }; prog.moved++; }
+        else if (bk && BOOK.has(bk) && BOOK.get(bk).key !== key) { const B = BOOK.get(bk); doc = { previews: B.pv.map((x) => slim({ ...x, from: 'book', of: B.key, at: x.at || at })), previewsAt: at, previewsStatus: 'shared', previewsFrom: 'book', previewsBook: bk }; prog.shared++; }
+        if (doc) { await C('prd_listings').doc(key).set({ ...doc, ...W() }, { merge: true }); LISTINGS.set(key, { ...l, ...doc }); if (bk && !BOOK.has(bk)) { const pv = doc.previews.filter((x) => x.stored); if (pv.length) BOOK.set(bk, { key, pv }); }
+          ui('📖 미리보기만 모으기', prog.i + 1, prog.list.length, `${l.title || l.usedCode} · ${doc.previewsFrom === 'photos' ? '예전에 받아 둔 미리보기 옮김' : '같은 책 미리보기 경로 함께 씀'} ${doc.previews.length}쪽`); if (prog.i % 5 === 0) await saveProgress('previews', prog); await sleep(3000); continue; }
+        let pv = [], status = 'none';
+        try { const g = await getDoc(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${l.listingId}`); const can = (g.doc.querySelector('link[rel="canonical"]') || {}).href || '';
+          if (!new RegExp(`ItemId=${l.listingId}\\b`).test(can) && !/\[중고\]/.test(g.doc.title || '')) status = 'nopage'; else pv = P.parseUsedItemPreviews(g.doc); } catch (e) { status = 'nopage'; }
+        const saved = []; const dir = `img/preview/${String(bk || 'U' + l.usedCode).replace(/[^A-Za-z0-9_-]/g, '_')}`;
+        for (let k = 0; k < pv.length; k++) { const x = pv[k]; let blob = null; try { blob = await gmBlob(x.src); } catch (e) {}
+          if (!blob) { saved.push(slim({ src: x.src, file: x.file, stored: null, thumb: null, n: x.n, at, from: 'page', error: '받기 실패' })); continue; }
+          const ext = (x.src.match(/\.(jpe?g|png|gif|webp)(\?|$)/i) || [, 'jpg'])[1].toLowerCase(); const base = `${dir}/${k + 1}`; const meta = { cacheControl: 'public,max-age=31536000,immutable' };
+          try { await storage.ref(`${base}.${ext}`).put(blob, { ...meta, contentType: blob.type || 'image/' + ext }); let t = null; try { t = await thumb(blob, 200); if (t) await storage.ref(`${base}_t.webp`).put(t, { ...meta, contentType: 'image/webp' }); } catch (e) { t = null; }
+            saved.push(slim({ src: x.src, file: x.file, stored: `${base}.${ext}`, thumb: t ? `${base}_t.webp` : null, bytes: blob.size ?? null, n: x.n, at, from: 'page' })); prog.imgs++; } catch (e) { saved.push(slim({ src: x.src, file: x.file, stored: null, thumb: null, n: x.n, at, from: 'page', error: e.message })); } }
+        if (saved.some((x) => x.stored)) { status = 'done'; prog.page++; if (bk && !BOOK.has(bk)) BOOK.set(bk, { key, pv: saved.filter((x) => x.stored) }); } else if (status === 'nopage') prog.nopage++; else prog.none++;
+        const d2 = { previews: saved, previewsAt: at, previewsStatus: status, previewsFrom: saved.length ? 'page' : null, previewsBook: bk };
+        await C('prd_listings').doc(key).set({ ...d2, ...W() }, { merge: true }); LISTINGS.set(key, { ...l, ...d2 });
+        ui('📖 미리보기만 모으기', prog.i + 1, prog.list.length, `${l.title || l.usedCode} · 미리보기 ${saved.filter((x) => x.stored).length}쪽 · 받음 ${prog.page} · 옮김 ${prog.moved} · 같은 책 ${prog.shared} · 없음 ${prog.none} · 화면 없음 ${prog.nopage}${prog.skip ? ` · 이미 있어 건너뜀 ${prog.skip}` : ''}`);
+        if (prog.i % 5 === 0) await saveProgress('previews', prog);
+      }
+      await pvStat(prog, 'done');
+      await finishJob('previews', { page: prog.page, moved: prog.moved, shared: prog.shared, none: prog.none, nopage: prog.nopage, imgs: prog.imgs, skip: prog.skip || 0 });
+      log(`📖 미리보기만 모으기 완료: 화면에서 받음 ${prog.page}개 상품(${prog.imgs}장) · 예전에 받아 둔 것 옮김 ${prog.moved} · 같은 책 경로 함께 씀 ${prog.shared} · 미리보기 없음 ${prog.none} · 화면 없음 ${prog.nopage} · 이미 있어 건너뜀 ${prog.skip || 0}`);
     } finally { await releaseLane('aladin'); }
   }
 
@@ -6891,6 +6961,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     soldInfo: ['판매완료 상품 정보·이미지', () => soldInfoJob()],
     poolInfo: ['알라딘 구매 풀(미연결) 도서 정보', () => poolInfoJob()],
     photos: ['상품 사진 (표지 없는 상품: 우리 페이지 → 상품명 검색)', () => photosJob()],
+    previews: ['📖 미리보기만 모으기 (알라딘 미리보기 — 책 처음 몇 쪽 샘플 · 옵션)', () => previewsJob()], /* 시간표 칸에는 넣지 않음 — 편집기 일 목록·관리도구·패널 단추로만 */
     usedInfo: ['경쟁 매물 유의사항·사진', () => usedInfoJob()],
     explore: ['끝없는 탐색 수집', () => exploreJob()],
     handoff: ['🔁 로거가 못 한 일 넘겨받기 (19금 시장 지표)', () => handoffJob()],

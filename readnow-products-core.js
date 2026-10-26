@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.19.2'; // (0.19.2) 📷 알라딘 미리보기(letslook) 사진은 상품 사진으로 받지 않음 // (0.19.1) 🔬 조회수 실험 1×1 그림(/px/숫자.gif)은 상품 사진으로 받지 않음 // (0.19.0) aladinQ — 알라딘 상품명 검색어 다듬기(정범님 10/23: 앞뒤 괄호와 그 안 · 부제(: 뒤) · 글자·숫자 아닌 기호 모두 뺌) // (0.18.0) resolveItemId — 주문 때 시장을 읽을 알라딘 상품을 ISBN으로 확인(이름 검색으로 다른 판을 잡던 것 · 정범님 10/20 빌리 배스게이트) // (0.17.0) scmSmart — 상품명·지은이 낱말 일부를 섞어 쳐도 찾음(정범님 10/20 '톨레 지금 순간') // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
+  const VERSION = '0.19.3'; // (0.19.3) 📖 미리보기(letslook)와 제품 사진 가르는 공용 함수(parseUsedItemPreviews·isPreviewPhoto·productPhotos·previewsOf 등) // (0.19.2) 📷 알라딘 미리보기(letslook) 사진은 상품 사진으로 받지 않음 // (0.19.1) 🔬 조회수 실험 1×1 그림(/px/숫자.gif)은 상품 사진으로 받지 않음 // (0.19.0) aladinQ — 알라딘 상품명 검색어 다듬기(정범님 10/23: 앞뒤 괄호와 그 안 · 부제(: 뒤) · 글자·숫자 아닌 기호 모두 뺌) // (0.18.0) resolveItemId — 주문 때 시장을 읽을 알라딘 상품을 ISBN으로 확인(이름 검색으로 다른 판을 잡던 것 · 정범님 10/20 빌리 배스게이트) // (0.17.0) scmSmart — 상품명·지은이 낱말 일부를 섞어 쳐도 찾음(정범님 10/20 '톨레 지금 순간') // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -541,6 +541,25 @@
     d.querySelectorAll('#usedDecription img').forEach((im) => add(im, 'desc'));
     return out;
   }
+  /* 📖 (10/26 정범님 '미리보기는 제품 이미지와 별개') 알라딘 '미리보기'(letslook — 새상품 책의 처음 몇 쪽 샘플 사진 · 같은 책이면 모든 매물이 같음)는 우리 '제품 사진'이 아님
+   *  isPreviewPhoto(p): 사진 한 장이 미리보기인가 — 주소에 /letslook/ 이 있거나 kind:'preview' · 예전(10/26 전) 사진 받기가 photos[]에 넣어 둔 것도 이것으로 가려냄(기록은 지우지 않고 읽는 쪽이 뺌)
+   *  pvPageNo(src): 파일 이름 끝 _t12 → 12 (쪽 차례) · parseUsedItemPreviews(d): 우리 매물 화면 위쪽 사진 칸에서 미리보기만 (쪽 차례대로)
+   *  previewsFromPhotos(photos, at): 예전 photos[] 안의 미리보기 → 미리보기 칸(previews) 모양 [{src, file, stored, thumb, bytes, n, at, from:'photos'}] · productPhotos(photos): 미리보기를 뺀 제품 사진만
+   *  previewsOf(l): 상품 기록의 미리보기 — previews 칸이 있으면 그것, 없으면 photos[] 안에서 가려냄 */
+  const PV_RX = /\/letslook\//i;
+  function isPreviewPhoto(p) { return !!(p && (p.kind === 'preview' || PV_RX.test(String(p.src || '')) || PV_RX.test(String(p.big || '')))); }
+  function pvPageNo(src) { const m = String(src || '').split('?')[0].split('/').pop().match(/_t(\d+)\.[a-z]+$/i); return m ? +m[1] : null; }
+  function pvSort(L) { return L.map((x, i) => ({ x, i })).sort((a, b) => ((a.x.n ?? 1e6 + a.i) - (b.x.n ?? 1e6 + b.i)) || a.i - b.i).map((o) => o.x); }
+  function parseUsedItemPreviews(d) { const out = []; const seen = new Set();
+    const add = (img) => { const src = img && (img.getAttribute('src') || img.getAttribute('data-src') || ''); if (!src || !PV_RX.test(src)) return; const file = src.split('?')[0].split('/').pop(); if (!file || seen.has(file)) return; seen.add(file); const abs = /^\/\//.test(src) ? 'https:' + src : src; out.push({ src: abs, file, n: pvPageNo(abs) }); };
+    const main = d.getElementById ? d.getElementById('CoverMainImage') : null; if (main) add(main);
+    d.querySelectorAll('#swiper-container-cover img.imgbox, #swiper-container-cover .swiper-slide img, #swiper-container-cover img').forEach(add);
+    return pvSort(out); }
+  function previewsFromPhotos(photos, at) { if (!Array.isArray(photos)) return []; const out = [];
+    photos.forEach((x) => { if (!isPreviewPhoto(x)) return; const src = x.src || null; out.push({ src, file: x.file || (src ? String(src).split('?')[0].split('/').pop() : null), stored: x.stored || null, thumb: x.thumb || null, bytes: x.bytes ?? null, n: pvPageNo(src), at: at || null, from: 'photos', ...(x.error ? { error: x.error } : {}) }); });
+    return pvSort(out); }
+  function productPhotos(photos) { return Array.isArray(photos) ? photos.filter((x) => x && !isPreviewPhoto(x)) : []; }
+  function previewsOf(l) { if (!l) return []; if (Array.isArray(l.previews) && l.previews.length) return l.previews; return previewsFromPhotos(l.photos, l.photosAt); }
   // 다른 판매자 중고 매물 페이지(wproduct.aspx?ItemId=매물번호): '중고상품 구매 유의 사항' 글 전체 + 사진(위쪽 표지 영역·유의 사항 안)
   // newCoverFile(새상품 표지 파일 이름)을 주면 '새상품 사진과 다른 사진이 있는가'를 계산 — 위쪽 영역에 새상품 표지가 아닌 사진이 있거나 유의 사항 안에 사진이 있으면 다름
   // ---------- (0.13.0) 중고 상품 페이지(wproduct.aspx?ItemId=중고 상품번호) 판매가 — 실제 화면(2026-10-08 저장본)에서 확인한 자리 ----------
@@ -774,7 +793,7 @@
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
     parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, scmSmart, aladinQ, aladinQTries, resolveItemId, isbnN, smHit, smTok, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
-    parseUsedItemInfo, parseScmEditNote, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
+    parseUsedItemInfo, parseUsedItemPreviews, isPreviewPhoto, pvPageNo, previewsFromPhotos, productPhotos, previewsOf, parseScmEditNote, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
 })(typeof window !== 'undefined' ? window : this);

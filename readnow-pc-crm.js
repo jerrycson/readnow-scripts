@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.99의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.100의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.99' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.99', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.100' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.100', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -685,9 +685,13 @@
     try {
       if (!FB.apps.length) FB.initializeApp(FIREBASE_CONFIG);
       fdb = FB.firestore();
-      FB.auth().onAuthStateChanged((u) => { fbUser = u; if (u) { watchUsage(); watchLock(); } render(); });
+      FB.auth().onAuthStateChanged((u) => { fbUser = u; if (u) { watchUsage(); watchLock(); pxSelfPingPc(); } render(); });
+      /* (10/26 밤) 🔬 상품 조회수 실험 — 이 PC를 '우리 기기'로 클라우드에 알림(/px/me.gif · 7일 · 알라딘 화면 안에서 부르므로 손님 화면과 같은 쿠키 칸) → 이 PC에서 알라딘 상품 화면·샵매니저를 열어도 사람 조회에서 빠짐 · 같은 PC의 알라딘 탭끼리 한 시간에 한 번만 */
+      setInterval(() => { if (fbUser) pxSelfPingPc(); }, 15 * 60e3);
     } catch (e) { console.error(e); }
   }
+  function pxSelfPingPc() { try { if (window.top !== window || !fdb) return; let t = 0; try { t = +localStorage.getItem('rnPxSelfAt') || 0; } catch (e) {} if (Date.now() - t < 60 * 60e3) return; try { localStorage.setItem('rnPxSelfAt', String(Date.now())); } catch (e) {}
+    fdb.collection('app_settings').doc('main').get().then((d) => { const cu = String(((d.exists && d.data()) || {}).cloudUrl || '').replace(/\/+$/, ''); if (!/^https:\/\//.test(cu)) return; const im = new Image(); im.referrerPolicy = 'no-referrer'; im.src = `${cu}/px/me.gif?d=${encodeURIComponent((window.__rnPcName && window.__rnPcName.get()) || 'PC')}&_=${Date.now()}`; }).catch(() => {}); } catch (e) {} }
   // 로그인: 구글 창 방식(기본). 창 방식이 이 환경에서 안 되면 Firebase 전용 이메일·비밀번호 방식 사용.
   let fbLoggingIn = false;
   async function fbLogin() {
