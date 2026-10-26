@@ -1,4 +1,2 @@
-doc=prd_jobs/pcBeat
-pagetext=terms1026
-cmds=pageText
-# 15818
+logs=1&pc=LOGGER&from=202610260200
+# 10050
