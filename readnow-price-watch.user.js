@@ -1,16 +1,16 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.18
+// @version      0.10.19
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
 // @updateURL    https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-price-watch.user.js
 // @downloadURL  https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-price-watch.user.js
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.1
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-aladin-core.js?v=0.2.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-exec-core.js?v=0.1.1
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
@@ -299,7 +299,7 @@
     const st = ['approved', 'manual', 'hold', 'unhold']; const docs = [];
     for (const k of st) { const q = await C('prd_price_decisions').where('approvalState', '==', k).get(); q.docs.forEach((d) => docs.push(d)); }
     if (!docs.length) return; log(`반영할 관리자 결정 ${docs.length}건`);
-    const today = new Date().toISOString().slice(0, 10); let n = 0; // (0.6.0) 하루 반영 상한 없음 — 확정한 것은 모두 차례로 (정범 결정 2026-10-07)
+    const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); let n = 0; // (0.10.19) 정범님 10/26: 한국 날짜(예전 UTC — 같은 문서 kst와 달랐음) // (0.6.0) 하루 반영 상한 없음 — 확정한 것은 모두 차례로 (정범 결정 2026-10-07)
     const offOf = (x) => { const a = x.approval || {}; return a.decision === 'batch' && a.batchId && (SET.batchOff || {})[a.batchId]; }; // (0.6.0) 꺼진 수동 일괄 그룹: 그 그룹이 확정한 것은 건드리지 않고 기다림 (설정은 실시간 — 도는 중에 꺼도 다음 상품부터)
     let offN = 0;
     const post = async (url, body) => { await PACE.wait(sleep); return fetch(url, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' }, body }); };
@@ -382,7 +382,7 @@
   let VQ = null, VQAt = 0, vqBusy = false;
   async function vqLoad() { if (VQ && Date.now() - VQAt < 10 * 60000) return;
     const [q, qp] = await Promise.all([C('prd_price_actions').where('verify.state', '==', 'wait').get(), C('prd_price_actions').where('verifyPg.state', '==', 'wait').get()]); const M = new Map(); [...q.docs, ...qp.docs].forEach((d) => M.set(d.id, { id: d.id, ref: d.ref, ...d.data() })); const L = [...M.values()];
-    if (!VQ) { try { const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString().slice(0, 10); const q2 = await C('prd_price_actions').where('day', 'in', [ago(0), ago(24), ago(48)]).get(); // 0.7.0 전 반영분 (48시간 안)
+    if (!VQ) { try { const ago = (h) => new Date(Date.now() + 9 * 3600e3 - h * 3600e3).toISOString().slice(0, 10); const q2 = await C('prd_price_actions').where('day', 'in', [ago(0), ago(24), ago(48), ago(72)]).get(); // 0.7.0 전 반영분 (48시간 안)
         for (const d of q2.docs) { const a = d.data(); if (a.verify || a.to == null || !a.at || Date.now() - Date.parse(a.at) > 48 * 3600e3 || ['hold', 'unhold'].includes(a.kind) || M.has(d.id)) continue; const v = { state: 'wait', n: 0, late: true, si: 0, next: new Date().toISOString() }; await d.ref.set({ verify: v, kst: kstOf(a.at), ...W() }, { merge: true }); L.push({ id: d.id, ref: d.ref, ...a, verify: v }); } } catch (e) { log('공개 반영 확인 — 예전 반영분 읽기 실패: ' + e.message, 1); } }
     VQ = L; VQAt = Date.now(); }
   const vWaiting = (a) => (a.verify && a.verify.state === 'wait') || (a.verifyPg && a.verifyPg.state === 'wait');

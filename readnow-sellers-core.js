@@ -7,7 +7,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '1.3.1'; // (1.3.1) 숫자 글자 형식 다시 씀(빠르게)
+  const VERSION = '1.3.2'; // (1.3.2) 🕘 기간 자르기 한국 날짜 // (1.3.1) 숫자 글자 형식 다시 씀(빠르게)
   const DEFAULT_THRESHOLDS = { modelHigh: 70, modelLow: 35, gainHigh: 60, gainLow: 40 };
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const numK = (v) => { if (v == null || v === '') return null; if (typeof v === 'number') return Number.isFinite(v) ? v : null; const n = parseFloat(String(v).replace(/[^\d.\-]/g, '')); return Number.isFinite(n) ? n : null; };
@@ -106,7 +106,7 @@
   }
   // 날짜별 [만족, 보통, 불만족] 묶음 → 기간별 합계
   function reviewStats(days, now) {
-    const t = now || Date.now(); const ds = (n) => new Date(t - n * 864e5).toISOString().slice(0, 10);
+    const t = now || Date.now(); const ds = (n) => new Date(t + 9 * 3600e3 - n * 864e5).toISOString().slice(0, 10); /* 한국 날짜 */
     const cut = { d7: ds(7), d30: ds(30), d90: ds(90), d180: ds(180), d365: ds(365) }; const st = { d7: 0, d30: 0, d90: 0, d180: 0, d365: 0, total: 0, good: 0, mid: 0, bad: 0, first: null, last: null };
     for (const [d, v] of Object.entries(days || {})) { const n = (v[0] || 0) + (v[1] || 0) + (v[2] || 0); st.total += n; st.good += v[0] || 0; st.mid += v[1] || 0; st.bad += v[2] || 0;
       for (const k of Object.keys(cut)) if (d > cut[k]) st[k] += n; if (!st.first || d < st.first) st.first = d; if (!st.last || d > st.last) st.last = d; }
@@ -148,7 +148,7 @@
   // 최근 6개월 평가 수: 숍 화면 값(가장 정확) → 모은 평가(6개월 이상 모았을 때) → 툴팁 기록 → 구글 시트
   function rev6m(s) {
     if (s.rev6m != null) return { n: s.rev6m, src: '숍 화면', at: s.rev6mAt || null };
-    const st = s.reviewStats; if (st && st.d180 != null && (st.complete || (st.first && st.first <= new Date(Date.now() - 180 * 864e5).toISOString().slice(0, 10)))) return { n: st.d180, src: '모은 평가', at: st.at || null };
+    const st = s.reviewStats; if (st && st.d180 != null && (st.complete || (st.first && st.first <= new Date(Date.now() + 9 * 3600e3 - 180 * 864e5).toISOString().slice(0, 10)))) return { n: st.d180, src: '모은 평가', at: st.at || null };
     if (s.rev6mLt3) return { n: null, lt3: true, src: '숍 화면: 3건 미만', at: s.rev6mAt || null }; // 알라딘이 '-'로 표시 = 최근 6개월 평가 3건 미만 (0이 아님)
     const tc = numK(s.reviewCount); if (tc != null) return { n: tc, src: '툴팁 기록', at: s.lastFetchedAt || null };
     const sh = numK(s.reviews6m ?? (s.sheet && s.sheet.reviews6m)); if (sh != null) return { n: sh, src: '구글 시트', at: null };

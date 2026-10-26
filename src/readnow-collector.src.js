@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.88
+// @version      1.89.89
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -19,16 +19,16 @@
 // @updateURL    https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
 // @downloadURL  https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-orders-core.js?v=0.3.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.1
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.101
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.102
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.4
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.1
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.18.5
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.18.6
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
@@ -1582,7 +1582,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   let sellerLinkMap = new Map(); // customerId → [{name, grade}] (판매자 시트와 연결된 고객)
   function scoreCustomer(c, todayIso) {
     const today = todayIso ? new Date(todayIso) : new Date();
-    const days = (iso) => (iso ? Math.floor((today - new Date(String(iso).slice(0, 10))) / 864e5) : null);
+    const days = (iso) => (iso ? Math.floor((today - new Date(String(iso).slice(0, 10) + 'T00:00:00+09:00')) / 864e5) : null); /* (1.89.89) 한국 0시로 셈(예전 UTC 0시 — 오전 9시 전 경과일 1 적게) */
     const won = (n) => `${Math.round(n || 0).toLocaleString()}원`;
     const V = []; const R = [];
     const orders = c.saleOrderCount || 0; const amt = c.salesAmount || 0; const last = days(c.lastSaleAt || c.lastOrderAt);
@@ -1629,7 +1629,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
     const vipOn = value >= SCORE_RULES.vip.minValue && risk < SCORE_RULES.vip.maxRisk && orders >= SCORE_RULES.vip.minOrders && !(SCORE_RULES.vip.excludeSellers && sl.length);
     const cauOn = risk >= SCORE_RULES.caution.minRisk;
     return {
-      scores: { value, risk, valueParts: V, riskParts: R, ver: SCORE_VER, day: today.toISOString().slice(0, 10) },
+      scores: { value, risk, valueParts: V, riskParts: R, ver: SCORE_VER, day: new Date(today.getTime() + 9 * 3600e3).toISOString().slice(0, 10) }, /* (1.89.89) 한국 날짜 */
       autoFlags: {
         vip: { on: vipOn, reasons: vipOn ? [`가치 점수 ${value}점 (기준 ${SCORE_RULES.vip.minValue}점 이상), 주의 점수 ${risk}점`, ...top(V)] : [] },
         caution: { on: cauOn, reasons: cauOn ? [`주의 점수 ${risk}점 (기준 ${SCORE_RULES.caution.minRisk}점 이상)`, ...top(R)] : [] },
@@ -2419,7 +2419,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       const raw = await dbGet('sellerRaw', settings.shopSc || '996008'); if (!raw) return;
       const snaps = Object.values(raw.snapshots || {}).sort((a, b) => (a.fetchedAt || 0) - (b.fetchedAt || 0));
       const n = (v) => (v == null ? null : parseInt(String(v).replace(/[^\d]/g, ''), 10) || 0);
-      const hist = []; snaps.forEach((s) => { const paidOnly = /무조건/.test(s.freeShipping || ''); const p = { freeOver: paidOnly ? null : n(s.freeShipping), fee: n(s.shippingFee), paidOnly, from: new Date(s.fetchedAt).toISOString().slice(0, 10), seenAt: new Date(s.fetchedAt).toISOString(), by: '툴팁 기록' }; const l = hist[hist.length - 1]; if (!l || l.freeOver !== p.freeOver || l.fee !== p.fee) hist.push(p); });
+      const hist = []; snaps.forEach((s) => { const paidOnly = /무조건/.test(s.freeShipping || ''); const p = { freeOver: paidOnly ? null : n(s.freeShipping), fee: n(s.shippingFee), paidOnly, from: new Date(Date.parse(s.fetchedAt) + 9 * 3600e3).toISOString().slice(0, 10), seenAt: new Date(s.fetchedAt).toISOString(), by: '툴팁 기록' }; const l = hist[hist.length - 1]; if (!l || l.freeOver !== p.freeOver || l.fee !== p.fee) hist.push(p); });
       if (hist.length) await SYS().doc('shopPolicy').set({ tooltipHistory: hist, writerSchema: WRITER_SCHEMA }, { merge: true });
     } catch (e) {}
   }
@@ -2477,7 +2477,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
         // 수집 전에 한 번: 날짜가 바뀌었거나 지난 계산 뒤 새로 올린 게 있을 때만 (없으면 건너뜀)
         if (bj.si === 0 && fbUser && !bj.preScored) {
           const ls = await dbGet('meta', 'lastScore'); const lu = await dbGet('meta', 'lastUpload');
-          const stale = !ls ? false : String(ls.at).slice(0, 10) !== new Date().toISOString().slice(0, 10) || (lu && lu.at > ls.at);
+          const stale = !ls ? false : new Date(Date.parse(ls.at) + 9 * 3600e3).toISOString().slice(0, 10) !== new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) || (lu && lu.at > ls.at);
           if (stale) { currentTask = 'score'; render(); try { await taskScore(); } catch (e) { if (e.code === 'PAUSED' || e.code === 'LOGIN') throw e; log(`수집 전 점수 계산 건너뜀: ${e.message}`, 'warn'); } }
           else log(ls ? '수집 전 점수 계산: 바뀐 내용이 없어 건너뜁니다.' : '수집 전 점수 계산: 아직 계산 기록이 없어 수집 뒤에 합니다.');
           bj.preScored = true; await saveJob(bj);
@@ -3865,10 +3865,14 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const jobKeyOf = (k) => { const j = String(k || '').replace(/^job:/, '').split('#')[0]; return ({ benchForce: 'bench', benchHelp: 'bench', benchDetail: 'bench', benchResume: 'bench' }[j] || j).replace(/[^A-Za-z0-9_]/g, '').slice(0, 30) || 'etc'; };
   const meterSend = () => { const m = Math.round(METC.main), g0 = Math.round(METC.gen); if (!(m + g0)) return; METC.main = 0; METC.gen = 0; const J = { ...METJ }; for (const k of Object.keys(METJ)) delete METJ[k]; const js = Object.entries(J).map(([k, v]) => `${k}:${Math.round(v)}`).join(','); helperGet1(`http://127.0.0.1:8899/meter?main=${m}&gen=${g0}&jobs=${encodeURIComponent(js)}`, { 'X-RN-Meter': '1' }) /* (1.78.3 자동 점검) 도우미 1.6.7은 이 머리가 있어야 받음 — 웹 페이지(알라딘 화면 등)가 몫 나눔을 흐트러뜨리지 못하게 */.then((r) => { if (!r) { METC.main += m; METC.gen += g0; for (const [k, v] of Object.entries(J)) METJ[k] = (METJ[k] || 0) + v; } }); };
   /* (1.75.0) 📱 도우미 화면에 통신사 기준 남은 양·오늘 몫을 보여 주게 계산 결과를 알림(표시만) */
-  const budSend = (b) => { try { if (!b || !b.base) return; const st = b.strict || {}; const d = { E: Math.round(b.base.E * 0.97), usedS: Math.round(b.base.usedS), remainGB: b.base.remainGB, baseAt: b.base.at ? new Date(Date.parse(b.base.at) + 9 * 3600e3).toISOString().slice(5, 16).replace('-', '/').replace('T', ' ') : b.base.day, share: Math.round(b.dayCap || st.share || b.dayB || 0), nLeft: st.nLeft || 0, ml: Math.round(Math.max(0, b.left.main)), gl: Math.round(Math.max(0, b.left.gen)), pct: st.pct || 50, over: !!st.over }; helperGet1('http://127.0.0.1:8899/bud?d=' + encodeURIComponent(JSON.stringify(d)), { 'X-RN-Meter': '1' }); } catch (e) {} };
+  /* (1.89.89) 📶 정범님 10/26: 유심 바꿈 — 웹앱·편집기에서 '지금 꽂은 유심'을 고르면(simReq) 로거가 받아 앞 유심의 남은 양을 적고 새 유심 몫(남은 양·하루 = 한 달 GB ÷ 그달 날 수)으로 바꿈 · 한 번만(sim.done) */
+  function simTick(H, b) { try { const B0 = (SCHED && SCHED.budget) || {}; const rq = B0.simReq; const sm = B0.sim; if (!rq || !rq.at || !rq.to || !sm || sm.done === rq.at || simTick._at === rq.at || !AS.simSwitch) return; simTick._at = rq.at; const P = AS.simSwitch(SCHED, b, H, Date.now(), String(rq.to), rq.fromLeft); if (!P) { log(`📶 유심 바꾸기 못 함: '${rq.to}' 유심이 목록에 없음`, 1); return; }
+      RA.saveBudget({ cfgRef: SCHED_REF(), editsRef: (m) => C('prd_jobs').doc('autoSched_edits_' + m), arrayUnion: (...x) => firebase.firestore.FieldValue.arrayUnion(...x), email: (auth.currentUser || {}).email || null }, P, PC_NAME).then(() => log(`📶 ${P.ovr.by} — 오늘 그 전에 쓴 ${P.ovr.dayUsedGB}GB는 앞 유심 몫`, 1)).catch((e) => { simTick._at = null; log('📶 유심 바꾸기 저장 실패 ' + e.message, 1); }); } catch (e) { log('📶 유심 바꾸기 오류 ' + e.message, 1); } }
+  const budSend = (b) => { try { if (!b || !b.base) return; const st = b.strict || {}; const d = { E: Math.round(b.base.E * 0.97), usedS: Math.round(b.base.usedS), remainGB: b.base.remainGB, baseAt: b.base.at ? new Date(Date.parse(b.base.at) + 9 * 3600e3).toISOString().slice(5, 16).replace('-', '/').replace('T', ' ') : b.base.day, share: Math.round(b.dayCap || st.share || b.dayB || 0), nLeft: st.nLeft || 0, ml: Math.round(Math.max(0, b.left.main)), gl: Math.round(Math.max(0, b.left.gen)), pct: st.pct || 50, over: !!st.over, ...(b.base.simName ? { sim: String(b.base.simName).slice(0, 30) } : {}), ...(b.base.capFrom && b.base.capGB ? { capM: b.base.capFrom.slice(0, 7), capFrom: b.base.capFrom, capGB: b.base.capGB } : {}) }; helperGet1('http://127.0.0.1:8899/bud?d=' + encodeURIComponent(JSON.stringify(d)), { 'X-RN-Meter': '1' }); } catch (e) {} };
   function budTick(H) { if (!PUBONLY || !AS || !AS.budget || !H || !H.ok) { BUD = null; return; } const b = AS.budget(SCHED || {}, H, Date.now()); const was = BUD; BUD = b; if (!b) return;
+    simTick(H, b);
     /* (1.89.63) 🛡 정범님 10/25: 일반 몫이 하루 37.7GB로 셈되어 ✨ 끝없는 탐색이 하루에 테더링 28GB를 씀(이번 달 남은 51.3 → 22.7GB) — 계산이 어떻든 일반 몫은 '오늘 0시 기준 이번 달 남은 양 ÷ 남은 날 − 주요 몫 − 오늘 쓴 일반' 을 넘지 않게 */
-    try { const kd0 = new Date(Date.now() + 9 * 3600e3); const nL = Math.max(1, new Date(Date.UTC(kd0.getUTCFullYear(), kd0.getUTCMonth() + 1, 0)).getUTCDate() - kd0.getUTCDate() + 1); /* 남은 날은 계산 결과를 믿지 않고 오늘 날짜로 */ const dk0 = kd0.toISOString().slice(0, 10); const hT = H.today && (!H.today.key || H.today.key === dk0) ? H.today : null; const usedT = hT && +hT.tether >= 0 ? +hT.tether : b.strict ? +b.strict.used || 0 : 0; const dayCap = Math.max(0, (+b.monthLeft || 0) + usedT) / nL; const mainCap = b.strict ? +b.strict.main || 0 : 0; const umT = hT && hT.tiers ? +hT.tiers.main || 0 : b.strict ? +b.strict.um || 0 : 0; b.dayCap = dayCap; /* (1.89.81) 화면·기록의 '하루 몫'은 이 값(이번 달 남은 양 ÷ 남은 날) — 예전 줄은 계산 중간값(42.86GB 같은)을 보여 줬음 */ const owe = !benchDoneToday(); const genCap = Math.max(0, dayCap - usedT - (owe ? Math.max(0, mainCap - umT) : 0)); b.benchOwe = owe; const bx = (() => { const x = BFD || {}; const d0 = Date.parse(new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) + 'T00:00:00+09:00'); return Array.isArray(x.failed) && x.failed.length && (Date.parse(x.doneAt || '') || 0) >= d0; })(); const bRun = !!(running && isBenchKey(running) && BENCH_DAYRUN); b.benchMust = owe || bRun || bx; b.left.bench = b.benchMust ? Math.max(0, b.monthLeft != null ? +b.monthLeft : Infinity) : b.left.main; /* (1.89.80) 구조 점검: 한 바퀴 '끝' 표시는 숍 목록을 다 돈 때 찍히지만 그 뒤 상품 페이지 정보(같은 벤치마킹 일)·오늘 못 끝낸 판매자 이어 읽기도 벤치마킹 몫 — 하루 몫과 상관없이 끝까지(요금제 상한까지만) · 일반 업무 막기는 한 바퀴 끝 표시 기준 그대로 */ if (!owe && b.left && b.left.gen < genCap) { b.left.gen = genCap; b.genOpen = true; } /* (1.89.77) 벤치마킹이 끝나면 남겨 두던 벤치마킹 몫까지 일반 업무가 씀(오늘 쓴 테더링 전부를 뺀 나머지) */ /* (1.89.71) 정범님 10/25 '일반 업무에 테더링이 새지 않게': 일반 몫 = 오늘 하루 몫 − 오늘 실제로 쓴 테더링 전부(도우미 실측 · 일반·벤치마킹·기타) − 벤치마킹에 남겨 둘 몫 — 예전엔 오늘 쓴 일반 양을 놓쳐(오늘 탐색 29GB를 쓰고도) 일반 몫이 4.98GB로 남아 보였음 */
+    try { const kd0 = new Date(Date.now() + 9 * 3600e3); const nL = Math.max(1, new Date(Date.UTC(kd0.getUTCFullYear(), kd0.getUTCMonth() + 1, 0)).getUTCDate() - kd0.getUTCDate() + 1); /* 남은 날은 계산 결과를 믿지 않고 오늘 날짜로 */ const dk0 = kd0.toISOString().slice(0, 10); const hT = H.today && (!H.today.key || H.today.key === dk0) ? H.today : null; const usedT = hT && +hT.tether >= 0 ? +hT.tether : b.strict ? +b.strict.used || 0 : 0; const dayCap = Math.min(Math.max(0, (+b.monthLeft || 0) + usedT) / nL, b.base && +b.base.dayGB > 0 ? +b.base.dayGB * 1073741824 : Infinity); /* (1.89.89) 정범님 10/26 '120을 31로 나누면 하루 사용량': 유심 몫이 있으면 하루 몫 = 한 달 GB ÷ 그달 날 수를 넘지 않음 */ const mainCap = b.strict ? +b.strict.main || 0 : 0; const umT = hT && hT.tiers ? +hT.tiers.main || 0 : b.strict ? +b.strict.um || 0 : 0; b.dayCap = dayCap; /* (1.89.81) 화면·기록의 '하루 몫'은 이 값(이번 달 남은 양 ÷ 남은 날) — 예전 줄은 계산 중간값(42.86GB 같은)을 보여 줬음 */ const owe = !benchDoneToday(); const genCap = Math.max(0, dayCap - usedT - (owe ? Math.max(0, mainCap - umT) : 0)); b.benchOwe = owe; const bx = (() => { const x = BFD || {}; const d0 = Date.parse(new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) + 'T00:00:00+09:00'); return Array.isArray(x.failed) && x.failed.length && (Date.parse(x.doneAt || '') || 0) >= d0; })(); const bRun = !!(running && isBenchKey(running) && BENCH_DAYRUN); b.benchMust = owe || bRun || bx; b.left.bench = b.benchMust ? Math.max(0, b.monthLeft != null ? +b.monthLeft : Infinity) : b.left.main; /* (1.89.80) 구조 점검: 한 바퀴 '끝' 표시는 숍 목록을 다 돈 때 찍히지만 그 뒤 상품 페이지 정보(같은 벤치마킹 일)·오늘 못 끝낸 판매자 이어 읽기도 벤치마킹 몫 — 하루 몫과 상관없이 끝까지(요금제 상한까지만) · 일반 업무 막기는 한 바퀴 끝 표시 기준 그대로 */ if (!owe && b.left && b.left.gen < genCap) { b.left.gen = genCap; b.genOpen = true; } /* (1.89.77) 벤치마킹이 끝나면 남겨 두던 벤치마킹 몫까지 일반 업무가 씀(오늘 쓴 테더링 전부를 뺀 나머지) */ /* (1.89.71) 정범님 10/25 '일반 업무에 테더링이 새지 않게': 일반 몫 = 오늘 하루 몫 − 오늘 실제로 쓴 테더링 전부(도우미 실측 · 일반·벤치마킹·기타) − 벤치마킹에 남겨 둘 몫 — 예전엔 오늘 쓴 일반 양을 놓쳐(오늘 탐색 29GB를 쓰고도) 일반 몫이 4.98GB로 남아 보였음 */
       if (b.left && b.left.gen > genCap) { const g0 = b.left.gen; b.left.gen = genCap; b.genClamp = { from: g0, to: genCap, dayCap, nL }; let cl0 = budTick._cl || 0; try { cl0 = Math.max(cl0, +GM_getValue('rnu-gencl-at', 0) || 0); } catch (e) {} if (Date.now() - cl0 > 3 * 3600e3) { budTick._cl = Date.now(); try { GM_setValue('rnu-gencl-at', budTick._cl); } catch (e) {} /* (1.89.87 3시간 점검) 3시간에 한 번을 이 PC 모든 탭이 함께(GM) — 탭 메모리라 새 탭마다 남겨 3시간 66줄이었음 */ log(`🛡 일반 몫 바로잡음: ${(g0 / 1073741824).toFixed(2)}GB → ${(genCap / 1073741824).toFixed(2)}GB (오늘 하루 몫 = 이번 달 남은 ${((+b.monthLeft + usedT) / 1073741824).toFixed(1)}GB ÷ 남은 ${nL}일 = ${(dayCap / 1073741824).toFixed(2)}GB · 주요 ${(mainCap / 1073741824).toFixed(2)}GB 먼저) — ✨ 끝없는 탐색이 벤치마킹 몫까지 쓰지 않게`, 1); } } } catch (e) {}
     budSend(b);
     try { const tt = H.today && H.today.tiers; const oth = tt ? Math.max(0, (+H.today.tether || 0) - (+tt.main || 0) - (+tt.gen || 0)) : 0; const dk = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); if (oth > 300 * 1048576 && budTick._ow !== dk) { budTick._ow = dk; log(`🚨 오늘 어느 일에도 속하지 않은 테더링 ${(oth / 1048576).toFixed(0)}MB — 크롬 자체·윈도우 업데이트·다른 창일 수 있음 · 이 양도 하루 몫에서 빠짐(넘지는 않음) · 3시간 점검이 까닭을 찾음`, 1); } } catch (e) {} /* (1.89.67) 일반 몫 밖으로 새는 테더링 감시 */
@@ -4043,7 +4047,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const kMsC = (v) => { if (!v) return 0; if (v.toMillis) return v.toMillis(); const s0 = String(v); if (/^\d{4}-\d\d-\d\dT\d\d:\d\d(:\d\d)?$/.test(s0)) return Date.parse(s0 + (s0.length === 16 ? ':00' : '') + '+09:00') || 0; if (/^\d{4}-\d\d-\d\d$/.test(s0)) return Date.parse(s0 + 'T00:00:00+09:00') || 0; return Date.parse(s0) || 0; };
   async function soldInfer(force) { if (PUBONLY || !auth.currentUser || (!force && window.__rnRest && window.__rnRest())) return; /* (1.88.6) 쉬는 탭은 하지 않음(상품 2만 5천 건을 탭마다 메모리에 올리던 것) */ const LR = C('app_settings').doc('sold_infer'); let first = false;
     try { let go = false; await db.runTransaction(async (tx) => { go = false; /* (1.89.13) 트랜잭션이 다시 돌면 앞 시도의 값이 남지 않게 */ const d = (await tx.get(LR)).data() || {}; first = !d.u1016; if (!force && !first && d.at && Date.now() - Date.parse(d.at) < 55 * 60e3) return; if (d.lease && d.lease.pc !== PC_NAME && Date.now() - (+d.lease.ms || 0) < 15 * 60e3) return; tx.set(LR, { lease: { pc: PC_NAME, ms: Date.now() } }, { merge: true }); go = true; }); if (!go) return; } catch (e) { return; }
-    const grp = first ? 'u1016' : 'auto_' + nowIso().slice(0, 10); const since = first ? '2026-08-01' : new Date(Date.now() + 9 * 3600e3 - 30 * 864e5).toISOString().slice(0, 10);
+    const grp = first ? 'u1016' : 'auto_' + new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const since = first ? '2026-08-01' : new Date(Date.now() + 9 * 3600e3 - 30 * 864e5).toISOString().slice(0, 10);
     try { await loadListings('inc'); const L = LISTINGS; const byIsbn = new Map(); const took = new Map(); /* (자동 점검 2026-10-16) 이미 어느 상품을 판매 끝으로 고른 주문 줄은 다시 고르지 않음 — 1시간마다 30일 주문을 다시 훑으며 앞에서 고른 상품이 판매완료가 되면 같은 ISBN의 다음 판매중 상품을 또 고르던 것 */ for (const [k, l] of L) { const so = l && l.soldInfer; if (so && so.how === 'isbn' && so.order && so.order.orderId && so.order.isbn) { const tk = so.order.orderId + '|' + so.order.isbn; took.set(tk, (took.get(tk) || 0) + Math.max(1, +l.qty || 1)); } } for (const [k, l] of L) { if (!l || l.active === false || !l.isbn13) continue; (byIsbn.get(l.isbn13) || byIsbn.set(l.isbn13, []).get(l.isbn13)).push(k); }
       const qs = await C('crm_orders').where('orderedAt', '>=', since).get(); const ords = []; qs.forEach((d) => { const o = d.data(); if (o && o.kind === 'sale' && o.platform !== 'cash' && SHIPPED_ST.test(String(o.status || o.stage || ''))) ords.push({ id: d.id, ...o }); }); ords.sort((a, b) => kMsC(a.orderedAt) - kMsC(b.orderedAt));
       const used = new Set(); const certain = [], inferred = [], skipped = []; const FV = firebase.firestore.FieldValue; const at = nowIso();
@@ -4573,7 +4577,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
         prog = { list: arr.map((x) => `${x.id}|${x.sc}`), i: 0, got: 0, startedAt: nowIso() }; await saveProgress(name, prog); // Firebase는 배열 안의 배열을 저장 못 함 → '아이디|번호' 글자로
         log(`6개월 평가 수: 판매자 ${arr.length}곳 ${mode === 'all' ? '(전체)' : `(${SET.rev6mDays || 7}일 넘게 확인 안 한 곳)`}`);
       }
-      let b = db.batch(); let w = 0; const day = nowIso().slice(0, 10);
+      let b = db.batch(); let w = 0; const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); /* (1.89.89) 정범님 10/26: 한국 날짜 — 예전 UTC라 오전 9시 전 수집이 어제 칸을 덮었음(10/26 전 키는 UTC 날짜) */
       const qSet = new Set(); try { const qd = (await C('app_settings').doc('seller_queue').get()).data() || {}; (qd.sc || []).forEach((x) => qSet.add(String(x))); } catch (e) { qSet.add('*'); } // (1.89.32) 모으기 줄에 지금 든 판매자 — 읽기 실패하면 예전처럼 모두 지움
       for (; prog.i < prog.list.length; prog.i++) {
         if (stopFlag) { if (w) await b.commit(); await saveProgress(name, prog); throw new Error('멈춤'); }

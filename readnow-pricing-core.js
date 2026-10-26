@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.16.0'; // (0.16.0) 정범님 10/19: 재고 기간 할인(T2 5~10% … T7 70%)을 없앰 — 우리 판매 자료(10/08~10/18 · 상품·일 17만)로 판매 확률은 등록 30일 뒤 약 1.2~1.5‰로 내려간 뒤 1년까지 거의 그대로이고, 수요 낮은 책은 값을 내려도 판매가 늘지 않음 → 기간에 따라 깎을 근거가 없음 · 오래된 재고의 값은 판매가치 엔진(ml-core valueOf: 수요×자리 · 알라딘 매입 검토)이 맡음 · 단계(T1~T8)는 남김(기준 판매자 색 넓히기·불용 판정에 씀) // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
+  const VERSION = '0.16.1'; // (0.16.1) 🕘 임시 기준 끝나는 날 한국 날짜 // (0.16.0) 정범님 10/19: 재고 기간 할인(T2 5~10% … T7 70%)을 없앰 — 우리 판매 자료(10/08~10/18 · 상품·일 17만)로 판매 확률은 등록 30일 뒤 약 1.2~1.5‰로 내려간 뒤 1년까지 거의 그대로이고, 수요 낮은 책은 값을 내려도 판매가 늘지 않음 → 기간에 따라 깎을 근거가 없음 · 오래된 재고의 값은 판매가치 엔진(ml-core valueOf: 수요×자리 · 알라딘 매입 검토)이 맡음 · 단계(T1~T8)는 남김(기준 판매자 색 넓히기·불용 판정에 씀) // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -206,7 +206,7 @@
     if (cut == null) { tier = tierOf(regDays, S.tierBounds); if (tier !== 'T8' && +tier.slice(1) > +S.tempTierCap.slice(1)) tier = S.tempTierCap; basis = `감시 시작 전: 등록 후 ${regDays}일 (${S.tempTierCap}까지만)`; days = regDays; }
     else if (legacy && now < sunset) {
       const frozen = Math.floor((cut - t(listing.registeredAt)) / DAY); let tt = tierOf(frozen, S.tierBounds); if (+tt.slice(1) > +S.tempTierCap.slice(1)) tt = S.tempTierCap;
-      if (+tt.slice(1) > +tier.slice(1)) { temp = { tier: tt, frozenDays: frozen, endsAt: new Date(sunset).toISOString().slice(0, 10) }; tier = tt; basis = `임시 기준: 감시 시작일까지 등록 ${frozen}일 → ${tt} (최저가 기간 ${lowDays}일이 따라잡거나 ${temp.endsAt}에 자동 종료)`; }
+      if (+tt.slice(1) > +tier.slice(1)) { temp = { tier: tt, frozenDays: frozen, endsAt: new Date(sunset + 9 * 3600e3).toISOString().slice(0, 10) }; tier = tt; basis = `임시 기준: 감시 시작일까지 등록 ${frozen}일 → ${tt} (최저가 기간 ${lowDays}일이 따라잡거나 ${temp.endsAt}에 자동 종료)`; }
     }
     if (listing.registeredAt && regDays > S.tierBounds[S.tierBounds.length - 1]) { tier = 'T8'; basis = `등록 ${regDays}일 — 불용은 등록일 기준`; days = regDays; }
     const T = S.tiers[tier];

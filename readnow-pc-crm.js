@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.88의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.89의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.88' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.88', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.89' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.89', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -850,7 +850,7 @@
   let sellerLinkMap = new Map(); // customerId → [{name, grade}] (판매자 시트와 연결된 고객)
   function scoreCustomer(c, todayIso) {
     const today = todayIso ? new Date(todayIso) : new Date();
-    const days = (iso) => (iso ? Math.floor((today - new Date(String(iso).slice(0, 10))) / 864e5) : null);
+    const days = (iso) => (iso ? Math.floor((today - new Date(String(iso).slice(0, 10) + 'T00:00:00+09:00')) / 864e5) : null); /* (1.89.89) 한국 0시로 셈(예전 UTC 0시 — 오전 9시 전 경과일 1 적게) */
     const won = (n) => `${Math.round(n || 0).toLocaleString()}원`;
     const V = []; const R = [];
     const orders = c.saleOrderCount || 0; const amt = c.salesAmount || 0; const last = days(c.lastSaleAt || c.lastOrderAt);
@@ -897,7 +897,7 @@
     const vipOn = value >= SCORE_RULES.vip.minValue && risk < SCORE_RULES.vip.maxRisk && orders >= SCORE_RULES.vip.minOrders && !(SCORE_RULES.vip.excludeSellers && sl.length);
     const cauOn = risk >= SCORE_RULES.caution.minRisk;
     return {
-      scores: { value, risk, valueParts: V, riskParts: R, ver: SCORE_VER, day: today.toISOString().slice(0, 10) },
+      scores: { value, risk, valueParts: V, riskParts: R, ver: SCORE_VER, day: new Date(today.getTime() + 9 * 3600e3).toISOString().slice(0, 10) }, /* (1.89.89) 한국 날짜 */
       autoFlags: {
         vip: { on: vipOn, reasons: vipOn ? [`가치 점수 ${value}점 (기준 ${SCORE_RULES.vip.minValue}점 이상), 주의 점수 ${risk}점`, ...top(V)] : [] },
         caution: { on: cauOn, reasons: cauOn ? [`주의 점수 ${risk}점 (기준 ${SCORE_RULES.caution.minRisk}점 이상)`, ...top(R)] : [] },
@@ -1687,7 +1687,7 @@
       const raw = await dbGet('sellerRaw', settings.shopSc || '996008'); if (!raw) return;
       const snaps = Object.values(raw.snapshots || {}).sort((a, b) => (a.fetchedAt || 0) - (b.fetchedAt || 0));
       const n = (v) => (v == null ? null : parseInt(String(v).replace(/[^\d]/g, ''), 10) || 0);
-      const hist = []; snaps.forEach((s) => { const paidOnly = /무조건/.test(s.freeShipping || ''); const p = { freeOver: paidOnly ? null : n(s.freeShipping), fee: n(s.shippingFee), paidOnly, from: new Date(s.fetchedAt).toISOString().slice(0, 10), seenAt: new Date(s.fetchedAt).toISOString(), by: '툴팁 기록' }; const l = hist[hist.length - 1]; if (!l || l.freeOver !== p.freeOver || l.fee !== p.fee) hist.push(p); });
+      const hist = []; snaps.forEach((s) => { const paidOnly = /무조건/.test(s.freeShipping || ''); const p = { freeOver: paidOnly ? null : n(s.freeShipping), fee: n(s.shippingFee), paidOnly, from: new Date(Date.parse(s.fetchedAt) + 9 * 3600e3).toISOString().slice(0, 10), seenAt: new Date(s.fetchedAt).toISOString(), by: '툴팁 기록' }; const l = hist[hist.length - 1]; if (!l || l.freeOver !== p.freeOver || l.fee !== p.fee) hist.push(p); });
       if (hist.length) await SYS().doc('shopPolicy').set({ tooltipHistory: hist, writerSchema: WRITER_SCHEMA }, { merge: true });
     } catch (e) {}
   }
@@ -1745,7 +1745,7 @@
         // 수집 전에 한 번: 날짜가 바뀌었거나 지난 계산 뒤 새로 올린 게 있을 때만 (없으면 건너뜀)
         if (bj.si === 0 && fbUser && !bj.preScored) {
           const ls = await dbGet('meta', 'lastScore'); const lu = await dbGet('meta', 'lastUpload');
-          const stale = !ls ? false : String(ls.at).slice(0, 10) !== new Date().toISOString().slice(0, 10) || (lu && lu.at > ls.at);
+          const stale = !ls ? false : new Date(Date.parse(ls.at) + 9 * 3600e3).toISOString().slice(0, 10) !== new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) || (lu && lu.at > ls.at);
           if (stale) { currentTask = 'score'; render(); try { await taskScore(); } catch (e) { if (e.code === 'PAUSED' || e.code === 'LOGIN') throw e; log(`수집 전 점수 계산 건너뜀: ${e.message}`, 'warn'); } }
           else log(ls ? '수집 전 점수 계산: 바뀐 내용이 없어 건너뜁니다.' : '수집 전 점수 계산: 아직 계산 기록이 없어 수집 뒤에 합니다.');
           bj.preScored = true; await saveJob(bj);
