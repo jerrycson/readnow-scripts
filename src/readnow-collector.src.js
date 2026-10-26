@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.103
+// @version      1.89.104
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -5855,6 +5855,8 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   /* (1.60.1) 발송 요청 읽기를 평일 9~16시 15분마다 스스로 하던 것(클라우드가 꺼졌을 때) → ⏰ 매일 자동 수집의 칸에서만 (클라우드가 살아 있으면 그 칸은 저절로 건너뜀) */
 
   async function photosJob() {
+    /* (1.89.104) 🛑 정범님 10/26 22:38 '왜 하루 종일 이미지만 받고 있나': '표지 없는 상품' 판단(prd_books.images.front — 우리가 찍은 표지 칸)이 거의 모든 상품(2.56만 중 2.56만)을 골라, 실제로는 알라딘 표지(같은 책 공용 그림 · 웹앱은 알라딘 주소로 바로 보여 줌)를 상품마다 한 장씩 하루 종일 받고 있었음 → 시간표·자동 실행 멈춤(하던 목록도 버림) · 🧭 관리도구에서 사람이 고른 때만 */
+    if (!FORCE_ALL) { try { const pg = await loadProgress('photos'); if (pg && pg.list) await saveProgress('photos', { ...pg, list: null, stoppedAt: nowIso(), stopWhy: '정범님 10/26 22:38 — 알라딘 표지를 상품마다 받던 것 멈춤' }); } catch (e) {} log('🛑 우리 상품 사진 받기는 시간표로 돌지 않음 — 받던 것의 거의 전부가 알라딘 표지(같은 책 공용 그림)였음 · 필요하면 🧭 관리도구에서 직접', 1); ui('우리 상품 사진: 멈춤(시간표로 안 돎)', 0, 0); return true; }
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
     try {
       await loadListings();
