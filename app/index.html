@@ -255,6 +255,7 @@ label.set{display:block;font-size:13px;color:var(--sub);margin-top:8px}label.set
 @media (max-width:600px){.adrow{flex-wrap:wrap}.adst{width:auto}.adb{flex-direction:row}.aldet{margin-left:0}}
 .wcat{margin-top:8px}.wcat>b{display:block;font-size:12.5px;color:var(--sub);margin-bottom:4px}.wcat .sc button{display:flex;flex-direction:column;align-items:flex-start;text-align:left}.wcat .sc button small{font-weight:400;color:var(--sub);font-size:11px}
 .hrow b small{font-weight:400;color:var(--sub)}
+.olist .item.tobhid>span:first-child{opacity:.45;text-decoration:line-through}
 fieldset.setf{border:0;padding:0;margin:0;min-width:0}fieldset.setf:disabled{opacity:.6}label.set.ck{display:flex;gap:8px;align-items:center}label.set.ck input{width:auto;display:inline;margin:0}
 .nums.six{grid-template-columns:repeat(6,1fr)}@media(max-width:520px){.nums.six{grid-template-columns:repeat(3,1fr)}}
 .ro{background:var(--soft);border-radius:8px;padding:8px 10px;font-size:13px}.ro b{color:var(--ink)}
@@ -813,6 +814,11 @@ button:focus-visible,.btn:focus-visible,a:focus-visible{outline:2px solid var(--
 .sev-box{border:1px dashed #BFCBC7;background:#FAFBFB;border-radius:8px;padding:6px 10px;font-size:12.5px;color:#55635F;line-height:1.45}
 .sev-h{font-size:11.5px;font-weight:800;color:#6E7C78;margin-bottom:2px}.sev-h small{font-weight:400;color:#97A39F;margin-left:4px}
 .sev-ev{font-weight:700;color:#3F4B48}.sev-ev small{font-weight:400;color:#6E7C78;font-size:12px}.sev-ev.s-2,.sev-ev.s-1{color:#9A3E37}.sev-ev.s1,.sev-ev.s2{color:#2F6E4E}
+/* (10/26) 📝 판매가 평가 사유 */
+.sev-rs{margin-top:6px}.sev-rs-h{display:flex;align-items:center;flex-wrap:wrap;gap:4px}.sev-rs-h small{font-size:11px;color:#8C9894}
+.sev-rt{font-size:12px;padding:2px 9px;min-height:26px;border:1px dashed #9FB8AF;background:#fff;color:#2F5D50;border-radius:13px;cursor:pointer;font-weight:600}.sev-rt.on{background:#EEF5F2;border-style:solid}
+.sev-rc{font-size:12px;padding:2px 8px;min-height:26px;border:1px solid #2F5D50;background:#E6F0EC;color:#1F4A3E;border-radius:13px;cursor:pointer}.sev-rc i{font-style:normal;color:#8C9894;margin-left:2px}.sev-rc:hover i{color:#B0322A}
+.sev-rs-ph{margin-top:6px}.sev-rs-ph .rgpb.on{background:#E6F0EC;border-color:#2F5D50}.sev-rs-ph .rgpb.on .pt{font-weight:700;color:#1F4A3E}.sev-rs-ph .rgpb.on .pt::before{content:'✓ ';color:#1F6F4A}
 .sev-fb{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:6px}.sev-fb small{font-size:11.5px;color:#7A8783;margin-right:2px}
 .sev-fb button{font-size:13px;padding:4px 12px;min-height:30px;border:1px solid #C9D3D0;background:#fff;color:#55635F;border-radius:15px;cursor:pointer;font-weight:600}.sev-fb button:hover{border-color:#2F5D50;color:#2F5D50}.sev-fb button.na{color:#8C9894;border-style:dashed}.sev-fb button.na.on{background:#8C9894;border-color:#8C9894;color:#fff}.sev-fb button.on{background:#2F5D50;color:#fff;border-color:#2F5D50}
 .shp-it{grid-template-areas:"code gt blk" "img note blk" "img etc blk" "img sev blk" "img . blk" "oth oth oth"!important;grid-template-rows:auto auto auto auto 1fr auto!important}
@@ -884,6 +890,7 @@ html.ovlock,html.ovlock body{overflow:hidden!important;overscroll-behavior:none}
 .delchip.run{background:#EAF2FD;border-color:#5B8DEF;color:#1F4FA8}.delchip.ok{background:#F2F3F3;border-color:#A9B1AE;color:#4F5754}.delchip.bad{background:#FDECEA;border-color:#D9534F;color:#A12A22}
 .problink{display:inline-flex;align-items:center;gap:4px;margin-left:auto;padding:4px 10px;border:1px solid #C9D3CF;border-radius:14px;background:#fff;color:#55615C;font-size:12.5px;cursor:pointer;white-space:nowrap}.problink.on{background:#B0322A;border-color:#8A221C;color:#fff;font-weight:700;box-shadow:0 0 0 3px rgba(176,50,42,.22)}.problink b{font-weight:800}.sh .problink + .kbbtn{margin-left:6px !important}
 .probband{display:block;margin:0 0 4px;padding:5px 9px;border-radius:7px;background:#FDECEA;border:2px solid #B0322A;color:#7A1C16;font-size:12.5px;line-height:1.45;cursor:pointer;white-space:normal}.probband u{text-decoration:none;font-weight:700;white-space:nowrap}.probband.t{background:repeating-linear-gradient(135deg,#FFF1C9 0 12px,#FFE19A 12px 24px);border-color:#B26A00;color:#4A2E00;font-size:14.5px;padding:7px 10px}.probband.off{border-width:1px;border-style:dashed;cursor:default;font-size:12px;padding:3px 8px}
+/* (10/26) 🔬 상품 조회수 실험 */ .pxband{display:inline-block;margin:0 0 4px;padding:2px 8px;border-radius:6px;background:#F1E9FB;border:1.5px solid #6B3FA0;color:#4A2380;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}.pxband u{text-decoration:none;margin-left:2px}.pxband.run{border-style:dashed;animation:pxpulse 1.6s ease-in-out infinite}@keyframes pxpulse{50%{background:#E2D2F7}}.pxtop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px}.pxchip{border:1.5px solid #6B3FA0;background:#fff;color:#4A2380;border-radius:16px;padding:4px 12px;font-size:13px;cursor:pointer}.pxchip.on{background:#6B3FA0;color:#fff}.pxhow p{margin:6px 0;font-size:13px;line-height:1.55}.pxhow summary{cursor:pointer}.pxaddbar{margin-top:8px}.pxaddp{margin-top:8px;padding:8px;border:1px dashed #B9A3D6;border-radius:8px}.pxaddp input[type=search]{width:100%;padding:8px;font-size:15px;box-sizing:border-box}.pxsel{margin:6px 0;font-size:12.5px;display:flex;flex-wrap:wrap;gap:4px;align-items:center}.pxselc{background:#F1E9FB;border-radius:10px;padding:1px 6px}.pxres{max-height:320px;overflow:auto;margin:4px 0 8px}.pxpick{display:flex;gap:6px;align-items:flex-start;padding:5px 4px;border-bottom:1px solid #eee;cursor:pointer;font-size:13px}.pxpick.on{background:#F6F0FD}.pxpick.dis{opacity:.55;cursor:default}.pxcard{border-left:5px solid #6B3FA0}.pxcard.ended{border-left-color:#bbb}.pxcard.focus{box-shadow:0 0 0 3px #B48BE6}.pxstate{margin:6px 0 4px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;font-size:12.5px}.pxst{font-weight:700;padding:1px 7px;border-radius:6px;background:#EEE}.pxst.on{background:#E3F4E5;color:#1F6F4A}.pxst.run{background:#E5EEFB;color:#1F4E9A}.pxst.bad{background:#FDECEA;color:#9A2A22}.pxst.off{background:#F0F0F0;color:#666}.pxck{padding:1px 6px;border-radius:6px;border:1px solid #ddd;font-size:12px}.pxck.ok{border-color:#9CCFA5;color:#1F6F4A}.pxck.bad{border-color:#E3A29C;color:#9A2A22}.pxck.unk{border-color:#E6C77E;color:#7A5600}.pxmsg{color:#555}.pxnums{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}.pxn{display:flex;flex-direction:column;align-items:center;min-width:64px;padding:4px 8px;border-radius:8px;background:#F7F4FB;border:1px solid #E4DAF1}.pxn small{font-size:11px;color:#666}.pxn b{font-size:18px;color:#4A2380}.pxn i{font-style:normal;font-size:10.5px;color:#777}.pxn.sm b{font-size:14px}.pxsale{font-size:12.5px;margin:4px 0}.pxbars{width:100%;max-width:520px;height:64px;display:block;margin:4px 0}.pxacts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}.pxhist{font-size:12px;width:100%}.pxhist ol{margin:4px 0;padding-left:18px}.pxcmd{padding:6px 0;border-top:1px solid #eee;font-size:13px}.pxcmd.run{background:#F5F8FE}.pxcmd.bad b{color:#9A2A22}.pxcr{padding-left:12px;font-size:12px}.pxpd{border-left:5px solid #6B3FA0}.pxpdn{font-size:13px;margin-top:4px}
 .prow2.probc{box-shadow:inset 4px 0 0 #B0322A;background:#FFFAF9}tr.probtr td{background:#FFF7F6}.probtop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px}.probtop.card{display:block;border:2px solid #B0322A}.probtop-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.probtop .problink{margin-left:0}
 .probcur{border-left:4px solid #B0322A}.probcur.focus{box-shadow:0 0 0 3px rgba(176,50,42,.35)}.probwhy{margin:6px 0 0;padding:6px 9px;border-radius:6px;background:#FBF4F3;font-size:13px;line-height:1.5}.probwhy.k-test{background:#FFF6DD}.probacts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
 .problog{border-top:1px solid #E6ECE9;padding:6px 2px}.problog summary{cursor:pointer;font-size:13px}.pl-st{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11.5px;font-weight:700}.pl-st.on{background:#B0322A;color:#fff}.pl-st.off{background:#E3EFE8;color:#1F6F4A}.pl-ev{margin:6px 0 0 18px;padding:0;font-size:12.5px;line-height:1.6}.pl-b{padding:4px 6px}.probacts .btn.armed{background:#FFF0D6 !important;border-color:#C77C00 !important;color:#6A4200 !important}
@@ -939,14 +946,14 @@ html.ovlock,html.ovlock body{overflow:hidden!important;overscroll-behavior:none}
 <script src="../readnow-core.js?v=1.4.2"></script>
 <script src="../readnow-pricing-core.js?v=0.16.1"></script>
 <script src="../readnow-shipping-core.js?v=0.7.1"></script>
-<script src="../readnow-products-core.js?v=0.19.0"></script>
+<script src="../readnow-products-core.js?v=0.19.1"></script>
 <script src="../readnow-ext-core.js?v=0.6.3"></script>
 <script src="../readnow-autosched-core.js?v=0.18.6"></script>
-<script src="../readnow-registry.js?v=0.14.105"></script>
+<script src="../readnow-registry.js?v=0.14.106"></script>
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
-<script src="../readnow-ml-core.js?v=0.9.1"></script>
+<script src="../readnow-ml-core.js?v=0.9.2"></script>
 <script src="../readnow-register-core.js?v=0.7.4"></script>
-<script>const APP_VER = '1.78.137';</script>
-<script src="readnow-webapp.js?v=1.78.137"></script>
+<script>const APP_VER = '1.78.138';</script>
+<script src="readnow-webapp.js?v=1.78.138"></script>
 </body>
 </html>

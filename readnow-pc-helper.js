@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.96의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.97의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.96' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.96', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.97' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.97', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -248,7 +248,7 @@
   const PE_ST = { '판매중': 1, '일시판매중지': 3, '판매중지': 15 }; const PE_GR = { '최상': 1, '상': 2, '중': 3 }; const PE_COV = ['mainCover', 'zoomCover0', 'zoomCover1', 'zoomCover2', 'zoomCover3', 'zoomCover4', 'zoomCover5', 'zoomCover6', 'zoomCover7'];
   const peTxt = (h) => String(h || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim();
   const peNoteN = (h) => peImgs(h).length + (String(h || '').match(/<img[^>]*data-rnup=/gi) || []).length; /* 보낼 유의 사항의 사진 수 = 이미 있는 사진 + 새로 올릴 사진(자리표) */
-  const peImgs = (h) => (String(h || '').match(/<img[^>]+src=["']([^"']+)/gi) || []).map((x) => x.replace(/^.*src=["']/i, ''));
+  const peImgs = (h) => (String(h || '').match(/<img[^>]+src=["']([^"']+)/gi) || []).map((x) => x.replace(/^.*src=["']/i, '')).filter((u) => !/\/px\/\d+\.gif/i.test(u)); /* (10/26) 🔬 조회수 실험 그림은 셈에서 뺌 */
   async function peReadPc(lid) { const r = await fetch('/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=' + encodeURIComponent(lid), { credentials: 'include' }); if (/\/login\/|wlogin/i.test(r.url)) return { login: false }; const d = new DOMParser().parseFromString(await r.text(), 'text/html'); const v = (id) => { const e = d.getElementById(id); return e ? (e.tagName === 'SELECT' ? (e.querySelector('option[selected]') || e.options[e.selectedIndex] || {}).value : e.value != null && e.value !== '' ? e.value : e.textContent) : null; };
     if (!d.getElementById('frmRecord')) return { ok: false, why: '수정 화면에 양식이 없음' }; return { ok: true, uid: String((d.querySelector('input[name="UpdateItemId"]') || {}).value || ''), isbn: v('isbn'), title: v('title'), price: +v('priceSales') || null, qty: v('stockCount') != null ? +v('stockCount') : null, state: v('stockState') != null ? +v('stockState') : null, code: v('supItemCode'), subtitle: v('itemSubTitle') || '', noteHtml: v('bookDesc') || '', covers: PE_COV.map((f) => { const e = d.getElementById(f); const im = d.getElementById(f + 'img'); const src = im ? im.getAttribute('src') || '' : ''; return { f, v: e ? e.value || '' : '', src: /space\.gif/i.test(src) ? '' : src }; }) }; }
   const peSame = (ch) => ({ price: (x) => +x.price === Math.round(+ch.price), qty: (x) => +x.qty === Math.round(+ch.qty), code: (x) => String(x.code || '') === String(ch.code || ''), state: (x) => +x.state === PE_ST[ch.state], subtitle: (x) => String(x.subtitle || '').trim() === String(ch.subtitle || '').trim(), note: (x) => peTxt(x.noteHtml) === peTxt(ch.note) && peImgs(x.noteHtml).length === peNoteN(ch.note), /* (10/26 정범님 '콘 에어') 새로 올린 설명 사진(자리표 data-rnup · src 빈칸)도 셈 — 예전엔 빼고 세어 사진을 더하면 늘 '값이 그대로(실패)'였음 */ grade: () => null, imgs: (x) => { const cv = (ch.imgs && ch.imgs.covers) || {}; for (const [f, w] of Object.entries(cv)) { const c = (x.covers || []).find((y) => y.f === f); if (!c) return false; if (w && w.rm ? !!c.v : !c.v) return false; } return true; } });

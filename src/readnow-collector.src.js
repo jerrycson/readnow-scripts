@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.96
+// @version      1.89.97
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -20,14 +20,14 @@
 // @downloadURL  https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-orders-core.js?v=0.3.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.2
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.0
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.1
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.105
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.106
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.4
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.1
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.18.6
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
@@ -7519,7 +7519,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   const PE_ST = { '판매중': 1, '일시판매중지': 3, '판매중지': 15 }; const PE_GR = { '최상': 1, '상': 2, '중': 3 }; const PE_COV = ['mainCover', 'zoomCover0', 'zoomCover1', 'zoomCover2', 'zoomCover3', 'zoomCover4', 'zoomCover5', 'zoomCover6', 'zoomCover7'];
   const peTxt = (h) => String(h || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim();
   const peNoteN = (h) => peImgs(h).length + (String(h || '').match(/<img[^>]*data-rnup=/gi) || []).length; /* 보낼 유의 사항의 사진 수 = 이미 있는 사진 + 새로 올릴 사진(자리표) */
-  const peImgs = (h) => (String(h || '').match(/<img[^>]+src=["']([^"']+)/gi) || []).map((x) => x.replace(/^.*src=["']/i, ''));
+  const peImgs = (h) => (String(h || '').match(/<img[^>]+src=["']([^"']+)/gi) || []).map((x) => x.replace(/^.*src=["']/i, '')).filter((u) => !/\/px\/\d+\.gif/i.test(u)); /* (10/26) 🔬 조회수 실험 그림은 셈에서 뺌 */
   async function peReadPc(lid) { const r = await fetch('/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=' + encodeURIComponent(lid), { credentials: 'include' }); if (/\/login\/|wlogin/i.test(r.url)) return { login: false }; const d = new DOMParser().parseFromString(await r.text(), 'text/html'); const v = (id) => { const e = d.getElementById(id); return e ? (e.tagName === 'SELECT' ? (e.querySelector('option[selected]') || e.options[e.selectedIndex] || {}).value : e.value != null && e.value !== '' ? e.value : e.textContent) : null; };
     if (!d.getElementById('frmRecord')) return { ok: false, why: '수정 화면에 양식이 없음' }; return { ok: true, uid: String((d.querySelector('input[name="UpdateItemId"]') || {}).value || ''), isbn: v('isbn'), title: v('title'), price: +v('priceSales') || null, qty: v('stockCount') != null ? +v('stockCount') : null, state: v('stockState') != null ? +v('stockState') : null, code: v('supItemCode'), subtitle: v('itemSubTitle') || '', noteHtml: v('bookDesc') || '', covers: PE_COV.map((f) => { const e = d.getElementById(f); const im = d.getElementById(f + 'img'); const src = im ? im.getAttribute('src') || '' : ''; return { f, v: e ? e.value || '' : '', src: /space\.gif/i.test(src) ? '' : src }; }) }; }
   const peSame = (ch) => ({ price: (x) => +x.price === Math.round(+ch.price), qty: (x) => +x.qty === Math.round(+ch.qty), code: (x) => String(x.code || '') === String(ch.code || ''), state: (x) => +x.state === PE_ST[ch.state], subtitle: (x) => String(x.subtitle || '').trim() === String(ch.subtitle || '').trim(), note: (x) => peTxt(x.noteHtml) === peTxt(ch.note) && peImgs(x.noteHtml).length === peNoteN(ch.note), /* (10/26 정범님 '콘 에어') 새로 올린 설명 사진(자리표 data-rnup · src 빈칸)도 셈 — 예전엔 빼고 세어 사진을 더하면 늘 '값이 그대로(실패)'였음 */ grade: () => null, imgs: (x) => { const cv = (ch.imgs && ch.imgs.covers) || {}; for (const [f, w] of Object.entries(cv)) { const c = (x.covers || []).find((y) => y.f === f); if (!c) return false; if (w && w.rm ? !!c.v : !c.v) return false; } return true; } });
