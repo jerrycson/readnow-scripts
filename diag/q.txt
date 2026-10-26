@@ -1,3 +1,2 @@
-shpauto=25
-doc=app_settings/pxSample1026
-# 17619
+cmds=pxExp&n=3
+# 6643
