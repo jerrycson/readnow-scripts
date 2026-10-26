@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.105
+// @version      1.89.106
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -5375,7 +5375,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   setInterval(() => qchkNext(), 3 * 60e3);
   async function runCmd(id) { await runCmd0(id); const c = window.__rnCmdCur; if (c && c.id === id) { window.__rnCmdCur = null; log(`✅ 웹앱이 맡긴 일 끝: ${CMD_KO[c.type] || c.type}${c.label ? ' · ' + c.label : ''} (${Math.round((Date.now() - c.t0) / 1000)}초)`); } }
   async function runCmd0(id) { const ref = C('shp_cmds').doc(id); let v = null; if ((window.__rnRest && window.__rnRest())) return; // (1.56.0) 맡긴 일은 이 PC의 수집기 탭만
-    { const x0 = (await ref.get()).data(); if (x0 && x0.status === 'queued' && CLOUD_FIRST.has(x0.type) && !x0.cloudTried) { const age = Date.now() - (Date.parse(x0.createdAt || 0) || Date.now()); const ca = await cloudAlive(); CLOUD_GRACE = ca.alive ? 45000 : 3000; if (age < CLOUD_GRACE) { setTimeout(() => runCmd(id).catch(() => {}), CLOUD_GRACE - age + 300 + claimDelay(x0)); return; } } } /* (1.77.5) 출고·돈 일은 클라우드 먼저 — 20초 안에 클라우드가 안 받으면 이 PC가 받음(아래 pcFallback 표시 → 웹앱 '클라우드 이상' 알림) */
+    { const x0 = (await ref.get()).data(); if (x0 && x0.status === 'queued' && CLOUD_FIRST.has(x0.type) && !x0.cloudTried && x0.dev !== PC_NAME) { /* (1.89.106) 정범님 10/26 23:16 '모든 요청은 휴대폰이 아닌 한 그 PC가 먼저': 이 PC 웹앱에서 누른 일은 클라우드를 기다리지 않고 바로 */ const age = Date.now() - (Date.parse(x0.createdAt || 0) || Date.now()); const ca = await cloudAlive(); CLOUD_GRACE = ca.alive ? 45000 : 3000; if (age < CLOUD_GRACE) { setTimeout(() => runCmd(id).catch(() => {}), CLOUD_GRACE - age + 300 + claimDelay(x0)); return; } } } /* (1.77.5) 출고·돈 일은 클라우드 먼저 — 20초 안에 클라우드가 안 받으면 이 PC가 받음(아래 pcFallback 표시 → 웹앱 '클라우드 이상' 알림) */
     await db.runTransaction(async (tx) => { v = null; /* (1.89.13) 트랜잭션이 다시 돌면 앞 시도의 값이 남지 않게 */ const sn = await tx.get(ref); const x = sn.data(); if (!x || x.status !== 'queued' || !pcCan(x.type) || !cmdMine(x.type) || String(x.pcSkip || '').includes(` ${APP_VER}에`)) return; /* 노선표에서 PC 몫인 종류만 (1.36.0) */ tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, ...(CLOUD_FIRST.has(x.type) && !x.cloudTried ? { pcFallback: { at: nowIso(), pc: PC_NAME, why: `클라우드가 ${Math.round(CLOUD_GRACE / 1000)}초 안에 받지 않음` } } : {}), uploadedAt: TS() }); v = x; });
     if (!v) return;
     window.__rnCmdCur = { id, type: v.type, label: String(v.label || '').slice(0, 60), t0: Date.now() }; log(`📨 웹앱이 맡긴 일 받음: ${CMD_KO[v.type] || v.type}${v.label ? ' · ' + String(v.label).slice(0, 60) : ''}${v.by ? ' · ' + String(v.by).split('@')[0] : ''} — 이 PC(${PC_NAME})가 처리 시작`);
