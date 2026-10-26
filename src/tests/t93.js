@@ -1,0 +1,12 @@
+require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  const errs = []; p.on('pageerror', (e) => errs.push(e.message));
+  const r = await p.evaluate(async () => { S.leader = true; const t = new Date().toISOString();
+    await db.collection('reg_items').doc('rt1').set({ test: true, stage: 'done', confirmedAt: t, createdAt: t, final: { title: '테스트 책 1' }, result: { state: 'live', listingId: '404935001', usedCode: 'U215983411' } });
+    await db.collection('reg_items').doc('rt9').set({ test: true, mock: true, stage: 'done', confirmedAt: t, createdAt: t, final: { title: '모의 책' }, result: { state: 'mock' } });
+    await db.collection('reg_items').doc('rt8').set({ test: true, stage: 'pick', createdAt: t, final: { title: '시험 대기 책' } });
+    await new Promise((r) => setTimeout(r, 1200)); const n0 = probAll().size; openProblems(); await new Promise((r) => setTimeout(r, 400));
+    const b = document.querySelector('#sheet [data-probfin]'); b.click(); await new Promise((r) => setTimeout(r, 100)); const armed = /한 번 더/.test(b.textContent); b.click(); await new Promise((r) => setTimeout(r, 800));
+    const n1 = probAll().size, raw = probAllRaw().size; const d = (await db.collection('prd_problems').doc(probDocId('test', 'aladin_U215983411')).get()).data() || {};
+    return { n0, armed, n1, raw, ack: !!d.ack }; });
+  console.log(JSON.stringify(r), errs.join('|')); console.log(r.n0 === 1 && r.armed && r.n1 === 0 && r.raw === 1 && r.ack && !errs.length ? '✓ t93 통과' : '❌ t93 실패');
+});
