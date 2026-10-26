@@ -1,2 +1,1 @@
-lphotos=%EC%82%AC%EB%9E%91%EC%9D%98%20%EA%BF%88
-# 0.5307860011862305
+@kpin kpin/aud_20261026-112220.json
