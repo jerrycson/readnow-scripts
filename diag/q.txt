@@ -1,3 +1,1 @@
-doc=app_settings/regDelRecheck1026
-regfind=321321
-# 31184
+@kpin kpin/aud_20261026-052209.json
