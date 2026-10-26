@@ -31,7 +31,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.35.18'; // (0.35.17 2시간 점검) 📈 실패 회차 동안 요약을 못 쓴 책 한 번 다시 셈 // (0.35.16 2시간 점검) 📈 시장 흐름 요약 16→128칸(문서 색인 한도) · 실패 회차가 겹쳐 쌓은 사라진 매물 바로잡음 // (0.35.15 2시간 점검) 📈 시장 흐름 모음 시도 시각·실패 까닭을 상태 문서·숫자 요약에 // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
+const VER = '0.35.19'; // (0.35.17 2시간 점검) 📈 실패 회차 동안 요약을 못 쓴 책 한 번 다시 셈 // (0.35.16 2시간 점검) 📈 시장 흐름 요약 16→128칸(문서 색인 한도) · 실패 회차가 겹쳐 쌓은 사라진 매물 바로잡음 // (0.35.15 2시간 점검) 📈 시장 흐름 모음 시도 시각·실패 까닭을 상태 문서·숫자 요약에 // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
 // // (0.35.5 격일 정밀 점검) ☁ 공개 확인: 읽기 실패 길도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂 · 상품 조회 HTTP 오류 = 읽기 실패 · deepscan 바꾸는 말 쿼리까지 · 진단 mchg
 // // (0.35.3) deepscan을 화면마다 따로 읽기(한 번에 60초 넘던 것) // (0.35.2) 진단 deepscan — 샵매니저 메뉴 깊이 2까지 · 북스킹 숍 · 우리 상품 화면 · 온라인 중고 목록을 읽기만(GET · 고객 정보 가림)
 // // (0.35.1) 💾 하루 한 번 prd_system/fbCols(모든 최상위 칸 이름 · app_secrets 뺌) — 로거 수집기 자료 보관이 칸 목록으로 씀
@@ -740,7 +740,7 @@ async function fastLoop(p, until, cr, cm, J) { J = J || {}; const FAST = 15000; 
     kickFlag = false; last = Date.now(); loops++; p = curPage(p); if (pageBroken) { try { p = await getPage(); } catch (e) { break; } }
     try { const cm2 = J.cmds === false ? { n: 0, needRead: false, force: new Set() } : await runCmds(p, until + 20000, cmdUrgent); if (cm2.p) p = curPage(cm2.p); n += cm2.n; let c2; try { c2 = await confirmRead(p); } catch (e) { if (!e.relogin) throw e; await login(p); c2 = await confirmRead(p); }
       if (c2.changed) { changed++; cr = c2; } if (J.ship !== false && (cm2.needRead || (c2.prevTab && c2.tabCounts && c2.prevTab['발송 요청'] !== c2.tabCounts['발송 요청']))) { try { rd = await shipRead(p, Math.min(until + 5000, Date.now() + 20000)); lastDelivAt = Date.now(); } catch (e) { log('빠른 발송 요청 읽기 실패', e.message); } }
-      if (J.enrich !== false) { try { await enrichConfirm(p, c2, cm2.force, Math.min(until, Date.now() + 12000), 0); } catch (e) {} } /* (0.12.6) 목록이 그대로여도 아직 시장을 못 읽은 상품이 있으면 빠른 고리에서도 이어 읽음(다 읽었으면 바로 끝남) */
+      if (J.enrich !== false) { try { await enrichConfirm(p, c2, cm2.force, Math.min(until, Date.now() + 12000), 0); } catch (e) {} } try { await shipAutoTick(c2, J); } catch (e) { log('🤖 자동 발송요청 판단 실패(빠른 고리)', e.message); } /* (정범님 10/26) 새 주문을 15초 안에 판단 — 통과면 kickFlag로 다음 고리에서 바로 발송준비시작 */ /* (0.12.6) 목록이 그대로여도 아직 시장을 못 읽은 상품이 있으면 빠른 고리에서도 이어 읽음(다 읽었으면 바로 끝남) */
       await C('app_settings').doc('cloud').set({ lastConfirmAt, lastLoopAt: nowIso(), ok: true, err: null }, { merge: true }).catch(() => {}); // 신선함 신호 — 웹앱 '읽은 시각'이 15초마다
     } catch (e) { log('빠른 읽기 실패', e.message); if (e.pageTimeout || pageBroken || isClosed(e)) { try { p = await getPage(); continue; } catch (e2) {} } break; } }
   return { cr, rd, n, loops, changed }; }
@@ -768,6 +768,66 @@ async function shipDoneClearTick() { if (!webpush) return null; const cfg = (awa
     let ok = false; await db.runTransaction(async (tx) => { ok = false; const sn = await tx.get(d.ref); if ((sn.data() || {}).clearPushAt) return; tx.set(d.ref, { clearPushAt: nowIso() }, { merge: true }); ok = true; }).catch(() => {}); if (!ok) continue;
     const r = await pushSend(null, { title: '✅ 리드나우 발송요청 확정', body: `${R.length}건 발송요청 확정 확인 — 알라딘 주문 알림 정리 (${R.map(([o]) => o).slice(0, 3).join(', ')}${R.length > 3 ? ' …' : ''})`, tag: 'rn-shipdone', url: './?go=deliv' }, 'shipdone').catch((e) => ({ err: e.message })); await d.ref.set({ clearPush: r }, { merge: true }).catch(() => {}); out.push({ cmd: d.id, n: R.length }); }
   return out.length ? out : null; }
+/* ══════════ 🤖 (정범님 10/26) 자동 발송요청 — 주문확인요청에 새로 들어온 주문을 판단해, 통과면 발송준비시작(발송요청)을 맡기고 검토가 필요하면 그대로 두고 알림
+ *  판단 = 공용 출고 파일 autoShipDecide(웹앱과 같은 기준 한 곳) + 판매가 평가 evalSale(출고 카드 알약과 같은 계산) · 시장 = 이 클라우드가 주문 뒤 읽은 첫 페이지(shp_enrich · 판매자 색은 서버 기준)
+ *  통과 → shp_cmds/auto_{주문번호}(사람이 누른 것과 같은 길: 실행 문 기록·결과 확인 · 클라우드가 바로, 안 되면 PC 수집기) — 문서 이름이 주문번호라 같은 주문을 두 번 맡기지 않음(트랜잭션)
+ *  사람이 이미 그 주문을 맡겼으면(startDelivery) 손대지 않음 · 켜기 전에 들어온 주문은 'skip'(사람 몫)
+ *  기록 shp_auto/{주문번호}: 판단 이유·총액·대표 상품(가장 비싼)·상품마다 판정 근거·그때 설정 — 판정이 정해진 뒤엔 덮지 않고 결과(done·fail)만 덧붙임 · 지우지 않음
+ *  알림(웹 푸시): autodone ✅ 자동 주문처리 완료(알라딘에서 발송요청으로 넘어간 것을 확인한 뒤) · autorev 🔎 관리자 검토 필요(이유) — 기기마다 끌 수 있음(웹앱 설정 🔔) */
+const autoMem = new Map(); let autoCfgC = null, autoCfgAt = 0, autoBusy = false, autoTrackAt = 0, autoBeatAt = 0;
+async function autoCfgGet(SHC) { if (autoCfgC && Date.now() - autoCfgAt < 30e3) return autoCfgC; const ref = C('app_settings').doc('ship_auto'); let d = {};
+  try { d = (await ref.get()).data() || {}; } catch (e) { if (autoCfgC) return autoCfgC; throw e; }
+  const cfg = SHC.autoCfg(d); cfg.since = d.since || null; if (cfg.on && !cfg.since) { cfg.since = nowIso(); await ref.set({ since: cfg.since, sinceBy: 'cloud (처음 켜짐 — 이 시각 뒤 주문부터)' }, { merge: true }).catch(() => {}); }
+  autoCfgC = cfg; autoCfgAt = Date.now(); return cfg; }
+async function autoCust(o, SHC) { const hits = []; const seen = new Set();
+  const look = async (who, field, val, weak, name) => { const qs = await C('crm_customers').where(field, 'array-contains', val).limit(6).get(); qs.forEach((d) => { if (seen.has(who + d.id)) return; seen.add(who + d.id); const r = SHC.custRisk(d.data()); if (r.bl || r.seller) hits.push({ who, name: name || '', cid: d.id, bl: r.bl, seller: r.seller, sellers: r.sellers, blWhy: r.blWhy, weak: !!weak || qs.size > 1 }); }); return qs.size; };
+  try { const em = String(o.buyerEmail || '').trim(); let n = 0; if (em && !em.includes('*')) { n = await look('주문인', 'emails', em, false, o.buyer); if (!n && em.toLowerCase() !== em) n = await look('주문인', 'emails', em.toLowerCase(), false, o.buyer); }
+    const bn = String(o.buyer || '').trim(); if (!n && bn) await look('주문인', 'names', bn, true, bn);
+    const rn = o.recipient && !o.recipient.sameAsBuyer ? String(o.recipient.name || '').trim() : ''; if (rn && rn !== '상동' && rn !== bn) await look('수령인', 'names', rn, true, rn);
+    return { hits }; } catch (e) { return { hits, err: e.message }; } }
+const autoTopTxt = (v) => (v.top ? `「${String(v.top.title || '').slice(0, 40)}」 ${wonT(v.top.price)}${(v.top.qty || 1) > 1 ? ' ×' + v.top.qty : ''}` : '');
+async function autoPush(kind, v) { const n = v.qty || 0; const p = kind === 'autodone'
+  ? { title: `✅ 자동 주문처리 완료 · 총 ${wonT(v.total)}`, body: `대표 ${autoTopTxt(v)}${n > 1 ? ` 외 ${n - (v.top && v.top.qty || 1)}권` : ''} · 주문 ${v.orderNo} — 발송요청으로 넘김(오늘 출고)`, tag: 'rn-auto-' + v.orderNo, url: './?go=deliv' }
+  : { title: `🔎 관리자 검토 필요 · 총 ${wonT(v.total)}`, body: `${(v.reasons || []).slice(0, 2).join(' / ') || '확인 필요'} · 대표 ${autoTopTxt(v)} · 주문 ${v.orderNo} — 주문확인요청에 남겨 둠`, tag: 'rn-autorev-' + v.orderNo, url: './?go=confirm', sticky: true };
+  try { return await pushSend(null, p, kind); } catch (e) { return { err: e.message }; } }
+async function autoHumanCmd(ono) { const qs = await C('shp_cmds').where('orderNos', 'array-contains', ono).limit(20).get(); const d = qs.docs.find((x) => { const v = x.data() || {}; return v.type === 'startDelivery' && !v.auto && !['cancelled', 'cancel'].includes(v.status); }); return d ? d.id : null; }
+/* 판정이 '기다림'에서 처음 정해질 때만 씀(트랜잭션) — 두 회차가 겹쳐도 한 번만 맡기고 한 번만 알림 */
+async function autoFinal(ref, rec, cmd) { let did = false; await db.runTransaction(async (tx) => { did = false; const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && v.state && v.state !== 'wait') return;
+    if (cmd) { const cs = await tx.get(cmd.ref); if (cs.exists) return; tx.set(cmd.ref, cmd.v); }
+    tx.set(ref, { ...rec, ...W() }, { merge: true }); did = true; }); return did; }
+async function shipAutoTick(cr, J) { if (autoBusy || !J || J.cmds === false || J.confirm === false) return null; const SHC = shipCoreNode(); if (!SHC || !SHC.autoShipDecide) return { err: '출고 공용 파일에 자동 판단이 없음(옛 판)' };
+  const ML = await mlMod(); if (!ML || !ML.evalSale) return { err: '판매가 평가 파일(readnow-ml-core.js)을 못 읽음 — 자동 판단 쉼' };
+  autoBusy = true; const out = { sent: 0, review: 0, wait: 0, done: 0, fail: 0 };
+  try { const cfg = await autoCfgGet(SHC); const enrich = (cr && cr.enrich) || {}; const L = lastConfirm || []; if (autoMem.size > 3000) autoMem.clear();
+    if (Date.now() - autoBeatAt > 5 * 60e3) { autoBeatAt = Date.now(); C('app_settings').doc('ship_auto').set({ beatAt: nowIso(), beatVer: VER }, { merge: true }).catch(() => {}); } /* 살아 있음 신호(5분마다) — 웹앱이 신호가 10분 넘게 없으면 '자동 판단이 멈춤 — 직접 처리'를 띄움 */
+    const cfgRec = { on: cfg.on, minQty: cfg.minQty, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, since: cfg.since };
+    if (cfg.on) for (const o of L) { const ono = String(o.orderNo || ''); if (!ono || o.platform === 'cash') continue; let m = autoMem.get(ono); if (m && m.final) continue; const ref = C('shp_auto').doc(ono);
+      if (!m) { const sn = await ref.get(); const v = sn.exists ? sn.data() : null; if (v && v.state !== 'wait') { autoMem.set(ono, { final: true }); continue; } m = { firstAt: (v && Date.parse(v.firstAt || '')) || Date.now(), doc: !!v }; autoMem.set(ono, m); }
+      const base = { orderNo: ono, buyer: o.buyer || null, recipient: o.recipient && !o.recipient.sameAsBuyer ? o.recipient.name || null : null, orderedAt: o.orderedAt || null, firstAt: new Date(m.firstAt).toISOString(), at: nowIso(), by: 'cloud', ver: VER, cfg: cfgRec };
+      const oAt = Date.parse(String(o.orderedAt || '').replace(' ', 'T') + ':00+09:00');
+      if (cfg.since && oAt && oAt < Date.parse(cfg.since) - 60e3) { await autoFinal(ref, { ...base, state: 'skip', reasons: ['자동 발송요청을 켜기 전에 들어온 주문 — 사람이 처리'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; }
+      const hc = await autoHumanCmd(ono); if (hc) { await autoFinal(ref, { ...base, state: 'human', humanCmd: hc, reasons: ['사람이 먼저 발송준비시작을 맡김 — 자동 판단 안 함'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; }
+      if (cfg.custBlock && m.cust === undefined) m.cust = await autoCust(o, SHC);
+      const D = SHC.autoShipDecide({ order: o, enrich, cfg, evalSale: ML.evalSale, now: Date.now(), firstAt: m.firstAt, cust: cfg.custBlock ? m.cust : null });
+      const rec = { ...base, qty: D.qty, total: D.total, top: D.top, items: D.items, reasons: D.reasons, kinds: D.kinds, cust: (m.cust && m.cust.hits) || [], custErr: (m.cust && m.cust.err) || null, shipVer: SHC.VERSION || null, mlVer: ML.VERSION || null };
+      if (D.state === 'wait') { out.wait++; if (!m.doc) { await ref.set({ ...rec, state: 'wait', waitLeftMs: D.waitLeftMs, ...W() }, { merge: true }).catch(() => {}); m.doc = true; } continue; }
+      if (D.state === 'pass') { const cref = C('shp_cmds').doc('auto_' + ono); const ok = await autoFinal(ref, { ...rec, state: 'sent', cmdId: cref.id, decidedAt: nowIso() }, { ref: cref, v: { type: 'startDelivery', orderNos: [ono], status: 'queued', createdAt: nowIso(), by: '🤖 자동 발송요청 (클라우드 판단)', auto: true, dev: 'cloud', uploadedAt: FV.serverTimestamp() } });
+        m.final = true; if (ok) { out.sent++; kickFlag = true; log('🤖 자동 발송요청 맡김', ono, wonT(D.total)); } continue; }
+      const ok = await autoFinal(ref, { ...rec, state: 'review', decidedAt: nowIso() }); m.final = true;
+      if (ok) { out.review++; const pr = await autoPush('autorev', rec); await ref.set({ push: pr, pushAt: nowIso() }, { merge: true }).catch(() => {}); log('🤖 검토 필요', ono, D.reasons.join(' / ')); } }
+    /* 맡긴 뒤 결과 따라가기(20초마다): 알라딘에서 발송요청으로 넘어간 것을 확인하면 ✅ 알림 · 실패·확인 못함이면 🔎 알림 · 사람이 취소·다시 맡겼으면 'human' · 기다리던 주문이 목록에서 사라지면 'gone' */
+    if (Date.now() - autoTrackAt > 20e3) { autoTrackAt = Date.now(); const qs = await C('shp_auto').where('state', 'in', ['sent', 'wait']).limit(60).get(); const inList = new Set(L.map((o) => String(o.orderNo)));
+      const flip = async (ref, from, patch) => { let did = false; await db.runTransaction(async (tx) => { did = false; const sn = await tx.get(ref); if ((sn.data() || {}).state !== from) return; tx.set(ref, { ...patch, ...W() }, { merge: true }); did = true; }); return did; };
+      for (const d of qs.docs) { const v = d.data() || {}; const ono = d.id;
+        if (v.state === 'wait') { if (cr && !inList.has(ono) && Date.now() - Date.parse(v.at || 0) > 60e3) await flip(d.ref, 'wait', { state: 'gone', goneAt: nowIso(), reasons: ['판단 전에 주문확인요청에서 사라짐(사람이 처리했거나 취소됨)'] }).catch(() => {}); continue; }
+        const c = (await C('shp_cmds').doc(v.cmdId || 'auto_' + ono).get()).data(); if (!c) continue; const r = (c.results || {})[ono];
+        if (['cancelled', 'cancel'].includes(c.status)) { await flip(d.ref, 'sent', { state: 'human', endAt: nowIso(), endWhy: '자동으로 맡긴 발송준비시작이 취소됨(사람이 다시 눌렀거나 취소)' }).catch(() => {}); continue; }
+        if (r && r.state === 'done') { if (await flip(d.ref, 'sent', { state: 'done', doneAt: r.at || nowIso(), proof: r.proof || null })) { out.done++; const pr = await autoPush('autodone', v); await d.ref.set({ push: pr, pushAt: nowIso() }, { merge: true }).catch(() => {}); log('🤖 자동 발송요청 완료', ono); } continue; }
+        const end = c.status === 'done' || ['stuck', 'fail', 'failed', 'resolved'].includes(c.status);
+        if (end && (!r || r.state === 'fail' || r.state === 'unknown')) { const why = r ? (r.state === 'fail' ? '알라딘에서 발송준비시작이 안 됨' : '알라딘이 받았는지 확인 못 함') + (r.msg ? ' — ' + String(r.msg).slice(0, 100) : '') : '맡긴 일이 끝났는데 이 주문 결과가 없음';
+          const st = r && r.state === 'unknown' ? 'unknown' : 'fail'; if (await flip(d.ref, 'sent', { state: st, endAt: nowIso(), endWhy: why })) { out.fail++; const pr = await autoPush('autorev', { ...v, reasons: ['🤖 자동 발송요청 ' + (st === 'fail' ? '실패' : '확인 못 함') + ': ' + why] }); await d.ref.set({ push: pr, pushAt: nowIso() }, { merge: true }).catch(() => {}); } } } }
+  } finally { autoBusy = false; }
+  return out.sent || out.review || out.wait || out.done || out.fail ? out : null; }
 async function shipNotifyTick(p) { if (!webpush) return null; const ref = C('app_settings').doc('ship_notify'); const cfg = (await ref.get()).data() || {}; await pushKeys().catch((e) => log('푸시 열쇠', e.message));
   const now = Date.now(); const day = kstDay(now); const k = new Date(now + 9 * 3600e3); const minNow = k.getUTCHours() * 60 + k.getUTCMinutes();
   /* 시험 보내기 */ if (cfg.test && (!cfg.testDone || cfg.test > cfg.testDone)) { const r = await pushSend(null, { title: '🔔 리드나우 출고 알림 시험', body: '이 기기에 출고 알림이 옵니다 — 누르면 웹앱 오늘 출고(발송 요청)', tag: 'rn-test', url: './?go=deliv' }); await ref.set({ testDone: cfg.test, testRes: r }, { merge: true }); }
@@ -970,6 +1030,7 @@ async function tick(why) {
     const until = t0 + 30000; // (0.9.0) 무거운 일은 30초 안에서 — 나머지 시간은 빠른 고리(15초마다 주문확인요청) · 한 회차는 1분 안에 끝냄 (다음 예약을 건너뛰지 않게) — 못 한 것은 다음 회차에 이어 함
     /* (0.12.6) 주문확인요청 상품의 시장 읽기(보강)를 발송 요청 읽기보다 먼저 — 예전엔 발송 요청 상품의 유의 사항 다시 읽기가 시간 상자(30초)를 다 써서 보강이 굶었고, 휴대폰 출고 화면 시장이 '읽는 중'에 오래 머물렀음 */
     let en = null; if (J.enrich && cr) { en = await tm('enrich', async () => { try { return await enrichConfirm(p, cr, cm.force, until - 4000); } catch (e) { return { err: e.message }; } }); }
+    if (cr) { try { const au = await tm('auto', () => shipAutoTick(cr, J)); if (au) out0.auto = au; } catch (e) { out0.auto = { err: String(e.message || e).slice(0, 160) }; log('🤖 자동 발송요청 판단 실패', e.message); } if (kickFlag) await urg(); } /* (정범님 10/26) 🤖 자동 발송요청 — 통과한 주문은 바로 맡긴 일로(같은 회차에 처리) */
     if (J.cmds && Date.now() < t0 + 42000) { const cs = await tm('cmdsSlow', () => step('맡긴 일(느린)', (pp) => runCmds(pp, t0 + 42000, cmdSlow))); if (cs) { cm.n += cs.n; if (cs.needRead) cm.needRead = true; (cs.force || new Set()).forEach((x) => cm.force.add(x)); if (cs.buy) cm.buy = true; } } /* (0.12.9) 느린 맡긴 일은 시장 읽기 뒤 42초 안에서만 — 남은 것은 다음 회차 */
     let rd = null; if (delivDue) rd = await tm('ship', () => step('발송 요청', (pp) => shipRead(pp, Math.max(until, Date.now() + 8000))));
     if (J.enrich && lastDelivOrders.length && Date.now() < t0 + 30000) { try { out0.delivFill = await delivFill(curPage(p), t0 + 52000); } catch (e) { out0.delivFill = 'err ' + e.message; } } /* (0.17.12) 발송 요청 상품의 새상품가·예스24 참고값 */
@@ -1125,6 +1186,109 @@ async function spines(b64) {
     else groups.push({ ps: [q], x0: q.x0, x1: q.x1, y0: q.y0, y1: q.y1 }); }
   const out = groups.map((g) => ({ text: g.ps.sort((m, n) => m[o0] - n[o0]).map((q) => q.text).join(' ').replace(/\s+/g, ' ').trim(), box: { x: g.x0 / Wd, y: g.y0 / Ht, w: (g.x1 - g.x0) / Wd, h: (g.y1 - g.y0) / Ht } })).filter((s) => s.text.replace(/[^가-힣A-Za-z0-9]/g, '').length >= 2);
   return { spines: out, w: Wd, h: Ht, standing: tall };
+}
+
+/* ══════════ 📜 김미소책방 매출 문서 — 종이 문서 사진 → 글자(Google Vision) → 줄 → 날짜·금액 표 (정범님 10/26) ══════════
+ *  웹앱 경영 탭 '📜 김미소책방 매출 문서'가 사진 한 장씩 /kmsocr로 보냄 → ① Vision DOCUMENT_TEXT_DETECTION(낱말마다 자리·확신도) ② 낱말을 줄로(기울기·90° 돌린 사진도 바로 세움)
+ *  ③ 줄마다 날짜·금액을 찾아 표 줄로(kmsParse) — 형식을 모르므로 일반 규칙만: 날짜 꼴(YYYY-MM-DD·YY.MM.DD·MM/DD·n월 n일·n일) · 쉼표 숫자·원 · 표 머리말(매출·현금·카드·합계…)로 칸 이름
+ *  애매한 것(연도를 앞 줄에서 빌림·쉼표 없는 숫자·칸 짐작·Vision 확신도 낮음·칸 합 ≠ 합계)은 고치지 않고 표시(flags)만 → 웹앱에서 사람이 확인(노랑)
+ *  {ocr}만 보내면 Vision 없이 다시 나누기만(돈 안 듦 — 나누는 규칙을 고친 뒤 옛 문서를 다시 볼 때) · 기준 숫자를 지어내지 않음(확신도 기준 minConf는 웹앱 설정 값) */
+const KMS_PARSE_VER = 1;
+async function kmsOcr(b64) {
+  if (!visionClient) { const vision = require('@google-cloud/vision'); visionClient = new vision.ImageAnnotatorClient(); }
+  const [res] = await visionClient.documentTextDetection({ image: { content: Buffer.from(b64, 'base64') }, imageContext: { languageHints: ['ko', 'en'] } });
+  const fa = res.fullTextAnnotation; if (!fa || !fa.pages || !fa.pages.length) return { text: '', w: 0, h: 0, wds: '' };
+  const pg = fa.pages[0]; const out = [];
+  for (const bl of pg.blocks || []) for (const pa of bl.paragraphs || []) for (const w of pa.words || []) { const v = (w.boundingBox && w.boundingBox.vertices) || []; if (v.length < 4) continue;
+    const t = (w.symbols || []).map((s) => s.text).join(''); if (!t) continue; const c = w.confidence == null ? '' : Math.round(w.confidence * 100) / 100;
+    out.push([t.replace(/[\t\n]/g, ' '), ...[0, 1, 2, 3].flatMap((i) => [Math.round(v[i].x || 0), Math.round(v[i].y || 0)]), c].join('\t')); }
+  return { text: fa.text || '', w: pg.width || 0, h: pg.height || 0, wds: out.join('\n') }; /* 낱말 = 글\t네 꼭짓점 x,y(8)\t확신도 — 한 줄 글로(Firestore는 배열 안 배열을 못 넣음) */
+}
+/* 낱말 → 줄: 첫 꼭짓점→둘째 꼭짓점 방향(글이 나가는 쪽)의 가운데 각도로 사진을 바로 세운 뒤 세로 위치로 묶음 */
+function kmsLines(wds) {
+  const W = String(wds || '').split('\n').filter(Boolean).map((l) => { const a = l.split('\t'); const p = a.slice(1, 9).map(Number); return { t: a[0], p, c: a[9] === '' || a[9] == null ? null : +a[9] }; }).filter((w) => w.t && w.p.length === 8 && w.p.every((x) => !isNaN(x)));
+  if (!W.length) return [];
+  const ang = W.map((w) => Math.atan2(w.p[3] - w.p[1], w.p[2] - w.p[0])).sort((a, b) => a - b)[Math.floor(W.length / 2)]; const cs = Math.cos(-ang), sn = Math.sin(-ang);
+  const rot = (x, y) => [x * cs - y * sn, x * sn + y * cs];
+  const R = W.map((w) => { const q = [0, 1, 2, 3].map((i) => rot(w.p[i * 2], w.p[i * 2 + 1])); const xs = q.map((z) => z[0]), ys = q.map((z) => z[1]); const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys); return { t: w.t, c: w.c, x0, x1, y0, y1, cy: (y0 + y1) / 2, h: Math.max(1, y1 - y0) }; });
+  const mh = R.map((w) => w.h).sort((a, b) => a - b)[Math.floor(R.length / 2)];
+  R.sort((a, b) => a.cy - b.cy); const lines = [];
+  for (const w of R) { let best = null, bd = Infinity; for (let i = Math.max(0, lines.length - 3); i < lines.length; i++) { const d = Math.abs(lines[i].cy - w.cy); if (d < bd) { bd = d; best = lines[i]; } }
+    if (best && bd <= mh * 0.5) { best.ws.push(w); best.cy = best.ws.reduce((s, z) => s + z.cy, 0) / best.ws.length; } else lines.push({ cy: w.cy, ws: [w] }); }
+  return lines.map((L) => { L.ws.sort((a, b) => a.x0 - b.x0); const segs = []; /* 붙어 있는 낱말(OCR이 '12' ',' '000'처럼 나눈 것)은 한 덩어리로 */
+    for (const w of L.ws) { const s = segs[segs.length - 1]; if (s && w.x0 - s.x1 < mh * 0.35) { s.t += w.t; s.x1 = Math.max(s.x1, w.x1); if (w.c != null) s.c = s.c == null ? w.c : Math.min(s.c, w.c); } else segs.push({ t: w.t, x0: w.x0, x1: w.x1, c: w.c }); }
+    return { text: segs.map((s) => s.t).join(' '), segs: segs.map((s) => ({ t: s.t, x: (s.x0 + s.x1) / 2, x0: s.x0, x1: s.x1, c: s.c })), y: L.cy }; });
+}
+/* 표 머리말 낱말 → 칸 역할 (역할은 '합계 대조'와 '매출로 셀 칸' 기본값에만 씀 — 칸 이름은 문서에 적힌 그대로) */
+const KMS_ROLE = [['total', /^(합계|총계|총합|총액|총매출|매출합계|합계금액|합|계|total)$/i], ['sales', /^(매출|매출액|판매|판매액|판매금액|순매출|실매출|금액|받은돈|입금액?)$/], ['cash', /^(현금|현금매출)$/], ['card', /^(카드|신용카드|카드매출|신용)$/], ['transfer', /^(이체|계좌|계좌이체|통장|송금)$/], ['count', /^(건수|수량|권수|객수|매수|판매수량|판매권수|건)$/], ['discount', /^(할인|할인액|에누리)$/], ['refund', /^(반품|환불|취소|반품액)$/], ['date', /^(날짜|일자|일|월일|년월일|년월|월|요일|기간)$/], ['memo', /^(비고|메모|적요)$/]];
+const kmsRole = (t) => { const s = String(t).replace(/[\s:：()\[\]]/g, ''); for (const [r, re] of KMS_ROLE) if (re.test(s)) return r; return null; };
+const KMS_TOTAL_RE = /(합\s*계|총\s*계|총\s*합|누\s*계|소\s*계|월\s*계|일\s*계|^\s*계\s|\bTOTAL\b)/i;
+/* 날짜 찾기 — 가장 확실한 꼴부터. 앞 줄·머리말에서 빌린 연·월은 flag로 남김 */
+function kmsDate(text, ctx) {
+  const t = String(text).replace(/\((월|화|수|목|금|토|일)\)/g, ' '); let m; const ok = (y, mo, d) => mo >= 1 && mo <= 12 && d >= 1 && d <= 31 && (!y || (y >= 1990 && y <= 2099));
+  const pad = (n) => String(n).padStart(2, '0');
+  if ((m = t.match(/(?<![\d,])((?:19|20)\d{2})\s*(?:[.\-\/]|년)\s*(\d{1,2})\s*(?:[.\-\/]|월)\s*(\d{1,2})\s*일?(?![\d,])/)) && ok(+m[1], +m[2], +m[3])) return { kind: 'day', date: `${m[1]}-${pad(m[2])}-${pad(m[3])}`, raw: m[0], flags: [] };
+  if ((m = t.match(/(?<![\d,.])(\d{2})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})(?![\d,]|\.\d)/)) && ok(2000 + +m[1], +m[2], +m[3])) return { kind: 'day', date: `20${m[1]}-${pad(m[2])}-${pad(m[3])}`, raw: m[0], flags: ['yy'] };
+  if ((m = t.match(/(?<!\d)(\d{1,2})\s*월\s*(\d{1,2})\s*일/)) && ok(0, +m[1], +m[2])) return ctx.year ? { kind: 'day', date: `${ctx.year}-${pad(m[1])}-${pad(m[2])}`, raw: m[0], flags: ['noYear'] } : { kind: 'day', date: null, md: `${pad(m[1])}-${pad(m[2])}`, raw: m[0], flags: ['noYear'] };
+  if ((m = t.match(/(?<![\d,.])(\d{1,2})\s*[\/.\-]\s*(\d{1,2})(?![\d,]|\s*[\/.\-]\s*\d)/)) && ok(0, +m[1], +m[2]) && !/^\d{1,2}\.\d{1,2}$/.test(t.trim())) return ctx.year ? { kind: 'day', date: `${ctx.year}-${pad(m[1])}-${pad(m[2])}`, raw: m[0], flags: ['noYear'] } : { kind: 'day', date: null, md: `${pad(m[1])}-${pad(m[2])}`, raw: m[0], flags: ['noYear'] };
+  if ((m = t.match(/(?<![\d,])((?:19|20)\d{2})\s*(?:[.\-\/]|년)\s*(\d{1,2})\s*월?(?![\d,]|\s*[.\-\/]\s*\d|\s*월?\s*\d{1,2}\s*일)/)) && ok(+m[1], +m[2], 1)) return { kind: 'month', ym: `${m[1]}-${pad(m[2])}`, raw: m[0], flags: [] };
+  if ((m = t.match(/^\s*(\d{1,2})\s*월(?!\s*\d{1,2}\s*일)/)) && ok(0, +m[1], 1)) return { kind: 'month', ym: ctx.year ? `${ctx.year}-${pad(m[1])}` : null, mo: pad(m[1]), raw: m[0], flags: ['noYear'] };
+  if ((m = t.match(/^\s*(\d{1,2})\s*일(?![가-힣])/)) && ok(0, 1, +m[1])) return { kind: 'day', date: ctx.year && ctx.month ? `${ctx.year}-${pad(ctx.month)}-${pad(m[1])}` : null, d: pad(m[1]), raw: m[0], flags: ['dayOnly'] };
+  if (ctx.dayCol && (m = t.match(/^\s*(\d{1,2})(?=\s)/)) && ok(0, 1, +m[1])) return { kind: 'day', date: ctx.year && ctx.month ? `${ctx.year}-${pad(ctx.month)}-${pad(m[1])}` : null, d: pad(m[1]), raw: m[0], flags: ['dayOnly'] }; /* 머리말에 '일' 칸이 있는 월 장부: 줄 맨 앞 1~2자리 = 날 */
+  return null;
+}
+/* 줄의 숫자 덩어리 → 값 (원·건·% 꼬리 · 괄호·△·- = 빼는 값) */
+function kmsNums(segs, skipRaw) {
+  const out = []; let skip = skipRaw ? String(skipRaw).replace(/\s+/g, '') : '';
+  for (const s of segs) { let t = s.t; if (skip) { const st = t.replace(/\s+/g, ''); if (skip.startsWith(st) || st.startsWith(skip) || skip.includes(st)) { skip = skip.replace(st, ''); if (!skip || st.length >= 2) continue; } }
+    const re = /([△▲\-−(]?)\s*(\d{1,3}(?:[,.]\d{3})+|\d+)(?:\.(\d{1,2}))?\s*(\)?)\s*(원|건|권|개|명|매|%|년|월|일)?/g; let m;
+    while ((m = re.exec(t))) { const body = m[2]; const sepDot = /\.\d{3}/.test(body) && !/,/.test(body); const v0 = +body.replace(/[,.]/g, ''); if (isNaN(v0)) continue;
+      if (/년|월|일/.test(m[5] || '')) continue; /* 연·월·날 숫자(2021년·5월)는 금액이 아님 */ const neg = /[△▲\-−]/.test(m[1]) || (m[1] === '(' && m[4] === ')'); const suf = m[5] || ''; const grouped = /[,.]\d{3}/.test(body);
+      const kind = suf === '%' ? 'pct' : /건|권|개|명|매/.test(suf) ? 'cnt' : suf === '원' || grouped ? 'amt' : body.length >= 4 ? 'amt' : 'num';
+      const flags = []; if (kind === 'amt' && !grouped && suf !== '원') flags.push('bare'); if (sepDot) flags.push('dotSep'); if (m[3]) flags.push('decimal');
+      out.push({ v: neg ? -v0 : v0, kind, x: s.x, raw: m[0].trim(), c: s.c, flags }); } }
+  return out;
+}
+/* 줄들 → 표 줄 · ctx(앞 사진에서 이어받는 연·월·머리말)를 돌려줘 다음 사진에 넘김 */
+function kmsParse(lines, ctx0) {
+  const ctx = { year: null, month: null, cols: null, dayCol: false, ...(ctx0 || {}) }; const rows = []; const notes = []; let inh = !!(ctx.cols && ctx.cols.length); /* 앞 사진에서 받은 머리말 — 사진마다 크기·자리가 달라 가로 자리는 믿지 않음 */
+  for (let li = 0; li < lines.length; li++) { const L = lines[li]; const text = String(L.text || '').trim(); if (!text) continue;
+    const roles = (L.segs || []).map((s) => ({ s, r: kmsRole(s.t) })); const nr = roles.filter((x) => x.r).length; const hasNum = /\d{2,}/.test(text.replace(/(?:19|20)\d{2}\s*년?/g, ''));
+    if (nr >= 2 && (!hasNum || nr >= (L.segs || []).length - 1)) { /* 머리말 줄: 칸 이름과 가로 자리 */
+      inh = false; ctx.cols = roles.filter((x) => x.r !== 'date' && x.r !== 'memo' && (x.r || !/^\d/.test(x.s.t))).map((x) => ({ key: String(x.s.t).replace(/\s+/g, ''), name: x.s.t, role: x.r, x: x.s.x })); ctx.dayCol = roles.some((x) => x.r === 'date' && /^(일|일자|월일)$/.test(String(x.s.t).replace(/\s/g, '')));
+      const ym = text.match(/((?:19|20)\d{2})\s*(?:년|[.\-\/])\s*(\d{1,2})\s*월?/); if (ym) { ctx.year = +ym[1]; ctx.month = +ym[2]; } continue; }
+    const D = kmsDate(text, ctx); const N = kmsNums(L.segs || [{ t: text, x: 0, c: null }], D && D.raw).filter((n) => n.kind !== 'pct');
+    if (!N.length) { /* 글만 있는 줄: 문서 머리의 연·월(예 '2023년 5월 매출')만 기억 */ const ym = text.match(/((?:19|20)\d{2})\s*(?:년|[.\-\/])\s*(\d{1,2})\s*월?/); if (ym && +ym[2] >= 1 && +ym[2] <= 12) { ctx.year = +ym[1]; ctx.month = +ym[2]; } else { const y = text.match(/((?:19|20)\d{2})\s*년/); if (y) ctx.year = +y[1]; } continue; }
+    if (D && D.kind === 'day' && D.date && !D.flags.length) { ctx.year = +D.date.slice(0, 4); ctx.month = +D.date.slice(5, 7); }
+    if (D && D.kind === 'month' && D.ym && !D.flags.length) { ctx.year = +D.ym.slice(0, 4); ctx.month = +D.ym.slice(5, 7); }
+    const isTot = KMS_TOTAL_RE.test(' ' + text + ' ');
+    const kind = isTot ? 'total' : D ? D.kind : 'other'; /* 날짜가 있는 합계 줄(일계·누계)은 '합계'로 두고 표시 — 그날 합계면 사람이 '일'로 바꿈 */ const vals = {}; const fl = {}; const cf = {}; const add = (k, f) => { (fl[k] = fl[k] || []).push(f); };
+    const amts = N.filter((n) => n.kind === 'amt' || n.kind === 'num'); const cnts = N.filter((n) => n.kind === 'cnt');
+    if (ctx.cols && ctx.cols.length && inh && N.length === ctx.cols.length) { N.forEach((n, i) => { const k = ctx.cols[i].key; vals[k] = n.v; n.flags.forEach((f) => add(k, f)); if (n.kind === 'num' && ctx.cols[i].role !== 'count') add(k, 'bare'); if (n.c != null) cf[k] = n.c; }); } /* 앞 사진 머리말: 숫자 수가 칸 수와 같으면 차례대로 */
+    else if (ctx.cols && ctx.cols.length) { const used = new Set(); const valCols = ctx.cols;
+      for (const n of N) { let best = null, bd = Infinity; for (const c of valCols) { if (n.kind === 'cnt' && c.role && c.role !== 'count') continue; const d = Math.abs(c.x - n.x); if (d < bd) { bd = d; best = c; } }
+        if (!best) { const k = n.kind === 'cnt' ? '건수' : '값' + (Object.keys(vals).length + 1); vals[k] = n.v; add(k, 'col?'); n.flags.forEach((f) => add(k, f)); if (n.c != null) cf[k] = n.c; continue; }
+        let k = best.key; if (used.has(k)) { k = k + '·' + (Object.keys(vals).length + 1); add(k, 'col?'); } else if (inh) add(k, 'col?'); used.add(k); vals[k] = n.v; n.flags.forEach((f) => add(k, f)); if (n.kind === 'num' && best.role !== 'count') add(k, 'bare'); if (n.c != null) cf[k] = n.c; } }
+    else { let i = 0; for (const n of amts) { const k = '값' + ++i; vals[k] = n.v; n.flags.forEach((f) => add(k, f)); if (n.kind === 'num') add(k, 'bare'); if (n.c != null) cf[k] = n.c; } if (cnts.length) { vals['건수'] = cnts[0].v; if (cnts[0].c != null) cf['건수'] = cnts[0].c; } }
+    if (D) D.flags.forEach((f) => add('date', f)); if (D && D.kind === 'day' && !D.date) add('date', 'noDate'); if (D && D.kind === 'month' && !D.ym) add('date', 'noDate');
+    if (!D && !isTot) add('date', 'noDate'); if (isTot && D) add('date', 'totDate');
+    const dc = (L.segs || []).filter((s) => D && s.c != null && D.raw.replace(/\s/g, '').includes(String(s.t).replace(/\s/g, ''))).map((s) => s.c); if (dc.length) cf.date = Math.min(...dc);
+    /* 칸 합 대조 — 머리말 역할이 '합계'인 칸과 현금·카드·이체 칸이 모두 있을 때만 */
+    if (ctx.cols) { const tc = ctx.cols.find((c) => c.role === 'total'); const parts = ctx.cols.filter((c) => ['cash', 'card', 'transfer'].includes(c.role)); if (tc && parts.length >= 2 && vals[tc.key] != null && parts.every((c) => vals[c.key] != null)) { const s = parts.reduce((a, c) => a + vals[c.key], 0); if (s !== vals[tc.key]) add(tc.key, 'sum≠'); } }
+    rows.push({ li, kind, date: D && D.date ? D.date : null, ym: D && D.kind === 'month' ? D.ym || null : D && D.date ? D.date.slice(0, 7) : null, md: (D && (D.md || D.d || D.mo)) || null, vals, flags: fl, conf: cf, raw: text.slice(0, 200) }); }
+  /* 칸 목록: 머리말이 있으면 그 순서, 없으면 값1·값2… · 매출로 셀 칸 기본값 = 역할 '합계' → '매출' → (모든 줄이 금액 하나면) 그 칸 — 정해지지 않으면 null(사람이 고름) */
+  const keys = []; const seen = new Set(); for (const c of ctx.cols || []) if (!seen.has(c.key)) { seen.add(c.key); keys.push({ key: c.key, name: c.name, role: c.role }); }
+  for (const r of rows) for (const k of Object.keys(r.vals)) if (!seen.has(k)) { seen.add(k); keys.push({ key: k, name: k, role: k === '건수' ? 'count' : null }); }
+  const dataRows = rows.filter((r) => r.kind === 'day' || r.kind === 'month'); let salesCol = (keys.find((c) => c.role === 'total') || keys.find((c) => c.role === 'sales') || {}).key || null;
+  if (!salesCol) { const am = keys.filter((c) => c.role !== 'count'); if (am.length === 1 && dataRows.length) salesCol = am[0].key; }
+  if (!salesCol && dataRows.length) notes.push('매출로 셀 칸을 정하지 못함 — 화면에서 골라 주세요');
+  if (!rows.length) notes.push('날짜·금액이 있는 줄을 찾지 못함');
+  return { v: KMS_PARSE_VER, rows, cols: keys, salesCol, notes, ctx: { year: ctx.year, month: ctx.month, cols: ctx.cols, dayCol: ctx.dayCol } };
+}
+async function kmsRoute(b) {
+  let ocr = b.ocr && typeof b.ocr === 'object' ? { text: String(b.ocr.text || ''), w: +b.ocr.w || 0, h: +b.ocr.h || 0, wds: String(b.ocr.wds || '') } : null; let vision = false;
+  if (!ocr) { if (!b.image) throw Object.assign(new Error('사진 없음'), { code: 400 }); ocr = await kmsOcr(String(b.image).replace(/^data:[^,]+,/, '')); vision = true; }
+  const lines = kmsLines(ocr.wds); const P = kmsParse(lines, b.ctx || null); return { ok: true, vision, ocr, parse: P, lines: lines.length };
 }
 
 /* ── (0.5.5) 사진 가격 조회 기록 저장·읽기 — 웹앱이 Firebase 규칙에 막힐 때 저절로 여기로 (관리자 권한이라 규칙과 관계없음, 허용한 계정만)
@@ -2324,6 +2488,7 @@ const server = http.createServer(async (req, res) => {
     if (path === '/storage-files') { await authUser(req); if (await reqOff()) return send(200, OFFMSG); const b = await bodyOf(req); const pre = String(b.prefix || ''); if (!/^[A-Za-z0-9_\-\/]*$/.test(pre)) return send(400, { ok: false, err: '폴더 이름이 이상함' }); return send(200, { ok: true, files: await storageFiles(pre) }); }
     if (path === '/storage-get') { await authUser(req); if (await reqOff()) return send(200, OFFMSG); const b = await bodyOf(req); return send(200, { ok: true, files: await storageGet(b.names) }); }
     if (path === '/ppt') { const u = await authUser(req); if (await reqOff()) return send(200, OFFMSG); const b = await bodyOf(req); return send(200, await pptStore(b, u)); }
+    if (path === '/kmsocr') { await authUser(req); if (await reqOff()) return send(200, OFFMSG); const b = await bodyOf(req); try { return send(200, await kmsRoute(b)); } catch (e) { return send(e.code === 400 ? 400 : 200, { ok: false, err: '글자 읽기 실패: ' + String(e.message || e).slice(0, 200) }); } } /* 📜 김미소책방 매출 문서: 사진 → Vision 글자 → 날짜·금액 표 ({ocr}만 보내면 다시 나누기만) */
     if (path === '/spines') { await authUser(req); if (await reqOff()) return send(200, OFFMSG); const b = await bodyOf(req); if (!b.image) return send(400, { ok: false, err: '사진 없음' }); const out = await spines(String(b.image).replace(/^data:[^,]+,/, '')); return send(200, out); }
     if (path === '/test') { await authUser(req); const out = await serial(async () => { const p = await getPage(); try { await login(p, true); /* 사람이 누른 시험은 쉬는 시간과 상관없이 한 번 */ return { ok: true, login: 'ok', cores: coreVer }; } catch (e) { return { ok: false, login: 'fail', err: e.message }; } }); return send(200, out); }
     return send(404, { ok: false, err: '없는 주소' });

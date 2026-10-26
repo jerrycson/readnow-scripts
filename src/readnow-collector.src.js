@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.89
+// @version      1.89.90
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -23,8 +23,8 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.1
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.102
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.1
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.103
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.4
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.1
@@ -5764,7 +5764,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       }
       for (; prog.i < prog.list.length; prog.i++) {
         if (stopFlag) { await saveProgress('photos', prog); throw new Error('멈춤'); }
-        const l = LISTINGS.get(prog.list[prog.i]); if (!l) continue; const at = nowIso();
+        const l = LISTINGS.get(prog.list[prog.i]); if (!l) continue; if (l.photosStatus === 'done' && l.photosAt) { prog.skip = (prog.skip || 0) + 1; if (prog.skip % 200 === 1) ui('우리 상품 사진', prog.i + 1, prog.list.length, `이미 받은 상품 건너뜀 ${prog.skip.toLocaleString()}개`); continue; } /* (1.89.89) 정범님 10/26 '사진은 중복해서 받지 않는 정보': 1.89.75 전에 만든 목록(이미 받은 상품까지 든 2.5만 개)이 이어지며 받은 사진을 또 받던 것 — 받을 때마다 지금 기록을 다시 보고 이미 받은(done) 상품은 건너뜀 */ const at = nowIso();
         let ph = [], status = 'none';
         try { const g = await getDoc(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${l.listingId}`); const can = (g.doc.querySelector('link[rel="canonical"]') || {}).href || '';
           if (!new RegExp(`ItemId=${l.listingId}\\b`).test(can) && !/\[중고\]/.test(g.doc.title || '')) status = 'nopage'; else ph = P.parseUsedItemPhotos(g.doc); }
@@ -5787,10 +5787,10 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
         if (saved.some((x) => x.stored)) { status = 'done'; prog.ok++; } else if (status === 'nopage') prog.nopage++; else prog.none++;
         await C('prd_listings').doc(prog.list[prog.i]).set({ photos: saved, photosAt: at, photosStatus: status, photosFrom: match ? 'search' : saved.length ? 'mine' : null, ...(match ? { photosMatch: match } : {}), ...W() }, { merge: true });
         l.photosAt = at; l.photosStatus = status;
-        ui('우리 상품 사진', prog.i + 1, prog.list.length, `${l.title || l.usedCode} · 사진 ${saved.filter((x) => x.stored).length}장 · 받은 상품 ${prog.ok} · 사진 없음 ${prog.none} · 페이지 없음 ${prog.nopage}`);
+        ui('우리 상품 사진', prog.i + 1, prog.list.length, `${l.title || l.usedCode} · 사진 ${saved.filter((x) => x.stored).length}장 · 받은 상품 ${prog.ok} · 사진 없음 ${prog.none} · 페이지 없음 ${prog.nopage}${prog.skip ? ` · 이미 받아 건너뜀 ${prog.skip}` : ''}`);
         if (prog.i % 5 === 0) await saveProgress('photos', prog);
       }
-      await finishJob('photos', { ok: prog.ok, none: prog.none, nopage: prog.nopage, imgs: prog.imgs });
+      await finishJob('photos', { ok: prog.ok, none: prog.none, nopage: prog.nopage, imgs: prog.imgs, skip: prog.skip || 0 });
       log(`상품 사진 완료: ${prog.ok}개 상품 사진 ${prog.imgs}장 (우리 페이지 또는 상품명 검색 90%↑) · 끝내 사진 없음 ${prog.none + prog.nopage} (건너뜀 — 외부 정보로 개선 예정)`);
     } finally { await releaseLane('aladin'); }
   }
