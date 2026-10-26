@@ -1,7 +1,7 @@
 // 🧯 문제 상품 — 상품 전체 표 맨 위·띠 · 홈 알림 · DUPES 맨 위 · 문제 없을 때 그대로
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   const errs = []; p.on('pageerror', (e) => errs.push(e.message));
-  const r = await p.evaluate(async () => { S.leader = true; const t = new Date().toISOString(); const l7 = S.plist.get('aladin_U215983417'); S.plist.set(l7.id, { ...l7, sku: 'DUPES' }); const l8 = S.plist.get('aladin_U215983418'); S.plist.set(l8.id, { ...l8, sku: 'DUPES', registeredAt: '2026-10-29T00:00:00' });
+  const r = await p.evaluate(async () => { S.leader = true; for (const k of ['aladin_U215983411','aladin_U215983415','aladin_U215983417']) { const l0 = S.plist.get(k); if (l0) l0.registeredAt = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }  const t = new Date().toISOString(); const l7 = S.plist.get('aladin_U215983417'); S.plist.set(l7.id, { ...l7, sku: 'DUPES' }); const l8 = S.plist.get('aladin_U215983418'); S.plist.set(l8.id, { ...l8, sku: 'DUPES', registeredAt: '2026-10-29T00:00:00' });
     const all0 = [...S.plist.values()]; const same = probPin(all0) === all0;
     await db.collection('reg_items').doc('rt9').set({ test: true, stage: 'done', confirmedAt: t, createdAt: t, result: { state: 'live', listingId: '404935007', usedCode: 'U215983417' } }); await new Promise((r) => setTimeout(r, 1200));
     openProdAll(); await new Promise((r) => setTimeout(r, 400)); const sh = document.getElementById('sheet'); const tr = sh.querySelector('tr[data-btpid]'); const band = !!(tr && tr.querySelector('.probband.t'));

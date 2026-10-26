@@ -2,7 +2,7 @@
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   const errs = []; p.on('pageerror', (e) => errs.push(e.message));
   const ok = []; const chk = (name, v) => { ok.push([name, !!v]); };
-  const r1 = await p.evaluate(async () => { S.leader = true; const before = prodInv(); const t = new Date().toISOString();
+  const r1 = await p.evaluate(async () => { S.leader = true; for (const k of ['aladin_U215983411','aladin_U215983415','aladin_U215983417']) { const l0 = S.plist.get(k); if (l0) l0.registeredAt = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }  const before = prodInv(); const t = new Date().toISOString();
     await db.collection('reg_items').doc('rt1').set({ test: true, stage: 'done', confirmedAt: t, createdAt: t, final: { title: '테스트 책 1' }, result: { state: 'live', listingId: '404935001', usedCode: 'U215983411' } });
     await db.collection('reg_items').doc('rt2').set({ test: true, stage: 'done', confirmedAt: t, createdAt: t, final: { title: '테스트 책 5' }, result: { state: 'live', listingId: '404935005', usedCode: 'U215983415' } });
     await new Promise((r) => setTimeout(r, 1200)); const l = S.plist.get('aladin_U215983411'); const after = prodInv(); const A = []; probAlerts((lv, t0, k) => A.push([lv, t0, k]));
