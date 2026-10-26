@@ -1,4 +1,4 @@
-doc=app_settings/ship_auto
-shpauto=6
-doc=prd_jobs/cloudBeat
-# 23316
+doc=app_settings/cloud
+doc=app_settings/qna_notify
+rawget=https://market.aladin.co.kr/m/join/mProvision.aspx?pType=4
+# 6478
