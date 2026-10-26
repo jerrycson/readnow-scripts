@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.90
+// @version      1.89.91
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -5317,7 +5317,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
   async function qEditRead(lid) { const r = await fetch('https://www.aladin.co.kr/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=' + encodeURIComponent(lid), { credentials: 'include', cache: 'no-store' }); if (/\/login\/|wlogin/i.test(r.url)) return { login: false };
     let d = new DOMParser().parseFromString(await r.text(), 'text/html'); try { if (!d.getElementById('frmRecord')) return { ok: false, why: '정보수정 화면에 양식이 없음(지운 상품일 수 있음)' };
       const v = (id) => { const e = d.getElementById(id); return e ? (e.tagName === 'SELECT' ? (e.querySelector('option[selected]') || e.options[e.selectedIndex] || {}).value : e.value != null && e.value !== '' ? e.value : e.textContent) : null; }; const n = (x) => (x == null || String(x).trim() === '' || !isFinite(+x) ? null : +x);
-      return { ok: true, uid: String((d.querySelector('input[name="UpdateItemId"]') || {}).value || ''), qty: n(v('stockCount')), price: n(v('priceSales')), code: v('supItemCode'), state: n(v('stockState')) }; } finally { d = null; } }
+      return { ok: true, uid: String((d.querySelector('input[name="UpdateItemId"]') || {}).value || ''), qty: n(v('stockCount')), price: n(v('priceSales')), code: v('supItemCode'), state: n(((d.getElementById('stockState') || { querySelector: () => null }).querySelector('option[selected]') || {}).value) /* (1.89.91 2시간 점검) 판매 상태는 '골라 둔(selected) 칸'이 글에 있을 때만 — 없으면 DOMParser가 첫 칸(판매중)을 고른 것으로 돌려줘, 목록이 '판매중지·일시판매중지'로 보여 주는 상품 65개를 정보수정 확인이 10분마다 '판매중'으로 되돌리고 목록이 다시 바꾸는 되풀이(10/26 09~12시 상태 변경 2,340건 · 상품마다 36번 · 모두 판매중지/일시판매중지→판매중)를 막음. 골라 둔 칸이 없으면 상태는 목록 값 그대로 */ }; } finally { d = null; } }
   async function qchkQueue(pairs, label, why, by) { const per = 40; const parts = []; for (let i = 0; i < pairs.length; i += per) parts.push(pairs.slice(i, i + per)); const now = nowIso(); const tag = now.slice(5, 16).replace('T', ' ');
     await commitBatches(parts.map((pt, j) => (b) => b.set(C('qty_chk').doc(), { status: 'queued', claim: null, items: pt.map(([k, lid]) => ({ k, lid: String(lid) })), label: `${label} ${j + 1}/${parts.length} (${tag})`, why: why || null, createdAt: now, by: by || PC_NAME, dev: null, uploadedAt: TS() })));
     return { cmds: parts.length, items: pairs.length }; }
