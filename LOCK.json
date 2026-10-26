@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "auto3h",
+ "what": "2시간 점검 00:20 — 웹앱 shipListingOf 옛 상품 물건 붙잡음 고침",
+ "since": "2026-10-26T15:27:10Z",
+ "beat": "2026-10-26T15:27:10Z",
  "ask": null,
  "last": {
   "who": "auto-check",
