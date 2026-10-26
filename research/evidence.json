@@ -2346,6 +2346,53 @@
    "one": "평점 1점 ↑ ≈ 매출 5~9% ↑(독립 가게) · 평가 수가 많을수록 평점 영향 커짐",
    "addedBy": "🔬 매일 정밀 점검(Fable) 2026-10-26",
    "at": "2026-10-26"
+  },
+  {
+   "id": "owasp-authentication-cheatsheet-lockout",
+   "topic": [
+    "보안",
+    "클라우드",
+    "알라딘 접근"
+   ],
+   "kind": "업계 표준 문서 (OWASP Foundation — Authentication Cheat Sheet)",
+   "authors": "OWASP Cheat Sheet Series 프로젝트",
+   "year": 2025,
+   "title": "Authentication Cheat Sheet — Account Lockout · Login Throttling · Session Management",
+   "venue": "OWASP Cheat Sheet Series",
+   "url": "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html",
+   "urls": [
+    "https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"
+   ],
+   "finding": "표준적인 로그인 보호는 같은 계정·같은 주소에서 짧은 시간에 되풀이되는 로그인 시도를 '공격 신호'로 보고 계정을 잠그거나 지연시킨다(account lockout · throttling). 정상 서비스는 한 번 로그인한 세션을 유효 기간 동안 다시 써서 로그인 횟수 자체를 줄이는 것이 권장된다.",
+   "use": "☁ 클라우드(Cloud Run)는 새 판을 올릴 때마다 컨테이너가 바뀌어 알라딘에 다시 로그인함 — 10/26 하루 22번 배포 = 22번 로그인(같은 계정 · 데이터센터 주소) → 21:56부터 알라딘이 '로그인 과정에 문제가 발생하였습니다'로 막음(10/14과 같은 꼴). 제안: 알라딘 세션 쿠키를 암호화해 app_secrets에 보관하고 새 컨테이너가 이어 쓰기(로그인은 하루 한 번 안쪽으로) + 배포 묶기(진단 q.txt·기록만 바뀐 커밋은 배포 안 함 — 이미 그렇게 됨 · 클라우드 코드 커밋을 모아서).",
+   "applied": [],
+   "one": "짧은 시간 되풀이 로그인은 잠김 신호 — 세션을 이어 써서 로그인 횟수를 줄여야 함",
+   "addedBy": "🔬 매일 정밀 점검(Fable) 2026-10-26",
+   "at": "2026-10-26"
+  },
+  {
+   "id": "mdn-compressionstream-gzip",
+   "topic": [
+    "웹앱·수집기 기술",
+    "메모리"
+   ],
+   "kind": "기술 표준 문서 (MDN Web Docs · WHATWG Compression Streams)",
+   "authors": "MDN Web Docs (Mozilla) · WHATWG",
+   "year": 2025,
+   "title": "CompressionStream / DecompressionStream — Compression Streams API",
+   "venue": "MDN Web Docs",
+   "url": "https://developer.mozilla.org/en-US/docs/Web/API/CompressionStream",
+   "urls": [
+    "https://developer.mozilla.org/en-US/docs/Web/API/Compression_Streams_API"
+   ],
+   "finding": "브라우저 내장 gzip/deflate 스트림 — 크롬 80부터 모든 최신 브라우저가 지원하며 압축은 주 스레드 밖에서 처리됨. JSON처럼 칸 이름이 되풀이되는 글자는 보통 5~10배 줄어듦.",
+   "use": "수집기 1.89.103 — 로거 크롬의 상품 보관본(Tampermonkey rn-lcache · 상품 2.6만 건 약 40M자)을 gzip+base64로 눌러 담아(시험 17M자→1.1M자) 1.89.101의 '24M자 넘으면 보관 안 함'에 걸려 한 번도 보관되지 않던 것을 되살림 · Tampermonkey 저장소 64MB 한도와 시작 메시지 크기도 함께 줄임.",
+   "applied": [
+    "수집기 1.89.103 LCZ(zip/unzip) · LCACHE.get/put"
+   ],
+   "one": "브라우저 내장 gzip 스트림 — JSON 5~10배 압축 · 주 스레드 밖",
+   "addedBy": "🔬 매일 정밀 점검(Fable) 2026-10-26",
+   "at": "2026-10-26"
   }
  ]
 }
