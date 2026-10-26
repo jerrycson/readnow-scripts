@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.19.3'; // (0.19.3) 📖 미리보기(letslook)와 제품 사진 가르는 공용 함수(parseUsedItemPreviews·isPreviewPhoto·productPhotos·previewsOf 등) // (0.19.2) 📷 알라딘 미리보기(letslook) 사진은 상품 사진으로 받지 않음 // (0.19.1) 🔬 조회수 실험 1×1 그림(/px/숫자.gif)은 상품 사진으로 받지 않음 // (0.19.0) aladinQ — 알라딘 상품명 검색어 다듬기(정범님 10/23: 앞뒤 괄호와 그 안 · 부제(: 뒤) · 글자·숫자 아닌 기호 모두 뺌) // (0.18.0) resolveItemId — 주문 때 시장을 읽을 알라딘 상품을 ISBN으로 확인(이름 검색으로 다른 판을 잡던 것 · 정범님 10/20 빌리 배스게이트) // (0.17.0) scmSmart — 상품명·지은이 낱말 일부를 섞어 쳐도 찾음(정범님 10/20 '톨레 지금 순간') // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
+  const VERSION = '0.19.4'; // (0.19.4) 📝 peerNoteTargets — 출고 시장에서 유의 사항을 읽을 다른 판매자 매물 고르기(중 전부 · 상 유효 중 우리 판매가 아래 2·위 2) // (0.19.3) 📖 미리보기(letslook)와 제품 사진 가르는 공용 함수(parseUsedItemPreviews·isPreviewPhoto·productPhotos·previewsOf 등) // (0.19.2) 📷 알라딘 미리보기(letslook) 사진은 상품 사진으로 받지 않음 // (0.19.1) 🔬 조회수 실험 1×1 그림(/px/숫자.gif)은 상품 사진으로 받지 않음 // (0.19.0) aladinQ — 알라딘 상품명 검색어 다듬기(정범님 10/23: 앞뒤 괄호와 그 안 · 부제(: 뒤) · 글자·숫자 아닌 기호 모두 뺌) // (0.18.0) resolveItemId — 주문 때 시장을 읽을 알라딘 상품을 ISBN으로 확인(이름 검색으로 다른 판을 잡던 것 · 정범님 10/20 빌리 배스게이트) // (0.17.0) scmSmart — 상품명·지은이 낱말 일부를 섞어 쳐도 찾음(정범님 10/20 '톨레 지금 순간') // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -759,6 +759,26 @@
     };
   }
 
+  /* (정범님 10/26) 📝 출고 시장 블록에서 유의 사항을 읽어 보여 줄 다른 판매자 매물 — 클라우드(읽기)·웹앱(표시)이 같은 기준을 씀
+   *  rows = 시장 블록 줄({ r, g, p, lid, c, sc, n, so } — 클라우드 marketOf·웹앱 page1FromRows 모양) · me = { g, p } 우리 주문 등급·판매가
+   *  · '중' 등급 = 첫 페이지(20줄) 전부 — 우리 판매가에 가까운 것부터
+   *  · '상' 등급 = 우리 판매가 바로 아래(같거나 싼 쪽 가장 비싼 것) · 바로 위(비싼 쪽 가장 싼 것) 한 줄씩 — 우리 판매가를 모르면 없음
+   *  · 우리 줄(북스킹)·판매 끝난 줄·매물 번호 없는 줄은 뺌 · 돌려주는 차례 = 읽는 차례('중' 먼저) */
+  function peerNoteTargets(rows, me) {
+    const myP = me && +me.p > 0 ? +me.p : null;
+    const L = (rows || []).slice(0, 20).filter((r) => r && r.lid && !r.so && r.c !== 'ours' && String(r.sc || '') !== '996008');
+    const dist = (r) => (myP == null ? +r.r || 0 : Math.abs((+r.p || 0) - myP));
+    const mid = L.filter((r) => r.g === '중').sort((a, b) => dist(a) - dist(b));
+    /* (정범님 10/26 23:30) '상'은 유효 판매가(짙은 초록·초록 판매자 + 알라딘측 — 판매자 분류를 모르는 줄은 넣음) 가운데 우리 판매가 아래(같음 포함) 가까운 2개 + 위 가까운 2개 = 4개 */
+    const VAL = new Set(['dkgreen', 'green', 'aladin']); const valid = (r) => r.c == null || r.c === '' || VAL.has(r.c);
+    const sang = myP == null ? [] : L.filter((r) => r.g === '상' && valid(r) && +r.p > 0);
+    const lows = sang.filter((r) => +r.p <= myP).sort((a, b) => +b.p - +a.p).slice(0, 2); const highs = sang.filter((r) => +r.p > myP).sort((a, b) => +a.p - +b.p).slice(0, 2);
+    const out = [], seen = new Set();
+    const add = (r, why) => { const k = String(r.lid); if (seen.has(k)) return; seen.add(k); out.push({ lid: k, g: r.g || null, p: r.p ?? null, sc: r.sc || null, n: r.n || null, why }); };
+    mid.forEach((r) => add(r, 'mid')); lows.forEach((r) => add(r, 'sangLo')); highs.forEach((r) => add(r, 'sangHi'));
+    return out;
+  }
+
   // ---------- 변경 비교 ----------
   function diff(prev, next, fields) {
     const ch = {};
@@ -793,7 +813,7 @@
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
     parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, scmSmart, aladinQ, aladinQTries, resolveItemId, isbnN, smHit, smTok, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
-    parseUsedItemInfo, parseUsedItemPreviews, isPreviewPhoto, pvPageNo, previewsFromPhotos, productPhotos, previewsOf, parseScmEditNote, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult,
+    parseUsedItemInfo, parseUsedItemPreviews, isPreviewPhoto, pvPageNo, previewsFromPhotos, productPhotos, previewsOf, parseScmEditNote, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult, peerNoteTargets,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
 })(typeof window !== 'undefined' ? window : this);
