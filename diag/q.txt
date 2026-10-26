@@ -1,2 +1,1 @@
-pushsubs=1
-# 19691
+@kpin kpin/aud_20261026-073322.json
