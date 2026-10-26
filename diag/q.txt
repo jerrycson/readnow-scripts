@@ -1,4 +1,2 @@
 doc=prd_system/autoSched
-logs=1&pc=LOGGER&from=202610261000
-doc=prd_jobs/pcBeat
-# 16832
+# 14645
