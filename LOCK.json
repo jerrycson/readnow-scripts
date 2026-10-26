@@ -1,12 +1,12 @@
 {
- "holder": "kpsum",
- "what": "출판 정보 요약",
- "since": "2026-10-26T20:48:44Z",
- "beat": "2026-10-26T21:05:32Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "auto3h",
-  "done": "2시간 점검 00:20 — 웹앱 1.78.159(405b0e9) shipListingOf 옛 물건 붙잡음 고침",
-  "at": "2026-10-26T15:28:46Z"
+  "who": "kpsum",
+  "done": "요약 75개 넣음(3회 · 481f345·a901f35·b94baef) · 남은 약 325개(표시는 400+)",
+  "at": "2026-10-26T21:07:14Z"
  }
 }
