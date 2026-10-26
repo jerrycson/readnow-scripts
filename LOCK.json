@@ -1,13 +1,9 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
- "ask": {
-  "who": "chat",
-  "why": "정범님 00:23 긴급: 도서 정보 검색 기록 복구(웹앱 1.78.114) — 최신(96cc71c) 위에 얹어 올림",
-  "at": "2026-10-25T15:30:13Z"
- },
+ "holder": "chat",
+ "what": "유심 2·한국 날짜·10/26 요청들",
+ "since": "2026-10-26T01:47:11Z",
+ "beat": "2026-10-26T01:47:11Z",
+ "ask": null,
  "last": {
   "who": "auto3h",
   "done": "웹앱 1.78.125 🪶 판매자 shopSig 등 빼기 (72e8dcc)",
