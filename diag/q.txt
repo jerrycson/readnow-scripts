@@ -1,5 +1,4 @@
-@health&hours=3
-sizes=shp_cmds,prd_jobs,app_settings,prd_system&n=300
-doc=prd_jobs/autoSched,prd_system/jobStats,prd_system/autoSched,app_settings/write_watch
-rate=prd_listings,prd_book_metrics,prd_metric_changes,bench_items,ext_used,shp_cmds,perf_logs,app_summary,prd_jobs,rn_logs&mins=240
-# 49754945
+sizes=prd_market_nobook,prd_seen,shp_cmds,prd_handoff&n=300
+doc=prd_system/dataBackup,app_settings/secure_vault_rep,app_settings/secure_vault_cfg
+cmds=regLookup&n=2
+# 815811890
