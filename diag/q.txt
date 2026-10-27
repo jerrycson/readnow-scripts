@@ -1,2 +1,2 @@
-doc=app_settings/backup_auto
-# 1814327939
+doc=app_settings/shop_cfg
+# 529331980
