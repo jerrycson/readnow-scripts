@@ -1,2 +1,2 @@
-recentUp=prd_listings&mins=180
-# 30573
+doc=prd_listings/aladin_U005050418,prd_listings/aladin_U005051803,prd_listings/aladin_U005057721
+# 21078
