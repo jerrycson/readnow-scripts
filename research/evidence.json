@@ -2894,6 +2894,158 @@
      "now": 1
     }
    }
+  },
+  {
+   "id": "thomas-johnston-1981-12principles",
+   "kind": "책(업계 고전)",
+   "authors": "Frank Thomas, Ollie Johnston",
+   "year": 1981,
+   "title": "The Illusion of Life: Disney Animation — 애니메이션 12원리",
+   "venue": "Abbeville Press · 원리 정리 예: animatron.com 블로그",
+   "url": "https://www.animatron.com/blog/12-basic-principles-of-animation",
+   "finding": "찌그러짐·늘어남, 예비 동작, 느리게 들어가고 나오기, 따라오는 움직임·겹치는 움직임, 이차 동작, 타이밍, 과장 등 12원리를 캐릭터 움직임의 기본으로 정리.",
+   "use": "캐릭터 액션을 예비 동작 → 정지 → 큰 동작 → 지나침 → 정착으로 짜고, 머리카락·끈을 늦게 따라오게 함.",
+   "one": "애니메이션 12원리",
+   "sent": "캐릭터가 살아 보이려면 예비 동작·찌그러짐·따라오는 움직임·타이밍 같은 12원리를 지켜야 한다.",
+   "rel": "책방 친구 액션 3종(머리·볼·배)의 키 포즈 표와 머리카락 스프링의 근거.",
+   "cat": "웹앱·기술",
+   "addedBy": "🐾 책방 친구 4차 — 그림·움직임(2026-10-27)",
+   "at": "2026-10-27",
+   "topic": [
+    "캐릭터 애니메이션",
+    "책방 친구"
+   ],
+   "applied": [
+    {
+     "where": "웹앱 🐾 책방 친구 › 움직임 엔진(mscRigNew · MSC_ACTS)",
+     "why": "액션 키 포즈 타이밍·숨쉬기·스프링"
+    }
+   ],
+   "prio": {
+    "score": 30,
+    "why": "직원 사기·화면 완성도(매출과 간접)",
+    "c": {
+     "research": 8,
+     "reputable": 12,
+     "biz": 3,
+     "app": 5,
+     "now": 2
+    }
+   }
+  },
+  {
+   "id": "live2d-physics-docs",
+   "kind": "제품 공식 문서",
+   "authors": "Live2D Inc.",
+   "year": 2024,
+   "title": "Live2D Cubism Editor 설명서 — 물리 연산(Physics) 설정",
+   "venue": "docs.live2d.com",
+   "url": "https://docs.live2d.com/en/cubism-editor-manual/physics-operation/",
+   "finding": "머리카락·장식 흔들림을 진자 사슬로 계산 — 입력(가로 위치·각도) → 진자(흔들림 크기·반응 시간·수렴 속도) → 출력 매개변수. 계산 FPS를 따로 둠.",
+   "use": "머리 각도·가속을 입력으로 다발마다 감쇠 스프링(긴 다발일수록 느림)을 30fps로 계산.",
+   "one": "Live2D 진자 물리",
+   "sent": "Live2D는 머리카락 흔들림을 입력(위치·각도)에 반응하는 진자로 계산하고 반응 시간·수렴 속도로 맛을 정한다.",
+   "rel": "책방 친구 머리카락·목도리·앞치마 끈 스프링의 근거.",
+   "cat": "웹앱·기술",
+   "addedBy": "🐾 책방 친구 4차 — 그림·움직임(2026-10-27)",
+   "at": "2026-10-27",
+   "topic": [
+    "캐릭터 애니메이션",
+    "책방 친구"
+   ],
+   "applied": [
+    {
+     "where": "웹앱 🐾 책방 친구 › 움직임 엔진(mscRigNew · MSC_ACTS)",
+     "why": "액션 키 포즈 타이밍·숨쉬기·스프링"
+    }
+   ],
+   "prio": {
+    "score": 30,
+    "why": "직원 사기·화면 완성도(매출과 간접)",
+    "c": {
+     "research": 8,
+     "reputable": 12,
+     "biz": 3,
+     "app": 5,
+     "now": 2
+    }
+   }
+  },
+  {
+   "id": "ann-shot-on-threes",
+   "kind": "용어 사전(업계)",
+   "authors": "Anime News Network",
+   "year": 2024,
+   "title": "Shot on threes (ones, twos, etc.) — 리미티드 애니메이션",
+   "venue": "Anime News Network Lexicon",
+   "url": "https://AnimeNewsNetwork.com/encyclopedia/lexicon.php?id=61",
+   "finding": "아니메는 그림 한 장을 2~3프레임 동안 보여 주는(약 8~12fps) 리미티드 애니메이션을 흔히 쓰고, 정지 장면은 더 길게, 빠른 장면은 1~2프레임으로 바꾼다.",
+   "use": "눈 깜박임·립플랩·감정 기호를 24fps 프레임 단위로 장을 바꿔 끼우고(사이 그림 없음), 큰 몸 움직임만 부드럽게.",
+   "one": "아니메는 2~3프레임씩",
+   "sent": "아니메는 그림 한 장을 2~3프레임 보여 주는 방식이 기본이라, 얼굴 장은 툭툭 바꾸는 편이 아니메답다.",
+   "rel": "깜박임(반1·감음2·반2)과 립플랩(2~3프레임) 타이밍의 근거.",
+   "cat": "웹앱·기술",
+   "addedBy": "🐾 책방 친구 4차 — 그림·움직임(2026-10-27)",
+   "at": "2026-10-27",
+   "topic": [
+    "캐릭터 애니메이션",
+    "책방 친구"
+   ],
+   "applied": [
+    {
+     "where": "웹앱 🐾 책방 친구 › 움직임 엔진(mscRigNew · MSC_ACTS)",
+     "why": "액션 키 포즈 타이밍·숨쉬기·스프링"
+    }
+   ],
+   "prio": {
+    "score": 30,
+    "why": "직원 사기·화면 완성도(매출과 간접)",
+    "c": {
+     "research": 8,
+     "reputable": 12,
+     "biz": 3,
+     "app": 5,
+     "now": 2
+    }
+   }
+  },
+  {
+   "id": "trutoiu-2011-blinks",
+   "kind": "학술지",
+   "authors": "Laura C. Trutoiu, Elizabeth J. Carter, Iain Matthews, Jessica K. Hodgins",
+   "year": 2011,
+   "title": "Modeling and Animating Eye Blinks",
+   "venue": "ACM Transactions on Applied Perception 2(3) · Disney Research",
+   "url": "https://la.disneyresearch.com/wp-content/uploads/Modeling-and-Animating-Eye-Blinks-Paper.pdf",
+   "finding": "깜박임은 감기가 빠르고 뜨기가 느린 비대칭일 때 가장 자연스럽게 보였고(대칭·교과서식 ease in/out보다 나음), 30fps 기준 9프레임 길이가 가장 높게 평가됨. 깜박임 빈도는 분당 약 7~27회.",
+   "use": "깜박임 = 반 1프레임 → 감음 2 → 반 2(24fps · 감기 빠르고 뜨기 느림) · 2.2~6.5초 간격 · 20%는 두 번.",
+   "one": "감기 빠르고 뜨기 느린 깜박임",
+   "sent": "사람 깜박임은 빨리 감고 천천히 뜨며, 그렇게 만든 깜박임이 대칭 깜박임보다 자연스럽게 보인다.",
+   "rel": "책방 친구 깜박임 프레임 수와 간격의 근거.",
+   "cat": "웹앱·기술",
+   "addedBy": "🐾 책방 친구 4차 — 그림·움직임(2026-10-27)",
+   "at": "2026-10-27",
+   "topic": [
+    "캐릭터 애니메이션",
+    "책방 친구"
+   ],
+   "applied": [
+    {
+     "where": "웹앱 🐾 책방 친구 › 움직임 엔진(mscRigNew · MSC_ACTS)",
+     "why": "액션 키 포즈 타이밍·숨쉬기·스프링"
+    }
+   ],
+   "prio": {
+    "score": 30,
+    "why": "직원 사기·화면 완성도(매출과 간접)",
+    "c": {
+     "research": 8,
+     "reputable": 12,
+     "biz": 3,
+     "app": 5,
+     "now": 2
+    }
+   }
   }
  ]
 }
