@@ -1,0 +1,71 @@
+{
+ "saved": "2026-10-27",
+ "by": "정범님 저장(Ctrl+S) 첨부 · Claude가 본문만 남김",
+ "docs": [
+  {
+   "key": "terms",
+   "title": "알라딘 이용약관",
+   "file": "terms.html",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=1",
+   "ver": "2026-09-15 시행(최종 변경 2026-09-15 · 최초 제정 1999-07-14)",
+   "secs": 28,
+   "chars": 16888
+  },
+  {
+   "key": "privacy",
+   "title": "알라딘 개인정보 처리방침",
+   "file": "privacy.html",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=3",
+   "ver": "2026-09-15 시행(이전 판 2026-08-12)",
+   "secs": 13,
+   "chars": 12573
+  },
+  {
+   "key": "partnership",
+   "title": "알라딘 파트너십 가이드",
+   "file": "partnership.html",
+   "url": "https://www.aladin.co.kr/partnership/wguide.aspx",
+   "ver": "날짜 표시 없음(2026-10-27 화면)",
+   "secs": 4,
+   "chars": 556
+  }
+ ],
+ "missing": [
+  {
+   "key": "seller",
+   "title": "판매자 이용약관",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=4",
+   "pType": 4
+  },
+  {
+   "key": "shopmgr",
+   "title": "샵매니저 이용약관",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=8",
+   "pType": 8
+  },
+  {
+   "key": "community",
+   "title": "커뮤니티 이용약관",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=2",
+   "pType": 2
+  },
+  {
+   "key": "youth",
+   "title": "청소년 보호정책",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=7",
+   "pType": 7
+  },
+  {
+   "key": "cctv",
+   "title": "영상정보처리기기 운영·관리방침",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=5",
+   "pType": 5
+  },
+  {
+   "key": "pmgmt",
+   "title": "개인정보 관리 약정서",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=6",
+   "pType": 6
+  }
+ ]
+}
