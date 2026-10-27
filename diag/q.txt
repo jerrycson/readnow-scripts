@@ -1,1 +1,2 @@
-@kpin kpin/aud_20261027-011628.json
+perf=1&hours=24
+# 22672
