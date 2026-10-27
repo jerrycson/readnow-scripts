@@ -1,1 +1,2 @@
-@kpin kpin/20261027-210759.json
+doc=app_settings/backup_auto,app_settings/backup_log
+# 3045112753
