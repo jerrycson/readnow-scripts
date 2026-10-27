@@ -3046,6 +3046,83 @@
      "now": 2
     }
    }
+  },
+  {
+   "id": "firebase-firestore-best-practices-hotspots",
+   "kind": "공식 문서",
+   "authors": "Google Firebase",
+   "year": 2026,
+   "title": "Cloud Firestore — Best practices (Hotspotting · Document writes · Realtime updates)",
+   "venue": "Firebase 문서",
+   "url": "https://firebase.google.com/docs/firestore/best-practices",
+   "finding": "한 문서에 쓰기가 몰리면(hotspot) 지연·실패가 늘고, 실시간 듣기(onSnapshot)는 문서가 바뀔 때마다 모든 듣는 쪽이 문서 전체를 다시 받으므로, 자주 바뀌는 값과 큰 기록은 문서를 나누고 듣는 쪽 처리를 가볍게 해야 함.",
+   "use": "⏰ 일정 문서(prd_jobs/autoSched · 232KB · 하루 726회차)가 시간당 80~100번 바뀌어 모든 PC·웹앱 탭이 다시 받음 → 수집기 1.89.124는 받은 뒤 그리기를 3초 모아 한 번·숨은 탭 쉼 · 다음 단계 = 심장박동·진행을 작은 별도 문서로(reports/SCHED_DOC_2026-10-27.md).",
+   "one": "자주 바뀌는 큰 문서는 나누고 듣는 쪽은 가볍게",
+   "sent": "Firestore에서 한 문서에 쓰기가 몰리고 그 문서를 많이 들으면 쓰기마다 모든 듣는 쪽이 전체를 다시 받으므로, 자주 바뀌는 값은 작은 문서로 떼어 두는 것이 권장된다.",
+   "rel": "⏰ 일정 문서 과다 쓰기·과다 받기의 근원과 처방 근거.",
+   "cat": "웹앱·기술",
+   "addedBy": "🔬 매일 정밀 점검(Fable) 2026-10-27",
+   "at": "2026-10-27",
+   "topic": [
+    "Firestore",
+    "메모리·성능",
+    "자동 수집"
+   ],
+   "applied": [
+    {
+     "where": "수집기 1.89.124 schedDrawSoon · 함께 도는 쉴 때 일 심장박동 10분",
+     "why": "받는 쪽 비용·쓰기 수 줄이기"
+    }
+   ],
+   "prio": {
+    "score": 62,
+    "why": "모든 PC 수집기 화면 멈춤·Firestore 읽기 비용에 직결",
+    "c": {
+     "research": 10,
+     "reputable": 20,
+     "biz": 10,
+     "app": 15,
+     "now": 7
+    }
+   }
+  },
+  {
+   "id": "mdn-page-visibility-api",
+   "kind": "공식 문서",
+   "authors": "MDN Web Docs (Mozilla)",
+   "year": 2026,
+   "title": "Page Visibility API — document.hidden · visibilitychange",
+   "venue": "MDN",
+   "url": "https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API",
+   "finding": "탭이 숨어 있을 때 화면 갱신·애니메이션·그리기를 멈추고 다시 보일 때 한 번 갱신하면 CPU·전력·메모리 쓰레기를 줄일 수 있으며, 브라우저도 숨은 탭의 타이머를 제한한다.",
+   "use": "수집기 ⏰ 패널 다시 그리기(1.89.124)·책방 친구 움직임 엔진(1.78.187)이 숨은 탭에서 멈추고 보일 때 한 번 그리는 근거.",
+   "one": "숨은 탭은 그리지 않고 보일 때 한 번",
+   "sent": "브라우저 탭이 숨어 있으면 화면 갱신을 멈추고 다시 보일 때 한 번만 갱신하는 것이 표준 권장 방식이다.",
+   "rel": "수집기 탭(대부분 뒤에 숨어 있음)의 다시 그리기 비용 제거 근거.",
+   "cat": "웹앱·기술",
+   "addedBy": "🔬 매일 정밀 점검(Fable) 2026-10-27",
+   "at": "2026-10-27",
+   "topic": [
+    "브라우저",
+    "메모리·성능"
+   ],
+   "applied": [
+    {
+     "where": "수집기 1.89.124 schedDrawSoon(document.hidden)",
+     "why": "숨은 탭 그리기 생략"
+    }
+   ],
+   "prio": {
+    "score": 40,
+    "why": "PC 멈춤 체감",
+    "c": {
+     "research": 6,
+     "reputable": 15,
+     "biz": 5,
+     "app": 10,
+     "now": 4
+    }
+   }
   }
  ]
 }
