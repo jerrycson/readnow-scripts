@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.121의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.122의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.121' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.121', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.122' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.122', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
