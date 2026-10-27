@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.124
+// @version      1.89.125
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -294,6 +294,22 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    *  ⑤ 🪑 자리: 위가 모두 통과하면 판매자 로그인 자리를 받음(seatAsk) — 받으면 { ok:true, cfg, patch(자리 적기) } · 꽉 찼으면 { ok:false, kind:'seat', until, why, patch(기다림 적기) }
    *  🔒 상시 기기(cfg.always · 클라우드 아님): 계정 쉼·데이터센터 기다림·자리를 보지 않고 늘 바로 — 지킬 것은 '사람처럼' 실패 뒤 1~10분 무작위 간격 하나뿐
    *     (그 간격도 그 기기의 마지막 시도 + retrySec 최대(10분)를 넘지 않음 — 예전 판이 적은 아이디 오류 6시간 쉼 등은 무시) */
+  /* ⑥ 🌙 데이터센터 주소 막힘 뒤 조용히 기다림 (정범님 10/27 23:38 '너가 정해 · 통계 근거로' · 클라우드 0.35.50)
+   *  까닭: 10/26 22:40~10/27 21:49 클라우드 고정 주소에서 2시간마다 10번 모두 42FB · 같은 때 PC(집·사무실 주소)는 모두 로그인 성공 = 계정이 아니라 데이터센터 주소가 막힘
+   *  근거: OWASP 자격 증명 대입 방어 지침 — 주소 막음은 '잠시'이고 '나쁜 신호가 줄거나 멈추면' 풀도록 권함 · 호스팅(데이터센터) 주소는 따로 분류해 더 엄하게 봄
+   *        Fortinet 인증 평판 — 처음 10분 막고, 되풀이하면 막는 시간을 늘림(되풀이할수록 길어짐) → 막힌 동안 다시 두드리면 풀리는 시계가 다시 감김
+   *  그래서: 막힌 뒤로는 시도하지 않음(로그인이 필요 없는 일만) → 72시간 조용히 둔 뒤 한 번 · 또 막히면 7일 뒤 한 번 · 또 막히면 멈춤(사람이 직접 '시험'하거나 주소를 바꿀 때까지)
+   *        시도는 사람이 일하는 때(한국 시간 10~12시 사이 무작위)에만 · 같은 계정 PC가 그 전 6시간 안에 로그인 성공한 때만(계정 자체는 멀쩡할 때) · PC 로그인은 이 규칙을 전혀 받지 않음 */
+  const DC_Q_FROM = Date.parse('2026-10-27T15:00:00Z'); const DC_Q_WAIT = [72 * 3600e3, 7 * 86400e3];
+  function dcQuiet(doc, who, now, rnd) { const B = Object.entries((doc && doc.blk) || {}).filter(([k, v]) => k.split('·')[0] === who && v && !v.okAt).map(([, v]) => v)[0]; if (!B) return null;
+    const T = (doc && doc.tries) || []; const mine = T.filter((t) => t && t.who === who && t.blocked && +t.at >= DC_Q_FROM); const k = mine.length;
+    if (k >= DC_Q_WAIT.length) return { ok: false, kind: 'dcquiet', until: 0, stop: true, why: `${who} 주소가 72시간·7일 쉰 뒤에도 막힘 — 시도 멈춤(로그인이 필요 없는 일만 · 사람이 '시험'을 누르거나 주소를 바꾸면 다시)` };
+    const base = Math.max(DC_Q_FROM, k ? +mine[k - 1].at : +B.last || DC_Q_FROM); let at = base + DC_Q_WAIT[k];
+    const K = 9 * 3600e3; const d = new Date(at + K); let s = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 10) - K; if (at > s + 2 * 3600e3) s += 86400e3; if (at < s) at = s + Math.round((Number.isFinite(rnd) ? rnd : Math.random()) * 2 * 3600e3);
+    if (now < at) return { ok: false, kind: 'dcquiet', until: at, why: `${who} 주소 막힘(42FB) — 조용히 기다림 ${k + 1}/2 · 다음 한 번 ${kstHm(at)}(사람이 일하는 10~12시)` };
+    const pcOk = T.some((t) => t && t.ok && t.who !== who && now - (+t.at || 0) < 6 * 3600e3) || Object.entries((doc && doc.dev) || {}).some(([w, v]) => w !== who && v && v.in && now - (+v.at || 0) < 6 * 3600e3);
+    if (!pcOk) return { ok: false, kind: 'dcquiet', until: now + 3600e3, why: `${who} 시험 차례지만 최근 6시간 안 PC 로그인 성공이 없음 — 계정이 멀쩡할 때만 시험` };
+    return null; }
   function decide(doc, who, now, o) { o = o || {}; const c = cfgOf(doc);
     if (!o.dc && isAlways(c, who)) { const nx0 = +((doc && doc.next) || {})[who] || 0; const T = (doc && doc.tries) || []; let la = 0; for (let i = T.length - 1; i >= 0; i--) if (T[i] && T[i].who === who) { la = +T[i].at || 0; break; }
       const nx = Math.min(nx0, la ? la + c.retrySec[1] * 1000 : 0); if (!o.force && nx > now) return { ok: false, kind: 'retry', always: true, until: nx, why: `${who}(🔒 상시) 지난 시도가 안 됨 — 다음 시도 ${kstHm(nx)}(1~10분 무작위 · 사람처럼)` };
@@ -301,6 +317,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       return { ok: true, always: true, cfg: c }; }
     if (doc && +doc.holdUntil > now) return { ok: false, kind: 'hold', until: +doc.holdUntil, why: doc.holdWhy || '정범님이 켠 계정 새 로그인 쉼' };
     const nx = +((doc && doc.next) || {})[who] || 0; if (!o.force && nx > now) return { ok: false, kind: 'retry', until: nx, why: `${who} 지난 시도가 안 됨 — 다음 시도 ${kstHm(nx)}(1~10분 무작위)` };
+    if (o.dc && !o.force) { const q = dcQuiet(doc, who, now, o.rnd); if (q) return q; }
     if (o.dc && c.dcWaitMin > 0) { const T = (doc && doc.tries) || []; let bi = -1; for (let i = T.length - 1; i >= 0; i--) if (T[i] && T[i].blocked && now - (+T[i].at || 0) < c.dcWaitMin * 60e3) { bi = i; break; }
       if (bi >= 0 && !T.slice(bi + 1).some((t) => t && t.ok && t.who !== who)) return { ok: false, kind: 'dcwait', until: +T[bi].at + c.dcWaitMin * 60e3, why: `${kstHm(+T[bi].at)} ${T[bi].who}에 42FB 경고 뒤 아직 어느 PC도 새 로그인에 성공하지 않음 — 데이터센터(클라우드)는 PC가 먼저 성공할 때까지 기다림` }; }
     if (o.seat !== false) { const s = seatAsk(doc, who, now, o, o.rnd); if (!s.ok) return s; return { ok: true, cfg: c, patch: s.patch, seat: { n: s.n, max: s.max } }; }
@@ -329,7 +346,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (o.scmNeedsLogout && !hasLogout) return 'suspect';
     return false; }
   const net2 = (ip) => { const m = String(ip || '').match(/^(\d{1,3})\.(\d{1,3})\./); return m ? `${m[1]}.${m[2]}` : null; };
-  return { DEF, cfgOf, kstDay, kstHm, between, isBlock, codeOf, decide, record, judge, net2, LOGIN_URL, AUTH_URL, SCM_URL, PRI, isLive, seatView, seatAsk, seatYield, seatKeep, isAlways, slotOf };
+  return { DEF, cfgOf, kstDay, kstHm, between, isBlock, codeOf, decide, dcQuiet, record, judge, net2, LOGIN_URL, AUTH_URL, SCM_URL, PRI, isLive, seatView, seatAsk, seatYield, seatKeep, isAlways, slotOf };
 })();
 /* ═════════════ (정범님 10/26) 🔑 알라딘 로그인 — 사람처럼 (계정 단위 · 모든 PC·클라우드가 같은 규칙 __rnLoginRule) ═════════════
  * 예전(~1.89.104): 고객·출고 리더가 공개 상품 화면(머리에 로그인 칸이 있고 제목이 '샵매니저'가 아님)을 '로그인 풀림'으로 잘못 보고, 실제로는 로그인돼 있는데
