@@ -31,7 +31,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.35.47'; // (0.35.28 2시간 점검) 성능 요약에 웹앱 판별 [긴 멈춤 수·합초·힙 최고](byVer) — 고친 판이 실제로 나아졌는지 가름 // (0.35.27 2시간 점검) 숫자 요약에 웹앱 성능 기록 요약(perfSum — 긴 멈춤 합·gcLike·기기·화면별 힙·pSelf 상위·mem top) // (0.35.21 2시간 점검) 상품 변경 기록 내역에 상태 from→to·되풀이 상위 상품 // (0.35.20 2시간 점검) 숫자 요약 who에 상품 변경 기록 내역(출처·PC·바뀐 칸·되풀이) // (0.35.17 2시간 점검) 📈 실패 회차 동안 요약을 못 쓴 책 한 번 다시 셈 // (0.35.16 2시간 점검) 📈 시장 흐름 요약 16→128칸(문서 색인 한도) · 실패 회차가 겹쳐 쌓은 사라진 매물 바로잡음 // (0.35.15 2시간 점검) 📈 시장 흐름 모음 시도 시각·실패 까닭을 상태 문서·숫자 요약에 // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
+const VER = '0.35.49'; // (0.35.28 2시간 점검) 성능 요약에 웹앱 판별 [긴 멈춤 수·합초·힙 최고](byVer) — 고친 판이 실제로 나아졌는지 가름 // (0.35.27 2시간 점검) 숫자 요약에 웹앱 성능 기록 요약(perfSum — 긴 멈춤 합·gcLike·기기·화면별 힙·pSelf 상위·mem top) // (0.35.21 2시간 점검) 상품 변경 기록 내역에 상태 from→to·되풀이 상위 상품 // (0.35.20 2시간 점검) 숫자 요약 who에 상품 변경 기록 내역(출처·PC·바뀐 칸·되풀이) // (0.35.17 2시간 점검) 📈 실패 회차 동안 요약을 못 쓴 책 한 번 다시 셈 // (0.35.16 2시간 점검) 📈 시장 흐름 요약 16→128칸(문서 색인 한도) · 실패 회차가 겹쳐 쌓은 사라진 매물 바로잡음 // (0.35.15 2시간 점검) 📈 시장 흐름 모음 시도 시각·실패 까닭을 상태 문서·숫자 요약에 // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
 // // (0.35.5 격일 정밀 점검) ☁ 공개 확인: 읽기 실패 길도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂 · 상품 조회 HTTP 오류 = 읽기 실패 · deepscan 바꾸는 말 쿼리까지 · 진단 mchg
 // // (0.35.3) deepscan을 화면마다 따로 읽기(한 번에 60초 넘던 것) // (0.35.2) 진단 deepscan — 샵매니저 메뉴 깊이 2까지 · 북스킹 숍 · 우리 상품 화면 · 온라인 중고 목록을 읽기만(GET · 고객 정보 가림)
 // // (0.35.1) 💾 하루 한 번 prd_system/fbCols(모든 최상위 칸 이름 · app_secrets 뺌) — 로거 수집기 자료 보관이 칸 목록으로 씀
@@ -164,10 +164,13 @@ const RN_LOGIN_RULE = (function () { /* ⟦알라딘 로그인 규칙 — 수집
  *  사람처럼(정범님 10/26 23:46 · 23:53): ① 한 회사에 사람이 여럿이듯 기기마다 각자 필요할 때 따로 시도(계정 전체 차례 없음 · 같은 기기 안의 여러 탭은 한 탭만 — 수집기 GM 표시) ② 진짜 풀린 것을 확인한 뒤 5~20초 알아차리는 시간 → 한 번
  *   ③ 안 되면(42FB 경고도 같음) 그 기기는 1~10분 사이 무작위(매번 새로) 뒤 다시 — 그 기기에 로그인이 필요한 일이 남아 있는 동안만 · 단계 간격·하루 상한·다음 날 9시 쉼 없음
  *   ④ 클라우드(데이터센터 IP): 2시간 안에 42FB가 있었고 그 뒤 어느 PC도 새 로그인에 성공하지 않았으면 기다림 → PC가 성공하면 그때부터 ①~③ */
-  const DEF = { retrySec: [60, 600], noticeSec: [5, 20], keep: 200, dcWaitMin: 120, credBadMin: 360, maxDev: 4, liveMin: 30, beatSec: [600, 900] }; /* maxDev·liveMin·beatSec = 🪑 판매자 로그인 자리(아래) */ /* credBadMin = '아이디·비밀번호가 틀림·자동입력 방지' 글이 뜬 때만(계정 잠김 막기 — 클라우드 0.11.0부터 있던 안전장치 · 42FB와 다름) */
+  const DEF = { retrySec: [60, 600], noticeSec: [5, 20], keep: 200, dcWaitMin: 120, credBadMin: 360, maxDev: 4, liveMin: 30, beatSec: [600, 900], always: ['JS-MAIN', 'MJ-MAIN', 'HOME'], alwaysPair: [['JS-MAIN', 'HOME']], phones: ['JS-phone', 'MJ-phone'] }; /* maxDev·liveMin·beatSec = 🪑 판매자 로그인 자리(아래) · always·alwaysPair·phones = 🔒 상시 기기(정범님 10/27 15:12 — 아래 '상시 기기') */ /* credBadMin = '아이디·비밀번호가 틀림·자동입력 방지' 글이 뜬 때만(계정 잠김 막기 — 클라우드 0.11.0부터 있던 안전장치 · 42FB와 다름) */
   const num = (v, lo, hi, d) => { const n = +v; return Number.isFinite(n) && n >= lo && n <= hi ? n : d; };
   const pair = (v, lo, hi, d) => (Array.isArray(v) && v.length === 2 && +v[0] >= lo && +v[1] >= +v[0] && +v[1] <= hi ? v.map(Number) : d);
-  function cfgOf(doc) { const c = (doc && doc.cfg) || {}; return { retrySec: pair(c.retrySec, 10, 3600, DEF.retrySec), noticeSec: pair(c.noticeSec, 0, 120, DEF.noticeSec), keep: Math.round(num(c.keep, 20, 400, DEF.keep)), dcWaitMin: num(c.dcWaitMin, 0, 1440, DEF.dcWaitMin), credBadMin: num(c.credBadMin, 0, 1440, DEF.credBadMin), maxDev: Math.round(num(c.maxDev, 1, 4, DEF.maxDev)), liveMin: num(c.liveMin, 20, 120, DEF.liveMin), beatSec: pair(c.beatSec, 120, 1080, DEF.beatSec) }; } /* maxDev 1~4(5대부터 약관 위반) · 신호 간격 최대 18분 < 자리 유지 최소 20분(신호가 한 번 늦어도 자리가 풀리지 않게) */
+  /* 기기 이름 목록(관리도구에서 바꿈) — 빈 목록도 됨 · 'cloud'는 상시가 될 수 없음(휴대폰 목록은 이름만 셈) · 짝은 ['A','B'] 또는 Firestore용 글 'A+B'(배열 안 배열은 Firestore가 받지 않음) */
+  const names = (v, d, ph) => (Array.isArray(v) ? v.map((x) => String(x == null ? '' : x).trim()).filter((x) => x && x.length <= 40 && (ph || x.toLowerCase() !== 'cloud')).slice(0, 12) : d);
+  const pairs = (v, d) => (Array.isArray(v) ? v.map((p) => (Array.isArray(p) ? p : String(p == null ? '' : p).split('+')).map((x) => String(x == null ? '' : x).trim()).filter(Boolean)).filter((p) => p.length >= 2).slice(0, 6) : d);
+  function cfgOf(doc) { const c = (doc && doc.cfg) || {}; return { retrySec: pair(c.retrySec, 10, 3600, DEF.retrySec), noticeSec: pair(c.noticeSec, 0, 120, DEF.noticeSec), keep: Math.round(num(c.keep, 20, 400, DEF.keep)), dcWaitMin: num(c.dcWaitMin, 0, 1440, DEF.dcWaitMin), credBadMin: num(c.credBadMin, 0, 1440, DEF.credBadMin), maxDev: Math.round(num(c.maxDev, 1, 4, DEF.maxDev)), liveMin: num(c.liveMin, 20, 120, DEF.liveMin), beatSec: pair(c.beatSec, 120, 1080, DEF.beatSec), always: names(c.always, DEF.always), alwaysPair: pairs(c.alwaysPair, DEF.alwaysPair), phones: names(c.phones, DEF.phones, true) }; } /* maxDev 1~4(5대부터 약관 위반) · 신호 간격 최대 18분 < 자리 유지 최소 20분(신호가 한 번 늦어도 자리가 풀리지 않게) */
   const kstDay = (ms) => new Date(+ms + 9 * 3600e3).toISOString().slice(0, 10);
   const kstHm = (ms) => { const k = new Date(+ms + 9 * 3600e3); return `${k.getUTCMonth() + 1}/${k.getUTCDate()} ${String(k.getUTCHours()).padStart(2, '0')}:${String(k.getUTCMinutes()).padStart(2, '0')}`; };
   const between = (a, rnd) => Math.round((a[0] + (Number.isFinite(rnd) ? Math.min(1, Math.max(0, rnd)) : Math.random()) * (a[1] - a[0])) * 1000);
@@ -176,47 +179,69 @@ const RN_LOGIN_RULE = (function () { /* ⟦알라딘 로그인 규칙 — 수집
   const isBlock = (msg) => BLOCK_RE.test(String(msg || ''));
   const codeOf = (msg) => { const m = String(msg || '').match(/에러\s*코드\s*[:：]?\s*([0-9A-F]{4,}(?:-[0-9A-F]+)?)/i) || String(msg || '').match(/\b(42FB[0-9A-F]{2,})/i); return m ? m[1].toUpperCase().slice(0, 24) : isBlock(msg) ? '42FB' : null; };
   /* 🪑 판매자 로그인 자리 (정범님 10/27) — 알라딘 이용약관 제19조(부정이용 금지) 1.① "동일한 아이디로 5대 이상의 기기(PC, 스마트폰, 태블릿PC, 전용 단말기 등)에서 동시 접속하여 서비스를 이용하는 경우"
-   *  → 우리 코드가 쓰는 기기(PC 수집기·클라우드)는 합쳐 cfg.maxDev(기본 4 · 1~4)대까지만 로그인해 일함. 사람이 직접 쓰는 휴대폰 알라딘 앱 등은 우리가 셀 수 없음 → 기본 4 = 5번째 자리를 사람 몫으로 비워 둠
+   *  → 계정 전체로 cfg.maxDev(기본 4 · 1~4)대까지만 = 휴대폰(cfg.phones · 기본 JS-phone·MJ-phone 2대 — 사람 손 · 우리 코드는 휴대폰에서 로그인하지 않음 · 늘 쓰는 것으로 미리 셈)
+   *     + 🔒 상시 PC 자리(cfg.always · 기본 JS-MAIN·MJ-MAIN·HOME — cfg.alwaysPair 짝 JS-MAIN·HOME은 정범님이 끄고 켜며 바꿔 쓰는 한 자리 = 둘이 함께 살아 있어도 한 자리로 셈) + 그 밖 기기(클라우드 등)
+   *  🔒 상시 기기(정범님 10/27 15:12 절대 원칙 — '무슨 일이 있어도 JS-MAIN·MJ-MAIN은 자동 수집이든 엔진이든 Claude든 로그인을 방해하는 일이 절대로 있어서는 안 됨'):
+   *     자리를 묻지 않고 늘 받음(꽉 차도) · 넘기지(양보) 않음 · 기다림 줄에 서지 않음 · 계정 쉼(holdUntil)·데이터센터 기다림·아이디 오류 6시간 쉼을 받지 않음
+   *     → 그 PC에 로그인이 필요하면 언제나 바로(사람처럼: 필요할 때만 · 실패하면 1~10분 무작위 뒤 될 때까지) · 넘치면 늘 '그 밖' 기기가 넘김
+   *  그 밖 기기의 자리 = maxDev − 휴대폰 − 지금 살아 있는 상시 PC 자리 − 이미 자리를 가진 그 밖 기기 (기본: 4 − 2 − 2 = 0 → 상시 PC 둘이 로그인 일을 하는 동안 클라우드는 받침으로만 · 쿠키 내려놓고 기다림)
    *  자리 = dev[기기]: in 참 · 신호(at)가 cfg.liveMin(기본 30)분 안 · 양보(yield) 아님. 신호는 그 기기가 로그인이 필요한 일(샵매니저·내 계정 등)을 하는 동안만 cfg.beatSec(10~15분 무작위)마다
-   *   → 30분 동안 로그인 일을 하지 않은 기기(가장 한가한 기기)는 신호가 끊겨 자리가 저절로 풀림(로그아웃 단추는 누르지 않음 — 세션은 그대로 두고 만료되면 다시 로그인하지 않음)
-   *  새로 로그인하거나 쉬던 기기가 다시 로그인 일을 하려면 먼저 자리를 받음(seatAsk · 트랜잭션이라 5대가 한꺼번에 물어도 maxDev대만 받음) — 꽉 찼으면 로그인하지 않고 '자리 기다림'(retrySec 1~10분 무작위 뒤 다시 봄)
-   *  우선순위 PRI: 사람이 그 기기에서 웹앱·알라딘을 누름 3 > 출고·자동 발송 판단(주문확인요청 읽기) 2 > 그 밖 PC 1 > 클라우드 0(받침)
+   *   → 30분 동안 로그인 일을 하지 않은 기기는 신호가 끊겨 자리가 저절로 풀림(로그아웃 단추는 누르지 않음 — 세션은 그대로 두고 만료되면 다시 로그인하지 않음)
+   *  그 밖 기기가 새로 로그인하거나 쉬다가 다시 로그인 일을 하려면 먼저 자리를 받음(seatAsk · 트랜잭션) — 없으면 로그인하지 않고 '자리 기다림'(retrySec 1~10분 무작위 뒤 다시 봄)
+   *  우선순위 PRI(그 밖 기기끼리): 사람이 그 기기에서 웹앱·알라딘을 누름 3 > 출고·자동 발송 판단(주문확인요청 읽기) 2 > 그 밖 PC 1 > 클라우드 0(받침)
    *   · 빈자리는 기다리는 기기 중 우선순위가 높은(같으면 먼저 기다린) 기기 몫 · 자리를 가진 기기가 세션 만료로 다시 로그인할 때 더 높은 기기가 기다리면 다시 로그인하지 않고 넘김
-   *   · 꽉 찼는데 PC가 기다리면 클라우드(받침)는 일하는 중이라도 로그인 일을 멈추고 자리를 넘김(seatYield) · 어떤 까닭으로든 maxDev대를 넘으면 우선순위가 가장 낮은 기기(같으면 가장 오래 일 안 한 기기)가 넘김 */
+   *   · 꽉 찼는데 PC가 기다리면 클라우드(받침)는 일하는 중이라도 로그인 일을 멈추고 자리를 넘김(seatYield) · 어떤 까닭으로든 maxDev대를 넘으면(상시 PC가 켜짐 등) 그 밖 기기 중 우선순위가 가장 낮은 기기(같으면 가장 오래 일 안 한 기기)가 넘김 — 상시 기기는 넘기지 않음 */
   const PRI = { human: 3, ship: 2, pc: 1, cloud: 0 };
+  const UP = (x) => String(x == null ? '' : x).trim().toUpperCase();
+  /* 상시 기기인가 — cfg(cfgOf 결과)·기기 이름 · 'cloud'는 언제나 아님 */
+  const isAlways = (c, who) => UP(who) !== 'CLOUD' && !!who && (c.always || []).some((x) => UP(x) === UP(who));
+  /* 상시 기기의 자리 이름 — 짝(JS-MAIN·HOME)은 한 자리 */
+  const slotOf = (c, who) => { const p = (c.alwaysPair || []).find((q) => q.some((x) => UP(x) === UP(who))); return p ? p.map(UP).join('+') : UP(who); };
   const isLive = (v, now, c) => !!(v && v.in === true && !v.yield && now - (+v.at || 0) < c.liveMin * 60e3);
   const waitMs = (c) => c.retrySec[1] * 1500 + 60e3; /* 기다림 표시가 살아 있는 시간 = 다시 묻는 가장 긴 간격의 1.5배 + 1분(그 뒤엔 더 기다리지 않는 기기로 봄) */
   const priOf = (v, who) => (v && Number.isFinite(+v.pri) && v.pri !== null ? +v.pri : who === 'cloud' ? PRI.cloud : PRI.pc);
+  /* 자리 보기 → { max, live(모두 · al = 상시), wait(그 밖 기기만), phones(휴대폰 대수), slots(살아 있는 상시 PC 자리 이름), used(계정 전체로 센 대수), room(그 밖 기기가 쓸 수 있는 자리 — 이미 가진 그 밖 기기 포함 전), cfg } */
   function seatView(doc, now) { const c = cfgOf(doc); const D = (doc && doc.dev) || {}; const Wt = (doc && doc.wait) || {};
-    const live = Object.entries(D).filter(([, v]) => isLive(v, now, c)).map(([w, v]) => ({ who: w, pri: priOf(v, w), at: +v.at || 0, use: +v.use || +v.at || 0 })).sort((a, b) => b.pri - a.pri || b.use - a.use);
-    const wait = Object.entries(Wt).filter(([w, v]) => v && now - (+v.at || 0) < waitMs(c) && !isLive(D[w], now, c)).map(([w, v]) => ({ who: w, pri: priOf(v, w), since: +v.since || +v.at || 0, at: +v.at || 0 })).sort((a, b) => b.pri - a.pri || a.since - b.since);
-    return { max: c.maxDev, live, wait, cfg: c }; }
-  /* 자리 받기 → { ok:true, patch } | { ok:false, kind:'seat', until, why, patch(기다림 적기) } · o.pri = 이 기기 우선순위(없으면 PC 1 · o.dc면 클라우드 0) */
+    const live = Object.entries(D).filter(([, v]) => isLive(v, now, c)).map(([w, v]) => ({ who: w, pri: priOf(v, w), at: +v.at || 0, use: +v.use || +v.at || 0, al: isAlways(c, w) })).sort((a, b) => b.pri - a.pri || b.use - a.use);
+    const wait = Object.entries(Wt).filter(([w, v]) => v && now - (+v.at || 0) < waitMs(c) && !isLive(D[w], now, c) && !isAlways(c, w)).map(([w, v]) => ({ who: w, pri: priOf(v, w), since: +v.since || +v.at || 0, at: +v.at || 0 })).sort((a, b) => b.pri - a.pri || a.since - b.since);
+    const slots = [...new Set(live.filter((x) => x.al).map((x) => slotOf(c, x.who)))].sort(); const phones = c.phones.length; const others = live.filter((x) => !x.al).length;
+    return { max: c.maxDev, live, wait, phones, slots, used: phones + slots.length + others, room: Math.max(0, c.maxDev - phones - slots.length), cfg: c }; }
+  /* 자리 받기 → { ok:true, patch } | { ok:false, kind:'seat', until, why, patch(기다림 적기) } · o.pri = 이 기기 우선순위(없으면 PC 1 · o.dc면 클라우드 0) · 🔒 상시 기기는 늘 ok(always) */
   function seatAsk(doc, who, now, o, rnd) { o = o || {}; const V = seatView(doc, now); const pri = Number.isFinite(+o.pri) && o.pri !== null ? +o.pri : o.dc ? PRI.cloud : PRI.pc;
-    const others = V.live.filter((x) => x.who !== who); const W0 = ((doc && doc.wait) || {})[who] || null; const since = W0 && now - (+W0.at || 0) < waitMs(V.cfg) ? +W0.since || +W0.at || now : now;
+    if (!o.dc && isAlways(V.cfg, who)) { const sl = new Set(V.slots); sl.add(slotOf(V.cfg, who)); const n = V.phones + sl.size + V.live.filter((x) => !x.al).length;
+      return { ok: true, always: true, n, max: V.max, patch: { dev: { [who]: { in: true, at: now, how: '상시', pri, use: now, yield: false } }, wait: { [who]: null } } }; }
+    const others = V.live.filter((x) => !x.al && x.who !== who); const W0 = ((doc && doc.wait) || {})[who] || null; const since = W0 && now - (+W0.at || 0) < waitMs(V.cfg) ? +W0.since || +W0.at || now : now;
     const mine = V.live.some((x) => x.who === who); /* 이미 자리를 가진 기기(세션 만료로 다시 로그인 등)는 더 높은 기기에게만 넘김 · 새로 묻는 기기는 같은 우선순위면 먼저 기다린 기기 다음 */
-    const ahead = V.wait.filter((x) => x.who !== who && (x.pri > pri || (!mine && x.pri === pri && x.since < since))); const free = V.max - others.length;
-    if (free - ahead.length >= 1) return { ok: true, n: others.length + 1, max: V.max, patch: { dev: { [who]: { in: true, at: now, how: '자리', pri, use: now, yield: false } }, wait: { [who]: null } } };
+    const ahead = V.wait.filter((x) => x.who !== who && (x.pri > pri || (!mine && x.pri === pri && x.since < since))); const free = V.room - others.length; const base = V.phones + V.slots.length;
+    if (free - ahead.length >= 1) return { ok: true, n: base + others.length + 1, max: V.max, patch: { dev: { [who]: { in: true, at: now, how: '자리', pri, use: now, yield: false } }, wait: { [who]: null } } };
     const until = now + between(V.cfg.retrySec, rnd);
-    const why = free <= 0 ? `알라딘 판매자 로그인 기기 ${others.length}/${V.max}대(${others.map((x) => x.who).join('·')}) — 자리 기다림(약관 제19조: 같은 아이디 5대 이상 동시 접속 금지)` : `빈자리 ${free}개는 먼저 기다리는 우선순위 높은 기기(${ahead.slice(0, free).map((x) => x.who).join('·')}) 몫 — 자리 기다림`;
-    return { ok: false, kind: 'seat', until, why, n: others.length, max: V.max, ahead: ahead.map((x) => x.who), patch: { dev: { [who]: { in: false, at: now, how: '자리 기다림', pri, yield: false } }, wait: { [who]: { at: now, since, pri } } } }; }
-  /* 자리를 넘길 기기 하나(없으면 null) — 꽉 찼고 클라우드보다 높은 기기가 기다리면 클라우드 · maxDev대를 넘으면 가장 낮은 기기(같으면 가장 오래 일 안 한 기기) */
-  function seatYield(doc, now) { const V = seatView(doc, now); const over = V.live.length - V.max; const top = V.wait[0];
-    if (over > 0) { const c = V.live.slice().sort((a, b) => a.pri - b.pri || a.use - b.use); return c[0].who; }
-    if (over === 0 && top) { const c = V.live.filter((x) => x.who === 'cloud' && x.pri < top.pri); return c.length ? 'cloud' : null; }
+    const held = [V.phones ? `휴대폰 ${V.phones}대` : '', V.slots.length ? `🔒 상시 PC ${V.slots.join('·')}` : '', ...others.map((x) => x.who)].filter(Boolean).join(' · ');
+    const why = free <= 0 ? `알라딘 판매자 로그인 ${base + others.length}/${V.max}대(${held}) — 자리 기다림(약관 제19조: 같은 아이디 5대 이상 동시 접속 금지 · 상시 PC·휴대폰이 먼저)` : `빈자리 ${free}개는 먼저 기다리는 우선순위 높은 기기(${ahead.slice(0, free).map((x) => x.who).join('·')}) 몫 — 자리 기다림`;
+    return { ok: false, kind: 'seat', until, why, n: base + others.length, max: V.max, ahead: ahead.map((x) => x.who), patch: { dev: { [who]: { in: false, at: now, how: '자리 기다림', pri, yield: false } }, wait: { [who]: { at: now, since, pri } } } }; }
+  /* 자리를 넘길 기기 하나(없으면 null) — 상시 기기는 절대 아님 · 계정 전체 대수가 maxDev를 넘으면 그 밖 기기 중 가장 낮은 기기(같으면 가장 오래 일 안 한 기기) · 꽉 찼고 클라우드보다 높은 기기가 기다리면 클라우드 */
+  function seatYield(doc, now) { const V = seatView(doc, now); const over = V.used - V.max; const top = V.wait[0]; const ot = V.live.filter((x) => !x.al);
+    if (over > 0) { const c = ot.slice().sort((a, b) => a.pri - b.pri || a.use - b.use); return c.length ? c[0].who : null; }
+    if (over === 0 && top) { const c = ot.filter((x) => x.who === 'cloud' && x.pri < top.pri); return c.length ? 'cloud' : null; }
     return null; }
-  /* 로그인 일을 하는 기기가 신호(10~15분마다) 때 부름 → 자리가 있으면 신호 적기 · 넘길 차례면 양보 · 자리가 없으면(신호가 끊겼던 기기) 새로 받기 */
+  /* 로그인 일을 하는 기기가 신호(10~15분마다) 때 부름 → 자리가 있으면 신호 적기 · 넘길 차례면 양보 · 자리가 없으면(신호가 끊겼던 기기) 새로 받기 · 🔒 상시 기기는 늘 신호만(넘기지 않음) */
   function seatKeep(doc, who, now, o, rnd) { o = o || {}; const c = cfgOf(doc); const me = ((doc && doc.dev) || {})[who];
+    if (!o.dc && isAlways(c, who)) { const a = seatAsk(doc, who, now, o, rnd); return { ...a, keep: true, patch: { dev: { [who]: { in: true, at: now, how: '상시', pri: a.patch.dev[who].pri, use: +o.use || now, yield: false } }, wait: { [who]: null } } }; }
     if (!isLive(me, now, c)) return seatAsk(doc, who, now, o, rnd);
     const pri = Number.isFinite(+o.pri) && o.pri !== null ? +o.pri : priOf(me, who);
     if (seatYield(doc, now) === who) { const V = seatView(doc, now); const until = now + between(c.retrySec, rnd);
-      return { ok: false, kind: 'yield', until, n: V.live.length - 1, max: V.max, why: V.live.length > V.max ? `알라딘 판매자 로그인 기기가 ${V.live.length}대로 ${V.max}대를 넘음 — 우선순위가 가장 낮은 이 기기(${who})가 로그인 일을 멈추고 자리를 넘김(로그아웃 단추는 누르지 않음)` : `${V.wait[0].who}(우선순위 더 높음)가 자리를 기다림 — 받침인 ${who}가 로그인 일을 멈추고 자리를 넘김(로그아웃 단추는 누르지 않음)`,
+      return { ok: false, kind: 'yield', until, n: V.used - 1, max: V.max, why: V.used > V.max ? `알라딘 판매자 로그인이 계정 전체 ${V.used}대(휴대폰 ${V.phones} · 🔒 상시 PC ${V.slots.length}자리 포함)로 ${V.max}대를 넘음 — 우선순위가 가장 낮은 이 기기(${who})가 로그인 일을 멈추고 자리를 넘김(로그아웃 단추는 누르지 않음)` : `${V.wait[0].who}(우선순위 더 높음)가 자리를 기다림 — 받침인 ${who}가 로그인 일을 멈추고 자리를 넘김(로그아웃 단추는 누르지 않음)`,
         patch: { dev: { [who]: { in: false, at: now, how: '양보', pri, yield: true } } } }; }
-    return { ok: true, keep: true, n: seatView(doc, now).live.length, max: c.maxDev, patch: { dev: { [who]: { in: true, at: now, pri, use: +o.use || now, yield: false } } } }; }
+    return { ok: true, keep: true, n: seatView(doc, now).used, max: c.maxDev, patch: { dev: { [who]: { in: true, at: now, pri, use: +o.use || now, yield: false } } } }; }
   /* 지금 이 기기(who)가 새 로그인을 해도 되나 → { ok:true, cfg } | { ok:false, kind:'hold'|'retry'|'dcwait', until, why }
    *  o.force = 사람이 직접 누른 시험(다시 시도 때만 건너뜀 — 🪑 자리는 건너뛰지 않음) · o.dc = 데이터센터(클라우드) — ④ 규칙 · o.pri = 🪑 자리 우선순위 · o.seat === false = 자리를 보지 않음(시험용)
-   *  ⑤ 🪑 자리: 위가 모두 통과하면 판매자 로그인 자리를 받음(seatAsk) — 받으면 { ok:true, cfg, patch(자리 적기) } · 꽉 찼으면 { ok:false, kind:'seat', until, why, patch(기다림 적기) } */
+   *  ⑤ 🪑 자리: 위가 모두 통과하면 판매자 로그인 자리를 받음(seatAsk) — 받으면 { ok:true, cfg, patch(자리 적기) } · 꽉 찼으면 { ok:false, kind:'seat', until, why, patch(기다림 적기) }
+   *  🔒 상시 기기(cfg.always · 클라우드 아님): 계정 쉼·데이터센터 기다림·자리를 보지 않고 늘 바로 — 지킬 것은 '사람처럼' 실패 뒤 1~10분 무작위 간격 하나뿐
+   *     (그 간격도 그 기기의 마지막 시도 + retrySec 최대(10분)를 넘지 않음 — 예전 판이 적은 아이디 오류 6시간 쉼 등은 무시) */
   function decide(doc, who, now, o) { o = o || {}; const c = cfgOf(doc);
+    if (!o.dc && isAlways(c, who)) { const nx0 = +((doc && doc.next) || {})[who] || 0; const T = (doc && doc.tries) || []; let la = 0; for (let i = T.length - 1; i >= 0; i--) if (T[i] && T[i].who === who) { la = +T[i].at || 0; break; }
+      const nx = Math.min(nx0, la ? la + c.retrySec[1] * 1000 : 0); if (!o.force && nx > now) return { ok: false, kind: 'retry', always: true, until: nx, why: `${who}(🔒 상시) 지난 시도가 안 됨 — 다음 시도 ${kstHm(nx)}(1~10분 무작위 · 사람처럼)` };
+      if (o.seat !== false) { const s = seatAsk(doc, who, now, o, o.rnd); return { ok: true, always: true, cfg: c, patch: s.patch, seat: { n: s.n, max: s.max } }; }
+      return { ok: true, always: true, cfg: c }; }
     if (doc && +doc.holdUntil > now) return { ok: false, kind: 'hold', until: +doc.holdUntil, why: doc.holdWhy || '정범님이 켠 계정 새 로그인 쉼' };
     const nx = +((doc && doc.next) || {})[who] || 0; if (!o.force && nx > now) return { ok: false, kind: 'retry', until: nx, why: `${who} 지난 시도가 안 됨 — 다음 시도 ${kstHm(nx)}(1~10분 무작위)` };
     if (o.dc && c.dcWaitMin > 0) { const T = (doc && doc.tries) || []; let bi = -1; for (let i = T.length - 1; i >= 0; i--) if (T[i] && T[i].blocked && now - (+T[i].at || 0) < c.dcWaitMin * 60e3) { bi = i; break; }
@@ -226,7 +251,7 @@ const RN_LOGIN_RULE = (function () { /* ⟦알라딘 로그인 규칙 — 수집
   /* 로그인 한 번 결과 → 계정 문서 고침(patch)과 하루 요약 고침(day) — r = { ok, how, why, blocked, net, credBad } · rnd = 0~1 무작위(다음 시도 간격) */
   function record(doc, who, now, r, rnd) { const c = cfgOf(doc); const net = r.net || ((doc && doc.net) || {})[who] || null; const code = r.ok ? null : codeOf(r.why);
     const t = { at: now, who, net, ok: !!r.ok, how: r.how || null, why: r.why ? String(r.why).slice(0, 200) : null, code }; if (r.blocked) t.blocked = true; if (r.credBad) t.credBad = true;
-    const tries = [...((doc && doc.tries) || []), t].slice(-c.keep); const nextAt = r.ok ? 0 : r.credBad && c.credBadMin > 0 ? now + c.credBadMin * 60e3 : now + between(c.retrySec, rnd);
+    const tries = [...((doc && doc.tries) || []), t].slice(-c.keep); const nextAt = r.ok ? 0 : r.credBad && c.credBadMin > 0 && !isAlways(c, who) ? now + c.credBadMin * 60e3 : now + between(c.retrySec, rnd); /* 🔒 상시 기기는 아이디 오류여도 6시간 쉼 없이 1~10분 무작위 */
     const p = { tries, lastTry: t, next: { [who]: nextAt } };
     if (!r.ok) p.dev = { [who]: { in: false, at: now, how: r.how || 'fail' } }; /* 🪑 실패하면 받아 둔 자리를 바로 풀어 줌(다른 기기가 기다리지 않게) */
     if (doc && doc.lock) p.lock = null; /* 예전 판(차례 표)이 남긴 것 정리 */
@@ -247,7 +272,7 @@ const RN_LOGIN_RULE = (function () { /* ⟦알라딘 로그인 규칙 — 수집
     if (o.scmNeedsLogout && !hasLogout) return 'suspect';
     return false; }
   const net2 = (ip) => { const m = String(ip || '').match(/^(\d{1,3})\.(\d{1,3})\./); return m ? `${m[1]}.${m[2]}` : null; };
-  return { DEF, cfgOf, kstDay, kstHm, between, isBlock, codeOf, decide, record, judge, net2, LOGIN_URL, AUTH_URL, SCM_URL, PRI, isLive, seatView, seatAsk, seatYield, seatKeep };
+  return { DEF, cfgOf, kstDay, kstHm, between, isBlock, codeOf, decide, record, judge, net2, LOGIN_URL, AUTH_URL, SCM_URL, PRI, isLive, seatView, seatAsk, seatYield, seatKeep, isAlways, slotOf };
 })();
 const ALG = () => C('app_settings').doc('aladin_login');
 async function algTx(fn) { let out = null; await db.runTransaction(async (tx) => { out = null; const sn = await tx.get(ALG()); const d = sn.exists ? sn.data() || {} : {}; algCfg = RN_LOGIN_RULE.cfgOf(d); out = fn(d) || {}; if (out.patch) tx.set(ALG(), out.patch, { merge: true }); }); return out; }
@@ -1087,11 +1112,34 @@ const wonT = (n) => Math.round(+n || 0).toLocaleString('ko-KR') + '원';
 async function pushSend(names, payload, kind) { const K = await pushKeys(); if (!K) return { err: '열쇠 없음' }; const D = (await C('app_settings').doc('push_subs').get()).data() || {}; const subs = D.subs || {}; const list = (names && names.length ? names : Object.keys(subs)).filter((n) => subs[n] && subs[n].sub && !(kind && subs[n].kinds && subs[n].kinds[kind] === false)); const res = {};
   for (const n of list) { try { await webpush.sendNotification(subs[n].sub, JSON.stringify(payload), { TTL: 6 * 3600, urgency: 'high' }); res[n] = 'ok'; } catch (e) { res[n] = `실패 ${e.statusCode || ''} ${String(e.body || e.message || '').slice(0, 80)}`; if (e.statusCode === 404 || e.statusCode === 410) await C('app_settings').doc('push_subs').set({ subs: { [n]: { gone: nowIso(), sub: FV.delete() } } }, { merge: true }).catch(() => {}); } } /* (0.13.2 자동 점검) 끊긴 구독은 sub를 지움 — 예전엔 sub가 남아 매번 그 기기에 다시 보냄 */
   return res; }
+/* (정범님 10/27 15:12) '발송요청 확정' 알림 본문 — '리드나우 발송요청 확정' 아래는 다음만(주문번호도 빼고): ① 주문 총액 ② 주문 상품 중 가장 비싼 상품의 상품명·상태·가격 ③ 유효 최저가와 몇 퍼센트 차이
+ *  주문 = 이 클라우드가 읽어 둔 주문확인요청·발송 요청 목록(기억 → shp_state/current·confirm 문서) · 없으면 자동 판단 기록(shp_auto · 총액·대표 상품)
+ *  유효 최저가 = 출고 카드·자동 발송요청과 같은 판매가 평가(ReadnowML.evalSale · 같은 상품 시장 shp_enrich 첫 페이지)에서 '유효' 판매자 매물로 정한 기준값만 · 이름으로 찾은 시장·유효 매물 없음이면 '유효 최저가 모름'
+ *  퍼센트 = (판매가 − 유효 최저가) ÷ 유효 최저가 (evalSale ratio와 같음 · 소수 첫째 자리) */
+async function shipDoneSum(onos) { const want = new Set(onos.map(String)); const got = new Map(); const take = (L) => { for (const o of L || []) { const k = String((o && o.orderNo) || ''); if (want.has(k) && !got.has(k)) got.set(k, o); } };
+  take(lastConfirm); take(lastDelivOrders); take(confirmDoc && confirmDoc.orders);
+  for (const id of ['current', 'confirm']) { if (got.size >= want.size) break; try { take(((await C('shp_state').doc(id).get()).data() || {}).orders); } catch (e) {} }
+  const items = []; let total = 0; const miss = [];
+  for (const ono of want) { const o = got.get(ono); if (o) { for (const it of o.items || []) { if (!it) continue; const q = +it.qty || 1; total += (+it.price || 0) * q; items.push({ ono, lid: String(it.listingId || ''), title: it.title || '', grade: it.grade || null, price: +it.price || 0, qty: q }); } continue; }
+    let a = null; try { a = (await C('shp_auto').doc(ono).get()).data() || null; } catch (e) {} if (a && a.total) { total += +a.total || 0; if (a.top) items.push({ ono, lid: String(a.top.lid || ''), title: a.top.title || '', grade: a.top.grade || null, price: +a.top.price || 0, qty: +a.top.qty || 1, auto: a }); } else miss.push(ono); }
+  const top = items.reduce((m, it) => (!m || it.price > m.price ? it : m), null);
+  let eff = null, pct = null, effWhy = '';
+  if (top && top.price > 0) { const ai = top.auto && (top.auto.items || []).find((x) => x && String(x.lid) === top.lid && x.mkt === 'ok');
+    let e = top.lid ? enrichMem.get(top.lid) : null; if (!e && top.lid) { try { const sn = await C('shp_enrich').doc(top.lid).get(); if (sn.exists) e = sn.data(); } catch (er) {} }
+    const m = e && e.mkt; const byName = !!(m && e.via === 'search' && !m.isbnOk);
+    if (m && !byName) { const ML = await mlMod().catch(() => null); const r = ML && ML.evalSale ? ML.evalSale({ p: top.price, g: top.grade || (e && e.grade) || '', rows: (m.rows || []).slice(0, 20), lid: top.lid, ps: m.np && m.np.ps, pl: m.np && m.np.pl, av: m.np && m.np.av }) : null; if (r && r.tier === 'valid' && r.ref > 0) { eff = r.ref; pct = (top.price - r.ref) / r.ref * 100; } else effWhy = r ? '유효 매물 없음' : '판매가 평가 파일을 못 읽음'; }
+    else if (ai && ai.tier === 'valid' && ai.ref > 0) { eff = ai.ref; pct = (top.price - ai.ref) / ai.ref * 100; }
+    else effWhy = byName ? '이름으로 찾은 시장만 있음' : '시장 자료 없음'; }
+  const L1 = total > 0 ? `총 ${wonT(total)}${miss.length ? ` (주문 ${miss.length}건은 내용을 못 읽어 빠짐)` : ''}` : '총액 모름 — 주문 내용을 못 읽음';
+  const L2 = top ? `가장 비싼 상품: 「${String(top.title || '').slice(0, 40)}」 ${top.grade ? top.grade + ' · ' : ''}${wonT(top.price)}${top.qty > 1 ? ' ×' + top.qty : ''}` : '가장 비싼 상품: 모름';
+  const L3 = eff ? `유효 최저가 ${wonT(eff)} · ${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%` : `유효 최저가 모름${effWhy ? ' (' + effWhy + ')' : ''}`;
+  return { body: [L1, L2, L3].join('\n'), rec: { total, top: top ? { title: top.title, grade: top.grade, price: top.price, qty: top.qty, lid: top.lid } : null, eff, pct: pct == null ? null : Math.round(pct * 10) / 10, effWhy: effWhy || null, miss } }; }
 /* (0.32.7) 정범님 10/22: 발송요청 확정을 확인한 직후 휴대폰의 알라딘 셀러 앱 '주문' 알림을 지우게 — 웹은 다른 앱 알림을 못 지움 → 우리 알림 '✅ 발송요청 확정'을 보내고, 휴대폰 자동화 앱(MacroDroid)이 이 알림을 보면 알라딘 앱 알림을 지움 · 클라우드·PC 어느 쪽이 처리해도(맡긴 일 done) 한 번만 · 켬/끔 app_settings/ship_notify.clearAl(기본 켬) */
 async function shipDoneClearTick() { if (!webpush) return null; const cfg = (await C('app_settings').doc('ship_notify').get()).data() || {}; if (cfg.clearAl === false) return null; const ss = await C('shp_cmds').where('doneAt', '>=', new Date(Date.now() - 15 * 60e3).toISOString()).get(); const out = [];
   for (const d of ss.docs) { const v = d.data() || {}; if (v.type !== 'startDelivery' || v.status !== 'done' || v.clearPushAt) continue; const R = Object.entries(v.results || {}).filter(([, r]) => r && r.state === 'done'); if (!R.length) continue;
     let ok = false; await db.runTransaction(async (tx) => { ok = false; const sn = await tx.get(d.ref); if ((sn.data() || {}).clearPushAt) return; tx.set(d.ref, { clearPushAt: nowIso() }, { merge: true }); ok = true; }).catch(() => {}); if (!ok) continue;
-    const r = await pushSend(null, { title: '✅ 리드나우 발송요청 확정', body: `${R.length}건 발송요청 확정 확인 — 알라딘 주문 알림 정리 (${R.map(([o]) => o).slice(0, 3).join(', ')}${R.length > 3 ? ' …' : ''})`, tag: 'rn-shipdone', url: './?go=deliv' }, 'shipdone').catch((e) => ({ err: e.message })); await d.ref.set({ clearPush: r }, { merge: true }).catch(() => {}); out.push({ cmd: d.id, n: R.length }); }
+    let body = ''; let sum = null; try { sum = await shipDoneSum(R.map(([o]) => String(o))); body = sum.body; } catch (e) { body = '주문 내용을 못 읽음 — ' + String(e.message || e).slice(0, 60); }
+    const r = await pushSend(null, { title: '✅ 리드나우 발송요청 확정', body, tag: 'rn-shipdone', url: './?go=deliv' }, 'shipdone').catch((e) => ({ err: e.message })); await d.ref.set({ clearPush: r, clearPushBody: body, clearPushSum: sum ? sum.rec : null }, { merge: true }).catch(() => {}); out.push({ cmd: d.id, n: R.length }); }
   return out.length ? out : null; }
 /* ══════════ ❓ (정범님 10/26) 답할 문의 알림 — 클라우드는 묻고 답하기를 직접 읽지 않음: PC 수집기(crm:qna · 30분마다)가 crm_interactions(type 'qna' · answerStatus = 샵매니저 '답변여부' 칸 그대로)에 올린 것을 1분마다 봄
  *  '답할 문의' = 웹앱 qNeeds와 같은 기준(답변여부가 있고 'Yes'·'취소된 질문'이 아님) · 새로 올라온 것만(uploadedAt 최근 2시간 · 단일 필드 조건이라 따로 색인 없음 · type은 메모리에서 거름)

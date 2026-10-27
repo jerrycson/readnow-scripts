@@ -1,6 +1,7 @@
 {
  "saved": "2026-10-27",
  "by": "정범님 저장(Ctrl+S) 첨부 · Claude가 본문만 남김",
+ "rule": "바뀐 조항은 docs[].changes [{id, at(그 판 시행일), seen(우리가 알아챈 날), note}]에 덧붙임 — 옛 판 파일은 <key>_<시행일>.html로 남김(지우지 않음)",
  "docs": [
   {
    "key": "terms",
@@ -9,7 +10,39 @@
    "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=1",
    "ver": "2026-09-15 시행(최종 변경 2026-09-15 · 최초 제정 1999-07-14)",
    "secs": 28,
-   "chars": 16888
+   "chars": 16888,
+   "pType": 1,
+   "checked": [
+    {
+     "at": "2026-10-27",
+     "r": "두 번째 저장본(8개 묶음)과 본문 글자 대조 — 바뀐 조항 없음"
+    }
+   ],
+   "changes": []
+  },
+  {
+   "key": "seller",
+   "title": "알라딘 판매자 이용약관",
+   "file": "seller.html",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=4",
+   "ver": "2022-07-01 시행(최종 변경 2022-07-01 · 최초 제정 2008-02-20 · 옛 판 2021-08-17·2020-03-12·2008-02-20)",
+   "secs": 31,
+   "chars": 17249,
+   "pType": 4,
+   "changes": [],
+   "added": "2026-10-27"
+  },
+  {
+   "key": "shopmgr",
+   "title": "알라딘 샵매니저 이용약관",
+   "file": "shopmgr.html",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=8",
+   "ver": "2021-08-17 시행(최종 변경 2021-08-17 · 최초 제정 2008-02-20 · 옛 판 없음)",
+   "secs": 29,
+   "chars": 17195,
+   "pType": 8,
+   "changes": [],
+   "added": "2026-10-27"
   },
   {
    "key": "privacy",
@@ -18,7 +51,63 @@
    "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=3",
    "ver": "2026-09-15 시행(이전 판 2026-08-12)",
    "secs": 13,
-   "chars": 12573
+   "chars": 12573,
+   "pType": 3,
+   "checked": [
+    {
+     "at": "2026-10-27",
+     "r": "두 번째 저장본(8개 묶음)과 본문 글자 대조 — 바뀐 조항 없음"
+    }
+   ],
+   "changes": []
+  },
+  {
+   "key": "pmgmt",
+   "title": "알라딘 개인정보 관리 약정서",
+   "file": "pmgmt.html",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=6",
+   "ver": "2021-08-17 시행(옛 판 2020-03-12)",
+   "secs": 9,
+   "chars": 1484,
+   "pType": 6,
+   "changes": [],
+   "added": "2026-10-27"
+  },
+  {
+   "key": "community",
+   "title": "알라딘 커뮤니티 이용약관",
+   "file": "community.html",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=2",
+   "ver": "2013-11-20 시행(최초 제정·최종 변경 2013-11-20 · 옛 판 없음)",
+   "secs": 17,
+   "chars": 7078,
+   "pType": 2,
+   "changes": [],
+   "added": "2026-10-27"
+  },
+  {
+   "key": "youth",
+   "title": "알라딘 청소년 보호정책",
+   "file": "youth.html",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=7",
+   "ver": "2026-01-26 시행(옛 판 2025-07-28 등 8개)",
+   "secs": 6,
+   "chars": 1167,
+   "pType": 7,
+   "changes": [],
+   "added": "2026-10-27"
+  },
+  {
+   "key": "cctv",
+   "title": "알라딘 고정형 영상정보처리기기 운영∙관리방침",
+   "file": "cctv.html",
+   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=5",
+   "ver": "2026-05-06 시행(옛 판 2023-10-30)",
+   "secs": 8,
+   "chars": 1757,
+   "pType": 5,
+   "changes": [],
+   "added": "2026-10-27"
   },
   {
    "key": "partnership",
@@ -27,45 +116,9 @@
    "url": "https://www.aladin.co.kr/partnership/wguide.aspx",
    "ver": "날짜 표시 없음(2026-10-27 화면)",
    "secs": 4,
-   "chars": 556
+   "chars": 556,
+   "changes": []
   }
  ],
- "missing": [
-  {
-   "key": "seller",
-   "title": "판매자 이용약관",
-   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=4",
-   "pType": 4
-  },
-  {
-   "key": "shopmgr",
-   "title": "샵매니저 이용약관",
-   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=8",
-   "pType": 8
-  },
-  {
-   "key": "community",
-   "title": "커뮤니티 이용약관",
-   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=2",
-   "pType": 2
-  },
-  {
-   "key": "youth",
-   "title": "청소년 보호정책",
-   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=7",
-   "pType": 7
-  },
-  {
-   "key": "cctv",
-   "title": "영상정보처리기기 운영·관리방침",
-   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=5",
-   "pType": 5
-  },
-  {
-   "key": "pmgmt",
-   "title": "개인정보 관리 약정서",
-   "url": "https://www.aladin.co.kr/account/waccount_provision.aspx?pType=6",
-   "pType": 6
-  }
- ]
+ "missing": []
 }
