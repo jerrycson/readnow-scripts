@@ -1,1 +1,9 @@
-@kpin kpin/aud_20261027-113145.json
+@health&hours=24
+perf=400&doc=app_settings/write_watch,prd_jobs/pcBeat,app_settings/value_model,app_settings/buyback_stats,app_settings/extras_study,prd_system/dataBackup,app_settings/cloud,prd_system/qtychk
+logs=1&pc=LOGGER&from=202610271800
+logs=1&pc=HOME&from=202610271800
+logs=1&pc=JS-MAIN&from=202610271800
+logs=1&pc=MJ-MAIN&from=202610271800
+recentUp=prd_listings&mins=240
+rate=prd_listings,prd_book_metrics,prd_metric_changes,prd_books,prd_listing_changes,sellers,ext_used,bench_items,perf_logs,app_summary,rn_logs,mkt_kpipa&mins=240
+# 177403566
