@@ -1,1 +1,1 @@
-doc=app_settings/shop_cfg
+@kpin kpin/aud_20261027-052205.json
