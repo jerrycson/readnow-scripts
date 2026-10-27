@@ -1,2 +1,2 @@
-doc=app_settings/backup_auto,app_settings/secure_vault_status,app_settings/secure_vault_cfg,app_settings/secure_vault_pub,app_settings/ext
-# 23645
+doc=app_settings/ext_run
+# 13863
