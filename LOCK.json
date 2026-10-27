@@ -1,12 +1,12 @@
 {
- "holder": "kpsum",
- "what": "출판 정보 요약",
- "since": "2026-10-27T20:48:38Z",
- "beat": "2026-10-27T21:05:17Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "auto3h",
-  "done": "4시간 점검 끝 — 수집기 1.89.126 · 웹앱 1.78.199 (7b53dfc)",
-  "at": "2026-10-27T15:40:38Z"
+  "who": "kpsum",
+  "done": "요약 75개 넣음(25×3, 모두 success) · 남은 약 325개 이상(받기 때 표시 '남은 글 400')",
+  "at": "2026-10-27T21:10:14Z"
  }
 }
