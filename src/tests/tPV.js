@@ -20,7 +20,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
     out.core.parse = P.parseUsedItemPreviews(d).map((x) => x.n).join(','); out.core.photos = P.parseUsedItemPhotos(d).length;
     return out; }, [null, LL(1), LL(2), LL(3), null, null, null, null, null, null, null, null, LL(12)]);
   console.log(JSON.stringify(r));
-  let ok = r.a.ph === 1 && r.a.pvN === 3 && !r.a.hasPv && r.a2.ph === 1 && r.a2.pvN === 3 && r.b.ph === 1 && r.b.pvN === 1 && !r.b.keys.length && r.c && r.core.pg === 12 && r.core.from === '1,2,3' && r.core.prod === 1 && r.core.isPv && r.core.parse === '1,2' && r.core.photos === 1;
+  let ok = r.a.ph === 1 && r.a.pvN === 3 && !r.a.hasPv && r.a2.ph === 1 && r.a2.pvN === 3 && r.b.ph === 0 /* (10/27 📷) 원 주소 없는 예전 보관본 사진은 판정할 수 없어 제품 사진으로 안 보임 */ && r.b.pvN === 1 && !r.b.keys.length && r.c && r.core.pg === 12 && r.core.from === '1,2,3' && r.core.prod === 1 && r.core.isPv && r.core.parse === '1,2' && r.core.photos === 1;
   // ④ 상품 상세: 사진 칸에 미리보기 없음 · 📖 칸 · 넘겨 보기
   await p.evaluate(() => openProduct('aladin_UPV1')); await p.waitForTimeout(1200);
   const d1 = await p.evaluate(() => ({ imgs: document.querySelectorAll('#sheet .pimgs img').length, card: !!document.querySelector('#sheet .pvcard'), txt: (document.querySelector('#sheet .pvcard') || {}).textContent || '' }));

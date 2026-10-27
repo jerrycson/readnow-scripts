@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.107
+// @version      1.89.108
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -20,11 +20,11 @@
 // @downloadURL  https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-orders-core.js?v=0.3.0
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.2
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.4
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.5
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.1
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.110
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.111
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.4
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.2
@@ -3440,7 +3440,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   /* 중요도: 숫자가 클수록 먼저. 알라딘 작업 잠금을 낮은 작업이 쥐고 있으면 높은 작업이 양보를 요청 → 낮은 작업은 진행 위치를 저장하고 멈췄다가, 높은 작업이 끝나면 자동으로 이어감.
    * 기본값 근거: 돈·고객에 바로 닿는 것(주문·고객 > 새 등록 > 알라딘 팔기·구매 정산) → 가격 판단 재료(시장 지표) → 경쟁 분석(판매자) → 장기 분석(구매자 분포) 순 */
   const PRIO_DEFAULT = { crm: 100, scanNew: 90, buyback: 80, aladinBuy: 75, scanFull: 70, market: 60, rev6m: 50, revTop: 45, rev6mAll: 40, dynamic: 30, revAll: 20 };
-  const PRIO_KEY = { bench: 'market', usedInfo: 'market', soldInfo: 'market', poolInfo: 'market', photos: 'market', nbMarket: 'market', scanNew: 'scanNew', scanFull: 'scanFull', aladinBuy: 'aladinBuy', buyback: 'buyback', market: 'market', rev6mStale: 'rev6m', rev6m: 'rev6m', rev6mAll: 'rev6mAll', revTop: 'revTop', revAll: 'revAll', dynamic: 'dynamic', dynamic0: 'dynamic', dynAll: 'dynamic', crm: 'crm' };
+  const PRIO_KEY = { bench: 'market', usedInfo: 'market', soldInfo: 'market', poolInfo: 'market', photos: 'market', prodPhotos: 'market', nbMarket: 'market', scanNew: 'scanNew', scanFull: 'scanFull', aladinBuy: 'aladinBuy', buyback: 'buyback', market: 'market', rev6mStale: 'rev6m', rev6m: 'rev6m', rev6mAll: 'rev6mAll', revTop: 'revTop', revAll: 'revAll', dynamic: 'dynamic', dynamic0: 'dynamic', dynAll: 'dynamic', crm: 'crm' };
   let curStage = null; let myLockPrio = 0;
   const prioOf = (k) => { if (k === 'explore') return 1; /* 탐색 수집은 가장 낮음 (무엇이든 양보) */ const pk = PRIO_KEY[k] || k; return +((SET.prio || {})[pk] ?? PRIO_DEFAULT[pk] ?? 50); };
   const curPrio = () => prioOf(curStage || curKey || '');
@@ -3931,13 +3931,13 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const hidGet = (u) => { try { const k = hidKey(u); if (!k) return false; const M = GM_getValue(HID_K, {}) || {}; return !!(M[k] && Date.now() - M[k] < 3 * 864e5); } catch (e) { return false; } };
   const hidSet = (u) => { try { const k = hidKey(u); if (!k) return; const M = GM_getValue(HID_K, {}) || {}; M[k] = Date.now(); for (const [x, t] of Object.entries(M)) if (Date.now() - t > 3 * 864e5) delete M[x]; GM_setValue(HID_K, M); } catch (e) {} };
   const hidErr = () => Object.assign(new Error('알라딘에서 비공개된 상품(판매 화면 없음) — 3일 뒤 다시 봄'), { hidden: true });
-  async function getDoc(url, opt) { tgateCheck(); if (hidGet(url)) throw hidErr(); if (PUBONLY && !isPubUrl(url)) throw new Error('🛡 로거: 공개 화면이 아닌 알라딘 주소는 읽지 않음 — ' + String(url).slice(0, 80)); /* (1.69.0) 로그인 영역·우리 숍 관리 화면은 로거가 절대 부르지 않음 */ if ((window.__rnForceLogin && !PUBONLY) || !((PUBONLY || pubAnonOn()) && isPubUrl(url))) { const L = await getDocRaw(url, opt); /* (1.72.3) 🔁 로거가 못 한 일(19금) 넘겨받기 중에는 사무실 PC가 로그인 상태로 읽음 */ netAdd((L && L.html || '').length); return L; }
+  async function getDoc(url, opt) { tgateCheck(); if (hidGet(url)) throw hidErr(); if (PUBONLY && !isPubUrl(url)) throw new Error('🛡 로거: 공개 화면이 아닌 알라딘 주소는 읽지 않음 — ' + String(url).slice(0, 80)); /* (1.69.0) 로그인 영역·우리 숍 관리 화면은 로거가 절대 부르지 않음 */ const noLogin = !!(opt && opt.noLogin) && isPubUrl(url); /* (10/27) 📷 noLogin: 공개 화면을 꼭 로그인 없이만 — 로그인이 필요해 보여도 로그인 상태로 다시 읽지 않고 그 장만 건너뜀(알라딘 새 로그인을 일으키지 않음) */ if (!noLogin && ((window.__rnForceLogin && !PUBONLY) || !((PUBONLY || pubAnonOn()) && isPubUrl(url)))) { const L = await getDocRaw(url, opt); /* (1.72.3) 🔁 로거가 못 한 일(19금) 넘겨받기 중에는 사무실 PC가 로그인 상태로 읽음 */ netAdd((L && L.html || '').length); return L; }
     const A = await getDocRaw(url, { ...(opt || {}), cred: 'omit' }); anonNote(); netAdd((A && A.html || '').length); if (PUBONLY && A && A.doc) mixHarvest(A.doc);
     const viaLogin = async () => { ANON.login = (ANON.login || 0) + 1; const L = await getDocRaw(url, opt); netAdd((L && L.html || '').length); return L; }; /* (1.89.1) 정범님 10/20 '이 PC는 로그인 해도 되잖아' — 로그인할 수 있는 사무실 PC는 19금 등 로그인이 필요한 화면을 그 자리에서 로그인 상태로 다시 읽음(예전: 건너뛰고 며칠 동안 같은 책을 되풀이 실패) · 로거(PUBONLY)만 건너뛰고 사무실 PC로 넘김 */
-    if (A.needLogin) { if (!PUBONLY) return viaLogin(); ANON.gate++; throw Object.assign(new Error('로그인 없이는 못 보는 화면(19금 등) — 계정과 떼어 두는 중이라 이 장은 건너뜀'), { needLogin: true }); }
+    if (A.needLogin) { if (!PUBONLY && !noLogin) return viaLogin(); ANON.gate++; throw Object.assign(new Error('로그인 없이는 못 보는 화면(19금 등) — 계정과 떼어 두는 중이라 이 장은 건너뜀'), { needLogin: true }); }
     if (!/알라딘/.test(A.doc.title || '') && !A.doc.querySelector('link[rel="canonical"]')) { const h = String(A.html || '');
       /* (1.72.1) 19금(성인 인증) 상품: 로그인 없이 열면 알라딘이 짧은 '성인 인증·로그인으로 보내는' 화면을 줌(제목에 '알라딘'이 없어 예전엔 '알라딘 화면 같지 않음' 실패로 셈 — 로거에서 매일 수십 권) → 19금 건너뜀으로 셈 */
-      if (/wlogin\.aspx|login\.aspx|성인\s*인증|19세\s*(미만|이상)|청소년\s*(유해|이용불가)|adult/i.test(h)) { if (!PUBONLY) return viaLogin(); ANON.gate++; throw Object.assign(new Error('로그인 없이는 못 보는 화면(19금 등) — 계정과 떼어 두는 중이라 이 장은 건너뜀'), { needLogin: true }); }
+      if (/wlogin\.aspx|login\.aspx|성인\s*인증|19세\s*(미만|이상)|청소년\s*(유해|이용불가)|adult/i.test(h)) { if (!PUBONLY && !noLogin) return viaLogin(); ANON.gate++; throw Object.assign(new Error('로그인 없이는 못 보는 화면(19금 등) — 계정과 떼어 두는 중이라 이 장은 건너뜀'), { needLogin: true }); }
       if (/비공개\s*상태입니다/.test(h)) { hidSet(url); throw hidErr(); }
       if (!ANON.oddShown || ANON.oddShown < 3) { ANON.oddShown = (ANON.oddShown || 0) + 1; log(`🔎 알라딘 화면 같지 않은 응답(${ANON.oddShown}/3 · 까닭 찾기용) ${String(url).slice(0, 80)} — 앞부분: ${h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)}`, 1); }
       throw new Error('로그인 없이 읽은 화면이 알라딘 화면 같지 않음(막힘·오류 화면일 수 있음) — 빈 결과로 쓰지 않음'); }
@@ -5333,7 +5333,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
           const info = P.parseUsedItemInfo(g.doc, covers.get(x.bookId));
           const ref = C('prd_used_info').doc(x.lid); const prev = (await ref.get()).data();
           const sig = JSON.stringify([info.note, info.photos.map((p) => p.file)]);
-          const ver = { note: info.note || null, hasNote: info.hasNote, photos: info.photos.map((p) => ({ src: p.src, where: p.where, file: p.file })), sellerPhotoCount: info.sellerPhotoCount, photoDiff: info.photoDiff, coverKnown: info.coverKnown, found: info.found, sig, at };
+          const ver = { note: info.note || null, hasNote: info.hasNote, photos: info.photos.map((p) => ({ src: p.src, where: p.where, file: p.file, ...(p.kind ? { kind: p.kind } : {}) })), sellerPhotoCount: info.sellerPhotoCount, photoDiff: info.photoDiff, coverKnown: info.coverKnown, found: info.found, sig, at };
           if (prev && prev.sig === sig) { await ref.set({ checkedAt: at }, { merge: true }); prog.same++; } // 같은 내용: 판을 늘리지 않고 확인 시각만
           else if (prev && (prev.note || (prev.photos || []).length) && (!info.found || (!info.note && !info.photos.length))) { await ref.set({ lastMissAt: at }, { merge: true }); prog.same++; } // (1.34.0) 화면을 못 읽어 빈 내용이면 있던 유의 사항을 덮지 않음
           else {
@@ -5370,7 +5370,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (!info.hasNote && grade === '중') return miss("'중' 상품인데 유의 사항 글이 비어 있음");
     const sig = JSON.stringify([info.note, info.photos.map((x) => x.file)]);
     if (prev && prev.sig === sig) { await ref.set({ checkedAt: at }, { merge: true }); return { wrote: false, same: true, note: prev.note }; }
-    const nv = ((prev && prev.versions) || 0) + 1; const b = db.batch(); const ver = { note: info.note || null, hasNote: info.hasNote, photos: info.photos.map((x) => ({ src: x.src, where: x.where, file: x.file })), sellerPhotoCount: info.sellerPhotoCount, photoDiff: info.photoDiff, found: true, sig, at };
+    const nv = ((prev && prev.versions) || 0) + 1; const b = db.batch(); const ver = { note: info.note || null, hasNote: info.hasNote, photos: info.photos.map((x) => ({ src: x.src, where: x.where, file: x.file, ...(x.kind ? { kind: x.kind } : {}) })), sellerPhotoCount: info.sellerPhotoCount, photoDiff: info.photoDiff, found: true, sig, at };
     b.set(ref.collection('v').doc(String(nv).padStart(4, '0')), { ...ver, listingId: String(lid), ...W() }); b.set(ref, { listingId: String(lid), sellerCode: '996008', ours: true, ...ver, versions: nv, firstAt: (prev && prev.firstAt) || at, checkedAt: at, ...W() }, { merge: true }); await b.commit();
     return { wrote: true, note: info.note || null }; }
   /* (1.34.6) 출고 목록 빠른 반영: 주문확인요청(①)·발송 요청(②) 화면을 읽은 그대로 Firebase에 — 발송준비시작 직후·웹앱이 '다시 읽기'를 맡겼을 때 바로 씀
@@ -5495,7 +5495,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   /* (1.83.0) ☁ 클라우드 이상 띠가 매일 뜨던 까닭(진단 10/18): ① '유의 사항 다시 읽기'(usedInfo)는 클라우드가 느린 일로 회차 끝에만 처리하는데 PC는 20초만 기다려 거의 늘 '클라우드 이상'으로 적음(오늘 6번 모두 이것) ② 클라우드가 살아 있어도 다른 단계(조회·보강)를 하는 중이면 20초를 넘김
    *  → usedInfo는 클라우드 먼저에서 뺌(PC가 바로) · 발송준비시작·현금 판매 중지는 클라우드 신호(app_settings/cloud.at)가 2분 안에 있으면 45초까지 기다리고, 그래도 늦으면 PC가 처리하되 '느림'으로만 적음(띠 없음) · 신호가 끊긴 때만 '클라우드 이상' 띠 */
   const CLOUD_FIRST = new Set(['startDelivery', 'cashStop', 'prdEdit']); /* (1.89.26) 상품 정보 수정도 클라우드 먼저 */ let CLOUD_GRACE = 45000; let cloudSt = null, cloudStAt = 0;
-  const cloudAlive = async () => { if (!cloudSt || Date.now() - cloudStAt > 20000) { cloudStAt = Date.now(); try { cloudSt = (await C('app_settings').doc('cloud').get()).data() || {}; } catch (e) { cloudSt = cloudSt || {}; } } const at = Date.parse(cloudSt.at || 0) || 0; return { alive: Date.now() - at < 150e3 && cloudSt.ok !== false, ageS: Math.round((Date.now() - at) / 1000), err: cloudSt.err || null }; }; /* (1.77.5) 출고 과정(발송준비시작·현금 판매 중지·유의 사항 다시 읽기)은 클라우드 먼저 */
+  const cloudAlive = async () => { if (!cloudSt || Date.now() - cloudStAt > 20000) { cloudStAt = Date.now(); try { cloudSt = (await C('app_settings').doc('cloud').get()).data() || {}; } catch (e) { cloudSt = cloudSt || {}; } } const at = Date.parse(cloudSt.at || 0) || 0; return { alive: Date.now() - at < 150e3 && cloudSt.ok !== false && cloudSt.login !== 'off' && cloudSt.scm !== false, ageS: Math.round((Date.now() - at) / 1000), err: cloudSt.err || null }; }; /* (1.77.5) 출고 과정(발송준비시작·현금 판매 중지·유의 사항 다시 읽기)은 클라우드 먼저 */
+  /* (정범님 10/27 '로그인이 필요한 일은 로그인된 PC 먼저 · 클라우드는 받침') — 이 PC가 알라딘에 로그인되어 있으면(로그인 규칙이 '풀림'으로 알고 있지 않으면) 출고·돈 일(CLOUD_FIRST)도 클라우드를 기다리지 않고 바로 · 로그인이 풀린 PC만 예전처럼 클라우드 먼저 */
+  const pcLoggedNow = () => { if (PUBONLY) return false; try { const s0 = LGOV && LGOV.state ? LGOV.state() : null; return !s0 || s0.in !== false; } catch (e) { return true; } };
   const cmdMine = (t) => { const f = (k) => !window.__rnFeat || window.__rnFeat(k); if (t === 'startDelivery') return f('ship'); if (t === 'cashStop') return f('cash'); if (/^reg/.test(String(t))) return f('reg'); return !window.__rnPaused; };
   /* (1.88.4) 정범님 10/20 'JS-MAIN: 웹앱이 맡긴 일을 받았다는 표시가 기록에 전혀 없음' — 맡은 순간과 끝난 순간을 기록 창에 한 줄씩(종류·이름·걸린 시간) */
   const CMD_KO = { startDelivery: '발송준비시작', usedInfo: '유의 사항 다시 읽기', c2bAdd: '알라딘 팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지', prdEdit: '✏ 상품 정보 수정', qnaReply: '💬 묻고 답하기 답변', pageText: '📄 알라딘 안내 글 읽기', lookup: '사진 가격 조회', regDel: '등록 상품 삭제', regLookup: '📥 등록 조회', extLookup: '🌐 외부 정보', extTest: '🌐 외부 정보 시험', metrics: '시장 지표 다시 읽기', regBulk: '📦 대량 등록', regBulkMock: '🧷 모의 대량 등록', regOne: '🤖 개별·미등록 등록', regOneMock: '🧷 모의 개별 등록' };
@@ -5545,11 +5547,12 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   setInterval(() => qchkNext(), 3 * 60e3);
   async function runCmd(id) { await runCmd0(id); const c = window.__rnCmdCur; if (c && c.id === id) { window.__rnCmdCur = null; log(`✅ 웹앱이 맡긴 일 끝: ${CMD_KO[c.type] || c.type}${c.label ? ' · ' + c.label : ''} (${Math.round((Date.now() - c.t0) / 1000)}초)`); } }
   async function runCmd0(id) { const ref = C('shp_cmds').doc(id); let v = null; if ((window.__rnRest && window.__rnRest())) return; // (1.56.0) 맡긴 일은 이 PC의 수집기 탭만
-    { const x0 = (await ref.get()).data(); if (x0 && x0.status === 'queued' && CLOUD_FIRST.has(x0.type) && !x0.cloudTried && x0.dev !== PC_NAME) { /* (1.89.106) 정범님 10/26 23:16 '모든 요청은 휴대폰이 아닌 한 그 PC가 먼저': 이 PC 웹앱에서 누른 일은 클라우드를 기다리지 않고 바로 */ const age = Date.now() - (Date.parse(x0.createdAt || 0) || Date.now()); const ca = await cloudAlive(); CLOUD_GRACE = ca.alive ? 45000 : 3000; if (age < CLOUD_GRACE) { setTimeout(() => runCmd(id).catch(() => {}), CLOUD_GRACE - age + 300 + claimDelay(x0)); return; } } } /* (1.77.5) 출고·돈 일은 클라우드 먼저 — 20초 안에 클라우드가 안 받으면 이 PC가 받음(아래 pcFallback 표시 → 웹앱 '클라우드 이상' 알림) */
-    await db.runTransaction(async (tx) => { v = null; /* (1.89.13) 트랜잭션이 다시 돌면 앞 시도의 값이 남지 않게 */ const sn = await tx.get(ref); const x = sn.data(); if (!x || x.status !== 'queued' || !pcCan(x.type) || !cmdMine(x.type) || String(x.pcSkip || '').includes(` ${APP_VER}에`)) return; /* 노선표에서 PC 몫인 종류만 (1.36.0) */ tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, ...(CLOUD_FIRST.has(x.type) && !x.cloudTried ? { pcFallback: { at: nowIso(), pc: PC_NAME, why: `클라우드가 ${Math.round(CLOUD_GRACE / 1000)}초 안에 받지 않음` } } : {}), uploadedAt: TS() }); v = x; });
+    const cfWait = (x) => !!x && CLOUD_FIRST.has(x.type) && !x.cloudTried && x.dev !== PC_NAME && !pcLoggedNow(); /* (10/27) 클라우드를 기다리는 것은 이 PC 로그인이 풀린 때만 */
+    { const x0 = (await ref.get()).data(); if (x0 && x0.status === 'queued' && cfWait(x0)) { /* (1.89.106) 정범님 10/26 23:16 '모든 요청은 휴대폰이 아닌 한 그 PC가 먼저': 이 PC 웹앱에서 누른 일은 클라우드를 기다리지 않고 바로 */ const age = Date.now() - (Date.parse(x0.createdAt || 0) || Date.now()); const ca = await cloudAlive(); CLOUD_GRACE = ca.alive ? 45000 : 3000; if (age < CLOUD_GRACE) { setTimeout(() => runCmd(id).catch(() => {}), CLOUD_GRACE - age + 300 + claimDelay(x0)); return; } } } /* (1.77.5) 출고·돈 일은 클라우드 먼저 — 20초 안에 클라우드가 안 받으면 이 PC가 받음(아래 pcFallback 표시 → 웹앱 '클라우드 이상' 알림) */
+    await db.runTransaction(async (tx) => { v = null; /* (1.89.13) 트랜잭션이 다시 돌면 앞 시도의 값이 남지 않게 */ const sn = await tx.get(ref); const x = sn.data(); if (!x || x.status !== 'queued' || !pcCan(x.type) || !cmdMine(x.type) || String(x.pcSkip || '').includes(` ${APP_VER}에`)) return; /* 노선표에서 PC 몫인 종류만 (1.36.0) */ tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, ...(cfWait(x) ? { pcFallback: { at: nowIso(), pc: PC_NAME, why: `클라우드가 ${Math.round(CLOUD_GRACE / 1000)}초 안에 받지 않음` } } : {}), uploadedAt: TS() }); v = x; });
     if (!v) return;
     window.__rnCmdCur = { id, type: v.type, label: String(v.label || '').slice(0, 60), t0: Date.now() }; log(`📨 웹앱이 맡긴 일 받음: ${CMD_KO[v.type] || v.type}${v.label ? ' · ' + String(v.label).slice(0, 60) : ''}${v.by ? ' · ' + String(v.by).split('@')[0] : ''} — 이 PC(${PC_NAME})가 처리 시작`);
-    if (CLOUD_FIRST.has(v.type) && !v.cloudTried) { const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const ca = await cloudAlive(); const docN = ca.alive ? 'cloud_slow' : 'cloud_fb'; /* (1.83.0) 신호가 살아 있는데 늦은 것은 '느림' 기록만(띠 없음) · 신호가 끊긴 때만 클라우드 이상 */
+    if (cfWait(v)) { const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const ca = await cloudAlive(); const docN = ca.alive ? 'cloud_slow' : 'cloud_fb'; /* (1.83.0) 신호가 살아 있는데 늦은 것은 '느림' 기록만(띠 없음) · 신호가 끊긴 때만 클라우드 이상 */
       const why = ca.alive ? `클라우드가 살아 있지만 ${Math.round(CLOUD_GRACE / 1000)}초 안에 받지 않음(다른 단계를 하는 중) — PC가 처리` : `클라우드 신호가 ${ca.ageS}초째 없음${ca.err ? ' · ' + String(ca.err).slice(0, 80) : ''}`;
       C('app_settings').doc(docN).get().then((d) => { const o = d.exists ? d.data() : {}; return C('app_settings').doc(docN).set({ at: nowIso(), type: v.type, pc: PC_NAME, why, cmd: id, day, n: o.day === day ? (o.n || 0) + 1 : 1 }, { merge: true }); }).catch(() => {}); C('prd_jobs').doc('cloudfb_' + day).set({ day, ev: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), type: v.type, pc: PC_NAME, why, cmd: id, alive: ca.alive, ageS: ca.ageS }), ...W() }, { merge: true }).catch(() => {}); /* 날짜별로 빠짐없이 쌓음(지우지 않음) */ log(`☁ ${why} → 이 PC가 '${v.type}' 처리${ca.alive ? '' : ' — 웹앱에 클라우드 이상 띠'}`, 1); }
     if (v.type === 'startDelivery') { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; const results = {};
@@ -5588,6 +5591,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         try { await refreshOne(l, l.bookId || null); ok++; } catch (e) { fail++; why.push(`${l.title || k}: ${e.message}`); } await ref.set({ ok, fail, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); }
       await ref.set({ status: 'done', ok, fail, why: why.slice(0, 5), doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`시장 지표 바로 읽기(${v.label || ''}): 성공 ${ok} · 실패 ${fail}`, fail ? 1 : 0); return; }
     else if (v.type === 'metrics') { log(`그룹 시장 지표 갱신 맡음: ${v.label || ''} ${(v.keys || []).length}개`); if (SCHED && SCHED.on) { MET_PEND = MET_PEND || Date.now(); log('그룹 시장 지표 — ⏰ 차례 6(정한 시각·조건 칸 뒤)으로 곧 이어서'); } else if (!running) runJob('metricsReq'); else { MET_PEND = Date.now(); log('다른 작업 중 — 끝나면 바로 이어서'); } return; }
+    else if (v.type === 'tab') { let r; try { r = await tabReadPc(true); } catch (e) { await ref.set({ status: 'queued', claim: null, pcErr: String(e.message || e).slice(0, 200), pcErrAt: nowIso(), uploadedAt: TS() }, { merge: true }); log(`출고별 매출 다시 읽기 실패 — 대기로 되돌림(클라우드·다른 PC가 받음): ${e.message}`, 1); return; } await ref.set({ status: 'done', result: r || { skip: 1 }, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); return; } /* (10/27) 📦 출고별 매출 '⟳ 다시 읽기'(배송&구매확정전) — 로그인된 PC 먼저(클라우드와 같은 계산) */
+    else if (v.type === 'vatRead') { try { await vatReadPc(ref, v); } catch (e) { await ref.set({ status: 'queued', claim: null, pcErr: String(e.message || e).slice(0, 200), pcErrAt: nowIso(), uploadedAt: TS() }, { merge: true }); log(`🧾 부가가치세 조회 읽기 실패 — 대기로 되돌림: ${e.message}`, 1); } return; } /* (10/27) 🧾 경영 › 매출 맞춰 보기 — 로그인된 PC 먼저 */
     else if (v.type === 'read') { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (SH) try { await shipLiteRead(SH, null); } catch (e) {} await ref.set({ status: 'done', doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); }
     else { await ref.set({ status: 'queued', claim: null, pcSkip: `수집기 ${APP_VER}에 처리 길이 없는 종류 — 노선표 확인`, uploadedAt: TS() }, { merge: true }); log(`맡긴 일 '${v.type}': 이 수집기 판에 처리하는 길이 없어 대기로 되돌림 (노선표 확인)`, 1); return; } // (1.36.0) 예전: 모르는 종류도 '끝남' // (1.34.6) '다시 읽기'는 목록부터 바로(몇 초), 전체 읽기(유의 사항·엑셀)는 이어서
     window.__rnShipAt = 0; if (!running && !schedBusy) runCtx('urgent', 'shipRead'); else { SHIP_PEND = Date.now(); log('발송 요청 다시 읽기 — 하던 자동 일을 지금 항목까지 저장하고 비키게 한 뒤 바로'); } }
@@ -5606,6 +5611,74 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    *  · 한 PC 안에서는 한 탭만(GM 'rnu-shipfast', 40초 신호) · 다른 작업·일시정지와 상관없이 (읽기 한 번, 속도 조절은 같이 씀)
    *  · 바뀌지 않으면 목록 문서는 건드리지 않고 작은 신호(shp_state/fast)만 — 웹앱 '읽은 시각'과 클라우드가 봄(PC가 읽는 동안 클라우드는 빠른 고리를 쉼 = 비용 절약)
    *  · ② 발송 요청 수가 바뀌면 발송 요청도 바로 읽음 · 뒤에 숨은 탭에서도 느려지지 않게 일꾼 타이머(sleep) */
+  /* ══ (정범님 10/27) 📦 출고별 매출 = 배송&구매확정전 읽기 — 클라우드 shipTabRead와 같은 계산·같은 기록(shp_days) · 로그인된 PC 먼저
+   *  자동(5분마다 · 한국 7시~)은 PC와 클라우드가 임대(shp_state/tabRead {at, by})로 나눔 — 4분 30초 안에 다른 곳이 읽었으면 쉼 · 사람이 누른 다시 읽기는 늘 */
+  async function tabLeasePc(force) { let ok = false; const ref = C('shp_state').doc('tabRead'); try { await db.runTransaction(async (tx) => { ok = false; const x = (await tx.get(ref)).data() || {}; if (!force && x.by && x.by !== PC_NAME && Date.now() - (Date.parse(x.at || 0) || 0) < 270e3) return; tx.set(ref, { at: nowIso(), by: PC_NAME, force: !!force }, { merge: true }); ok = true; }); } catch (e) { ok = !!force; } return ok; }
+  async function tabReadPc(force) { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (!SH || !SH.parseShippedPage) return { err: '출고 공용 파일 0.7.0이 아님' };
+    if (!(await tabLeasePc(!!force))) return { skip: '다른 곳(클라우드·다른 PC)이 방금 읽음' };
+    const kd = (t) => new Date(t + 9 * 3600e3).toISOString().slice(0, 10); const now = Date.now(); const td = kd(now), from = kd(now - 10 * 864e5); const all = []; let tabCounts = null, last = 1;
+    for (let pg = 1; pg <= Math.min(last, 8); pg++) { const g = await getDoc('https://www.aladin.co.kr/scm/worder_delivery_complete.aspx?page=' + pg + '&keywordType=0&keyword=&orderstep=5'); const x = SH.parseShippedPage(g.doc, td);
+      if (pg === 1) { tabCounts = x.tabCounts; last = x.lastPage; if (!tabCounts || !Object.keys(tabCounts).length) throw new Error('배송&구매확정전 화면을 제대로 못 읽음(탭 숫자 없음) — 아무것도 쓰지 않음'); }
+      x.orders.forEach((o) => all.push({ ...o, pos: all.length })); if (!x.orders.length || x.orders.some((o) => o.shipDay && o.shipDay < from)) break; }
+    const orders = all.map((o) => ({ orderNo: o.orderNo, shipDay: o.shipDay, pos: o.pos, orderedAt: o.orderedAt, buyer: o.buyer, items: (o.items || []).map((i) => ({ title: i.title, qty: i.qty, price: i.price, listingId: i.listingId, sku: i.sku })) }));
+    const byDay = new Map(); for (const o of orders) { if (!o.shipDay || o.shipDay < from) continue; (byDay.get(o.shipDay) || byDay.set(o.shipDay, []).get(o.shipDay)).push(o); }
+    const days = [...byDay.keys()].sort(); let w = 0; const AU0 = firebase.firestore.FieldValue.arrayUnion;
+    for (const d of days) { const L = byDay.get(d); const ref = C('shp_days').doc(d); const ex = (await ref.get()).data(); if (ex && ex.source === 'edit' && !ex.void) continue; /* 사람이 직접 고친 날은 그대로 (클라우드와 같음) */
+      const old = ex && ex.source === 'tab' ? ex.entries || [] : (ex && Array.isArray(ex.tabEntries) ? ex.tabEntries : []); const have = new Set(old.map((e) => e.orderNo)); const add = L.filter((o) => !have.has(o.orderNo)).map((o) => ({ id: 'aladin_' + o.orderNo, orderNo: o.orderNo, ex: [], pos: o.pos, items: o.items, orderedAt: o.orderedAt || null, seenAt: nowIso() }));
+      if (ex && ex.source === 'tab' && !add.length && Array.isArray(ex.tabEntries)) continue; const ents = [...add, ...old]; const sig = ents.map((e) => e.orderNo).join(','); const prev = orders.find((o) => o.shipDay && o.shipDay < d); const top = L[0];
+      let items = 0, total = 0; ents.forEach((o) => (o.items || []).forEach((i) => { items += +i.qty || 1; total += (+i.price || 0) * (+i.qty || 1); }));
+      await ref.set({ day: d, entries: ents, tabEntries: ents, source: 'tab', sig, orderCount: ents.length, itemCount: items, total, top: top ? top.orderNo : (ex && ex.top) || null, prevLast: prev ? prev.orderNo : (ex && ex.prevLast) || null, readAt: nowIso(), by: `${PC_NAME} (배송&구매확정전)`, writerSchema: 7, ...(ex && ex.source === 'auto' ? { oldAuto: { entries: ex.entries || [], orderCount: ex.orderCount || null, total: ex.total || null, confirmedAt: ex.confirmedAt || null } } : {}), ...(ex && ex.source === 'confirm' ? { prevConfirm: { entries: ex.entries || [], by: ex.by || null, confirmedAt: ex.confirmedAt || null, orderCount: ex.orderCount || null, total: ex.total || null } } : {}), history: AU0({ at: nowIso(), by: PC_NAME, what: `배송&구매확정전 발송일 ${d} — 새로 ${add.length}건 · 모두 ${ents.length}건 ${items}권` }), uploadedAt: TS() }, { merge: true }); w++; }
+    const res = { n: orders.length, days: days.length, wrote: w, tab: (tabCounts || {})['배송&구매확정전'] ?? null, by: PC_NAME }; await C('shp_state').doc('tabRead').set({ lastTab: { ...res, at: nowIso() } }, { merge: true }).catch(() => {});
+    if (w) log(`📦 출고별 매출(배송&구매확정전): ${orders.length}건 읽음 · ${w}날 기록`); return res; }
+  /* ══ (정범님 10/27) 🧾 부가가치세 조회 읽기(경영 › 매출 맞춰 보기) — 클라우드 vatReadRun과 같은 길: 샵매니저 메뉴에서 '부가가치세' 링크를 찾아 GET으로만 읽음(바꾸는 주소는 열지 않음) → app_settings/vat_monthly */
+  async function vatReadPc(ref, v) { const AL0 = 'https://www.aladin.co.kr'; const at = nowIso(); const BAD = /del|remove|cancel|save|proc|update|insert|confirm|apply|send|logout|pay|refund|excel|down/i; const cand = new Map();
+    for (const st of ['/scm/wmain.aspx', '/scm/']) { try { const g = await getDoc(AL0 + st); for (const a of g.doc.querySelectorAll('a[href]')) { const t = (a.textContent || '').replace(/\s+/g, ''); const h = a.getAttribute('href') || ''; if (!/부가가치세|부가세/.test(t)) continue; let u; try { u = new URL(h, AL0 + '/scm/'); } catch (e) { continue; } if (u.origin !== AL0 || BAD.test(u.pathname + u.search)) continue; cand.set(u.pathname + u.search, t.slice(0, 40)); } } catch (e) { if (/로그인|멈춤/.test(e.message)) throw e; } }
+    (Array.isArray(v.urls) ? v.urls : []).forEach((u) => { if (/^\/scm\//.test(u) && !BAD.test(u)) cand.set(u, '지정'); });
+    const out = []; for (const [u, t] of [...cand].slice(0, 4)) { try { const g = await getDoc(AL0 + u); const tabs = []; for (const tb of g.doc.querySelectorAll('table')) { const rows = [...tb.querySelectorAll('tr')].map((tr) => [...tr.children].map((c) => (c.textContent || '').replace(/\s+/g, ' ').trim())); if (rows.length < 2) continue; const head = rows.find((r0) => r0.some((c) => /금액|매출|과세|부가|공급|합계|월/.test(c)) && !r0.some((c) => /\d{4}[.\-년]\s*\d{1,2}/.test(c))) || null; const data = rows.filter((r0) => r0.some((c) => /(\d{4})\s*[.\-년\/]\s*(\d{1,2})/.test(c)) && r0.some((c) => /^-?[\d,]+(원)?$/.test(c))); if (data.length) tabs.push({ head, data: data.slice(0, 60) }); }
+        out.push({ u, t, title: (g.doc.title || '').trim().slice(0, 60), tabs, forms: [...g.doc.querySelectorAll('select')].map((s0) => ({ n: s0.name || s0.id || '', o: [...s0.options].slice(0, 20).map((o) => o.value) })).slice(0, 6) }); } catch (e) { out.push({ u, t, err: String(e.message || e).slice(0, 100) }); } }
+    const months = {}; let head = null, src = null;
+    for (const o of out) for (const tb of o.tabs || []) for (const row of tb.data) { const mc = row.find((c) => /(\d{4})\s*[.\-년\/]\s*(\d{1,2})/.test(c)); const m = mc.match(/(\d{4})\s*[.\-년\/]\s*(\d{1,2})/); const k = `${m[1]}-${String(m[2]).padStart(2, '0')}`; const nums = row.map((c) => (/^-?[\d,]+(원)?$/.test(c) ? +c.replace(/[^\d-]/g, '') : null)); if (!months[k]) { months[k] = { cells: row.slice(0, 12), nums: nums.slice(0, 12) }; if (!head && tb.head) head = tb.head.slice(0, 12); if (!src) src = o.u; } }
+    const n = Object.keys(months).length; await C('app_settings').doc('vat_monthly').set({ at, src, head, months, cand: [...cand.keys()].slice(0, 6), pages: out.map((o) => ({ u: o.u, t: o.t, title: o.title || null, tables: (o.tabs || []).length, forms: o.forms || [], err: o.err || null })), readBy: PC_NAME, ...W() }, { merge: true });
+    await ref.set({ status: 'done', result: { months: n, src, cand: cand.size }, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`🧾 부가가치세 조회: 달 ${n}개 · 화면 ${cand.size}개 (웹앱 매출 맞춰 보기)`); }
+  /* ══ (정범님 10/27 '처음부터 PC가 잡는 것이 조건') 🤖 자동 발송요청 판단 — 로그인된 PC가 주문확인요청을 읽은 그 고리(15초)에서 바로
+   *  판단 = 공용 출고 파일 autoShipDecide(클라우드·웹앱과 같은 기준) · 시장 = shp_enrich(클라우드 보강 — 공개 화면) · 판매가 평가 = readnow-ml-core evalSale
+   *  판정 기록 shp_auto/{주문}은 '기다림'에서 처음 정할 때만(트랜잭션 — 클라우드·다른 PC와 겹쳐도 한 번만) · 통과면 발송준비시작(shp_cmds/auto_{주문})을 이 PC 이름으로 만들고 이 PC가 바로 처리(실행 문 exBegin/exEnd로 두 번 보내지 않음)
+   *  검토면 pushWant 표시 → 클라우드가 휴대폰 알림을 한 번(알림 열쇠는 클라우드에만) · 결과 따라가기(✅ 완료 알림)도 클라우드 · 살아 있음 신호 ship_auto.beatAt·beatBy(이 PC) 2분마다(웹앱들이 이 문서를 들으므로 너무 잦지 않게) */
+  const AU = { mem: new Map(), cfg: null, cfgAt: 0, beatAt: 0, busy: false };
+  async function auCust(o, SHC) { const hits = []; const seen = new Set();
+    const look = async (who, field, val, weak, name) => { const qs = await C('crm_customers').where(field, 'array-contains', val).limit(6).get(); qs.forEach((d) => { if (seen.has(who + d.id)) return; seen.add(who + d.id); const r = SHC.custRisk(d.data()); if (r.bl || r.seller) hits.push({ who, name: name || '', cid: d.id, bl: r.bl, seller: r.seller, sellers: r.sellers, blWhy: r.blWhy, weak: !!weak || qs.size > 1 }); }); return qs.size; };
+    try { const em = String(o.buyerEmail || '').trim(); let n = 0; if (em && !em.includes('*')) { n = await look('주문인', 'emails', em, false, o.buyer); if (!n && em.toLowerCase() !== em) n = await look('주문인', 'emails', em.toLowerCase(), false, o.buyer); }
+      const bn = String(o.buyer || '').trim(); if (!n && bn) await look('주문인', 'names', bn, true, bn);
+      const rn = o.recipient && !o.recipient.sameAsBuyer ? String(o.recipient.name || '').trim() : ''; if (rn && rn !== '상동' && rn !== bn) await look('수령인', 'names', rn, true, rn);
+      return { hits }; } catch (e) { return { hits, err: e.message }; } }
+  async function auFinal(ref, rec, cmd) { let did = false; await db.runTransaction(async (tx) => { did = false; const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && v.state && v.state !== 'wait') return;
+      if (cmd) { const cs = await tx.get(cmd.ref); if (cs.exists) return; tx.set(cmd.ref, cmd.v); }
+      tx.set(ref, { ...rec, ...W() }, { merge: true }); did = true; }); return did; }
+  async function autoShipPc(orders) { if (AU.busy || PUBONLY || !auth.currentUser || !pcLoggedNow()) return null; if (window.__rnFeat && !window.__rnFeat('ship')) return null; /* 출고 기능을 끈 PC는 판단·발송준비시작 안 함(다른 PC·클라우드) */
+    const SHC = window.ReadnowShipping || globalThis.ReadnowShipping, ML = window.ReadnowML || globalThis.ReadnowML; if (!SHC || !SHC.autoShipDecide || !ML || !ML.evalSale) return null;
+    AU.busy = true; const out = { sent: 0, review: 0, wait: 0 };
+    try { if (!AU.cfg || Date.now() - AU.cfgAt > 30e3) { const d = (await C('app_settings').doc('ship_auto').get()).data() || {}; const c = SHC.autoCfg(d); c.since = d.since || null; AU.cfg = c; AU.cfgAt = Date.now(); if (c.on && !c.since) { c.since = nowIso(); await C('app_settings').doc('ship_auto').set({ since: c.since, sinceBy: `${PC_NAME} (처음 켜짐 — 이 시각 뒤 주문부터)` }, { merge: true }).catch(() => {}); } }
+      const cfg = AU.cfg; if (!cfg.on) return null;
+      if (Date.now() - AU.beatAt > 120e3) { AU.beatAt = Date.now(); C('app_settings').doc('ship_auto').set({ beatAt: nowIso(), beatVer: APP_VER, beatBy: PC_NAME, beats: { [PC_NAME]: nowIso() } }, { merge: true }).catch(() => {}); }
+      const cfgRec = { on: cfg.on, minQty: cfg.minQty, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, since: cfg.since }; if (AU.mem.size > 3000) AU.mem.clear();
+      for (const o of orders || []) { const ono = String(o.orderNo || ''); if (!ono || o.platform === 'cash') continue; let m = AU.mem.get(ono); if (m && m.final) continue; const ref = C('shp_auto').doc(ono);
+        if (!m) { const v0 = (await ref.get()).data() || null; if (v0 && v0.state !== 'wait') { AU.mem.set(ono, { final: true }); continue; } m = { firstAt: (v0 && Date.parse(v0.firstAt || '')) || Date.now(), doc: !!v0 }; AU.mem.set(ono, m); }
+        const base = { orderNo: ono, buyer: o.buyer || null, recipient: o.recipient && !o.recipient.sameAsBuyer ? o.recipient.name || null : null, orderedAt: o.orderedAt || null, firstAt: new Date(m.firstAt).toISOString(), at: nowIso(), by: PC_NAME, ver: APP_VER, cfg: cfgRec };
+        const oAt = Date.parse(String(o.orderedAt || '').replace(' ', 'T') + ':00+09:00');
+        if (cfg.since && oAt && oAt < Date.parse(cfg.since) - 60e3) { await auFinal(ref, { ...base, state: 'skip', reasons: ['자동 발송요청을 켜기 전에 들어온 주문 — 사람이 처리'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; }
+        if (!m.hcAt || Date.now() - m.hcAt > 60e3) { m.hcAt = Date.now(); const qs = await C('shp_cmds').where('orderNos', 'array-contains', ono).limit(20).get(); const hd = qs.docs.find((x) => { const y = x.data() || {}; return y.type === 'startDelivery' && !y.auto && !['cancelled', 'cancel'].includes(y.status); });
+          if (hd) { await auFinal(ref, { ...base, state: 'human', humanCmd: hd.id, reasons: ['사람이 먼저 발송준비시작을 맡김 — 자동 판단 안 함'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; } }
+        if (cfg.custBlock && m.cust === undefined) m.cust = await auCust(o, SHC);
+        const E = {}; for (const it of o.items || []) { const lid = String(it.listingId || ''); if (!lid) continue; try { const e = (await C('shp_enrich').doc(lid).get()).data(); if (e) E[lid] = e; } catch (e2) {} }
+        const D = SHC.autoShipDecide({ order: o, enrich: E, cfg, evalSale: ML.evalSale, now: Date.now(), firstAt: m.firstAt, cust: cfg.custBlock ? m.cust : null });
+        const rec = { ...base, qty: D.qty, total: D.total, top: D.top, items: D.items, reasons: D.reasons, kinds: D.kinds, cust: (m.cust && m.cust.hits) || [], custErr: (m.cust && m.cust.err) || null, shipVer: SHC.VERSION || null, mlVer: ML.VERSION || null };
+        if (D.state === 'wait') { out.wait++; if (!m.doc) { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); if (!sn.exists) tx.set(ref, { ...rec, state: 'wait', waitLeftMs: D.waitLeftMs, ...W() }); }).catch(() => {}); m.doc = true; } continue; }
+        if (D.state === 'pass') { const cref = C('shp_cmds').doc('auto_' + ono); const ok = await auFinal(ref, { ...rec, state: 'sent', cmdId: cref.id, decidedAt: nowIso() }, { ref: cref, v: { type: 'startDelivery', orderNos: [ono], status: 'queued', createdAt: nowIso(), by: `🤖 자동 발송요청 (${PC_NAME} 판단)`, auto: true, dev: PC_NAME, uploadedAt: TS() } }).catch((e) => { log(`🤖 자동 발송요청 기록 실패(${ono}): ${e.message}`, 1); return false; });
+          m.final = true; if (ok) { out.sent++; log(`🤖 자동 발송요청: 주문 ${ono} 통과 (총 ${Math.round(D.total || 0).toLocaleString()}원) — 이 PC가 바로 발송준비시작`); setTimeout(() => runCmd(cref.id).catch(() => {}), 300); } continue; }
+        const ok = await auFinal(ref, { ...rec, state: 'review', decidedAt: nowIso(), pushWant: true }).catch(() => false); m.final = true; if (ok) { out.review++; log(`🔎 자동 발송요청: 주문 ${ono} 관리자 검토 — ${D.reasons.slice(0, 2).join(' / ')}`, 1); } }
+      if (out.sent || out.review) window.__rnAutoShip = { at: nowIso(), ...out }; return out; }
+    catch (e) { log('🤖 자동 발송요청 판단 실패: ' + e.message, 1); return null; } finally { AU.busy = false; } }
+  window.__rnAutoShipPc = (orders) => autoShipPc(orders);
   (function shipFastPc() { const ME = Math.random().toString(36).slice(2, 8); const KEY = 'rnu-shipfast'; let lastSig = null, lastDeliv = null, busy = false, fails = 0;
     /* (1.63.12) 출고 시장 받쳐 주기 — 새 주문 상품이 2분 넘게 '지금 시장 읽는 중'이면(클라우드가 못 읽었거나 늦음) 이 PC가 그 상품의 온라인 중고 첫 페이지를 읽어 같은 기록(shp_market)에 씀
      *  · 15초마다 최대 2권 · 서버 기준으로 이미 읽었으면(shp_enrich에 시장 또는 shp_market에 그 주문·상품) 안 읽음 · 로그인 필요 없는 공개 화면 */
@@ -5614,16 +5687,20 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         try { const e = (await C('shp_enrich').doc(lid).get()).data(); if (e && (e.mkt || e.mktErr)) { mktSeen.set(id, true); continue; }
           const q = await C('shp_market').where('orderNo', '==', o.orderNo).where('listingId', '==', lid).limit(1).get(); if (!q.empty) { mktSeen.set(id, true); continue; }
           const r = await marketSnapPC([{ ...o, items: [it] }]); mktSeen.set(id, true); if (r.n && !r.fail) log(`출고 시장 받쳐 주기: '${String(it.title || lid).slice(0, 30)}' — 클라우드가 2분 넘게 못 읽어 이 PC가 읽음`); } catch (e) { mktSeen.set(id, now + 5 * 60e3); } } }
-    let cfAt = 0, cfV = false; const cloudFresh = async () => { if (Date.now() - cfAt < 20000) return cfV; cfAt = Date.now(); try { const d = (await C('app_settings').doc('cloud').get()).data() || {}; const t = Date.parse(d.lastLoopAt || d.lastConfirmAt || 0); cfV = d.ok !== false && Date.now() - t < 45e3; } catch (e) { cfV = false; } return cfV; };
+    /* (정범님 10/27) 주문확인요청 읽기 = 로그인 일 → 로그인된 PC 먼저(예전 1.77.5~: 클라우드가 45초 안에 읽었으면 PC가 쉼 → 클라우드 로그인이 막히자 자동 판단까지 멈췄음) · 클라우드는 PC 신호가 40초 넘게 없을 때만 직접 읽음(받침)
+     *  PC끼리는 한 PC만: 다른 PC가 35초 안에 읽었으면(shp_state/fast.pc) 이 PC는 쉼 · 이 PC 로그인이 풀린 동안은 읽지 않음(다른 PC·클라우드가) */
+    let ofAt = 0, ofV = false; const otherPcFresh = async () => { if (Date.now() - ofAt < 14000) return ofV; ofAt = Date.now(); try { const d = (await C('shp_state').doc('fast').get()).data() || {}; ofV = !!d.pc && d.pc !== 'cloud' && d.pc !== PC_NAME && Date.now() - (Date.parse(d.at || 0) || 0) < 35e3; } catch (e) { ofV = false; } return ofV; };
+    let tabAt = 0;
     const leader = () => { const v = GM_getValue(KEY, null); if (!v || v.tab === ME || Date.now() - v.at > 40000) { GM_setValue(KEY, { tab: ME, at: Date.now() }); return true; } return false; };
     addEventListener('beforeunload', () => { const v = GM_getValue(KEY, null); if (v && v.tab === ME) GM_deleteValue(KEY); });
     window.__rnShipFast = () => ({ leader: (GM_getValue(KEY, null) || {}).tab === ME, lastSig: !!lastSig, fails });
-    (async () => { if (PUBONLY) return; /* (1.64.0) 주문 읽기 = 로그인 일 */ await sleep(10000); for (;;) { await sleep(15000); if (busy || !auth.currentUser || !leader()) continue; if (await cloudFresh()) continue; /* (1.77.5) 출고 과정은 클라우드 먼저(정범님 10/17) — 클라우드 빠른 고리가 45초 안에 읽었으면 PC는 쉬고, 클라우드가 멈추면 바로 이 PC가 15초마다 */ busy = true;
+    (async () => { if (PUBONLY) return; /* (1.64.0) 주문 읽기 = 로그인 일 */ await sleep(10000); for (;;) { await sleep(15000); if (busy || !auth.currentUser || !leader()) continue; if (!pcLoggedNow() || (await otherPcFresh())) continue; /* (10/27) 로그인된 PC 먼저 — 다른 PC가 읽는 중이거나 이 PC 로그인이 풀렸으면 쉼 */ busy = true;
         try { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (!SH) continue; const g = await lookDoc('https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx'); const rc = SH.parseDeliveryPage(g.doc);
           if (!rc || !rc.tabCounts || !Object.keys(rc.tabCounts).length) { fails++; continue; } if (rc.tabCounts['주문확인요청'] > 0 && (!rc.orders.length || rc.orders.every((o) => !(o.items || []).length))) { fails++; if (fails === 1 || fails % 40 === 0) log(`⚠ 출고 실시간(PC): 주문확인요청 탭은 ${rc.tabCounts['주문확인요청']}건인데 주문·상품을 못 읽음 — 알라딘 화면 모양이 바뀐 듯 · 빈 목록을 쓰지 않음`, 1); continue; } /* (1.63.14) */ fails = 0; const at = nowIso(); const sig = JSON.stringify(rc.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId)]));
           let ch = false; if (sig !== lastSig) { ch = await saveConfirmState(rc, at); lastSig = sig; if (ch) log(`출고 실시간(PC): 주문확인요청 ${rc.orders.length}건으로 바뀜 — 웹앱에 바로`); }
-          const dv = rc.tabCounts['발송 요청']; if (lastDeliv != null && dv !== lastDeliv) { try { await shipLiteRead(SH, g.doc); } catch (e) {} } lastDeliv = dv;
-          await C('shp_state').doc('fast').set({ pc: PC_NAME, at, n: rc.orders.length, changed: ch, ver: APP_VER }, { merge: true }); try { await mktBackup(rc.orders); } catch (e) {} }
+          const dv = rc.tabCounts['발송 요청']; const dvDrop = lastDeliv != null && dv != null && dv < lastDeliv; if (lastDeliv != null && dv !== lastDeliv) { try { await shipLiteRead(SH, g.doc); } catch (e) {} } lastDeliv = dv;
+          await C('shp_state').doc('fast').set({ pc: PC_NAME, at, n: rc.orders.length, changed: ch, ver: APP_VER }, { merge: true }); try { await autoShipPc(rc.orders); } catch (e) {} /* (10/27) 🤖 읽은 바로 그 자리에서 자동 발송요청 판단 */ try { await mktBackup(rc.orders); } catch (e) {}
+          if (new Date(Date.now() + 9 * 3600e3).getUTCHours() >= 7 && (dvDrop || Date.now() - tabAt > 5 * 60e3)) { tabAt = Date.now(); try { await tabReadPc(false); } catch (e) { log('📦 출고별 매출(배송&구매확정전) 읽기 실패: ' + e.message, 1); } } /* (10/27) 출고별 매출 — 5분마다(발송 요청이 줄면 바로) · 클라우드와 임대로 나눔 */ }
         catch (e) { fails++; } finally { busy = false; } } })(); })();
   async function lookupBook(url, code) { let g = await lookDoc(url); let p = P.parseProductPage(g.doc, g.finalUrl); if (!p.aladinItemId && !PUBONLY && /성인\s*인증|19세|청소년\s*(유해|이용불가)|wlogin\.aspx|adult/i.test(String(g.finalUrl || '') + ' ' + String(g.html || (g.doc && g.doc.documentElement ? g.doc.documentElement.outerHTML : '')).slice(0, 30000))) { /* (1.81.0) 🔞 알라딘 제목이 붙은 성인 인증 화면 — 로그인한 채로 다시 */ g = await AL.quick(url, { pace: PACE_P, sleep }); p = P.parseProductPage(g.doc, g.finalUrl); } if (!p.aladinItemId) throw new Error('알라딘에서 이 책을 못 찾음');
     const RG = RGF(); const barcode = RG ? RG.pageBarcode(g.doc) : null; if (code && !(RG ? RG.matchCode({ isbn13: p.isbn13, barcode }, code) : String(p.isbn13 || '') === String(code))) throw Object.assign(new Error(`알라딘이 다른 상품(${p.title || p.aladinItemId})으로 연결함`), { wrong: true }); /* (1.44.1) 찾던 번호와 다른 상품이면 쓰지 않음 (음반·DVD 바코드는 엉뚱한 책으로 갈 때가 있음) */
@@ -6025,53 +6102,102 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const cloudOn = () => !!(cloudBeat && cloudBeat.at && Date.now() - Date.parse(cloudBeat.at) < 10 * 60000 && cloudBeat.ok !== false && !(cloudBeat.jobs && cloudBeat.jobs.ship === false)); // 클라우드 수집이 살아 있고 발송 요청 읽기를 켜 둠 (10분 안 신호 · 1.61.0: ☁ 설정에서 '발송 요청 읽기'를 끄면 PC 칸이 다시 맡음)
   /* (1.60.1) 발송 요청 읽기를 평일 9~16시 15분마다 스스로 하던 것(클라우드가 꺼졌을 때) → ⏰ 매일 자동 수집의 칸에서만 (클라우드가 살아 있으면 그 칸은 저절로 건너뜀) */
 
-  async function photosJob() {
-    /* (1.89.104) 🛑 정범님 10/26 22:38 '왜 하루 종일 이미지만 받고 있나': '표지 없는 상품' 판단(prd_books.images.front — 우리가 찍은 표지 칸)이 거의 모든 상품(2.56만 중 2.56만)을 골라, 실제로는 알라딘 표지(같은 책 공용 그림 · 웹앱은 알라딘 주소로 바로 보여 줌)를 상품마다 한 장씩 하루 종일 받고 있었음 → 시간표·자동 실행 멈춤(하던 목록도 버림) · 🧭 관리도구에서 사람이 고른 때만 */
-    if (!FORCE_ALL) { try { const pg = await loadProgress('photos'); if (pg && pg.list) await saveProgress('photos', { ...pg, list: null, stoppedAt: nowIso(), stopWhy: '정범님 10/26 22:38 — 알라딘 표지를 상품마다 받던 것 멈춤' }); } catch (e) {} log('🛑 우리 상품 사진 받기는 시간표로 돌지 않음 — 받던 것의 거의 전부가 알라딘 표지(같은 책 공용 그림)였음 · 필요하면 🧭 관리도구에서 직접', 1); ui('우리 상품 사진: 멈춤(시간표로 안 돎)', 0, 0); return true; }
+  /* (10/27) 예전 '우리 상품 사진'(photosJob · 10/20~26) — 받은 것의 거의 전부가 알라딘 표지·미리보기였음(정범님 10/26 22:38 멈춤 · 10/27 '제품 사진만(!!!) 다시') → 이 일은 이제 '📷 제품 사진 다시 받기'(제품 사진 판정만)로 돎
+   *  예전 기록 photos[]·저장소 img/listing/{U코드}/{n}.jpg 는 지우지도 옮기지도 않고 그대로 · 상품명 검색으로 다른 매물 사진을 가져오던 길은 없앰(우리 제품 사진이 아님) */
+  async function photosJob() { return prodPhotosJob(); }
+
+  /* ───────── 📷 제품 사진 다시 받기 (정범님 10/27 '옮기기가 끝나면 미리보기가 아닌 제품 사진만 전부 다시 · 이번엔 확실히 구분해서 제품 사진만(!!!)') ─────────
+   * 판정 = 공용 파일 readnow-products-core.js photoKind/isProductPhoto 한 곳(판매자가 샵매니저로 올린 사진 scm{번호}.jpg·/usedshop/ + 유의 사항 안 판매자 그림 · 알라딘 표지·미리보기·조회수 실험·꾸밈 그림은 받지도 저장하지도 않음)
+   * 언제: 클라우드 '예전 미리보기 옮기기'(app_settings/previews_migrate.doneAt)가 끝난 뒤에만 · 끝나면 저절로 한 번(쉴 때 · 다른 일이 오면 자리 내줌) → 다 돌면 멈춤 · 🧭 관리도구 '지금 한 번'·⏰ 편집기 일 목록으로도
+   * 대상: 우리 상품 전부(판매 중 먼저 → 판매완료 뒤로) 중 서버 기록에 photosV:2(이 판정으로 끝낸 표시)가 없는 것 — 상품마다 서버 기록을 다시 읽어 확인(다른 PC가 방금 끝냈을 수 있음)
+   * 읽기: 우리 매물 공개 화면(wproduct.aspx?ItemId=매물번호)을 로그인 없이만(getDoc noLogin — 19금 등 로그인이 필요해 보여도 로그인으로 다시 읽지 않음 · 알라딘 새 로그인을 일으키지 않음) · 속도는 공개 읽기 줄(PACE)
+   * 저장: prd_listings/{상품}.productPhotos[] = [{src, where(top·desc), file, stored: img/listing/{U코드}/p{n}.jpg, thumb: …/p{n}_t.webp, bytes, kind:'product', from:'page'|'photos'}] + productPhotosAt·productPhotosStatus·photosV:2
+   *   from:'photos' = 예전 사진 받기가 이미 받아 둔 같은 파일(파일 이름이 같고 판정이 제품 사진) → 다시 받지 않고 그 저장 경로를 씀(정범님 '사진은 중복해서 받지 않는 정보')
+   *   상태: done(제품 사진 있음) · none(제품 사진 없음 — productPhotos [] · 다시 안 감) · nopage(매물 화면 없음 — 팔림·지움) · gate(로그인 없이는 못 보는 화면) = 끝(photosV:2)
+   *         hidden(주문이 들어와 비공개) · err(읽기·받기 실패) = productPhotosTry에만 적고 다음 회차(하루 뒤 · 최대 4회차)에 다시
+   *         unknown(위쪽 사진 칸에 허용 목록에도 빼는 목록에도 안 걸린 주소 = 모르는 꼴) = 아무것도 받지 않고 productPhotosUnknown[{src,where}](최대 10)·productPhotosSeen(그 화면 사진 주소 전부)·productPhotosJudgeV 만 남김 · 끝으로 치지 않음
+   *           → 판정 규칙이 늘어 PP_V가 오르면 화면을 다시 열지 않고 productPhotosSeen만 다시 판정해 받음 · 같은 규칙이면 다시 열지 않음(수동 실행만 다시 엶)
+   *   표본: 이번 실행의 처음 100개 상품 뒤 app_settings/pphotos_job.sample(있음·없음·모르는 꼴 수 + 모르는 주소 꼴 상위 10 — 호스트·경로 앞 두 칸) · 모르는 꼴이 30% 넘으면 'hold'(확인 기다림)로 멈춤 → 관리도구 '지금 한 번'(사람이 확인)으로만 이어감
+   *   예전 photos[]는 그대로(지우지도 photosOld로 옮기지도 않음) — 읽는 쪽(productPhotosOf)은 productPhotos가 있으면 그것만, 없으면 photos[]를 판정으로 거른 것
+   * 쓰기: 상품마다 한 번 · 한 상품에 최소 2.5초(prd_listings 한 시간 최대 약 1,440건 — 클라우드 쓰기 감시 한 시간 2,500건 한도의 58%) · 2.6만 상품이면 쓰기 약 2.6만 번·하루 남짓
+   * 진행: prd_jobs/prodPhotos(목록·자리 — 멈춰도 그 자리부터) + app_settings/pphotos_job(관리도구 계기판이 읽는 작은 상태) · 로거(공개 전용 PC)는 하지 않음(우리 매물 화면 — 사무실 PC 일) */
+  const PPJ_REF = () => C('app_settings').doc('pphotos_job');
+  const ppStat = (prog, st, extra) => PPJ_REF().set({ status: st, i: prog.i, n: prog.list ? prog.list.length : null, ok: prog.ok, none: prog.none, nopage: prog.nopage, hidden: prog.hidden, gate: prog.gate, err: prog.err, unknown: prog.unknown || 0, unkSkip: prog.unkSkip || 0, reJ: prog.reJ || 0, imgs: prog.imgs, reused: prog.reused, skip: prog.skip || 0, retryLeft: (prog.retry || []).length, round: prog.round || 1, startedAt: prog.startedAt || null, at: nowIso(), pc: PC_NAME, msPer: prog.msN ? Math.round(prog.msT / prog.msN) : null, ...(extra || {}), ...W() }, { merge: true }).catch(() => {});
+  const ppPat = (u) => { try { const x = new URL(String(u || ''), 'https://www.aladin.co.kr'); return x.hostname + '/' + x.pathname.split('/').filter(Boolean).slice(0, -1).slice(0, 2).join('/'); } catch (e) { return '?'; } }; /* 모르는 꼴 묶기 = 호스트 + 경로 앞 두 칸(파일 이름 뺌) */
+  const ppBase = (u) => String(u || '').split('?')[0].split('/').pop().replace(/\(\d+\)(?=\.)/, '');
+  async function prodPhotosJob() {
+    if (PUBONLY) { log('📷 제품 사진 다시 받기는 로거(공개 전용 PC)에서 하지 않음 — 사무실 PC 일', 1); return 'off'; }
+    if (!P.parseUsedItemProductPhotos || !P.productPhotosOf || !P.isProductPhoto || P.PP_V == null) { log('📷 제품 사진 다시 받기: 공용 파일(readnow-products-core.js)이 옛 판이라 시작하지 않음 — 수집기를 새로 고친 뒤 다시', 1); return 'off'; }
+    const PPV = P.PP_V;
+    { let M = null; try { M = (await C('app_settings').doc('previews_migrate').get()).data(); } catch (e) {} if (!M || !M.doneAt) { log('📷 제품 사진 다시 받기: 클라우드의 \'예전 미리보기 옮기기\'가 아직 안 끝나 시작하지 않음 — 끝나면 저절로 시작', 1); ui('📷 제품 사진 다시 받기: 미리보기 옮기기 끝나기 기다림', 0, 0); return 'off'; } }
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
     try {
       await loadListings();
-      let prog = await loadProgress('photos');
-      if (!prog || !prog.list) {
-        const B = new Map(); (await C('prd_books').get()).forEach((d) => { const v = d.data(); B.set(d.id, !!(v.images && v.images.front && (v.images.front.src || v.images.front.stored))); });
-        const retry = new Date(Date.now() - 14 * 864e5).toISOString();
-        const list = [...LISTINGS.entries()].filter(([, l]) => l.listingId && l.usedCode && (!l.bookId || !B.get(l.bookId)) && !(l.photosAt && (l.photosStatus === 'done' || (!FORCE_ALL && l.photosAt > retry)))) /* (1.89.75 자동 점검) 수동 실행은 14일 기다림만 건너뜀 — 이미 받은(done) 상품은 다시 받지 않음. 전엔 수동 실행이 사진을 받은 상품까지 전부 다시 받아 10/25 하루 판매 중 상품 5,817개(JS-MAIN 5,184 · HOME 633)의 알라딘 화면·사진 받기·저장소 올리기·상품 기록 쓰기를 되풀이했음('기존 기록은 그대로 두고 바뀐 것만'과 어긋남) */
-          .sort((a, b) => (b[1].active ? 1 : 0) - (a[1].active ? 1 : 0)).map(([k]) => k);
-        prog = { list, i: 0, ok: 0, none: 0, nopage: 0, imgs: 0, startedAt: nowIso() }; await saveProgress('photos', prog);
-        log(`우리 상품 사진: 표지 사진이 없는 상품 ${list.length.toLocaleString()}개 (판매 중 먼저)`);
-      }
+      let prog = await loadProgress('prodPhotos');
+      const fin = (v) => !!(v && +v.photosV >= 2 && !(FORCE_ALL && v.active && ['nopage', 'gate'].includes(v.productPhotosStatus)));
+      if (!prog || !prog.list) { let J = null; try { J = (await PPJ_REF().get()).data(); } catch (e) {}
+        const list = [...LISTINGS.entries()].filter(([, l]) => l.listingId && l.usedCode && !fin(l)).sort((a, b) => (b[1].active ? 1 : 0) - (a[1].active ? 1 : 0)).map(([k]) => k);
+        prog = { list, i: 0, ok: 0, none: 0, unknown: 0, nopage: 0, hidden: 0, gate: 0, err: 0, imgs: 0, reused: 0, skip: 0, retry: [], msT: 0, msN: 0, startedAt: nowIso(), round: (J && J.status === 'done' ? (+J.round || 1) + 1 : +((J && J.round) || 1)) }; await saveProgress('prodPhotos', prog);
+        log(`📷 제품 사진 다시 받기: 아직 이 판정(v${PPV})으로 끝내지 않은 우리 상품 ${list.length.toLocaleString()}개 (판매 중 먼저 · ${prog.round}회차)`); }
+      prog.retry = prog.retry || []; if (FORCE_ALL && !prog.sampleOk) { let J0 = null; try { J0 = (await PPJ_REF().get()).data(); } catch (e) {} if (J0 && J0.status === 'hold') { prog.sampleOk = true; log('📷 제품 사진 다시 받기: 사람이 표본을 보고 다시 시작 — 확인 기다림 풀고 이어감'); } } ppStat(prog, 'running');
       for (; prog.i < prog.list.length; prog.i++) {
-        if (stopFlag) { await saveProgress('photos', prog); throw new Error('멈춤'); }
-        const l = LISTINGS.get(prog.list[prog.i]); if (!l) continue; if (l.photosStatus === 'done' && l.photosAt) { prog.skip = (prog.skip || 0) + 1; if (prog.skip % 200 === 1) ui('우리 상품 사진', prog.i + 1, prog.list.length, `이미 받은 상품 건너뜀 ${prog.skip.toLocaleString()}개`); continue; } /* (1.89.89) 정범님 10/26 '사진은 중복해서 받지 않는 정보': 1.89.75 전에 만든 목록(이미 받은 상품까지 든 2.5만 개)이 이어지며 받은 사진을 또 받던 것 — 받을 때마다 지금 기록을 다시 보고 이미 받은(done) 상품은 건너뜀 */ const at = nowIso();
-        let ph = [], status = 'none';
-        try { const g = await getDoc(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${l.listingId}`); const can = (g.doc.querySelector('link[rel="canonical"]') || {}).href || '';
-          if (!new RegExp(`ItemId=${l.listingId}\\b`).test(can) && !/\[중고\]/.test(g.doc.title || '')) status = 'nopage'; else ph = P.parseUsedItemPhotos(g.doc); }
-        catch (e) { status = 'nopage'; }
-        let match = null;
-        if (!ph.length && l.title) { // ③ 상품명 검색: 검색어(상품명)가 이름에 90% 이상 들어 있는 상품 — 같은 비율이면 우리 가게(996008) 상품, 그다음 검색 순서
-          try { const q = String(l.title).replace(/^\[중고\]\s*/, '').replace(/\((최상|상|중|하)[^)]*\)\s*$/, '').trim(); const sr = await getDoc(`https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=All&SearchWord=${encodeURIComponent(q)}`);
-            const th = SET.photoMatch ?? 0.9; const cands = P.parseSearchResults(sr.doc).filter((r) => r.itemId !== String(l.listingId)).map((r, i) => ({ ...r, cov: P.nameCoverage(q, r.title), ours: /scm996008/.test(r.img), i })).filter((r) => r.cov >= th).sort((a, b) => b.cov - a.cov || (b.ours ? 1 : 0) - (a.ours ? 1 : 0) || a.i - b.i);
-            for (const c of cands) { try { const g2 = await getDoc(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${c.itemId}`); ph = P.parseUsedItemPhotos(g2.doc); } catch (e) { ph = []; }
-              if (!ph.length && c.img) ph = [{ src: c.img, big: c.img.replace(/\/(coversum|cover150|cover200|cover|cover300)\//, '/cover500/'), where: 'search', file: c.img.split('/').pop() }];
-              if (ph.length) { match = { itemId: c.itemId, title: c.title, coverage: Math.round(c.cov * 1000) / 1000, ours: c.ours, query: q, candidates: cands.length }; break; } }
-            if (!match) log(`${l.title}: 상품명 검색에서 이름이 ${Math.round(th * 100)}% 이상 같은 상품의 사진이 없어 건너뜀 (후보 ${cands.length}개)`); } catch (e) { log(`${l.title}: 상품명 검색 실패 (${e.message})`, 1); } }
+        if (stopFlag) { await saveProgress('prodPhotos', prog); await ppStat(prog, 'stopped'); throw new Error('멈춤'); }
+        if (prog.i % 25 === 0) ppStat(prog, 'running');
+        const t0 = Date.now(); const key = prog.list[prog.i]; let l = LISTINGS.get(key); if (!l) continue;
+        try { const sn = await C('prd_listings').doc(key).get(); if (sn.exists) { l = { ...l, ...sn.data() }; LISTINGS.set(key, l); } } catch (e) {} /* 서버 기록으로 확인 */
+        if (fin(l)) { prog.skip++; continue; }
+        const reJ = l.productPhotosStatus === 'unknown' && Array.isArray(l.productPhotosSeen) && +l.productPhotosJudgeV < PPV; /* 판정 규칙이 늘어(PP_V 올림) — 화면을 다시 열지 않고 저장해 둔 주소만 다시 판정 */
+        if (l.productPhotosStatus === 'unknown' && !reJ && !FORCE_ALL) { prog.unkSkip = (prog.unkSkip || 0) + 1; continue; } /* 같은 규칙이면 다시 열어도 같음 — 규칙이 늘 때까지 기다림 */
+        const at = nowIso(); let status = 'none', why = null, ph = [], seen = null;
+        if (reJ) seen = l.productPhotosSeen; else try { const g = await getDoc(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${l.listingId}`, { noLogin: true }); const can = (g.doc.querySelector('link[rel="canonical"]') || {}).href || '';
+          if (!new RegExp(`ItemId=${l.listingId}\\b`).test(can) && !/\[중고\]/.test(g.doc.title || '')) status = 'nopage'; else seen = P.parseUsedItemPhotos(g.doc).filter((x) => P.photoKind(x) !== 'preview').slice(0, 30).map((x) => ({ src: x.src, big: x.big || null, where: x.where, file: x.file || null })); }
+        catch (e) { if (e.message === '멈춤' || e.loginWait || /분 넘게 응답하지 않아|로그인이 풀렸/.test(e.message)) { await saveProgress('prodPhotos', prog); await ppStat(prog, 'stopped', { lastErr: e.message.slice(0, 160) }); throw e; }
+          if (e.hidden) status = 'hidden'; else if (e.needLogin || e.gate) status = 'gate'; else { status = 'err'; why = String(e.message || e).slice(0, 160); } }
+        let unk = []; if (seen) { ph = seen.filter((x) => P.isProductPhoto(x)); unk = seen.filter((x) => P.photoKind(x) === 'other'); }
+        if (status === 'none' && unk.length) { status = 'unknown'; prog.unkPat = prog.unkPat || {}; unk.forEach((x) => { const k = ppPat(x.src); prog.unkPat[k] = (prog.unkPat[k] || 0) + 1; }); } /* 허용 목록에도 빼는 목록에도 안 걸린 주소 = 모르는 꼴 → 받지 않고 주소만 남김(끝으로 치지 않음) */
         const saved = [];
-        for (let k = 0; k < ph.length; k++) { const x = ph[k]; let blob = null, used = null;
-          for (const u of [x.big, x.src].filter(Boolean)) { try { blob = await gmBlob(u); used = u; break; } catch (e) {} }
-          if (!blob) { saved.push({ src: x.src, where: x.where, stored: null, error: '받기 실패' }); continue; }
-          const ext = (used.match(/\.(jpe?g|png|gif|webp)(\?|$)/i) || [, 'jpg'])[1].toLowerCase(); const base = `img/listing/${l.usedCode}/${k + 1}`; const meta = { cacheControl: 'public,max-age=31536000,immutable' };
-          try { await storage.ref(`${base}.${ext}`).put(blob, { ...meta, contentType: blob.type || 'image/' + ext }); let t = null; try { t = await thumb(blob, 200); if (t) await storage.ref(`${base}_t.webp`).put(t, { ...meta, contentType: 'image/webp' }); } catch (e) { t = null; } // 작은 사진 실패는 원본 저장에 영향 없음
-            saved.push({ src: used, where: x.where, file: x.file, stored: `${base}.${ext}`, thumb: t ? `${base}_t.webp` : null, bytes: blob.size ?? null }); prog.imgs++; } catch (e) { saved.push({ src: used, where: x.where, stored: null, error: e.message }); } }
-        if (saved.some((x) => x.stored)) { status = 'done'; prog.ok++; } else if (status === 'nopage') prog.nopage++; else prog.none++;
-        await C('prd_listings').doc(prog.list[prog.i]).set({ photos: saved, photosAt: at, photosStatus: status, photosFrom: match ? 'search' : saved.length ? 'mine' : null, ...(match ? { photosMatch: match } : {}), ...W() }, { merge: true });
-        l.photosAt = at; l.photosStatus = status;
-        ui('우리 상품 사진', prog.i + 1, prog.list.length, `${l.title || l.usedCode} · 사진 ${saved.filter((x) => x.stored).length}장 · 받은 상품 ${prog.ok} · 사진 없음 ${prog.none} · 페이지 없음 ${prog.nopage}${prog.skip ? ` · 이미 받아 건너뜀 ${prog.skip}` : ''}`);
-        if (prog.i % 5 === 0) await saveProgress('photos', prog);
+        if (status === 'none' && ph.length) {
+          const old = new Map(); (Array.isArray(l.photos) ? l.photos : []).forEach((x) => { if (x && x.stored && x.where !== 'search' && l.photosFrom !== 'search' && P.isProductPhoto(x)) old.set(ppBase(x.src), x); });
+          for (let k = 0; k < ph.length; k++) { const x = ph[k]; const o = old.get(ppBase(x.src)) || (x.big ? old.get(ppBase(x.big)) : null);
+            if (o) { saved.push({ src: x.src, where: x.where, file: x.file || null, stored: o.stored, thumb: o.thumb || null, bytes: o.bytes ?? null, kind: 'product', from: 'photos' }); prog.reused++; continue; }
+            let blob = null, used = null; for (const u of [x.big, x.src].filter(Boolean)) { try { blob = await gmBlob(u); used = u; break; } catch (e) {} }
+            if (!blob) { saved.push({ src: x.src, where: x.where, file: x.file || null, stored: null, kind: 'product', error: '받기 실패' }); continue; }
+            const ext = (used.match(/\.(jpe?g|png|gif|webp)(\?|$)/i) || [, 'jpg'])[1].toLowerCase(); const base = `img/listing/${l.usedCode}/p${k + 1}`; const meta = { cacheControl: 'public,max-age=31536000,immutable' };
+            try { await storage.ref(`${base}.${ext}`).put(blob, { ...meta, contentType: blob.type || 'image/' + ext }); let t = null; try { t = await thumb(blob, 200); if (t) await storage.ref(`${base}_t.webp`).put(t, { ...meta, contentType: 'image/webp' }); } catch (e) { t = null; }
+              saved.push({ src: used, where: x.where, file: x.file || null, stored: `${base}.${ext}`, thumb: t ? `${base}_t.webp` : null, bytes: blob.size ?? null, kind: 'product', from: 'page' }); prog.imgs++; } catch (e) { saved.push({ src: used, where: x.where, file: x.file || null, stored: null, kind: 'product', error: String(e.message || e).slice(0, 120) }); } }
+          status = saved.some((x) => x.stored) ? 'done' : 'err'; if (status === 'err') why = '제품 사진을 받거나 올리지 못함'; }
+        let doc;
+        if (status === 'done' || status === 'none') doc = { productPhotos: saved, productPhotosAt: at, productPhotosStatus: status, photosV: PPV };
+        else if (status === 'nopage' || status === 'gate') doc = { productPhotosAt: at, productPhotosStatus: status, photosV: PPV };
+        else if (status === 'unknown') doc = { productPhotosAt: at, productPhotosStatus: 'unknown', productPhotosUnknown: unk.slice(0, 10).map((x) => ({ src: x.src, where: x.where })), productPhotosSeen: seen, productPhotosJudgeV: PPV };
+        else doc = { productPhotosTry: { at, status, why, n: (+((l.productPhotosTry || {}).n) || 0) + 1 } };
+        prog[status === 'done' ? 'ok' : status] = (prog[status === 'done' ? 'ok' : status] || 0) + 1; if (status === 'hidden' || status === 'err') prog.retry.push(key); prog.proc = (prog.proc || 0) + 1; if (reJ) prog.reJ = (prog.reJ || 0) + 1;
+        await C('prd_listings').doc(key).set({ ...doc, ...W() }, { merge: true }); LISTINGS.set(key, { ...l, ...doc });
+        if (prog.proc === 100 && !prog.sampleOk) { /* 처음 100개 상품 표본 — 모르는 꼴이 30% 넘으면 규칙이 틀린 것일 수 있어 2.6만 화면을 헛읽지 않게 '확인 기다림'으로 멈춤 */
+          const judged = (prog.ok || 0) + (prog.none || 0) + (prog.unknown || 0); const rate = judged ? (prog.unknown || 0) / judged : 0;
+          const sample = { n: prog.proc, done: prog.ok || 0, none: prog.none || 0, unknown: prog.unknown || 0, judged, rate: Math.round(rate * 1000) / 10, top: Object.entries(prog.unkPat || {}).sort((a, b) => b[1] - a[1]).slice(0, 10), at: nowIso() };
+          if (judged >= 20 && rate > 0.3) { prog.i++; await saveProgress('prodPhotos', prog); await ppStat(prog, 'hold', { sample, holdAt: nowIso() }); log(`📷 제품 사진 다시 받기: 처음 ${prog.proc}개 중 모르는 사진 주소 꼴이 ${sample.rate}%(30% 넘음) — 판정 규칙을 확인할 때까지 '확인 기다림'으로 멈춤 (관리도구에 표본)`, 1); ui('📷 제품 사진 다시 받기: 확인 기다림 — 관리도구 표본 보기', 0, 0); return 'hold'; }
+          prog.sampleOk = true; await ppStat(prog, 'running', { sample }); }
+        ui('📷 제품 사진 다시 받기', prog.i + 1, prog.list.length, `${l.title || l.usedCode} · ${status === 'done' ? `제품 사진 ${saved.filter((x) => x.stored).length}장` : { none: '제품 사진 없음', unknown: '모르는 사진 주소 꼴 — 받지 않고 주소만 남김', nopage: '매물 화면 없음', gate: '로그인 없이 못 보는 화면', hidden: '비공개(주문 중) — 다음 회차', err: '실패 — 다음 회차' }[status]} · 받은 상품 ${prog.ok} · 없음 ${prog.none} · 화면 없음 ${prog.nopage}${prog.skip ? ` · 이미 끝내 건너뜀 ${prog.skip}` : ''}`);
+        if (prog.i % 5 === 0) await saveProgress('prodPhotos', prog);
+        const dt = Date.now() - t0; prog.msT += Math.max(dt, 2500); prog.msN++; if (dt < 2500) await sleep(2500 - dt); /* 쓰기 한도 안으로 */
       }
-      await finishJob('photos', { ok: prog.ok, none: prog.none, nopage: prog.nopage, imgs: prog.imgs, skip: prog.skip || 0 });
-      log(`상품 사진 완료: ${prog.ok}개 상품 사진 ${prog.imgs}장 (우리 페이지 또는 상품명 검색 90%↑) · 끝내 사진 없음 ${prog.none + prog.nopage} (건너뜀 — 외부 정보로 개선 예정)`);
+      await ppStat(prog, 'done', { doneAt: nowIso(), retryKeys: prog.retry.slice(0, 500) });
+      await finishJob('prodPhotos', { ok: prog.ok, none: prog.none, nopage: prog.nopage, hidden: prog.hidden, gate: prog.gate, err: prog.err, unknown: prog.unknown || 0, unkSkip: prog.unkSkip || 0, reJ: prog.reJ || 0, imgs: prog.imgs, reused: prog.reused, skip: prog.skip || 0, retry: prog.retry.length, round: prog.round });
+      log(`📷 제품 사진 다시 받기 ${prog.round}회차 끝: 제품 사진 있는 상품 ${prog.ok}개(새로 받은 사진 ${prog.imgs}장 · 예전에 받아 둔 것 다시 씀 ${prog.reused}장) · 제품 사진 없음 ${prog.none} · 모르는 주소 꼴(받지 않음) ${prog.unknown || 0} · 화면 없음 ${prog.nopage} · 로그인 없이 못 봄 ${prog.gate} · 다음 회차에 다시 ${prog.retry.length}(비공개 ${prog.hidden} · 실패 ${prog.err})`);
     } finally { await releaseLane('aladin'); }
   }
+  /* 📷 저절로 한 번: 미리보기 옮기기가 끝났고 아직 다 못 했으면(또는 다음 회차가 남았으면) 이 PC가 쉬고 있을 때 시작 — 쉴 때 일(차례 8)이라 다른 일이 오면 자리 내주고 멈춘 자리부터 이어감
+   *  다른 PC가 20분 안에 진행을 적었으면 그 PC가 하는 중으로 보고 기다림 · 확인 간격은 4~10분 무작위(기계처럼 일정하지 않게) · 다음 회차 = 끝난 지 하루 뒤 · 다시 볼 상품이 있을 때만 · 최대 4회차 */
+  let PP_AUTO_AT = Date.now() + 3 * 60e3;
+  setInterval(async () => { try { if (PUBONLY || Date.now() < PP_AUTO_AT) return; PP_AUTO_AT = Date.now() + (4 + Math.random() * 6) * 60e3;
+      if (running || schedBusy || window.__rnPaused || window.__rnReloading || (window.__rnRest && window.__rnRest()) || !auth.currentUser || !P.parseUsedItemProductPhotos || (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy())) return;
+      const [m, j] = await Promise.all([C('app_settings').doc('previews_migrate').get(), PPJ_REF().get()]); const M = m.exists ? m.data() : null, J = (j.exists && j.data()) || {};
+      if (!M || !M.doneAt) return;
+      const due = (J.status !== 'done' && J.status !== 'hold') || (+J.retryLeft > 0 && (+J.round || 1) < 4 && Date.now() - Date.parse(J.doneAt || J.at || 0) > 864e5); if (!due) return;
+      if (J.status === 'running' && J.pc && J.pc !== PC_NAME && Date.now() - Date.parse(J.at || 0) < 20 * 60e3) return;
+      if (running || schedBusy) return; log('📷 제품 사진 다시 받기: 미리보기 옮기기가 끝나 저절로 시작(쉴 때 일 — 다른 일이 오면 자리 내줌 · 다 돌면 멈춤)');
+      await runCtx('rest:prd:prodPhotos', 'prodPhotos', { sched: true }); } catch (e) {} }, 60e3);
 
   /* ───────── 📖 미리보기만 모으기 (정범님 10/26 — 옵션: ⏰ 자동 수집 편집기 일 목록·🧭 관리도구 '지금 한 번'·이 패널 단추로만, 시간표 칸에는 넣지 않음) ─────────
    * 미리보기 = 알라딘 '미리보기'(letslook — 새상품 책의 처음 몇 쪽 샘플 사진) · 우리 '제품 사진'(photos[])과 따로 prd_listings/{상품}.previews[] 에 둠
@@ -7140,7 +7266,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     dynAll: ['구매자 분포 전체 수집', async () => { const human = window.__rnHuman(5000); /* (1.63.6) 확인 창은 사람이 막 누른 때만 · 책 수는 세기만(문서 수만 건을 다 받지 않음) */ let n = 0; if (human && !window.__rnRemote && !window.__rnAuto) { try { n = (await C('prd_books').count().get()).data().count; } catch (e) { n = (await C('prd_books').get()).size; } } if (human && !window.__rnRemote && !window.__rnAuto && !confirm(`도서 정보가 있는 책 ${n.toLocaleString()}권 중 아직 안 모았거나 오래된 책을 전부 모읍니다. 한 권에 5~10초라 수천 권이면 하루 넘게 걸릴 수 있습니다. 멈춰도 이어서 합니다. 시작할까요?`)) return 'cancel'; return dynJob(0); }],
     soldInfo: ['판매완료 상품 정보·이미지', () => soldInfoJob()],
     poolInfo: ['알라딘 구매 풀(미연결) 도서 정보', () => poolInfoJob()],
-    photos: ['상품 사진 (표지 없는 상품: 우리 페이지 → 상품명 검색)', () => photosJob()],
+    photos: ['📷 제품 사진 다시 받기 (예전 \'상품 사진\' 자리 — 제품 사진 판정만)', () => prodPhotosJob()],
+    prodPhotos: ['📷 제품 사진 다시 받기 (판매자가 올린 제품 사진만 · 표지·미리보기 안 받음)', () => prodPhotosJob()], /* 미리보기 옮기기가 끝난 뒤 저절로 한 번(쉴 때) · 관리도구 '지금 한 번' · 시간표 칸에는 넣지 않음 */
     previews: ['📖 미리보기만 모으기 (알라딘 미리보기 — 책 처음 몇 쪽 샘플 · 옵션)', () => previewsJob()], /* 시간표 칸에는 넣지 않음 — 편집기 일 목록·관리도구·패널 단추로만 */
     usedInfo: ['경쟁 매물 유의사항·사진', () => usedInfoJob()],
     explore: ['끝없는 탐색 수집', () => exploreJob()],

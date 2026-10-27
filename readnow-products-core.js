@@ -5,7 +5,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.19.4'; // (0.19.4) 📝 peerNoteTargets — 출고 시장에서 유의 사항을 읽을 다른 판매자 매물 고르기(중 전부 · 상 유효 중 우리 판매가 아래 2·위 2) // (0.19.3) 📖 미리보기(letslook)와 제품 사진 가르는 공용 함수(parseUsedItemPreviews·isPreviewPhoto·productPhotos·previewsOf 등) // (0.19.2) 📷 알라딘 미리보기(letslook) 사진은 상품 사진으로 받지 않음 // (0.19.1) 🔬 조회수 실험 1×1 그림(/px/숫자.gif)은 상품 사진으로 받지 않음 // (0.19.0) aladinQ — 알라딘 상품명 검색어 다듬기(정범님 10/23: 앞뒤 괄호와 그 안 · 부제(: 뒤) · 글자·숫자 아닌 기호 모두 뺌) // (0.18.0) resolveItemId — 주문 때 시장을 읽을 알라딘 상품을 ISBN으로 확인(이름 검색으로 다른 판을 잡던 것 · 정범님 10/20 빌리 배스게이트) // (0.17.0) scmSmart — 상품명·지은이 낱말 일부를 섞어 쳐도 찾음(정범님 10/20 '톨레 지금 순간') // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
+  const VERSION = '0.19.5'; // (0.19.5) 📷 제품 사진 판정 photoKind·isProductPhoto·parseUsedItemProductPhotos·productPhotosOf(판매자 사진만) // (10/27) 📷 제품 사진 판정 photoKind·isProductPhoto·parseUsedItemProductPhotos·productPhotosOf (판 번호는 나중에) // (0.19.4) 📝 peerNoteTargets — 출고 시장에서 유의 사항을 읽을 다른 판매자 매물 고르기(중 전부 · 상 유효 중 우리 판매가 아래 2·위 2) // (0.19.3) 📖 미리보기(letslook)와 제품 사진 가르는 공용 함수(parseUsedItemPreviews·isPreviewPhoto·productPhotos·previewsOf 등) // (0.19.2) 📷 알라딘 미리보기(letslook) 사진은 상품 사진으로 받지 않음 // (0.19.1) 🔬 조회수 실험 1×1 그림(/px/숫자.gif)은 상품 사진으로 받지 않음 // (0.19.0) aladinQ — 알라딘 상품명 검색어 다듬기(정범님 10/23: 앞뒤 괄호와 그 안 · 부제(: 뒤) · 글자·숫자 아닌 기호 모두 뺌) // (0.18.0) resolveItemId — 주문 때 시장을 읽을 알라딘 상품을 ISBN으로 확인(이름 검색으로 다른 판을 잡던 것 · 정범님 10/20 빌리 배스게이트) // (0.17.0) scmSmart — 상품명·지은이 낱말 일부를 섞어 쳐도 찾음(정범님 10/20 '톨레 지금 순간') // (0.16.0) parseC2BDetail이 '매입불가 상품 내역'(불가 사유)도 읽음 · usedSearchRows(바깥 중고 검색 → 같은 상품 후보) // (0.15.1) parseScmEditNote — 샵매니저 상품 수정 화면의 구매 유의 사항(bookDesc) // (0.15.0) parseScmSearch — 샵매니저 상품등록 '알라딘 등록 상품 검색' 결과(등록 조회는 이 검색으로 · 사장님 10/16)
 
   // ---------- 공용 ----------
   const txt = (el) => (el ? el.textContent.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -558,7 +558,36 @@
   function previewsFromPhotos(photos, at) { if (!Array.isArray(photos)) return []; const out = [];
     photos.forEach((x) => { if (!isPreviewPhoto(x)) return; const src = x.src || null; out.push({ src, file: x.file || (src ? String(src).split('?')[0].split('/').pop() : null), stored: x.stored || null, thumb: x.thumb || null, bytes: x.bytes ?? null, n: pvPageNo(src), at: at || null, from: 'photos', ...(x.error ? { error: x.error } : {}) }); });
     return pvSort(out); }
-  function productPhotos(photos) { return Array.isArray(photos) ? photos.filter((x) => x && !isPreviewPhoto(x)) : []; }
+  /* 📷 (10/27 정범님 '이번엔 확실히 구분해서 제품 사진만(!!!)') 제품 사진 판정 — 같은 기준은 여기 한 곳(수집기 '📷 제품 사진 다시 받기'·웹앱 상품 상세·출고 카드·클라우드가 모두 이것만 씀)
+   *  photoKind(p, where) → 'product'(판매자가 올린 제품 사진) | 'preview'(알라딘 미리보기 letslook) | 'cover'(알라딘 표지·상품 그림 — 같은 책 공용) | 'px'(🔬 조회수 실험 1×1 그림) | 'icon'(알라딘 화면 꾸밈 그림) | 'other'(다른 매물 사진·알 수 없음)
+   *  허용 목록(위쪽 사진 칸 · 우리 매물 화면 #CoverMainImage·표지 넘김):
+   *   ① 파일 이름이 scm+숫자(예: scm996008826671.jpg) — 샵매니저 '대표·추가 사진' 올리기(/scm/upload/imgUpPopup.aspx)가 칸 mainCover에 돌려주는 이름이 'scm{판매자번호}{번호}.jpg'(수집기 1.52.0 사진 올리기)이고,
+   *      알라딘 검색 결과에서 우리 가게 매물 그림 주소를 'scm996008'으로 가려 온 규칙(parseSearchResults·벤치마킹 · 우리 매물은 경쟁에서 뺌)과 같은 근거 · 판매자 번호는 가리지 않음(다른 판매자 사진도 그 판매자의 제품 사진)
+   *   ② 주소 경로에 /usedshop/ (샵매니저 사진 올리기 응답의 그림 주소 image.aladin.co.kr/usedshop/…)
+   *   → 위 둘이 아니면 위쪽 칸 그림은 제품 사진이 아님(알라딘 표지 /product/{n}/{n}/cover…/ · 미리보기 /letslook/ · 그 밖 모두)
+   *  유의 사항 안(#usedDecription · where 'desc') 그림 = 판매자가 글에 넣은 그림 → 빼는 목록(미리보기·조회수 실험·꾸밈 그림·알라딘 표지·알라딘 화면 그림 /img/)에 안 걸리면 제품 사진
+   *   (편집기 사진 올리기 /scm/upload/wimage_upload_scm.aspx 가 돌려주는 주소 꼴은 실제 화면으로 확인 전 — 그래서 유의 사항 칸은 빼는 목록 방식)
+   *  where 'search'(예전 사진 받기가 '상품명 검색'으로 다른 매물에서 가져온 사진) = 우리 제품 사진 아님 */
+  const PP_V = 2;
+  const PP_FILE = (s) => String(s || '').split('?')[0].split('#')[0].split('/').pop();
+  function photoKind(p, where) { const o = typeof p === 'string' ? { src: p } : p || {}; const w = where || o.where || '';
+    const s = String(o.src || ''), b = String(o.big || ''); if (o.kind === 'preview' || PV_RX.test(s) || PV_RX.test(b)) return 'preview';
+    const u = s || b; if (!u) return 'other'; const path = u.split('?')[0].split('#')[0]; const f = PP_FILE(path);
+    if (/\/px\/\d+\.gif$/i.test(path)) return 'px';
+    if (/icon|btn|blank|noimg|spacer/i.test(f)) return 'icon';
+    if (w === 'search') return 'other';
+    if (/^scm\d{3,}[^/]*\.(jpe?g|png|gif|webp)$/i.test(f) || /\/usedshop\//i.test(path)) return 'product';
+    if (/\/product\/\d+\/\d+\//i.test(path) || /\/(cover|coversum|cover\d{2,3}|cover_[a-z0-9]+)\/[^/]+$/i.test(path)) return 'cover';
+    if (/(^|\/\/)[^/]*aladin\.co\.kr\/img\//i.test(path)) return 'icon';
+    if (w === 'desc') return 'product';
+    return 'other'; }
+  function isProductPhoto(p, where) { return photoKind(p, where) === 'product'; }
+  /* 우리(판매자) 매물 공개 화면에서 제품 사진만 — 표지·미리보기·조회수 실험·꾸밈은 받지도 저장하지도 않음 */
+  function parseUsedItemProductPhotos(d) { return parseUsedItemPhotos(d).filter((x) => isProductPhoto(x)); }
+  /* 상품 기록 한 건의 제품 사진 — productPhotos 칸(📷 다시 받기 · 판정 v2)이 있으면 그것만 · 없으면 예전 photos[]를 판정으로 거른 것('상품명 검색'으로 다른 매물에서 가져온 기록은 없음) */
+  function productPhotosOf(l) { if (!l) return []; if (Array.isArray(l.productPhotos)) return l.productPhotos.filter(Boolean); if (l.photosFrom === 'search') return []; return Array.isArray(l.photos) ? l.photos.filter((x) => x && isProductPhoto(x)) : []; }
+  /* 예전 이름 — 미리보기만 빼던 것 → (10/27) 제품 사진 판정으로 */
+  function productPhotos(photos) { return Array.isArray(photos) ? photos.filter((x) => x && isProductPhoto(x)) : []; }
   function previewsOf(l) { if (!l) return []; if (Array.isArray(l.previews) && l.previews.length) return l.previews; return previewsFromPhotos(l.photos, l.photosAt); }
   // 다른 판매자 중고 매물 페이지(wproduct.aspx?ItemId=매물번호): '중고상품 구매 유의 사항' 글 전체 + 사진(위쪽 표지 영역·유의 사항 안)
   // newCoverFile(새상품 표지 파일 이름)을 주면 '새상품 사진과 다른 사진이 있는가'를 계산 — 위쪽 영역에 새상품 표지가 아닌 사진이 있거나 유의 사항 안에 사진이 있으면 다름
@@ -593,7 +622,8 @@
     const photos = parseUsedItemPhotos(d);
     const baseOf = (f) => String(f || '').split('?')[0].split('/').pop().replace(/\(\d+\)(?=\.)/, '');
     const nc = newCoverFile ? baseOf(newCoverFile) : null;
-    const sellerPhotos = photos.filter((p) => p.where === 'desc' || (nc && p.where === 'top' && p.file !== nc));
+    photos.forEach((p) => { p.kind = photoKind(p); }); /* (10/27) 사진마다 판정 결과(제품·표지·…)를 함께 — 읽는 쪽은 isProductPhoto로 다시 봐도 같음 */
+    const sellerPhotos = photos.filter((p) => p.kind === 'product'); /* (10/27) 판매자 사진 = 제품 사진 판정(예전: 유의 사항 안 사진 + 새상품 표지 파일과 다른 위쪽 사진) */
     return { note, hasNote: !!(note && note.replace(/\s/g, '').length), photos, sellerPhotoCount: sellerPhotos.length, photoDiff: sellerPhotos.length > 0, coverKnown: !!nc, found: !!(box || photos.length) };
   }
   // '지금 이 상품을 클릭한 분들이 다음 상품도 클릭' (알라딘 지니 추천, 늘 나오지는 않음)
@@ -813,7 +843,7 @@
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
     parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, scmSmart, aladinQ, aladinQTries, resolveItemId, isbnN, smHit, smTok, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
-    parseUsedItemInfo, parseUsedItemPreviews, isPreviewPhoto, pvPageNo, previewsFromPhotos, productPhotos, previewsOf, parseScmEditNote, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult, peerNoteTargets,
+    parseUsedItemInfo, parseUsedItemPreviews, isPreviewPhoto, pvPageNo, previewsFromPhotos, productPhotos, previewsOf, PP_V, photoKind, isProductPhoto, parseUsedItemProductPhotos, productPhotosOf, parseScmEditNote, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult, peerNoteTargets,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
 })(typeof window !== 'undefined' ? window : this);
