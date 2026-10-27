@@ -1,4 +1,1 @@
-doc=app_settings/kpipa_ctg
-doc=mkt_kpipa/20261025
-doc=app_settings/kpipa
-# 1212510968
+@kpin kpin/aud_20261027-113145.json
