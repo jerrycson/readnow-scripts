@@ -1,1 +1,1 @@
-@health&hours=1
+doc=app_settings/shop_cfg
