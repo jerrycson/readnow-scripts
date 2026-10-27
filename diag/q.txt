@@ -1,7 +1,1 @@
-perf=400
-doc=prd_jobs/autoSched
-logs=1&pc=LOGGER&from=202610272030
-logs=1&pc=JS-MAIN&from=202610272030
-logs=1&pc=HOME&from=202610272030
-doc=app_settings/kpipa_ctg
-# 1659227050
+@kpin kpin/aud_20261027-154138.json
