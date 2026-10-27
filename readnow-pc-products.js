@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.123의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.124의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.123' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.123', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.124' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.124', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -3800,8 +3800,8 @@
         if (SET.autoDaily) { try { await saveSet({ autoDaily: false }); } catch (e) {} }
         return; }
       SCHED = d.data(); window.__rnSchedOn = !!SCHED.on; window.__rnSchedHas = true; if (PUBONLY && HELPER) budTick(HELPER); /* (1.67.0) 📶 몫 설정이 바뀌면 바로 */ if (!SCHED.mig161) asMigrate161(); if ((!SCHED.mig175 || !SCHED.mig176) && !PUBONLY) asMigrate175(); if (!SCHED.mig1849 && !PUBONLY) asMigrate1849(); schedDraw(); asEdRefresh(); asAck('sched', SCHED, () => `rev ${+SCHED.rev || 0} · ${SCHED.on ? '켬' : '끔'} 받음`); }, () => {});
-    SCHED_RUN().onSnapshot((d) => { SCHED_RUNS = (d.exists && d.data().runs) || {}; window.__rnSchedRunsAt = Date.now(); schedDraw(); schedArchive(); asEdRefresh(true); }, () => {});
-    JSTAT_REF().onSnapshot((d) => { JSTATS = (d.exists && d.data().jobs) || {}; schedDraw(); asEdRefresh(true); }, () => {});
+    SCHED_RUN().onSnapshot((d) => { SCHED_RUNS = (d.exists && d.data().runs) || {}; window.__rnSchedRunsAt = Date.now(); schedDrawSoon(); schedArchive(); asEdRefresh(true); }, () => {});
+    JSTAT_REF().onSnapshot((d) => { JSTATS = (d.exists && d.data().jobs) || {}; schedDrawSoon(); asEdRefresh(true); }, () => {});
     setInterval(() => { if (running || (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()) || schedBusy) lastBusyAt = Date.now(); }, 15000);
     setInterval(schedTick, 60000); setTimeout(schedTick, 15000); setInterval(parTick, 60000); setTimeout(parTick, 20000); setInterval(() => { const d = kstNow().day; if (d !== schedDrawDay) schedDraw(); }, 60000);
     setTimeout(() => jobStatSeed().catch(() => {}), 60000); }
@@ -3949,7 +3949,7 @@
   const restEarlier = (j) => { const L = restListMain(); const i = L.indexOf(j); if (i <= 0) return null; const now = Date.now(); return L.slice(0, i).find((x) => !PAR_JOBS[x.slice(4)] && restEligible(x, now)) || null; };
   async function restRun(j, par) { const k = j.slice(4); const day = AS.kst(Date.now()).day; const key = `rest_${k}@${day}@r${AS.hm4(AS.kst(Date.now()).min)}`; const t0 = Date.now(); if (SCHED_RUNS[key]) return;
     await SCHED_RUN().set({ runs: { [key]: { by: PC_NAME, at: nowIso(), st: nowIso(), beat: nowIso(), state: 'running', job: j, slot: 'rest', rest: true, why: '✨ 쉴 때 하는 일', ...(par ? { par: true } : {}) } } }, { merge: true }).catch(() => {});
-    log(`✨ 쉴 때 하는 일: '${(JOBS[k] || [k])[0]}' 시작${par ? ' (외부 조회 · 함께 돎)' : ''}`); if (!par) PROG_NOW = null; const progOf = () => (par ? (PAR_NOW[k] ? { prog: { l: String(PAR_NOW[k]).slice(0, 60) } } : {}) : PROG_NOW && PROG_NOW.at >= t0 ? { prog: { i: PROG_NOW.i, n: PROG_NOW.n, l: PROG_NOW.l } } : {}); const hb = setInterval(() => SCHED_RUN().set({ runs: { [key]: { beat: nowIso(), ...progOf() } } }, { merge: true }).catch(() => {}), 5 * 60000); let res, err = null;
+    log(`✨ 쉴 때 하는 일: '${(JOBS[k] || [k])[0]}' 시작${par ? ' (외부 조회 · 함께 돎)' : ''}`); if (!par) PROG_NOW = null; const progOf = () => (par ? (PAR_NOW[k] ? { prog: { l: String(PAR_NOW[k]).slice(0, 60) } } : {}) : PROG_NOW && PROG_NOW.at >= t0 ? { prog: { i: PROG_NOW.i, n: PROG_NOW.n, l: PROG_NOW.l } } : {}); const hb = setInterval(() => SCHED_RUN().set({ runs: { [key]: { beat: nowIso(), ...progOf() } } }, { merge: true }).catch(() => {}), (par ? 10 : 5) * 60000); /* (1.89.124 정밀 점검) 함께 도는 쉴 때 일(외부 조회·KPIPA·사진 — PC마다 2~3개가 종일 돎)의 심장박동은 10분마다 — 끊김 판정(isLost)은 25분이라 여유 2.5배 · ⏰ 일정 문서 쓰기(시간당 80~100번)의 가장 큰 몫을 절반으로 */ let res, err = null;
     try { if (par) { RESTX.busy = true; RESTX.k = k; res = await PAR_JOBS[k](); } else res = await runCtx('rest:' + j, k, { sched: true }); if (!par) err = lastRunErr || (lastRunSt === 'stop' && res !== false ? '멈춤' : null); } catch (e) { err = e.message; } finally { clearInterval(hb); if (par) { RESTX.busy = false; RESTX.k = null; } }
     if (par && res === 'none') { REST_SET(j, { doneAt: Date.now(), backAt: Date.now() + 30 * 60e3 }); await SCHED_RUN().set({ runs: { [key]: firebase.firestore.FieldValue.delete() } }, { merge: true }).catch(() => {}); log(`✨ 쉴 때 하는 일: '${(JOBS[k] || [k])[0]}' 지금 할 것 없음 — 30분 뒤 다시 봄`); return; } /* (1.89.121 2시간 점검) 함께 도는 일(외부 조회)이 물을 것이 하나도 없으면 회차 기록을 남기지 않고 30분 쉼 — 10/27 로거: 테더링 몫이 없는 동안(와이파이 집중 · 5분마다) '번개장터 건너뜀 20'만 하고 끝나는 빈 회차가 하루 157번 ⏰ 일정 문서(prd_jobs/autoSched · 203KB · 모든 PC 탭이 들음)에 적혀 그 문서의 20%를 차지하고 쓸 때마다 다른 PC 탭이 다시 읽음(JS-MAIN 5분에 17번 · 최대 2.3초) */
     if (res === false || ['nolease', 'nohelper', 'off'].includes(res)) { REST_SET(j, { backAt: Date.now() + 10 * 60e3 }); await SCHED_RUN().set({ runs: { [key]: firebase.firestore.FieldValue.delete() } }, { merge: true }).catch(() => {}); return; }
@@ -4006,6 +4006,11 @@
       log(`⏰ 매일 자동: 지난 회차 기록 ${Object.keys(del).length}개를 날짜별 보관 문서로 옮김(지우지 않음)${old.length > 3000 ? ` · 남은 ${old.length - 3000}개는 1시간 뒤` : ''}`); } catch (e) { schedArchAt = Date.now() - 3300e3; log('⏰ 회차 기록 옮기기 실패(5분 뒤 다시): ' + (e.code || e.message), 1); } }
   const schedHM = (iso) => AS.hm(AS.kst(AS.toMs(iso)).min);
   let schedDrawDay = '';
+  /* (1.89.124 🔬 정밀 점검 — 10/27 실측) ⏰ 일정 문서(prd_jobs/autoSched · 232KB · 오늘 회차 726개)는 PC마다 함께 도는 쉴 때 일의 심장박동·회차 시작/끝으로 한 시간에 80~100번 바뀌고, 모든 PC 수집기 탭이 그때마다 ⏰ 패널 전체를 다시 그렸음
+   *  (LOGGER 4시간 343번 · HOME 316번 · JS-MAIN 275번 · 한 번에 0.4~0.6초 = PC마다 시간당 약 40초 화면 멈춤 · 그때마다 패널 HTML 쓰레기). → 받은 값은 바로 갱신하고 그리기만 3초 뒤 한 번으로 모음 · 탭이 숨어 있으면 그리지 않고 다시 보일 때 한 번 */
+  let schedDrawT = 0, schedDrawDue = false;
+  function schedDrawSoon() { if (typeof document !== 'undefined' && document.hidden) { schedDrawDue = true; return; } if (schedDrawT) return; schedDrawT = setTimeout(() => { schedDrawT = 0; schedDrawDue = false; try { schedDraw(); } catch (e) { console.warn('⏰ 그리기 실패', e); } }, 3000); }
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden && schedDrawDue) schedDrawSoon(); });
   function schedDraw() { const el = globalThis.__rnById('rnpSched'); if (!el || !AS) return; const S0 = SCHED || { on: false }; const { day } = kstNow(); schedDrawDay = day; const slots = AS.slotsOf(S0); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
     const plan = AS.dayPlan(S0, SCHED_RUNS, { now: Date.now() }, asAvgMs);
     /* (1.60.1) 한눈에: 지금 하는 자동 일 · 다음 · 켜진 칸 수 */ const runK = Object.entries(SCHED_RUNS).filter(([k, r]) => r && r.state === 'running' && !AS.isLost(r, Date.now()) && k.split('@')[1] === day).map(([k, r]) => `${asName(byId[r.slot || k.split('@')[0]] || { job: r.job || '' })}${r.par ? '(동시)' : ''} · ${r.by || ''}`); const nx = window.__rnSchedNext ? window.__rnSchedNext() : null;
