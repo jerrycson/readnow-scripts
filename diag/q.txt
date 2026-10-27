@@ -1,2 +1,1 @@
-lphotos=%EB%AC%B8%ED%95%99%EC%A0%95%EC%8B%A0%2093%EB%85%84
-# 25709
+@health&hours=3
