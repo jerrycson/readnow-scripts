@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.119
+// @version      1.89.120
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -502,7 +502,12 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   window.__rnLead = () => { const v = GM_getValue(GK, null); return v && Date.now() - (v.at || 0) < 20000 ? v : null; };
   /* 자동·원격 작업을 건너뛸 탭: 쉬는 탭·확인 중·떠나는 탭, 그리고 '켜 둔' 탭(사람이 누른 것만) */
   window.__rnRest = () => role === 'wait' || role === 'follow' || role === 'force' || role === 'leaving';
-  const beat = () => { if (role === 'lead') { try { GM_setValue(GK, { tab: ME, page: PAGE, at: Date.now(), since: window.__rnLeadSince || Date.now() }); } catch (e) {} } };
+  /* (1.89.120 2시간 점검) 얼어붙은 수집기 탭 — 10/27 JS-MAIN: 수집기 탭(상품 조회 · 기록 창 열림 · 5분에 긴 작업 30초)이 08:58 뒤 아무 코드도 돌지 않는데(브라우저가 탭을 얼림·멈춤) Web Lock은 계속 쥐고 있어,
+   *  그 뒤 연 수집기 탭 넷이 모두 '이미 일하는 중'으로 쉬었고 7시간 넘게 이 PC 신호(pcBeat)·자동 일이 멈췄음. 쉬는 탭이 수집기 탭의 심장박동(rnu-lead · 5초, 백그라운드에서도 1분 안)을 1분마다 보고,
+   *  15분 넘게 그대로인 것을 이 탭이 쉬지 않고 깨어 있는 3분 동안 거듭 확인하면(PC 잠자기에서 막 깬 때는 건너뜀) Web Lock을 넘겨받음(steal). 얼었던 탭이 깨어나면 다른 탭의 새 심장박동을 보고 스스로 쉬는 탭으로 물러남 */
+  const lostLead = () => { const v = GM_getValue(GK, null); return v && v.tab !== ME && v.since && Date.now() - (v.at || 0) < 90000 && v.since > (window.__rnLeadSince || 0) ? v : null; }; /* 나보다 나중에 수집기가 된 다른 탭이 지금 뛰고 있으면 = 내 Web Lock은 넘겨짐 */
+  const beat = () => { if (role === 'lead') { try { const o = lostLead(); if (o) return stepDown(o); GM_setValue(GK, { tab: ME, page: PAGE, at: Date.now(), since: window.__rnLeadSince || Date.now() }); } catch (e) {} } };
+  let stepDown = () => {};
   const heirOther = () => { const h = GM_getValue(HK, null); return h && h.tab !== ME && Date.now() - (h.at || 0) < 3 * 60000 ? h : null; };
   const setLead = (how) => { role = 'lead'; window.__rnLeadSince = Date.now(); const h = GM_getValue(HK, null); if (h && h.tab === ME) GM_deleteValue(HK); beat(); clearInterval(beatT); beatT = setInterval(beat, 5000);
     if (how === 'promote') L('ok', '이 탭이 이제 이 PC의 수집기입니다 (앞서 일하던 수집기 탭이 닫혀 이어받음) — 지금부터 자동 수집·웹앱 요청·맡긴 일도 이 탭이 맡습니다'); fire(); };
@@ -525,7 +530,16 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   if (!PANEL) return;
   const hold = () => new Promise((res) => { release = res; });
   // 넘겨받을 차례가 됐는데 이어받을 탭(heir)이 따로 있으면, 그 탭에 양보하고 다시 줄을 섬
-  const queue = () => navigator.locks.request(LK, () => { if (heirOther()) { setTimeout(queue, 1500); return null; } setLead('promote'); return hold(); }).catch(() => {});
+  let qAc = null; const queue = () => navigator.locks.request(LK, (() => { try { qAc = new AbortController(); return { signal: qAc.signal }; } catch (e) { qAc = null; return {}; } })(), () => { if (heirOther()) { setTimeout(queue, 1500); return null; } setLead('promote'); return hold(); }).catch(() => {});
+  let stealT = null, seen = null; const STALE = 15 * 60000;
+  const stealChk = () => { if (role !== 'follow') { seen = null; return; } const now = Date.now(); const v = GM_getValue(GK, null);
+    if (!v || !v.at || now - v.at < STALE || heirOther() || (seen && now - seen.tick > 150000)) { seen = null; if (v && v.at && now - v.at >= STALE) seen = { at: v.at, t0: now, tick: now }; return; }
+    if (!seen || seen.at !== v.at) { seen = { at: v.at, t0: now, tick: now }; return; } seen.tick = now; if (now - seen.t0 < 3 * 60000) return;
+    clearInterval(stealT); stealT = null; seen = null; try { qAc && qAc.abort(); } catch (e) {} L('warn', `🧊 이 PC의 수집기 탭(${window.__rnPageName(v.page)})이 ${Math.round((now - v.at) / 60000)}분 넘게 신호가 없음(브라우저가 탭을 얼렸거나 멈춤) — 이 탭이 수집기를 넘겨받습니다`);
+    navigator.locks.request(LK, { steal: true }, () => { setLead('steal'); return hold(); }).catch(() => {}); };
+  const watchLead = () => { if (!stealT) stealT = setInterval(stealChk, 60000); };
+  stepDown = (o) => { clearInterval(beatT); role = 'follow'; const r0 = release; release = null; if (r0) { try { r0(); } catch (e) {} } try { window.__rnPrd && window.__rnPrd.pause(); } catch (e) {} try { window.__rnCrm && window.__rnCrm.pause(); } catch (e) {}
+    L('warn', `🧊 이 탭이 얼어 있던 사이 다른 탭(${window.__rnPageName(o.page)})이 수집기를 넘겨받았습니다 — 이 탭은 하던 일을 지금 항목까지 저장하고 쉬는 탭으로 물러납니다`); fire(); queue(); watchLead(); };
   const viaGM = () => { // Web Locks가 없는 브라우저: 심장박동
     const tick = () => { if (role === 'lead') return beat(); if (role === 'leaving') return; const v = GM_getValue(GK, null); const fresh = v && v.tab !== ME && Date.now() - (v.at || 0) < 15000;
       if (!fresh && !heirOther()) { GM_setValue(GK, { tab: ME, page: PAGE, at: Date.now() }); setTimeout(() => { const w = GM_getValue(GK, null); if (w && w.tab === ME) setLead(role === 'wait' ? 'first' : 'promote'); else if (role === 'wait') setFollow(); }, 800); }
@@ -533,7 +547,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     tick(); setInterval(tick, 5000); };
   try {
     if (!navigator.locks || !navigator.locks.request) throw 0;
-    navigator.locks.request(LK, { ifAvailable: true }, (lk) => { if (!lk || heirOther()) { setFollow(); queue(); return null; } setLead('first'); return hold(); }).catch(() => viaGM());
+    navigator.locks.request(LK, { ifAvailable: true }, (lk) => { if (!lk || heirOther()) { setFollow(); queue(); watchLead(); return null; } setLead('first'); return hold(); }).catch(() => { if (role === 'wait') viaGM(); }); /* (1.89.120) 이미 정해진 뒤의 거절(넘겨받기로 Web Lock을 뺏김 = AbortError)에는 심장박동 방식으로 바꾸지 않음 — 바꾸면 두 탭이 번갈아 수집기가 됨 */
   } catch (e) { viaGM(); }
   setTimeout(() => { if (role === 'wait') { L('warn', '수집기 탭 정하기가 5초 안에 끝나지 않아 심장박동 방식으로 바꿉니다'); viaGM(); } }, 5000);
 })();
