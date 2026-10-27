@@ -1,12 +1,12 @@
 {
- "holder": "auto3h",
- "what": "2시간 점검 10:13 — 🪶 웹앱 메모리 고침",
- "since": "2026-10-27T01:14:39Z",
- "beat": "2026-10-27T01:14:39Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "auto3h",
-  "done": "웹앱 1.78.163 (2시간 점검 08:13 · 🪶 pmatch 보관본 한 번 읽기·ordAllRows MEMO_DEPS · 7b76ba3)",
-  "at": "2026-10-26T23:16:41Z"
+  "done": "웹앱 1.78.164 (2시간 점검 10:13 · 🪶 pmatchIdb 작은 표시 칸 · 90bf331)",
+  "at": "2026-10-27T01:15:45Z"
  }
 }
