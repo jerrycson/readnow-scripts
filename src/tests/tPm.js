@@ -1,0 +1,14 @@
+const SP = '/tmp/claude-0/-home-claude/2514b938-5524-5e43-ad0a-05319ceb1a3b/scratchpad/';
+require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  await p.evaluate(async () => { localStorage.setItem('rn-device', 'PH-1'); localStorage.setItem('rn-phui|PH-1', JSON.stringify({ A: true, B: true, C: true })); S._phuiC = null;
+    S.regItems = S.regItems || new Map(); const t = new Date().toISOString(); const doc = { stage: 'sel', isbn: '9790000000777', info: { title: '시험책', isbn13: '9790000000777', categories: [1], page1: [], at: t }, grade: 2, qty: 1, price: 9000, by: S.user.email, ws: regWsCur(), createdAt: t, descMode: 'manual', descParts: { a: '', b: '', c: '' } };
+    await db.collection('reg_items').doc('c1').set(doc); S.regItems.set('c1', { id: 'c1', ...doc });
+    await db.collection('app_settings').doc('reg_phrases').set({ a: [{ f: '띠지류', id: 'f1', pin: false, items: [{ t: '띠지 있음', pin: false }] }, { t: '도장 있음', pin: true }], b: ['색바램 조금', '변색 있음'], c: ['깨끗함'] });
+    S.regT = 'sel'; openRegister(); });
+  await p.waitForTimeout(1800);
+  await p.evaluate(() => document.querySelector('textarea[data-rgslot="c1"][data-k="b"]').scrollIntoView({ block: 'center' })); await p.click('textarea[data-rgslot="c1"][data-k="b"]');
+  await p.screenshot({ path: SP + 'tPm_b.png' });
+  await p.keyboard.press('Alt+KeyA'); await p.waitForTimeout(200); await p.screenshot({ path: SP + 'tPm_a.png' });
+  const w = await p.evaluate(() => ({ sw: document.documentElement.scrollWidth, vw: innerWidth, a: document.querySelector('.phui-a').getBoundingClientRect().width }));
+  console.log(JSON.stringify(w)); console.log(w.sw <= w.vw + 1 && w.a <= w.vw ? '✓ tPm 통과' : '❌ tPm 실패');
+}, { vp: { width: 390, height: 800 } });

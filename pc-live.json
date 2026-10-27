@@ -1,7 +1,7 @@
 {
- "ver": "1.89.108",
+ "ver": "1.89.109",
  "hsig": "8559039d5a96110b",
- "at": "2026-10-27T01:38:22.677Z",
+ "at": "2026-10-27T01:40:25.953Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -41,9 +41,9 @@
   },
   {
    "f": "readnow-registry.js",
-   "v": "0.14.111",
-   "sha": "5eca4919f155200aa3f5c8767cb0b0c8a1c976e2c94628f7748e1d9ac6047352",
-   "n": 66773
+   "v": "0.14.112",
+   "sha": "4139a27bba3c97af6f1dfbf3b076150a78d211df07bfd1a5d0b5240c21c68464",
+   "n": 67753
   },
   {
    "f": "readnow-ext-core.js",
@@ -83,38 +83,38 @@
   },
   {
    "f": "readnow-pc-boot.js",
-   "v": "1.89.108",
-   "sha": "17ce7de1988cb75923a20010216a1bfcc4788d1f16e5f40e76f41f82dd2e9139",
+   "v": "1.89.109",
+   "sha": "48fa4dce66b2b5932ab5bd9af9fdf3ff192b386cd9847215f8294bb1943319fd",
    "n": 23140
   },
   {
    "f": "readnow-pc-runtime.js",
-   "v": "1.89.108",
-   "sha": "99c2b2c00fd80a9bf2edab57314d2e441150a84f7368df7b5bd1fb17547b1466",
-   "n": 163322
+   "v": "1.89.109",
+   "sha": "11e7d2dfc2061eab2f634234872d80b4ae2641494b68c8e1a7211496e881c05e",
+   "n": 169012
   },
   {
    "f": "readnow-pc-crm.js",
-   "v": "1.89.108",
-   "sha": "7d66bf8b832a6bd26cba620eac3cecdd33ad4995b098b883e7539441b11ea754",
-   "n": 236323
+   "v": "1.89.109",
+   "sha": "db90e57c227c4bff73c2397a3a9c7a9070fda44c97cf25ab3632ec4cb50d112f",
+   "n": 237112
   },
   {
    "f": "readnow-pc-products.js",
-   "v": "1.89.108",
-   "sha": "c47ef450d1ccbe280b5d2adcd7847017eeb87ac67187cad0436523a6ea7ab99d",
-   "n": 923511
+   "v": "1.89.109",
+   "sha": "28c0cfbe789c7ce91e52c34317fa053d6c9da0871b8bf3c25df8031bbeda270a",
+   "n": 936496
   },
   {
    "f": "readnow-pc-ship.js",
-   "v": "1.89.108",
-   "sha": "c7610e3ef3d4a0314c16ff2fd470484ed0e9f406e6ca4aa7ad89374dbfc20252",
+   "v": "1.89.109",
+   "sha": "67a8ef9f373a3cc45bd511913389091f2e252dad01e768442ae4378e82734ec4",
    "n": 15347
   },
   {
    "f": "readnow-pc-helper.js",
-   "v": "1.89.108",
-   "sha": "707117e69dc321ea7bac1c0149bf150b50af7ce47943bc23422b5ac5876ce218",
+   "v": "1.89.109",
+   "sha": "e071e64123be8326047786b4aae501f26533cd18199a17329c3cee4c3d46552a",
    "n": 132046
   }
  ]

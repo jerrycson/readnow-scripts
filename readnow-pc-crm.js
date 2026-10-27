@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.108의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.109의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.108' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.108', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.109' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.109', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -501,6 +501,8 @@
   function popupExtras(doc, p) {
     const t = (sel) => { const e = doc.querySelector(sel); return e ? e.textContent.replace(/\s+/g, ' ').trim() : null; };
     p.freeRuleText = t('#lblPriceType'); const rp = t('#lblDeliveryPriceRP'); p.remoteFee = rp ? parseInt(rp.replace(/[^\d]/g, ''), 10) || null : null;
+    /* (정범님 10/27) 고객이 주문 때 고른 '일부 품절 시' 선택(판매자의 주문 전체 취소 / 품절 상품만 취소·나머지 수령)이 주문 상세 화면에 있는지 아직 모름 → 그런 글이 보이면 그 칸 글만 그대로 남김(해석하지 않음 · 웹앱 취소 창이 나중에 씀) */
+    try { const seen = new Set(); const out = []; doc.querySelectorAll('td,th,li,span,label,p,div').forEach((e) => { if (out.length >= 4 || e.children.length > 3) return; const s = (e.textContent || '').replace(/\s+/g, ' ').trim(); if (s.length < 4 || s.length > 160 || seen.has(s) || !/품절|전체\s*취소|부분\s*취소|나머지\s*(상품|수령)/.test(s)) return; seen.add(s); out.push(s); }); p.soldOutRaw = out.length ? out : null; } catch (e) {}
   }
   async function savePopup(ono, p) { // 개인정보가 지워진 뒤 다시 받아도 먼저 확보한 개인정보는 유지
     const old = await dbGet('popups', ono);

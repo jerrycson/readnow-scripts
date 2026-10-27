@@ -120,8 +120,8 @@ function cloudCtx(F) { const pushes = []; const ctx = { C: F.C, db: F.db, W: () 
     const r = await p.evaluate(() => { S.shipAutoCfg = { on: true, beatAt: new Date().toISOString(), beatBy: 'JS-MAIN' }; S._saW = 1; S.shipAuto = new Map([['W-1', { orderNo: 'W-1', state: 'sent', by: 'HOME', total: 9000, items: [], decidedAt: new Date().toISOString() }]]);
       const a = shipAutoLine('W-0', true); S.shipAutoCfg = { on: true, beatAt: new Date(Date.now() - 20 * 60e3).toISOString(), beatBy: 'cloud' }; const b = shipAutoLine('W-0', true); const c = shipAutoLine('W-1', true); S.shipAutoCfg = { on: true, beatAt: new Date().toISOString(), beatBy: 'MJ-MAIN' }; const d = shipAutoSetHtml();
       const f = FEAT.find((x) => /로그인된 PC 먼저/.test(x.t)); return { a, b, c, d, f: !!f && typeof f.go.fn === 'function' }; });
-    ok(/판정 중 — JS-MAIN PC가/.test(r.a) && !/클라우드가 시장/.test(r.a), '판단 전 줄 = 판단하는 기기 이름(JS-MAIN PC) · 클라우드 이름으로 짓지 않음');
-    ok(/지금 판단하는 기기 없음/.test(r.b) && /클라우드/.test(r.b), '10분 넘게 신호 없으면 ⚠ 지금 판단하는 기기 없음(마지막 기기 이름과 함께)');
+    ok(/자동 판단 대기/.test(r.a) && /JS-MAIN PC/.test(r.a) && !/클라우드가 시장/.test(r.a), '판단 전 줄 = 판단하는 기기 이름(JS-MAIN PC) · 클라우드 이름으로 짓지 않음');
+    ok(/10분 넘게 신호 없음/.test(r.b) && /클라우드/.test(r.b), '10분 넘게 신호 없으면 ⚠ 지금 판단하는 기기 없음(마지막 기기 이름과 함께)');
     ok(/HOME PC/.test(r.c), '판단 기록 풍선에 판단한 기기(HOME PC)');
     ok(/판단 신호 [^<]*MJ-MAIN PC/.test(r.d) && /로그인된 PC 수집기 먼저/.test(r.d), '⚙ 설정에 판단 신호 + 기기 이름 · 설명 PC 먼저');
     ok(r.f, '🔍 기능 찾기에 \'로그인 일은 로그인된 PC 먼저\'');

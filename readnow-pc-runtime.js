@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.108의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.109의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.108' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.108', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.109' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.109', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -517,7 +517,15 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     setInterval(drawPw, 2000);
     /* (1.56.0) 🖥 다른 PC 탭: 다른 PC 수집기의 기록 — 각 PC가 1분마다 rn_logs/{PC}_{10분 칸}에 올린 줄을 읽어 PC별로 보여 줌 (이 PC는 빼고)
      *  기본 최근 3시간 · [하루]로 늘림 · 탭을 보고 있을 때만 1분마다 다시 읽음(안 볼 땐 읽지 않음 → Firebase 읽기 아낌) · 위쪽 칩 = PC마다 마지막 기록 시각·오류 수 */
-    let pcsData = null, pcsSel = GM_getValue('rnu-jw-pc', null), pcsHours = 3, pcsAt = 0, pcsBusy = false, pcsErr = null, pcsDrawn = '';
+    let pcsData = null, pcsSel = GM_getValue('rnu-jw-pc', null), pcsHours = 3, pcsAt = 0, pcsBusy = false, pcsErr = null, pcsDrawn = '', pcsLv = null;
+    /* (웹앱 10/27 정범님) PC 칩의 '오류 n · 경고 m' = 그 PC가 rn_logs에 올린 줄 중 보는 기간(3시간·하루) 안의 ⚠ 오류(그 일을 끝내지 못함)·! 경고(일은 계속됨) 줄 수
+     *  → 그 숫자를 누르면 그 PC의 그 줄만(시각·원문) + 줄마다 💡 풀이 + 같은 뜻끼리 묶은 수 · ✕ 거르기 풀기. 풀이 표는 웹앱 ⚙ 기록의 LOGW와 같은 글(고치면 둘 다) */
+    const LOGW = [[/요청이 너무 많다|\(429\)/, '알라딘이 "요청이 너무 많다"고 막음 → 이 PC 수집이 정해진 시간 쉬고 요청 간격을 늘림(저절로 다시 함) · 자주면 설정 ⑨ 동시 PC 수를 줄임'], [/요청 실패|응답 시간 초과|다시 시도|재시도/, '알라딘 응답이 늦거나 끊겨 몇 초 뒤 다시 읽음 — 바로 뒤에 이어서 되면 문제 없음'], [/^\[성능\]|⏱/, '이 PC 크롬 탭이 느렸음(30초 넘는 긴 멈춤이나 메모리 60% 넘음) — 일은 계속 · 자주면 크롬 다시 켜기'],
+      [/is not defined|TypeError|ReferenceError|처리되지 않은 오류|^\[오류\]/, '스크립트 오류 — 끝의 (파일)이 wgate.aspx 같은 알라딘 화면이면 알라딘 자체 오류(우리와 무관), readnow-…면 우리 코드(Claude에게 이 줄을 보여 주세요)'], [/로그인 풀림으로 잘못 봄/, '로그인이 풀린 줄 알았는데 아니었음 — 다시 확인하고 그대로 계속(할 일 없음)'], [/네이버/, '네이버 로그인이 안 됨 — 네이버 도서 외부 정보만 못 읽음(그 PC 크롬에서 네이버 로그인)'], [/로그인/, '알라딘·구글 로그인이 풀렸거나 다시 로그인하는 중 — 수집기가 스스로 다시 로그인 · 계속 실패면 로그인 막힘'],
+      [/일시정지/, '사람이나 다른 탭이 이 PC 수집을 일시정지함 — 하던 일은 멈춘 자리에서 쉼'], [/메모리 절약으로 내려놓/, '크롬이 메모리를 아끼려 이 탭을 잠재웠다 다시 깨움 — 그동안 이 탭 일은 쉬었음'], [/이 크롬에 수집기 \d+개/, '같은 크롬에 수집기가 여러 개 — 하나만 남겨야 서로 겹치지 않음'], [/permission|권한/i, 'Firebase 규칙이 이 기록을 막음 — 그 칸 기록이 안 남음(Claude에게 이 줄을 보여 주세요)'],
+      [/올리기 실패|Firebase/, 'Firebase에 올리다 실패 — 다음 분에 다시 올림(인터넷이 잠깐 끊기면 흔함)'], [/건너뜀|건너뜁/, '이번 회차는 이 일을 건너뜀(다른 일이 진행 중이거나 조건이 안 맞음) — 다음 회차에 다시'], [/다른 작업 진행 중|다른 탭/, '다른 작업이 알라딘을 쓰는 중이라 기다리거나 건너뜀'], [/예스24/, '예스24 읽기·올리기 실패 — 다음 회차에 다시'], [/SKU/, '샵매니저 화면의 SKU 표시용 코드를 못 읽음 — 표시만 빠짐'],
+      [/드라이브/, '구글 드라이브 저장이 안 돼 PC 다운로드 폴더에 저장함'], [/점수 계산/, '고객·판매자 점수 계산이 멈추거나 건너뜀 — 다음 수집 때 다시 계산'], [/사진|📷/, '사진 받기·보관 실패 — 다음에 다시 받음'], [/보관본|🪶/, 'PC에 두는 보관본이 너무 커서 줄이거나 건너뜀 — 서버 기록은 그대로'], [/없음:/, '있어야 할 Firebase 문서가 없음'], [/실패/, '그 일이 실패함 — 같은 줄이 되풀이되면 점검 필요']];
+    const logWhy = (e) => { const t = `[${e.m}] ${e.x}`; for (const [re, d] of LOGW) if (re.test(t)) return d; return e.l === 'err' ? '그 일을 끝내지 못함(오류) — 같은 줄이 되풀이되면 Claude에게 보여 주세요' : '주의 — 일은 계속됨'; };
     const kslot = (t) => new Date(t + 9 * 3600e3).toISOString().slice(0, 15).replace(/[-:T]/g, '') + '0';
     const pcsLine = (raw, slot) => { const m = String(raw).match(/^(\d{2}):(\d{2}):(\d{2}) \[([^\]]*)\] (⚠ |! |· )?(.*)$/s); if (!m) return { t: 0, m: '', l: 'info', x: String(raw) };
       const y = +slot.slice(0, 4), mo = +slot.slice(4, 6), d = +slot.slice(6, 8); const t = Date.UTC(y, mo - 1, d, +m[1], +m[2], +m[3]) - 9 * 3600e3;
@@ -537,15 +545,19 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       const ks = Object.keys(pcsData).sort((a, b) => pcsData[b].last - pcsData[a].last);
       if (!ks.length) return `<div class="ol"><b>🖥 다른 PC</b> · 최근 ${pcsHours}시간 동안 기록을 올린 다른 PC가 없습니다 ${pcsHours < 24 ? '<button data-pch="24" style="margin-left:6px">하루로 늘리기</button>' : ''}</div>`;
       return `<div class="ol"><b>🖥 다른 PC</b> · 최근 ${pcsHours}시간 · ${ago(pcsAt)} 읽음 <button data-pch="${pcsHours < 24 ? 24 : 3}" style="margin-left:6px">${pcsHours < 24 ? '하루로 늘리기' : '3시간만'}</button> <button data-pcr="1">↻ 지금 읽기</button></div><div class="chips">${ks.map((k) => { const x = pcsData[k]; const off = Date.now() - x.last > 15 * 60000;
-        return `<span class="chip ${k === pcsSel ? 'now' : off ? '' : 'done'}" data-pc="${e(k)}" style="cursor:pointer" title="마지막 기록 ${x.last ? new Date(x.last).toLocaleString('ko-KR') : '-'} · ${x.lines.length.toLocaleString()}줄">${off ? '⚪' : '🟢'} ${e(k)} · ${x.last ? ago(x.last) : '-'}${x.err ? ` · 오류 ${x.err}` : ''}${x.warn ? ` · 경고 ${x.warn}` : ''}</span>`; }).join('')}</div>`; };
+        return `<span class="chip ${k === pcsSel ? 'now' : off ? '' : 'done'}" data-pc="${e(k)}" style="cursor:pointer" title="마지막 기록 ${x.last ? new Date(x.last).toLocaleString('ko-KR') : '-'} · ${x.lines.length.toLocaleString()}줄">${off ? '⚪' : '🟢'} ${e(k)} · ${x.last ? ago(x.last) : '-'}${x.err ? ` · <u data-pcw="err" data-pcwp="${e(k)}" title="⚠ 오류 줄 ${x.err}개(그 일을 끝내지 못함) — 누르면 이 줄들만 풀이와 함께">오류 ${x.err}</u>` : ''}${x.warn ? ` · <u data-pcw="warn" data-pcwp="${e(k)}" title="! 경고 줄 ${x.warn}개(일은 계속됨 — 다시 시도·쉬기·건너뜀 등) — 누르면 이 줄들만 풀이와 함께">경고 ${x.warn}</u>` : ''}</span>`; }).join('')}</div>${pcsLv && pcsData[pcsSel] ? `<div class="ol sub" style="white-space:normal">🔎 <b>${e(pcsSel)}</b>의 <b>${pcsLv === 'err' ? '⚠ 오류' : '! 경고'}</b> 줄만 보는 중 (최근 ${pcsHours}시간) <button data-pcwx="1" style="margin-left:6px">✕ 거르기 풀기</button></div>` : ''}`; };
     const drawPcs = async (load) => { if (!w.classList.contains('on') || tab !== 'pcs') return; const b = w.querySelector('#rnjB');
       if (load || !pcsData || Date.now() - pcsAt > 60000) { if (!pcsData) b.innerHTML = '<div class="detail">다른 PC의 기록을 불러오는 중…</div>'; await pcsLoad(); drawOv(); }
       if (tab !== 'pcs') return; const x = pcsData && pcsSel ? pcsData[pcsSel] : null;
-      const stamp = `${pcsSel}|${pcsAt}|${w.querySelector('#rnjF').value}|${w.querySelector('#rnjQ').value}`; if (!load && stamp === pcsDrawn) return; pcsDrawn = stamp;
+      const stamp = `${pcsSel}|${pcsAt}|${w.querySelector('#rnjF').value}|${w.querySelector('#rnjQ').value}|${pcsLv}`; if (!load && stamp === pcsDrawn) return; pcsDrawn = stamp;
+      if (pcsLv && x) { const q = w.querySelector('#rnjQ').value.trim(); const L = x.lines.filter((e) => e.l === pcsLv && (!q || String(e.x).includes(q))).slice(-5000); const esc2 = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); const G = {}; L.forEach((e) => { const k = logWhy(e); G[k] = (G[k] || 0) + 1; });
+        b.innerHTML = L.length ? `<div class="info" style="white-space:normal;background:#F2F6F4;padding:4px 6px;border-radius:6px;margin-bottom:4px">💡 같은 뜻끼리 (${esc2(pcsSel)} · ${L.length.toLocaleString()}줄)${Object.entries(G).sort((p, q2) => q2[1] - p[1]).map(([k, n]) => `<br>· <b>${n.toLocaleString()}</b> — ${esc2(k)}`).join('')}</div>` + L.map((e) => fmtRow(e).replace(/<\/div>$/, `<br><span class="detail" style="padding-left:14px">💡 ${esc2(logWhy(e))}</span></div>`)).join('') : '<div class="detail">이 기간에 그런 줄이 없음</div>';
+        if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; return; }
       const all0 = x ? x.lines.filter(pass) : []; const rows = all0.slice(-30000); /* (1.77.4) 3,000줄 → 3만 줄 — 로거는 한 시간에 3천 줄 넘게 써서 '다른 PC'에서 1시간치만 보였음(정범님 10/17) */ b.innerHTML = (all0.length > rows.length ? `<div class="detail">앞의 ${(all0.length - rows.length).toLocaleString()}줄은 생략 — 웹앱 ⚙ 기록 → 기록 내려받기로 전부 받을 수 있음</div>` : '') + rows.map(fmtRow).join('') || `<div class="detail">${pcsErr ? '' : x ? '거른 결과 없음' : '고를 PC가 없습니다'}</div>`;
       if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; };
-    ov.addEventListener('click', (ev) => { if (tab !== 'pcs') return; const c = ev.target.closest('[data-pc]'); const hh = ev.target.closest('[data-pch]'); const rr = ev.target.closest('[data-pcr]');
-      if (c) { pcsSel = c.dataset.pc; GM_setValue('rnu-jw-pc', pcsSel); pcsDrawn = ''; drawOv(); drawPcs(false); }
+    ov.addEventListener('click', (ev) => { if (tab !== 'pcs') return; const c = ev.target.closest('[data-pc]'); const hh = ev.target.closest('[data-pch]'); const rr = ev.target.closest('[data-pcr]'); const wv = ev.target.closest('[data-pcw]'); const wx = ev.target.closest('[data-pcwx]');
+      if (wv) { pcsSel = wv.dataset.pcwp; GM_setValue('rnu-jw-pc', pcsSel); pcsLv = wv.dataset.pcw; pcsDrawn = ''; drawOv(); drawPcs(false); return; } if (wx) { pcsLv = null; pcsDrawn = ''; drawOv(); drawPcs(false); return; }
+      if (c) { pcsLv = null; pcsSel = c.dataset.pc; GM_setValue('rnu-jw-pc', pcsSel); pcsDrawn = ''; drawOv(); drawPcs(false); }
       else if (hh) { pcsHours = +hh.dataset.pch; pcsData = null; drawOv(); drawPcs(true); } else if (rr) { drawPcs(true); } });
     setInterval(() => { if (tab === 'pcs') drawPcs(false); }, 5000);
     setInterval(drawOv, 1000);

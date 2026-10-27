@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.108
+// @version      1.89.109
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -24,7 +24,7 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.1
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.111
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.112
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.4
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.2
@@ -614,7 +614,15 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     setInterval(drawPw, 2000);
     /* (1.56.0) 🖥 다른 PC 탭: 다른 PC 수집기의 기록 — 각 PC가 1분마다 rn_logs/{PC}_{10분 칸}에 올린 줄을 읽어 PC별로 보여 줌 (이 PC는 빼고)
      *  기본 최근 3시간 · [하루]로 늘림 · 탭을 보고 있을 때만 1분마다 다시 읽음(안 볼 땐 읽지 않음 → Firebase 읽기 아낌) · 위쪽 칩 = PC마다 마지막 기록 시각·오류 수 */
-    let pcsData = null, pcsSel = GM_getValue('rnu-jw-pc', null), pcsHours = 3, pcsAt = 0, pcsBusy = false, pcsErr = null, pcsDrawn = '';
+    let pcsData = null, pcsSel = GM_getValue('rnu-jw-pc', null), pcsHours = 3, pcsAt = 0, pcsBusy = false, pcsErr = null, pcsDrawn = '', pcsLv = null;
+    /* (웹앱 10/27 정범님) PC 칩의 '오류 n · 경고 m' = 그 PC가 rn_logs에 올린 줄 중 보는 기간(3시간·하루) 안의 ⚠ 오류(그 일을 끝내지 못함)·! 경고(일은 계속됨) 줄 수
+     *  → 그 숫자를 누르면 그 PC의 그 줄만(시각·원문) + 줄마다 💡 풀이 + 같은 뜻끼리 묶은 수 · ✕ 거르기 풀기. 풀이 표는 웹앱 ⚙ 기록의 LOGW와 같은 글(고치면 둘 다) */
+    const LOGW = [[/요청이 너무 많다|\(429\)/, '알라딘이 "요청이 너무 많다"고 막음 → 이 PC 수집이 정해진 시간 쉬고 요청 간격을 늘림(저절로 다시 함) · 자주면 설정 ⑨ 동시 PC 수를 줄임'], [/요청 실패|응답 시간 초과|다시 시도|재시도/, '알라딘 응답이 늦거나 끊겨 몇 초 뒤 다시 읽음 — 바로 뒤에 이어서 되면 문제 없음'], [/^\[성능\]|⏱/, '이 PC 크롬 탭이 느렸음(30초 넘는 긴 멈춤이나 메모리 60% 넘음) — 일은 계속 · 자주면 크롬 다시 켜기'],
+      [/is not defined|TypeError|ReferenceError|처리되지 않은 오류|^\[오류\]/, '스크립트 오류 — 끝의 (파일)이 wgate.aspx 같은 알라딘 화면이면 알라딘 자체 오류(우리와 무관), readnow-…면 우리 코드(Claude에게 이 줄을 보여 주세요)'], [/로그인 풀림으로 잘못 봄/, '로그인이 풀린 줄 알았는데 아니었음 — 다시 확인하고 그대로 계속(할 일 없음)'], [/네이버/, '네이버 로그인이 안 됨 — 네이버 도서 외부 정보만 못 읽음(그 PC 크롬에서 네이버 로그인)'], [/로그인/, '알라딘·구글 로그인이 풀렸거나 다시 로그인하는 중 — 수집기가 스스로 다시 로그인 · 계속 실패면 로그인 막힘'],
+      [/일시정지/, '사람이나 다른 탭이 이 PC 수집을 일시정지함 — 하던 일은 멈춘 자리에서 쉼'], [/메모리 절약으로 내려놓/, '크롬이 메모리를 아끼려 이 탭을 잠재웠다 다시 깨움 — 그동안 이 탭 일은 쉬었음'], [/이 크롬에 수집기 \d+개/, '같은 크롬에 수집기가 여러 개 — 하나만 남겨야 서로 겹치지 않음'], [/permission|권한/i, 'Firebase 규칙이 이 기록을 막음 — 그 칸 기록이 안 남음(Claude에게 이 줄을 보여 주세요)'],
+      [/올리기 실패|Firebase/, 'Firebase에 올리다 실패 — 다음 분에 다시 올림(인터넷이 잠깐 끊기면 흔함)'], [/건너뜀|건너뜁/, '이번 회차는 이 일을 건너뜀(다른 일이 진행 중이거나 조건이 안 맞음) — 다음 회차에 다시'], [/다른 작업 진행 중|다른 탭/, '다른 작업이 알라딘을 쓰는 중이라 기다리거나 건너뜀'], [/예스24/, '예스24 읽기·올리기 실패 — 다음 회차에 다시'], [/SKU/, '샵매니저 화면의 SKU 표시용 코드를 못 읽음 — 표시만 빠짐'],
+      [/드라이브/, '구글 드라이브 저장이 안 돼 PC 다운로드 폴더에 저장함'], [/점수 계산/, '고객·판매자 점수 계산이 멈추거나 건너뜀 — 다음 수집 때 다시 계산'], [/사진|📷/, '사진 받기·보관 실패 — 다음에 다시 받음'], [/보관본|🪶/, 'PC에 두는 보관본이 너무 커서 줄이거나 건너뜀 — 서버 기록은 그대로'], [/없음:/, '있어야 할 Firebase 문서가 없음'], [/실패/, '그 일이 실패함 — 같은 줄이 되풀이되면 점검 필요']];
+    const logWhy = (e) => { const t = `[${e.m}] ${e.x}`; for (const [re, d] of LOGW) if (re.test(t)) return d; return e.l === 'err' ? '그 일을 끝내지 못함(오류) — 같은 줄이 되풀이되면 Claude에게 보여 주세요' : '주의 — 일은 계속됨'; };
     const kslot = (t) => new Date(t + 9 * 3600e3).toISOString().slice(0, 15).replace(/[-:T]/g, '') + '0';
     const pcsLine = (raw, slot) => { const m = String(raw).match(/^(\d{2}):(\d{2}):(\d{2}) \[([^\]]*)\] (⚠ |! |· )?(.*)$/s); if (!m) return { t: 0, m: '', l: 'info', x: String(raw) };
       const y = +slot.slice(0, 4), mo = +slot.slice(4, 6), d = +slot.slice(6, 8); const t = Date.UTC(y, mo - 1, d, +m[1], +m[2], +m[3]) - 9 * 3600e3;
@@ -634,15 +642,19 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       const ks = Object.keys(pcsData).sort((a, b) => pcsData[b].last - pcsData[a].last);
       if (!ks.length) return `<div class="ol"><b>🖥 다른 PC</b> · 최근 ${pcsHours}시간 동안 기록을 올린 다른 PC가 없습니다 ${pcsHours < 24 ? '<button data-pch="24" style="margin-left:6px">하루로 늘리기</button>' : ''}</div>`;
       return `<div class="ol"><b>🖥 다른 PC</b> · 최근 ${pcsHours}시간 · ${ago(pcsAt)} 읽음 <button data-pch="${pcsHours < 24 ? 24 : 3}" style="margin-left:6px">${pcsHours < 24 ? '하루로 늘리기' : '3시간만'}</button> <button data-pcr="1">↻ 지금 읽기</button></div><div class="chips">${ks.map((k) => { const x = pcsData[k]; const off = Date.now() - x.last > 15 * 60000;
-        return `<span class="chip ${k === pcsSel ? 'now' : off ? '' : 'done'}" data-pc="${e(k)}" style="cursor:pointer" title="마지막 기록 ${x.last ? new Date(x.last).toLocaleString('ko-KR') : '-'} · ${x.lines.length.toLocaleString()}줄">${off ? '⚪' : '🟢'} ${e(k)} · ${x.last ? ago(x.last) : '-'}${x.err ? ` · 오류 ${x.err}` : ''}${x.warn ? ` · 경고 ${x.warn}` : ''}</span>`; }).join('')}</div>`; };
+        return `<span class="chip ${k === pcsSel ? 'now' : off ? '' : 'done'}" data-pc="${e(k)}" style="cursor:pointer" title="마지막 기록 ${x.last ? new Date(x.last).toLocaleString('ko-KR') : '-'} · ${x.lines.length.toLocaleString()}줄">${off ? '⚪' : '🟢'} ${e(k)} · ${x.last ? ago(x.last) : '-'}${x.err ? ` · <u data-pcw="err" data-pcwp="${e(k)}" title="⚠ 오류 줄 ${x.err}개(그 일을 끝내지 못함) — 누르면 이 줄들만 풀이와 함께">오류 ${x.err}</u>` : ''}${x.warn ? ` · <u data-pcw="warn" data-pcwp="${e(k)}" title="! 경고 줄 ${x.warn}개(일은 계속됨 — 다시 시도·쉬기·건너뜀 등) — 누르면 이 줄들만 풀이와 함께">경고 ${x.warn}</u>` : ''}</span>`; }).join('')}</div>${pcsLv && pcsData[pcsSel] ? `<div class="ol sub" style="white-space:normal">🔎 <b>${e(pcsSel)}</b>의 <b>${pcsLv === 'err' ? '⚠ 오류' : '! 경고'}</b> 줄만 보는 중 (최근 ${pcsHours}시간) <button data-pcwx="1" style="margin-left:6px">✕ 거르기 풀기</button></div>` : ''}`; };
     const drawPcs = async (load) => { if (!w.classList.contains('on') || tab !== 'pcs') return; const b = w.querySelector('#rnjB');
       if (load || !pcsData || Date.now() - pcsAt > 60000) { if (!pcsData) b.innerHTML = '<div class="detail">다른 PC의 기록을 불러오는 중…</div>'; await pcsLoad(); drawOv(); }
       if (tab !== 'pcs') return; const x = pcsData && pcsSel ? pcsData[pcsSel] : null;
-      const stamp = `${pcsSel}|${pcsAt}|${w.querySelector('#rnjF').value}|${w.querySelector('#rnjQ').value}`; if (!load && stamp === pcsDrawn) return; pcsDrawn = stamp;
+      const stamp = `${pcsSel}|${pcsAt}|${w.querySelector('#rnjF').value}|${w.querySelector('#rnjQ').value}|${pcsLv}`; if (!load && stamp === pcsDrawn) return; pcsDrawn = stamp;
+      if (pcsLv && x) { const q = w.querySelector('#rnjQ').value.trim(); const L = x.lines.filter((e) => e.l === pcsLv && (!q || String(e.x).includes(q))).slice(-5000); const esc2 = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); const G = {}; L.forEach((e) => { const k = logWhy(e); G[k] = (G[k] || 0) + 1; });
+        b.innerHTML = L.length ? `<div class="info" style="white-space:normal;background:#F2F6F4;padding:4px 6px;border-radius:6px;margin-bottom:4px">💡 같은 뜻끼리 (${esc2(pcsSel)} · ${L.length.toLocaleString()}줄)${Object.entries(G).sort((p, q2) => q2[1] - p[1]).map(([k, n]) => `<br>· <b>${n.toLocaleString()}</b> — ${esc2(k)}`).join('')}</div>` + L.map((e) => fmtRow(e).replace(/<\/div>$/, `<br><span class="detail" style="padding-left:14px">💡 ${esc2(logWhy(e))}</span></div>`)).join('') : '<div class="detail">이 기간에 그런 줄이 없음</div>';
+        if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; return; }
       const all0 = x ? x.lines.filter(pass) : []; const rows = all0.slice(-30000); /* (1.77.4) 3,000줄 → 3만 줄 — 로거는 한 시간에 3천 줄 넘게 써서 '다른 PC'에서 1시간치만 보였음(정범님 10/17) */ b.innerHTML = (all0.length > rows.length ? `<div class="detail">앞의 ${(all0.length - rows.length).toLocaleString()}줄은 생략 — 웹앱 ⚙ 기록 → 기록 내려받기로 전부 받을 수 있음</div>` : '') + rows.map(fmtRow).join('') || `<div class="detail">${pcsErr ? '' : x ? '거른 결과 없음' : '고를 PC가 없습니다'}</div>`;
       if (w.querySelector('#rnjA').checked) b.scrollTop = b.scrollHeight; };
-    ov.addEventListener('click', (ev) => { if (tab !== 'pcs') return; const c = ev.target.closest('[data-pc]'); const hh = ev.target.closest('[data-pch]'); const rr = ev.target.closest('[data-pcr]');
-      if (c) { pcsSel = c.dataset.pc; GM_setValue('rnu-jw-pc', pcsSel); pcsDrawn = ''; drawOv(); drawPcs(false); }
+    ov.addEventListener('click', (ev) => { if (tab !== 'pcs') return; const c = ev.target.closest('[data-pc]'); const hh = ev.target.closest('[data-pch]'); const rr = ev.target.closest('[data-pcr]'); const wv = ev.target.closest('[data-pcw]'); const wx = ev.target.closest('[data-pcwx]');
+      if (wv) { pcsSel = wv.dataset.pcwp; GM_setValue('rnu-jw-pc', pcsSel); pcsLv = wv.dataset.pcw; pcsDrawn = ''; drawOv(); drawPcs(false); return; } if (wx) { pcsLv = null; pcsDrawn = ''; drawOv(); drawPcs(false); return; }
+      if (c) { pcsLv = null; pcsSel = c.dataset.pc; GM_setValue('rnu-jw-pc', pcsSel); pcsDrawn = ''; drawOv(); drawPcs(false); }
       else if (hh) { pcsHours = +hh.dataset.pch; pcsData = null; drawOv(); drawPcs(true); } else if (rr) { drawPcs(true); } });
     setInterval(() => { if (tab === 'pcs') drawPcs(false); }, 5000);
     setInterval(drawOv, 1000);
@@ -1384,6 +1396,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   function popupExtras(doc, p) {
     const t = (sel) => { const e = doc.querySelector(sel); return e ? e.textContent.replace(/\s+/g, ' ').trim() : null; };
     p.freeRuleText = t('#lblPriceType'); const rp = t('#lblDeliveryPriceRP'); p.remoteFee = rp ? parseInt(rp.replace(/[^\d]/g, ''), 10) || null : null;
+    /* (정범님 10/27) 고객이 주문 때 고른 '일부 품절 시' 선택(판매자의 주문 전체 취소 / 품절 상품만 취소·나머지 수령)이 주문 상세 화면에 있는지 아직 모름 → 그런 글이 보이면 그 칸 글만 그대로 남김(해석하지 않음 · 웹앱 취소 창이 나중에 씀) */
+    try { const seen = new Set(); const out = []; doc.querySelectorAll('td,th,li,span,label,p,div').forEach((e) => { if (out.length >= 4 || e.children.length > 3) return; const s = (e.textContent || '').replace(/\s+/g, ' ').trim(); if (s.length < 4 || s.length > 160 || seen.has(s) || !/품절|전체\s*취소|부분\s*취소|나머지\s*(상품|수령)/.test(s)) return; seen.add(s); out.push(s); }); p.soldOutRaw = out.length ? out : null; } catch (e) {}
   }
   async function savePopup(ono, p) { // 개인정보가 지워진 뒤 다시 받아도 먼저 확보한 개인정보는 유지
     const old = await dbGet('popups', ono);
@@ -5498,9 +5512,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const cloudAlive = async () => { if (!cloudSt || Date.now() - cloudStAt > 20000) { cloudStAt = Date.now(); try { cloudSt = (await C('app_settings').doc('cloud').get()).data() || {}; } catch (e) { cloudSt = cloudSt || {}; } } const at = Date.parse(cloudSt.at || 0) || 0; return { alive: Date.now() - at < 150e3 && cloudSt.ok !== false && cloudSt.login !== 'off' && cloudSt.scm !== false, ageS: Math.round((Date.now() - at) / 1000), err: cloudSt.err || null }; }; /* (1.77.5) 출고 과정(발송준비시작·현금 판매 중지·유의 사항 다시 읽기)은 클라우드 먼저 */
   /* (정범님 10/27 '로그인이 필요한 일은 로그인된 PC 먼저 · 클라우드는 받침') — 이 PC가 알라딘에 로그인되어 있으면(로그인 규칙이 '풀림'으로 알고 있지 않으면) 출고·돈 일(CLOUD_FIRST)도 클라우드를 기다리지 않고 바로 · 로그인이 풀린 PC만 예전처럼 클라우드 먼저 */
   const pcLoggedNow = () => { if (PUBONLY) return false; try { const s0 = LGOV && LGOV.state ? LGOV.state() : null; return !s0 || s0.in !== false; } catch (e) { return true; } };
-  const cmdMine = (t) => { const f = (k) => !window.__rnFeat || window.__rnFeat(k); if (t === 'startDelivery') return f('ship'); if (t === 'cashStop') return f('cash'); if (/^reg/.test(String(t))) return f('reg'); return !window.__rnPaused; };
+  const cmdMine = (t) => { const f = (k) => !window.__rnFeat || window.__rnFeat(k); if (t === 'startDelivery' || t === 'cancelOrder') return f('ship'); if (t === 'cashStop') return f('cash'); if (/^reg/.test(String(t))) return f('reg'); return !window.__rnPaused; };
   /* (1.88.4) 정범님 10/20 'JS-MAIN: 웹앱이 맡긴 일을 받았다는 표시가 기록에 전혀 없음' — 맡은 순간과 끝난 순간을 기록 창에 한 줄씩(종류·이름·걸린 시간) */
-  const CMD_KO = { startDelivery: '발송준비시작', usedInfo: '유의 사항 다시 읽기', c2bAdd: '알라딘 팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지', prdEdit: '✏ 상품 정보 수정', qnaReply: '💬 묻고 답하기 답변', pageText: '📄 알라딘 안내 글 읽기', lookup: '사진 가격 조회', regDel: '등록 상품 삭제', regLookup: '📥 등록 조회', extLookup: '🌐 외부 정보', extTest: '🌐 외부 정보 시험', metrics: '시장 지표 다시 읽기', regBulk: '📦 대량 등록', regBulkMock: '🧷 모의 대량 등록', regOne: '🤖 개별·미등록 등록', regOneMock: '🧷 모의 개별 등록' };
+  const CMD_KO = { startDelivery: '발송준비시작', cancelOrder: '✖ 주문 취소', usedInfo: '유의 사항 다시 읽기', c2bAdd: '알라딘 팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지', prdEdit: '✏ 상품 정보 수정', qnaReply: '💬 묻고 답하기 답변', pageText: '📄 알라딘 안내 글 읽기', lookup: '사진 가격 조회', regDel: '등록 상품 삭제', regLookup: '📥 등록 조회', extLookup: '🌐 외부 정보', extTest: '🌐 외부 정보 시험', metrics: '시장 지표 다시 읽기', regBulk: '📦 대량 등록', regBulkMock: '🧷 모의 대량 등록', regOne: '🤖 개별·미등록 등록', regOneMock: '🧷 모의 개별 등록' };
   /* ══ (1.89.65) 🔢 정보수정 화면으로 판매 상품 수량·판매가·관리코드·판매 상태 확인 (맡긴 일 qtyChk) ══
    *  정범님 10/25 '엔진이 수량을 셀 때 샵매니저 목록을 보는 게 잘못 — 목록은 수량 반영이 안 될 때가 많으니 정보수정에 들어가 확인. 지금 당장 로그인 PC들이 재고 전체를 다시 세고, 앞으로 판매 중 상품 정보는 반드시 정보수정 화면에서'
    *  · 맡긴 일 칸은 qty_chk(shp_cmds가 아님 — 웹앱들이 듣는 맡긴 일 칸에 수백 묶음을 넣지 않게) · 한 묶음 = 상품 40개 · 로그인한 PC가 한 번에 한 묶음씩(여러 PC가 나눠 함) · 상품마다 정보수정 화면(wrecord.aspx?action=2&UpdateItemId=)을 읽어 우리 기록과 다른 칸만 고침 + 변경 이력(prd_listing_changes source 'editPage')
@@ -5578,7 +5592,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     else if (v.type === 'cashStop') { await cashStopCmd(ref, v); return; } // (1.37.0) 현금 판매 → 알라딘 판매중지 자동 // (1.35.0) 알라딘 매입: 팔기 장바구니에 담기
     else if (v.type === 'lookup') { LOOK_PRIO++; try { await lookupCmd(ref, v); } finally { LOOK_PRIO--; } return; } /* (1.78.2) 사진 가격 조회도 사람이 기다림 — 알라딘 차례 먼저 */
     else if (v.type === 'pageText') { await pageTextCmd(ref, v); return; } /* (10/26) 📄 알라딘 안내 글(약관 등) 읽기 — 정범님 '알라딘 규약 살펴봐' · 대화 세션이 원문 조항을 확인 */
-    else if (v.type === 'qnaReply') { await qnaReplyCmd(ref, v); return; } /* (10/26) 💬 웹앱에서 쓴 묻고 답하기 답변 → 샵매니저 */
+    else if (v.type === 'qnaReply') { await qnaReplyCmd(ref, v); return; }
+    else if (v.type === 'cancelOrder') { await cancelOrderCmd(ref, v); return; } /* (10/27) ✖ 웹앱 출고 ① 주문확인요청에서 맡긴 주문 취소 → 샵매니저 */ /* (10/26) 💬 웹앱에서 쓴 묻고 답하기 답변 → 샵매니저 */
     else if (v.type === 'regDel') { await regDelCmd(ref, v); return; } /* (1.81.0) 🗑 웹앱에서 지운 등록 상품 → 알라딘 삭제 */
     else if (v.type === 'regLookup') { await regLookupCmd(ref, v); return; } /* (1.77.0) 📥 등록 조회 = 샵매니저 등록 검색(로그인 PC만 — 로거는 pcCan에서 거름) */
     else if (v.type === 'extLookup' || v.type === 'extTest') { await extCmd(ref, v); return; } // (1.57.0) 🌐 외부 정보 — 알라딘과 상관없음
@@ -6075,6 +6090,61 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       else { why = why || `보냈지만(HTTP ${r1.status}) 상세 화면에 이 답변이 보이지 않음${msgs.length ? ' · 알라딘 알림: ' + msgs.join(' / ').slice(0, 200) : ''}`; await fail(why, { probe: qrFindForm(d).probe, alerts: msgs, http: r1.status, result: { state: 'notSeen', answer: (c3 && c3.ans) || null } }); } }
     catch (e) { why = e.message; await fail(e.message); }
     finally { await exEnd('qnaReply', xk, st, st === 'done' ? null : why); } }
+  /* ══════════ (정범님 10/27) ✖ 웹앱이 맡긴 주문 취소 (맡긴 일 cancelOrder · 로그인한 PC만 · 누른 PC 먼저) ══════════
+   *  알라딘 샵매니저 주문확인요청 → '판매 불가 통보' → '주문 상품 취소' 창(정범님이 보낸 실제 화면 10/27): form#layerReportNotSales · GET → /scm/ReportNotSalesLayer.aspx
+   *    칸: radio cancelReason(1 = 고객 취소 요청 · 2 = 품절 취소) · checkbox ordersItem(상품 번호 = 주문 줄 ItemId) · hidden rdUrl · rnsAction(1) · ono → 응답 '주문이 취소되었습니다.'
+   *  ① 주문확인요청 화면을 읽어 그 주문·상품이 아직 있는지(없으면 아무것도 보내지 않음)
+   *  ② 취소 창(ReportNotSalesLayer.aspx?ono=)을 읽어 양식이 위와 같고 ono·고른 상품 번호·사유 값이 모두 그 양식에 있을 때만 — 하나라도 다르면 보내지 않고 실패(probe: 화면의 양식·칸 목록 · 다음에 맞추려고)
+   *     ※ 창을 여는 주소는 알라딘 scm_order.js 안(reportNotSales2)에 있어 받은 HTML에 없음 — ?ono= 로 열어 양식이 맞는지로 확인(맞지 않으면 보내지 않음)
+   *  ③ 실행 문(exec_log)에 시작을 적을 수 있을 때만 · 양식의 칸 차례 그대로(고른 사유 하나 · 고른 상품만 · 숨은 칸 그대로) 같은 주소로 GET
+   *  ④ 주문확인요청을 다시 읽어 확인: 고른 상품이 모두 빠짐 → done · 일부만 골랐는데 주문이 통째로 빠짐 → doneAll(고객이 '주문 전체 취소'를 고른 주문 → learnedOpt 'all') · 남은 상품이 그대로 → learnedOpt 'part'
+   *  로그인이 풀려 있으면 다시 로그인하지 않고 실패로(아무것도 보내지 않음 · 로그인은 __rnLoginGov 규칙만) */
+  const CX_LAYER = (ono) => `https://www.aladin.co.kr/scm/ReportNotSalesLayer.aspx?ono=${encodeURIComponent(ono)}`; const CX_LIST = 'https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx';
+  async function cxGet(url, scm) { await PACE.wait(sleep); const r = await fetch(url, { credentials: 'include', cache: 'no-store' }); const html = AL.decode(await r.arrayBuffer(), r.headers.get('content-type')); const doc = new DOMParser().parseFromString(html, 'text/html');
+    return { r, html, doc, lo: AL.looksLoggedOut(r.url, doc, scm ? { scmNeedsLogout: true, url } : { titleOk: /샵매니저|알라딘|취소/ }) }; }
+  function cxListOf(SH, doc) { const x = SH.parseDeliveryPage(doc); const okP = !!(x && x.tabCounts && Object.keys(x.tabCounts).length); const orders = (x && x.orders) || []; const full = okP && x.tabCounts['주문확인요청'] != null && orders.length >= x.tabCounts['주문확인요청']; return { okP, full, orders }; }
+  function cxProbe(doc) { return { title: String(doc.title || '').slice(0, 60), forms: [...doc.forms].slice(0, 6).map((f) => ({ id: f.id || '', action: String(f.getAttribute('action') || '').slice(0, 120), method: f.getAttribute('method') || '', fields: [...f.elements].slice(0, 30).map((e) => `${e.type || e.tagName}:${e.name || e.id || ''}`) })), text: String((doc.body || doc.documentElement || {}).textContent || '').replace(/\s+/g, ' ').trim().slice(0, 400) }; }
+  async function cancelOrderCmd(ref, v) { const ono = String(v.orderNo || (v.orderNos || [])[0] || '').trim(); const reason = String(v.reason || ''); const want = [...new Set((v.items || []).map(String).filter((x) => /^\d+$/.test(x)))]; const t0 = Date.now();
+    const ex = (s) => ref.set({ ...s, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {});
+    const fail = async (msg, more) => { await ref.set({ status: 'fail', msg, doneAt: nowIso(), by: PC_NAME, ms: Date.now() - t0, ...(more || {}), uploadedAt: TS() }, { merge: true }); log(`✖ 주문 취소 못 함 (${ono}): ${msg}`, 1); };
+    if (!/^\d{3}-[A-Z]\d{9}$/.test(ono) || !['1', '2'].includes(reason) || !want.length) return fail('주문번호·취소 사유·상품 번호가 맞지 않음 (아무것도 보내지 않음)');
+    const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (!SH || !SH.parseDeliveryPage) return fail('출고 공용 파일(readnow-shipping-core.js)이 없음 — 수집기 새로고침 (아무것도 보내지 않음)');
+    let before; try { await ex({ step: 'read', msg: `${PC_NAME}: 주문확인요청에서 이 주문을 확인하는 중` }); const g = await cxGet(CX_LIST, true); if (g.lo) return fail(`${PC_NAME}의 알라딘 로그인이 풀려 있음 — 로그인된 PC에서 다시 (아무것도 보내지 않음)`); before = cxListOf(SH, g.doc); }
+    catch (e) { return fail('주문확인요청을 못 읽음: ' + e.message + ' (아무것도 보내지 않음)'); }
+    const o0 = before.orders.find((o) => o.orderNo === ono); if (!o0) return fail(before.okP ? '주문확인요청에 이 주문이 없음 — 이미 발송준비시작했거나 취소된 주문 (아무것도 보내지 않음)' : '주문확인요청 화면을 제대로 못 읽음 (아무것도 보내지 않음)', { result: { state: 'notInList' } });
+    const have = (o0.items || []).map((it) => String(it.listingId || '')).filter(Boolean); const miss = want.filter((x) => !have.includes(x)); if (miss.length) return fail(`고른 상품 ${miss.join(', ')}이(가) 이 주문에 없음 — 목록이 바뀜 (아무것도 보내지 않음)`, { result: { state: 'itemsChanged', have } });
+    let L; try { await ex({ step: 'layer', msg: `${PC_NAME}: 알라딘 '주문 상품 취소' 창을 읽는 중` }); L = await cxGet(CX_LAYER(ono)); } catch (e) { return fail('취소 창을 못 읽음: ' + e.message + ' (아무것도 보내지 않음)'); }
+    if (L.lo) return fail(`${PC_NAME}의 알라딘 로그인이 풀려 있음 (아무것도 보내지 않음)`);
+    const F = L.doc.querySelector('form#layerReportNotSales') || [...L.doc.forms].find((f) => /ReportNotSalesLayer\.aspx/i.test(f.getAttribute('action') || '')); const probe = cxProbe(L.doc);
+    const layerText = (() => { if (!F) return null; const c = F.cloneNode(true); c.querySelectorAll('.info_list1,.info_list2,script,style').forEach((x) => x.remove()); return c.textContent.replace(/\s+/g, ' ').trim().slice(0, 600); })(); /* 고객의 '일부 품절 시' 선택이 이 창에 보이는지 알아보려고 안내 문구를 뺀 글을 남김(지어내지 않음 — 글만) */
+    if (!F) return fail("알라딘 취소 창에서 '주문 상품 취소' 양식을 못 찾음 — 창을 여는 주소가 다를 수 있음(확인 필요 · 아무것도 보내지 않음)", { probe });
+    const act = new URL(F.getAttribute('action') || '', L.r.url || CX_LAYER(ono)); if (act.host !== 'www.aladin.co.kr' || !/\/scm\/ReportNotSalesLayer\.aspx$/i.test(act.pathname) || String(F.getAttribute('method') || 'GET').toUpperCase() !== 'GET') return fail(`취소 양식이 보내는 곳이 예상과 다름(${act.pathname} ${F.getAttribute('method') || ''}) — 아무것도 보내지 않음`, { probe, layerText });
+    const els = [...F.elements]; const onoEl = els.find((e) => e.name === 'ono'); const boxes = els.filter((e) => e.name === 'ordersItem' && e.type === 'checkbox').map((e) => String(e.value)); const rads = els.filter((e) => e.name === 'cancelReason' && e.type === 'radio').map((e) => String(e.value));
+    if (!onoEl || String(onoEl.value) !== ono) return fail(`취소 창의 주문번호(${onoEl ? onoEl.value : '없음'})가 이 주문과 다름 — 아무것도 보내지 않음`, { probe, layerText });
+    const bMiss = want.filter((x) => !boxes.includes(x)); if (bMiss.length || !rads.includes(reason)) return fail(`취소 창에 ${bMiss.length ? '고른 상품 ' + bMiss.join(', ') : '취소 사유 ' + reason}이(가) 없음 — 아무것도 보내지 않음`, { probe, layerText, result: { state: 'formMismatch', boxes, rads } });
+    const xk = `${ref.id}:${v.tries || 1}`; const gate = await exBegin('cancelOrder', xk, { ono, n: want.length, reason: +reason, whole: want.length === have.length });
+    if (!gate.ok) return fail('실행 문: ' + (gate.why || '같은 취소를 이미 보낸 기록이 있음') + ' — 샵매니저 주문확인요청에서 확인', { result: { state: gate.state === 'done' ? 'unknown' : 'gate' } });
+    let st = 'failed', why = null;
+    try { const q = new URLSearchParams(); for (const e of els) { if (!e.name || e.disabled) continue; if (e.type === 'radio') { if (e.name === 'cancelReason' && String(e.value) === reason) q.append(e.name, e.value); continue; } if (e.type === 'checkbox') { if (e.name === 'ordersItem' && want.includes(String(e.value))) q.append(e.name, e.value); continue; } if (['hidden', 'text'].includes(e.type)) q.append(e.name, e.value); }
+      act.search = q.toString(); await ex({ step: 'send', msg: `${PC_NAME}: 알라딘 '선택 상품 품절 취소'와 같은 요청을 보냄 (${want.length}권 · 사유 ${reason === '1' ? '고객 취소 요청' : '품절 취소'})` });
+      await PACE.wait(sleep); const r1 = await fetch(act.href, { credentials: 'include', cache: 'no-store' }); const h1 = AL.decode(await r1.arrayBuffer(), r1.headers.get('content-type')); const alerts = [...h1.matchAll(/alert\(\s*['"]([^'"]{1,200})['"]/g)].map((m) => m[1]).slice(0, 6);
+      await ex({ step: 'verify', msg: `${PC_NAME}: 주문확인요청을 다시 읽어 빠졌는지 확인하는 중 (응답 HTTP ${r1.status}${alerts.length ? ' · ' + alerts.join(' / ').slice(0, 80) : ''})`, alerts, http: r1.status });
+      let after = null, gDoc = null; for (let k = 0; k < 3; k++) { if (k) await sleep(2500); try { const g2 = await cxGet(CX_LIST, true); if (!g2.lo) { after = cxListOf(SH, g2.doc); gDoc = g2.doc; } } catch (e) { why = '확인 읽기 실패: ' + e.message; } if (after && after.okP) { const o1 = after.orders.find((o) => o.orderNo === ono); if (!o1 || want.every((x) => !(o1.items || []).some((it) => String(it.listingId) === x))) break; } }
+      const okSaid = alerts.some((a) => /취소되었습니다|취소 되었습니다/.test(a)); let result;
+      if (!after || !after.okP) result = { state: 'unknown', why: why || '주문확인요청을 다시 못 읽음' };
+      else { const o1 = after.orders.find((o) => o.orderNo === ono); const left = o1 ? (o1.items || []).map((it) => String(it.listingId || '')) : []; const still = want.filter((x) => left.includes(x)); const partial = want.length < have.length;
+        if (still.length) result = { state: okSaid ? 'unknown' : 'fail', why: `보냈지만 고른 상품 ${still.length}권이 아직 주문확인요청에 있음${okSaid ? '(알라딘은 취소됐다고 답함 — 목록 반영이 늦을 수 있음)' : ''}`, left };
+        else if (!o1 && !(after.full || okSaid)) result = { state: 'unknown', why: '주문이 읽은 목록에 안 보이지만 목록을 다 읽지 못했고 알라딘 답도 없어 취소됐는지 확인 못 함', left: [] };
+        else if (!o1 && partial && after.full) result = { state: 'doneAll', learnedOpt: 'all', left: [] };
+        else if (!o1 && partial) result = { state: 'unknown', why: '일부만 골랐는데 주문이 읽은 목록에 안 보임 — 목록을 다 읽지 못해 주문 전체가 취소됐는지 확인 못 함', left: [] };
+        else result = { state: 'done', ...(partial && o1 ? { learnedOpt: 'part' } : {}), left }; }
+      Object.assign(result, { sent: want, reason: +reason, alerts, http: r1.status, layerText, before: have });
+      st = ['done', 'doneAll'].includes(result.state) ? 'done' : result.state === 'fail' ? 'failed' : 'unknown'; why = result.why || null;
+      await ref.set({ status: st === 'done' ? 'done' : st === 'failed' ? 'fail' : 'unknown', step: 'end', result, msg: st === 'done' ? (result.state === 'doneAll' ? '주문 전체가 취소됨(고객이 전체 취소를 고른 주문)' : '알라딘에서 취소된 것을 확인함') : why, doneAt: nowIso(), by: PC_NAME, ms: Date.now() - t0, uploadedAt: TS() }, { merge: true });
+      log(`✖ 주문 취소 ${st === 'done' ? '확인' : st === 'failed' ? '실패' : '확인 못 함'} (${ono} · ${want.length}권 · ${reason === '1' ? '고객 취소 요청' : '품절 취소'}${result.state === 'doneAll' ? ' · 주문 전체 취소됨' : ''}, ${Math.round((Date.now() - t0) / 1000)}초)`, st === 'done' ? 0 : 1);
+      if (gDoc) { try { await shipLiteRead(SH, gDoc); } catch (e) {} } /* 취소 결과를 바로 목록에 — 웹앱 주문확인요청에서 빠짐 */ }
+    catch (e) { why = e.message; await fail('보내는 중 오류: ' + e.message + ' — 알라딘에 갔을 수 있음, 샵매니저에서 확인', { result: { state: 'unknown' } }); st = 'unknown'; }
+    finally { await exEnd('cancelOrder', xk, st, st === 'done' ? null : why); } }
   /* 알라딘 답변 화면(form1 · ASP.NET)을 받은 그대로 보내는 요청으로 — 양식의 이름 있는 칸을 모두 그대로 모으고 답변 칸(txtAnswer)만 바꾼 뒤, 등록 이미지 단추(btnAnswerAddEdit)를 누른 것과 같은 값(.x·.y)을 붙임
    *  (정범님이 보낸 실제 화면 10/26: form1 post → 같은 주소 · hidden __VIEWSTATE·__VIEWSTATEGENERATOR·IsAnswerEmail·hidAnswerId · textarea txtAnswer · input type=image btnAnswerAddEdit — 화면 검사는 빈 칸이면 '답변 내용을 입력하세요.'뿐) */
   function qrBuildPost(doc, pageUrl, text) { const ta = doc.querySelector('textarea[name="txtAnswer"]') || doc.querySelector('#txtAnswer'); if (!ta || !ta.getAttribute('name')) return { why: '답변 화면에서 답변 칸(txtAnswer)을 못 찾음' };
