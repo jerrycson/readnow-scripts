@@ -1,2 +1,2 @@
-logs=1&pc=LOGGER&from=202610280030
-# 2903822492
+doc=app_settings/kpipa_ctg
+# 302674951
