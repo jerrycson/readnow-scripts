@@ -1,3 +1,4 @@
-logs=1&pc=HOME&from=202610271815
-logs=1&pc=JS-MAIN&from=202610271500
-# 2030525256
+doc=app_settings/kpipa_ctg
+doc=mkt_kpipa/20261025
+doc=app_settings/kpipa
+# 1212510968
