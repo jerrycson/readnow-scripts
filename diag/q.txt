@@ -1,1 +1,7 @@
-@kpin kpin/aud_20261027-072656.json
+@health&hours=3
+perf=400
+logs=1&pc=JS-MAIN&from=202610271600
+logs=1&pc=LOGGER&from=202610271600
+logs=1&pc=HOME&from=202610271600
+logs=1&pc=MJ-MAIN&from=202610271600
+# 430324959
