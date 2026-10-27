@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.113의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.116의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.113' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.113', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.116' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.116', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -117,16 +117,17 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
 })();
 globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — 수집기·클라우드에 글자 하나까지 같은 글(시험 t_login이 견줌) · 순수 함수만(저장·네트워크 없음)⟧
  *  계정 상태 문서 = Firestore app_settings/aladin_login (모든 PC·클라우드가 같이 봄)
- *   { tries:[{at,who,net,ok,how,why,code,blocked}](최근 cfg.keep개 · 기본 200) · next:{기기: 다음 시도 때(ms)} · dev:{기기:{in,at,how}} · net:{기기: 공인 IP 앞 두 마디}
- *     · blk:{'기기·망':{first,last,n,okAt}}(42FB 막힘이 기기·망별로 얼마나 갔나) · holdUntil·holdWhy(정범님이 켤 때만 — 자동으로는 넣지 않음) · cfg:{바꿀 수 있는 값} }
+ *   { tries:[{at,who,net,ok,how,why,code,blocked}](최근 cfg.keep개 · 기본 200) · next:{기기: 다음 시도 때(ms)} · dev:{기기:{in,at,how,pri,use,yield}} · net:{기기: 공인 IP 앞 두 마디}
+ *     · blk:{'기기·망':{first,last,n,okAt}}(42FB 막힘이 기기·망별로 얼마나 갔나) · holdUntil·holdWhy(정범님이 켤 때만 — 자동으로는 넣지 않음) · cfg:{바꿀 수 있는 값}
+ *     · wait:{기기:{at,since,pri}}(🪑 판매자 로그인 자리를 기다리는 기기 — 아래 '판매자 로그인 자리') }
  *  하루 요약 = app_settings/aladin_login/days/{KST 날짜} { c:{'기기·망·방법·결과·경고':수}, eps:[닫힌 막힘 {who,net,first,okAt,n}] }
  *  사람처럼(정범님 10/26 23:46 · 23:53): ① 한 회사에 사람이 여럿이듯 기기마다 각자 필요할 때 따로 시도(계정 전체 차례 없음 · 같은 기기 안의 여러 탭은 한 탭만 — 수집기 GM 표시) ② 진짜 풀린 것을 확인한 뒤 5~20초 알아차리는 시간 → 한 번
  *   ③ 안 되면(42FB 경고도 같음) 그 기기는 1~10분 사이 무작위(매번 새로) 뒤 다시 — 그 기기에 로그인이 필요한 일이 남아 있는 동안만 · 단계 간격·하루 상한·다음 날 9시 쉼 없음
  *   ④ 클라우드(데이터센터 IP): 2시간 안에 42FB가 있었고 그 뒤 어느 PC도 새 로그인에 성공하지 않았으면 기다림 → PC가 성공하면 그때부터 ①~③ */
-  const DEF = { retrySec: [60, 600], noticeSec: [5, 20], keep: 200, dcWaitMin: 120, credBadMin: 360 }; /* credBadMin = '아이디·비밀번호가 틀림·자동입력 방지' 글이 뜬 때만(계정 잠김 막기 — 클라우드 0.11.0부터 있던 안전장치 · 42FB와 다름) */
+  const DEF = { retrySec: [60, 600], noticeSec: [5, 20], keep: 200, dcWaitMin: 120, credBadMin: 360, maxDev: 4, liveMin: 30, beatSec: [600, 900] }; /* maxDev·liveMin·beatSec = 🪑 판매자 로그인 자리(아래) */ /* credBadMin = '아이디·비밀번호가 틀림·자동입력 방지' 글이 뜬 때만(계정 잠김 막기 — 클라우드 0.11.0부터 있던 안전장치 · 42FB와 다름) */
   const num = (v, lo, hi, d) => { const n = +v; return Number.isFinite(n) && n >= lo && n <= hi ? n : d; };
   const pair = (v, lo, hi, d) => (Array.isArray(v) && v.length === 2 && +v[0] >= lo && +v[1] >= +v[0] && +v[1] <= hi ? v.map(Number) : d);
-  function cfgOf(doc) { const c = (doc && doc.cfg) || {}; return { retrySec: pair(c.retrySec, 10, 3600, DEF.retrySec), noticeSec: pair(c.noticeSec, 0, 120, DEF.noticeSec), keep: Math.round(num(c.keep, 20, 400, DEF.keep)), dcWaitMin: num(c.dcWaitMin, 0, 1440, DEF.dcWaitMin), credBadMin: num(c.credBadMin, 0, 1440, DEF.credBadMin) }; }
+  function cfgOf(doc) { const c = (doc && doc.cfg) || {}; return { retrySec: pair(c.retrySec, 10, 3600, DEF.retrySec), noticeSec: pair(c.noticeSec, 0, 120, DEF.noticeSec), keep: Math.round(num(c.keep, 20, 400, DEF.keep)), dcWaitMin: num(c.dcWaitMin, 0, 1440, DEF.dcWaitMin), credBadMin: num(c.credBadMin, 0, 1440, DEF.credBadMin), maxDev: Math.round(num(c.maxDev, 1, 4, DEF.maxDev)), liveMin: num(c.liveMin, 20, 120, DEF.liveMin), beatSec: pair(c.beatSec, 120, 1080, DEF.beatSec) }; } /* maxDev 1~4(5대부터 약관 위반) · 신호 간격 최대 18분 < 자리 유지 최소 20분(신호가 한 번 늦어도 자리가 풀리지 않게) */
   const kstDay = (ms) => new Date(+ms + 9 * 3600e3).toISOString().slice(0, 10);
   const kstHm = (ms) => { const k = new Date(+ms + 9 * 3600e3); return `${k.getUTCMonth() + 1}/${k.getUTCDate()} ${String(k.getUTCHours()).padStart(2, '0')}:${String(k.getUTCMinutes()).padStart(2, '0')}`; };
   const between = (a, rnd) => Math.round((a[0] + (Number.isFinite(rnd) ? Math.min(1, Math.max(0, rnd)) : Math.random()) * (a[1] - a[0])) * 1000);
@@ -134,19 +135,60 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const BLOCK_RE = /로그인\s*과정에\s*문제|에러\s*코드\s*[:：]?\s*42FB|\b42FB[0-9A-F]{2,}/i;
   const isBlock = (msg) => BLOCK_RE.test(String(msg || ''));
   const codeOf = (msg) => { const m = String(msg || '').match(/에러\s*코드\s*[:：]?\s*([0-9A-F]{4,}(?:-[0-9A-F]+)?)/i) || String(msg || '').match(/\b(42FB[0-9A-F]{2,})/i); return m ? m[1].toUpperCase().slice(0, 24) : isBlock(msg) ? '42FB' : null; };
+  /* 🪑 판매자 로그인 자리 (정범님 10/27) — 알라딘 이용약관 제19조(부정이용 금지) 1.① "동일한 아이디로 5대 이상의 기기(PC, 스마트폰, 태블릿PC, 전용 단말기 등)에서 동시 접속하여 서비스를 이용하는 경우"
+   *  → 우리 코드가 쓰는 기기(PC 수집기·클라우드)는 합쳐 cfg.maxDev(기본 4 · 1~4)대까지만 로그인해 일함. 사람이 직접 쓰는 휴대폰 알라딘 앱 등은 우리가 셀 수 없음 → 기본 4 = 5번째 자리를 사람 몫으로 비워 둠
+   *  자리 = dev[기기]: in 참 · 신호(at)가 cfg.liveMin(기본 30)분 안 · 양보(yield) 아님. 신호는 그 기기가 로그인이 필요한 일(샵매니저·내 계정 등)을 하는 동안만 cfg.beatSec(10~15분 무작위)마다
+   *   → 30분 동안 로그인 일을 하지 않은 기기(가장 한가한 기기)는 신호가 끊겨 자리가 저절로 풀림(로그아웃 단추는 누르지 않음 — 세션은 그대로 두고 만료되면 다시 로그인하지 않음)
+   *  새로 로그인하거나 쉬던 기기가 다시 로그인 일을 하려면 먼저 자리를 받음(seatAsk · 트랜잭션이라 5대가 한꺼번에 물어도 maxDev대만 받음) — 꽉 찼으면 로그인하지 않고 '자리 기다림'(retrySec 1~10분 무작위 뒤 다시 봄)
+   *  우선순위 PRI: 사람이 그 기기에서 웹앱·알라딘을 누름 3 > 출고·자동 발송 판단(주문확인요청 읽기) 2 > 그 밖 PC 1 > 클라우드 0(받침)
+   *   · 빈자리는 기다리는 기기 중 우선순위가 높은(같으면 먼저 기다린) 기기 몫 · 자리를 가진 기기가 세션 만료로 다시 로그인할 때 더 높은 기기가 기다리면 다시 로그인하지 않고 넘김
+   *   · 꽉 찼는데 PC가 기다리면 클라우드(받침)는 일하는 중이라도 로그인 일을 멈추고 자리를 넘김(seatYield) · 어떤 까닭으로든 maxDev대를 넘으면 우선순위가 가장 낮은 기기(같으면 가장 오래 일 안 한 기기)가 넘김 */
+  const PRI = { human: 3, ship: 2, pc: 1, cloud: 0 };
+  const isLive = (v, now, c) => !!(v && v.in === true && !v.yield && now - (+v.at || 0) < c.liveMin * 60e3);
+  const waitMs = (c) => c.retrySec[1] * 1500 + 60e3; /* 기다림 표시가 살아 있는 시간 = 다시 묻는 가장 긴 간격의 1.5배 + 1분(그 뒤엔 더 기다리지 않는 기기로 봄) */
+  const priOf = (v, who) => (v && Number.isFinite(+v.pri) && v.pri !== null ? +v.pri : who === 'cloud' ? PRI.cloud : PRI.pc);
+  function seatView(doc, now) { const c = cfgOf(doc); const D = (doc && doc.dev) || {}; const Wt = (doc && doc.wait) || {};
+    const live = Object.entries(D).filter(([, v]) => isLive(v, now, c)).map(([w, v]) => ({ who: w, pri: priOf(v, w), at: +v.at || 0, use: +v.use || +v.at || 0 })).sort((a, b) => b.pri - a.pri || b.use - a.use);
+    const wait = Object.entries(Wt).filter(([w, v]) => v && now - (+v.at || 0) < waitMs(c) && !isLive(D[w], now, c)).map(([w, v]) => ({ who: w, pri: priOf(v, w), since: +v.since || +v.at || 0, at: +v.at || 0 })).sort((a, b) => b.pri - a.pri || a.since - b.since);
+    return { max: c.maxDev, live, wait, cfg: c }; }
+  /* 자리 받기 → { ok:true, patch } | { ok:false, kind:'seat', until, why, patch(기다림 적기) } · o.pri = 이 기기 우선순위(없으면 PC 1 · o.dc면 클라우드 0) */
+  function seatAsk(doc, who, now, o, rnd) { o = o || {}; const V = seatView(doc, now); const pri = Number.isFinite(+o.pri) && o.pri !== null ? +o.pri : o.dc ? PRI.cloud : PRI.pc;
+    const others = V.live.filter((x) => x.who !== who); const W0 = ((doc && doc.wait) || {})[who] || null; const since = W0 && now - (+W0.at || 0) < waitMs(V.cfg) ? +W0.since || +W0.at || now : now;
+    const mine = V.live.some((x) => x.who === who); /* 이미 자리를 가진 기기(세션 만료로 다시 로그인 등)는 더 높은 기기에게만 넘김 · 새로 묻는 기기는 같은 우선순위면 먼저 기다린 기기 다음 */
+    const ahead = V.wait.filter((x) => x.who !== who && (x.pri > pri || (!mine && x.pri === pri && x.since < since))); const free = V.max - others.length;
+    if (free - ahead.length >= 1) return { ok: true, n: others.length + 1, max: V.max, patch: { dev: { [who]: { in: true, at: now, how: '자리', pri, use: now, yield: false } }, wait: { [who]: null } } };
+    const until = now + between(V.cfg.retrySec, rnd);
+    const why = free <= 0 ? `알라딘 판매자 로그인 기기 ${others.length}/${V.max}대(${others.map((x) => x.who).join('·')}) — 자리 기다림(약관 제19조: 같은 아이디 5대 이상 동시 접속 금지)` : `빈자리 ${free}개는 먼저 기다리는 우선순위 높은 기기(${ahead.slice(0, free).map((x) => x.who).join('·')}) 몫 — 자리 기다림`;
+    return { ok: false, kind: 'seat', until, why, n: others.length, max: V.max, ahead: ahead.map((x) => x.who), patch: { dev: { [who]: { in: false, at: now, how: '자리 기다림', pri, yield: false } }, wait: { [who]: { at: now, since, pri } } } }; }
+  /* 자리를 넘길 기기 하나(없으면 null) — 꽉 찼고 클라우드보다 높은 기기가 기다리면 클라우드 · maxDev대를 넘으면 가장 낮은 기기(같으면 가장 오래 일 안 한 기기) */
+  function seatYield(doc, now) { const V = seatView(doc, now); const over = V.live.length - V.max; const top = V.wait[0];
+    if (over > 0) { const c = V.live.slice().sort((a, b) => a.pri - b.pri || a.use - b.use); return c[0].who; }
+    if (over === 0 && top) { const c = V.live.filter((x) => x.who === 'cloud' && x.pri < top.pri); return c.length ? 'cloud' : null; }
+    return null; }
+  /* 로그인 일을 하는 기기가 신호(10~15분마다) 때 부름 → 자리가 있으면 신호 적기 · 넘길 차례면 양보 · 자리가 없으면(신호가 끊겼던 기기) 새로 받기 */
+  function seatKeep(doc, who, now, o, rnd) { o = o || {}; const c = cfgOf(doc); const me = ((doc && doc.dev) || {})[who];
+    if (!isLive(me, now, c)) return seatAsk(doc, who, now, o, rnd);
+    const pri = Number.isFinite(+o.pri) && o.pri !== null ? +o.pri : priOf(me, who);
+    if (seatYield(doc, now) === who) { const V = seatView(doc, now); const until = now + between(c.retrySec, rnd);
+      return { ok: false, kind: 'yield', until, n: V.live.length - 1, max: V.max, why: V.live.length > V.max ? `알라딘 판매자 로그인 기기가 ${V.live.length}대로 ${V.max}대를 넘음 — 우선순위가 가장 낮은 이 기기(${who})가 로그인 일을 멈추고 자리를 넘김(로그아웃 단추는 누르지 않음)` : `${V.wait[0].who}(우선순위 더 높음)가 자리를 기다림 — 받침인 ${who}가 로그인 일을 멈추고 자리를 넘김(로그아웃 단추는 누르지 않음)`,
+        patch: { dev: { [who]: { in: false, at: now, how: '양보', pri, yield: true } } } }; }
+    return { ok: true, keep: true, n: seatView(doc, now).live.length, max: c.maxDev, patch: { dev: { [who]: { in: true, at: now, pri, use: +o.use || now, yield: false } } } }; }
   /* 지금 이 기기(who)가 새 로그인을 해도 되나 → { ok:true, cfg } | { ok:false, kind:'hold'|'retry'|'dcwait', until, why }
-   *  o.force = 사람이 직접 누른 시험(다시 시도 때만 건너뜀) · o.dc = 데이터센터(클라우드) — ④ 규칙 */
+   *  o.force = 사람이 직접 누른 시험(다시 시도 때만 건너뜀 — 🪑 자리는 건너뛰지 않음) · o.dc = 데이터센터(클라우드) — ④ 규칙 · o.pri = 🪑 자리 우선순위 · o.seat === false = 자리를 보지 않음(시험용)
+   *  ⑤ 🪑 자리: 위가 모두 통과하면 판매자 로그인 자리를 받음(seatAsk) — 받으면 { ok:true, cfg, patch(자리 적기) } · 꽉 찼으면 { ok:false, kind:'seat', until, why, patch(기다림 적기) } */
   function decide(doc, who, now, o) { o = o || {}; const c = cfgOf(doc);
     if (doc && +doc.holdUntil > now) return { ok: false, kind: 'hold', until: +doc.holdUntil, why: doc.holdWhy || '정범님이 켠 계정 새 로그인 쉼' };
     const nx = +((doc && doc.next) || {})[who] || 0; if (!o.force && nx > now) return { ok: false, kind: 'retry', until: nx, why: `${who} 지난 시도가 안 됨 — 다음 시도 ${kstHm(nx)}(1~10분 무작위)` };
     if (o.dc && c.dcWaitMin > 0) { const T = (doc && doc.tries) || []; let bi = -1; for (let i = T.length - 1; i >= 0; i--) if (T[i] && T[i].blocked && now - (+T[i].at || 0) < c.dcWaitMin * 60e3) { bi = i; break; }
       if (bi >= 0 && !T.slice(bi + 1).some((t) => t && t.ok && t.who !== who)) return { ok: false, kind: 'dcwait', until: +T[bi].at + c.dcWaitMin * 60e3, why: `${kstHm(+T[bi].at)} ${T[bi].who}에 42FB 경고 뒤 아직 어느 PC도 새 로그인에 성공하지 않음 — 데이터센터(클라우드)는 PC가 먼저 성공할 때까지 기다림` }; }
+    if (o.seat !== false) { const s = seatAsk(doc, who, now, o, o.rnd); if (!s.ok) return s; return { ok: true, cfg: c, patch: s.patch, seat: { n: s.n, max: s.max } }; }
     return { ok: true, cfg: c }; }
   /* 로그인 한 번 결과 → 계정 문서 고침(patch)과 하루 요약 고침(day) — r = { ok, how, why, blocked, net, credBad } · rnd = 0~1 무작위(다음 시도 간격) */
   function record(doc, who, now, r, rnd) { const c = cfgOf(doc); const net = r.net || ((doc && doc.net) || {})[who] || null; const code = r.ok ? null : codeOf(r.why);
     const t = { at: now, who, net, ok: !!r.ok, how: r.how || null, why: r.why ? String(r.why).slice(0, 200) : null, code }; if (r.blocked) t.blocked = true; if (r.credBad) t.credBad = true;
     const tries = [...((doc && doc.tries) || []), t].slice(-c.keep); const nextAt = r.ok ? 0 : r.credBad && c.credBadMin > 0 ? now + c.credBadMin * 60e3 : now + between(c.retrySec, rnd);
     const p = { tries, lastTry: t, next: { [who]: nextAt } };
+    if (!r.ok) p.dev = { [who]: { in: false, at: now, how: r.how || 'fail' } }; /* 🪑 실패하면 받아 둔 자리를 바로 풀어 줌(다른 기기가 기다리지 않게) */
     if (doc && doc.lock) p.lock = null; /* 예전 판(차례 표)이 남긴 것 정리 */
     const bk = `${who}·${net || '?'}`; const B = ((doc && doc.blk) || {})[bk]; let closed = null;
     if (r.blocked) p.blk = { [bk]: B && !B.okAt ? { ...B, last: now, n: (+B.n || 0) + 1 } : { first: now, last: now, n: 1, okAt: null } };
@@ -165,7 +207,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (o.scmNeedsLogout && !hasLogout) return 'suspect';
     return false; }
   const net2 = (ip) => { const m = String(ip || '').match(/^(\d{1,3})\.(\d{1,3})\./); return m ? `${m[1]}.${m[2]}` : null; };
-  return { DEF, cfgOf, kstDay, kstHm, between, isBlock, codeOf, decide, record, judge, net2, LOGIN_URL, AUTH_URL, SCM_URL };
+  return { DEF, cfgOf, kstDay, kstHm, between, isBlock, codeOf, decide, record, judge, net2, LOGIN_URL, AUTH_URL, SCM_URL, PRI, isLive, seatView, seatAsk, seatYield, seatKeep };
 })();
 /* ═════════════ (정범님 10/26) 🔑 알라딘 로그인 — 사람처럼 (계정 단위 · 모든 PC·클라우드가 같은 규칙 __rnLoginRule) ═════════════
  * 예전(~1.89.104): 고객·출고 리더가 공개 상품 화면(머리에 로그인 칸이 있고 제목이 '샵매니저'가 아님)을 '로그인 풀림'으로 잘못 보고, 실제로는 로그인돼 있는데
@@ -191,18 +233,38 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const REF = (db) => db.collection('app_settings').doc('aladin_login');
   const deep = (a, b) => { const o = { ...(a || {}) }; for (const [k, v] of Object.entries(b || {})) o[k] = v && typeof v === 'object' && !Array.isArray(v) && o[k] && typeof o[k] === 'object' && !Array.isArray(o[k]) ? { ...o[k], ...v } : v; return o; };
   async function tx(fn) { const db = fs();
-    if (!db) { const d = G('rnu-login-acct', {}) || {}; const r = fn(d) || {}; if (r.patch) S('rnu-login-acct', deep(d, r.patch)); return { ...r, local: true }; }
-    let out = null; await db.runTransaction(async (t) => { out = null; const sn = await t.get(REF(db)); const d = sn.exists ? sn.data() || {} : {}; out = fn(d) || {}; if (out.patch) t.set(REF(db), out.patch, { merge: true }); }); return out; }
+    if (!db) { const d = G('rnu-login-acct', {}) || {}; CFG = RULE.cfgOf(d); const r = fn(d) || {}; if (r.patch) S('rnu-login-acct', deep(d, r.patch)); return { ...r, local: true }; }
+    let out = null; await db.runTransaction(async (t) => { out = null; const sn = await t.get(REF(db)); const d = sn.exists ? sn.data() || {} : {}; CFG = RULE.cfgOf(d); out = fn(d) || {}; if (out.patch) t.set(REF(db), out.patch, { merge: true }); }); return out; }
   /* 하루 요약(부지런한 통계) — app_settings/aladin_login/days/{KST 날짜} · 기기·망·방법·결과·경고 코드별 수 + 닫힌 막힘(42FB가 처음 뜬 때 → 그 기기가 다시 성공한 때) */
   function dayPut(day) { const db = fs(); if (!db || !day) return; try { const FV = firebase.firestore.FieldValue; REF(db).collection('days').doc(day.id).set({ c: { [day.key]: FV.increment(1) }, at: Date.now(), ...(day.closed ? { eps: FV.arrayUnion(...day.closed) } : {}) }, { merge: true }).catch(() => {}); } catch (e) {} }
   /* 이 PC의 로그인 상태(모든 탭 공유) — { in: 참/거짓, at, until(다시 해 볼 수 있는 때), why } */
   const ST = 'rnu-login-st'; const st = () => G(ST, {}) || {};
-  let devAt = 0, devIn = null; const inCb = [];
-  function devPut(inn, how) { const now = Date.now(); if (devIn === inn && now - devAt < 30 * 60e3) return; devIn = inn; devAt = now; const db = fs(); const v = { dev: { [who()]: { in: inn, at: now, how: how || null } } }; if (db) REF(db).set(v, { merge: true }).catch(() => {}); else S('rnu-login-acct', deep(G('rnu-login-acct', {}) || {}, v)); }
-  function markIn(how) { const s = st(); S(ST, { in: true, at: Date.now(), how: how || null }); devPut(true, how); if (s.in === false) { L('info', `🔑 알라딘 로그인 확인됨(${how || '확인'}) — 로그인이 필요한 일을 다시 받음`); inCb.forEach((f) => { try { f(); } catch (e) {} }); } }
-  function markOut(until, why) { S(ST, { in: false, at: Date.now(), until: until || 0, why: why || null }); devPut(false, 'out'); }
+  /* 🪑 판매자 로그인 자리(정범님 10/27 · 약관 제19조 — 규칙 __rnLoginRule.seatAsk 위 설명): 이 PC가 로그인 일을 하는 동안만 10~15분마다 신호(dev[이 PC] · 트랜잭션 seatKeep)
+   *  · 신호 = 샵매니저 화면을 로그인된 채로 읽을 때(suspect가 로그아웃 링크를 봄 → seen) · 사람이 이 PC 알라딘 화면을 누를 때 · 다시 로그인했을 때
+   *  · 자리가 없거나 넘길 차례면 이 PC 상태를 '자리 기다림'(in 거짓 · seat)으로 → 로그인 일은 받지 않고(ready 거짓) 샵매니저를 읽으려던 일은 '로그인 쉼'으로 그 일만 건너뜀 → 할 일이 남아 있으면 1~10분 무작위 뒤 다시 자리를 물음
+   *  · 로그아웃 단추는 누르지 않음(그것도 사람답지 않은 되풀이가 될 수 있음) — 세션은 그대로 두고 쓰지 않을 뿐 */
+  const SEAT = 'rnu-login-seat', USE = 'rnu-login-use', HUM = 'rnu-login-human', SHIP = 'rnu-login-ship'; let CFG = RULE.cfgOf(null);
+  const ago = (k) => Date.now() - (+G(k, 0) || 0);
+  const myPri = () => (ago(HUM) < CFG.liveMin * 60e3 ? RULE.PRI.human : ago(SHIP) < CFG.liveMin * 60e3 ? RULE.PRI.ship : RULE.PRI.pc);
+  const seatAt = () => +((G(SEAT, null) || {}).at) || 0; const seatFresh = () => Date.now() - seatAt() < CFG.liveMin * 60e3 && !st().seat;
+  let devAt = 0, devIn = null, beatGap = 0; const inCb = [];
+  function devPut(inn, how, extra) { const now = Date.now(); if (devIn === inn && now - devAt < beatGap && !extra) return; devIn = inn; devAt = now; beatGap = RULE.between(CFG.beatSec); const db = fs(); const v = { dev: { [who()]: { in: inn, at: now, how: how || null, pri: myPri(), use: +G(USE, 0) || now, yield: false, ...(extra || {}) } } }; if (inn) S(SEAT, { at: now }); if (db) REF(db).set(v, { merge: true }).catch(() => {}); else S('rnu-login-acct', deep(G('rnu-login-acct', {}) || {}, v)); }
+  /* 자리 지키기·받기(트랜잭션) → 참(자리 있음) | 거짓(자리 기다림·양보 — 이 PC 상태를 '자리 기다림'으로) */
+  let holding = null;
+  function hold(why) { if (holding) return holding; holding = hold0(why).finally(() => { holding = null; }); return holding; }
+  async function hold0(why) { const me = who(); if (PUB()) return false; const out = await tx((doc) => RULE.seatKeep(doc, me, Date.now(), { pri: myPri(), use: +G(USE, 0) || Date.now() }, Math.random())).catch(() => null);
+    if (!out) return st().seat ? false : true; /* 계정 문서를 못 읽음 — 지금 상태 그대로 */
+    if (out.ok) { devIn = true; devAt = Date.now(); beatGap = RULE.between(CFG.beatSec); S(SEAT, { at: Date.now() }); const s = st(); if (s.seat) { S(ST, { in: true, at: Date.now(), how: '자리 받음' }); L('info', `🪑 알라딘 판매자 로그인 자리를 받음(${out.n}/${out.max}대) — 로그인이 필요한 일을 다시 함`); inCb.forEach((f) => { try { f(); } catch (e) {} }); } return true; }
+    devIn = false; devAt = Date.now(); S(SEAT, null); S(ST, { in: false, at: Date.now(), until: out.until, why: out.why, seat: out.kind });
+    L('warn', `🪑 ${out.why} — 로그인이 필요한 일은 받지 않음(로그인된 다른 기기가 맡음) · 이 PC에 로그인 일이 남아 있으면 ${RULE.kstHm(out.until)}에 다시 자리를 물음${why ? ' · ' + why : ''}`); return false; }
+  /* 로그인 일을 했다는 표시(1분에 한 번만 저장) — 신호 때가 되면 자리 지키기 */
+  let useAt = 0;
+  function seen() { if (PUB()) return; const now = Date.now(); if (now - useAt > 60e3) { useAt = now; S(USE, now); } const s = st(); if (s.in === false) return; /* 풀림·자리 기다림은 다시 로그인 흐름이 맡음 */
+    if (now - seatAt() < (beatGap || CFG.beatSec[0] * 1000)) return; S(SEAT, { at: now }); /* 이 PC 여러 탭 중 한 번만 */ hold().catch(() => {}); }
+  function markIn(how) { const s = st(); S(ST, { in: true, at: Date.now(), how: how || null }); if (seatFresh()) devPut(true, how); else hold(how).catch(() => {}); /* 자리 신호가 30분 넘게 없던 PC는 자리부터 */ if (s.in === false) { L('info', `🔑 알라딘 로그인 확인됨(${how || '확인'}) — 로그인이 필요한 일을 다시 받음`); inCb.forEach((f) => { try { f(); } catch (e) {} }); } }
+  function markOut(until, why) { const s0 = st(); if (s0.seat && +s0.until > Date.now()) return; S(ST, { in: false, at: Date.now(), until: until || 0, why: why || null }); S(SEAT, null); devPut(false, 'out'); }
   /* 로그인이 필요한 일을 지금 받아도 되나(맡긴 일 pcCan) — 로그인돼 있거나(모름 포함), 풀렸어도 다시 해 볼 때가 됐으면 참 */
-  const ready = () => { if (PUB()) return false; const s = st(); return s.in !== false || Date.now() >= (+s.until || 0); };
+  const ready = () => { if (PUB()) return false; const s = st(); if (s.seat) return false; /* 🪑 자리 기다림 — 자리를 받을 때까지(다시 로그인 흐름 relogin이 물음) */ return s.in !== false || Date.now() >= (+s.until || 0); };
   /* 잘못 본 화면 기억 — 같은 화면 꼴(주소 길)을 잘못 보면 세고, 3번이면 그 화면은 로그인 판단에서 뺌(7일 · 이 PC) */
   const MR = 'rn-login-misread'; const recent = new Map();
   const pkey = (u) => { try { return new URL(String(u), 'https://www.aladin.co.kr').pathname.toLowerCase(); } catch (e) { return String(u || '').split('?')[0].toLowerCase(); } };
@@ -211,7 +273,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     L('warn', `🔑 로그인 풀림으로 잘못 봄(${k} · ${m[k].n}번째) — 샵매니저는 로그인돼 있어 다시 로그인하지 않고 그 요청만 다시${m[k].n >= 3 ? ' · 이 화면은 이제 로그인 판단에서 뺌(7일)' : ''}`); }
   /* ① 의심 판단 — 'suspect' | 'gate'(그 화면만 로그인 필요) | false */
   function suspect(url, finalUrl, doc, o) { if (!doc) return false; let hasPw = false, hasOut = false; try { hasPw = !!doc.querySelector('input[type="password"]'); hasOut = !!doc.querySelector('a[href*="wC2Cuser_logout"]'); } catch (e) {}
-    const j = RULE.judge(url, finalUrl, hasPw, hasOut, doc.title || '', o); if (j === 'suspect' && misreadSkip(url)) return false; return j; }
+    const j = RULE.judge(url, finalUrl, hasPw, hasOut, doc.title || '', o); if (j === 'suspect' && misreadSkip(url)) return false;
+    if (!j && (RULE.SCM_URL.test(String(url || '')) || RULE.AUTH_URL.test(String(url || '')))) { if (st().seat && !PUB()) return 'suspect'; /* 🪑 자리 기다림 중 — 로그인 일은 '로그인 쉼'으로(그 일만 건너뜀 · 다시 로그인 흐름이 자리를 물음) */ if (hasOut) seen(); }
+    return j; }
   /* 일반 확인(샵매니저 주문 화면 한 번) — 모듈이 자기 확인 함수를 주면 그것을 씀 */
   async function checkIn() { try { const AL = globalThis.ReadnowAladin; const r = await fetch('https://www.aladin.co.kr/scm/worders.aspx?searchType=1&limitDate=1', { credentials: 'include' }); const h = await r.text(); const d = new DOMParser().parseFromString(h, 'text/html'); return r.ok && !(AL ? AL.looksLoggedOut(r.url, d, { titleOk: /샵매니저/ }) : /\/login\/|wlogin/i.test(r.url)); } catch (e) { return false; } }
   /* ② 의심이면 한 번 더 확인 → 'misread'(로그인돼 있음 — 잘못 본 것) | 'out'(진짜 풀림) */
@@ -223,14 +287,18 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   function relogin(o) { if (inFlight) return inFlight.then(() => true, (e) => { throw waitErr(o, { why: (e && e.why0) || '같은 탭의 다른 일이 방금 로그인하지 못함', until: (e && e.until) || +st().until || 0, kind: (e && e.kind) || 'local' }); }); inFlight = relogin0(o).finally(() => { inFlight = null; }); return inFlight; }
   async function relogin0(o) { const me = who(); const isIn = o.isLoggedIn || checkIn; const say = (m) => { try { o.say && o.say(m); } catch (e) {} };
     if (PUB()) throw waitErr(o, { why: '🛡 로거는 알라딘에 로그인하지 않음', kind: 'pub' });
-    { const s0 = st(); if (!o.force && s0.in === false && Date.now() < (+s0.until || 0)) throw waitErr(o, { why: s0.why || '다음 시도를 기다림', until: +s0.until, kind: 'retry' }); }
+    { const s0 = st(); if (!o.force && s0.in === false && Date.now() < (+s0.until || 0)) throw waitErr(o, { why: s0.why || '다음 시도를 기다림', until: +s0.until, kind: s0.seat ? 'seat' : 'retry' }); }
+    /* 🪑 로그인 일을 다시 하기 전에 판매자 로그인 자리부터(자리 기다림이었거나 30분 넘게 자리 신호가 없던 PC) — 세션이 살아 있어도 자리 없이 쓰지 않음 */
+    if (!seatFresh() && !(await hold('다시 로그인 전'))) { const s1 = st(); throw waitErr(o, { why: s1.why || '판매자 로그인 자리 기다림', until: +s1.until || 0, kind: 'seat' }); }
     if (await isIn()) { markIn('확인'); return true; }
     const cant = o.canLogin ? o.canLogin() : null; if (cant) { markOut(Date.now() + 10 * 60e3, cant); throw waitErr(o, { why: cant, until: Date.now() + 10 * 60e3, kind: 'nocred' }); }
     /* 같은 PC의 다른 탭이 로그인하는 중이면 그 결과를 기다림(각 탭이 따로 로그인하지 않게) */
     for (let i = 0; i < 40; i++) { const b = G('rnu-login-busy', null); if (!b || Date.now() - b.at > 4 * 60e3 || b.tab === window.__rnTab) break; say('같은 PC의 다른 탭이 알라딘에 로그인하는 중 — 기다림'); await sleep(6000); if (await isIn()) { markIn('다른 탭'); return true; } if (o.stopped && o.stopped()) throw waitErr(o, { why: '멈춤', kind: 'stop' }); }
     /* 이 기기가 지금 해도 되나 — 기기마다 각자(계정 전체 차례 없음 · 정범님 10/26 23:53): 이 기기의 다음 시도 때 · 정범님이 켠 계정 쉼만 봄 */
-    const d = await tx((doc) => RULE.decide(doc, me, Date.now(), { force: o.force })).catch((e) => ({ ok: true, why: '계정 상태 문서를 못 읽음: ' + (e.code || e.message) })); /* 문서를 못 읽어도 이 PC 저장소의 다음 시도 때(위 s0)는 지킴 */
+    const d = await tx((doc) => RULE.decide(doc, me, Date.now(), { force: o.force, pri: myPri(), rnd: Math.random() })).catch((e) => ({ ok: true, why: '계정 상태 문서를 못 읽음: ' + (e.code || e.message) })); /* 문서를 못 읽어도 이 PC 저장소의 다음 시도 때(위 s0)는 지킴 */
+    if (!d.ok && d.kind === 'seat') { S(SEAT, null); devIn = false; devAt = Date.now(); S(ST, { in: false, at: Date.now(), until: d.until, why: d.why, seat: 'seat' }); L('warn', `🪑 ${d.why} — 세션이 풀렸지만 다시 로그인하지 않음(자리를 넘김) · ${RULE.kstHm(d.until)}에 다시 물음`); throw waitErr(o, d); }
     if (!d.ok) { markOut(d.until, d.why); L('warn', `🔑 ${d.why}`); throw waitErr(o, d); }
+    if (d.seat) { S(SEAT, { at: Date.now() }); devIn = true; devAt = Date.now(); }
     const C0 = d.cfg || RULE.cfgOf(null);
     /* 알아차리는 시간 — 사람이 '어, 풀렸네' 하고 로그인하러 가는 만큼(5~20초 무작위) */
     const w = RULE.between(C0.noticeSec); say(`알라딘 로그인이 풀림 — ${Math.round(w / 1000)}초 뒤 ${o.how === 'naver' ? '네이버로' : '아이디로'} 한 번 로그인`); L('info', `🔑 로그인이 풀린 것을 확인 — ${Math.round(w / 1000)}초 뒤 ${o.how === 'naver' ? '네이버(로그인 상태 유지)' : '아이디·비밀번호'}로 한 번 로그인`);
@@ -260,8 +328,15 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const onAlert = (v) => { if (!v || !RULE.isBlock(v.msg) || Date.now() - (+v.at || 0) > 5 * 60e3 || !fs()) return; const b = G('rnu-login-busy', null); if (b && Date.now() - b.at < 4 * 60e3) return; let R = null; tx((doc) => { if ((doc.tries || []).some((t) => t && t.who === who() && Math.abs((+t.at || 0) - +v.at) < 60e3)) return {}; R = RULE.record(doc, who(), +v.at, { ok: false, how: '사람', why: `알라딘 경고: ${v.msg}`, blocked: true }, Math.random()); return { patch: R.patch }; }).then(() => { if (R) dayPut(R.day); }).catch(() => {}); };
   try { if (typeof GM_addValueChangeListener === 'function' && !/login/i.test(location.pathname) && window.top === window) GM_addValueChangeListener('rn-login-alert', (k, o, n, remote) => { if (remote) onAlert(n); }); } catch (e) {}
   /* 풀린 동안 10분마다 한 번 가볍게 확인(이 PC 모든 탭 중 하나만) — 사람이 직접 로그인했거나 세션이 돌아오면 곧 '로그인됨'으로 */
-  setInterval(() => { try { if (PUB() || window.top !== window || !/\/scm\//i.test(location.pathname)) return; const s = st(); if (s.in !== false) return; const c = G('rnu-login-chk', 0); if (Date.now() - c < 10 * 60e3) return; S('rnu-login-chk', Date.now()); checkIn().then((ok) => { if (ok) markIn('10분 확인'); }); } catch (e) {} }, 60e3);
-  window.__rnLoginGov = { RULE, suspect, verify, relogin, ready, markIn, markOut, state: st, misreadSkip,
+  setInterval(() => { try { if (PUB() || window.top !== window || !/\/scm\//i.test(location.pathname)) return; const s = st(); if (s.in !== false || s.seat) return; /* 🪑 자리 기다림 중엔 확인도 하지 않음(계정을 쓰지 않음) */ const c = G('rnu-login-chk', 0); if (Date.now() - c < 10 * 60e3) return; S('rnu-login-chk', Date.now()); checkIn().then((ok) => { if (ok) markIn('10분 확인'); }); } catch (e) {} }, 60e3);
+  /* 🪑 사람이 이 PC 알라딘 화면을 누름 = 우선순위 '사람'(30분) · 샵매니저 화면이 로그인된 채로 열림 = 로그인 일을 함(신호) */
+  const human = () => { if (ago(HUM) > 60e3) S(HUM, Date.now()); };
+  if (/(^|\.)aladin\.co\.kr$/i.test(location.hostname) && !PUB() && window.top === window) {
+    try { const on = (e) => { if (e && e.isTrusted) human(); }; addEventListener('pointerdown', on, true); addEventListener('keydown', on, true); } catch (e) {}
+    try { if (RULE.SCM_URL.test(location.pathname) && document.querySelector && document.querySelector('a[href*="wC2Cuser_logout"]')) setTimeout(() => { try { seen(); } catch (e) {} }, 3000 + Math.random() * 7000); } catch (e) {}
+  }
+  window.__rnLoginGov = { RULE, suspect, verify, relogin, ready, markIn, markOut, state: st, misreadSkip, hold, seen,
+    human, ship: () => { if (ago(SHIP) > 60e3) S(SHIP, Date.now()); }, pri: myPri,
     provide: (fn) => { provider = fn; }, need: (k, fn) => { if (fn) needs.set(k, fn); else needs.delete(k); }, onIn: (fn) => inCb.push(fn),
     /* 맡긴 일 종류가 알라딘 로그인이 필요한가 — 노선표 lane 'scm' + 내 계정·팔기 장바구니 */
     needs: (type, kind) => !!((kind && kind.lane === 'scm') || type === 'aladinBuy' || type === 'c2bAdd') };
