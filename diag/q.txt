@@ -1,2 +1,6 @@
-logs=1&pc=LOGGER&from=202610270100
-# 130914686
+@health&hours=4
+perf=400
+logs=1&pc=LOGGER&from=202610271815
+doc=prd_jobs/autoSched
+doc=prd_jobs/benchForce
+# 2333026113
