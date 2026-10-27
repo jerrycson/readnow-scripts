@@ -1,1 +1,5 @@
-@kpin kpin/aud_20261026-231724.json
+doc=app_settings/aladin_login
+doc=app_settings/cloud
+doc=prd_jobs/pcBeat
+doc=app_settings/ship_auto
+# 9925
