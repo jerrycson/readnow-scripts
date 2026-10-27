@@ -1,2 +1,2 @@
-doc=app_settings/aladin_login
-# 572915157
+@health&hours=4
+# 14094994
