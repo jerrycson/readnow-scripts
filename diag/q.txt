@@ -1,4 +1,2 @@
-sizes=prd_market_nobook,prd_seen,shp_cmds,prd_handoff&n=300
-doc=prd_system/dataBackup,app_settings/secure_vault_rep,app_settings/secure_vault_cfg
-cmds=regLookup&n=2
-# 815811890
+doc=app_settings/secure_vault_status,app_settings/secure_vault_pub
+# 3211418447
