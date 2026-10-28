@@ -45,7 +45,6 @@ jobs:
         run: |
           mkdir -p ../../dist-friend
           cp src-tauri/target/release/bundle/nsis/*-setup.exe "../../dist-friend/readnow-friend_${FV}_x64-setup.exe"
-          cp src-tauri/target/release/bundle/msi/*.msi "../../dist-friend/readnow-friend_${FV}_x64.msi"
           ls -la ../../dist-friend
       - uses: actions/upload-artifact@v4
         with: { name: 'readnow-friend-windows-${{ env.FV }}', path: dist-friend/* }

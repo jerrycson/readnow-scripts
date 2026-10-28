@@ -4,26 +4,58 @@
   "mainBinaryName": "readnow-friend",
   "version": "0.1.0",
   "identifier": "kr.readnow.friend",
-  "build": { "frontendDist": "../dist" },
+  "build": {
+    "frontendDist": "../dist"
+  },
   "app": {
     "withGlobalTauri": false,
     "windows": [],
-    "security": { "csp": null }
+    "security": {
+      "csp": null
+    }
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
+    "targets": [
+      "nsis"
+    ],
     "publisher": "리드나우",
     "shortDescription": "리드나우 책방 친구",
     "longDescription": "리드나우 웹앱의 🐾 책방 친구 캐릭터를 바탕화면 맨 위에 띄웁니다. 캐릭터 화면은 GitHub Pages에서 받아 늘 최신입니다.",
-    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
     "windows": {
-      "webviewInstallMode": { "type": "downloadBootstrapper" },
-      "nsis": { "installMode": "currentUser", "languages": ["Korean", "English"], "displayLanguageSelector": false },
-      "wix": { "language": ["ko-KR", "en-US"] }
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": [
+          "Korean",
+          "English"
+        ],
+        "displayLanguageSelector": false
+      },
+      "wix": {
+        "language": [
+          "ko-KR",
+          "en-US"
+        ]
+      }
     }
   },
   "plugins": {
-    "deep-link": { "desktop": { "schemes": ["readnow-friend"] } }
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "readnow-friend"
+        ]
+      }
+    }
   }
 }
