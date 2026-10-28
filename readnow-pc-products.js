@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.136의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.137의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.136' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.136', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.137' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.137', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -4081,7 +4081,12 @@
   let schedDrawT = 0, schedDrawDue = false, schedVis = true, schedIO = null;
   /* (1.89.134 · 🔬 정밀 점검) ⏰ 패널이 화면에 보이지 않으면(접힘·다른 칸·스크롤 밖) 그리지 않음 — 로거·사무실 PC는 알라딘 화면이 늘 앞이라 document.hidden이 거의 안 먹어, 회차 문서 스냅숏마다(시간당 80~100번) 패널 전체를 다시 그려 PC마다 시간당 수십 초 멈추고 HTML 쓰레기가 쌓였음(10/28 실측 HOME 4시간 340번·272초). IntersectionObserver로 '보일 때만' 그리고, 안 보이는 동안 쌓인 변화는 다시 보일 때 한 번 그림. */
   function schedSeeEl() { if (schedIO || typeof IntersectionObserver === 'undefined') return; const el = globalThis.__rnById && globalThis.__rnById('rnpSched'); if (!el) return; try { schedIO = new IntersectionObserver((ents) => { schedVis = ents[ents.length - 1].isIntersecting; if (schedVis && schedDrawDue) schedDrawSoon(); }); schedIO.observe(el); } catch (e) { schedVis = true; } }
-  function schedDrawSoon() { schedSeeEl(); if ((typeof document !== 'undefined' && document.hidden) || !schedVis) { schedDrawDue = true; return; } if (schedDrawT) return; schedDrawT = setTimeout(() => { schedDrawT = 0; schedDrawDue = false; try { schedDraw(); } catch (e) { console.warn('⏰ 그리기 실패', e); } }, 3000); }
+  /* (1.89.136 4시간 점검 · 🧠 근원) 사람이 10분 넘게 이 탭을 만지지 않았으면 ⏰ 패널은 5분에 한 번만 다시 그림 — 10/29 실측 LOGGER: 한국 날짜가 바뀐 00:00 뒤 dayPlan(남은 하루 칸 전부 미리 셈)이 커져
+   *  한 번 그리기 0.3초 → 2.3~2.7초 · 5분에 1~10번(시간당 약 2분 화면 막힘 · 5분 긴 작업 최대 23.7초 · 알라딘 일 하는 탭). 로거·사무실 PC는 대부분 사람이 안 보는데 패널이 열려 있어(1.89.134 '보일 때만'이 안 걸림) 회차 문서가 바뀔 때마다 그렸음.
+   *  사람이 누르거나·키를 치거나·마우스를 움직이면 바로(3초) 그림 — 보이는 내용·자료 그대로, 사람이 없을 때 패널이 최대 5분 늦을 뿐 */
+  let schedDrawSlow = false, schedMoveAt = 0; const schedIdle = () => !((window.__rnHuman && window.__rnHuman(10 * 60e3)) || Date.now() - schedMoveAt < 10 * 60e3);
+  function schedDrawSoon() { schedSeeEl(); if ((typeof document !== 'undefined' && document.hidden) || !schedVis) { schedDrawDue = true; return; } if (schedDrawT) return; const slow = schedIdle(); schedDrawSlow = slow; schedDrawDue = true; schedDrawT = setTimeout(() => { schedDrawT = 0; schedDrawSlow = false; schedDrawDue = false; try { schedDraw(); } catch (e) { console.warn('⏰ 그리기 실패', e); } }, slow ? 5 * 60e3 : 3000); }
+  if (typeof document !== 'undefined') { let mvAt = 0; const wake = () => { if (!schedDrawSlow || !schedDrawT) return; clearTimeout(schedDrawT); schedDrawT = 0; schedDrawSlow = false; schedDrawSoon(); }; document.addEventListener('pointermove', () => { const t = Date.now(); if (t - mvAt < 5000) return; mvAt = t; schedMoveAt = t; wake(); }, { capture: true, passive: true }); document.addEventListener('pointerdown', () => setTimeout(wake, 0), true); document.addEventListener('keydown', () => setTimeout(wake, 0), true); }
   if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden && schedDrawDue) schedDrawSoon(); });
   function schedDraw() { const el = globalThis.__rnById('rnpSched'); if (!el || !AS) return; const S0 = SCHED || { on: false }; const { day } = kstNow(); schedDrawDay = day; const slots = AS.slotsOf(S0); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
     const plan = AS.dayPlan(S0, SCHED_RUNS, { now: Date.now() }, asAvgMs);
