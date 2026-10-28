@@ -4,7 +4,9 @@
 
 | 판 | 날짜 | 지문 | 보기 |
 |---|---|---|---|
-| v41 (지금) | 2026-10-28 | `b1cb54fb48679f9d` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v41_2026-10-28.html) · [파일](v41_2026-10-28.html) |
+| v43 (지금) | 2026-10-28 | `cdbf77f3348ea9bf` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v43_2026-10-28.html) · [파일](v43_2026-10-28.html) |
+| v42 | 2026-10-28 | `864712095e562a42` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v42_2026-10-28.html) · [파일](v42_2026-10-28.html) |
+| v41 | 2026-10-28 | `b1cb54fb48679f9d` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v41_2026-10-28.html) · [파일](v41_2026-10-28.html) |
 | v40 | 2026-10-28 | `de9fe558f3e3dc51` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v40_2026-10-28.html) · [파일](v40_2026-10-28.html) |
 | v39 | 2026-10-28 | `955654dc6f9b16a2` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v39_2026-10-28.html) · [파일](v39_2026-10-28.html) |
 | v38 | 2026-10-28 | `8d7c5fe0e9f3d074` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v38_2026-10-28.html) · [파일](v38_2026-10-28.html) |
