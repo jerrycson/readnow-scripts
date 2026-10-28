@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "friend-remote",
+  "description": "GitHub Pages의 책방 친구 화면(friend/)만 프로그램 다리(friend_post)를 부를 수 있음",
+  "windows": ["friend"],
+  "remote": { "urls": ["https://jerrycson.github.io/readnow-scripts/*"] },
+  "permissions": ["allow-friend-post"]
+}

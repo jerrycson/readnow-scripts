@@ -1,0 +1,55 @@
+# 🐾 책방 친구 PC 프로그램(윈도우 · Tauri 2) — friend-v… 꼬리표를 올리면 설치 파일을 만들어 GitHub 판(Release)에 붙임
+#  · 만드는 것: readnow-friend_<판>_x64-setup.exe(권장 · 사용자 폴더에 설치 · 관리자 권한 없이) · readnow-friend_<판>_x64.msi
+#  · 프로그램 안 '업데이트 확인'이 friend-v… 판의 …-setup.exe 를 찾아 조용히 설치함 — 이름 끝(-setup.exe)을 바꾸지 말 것
+#  · 손으로: Actions → '책방 친구 PC 프로그램' → Run workflow(꼬리표 없이 돌리면 만들기만 · 판에 붙이지 않음 — 결과는 Artifacts)
+name: 책방 친구 PC 프로그램 (Windows)
+on:
+  push:
+    tags: ['friend-v*']
+    branches: [main]
+    paths: ['friend-app/**', '.github/workflows/friend-*.yml']  # (10/28) 껍데기를 고쳐 올리면 저절로 새 판(꼬리표 없이도 · 판 번호는 tauri.conf.json)
+  workflow_dispatch:
+permissions: { contents: write }
+concurrency: { group: 'friend-release-${{ github.ref }}', cancel-in-progress: false }  # 안드로이드 작업과 같은 판에 차례로 붙임
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults: { run: { working-directory: friend-app/desktop } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: 'friend-app/desktop/src-tauri -> target' }
+      - name: 판 번호 맞추기 (꼬리표 friend-v1.2.3 → Cargo.toml · tauri.conf.json · package.json)
+        shell: bash
+        run: |
+          V="${GITHUB_REF_NAME#friend-v}"; if [[ ! "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then V=$(node -p "require('./src-tauri/tauri.conf.json').version"); fi
+          echo "FV=$V" >> "$GITHUB_ENV"
+          node -e "const fs=require('fs');const v=process.argv[1];for(const f of ['src-tauri/tauri.conf.json','package.json']){const j=JSON.parse(fs.readFileSync(f,'utf8'));j.version=v;fs.writeFileSync(f,JSON.stringify(j,null,2))}const c=fs.readFileSync('src-tauri/Cargo.toml','utf8').replace(/^version = \".*\"/m,'version = \"'+v+'\"');fs.writeFileSync('src-tauri/Cargo.toml',c)" "$V"
+      - run: npm install --no-audit --no-fund
+      - name: 만들기 (tauri build — NSIS · MSI)
+        run: npx tauri build
+      - name: 파일 이름 정리
+        shell: bash
+        run: |
+          mkdir -p ../../dist-friend
+          cp src-tauri/target/release/bundle/nsis/*-setup.exe "../../dist-friend/readnow-friend_${FV}_x64-setup.exe"
+          cp src-tauri/target/release/bundle/msi/*.msi "../../dist-friend/readnow-friend_${FV}_x64.msi"
+          ls -la ../../dist-friend
+      - uses: actions/upload-artifact@v4
+        with: { name: 'readnow-friend-windows-${{ env.FV }}', path: dist-friend/* }
+      - name: GitHub 판에 붙이기
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: 'friend-v${{ env.FV }}'
+          files: dist-friend/*
+          name: '🐾 책방 친구 ${{ env.FV }}'
+          body: |
+            🐾 책방 친구 프로그램 ${{ env.FV }}
+            - 윈도우: readnow-friend_${{ env.FV }}_x64-setup.exe 를 받아 실행(파란 'PC 보호' 창 → 추가 정보 → 실행)
+            - 안드로이드: readnow-friend-${{ env.FV }}.apk (안드로이드 작업이 곧 붙임)
+            - 연결: 그 기기 크롬의 리드나우 웹앱 → ⚙ 설정 → 🐾 책방 친구 → '🖥 이 기기에 책방 친구 프로그램 연결'

@@ -31,7 +31,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.35.56'; // (0.35.28 2시간 점검) 성능 요약에 웹앱 판별 [긴 멈춤 수·합초·힙 최고](byVer) — 고친 판이 실제로 나아졌는지 가름 // (0.35.27 2시간 점검) 숫자 요약에 웹앱 성능 기록 요약(perfSum — 긴 멈춤 합·gcLike·기기·화면별 힙·pSelf 상위·mem top) // (0.35.21 2시간 점검) 상품 변경 기록 내역에 상태 from→to·되풀이 상위 상품 // (0.35.20 2시간 점검) 숫자 요약 who에 상품 변경 기록 내역(출처·PC·바뀐 칸·되풀이) // (0.35.17 2시간 점검) 📈 실패 회차 동안 요약을 못 쓴 책 한 번 다시 셈 // (0.35.16 2시간 점검) 📈 시장 흐름 요약 16→128칸(문서 색인 한도) · 실패 회차가 겹쳐 쌓은 사라진 매물 바로잡음 // (0.35.15 2시간 점검) 📈 시장 흐름 모음 시도 시각·실패 까닭을 상태 문서·숫자 요약에 // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
+const VER = '0.35.57'; // (0.35.28 2시간 점검) 성능 요약에 웹앱 판별 [긴 멈춤 수·합초·힙 최고](byVer) — 고친 판이 실제로 나아졌는지 가름 // (0.35.27 2시간 점검) 숫자 요약에 웹앱 성능 기록 요약(perfSum — 긴 멈춤 합·gcLike·기기·화면별 힙·pSelf 상위·mem top) // (0.35.21 2시간 점검) 상품 변경 기록 내역에 상태 from→to·되풀이 상위 상품 // (0.35.20 2시간 점검) 숫자 요약 who에 상품 변경 기록 내역(출처·PC·바뀐 칸·되풀이) // (0.35.17 2시간 점검) 📈 실패 회차 동안 요약을 못 쓴 책 한 번 다시 셈 // (0.35.16 2시간 점검) 📈 시장 흐름 요약 16→128칸(문서 색인 한도) · 실패 회차가 겹쳐 쌓은 사라진 매물 바로잡음 // (0.35.15 2시간 점검) 📈 시장 흐름 모음 시도 시각·실패 까닭을 상태 문서·숫자 요약에 // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
 // // (0.35.5 격일 정밀 점검) ☁ 공개 확인: 읽기 실패 길도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂 · 상품 조회 HTTP 오류 = 읽기 실패 · deepscan 바꾸는 말 쿼리까지 · 진단 mchg
 // // (0.35.3) deepscan을 화면마다 따로 읽기(한 번에 60초 넘던 것) // (0.35.2) 진단 deepscan — 샵매니저 메뉴 깊이 2까지 · 북스킹 숍 · 우리 상품 화면 · 온라인 중고 목록을 읽기만(GET · 고객 정보 가림)
 // // (0.35.1) 💾 하루 한 번 prd_system/fbCols(모든 최상위 칸 이름 · app_secrets 뺌) — 로거 수집기 자료 보관이 칸 목록으로 씀
@@ -1762,6 +1762,28 @@ async function pptStore(b, u) { const fs = getFirestore(); const sid = String(b.
     const v = d.data(); let photo = null; if (v.photoFs) { const p = await fs.collection('ppt_photo_data').doc(sid).get(); if (p.exists) photo = 'data:image/jpeg;base64,' + p.data().data; } return { ok: true, doc: v, photo }; }
   throw Object.assign(new Error('모르는 일: ' + b.op), { code: 400 }); }
 
+/* ── 🖥 책방 친구 프로그램 연결 (웹앱 ⚙ 🐾 › '이 기기에 책방 친구 프로그램 연결' · 정범님 10/28) ──
+ *  /friend-pair  (로그인 확인 · 허용 계정): 10분짜리 1회용 표(t, 32자) + 손으로 칠 8자리 코드를 만듦 → friend_pair/<sha256(t)>에 {uid·이메일·기기 이름·만료} (표·코드 원문은 저장하지 않음 · 해시만)
+ *  /friend-token (로그인 없음 · 프로그램이 부름): 표나 코드를 내면 한 번만(트랜잭션) → 같은 계정 uid의 Firebase 로그인 열쇠(custom token)와 그 기기 이름을 돌려줌 · 쓴 표는 지우지 않고 usedAt·usedIp(해시)만 덧붙임
+ *  · 계정이 지금도 허용 계정(ALLOW_EMAILS·보안 규칙 staff)인지 다시 확인 · 실패가 잦은 IP는 10분 동안 막음(코드 맞히기 막기)
+ *  · 열쇠 만들기(createCustomToken)는 Cloud Run 서비스 계정이 자기 자신에 '서비스 계정 토큰 생성자' 권한이 있어야 함(처음 한 번 — 설명서) */
+const FRP_TTL = 10 * 60e3, FRP_ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; const FRP_FAIL = new Map();
+const frpH = (k, v) => require('crypto').createHash('sha256').update(k + '|' + String(v)).digest('hex');
+const frpDev = (d) => String(d || '').replace(/[^\w가-힣 .\-()]/g, '').trim().slice(0, 40);
+async function friendPair(u, b) { const dev = frpDev(b.dev); if (!dev) throw Object.assign(new Error('기기 이름이 없음'), { code: 400 }); const cr = require('crypto');
+  const t = cr.randomBytes(24).toString('base64url'); let code = ''; const rb = cr.randomBytes(8); for (let i = 0; i < 8; i++) code += FRP_ABC[rb[i] % FRP_ABC.length];
+  const exp = new Date(Date.now() + FRP_TTL).toISOString(); await C('friend_pair').doc(frpH('fp', t)).set({ uid: u.uid, email: String(u.email || '').toLowerCase(), dev, kind: String(b.kind || '').slice(0, 20) || null, codeH: frpH('fc', code), exp, at: nowIso(), used: false, uploadedAt: FV.serverTimestamp() });
+  return { ok: true, t, code, exp, dev }; }
+async function friendToken(req, b) { const ip = pxIp(req); const f = FRP_FAIL.get(ip); if (f && f.n >= 20 && Date.now() - f.at < 10 * 60e3) throw Object.assign(new Error('잘못된 연결 시도가 너무 많음 — 10분 뒤 다시'), { code: 429 });
+  const bad = (m, code) => { const g = FRP_FAIL.get(ip); FRP_FAIL.set(ip, { n: (g && Date.now() - g.at < 10 * 60e3 ? g.n : 0) + 1, at: Date.now() }); if (FRP_FAIL.size > 5000) FRP_FAIL.clear(); return Object.assign(new Error(m), { code: code || 400 }); };
+  const t = typeof b.t === 'string' && /^[\w-]{20,64}$/.test(b.t) ? b.t : null; const code = typeof b.code === 'string' ? b.code.toUpperCase().replace(/[^A-Z0-9]/g, '') : ''; if (!t && code.length !== 8) throw bad('연결 표나 8자리 코드가 없음');
+  let ref = t ? C('friend_pair').doc(frpH('fp', t)) : null; if (!ref) { const qs = await C('friend_pair').where('codeH', '==', frpH('fc', code)).limit(1).get(); if (qs.empty) throw bad('연결 코드가 맞지 않음(또는 지났음)', 404); ref = qs.docs[0].ref; }
+  const P = await db.runTransaction(async (tx) => { const d = await tx.get(ref); if (!d.exists) throw bad('연결 표가 맞지 않음(또는 지났음)', 404); const v = d.data(); if (v.used) throw bad('이미 사용한 연결 표 — 웹앱에서 다시 눌러 새 코드를 받아 주세요', 410); if (Date.parse(v.exp) < Date.now()) throw bad('연결 표 시간(10분)이 지났음 — 웹앱에서 다시 눌러 주세요', 410);
+    tx.set(ref, { used: true, usedAt: nowIso(), usedIp: frpH('ip', ip).slice(0, 16), usedUa: String(req.headers['user-agent'] || '').slice(0, 160) }, { merge: true }); return v; });
+  const em = String(P.email || '').toLowerCase(); if (!ALLOW.includes(em) && !(await allowDyn()).has(em)) throw Object.assign(new Error('허용되지 않은 계정: ' + em), { code: 403 });
+  let token; try { token = await getAuth().createCustomToken(P.uid, { rnFriend: true, rnDev: P.dev }); } catch (e) { log('책방 친구 열쇠 만들기 실패', e.message); throw Object.assign(new Error('클라우드가 로그인 열쇠를 만들 권한이 없음(서비스 계정 토큰 생성자 · IAM) — ' + String(e.message || '').slice(0, 120)), { code: 500 }); }
+  log('책방 친구 연결', P.dev, em); return { ok: true, token, dev: P.dev, email: em }; }
+
 /* ── HTTP ── */
 /* (0.34.4) 정범님 10/23 'ninjamj81이 권한 문제로 업무를 못 볼 때가 많음' — 원인: Firestore 보안 규칙(staff)엔 있는데 클라우드 허용 계정(ALLOW_EMAILS)엔 jerrycson만 있어 그 계정의 클라우드 요청(조회·등록·수정·미리보기 등)이 403
  *  → 허용 계정의 기준을 한 곳(Firestore 보안 규칙의 staff() 목록)으로: 클라우드가 규칙 원문을 30분마다 읽어 그 이메일들도 허용(환경 변수 목록은 그대로 함께) */
@@ -3052,6 +3074,8 @@ const server = http.createServer(async (req, res) => {
       if (!who) return send(403, { ok: false }); try { const b = await bodyOf(req); const d = await kpinKey(); const J0 = JSON.parse(kpinOpen(d, String(b.k || ''), String(b.e || ''))); const r = J0.items ? await kpinApply(J0.items, J0.by || 'claude') : {}; const ra = J0.audits ? await auditIn(J0.audits, J0.by || 'claude') : null; return send(200, { ok: true, ...r, ...(ra ? { audits: ra } : {}) }); } catch (e) { return send(200, { ok: false, err: e.message }); } }
     if (path === '/billing') { const k = (String(req.url || '').match(/[?&]k=([A-Za-z0-9]+)/) || [])[1] || ''; const bk = billKey(); if (!bk || k.length !== bk.length || !require('crypto').timingSafeEqual(Buffer.from(k), Buffer.from(bk))) return send(403, { ok: false }); const b = await bodyOf(req); const out = await billingPush(b).catch((e) => ({ ok: false, err: e.message })); if (out.mtd != null) log('💳 실제 비용', out.ym, out.mtd); return send(200, out); } /* (0.12.4) Pub/Sub 밀어 주기 — 2xx면 다시 안 보냄 */
     const reqOff = async () => !(await cjobs()).req; const OFFMSG = { ok: false, off: true, err: '클라우드 설정(☁ 클라우드가 하는 일)에서 \'웹앱이 부르는 일\'을 꺼 둠' };
+    if (path === '/friend-pair') { const u = await authUser(req); const b = await bodyOf(req); return send(200, await friendPair(u, b)); } /* 🖥 책방 친구 프로그램 연결 표 */
+    if (path === '/friend-token') { if (req.method !== 'POST') return send(405, { ok: false }); const b = await bodyOf(req); return send(200, await friendToken(req, b)); } /* 🖥 표 → 같은 계정 로그인 열쇠(로그인 없음 · 1회용) */
     if (path === '/strat-run') { await authUser(req); if (!(await cjobs()).strat) return send(200, { ok: false, err: '☁ 설정에서 ⚡ 전략 실행을 꺼 둠' }); const r = await stratTick(true); return send(200, { ok: !(r && r.err), ...(r || { busy: '이미 판단하는 중' }) }); } /* (0.34.0) 웹앱 '지금 판단' */
     if (path === '/kick') { await authUser(req); if (!(await cjobs()).cmds) return send(200, { ok: true, skipped: '맡긴 일 처리를 꺼 둠(☁ 설정)' }); KICK(); if (tickBusy) return send(200, { ok: true, queued: '도는 회차가 바로 처리 (빠른 고리)' }); tickBusy = true; tickAt = Date.now(); try { const out = await serial(() => tick('kick')); return send(200, out); } finally { tickBusy = false; } } // (0.9.0) 회차가 돌고 있으면 기다리지 않고 그 회차의 빠른 고리가 바로 처리
     if (path === '/regaux') { await authUser(req); if (await reqOff()) return send(200, OFFMSG); const b = await bodyOf(req); const out = await serial(() => regAux(b)); return send(200, out); } // (0.9.5) 📥 개별·미등록 등록: 분류·저자·출판사 찾기 (알라딘 팝업 대신)

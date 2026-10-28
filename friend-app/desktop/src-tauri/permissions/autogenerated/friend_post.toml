@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-friend-post"
+description = "Enables the friend_post command without any pre-configured scope."
+commands.allow = ["friend_post"]
+
+[[permission]]
+identifier = "deny-friend-post"
+description = "Denies the friend_post command without any pre-configured scope."
+commands.deny = ["friend_post"]

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>🐾 책방 친구</title>
+<!-- 🐾 책방 친구 혼자 도는 화면 — 윈도우·안드로이드 '책방 친구 프로그램'이 이 화면을 엶(?host=tauri|android) · 크롬 탭으로 열면 캐릭터 설정 화면(?settings=1)
+     캐릭터 본체 = readnow-friend.js(단 하나뿐인 원본 · 웹앱 안에서 켤 때도 같은 파일) · 바탕 = readnow-friend-boot.js -->
+<style>
+:root{--paper:#FFFFFF;--bg:#F3F5F4;--ink:#1E2B28;--sub:#5B6B66;--line:#DCE3E0;--cloth:#2F5D50;--soft:#E6EFEB;--red:#B0322A}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+body{color:var(--ink);font:15px/1.5 Pretendard,"Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+button{font:inherit;cursor:pointer}input,textarea,select{font:inherit}
+.hint{color:var(--sub);font-size:12.5px}
+.btn{border:1px solid var(--cloth);background:var(--cloth);color:#fff;border-radius:8px;padding:6px 12px;font-weight:600}.btn.sm{padding:4px 9px;font-size:13px}.btn.ghost{background:#fff;color:var(--cloth)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.ldg{display:inline-block;margin-right:4px;animation:rnfSpin 1s linear infinite}@keyframes rnfSpin{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 16px;border-radius:20px;font-size:13.5px;z-index:70;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}.toast.on{opacity:.95}
+html.rn-fhide body>*{visibility:hidden!important}
+.fr-card{position:fixed;right:16px;bottom:16px;z-index:60;width:min(340px,calc(100vw - 32px));background:#fff;border:2px solid #2F5D50;border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.22);padding:12px 14px;font-size:14px;line-height:1.5}
+.fr-card h4{margin:0 0 6px;font-size:15px}.fr-card p{margin:4px 0}.fr-card small{color:var(--sub)}.fr-card .row{display:flex;gap:6px;margin-top:8px}
+.fr-card input{flex:1;min-width:0;font:600 18px/1.2 monospace;letter-spacing:2px;text-transform:uppercase;padding:6px 8px;border:1px solid #C9D3D0;border-radius:8px}
+.fr-card button{border:0;border-radius:8px;background:#2F5D50;color:#fff;padding:6px 12px;font-weight:700}.fr-card button.ghost{background:#EEF3F1;color:#2F5D50}.fr-card .x{position:absolute;right:8px;top:6px;background:none;color:var(--sub);padding:2px 6px}.fr-card.err{border-color:var(--red)}.fr-card .bad{color:var(--red);font-weight:700}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="readnow-friend-boot.js?v=0.1.0"></script>
+<script src="readnow-friend.js?v=0.1.0"></script>
+<script>RNF_START();</script>
+</body>
+</html>

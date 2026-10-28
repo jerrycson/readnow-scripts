@@ -1,0 +1,32 @@
+[package]
+name = "readnow-friend"
+version = "0.1.0"
+description = "🐾 책방 친구 — 리드나우 캐릭터를 바탕화면 맨 위에 (껍데기 · 화면은 GitHub Pages friend/)"
+authors = ["리드나우"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "readnow_friend_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-autostart = "2"
+tauri-plugin-deep-link = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+ureq = { version = "2", default-features = false, features = ["tls", "json"] }
+url = "2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

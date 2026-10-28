@@ -1,0 +1,43 @@
+# 🐾 책방 친구 안드로이드 앱 — friend-v… 꼬리표를 올리면 APK(사이드로드 · 플레이 스토어 아님)를 만들어 GitHub 판에 붙임
+#  · 서명 열쇠: 저장소 비밀 FRIEND_KS_B64(keystore를 base64) · FRIEND_KS_PASS · (선택) FRIEND_KS_ALIAS — friend-app/android/make-keystore.sh 로 한 번 만듦
+#    비밀이 없으면 디버그 열쇠로 서명(그 판끼리는 덮어 설치가 안 될 수 있음 → 경고)
+name: 책방 친구 안드로이드 앱
+on:
+  push:
+    tags: ['friend-v*']
+    branches: [main]
+    paths: ['friend-app/**', '.github/workflows/friend-*.yml']  # (10/28) 껍데기를 고쳐 올리면 저절로 새 판(꼬리표 없이도 · 판 번호는 tauri.conf.json)
+  workflow_dispatch:
+permissions: { contents: write }
+concurrency: { group: 'friend-release-${{ github.ref }}', cancel-in-progress: false }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '8.14.3' }
+      - name: 판 번호 · 서명 열쇠
+        env: { KS: '${{ secrets.FRIEND_KS_B64 }}' }
+        run: |
+          V="${GITHUB_REF_NAME#friend-v}"; [[ "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || V=$(node -p "require('./friend-app/desktop/src-tauri/tauri.conf.json').version")
+          echo "FRIEND_VERSION=$V" >> "$GITHUB_ENV"
+          if [ -n "$KS" ]; then echo "$KS" | base64 -d > "$RUNNER_TEMP/friend.jks"; echo "FRIEND_KS_FILE=$RUNNER_TEMP/friend.jks" >> "$GITHUB_ENV"; else echo "::warning::서명 비밀(FRIEND_KS_B64)이 없어 디버그 열쇠로 서명함 — 새 판을 덮어 설치하지 못할 수 있음(friend-app/android/make-keystore.sh)"; fi
+      - name: 만들기 (assembleRelease)
+        env:
+          FRIEND_KS_PASS: '${{ secrets.FRIEND_KS_PASS }}'
+          FRIEND_KS_ALIAS: '${{ secrets.FRIEND_KS_ALIAS }}'
+        run: gradle -p friend-app/android --no-daemon assembleRelease
+      - name: 파일 이름 정리
+        run: |
+          mkdir -p dist-friend; cp friend-app/android/app/build/outputs/apk/release/*.apk "dist-friend/readnow-friend-${FRIEND_VERSION}.apk"; ls -la dist-friend
+      - uses: actions/upload-artifact@v4
+        with: { name: 'readnow-friend-android-${{ env.FRIEND_VERSION }}', path: dist-friend/* }
+      - name: GitHub 판에 붙이기
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with: { tag_name: 'friend-v${{ env.FRIEND_VERSION }}', files: dist-friend/* }
