@@ -5,7 +5,7 @@
  *   셀 서식(XF)은 원본에서 실제로 등록에 성공했던 줄(19행)의 것을 그대로 씀: ISBN = 텍스트 셀, 판매상태·수량·품질·판매가 = 숫자 셀.
  * 이 파일은 알라딘에 아무것도 바꾸지 않음 — 계산·만들기·읽기만. */
 (function (root) {
-  const VERSION = '0.7.4'; // (0.7.4) 저자 검색 결과마다 그 저자 글만(예전엔 모든 줄에 첫 저자 대표작·칸 전체 글) // // (0.7.3) aprof — 알라딘 작가 파일(이름·소개·사진) // // (0.7.2) 저자·출판사 검색 결과에 그 줄 글 전부(info) — 동명이인 툴팁
+  const VERSION = '0.7.5'; // (0.7.5) 알라딘 상품 코드 aladinCode · matchCode가 숨은 ISBN 칸과 코드 맞춤 // (0.7.4) 저자 검색 결과마다 그 저자 글만(예전엔 모든 줄에 첫 저자 대표작·칸 전체 글) // // (0.7.3) aprof — 알라딘 작가 파일(이름·소개·사진) // // (0.7.2) 저자·출판사 검색 결과에 그 줄 글 전부(info) — 동명이인 툴팁
   // 상품 구분 (알라딘 SelectType / BranchType)
   const BRANCH = { 1: '국내도서', 2: '음반', 3: 'DVD/블루레이', 7: '외국도서' };
   // 상품 관리 코드 아이콘 — 알라딘 상품 등록 도우미 0.1.0과 같은 색 (한 곳)
@@ -81,7 +81,10 @@
    *             (예: DVD 바코드 8809046775925 → 다른 책 페이지) 반드시 맞춰 봄 */
   function normCode(t) { let d = String(t || '').replace(/[-\s]/g, '').toUpperCase(); if (/^\d{18}$/.test(d)) d = d.slice(0, 13); if (/^\d{12}$/.test(d)) d = '0' + d; return /^(\d{9}[\dX]|\d{13})$/.test(d) ? d : null; }
   function sameCode(a, b) { a = normCode(a); b = normCode(b); if (!a || !b) return false; if (a === b) return true; const t = (x) => (x.length === 10 ? '978' + x.slice(0, 9) : x.startsWith('978') ? x.slice(0, 12) : null); return !!t(a) && !!t(b) && t(a).slice(0, 12) === t(b).slice(0, 12); }
-  function matchCode(info, code) { return !!info && [info.isbn13, info.isbn10, info.barcode].some((x) => x && sameCode(x, code)); }
+  /* (MJ 10/28 'K982434212 조회 안 됨') 알라딘 상품 코드 — ISBN이 없는(979 ISBN13만 있는 책 등) 상품에 알라딘이 ISBN10 자리에 붙인 번호: K·D·F·C + 9자리(products-core classifyCode와 같은 꼴)
+   *  샵매니저 등록 검색(ISBN)·상품 화면(wproduct.aspx?ISBN=)이 이 코드를 받음 · 상품 화면의 숨은 칸(input.hd_ISBN = isbnKey)에 같은 코드가 있음 */
+  function aladinCode(t) { const d = String(t || '').replace(/[-\s]/g, '').toUpperCase(); return /^[KDFC]\d{9}$/.test(d) ? d : null; }
+  function matchCode(info, code) { if (!info) return false; const ac = aladinCode(code); if (ac) return [info.isbnKey, info.isbn10, info.aladinCode, info.scmCode, info.barcode, info.isbn13].some((x) => x && aladinCode(x) === ac); return [info.isbn13, info.isbn10, info.barcode].some((x) => x && sameCode(x, code)); }
   function pageBarcode(doc) { const m = doc && doc.querySelector('meta[property="og:barcode"], meta[name="og:barcode"]'); const v = m ? String(m.getAttribute('content') || '').replace(/\D/g, '') : ''; return v || null; }
   const BULK_STATE = { 1: '판매중', 2: '일시판매중지', 3: '판매중지' }; const GRADE = { 1: '최상', 2: '상', 3: '중' };
   /* ───────── 대량등록 엑셀 (BIFF8 원본 고쳐 쓰기) ───────── */
@@ -214,6 +217,6 @@
   // 상품 설명 문구 (알라딘 상품 등록 도우미와 같은 기본값 — 웹앱에서 고친 것은 Firebase에 저장해 모든 PC가 같게)
   const PHRASES_A = ['띠지 있습니다.', '비닐 뜯지 않은 밀봉 제품입니다.', '책등 약간 색바램 있습니다.', '책등 색바램 있습니다.', '겉커버 없습니다.', '표지 빛바램 및 내지 변색 있습니다.', '표지 빛바램 및 내지 변색 많습니다.', '대체적으로 중고감 많습니다.', '10페이지 가량 밑줄 있습니다.', '책머리에 드림도장 있습니다.', '책꼬리에 드림도장 있습니다.', '앞 면지에 드림도장 있습니다.', '책등 하단에 "북카페" 스티커 있습니다.', '도서관 정리 도서 입니다!!', '책등 하단에 "도서관"스티커 있습니다.', '앞표지에 "기증"스티커 있습니다.', '둘레 "도서관"도장 찍혀 있습니다.', '해당 도서는 연/구용이지만 학생용과 동일합니다.'];
   const PHRASES_B = ['', '그 외 상태 양호합니다.', '그 외 상급입니다.'];
-  const api = { VERSION, DATE_RULE_DEFAULT, needDate, noteKey, decideDate, BRANCH, CODES, SOURCES, NEW_WORDS, RULES_DEFAULT, BULK_STATE, GRADE, PHRASES_A, PHRASES_B, templateBytes, pageAlerts, normCode, sameCode, matchCode, pageBarcode, auxRun, auxKey, AUX_TTL_D, parseAuthorPopup, parseBrandPopup, ITEM_SIZES, descHtml, topCats, sizeMm, decideCode, withSuffix, yymmdd, buildBulkXls, verifyBulkXls, parseBulkPage, matchPreview, _readRecs: readRecs };
+  const api = { VERSION, DATE_RULE_DEFAULT, needDate, noteKey, decideDate, BRANCH, CODES, SOURCES, NEW_WORDS, RULES_DEFAULT, BULK_STATE, GRADE, PHRASES_A, PHRASES_B, templateBytes, pageAlerts, normCode, aladinCode, sameCode, matchCode, pageBarcode, auxRun, auxKey, AUX_TTL_D, parseAuthorPopup, parseBrandPopup, ITEM_SIZES, descHtml, topCats, sizeMm, decideCode, withSuffix, yymmdd, buildBulkXls, verifyBulkXls, parseBulkPage, matchPreview, _readRecs: readRecs };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowRegister = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

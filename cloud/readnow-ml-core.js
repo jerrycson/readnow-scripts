@@ -6,7 +6,7 @@
  *   → ④ 새 모델이 지금 모델보다 3번 연속 확실히 나으면(로그 손실 1% 넘게 낮음) 승격. 처음 '지금 모델'은 기준선(자리 1위 여부·등급별 평균 판매율)
  * 쓰는 곳: 웹앱 전략도구의 조언 금액(그림자 표시), 앞으로 판정 엔진의 '권당 하루 기대 순이익'. 알라딘에 아무것도 바꾸지 않음 — 계산만. */
 (function (root) {
-  const VERSION = '0.9.2'; // (0.9.2) 📝 판매가 평가 사유별 묶음 sevReasonGroups(세기만 · 가중치 없음) // (0.9.1) ⚡ 전략 독립 검토 고침 — 자기가 멈춘 것만 내놓기·기다림 되풀이 막기·빈 첫 쪽/우리 줄 없음/오래된 신호 안 씀·등급 모르는 매물도 경쟁·🐢는 매입가 알 때만·사람 수정 감지·되돌림 쉬기·설정 값 범위 // (0.9.0) ⚡ 전략 실행(STRATS · stratDecide · stratGuard — 웹앱 미리 보기와 클라우드 실행이 같은 판단) // (0.8.2) extrasOf: 도서관·바코드·가격표 스티커와 넘버링 도장은 특전·한정에서 뺌 // (0.8.1) bbAccept: 불가 내역을 다 읽기 전엔 우리 상태별 매입률을 쓰지 않음 // (0.8.0) valueTrain 무게(w)·판매 수(y) — 벤치마킹 사라짐 표본 · extrasOf(유의 사항의 박스·미개봉·특전·한정판·사인) // (0.7.0) // (0.7.0) 기대 매입가에 매입될 확률(bbAccept — 매입불가 상품 내역까지 읽은 실측) // (0.6.0) 알라딘 매입 기대값(bbExpect — 우리 실제 매입 기록의 등급별 지급 비율 · 유의 사항에 하자가 있으면 매입 없음) · 하자 표시(defectOf) // (0.5.1) rawRow: 첫 페이지 못 읽으면 자리 null · top(맨 윗줄이 우리 = 최저가배지) // (0.5.0) 정범님 10/19 '정가가 고객의 첫 기준' — 정가 대비 우리 값 칸(<35%·35~50%·50%+)을 수요×자리 칸 안에서 배움(cells3 · 줄이 적으면 수요×자리 값으로 당김) · valueOf·valueRec가 씀 // (0.4.0) 🧠 valueRec — 등록·매입 때 판매가치 엔진으로 추천가·판매 확률·매입 판단(살 이유·사지 말 이유) 한 곳 // (0.3.0) 🧠 판매가치 엔진 v1(VALUE) — 수요(Sales Point)×자리(첫 페이지 순위)×값(동급 최저 대비)의 하루 판매 확률 표를 우리 판매 자료로 매일 배움 · 희소/희귀 분류 · 상품마다 전략과 기대 판매 // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
+  const VERSION = '0.9.3'; // (0.9.3) 판매가 평가 v0.3-rule: 유효 최저가 = 같은 등급 + 더 좋은 등급 중 가장 싼 값 · 등급 글자 없는 줄은 중 // (0.9.2) 📝 판매가 평가 사유별 묶음 sevReasonGroups(세기만 · 가중치 없음) // (0.9.1) ⚡ 전략 독립 검토 고침 — 자기가 멈춘 것만 내놓기·기다림 되풀이 막기·빈 첫 쪽/우리 줄 없음/오래된 신호 안 씀·등급 모르는 매물도 경쟁·🐢는 매입가 알 때만·사람 수정 감지·되돌림 쉬기·설정 값 범위 // (0.9.0) ⚡ 전략 실행(STRATS · stratDecide · stratGuard — 웹앱 미리 보기와 클라우드 실행이 같은 판단) // (0.8.2) extrasOf: 도서관·바코드·가격표 스티커와 넘버링 도장은 특전·한정에서 뺌 // (0.8.1) bbAccept: 불가 내역을 다 읽기 전엔 우리 상태별 매입률을 쓰지 않음 // (0.8.0) valueTrain 무게(w)·판매 수(y) — 벤치마킹 사라짐 표본 · extrasOf(유의 사항의 박스·미개봉·특전·한정판·사인) // (0.7.0) // (0.7.0) 기대 매입가에 매입될 확률(bbAccept — 매입불가 상품 내역까지 읽은 실측) // (0.6.0) 알라딘 매입 기대값(bbExpect — 우리 실제 매입 기록의 등급별 지급 비율 · 유의 사항에 하자가 있으면 매입 없음) · 하자 표시(defectOf) // (0.5.1) rawRow: 첫 페이지 못 읽으면 자리 null · top(맨 윗줄이 우리 = 최저가배지) // (0.5.0) 정범님 10/19 '정가가 고객의 첫 기준' — 정가 대비 우리 값 칸(<35%·35~50%·50%+)을 수요×자리 칸 안에서 배움(cells3 · 줄이 적으면 수요×자리 값으로 당김) · valueOf·valueRec가 씀 // (0.4.0) 🧠 valueRec — 등록·매입 때 판매가치 엔진으로 추천가·판매 확률·매입 판단(살 이유·사지 말 이유) 한 곳 // (0.3.0) 🧠 판매가치 엔진 v1(VALUE) — 수요(Sales Point)×자리(첫 페이지 순위)×값(동급 최저 대비)의 하루 판매 확률 표를 우리 판매 자료로 매일 배움 · 희소/희귀 분류 · 상품마다 전략과 기대 판매 // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
   const HORIZON_D = 7; // 7일 안에 팔렸나
   const GR = ['최상', '상', '중'];
   /* rawRow: 하루 모습 한 줄 (클라우드 ml_days ML_VER 1과 같은 칸) — l = 상품(prd_listings), m = 시장 지표(prd_book_metrics), a = 마지막 가격 변경 {at, from, batchId}, wg = 감시 그룹, nowMs = 그날 끝 */
@@ -69,7 +69,7 @@
    * 유효 상품 = 짙은 초록·초록 판매자 + 알라딘측(파랑) — 북스킹(우리) 줄은 뺌. 동급 유효 최저가 = 같은 등급의 유효 상품 중 가장 싼 판매가
    * 돌려줌: { ver, ref 비교 기준가, refHow, ratio (우리 − 기준)/기준, score −2(많이 싸게)…+2(많이 비싸게 받음), verdict 짧은 말, why 근거 한 줄, missed 더 받을 수 있었던 어림 금액, feat 그때 값 } */
   /* (0.6.0) ⚠ 정범님 판매가 평가(ml_sale_evals.label)는 정답이 아님(정범님 10/20): 유의 사항·품절/절판·매물 수·판매 이력·책 사정·그때 상황(급함·현금 필요)까지 섞인 직감 — 1차 정답은 실제 판매(판매 장부), 평가는 약한 참고로 그때 재료·시각(labelLog)과 함께 배움 · 한 요인에 매몰되지 말고 판매가치 엔진 전체로 */
-  const SALE_EVAL_VER = 'v0.2-rule'; /* (0.2.1) 동급이 없으면 '더 높은 등급인데 더 싼'·'더 낮은 등급인데 더 비싼' 유효 최저가와 먼저 견줌(정범님 10/18) */
+  const SALE_EVAL_VER = 'v0.3-rule'; /* (10/28) 동급이 있어도 더 좋은 등급 유효 매물이 더 싸면 그 값이 기준 · 알라딘측 균일가 = 중 */ /* (0.2.1) 동급이 없으면 '더 높은 등급인데 더 싼'·'더 낮은 등급인데 더 비싼' 유효 최저가와 먼저 견줌(정범님 10/18) */
   /* (10/26) 📝 판매가 평가 사유별 묶음 — 정범님 평가(label)에 붙인 사유(reasons [{t, id}] · 웹앱 💬 판매가 평가 › 📝 사유)로 평가를 묶어 셈만 함
    *  돌려줌 [{ id, t, n 평가 수, lab {'-1' 싸게, 0 적정, 1 잘 받음, 9 평가불가}, comp 규칙 평가와 견줄 수 있는 수, hit 같은 수 }] — 많은 순 · 사유 없는 평가는 id '_none'
    *  쓰는 곳: 웹앱 💬 판매가 평가 모음 › 📝 사유별 · 다음 판(배운 모델)이 어느 사유가 붙은 평가를 빼거나 가볍게 볼지 고를 재료
@@ -79,7 +79,9 @@
     return [...G.values()].sort((a, b) => (a.id === '_none') - (b.id === '_none') || b.n - a.n); }
   const GRANK = { 최상: 3, 상: 2, 중: 1, 하: 0 };
   const GCOEF = { 최상: 1, 상: 0.9, 중: 0.75 };
-  function evalSale(x) { x = x || {}; const p = +x.p || 0; const g = x.g || ''; const rows = Array.isArray(x.rows) ? x.rows : [];
+  /* (정범님 10/28 '알라딘측도 유효 상품') 알라딘측 균일가(또는 등급 글자가 최상·상·중이 아닌 알라딘측 줄) = '중' — 판매가 엔진(readnow-pricing-core gOf · '알라딘측 균일가 = 중' 정범님 지정)과 같은 기준. 예전엔 이 줄이 어느 등급과도 안 맞아 판매가 평가·자동 발송요청 비교에서 빠졌음 */
+  const evRowG = (r) => (r && r.c === 'aladin' && !(r.g in GCOEF) ? { ...r, g: '중', g0: r.g == null ? null : r.g } : r);
+  function evalSale(x) { x = x || {}; const p = +x.p || 0; const g = x.g || ''; const rows = Array.isArray(x.rows) ? x.rows.map(evRowG) : [];
     const VALID = { dkgreen: 1, green: 1, aladin: 1 }; const oth = rows.filter((r) => r && r.p > 0 && !r.so && !r.srch && r.c !== 'ours' && !(x.lid && String(r.lid || '') === String(x.lid)));
     const valid = oth.filter((r) => VALID[r.c]); const same = valid.filter((r) => r.g === g);
     const effSame = same.length ? Math.min(...same.map((r) => r.p)) : null; const nextAbove = same.filter((r) => r.p > p).reduce((m, r) => Math.min(m, r.p), Infinity);
@@ -90,8 +92,10 @@
     let ref = null, how = '', kind = null, refG = null, tier = 'valid';
     const gr0 = GRANK[g]; const minOf = (L) => L.reduce((m, r) => (!m || r.p < m.p ? r : m), null);
     /* 한 무리(유효 → 노랑 → 주황 → 빨강) 안에서 같은 순서로: 동급 최저가 → 위 등급 최저가(우리보다 쌀 때) → 아래 등급 최저가(우리보다 비쌀 때) → 등급 환산 */
-    const pick = (pool, tag) => { const sm = pool.filter((r) => r.g === g); if (sm.length) return { ref: Math.min(...sm.map((r) => r.p)), kind: 'same', refG: g, how: `동급 ${tag} 최저가` };
-      const hi = gr0 != null ? minOf(pool.filter((r) => GRANK[r.g] != null && GRANK[r.g] > gr0)) : null; if (hi && hi.p < p) return { ref: hi.p, kind: 'hi', refG: hi.g, how: `더 높은 등급(${hi.g}) ${tag} 최저가 — 우리보다 쌈` }; /* 더 좋은 책이 더 쌌는데도 우리 것이 팔림 → 비싸게 받음 */
+    const pick = (pool, tag) => { const sm = pool.filter((r) => r.g === g); const hi = gr0 != null ? minOf(pool.filter((r) => GRANK[r.g] != null && GRANK[r.g] > gr0)) : null;
+      /* (정범님 10/28) 유효 최저가 = 같은 등급 + 더 좋은 등급 중 가장 싼 값(판매가 엔진 useBetterGrade · '상태가 더 좋은데 더 싼 상품이 있으면 고객은 그쪽을 고름') — 예전엔 동급이 하나라도 있으면 더 좋은 등급의 더 싼 매물(알라딘 직접 배송 최상 등)을 보지 않았음(베니스의 상인: 동급 6,400 · 최상 3,800·5,200을 안 봄) */
+      if (sm.length) { const sMin = Math.min(...sm.map((r) => r.p)); if (hi && hi.p < sMin) return { ref: hi.p, kind: 'hi', refG: hi.g, how: `더 높은 등급(${hi.g}) ${tag} 최저가 — 동급 최저가 ${sMin.toLocaleString()}원보다 쌈` }; return { ref: sMin, kind: 'same', refG: g, how: `동급 ${tag} 최저가` }; }
+      if (hi && hi.p < p) return { ref: hi.p, kind: 'hi', refG: hi.g, how: `더 높은 등급(${hi.g}) ${tag} 최저가 — 우리보다 쌈` }; /* 더 좋은 책이 더 쌌는데도 우리 것이 팔림 → 비싸게 받음 */
       const lo = gr0 != null ? minOf(pool.filter((r) => GRANK[r.g] != null && GRANK[r.g] < gr0)) : null; if (lo && lo.p > p) return { ref: lo.p, kind: 'lo', refG: lo.g, how: `더 낮은 등급(${lo.g}) ${tag} 최저가 — 우리보다 비쌈` }; /* 더 나쁜 책도 우리보다 비쌌음 → 싸게 팔림 */
       if (pool.length && GCOEF[g]) { const conv = pool.map((r) => (GCOEF[r.g] ? r.p / GCOEF[r.g] * GCOEF[g] : null)).filter((v) => v > 0); if (conv.length) return { ref: Math.round(Math.min(...conv)), kind: 'conv', refG: null, how: `다른 등급 ${tag} 최저가를 등급 환산(최상 1·상 0.9·중 0.75)` }; }
       return null; };

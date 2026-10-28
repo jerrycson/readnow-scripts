@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.128
+// @version      1.89.129
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -23,11 +23,11 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.5
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.1
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.1
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.116
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.2
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.117
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.3
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.4
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.2
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.5
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.18.10
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
@@ -6076,7 +6076,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     try { if (!AU.cfg || Date.now() - AU.cfgAt > 30e3) { const d = (await C('app_settings').doc('ship_auto').get()).data() || {}; const c = SHC.autoCfg(d); c.since = d.since || null; AU.cfg = c; AU.cfgAt = Date.now(); if (c.on && !c.since) { c.since = nowIso(); await C('app_settings').doc('ship_auto').set({ since: c.since, sinceBy: `${PC_NAME} (처음 켜짐 — 이 시각 뒤 주문부터)` }, { merge: true }).catch(() => {}); } }
       const cfg = AU.cfg; if (!cfg.on) return null;
       if (Date.now() - AU.beatAt > 120e3) { AU.beatAt = Date.now(); C('app_settings').doc('ship_auto').set({ beatAt: nowIso(), beatVer: APP_VER, beatBy: PC_NAME, beats: { [PC_NAME]: nowIso() } }, { merge: true }).catch(() => {}); }
-      const cfgRec = { on: cfg.on, minQty: cfg.minQty, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, since: cfg.since }; if (AU.mem.size > 3000) AU.mem.clear();
+      const cfgRec = { on: cfg.on, minQty: cfg.minQty, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, lowOn: cfg.lowOn, lowPrice: cfg.lowPrice, lowSku: cfg.lowSku, since: cfg.since }; /* (10/28) ⑥ 저가·YLW 매입가 기준도 그때 설정으로 남김 */ if (AU.mem.size > 3000) AU.mem.clear();
       for (const o of orders || []) { const ono = String(o.orderNo || ''); if (!ono || o.platform === 'cash') continue; let m = AU.mem.get(ono); if (m && m.final) continue; const ref = C('shp_auto').doc(ono);
         if (!m) { const v0 = (await ref.get()).data() || null; if (v0 && v0.state !== 'wait') { AU.mem.set(ono, { final: true }); continue; } m = { firstAt: (v0 && Date.parse(v0.firstAt || '')) || Date.now(), doc: !!v0 }; AU.mem.set(ono, m); }
         const base = { orderNo: ono, buyer: o.buyer || null, recipient: o.recipient && !o.recipient.sameAsBuyer ? o.recipient.name || null : null, orderedAt: o.orderedAt || null, firstAt: new Date(m.firstAt).toISOString(), at: nowIso(), by: PC_NAME, ver: APP_VER, cfg: cfgRec };
@@ -6119,9 +6119,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
           if (new Date(Date.now() + 9 * 3600e3).getUTCHours() >= 7 && (dvDrop || Date.now() - tabAt > 5 * 60e3)) { tabAt = Date.now(); try { await tabReadPc(false); } catch (e) { log('📦 출고별 매출(배송&구매확정전) 읽기 실패: ' + e.message, 1); } } /* (10/27) 출고별 매출 — 5분마다(발송 요청이 줄면 바로) · 클라우드와 임대로 나눔 */ }
         catch (e) { fails++; } finally { busy = false; } } })(); })();
   async function lookupBook(url, code) { let g = await lookDoc(url); let p = P.parseProductPage(g.doc, g.finalUrl); if (!p.aladinItemId && !PUBONLY && /성인\s*인증|19세|청소년\s*(유해|이용불가)|wlogin\.aspx|adult/i.test(String(g.finalUrl || '') + ' ' + String(g.html || (g.doc && g.doc.documentElement ? g.doc.documentElement.outerHTML : '')).slice(0, 30000))) { /* (1.81.0) 🔞 알라딘 제목이 붙은 성인 인증 화면 — 로그인한 채로 다시 */ g = await AL.quick(url, { pace: PACE_P, sleep }); p = P.parseProductPage(g.doc, g.finalUrl); } if (!p.aladinItemId) throw new Error('알라딘에서 이 책을 못 찾음');
-    const RG = RGF(); const barcode = RG ? RG.pageBarcode(g.doc) : null; if (code && !(RG ? RG.matchCode({ isbn13: p.isbn13, barcode }, code) : String(p.isbn13 || '') === String(code))) throw Object.assign(new Error(`알라딘이 다른 상품(${p.title || p.aladinItemId})으로 연결함`), { wrong: true }); /* (1.44.1) 찾던 번호와 다른 상품이면 쓰지 않음 (음반·DVD 바코드는 엉뚱한 책으로 갈 때가 있음) */
+    const RG = RGF(); const barcode = RG ? RG.pageBarcode(g.doc) : null; if (code && !(RG ? RG.matchCode({ isbn13: p.isbn13, barcode, isbnKey: p.isbnKey || null }, code) : String(p.isbn13 || '') === String(code) || String(p.isbnKey || '').toUpperCase() === String(code).toUpperCase())) throw Object.assign(new Error(`알라딘이 다른 상품(${p.title || p.aladinItemId})으로 연결함`), { wrong: true }); /* (1.44.1) 찾던 번호와 다른 상품이면 쓰지 않음 (음반·DVD 바코드는 엉뚱한 책으로 갈 때가 있음) */
     const u = P.parseUsedPage((await lookDoc(`/shop/UsedShop/wuseditemall.aspx?ItemId=${p.aladinItemId}&TabType=0`)).doc);
-    return { itemId: p.aladinItemId, isbn13: p.isbn13 || null, barcode, title: p.title || null, subtitle: p.subtitle || null, author: (p.contributors || []).slice(0, 2).map((c) => c.name).join(', ') || null, publisher: p.publisher || null, pubDate: p.pubDate || null,
+    return { itemId: p.aladinItemId, isbn13: p.isbn13 || null, barcode, isbnKey: p.isbnKey || null, /* (MJ 10/28) 알라딘 상품 코드(K…)로 찾은 것을 맞춰 볼 칸 */ title: p.title || null, subtitle: p.subtitle || null, author: (p.contributors || []).slice(0, 2).map((c) => c.name).join(', ') || null, publisher: p.publisher || null, pubDate: p.pubDate || null,
       cover: (p.images && p.images.front) || null, imgs: p.images ? { front: p.images.front || null, back: p.images.back || null, spine: p.images.spine || null } : null, priceList: p.priceList ?? null, priceSales: p.priceSales ?? null, availability: p.availability || null, availabilityNote: p.availabilityNote || null, soldoutCheckedAt: p.soldoutCheckedAt || null, ldAvailability: p.ldAvailability || null, usedTotal: u.usedTotal ?? null, buyback: u.buyback || null, mins: u.mins || null, page1: u.listings || [], lastPage: u.lastPage || 1, at: nowIso(),
       /* (1.44.0) 등록 엔진: 클라우드 /lookup(0.9.2)과 같은 칸 — 상품 관리 코드 판정·카드 */ categories: (p.categories || []).map((c) => ({ path: c.path || [], cids: c.cids || [] })), salesPoint: p.salesPoint ?? null, ranks: p.ranks || [], reviewCount: p.reviewCount ?? null, commentCount: p.commentCount ?? null, rating: p.rating ?? null, size: p.size || null, pages: p.pages || null, originalTitle: p.originalTitle || null, series: p.series || null }; }
   /* (1.77.0) 📥 등록 조회 — 정범님 10/16: '알라딘 검색이 아니라 샵매니저 상품등록의 알라딘 등록 검색으로' · 클라우드 0.16.0과 같은 순서
@@ -6135,7 +6135,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const scm = async (q, kind) => { const R = await P.scmSearch(q, kind, br, get, 10); if (!R.login) throw new Error('샵매니저 로그인이 풀림 — 이 PC에서 알라딘 샵매니저에 로그인해 주세요'); const qc = (P.aladinQ && P.aladinQ(q)) || q; return R.rows.slice(0, 200).map((x) => ({ ...x, cov: Math.round(P.nameCoverage(qc, x.title) * 1000) / 1000, scm: true })); };
     /* (1.78.2) 가볍고 빠른 것부터: 고른 상품(번호 확정 — 화면 2장) → 번호(ISBN) → 상품명(등록 검색 여러 쪽 · 사람이 골라야 함) */
     for (const id of ids) { try { await keep('id_' + id, await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(id)}`)); } catch (e) { errs['id_' + id] = e.message; } n++; await prog(); }
-    for (const isbn of isb) { try { const L = await scm(isbn, 'ISBN'); if (L.length === 1) { const r = await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(L[0].itemId)}`); r.scmCode = L[0].code; await keep(isbn, r); }
+    for (const isbn of isb) { try { let L = await scm(isbn, 'ISBN'); { const RG = RGF(); const ac = RG && RG.aladinCode ? RG.aladinCode(isbn) : null; if (ac && L.length > 1) { const ex = L.filter((x) => String(x.code || '').toUpperCase() === ac); if (ex.length) L = ex; } } /* (MJ 10/28) 알라딘 상품 코드(K982434212 등)는 등록 코드가 똑같은 후보만 */ if (L.length === 1) { const r = await lookupBook(`/shop/wproduct.aspx?ItemId=${encodeURIComponent(L[0].itemId)}`); r.scmCode = L[0].code; await keep(isbn, r); }
         else if (L.length > 1) { cands[isbn] = L; errs[isbn] = `샵매니저 등록 검색에 이 번호의 상품이 ${L.length}개(판·에디션) — 맞는 상품을 누르세요`; }
         else { let r = null, why = null; try { r = await lookupBook(`/shop/wproduct.aspx?ISBN=${encodeURIComponent(isbn)}`, isbn); } catch (e) { why = e.message; } if (r) await keep(isbn, r); else errs[isbn] = '샵매니저 등록 검색·상품 페이지 모두 이 번호(ISBN·바코드)의 상품을 못 찾음 — 상품명으로 찾아 보세요' + (why ? ` (${why})` : ''); } }
       catch (e) { errs[isbn] = e.message; } n++; await prog(); await sleep(500); }

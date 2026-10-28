@@ -8,7 +8,7 @@
 // ==========================================================================
 (function (root) {
   'use strict';
-  const VERSION = '0.7.1'; // (0.7.1) 🤖 자동 발송요청 판단(autoShipDecide · AUTO_DEFAULTS · custRisk) — 판매가 비교는 출고 카드 판매가 평가와 같은 ReadnowML.evalSale // (0.7.0) 🇰🇷 법정 공휴일 미리 넣음·택배 수거 달력(pickup off/on)·실제 발송 묶음(pickupRun)·③ 배송&구매확정전 화면 읽기(parseShippedPage — 그날 출고 = 발송일이 그날인 주문) // (0.6.0) planConfirm — 오늘 출고 확정 목록 계산(웹앱 '출고 확정' 단추와 클라우드 출고 시각 자동 확정이 같은 기준) 
+  const VERSION = '0.7.2'; // (0.7.2) 🤖 자동 발송요청 YLW·저가 상품 알라딘 매입가 기준(autoLowOf·bbOf) // (0.7.1) 🤖 자동 발송요청 판단(autoShipDecide · AUTO_DEFAULTS · custRisk) — 판매가 비교는 출고 카드 판매가 평가와 같은 ReadnowML.evalSale // (0.7.0) 🇰🇷 법정 공휴일 미리 넣음·택배 수거 달력(pickup off/on)·실제 발송 묶음(pickupRun)·③ 배송&구매확정전 화면 읽기(parseShippedPage — 그날 출고 = 발송일이 그날인 주문) // (0.6.0) planConfirm — 오늘 출고 확정 목록 계산(웹앱 '출고 확정' 단추와 클라우드 출고 시각 자동 확정이 같은 기준) 
   const T = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
   const toInt = (s) => { const n = parseInt(String(s || '').replace(/[^\d-]/g, ''), 10); return isNaN(n) ? null : n; };
 
@@ -202,10 +202,20 @@
    *   ④ 시장 자료가 끝내 없음 — 주문을 처음 본 뒤 waitMin분(기본 10)까지 기다림(클라우드 시장 읽기는 보통 1분 안 · 실패하면 2·4분 뒤 다시 → 10분이면 세 번 시도가 들어감)
    *      시장을 못 읽는다고 확정된 상품(알라딘 상품 번호를 못 찾음 등 mktErr)은 기다리지 않고 바로 검토
    *   ⑤ (선택·기본 끔) 첫 페이지에 유효 매물이 하나도 없어 판매가를 견줄 수 없음
-   *  돌려줌: { state: 'wait'|'pass'|'review', reasons:[글], kinds:[qty|cheap|cust|nomkt|novalid|read], qty, total, top:{title,price,qty,lid,grade}, items:[상품마다 판정 근거], waitLeftMs } */
-  const AUTO_DEFAULTS = { on: true, minQty: 5, cheapPct: 25, waitMin: 10, noValid: false, custBlock: true };
+   *   ⑥ (정범님 10/28 · 기본 켬) 저가·YLW 상품 = 관리코드가 lowSku(기본 'YLW')로 시작하거나 판매가가 lowPrice원(기본 4,000) 이하 → ② 25% 규칙 대신
+   *      판매가 ≥ 알라딘 매입가(그 상품 · 우리 등급 — 주문 뒤 읽은 온라인 중고 화면의 '알라딘 중고 매입가' 표 = shp_enrich mkt.buyback)면 통과, 매입가보다 싸면 검토(bbLow)
+   *      매입가를 모르면(알라딘이 안 사는 책·그 등급 칸 없음·표를 못 읽음) 기준을 지어내지 않고 ② 25% 규칙으로 — 판정 근거에 '매입가 모름 → 25% 기준' 남김
+   *  ※ 더 비싸게 팔린 것은 어느 길에서도 검토가 아님(정범님 10/28 '위로는 얼마든지 비싸도 상관 없어') — 검토는 '싸게'(②·⑥)·권수·고객·시장 없음·(선택)유효 매물 없음뿐
+   *  돌려줌: { state: 'wait'|'pass'|'review', reasons:[글], kinds:[qty|cheap|bbLow|cust|nomkt|novalid|read], qty, total, top:{title,price,qty,lid,grade}, items:[상품마다 판정 근거 · rule 'bb'|'bbNone'|'pct'], waitLeftMs } */
+  const AUTO_DEFAULTS = { on: true, minQty: 5, cheapPct: 25, waitMin: 10, noValid: false, custBlock: true, lowOn: true, lowPrice: 4000, lowSku: 'YLW' };
+  /* ⑥ 저가·YLW 상품인지 — 같은 판단을 웹앱(설정 설명·출고 카드)이 같이 씀 · 돌려줌 null(아님) 또는 { sku, price } (어느 조건으로 걸렸나) */
+  function autoLowOf(it, cfg, sku) { cfg = autoCfg(cfg); if (!cfg.lowOn) return null; const k = String(sku || (it && it.sku) || '').trim().toUpperCase(); const pre = String(cfg.lowSku || '').trim().toUpperCase(); const pr = +(it && it.price) || 0;
+    const bySku = !!(pre && k.startsWith(pre)), byPrice = cfg.lowPrice > 0 && pr > 0 && pr <= cfg.lowPrice; return bySku || byPrice ? { sku: bySku, price: byPrice } : null; }
+  /* 알라딘 매입가(그 등급) — mkt.buyback {최상, 상, 중} 숫자만 · 0·빈 칸·모르는 등급 = 모름(null) */
+  function bbOf(m, grade) { const B = m && m.buyback; if (!B || typeof B !== 'object' || !grade) return null; const v = +B[grade]; return Number.isFinite(v) && v > 0 ? v : null; }
   function autoCfg(c) { const x = { ...AUTO_DEFAULTS, ...(c || {}) }; const n = (v, d, lo, hi) => { v = +v; return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
-    x.minQty = Math.round(n(x.minQty, AUTO_DEFAULTS.minQty, 1, 999)); x.cheapPct = n(x.cheapPct, AUTO_DEFAULTS.cheapPct, 0, 100); x.waitMin = n(x.waitMin, AUTO_DEFAULTS.waitMin, 1, 120); x.on = x.on !== false; x.noValid = !!x.noValid; x.custBlock = x.custBlock !== false; return x; }
+    x.minQty = Math.round(n(x.minQty, AUTO_DEFAULTS.minQty, 1, 999)); x.cheapPct = n(x.cheapPct, AUTO_DEFAULTS.cheapPct, 0, 100); x.waitMin = n(x.waitMin, AUTO_DEFAULTS.waitMin, 1, 120); x.on = x.on !== false; x.noValid = !!x.noValid; x.custBlock = x.custBlock !== false;
+    x.lowOn = x.lowOn !== false; x.lowPrice = Math.round(n(x.lowPrice, AUTO_DEFAULTS.lowPrice, 0, 1e7)); x.lowSku = String(x.lowSku == null ? AUTO_DEFAULTS.lowSku : x.lowSku).trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 12); return x; }
   /* 고객 기록(crm_customers 문서) → ⛔ 블랙리스트 · 🔗 판매자 연관 (웹앱 effFlag·flagsOf와 같은 뜻: 사람이 정한 표시가 먼저, 블랙리스트는 시트 표시도 · 판매자 연관 = 강한 연결 sellerLinks) */
   function custRisk(c) { c = c || {}; const m = (c.flags || {}).blacklist; const bl = m && (m.on === true || m.on === false) ? m.on === true : !!(c.sheetFlags && c.sheetFlags.blacklist);
     const sl = (c.sellerLinks || []).filter((x) => x && x.strong !== false); return { bl, seller: sl.length > 0, sellers: sl.map((x) => x.name || x.sc || x.sellerCode || '').filter(Boolean).slice(0, 3), blWhy: bl ? String((m && m.reason) || (c.sheetFlags && c.sheetFlags.blacklist && c.sheetFlags.blacklist.reason) || '') : '' }; }
@@ -223,14 +233,20 @@
       if (!m || byName) { const err = e && e.mktErr && !byName ? String(e.mktErr) : null; per.push({ ...b, mkt: err ? 'err' : 'none', why: err || (byName ? '이름으로 찾은 시장(다른 판일 수 있음)이라 쓰지 않음 — 클라우드가 ISBN으로 다시 읽는 중' : e && e.mktFail ? '시장 읽기 실패 — 다시 읽는 중: ' + String(e.mktFail.msg || '').slice(0, 60) : '시장을 아직 못 읽음') }); (err ? errL : waitL).push(b); continue; }
       const r = ev ? ev({ p: b.price, g: b.grade || '', rows: (m.rows || []).slice(0, 20), lid, ps: m.np && m.np.ps, pl: m.np && m.np.pl, av: m.np && m.np.av }) : null;
       const P = { ...b, mkt: 'ok', at: m.at || null, ratio: r && r.ratio != null ? r.ratio : null, ref: r ? r.ref : null, refHow: r ? r.refHow || '' : '', tier: r ? r.tier || null : null, verdict: r ? r.verdict || '' : '평가 파일 없음', nValid: r && r.feat ? r.feat.nValid : null };
-      if (r && r.tier === 'valid' && r.ratio != null && r.ratio < -cfg.cheapPct / 100) { P.flag = 'cheap'; add('cheap', `「${sh(b.title)}」 ${W(b.price)} — ${r.refHow} ${W(r.ref)}보다 ${Math.round(-r.ratio * 100)}% 쌈 (기준 ${cfg.cheapPct}% 넘게)`); }
-      else if (!r || r.tier !== 'valid') { P.flag = 'novalid'; P.why = '첫 페이지에 유효 매물이 없어 유효 최저가가 없음'; if (cfg.noValid) add('novalid', `「${sh(b.title)}」 유효 매물이 없어 판매가를 견줄 수 없음`); }
+      const sku = it.sku || (e && e.sku) || null; if (sku) P.sku = String(sku); const low = autoLowOf(it, cfg, sku);
+      const lowT = low ? [low.sku ? `관리코드 ${cfg.lowSku}…` : '', low.price ? `${W(cfg.lowPrice)} 이하` : ''].filter(Boolean).join(' · ') : '';
+      if (low) { const bb = bbOf(m, b.grade); P.low = lowT; P.bb = bb;
+        if (bb != null) { P.rule = 'bb'; if (b.price < bb) { P.flag = 'bbLow'; add('bbLow', `「${sh(b.title)}」 ${W(b.price)} — 알라딘 매입가(${b.grade}) ${W(bb)}보다 쌈 (${lowT} 상품: 매입가 이상이면 통과)`); } else P.why = `${lowT} 상품 — 알라딘 매입가(${b.grade}) ${W(bb)} 이상이라 통과 (25% 기준 안 씀)`; per.push(P); continue; }
+        P.rule = 'bbNone'; P.bbWhy = `${lowT} 상품인데 알라딘 매입가(${b.grade || '등급 모름'})를 모름(알라딘이 안 사는 책이거나 표에 그 등급이 없음) → 25% 기준으로`; } else P.rule = 'pct';
+      if (r && r.tier === 'valid' && r.ratio != null && r.ratio < -cfg.cheapPct / 100) { P.flag = 'cheap'; add('cheap', `「${sh(b.title)}」 ${W(b.price)} — ${r.refHow} ${W(r.ref)}보다 ${Math.round(-r.ratio * 100)}% 쌈 (기준 ${cfg.cheapPct}% 넘게)${P.rule === 'bbNone' ? ' · 알라딘 매입가를 몰라 25% 기준으로 봄' : ''}`); }
+      else if (!r || r.tier !== 'valid') { P.flag = 'novalid'; P.why = '첫 페이지에 유효 매물이 없어 유효 최저가가 없음' + (P.bbWhy ? ' · ' + P.bbWhy : ''); if (cfg.noValid) add('novalid', `「${sh(b.title)}」 유효 매물이 없어 판매가를 견줄 수 없음`); }
+      else if (P.bbWhy) P.why = P.bbWhy;
       per.push(P); }
     errL.forEach((b) => add('nomkt', `「${sh(b.title)}」 시장 자료 없음 — ${per.find((p) => p.lid === b.lid).why}`));
     const left = Math.max(0, first + cfg.waitMin * 60e3 - now);
     if (waitL.length && !R.length && left > 0) return { state: 'wait', reasons: [], kinds: [], qty, total, top, items: per, waitLeftMs: left, cfg };
     waitL.forEach((b) => add('nomkt', `「${sh(b.title)}」 시장 자료 없음 — ${left > 0 ? '아직 못 읽음(다른 검토 이유가 있어 기다리지 않음)' : `${cfg.waitMin}분 기다려도 못 읽음`}`));
     return { state: R.length ? 'review' : 'pass', reasons: R, kinds: [...kinds], qty, total, top, items: per, waitLeftMs: 0, cfg }; }
-  const API = { VERSION, planConfirm, AUTO_DEFAULTS, autoCfg, custRisk, autoShipDecide, parseDeliveryPage, parseShippedPage, KR_HOLIDAYS, holName, pickupRun, dayKeyAdd, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays };
+  const API = { VERSION, planConfirm, AUTO_DEFAULTS, autoCfg, autoLowOf, bbOf, custRisk, autoShipDecide, parseDeliveryPage, parseShippedPage, KR_HOLIDAYS, holName, pickupRun, dayKeyAdd, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; root.ReadnowShipping = API;
 })(typeof window !== 'undefined' ? window : globalThis);
