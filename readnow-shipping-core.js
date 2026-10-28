@@ -8,7 +8,7 @@
 // ==========================================================================
 (function (root) {
   'use strict';
-  const VERSION = '0.7.2'; // (0.7.2) 🤖 자동 발송요청 YLW·저가 상품 알라딘 매입가 기준(autoLowOf·bbOf) // (0.7.1) 🤖 자동 발송요청 판단(autoShipDecide · AUTO_DEFAULTS · custRisk) — 판매가 비교는 출고 카드 판매가 평가와 같은 ReadnowML.evalSale // (0.7.0) 🇰🇷 법정 공휴일 미리 넣음·택배 수거 달력(pickup off/on)·실제 발송 묶음(pickupRun)·③ 배송&구매확정전 화면 읽기(parseShippedPage — 그날 출고 = 발송일이 그날인 주문) // (0.6.0) planConfirm — 오늘 출고 확정 목록 계산(웹앱 '출고 확정' 단추와 클라우드 출고 시각 자동 확정이 같은 기준) 
+  const VERSION = '0.7.3'; // (0.7.3) 저가·YLW 매입가: 우리 등급 칸이 없으면 가장 가까운 다른 등급 매입가와 견줌(bbPick) // (0.7.2) 🤖 자동 발송요청 YLW·저가 상품 알라딘 매입가 기준(autoLowOf·bbOf) // (0.7.1) 🤖 자동 발송요청 판단(autoShipDecide · AUTO_DEFAULTS · custRisk) — 판매가 비교는 출고 카드 판매가 평가와 같은 ReadnowML.evalSale // (0.7.0) 🇰🇷 법정 공휴일 미리 넣음·택배 수거 달력(pickup off/on)·실제 발송 묶음(pickupRun)·③ 배송&구매확정전 화면 읽기(parseShippedPage — 그날 출고 = 발송일이 그날인 주문) // (0.6.0) planConfirm — 오늘 출고 확정 목록 계산(웹앱 '출고 확정' 단추와 클라우드 출고 시각 자동 확정이 같은 기준) 
   const T = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
   const toInt = (s) => { const n = parseInt(String(s || '').replace(/[^\d-]/g, ''), 10); return isNaN(n) ? null : n; };
 
@@ -212,7 +212,13 @@
   function autoLowOf(it, cfg, sku) { cfg = autoCfg(cfg); if (!cfg.lowOn) return null; const k = String(sku || (it && it.sku) || '').trim().toUpperCase(); const pre = String(cfg.lowSku || '').trim().toUpperCase(); const pr = +(it && it.price) || 0;
     const bySku = !!(pre && k.startsWith(pre)), byPrice = cfg.lowPrice > 0 && pr > 0 && pr <= cfg.lowPrice; return bySku || byPrice ? { sku: bySku, price: byPrice } : null; }
   /* 알라딘 매입가(그 등급) — mkt.buyback {최상, 상, 중} 숫자만 · 0·빈 칸·모르는 등급 = 모름(null) */
-  function bbOf(m, grade) { const B = m && m.buyback; if (!B || typeof B !== 'object' || !grade) return null; const v = +B[grade]; return Number.isFinite(v) && v > 0 ? v : null; }
+  /* (정범님 10/28 11:32) 우리 등급 칸에 매입가가 없으면 다른 등급이라도 매입가가 있으면 그것과 견줌 — 우리 등급에 가장 가까운 등급부터(같은 거리면 더 좋은 등급 = 더 높은 매입가라 더 엄격). 돌려줌 { v, g, alt } */
+  const BB_ORD = ['최상', '상', '중', '하'];
+  function bbPick(m, grade) { const B = m && m.buyback; if (!B || typeof B !== 'object') return null; const ok = (x) => Number.isFinite(x) && x > 0;
+    if (grade && ok(+B[grade])) return { v: +B[grade], g: grade, alt: false };
+    const gi = BB_ORD.indexOf(grade); const c = Object.keys(B).filter((k) => ok(+B[k])).map((k) => { const i = BB_ORD.indexOf(k); return { k, d: i < 0 ? 9 : gi < 0 ? i : Math.abs(i - gi), i: i < 0 ? 9 : i }; }).sort((a, b) => a.d - b.d || a.i - b.i);
+    return c.length ? { v: +B[c[0].k], g: c[0].k, alt: true } : null; }
+  function bbOf(m, grade) { const x = bbPick(m, grade); return x ? x.v : null; }
   function autoCfg(c) { const x = { ...AUTO_DEFAULTS, ...(c || {}) }; const n = (v, d, lo, hi) => { v = +v; return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
     x.minQty = Math.round(n(x.minQty, AUTO_DEFAULTS.minQty, 1, 999)); x.cheapPct = n(x.cheapPct, AUTO_DEFAULTS.cheapPct, 0, 100); x.waitMin = n(x.waitMin, AUTO_DEFAULTS.waitMin, 1, 120); x.on = x.on !== false; x.noValid = !!x.noValid; x.custBlock = x.custBlock !== false;
     x.lowOn = x.lowOn !== false; x.lowPrice = Math.round(n(x.lowPrice, AUTO_DEFAULTS.lowPrice, 0, 1e7)); x.lowSku = String(x.lowSku == null ? AUTO_DEFAULTS.lowSku : x.lowSku).trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 12); return x; }
@@ -235,9 +241,9 @@
       const P = { ...b, mkt: 'ok', at: m.at || null, ratio: r && r.ratio != null ? r.ratio : null, ref: r ? r.ref : null, refHow: r ? r.refHow || '' : '', tier: r ? r.tier || null : null, verdict: r ? r.verdict || '' : '평가 파일 없음', nValid: r && r.feat ? r.feat.nValid : null };
       const sku = it.sku || (e && e.sku) || null; if (sku) P.sku = String(sku); const low = autoLowOf(it, cfg, sku);
       const lowT = low ? [low.sku ? `관리코드 ${cfg.lowSku}…` : '', low.price ? `${W(cfg.lowPrice)} 이하` : ''].filter(Boolean).join(' · ') : '';
-      if (low) { const bb = bbOf(m, b.grade); P.low = lowT; P.bb = bb;
-        if (bb != null) { P.rule = 'bb'; if (b.price < bb) { P.flag = 'bbLow'; add('bbLow', `「${sh(b.title)}」 ${W(b.price)} — 알라딘 매입가(${b.grade}) ${W(bb)}보다 쌈 (${lowT} 상품: 매입가 이상이면 통과)`); } else P.why = `${lowT} 상품 — 알라딘 매입가(${b.grade}) ${W(bb)} 이상이라 통과 (25% 기준 안 씀)`; per.push(P); continue; }
-        P.rule = 'bbNone'; P.bbWhy = `${lowT} 상품인데 알라딘 매입가(${b.grade || '등급 모름'})를 모름(알라딘이 안 사는 책이거나 표에 그 등급이 없음) → 25% 기준으로`; } else P.rule = 'pct';
+      if (low) { const bp = bbPick(m, b.grade); const bb = bp ? bp.v : null; P.low = lowT; P.bb = bb; if (bp) { P.bbG = bp.g; P.bbAlt = bp.alt; } const bgT = bp ? (bp.alt ? `${bp.g} — 우리 등급(${b.grade || '모름'}) 칸이 없어 가장 가까운 등급` : bp.g) : '';
+        if (bb != null) { P.rule = 'bb'; if (b.price < bb) { P.flag = 'bbLow'; add('bbLow', `「${sh(b.title)}」 ${W(b.price)} — 알라딘 매입가(${bgT}) ${W(bb)}보다 쌈 (${lowT} 상품: 매입가 이상이면 통과)`); } else P.why = `${lowT} 상품 — 알라딘 매입가(${bgT}) ${W(bb)} 이상이라 통과 (25% 기준 안 씀)`; per.push(P); continue; }
+        P.rule = 'bbNone'; P.bbWhy = `${lowT} 상품인데 알라딘 매입가(${b.grade || '등급 모름'})를 모름(알라딘이 안 사는 책 — 표에 어느 등급도 매입가가 없음) → 25% 기준으로`; } else P.rule = 'pct';
       if (r && r.tier === 'valid' && r.ratio != null && r.ratio < -cfg.cheapPct / 100) { P.flag = 'cheap'; add('cheap', `「${sh(b.title)}」 ${W(b.price)} — ${r.refHow} ${W(r.ref)}보다 ${Math.round(-r.ratio * 100)}% 쌈 (기준 ${cfg.cheapPct}% 넘게)${P.rule === 'bbNone' ? ' · 알라딘 매입가를 몰라 25% 기준으로 봄' : ''}`); }
       else if (!r || r.tier !== 'valid') { P.flag = 'novalid'; P.why = '첫 페이지에 유효 매물이 없어 유효 최저가가 없음' + (P.bbWhy ? ' · ' + P.bbWhy : ''); if (cfg.noValid) add('novalid', `「${sh(b.title)}」 유효 매물이 없어 판매가를 견줄 수 없음`); }
       else if (P.bbWhy) P.why = P.bbWhy;
@@ -247,6 +253,6 @@
     if (waitL.length && !R.length && left > 0) return { state: 'wait', reasons: [], kinds: [], qty, total, top, items: per, waitLeftMs: left, cfg };
     waitL.forEach((b) => add('nomkt', `「${sh(b.title)}」 시장 자료 없음 — ${left > 0 ? '아직 못 읽음(다른 검토 이유가 있어 기다리지 않음)' : `${cfg.waitMin}분 기다려도 못 읽음`}`));
     return { state: R.length ? 'review' : 'pass', reasons: R, kinds: [...kinds], qty, total, top, items: per, waitLeftMs: 0, cfg }; }
-  const API = { VERSION, planConfirm, AUTO_DEFAULTS, autoCfg, autoLowOf, bbOf, custRisk, autoShipDecide, parseDeliveryPage, parseShippedPage, KR_HOLIDAYS, holName, pickupRun, dayKeyAdd, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays };
+  const API = { VERSION, planConfirm, AUTO_DEFAULTS, autoCfg, autoLowOf, bbOf, bbPick, custRisk, autoShipDecide, parseDeliveryPage, parseShippedPage, KR_HOLIDAYS, holName, pickupRun, dayKeyAdd, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; root.ReadnowShipping = API;
 })(typeof window !== 'undefined' ? window : globalThis);
