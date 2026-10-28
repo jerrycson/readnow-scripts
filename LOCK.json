@@ -1,12 +1,12 @@
 {
- "holder": "auto-check",
- "what": "커밋 준비 — 수집기 1.89.134·웹앱 1.78.220",
- "since": "2026-10-28T13:16:00Z",
- "beat": "2026-10-28T13:19:37Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "auto3h",
-  "done": "4시간 점검 20:13 — 웹앱 1.78.219 (b8427cf)",
-  "at": "2026-10-28T11:31:51Z"
+  "who": "auto-check",
+  "done": "🔬 정밀 점검(Fable) — 수집기 1.89.134·웹앱 1.78.220 (8572cba) + 보고",
+  "at": "2026-10-28T13:25:16Z"
  }
 }
