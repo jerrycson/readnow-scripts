@@ -1,1 +1,2 @@
-@kpin kpin/aud_20261027-231948.json
+shpauto=40
+# 1440613528
