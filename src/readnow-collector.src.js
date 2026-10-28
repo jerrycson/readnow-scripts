@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.133
+// @version      1.89.134
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -7334,8 +7334,10 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   let schedDrawDay = '';
   /* (1.89.124 🔬 정밀 점검 — 10/27 실측) ⏰ 일정 문서(prd_jobs/autoSched · 232KB · 오늘 회차 726개)는 PC마다 함께 도는 쉴 때 일의 심장박동·회차 시작/끝으로 한 시간에 80~100번 바뀌고, 모든 PC 수집기 탭이 그때마다 ⏰ 패널 전체를 다시 그렸음
    *  (LOGGER 4시간 343번 · HOME 316번 · JS-MAIN 275번 · 한 번에 0.4~0.6초 = PC마다 시간당 약 40초 화면 멈춤 · 그때마다 패널 HTML 쓰레기). → 받은 값은 바로 갱신하고 그리기만 3초 뒤 한 번으로 모음 · 탭이 숨어 있으면 그리지 않고 다시 보일 때 한 번 */
-  let schedDrawT = 0, schedDrawDue = false;
-  function schedDrawSoon() { if (typeof document !== 'undefined' && document.hidden) { schedDrawDue = true; return; } if (schedDrawT) return; schedDrawT = setTimeout(() => { schedDrawT = 0; schedDrawDue = false; try { schedDraw(); } catch (e) { console.warn('⏰ 그리기 실패', e); } }, 3000); }
+  let schedDrawT = 0, schedDrawDue = false, schedVis = true, schedIO = null;
+  /* (1.89.134 · 🔬 정밀 점검) ⏰ 패널이 화면에 보이지 않으면(접힘·다른 칸·스크롤 밖) 그리지 않음 — 로거·사무실 PC는 알라딘 화면이 늘 앞이라 document.hidden이 거의 안 먹어, 회차 문서 스냅숏마다(시간당 80~100번) 패널 전체를 다시 그려 PC마다 시간당 수십 초 멈추고 HTML 쓰레기가 쌓였음(10/28 실측 HOME 4시간 340번·272초). IntersectionObserver로 '보일 때만' 그리고, 안 보이는 동안 쌓인 변화는 다시 보일 때 한 번 그림. */
+  function schedSeeEl() { if (schedIO || typeof IntersectionObserver === 'undefined') return; const el = globalThis.__rnById && globalThis.__rnById('rnpSched'); if (!el) return; try { schedIO = new IntersectionObserver((ents) => { schedVis = ents[ents.length - 1].isIntersecting; if (schedVis && schedDrawDue) schedDrawSoon(); }); schedIO.observe(el); } catch (e) { schedVis = true; } }
+  function schedDrawSoon() { schedSeeEl(); if ((typeof document !== 'undefined' && document.hidden) || !schedVis) { schedDrawDue = true; return; } if (schedDrawT) return; schedDrawT = setTimeout(() => { schedDrawT = 0; schedDrawDue = false; try { schedDraw(); } catch (e) { console.warn('⏰ 그리기 실패', e); } }, 3000); }
   if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden && schedDrawDue) schedDrawSoon(); });
   function schedDraw() { const el = globalThis.__rnById('rnpSched'); if (!el || !AS) return; const S0 = SCHED || { on: false }; const { day } = kstNow(); schedDrawDay = day; const slots = AS.slotsOf(S0); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
     const plan = AS.dayPlan(S0, SCHED_RUNS, { now: Date.now() }, asAvgMs);
