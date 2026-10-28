@@ -1,2 +1,2 @@
-sizes=shp_cmds&n=1500
-# 3241229441
+sizes=pur_matches,shp_market_seen&n=3000
+# 486217341
