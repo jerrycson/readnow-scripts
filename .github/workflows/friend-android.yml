@@ -18,7 +18,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }
-      - uses: android-actions/setup-android@v3
+      - name: 안드로이드 SDK (러너에 이미 있음 — 라이선스만)
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '8.14.3' }
       - name: 판 번호 · 서명 열쇠
@@ -31,7 +32,15 @@ jobs:
         env:
           FRIEND_KS_PASS: '${{ secrets.FRIEND_KS_PASS }}'
           FRIEND_KS_ALIAS: '${{ secrets.FRIEND_KS_ALIAS }}'
-        run: gradle -p friend-app/android --no-daemon assembleRelease
+        shell: bash
+        run: set -o pipefail; gradle -p friend-app/android --no-daemon assembleRelease --stacktrace 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+      - name: 실패하면 기록 끝부분을 주석으로(밖에서 읽을 수 있게)
+        if: failure()
+        shell: bash
+        run: |
+          f=$(ls -t "$GITHUB_WORKSPACE/build.log" 2>/dev/null | head -1); [ -f "$f" ] || exit 0
+          tail -c 60000 "$f" | grep -v '^\s*$' | tail -400 > tail.txt
+          split -l 40 tail.txt part_; for p in part_*; do m=$(sed 's/%/%25/g' "$p" | awk '{printf "%s%%0A", $0}'); echo "::error title=log $p::$m"; done
       - name: 파일 이름 정리
         run: |
           mkdir -p dist-friend; cp friend-app/android/app/build/outputs/apk/release/*.apk "dist-friend/readnow-friend-${FRIEND_VERSION}.apk"; ls -la dist-friend

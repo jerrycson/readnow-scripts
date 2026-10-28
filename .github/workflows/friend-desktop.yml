@@ -31,7 +31,15 @@ jobs:
           node -e "const fs=require('fs');const v=process.argv[1];for(const f of ['src-tauri/tauri.conf.json','package.json']){const j=JSON.parse(fs.readFileSync(f,'utf8'));j.version=v;fs.writeFileSync(f,JSON.stringify(j,null,2))}const c=fs.readFileSync('src-tauri/Cargo.toml','utf8').replace(/^version = \".*\"/m,'version = \"'+v+'\"');fs.writeFileSync('src-tauri/Cargo.toml',c)" "$V"
       - run: npm install --no-audit --no-fund
       - name: 만들기 (tauri build — NSIS · MSI)
-        run: npx tauri build
+        shell: bash
+        run: set -o pipefail; npx tauri build 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+      - name: 실패하면 기록 끝부분을 주석으로(밖에서 읽을 수 있게)
+        if: failure()
+        shell: bash
+        run: |
+          f=$(ls -t "$GITHUB_WORKSPACE/build.log" 2>/dev/null | head -1); [ -f "$f" ] || exit 0
+          tail -c 60000 "$f" | grep -v '^\s*$' | tail -400 > tail.txt
+          split -l 40 tail.txt part_; for p in part_*; do m=$(sed 's/%/%25/g' "$p" | awk '{printf "%s%%0A", $0}'); echo "::error title=log $p::$m"; done
       - name: 파일 이름 정리
         shell: bash
         run: |
