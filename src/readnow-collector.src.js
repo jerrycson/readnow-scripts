@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.135
+// @version      1.89.136
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -2526,6 +2526,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const sent = new Map((await dbAll('uploaded')).map((u) => [u._key, u.hash]));
     const todo = docs.filter((d) => sent.get(`${d.col}/${d.id}`) !== docHash(d));
     const pendingCust = new Set(((await dbGet('meta', 'pendingCustomers')) || { ids: [] }).ids); // 지난번에 다 못 한 고객 요약
+    const pend0 = pendingCust.size; /* (1.89.136 4시간 점검) 이번 올리기가 아무것도 바꾸지 않았는지 — 아래 점수 전체 재계산을 건너뛸지 정할 때 씀 */
     log(`올릴 문서 ${todo.length.toLocaleString()}개 (바뀐 것만), 다시 계산할 고객 요약은 올린 뒤 정해집니다`);
     const BATCH = 300; let done = 0; let skipped = 0;
     for (let i = 0; i < todo.length; i += BATCH) {
@@ -2563,7 +2564,21 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     ujob.status = 'done'; ujob.finishedAt = now(); ujob.startedAt = null; await saveJob(ujob);
     try { window.__rnCS && (window.__rnCS.add('crm_upload', 'ok', Math.max(0, todo.length - skipped)), window.__rnCS.add('crm_upload', 'skip', skipped, '같은 내용(이미 올림)')); } catch (e) {} /* (1.79.0) 📊 */
     log(`Firebase 올리기 완료: 문서 ${todo.length.toLocaleString()}개 확인 (그중 같은 내용 ${skipped.toLocaleString()}개는 건너뜀)${buildDocs.lastPending ? `, 구글 시트 연결 대기 ${buildDocs.lastPending}건은 웹앱에서 확정 예정` : ''}`, 'ok');
+    return { quiet: !todo.length && !pend0 && !pendingCust.size && !fromApp.length };
   }
+  /* (1.89.136 4시간 점검 · 🧠 근원) 올리기 뒤 고객 점수 '전체' 재계산을 바뀐 것이 없으면 건너뜀
+   *  10/29 실측 JS-MAIN: ⏰ '고객 문의'(30분마다)·'전체주문 상시'(1시간마다)가 끝날 때마다 올릴 것 0개여도 taskScore가 crm_orders 5,791건 + crm_interactions 전체(약 7천 건)를 Firebase에서 통째로 읽어
+   *  고객 5,120명을 다시 계산(늘 '바뀐 0명') — 하루 약 70번 · 약 50만 번 읽기 · 그때마다 화면 막힘(5분 긴 작업 45~88초 · 한 번 최대 11.5초 · 회차마다 '기록 창 열림' 성능 경고의 주인)
+   *  → 건너뛰는 조건(모두 맞을 때만): 이번 올리기가 쓴 것·다시 계산할 고객·웹앱 재계산 요청 없음 · 지난 전체 계산이 오늘(한국 날짜 — 최근성 점수는 날이 바뀌면 바뀜)이고 2시간 안
+   *  · 점수 규칙(crm_system/scoring) 그대로 · 지난 계산 시작 뒤 crm_orders·crm_interactions에 새로 적힌 것(uploadedAt — 수집기·웹앱·클라우드가 모두 찍음) 없음(각 1건 읽기)
+   *  2시간마다·날이 바뀌면·무엇이든 바뀌면 예전처럼 전체 계산 · '고객 점수 계산' 단추·일괄 수집은 그대로 늘 계산 */
+  async function scoreSkipWhy(up) { try { if (!up || !up.quiet) return null; const ls = await dbGet('meta', 'lastScore'); if (!ls || !ls.at) return null; const t0 = Date.parse(ls.from || ls.at); if (!t0 || Date.now() - t0 > 2 * 3600e3) return null;
+      const kd = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10); if (kd(t0) !== kd(Date.now())) return null;
+      let rh = ''; try { const d = await fdb.collection('crm_system').doc('scoring').get(); rh = d.exists ? stableStr(d.data()) : ''; } catch (e) { return null; } if ((ls.rules || '') !== hashStr(rh)) return null;
+      const since = FB.firestore.Timestamp.fromMillis(t0 - 5 * 60e3); /* 5분 겹쳐 봄(시계 차이) */
+      for (const col of ['crm_orders', 'crm_interactions']) { const q = await fdb.collection(col).where('uploadedAt', '>', since).limit(1).get(); if (!q.empty) return null; }
+      return `바뀐 주문·기록·규칙 없음 · 지난 전체 계산 ${Math.round((Date.now() - t0) / 60e3)}분 전`; } catch (e) { return null; } }
+  async function uploadThenScore() { const up = await taskUpload(); const why = await scoreSkipWhy(up); if (why) { log(`고객 점수 전체 재계산 건너뜀 — ${why} (2시간마다·날이 바뀌면 다시 계산)`); return; } currentTask = 'score'; render(); try { await taskScore(); } catch (e) { if (e.code === 'PAUSED') throw e; log(`점수 계산 멈춤: ${e.message}`, 'warn'); } }
   // 고객 요약: 그 고객의 모든 주문·기록을 Firebase에서 읽어 다시 계산 (어느 PC에서 올려도 정확)
   async function recomputeCustomers(set) {
     const ids = [...set]; if (!ids.length) return; await loadSellerLinks(); await loadScoringConfig();
@@ -2642,6 +2657,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   async function taskScore() {
     if (!FB || !fdb) throw new Error('Firebase 파일을 불러오지 못했습니다.');
     if (!fbUser) throw new StopSignal('FBLOGIN', '점수 계산은 Firebase 로그인 후에 할 수 있습니다.');
+    const scoreFrom = now(); let rulesH = ''; try { const d = await fdb.collection('crm_system').doc('scoring').get(); rulesH = hashStr(d.exists ? stableStr(d.data()) : ''); } catch (e) {} /* (1.89.136) 건너뛰기 판단용 — 계산 시작 시각·점수 규칙 */
     setNow('Firebase에서 주문·기록을 읽는 중 (약 7천 건 읽기)'); progress('고객 점수 계산', 0, 1); await loadSellerLinks(); await loadScoringConfig();
     const [os, is] = await Promise.all([fdb.collection('crm_orders').get(), fdb.collection('crm_interactions').get()]);
     const orders = []; os.forEach((d) => orders.push({ _id: d.id, ...d.data() })); const inters = []; is.forEach((d) => inters.push(d.data()));
@@ -2664,7 +2680,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       progress('고객 점수 계산', Math.min(todo.length, i + 300), todo.length);
     }
     const vip = custs.filter((c) => c.autoFlags.vip.on).length; const cau = custs.filter((c) => c.autoFlags.caution.on).length;
-    await dbPut('meta', { _key: 'lastScore', at: now(), vip, cau });
+    await dbPut('meta', { _key: 'lastScore', at: now(), from: scoreFrom, rules: rulesH, vip, cau });
     log(`점수 계산 완료: 자동 VIP ${vip}명, 자동 주의고객 ${cau}명 (사람이 직접 정한 표시는 그대로 우선)`, 'ok');
   }
 
@@ -2744,7 +2760,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     qna: { label: '묻고 답하기', run: taskQna },
     reviews: { label: '구매평', run: taskReviews },
     verify: { label: '검증', run: taskVerify },
-    upload: { label: 'Firebase 올리기', run: async () => { await taskUpload(); currentTask = 'score'; render(); try { await taskScore(); } catch (e) { if (e.code === 'PAUSED') throw e; log(`점수 계산 멈춤: ${e.message}`, 'warn'); } } },
+    upload: { label: 'Firebase 올리기', run: uploadThenScore },
     recheck: { label: '문제 주문 재확인', run: taskRecheck },
     score: { label: '고객 점수 계산', run: taskScore },
     sellerSync: { label: '판매자 툴팁 동기화', run: taskSellerSync },
