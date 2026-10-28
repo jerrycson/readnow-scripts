@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "auto3h",
+ "what": "4시간 점검: 고객 점수 건너뛰기 판단을 서버 시각으로(수집기 1.89.138)",
+ "since": "2026-10-28T23:22:08Z",
+ "beat": "2026-10-28T23:22:08Z",
  "ask": null,
  "last": {
   "who": "kpsum",
