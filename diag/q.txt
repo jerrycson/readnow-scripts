@@ -1,1 +1,11 @@
-@kpin kpin/aud_20261028-113244.json
+perf=400
+health=1&hours=24
+health=1&hours=3
+logs=1&pc=LOGGER&from=202610281800
+logs=1&pc=JS-MAIN&from=202610281800
+logs=1&pc=HOME&from=202610281800
+logs=1&pc=MJ-MAIN&from=202610281200
+doc=prd_jobs/pcBeat,app_settings/write_watch,app_settings/value_model,app_settings/buyback_stats,app_settings/extras_study,prd_system/dataBackup,app_settings/kpipa_ctg,app_settings/secure_vault_status,app_settings/secure_vault_files
+sizes=shp_cmds&n=400
+recentUp=prd_listings&mins=240
+# 592915207
