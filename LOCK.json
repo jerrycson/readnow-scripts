@@ -1,12 +1,12 @@
 {
- "holder": "auto3h",
- "what": "4시간 점검 00:13 — 웹앱 매입 연결(pmatch) 글자 같이 쓰기(메모리)",
- "since": "2026-10-28T15:30:42Z",
- "beat": "2026-10-28T15:30:42Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "auto-check",
-  "done": "🔬 정밀 점검(Fable) — 수집기 1.89.134·웹앱 1.78.220 (8572cba) + 보고",
-  "at": "2026-10-28T13:25:16Z"
+  "who": "auto3h",
+  "done": "4시간 점검 00:13 — 웹앱 1.78.223 (9d77045) + 보고",
+  "at": "2026-10-28T15:33:26Z"
  }
 }
