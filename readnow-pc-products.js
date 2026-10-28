@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.131의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.132의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.131' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.131', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.132' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.132', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2556,7 +2556,7 @@
     else if (v.type === 'lookup') { LOOK_PRIO++; try { await lookupCmd(ref, v); } finally { LOOK_PRIO--; } return; } /* (1.78.2) 사진 가격 조회도 사람이 기다림 — 알라딘 차례 먼저 */
     else if (v.type === 'pageText') { await pageTextCmd(ref, v); return; } /* (10/26) 📄 알라딘 안내 글(약관 등) 읽기 — 정범님 '알라딘 규약 살펴봐' · 대화 세션이 원문 조항을 확인 */
     else if (v.type === 'qnaReply') { await qnaReplyCmd(ref, v); return; }
-    else if (v.type === 'cancelOrder') { await cancelOrderCmd(ref, v); return; } /* (10/27) ✖ 웹앱 출고 ① 주문확인요청에서 맡긴 주문 취소 → 샵매니저 */ /* (10/26) 💬 웹앱에서 쓴 묻고 답하기 답변 → 샵매니저 */
+    else if (v.type === 'cancelOrder') { await cancelOrderCmd(ref, v); return; } /* (10/27) ✖ 웹앱 출고 ① 주문확인요청 · (10/28) ② 발송요청에서 맡긴 주문 취소 → 샵매니저 (v.stage) */ /* (10/26) 💬 웹앱에서 쓴 묻고 답하기 답변 → 샵매니저 */
     else if (v.type === 'regDel') { await regDelCmd(ref, v); return; } /* (1.81.0) 🗑 웹앱에서 지운 등록 상품 → 알라딘 삭제 */
     else if (v.type === 'regLookup') { await regLookupCmd(ref, v); return; } /* (1.77.0) 📥 등록 조회 = 샵매니저 등록 검색(로그인 PC만 — 로거는 pcCan에서 거름) */
     else if (v.type === 'extLookup' || v.type === 'extTest') { await extCmd(ref, v); return; } // (1.57.0) 🌐 외부 정보 — 알라딘과 상관없음
@@ -3207,10 +3207,13 @@
    *  ③ 실행 문(exec_log)에 시작을 적을 수 있을 때만 · 양식의 칸 차례 그대로(고른 사유 하나 · 고른 상품만 · 숨은 칸 그대로) 같은 주소로 GET
    *  ④ 주문확인요청을 다시 읽어 확인: 고른 상품이 모두 빠짐 → done · 일부만 골랐는데 주문이 통째로 빠짐 → doneAll(고객이 '주문 전체 취소'를 고른 주문 → learnedOpt 'all') · 남은 상품이 그대로 → learnedOpt 'part'
    *  로그인이 풀려 있으면 다시 로그인하지 않고 실패로(아무것도 보내지 않음 · 로그인은 __rnLoginGov 규칙만) */
-  const CX_LAYER = (ono) => `https://www.aladin.co.kr/scm/ReportNotSalesLayer.aspx?ono=${encodeURIComponent(ono)}`; const CX_LIST = 'https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx';
+  /* (정범님 10/28) ② 발송요청 단계 취소도 — 샵매니저 발송요청 탭(worder_delivery.aspx?orderstep=4)에서 주문을 체크하고 '판매 불가 통보'를 누르면 같은 '주문 상품 취소' 창(form#layerReportNotSales → ReportNotSalesLayer.aspx GET · rdUrl만 발송요청 주소)이 뜸(정범님이 보낸 실제 화면 10/28)
+   *  stage 'confirm'(① 주문확인요청 · 기본) | 'deliv'(② 발송요청) — 앞뒤 확인은 그 단계 목록(같은 읽기 함수 SH.parseDeliveryPage · 탭 건수 칸 '주문확인요청' / '발송 요청')으로
+   *  발송요청 단계는 그 주문의 송장번호 칸(deliveryNo.{주문번호})에 번호가 들어 있으면 이미 발송했을 수 있어 아무것도 보내지 않음 */
+  const CX_LAYER = (ono) => `https://www.aladin.co.kr/scm/ReportNotSalesLayer.aspx?ono=${encodeURIComponent(ono)}`; const CX_LISTS = { confirm: 'https://www.aladin.co.kr/scm/worder_preparatory_complete.aspx', deliv: 'https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4' }; const CX_TAB = { confirm: '주문확인요청', deliv: '발송 요청' }; const CX_LIST = CX_LISTS.confirm;
   async function cxGet(url, scm) { await PACE.wait(sleep); const r = await fetch(url, { credentials: 'include', cache: 'no-store' }); const html = AL.decode(await r.arrayBuffer(), r.headers.get('content-type')); const doc = new DOMParser().parseFromString(html, 'text/html');
     return { r, html, doc, lo: AL.looksLoggedOut(r.url, doc, scm ? { scmNeedsLogout: true, url } : { titleOk: /샵매니저|알라딘|취소/ }) }; }
-  function cxListOf(SH, doc) { const x = SH.parseDeliveryPage(doc); const okP = !!(x && x.tabCounts && Object.keys(x.tabCounts).length); const orders = (x && x.orders) || []; const full = okP && x.tabCounts['주문확인요청'] != null && orders.length >= x.tabCounts['주문확인요청']; return { okP, full, orders }; }
+  function cxListOf(SH, doc, stage) { const tk = CX_TAB[stage] || CX_TAB.confirm; const x = SH.parseDeliveryPage(doc); const okP = !!(x && x.tabCounts && Object.keys(x.tabCounts).length); const orders = (x && x.orders) || []; const full = okP && x.tabCounts[tk] != null && orders.length >= x.tabCounts[tk]; return { okP, full, orders }; }
   function cxProbe(doc) { return { title: String(doc.title || '').slice(0, 60), forms: [...doc.forms].slice(0, 6).map((f) => ({ id: f.id || '', action: String(f.getAttribute('action') || '').slice(0, 120), method: f.getAttribute('method') || '', fields: [...f.elements].slice(0, 30).map((e) => `${e.type || e.tagName}:${e.name || e.id || ''}`) })), text: String((doc.body || doc.documentElement || {}).textContent || '').replace(/\s+/g, ' ').trim().slice(0, 400) }; }
   /* (정범님 10/28) 고객이 주문 때 고른 '일부 상품 품절 시 주문 취소 여부' — 알라딘 '판매 불가 통보' 창(ReportNotSalesLayer.aspx?ono=)의 [취소 상품] 위 한 줄
    *  '구매자가 선택한 일부 상품 품절시 주문 취소 여부 : <mark>품절 상품만 취소, 나머지 상품은 수령</mark>' (정범님이 보낸 발송요청 탭 화면 10/28) → 'part' · '판매자의 주문 전체 취소' → 'all'
@@ -3228,47 +3231,50 @@
       try { const L = await cxGet(CX_LAYER(o.orderNo)); if (L.lo) { out.fail++; break; } const x = cxOptParse(L.doc); if (x && x.v) { await soldOptSave(o.orderNo, x, st); out.n++; } else await soldOptSave(o.orderNo, { v: null, txt: x ? x.txt : '', tried: { ...((M[o.orderNo] || {}).tried || {}), [st]: nowIso() } }, st); }
       catch (e) { out.fail++; } } return out; }
   async function cancelOrderCmd(ref, v) { const ono = String(v.orderNo || (v.orderNos || [])[0] || '').trim(); const reason = String(v.reason || ''); const want = [...new Set((v.items || []).map(String).filter((x) => /^\d+$/.test(x)))]; const t0 = Date.now();
+    const stage = v.stage == null || v.stage === 'confirm' ? 'confirm' : v.stage === 'deliv' ? 'deliv' : null; const TAB = CX_TAB[stage] || ''; const LIST = CX_LISTS[stage] || ''; /* (10/28) 단계 — 없으면 예전처럼 ① 주문확인요청 */
     const ex = (s) => ref.set({ ...s, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {});
     const fail = async (msg, more) => { await ref.set({ status: 'fail', msg, doneAt: nowIso(), by: PC_NAME, ms: Date.now() - t0, ...(more || {}), uploadedAt: TS() }, { merge: true }); log(`✖ 주문 취소 못 함 (${ono}): ${msg}`, 1); };
     if (!/^\d{3}-[A-Z]\d{9}$/.test(ono) || !['1', '2'].includes(reason) || !want.length) return fail('주문번호·취소 사유·상품 번호가 맞지 않음 (아무것도 보내지 않음)');
+    if (!stage) return fail(`취소 단계(${String(v.stage).slice(0, 20)})를 모름 — 주문확인요청(confirm)·발송요청(deliv)만 (아무것도 보내지 않음)`);
     const SH = window.ReadnowShipping || globalThis.ReadnowShipping; if (!SH || !SH.parseDeliveryPage) return fail('출고 공용 파일(readnow-shipping-core.js)이 없음 — 수집기 새로고침 (아무것도 보내지 않음)');
-    let before; try { await ex({ step: 'read', msg: `${PC_NAME}: 주문확인요청에서 이 주문을 확인하는 중` }); const g = await cxGet(CX_LIST, true); if (g.lo) return fail(`${PC_NAME}의 알라딘 로그인이 풀려 있음 — 로그인된 PC에서 다시 (아무것도 보내지 않음)`); before = cxListOf(SH, g.doc); }
-    catch (e) { return fail('주문확인요청을 못 읽음: ' + e.message + ' (아무것도 보내지 않음)'); }
-    const o0 = before.orders.find((o) => o.orderNo === ono); if (!o0) return fail(before.okP ? '주문확인요청에 이 주문이 없음 — 이미 발송준비시작했거나 취소된 주문 (아무것도 보내지 않음)' : '주문확인요청 화면을 제대로 못 읽음 (아무것도 보내지 않음)', { result: { state: 'notInList' } });
+    let before; try { await ex({ step: 'read', msg: `${PC_NAME}: ${TAB}에서 이 주문을 확인하는 중` }); const g = await cxGet(LIST, true); if (g.lo) return fail(`${PC_NAME}의 알라딘 로그인이 풀려 있음 — 로그인된 PC에서 다시 (아무것도 보내지 않음)`); before = cxListOf(SH, g.doc, stage); }
+    catch (e) { return fail(TAB + '을(를) 못 읽음: ' + e.message + ' (아무것도 보내지 않음)'); }
+    const o0 = before.orders.find((o) => o.orderNo === ono); if (!o0) return fail(before.okP ? (stage === 'deliv' ? '발송 요청에 이 주문이 없음 — 이미 송장을 넣어 배송&구매확정전으로 넘어갔거나 취소된 주문 (아무것도 보내지 않음)' : '주문확인요청에 이 주문이 없음 — 이미 발송준비시작했거나 취소된 주문 (아무것도 보내지 않음)') : TAB + ' 화면을 제대로 못 읽음 (아무것도 보내지 않음)', { result: { state: 'notInList', stage } });
+    if (stage === 'deliv' && String(o0.deliveryNo || '').trim()) { const dn = String(o0.deliveryNo).trim(); return fail(`이 주문에 송장번호(${dn.length > 4 ? '…' + dn.slice(-4) : dn})가 이미 들어 있음 — 이미 발송했을 수 있어 취소를 보내지 않음 (샵매니저 발송요청에서 송장·택배 상태를 직접 확인)`, { result: { state: 'shipped', stage, deliveryNo: dn } }); }
     const have = (o0.items || []).map((it) => String(it.listingId || '')).filter(Boolean); const miss = want.filter((x) => !have.includes(x)); if (miss.length) return fail(`고른 상품 ${miss.join(', ')}이(가) 이 주문에 없음 — 목록이 바뀜 (아무것도 보내지 않음)`, { result: { state: 'itemsChanged', have } });
     let L; try { await ex({ step: 'layer', msg: `${PC_NAME}: 알라딘 '주문 상품 취소' 창을 읽는 중` }); L = await cxGet(CX_LAYER(ono)); } catch (e) { return fail('취소 창을 못 읽음: ' + e.message + ' (아무것도 보내지 않음)'); }
     if (L.lo) return fail(`${PC_NAME}의 알라딘 로그인이 풀려 있음 (아무것도 보내지 않음)`);
     const F = L.doc.querySelector('form#layerReportNotSales') || [...L.doc.forms].find((f) => /ReportNotSalesLayer\.aspx/i.test(f.getAttribute('action') || '')); const probe = cxProbe(L.doc);
     const layerText = (() => { if (!F) return null; const c = F.cloneNode(true); c.querySelectorAll('.info_list1,.info_list2,script,style').forEach((x) => x.remove()); return c.textContent.replace(/\s+/g, ' ').trim().slice(0, 600); })(); /* 고객의 '일부 품절 시' 선택이 이 창에 보이는지 알아보려고 안내 문구를 뺀 글을 남김(지어내지 않음 — 글만) */
-    const lOpt = cxOptParse(L.doc); if (lOpt && lOpt.v) await soldOptSave(ono, lOpt, 'confirm'); /* (정범님 10/28) 창에 고객 선택이 보이면 적어 둠 */
+    const lOpt = cxOptParse(L.doc); if (lOpt && lOpt.v) await soldOptSave(ono, lOpt, stage); /* (정범님 10/28) 창에 고객 선택이 보이면 적어 둠 */
     if (lOpt && lOpt.v === 'all' && want.length < have.length) return fail(`고객이 '판매자의 주문 전체 취소'를 고른 주문 — ${want.length}권만 취소해도 알라딘이 주문 전체(${have.length}권)를 취소하므로 보내지 않음 (웹앱에서 전체 취소로 다시 고르세요)`, { result: { state: 'optAll', learnedOpt: 'all' }, layerText });
     if (!F) return fail("알라딘 취소 창에서 '주문 상품 취소' 양식을 못 찾음 — 창을 여는 주소가 다를 수 있음(확인 필요 · 아무것도 보내지 않음)", { probe });
     const act = new URL(F.getAttribute('action') || '', L.r.url || CX_LAYER(ono)); if (act.host !== 'www.aladin.co.kr' || !/\/scm\/ReportNotSalesLayer\.aspx$/i.test(act.pathname) || String(F.getAttribute('method') || 'GET').toUpperCase() !== 'GET') return fail(`취소 양식이 보내는 곳이 예상과 다름(${act.pathname} ${F.getAttribute('method') || ''}) — 아무것도 보내지 않음`, { probe, layerText });
     const els = [...F.elements]; const onoEl = els.find((e) => e.name === 'ono'); const boxes = els.filter((e) => e.name === 'ordersItem' && e.type === 'checkbox').map((e) => String(e.value)); const rads = els.filter((e) => e.name === 'cancelReason' && e.type === 'radio').map((e) => String(e.value));
     if (!onoEl || String(onoEl.value) !== ono) return fail(`취소 창의 주문번호(${onoEl ? onoEl.value : '없음'})가 이 주문과 다름 — 아무것도 보내지 않음`, { probe, layerText });
     const bMiss = want.filter((x) => !boxes.includes(x)); if (bMiss.length || !rads.includes(reason)) return fail(`취소 창에 ${bMiss.length ? '고른 상품 ' + bMiss.join(', ') : '취소 사유 ' + reason}이(가) 없음 — 아무것도 보내지 않음`, { probe, layerText, result: { state: 'formMismatch', boxes, rads } });
-    const xk = `${ref.id}:${v.tries || 1}`; const gate = await exBegin('cancelOrder', xk, { ono, n: want.length, reason: +reason, whole: want.length === have.length });
-    if (!gate.ok) return fail('실행 문: ' + (gate.why || '같은 취소를 이미 보낸 기록이 있음') + ' — 샵매니저 주문확인요청에서 확인', { result: { state: gate.state === 'done' ? 'unknown' : 'gate' } });
+    const xk = `${ref.id}:${v.tries || 1}`; const gate = await exBegin('cancelOrder', xk, { ono, n: want.length, reason: +reason, whole: want.length === have.length, stage });
+    if (!gate.ok) return fail('실행 문: ' + (gate.why || '같은 취소를 이미 보낸 기록이 있음') + ` — 샵매니저 ${TAB}에서 확인`, { result: { state: gate.state === 'done' ? 'unknown' : 'gate', stage } });
     let st = 'failed', why = null;
     try { const q = new URLSearchParams(); for (const e of els) { if (!e.name || e.disabled) continue; if (e.type === 'radio') { if (e.name === 'cancelReason' && String(e.value) === reason) q.append(e.name, e.value); continue; } if (e.type === 'checkbox') { if (e.name === 'ordersItem' && want.includes(String(e.value))) q.append(e.name, e.value); continue; } if (['hidden', 'text'].includes(e.type)) q.append(e.name, e.value); }
       act.search = q.toString(); await ex({ step: 'send', msg: `${PC_NAME}: 알라딘 '선택 상품 품절 취소'와 같은 요청을 보냄 (${want.length}권 · 사유 ${reason === '1' ? '고객 취소 요청' : '품절 취소'})` });
       await PACE.wait(sleep); const r1 = await fetch(act.href, { credentials: 'include', cache: 'no-store' }); const h1 = AL.decode(await r1.arrayBuffer(), r1.headers.get('content-type')); const alerts = [...h1.matchAll(/alert\(\s*['"]([^'"]{1,200})['"]/g)].map((m) => m[1]).slice(0, 6);
-      await ex({ step: 'verify', msg: `${PC_NAME}: 주문확인요청을 다시 읽어 빠졌는지 확인하는 중 (응답 HTTP ${r1.status}${alerts.length ? ' · ' + alerts.join(' / ').slice(0, 80) : ''})`, alerts, http: r1.status });
-      let after = null, gDoc = null; for (let k = 0; k < 3; k++) { if (k) await sleep(2500); try { const g2 = await cxGet(CX_LIST, true); if (!g2.lo) { after = cxListOf(SH, g2.doc); gDoc = g2.doc; } } catch (e) { why = '확인 읽기 실패: ' + e.message; } if (after && after.okP) { const o1 = after.orders.find((o) => o.orderNo === ono); if (!o1 || want.every((x) => !(o1.items || []).some((it) => String(it.listingId) === x))) break; } }
+      await ex({ step: 'verify', msg: `${PC_NAME}: ${TAB}을(를) 다시 읽어 빠졌는지 확인하는 중 (응답 HTTP ${r1.status}${alerts.length ? ' · ' + alerts.join(' / ').slice(0, 80) : ''})`, alerts, http: r1.status });
+      let after = null, gDoc = null; for (let k = 0; k < 3; k++) { if (k) await sleep(2500); try { const g2 = await cxGet(LIST, true); if (!g2.lo) { after = cxListOf(SH, g2.doc, stage); gDoc = g2.doc; } } catch (e) { why = '확인 읽기 실패: ' + e.message; } if (after && after.okP) { const o1 = after.orders.find((o) => o.orderNo === ono); if (!o1 || want.every((x) => !(o1.items || []).some((it) => String(it.listingId) === x))) break; } }
       const okSaid = alerts.some((a) => /취소되었습니다|취소 되었습니다/.test(a)); let result;
-      if (!after || !after.okP) result = { state: 'unknown', why: why || '주문확인요청을 다시 못 읽음' };
+      if (!after || !after.okP) result = { state: 'unknown', why: why || TAB + '을(를) 다시 못 읽음' };
       else { const o1 = after.orders.find((o) => o.orderNo === ono); const left = o1 ? (o1.items || []).map((it) => String(it.listingId || '')) : []; const still = want.filter((x) => left.includes(x)); const partial = want.length < have.length;
-        if (still.length) result = { state: okSaid ? 'unknown' : 'fail', why: `보냈지만 고른 상품 ${still.length}권이 아직 주문확인요청에 있음${okSaid ? '(알라딘은 취소됐다고 답함 — 목록 반영이 늦을 수 있음)' : ''}`, left };
+        if (still.length) result = { state: okSaid ? 'unknown' : 'fail', why: `보냈지만 고른 상품 ${still.length}권이 아직 ${TAB}에 있음${okSaid ? '(알라딘은 취소됐다고 답함 — 목록 반영이 늦을 수 있음)' : ''}`, left };
         else if (!o1 && !(after.full || okSaid)) result = { state: 'unknown', why: '주문이 읽은 목록에 안 보이지만 목록을 다 읽지 못했고 알라딘 답도 없어 취소됐는지 확인 못 함', left: [] };
         else if (!o1 && partial && after.full) result = { state: 'doneAll', learnedOpt: 'all', left: [] };
         else if (!o1 && partial) result = { state: 'unknown', why: '일부만 골랐는데 주문이 읽은 목록에 안 보임 — 목록을 다 읽지 못해 주문 전체가 취소됐는지 확인 못 함', left: [] };
         else result = { state: 'done', ...(partial && o1 ? { learnedOpt: 'part' } : {}), left }; }
-      Object.assign(result, { sent: want, reason: +reason, alerts, http: r1.status, layerText, before: have, ...(lOpt && lOpt.v ? { layerOpt: lOpt.v } : {}) });
+      Object.assign(result, { stage, sent: want, reason: +reason, alerts, http: r1.status, layerText, before: have, ...(lOpt && lOpt.v ? { layerOpt: lOpt.v } : {}) });
       st = ['done', 'doneAll'].includes(result.state) ? 'done' : result.state === 'fail' ? 'failed' : 'unknown'; why = result.why || null;
       await ref.set({ status: st === 'done' ? 'done' : st === 'failed' ? 'fail' : 'unknown', step: 'end', result, msg: st === 'done' ? (result.state === 'doneAll' ? '주문 전체가 취소됨(고객이 전체 취소를 고른 주문)' : '알라딘에서 취소된 것을 확인함') : why, doneAt: nowIso(), by: PC_NAME, ms: Date.now() - t0, uploadedAt: TS() }, { merge: true });
-      log(`✖ 주문 취소 ${st === 'done' ? '확인' : st === 'failed' ? '실패' : '확인 못 함'} (${ono} · ${want.length}권 · ${reason === '1' ? '고객 취소 요청' : '품절 취소'}${result.state === 'doneAll' ? ' · 주문 전체 취소됨' : ''}, ${Math.round((Date.now() - t0) / 1000)}초)`, st === 'done' ? 0 : 1);
-      if (gDoc) { try { await shipLiteRead(SH, gDoc); } catch (e) {} } /* 취소 결과를 바로 목록에 — 웹앱 주문확인요청에서 빠짐 */ }
-    catch (e) { why = e.message; await fail('보내는 중 오류: ' + e.message + ' — 알라딘에 갔을 수 있음, 샵매니저에서 확인', { result: { state: 'unknown' } }); st = 'unknown'; }
+      log(`✖ 주문 취소 ${st === 'done' ? '확인' : st === 'failed' ? '실패' : '확인 못 함'} (${TAB} · ${ono} · ${want.length}권 · ${reason === '1' ? '고객 취소 요청' : '품절 취소'}${result.state === 'doneAll' ? ' · 주문 전체 취소됨' : ''}, ${Math.round((Date.now() - t0) / 1000)}초)`, st === 'done' ? 0 : 1);
+      if (gDoc) { try { await shipLiteRead(SH, stage === 'confirm' ? gDoc : null); } catch (e) {} } /* 취소 결과를 바로 목록에 — 웹앱 주문확인요청(발송요청)에서 빠짐 · shipLiteRead의 둘째 값은 주문확인요청 화면만(발송요청 화면을 넘기면 주문확인요청으로 잘못 적힘 → 그때는 두 화면을 다시 읽음) */ }
+    catch (e) { why = e.message; await fail('보내는 중 오류: ' + e.message + ' — 알라딘에 갔을 수 있음, 샵매니저에서 확인', { result: { state: 'unknown', stage } }); st = 'unknown'; }
     finally { await exEnd('cancelOrder', xk, st, st === 'done' ? null : why); } }
   /* 알라딘 답변 화면(form1 · ASP.NET)을 받은 그대로 보내는 요청으로 — 양식의 이름 있는 칸을 모두 그대로 모으고 답변 칸(txtAnswer)만 바꾼 뒤, 등록 이미지 단추(btnAnswerAddEdit)를 누른 것과 같은 값(.x·.y)을 붙임
    *  (정범님이 보낸 실제 화면 10/26: form1 post → 같은 주소 · hidden __VIEWSTATE·__VIEWSTATEGENERATOR·IsAnswerEmail·hidAnswerId · textarea txtAnswer · input type=image btnAnswerAddEdit — 화면 검사는 빈 칸이면 '답변 내용을 입력하세요.'뿐) */
