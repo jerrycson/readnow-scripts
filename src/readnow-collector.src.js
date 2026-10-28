@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.134
+// @version      1.89.135
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -154,7 +154,7 @@ rnPwEye((inp) => !!(inp.closest && inp.closest('[id^="rn"], .rncard'))); /* 수�
 window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } catch (e) {} for (let i = 0; i < 12; i++) { if (tb.closed) return true; await new Promise((r) => setTimeout(r, 500)); } try { window.__rnLog && window.__rnLog('수집기', 'warn', '연 탭(로그인 등)을 닫지 못함 — 남은 탭이 있으면 직접 닫아 주세요'); } catch (e) {} return false; };
 (function rnFeatInit() {
   window.__rnFeats = [
-    ['custCard', '🧑 고객 카드·고객 표시', '주문 상세 팝업의 고객 카드 · 판매관리·주문조회 목록의 주문번호 옆 고객 표시', '화면'],
+    ['custCard', '🧑 고객 카드·고객 표시', '주문 상세 팝업의 고객 카드 · 판매관리·주문조회·주문확인요청·발송요청 목록의 주문번호 옆 고객 표시', '화면'],
     ['monitor', '🎨 가격 감시 색 표시', '상품 조회/수정 목록 줄마다 판정 엔진 묶음 색', '화면'],
     ['marks', '⚠ 우리 상품 옆 표시', '취소 주문 기록 · 참고 가격(정가·새상품 판매가) · 예스24 중고 링크 (상품 조회/수정·판매관리)', '화면'],
     ['cash', '💵 현금 판매 띠', '상품 조회/수정의 판매중지 바꾸기·다시 판매중 + 웹앱이 맡긴 현금 판매 판매중지', '화면·맡긴 일'],
@@ -1060,7 +1060,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   /* ════════════════════════════════════════════════════════════
    * C. 알라딘 화면의 고객 정보 (웹앱과 같은 내용)
    *    · 주문 상세 팝업: 고객 카드 전체
-   *    · 판매관리·주문조회 목록: 주문번호 옆에 고객 표시(VIP·주의·블랙리스트·불만족·판매자 일치·재구매), 누르면 카드
+   *    · 판매관리·주문조회 목록·① 주문확인요청·② 발송요청(10/28): 주문번호 옆에 고객 표시(VIP·주의·블랙리스트·불만족·판매자 일치·재구매), 누르면 카드
    *    웹앱에 고객 기능이 추가되면 이 카드에도 함께 반영한다.
    * ════════════════════════════════════════════════════════════ */
   const RN_APP_URL = 'https://jerrycson.github.io/readnow-scripts/app/';
@@ -1228,8 +1228,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     return;
   }
 
-  // ── 판매관리·주문조회 목록: 주문번호 옆에 고객 표시, 누르면 카드
-  if (/\/scm\/(worders|worder_preparatory_complete)\.aspx/i.test(location.pathname)) {
+  // ── 판매관리·주문조회 목록: 주문번호 옆에 고객 표시, 누르면 카드 — (정범님 10/28) ② 발송요청 탭(worder_delivery.aspx?orderstep=4)에도 같은 표시·같은 카드(주문 링크 viewOrderDetail이 같은 모양)
+  if (/\/scm\/(worders|worder_preparatory_complete)\.aspx/i.test(location.pathname) || (/\/scm\/worder_delivery\.aspx/i.test(location.pathname) && window.top === window)) {
     (async () => { if (window.__rnFeat && !window.__rnFeat('custCard')) return; /* (1.63.7) 🧩 */
       await new Promise((r) => setTimeout(r, 1200));
       const F = CARD.FBx(); if (!F) return; const u = await CARD.user(); if (!u) return;
@@ -5815,7 +5815,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   async function runCmd0(id) { const ref = C('shp_cmds').doc(id); let v = null; if ((window.__rnRest && window.__rnRest())) return; // (1.56.0) 맡긴 일은 이 PC의 수집기 탭만
     const cfWait = (x) => !!x && CLOUD_FIRST.has(x.type) && !x.cloudTried && x.dev !== PC_NAME && !pcLoggedNow(); /* (10/27) 클라우드를 기다리는 것은 이 PC 로그인이 풀린 때만 */
     { const x0 = (await ref.get()).data(); if (x0 && x0.status === 'queued' && cfWait(x0)) { /* (1.89.106) 정범님 10/26 23:16 '모든 요청은 휴대폰이 아닌 한 그 PC가 먼저': 이 PC 웹앱에서 누른 일은 클라우드를 기다리지 않고 바로 */ const age = Date.now() - (Date.parse(x0.createdAt || 0) || Date.now()); const ca = await cloudAlive(); CLOUD_GRACE = ca.alive ? 45000 : 3000; if (age < CLOUD_GRACE) { setTimeout(() => runCmd(id).catch(() => {}), CLOUD_GRACE - age + 300 + claimDelay(x0)); return; } } } /* (1.77.5) 출고·돈 일은 클라우드 먼저 — 20초 안에 클라우드가 안 받으면 이 PC가 받음(아래 pcFallback 표시 → 웹앱 '클라우드 이상' 알림) */
-    await db.runTransaction(async (tx) => { v = null; /* (1.89.13) 트랜잭션이 다시 돌면 앞 시도의 값이 남지 않게 */ const sn = await tx.get(ref); const x = sn.data(); if (!x || x.status !== 'queued' || !pcCan(x.type) || !cmdMine(x.type) || String(x.pcSkip || '').includes(` ${APP_VER}에`) || (Array.isArray(x.pcNo) && x.pcNo.includes(PC_NAME)) || (x.type === 'shopCfg' && x.delivery && !(window.__rnShopCredOk && window.__rnShopCredOk()))) return; /* (10/27) pcNo = 이 PC가 못 한다고 되돌린 일(다른 PC·클라우드 몫) · 가게 배송 설정 저장은 알라딘 비밀번호(rn-cred)가 있는 PC만 */ /* 노선표에서 PC 몫인 종류만 (1.36.0) */ tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, ...(cfWait(x) ? { pcFallback: { at: nowIso(), pc: PC_NAME, why: `클라우드가 ${Math.round(CLOUD_GRACE / 1000)}초 안에 받지 않음` } } : {}), uploadedAt: TS() }); v = x; });
+    await db.runTransaction(async (tx) => { v = null; /* (1.89.13) 트랜잭션이 다시 돌면 앞 시도의 값이 남지 않게 */ const sn = await tx.get(ref); const x = sn.data(); if (!x || x.status !== 'queued' || (x.type === 'pageText' && x.op && !pcLoggedNow()) /* (10/28) 🪟 웹앱 안 창 알라딘 읽기는 로그인된 PC만(로그인이 풀린 PC는 다른 PC·클라우드에 넘김) */ || !pcCan(x.type) || !cmdMine(x.type) || String(x.pcSkip || '').includes(` ${APP_VER}에`) || (Array.isArray(x.pcNo) && x.pcNo.includes(PC_NAME)) || (x.type === 'shopCfg' && x.delivery && !(window.__rnShopCredOk && window.__rnShopCredOk()))) return; /* (10/27) pcNo = 이 PC가 못 한다고 되돌린 일(다른 PC·클라우드 몫) · 가게 배송 설정 저장은 알라딘 비밀번호(rn-cred)가 있는 PC만 */ /* 노선표에서 PC 몫인 종류만 (1.36.0) */ tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, ...(cfWait(x) ? { pcFallback: { at: nowIso(), pc: PC_NAME, why: `클라우드가 ${Math.round(CLOUD_GRACE / 1000)}초 안에 받지 않음` } } : {}), uploadedAt: TS() }); v = x; });
     if (!v) return;
     window.__rnCmdCur = { id, type: v.type, label: String(v.label || '').slice(0, 60), t0: Date.now() }; log(`📨 웹앱이 맡긴 일 받음: ${CMD_KO[v.type] || v.type}${v.label ? ' · ' + String(v.label).slice(0, 60) : ''}${v.by ? ' · ' + String(v.by).split('@')[0] : ''} — 이 PC(${PC_NAME})가 처리 시작`);
     if (cfWait(v)) { const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const ca = await cloudAlive(); const docN = ca.alive ? 'cloud_slow' : 'cloud_fb'; /* (1.83.0) 신호가 살아 있는데 늦은 것은 '느림' 기록만(띠 없음) · 신호가 끊긴 때만 클라우드 이상 */
@@ -5849,6 +5849,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     else if (v.type === 'prdEdit') { if (typeof window.__rnPrdEdit !== 'function') { await ref.set({ status: 'queued', claim: null, pcSkip: `PC 수집기 ${APP_VER}에 상품 수정 길이 아직 안 열림(상품 조회·등록 화면이 열린 탭만)`, uploadedAt: TS() }, { merge: true }); return; } await window.__rnPrdEdit(ref, v, id); return; } /* (1.89.26) ✏ 상품 정보 수정 — 클라우드가 못 받을 때 */
     else if (v.type === 'cashStop') { await cashStopCmd(ref, v); return; } // (1.37.0) 현금 판매 → 알라딘 판매중지 자동 // (1.35.0) 알라딘 매입: 팔기 장바구니에 담기
     else if (v.type === 'lookup') { LOOK_PRIO++; try { await lookupCmd(ref, v); } finally { LOOK_PRIO--; } return; } /* (1.78.2) 사진 가격 조회도 사람이 기다림 — 알라딘 차례 먼저 */
+    else if (v.type === 'pageText' && (v.op === 'usedPages' || v.op === 'page')) { await alReadCmd(ref, v); return; } /* (10/28) 🪟 웹앱 안 창의 알라딘 읽기 — 로그인된 PC 먼저 */
     else if (v.type === 'pageText') { await pageTextCmd(ref, v); return; } /* (10/26) 📄 알라딘 안내 글(약관 등) 읽기 — 정범님 '알라딘 규약 살펴봐' · 대화 세션이 원문 조항을 확인 */
     else if (v.type === 'qnaReply') { await qnaReplyCmd(ref, v); return; }
     else if (v.type === 'cancelOrder') { await cancelOrderCmd(ref, v); return; } /* (10/27) ✖ 웹앱 출고 ① 주문확인요청 · (10/28) ② 발송요청에서 맡긴 주문 취소 → 샵매니저 (v.stage) */ /* (10/26) 💬 웹앱에서 쓴 묻고 답하기 답변 → 샵매니저 */
@@ -5893,12 +5894,12 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     for (let pg = 1; pg <= Math.min(last, 8); pg++) { const g = await getDoc('https://www.aladin.co.kr/scm/worder_delivery_complete.aspx?page=' + pg + '&keywordType=0&keyword=&orderstep=5'); const x = SH.parseShippedPage(g.doc, td);
       if (pg === 1) { tabCounts = x.tabCounts; last = x.lastPage; if (!tabCounts || !Object.keys(tabCounts).length) throw new Error('배송&구매확정전 화면을 제대로 못 읽음(탭 숫자 없음) — 아무것도 쓰지 않음'); }
       x.orders.forEach((o) => all.push({ ...o, pos: all.length })); if (!x.orders.length || x.orders.some((o) => o.shipDay && o.shipDay < from)) break; }
-    const orders = all.map((o) => ({ orderNo: o.orderNo, shipDay: o.shipDay, pos: o.pos, orderedAt: o.orderedAt, buyer: o.buyer, items: (o.items || []).map((i) => ({ title: i.title, qty: i.qty, price: i.price, listingId: i.listingId, sku: i.sku })) }));
+    const orders = all.map((o) => ({ orderNo: o.orderNo, shipDay: o.shipDay, pos: o.pos, orderedAt: o.orderedAt, buyer: o.buyer, buyerEmail: o.buyerEmail || null, items: (o.items || []).map((i) => ({ title: i.title, qty: i.qty, price: i.price, listingId: i.listingId, sku: i.sku })) }));
     const byDay = new Map(); for (const o of orders) { if (!o.shipDay || o.shipDay < from) continue; (byDay.get(o.shipDay) || byDay.set(o.shipDay, []).get(o.shipDay)).push(o); }
     const days = [...byDay.keys()].sort(); let w = 0; const AU0 = firebase.firestore.FieldValue.arrayUnion;
     for (const d of days) { const L = byDay.get(d); const ref = C('shp_days').doc(d); const ex = (await ref.get()).data(); if (ex && ex.source === 'edit' && !ex.void) continue; /* 사람이 직접 고친 날은 그대로 (클라우드와 같음) */
-      const old = ex && ex.source === 'tab' ? ex.entries || [] : (ex && Array.isArray(ex.tabEntries) ? ex.tabEntries : []); const have = new Set(old.map((e) => e.orderNo)); const add = L.filter((o) => !have.has(o.orderNo)).map((o) => ({ id: 'aladin_' + o.orderNo, orderNo: o.orderNo, ex: [], pos: o.pos, items: o.items, orderedAt: o.orderedAt || null, seenAt: nowIso() }));
-      if (ex && ex.source === 'tab' && !add.length && Array.isArray(ex.tabEntries)) continue; const ents = [...add, ...old]; const sig = ents.map((e) => e.orderNo).join(','); const prev = orders.find((o) => o.shipDay && o.shipDay < d); const top = L[0];
+      const old = ex && ex.source === 'tab' ? ex.entries || [] : (ex && Array.isArray(ex.tabEntries) ? ex.tabEntries : []); const have = new Set(old.map((e) => e.orderNo)); const add = L.filter((o) => !have.has(o.orderNo)).map((o) => ({ id: 'aladin_' + o.orderNo, orderNo: o.orderNo, ex: [], pos: o.pos, items: o.items, orderedAt: o.orderedAt || null, buyer: o.buyer || null, buyerEmail: o.buyerEmail || null, seenAt: nowIso() })); /* (정범님 10/28) 주문인(구매자) 이름도 — 웹앱 출고별 매출 카드가 주문 기록(crm_orders)이 아직 없어도 구매자를 보이고 판매자 의심(사은품 금지)을 봄 */ const bOf = new Map(L.map((o) => [o.orderNo, o.buyer || null])); let bFill = 0; old.forEach((e) => { if (e && !e.buyer && bOf.get(e.orderNo)) { e.buyer = bOf.get(e.orderNo); bFill++; } }); /* 예전 줄에 없던 주문인은 덧붙이기만(다른 칸은 그대로) */
+      if (ex && ex.source === 'tab' && !add.length && !bFill && Array.isArray(ex.tabEntries)) continue; const ents = [...add, ...old]; const sig = ents.map((e) => e.orderNo).join(','); const prev = orders.find((o) => o.shipDay && o.shipDay < d); const top = L[0];
       let items = 0, total = 0; ents.forEach((o) => (o.items || []).forEach((i) => { items += +i.qty || 1; total += (+i.price || 0) * (+i.qty || 1); }));
       await ref.set({ day: d, entries: ents, tabEntries: ents, source: 'tab', sig, orderCount: ents.length, itemCount: items, total, top: top ? top.orderNo : (ex && ex.top) || null, prevLast: prev ? prev.orderNo : (ex && ex.prevLast) || null, readAt: nowIso(), by: `${PC_NAME} (배송&구매확정전)`, writerSchema: 7, ...(ex && ex.source === 'auto' ? { oldAuto: { entries: ex.entries || [], orderCount: ex.orderCount || null, total: ex.total || null, confirmedAt: ex.confirmedAt || null } } : {}), ...(ex && ex.source === 'confirm' ? { prevConfirm: { entries: ex.entries || [], by: ex.by || null, confirmedAt: ex.confirmedAt || null, orderCount: ex.orderCount || null, total: ex.total || null } } : {}), history: AU0({ at: nowIso(), by: PC_NAME, what: `배송&구매확정전 발송일 ${d} — 새로 ${add.length}건 · 모두 ${ents.length}건 ${items}권` }), uploadedAt: TS() }, { merge: true }); w++; }
     const res = { n: orders.length, days: days.length, wrote: w, tab: (tabCounts || {})['배송&구매확정전'] ?? null, by: PC_NAME }; await C('shp_state').doc('tabRead').set({ lastTab: { ...res, at: nowIso() } }, { merge: true }).catch(() => {});
@@ -6464,6 +6465,44 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       try { const g = await getDoc(String(u)); const d = g.doc; d.querySelectorAll('script,style,noscript').forEach((x) => x.remove()); const t = String((d.body || d.documentElement).textContent || '').replace(/[ \t\u00a0]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim(); results[k] = { url: String(u), ok: true, len: t.length, text: t.slice(0, 80000), title: String(d.title || '').slice(0, 200) }; }
       catch (e) { results[k] = { url: String(u), ok: false, why: String(e.message || e).slice(0, 200) }; } }
     await ref.set({ status: 'done', results, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true }); log(`📄 알라딘 안내 글 읽기: ${Object.values(results).filter((r) => r.ok).length} / ${Object.keys(results).length}개`); }
+  /* ══ (정범님 10/28 '출고 주문 상품 카드의 내부창으로 전체중고를 확인할 때 여전히 로그인 업무를 클라우드 단독으로') — 웹앱 안 창의 알라딘 읽기를 로그인된 PC 먼저
+   *  맡긴 일 pageText(📄 알라딘 화면 읽기 · 노선표 by pc · 로거는 받지 않음)에 op를 더함 — 웹앱 pcFirst가 맡기고 20초 안에 PC가 안 받으면 웹앱이 클라우드(/usedpages · /aladinpage)를 부름(클라우드는 마지막)
+   *   · op 'usedPages' = 온라인 중고 2페이지부터 끝까지(시장 블록 '▾ 더 보기'·📑 크게 서랍) · op 'page' = 🪟 알라딘 화면 📄 화면(공개 화면 글 · 스크립트 뺌)
+   *   · 큰 결과(매물 줄·화면 글)는 맡긴 일 문서가 아니라 shp_cmd_out/{맡긴 일 번호}에(모든 웹앱이 듣는 shp_cmds를 무겁게 하지 않게) — 웹앱이 읽은 뒤 지움(옮기는 칸일 뿐 · 매물 기록은 prd_market_more에 바뀐 때만 쌓음 = 클라우드와 같음)
+   *   · 쪽 넘기기 방식은 클라우드 usedPages와 같음(첫 쪽 번호 단추 → 진짜 주소 · __doPostBack · 흔한 이름) — 공용 파일 readnow-products-core.js 다음 판에서 한 곳(usedPagesWalk)으로 옮길 것 */
+  const UP_HOW = { how: null }; const UP_LAST = new Map();
+  async function usedPagesWalkPc(itemId, maxP) { const P = window.ReadnowProducts || globalThis.ReadnowProducts; if (!P || !P.parseUsedPage) throw new Error('기준 파일(ReadnowProducts)이 아직 안 들어옴');
+    const ORI = 'https://www.aladin.co.kr'; const base = `/shop/UsedShop/wuseditemall.aspx?ItemId=${itemId}&TabType=0`; const dp = (h) => new DOMParser().parseFromString(h, 'text/html'); const rest = () => sleep(600 + Math.floor(Math.random() * 900)); /* 사람처럼 쪽 사이 0.6~1.5초 무작위 */
+    const g1 = await fetch(ORI + base, { credentials: 'include', cache: 'no-store' }); if (!g1.ok) throw new Error('첫 페이지 HTTP ' + g1.status); const d1 = dp(await g1.text()); const u1 = P.parseUsedPage(d1);
+    const ids1 = new Set((u1.listings || []).map((x) => x.listingId)); const anc = [...d1.querySelectorAll('.Ere_usedsell_num_box a')].map((a) => ({ t: (a.textContent || '').trim(), href: a.getAttribute('href') || '', on: a.getAttribute('onclick') || '' }));
+    const pb = (x) => { const m = String(x || '').match(/__doPostBack\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]*)['"]/); return m ? { t: m[1], a: m[2] } : null; };
+    const form = d1.querySelector('form'); const hid = form ? [...form.querySelectorAll('input[type=hidden]')].map((i) => [i.name, i.value]) : [];
+    const tryUrl = async (u, post) => { await rest(); const r = post ? await fetch(u, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: post }) : await fetch(u, { credentials: 'include', cache: 'no-store' }); if (!r.ok) return null; const d = dp(await r.text()); const u2 = P.parseUsedPage(d); const L = u2.listings || []; if (!L.length || L.every((x) => ids1.has(x.listingId))) return null; return { L, last: u2.lastPage || 0 }; };
+    const pageOf = async (n, how) => { const a = anc.find((x) => x.t === String(n));
+      if (how === 'href' || (!how && a && a.href && !/^javascript:|^#/.test(a.href))) { if (!a || !a.href || /^javascript:|^#/.test(a.href)) return null; const x = await tryUrl(new URL(a.href, ORI + base).href); return x ? { ...x, how: 'href' } : null; }
+      if (how === 'post' || (!how && a && pb(a.href || a.on))) { const q = a && pb(a.href || a.on); if (!q) return null; const f = new URLSearchParams(hid); f.set('__EVENTTARGET', q.t); f.set('__EVENTARGUMENT', q.a); const x = await tryUrl(new URL((form && form.getAttribute('action')) || base, ORI + base).href, f.toString()); return x ? { ...x, how: 'post' } : null; }
+      for (const k of how ? [how] : ['page', 'PageNumber', 'cpage', 'Page', 'pageNo']) { if (!/^[A-Za-z]+$/.test(k)) continue; const x = await tryUrl(`${ORI}${base}&${k}=${n}`); if (x) return { ...x, how: k }; } return null; };
+    const out = []; let how = UP_HOW.how; let last = u1.lastPage || 1; const seen = new Set(ids1); let why = null;
+    for (let n = 2; n <= Math.min(last, maxP); n++) { let x = await pageOf(n, how); if (!x && how) { how = null; x = await pageOf(n, null); } if (!x) { why = `${n}페이지를 못 엶 — 알라딘 번호 단추 모양: ${JSON.stringify(anc.slice(0, 3)).slice(0, 220)}`; break; } how = x.how; last = Math.max(last, x.last || 0);
+      const L = x.L.filter((r) => !seen.has(r.listingId)); L.forEach((r) => seen.add(r.listingId)); out.push({ page: n, rows: L }); if (!L.length) break; }
+    if (how) UP_HOW.how = how; return { usedTotal: u1.usedTotal ?? null, page1N: (u1.listings || []).length, lastPage: last, pages: out, how, why, capped: last > maxP }; }
+  const PV_OK = (u) => { try { const x = new URL(String(u || '')); return x.protocol === 'https:' && /^www\.aladin\.co\.kr$/i.test(x.hostname) && !/^\/(scm|login|account|order|cart|mypage|m\/mypage)\b|wlogin|wcart|worder|payment/i.test(x.pathname); } catch (e) { return false; } }; /* 웹앱 alPvOk와 같은 기준 + 이 PC 화면과 같은 주소(www)만 */
+  const pvClean = (html) => String(html || '').replace(/<script\b[\s\S]*?<\/script>/gi, '').replace(/<noscript\b[^>]*>([\s\S]*?)<\/noscript>/gi, '$1').replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*')/gi, '').replace(/<meta[^>]+http-equiv=["']?(refresh|content-security-policy)[^>]*>/gi, '').replace(/<img\b([^>]*?)\s(?:data-src|data-original|data-lazy-src)=("[^"]*"|'[^']*')([^>]*)>/gi, (a, x, src, y) => `<img${x.replace(/\ssrc=("[^"]*"|'[^']*')/i, '')} src=${src}${y}>`); /* 클라우드 aladinPage와 같은 규칙 */
+  async function alReadCmd(ref, v) { const t0 = Date.now(); const id = ref.id; const fin = (x) => ref.set({ status: 'done', ...x, ms: Date.now() - t0, doneAt: nowIso(), by: PC_NAME, uploadedAt: TS() }, { merge: true });
+    try {
+      if (v.op === 'usedPages') { const itemId = String(v.itemId || '').replace(/\D/g, ''); if (!itemId) return fin({ ok: false, err: '상품 번호가 없음' }); const maxP = Math.max(2, Math.min(30, +v.maxPages || 15));
+        const r = await usedPagesWalkPc(itemId, maxP); r.pages = JSON.parse(JSON.stringify(r.pages || [])); /* Firestore는 빈 값(undefined)을 받지 않음 */ const rows = r.pages.flatMap((pg) => pg.rows.map((x) => ({ ...x, page: pg.page }))); const h = JSON.stringify(rows.map((x) => [x.listingId, x.price, x.ship, x.grade]));
+        if (rows.length && UP_LAST.get(itemId) !== h) { UP_LAST.set(itemId, h); C('prd_market_more').add({ itemId, at: nowIso(), usedTotal: r.usedTotal, lastPage: r.lastPage, how: r.how || null, rows, by: PC_NAME, ...W() }).catch(() => {}); } /* 매물 기록 = 클라우드와 같은 칸·같은 규칙(바뀐 때만 쌓음) */
+        await C('shp_cmd_out').doc(id).set({ op: 'usedPages', itemId, pages: r.pages, at: nowIso(), by: PC_NAME, ...W() });
+        await fin({ ok: !r.why || rows.length > 0, out: id, usedTotal: r.usedTotal, page1N: r.page1N, lastPage: r.lastPage, capped: r.capped, maxPages: maxP, how: r.how || null, why: r.why || null, n: rows.length, err: !rows.length && r.why ? r.why : null });
+        log(`🪟 전체중고 더 보기(웹앱이 맡김): 상품 ${itemId} — 2~${r.lastPage}쪽 매물 ${rows.length}개 (${Math.round((Date.now() - t0) / 1000)}초)`); return; }
+      if (v.op === 'page') { const u = String(v.url || ''); if (!PV_OK(u)) return fin({ ok: false, err: '이 PC가 읽을 수 있는 알라딘 공개 화면 주소가 아님(샵매니저·로그인·주문 화면은 안 함)' });
+        const r = await fetch(u, { credentials: 'include', cache: 'no-store' }); if (!PV_OK(r.url)) return fin({ ok: false, err: '로그인 화면으로 넘어감 — 로그인이 필요한 화면은 미리보기 안 함', url: r.url });
+        let html = pvClean(await r.text()); let cut = false; while (new Blob([html]).size > 900000) { html = html.slice(0, Math.floor(html.length * 0.9)); cut = true; } /* Firestore 문서 1MB 한도 */
+        await C('shp_cmd_out').doc(id).set({ op: 'page', url: r.url, html, at: nowIso(), by: PC_NAME, ...W() });
+        await fin({ ok: r.ok, out: id, st: r.status, url: r.url, cut }); log(`🪟 알라딘 화면 📄(웹앱이 맡김): ${String(r.url).replace(/^https:\/\/www\.aladin\.co\.kr/, '').slice(0, 80)} (${Math.round((Date.now() - t0) / 1000)}초)`); return; }
+    } catch (e) { await fin({ ok: false, err: String(e.message || e).slice(0, 200) }); log(`🪟 웹앱 안 창 알라딘 읽기 실패(${v.op}): ${e.message} — 웹앱이 클라우드로 넘김`, 1); return; }
+    return fin({ ok: false, err: `모르는 읽기(${String(v.op).slice(0, 20)})` }); }
   async function qnaReplyCmd(ref, v) { const id = String(v.questionId || '').replace(/\D/g, ''); const text = String(v.text || '').replace(/\r/g, '').trim(); const t0 = Date.now(); const ex = (s) => ref.set({ ...s, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {});
     const fail = async (msg, more) => { await ref.set({ status: 'fail', msg, doneAt: nowIso(), by: PC_NAME, ms: Date.now() - t0, ...(more || {}), uploadedAt: TS() }, { merge: true }); log(`💬 묻고 답하기 답변 실패 (문의 ${id}): ${msg}`, 1); };
     if (!id || !text) return fail('문의 번호나 답변 글이 없음');

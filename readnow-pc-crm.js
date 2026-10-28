@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.134의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.135의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.134' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.134', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.135' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.135', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -28,7 +28,7 @@
   /* ════════════════════════════════════════════════════════════
    * C. 알라딘 화면의 고객 정보 (웹앱과 같은 내용)
    *    · 주문 상세 팝업: 고객 카드 전체
-   *    · 판매관리·주문조회 목록: 주문번호 옆에 고객 표시(VIP·주의·블랙리스트·불만족·판매자 일치·재구매), 누르면 카드
+   *    · 판매관리·주문조회 목록·① 주문확인요청·② 발송요청(10/28): 주문번호 옆에 고객 표시(VIP·주의·블랙리스트·불만족·판매자 일치·재구매), 누르면 카드
    *    웹앱에 고객 기능이 추가되면 이 카드에도 함께 반영한다.
    * ════════════════════════════════════════════════════════════ */
   const RN_APP_URL = 'https://jerrycson.github.io/readnow-scripts/app/';
@@ -196,8 +196,8 @@
     return;
   }
 
-  // ── 판매관리·주문조회 목록: 주문번호 옆에 고객 표시, 누르면 카드
-  if (/\/scm\/(worders|worder_preparatory_complete)\.aspx/i.test(location.pathname)) {
+  // ── 판매관리·주문조회 목록: 주문번호 옆에 고객 표시, 누르면 카드 — (정범님 10/28) ② 발송요청 탭(worder_delivery.aspx?orderstep=4)에도 같은 표시·같은 카드(주문 링크 viewOrderDetail이 같은 모양)
+  if (/\/scm\/(worders|worder_preparatory_complete)\.aspx/i.test(location.pathname) || (/\/scm\/worder_delivery\.aspx/i.test(location.pathname) && window.top === window)) {
     (async () => { if (window.__rnFeat && !window.__rnFeat('custCard')) return; /* (1.63.7) 🧩 */
       await new Promise((r) => setTimeout(r, 1200));
       const F = CARD.FBx(); if (!F) return; const u = await CARD.user(); if (!u) return;
