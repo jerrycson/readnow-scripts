@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.137의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.138의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.137' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.137', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.138' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.138', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -1543,7 +1543,7 @@
   async function scoreSkipWhy(up) { try { if (!up || !up.quiet) return null; const ls = await dbGet('meta', 'lastScore'); if (!ls || !ls.at) return null; const t0 = Date.parse(ls.from || ls.at); if (!t0 || Date.now() - t0 > 2 * 3600e3) return null;
       const kd = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10); if (kd(t0) !== kd(Date.now())) return null;
       let rh = ''; try { const d = await fdb.collection('crm_system').doc('scoring').get(); rh = d.exists ? stableStr(d.data()) : ''; } catch (e) { return null; } if ((ls.rules || '') !== hashStr(rh)) return null;
-      const since = FB.firestore.Timestamp.fromMillis(t0 - 5 * 60e3); /* 5분 겹쳐 봄(시계 차이) */
+      const since = ls.upS != null ? new FB.firestore.Timestamp(ls.upS, ls.upN || 0) : FB.firestore.Timestamp.fromMillis(t0 - 5 * 60e3); /* (1.89.138 4시간 점검) 지난 전체 계산이 읽은 주문·기록 가운데 가장 늦은 uploadedAt(서버 시각)보다 뒤에 적힌 것만 '새것' — 예전엔 내 시계 기준 계산 시작 5분 전부터 봐서, 계산 바로 앞에 올린 주문 1건(이미 계산에 들어감)을 다음 회차가 또 '새것'으로 봐 매시 전체 재계산을 2~3번 더 했음(10/29 07:01·07:03·07:31·08:01·08:03) · 옛 기록(upS 없음)은 예전처럼 5분 겹쳐 봄 */
       for (const col of ['crm_orders', 'crm_interactions']) { const q = await fdb.collection(col).where('uploadedAt', '>', since).limit(1).get(); if (!q.empty) return null; }
       return `바뀐 주문·기록·규칙 없음 · 지난 전체 계산 ${Math.round((Date.now() - t0) / 60e3)}분 전`; } catch (e) { return null; } }
   async function uploadThenScore() { const up = await taskUpload(); const why = await scoreSkipWhy(up); if (why) { log(`고객 점수 전체 재계산 건너뜀 — ${why} (2시간마다·날이 바뀌면 다시 계산)`); return; } currentTask = 'score'; render(); try { await taskScore(); } catch (e) { if (e.code === 'PAUSED') throw e; log(`점수 계산 멈춤: ${e.message}`, 'warn'); } }
@@ -1629,6 +1629,7 @@
     setNow('Firebase에서 주문·기록을 읽는 중 (약 7천 건 읽기)'); progress('고객 점수 계산', 0, 1); await loadSellerLinks(); await loadScoringConfig();
     const [os, is] = await Promise.all([fdb.collection('crm_orders').get(), fdb.collection('crm_interactions').get()]);
     const orders = []; os.forEach((d) => orders.push({ _id: d.id, ...d.data() })); const inters = []; is.forEach((d) => inters.push(d.data()));
+    let upS = null, upN = 0; for (const a of [orders, inters]) for (const x of a) { const u = x && x.uploadedAt; if (u && typeof u.seconds === 'number' && typeof u.toMillis === 'function' && (upS == null || u.seconds > upS || (u.seconds === upS && (u.nanoseconds || 0) > upN))) { upS = u.seconds; upN = u.nanoseconds || 0; } } /* (1.89.138) 이번에 읽은 것 가운데 가장 늦은 서버 시각 — 다음 건너뛰기 판단은 이것보다 뒤에 적힌 것만 봄 */
     const custs = aggregateCustomers(orders, inters);
     const sent = new Map((await dbAll('uploaded')).filter((u) => u._key.startsWith('crm_customers/')).map((u) => [u._key, u.hash]));
     const hashC = (c) => hashStr(stableStr(clean({ ...c, scores: { ...c.scores, day: undefined } })));
@@ -1648,7 +1649,7 @@
       progress('고객 점수 계산', Math.min(todo.length, i + 300), todo.length);
     }
     const vip = custs.filter((c) => c.autoFlags.vip.on).length; const cau = custs.filter((c) => c.autoFlags.caution.on).length;
-    await dbPut('meta', { _key: 'lastScore', at: now(), from: scoreFrom, rules: rulesH, vip, cau });
+    await dbPut('meta', { _key: 'lastScore', at: now(), from: scoreFrom, rules: rulesH, upS, upN, vip, cau });
     log(`점수 계산 완료: 자동 VIP ${vip}명, 자동 주의고객 ${cau}명 (사람이 직접 정한 표시는 그대로 우선)`, 'ok');
   }
 
