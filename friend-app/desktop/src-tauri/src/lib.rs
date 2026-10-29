@@ -6,12 +6,14 @@
 //!   칸 안이면 창이 클릭을 받고(set_ignore_cursor_events(false)) 밖이면 뒤 프로그램으로 통과(true).
 //! · 트레이: 보이기/숨기기 · 항상 위 · 모니터 바꾸기 · 시작 시 자동 실행 · 업데이트 확인 · 웹앱 열기 · 종료
 //! · 연결 링크 readnow-friend://pair?t=…&c=…&d=… → 화면을 #pair=… 로 다시 엶(한 번만 쓰는 표 → 같은 계정 로그인)
+//! · 바깥 알림(10/29): ① 같은 PC 창구 http://127.0.0.1:47613/say?m=글(&f=보낸 곳) · /open?p=order|qna|bad (브라우저 요청은 뺌)
+//! · 바깥 알림 ③ 연결 주소 readnow-friend://say?m=글(&f=보낸 곳) · readnow-friend://open?p=order|qna|bad — 허용 명령은 이 셋뿐
 //! · 껍데기 새 판: GitHub 판(friend-v…)을 6시간마다 확인 → …-setup.exe 를 받아 조용히(/S) 설치하고 다시 켬
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex,
 };
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use tauri::{
@@ -36,6 +38,8 @@ struct Hit {
     ignoring: bool,
     /// 글 칸(입력칸)에 커서가 있는 동안 — 칸 밖으로 마우스가 가도 창이 키보드·클릭을 계속 받음
     kb_focus: bool,
+    /// 화면(JS)이 보고한 배율(devicePixelRatio) — 칸 좌표(CSS px)를 만든 바로 그 값. 0이면 아직 못 받음
+    dpr: f64,
 }
 
 #[derive(Default, Serialize, Deserialize, Clone)]
@@ -89,7 +93,10 @@ fn friend_post(app: AppHandle, kind: String, data: serde_json::Value) {
                     }
                 }
             }
-            st.hit.lock().unwrap().rects = v;
+            let mut h = st.hit.lock().unwrap();
+            h.rects = v;
+            // 칸 좌표를 만든 배율을 같이 받음(hit_loop가 물리 px → CSS px 환산에 씀)
+            h.dpr = data.get("dpr").and_then(|x| x.as_f64()).filter(|d| *d > 0.1 && *d < 8.0).unwrap_or(0.0);
         }
         "focus" => {
             // 글 칸에 들어가면(on) 창을 앞으로 세우고 클릭·키를 받음 · 나오면(off) 칸 밖 규칙으로 돌아감
@@ -176,9 +183,11 @@ fn hit_loop(app: AppHandle) {
         let Some(w) = win(&app) else { continue };
         let st = app.state::<Arc<App>>();
         let (Ok(cur), Ok(pos), Ok(sf)) = (w.cursor_position(), w.inner_position(), w.scale_factor()) else { continue };
-        let x = (cur.x - pos.x as f64) / sf;
-        let y = (cur.y - pos.y as f64) / sf;
         let mut h = st.hit.lock().unwrap();
+        // 환산 배율: 화면이 보낸 devicePixelRatio가 있으면 그 값(칸을 그 값으로 계산함) · 없으면 창 배율
+        let s = if h.dpr > 0.0 { h.dpr } else { sf };
+        let x = (cur.x - pos.x as f64) / s;
+        let y = (cur.y - pos.y as f64) / s;
         let inside = !st.hidden.load(Ordering::Relaxed)
             && h.rects.iter().any(|r| x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3]);
         let typing = h.kb_focus && !st.hidden.load(Ordering::Relaxed);
@@ -190,11 +199,145 @@ fn hit_loop(app: AppHandle) {
     });
 }
 
-/// readnow-friend://pair?t=…&c=…&d=… → 화면을 #pair=… 로 다시 엶
+/// (10/29) 바깥 알림·화면 열기 허용 목록 — 이 셋만 받음(딥링크·127.0.0.1 창구 공용)
+const OPEN_PAGES: [&str; 3] = ["order", "qna", "bad"];
+/// ① 같은 PC 창구 포트 — 127.0.0.1에서만 받음(밖에서 못 들어옴)
+const LOCAL_PORT: u16 = 47613;
+/// 창구 말하기 속도 제한(1.5초 안에 또 오면 429)
+static LOCAL_LAST: Mutex<Option<Instant>> = Mutex::new(None);
+
+/// 바깥 알림 한 줄: 글은 공백 정리 뒤 120자까지 · 화면에는 JSON 문자열로 넣어 줌(따옴표·줄바꿈 안전)
+fn friend_say(app: &AppHandle, text: &str, from: &str) {
+    let t: String = text.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(120).collect();
+    if t.is_empty() {
+        return;
+    }
+    let f: String = from.chars().take(30).collect();
+    let tj = serde_json::to_string(&t).unwrap_or_else(|_| "\"\"".into());
+    let fj = serde_json::to_string(&f).unwrap_or_else(|_| "\"\"".into());
+    js(app, &format!("window.__rnFriendCmd&&window.__rnFriendCmd('say',{{text:{tj},from:{fj}}})"));
+}
+
+/// 허용 목록의 화면(order·qna·bad)을 열게 함
+fn open_page(app: &AppHandle, p: &str) {
+    if OPEN_PAGES.contains(&p) {
+        js(app, &format!("window.__rnFriendCmd&&window.__rnFriendCmd('open',{{p:\"{p}\"}})"));
+    }
+}
+
+/// ① 127.0.0.1 창구 시작(프로그램이 켜질 때 한 번) — 포트를 못 열면 조용히 그만둠(프로그램은 계속 돎)
+fn start_local(app: AppHandle) {
+    std::thread::spawn(move || {
+        let Ok(listener) = std::net::TcpListener::bind(("127.0.0.1", LOCAL_PORT)) else {
+            return;
+        };
+        for conn in listener.incoming().flatten() {
+            handle_local(&app, conn);
+        }
+    });
+}
+
+/// 창구 요청 한 건: GET /say?m=…&f=… · GET /open?p=… · 브라우저(Origin 머리)가 보낸 요청은 거절
+fn handle_local(app: &AppHandle, mut s: std::net::TcpStream) {
+    use std::io::{Read, Write};
+    let _ = s.set_read_timeout(Some(Duration::from_secs(2)));
+    let mut buf: Vec<u8> = Vec::new();
+    let mut tmp = [0u8; 1024];
+    while buf.len() < 8192 && !buf.windows(4).any(|w| w == b"\r\n\r\n") {
+        match s.read(&mut tmp) {
+            Ok(0) | Err(_) => break,
+            Ok(n) => buf.extend_from_slice(&tmp[..n]),
+        }
+    }
+    let head = String::from_utf8_lossy(&buf).to_string();
+    let mut lines = head.lines();
+    let first = lines.next().unwrap_or("");
+    let browser = lines.any(|l| l.to_ascii_lowercase().starts_with("origin:"));
+    let mut it = first.split_whitespace();
+    let method = it.next().unwrap_or("");
+    let target = it.next().unwrap_or("");
+    let (code, msg): (u16, &str) = if browser {
+        (403, "브라우저 요청은 받지 않아요")
+    } else if method != "GET" {
+        (405, "GET만 받아요")
+    } else {
+        match url::Url::parse(&format!("http://127.0.0.1{target}")) {
+            Err(_) => (400, "잘못된 주소"),
+            Ok(u) => {
+                let q = |k: &str| u.query_pairs().find(|(a, _)| a == k).map(|(_, v)| v.into_owned()).unwrap_or_default();
+                match u.path() {
+                    "/say" => {
+                        let m = q("m");
+                        let now = Instant::now();
+                        let fast = match LOCAL_LAST.lock() {
+                            Ok(mut last) => {
+                                let f = last.map_or(false, |t| now.duration_since(t) < Duration::from_millis(1500));
+                                if !f && !m.trim().is_empty() {
+                                    *last = Some(now);
+                                }
+                                f
+                            }
+                            Err(_) => true,
+                        };
+                        if m.trim().is_empty() {
+                            (400, "m=글 이 없어요")
+                        } else if fast {
+                            (429, "너무 빨리 보냈어요(1.5초 뒤 다시)")
+                        } else {
+                            friend_say(app, &m, &q("f"));
+                            (200, "ok")
+                        }
+                    }
+                    "/open" => {
+                        let p = q("p");
+                        if OPEN_PAGES.contains(&p.as_str()) {
+                            open_page(app, &p);
+                            (200, "ok")
+                        } else {
+                            (400, "허용되지 않은 화면(order·qna·bad)")
+                        }
+                    }
+                    _ => (404, "없는 주소(/say · /open)"),
+                }
+            }
+        }
+    };
+    let status = match code {
+        200 => "200 OK",
+        400 => "400 Bad Request",
+        403 => "403 Forbidden",
+        404 => "404 Not Found",
+        405 => "405 Method Not Allowed",
+        429 => "429 Too Many Requests",
+        _ => "500 Internal Server Error",
+    };
+    let body = serde_json::json!({ "ok": code == 200, "msg": msg }).to_string();
+    let resp = format!(
+        "HTTP/1.1 {status}\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+        body.len()
+    );
+    let _ = s.write_all(resp.as_bytes());
+}
+
+/// readnow-friend://pair?t=…&c=…&d=… → 화면을 #pair=… 로 다시 엶 · (10/29) readnow-friend://say?m=… · …://open?p=…
 fn handle_link(app: &AppHandle, raw: &str) {
     let Ok(u) = url::Url::parse(raw) else { return };
     if u.scheme() != "readnow-friend" {
         return;
+    }
+    match u.host_str().unwrap_or("") {
+        "say" => {
+            let get = |k: &str| u.query_pairs().find(|(a, _)| a == k).map(|(_, v)| v.into_owned()).unwrap_or_default();
+            friend_say(app, &get("m"), &get("f"));
+            return;
+        }
+        "open" => {
+            let p = u.query_pairs().find(|(a, _)| a == "p").map(|(_, v)| v.into_owned()).unwrap_or_default();
+            open_page(app, &p);
+            return;
+        }
+        "pair" => {}
+        _ => return,
     }
     let mut t = String::new();
     let mut c = String::new();
@@ -404,6 +547,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![friend_post])
         .setup(|app| {
             let h = app.handle().clone();
+            start_local(h.clone()); // (10/29) ① 같은 PC 바깥 알림 창구 127.0.0.1:47613
             let prefs = load_prefs(&h);
             let st = Arc::new(App { hit: Mutex::new(Hit { rects: vec![], ignoring: false, kb_focus: false }), prefs: Mutex::new(prefs.clone()), hidden: AtomicBool::new(false), bye: AtomicBool::new(false) });
             app.manage(st);

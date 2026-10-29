@@ -70,6 +70,8 @@ function frBoot(u) { S.user = u; const dev = deviceName().trim(); if (!dev) retu
 /* 알림 재료 — 작은 문서만 */
 function frFeeds() { try { db.collection('shp_state').doc('confirm').onSnapshot({ includeMetadataChanges: true }, (d) => { const fc = d.metadata.fromCache; if (fc && !d.exists) return; const nv = d.exists ? d.data() : { orders: [] }; S.shipC = nv; try { mscOrd(nv, fc); } catch (e) {} }, () => {}); } catch (e) {}
   try { db.collection('crm_interactions').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(Date.now() - 60e3)).onSnapshot((ss) => ss.docChanges().forEach((c) => { if (c.type !== 'removed') try { mscIx(c.doc.id, c.doc.data()); } catch (e) {} }), () => {}); } catch (e) {}
+  /* (10/29 정범님 ②) 클라우드 바깥 알림: friend_say 문서 중 60초 안에 올라온 것 · 받는 기기(또는 all)만 말함 · 한 번 말한 문서는 다시 말하지 않음 */
+  try { const seen = new Set(); db.collection('friend_say').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(Date.now() - 60e3)).onSnapshot((ss) => ss.docChanges().forEach((c) => { if (c.type !== 'added' || seen.has(c.doc.id)) return; seen.add(c.doc.id); const v = c.doc.data() || {}; if (v.to !== 'all' && v.to !== deviceName().trim()) return; try { mscExtSay(v.text, v.from); } catch (e) {} }), () => {}); } catch (e) {}
   try { db.collection('app_summary').doc('alerts').onSnapshot((d) => { const v = d.exists ? d.data() : null; if (!v || !Array.isArray(v.items)) return; S._alNow = new Map(v.items.map((x) => [x.k, x])); S._biz = v.T ? { T: v.T } : null; try { mscAlBiz(S._alNow); } catch (e) {} }, () => {}); } catch (e) {} }
 /* 살아 있음 신호 · bye = 끄기 직전(웹앱 안에서 켠 크롬 캐릭터가 바로 돌아옴) */
 async function frBeat(bye) { const dev = deviceName().trim(); if (!dev || !S.user) return; const now = new Date().toISOString(); if (!FR.since) FR.since = now;
@@ -87,7 +89,7 @@ function frRects() { const out = []; if (FR.hidden) return out; const vw = inner
 document.addEventListener('focusin', (e) => { const t = e.target; if (t && /^(INPUT|TEXTAREA)$/.test(t.tagName)) frPost('focus', { on: true }); });
 document.addEventListener('focusout', (e) => { const t = e.target; if (t && /^(INPUT|TEXTAREA)$/.test(t.tagName)) setTimeout(() => { const a = document.activeElement; if (!a || !/^(INPUT|TEXTAREA)$/.test(a.tagName)) frPost('focus', { on: false }); }, 60); });
 function frKb() { const a = document.activeElement; return !!((a && a !== document.body && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || document.querySelector('#msc_mbar,#msc_ov,#msc_cu,#msc_sh,#fr_card input')); } /* 안드로이드: 글 칸이 열려 있으면 창이 키보드를 받게 */
-function frTick() { if (document.hidden || !frHost()) return; const r = frRects(); const kb = frKb(); const k = JSON.stringify(r) + kb + innerWidth + 'x' + innerHeight; const now = Date.now(); if (k === FR.rk && now - FR.rAt < 5000) return; FR.rk = k; FR.rAt = now;
+function frTick() { if (document.hidden || !frHost()) return; const r = frRects(); const kb = frKb(); const k = JSON.stringify(r) + kb + innerWidth + 'x' + innerHeight + '@' + (window.devicePixelRatio || 1); const now = Date.now(); if (k === FR.rk && now - FR.rAt < 5000) return; FR.rk = k; FR.rAt = now;
   frPost('rects', { r, kb, vw: innerWidth, vh: innerHeight, dpr: window.devicePixelRatio || 1, sx: window.screenX || 0, sy: window.screenY || 0 }); }
 /* 캐릭터가 안 나오는 까닭을 카드로(범위 밖 · 캐릭터 안 고름) · 처음 연결이면 캐릭터 보이기 */
 function frState() { if (!S.user || FR.card === 'pair' || FR.card === 'err' || FR.card === 'busy' || typeof M_ === 'undefined' || !M_.doc) return; const dev = mscDev(); if (!mscInScope()) return FR.cardNo === 'scope' ? null : frCard('scope', dev); const mine = mscMine();
@@ -96,6 +98,9 @@ window.__rnFriendCmd = function (cmd, arg) { if (cmd === 'geom') { FR.geom = arg
   if (cmd === 'hide' || cmd === 'show') { FR.hidden = cmd === 'hide'; document.documentElement.classList.toggle('rn-fhide', FR.hidden); FR.rk = ''; frTick(); frBeat(); return true; }
   if (cmd === 'bye') return frBeat(true).then(() => { frPost('byeok', null); return true; });
   if (cmd === 'esc') { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); return true; }
+  /* (10/29 정범님 ③) 프로그램 명령 허용 목록 — 이 셋만 받음: say(글 · 120자까지 말함) · open(order·qna·bad 화면) */
+  if (cmd === 'say') return typeof mscExtSay === 'function' && !!mscExtSay(arg && arg.text, arg && arg.from);
+  if (cmd === 'open') { const p = arg && arg.p; if (!['order', 'qna', 'bad'].includes(p) || typeof mscGo !== 'function') return false; try { mscGo(p); } catch (e) { return false; } return true; }
   return false; };
 function frCard(kind, arg) { let c = document.getElementById('fr_card'); if (kind && c && FR.card === kind && FR.cardArg === arg) return; FR.card = kind; FR.cardArg = arg; if (!kind) { if (c) c.remove(); FR.rk = ''; return; }
   if (!c) { c = document.createElement('div'); c.id = 'fr_card'; c.className = 'fr-card'; document.body.appendChild(c);
