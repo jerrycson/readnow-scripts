@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.148
+// @version      1.89.149
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -7367,7 +7367,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const REST_ST = () => { try { return GM_getValue('rnu-rest-st', {}) || {}; } catch (e) { return {}; } }; const REST_SET = (j, v) => { const o = REST_ST(); o[j] = { ...(o[j] || {}), ...v }; try { GM_setValue('rnu-rest-st', o); } catch (e) {} };
   const biFocus = () => !!PUBONLY && !tetherLeft(); /* (1.77.7) 🎯 와이파이 집중: 로거의 테더링(알라딘 길)이 끊겼거나 남은 양이 없을 때 — 쉬는 시간 없이 외부 도서 정보만 */
   const tetherLeft = () => PUBONLY && TGATE.ok && !benchOnly() && (!BUD || (BUD.benchOwe ? BUD.left.bench > 0 : BUD.left.main > 0 || BUD.left.gen > 0)); /* (1.89.64) 벤치마킹 전용 기간에는 '테더링 남음'으로 보지 않음 → 쉴 때 일은 와이파이 목록(테더링을 다 썼을 때)·와이파이 집중 */
-  const restListMain = () => { if (!AS || !AS.restOf || !SCHED) return []; const R0 = AS.restOf(SCHED); if (!R0.on) return []; if (PUBONLY) return tetherLeft() ? [...R0.lgA, AS.REST_SAFETY].filter((j) => isPubKey(String(j).slice(4))) : []; /* (1.76.0) 로거 테더링은 벤치마킹만 — 쉴 때 일도 벤치마킹 계열만 */ return R0.ofA.filter((j) => !(pubPcMode() && isPubKey(j.slice(4)))); };
+  const restListMain = () => { if (!AS || !AS.restOf || !SCHED) return []; const R0 = AS.restOf(SCHED); if (!R0.on) return []; if (PUBONLY) return tetherLeft() ? [...R0.lgA, AS.REST_SAFETY].filter((j) => isPubKey(String(j).slice(4)) && !(BUD && BUD.benchOwe && !isBenchKey(j))) : []; /* (10/29 점검 제안 17 · 10/25-fable ④-2) 벤치 몫을 갚는 동안(benchOwe)엔 tetherLeft가 '벤치 몫 남음'으로 참이라 쉴 때 일이 탐색(prd:explore) 같은 비벤치 테더링 일을 골라 budLeft 0·tgateCheck에 막혀 되풀이 → 그동안은 벤치 계열만 */ /* (1.76.0) 로거 테더링은 벤치마킹만 — 쉴 때 일도 벤치마킹 계열만 */ return R0.ofA.filter((j) => !(pubPcMode() && isPubKey(j.slice(4)))); };
   const restListExt = () => { if (!AS || !AS.restOf || !SCHED) return []; const R0 = AS.restOf(SCHED); if (!R0.on) return []; if (PUBONLY) return helperVerOk('1.6.0') ? (tetherLeft() ? R0.lgE : R0.lgN) : []; return R0.ofE; };
   const restEligible = (j, now) => { const k = j.slice(4); if (!JOBS[k]) return false; const st = REST_ST()[j] || {}; if ((st.backAt || 0) > now) return false; if (st.doneAt && now - st.doneAt < (j === AS.REST_SAFETY ? 10 : biFocus() ? 5 : 60) * 60e3) return false; /* (1.77.7) 로거 테더링이 끊긴 동안(와이파이 집중)은 5분만 쉬고 다시 */ if (PUBONLY && isPubKey(k) && !(budLeft(k) > 0)) return false; return true; };
   const restEarlier = (j) => { const L = restListMain(); const i = L.indexOf(j); if (i <= 0) return null; const now = Date.now(); return L.slice(0, i).find((x) => !PAR_JOBS[x.slice(4)] && restEligible(x, now)) || null; };
