@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "CLAUDE.md 한국어 규칙 겹침 정리(문서만)",
- "since": "2026-10-29T13:46:06Z",
- "beat": "2026-10-29T13:46:06Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "friend",
-  "done": "CLAUDE.md 한국어 규칙 a849aa9",
-  "at": "2026-10-29T13:45:41Z"
+  "done": "CLAUDE.md 한국어 규칙 정리 1e5cfd5",
+  "at": "2026-10-29T13:46:12Z"
  },
- "host": "vm"
+ "host": null
 }
