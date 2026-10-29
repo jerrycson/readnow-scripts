@@ -1,2 +1,14 @@
-doc=app_settings/aladin_login
-# 1334221910
+perf=400
+health=1&hours=24
+health=1&hours=3
+doc=app_settings/write_watch,prd_jobs/pcBeat,app_settings/value_model,app_settings/buyback_stats,app_settings/extras_study,app_settings/backup_auto,prd_system/dataBackup,prd_system/autoSched,app_settings/platforms,app_settings/y24_state,app_settings/cloud,app_settings/aladin_login
+logs=1&pc=HOME&from=202610292030
+logs=1&pc=JS-MAIN&from=202610292030
+logs=1&pc=LOGGER&from=202610292030
+logs=1&pc=MJ-MAIN&from=202610291600
+recentUp=ext_basic&mins=120
+recentUp=ext_pool&mins=120
+rate=ext_basic,ext_pool,prd_listings,prd_book_metrics,prd_metric_changes,ext_used,ext_lib,ext_ebook,ext_foreign,ext_hist,perf_logs,crm_orders,crm_customers,sellers,shp_cmds,bench_items,prd_ids,y24_listings&mins=180
+rate=ext_basic,ext_pool,y24_listings,prd_listings,prd_book_metrics,prd_metric_changes,prd_ids,shp_cmds,sellers,crm_orders,crm_customers,crm_interactions,perf_logs,rn_logs&mins=1440
+cmds=y24Shop&n=5
+# 617702
