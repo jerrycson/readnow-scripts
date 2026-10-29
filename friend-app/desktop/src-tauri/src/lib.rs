@@ -34,6 +34,8 @@ const VER: &str = env!("CARGO_PKG_VERSION");
 struct Hit {
     rects: Vec<[f64; 4]>,
     ignoring: bool,
+    /// 글 칸(입력칸)에 커서가 있는 동안 — 칸 밖으로 마우스가 가도 창이 키보드·클릭을 계속 받음
+    kb_focus: bool,
 }
 
 #[derive(Default, Serialize, Deserialize, Clone)]
@@ -88,6 +90,17 @@ fn friend_post(app: AppHandle, kind: String, data: serde_json::Value) {
                 }
             }
             st.hit.lock().unwrap().rects = v;
+        }
+        "focus" => {
+            // 글 칸에 들어가면(on) 창을 앞으로 세우고 클릭·키를 받음 · 나오면(off) 칸 밖 규칙으로 돌아감
+            let on = data.get("on").and_then(|x| x.as_bool()).unwrap_or(false);
+            st.hit.lock().unwrap().kb_focus = on;
+            if on {
+                if let Some(w) = win(&app) {
+                    let _ = w.set_ignore_cursor_events(false);
+                    let _ = w.set_focus();
+                }
+            }
         }
         "open" => {
             if let Some(u) = data.get("url").and_then(|x| x.as_str()) {
@@ -168,7 +181,8 @@ fn hit_loop(app: AppHandle) {
         let mut h = st.hit.lock().unwrap();
         let inside = !st.hidden.load(Ordering::Relaxed)
             && h.rects.iter().any(|r| x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3]);
-        let want_ignore = !inside;
+        let typing = h.kb_focus && !st.hidden.load(Ordering::Relaxed);
+        let want_ignore = !(inside || typing);
         if want_ignore != h.ignoring {
             h.ignoring = want_ignore;
             let _ = w.set_ignore_cursor_events(want_ignore);
@@ -391,7 +405,7 @@ pub fn run() {
         .setup(|app| {
             let h = app.handle().clone();
             let prefs = load_prefs(&h);
-            let st = Arc::new(App { hit: Mutex::new(Hit { rects: vec![], ignoring: false }), prefs: Mutex::new(prefs.clone()), hidden: AtomicBool::new(false), bye: AtomicBool::new(false) });
+            let st = Arc::new(App { hit: Mutex::new(Hit { rects: vec![], ignoring: false, kb_focus: false }), prefs: Mutex::new(prefs.clone()), hidden: AtomicBool::new(false), bye: AtomicBool::new(false) });
             app.manage(st);
             // 처음 한 번: 시작 시 자동 실행을 켬(트레이에서 끌 수 있음)
             if prefs.auto_set.is_none() {

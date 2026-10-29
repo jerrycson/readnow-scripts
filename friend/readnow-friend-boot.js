@@ -83,6 +83,9 @@ function frRects() { const out = []; if (FR.hidden) return out; const vw = inner
       el.querySelectorAll('.msc-bub').forEach((b) => addEl(b, 4)); continue; }
     const cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0 || cs.pointerEvents === 'none') continue; addEl(el, 2); }
   return out; }
+/* 글 칸에 커서가 들어가면 창이 키보드를 받고(나오면 풀림) — 칸 밖으로 마우스가 나가도 입력이 끊기지 않게 */
+document.addEventListener('focusin', (e) => { const t = e.target; if (t && /^(INPUT|TEXTAREA)$/.test(t.tagName)) frPost('focus', { on: true }); });
+document.addEventListener('focusout', (e) => { const t = e.target; if (t && /^(INPUT|TEXTAREA)$/.test(t.tagName)) setTimeout(() => { const a = document.activeElement; if (!a || !/^(INPUT|TEXTAREA)$/.test(a.tagName)) frPost('focus', { on: false }); }, 60); });
 function frKb() { const a = document.activeElement; return !!((a && a !== document.body && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || document.querySelector('#msc_mbar,#msc_ov,#msc_cu,#msc_sh,#fr_card input')); } /* 안드로이드: 글 칸이 열려 있으면 창이 키보드를 받게 */
 function frTick() { if (document.hidden || !frHost()) return; const r = frRects(); const kb = frKb(); const k = JSON.stringify(r) + kb + innerWidth + 'x' + innerHeight; const now = Date.now(); if (k === FR.rk && now - FR.rAt < 5000) return; FR.rk = k; FR.rAt = now;
   frPost('rects', { r, kb, vw: innerWidth, vh: innerHeight, dpr: window.devicePixelRatio || 1, sx: window.screenX || 0, sy: window.screenY || 0 }); }
