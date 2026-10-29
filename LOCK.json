@@ -1,17 +1,13 @@
 {
- "holder": "friend",
- "what": "③ 움직임 1묶음 배포(t3 시험)",
- "since": "2026-10-29T17:51:38Z",
- "beat": "2026-10-29T18:09:49Z",
- "ask": {
-  "who": "friend",
-  "why": "판 내기 기다림: ① 얼굴 1묶음 배포(fix_face)",
-  "at": "2026-10-29T18:11:17Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "friend",
-  "done": "② 몸·옷 1묶음 be7b6d8 · 웹앱 1.78.256 · friend 0.15.1",
-  "at": "2026-10-29T17:51:24Z"
+  "done": "실패: 시험 실패 있음(위 표) — 고치고 다시",
+  "at": "2026-10-29T18:15:46Z"
  },
- "host": "vm-motion"
+ "host": null
 }
