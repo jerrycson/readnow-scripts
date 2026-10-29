@@ -1,5 +1,5 @@
-recentUp=ext_basic&mins=20
-rate=ext_basic,ext_index,ext_hist,ext_probe,ext_fx&mins=10
-rate=ext_basic,ext_index,ext_hist,ext_probe,ext_fx,mkt_signals,mkt_snapcnt,prd_dyn_history,ml_sp_obs,prd_explore,bench_lookup,bench_lookup_items&mins=1440
-recentUp=ext_lib&mins=240
-# 1745713246
+rate=ext_basic&mins=2880
+rate=ext_basic&mins=7200
+rate=ext_basic&mins=20160
+rate=ext_basic,ext_pool&mins=43200
+# 1979929677
