@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "진단 회차 열쇠(pub_*.pem) — 예약 점검 Claude Code 작업 이전",
- "since": "2026-10-29T10:52:53Z",
- "beat": "2026-10-29T10:52:53Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "빌드 도구 경로 독립 9b84e17",
-  "at": "2026-10-29T10:15:10Z"
+  "done": "진단 회차 열쇠 pub_*.pem a6079cd",
+  "at": "2026-10-29T10:58:53Z"
  }
 }
