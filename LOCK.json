@@ -1,17 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
- "ask": {
-  "who": "friend",
-  "why": "판 내기 기다림: CLAUDE.md 0번 언제나 한국어 규칙(문서만)",
-  "at": "2026-10-29T13:38:26Z"
- },
+ "holder": "friend",
+ "what": "CLAUDE.md 0번 언제나 한국어 규칙(문서만)",
+ "since": "2026-10-29T13:45:33Z",
+ "beat": "2026-10-29T13:45:33Z",
+ "ask": null,
  "last": {
   "who": "lead",
   "done": "CLAUDE.md 한국어 규칙 (42baeba)",
   "at": "2026-10-29T13:44:45Z"
  },
- "host": null
+ "host": "vm"
 }
