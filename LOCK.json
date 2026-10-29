@@ -1,12 +1,12 @@
 {
- "holder": "chat",
- "what": "빌드 도구 경로 독립(claude.ai/code 준비)",
- "since": "2026-10-29T10:11:26Z",
- "beat": "2026-10-29T10:11:26Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "chat",
-  "done": "연구 페이지 v2 게시 91d4eb0",
-  "at": "2026-10-29T09:56:37Z"
+  "done": "빌드 도구 경로 독립 9b84e17",
+  "at": "2026-10-29T10:15:10Z"
  }
 }
