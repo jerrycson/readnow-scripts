@@ -2327,7 +2327,7 @@ const FEAT = [
   { t: '🐾 책방 친구 — 4차 그림·움직임(눈 층·머리카락 다발·스프링·깜박임·립플랩·감정 기호)', w: '⚙ 설정 › 🐾 책방 친구 열기 · 오른쪽 아래 캐릭터 · 설명서 › 🐾 책방 친구 › 그림·움직임', k: '아니메 애니메이션 움직임 부드럽게 숨쉬기 시선 마우스 깜박임 24fps 머리카락 흔들림 스프링 물리 립플랩 말하기 입 만푸 땀방울 홍조 분노 표시 집중선 충격 프레임 예비 동작 오버슈트 Live2D 12원리', go: { fn: () => frwOpenFriend() } },
   { t: '🐾 책방 친구 — 캐릭터 설정표·크기·반신/전신', w: '⚙ 설정 › 🐾 책방 친구 열기 › ① 내 설정(보기·크기) · 캐릭터 카드 누르기 = 설정표', k: '캐릭터 설정표 프로필 나이 키 직업 성격 표정 시트 12가지 색상 팔레트 소품 크기 조정 슬라이더 작게 보통 크게 아주 크게 특대 cm 등록 단추 배 전신 반신 바스트업', go: { fn: () => frwOpenFriend() } },
   { t: '🖥 책방 친구 프로그램 — PC 바탕화면·안드로이드 다른 앱 위에 캐릭터만(설치·연결·같은 기기 크롬 캐릭터 자동 쉼)', w: '⚙ 설정 › 🐾 책방 친구 › 🖥 책방 친구 프로그램 · 설명서 › 🖥 책방 친구 프로그램', k: '프로그램 설치 바탕화면 오버레이 항상 위 트레이 안드로이드 apk 다른 앱 위에 표시 연결 코드 페어링 자동 로그인 클릭 통과 friend', go: { fn: () => frwOpenFriend() } },
-  { t: '🐾 책방 친구 — 알았어·다시 알림(주문·문의 해결될 때까지 8~12분 · 불만족 그날 45~75분)', w: '캐릭터 말풍선의 알았어 단추 · ⚙ 설정 › 🐾 책방 친구 › 말풍선 시간 · 간격', k: '알았어 다시 알림 반복 리마인드 주문 처리 기다림 문의 답변 기다림 불만족 확인 묶음 말풍선', go: { fn: () => frwOpenFriend() } },
+  { t: '🐾 책방 친구 — 알았어·다시 알림(문의·불만족은 알았어 누를 때까지 1~10분 무작위 간격(주문은 한 번만))', w: '캐릭터 말풍선의 알았어 단추 · ⚙ 설정 › 🐾 책방 친구 › 말풍선 시간 · 간격', k: '알았어 다시 알림 반복 리마인드 주문 처리 기다림 문의 답변 기다림 불만족 확인 묶음 말풍선', go: { fn: () => frwOpenFriend() } },
   { t: '💬 캐릭터 메시지 입력 줄 — 접기(Alt + ,)·⚙ 설정·🔔 받을 때 소리·글로 자동 표정·⌖ 커서 붙잡기(Alt + `)', w: '🐾 아래 💬 단추 또는 Alt + M › 받는 사람 고르기 › 입력 줄', k: '메시지 입력 줄 접기 펼치기 탭 Alt+, 설정 톱니 소리 알림음 효과음 벨 무음 마림바 차임 자동 표정 감정 ㅋㅋ ㅠㅠ 커서 붙잡기 포커스 보낸 뒤 닫기 따라 하기 단축키', go: null },
   { t: '💬 팀 채팅(기본) — 입력 줄 위 카카오톡식 기록 창(한 줄씩 접힘 · Alt + Enter 크게) · 👥 모두 / 🤫 속삭임', w: '🐾 아래 💬 단추 또는 Alt + M › 입력 줄 왼쪽 칩(👥 모두 ▾) · ⚙ › 🗂 예전 채팅창', k: '팀 채팅 단체 전체 모두에게 속삭임 귓속말 귓말 whisper 기록 창 카톡 카카오톡 접힘 Alt+Enter 크게 고정 /w @이름 답장 예전 채팅창 기록 전부 이전 메시지 지난 대화 날짜 요일 시각 처음 메시지', go: null },
   { t: '💬 캐릭터 메시지 대화 기록(Alt + N) — 카카오톡처럼 상대 왼쪽·나 오른쪽', w: 'Alt + N (어느 화면에서나) · Esc 닫기', k: '대화 기록 메시지 기록 히스토리 카톡 주고받은 메시지 표정 몸짓 기록', go: null },
@@ -7964,7 +7964,7 @@ const WIDGETS = {
  *  ③ 사업 알림 요약 app_summary/alerts — 대표 탭이 '오늘 확인할 것'이 바뀔 때 작은 문서 하나로 씀(1분에 한 번까지) → 프로그램이 들어 🔔 사업 알림(늦은 출고·백업 등)과 하루 매출 요약을 말함 */
 const FRIEND_PIN = '0.12.0'; /* friend/readnow-friend.js 판(불러올 때 ?v=) — 본체를 고치면 함께 올림 */
 const FRW_STALE = 90e3, FRW_PAIR_MIN = 10;
-const FRW_REL = 'https://github.com/jerrycson/readnow-scripts/releases?q=friend-v&expanded=true'; /* 설치 파일(윈도우 …setup.exe · 안드로이드 .apk) — GitHub 자동 작업이 friend-v… 판마다 만듦 */
+const FRW_REL = 'https://github.com/jerrycson/readnow-scripts/releases?q=friend&expanded=true'; /* 설치 파일(윈도우 …setup.exe · 안드로이드 .apk) — GitHub 자동 작업이 friend-v… 판마다 만듦 */
 const FRW = { seen: null, watch: null, wDev: null, was: undefined, tm: 0, loadP: null, pair: null, pairBusy: 0, sumK: '', sumAt: 0, sumTm: 0 };
 const frwKey = (d) => 'fhost_' + String(d || '').trim().toUpperCase().replace(/[\/\s.#$\[\]]+/g, '_').slice(0, 60); /* 프로그램(readnow-friend-boot.js)과 같은 규칙 */
 const frwOn = () => { try { return localStorage.getItem('rn-msc-inapp') === '1'; } catch (e) { return false; } };
