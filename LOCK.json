@@ -1,17 +1,13 @@
 {
- "holder": "friend",
- "what": "⑤ 화풍 커밋·push",
- "since": "2026-10-29T18:15:52Z",
- "beat": "2026-10-29T18:36:38Z",
- "ask": {
-  "who": "friend",
-  "why": "판 내기 기다림: 책방 친구 ④ 손·발·크기·화면 1묶음 배포",
-  "at": "2026-10-29T18:20:22Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "friend",
-  "done": "실패: 시험 실패 있음(위 표) — 고치고 다시",
-  "at": "2026-10-29T18:15:46Z"
+  "done": "⑤ 화풍 렌더링 1묶음 · 책방 친구 0.15.2 · 웹앱 1.78.257 · 91fff21",
+  "at": "2026-10-29T18:36:56Z"
  },
- "host": "vm-style"
+ "host": null
 }
