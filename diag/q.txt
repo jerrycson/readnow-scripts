@@ -1,5 +1,2 @@
-rate=ext_basic&mins=2880
-rate=ext_basic&mins=7200
-rate=ext_basic&mins=20160
-rate=ext_basic,ext_pool&mins=43200
-# 1979929677
+doc=app_settings/backup_auto
+# 1592623883
