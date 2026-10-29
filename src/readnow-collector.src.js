@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.140
+// @version      1.89.141
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -1997,8 +1997,10 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       return { ...base, ...scoreCustomer(base) };
     });
   }
-  function setSellerLinks(sellers) { sellerLinkMap = new Map(); sellers.forEach((s) => (s.linkedCustomers || []).forEach((l) => { const a = sellerLinkMap.get(l.customerId) || []; a.push({ name: s.name, grade: s.ourGrade || s.grade || null, aladinGrade: s.aladinGrade || null, reasons: l.reasons, level: l.level || null, strong: l.level ? l.level === 'match' : (l.reasons || []).some((r) => r !== '비슷한 이메일') }); sellerLinkMap.set(l.customerId, a); })); }
-  async function loadSellerLinks() { try { const ss = await fdb.collection('sellers').get(); const arr = []; ss.forEach((d) => arr.push(d.data())); setSellerLinks(arr); } catch (e) {} }
+  let sellerLinksAt = 0; /* (1.89.141 4시간 점검) loadSellerLinks로 Firebase 판매자 전부를 읽은 시각 — 10분 안이면 다시 읽지 않음(이 PC 판매자로 바꾸면 0) */
+  function setSellerLinks(sellers) { sellerLinksAt = 0; sellerLinkMap = new Map(); sellers.forEach((s) => (s.linkedCustomers || []).forEach((l) => { const a = sellerLinkMap.get(l.customerId) || []; a.push({ name: s.name, grade: s.ourGrade || s.grade || null, aladinGrade: s.aladinGrade || null, reasons: l.reasons, level: l.level || null, strong: l.level ? l.level === 'match' : (l.reasons || []).some((r) => r !== '비슷한 이메일') }); sellerLinkMap.set(l.customerId, a); })); }
+  /* (1.89.141 4시간 점검 · 🧠) 판매자 1.5만여 명 통째 읽기를 한 번의 올리기 안에서 두 번(고객 요약 다시 계산 → 점수 전체 계산) 하던 것 — 10/29 HOME 실측 주문 든 시간마다 13~15초 · 그때마다 약 1.5만 번 읽기 더. 10분 안에 읽었으면 그것을 씀 */
+  async function loadSellerLinks() { if (sellerLinksAt && Date.now() - sellerLinksAt < 10 * 60e3) return; try { const ss = await fdb.collection('sellers').get(); const arr = []; ss.forEach((d) => arr.push(d.data())); setSellerLinks(arr); sellerLinksAt = Date.now(); } catch (e) {} }
 
   // 이 PC에 주문 데이터가 적으면(다른 PC가 주로 수집한 경우) 고객 연결에 쓸 주문을 Firebase에서 내려받음
   let serverOrdersCache = [];
@@ -2579,7 +2581,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     ujob.status = 'done'; ujob.finishedAt = now(); ujob.startedAt = null; await saveJob(ujob);
     try { window.__rnCS && (window.__rnCS.add('crm_upload', 'ok', Math.max(0, todo.length - skipped)), window.__rnCS.add('crm_upload', 'skip', skipped, '같은 내용(이미 올림)')); } catch (e) {} /* (1.79.0) 📊 */
     log(`Firebase 올리기 완료: 문서 ${todo.length.toLocaleString()}개 확인 (그중 같은 내용 ${skipped.toLocaleString()}개는 건너뜀)${buildDocs.lastPending ? `, 구글 시트 연결 대기 ${buildDocs.lastPending}건은 웹앱에서 확정 예정` : ''}`, 'ok');
-    return { quiet: !todo.length && !pend0 && !pendingCust.size && !fromApp.length };
+    return { quiet: !todo.length && !pend0 && !pendingCust.size && !fromApp.length, cust: [...pendingCust] }; /* (1.89.141) cust = 이번에 Firebase 전체 자료로 요약을 다시 계산해 마친 고객 */
   }
   /* (1.89.136 4시간 점검 · 🧠 근원) 올리기 뒤 고객 점수 '전체' 재계산을 바뀐 것이 없으면 건너뜀
    *  10/29 실측 JS-MAIN: ⏰ '고객 문의'(30분마다)·'전체주문 상시'(1시간마다)가 끝날 때마다 올릴 것 0개여도 taskScore가 crm_orders 5,791건 + crm_interactions 전체(약 7천 건)를 Firebase에서 통째로 읽어
@@ -2587,11 +2589,16 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    *  → 건너뛰는 조건(모두 맞을 때만): 이번 올리기가 쓴 것·다시 계산할 고객·웹앱 재계산 요청 없음 · 지난 전체 계산이 오늘(한국 날짜 — 최근성 점수는 날이 바뀌면 바뀜)이고 2시간 안
    *  · 점수 규칙(crm_system/scoring) 그대로 · 지난 계산 시작 뒤 crm_orders·crm_interactions에 새로 적힌 것(uploadedAt — 수집기·웹앱·클라우드가 모두 찍음) 없음(각 1건 읽기)
    *  2시간마다·날이 바뀌면·무엇이든 바뀌면 예전처럼 전체 계산 · '고객 점수 계산' 단추·일괄 수집은 그대로 늘 계산 */
-  async function scoreSkipWhy(up) { try { if (!up || !up.quiet) return null; const ls = await dbGet('meta', 'lastScore'); if (!ls || !ls.at) return null; const t0 = Date.parse(ls.from || ls.at); if (!t0 || Date.now() - t0 > 2 * 3600e3) return null;
+  async function scoreSkipWhy(up) { try { if (!up) return null; const cov = up.quiet ? null : new Set(up.cust || []); if (!up.quiet && (!cov.size || cov.size > 300 || !PC.name)) return null; const ls = await dbGet('meta', 'lastScore'); if (!ls || !ls.at) return null; const t0 = Date.parse(ls.from || ls.at); if (!t0 || Date.now() - t0 > 2 * 3600e3) return null;
       const kd = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10); if (kd(t0) !== kd(Date.now())) return null;
       let rh = ''; try { const d = await fdb.collection('crm_system').doc('scoring').get(); rh = d.exists ? stableStr(d.data()) : ''; } catch (e) { return null; } if ((ls.rules || '') !== hashStr(rh)) return null;
       const since = ls.upS != null ? new FB.firestore.Timestamp(ls.upS, ls.upN || 0) : FB.firestore.Timestamp.fromMillis(t0 - 5 * 60e3); /* (1.89.138 4시간 점검) 지난 전체 계산이 읽은 주문·기록 가운데 가장 늦은 uploadedAt(서버 시각)보다 뒤에 적힌 것만 '새것' — 예전엔 내 시계 기준 계산 시작 5분 전부터 봐서, 계산 바로 앞에 올린 주문 1건(이미 계산에 들어감)을 다음 회차가 또 '새것'으로 봐 매시 전체 재계산을 2~3번 더 했음(10/29 07:01·07:03·07:31·08:01·08:03) · 옛 기록(upS 없음)은 예전처럼 5분 겹쳐 봄 */
-      for (const col of ['crm_orders', 'crm_interactions']) { const q = await fdb.collection(col).where('uploadedAt', '>', since).limit(1).get(); if (!q.empty) return null; }
+      /* (1.89.141 4시간 점검 · 🧠 근원) 주문이 든 시간에도: 지난 전체 계산 뒤 새로 적힌 주문·기록이 모두 '이 PC가 이번 올리기에서 쓴 것'이고 그 고객들을 방금 Firebase 전체 자료로 다시 계산했으면(cov) 전체 재계산은 같은 결과 — 10/29 HOME 12:41·15:01·16:01 매번 '고객 5,12x명 중 바뀐 0명'인데 주문·기록 약 7천 건+판매자 1.5만 건을 다시 읽어 30초(5분 긴 작업 25~61초)
+       *  (고객 점수는 고객마다 그 고객의 주문·기록만으로 셈 — aggregateCustomers·scoreCustomer) · 다른 PC·웹앱·클라우드가 쓴 것 · 고객 없는 문서 · 300건 넘음 · 2시간 넘음 · 날 바뀜 · 규칙 바뀜이면 예전처럼 전체 계산 */
+      let mS = ls.upS, mN = ls.upN || 0;
+      for (const col of ['crm_orders', 'crm_interactions']) { const q = await fdb.collection(col).where('uploadedAt', '>', since).limit(cov ? 301 : 1).get(); if (q.empty) continue; if (!cov || q.size > 300) return null;
+        for (const d of q.docs) { const x = d.data(); if (!x.customerId || !cov.has(x.customerId) || x.lastWrittenBy !== PC.name) return null; const u = x.uploadedAt; if (!u || typeof u.seconds !== 'number') return null; if (mS == null || u.seconds > mS || (u.seconds === mS && (u.nanoseconds || 0) > mN)) { mS = u.seconds; mN = u.nanoseconds || 0; } } }
+      if (cov) { await dbPut('meta', { ...ls, upS: mS, upN: mN }); return `새 주문·기록은 모두 이 PC가 방금 올린 것이고 그 고객 ${cov.size}명은 방금 다시 계산함 · 지난 전체 계산 ${Math.round((Date.now() - t0) / 60e3)}분 전`; } /* 다음 회차가 같은 문서를 또 '새것'으로 보지 않게 본 시각만 앞으로 (전체 계산 시각 from은 그대로 — 2시간마다 전체 계산) */
       return `바뀐 주문·기록·규칙 없음 · 지난 전체 계산 ${Math.round((Date.now() - t0) / 60e3)}분 전`; } catch (e) { return null; } }
   async function uploadThenScore() { const up = await taskUpload(); const why = await scoreSkipWhy(up); if (why) { log(`고객 점수 전체 재계산 건너뜀 — ${why} (2시간마다·날이 바뀌면 다시 계산)`); return; } currentTask = 'score'; render(); try { await taskScore(); } catch (e) { if (e.code === 'PAUSED') throw e; log(`점수 계산 멈춤: ${e.message}`, 'warn'); } }
   // 고객 요약: 그 고객의 모든 주문·기록을 Firebase에서 읽어 다시 계산 (어느 PC에서 올려도 정확)
