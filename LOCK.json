@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "friend",
+ "what": "책방 친구 ② 몸·옷 윤곽 1묶음 배포",
+ "since": "2026-10-29T17:15:02Z",
+ "beat": "2026-10-29T17:15:02Z",
  "ask": null,
  "last": {
   "who": "friend",
   "done": "P5 2f01ecc · 웹앱 1.78.255 · 프로그램 0.2.0 · 책방 친구 0.15.0",
   "at": "2026-10-29T17:14:21Z"
  },
- "host": null
+ "host": "vm-body"
 }
