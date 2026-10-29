@@ -1,5 +1,5 @@
-sizes=ext_basic,ext_used,ext_foreign,ext_lib,ext_ebook&n=200
-rate=ext_basic,ext_used,ext_foreign,ext_lib,ext_ebook,perf_logs,rn_logs&mins=1440
-doc=app_settings/y24_state,app_settings/platforms
-logs=1&pc=HOME&from=202610291150&to=202610291340
-# 138744595
+recentUp=ext_basic&mins=20
+rate=ext_basic,ext_index,ext_hist,ext_probe,ext_fx&mins=10
+rate=ext_basic,ext_index,ext_hist,ext_probe,ext_fx,mkt_signals,mkt_snapcnt,prd_dyn_history,ml_sp_obs,prd_explore,bench_lookup,bench_lookup_items&mins=1440
+recentUp=ext_lib&mins=240
+# 1745713246
