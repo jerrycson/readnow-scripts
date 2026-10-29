@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "③ 움직임 2묶음 배포(t3)",
- "since": "2026-10-29T20:35:43Z",
- "beat": "2026-10-29T22:05:29Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "friend",
-  "done": "① 얼굴 2묶음: 배포 전 T67 고치는 중 — 순서 양보",
-  "at": "2026-10-29T20:35:07Z"
+  "done": "③ 움직임 2묶음 배포 멈춤: t3 1회차 tK15 ✗ — 혼자 고친 뒤 다시 줄 섬(올린 것 없음)",
+  "at": "2026-10-29T22:12:04Z"
  },
- "host": "vm-motion"
+ "host": null
 }
