@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "책방 친구 P1 1차 배포 — t3 시험·push 중",
- "since": "2026-10-29T15:37:51Z",
- "beat": "2026-10-29T16:11:04Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "friend",
-  "done": "급한 고침 3242adf · 웹앱 1.78.253 · 책방 친구 0.13.1(연결 카드 끌기·접기·휴대폰 40%)",
-  "at": "2026-10-29T15:05:57Z"
+  "done": "P1 1차 배포 29790ce · 웹앱 1.78.254 · friend 0.14.0",
+  "at": "2026-10-29T16:13:40Z"
  },
- "host": "vm"
+ "host": null
 }
