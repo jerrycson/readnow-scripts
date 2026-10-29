@@ -4,7 +4,8 @@
 
 | 판 | 날짜 | 지문 | 보기 |
 |---|---|---|---|
-| v63 (지금) | 2026-10-29 | `113b0d1727771f92` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v63_2026-10-29.html) · [파일](v63_2026-10-29.html) |
+| v64 (지금) | 2026-10-30 | `34193dd35c5b7517` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v64_2026-10-30.html) · [파일](v64_2026-10-30.html) |
+| v63 | 2026-10-29 | `113b0d1727771f92` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v63_2026-10-29.html) · [파일](v63_2026-10-29.html) |
 | v62 | 2026-10-29 | `8d0fc83cf63a406b` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v62_2026-10-29.html) · [파일](v62_2026-10-29.html) |
 | v61 | 2026-10-29 | `38e874fb96f5af48` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v61_2026-10-29.html) · [파일](v61_2026-10-29.html) |
 | v60 | 2026-10-29 | `554b1e2773090150` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v60_2026-10-29.html) · [파일](v60_2026-10-29.html) |
