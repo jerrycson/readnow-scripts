@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "friend",
+ "what": "⑤ 화풍 렌더링 1묶음 배포",
+ "since": "2026-10-29T18:15:52Z",
+ "beat": "2026-10-29T18:15:52Z",
  "ask": null,
  "last": {
   "who": "friend",
   "done": "실패: 시험 실패 있음(위 표) — 고치고 다시",
   "at": "2026-10-29T18:15:46Z"
  },
- "host": null
+ "host": "vm-style"
 }
