@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.142의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.143의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.142' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.142', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.143' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.143', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -966,11 +966,21 @@
     });
   }
   let sellerLinksAt = 0; /* (1.89.141 4시간 점검) loadSellerLinks로 Firebase 판매자 전부를 읽은 시각 — 10분 안이면 다시 읽지 않음(이 PC 판매자로 바꾸면 0) */
-  function setSellerLinks(sellers) { sellerLinksAt = 0; sellerLinkMap = new Map(); sellers.forEach((s) => (s.linkedCustomers || []).forEach((l) => { const a = sellerLinkMap.get(l.customerId) || []; a.push({ name: s.name, grade: s.ourGrade || s.grade || null, aladinGrade: s.aladinGrade || null, reasons: l.reasons, level: l.level || null, strong: l.level ? l.level === 'match' : (l.reasons || []).some((r) => r !== '비슷한 이메일') }); sellerLinkMap.set(l.customerId, a); })); }
+  let selSrc = null, selMax = 0, selFullAt = 0; /* (1.89.143 4시간 점검) 고객과 연결된 판매자만 가볍게(id → 이름·등급·연결) · 그 읽기에서 가장 늦은 uploadedAt(ms) · 마지막 통째 읽기 시각 */
+  function setSellerLinks(sellers, keep) { if (!keep) { sellerLinksAt = 0; selSrc = null; selFullAt = 0; } sellerLinkMap = new Map(); sellers.forEach((s) => (s.linkedCustomers || []).forEach((l) => { const a = sellerLinkMap.get(l.customerId) || []; a.push({ name: s.name, grade: s.ourGrade || s.grade || null, aladinGrade: s.aladinGrade || null, reasons: l.reasons, level: l.level || null, strong: l.level ? l.level === 'match' : (l.reasons || []).some((r) => r !== '비슷한 이메일') }); sellerLinkMap.set(l.customerId, a); })); }
   /* (1.89.141 4시간 점검 · 🧠) 판매자 1.5만여 명 통째 읽기를 한 번의 올리기 안에서 두 번(고객 요약 다시 계산 → 점수 전체 계산) 하던 것 — 10/29 HOME 실측 주문 든 시간마다 13~15초 · 그때마다 약 1.5만 번 읽기 더. 10분 안에 읽었으면 그것을 씀 */
-  async function loadSellerLinks() { if (sellerLinksAt && Date.now() - sellerLinksAt < 10 * 60e3) return; try { const arr = []; const FPd = FB.firestore.FieldPath.documentId(); let last = null; /* (1.89.142 4시간 점검) 판매자 1.5만여 명을 한 번에 받아 풀며 화면을 12초 막던 것을 2천 명씩 나눠 받고 사이마다 숨 돌림(읽는 수는 같음) */
-      for (;;) { let q = fdb.collection('sellers').orderBy(FPd).limit(2000); if (last) q = q.startAfter(last); const ss = await q.get(); ss.forEach((d) => arr.push(d.data())); if (ss.size < 2000) break; last = ss.docs[ss.docs.length - 1]; await sleep(0); }
-      setSellerLinks(arr); sellerLinksAt = Date.now(); } catch (e) {} }
+  /* (1.89.143 4시간 점검 · 🧠 근원) 1.89.142가 통째 읽기를 2천 명씩 나눠 화면 막힘은 줄였지만 읽는 수는 같음 — 10분 재사용은 매시 '⏰ 전체주문'(주문 든 시간)에 소용없어 그때마다 판매자 1.5만여 명(약 1.5만 번 읽기 · 15초 · 1.5만 건 사본)을 다시 받았음(10/29 JS-MAIN 19:01:35→19:01:51 · 20:01:23→20:01:38)
+   *  → 2시간 안에는 지난 읽기 뒤 uploadedAt이 바뀐 판매자만 받아 고침(웹앱 syncSellersNow와 같은 방식 · 판매자를 쓰는 곳은 모두 uploadedAt을 찍음) · 2시간마다·이 PC 판매자로 바꾸면·바뀐 것이 2천 명 넘으면 예전처럼 통째로(2천 명씩 나눠)
+   *  계산 결과는 같음(연결 정보 출처는 같고 받는 양만 줄임) · 연결 없는 판매자는 들고 있지 않음(🪶) */
+  async function loadSellerLinks() { const t = Date.now(); if (sellerLinksAt && t - sellerLinksAt < 10 * 60e3) return;
+    const lite = (x) => ({ name: x.name, ourGrade: x.ourGrade, grade: x.grade, aladinGrade: x.aladinGrade, linkedCustomers: x.linkedCustomers });
+    const ms = (x) => (x && x.uploadedAt && typeof x.uploadedAt.toMillis === 'function' ? x.uploadedAt.toMillis() : 0);
+    try { if (selSrc && selMax && selFullAt && t - selFullAt < 2 * 3600e3) {
+        const q = await fdb.collection('sellers').where('uploadedAt', '>', FB.firestore.Timestamp.fromMillis(selMax)).limit(2001).get();
+        if (q.size <= 2000) { let mx = selMax; q.forEach((d) => { const x = d.data(); const u = ms(x); if (u > mx) mx = u; if ((x.linkedCustomers || []).length) selSrc.set(d.id, lite(x)); else selSrc.delete(d.id); }); selMax = mx; setSellerLinks([...selSrc.values()], true); sellerLinksAt = t; return; } }
+      const src = new Map(); let mx = 0; const FPd = FB.firestore.FieldPath.documentId(); let last = null; /* (1.89.142) 2천 명씩 나눠 받고 사이마다 숨 돌림 */
+      for (;;) { let q = fdb.collection('sellers').orderBy(FPd).limit(2000); if (last) q = q.startAfter(last); const ss = await q.get(); ss.forEach((d) => { const x = d.data(); const u = ms(x); if (u > mx) mx = u; if ((x.linkedCustomers || []).length) src.set(d.id, lite(x)); }); if (ss.size < 2000) break; last = ss.docs[ss.docs.length - 1]; await sleep(0); }
+      setSellerLinks([...src.values()]); selSrc = src; selMax = mx; selFullAt = t; sellerLinksAt = t; } catch (e) {} }
 
   // 이 PC에 주문 데이터가 적으면(다른 PC가 주로 수집한 경우) 고객 연결에 쓸 주문을 Firebase에서 내려받음
   let serverOrdersCache = [];
