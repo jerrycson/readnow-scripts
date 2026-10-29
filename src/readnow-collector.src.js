@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.147
+// @version      1.89.148
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -2588,8 +2588,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       done += chunk.length; progress('Firebase 올리기 (주문·기록)', done, todo.length); setNow(`올린 문서 ${done.toLocaleString()} / ${todo.length.toLocaleString()} (같은 내용이라 건너뜀 ${skipped.toLocaleString()})`);
     }
     // 웹앱에서 연결을 확정·변경한 고객도 요약을 다시 계산
-    let fromApp = [];
+    let fromApp = []; const tR0 = Date.now();
     try { const rq = await SYS().doc('recompute').get(); fromApp = rq.exists ? (rq.data().ids || []) : []; fromApp.forEach((x) => pendingCust.add(x)); } catch (e) {}
+    if (Date.now() - tR0 > 3000) log(`🔢 웹앱 다시 계산 요청 문서 읽기 ${Math.round((Date.now() - tR0) / 1000)}초`, 'warn'); /* (1.89.148 🔬 정밀 점검) 14초 공백의 후보 단계마다 시간 남김 */
     await recomputeCustomers(pendingCust);
     if (fromApp.length) SYS().doc('recompute').set({ ids: FB.firestore.FieldValue.arrayRemove(...fromApp), writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {});
     await dbPut('meta', { _key: 'lastUpload', at: now(), count: todo.length, total: skipB ? (skipB.total || 0) : docs.length, by: fbUser.email });
@@ -2619,7 +2620,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   async function uploadThenScore() { const up = await taskUpload(); const why = await scoreSkipWhy(up); if (why) { log(`고객 점수 전체 재계산 건너뜀 — ${why} (2시간마다·날이 바뀌면 다시 계산)`); return; } currentTask = 'score'; render(); try { await taskScore(); } catch (e) { if (e.code === 'PAUSED') throw e; log(`점수 계산 멈춤: ${e.message}`, 'warn'); } }
   // 고객 요약: 그 고객의 모든 주문·기록을 Firebase에서 읽어 다시 계산 (어느 PC에서 올려도 정확)
   async function recomputeCustomers(set) {
-    const ids = [...set]; if (!ids.length) return; await loadSellerLinks(); await loadScoringConfig();
+    const ids = [...set]; if (!ids.length) return; const tL0 = Date.now(); await loadSellerLinks(); const tL1 = Date.now(); await loadScoringConfig(); if (Date.now() - tL0 > 3000) log(`🔢 고객 요약 준비 ${Math.round((Date.now() - tL0) / 1000)}초 — 판매자 연결 ${Math.round((tL1 - tL0) / 1000)}초 · 점수 규칙 ${Math.round((Date.now() - tL1) / 1000)}초`, 'warn'); /* (1.89.148 🔬 정밀 점검) 10/29 JS-MAIN 21:00·21:01 '올린 문서' → '고객 요약' 사이 14초 공백이 1.89.143(판매자 바뀐 것만) 뒤에도 그대로 — 어느 단계인지 숫자로 남겨 다음 점검이 잡게 */
     log(`고객 요약 ${ids.length.toLocaleString()}명을 Firebase 전체 데이터로 다시 계산합니다`);
     let i = 0; let b = fdb.batch(); let n = 0; let doneIds = []; let skipSame = 0;
     const flush = async () => { if (!n) return; await guardQuota(n, ids.length - i); await commitWithRetry(b, n); const rest = new Set(ids.slice(i)); await dbPut('meta', { _key: 'pendingCustomers', ids: [...rest] }); b = fdb.batch(); n = 0; doneIds = []; };
@@ -2699,7 +2700,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     setNow('Firebase에서 주문·기록을 읽는 중 (약 7천 건 읽기)'); progress('고객 점수 계산', 0, 1); await loadSellerLinks(); await loadScoringConfig();
     /* (10/29 정밀 점검 제안 · 66) 연결이 끊긴 채(client is offline) 7천 건 읽기가 95분 매달려 ⏰ 다른 일이 모두 밀린 것(JS-MAIN 10/29 12:01) → 3분 넘으면 이번 회차만 건너뜀(다음 회차가 다시 · 결과는 버리므로 자료는 그대로). 3분 = 평소 이 계산 전체 약 30초(1.89.141 실측)의 6배 */
     const t0r = Date.now(); let tmr = null; const lim = new Promise((_, rj) => { tmr = setTimeout(() => rj(new Error('⏱ Firebase 주문·기록 읽기가 3분 넘음(연결 끊김일 수 있음) — 이번 회차는 건너뛰고 다음 회차에 다시')), 180e3); });
-    let os, is; try { [os, is] = await Promise.race([Promise.all([fdb.collection('crm_orders').get(), fdb.collection('crm_interactions').get()]), lim]); } finally { clearTimeout(tmr); }
+    let os, is; try { const rd = Promise.all([fdb.collection('crm_orders').get(), fdb.collection('crm_interactions').get()]); rd.catch(() => {}); /* (1.89.148 🔬 정밀 점검) 3분을 넘겨 race에서 진 뒤 그 읽기가 실패(연결 끊김)하면 '처리되지 않은 오류'로 기록 창에 남던 것 — 결과는 race가 받으므로 여기선 거부만 받아 둠 */ [os, is] = await Promise.race([rd, lim]); } finally { clearTimeout(tmr); }
     if (Date.now() - t0r > 60e3) log(`🔢 주문·기록 읽기 ${Math.round((Date.now() - t0r) / 1000)}초(평소보다 오래)`, 'warn');
     const orders = []; os.forEach((d) => orders.push({ _id: d.id, ...d.data() })); const inters = []; is.forEach((d) => inters.push(d.data()));
     let upS = null, upN = 0; for (const a of [orders, inters]) for (const x of a) { const u = x && x.uploadedAt; if (u && typeof u.seconds === 'number' && typeof u.toMillis === 'function' && (upS == null || u.seconds > upS || (u.seconds === upS && (u.nanoseconds || 0) > upN))) { upS = u.seconds; upN = u.nanoseconds || 0; } } /* (1.89.138) 이번에 읽은 것 가운데 가장 늦은 서버 시각 — 다음 건너뛰기 판단은 이것보다 뒤에 적힌 것만 봄 */
