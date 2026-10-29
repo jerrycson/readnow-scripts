@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.139의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.140의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.139' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.139', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.140' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.140', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -274,11 +274,17 @@
   const dbGet = (s, k) => reqP(db.transaction(s).objectStore(s).get(k));
   const dbAll = (s) => reqP(db.transaction(s).objectStore(s).getAll());
   const dbCount = (s) => reqP(db.transaction(s).objectStore(s).count());
-  const dbPut = (s, objs) => new Promise((res, rej) => {
+  const dbPutRaw = (s, objs) => new Promise((res, rej) => {
     const t = db.transaction(s, 'readwrite'); const st = t.objectStore(s);
     (Array.isArray(objs) ? objs : [objs]).forEach((o) => st.put(o));
     t.oncomplete = () => res(); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
   });
+  /* (1.89.140 4시간 점검 · 🧠 근원) '올릴 문서 계산'(buildDocs)이 읽는 칸에 내용이 바뀌어 적히면 표시(meta/crmDirty) — 바뀐 것이 없으면 taskUpload가 통째 다시 계산을 건너뜀
+   *  same=true = 부른 쪽이 '수집 시각 말고는 전과 같음'을 확인한 쓰기(목록 줄·문의 목록) → 표시 안 함 · 표시는 쓰기 '앞'에(쓰다 멈춰도 다음 올리기가 계산하게) */
+  const CRM_BUILD_STORES = new Set(['orderLines', 'popups', 'returns', 'qnaList', 'qnaDetail', 'reviews', 'excelLines', 'sheetRows', 'sellerRaw']);
+  const markCrmDirty = (why) => dbPutRaw('meta', { _key: 'crmDirty', at: Date.now(), why });
+  const dbPut = async (s, objs, same) => { if (CRM_BUILD_STORES.has(s) && !same) await markCrmDirty(s); return dbPutRaw(s, objs); };
+  const sameRec = (o, r, skip) => { if (!o) return false; const f = (x) => { const y = { ...x }; skip.forEach((k) => { delete y[k]; }); return stableStr(y); }; return f(o) === f(r); };
   const dbDelete = (s, keys) => new Promise((res, rej) => {
     const t = db.transaction(s, 'readwrite'); const st = t.objectStore(s);
     keys.forEach((k) => st.delete(k)); t.oncomplete = () => res(); t.onerror = () => rej(t.error);
@@ -448,7 +454,7 @@
           if (svDone && (!o || sameLine(o, r))) { r.detailTouchAt = (o && o.detailTouchAt) || now(); } // 서버에 끝난 상세가 있으면 '아는 줄' (이 PC에 없어도)
           else if (!o || !sameLine(o, r) || stale || (SV && !sv)) { fresh += 1; touched.add(r.orderNo); r.detailTouchAt = now(); } else r.detailTouchAt = o.detailTouchAt || now(); // 서버에 없는 주문은 이 PC에 있어도 '새 줄'
         }
-        if (recs.length) await dbPut('orderLines', recs);
+        if (recs.length) await dbPut('orderLines', recs, recs.every((r) => sameRec(old.get(r._key), r, ['collectedAt', 'detailTouchAt']))); /* (1.89.140) 수집 시각·상세 확인 시각만 바뀐 줄은 '올릴 문서'에 영향 없음 */
         touched.forEach((o) => { if (!job.touched.includes(o)) job.touched.push(o); });
         const d = recs.map((r) => r.orderedAt).filter(Boolean).sort();
         return { count: recs.length, firstKey: recs[0] && recs[0]._key, allKnown: fresh === 0,
@@ -567,7 +573,7 @@
           r.answeredHistory = (o && o.answeredHistory) || (o ? [{ v: o.answered ?? null, seenAt: o.firstCollectedAt || o.collectedAt || null }] : []);
           if (!o || (o.answered ?? null) !== (r.answered ?? null)) { r.answeredHistory = [...r.answeredHistory, { v: r.answered ?? null, seenAt: now() }]; }
           if (!o || (o.answered ?? null) !== (r.answered ?? null) || !det.has(r._key)) fresh += 1; }
-        if (rows.length) await dbPut('qnaList', rows);
+        if (rows.length) await dbPut('qnaList', rows, rows.every((r) => sameRec(old.get(r._key), r, ['collectedAt']))); /* (1.89.140) */
         return { count: rows.length, firstKey: rows[0] && rows[0]._key, allKnown: fresh === 0, summary: `문의 ${rows.length}건, 새로 바뀐 것 ${fresh}건 (${fmtDate(rows[rows.length - 1]?.createdDate)} ~ ${fmtDate(rows[0]?.createdDate)})` };
       }, '묻고 답하기');
       job.phase = 'detail'; job.queue = null; await saveJob(job);
@@ -971,7 +977,7 @@
       let serverN; try { serverN = (await fdb.collection('crm_orders').count().get()).data().count; } catch (e) { serverN = null; }
       if (serverN != null && serverN <= localN + 50) return;
       setNow('고객 연결을 위해 Firebase의 주문을 내려받는 중'); const snap = await fdb.collection('crm_orders').get();
-      serverOrdersCache = []; snap.forEach((d) => serverOrdersCache.push({ _id: d.id, ...d.data() }));
+      serverOrdersCache = []; snap.forEach((d) => serverOrdersCache.push({ _id: d.id, ...d.data() })); await markCrmDirty('serverOrders'); /* (1.89.140) buildDocs가 고객 연결에 씀 */
       log(`이 PC의 주문(${localN.toLocaleString()}건)이 Firebase보다 적어, Firebase 주문 ${serverOrdersCache.length.toLocaleString()}건을 함께 써서 고객을 연결합니다.`);
     } catch (e) { log('Firebase 주문 내려받기 실패: ' + e.message, 'warn'); }
   }
@@ -1490,12 +1496,20 @@
     if (settings.billing !== 'paid' && await limitHitToday() && !(window.__rnHuman(8000) ? confirm(`오늘은 이미 무료 쓰기 한도에 도달한 것으로 보입니다.\n한도 초기화: ${resetText()}\n\n초기화 전에 올리면 다시 2분쯤 기다리다 멈출 가능성이 큽니다. 그래도 지금 시도할까요?\n(인터넷 연결 문제로 멈췄던 경우라면 '확인'을 누르세요)`) : false)) throw new StopSignal('FBQUOTA', `한도 초기화(${resetText()}) 뒤 이어하기를 눌러 주세요.`);
     const ujob = await loadJob('upload'); ujob.status = 'running'; ujob.startedAt = ujob.startedAt || now(); await saveJob(ujob);
     setNow('올릴 문서를 계산하는 중'); progress('Firebase 올리기', 0, 1);
-    const docs = (await buildDocs()).filter((d) => d.col !== 'crm_customers'); // 고객 요약은 아래에서 Firebase 전체 데이터로 계산
-    const sent = new Map((await dbAll('uploaded')).map((u) => [u._key, u.hash]));
+    /* (1.89.140 4시간 점검 · 🧠 근원) 지난 '올릴 문서 계산'이 끝까지 올린 뒤 이 PC 저장소(buildDocs가 읽는 칸)에 바뀐 것이 없으면 통째 다시 계산을 건너뜀
+     *  10/29 실측 JS-MAIN: ⏰ 고객 문의(xx:02·xx:30)·전체주문(xx:00)마다 IndexedDB 9칸 통째 읽기 + 계산 약 14초(한 번 최대 11.7초 화면 막음) — 대부분 '올릴 문서 0개'
+     *  건너뛰는 조건(모두): 지난 계산이 끝까지 올림 · 같은 수집기·파서 판 · 2시간 안 · 그 계산 시작 뒤 바뀐 표시(meta/crmDirty) 없음 · 남은 고객 요약 없음 · 서버 주문 사본 수 같음
+     *  2시간마다·판이 바뀌면·무엇이든 바뀌면 예전처럼 전체 계산 · 웹앱의 고객 다시 계산 요청은 건너뛸 때도 아래에서 그대로 처리 */
+    const tB = Date.now(); let skipB = null;
+    try { const lb = await dbGet('meta', 'lastBuild'); const dt = await dbGet('meta', 'crmDirty'); const pc0 = ((await dbGet('meta', 'pendingCustomers')) || { ids: [] }).ids.length;
+      if (lb && lb.ver === APP_VER && lb.pv === P.VERSION && tB - lb.at < 2 * 3600e3 && tB >= lb.at && (!dt || dt.at < lb.at) && !pc0 && (lb.soc || 0) === serverOrdersCache.length) skipB = lb; } catch (e) { skipB = null; }
+    if (skipB) log(`올릴 문서 계산 건너뜀 — ${Math.round((tB - skipB.at) / 60e3)}분 전 계산 뒤 이 PC에 바뀐 주문·문의·기록 없음 (2시간마다·바뀌면 다시 계산)`);
+    const docs = skipB ? [] : (await buildDocs()).filter((d) => d.col !== 'crm_customers'); // 고객 요약은 아래에서 Firebase 전체 데이터로 계산
+    const sent = skipB ? new Map() : new Map((await dbAll('uploaded')).map((u) => [u._key, u.hash]));
     const todo = docs.filter((d) => sent.get(`${d.col}/${d.id}`) !== docHash(d));
     const pendingCust = new Set(((await dbGet('meta', 'pendingCustomers')) || { ids: [] }).ids); // 지난번에 다 못 한 고객 요약
     const pend0 = pendingCust.size; /* (1.89.136 4시간 점검) 이번 올리기가 아무것도 바꾸지 않았는지 — 아래 점수 전체 재계산을 건너뛸지 정할 때 씀 */
-    log(`올릴 문서 ${todo.length.toLocaleString()}개 (바뀐 것만), 다시 계산할 고객 요약은 올린 뒤 정해집니다`);
+    if (!skipB) log(`올릴 문서 ${todo.length.toLocaleString()}개 (바뀐 것만), 다시 계산할 고객 요약은 올린 뒤 정해집니다`);
     const BATCH = 300; let done = 0; let skipped = 0;
     for (let i = 0; i < todo.length; i += BATCH) {
       checkPause();
@@ -1519,7 +1533,7 @@
         }
       }
       if (n) { await guardQuota(n + hist.length, todo.length - done); if (hist.length) await crmHistCommit(hist); /* 옛 값을 먼저 남기고(못 남기면 여기서 멈춰 덮어쓰지 않음) */ await commitWithRetry(b, n); }
-      await dbPut('uploaded', wrote.map((d) => ({ _key: `${d.col}/${d.id}`, hash: docHash(d), at: now() })));
+      await dbPutRaw('uploaded', wrote.map((d) => ({ _key: `${d.col}/${d.id}`, hash: docHash(d), at: now() })));
       await dbPut('meta', { _key: 'pendingCustomers', ids: [...pendingCust] });
       done += chunk.length; progress('Firebase 올리기 (주문·기록)', done, todo.length); setNow(`올린 문서 ${done.toLocaleString()} / ${todo.length.toLocaleString()} (같은 내용이라 건너뜀 ${skipped.toLocaleString()})`);
     }
@@ -1528,7 +1542,8 @@
     try { const rq = await SYS().doc('recompute').get(); fromApp = rq.exists ? (rq.data().ids || []) : []; fromApp.forEach((x) => pendingCust.add(x)); } catch (e) {}
     await recomputeCustomers(pendingCust);
     if (fromApp.length) SYS().doc('recompute').set({ ids: FB.firestore.FieldValue.arrayRemove(...fromApp), writerSchema: WRITER_SCHEMA }, { merge: true }).catch(() => {});
-    await dbPut('meta', { _key: 'lastUpload', at: now(), count: todo.length, total: docs.length, by: fbUser.email });
+    await dbPut('meta', { _key: 'lastUpload', at: now(), count: todo.length, total: skipB ? (skipB.total || 0) : docs.length, by: fbUser.email });
+    if (!skipB) await dbPutRaw('meta', { _key: 'lastBuild', at: tB, ver: APP_VER, pv: P.VERSION, soc: serverOrdersCache.length, total: docs.length }); /* (1.89.140) 끝까지 올렸을 때만 — 중간에 멈추면 다음에 다시 계산 */
     ujob.status = 'done'; ujob.finishedAt = now(); ujob.startedAt = null; await saveJob(ujob);
     try { window.__rnCS && (window.__rnCS.add('crm_upload', 'ok', Math.max(0, todo.length - skipped)), window.__rnCS.add('crm_upload', 'skip', skipped, '같은 내용(이미 올림)')); } catch (e) {} /* (1.79.0) 📊 */
     log(`Firebase 올리기 완료: 문서 ${todo.length.toLocaleString()}개 확인 (그중 같은 내용 ${skipped.toLocaleString()}개는 건너뜀)${buildDocs.lastPending ? `, 구글 시트 연결 대기 ${buildDocs.lastPending}건은 웹앱에서 확정 예정` : ''}`, 'ok');
