@@ -1,17 +1,13 @@
 {
- "holder": "friend",
- "what": "② 몸·옷 1묶음 배포(t3 시험)",
- "since": "2026-10-29T17:15:02Z",
- "beat": "2026-10-29T17:46:41Z",
- "ask": {
-  "who": "friend",
-  "why": "판 내기 기다림: ③ 움직임 1묶음 배포",
-  "at": "2026-10-29T17:49:35Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "friend",
-  "done": "P5 2f01ecc · 웹앱 1.78.255 · 프로그램 0.2.0 · 책방 친구 0.15.0",
-  "at": "2026-10-29T17:14:21Z"
+  "done": "② 몸·옷 1묶음 be7b6d8 · 웹앱 1.78.256 · friend 0.15.1",
+  "at": "2026-10-29T17:51:24Z"
  },
- "host": "vm-body"
+ "host": null
 }
