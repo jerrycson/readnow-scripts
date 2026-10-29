@@ -549,7 +549,7 @@ pub fn run() {
             let h = app.handle().clone();
             start_local(h.clone()); // (10/29) ① 같은 PC 바깥 알림 창구 127.0.0.1:47613
             let prefs = load_prefs(&h);
-            let st = Arc::new(App { hit: Mutex::new(Hit { rects: vec![], ignoring: false, kb_focus: false }), prefs: Mutex::new(prefs.clone()), hidden: AtomicBool::new(false), bye: AtomicBool::new(false) });
+            let st = Arc::new(App { hit: Mutex::new(Hit { rects: vec![], ignoring: false, kb_focus: false, dpr: 0.0 }), prefs: Mutex::new(prefs.clone()), hidden: AtomicBool::new(false), bye: AtomicBool::new(false) });
             app.manage(st);
             // 처음 한 번: 시작 시 자동 실행을 켬(트레이에서 끌 수 있음)
             if prefs.auto_set.is_none() {
