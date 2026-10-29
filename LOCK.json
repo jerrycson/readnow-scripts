@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "friend",
+ "what": "③ 움직임 2묶음(고친 패치) 배포",
+ "since": "2026-10-29T23:07:12Z",
+ "beat": "2026-10-29T23:07:12Z",
  "ask": null,
  "last": {
   "who": "friend",
   "done": "① 얼굴 2+3묶음 8a299d9 · 웹앱 1.78.263 · friend 0.15.8",
   "at": "2026-10-29T23:06:48Z"
  },
- "host": null
+ "host": "vm-motion"
 }
