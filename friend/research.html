@@ -1,497 +1,4361 @@
-<!doctype html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>🎨 캐릭터·애니메이션 연구</title>
-<style>
-:root{--bg:#F6F4EF;--card:#FFFFFF;--ink:#1F2A27;--sub:#5B6763;--line:#DCD8CF;--acc:#1F5A44;--acc2:#C8734A;--keep:#2E7D4F;--keepbg:#E6F3EA;--drop:#B0322A;--dropbg:#FBE9E7;--warn:#8A5A00;--warnbg:#FFF4D6;--th:#EEF2EF;--code:#F1EFE9}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#141816;--card:#1C221F;--ink:#E8ECE9;--sub:#A3AFAA;--line:#33403B;--acc:#7CC4A4;--acc2:#E39A73;--keep:#7FD39F;--keepbg:#1D3326;--drop:#F08A80;--dropbg:#3A1F1C;--warn:#F2C766;--warnbg:#3A3017;--th:#232C28;--code:#232A27}}
-:root[data-theme="dark"]{--bg:#141816;--card:#1C221F;--ink:#E8ECE9;--sub:#A3AFAA;--line:#33403B;--acc:#7CC4A4;--acc2:#E39A73;--keep:#7FD39F;--keepbg:#1D3326;--drop:#F08A80;--dropbg:#3A1F1C;--warn:#F2C766;--warnbg:#3A3017;--th:#232C28;--code:#232A27}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif}
-.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 64px}
-header h1{font-size:26px;margin:4px 0 6px}
-header p{color:var(--sub);margin:0}
-nav.toc{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:8px 0;margin:14px 0 6px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:thin}
-nav.toc a{flex:none;font-size:13px;text-decoration:none;color:var(--acc);border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:var(--card)}
-section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
-h2{font-size:20px;margin:0 0 10px;color:var(--acc)}
-h3{font-size:16px;margin:16px 0 6px}
-p{margin:6px 0}
-ul{margin:6px 0;padding-left:20px}
-li{margin:3px 0}
-.tbl{overflow-x:auto;margin:8px 0;border:1px solid var(--line);border-radius:10px}
-table{border-collapse:collapse;width:100%;font-size:13px;min-width:560px}
-th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
-th{background:var(--th);font-weight:600;white-space:nowrap}
-tr:last-child td{border-bottom:none}
-.num td:not(:first-child){text-align:center;font-variant-numeric:tabular-nums}
-.pill{display:inline-block;font-size:12px;border-radius:999px;padding:1px 8px;margin-right:4px}
-.keep{background:var(--keepbg);color:var(--keep)}
-.drop{background:var(--dropbg);color:var(--drop)}
-.warn{background:var(--warnbg);color:var(--warn)}
-.note{border-left:4px solid var(--acc2);background:var(--code);padding:8px 12px;border-radius:6px;margin:10px 0}
-.law{counter-reset:law;list-style:none;padding:0}
-.law li{counter-increment:law;position:relative;padding:8px 10px 8px 44px;border:1px solid var(--line);border-radius:10px;margin:8px 0}
-.law li::before{content:counter(law);position:absolute;left:10px;top:8px;width:24px;height:24px;border-radius:50%;background:var(--acc);color:var(--card);font-weight:700;text-align:center;line-height:24px;font-size:13px}
-code{background:var(--code);border-radius:4px;padding:0 4px;font-size:12.5px}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
-.box{border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-.box h4{margin:0 0 4px;font-size:14px}
-.chart{width:100%;height:auto;display:block}
-.chart text{fill:var(--sub);font-size:10px}
-.chart .lab{fill:var(--ink);font-size:11px;font-weight:600}
-.src li{word-break:break-all}
-small{color:var(--sub)}
-</style>
-</head>
-<body>
-<div class="wrap">
-<header>
-<h1>🎨 캐릭터·애니메이션 연구</h1>
-<p>책방 친구 재건축의 기준 문서 요약 · 2026-10-28 · 참고 이미지 602장 + 웹 자료 분석 · 원본: <code>mascot_bible.md</code>(숫자·규칙 전부) · <code>mascot_rebuild_plan.md</code>(남길 것·버릴 것·만드는 순서)</p>
-</header>
-
-<nav class="toc" aria-label="목차">
-<a href="#law">5대 철칙</a><a href="#obj">객체 10명</a><a href="#face">얼굴</a><a href="#eye">눈</a><a href="#hair">머리카락</a><a href="#body">몸통</a><a href="#hand">손·발</a><a href="#cloth">옷·소품</a><a href="#pose">포즈</a><a href="#anim">애니메이션</a><a href="#sd">SD·동물·로봇·외계인</a><a href="#chat">채팅 새 구조</a><a href="#defect">지금 결함</a><a href="#decide">남길 것·버릴 것</a><a href="#order">만드는 순서</a><a href="#applied">적용 기록</a><a href="#src">출처</a>
-</nav>
-
-<section id="law">
-<h2>1. 다섯 가지 철칙 — 모든 규칙보다 먼저</h2>
-<ol class="law">
-<li><b>전체 먼저, 부분은 나중.</b> 뼈대 → 살 덩어리 → 하나의 실루엣 → 얼굴 → 옷 → 세부 순서로 만든다. 살끼리 만나는 곳에 부위마다 따로 테두리를 두르지 않는다(정범님 "전체 조화를 목적으로").</li>
-<li><b>모든 것은 뼈대에 붙는다.</b> 소품·머리카락·옷은 붙는 뼈와 닿는 곳이 정해져 있다. 떠 있는 연필, 머리를 꿰뚫는 비녀는 금지.</li>
-<li><b>변하지 않는 비율.</b> 키의 48~52%에 가랑이, 70~74%에 무릎 가운데, 팔꿈치는 허리, 손목은 가랑이, 손끝은 허벅지 가운데(꼬마만 가랑이 55~61%). 40장 넘는 설정표가 같은 값을 보인다.</li>
-<li><b>팔다리는 늘어나지 않는다.</b> 뼈 길이는 그대로이고 관절은 원호를 따라 움직인다(“ARMS DON'T STRETCH”).</li>
-<li><b>다림줄(무게 중심).</b> 서 있을 때 목 아래 오목한 곳에서 내린 수직선이 디딘 발(두 발이면 그 사이)에 떨어져야 한다. SD는 목 관절에서 내린다.</li>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🎨 책방 친구 캐릭터·애니메이션 바이블 v2</title><style>
+:root{--ink:#1f2a24;--bg:#faf8f3;--card:#fff;--line:#d9d4c7;--hd:#1f5a44;--acc:#b8562a;--mut:#6b6f66}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif}
+header{background:var(--hd);color:#fff;padding:14px 18px}header h1{margin:0;font-size:19px}header p{margin:4px 0 0;font-size:13px;opacity:.9}
+.wrap{display:grid;grid-template-columns:260px 1fr;gap:0;max-width:1400px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:14px 10px;border-right:1px solid var(--line);background:#f3f0e8;font-size:13px}
+nav a{display:block;color:var(--ink);text-decoration:none;padding:3px 6px;border-radius:6px}nav a:hover{background:#e6e1d4}nav .l2{padding-left:18px;color:var(--mut);font-size:12px}
+main{padding:18px 28px 80px;min-width:0}
+section.ch{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin:0 0 22px}
+h1,h2,h3,h4{line-height:1.3}section.ch>h1{font-size:21px;margin:0 0 10px;color:var(--hd)}h2{font-size:17px;margin:22px 0 8px;border-left:4px solid var(--hd);padding-left:8px}h3{font-size:15px;margin:16px 0 6px;color:var(--acc)}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0 12px;display:block;overflow:auto}th,td{border:1px solid var(--line);padding:5px 7px;vertical-align:top;text-align:left}th{background:#eef3ef}
+code{background:#f0ede4;padding:0 4px;border-radius:4px;font-size:12.5px}pre{background:#f0ede4;padding:10px;border-radius:8px;overflow:auto;font-size:12.5px}
+blockquote{border-left:3px solid var(--line);margin:8px 0;padding:2px 12px;color:var(--mut)}
+.meta{font-size:12px;color:var(--mut)}.back{font-size:13px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}nav{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}main{padding:12px 16px 60px}}
+</style></head><body>
+<header><h1>🎨 책방 친구 캐릭터·애니메이션 바이블 v2</h1><p>정범님 지시(2026-10-29 17:35)로 다시 쓴 설계 기준 · 진행도 표 · 실행 묶음 · 생성 2026-10-29 18:56 KST · 원본 friend/research/*.md (비공개 저장소 readnow-chats/mascot/bible_v2 와 동일)</p></header>
+<div class="wrap"><nav><a href="#00_개요">🐾 책방 친구 캐릭터·애니메이션 바이블 v2 — 0. 개요</a>
+<a class="l2" href="#00_개요-0-1-이-문서의-목적과-독자">0.1 이 문서의 목적과 독자</a>
+<a class="l2" href="#00_개요-0-2-정범님이-정한-목표-원문-근거">0.2 정범님이 정한 목표 (원문 근거)</a>
+<a class="l2" href="#00_개요-0-3-다섯-철칙-v1-계승-모든-규칙보다-우선">0.3 다섯 철칙 (v1 계승 · 모든 규칙보다 우선)</a>
+<a class="l2" href="#00_개요-0-4-단위-좌표-용어">0.4 단위·좌표·용어</a>
+<a class="l2" href="#00_개요-0-5-합격-판정-방식-회차-끝마다-90_진행도표의-산출-규칙">0.5 합격 판정 방식 (회차 끝마다 · 90_진행도표의 % 산출 규칙)</a>
+<a class="l2" href="#00_개요-0-6-문서-구성">0.6 문서 구성</a>
+<a href="#01_스타일">01. 스타일 — TV 애니메이션 설정표 화풍 · 선 · 셀 그림자 · 색 · LOD</a>
+<a class="l2" href="#01_스타일-1-1-설정표-모델-시트-란-무엇을-담는가-A11-2-A11-4의-기준">1.1 설정표(모델 시트)란 무엇을 담는가 (A11.2·A11.4의 기준</a>
+<a class="l2" href="#01_스타일-1-2-선-A10-3">1.2 선 (A10.3)</a>
+<a class="l2" href="#01_스타일-1-3-셀-그림자-하이라이트-A10-4">1.3 셀 그림자·하이라이트 (A10.4)</a>
+<a class="l2" href="#01_스타일-1-4-색-A10-5">1.4 색 (A10.5)</a>
+<a class="l2" href="#01_스타일-1-5-LOD-화면-크기별-그릴-것-A3-7-A6-4-A10-6">1.5 LOD — 화면 크기별 그릴 것 (A3.7·A6.4·A10.6)</a>
+<a class="l2" href="#01_스타일-1-6-도형-언어-정체성-A11-2">1.6 도형 언어·정체성 (A11.2)</a>
+<a class="l2" href="#01_스타일-1-7-합격-기준-T32-T40-10-10-4-이어서">1.7 합격 기준 (T32~T40 · 10 §10.4 이어서)</a>
+<a class="l2" href="#01_스타일-1-8-설정값-설정-그림">1.8 설정값(설정 › 그림)</a>
+<a class="l2" href="#01_스타일-1-9-근거를-못-찾은-것">1.9 근거를 못 찾은 것</a>
+<a href="#02_인체_리그">02. 인체 리그 — 뼈대 · 관절 · ROM · 10객체 비율표 · 머리–목–어깨 연</a>
+<a class="l2" href="#02_인체_리그-2-1-뼈대-A1-2">2.1 뼈대 (A1.2)</a>
+<a class="l2" href="#02_인체_리그-2-2-10객체-비율표-A1-1-아니메-기본값-한국-실측-열">2.2 10객체 비율표 (A1.1) — 아니메 기본값 + 한국 실측 열</a>
+<a class="l2" href="#02_인체_리그-2-3-머리-목-어깨-연결-A2-3-정범님-가장-급한-지적-obs-turn_body-A1-14">2.3 머리–목–어깨 연결 (A2.3 · 정범님 가장 급한 지적) [ob</a>
+<a class="l2" href="#02_인체_리그-2-4-관절-가동-범위-A1-3-AAOS-Luttgens-범위-web-anatomy-16-17">2.4 관절 가동 범위 (A1.3) — AAOS/Luttgens 범위 [</a>
+<a class="l2" href="#02_인체_리그-2-5-다림줄-콘트라포스토-A1-5-obs-turn_body-23-obs-motion-1-3">2.5 다림줄·콘트라포스토 (A1.5) [obs/turn_body 23 </a>
+<a class="l2" href="#02_인체_리그-2-6-등신-규칙-설정-어느-값에서도-같은-식-A1-4-정범님-등신-설정이-작동-안-함">2.6 등신 규칙 — 설정 어느 값에서도 같은 식 (A1.4 · 정범님 </a>
+<a class="l2" href="#02_인체_리그-2-7-합격-기준-T1-T7-v1-T14-T17-T67-T70">2.7 합격 기준 (T1~T7 v1 + T14~T17 + T67~T70)</a>
+<a class="l2" href="#02_인체_리그-2-8-설정값">2.8 설정값</a>
+<a class="l2" href="#02_인체_리그-2-9-근거를-못-찾은-것">2.9 근거를 못 찾은 것</a>
+<a href="#03_머리_얼굴_눈">03. 머리·얼굴·눈 — 두개골+턱 · 이목구비 배치 · 눈 체계(꼬마 눈) · 눈썹 </a>
+<a class="l2" href="#03_머리_얼굴_눈-3-1-머리-틀-두개골-구-턱-쐐기-A2-1">3.1 머리 틀 — 두개골 구 + 턱 쐐기 (A2.1)</a>
+<a class="l2" href="#03_머리_얼굴_눈-3-2-머리-목-연결-A2-3-10-10-1-2와-한-몸">3.2 머리–목 연결 (A2.3 · 10 §10.1.2와 한 몸)</a>
+<a class="l2" href="#03_머리_얼굴_눈-3-3-눈-체계-남기고-더-다듬는다-A3">3.3 눈 체계 — 남기고 더 다듬는다 (A3)</a>
+<a class="l2" href="#03_머리_얼굴_눈-3-4-코-입-귀-A2-5-A2-6">3.4 코·입·귀 (A2.5·A2.6)</a>
+<a class="l2" href="#03_머리_얼굴_눈-3-5-눈썹-A3-5">3.5 눈썹 (A3.5)</a>
+<a class="l2" href="#03_머리_얼굴_눈-3-6-얼굴-돌리기-2-5D-A2-4">3.6 얼굴 돌리기 — 2.5D (A2.4)</a>
+<a class="l2" href="#03_머리_얼굴_눈-3-7-수염-나이-선-A2-7">3.7 수염·나이 선 (A2.7)</a>
+<a class="l2" href="#03_머리_얼굴_눈-3-8-얼굴-컨트롤-A2-8-범위">3.8 얼굴 컨트롤 (A2.8) — 범위</a>
+<a class="l2" href="#03_머리_얼굴_눈-3-9-합격-기준-T41-T48">3.9 합격 기준 (T41~T48)</a>
+<a class="l2" href="#03_머리_얼굴_눈-3-10-설정값">3.10 설정값</a>
+<a href="#04_머리카락">04. 머리카락 — 껍질 · 다발 · 층 · 묶음 · 물리 · 모자</a>
+<a class="l2" href="#04_머리카락-4-1-껍질-볼륨-헤어라인-가르마-A4-1">4.1 껍질(볼륨)·헤어라인·가르마 (A4.1)</a>
+<a class="l2" href="#04_머리카락-4-2-다발-clump-A4-2">4.2 다발(clump) (A4.2)</a>
+<a class="l2" href="#04_머리카락-4-3-층-순서-A4-3">4.3 층 순서 (A4.3)</a>
+<a class="l2" href="#04_머리카락-4-4-묶음-땋기-경단-꼬리-A4-4">4.4 묶음·땋기·경단·꼬리 (A4.4)</a>
+<a class="l2" href="#04_머리카락-4-5-모양-목록-A4-5">4.5 모양 목록 (A4.5)</a>
+<a class="l2" href="#04_머리카락-4-6-물리-A4-6">4.6 물리 (A4.6)</a>
+<a class="l2" href="#04_머리카락-4-7-모자-핀-머리띠-상호작용-A4-7-정범님-머리가-모자를-뚫음">4.7 모자·핀·머리띠 상호작용 (A4.7 · 정범님 &quot;머리가 모자를 뚫</a>
+<a class="l2" href="#04_머리카락-4-8-합격-기준-T71-T75">4.8 합격 기준 (T71~T75)</a>
+<a class="l2" href="#04_머리카락-4-9-설정값">4.9 설정값</a>
+<a class="l2" href="#04_머리카락-4-10-보강-예정-관찰-76장-재개-시">4.10 보강 예정(관찰 76장 재개 시)</a>
+<a href="#05_몸통_팔다리_손발">05. 몸통·팔다리·손·발 — 여/남 몸통 · 체형 극단 · 팔다리 로프트 · 손 5손</a>
+<a class="l2" href="#05_몸통_팔다리_손발-5-1-몸통-공통-구조-A5">5.1 몸통 공통 구조 (A5)</a>
+<a class="l2" href="#05_몸통_팔다리_손발-5-2-여자-가슴-팔-앞으로-나오게-A5-1-정범님-10-28-참고-가슴이-팔-앞으로-안-나옴">5.2 여자 가슴 — 팔 앞으로 나오게 (A5.1 · 정범님 10/28 </a>
+<a class="l2" href="#05_몸통_팔다리_손발-5-3-여자-허리-골반-허벅지-한-윤곽-A5-2-골반이-허벅지와-따로-놂">5.3 여자 허리·골반·허벅지 = 한 윤곽 (A5.2 · &quot;골반이 허벅지</a>
+<a class="l2" href="#05_몸통_팔다리_손발-5-4-남자-가슴-복근-A5-3">5.4 남자 가슴·복근 (A5.3)</a>
+<a class="l2" href="#05_몸통_팔다리_손발-5-5-체형-변수-p0-p1-A5-4-A5-6">5.5 체형 변수 p0/p1 (A5.4·A5.6)</a>
+<a class="l2" href="#05_몸통_팔다리_손발-5-6-배-엉덩이-등-나이-A5-5">5.6 배·엉덩이·등 — 나이 (A5.5)</a>
+<a class="l2" href="#05_몸통_팔다리_손발-5-7-팔-로프트-A6-1-obs-limbs-1-12">5.7 팔 로프트 (A6.1) [obs/limbs 1~12]</a>
+<a class="l2" href="#05_몸통_팔다리_손발-5-8-손-5손가락-상호작용-A6-2-A6-5-obs-limbs-19-22-web-anatomy-7-8">5.8 손 — 5손가락 상호작용 (A6.2~A6.5) [obs/limbs</a>
+<a class="l2" href="#05_몸통_팔다리_손발-5-9-다리-로프트-A7-1-obs-limbs-13-17-web-anatomy-3-4">5.9 다리 로프트 (A7.1) [obs/limbs 13~17 · web</a>
+<a class="l2" href="#05_몸통_팔다리_손발-5-10-발-발목-발가락-묶음-A7-2-A7-3-obs-limbs-18-web-anatomy-9">5.10 발·발목·발가락 묶음 (A7.2·A7.3) [obs/limbs </a>
+<a class="l2" href="#05_몸통_팔다리_손발-5-11-합격-기준">5.11 합격 기준</a>
+<a class="l2" href="#05_몸통_팔다리_손발-5-12-설정값">5.12 설정값</a>
+<a class="l2" href="#05_몸통_팔다리_손발-5-13-근거를-못-찾은-것">5.13 근거를 못 찾은 것</a>
+<a href="#06_옷_소품">06. 옷·신발·장신구·소품 — 옷감 4분류 · 품 · 주름 · 드리움·충돌 · 붙임점</a>
+<a class="l2" href="#06_옷_소품-6-1-옷감-4분류-MSC2_FABRIC-A8-1-정범님-옷감-4분류는-알아서">6.1 옷감 4분류 — `MSC2_FABRIC` (A8.1 · 정범님 &quot;</a>
+<a class="l2" href="#06_옷_소품-6-2-품-여유-층-순서-A8-2-A8-5">6.2 품(여유)·층 순서 (A8.2·A8.5)</a>
+<a class="l2" href="#06_옷_소품-6-3-주름-당김점-쌓임점에서만-A8-3">6.3 주름 — 당김점·쌓임점에서만 (A8.3)</a>
+<a class="l2" href="#06_옷_소품-6-4-드리움-충돌-뚫림-0-A8-4-정범님-10-28-15-00">6.4 드리움·충돌 — 뚫림 0 (A8.4 · 정범님 10/28 15:0</a>
+<a class="l2" href="#06_옷_소품-6-5-신발-A7-4">6.5 신발 (A7.4)</a>
+<a class="l2" href="#06_옷_소품-6-6-장신구-붙임점-MSC2_ACC_ATTACH-A8-6-정범님-모자를-뚫고-올라감-소품이-머리에-묻힘">6.6 장신구 붙임점 — `MSC2_ACC_ATTACH` (A8.6 · </a>
+<a class="l2" href="#06_옷_소품-6-7-소품-치수-쥐기-A6-5-A8-7-MSC2_PROP_SIZE">6.7 소품 치수·쥐기 (A6.5·A8.7) — `MSC2_PROP_SI</a>
+<a class="l2" href="#06_옷_소품-6-8-SF-판타지-해변-A8-8">6.8 SF·판타지·해변 (A8.8)</a>
+<a class="l2" href="#06_옷_소품-6-12-옷-B-묶음-보강-obs-clothes_b-66장-합격-C1-C28">6.12 옷 B 묶음 보강 (obs/clothes_b · 66장 · 합격</a>
+<a class="l2" href="#06_옷_소품-6-9-합격-기준-T19-T9-T49-T56">6.9 합격 기준 (T19·T9 + T49~T56)</a>
+<a class="l2" href="#06_옷_소품-6-10-설정값">6.10 설정값</a>
+<a class="l2" href="#06_옷_소품-6-11-근거를-못-찾은-것">6.11 근거를 못 찾은 것</a>
+<a href="#07_특수객체">07. 특수 객체 — SD(2~4등신) · 동물 꼬마 5종 · 로봇 · 외계인 · 마네</a>
+<a class="l2" href="#07_특수객체-7-1-SD-2-4등신-A9-1-02-2-6-식의-값">7.1 SD 2~4등신 (A9.1) — 02 §2.6 식의 값</a>
+<a class="l2" href="#07_특수객체-7-2-동물-꼬마-5종-A9-2">7.2 동물 꼬마 5종 (A9.2)</a>
+<a class="l2" href="#07_특수객체-7-3-로봇-A9-3">7.3 로봇 (A9.3)</a>
+<a class="l2" href="#07_특수객체-7-4-외계인-A9-4">7.4 외계인 (A9.4)</a>
+<a class="l2" href="#07_특수객체-7-5-마네킹-미성년-맨몸-A9-5">7.5 마네킹 — 미성년 맨몸 (A9.5)</a>
+<a class="l2" href="#07_특수객체-7-6-합격-기준-T76-T79">7.6 합격 기준 (T76~T79)</a>
+<a class="l2" href="#07_특수객체-7-7-설정값">7.7 설정값</a>
+<a href="#08_애니메이션">08. 애니메이션 — 양식 3종 · 대기 · 걷기 · 몸짓 · 2차 운동 · 블렌드 ·</a>
+<a class="l2" href="#08_애니메이션-8-1-런타임-구조-B1">8.1 런타임 구조 (B1)</a>
+<a class="l2" href="#08_애니메이션-8-2-양식-3종-설정-motion-style-real-full-anime-기본-anime">8.2 양식 3종 — 설정 `motion.style` = real / f</a>
+<a class="l2" href="#08_애니메이션-8-3-대기-idle-B2">8.3 대기(idle) (B2)</a>
+<a class="l2" href="#08_애니메이션-8-4-이동-B3">8.4 이동 (B3)</a>
+<a class="l2" href="#08_애니메이션-8-5-2차-운동-B4-3">8.5 2차 운동 (B4.3)</a>
+<a class="l2" href="#08_애니메이션-8-6-몸짓-B4-1-B4-2-B4-4">8.6 몸짓 (B4.1·B4.2·B4.4)</a>
+<a class="l2" href="#08_애니메이션-8-7-끊고-들어오기-B4-5">8.7 끊고 들어오기 (B4.5)</a>
+<a class="l2" href="#08_애니메이션-8-8-상호작용-B5">8.8 상호작용 (B5)</a>
+<a class="l2" href="#08_애니메이션-8-9-SF-판타지-B6">8.9 SF·판타지 (B6)</a>
+<a class="l2" href="#08_애니메이션-8-10-끌기-터치-B7">8.10 끌기·터치 (B7)</a>
+<a class="l2" href="#08_애니메이션-8-11-합격-기준-자동-시험-10-10-4-번호-이어서">8.11 합격 기준 (자동 시험 · 10 §10.4 번호 이어서)</a>
+<a class="l2" href="#08_애니메이션-8-12-설정값-설정-움직임">8.12 설정값(설정 › 움직임)</a>
+<a class="l2" href="#08_애니메이션-8-13-근거를-못-찾은-것">8.13 근거를 못 찾은 것</a>
+<a href="#09_표정">09. 표정 — 채널 · 53+ 표정표 · 세기 · 전환 순서 · 입 모양</a>
+<a class="l2" href="#09_표정-9-1-채널-체계-C1-표정-독립-채널의-조합-얼굴-틀-눈-종류-눈썹-종류-id-불변">9.1 채널 체계 (C1) — 표정 = 독립 채널의 조합, 얼굴 틀·눈 </a>
+<a class="l2" href="#09_표정-9-2-표정-목록-53-C2-1-수치표는-obs-expression-md-3-1-13열-53행-근거-그림ID-그대로-엔진-MSC2_XPP-에-옮긴다">9.2 표정 목록 53+ (C2.1) — 수치표는 `obs/express</a>
+<a class="l2" href="#09_표정-9-3-꼬마-동물-노인-변형-C2-3">9.3 꼬마·동물·노인 변형 (C2.3)</a>
+<a class="l2" href="#09_표정-9-4-전환-C3-끊김-0-순서-고정">9.4 전환 (C3) — 끊김 0 · 순서 고정</a>
+<a class="l2" href="#09_표정-9-5-효과-홍조-C1-5-2643e4f6-db4488c6-ea694dac-15b99f91">9.5 효과·홍조 (C1.5) [2643e4f6·db4488c6·ea69</a>
+<a class="l2" href="#09_표정-9-6-입-모양-립플랩-C4">9.6 입 모양·립플랩 (C4)</a>
+<a class="l2" href="#09_표정-9-7-합격-기준-T20-T45-T61-T66">9.7 합격 기준 (T20 · T45 + T61~T66)</a>
+<a class="l2" href="#09_표정-9-8-설정값">9.8 설정값</a>
+<a class="l2" href="#09_표정-9-9-근거를-못-찾은-것">9.9 근거를 못 찾은 것</a>
+<a href="#10_렌더_성능">10. 렌더링·성능 — 한 실루엣, 깊이 층, 예산</a>
+<a class="l2" href="#10_렌더_성능-10-1-한-실루엣-가장-중요한-구조-변경-정범님-부위가-따로-논다-해결">10.1 한 실루엣 (가장 중요한 구조 변경 · 정범님 &quot;부위가 따로 논</a>
+<a class="l2" href="#10_렌더_성능-10-2-선-채움-그림자-01장-규칙의-구현">10.2 선·채움·그림자(01장 규칙의 구현)</a>
+<a class="l2" href="#10_렌더_성능-10-3-예산-유지-측정-방법-명시">10.3 예산 (유지 · 측정 방법 명시)</a>
+<a class="l2" href="#10_렌더_성능-10-4-자동-시험-체계-D8-1">10.4 자동 시험 체계 (D8.1)</a>
+<a href="#11_시스템">11. 시스템 — 프로그램·알림·채팅·바깥 연결·설정·웹앱</a>
+<a class="l2" href="#11_시스템-11-1-PC-프로그램-friend-app-desktop-Tauri-2">11.1 PC 프로그램 (friend-app/desktop · Tauri</a>
+<a class="l2" href="#11_시스템-11-2-안드로이드-friend-app-android">11.2 안드로이드 (friend-app/android)</a>
+<a class="l2" href="#11_시스템-11-3-알림-friend-readnow-friend-js-MSC_AL">11.3 알림 (friend/readnow-friend.js `MSC_A</a>
+<a class="l2" href="#11_시스템-11-4-채팅">11.4 채팅</a>
+<a class="l2" href="#11_시스템-11-5-바깥-연결-작업-A-2단계-배포-대기">11.5 바깥 연결(작업 A 2단계 · 배포 대기)</a>
+<a class="l2" href="#11_시스템-11-6-설정-꾸미기">11.6 설정·꾸미기</a>
+<a class="l2" href="#11_시스템-11-7-웹앱">11.7 웹앱</a>
+<a href="#12_남길것_버릴것">12. 남길 것 · 고칠 것 · 버릴 것 (결정표)</a>
+<a class="l2" href="#12_남길것_버릴것-12-1-남김-그대로-더-다듬음">12.1 남김 (그대로 · 더 다듬음)</a>
+<a class="l2" href="#12_남길것_버릴것-12-2-고침-구조는-두고-규칙-값-교체">12.2 고침 (구조는 두고 규칙·값 교체)</a>
+<a class="l2" href="#12_남길것_버릴것-12-3-버림-다시-쌓음">12.3 버림 (다시 쌓음)</a>
+<a class="l2" href="#12_남길것_버릴것-12-4-백업-되돌리기-규칙">12.4 백업·되돌리기 규칙</a>
+<a href="#90_진행도표">90. 진행도 표 — 상위 → 하위 → 단순 범위 (회차 끝마다 갱신)</a>
+<a class="l2" href="#90_진행도표-요약">요약</a>
+<a class="l2" href="#90_진행도표-A-캐릭터-생김새">A. 캐릭터 (생김새)</a>
+<a class="l2" href="#90_진행도표-B-애니메이션">B. 애니메이션</a>
+<a class="l2" href="#90_진행도표-C-표정">C. 표정</a>
+<a class="l2" href="#90_진행도표-D-시스템">D. 시스템</a>
+<a class="l2" href="#90_진행도표-다음-회차-판정-때">다음 회차 판정 때</a>
+<a href="#95_실행묶음">95. 실행 묶음 — Opus가 하나씩 실행하는 작업 지시서</a>
+<a class="l2" href="#95_실행묶음-0-모든-묶음에-공통-지시문-머리에-그대로-붙임">0. 모든 묶음에 공통 (지시문 머리에 그대로 붙임)</a>
+<a class="l2" href="#95_실행묶음-1-묶음-순서와-의존-관계">1. 묶음 순서와 의존 관계</a>
+<a class="l2" href="#95_실행묶음-2-묶음별-지시서">2. 묶음별 지시서</a>
+<a href="#99_출처">99. 출처 색인</a>
+<a class="l2" href="#99_출처-참고-그림-정범님-첨부-비공개-저장소-readnow-chats-mascot-refs-그림ID-파일명-앞-8자">참고 그림(정범님 첨부 · 비공개 저장소 readnow-chats/mas</a>
+<a class="l2" href="#99_출처-웹-조사-출처-URL-접속일-신뢰도는-각-기록-끝-출처">웹 조사(출처 URL·접속일·신뢰도는 각 기록 끝 &#x27;출처&#x27;)</a>
+<a class="l2" href="#99_출처-v1-문서-2026-10-28">v1 문서(2026-10-28)</a>
+<a href="research_v1.html">↩ v1 페이지(2026-10-28)</a></nav><main><section class="ch" id="00_개요"><h1>🐾 책방 친구 캐릭터·애니메이션 바이블 v2 — 0. 개요</h1>
+<p>작성 2026-10-29 (Fable 5.1) · 정범님 지시 17:35 "면밀한 연구를 다시 · 엄격하고 세부적인 설계 · 바이블 전체 개편 · 회차 끝 진행도 판정 · Opus가 하나하나 실행할 수 있게".
+v1(mascot_bible.md · 영어 · 10/28)을 대체한다. v1의 수치 중 새 조사로 바뀐 것은 각 장에 <strong>[v1→v2]</strong> 로 표시한다.</p>
+<h2 id="00_개요-0-1-이-문서의-목적과-독자">0.1 이 문서의 목적과 독자</h2>
+<ul>
+<li><strong>목적</strong>: 다른 AI(타사 포함)가 이 문서와 연결된 조사 기록만 보고도 같은 수준의 캐릭터·애니메이션을 다시 구현할 수 있을 만큼 명확한 설계 기준.</li>
+<li><strong>독자</strong>: ① 실행 담당(Opus 작업 묶음 <code>95_실행묶음.md</code>) ② 정범님(진행도 표 <code>90_진행도표.md</code>) ③ 다음 회차의 Fable(판정·개정).</li>
+<li><strong>언어</strong>: 한국어. 코드 식별자·출처 제목만 원어.</li>
+</ul>
+<h2 id="00_개요-0-2-정범님이-정한-목표-원문-근거">0.2 정범님이 정한 목표 (원문 근거)</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>지시</th>
+<th>이 문서에서의 자리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10/27 13:34</td>
+<td>오른쪽 아래 반투명 캐릭터 · 주문·문의·오류 말풍선 · 살아 있는 대기</td>
+<td>D3 알림 · B2 대기</td>
+</tr>
+<tr>
+<td>10/27 16:24</td>
+<td>아니메풍 = <strong>TV 애니메이션 설정표 화풍</strong></td>
+<td>1장 스타일</td>
+</tr>
+<tr>
+<td>10/27 19:32~23:21</td>
+<td>캐릭터마다 다른 눈·머리·얼굴형 · 꾸미기 전 항목 · 표정 다양 · 알림 네 가지 기본 · 끌기 · 메시지</td>
+<td>A11 꾸미기 · C 표정 · D3·D4</td>
+</tr>
+<tr>
+<td>10/28 15:00 (심화)</td>
+<td>그림 속 글까지 숙지 · 얼굴형·눈·눈썹 대폭 확장 + 컨트롤 · 소품 조화 · 맨몸 기본 · 꼬마 2~4등신(망가형) · 동물 꼬마 5종 · 옷 뚫림 0 · 동작 끊김 0 · 휴대폰 채팅</td>
+<td>A2·A3·A8·A9·B4·D4</td>
+</tr>
+<tr>
+<td>10/28 21:42</td>
+<td><strong>연구 먼저 → 남길 것·버릴 것 → 재설계</strong>. 10객체 360° · 얼굴 각 요소 · 손가락 5 · 발 묶음 · 남녀 몸통 매력 · 전체 조화 · 눈은 남김 · 백업 · 밤새 회차</td>
+<td>전체</td>
+</tr>
+<tr>
+<td>10/28 21:55</td>
+<td>웹앱은 꺼 둠 · PC·안드로이드 프로그램 · 소스 한 곳 · 자동 로그인·업데이트</td>
+<td>D1·D2·D7</td>
+</tr>
+<tr>
+<td>10/29 13:20</td>
+<td>다섯 분야 연구(아니메·인체·드로잉CG·움직임·소품옷) · 웹앱에 "다른 AI가 보고 구현할 정도로" 기록</td>
+<td>2~8장 · 연구 페이지</td>
+</tr>
+<tr>
+<td>10/29 13:58</td>
+<td>한국 기준 · cm · 수치 전부 설정화 · 설정 시트에서 표정·몸짓 확인 · 등신 설정 작동 · 꼬마 눈 불쾌 원인 · 부위가 따로 노는 것 금지</td>
+<td>A1.4 · A3.2 · A2.3 · D6</td>
+</tr>
+<tr>
+<td>10/29 15:20·15:32</td>
+<td>시장에 팔 수 있는 수준까지 멈추지 않음 · 하위 분류까지 세분 · 확인 안 한 것을 완료라 하지 않음 · 스타일·인체 구조를 진행도에 넣음</td>
+<td>90_진행도표</td>
+</tr>
+<tr>
+<td>10/29 16:00</td>
+<td>작업은 에이전트, Claude는 대화</td>
+<td>95_실행묶음</td>
+</tr>
+</tbody>
+</table>
+<h2 id="00_개요-0-3-다섯-철칙-v1-계승-모든-규칙보다-우선">0.3 다섯 철칙 (v1 계승 · 모든 규칙보다 우선)</h2>
+<ol>
+<li><strong>전체 먼저, 부분 나중.</strong> 뼈대 → 덩어리 → <strong>한 실루엣</strong> → 이목구비 → 옷 → 세부. 살이 이어지는 곳(머리–목–몸통, 골반–허벅지)에 부위별 자기 윤곽선이 생기면 안 된다. <strong>[v2 추가] 머리(얼굴 살)도 이 실루엣에 포함된다</strong> — v1 구현은 머리를 따로 그려 '머리가 목에 안 붙는' 결함을 만들었다(2장 §2.3).</li>
+<li><strong>모든 것은 뼈대에 붙는다.</strong> 머리카락·소품·옷은 붙는 뼈와 접촉점이 있다. 떠 있는 것·두개골을 뚫는 것 금지.</li>
+<li><strong>안정 분수는 등신이 바뀌어도 유지.</strong> 샅 48~52%, 무릎 70~74%, 팔꿈치 = 허리(여·꼬마)/갈비 아래(남), 손목 = 샅, 손끝 = 허벅지 중간. 꼬마는 샅 55~61%. <strong>[v2 추가] 등신 슬라이더의 어느 값에서도 이 분수와 머리–목 연결이 자동으로 다시 계산되어야 한다</strong>(A1.4).</li>
+<li><strong>팔다리는 늘어나지 않는다.</strong> 뼈 길이는 상수, 관절은 호를 그린다.</li>
+<li><strong>다림줄.</strong> 목 패임에서 내린 수직선이 디딘 발(또는 두 발 사이)에 떨어진다. 허용 ±0.10H.</li>
 </ol>
-<div class="note">몸 크기 단위 <b>H</b> = 머리카락을 뺀 <b>정수리~턱 높이</b>. 머리카락·묶은 머리·모자는 머리 수에 넣지 않는다. 몸 폭도 H로 적는다.</div>
-</section>
-
-<section id="obj">
-<h2>2. 객체 10명 — 공통점·차이점·숫자</h2>
-<p>열 명 모두 <b>같은 뼈대 하나</b>에 숫자만 다르게 넣는다(나이·성별 = 매개변수 묶음). 2살이면 머리가 이미 어른의 80~90%라서, <b>어려 보이는 까닭은 머리가 커서가 아니라 몸이 짧고 얼굴 아래쪽에 큰 눈이 있어서</b>다. 성별 몸 차이는 3.5등신부터 나타나고, 꼬마 몸은 남녀가 같다(머리·옷만 다름).</p>
-
-<svg class="chart" viewBox="0 0 1000 330" role="img" aria-label="객체별 키(등신) 비교">
-<g transform="translate(40,44)">
-<line x1="0" y1="260" x2="930" y2="260" stroke="currentColor" opacity=".3"/>
-<g font-family="inherit">
-<rect x="10" y="111" width="60" height="149" rx="8" fill="#E39A73" opacity=".85"/><text x="40" y="104" text-anchor="middle" class="lab">4.0</text><text x="40" y="278" text-anchor="middle">꼬마 F</text>
-<rect x="100" y="111" width="60" height="149" rx="8" fill="#7FA9D6" opacity=".85"/><text x="130" y="104" text-anchor="middle" class="lab">4.0</text><text x="130" y="278" text-anchor="middle">꼬마 M</text>
-<rect x="190" y="18" width="60" height="242" rx="8" fill="#E39A73" opacity=".85"/><text x="220" y="12" text-anchor="middle" class="lab">6.5</text><text x="220" y="278" text-anchor="middle">청소년 F</text>
-<rect x="280" y="7" width="60" height="253" rx="8" fill="#7FA9D6" opacity=".85"/><text x="310" y="1" text-anchor="middle" class="lab">6.8</text><text x="310" y="278" text-anchor="middle">청소년 M</text>
-<rect x="370" y="0" width="60" height="260" rx="8" fill="#E39A73"/><text x="400" y="-5" text-anchor="middle" class="lab">7.0</text><text x="400" y="278" text-anchor="middle">20대 F</text>
-<rect x="460" y="-19" width="60" height="279" rx="8" fill="#7FA9D6"/><text x="490" y="-24" text-anchor="middle" class="lab">7.5</text><text x="490" y="278" text-anchor="middle">20대 M</text>
-<rect x="550" y="0" width="60" height="260" rx="8" fill="#E39A73" opacity=".7"/><text x="580" y="-5" text-anchor="middle" class="lab">7.0</text><text x="580" y="278" text-anchor="middle">중년 F</text>
-<rect x="640" y="-15" width="60" height="275" rx="8" fill="#7FA9D6" opacity=".7"/><text x="670" y="-20" text-anchor="middle" class="lab">7.4</text><text x="670" y="278" text-anchor="middle">중년 M</text>
-<rect x="730" y="22" width="60" height="238" rx="8" fill="#E39A73" opacity=".5"/><text x="760" y="16" text-anchor="middle" class="lab">6.4*</text><text x="760" y="278" text-anchor="middle">노인 F</text>
-<rect x="820" y="11" width="60" height="249" rx="8" fill="#7FA9D6" opacity=".5"/><text x="850" y="5" text-anchor="middle" class="lab">6.7*</text><text x="850" y="278" text-anchor="middle">노인 M</text>
-</g></g>
-</svg>
-<small>* 노인은 뼈 길이는 중년의 0.97배 그대로이고, 굽은 자세 때문에 그려진 키가 줄어듦. 머리 크기는 모두 같다고 보고 그린 막대.</small>
-
-<h3>세로 위치·폭 (정수리 = 0, 단위 H)</h3>
-<div class="tbl"><table class="num">
-<tr><th>항목</th><th>꼬마</th><th>청소년 F</th><th>청소년 M</th><th>20대 F</th><th>20대 M</th><th>중년 F</th><th>중년 M</th><th>노인 F</th><th>노인 M</th></tr>
-<tr><td>등신(그린 키)</td><td>4.0</td><td>6.5</td><td>6.8</td><td>7.0</td><td>7.5</td><td>7.0</td><td>7.4</td><td>6.4</td><td>6.7</td></tr>
-<tr><td>어깨선</td><td>1.15</td><td>1.30</td><td>1.30</td><td>1.35</td><td>1.30</td><td>1.35</td><td>1.30</td><td>1.25</td><td>1.22</td></tr>
-<tr><td>가슴 꼭지점</td><td>1.55</td><td>1.80</td><td>1.85</td><td>1.85</td><td>2.00</td><td>1.95</td><td>2.05</td><td>1.95</td><td>2.00</td></tr>
-<tr><td>허리(가장 잘록)</td><td>1.85(없음)</td><td>2.45</td><td>2.62</td><td>2.60</td><td>2.85</td><td>2.65</td><td>2.90</td><td>2.55</td><td>2.75</td></tr>
-<tr><td>가랑이</td><td>2.25 (56%)</td><td>3.25</td><td>3.40</td><td>3.50</td><td>3.75</td><td>3.50</td><td>3.70</td><td>3.30</td><td>3.50</td></tr>
-<tr><td>무릎 가운데</td><td>3.05 (76%)</td><td>4.62</td><td>4.85</td><td>4.95</td><td>5.35</td><td>4.95</td><td>5.30</td><td>4.60</td><td>4.85</td></tr>
-<tr><td>목 폭</td><td>0.28</td><td>0.30</td><td>0.40</td><td>0.32</td><td>0.48</td><td>0.34</td><td>0.52</td><td>0.33</td><td>0.48</td></tr>
-<tr><td>어깨 폭</td><td>1.05</td><td>1.36</td><td>1.58</td><td>1.48</td><td>1.85</td><td>1.50</td><td>1.85</td><td>1.38</td><td>1.70</td></tr>
-<tr><td>허리 폭</td><td>0.95</td><td>0.92</td><td>1.05</td><td>1.04</td><td>1.20</td><td>1.18</td><td>1.38</td><td>1.16</td><td>1.32</td></tr>
-<tr><td>골반 폭(넓적다리뼈 돌기)</td><td>0.92</td><td>1.30</td><td>1.15</td><td>1.52</td><td>1.30</td><td>1.58</td><td>1.36</td><td>1.50</td><td>1.30</td></tr>
-<tr><td>손 길이</td><td>0.45</td><td>0.62</td><td>0.70</td><td>0.68</td><td>0.75</td><td>0.68</td><td>0.76</td><td>0.68</td><td>0.76</td></tr>
-<tr><td>발 길이</td><td>0.62</td><td>0.88</td><td>1.00</td><td>0.90</td><td>1.05</td><td>0.92</td><td>1.06</td><td>0.92</td><td>1.04</td></tr>
-</table></div>
-
-<h3>객체별 성격 — 자세·움직임</h3>
-<div class="grid2">
-<div class="box"><h4>꼬마 F·M (5~6살)</h4>허리 잘록함 없음, 배가 살짝 나옴, 목이 아주 짧음, 얼굴 아래가 넓은 둥근 얼굴(뾰족한 턱 없음). <b>움직임</b>: 빠르고 통통 튐, 진폭 ×1.3, 숨 2.2초(배로 숨 쉼).</div>
-<div class="box"><h4>여자 청소년 (~15)</h4>좁은 어깨, 약한 허리선, 어깨 = 엉덩이(슬림형), 가슴 최대치 제한 0.5. <b>움직임</b>: 고개 갸웃이 잦고 머리·소매를 만짐, 무릎 모으고 발 벌리기 같은 귀여운 자세.</div>
-<div class="box"><h4>남자 청소년 (~15)</h4>V자가 덜함, 목이 가늘고 울대 없음. <b>자세</b>: 골반이 앞으로, 머리가 앞으로 나온 구부정한 자세, 주머니에 손.</div>
-<div class="box"><h4>여자 20대 (~24) — 가장 먼저 만듦</h4>허리 = 엉덩이의 0.68, 엉덩이가 어깨보다 살짝 넓음, 쇄골 보임, 가는 목. <b>움직임</b>: 우아함, 쉴 때 콘트라포스토, 손끝까지 단정하게.</div>
-<div class="box"><h4>남자 20대 (~26)</h4>V자 몸(어깨:허리 1.54), 엉덩이 = 어깨의 0.70, 허리가 거의 안 들어감, 굵은 목·승모근. <b>움직임</b>: 안정적이고 군더더기 없음, 넓게 선 자세.</div>
-<div class="box"><h4>중년 F·M (~50)</h4>뼈는 20대와 같고 살 분포가 바뀜: 허리가 넓어지고 아랫배·턱살, 가슴 위치가 내려감, 어깨가 약간 앞으로. 남자는 배가 나오고 허리 = 엉덩이. <b>움직임</b>: 신중하고 잔동작이 적음, 한숨·끄덕임.</div>
-<div class="box"><h4>노인 F·M (~75)</h4><b>나이를 가장 크게 보여 주는 것은 자세</b>: 등이 굽고, 머리가 가슴보다 0.3H 앞, 무릎이 8° 굽음. 눈 덮임 40%, 코·귀가 길어짐, 짧은 주름만(눈가·팔자 짧게·이마). <b>볼→턱 V선 금지.</b> <b>움직임</b>: 모든 동작 시간 ×1.4, 진폭 ×0.7.</div>
-</div>
-
-<div class="note"><b>결정</b>: 어른 여자 7.0등신 · 남자 7.5등신(키 비율 0.93 = 165:175cm). 꼬마는 정범님 지정(2~4등신) 범위의 위쪽 끝인 <b>4.0</b>이 기본(손가락 다섯 개·발이 제대로 보임)이고, 2.5·3.0은 SD 설정으로 둔다. 여자 어깨 폭은 책에 적힌 '머리 길이 둘'이 아니라 실제로 잰 <b>머리 폭 둘(≈1.48H)</b>로 정했다 — 지금 앱(1.0~1.08H)이 '어린이 몸에 큰 머리'처럼 보이는 가장 큰 까닭이다.</div>
-</section>
-
-<section id="face">
-<h2>3. 얼굴 — 머리뼈·턱·코·입·귀·돌리기</h2>
+<h2 id="00_개요-0-4-단위-좌표-용어">0.4 단위·좌표·용어</h2>
+<table>
+<thead>
+<tr>
+<th>기호</th>
+<th>뜻</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>H</td>
+<td>머리 높이(머리카락 없는 두개골 정수리~턱). 1H = 22.5cm(한국 성인 평균 · 3장 §3.1에서 검증)</td>
+</tr>
+<tr>
+<td>HC</td>
+<td>등신 = 키 ÷ H</td>
+</tr>
+<tr>
+<td>HW</td>
+<td>광대 높이에서 잰 머리 폭 (얼굴 안 치수용)</td>
+</tr>
+<tr>
+<td>좌표</td>
+<td>y 아래로(정수리 0), x 몸 중심선 0, z 보는 사람 쪽 +</td>
+</tr>
+<tr>
+<td>f</td>
+<td>프레임 = 1/24초</td>
+</tr>
+<tr>
+<td>각</td>
+<td>도(°) · 치수 cm · 한국 기준(사이즈코리아)</td>
+</tr>
+<tr>
+<td>10객체</td>
+<td>여/남 × 꼬마(6~9세)·청소년(13~16)·20대·중년(45~55)·노인(70대)</td>
+</tr>
+<tr>
+<td>특수 객체</td>
+<td>SD 2~4등신 · 동물 꼬마 5종(너구리·곰·토끼·호랑이·늑대) · 로봇 · 외계인 · 마네킹(미성년 맨몸)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="00_개요-0-5-합격-판정-방식-회차-끝마다-90_진행도표의-산출-규칙">0.5 합격 판정 방식 (회차 끝마다 · 90_진행도표의 % 산출 규칙)</h2>
+<p>세부 항목(단순 범위)마다 두 숫자를 낸다.
+- <strong>진행률</strong> = 만든 정도. 0 설계 없음 · 20 설계 확정 · 40 구현(엔진에 들어감) · 60 자동 시험 있음 · 80 정범님 기기에 배포 · 100 정범님 확인.
+- <strong>완성도</strong> = 품질. <code>0.5 × 자동 시험 통과율 + 0.5 × 시각 비교 점수</code>. 시각 비교 점수 = 참고 그림과 <strong>나란히</strong> 놓고 항목의 기준표(각 장 '합격 기준')로 0/25/50/75/100 중 하나. 판정자는 그 회차 구현을 하지 않은 모델(Fable)이 한다. 판정 근거 캡처 경로를 표에 적는다.
+- 자동 시험이 없는 항목의 완성도 상한은 50. 배포되지 않은 항목의 진행률 상한은 60.
+- 정범님이 "틀렸다"고 지적한 항목은 그 회차 완성도를 25 이하로 되돌리고 지적 원문을 표에 적는다.</p>
+<h2 id="00_개요-0-6-문서-구성">0.6 문서 구성</h2>
+<table>
+<thead>
+<tr>
+<th>파일</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>00_개요</td>
+<td>이 문서</td>
+</tr>
+<tr>
+<td>01_스타일</td>
+<td>TV 애니 설정표 화풍 · 선 · 셀 그림자 · 색 · LOD</td>
+</tr>
+<tr>
+<td>02_인체_리그</td>
+<td>뼈대·관절·ROM·10객체 비율표(한국 실측 기반)·머리–목–어깨 연결·등신 규칙·다림줄</td>
+</tr>
+<tr>
+<td>03_머리_얼굴_눈</td>
+<td>두개골+턱 · 이목구비 배치 · 눈 체계(꼬마 눈 포함) · 눈썹 · 2.5D 돌리기 · 수염·나이 선</td>
+</tr>
+<tr>
+<td>04_머리카락</td>
+<td>껍질·다발·묶음·물리·모자</td>
+</tr>
+<tr>
+<td>05_몸통_팔다리_손발</td>
+<td>여/남 몸통 · 체형 극단 · 팔다리 로프트 · 손 5손가락 · 발 묶음</td>
+</tr>
+<tr>
+<td>06_옷_소품</td>
+<td>옷감 4분류 · 품 · 주름 · 드리움·충돌 · 장신구·소품 치수</td>
+</tr>
+<tr>
+<td>07_특수객체</td>
+<td>SD · 동물 · 로봇 · 외계인 · 마네킹</td>
+</tr>
+<tr>
+<td>08_애니메이션</td>
+<td>양식 3종 · 대기 · 걷기 · 몸짓 시간표 · 2차 운동 · 블렌드 · 상호작용 · SF</td>
+</tr>
+<tr>
+<td>09_표정</td>
+<td>채널 · 53+ 표정표 · 세기 · 전환 순서</td>
+</tr>
+<tr>
+<td>10_렌더_성능</td>
+<td>깊이 층 · stroke-behind-fill · SVG 예산 · 휴대폰</td>
+</tr>
+<tr>
+<td>11_시스템</td>
+<td>프로그램(PC·안드로이드) · 알림 · 채팅 · 바깥 연결 · 설정 · 웹앱</td>
+</tr>
+<tr>
+<td>12_남길것_버릴것</td>
+<td>결정표</td>
+</tr>
+<tr>
+<td>90_진행도표</td>
+<td>상위→하위→단순 범위 · 진행률·완성도 % · 판정 근거</td>
+</tr>
+<tr>
+<td>95_실행묶음</td>
+<td>Opus 작업 지시서(순서·입력·절차·합격 시험·되돌리기)</td>
+</tr>
+<tr>
+<td>99_출처</td>
+<td>참고 그림 ID 색인 · 웹 출처</td>
+</tr>
+</tbody>
+</table></section>
+<section class="ch" id="01_스타일"><h1>01. 스타일 — TV 애니메이션 설정표 화풍 · 선 · 셀 그림자 · 색 · LOD</h1>
+<p>정범님 정의(10/27 16:24): "아니메풍 = TV 애니 설정표(キャラクター設定・設定資料) 화풍". 근거: <code>web/anime_style.md</code>(출처 30 · [N번호]) · 참고 그림([그림ID]) · v1 §0.3.</p>
+<h2 id="01_스타일-1-1-설정표-모델-시트-란-무엇을-담는가-A11-2-A11-4의-기준">1.1 설정표(모델 시트)란 무엇을 담는가 (A11.2·A11.4의 기준)</h2>
 <ul>
-<li><b>머리 = 구(머리뼈) + 아래로 늘어진 턱 쐐기.</b> 구의 적도에 윗눈꺼풀을 놓는다(애니 작법). 양옆을 초승달처럼 깎되 눈~코 높이에서 가장 깊게 깎는다. 턱선은 <b>곡선 → 직선 → 곡선</b>.</li>
-<li><b>얼굴은 닫힌 피부 도형 하나.</b> 턱끝은 윤곽이 꺾이는 각도로만 보이게 하고, 얼굴 안에 볼→턱 선, 턱 밑 가로선, 이중 턱선을 긋지 않는다. 서윤 턱 문제는 턱끝을 깎은 곡선 <i>위에</i> 놓는 것으로 해결한다.</li>
-<li><b>목은 턱 뒤, 귀 아래에서 시작</b>하고 15~20° 앞으로 기울어진다. 턱 아래 목에는 그늘이 항상 진다.</li>
-<li><b>귀</b>: 위는 눈썹·윗눈꺼풀 높이, 아래는 코끝 높이, 턱 모서리 뒤. 요정 귀는 사람 귀 자리에서 윗부분만 늘인다.</li>
-<li><b>입</b>은 코와 턱 사이의 1/3 지점. 크게 벌릴 때는 귀 옆 경첩을 중심으로 아래턱이 돌아가 얼굴이 최대 0.12H 길어진다.</li>
-<li><b>고개 돌리기(2.5D)</b>: 30° 돌리면 먼 눈 폭은 75~85%이고 <b>높이는 그대로</b>다. 코 > 입 > 눈 > 윤곽 순서로 많이 움직이고, 귀와 뒷머리는 반대쪽으로 움직인다. 아래를 보면 가로선들이 ∪로 휘고 귀 밑이 눈 높이까지 올라가며, 위를 보면 ∩로 휘고 코끝이 눈 위까지 온다. <b>한 머리에는 한 각도만</b> 쓴다(지금 앱은 앞 눈 + 3/4 코·입).</li>
+<li>표준 구성: <strong>정면·측면·배면 3면</strong> + 기본 동작 + 희로애락 표정집 + 복장 변형 + 소품 + 신장 비교표. 색은 뒤 공정 '색채설계'가 따로 정한다 [N3]. 머리·몸 회전 그림, 손·발 스케치, "머리 모양·길이·눈·입의 크기와 위치" 메모가 들어간다 [N4].</li>
+<li>색 지정표 단계 이름: <strong>ハイライト / ノーマル / 1号影 / 2号影</strong> 4단 [N5·N6]. TV 시리즈 한 작품 ノーマル색 약 120색 [N7~N9].</li>
+<li><strong>우리 설정 시트</strong>(11 §11.6)는 이 구성을 그대로 따른다: 3면도 + 고유 요소(고정/가변 표시) + 표정 40+ 얼굴 썸네일 + 몸짓 96 + 소품 + 색 4단 표 + 신장 비교(1H = 여 22.5cm·남 23.5cm).</li>
+<li>공정 용어(용어집): キャラクターデザイン·色彩設計·色指定·原画·動画·中割り·溜め(타메)·詰め(츠메)·動検·実線·色トレス線·影指定·撮影.</li>
 </ul>
-<h3>객체별 얼굴 배치 (머리 정수리 0 → 턱 1)</h3>
-<div class="tbl"><table class="num">
-<tr><th>항목</th><th>꼬마</th><th>청소년 F</th><th>청소년 M</th><th>20대 F</th><th>20대 M</th><th>중년 F</th><th>중년 M</th><th>노인 F</th><th>노인 M</th></tr>
-<tr><td>눈 가운데 높이</td><td>0.62</td><td>0.57</td><td>0.55</td><td>0.54</td><td>0.52</td><td>0.53</td><td>0.51</td><td>0.53</td><td>0.51</td></tr>
-<tr><td>눈 높이(×H)</td><td>0.20</td><td>0.16</td><td>0.13</td><td>0.14</td><td>0.11</td><td>0.12</td><td>0.095</td><td>0.10</td><td>0.085</td></tr>
-<tr><td>눈썹–눈 간격(×눈 높이)</td><td>0.9</td><td>0.9</td><td>0.6</td><td>1.0</td><td>0.45</td><td>0.85</td><td>0.4</td><td>0.8</td><td>0.35</td></tr>
-<tr><td>코 / 입 높이</td><td>0.74 / 0.84</td><td>0.71 / 0.82</td><td>0.70 / 0.81</td><td>0.70 / 0.81</td><td>0.70 / 0.80</td><td>0.70 / 0.81</td><td>0.69 / 0.80</td><td>0.72 / 0.82</td><td>0.71 / 0.81</td></tr>
-<tr><td>턱끝 폭(×머리 폭)</td><td>0.35 둥근 U</td><td>0.20</td><td>0.26</td><td>0.18</td><td>0.30 각</td><td>0.22</td><td>0.33</td><td>0.22</td><td>0.32</td></tr>
-</table></div>
-<p>나이가 들수록(사실적일수록) 눈은 위로 올라가며 작아지고, 코가 길어지고, 턱이 각지고, 목이 굵어진다. 콧구멍·울대·수염 자국은 어른에게만 그린다.</p>
-</section>
-
-<section id="eye">
-<h2>4. 눈 — 남기고 더 다듬는다 (정범님이 가장 마음에 들어 한 부분)</h2>
-<p><span class="pill keep">유지</span> 지금 눈 그리기(<code>mscEye</code>)는 구조가 맞다: 눈꺼풀 곡선 매개변수, 눈꺼풀을 따라가는 속눈썹 띠, 층으로 쌓은 홍채, 두 눈 같은 쪽에 있는 반사광, 같은 눈 종류에서 만든 감은 눈(14차 규칙). 이 모두를 그대로 두고 아래만 고친다.</p>
-<div class="tbl"><table>
-<tr><th>#</th><th>고칠 점</th><th>근거</th></tr>
-<tr><td>E1</td><td>흰자를 순백 대신 피부색을 밝힌 색으로 + 윗눈꺼풀 아래 회청색 그늘 띠</td><td>01b813c3 「흰자위 색을 피부 톤보다 약간 어둡게」, aa1a1622</td></tr>
-<tr><td>E2·E3</td><td>나이별 홍채 비율(눈 높이 중 꼬마 90%·청소년 80%·여자 75%·남자 60%·노인 55%)과 윗눈꺼풀 덮임(10/15/20/30/38%)</td><td>e5b44b40, dbb6f0f9</td></tr>
-<tr><td>E4</td><td>비대칭: 윗눈꺼풀 꼭대기는 안쪽에서 40%, 아랫눈꺼풀 바닥은 60%</td><td>066567bb</td></tr>
-<tr><td>E5·E6</td><td>아래 눈꺼풀은 바깥 절반만 끊긴 가는 선으로, 쌍꺼풀 선은 크게 보일 때만</td><td>a62d6b96, 608055cc</td></tr>
-<tr><td>E8</td><td>3/4·옆얼굴에서 먼 눈은 폭만 줄이고 높이는 그대로, 옆얼굴은 '◁' 쐐기</td><td>2bf767c9, 831913f2</td></tr>
-<tr><td>E9</td><td>보이는 크기에 따라 반짝이·고리 무늬를 넣고 뺌</td><td>eab4f365 目の処理</td></tr>
-</table></div>
-<p><b>눈 종류는 고정</b>이다(r14). 표정은 눈뜸·웃음·덮임 기울기·눈꼬리 기울기·눌림·홍채/동공 크기만 바꾼다. 놀라면 윗눈꺼풀이 25~50% 올라가고 아랫눈꺼풀은 10% 이하만 움직인다. 눈은 <b>위로 커지고</b> 폭은 10~15% 좁아진다.</p>
-<h3>눈썹 — 종류는 그대로, 자세만 바뀜 (r14)</h3>
-<p>눈썹은 머리(안쪽 끝, 부드럽게)·몸통(가장 두꺼운 25~40% 지점)·꼬리(뾰족)로 나뉜다. 표정에 따라 바뀌는 것은 <b>안쪽 끝 높이·바깥 끝 높이·휨·안쪽으로 모임</b> 넷뿐이다. 화나면 안쪽이 내려가고 모이며, 슬프면 안쪽이 올라가 바깥이 처지고, 놀라면 둘 다 올라가며 둥글어진다. 움직일 때는 <b>바깥 끝이 먼저</b>, 안쪽이 1~2프레임 늦게 따라온다.</p>
-<div class="note"><b>결정 (자료끼리 다른 점)</b>: 공식 애니 설정(노라가미·SAO)은 "눈·눈썹은 앞머리를 비쳐 보이지 않음"이고, 강좌 그림은 눈썹을 앞머리 위에 그린다. → <b>눈은 절대 머리카락 위에 그리지 않는다. 눈썹은 앞머리 아래에 두되, 눈썹에 겹치는 앞머리 끝만 피부색으로 40% 비치게 한다</b>(eab4f365 「肌色透かしブラシ」). 표정을 읽을 수 있으면서 공식 규칙과도 맞는다.</div>
-<h3>표정 = 채널 조합</h3>
-<p>표정 하나는 <b>눈썹 + 눈꺼풀 + 홍채/동공 + 입 + 효과(홍조·땀·눈물·핏줄)</b>의 조합이고, 머리 모양·눈 위치는 바뀌지 않는다. 세기는 4단계다: ① 눈썹·눈꺼풀만, ② 입에 힘, ③ 입이 열림, ④ 최대 + 주름·효과. 섞을 때는 윗얼굴과 아랫얼굴을 다른 감정에서 가져온다(예: 공포 눈썹 + 기쁨 입 = 필사적). 바뀌는 차례: 시선 0f → 눈썹 0~2f → 눈꺼풀 2~4f → 입 3~6f → 고개·몸 4~8f → 효과 6~12f.</p>
-</section>
-
-<section id="hair">
-<h2>5. 머리카락</h2>
+<h2 id="01_스타일-1-2-선-A10-3">1.2 선 (A10.3)</h2>
+<table>
+<thead>
+<tr>
+<th>규칙</th>
+<th>값</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TV 동화 선은 <strong>굵기 균일</strong>. 入り抜き는 획 잇기용이지 강약 표현이 아님</td>
+<td>lineTaper <strong>0.0</strong>(TV) · 0.55(일러스트 모드)</td>
+<td>[N14·N15]</td>
+</tr>
+<tr>
+<td>바깥선·안쪽선 굵기 차이 <strong>없음</strong>이 TV 동화의 기본. <strong>[v1→v2]</strong> v1 '바깥 2×' · 15차m outK 1.4는 일러스트 관행 → 프리셋 두 개</td>
+<td>outK <strong>1.0 = '설정표(TV)' 기본</strong> · 1.4 = '일러스트'</td>
+<td>[N11·N16]</td>
+</tr>
+<tr>
+<td>선 굵기</td>
+<td>lineW 키 대비 <strong>0.31%</strong>(현 0.62/200 · 추정 범위 0.27~0.44%: AJA 프레임 254mm↔1920px에서 연필 0.3~0.5mm)</td>
+<td>§2.2 추정</td>
+</tr>
+<tr>
+<td>実線(검정 계열) vs 色トレス線(색 선) 구분. 피부 안쪽선·머리카락 안쪽 결·눈꺼풀 아래선은 영역색에 가까운 색선</td>
+<td>lineColorMode <strong>trace</strong> · traceParts {피부 안쪽선, 머리 결, 눈꺼풀 아래선} · 실선 = 로컬색 어둡게(<code>mscLn</code> 유지 · L≤0.22)</td>
+<td>[N8·N9·N10]</td>
+</tr>
+<tr>
+<td>모든 채움 영역은 선으로 닫힘(flood가 새지 않음)</td>
+<td>—</td>
+<td>[N7·N10]</td>
+</tr>
+<tr>
+<td>안쪽 선(쇄골·무릎·주름)은 데칼 · TV 모드 굵기 = 바깥과 같음, 일러스트 모드 0.5~0.6</td>
+<td></td>
+<td>10 §10.2</td>
+</tr>
+</tbody>
+</table>
+<h2 id="01_스타일-1-3-셀-그림자-하이라이트-A10-4">1.3 셀 그림자·하이라이트 (A10.4)</h2>
+<table>
+<thead>
+<tr>
+<th>규칙</th>
+<th>값</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TV 캐릭터 = <strong>ノーマル + 1号影</strong> 기본 · 2号影·하이라이트는 필요한 곳만(최대 4단). 단을 늘리면 "아니메다움 감소"</td>
+<td>shadeSteps <strong>1</strong>(2 = cast 전용: 옷 겹침·목 아래·머리 뒤) · hlOn 1</td>
+<td>[N15·N5]</td>
+</tr>
+<tr>
+<td>그림자는 <strong>명도만 낮추기 금지</strong> — 색상 이동 + 채도↑ + 명도 약간↓. 교재 실측: 바탕 H24 S21 V99 → 그림자 H10 S37 V90</td>
+<td>피부 1号影 <strong>dH −12° · dS +14 · dV −9</strong> (현 코드 −7°·S×1.06·L−0.08 → 채도 상승 키우고 명도 하강 줄임)</td>
+<td>[N7·N19·N20]</td>
+</tr>
+<tr>
+<td>피부 그림자 색상은 <strong>붉은 쪽</strong>, 그 외 재질은 <strong>푸른/보라 쪽</strong>. 피부 cast는 보랏빛, 목 아래만 저채도 청회색 허용</td>
+<td>피부 2号影 dH −8°(1号影에서 보라 쪽 +15°)·+18·−16 · 머리·옷·소품 1号影 <strong>+12°(250° 쪽) · +8 · −14</strong>(현 <code>mscS1</code> 유지 가능)</td>
+<td>[N19~N22]</td>
+</tr>
+<tr>
+<td>광원 고정 좌상 · 경계 단단함(hard)</td>
+<td>lightDir 좌상 · shadeEdge hard(<code>msc2Shade</code> 마스크 유지)</td>
+<td>v1 §0.3</td>
+</tr>
+<tr>
+<td>하이라이트 = 흰색 또는 바탕보다 조금 밝은 1단, 빛 쪽 돌출부(코끝·볼·입술·목)만 · 머리는 이마 위 띠</td>
+<td>hl dV +10 · dS −15 · 짙은 피부(V&lt;60)는 H +10°(분홍) · 면적 ≤ 재질의 8%(머리 띠 제외 3%)</td>
+<td>[N16·N21~N23]</td>
+</tr>
+<tr>
+<td>눈: 흰자는 밝기 약간 낮춘 흰색 · 홍채 아래 밝은 색 · 삼각 하이라이트 · 눈만 색 수를 늘려도 됨</td>
+<td>03 §3.3</td>
+<td>[N22·N15]</td>
+</tr>
+<tr>
+<td>턱 밑 그림자는 <strong>목 위에</strong> 모든 각도에서(머리·목 구분은 선이 아니라 그림자로)</td>
+<td>깊이 0.12~0.3H</td>
+<td>[그림 8f1e34ae·bb11e66a]</td>
+</tr>
+</tbody>
+</table>
+<h2 id="01_스타일-1-4-색-A10-5">1.4 색 (A10.5)</h2>
+<table>
+<thead>
+<tr>
+<th>규칙</th>
+<th>값</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>아니메 피부색 범위(측정)</td>
+<td>HSV H 0~40° · V ≥ 75 · RGB: R&gt;120, G&gt;90, B&gt;70, R&gt;G+10, G&gt;B+10 · 기본 H24 S21 V99 / 연한 H28 S11 V100</td>
+<td>[N26·N19·N21]</td>
+</tr>
+<tr>
+<td>피부 허용 범위는 배경(실내/실외·색온도)에 따라 다르고 색채 항상성은 실사보다 약함 → 상황색 세트</td>
+<td>sceneSet {day(구현), evening, night, indoorWarm, indoorCool: V −8~−20·H ±8°}</td>
+<td>[N27·N28]</td>
+</tr>
+<tr>
+<td>머리색·눈색은 자유(동석 캐릭터와 구별이 기준)</td>
+<td>maxNormalColors 12(운영값)</td>
+<td>[N7]</td>
+</tr>
+<tr>
+<td>팔레트 저장 = 캐릭터마다 ノーマル·1号影·2号影·하이라이트·선색 표(설정 시트 §1.1)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>리드나우 화면(흰 카드·#1f5a44 초록 머리)에서 잘 보이는 대비 ≥ 4.5:1</td>
+<td></td>
+<td>notes_00</td>
+</tr>
+</tbody>
+</table>
+<h2 id="01_스타일-1-5-LOD-화면-크기별-그릴-것-A3-7-A6-4-A10-6">1.5 LOD — 화면 크기별 그릴 것 (A3.7·A6.4·A10.6)</h2>
+<table>
+<thead>
+<tr>
+<th>그려지는 머리 높이</th>
+<th>그리는 것</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>&lt; 24px (원경·초원경)</td>
+<td>손 = 장갑 덩어리 · 하이라이트 1 · 홍채 고리·손톱·무릎 선 없음 · 초원경은 눈 = 점(目省略)</td>
+<td>[eab4f365 目の処理] · v1</td>
+</tr>
+<tr>
+<td>24~60px (7cm 기본)</td>
+<td>보통 세부 · 하이라이트 1 · 속눈썹 단순 · 손 3덩이(검지+3개 묶음+엄지)</td>
+<td>[b48e636a]</td>
+</tr>
+<tr>
+<td>&gt; 60px (14cm·클로즈업)</td>
+<td>손톱 · 홍채 안쪽 고리·그라데이션 · 속눈썹 가닥 · 쌍꺼풀 · 하이라이트 2</td>
+<td>[eab4f365·6d6ccfea]</td>
+</tr>
+<tr>
+<td>- 샷 거리 5단계(UP→Long→目省略)를 그대로 LOD 단계로 쓴다.</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="01_스타일-1-6-도형-언어-정체성-A11-2">1.6 도형 언어·정체성 (A11.2)</h2>
 <ul>
-<li><b>머리뼈 위에 두께가 있는 껍질</b>: 정수리 위 0.08~0.12H(웨이브 0.15~0.25), 관자놀이 옆 0.05~0.08 머리 폭. 머리뼈에 딱 붙인 헬멧 같은 머리는 금지.</li>
-<li><b>헤어라인·가르마</b>: 앞 헤어라인은 정수리에서 약 1/6 아래. 귀 바로 뒤에는 머리카락이 없다(피부 틈). 가르마에서 바깥쪽으로 흐르고, 앞머리는 헤어라인에서 위로 솟았다가 떨어진다.</li>
-<li><b>다발</b>: 뿌리가 넓고 끝이 뾰족한 리본. 앞머리는 5~9개, 끝 길이를 제각각으로. 마스코트는 '큰 다발 → 나눈 다발' 2단계까지만 그리고, 삐친 머리는 한두 가닥(머리 위로 솟은 한 가닥 정도)만. <b>머리카락에서 떨어져 떠 있는 가닥 금지.</b></li>
-<li><b>층 순서(뒤 → 앞)</b>: 뒷머리 → 꼬리·망토 → 몸·목 → 얼굴 → 귀 → 눈·눈썹·입 → 귀 앞 옆머리 → 앞머리 → 앞 장식.</li>
-<li><b>모자·핀</b>: 머리띠·모자는 머리카락 껍질 위에 타원으로 감긴다. 비니는 앞머리를 눌러 내린다. 핀은 머리 흐름과 나란히 놓이고 가닥이 그 안으로 모인다. 비녀는 쪽진 머리 <i>안으로</i> 꽂는다.</li>
-<li><b>물리(Live2D 수치)</b>: 앞머리 길이 3 · 지연 0.9 · 배율 2, 옆머리 7.5 · 0.8 · 1.7, 뒷머리·트윈테일 10 · 0.8 · 1.0, 계산은 60Hz.</li>
+<li>1차 도형 둥근 달걀(친근) · 2차 작은 원(하이라이트·홍조·단추) · 캐릭터마다 강조 1개(눈 또는 고유 소품) [8fa7d8f4·d10d11e3].</li>
+<li><strong>고유 요소 2~3개</strong>(머리 실루엣 요소·장신구 1·눈색)는 옷·표정·SD에서도 불변. 설정 시트에 '고정/가변'을 표시 [570eb4e6·7034e091].</li>
+<li>둥근 꼴 = 친근, 네모 = 안정, 세모 = 위험 · SF = 깨끗한 기하, 판타지 = 흐르는 곡선 + 절제된 뾰족함 [web/props_clothes 44·45].</li>
 </ul>
-</section>
-
-<section id="body">
-<h2>6. 몸통 — 여자·남자, 그리고 매력의 근거</h2>
-<h3>여자 가슴 (가슴이 팔 앞으로 나오게)</h3>
+<h2 id="01_스타일-1-7-합격-기준-T32-T40-10-10-4-이어서">1.7 합격 기준 (T32~T40 · 10 §10.4 이어서)</h2>
+<table>
+<thead>
+<tr>
+<th>번호</th>
+<th>시험</th>
+<th>통과 조건</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T32 선 굵기</td>
+<td>키 860px 렌더에서 실루엣 선 2.3~3.8px · 안쪽 선과 비 = outK ±10%</td>
+<td></td>
+</tr>
+<tr>
+<td>T33 선 균일</td>
+<td>TV 모드 한 경로 안 굵기 변동 ≤ 1.1</td>
+<td></td>
+</tr>
+<tr>
+<td>T34 선 닫힘</td>
+<td>모든 채움 경계 닫힘(flood 새지 않음)</td>
+<td></td>
+</tr>
+<tr>
+<td>T35 그림자 단 수</td>
+<td>재질별 고유색 수 = ノーマル + shadeSteps + hlOn</td>
+<td></td>
+</tr>
+<tr>
+<td>T36 그림자 색</td>
+<td>1号影: V −5~−20pt · S ≥ normal · 피부 H −20~−5° · 그 외 +5~+30°</td>
+<td></td>
+</tr>
+<tr>
+<td>T37 피부 범위</td>
+<td>HSV·RGB 조건 모두 참</td>
+<td></td>
+</tr>
+<tr>
+<td>T38 하이라이트</td>
+<td>V ≥ normal+8 · 면적 ≤ 8%(머리 띠 제외 3%)</td>
+<td></td>
+</tr>
+<tr>
+<td>T39 리그 파츠</td>
+<td>필수 그룹 존재(hairBack/Side/Front · eye{white,iris,lash} · mouth{lipU,lipD,inner} · 목 높이 ≥ 입 y) · 파츠 ±15% 이동해도 배경 노출 0px</td>
+<td></td>
+</tr>
+<tr>
+<td>T40 색 수</td>
+<td>캐릭터당 ノーマル 고유색 ≤ 12</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="01_스타일-1-8-설정값-설정-그림">1.8 설정값(설정 › 그림)</h2>
+<p>lineW · outK 프리셋(설정표/일러스트) · lineTaper · lineColorMode · shadeSteps · skS/skS2/matS(dH·dS·dV) · hl · sceneSet · LOD 문턱(24/60px).</p>
+<h2 id="01_스타일-1-9-근거를-못-찾은-것">1.9 근거를 못 찾은 것</h2>
+<p>설정표의 정형 배치(3/4 순서·머리 수 눈금) · 동화 선 굵기 공식 수치 · 그림자 색 이동량의 일반 공식(교재 1예) · 캐릭터 1명당 색 수 · Han&amp;Uchikawa 피부 타원 수치(오픈액세스 PDF 다음 회차 열람).</p></section>
+<section class="ch" id="02_인체_리그"><h1>02. 인체 리그 — 뼈대 · 관절 · ROM · 10객체 비율표 · 머리–목–어깨 연결 · 등신 규칙 · 다림줄</h1>
+<p>근거: <code>obs/turn_body.md</code>(114장 · 규칙 25 · 합격 T1~T7) · <code>web/anatomy.md</code>(사이즈코리아 8차 실측 · 출처 30) · <code>web/drawing_cg.md</code> · v1 §1~§2 · 05장. 정범님(10/28 21:42): "가장 문제는 인체 구조에 대한 잘못된 이해 — 10객체의 공통점·차이·360°를 숙지한 뒤 설계".</p>
+<h2 id="02_인체_리그-2-1-뼈대-A1-2">2.1 뼈대 (A1.2)</h2>
+<p>관절(3D · H 단위 · 원점 골반 중심 · y 아래 · z 보는 쪽): pelvis · spine1(요추) · chest(갈비 중심) · neck(쇄골 패임 고리) · <strong>headBase(턱 밑면 고리 · 머리와 함께 회전)</strong> · head(피벗 = 귀 뒤 환추) · clavL/R · shoulderL/R · elbowL/R · wristL/R · hipL/R(대퇴골두) · kneeL/R · ankleL/R · ballL/R(발가락 묶음 경첩) · 손가락 mcp/pip/dip×5 · 동물 꼬리·귀 사슬.
+- 갈비·골반 강체, 허리만 비틀기·굽힘(30/40/30 분배). 골반 앞기울기 10~15°(여&gt;남), 갈비 뒤 10~15° → 측면 S자가 기본 자세에서 나온다 [c1a7fdd5 DO].
+- 자세 풀이 순서: 골반 → 척추 → 가슴 → <strong>목(두 고리) → 머리</strong> → 팔(IK) → 다리(디딘 발 IK). 풀이 뒤 다림줄 검사 → 실패면 골반을 디딘 쪽으로 옮김.
+- 뼈 길이는 2.2 표에서 유도(매달린 팔 8° 벌림·팔꿈치 10°에서 팔꿈치 = 허리/갈비 밑, 손목 = 샅). 어떤 자세에서도 길이 불변(±3%).</p>
+<h2 id="02_인체_리그-2-2-10객체-비율표-A1-1-아니메-기본값-한국-실측-열">2.2 10객체 비율표 (A1.1) — 아니메 기본값 + 한국 실측 열</h2>
+<p>정수리 0 · H 단위. <strong>아니메 값</strong>(그림 관찰 · v1 계승)과 <strong>실측 값</strong>(사이즈코리아 8차 환산)을 함께 두고 <code>anat.realism</code>(0~1)로 보간한다. 기본 0.
+| 항목 | 꼬마 F/M | 청소년 F | 청소년 M | 20대 F | 20대 M | 중년 F | 중년 M | 노인 F | 노인 M | 실측(20대 여/남) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1H cm | 20.5 | 22 | 23 | <strong>22.5</strong> | <strong>23.5</strong> | 22.5 | 23.5 | 22.3 | 23.3 | 22.3~22.9 / 23.5 |
+| 등신 HC | 4.0(슬라이더 2~6) | 6.5 | 6.8 | 7.0 | 7.5 | 7.0 | 7.4 | 6.4(뼈 6.8) | 6.7(뼈 7.2) | 7.16 / 7.43 |
+| 머리 폭 HW | 0.90 | 0.78 | 0.79 | 0.76 | 0.78 | 0.78 | 0.80 | 0.77 | 0.79 | 0.86×머리길이 |
+| 쇄골 패임 | 1.12 | 1.27 | 1.28 | 1.30 | 1.30 | 1.30 | 1.28 | 1.18<em> | 1.18</em> | C7 1.11(여) |
+| 어깨점 | 1.15 | 1.30 | 1.30 | 1.35 | <strong>1.40</strong> | 1.35 | 1.38 | 1.25<em> | 1.25</em> | 1.36 / 1.44 |
+| 가슴 꼭짓점 | 1.55 | 1.80 | 1.85 | 1.85 | 2.00 | 1.95 | 2.05 | 1.95<em> | 2.00</em> | |
+| 갈비 밑 | 1.75 | 2.30 | 2.45 | 2.40 | 2.65 | 2.40 | 2.65 | 2.30<em> | 2.50</em> | |
+| 허리 | 1.85(없음) | 2.45 | 2.62 | 2.60 | 2.85 | 2.65 | 2.90 | 2.55<em> | 2.75</em> | |
+| 배꼽 | 1.95 | 2.65 | 2.72 | 2.80 | 2.95 | 2.85 | 3.00 | 2.75<em> | 2.90</em> | |
+| 큰돌기(엉덩이 최대) | 2.10 | 3.10 | 3.20 | 3.30 | 3.50 | 3.30 | 3.48 | 3.15<em> | 3.35</em> | |
+| <strong>샅</strong> | 2.25(56%) | 3.25(50%) | 3.40 | 3.50(50%) | 3.75(50%) | 3.50 | 3.70 | 3.30<em> | 3.50</em> | <strong>3.91 / 4.07(키의 54~56%)</strong> |
+| <strong>무릎</strong> | 3.05(76%) | 4.62(71%) | 4.85 | 4.95(71%) | 5.35 | 4.95 | 5.30 | 4.60<em> | 4.85</em> | 5.32 / 5.49 |
+| 발바닥 | 4.00 | 6.50 | 6.80 | 7.00 | 7.50 | 7.00 | 7.40 | 6.40 | 6.70 | 7.16 / 7.43 |
+| 목 폭 | 0.28(0.30~0.37HW) | 0.32(0.40~0.50HW) | 0.40 | 0.34(0.45~0.60HW) | 0.48(0.60~0.70HW) | 0.36 | 0.52 | 0.34 | 0.48 | <strong>0.45 / 0.52</strong> |
+| 목 길이(턱→패임) | 0.10~0.20 | 0.22~0.35 | 0.25~0.35 | 0.27~0.38 | 0.32~0.43 | 같음 | 같음 | 같음(굽음은 자세) | | |
+| 어깨 폭 | 1.05~1.35 | 1.36~1.5 | 1.58~1.8 | 1.48~1.65 | 1.85~2.3 | 1.50 | 1.85 | 1.38 | 1.70 | 1.56 / 1.89(가쪽) |
+| 허리 폭 | 0.95 | 0.92 | 1.05 | 1.04 | 1.20 | 1.18 | 1.38 | 1.16 | 1.32 | 1.22(50대) / 1.28 |
+| 엉덩이 폭 | 0.92 | 1.30 | 1.15 | 1.52 | 1.30 | 1.58 | 1.36 | 1.50 | 1.30 | 1.47(50대) |
+| 위팔/아래팔/손 | 0.61/0.42/0.45 | 1.05/0.88/0.62 | 1.06/0.99/0.70 | 1.12/0.97/0.68 | 1.30/1.07/0.75 | 같음 | 같음 | ×0.97 | ×0.97 | —/—/0.76 · 1.41/1.09/0.78 |
+| 발 길이 | 0.62 | 0.88 | 1.00 | 0.90 | 1.05 | 0.92 | 1.06 | 0.92 | 1.04 | 1.03 / 1.09~1.14 |
+* 노인은 굽은 자세 뒤 값. <strong>[v1→v2]</strong> 남 어깨점 1.30→1.40(실측 1.44) · 목 폭·손·발·샅은 실측 열을 추가해 realism으로 보간 · 꼬마 머리 4.0H(정범님 결정) 유지 · 실측상 <strong>7세~노년 샅 44~46%·무릎 25.7~26.5%로 일정 → 나이 차이는 등신(머리 크기)·목·어깨에서 온다</strong> [web/anatomy 3·4·14].
+- 나이 차이의 핵심(같은 작가 16세↔26세 [6191b39f]): 목 폭 0.29→0.42HW · 어깨 1.6→1.9HW · 얼굴 길어지고 눈 작아짐. 꼬마: 목 0.1~0.2H · 어깨점이 턱 바로 밑 0.2H · 허리 없음 · 측면에서 머리가 가슴보다 앞.
+- 안정 분수(철칙 3): 팔꿈치 = 허리(여·꼬마)/갈비 밑(남) · 손목 = 샅(실측은 0.13~0.16H 위) · 손끝 = 샅 아래 0.4~0.6H · 어떤 등신에서도 유지.</p>
+<h2 id="02_인체_리그-2-3-머리-목-어깨-연결-A2-3-정범님-가장-급한-지적-obs-turn_body-A1-14">2.3 머리–목–어깨 연결 (A2.3 · 정범님 가장 급한 지적) [obs/turn_body A1~14]</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>규칙</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>목은 턱 밑이 아니라 턱선 안쪽·귀 밑에서 시작</strong></td>
+<td>정면 목선 윗끝 = 턱 윤곽 안쪽 0.05~0.17HW(평균 0.10) · 높이 턱끝보다 0.02~0.10H 위 → 목선 윗끝은 턱 다각형 안에 묻히고 <strong>턱선이 목선 위를 덮는다</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>정면 목 폭(상단 최소)</td>
+<td>꼬마 0.30~0.37HW · 여 10대 0.40~0.50 · 여 성인 0.45~0.60 · 남 10대 0.48~0.60 · 남 성인 0.60~0.70</td>
+</tr>
+<tr>
+<td>3</td>
+<td>목 길이(턱끝→패임)</td>
+<td>꼬마 0.10~0.20H · 10대 0.22~0.35 · 성인 0.27~0.43(남 +0.05) · 어깨점 턱 아래 0.30~0.45H(꼬마 0.15~0.25)</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>목은 아래로 벌어지는 사다리꼴</strong></td>
+<td>밑동 폭 ≥1.1×상단 · 모서리 없이 승모근 곡선으로 · 높이 0.3~0.35H</td>
+</tr>
+<tr>
+<td>5</td>
+<td>승모근 경사(목 밑동→견봉)</td>
+<td>편안 15~25°(여·10대 15~22 · 남 18~26 · 근육형 30+) · 12° 아래 = 어깨 올림(긴장)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>쇄골</td>
+<td>패임에서 바깥·위 5~15° 두 곡선 · 흉쇄유돌근 22~25° 사선(남·사실체만)</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>턱 그림자</strong></td>
+<td>턱선을 윗변으로 한 V 쐐기를 목 위에 0.08~0.22H · 3/4는 먼 턱끝→가까운 턱각 비스듬 쐐기 — "머리가 목 위에 얹혀 있다"를 보여 주는 가장 싼 장치</td>
+</tr>
+<tr>
+<td>8</td>
+<td>측면</td>
+<td>목 원통 전체 10~20° 앞기울기(앞·뒷선 평행 ±8°) · 두개골 밑 중앙에 '꽂힘' · 앞선 시작 = 턱끝 뒤 0.12~0.20 머리깊이 · 뒷선 = 귀 뒤·아래 두개골 밑 · 귀 중심 수직선이 목 중심 ±0.1H · 측면 목 깊이 = 정면 폭 ×1.0~1.5(애니 1.15~1.5)</td>
+</tr>
+<tr>
+<td>9</td>
+<td>측면 DON'T/DO</td>
+<td>목을 갈비 위에 수직으로 얹고 등 일직선 = ✗ · 갈비 위 뒤로 10~15°·골반 위 앞으로 10~15°·허리 쐐기·목은 갈비 앞·위에서 앞으로 = ✓ · 머리 높이 = 갈비 블록 높이</td>
+</tr>
+<tr>
+<td>10</td>
+<td>3/4</td>
+<td>가까운 목선 = 귀 밑 턱각에서 턱선을 그대로 이어 내려옴 · 먼 목선 = 턱끝 바로 안쪽(턱 그림자 속) · 3/4 목 폭 = 정면 ×1.3~1.5 · 패임·정중선 먼 쪽 0.05~0.15H</td>
+</tr>
+<tr>
+<td>11</td>
+<td>뒷면</td>
+<td>목 폭 = 정면 ±10% · 두개골 밑선에서 바로 시작해 승모근으로 20~30° 오목 · C7 점 · 견갑 두 판 1.5~2.3H · 목덜미 V = 턱 높이 ±0.1H</td>
+</tr>
+<tr>
+<td>12</td>
+<td>머리는 어깨보다 앞</td>
+<td>측면 머리 중심이 어깨 관절 수직선보다 0.15~0.25H 앞(10대 구부정 0.2~0.3 · 영웅 ≤0.1)</td>
+</tr>
+<tr>
+<td>13</td>
+<td>위·아래 카메라</td>
+<td>위: 목 단면이 어깨 윗면 앞 1/3·어깨선 U / 아래: 턱 밑면 넓게·목 앞선 0.4~0.5H·∩</td>
+</tr>
+<tr>
+<td>14</td>
+<td><strong>머리 기울기·회전은 목을 따라간다</strong></td>
+<td>머리 5~15° 기울이면 목도 같은 방향 휨(수직 고정 금지) · 어깨 너머 돌리면 비틀림 주름·한쪽 승모근 길어짐 · 어깨 올리면 그쪽 목 20~30% 짧아짐</td>
+</tr>
+<tr>
+<td>- 구현 = 10 §10.1.2(두 고리 로프트 · 한 층 합집합) + 03 §3.2. <strong>15차m <code>msc2NeckTop</code>(턱→정수리 축 16% 근사)과 등신별 목 길이 예외표는 폐기</strong>(12장).</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="02_인체_리그-2-4-관절-가동-범위-A1-3-AAOS-Luttgens-범위-web-anatomy-16-17">2.4 관절 가동 범위 (A1.3) — AAOS/Luttgens 범위 [web/anatomy 16·17]</h2>
+<table>
+<thead>
+<tr>
+<th>관절</th>
+<th>최대(도)</th>
+<th>편한 한계(×0.7)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>목</td>
+<td>굽힘 45~60 · 젖힘 45~75 · 돌림 60~80 · 기울임 45</td>
+<td>머리 그림 한계: 상하 40~60 · 옆 35~45 · 회전 70~90(03 §3.6)</td>
+</tr>
+<tr>
+<td>어깨</td>
+<td>굽힘 180 · 젖힘 60 · 벌림 180(90° 넘으면 쇄골·견갑 회전) · 모음 40 · 회전 내 70/외 90</td>
+<td></td>
+</tr>
+<tr>
+<td>팔꿈치</td>
+<td>굽힘 140~150 · 과신전 ≤5 · 회내/회외 80/80</td>
+<td>쉬는 팔 5~15° 굽힘</td>
+</tr>
+<tr>
+<td>손목</td>
+<td>굽힘 60~80 · 젖힘 60~70 · 요측 20 · 척측 30</td>
+<td>기능 54/60/17/40</td>
+</tr>
+<tr>
+<td>손가락</td>
+<td>MCP 80~90(젖힘 30) · PIP 90~110 · DIP 65~80 · 엄지 CMC ±45</td>
+<td></td>
+</tr>
+<tr>
+<td>척추(흉요추)</td>
+<td>비틀기 30(한쪽) → <code>twistMaxDeg</code> 45(과장 70) · 앞 45~50 · 뒤 25 · 옆 25</td>
+<td></td>
+</tr>
+<tr>
+<td>엉덩이</td>
+<td>굽힘 100~120 · 젖힘 20~30 · 벌림 40~45 · 모음 20~30 · 회전 45</td>
+<td></td>
+</tr>
+<tr>
+<td>무릎</td>
+<td>굽힘 135~150 · 과신전 ≤5 · 옆 0</td>
+<td></td>
+</tr>
+<tr>
+<td>발목</td>
+<td>등쪽 20~30 · 바닥쪽 40~50 · 안 35 · 밖 15</td>
+<td></td>
+</tr>
+<tr>
+<td>발가락 묶음</td>
+<td>젖힘 70 · 굽힘 45</td>
+<td></td>
+</tr>
+<tr>
+<td>- 노인: 손목 젖힘 −41% 등 가동 ×0.8 · 동작 ×1.4 느리게.</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="02_인체_리그-2-5-다림줄-콘트라포스토-A1-5-obs-turn_body-23-obs-motion-1-3">2.5 다림줄·콘트라포스토 (A1.5) [obs/turn_body 23 · obs/motion 1~3]</h2>
 <ul>
-<li>먼저 가슴 없이 갈비뼈를 그린다. 가슴 크기는 갈비뼈·허리·어깨 폭을 바꾸지 않는다.</li>
-<li>한쪽은 <b>눈물방울</b> 모양. 뾰족한 위끝은 쇄골 가운데에서 겨드랑이 쪽으로 가고, <b>윗변은 쇄골과 나란하다</b>(15~20° 아래 바깥). 가파르게 높이 붙이면 틀린 것(4e140632 NO).</li>
-<li>살은 <b>옆에서</b> 온다: 바깥으로 15~20° 향하고 복장뼈 쪽은 평평하다.</li>
-<li><b>앞뒤 순서</b>: 가슴은 갈비뼈 앞면(앞으로 0.1~0.3H)에 있고, 내린 위팔은 옆면에 있다. → <b>가슴 층을 위팔 층 위에 그린다.</b> 크기가 0.45를 넘으면 가슴 바깥 윤곽이 팔 안쪽 선을 덮는다.</li>
-<li>가장 크게 해도 <b>둥글어지지 않고 길어진다</b>(무게로 눈물방울이 됨). 꼭지는 절대 그리지 않는다. 옷 위에서는 꼭지점에서 천이 곧게 떨어지고, 가슴 아래 윤곽은 비쳐 그리지 않는다.</li>
+<li>목 패임(또는 배꼽)에서 내린 수직선 = 디딘 발 안쪽 복사뼈 ±0.1H(두 발 서기는 두 발 사이) · 머리 중심 ±0.3H.</li>
+<li>기본 콘트라포스토: 골반 <strong>8°</strong>(범위 6~15 · 디딘 쪽 위) · 어깨 <strong>−4°</strong>(4~12 · 반대) · 머리 5~10° 올라간 어깨 쪽 · 골반 가로 이동 ≈0.25H('く') · 자유 무릎 낮고 안쪽 · 발끝 밖 20~30°. 고유 포즈는 12°/7°까지.</li>
+<li>어깨·골반 같은 방향 · 수직선이 발 밖 = ✗. '전봇대' 금지 규칙(08 §8.3).</li>
 </ul>
-<h3>여자 허리·골반·허벅지 = 윤곽 하나</h3>
+<h2 id="02_인체_리그-2-6-등신-규칙-설정-어느-값에서도-같은-식-A1-4-정범님-등신-설정이-작동-안-함">2.6 등신 규칙 — 설정 어느 값에서도 같은 식 (A1.4 · 정범님 "등신 설정이 작동 안 함")</h2>
 <ul>
-<li>허리(가장 잘록) → 엉덩뼈 → <b>넓적다리뼈 돌기(가장 넓은 곳, 가랑이 높이)</b> → 허벅지 바깥 → 무릎이 <b>꺾임 없이 이어진 한 곡선</b>이다. 지금 앱처럼 골반을 혹처럼 따로 붙이지 않는다.</li>
-<li><b>골반이 넓어지면 허벅지 윗부분도 같이 넓어진다</b>(허벅지 위 폭 = 골반 폭에 맞춰 계산). 정범님이 짚은 그대로다.</li>
-<li><b>극단 먼저</b>: 가슴·골반 최대치(1)를 먼저 자연스럽게 디자인하고 0(이미 자연스러움)과의 사이를 부드럽게 섞는다. 0.25·0.5·0.75 어디서도 곡선 모양이 튀지 않는지 시험으로 확인한다.</li>
+<li>등신 HC ∈ [2, 7.5] 연속. 키 = HC·H. 머리 크기 상수(2세 이후 어른의 80~90% [27fc6879]).</li>
+<li>랜드마크 y는 <strong>분수 함수</strong>: 샅 = f_c(HC)·키 (HC ≤4: 0.56 · 4~6.5: 0.56→0.50 선형 · ≥6.5: 0.50) · 무릎 = f_k(HC)(0.76→0.71) · 어깨점 = 턱 + g(HC)(HC ≤3: 0.05~0.15 · 4: 0.15~0.25 · ≥6.5: 0.30~0.45) · 목 길이 = n(HC)(HC ≤2.5: <strong>0(머리 밑면이 몸통 윗면에 닿음)</strong> · 3: 0.08 · 4: 0.15 · ≥6.5: 0.27~0.43) · 목 폭 = 표 2.3-2를 HC로 보간.</li>
+<li>캐릭터 슬라이더(머리:키)가 기기 등신 설정보다 우선(15차m 유지). 값이 바뀌면 <code>MSC2_SDC</code> 캐시 무효 → 머리·목·몸 <strong>동시에</strong> 재계산 → T17 스윕 통과해야 저장.</li>
+<li>SD(2~4등신) 세부는 07 §7.1.</li>
 </ul>
-<div class="tbl"><table class="num">
-<tr><th>골반 값</th><th>0</th><th>기본 0.4</th><th>1 (최대, 자연스럽게)</th></tr>
-<tr><td>엉덩이 / 어깨</td><td>0.98</td><td>1.03</td><td>1.30</td></tr>
-<tr><td>허리 / 엉덩이</td><td>0.78</td><td>0.68</td><td>0.58</td></tr>
-<tr><td>엉덩이 뒤 돌출(옆모습)</td><td>0.22H</td><td>0.30H</td><td>0.45H</td></tr>
-</table></div>
-<h3>남자 가슴·배</h3>
-<p>역삼각형 몸: 겨드랑이에서 엉덩이까지 옆선이 계속 안으로 좁아진다. 가슴 근육은 쇄골에서 턱 아래 약 1H까지 오는 두 판. 배 근육은 몸 모양을 따르고(삼각 몸이면 삼각), 마른 몸은 가슴 아래선·짧은 배 선 2~3개·배꼽만 그린다. 어깨:허리 = 1.45~1.6.</p>
-<h3>왜 매력적으로 보이나 (근거 있는 설명, 전체 이용가 기준)</h3>
+<h2 id="02_인체_리그-2-7-합격-기준-T1-T7-v1-T14-T17-T67-T70">2.7 합격 기준 (T1~T7 v1 + T14~T17 + T67~T70)</h2>
+<table>
+<thead>
+<tr>
+<th>번호</th>
+<th>시험</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T67 목 연결(정면)</td>
+<td>목선 윗끝 x = 턱 윤곽 안쪽 0.05~0.17HW · y = 턱끝 위 0.02~0.10H · 턱선이 목선을 덮음(목선 끝점이 턱 다각형 내부) · 목 폭/HW 표 범위 · 밑동 ≥1.1×상단 · 승모근 15~25° · 턱 그림자 0.08~0.22H</td>
+</tr>
+<tr>
+<td>T68 목 연결(측면·3/4·뒤)</td>
+<td>측면 기울기 10~20° · 앞선 턱끝 뒤 0.12~0.20 깊이 · 귀 수직선 ±0.1H · 3/4 폭 1.3~1.5× · 뒤 폭 ±10%</td>
+</tr>
+<tr>
+<td>T69 머리 기울기 동반</td>
+<td>롤 −35~35·요 −60~60·피치 −45~45 × 등신 2·2.5·3·3.5·4·5·6.5·7.5 모두 턱 밑면 고리 = 목 윗 고리(거리 0) · 배경 픽셀 0</td>
+</tr>
+<tr>
+<td>T70 등신 스윕</td>
+<td>위 등신마다 T1·T3·T4·안정 분수·목 길이 n(HC) ±0.02</td>
+</tr>
+</tbody>
+</table>
+<h2 id="02_인체_리그-2-8-설정값">2.8 설정값</h2>
+<p>anat.realism · HC 슬라이더 · twistMaxDeg · 콘트라포스토 골반/어깨 기본각 · 목 길이·폭 보정(객체별 ±10%) · 승모근 경사.</p>
+<h2 id="02_인체_리그-2-9-근거를-못-찾은-것">2.9 근거를 못 찾은 것</h2>
+<p>노인 턴어라운드(114장에 없음) · 아이 두신지수 한국 실측 · 한국 보행 수치 · 사이즈코리아 원자료 직접 열람(허용 목록 밖 → 논문 14편으로 대체).</p></section>
+<section class="ch" id="03_머리_얼굴_눈"><h1>03. 머리·얼굴·눈 — 두개골+턱 · 이목구비 배치 · 눈 체계(꼬마 눈) · 눈썹 · 2.5D 돌리기 · 수염·나이 선</h1>
+<p>근거: <code>obs/face.md</code>(참고 그림 78장 · 합격 기준 31) · <code>web/kid_eyes.md</code>(불쾌감 연구 + 현재 눈 코드·렌더 분석) · <code>web/anime_style.md</code> · <code>web/drawing_cg.md</code>(Loomis·2.5D 기하) · v1 §3. 단위: H = 정수리~턱(민머리), HW = 얼굴 최대 폭, EW·EH = 눈 폭·높이.</p>
+<h2 id="03_머리_얼굴_눈-3-1-머리-틀-두개골-구-턱-쐐기-A2-1">3.1 머리 틀 — 두개골 구 + 턱 쐐기 (A2.1)</h2>
 <ul>
-<li><b>여자</b>: 허리-엉덩이 비율 약 0.7이 문화권을 넘어 매력적이고 젊고 건강하다는 신호로 읽힌다는 연구(Singh 1993과 후속 반복 연구). 그래서 기본 허리/엉덩이를 0.68~0.72로 둔다. 매끄럽고 끊김 없는 곡선이 '부드럽고 건강함'을 만들기 때문에, 비율만큼 <b>선의 질</b>이 중요하다.</li>
-<li><b>남자</b>: 어깨·가슴·팔의 상체 힘 단서가 남성 몸 매력 차이의 대부분을 설명한다는 연구(Sell 외 2017, 영국 왕립학회보 B). 그래서 V자(어깨:허리 ≈ 1.5)와 깔끔한 가슴선이 '든든함·능력'으로 읽힌다.</li>
-<li><b>둘 다</b>: 자세가 곱하기로 작용한다. 가슴을 펴고 어깨를 내리면 좋아 보이고, 어깨를 올리면 긴장해 보인다. 무게를 한쪽에 실은 비대칭 자세는 편안한 자신감으로 읽힌다.</li>
+<li>모델 선택 <code>headModel</code>: <strong>anime</strong>(기본) · loomis(실사 모드 옵션). anime: 정면 머리 = 거꾸로 세운 달걀/원 + 턱. 가로 십자선 = <strong>위 눈꺼풀 선 = 0.50</strong> [1afa34ec], 눈 중심 ≈ 0.54. loomis: 공 지름 D = 0.857H, 눈썹선 = 공 중심, 턱 = 공 밑 D/6 [drawing_cg 1·2]. 두 약속을 섞지 않는다.</li>
+<li>턱은 원 아래 0.2~0.3×원지름만 나온다(H = 1.2~1.3×원지름) [b3609d0d].</li>
+<li>볼 윤곽은 <strong>곡선–직선–곡선</strong>: 눈꺼풀~코밑 구간 거의 직선, 눈~코 높이에서 가장 깊게 파임 [1afa34ec]. 턱선은 귀 밑(0.66~0.78)에서 꺾여 수직 대비 35~50°로 턱끝에서 만남 [487a3c20 51°·b3609d0d 35~40°].</li>
+<li>6 얼굴형(달걀·둥근·긴·각진·하트·역삼각) + 컨트롤(크기·가로·세로·턱 폭·턱 끝 길이·턱 끝 뾰족함)은 아래 표의 범위 안에서만 움직인다. 표정 중에는 모양 불변(10/28 15:00 "표정을 지어도 이 모양 그대로").</li>
 </ul>
-</section>
-
-<section id="hand">
-<h2>7. 손·발</h2>
-<h3>손 — 손가락 다섯 개의 상호작용</h3>
+<p><strong>나이·성별 머리 표 (정면 · 0 = 정수리 · 1 = 턱) [obs/face Q1]</strong>
+| 항목 | 꼬마 | 청소년 여 | 청소년 남 | 성인 여 | 성인 남 | 노인(추정) |
+|---|---|---|---|---|---|---|
+| HW/H | 0.85~0.95 | 0.76~0.83 | 0.78~0.82 | 0.72~0.76 | 0.78~0.84 | 성인과 같되 턱 폭↓ |
+| 눈 중심 높이 | 0.58~0.62 | 0.52~0.56 | 0.52~0.54 | 0.50~0.52 | 0.50~0.52 | 0.50 |
+| 눈 사이/EW | 1.1~1.35 | 0.9~1.1 | 0.85~1.0 | 1.0 | 1.0~1.15 | 1.0 |
+| EW/HW | 0.26~0.28 | 0.22~0.27 | 0.20~0.27 | 0.20~0.22 | 0.17~0.20 | 0.17~0.20 |
+| 코끝 | 0.70~0.74(점) | 0.66~0.70 | 0.68~0.73 | 0.67~0.70 | 0.72~0.76 | 0.72~0.76 |
+| 입 | 0.84~0.88 | 0.80~0.85 | 0.80~0.85 | 0.78~0.82 | 0.84~0.87 | 0.84~0.87 |
+| 턱끝 폭/HW | 0.10~0.18 | 0.12~0.20 | 0.20~0.28 | 0.18~0.25 | 0.28~0.35(모서리 0.70~0.78) | 0.25~0.30 |
+| 귀 위~아래 | 0.52~0.68 | 0.48~0.76 | 0.48~0.80 | 0.42~0.67 | 0.42~0.70 | 0.42~0.72 |
+| 턱선 꺾임 높이 | 0.68 | 0.70~0.75 | 0.72~0.78 | 0.70 | 0.75~0.78 | 0.75 |
+| 눈썹 높이 | 0.30~0.33 | 0.31~0.38 | 0.38~0.40 | 0.42 | 0.40~0.42 | 0.42 |
+| 목 폭/HW | 0.35 | 0.40~0.45 | 0.45~0.55 | 0.45~0.50 | 0.55~0.65 | 0.50 |
+- <strong>[v1→v2]</strong> 한국 실측(web/anatomy 11·12): 목 폭 여 0.45H·남 0.52H(머리둘레 대비 0.57/0.68), 얼굴 길이 = 머리 수직의 0.50~0.52, 아래턱 폭 = 머리 너비의 0.72. 아니메 목(여 0.40~0.45HW ≈ 0.31~0.35H)은 실측보다 30% 가늘다 → 설정 <code>anat.realism</code>(0~1)로 보간, 기본 0(아니메).</p>
+<h2 id="03_머리_얼굴_눈-3-2-머리-목-연결-A2-3-10-10-1-2와-한-몸">3.2 머리–목 연결 (A2.3 · 10 §10.1.2와 한 몸)</h2>
 <ul>
-<li>손바닥 = 손가락 = 손 길이의 1/2. 마디 비율 1 : 0.7 : 0.55. 가운데 손가락이 가장 길고, 검지 ≈ 약지, 새끼는 약지 끝마디에서 끝난다. <b>지금 손은 0.25~0.3H로 정답(0.68~0.75H)의 1/3</b>이다.</li>
-<li><b>쉬는 손의 말림 단계</b>: 검지 15~25° · 중지 25~35° · 약지 35~45° · 새끼 45~60°, 엄지는 앞으로 와서 검지 옆.</li>
-<li><b>연동</b>: 약지는 중지의 0.6배 이상 같이 굽고 새끼는 약지를 따라간다(검지만 독립). 주먹은 새끼 → 약지 → 중지 → 검지 순서로 1프레임씩 닫히고, 엄지가 검지·중지 가운데 마디를 덮는다. 굽힌 손가락은 벌어지지 않는다.</li>
-<li><b>쥐기</b>: 물건은 손바닥과 손가락 <i>사이</i>에 있고 엄지가 반대편에서 잡는다. 손 아래에 매달리거나 손 앞에 떠 있으면 안 된다.</li>
-<li><b>몸짓 모음</b>: 편한 손·흔들기·가리키기·주먹·엄지척·브이·감싸 쥐기·내밀기·턱 괴기·볼 감싸기·허리에 손·주머니·책 들기·집기·깍지·고양이 손·주먹 불끈·머리 만지기·입 가리기.</li>
-<li><b>작게 그릴 때</b>: 14px 미만은 벙어리장갑 + 엄지 방향만, 14~30px는 손가락 1~2덩어리, 30px 이상이면 다섯 개, 60px 이상이면 손톱까지.</li>
+<li>정면: 목선은 <strong>턱끝 아래가 아니라 귀 밑 안쪽</strong>(턱 모서리 안쪽)에서 내려온다 [bb11e66a·8f1e34ae·27fc6879 "WIDER NECK"]. 목 폭은 위 표.</li>
+<li>측면: 목 <strong>앞선은 턱 밑 1/3 지점</strong>(턱끝에서 턱 모서리 쪽으로)에서, <strong>뒷선은 귀 밑 높이의 두개골 밑</strong>에서 시작해 15~20° 앞으로 기운다 [245bacf6 "NECK CONNECTS LIKE THIS"·b3609d0d]. 머리 깊이 1.0~1.1H, 귀 앞선 = 머리 깊이의 50~55%.</li>
+<li>턱 밑 목에 <strong>셀 그림자 하나(깊이 0.12~0.3H)를 모든 각도에</strong> [8f1e34ae]. 머리와 목은 선이 아니라 그림자로 구분된다.</li>
+<li>구현은 10 §10.1.2: 턱 밑면 고리(두개골 표면의 위도·경도 점)가 머리와 함께 회전·투영되고, 목 로프트가 그 고리에서 쇄골 고리까지 이어지며, 얼굴 살과 목·몸통이 한 층에서 합집합.</li>
 </ul>
-<h3>발 — 발가락은 한 덩어리</h3>
+<h2 id="03_머리_얼굴_눈-3-3-눈-체계-남기고-더-다듬는다-A3">3.3 눈 체계 — 남기고 더 다듬는다 (A3)</h2>
+<h3 id="331">3.3.1 구조(모든 눈 공통)</h3>
+<table>
+<thead>
+<tr>
+<th>요소</th>
+<th>규칙</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>위 눈꺼풀 곡선</td>
+<td>꼭대기 = 안쪽 눈구석에서 <strong>40~50%</strong>(정확히 50% 대칭 반원은 인형·놀람). 선 두께 여 0.15~0.20EH · 남 0.08~0.12 · 꼬마 0.12~0.16. 바깥 끝 날개 0.10~0.25EW(꼬마 ≤0.08), 20~45° 위</td>
+<td>066567bb·eab4f365·aa1a1622</td>
+</tr>
+<tr>
+<td>아래 눈꺼풀</td>
+<td>최저점 안쪽에서 <strong>60%</strong>, 얕은 호 깊이 ≤0.2EH, 선은 위 선의 ≤0.4 두께·길이 ≤0.7EW(안쪽 1/3 비움)·꼬마는 거의 생략 — <strong>테두리를 완성하지 않는다</strong></td>
+<td>816ba45a·aa1a1622</td>
+</tr>
+<tr>
+<td>홍채</td>
+<td>세로 타원 높이/폭 1.0~1.45(꼬마 1.0~1.3) · 위는 눈꺼풀에 <strong>반드시</strong> 10~40% 덮임(꼬마 10~20·청소년 15~30·성인 25~40) · 아래는 아래 눈꺼풀에 닿거나 틈 ≤5% · 사방 흰자는 충격·공포 전용(三白眼)</td>
+<td>51cfc404·f927598f·e5be95fc</td>
+</tr>
+<tr>
+<td>홍채 그늘</td>
+<td>위 25~45%에 어두운 띠(명도 −15~25%·불투명 ≤0.55), 아래 밝은 초승달. <strong>동공 윤곽이 그늘에 묻히면 안 됨</strong>(ΔL ≥0.12)</td>
+<td>aa1a1622·kid_eyes 3</td>
+</tr>
+<tr>
+<td>동공</td>
+<td>홍채 폭의 0.25~0.40(꼬마 0.35~0.45) · 세로/가로 ≤1.15 · 점 동공(≤0.15)은 공포·분노 전용</td>
+<td>066567bb·831913f2</td>
+</tr>
+<tr>
+<td>하이라이트</td>
+<td><strong>큰 1개</strong>(홍채 폭 0.25~0.35 · 10~11시 · 위 눈꺼풀 바로 아래 걸침 · <strong>L ≥0.97 순백</strong>, 어떤 그늘도 위에 겹치지 않음) + <strong>작은 0~1개</strong>(0.08~0.15 · 4~5시). <strong>두 눈 같은 쪽</strong>(거울 대칭 금지, 상대 위치 차 ≤5%). 반짝이·별은 '반짝' 표정에서만(≤3)</td>
+<td>aa1a1622·kid_eyes 1·2·Farid&amp;Johnson</td>
+</tr>
+<tr>
+<td>흰자</td>
+<td>순백 아님: 피부 명도 −3~−8%, 채도 ≤0.08, <strong>따뜻한 흰색</strong>(푸른 회색 금지) · 위 눈꺼풀 그림자는 홍채 위에만(흰자 위 ≤10%EH·불투명 ≤0.2)</td>
+<td>01b813c3·kid_eyes 5</td>
+</tr>
+<tr>
+<td>속눈썹</td>
+<td>여 바깥 눈구석 2~4가닥(30~45°·길이 0.2~0.3EW)+아래 1~3(바깥 1/3) · 남 0(각진 바깥 끝) · <strong>꼬마 0~2 부드럽게, 아래 0</strong></td>
+<td>aa1a1622·816ba45a·e5b44b40</td>
+</tr>
+<tr>
+<td>쌍꺼풀 선</td>
+<td>선택. 넣으면 위 선 위 0.20~0.35EH, 바깥 2/3만. 꼬마 없음</td>
+<td>487a3c20</td>
+</tr>
+<tr>
+<td>사실감 일치</td>
+<td>셀 2~3단 홍채·단색 흰자·단순 눈꺼풀이면 하이라이트도 단순(둥근 1~2개). 사실적 결·12개 반짝이를 단순 얼굴에 넣는 것이 <strong>언캐니의 가장 잘 지지되는 원인</strong>(특징 간 사실감 불일치)</td>
+<td>MacDorman 2009·Seyama&amp;Nagayama 2007·Kätsyri 2015</td>
+</tr>
+</tbody>
+</table>
+<h3 id="332-obsface-q2">3.3.2 눈 종류 목록 (캐릭터마다 고정 · 표정은 자세만) [obs/face Q2]</h3>
+<p>① 눈꼬리: 올라간·동그란·내려간 ② 열림: 크게 뜸·보통·반쯤(윗꺼풀 40%)·일자 ③ 꺼풀: 홑·쌍·큰 쌍 ④ 홍채 크기: 큰(순)·보통·작은 ⑤ 동공: 둥근·세로 슬릿(고양이)·초승달·고리·막대 ⑥ 성별·나이 스펙트럼(중성→10대 여→순정 / 중성→청년 남→소년만화) ⑦ 감은 눈: ∩(웃음)·∪(슬픔)·일자 ⑧ 샷 거리 5단계(LOD). 조합으로 ≥12 종류를 설정 시트에 둔다(A3.3). 인상 = 눈꼬리 × 눈썹 각도 3×3 [71170641]; 마스코트 기본 = 동그란 눈 + 일자~살짝 내려간 눈썹("순하고 착해 보임").</p>
+<h3 id="333">3.3.3 나이·성별 눈 수치</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>꼬마</th>
+<th>청소년 여</th>
+<th>청소년 남</th>
+<th>성인 여</th>
+<th>성인 남</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EW/HW</td>
+<td>0.25~0.29</td>
+<td>0.21~0.27</td>
+<td>0.21~0.27</td>
+<td>0.19~0.23</td>
+<td>0.17~0.21</td>
+</tr>
+<tr>
+<td>EH/EW</td>
+<td>0.80~1.00(순정 모드 1.0~1.4 · <strong>1.3 초과 = 놀란 눈·안경원숭이</strong>)</td>
+<td>0.70~0.90</td>
+<td>0.55~0.75</td>
+<td>0.45~0.65</td>
+<td>0.33~0.50</td>
+</tr>
+<tr>
+<td>홍채/EW</td>
+<td>0.60~0.75(kid_eyes 0.75~0.85 상한 참조 · 금지 ≥0.78 인형)</td>
+<td>0.55~0.65</td>
+<td>0.55~0.65</td>
+<td>0.45~0.55</td>
+<td>0.45~0.55</td>
+</tr>
+<tr>
+<td>눈~눈썹</td>
+<td>0.8~1.2EH</td>
+<td>0.6~1.1</td>
+<td>0.3~0.5</td>
+<td>0.6~1.1</td>
+<td>0.3~0.5</td>
+</tr>
+</tbody>
+</table>
+<h3 id="334-8-a32">3.3.4 꼬마·동물 눈 — 불쾌감 제거 8기준 (A3.2 · 정범님 "크기 문제가 아니다")</h3>
+<p><strong>원인 확인(현재 코드·렌더, kid_eyes §2.8 · <code>shots/eye_arong.png</code>)</strong>: ① 주 하이라이트가 흰색이 아님 — 흰자 그늘 띠(<code>s1</code> #4E5280 0.3)가 하이라이트 <strong>위</strong>에 그려져 연보라 회색 '죽은 눈' ② 홍채 위 절반이 검은 덩어리(그늘 0.78 + 큰 동공 + 번짐 + 굵은 테) ③ 흰 반짝이 눈 하나에 12개 ④ 열림 H/W 1.34·홍채 세로/가로 1.78(놀란 눈) ⑤ 흰자가 푸른 회색(멍든 눈) ⑥ 5~6세에 굵은 검정 띠(바깥 끝 0.17W)+긴 날개(0.25W)+낱개 속눈썹(화장한 어른 눈 = 아기 도식과 충돌) ⑦ 눈꼬리가 얼굴선에 닿음(여백 0.1~0.2W) ⑧ 동물(너굴)에 사람 흰자·속눈썹을 오려 붙임. <strong>또한 15차m의 '눈 크기 0.82' 결정은 CSS 없이 모든 표정 프레임이 겹친 무효 캡처로 내려진 것</strong>(시험 그림은 <code>mscCss()</code> + <code>msc-ch msc-still</code> 필수 → T41).
+좋은 점(유지): 눈 높이 0.62 · 간격 1.25W · 아래 속눈썹·쌍꺼풀 없음 · 하이라이트 같은 쪽 · 눈썹 가늘고 멀리.</p>
+<p><strong>8기준(자동 시험 T42)</strong>
+| # | 기준 | 값 |
+|---|---|---|
+| 1 | 하이라이트가 눈 안에서 가장 밝음 | 주 하이라이트 L ≥0.97 · 위에 겹치는 그늘 0 · 눈당 흰 조각 ≤2(반짝 표정 제외) |
+| 2 | 홍채가 눈을 채우고 떠 있지 않음 | 홍채/EW 0.60~0.80 · 위 덮임 10~20% · 아래 흰자 ≤3%EH · 좌우 흰자 삼각 각 ≤0.2EW |
+| 3 | 동공 또렷 | 동공/홍채 0.35~0.45 · 세로/가로 ≤1.15 · 그늘 띠 ≤35%·불투명 ≤0.55 · ΔL ≥0.12 |
+| 4 | 열림 비율 | H/W 1.0~1.2(동물 0.9~1.1) · 홍채 ry/rx 1.0~1.3 |
+| 5 | 흰자 | L ≥0.93 · 채도 ≤0.08 · 따뜻한 색 |
+| 6 | 눈꺼풀·속눈썹 | 띠 바깥 끝 ≤0.10W · 날개 ≤0.08W · 낱개 속눈썹 0 · 아래 0 · 쌍꺼풀 0 · 아래 눈꺼풀이 테두리 완성 안 함 |
+| 7 | 배치 | 눈 높이 0.58~0.65 · 간격 1.0~1.5W · 눈 바깥 끝~얼굴 윤곽 ≥0.3W · 눈썹 거리 0.4~0.8H(꼬마 눈 기준)·두께 ≤0.12W |
+| 8 | 좌우·표정 일치 | 두 홍채 상대 위치 차 ≤0.03W · 열림 차 ≤8% · 입꼬리 ≥0.3이면 아래 눈꺼풀 올라와 H −15~35%(뒤센) |
+- 동물 꼬마(A9.2): 흰자 노출 ≤5%(놀람 때만) · 눈꺼풀 띠 = 털색 어두운 계열 · 속눈썹 0 · 눈 중심선이 주둥이 축과 수직 맞물림(어긋남 ≤0.02 얼굴 폭) · 눈 아래선 &gt; 주둥이 윗선.
+- 설정값(설정 › 그림 › 꼬마 눈): kidEye_hw 1.1 · kidEye_iris 0.80 · kidEye_irisHW 1.15 · kidEye_pupil 0.40 · kidEye_shadeTop 0.30 · kidEye_hl {main 0.30, sub 0.10} · kidEye_lash 0 · kidEye_wing 0 · kidEye_margin 0.3 · aniEye_sclera 0.05. 즉시 고칠 코드 순서: <code>s1</code> 흰자 그늘을 하이라이트 <strong>앞</strong>으로 · 푸른 흰자 그늘 삭제 · <code>MSC_EYE.chibi</code> 값 교체 · 꼬마에서 <code>layer</code> 점 4·<code>h3</code> 끔 · 웃음 계열에 EyeSmile ≥0.25 강제.</p>
+<h3 id="335-lod-01-15">3.3.5 샷 거리 LOD (01 §1.5와 같음)</h3>
+<p>클로즈업 = 그라데이션+하이라이트 2+속눈썹+쌍꺼풀 / 중간 = 하이라이트 1·속눈썹 단순 / 원경 = 검은 덩어리+점 / 초원경 = 점 [eab4f365].</p>
+<h2 id="03_머리_얼굴_눈-3-4-코-입-귀-A2-5-A2-6">3.4 코·입·귀 (A2.5·A2.6)</h2>
 <ul>
-<li>발 = <b>발등 쐐기 + 발바닥 판(땅콩 모양, 안쪽 아치)</b>. 뒤꿈치는 다리 선 뒤로 나오고, 다리는 발의 뒤 1/4~1/3에 붙는다. 길이는 남자 1H, 여자 0.88~0.92H.</li>
-<li><b>발가락 묶음</b>: 엄지발가락은 따로, 나머지 넷은 한 덩어리. 볼 부분의 경첩 하나로 위로 0~70°, 아래로 0~40° 움직인다.</li>
-<li><b>발목·발·발가락 연동</b>: 까치발은 발목을 40~50° 펴고 발가락 묶음을 50~70° 꺾는다. 걸을 때 밀기는 15~20° + 30~45°. 쪼그려 앉을 때 발목이 20°를 넘어야 하면 대신 뒤꿈치를 든다. 안쪽 복사뼈가 더 높아서 발목 선이 바깥으로 내려간다.</li>
-<li><b>신발</b> = 발 + 밑창 판 + 앞코 들림(귀여우면 10~25° 위로) + 비어 있는 앞코. 상자 모양 신발 금지.</li>
+<li>코: 데포르메 단계별 ① 점 ② 짧은 ㄴ 그림자 ③ 콧대선+코밑 그림자 ④ 콧대+콧구멍("콧구멍을 그려도 괜찮은 어른")[4ab138ac]. 꼬마·청소년 ≤0.06H 점/ㄴ. 3/4부터 코끝이 윤곽 밖(≥40°), 측면 항상 돌출.</li>
+<li>입: 닫힘 0.14~0.20HW · 웃음 0.30~0.40HW · 위치 코밑~턱의 1/3. 작은 열림은 턱 고정(얼굴 안 D/반달 0.80~0.88) · 입 높이 &gt;0.10H일 때만 귀 앞 경첩으로 턱이 0.03~0.10H 내려감(얼굴 5~10% 길어짐) [487a3c20·a184f4ad]. 입술은 갈매기·파도·반사 3선 [f5fde210].</li>
+<li>귀: C(물음표)+안쪽 Y/곡선 1 · 높이 0.25~0.30H · 정면 폭 0.08~0.12HW · 위가 바깥 10~20° · 위치 눈 위선~코끝 띠 안(꼬마는 작고 조금 아래). 3/4: 가까운 귀 그릇 전체, 가시 머리 폭의 65~75% 지점; 먼 귀 20~30°에서 조각, 45°부터 숨음 [80f603d1·3ef83b8c].</li>
 </ul>
-</section>
-
-<section id="cloth">
-<h2>8. 옷·신발·장신구·소품</h2>
+<h2 id="03_머리_얼굴_눈-3-5-눈썹-A3-5">3.5 눈썹 (A3.5)</h2>
 <ul>
-<li><b>옷 = 몸 표면 + 여유</b>: 꽉 낌 0~0.01H · 맞음 0.02~0.03 · 보통 0.04~0.06 · 헐렁 0.08~0.15. 깃은 목에서 떨어져 있고, 밑단·소매끝·허리띠는 <b>몸을 감는 타원 호</b>다. 직선 밑단은 금지.</li>
-<li><b>주름은 당기는 점 사이 또는 걸린 곳에서만</b> 생긴다: 당김(부채꼴), 눌림(지그재그, 굽힌 안쪽), 늘어짐(긴 세로, 걸린 곳 아래에서 가늘게 시작해 넓어짐), 꼬임(나선), 고임(밑단·소매끝), 단추·매듭(사방으로 짧게). 한쪽에 굵은 주름 3개 이하. 같은 길이의 방사선 금지.</li>
-<li><b>긴 옷자락이 팔다리에 걸쳐짐 (r14)</b>: 치마·코트·소매 밑단은 5~9개 점의 진자 사슬로 만들고, 다리·팔 캡슐과 부딪치면 밖으로 밀어낸다. → <b>팔다리가 옷을 뚫고 나오지 않는다.</b> 치마 뒤판은 다리 뒤에, 앞판은 다리 앞에 둔다. 빳빳한 치마·앞치마는 종처럼 ±10~20° 기울어진다.</li>
-<li><b>치마</b>: 허리띠에서 시작해 엉덩이 위를 지나 퍼지는 원뿔. 밑단은 U자 굴곡이 있는 타원이고, 주름은 치마 길이의 25~35% 지점부터 시작한다. 주름치마는 가운데 접힘이 Ω.</li>
-<li><b>소품은 붙는 뼈·닿는 곳이 있어야 그린다</b>: 귀 뒤 연필은 귀가 덮고, 비녀는 쪽 안으로, 책은 엄지가 표지·나머지 손가락이 등 뒤, 가방끈은 몸통 원통을 따라 휜다.</li>
+<li>종류 = 각도 3(올라간·일자·내려간) × 굵기 3(얇은 호·굵은 일자·굵은 안쪽+가는 꼬리) × 아치 위치(60~70%) × 길이(1.0/1.1~1.3/1.4EW) → ≥10종. 안쪽 끝 최대 굵기(길이의 0.18~0.25), 꼬리는 점, 안쪽 끝은 연하게.</li>
+<li>눈과의 거리: 꼬마 0.8~1.2EH · 여 0.6~1.1 · 남 0.3~0.5("눈썹과 눈이 가까우면 미인·성숙") [f927598f].</li>
+<li><strong>표정에서 바뀌는 것</strong>: 높이(놀람 +0.5~1.0EH · 분노 −0.3EH) · 안쪽 끝 기울기(분노 안쪽 아래 15~25° · 슬픔 안쪽 위 15~20°) · 휨. <strong>안 바뀌는 것</strong>: 길이·굵기 분포·안쪽 끝 x·색. 앞머리가 있어도 눈썹은 비침(04 §4.3).</li>
+<li>컨트롤(10/28 15:00): 길이·굵기·뚜렷함(불투명도) 범위 안.</li>
 </ul>
-</section>
-
-<section id="pose">
-<h2>9. 포즈 — 전봇대 금지, 자기만의 포즈</h2>
+<h2 id="03_머리_얼굴_눈-3-6-얼굴-돌리기-2-5D-A2-4">3.6 얼굴 돌리기 — 2.5D (A2.4)</h2>
 <ul>
-<li><b>순서</b>: 몸 흐름선 → <b>골반 먼저</b> → 갈비뼈를 반대로 기울임 → 머리 → 팔(관절 계산) → 발 디딤.</li>
-<li><b>쉬는 팔·무릎은 굽어 있다</b>(팔꿈치 5~15°, 노는 무릎 10~20°). 곧게 편 팔은 뻗을 때만.</li>
-<li><b>실루엣 검사</b>: 까맣게 칠해도 읽혀야 하고, 팔 하나는 몸통과 떨어져 빈 공간이 있어야 한다.</li>
-<li><b>콘트라포스토 기본값</b>: 디딘 쪽 골반 8° 올라감, 어깨는 반대로 4°, 골반 옆으로 0.1H, 고개 6°, 노는 발은 25° 바깥.</li>
+<li>기하: 부품 폭 배율 = cos(φ±yaw)/cos φ, 유효 반지름 R_eff = k·HW/2, <strong>k = 1.6</strong>(눈 위치각 ≈22°) → yaw 20°에서 먼 눈 0.80 [drawing_cg 15]. Live2D AngleX ±30 ≒ 실제 yaw ±20°.</li>
+<li><strong>[v1→v2] 범위</strong>: 단일 정면 키뷰로는 <strong>편안 ±40° · 한계 ±60°</strong>(v1 ±90은 40°에서 먼 눈 0.51, 53°에 콧대에 가려짐). <strong>60~90°는 옆얼굴 키뷰(윤곽·귀·코 전용 그림)와 보간</strong>(Rivers 키뷰 방식 · P4 후반), 뒷모습은 뒷머리+실루엣. 정범님 요구 '360°'는 이 두 키뷰 + 몸 회전(05)으로 채운다.</li>
+<li>요 표 [obs/face Q6]: 20~25° 먼 눈 0.85~0.9 · 45° 0.6~0.7(코끝이 먼 볼 윤곽을 뚫음) · 60~65° 0.3~0.5 · 70° 0 · 90° 없음. 먼 눈 <strong>높이는 불변</strong>. 중심선은 r·sinθ 밀린 타원 호. 뒷머리 가시 폭 20°≈0.15 · 45°≈0.3~0.35 · 60°≈0.45.</li>
+<li>피치 표: 위 60° 눈 중심 0.25(강한 ∩·귀 눈 아래·턱 밑면 평면) · 위 30° 0.40(코끝 = 눈 위선) · 위 15° 0.46 · 수평 0.52 · 아래 15~20° 0.62(귀 밑 = 눈 높이·눈썹이 눈꺼풀에 붙음) · 아래 45° 0.75 · 아래 70° 0.88 [0d06c77f].</li>
+<li>한계: 상하 40~60° · 옆기울기 35~45°(모든 가로선 함께 회전, 눈은 중심선에 직각) · 회전 70~90°(머리는 목 뒤에서 기움) [e5445209·c132171a].</li>
+<li>시차 순서(시험 오라클): 코 1.0 &gt; 입 0.85 &gt; 눈 0.78 &gt; 앞머리 0.55 &gt; 윤곽 0.3 &gt; 귀 −0.4 &gt; 뒷머리 −0.6.</li>
 </ul>
-<div class="tbl"><table>
-<tr><th>객체</th><th>대표 포즈(가장 자주)</th><th>둘째 포즈</th></tr>
-<tr><td>꼬마 F</td><td>뒷짐 지고 앞으로 8° 기울기, 뒤꿈치 듦, 고개 12°</td><td>주먹 두 개를 턱에</td></tr>
-<tr><td>꼬마 M</td><td>허리에 주먹, 가슴 펴고 발 넓게</td><td>엄지척</td></tr>
-<tr><td>청소년 F</td><td>얼굴 옆 브이, 엉덩이 10° 빼기</td><td>뒷짐 + 무릎 모음</td></tr>
-<tr><td>청소년 M</td><td>한 손 주머니, 구부정, 뒷발에 무게</td><td>머리 뒤 긁기</td></tr>
-<tr><td>20대 F</td><td>책을 가슴에 두 손으로, 콘트라포스토</td><td>한 손 허리</td></tr>
-<tr><td>20대 M</td><td>가슴 아래 팔짱, 한 다리에 무게</td><td>턱에 손(생각)</td></tr>
-<tr><td>중년 F</td><td>허리 앞에서 두 손 모음</td><td>볼에 손</td></tr>
-<tr><td>중년 M</td><td>뒷짐, 가슴 폄</td><td>한 손 허리 + 손바닥 펴서 설명</td></tr>
-<tr><td>노인 F</td><td>배 위에 손 포개기, 굽은 등</td><td>가슴 앞 뜨개질</td></tr>
-<tr><td>노인 M</td><td>뒷짐 또는 지팡이, 굽은 등</td><td>이마에 손 얹고 멀리 보기</td></tr>
-</table></div>
-<p><b>바꾸는 비율</b>: 대표 포즈 45% · 가벼운 콘트라포스토 변형 35% · 성격 버릇 20%. 무게 옮기기 6~15초마다(24~36프레임). 대표 포즈는 좌우를 번갈아 써서 붙여 넣은 것처럼 보이지 않게 한다.</p>
-</section>
-
-<section id="anim">
-<h2>10. 애니메이션 숫자</h2>
-<div class="tbl"><table>
-<tr><th>항목</th><th>값</th></tr>
-<tr><td>숨</td><td>어른 3.2~3.6초 · 꼬마 2.2초 · 들숨 40% / 날숨 60% · 어깨 상하 0.4%</td></tr>
-<tr><td>고개·몸 흔들림</td><td>AngleX ±7.5°/6.5초 · Y ±4°/3.5초 · Z ±5°/5.5초 · 몸 ±2°/15.5초 (주기가 서로 나누어떨어지지 않아 반복이 안 보임)</td></tr>
-<tr><td>깜빡임</td><td>평균 4.3초(2~6초), 닫힘 2f · 감은 채 1f · 열림 3f, 10~20%는 두 번 깜빡, 고개 크게 돌리면 반드시 깜빡</td></tr>
-<tr><td>끄덕임</td><td>예비 2~3f 위로 → 5~6f 아래로 → 6~8f 돌아옴 → 3~4f 정착</td></tr>
-<tr><td>인사</td><td>15°·30°·45° = 내림 10~12 / 14~16 / 18~20f, 멈춤 4~8 / 12~24 / 24~48f</td></tr>
-<tr><td>놀람</td><td>3~4f 움츠림 → 2~3f 110~120% 늘어남 → 지나침 → 6~8f 정착 → 12~24f 멈춤</td></tr>
-<tr><td>웃음</td><td>눈 먼저(4f) → 입 2f 뒤 → 4~6f 튐을 3~5번, 매번 70%</td></tr>
-<tr><td>걷기</td><td>한 걸음 12f · 지나갈 때 가장 높음(0.1H) · 팔은 다리와 반대로 ±20°</td></tr>
-<tr><td>계단식(일본 애니 느낌)</td><td>큰 몸동작은 12fps로 끊고, 숨·눈·머리카락 물리는 매끈하게. 12f 넘게 멈추면 1~3% 움직이는 정지(무빙 홀드)</td></tr>
-<tr><td>도착 순서</td><td>골반 → 몸통 +2~3f → 머리 +2~3f → 손 +2f → 머리카락·옷 +2~6f</td></tr>
-<tr><td>끊고 이어 붙이기</td><td>지금 순서 관리(메시지 3 > 알림 2 > 혼자 1, 줄 4개, 0.2초 섞기)를 유지. 표정·몸짓·시선·숨·물리는 서로 지우지 않는 별도 층</td></tr>
-<tr><td>SD 과장</td><td>진폭 ×1.5~2 · 예비동작 30~50% · 늘어남/눌림 ±15~25%(부피 유지)</td></tr>
-<tr><td>SF·판타지</td><td>공중부양(밀기 / 당기기 먼저 정함) · 순간이동(4f 선으로 눌림 → 6f 반짝 → 4f 늘어나 등장) · 마법 · 변신(부위마다 60~120ms 엇갈림) · 춤(닫힘 → 열림)</td></tr>
-<tr><td>캐릭터끼리</td><td>쳐다보기(눈 0~3f · 고개 4~8f · 가슴 8~12f) · 0.3~0.6초 뒤 반응 · 하이파이브 · 책 건네기 · 무리 지을 때 머리 높이 지그재그</td></tr>
-</table></div>
-</section>
-
-<section id="sd">
-<h2>11. SD·꼬마 동물·로봇·외계인</h2>
-<div class="grid2">
-<div class="box"><h4>SD 규칙</h4>2등신 = 머리:몸 1:1(가장 귀여움), 2.5 = 귀여움 + 움직이기 좋음, 3 = 몸통:다리 1:1(그리기 가장 쉬움). 머리는 구, 눈높이 60~65%. <b>2등신 손은 정수리에 닿지 않는다.</b> 「뺄 수 있는 묘사는 철저히 빼자」. 상징 장신구는 1.5~2배.</div>
-<div class="box"><h4>꼬마 동물 (너구리·곰·토끼·호랑이·늑대)</h4>몸은 사람 꼬마(3등신 기본, 사람 다리)이고 꼬리·털 가장자리가 붙는다. 얼굴은 동물 주둥이(눈은 들어가고 입은 나옴)이고 <b>눈은 사람과 같은 우리 눈</b>이다. 동물 귀가 생기면 사람 귀는 숨긴다. 꼬리는 엉치에 붙어 다리 뒤에 있는 진자.</div>
-<div class="box"><h4>로봇 (독창)</h4>둥근 상자 몸, 공 관절이 보이고, <b>화면 얼굴</b>에 우리 눈을 점 그림풍으로 띄운다(같은 표정 매개변수). 12fps 딱딱 끊기는 동작에 5% 튕김, 서보 소리.</div>
-<div class="box"><h4>외계인 (독창)</h4>큰 머리뼈, 낮은 눈높이, 손가락 4개(종족 표시), 파스텔 피부, 늘 둥실 떠 있음(±0.04H, 0.4Hz, 그림자), 옆으로 감기는 깜빡임.</div>
-</div>
-</section>
-
-<section id="chat">
-<h2>12. 채팅 새 구조 (정범님 지시 그대로)</h2>
-<div class="tbl"><table>
-<tr><th>상태</th><th>모습</th></tr>
-<tr><td>숨김</td><td>입력 줄과 💬 안 읽음 숫자만</td></tr>
-<tr><td>살짝 보기 (새 말이 오면 기본)</td><td>입력 줄 위로 펼쳐지는 반투명 창, 내용만큼(최대 58vh), 뒤 화면 클릭을 막지 않음</td></tr>
-<tr><td>열기 (마우스를 올리거나 위로 스크롤)</td><td>58vh 고정, 접힘 타이머 멈춤</td></tr>
-<tr><td><b>Alt+Enter 고정</b></td><td>입력 줄 폭 그대로 화면 맨 위까지. Alt+Enter를 다시 누를 때까지 유지</td></tr>
-</table></div>
+<h2 id="03_머리_얼굴_눈-3-7-수염-나이-선-A2-7">3.7 수염·나이 선 (A2.7)</h2>
 <ul>
-<li><b>한 줄씩 접힘</b>: 말 하나의 수명 = max(8초, 글자 수 ÷ 15 + 3초), 최대 20초(속삭임 ×1.5). 가장 오래된 줄부터 220ms에 걸쳐 접히며 창이 아래로 줄어든다. 보이는 줄은 최대 7줄. 다 접히고 6초 조용하면 닫힌다. 마우스를 올리면 0.15초 안에 다시 펼치고, 떠나면 2초 뒤 이어서 접는다.</li>
-<li><b>카톡 방식</b>: 남의 말은 왼쪽(그 사람 캐릭터 얼굴 아바타·이름·기기), 내 말은 오른쪽 노란 말풍선. 60초 안의 연속 말은 묶고, 날짜 구분선을 둔다. 캐릭터 말풍선(4~6초)에 나온 말도 기록에 남긴다.</li>
-<li><b>보내기</b>: 기본은 <b>👥 모두에게</b>. 칩을 누르거나 <code>@이름</code> 또는 <code>/w 이름</code>으로 <b>🤫 속삭임</b>(보라 테두리, 보냄 "→ 이름" / 받음 "← 이름"). 빈 칸에서 R = 마지막 속삭인 사람에게 답장. Enter 보내기 · Shift+Enter 줄바꿈 · Esc 나가기(쓰던 글 보관).</li>
-<li><b>뒤 구조</b>: 지금 <code>mascot_msgs</code>를 그대로 쓰고 <code>to:'*'</code>(모두)·<code>mode</code>·기기별 <code>seen</code>을 더한다. 기록은 지우지 않는다. <b>예전 채팅창은 설정에서 '예전 방식'으로 고를 수 있게 남긴다.</b></li>
-<li>가독성: 글자 대비 4.5:1 이상(WCAG AA), 반투명 바탕에는 흐림 6px.</li>
-<li><b>(적용 10/29) 📜 기록 전부</b>: 지우는 곳 없음(앱·클라우드 RETAIN 목록·TTL 모두 확인). 기록 창은 처음 7일 → 맨 위로 굴리면 50개씩(<code>mascot_msgs.orderBy('at','desc').startAfter(가장 오래 받은 문서).limit(50)</code> — 'at' 한 칸 색인만 · 복합 색인·<code>in</code> 30개 한도 없음) · 이 기기와 관계있는 것만(👥 모두 · 나에게 온/내가 보낸 🤫). 날짜 줄은 요일과 오늘/어제 · sticky(카카오톡·Slack·Discord처럼 굴리는 동안 위에 붙음) · 시각은 말풍선마다(마우스 = 전체 날짜). 위에 붙일 때 맨 위에 보이던 말풍선을 붙잡아 자리 그대로(브라우저 overflow-anchor는 끔). 메모리: 화면 3개 높이보다 먼 날은 그림만 비우고 높이만 남김(자료는 그대로 · 가까워지면 다시 그림). 시험 <code>pw/tFC1.js</code>(15개).</li>
+<li>수염: 전체 수염은 귀 앞 구레나룻→턱선→턱 밑을 덮고 볼 경계는 귓불 높이(0.7)→입꼬리(0.83) 사선 · 콧수염 코밑~윗입술(0.05~0.07H)·폭 = 입 +10~20% · 염소수염 폭 ≈ 입, 턱 아래 0.05~0.1H · <strong>수염은 턱 윤곽을 대신하지 V 얼굴선 앞에 얹지 않는다</strong> [a787e570].</li>
+<li>나이 선(허용): 팔자는 입꼬리 위에서 멈춤 · 눈꼬리 잔주름 · 이마 호 · 눈 밑 · <strong>볼→턱 V선 금지</strong> · 노인은 눈꺼풀 처짐·작은 홍채·광대 두드러짐·볼 꺼짐 [f581483b].</li>
 </ul>
-</section>
-
-<section id="defect">
-<h2>13. 지금 앱에서 찾은 결함 — 새로 만들 때 되풀이 금지</h2>
-<div class="grid2">
-<div class="box"><h4>몸</h4><ul>
-<li>어깨 1.0~1.08H(정답 여 1.48 · 남 1.85)</li>
-<li>가슴이 턱 아래 0.58H로 너무 높음 / 허리도 너무 높고 지나치게 조임</li>
-<li>팔 20% 짧음(손끝이 가랑이), 손 0.25~0.3H</li>
-<li>팔 = 같은 굵기의 관, 팔꿈치·어깨 둥근 근육 없음, 관절 자리 가로선(인형 관절)</li>
-<li>옷걸이 어깨, 상자 몸통</li>
-<li><b>골반 혹·날개</b>가 허벅지와 따로 놂</li>
-<li>막대 다리·X자 무릎, 상자 발(0.5H)</li>
-<li>허리 옆 구멍(몸통 윤곽이 끊김), '7등신' 표시인데 실제 6.3등신</li>
-<li>가슴이 팔 앞으로 안 나옴</li>
-</ul></div>
-<div class="box"><h4>얼굴·머리</h4><ul>
-<li>앞 눈 + 3/4 코·입이 섞인 얼굴 각도</li>
-<li>얼굴 안 볼→턱 V선·이중 턱, 턱 밑 선</li>
-<li>긴 V턱(서윤 턱 튀어나옴), 지호 네모 얼굴, 얼굴만큼 굵은 목</li>
-<li>귀가 납작한 혹이거나 떨어져 있음(요정 귀)</li>
-<li>눈썹이 없음(지호·다온·단우), 턱 가운데에서 바로 내려온 목</li>
-<li>만복 수염 위에 그어진 V 얼굴선, 노인 자세·주름 없음</li>
-<li>순백 흰자, 썸네일 입 위 회색 원</li>
-</ul></div>
-<div class="box"><h4>머리카락·옷·소품</h4><ul>
-<li>헬멧처럼 머리뼈에 붙은 머리, 떠 있는 가닥·더듬이, 앞머리 낙서</li>
-<li>동그라미 똥머리, 덩어리 곱슬, 볼륨 없는 일자 앞머리, 돌려도 대칭인 트윈테일</li>
-<li>스웨터·셔츠 위로 비친 가슴·배 선, 스웨터 위로 보이는 치마(층 버그)</li>
-<li>사다리꼴 치마·자로 그은 주름</li>
-<li>머리를 꿰뚫는 비녀, 머리 옆에 뜬 연필, 손 아래 매달린 털실, 손가락 구멍 난 책, 막대 뿔, 떠 있는 비니, 일자 쇄골</li>
-</ul></div>
-<div class="box"><h4>동작·화면</h4><ul>
-<li>모든 캐릭터가 똑같이 뻣뻣한 전봇대 자세</li>
-<li>휴대폰에서 손·발 끌기가 누르자마자 끝남 → <code>touch-action:none</code>을 넣고 <code>pointercancel</code>을 '놓음'으로 처리</li>
-<li>잘 때 "zzz" 글자 뒤 배경색이 붙음 → 말풍선 바탕을 상속하지 않도록</li>
-</ul></div>
-</div>
-</section>
-
-<section id="decide">
-<h2>14. 남길 것 · 버릴 것 (결정)</h2>
-<div class="tbl"><table>
-<tr><th>부분</th><th>결정</th><th>까닭</th></tr>
-<tr><td>눈 그리기</td><td><span class="pill keep">유지·개선</span></td><td>구조가 맞고 정범님이 가장 마음에 들어 함</td></tr>
-<tr><td>눈썹 종류 목록</td><td><span class="pill keep">유지</span> <span class="pill warn">자세는 새로</span></td><td>표정은 자세만 바꾸기(r14)</td></tr>
-<tr><td>색 계산·곡선 도구·관절 계산(IK)</td><td><span class="pill keep">유지</span></td><td>참고 자료와 맞고 다시 쓸 수 있음</td></tr>
-<tr><td>소리 · 메시지 저장 · 설정 저장</td><td><span class="pill keep">유지</span> (메시지는 모두 / 속삭임 확장)</td><td>잘 돌아가고 다른 프로그램이 기대고 있음</td></tr>
-<tr><td>움직임 순서 관리(우선순위 줄·섞기)</td><td><span class="pill keep">유지</span></td><td>설계가 탄탄함</td></tr>
-<tr><td>표정 이름 목록</td><td><span class="pill keep">이름 유지</span> <span class="pill warn">내용은 매개변수로</span></td><td>메시지·저장·시험이 이름을 씀</td></tr>
-<tr><td>움직임 엔진 껍데기(rAF·30fps·숨은 탭 멈춤·스프링)</td><td><span class="pill keep">유지</span> <span class="pill drop">부위 돌리기 방식 폐기</span></td><td>미리 그린 조각을 돌리는 방식으로는 윤곽·겹침·고개 돌리기가 안 됨</td></tr>
-<tr><td>몸 틀(MSC_BT)·체형 곱하기</td><td><span class="pill drop">폐기</span></td><td>뿌리부터 틀림(어깨 1.08H · 팔 1.8H · 손 0.28H)</td></tr>
-<tr><td>팔다리 관·몸통·골반 그리기</td><td><span class="pill drop">폐기</span></td><td>인형 관절·골반 혹·끊긴 윤곽</td></tr>
-<tr><td>손 · 발 · 신발 모양</td><td><span class="pill drop">폐기</span> (손 모양 이름은 유지)</td><td>크기 1/3, 손가락 연동 없음, 상자 신발</td></tr>
-<tr><td>얼굴 윤곽·턱·목·귀</td><td><span class="pill drop">폐기</span></td><td>V선·긴 턱·목 위치 틀림</td></tr>
-<tr><td>머리카락 짜기</td><td><span class="pill drop">폐기</span> (스타일 이름 30개는 유지)</td><td>헬멧·떠 있는 가닥</td></tr>
-<tr><td>옷 모양</td><td><span class="pill drop">폐기</span> (목록·색 칸은 유지)</td><td>사다리꼴 치마·층 버그·떠 있는 소품</td></tr>
-<tr><td>캐릭터 13명</td><td><span class="pill keep">아이디·이름·색·성격 유지</span> <span class="pill warn">디자인은 새로</span></td><td>저장된 자료가 아이디를 씀</td></tr>
-</table></div>
-<h3>새 설계의 핵심</h3>
+<h2 id="03_머리_얼굴_눈-3-8-얼굴-컨트롤-A2-8-범위">3.8 얼굴 컨트롤 (A2.8) — 범위</h2>
+<p>얼굴 크기 ±10% · 가로 ±8% · 세로 ±10% · 턱 폭 표 범위 · 턱 끝 길이 ±0.05H · 뾰족함 0~1. 기본 모양을 고른 뒤 변형만, 표정 중 불변.</p>
+<h2 id="03_머리_얼굴_눈-3-9-합격-기준-T41-T48">3.9 합격 기준 (T41~T48)</h2>
+<table>
+<thead>
+<tr>
+<th>번호</th>
+<th>시험</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T41</td>
+<td>시험 캡처 유효성: <code>mscCss()</code> 적용·<code>msc-ch msc-still</code>·표정 프레임 하나만 보임(겹침 0) — 모든 얼굴 시험의 전제</td>
+</tr>
+<tr>
+<td>T42</td>
+<td>꼬마·동물 눈 8기준(3.3.4) 전부</td>
+</tr>
+<tr>
+<td>T43</td>
+<td>머리 틀·이목구비 높이 표(3.1) ±0.02 · HW/H·턱끝 폭·턱선 각 35~50°·꺾임 0.66~0.78</td>
+</tr>
+<tr>
+<td>T44</td>
+<td>눈 공통 구조(3.3.1): 꼭대기 0.38~0.50 · 최저점 0.55~0.65 · 홍채 덮임·흰자·하이라이트 개수·같은 쪽·흰자 명도</td>
+</tr>
+<tr>
+<td>T45</td>
+<td>눈·눈썹 종류 id가 표정 전환 중 불변 · 눈썹 길이·굵기 분포·안쪽 끝 x 불변</td>
+</tr>
+<tr>
+<td>T46</td>
+<td>요 θ: 먼 눈 폭/가까운 눈 = cosθ±0.1 · 높이 0.95~1.05 · 코끝 윤곽 밖 ≥40° · 시차 순서</td>
+</tr>
+<tr>
+<td>T47</td>
+<td>머리–목: 정면 목선 x가 귀 안쪽 · 측면 앞선 턱 밑 1/3·뒷선 귀 밑 · 목 폭/HW 표 · 턱 밑 그림자 존재 · (10 §10.1.4 T14~T16)</td>
+</tr>
+<tr>
+<td>T48</td>
+<td>입 열림 &gt;0.10H일 때만 턱 하강 0.03~0.10H · 귀 3/4 가림 규칙</td>
+</tr>
+</tbody>
+</table>
+<h2 id="03_머리_얼굴_눈-3-10-설정값">3.10 설정값</h2>
+<p>headModel · 얼굴 컨트롤 6 · 눈 종류 id · eyeWFace(꼬마 0.28·청소년 0.24·성인 0.20·노인 0.17) · eyeGapW · EH/EW · 홍채/EW · 덮임 · 하이라이트 크기·개수 · 속눈썹 가닥·길이·굵기 · 눈썹 거리·길이·굵기·뚜렷함 · 꼬마 눈 11개(3.3.4) · 2.5D k·편안/한계 각.</p></section>
+<section class="ch" id="04_머리카락"><h1>04. 머리카락 — 껍질 · 다발 · 층 · 묶음 · 물리 · 모자</h1>
+<p>근거: v1 §4(참고 그림 45장 분석 · notes_02~09) · <code>obs/clothes_a·b</code>(모자·띠 상호작용) · <code>web/props_clothes</code>(지연 프레임) · 정범님(10/27 22:19 "머리 스타일 크게 개선 — 매우 부자연스러움"). ※ 머리카락·SD 원본 관찰 76장은 사용량 한도로 중단(20:40 뒤 재개 가능) — 이 장은 v1 수치를 유지하고 관찰이 들어오면 <strong>[v2 보강]</strong> 표시로 갱신한다.</p>
+<h2 id="04_머리카락-4-1-껍질-볼륨-헤어라인-가르마-A4-1">4.1 껍질(볼륨)·헤어라인·가르마 (A4.1)</h2>
 <ul>
-<li><b>뼈대가 먼저</b>: 3D 관절(정수리~발바닥) + 표 숫자에서 뽑은 뼈 길이 → 차렷 자세에서 팔꿈치·손목·무릎이 저절로 제자리에 온다.</li>
-<li><b>살 = 뼈를 따라 이은 단면(로프트)</b>: 몸통은 랜드마크마다 타원 단면을 두고, 가슴·배·엉덩이·어깨 근육은 덧붙이는 덩어리. 팔다리는 안팎 볼록이 어긋난 윤곽.</li>
-<li><b>그리기 = 깊이 층 + 테두리 먼저·면 나중</b>: 같은 층(몸통·골반·허벅지)은 테두리를 먼저 다 그리고 그 위에 면을 덮어 이음새가 사라진다 → 골반과 허벅지가 한 윤곽이 된다. 더 앞에 있는 층(가슴, 앞으로 온 팔)은 겹침 선이 생긴다 → 가슴이 팔 앞에 온다.</li>
-<li><b>2.5D 머리</b>: 구 + 턱 단면 7개로 만든 머리에 이목구비를 위도·경도로 붙이고 돌려서 비춘다 → 정면에서 옆얼굴까지 그림을 갈아 끼우지 않고 이어진다.</li>
-<li><b>옷 = 몸 위의 층</b>: 여유·밑단 타원·앞판/뒤판·관절 각도에 따른 주름·다리와 부딪치는 밑단 사슬.</li>
-<li><b>매개변수는 Live2D 표준을 본뜸</b>: AngleX/Y/Z · EyeOpen/Smile · EyeBall · Brow · MouthForm/OpenY · BodyAngle · Breath · 머리카락 물리 출력.</li>
-<li>소스는 <code>friend/readnow-friend.js</code> 하나(웹앱·PC 프로그램·안드로이드가 같은 파일을 받음). 밖에서 부르는 함수 이름은 바꾸지 않는다.</li>
+<li>머리카락은 두개골에서 <strong>떠 있는 껍질</strong>: 정수리 0.08~0.15H · 옆 ≥0.05HW · 뒤 0.10~0.18H. 두개골 윤곽을 따라 그린 '헬멧' 금지 [09b7c793·6082503f].</li>
+<li>헤어라인 = 정수리에서 이마의 1/6(눈썹 위 ≈0.17~0.20H) · 관자놀이에서 M자 · 가르마는 <strong>안쪽 눈구멍 선에 정렬</strong>("Part lines up w/ the inner eye socket" [697eeb4b]) · 가마(whorl)에서 다발이 방사.</li>
+<li>민머리 H로 비율을 잰다(머리카락은 등신에 넣지 않음 [b3ef7789]).</li>
 </ul>
-</section>
-
-<section id="order">
-<h2>15. 만드는 순서 (단계마다 백업 · 참고 그림과 나란히 비교 · 숫자 시험)</h2>
-<div class="tbl"><table>
-<tr><th>#</th><th>단계</th><th>통과 기준(요약)</th><th>나란히 비교할 참고</th></tr>
-<tr><td>1</td><td>뼈대·비율 + 디버그 눈금</td><td>랜드마크 ±0.05H · 팔 도달 · 다림줄 · 관절 한계 1000번 무작위</td><td>5d6400d6 · 47220dad · 4ef6658d · a91d443a · ea185939 · f16c7e20</td></tr>
-<tr><td>2</td><td>여자 20대 기본 몸 (최대치 먼저)</td><td>윤곽 꺾임 없음 · 골반-허벅지 홈 ≤0.02H · 0~1 사이 곡선 일관 · 가슴 ≥0.45에서 팔 앞</td><td>4e140632 · 6e43a0ad · 8e990761 · 41422499 · 19bab80d · 2ee3783a</td></tr>
-<tr><td>3</td><td>남자 20대</td><td>어깨:허리 1.45~1.6</td><td>47220dad · 7f56ba2b · 69afc7ab · 283f5a21 · 10a6b54e</td></tr>
-<tr><td>4</td><td>청소년 남녀</td><td>청소년 표 · 가슴 상한 0.5</td><td>a91d443a · 0b622f51 · e771af54 · c6699441</td></tr>
-<tr><td>5</td><td>꼬마 남녀 + SD 2.5/3.0</td><td>가랑이 56% · 무릎 76% · SD 손이 정수리 못 닿음</td><td>f16c7e20 · dd67d14a · d6e94044 · 7b3a86f9 · 0f4f0fcf</td></tr>
-<tr><td>6</td><td>중년 남녀</td><td>살 분포 매개변수 일관</td><td>9770bd9f · 83fd45b3 · 039bab95</td></tr>
-<tr><td>7</td><td>노인 남녀</td><td>머리가 가슴보다 0.30~0.35H 앞 · 다림줄 · 볼→턱 선 없음</td><td>2a67b3cc(전/후) · 9ce2a9b4</td></tr>
-<tr><td>8</td><td>꼬마 동물 5종 · 로봇 · 외계인</td><td>꼬리가 다리 뒤 · 동물 귀가 사람 귀를 대신 · 눈 공유</td><td>774d99e5 · e5749a28 · 4c387abd · 47f124e0</td></tr>
-<tr><td>9</td><td>얼굴</td><td>얼굴 도형 하나 · 30° 먼 눈 0.65~0.85 · 표정 21개 × 세기 4</td><td>b3609d0d · 487a3c20 · 3ef83b8c · aa1a1622 · 2643e4f6 · b28193d9</td></tr>
-<tr><td>10</td><td>머리카락</td><td>껍질 두께 · 떠 있는 가닥 0 · 귀 뒤 틈 · 물리 정착 시간</td><td>bb7f5c5f · b73cc218 · 18c27e9c · ef94e1f2 · 91a67cc3</td></tr>
-<tr><td>11</td><td>옷·신발·장신구·소품</td><td>뚫고 나옴 0(200프레임) · 소품마다 붙는 뼈</td><td>c81511bc · 699728d2 · 37752ed2 · d26b7efd · 5946f747 · 850a8942</td></tr>
-<tr><td>12</td><td>포즈</td><td>모든 포즈 다림줄 · 실루엣 빈 공간 · 대표 포즈 45%</td><td>d9b2964f · dcaa6a34 · 5078faee · 56d2335e · 88befbde</td></tr>
-<tr><td>13</td><td>애니메이션 (+ 휴대폰 끌기·zzz 고침)</td><td>깜빡 평균 4.3±0.5초 · 끄덕 프레임 ±2f · 프레임 4ms(PC) / 8ms(폰)</td><td>웹 출처 · 9570464f · 46c074b0 · 2e0c9942</td></tr>
-<tr><td>14</td><td>채팅</td><td>수명 공식 · 오래된 줄부터 접힘 · 6초 뒤 닫힘 · Alt+Enter 고정 · 모두/속삭임 수신 · 대비 4.5:1</td><td>WoW·Discord·Minecraft·WCAG</td></tr>
-</table></div>
-<p class="note">각 단계 전에 <code>scratchpad/backup/r15_mN/</code>에 백업하고, 설정에 '예전 판 그림(r14)' 선택을 남겨 언제든 되돌릴 수 있다. 진행은 <code>r15_progress.md</code>에 적는다.</p>
-</section>
-
-<section id="applied">
-<h2>16. 적용 기록 — 15차 새 그림(v2) M1~M3에서 실제로 한 것 · 왜</h2>
-<p class="note">이 표는 작업할 때마다 고칩니다. 코드 자리 = <code>friend/readnow-friend.js</code>의 <code>🐾 v2 시작</code> 블록(맨 아래) · 시험 = <code>pw/tR15a.js</code>(33개 검사). 예전 그림은 ⚙ 설정 <b>그림 → 예전 판(14차)</b>로 이 기기에서 언제든 돌아갈 수 있어요.</p>
-<div class="tbl"><table>
-<tr><th>무엇</th><th>어떻게(코드)</th><th>왜 · 근거</th></tr>
-<tr><td>뼈대·비율 표(10객체)</td><td><code>MSC2_OBJ</code> — 바이블 §2.2 숫자 그대로 · 관절은 3D(<code>msc2Solve</code>) · 팔다리 길이 고정(IK)</td><td>법칙 3·4 · 5d6400d6 · 47220dad · a91d443a — 이정표 모두 ±0.01H 안(시험 T1)</td></tr>
-<tr><td><b>결정: 꼬마·청소년 팔 길이를 고침</b></td><td>꼬마 위팔 0.68→0.61 · 아래팔 0.60→0.42 · 청소년 남 위팔 1.17→1.06 · 아래팔 0.97→0.99</td><td>표 숫자대로면 매단 팔의 손목이 샅보다 0.25H 아래(꼬마)였음 — '손목 = 샅 · 팔꿈치 = 허리/갈비 아래' 구조 규칙이 개별 숫자보다 우선(코디네이터 결정). 비례로만 줄이면 팔꿈치가 0.06H 높아 각 마디를 따로 맞춤</td></tr>
-<tr><td>콘트라포스토(「く」)</td><td>디딘 발 = 목 패임 아래(몸 가운데) · 디딘 다리는 옮긴 엉덩이에서 안쪽으로 비스듬히 곧게 · 쉬는 발은 바깥·앞 · 어깨선 반대로 4°</td><td>d9b2964f · dcaa6a34 — 다림줄 55개 자세 모두 0.10H 안(T4)</td></tr>
-<tr><td><b>결정: 골반 기울기 = 그림 8° · 뼈 0~1°</b></td><td>그림의 골반선은 8°(바이블) · 엉덩 관절 기울기는 쉬는 무릎이 정확히 15°(표준)·25°(강함)가 되도록 이분 탐색</td><td>관절 사이를 그대로 8° 기울이면 쉬는 쪽이 0.11H 내려가 무릎이 30° 넘게 굽음 — 그림 속 8°는 디딘 엉덩이가 튀어나온 살 윤곽까지 포함한 값</td></tr>
-<tr><td>골반→허벅지 한 윤곽(정범님 '따로 놂')</td><td>몸통과 다리가 <b>같은 스플라인 조각</b>을 씀(<code>msc2Contour</code> · <code>msc2SkinPaths</code>) + 같은 층 '선 먼저·칠 나중' → 이음매 0</td><td>바이블 §5.3 규칙 1·2 · 19bab80d '엉덩이에서 허벅지까지 둥글게' — 패임 0 · 꺾임 ≥150°(T5)</td></tr>
-<tr><td>골반이 넓어지면 허벅지 위도 함께</td><td>허벅지 위 = (엉덩이 − 0.04H)/2 · 바깥 허벅지는 엉덩이~무릎 <b>한 볼록 곡선 가족</b>(여 [1, .8, .44, .07, 0])</td><td>정범님 통찰(§5.3 규칙 2) — 예전엔 허벅지 중간까지 넓다가 무릎 앞에서 꺾여 '혹'이 생겼음</td></tr>
-<tr><td>극단 먼저 · 사이는 단조 보간</td><td>엉덩이·가슴 0 / 기본 / 1을 먼저 정하고 <code>msc2Mono</code>(단조 3차) — 곡률 부호 바뀜 수가 0~1 내내 같음(3,3,3,3,3)</td><td>정범님 '극단에서 자연스러움 기준' (§5.3 규칙 6) — 시험 T6</td></tr>
-<tr><td><b>결정: 허리 ≤ 갈비 아래</b></td><td>여자 허리 반폭 ≤ 가슴 반폭×0.955 − 0.015H</td><td>바이블 표의 엉덩이 극단 허리(0.78·0.58배)가 갈비보다 넓어져 허리선이 바깥으로 불룩해졌음</td></tr>
-<tr><td>가슴이 팔 앞(정범님 지적)</td><td>가슴은 위팔보다 <b>앞 층</b> · 물방울(위끝 = 쇄골 가운데 → 겨드랑이 · 쇄골과 나란히) · 크기별 바깥 끝(A·B 옆선 안 · C부터 위팔 위)</td><td>4e140632 · 6e43a0ad · 327d385f — 0.45부터 위팔 안쪽을 0.022H 이상 덮음(T7) · 젖꼭지 없음(늘)</td></tr>
-<tr><td>손 다섯 손가락</td><td>3D 손바닥 + 손가락 사슬(마디 1 : 0.7 : 0.55) · 말림 연쇄(검지 20 · 가운데 30 · 약지 40 · 새끼 52°) · 엄지 CMC 원뿔 · 깊이 차례로 그림 · 12모양</td><td>바이블 §6 · 850a8942 · 532dc7ba — 엄지 = 검지 쪽 · 길이 가운데 > 검지≈약지 > 새끼(시험)</td></tr>
-<tr><td>발 = 쐐기 + 발바닥 + 발가락 무리</td><td>3D 점을 바깥으로 돌려 투영 → 껍질 · 발목은 발 뒤 1/3 위 · 엄지 따로</td><td>5946f747 · 19bab80d · 바이블 §7</td></tr>
-<tr><td><b>턱(서윤 '턱 튀어나옴')</b></td><td>광대(0.5) ~ 턱 끝(1.0) = 일반 초타원 |x/a|^p + |y/b|^q = 1 (p,q ≥ 1 → 늘 볼록) · 얼굴형 6가지 = (p, q)</td><td>1afa34ec '곡선 → 곧음 → 곡선' · 바이블 §3.1-5 '턱 끝은 깎은 곡선 위' — 예전 점 목록은 턱 직전에 기울기가 가팔라졌다 평평해져 턱이 튀어나왔음(숫자로 확인 후 짜임을 바꿈)</td></tr>
-<tr><td>눈(정범님이 가장 좋아한 부분)</td><td>예전 눈 그리기(<code>mscEye</code>) 그대로 · 자리만 바이블 §3.9(눈 높이·폭·사이)</td><td>남기고 다듬기(§3.2) — 53가지 표정 층도 새 머리 자리로 그대로 작동</td></tr>
-<tr><td>머리카락(헬멧 X)</td><td>머리뼈 + 껍질(위 0.1H · 관자 1.28HW) · 다발 리본은 대부분 제 폭 → 끝쪽만 뾰족 · 덮개+앞머리를 <b>한 층 실루엣</b>(선은 끝쪽 갈라짐에만) · 윤기 = 정수리 곡선의 끊어진 얇은 띠</td><td>89b08ee2 · bb7f5c5f — 첫 판은 다발마다 테두리가 있어 '물줄기·왕관'처럼 보였고, 윤기 띠는 머리띠처럼 보여 고침</td></tr>
-<tr><td>옷 = 몸 + 여유</td><td>티(여유 0.025 · 가슴 위는 꼭지에서 곧게 · 아랫선 X) · A라인 치마(엉덩이에서 꺾여 퍼짐 · U 밑단) · 바지(다리 + 0.03) · 신발(3D 발 + 밑창)</td><td>바이블 §8 · 750c011c — 치마 폭은 실제 다리 바깥선에서 잼(살이 많아도 치마 밖으로 안 나옴)</td></tr>
-<tr><td>남자 20대</td><td>V자(어깨 1.85 : 허리 1.20) · 가슴판 아래 = 가운데에서 45°로 짧고 평평 · 복근 짧은 틱 · 다리 = 엉덩이~무릎 거의 곧게</td><td>47220dad · 7d94eba4 · 6869d797 '직사각형' · Sell 2017(윗몸 힘 신호)</td></tr>
-<tr><td>고유 자세(정범님 '전봇대 금지')</td><td>유나 = 책을 가슴에(45%) · 태오 = 팔짱(45%) · 나머지 시간 콘트라포스토 변형·한 손 허리 등</td><td>바이블 §9.3 · 56d2335e · 88befbde</td></tr>
-<tr><td>움직임</td><td>몸 = 뼈대를 풀어 1초 12장(2코마) 다시 그림(1.8ms) · 숨·시선·머리카락·고개는 매 프레임 이어서 · 예전 차례 관리·표정·깜박임·말하기 그대로</td><td>바이블 §11 · 계획 §2.9</td></tr>
-<tr><td>엄지(펼친 손·내미는 손)</td><td>엄지 벌림 52°→40° + 손바닥 앞으로 22° + 마디 굽힘 10·14° · 엄지척은 손등을 3/4로 보이게</td><td>532dc7ba — 첫 판 엄지가 손바닥 면에서 곧게 옆으로 뻗어 'ㄱ자 막대'처럼 보였음</td></tr>
-<tr><td><b>(15차d) 손 다시 — 관 묶음 → 손 모양 틀</b></td><td>13가지 2D 손 틀(<code>MSC2_HT</code>) = 바깥 실루엣 하나 + 끝으로 빠지는 가는 안쪽 선 · 자리·방향·좌우는 3D 손 뼈대(<code>msc2HandSk</code>)에서(엄지 l · 손바닥 n) · 작은 그림은 살색 덧선으로 틈을 메워 장갑 한 덩어리 · 손톱·마디·손금은 확대(LOD 3)만</td><td>5220b279 · 3c2dc31e · 532dc7ba · 60391896 — 확대하면 손가락 관마다 굵은 테두리·검은 틈이 생겨 '집게·소시지'처럼 보였음(코디네이터 지적) · 시험 tR15d: 안쪽 어두운 픽셀 ≤7%</td></tr>
-<tr><td>(15차d) 팔짱</td><td>아래팔 팔꿈치 끝 = 둥근 머리 · 속 손은 반대 위팔 아래(위팔을 손목 둘레로 잘라 다시 그림) · 소매가 위팔 꼭대기까지 덮음</td><td>a18ba06b '위 아래팔이 아래 팔 위에 · 손은 팔과 몸 사이' — 예전 삼각 끝 = 각진 상자 팔</td></tr>
-<tr><td>(15차d) 신발 = 밑창 + 갑피 + 입구</td><td>위에서 본 땅콩 밑창(안쪽 곧음 · 발볼 가장 넓음 · 앞코 들림) · 뒤꿈치 굽 · 발등 → 앞코 상자 · 안감과 발목이 보이는 입구 · 운동화 끈 X·앞코 덮개 · 로퍼 모카 바늘땀·띠 · 메리제인 띠·버클 · 내려다보는 각 0.2</td><td>295fe607(발 = 두 덩어리 · 앞코는 비어 있음 · 밑창 휨) · b52a7c3e(8방향 돌려보기 · 밑창은 갑피보다 넓은 판) — 예전 = 발 껍질을 키운 둥근 덩어리</td></tr>
-<tr><td>(15차d) 묶은 꼬리 사슬</td><td>마디 6 · 30%에서 가장 굵고 붓끝(다발 셋) · 마디마다 앞 마디를 용수철로 따라감(ζ0.28 · 2.2Hz · 이웃 ≤13°)</td><td>바이블 §4.6(꼬리 지나침 30~50%) · 18c27e9c 'HAIR IN MOTION' — 예전 = 통째로 도는 굳은 띠</td></tr>
-<tr><td>(15차d) 치마·코트 자락</td><td>엉덩뼈 높이 축으로 기울임(용수철 · 치마 1.9Hz ζ0.45 · 코트 1.4Hz ζ0.4) · 코트는 허리 아래만</td><td>바이블 §8.3(치마 3~6코마 · 코트 4~8코마 늦음 · 10~25% 지나침)</td></tr>
-<tr><td>(15차d) 중년·노인</td><td>노인: 머리가 가슴보다 0.30/0.35H 앞 · 목 굽혀 머리가 내려감 · 무릎 8° · 어깨 말림 · 팔이 허벅지 앞 · 움직임 ×1.4 느리게 ×0.7 작게 · 나이 선은 허용된 것만(팔자는 입꼬리 위에서 멈춤)</td><td>바이블 §2.3 · 2a67b3cc(예전 결함) · Dessindigo — 정범님 '불가능한 선 금지'(볼→턱 V선)</td></tr>
-<tr><td>(15차d) 고개 2.5D</td><td><code>msc2Turn</code>: 먼 눈 ×(0.62+0.38cos2θ) 같은 높이 · 시차 코 1.0 > 입 0.85 > 눈 0.78 > 윤곽 0.3 · 귀 반대 · 먼 귀 숨김 · 윤곽 2° 단위로 다시</td><td>바이블 §3.7 · 2bf767c9 · 41434a63 — 예전 = 이목구비를 같이 밀기만 함</td></tr>
-<tr><td>(15차d) 눈 E1·E2·E6·E9</td><td>흰자 = 피부빛 아주 옅게 · 남·노인 홍채 둥글게(1.06) · 쌍꺼풀 선 · 눈 폭 24px 아래면 쌍꺼풀·작은 반짝 안 그림(새 그림만)</td><td>01b813c3 · aa1a1622 · 608055cc · eab4f365 — 눈 종류(모양)는 그대로</td></tr>
-<tr><td>(15차d) 장신구 26가지</td><td>판타지·SF·해변·모자 — 모두 붙는 곳(<code>data-att</code>: 머리·귀·얼굴·목·등·엉덩이·어깨·허리·손목 · 후광·드론만 머리 옆에 뜸) · 어깨 요정은 머리카락보다 앞 층</td><td>바이블 §8.5 · 정범님 '떠 있는 연필·머리를 뚫는 핀' — 시험: 붙는 곳과 겹침</td></tr>
-<tr><td><b>(15차f) 손 = 부품 합집합</b></td><td>손바닥 판 + 손가락 마디마다 캡슐(마디 끝이 다음 마디보다 살짝 굵음 = 마디 계단) + 엄지 두덩 + 엄지 두 마디 · 한 path(nonzero 합집합) 선 뒤 칠 · 앞 부품이 뒤 부품 위에 겹친 둘레만 가는 붓선(자동) · 주먹 보는 쪽 셋(손가락 쪽·손등·옆) + 마디 줄 · 엄지 IP 주름 · 남자 틀 따로(굵게 ×1.12 · 각짐 · 마디)</td><td>5220b279 · 3c2dc31e(손가락 무리 · 마디 계단 · 엄지 두 마디 · 손목 가늘어짐) · 850a8942(말림 연쇄) · 60391896(남자 손)</td></tr>
-<tr><td>(15차f) 얼굴에 닿는 몸짓 자리</td><td>안경 올리기·턱·볼·머리 넘기기·긁기·브이 — 손은 얼굴 옆·아래, 손가락 끝만 닿음 · 얼굴 목표는 머리 자리를 따라감(노인) · 일부러 가리는 것(하품·이마 짚기·눈물 닦기)만 예외 · 시험 tR15f</td><td>바이블 §6.3 · 정범님 비교 '가리키기 손이 얼굴을 덮음'</td></tr>
-<tr><td>(15차f) 눈 E3·E4·E5·E7 · 놀람</td><td>나이별 눈꺼풀 덮임 · 위 꼭대기 40% / 아래 최저 60% · 아래 눈꺼풀 = 따뜻한 끊긴 선(아래 속눈썹은 여 청소년·20대만) · 셋째 색 반사광 · 놀람 = 아래 눈꺼풀에 붙어 위로 · 폭 −12% · 반사광은 크기만 바뀜</td><td>aa1a1622 · 066567bb · a62d6b96 · e5be95fc · 7cf0b53b</td></tr>
-<tr><td>(15차f) 표정 53 = 바이블 §3.8 채널</td><td>눈썹 Yi·Yo·휨·안쪽 당김 · EyeOpen·EyeSmile·LidTilt·눈꼬리 · 홍채·동공·반사광 크기 — 눈 종류·눈썹 종류는 그대로(아핀 맞춤 시험) · 바뀜 차례 시선 → 눈썹(1코마) → 눈꺼풀(3) → 입(5)</td><td>2643e4f6 · b28193d9 · 50705b7d · AnimSchool(바이블 §3.10)</td></tr>
-<tr><td>(15차f) 카레빵 입 · 둥근 등 · 먼 꼬리 · 망토·앞치마 · 신발</td><td>여자 웃는 열린 입 = 렌즈(양끝 뾰족·윗입술 부풂) · 남자 = 넓고 납작 + 아랫니 · 노인 둥근 등(목 밑~어깨 둔덕) · 고개 돌리면 먼 꼬리 머리 뒤로 · 망토·앞치마 자락 늦게 흔들림 · 운동화·부츠 앞코 둥글게</td><td>a94c3e98 · f83d4be4 · c8cbaa9c · 바이블 §2.3 · §8.3</td></tr>
-<tr><td>매단 팔이 넓은 엉덩이를 지나감</td><td>엉덩이가 가슴보다 0.15H 넘게 넓으면 어깨 벌림 + (최대 5°)</td><td>살이 많거나 엉덩이 극단에서 손이 허벅지 속으로 묻혔음 · 30·40대 여(mf) 위팔 1.12→1.16 · 아래팔 0.97→0.93(팔꿈치 = 허리 규칙 · T3)</td></tr>
-<tr><td>(15차g) 엉덩이·넓적다리 한 곡선</td><td>허리 → 큰돌기를 세 점이 아니라 한 S 곡선(허리에서 세로로 출발 · 오목 → 볼록)으로 · 엉덩이 1 폭 1.92 → 1.82 · 넓적다리가 무릎 쪽까지 채워짐 · 허벅지 위 ≤ 엉덩이 · 코트·바지는 같은 몸 곡선을 따르고 큰돌기 아래로 곧게 떨어짐</td><td>정범님 '골반이 허벅지와 따로 놂 · 극단부터 맞춰라' · 19bab80d '엉덩이에서 허벅지까지 둥글게' · 바이블 §5.3 규칙 1·2·6</td></tr>
-<tr><td>(15차g) 옷 위 가슴이 위팔 앞</td><td>옷 위에 가슴 바깥 윤곽(겨드랑이 → 바깥 볼록 → 아래) + 가장 바깥에서 곧게 떨어지는 천을 위팔 모양으로만 칠함(위팔 안쪽을 덮음 · 앞치마·하의는 안 덮음) · 겉옷은 겉옷 색 텐트(허리까지)</td><td>정범님 '가슴이 팔 앞으로 나오지 않음' · 4e140632 · 6e43a0ad(Large)</td></tr>
-<tr><td>(15차g) 눈썹 透かし · 목 · 동물 머리</td><td>눈썹을 앞머리 위 층(0.95) + 살빛 테(0.55) · 목 윗끝을 턱에 붙임(귀 밑에서 시작하던 목 선) · 동물 = 사람 앞머리 같은 정수리 뭉치 없앰 → 종마다 둥근 머리 지붕</td><td>바이블 §3.3 eab4f365 '肌色透かし' · 정범님 '귀→목 V 선' · '동물 머리에 사람 앞머리'</td></tr>
-<tr><td>(15차g) 콘트라포스토 · 발 · 손</td><td>엉덩이 옆 이동·쉬는 발 벌림 약 1.7배(꼬마는 다리 길이만큼 줄임) · 뒤꿈치 들림 최대 46° → 24°(돌린 발 쐐기) · 편한 손 엄지를 손가락 옆으로(틈 0.35~0.42 → 0.2) · 손목 그늘 띠 없앰</td><td>정범님 '전봇대' · dcaa6a34 '〈 모양' · d9b2964f · 850a8942</td></tr>
-<tr><td>(15차g) zzz · 불꽃 · 휴대폰 끌기</td><td>Z = 선 그림 · 그림 글자 선택 안 됨 · 불꽃 = 관자 옆 작은 불꽃 · 다른 층(진행 띠 등)이 발을 덮어도 손가락 끌기(단추·입력 칸은 제외)</td><td>정범님 'zzz 배경이 붙음 · 휴대폰에서 당기기 안 됨'</td></tr>
-<tr><td>(15차h) 몸통 S자(〈)</td><td>가슴 상자가 디딘 쪽으로 기욺(어깨선 기울기의 65% · 나머지 35%는 어깨뼈가 내려감) · 골반 가운데는 '목 패임이 디딘 발목 위'가 되도록 놓음(예전엔 가슴을 옆으로 밀어 맞춰 가슴 축이 늘 곧았음) → 골반 축 −10° · 가슴 축 +3.9° · 허리 꺾임 ≈14°(표준) · 캐릭터마다 고유 고개 기울기·어깨(청소년 남 구부정 · 꼬마 남 가슴 펴기 · 노인 머리 앞)</td><td>dcaa6a34 '〈 모양 · 몸통 한쪽 짧아지고 한쪽 길어짐' · d9b2964f 무게 중심선 · 바이블 §9.1~9.3</td></tr>
-<tr><td>(15차h) 무게 옮김 = 발 디딤 계획</td><td>디딘 발은 절대 미끄러지지 않음: 옮길 발은 무게가 없을 때만 들어 호를 그리며 옮김 → 두 발 붙인 채 무게 옮김(골반 → 가슴 +2~3f → 고개 +2~3f · 골반은 6% 지나쳤다 정착) → 남은 발 · 끊고 들어오면 지금 상태에서 새 계획 · 쉬는 동안 6~15초마다 작은 무게 옮김(발 제자리) · 팔은 관절 각(구면 보간)으로 섞어 손목 길이 호 · 팔꿈치 뒤집힘 없음</td><td>바이블 §9.3 '24~36f · 6~15초' · §11.5 겹친 동작 · 웹 노트 §1-4</td></tr>
-<tr><td>(15차h) 살아 있는 쉼</td><td>고개 = Live2D 기본 주기(6.5 · 3.5 · 5.5초)에 서로 배수 아닌 둘째 주기 + 주파수 ±30% 떠돎 + 느린 잡음(60초 자기상관 &lt; 0.7 · 예전 사인 1.0) · 몸 흔들림(15.5초)은 뼈대로 · 숨(들숨 40% · 날숨 60% · 끝에 쉼 · 나이별 주기) · 깜박임 상태별(쉼 4.6~5.3초 · 말 3초 · 읽기 8초 · 큰 시선 이동 때 · 두 번 15% · 꼬마는 덜) = 분당 14~16회 · 성격마다 빠르기(꼬마 남 1.45 · 노인 0.65)·버릇 가중치(머리 넘기기 · 안경 · 시계 · 두리번 · 기지개 · 흥얼 · 책)</td><td>PMC3156585(14회/분) · Bloop 깜박임 · Live2D SDK 기본 흔들림 · 웹 노트 §1-2~1-6</td></tr>
-<tr><td>(15차h) 몸짓 다듬기</td><td>몸짓 76개 모두 주된 채널(가장 크게 움직이는 것)에 예비 동작(원래 없던 41개 · 본 동작의 12% · 시작 전에) · 돌아오는 끝 6% 지나쳤다 정착 · 몸짓 팔 = 관절 각 섞기(예비 음수·지나침도 팔에 보임) · 팔 관절 속도 한도(초당 515° · 노인 더 느리게 · 1프레임 늦게 따라옴) · 팔 몸짓 중에는 1초 24장(1코마)으로 다시 그림 → 한 장에 튀는 관절 없음(≤ 1.3H · 이웃 3배 이하) · 표정 차례 시선(0f) → 눈썹 → 눈꺼풀 → 입</td><td>바이블 §11.3~11.6 · 웹 노트 §1-7~1-11 · AnimSchool</td></tr>
-<tr><td>(15차i) 숨 = 가슴 상자</td><td>뼈대의 가슴 상자 점이 갈비 아래(o.rib) 위는 다, 허리에서 0으로 올라감 · 키의 0.45% · 머리 60% · 가슴 폭 +1% · 6칸 계단(몸 통째 scaleY 없앰)</td><td>웹 노트 §1-3(어깨·가슴 0.3~0.6% · 머리 50~70%) · 바이블 §11.1</td></tr>
-<tr><td>(15차i) 스미어·잔상</td><td>손·발이 한 장에 0.5H 넘게 → 관절 둘레 호를 따라 늘어난 살빛 붓(꼬리 0 → 손 폭) + 속도선 · 2장까지 · 점프 솟음·테이크 펴짐·빙글 뒤집힘 1~2장에 잔상 둘(30%·15%)</td><td>웹 노트 §1-10(SD 과장 · 스쿼시·스트레치) · 아니메 관행(스미어·잔상 1~2장)</td></tr>
-<tr><td>(15차i) 허리 손·주머니</td><td>손목 = 엉덩뼈 능선 위 윤곽 바깥 · 손끝 아래·안쪽 꺾임(≤80°) · 치마·앞치마 주머니 · 천 밑 불룩</td><td>2c528dc8(허리에 얹은 손)</td></tr>
-<tr><td>(15차i) 3/4 몸(yaw ±32°)</td><td>정면 그림을 점마다 깊이를 주어 세로축으로 돌림: 몸통 = 단면 앞면(깊이 0.38~0.42 반폭) · 먼 쪽 윤곽 = 앞면(가슴 포함) 봉우리 · 가까운 쪽은 옆·등이 보임 · 팔·다리 = 뼈 3D 돌림(굵기 그대로) · 단면 줄은 콘트라포스토 기울기를 따름 · 먼 팔 몸 뒤 층 · 발 돌림 + yaw · 옆면 셀 그늘 · 노인 굽은 등 = 등 깊이 더함 → 먼 어깨 폭 = 가까운 쪽의 0.65~0.8</td><td>바이블 §1.5(먼 쪽 60~70% · 가운데 선은 먼 쪽 윤곽 가까이) · 75acbcc8 ななめの描き方(正しい正中線 · 手前より薄く見える) · f16c7e20 ¾ FRONT · Live2D 몸 AngleX 변형기</td></tr>
-<tr><td>(15차j) 손 그림 id</td><td>공용 손 id = m2h-그림이름-쪽 + 손 실루엣 해시(FNV-1a) — 같은 그림 안 defs 한 벌 + use는 그대로 · 다른 캐릭터·다른 손 모양과 절대 겹치지 않음</td><td>시험 tR15j ①(손 자리 같은 그림 4벌 · use 모두 제 그림 안)</td></tr>
-<tr><td>(15차j) 숨 = 허리 위 그림 늘이기</td><td>뼈대는 숨을 쉬지 않음 · 몸 그림을 허리선에서 둘로(아래 = 원래 · 위 = 같은 그림 use) · 위를 허리선 축으로 세로 늘이기(어깨 오름 = 키의 0.45%) + 폭 +1% · 머리 60% · 두 묶음 opacity .999로 굳혀 자름(이음매 없음) — 4배 확대 장 사이 1px → 0.2px · 숨 때문에 다시 그리기 0</td><td>바이블 §11.1 · Live2D 호흡 파라미터(연속값)</td></tr>
-<tr><td>(15차j) 한 손 허리 손목</td><td>손목 = 엉덩뼈 능선 위 0.11H · 윤곽 바깥 0.06H(남 +0.06) · 살짝 뒤 · 손끝 aim 안쪽 2.4 : 아래 1(≈65°) · 손가락 마디 −8/−16/−14° 앞으로 굽힘 · 손 폭 84%(손등이 옆으로 돎) · 손등 손목 주름</td><td>2c528dc8(손가락이 앞으로 눌러 감쌈 · 손목 젖힘)</td></tr>
-<tr><td>(15차j) 잔상 자동</td><td>몸짓 이름 표(3개) 대신 몸 속도 문턱 70(뷰박스/초) — 30여 몸짓 재 봄: 느린 몸짓 ≤ 50 · 깡충 88 · 막기·간지럼 79 · 깜짝 71 · 큰 몸짓 106~335 · 한 번 2코마 → 0.3초 쉼 · 기기 '동작 줄이기'면 잔상·스미어 없음</td><td>바이블 §11 · 아니메 오바케·잔상 관행</td></tr>
-<tr><td>(15차j) 3/4 다리 S자·벌림</td><td>가랑이→발목 t: S = 0.04H·sin(2πt)(넓적다리 앞 · 종아리 뒤) · 벌림 0.07H(무릎까지 차차) · |sin yaw|에 비례 — rl 자세 발목 사이 0.34 → 0.48H(±32°)</td><td>턴어라운드 3/4 다리 관행(f16c7e20 · 75acbcc8)</td></tr>
-<tr><td>(15차j) 둘이 하는 몸짓 4</td><td>마주 손 흔들기(대답 0.28~0.52초) · 주먹 맞대기(당김 → 4f 내밂 → 닿음 충격 2f → 튕김) · 책 건네기/받기(0.25초 · 넘겨주는 장에서 책이 손을 옮겨 감) · 휴대폰 보여 주기/어깨 너머 들여다보기(0.15초 · ㅎㅎ) · 모두 몸 3/4 ±28°로 마주 봄 · 손끼리만 닿음 · 고르기 가중치 하이파이브 2 · 인사 1 · 손 흔들기 2 · 주먹 1.5 · 책 1.5 · 휴대폰 1</td><td>바이블 §11.2~11.8(예비·지나침·정착 · 대답 늦음)</td></tr>
-<tr><td>(15차k) 몸짓 끊고 들어오기</td><td>끊는 순간(앞 몸짓이 아직 도는 중 새 몸짓) 팔 관절 방향 = 앞 몸짓의 마지막 목표에서 새 목표로 구면 보간(io) · 섞는 시간 = 가장 큰 각 ÷ 2.8rad/s(0.28~0.6초) · 그동안 팔 속도 한도 0.75배 · 24fps 다시 그리기 — 시험: 무작위 100쌍, 끊은 뒤 0.3초 손목 한 장 이동이 '같은 두 몸짓을 끊지 않고 할 때의 최대 × 1.1 + 2px'를 넘은 쌍 18 → 0</td><td>바이블 §11.5 겹침·스냅 없음 · 15차h 팔 속도 한도</td></tr>
-<tr><td>(15차k) 짝 손 맞닿기</td><td>계획(msc2KPlan): 두 그림의 화면 어깨·키·팔 길이(getScreenCTM) → 만날 높이 = 설계 높이를 키로 섞음(키 큰 쪽이 낮춤) · 가로 = 팔 길이 비율 · 모자라면 걸음(키 비율로 나눔 · 최대 1.6H · 0.46초 · 앞발 먼저) → 닿는 순간의 몸 옮김(tx·ty·찌부·기울기)과 3/4 팔 돌림(실제 그림 함수로 3번 되풀이)을 미리 풀어 손목 목표 고정 · 설계 팔 길은 통째로 옮김 · 닿는 동안 그린 손을 재어 0.5배씩 고침 · 지나침 1.1 없앰 · 팔 속도 한도 1.8배 · 두 몸짓의 닿는 순간을 같은 때로(예비 동작으로 늘어난 시간 역산) — 시험 36경우(어른·꼬마·청소년·동물·외계인 · 간격 0/30px): 손바닥 사이 − 닿는 거리 최대 4.45H → 0.16H · 책은 두 손 가운데(0.00H)에서 한 권만</td><td>바이블 §11.8 대답 늦음 · 아니메 접촉 원칙(닿는 장을 먼저 정함)</td></tr>
-<tr><td>(15차k) 휴대폰 들여다보기 기울기</td><td>허리 옆 굽힘 채널 sb(가슴 상자 축 · 다림줄을 맞춘 뒤 더함) 13~15° + 고개 10° + 몸 3° · 멀면 걸음 — 키 265px(≈7cm)에서 머리 0.9~2.1머리 · 목–골반 12~13°</td><td>실루엣 읽힘(작은 크기에서는 몸통 기울기가 먼저 읽힘)</td></tr>
-<tr><td>(15차k) 한 손 허리</td><td>손끝 aim 3.7 : 1 → 세로에서 73°(예전 65°) · 남자 손목 꺾임 28~32°(예전 20~23°) · 만복(노인 배) 39° 남음</td><td>2c528dc8 · 정범님 70~80° · 25~35°</td></tr>
-<tr><td>(15차k) 숨 두 벌 칠하기 비용</td><td>CPU 4배 느리게 · 캐릭터 3명 400px · Chrome trace 칠하기 한 번당: 15차i(뼈대 숨 · 다시 그리기) Paint 1.9~2.0ms / 15차j(두 벌) 2.4~2.8ms · Raster는 재는 사이 흔들림 안(28~38ms) · 대신 스크립트 p95 55~63ms → 12~16ms(다시 그리기 멈칫 없어짐) · 시도: 아래 묶음 굳힘 끔·두 묶음 모두 굳힘 끔+날카로운 자름 = 눈에 띄는 이득 없음 → 15차j 그대로</td><td>scratchpad/r15/k_paint_cost.txt</td></tr>
-<tr><td>(15차k) SF·판타지 몸짓 8</td><td>로봇: 책 스캔 빔 · 충전 / 외계인: 떠오름 빛(땅 위 빛 고리는 땅에 남음) · 염력 책 / 판타지: 손끝 마법(책이 빛남) · 망토 휘날리기(망토 있는 캐릭터) / 동물: 꼬리 잡기 빙글 / 꼬마: 슈퍼히어로(장난감 망토) — 예비→본→정착 · 종류별 대기 가중치 ×2~3 · 동작 줄이기면 빛·반짝 효과 없음</td><td>정범님 '정적·동적·SF·판타지 동작'</td></tr>
-<tr><td>(15차k) 맨몸 보기</td><td>어른 = 옷 층 0 · 매끈한 맨살(표시 없음) / 미성년(청소년·꼬마) = 회베이지 무광 마네킹 #BDB6AA · 관절 공 12 · 세 마디 몸통 · 가슴 모양 없음 · 손·발·얼굴·머리 그대로 / 동물 = 털 몸 / 로봇·외계인 = 몸체만</td><td>정범님 규칙(미성년 맨살·어른 곡선 금지)</td></tr>
-</table></div>
-</section>
-<section id="src">
-<h2>16. 출처</h2>
-<h3>참고 이미지 (정범님 첨부 602장)</h3>
-<p>분석 노트 <code>research/notes_00~09.md</code>. 각 규칙 옆의 8자리 번호(예: <code>4ef6658d</code>)가 이미지 파일 앞자리다. 업무 화면 캡처 등 그림과 관계없는 것은 따로 표시했다.</p>
-<h3>웹 자료</h3>
-<ul class="src">
-<li><a href="https://docs.live2d.com/en/cubism-editor-manual/standard-parameter-list/">Live2D 표준 매개변수 목록</a> — 매개변수 이름·범위</li>
-<li><a href="https://docs.live2d.com/en/cubism-editor-manual/physics-operation/">Live2D 물리 설명서</a> · <a href="https://docs.live2d.com/en/cubism-editor-tutorials/physical-calculation-settings/">물리 설정 강좌</a> · <a href="https://cdn.jsdelivr.net/npm/@white-matrix/live2d-lib@0.0.1/resources/shizuku/shizuku.physics3.json">샘플 모델 물리값(shizuku)</a> — 머리카락 진자 수치</li>
-<li><a href="https://docs.live2d.com/en/cubism-sdk-manual/breath">Live2D SDK 숨쉬기</a> · <a href="https://docs.live2d.com/en/cubism-editor-tutorials/xy/">고개 XY 움직임</a> — 흔들림 주기, 3/4 변형</li>
-<li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC3156585">자연 눈 깜빡임 빈도 연구(PMC3156585)</a> · <a href="https://www.dovepress.com/article/download/12211">깜빡임 지속 연구</a> · <a href="https://www.bloopanimation.com/blinking-animation/">Bloop 깜빡임·시선</a> · <a href="https://tips.clip-studio.com/en-us/articles/2643">CLIP STUDIO 깜빡임</a></li>
-<li><a href="https://animationmentor.com/blog/why-all-animators-need-to-master-the-moving-hold">Animation Mentor 무빙 홀드</a> · <a href="https://blog.animschool.edu/?p=980">AnimSchool 눈썹 애니메이션</a> · <a href="https://openlab.bmcc.cuny.edu/ani-260-1300-intro-2d-animation-sp-2021/week-7">CUNY 뒤따름·겹침 동작</a> · <a href="https://www.adobe.com/creativecloud/animation/discover/principles-of-animation.html">Adobe 애니메이션 원칙</a></li>
-<li><a href="https://AnimeNewsNetwork.com/encyclopedia/lexicon.php?id=61">ANN 3코마</a> · <a href="https://www.idtech.com/blog/what-does-animating-on-ones-twos-and-threes-mean">iD Tech 1·2·3코마</a> · <a href="https://medium.com/@lolsebca/on-defining-sakugas-notion-of-character-acting-3777f0a9c90a">작화 연기론</a></li>
-<li><a href="https://acibademinternational.com/blog/normal-respiratory-rate-by-age-adults-children-and-when-breathing-speed-is-a-warning-sign/">나이별 호흡수</a></li>
-<li><a href="https://www.proko.com/human-figure-proportions-average-richer">Proko 평균 비율(Richer)</a> · <a href="https://proko.com/course-lesson/human-proportions-idealistic-figures/notes">Proko 이상 비율(Loomis)</a> · <a href="https://pxstudio.us/blog/?p=16404">남녀 비율 비교</a> · <a href="https://boneandspine.com/q-angle/">Q각</a></li>
-<li><a href="https://mangamen101.blogspot.com/2014/10/how-many-heads-tall-should-my-manga.html">만화 등신</a> · <a href="https://www.toonsmag.com/drawing-cartoon-children-using-correct/">어린이 비율</a> · <a href="https://oreilly.com/library/view/drawing-faces/9781560100027/xhtml/ch04.html">어린이 얼굴(O'Reilly)</a> · <a href="https://tips.clip-studio.com/en-us/articles/7052">CLIP STUDIO 세대별 캐릭터</a> · <a href="https://tips.clip-studio.com/en-us/articles/4868">CLIP STUDIO 치비</a> · <a href="https://dessindigo.com/en/blog/drawing-tutorial/draw-old-person">노인 그리기(Dessindigo)</a></li>
-<li><a href="https://tips.clip-studio.com/en-us/articles/8233">CLIP STUDIO 손</a> · <a href="https://www.21-draw.com/fr/4-simple-tips-for-drawing-better-feet/">21-Draw 발</a></li>
-<li><a href="https://warcraft.wiki.gg/wiki/API:ScrollingMessageFrame_SetTimeVisible/archive">WoW 채팅 표시 시간</a> · <a href="https://support.discord.com/hc/en-us/articles/217659737">Discord 오버레이</a> · <a href="https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html">WCAG 2.1 대비</a></li>
-<li><a href="https://labs.psych.ucsb.edu/roney/james/other%20pdf%20readings/reserve%20readings/singhwhr.pdf">Singh 1993 허리-엉덩이 비율과 매력(PDF)</a> · <a href="https://pubmed.ncbi.nlm.nih.gov/24214368/">PubMed 24214368</a></li>
-<li><a href="https://news.griffith.edu.au/2017/12/13/upper-body-strength-key-factor-in-mens-bodily-attractiveness/">Sell 외 2017 상체 힘과 남성 매력(그리피스대 요약)</a> · <a href="https://omicsdi.org/dataset/biostudies-literature/S-EPMC5745404">원문 PMC5745404</a></li>
+<h2 id="04_머리카락-4-2-다발-clump-A4-2">4.2 다발(clump) (A4.2)</h2>
+<ul>
+<li>한 머리 = 큰 다발 5~9 + 작은 가닥(ahoge 포함) · 뿌리 굵고 끝 가늘게(붓끝) · 끝은 2~3갈래 · S자 흐름 · <strong>떠 있는 가닥 0</strong>(모든 가닥은 다발에 붙음).</li>
+<li>앞머리 끝 = 눈썹~눈 위 사이 · 눈썹은 앞머리 위로 비침(살빛 테 + 눈썹 사본 맨 위 · 15차g) · 옆머리는 귀를 반쯤 덮고 귀 뒤 살 틈을 남김.</li>
+<li>윤기 띠 = 이마 위 머리 둘레 띠(선 여러 개→일부 지움 [N22]) · 그늘 = 끝·정수리·뒷머리(01 §1.3).</li>
 </ul>
-</section>
-</div>
-</body>
-</html>
+<h2 id="04_머리카락-4-3-층-순서-A4-3">4.3 층 순서 (A4.3)</h2>
+<p>뒷머리(몸 뒤) → 옆머리 뒤 → 귀 → 옆머리 앞 → 얼굴 → 앞머리(눈썹 비침) → 모자·핀. 먼 쪽 트윈테일은 요 30°에서 가려짐. 머리카락은 깃·목도리·모자 '위'에 얹힘(옷 B 10).</p>
+<h2 id="04_머리카락-4-4-묶음-땋기-경단-꼬리-A4-4">4.4 묶음·땋기·경단·꼬리 (A4.4)</h2>
+<ul>
+<li>묶음점(끈·고무)에서 다발이 모였다 퍼짐 · 꼬리는 사슬 6마디(끈에서 30% 지점 가장 굵고 끝 붓끝 · 15차d) · 경단은 원이 아니라 감긴 띠 · 땋기는 3가닥 교차 눈금.</li>
+<li>매듭 위치: 포니테일 뒤통수 가마 높이 · 트윈테일 귀 위 0.1~0.2H · 낮은 묶음 목덜미.</li>
+</ul>
+<h2 id="04_머리카락-4-5-모양-목록-A4-5">4.5 모양 목록 (A4.5)</h2>
+<p>기존 30종(15차b 22 + 예전 46 이름 이음) 전부 v2 껍질+다발 규칙으로 재검 · 남/여/꼬마/노인(숱·흰머리·이마 후퇴) · 동물 털 머리(furtuft·helmet)는 목록에서 숨김.</p>
+<h2 id="04_머리카락-4-6-물리-A4-6">4.6 물리 (A4.6)</h2>
+<ul>
+<li>진자 사슬 · Live2D 기준 흔들리기 쉬움 0.7~0.99 · 반응·수렴 1(24fps는 수렴 1.0~1.5) · 60fps 고정 스텝 · 앞머리 지연 1~2f·옆 2~3f·뒤 3~5f(full) / 3·3·6 계단(anime) · 오버슛 10~50% · 멈춘 뒤 1~2회(anime) · 이웃 마디 ≤13° · ζ0.28·2.2Hz(15차d 유지 · 애니 머리카락 T ≈0.45초 [props 16]).</li>
+<li>머리카락은 <strong>지나온 방향</strong>을 가리킨다(08 §8.5).</li>
+</ul>
+<h2 id="04_머리카락-4-7-모자-핀-머리띠-상호작용-A4-7-정범님-머리가-모자를-뚫음">4.7 모자·핀·머리띠 상호작용 (A4.7 · 정범님 "머리가 모자를 뚫음")</h2>
+<ul>
+<li>모자 밴드 = 머리둘레(2.46~2.54H)+0.01~0.13H · 안쪽 테두리는 껍질 <strong>안으로 0.02~0.05H</strong> 파고듦(눌림 = 껍질 두께의 50~70%) · 밴드 아래로 앞·옆머리 삐짐 · 챙 2.0~2.4×머리폭 · 베레 15~20° · 후드 테 껍질 밖 0.10~0.16H.</li>
+<li>머리띠 = 앞 헤어라인 위 0.05~0.15H · 측면 20~30° 뒤 · 폭 0.04~0.12H · 머리카락 눌림 0.02~0.03H · 앞머리는 띠 아래 · 머리 뒤 장식은 가려짐.</li>
+<li>핀·리본은 붙는 다발이 있고(attach) 다발과 함께 흔들림.</li>
+</ul>
+<h2 id="04_머리카락-4-8-합격-기준-T71-T75">4.8 합격 기준 (T71~T75)</h2>
+<table>
+<thead>
+<tr>
+<th>번호</th>
+<th>시험</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T71</td>
+<td>모든 모양: 정수리 띄움 0.08~0.15H · 옆 ≥0.05HW · 헬멧(두개골 윤곽과 평행 구간 &gt;50%) 0</td>
+</tr>
+<tr>
+<td>T72</td>
+<td>떠 있는 가닥 0(모든 path가 다발 path와 접함) · 뿌리 폭 &gt; 끝 폭</td>
+</tr>
+<tr>
+<td>T73</td>
+<td>귀 뒤 살 틈 존재 · 앞머리 위 눈썹 비침 · 요 30° 먼 꼬리 가림</td>
+</tr>
+<tr>
+<td>T74</td>
+<td>물리 정착 시간 범위 · 이웃 마디 ≤13°</td>
+</tr>
+<tr>
+<td>T75</td>
+<td>모자·띠: 테가 껍질 안 0.02~0.05H · 두개골 교차 0 · 머리카락 삐짐 존재</td>
+</tr>
+</tbody>
+</table>
+<h2 id="04_머리카락-4-9-설정값">4.9 설정값</h2>
+<p>껍질 두께(정수리·옆·뒤) · 다발 수 · 윤기 띠 · 물리(mobility·감쇠·Hz) · 모자 눌림 비율.</p>
+<h2 id="04_머리카락-4-10-보강-예정-관찰-76장-재개-시">4.10 보강 예정(관찰 76장 재개 시)</h2>
+<p>다발 굵기 분포 실측 · 모양 분류 목록 확정 · 남/여/꼬마/노인 차이 수치 · 윤기 위치 · 묶음 매듭 위치 실측.</p></section>
+<section class="ch" id="05_몸통_팔다리_손발"><h1>05. 몸통·팔다리·손·발 — 여/남 몸통 · 체형 극단 · 팔다리 로프트 · 손 5손가락 · 발 묶음</h1>
+<p>근거: <code>obs/limbs_hands.md</code>(54장 · 합격 A1~A10·L1~L7·H1~H7·F1~F4) · <code>obs/turn_body.md</code>(114장 · 도착 시 §5.1~5.6 보강) · <code>web/anatomy.md</code>(한국 실측) · v1 §1.2·§5~§7. 정범님(10/28 21:42): "몸통은 여자 가슴·배·골반, 남자 가슴·배 근육 — 왜 매력적인지 이해하고 그릴 것 · 손가락 5개 상호작용 정확히 · 발가락은 묶음, 발·발목 관계는 정확히".</p>
+<h2 id="05_몸통_팔다리_손발-5-1-몸통-공통-구조-A5">5.1 몸통 공통 구조 (A5)</h2>
+<ul>
+<li><strong>가슴 덩어리 + 골반 덩어리, 사이는 부드러운 허리(Bean)</strong>. 두 덩어리는 강체, 비틀기·굽힘은 허리에만. 남자는 가슴≈골반 폭, 여자는 가슴 좁고 골반 넓음 [drawing_cg 5·e3b03194 "SOLID/SOFT/SOLID"].</li>
+<li>비틀기 한계 <strong>[v1→v2]</strong>: 실측 흉요추 회전 30°(한쪽) · 그림 관행 45~70° → <code>twistMaxDeg</code> 기본 <strong>45</strong>, 과장 모드 70 [drawing_cg 6·8bc43f63]. 앞굽힘 45~50° · 뒤젖힘 25° · 옆 25°.</li>
+<li>측면 S자: 가슴 앞·허리 안·엉덩이 뒤·종아리 뒤, 귀→어깨 관절→큰돌기→무릎 뒤→복사뼈 앞이 한 수직선 [4ef6658d·7fe62c44]. <strong>평평한 등 금지</strong>.</li>
+<li>단면 깊이/폭(로프트): 갈비 0.72(여)/0.75(남) · 허리 0.68/0.72 · 골반 0.62 · 허벅지 0.95 · 종아리 0.90 [a4936481].</li>
+<li>한국 실측(web/anatomy 10·15): 20대 여 어깨너비 1.56H · 50대 여 가슴 1.24·허리 1.22·엉덩이 1.47H · 50대 남 가슴 1.33·허리 1.28·어깨가쪽 1.79H · 허리/엉덩이 둘레비 여 20대 0.77 → 50대 0.86 → 60대 0.90, 남 0.85 → 0.90~0.92 → <strong>중년·노인은 허리 폭을 늘리고 엉덩이는 거의 그대로</strong>.</li>
+</ul>
+<h2 id="05_몸통_팔다리_손발-5-2-여자-가슴-팔-앞으로-나오게-A5-1-정범님-10-28-참고-가슴이-팔-앞으로-안-나옴">5.2 여자 가슴 — 팔 앞으로 나오게 (A5.1 · 정범님 10/28 참고 "가슴이 팔 앞으로 안 나옴")</h2>
+<ul>
+<li>가슴은 갈비 상자 위에 얹힌 두 물방울(z +0.10~+0.30), 꼭짓점 = 어깨선 아래 0.50~0.55H(20대) · 바깥 윤곽은 겨드랑이→바깥 볼록→아래, 위팔 안쪽과 <strong>겹침 ≥0.02H</strong>(bust ≥0.45) [4e140632·6e43a0ad·v1 §5.2].</li>
+<li>옷 위 가슴: 바깥 윤곽선 + 위팔을 덮는 옷 텐트(15차g 유지) · 밑가슴 선은 옷 위로 비치지 않음.</li>
+<li>극단 설계 원칙(정범님 10/28): <strong>최대치(bust 1·hip 1)를 먼저 자연스럽게 맞추면 중간은 따라온다</strong> → p0/p1 두 벌을 손으로 검증, 중간은 smoothstep. 최대는 "풍만하되 자연"(캐리커처 금지, 유두 없음).</li>
+</ul>
+<h2 id="05_몸통_팔다리_손발-5-3-여자-허리-골반-허벅지-한-윤곽-A5-2-골반이-허벅지와-따로-놂">5.3 여자 허리·골반·허벅지 = 한 윤곽 (A5.2 · "골반이 허벅지와 따로 놂")</h2>
+<ul>
+<li>바깥 윤곽 허리 → 엉덩뼈 능선 → 큰돌기 → 바깥 허벅지가 <strong>접선 연속 한 곡선</strong>(S) [19bab80d·efa4e4bf·41422499]. 골반 폭이 커지면 허벅지 윗부분 굴곡도 함께(정범님 지적) → 허벅지 최상부 폭 = 골반 폭 × 0.44~0.48(L2)에 묶는다.</li>
+<li>허벅지는 골반 로프트 <strong>안에서</strong> 시작, 같은 깊이 층에서 합집합(10 §10.1). 골반–허벅지 홈 ≤0.02H(T5).</li>
+<li>여: 허벅지 윗부분이 샅에서 닿고 안쪽 선은 거의 직선으로 무릎으로 모임, 무릎 사이 틈 ≤0.5 무릎 폭 · 구성 도형 = 타원들(허리:골반 0.69~0.75) [19bab80d·6869d797].</li>
+</ul>
+<h2 id="05_몸통_팔다리_손발-5-4-남자-가슴-복근-A5-3">5.4 남자 가슴·복근 (A5.3)</h2>
+<ul>
+<li>어깨:허리 1.45~1.6 · 가슴 상자 V · 흉근 가장자리·복근 분할은 데칼(마름 기본) · 허벅지 사이 틈 ≥0.15 허벅지 폭 · 무릎 사이 틈 0.8~1.0 무릎 폭 · 무릎은 각진 상자+힘줄 2~3획 · 구성 도형 = 직사각형(허리 ≈0.95 골반) [6869d797·98bacc4a·54d58866].</li>
+<li>남자 팔꿈치: 실측 어깨점 1.44H + 위팔 1.41H = <strong>2.85H = 갈비 아래</strong>(허리 뒤선보다 0.15H 위) → 15차m 보류 항목의 답 [web/anatomy 6].</li>
+</ul>
+<h2 id="05_몸통_팔다리_손발-5-5-체형-변수-p0-p1-A5-4-A5-6">5.5 체형 변수 p0/p1 (A5.4·A5.6)</h2>
+<p><code>hip</code>·<code>bust</code>·<code>fat</code>·<code>muscle</code>·<code>frame</code> + 등신. 섹션 폭·깊이에 가산 → clamp(안정 분수·여자 waist<hip unless fat>0.8). 꾸미기 체형 탭: 동그라미 손잡이(두 값 동시) + 슬라이더, 바로 적용 토스트, 기기별 저장.</p>
+<h2 id="05_몸통_팔다리_손발-5-6-배-엉덩이-등-나이-A5-5">5.6 배·엉덩이·등 — 나이 (A5.5)</h2>
+<ul>
+<li>꼬마: 허리 없음·배 볼록·샅 56%·무릎 76%(v1). 중년: 허리/엉덩이비 0.86~0.90 · 가슴 꼭짓점 하강 0.1H · 턱살. 노인: 척추 굽음(머리 앞 0.30H 여/0.35 남) · 둥근 등은 몸 윤곽에(15차f) · 허리 폭↑ · 실측상 어깨·C7 높이는 20대와 같은 비율(web/anatomy 15) → 굽음은 자세 변수로만.</li>
+</ul>
+<h2 id="05_몸통_팔다리_손발-5-7-팔-로프트-A6-1-obs-limbs-1-12">5.7 팔 로프트 (A6.1) [obs/limbs 1~12]</h2>
+<table>
+<thead>
+<tr>
+<th>규칙</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>길이 비 상완:전완:손</td>
+<td>1.2 : 1 : 0.75(±0.1) · 실측 남 위팔 1.41H·아래팔 1.09H·손 0.78H / 여 팔 2.39H·손 0.76H</td>
+</tr>
+<tr>
+<td>매달린 팔 위치</td>
+<td>팔꿈치 = 허리(여·꼬마)/갈비 아래(남) ±0.15H · 손목 = 샅 ±0.1H(실측은 샅 위 0.13~0.16H) · 손끝 = 허벅지 1/3~1/2</td>
+</tr>
+<tr>
+<td>팔꿈치는 호 위</td>
+<td>어깨 중심 반지름 = 상완 · 옆 45°면 팔꿈치가 갈비 아래보다 위 · T자세면 어깨 높이("ARMS DON'T STRETCH")</td>
+</tr>
+<tr>
+<td>봉우리 어긋남</td>
+<td>상완 바깥(삼각근·삼두) 25~35% · 안쪽(이두) 55~60% · 전완 바깥(엄지쪽) 20~25% · 안쪽 30~35% · 차 = 팔 길이의 10~15% · 잇는 선 대각선</td>
+</tr>
+<tr>
+<td>굵기(상완 최대 1.0)</td>
+<td>삼각근 1.0 → 팔꿈치 0.75~0.85 → 전완 최대 0.9(팔꿈치 아래 1/4~1/3) → 손목 0.55~0.65 · <strong>손목은 납작 상자(폭:두께 2:1)</strong></td>
+</tr>
+<tr>
+<td>쉬는 팔</td>
+<td>팔꿈치 5~15° 굽힘(165~175°) · 전완 5~10° 바깥(운반각) · 곧게 펴는 것은 뻗을 때만</td>
+</tr>
+<tr>
+<td>굽힘</td>
+<td>안쪽 윤곽 이두·전완 눌려 겹침(틈 0) · 바깥 연속 곡선+꼭짓점 1 · 이두 +10% · 주먹 쥐면 전완 +10% · 손 비틀면 +20~30%</td>
+</tr>
+<tr>
+<td>겹침선</td>
+<td>전완이 상완 위: 옆 ≥90°·앞·정면 / 상완이 전완 위: 뒤·힘줄 때 / 없음: 바로 위·&gt;120° · 길이 = 팔 폭 0.3 · 곧은 팔 뒤 팔꿈치는 윤곽 단차(jog)</td>
+</tr>
+<tr>
+<td>직선 대 곡선</td>
+<td>마디마다 한쪽 직선·반대쪽 곡선, 팔꿈치에서 자리 바꿈</td>
+</tr>
+<tr>
+<td>팔짱</td>
+<td>위 팔꿈치 0.15~0.2H 높고 상완 20% 단축 · 아래 전완 배 위·위 전완 아래 팔 위 · 아랫선 S · 위 손 손가락 3~4 보임 · 손목 20~40°</td>
+</tr>
+<tr>
+<td>손 허리</td>
+<td>손 = 엉덩이뼈 위(배꼽 ±0.1H) · 팔꿈치 몸 밖 0.6~0.8H · 옆에서 상완 뒤 20~30°·전완 앞아래 45°</td>
+</tr>
+<tr>
+<td>실루엣</td>
+<td>팔은 몸통 밖으로 음의 공간 ≥1 또는 팔꿈치 몸 밖 ≥0.2H</td>
+</tr>
+</tbody>
+</table>
+<h2 id="05_몸통_팔다리_손발-5-8-손-5손가락-상호작용-A6-2-A6-5-obs-limbs-19-22-web-anatomy-7-8">5.8 손 — 5손가락 상호작용 (A6.2~A6.5) [obs/limbs 19~22 · web/anatomy 7·8]</h2>
+<ul>
+<li>비율: 손 길이 0.76~0.78H(실측 · 아니메 0.68은 작은 손 관행) · 손바닥:중지 1:0.95~1.0 · 폭 = 길이 0.43~0.48 · 두께 = 폭 0.2~0.3 · 손가락 비 검지 0.90 : 중지 1 : 약지 0.92 : 소지 0.71 : 엄지 0.65(<strong>약지 &gt; 검지</strong>) · 마디 1:0.7:0.55.</li>
+<li>엄지: 손바닥 옆 아래 35~45%에서 · 벌리면 검지와 45~60° · 끝 = 검지 MCP~첫 마디 중간 · 새끼 끝 = 약지 DIP · 새끼 폭 0.75.</li>
+<li><strong>굽힘 계단(curl cascade)</strong>: 쉬는 손 검지 &lt; 중지 &lt; 약지 &lt; 새끼(관절당 30~45°) · 손가락 사이 붙고 검지만 살짝 · 엄지는 앞·아래에서 검지와 마주(틈 = 물건 자리). 한 손가락만 굽히면 이웃이 따라옴(생체역학 연동 — 수치 다음 조사).</li>
+<li>주먹: 네 관절 호(검지 가장 높고 앞) · <strong>엄지는 검지·중지 중간 마디 위</strong> · 폭 ≈ 손바닥 폭 · 정면 마디 3줄. 브이: 검지·중지 30° · 가리킴: 검지만, 엄지 중지 위.</li>
+<li>쥐기: 물건은 손가락 뒤·손바닥 앞, 엄지 반대쪽(06 §6.7). 손 모양 라이브러리 19 + 쥐기 6(wrap_medium·lateral_pinch·lateral_tripod·power_sphere·index_ext·phone_call).</li>
+<li>LOD: 손 폭 &lt;12px → 3덩이(검지+3묶음+엄지) · &lt;6px → 장갑 · 손톱은 보는 쪽만 · 선은 적갈색 · 그림자 1톤.</li>
+<li>매달린 손: 손바닥 허벅지 향함 · 손가락 느슨 · 엄지 앞 · 손목 중립 · 손이 몸통 선 안에 들어가지 않음.</li>
+</ul>
+<h2 id="05_몸통_팔다리_손발-5-9-다리-로프트-A7-1-obs-limbs-13-17-web-anatomy-3-4">5.9 다리 로프트 (A7.1) [obs/limbs 13~17 · web/anatomy 3·4]</h2>
+<table>
+<thead>
+<tr>
+<th>규칙</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>길이</td>
+<td>두 관습: 사실형 샅→무릎 : 무릎→바닥 0.58~0.75 : 1(무릎 = 샅~바닥 37~42%) / 아니메 롱레그 샅→무릎 = 무릎→복사뼈 1:1. <strong>기본 아니메 1:1 ±0.1</strong>, SD·실사 모드는 사실형. 실측: 샅 = 키 44~46% · 무릎 = 키 25.7~26.5%(7세~노년 일정)</td>
+</tr>
+<tr>
+<td>굵기(허벅지 최상 1.0)</td>
+<td>중간 0.78~0.85 → 무릎 위 0.6 → 무릎 0.55~0.63 → 종아리 최대 0.68(여)/0.75(남) at 무릎 아래 1/4~1/3 → 발목 0.32~0.39 · 종아리 = 무릎 ×1.1~1.25 · 허벅지 최상 = 골반 폭 0.44~0.48</td>
+</tr>
+<tr>
+<td>X 대각선</td>
+<td>바깥 종아리 봉우리가 안쪽보다 높음(정강이 5~12%) · 안쪽 복사뼈가 바깥보다 높음 · 종아리선 안쪽으로·복사뼈선 바깥으로 내려감</td>
+</tr>
+<tr>
+<td>여/남</td>
+<td>여 = 타원·골반→허벅지 둥글게·무릎 U 하나·발목 0.8×남 / 남 = 직사각형·무릎 상자+힘줄·종아리 안쪽 불룩</td>
+</tr>
+<tr>
+<td>무릎</td>
+<td>폭 = 위 허벅지 0.75~0.85 · 안쪽 홈이 바깥보다 1.2~1.5 깊음 · 굽히면 각진 모서리, 허벅지 윤곽이 정강이 뒤로 겹침 · 무릎 뒤 Y/H 주름 1</td>
+</tr>
+<tr>
+<td>직선 대 곡선</td>
+<td>정면 바깥 허벅지 곡선 / 안쪽 허벅지~정강이 직선 / 바깥 종아리 곡선 · 옆 허벅지 앞 곡선·정강이 앞 직선·종아리 뒤 곡선</td>
+</tr>
+<tr>
+<td>가동</td>
+<td>무릎 0~135~150° · 앞으로 꺾임 금지 · 무릎 방향 = 발끝 방향 ±15° · 동물 디지털 다리는 07</td>
+</tr>
+</tbody>
+</table>
+<h2 id="05_몸통_팔다리_손발-5-10-발-발목-발가락-묶음-A7-2-A7-3-obs-limbs-18-web-anatomy-9">5.10 발·발목·발가락 묶음 (A7.2·A7.3) [obs/limbs 18 · web/anatomy 9]</h2>
+<ul>
+<li>길이: 실측 남 1.09~1.14H·여 1.03H(아니메 관행 남 1.0·여 0.9) · 발/(무릎→바닥) 0.45~0.55 · 정면 폭 = 길이 0.30~0.40 = 발목 폭 ×1.45~1.7 · 발등 높이 = 길이 0.25~0.35 · 뒤꿈치→새끼발가락 = 길이 0.825.</li>
+<li>구조: 쐐기(발등) + 밑창 판(위에서 땅콩·안쪽 곧음·볼 65~70%가 가장 넓음) + 발가락 묶음(한 덩어리 · MTP 경첩 젖힘 0~70°·굽힘 0~45°) · 측면 뒤꿈치가 아킬레스선 뒤로 발목 두께의 1/3 돌출 · 안쪽 복사뼈 높음·활.</li>
+<li>발목: 등쪽 20~30° · 바닥쪽 40~50° · 안/바깥 35/15 · 서 있을 때 발끝 바깥 5~15°(여성 안짱 포즈 −5~−15° 허용).</li>
+<li>신발 신으면 맨발 윤곽 그리지 않음(15차d) · 굽 = asin(굽/길이)만큼 쐐기 기울임.</li>
+</ul>
+<h2 id="05_몸통_팔다리_손발-5-11-합격-기준">5.11 합격 기준</h2>
+<ul>
+<li>팔 A1~A10 · 다리 L1~L7 · 손 H1~H7 · 발 F1~F4(<code>obs/limbs_hands.md</code> §합격 기준 전문 · 번호 T57 묶음) + v1 T1~T7(랜드마크·폭·팔 닿음·다림줄·실루엣 연속·극단 보간·깊이 순서).</li>
+<li>T58 여 가슴–위팔 겹침 ≥0.02H(bust ≥0.45) · 밑가슴 선 옷 위 노출 0.</li>
+<li>T59 골반–허벅지 홈 ≤0.02H · 허벅지 최상 = 골반 0.44~0.48 · hip 0/0.25/0.5/0.75/1에서 곡률 부호 변화 수 일정.</li>
+<li>T60 비틀기 ≤ twistMaxDeg · 팔꿈치 각 165~180(쉼) · 무릎 방향 = 발끝 ±15°.</li>
+</ul>
+<h2 id="05_몸통_팔다리_손발-5-12-설정값">5.12 설정값</h2>
+<p>anat.realism(0 아니메 ~ 1 실측: 손·발 길이·목 폭·샅 높이·다리 비 보간) · twistMaxDeg · 체형 5변수 · 등신 · 다리 관습(아니메/사실) · 손 LOD 문턱.</p>
+<h2 id="05_몸통_팔다리_손발-5-13-근거를-못-찾은-것">5.13 근거를 못 찾은 것</h2>
+<p>손가락 연동(Zatsiorsky) 수치 · 팔꿈치·손목 가동의 그림 근거(일반 해부학으로만) · 아이 두신지수 한국 실측(외국 6세 6.36·15세 7.5 사용).</p></section>
+<section class="ch" id="06_옷_소품"><h1>06. 옷·신발·장신구·소품 — 옷감 4분류 · 품 · 주름 · 드리움·충돌 · 붙임점 · 치수</h1>
+<p>근거: <code>obs/clothes_a.md</code>(66장 · 합격 기준 22) · <code>obs/clothes_b.md</code>(66장 · 도착 시 보강) · <code>web/props_clothes.md</code>(출처 50) · v1 §7·§8. 단위 H(1H = 22.5cm 여·23.5cm 남) · cm는 한국 기준.</p>
+<h2 id="06_옷_소품-6-1-옷감-4분류-MSC2_FABRIC-A8-1-정범님-옷감-4분류는-알아서">6.1 옷감 4분류 — <code>MSC2_FABRIC</code> (A8.1 · 정범님 "옷감 4분류는 알아서")</h2>
+<p>분류 기준은 <strong>굽힘 강성 B</strong>와 <strong>면적 밀도</strong> 둘(드리움 계수는 굽힘 계수와 R² 0.908 [3]). 상대값 근거 = Maya nCloth 공식 프리셋 [4].
+| 설정 | stiff 뻣뻣(데님·코트·가죽) | mid 보통(면 셔츠·치노) | soft 부드러움(실크·시폰) | stretch 신축(저지·수영복·스타킹) |
+|---|---|---|---|---|
+| bendRel(mid=1) | 5 (4~8) | 1 | 0.5 | 0.7 |
+| massRel | 3 | 1 | 0.2 | 1.3 |
+| foldPerSide 주름 수(한쪽 면) | 1 (1~2) | 2 (2~3) | 4 (3~5) | 1 (사선 늘임선) |
+| foldWidth(옷 폭 대비) | 0.20~0.30 | 0.10~0.15 | 0.04~0.08 | 0.15 넓고 얕음 |
+| hemBumps 치마 밑단 Ω 수 | 3~4 | 4~5 | 6~7 | — |
+| drapeDC 밑단 처짐 비율 | 0.05~0.20 | 0.30~0.55 | 0.65~0.80 | 0.50 |
+| lagFrames 늦음(24fps) | 2 | 3 | 5 | 0 |
+| overshoot | 0.05~0.10 | 0.10~0.20 | 0.20~0.25 | 0 |
+| wobbles 멈춘 뒤 흔들림 | 0~1 | 1~2 | 2~3 | 0 |
+| damping(Live2D 수렴 1 기준) | 1.5 | 1.0 | 0.6 | 2.0 |
+| swingHz | 1.0~1.5 | 1.5~2.0 | 2.0~2.5 | — |
+| easeMin 둘레 여유 하한 cm | 12 | 6 | 2.5 | −4~0 |
+| bellRotate ±° | 10~20 | 5~10 | 0 | 0 |
+| settleFrames | 2~4 | 4~6 | 6~10 | 1 |
+| 두께(밑단 두 줄 간격, 폭 대비) | 10% | 3~5% | 1~2% | 1% |
+- 그림 관찰 [a08b0535·699728d2·16607bf8·53f4cc37]: 뻣뻣 = 크고 불규칙한 주름 적게 · 보통 = 곡선 주름 · 부드러움 = 가늘고 많은 세로 주름, Ω 밑단 물결, 아래 층 비침 · 신축 = 몸을 따라감, 골 무늬만.
+- 펜듈럼 마디 = 밑단 길이(H)/0.5(최소 2·치마 5~9 제어점) · mobility stiff 0.7·mid 0.85·soft 0.95·stretch 0.7 [17]. 계층 늦음: 몸통→어깨 1~2f→팔꿈치 2~3f→손 2~3f→소품 [14].</p>
+<h2 id="06_옷_소품-6-2-품-여유-층-순서-A8-2-A8-5">6.2 품(여유)·층 순서 (A8.2·A8.5)</h2>
+<ul>
+<li>옷 = 몸 윤곽 바깥의 <strong>두 번째 껍질</strong>. 둘레 여유 cm를 보관하고 그리기는 반지름 오프셋 = 둘레/2π.
+| fit | 둘레 여유 cm | 오프셋 H | 옷 |
+|---|---|---|---|
+| tight | 0 또는 음 | 0~0.01 | 타이츠·레깅스·수영복·저지 |
+| fitted | 2.5~6 | 0.018~0.042 | 슬림 셔츠(6)·스키니·펜슬 |
+| regular | 6~12 | 0.042~0.085 | 셔츠·바지·가디건 |
+| loose | 16~21 | 0.11~0.15 | 클래식 셔츠(18)·후드·오버핏·코트 |
+| blouse | 27 | 0.19 | 블라우징 허리 · 배기팬츠(다리의 1.3~2.5배) |</li>
+<li>그림 수치 [395e2b32·cc3051f5·871d15f4]: 밀착 0~0.02H · 보통 0.03~0.06H · 두꺼운 겉옷 0.08~0.15H · 헐렁 ≥0.3H. <strong>깃·소매 끝은 몸에서 떠서 빈틈이 보인다</strong>(목 둘레 0.03~0.05H · 반팔 소매 끝 ≈0.1H).</li>
+<li>층 순서(안→밖): 속옷 → 셔츠/티 → 조끼·카디건·재킷·후드 → 벨트·가방끈·멜빵·넥타이 → 모자·안경·귀걸이. 겹칠 때 보이는 것: 셔츠 깃·커프·밑단(겉옷 밖 0.05~0.15H) · 넥타이는 조끼 아래 · 세일러 칼라·스카프는 조끼 위 · 배가 나오면 배가 허리띠 윗선을 덮음 [c81511bc·31e115b0·88bcd4a6].</li>
+<li>깃 목에서 0.03~0.05H 떠서 폭 0.06~0.08H · 단추 간격 ≈0.3H(셔츠 7·폴로 2~3) · 앞주머니 허리띠 바로 아래 사선 · 뒷주머니 엉덩이 최대 폭 · 벨트 폭 0.1~0.15H · 허리띠·주머니·지퍼 선은 '두 줄' [871d15f4·b94e51f9·26e035a6].</li>
+<li>KS K 0050/0051은 호칭 규격이지 여유량 규격이 아님 [12·13]. 코트·원피스·치마 부위별 여유 cm는 근거 없음(설계값).</li>
+</ul>
+<h2 id="06_옷_소품-6-3-주름-당김점-쌓임점에서만-A8-3">6.3 주름 — 당김점·쌓임점에서만 (A8.3)</h2>
+<ul>
+<li>7종(Bridgman): pipe(지지점 1+중력) · drop(지지점 1+걸치는 캡슐) · diaper(지지점 2 처짐) · zigzag(지지점 1+원통 둘레: 무릎 뒤·팔꿈치 안) · spiral(캡슐 비틀림 &gt;15°) · halfLock(관절 &gt;30°) · inert(바닥) [7~9]. 데이터는 '당김점 쌍'으로 생성.</li>
+<li>당김점 = 어깨 끝·겨드랑이·팔꿈치 안쪽·허리(주머니 손)·샅·무릎·가슴 꼭짓점(여)·단추·매듭. 선은 쐐기로 당김점을 향함. <strong>평행선 금지 · 한 점에서 같은 길이 방사선 4~5개 금지</strong> [750c011c·ba8821cf·699728d2].</li>
+<li>개수(서 있을 때): 티셔츠 3~6 · 반팔 겨드랑이 1~2 · 팔꿈치 안쪽(굽힘) 2~4 · 무릎 뒤 2~3 · 바지 샅 좌우 1~2 · 바지 밑단(신발 닿음) 2~3 · 셔츠 커프 위 3~4 · 스키니 발목 쌓임 3~4 · 단추 양옆 1 [dea2a02c·699728d2]. 가슴 크기(여)에 따라 티셔츠 2~3 → 4~6 → 7~10+해칭.</li>
+<li>굽힘: <strong>안쪽 = 쌓임(복잡) · 바깥쪽 = 당겨져 매끈한 한 줄</strong>. 팔꿈치 바깥 주름 0, 안쪽 2~4(90°에 가까울수록 많음, 마름모 패임 1) · 무릎 같음 [699728d2·0df866fc·c81511bc].</li>
+<li>옷은 몸과 한 덩어리로: 비틀면 사선 나선 · 팔 올리면 밑단 상승+겨드랑이→밑단 3줄/쪽 · 양팔은 어깨 2점 U · 숙이면 밑단 고임 · 큰 셔츠는 어깨에서 수직 낙하 [b8ae929d·ba8821cf].</li>
+</ul>
+<h2 id="06_옷_소품-6-4-드리움-충돌-뚫림-0-A8-4-정범님-10-28-15-00">6.4 드리움·충돌 — 뚫림 0 (A8.4 · 정범님 10/28 15:00)</h2>
+<ul>
+<li>천은 <strong>가장 높은 접촉점</strong>에 걸려 수직으로 떨어진다. 다리를 들면 든 무릎이 새 접촉점 → 치마·통바지가 거기서 커튼처럼 떨어지고 밑단은 든 쪽이 올라감(무릎 든 만큼) · 든 다리는 천 안쪽에 숨거나 밑단 아래로만 · 밑단은 ㄱ자 상자가 아니라 처진 둥근 통 [dea2a02c·0df866fc·8138e49f].</li>
+<li>치마: 허리띠에서 시작해 엉덩이 최대 폭에서 퍼짐. 교복 플리츠 허리 0.9H → 밑단 1.4H(1.5~1.6배) · 길이 ≈1.1H(허벅지 중간) · 앞면 플리츠 8~10 · 밑단 지그재그 [e771af54]. 플레어·시폰 = 밑단 Ω 먼저, 물결 꼭대기마다 허리로 선 2줄 [16607bf8·84e2fdfd]. 밑단은 골반선과 평행하게 기울고 움직이는 쪽으로 15° 더 퍼짐 [c98418d8]. 달릴 때 진행 반대쪽 15~30° 각진 물결 3~5파 [d26b7efd].</li>
+<li>구현: 앞판/뒤판 분리 · 펜듈럼 사슬 + 다리 캡슐(반지름+오프셋) 충돌 · 무릎이 앞판을 밀어 2~4f 뒤따름 · 긴 겉옷은 허리선 아래 자락만 흔듦(15차d 유지).</li>
+<li><strong>T19 뚫림 0</strong>: 걷기·앉기·차기·끌기 200프레임에서 다리·팔 정점이 옷 밑단 다각형 안에 0회.</li>
+</ul>
+<h2 id="06_옷_소품-6-5-신발-A7-4">6.5 신발 (A7.4)</h2>
+<ul>
+<li>구조 = 둥근 돔(앞코) + 일정 두께 밑창 띠 + 발목 입구 타원 [a4c1685b·cbb14fdd]. 옆 길이 ≈1H(관행) · 실측 발 남 1.14H·여 1.03H(web/props 10 · <strong>관행값/실측값 둘 다 기록</strong>, <code>anat.realism</code>로 보간) · 높이 운동화 0.4~0.45×길이·구두 0.33 · 밑창 운동화 0.08~0.1H·구두 절반·샌들 0.07H·두꺼운 밑창 0.2H·펌프스 굽 0.25H · 앞코 들림 · 정면 폭 = 발목의 1.6~1.8배 · 위에서 볼(65~70%)이 가장 넓고 안쪽 곧음 · 다리 통은 뒤 1/3 지점으로 들어감 · 부츠 통 종아리 1.2배·발목 가로 주름 2~3.</li>
+<li>굽 4단계 [19·20]: 플랫 ≤2cm · 낮음 ≤4 · 중간 ≤6 · 높음 &gt;7(키튼 3~5·미드 6~7·하이 ≥8·플랫폼 &gt;10). 발 쐐기 기울기 = asin(굽/발길이). 한국 호칭 = 발길이 mm 5mm 간격 [21].</li>
+<li>양말: 니삭스 윗선 무릎 아래 0.1~0.2H · 사이하이 무릎 위 0.4~0.6H · 밴드 0.03H · 허벅지 살 살짝 눌림 [e771af54·16607bf8].</li>
+</ul>
+<h2 id="06_옷_소품-6-6-장신구-붙임점-MSC2_ACC_ATTACH-A8-6-정범님-모자를-뚫고-올라감-소품이-머리에-묻힘">6.6 장신구 붙임점 — <code>MSC2_ACC_ATTACH</code> (A8.6 · 정범님 "모자를 뚫고 올라감·소품이 머리에 묻힘")</h2>
+<table>
+<thead>
+<tr>
+<th>품목</th>
+<th>뼈</th>
+<th>점·크기(H)</th>
+<th>규칙</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>모자</td>
+<td>head</td>
+<td>밴드 = 눈썹 위 0.08~0.12H · 밴드 둘레 = 머리둘레(2.46~2.54H)+0.01~0.13H</td>
+<td>안쪽 테두리는 머리카락 껍질 <strong>안으로 0.02~0.05H 파고들어</strong> 앉음(눌림 = 껍질 두께의 50~70%) · 앞·옆머리는 테 밑으로 삐짐 · 밀짚 챙 ≈1.8H·크라운 챙 위 0.5H·챙 15~20° 처짐 · 베레 비스듬·머리카락이 둘레 감싸 부풂 · 후드 테 머리카락 바깥 0.10~0.16H</td>
+<td>d622d9b5·2c528dc8·938665cc·[24~26]</td>
+</tr>
+<tr>
+<td>머리띠·핀</td>
+<td>head</td>
+<td>머리카락 위 눌러 앞뒤 부풂</td>
+<td>04 §4.7</td>
+<td>c81511bc</td>
+</tr>
+<tr>
+<td>안경</td>
+<td>head</td>
+<td>브릿지 = 눈선·코 뿌리 · 템플 끝 = 귀 윗점 뒤 · 전체 폭 = 머리너비+0~0.02H · 렌즈 0.18~0.27H · 브릿지 0.06~0.11H · 렌즈 중심 간격 = 동공거리</td>
+<td>얼굴 앞 층 · 머리카락 뒤</td>
+<td>[28·29]</td>
+</tr>
+<tr>
+<td>귀걸이</td>
+<td>ear</td>
+<td>귓불 밑 0.1~0.2H 드롭 · 머리카락 앞</td>
+<td>중력 방향</td>
+<td>b94e51f9</td>
+</tr>
+<tr>
+<td>목걸이</td>
+<td>neck→chest</td>
+<td>35cm 목 · 45 쇄골 · 55 가슴 위 · 80 가슴 아래(둘레 = 길이/22.5H)</td>
+<td></td>
+<td>[30]</td>
+</tr>
+<tr>
+<td>시계</td>
+<td>wrist</td>
+<td>손목뼈 위 · 케이스 0.17~0.19H · 밴드 = 케이스/2</td>
+<td>아래팔 뒤·손 앞 층(15차d)</td>
+<td>[31]</td>
+</tr>
+<tr>
+<td>가방 숄더</td>
+<td>shoulder</td>
+<td>드롭 0.9~1.3H → 겨드랑이 아래 · 끈 폭 0.05~0.12H</td>
+<td>끈은 몸통 원통 따라 휨</td>
+<td>[32]·220fec46</td>
+</tr>
+<tr>
+<td>가방 크로스</td>
+<td>shoulder→반대 hip</td>
+<td>드롭 2.3~2.7H · 끈 사선 30~35° · 끈 길이 4.8~6.0H</td>
+<td></td>
+<td>[32·33]·3fc95be8</td>
+</tr>
+<tr>
+<td>핸드백</td>
+<td>hand</td>
+<td>0.6H×0.55H · 손가락이 손잡이 감쌈(가려진 손잡이도 그림) · 윗선 = 손목</td>
+<td></td>
+<td>220fec46</td>
+</tr>
+<tr>
+<td>- <strong>T9 붙임</strong>: 모든 소품에 attachBone · 뼈 hull+0.2H 밖 렌더 0 · 두개골 교차는 선언된 접촉만.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="06_옷_소품-6-7-소품-치수-쥐기-A6-5-A8-7-MSC2_PROP_SIZE">6.7 소품 치수·쥐기 (A6.5·A8.7) — <code>MSC2_PROP_SIZE</code></h2>
+<table>
+<thead>
+<tr>
+<th>소품</th>
+<th>cm</th>
+<th>H</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>46판 책</td>
+<td>12.7×18.8</td>
+<td>0.56×0.84(기본 heldBook · 세로 ≈ 손 길이)</td>
+</tr>
+<tr>
+<td>국판/A5</td>
+<td>14.8×21.0</td>
+<td>0.66×0.93</td>
+</tr>
+<tr>
+<td>신국판</td>
+<td>15.2×22.5</td>
+<td>0.68×1.00</td>
+</tr>
+<tr>
+<td>B5</td>
+<td>18.2×25.7</td>
+<td>0.81×1.14</td>
+</tr>
+<tr>
+<td>문고판/A6</td>
+<td>10.5×14.8</td>
+<td>0.47×0.66</td>
+</tr>
+<tr>
+<td>책 두께</td>
+<td>1~3cm</td>
+<td>bookThick 0.04~0.13(기본 0.07)</td>
+</tr>
+<tr>
+<td>스마트폰</td>
+<td>14.0×6.5~7.0×0.8</td>
+<td>0.62×0.29~0.31×0.036</td>
+</tr>
+<tr>
+<td>종이컵 6oz</td>
+<td>윗지름 7.3·밑 5.2·높이 8.0</td>
+<td>0.32·0.23·0.36</td>
+</tr>
+<tr>
+<td>연필</td>
+<td>17.8~19.0×0.76</td>
+<td>0.79~0.84×0.034</td>
+</tr>
+<tr>
+<td>- 쥐기(GRASP 33분류 [40]): 중간 감싸기(병·자루 · 가장 잦음) · 옆집기(열쇠·카드) · 옆삼각(연필 · 끝에서 1~3cm 위) · 힘 구(인형) · 검지 뻗기(자루). <strong>물건은 손가락 뒤·손바닥 앞에 끼우고 엄지가 반대쪽</strong> — 손가락이 물건을 가려야 하며 손 밑에 매달리거나 앞에 떠 있으면 ✗ [850a8942·3c2dc31e]. 팔을 몸·면에 누르면 그 부위 윤곽이 납작해짐.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- 긴 막대는 승모근에 걸치고 어깨에서 0.8H 밖에서 손목을 꺾어 쥠 [8138e49f].</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="06_옷_소품-6-8-SF-판타지-해변-A8-8">6.8 SF·판타지·해변 (A8.8)</h2>
+<p>비키니 = 몸 윤곽 + 끈 0.03H·가장자리 선만 · 파레오 = 매듭이 주름 원점 · 케이프 = 어깨 끝에서 팔 감싸 팔뚝 중간, 몸 밖 0.3H · 볼가운 밑단 ≈3×어깨 폭·러플 3단 · 기모노 소매 무릎까지·오비 0.5H · 벨소매 팔꿈치부터 입구 1H · 튜튜 가로 1.3H · 메이드 퍼프 소매+앞치마+머리 프릴 [84e2fdfd·123686d0·220fec46·d36f0911]. 양식: SF = 깨끗한 기하(패널·육각·단단한 모서리) · 판타지 = 흐르는 곡선+절제된 뾰족함 [44].</p>
+<h2 id="06_옷_소품-6-12-옷-B-묶음-보강-obs-clothes_b-66장-합격-C1-C28">6.12 옷 B 묶음 보강 (obs/clothes_b · 66장 · 합격 C1~C28)</h2>
+<ul>
+<li><strong>두께 규칙</strong>: 모든 옷 가장자리와 피부 윤곽 사이 틈 ≥0.02H(밀착 신축만 예외) + 두께 선(이중선/어깨 꺾임) [9d86a2e3].</li>
+<li><strong>밑단 위치 사전(턱 기준 7.3H)</strong>: 크롭 가슴 아래 0.3~0.5H · 보통 티 가랑이 ±0.1~0.15H · 라이더스 허리뼈(턱 아래 2.1~2.2H) · 교복 블레이저 엉덩이 중간(가랑이 위 0.3~0.5H) · 정장 가랑이 아래 0.1~0.2H · 튜닉 0.5H / 하의(가랑이 아래): 데님 반바지 0.15~0.25H · 미니 0.3H · 무릎 위 0.7H · 무릎 1.1H · 미디 1.5~1.9H · 맥시 2.6H · 긴바지 브레이크 1(0.03H) [62c19415·2d9919d2·7b36572c].</li>
+<li><strong>밑위 3단</strong>: 보통 배꼽 ±0.05H(밑위 0.95H) · 높음 배꼽 위 0.15H · 낮음 배꼽 아래 0.4~0.45H(앞이 뒤보다 5~8° 낮음) · 플라이 = 밑위×0.6 · 가랑이 수염 주름 좌우 2 [c8e18cb3·103c8b6c].</li>
+<li><strong>깃·단추·주머니 표준</strong>: 셔츠 단추 5개 간격 0.3~0.45H(첫 단추 턱 아래 0.8H) · 가슴 주머니 윗변 젖꼭지 높이·폭 0.5~0.7 머리폭 · 라펠 V = 정장 턱 아래 1.8H/교복 1.1H · 세일러 V 0.37H·타이 0.85H · 넥타이 끝 = 벨트 상단 · 카고 허벅지 바깥 윗변 가랑이 [b4ddaa01·bae3ea09·40774901].</li>
+<li><strong>밴드 블라우징</strong>: 커프 0.05~0.1H · 니트 밑단 0.05~0.1H · 셔츠 넣으면 0.05~0.15H · 바지 부츠 안 0.1~0.15H · 밴드 폭 골 커프 0.1~0.12H·밑단 0.08~0.12H·벨트 0.08H·초커 0.04~0.06H [360f728c·f4ab0261].</li>
+<li><strong>여성 상의 당김점 = 가슴 꼭대기 2점</strong>: →어깨 ↗45°·→겨드랑이 ↘45° 각 1~2(총 4~6) · 가슴 사이·가슴 아래 윤곽은 그리지 않음(수직 낙하, 몸판이 갈비에서 0.1H 떨어짐) · 등 어깨→반대 골반 사선 1 + 허리 Z 3단 [cf1a8722·4b389981].</li>
+<li><strong>팔 동작 반응</strong>: 한 팔 올림 밑단 0.1~0.15H↑+겨드랑이 방사 3~4 · 양팔 0.2~0.3H↑ · 팔짱 전완 교차 = 가슴 아래 0.2H · 손 허리 옆선 0.03H 눌림+밑단 사선 0.1H · 팔꿈치 90° 안쪽 3~4·바깥 0 [376688eb·881b29bf].</li>
+<li><strong>롤업 천 보존</strong>: n회 접음 → 띠 0.05H×n · 밀어올린 소매 폭 1.5~1.8×팔·높이 0.4~0.5 전완 [103fe5be·8c70a4f4].</li>
+<li><strong>치마 수치</strong>: 플리츠 미니 11~12(정면)·2.0×허리·0.8H / 무릎 16~18·2.2× / 롱 18~20·2.3× · 밑단 지그재그 0.03H · 플레어 2.2~2.5× · 펜슬 0.9~0.95×골반+뒤 트임 · A라인 1.8× · 리본 'ワ' 눌림 2+고리 2+가닥 2 [bae3ea09·9dd4f639].</li>
+<li><strong>드리움</strong>: 어깨/골반 곡면 위 매끈 → 바로 아래부터 파이프 폴드(간격 위 0.05H → 밑단 0.2~0.3H) · 정지 시 뒤 4~6·앞 3~5 · 팔 들면 천이 팔 바깥면에 얹힘(단면 폭 ≥ 몸 폭+0.05H) · 바람 쪽 다리 노출+반대 2~3배 부풂 [843d324c·37752ed2].</li>
+<li><strong>모자·띠</strong>: 띠는 앞 헤어라인 위 0.05~0.15H · 측면 20~30° 뒤 · 폭 0.04~0.12H · 머리카락 눌림 0.02~0.03H · 챙 2.0~2.4×머리폭 · 귀걸이 귓불 아래(후프 0.08H) · 팔찌 손목뼈 위 0.05H [3fbced78·b148644d].</li>
+<li><strong>신발</strong>: 길이 = 발×1.1~1.2(앞코 빈 공간) · 밑창 0.06~0.1H · 굽 스니커즈 0.05H/펌프스 0.25H/하이힐 0.3~0.35H · 부츠 통 앵클 0.15H·숏 0.3~0.4H·종아리 0.5~0.6H · 발끝 10~20° 바깥 [5946f747·295fe607].</li>
+<li><strong>무늬·로고는 몸 단면을 따라 휨</strong>(양끝 0.02~0.05H 아래) · 주름을 지나면 꺾임 [9e37f137].</li>
+<li><strong>실루엣 검사</strong>: 입힌 실루엣 = 알몸 실루엣이면 실패(신축 제외) [8d07c64d·c29442e1].</li>
+<li>SD(2H): 목 없어 깃이 턱 바로 아래 · 반팔 0.22H · 밑위 = 몸통 1/3 [e891e20c].</li>
+</ul>
+<h2 id="06_옷_소품-6-9-합격-기준-T19-T9-T49-T56">6.9 합격 기준 (T19·T9 + T49~T56)</h2>
+<table>
+<thead>
+<tr>
+<th>번호</th>
+<th>시험</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T49</td>
+<td>옷 데이터 fab ∈ 4분류 · 주름 함수가 MSC2_FABRIC 밖 상수 참조 0</td>
+</tr>
+<tr>
+<td>T50</td>
+<td>한쪽 면 주름 수 ≤ foldPerSide 상한 · 셔츠 전체 3~6 · 팔꿈치 바깥 0</td>
+</tr>
+<tr>
+<td>T51</td>
+<td>몸 1.0H 이동 후 밑단 정지 프레임 = lag+settle±1(stiff 4~7·mid 6~10·soft 10~18·stretch ≤2) · 오버슛 ±0.03 · 영점 교차 = wobbles</td>
+</tr>
+<tr>
+<td>T52</td>
+<td>품: 옷 윤곽–몸 윤곽 최소 거리 = fit 표 ±0.005H · 깃·소매 빈틈 존재</td>
+</tr>
+<tr>
+<td>T53</td>
+<td>치마 밑단 ≥ 다리 윤곽 바깥 0.05H · 든 다리 뚫림 0 · 밑단 기울기 = 골반선 ±5°</td>
+</tr>
+<tr>
+<td>T54</td>
+<td>모자 안쪽 테 = 껍질 안 0.02~0.05H · 머리카락 테 밑 삐짐 존재 · 두개골 교차 0</td>
+</tr>
+<tr>
+<td>T55</td>
+<td>안경 브릿지 y = 눈선 ±0.02H · 템플 끝 = 귀 윗점 ±0.02H · 폭 ∈ [머리너비, +0.02H] · 시계 중심 손목뼈 ±0.03H · 목걸이 최저점 길이표 구간</td>
+</tr>
+<tr>
+<td>T56</td>
+<td>소품 bbox = 치수표 ±3% · 쥐기 접촉점 ±0.01H · 손가락이 물건 뚫지 않음 · 굽 = 종류 범위·발 쐐기 각 ±1°</td>
+</tr>
+</tbody>
+</table>
+<h2 id="06_옷_소품-6-10-설정값">6.10 설정값</h2>
+<p>fab 4분류 15항목 · MSC2_FIT 5단 · foldPerSide 상한 · bookThick · heldBook · 모자 눌림 비율 · anat.realism(발 길이 관행/실측).</p>
+<h2 id="06_옷_소품-6-11-근거를-못-찾은-것">6.11 근거를 못 찾은 것</h2>
+<p>갈래별 주름 수·폭·늦음의 숫자(설계값) · 코트·원피스·치마 여유 cm · 부츠 샤프트·귀걸이·배낭·해변 관행(검색 한도) · 안경·책·휴대폰·컵의 참고 그림 근거(웹 치수만).</p></section>
+<section class="ch" id="07_특수객체"><h1>07. 특수 객체 — SD(2~4등신) · 동물 꼬마 5종 · 로봇 · 외계인 · 마네킹</h1>
+<p>근거: v1 §10 · 02 §2.6 · 03 §3.3.4 · <code>obs/turn_body</code>(꼬마 비율) · <code>web/kid_eyes</code>(동물 눈) · 15차e·k 기록. ※ SD·동물 원본 관찰(76장 묶음)은 한도로 중단 — 재개 시 <strong>[v2 보강]</strong>. 정범님(10/28 15:00): "진짜 꼬마아이(망가형) 2~4등신 · 꼬마형 인간 동물(몸은 사람형, 꼬리·털, 얼굴은 동물, 눈은 사람과 유사) · 너구리·곰·토끼·호랑이·늑대".</p>
+<h2 id="07_특수객체-7-1-SD-2-4등신-A9-1-02-2-6-식의-값">7.1 SD 2~4등신 (A9.1) — 02 §2.6 식의 값</h2>
+<table>
+<thead>
+<tr>
+<th>등신</th>
+<th>목</th>
+<th>어깨 폭(H)</th>
+<th>팔(위+아래)</th>
+<th>다리(샅→바닥)</th>
+<th>손</th>
+<th>눈 중심 높이</th>
+<th>눈 폭/HW</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2</td>
+<td>0(머리 밑면이 몸통 윗면에 닿음)</td>
+<td>0.9~1.0</td>
+<td>0.5~0.6(손이 정수리 못 닿음)</td>
+<td>0.9~1.0</td>
+<td>0.25~0.3(장갑)</td>
+<td>0.60~0.65</td>
+<td>0.28~0.32</td>
+<td>아기 넨도로이드</td>
+</tr>
+<tr>
+<td>2.5</td>
+<td>0</td>
+<td>1.0</td>
+<td>0.7</td>
+<td>1.2</td>
+<td>0.3</td>
+<td>0.60</td>
+<td>0.28</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>0.08</td>
+<td>1.05</td>
+<td>0.9</td>
+<td>1.4~1.5</td>
+<td>0.35</td>
+<td>0.58~0.62</td>
+<td>0.27</td>
+<td>동물 꼬마 기본</td>
+</tr>
+<tr>
+<td>3.5</td>
+<td>0.12</td>
+<td>1.1</td>
+<td>1.0</td>
+<td>1.7</td>
+<td>0.4</td>
+<td>0.58</td>
+<td>0.27</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>0.15</td>
+<td>1.15~1.35</td>
+<td>1.03(0.61+0.42)</td>
+<td>1.75(샅 56%)</td>
+<td>0.45</td>
+<td>0.58</td>
+<td>0.26~0.28</td>
+<td>꼬마 기본(정범님 4.0H)</td>
+</tr>
+<tr>
+<td>- 몸 모양 3종(서양배·가는 몸·삼각) · 체격 3(마른·보통·통통) 유지. 안정 분수는 02 §2.6 함수로, 칸별 예외표 금지.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- SD 다림줄은 목 관절에서 내림 [b078d6db] · 손은 2~2.5등신에서 정수리에 못 닿음(15차e 시험 유지) · 2등신 발 사이 틈.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- 꼬마 눈·얼굴은 03 §3.3.4 8기준이 우선(크기보다 비율).</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- 옷: 깃이 턱 바로 아래 · 반팔 0.22H · 밑위 = 몸통 1/3(옷 B 21).</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="07_특수객체-7-2-동물-꼬마-5종-A9-2">7.2 동물 꼬마 5종 (A9.2)</h2>
+<ul>
+<li>몸 = 꼬마 리그 3.0H(사람형) + 꼬리 사슬(정면에서 다리 뒤 층) + 털 가장자리(실루엣 톱니 0.02~0.04H) + 손발 패드.</li>
+<li>머리 = 종별 둥근 지붕(곰·토끼 둥글게 · 너구리·호랑이 넓게 · 늑대) + 주둥이 덩어리 + 코 패드 + ω 입 + 볼 털 + 무늬 · 동물 귀가 사람 귀를 대체(15차e·g).</li>
+<li><strong>눈 = 사람 눈 구조이되 홍채 주도</strong>(03 §3.3.4 동물 행): 흰자 ≤5% · 눈꺼풀 띠 = 털색 어두운 계열 · 속눈썹 0 · 하이라이트 1+1 · 두 눈 중심의 중점이 주둥이 세로축 위(어긋남 ≤0.02 얼굴 폭) · 눈 아래선 &gt; 주둥이 윗선. 사람 흰자·속눈썹을 오려 붙인 느낌(너굴 현재) 금지.</li>
+<li>표정: 귀가 슬픔에 처짐(유일 근거) · 놀람은 홍채 축소+동공 · 나머지 관례.</li>
+<li>종별 고유 요소(고정): 너구리 눈 가면 무늬·줄무늬 꼬리 / 곰 둥근 귀·짧은 꼬리 / 토끼 긴 귀(물리)·둥근 꼬리 / 호랑이 줄무늬·볼 털 / 늑대 뾰족 귀·긴 주둥이·굵은 꼬리.</li>
+</ul>
+<h2 id="07_특수객체-7-3-로봇-A9-3">7.3 로봇 (A9.3)</h2>
+<p>원시 도형 몸 + 공 관절 12 + 얼굴 화면(LED 눈·입) · 머리–몸 연결은 <strong>목 원통 또는 공 관절이 보이게</strong>(머리가 떠 있으면 안 됨 — 정범님 캡처 '회색 로봇 머리 떠 있음') · 관절 ROM은 사람과 같되 비틀림 과장 허용.</p>
+<h2 id="07_특수객체-7-4-외계인-A9-4">7.4 외계인 (A9.4)</h2>
+<p>큰 두개골(HW 1.0~1.1) · 더듬이 사슬(물리) · 손가락 4 · 부유(08 §8.9 push/pull · 바닥 그림자 타원 필수).</p>
+<h2 id="07_특수객체-7-5-마네킹-미성년-맨몸-A9-5">7.5 마네킹 — 미성년 맨몸 (A9.5)</h2>
+<ul>
+<li>성인 '맨몸으로' = 매끈한 맨살(유두·성기 없음). <strong>미성년(꼬마·청소년)은 회베이지 마네킹</strong>(관절 공 12 · 가슴 없음) — 손·발은 살색 유지(정범님 10/29 13:58 결정, 15차m 확인). 전신복 보기는 선택지로.</li>
+</ul>
+<h2 id="07_특수객체-7-6-합격-기준-T76-T79">7.6 합격 기준 (T76~T79)</h2>
+<table>
+<thead>
+<tr>
+<th>번호</th>
+<th>시험</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T76</td>
+<td>SD 표 값 ±0.03H · 2~2.5등신 손 정수리 못 닿음 · 목 0일 때 머리 밑면–몸통 윗면 거리 0</td>
+</tr>
+<tr>
+<td>T77</td>
+<td>동물: 꼬리 다리 뒤 층 · 동물 귀가 사람 귀 대체 · 눈 8기준 동물 행 · 주둥이 축 정렬 ≤0.02</td>
+</tr>
+<tr>
+<td>T78</td>
+<td>로봇 머리–몸 연결 요소 존재(목 원통/공 관절) · 모든 각도 틈 0</td>
+</tr>
+<tr>
+<td>T79</td>
+<td>마네킹: 미성년 맨살 0 · 손발 살색 · 관절 공 12</td>
+</tr>
+</tbody>
+</table>
+<h2 id="07_특수객체-7-7-설정값">7.7 설정값</h2>
+<p>SD 등신 슬라이더 · 몸 모양·체격 · 종별 고유 요소 · 털 톱니 크기 · 꼬리 물리.</p></section>
+<section class="ch" id="08_애니메이션"><h1>08. 애니메이션 — 양식 3종 · 대기 · 걷기 · 몸짓 · 2차 운동 · 블렌드 · 상호작용 · SF</h1>
+<p>근거: <code>web/motion.md</code>(출처 33 · [출처 n]) · <code>obs/motion_etc.md</code>(참고 그림 39장 · [그림ID]) · v1 §11 · notes_web §1. 정범님 지시(10/29 13:20): "실제 움직임 · 애니메이션 · 아니메가 어떻게 다르고 비슷한지 구분해서 셋 중 하나를 골라 구현할 수 있는 수준".</p>
+<h2 id="08_애니메이션-8-1-런타임-구조-B1">8.1 런타임 구조 (B1)</h2>
+<ul>
+<li>재생은 언제나 24fps(f = 41.7ms). 트랙 5개: <strong>몸(body)</strong> · <strong>얼굴(face: 눈썹·눈꺼풀·입)</strong> · <strong>생명(life: 호흡·시선·깜박임 간격)</strong> · <strong>물리(phys: 머리카락·옷)</strong> · <strong>이펙트(fx)</strong>.</li>
+<li>계단화(코마)는 <strong>값 갱신 시각만</strong> <code>floor(t/koma)·koma</code>로 묶고 이징 계산은 연속으로 둔다 → 코마를 바꿔도 동작 길이는 같다 [출처 32]. 생명·물리 트랙은 항상 1코마(계단화 금지 — 호흡을 계단화하면 떨려 보임).</li>
+<li>스케줄러(<code>mscAnimReq</code> 우선순위·큐 4·크로스페이드)는 유지. 파라미터 이름은 Live2D 표준(ParamAngleX/Y/Z · BodyAngleX/Y/Z · Breath · EyeLOpen… )을 따른다(v1 §2.8).</li>
+<li>기존 중복 <code>msc2Io</code>/<code>MSC_EASE.io</code>는 하나로 합친다. <code>MSC2K.stepMs</code>(짝 접근용 460ms)와 걷기 <code>stepF</code>는 분리.</li>
+</ul>
+<h2 id="08_애니메이션-8-2-양식-3종-설정-motion-style-real-full-anime-기본-anime">8.2 양식 3종 — 설정 <code>motion.style</code> = real / full / anime (기본 anime)</h2>
+<p>세 양식은 뼈대·가동 범위·표정 순서·호흡·깜박임 간격·물리 스텝이 <strong>같고</strong>, 아래 매개변수 묶음만 다르다(한 곳 <code>MSC2_STYLE</code>에 두고 모듈은 참조).</p>
+<table>
+<thead>
+<tr>
+<th>이름</th>
+<th>뜻</th>
+<th>real</th>
+<th>full</th>
+<th>anime</th>
+<th>범위</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>komaBody</td>
+<td>몸 트랙 갱신 간격(f)</td>
+<td>1</td>
+<td>2</td>
+<td>3(빠른 동작 2)</td>
+<td>1~4</td>
+<td>[출처 1·2·3]</td>
+</tr>
+<tr>
+<td>komaFace</td>
+<td>얼굴 트랙</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>1~4</td>
+<td>[2·20]</td>
+</tr>
+<tr>
+<td>komaLife / komaPhys</td>
+<td>호흡·시선·물리</td>
+<td>1</td>
+<td>1</td>
+<td>1 고정</td>
+<td>1</td>
+<td>규칙</td>
+</tr>
+<tr>
+<td>holdMaxF</td>
+<td>완전 정지 허용 최대(f)</td>
+<td>0</td>
+<td>8~12</td>
+<td>36</td>
+<td>0~96</td>
+<td>[18·30]</td>
+</tr>
+<tr>
+<td>holdDriftPct</td>
+<td>무빙 홀드 드리프트</td>
+<td>—</td>
+<td>2</td>
+<td>0</td>
+<td>0~3</td>
+<td>[18]</td>
+</tr>
+<tr>
+<td>easeKind</td>
+<td>기본 이징</td>
+<td>sine io</td>
+<td>cubic io / easeOutBack</td>
+<td>step(타메·츠메: u&lt;0.3→0, u&gt;0.7→1)</td>
+<td></td>
+<td>[19]</td>
+</tr>
+<tr>
+<td>anticipRatio</td>
+<td>예비 거리/본 동작</td>
+<td>0.05</td>
+<td>0.10~0.25(SD 0.3~0.5)</td>
+<td>0.15(그림 1장)</td>
+<td>0~0.5</td>
+<td>v1 §11.4</td>
+</tr>
+<tr>
+<td>overshootPct</td>
+<td>지나침</td>
+<td>0</td>
+<td>5~15</td>
+<td>0~5</td>
+<td>0~20</td>
+<td></td>
+</tr>
+<tr>
+<td>settleF</td>
+<td>정착(f)</td>
+<td>0</td>
+<td>2~6</td>
+<td>1코마</td>
+<td>0~8</td>
+<td></td>
+</tr>
+<tr>
+<td>squashMax</td>
+<td>스쿼시·스트레치 최대 %</td>
+<td>0</td>
+<td>10(SD 25)</td>
+<td>3</td>
+<td>0~30</td>
+<td>[관행]</td>
+</tr>
+<tr>
+<td>lagHairF</td>
+<td>앞/옆/뒤머리 지연(f)</td>
+<td>물리</td>
+<td>1·2·4</td>
+<td>3·3·6 계단</td>
+<td>0~8</td>
+<td></td>
+</tr>
+<tr>
+<td>lagClothF</td>
+<td>치마/리본</td>
+<td>물리</td>
+<td>4·6</td>
+<td>6·6</td>
+<td>0~8</td>
+<td></td>
+</tr>
+<tr>
+<td>smear</td>
+<td>스미어</td>
+<td>off</td>
+<td>on(정확히 1f)</td>
+<td>obake(1~2코마)</td>
+<td></td>
+<td>[22·24]</td>
+</tr>
+<tr>
+<td>exprMidFrames</td>
+<td>표정 중간 그림</td>
+<td>연속</td>
+<td>2~4</td>
+<td>0~1</td>
+<td>0~6</td>
+<td>규칙 11</td>
+</tr>
+<tr>
+<td>exprTransF</td>
+<td>표정 전환 길이</td>
+<td>6~10</td>
+<td>6~10</td>
+<td>3~6</td>
+<td>2~20</td>
+<td></td>
+</tr>
+<tr>
+<td>blinkIntervalS</td>
+<td>깜박임 평균 간격</td>
+<td>4.3(2~6)</td>
+<td>4.3</td>
+<td>4.3</td>
+<td>1~10</td>
+<td></td>
+</tr>
+<tr>
+<td>blinkShapeF</td>
+<td>닫힘/감음/열림</td>
+<td>2/1/3</td>
+<td>2/1/3</td>
+<td>3장 1→3→2→1 ×코마(=12f)</td>
+<td></td>
+<td>[20]</td>
+</tr>
+<tr>
+<td>mouthLoopF</td>
+<td>입 루프 열/반/열/닫</td>
+<td>음소</td>
+<td>5/5/3/3</td>
+<td>5/5/3/3 코마 정렬</td>
+<td></td>
+<td>[21]</td>
+</tr>
+<tr>
+<td>breathPeriodS</td>
+<td>호흡 주기</td>
+<td>3.2~3.6</td>
+<td>같음</td>
+<td>같음</td>
+<td>1.8~5</td>
+<td></td>
+</tr>
+<tr>
+<td>swayBodyDeg / swayPeriodS</td>
+<td>몸 흔들림</td>
+<td>±0.3°/9s</td>
+<td>±2°/15.5s</td>
+<td>0</td>
+<td>0~3°</td>
+<td>[16·17]</td>
+</tr>
+<tr>
+<td>swayHeadDeg</td>
+<td>머리 흔들림</td>
+<td>±1.5°/6.5s</td>
+<td>±7.5°/6.5s</td>
+<td>±2°(2코마)</td>
+<td>0~8°</td>
+<td></td>
+</tr>
+<tr>
+<td>shiftEveryS / shiftDurF</td>
+<td>체중 옮김</td>
+<td>6~15s / 24~36f</td>
+<td>같음</td>
+<td>같음(2코마)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>stepF</td>
+<td>걷기 한 걸음(f)</td>
+<td>13</td>
+<td>12</td>
+<td>15(3코마 5장)</td>
+<td>4~32</td>
+<td>[4·8·12]</td>
+</tr>
+<tr>
+<td>stepPerMin</td>
+<td>=1440/stepF</td>
+<td>110</td>
+<td>120</td>
+<td>96</td>
+<td>45~360</td>
+<td></td>
+</tr>
+<tr>
+<td>bobHead</td>
+<td>상하 진폭(머리 단위)</td>
+<td>0.15</td>
+<td>0.1~0.2</td>
+<td>0.05~0.1</td>
+<td>0~0.3</td>
+<td>[6·13]</td>
+</tr>
+<tr>
+<td>lateralHead</td>
+<td>좌우 진폭</td>
+<td>0.09</td>
+<td>0.05</td>
+<td>0.03</td>
+<td>0~0.2</td>
+<td>[6]</td>
+</tr>
+<tr>
+<td>pelvisRotDeg / pelvisObliqDeg</td>
+<td>골반 회전·기울기</td>
+<td>±5/±5</td>
+<td>±8/±6</td>
+<td>±5/±5 계단</td>
+<td>0~12</td>
+<td>[7]</td>
+</tr>
+<tr>
+<td>kneeSwingDeg</td>
+<td>유각 무릎 최대</td>
+<td>60</td>
+<td>70</td>
+<td>60</td>
+<td>40~90</td>
+<td>[7]</td>
+</tr>
+<tr>
+<td>armSwingDeg</td>
+<td>팔 흔들기</td>
+<td>±20</td>
+<td>±20~30</td>
+<td>±20</td>
+<td>0~45</td>
+<td>[관행 · 그림 2e0c9942 ±15~22°]</td>
+</tr>
+<tr>
+<td>runStepF</td>
+<td>달리기 한 걸음</td>
+<td>7</td>
+<td>8(빠름 6)</td>
+<td>8~10</td>
+<td>4~12</td>
+<td>[8·11·13]</td>
+</tr>
+<tr>
+<td>blendF</td>
+<td>끊고 들어올 때 블렌드</td>
+<td>8~10</td>
+<td>5~8</td>
+<td>0~2코마</td>
+<td>0~12</td>
+<td>[25·27]</td>
+</tr>
+<tr>
+<td>blendVelMaxDegF</td>
+<td>블렌드 중 관절 속도 한도 °/f</td>
+<td>15</td>
+<td>25</td>
+<td>없음</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>fxKoma / fxImpactMode / fxSparkleF</td>
+<td>이펙트</td>
+<td>1 / none / —</td>
+<td>1~2 / blurAfter / 2</td>
+<td>2(반짝)·1~3(빔) / omit·blurAfter / 2</td>
+<td></td>
+<td>[24·20]</td>
+</tr>
+<tr>
+<td>- 아니메 걷기 원칙: <strong>장수를 줄이되 시간은 실제와 같게</strong>(3코마 中4장 = 15f/걸음 = 96걸음/분 ≈ 실제 100~115) [출처 12]. 현재 기본 95걸음/분은 그대로 anime 기본.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- <strong>[v1→v2]</strong> v1은 양식 선택이 없었고 12fps 계단 하나였다. 꼬마 걸음 발 들기 0.25H(15차m)는 anime bobHead 0.05~0.1(머리 단위)·발끝 높이 0.1H(통과 프레임 · 그림 2e0c9942)로 재조정.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="08_애니메이션-8-3-대기-idle-B2">8.3 대기(idle) (B2)</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>real</th>
+<th>full</th>
+<th>anime</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>몸 흔들림</td>
+<td>발목 각 ±0.3~0.5° · 앞뒤 주기 ≈9초(COP 0.11Hz)</td>
+<td>키 포즈 대비 1~3% 드리프트(ease-out)</td>
+<td>0 — 정지 그림</td>
+</tr>
+<tr>
+<td>생명</td>
+<td>깜박임 4.3초 · 호흡 3.2~3.6초(들숨 40%:날숨 60%) · 시선 1.5~4초</td>
+<td>같음 + 부위별 도착 엇갈림</td>
+<td>깜박임 + 머리카락 물리 + 가끔 입</td>
+</tr>
+<tr>
+<td>체중 옮김</td>
+<td>6~15초마다 24~36f · 골반→몸통→머리 2~3f씩 늦게</td>
+<td>같음</td>
+<td>2코마 계단화 · 포즈 2~3개 교대</td>
+</tr>
+<tr>
+<td>- 자세 교대 45/35/20(고유 포즈 / 콘트라포스토 변형 / 중립) · 어깨선·골반선 비평행 시간 ≥80%(B2.4).</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- <strong>'전봇대' 금지 규칙</strong>(그림 661e8241·b6fbef88): 어깨선 0°·골반선 0°·중심선 직선·두 발 대칭·두 팔 동일은 동시에 허용되지 않는다. 적어도 어깨 또는 골반 ≥5°, 중심선 C/S, 발 간격·발끝 각 다름, 한 팔 10~20° 굽힘.</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- 고유 포즈(캐릭터마다 2~3개)가 가장 자주(머묾 41%+ → <strong>45%</strong>). 코드: 여성 교복 '소심' = 무릎 붙이고 발끝 안쪽·양손 앞·어깨 안으로; '활발' = 한 다리 뒤로 차올림·팔 머리 위(그림 c98418d8). 꼬마 '장난' = 비대칭·무릎 굽힘·한 발 뗌·몸통 15~30°(87192ca2).</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- 잠: zzz는 선 그림(배경 투명) · 깊은 잠(아무 일 없을 때)은 보통 잠과 뚜렷이 다른 몸짓(10/28 15:00).</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="08_애니메이션-8-4-이동-B3">8.4 이동 (B3)</h2>
+<h3 id="_1">걷기 키 프레임</h3>
+<table>
+<thead>
+<tr>
+<th>키</th>
+<th>real(13f)</th>
+<th>full(12f · Williams)</th>
+<th>anime(3코마 5장 · 15f)</th>
+<th>자세(그림 2e0c9942·c98418d8·b6fbef88)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>접촉</td>
+<td>0</td>
+<td>1</td>
+<td>원화 A 1~3</td>
+<td>양발 최대 벌림 ≈ 2.0H(5.5등신 기준 키의 0.37~0.40) · 앞발 뒤꿈치만 닿고 발끝 15° 들림 · 뒷발 발끝만, 뒤꿈치 0.3~0.35H 들림 · 앞 무릎 175° · 뒷무릎 150° · 몸 높이 최저</td>
+</tr>
+<tr>
+<td>내림</td>
+<td>0~2.6</td>
+<td>3~4</td>
+<td>동화 1</td>
+<td>앞 무릎 20° 굽힘 · 무게 받음</td>
+</tr>
+<tr>
+<td>통과</td>
+<td>2.6~7.8(최고)</td>
+<td>7</td>
+<td>동화 2~3</td>
+<td>디딤 다리 수직 · 지나가는 발 지면 0.1H · 무릎 30° · 몸 최고(일상 +0.03~0.1H · 튀는 걸음 +0.2H)</td>
+</tr>
+<tr>
+<td>올림</td>
+<td>7.8~13</td>
+<td>9~10</td>
+<td>동화 3~4</td>
+<td>뒷발 발끝 밀기</td>
+</tr>
+<tr>
+<td>접촉</td>
+<td>13</td>
+<td>13</td>
+<td>원화 B</td>
+<td>반대 발</td>
+</tr>
+<tr>
+<td>- 실제 관절표(출처 6·7): 무릎 접지 10°→하중 20°→중간 입각 5°→발 떼기 40~50°→유각 60°→유각 말 5° · 엉덩관절 접지 35°→입각 말 −10° · 발목 −5°→+10~15°→−25°. 골반 회전 ±5°·기울기 ±5°.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- 팔은 같은 쪽 다리와 반대, 수직에서 ±15~22°. 몸통 0~8° 앞.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- 걸음 성격 변수 5개(그림 46c074b0): 몸통 기울기(자신감 뒤 10° / 급함·몰래 앞 30°) · 걸음 길이(활보 = 다리 길이 1배 · 소심 0.3배) · 무릎 높이(기쁨·행진 = 골반 높이 · 지침 = 발끝 끌기) · 팔 흔들기(활보 ±40° · 주머니·슬픔 0) · 머리 높이(기쁨 턱 올림 · 슬픔 턱이 어깨선 아래). 같은 뼈대에 이 5개만 바꿔 13가지 걸음.</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- 달리기: 몸통 앞 10~25°(기울수록 빠름) · 뒷다리 무릎 90° 접어 뒤꿈치가 엉덩이 쪽 · 앞다리 무릎 골반 높이 · 팔꿈치 90° · 팔 방향이 바뀌는 순간 그쪽 어깨 0.1H 상승(b546baab). anime 대시는 공중 그림 없이 4장 2~3코마(출처 13).</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- 미끄러짐 0: 디딘 발은 접지~발 떼기 동안 화면에서 고정(15차h 발 디딤 계획 유지).</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="_2">몸 돌기</h3>
+<ul>
+<li>순서 <strong>머리 → 가슴 → 골반</strong>(e3b03194 "TORSO FOLLOWS HEAD"), 각 2~3f 지연. 비틀기 한계 몸통 45~70°·머리 70~90°(8bc43f63). 3/4에서 먼 팔은 몸통 뒤 층.</li>
+</ul>
+<h2 id="08_애니메이션-8-5-2차-운동-B4-3">8.5 2차 운동 (B4.3)</h2>
+<ul>
+<li>머리카락·치마·자락은 <strong>지나온 방향</strong>을 가리킨다(f9008054). 달릴 때 치마 밑단은 진행 반대쪽으로 15~30° 올라가는 각진 물결 3~5파(d26b7efd).</li>
+<li>지연·오버슛: 표 8.2 lagHairF·lagClothF, 오버슛 10~50%(full) · 1~2회 흔들고 정지(anime). 물리 스텝 60fps 고정. 꼬리·포니테일은 뿌리가 머리를 따르고 끝이 진자(출처 13).</li>
+</ul>
+<h2 id="08_애니메이션-8-6-몸짓-B4-1-B4-2-B4-4">8.6 몸짓 (B4.1·B4.2·B4.4)</h2>
+<ul>
+<li>3단: <strong>예비(반대 방향) → 본동작 → 정착</strong>. 예비는 본동작의 반대로(팔 치기 전 앞으로 내밀며 10° 숙임 · 점프 전 웅크림 키의 60%까지 · 춤 CLOSED→OPEN)(9e4916c1·9570464f·f9008054).</li>
+<li>시간표(24fps · v1 §11.2 유지): 끄덕 8~12f · 갸웃 10~14f · 손 흔들기 왕복 12~16f×2~3 · 인사 15°/30°/45° = 12/18/24f 내려가고 1.5배로 올라옴 · 놀람 뒤로 젖힘 3~4f + 정착 6~8f · 웃음 12f 주기 · 한숨 36f · SD 점프 예비 6f·공중 8~10f·착지 스쿼시 2~3f.</li>
+<li>동작선은 C 또는 S 한 줄, 손·발 각은 팔·다리 곡선을 잇는다(9570464f·f9008054). 뒤 팔다리는 몸 윤곽 앞에서 선을 끊는다(e74246be · 렌더는 10 §10.1 층으로 자동).</li>
+<li>공중 자세: 모든 관절 20~40° 부드럽게 굽힘, 발끝 폄 30°, 팔 30~60° 띄움, PUSH(C자 말림)/PULL(S자) 먼저 정함, <strong>바닥 그림자 타원 필수</strong>(높이는 그림자–발 거리로)(9570464f·e74246be).</li>
+<li>스미어: full은 손 ≥0.5머리/f 또는 머리 ≥20°/f인 <strong>1프레임만</strong> 늘임 그림; anime는 오바케 1~2코마; 동작 줄이기면 둘 다 끔.</li>
+</ul>
+<h2 id="08_애니메이션-8-7-끊고-들어오기-B4-5">8.7 끊고 들어오기 (B4.5)</h2>
+<ul>
+<li>블렌드 길이 표 8.2 blendF(현 MSC_XFADE 200ms≈5f는 업계 0.1~0.4s 안 [출처 25~28]). 관절 각속도 한도 blendVelMaxDegF. anime는 블렌드 없이 2코마 안 새 키.</li>
+<li>끊김 0 기준: 무작위 100쌍 끊기에서 '보통 한도' 초과 0(15차k 달성 → 유지 시험).</li>
+</ul>
+<h2 id="08_애니메이션-8-8-상호작용-B5">8.8 상호작용 (B5)</h2>
+<ul>
+<li>짝 동작은 두 리그에 'contact' 마커를 두고 접촉 프레임을 같은 시각에, 팔로워 재생 속도를 비례 조정(Unreal Sync Marker 방식) · 길이 차 ±25% 안.</li>
+<li>하이파이브: 들기 8~10f · 접촉 1f · 스파크 3f · 반동 6f · 두 손 거리 ≤0.05H(15차k 0.16H → 목표 0.05H).</li>
+<li>어른–꼬마: 닿는 높이 = 꼬마 손 설계 높이 · 어른은 무릎 굽힘(엉덩이 0.4H↓)+상체 앞숙임 ≤20° — 이때 <strong>목 틈 0</strong>(10 §10.1 구조가 전제. 15차l에서 숙임을 0으로 둔 원인이 바로 머리·목 분리).</li>
+<li>겹침 피하기: 캐릭터 둘의 손목 궤적이 0.1H 안으로 들어오면 한쪽이 반 걸음 물러남 · 마주 볼 때 몸 요 ±30°.</li>
+</ul>
+<h2 id="08_애니메이션-8-9-SF-판타지-B6">8.9 SF·판타지 (B6)</h2>
+<ul>
+<li>부유 push/pull · 수중 · 마법 시전 6f/3f · 순간이동 · 변신 60~120ms 엇갈림(v1 §11.7 유지).</li>
+<li>이펙트 작화 수치(출처 24 CEDEC 2011): 불꽃 한 사이클 6~8장 · 반짝임 2코마 · 빔 1~2f+2~3f를 10f 안에 · 충격은 <strong>프레임 생략(속도) 또는 블러 1장(힘)</strong> · 반짝이 4장×2f · 폭발은 표준보다 1.3배 느리게. 너무 매끈하면 죽어 보이므로 '걸림'을 일부러 둔다.</li>
+</ul>
+<h2 id="08_애니메이션-8-10-끌기-터치-B7">8.10 끌기·터치 (B7)</h2>
+<ul>
+<li>손·발 끌기: 커서를 손·발이 따라가고 팔·다리 IK, 한 발 붙고 기우뚱, 놓으면 제자리·옷매무새·한숨(10/27 23:21). 휴대폰은 <code>touch-action:none</code> + pointercancel을 놓음으로(15차g).</li>
+</ul>
+<h2 id="08_애니메이션-8-11-합격-기준-자동-시험-10-10-4-번호-이어서">8.11 합격 기준 (자동 시험 · 10 §10.4 번호 이어서)</h2>
+<table>
+<thead>
+<tr>
+<th>번호</th>
+<th>기준</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T22 코마</td>
+<td>anime에서 몸 트랙 변화 시각 차가 komaBody×41.7ms 배수(±2ms) · 호흡·물리는 매 프레임 변화</td>
+</tr>
+<tr>
+<td>T23 걷기</td>
+<td>10걸음 평균: real 541~583ms · full 500±5% · anime 625±5% · 상하 진폭 real 0.13~0.17·anime ≤0.1(머리 단위) · 접촉에서 최저, 중간 입각에서 최고 · 디딘 발 화면 이동 0 · 접촉 프레임 발 간격 1.8~2.2H</td>
+</tr>
+<tr>
+<td>T24 홀드</td>
+<td>full: 같은 값 12f 초과 0회 · anime: 36f까지 허용</td>
+</tr>
+<tr>
+<td>T25 대기</td>
+<td>real BodyAngle 0.2~0.5°·0.08~0.15Hz · full ±2°/15.5s · anime 0 · 어깨·골반 비평행 ≥80% · '전봇대' 조합 0회</td>
+</tr>
+<tr>
+<td>T26 깜박임</td>
+<td>5분 간격 평균 3.5~5.5s · 2s 미만 ≤10% · 모양 6f(±1) 또는 12f/8f</td>
+</tr>
+<tr>
+<td>T27 표정 순서</td>
+<td>눈썹 ≤ 눈꺼풀 ≤ 입 ≤ 머리, 100회 위반 0</td>
+</tr>
+<tr>
+<td>T28 블렌드</td>
+<td>각속도 ≤ 한도 · 길이 blendF±1f · 무작위 100쌍 튐 0</td>
+</tr>
+<tr>
+<td>T29 짝 동작</td>
+<td>하이파이브 100회 접촉 프레임 차 0f · 손 거리 ≤0.05H · 어른–꼬마 목 틈 0</td>
+</tr>
+<tr>
+<td>T30 스미어</td>
+<td>full 정확히 1f · anime 1~2코마 · 동작 줄이기 0회</td>
+</tr>
+<tr>
+<td>T31 양식 전환</td>
+<td>뼈대 길이·ROM·호흡·깜박임 통계 ±3% 불변</td>
+</tr>
+</tbody>
+</table>
+<h2 id="08_애니메이션-8-12-설정값-설정-움직임">8.12 설정값(설정 › 움직임)</h2>
+<p><code>motion.style</code> + 사용자 조정 항목: komaBody · stepPerMin · bobHead · swayBodyDeg · holdMaxF · blendF · armSwingDeg · 고유 포즈 비율. 바꾸면 화면 아래 알림(정범님 규칙).</p>
+<h2 id="08_애니메이션-8-13-근거를-못-찾은-것">8.13 근거를 못 찾은 것</h2>
+<p>팔 흔들기 생체역학 각 · 앉기 프레임 수 · 짝 동작 길이 허용치(±25%는 관행) · 스쿼시·예비 %의 정량 출처 · Preston Blair 원문(검색 한도) — 다음 조사 회차.</p></section>
+<section class="ch" id="09_표정"><h1>09. 표정 — 채널 · 53+ 표정표 · 세기 · 전환 순서 · 입 모양</h1>
+<p>근거: <code>obs/expression.md</code>(70장 · 53표정 13열 대응표 · 합격 15) · <code>web/motion.md</code>(전환 타이밍) · 03장(눈·눈썹 구조) · v1 §3.8·§3.10. 정범님(10/27 21:22): "표정은 MANGA·ANIME처럼 더 실감나고 다이나믹하게 매우 다양하게" · (10/27 19:35) "눈·눈썹 종류는 캐릭터마다 고정 — 표정은 형태만".</p>
+<h2 id="09_표정-9-1-채널-체계-C1-표정-독립-채널의-조합-얼굴-틀-눈-종류-눈썹-종류-id-불변">9.1 채널 체계 (C1) — 표정 = 독립 채널의 조합, 얼굴 틀·눈 종류·눈썹 종류 id 불변</h2>
+<table>
+<thead>
+<tr>
+<th>채널</th>
+<th>매개변수</th>
+<th>범위</th>
+<th>뜻</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 눈썹 안쪽 높이</td>
+<td>browIn</td>
+<td>−0.09~+0.08H</td>
+<td><strong>감정의 열쇠</strong>: 내리면 화·결의(0.05~0.09H·20~30°), 올리면 슬픔·걱정(0.03~0.06H·15~25°)</td>
+</tr>
+<tr>
+<td>② 눈썹 바깥 높이</td>
+<td>browOut</td>
+<td>±0.08H</td>
+<td>①②로 기울기·휨이 정해짐 · 양쪽 올라 둥글면 놀람(눈썹–눈 EH×1.0~1.2) · 한쪽만 다르면 의심·우쭐(좌우 차 0.03~0.05H)</td>
+</tr>
+<tr>
+<td>③ 위 눈꺼풀 덮임·모양</td>
+<td>lidTop</td>
+<td>0~100% · 아치/평평/∩/경사</td>
+<td><strong>'온도'</strong>: 기본 10~20% · 수줍·피곤 30~40% 평평 · 졸림·경멸·우쭐 40~50% 수평 · 화남 25~35% 코 쪽 경사 · 놀람 0% · 웃음 100% ∩</td>
+</tr>
+<tr>
+<td>④ 아래 눈꺼풀</td>
+<td>lidBot</td>
+<td>0~+0.4EH</td>
+<td>웃음에서 올라옴(입 곡률과 같은 부호) · 놀람은 거의 고정(≤10%EH)</td>
+</tr>
+<tr>
+<td>⑤ 홍채·동공·시선</td>
+<td>irisK · pupilK · gaze</td>
+<td>×0.5~1.1 · ×0.15~0.45 · ±0.3EW/EH</td>
+<td><strong>세기 계기판</strong>: 놀람 ×0.70~0.75(흰자 위아래) · 충격·공포 ≤×0.5+동공 0.2EW · 감동 ×1.1+하이라이트 · 동공 축소 = 강도, 세로 늘림(1:1.4) = 에너지</td>
+</tr>
+<tr>
+<td>⑥ 입</td>
+<td>mouthW · open · corner · teeth · tongue</td>
+<td>FW 0.08~0.5 · 0~0.3H · ±1</td>
+<td>세기의 '행': 평평→작은 미소→작은 o→중간→큰 열림</td>
+</tr>
+<tr>
+<td>⑦ 효과·홍조</td>
+<td>blush 3등급 · fx</td>
+<td>표 9.5</td>
+<td></td>
+</tr>
+<tr>
+<td>⑧ 고개·손·몸</td>
+<td>headPitch/Roll · pose</td>
+<td>표 9.2</td>
+<td>8번째 채널</td>
+</tr>
+<tr>
+<td>- 눈·눈썹 <strong>종류 id, 얼굴 윤곽, 머리 윤곽, 속눈썹 개수, 홍채 색, 하이라이트 배치 규칙은 어느 표정에서도 neutral과 같다</strong>(T45). 입 열림 ≤0.15H면 턱 윤곽 변화 0.</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- 눈썹–머리카락: 캐릭터 설정 <code>browOverHair</code>(기본 true: 표정이 읽히게 앞머리 위에 비침 · false면 공식 설정 「目、眉透けません」식으로 늘 숨김) [c47a1ea2].</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="09_표정-9-2-표정-목록-53-C2-1-수치표는-obs-expression-md-3-1-13열-53행-근거-그림ID-그대로-엔진-MSC2_XPP에-옮긴다">9.2 표정 목록 53+ (C2.1) — 수치표는 <code>obs/expression.md</code> §3-1(13열 × 53행 · 근거 그림ID) 그대로 엔진 <code>MSC2_XPP</code>에 옮긴다</h2>
+<p>세기 사다리 6줄(약→강, 4단) [50705b7d·f7183880]:
+| 감정 | 1단 | 2단 | 3단 | 4단 |
+|---|---|---|---|---|
+| 화 | annoyed(굳어짐) | angry(분개) | furious(분노) | rage(광분) |
+| 두려움 | worried | uneasy | afraid | terrified |
+| 기쁨 | pleased | happy | laugh | hyster |
+| 슬픔 | disappointed | sad | crying | wailing |
+| 놀람 | wary | puzzled | surprised | shocked |
+| 혐오 | 멸시 | 반감 | 혐오 | 극혐오 |
+- 1단 눈썹·눈꺼풀만, 입 다묾 / 2단 입 긴장 / 3단 입 열림 / 4단 최대 열림+주름+고개. 세기가 오르면 <strong>선이 뾰족해지고 비대칭</strong>(머리카락/눈썹/윗입술/턱이 번갈아 ±5~10°) [b785a20b].
+- 복합 = 윗얼굴 A + 아랫얼굴 B [a662c561]: forced(억지 웃음) = afraid 눈썹·눈 + laugh 입 · bitter = sad 눈썹 + pleased 입 · amazed = surprised 눈썹·눈 + happy 입 · despair = afraid 눈썹 + sad 열린 입.
+- 웃음: 입 곡선을 아래 눈꺼풀·눈썹에 <strong>반복</strong> · 입 크게 열리면 턱선이 5~10% 부풂 · 열린 웃음 입 = 바나나 반쪽 · 여자 열린 웃음 = 카레빵(렌즈형·윗입술 둥글게·작은 앞니), 남자 = 턱 조금 길게·W [6ffad67c·a94c3e98].
+- 감은 눈 두 종류: 기쁨 ∩(두께 0.25EH·끝 속눈썹 튐) / 편안·졸림 ‿ 또는 직선 · 꽉 감음 = ∩+주름 2~3 또는 &gt;&lt; · 윙크 한쪽 + 그쪽 눈썹 내림 [9530cec3·e0e93b70].
+- 놀람은 <strong>위로</strong> 커진다: 위 눈꺼풀 25~50%↑ · 폭 10~15%↓(면적 보존) · 고개 10~15° 젖힘 · '본 것'은 고개 = 시선 방향, '들은 것'은 반대 [7cf0b53b].
+- 성격·나이 보정: 냉정 성격 델타 ×0.33 · 리액션 큼 +1단 · 노인 3단 이상 주름선 ≥2(이마·미간·눈가) · 꼬마 이 악문 입·미간 주름 금지 · 꼬마·여 EH/EW 0.5~0.6·홍채 80~90%, 남 어른 0.3~0.45·홍채 55~60% [435faa32·4964b969].
+- 손·몸(8채널): 기쁨 두 손 턱 밑·주먹 가슴·V팔 · 수줍 볼·입 가림 · 생각 검지 턱 · 당황 손 가슴 · 놀람 두 손 방어 · 슬픔 팔짱 꽉·고개 숙임 · 자신감 양손 허리 · 짜증 팔짱+턱 당김 [15b99f91·88befbde].</p>
+<h2 id="09_표정-9-3-꼬마-동물-노인-변형-C2-3">9.3 꼬마·동물·노인 변형 (C2.3)</h2>
+<ul>
+<li>꼬마: 03 §3.3.4 눈 기준 유지 · 이 악문 입·미간 주름 금지 · 홍조 빗금 2~3.</li>
+<li>동물: 귀가 슬픔에 처짐(유일 근거) · 흰자 ≤5%라 놀람은 홍채 축소+동공으로만 · 나머지 '관례(근거 없음)' 표기, 참고 그림 모집.</li>
+<li>노인: 주름이 세기 채널 — 1~2단 ≤1줄, 3단 이상 ≥2줄.</li>
+</ul>
+<h2 id="09_표정-9-4-전환-C3-끊김-0-순서-고정">9.4 전환 (C3) — 끊김 0 · 순서 고정</h2>
+<ul>
+<li>순서(세 양식 공통): <strong>시선 0f → 눈썹(바깥 먼저) +0~2f → 눈꺼풀 +2~4f → 입(모양→열림) +3~6f → 머리·몸 +4~8f → 홍조·땀 +6~12f</strong>. 길이 보통 6~10f · 미묘 12~20f · 충격 2~4f. anime 중간 그림 0~1장('탁'), full 2~4장, real 연속 [web/motion 11·v1 §3.10].</li>
+<li>화는 눈썹·윗입술이 먼저. anime 3코마면 눈썹 0f·눈꺼풀 3f·입 6f에 정렬.</li>
+<li>전환 중 눈 종류 id 불변 · 채널 값만 보간 · 중간 상태에서 홍채가 눈꺼풀 clip 밖으로 나가지 않음.</li>
+</ul>
+<h2 id="09_표정-9-5-효과-홍조-C1-5-2643e4f6-db4488c6-ea694dac-15b99f91">9.5 효과·홍조 (C1.5) [2643e4f6·db4488c6·ea694dac·15b99f91]</h2>
+<table>
+<thead>
+<tr>
+<th>효과</th>
+<th>위치</th>
+<th>크기</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>홍조 ① 수줍</td>
+<td>눈 아래 바깥 타원, 중심 0.66~0.70H</td>
+<td>폭 FW×0.3 연분홍 + 빗금 3~5(15~25°)</td>
+</tr>
+<tr>
+<td>홍조 ② 부끄러움</td>
+<td>양 볼 + 콧등 띠</td>
+<td>폭 FW×0.9 · 높이 EH×0.6 진분홍 + 빗금</td>
+</tr>
+<tr>
+<td>홍조 ③ 새빨감</td>
+<td>얼굴 아래 2/3</td>
+<td>+ 땀 + 김</td>
+</tr>
+<tr>
+<td>땀 1개</td>
+<td>관자놀이·이마 가장자리(머리카락선 안 ≤0.05FW)</td>
+<td>0.04~0.08H 끝 위로 뾰족</td>
+</tr>
+<tr>
+<td>놀람 번쩍선</td>
+<td>머리 밖 1~2시 3선</td>
+<td>0.15H</td>
+</tr>
+<tr>
+<td>당황 흔들선 〃</td>
+<td>10시·2시</td>
+<td>0.1H</td>
+</tr>
+<tr>
+<td>눈물</td>
+<td>아래 눈꺼풀 바깥 1/3 → 턱</td>
+<td>폭 0.025~0.03H · 길이 0.3~0.35H(울음) / 물방울 1(글썽)</td>
+</tr>
+<tr>
+<td>?</td>
+<td>머리 옆</td>
+<td>0.25~0.3H</td>
+</tr>
+<tr>
+<td>✦ 반짝</td>
+<td>머리 양옆 2~4개</td>
+<td>0.07~0.1H</td>
+</tr>
+<tr>
+<td>♥</td>
+<td>머리 옆 위 1~2</td>
+<td>0.08~0.1H</td>
+</tr>
+<tr>
+<td>공포 그늘</td>
+<td>머리카락선~눈 아래</td>
+<td>청회색 그라데이션</td>
+</tr>
+<tr>
+<td>zzz·핏줄·먹구름·꽃·불꽃·혼</td>
+<td>관례(근거 없음) — zzz는 선 그림·배경 투명(15차g)</td>
+<td></td>
+</tr>
+<tr>
+<td>- 효과는 머리 실루엣 <strong>밖</strong> 1~2시·10~11시에 붙고 머리 기준점을 따라간다(v1 §3.8).</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="09_표정-9-6-입-모양-립플랩-C4">9.6 입 모양·립플랩 (C4)</h2>
+<ul>
+<li>귀여운 양식: 입이 FW×0.4·0.3H까지 열려도 턱 윤곽 그대로(얼굴 안에서만) · 코미디 고함만 턱 0.2~0.25H 하강 · 하품·폭소는 고개 10~15° 젖힘으로 [2643e4f6·9530cec3]. (03 §3.4 '입 &gt;0.10H면 턱 하강'은 사실형 옵션 · 기본은 귀여운 양식.)</li>
+<li>말하기 루프(口パク): 열림 5f → 반 5f → 열림 3f → 닫힘 3f(16f) · 말할 때만 · '아·오' 열림 유지 · '이·우·에' 반 · '응' 닫힘 [web/motion 10]. 모음별 입 모양 수치는 근거 없음(관례).</li>
+<li>로우앵글(pitch &lt; −10°): 웃는 입 곡률 ≤0.1·양끝 ×1.5 · 남성 W [a94c3e98].</li>
+</ul>
+<h2 id="09_표정-9-7-합격-기준-T20-T45-T61-T66">9.7 합격 기준 (T20 · T45 + T61~T66)</h2>
+<table>
+<thead>
+<tr>
+<th>번호</th>
+<th>시험</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T61 불변</td>
+<td>53표정 모두 eyeTypeId·browTypeId·faceOutline·hairOutline·속눈썹 수·홍채 색·하이라이트 규칙 = neutral · 입 ≤0.15H면 턱 좌표 변화 0</td>
+</tr>
+<tr>
+<td>T62 채널 값</td>
+<td><code>obs/expression.md</code> 합격 2~10의 눈썹 기울기·덮임·홍채·입 폭·홍조·효과·고개 수치 ±허용</td>
+</tr>
+<tr>
+<td>T63 사다리 단조</td>
+<td>5개 사다리에서 눈썹 내림/올림·입 열림·홍채 축소가 단계마다 단조 증가</td>
+</tr>
+<tr>
+<td>T64 복합 규칙</td>
+<td>forced·bitter·amazed·despair의 채널 값이 원본 표정 값과 일치</td>
+</tr>
+<tr>
+<td>T65 전환 순서</td>
+<td>눈썹 ≤ 눈꺼풀 ≤ 입 ≤ 머리 100회 위반 0 · 중간 프레임 홍채 clip 안</td>
+</tr>
+<tr>
+<td>T66 뒤센</td>
+<td>입꼬리 ≥0.3이면 아래 눈꺼풀 ≥0.1EH 상승·곡률 부호 = 입</td>
+</tr>
+</tbody>
+</table>
+<h2 id="09_표정-9-8-설정값">9.8 설정값</h2>
+<p>browOverHair · 성격 델타 배수(냉정 0.33·보통 1·리액션 큼 1.3) · 홍조 색 · 효과 크기 배수 · 전환 길이(양식별) · 입 양식(귀여운/사실).</p>
+<h2 id="09_표정-9-9-근거를-못-찾은-것">9.9 근거를 못 찾은 것</h2>
+<p>모음별 입 · zzz·핏줄·먹구름·꽃·불꽃·혼 기호 · 동물 얼굴 표정 · 꼬마 전용 변화량 — 다음 참고 그림 모집 대상.</p></section>
+<section class="ch" id="10_렌더_성능"><h1>10. 렌더링·성능 — 한 실루엣, 깊이 층, 예산</h1>
+<h2 id="10_렌더_성능-10-1-한-실루엣-가장-중요한-구조-변경-정범님-부위가-따로-논다-해결">10.1 한 실루엣 (가장 중요한 구조 변경 · 정범님 "부위가 따로 논다" 해결)</h2>
+<h3 id="1011-15m">10.1.1 현재(15차m) 구조와 결함 — 코드로 확인</h3>
+<ul>
+<li><code>msc2_svg.js</code> <code>msc2BodySvg</code>: 살 층(<code>m2-skin</code>)은 <strong>몸통(목 포함)·두 다리·두 발</strong>만 합집합으로 그린다(<code>sp = ['t','lL','lR','fL','fR']</code>). 바깥 윤곽은 '선 색 채움 + 2×선폭 stroke'를 먼저 깔고 살색 채움을 위에 얹는 방식(stroke-behind-fill)이라 <strong>이 다섯 조각끼리는 이음선이 없다</strong>.</li>
+<li>그러나 <strong>머리(얼굴 살·턱)는 이 층에 없다.</strong> 머리는 예전 머리 그리기(<code>hd.head</code>)가 만든 묶음을 <code>mp-head</code> 그룹에 넣고 <strong>자기 회전 중심(피벗)으로 따로 기울인다</strong>(<code>msc2_svg.js</code> 79행). 목 윗끝은 <code>msc2NeckTop</code>이 턱→정수리 축의 16% 지점에서 목 폭의 0.95배로 잡는 <strong>근사값</strong>이다(<code>msc2_body.js</code> 19행).</li>
+<li>결과: ① 머리와 목이 각자 윤곽을 가져 턱 아래에 선이 생김 ② 머리가 기울거나 돌면 목 윗끝이 따라가지 않아 틈·겹침 ③ 등신을 바꾸면 머리 크기·목 길이 계산이 서로 다른 식을 써서 어긋남(15차m 측정: 등신 2~4에서 12건 중 2~8건 틈). 정범님 캡처(10/29 13:41·16:10)의 '머리가 목 위에 떠 있음'이 이것이다.</li>
+</ul>
+<h3 id="1012-v2">10.1.2 v2 구조 (결정)</h3>
+<ol>
+<li><strong>살 층 = 얼굴 살(턱 포함) + 목 + 몸통 + 골반 + 허벅지 + 종아리 + 발 + 보이는 팔</strong>을 <strong>한 깊이 층 안에서 합집합</strong>으로 그린다. 머리카락·이목구비·옷·장신구는 그 위 층.</li>
+<li><strong>목은 머리 쪽 고리와 가슴 쪽 고리를 잇는 로프트</strong>다. 머리 쪽 고리는 두개골 모델의 <strong>턱 밑면</strong>(턱 끝에서 턱 모서리 쪽으로 1/3 지점, 02 §2.3)에 고정되어 머리와 <strong>함께 회전·기울기·돌림</strong>한다. 가슴 쪽 고리는 쇄골 패임 높이에 고정. 두 고리 사이를 2차 곡선으로 잇는다(머리가 기울면 목이 휜다). <code>msc2NeckTop</code>의 근사식은 버린다.</li>
+<li><strong>머리 회전은 살 층 안에서 처리</strong>한다. 얼굴 살 path를 머리 피벗으로 변환한 <strong>좌표를 계산해 넣고</strong>(SVG transform 그룹이 아니라 점 좌표), 목 로프트를 그 결과에 잇는다. 따라서 어느 각도에서도 턱–목 이음선이 없고 틈이 0이다.</li>
+<li><strong>턱 그림자</strong>는 살 층 위의 데칼(목 위에 걸치는 셀 그림자)로 그린다. 선이 아니라 그림자로 머리와 목을 구분한다(참고 그림 공통).</li>
+<li>2.5D 돌리기(03 §3.6)에서 얼굴 윤곽이 바뀌면 턱 밑면 고리도 같은 투영으로 바뀐다(고리는 두개골 표면의 위도·경도 점).</li>
+<li>등신(SD) 규칙: 목 길이 0인 2·2.5등신은 머리 쪽 고리와 가슴 쪽 고리가 <strong>같은 높이</strong>가 되어 로프트 길이 0 — 머리 밑면이 몸통 윗면에 <strong>닿는다</strong>(틈 0, 겹침 허용 0.02H). 3등신 이상은 02 §2.6 표의 목 길이.</li>
+</ol>
+<h3 id="1013-34">10.1.3 깊이 층 순서(정면 기준 · 3/4는 먼 쪽이 뒤로)</h3>
+<p>뒷머리 → 뒤 소품(가방 몸통·망토) → 먼 팔 → <strong>살 층(머리 살+목+몸통+골반+다리+발+가까운 팔 위팔)</strong> → 속옷/윗옷 → 하의 → 겉옷 → 가슴(위팔보다 앞) → 가까운 아래팔·손 → 앞 소품(책·휴대폰) → 얼굴 이목구비·수염 → 앞머리(눈썹 비침) → 모자·안경·효과.
+- 층 사이의 겹침 선은 앞 층의 stroke-behind-fill이 자동으로 만든다. 같은 층 안에서는 이음선이 없다.
+- 팔이 몸 앞을 지날 때(팔짱·배 앞)는 위팔부터 '가까운 팔' 층으로 올린다(15차 규칙 유지).</p>
+<h3 id="1014-a101a23">10.1.4 합격 기준 (A10.1·A2.3)</h3>
+<ul>
+<li>T14 <strong>이음선 검사</strong>: 살 층 묶음 안에 fill이 같은 path들 사이에 stroke path가 없고, 래스터에서 턱 아래 띠(턱 끝 ±0.3H 폭 · 턱 아래 0.05H)에 선 색 픽셀이 턱 그림자 데칼 영역 밖에서 0.</li>
+<li>T15 <strong>틈 검사</strong>: 머리 롤 −35~35°, 요 −90~90°, 피치 −45~45°, 등신 2·2.5·3·3.5·4 전부 × 정면·3/4·측면·움직임에서 턱 밑면 고리와 목 윗 고리 거리 = 0(같은 점). 래스터: 턱 아래 띠에 배경색 픽셀 0.</li>
+<li>T16 <strong>목 폭·기울기</strong>: 02 §2.3 범위.</li>
+</ul>
+<h2 id="10_렌더_성능-10-2-선-채움-그림자-01장-규칙의-구현">10.2 선·채움·그림자(01장 규칙의 구현)</h2>
+<ul>
+<li>바깥 윤곽 = 살 층 합집합의 외곽선만. 안쪽 선(쇄골·무릎·팔꿈치·주름)은 데칼로, 굵기 = 바깥의 0.5~0.6.</li>
+<li>선 색 = 그 부위 색의 어두운 변형(<code>mscLn</code>) — 유지.</li>
+<li>셀 그림자 = 부위 fill을 빛 반대쪽으로 평행 이동한 뒤 원래 fill로 clip(<code>msc2Shade</code>) — 유지. 그림자색 공식은 01 §1.3.</li>
+</ul>
+<h2 id="10_렌더_성능-10-3-예산-유지-측정-방법-명시">10.3 예산 (유지 · 측정 방법 명시)</h2>
+<ul>
+<li>SVG 한 장 ≤ 130KB(defs 포함). 좌표 소수: 얼굴 2자리·몸 1자리.</li>
+<li>프레임 작업 시간: PC ≤ 4ms · 휴대폰(CPU 4배 느리게) ≤ 8ms, 24fps. 숨은 탭 rAF 0.</li>
+<li>측정: Playwright <code>pw/tR15a.js</code>의 다시 그리기 시간 항목 + <code>k_paint_cost.txt</code> 방식(장당 Paint ms).</li>
+<li>머리 실루엣은 2° 단위로 캐시(회전 때만 재계산).</li>
+</ul>
+<h2 id="10_렌더_성능-10-4-자동-시험-체계-D8-1">10.4 자동 시험 체계 (D8.1)</h2>
+<table>
+<thead>
+<tr>
+<th>번호</th>
+<th>이름</th>
+<th>출처</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1~T13</td>
+<td>v1 재설계 계획 §3 공통 시험(랜드마크·폭·팔 닿음·다림줄·실루엣 연속·극단 보간·깊이 순서·얼굴 한 모양·붙임·머리 돌림·ROM·성능·스케줄러)</td>
+<td>유지</td>
+</tr>
+<tr>
+<td>T14~T16</td>
+<td>10.1.4</td>
+<td><strong>신설</strong></td>
+</tr>
+<tr>
+<td>T17</td>
+<td>등신 스윕: 2·2.5·3·3.5·4 × T1·T3·T15</td>
+<td>신설(A1.4)</td>
+</tr>
+<tr>
+<td>T18</td>
+<td>꼬마 눈 8기준(03 §3.3.4)</td>
+<td>신설(A3.2)</td>
+</tr>
+<tr>
+<td>T19</td>
+<td>옷 뚫림 0(걷기·앉기·차기 200f)</td>
+<td>v1 M11 → 번호 부여</td>
+</tr>
+<tr>
+<td>T20</td>
+<td>표정 전환 중 눈 종류 id 불변 · 전환 프레임 순서</td>
+<td>신설(C3)</td>
+</tr>
+<tr>
+<td>T21</td>
+<td>참고 나란히 비교 시트 생성(항목마다 캡처 파일 존재)</td>
+<td>신설(D8.2)</td>
+</tr>
+<tr>
+<td>- 시험은 <strong>정범님이 보는 화면과 같은 설정</strong>(friend/index.html?settings=1 · 웹 안 책방 친구 · 기본 설정)에서 돌린다. 시험용 하네스(rhar.html)만으로 통과를 선언하지 않는다(10/29 머리·목 측정이 어긋난 원인).</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table></section>
+<section class="ch" id="11_시스템"><h1>11. 시스템 — 프로그램·알림·채팅·바깥 연결·설정·웹앱</h1>
+<p>원칙(정범님 10/28 21:55): 캐릭터는 <strong>PC 프로그램(Tauri)·안드로이드 앱</strong>에서 돈다. 소스는 <code>friend/</code>(index.html · readnow-friend.js · readnow-friend-boot.js) 한 곳. 웹앱은 꺼 둔다(설정 '웹앱 안에서도 켜기'는 확인용).</p>
+<h2 id="11_시스템-11-1-PC-프로그램-friend-app-desktop-Tauri-2">11.1 PC 프로그램 (friend-app/desktop · Tauri 2)</h2>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>규칙</th>
+<th>현재(10/29)</th>
+<th>합격 기준</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>연결</td>
+<td>웹앱 🖥 단추 → <code>readnow-friend://pair?t&amp;c&amp;d</code> 딥링크로 프로그램이 열리며 자동 연결. 안 열리면 코드 8자리(10분·1회) 입력 — <strong>카드가 떠 있는 동안 언제든</strong> 입력·Enter 가능</td>
+<td>몇 초 뒤 입력 불가(커밋 950f0e1에서 '글 칸 초점 동안 창이 키 받음' 고침 · 새 판 미배포) · "설치→프로그램 닫기→웹앱 단추" 순서로만 됨</td>
+<td>설치 직후 웹앱 단추 한 번에 연결 · 카드 열린 뒤 60초 지나도 입력·Enter 됨(자동 시험 + 정범님 PC 확인)</td>
+</tr>
+<tr>
+<td>클릭 통과</td>
+<td>투명 창. 화면이 보낸 '눌리는 칸'(rects, CSS px + dpr) 안이면 클릭 받음</td>
+<td>hit_loop가 창 배율로 환산 → 모니터 배율이 다르면 단추가 칸 밖(w8 복사본에서 dpr 동반 전송으로 고침 · 미배포)</td>
+<td>모니터 3대 배율(100/125/150%) 조합마다 설정·닫기/열기·메시지 단추 클릭 반응</td>
+</tr>
+<tr>
+<td>설정창</td>
+<td><strong>PC에서 바로</strong>: 캐릭터 옆 ⚙ 단추 + 트레이 메뉴 '설정' → <code>friend/index.html?settings=1</code> 창을 프로그램 안 새 창으로</td>
+<td>웹앱으로만</td>
+<td>트레이·단추 둘 다 열림</td>
+</tr>
+<tr>
+<td>모니터·위치</td>
+<td>트레이 '모니터 바꾸기'(있음) + <strong>캐릭터를 끌어 원하는 위치에 놓고 기억</strong>(기기별 저장 · 모니터 경계 넘어가면 그 모니터로 창 이동)</td>
+<td>끌기는 캐릭터 몸짓(손·발 끌기)만 · 창 이동 없음</td>
+<td>모니터 3대 어디든 놓고 재시작 뒤 같은 자리</td>
+</tr>
+<tr>
+<td>자동 업데이트</td>
+<td>켜고 60초 뒤·이후 6시간마다 GitHub friend-v* 판의 setup.exe를 조용히 설치(있음)</td>
+<td>새 판을 한 번도 안 냄(0.1.0)</td>
+<td>판 올린 뒤 6시간 안에 정범님 PC 판 번호가 바뀜</td>
+</tr>
+<tr>
+<td>화면 코드</td>
+<td>friend/ 파일은 GitHub Pages에서 바로 반영(FRIEND_PIN·?v= 올려야 캐시 갱신)</td>
+<td>10/29 고침들 판 번호 미상승</td>
+<td>배포 절차 95 §0</td>
+</tr>
+</tbody>
+</table>
+<h2 id="11_시스템-11-2-안드로이드-friend-app-android">11.2 안드로이드 (friend-app/android)</h2>
+<ul>
+<li>권한 3(다른 앱 위·알림·배터리 제외) → 연결(딥링크 intent) → 캐릭터. 127.0.0.1 창구 없음(클라우드 창구만).</li>
+<li>업데이트: 플레이 스토어 밖 apk라 사용자가 설치 확인을 눌러야 함. 앱 안 '업데이트 확인' 단추가 새 apk를 받아 설치 화면을 띄우는 방식까지가 자동의 한계(합격 기준: 단추 한 번).</li>
+<li>서명 키(FRIEND_KS_B64·FRIEND_KS_PASS)가 없어 디버그 키 → 덮어 설치 실패 가능. 정범님 참여 필요(비밀값).</li>
+</ul>
+<h2 id="11_시스템-11-3-알림-friend-readnow-friend-js-MSC_AL">11.3 알림 (friend/readnow-friend.js <code>MSC_AL</code>)</h2>
+<table>
+<thead>
+<tr>
+<th>알림</th>
+<th>기본</th>
+<th>반복 규칙(정범님 10/27 23:21·10/29 13:58·15:20)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>새 주문</td>
+<td>켬</td>
+<td>발생 때 <strong>한 번</strong></td>
+</tr>
+<tr>
+<td>새 문의</td>
+<td>켬</td>
+<td>'알았어'까지 <strong>1~10분 무작위</strong></td>
+</tr>
+<tr>
+<td>불만족 평가</td>
+<td>켬</td>
+<td>'알았어'까지 1~10분 무작위</td>
+</tr>
+<tr>
+<td>관리자 행위 오류(15초 안)</td>
+<td>켬</td>
+<td>한 번</td>
+</tr>
+<tr>
+<td>🔎 관리자 검토 필요</td>
+<td>켬</td>
+<td>'알았어' 또는 해결까지 1~10분 무작위</td>
+</tr>
+<tr>
+<td>하루 매출 요약</td>
+<td>끔→정범님 켬</td>
+<td>14:00~15:00 창 안 1~10분 무작위 · '알았어'면 그날 끝</td>
+</tr>
+<tr>
+<td>그 밖(마감·비싼 책·PC 꺼짐·백업 등)</td>
+<td>끔</td>
+<td>설정에서 켬</td>
+</tr>
+<tr>
+<td>토요일 zip</td>
+<td>알림 아님(자동 백업)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>- 응원 말풍선은 알림이 아님(3~10분 무작위 · 설정으로 끔).</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- 알림음: 짧고 구분되는 소리 여러 개 · 켜고 끄기 단축키(10/28 15:00) — 미구현.</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>- 작업 A(wJ)가 위 반복 규칙을 구현함(tJ1 통과) · 합치기·배포 대기.</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="11_시스템-11-4-채팅">11.4 채팅</h2>
+<ul>
+<li>기본 = 오버레이 기록창: 자판 위로 반투명 · 화면 반 조금 넘게 · 시간이 지나면 <strong>한 줄씩 접힘</strong> → 조용하면 닫힘 · Alt+Enter 전체 화면 고정/해제 · 기본 전체, 속삭임은 한 사람 · 연속으로 보낸 내 말풍선은 옆으로 밀리며 일정 시간 유지.</li>
+<li>기록: 지우지 않음 · 처음 7일 · 위로 굴리면 50개씩 · 날짜 줄 · 시각.</li>
+<li>휴대폰: 자판 위 배치 · 한 손 조작 · 가로 스크롤 없음(10/28 15:00 "휴대폰이 채팅하기 불편").</li>
+<li>현재(1.78.238): 접힘·Alt+Enter·속삭임·기록 구현됨. 연속 말풍선·알림음·휴대폰 편의는 미구현.</li>
+</ul>
+<h2 id="11_시스템-11-5-바깥-연결-작업-A-2단계-배포-대기">11.5 바깥 연결(작업 A 2단계 · 배포 대기)</h2>
+<table>
+<thead>
+<tr>
+<th>창구</th>
+<th>상태</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>② 클라우드 <code>POST /friend-say</code>(헤더 x-say-key = FRIEND_SAY_KEY)</td>
+<td>구현(wJ) · 미배포</td>
+<td>Cloud Run 변수는 정범님이 넣음(10/29 15:55) — 값이 대화 캡처에 보였으므로 배포 뒤 <strong>새 값으로 교체</strong> 권장</td>
+</tr>
+<tr>
+<td>① PC <code>127.0.0.1:47613</code> <code>/say?m&amp;f</code> <code>/open?p=order|qna|bad</code></td>
+<td>구현(lib.rs) · 윈도우 빌드 필요</td>
+<td>브라우저 403 · 1.5초 안 2회 429</td>
+</tr>
+<tr>
+<td>③ 딥링크 <code>readnow-friend://say?m</code> · <code>open?p</code></td>
+<td>구현</td>
+<td>허용 명령 2개</td>
+</tr>
+<tr>
+<td>④ 사업 알림 요약을 클라우드가</td>
+<td>보류</td>
+<td>웹앱이 app_summary/alerts를 통째로 덮어씀 → 계산 규칙을 <code>readnow-alerts-core.js</code> 공용 파일로 빼고 쓰는 쪽을 클라우드 하나로</td>
+</tr>
+<tr>
+<td>- Firestore 규칙: 세 계정(jerrycson·ninjamij81·readnowkings)만 읽기·쓰기 → <code>friend_say</code> 읽기 이미 허용. 규칙 파일을 저장소에 두고 관리(<code>cloud/firestore.rules</code> 신설 · 콘솔 내용 그대로).</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="11_시스템-11-6-설정-꾸미기">11.6 설정·꾸미기</h2>
+<ul>
+<li><strong>수치 설정</strong>(15차m 신설 · 설정 › 그림): 바이블의 모든 수치가 항목이 된다(기본값 = 바이블 값 · 범위 명시 · '모두 기본값' · 바로 적용 토스트 · 기기별 저장). 목록은 각 장 끝 '설정값' 표.</li>
+<li>꾸미기 탭(체형·얼굴형·눈·눈썹·머리·옷·하의·신발·소품·색)은 껍데기 유지 · 체형 탭은 5변수(가슴·골반·살·근육·골격)+등신 슬라이더 · 얼굴형·눈·눈썹에 <strong>컨트롤</strong>(크기·가로·세로·턱 폭·턱 끝 · 속눈썹 길이/굵기 · 눈썹 길이/굵기/뚜렷함).</li>
+<li>설정 시트(카드 누름): 표정 40+ <strong>얼굴 썸네일</strong>(지금은 이름표) · 몸짓 96 전신 썸네일 · 고르면 큰 그림이 바뀜.</li>
+<li>'맨몸으로' 단추: 성인 매끈 맨몸 · 미성년 마네킹(07 §7.5).</li>
+<li>엔진 고르기: 자동 / 새 그림 / 15차 끝 / 예전 판(14차) — 기기별.</li>
+</ul>
+<h2 id="11_시스템-11-7-웹앱">11.7 웹앱</h2>
+<ul>
+<li>카드: 🖥 연결(코드 표시) · ⬇ 설치 파일(GitHub releases?q=friend — <code>friend-v</code>는 검색 안 됨 · src만 고침, 빌드 미반영) · 🐾 캐릭터 설정 열기(friend/?settings=1) · '웹앱 안에서도 켜기'(기본 끔).</li>
+<li>연구 페이지 <code>friend/research.html</code> = 이 바이블 v2 전체(장별 섹션 · 진행도 표 · 출처). 시장조사 탭 맨 아래 링크.</li>
+</ul></section>
+<section class="ch" id="12_남길것_버릴것"><h1>12. 남길 것 · 고칠 것 · 버릴 것 (결정표)</h1>
+<p>정범님 규칙(10/28 21:42): "개선 가능성이 높은 것은 남기고 계속 개선 · 전문 내용과 애초에 다르게 시작해 꼬여 가는 것은 과감히 폐기하고 다시 쌓음 · 시작 전 백업".
+판정 근거: 코드(<code>readnow-chats/mascot/r15/msc2_*.js</code> = 배포 판 · <code>friend/readnow-friend.js</code>), 회차 기록(r15_progress.md), 정범님 지적(10/29 13:58·15:20·16:10), v1 결정표(mascot_rebuild_plan.md §1).</p>
+<h2 id="12_남길것_버릴것-12-1-남김-그대로-더-다듬음">12.1 남김 (그대로 · 더 다듬음)</h2>
+<table>
+<thead>
+<tr>
+<th>코드</th>
+<th>결정</th>
+<th>이유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>눈 그리기 <code>mscEye</code>·눈 종류·감은 눈 변형</td>
+<td><strong>남김 + 개선</strong></td>
+<td>정범님이 가장 마음에 든 부분. 구조(눈꺼풀 곡선·속눈썹 띠·층 홍채·같은 쪽 하이라이트)가 맞음. 꼬마 눈은 03 §3.3.4 규칙으로 값만 바꿈</td>
+</tr>
+<tr>
+<td>색 체계 <code>mscHsl</code>·<code>mscLn</code>·<code>mscS1/S2</code>·<code>mscSkS</code>·<code>mscBlush</code></td>
+<td>남김</td>
+<td>참고 그림의 차가운 셀 그림자·따뜻한 피부 그림자·색선과 일치</td>
+</tr>
+<tr>
+<td>경로 기본 함수 <code>mscPath</code>·<code>mscSpl</code>·<code>mscTpr</code>·<code>mscBz</code>·<code>mscF</code> 정밀도</td>
+<td>남김</td>
+<td>맞고 가벼움</td>
+</tr>
+<tr>
+<td>IK <code>mscIK</code>·<code>mscIKf</code> · ROM clamp <code>MSC2_ROM</code></td>
+<td>남김</td>
+<td>수학적으로 맞음. 02 §2.4 한계값으로 갱신</td>
+</tr>
+<tr>
+<td>스케줄러 <code>mscAnimReq</code>·크로스페이드·<code>mscALog</code></td>
+<td>남김</td>
+<td>우선순위·큐·로그가 시험 기반</td>
+</tr>
+<tr>
+<td>메시지 백엔드 <code>mascot_msgs</code>·기록 보존</td>
+<td>남김 + 확장</td>
+<td>데이터 모델 맞음</td>
+</tr>
+<tr>
+<td>설정 저장(기기별 <code>app_settings/mascot</code>·<code>mscCust</code>)</td>
+<td>남김</td>
+<td>세 호스트가 의존</td>
+</tr>
+<tr>
+<td>표정 키 <code>MSC_XP</code>·이벤트 맵·캐릭터 가중치</td>
+<td>키 남김 · 값 재작성</td>
+<td>메시지·시험이 키를 참조</td>
+</tr>
+<tr>
+<td>손 모양 이름 <code>MSC_HPOSE</code> 19</td>
+<td>이름 남김</td>
+<td>기하는 15차d~f 부품 합집합 손으로 이미 교체됨 → 05 §5.8 규칙으로 검증 후 유지</td>
+</tr>
+<tr>
+<td>15차 h~k의 S자 서기·발 디딤 계획·살아 있는 쉼 <code>msc2_life.js</code>·짝 몸짓 <code>msc2_k.js</code></td>
+<td>남김 + 수치 재검</td>
+<td>구조가 08장 규칙과 같음. 걸음 발 들기·속도는 설정값으로</td>
+</tr>
+<tr>
+<td>15차m 수치 설정 칸 <code>MSC2_TUNE</code>·<code>msc2T</code></td>
+<td>남김 + 전 항목으로 확장</td>
+<td>정범님 "수치 전부 설정화"</td>
+</tr>
+<tr>
+<td>알림 개편(작업 A 1단계)·바깥 창구 ②①③</td>
+<td>남김(배포 대기)</td>
+<td>정범님 지시대로 구현됨. 합치기만 남음</td>
+</tr>
+<tr>
+<td>드래그 <code>mscDragBind</code>·휴대폰 pointercancel 보정</td>
+<td>남김</td>
+<td>15차g에서 고침</td>
+</tr>
+</tbody>
+</table>
+<h2 id="12_남길것_버릴것-12-2-고침-구조는-두고-규칙-값-교체">12.2 고침 (구조는 두고 규칙·값 교체)</h2>
+<table>
+<thead>
+<tr>
+<th>코드</th>
+<th>무엇을</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MSC2_OBJ</code>·<code>msc2_sd.js</code> 비율표</td>
+<td>사이즈코리아 환산표(02 §2.2)로 값 교체 · 등신 2~4를 <strong>같은 식</strong>으로(칸별 예외표 폐기)</td>
+<td>A1.1·A1.4</td>
+</tr>
+<tr>
+<td><code>msc2_cloth.js</code> 옷감</td>
+<td>4분류 설정표(06 §6.1) 적용</td>
+<td>A8.1</td>
+</tr>
+<tr>
+<td><code>msc2Turn</code>(2.5D 머리)</td>
+<td>얼굴 살 path까지 같은 투영 · 턱 밑면 고리 투영(10 §10.1.2)</td>
+<td>A2.4</td>
+</tr>
+<tr>
+<td>표정 값 <code>MSC2_XPP</code></td>
+<td>09 §9.2 수치표로</td>
+<td>C2</td>
+</tr>
+<tr>
+<td>걷기 <code>msc2KLegs</code>·<code>msc2Step</code></td>
+<td>08 §8.4 키 프레임 표</td>
+<td>B3.1</td>
+</tr>
+<tr>
+<td>꼬마 눈 <code>msc2FB</code>·<code>mscEye</code> lashKid</td>
+<td>03 §3.3.4 8기준</td>
+<td>A3.2</td>
+</tr>
+</tbody>
+</table>
+<h2 id="12_남길것_버릴것-12-3-버림-다시-쌓음">12.3 버림 (다시 쌓음)</h2>
+<table>
+<thead>
+<tr>
+<th>코드</th>
+<th>결정</th>
+<th>이유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>머리 따로 그리기</strong>(<code>hd.head</code> → <code>mp-head</code> 그룹 자체 회전) + <code>msc2NeckTop</code> 근사</td>
+<td><strong>버림</strong> → 얼굴 살이 살 층에 들어가고 목은 두 고리 로프트(10 §10.1.2)</td>
+<td>'머리가 목에 안 붙음'의 구조적 원인. 15차m·10/29 에이전트가 값(0.16→0.6)을 바꿔도 못 고친 것이 증거</td>
+</tr>
+<tr>
+<td>등신별 목 길이 예외표(<code>msc2_sd.js</code> 14행: 0/0.03/0.08/0.15/0.12H)</td>
+<td>버림 → 한 식(02 §2.6)</td>
+<td>등신 바꿀 때마다 어긋나는 원인</td>
+</tr>
+<tr>
+<td>예전 머리 그리기 안의 얼굴 윤곽·턱·귀(<code>mscSvg</code> v1 head)</td>
+<td>버림 → 두개골 구+턱 로프트(03 §3.1)</td>
+<td>v1 결정과 같음. 아직 v2로 안 옮겨진 부분</td>
+</tr>
+<tr>
+<td>예전 몸 틀 <code>MSC_BT</code>·<code>mscBody*</code>·<code>mscTube</code>·<code>mscLimb</code>(14차 엔진)</td>
+<td>버림(되돌리기용 '예전 판' 선택지만 유지)</td>
+<td>v1 결정</td>
+</tr>
+<tr>
+<td>머리카락 '헬멧' 구성(두개골 윤곽 따라 그린 것)</td>
+<td>버림 → 껍질+다발(04장)</td>
+<td>v1 결정 · 15차b 22종은 껍질+다발로 이미 바꿨으나 04 §4.1 띄움 기준으로 재검</td>
+</tr>
+<tr>
+<td>사다리꼴 치마·직선 주름 등 예전 옷 기하</td>
+<td>버림</td>
+<td>v1 결정</td>
+</tr>
+<tr>
+<td>하네스 전용 측정(rhar.html)만으로 통과 선언</td>
+<td>버림 → 정범님 화면 설정으로 시험(10 §10.4)</td>
+<td>10/29 측정 어긋남</td>
+</tr>
+</tbody>
+</table>
+<h2 id="12_남길것_버릴것-12-4-백업-되돌리기-규칙">12.4 백업·되돌리기 규칙</h2>
+<ul>
+<li>회차 시작 때 <code>readnow-chats/mascot/backup/friend_r16&lt;x&gt;_m0.js</code> + <code>r16&lt;x&gt;_m0_src/</code>(msc2_*.js 전부).</li>
+<li>설정 › 그림 › 엔진 고르기에 '예전 판(14차)'·'15차 끝(m)'·'새 판(16차)'을 둔다. 기기마다.</li>
+<li>되돌리기는 파일 교체 + FRIEND_PIN 올림으로만(코드 분기 누적 금지).</li>
+</ul></section>
+<section class="ch" id="90_진행도표"><h1>90. 진행도 표 — 상위 → 하위 → 단순 범위 (회차 끝마다 갱신)</h1>
+<p>판정 규칙(00 §0.5): <strong>진행률</strong> 0 설계 없음 · 20 설계 확정(이 바이블) · 40 구현 · 60 자동 시험 있음 · 80 정범님 기기 배포 · 100 정범님 확인. <strong>완성도</strong> = 0.5×자동 시험 통과율 + 0.5×시각 비교 점수(0/25/50/75/100). 자동 시험 없음 → 완성도 ≤50 · 미배포 → 진행률 ≤60 · 정범님 지적 → 완성도 ≤25(원문 적음).
+<strong>이번 판정(2026-10-29 19:00 · 판정자 Fable · 회차 0 = 준비 단계)</strong>. 배포 기준 = 웹앱 1.78.238 · 책방 친구 0.12.0 · 프로그램 0.1.0. 10/29 작업본(wR15l·wJ·wR15m·w8·w9)은 미배포 → 진행률 ≤60. 시각 점수는 정범님 10/29 캡처 5장·13:58·15:20·15:32·16:10 지적과 에이전트 렌더(shots/)로 매김. 정범님 총평 "개편 전과 비교해 전부 빵점(15:20)"을 반영해 시각 점수는 보수적으로 둠.</p>
+<h2 id="90_진행도표-요약">요약</h2>
+<table>
+<thead>
+<tr>
+<th>대분류</th>
+<th>항목 수</th>
+<th>진행률 평균</th>
+<th>완성도 평균</th>
+<th>한 줄</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A 캐릭터(생김새)</td>
+<td>62</td>
+<td>39</td>
+<td>24</td>
+<td>설계는 v2로 확정(20↑), 구현은 15차 것이 대부분 '부위 따로' 구조 위에 있음</td>
+</tr>
+<tr>
+<td>B 애니메이션</td>
+<td>24</td>
+<td>44</td>
+<td>31</td>
+<td>15차h~k 구조(S자·발 디딤·쉼·짝)는 맞으나 양식 선택·시간표 미적용</td>
+</tr>
+<tr>
+<td>C 표정</td>
+<td>11</td>
+<td>36</td>
+<td>27</td>
+<td>53키 있음, 값·전환·꼬마 변형 미적용</td>
+</tr>
+<tr>
+<td>D 시스템</td>
+<td>24</td>
+<td>45</td>
+<td>33</td>
+<td>알림·창구는 작업본 완성, 프로그램 조작(먹통·설정·모니터)은 0~20</td>
+</tr>
+<tr>
+<td><strong>전체</strong></td>
+<td><strong>121</strong></td>
+<td><strong>41</strong></td>
+<td><strong>28</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="90_진행도표-A-캐릭터-생김새">A. 캐릭터 (생김새)</h2>
+<h3 id="a1">A1 인체 뼈대·비율</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>단순 범위</th>
+<th>진행률</th>
+<th>완성도</th>
+<th>판정 근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A1.1</td>
+<td>10객체 비율표(한국 실측)</td>
+<td>40</td>
+<td>38</td>
+<td>15차 MSC2_OBJ = v1 표(T1 통과 ±0.05H) · 실측 열·realism 미구현 · 시각 50</td>
+</tr>
+<tr>
+<td>A1.2</td>
+<td>관절 24 뼈대·FK/IK</td>
+<td>60</td>
+<td>50</td>
+<td>15차 M1 뼈대·IK·T11 fuzz 통과 · headBase 고리 없음 → 시각 25(목 분리)</td>
+</tr>
+<tr>
+<td>A1.3</td>
+<td>ROM 한계값</td>
+<td>60</td>
+<td>55</td>
+<td>MSC2_ROM 있음 · 비틀기 70 과장값 · twistMaxDeg 45 미적용</td>
+</tr>
+<tr>
+<td>A1.4</td>
+<td>등신 변경 일관성</td>
+<td>40</td>
+<td>13</td>
+<td>정범님 13:58 "등신 설정이 전부 제대로 작동 안 함" · 16:10 "2·3·4등신 바꾸면 계속 버그" · 15차m 슬라이더 우선은 작업본만 · 등신별 목 틈 12건 중 2~8건</td>
+</tr>
+<tr>
+<td>A1.5</td>
+<td>다림줄·콘트라포스토</td>
+<td>80</td>
+<td>63</td>
+<td>15차h T4·골반 10°/어깨 6° 배포 · 시각 50(전봇대 지적은 15차 전)</td>
+</tr>
+<tr>
+<td>A1.6</td>
+<td>나이별 자세</td>
+<td>60</td>
+<td>38</td>
+<td>15차d 노인 굽음 배포 · 머리만 떨어짐 지적 → 15차f 둥근 등 · 노인 턴어라운드 근거 없음 · 시각 25</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a2">A2 머리·얼굴 구조</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>단순 범위</th>
+<th>진행률</th>
+<th>완성도</th>
+<th>판정 근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A2.1</td>
+<td>두개골 구+턱 쐐기·6 얼굴형</td>
+<td>40</td>
+<td>25</td>
+<td>얼굴형 12종 UI 있음(캡처) · 머리는 예전 그리기(v1 head) 그대로 · 시각 25</td>
+</tr>
+<tr>
+<td>A2.2</td>
+<td>이목구비 배치 표</td>
+<td>40</td>
+<td>38</td>
+<td>15차f 얼굴 배치 · 03 §3.1 표 대비 미검증</td>
+</tr>
+<tr>
+<td>A2.3</td>
+<td><strong>머리–목–어깨 연결</strong></td>
+<td>20</td>
+<td>0</td>
+<td>정범님 13:58 "얼굴이 목에 붙어 있지 않음·레이어 분리" · 16:10 캡처 · 구조적 원인 확인(10 §10.1.1) · 10/29 w9 실험 실패(12건 중 5건) · 설계만 확정</td>
+</tr>
+<tr>
+<td>A2.4</td>
+<td>2.5D 돌리기</td>
+<td>60</td>
+<td>38</td>
+<td>15차d msc2Turn ±40° 배포 · T10 통과 · 얼굴 살 미투영 · 범위 재정의(±40/60) 미적용 · 시각 25</td>
+</tr>
+<tr>
+<td>A2.5</td>
+<td>귀</td>
+<td>60</td>
+<td>50</td>
+<td>15차d 귀 돌림 보정 · 3/4 가림 규칙 미검증</td>
+</tr>
+<tr>
+<td>A2.6</td>
+<td>코·입·턱 경첩</td>
+<td>60</td>
+<td>50</td>
+<td>15차f 입 · 턱 경첩 없음</td>
+</tr>
+<tr>
+<td>A2.7</td>
+<td>수염·나이 선</td>
+<td>60</td>
+<td>50</td>
+<td>15차d 허용 선 규칙 · T8 · 정범님 13:58 "수염이 얼굴에 안 붙음" → 25</td>
+</tr>
+<tr>
+<td>A2.8</td>
+<td>얼굴 컨트롤</td>
+<td>60</td>
+<td>50</td>
+<td>꾸미기 세부 조절 6개 있음(캡처) · 표정 중 불변 시험 없음</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a3">A3 눈·눈썹</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>단순 범위</th>
+<th>진행률</th>
+<th>완성도</th>
+<th>판정 근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A3.1</td>
+<td>눈 구조</td>
+<td>80</td>
+<td>56</td>
+<td>mscEye 배포(정범님 "가장 마음에 듦") · 하이라이트 위 그늘 겹침·12개 반짝이 결함(kid_eyes) · 시각 50</td>
+</tr>
+<tr>
+<td>A3.2</td>
+<td><strong>꼬마·동물 눈 불쾌감 제거</strong></td>
+<td>20</td>
+<td>0</td>
+<td>정범님 13:58 "불쾌 — 크기 문제 아님" · 원인 8개 확인(03 §3.3.4) · 15차m 0.82 결정은 무효 캡처 기반</td>
+</tr>
+<tr>
+<td>A3.3</td>
+<td>눈 종류 ≥12·고정</td>
+<td>60</td>
+<td>50</td>
+<td>종류 있음 · id 불변 시험 없음</td>
+</tr>
+<tr>
+<td>A3.4</td>
+<td>속눈썹·눈썹 컨트롤</td>
+<td>40</td>
+<td>25</td>
+<td>10/28 15:00 요청 · 일부 UI</td>
+</tr>
+<tr>
+<td>A3.5</td>
+<td>눈썹 종류·자세</td>
+<td>60</td>
+<td>50</td>
+<td>종류 고정·자세 변형(r14) · 수치 미검증</td>
+</tr>
+<tr>
+<td>A3.6</td>
+<td>시선·깜박임 그림</td>
+<td>80</td>
+<td>63</td>
+<td>배포 · 반쯤 감음 중간 그림 anime 3장 규칙 미적용</td>
+</tr>
+<tr>
+<td>A3.7</td>
+<td>눈 LOD</td>
+<td>60</td>
+<td>50</td>
+<td>24/60px 규칙 코드 있음 · 시험 없음</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a4">A4 머리카락</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>단순 범위</th>
+<th>진행률</th>
+<th>완성도</th>
+<th>판정 근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A4.1</td>
+<td>껍질·헤어라인·가르마</td>
+<td>60</td>
+<td>38</td>
+<td>15차b 껍질+다발 · 띄움 시험 없음 · 정범님 10/27 "매우 부자연스러움" 이후 재평가 없음</td>
+</tr>
+<tr>
+<td>A4.2</td>
+<td>다발</td>
+<td>60</td>
+<td>38</td>
+<td>15차b·d · 떠 있는 가닥 시험 없음</td>
+</tr>
+<tr>
+<td>A4.3</td>
+<td>층 순서</td>
+<td>60</td>
+<td>50</td>
+<td>15차g 눈썹 비침 · 귀 틈</td>
+</tr>
+<tr>
+<td>A4.4</td>
+<td>묶음·땋기·경단·꼬리</td>
+<td>60</td>
+<td>50</td>
+<td>15차d 사슬 꼬리</td>
+</tr>
+<tr>
+<td>A4.5</td>
+<td>모양 ≥30 재구현</td>
+<td>60</td>
+<td>50</td>
+<td>15차b 22종 + 이음</td>
+</tr>
+<tr>
+<td>A4.6</td>
+<td>물리</td>
+<td>80</td>
+<td>63</td>
+<td>배포 · 정착 시간 시험 없음</td>
+</tr>
+<tr>
+<td>A4.7</td>
+<td>모자·핀 상호작용</td>
+<td>40</td>
+<td>13</td>
+<td>정범님 10/28 15:00 "머리가 모자를 뚫음" · 눌림 규칙 미구현</td>
+</tr>
+<tr>
+<td>A4.8</td>
+<td>윤기·그늘</td>
+<td>60</td>
+<td>50</td>
+<td>15차d 윤기 붓선</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a5">A5 몸통</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>단순 범위</th>
+<th>진행률</th>
+<th>완성도</th>
+<th>판정 근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A5.1</td>
+<td>여자 가슴(팔 앞)</td>
+<td>60</td>
+<td>38</td>
+<td>15차g T7 겹침 · 정범님 10/28 "여전히 팔 앞으로 안 나옴" → 재검증 전 25</td>
+</tr>
+<tr>
+<td>A5.2</td>
+<td>허리·골반·허벅지 한 윤곽</td>
+<td>60</td>
+<td>38</td>
+<td>15차g msc2HipArc · T5 · 정범님 10/28 "골반이 허벅지와 따로" → 25</td>
+</tr>
+<tr>
+<td>A5.3</td>
+<td>남자 가슴·복근·V</td>
+<td>60</td>
+<td>50</td>
+<td>15차 M3</td>
+</tr>
+<tr>
+<td>A5.4</td>
+<td>체형 극단 p0/p1</td>
+<td>60</td>
+<td>38</td>
+<td>T6 있음 · 극단 '먼저 검증' 안 됨(정범님 10/28)</td>
+</tr>
+<tr>
+<td>A5.5</td>
+<td>배·엉덩이·등(나이)</td>
+<td>60</td>
+<td>50</td>
+<td>15차d·f</td>
+</tr>
+<tr>
+<td>A5.6</td>
+<td>몸 컨트롤 UI</td>
+<td>80</td>
+<td>56</td>
+<td>동그라미 손잡이·슬라이더 배포(캡처) · 등신과 얽힘</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a6-a7">A6 팔·손 · A7 다리·발</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>단순 범위</th>
+<th>진행률</th>
+<th>완성도</th>
+<th>판정 근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A6.1</td>
+<td>팔 로프트</td>
+<td>60</td>
+<td>50</td>
+<td>봉우리 어긋남 규칙 일부 · A1~A10 시험 없음</td>
+</tr>
+<tr>
+<td>A6.2</td>
+<td>손 5손가락 cascade</td>
+<td>60</td>
+<td>38</td>
+<td>15차d·f 부품 합집합 손 · cascade 규칙 없음</td>
+</tr>
+<tr>
+<td>A6.3</td>
+<td>손 라이브러리 19</td>
+<td>80</td>
+<td>56</td>
+<td>배포 · 쥐기 6 없음</td>
+</tr>
+<tr>
+<td>A6.4</td>
+<td>손 LOD</td>
+<td>80</td>
+<td>63</td>
+<td>배포</td>
+</tr>
+<tr>
+<td>A6.5</td>
+<td>쥐기(책·휴대폰)</td>
+<td>60</td>
+<td>50</td>
+<td>책 잡기 15차 · 치수표 없음</td>
+</tr>
+<tr>
+<td>A7.1</td>
+<td>다리 로프트·무릎</td>
+<td>60</td>
+<td>50</td>
+<td>15차 M2 · X 대각선 미검증</td>
+</tr>
+<tr>
+<td>A7.2</td>
+<td>발 쐐기+묶음</td>
+<td>80</td>
+<td>56</td>
+<td>15차d 발·신발 배포 · 길이 관행/실측 혼재</td>
+</tr>
+<tr>
+<td>A7.3</td>
+<td>발목·발 돌림</td>
+<td>60</td>
+<td>50</td>
+<td>15차g 돌린 발 쐐기</td>
+</tr>
+<tr>
+<td>A7.4</td>
+<td>신발 5종</td>
+<td>80</td>
+<td>63</td>
+<td>15차d 배포</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a8">A8 옷·소품</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>단순 범위</th>
+<th>진행률</th>
+<th>완성도</th>
+<th>판정 근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A8.1</td>
+<td>옷감 4분류</td>
+<td>20</td>
+<td>0</td>
+<td>설계만(06 §6.1)</td>
+</tr>
+<tr>
+<td>A8.2</td>
+<td>품·층 순서</td>
+<td>60</td>
+<td>50</td>
+<td>15차b fit 3단 · 두께 틈 규칙 미적용</td>
+</tr>
+<tr>
+<td>A8.3</td>
+<td>주름 데칼</td>
+<td>40</td>
+<td>25</td>
+<td>팔꿈치 눌림 주름만</td>
+</tr>
+<tr>
+<td>A8.4</td>
+<td>드리움·충돌 뚫림 0</td>
+<td>60</td>
+<td>38</td>
+<td>15차d 자락 흔들림 · 정범님 10/28 "팔다리가 옷을 뚫고 나옴" · T19 없음</td>
+</tr>
+<tr>
+<td>A8.5</td>
+<td>깃·단추·주머니</td>
+<td>60</td>
+<td>50</td>
+<td>15차b</td>
+</tr>
+<tr>
+<td>A8.6</td>
+<td>장신구 붙임점</td>
+<td>60</td>
+<td>38</td>
+<td>15차d 26종 data-att · 모자 뚫림 지적</td>
+</tr>
+<tr>
+<td>A8.7</td>
+<td>소품 치수표</td>
+<td>20</td>
+<td>0</td>
+<td>설계만</td>
+</tr>
+<tr>
+<td>A8.8</td>
+<td>SF·판타지·해변</td>
+<td>60</td>
+<td>50</td>
+<td>15차d 카탈로그</td>
+</tr>
+</tbody>
+</table>
+<h3 id="a9-a10-a11">A9 특수 객체 · A10 렌더링 · A11 캐릭터·꾸미기</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>단순 범위</th>
+<th>진행률</th>
+<th>완성도</th>
+<th>판정 근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A9.1</td>
+<td>SD 2~4등신</td>
+<td>60</td>
+<td>13</td>
+<td>15차e 배포 · 정범님 16:10 "등신 바꾸면 버그" · 목 예외표</td>
+</tr>
+<tr>
+<td>A9.2</td>
+<td>동물 5종</td>
+<td>60</td>
+<td>25</td>
+<td>15차e 배포 · 눈 오려 붙임 결함(kid_eyes)</td>
+</tr>
+<tr>
+<td>A9.3</td>
+<td>로봇</td>
+<td>60</td>
+<td>13</td>
+<td>배포 · 정범님 캡처 "머리가 몸 위에 떠 있음"</td>
+</tr>
+<tr>
+<td>A9.4</td>
+<td>외계인</td>
+<td>60</td>
+<td>38</td>
+<td>배포 · 부유</td>
+</tr>
+<tr>
+<td>A9.5</td>
+<td>마네킹</td>
+<td>80</td>
+<td>63</td>
+<td>15차k 배포 · 손발 살색 확인</td>
+</tr>
+<tr>
+<td>A10.1</td>
+<td><strong>한 실루엣(머리 포함)</strong></td>
+<td>20</td>
+<td>0</td>
+<td>설계 확정 · 구현 0</td>
+</tr>
+<tr>
+<td>A10.2</td>
+<td>깊이 층 정렬</td>
+<td>60</td>
+<td>50</td>
+<td>15차 T7 · 3/4 먼 팔</td>
+</tr>
+<tr>
+<td>A10.3</td>
+<td>선 굵기·색</td>
+<td>60</td>
+<td>38</td>
+<td>outK 1.4 일러스트 관행 · TV 1.0 프리셋 없음</td>
+</tr>
+<tr>
+<td>A10.4</td>
+<td>셀 그림자·하이라이트</td>
+<td>60</td>
+<td>50</td>
+<td>mscS1·msc2Shade · HSV 공식 미적용</td>
+</tr>
+<tr>
+<td>A10.5</td>
+<td>팔레트</td>
+<td>60</td>
+<td>50</td>
+<td>색 체계 있음 · 피부 범위 검사 없음</td>
+</tr>
+<tr>
+<td>A10.6</td>
+<td>LOD</td>
+<td>60</td>
+<td>50</td>
+<td></td>
+</tr>
+<tr>
+<td>A10.7</td>
+<td>SVG ≤130KB·프레임</td>
+<td>80</td>
+<td>75</td>
+<td>126KB · T12 통과</td>
+</tr>
+<tr>
+<td>A11.1</td>
+<td>10객체 기본 캐릭터 새로</td>
+<td>40</td>
+<td>13</td>
+<td>24명 있으나 "유치함·인체 이해 부족"(13:58) · 참고 나란히 비교 ≥75 0명</td>
+</tr>
+<tr>
+<td>A11.2</td>
+<td>고유 요소 2~3</td>
+<td>60</td>
+<td>38</td>
+<td>MSC2_CSIG 고유 포즈 · 설정 시트 고정/가변 표시 없음</td>
+</tr>
+<tr>
+<td>A11.3</td>
+<td>꾸미기 항목</td>
+<td>80</td>
+<td>56</td>
+<td>10탭 배포 · 컨트롤 일부</td>
+</tr>
+<tr>
+<td>A11.4</td>
+<td><strong>설정 시트</strong></td>
+<td>40</td>
+<td>0</td>
+<td>정범님 15:32 "설정 시트 복구 안 됨 · PC 안 열림 · 웹앱 먹통" · 15차m 고침은 판 미상승 · 썸네일 없음</td>
+</tr>
+<tr>
+<td>A11.5</td>
+<td>맨몸 기본 시작</td>
+<td>80</td>
+<td>63</td>
+<td>15차k 배포</td>
+</tr>
+</tbody>
+</table>
+<h2 id="90_진행도표-B-애니메이션">B. 애니메이션</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>단순 범위</th>
+<th>진행률</th>
+<th>완성도</th>
+<th>판정 근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B1.1</td>
+<td>파라미터 트랙</td>
+<td>60</td>
+<td>50</td>
+<td>15차 h·i 트랙 · Live2D 이름 부분</td>
+</tr>
+<tr>
+<td>B1.2</td>
+<td>스케줄러</td>
+<td>80</td>
+<td>75</td>
+<td>T13 배포</td>
+</tr>
+<tr>
+<td>B1.3</td>
+<td>양식 선택 real/full/anime</td>
+<td>20</td>
+<td>0</td>
+<td>설계만(08 §8.2)</td>
+</tr>
+<tr>
+<td>B1.4</td>
+<td>성능 24fps</td>
+<td>80</td>
+<td>75</td>
+<td></td>
+</tr>
+<tr>
+<td>B2.1</td>
+<td>호흡</td>
+<td>80</td>
+<td>63</td>
+<td>15차i 가슴 상자</td>
+</tr>
+<tr>
+<td>B2.2</td>
+<td>깜박임 분포</td>
+<td>80</td>
+<td>56</td>
+<td>분포 시험 없음</td>
+</tr>
+<tr>
+<td>B2.3</td>
+<td>시선·마우스·고개</td>
+<td>80</td>
+<td>63</td>
+<td></td>
+</tr>
+<tr>
+<td>B2.4</td>
+<td>자세 바꿈·버릇·무빙 홀드</td>
+<td>80</td>
+<td>50</td>
+<td>15차h msc2_life · 비평행 ≥80% 시험 없음 · 정범님 10/28 "전봇대"</td>
+</tr>
+<tr>
+<td>B2.5</td>
+<td>잠·깊은 잠</td>
+<td>60</td>
+<td>50</td>
+<td>zzz 선 그림 15차g · 깊은 잠 미구현</td>
+</tr>
+<tr>
+<td>B3.1</td>
+<td>걷기</td>
+<td>60</td>
+<td>38</td>
+<td>15차l 발 들기 작업본 · 키 프레임 표 미적용 · "미끄러짐"</td>
+</tr>
+<tr>
+<td>B3.2</td>
+<td>달리기</td>
+<td>20</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>B3.3</td>
+<td>몸 돌기</td>
+<td>60</td>
+<td>38</td>
+<td>15차i 3/4 ±32° · 옆·뒤 없음</td>
+</tr>
+<tr>
+<td>B3.4</td>
+<td>무게 옮김·발 디딤</td>
+<td>80</td>
+<td>63</td>
+<td>15차h</td>
+</tr>
+<tr>
+<td>B4.1</td>
+<td>몸짓 시간표</td>
+<td>80</td>
+<td>56</td>
+<td>76+18+8 몸짓 · ±2f 시험 없음</td>
+</tr>
+<tr>
+<td>B4.2</td>
+<td>예비·지나침·정착</td>
+<td>60</td>
+<td>50</td>
+<td>15차 액션 3단</td>
+</tr>
+<tr>
+<td>B4.3</td>
+<td>2차 운동</td>
+<td>80</td>
+<td>56</td>
+<td>15차d 꼬리·치마 용수철</td>
+</tr>
+<tr>
+<td>B4.4</td>
+<td>스미어·잔상</td>
+<td>80</td>
+<td>56</td>
+<td>15차i·j</td>
+</tr>
+<tr>
+<td>B4.5</td>
+<td>끊고 들어오기</td>
+<td>80</td>
+<td>63</td>
+<td>15차k 100쌍 0</td>
+</tr>
+<tr>
+<td>B4.6</td>
+<td>고유 포즈·성격</td>
+<td>80</td>
+<td>50</td>
+<td>MSC2_CSIG 41% · 시각 25(전봇대 지적)</td>
+</tr>
+<tr>
+<td>B5.1</td>
+<td>둘이 하는 몸짓</td>
+<td>80</td>
+<td>50</td>
+<td>15차j·k 0.16H(목표 0.05)</td>
+</tr>
+<tr>
+<td>B5.2</td>
+<td>어른–꼬마 높이</td>
+<td>60</td>
+<td>25</td>
+<td>15차l 결함 남음(머리 근처 접촉·숙임 0)</td>
+</tr>
+<tr>
+<td>B5.3</td>
+<td>겹침 피하기</td>
+<td>20</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>B6.1</td>
+<td>SF·판타지</td>
+<td>80</td>
+<td>56</td>
+<td>15차k 8종</td>
+</tr>
+<tr>
+<td>B7.1</td>
+<td>끌기(PC·휴대폰)</td>
+<td>80</td>
+<td>50</td>
+<td>15차g · 정범님 10/28 "휴대폰 안 됨" 재확인 전</td>
+</tr>
+</tbody>
+</table>
+<h2 id="90_진행도표-C-표정">C. 표정</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>단순 범위</th>
+<th>진행률</th>
+<th>완성도</th>
+<th>판정 근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C1.1~C1.5</td>
+<td>채널 5(눈썹·눈꺼풀·홍채·입·효과)</td>
+<td>60</td>
+<td>44</td>
+<td>MSC2_XPP 채널 있음 · 09 §9.1 수치 미적용</td>
+</tr>
+<tr>
+<td>C2.1</td>
+<td>표정 53 수치표</td>
+<td>60</td>
+<td>38</td>
+<td>53키 배포 · 대응표(obs/expression §3-1) 미적용</td>
+</tr>
+<tr>
+<td>C2.2</td>
+<td>세기 3단</td>
+<td>20</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>C2.3</td>
+<td>꼬마·노인·동물 변형</td>
+<td>20</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>C3.1</td>
+<td>전환 순서·프레임</td>
+<td>60</td>
+<td>50</td>
+<td>15차f 눈썹1→눈꺼풀3→입5</td>
+</tr>
+<tr>
+<td>C3.2</td>
+<td>끊김 0·종류 불변</td>
+<td>60</td>
+<td>38</td>
+<td>시험 없음 · 정범님 10/28 "표정 사이 끊김"</td>
+</tr>
+<tr>
+<td>C4.1</td>
+<td>입 모양·립플랩</td>
+<td>40</td>
+<td>25</td>
+<td>립플랩 있음 · 루프 수치 미적용</td>
+</tr>
+</tbody>
+</table>
+<h2 id="90_진행도표-D-시스템">D. 시스템</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>단순 범위</th>
+<th>진행률</th>
+<th>완성도</th>
+<th>판정 근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D1.1</td>
+<td>PC 연결</td>
+<td>60</td>
+<td>13</td>
+<td>정범님 15:20 "설치→닫기→웹앱 단추로만 됨" · 초점 고침 커밋(판 미상승)</td>
+</tr>
+<tr>
+<td>D1.2</td>
+<td>클릭 통과·단추</td>
+<td>40</td>
+<td>0</td>
+<td>정범님 "설정·작동·메시지 전부 먹통" · dpr 원인 후보 w8 작업본</td>
+</tr>
+<tr>
+<td>D1.3</td>
+<td>PC 설정창</td>
+<td>20</td>
+<td>0</td>
+<td>설계만</td>
+</tr>
+<tr>
+<td>D1.4</td>
+<td>모니터 이동·끌어 놓기</td>
+<td>20</td>
+<td>0</td>
+<td>트레이 '모니터 바꾸기'만</td>
+</tr>
+<tr>
+<td>D1.5</td>
+<td>자동 업데이트</td>
+<td>80</td>
+<td>50</td>
+<td>구조 있음 · 새 판 0회</td>
+</tr>
+<tr>
+<td>D2.1</td>
+<td>안드로이드</td>
+<td>60</td>
+<td>25</td>
+<td>apk 0.1.0 · 서명 키 없음</td>
+</tr>
+<tr>
+<td>D3.1</td>
+<td>알림 네 가지 기본</td>
+<td>80</td>
+<td>63</td>
+<td>배포</td>
+</tr>
+<tr>
+<td>D3.2</td>
+<td>반복 규칙 1~10분·알았어</td>
+<td>60</td>
+<td>50</td>
+<td>작업 A tJ1 통과 · 미배포</td>
+</tr>
+<tr>
+<td>D3.3</td>
+<td>하루 매출 요약 창</td>
+<td>60</td>
+<td>50</td>
+<td>작업 A</td>
+</tr>
+<tr>
+<td>D3.4</td>
+<td>알림음</td>
+<td>20</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td>D4.1</td>
+<td>오버레이 기록창</td>
+<td>80</td>
+<td>63</td>
+<td>1.78.238</td>
+</tr>
+<tr>
+<td>D4.2</td>
+<td>Alt+Enter·속삭임·연속 말풍선</td>
+<td>80</td>
+<td>50</td>
+<td>연속 말풍선 없음</td>
+</tr>
+<tr>
+<td>D4.3</td>
+<td>휴대폰 채팅 편의</td>
+<td>40</td>
+<td>25</td>
+<td>정범님 10/28 "불편"</td>
+</tr>
+<tr>
+<td>D4.4</td>
+<td>기록 보존</td>
+<td>80</td>
+<td>75</td>
+<td></td>
+</tr>
+<tr>
+<td>D5.1</td>
+<td>클라우드 창구</td>
+<td>60</td>
+<td>50</td>
+<td>작업 A · Cloud Run 키 입력됨(값 노출 → 교체 권장) · 미배포</td>
+</tr>
+<tr>
+<td>D5.2</td>
+<td>PC 127.0.0.1 창구</td>
+<td>60</td>
+<td>38</td>
+<td>lib.rs · 윈도우 빌드 미확인</td>
+</tr>
+<tr>
+<td>D5.3</td>
+<td>딥링크 say/open</td>
+<td>60</td>
+<td>50</td>
+<td>tJ2 통과</td>
+</tr>
+<tr>
+<td>D5.4</td>
+<td>사업 알림 요약 클라우드</td>
+<td>20</td>
+<td>0</td>
+<td>설계(공용 규칙 파일)</td>
+</tr>
+<tr>
+<td>D6.1</td>
+<td>수치 설정 칸 전 항목</td>
+<td>40</td>
+<td>25</td>
+<td>15차m 7항목(작업본) · 바이블 전 항목 아님</td>
+</tr>
+<tr>
+<td>D6.2</td>
+<td>기기별 저장·엔진 고르기</td>
+<td>80</td>
+<td>63</td>
+<td></td>
+</tr>
+<tr>
+<td>D7.1</td>
+<td>웹앱 카드·설치 링크</td>
+<td>60</td>
+<td>25</td>
+<td>friend 검색어 src만 고침 · 빌드 미반영</td>
+</tr>
+<tr>
+<td>D7.2</td>
+<td>연구 페이지(바이블 v2)</td>
+<td>40</td>
+<td>25</td>
+<td>이번 회차 0에서 게시(아래 95 P15)</td>
+</tr>
+<tr>
+<td>D8.1</td>
+<td>자동 시험 묶음</td>
+<td>60</td>
+<td>50</td>
+<td>T1~T13 · T14~T79 신설 미구현</td>
+</tr>
+<tr>
+<td>D8.2</td>
+<td>참고 나란히 비교 시트</td>
+<td>40</td>
+<td>25</td>
+<td>회차별 cmp.png 일부 · 항목별 아님</td>
+</tr>
+<tr>
+<td>D8.3</td>
+<td>회차 기록·백업</td>
+<td>80</td>
+<td>75</td>
+<td>r15_progress · backup</td>
+</tr>
+<tr>
+<td>D8.4</td>
+<td>배포 절차</td>
+<td>60</td>
+<td>38</td>
+<td>10/29 고침 4건 판 미상승(절차 위반)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="90_진행도표-다음-회차-판정-때">다음 회차 판정 때</h2>
+<ul>
+<li>각 행의 완성도는 자동 시험(10 §10.4 T번호) 통과율과 참고 나란히 비교 캡처 경로를 적는다.</li>
+<li>정범님이 "틀렸다"고 한 행은 지적 원문을 적고 ≤25로 되돌린다.</li>
+</ul></section>
+<section class="ch" id="95_실행묶음"><h1>95. 실행 묶음 — Opus가 하나씩 실행하는 작업 지시서</h1>
+<h2 id="95_실행묶음-0-모든-묶음에-공통-지시문-머리에-그대로-붙임">0. 모든 묶음에 공통 (지시문 머리에 그대로 붙임)</h2>
+<pre><code>당신은 리드나우 '책방 친구' 실행 담당(Opus)입니다. 한국어로 보고하고 정범님이라 부릅니다.
+읽을 것: readnow-chats/mascot/bible_v2/00_개요.md → 이 묶음이 가리키는 장 → 12_남길것_버릴것.md → 10_렌더_성능.md §10.4(시험 체계).
+작업 폴더: /home/claude/w16&lt;x&gt;/ (readnow-scripts 최신 main 복사 · 시험 서버 포트는 묶음마다 다름). 원본 저장소·readnow-chats 원본은 직접 고치지 않습니다.
+시작: 백업(readnow-chats/mascot/backup/friend_r16&lt;x&gt;_m0.js + r16&lt;x&gt;_m0_src/) → 기준 시험(손대기 전 통과/실패 기록).
+절차: 바이블 규칙대로 구현 → 자동 시험(이 묶음의 T번호 + 기존 tR15a~m·tK·tF1·t85·t88) → **참고 나란히 비교 시트**(우리 그림을 참고 그림 옆에 · 랜드마크 선 겹침 · scratchpad/compare/&lt;묶음&gt;_&lt;그림ID&gt;.png) → 정범님 화면 설정(friend/index.html?settings=1 · 기본 설정)에서 캡처.
+완료 판정은 하지 않습니다. 보고는 (1) 바꾼 파일·함수 (2) 시험 표(통과/실패) (3) 비교 시트 경로 (4) 못 한 것과 이유 (5) 90_진행도표의 해당 ID와 '권장 진행률'. 완성도는 판정자(Fable)가 매깁니다.
+배포·커밋·push·판 번호는 묶음에 '배포'라고 적힌 경우에만, 95 §0.1 절차대로.
+추정으로 '완료'라고 쓰지 않습니다. 재현되지 않은 것은 '재현 안 됨'.
+</code></pre>
+<h3 id="01-pull">0.1 배포 절차(한 번에 · 두 방이 같은 저장소를 쓰므로 반드시 pull 먼저)</h3>
+<ol>
+<li><code>cd readnow-scripts &amp;&amp; git pull</code> → 작업본 변경을 얹음(충돌은 작은 diff로).</li>
+<li><code>python3 pw/r15/splice.py &amp;&amp; python3 pw/r15/f_main_patch.py</code> → <code>FRIEND_PIN</code>(src/app.html)·<code>friend/index.html ?v=</code> 올림 → <code>spec.json</code> 쓰고 <code>python3 $RN_SP/bump.py spec.json</code> → <code>node split.js &amp;&amp; node release.js</code>('✓ 판 모두 맞음' · 수집기 머리 8559039d5a96110b 그대로).</li>
+<li><code>bash $RN_SP/t3.sh</code>(3번 시험) → <code>bash $RN_SP/cpall.sh</code> → commit(끝 두 줄 Co-Authored-By·Claude-Session) → push → <code>git rev-parse HEAD &gt; $RN_SP/synced.sha</code>.</li>
+<li>프로그램 껍데기(friend-app/**)가 바뀐 묶음: <code>friend-app/desktop/src-tauri/tauri.conf.json</code> version 올림 → 태그 <code>friend-v&lt;판&gt;</code> push → Actions '책방 친구 PC 프로그램' 성공 확인 → 정범님 PC는 6시간 안 자동 설치(즉시 보려면 트레이 '업데이트 확인').</li>
+<li>클라우드(cloud/**)가 바뀐 묶음: main push로 자동 배포(deploy-cloud.yml) · Cloud Run 콘솔에서 새 버전 확인.</li>
+<li>readnow-chats <code>mascot/r15_progress.md</code>(또는 r16)에 회차 줄 · 백업 <code>friend_r16&lt;x&gt;_final.js</code> · <code>audits/3h/PENDING.md</code>에 요약 한 칸.</li>
+</ol>
+<h2 id="95_실행묶음-1-묶음-순서와-의존-관계">1. 묶음 순서와 의존 관계</h2>
+<table>
+<thead>
+<tr>
+<th>묶음</th>
+<th>이름</th>
+<th>의존</th>
+<th>포트</th>
+<th>배포</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P0</td>
+<td>흩어진 작업 합치기·배포 (wR15l·wJ·wR15m·w8·w9 + 10/29 저장소 고침)</td>
+<td>—</td>
+<td>8771</td>
+<td>✅ 웹앱·책방 친구·프로그램 0.1.1·클라우드</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>한 실루엣: 얼굴 살+목+몸통 합집합 · 두 고리 목 로프트 · 등신 통일 식</td>
+<td>P0</td>
+<td>8772</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>비율표 교체(한국 실측) · 등신 슬라이더 일관성 · ROM 갱신</td>
+<td>P1</td>
+<td>8773</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>꼬마·동물 눈 8기준 · 눈·눈썹 종류 확장 · 컨트롤</td>
+<td>P1</td>
+<td>8774</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>두개골+턱 로프트 · 6얼굴형 · 이목구비 표 · 2.5D 돌리기 재투영 · 얼굴 컨트롤</td>
+<td>P1</td>
+<td>8775</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>P5</td>
+<td>PC 프로그램: 설정창·모니터 이동·끌어 놓기·클릭 dpr·연결 흐름 · 프로그램 0.2.0</td>
+<td>P0</td>
+<td>—</td>
+<td>✅ 태그</td>
+</tr>
+<tr>
+<td>P6</td>
+<td>설정 시트 썸네일 · 수치 설정 전 항목 · 맨몸 단추 · 엔진 고르기</td>
+<td>P1~P4</td>
+<td>8776</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>P7</td>
+<td>몸통·체형 극단(p0/p1) · 팔다리 로프트 · 손 cascade · 발</td>
+<td>P2</td>
+<td>8777</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>P8</td>
+<td>머리카락 껍질·다발·물리·모자</td>
+<td>P4</td>
+<td>8778</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>P9</td>
+<td>옷감 4분류 · 품·주름·드리움 충돌 0 · 장신구 붙임 · 소품 치수</td>
+<td>P7</td>
+<td>8779</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>P10</td>
+<td>애니메이션: 양식 3종 설정 · 걷기 표 · 몸짓 시간표 · 블렌드 · 2차 운동</td>
+<td>P7</td>
+<td>8780</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>P11</td>
+<td>표정 53+ 수치표 · 세기 · 전환 순서 · 입 모양</td>
+<td>P3·P4</td>
+<td>8781</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>P12</td>
+<td>SD·동물·로봇·외계인·마네킹 재검</td>
+<td>P1~P4·P7</td>
+<td>8782</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>P13</td>
+<td>채팅 남은 것(연속 말풍선·알림음·휴대폰) · 바깥 연결 ④ 공용 규칙 파일</td>
+<td>P0</td>
+<td>8783</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>P14</td>
+<td>10객체 기본 캐릭터 새로 하나씩(여20→남20→청소년→꼬마→중년→노인) + 참고 비교</td>
+<td>P7·P8·P9·P11</td>
+<td>8784</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>P15</td>
+<td>연구 페이지(바이블 v2) 게시 · 진행도 표 자동 생성</td>
+<td>각 묶음 뒤</td>
+<td>—</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>(각 묶음의 상세 지시서는 §2. 조사 결과가 들어온 뒤 수치를 채움.)</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="95_실행묶음-2-묶음별-지시서">2. 묶음별 지시서</h2>
+<h3 id="p0">P0 — 흩어진 작업 합치기·실제 배포 (가장 먼저 · 반나절)</h3>
+<ul>
+<li><strong>목표</strong>: 10/29에 만들어 놓고 정범님 기기에 닿지 않은 것 전부를 한 판으로 배포. 완료 = 정범님 PC·휴대폰에서 새 판 번호 확인.</li>
+<li><strong>입력</strong>: wR15l(15차l 걸음·하이파이브·알림 편집) · wJ(작업 A: 알림 1~10분 무작위·관리자 검토·하루 매출 창 · 클라우드 /friend-say · lib.rs 127.0.0.1 창구 · 딥링크 say/open · tJ1·tJ2) · wR15m(15차m: 등신 슬라이더 우선·수치 설정 칸·외곽선 1.4·걸음 95·설정 시트 이름표) · w8(hit_loop dpr · frTick 배율) · 저장소 10/29 커밋 4건(950f0e1 연결 칸 초점 · 86ff521 다시 알림 1~10분·GitHub 검색어 · 7168ab4 설정 시트).</li>
+<li><strong>절차</strong>: ① <code>git pull</code> 최신 main → w16a 복사 ② wJ → wR15m → w8 순서로 diff 얹기(friend/readnow-friend.js 충돌은 함수 단위로 · 알림 MSC_AL 행과 mscRemRange는 wJ 것을 기준) ③ pw/r15 원본은 wR15m 것 ④ <code>splice.py · f_main_patch.py</code> ⑤ <strong>T41 유효 캡처 조건</strong>(mscCss + msc-ch msc-still)으로 시험 하네스 고침 → tR15a~m·tJ1·tJ2·tK·tF1·t85·t88 ⑥ 판 올림: FRIEND_PIN 0.12.0→0.13.0 · friend/index.html ?v= · 웹앱 bump · 프로그램 tauri.conf.json 0.1.0→<strong>0.1.1</strong> ⑦ §0.1 배포 → 태그 friend-v0.1.1 push → Actions 성공 확인 ⑧ 정범님 안내문: "PC 트레이 🐾 오른쪽 클릭 → 업데이트 확인 → 0.1.1 표시되면 됨(안 눌러도 6시간 안 자동)".</li>
+<li><strong>합격</strong>: 웹앱 ⬇ 설치 파일 링크가 <code>?q=friend</code>(No releases found 사라짐) · 설정 시트가 friend/?settings=1에서 열리고 표정 40칸·몸짓 96칸(이름표라도) · 연결 카드 60초 뒤 입력·Enter(T_connect) · 알림 tJ1 11 · 클라우드 콘솔 새 버전에 /friend-say 포함.</li>
+<li><strong>되돌리기</strong>: 설정 › 그림 › 엔진 '15차 끝(k)' · FRIEND_PIN 0.12.0 · 프로그램은 GitHub friend-v0.1.0 setup.exe.</li>
+<li><strong>보고 ID</strong>: D1.1 D7.1 A11.4 D3.2 D3.3 D5.1~5.3 A1.4(부분) D8.4.</li>
+</ul>
+<h3 id="p1-12">P1 — 한 실루엣: 얼굴 살 + 목 + 몸통 합집합 · 두 고리 목 로프트 (핵심 · 1~2일)</h3>
+<ul>
+<li><strong>목표</strong>: 정범님 캡처의 '머리가 목 위에 떠 있음·따로 놈'을 구조로 없앤다. 10 §10.1.2 · 02 §2.3 · 03 §3.2 그대로.</li>
+<li><strong>읽을 것</strong>: 10_렌더_성능 §10.1 전부 · 02 §2.3 표 14개 · 03 §3.2 · 12 §12.3(버릴 것: hd.head 자체 회전·msc2NeckTop·등신별 목 예외표).</li>
+<li><strong>절차</strong>: ① 두개골 모델에 <strong>턱 밑면 고리</strong>(headBase: 위도·경도 8점 · 턱끝에서 턱 모서리 쪽 1/3 · 폭 = 02 §2.3-2 목 상단 폭)를 둔다. 머리 회전(롤·요·피치)과 2.5D 투영을 이 고리에도 적용 ② 가슴 쪽 고리(쇄골 패임 · 밑동 ≥1.1×상단)와 2차 곡선 로프트로 목 path 생성 — 머리가 기울면 목이 휨 ③ 얼굴 살 path(턱 포함)를 머리 피벗으로 <strong>좌표 변환해</strong>(transform 그룹 아님) 살 층 <code>sp</code>에 넣는다: sp = ['face','neck','t','lL','lR','fL','fR'] + 가까운 위팔 ④ 턱 그림자 데칼(V 쐐기 0.08~0.22H · 3/4 비스듬) ⑤ msc2NeckTop·등신 목 예외표 삭제 → 02 §2.6 n(HC) 함수 ⑥ 이목구비·수염·머리카락은 살 층 위 층으로(순서 10 §10.1.3) ⑦ 시험 T14(이음선 0)·T15(틈 0: 롤·요·피치 × 등신 8값 × 4자세 = 정범님 화면 설정에서)·T16·T67~T70 신설 ⑧ 참고 나란히: 4ef6658d·a91d443a·7f56ba2b·245bacf6·c1a7fdd5(DO) 옆에 우리 정면·측면·3/4 · 턱 아래 확대.</li>
+<li><strong>합격</strong>: T14·T15·T67~T70 전부 통과 · 비교 시트에서 턱–목에 선 없음·틈 없음 · 로봇(n_bolt)·호랑이(n_eoheung)·소년(n_dodam)·아롱 4명 × 등신 2·3·4.</li>
+<li><strong>보고 ID</strong>: A2.3 A10.1 A1.4 A9.1 A9.3 B5.2(목 틈).</li>
+</ul>
+<h3 id="p2-rom">P2 — 비율표 교체·등신 통일·ROM (반나절)</h3>
+<ul>
+<li>02 §2.2 표를 MSC2_OBJ에(아니메 값 + 실측 열 + anat.realism 보간) · 남 어깨점 1.40 · 02 §2.6 분수 함수 f_c·f_k·g·n · ROM 02 §2.4(twistMaxDeg 45/70) · 콘트라포스토 기본 8/−4.</li>
+<li><strong>합격</strong>: T1·T2·T3·T4·T11·T17·T70 · 등신 슬라이더 2→7.5 스윕 캡처 10장 · 참고 5d6400d6·47220dad·cc4d580d·f16c7e20 나란히.</li>
+<li><strong>보고 ID</strong>: A1.1 A1.2 A1.3 A1.4 A1.5.</li>
+</ul>
+<h3 id="p3-8">P3 — 꼬마·동물 눈 8기준 · 눈·눈썹 종류 확장 · 컨트롤 (반나절)</h3>
+<ul>
+<li>03 §3.3.4 즉시 고칠 순서: <code>s1</code> 흰자 그늘을 하이라이트 앞으로 · 푸른 흰자 그늘 삭제(따뜻한 0.15) · <code>MSC_EYE.chibi</code> = {hk 1.1, g 0.02, c 0.12, irW 0.80, lash 0.6, wing 0, fl 0, pu 'kid', ir 'cel2', hl 'kid'} · <code>MSC_EYE_LT.chibi [0.9,0]</code> · 꼬마 layer 점 4·h3 끔 · 동물 흰자 ≤5%·띠 = 털색 어둡게 · 웃음 계열 EyeSmile ≥0.25 · 눈 종류 ≥12·눈썹 ≥10 · 속눈썹·눈썹 컨트롤(길이·굵기·뚜렷함).</li>
+<li><strong>합격</strong>: T41(캡처 유효) · T42 8기준 × 아롱·토리·너굴·곰실·토실·어흥·늑이 · T44 · T45 · 참고 e5be95fc·f65adaf1·487a3c20 나란히(눈 3배 확대).</li>
+<li><strong>보고 ID</strong>: A3.1~A3.5 A9.2.</li>
+</ul>
+<h3 id="p4-6-25d-1">P4 — 두개골+턱 로프트 · 6얼굴형 · 이목구비 표 · 2.5D 재투영 · 얼굴 컨트롤 (1일)</h3>
+<ul>
+<li>03 §3.1 표(나이·성별) · headModel anime · 볼 곡선–직선–곡선 · 턱선 35~50° · 귀 위치·3/4 가림 · 코 4단계 · 입·턱 경첩(귀여운 양식 기본) · 2.5D k 1.6 · 편안 ±40 한계 ±60 · 옆얼굴 키뷰 60~90 보간(후반) · 수염 윤곽 대체 · 나이 선 허용 목록.</li>
+<li><strong>합격</strong>: T43 T46 T48 T8 · 요 0/20/45/60 × 피치 −30/0/+30 캡처 그리드 · 참고 3ef83b8c·b3609d0d·0d06c77f·2bf767c9 나란히.</li>
+<li><strong>보고 ID</strong>: A2.1 A2.2 A2.4~A2.8.</li>
+</ul>
+<h3 id="p5-pc-dpr-020-1-rust-actions">P5 — PC 프로그램: 설정창·모니터 이동·끌어 놓기·클릭 dpr·연결 흐름 · 0.2.0 (1일 · Rust는 윈도우 Actions 빌드로 검증)</h3>
+<ul>
+<li>① w8 dpr 고침 포함(P0에서 배포됐으면 생략) ② 캐릭터 옆 ⚙ 단추 + 트레이 '설정' → <code>friend/index.html?settings=1</code> 새 창(Tauri WebviewWindow · 크기 1100×760 · 항상 위 아님) ③ 캐릭터 몸통을 <strong>Ctrl+끌기</strong>(손·발 끌기 몸짓과 구분)로 창 자체를 옮김 → 모니터 경계 넘으면 그 모니터로 · 위치 prefs 저장(기기별) · 트레이 '모니터 바꾸기' 유지 ④ 연결 흐름: 설치 직후 딥링크 등록 확인 → 웹앱 단추 한 번에 열림 · 코드 카드는 열린 동안 언제나 입력(hit_loop에 카드 rect 상시 포함 + kb_focus) ⑤ 자동 업데이트 확인 주기 6h 유지 · 트레이 '업데이트 확인' 결과 토스트.</li>
+<li><strong>합격</strong>: 자동 시험(모델) t_program·t_connect·t_dpi 통과 + <strong>정범님 PC 확인 체크리스트</strong>(①설정 단추 눌러 설정창 뜸 ②Ctrl+끌기로 2번 모니터로 옮기고 재시작 뒤 같은 자리 ③연결 카드 60초 뒤 입력 ④세 단추 반응 — 모니터 배율 100/125/150 각각).</li>
+<li><strong>보고 ID</strong>: D1.1~D1.5.</li>
+</ul>
+<h3 id="p6">P6 — 설정 시트 썸네일 · 수치 설정 전 항목 · 맨몸 · 엔진 고르기 (반나절)</h3>
+<ul>
+<li>표정 40 <strong>얼굴 썸네일</strong>(v2 얼굴 살 층을 face 뷰로 · defs 공유) · 몸짓 96 전신 · 고정/가변 표시 · 3면도 · 색 4단 표 · 신장 비교 · 수치 설정 = 각 장 '설정값' 전부(장별 접기) · 엔진 '예전 14차/15차 끝/새 판'.</li>
+<li><strong>합격</strong>: 시트 열림 ≤1.5초 · 썸네일 40+96 · 설정 바꾸면 토스트·즉시 반영 · 기기별 저장.</li>
+<li><strong>보고 ID</strong>: A11.2 A11.4 A11.5 D6.1 D6.2.</li>
+</ul>
+<h3 id="p7p14">P7~P14 (요약 · 각 묶음 시작 때 해당 장을 지시서로 그대로 씀)</h3>
+<table>
+<thead>
+<tr>
+<th>묶음</th>
+<th>장</th>
+<th>합격 시험</th>
+<th>참고 나란히</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P7 몸통·팔다리·손발</td>
+<td>05 전부</td>
+<td>T5 T6 T7 T57(A1~A10·L1~L7·H1~H7·F1~F4) T58~T60</td>
+<td>4ef6658d·19bab80d·bbae5ae5·64311264·5220b279·3c2dc31e</td>
+</tr>
+<tr>
+<td>P8 머리카락</td>
+<td>04 전부(관찰 76장 재개 뒤 보강)</td>
+<td>T71~T75</td>
+<td>89b08ee2·d5c6672c·7034e091·3fbced78</td>
+</tr>
+<tr>
+<td>P9 옷·소품</td>
+<td>06 전부(MSC2_FABRIC·MSC2_FIT·foldType 7·MSC2_ACC_ATTACH·MSC2_PROP_SIZE)</td>
+<td>T9 T19 T49~T56</td>
+<td>c81511bc·699728d2·dea2a02c·e771af54·d622d9b5·5946f747</td>
+</tr>
+<tr>
+<td>P10 애니메이션</td>
+<td>08 전부(MSC2_STYLE 36항목 · 걷기 표 · 시간표 · 블렌드)</td>
+<td>T22~T31</td>
+<td>2e0c9942·46c074b0·b546baab·9570464f·661e8241</td>
+</tr>
+<tr>
+<td>P11 표정</td>
+<td>09 전부(MSC2_XPP 53행 수치 · 세기 3단 · 복합 4 · 전환 순서)</td>
+<td>T20 T45 T61~T66</td>
+<td>2643e4f6·db4488c6·50705b7d·b28193d9·7cf0b53b</td>
+</tr>
+<tr>
+<td>P12 특수 객체</td>
+<td>07 전부</td>
+<td>T76~T79</td>
+<td>cc4d580d·774d99e5·d1944fc1·47f124e0</td>
+</tr>
+<tr>
+<td>P13 채팅·바깥 연결 ④</td>
+<td>11 §11.4~11.5(연속 말풍선·알림음·휴대폰 · readnow-alerts-core.js 공용 규칙 → 클라우드 하나가 app_summary/alerts 씀)</td>
+<td>채팅 시험 10 · 웹앱·클라우드 요약 결과 동일 비교</td>
+<td>—</td>
+</tr>
+<tr>
+<td>P14 10객체 새 캐릭터</td>
+<td>01 §1.6 · 02·03·05 · 순서 여20→남20→청소년→꼬마→중년→노인→동물→로봇·외계인</td>
+<td>객체마다 비교 시트 ≥75 · 정범님 확인</td>
+<td>5d6400d6·4ef6658d·a91d443a·cc4d580d·9770bd9f</td>
+</tr>
+<tr>
+<td>P15 연구 페이지</td>
+<td>friend/research.html = 바이블 v2 전부 + 진행도 표 자동 생성(<code>friend/research/build.py</code>)</td>
+<td>링크·목차·출처 · 시장조사 탭 링크</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_1">회차마다 끝에</h3>
+<p>① r15_progress(→r16) 줄 · 백업 · PENDING.md 요약 ② 90_진행도표 해당 ID의 '권장 진행률' 보고 → 판정자(Fable)가 완성도 매김 ③ 정범님 보고: 바뀐 것 · 못 한 것 · 비교 시트 · 정범님 확인 항목(어느 화면 어느 단추).</p></section>
+<section class="ch" id="99_출처"><h1>99. 출처 색인</h1>
+<h2 id="99_출처-참고-그림-정범님-첨부-비공개-저장소-readnow-chats-mascot-refs-그림ID-파일명-앞-8자">참고 그림(정범님 첨부 · 비공개 저장소 readnow-chats/mascot/refs · 그림ID = 파일명 앞 8자)</h2>
+<ul>
+<li>그림 611장을 주제 8갈래로 나눠 원본 크기로 관찰했다. 갈래별 기록(그림별 관찰 · 그림 속 글 옮김 · 합격 기준):</li>
+<li><a href="research/obs/turn_body.html">턴어라운드·몸통 114장</a> · <a href="research/obs/limbs_hands.html">팔·다리·손·발 54장</a> · <a href="research/obs/face.html">얼굴 78장</a> · <a href="research/obs/expression.html">표정 70장</a> · <a href="research/obs/clothes_a.html">옷·소품 A 66장</a> · <a href="research/obs/clothes_b.html">옷·소품 B 66장</a> · <a href="research/obs/motion_etc.html">움직임·포즈 39장</a></li>
+<li>머리카락·SD 꼬마 76장: 2026-10-29 사용량 한도로 중단 → 다음 회차에 보강(04·07장에 표시).</li>
+<li>이전 분석 노트(영어 · notes_00~09 · 2026-10-28)는 비공개 저장소에 그대로 있다.</li>
+</ul>
+<h2 id="99_출처-웹-조사-출처-URL-접속일-신뢰도는-각-기록-끝-출처">웹 조사(출처 URL·접속일·신뢰도는 각 기록 끝 '출처')</h2>
+<ul>
+<li><a href="research/web/anime_style.html">아니메 설정표 화풍</a> 30건 · <a href="research/web/anatomy.html">인체(한국 실측·ROM)</a> 30건+ · <a href="research/web/drawing_cg.html">드로잉·CG·SVG</a> 42건 · <a href="research/web/motion.html">움직임 세 양식</a> 33건 · <a href="research/web/props_clothes.html">옷·소품</a> 50건 · <a href="research/web/kid_eyes.html">꼬마·동물 눈 불쾌감</a> 23건</li>
+<li>저작권 규칙: 원문 통째 옮김 없음 · 인용은 출처당 한 번 15단어 안쪽 · 그림은 링크만.</li>
+</ul>
+<h2 id="99_출처-v1-문서-2026-10-28">v1 문서(2026-10-28)</h2>
+<ul>
+<li>Mascot Design Bible v1(영어) · Rebuild Plan v1 · <a href="research_v1.html">연구 페이지 v1</a> — v2가 대체하며 수치가 바뀐 곳은 각 장에 [v1→v2] 표시.</li>
+</ul></section></main></div></body></html>

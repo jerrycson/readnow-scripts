@@ -1,0 +1,738 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>일본 TV 애니메이션 &#x27;설정표(キャラクター設定・設定資料)&#x27; 화풍 — 웹 심화 조사 (바이블 v2용)</title><style>
+:root{--ink:#1f2a24;--bg:#faf8f3;--card:#fff;--line:#d9d4c7;--hd:#1f5a44;--acc:#b8562a;--mut:#6b6f66}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif}
+header{background:var(--hd);color:#fff;padding:14px 18px}header h1{margin:0;font-size:19px}header p{margin:4px 0 0;font-size:13px;opacity:.9}
+.wrap{display:grid;grid-template-columns:260px 1fr;gap:0;max-width:1400px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:14px 10px;border-right:1px solid var(--line);background:#f3f0e8;font-size:13px}
+nav a{display:block;color:var(--ink);text-decoration:none;padding:3px 6px;border-radius:6px}nav a:hover{background:#e6e1d4}nav .l2{padding-left:18px;color:var(--mut);font-size:12px}
+main{padding:18px 28px 80px;min-width:0}
+section.ch{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin:0 0 22px}
+h1,h2,h3,h4{line-height:1.3}section.ch>h1{font-size:21px;margin:0 0 10px;color:var(--hd)}h2{font-size:17px;margin:22px 0 8px;border-left:4px solid var(--hd);padding-left:8px}h3{font-size:15px;margin:16px 0 6px;color:var(--acc)}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0 12px;display:block;overflow:auto}th,td{border:1px solid var(--line);padding:5px 7px;vertical-align:top;text-align:left}th{background:#eef3ef}
+code{background:#f0ede4;padding:0 4px;border-radius:4px;font-size:12.5px}pre{background:#f0ede4;padding:10px;border-radius:8px;overflow:auto;font-size:12.5px}
+blockquote{border-left:3px solid var(--line);margin:8px 0;padding:2px 12px;color:var(--mut)}
+.meta{font-size:12px;color:var(--mut)}.back{font-size:13px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}nav{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}main{padding:12px 16px 60px}}
+</style></head><body>
+<header><h1>일본 TV 애니메이션 &#x27;설정표(キャラクター設定・設定資料)&#x27; 화풍 — 웹 심화 조사 (바이블 v2용)</h1><p>조사 기록(관찰·웹) · 바이블 v2의 근거 · 생성 2026-10-29 18:56 KST · 원본 friend/research/*.md (비공개 저장소 readnow-chats/mascot/bible_v2 와 동일)</p></header>
+<div class="wrap"><nav><a class="back" href="../../research.html">← 바이블 v2</a><a href="#1-핵심-규칙-바이블에-그대로-넣을-것">1. 핵심 규칙 (바이블에 그대로 넣을 것)</a><a href="#2-세부-조사">2. 세부 조사</a><a href="#3-우리-엔진에-적용하는-법-SVG-JS-2-5D-리그">3. 우리 엔진에 적용하는 법 (SVG/JS 2.5D 리그)</a><a href="#4-합격-기준-제안-자동-시험">4. 합격 기준 제안 (자동 시험)</a><a href="#5-출처-번호-제목-저자-기관-URL-접속일-2026-10-29-신뢰도">5. 출처 (번호 · 제목 · 저자/기관 · URL · 접속일 2026-</a><a href="#6-근거를-못-찾은-것-솔직하게">6. 근거를 못 찾은 것 (솔직하게)</a></nav><main><section class="ch"><h1 id="tv-v2">일본 TV 애니메이션 '설정표(キャラクター設定・設定資料)' 화풍 — 웹 심화 조사 (바이블 v2용)</h1>
+<p>조사일: 2026-10-29 · 조사자: Fable 5.1 (웹 조사 에이전트) · 산출: <code>scratchpad/web/anime_style.md</code>
+기존 조사(<code>mascot/research/anime_style/findings.md</code> S01~S15, <code>applied.md</code>, <code>notes_web.md</code> §2·§3, <code>mascot_bible.md</code> §0.3)는 읽었고, 아래는 <strong>빠진 것·얇은 것·틀린 것</strong>만 채운다. 이미 있는 내용은 '기존 조사 그대로'라고 적는다.
+표기: <code>[Nn]</code> = 이 문서 §5 출처 번호. <code>[기존 Sxx]</code> = findings.md 출처. <strong>(추정)</strong> = 출처가 숫자를 주지 않아 조사자가 계산·유도한 값. <strong>근거 없음</strong> = 찾지 못함.
+※ 이 턴의 웹 검색 한도(200회·전체 에이전트 공유)가 소진되어 후반 일부 항목(연필 색 규약의 2차 확인, 技評 책 제목, 눈 비율 학술 근거)은 추가 검색을 못 했다. §6에 적었다.</p>
+<hr>
+<h2 id="1-핵심-규칙-바이블에-그대로-넣을-것">1. 핵심 규칙 (바이블에 그대로 넣을 것)</h2>
+<h3 id="a">A. 설정표 구성</h3>
+<ol>
+<li><strong>캐릭터 설정화의 표준 구성 = 정면·측면·배면 3면 + 기본 동작 + 희로애락 표정집 + 복장 변형 + 소품 + 신장 비교표.</strong> 색은 설정화가 아니라 뒤 공정 '색채설계'가 따로 정한다. [N3]</li>
+<li><strong>모델 시트(서양·일본 공통)에는 머리·몸을 여러 각도로 돌린 그림(model rotation), 손·발 스케치, 기본 표정 몇 개, 그리고 "머리 모양·머리 길이·눈·입의 크기와 위치" 메모가 들어간다.</strong> [N4]</li>
+<li><strong>색 지정표의 단계 이름은 '하이라이트 / ノーマル(통상색) / 1号影 / 2号影'의 4단이 업계 표준 명칭이다.</strong> 3D 툰셰이더 실무(스튜디오Q)도 이 4단을 그대로 쓰고 [N5], 색채설계에서는 "주색·1影·2影를 엄밀히 지정하는 경우가 많다" [N6].</li>
+<li><strong>한 TV 시리즈의 ノーマル색만 약 120색(『夜のクラゲは泳げない』, 동화공방 색채설계 石黒けい).</strong> 셀 시대에도 한 작품에 최소 수십~100색 이상의 물감이 필요했고, 도에이 TV 표준색은 약 120색이었다. [N7][N8][N9] → 캐릭터 1명당 색 수는 공식 근거 없음(§6).</li>
+<li><strong>공정 용어(일본 제작 현장 표준)</strong> — §2.1 표 그대로 바이블 용어집에 넣는다. [N3][N10][N11][N12][N13]</li>
+</ol>
+<h3 id="b">B. 선</h3>
+<ol>
+<li><strong>일본 TV 애니의 완성 선은 '동화(動画)' 선이며, 셀마다 굵기·세기가 일정한 균일한 선이 원칙이다.</strong> 셀시스 공식 튜토리얼: "애니메이션의 선은 셀 간에 일정하게 그린다"; 입り抜き(선 끝 테이퍼)는 다음 획과 잇기 위한 것이지 강약 표현이 아니다. [N14] 아니메 영화풍 일러스트 지침도 "브러시 하나, 선폭 강약 최소, 안티앨리어스 최소". [N15]</li>
+<li><strong>동화 선은 채색 효율을 위해 二値化(안티앨리어스 없음)하는 것이 현행 주류이고, 계단 현상은 촬영 단계 스무딩으로 푼다.</strong> 셀시스 공식: "애니메이션 스튜디오는 보통 안티앨리어스 없는 선을 쓴다". [N11][N16] → 이진화된 선은 굵기가 픽셀 단위로 고정되므로 <strong>바깥선·안쪽선 굵기 차이가 없는 것이 TV 애니 동화의 기본</strong>이다. (바이블 §0.3 '바깥 2배'·현재 코드 outK 1.4는 아니메 설정표가 아니라 일러스트 관행 — 기존 조사 항목 11·12 그대로.)</li>
+<li><strong>선 색: '実線'(검정 트레스선)과 '色トレス線'(검정 외 색 선)을 구분한다.</strong> 색트레스선은 밝은 면·그림자 경계 등에 쓰며, 셀 시대에는 색 카본이 비싸 『となりのトトロ』(茶カーボン) 등 일부 작품만 썼고, 디지털 이후 셀에 그리는 색트레스는 사라지고 "동화에 색연필로 그은 선"을 가리키는 이름으로 남았다. [N10] 디지털 시대 색채설계는 "감독 희망으로 일부 実線을 색트레스로" 바꾸고 어디에 넣을지 캐릭터 디자이너와 상의한다. [N7]</li>
+<li><strong>동화 용지의 색 규약(셀시스·스튜디오 공식 자산):</strong> 각 동화 셀 레이어는 <strong>검정·빨강·파랑·초록 4색만</strong> 받도록 제한한다(ゼクシズ 공식 작화 세트). [N17] PaintMan/OpenToonz 연동 팔레트는 <strong>선 5색(黒 000000·白 FFFFFF·赤 FF0000·緑 00FF00·青 0000FF) + 影指定 8색(FF80FF·FFFF00·FF8000·80FFFF·80FFC0·8080FF·00C0FF·FF8080) = 13색</strong>이며, 빨·초·파 색선은 채색 시 자동으로 같이 칠해지는 '색트레스선'이다. [N16] 셀 시대 각주: "밝은 부분 경계는 빨강, 어두운 부분 경계는 파랑" 식으로 구분. [N10]</li>
+<li><strong>시대별 선 경향(학술 정리, 小松祐美):</strong> 셀 시대 = 트레스머신이 연필 터치를 부분 보존한 검정 실선 / 디지털 페인트 시대 = 스캔으로 질감 재현도는 높아졌으나 선은 '색을 가르는 경계'라 끊김 없이 닫혀야 함 / 2010년대 = 『かぐや姫の物語』(2013) 원화 선 직접 사용, 『Gのレコンギスタ』(2014) 촬영 단계 'セルトレス処理'로 거친 질감, 『I can Friday by day!』(2015) 태블릿풍 균질한 굵은 선 — "표현으로서의 선"이 등장. [N18]</li>
+<li><strong>디지털 전환 시기(바이블의 '1990·2000·2010년대' 구분에 쓸 기준):</strong> 1997년 디지털 채색 시작(『ゲゲゲの鬼太郎』 등) → 1998년 도에이 셀 제작 중단 → 2004년 『サザエさん』 외 전부 디지털 → 2013-09-29 『サザエさん』 셀 종료. [N10] 2010년대 이후 디지털 작화(클린업) 일반화. [N13]</li>
+</ol>
+<h3 id="c">C. 셀 셰이딩</h3>
+<ol>
+<li><strong>TV 시리즈 캐릭터 색은 '2단(ノーマル + 1号影)'이 기본, 필요한 곳만 2号影·하이라이트를 더한 최대 4단.</strong> 아니메 영화풍 지침: "각 색은 기본 2단(밝은 면·그림자), 단을 늘리면 작업 시간이 늘고 아니메다움이 사라짐". [N15] 3D 툰 실무도 ハイライト/ノーマル/1号影/2号影. [N5] (기존 조사 항목 10 '단계 수 근거 없음'을 <strong>채움</strong>.)</li>
+<li><strong>그림자 색은 '명도만 낮추기' 금지 — 색상을 옮기고 채도를 올리며 명도는 조금만 낮춘다.</strong> 프로 색채설계(石黒けい): "단순히 어둡게 하면 좋은 색이 안 되며, 포토샵에서 단순히 색을 떨어뜨리면 회색을 섞은 색이 된다. 채도를 올리거나 색상을 옮겨 조정한다." [N7] 기술평론사 교재 실측 예: 바탕 <strong>H24 S21 V99</strong> → 명도만 낮춘 탁한 그림자 H24 S21 V75(나쁜 예) → 좋은 그림자 <strong>H10 S37 V90</strong>, 즉 <strong>ΔH −14°(피부는 붉은 쪽) · ΔS +16pt · ΔV −9pt</strong>. [N19] 셀시스 공식 가이드도 "피부 그림자는 바탕보다 조금 붉은 색상으로 옮기고 채도·명도를 함께 조정". [N20]</li>
+<li><strong>피부 그림자 색상은 붉은 쪽(−10~−15°), 그 외 재질은 푸른/보라 쪽.</strong> 피부: [N19][N20][N21]. 피부의 드리운 그림자(cast)는 "약간 보랏빛", 먼 쪽 손은 연보라·가까운 손은 분홍(공기원근). [N22] 목 아래 등 일부만 청회색 그림자 허용, 채도는 낮게. [N21] (기존 항목 7·8 '분홍 계열·차가운 곱하기'와 일치 — 부위별로 갈라 적는 것이 새 내용.)</li>
+<li><strong>곱하기(Multiply) 한 색으로 전 부위 그림자를 넣는 방식이 디지털 관행(효율)이며, 같은 그림자색이 머리·옷·피부에서 각각 다른 색으로 나온다.</strong> 바탕과 그림자는 반드시 별 레이어. [N20] → 엔진은 '재질별 그림자색 함수'와 '공통 곱하기색' 두 방식을 모두 지원하되 기본은 재질별 함수(§3).</li>
+<li><strong>하이라이트는 흰색 또는 바탕보다 조금 밝은 1단, 빛 쪽 돌출부(코끝·볼·입술·목)에만.</strong> [N21][N23] 짙은 피부는 흰색 대신 연분홍·갈색. [N23]</li>
+<li><strong>머리카락 그림자 위치 = 머리끝·정수리 부근·뒷머리 전체, 하이라이트 = 이마 위쪽(앞머리 윗부분)에 선 여러 개 → 일부 지움, 빛 쪽에 밝은 띠.</strong> [N22] (기존 항목 4·5와 일치 — 기존 조사 그대로.)</li>
+<li><strong>눈: 흰자는 순백이 아니라 밝기를 약간 낮춘 흰색, 홍채 아랫부분에 밝은 색, 하이라이트는 약간 삼각형.</strong> [N22] 눈은 카메라 거리에 따라 다른 부위보다 색 수를 늘려도 되는 유일한 부위. [N15]</li>
+</ol>
+<h3 id="d">D. 얼굴 비율(양식)</h3>
+<ol>
+<li><strong>눈 크기: 실사 눈은 얼굴 폭의 약 1/10, 아니메는 1/6~1/7(작은 쪽)부터 1/3~1/4(큰 쪽). 클수록 어린 인상.</strong> 눈 사이 간격은 눈 폭 1개가 기본이며 얼굴이 넓으면 더 벌린다. 아니메 눈은 실사(이마 = 얼굴 앞면의 1/3, 그 바로 아래 눈)보다 약간 아래. 크기 변화는 폭이 아니라 <strong>세로 높이</strong>로 준다. [N24] (개인 기고 — 관행 수준.)</li>
+<li><strong>아이 얼굴의 3원칙(셀시스 공식 강좌 平井太朗): ① 얼굴 전체가 작다 ② 눈이 다른 부위보다 크게 보인다 ③ 눈·코·입이 가깝다.</strong> 아기는 가장 강하게 + '黒目がち'(홍채가 눈을 거의 채움) + 머리 위 절반(뇌)이 아래 절반보다 크고 눈 위치를 내리면 귀엽다. 유아는 약하게, 초등학생은 어른 기본에서 약간 조정. 어른 눈은 머리 세로 중심선 위, 10대 후반부터 눈매가 날카로워지고 턱선이 뚜렷. [N25][기존 notes_web §3-3] 구체 수치(눈 높이 0.62 등)는 <strong>근거 없음</strong> — notes_web §3-3 표의 [관행] 표기 유지.</li>
+<li><strong>눈 모양의 3형(표준 = 눈꼬리가 동공 중심선 약간 위 / 처진 눈 = 아래, 온화 / 올라간 눈 = 위, 날카로움), 위 속눈썹은 3구간으로 나눠 그린다.</strong> [N24]</li>
+</ol>
+<h3 id="e">E. 색</h3>
+<ol>
+<li><strong>아니메 피부색 범위(측정 기반): HSV 색상 0~40°, 명도 75% 이상(Takayama 외) / RGB 120&lt;R&lt;255, 90&lt;G&lt;250, 70&lt;B&lt;218, R&gt;G+10, G&gt;B+10 (Siddiqui &amp; Wasif, 아니메 255장·주석 70장·1,800만 픽셀).</strong> [N26] 교재 바탕색 예: <strong>H24 S21 V99</strong>, <strong>H28 S11 V100</strong>. [N19] 일본 캐릭터풍은 노랑~주황 쪽, 창백·투명 느낌은 분홍 쪽; 명도는 최대, 채도는 흰색에 가깝게 낮게(그을린 피부 제외). [N21]</li>
+<li><strong>아니메 피부색의 허용·선호 범위는 배경(실내/실외·색온도·조도)에 따라 뚜렷이 달라지고, 색채 항상성 효과는 실사보다 약하다(Han &amp; Uchikawa 2016·2017, 도쿄공업대).</strong> [N27][N28] → 엔진은 배경색이 바뀌면 피부 ノーマル을 그대로 두지 말고 '상황색 세트'(§1-4 ノーマル 120색 관행과 같은 원리)를 둔다. 수치는 PDF 미입수(§6).</li>
+<li><strong>머리색·눈색은 자유(색채설계가 배경·원작 컬러·동석 캐릭터와의 구별을 기준으로 정함).</strong> 같은 방의 캐릭터가 같은 색만 되지 않게 바꾸기도 함. [N7] (기존 항목 18과 일치.)</li>
+</ol>
+<h3 id="f-2d">F. 2D 리그 분해</h3>
+<ol>
+<li><strong>Live2D 공식 최소 분해: 머리카락 3(앞·옆·뒤, 좌우로 갈리는 것은 좌우 따로, 흔들릴 것은 따로) / 얼굴 = 눈·코·눈썹·입·윤곽·귀 / 눈 = 속눈썹·눈알·흰자(전부 그림) / 입 = 윗입술·아랫입술·입속(원본보다 한 치수 크게) / 목(입 높이까지 길게) / 몸 = 목·몸통·팔(상완·전완·손)·다리(치마·좌·우).</strong> 가려진 부분은 그려 넣고, 파츠마다 선+채색을 한 레이어로 합친다. [N1][N2] 셀시스 공식(2018): 앞머리 우·중·좌 + 뒷머리 / 윤곽·귀 좌우·목 / 눈썹·속눈썹·홍채·흰자 / 코 / 입 = 윗입술·아랫입술·이·입속 / 상체·팔 좌우(상완·전완)·다리 좌우 — <strong>PC·폰 표시는 가로 약 1000px이면 충분</strong>. [N29]</li>
+<li><strong>분해 순서: 머리카락을 먼저(얼굴 윤곽·눈·귀·입과 겹치므로), 몸은 얼굴 제외 먼저, 얼굴 세부는 마지막(복제한 얼굴 레이어에서).</strong> [N30][N29] 앞 숱(ahoge)은 앞·뒤 2묶음, 트윈테일은 좌우 따로, 머리끈은 머리카락과 분리. [N30]</li>
+</ol>
+<hr>
+<h2 id="2-세부-조사">2. 세부 조사</h2>
+<h3 id="21-1">2.1 설정표 구성 규칙과 제작 현장 용어 (질문 1)</h3>
+<p><strong>구성</strong> — 공식·백과 근거로 확인된 항목만:</p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+<th>출처</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>기본 방향</td>
+<td>正面・側面・背面 (3면)</td>
+<td>[N3]</td>
+</tr>
+<tr>
+<td>동작·표정</td>
+<td>基本動作, 喜怒哀楽の表情集</td>
+<td>[N3]</td>
+</tr>
+<tr>
+<td>복장·소품</td>
+<td>服装バリエーション, アクセサリー等 小物類 (복장 수 ∝ 비용 → 예산이 제약)</td>
+<td>[N3]</td>
+</tr>
+<tr>
+<td>체격 비교</td>
+<td>身長比較表 (여럿이 한 화면에 설 때용)</td>
+<td>[N3]</td>
+</tr>
+<tr>
+<td>머리·몸 회전</td>
+<td>'model rotation'(여러 각도), 손·발 스케치, 기본 표정 몇 개, 머리 모양·머리 길이·눈·입 크기·위치 메모</td>
+<td>[N4]</td>
+</tr>
+<tr>
+<td>색</td>
+<td>설정화에는 없음 → 색채설계가 결정 · 단계 이름 ハイライト/ノーマル/1号影/2号影</td>
+<td>[N3][N5][N6]</td>
+</tr>
+<tr>
+<td>디자이너</td>
+<td>작품당 원칙 1명(일관성) · 총작화감독 겸임 多 · 일본 최초 크레딧 1973『ゼロテスター』</td>
+<td>[N3]</td>
+</tr>
+<tr>
+<td>캔버스 템플릿(참고)</td>
+<td>셀시스 자산: 정면·측면·사선 얼굴 가이드 + 복장 바디 + 등신·상대 신장 가이드 + 성격 메모</td>
+<td>[N31]</td>
+</tr>
+</tbody>
+</table>
+<p>3/4(斜め) 뷰 포함 여부·머리 수 눈금의 형식·표정표 칸 수는 <strong>공식 근거 없음</strong>(§6) — 실제 공개 설정화(JoJo wiki 'Settei' 아카이브)는 캐릭터당 얼굴·전신·소년기·색 시트 등 6~18장이 흔하나, 내부 배치는 텍스트로 확인 불가. [N32]</p>
+<p><strong>용어(현장 표준)</strong> — 바이블 용어집용:</p>
+<table>
+<thead>
+<tr>
+<th>용어</th>
+<th>뜻</th>
+<th>출처</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>キャラクターデザイン / 設定(設定画)</td>
+<td>인물 외견 설정과 그 공정·직책. 原案(러프)과 구분. 프리프로덕션의 설정 하위 공정</td>
+<td>[N3]</td>
+</tr>
+<tr>
+<td>設定資料集</td>
+<td>공개된 캐릭터·미술 설정화를 모은 책(공식設定資料集 등)</td>
+<td>[N33]</td>
+</tr>
+<tr>
+<td>色彩設定(=色彩設計, colour planning)</td>
+<td>색의 총괄 책임자. 하위에 色彩設計·色指定·仕上</td>
+<td>[N12]</td>
+</tr>
+<tr>
+<td>色彩設計</td>
+<td>작화에 나오는 모든 대상의 색을 미리 규칙으로 정함(원래 미술감독 영역)</td>
+<td>[N12]</td>
+</tr>
+<tr>
+<td>色指定</td>
+<td>색채설계 데이터로 각 화·컷(주로 서브·게스트 캐릭터)의 색을 지정</td>
+<td>[N12]</td>
+</tr>
+<tr>
+<td>色指定検査(セル検)</td>
+<td>완성 페인트의 色パカ(움직일 때 색이 깜빡임) 검사·리테이크</td>
+<td>[N12]</td>
+</tr>
+<tr>
+<td>仕上(仕上げ)=彩色=デジタルペイント</td>
+<td>동화·색지정으로 색을 입혀 셀을 만드는 공정. 색채 커리어 시작점</td>
+<td>[N12]</td>
+</tr>
+<tr>
+<td>原画</td>
+<td>동작의 시작·요점·끝을 그린 키포즈(화면에 직접 안 나옴). 공정·소재·직책 모두</td>
+<td>[N13-a]</td>
+</tr>
+<tr>
+<td>レイアウト(LO) / ラフ原 / 第一原画(一原) / 第二原画(二原)</td>
+<td>화면 설계 / 원화 밑그림 / LO+ラフ原 / 러프를 청서한 납품 원화</td>
+<td>[N13-a]</td>
+</tr>
+<tr>
+<td>作画監督 / 総作画監督</td>
+<td>원화·타임시트 완성 시 수정 / 전체 통일</td>
+<td>[N13-a]</td>
+</tr>
+<tr>
+<td>動画</td>
+<td>원화를 清書(クリーンアップ)한 뒤 사이 코마를 채우는 공정·선화·담당자. 화면에 보이는 선</td>
+<td>[N11]</td>
+</tr>
+<tr>
+<td>クリーンアップ(清書・原トレ)</td>
+<td>원화를 작품용으로 정서. 여러 동화맨이 그려도 한 사람이 그린 듯 보이게</td>
+<td>[N13]</td>
+</tr>
+<tr>
+<td>中割り / スペーシング</td>
+<td>원화 사이 보간. 均等割・先ヅメ・後ヅメ・両ヅメ</td>
+<td>[N11]</td>
+</tr>
+<tr>
+<td>溜め・詰め(タメツメ)</td>
+<td>원화 쪽에 동화를 몰아 정지감(溜め)과 완급</td>
+<td>[N11]</td>
+</tr>
+<tr>
+<td>ツメ指示(ゲージ) / 中割参考</td>
+<td>동화 매수·위치 지정 / 원화맨·작감이 그린 중간 참고</td>
+<td>[N11]</td>
+</tr>
+<tr>
+<td>動画検査(動検)</td>
+<td>선 끊김·소재 누락·움직임 점검</td>
+<td>[N11]</td>
+</tr>
+<tr>
+<td>二値化</td>
+<td>동화 선의 안티앨리어스 제거(채색 효율)</td>
+<td>[N11]</td>
+</tr>
+<tr>
+<td>ヌキ</td>
+<td>투과(빈 부분) 지시 ✘·「ヌキ」</td>
+<td>[N11]</td>
+</tr>
+<tr>
+<td>実線 / 色トレス線</td>
+<td>검정 트레스선 / 검정 외 색의 선(밝은 면·그림자 경계 등)</td>
+<td>[N10]</td>
+</tr>
+<tr>
+<td>影指定(カゲ指定)</td>
+<td>그림자 영역 지정(동화 위 색연필 → 디지털은 전용 레이어·8색)</td>
+<td>[N16][N17]</td>
+</tr>
+<tr>
+<td>特効(特殊効果)</td>
+<td>仕上의 에어브러시·질감 작업(투과광은 撮影)</td>
+<td>[N12]</td>
+</tr>
+<tr>
+<td>撮影</td>
+<td>하류 공정. 디지털 이후 브러시·그라데이션이 仕上에서 촬영으로 이동</td>
+<td>[N12]</td>
+</tr>
+<tr>
+<td>タップ穴 / セル規격</td>
+<td>3공 기본(세계 공통), 스탠더드 셀 268×228mm, 비스타 345×230mm</td>
+<td>[N10]</td>
+</tr>
+<tr>
+<td>AJA規格 LO用紙</td>
+<td>A4 297×210mm, 메인 프레임 10×5.625in(254×142.875mm, 16:9), 안전 프레임 90%, 스캔 프레임 110%, 프레임 중심~중앙 탭 4.125in</td>
+<td>[N34]</td>
+</tr>
+</tbody>
+</table>
+<p>수량: 30분 TV 1화 동화 약 3,000~5,000장(Production I.G) / 3,000~10,000장+(Wikipedia) / 한 장 수백 엔. [N35][N11][N36]</p>
+<h3 id="22-2">2.2 선 (질문 2)</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>결론</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>외곽선 굵기(캐릭터 키 대비)</td>
+<td><strong>공식 수치 없음.</strong> (추정) AJA 16:9 메인 프레임 254mm ↔ 1920px → 7.56px/mm. 연필 선 0.3~0.5mm라면 완성 화면 <strong>2.3~3.8px @1080p</strong>. 전신 캐릭터가 프레임 높이의 80%(≈860px)일 때 선 = 키의 <strong>0.27~0.44%</strong>. 우리 엔진(viewBox 높이 200, MSC2_LW 0.62) = 키의 0.31% — 범위 안.</td>
+<td>[N34] + 추정</td>
+</tr>
+<tr>
+<td>안쪽 선 : 바깥 선</td>
+<td><strong>TV 동화는 1 : 1(균일)이 기본.</strong> 이진화 선은 픽셀 굵기 고정. 굵기 차는 일러스트 관행(설문 1.25~1.5배).</td>
+<td>[N11][N14][N16] · [기존 S12]</td>
+</tr>
+<tr>
+<td>선 끝 처리</td>
+<td>入り抜き는 '획 잇기'용. 끊김 없이 닫힌 선(채색 경계). 이진화 후 계단은 촬영 스무딩</td>
+<td>[N14][N18][N11]</td>
+</tr>
+<tr>
+<td>선 색</td>
+<td>実線 = 검정 / 色トレス線 = 빨·초·파 등(채색 시 자동으로 영역색으로 칠해짐). 2010년대 색채설계가 일부 実線을 색트레스로 전환</td>
+<td>[N10][N16][N7]</td>
+</tr>
+<tr>
+<td>시대별</td>
+<td>셀(~1997/2004): 검정 실선 + 극히 드문 색 카본 / 디지털(1997~): 색트레스 자유, 선은 닫힌 경계 / 2010년대: 선 질감 가공(セルトレス処理, 굵은 균질선)</td>
+<td>[N10][N18]</td>
+</tr>
+</tbody>
+</table>
+<p>제작사별 차이: 수정용지 색조차 "업계 통일 규격 없음"(작감 노랑, 총작감 분홍/연두, 연출 연파랑 — 지브리 2001 일지) [N13-a]. 선 굵기 제작사별 표준은 <strong>근거 없음</strong>.</p>
+<h3 id="23-3">2.3 셀 셰이딩 (질문 3)</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>결론</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>단계 수</td>
+<td>기본 2단(ノーマル+1号影), 최대 4단(+2号影, ハイライト). 2단 넘으면 "아니메다움 감소"</td>
+<td>[N15][N5][N6]</td>
+</tr>
+<tr>
+<td>그림자 색 만들기</td>
+<td>명도만 ↓ 금지. 색상 이동 + 채도 ↑ + 명도 약간 ↓. 실측 예 ΔH −14°·ΔS +16·ΔV −9 (피부). 이동량의 일반 공식은 <strong>근거 없음</strong></td>
+<td>[N7][N19][N20]</td>
+</tr>
+<tr>
+<td>피부</td>
+<td>붉은 쪽(혈색). cast 그림자는 보랏빛. 목 아래만 청회색(저채도) 허용</td>
+<td>[N19][N20][N22][N21]</td>
+</tr>
+<tr>
+<td>머리</td>
+<td>그림자: 끝·정수리·뒷머리. 하이라이트: 이마 위 띠(선 여러 개→일부 지움). 곱하기 시 같은 색도 짙은 녹/갈색으로 변함</td>
+<td>[N22][N20]</td>
+</tr>
+<tr>
+<td>옷</td>
+<td>"넓은 면은 밝게, 좁은 면은 어둡게"(kawashita). 곱하기 시 피부색 영향으로 주황빛</td>
+<td>[N22][N20]</td>
+</tr>
+<tr>
+<td>눈</td>
+<td>흰자 = 밝기 낮춘 흰색, 홍채 아래 밝은 색, 삼각 하이라이트, 색 수 ↑ 허용</td>
+<td>[N22][N15]</td>
+</tr>
+<tr>
+<td>하이라이트</td>
+<td>흰색/바탕보다 조금 밝게 1단, 돌출부(코·볼·입술·목)</td>
+<td>[N21][N23]</td>
+</tr>
+<tr>
+<td>경계 모양</td>
+<td>단단한 경계(기존 S08·S10). 영화풍 지침: 그림자 경계는 선으로 그린다(채도 높은 가이드 선)</td>
+<td>[N15]</td>
+</tr>
+<tr>
+<td>3D 툰 임계값</td>
+<td>명암 흑백 2값화(Greater Than), 단계별 임계값 0~1을 재질마다 자유 설정 — 수치 미제시</td>
+<td>[N5]</td>
+</tr>
+</tbody>
+</table>
+<h3 id="24-4">2.4 얼굴 비율 (질문 4)</h3>
+<ul>
+<li>눈 폭 : 얼굴 = 1/6~1/7 ~ 1/3~1/4(아니메), 1/10(실사). 눈 사이 1눈 폭. 아니메는 실사(이마 1/3 아래)보다 약간 아래. 크기는 <strong>세로</strong>로 조절. [N24 — 개인 기고, 관행]</li>
+<li>아이: 3원칙 + 아기 黒目がち + 눈 위치 ↓. [N25 — 셀시스 공식 강좌] 수치 없음.</li>
+<li>연령·성별·장르별 수치표: <strong>근거 없음</strong>. notes_web §3-3 [관행] 표를 유지하되 '관행' 표기.</li>
+<li>속눈썹: 위 속눈썹 3구간. 빛 쪽 속눈썹은 흰색도 가능. 하이라이트 개수·크기·홍채 비율 수치 <strong>근거 없음</strong>. [N24]</li>
+<li>큰 눈 → 귀여움 방향만 학술 지지(기존 S05·S06 그대로).</li>
+</ul>
+<h3 id="25-5">2.5 머리카락·옷 (질문 5)</h3>
+<ul>
+<li>머리는 가마(つむじ)를 기준으로 <strong>앞·옆·뒤 3분할</strong>이 그리기·리깅 공통 단위. [N37][N1]</li>
+<li>房(다발) 수·하이라이트 띠 폭·주름 수: <strong>근거 없음</strong>(셀시스 공식·튜토리얼 모두 수치 없음). 기존 바이블 §4.3·§8.2 값 유지(관행 표기).</li>
+<li>앞머리 반투명(얼굴 위 앞머리 불투명도 85% 예). [N37]</li>
+</ul>
+<h3 id="26-6">2.6 색 (질문 6)</h3>
+<ul>
+<li>피부 범위·예시값: 핵심 규칙 22. 배경 의존성: 23.</li>
+<li>색 수: ノーマル 약 120색/시리즈, 셀 물감 100색+/작품, 도에이 표준 120색(+극장 X색 70, 해외합작 あ色 70). [N7][N8][N9]</li>
+<li>머리·눈색: 자유, 구별·원작·배경 기준. [N7]</li>
+</ul>
+<h3 id="27-live2d-7">2.7 Live2D식 분해 (질문 7)</h3>
+<ul>
+<li>공식 목록·순서: 핵심 규칙 25·26. 파츠 총수 "많을수록 품질↑, 모델마다 다름" — 공식 수치 없음. [N2]</li>
+<li>입은 클리핑 대신 <strong>피부색 채움으로 가리기</strong> 권장(클리핑은 마스크 부담·선 밖 돌출·큰 변형 시 작업↑). [N1]</li>
+<li>파츠별 변형기 격자·3/4 돌림 수치: 기존 notes_web §2-2 그대로.</li>
+</ul>
+<hr>
+<h2 id="3-우리-엔진에-적용하는-법-SVG-JS-2-5D-리그">3. 우리 엔진에 적용하는 법 (SVG/JS 2.5D 리그)</h2>
+<p>현재 코드 기준값(wR15m/pw/r15): <code>MSC2_LW = 0.62</code>(viewBox 200 높이) · <code>MSC2_TUNE.outK = 1.4</code> · 그림자 함수 <code>mscS1</code>(색상을 250° 쪽으로 13% 당김·S+0.03·L×0.8−0.015) · <code>mscS2</code>(20%·S×1.02+0.05·L×0.63−0.02) · <code>mscSkS</code>(h−7°, s×1.06+0.03, l−0.08) · <code>mscL1</code>(L+(1−L)×0.32) · <code>mscLn</code>(선 = 로컬색 어둡게, L≤0.22).</p>
+<h3 id="31-msc2_tune-k-lohi">3.1 설정값 제안 (MSC2_TUNE 형식: k · 이름 · lo~hi · 기본 · 근거)</h3>
+<p><strong>선</strong>
+| k | 이름 | 범위 | 기본 | 근거 |
+|---|---|---|---|---|
+| <code>lineW</code> | 선 굵기(키 대비 %) | 0.15~0.60 | <strong>0.31</strong> (=0.62/200) | §2.2 추정 범위 0.27~0.44% 안 |
+| <code>outK</code> | 바깥÷안쪽 굵기 | 1.0~2.5 | <strong>1.0 = 'TV 동화' 모드</strong>, 1.4 = '일러스트' 모드 | 규칙 7 · 기존 S12. <strong>두 프리셋을 설정 화면에 '설정표(TV)/일러스트'로 두고 기본은 TV</strong> |
+| <code>lineAA</code> | 선 안티앨리어스 | 0/1 | 1(화면용) | 규칙 7 — SVG는 스무딩이 촬영 역할; 이진화 흉내는 불필요 |
+| <code>lineTaper</code> | 선 끝 테이퍼 비율 | 0~0.6 | <strong>0.0</strong> (TV) / 0.55(일러스트, 현 <code>mscTpr</code> 0.55) | 규칙 6 |
+| <code>lineColorMode</code> | 선 색 | <code>ink</code>/<code>local</code>/<code>trace</code> | <strong><code>trace</code></strong>: 実線=어두운 로컬색(현 mscLn), 색트레스 부위(피부 안쪽선·머리 하이라이트 경계·볼선)=영역색에 가까운 선 | 규칙 8·9 |
+| <code>traceParts</code> | 색트레스 적용 부위 | 집합 | {피부 안쪽선, 머리카락 안쪽 결, 눈꺼풀 아래선} | 규칙 8·바이블 E5 |</p>
+<p><strong>셀 셰이딩</strong> (HSV 기준으로 바꿀 것 — 교재 수치가 HSV)
+| k | 이름 | 범위 | 기본 | 근거 |
+|---|---|---|---|---|
+| <code>shadeSteps</code> | 그림자 단 수 | 1~2 | <strong>1</strong> (TV) · 2 = 2号影 추가(옷 겹침·목 아래·머리 뒤만) | 규칙 12 |
+| <code>hlOn</code> | 하이라이트 단 | 0/1 | 1 (머리 띠·눈·코끝·입술) | 규칙 16·17 |
+| <code>skS.dH / dS / dV</code> | 피부 1号影 이동 | −25~+10° / 0~+30pt / −25~0pt | <strong>−12° / +14 / −9</strong> | 규칙 13·14 (교재 −14/+16/−9, 현 코드 −7°·S×1.06+0.03·L−0.08 → 채도 상승을 키우고 명도 하강을 줄임) |
+| <code>skS2.dH/dS/dV</code> | 피부 2号影(cast) | | <strong>−8°(=1号影에서 보라 쪽 +15°) / +18 / −16</strong> | 규칙 14 'cast는 보랏빛' |
+| <code>matS.dH/dS/dV</code> | 머리·옷·소품 1号影 | | <strong>+12°(250° 쪽으로 당김 0.13 유지) / +8 / −14</strong> | 규칙 13 + 기존 S10·S14(차가운 곱하기) — 현 <code>mscS1</code> 유지 가능 |
+| <code>matS2</code> | 2号影 | | 현 <code>mscS2</code> | |
+| <code>hl.dV / dS</code> | 하이라이트 | | <strong>+10 / −15</strong>, 짙은 피부(V&lt;60)는 색상 +10°(분홍) | 규칙 16 |
+| <code>shadeMode</code> | 그림자 생성 방식 | <code>perMaterial</code> / <code>multiply</code> | <strong>perMaterial</strong>(위 표) · multiply = 단일 곱하기색 <code>#B8A6D6</code> 류 하나로 전 부위 | 규칙 15 |
+| <code>shadeEdge</code> | 경계 | hard | hard (현 <code>msc2Shade</code> 마스크 유지) | 기존 S08 |
+| <code>lightDir</code> | 광원 | 고정 좌상 | 좌상(현) | 기존 §0.3 |</p>
+<p><strong>색</strong>
+| k | 이름 | 범위 | 기본 | 근거 |
+|---|---|---|---|---|
+| <code>skin.H / S / V</code> | 피부 ノーマル 범위 검사 | H 0~40° · S 5~40 · V 75~100 | 기본 캐릭터 H24 S21 V99 / 연한 H28 S11 V100 | 규칙 22 |
+| <code>skinCheck</code> | RGB 검사(런타임 경고) | — | R&gt;120, G&gt;90, B&gt;70, R&gt;G+10, G&gt;B+10 | 규칙 22 |
+| <code>sceneSet</code> | 상황색 세트 | {day, evening, night, indoorWarm, indoorCool} | day만 구현, 나머지는 피부 V −8~−20·H ±8° 프리셋 | 규칙 23 |
+| <code>maxNormalColors</code> | 캐릭터당 ノーマル 색 수 경고 | 6~20 | 12 (근거 없음 — 운영값) | §6 |</p>
+<p><strong>얼굴</strong>
+| k | 이름 | 범위 | 기본 | 근거 |
+|---|---|---|---|---|
+| <code>eyeWFace</code> | 눈 폭 ÷ 얼굴 폭 | 0.14~0.33 | 꼬마 0.28 · 청소년 0.24 · 성인 0.20 · 노인 0.17 | 규칙 19(1/6~1/3) · 현 eyW 표(0.20~0.25H, HW≈0.78H → 0.26~0.32HW, 상한 근처) |
+| <code>eyeGapW</code> | 눈 사이 ÷ 눈 폭 | 0.9~1.4 | 1.0(성인) · 1.25(꼬마, 현 eyG) | 규칙 19 |
+| <code>eyeSizeAxis</code> | 크기 변화 축 | <code>h</code>/<code>wh</code> | <strong>h</strong>(세로만) | 규칙 19 |
+| <code>kidIrisFill</code> | 꼬마 홍채가 눈을 채우는 비율 | 0.7~0.95 | 0.90(바이블 E2) | 규칙 20 黒目がち |
+| <code>lashSeg</code> | 위 속눈썹 구간 수 | 1~3 | 3 | 규칙 21 |</p>
+<p><strong>리그 분해(SVG <code>&lt;g&gt;</code> 계층)</strong> — Live2D 공식 최소 집합을 그대로 클래스 이름으로:
+<code>hairBack &gt; body(neckLong, torso, armU/F ×2, hand ×2, legs ×2 / skirt) &gt; face(contour+ears) &gt; faceParts(browL/R, eyeL/R{white(full), iris, lashUpper(3구간), lashCorner, highlight}, nose, mouth{lipU, lipD, inner(1치수 크게), skinFill}) &gt; hairSide L/R &gt; hairFront{bang×3, ahogeFront, ahogeBack} &gt; accessories(hairTie 분리)</code>.
+규칙: 목은 입 높이까지 그림(현 코드 head ellipse 아래에 목 추가) · 가려진 부분 모두 그림(이미 msc2Shade가 <code>&lt;use&gt;</code>로 전체 실루엣 참조 — 유지) · 파츠당 선+채움 한 그룹.</p>
+<h3 id="32-24fps">3.2 시간표(24fps)와의 관계</h3>
+<ul>
+<li>색·선 설정은 정지 규칙이므로 프레임 시간표 변경 없음. <code>shadeSteps</code>를 2로 올릴 때 2号影은 cast 전용이므로 팔·앞머리 등 '드리우는' 파츠가 움직일 때만 다시 계산(성능).</li>
+<li>입 파츠 <code>inner</code>를 크게 두는 규칙 때문에 말하기(MouthOpenY) 시 입속이 선 밖으로 나오지 않음 — 기존 notes_web §2-3 립싱크 값 그대로.</li>
+</ul>
+<h3 id="33">3.3 구현 순서 제안</h3>
+<ol>
+<li><code>lineColorMode=trace</code> + <code>outK</code> 프리셋(TV 1.0 / 일러스트 1.4) — 작은 변경.</li>
+<li>그림자 함수를 HSV 기반 <code>msc2Shade{Skin,Mat}(c, {dH,dS,dV})</code>로 통일하고 <code>MSC2_TUNE</code>에 올림(한 곳 기준 원칙).</li>
+<li>피부 ノーマル 검사(skinCheck) + 상황색 세트.</li>
+<li>눈 설정(eyeWFace·eyeSizeAxis).</li>
+</ol>
+<hr>
+<h2 id="4-합격-기준-제안-자동-시험">4. 합격 기준 제안 (자동 시험)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>시험</th>
+<th>통과 조건</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1</td>
+<td>선 굵기</td>
+<td>렌더 PNG(키 860px)에서 실루엣 선 평균 굵기 2.3~3.8px, 안쪽 선과의 비 = outK ±10%</td>
+<td>규칙 7 · §2.2 추정</td>
+</tr>
+<tr>
+<td>T2</td>
+<td>선 균일</td>
+<td>TV 모드에서 한 경로 안 굵기 변동(최대/최소) ≤ 1.1</td>
+<td>규칙 6</td>
+</tr>
+<tr>
+<td>T3</td>
+<td>선 닫힘</td>
+<td>모든 채움 영역의 경계가 선으로 닫혀 있음(채움 flood가 바깥으로 새지 않음)</td>
+<td>규칙 7·10</td>
+</tr>
+<tr>
+<td>T4</td>
+<td>그림자 단 수</td>
+<td>재질별 고유 색 수 = ノーマル + shadeSteps + hlOn (±0)</td>
+<td>규칙 12</td>
+</tr>
+<tr>
+<td>T5</td>
+<td>그림자 색</td>
+<td>각 재질 1号影: V(normal)−V(shadow) 5~20pt, S(shadow) ≥ S(normal), 피부 H 이동 −20~−5°, 그 외 +5~+30°(보라/청 쪽)</td>
+<td>규칙 13·14</td>
+</tr>
+<tr>
+<td>T6</td>
+<td>피부 범위</td>
+<td>ノーマル 피부 HSV: H 0~40°, V ≥ 75; RGB 규칙 5개 모두 참</td>
+<td>규칙 22</td>
+</tr>
+<tr>
+<td>T7</td>
+<td>하이라이트</td>
+<td>V ≥ ノーマル+8, 면적 ≤ 재질 면적의 8%(머리 띠 제외 3%)</td>
+<td>규칙 16 (면적 비율은 운영값)</td>
+</tr>
+<tr>
+<td>T8</td>
+<td>눈 비율</td>
+<td>눈 폭/얼굴 폭 0.14~0.33, 눈 사이/눈 폭 0.9~1.4, 꼬마 홍채 채움 ≥ 0.85</td>
+<td>규칙 19·20</td>
+</tr>
+<tr>
+<td>T9</td>
+<td>리그 파츠</td>
+<td>필수 그룹 존재: hairFront/Side/Back, eye{white,iris,lash}, mouth{lipU,lipD,inner}, neck 높이 ≥ 입 y</td>
+<td>규칙 25</td>
+</tr>
+<tr>
+<td>T10</td>
+<td>가려진 부분</td>
+<td>각 파츠를 ±15% 이동해도 아래 파츠에 구멍(배경 노출) 0px</td>
+<td>규칙 25</td>
+</tr>
+<tr>
+<td>T11</td>
+<td>색 수</td>
+<td>캐릭터당 ノーマル 고유색 ≤ maxNormalColors</td>
+<td>운영값</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="5-출처-번호-제목-저자-기관-URL-접속일-2026-10-29-신뢰도">5. 출처 (번호 · 제목 · 저자/기관 · URL · 접속일 2026-10-29 · 신뢰도)</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>출처</th>
+<th>신뢰도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>N1</td>
+<td>Live2D 공식 튜토리얼 "1. Illustration Processing" — Live2D Inc. https://docs.live2d.com/en/cubism-editor-tutorials/psd/</td>
+<td>높음(도구 공식 문서)</td>
+</tr>
+<tr>
+<td>N2</td>
+<td>Live2D 매뉴얼 "About Material Separation" https://docs.live2d.com/4.2/en/cubism-editor-manual/divide-the-material/</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>N3</td>
+<td>Wikipedia(ja) 「キャラクターデザイン (アニメ制作)」 https://ja.wikipedia.org/wiki/キャラクターデザイン_(アニメ制作)</td>
+<td>중간(백과·각주 14건·일부 要出典)</td>
+</tr>
+<tr>
+<td>N4</td>
+<td>Wikipedia(en) "Model sheet" https://en.wikipedia.org/wiki/Model_sheet</td>
+<td>중간</td>
+</tr>
+<tr>
+<td>N5</td>
+<td>CGWORLD 연재 「プロジェクトスタジオQ Blenderでのアニメ制作 第2回 トゥーンシェーダ(前篇)」 林田樹, 2022-07-05 https://cgworld.jp/regular/studio-q-02.html</td>
+<td>높음(제작 스튜디오 실무자·업계지)</td>
+</tr>
+<tr>
+<td>N6</td>
+<td>Wikipedia(ja) 「トゥーンレンダリング」 https://ja.wikipedia.org/wiki/トゥーンレンダリング</td>
+<td>중간</td>
+</tr>
+<tr>
+<td>N7</td>
+<td>リアルサウンド映画部 「色彩設計・石黒けいが語る"動画工房の色"」 2024-05-25 (p.1·p.2) https://realsound.jp/movie/2024/05/post-1670331.html , …_2.html</td>
+<td>높음(현역 색채설계 인터뷰)</td>
+</tr>
+<tr>
+<td>N8</td>
+<td>Wikipedia(ja) 「セル画」 https://ja.wikipedia.org/wiki/セル画</td>
+<td>중간(각주 풍부)</td>
+</tr>
+<tr>
+<td>N9</td>
+<td>Wikipedia(ja) 「アニメカラー」 https://ja.wikipedia.org/wiki/アニメカラー</td>
+<td>중간</td>
+</tr>
+<tr>
+<td>N10</td>
+<td>= N8 (선·色トレス·시대별 전환은 セル画 항목)</td>
+<td>중간</td>
+</tr>
+<tr>
+<td>N11</td>
+<td>Wikipedia(ja) 「動画 (アニメ制作)」 https://ja.wikipedia.org/wiki/動画_(アニメ制作)</td>
+<td>중간</td>
+</tr>
+<tr>
+<td>N12</td>
+<td>Wikipedia(ja) 「色彩設定」 https://ja.wikipedia.org/wiki/色彩設定</td>
+<td>중간</td>
+</tr>
+<tr>
+<td>N13</td>
+<td>Wikipedia(ja) 「クリーンアップ (アニメ制作)」 https://ja.wikipedia.org/wiki/クリーンアップ_(アニメ制作) · N13-a 「原画 (アニメ制作)」 https://ja.wikipedia.org/wiki/原画_(アニメ制作)</td>
+<td>중간</td>
+</tr>
+<tr>
+<td>N14</td>
+<td>CLIP STUDIO TIPS(ClipStudioOfficial, CELSYS) "Tips when drawing line art for animation" 2018-07-18 https://tips.clip-studio.com/en-us/articles/957</td>
+<td>높음(도구사 공식)</td>
+</tr>
+<tr>
+<td>N15</td>
+<td>CLIP STUDIO TIPS "Shading Your Drawings Like An Anime Movie" Konart, 2020-04-30 https://tips.clip-studio.com/ja-jp/articles/3054</td>
+<td>중간(개인 기고, 구체 절차)</td>
+</tr>
+<tr>
+<td>N16</td>
+<td>CLIP STUDIO TIPS(ClipStudioOfficial) "Coloring Clip Studio Paint Drawing Data in OpenToonz" 2019-04-26 https://tips.clip-studio.com/en-us/articles/1650 ; 색 세트 "Anime Color for CLIP STUDIO"(13색) https://assets.clip-studio.com/en-us/detail?id=1691252</td>
+<td>높음(도구사 공식·PaintMan 팔레트)</td>
+</tr>
+<tr>
+<td>N17</td>
+<td>【ゼクシズ公式】アニメーション作画セット v1.2 (2022-03-10) https://assets.clip-studio.com/en-us/detail?id=1904414</td>
+<td>높음(제작사 공식)</td>
+</tr>
+<tr>
+<td>N18</td>
+<td>小松祐美 「アニメの描線が持つ不自由さをめぐって」 (法政大学 리포지토리, 2015년 이후) https://honan.repo.nii.ac.jp/record/360/files/34-4-yumikomatsu.pdf</td>
+<td>높음(학술)</td>
+</tr>
+<tr>
+<td>N19</td>
+<td>技術評論社 도서 견본 PDF (ISBN 978-4-297-13561-4, 2023) https://gihyo.jp/assets/files/book/2023/978-4-297-13561-4/9784297135614-01.pdf</td>
+<td>중간~높음(상업 교재 · 책 제목 미확인)</td>
+</tr>
+<tr>
+<td>N20</td>
+<td>イラスト・マンガ描き方ナビ(CLIP STUDIO) 「失敗しない影色の選び方」 2017-01-12/2024-02-19 https://www.clipstudio.net/oekaki/archives/151736 (번체판 https://www.clipstudio.net/painting/archives/159055)</td>
+<td>높음(도구사 공식 사이트)</td>
+</tr>
+<tr>
+<td>N21</td>
+<td>MediBang "how to choose skin color" はらなおこ, 2022-10-24 https://medibangpaint.com/en/use/2022/10/how-to-choose-skin-color</td>
+<td>중간(도구사 사이트·개인 기고)</td>
+</tr>
+<tr>
+<td>N22</td>
+<td>CLIP STUDIO TIPS "Make your illustrations dramatic with shadows and highlights" kawashita, 2020-04-24 https://tips.clip-studio.com/en-us/articles/2974</td>
+<td>중간</td>
+</tr>
+<tr>
+<td>N23</td>
+<td>Art Rocket(CLIP STUDIO) "Anime-Style Skin Coloring Tutorial" Nanniimo, 2020-08-27 https://www.clipstudio.net/how-to-draw/archives/161037</td>
+<td>중간</td>
+</tr>
+<tr>
+<td>N24</td>
+<td>CLIP STUDIO TIPS "Everything about Drawing &amp; Colouring Perfect Anime Eyes" Pharmarr, 2024-12-12 https://tips.clip-studio.com/de-de/articles/10248</td>
+<td>낮음~중간(개인 기고·기계번역)</td>
+</tr>
+<tr>
+<td>N25</td>
+<td>イラスト・マンガ描き方ナビ 「キャラクターの描き分け STEP.2 子供の顔を描く」 平井太朗(ワコムクラブアカデミー), 2017-04-05 https://www.clipstudio.net/oekaki/archives/151909 (STEP.1 …/151854)</td>
+<td>높음(공식 강좌)</td>
+</tr>
+<tr>
+<td>N26</td>
+<td>Siddiqui &amp; Wasif, "Skin Detection of Animation Characters" arXiv:1503.06275 (Takayama et al. HSV 인용 포함) https://arxiv.org/pdf/1503.06275</td>
+<td>중간(프리프린트·실측)</td>
+</tr>
+<tr>
+<td>N27</td>
+<td>Han, H. &amp; Uchikawa, K. "Ranges of Animation Skin Color", Int. J. Affective Engineering 16(1), 2017, doi:10.5057/ijae.IJAE-D-16-00031 https://www.jstage.jst.go.jp/article/ijae/advpub/0/advpub_IJAE-D-16-00031/_article/-char/en</td>
+<td>높음(학술·초록만 확인)</td>
+</tr>
+<tr>
+<td>N28</td>
+<td>韓惠軫·内川惠二 「アニメーション画像の人物顔における肌色許容範囲の背景依存性」 日本印刷学会誌 54(3) 193–202, 2017, doi:10.11413/nig.54.193 https://www.jstage.jst.go.jp/article/nig/54/3/54_193/_article/-char/ja/</td>
+<td>높음(학술·초록만)</td>
+</tr>
+<tr>
+<td>N29</td>
+<td>CLIP STUDIO TIPS(ClipStudioOfficial) "Creating Live2D Data in CLIP STUDIO PAINT [Part 1]" 2018-01-30 https://tips.clip-studio.com/en-us/articles/578</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>N30</td>
+<td>CLIP STUDIO TIPS "Separate character parts with CLIP STUDIO PAINT (Live2D)" 2020-02-06 https://tips.clip-studio.com/en-us/articles/2684</td>
+<td>중간</td>
+</tr>
+<tr>
+<td>N31</td>
+<td>CLIP STUDIO ASSETS 「キャラクターデザイン テンプレート」 尾津杏奈 https://assets.clip-studio.com/en-us/detail?id=2263059</td>
+<td>낮음(개인 자산)</td>
+</tr>
+<tr>
+<td>N32</td>
+<td>JoJo Wiki "Settei" 아카이브 https://jojowiki.com/Settei</td>
+<td>낮음(팬 위키·실물 설정화 목록)</td>
+</tr>
+<tr>
+<td>N33</td>
+<td>Wikipedia(ja) 「設定資料集」(書きかけ) https://ja.wikipedia.org/wiki/設定資料集</td>
+<td>낮음</td>
+</tr>
+<tr>
+<td>N34</td>
+<td>日本動画協会(AJA) 「AJA推奨レイアウト用紙規格」 해설 https://aja.gr.jp/assets/files/aja_layout/aja_layout_doc.pdf</td>
+<td>높음(업계 단체 규격)</td>
+</tr>
+<tr>
+<td>N35</td>
+<td>Production I.G 「動画について」 https://production-ig.co.jp/retail/notice-douga/docs/about-douga.pdf</td>
+<td>높음(제작사 공식)</td>
+</tr>
+<tr>
+<td>N36</td>
+<td>アニメハック 「編集Gのサブカル本棚 第45回 アニメーションの動画の大切さ」 五所光太郎, 2025-02-24 https://anime.eiga.com/news/column/editor_bookshelf/123188/</td>
+<td>중간(업계지 칼럼·NAFCA 교재 소개)</td>
+</tr>
+<tr>
+<td>N37</td>
+<td>イラスト・マンガ描き方ナビ 「艶のある白髪の塗り方【厚塗り】」 神慶, 2023-01-20 https://www.clipstudio.net/oekaki/archives/168993</td>
+<td>중간(두껍게 칠하기 — 아니메 칠 아님, 3분할·앞머리 85%만 인용)</td>
+</tr>
+<tr>
+<td>N38</td>
+<td>文化庁 アニメーション人材育成 「色彩設計・仕上げの役割」(辻田邦夫 외) https://www.bunka.go.jp/animeseminar/2025/course/course06.html</td>
+<td>높음(국가 사업 · 영상 강좌라 본문 수치 없음 — 용어·강사 경력만)</td>
+</tr>
+<tr>
+<td>N39</td>
+<td>Sugimoto et al. "Interactive Shadow design tool for Cartoon Animation -KAGEZOU-", J. WSCG (Waseda) https://otik.zcu.cz/bitstream/11025/1257/1/Sugimoto.pdf</td>
+<td>높음(학술 · 드리운 그림자 단순 타원·다리 그림자 상세/상체 단순 관행만)</td>
+</tr>
+</tbody>
+</table>
+<p>읽었으나 수치가 없어 인용하지 않은 것: JAniCA 디지털툴 WG 보고(2015), NAFCA 검정 기사(gamebiz 2024-09-11), 三鷹ネットワーク大学 色彩 강좌 자료(2018), KAKEN 17530677 (市原 2005-06, CIE-xy 측정 보고·수치 없음), Clip Studio 'Simple Anime-style Coloring'(Nicca 2020), MediBang 'how to color like anime style'(2021, 그림자 1단·하이라이트 1단만), Clip Studio 3037·2964·957 계열, 日本VR学会論文誌 21(3) 伊藤 외 2016(움직임 선: 만화 40% 컷 vs 아니메 5% 샷 — 효과선 통계), Wikipedia(ja) アニメ絵.</p>
+<hr>
+<h2 id="6-근거를-못-찾은-것-솔직하게">6. 근거를 못 찾은 것 (솔직하게)</h2>
+<ol>
+<li><strong>설정표의 정형 배치</strong>(3면 + 3/4의 순서·머리 수 눈금 그리는 법·표정표 칸 수·소품표 축척 표기) — 공식 문서 없음. 실물 설정화 이미지를 직접 보고 세어야 함(정범님 소장 refs 602장 중 設定 류를 notes_0x에서 다시 집계 권장).</li>
+<li><strong>동화 선 굵기(mm·px)</strong> — 모든 공식 출처가 수치 미제시. §2.2 값은 AJA 프레임 + 연필 선 폭 가정으로 계산한 추정.</li>
+<li><strong>그림자 색 이동량의 일반 공식</strong>(색상 몇 도·채도 몇 %) — 교재 1예(ΔH −14/ΔS +16/ΔV −9)뿐. 재질별(머리·옷·눈) 수치 없음.</li>
+<li><strong>동화 색연필 규약</strong>(파랑=그림자, 빨강=하이라이트, 초록=색트레스 등)의 2차 확인 — セル画 항목 각주 1건뿐. 검색 한도 소진으로 추가 확인 못 함.</li>
+<li><strong>눈 비율의 연령·성별·장르별 수치</strong> — 개인 기고(N24) 범위와 공식 강좌의 정성 원칙(N25)뿐. notes_web §3-3 표는 [관행] 유지.</li>
+<li><strong>머리 다발 수·하이라이트 띠 폭·옷 주름 수</strong> — 근거 없음.</li>
+<li><strong>아니메 피부색 허용 타원의 실제 수치(Han &amp; Uchikawa)</strong> — PDF가 허용 목록 밖이라 초록만. 다음 조사에서 J-STAGE PDF 직접 열람 필요(오픈 액세스).</li>
+<li><strong>캐릭터 1명당 색 수</strong> — 시리즈 전체 ノーマル 120색만 확인.</li>
+<li><strong>技術評論社 교재의 책 제목·저자</strong>(ISBN 978-4-297-13561-4) — 검색 한도로 미확인.</li>
+<li>1990년대·2000년대·2010년대 <strong>선 굵기·그림자 단 수의 시대별 통계</strong> — 디지털 전환 연표(규칙 11)와 사례(규칙 10)로 대체. 정량 통계 없음.</li>
+</ol></section></main></div></body></html>

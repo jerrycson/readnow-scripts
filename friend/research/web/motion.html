@@ -1,0 +1,1135 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>사람 움직임 — 실제 · 풀 애니메이션 · 아니메 세 양식 비교와 엔진 적용 (웹 심화 조사 · 2026-10-29)</title><style>
+:root{--ink:#1f2a24;--bg:#faf8f3;--card:#fff;--line:#d9d4c7;--hd:#1f5a44;--acc:#b8562a;--mut:#6b6f66}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif}
+header{background:var(--hd);color:#fff;padding:14px 18px}header h1{margin:0;font-size:19px}header p{margin:4px 0 0;font-size:13px;opacity:.9}
+.wrap{display:grid;grid-template-columns:260px 1fr;gap:0;max-width:1400px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:14px 10px;border-right:1px solid var(--line);background:#f3f0e8;font-size:13px}
+nav a{display:block;color:var(--ink);text-decoration:none;padding:3px 6px;border-radius:6px}nav a:hover{background:#e6e1d4}nav .l2{padding-left:18px;color:var(--mut);font-size:12px}
+main{padding:18px 28px 80px;min-width:0}
+section.ch{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin:0 0 22px}
+h1,h2,h3,h4{line-height:1.3}section.ch>h1{font-size:21px;margin:0 0 10px;color:var(--hd)}h2{font-size:17px;margin:22px 0 8px;border-left:4px solid var(--hd);padding-left:8px}h3{font-size:15px;margin:16px 0 6px;color:var(--acc)}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0 12px;display:block;overflow:auto}th,td{border:1px solid var(--line);padding:5px 7px;vertical-align:top;text-align:left}th{background:#eef3ef}
+code{background:#f0ede4;padding:0 4px;border-radius:4px;font-size:12.5px}pre{background:#f0ede4;padding:10px;border-radius:8px;overflow:auto;font-size:12.5px}
+blockquote{border-left:3px solid var(--line);margin:8px 0;padding:2px 12px;color:var(--mut)}
+.meta{font-size:12px;color:var(--mut)}.back{font-size:13px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}nav{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}main{padding:12px 16px 60px}}
+</style></head><body>
+<header><h1>사람 움직임 — 실제 · 풀 애니메이션 · 아니메 세 양식 비교와 엔진 적용 (웹 심화 조사 · 2026-10-29)</h1><p>조사 기록(관찰·웹) · 바이블 v2의 근거 · 생성 2026-10-29 18:56 KST · 원본 friend/research/*.md (비공개 저장소 readnow-chats/mascot/bible_v2 와 동일)</p></header>
+<div class="wrap"><nav><a class="back" href="../../research.html">← 바이블 v2</a><a href="#핵심-규칙-바이블에-그대로-넣을-것">핵심 규칙 (바이블에 그대로 넣을 것)</a><a href="#세부-조사">세부 조사</a><a href="#우리-엔진에-적용하는-법">우리 엔진에 적용하는 법</a><a href="#합격-기준-제안-자동-시험">합격 기준 제안 (자동 시험)</a><a href="#출처-접속일-모두-2026-10-29">출처 (접속일 모두 2026-10-29)</a><a href="#근거를-못-찾은-것-솔직하게">근거를 못 찾은 것 (솔직하게)</a></nav><main><section class="ch"><h1 id="2026-10-29">사람 움직임 — 실제 · 풀 애니메이션 · 아니메 세 양식 비교와 엔진 적용 (웹 심화 조사 · 2026-10-29)</h1>
+<blockquote>
+<p>기준: 24fps(1f = 41.7ms) · 단위 cm·kg·°·초·프레임(f) · H = 전신 높이, 머리 = 정수리~턱.
+표기: <strong>[출처 n]</strong> = 아래 '출처' 목록 번호에서 수치를 직접 확인 · <strong>[기존]</strong> = 기존 조사(research/motion/findings.md, notes_web.md, mascot_bible.md §11)에 이미 있는 값 · <strong>[관행]</strong> = 출처에 수치가 없어 업계 관행으로 잡은 시작값 · <strong>[유도]</strong> = 출처 수치로 내가 계산한 값(계산식 병기).
+기존 조사와 겹치는 것은 '기존 조사 그대로'라고만 적고, 이번 조사는 <strong>빠진 것·출처 없던 것·세 양식 구분</strong>을 채우는 데 집중했다.</p>
+</blockquote>
+<hr>
+<h2 id="핵심-규칙-바이블에-그대로-넣을-것">핵심 규칙 (바이블에 그대로 넣을 것)</h2>
+<ol>
+<li><strong>양식은 설정 하나로 고른다 — <code>motion.style</code> = <code>real</code> / <code>full</code> / <code>anime</code>.</strong> 세 양식의 차이는 "그림 장수(코마)·정지 길이·간격 곡선·과장량·2차 운동·잔상" 7가지 매개변수 묶음이고, 그 밖의 뼈대·리그는 공통이다. 세 양식 모두 재생은 24fps 고정이며 바뀌는 것은 <strong>값이 갱신되는 프레임 간격</strong>뿐이다(1코마 24장/초 · 2코마 12장/초 · 3코마 8장/초). [출처 1][출처 2][출처 3][기존]</li>
+<li><strong>아니메(3코마)는 평균값이지 고정 규칙이 아니다.</strong> 한 컷 안에서 큰 동작은 2코마·1코마, 정지 대사는 4코마 이상으로 섞어 쓴다. 엔진은 '트랙별 코마'를 둔다: 몸 동작 2~3코마, 얼굴(눈·입) 2~3코마, 호흡·시선·물리(머리카락·옷)는 항상 1코마(계단화 금지). [출처 2][출처 3][기존 notes_web §1-1]</li>
+<li><strong>실제 걷기 기준값(생체역학):</strong> 케이던스 100~115걸음/분(≈1.67~1.92걸음/초 → 한 걸음 12.5~14.4f), 편한 속도 약 80m/분(1.33m/s), 입각 60% : 유각 40%, 이중 지지 걸음당 10%+10%. [출처 4][출처 5][기존 S13 1.83걸음/초]</li>
+<li><strong>실제 걷기 몸통 수치:</strong> 무게중심 상하 진폭 = 신장의 2.16%(170cm면 약 3.7cm · 걸음마다 1회 오르내림, 양발 지지(접지) 때 최저 · 한발 중간 입각 때 최고), 좌우 진폭 = 신장의 1.34%(약 2.3cm, 빠른 걸음에서 0.25%로 급감). 골반 회전 ±5°, 골반 좌우 기울기(obliquity) ±5°, 골반 앞뒤 기울기 변동 5°(평균 전방 10°). 무릎: 접지 10° → 하중 20° → 중간 입각 5° → 발 떼기 40~50° → 유각 초 60° → 유각 말 5°. 엉덩관절: 접지 굽힘 35° → 입각 말 폄 −10°. 발목: 접지 −5° → 중간 입각 +10~15° → 발 떼기 −25°. [출처 6][출처 7]</li>
+<li><strong>풀 애니 걷기(Williams 공식):</strong> 한 걸음 12f가 '보통·활기찬 걸음'(2걸음/초). 4f 매우 빠른 달리기 · 6f 달리기/매우 빠른 걷기 · 8f 느린 달리기/만화 걸음 · 12f 보통 · 16f 산책 · 20f 노인·지친 걸음 · 24f 느린 걸음 · 32f 매우 느림. 키 순서는 접촉(contact) → 내림(down) → 통과(passing) → 올림(up) → 접촉이고, 12f 걸음의 키 위치는 접촉 1 · 내림 3~4 · 통과 7 · 올림 9~10 · 접촉 13(자료마다 3/4·9/10 차이). 높이 순서: 올림 &gt; 통과 &gt; 접촉 &gt; 내림. [출처 8][출처 9][출처 10][출처 11]</li>
+<li><strong>아니메 걷기(作画 관행):</strong> 전문학교 정규 과정의 기본 과제는 "횡걸음 3코마 중(中) 4장"이다 — 접촉 원화 둘 사이에 동화 4장, 즉 한 걸음 5장 × 3코마 = <strong>15f/걸음(0.625초, 96걸음/분)</strong>. 실제 사람 케이던스(100~115/분)와 거의 같아, 아니메 걷기는 "장수를 줄이되 시간은 실제와 같게"가 원칙이다. 달리기는 한 걸음 4~5장 2코마(8~10f), '아니메식 대시'는 공중 그림을 빼고 4장을 2~3코마. [출처 12][출처 13][출처 14]</li>
+<li><strong>실제 서 있을 때 흔들림(자세 동요):</strong> 압력중심(COP) RMS 앞뒤 0.6~0.7cm · 좌우 0.4cm, 평균 속도 앞뒤 0.5~0.65cm/s · 좌우 0.3~0.5cm/s, 주 주파수 앞뒤 0.11Hz(눈 뜸, 주기 약 9초) · 0.20Hz(눈 감음). 몸 각도로 환산하면 발목 기준 ±0.3~0.5°(복사뼈~무게중심 100cm 가정: atan(0.6/100)≈0.34°). 즉 '실제' 양식의 몸 흔들림은 Live2D 예시(BodyAngleX ±2°/15.5s)의 약 1/5이다. [출처 15][출처 16][출처 17][유도]</li>
+<li><strong>풀 애니 대기 = 무빙 홀드:</strong> 같은 그림을 8~12f 넘게 두지 않는다. 키 포즈 대비 1~3% 드리프트(ease-out) + 부위별 도착 프레임 엇갈림 + 깜박임·호흡. <strong>아니메 대기 = 정지 그림 + 깜박임 + 머리카락 물리만</strong>(몸은 계단화 정지). 아니메 연구(쓰쿠바대 2013)는 이것을 '코마도리(コマ撮り)=거의 정지인 프레임은 갱신하지 않음'과 '나카나시(中無し)=중간 그림을 빼서 속도를 과장'으로 정의한다. [출처 18][출처 19][기존 notes_web §1-6]</li>
+<li><strong>깜박임 세 양식:</strong> 실제 — 평균 간격 4.3초(2~6초 무작위), 닫힘 2f·감음 1f·열림 3f(총 6f). 풀 애니 — 같은 모양에 눈썹 2~5% 동반 하강, 머리 15° 이상 돌림 시작 0~2f에 강제 깜박임. 아니메 — 그림 3장(뜸·반·감음), 기본 순서 뜸→감음→반→뜸(닫을 때는 중간 그림 없이 '탁' 감고 열 때만 반 그림), 8fps 타임라인 기준 4프레임 = 24fps에서 3코마 × 4 = 12f(0.5초). 느리게 보이려면 닫을 때도 반 그림을 넣는다(5장). [출처 20][기존 §3.11]</li>
+<li><strong>입 움직임(아니메 口パク):</strong> 입 그림 3장(닫힘·반·열림). 무작위 교체는 떨려 보이므로 고정 루프를 쓴다 — 원 자료(15fps) '열림 3 + 반 3 + 열림 2 + 닫힘 2' = 24fps 환산 <strong>열림 5f → 반 5f → 열림 3f → 닫힘 3f(16f ≈ 0.67초)</strong>, 말할 때만 돌리고 침묵이면 멈춤. 긴 '아·오'는 열림 유지, '이·우·에'는 반 유지, '응'은 닫힘 유지. [출처 21][유도]</li>
+<li><strong>표정 전환 순서(세 양식 공통):</strong> 시선 0f → 눈썹(바깥 먼저) +0~2f → 눈꺼풀 +2~4f → 입(모양→열림) +3~6f → 머리·몸 +4~8f → 홍조·땀 +6~12f. 전환 길이: 보통 6~10f · 미묘 12~20f · 충격 2~4f. <strong>아니메는 중간 그림 0~1장(中無し 또는 中1枚)</strong>으로 '탁' 바뀌고, 풀 애니는 중간 2~4장, 실제는 연속. [기존 §3.10][출처 19]</li>
+<li><strong>잔상(스미어)·오바케:</strong> 스미어는 "가능한 한 적은 프레임, 대개 <strong>1프레임</strong>"이며 2·3프레임 유지하면 틀리게 보인다. 풀 애니에서만 쓰고(빠른 턴·펀치·손 흔들기 시작), 아니메는 같은 자리에 오바케(ブレ) 그림을 1~2코마 넣는다. 실제 양식에서는 쓰지 않는다. <code>prefers-reduced-motion</code>이면 스미어·잔상만 끄고 몸짓은 유지(엔진 기존 msc2RMfx 규칙). [출처 22][출처 23][출처 14]</li>
+<li><strong>이펙트(SF·판타지) 작화 수치:</strong> 불꽃 한 사이클 6~8장(반복 루프면 약 16장), 반짝임 효과는 2코마 노출(사이에 색 셀 삽입 가능), 빔은 한 그림 1~2f + 다른 그림 2~3f를 10f 안에 채움, 충격은 <strong>충격 프레임을 빼면 속도감, 충격 뒤 블러 그림 1장을 넣으면 힘</strong>. 반짝이(キラキラ)는 4장 × 2f = 8f(1f/장은 너무 빠름), 놀람 기호는 2장 교대 4f. 폭발은 지브리 기준 표준보다 1.3배 느리게. [출처 24][출처 20]</li>
+<li><strong>끊고 들어오기(블렌딩) 업계값:</strong> 게임 엔진의 전환(크로스페이드)은 초 단위 고정 길이로 두며 예시값 0.1~0.4초(Spine 기본 0.1s 예시, 쌍별 0.2·0.25·0.4s, 걷기→사격처럼 즉시 바꿀 때 0s, 셋업 포즈로 돌아갈 때 1.5s). Unity는 Exit Time(정규화, 예 0.75) + Transition Duration(초 또는 정규화) + Interruption Source(None/Current/Next/둘 다)로 끊기 규칙을 두고, Unreal은 Blend In/Out(사용자 예시 0.25s)과 Sync Group(리더·팔로워, 발 접지 마커로 시간 맞춤)을 쓴다. 우리 엔진 MSC_XFADE 200ms(≈5f)는 이 범위 안이다. [출처 25][출처 26][출처 27][출처 28]</li>
+<li><strong>두 캐릭터 동기화 관행(게임식):</strong> 접촉이 있는 짝 동작은 두 리그의 '접촉 마커' 프레임을 같은 시각에 놓고, 나머지 구간을 리더(먼저 시작한 쪽) 길이에 맞춰 팔로워의 재생 속도를 비례 조정한다(Unreal Sync Marker 방식). 길이 차가 크면 속도 튐이 생기므로 짝 동작의 길이 차는 ±25% 안으로 설계한다(±25%는 [관행]). 아니메·풀 애니 교재에는 이에 대한 수치 규정이 없다(근거 없음). [출처 28][관행]</li>
+<li><strong>찌그러짐·늘임(스쿼시·스트레치) 허용량:</strong> 실제 0%(뼈대는 변형되지 않음) · 풀 애니 몸통 ±5~10%, SD·착지 ±15~25%, 부피 보존 scaleX×scaleY≈1 · 아니메 몸은 0~3%(거의 쓰지 않고, 개그·SD 컷에서만 풀 애니 값). 출처에 정량 규정은 없고 부피 보존 원칙만 있다 — 숫자는 [관행]. [출처 1][기존 notes_web §1-10]</li>
+<li><strong>2차 운동(머리카락·옷) 늦음:</strong> 실제 = 물리(진자·감쇠, Live2D 값 그대로) · 풀 애니 = 부위별 지연 앞머리 1~2f · 옆머리 2~3f · 뒷머리 3~5f · 치마 3~6f · 리본 4~8f, 오버슛 10~50% · 아니메 = 같은 지연이지만 2~3코마로 계단화하고 몸이 멈춘 뒤 1~2회만 흔들고 정지. [기존 notes_web §1-5][관행]</li>
+<li><strong>호흡·체중 이동은 양식과 무관하게 '실제' 값을 쓴다</strong>(성인 3.2~3.6초, 들숨 40%:날숨 60%, 체중 옮김 6~15초마다 24~36f). 단 아니메 양식에서는 체중 옮김만 2코마 계단화. [기존 §11.1]</li>
+<li><strong>양식 전환 시 바뀌지 않는 것:</strong> 뼈대·가동 범위(§1.4)·표정 순서(규칙 11)·호흡·깜박임 간격·물리 60fps 고정 스텝. 바뀌는 것은 '우리 엔진에 적용하는 법' 표의 매개변수뿐이다.</li>
+</ol>
+<hr>
+<h2 id="세부-조사">세부 조사</h2>
+<h3 id="1">1. 세 양식 비교표</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>실제 사람(생체역학)</th>
+<th>풀 애니메이션(서양식)</th>
+<th>아니메(일본 리밋)</th>
+<th>출처</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>그림 장수</td>
+<td>연속(24fps 샘플 = 1코마)</td>
+<td>1코마(24장/초) 빠른 동작, 2코마(12장/초) 기본</td>
+<td>3코마(8장/초) 기본, 중요 동작 2코마·1코마, 정지 대사 4코마 이상. Krita 일본식 템플릿: 풀 24장/초, 리밋 12·8장/초</td>
+<td>[1][2][3][29]</td>
+</tr>
+<tr>
+<td>홀드 길이</td>
+<td>홀드 없음(항상 미세 동요: COP 주 주파수 0.11Hz)</td>
+<td>완전 정지는 8~12f까지, 그 이상은 무빙 홀드(1~3% 드리프트)</td>
+<td>止め絵(정지 그림) 12~36f 이상 허용 + 깜박임·입만 움직임(目パク·口パク)</td>
+<td>[16][18][30][기존]</td>
+</tr>
+<tr>
+<td>이징</td>
+<td>역진자·사인형(걷기 상하 2.16%H 사인 곡선)</td>
+<td>강한 slow-in/out(키 근처에 그림 몰림), easeOutBack 오버슛 5~10%</td>
+<td>타메(溜め)·츠메(詰め): 키 근처에 그림을 몰고 중간은 中無し로 비움 — 곡선이 아니라 '정지 → 큰 변화 1~2장 → 정지'</td>
+<td>[6][19][기존 §11.3]</td>
+</tr>
+<tr>
+<td>예비 동작</td>
+<td>체중을 먼저 옮김(걸음 전환 비용이 대사의 2/3)</td>
+<td>본 동작의 10~25% 거리, 50~100% 시간</td>
+<td>예비 1장(2~3코마) 뒤 본 동작 中無し</td>
+<td>[기존 S15][기존 §11.4][19]</td>
+</tr>
+<tr>
+<td>지나침·정착</td>
+<td>관절 오버슛 거의 없음(유각 말 무릎 5°로 정착)</td>
+<td>5~15% 오버슛, 2~6f 복귀</td>
+<td>오버슛 그림 1장(2코마) 또는 없음</td>
+<td>[7][기존 §11.4][관행]</td>
+</tr>
+<tr>
+<td>스쿼시·스트레치</td>
+<td>0%</td>
+<td>몸통 5~10%, SD·착지 15~25%, 부피 보존</td>
+<td>0~3%(개그 컷 제외)</td>
+<td>[1][기존 §1-10][관행]</td>
+</tr>
+<tr>
+<td>2차 운동 늦음</td>
+<td>물리(머리카락 진자 Mobility 0.95·Delay 0.8~0.9)</td>
+<td>앞머리 1~2f·옆 2~3f·뒤 3~5f·치마 3~6f·리본 4~8f</td>
+<td>같은 지연을 2~3코마 계단화, 1~2회 흔들고 정지</td>
+<td>[기존 notes_web §0·§1-5][관행]</td>
+</tr>
+<tr>
+<td>스미어·잔상</td>
+<td>없음</td>
+<td>1프레임 스미어(엘론게이티드 인비트윈·멀티플·드라이브러시)</td>
+<td>오바케(ブレ) 1~2코마, 충격 뒤 블러 그림 1장</td>
+<td>[22][23][24]</td>
+</tr>
+<tr>
+<td>표정 전환</td>
+<td>연속 6~10f(눈썹→눈꺼풀→입 순)</td>
+<td>같은 순서, 중간 그림 2~4장</td>
+<td>중간 그림 0~1장, '탁' 전환</td>
+<td>[기존 §3.10][19]</td>
+</tr>
+<tr>
+<td>깜박임</td>
+<td>평균 4.3초마다, 6f(2/1/3)</td>
+<td>같음 + 눈썹 동반, 머리 돌림에 강제</td>
+<td>3장(뜸·반·감음) 1→3→2→1, 3코마면 12f</td>
+<td>[20][기존 §3.11]</td>
+</tr>
+<tr>
+<td>호흡</td>
+<td>성인 3~5초 주기, 어깨·가슴 0.3~0.6%H</td>
+<td>같음(1코마 연속)</td>
+<td>같음(1코마 연속 — 계단화하면 떨려 보임)</td>
+<td>[기존 §11.1]</td>
+</tr>
+<tr>
+<td>체중 이동</td>
+<td>COP 앞뒤 RMS 0.6~0.7cm·좌우 0.4cm, 0.5cm/s, 0.11Hz</td>
+<td>6~15초마다 24~36f, 골반→몸통→머리 2~3f씩 늦게</td>
+<td>같은 간격, 2코마 계단화, 포즈 2~3개를 교대</td>
+<td>[15][16][17][기존]</td>
+</tr>
+<tr>
+<td>걷기</td>
+<td>12.5~14.4f/걸음(100~115걸음/분)</td>
+<td>12f/걸음 기본(접촉·내림·통과·올림)</td>
+<td>3코마 中4장 = 15f/걸음(5장)</td>
+<td>[4][5][8][12]</td>
+</tr>
+</tbody>
+</table>
+<h3 id="2">2. 걷기 키 프레임 표</h3>
+<p><strong>2-1. 실제(생체역학) — 한 걸음(= 반 주기, 50% 보행 주기)을 24fps 13f로 환산(케이던스 110걸음/분)</strong></p>
+<table>
+<thead>
+<tr>
+<th>보행 주기 %</th>
+<th>사건</th>
+<th>f(13f 걸음 기준)</th>
+<th>무게중심 높이</th>
+<th>골반 회전</th>
+<th>골반 기울기</th>
+<th>무릎(접지 다리)</th>
+<th>엉덩관절</th>
+<th>발목</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>접지(initial contact)</td>
+<td>0</td>
+<td>최저</td>
+<td>+5°</td>
+<td>0°</td>
+<td>10°</td>
+<td>35° 굽힘</td>
+<td>−5°</td>
+</tr>
+<tr>
+<td>0~10</td>
+<td>하중(loading, 이중 지지)</td>
+<td>0~2.6</td>
+<td>오름 시작</td>
+<td>→</td>
+<td>5°(접지 쪽 올라감)</td>
+<td>20°</td>
+<td>30°</td>
+<td>0</td>
+</tr>
+<tr>
+<td>10~30</td>
+<td>중간 입각(single support)</td>
+<td>2.6~7.8</td>
+<td><strong>최고</strong>(30% 부근)</td>
+<td>0°</td>
+<td>0°</td>
+<td>5°</td>
+<td>10°</td>
+<td>+10~15°</td>
+</tr>
+<tr>
+<td>30~50</td>
+<td>입각 말(heel-off)</td>
+<td>7.8~13</td>
+<td>내려감</td>
+<td>−5°</td>
+<td>−5°</td>
+<td>10~20°</td>
+<td>−10°(폄)</td>
+<td>−25°(발 떼기)</td>
+</tr>
+<tr>
+<td>50~60</td>
+<td>발 떼기(toe-off, 이중 지지) = 다음 걸음 접지</td>
+<td>13</td>
+<td>최저</td>
+<td>−5°</td>
+<td></td>
+<td>40~50°</td>
+<td>0°</td>
+<td>−25°</td>
+</tr>
+<tr>
+<td>60~70</td>
+<td>유각 초</td>
+<td>(상대 다리)</td>
+<td></td>
+<td></td>
+<td></td>
+<td>60°(최대 굽힘)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>85~100</td>
+<td>유각 말</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>5°로 정착</td>
+<td>35°</td>
+<td>−5°</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>무게중심 상하 2.16%H(사인형, 걸음당 1회), 좌우 1.34%H(지지 다리 쪽으로), 앞뒤 1.07%H. [출처 6][출처 7]</li>
+<li>걸음 수직 진폭을 7등신 리그(머리 = H/7 = 14.3%H)로 바꾸면 <strong>0.15머리</strong> [유도: 2.16 ÷ 14.3]. 바이블 §11.2의 'bob 0.1 H'(H=머리)는 이보다 약간 작다 — 실제 양식은 0.15, 풀 애니는 0.1~0.2(과장), 아니메는 0.05~0.1(요시베: "프로의 달리기는 상하 진동이 작다")로 둔다. [출처 13]</li>
+<li>팔 흔들기 각도·어깨 역회전 각도의 생체역학 수치: 근거 못 찾음(아래 '근거를 못 찾은 것').</li>
+</ul>
+<p><strong>2-2. 풀 애니(Williams 공식) — 12f 걸음, 2코마면 6장</strong></p>
+<table>
+<thead>
+<tr>
+<th>키</th>
+<th>프레임(자료별)</th>
+<th>몸 높이</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>접촉 contact</td>
+<td>1</td>
+<td>중간(아래쪽)</td>
+<td>양발 최대 벌림, 뒤꿈치 접지</td>
+</tr>
+<tr>
+<td>내림 down(recoil)</td>
+<td>3[8·11 변형] / 4[9]</td>
+<td><strong>최저</strong></td>
+<td>앞다리 굽혀 무게 받음</td>
+</tr>
+<tr>
+<td>통과 passing</td>
+<td>7(정확히 중간)</td>
+<td>중간(위쪽)</td>
+<td>뒤다리가 앞다리를 지나감</td>
+</tr>
+<tr>
+<td>올림 up(push-off)</td>
+<td>9[11] / 10[9]</td>
+<td><strong>최고</strong></td>
+<td>뒷발 발끝으로 밀어 올림</td>
+</tr>
+<tr>
+<td>접촉</td>
+<td>13</td>
+<td></td>
+<td>반대 발</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>속도표(걸음당 f): 4 매우 빠른 달리기 · 6 달리기/매우 빠른 걷기 · 8 느린 달리기/만화 걸음 · 12 보통(2걸음/초) · 16 산책 · 20 노인·지친 · 24 느린 걸음 · 32 매우 느림. 16f·8f는 나누기 쉬워 자주 쓴다. [출처 8][출처 9][출처 10]</li>
+<li>2코마 그림 수 기준(Lemay): 한 주기 8장 = 빠름(3걸음/초) · 12장 = 보통 사람(2걸음/초) · 16장 = 산책(1.5걸음/초) · 24장 = 거인·느리고 무거움(1걸음/초). 주기는 반드시 짝수 장. [출처 11]</li>
+<li>16f 걸음(2코마 8장)의 키: 접촉 1·내림 3·통과 5·올림 7·접촉 9 — 즉 4키 등간격. [출처 10]</li>
+<li>팔은 다리와 반대, 머리·몸은 거의 수직 상하(겹침 없음) [출처 11][출처 31]. 각도 수치는 출처 없음 → 바이블 ±20° [관행] 유지.</li>
+</ul>
+<p><strong>2-3. 아니메(作画) — 횡걸음 3코마 中4장</strong></p>
+<table>
+<thead>
+<tr>
+<th>그림</th>
+<th>24fps 프레임(3코마)</th>
+<th>자세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>원화 A</td>
+<td>1~3</td>
+<td>접촉(왼발 앞)</td>
+</tr>
+<tr>
+<td>동화 1</td>
+<td>4~6</td>
+<td>내림</td>
+</tr>
+<tr>
+<td>동화 2</td>
+<td>7~9</td>
+<td>통과 직전</td>
+</tr>
+<tr>
+<td>동화 3</td>
+<td>10~12</td>
+<td>통과·올림</td>
+</tr>
+<tr>
+<td>동화 4</td>
+<td>13~15</td>
+<td>다음 접촉 직전</td>
+</tr>
+<tr>
+<td>원화 B</td>
+<td>16~18</td>
+<td>접촉(오른발 앞)</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>한 걸음 15f(0.625초) = 96걸음/분 [유도: 5장 × 3f]. 자세 배분은 Williams 4키를 5장에 펴 넣은 [관행]이고, '3코마 中4장'이라는 장수·코마만 출처가 있다. [출처 12]</li>
+<li>달리기(요시베): 세미 스프린트 5장 2코마(10f/걸음, 공중 그림 포함) · 아니메식 대시 4장 2~3코마(공중 그림 없음, 착지를 낮게·밀기 다리와 팔을 높게) · 데포르메 달리기 4장 2코마(착지 웅크림이 예비 동작 겸함). 상하 진동은 작게, 힘은 웅크림 깊이로. 포니테일은 뿌리가 머리를 따르고 끝이 진자처럼 늦음. [출처 13]</li>
+<li>엔진 규칙: 아니메 양식 걷기 = 사이클 시간은 실제(13~15f/걸음)로 두고 <strong>값 갱신만 3코마</strong>로 계단화. 장수를 줄여 시간을 짧게 만들지 않는다.</li>
+</ul>
+<h3 id="3-idle">3. 대기(idle)</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>실제</th>
+<th>풀 애니</th>
+<th>아니메</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>몸 흔들림 진폭</td>
+<td>COP RMS 앞뒤 0.6~0.7cm·좌우 0.4cm → 발목 각 ±0.3~0.5°</td>
+<td>키 포즈 대비 1~3% 드리프트(ease-out)</td>
+<td>0(정지)</td>
+</tr>
+<tr>
+<td>주기</td>
+<td>앞뒤 주 주파수 0.11Hz(≈9초), 눈 감으면 0.20Hz(≈5초)</td>
+<td>홀드 길이만큼(8~36f)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>속도</td>
+<td>앞뒤 0.5~0.65cm/s, 좌우 0.3~0.5cm/s</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>추가 생명</td>
+<td>깜박임 4.3초, 호흡 3.2~3.6초, 시선 1.5~4초</td>
+<td>같음 + 부위별 도착 엇갈림 + 손가락·골반 미세 조정</td>
+<td>깜박임 + 머리카락 물리 + 가끔 입</td>
+</tr>
+<tr>
+<td>체중 옮김</td>
+<td>6~15초마다 24~36f</td>
+<td>같음</td>
+<td>같음, 2코마 계단화</td>
+</tr>
+<tr>
+<td>출처</td>
+<td>[15][16][17]</td>
+<td>[18][기존 §1-6]</td>
+<td>[19][30][기존 §1-1]</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>COP와 무게중심(COM)은 다르다: COP가 COM보다 진폭이 크고 빠르다(제어 신호). 엔진 몸 각도에는 COP 값의 0.5~0.7배를 쓴다 → <strong>real 양식 BodyAngleX ±0.3°/9초 + 머리 AngleX ±1.5°/6.5초</strong> [유도·관행]. 기존 Live2D 예시(±2°/15.5초, 머리 ±7.5°/6.5초)는 full 양식 값으로 유지.</li>
+</ul>
+<h3 id="4-notes_web-1-9-112-153045sd">4. 몸짓 시간표 — 기존 조사 그대로(notes_web §1-9 · 바이블 §11.2 표: 끄덕·갸웃·손 흔들기·인사 15/30/45°·놀람·웃음·한숨·걷기·달리기·SD 점프). 이번에 더한 것:</h3>
+<table>
+<thead>
+<tr>
+<th>동작</th>
+<th>실제</th>
+<th>풀 애니</th>
+<th>아니메</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>달리기 한 걸음</td>
+<td>6~8f(3~4걸음/초)</td>
+<td>8f 기본(Lemay: 4장×2코마 = 3걸음/초), 6f 빠름</td>
+<td>8~10f(4~5장 2코마), 대시는 공중 그림 생략</td>
+<td>[8][11][13]</td>
+</tr>
+<tr>
+<td>점프(SD)</td>
+<td>—</td>
+<td>기존 §11.2 그대로</td>
+<td>예비 웅크림 1장(3코마) → 中無し → 공중 1장 → 착지 1장 + 블러</td>
+<td>[13][19][24]</td>
+</tr>
+<tr>
+<td>앉기</td>
+<td>근거 없음</td>
+<td>근거 없음</td>
+<td>근거 없음</td>
+<td>—</td>
+</tr>
+<tr>
+<td>놀람 기호</td>
+<td>—</td>
+<td>—</td>
+<td>2장 교대 4f</td>
+<td>[20]</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-310-011-19-20">5. 표정 전환 — 기존 조사 그대로(§3.10 순서·길이). 아니메 중간 그림 수: 0~1장(中無し/中1枚)이 기본이고, 중간 그림을 넣으면 '느리게·부드럽게'로 읽힌다(깜박임 반 그림 규칙과 같은 원리). [출처 19][출처 20]</h3>
+<ul>
+<li>입: 3장 루프 열림 5f→반 5f→열림 3f→닫힘 3f(24fps 환산). [출처 21]</li>
+</ul>
+<h3 id="6">6. 끊고 들어오기(인터럽트)·블렌딩</h3>
+<table>
+<thead>
+<tr>
+<th>엔진</th>
+<th>규칙</th>
+<th>값</th>
+<th>출처</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Spine</td>
+<td><code>setDefaultMix</code> + 쌍별 <code>setMix(from,to,s)</code>; 트랙 0 = 몸, 트랙 1 = 팔만 키한 상위 트랙이 덮어씀; <code>alpha</code>로 트랙 섞음; 빈 애니메이션으로 셋업 포즈 페이드</td>
+<td>기본 0.1s 예시, 쌍별 0.2·0.25·0.4s, 즉시 0s, 셋업 복귀 1.5s</td>
+<td>[25]</td>
+</tr>
+<tr>
+<td>Unity Mecanim</td>
+<td>Exit Time(정규화, 0.75 = 75% 재생 뒤), Transition Duration(초 고정 또는 정규화), Transition Offset, Interruption Source = None/Current State/Next State/둘 다, Ordered Interruption</td>
+<td>기본값은 문서에 명시 없음</td>
+<td>[26]</td>
+</tr>
+<tr>
+<td>Unreal</td>
+<td>Montage Blend In/Out, 끼어들면 새 몽타주의 Blend In으로 이전 것을 내보냄; Sync Group 리더(가중치 최대)·팔로워(시간 비례 조정)</td>
+<td>사용자 예시 0.25s</td>
+<td>[27][28]</td>
+</tr>
+<tr>
+<td>우리 엔진</td>
+<td><code>MSC_XFADE</code> 200ms(≈5f) sine in-out, 우선순위 큐(메시지 3 &gt; 알림 2 &gt; 자발 1)</td>
+<td>기존 §11.6 그대로</td>
+<td>[기존]</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>양식별 블렌드: real 8~10f(0.33~0.42s, 관절 속도 한도 ≤ 15°/f) · full 5~8f(0.2~0.33s, 예비 동작 50% 단축) · anime 0~2코마(끊고 바로 다음 키, 블렌드 대신 中無し). 수치는 [관행], 범위는 [출처 25][출처 27]의 0.1~0.4s 안.</li>
+</ul>
+<h3 id="7-118-810f-1f-3f-6f-attach-unreal-sync-marker-contact-25-28">7. 두 캐릭터 상호작용 — 기존 §11.8 그대로(하이파이브 8~10f 들기·접촉 1f·스파크 3f·반동 6f, 책 주고받기 attach 전환). 이번에 더한 관행: Unreal Sync Marker처럼 두 리그에 'contact' 마커를 두고 접촉 프레임을 맞춘 뒤 팔로워 재생 속도를 비례 조정, 길이 차 ±25% 안. 아니메·풀 애니 교재의 수치 규정은 없음. [출처 28][관행]</h3>
+<h3 id="8-sf-117-pushpull-6f3f-60120ms-13-68-12f23f10f-2-42f-13-24">8. SF·판타지 — 기존 §11.7 그대로(부유 push/pull, 수중, 마법 시전 6f/3f, 순간이동, 변신 60~120ms 엇갈림). 이번에 더한 수치: 핵심 규칙 13(불꽃 6~8장, 빔 1~2f+2~3f/10f, 반짝임 2코마, 충격 프레임 생략/블러 삽입, 반짝이 4장×2f, 폭발 1.3배 느리게). 이펙트는 포즈가 아니라 <strong>실루엣과 화면 면적 변화</strong>로 판정하고, 너무 매끈하면 죽어 보이므로 '걸림(引っかかり)'을 일부러 넣는다. [출처 24]</h3>
+<hr>
+<h2 id="우리-엔진에-적용하는-법">우리 엔진에 적용하는 법</h2>
+<p>설정 <code>motion.style</code>을 두고, 아래 표의 값을 한 묶음으로 바꾼다(한 곳에만 두고 다른 모듈은 참조). 트랙 = 몸(body) · 얼굴(face: 눈썹·눈꺼풀·입) · 생명(life: 호흡·시선·깜박임 간격) · 물리(phys: 머리카락·옷) · 이펙트(fx).</p>
+<table>
+<thead>
+<tr>
+<th>이름</th>
+<th>뜻</th>
+<th>real</th>
+<th>full</th>
+<th>anime</th>
+<th>범위</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>style</code></td>
+<td>양식</td>
+<td>real</td>
+<td>full</td>
+<td><strong>anime(기본)</strong></td>
+<td>셋 중 하나</td>
+<td>규칙 1</td>
+</tr>
+<tr>
+<td><code>komaBody</code></td>
+<td>몸 트랙 갱신 간격(f)</td>
+<td>1</td>
+<td>2</td>
+<td>3(빠른 동작 2)</td>
+<td>1~4</td>
+<td>[1][2][3]</td>
+</tr>
+<tr>
+<td><code>komaFace</code></td>
+<td>얼굴 트랙 갱신 간격</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>1~4</td>
+<td>[2][20]</td>
+</tr>
+<tr>
+<td><code>komaLife</code>/<code>komaPhys</code></td>
+<td>호흡·시선·물리</td>
+<td>1</td>
+<td>1</td>
+<td>1(고정)</td>
+<td>1</td>
+<td>규칙 2</td>
+</tr>
+<tr>
+<td><code>holdMaxF</code></td>
+<td>완전 정지 허용 최대(f) — 넘으면 무빙 홀드</td>
+<td>0</td>
+<td>8~12</td>
+<td>36</td>
+<td>0~96</td>
+<td>[18][30]</td>
+</tr>
+<tr>
+<td><code>holdDriftPct</code></td>
+<td>무빙 홀드 드리프트(%)</td>
+<td>—</td>
+<td>2</td>
+<td>0</td>
+<td>0~3</td>
+<td>[18]</td>
+</tr>
+<tr>
+<td><code>easeKind</code></td>
+<td>기본 이징</td>
+<td>sine io</td>
+<td>cubic io / easeOutBack</td>
+<td>step(타메·츠메: u&lt;0.3→0, u&gt;0.7→1)</td>
+<td>목록</td>
+<td>[19][기존 §11.3]</td>
+</tr>
+<tr>
+<td><code>anticipRatio</code></td>
+<td>예비 동작 거리(본 동작 대비)</td>
+<td>0.05</td>
+<td>0.10~0.25(SD 0.3~0.5)</td>
+<td>0.15(그림 1장)</td>
+<td>0~0.5</td>
+<td>[기존 §11.4]</td>
+</tr>
+<tr>
+<td><code>overshootPct</code></td>
+<td>지나침(%)</td>
+<td>0</td>
+<td>5~15</td>
+<td>0~5</td>
+<td>0~20</td>
+<td>[기존 §11.4]</td>
+</tr>
+<tr>
+<td><code>settleF</code></td>
+<td>정착(f)</td>
+<td>0</td>
+<td>2~6</td>
+<td>1코마</td>
+<td>0~8</td>
+<td>[기존]</td>
+</tr>
+<tr>
+<td><code>squashMax</code></td>
+<td>스쿼시·스트레치 최대(%)</td>
+<td>0</td>
+<td>10(SD 25)</td>
+<td>3</td>
+<td>0~30</td>
+<td>규칙 16</td>
+</tr>
+<tr>
+<td><code>lagHairF</code></td>
+<td>앞/옆/뒤머리 지연(f)</td>
+<td>물리</td>
+<td>1·2·4</td>
+<td>3·3·6(계단)</td>
+<td>0~8</td>
+<td>[기존 §1-5]</td>
+</tr>
+<tr>
+<td><code>lagClothF</code></td>
+<td>치마/리본 지연(f)</td>
+<td>물리</td>
+<td>4·6</td>
+<td>6·6</td>
+<td>0~8</td>
+<td>[기존 §1-5]</td>
+</tr>
+<tr>
+<td><code>smear</code></td>
+<td>스미어 사용</td>
+<td>off</td>
+<td>on(1f)</td>
+<td>obake(1~2코마)</td>
+<td>off/on/obake</td>
+<td>[22][24]</td>
+</tr>
+<tr>
+<td><code>exprMidFrames</code></td>
+<td>표정 중간 그림 수</td>
+<td>연속</td>
+<td>2~4</td>
+<td>0~1</td>
+<td>0~6</td>
+<td>규칙 11</td>
+</tr>
+<tr>
+<td><code>exprTransF</code></td>
+<td>표정 전환 길이(f)</td>
+<td>6~10</td>
+<td>6~10</td>
+<td>3~6</td>
+<td>2~20</td>
+<td>[기존 §3.10]</td>
+</tr>
+<tr>
+<td><code>blinkIntervalS</code></td>
+<td>깜박임 평균 간격(초)</td>
+<td>4.3(2~6)</td>
+<td>4.3</td>
+<td>4.3</td>
+<td>1~10</td>
+<td>[기존 §3.11]</td>
+</tr>
+<tr>
+<td><code>blinkShapeF</code></td>
+<td>닫힘/감음/열림(f)</td>
+<td>2/1/3</td>
+<td>2/1/3</td>
+<td>3장 1→3→2→1 ×코마(3코마=12f)</td>
+<td>—</td>
+<td>[20][기존]</td>
+</tr>
+<tr>
+<td><code>mouthLoopF</code></td>
+<td>입 루프(열/반/열/닫 f)</td>
+<td>비제모(음소)</td>
+<td>5/5/3/3</td>
+<td>5/5/3/3 ×코마 정렬</td>
+<td>—</td>
+<td>[21]</td>
+</tr>
+<tr>
+<td><code>breathPeriodS</code></td>
+<td>호흡 주기</td>
+<td>3.2~3.6</td>
+<td>같음</td>
+<td>같음</td>
+<td>1.8~5</td>
+<td>[기존 §11.1]</td>
+</tr>
+<tr>
+<td><code>swayBodyDeg</code>/<code>swayPeriodS</code></td>
+<td>몸 흔들림</td>
+<td>±0.3°/9s</td>
+<td>±2°/15.5s</td>
+<td>0</td>
+<td>0~3°</td>
+<td>[16][17][기존]</td>
+</tr>
+<tr>
+<td><code>swayHeadDeg</code></td>
+<td>머리 흔들림</td>
+<td>±1.5°/6.5s</td>
+<td>±7.5°/6.5s</td>
+<td>±2°(2코마)</td>
+<td>0~8°</td>
+<td>[기존]</td>
+</tr>
+<tr>
+<td><code>shiftEveryS</code>/<code>shiftDurF</code></td>
+<td>체중 옮김 간격·길이</td>
+<td>6~15s/24~36f</td>
+<td>같음</td>
+<td>같음(2코마)</td>
+<td>—</td>
+<td>[기존 §9.3]</td>
+</tr>
+<tr>
+<td><code>stepF</code></td>
+<td>걷기 한 걸음(f)</td>
+<td>13(12.5~14.4)</td>
+<td>12</td>
+<td>15(3코마 5장)</td>
+<td>4~32</td>
+<td>[4][8][12]</td>
+</tr>
+<tr>
+<td><code>stepPerMin</code></td>
+<td>(<code>stepF</code>와 한 값: 1440/stepF)</td>
+<td>110</td>
+<td>120</td>
+<td>96</td>
+<td>45~360</td>
+<td>[유도]</td>
+</tr>
+<tr>
+<td><code>walkKeysF</code></td>
+<td>접촉/내림/통과/올림 위치</td>
+<td>0/0.2/0.5/0.7(주기 비율: 0·10~30%·중간·30~50%)</td>
+<td>1/3~4/7/9~10</td>
+<td>그림 5장 등간격</td>
+<td>—</td>
+<td>[6][8][9]</td>
+</tr>
+<tr>
+<td><code>bobHead</code></td>
+<td>상하 진폭(머리 단위)</td>
+<td>0.15</td>
+<td>0.1~0.2</td>
+<td>0.05~0.1</td>
+<td>0~0.3</td>
+<td>[6][13][유도]</td>
+</tr>
+<tr>
+<td><code>lateralHead</code></td>
+<td>좌우 진폭(머리 단위)</td>
+<td>0.09</td>
+<td>0.05</td>
+<td>0.03</td>
+<td>0~0.2</td>
+<td>[6][유도: 1.34÷14.3]</td>
+</tr>
+<tr>
+<td><code>pelvisRotDeg</code>/<code>pelvisObliqDeg</code></td>
+<td>골반 회전·기울기</td>
+<td>±5/±5</td>
+<td>±8/±6</td>
+<td>±5/±5(계단)</td>
+<td>0~12</td>
+<td>[7][관행]</td>
+</tr>
+<tr>
+<td><code>kneeSwingDeg</code></td>
+<td>유각 무릎 최대 굽힘</td>
+<td>60</td>
+<td>70</td>
+<td>60</td>
+<td>40~90</td>
+<td>[7]</td>
+</tr>
+<tr>
+<td><code>armSwingDeg</code></td>
+<td>팔 흔들기</td>
+<td>±20(근거 없음)</td>
+<td>±20~30</td>
+<td>±20</td>
+<td>0~45</td>
+<td>[관행]</td>
+</tr>
+<tr>
+<td><code>runStepF</code></td>
+<td>달리기 한 걸음</td>
+<td>7</td>
+<td>8(빠름 6)</td>
+<td>8~10(4~5장 2코마)</td>
+<td>4~12</td>
+<td>[8][11][13]</td>
+</tr>
+<tr>
+<td><code>blendF</code></td>
+<td>끊고 들어올 때 블렌드</td>
+<td>8~10</td>
+<td>5~8</td>
+<td>0~2코마</td>
+<td>0~12</td>
+<td>[25][27][기존 MSC_XFADE]</td>
+</tr>
+<tr>
+<td><code>blendVelMaxDegF</code></td>
+<td>블렌드 중 관절 속도 한도(°/f)</td>
+<td>15</td>
+<td>25</td>
+<td>제한 없음</td>
+<td>—</td>
+<td>[관행]</td>
+</tr>
+<tr>
+<td><code>pairLenTol</code></td>
+<td>짝 동작 길이 차 허용</td>
+<td>±25%</td>
+<td>±25%</td>
+<td>±25%</td>
+<td>—</td>
+<td>규칙 15</td>
+</tr>
+<tr>
+<td><code>fxKoma</code></td>
+<td>이펙트 갱신 간격</td>
+<td>1</td>
+<td>1~2</td>
+<td>2(반짝임)·1~3(빔)</td>
+<td>1~3</td>
+<td>[24]</td>
+</tr>
+<tr>
+<td><code>fxImpactMode</code></td>
+<td>충격 처리</td>
+<td>none</td>
+<td>blurAfter</td>
+<td>omit(속도) / blurAfter(힘)</td>
+<td>—</td>
+<td>[24]</td>
+</tr>
+<tr>
+<td><code>fxSparkleF</code></td>
+<td>반짝이 4장 × f</td>
+<td>—</td>
+<td>2</td>
+<td>2</td>
+<td>1~3</td>
+<td>[20]</td>
+</tr>
+</tbody>
+</table>
+<p>구현 메모
+- 계단화는 <strong>값 갱신 시각</strong>만 <code>floor(t/koma)*koma</code>로 묶고, 이징 계산 자체는 연속으로 해 둔다(코마를 바꿔도 동작 길이가 변하지 않음 — [출처 32] "12프레임 이동은 코마 수와 무관하게 같은 시간"). 기존 msc2Io(sine io)와 MSC_EASE.io 중복은 하나로 합친다(기존 applied.md).
+- <code>stepF</code>는 <code>MSC2K.stepMs</code>(460ms·짝 접근용)와 분리해 걷기 모드 전용으로 둔다(기존 applied.md 지적 유지). 95걸음/분(632ms=15.2f)은 아니메 양식 15f와 거의 같으니 anime 기본값으로 그대로 두고, real 13f·full 12f를 추가.
+- 아니메 걷기의 그림 5장은 '키 포즈 5개를 계단 재생'으로 구현(중간 보간은 코마 사이에서만). 몸 트랙 계단화 중에도 물리·호흡은 1코마.
+- 표정 트랙은 얼굴 코마를 따르되, 규칙 11의 부위 순서(눈썹→눈꺼풀→입)는 코마 경계에 정렬한다(아니메 3코마면 눈썹 0f·눈꺼풀 3f·입 6f).
+- 스미어: full은 손·머리 회전 속도가 임계(예: 손 ≥ 0.5머리/f, 머리 ≥ 20°/f)를 넘는 1프레임만 늘임 그림으로 바꿈. anime는 같은 조건에 오바케 1~2코마. <code>msc2RMfx()</code>가 참이면 둘 다 끔(기존).
+- 홈 화면 설정 시트의 '움직임 방식' 칸에 세 양식 + 위 표의 '사용자 조정 가능' 항목(koma·stepPerMin·bobHead·swayBodyDeg·holdMaxF·blendF)을 노출하고, 바꾸면 화면 아래 알림으로 즉시 표시(정범님 규칙).</p>
+<hr>
+<h2 id="합격-기준-제안-자동-시험">합격 기준 제안 (자동 시험)</h2>
+<ol>
+<li><strong>코마 시험:</strong> anime 양식에서 몸 트랙 값의 변화 시각 차가 항상 <code>komaBody × 41.7ms</code>의 배수(±2ms)여야 함. 호흡·물리 값은 매 프레임 달라야 함(연속 100프레임 중 같은 값 연속 ≤ 1).</li>
+<li><strong>걷기 케이던스:</strong> 10걸음 평균 걸음 시간이 real 541~583ms(13~14f), full 500ms±5%, anime 625ms±5%. 상하 진폭(머리 단위) real 0.13~0.17, anime ≤ 0.1. 접촉 프레임에서 무게중심 높이가 주기 최저, 중간 입각(주기 10~30%)에서 최고.</li>
+<li><strong>홀드 시험:</strong> full 양식에서 몸 트랙이 완전히 같은 값으로 12f 넘게 머무는 구간이 0회. anime 양식에서는 36f까지 허용.</li>
+<li><strong>대기 흔들림:</strong> real 양식 BodyAngle 진폭 0.2~0.5°, 주 주파수 0.08~0.15Hz(60초 FFT). full 양식 ±2°/15.5s. anime 0.</li>
+<li><strong>깜박임 분포:</strong> 5분간 간격 평균 3.5~5.5초, 2초 미만 비율 ≤ 10%; 모양 real/full 6f(±1f), anime 12f(3코마) 또는 8f(2코마).</li>
+<li><strong>표정 순서:</strong> 전환 이벤트마다 눈썹 변화 시작 ≤ 눈꺼풀 ≤ 입 ≤ 머리(같거나 뒤) — 100회 중 위반 0.</li>
+<li><strong>블렌드:</strong> 끊고 들어올 때 real/full에서 관절 각속도 ≤ <code>blendVelMaxDegF</code>, 블렌드 길이 = <code>blendF</code>±1f. anime는 블렌드 없이 2코마 안에 새 키로 전환.</li>
+<li><strong>짝 동작:</strong> 하이파이브 100회에서 두 손 접촉 프레임 차 0f, 손 거리 ≤ 0.05머리; 길이 차 ±25% 초과 시 경고 로그.</li>
+<li><strong>스미어:</strong> full에서 스미어 프레임 길이 정확히 1f, anime 1~2코마, <code>prefers-reduced-motion</code>이면 0회.</li>
+<li><strong>양식 전환 무결성:</strong> 양식을 바꿔도 뼈대 길이·가동 범위·호흡 주기·깜박임 간격 통계가 변하지 않음(±3%).</li>
+</ol>
+<hr>
+<h2 id="출처-접속일-모두-2026-10-29">출처 (접속일 모두 2026-10-29)</h2>
+<table>
+<thead>
+<tr>
+<th>번호</th>
+<th>제목</th>
+<th>저자/기관</th>
+<th>URL</th>
+<th>신뢰도·이유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Principles of Traditional Animation Applied to 3D Computer Animation (교육용 미러)</td>
+<td>John Lasseter, SIGGRAPH 1987</td>
+<td>https://education.siggraph.org/static/HyperGraph/animation/character_animation/principles/prin_trad_anim.htm</td>
+<td>높음(원 논문의 교육 미러) · 단 미러에는 수치 없음</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Shot on threes (lexicon)</td>
+<td>Anime News Network</td>
+<td>https://AnimeNewsNetwork.com/encyclopedia/lexicon.php?id=61</td>
+<td>중간~높음(업계 용어 사전) [기존 S09]</td>
+</tr>
+<tr>
+<td>3</td>
+<td>日本式リミテッドアニメーションの可能性(ブルーロック 作画 考察)</td>
+<td>渡邉大輔, リアルサウンド 2024-12-28</td>
+<td>https://realsound.jp/movie/2024/12/post-1884060_2.html</td>
+<td>중간(비평 기사, 1초 24/12/8장 수치 일치)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Bipedal gait cycle</td>
+<td>Wikipedia(Perry 1992·Winter 1984·Baker 2013 인용)</td>
+<td>https://en.wikipedia.org/wiki/Bipedal_gait_cycle</td>
+<td>중간(백과, 원 문헌 인용)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Mass-spring model with roller feet (케이던스 1.62/1.83/1.96)</td>
+<td>Whittington &amp; Thelen, J Biomech Eng 2009</td>
+<td>https://pmc.ncbi.nlm.nih.gov/articles/PMC2918273</td>
+<td>높음 [기존 S13]</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Trajectory of the Human Body Mass Centre during Walking at Different Speed</td>
+<td>Jurcevic Lulic &amp; Muftic, DESIGN 2002</td>
+<td>https://www.designsociety.org/download-publication/29655/</td>
+<td>중간~높음(학회 논문, 신장 % 수치)</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Gait kinematics 정상값 슬라이드(Davis 프로토콜·ESMAC 2001)</td>
+<td>M. Galli, Politecnico di Milano 2007</td>
+<td>https://trama.deib.polimi.it/allegati/practical_session_september_2007/Galli_kinematics.pdf</td>
+<td>중간(대학 강의 자료, 임상 정상값)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Movement: Walk Cycle (Williams 속도표 발췌)</td>
+<td>Monmouth Univ. animation 강의</td>
+<td>https://animation.monmouth.edu/instruct/?p=351</td>
+<td>중간(대학 강의, Williams 2001 인용 명시)</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Walk cycle: easy steps (24f 주기, 3f 간격)</td>
+<td>GarageFarm 블로그</td>
+<td>https://garagefarm.net/blog/walk-cycle-easy-steps-to-animate-walking-animation-for-beginners</td>
+<td>낮음(업체 블로그, Williams 인용)</td>
+</tr>
+<tr>
+<td>10</td>
+<td>no 191 old man walks (16f 걸음 키 1/3/5/7) · More research — Survival Kit (p.109 속도표)</td>
+<td>acmepunched 블로그 · s184753 블로그</td>
+<td>https://acmepunched.blogspot.com/2019/07/no-191-old-man-walks.html · https://s184753.blogspot.com/2019/01/more-research-animators-survival-kit.html</td>
+<td>낮음(개인 학습 블로그, 두 곳이 Williams p.109~111 수치 일치)</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Walk Cycle #1 Analysis (주기 8~24장, 2코마 걸음/초)</td>
+<td>Brian Lemay, Animated Cartoon Factory</td>
+<td>https://www.brianlemay.com/Pages/animationschool/animation/1stsemesteranimation/walks/walkcycle1a.html</td>
+<td>중간(애니메이션 교사 교재)</td>
+</tr>
+<tr>
+<td>12</td>
+<td>作画技法2C · アニメ制作実習6A · アニメーション制作6 시라버스 — "横歩き3コマ中4枚"</td>
+<td>日本工学院八王子専門学校 2022·2023</td>
+<td>https://www.neec.ac.jp/tuitionfreedat/syllabusdat/pdf/2022/hac/22AN052.pdf · …/2023/hac/23LA107.pdf · …/2023/hac/23AN078.pdf</td>
+<td>높음(전문학교 공식 교과 과정 3건 일치)</td>
+</tr>
+<tr>
+<td>13</td>
+<td>【メイキング】基本的な走り方と女の子らしい走り方</td>
+<td>吉邉尚希『ショートアニメーション メイキング講座』 발췌, Clip Studio TIPS</td>
+<td>https://www.clipstudio.net/oekaki/archives/151955</td>
+<td>높음(현역 애니메이터 교재, 도구 공식 사이트)</td>
+</tr>
+<tr>
+<td>14</td>
+<td>ショートアニメーション メイキング講座 목차(オバケ作画·振り向き·なびき 장 존재)</td>
+<td>技術評論社</td>
+<td>https://gihyo.jp/book/2022/978-4-297-12549-3 · https://scrapbox.io/motoso/…</td>
+<td>중간(목차만 확인)</td>
+</tr>
+<tr>
+<td>15</td>
+<td>Traditional COP measures table (bipedal EO/EC RMS·velocity)</td>
+<td>IEEE Trans Neural Syst Rehabil Eng 2015;24(5):551-561 (PMC4884176 표1)</td>
+<td>https://pmc.ncbi.nlm.nih.gov/articles/PMC4884176/table/T1</td>
+<td>높음(학술지) · 피험자 특성은 표에 없음</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Reliability of COP-based postural sway measures (RMS 6.2mm EO, MPF 0.11Hz)</td>
+<td>Lin, Seol, Nussbaum, Madigan, HFES 2006</td>
+<td>https://stacks.cdc.gov/view/cdc/193681/cdc_193681_DS1.pdf</td>
+<td>높음(학회 논문, 16명 젊은 성인)</td>
+</tr>
+<tr>
+<td>17</td>
+<td>Posturographic Standards for Optimal Control of Human Standing Posture (100명, 속도 mm/s)</td>
+<td>Błaszczyk &amp; Beck, J Hum Kinet 2023;86:7-15</td>
+<td>https://jhk.termedia.pl/Posturographic-Standards-for-Optimal-Control-of-Human-Standing-Posture,159452,0,2.html</td>
+<td>높음(학술지)</td>
+</tr>
+<tr>
+<td>18</td>
+<td>Why all animators need to master the moving hold</td>
+<td>Animation Mentor</td>
+<td>https://animationmentor.com/blog/why-all-animators-need-to-master-the-moving-hold</td>
+<td>중간 [기존]</td>
+</tr>
+<tr>
+<td>19</td>
+<td>リミテッドアニメ風表現のためのモーションタイミング調整法 (中無し·コマ撮り 정의)</td>
+<td>北村真紀·金森由博·三谷純·福井幸男·鶴野玲治, 筑波大 2013</td>
+<td>https://cgg.cs.tsukuba.ac.jp/projects/2013/motion_frame_omission/index.html</td>
+<td>높음(대학 연구)</td>
+</tr>
+<tr>
+<td>20</td>
+<td>まばたきアニメでいつものイラストをバージョンアップしよう！(目パチ 3장 1→3→2→1, 반짝이 4장×2f)</td>
+<td>Clip Studio TIPS (Kakikata_Nav)</td>
+<td>https://www.clipstudio.net/oekaki/archives/165110</td>
+<td>중간(도구 공식 사이트 튜토리얼)</td>
+</tr>
+<tr>
+<td>21</td>
+<td>Flashアニメーションのキャラクターの口の動きを考える (口パク 3장 루프)</td>
+<td>青池良輔, マイナビ TECH+ 2010-03-25</td>
+<td>https://news.mynavi.jp/techplus/article/kurieita-22/</td>
+<td>중간(현역 작가 연재)</td>
+</tr>
+<tr>
+<td>22</td>
+<td>The Art of Smear Frames</td>
+<td>Bloop Animation</td>
+<td>https://www.bloopanimation.com/the-art-of-smear-frames/</td>
+<td>중간(교육 업체)</td>
+</tr>
+<tr>
+<td>23</td>
+<td>The partial and mostly lost history of animation smear terminology</td>
+<td>Christian Avender, Cartoon Research 2025-02-11</td>
+<td>https://cartoonresearch.com/index.php/the-partial-and-mostly-lost-history-of-animation-smear-terminology/</td>
+<td>중간(애니메이션 사학 사이트)</td>
+</tr>
+<tr>
+<td>24</td>
+<td>CEDEC 2011 アニメ エフェクト作画 강연 보고(橋本敬史)</td>
+<td>GIGAZINE 2011-10-19</td>
+<td>https://www.gigazine.net/news/20111019_anime_effect_cedec2011/</td>
+<td>중간~높음(업계 학회 강연의 상세 보도)</td>
+</tr>
+<tr>
+<td>25</td>
+<td>Applying Animations (mix, tracks, empty animation)</td>
+<td>Esoteric Software Spine 공식 문서</td>
+<td>https://eu.esotericsoftware.com/spine-applying-animations</td>
+<td>높음(도구 공식 문서)</td>
+</tr>
+<tr>
+<td>26</td>
+<td>Animation transitions / AnimatorStateTransition</td>
+<td>Unity 공식 매뉴얼·스크립트 레퍼런스</td>
+<td>https://docs.unity3d.com/ru/current/Manual/class-Transition.html · https://docs.unity3d.com/es/ScriptReference/Animations.AnimatorStateTransition.html</td>
+<td>높음(공식) · 기본값 숫자는 미기재</td>
+</tr>
+<tr>
+<td>27</td>
+<td>AnimMontage Python API (blend_in/out, blend_out_trigger_time) · 포럼 질문(0.25s 예시)</td>
+<td>Epic Games 공식 API · Unreal 포럼</td>
+<td>https://docs.unrealengine.com/PythonAPI/class/AnimMontage.html · https://forums.unrealengine.com/t/how-do-blend-in-and-blend-out-work-exactly-duration/264779</td>
+<td>높음(API) / 낮음(포럼 예시)</td>
+</tr>
+<tr>
+<td>28</td>
+<td>Animation Sync Groups in Unreal Engine</td>
+<td>Epic Games 공식 문서</td>
+<td>https://dev.epicgames.com/documentation/en-us/unreal-engine/animation-sync-groups-in-unreal-engine</td>
+<td>높음(공식)</td>
+</tr>
+<tr>
+<td>29</td>
+<td>Japanese Animation Template for Krita (풀 24장/초, 리밋 12·8장/초)</td>
+<td>Krita 공식 문서</td>
+<td>https://docs.krita.org/Japanese_Animation_Template_for_Krita</td>
+<td>높음(도구 공식 문서)</td>
+</tr>
+<tr>
+<td>30</td>
+<td>リミテッドアニメーション 용어</td>
+<td>CGWORLD 용어집</td>
+<td>https://cgworld.jp/terms/リミテッドアニメーション.html</td>
+<td>중간 · 이번 환경에서 본문 접근 실패(제목만)</td>
+</tr>
+<tr>
+<td>31</td>
+<td>2D Animation — Walk Cycles (5장 기본, 2코마, 더블 바운스)</td>
+<td>art379 강의 사이트</td>
+<td>https://sites.google.com/view/art379/lessons/walk-cycles</td>
+<td>낮음~중간(강의 자료)</td>
+</tr>
+<tr>
+<td>32</td>
+<td>【はじめての2Dアニメーション】基本原則と制作の流れ (코마 수와 무관하게 이동 시간 동일)</td>
+<td>Omnific, Clip Studio TIPS</td>
+<td>https://www.clipstudio.net/oekaki/archives/174900</td>
+<td>중간</td>
+</tr>
+<tr>
+<td>33</td>
+<td>Walk cycle</td>
+<td>Wikipedia</td>
+<td>https://en.wikipedia.org/wiki/Walk_cycle</td>
+<td>낮음(수치 없음, 키 포즈 명칭만)</td>
+</tr>
+</tbody>
+</table>
+<p>기존 조사 출처(S01~S22, notes_web Sources)는 그대로 유효하며 위 번호와 겹치는 것은 [기존]으로 표시했다.</p>
+<hr>
+<h2 id="근거를-못-찾은-것-솔직하게">근거를 못 찾은 것 (솔직하게)</h2>
+<ol>
+<li><strong>Richard Williams 원문의 12f 걸음 키 프레임 번호</strong> — 원서 본문(archive.org 텍스트)은 걷기 장(p.217~)이 발췌에 없어 확인 못 함. 2차 자료 셋(출처 8·9·10)이 내림 3~4·올림 9~10으로 갈려 범위로 적음.</li>
+<li><strong>Preston Blair 'Cartoon Animation'의 걷기·스쿼시 수치</strong> — 이번 턴 검색 한도 소진으로 미확인. 다음 턴에 공개본(1947 'Advanced Animation' 공유 자료) 확인 필요.</li>
+<li><strong>스쿼시·스트레치 허용 % · 예비 동작 % · 오버슛 %</strong> — Lasseter 미러 페이지·교재 요약에 숫자 없음. 부피 보존 원칙만 출처 있음. 표의 숫자는 [관행].</li>
+<li><strong>실제 걷기의 팔 흔들기 각도·어깨 역회전 각도</strong> — 생체역학 정상값 자료(출처 7)에 상지 항목 없음. ±20°는 [관행].</li>
+<li><strong>아니메 걷기 5장의 자세 배분</strong>(어느 장이 내림·올림인지) — 시라버스에는 '3코마 中4장'만 있음. Williams 4키를 펴 넣은 [관행].</li>
+<li><strong>아니메 目パチ의 표준 코마 수</strong>(2코마냐 3코마냐) — 출처 20은 8fps 타임라인(=3코마) 예시 하나뿐. TV 현장 표준이라는 증거는 못 찾음.</li>
+<li><strong>Unity 전환 기본값(0.25s·Exit Time 0.75)·Unreal Blend In/Out 기본값(0.25s)</strong> — 공식 문서에 숫자 명시 없음(포럼 사용자 예시만). '업계 범위 0.1~0.4s'는 Spine 공식 예시로만 뒷받침.</li>
+<li><strong>두 캐릭터 접촉 동기화의 애니메이션 교재 규칙·길이 차 허용치</strong> — 없음. ±25%는 [관행].</li>
+<li><strong>앉기 동작 프레임 수</strong> — 세 양식 모두 근거 없음.</li>
+<li><strong>아니메 오바케(ブレ)의 코마 수 규정</strong> — 요시베 교재에 장이 있다는 것만 확인(본문 미열람). 1~2코마는 스미어 1프레임 규칙(출처 22·23)에서 유추.</li>
+<li><strong>postural sway의 COP→COM 환산 계수(0.5~0.7)</strong> — 직접 출처 없음(COP가 COM보다 크고 빠르다는 일반 지식에서 잡음).</li>
+<li>접근 실패 사이트: PMC 전문(reCAPTCHA · 표 페이지만 열림), CGWORLD 용어집, Unity 최신 매뉴얼(리다이렉트 차단), IPSJ EC2019008 PDF(바이너리), Wikipedia Smear_frame(허용 목록 밖).</li>
+</ol></section></main></div></body></html>

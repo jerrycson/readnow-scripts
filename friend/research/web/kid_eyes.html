@@ -1,0 +1,778 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>꼬마(어린이·동물 꼬마) 눈 — 왜 불쾌한가, 무엇을 고쳐야 하나 (바이블 v2 조사 · 2026-10-29)</title><style>
+:root{--ink:#1f2a24;--bg:#faf8f3;--card:#fff;--line:#d9d4c7;--hd:#1f5a44;--acc:#b8562a;--mut:#6b6f66}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif}
+header{background:var(--hd);color:#fff;padding:14px 18px}header h1{margin:0;font-size:19px}header p{margin:4px 0 0;font-size:13px;opacity:.9}
+.wrap{display:grid;grid-template-columns:260px 1fr;gap:0;max-width:1400px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:14px 10px;border-right:1px solid var(--line);background:#f3f0e8;font-size:13px}
+nav a{display:block;color:var(--ink);text-decoration:none;padding:3px 6px;border-radius:6px}nav a:hover{background:#e6e1d4}nav .l2{padding-left:18px;color:var(--mut);font-size:12px}
+main{padding:18px 28px 80px;min-width:0}
+section.ch{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin:0 0 22px}
+h1,h2,h3,h4{line-height:1.3}section.ch>h1{font-size:21px;margin:0 0 10px;color:var(--hd)}h2{font-size:17px;margin:22px 0 8px;border-left:4px solid var(--hd);padding-left:8px}h3{font-size:15px;margin:16px 0 6px;color:var(--acc)}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0 12px;display:block;overflow:auto}th,td{border:1px solid var(--line);padding:5px 7px;vertical-align:top;text-align:left}th{background:#eef3ef}
+code{background:#f0ede4;padding:0 4px;border-radius:4px;font-size:12.5px}pre{background:#f0ede4;padding:10px;border-radius:8px;overflow:auto;font-size:12.5px}
+blockquote{border-left:3px solid var(--line);margin:8px 0;padding:2px 12px;color:var(--mut)}
+.meta{font-size:12px;color:var(--mut)}.back{font-size:13px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}nav{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}main{padding:12px 16px 60px}}
+</style></head><body>
+<header><h1>꼬마(어린이·동물 꼬마) 눈 — 왜 불쾌한가, 무엇을 고쳐야 하나 (바이블 v2 조사 · 2026-10-29)</h1><p>조사 기록(관찰·웹) · 바이블 v2의 근거 · 생성 2026-10-29 18:56 KST · 원본 friend/research/*.md (비공개 저장소 readnow-chats/mascot/bible_v2 와 동일)</p></header>
+<div class="wrap"><nav><a class="back" href="../../research.html">← 바이블 v2</a><a href="#1-핵심-규칙-바이블에-그대로-넣을-것">1. 핵심 규칙 (바이블에 그대로 넣을 것)</a><a href="#2-세부-조사">2. 세부 조사</a><a href="#3-우리-엔진에-적용하는-법-SVG-JS-mscEye-msc2FB-설정값-제안">3. 우리 엔진에 적용하는 법 (SVG/JS · `mscEye`/`msc</a><a href="#4-합격-기준-제안-자동-시험-tK_eye-js-식으로-SVG를-파싱해-잼">4. 합격 기준 제안 (자동 시험 · `tK_eye.js` 식으로 SVG</a><a href="#5-출처">5. 출처</a><a href="#6-근거를-못-찾은-것-솔직하게">6. 근거를 못 찾은 것 (솔직하게)</a></nav><main><section class="ch"><h1 id="v2-2026-10-29">꼬마(어린이·동물 꼬마) 눈 — 왜 불쾌한가, 무엇을 고쳐야 하나 (바이블 v2 조사 · 2026-10-29)</h1>
+<p>조사자 메모(먼저 읽을 것)
+- 이 세션은 WebSearch 한도(턴당 200회 · 모든 에이전트 공유)가 이미 소진된 상태였고, WebFetch는 세션 허용 목록(Springer 논문 1편 · Clip Studio Tips · MediBang · AnimeOutline 검색 페이지)만 열렸다. 그래서 <strong>학술 원문은 이 세션에서 다시 열어 대조하지 못했다.</strong> 기억에 기대어 쓴 문헌은 전부 <code>[원문 미확인]</code>으로 표시했고, 서지(저자·연도·학술지·권·쪽)를 정확히 적어 다음 세션에서 바로 대조할 수 있게 했다. 수치가 기억과 다를 수 있는 곳은 범위로 적었다.
+- 대신 <strong>가장 강한 근거는 이 세션에서 직접 만든 것</strong>이다: 현재 코드(<code>mscEye</code>·<code>msc2FB</code>·<code>MSC_EYE.chibi</code>)를 수식으로 풀어 실제 비율을 계산했고, 꼬마 셋(아롱·토리·너굴)의 <strong>중립 표정 눈을 큰 크기로 직접 그려</strong> 문제를 눈으로 확인했다(그림 경로는 §2.8).
+- <strong>중요한 발견(먼저 보고)</strong>: 기존 비교 그림 <code>eye_kid_cmp.png</code>(그리고 sd_arong·sd_sweep 등 r15m 그림)는 <strong>앱 CSS(<code>mscCss()</code>)를 넣지 않은 시험 페이지에서 찍혀, 감은 눈·^눈·&gt;&lt; 눈·눈물·효과 기호(별·하트·땀·분노 표시·속도선)가 전부 한꺼번에 겹쳐 보이는 상태</strong>였다. 그래서 그 그림으로는 눈 크기 비교가 불가능했고, '꼬마 눈 크기 0.82' 결정도 사실상 눈을 보지 못한 채 내려진 것이다. 시험 그림 스크립트(<code>pw/r15/tM3_grid.js</code> 등)는 그리기 전에 <code>mscCss()</code>를 부르고 칸에 <code>class="msc-ch msc-still"</code>을 줘야 한다(이 세션의 <code>kid_face.js</code>가 그렇게 고친 판).</p>
+<hr>
+<h2 id="1-핵심-규칙-바이블에-그대로-넣을-것">1. 핵심 규칙 (바이블에 그대로 넣을 것)</h2>
+<p>눈 폭을 W(바깥 끝~안쪽 끝), 눈 세로 열림을 H, 홍채 폭을 I, 머리 높이(정수리~턱)를 HH로 쓴다.</p>
+<ol>
+<li><strong>반사광(하이라이트)은 눈 안에서 가장 밝은 점이어야 한다.</strong> 어떤 그늘·띠도 주 반사광 위에 겹치면 안 된다(흰 #FFFFFF 또는 L ≥ 0.97). 반사광이 회색·보라빛으로 탁해지면 '죽은 눈'으로 읽힌다. [S1 Looser&amp;Wheatley 2010 — 눈이 생기(animacy) 판단의 핵심 부위 · S12 만화 관행 '하이라이트 없는 눈 = 죽은 눈' · 이 세션 그림 분석 §2.8]</li>
+<li><strong>주 반사광 1개 + 보조 반사광 1개가 기본.</strong> 주 반사광은 두 눈 모두 같은 쪽(빛 쪽 · 우리 기본은 화면 왼쪽 위), 지름 = 홍채 폭의 0.25~0.35, 홍채 위 눈꺼풀 바로 아래에 걸침. 보조는 반대쪽 아래, 지름 = 홍채 폭의 0.08~0.12. <strong>그 밖의 반짝이 점·별은 '반짝(starry/kira)' 표정에서만</strong> 켠다. 두 눈의 반사광 위치는 홍채 기준 같은 상대 위치(차이 ≤ 홍채 폭의 5 %). [S12 관행 · S13 Farid&amp;Johnson 2007(반사광은 광원 방향의 증거) · 현재 코드 눈 하나에 흰 조각 12개 → §2.5]</li>
+<li><strong>동공은 홍채 안에서 또렷이 보여야 한다.</strong> 동공 지름 = 홍채 폭의 0.35~0.45(꼬마), 동공 세로/가로 ≤ 1.15. 홍채 위쪽 그늘 띠(눈꺼풀 그림자)는 홍채 높이의 <strong>25~35 %</strong>까지만, 불투명도 ≤ 0.55 — 동공 윤곽이 그늘에 묻히면 안 된다(홍채 가운데 띠에서 동공 테두리 대비 ΔL ≥ 0.12). [S9 Kobayashi&amp;Kohshima 1997/2001 — 사람 눈은 홍채·흰자·동공 대비로 시선을 읽는 눈 · S14 Hess 1965 동공 크기 호감(확장된 동공이 호감) · §2.8 '검은 덩어리' 문제]</li>
+<li><strong>꼬마 홍채는 눈 폭의 0.75~0.85를 채우고, 홍채 아래쪽은 아래 눈꺼풀에 닿는다(아래 흰자 0~3 % H).</strong> 흰자는 좌우 양옆에만 조금 보인다. 홍채 타원 세로/가로 = 1.0~1.3(바이블 E2 '꼬마 1.30' 유지 가능 · 현재 코드는 1.78로 어긋남 §2.8). 생물학 근거: 홍채(각막) 지름은 태어날 때 이미 어른의 ≈ 85~90 %(신생아 9.5~10.5 mm · 어른 11.5~12 mm)인데 눈꺼풀 틈 폭은 신생아 ≈ 18~19 mm · 어른 ≈ 28~30 mm라서, 어린아이는 <strong>홍채/틈 폭 ≈ 0.55</strong>, 어른 ≈ 0.40 → '어린 눈 = 홍채가 틈을 더 채움·흰자 적음'. 아니메 꼬마 눈은 이 사실을 과장한 것. [S15 안과 교과서 수치 [원문 미확인] · S16 Loomis(유아 눈: 홍채가 거의 어른 크기라 눈이 커 보임) [원문 미확인]]</li>
+<li><strong>흰자는 따뜻한 흰색 하나로.</strong> 푸른 회색 그늘(현재 <code>#AEB6D3</code>·<code>#4E5280</code>)은 흰자를 멍들거나 아픈 것처럼 보이게 한다. 흰자 색 L ≥ 0.93, 채도 ≤ 0.08, 색상은 피부와 같은 따뜻한 쪽. 위 눈꺼풀 그림자는 <strong>홍채 위에만</strong>(흰자 위에는 홍채 높이의 10 % 폭 이하 · 불투명도 ≤ 0.2). [S10 Provine 외 2013 — 더 흰 흰자가 건강·매력·젊음으로 평가, 붉거나 누렇거나 어두우면 반대 · S11 Russell 외 2014 — 흰자 어두워짐 = 나이 든 인상 [둘 다 원문 미확인]]</li>
+<li><strong>눈 열림 비율(H/W)은 꼬마 1.0~1.2, 동물 꼬마 0.9~1.1.</strong> 1.3을 넘는 세로 타원은 놀란 눈·안경원숭이(tarsier) 인상이 된다. 아래 눈꺼풀은 둥글게(U), 위 눈꺼풀은 완만한 아치(꼭대기는 안쪽에서 40~50 %). [S12 관행 · §2.8 현재 1.34]</li>
+<li><strong>꼬마에게는 속눈썹을 그리지 않는다.</strong> 위 눈꺼풀 띠는 안쪽→바깥쪽으로 두꺼워지되 바깥 끝 두께 ≤ W의 0.10, 바깥 끝 날개(flick) 길이 ≤ W의 0.08, 위로 솟는 낱개 속눈썹 0개, 아래 속눈썹 0개, 쌍꺼풀선 없음. 긴 날개·낱개 속눈썹은 '성인·화장' 신호라 아기 도식(큰 눈·작은 코·둥근 볼)과 충돌해 불쾌감을 만든다. [S3 Glocker 2009 아기 도식 · S17 Bancroft/Preston Blair '귀여운 캐릭터는 속눈썹·각진 선을 뺀다' [원문 미확인] · §2.8 현재 바깥 끝 두께 0.17 W + 날개 0.25 W + 낱개 속눈썹]</li>
+<li><strong>눈 사이 간격(안쪽 끝~안쪽 끝) = 1.0~1.5 W, 두 눈 중심 거리 = 얼굴 폭(눈 높이에서)의 0.46~0.55.</strong> 어른은 0.46(Pallett 2010의 '새 황금비')이고 아이는 눈이 작고 머리가 넓어 더 넓게 보인다(5~6세: 동공 간 거리 ≈ 52~55 mm, 눈 폭 ≈ 22 mm → 간격/눈 폭 ≈ 1.4). [S8 Pallett, Link &amp; Lee 2010 [원문 미확인] · S15 인체 치수 [원문 미확인] · 현재 코드 1.25 W = 합격]</li>
+<li><strong>눈 높이 = 머리 높이의 0.58~0.65(정수리 기준), 눈~입 거리 = 얼굴 길이의 0.33~0.38.</strong> 아기 도식의 '낮은 눈 위치·큰 이마'. [S2 Lorenz 1943 · S3 Glocker 2009 · S8 Pallett 2010 · 현재 0.62 = 합격]</li>
+<li><strong>얼굴 바깥 여백</strong>: 눈 바깥 끝과 얼굴 윤곽 사이 ≥ 0.3 W. 두 눈이 얼굴 가장자리에 닿으면 눈이 '얼굴보다 크다'고 읽힌다. [§2.8 그림 측정 현재 ≈ 0.1~0.2 W · 관행]</li>
+<li><strong>눈썹은 가늘고 짧고 멀리.</strong> 눈썹 아래선과 위 눈꺼풀 윗선 사이 = 0.4~0.8 H, 두께 ≤ 0.12 W, 길이 0.9~1.1 W, 색은 머리색보다 밝게(불투명도 0.7~0.85). [S12 관행 · 바이블 §3.3]</li>
+<li><strong>두 눈은 같은 방향을 본다.</strong> 두 홍채의 (눈 중심 기준) 상대 위치 차이 ≤ 0.03 W, 두 눈의 열림 H 차이 ≤ 8 %(정면·고개 기울임 없을 때). 사시·비대칭은 즉시 불쾌감을 만든다. [S5 Seyama&amp;Nagayama 2007 '비정상 특징 × 사실감' · S18 Rhodes 1998 대칭 선호 [원문 미확인]]</li>
+<li><strong>입이 웃으면 눈도 웃어야 한다(뒤센 규칙).</strong> 입꼬리 올림 ≥ 0.3이면 아래 눈꺼풀이 올라와 H가 15~35 % 줄고, 눈 바깥 끝이 1~3° 올라가며, 볼 홍조가 켜진다. 눈이 고정된 웃음은 가짜 웃음·소름으로 읽힌다. [S6 Ekman, Davidson &amp; Friesen 1990 · S7 Gunnery &amp; Ruben 2016 메타분석 · S19 Tinwell 외 2011 — 윗얼굴(눈·눈썹) 움직임 부족 = 언캐니 [모두 원문 미확인]]</li>
+<li><strong>사실감 수준을 눈 안에서 섞지 않는다.</strong> 셀 2~3단 홍채·단색 흰자·단순 눈꺼풀이면 반사광도 단순(둥근 면 1~2개)해야 한다. 사실적 홍채 결·다층 그라데이션·12개 반짝이를 단순한 얼굴에 넣는 것이 '불일치'이고, 언캐니 밸리의 가장 잘 지지되는 설명이 바로 이 <strong>특징 간 사실감 불일치</strong>다. [S4 MacDorman 외 2009 · S5 Seyama&amp;Nagayama 2007 · S20 Kätsyri 외 2015 리뷰 · S21 Diel 외 2022 메타분석 [원문 미확인]]</li>
+<li><strong>동물 꼬마의 눈은 홍채 주도.</strong> 흰자 노출 ≤ 5 %(거의 없음 · 놀람 때만), 눈꺼풀 띠는 털색보다 어두운 같은 계열, 속눈썹 0, 반사광 1+1, 눈 중심선은 주둥이 축과 수직으로 맞물림(두 눈 중심의 중점이 주둥이 세로축 위 · 어긋남 ≤ 0.02 얼굴 폭), 눈 아래선이 주둥이 윗선보다 위에 있어야 함. 사람 흰자·사람 속눈썹을 털 얼굴에 그대로 붙이면 '사람 눈을 오려 붙인' 불일치가 된다. [S9 Kobayashi&amp;Kohshima(사람만 흰 흰자 노출) · S14 규칙 · §2.8 너굴 그림]</li>
+<li><strong>눈 크기는 문제의 원인이 아니다(정범님 지적과 일치).</strong> 큰 눈은 단순한(비사실적) 얼굴에서는 불쾌감을 만들지 않는다(S5: 인형풍 얼굴에서는 눈을 키워도 쾌감 저하 없음 · S22 Yao 2022·S23 Lieber-Milo 2025: 큰 눈 ↔ 귀여움 방향 지지). 위 1·3·5·7·14가 원인이다.</li>
+</ol>
+<hr>
+<h2 id="2-세부-조사">2. 세부 조사</h2>
+<h3 id="21">2.1 불쾌감의 원인 — 언캐니 밸리 연구에서 '눈'에 관한 결과</h3>
+<table>
+<thead>
+<tr>
+<th>연구</th>
+<th>무엇을 조작</th>
+<th>눈에 관한 결과</th>
+<th>우리 적용</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mori 1970 (S0)</td>
+<td>사실감 vs 친숙함 곡선</td>
+<td>원 논문은 눈을 따로 다루지 않음. '움직임'이 골짜기를 깊게 함</td>
+<td>눈 애니메이션(깜박임·시선)도 규칙 대상</td>
+<td>[원문 미확인]</td>
+</tr>
+<tr>
+<td>Seyama &amp; Nagayama 2007 (S5)</td>
+<td>인형↔사람 얼굴 몰핑 × 눈 크기 확대(기억: 100 %→150 % 범위)</td>
+<td><strong>눈을 키우면 사실적인 얼굴에서만 쾌감이 급락</strong>, 인형풍 얼굴에서는 거의 안 떨어짐. 또 눈의 사실감과 얼굴의 사실감이 다르면(사실적 눈 + 인형 얼굴 등) 가장 불쾌</td>
+<td>큰 눈 자체가 아니라 <strong>눈 안 요소의 사실감 불일치</strong>를 제거</td>
+<td>[원문 미확인 · 수치 범위는 기억]</td>
+</tr>
+<tr>
+<td>MacDorman, Green, Ho &amp; Koch 2009 (S4)</td>
+<td>질감 사실감 × 눈 크기 × 비율</td>
+<td>사진 질감 + 비정상 비율(큰 눈)이 가장 으스스. 평면(셀) 셰이딩 + 큰 눈은 덜 으스스</td>
+<td>셀 셰이딩 유지 · 홍채 사실적 결은 빼기</td>
+<td>[원문 미확인]</td>
+</tr>
+<tr>
+<td>Looser &amp; Wheatley 2010 (S1)</td>
+<td>마네킹↔사람 몰핑, 부위별 제시</td>
+<td>생기(animacy) 판단은 사람 쪽 약 2/3 지점에서 급변. <strong>눈 부위만 보여줘도 판단이 유지</strong> → 눈이 '살아 있음'의 핵심</td>
+<td>반사광·동공 가시성(규칙 1·3)</td>
+<td>[원문 미확인]</td>
+</tr>
+<tr>
+<td>Tinwell, Grimshaw, Nabi &amp; Williams 2011 (S19)</td>
+<td>가상 캐릭터 표정에서 윗얼굴(눈·눈썹·이마) 움직임 제거</td>
+<td>윗얼굴이 안 움직이면 언캐니 평가 상승 · 2013 후속: 놀람 반응이 없는 캐릭터는 '사이코패스 같다'로 지각</td>
+<td>규칙 13(뒤센)</td>
+<td>[원문 미확인]</td>
+</tr>
+<tr>
+<td>Kätsyri 외 2015 (S20) · Diel 외 2022 (S21)</td>
+<td>리뷰·메타분석</td>
+<td><strong>지각 불일치(perceptual mismatch)</strong> 가설이 가장 잘 지지</td>
+<td>규칙 14</td>
+<td>[원문 미확인]</td>
+</tr>
+<tr>
+<td>Farid &amp; Johnson 2007 (S13)</td>
+<td>사진 위조 탐지 — 두 눈 반사광</td>
+<td>반사광 위치가 광원 방향을 드러냄. 다만 사람은 조명 불일치에 둔감 → 반사광 '방향 불일치'는 약한 원인, <strong>반사광 '없음·탁함'</strong>이 강한 원인</td>
+<td>규칙 1·2</td>
+<td>[원문 미확인]</td>
+</tr>
+</tbody>
+</table>
+<p>눈 간격·비대칭·시선 불일치·공막 노출의 <strong>정량 임계치(몇 % 어긋나면 불쾌)</strong> 를 제시하는 연구는 이 세션에서 확인하지 못했다(§6). 규칙 12의 수치는 우리 엔진용 보수적 제안이다.</p>
+<h3 id="22-kindchenschema">2.2 귀여움 — 아기 도식(Kindchenschema)</h3>
+<table>
+<thead>
+<tr>
+<th>출처</th>
+<th>내용</th>
+<th>수치</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lorenz 1943 (S2)</td>
+<td>큰 머리, 튀어나온 큰 이마, 얼굴 중앙 아래쪽의 큰 눈, 통통한 볼, 짧고 굵은 팔다리, 탄력 있는 피부, 서툰 움직임</td>
+<td>정성 목록</td>
+<td>[원문 미확인]</td>
+</tr>
+<tr>
+<td>Glocker 외 2009, Ethology 115:257 (S3)</td>
+<td>17장의 아기 사진을 '높은/낮은 아기 도식'으로 몰핑(이마 높이·눈 크기·코·입 크기·얼굴 둥글기를 함께 조작)</td>
+<td>높은 도식 &gt; 원본 &gt; 낮은 도식으로 귀여움·돌봄 동기 상승. 개별 특징의 % 값은 기억에 없음</td>
+<td>[원문 미확인]</td>
+</tr>
+<tr>
+<td>Hildebrandt &amp; Fitzgerald 1979 (S24)</td>
+<td>아기 얼굴 귀여움 평정과 특징 측정</td>
+<td>큰 이마·큰 눈·작은 코·작은 턱이 귀여움과 상관</td>
+<td>[원문 미확인]</td>
+</tr>
+<tr>
+<td>Little 2012, Ethology 118:775 (S25)</td>
+<td>어른 얼굴에 아기 특징(큰 눈·둥근 얼굴 등) 합성</td>
+<td>귀여움·매력 상승</td>
+<td>[원문 미확인]</td>
+</tr>
+<tr>
+<td>Lieber-Milo 외 2025, AI &amp; Society 40(2) (S23, <strong>이 세션에서 원문 확인</strong>)</td>
+<td>3D 아바타에 '눈·볼 확대 + 작은 코·입' 합성</td>
+<td>귀여움 F(2,962)=6.2, p=.002, ηp²=.013 · 다가가기 쉬움 ηp²=.032 등 효과는 작음. 눈 크기 단독 조작 아님</td>
+<td>확인</td>
+</tr>
+<tr>
+<td>Yao 외 2022 (S22)</td>
+<td>눈 크기 큼/보통/작음 × 표정 × 연령</td>
+<td>큰 눈이 귀여움 평정 높음(효과 작음)</td>
+<td>기존 조사 그대로</td>
+</tr>
+</tbody>
+</table>
+<p><strong>눈이 크더라도 귀엽게 보이는 조합 (종합)</strong>: 눈 위치 낮음(0.58~0.65 HH) + 눈 사이 넓음(1.0~1.5 W) + 홍채가 틈을 채움 + 둥근 아래 눈꺼풀 + 작은 코(점) + 입 작고 낮음(0.82~0.88 HH) + 속눈썹 없음 + 눈썹 가늘고 멀리.
+<strong>큰 눈이 불쾌해지는 조합</strong>: 큰 눈 + 사실적 세부(속눈썹 낱개·홍채 결·다층 반사광) 또는 큰 눈 + 흰자 많음(특히 아래 흰자) 또는 큰 눈 + 동공이 안 보이는 검은 덩어리 또는 큰 눈 + 세로로 긴 열림(H/W &gt; 1.3) + 날카로운 눈꼬리.</p>
+<h3 id="23">2.3 아니메·만화의 아이 눈 관행 (교재·튜토리얼)</h3>
+<p>허용 목록 때문에 개별 튜토리얼 본문은 못 열었고(AnimeOutline 검색 목록만 확인 · S12), 아래는 Clip Studio 공식 'How to draw'·AnimeOutline·Hikaru Hayashi 교재 등에서 널리 반복되는 관행을 기억으로 정리한 것이다 <code>[관행 · 원문 미확인]</code>. 수치는 '보통 그렇게 그린다' 범위이지 표준이 아니다.</p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>아이(꼬마) 관행값</th>
+<th>어른 관행값(비교)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>눈 높이(정수리 기준)</td>
+<td>0.55~0.65 HH</td>
+<td>0.50 HH</td>
+</tr>
+<tr>
+<td>눈 사이 간격</td>
+<td>1.0~1.5 W</td>
+<td>1.0 W</td>
+</tr>
+<tr>
+<td>H/W</td>
+<td>1.0~1.3(소녀만화는 1.3까지)</td>
+<td>0.4~0.6</td>
+</tr>
+<tr>
+<td>홍채 폭/눈 폭</td>
+<td>0.75~0.9</td>
+<td>0.5~0.65</td>
+</tr>
+<tr>
+<td>위 눈꺼풀이 홍채를 덮는 몫</td>
+<td>10~20 %</td>
+<td>20~35 %</td>
+</tr>
+<tr>
+<td>아래 흰자</td>
+<td>거의 없음(홍채가 아래 눈꺼풀에 닿음)</td>
+<td>약간</td>
+</tr>
+<tr>
+<td>동공/홍채</td>
+<td>0.35~0.5</td>
+<td>0.3~0.4</td>
+</tr>
+<tr>
+<td>주 반사광/홍채 폭</td>
+<td>0.25~0.4(크고 둥글게)</td>
+<td>0.15~0.25</td>
+</tr>
+<tr>
+<td>반사광 수</td>
+<td>1 큰 것 + 1 작은 것</td>
+<td>1~2</td>
+</tr>
+<tr>
+<td>속눈썹</td>
+<td>없음 또는 바깥쪽 1~2개 짧게</td>
+<td>성별·스타일별</td>
+</tr>
+<tr>
+<td>위 눈꺼풀 선</td>
+<td>두껍고 부드러움, 날카로운 꼬리 없음</td>
+<td>꼬리 올림/내림</td>
+</tr>
+<tr>
+<td>눈썹</td>
+<td>가늘고 짧고 멀리(0.5~1 H 위)</td>
+<td>0.3~0.5 H 위</td>
+</tr>
+<tr>
+<td>코</td>
+<td>점 또는 생략</td>
+<td>선·그림자</td>
+</tr>
+</tbody>
+</table>
+<h3 id="24">2.4 동물 꼬마(수인·마스코트)의 눈</h3>
+<ul>
+<li><strong>불쾌해지는 조건</strong>: 사람 흰자가 넓게 보임 · 사람 속눈썹 · 눈이 주둥이 축에서 어긋남 · 눈 사이에 주둥이가 끼어 세 덩어리가 따로 놂 · 눈꺼풀 띠가 털과 다른 재질(검정 잉크)로 보임.</li>
+<li><strong>귀여운 조건(일반 원칙)</strong>: 눈 = 홍채(거의 검정 또는 짙은 색) + 큰 반사광 1 + 작은 반사광 1 · 흰자 없음 또는 극소 · 눈 두 개와 코가 <strong>역삼각형</strong>을 이루고 코가 그 꼭짓점 · 눈 위치는 얼굴 높이의 0.55~0.65 · 눈 사이 간격 1.2~1.8 W(사람 꼬마보다 넓게 — 주둥이가 들어갈 자리) · 마스크(눈 주변 무늬)가 있으면 눈 윤곽을 마스크 색으로. [S9 Kobayashi&amp;Kohshima: 사람만 흰 흰자가 넓게 노출됨 → 털 얼굴에 사람 흰자를 붙이면 종(種) 불일치 · 마스코트 관행 · 특정 캐릭터 복제 금지]</li>
+<li>정범님 r14 지시("눈은 사람 눈 렌더러")는 유지하되, <strong>동물 꼬마 눈은 같은 렌더러의 '홍채 주도 변형'</strong>(흰자 ≤ 5 %, 속눈썹 0, 눈꺼풀 띠 = 털색 어둡게)으로 둔다.</li>
+</ul>
+<h3 id="25">2.5 시선·반사광 — '죽은 눈'을 만드는 조건</h3>
+<table>
+<thead>
+<tr>
+<th>조건</th>
+<th>결과</th>
+<th>현재 코드</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>주 반사광이 없음</td>
+<td>생기 없음(만화 관행 '하이라이트 없는 눈' = 절망·세뇌)</td>
+<td>'none'은 표정에서만 — 합격</td>
+</tr>
+<tr>
+<td>주 반사광 위에 그늘이 덮여 회색·보라빛</td>
+<td><strong>가장 흔한 '죽은 눈'</strong> — 밝기 정점이 사라짐</td>
+<td><strong>불합격</strong>: <code>s1</code> 흰자 그늘 띠(<code>#4E5280</code> 0.3)가 반사광 <strong>위</strong>에 그려져 주 반사광이 ≈ <code>#CACBD9</code>(L 0.80)로 탁해짐 (readnow-friend.js:342가 :335 뒤에 그림)</td>
+</tr>
+<tr>
+<td>두 눈 반사광이 거울 대칭</td>
+<td>광원 두 개 → 불일치</td>
+<td>같은 쪽 — 합격</td>
+</tr>
+<tr>
+<td>반사광이 동공을 완전히 가림</td>
+<td>동공 없음 → 시선 못 읽음</td>
+<td>'big'·'multi'에서 주 반사광이 동공 위쪽 절반을 덮음 — 경계</td>
+</tr>
+<tr>
+<td>반사광 수 과다(&gt; 3)</td>
+<td>사실감 불일치·산만</td>
+<td><strong>불합격</strong>: 'multi' 1+1+2+별 1 + <code>h3</code> 3 + 'layer' 4 = <strong>흰 조각 12개/눈</strong></td>
+</tr>
+<tr>
+<td>동공·홍채 위 그늘이 합쳐져 검은 덩어리</td>
+<td>동공 윤곽 소실 → '구멍 눈'</td>
+<td><strong>불합격</strong>: <code>i1</code>(짙은 띠, 불투명 0.78, 홍채 높이의 ≈ 60 % 덮음) + 동공 'big'(세로 0.59 홍채) + <code>p0</code> 번짐</td>
+</tr>
+</tbody>
+</table>
+<h3 id="26">2.6 눈 모양이 표정과 어긋날 때</h3>
+<ul>
+<li>Ekman, Davidson &amp; Friesen 1990 (S6): 진짜 웃음(뒤센)은 입꼬리(AU12) + <strong>눈둘레근(AU6, 볼 올림·눈 좁아짐)</strong>. AU6 없는 웃음은 가짜로 읽힘.</li>
+<li>Gunnery &amp; Ruben 2016 메타분석 (S7): 뒤센 웃음이 더 진짜·더 긍정적으로 평가(중간 효과 크기). [원문 미확인]</li>
+<li>Tinwell 외 2011 (S19): 캐릭터의 윗얼굴 움직임이 부족하면 언캐니 평가 상승.</li>
+<li>우리 엔진은 <code>EyeSmile</code>(아래 눈꺼풀 상승)·<code>CornerTilt</code>·볼 홍조가 이미 있으므로 <strong>입 파라미터와 연동 규칙</strong>만 추가하면 된다(§3 규칙 R13).</li>
+</ul>
+<h3 id="27-hh-25">2.7 현재 꼬마 눈의 실제 수치 (코드에서 계산 · 아롱 기준, 머리 높이 HH = 25 단위)</h3>
+<p>출처: <code>pw/r15/msc2_head.js:19–21</code> (<code>msc2FB</code>), <code>friend/readnow-friend.js:269–344</code> (<code>mscEye</code>), <code>:1404</code> (<code>MSC_EYE.chibi</code>), <code>:285</code> (속눈썹 두께), <code>:1279/:1282/:1327</code> (아롱·토리·너굴 설정), <code>pw/r15/msc2_core.js:9–10</code>(설정 eyeKid 0.82·lashKid 0.7), <code>:23</code>(eyY/eyW/eyG 표).</p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>계산</th>
+<th>값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>반폭 <code>B.ew</code></td>
+<td>0.25 × hw(0.9)/2 × 25 × 1.12 × 0.82</td>
+<td>2.58 → <strong>W = 5.17</strong></td>
+</tr>
+<tr>
+<td>머리 폭</td>
+<td>2 × B.fw</td>
+<td>22.5 → W/머리 폭 = 0.23</td>
+</tr>
+<tr>
+<td>열림 H</td>
+<td>2.2 × eh(= ew × hk 1.22)</td>
+<td>6.93 → <strong>H/W = 1.34</strong></td>
+</tr>
+<tr>
+<td>눈 중심 간격</td>
+<td>2 × ex(= ew × 2.25)</td>
+<td>11.6 → 안쪽 간격 = 1.25 W · 중심 거리/머리 폭 = 0.52</td>
+</tr>
+<tr>
+<td>눈 높이</td>
+<td>(eyeY − crown)/HH</td>
+<td>0.62</td>
+</tr>
+<tr>
+<td>홍채 반폭 irx</td>
+<td>min(0.84 w, iry/1.22)</td>
+<td>0.84 w → <strong>I/W = 0.84</strong></td>
+</tr>
+<tr>
+<td>홍채 반높이 iry</td>
+<td>(yL−yU)/(2(1−c)), c = 0.05</td>
+<td>≈ 1.50 w → <strong>홍채 세로/가로 = 1.78</strong>(열림 H보다 큼 → 잘려서 보임)</td>
+</tr>
+<tr>
+<td>위 눈꺼풀 덮임 c</td>
+<td>max(0.05, 0.12 + (0.1−0.2)×0.8)</td>
+<td><strong>0.05</strong>(바이블 E3 꼬마 0.10)</td>
+</tr>
+<tr>
+<td>아래 흰자 g</td>
+<td>0.04 h</td>
+<td>작음 — 그러나 아래 눈꺼풀 U 곡선과 홍채 타원이 달라 아래 양 모서리에 흰자가 넓게 보임</td>
+</tr>
+<tr>
+<td>동공 'big'</td>
+<td>rx 0.5 irx · ry 0.59 iry</td>
+<td>세로/가로 2.1 · 면적 ≈ 홍채의 30 %</td>
+</tr>
+<tr>
+<td>홍채 위 그늘 <code>i1</code></td>
+<td>중심 icy−0.66 iry, ry 0.62 iry, 불투명 0.78</td>
+<td>홍채 위쪽 ≈ 60 % 어둡게</td>
+</tr>
+<tr>
+<td>흰자 그늘 <code>s1</code></td>
+<td>위 눈꺼풀에서 0.6~0.76 h 아래까지 <code>#4E5280</code> 0.3</td>
+<td>눈 높이의 ≈ 35 %, <strong>반사광 위에 겹침</strong></td>
+</tr>
+<tr>
+<td>흰자 양끝</td>
+<td><code>#AEB6D3</code> 0.4 타원</td>
+<td>푸른 회색</td>
+</tr>
+<tr>
+<td>속눈썹 띠 바깥 끝 두께</td>
+<td>h × 1.0 × 1.15 × 0.4 × 0.85 × 0.7</td>
+<td>0.27 h = <strong>0.17 W</strong> · 날개(wing 1) u = 1.5까지 = 눈 밖 0.25 W · 낱개 속눈썹 fl 1</td>
+</tr>
+<tr>
+<td>아래 속눈썹</td>
+<td>꼬마 없음</td>
+<td>합격</td>
+</tr>
+<tr>
+<td>쌍꺼풀선</td>
+<td>crease 0</td>
+<td>합격</td>
+</tr>
+<tr>
+<td>눈썹 기준선</td>
+<td>eyeY − 1.45 ew</td>
+<td>그림에서 눈 위 ≈ 0.4 H</td>
+</tr>
+<tr>
+<td>반사광 'multi'</td>
+<td>rect 0.58 irx × 0.42 iry + 원 0.15 + 원 0.09 + 원 0.07 + 별 + h3(3) + layer 점(4)</td>
+<td><strong>12개</strong></td>
+</tr>
+<tr>
+<td>얼굴 바깥 여백</td>
+<td>그림 측정</td>
+<td>≈ 0.1~0.2 W(눈꼬리가 얼굴선에 닿음)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="28-2">2.8 그림으로 확인한 문제 (이 세션 렌더 · 중립 표정 · 2×)</h3>
+<p>그림: <code>/tmp/claude-0/-home-claude/e88b78c0-7a9f-550c-ae7d-cb9116807b69/scratchpad/web/kid_big.png</code>(아롱·토리·너굴 얼굴 600 px) · <code>eye_arong.png</code> · <code>eye_tori.png</code> · <code>eye_neogul.png</code>(눈 확대) · <code>kid_neutral_v3.png</code>(eyeKid 0.82 vs 1.0 비교). 렌더 스크립트: 같은 폴더 <code>kid_face.js</code>(CSS 주입 포함 · <code>node kid_face.js &lt;out.png&gt; "&lt;id,id&gt;" "&lt;설정|설정&gt;" [표정키] [칸px]</code>).</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>문제(그림에서 보임)</th>
+<th>원인(코드)</th>
+<th>규칙</th>
+<th>심각도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1</td>
+<td>주 반사광이 흰색이 아니라 <strong>연보라 회색</strong> — 눈이 유리알처럼 탁함</td>
+<td><code>s1</code> 흰자 그늘이 반사광 뒤가 아니라 <strong>위</strong>에 그려짐(:342 vs :335)</td>
+<td>1</td>
+<td>최상</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>홍채 위쪽 절반이 <strong>검은 덩어리</strong>, 동공 윤곽이 안 보임 → '구멍' 인상</td>
+<td><code>i1</code> 0.78 × 60 % + 동공 big + <code>p0</code> 번짐 + <code>i5</code> 굵은 테두리(0.06 w)</td>
+<td>3</td>
+<td>최상</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>흰 반짝이 조각 12개(별 포함) → 산만·사실감 불일치</td>
+<td><code>hl:'multi'</code> + <code>h3</code> + <code>ir:'layer'</code> 점 4개</td>
+<td>2·14</td>
+<td>상</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>눈이 <strong>세로로 긴 타원</strong>(H/W 1.34) + 홍채는 더 긴 캡슐(1.78) → 놀란 눈·안경원숭이</td>
+<td><code>chibi.hk 1.22</code>, <code>iry</code> 계산이 열림 높이에서 유도되어 홍채가 열림보다 커짐</td>
+<td>4·6</td>
+<td>상</td>
+</tr>
+<tr>
+<td>P5</td>
+<td>아래 모서리·양옆 흰자가 <strong>푸른 회색</strong> → 멍든·아픈 흰자</td>
+<td><code>#AEB6D3</code> 0.4 양끝 타원 + <code>s1</code></td>
+<td>5</td>
+<td>상</td>
+</tr>
+<tr>
+<td>P6</td>
+<td>5~6세에게 <strong>굵은 검은 눈꺼풀 띠 + 긴 바깥 날개 + 위로 솟은 낱개 속눈썹 + 안쪽 끝 갈고리</strong> → 화장한 어른 눈</td>
+<td><code>lash 1.0 × lt 1.15</code>, <code>wing 1</code>, <code>fl 1</code>; lashKid 0.7로도 바깥 끝 0.17 W</td>
+<td>7</td>
+<td>상</td>
+</tr>
+<tr>
+<td>P7</td>
+<td>눈꼬리가 얼굴 윤곽에 닿음 → 눈이 얼굴보다 커 보임</td>
+<td>W/머리 폭 0.23 + 간격 1.25 W → 두 눈 폭 합 = 머리 폭의 75 %</td>
+<td>10</td>
+<td>중</td>
+</tr>
+<tr>
+<td>P8</td>
+<td>너굴: 사람 흰자·사람 속눈썹·두꺼운 검정 띠가 털 얼굴에 '오려 붙인' 느낌, 눈이 주둥이 위에 걸쳐 세 덩어리가 따로 놂</td>
+<td>사람 chibi 눈 그대로 + 흰자 색/그늘 동일</td>
+<td>15</td>
+<td>상</td>
+</tr>
+<tr>
+<td>P9</td>
+<td>(아롱) 고개 yaw로 두 눈 크기 차이가 큼(먼 눈 0.62+0.38cos2θ)</td>
+<td>바이블 E8 — 꼬마 SD에서는 원근 축소를 줄여야 함(최대 15 %)</td>
+<td>12</td>
+<td>중</td>
+</tr>
+<tr>
+<td>P10</td>
+<td>기존 비교 그림이 CSS 없이 찍혀 모든 눈 프레임·효과가 겹쳐 보임 — 눈 판단 자체가 불가능했음</td>
+<td>시험 스크립트가 <code>mscCss()</code> 미호출·<code>msc-ch msc-still</code> 미부여</td>
+<td>—</td>
+<td>절차</td>
+</tr>
+</tbody>
+</table>
+<p><strong>좋은 점(유지)</strong>: 눈 높이 0.62 · 간격 1.25 W · 아래 속눈썹 없음 · 쌍꺼풀선 없음 · 아래 눈꺼풀 살색 가는 선 + 따뜻한 그늘 · 반사광 두 눈 같은 쪽 · 눈썹 가늘고 멀리 · 코 점.</p>
+<hr>
+<h2 id="3-우리-엔진에-적용하는-법-SVG-JS-mscEye-msc2FB-설정값-제안">3. 우리 엔진에 적용하는 법 (SVG/JS · <code>mscEye</code>/<code>msc2FB</code> · 설정값 제안)</h2>
+<p>설정은 <code>MSC2_TUNE</code>(msc2_core.js)에 추가하고 <code>B.kid</code>(또는 <code>D.ani &amp;&amp; B.kid</code>)일 때만 곱한다. 이름 앞 <code>kidEye_</code>.</p>
+<table>
+<thead>
+<tr>
+<th>설정 키</th>
+<th>이름</th>
+<th>기본</th>
+<th>범위</th>
+<th>적용 위치</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>kidEye_hw</code></td>
+<td>꼬마 눈 세로/가로</td>
+<td>1.10</td>
+<td>0.9~1.3</td>
+<td><code>chibi.hk</code> 대신 <code>B.eh = B.ew × kidEye_hw/1.1</code> (열림 전체 H/W가 이 값이 되게 상수 보정)</td>
+<td>규칙 6</td>
+</tr>
+<tr>
+<td><code>kidEye_iris</code></td>
+<td>홍채 폭/눈 폭</td>
+<td>0.80</td>
+<td>0.7~0.9</td>
+<td><code>irW</code></td>
+<td>규칙 4</td>
+</tr>
+<tr>
+<td><code>kidEye_irisHW</code></td>
+<td>홍채 세로/가로</td>
+<td>1.20</td>
+<td>1.0~1.3</td>
+<td><code>iry = irx × kidEye_irisHW</code> (열림에서 유도하지 말고 폭에서 유도 · 그 뒤 <code>icy</code>를 아래 눈꺼풀 − g에 맞춤)</td>
+<td>규칙 4 · P4</td>
+</tr>
+<tr>
+<td><code>kidEye_lidC</code></td>
+<td>위 눈꺼풀 덮임</td>
+<td>0.12</td>
+<td>0.05~0.25</td>
+<td><code>lidC.kf/km</code></td>
+<td>바이블 E3</td>
+</tr>
+<tr>
+<td><code>kidEye_scleraB</code></td>
+<td>아래 흰자</td>
+<td>0.02</td>
+<td>0~0.05</td>
+<td><code>chibi.g</code></td>
+<td>규칙 4</td>
+</tr>
+<tr>
+<td><code>kidEye_pupil</code></td>
+<td>동공/홍채 폭</td>
+<td>0.40</td>
+<td>0.3~0.5</td>
+<td><code>pu:'kid'</code> 신설: rx = irx × v, ry = rx × 1.1 (세로 늘임 1.18 → 1.1)</td>
+<td>규칙 3</td>
+</tr>
+<tr>
+<td><code>kidEye_shadeTop</code></td>
+<td>홍채 위 그늘 몫</td>
+<td>0.30</td>
+<td>0.2~0.45</td>
+<td><code>i1</code> ry = iry × v, 불투명도 0.5</td>
+<td>규칙 3 · P2</td>
+</tr>
+<tr>
+<td><code>kidEye_ring</code></td>
+<td>홍채 테두리 굵기/눈 폭</td>
+<td>0.035</td>
+<td>0.02~0.06</td>
+<td><code>i5</code> stroke(현재 0.06 w)</td>
+<td>P2</td>
+</tr>
+<tr>
+<td><code>kidEye_hl</code></td>
+<td>주 반사광/홍채 폭</td>
+<td>0.30</td>
+<td>0.2~0.4</td>
+<td><code>hl:'kid'</code> 신설: 원(또는 둥근 네모) 1 + 보조 원 0.10 · <code>h3</code>·layer 점·별 없음</td>
+<td>규칙 2 · P3</td>
+</tr>
+<tr>
+<td><code>kidEye_lash</code></td>
+<td>눈꺼풀 띠 바깥 끝 두께/W</td>
+<td>0.08</td>
+<td>0.04~0.12</td>
+<td><code>thk()</code>의 <code>lashKid</code> 대체 · <code>wing 0</code>·<code>fl 0</code> 강제</td>
+<td>규칙 7 · P6</td>
+</tr>
+<tr>
+<td><code>kidEye_wing</code></td>
+<td>바깥 날개 길이/W</td>
+<td>0.05</td>
+<td>0~0.1</td>
+<td>wing 길이 상수</td>
+<td>규칙 7</td>
+</tr>
+<tr>
+<td><code>kidEye_margin</code></td>
+<td>눈꼬리~얼굴선 여백/W</td>
+<td>0.3</td>
+<td>0.2~0.5</td>
+<td><code>B.ew</code>를 얼굴 폭에서 역산: W = 얼굴폭(눈 높이) / (2 + eyG + 2·margin)</td>
+<td>규칙 10 · P7</td>
+</tr>
+<tr>
+<td><code>kidEye_yawK</code></td>
+<td>꼬마 먼 눈 축소 강도</td>
+<td>0.4</td>
+<td>0~1</td>
+<td>E8 공식의 0.38 → 0.38 × v</td>
+<td>P9</td>
+</tr>
+<tr>
+<td><code>aniEye_sclera</code></td>
+<td>동물 꼬마 흰자 노출(최대)</td>
+<td>0.05</td>
+<td>0~0.15</td>
+<td><code>D.ani &amp;&amp; kid</code>: irW 0.92, g 0, 양옆 흰자 폭 ≤ 0.05 W</td>
+<td>규칙 15</td>
+</tr>
+</tbody>
+</table>
+<p><strong>그리기 순서 고침(설정 아님 · 바로)</strong>
+1. <code>s1</code>(흰자 그늘 띠)을 반사광 <strong>앞</strong>(홍채 <code>gz</code> 그룹 앞)에 그리거나, <code>s1</code>을 홍채 clip 바깥 흰자에만 적용하고 홍채 위 그늘은 <code>i1</code>만 쓴다. → 주 반사광 L ≥ 0.97 보장.
+2. 흰자 색: 피부 밝힘(현재 E1) 유지, <code>#AEB6D3</code> 양끝 타원 삭제(또는 피부 그늘색 <code>skS</code> 0.15로 교체), <code>s1</code> 색을 <code>#4E5280</code> → 피부 그늘 따뜻한 색 · 불투명 0.3 → 0.15.
+3. <code>MSC_EYE.chibi</code> 새 값(제안): <code>hk 1.1 · g 0.02 · c 0.12 · irW 0.80 · lash 0.6 · wing 0 · fl 0 · lw 'none' · pu 'kid' · ir 'cel2'(위 그늘 30 % + 아래 밝은 반달 1단 · 결 없음) · hl 'kid' · crease 0</code>.
+4. <code>MSC_EYE_LT.chibi</code> [1.15, 0.4] → [0.9, 0].
+5. <code>ir:'layer'</code>의 흰 점 4개와 <code>h3</code> 반짝 3개는 <code>B.kid</code>에서 끔(표정 'starry'·'kira'·'hearteye'만 켬).
+6. 동물 꼬마(<code>D.ani</code>): 눈꺼풀 띠 색 = 털색 L−0.35(검정 잉크 금지), 흰자 ≤ 5 %, 눈 아래선 y &lt; 주둥이 윗선 y, 두 눈 중심의 중점 x = 주둥이 축 x.
+7. 뒤센 연동: <code>msc2XpX</code>에서 입 <code>smile</code> 계열(content·pleased·happy·laugh·hyster·smug·shy)이면 <code>EyeSmile ≥ 0.25</code>, <code>CornerTilt +1~+3°</code>, 볼 홍조 ≥ 0.3을 강제. 입이 웃는데 <code>EyeSmile 0</code>인 표정 값은 금지.
+8. 시험 그림 스크립트: <code>mscCss()</code> 호출 + <code>class="msc-ch msc-still"</code> + 표정은 <code>mscXLayers</code>로 명시(현재 <code>kid_face.js</code> 참고). 바이블 §10.1 SD 눈 항목에 "꼬마 눈은 §3.2 E1~E10에 <strong>꼬마 변형 표(위 설정 표)</strong>를 덧씌운다"를 추가.</p>
+<p><strong>Live2D식 파라미터와의 관계</strong>: <code>EyeOpen</code>·<code>EyeSmile</code>·<code>IrisScale</code>·<code>PupilScale</code>·<code>EyeBallX/Y</code>는 그대로. 꼬마 변형은 '기본 모양' 단계(B 계산)에서만 적용되고 표정 파라미터는 그 위에 곱한다(바이블 r14 규칙 유지).</p>
+<hr>
+<h2 id="4-합격-기준-제안-자동-시험-tK_eye-js-식으로-SVG를-파싱해-잼">4. 합격 기준 제안 (자동 시험 · <code>tK_eye.js</code> 식으로 SVG를 파싱해 잼)</h2>
+<p>중립 표정·정면(yaw 0)·꼬마 9명 + 동물 꼬마 전원에 대해:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>잴 것</th>
+<th>합격</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1</td>
+<td>주 반사광 <code>hl1</code>의 실제 합성 색(위에 겹친 모든 도형 불투명도 합성)</td>
+<td>L ≥ 0.97, 채도 ≤ 0.03</td>
+</tr>
+<tr>
+<td>T2</td>
+<td>눈 하나 안의 흰색(L ≥ 0.95) 도형 수(중립)</td>
+<td>≤ 2 (표정 starry·kira·hearteye 제외)</td>
+</tr>
+<tr>
+<td>T3</td>
+<td>두 눈 <code>hl1</code> 중심의 홍채 기준 상대 위치 차</td>
+<td>≤ 0.05 I</td>
+</tr>
+<tr>
+<td>T4</td>
+<td>동공 <code>p1</code> 테두리와 바깥 홍채 색의 명도 차(그늘 합성 후, 동공 아래쪽 반원에서)</td>
+<td>ΔL ≥ 0.12</td>
+</tr>
+<tr>
+<td>T5</td>
+<td>홍채 안 L &lt; 0.2 영역 면적/홍채 면적</td>
+<td>≤ 0.45</td>
+</tr>
+<tr>
+<td>T6</td>
+<td>열림 H/W (clipPath 경로의 bbox)</td>
+<td>꼬마 1.0~1.2 · 동물 꼬마 0.9~1.1</td>
+</tr>
+<tr>
+<td>T7</td>
+<td>홍채 ellipse ry/rx</td>
+<td>1.0~1.3</td>
+</tr>
+<tr>
+<td>T8</td>
+<td>홍채 폭/눈 폭</td>
+<td>0.75~0.85 (동물 ≥ 0.9)</td>
+</tr>
+<tr>
+<td>T9</td>
+<td>흰자 보이는 면적/열림 면적</td>
+<td>꼬마 ≤ 0.25 · 동물 ≤ 0.05 · 아래 흰자(홍채 아래) ≤ 0.03 H</td>
+</tr>
+<tr>
+<td>T10</td>
+<td>흰자 영역 합성 색</td>
+<td>L ≥ 0.93, 채도 ≤ 0.08, 색상 h 20~60°(따뜻함) — 푸른 계열(h 200~260°) 금지</td>
+</tr>
+<tr>
+<td>T11</td>
+<td>위 눈꺼풀 띠(<code>lashU</code>) 바깥 끝 두께/W · 날개 bbox가 눈 밖으로 나간 길이/W · 낱개 속눈썹 경로 수</td>
+<td>≤ 0.10 · ≤ 0.08 · 0</td>
+</tr>
+<tr>
+<td>T12</td>
+<td>눈 사이 안쪽 간격/W · 중심 거리/얼굴 폭(눈 높이)</td>
+<td>1.0~1.5 · 0.46~0.55</td>
+</tr>
+<tr>
+<td>T13</td>
+<td>눈 중심 y/HH · 눈~입 거리/얼굴 길이</td>
+<td>0.58~0.65 · 0.33~0.38</td>
+</tr>
+<tr>
+<td>T14</td>
+<td>눈꼬리~얼굴선 여백/W</td>
+<td>≥ 0.3</td>
+</tr>
+<tr>
+<td>T15</td>
+<td>두 눈 H 차 · 두 홍채 상대 위치 차</td>
+<td>≤ 8 % · ≤ 0.03 W</td>
+</tr>
+<tr>
+<td>T16</td>
+<td>눈썹 아래선~눈꺼풀 윗선/H · 눈썹 두께/W</td>
+<td>0.4~0.8 · ≤ 0.12</td>
+</tr>
+<tr>
+<td>T17</td>
+<td>웃음 계열 표정에서 <code>EyeSmile</code>·<code>CornerTilt</code>·볼 홍조</td>
+<td>≥ 0.25 · ≥ +1° · ≥ 0.3</td>
+</tr>
+<tr>
+<td>T18</td>
+<td>동물 꼬마: 두 눈 중심 중점 x − 주둥이 축 x · 눈 아래선 y − 주둥이 윗선 y</td>
+<td>≤ 0.02 얼굴 폭 · &lt; 0</td>
+</tr>
+<tr>
+<td>T19</td>
+<td>시험 그림 자체: <code>#m2base_css</code>·<code>#msc_css</code> 존재, 칸 class에 <code>msc-still</code></td>
+<td>있어야 통과(없으면 그림 무효)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="5-출처">5. 출처</h2>
+<p>번호 · 제목 · 저자/기관 · URL · 접속일 · 신뢰도. <strong>[원문 미확인]</strong> = 이 세션에서 검색·열람이 차단되어 기억으로 서지를 적음(다음 세션에서 대조 필요).</p>
+<ul>
+<li>S0. Mori, M. (1970/2012). "The Uncanny Valley" (trans. MacDorman &amp; Kageki). IEEE Robotics &amp; Automation Magazine 19(2):98–100. [원문 미확인] · 높음(원전).</li>
+<li>S1. Looser, C. E. &amp; Wheatley, T. (2010). "The Tipping Point of Animacy: How, When, and Where We Perceive Life in a Face." Psychological Science 21(12):1854–1862. [원문 미확인] · 높음(동료 심사).</li>
+<li>S2. Lorenz, K. (1943). "Die angeborenen Formen möglicher Erfahrung." Zeitschrift für Tierpsychologie 5:235–409. [원문 미확인] · 높음(원전).</li>
+<li>S3. Glocker, M. L. et al. (2009). "Baby Schema in Infant Faces Induces Cuteness Perception and Motivation for Caretaking in Adults." Ethology 115(3):257–263. [원문 미확인] · 높음.</li>
+<li>S4. MacDorman, K. F., Green, R. D., Ho, C.-C. &amp; Koch, C. T. (2009). "Too real for comfort? Uncanny responses to computer generated faces." Computers in Human Behavior 25(3):695–710. [원문 미확인] · 높음.</li>
+<li>S5. Seyama, J. &amp; Nagayama, R. S. (2007). "The Uncanny Valley: Effect of Realism on the Impression of Artificial Human Faces." Presence 16(4):337–351. [원문 미확인 · 눈 크기 조작 범위는 기억] · 높음.</li>
+<li>S6. Ekman, P., Davidson, R. J. &amp; Friesen, W. V. (1990). "The Duchenne smile: Emotional expression and brain physiology II." Journal of Personality and Social Psychology 58(2):342–353. [원문 미확인] · 높음.</li>
+<li>S7. Gunnery, S. D. &amp; Ruben, M. A. (2016). "Perceptions of Duchenne and non-Duchenne smiles: A meta-analysis." Cognition and Emotion 30(3):501–515. [원문 미확인] · 높음.</li>
+<li>S8. Pallett, P. M., Link, S. &amp; Lee, K. (2010). "New 'golden' ratios for facial beauty." Vision Research 50(2):149–154. (눈 중심 거리 = 얼굴 폭의 46 %, 눈~입 = 얼굴 길이의 36 %) [원문 미확인] · 높음.</li>
+<li>S9. Kobayashi, H. &amp; Kohshima, S. (1997). "Unique morphology of the human eye." Nature 387:767–768; (2001) Journal of Human Evolution 40(5):419–435. [원문 미확인] · 높음.</li>
+<li>S10. Provine, R. R., Cabrera, M. O. &amp; Nave-Blodgett, J. (2013). "Red, Yellow, and Super-White Sclera: Uniquely Human Cues for Healthiness, Attractiveness, and Age." Human Nature 24(2):126–136. [원문 미확인] · 높음.</li>
+<li>S11. Russell, R., Sweda, J. R., Porcheron, A. &amp; Mauger, E. (2014). "Sclera color changes with age and is a cue for perceiving age, health, and beauty." Psychology and Aging 29(3):626–635. [원문 미확인] · 높음.</li>
+<li>S12. AnimeOutline 튜토리얼 목록(검색 페이지만 열림 · 본문 차단): https://www.animeoutline.com/?s=chibi+eyes — 'How to Draw Anime Eyes (Normal Expression)', 'How to Draw Chibi Anime Character Step by Step', 'How to Draw an Anime Little Girl', 'How to Draw Anime Eyelashes' 등. 접속 2026-10-29. · 낮음(개인 튜토리얼 · 관행 예).</li>
+<li>S13. Johnson, M. K. &amp; Farid, H. (2007). "Exposing Digital Forgeries Through Specular Highlights on the Eye." Information Hiding 2007, LNCS 4567:311–325. [원문 미확인] · 중간(공학 논문 · 지각 연구 아님).</li>
+<li>S14. Hess, E. H. (1965). "Attitude and pupil size." Scientific American 212(4):46–54; Tombs, S. &amp; Silverman, I. (2004). Evolution and Human Behavior 25(4):221–228. [원문 미확인] · 중간.</li>
+<li>S15. 안과 교과서 수치(각막 수평 지름 신생아 9.5~10.5 mm · 어른 11.5~12 mm; 눈꺼풀 틈 길이 신생아 ≈ 18~19 mm · 어른 ≈ 28~30 mm; 한국 성인 틈 길이 ≈ 27~28 mm — Park 외 2008 Korean J Ophthalmol 계열 논문). [원문 미확인] · 중간(수치 범위 기억).</li>
+<li>S16. Loomis, A. (1956). Drawing the Head and Hands — 유아·아동 머리 비율 장(눈 자리 낮음, 홍채 거의 어른 크기, 눈 사이 넓음). [원문 미확인] · 높음(업계 교재).</li>
+<li>S17. Bancroft, T. (2006). Creating Characters with Personality; Blair, P. (1994). Cartoon Animation — '귀여운(cute)' 원형: 큰 머리, 낮게 자리한 큰 눈, 큰 동공, 작은 코·입, 각 없는 선. [원문 미확인] · 높음(업계 교재).</li>
+<li>S18. Rhodes, G., Proffitt, F., Grady, J. M. &amp; Sumich, A. (1998). "Facial symmetry and the perception of beauty." Psychonomic Bulletin &amp; Review 5(4):659–669. [원문 미확인] · 높음.</li>
+<li>S19. Tinwell, A., Grimshaw, M., Nabi, D. A. &amp; Williams, A. (2011). "Facial expression of emotion and perception of the Uncanny Valley in virtual characters." Computers in Human Behavior 27(2):741–749; Tinwell, A., Nabi, D. A. &amp; Charlton, J. P. (2013). "Perception of psychopathy and the Uncanny Valley in virtual characters." CHB 29(4):1617–1625. [원문 미확인] · 높음.</li>
+<li>S20. Kätsyri, J., Förger, K., Mäkäräinen, M. &amp; Takala, T. (2015). "A review of empirical evidence on different uncanny valley hypotheses." Frontiers in Psychology 6:390. [원문 미확인] · 높음.</li>
+<li>S21. Diel, A., Weigelt, S. &amp; MacDorman, K. F. (2022). "A Meta-analysis of the Uncanny Valley's Independent and Dependent Variables." ACM Transactions on Human-Robot Interaction 11(1):1. [원문 미확인] · 높음.</li>
+<li>S22. Yao, L. 외 (2022). Frontiers in Psychology — 눈 크기와 귀여움(기존 조사 S05). 기존 조사 그대로.</li>
+<li>S23. Lieber-Milo, S. 외 (2025). "Cuteness in avatar design..." AI &amp; Society 40(2). https://link.springer.com/article/10.1007/s00146-024-01878-3 · 접속 2026-10-29 · <strong>원문 확인</strong> · 높음(효과 작음 · 눈 단독 조작 아님).</li>
+<li>S24. Hildebrandt, K. A. &amp; Fitzgerald, H. E. (1979). "Facial feature determinants of perceived infant attractiveness." Infant Behavior and Development 2:329–339. [원문 미확인] · 높음.</li>
+<li>S25. Little, A. C. (2012). "Manipulation of Infant-Like Traits Affects Perceived Cuteness of Infant, Adult and Cat Faces." Ethology 118(8):775–782. [원문 미확인] · 높음.</li>
+<li>S26. 이 세션의 직접 분석: 코드 <code>/home/claude/wR15m/friend/readnow-friend.js:269–344, 1404</code> · <code>/home/claude/wR15m/pw/r15/msc2_head.js:19–21</code> · <code>/home/claude/wR15m/pw/r15/msc2_core.js:9–10, 23</code> · 렌더 그림 <code>scratchpad/web/kid_big.png, eye_*.png</code> · 높음(사실 확인).</li>
+</ul>
+<hr>
+<h2 id="6-근거를-못-찾은-것-솔직하게">6. 근거를 못 찾은 것 (솔직하게)</h2>
+<ol>
+<li><strong>학술 원문 전부</strong> — 이 세션에서는 검색·열람이 막혀 S0~S11·S13~S21·S24~S25를 기억으로 썼다. 서지는 정확하다고 믿지만 <strong>수치(Seyama의 눈 확대 %, Pallett의 46 %/36 %, 안과 치수)는 다음 세션에서 반드시 원문 대조</strong>해야 한다.</li>
+<li><strong>눈 간격·비대칭·사시·공막 노출의 '불쾌 임계치'</strong> 를 수치로 준 연구를 확인하지 못했다. 규칙 12·T15의 수치는 엔진용 보수 제안이다.</li>
+<li><strong>반사광 크기·동공/홍채 비율의 실험 수치</strong> — 지각 실험으로 정한 값은 찾지 못했다(관행값만).</li>
+<li><strong>아니메 아이 눈의 수치 관행</strong>(§2.3 표)은 튜토리얼 본문을 못 열어 기억 범위다. Clip Studio 공식 'How to draw' 아이 얼굴 편, Hikaru Hayashi 교재로 대조할 것.</li>
+<li><strong>한국 아동 눈꺼풀 틈·동공 간 거리</strong>(사이즈코리아)는 확인하지 못했다.</li>
+<li>정범님이 본 '불쾌한 그림'이 어느 판·어느 표정이었는지는 모른다. 이 세션 그림은 중립 표정 기준이며, 표정 중에도 P1~P6은 그대로 적용된다.</li>
+</ol></section></main></div></body></html>

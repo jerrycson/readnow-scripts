@@ -1,0 +1,1411 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>옷·신발·장신구·소품 — 구조와 움직임 (웹 심화 조사 · 2026-10-29)</title><style>
+:root{--ink:#1f2a24;--bg:#faf8f3;--card:#fff;--line:#d9d4c7;--hd:#1f5a44;--acc:#b8562a;--mut:#6b6f66}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,'Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif}
+header{background:var(--hd);color:#fff;padding:14px 18px}header h1{margin:0;font-size:19px}header p{margin:4px 0 0;font-size:13px;opacity:.9}
+.wrap{display:grid;grid-template-columns:260px 1fr;gap:0;max-width:1400px;margin:0 auto}
+nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;padding:14px 10px;border-right:1px solid var(--line);background:#f3f0e8;font-size:13px}
+nav a{display:block;color:var(--ink);text-decoration:none;padding:3px 6px;border-radius:6px}nav a:hover{background:#e6e1d4}nav .l2{padding-left:18px;color:var(--mut);font-size:12px}
+main{padding:18px 28px 80px;min-width:0}
+section.ch{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin:0 0 22px}
+h1,h2,h3,h4{line-height:1.3}section.ch>h1{font-size:21px;margin:0 0 10px;color:var(--hd)}h2{font-size:17px;margin:22px 0 8px;border-left:4px solid var(--hd);padding-left:8px}h3{font-size:15px;margin:16px 0 6px;color:var(--acc)}
+table{border-collapse:collapse;width:100%;font-size:13px;margin:8px 0 12px;display:block;overflow:auto}th,td{border:1px solid var(--line);padding:5px 7px;vertical-align:top;text-align:left}th{background:#eef3ef}
+code{background:#f0ede4;padding:0 4px;border-radius:4px;font-size:12.5px}pre{background:#f0ede4;padding:10px;border-radius:8px;overflow:auto;font-size:12.5px}
+blockquote{border-left:3px solid var(--line);margin:8px 0;padding:2px 12px;color:var(--mut)}
+.meta{font-size:12px;color:var(--mut)}.back{font-size:13px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}nav{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}main{padding:12px 16px 60px}}
+</style></head><body>
+<header><h1>옷·신발·장신구·소품 — 구조와 움직임 (웹 심화 조사 · 2026-10-29)</h1><p>조사 기록(관찰·웹) · 바이블 v2의 근거 · 생성 2026-10-29 18:56 KST · 원본 friend/research/*.md (비공개 저장소 readnow-chats/mascot/bible_v2 와 동일)</p></header>
+<div class="wrap"><nav><a class="back" href="../../research.html">← 바이블 v2</a><a href="#핵심-규칙">핵심 규칙</a><a href="#세부-조사">세부 조사</a><a href="#우리-엔진에-적용하는-법-SVG-JS-2-5D-리그-24fps-Live2D식-파라미터">우리 엔진에 적용하는 법 (SVG/JS 2.5D 리그 · 24fps · </a><a href="#합격-기준-제안-자동-시험">합격 기준 제안 (자동 시험)</a><a href="#출처">출처</a><a href="#근거를-못-찾은-것">근거를 못 찾은 것</a></nav><main><section class="ch"><h1 id="2026-10-29">옷·신발·장신구·소품 — 구조와 움직임 (웹 심화 조사 · 2026-10-29)</h1>
+<p>조사 범위: 기존 조사(research/props_clothes/findings.md·sources.md S1~S22, notes_web.md §6, mascot_bible.md §7·§8)를 읽고 <strong>빠진 것·얇은 것·틀린 것</strong>만 채웠다. 기존에 있는 내용은 '기존 조사 그대로'로 표시한다.
+단위: cm · mm · 도 · 초 · 프레임(24fps). 머리 단위 <strong>1H = 22.5cm</strong>(지시값). cm→H 환산은 모두 계산값(÷22.5).
+주의: 이 세션은 웹 검색 한도가 중간에 소진되어(공유 200회) 뒤쪽 항목(부츠 샤프트 높이·귀걸이·배낭·해변 복장)은 더 찾지 못했다. §6에 솔직히 적었다.</p>
+<hr>
+<h2 id="핵심-규칙">핵심 규칙</h2>
+<ol>
+<li><strong>옷감은 네 갈래(stiff·mid·soft·stretch)로만 나누고, 분류 기준은 '굽힘 강성 B'와 '면적 밀도' 두 값이다.</strong> 실측 범위: 셔츠용 평직 B = 0.018~0.119 gf·cm²/cm, 밀도 69~202 g/m² [1]; 한복 실크는 B ≤ 0.089, 신축 ≥ 1.03%에서 드리움이 실물과 맞음 [2·기존 S3]; 데님 0.324 · 재킷 0.284 · 니트 0.276 · 스웨트 0.224 · 수영복 0.204 · 인터록 0.187 · 폴리 드레스 0.113 kg/m² [기존 S2]. 드리움 계수는 굽힘 계수와 R² = 0.908로 거의 전부 설명된다 [3] → 엔진에서는 B 하나로 주름 수·드리움을 정하고 밀도는 흔들림 늦음에만 쓴다.</li>
+<li><strong>3D 클로스 도구의 공식 프리셋이 네 갈래의 상대값 근거다.</strong> Maya nCloth(Autodesk 공식 문서): 실크 굽힘 0.05·질량 0.05·감쇠 0.2 / 시폰 0.2·0.15·2.0 / 면 티셔츠 0.1·0.6·0.8 / 굵은 니트 0.5·0.8·1.0 / 헤비 데님 0.4·2.0·0.8 / 두꺼운 가죽 10·3.0·8.0 [4]. 3ds Max Cloth: 면 굽힘 15 · 실크 2.5 · 가죽 50 · 버랩 50 [5]. → stiff:mid:soft 굽힘 비 ≈ 4~8 : 1 : 0.5, 질량 비 ≈ 3 : 1 : 0.1~0.25.</li>
+<li><strong>주름 수는 굽힘 강성에 반비례, 주름 폭은 비례한다.</strong> 뻣뻣한 원단 = 적고 굵은 주름, 부드러운 원단 = 많은 잔주름, 신축 원단 = 주름이 넓게 퍼짐 [기존 S2]. 드리움 시험에서 가벼운 천(62.8 g/m²)은 드리움 계수 21.9%, 무거운 천(305 g/m²)은 94.7% [6] — 즉 soft는 밑단이 거의 다 처지고(둘레의 80%가 접힘), stiff는 거의 종 모양으로 선다.</li>
+<li><strong>주름 7종(Bridgman 1942)을 쓴다: 파이프·지그재그·나선·반잠김·다이아몬드(diaper)·드롭·관성</strong> [7]. 생기는 조건: 파이프 = 한 지지점에서 매달린 통 주름 · 드롭 = 한 점(머리·어깨)에서 흘러내려 팔 위로 떨어짐 · 다이아몬드 = 두 지지점 사이 처짐(손으로 잡은 천) · 지그재그 = 한 당김점에서 매달린 천이 원통(바짓가랑이·소매)에 걸쳐 꺾임 · 나선 = 헐렁한 소매·바짓가랑이가 원통을 감아 비틀림 · 반잠김 = 밑의 형태가 굽히거나 눌릴 때(관절) · 관성 = 바닥에 놓여 당김 없는 천 [8][9]. 모든 주름은 당김점 사이 또는 한 지지점 아래에서만 생긴다 [기존 바이블 §8.2].</li>
+<li><strong>품(여유)은 전둘레 cm로 보관하고, 그리기에는 반지름 오프셋 = 둘레 여유 ÷ 2π 를 쓴다.</strong> 남성 셔츠 실측: 클래식핏 가슴 여유 8~21cm(외관 평가 최고 18cm), 슬림핏 3.5~11cm(최고 6cm); 허리 클래식 13~27 · 슬림 6~17cm; 어깨(반값) 클래식 +3~+6.6 · 슬림 0~+5cm [10]. 착용 여유 최소치: 가슴 6.4 · 허리 2.5 · 엉덩이 7.6cm(English 2016), 기성복 5.1 · 2.5 · 5.1cm(King 2018) [11]. → 6cm = 0.042H 오프셋, 18cm = 0.127H 오프셋(기존 바이블 fitted 0.02~0.03H · regular 0.04~0.06H · loose 0.08~0.15H와 일치).</li>
+<li><strong>KS K 0050(성인 남성복)·0051(성인 여성복)은 '호칭·신체치수 간격' 규격이지 여유량 규격이 아니다</strong> [12][13]. 바지 호칭은 허리·엉덩이둘레, 체형은 드롭(엉덩이−허리)으로 가르며 허리 간격 3cm·엉덩이 간격 5cm [13]. 코트·원피스·치마의 부위별 여유량 cm는 이번에 근거를 못 찾았다(§6).</li>
+<li><strong>뒤따름 늦음(24fps)은 '길이·무게'가 정하고 흔들림 횟수는 '굽힘·감쇠'가 정한다.</strong> 머리→머리끝 2~4f, 머리카락이 멈춘 뒤 4~8f, 천·망토 3~6f, 무거운 코트는 2~4f에 가라앉음, 계층마다 2~4f씩 늦춤 [14][15]; 애니 머리카락 주기 운동: 24fps·2~3코마 홀드·한 주기 3~8장·예시 주기 T = 0.45초(≈2.2Hz) [16]. 리지드한 것은 뒤따름이 거의 없고 짧게 되튀며, 유연한 것은 고무줄처럼 길게 뒤따른다 [14]. 기존 notes_web §6의 소매 2~3f · 밑단 2~4f · 치마 3~6f · 코트 4~8f 와 범위가 겹친다 → 그대로 채택.</li>
+<li><strong>Live2D 물리 기준값을 그대로 가져온다</strong>: '흔들리기 쉬움' 0.7~0.99, 반응 속도 1(기준), 수렴 속도 1(기준), 계산 60fps(5.0 이전 30), 같은 종류 입력 영향 합 ≤ 100% [17][18]. 우리 24fps에서는 수렴 속도를 1.0~1.5로 올린다(계산값).</li>
+<li><strong>신발 굽 높이 4단계</strong>: 플랫 ≤ 2cm · 낮음 ≤ 4 · 중간 ≤ 6 · 높음 &gt; 7cm(Broega 2017), 하이힐 정의 ≥ 5cm(Wiedemeijer 2018), 실험 신발: 플랫 ≈1cm · 운동화 ≈3cm · 펌프스·스틸레토·청키 9cm [19]; 키튼 3~5 · 미드 6~7 · 하이 ≥ 8 · 플랫폼 &gt; 10cm [20]. 한국 신발 호칭 = 발길이 mm, 5mm 간격(숙녀화 205~255), 발둘레 3mm 간격, KS M ISO 9407 몬도포인트 [21].</li>
+<li><strong>한국 성인 발(8차 사이즈코리아, 남 1,973명)</strong>: 발길이 256.4 · 발너비 99.4 · 발꿈치너비 66.8 · 볼둘레 250.5mm [22]; 여(5차, 정상체중 1,081명) 발길이 232.3 · 발너비 91.8 · 발꿈치너비 61.2 · 발등높이 54.0mm [23]; 여 20~30대 수도권 407명 233.4 · 92.9mm [21]. → 남 발 1.14H · 너비 0.44H, 여 1.03H · 0.41H. (기존 바이블 '남 1H · 여 0.88~0.92H'는 애니 관행값; 실측은 이보다 10% 길다.)</li>
+<li><strong>머리 치수(한국)</strong>: 남 머리둘레 57.2 ± 1.5cm · 머리높이 23.5 ± 1.0cm(6차 사이즈코리아, n = 2,471) [24]; 여 20~24세 머리둘레 55.3 · 머리너비 14.7 · 귀구슬사이너비 13.8cm(국민표준체위) [25]; 여 20대 머리둘레 55.5 · 머리너비 15.6 · 머리두께 17.7 · 머리마루~턱 22.5cm [26]. 8차(2020~21, n = 6,839, 20~69세) 평균 키 남 172.5 · 여 159.6cm [27]. → 머리둘레 남 2.54H · 여 2.46H, 키 남 7.67H · 여 7.09H.</li>
+<li><strong>모자 여유</strong>: 베이스볼캡 크라운 기초선 = 머리둘레/6 + 0.2cm, 캡 가로 여유 3cm·세로 6cm [25]; 베레·크라운 패턴은 머리너비·두께에 +5cm, 사이드크라운 둘레 +3cm [26]. → 모자 밴드 둘레 = 머리둘레 + 0.2~3cm, 머리카락은 밴드 아래로 눌려 밴드 바로 밑에서 바깥으로 펴진다(눌림 두께 = 머리카락 껍질 두께의 50~70%, 설계값).</li>
+<li><strong>안경 치수</strong>: 렌즈 폭 40~60mm(소 ≤ 50 · 중 51~54 · 대 ≥ 55), 브릿지 14~24mm, 템플 120~150mm(흔한 값 135·140·145·150), 전체 폭은 얼굴 폭보다 약간 넓되 템플과 얼굴 사이 '손가락 하나' 이내 [28]; 성인 동공거리 평균 62mm(54~74) [29]. → 렌즈 중심 간격 = 동공거리, 안경 전체 폭 ≈ 머리너비(14.7~15.6cm)와 같거나 +0.5cm.</li>
+<li><strong>목걸이 길이</strong>: 초커 35cm(목에 밀착) · 칼라 40cm(목 밑) · 프린세스 45cm(쇄골) · 마티네 50~60cm(가슴 위) · 오페라·로프 70~90cm(가슴 아래) [30]. <strong>시계</strong>: 손목둘레 15~18cm → 케이스 38~42mm, 19~20cm → 44~46mm, 케이스 ≈ 손목둘레(mm)/3, 밴드 폭 = 케이스/2(18·20·22·24mm) [31]. <strong>가방</strong>: 어깨끈 드롭 20~30cm(겨드랑이 아래), 크로스바디 드롭 51~61cm(허리~엉덩이) [32]; 체인 스트랩 드롭 18/20/23인치(46/51/58cm)에 전체 길이 107~135cm [33].</li>
+<li><strong>소품 치수(cm → H)</strong>: 46판 12.7×18.8(0.56×0.84H) · 국판/A5 14.8×21.0(0.66×0.93H) · 신국판 15.2×22.5(0.68×1.00H) · 크라운판 17.6×24.8(0.78×1.10H) · B5(JIS) 18.2×25.7(0.81×1.14H) · A4 21.0×29.7(0.93×1.32H) · 문고판/A6 10.5×14.8(0.47×0.66H) [34][35][36]; 스마트폰 14.0×6.5~7.0×0.8(0.62×0.29~0.31×0.036H) [기존 S15]; 종이컵 6oz 윗지름 7.3·밑지름 5.2·높이 8.0(0.32·0.23·0.36H) [37]; 연필 길이 17.8~19.0 · 지름 0.76~0.77(0.79~0.84H · 0.034H) [38][39].</li>
+<li><strong>쥐기는 GRASP 33분류(Feix 2016)의 세 축으로 적는다: 힘/중간/정밀 × 대립(손바닥·패드·옆) × 엄지(벌림·모음)</strong> [40]. 일상에서 가장 잦은 쥐기는 '중간 감싸기(medium wrap)' 빈도 12.7%·시간 23.8%, 옆집기(lateral) 8.9%, 삼각집기(tripod) 8.4%, 정밀 원반 7.1% [40]; 가사 노동 시간 비율: 중간 감싸기 26.8% · 검지 뻗기 13.4% · 힘 구(球) 13.2% · 옆집기 12.0% [41]. 물건↔쥐기: 큰 원통(병·자루) = 중간 감싸기, 작은 원통 도구(필기구) = 옆삼각(lateral tripod), 납작한 것(열쇠·카드) = 옆집기, 부드러운 것(베개·인형) = 힘 구 [42]. 연필은 엄지·검지로 집고 중지에 얹으며 끝에서 1~3cm 위를 잡는다 [43].</li>
+<li><strong>양식 관행(장르)</strong>: 둥근 꼴 = 친근·안전, 네모 = 안정·무게, 세모 = 위험·공격 [44][45]; SF = 깨끗한 기하(패널·육각·단단한 모서리), 판타지·애니 = 흐르는 곡선 + 절제된 뾰족함, 호러 = 불규칙 형태 [44]; 실루엣이 인상의 약 70%(출처 자체가 근거 없음을 밝힘) [44]; 거친 질감은 윤곽을 흐리고 커 보이게, 매끈·단단한 질감은 날카로운 하이라이트와 뚜렷한 모서리 [45].</li>
+<li><strong>긴 천이 다리 위에 걸치는 규칙·뚫림 방지 층 처리·치마 변형</strong>: 기존 바이블 §8.3·notes_web §6 그대로(펜듈럼 사슬 5~9점·캡슐 충돌·앞판/뒤판 분리·무릎이 앞판을 밀어 2~4f 뒤따름). 새 근거는 없고, 늦음 프레임만 [14][15][16]으로 보강.</li>
+</ol>
+<hr>
+<h2 id="세부-조사">세부 조사</h2>
+<h3 id="1">1. 옷감 분류와 물성 수치</h3>
+<p><strong>1-1. 업계 분류 체계</strong>
+- 의류 공학: Kawabata KES-FB 17항목(인장 LT·WT·RT·EM / 굽힘 B·2HB / 전단 G·2HG·2HG5 / 압축 LC·WC·RC / 표면 MIU·MMD·SMD / 두께 T / 중량 W) [2]. 드리움은 Cusick 드리움 계수(DC %, 0 = 매우 유연, 100 = 매우 뻣뻣) [6][47].
+- 3D 클로스(Maya nCloth): 늘어남 저항·압축 저항·굽힘 저항·접선 항력·질량·감쇠 [4]. 3ds Max Cloth: U/V Bend·B-Curve·Stretch·Compress·Shear·Density(g/cm²)·Damping·Air Res [5].
+- 물리 시뮬 고전: 늘어남 강성 ≫ 전단 &gt; 굽힘 [기존 S1].</p>
+<p><strong>1-2. 실측 수치(새로 확보)</strong></p>
+<table>
+<thead>
+<tr>
+<th>출처</th>
+<th>원단</th>
+<th>B (gf·cm²/cm)</th>
+<th>G (gf/cm·°)</th>
+<th>밀도 (g/m²)</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[1]</td>
+<td>면·폴리 평직 15종(셔츠·블라우스급)</td>
+<td>0.018~0.119</td>
+<td>0.31~4.15</td>
+<td>69~202</td>
+<td>올 밀도 높을수록 B 커짐</td>
+</tr>
+<tr>
+<td>[2]</td>
+<td>한복용 실크</td>
+<td>≤ 0.089 (드리움 일치 조건)</td>
+<td>—</td>
+<td>—</td>
+<td>신축 EM ≥ 1.03%</td>
+</tr>
+<tr>
+<td>[6]</td>
+<td>드리움 시험 5종 R1~R5</td>
+<td>(캔틸레버 M 29~54)</td>
+<td>—</td>
+<td>62.8 / 158.4 / 200 / 232 / 305</td>
+<td>DC 21.9 / 34.7 / 47.8 / 78.4 / 94.7%</td>
+</tr>
+<tr>
+<td>[3]</td>
+<td>평직·능직 9종</td>
+<td>굽힘 계수 28~84 kg/cm²</td>
+<td>—</td>
+<td>106~122</td>
+<td>DC 61.5~79.0%, DC~굽힘 R² 0.908</td>
+</tr>
+<tr>
+<td>[47]</td>
+<td>면 12종(312~320 g/m²)</td>
+<td>총강성 0.05~0.14 mNm</td>
+<td>—</td>
+<td>312~320</td>
+<td>K(드리움) 2.9~29.4%, 강성↔K r = −0.886</td>
+</tr>
+<tr>
+<td>기존 S2</td>
+<td>데님·재킷·니트·스웨트·수영복·인터록·도트·폴리드레스</td>
+<td>(정성)</td>
+<td>—</td>
+<td>324/284/276/224/204/187/128/113</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>1-3. 3D 도구 프리셋(상대값)</strong> [4][5]</p>
+<table>
+<thead>
+<tr>
+<th>프리셋(nCloth)</th>
+<th>늘어남</th>
+<th>압축</th>
+<th>굽힘</th>
+<th>항력</th>
+<th>질량</th>
+<th>감쇠</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Silk</td>
+<td>60</td>
+<td>10</td>
+<td>0.05</td>
+<td>0.05</td>
+<td>0.05</td>
+<td>0.20</td>
+</tr>
+<tr>
+<td>Chiffon</td>
+<td>40</td>
+<td>20</td>
+<td>0.2</td>
+<td>0.40</td>
+<td>0.15</td>
+<td>2.0</td>
+</tr>
+<tr>
+<td>t-Shirt Cotton</td>
+<td>35</td>
+<td>10</td>
+<td>0.1</td>
+<td>0.10</td>
+<td>0.6</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td>Loose Thick-knit</td>
+<td>30</td>
+<td>5</td>
+<td>0.5</td>
+<td>0.40</td>
+<td>0.8</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>Heavy Denim</td>
+<td>50</td>
+<td>20</td>
+<td>0.4</td>
+<td>0.10</td>
+<td>2.0</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td>Burlap</td>
+<td>40</td>
+<td>40</td>
+<td>3.0</td>
+<td>0.40</td>
+<td>1.5</td>
+<td>4.0</td>
+</tr>
+<tr>
+<td>Thick Leather</td>
+<td>50</td>
+<td>50</td>
+<td>10.0</td>
+<td>0.20</td>
+<td>3.0</td>
+<td>8.0</td>
+</tr>
+</tbody>
+</table>
+<p>3ds Max: Cotton bend 15 · Silk 2.5 · Leather 50 · Burlap 50 · Stretch 기본 50 · Damping 0.01부터 [5].</p>
+<p><strong>1-4. 네 갈래 정의(이 조사의 결론)</strong></p>
+<table>
+<thead>
+<tr>
+<th>갈래</th>
+<th>대표</th>
+<th>B 범위 (gf·cm²/cm)</th>
+<th>밀도 (g/m²)</th>
+<th>늘어남</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>stiff 뻣뻣</td>
+<td>데님·코트 모직·가죽·캔버스</td>
+<td>&gt; 0.12 (추정 상한 없음)</td>
+<td>&gt; 270</td>
+<td>작음</td>
+<td>[1] 상한 0.119 넘음, [기존 S2] 데님 324, [4] 굽힘 0.4~10</td>
+</tr>
+<tr>
+<td>mid 보통</td>
+<td>면 셔츠·포플린·치노</td>
+<td>0.03~0.12</td>
+<td>100~270</td>
+<td>작음</td>
+<td>[1] 셔츠급 전 범위, [4] tshirt 0.1</td>
+</tr>
+<tr>
+<td>soft 부드러움</td>
+<td>실크·시폰·레이온</td>
+<td>&lt; 0.09 (실크), 시폰은 더 작음</td>
+<td>50~130</td>
+<td>작음~중간</td>
+<td>[2], [4] silk 0.05 · chiffon 0.2(가벼워 항력 큼)</td>
+</tr>
+<tr>
+<td>stretch 신축</td>
+<td>저지·수영복·레깅스</td>
+<td>(굽힘은 soft~mid)</td>
+<td>180~280</td>
+<td>큼(음의 여유)</td>
+<td>[기존 S2] 수영복 204 · 인터록 187, [4] knit 0.5, [기존 S6] 니트 음의 여유</td>
+</tr>
+</tbody>
+</table>
+<p><strong>1-5. 갈래별 주름 폭·개수·늦음·감쇠</strong> — §3(엔진 적용) 표로 통합. 근거: 개수·폭은 [기존 S2]·[6], 늦음은 [14][15][16], 감쇠는 [4] 감쇠/질량 비.</p>
+<h3 id="2-7-789">2. 주름 7종과 생기는 조건 [7][8][9]</h3>
+<table>
+<thead>
+<tr>
+<th>이름(영)</th>
+<th>우리 이름</th>
+<th>생기는 조건</th>
+<th>당김점·지지점</th>
+<th>모양</th>
+<th>옷에서 자리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pipe</td>
+<td>파이프</td>
+<td>한 지지점에서 천이 매달림</td>
+<td>위 1점</td>
+<td>통(원기둥)들이 세로로 나란히, 아래로 넓어짐</td>
+<td>치마·커튼·망토·긴 소매 밑</td>
+</tr>
+<tr>
+<td>Drop</td>
+<td>드롭(떨어지는)</td>
+<td>한 점에서 흘러내려 아래 형태(어깨·팔)를 넘어 떨어짐</td>
+<td>위 1점 + 걸치는 형태</td>
+<td>파이프보다 흐르고 폭포처럼</td>
+<td>숄·머리에 덮은 천·늘어진 소매</td>
+</tr>
+<tr>
+<td>Diaper</td>
+<td>다이아몬드(기저귀)</td>
+<td>두 지지점 사이에서 처짐, 중심에서 비껴남</td>
+<td>양쪽 2점</td>
+<td>두 점 사이 U, 안에 파이프·드롭 포함</td>
+<td>손에 든 천·두 어깨 사이 숄·가슴 앞 스카프</td>
+</tr>
+<tr>
+<td>Zigzag</td>
+<td>지그재그</td>
+<td>한 당김점에서 매달린 천이 원통(팔·다리)에 걸쳐 꺾임</td>
+<td>위 1점 + 원통</td>
+<td>번개꼴로 보는 쪽으로 꺾여 옴</td>
+<td>바짓가랑이 안쪽·소매 안쪽·무릎 뒤</td>
+</tr>
+<tr>
+<td>Spiral</td>
+<td>나선</td>
+<td>헐렁한 통이 원통을 감아 비틀림</td>
+<td>원통 둘레</td>
+<td>사선 쐐기가 둘레를 감음</td>
+<td>비튼 소매·바짓가랑이·몸통 비틀기</td>
+</tr>
+<tr>
+<td>Half-lock</td>
+<td>반잠김(반원)</td>
+<td>밑의 형태가 굽히거나 눌림(관절이 꺾일 때 통이 꺾임)</td>
+<td>관절</td>
+<td>통이 꺾이며 한쪽이 반쯤 잠김</td>
+<td>팔꿈치·무릎·허리 굽힘</td>
+</tr>
+<tr>
+<td>Inert</td>
+<td>관성(늘어진)</td>
+<td>바닥·표면에 놓여 당김 없음</td>
+<td>없음</td>
+<td>흐트러져 눕힘</td>
+<td>바닥에 끌리는 자락·앉았을 때 무릎 위</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>지시문의 '늘어진·관성'은 Inert, '반원'은 Half-lock, '다이아몬드'는 Diaper 에 대응한다. Proko 강좌는 지그재그·드롭·다이아몬드 대신 '압축(compression)·깃발(flag)'을 넣어 7종을 꾸린다 [48] — 압축 = 반잠김의 관절 쪽, 깃발 = 바람·속도 때 드롭.</li>
+<li>당김점 규칙·경제성(옷 한쪽 ≤ 3줄, 셔츠 3~6줄)·관절 각도 연동(팔꿈치 0→90°에 주름 불투명도 0→1)은 기존 바이블 §8.2 그대로.</li>
+</ul>
+<h3 id="3">3. 품(여유) — 한국 기준</h3>
+<ul>
+<li><strong>규격의 성격</strong>: KS K 0050(성인 남성복)·KS K 0051(성인 여성복, 18~59세)은 호칭·기본신체치수(가슴·엉덩이·키)·참고치수 체계이지 여유량을 정하지 않는다 [12][13]. 바지 호칭 = 허리·엉덩이둘레, 체형 = 드롭 A(11.7~30.0cm)·B(−12.0~11.6cm) [13].</li>
+<li><strong>셔츠(남, 실측 5종)</strong> [10]</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>부위</th>
+<th>클래식핏</th>
+<th>슬림핏</th>
+<th>외관 최고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>가슴둘레 여유</td>
+<td>8 · 12 · 18 · 21 · 21 cm</td>
+<td>3.5 · 4.5 · 5.8 · 9.6 · 11 cm</td>
+<td>18 / 6 cm</td>
+</tr>
+<tr>
+<td>허리둘레 여유</td>
+<td>13 · 13.5 · 22 · 27 · 27 cm</td>
+<td>6~8 · 11.4 · 12 · 17 cm</td>
+<td>—</td>
+</tr>
+<tr>
+<td>어깨(반값 가산)</td>
+<td>+3 ~ +6.6 cm</td>
+<td>0 ~ +5 cm</td>
+<td>—</td>
+</tr>
+<tr>
+<td>진동 깊이</td>
+<td>C/4 + 2.5~4.5 또는 H/7.5 + 2.5~4</td>
+<td>C/4 + 1.5~2.5 또는 H/7.5 + 2</td>
+<td>C 가슴둘레·H 키</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>셔츠 기준 인체(20대 남, 7차)</strong>: 가슴 96.5 · 젖가슴 93.0 · 허리 81.5 · 엉덩이 96.5 · 등길이 44.0 · 팔길이 59.5 · 어깨너비 40.5 · 키 174.0cm [49]. 완성 패턴: 커프스 폭 5~6.5cm, 앞주머니 11.5~13.5 × 10.5~11.5cm, 소매 트임 9~16cm [49].</li>
+<li><strong>착용 여유 최소치(영미 교재)</strong>: 가슴 2.5in(6.4cm) · 허리 1in(2.5) · 엉덩이 3in(7.6)(English 2016) / 기성복 2·1·2in(5.1·2.5·5.1cm)(King 2018) [11]. 기존 S6: 극슬림 9 · 슬림 12 · 보통 16 · 루즈 20cm.</li>
+<li><strong>재킷</strong>: 가슴 여유가 체형에 가장 민감하고 허리·엉덩이는 실루엣에 맞춰 조정, 소비자가 가장 중시하는 부위는 어깨 [50] — 수치는 원문 PDF가 막혀 미확보.</li>
+<li><strong>티·치마·코트·원피스 부위별 cm</strong>: 근거 없음(§6). 바이블 §8.1의 H 단위 표(스킨타이트 0~0.01H … 루즈 0.08~0.15H)를 그대로 쓰고, cm 값이 생기면 반지름 오프셋 = cm ÷ 2π ÷ 22.5 로 환산해 넣는다.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>둘레 여유 (cm)</th>
+<th>반지름 오프셋 (cm)</th>
+<th>H</th>
+<th>바이블 등급</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 (니트·바이어스)</td>
+<td>0</td>
+<td>0</td>
+<td>skin-tight</td>
+</tr>
+<tr>
+<td>2.5~6</td>
+<td>0.4~0.95</td>
+<td>0.018~0.042</td>
+<td>fitted</td>
+</tr>
+<tr>
+<td>6~12</td>
+<td>0.95~1.9</td>
+<td>0.042~0.085</td>
+<td>regular</td>
+</tr>
+<tr>
+<td>16~21</td>
+<td>2.5~3.3</td>
+<td>0.11~0.15</td>
+<td>loose</td>
+</tr>
+<tr>
+<td>27 (클래식 허리 최대)</td>
+<td>4.3</td>
+<td>0.19</td>
+<td>loose 상한 초과 → 블라우징</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-2d">4. 드리움·충돌 (2D 애니)</h3>
+<ul>
+<li>기존 바이블 §8.3·notes_web §6 그대로: 긴 밑단 = 5~9 제어점 펜듈럼 사슬(2~3마디), 허벅지·종아리 캡슐 밖으로 밀어냄, 치마 앞판은 다리 앞·뒤판은 다리 뒤, 무릎이 앞판을 밀어 그쪽 밑단이 앞으로 볼록·반대쪽 2~4f 뒤처짐, 뻣뻣한 치마·앞치마는 종처럼 ±10~20° 회전.</li>
+<li>새 근거로 보강한 늦음값(24fps) [14][15][16] — §핵심 7. 애니 머리카락은 "공기가 밑으로 흐르듯" 뿌리→끝으로 진행하는 파동으로 그리고, 뿌리/끝 진폭 비 p 로 끝쪽을 키운다; 한 주기를 3~8장으로 2~3코마씩 홀드 [16].</li>
+<li>Live2D 60fps 계산·흔들림 0.7~0.99·반응 1·수렴 1 [17][18]; 머리 입력에 몸 회전 Y를 넣으면 점프 때 머리가 떠오른다 [17].</li>
+</ul>
+<h3 id="5">5. 신발</h3>
+<ul>
+<li><strong>구조</strong>: 기존 S16·바이블 §7.3 그대로(라스트·토박스 둥근/뾰족/박스·힐카운터·미드솔·아웃솔·웰트·텅). 부츠 샤프트 높이(cm)·로퍼/구두 세부 구조 수치는 근거 없음(§6).</li>
+<li><strong>굽 높이</strong> [19][20]</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>종류</th>
+<th>굽 (cm)</th>
+<th>출처</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>플랫·슬리퍼</td>
+<td>≤ 2 (실험 플랫 ≈ 1)</td>
+<td>Broega 2017 via [19]</td>
+</tr>
+<tr>
+<td>운동화</td>
+<td>≈ 3 (밑창 포함)</td>
+<td>[19]</td>
+</tr>
+<tr>
+<td>로퍼·낮은 구두·키튼</td>
+<td>≤ 4 / 키튼 3~5</td>
+<td>[19][20]</td>
+</tr>
+<tr>
+<td>중간 굽</td>
+<td>≤ 6 / 6~7</td>
+<td>[19][20]</td>
+</tr>
+<tr>
+<td>하이힐·펌프스·스틸레토</td>
+<td>&gt; 7 / ≥ 8 (실험 9) · 하이힐 정의 ≥ 5</td>
+<td>[19][20]</td>
+</tr>
+<tr>
+<td>플랫폼</td>
+<td>&gt; 10 (앞굽이 경사 줄임)</td>
+<td>[20]</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>굽이 h 일 때 발 쐐기 기울기 θ = asin(h / 발길이) 계산값: 남 25.6cm 기준 3cm → 6.7°, 6cm → 13.6°, 9cm → 20.6°; 바이블 §7.3의 '펌프스 30~45°'는 발바닥이 아니라 발등선 기준이라 둘을 섞지 않는다.</li>
+<li><strong>발과 신발 크기</strong>: 한국 호칭 = 발길이 mm(5mm 간격), 발둘레 3mm 간격(같은 길이 안에서 6mm씩), KS M ISO 9407 몬도포인트 [21]. 발 실측 §핵심 10. 신발 길이 = 발길이 + 여유(토 스프링·앞 여유)의 cm 근거는 없음 → 바이블 '귀여운 신발 1.1~1.2× 발' 유지.</li>
+</ul>
+<h3 id="6">6. 장신구 치수(한국 기준)</h3>
+<table>
+<thead>
+<tr>
+<th>품목</th>
+<th>치수</th>
+<th>붙는 곳</th>
+<th>출처</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>안경</td>
+<td>렌즈 40~60(소 ≤50·중 51~54·대 ≥55) · 브릿지 14~24 · 템플 120~150mm; 동공거리 62(54~74)mm</td>
+<td>브릿지 = 코 뿌리(눈선), 템플 끝 = 귀 윗점 뒤; 전체 폭 ≈ 머리너비 14.7~15.6cm</td>
+<td>[28][29][25][26]</td>
+</tr>
+<tr>
+<td>모자</td>
+<td>밴드 둘레 = 머리둘레(남 57.2·여 55.3~55.5cm) + 0.2~3cm</td>
+<td>눈썹 위 1~2 손가락(설계값); 머리카락 밴드 아래 눌림</td>
+<td>[24][25][26]</td>
+</tr>
+<tr>
+<td>귀걸이</td>
+<td>근거 없음</td>
+<td>귓불에서 중력 방향</td>
+<td>기존 바이블</td>
+</tr>
+<tr>
+<td>목걸이</td>
+<td>35 / 40 / 45 / 50~60 / 70~90cm</td>
+<td>목 밀착 / 목 밑 / 쇄골 / 가슴 위 / 가슴 아래</td>
+<td>[30]</td>
+</tr>
+<tr>
+<td>시계</td>
+<td>케이스 38~42mm(손목 15~18cm) · 44~46(19~20cm) · 밴드 = 케이스/2</td>
+<td>손목뼈(척골 돌기) 바로 위</td>
+<td>[31]</td>
+</tr>
+<tr>
+<td>가방 끈</td>
+<td>숄더 드롭 20~30cm · 크로스 드롭 51~61cm · 체인 드롭 46/51/58cm(전체 107~135cm)</td>
+<td>어깨 → 반대 엉덩이(크로스), 겨드랑이 아래(숄더)</td>
+<td>[32][33]</td>
+</tr>
+<tr>
+<td>배낭</td>
+<td>근거 없음</td>
+<td>어깨 양쪽 · 등</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="7-cm-1h-225cm">7. 소품 치수(cm · 1H = 22.5cm)</h3>
+<table>
+<thead>
+<tr>
+<th>소품</th>
+<th>가로 × 세로 × 두께 (cm)</th>
+<th>H 단위</th>
+<th>손 대비(남 손 18.4 · 여 17.4cm)</th>
+<th>출처</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>46판 책</td>
+<td>12.7 × 18.8</td>
+<td>0.56 × 0.84</td>
+<td>세로 = 손 1.02~1.08</td>
+<td>[34]</td>
+</tr>
+<tr>
+<td>국판(A5)</td>
+<td>14.8 × 21.0</td>
+<td>0.66 × 0.93</td>
+<td>세로 = 손 1.14~1.21</td>
+<td>[35][36]</td>
+</tr>
+<tr>
+<td>신국판</td>
+<td>15.2 × 22.5</td>
+<td>0.68 × 1.00</td>
+<td>세로 = 머리 높이</td>
+<td><a href="중">34</a></td>
+</tr>
+<tr>
+<td>크라운판</td>
+<td>17.6 × 24.8</td>
+<td>0.78 × 1.10</td>
+<td>—</td>
+<td><a href="중">34</a></td>
+</tr>
+<tr>
+<td>B5(JIS)</td>
+<td>18.2 × 25.7</td>
+<td>0.81 × 1.14</td>
+<td>—</td>
+<td>[36]</td>
+</tr>
+<tr>
+<td>A4</td>
+<td>21.0 × 29.7</td>
+<td>0.93 × 1.32</td>
+<td>—</td>
+<td>[36]</td>
+</tr>
+<tr>
+<td>문고판(A6)</td>
+<td>10.5 × 14.8</td>
+<td>0.47 × 0.66</td>
+<td>손바닥 안</td>
+<td>[36][35]</td>
+</tr>
+<tr>
+<td>책 두께</td>
+<td>근거 없음 → 설정값 1.0~3.0cm(0.04~0.13H)</td>
+<td></td>
+<td></td>
+<td>—</td>
+</tr>
+<tr>
+<td>스마트폰</td>
+<td>14.0 × 6.5~7.0 × 0.8</td>
+<td>0.62 × 0.29~0.31 × 0.036</td>
+<td>길이 = 손 0.76~0.80</td>
+<td>기존 S15</td>
+</tr>
+<tr>
+<td>종이컵 6oz</td>
+<td>⌀7.3 위 · ⌀5.2 밑 · 높이 8.0</td>
+<td>0.32 · 0.23 · 0.36</td>
+<td>높이 = 손바닥너비 0.95~1.05</td>
+<td>[37]</td>
+</tr>
+<tr>
+<td>머그컵</td>
+<td>근거 없음</td>
+<td></td>
+<td></td>
+<td>—</td>
+</tr>
+<tr>
+<td>연필</td>
+<td>길이 17.8~19.0 · ⌀0.76~0.77</td>
+<td>0.79~0.84 · 0.034</td>
+<td>길이 ≈ 손 길이</td>
+<td>[38][39]</td>
+</tr>
+<tr>
+<td>우산</td>
+<td>근거 없음</td>
+<td></td>
+<td></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>46판은 일본 四六判과 같은 127×188 [34]; 국판 = A5 [35]; B5는 ISO B5(176×250)가 아니라 JIS B5(182×257)다 [36]. 신국판·크라운판·46배판(182/188/190×257)은 한국 출판 관행 자료(신뢰 중)만 확인됨 [34].</li>
+</ul>
+<h3 id="8">8. 쥐기</h3>
+<ul>
+<li><strong>분류(Feix 2016 GRASP)</strong>: 22개 선행 분류의 211예를 33종으로 통합, 물체 크기·모양을 무시하면 17종. 축 = 힘/중간/정밀 × 대립(손바닥 = 손바닥 VF1 + 네 손가락 VF2 / 패드 = 손끝끼리, 엄지 VF1 / 옆 = 엄지가 손가락 옆면) × 엄지 벌림/모음 [40]. 17종이 시간 83.4%·빈도 75.8%를 덮는다 [40].</li>
+<li><strong>빈도</strong>: 중간 감싸기 12.7%/23.8%(시간), #25 10.4%, 옆집기 8.9%, 삼각 8.4%, 정밀 원반 7.1%/18.8%(시간); 손바닥·끝 집기는 문헌 인용은 많지만 실제 4.2%뿐 [40]. 가사: 중간 감싸기 26.8 · 검지 뻗기 13.4 · 힘 구 13.2 · 옆집기 12.0 · 정밀 원반 6.9 · 엄지-검지 4.1% / 기계공: 옆집기 18.8 · 가벼운 도구 11.0 · 삼각 10.6 · 중간 감싸기 10.5% [41].</li>
+<li><strong>물건별 손 모양</strong> [42][43][기존 S15·바이블 §8.5]</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>물건</th>
+<th>쥐기</th>
+<th>손가락 배치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>스마트폰(통화)</td>
+<td>옆/패드 혼합</td>
+<td>엄지 한쪽 옆, 나머지 넷 반대 옆 [S15]</td>
+</tr>
+<tr>
+<td>스마트폰(보기)</td>
+<td>한 손 쥠 5형</td>
+<td>새끼가 아래를 받치는 형 포함 [S15]</td>
+</tr>
+<tr>
+<td>책(들고 읽기)</td>
+<td>중간 감싸기 변형</td>
+<td>엄지 표지 위, 네 손가락 책등 뒤 [바이블]</td>
+</tr>
+<tr>
+<td>책(옆구리)</td>
+<td>손바닥 대립</td>
+<td>엉덩이에 대고 손가락이 감쌈 [바이블]</td>
+</tr>
+<tr>
+<td>컵(손잡이 없음)</td>
+<td>중간 감싸기 / 힘 구(작은 컵)</td>
+<td>엄지 반대편에 넷 [42 유추]</td>
+</tr>
+<tr>
+<td>머그 손잡이</td>
+<td>근거 없음(고리형 추정 금지 — 설정값으로)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>연필·펜</td>
+<td>옆삼각(lateral tripod) · 동적 삼각</td>
+<td>엄지·검지로 집고 중지에 얹음, 끝에서 1~3cm [42][43]</td>
+</tr>
+<tr>
+<td>열쇠·카드</td>
+<td>옆집기</td>
+<td>엄지 패드가 검지 옆면에 [40][42]</td>
+</tr>
+<tr>
+<td>가방 손잡이·우산</td>
+<td>중간 감싸기(엄지 모음)</td>
+<td>넷이 감고 엄지 위 [42]</td>
+</tr>
+<tr>
+<td>큰 봉지·자루</td>
+<td>검지 뻗기</td>
+<td>검지는 축 따라 뻗음 [42]</td>
+</tr>
+<tr>
+<td>베개·인형</td>
+<td>힘 구</td>
+<td>손가락 벌려 감쌈 [42]</td>
+</tr>
+</tbody>
+</table>
+<h3 id="9-sf">9. SF·판타지·해변 복장 양식</h3>
+<ul>
+<li>요소 원리(MIT OCW 21M.732): 실루엣이 몸무게·키·크기 지각을 바꿈; 선의 경로·굵기·연속성·방향으로 성격 표현; 네모 = 안정·자신감, 세모·사선 = 행동·드라마·불안정; 따뜻한 색 전진·찬색 후퇴; 거친 질감 = 윤곽 흐림·커짐, 매끈·단단 = 날카로운 하이라이트 [45].</li>
+<li>장르 관행(게임 캐릭터 디자인 업계 글, 신뢰 하): SF = 깨끗한 기하·패널·육각·단단한 모서리(제조된 갑옷·기계) / 판타지·애니 = 흐르는 곡선 + 절제된 스파이크 / 호러 = 불규칙; 역할별 실루엣(탱크 = 넓고 블록, 빠른 적 = 날카롭고 앞으로 기움, 서포트 = 둥글고 곧음); 진영은 같은 형태 논리; 그레이스케일·먼 거리·움직임 중에 가독성 검사 [44].</li>
+<li>해변·수영복: 양식 근거 없음(검색 결과가 전부 스팸). 물성만 적용: stretch 갈래(수영복 밀도 204 g/m², 음의 여유, 주름이 넓게 퍼짐) [기존 S2·S6].</li>
+</ul>
+<hr>
+<h2 id="우리-엔진에-적용하는-법-SVG-JS-2-5D-리그-24fps-Live2D식-파라미터">우리 엔진에 적용하는 법 (SVG/JS 2.5D 리그 · 24fps · Live2D식 파라미터)</h2>
+<h3 id="a-4-msc2_fabric-fab">A. 옷감 4분류 설정표 — <code>MSC2_FABRIC</code> (한 곳에만 두고 옷 데이터는 <code>fab</code> 키로 참조)</h3>
+<table>
+<thead>
+<tr>
+<th>설정 이름</th>
+<th>stiff</th>
+<th>mid</th>
+<th>soft</th>
+<th>stretch</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>뻣뻣(데님·코트·가죽)</td>
+<td>보통(면 셔츠·치노)</td>
+<td>부드러움(실크·시폰)</td>
+<td>신축(저지·수영복)</td>
+<td>§1-4</td>
+</tr>
+<tr>
+<td><code>bendRel</code> (상대 굽힘, mid = 1)</td>
+<td>4~8 (기본 5)</td>
+<td>1</td>
+<td>0.5 (기본 0.5)</td>
+<td>0.7</td>
+<td>[4] 0.4~10 / 0.1 / 0.05~0.2 / 0.5</td>
+</tr>
+<tr>
+<td><code>massRel</code> (상대 질량)</td>
+<td>3 (기본 3)</td>
+<td>1</td>
+<td>0.1~0.25 (기본 0.2)</td>
+<td>1.3</td>
+<td>[4] 2.0~3.0 / 0.6 / 0.05~0.15 / 0.8</td>
+</tr>
+<tr>
+<td><code>foldPerSide</code> 주름 수(옷 한쪽 면)</td>
+<td>1~2 (기본 1)</td>
+<td>2~3 (기본 2)</td>
+<td>3~5 (기본 4)</td>
+<td>0~1 (기본 1, 사선 늘임선)</td>
+<td>[기존 S2] · 바이블 ≤3</td>
+</tr>
+<tr>
+<td><code>foldWidth</code> 주름 폭(옷 폭 대비)</td>
+<td>0.20~0.30</td>
+<td>0.10~0.15</td>
+<td>0.04~0.08</td>
+<td>0.15 (넓고 얕음)</td>
+<td>[기존 S2] 굵기↔강성 (설계값)</td>
+</tr>
+<tr>
+<td><code>hemBumps</code> 치마 밑단 U 개수</td>
+<td>3~4</td>
+<td>4~5</td>
+<td>6~7</td>
+<td>—</td>
+<td>바이블 4~7 + [6] DC 95→22%</td>
+</tr>
+<tr>
+<td><code>drapeDC</code> 밑단 처짐 비율(1 − DC)</td>
+<td>0.05~0.20</td>
+<td>0.30~0.55</td>
+<td>0.65~0.80</td>
+<td>0.50</td>
+<td>[6] DC 94.7 / 47.8~78.4 / 21.9 / (수영복 미측)</td>
+</tr>
+<tr>
+<td><code>lagFrames</code> 드리움 늦음(24fps)</td>
+<td>2~3 (기본 2)</td>
+<td>2~4 (기본 3)</td>
+<td>4~8 (기본 5)</td>
+<td>0~1 (기본 0)</td>
+<td>[14][15] + notes_web §6</td>
+</tr>
+<tr>
+<td><code>overshoot</code> 멈춤 후 더 나감</td>
+<td>0.05~0.10</td>
+<td>0.10~0.20</td>
+<td>0.20~0.25</td>
+<td>0</td>
+<td>notes_web 10~25% 범위를 갈래로 나눔(설계값)</td>
+</tr>
+<tr>
+<td><code>wobbles</code> 멈춘 뒤 흔들림 횟수</td>
+<td>0~1</td>
+<td>1~2</td>
+<td>2~3</td>
+<td>0</td>
+<td>[14] 리지드 = 짧게 되튐 / 유연 = 길게</td>
+</tr>
+<tr>
+<td><code>damping</code> 수렴(Live2D 수렴속도 기준 1)</td>
+<td>1.5</td>
+<td>1.0</td>
+<td>0.6</td>
+<td>2.0</td>
+<td>[4] 감쇠/질량 비, [17]</td>
+</tr>
+<tr>
+<td><code>swingHz</code> 흔들림 주파수</td>
+<td>1.0~1.5</td>
+<td>1.5~2.0</td>
+<td>2.0~2.5</td>
+<td>—</td>
+<td>[16] 머리카락 T = 0.45s → 2.2Hz 기준(설계값)</td>
+</tr>
+<tr>
+<td><code>easeMin</code> 둘레 여유 하한(cm)</td>
+<td>12</td>
+<td>6</td>
+<td>2.5</td>
+<td>−4~0 (음)</td>
+<td>[10][11][기존 S6]</td>
+</tr>
+<tr>
+<td><code>bellRotate</code> 종 회전 ±°</td>
+<td>10~20</td>
+<td>5~10</td>
+<td>0 (펜듈럼만)</td>
+<td>0</td>
+<td>바이블 §8.3</td>
+</tr>
+<tr>
+<td><code>settleFrames</code> 가라앉기</td>
+<td>2~4</td>
+<td>4~6</td>
+<td>6~10</td>
+<td>1</td>
+<td>[14] 코트 2~4f · 머리 4~8f</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>계층 늦음: 몸통 → 어깨 1~2f → 팔꿈치 2~3f → 손 2~3f → 소품; 머리 → 머리끝 2~4f [14]. 옷은 <code>lagFrames</code> + 붙은 뼈대의 계층 늦음을 더한다.</li>
+<li>펜듈럼: 마디 수 = 밑단 길이(H)/0.5 (최소 2·최대 3·치마 5~9 제어점), <code>mobility</code> 0.7~0.99(stiff 0.7 · mid 0.85 · soft 0.95 · stretch 0.7) [17].</li>
+</ul>
+<h3 id="b-msc2_fit-cm-h">B. 품 설정 — <code>MSC2_FIT</code> (cm 원본 보관 · 그리기는 H 오프셋 참조)</h3>
+<table>
+<thead>
+<tr>
+<th>fit</th>
+<th>둘레 여유 cm(원본)</th>
+<th>반지름 오프셋 H</th>
+<th>적용 옷</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>tight</td>
+<td>0 또는 음</td>
+<td>0~0.01</td>
+<td>타이츠·레깅스·수영복·저지</td>
+</tr>
+<tr>
+<td>fitted</td>
+<td>2.5~6</td>
+<td>0.018~0.042</td>
+<td>슬림 셔츠(6)·스키니·펜슬</td>
+</tr>
+<tr>
+<td>regular</td>
+<td>6~12</td>
+<td>0.042~0.085</td>
+<td>셔츠·바지·가디건</td>
+</tr>
+<tr>
+<td>loose</td>
+<td>16~21</td>
+<td>0.11~0.15</td>
+<td>클래식 셔츠(18)·후드·오버핏</td>
+</tr>
+<tr>
+<td>blouse</td>
+<td>27</td>
+<td>0.19</td>
+<td>블라우징 허리</td>
+</tr>
+</tbody>
+</table>
+<h3 id="c-foldtype-7">C. 주름 생성 규칙 — <code>foldType</code> 7종을 '당김점 쌍' 데이터로 생성</h3>
+<ul>
+<li><code>pipe</code>: 지지점 1(어깨·허리) + 중력. <code>drop</code>: 지지점 1 + 걸치는 캡슐(어깨·팔). <code>diaper</code>: 지지점 2. <code>zigzag</code>: 지지점 1 + 캡슐 둘레(무릎 뒤·팔꿈치 안). <code>spiral</code>: 캡슐 비틀림 각 &gt; 15°. <code>halfLock</code>: 관절 각 &gt; 30°(불투명도 30→90°에서 0→1). <code>inert</code>: 바닥 접촉면.</li>
+<li>갈래별 개수·폭은 A표 참조. 같은 면에서 7종 합계가 <code>foldPerSide</code> 상한을 넘지 않는다.</li>
+</ul>
+<h3 id="d-msc2_acc_attach">D. 장신구 붙는 점 규칙 — <code>MSC2_ACC_ATTACH</code></h3>
+<table>
+<thead>
+<tr>
+<th>품목</th>
+<th>뼈</th>
+<th>점(H)</th>
+<th>크기(H)</th>
+<th>규칙</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>안경</td>
+<td>head</td>
+<td>브릿지 = 눈선·코 뿌리; 템플 끝 = 귀 윗점 뒤</td>
+<td>전체 폭 = 머리너비(0.65~0.69H) + 0~0.02H; 렌즈 0.18~0.27H; 브릿지 0.06~0.11H</td>
+<td>[28][25]</td>
+</tr>
+<tr>
+<td>모자</td>
+<td>head</td>
+<td>밴드 = 눈썹 위 0.08~0.12H(설계)</td>
+<td>밴드 둘레 = 2.46~2.54H + 0.01~0.13H</td>
+<td>[24][25][26]</td>
+</tr>
+<tr>
+<td>귀걸이</td>
+<td>ear lobe</td>
+<td>귓불 밑</td>
+<td>근거 없음(설정값)</td>
+<td>중력 방향</td>
+</tr>
+<tr>
+<td>목걸이</td>
+<td>neck→chest</td>
+<td>길이별 높이: 35cm 목 · 45 쇄골 · 55 가슴 위 · 80 가슴 아래</td>
+<td>둘레 = 길이 ÷ 22.5 H</td>
+<td>[30]</td>
+</tr>
+<tr>
+<td>시계</td>
+<td>wrist</td>
+<td>손목뼈 위</td>
+<td>케이스 0.17~0.19H(38~42mm) · 밴드 폭 케이스/2</td>
+<td>[31]</td>
+</tr>
+<tr>
+<td>가방(숄더)</td>
+<td>shoulder</td>
+<td>드롭 0.9~1.3H(20~30cm) → 겨드랑이 아래</td>
+<td>끈은 몸통 원통 따라 휨</td>
+<td>[32]</td>
+</tr>
+<tr>
+<td>가방(크로스)</td>
+<td>shoulder→opp. hip</td>
+<td>드롭 2.3~2.7H(51~61cm) → 반대 엉덩이</td>
+<td>끈 길이 4.8~6.0H</td>
+<td>[32][33]</td>
+</tr>
+<tr>
+<td>손 소품</td>
+<td>hand</td>
+<td>손바닥 중심, 손가락 사이 층</td>
+<td>§7 표</td>
+<td>[40][42][43]</td>
+</tr>
+</tbody>
+</table>
+<h3 id="e-msc2_prop_size-h">E. 소품 크기표 — <code>MSC2_PROP_SIZE</code> (H)</h3>
+<p>§7 표 그대로. 책 두께는 설정값 <code>bookThick</code> 0.04~0.13H(기본 0.07). 손에 든 책은 <code>heldBook = '46판'</code> 기본(세로 0.84H ≈ 손 길이).</p>
+<h3 id="f-msc2_hp">F. 쥐기 포즈 — <code>MSC2_HP</code> 추가 후보</h3>
+<p><code>wrap_medium</code>(중간 감싸기: 넷 감고 엄지 위) · <code>lateral_pinch</code>(옆집기) · <code>lateral_tripod</code>(연필) · <code>power_sphere</code>(인형) · <code>index_ext</code>(검지 뻗기 자루) · <code>phone_call</code>(기존 F-2). 각 포즈에 물건 축과 접촉점 2~3개 메타데이터.</p>
+<hr>
+<h2 id="합격-기준-제안-자동-시험">합격 기준 제안 (자동 시험)</h2>
+<ol>
+<li><strong>옷감 분류 일관성</strong>: 모든 옷 데이터의 <code>fab</code> ∈ {stiff, mid, soft, stretch}이고, 주름 그리기 함수가 <code>MSC2_FABRIC</code> 외의 상수를 참조하지 않는다(grep 0건).</li>
+<li><strong>주름 수 상한</strong>: 한 옷 한쪽 면의 주름 수 ≤ <code>foldPerSide</code> 상한(stiff 2 · mid 3 · soft 5 · stretch 1), 셔츠 전체 3~6줄.</li>
+<li><strong>늦음 프레임</strong>: 몸이 1.0H 이동 후 정지한 뒤, 밑단 끝점이 정지 위치에 ±2% 안으로 들어오는 프레임 = <code>lagFrames</code> + <code>settleFrames</code> ± 1 (stiff 4~7f · mid 6~10f · soft 10~18f · stretch ≤ 2f).</li>
+<li><strong>오버슛</strong>: 정지 후 밑단 최대 초과 거리 / 이동 거리 = <code>overshoot</code> ± 0.03; 영점 교차 횟수 = <code>wobbles</code>.</li>
+<li><strong>뚫림 0</strong>: 치마·코트 밑단 제어점이 다리 캡슐(반지름 + 오프셋) 안에 들어가는 프레임 0.</li>
+<li><strong>품 오프셋</strong>: 옷 윤곽과 몸 윤곽의 최소 거리가 fit 표 값의 ±0.005H 안.</li>
+<li><strong>장신구 위치</strong>: 안경 브릿지 y = 눈선 ±0.02H, 템플 끝 x = 귀 윗점 ±0.02H, 전체 폭 ∈ [머리너비, 머리너비 + 0.02H]; 목걸이 최저점 y가 길이표 구간 안; 시계 중심이 손목뼈 ±0.03H.</li>
+<li><strong>소품 크기</strong>: 렌더된 소품의 bbox가 <code>MSC2_PROP_SIZE</code> ±3%.</li>
+<li><strong>쥐기 접촉</strong>: 포즈별 접촉점(엄지·검지·중지 등)이 물건 윤곽에서 ±0.01H 안, 손가락이 물건을 뚫지 않음.</li>
+<li><strong>굽</strong>: 신발 종류별 굽 높이가 §5 표 범위 안이고 발 쐐기 기울기 = asin(h/발길이) ± 1°.</li>
+</ol>
+<hr>
+<h2 id="출처">출처</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>제목</th>
+<th>저자/기관</th>
+<th>URL</th>
+<th>접속일</th>
+<th>신뢰도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Role of fibre, yarn and fabric parameters on bending and shear behaviour of plain woven fabrics</td>
+<td>Alam, Majumdar, Ghosh · Indian J. Fibre &amp; Textile Research 44 (2019)</td>
+<td>https://core.ac.uk/download/297998452.pdf</td>
+<td>2026-10-29</td>
+<td>높음(학술지, 15종 실측)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Investigating parameters affecting the real and virtual drapability of silk fabrics for traditional Hanbok (Table 2)</td>
+<td>Kim &amp; Lee · Fashion and Textiles 11 (2024)</td>
+<td>https://fashionandtextiles.springeropen.com/articles/10.1186/s40691-024-00388-6/tables/2</td>
+<td>2026-10-29</td>
+<td>높음(동료심사)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Contribution of bending and shear behavior of woven fabrics in the characterization of drape</td>
+<td>Sadoughi, Boushehri, Ezazshahabi · IJFTR 45 (2020)</td>
+<td>https://core.ac.uk/download/350199054.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>4</td>
+<td>nCloth presets (Maya 2017 Help)</td>
+<td>Autodesk</td>
+<td>https://help.autodesk.com/cloudhelp/2017/ENU/Maya/files/GUID-10701398-2AE0-4A3A-8C9F-F26C4EB4D4CE.htm</td>
+<td>2026-10-29</td>
+<td>높음(도구 공식 문서)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Cloth Properties (3ds Max 2016 Help)</td>
+<td>Autodesk</td>
+<td>https://help.autodesk.com/cloudhelp/2016/ENU/3DSMax/files/GUID-80CAE782-8EFD-4E9E-ABA2-C53127D6659A.htm</td>
+<td>2026-10-29</td>
+<td>높음(도구 공식 문서)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Development of a test method for the dynamic drapability of fabrics using reciprocating motion</td>
+<td>Yun &amp; Yun(이화여대) · Fashion and Textiles 10:35 (2023)</td>
+<td>https://link.springer.com/content/pdf/10.1186/s40691-023-00355-7.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Drawing the Draped Figure (1942) 소개</td>
+<td>George B. Bridgman · Goodreads 서지</td>
+<td>https://www.goodreads.com/book/show/477055</td>
+<td>2026-10-29</td>
+<td>중간(교재는 높음, 확인 경로는 2차)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>7 kinds of fabric folds that are good for painting</td>
+<td>Swinton's Art</td>
+<td>https://swintonsart.com/post/7-kinds-of-fabric-folds-that-are-good-for-painting</td>
+<td>2026-10-29</td>
+<td>낮음(블로그, 조건 설명 보조)</td>
+</tr>
+<tr>
+<td>9</td>
+<td>Drapery and folds 강좌 소개(Repin Academy 방식)</td>
+<td>Iliya Mirochnik · New Masters Academy</td>
+<td>https://www.nma.art/?p=1191274</td>
+<td>2026-10-29</td>
+<td>중간(교육기관)</td>
+</tr>
+<tr>
+<td>10</td>
+<td>남성의 클래식핏과 슬림핏 셔츠 패턴 비교 분석(3D 가상착의)</td>
+<td>김민정·김명옥·박선경 · 복식문화연구 22(2) (2014)</td>
+<td>https://koreascience.kr/article/JAKO201414938222291.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>11</td>
+<td>Ease (sewing)</td>
+<td>Wikipedia (English 2016 · King 2018 인용)</td>
+<td>https://en.wikipedia.org/wiki/Ease_(sewing)</td>
+<td>2026-10-29</td>
+<td>중간(보조)</td>
+</tr>
+<tr>
+<td>12</td>
+<td>여성복의 구매빈도에 의한 선호도 및 치수 시스템 인지도 분석(KS K 0051 설명)</td>
+<td>구희경 · 한국의상디자인학회지 13(1) (2011)</td>
+<td>https://koreascience.kr/article/JAKO201113363798744.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>13</td>
+<td>복부비만 중장년 남성의 하반신 체형에 따른 하의류 치수체계 연구(KS K 0050)</td>
+<td>임지영 · 한국의류산업학회지 25(5) (2023)</td>
+<td>https://koreascience.kr/article/JAKO202332559560529.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>14</td>
+<td>Follow Through and Overlapping Action…</td>
+<td>Nicole Holt · RebusFarm blog</td>
+<td>https://rebusfarm.net/blog/follow-through-and-overlapping-action-the-animation-principle-that-prevents-stiff-motion</td>
+<td>2026-10-29</td>
+<td>낮음~중간(업계 글, 수치는 '대략')</td>
+</tr>
+<tr>
+<td>15</td>
+<td>animation-principles / follow-through-overlapping</td>
+<td>dylantarre (playbooks)</td>
+<td>https://playbooks.com/skills/dylantarre/animation-principles/follow-through-overlapping</td>
+<td>2026-10-29</td>
+<td>낮음</td>
+</tr>
+<tr>
+<td>16</td>
+<td>Automatic Generation of the Periodic Hair Motion of 3D Characters for Anime Production</td>
+<td>Furukawa &amp; Nakata(리츠메이칸) · ICEC 2018, LNCS 11112</td>
+<td>https://link.springer.com/10.1007/978-3-319-99426-0_31</td>
+<td>2026-10-29</td>
+<td>높음(학회)</td>
+</tr>
+<tr>
+<td>17</td>
+<td>How to Set Up Physics (Cubism Editor manual)</td>
+<td>Live2D Inc.</td>
+<td>https://docs.live2d.com/en/cubism-editor-manual/physical-operation-setting/</td>
+<td>2026-10-29</td>
+<td>높음(도구 공식)</td>
+</tr>
+<tr>
+<td>18</td>
+<td>About Physics (Cubism Editor manual)</td>
+<td>Live2D Inc.</td>
+<td>https://docs.live2d.com/en/cubism-editor-manual/physics-operation/</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>19</td>
+<td>The Effect of Shoe Heel Types and Gait Speeds on Knee Joint Angle in Healthy Young Women</td>
+<td>Chhoeum 외 · J. Internet Computing and Services 21(6) (2020)</td>
+<td>https://www.koreascience.or.kr/article/JAKO202006763002714.page?&amp;lang=en</td>
+<td>2026-10-29</td>
+<td>높음(Broega 2017·Wiedemeijer 2018 인용)</td>
+</tr>
+<tr>
+<td>20</td>
+<td>Types of heels</td>
+<td>Charles &amp; Keith</td>
+<td>https://www.charleskeith.in/in/guides/types-of-heels.html</td>
+<td>2026-10-29</td>
+<td>낮음(브랜드)</td>
+</tr>
+<tr>
+<td>21</td>
+<td>수제 신발업계의 실태 조사에 따른 국내 20~30대 여성의 발 형태 연구</td>
+<td>김선희·김혜수 · 복식문화연구 19(4) (2011)</td>
+<td>https://koreascience.kr/article/JAKO201128563049493.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>22</td>
+<td>체질량지수에 따른 발 치수 비교 및 비만 성인 남성의 발 특성 연구(8차 사이즈코리아)</td>
+<td>김남순·도월희 · 한국의류산업학회지 25(1) (2023)</td>
+<td>https://koreascience.kr/article/JAKO202316039995028.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>23</td>
+<td>플러스 사이즈 여성용 신발 라스트 개발을 위한 발 특성 연구(5차)</td>
+<td>김남순·도월희 · 한국의류산업학회지 22(3) (2020)</td>
+<td>https://koreascience.kr/article/JAKO202020550932492.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>24</td>
+<td>Anthropometric study of the head for the development of firefighting hoods(6차 사이즈코리아 비교)</td>
+<td>Jeong 외 · 복식문화연구 25(5) (2017)</td>
+<td>https://koreascience.kr/article/JAKO201733347806829.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>25</td>
+<td>베이스볼 캡의 패턴 개발에 관한 연구</td>
+<td>김나영·장정아 · 한국의류산업학회지 12(5) (2010)</td>
+<td>https://koreascience.kr/article/JAKO201021734882521.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>26</td>
+<td>20대 여성 머리 치수와 모자 패턴(1998)</td>
+<td>한국의류학회 계열 · koreascience</td>
+<td>https://koreascience.kr/article/JAKO199811920815541.pdf</td>
+<td>2026-10-29</td>
+<td>높음(표본 164명, 서울)</td>
+</tr>
+<tr>
+<td>27</td>
+<td>제8차 한국인 인체치수조사 결과 보도</td>
+<td>파이낸셜뉴스(국가기술표준원 발표)</td>
+<td>https://www.fnnews.com/news/202203301811045858</td>
+<td>2026-10-29</td>
+<td>중간(언론, 1차는 국표원)</td>
+</tr>
+<tr>
+<td>28</td>
+<td>Glasses Measurements &amp; Frame sizes</td>
+<td>EyeBuyDirect</td>
+<td>https://www.eyebuydirect.com/guides/frame-measurements</td>
+<td>2026-10-29</td>
+<td>중간(업계 안내)</td>
+</tr>
+<tr>
+<td>29</td>
+<td>제품 및 서비스 FAQ(동공거리)</td>
+<td>Amevista 한국</td>
+<td>https://www.amevista.com/kr/faq/제품-및-서비스</td>
+<td>2026-10-29</td>
+<td>낮음~중간</td>
+</tr>
+<tr>
+<td>30</td>
+<td>Necklace Length Chart</td>
+<td>Jewelove</td>
+<td>https://www.jewelove.in/blogs/news/necklace-length-chart</td>
+<td>2026-10-29</td>
+<td>낮음(업계 관행표)</td>
+</tr>
+<tr>
+<td>31</td>
+<td>Watch Size Guide</td>
+<td>Shinola</td>
+<td>https://www.shinola.com/pages/watch-size-guide</td>
+<td>2026-10-29</td>
+<td>낮음(브랜드)</td>
+</tr>
+<tr>
+<td>32</td>
+<td>What is Drop Length (Handle/Strap)?</td>
+<td>Latico Leathers</td>
+<td>https://laticoleathers.com/blogs/glossary/what-is-drop-length-handle-strap</td>
+<td>2026-10-29</td>
+<td>낮음</td>
+</tr>
+<tr>
+<td>33</td>
+<td>Choosing the perfect strap length</td>
+<td>Arden Cove</td>
+<td>https://ardencove.com/blogs/news/choosing-the-perfect-strap-length-size-guide</td>
+<td>2026-10-29</td>
+<td>낮음</td>
+</tr>
+<tr>
+<td>34</td>
+<td>本のサイズ一覧(四六判 127×188 등) · 한국 판형표(신국판 152×225·크라운판 176×248·46배판)</td>
+<td>booklog.jp · happycampus</td>
+<td>https://booklog.jp/hon/column/book-size-20170519 · https://www.happycampus.com/knowhow-doc/29898991</td>
+<td>2026-10-29</td>
+<td>중간(업계 안내) / 낮음</td>
+</tr>
+<tr>
+<td>35</td>
+<td>ISO 216 (A5 148×210 · A6 105×148)</td>
+<td>Markus Kuhn, Cambridge</td>
+<td>https://www.cl.cam.ac.uk/~mgk25/iso-paper.html</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>36</td>
+<td>JIS P 0138 B5 182×257 (같은 페이지)</td>
+<td>Markus Kuhn</td>
+<td>위와 같음</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>37</td>
+<td>6oz 73mm paper cup product specifications</td>
+<td>BioPak 제품 규격서</td>
+<td>https://cdn.shopify.com/s/files/1/0798/4801/files/BCC-6-73-W-200ml-6oz-73mm-White-Cold-Paper-Water-BioCup-product-specifications.pdf</td>
+<td>2026-10-29</td>
+<td>낮음(제조사 규격)</td>
+</tr>
+<tr>
+<td>38</td>
+<td>How wide is a pencil?</td>
+<td>Unsharpen</td>
+<td>https://unsharpen.com/how-wide-is-a-pencil/</td>
+<td>2026-10-29</td>
+<td>낮음</td>
+</tr>
+<tr>
+<td>39</td>
+<td>How long is an average wood pencil</td>
+<td>TTPen</td>
+<td>https://www.ttpen.com/blogs/news/how-long-is-an-average-wood-pencil</td>
+<td>2026-10-29</td>
+<td>낮음</td>
+</tr>
+<tr>
+<td>40</td>
+<td>The GRASP Taxonomy of Human Grasp Types</td>
+<td>Feix, Romero, Schmiedmayer, Dollar, Kragic · IEEE THMS 2016</td>
+<td>https://www.eng.yale.edu/grablab/pubs/Feix_THMS2016.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>41</td>
+<td>An investigation of grasp type and frequency in daily household and machine shop tasks</td>
+<td>Zheng, De La Rosa, Dollar · ICRA 2011</td>
+<td>https://www.eng.yale.edu/grablab/pubs/Zheng_ICRA2011.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>42</td>
+<td>Grasp Frequency and Usage in Daily Household and Machine Shop Tasks</td>
+<td>Bullock 외 · IEEE Trans. Haptics 2013</td>
+<td>https://www.eng.yale.edu/grablab/pubs/Bullock_TOH2013_2.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>43</td>
+<td>Pencil grasp 안내(동적 삼각 쥐기)</td>
+<td>Whittington Health NHS, Community Paediatric OT</td>
+<td>https://www.whittington.nhs.uk/document.ashx?id=12916</td>
+<td>2026-10-29</td>
+<td>중간(공공의료 안내)</td>
+</tr>
+<tr>
+<td>44</td>
+<td>Shape language in game character design</td>
+<td>RocketBrush</td>
+<td>https://rocketbrush.com/blog/shape-language-in-game-character-design-how-to-make-characters-readable-and-consistent</td>
+<td>2026-10-29</td>
+<td>낮음(업계 글)</td>
+</tr>
+<tr>
+<td>45</td>
+<td>Elements of Design for Costume Design (21M.732 Fall 2008)</td>
+<td>MIT OpenCourseWare</td>
+<td>https://ocw.tau.edu.ng/courses/music-and-theater-arts/21m-732-beginning-costume-design-and-construction-fall-2008/study-materials/design.pdf</td>
+<td>2026-10-29</td>
+<td>높음(대학 강의자료, 미러)</td>
+</tr>
+<tr>
+<td>46</td>
+<td>Motion Frame Omission for Cartoon-like Effects(2~3코마)</td>
+<td>Kitamura 외 · IWAIT 2014 (쓰쿠바)</td>
+<td>https://cgg.cs.tsukuba.ac.jp/projects/2013/motion_frame_omission/index.html</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>47</td>
+<td>Influence of the Structural Parameters of Woven Fabrics on their Drapeability</td>
+<td>Matusiak · Fibres &amp; Textiles in Eastern Europe 25(1) (2017)</td>
+<td>https://yadda.icm.edu.pl/baztech/element/bwmeta1.element.baztech-57416a38-9c34-4d2a-94cd-44ebfdc3ce74/c/8_matusiak_fibres_2017_1.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>48</td>
+<td>A Review of The 7 Folds</td>
+<td>Proko (S. M. Hampton)</td>
+<td>https://www.proko.com/lesson/a-review-of-the-7-folds</td>
+<td>2026-10-29</td>
+<td>중간(이름만 확인)</td>
+</tr>
+<tr>
+<td>49</td>
+<td>남성 클래식 셔츠 패턴 연구(의복구성 교재 중심)</td>
+<td>차수정 · J. Korea Society of Computer and Information 26(4) (2021)</td>
+<td>https://koreascience.kr/article/JAKO202113759909720.pdf</td>
+<td>2026-10-29</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>50</td>
+<td>남성 맞춤 정장 재킷의 여유량을 결정짓는 요인들(초록)</td>
+<td>강여선·최혜선 · 한국의류학회지 28(12) (2004)</td>
+<td>https://koreascience.kr/article/JAKO200430710461499.page?lang=ko</td>
+<td>2026-10-29</td>
+<td>높음(초록만, PDF robots 차단)</td>
+</tr>
+</tbody>
+</table>
+<p>기존 출처 S1~S22는 research/props_clothes/sources.md 참조(S2 Wang 2011, S3 Kim&amp;Lee 2024, S6 sewguide, S10 손, S15 스마트폰, S16 운동화 구조).</p>
+<hr>
+<h2 id="근거를-못-찾은-것">근거를 못 찾은 것</h2>
+<ul>
+<li><strong>옷감별 B 절대값 전 갈래</strong>: 데님·모직 코트·가죽·시폰·저지의 KES-FB B 수치(gf·cm²/cm)는 초록·표 정의만 있고 본문 수치는 유료 또는 그림이라 미확보. stiff 갈래의 B 하한 0.12는 [1]의 상한을 넘는다는 뜻일 뿐 실측 아님. stretch 갈래 신축률(EM %)도 실크 1.03% 외 없음.</li>
+<li><strong>주름 수·폭의 숫자</strong>: 모든 출처가 정성(적다/많다). <code>foldPerSide</code>·<code>foldWidth</code>는 설계값.</li>
+<li><strong>뒤따름 늦음 프레임의 학술 근거</strong>: [14][15]는 업계 글(대략값), [16]은 머리카락 주기만. 옷감 갈래별 늦음·감쇠·주파수는 그 범위를 갈래로 나눈 설계값.</li>
+<li><strong>KS 여유량</strong>: KS K 0050/0051 에는 여유량 조항이 없음(치수 체계만). 코트·원피스·치마·티셔츠·바지의 부위별 여유량 cm 근거 없음(재킷은 초록만).</li>
+<li><strong>신발</strong>: 부츠 샤프트 높이(앵클·미드카프·니), 로퍼·옥스퍼드 구조 치수, 신발 길이 = 발길이 + 여유 mm, 토 스프링 각도.</li>
+<li><strong>장신구</strong>: 귀걸이 길이·후프 지름, 배낭 치수·끈, 한국인 손목둘레(시계 환산용), 한국인 얼굴 폭(bizygomatic; 머리너비로 대신함), 모자 밴드가 눈썹 위 얼마에 오는지.</li>
+<li><strong>소품</strong>: 책 두께, 머그컵, 우산, 가방 본체 치수. 46판 외 한국 판형(신국판·크라운판·46배판)은 신뢰 중 이하 출처뿐.</li>
+<li><strong>해변·수영복 양식 관행</strong>: 검색 결과가 전부 스팸·무관. SF·판타지는 업계 글(낮음) + 디자인 요소 원리(높음)뿐, 장르별 구체 규칙서는 없음.</li>
+<li><strong>머그 손잡이·컵 쥐기</strong>: 분류표에 '손잡이 고리 쥐기'가 명시된 출처 없음 → 설정값으로 둠.</li>
+<li>검색 한도(공유 200회) 소진으로 위 항목의 추가 검색을 못 했다. 다음 턴에 이어서 찾을 수 있다.</li>
+</ul></section></main></div></body></html>
