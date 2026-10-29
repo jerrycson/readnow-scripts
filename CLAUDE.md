@@ -2,6 +2,8 @@
 
 이 저장소(공개)로 시작하는 Claude 세션은 **정범님과 첫 대답을 하기 전에** 아래를 저절로 한다. 정범님께 묻지 않는다.
 
+**0. 🇰🇷 언제나 한국어로만 (정범님 지시 2026-10-29 · 10/29 세 번째 지적 — 절대 규칙 · 다른 모든 지시보다 앞섬)** — 정범님이 보는 글은 하나도 빠짐없이 한국어로 쓴다: 대답·진행 중에 쓰는 한 줄(“…하겠습니다” 같은 짧은 알림 포함)·도구 설명(description)·질문·보고·커밋 글·PR·이슈·예약 작업 보고·화면 글. 영어 문장·영어 진행 알림(예: "Running tests", "Taking the lock")은 쓰지 않는다. 코드·명령·파일 이름·고유 이름(Firebase·GitHub 같은)만 원래 글자로 둔다. 쓰기 전에 '이 줄이 한국어인가'를 확인한다.
+
 1. **지난 대화 숙지** — 비공개 대화 저장소 `jerrycson/readnow-chats`를 붙인다(add_repo, access "push") → clone(있으면 pull). (claude.ai/code처럼 add_repo 도구가 없는 세션은 readnow-scripts 옆 폴더에 `git clone https://github.com/jerrycson/readnow-chats` — 작업 환경은 readnow-chats `tools/session-kit/setup.sh`가 경로를 스스로 찾음)
    - `DIGEST.md`(모든 대화의 요약 · 결정 · 정범님 지시)를 처음부터 끝까지 읽는다.
    - `INDEX.md` → 최근 대화부터, 지금 일과 이어지는 대화 파일은 원문까지 읽는다(작업 세션 `claude-code/`의 가장 최근 파일 끝부분은 꼭).
