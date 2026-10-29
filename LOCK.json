@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "daily",
+ "what": "🔬 정밀 점검 2회차: 클라우드 y24 err 정리 · 웹앱 메모리(상품 전체 보기 잔여·mem 기록 S.mk) 판 내기",
+ "since": "2026-10-29T13:03:53Z",
+ "beat": "2026-10-29T13:03:53Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.248·1.89.147·0.35.63 — 쓰기 감시 모든 칸 · 주문 읽기 3분 제한 (e48da8d)",
   "at": "2026-10-29T13:02:56Z"
  },
- "host": null
+ "host": "vm"
 }
