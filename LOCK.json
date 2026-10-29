@@ -1,12 +1,12 @@
 {
- "holder": "friend",
- "what": "책방 친구 P0 배포 — lib.rs dpr 고침 push(프로그램 0.1.1)",
- "since": "2026-10-29T12:17:19Z",
- "beat": "2026-10-29T12:17:19Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "chat",
-  "done": "main 합치기 끝 — 웹앱 1.78.245 · 수집기 1.89.144 · 클라우드 0.35.60 · 출고 공용 0.7.5 (930c0ae)",
-  "at": "2026-10-29T12:16:37Z"
+  "who": "friend",
+  "done": "P0 배포 da59823(웹앱 1.78.244 · friend 0.13.0 · 클라우드 0.35.59 · 프로그램 0.1.1) + 윈도우 빌드 고침 6eb42c5(lib.rs dpr)",
+  "at": "2026-10-29T12:18:10Z"
  }
 }
