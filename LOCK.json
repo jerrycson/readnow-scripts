@@ -1,8 +1,8 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "chat",
+ "what": "빌드 도구 경로 독립(claude.ai/code 준비)",
+ "since": "2026-10-29T10:11:26Z",
+ "beat": "2026-10-29T10:11:26Z",
  "ask": null,
  "last": {
   "who": "chat",
