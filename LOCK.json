@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "friend",
+ "what": "책방 친구 급한 고침 — 연결 카드 끌기·접기·휴대폰 40%(FRIEND_PIN 0.13.1)",
+ "since": "2026-10-29T14:45:00Z",
+ "beat": "2026-10-29T14:45:00Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.252 — 가게 성적 한 주 전 비교 (2c084b9)",
   "at": "2026-10-29T13:54:39Z"
  },
- "host": null
+ "host": "vm"
 }
