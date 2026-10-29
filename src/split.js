@@ -2,7 +2,7 @@
 //  ① Tampermonkey에 넣는 작은 본체(readnow-collector.user.js) + ② GitHub에 올리는 모듈 파일 5개로 나눔.
 // 관문: 모듈 내용을 차례로 이으면 원본의 코드와 글자 하나까지 같아야 함 (같은 코드 = 같은 기록). 다르면 멈춤.
 const fs = require('fs'); const path = require('path');
-const SRC = process.argv[2] || '/home/claude/w/readnow-collector.user.js'; const OUT = process.argv[3] || '/home/claude/w/out';
+const SRC = process.argv[2] || require('path').join(__dirname, 'readnow-collector.user.js'); const OUT = process.argv[3] || require('path').join(__dirname, 'out'); /* (10/29) 이 파일이 있는 폴더 = 작업 폴더(예전엔 /home/claude/w 고정 → claude.ai/code 등 다른 경로에서 엉뚱한 곳에 씀) */
 const s = fs.readFileSync(SRC, 'utf8');
 const ver = (s.match(/\/\/ @version\s+([\d.]+)/) || [])[1]; if (!ver) throw new Error('@version 없음');
 const hEnd = s.indexOf('// ==/UserScript==\n') + '// ==/UserScript==\n'.length; const header = s.slice(0, hEnd); const body = s.slice(hEnd);

@@ -2,7 +2,7 @@
 
 이 저장소(공개)로 시작하는 Claude 세션은 **정범님과 첫 대답을 하기 전에** 아래를 저절로 한다. 정범님께 묻지 않는다.
 
-1. **지난 대화 숙지** — 비공개 대화 저장소 `jerrycson/readnow-chats`를 붙인다(add_repo, access "push") → clone(있으면 pull).
+1. **지난 대화 숙지** — 비공개 대화 저장소 `jerrycson/readnow-chats`를 붙인다(add_repo, access "push") → clone(있으면 pull). (claude.ai/code처럼 add_repo 도구가 없는 세션은 readnow-scripts 옆 폴더에 `git clone https://github.com/jerrycson/readnow-chats` — 작업 환경은 readnow-chats `tools/session-kit/setup.sh`가 경로를 스스로 찾음)
    - `DIGEST.md`(모든 대화의 요약 · 결정 · 정범님 지시)를 처음부터 끝까지 읽는다.
    - `INDEX.md` → 최근 대화부터, 지금 일과 이어지는 대화 파일은 원문까지 읽는다(작업 세션 `claude-code/`의 가장 최근 파일 끝부분은 꼭).
    - 대화 중 지난 일을 물으시거나 관련 주제가 나오면 그 저장소를 grep으로 찾아 원문을 확인하고 답한다(짐작하지 않음).
