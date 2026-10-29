@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "friend",
+ "what": "⑤ 화풍 렌더링 3묶음 배포",
+ "since": "2026-10-29T23:25:48Z",
+ "beat": "2026-10-29T23:25:48Z",
  "ask": null,
  "last": {
   "who": "friend",
   "done": "③ 움직임 2묶음 배포 멈춤: t3 2회차 tW1(웹앱 '함께 산 상품 비동기')만 ✗ · 1·3회차 모두 ✓ · 올린 것 없음",
   "at": "2026-10-29T23:25:45Z"
  },
- "host": null
+ "host": "vm-style"
 }
