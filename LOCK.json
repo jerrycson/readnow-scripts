@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "⑤ 화풍 커밋·push",
- "since": "2026-10-29T19:21:14Z",
- "beat": "2026-10-29T19:43:03Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "friend",
-  "done": "① 얼굴 1묶음 배포 7b6120b · 웹앱 1.78.259 · friend 0.15.4",
-  "at": "2026-10-29T19:20:52Z"
+  "done": "⑤ 화풍 렌더링 1묶음 · 책방 친구 0.15.5 · 웹앱 1.78.260 · 3caee49",
+  "at": "2026-10-29T19:43:17Z"
  },
- "host": "vm-style"
+ "host": null
 }
