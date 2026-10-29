@@ -1,17 +1,13 @@
 {
- "holder": "friend",
- "what": "얼굴 1묶음: 커밋·push",
- "since": "2026-10-29T18:57:50Z",
- "beat": "2026-10-29T19:20:07Z",
- "ask": {
-  "who": "friend",
-  "why": "판 내기 기다림: 책방 친구 ④ 손·발·크기·화면 1+2묶음 배포",
-  "at": "2026-10-29T18:59:29Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "friend",
-  "done": "③ 움직임 1묶음 d7b5a06 · 웹앱 1.78.258 · friend 0.15.3",
-  "at": "2026-10-29T18:57:38Z"
+  "done": "① 얼굴 1묶음 배포 7b6120b · 웹앱 1.78.259 · friend 0.15.4",
+  "at": "2026-10-29T19:20:52Z"
  },
- "host": "vm-face"
+ "host": null
 }
