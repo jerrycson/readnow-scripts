@@ -3174,6 +3174,66 @@
      "now": 18
     }
    }
+  },
+  {
+   "id": "firebase-firestore-pricing-2026",
+   "kind": "공식 문서",
+   "authors": "Google Firebase",
+   "year": 2026,
+   "title": "Cloud Firestore — Pricing (writes · storage · reads)",
+   "venue": "Firebase 문서",
+   "url": "https://firebase.google.com/docs/firestore/pricing",
+   "finding": "Firestore 비용은 문서 쓰기·읽기 횟수와 저장 용량(GB·월)에 비례한다. 쓰기 10만 번 약 0.18달러, 저장 1GB·월 약 0.18달러 — 큰 자료를 쓸수록 '한 번 쓴 뒤 영원히 남는 저장 비용'이 매달 쌓인다.",
+   "use": "♾ 무한 도서 정보 국중 날짜 차례가 하루 74.7만 번(약 1.35달러/일) · 하루 약 1GB를 ext_basic에 적어 왔음(10/29 정밀 점검 실측 249만 건·3.2GB). 수집기 1.89.145가 ext_pool로 분리, 범위 결정은 정범님께(readnow-chats reports/EXT_BASIC_FLOOD_2026-10-29.md).",
+   "one": "쓰기와 저장은 모두 돈 — 쓸수록 매달 남는 비용",
+   "sent": "Firestore는 문서 쓰기 횟수와 저장 용량에 따라 비용이 매겨지므로, 쓰임이 없는 자료를 대량으로 적어 두는 것은 한 번의 쓰기 비용에 더해 매달 저장 비용을 남긴다.",
+   "rel": "국중 ISBN 전량 수집의 범위를 정할 근거 · 쓰기 감시(write_watch)가 모든 칸을 봐야 하는 까닭.",
+   "cat": "웹앱·기술",
+   "topic": [
+    "비용",
+    "Firestore"
+   ],
+   "prio": {
+    "연구": 10,
+    "명망": 20,
+    "사업": 16,
+    "웹앱": 18,
+    "효과": 18,
+    "합": 82
+   },
+   "addedBy": "🔬 매일 정밀 점검(Fable) 2026-10-29",
+   "at": "2026-10-29",
+   "applied": "수집기 1.89.145 · 웹앱 1.78.246 · 클라우드 0.35.61"
+  },
+  {
+   "id": "firebase-firestore-in-query-limit",
+   "kind": "공식 문서",
+   "authors": "Google Firebase",
+   "year": 2026,
+   "title": "Cloud Firestore — Perform simple and compound queries (in · array-contains-any 최대 30개)",
+   "venue": "Firebase 문서",
+   "url": "https://firebase.google.com/docs/firestore/query-data/queries#in_not-in_and_array-contains-any",
+   "finding": "in 쿼리는 한 번에 최대 30개 값을 받아 그 문서들만 돌려준다 — 컬렉션 전체를 훑지 않고 '필요한 열쇠의 문서만' 받는 길.",
+   "use": "웹앱 1.78.246 mkSync: 기본 정보(ext_basic)를 처음 받을 때 통째 훑기(249만 건) 대신 판매 중 상품 열쇠 30개씩 documentId in 으로만 받음(1,000~2,600번 읽기 한 번).",
+   "one": "필요한 열쇠만 30개씩 물어 전체 훑기를 피함",
+   "sent": "Firestore의 in 쿼리는 최대 30개 값으로 그 문서들만 가져오므로, 클라이언트는 컬렉션 전체를 받지 않고 자기가 쓰는 열쇠의 문서만 받을 수 있다.",
+   "rel": "'모든 기기가 전체 자료를 든다' 구조(MEM_ROOT)를 깨는 첫 도구 — 상품 목록·시장 지표에도 같은 방식 적용 가능.",
+   "cat": "웹앱·기술",
+   "topic": [
+    "메모리",
+    "Firestore"
+   ],
+   "prio": {
+    "연구": 10,
+    "명망": 20,
+    "사업": 12,
+    "웹앱": 20,
+    "효과": 18,
+    "합": 80
+   },
+   "addedBy": "🔬 매일 정밀 점검(Fable) 2026-10-29",
+   "at": "2026-10-29",
+   "applied": "웹앱 1.78.246"
   }
  ]
 }
