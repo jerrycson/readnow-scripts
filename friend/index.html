@@ -22,6 +22,17 @@ html.rn-fhide body>*{visibility:hidden!important}
 .fr-card h4{margin:0 0 6px;font-size:15px}.fr-card p{margin:4px 0}.fr-card small{color:var(--sub)}.fr-card .row{display:flex;gap:6px;margin-top:8px}
 .fr-card input{flex:1;min-width:0;font:600 18px/1.2 monospace;letter-spacing:2px;text-transform:uppercase;padding:6px 8px;border:1px solid #C9D3D0;border-radius:8px}
 .fr-card button{border:0;border-radius:8px;background:#2F5D50;color:#fff;padding:6px 12px;font-weight:700}.fr-card button.ghost{background:#EEF3F1;color:#2F5D50}.fr-card .x{position:absolute;right:8px;top:6px;background:none;color:var(--sub);padding:2px 6px}.fr-card.err{border-color:var(--red)}.fr-card .bad{color:var(--red);font-weight:700}
+/* (10/29 급한 일) 연결 카드: 머리줄 끌기 · ▾ 접기(알약) · 휴대폰 폭 40% */
+.fr-card .fr-hd{display:flex;align-items:center;gap:6px;margin:-12px -14px 6px;padding:5px 6px 5px 12px;background:#EEF3F1;border-bottom:1px solid #DCE3E0;border-radius:12px 12px 0 0;cursor:move;touch-action:none;user-select:none;-webkit-user-select:none;font-size:13px;color:#2F5D50}
+.fr-card .fr-hd .grip{opacity:.6}.fr-card .fr-hd .sp{flex:1}
+.fr-card .fr-hd .hb{background:none;color:#2F5D50;padding:3px 9px;border-radius:6px;font-size:13px;line-height:1.2;font-weight:700;border:1px solid #C9D6D1}.fr-card .fr-hd .hb:hover{background:#DCE8E3}
+.fr-card .fr-pill{display:none}
+.fr-card.fold{width:auto;padding:0;border:0;background:none;box-shadow:none;max-height:none;overflow:visible}
+.fr-card.fold .fr-hd,.fr-card.fold .fr-bd{display:none}
+.fr-card.fold .fr-pill{display:inline-flex;align-items:center;gap:4px;border:2px solid #2F5D50;background:#fff;color:#2F5D50;border-radius:20px;padding:7px 14px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.22);cursor:pointer;touch-action:none;white-space:nowrap}
+.fr-card.err.fold .fr-pill{border-color:#B0322A;color:#B0322A}
+.fr-card .fr-how{margin:4px 0}.fr-card .fr-how summary{cursor:pointer;color:#5B6B66;font-size:12.5px}
+@media (max-width:480px){.fr-card{right:10px;bottom:10px;width:calc(100vw - 20px);max-height:40vh;overflow:auto;padding:10px 12px;font-size:13px;line-height:1.4}.fr-card .fr-hd{margin:-10px -12px 6px;position:sticky;top:-10px;z-index:1}.fr-card h4{font-size:14px}.fr-card input{font-size:16px}.fr-card .row{margin-top:6px}}
 </style>
 </head>
 <body>
@@ -29,8 +40,8 @@ html.rn-fhide body>*{visibility:hidden!important}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="readnow-friend-boot.js?v=0.13.0"></script>
-<script src="readnow-friend.js?v=0.13.0"></script>
+<script src="readnow-friend-boot.js?v=0.13.1"></script>
+<script src="readnow-friend.js?v=0.13.1"></script>
 <script>RNF_START();</script>
 </body>
 </html>

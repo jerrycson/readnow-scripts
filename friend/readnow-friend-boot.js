@@ -104,19 +104,44 @@ window.__rnFriendCmd = function (cmd, arg) { if (cmd === 'geom') { FR.geom = arg
   return false; };
 function frCard(kind, arg) { let c = document.getElementById('fr_card'); if (kind && c && FR.card === kind && FR.cardArg === arg) return; FR.card = kind; FR.cardArg = arg; if (!kind) { if (c) c.remove(); FR.rk = ''; return; }
   if (!c) { c = document.createElement('div'); c.id = 'fr_card'; c.className = 'fr-card'; document.body.appendChild(c);
-    c.addEventListener('click', (e) => { if (e.target.closest('[data-frgo]')) frCodeGo(); else if (e.target.closest('[data-frx]')) { FR.cardNo = FR.card; frCard(null); } else if (e.target.closest('[data-frweb]')) frOpenUrl(RNF_APP()); });
-    c.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'fr_code') frCodeGo(); }); }
+    c.addEventListener('click', (e) => { if (e.target.closest('[data-frgo]')) frCodeGo(); else if (e.target.closest('[data-frx]')) { FR.cardNo = FR.card; frCard(null); } else if (e.target.closest('[data-frweb]')) frOpenUrl(RNF_APP()); else if (e.target.closest('[data-frfold]')) frCardFold(true); else if (e.target.closest('[data-frunfold]') && !(c._dragAt && performance.now() - c._dragAt < 400)) frCardFold(false); });
+    c.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'fr_code') frCodeGo(); }); frCardDragBind(c); }
   const codeRow = '<div class="row"><input id="fr_code" maxlength="9" placeholder="ABCD-EFGH" autocomplete="off" spellcheck="false" aria-label="연결 코드 8자리"><button type="button" data-frgo="1" title="이 코드로 연결 — 같은 계정·같은 기기 이름으로 로그인">연결</button></div>';
-  const how = `<p><small>① 이 ${IS_MOBILE_DEV ? '휴대폰' : 'PC'}의 크롬에서 리드나우 웹앱을 엶 → ② ⚙ 설정 › <b>🐾 책방 친구</b> 카드의 <b>🖥 이 기기에 책방 친구 프로그램 연결</b> → ③ 저절로 이 프로그램이 열리며 연결돼요. 안 열리면 웹앱에 나온 <b>연결 코드 8자리</b>를 아래에 넣어요(10분 안 · 한 번만).</small></p>`;
+  const how0 = `<small>① 이 ${IS_MOBILE_DEV ? '휴대폰' : 'PC'}의 크롬에서 리드나우 웹앱을 엶 → ② ⚙ 설정 › <b>🐾 책방 친구</b> 카드의 <b>🖥 이 기기에 책방 친구 프로그램 연결</b> → ③ 저절로 이 프로그램이 열리며 연결돼요. 안 열리면 웹앱에 나온 <b>연결 코드 8자리</b>를 아래에 넣어요(10분 안 · 한 번만).</small>`;
+  const how = frNarrow() ? `<details class="fr-how"><summary>자세히 — 연결하는 법</summary>${how0}</details>` : `<p>${how0}</p>`; /* (10/29 급한 일) 휴대폰 폭이면 안내 글은 접어 둠 — 카드가 화면 40%를 넘지 않게 */
   c.classList.toggle('err', kind === 'err');
-  c.innerHTML = kind === 'pair' ? `<h4>🐾 책방 친구 — 연결이 필요해요</h4>${how}${codeRow}<p><button type="button" class="ghost" data-frweb="1" title="기본 브라우저(크롬)로 리드나우 웹앱 열기">🌐 웹앱 열기</button></p>`
+  const pill = kind === 'busy' ? '🔐 연결하는 중…' : kind === 'ok' ? '✓ 연결됨' : kind === 'err' ? '⚠ 연결 실패 — 펼치기' : kind === 'pair' || kind === 'nodev' ? '🐾 연결하기' : '🐾 책방 친구';
+  const body = kind === 'pair' ? `<h4>${IS_MOBILE_DEV ? '아직 연결 전이에요 — 아래 칸에 코드를 넣거나 웹앱 단추를 누르세요' : '🐾 책방 친구 — 연결이 필요해요'}</h4>${how}${codeRow}<p><button type="button" class="ghost" data-frweb="1" title="기본 브라우저(크롬)로 리드나우 웹앱 열기">🌐 웹앱 열기</button></p>`
     : kind === 'busy' ? '<h4>🔐 연결하는 중…</h4><p><small>클라우드에서 같은 계정의 로그인 열쇠를 받고 있어요(몇 초).</small></p>'
     : kind === 'ok' ? `<h4>✓ 연결됨 — 기기 ${esc(arg || '')}</h4><p><small>캐릭터를 불러와요. 다음부터는 켜기만 하면 저절로 로그인돼요.</small></p>`
     : kind === 'err' ? `<h4 class="bad">⚠ 연결 실패</h4><p class="bad">${esc(String(arg || '').slice(0, 220))}</p><p><small>${/지났|사용한|맞지 않음|코드/.test(String(arg)) ? '웹앱에서 연결 단추를 다시 눌러 새 코드를 받아 주세요.' : /권한|열쇠|IAM/i.test(String(arg)) ? '클라우드 권한 준비가 필요해요 — 웹앱 설명서 › 🖥 책방 친구 프로그램 › 처음 한 번(클라우드) 참고.' : '인터넷 연결을 확인하고 다시 해 보세요.'}</small></p>${codeRow}`
     : kind === 'nodev' ? `<h4>🐾 이 프로그램에 기기 이름이 없어요</h4><p><small>웹앱에서 연결 단추를 다시 눌러 주세요(그 크롬의 기기 이름을 함께 받아요).</small></p>${how}${codeRow}`
-    : kind === 'scope' ? `<button type="button" class="x" data-frx="1" title="닫기">✕</button><h4>🐾 이 기기(${esc(arg || '')})는 켜는 범위 밖이에요</h4><p><small>관리자 기기의 🐾 ⚙ 책방 친구 설정 › ② 관리자 설정 › <b>켜는 범위</b>에 이 기기 이름을 넣으면 바로 캐릭터가 나와요.</small></p>`
-    : kind === 'nochar' ? `<button type="button" class="x" data-frx="1" title="닫기">✕</button><h4>🐾 아직 캐릭터를 고르지 않았어요</h4><p><small>오른쪽 아래 <b>🐾</b>를 눌러 내 이름·캐릭터를 고르면 나와요.</small></p>` : '';
-  FR.rk = ''; if (kind === 'pair' || kind === 'err' || kind === 'nodev') setTimeout(() => { const i = document.getElementById('fr_code'); if (i) try { i.focus(); } catch (e) {} }, 50); setTimeout(frTick, 30); }
+    : kind === 'scope' ? `<h4>🐾 이 기기(${esc(arg || '')})는 켜는 범위 밖이에요</h4><p><small>관리자 기기의 🐾 ⚙ 책방 친구 설정 › ② 관리자 설정 › <b>켜는 범위</b>에 이 기기 이름을 넣으면 바로 캐릭터가 나와요.</small></p>`
+    : kind === 'nochar' ? `<h4>🐾 아직 캐릭터를 고르지 않았어요</h4><p><small>오른쪽 아래 <b>🐾</b>를 눌러 내 이름·캐릭터를 고르면 나와요.</small></p>` : '';
+  /* (10/29 급한 일 · 정범님 23:31 휴대폰) 머리줄 = 잡고 끌어 옮김 · ▾ 접기(작은 알약만) · 닫을 수 있는 카드는 ✕ — 자리·접힘은 이 기기에 기억 */
+  c.innerHTML = `<div class="fr-hd" data-frhd="1" title="잡고 끌면 옮겨져요 · ▾ = 접기"><span class="grip" aria-hidden="true">⠿</span><b>🐾 책방 친구</b><span class="sp"></span><button type="button" class="hb" data-frfold="1" title="접기 — 작은 단추만 남겨요(누르면 다시 펼침)" aria-label="접기">접기 ▾</button>${kind === 'scope' || kind === 'nochar' ? '<button type="button" class="hb" data-frx="1" title="닫기" aria-label="닫기">✕</button>' : ''}</div><div class="fr-bd">${body}</div><button type="button" class="fr-pill" data-frunfold="1" title="눌러서 펼치기 · 끌어서 옮기기">${pill}</button>`;
+  c.classList.toggle('fold', frLS(FR_CARD_FOLD) === '1'); frCardPlace(c);
+  FR.rk = ''; if ((kind === 'pair' || kind === 'err' || kind === 'nodev') && !c.classList.contains('fold') && !frNarrow()) setTimeout(() => { const i = document.getElementById('fr_code'); if (i) try { i.focus(); } catch (e) {} }, 50); /* 휴대폰은 저절로 커서를 넣지 않음(자판이 바로 올라와 화면을 덮지 않게) */ setTimeout(frTick, 30); }
+/* ── 연결 카드 옮기기·접기(10/29 급한 일) — 자리는 오른쪽·아래 끝에서 떨어진 거리(px)로 기억(화면 크기가 바뀌어도 그 모서리 기준) ── */
+const FR_CARD_POS = 'rn-fr-card-pos', FR_CARD_FOLD = 'rn-fr-card-fold';
+function frNarrow() { return Math.min(innerWidth || 9999, (screen && screen.width) || 9999) <= 480; }
+function frCardClamp(c, r, b) { const q = c.getBoundingClientRect(); const w = q.width || 0, h = q.height || 0; return [Math.round(Math.max(0, Math.min(innerWidth - w, r))), Math.round(Math.max(0, Math.min(innerHeight - h, b)))]; } /* 화면 밖으로 못 나감 */
+function frCardPlace(c) { c = c || document.getElementById('fr_card'); if (!c) return; let p = null; try { p = JSON.parse(frLS(FR_CARD_POS) || 'null'); } catch (e) {}
+  if (!p || !Number.isFinite(+p.r) || !Number.isFinite(+p.b)) { c.style.right = ''; c.style.bottom = ''; const q = c.getBoundingClientRect(); if (q.top < 0 || q.left < 0) { const [r, b] = frCardClamp(c, innerWidth - q.right, innerHeight - q.bottom); c.style.right = r + 'px'; c.style.bottom = b + 'px'; } }
+  else { const [r, b] = frCardClamp(c, +p.r, +p.b); c.style.right = r + 'px'; c.style.bottom = b + 'px'; }
+  frCardKb(); FR.rk = ''; }
+function frCardFold(on) { const c = document.getElementById('fr_card'); if (!c) return; const a = document.activeElement; if (on && a && c.contains(a)) try { a.blur(); } catch (e) {} c.classList.toggle('fold', !!on); frLS(FR_CARD_FOLD, on ? '1' : null); frCardPlace(c); setTimeout(() => { if (typeof frTick === 'function') frTick(); }, 30); }
+/* 머리줄(또는 접힌 알약)을 잡고 끌기 — 손가락·마우스 · 입력 칸·단추를 누를 땐 끌기 아님(알약은 5px 넘게 움직여야 끌기 · 아니면 펼치기) */
+function frCardDragBind(c) { let d = null;
+  c.addEventListener('pointerdown', (e) => { const h = e.target.closest && e.target.closest('[data-frhd],.fr-pill'); if (!h || (e.button && e.button !== 0)) return; if (e.target.closest('button') && !e.target.closest('.fr-pill')) return; const q = c.getBoundingClientRect(); d = { id: e.pointerId, x: e.clientX, y: e.clientY, r0: innerWidth - q.right, b0: innerHeight - q.bottom, on: 0, h }; try { h.setPointerCapture(e.pointerId); } catch (x) {} });
+  c.addEventListener('pointermove', (e) => { if (!d || e.pointerId !== d.id) return; const dx = e.clientX - d.x, dy = e.clientY - d.y; if (!d.on && Math.hypot(dx, dy) < 5) return; d.on = 1; e.preventDefault(); const [r, b] = frCardClamp(c, d.r0 - dx, d.b0 - dy); c.style.right = r + 'px'; c.style.bottom = b + 'px'; FR.rk = ''; });
+  const up = (e) => { if (!d || (e.pointerId != null && e.pointerId !== d.id)) return; try { d.h.releasePointerCapture(d.id); } catch (x) {} if (d.on) { const q = c.getBoundingClientRect(); frLS(FR_CARD_POS, JSON.stringify({ r: Math.round(innerWidth - q.right), b: Math.round(innerHeight - q.bottom) })); c._dragAt = performance.now(); setTimeout(() => { if (typeof frTick === 'function') frTick(); }, 30); } d = null; };
+  c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up); }
+/* 자판이 올라오면(휴대폰) 코드 칸이 보이게 카드를 자판 위로 · 내려가면 제자리 */
+function frCardKb() { const c = document.getElementById('fr_card'); const vv = window.visualViewport; if (!c || !vv) return; const a = document.activeElement; const kb = Math.max(0, innerHeight - vv.height - vv.offsetTop); if (a && a.id === 'fr_code' && kb > 60) { const b = parseFloat(c.style.bottom) || 0; if (b < kb + 8) { c.dataset.kbb = '1'; c.style.bottom = Math.round(kb + 8) + 'px'; } try { a.scrollIntoView({ block: 'nearest' }); } catch (e) {} } else if (c.dataset.kbb) { delete c.dataset.kbb; frCardPlace(c); } }
+try { if (window.visualViewport) { visualViewport.addEventListener('resize', frCardKb); visualViewport.addEventListener('scroll', frCardKb); } } catch (e) {}
+addEventListener('resize', () => { if (!(document.getElementById('fr_card') || {}).dataset || !document.getElementById('fr_card').dataset.kbb) frCardPlace(); });
+document.addEventListener('focusin', (e) => { if (e.target && e.target.id === 'fr_code') setTimeout(frCardKb, 350); });
 function frCodeGo() { const i = document.getElementById('fr_code'); const v = String((i && i.value) || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (v.length !== 8) { if (i) { i.style.borderColor = '#B0322A'; i.title = '연결 코드는 8자리(예: ABCD-EFGH)'; } return; } FR.xch = 1; frExchange({ code: v }); }
 /* ⚙ 창 아래 칸: 이 프로그램 · 연결 끊기 */
 function frPanHtml() { let P = null; try { P = JSON.parse(frLS('rn-fr-paired') || 'null'); } catch (e) {}
