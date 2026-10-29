@@ -13,6 +13,8 @@ SHA=$(git rev-parse HEAD); echo "기다림: $SHA"
 for i in $(seq 1 60); do git fetch -q origin +kp-out:refs/remotes/origin/kp-out 2>/dev/null || true; F=$(git show origin/kp-out:for.txt 2>/dev/null || true); [ "$F" = "$SHA" ] && break; sleep 8; done
 [ "$F" = "$SHA" ] || { echo "kp-out에 아직 안 옴(자동 작업 확인: gh run list)"; exit 2; }
 D=$(mktemp -d); git show origin/kp-out:out.enc > "$D/o.enc"; git show origin/kp-out:out.key > "$D/k.bin"
-openssl pkeyutl -decrypt -inkey "$KEY" -pkeyopt rsa_padding_mode:oaep -in "$D/k.bin" -out "$D/k"
+# (2026-10-29) out.key_<이름> = Claude Code 예약 작업 회차 열쇠(readnow-chats tools/dgkey.sh) — 맞는 쪽으로 풂
+for f in $(git ls-tree --name-only origin/kp-out | grep '^out.key_' || true); do git show "origin/kp-out:$f" > "$D/kx_${f#out.key_}.bin"; done
+ok=; for kb in "$D"/k.bin "$D"/kx_*.bin; do [ -f "$kb" ] || continue; openssl pkeyutl -decrypt -inkey "$KEY" -pkeyopt rsa_padding_mode:oaep -in "$kb" -out "$D/k" 2>/dev/null && { ok=1; break; }; done; [ -n "$ok" ] || { echo "열쇠가 맞지 않음"; exit 3; }
 openssl enc -d -aes-256-cbc -pbkdf2 -pass "file:$D/k" -in "$D/o.enc" -out "$D/o.tgz"; rm -rf kpq; mkdir -p kpq; tar xzf "$D/o.tgz" -C kpq; rm -rf "$D"
 python3 -c "import json;d=json.load(open('kpq/r1.json'));q=d.get('kpq',{});print('남은 글',q.get('left'),'· 받은 글',len(q.get('posts',[])),q.get('err') or '')"
