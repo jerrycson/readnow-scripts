@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "friend",
+ "what": "① 얼굴 1묶음 배포(fix_face)",
+ "since": "2026-10-29T18:57:50Z",
+ "beat": "2026-10-29T18:57:50Z",
  "ask": null,
  "last": {
   "who": "friend",
   "done": "③ 움직임 1묶음 d7b5a06 · 웹앱 1.78.258 · friend 0.15.3",
   "at": "2026-10-29T18:57:38Z"
  },
- "host": null
+ "host": "vm-face"
 }
