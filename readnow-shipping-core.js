@@ -8,7 +8,7 @@
 // ==========================================================================
 (function (root) {
   'use strict';
-  const VERSION = '0.7.4'; // (0.7.4) ⑦ 단독 매물 검토(aloneOn · mktOthers · kind 'alone') // 🤖 자동 발송요청 ⑦ 단독 매물(첫 페이지에 우리 매물뿐 — 견줄 다른 판매자 매물 없음)이면 검토(aloneOn · 기본 켬 · kind 'alone') // (0.7.3) 저가·YLW 매입가: 우리 등급 칸이 없으면 가장 가까운 다른 등급 매입가와 견줌(bbPick) // (0.7.2) 🤖 자동 발송요청 YLW·저가 상품 알라딘 매입가 기준(autoLowOf·bbOf) // (0.7.1) 🤖 자동 발송요청 판단(autoShipDecide · AUTO_DEFAULTS · custRisk) — 판매가 비교는 출고 카드 판매가 평가와 같은 ReadnowML.evalSale // (0.7.0) 🇰🇷 법정 공휴일 미리 넣음·택배 수거 달력(pickup off/on)·실제 발송 묶음(pickupRun)·③ 배송&구매확정전 화면 읽기(parseShippedPage — 그날 출고 = 발송일이 그날인 주문) // (0.6.0) planConfirm — 오늘 출고 확정 목록 계산(웹앱 '출고 확정' 단추와 클라우드 출고 시각 자동 확정이 같은 기준) 
+  const VERSION = '0.7.5'; // (0.7.5) 🤖 자동 발송요청 ① 권수·묶음 평균(정범님 10/29): qtyMax 20까지 권수 검토 없음 · 넘으면 bundleSize 20권 묶음(bundleRound ceil 기본)당 총액 평균 ≥ bundleWon 60,000이면 통과 · 미만 검토 · bundleOn 끄면 예전처럼 무조건 검토 · ⑧ maxItemWon·maxTotalWon(기본 0 = 안 씀 · kind 'big') · 돌려줌에 bundle{n,avg,size,won,ok,why} · minQty는 옛 이름(= qtyMax) // (0.7.4) ⑦ 단독 매물 검토(aloneOn · mktOthers · kind 'alone') // 🤖 자동 발송요청 ⑦ 단독 매물(첫 페이지에 우리 매물뿐 — 견줄 다른 판매자 매물 없음)이면 검토(aloneOn · 기본 켬 · kind 'alone') // (0.7.3) 저가·YLW 매입가: 우리 등급 칸이 없으면 가장 가까운 다른 등급 매입가와 견줌(bbPick) // (0.7.2) 🤖 자동 발송요청 YLW·저가 상품 알라딘 매입가 기준(autoLowOf·bbOf) // (0.7.1) 🤖 자동 발송요청 판단(autoShipDecide · AUTO_DEFAULTS · custRisk) — 판매가 비교는 출고 카드 판매가 평가와 같은 ReadnowML.evalSale // (0.7.0) 🇰🇷 법정 공휴일 미리 넣음·택배 수거 달력(pickup off/on)·실제 발송 묶음(pickupRun)·③ 배송&구매확정전 화면 읽기(parseShippedPage — 그날 출고 = 발송일이 그날인 주문) // (0.6.0) planConfirm — 오늘 출고 확정 목록 계산(웹앱 '출고 확정' 단추와 클라우드 출고 시각 자동 확정이 같은 기준) 
   const T = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
   const toInt = (s) => { const n = parseInt(String(s || '').replace(/[^\d-]/g, ''), 10); return isNaN(n) ? null : n; };
 
@@ -195,7 +195,11 @@
   /* ══ 🤖 자동 발송요청 판단 (정범님 10/26) — 주문확인요청에 새로 들어온 주문을 클라우드가 판단해 통과면 '발송준비시작'(발송요청)을 맡기고, 아래 조건이면 사람 검토로 남김
    *  같은 기준은 여기 한 곳 — 클라우드(판단)·웹앱(설정 화면·설명)이 같이 씀. 판매가 비교는 출고 카드 '판매가 평가' 알약과 같은 계산(readnow-ml-core.js evalSale — 주입)
    *  관리자 검토 조건(설정 app_settings/ship_auto에서 바꿈):
-   *   ① 한 주문 상품 수(권수 = 수량 합) ≥ minQty(기본 5 — 정범님 지정)
+   *   ① 권수·묶음 평균(정범님 10/29 확정 — 예전 '5권 이상이면 검토'를 바꿈): 한 주문 권수(수량 합)가 qtyMax(기본 20)까지는 권수로 검토하지 않음 · qtyMax를 넘으면 bundleSize(기본 20)권을 한 묶음으로(올림 — bundleRound ceil|floor|round)
+   *      묶음 수 = 올림(권수 ÷ 20)(1권만 넘어도 한 묶음) · 평균 = 총 주문 금액 ÷ 묶음 수 → 평균이 bundleWon(기본 60,000원) 미만이면 검토, 이상이면 통과(정확히 60,000원도 통과)
+   *      검산(정범님 예): 38권 12만 → 2묶음 6만 통과 · 21권 5.8만 → 2묶음 2.9만 검토 · 30권 12만 → 2묶음 6만 통과 · 42권 17만 → 3묶음 5.67만 검토 · 72권 24만 → 4묶음 6만 통과
+   *      bundleOn을 끄면 예전처럼 qtyMax를 넘는 주문은 무조건 검토(kind 'qty' 그대로)
+   *   ⑧ (선택·기본 끔 = 0) 금액 상한: 한 상품 판매가 ≥ maxItemWon 또는 총 주문 금액 ≥ maxTotalWon이면 검토(kind 'big') — 정범님이 값을 정할 때만 켜짐(기준을 지어내지 않음)
    *   ② 상품 판매가가 그때 시장(주문 뒤 읽은 알라딘 온라인 중고 첫 페이지)의 유효 최저가보다 cheapPct%(기본 25 — 정범님 지정) 넘게 쌈
    *      유효 = 짙은 초록·초록 판매자 + 알라딘측(판매가 평가 알약과 같음 · 우리 매물·팔린 우리 줄은 뺌) · 정확히 25%면 통과('넘게')
    *   ③ (선택·기본 켬) 주문인·수령인 이름(또는 주문인 이메일)으로 찾은 우리 고객 기록이 ⛔ 블랙리스트·🔗 판매자 연관 — 웹앱 고객 표시와 같은 뜻(custRisk)
@@ -209,8 +213,8 @@
    *      우리 줄 = c 'ours'(판매자 번호 996008 북스킹 · 클라우드/수집기가 시장 줄에 붙인 표시) · sc '996008' · 이 주문 상품 번호(lid)와 같은 줄 — 판매가 평가(ReadnowML.evalSale)가 '다른 매물'에서 빼는 것과 같음
    *      다른 판매자 매물 = 그 밖의 줄 중 값이 있고 품절(so)이 아니며 바깥 검색 줄(srch)이 아닌 것 — 알라딘측(직접 배송·중고매장)도 견줄 대상으로 셈 · 판매가가 몇이든(저가·YLW 매입가 통과여도) 검토
    *  ※ 더 비싸게 팔린 것은 어느 길에서도 검토가 아님(정범님 10/28 '위로는 얼마든지 비싸도 상관 없어') — 검토는 '싸게'(②·⑥)·권수·고객·시장 없음·(선택)유효 매물 없음뿐
-   *  돌려줌: { state: 'wait'|'pass'|'review', reasons:[글], kinds:[qty|cheap|bbLow|alone|cust|nomkt|novalid|read], qty, total, top:{title,price,qty,lid,grade}, items:[상품마다 판정 근거 · rule 'bb'|'bbNone'|'pct'], waitLeftMs } */
-  const AUTO_DEFAULTS = { on: true, minQty: 5, cheapPct: 25, waitMin: 10, noValid: false, custBlock: true, lowOn: true, lowPrice: 4000, lowSku: 'YLW', aloneOn: true };
+   *  돌려줌: { state: 'wait'|'pass'|'review', reasons:[글], kinds:[qty|big|cheap|bbLow|alone|cust|nomkt|novalid|read], bundle:{n,avg,size,won,ok,why}|null(qtyMax 넘는 주문만), qty, total, top:{title,price,qty,lid,grade}, items:[상품마다 판정 근거 · rule 'bb'|'bbNone'|'pct'], waitLeftMs } */
+  const AUTO_DEFAULTS = { on: true, qtyMax: 20, bundleOn: true, bundleSize: 20, bundleWon: 60000, bundleRound: 'ceil', maxItemWon: 0, maxTotalWon: 0, cheapPct: 25, waitMin: 10, noValid: false, custBlock: true, lowOn: true, lowPrice: 4000, lowSku: 'YLW', aloneOn: true };
   /* ⑥ 저가·YLW 상품인지 — 같은 판단을 웹앱(설정 설명·출고 카드)이 같이 씀 · 돌려줌 null(아님) 또는 { sku, price } (어느 조건으로 걸렸나) */
   function autoLowOf(it, cfg, sku) { cfg = autoCfg(cfg); if (!cfg.lowOn) return null; const k = String(sku || (it && it.sku) || '').trim().toUpperCase(); const pre = String(cfg.lowSku || '').trim().toUpperCase(); const pr = +(it && it.price) || 0;
     const bySku = !!(pre && k.startsWith(pre)), byPrice = cfg.lowPrice > 0 && pr > 0 && pr <= cfg.lowPrice; return bySku || byPrice ? { sku: bySku, price: byPrice } : null; }
@@ -223,7 +227,8 @@
     return c.length ? { v: +B[c[0].k], g: c[0].k, alt: true } : null; }
   function bbOf(m, grade) { const x = bbPick(m, grade); return x ? x.v : null; }
   function autoCfg(c) { const x = { ...AUTO_DEFAULTS, ...(c || {}) }; const n = (v, d, lo, hi) => { v = +v; return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
-    x.minQty = Math.round(n(x.minQty, AUTO_DEFAULTS.minQty, 1, 999)); x.cheapPct = n(x.cheapPct, AUTO_DEFAULTS.cheapPct, 0, 100); x.waitMin = n(x.waitMin, AUTO_DEFAULTS.waitMin, 1, 120); x.on = x.on !== false; x.noValid = !!x.noValid; x.custBlock = x.custBlock !== false;
+    x.qtyMax = Math.round(n(x.qtyMax, AUTO_DEFAULTS.qtyMax, 1, 999)); x.bundleOn = x.bundleOn !== false; x.bundleSize = Math.round(n(x.bundleSize, AUTO_DEFAULTS.bundleSize, 1, 999)); x.bundleWon = Math.round(n(x.bundleWon, AUTO_DEFAULTS.bundleWon, 0, 1e9));
+    x.bundleRound = ['ceil', 'floor', 'round'].includes(x.bundleRound) ? x.bundleRound : AUTO_DEFAULTS.bundleRound; x.maxItemWon = Math.round(n(x.maxItemWon, 0, 0, 1e9)); x.maxTotalWon = Math.round(n(x.maxTotalWon, 0, 0, 1e9)); x.minQty = x.qtyMax; /* minQty = 옛 이름(옛 판 화면·기록 호환) */ x.cheapPct = n(x.cheapPct, AUTO_DEFAULTS.cheapPct, 0, 100); x.waitMin = n(x.waitMin, AUTO_DEFAULTS.waitMin, 1, 120); x.on = x.on !== false; x.noValid = !!x.noValid; x.custBlock = x.custBlock !== false;
     x.lowOn = x.lowOn !== false; x.aloneOn = x.aloneOn !== false; x.lowPrice = Math.round(n(x.lowPrice, AUTO_DEFAULTS.lowPrice, 0, 1e7)); x.lowSku = String(x.lowSku == null ? AUTO_DEFAULTS.lowSku : x.lowSku).trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 12); return x; }
   /* 고객 기록(crm_customers 문서) → ⛔ 블랙리스트 · 🔗 판매자 연관 (웹앱 effFlag·flagsOf와 같은 뜻: 사람이 정한 표시가 먼저, 블랙리스트는 시트 표시도 · 판매자 연관 = 강한 연결 sellerLinks) */
   function custRisk(c) { c = c || {}; const m = (c.flags || {}).blacklist; const bl = m && (m.on === true || m.on === false) ? m.on === true : !!(c.sheetFlags && c.sheetFlags.blacklist);
@@ -237,7 +242,12 @@
     const topIt = items.reduce((m, it) => (!m || (+it.price || 0) > (+m.price || 0) ? it : m), null); const top = topIt ? { title: topIt.title || '', price: +topIt.price || 0, qty: +topIt.qty || 1, lid: topIt.listingId ? String(topIt.listingId) : null, grade: topIt.grade || null } : null;
     const R = [], kinds = new Set(); const add = (k, t) => { kinds.add(k); R.push(t); };
     if (!items.length) add('read', '주문 상품을 하나도 못 읽음 — 알라딘 화면에서 직접 확인'); items.forEach((it) => { if (!(+it.price > 0)) add('read', `「${sh(it.title)}」 판매가를 못 읽음 — 알라딘 화면에서 직접 확인`); });
-    if (qty >= cfg.minQty) add('qty', `한 주문 상품 ${qty}권 (기준 ${cfg.minQty}권 이상)`);
+    /* ① 권수·묶음 평균 (정범님 10/29) */ let BQ = null; const RN = { ceil: '올림', floor: '내림', round: '반올림' }[cfg.bundleRound];
+    if (qty > cfg.qtyMax) { if (cfg.bundleOn) { const nb = Math.max(1, Math[cfg.bundleRound](qty / cfg.bundleSize)); const avg = total / nb; BQ = { n: nb, avg: Math.round(avg), size: cfg.bundleSize, won: cfg.bundleWon, ok: avg >= cfg.bundleWon };
+        BQ.why = `${qty}권(${cfg.qtyMax}권 넘음) · 총 ${W(total)} ÷ ${cfg.bundleSize}권 묶음 ${nb}개(${RN}) = 묶음당 평균 ${W(avg)}`; if (!BQ.ok) add('qty', `한 주문 ${BQ.why} — 기준 ${W(cfg.bundleWon)} 미만 (묶음당 평균이 기준 이상이면 자동)`); else BQ.why += ` — 기준 ${W(cfg.bundleWon)} 이상이라 통과`; }
+      else add('qty', `한 주문 상품 ${qty}권 (기준 ${cfg.qtyMax}권 넘음 · 묶음 평균 기준 꺼짐)`); }
+    /* ⑧ 금액 상한(선택) */ if (cfg.maxItemWon > 0 && top && top.price >= cfg.maxItemWon) add('big', `「${sh(top.title)}」 ${W(top.price)} — 한 상품 ${W(cfg.maxItemWon)} 이상 (설정한 금액 상한)`);
+    if (cfg.maxTotalWon > 0 && total >= cfg.maxTotalWon) add('big', `총 주문 금액 ${W(total)} — ${W(cfg.maxTotalWon)} 이상 (설정한 총액 상한)`);
     if (cfg.custBlock && x.cust) { (x.cust.hits || []).forEach((h) => { const who = `${h.who || '주문인'} ${h.name || ''}`.trim(); const how = h.weak ? ' (이름만 같은 고객 — 불확실)' : ''; if (h.bl) add('cust', `${who}: ⛔ 블랙리스트 고객${h.blWhy ? ' — ' + h.blWhy : ''}${how}`); if (h.seller) add('cust', `${who}: 🔗 판매자 연관 고객${(h.sellers || []).length ? ' (' + h.sellers.join(', ') + ')' : ''}${how}`); }); if (x.cust.err) add('cust', '고객 기록을 확인하지 못함 — ' + String(x.cust.err).slice(0, 80)); }
     const per = []; const waitL = [], errL = [];
     for (const it of items) { const lid = String(it.listingId || ''); const e = E[lid] || null; const m = e && e.mkt; const byName = !!(m && e.via === 'search' && !m.isbnOk);
@@ -258,9 +268,9 @@
       aloneChk(); per.push(P); }
     errL.forEach((b) => add('nomkt', `「${sh(b.title)}」 시장 자료 없음 — ${per.find((p) => p.lid === b.lid).why}`));
     const left = Math.max(0, first + cfg.waitMin * 60e3 - now);
-    if (waitL.length && !R.length && left > 0) return { state: 'wait', reasons: [], kinds: [], qty, total, top, items: per, waitLeftMs: left, cfg };
+    if (waitL.length && !R.length && left > 0) return { state: 'wait', reasons: [], kinds: [], qty, total, top, bundle: BQ, items: per, waitLeftMs: left, cfg };
     waitL.forEach((b) => add('nomkt', `「${sh(b.title)}」 시장 자료 없음 — ${left > 0 ? '아직 못 읽음(다른 검토 이유가 있어 기다리지 않음)' : `${cfg.waitMin}분 기다려도 못 읽음`}`));
-    return { state: R.length ? 'review' : 'pass', reasons: R, kinds: [...kinds], qty, total, top, items: per, waitLeftMs: 0, cfg }; }
+    return { state: R.length ? 'review' : 'pass', reasons: R, kinds: [...kinds], qty, total, top, bundle: BQ, items: per, waitLeftMs: 0, cfg }; }
   const API = { VERSION, planConfirm, AUTO_DEFAULTS, autoCfg, mktOthers, autoLowOf, bbOf, bbPick, custRisk, autoShipDecide, parseDeliveryPage, parseShippedPage, KR_HOLIDAYS, holName, pickupRun, dayKeyAdd, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; root.ReadnowShipping = API;
 })(typeof window !== 'undefined' ? window : globalThis);

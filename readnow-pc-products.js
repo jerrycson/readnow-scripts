@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.141의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.142의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.141' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.141', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.142' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.142', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2784,7 +2784,7 @@
     try { if (!AU.cfg || Date.now() - AU.cfgAt > 30e3) { const d = (await C('app_settings').doc('ship_auto').get()).data() || {}; const c = SHC.autoCfg(d); c.since = d.since || null; AU.cfg = c; AU.cfgAt = Date.now(); if (c.on && !c.since) { c.since = nowIso(); await C('app_settings').doc('ship_auto').set({ since: c.since, sinceBy: `${PC_NAME} (처음 켜짐 — 이 시각 뒤 주문부터)` }, { merge: true }).catch(() => {}); } }
       const cfg = AU.cfg; if (!cfg.on) return null;
       if (Date.now() - AU.beatAt > 120e3) { AU.beatAt = Date.now(); C('app_settings').doc('ship_auto').set({ beatAt: nowIso(), beatVer: APP_VER, beatBy: PC_NAME, beats: { [PC_NAME]: nowIso() } }, { merge: true }).catch(() => {}); }
-      const cfgRec = { on: cfg.on, minQty: cfg.minQty, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, lowOn: cfg.lowOn, lowPrice: cfg.lowPrice, lowSku: cfg.lowSku, since: cfg.since }; /* (10/28) ⑥ 저가·YLW 매입가 기준도 그때 설정으로 남김 */ if (AU.mem.size > 3000) AU.mem.clear();
+      const cfgRec = { on: cfg.on, minQty: cfg.minQty, qtyMax: cfg.qtyMax, bundleOn: cfg.bundleOn, bundleSize: cfg.bundleSize, bundleWon: cfg.bundleWon, bundleRound: cfg.bundleRound, maxItemWon: cfg.maxItemWon, maxTotalWon: cfg.maxTotalWon, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, lowOn: cfg.lowOn, lowPrice: cfg.lowPrice, lowSku: cfg.lowSku, since: cfg.since }; /* (10/28) ⑥ 저가·YLW 매입가 기준도 그때 설정으로 남김 */ if (AU.mem.size > 3000) AU.mem.clear();
       for (const o of orders || []) { const ono = String(o.orderNo || ''); if (!ono || o.platform === 'cash') continue; let m = AU.mem.get(ono); if (m && m.final) continue; const ref = C('shp_auto').doc(ono);
         if (!m) { const v0 = (await ref.get()).data() || null; if (v0 && v0.state !== 'wait') { AU.mem.set(ono, { final: true }); continue; } m = { firstAt: (v0 && Date.parse(v0.firstAt || '')) || Date.now(), doc: !!v0 }; AU.mem.set(ono, m); }
         const base = { orderNo: ono, buyer: o.buyer || null, recipient: o.recipient && !o.recipient.sameAsBuyer ? o.recipient.name || null : null, orderedAt: o.orderedAt || null, firstAt: new Date(m.firstAt).toISOString(), at: nowIso(), by: PC_NAME, ver: APP_VER, cfg: cfgRec };
