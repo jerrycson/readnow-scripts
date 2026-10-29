@@ -29,11 +29,18 @@ function mscHsl(hex) { let h = String(hex || '#888888').replace('#', ''); if (h.
 function mscHex(h, s, l) { h = ((h % 360) + 360) % 360; s = Math.max(0, Math.min(1, s)); l = Math.max(0, Math.min(1, l)); const c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs(((h / 60) % 2) - 1)), m = l - c / 2;
   const [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x]; const t = (v) => Math.round((v + m) * 255).toString(16).padStart(2, '0'); return '#' + t(r) + t(g) + t(b); }
 const mscCool = (h, k) => h + ((((250 - h) % 360) + 540) % 360 - 180) * k; /* 그림자는 보랏빛 쪽으로 조금 */
-const mscS1 = (c) => { const [h, s, l] = mscHsl(c); return mscHex(mscCool(h, 0.13), Math.min(1, s * 1.0 + 0.03), l * 0.8 - 0.015); };
-const mscS2 = (c) => { const [h, s, l] = mscHsl(c); return mscHex(mscCool(h, 0.2), Math.min(1, s * 1.02 + 0.05), l * 0.63 - 0.02); };
-const mscL1 = (c) => { const [h, s, l] = mscHsl(c); return mscHex(h, s * 0.95, l + (1 - l) * 0.32); };
-const mscLn = (c) => { const [h, s, l] = mscHsl(c); return mscHex(mscCool(h, 0.08), Math.min(1, s * 0.75 + 0.12), Math.min(0.22, l * 0.36)); };
-const mscSkS = (c) => { const [h, s, l] = mscHsl(c); return mscHex(h - 7, Math.min(1, s * 1.06 + 0.03), l - 0.08); }; /* 살 그림자(5차 · 셀 애니 관행: 바탕보다 붉은·분홍 쪽으로 색상을 옮기고 채도를 올림 — 회색으로 어둡게 X) */
+/* (r16j ⑤ 화풍 · 바이블 01 §1.3·§1.4) 셀 색 4단(ノーマル·1号影·2号影·ハイライト)과 선색 — HSV로 계산(교재 실측이 HSV: 바탕 H24 S21 V99 → 그림자 H10 S37 V90)
+ *  예전(HSL l×0.8): 흰 옷 그림자가 살색 분홍(#d4af9f), 살 그림자 명도 차 −0.5pt(#F8E0CF→#f6bfa8)라 그늘이 안 보였음 */
+function mscHsv(c) { const [h, s, l] = mscHsl(c); const v = l + s * Math.min(l, 1 - l); return [h, v ? 2 * (1 - l / v) : 0, v]; }
+function mscHsvX(h, s, v) { s = Math.max(0, Math.min(1, s)); v = Math.max(0, Math.min(1, v)); const l = v * (1 - s / 2); return mscHex(h, l > 0 && l < 1 ? (v - l) / Math.min(l, 1 - l) : 0, l); }
+const mscTo250 = (h, d) => { const t = ((((250 - h) % 360) + 540) % 360) - 180; return h + Math.sign(t) * Math.min(Math.abs(t), d); }; /* 색상을 250°(푸른 보라) 쪽으로 d°만(넘지 않게) */
+const mscMix = (a, b, t) => { const A = parseInt(String(a).slice(1), 16), B = parseInt(String(b).slice(1), 16); const m = (sh) => Math.round(((A >> sh) & 255) * (1 - t) + ((B >> sh) & 255) * t); return '#' + [16, 8, 0].map((sh) => m(sh).toString(16).padStart(2, '0')).join(''); };
+const mscMemo = (f) => { const M = new Map(); return (c) => { let v = M.get(c); if (v === undefined) { v = f(c); if (M.size > 600) M.clear(); M.set(c, v); } return v; }; }; /* 색 계산 기억(팔레트가 작아 거의 다 맞음 — 몸을 다시 그릴 때마다 같은 색을 수십 번 계산하던 것을 한 번으로) */
+const mscS1 = mscMemo((c) => { const [h, s, v] = mscHsv(c); return s < 0.12 ? mscHsvX(248, Math.min(0.14, s * 0.4 + 0.08), v * 0.86) : mscHsvX(mscTo250(h, 12), Math.min(1, s + 0.08), v * (0.85 - 0.12 * (1 - v))); }); /* 옷·머리·소품 1号影: 250° 쪽 +12° · S +8 · V −15% · 채도 12% 아래(흰·회색·크림) = 색상 248° 푸른 보라 회색(S 8~14%) — 크림색을 250° 쪽으로 돌리면 빨강을 지나 분홍이 됨 */
+const mscS2 = mscMemo((c) => { const [h, s, v] = mscHsv(c); return s < 0.12 ? mscHsvX(250, Math.min(0.18, s * 0.4 + 0.11), v * 0.62) : mscHsvX(mscTo250(h, 22), Math.min(1, s + 0.14), v * 0.66); }); /* (r16j) 0.72→0.62: 흰·회색 머리 바깥선(머리카락은 2号影을 선으로 씀)이 연보라로 너무 옅어 실루엣이 흐렸음 */ /* 2号影(겹침·목 아래·머리 뒤) */
+const mscL1 = mscMemo((c) => { const [h, s, v] = mscHsv(c); return mscHsvX(h, s * 0.8, Math.min(1, v + (1 - v) * 0.45 + 0.05)); }); /* 하이라이트: V +8 이상 · S −20% */
+const mscLn = mscMemo((c) => { const [h, s, l] = mscHsl(c); return mscMix(mscHex(mscCool(h, 0.08), Math.min(1, s * 0.7 + 0.15), Math.min(0.2, l * 0.32)), MSC_INK, 0.42); }); /* 실선 = 부위 색을 어둡게(L ≤ 0.2) + 공통 먹색 42% — 흰 옷 갈색 선·청바지 파란 선처럼 선 색이 제각각이던 것을 한 벌의 선화로(바이블 §1.2 実線) */
+const mscSkS = mscMemo((c) => { const [h, s, v] = mscHsv(c); return mscHsvX(h - 12, Math.min(1, s + 0.14), v - 0.09); }); /* 살 1号影: H −12° · S +14 · V −9 (바이블 §1.3 · 예전 HSL l−0.08은 V가 거의 그대로였음) */
 const mscBlush = (c, k) => { const [h, s, l] = mscHsl(c); return mscHex(352 + (h - 20) * 0.3, 0.72, Math.max(0.3, Math.min(0.74, l * (k ? 0.86 : 0.78)))); }; /* (F4) 볼 홍조 = 피부 밝기에 맞춘 장밋빛(짙은 피부는 짙게) */
 const mscSkS2 = (c) => { const [h, s, l] = mscHsl(c); return mscHex(h - 2, s * 0.45, l * 0.6); }; /* 코·쌍꺼풀 선 */
 const mscOkC = (c, d) => (/^#[0-9a-f]{6}$/i.test(String(c || '')) ? c : d);
@@ -3639,7 +3646,7 @@ const MSC2_U = 25, MSC2_SOLE = 196;
 const MSC2_TUNE = [
   { k: 'eyeKid', n: '꼬마 눈 크기', lo: 0.6, hi: 1.1, st: 0.02, d: 0.82, u: '배', tip: '꼬마 눈 가로·세로 배율 · 1 = 예전 크기 · 0.82 = 눈 크기 18% 줄임(눈 면적 약 33% 줄어듦 — 불쾌감 대응 1차 시험값)' },
   { k: 'lashKid', n: '꼬마 속눈썹 굵기', lo: 0.3, hi: 1.0, st: 0.05, d: 0.7, u: '배', tip: '꼬마 눈 위 속눈썹 띠 굵기 배율 · 1 = 예전 굵기' },
-  { k: 'outK', n: '외곽선 굵기 배율(바깥 ÷ 안쪽)', lo: 1.0, hi: 2.5, st: 0.05, d: 1.4, u: '배', tip: '바깥 실루엣 선 = 안쪽 선 × 이 값 · 기본 1.4 = 설문 근거 1.25~1.5(research/anime_style 항목 11) · 2 = 바이블 값(시험: 성인 실루엣이 무거워 보임) · 예전 2' },
+  { k: 'outK', n: '외곽선 굵기 배율(바깥 ÷ 안쪽)', lo: 1.0, hi: 2.5, st: 0.05, d: 1.2, u: '배', tip: '바깥 실루엣 선 = 안쪽 선 × 이 값 · 기본 1.2(r16j ⑤ · 감사 STYLE_GAP 5위 "바깥선 굵고 안쪽과 차이 큼" · 바이블 01 §1.2 TV 1.0 쪽으로) · 예전 1.4 = 설문 근거 1.25~1.5(research/anime_style 항목 11) · 2 = 바이블 값(시험: 성인 실루엣이 무거워 보임) · 예전 2' },
   { k: 'stepRate', n: '걸음 속도', lo: 80, hi: 110, st: 1, d: 95, u: '걸음/분', tip: '사람 정상 범위 80~110걸음/분(anatomy 항목 9) · 기본 95 = 한 걸음 약 15f(24fps) · 예전 120(12f)' },
   { k: 'footLift', n: '걸을 때 발끝 들기', lo: 0.05, hi: 0.5, st: 0.01, d: 0.25, u: 'H', tip: '걸음 최고 발끝 높이(머리 1H = 키÷7.5 ≈ 22.5cm) · 0.25H ≈ 5.6cm · 근거: 걸음 중 발끝 간격 실측 1.3~4.2cm(anatomy 항목 11) · 과장 약 1.3~1.5배 · 예전 0.5H' },
   { k: 'oldBend', n: '노인 등 굽음(꼬부라진 등 높이)', lo: 0, hi: 0.3, st: 0.01, d: 0.11, u: 'H', tip: '노인 여자 등 솟음 높이 · 남자 노인은 ×1.18 · 기본 0.11H = 예전 값 유지 (근거: 흉추 후만은 34년 추적에서 변하지 않음 — 크게 굽히면 근거와 어긋남)' },
@@ -4024,7 +4031,9 @@ function msc2FootF(sk, S, M) { const F = msc2Foot3(sk, S); const hullD = (pts) =
   const d = F.parts.slice(0, 2).map((P) => hullD(P.map(pr))).join('') + toeHull + F.mals.map((m) => hullD(circ(m.c, m.r))).join('');
   const toes = F.toes.map((q) => [M.X(q[0]), M.Y(q[1] + (q[2] - az) * KP), q[3]]); F.kp = (q) => q[1] + (q[2] - az) * KP; return { d, toes, F }; }
 /* 셀 그림자(빛 = 왼쪽 위 고정): 모양 안에서, 빛 쪽으로 옮긴 같은 모양을 뺀 초승달(바이블 §0.3 · 계획 §2.4-5) */
-const msc2Shade = (id, ref, col, dx, dy, op) => `<mask id="${id}" maskUnits="userSpaceOnUse" x="-80" y="-80" width="260" height="380"><use href="#${ref}" fill="#fff"/><use href="#${ref}" fill="#000" transform="translate(${-dx} ${-dy})"/></mask><use href="#${ref}" fill="${col}" mask="url(#${id})"${op != null ? ` opacity="${op}"` : ''}/>`;
+const MSC2_SHK = [3.8, 0.9]; /* (r16j ⑤) 1号影 폭 배율(가로·세로) — 참고 설정표(4d953371·c2d0c72d·2643e4f6)의 그늘 면적: 팔·다리 폭의 25~40% · 몸통 15~30% · 예전 폭(0.03~0.05H)은 팔 폭의 10% 남짓이라 그늘이 안 보였음 */
+let MSC2_SHKS = 1; /* 몸 비율 배율(SD = 머리 단위가 몸에 비해 커서 0.45 · msc2BodySvg가 그릴 때만 바꿈) */
+const msc2Shade = (id, ref, col, dx, dy, op) => { const tx = dx * MSC2_SHK[0] * MSC2_SHKS, ty = dy * MSC2_SHK[1] * MSC2_SHKS, sw = mscF(Math.hypot(tx, ty) * 0.8); return `<mask id="${id}"><use href="#${ref}" style="--sf:#fff" fill="#fff"/><use href="#${ref}" style="--sf:#000;--sw:${sw};stroke:#000;stroke-width:${sw}" fill="#000" transform="translate(${mscF(tx)} ${mscF(ty)})"/></mask><use href="#${ref}" style="--sf:${col}" fill="${col}" mask="url(#${id})"/>`; }; /* (r16j ⑤ · 정범님 '유치·싸구려') 고침: ① 예전 translate(−dx −dy)는 같은 모양을 빛 반대쪽(오른쪽 아래)으로 옮겨 빼서 그늘이 빛 쪽(왼쪽 위 가장자리)에 생겼음 — 설명(빛 쪽으로 옮긴 모양을 뺀 초승달)대로 빛 쪽(dx·dy 음수 = 왼쪽 위)으로 옮겨 빼면 오른쪽·아래에 그늘 ② 빼는 모양을 선(옮긴 거리의 0.8배)으로 불려서 옷 윤곽의 작은 톱니·홈 안쪽에 생기던 번개 모양 조각을 메움 ③ 셀 그늘은 반투명이 아니라 지정색 그대로(opacity 없음 · 색은 mscS1·mscSkS = 바이블 §1.3) */
 /* ── 마네킹/맨몸 그림(머리 자리 표시) — 시험·비교용 · 얼굴은 msc2Head가 맡음 ── */
 function msc2Fig(k, bd, pose, opt) { opt = opt || {}; const o = MSC2_OBJ[k]; const S = msc2Shape(o, bd || {}); const W = msc2Widths(o, S); const sk = msc2Solve(o, W, typeof pose === 'string' ? MSC2_POSES[pose] : pose || MSC2_POSES.st); const M = msc2Map(o, opt.u);
   const C = msc2Contour(sk); msc2Contour.__last = C; const SP = msc2SkinPaths(C, M); const p = opt.p || 'f2'; const sk0 = opt.skin || '#F6DCCB', ln = mscLn(sk0), sh = mscSkS(sk0); const dp0 = MSC_DP; MSC_DP = 10;
@@ -5793,4 +5802,54 @@ const MSC2K_KIND = (id) => { const D = MSC_DES[id] || {}; const ak = D.ani && D.
 const MSC2K_ONLY = { xrbook: (K) => K.robot, xrchg: (K) => K.robot, xahov: (K) => K.alien, xatk: (K) => K.alien, xspell: (K, id) => K.fairy || id === 'n_neugi' || id === 'n_tosil' || id === 'n_ppyorong', xcape: (K) => K.cape, xtail: (K) => K.animal, xhero: (K) => K.kid || K.teen };
 const MSC2K_PW = { xrbook: 3, xrchg: 2.5, xahov: 3, xatk: 2.5, xspell: 2.5, xcape: 2.5, xtail: 2.5, xhero: 2 }; /* 그 종류 캐릭터의 다른 몸짓(1)보다 자주 — 고유 동작 */
 if (typeof mscIdleW === 'function') { const iw0 = mscIdleW; mscIdleW = function (id, gl) { const W = iw0(id, gl); const K = MSC2K_KIND(id); Object.keys(MSC2K_ONLY).forEach((k) => { if (!MSC2K_ONLY[k](K, id)) delete W[k]; else W[k] = (W[k] || 1) * MSC2K_PW[k] * (k === 'xhero' && K.teen ? 0.4 : 1); }); return W; }; }
+/* ═══ (r16j ⑤ 화풍 렌더링 · 정범님 10/30 '시장에서 먹힐 퀄리티로 일본 아니메 스타일') 선 LOD · 셀 그늘 색 바꿔 끼우기 ═══
+ *  ① 셀 그늘 마스크(msc2Shade)가 가리키는 모양에 fill 속성이 있으면 <use fill>이 덮어쓰지 못해(SVG 규칙: 원본의 속성이 이김) 마스크가 흰/검 대신 옷 색 그대로 →
+ *     옷(윗옷·치마·소매)의 그늘이 하나도 안 보였음. 원본 fill을 style="fill:var(--sf,원래색)"로 바꾸고 use 쪽이 --sf를 넘김(사용자 정의 속성은 use 그림자 트리로 상속됨).
+ *  ② 선 굵기 LOD: 선이 viewBox 단위라 그림이 커지면 선도 같이 굵어짐(휴대폰 '크게'에서 머리 높이 110px → 바깥선 3.8px(기기 10px) — 스티커처럼 무거움).
+ *     TV 셀 선은 화면에서 거의 같은 굵기(1080p에서 2~3px)라 머리 높이(CSS px)가 26px을 넘으면 선 배율 = (26/머리px)^0.45 (최소 0.45) — 26px 이하(휴대폰 기본 크기)는 그대로. */
+let MSC2_LWK = 1; /* 지금 그리는 캐릭터의 선 배율(msc2Frame 안에서만 1이 아님) */
+const msc2LwK = (pxH) => (!(pxH > 26) ? 1 : Math.max(0.45, Math.round(Math.pow(26 / pxH, 0.45) * 20) / 20)); /* 머리 45px(키 860 기기px) → 0.8: 바깥선 키의 0.32% · 안쪽 0.27%(바이블 T32 2.3~3.8px) · 머리 80px(휴대폰 c12) → 0.6 */
+const msc2LwSw = (s, k) => (!s || !k || k === 1 ? s : s.replace(/stroke-width="([\d.]+)"/g, (m, v) => `stroke-width="${Math.round(+v * k * 1000) / 1000}"`).replace(/--sw,([\d.]+)\)/g, (m, v) => `--sw,${Math.round(+v * k * 1000) / 1000})`));
+function msc2SfFix(s) { if (!s || s.indexOf('--sf:#000') < 0) return s; const ids = new Set(); s.replace(/<use href="#([^"]+)" style="--sf:#000[;"]/g, (m, id) => { ids.add(id); return m; });
+  return s.replace(/<path id="([^"]+)"[^>]*>/g, (tag, id) => { if (!ids.has(id) || tag.indexOf(' style="') >= 0) return tag; let sw = ''; const t2 = tag.replace(/ stroke-width="([\d.]+)"/, (m, w) => { sw = `;stroke-width:var(--sw,${w})`; return ''; }); return t2.replace(/ fill="(#[0-9a-fA-F]{3,8}|[a-z]+)"/, (m, c) => ` style="fill:var(--sf,${c})${sw}"`); }); } /* 한 번 훑기(다시 그리기 시간) — 모양 path는 id가 맨 앞 */
+/* DOM에 이미 있는 머리·얼굴·귀·머리카락 선(한 번 그려 두고 돌리기만 하는 것)을 배율대로 — 처음 굵기는 요소에 JS 값으로 기억(DOM 속성 늘리지 않음) */
+function msc2LwDom(R, k) { const svg = R && R.svg; if (!svg) return; svg.querySelectorAll('[stroke-width]').forEach((el) => { if (el.closest('.m2-body,.m2-bodyF,.m2-tail,.mp-xf,.mp-xb,.mp-xt,.mp-fx')) return; if (el.__sw0 == null) el.__sw0 = +el.getAttribute('stroke-width'); if (isFinite(el.__sw0)) el.setAttribute('stroke-width', Math.round(el.__sw0 * k * 1000) / 1000); }); }
+/* ⑥ 옷 주름·당김 데칼 중 1号影 색을 반투명으로 칠한 것: 예전 1号影(HSL l×0.8 — 흰 옷에서 V −3pt)에 맞춘 불투명도라 새 1号影(V −15%)에선 번개 모양 조각처럼 튐 → 불투명도 ×0.55(보이는 무게를 예전과 비슷하게) */
+/* ⑦ 겹침 그늘(2号影 자리 · 바이블 §1.3 'cast 전용: 옷 겹침'): 윗옷 밑단 → 하의 · 치마 밑단 → 다리 · 소매 끝 → 팔 — 위 층 모양을 빛 반대쪽(아래 오른쪽)으로 옮겨 아래 층 안에만(clip) 칠함
+ *  참고(c2d0c72d 반바지 위 셔츠 밑단 그늘 · 4d953371 반바지 → 허벅지 · 2643e4f6 깃 → 목) — 예전엔 겹친 옷이 한 장으로 붙어 보였음(종이 인형)
+ *  몸 글 고침(①·②·⑥·⑦)을 한 번 훑기로 합침 — 몸은 자세가 바뀔 때마다 다시 그리므로(24fps) 정규식 여러 번 = 다시 그리기 시간 */
+function msc2BodyFix(s, p, u) { if (!s) return s; const k = MSC2_LWK; const ids = new Set(), SC = {}, shades = new Set(); let i = s.indexOf('<use href="#');
+  const U = []; while (i >= 0) { const e = s.indexOf('>', i), t = s.slice(i, e); const q = t.indexOf('" style="--sf:'); if (q > 0) { const ref = t.slice(12, q), c = t.substr(q + 14, 7); U.push([i, e, t, ref]); if (c === '#000;--' || c === '#000"') ids.add(ref); else if (c[0] === '#' && c !== '#fff" f' && t.indexOf('mask=') > 0) { SC[ref] = c; shades.add(c.toLowerCase()); } } i = s.indexOf('<use href="#', e); }
+  const IDP = {}; { const re = /<path id="([^"]+)"/g; let m; while ((m = re.exec(s))) IDP[m[1]] = m.index; } /* 모양 자리 한 번에(없는 id를 indexOf로 끝까지 찾지 않게) */
+  const ed = []; /* [시작, 끝, 새 글] — 정규식으로 몸 글 전체를 여러 번 고쳐 쓰지 않고 마지막에 한 번 이어 붙임(다시 그리기 시간) */
+  if (p && u) { const F = (v) => Math.round(v * 100) / 100; const has = (x) => (IDP[`${p}-${x}`] != null ? IDP[`${p}-${x}`] : -1);
+    const cast = (src, clipIds, col, dx, dy, cid) => `<clipPath id="${p}-${cid}">${clipIds.map((x) => `<use href="#${p}-${x}"/>`).join('')}</clipPath><use href="#${p}-${src}" style="--sf:${col};--sw:0;stroke:none" fill="${col}" transform="translate(${F(dx * u)} ${F(dy * u)})" clip-path="url(#${p}-${cid})"/>`;
+    const at = (x, str) => { if (x >= 0) ed.push([x, x, str]); }; const skS = SC[p + '-sk']; const bot = has('sk2') >= 0 ? ['sk2'] : has('pL') >= 0 ? ['pL', 'pR'] : null;
+    if (bot && has('tp') > has(bot[0]) && SC[`${p}-${bot[0]}`]) at(has('tp'), cast('tp', bot, SC[`${p}-${bot[0]}`], 0.025, 0.075, 'ctb'));
+    if (skS && has('sk2') >= 0 && has('lL') >= 0) at(s.lastIndexOf('<g class="m2-skirt', has('sk2')), cast('sk2', ['lL', 'lR'], skS, 0.02, 0.09, 'csl'));
+  } /* (소매 → 팔 겹침 그늘은 SVG 예산(130KB) 때문에 뺌 — 팔 1号影이 이미 같은 쪽) */
+  U.forEach(([a, e, t, ref]) => { const own = ids.has(ref) && IDP[ref] != null; const t2 = own ? t.replace(/ fill="#[0-9a-fA-F]{3,6}"/, '') : t.replace(/ style="--sf:#(?:fff|000)"/, '').replace(/ style="--sf:#000;/, ' style="'); if (t2 !== t) ed.push([a, e, t2]); }); /* 덮어쓸 색이 원본 fill(var)인지 상속인지에 따라 use의 겹친 속성 하나를 뺌(SVG 크기) */
+  ids.forEach((id) => { const a = IDP[id]; if (a == null) return; const e = s.indexOf('>', a); const t = s.slice(a, e); if (t.indexOf(' style="') >= 0) return; let swv = ''; const t2 = t.replace(/ stroke-width="([\d.]+)"/, (m2, v) => { swv = `;stroke-width:var(--sw,${v})`; return ''; }).replace(/ fill="(#[0-9a-fA-F]{3,8}|[a-z]+)"/, (m2, c) => ` style="fill:var(--sf,${c})${swv}"`); ed.push([a, e, t2]); });
+  if (shades.size) { const re = /" fill="(#[0-9a-fA-F]{6})" opacity="([\d.]+)"\/>/g; let m; while ((m = re.exec(s))) if (shades.has(m[1].toLowerCase())) { const b0 = m.index + 26; ed.push([b0, b0 + m[2].length, String(Math.round(+m[2] * 55) / 100)]); } }
+  if (ed.length) { ed.sort((x, y) => x[0] - y[0] || x[1] - y[1]); let o = '', last = 0; ed.forEach(([a, e, t]) => { if (a < last) return; o += s.slice(last, a) + t; last = e; }); s = o + s.slice(last); }
+  return k === 1 ? s : s.replace(/stroke-width="([\d.]+)"|--sw,([\d.]+)\)/g, (m, w, w2) => (w ? `stroke-width="${Math.round(+w * k * 1000) / 1000}"` : `--sw,${Math.round(+w2 * k * 1000) / 1000})`)); }
+msc2BodySvg = ((f) => Object.assign(function (sk, D, C, p, M, opt) { const o = sk && sk.o; const k0 = MSC2_SHKS; MSC2_SHKS = o && o.sd ? 0.45 : o && o.kid ? 0.8 : 1; let bd; try { bd = f(sk, D, C, p, M, opt); } finally { MSC2_SHKS = k0; } /* 그늘 폭은 머리 단위라 SD(머리가 몸의 1/2~1/3)에서 옷 폭의 40%까지 커져 번개 조각이 됨 → SD 0.45 · 꼬마 0.8 */ if (bd && bd.svg) { const u = M && M.u; bd.svg = msc2BodyFix(bd.svg, p, u); if (bd.svgF) bd.svgF = msc2BodyFix(bd.svgF, p, u); } return bd; }, { f0: f }))(msc2BodySvg); /* f0 = 원래 함수(시간 재기용) */
+/* 머리·얼굴 칠(msc2Svg 결과 글을 고침 — 모양 담당 함수는 건드리지 않음)
+ *  ③ 머리카락 1号影: 정수리 덮개+앞머리 합집합에 오른쪽·아래 초승달(앞머리 끝·옆이 어두워지는 TV 셀 머리 · 2643e4f6·c2d0c72d) — 예전 = 바탕 한 색 + 가는 결선뿐(그늘 면 0)
+ *  ④ 홍채 그러데이션: 예전 정지점(.36에서 밝은색)이라 보이는 홍채 대부분이 연한 색 → 눈이 흐리고 멍해 보였음. 바탕색(eye[1])이 가운데 띠를 차지하고 위 1/3은 짙게, 아래만 밝게(2643e4f6 AYA·e5be95fc)
+ *  ⑤ 앞머리 위 눈썹 비침: 살색 테 0.026H × 55%가 눈썹보다 훨씬 굵어 '회색 막대'로 보였음 → 테 40%·옅게 */
+/* ⑧ 눈 칠(바이블 03 §3.3.1·§3.3.4 ①): 흰자 위 그늘 띠(s1 · #4E5280 30%)가 큰 반사광 위에 그려져 반사광이 연보라 회색(죽은 눈) → s1을 홍채 묶음(gz) 아래로 옮기고 흰자 위 불투명 ≤0.2 · 홍채 위 짙은 띠(i1) 불투명 0.78 → 0.55(동공 윤곽이 묻히지 않게 · 바이블 ≤0.55) */
+function msc2EyePaint(s) { if (!s || s.indexOf('class="s1"') < 0) return s; s = s.replace(/(<g class="gz"[\s\S]*?)<g class="s1">(<path [^>]*?)opacity="([\d.]+)"\/><\/g>/g, (m, gz, pa, op) => `<g class="s1">${pa}opacity="${Math.min(+op, 0.2)}"/></g>${gz}`); return s.replace(/(<ellipse class="i1" [^>]*?)opacity="([\d.]+)"/g, (m, a, op) => `${a}opacity="${Math.min(+op, 0.55)}"`); }
+function msc2HeadPaint(s, p) { s = msc2EyePaint(s); let gray = null; if (!s) return s; const H = +((/"H":([\d.]+)/.exec(s) || [])[1]) || 25; const F = (v) => Math.round(v * 100) / 100;
+  s = s.replace(new RegExp(`<radialGradient id="${p}-ir"([^>]*)>(.*?)</radialGradient>`), (m, at, st) => { const c = [...st.matchAll(/stop-color="([^"]+)"/g)].map((q) => q[1]); if (c.length < 7) return m; const e2 = c[2], e1 = c[3], e0 = c[5]; return `<radialGradient id="${p}-ir"${at}><stop offset="0" stop-color="${mscL1(e2)}"/><stop offset=".2" stop-color="${e2}"/><stop offset=".4" stop-color="${e1}"/><stop offset=".6" stop-color="${mscMix(e1, e0, 0.45)}"/><stop offset=".76" stop-color="${e0}"/><stop offset="1" stop-color="${mscLn(e0)}"/></radialGradient>`; });
+  s = s.replace(/(class="m2-brwt" stroke="[^"]+") stroke-opacity="[\d.]+" stroke-width="([\d.]+)"/, (m, a, w) => `${a} stroke-opacity=".45" stroke-width="${F(+w * 0.4)}"`);
+  s = s.replace(/<g class="m2-hfu">(<g fill="[^"]+" stroke="[^"]+" stroke-width="[^"]+" stroke-linejoin="round">(?:<path d="[^"]*"\/>)+<\/g>)<g fill="(#[0-9a-fA-F]{6})">((?:<path d="[^"]*"\/>)+)<\/g>/, (m, ol, col, ps) => { gray = mscHsv(col)[1] < 0.12 ? col : null; const k = gray ? 0.5 : 1; return `<g class="m2-hfu">${ol}<g id="${p}-hfF" style="fill:var(--sf,${col})">${ps}</g><mask id="${p}-hfS"><use href="#${p}-hfF" style="--sf:#fff"/><use href="#${p}-hfF" style="--sf:#000" transform="translate(${F(-0.1 * H * k)} ${F(-0.07 * H * k)})"/></mask><use href="#${p}-hfF" style="--sf:${mscS1(col)}" mask="url(#${p}-hfS)"/>`; });
+  if (gray) { const v = mscHsv(gray)[2], w1 = mscMix(mscS1(gray), mscHsvX(30, 0.1, v * 0.86), 0.5), w2 = mscMix(mscHsvX(250, 0.1, v * 0.72), mscHsvX(30, 0.1, v * 0.72), 0.5); [[mscS1(gray), w1], [mscS2(gray), w2]].forEach(([a0, b0]) => { s = s.split(a0).join(b0).split(a0.toUpperCase()).join(b0); }); } /* (r16j 코디네이터 10/30 '옥순 머리가 샤워 캡·헬멧처럼') 흰·회색 머리: 1号影 폭 절반(앞머리 끝·옆만) · 그늘·바깥선 색의 푸른 기 절반 → 따뜻한 회색 · 바깥선 V ×0.72(실루엣만) */
+  s = s.replace(new RegExp(`(<g clip-path="url\\(#${p}-hc\\)"><path d="[^"]*" fill="#[0-9a-fA-F]{6}") opacity="\\.55"`), '$1 opacity=".9"'); /* ⑨ 머리 윤기 띠(天使の輪): 55% 반투명이라 감사 STYLE_GAP 7위 '하이라이트 띠 약함' → 90%(셀 하이라이트는 거의 불투명 · 색은 mscL1 = V +45%·S −20%) */
+  return s; }
+msc2Svg = ((f) => function (ch, p, opt) { return msc2HeadPaint(msc2SfFix(f(ch, p, opt)), p); })(msc2Svg);
+mscXLayers = ((f) => function () { const L = f.apply(this, arguments); if (L) ['f', 'b', 't'].forEach((q) => { if (typeof L[q] === 'string') L[q] = msc2LwSw(msc2EyePaint(L[q]), MSC2_LWK); }); return L; })(mscXLayers);
+msc2TailSvg = ((f) => function (S, A) { return msc2LwSw(f(S, A), MSC2_LWK); })(msc2TailSvg);
+msc2XpApply = ((f) => function (R, k) { const k0 = MSC2_LWK; MSC2_LWK = (R && R.v2 && R.v2.lwk) || 1; try { return f(R, k); } finally { MSC2_LWK = k0; } })(msc2XpApply); /* 표정 층은 프레임 밖(몸짓·말하기 시작)에서도 만들어짐 → 그 캐릭터 선 배율로 */
+msc2Frame = ((f) => function (R, now, dt) { const V = R && R.v2; if (V && V.pxH) { const k = msc2LwK(V.pxH); if (k !== (V.lwk || 1)) { V.lwk = k; V.sig = ''; msc2LwDom(R, k); (V.tails || []).forEach((t) => { t.last = null; }); } } const k0 = MSC2_LWK; MSC2_LWK = (V && V.lwk) || 1; try { return f(R, now, dt); } finally { MSC2_LWK = k0; } })(msc2Frame);
 /* ═══════════ 🐾 v2 끝 ═══════════ */
