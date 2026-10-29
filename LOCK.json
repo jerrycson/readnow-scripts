@@ -1,17 +1,13 @@
 {
- "holder": "friend",
- "what": "얼굴 2+3: 커밋·push",
- "since": "2026-10-29T22:44:03Z",
- "beat": "2026-10-29T23:06:21Z",
- "ask": {
-  "who": "friend",
-  "why": "판 내기 기다림: ⑤ 화풍 렌더링 3묶음 배포",
-  "at": "2026-10-29T22:44:23Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "friend",
-  "done": "④ 손·크기·누름 1+2+3묶음 f1cf860 · 웹앱 1.78.262 · friend 0.15.7",
-  "at": "2026-10-29T22:43:49Z"
+  "done": "① 얼굴 2+3묶음 8a299d9 · 웹앱 1.78.263 · friend 0.15.8",
+  "at": "2026-10-29T23:06:48Z"
  },
- "host": "vm-face"
+ "host": null
 }
