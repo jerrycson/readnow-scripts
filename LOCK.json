@@ -1,12 +1,12 @@
 {
- "holder": "auto3h",
- "what": "1.89.140 커밋·push",
- "since": "2026-10-29T03:19:14Z",
- "beat": "2026-10-29T03:21:16Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "auto3h",
-  "done": "1.89.138 올림 (28ec349)",
-  "at": "2026-10-28T23:24:47Z"
+  "done": "1.89.140 올림 (497ca21)",
+  "at": "2026-10-29T03:23:00Z"
  }
 }
