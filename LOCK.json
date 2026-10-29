@@ -1,17 +1,13 @@
 {
- "holder": "friend",
- "what": "책방 친구 P5 PC 프로그램 0.2.0",
- "since": "2026-10-29T16:14:31Z",
- "beat": "2026-10-29T17:11:31Z",
- "ask": {
-  "who": "friend",
-  "why": "판 내기 기다림: 책방 친구 ② 몸·옷 윤곽 1묶음 배포",
-  "at": "2026-10-29T16:58:37Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "friend",
-  "done": "P1 1차 배포 29790ce · 웹앱 1.78.254 · friend 0.14.0",
-  "at": "2026-10-29T16:13:40Z"
+  "done": "P5 2f01ecc · 웹앱 1.78.255 · 프로그램 0.2.0 · 책방 친구 0.15.0",
+  "at": "2026-10-29T17:14:21Z"
  },
- "host": "vm"
+ "host": null
 }
