@@ -1,12 +1,12 @@
 {
- "holder": "auto3h",
- "what": "4시간 점검 20:13 — 판매자 연결 바뀐 것만(다른 점검 1.89.142 위에 얹음)",
- "since": "2026-10-29T11:24:21Z",
- "beat": "2026-10-29T11:36:59Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "chat",
-  "done": "진단 회차 열쇠 pub_*.pem a6079cd",
-  "at": "2026-10-29T10:58:53Z"
+  "who": "auto3h",
+  "done": "4시간 점검 20:13 — 수집기 1.89.143 d87c4c4",
+  "at": "2026-10-29T11:39:34Z"
  }
 }
