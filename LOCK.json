@@ -1,17 +1,13 @@
 {
- "holder": "friend",
- "what": "③ 움직임 1묶음 배포(t3)",
- "since": "2026-10-29T18:37:33Z",
- "beat": "2026-10-29T18:52:37Z",
- "ask": {
-  "who": "friend",
-  "why": "판 내기 기다림: 책방 친구 ② 몸·옷 2묶음 배포",
-  "at": "2026-10-29T18:38:04Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
   "who": "friend",
-  "done": "⑤ 화풍 렌더링 1묶음 · 책방 친구 0.15.2 · 웹앱 1.78.257 · 91fff21",
-  "at": "2026-10-29T18:36:56Z"
+  "done": "③ 움직임 1묶음 d7b5a06 · 웹앱 1.78.258 · friend 0.15.3",
+  "at": "2026-10-29T18:57:38Z"
  },
- "host": "vm-motion"
+ "host": null
 }
