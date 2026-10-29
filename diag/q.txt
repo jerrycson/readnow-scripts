@@ -1,14 +1,7 @@
-perf=400
-health=1&hours=24
-health=1&hours=3
-doc=app_settings/write_watch,prd_jobs/pcBeat,app_settings/value_model,app_settings/buyback_stats,app_settings/extras_study,app_settings/backup_auto,prd_system/dataBackup,prd_system/autoSched,app_settings/secure_vault_cfg,app_settings/cloud_login
-logs=1&pc=HOME&from=202610291700
-logs=1&pc=JS-MAIN&from=202610291700
-logs=1&pc=LOGGER&from=202610291700
-logs=1&pc=MJ-MAIN&from=202610291200
-recentUp=prd_listings&mins=240
-recentUp=sellers&mins=240
-cmds=shopRead&n=10
-cmds=y24Shop&n=5
-dump=counts
-# 1689615533
+logs=1&pc=JS-MAIN&from=202610291150&to=202610291340
+logs=1&pc=HOME&from=202610290940&to=202610291030
+doc=app_settings/cloud,app_settings/y24_shop,prd_system/fbCols
+cmds=pageText&n=10
+recentUp=bench_items&mins=240
+sizes=shp_cmd_out,friend_pair&n=50
+# 1939525547
