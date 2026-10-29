@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.142
+// @version      1.89.144
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -1998,9 +1998,21 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     });
   }
   let sellerLinksAt = 0; /* (1.89.141 4시간 점검) loadSellerLinks로 Firebase 판매자 전부를 읽은 시각 — 10분 안이면 다시 읽지 않음(이 PC 판매자로 바꾸면 0) */
-  function setSellerLinks(sellers) { sellerLinksAt = 0; sellerLinkMap = new Map(); sellers.forEach((s) => (s.linkedCustomers || []).forEach((l) => { const a = sellerLinkMap.get(l.customerId) || []; a.push({ name: s.name, grade: s.ourGrade || s.grade || null, aladinGrade: s.aladinGrade || null, reasons: l.reasons, level: l.level || null, strong: l.level ? l.level === 'match' : (l.reasons || []).some((r) => r !== '비슷한 이메일') }); sellerLinkMap.set(l.customerId, a); })); }
+  let selSrc = null, selMax = 0, selFullAt = 0; /* (1.89.143 4시간 점검) 고객과 연결된 판매자만 가볍게(id → 이름·등급·연결) · 그 읽기에서 가장 늦은 uploadedAt(ms) · 마지막 통째 읽기 시각 */
+  function setSellerLinks(sellers, keep) { if (!keep) { sellerLinksAt = 0; selSrc = null; selFullAt = 0; } sellerLinkMap = new Map(); sellers.forEach((s) => (s.linkedCustomers || []).forEach((l) => { const a = sellerLinkMap.get(l.customerId) || []; a.push({ name: s.name, grade: s.ourGrade || s.grade || null, aladinGrade: s.aladinGrade || null, reasons: l.reasons, level: l.level || null, strong: l.level ? l.level === 'match' : (l.reasons || []).some((r) => r !== '비슷한 이메일') }); sellerLinkMap.set(l.customerId, a); })); }
   /* (1.89.141 4시간 점검 · 🧠) 판매자 1.5만여 명 통째 읽기를 한 번의 올리기 안에서 두 번(고객 요약 다시 계산 → 점수 전체 계산) 하던 것 — 10/29 HOME 실측 주문 든 시간마다 13~15초 · 그때마다 약 1.5만 번 읽기 더. 10분 안에 읽었으면 그것을 씀 */
-  async function loadSellerLinks() { if (sellerLinksAt && Date.now() - sellerLinksAt < 10 * 60e3) return; try { const ss = await fdb.collection('sellers').get(); const arr = []; ss.forEach((d) => arr.push(d.data())); setSellerLinks(arr); sellerLinksAt = Date.now(); } catch (e) {} }
+  /* (1.89.143 4시간 점검 · 🧠 근원) 1.89.142가 통째 읽기를 2천 명씩 나눠 화면 막힘은 줄였지만 읽는 수는 같음 — 10분 재사용은 매시 '⏰ 전체주문'(주문 든 시간)에 소용없어 그때마다 판매자 1.5만여 명(약 1.5만 번 읽기 · 15초 · 1.5만 건 사본)을 다시 받았음(10/29 JS-MAIN 19:01:35→19:01:51 · 20:01:23→20:01:38)
+   *  → 2시간 안에는 지난 읽기 뒤 uploadedAt이 바뀐 판매자만 받아 고침(웹앱 syncSellersNow와 같은 방식 · 판매자를 쓰는 곳은 모두 uploadedAt을 찍음) · 2시간마다·이 PC 판매자로 바꾸면·바뀐 것이 2천 명 넘으면 예전처럼 통째로(2천 명씩 나눠)
+   *  계산 결과는 같음(연결 정보 출처는 같고 받는 양만 줄임) · 연결 없는 판매자는 들고 있지 않음(🪶) */
+  async function loadSellerLinks() { const t = Date.now(); if (sellerLinksAt && t - sellerLinksAt < 10 * 60e3) return;
+    const lite = (x) => ({ name: x.name, ourGrade: x.ourGrade, grade: x.grade, aladinGrade: x.aladinGrade, linkedCustomers: x.linkedCustomers });
+    const ms = (x) => (x && x.uploadedAt && typeof x.uploadedAt.toMillis === 'function' ? x.uploadedAt.toMillis() : 0);
+    try { if (selSrc && selMax && selFullAt && t - selFullAt < 2 * 3600e3) {
+        const q = await fdb.collection('sellers').where('uploadedAt', '>', FB.firestore.Timestamp.fromMillis(selMax)).limit(2001).get();
+        if (q.size <= 2000) { let mx = selMax; q.forEach((d) => { const x = d.data(); const u = ms(x); if (u > mx) mx = u; if ((x.linkedCustomers || []).length) selSrc.set(d.id, lite(x)); else selSrc.delete(d.id); }); selMax = mx; setSellerLinks([...selSrc.values()], true); sellerLinksAt = t; return; } }
+      const src = new Map(); let mx = 0; const FPd = FB.firestore.FieldPath.documentId(); let last = null; /* (1.89.142) 2천 명씩 나눠 받고 사이마다 숨 돌림 */
+      for (;;) { let q = fdb.collection('sellers').orderBy(FPd).limit(2000); if (last) q = q.startAfter(last); const ss = await q.get(); ss.forEach((d) => { const x = d.data(); const u = ms(x); if (u > mx) mx = u; if ((x.linkedCustomers || []).length) src.set(d.id, lite(x)); }); if (ss.size < 2000) break; last = ss.docs[ss.docs.length - 1]; await sleep(0); }
+      setSellerLinks([...src.values()]); selSrc = src; selMax = mx; selFullAt = t; sellerLinksAt = t; } catch (e) {} }
 
   // 이 PC에 주문 데이터가 적으면(다른 PC가 주로 수집한 경우) 고객 연결에 쓸 주문을 Firebase에서 내려받음
   let serverOrdersCache = [];
@@ -2022,8 +2034,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if ((o.remoteFee && f >= o.remoteFee) || f >= 6000) return 'remote'; return 'paid';
   }
   // 수집 원본 + 엑셀 + 시트 → 올릴 문서들 (순수 계산, 저장소 읽기만)
-  async function buildDocs() {
-    const lines = await dbAll('orderLines'); const popups = new Map((await dbAll('popups')).map((p) => [p._key, p]));
+  async function buildDocs(opt) { /* (1.89.142 4시간 점검) opt.noCust = 고객 요약(aggregateCustomers) 계산 생략 — 올리기(taskUpload)는 어차피 고객 요약을 버리고 Firebase 전체 자료로 다시 계산함 */
+    let yc = 0; const lines = await dbAll('orderLines'); const popups = new Map((await dbAll('popups')).map((p) => [p._key, p]));
     const returns = await dbAll('returns'); const qna = await dbAll('qnaDetail'); const reviews = await dbAll('reviews');
     const excel = await dbAll('excelLines'); const sheetRows = await dbAll('sheetRows'); const sellerRawAll = await dbAll('sellerRaw');
     const byOrder = {}; lines.forEach((l) => { const k = `${l.kind}|${l.orderNo}`; (byOrder[k] = byOrder[k] || []).push(l); });
@@ -2036,6 +2048,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
 
     // ① 샵매니저 주문 (+ 엑셀로 빈 개인정보 채움)
     for (const [k, ls] of Object.entries(byOrder)) {
+      if (++yc % 150 === 0) await sleep(0); /* (1.89.142) 주문 수천 건을 한 번에 돌며 화면을 12초 막던 것을 150건마다 숨 돌림 */
       const [kind, ono] = k.split('|');
       if (kind === 'cancel' && saleOrders.has(ono)) continue;
       ls.sort((a, b) => (a.page - b.page) || (a.seq - b.seq));
@@ -2254,7 +2267,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
 
     const inters = docs.filter((d) => d.col === 'crm_interactions').map((d) => d.data);
     if (docs.some((d) => d.col === 'sellers')) setSellerLinks(docs.filter((d) => d.col === 'sellers').map((d) => d.data));
-    for (const c of aggregateCustomers(orderDocs.map((x) => x.order), inters)) docs.push({ col: 'crm_customers', id: c.customerId, data: c });
+    if (!(opt && opt.noCust)) for (const c of aggregateCustomers(orderDocs.map((x) => x.order), inters)) docs.push({ col: 'crm_customers', id: c.customerId, data: c });
     buildDocs.lastPending = pending.length;
     return docs.map((d) => ({ ...d, data: clean(d.data) }));
   }
@@ -2538,7 +2551,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     try { const lb = await dbGet('meta', 'lastBuild'); const dt = await dbGet('meta', 'crmDirty'); const pc0 = ((await dbGet('meta', 'pendingCustomers')) || { ids: [] }).ids.length;
       if (lb && lb.ver === APP_VER && lb.pv === P.VERSION && tB - lb.at < 2 * 3600e3 && tB >= lb.at && (!dt || dt.at < lb.at) && !pc0 && (lb.soc || 0) === serverOrdersCache.length) skipB = lb; } catch (e) { skipB = null; }
     if (skipB) log(`올릴 문서 계산 건너뜀 — ${Math.round((tB - skipB.at) / 60e3)}분 전 계산 뒤 이 PC에 바뀐 주문·문의·기록 없음 (2시간마다·바뀌면 다시 계산)`);
-    const docs = skipB ? [] : (await buildDocs()).filter((d) => d.col !== 'crm_customers'); // 고객 요약은 아래에서 Firebase 전체 데이터로 계산
+    const docs = skipB ? [] : (await buildDocs({ noCust: true })).filter((d) => d.col !== 'crm_customers'); // 고객 요약은 아래에서 Firebase 전체 데이터로 계산
     const sent = skipB ? new Map() : new Map((await dbAll('uploaded')).map((u) => [u._key, u.hash]));
     const todo = docs.filter((d) => sent.get(`${d.col}/${d.id}`) !== docHash(d));
     const pendingCust = new Set(((await dbGet('meta', 'pendingCustomers')) || { ids: [] }).ids); // 지난번에 다 못 한 고객 요약
