@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "① 얼굴 2묶음 배포(fix_face)",
- "since": "2026-10-29T20:34:37Z",
- "beat": "2026-10-29T20:34:37Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "friend",
-  "done": "② 몸·옷 2묶음 15ac388 · 웹앱 1.78.261 · friend 0.15.6",
-  "at": "2026-10-29T20:34:23Z"
+  "done": "① 얼굴 2묶음: 배포 전 T67 고치는 중 — 순서 양보",
+  "at": "2026-10-29T20:35:07Z"
  },
- "host": "vm-face"
+ "host": null
 }
