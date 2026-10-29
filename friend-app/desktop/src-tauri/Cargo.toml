@@ -1,6 +1,6 @@
 [package]
 name = "readnow-friend"
-version = "0.1.1"
+version = "0.2.0"
 description = "🐾 책방 친구 — 리드나우 캐릭터를 바탕화면 맨 위에 (껍데기 · 화면은 GitHub Pages friend/)"
 authors = ["리드나우"]
 edition = "2021"

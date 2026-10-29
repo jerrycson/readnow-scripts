@@ -4,8 +4,9 @@
  *  ③ 알림 재료(작은 것만): 주문확인요청 문서 하나(shp_state/confirm) · 지금부터 올라오는 문의·구매평(crm_interactions) · 사업 알림 요약 문서 하나(app_summary/alerts — 웹앱 대표 탭이 씀)
  *  ④ 프로그램 다리: 살아 있음 신호(app_settings/fhost_<기기> 30초) · 눌리는 칸(rects) 알리기 · 프로그램 명령(window.__rnFriendCmd) · 연결 카드
  *  프로그램 다리 약속: 프로그램이 window.__rnFriendHost = {type:'tauri'|'android', ver, post(kind, data)}를 줌(없으면 RnHostAndroid · __TAURI_INTERNALS__로 만듦)
- *   화면 → 프로그램 post: ready{dev,email,app} · rects{r:[[l,t,r,b]...] CSS px 화면 좌표, kb, vw, vh, dpr, sx, sy} · notify{id,title,text,hidden} · open{url} · paired{dev,email} · signout · byeok
- *   프로그램 → 화면 __rnFriendCmd(cmd, arg): geom{x,y,w,h,scale} · hide · show · bye(끄기 직전 → byeok) · esc */
+ *   화면 → 프로그램 post: ready{dev,email,app} · rects{r:[[l,t,r,b]...] CSS px 화면 좌표, kb, card:[l,t,r,b]|null(연결 카드 · 늘 눌림), drag(끄는 중 → 창 전체), vw, vh, dpr, sx, sy} · focus{on, r:[l,t,r,b](글 칸이 든 상자)} · notify{id,title,text,hidden} · open{url} · paired{dev,email} · signout · byeok
+ *     (P5 · 프로그램 0.2.0) need_geom(화면이 뜬 뒤 자리 다시 받기) · open_settings(⚙ → 설정 창) · settings_close(설정 창 닫기) · win_drag{phase:start|move|end, x, y(포인터 CSS px), dx, dy(캐릭터 자리 · 기본 오른쪽 아래에서 옮긴 CSS px), dpr, vw, vh}
+ *   프로그램 → 화면 __rnFriendCmd(cmd, arg): geom{x,y,w,h,scale,monitors,mon,pos:[dx,dy]|null,link} · hide · show · bye(끄기 직전 → byeok) · esc · drag_to{x,y}(끄는 중 다른 모니터로 창이 옮겨 감 → 그 자리 포인터) · say · open */
 'use strict';
 const RNF_BOOT_VER = '0.1.0';
 firebase.initializeApp({ apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385', storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15' }); /* 웹앱과 같은 공개 설정(비밀 아님) */
@@ -32,7 +33,7 @@ function qrArm(b, fn) { if (b.dataset.arm === '1') { b.dataset.arm = ''; b.textC
 
 /* ══ 프로그램 다리 ══ */
 const FR_Q = new URLSearchParams(location.search);
-const FR = { kind: FR_Q.get('host') || null, settings: FR_Q.get('settings') === '1', rk: '', rAt: 0, geom: null, hidden: false, booted: 0, xch: 0, card: null, cardArg: null, cardNo: null, since: null };
+const FR = { kind: FR_Q.get('host') || null, settings: FR_Q.get('settings') === '1', win: FR_Q.get('win') === 'set' ? 'set' : null, rk: '', rAt: 0, geom: null, hidden: false, booted: 0, xch: 0, card: null, cardArg: null, cardNo: null, since: null, pos: [0, 0], drag: null, tk: 0, link: null }; /* win 'set' = PC 프로그램의 ⚙ 설정 창(캐릭터·알림 없이 설정만) */
 const FR_BEAT = 30e3;
 const FR_CLOUD_DEF = 'https://readnow-cloud-63884079760.asia-northeast3.run.app'; /* Cloud Run 정해진 주소 꼴(서비스-프로젝트번호.지역.run.app · 비밀 아님) — 연결 링크에 실제 주소가 오면 그것이 먼저 */
 const frKey = (d) => 'fhost_' + String(d || '').trim().toUpperCase().replace(/[\/\s.#$\[\]]+/g, '_').slice(0, 60); /* 웹앱 frwKey와 같은 규칙 */
@@ -48,25 +49,32 @@ function frOpenUrl(u) { if (!frPost('open', { url: u })) try { window.open(u, '_
 window.RNF_HOOKS = {
   go: (k) => frOpenUrl(RNF_APP() + (k === 'order' ? '?go=confirm' : k === 'qna' ? '?go=qna' : '')), /* 말풍선 '보기 ›' = 기본 브라우저로 웹앱 그 화면 */
   msg: (id, d) => { frPost('notify', { id, title: '💬 ' + String(((d && d.from) || {}).name || '책방 친구'), text: String((d && d.text) || '').slice(0, 200), hidden: FR.hidden ? 1 : 0 }); return false; }, /* 안드로이드 알림 · 화면에도 보임 */
-  panHtml: () => frPanHtml(), widgetHtml: () => '' };
+  panHtml: () => frPanHtml(), widgetHtml: () => '', off: () => FR.win === 'set' }; /* (P5) 설정 창 = 캐릭터·알림 없이 설정만 */
 /* ── 로그인 ── */
-function frPairArgs() { const h = new URLSearchParams(String(location.hash || '').replace(/^#/, '')); const t = h.get('pair'); const code = String(h.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return t ? { t, c: h.get('c'), d: h.get('d') } : code.length === 8 ? { code, c: h.get('c') } : null; } /* #pair=표(링크) · #code=8자리(안드로이드 앱 칸에서 친 코드) */
+function frPairArgs() { const h = new URLSearchParams(String(location.hash || '').replace(/^#/, '')); const t = h.get('pair'); const code = String(h.get('code') || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); const k = String(h.get('k') || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); return t ? { t, c: h.get('c'), d: h.get('d'), k: k.length === 8 ? k : '' } : code.length === 8 ? { code, c: h.get('c') } : null; } /* #pair=표(링크 · k=같은 표의 코드 8자리 — 카드 칸에 채워 둠) · #code=8자리(안드로이드 앱 칸에서 친 코드) */
+const frCleanUrl = () => { const q = new URLSearchParams(location.search); q.delete('pl'); const s = q.toString(); return location.pathname + (s ? '?' + s : ''); }; /* (P5) 프로그램이 연결 링크로 다시 열 때 붙인 pl(새로 읽기 표시)은 지움 */
 function frCloud(c) { const ok = (u) => /^https:\/\/[a-z0-9.-]+\.run\.app$/i.test(String(u || '')); if (ok(c)) return c.replace(/\/+$/, ''); const v = frLS('rn-friend-cloud'); return ok(v) ? v : FR_CLOUD_DEF; }
 function frAuth(u) { const P = frPairArgs();
-  if (P) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} if (!FR.xch) { FR.xch = 1; frExchange(P); } return; } /* 연결 표가 왔으면 먼저(이미 로그인돼 있어도 — 다른 기기 이름일 수 있음) */
+  if (P) { try { history.replaceState(null, '', frCleanUrl()); } catch (e) {} if (!FR.xch) { FR.xch = 1; frExchange(P); } return; } /* 연결 표가 왔으면 먼저(이미 로그인돼 있어도 — 다른 기기 이름일 수 있음) */
   if (FR.xch === 2) return; if (!u) { S.user = null; return frCard('pair'); } if (!FR.booted) { FR.booted = 1; frBoot(u); } }
-async function frExchange(arg) { const c = frCloud(arg.c); frCard('busy'); FR.xch = 2;
+async function frExchange(arg) { const c = frCloud(arg.c); FR.code = arg.k || arg.code || ''; frCard('busy', FR.code); FR.xch = 2;
   try { const r = await fetch(c + '/friend-token', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(arg.t ? { t: arg.t } : { code: arg.code }) }); const j = await r.json().catch(() => ({}));
     if (!r.ok || !j.ok || !j.token || !j.dev) throw new Error(j.err || '클라우드 응답 ' + r.status);
     await firebase.auth().signInWithCustomToken(j.token); frLS('rn-device', String(j.dev)); frLS('rn-friend-cloud', c); frLS('rn-fr-paired', JSON.stringify({ at: new Date().toISOString(), dev: j.dev, email: j.email || null, host: frHostType() })); frLS('rn-fr-show', '1');
-    frPost('paired', { dev: j.dev, email: j.email || null }); frCard('ok', j.dev); setTimeout(() => { try { location.replace(location.pathname + location.search); } catch (e) { location.reload(); } }, 600); /* 깨끗한 주소로 다시 열면 저장된 로그인으로 바로 */ }
+    frPost('paired', { dev: j.dev, email: j.email || null }); frCard('ok', j.dev); setTimeout(() => { try { location.replace(frCleanUrl()); } catch (e) { location.reload(); } }, 600); /* 깨끗한 주소로 다시 열면 저장된 로그인으로 바로 */ }
   catch (e) { FR.xch = 0; frCard('err', (e && e.message) || String(e)); } }
 function frBoot(u) { S.user = u; const dev = deviceName().trim(); if (!dev) return frCard('nodev'); S.devOk = true; /* 연결 때 받은 기기 이름 = 크롬 웹앱이 확인한 그 이름 */ frCard(null);
   try { db.collection('app_settings').doc('main').onSnapshot((d) => { const x = d.exists ? d.data() : {}; S.app = { ...x, adminDevices: x.adminDevices || [] }; }, () => {}); } catch (e) {} /* 관리자 기기·클라우드 주소만 씀 */
-  try { mscBoot(); } catch (e) { console.warn('책방 친구 시작', e); } frFeeds(); frBeat(); setInterval(() => frBeat(), FR_BEAT); setInterval(frTick, 250); setInterval(frState, 1500);
+  try { mscBoot(); } catch (e) { console.warn('책방 친구 시작', e); }
+  if (FR.win === 'set') return frSetWin(); /* (P5) PC 프로그램 ⚙ 설정 창: 살아 있음 신호·눌리는 칸·알림 재료 없이 설정 창만(닫으면 창도 닫힘) */
+  frFeeds(); frBeat(); setInterval(() => frBeat(), FR_BEAT); frTickArm(); setInterval(frState, 1500);
   addEventListener('pagehide', () => frBeat(true)); document.addEventListener('focusin', frTick, true); document.addEventListener('focusout', () => setTimeout(frTick, 30), true);
   if (FR.settings) setTimeout(() => { try { mscPanel(true); } catch (e) {} }, 800);
   frPost('ready', { dev, email: u.email || null, app: RNF_VER }); }
+/* (P5) 설정 창: 설정을 바로 열고 · 설정을 닫으면(✕·Esc·바깥 누름) 창도 닫음 */
+function frSetWin() { document.documentElement.classList.add('fr-setwin'); try { document.title = '🐾 책방 친구 설정'; } catch (e) {} let seen = 0, gone = 0;
+  const open = () => { try { mscPanel(true); } catch (e) {} }; setTimeout(open, 300);
+  setInterval(() => { const ov = document.getElementById('msc_ov'); if (ov) { seen = 1; gone = 0; return; } if (!seen) return; if (++gone >= 2) { seen = 0; if (!frPost('settings_close', null)) open(); } }, 400); }
 /* 알림 재료 — 작은 문서만 */
 function frFeeds() { try { db.collection('shp_state').doc('confirm').onSnapshot({ includeMetadataChanges: true }, (d) => { const fc = d.metadata.fromCache; if (fc && !d.exists) return; const nv = d.exists ? d.data() : { orders: [] }; S.shipC = nv; try { mscOrd(nv, fc); } catch (e) {} }, () => {}); } catch (e) {}
   try { db.collection('crm_interactions').where('uploadedAt', '>', firebase.firestore.Timestamp.fromMillis(Date.now() - 60e3)).onSnapshot((ss) => ss.docChanges().forEach((c) => { if (c.type !== 'removed') try { mscIx(c.doc.id, c.doc.data()); } catch (e) {} }), () => {}); } catch (e) {}
@@ -77,7 +85,9 @@ function frFeeds() { try { db.collection('shp_state').doc('confirm').onSnapshot(
 async function frBeat(bye) { const dev = deviceName().trim(); if (!dev || !S.user) return; const now = new Date().toISOString(); if (!FR.since) FR.since = now;
   try { await db.collection('app_settings').doc(frKey(dev)).set({ dev, at: bye ? null : now, byeAt: bye ? now : null, since: FR.since, host: frHostType(), shell: (window.__rnFriendHost && window.__rnFriendHost.ver) || null, app: RNF_VER, by: (S.user && S.user.email) || null, hidden: !!FR.hidden }, { merge: true }); } catch (e) {} }
 /* 눌리는 칸(rects): 화면 좌표(CSS px) [왼, 위, 오른, 아래] — 캐릭터는 머리 칸 + 몸 칸만(투명한 가장자리는 통과) · 그 밖의 body 바로 아래 보이는 것 전부(단추·말풍선·입력 줄·설정 창·메시지 캐릭터·연결 카드) */
-function frRects() { const out = []; if (FR.hidden) return out; const vw = innerWidth, vh = innerHeight;
+function frDragging() { return !!(FR.drag && FR.drag.on) || !!document.querySelector('#msc_ch.msc-dragging'); } /* 캐릭터를 끄는 중(Ctrl+끌기 자리 옮김 · 손발 끌기) */
+function frCardRect() { const c = document.getElementById('fr_card'); if (!c || !c.querySelector('input')) return null; const q = c.getBoundingClientRect(); return q.width && q.height ? [Math.floor(q.left - 6), Math.floor(q.top - 6), Math.ceil(q.right + 6), Math.ceil(q.bottom + 6)] : null; } /* 코드 칸이 있는 연결 카드 — 열린 동안 늘 눌림 */
+function frRects() { const out = []; if (FR.hidden) return out; const vw = innerWidth, vh = innerHeight; if (frHostType() === 'tauri' && frDragging()) return [[0, 0, vw, vh]]; /* (P5) 끄는 중엔 창 전체가 마우스를 받음(포인터가 캐릭터 칸 밖으로 나가도 끌기가 안 끊기게) */
   const add = (l, t, r, b, pad) => { pad = pad || 0; l = Math.max(0, l - pad); t = Math.max(0, t - pad); r = Math.min(vw, r + pad); b = Math.min(vh, b + pad); if (r - l >= 1 && b - t >= 1) out.push([Math.round(l), Math.round(t), Math.round(r), Math.round(b)]); };
   const addEl = (el, pad) => { const q = el.getBoundingClientRect(); if (q.width && q.height) add(q.left, q.top, q.right, q.bottom, pad); };
   for (const el of document.body.children) { if (/^(SCRIPT|STYLE|LINK|TEMPLATE|NOSCRIPT)$/.test(el.tagName)) continue;
@@ -86,15 +96,19 @@ function frRects() { const out = []; if (FR.hidden) return out; const vw = inner
     const cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity === 0 || cs.pointerEvents === 'none') continue; addEl(el, 2); }
   return out; }
 /* 글 칸에 커서가 들어가면 창이 키보드를 받고(나오면 풀림) — 칸 밖으로 마우스가 나가도 입력이 끊기지 않게 */
-document.addEventListener('focusin', (e) => { const t = e.target; if (t && /^(INPUT|TEXTAREA)$/.test(t.tagName)) frPost('focus', { on: true }); });
+const frFocusBox = (t) => { const b = (t.closest && t.closest('#fr_card,#msc_mbar,#msc_ov,#msc_cu,#msc_sh,.msc-ov')) || t; const q = b.getBoundingClientRect(); return [Math.floor(q.left), Math.floor(q.top), Math.ceil(q.right), Math.ceil(q.bottom)]; };
+document.addEventListener('focusin', (e) => { const t = e.target; if (t && /^(INPUT|TEXTAREA)$/.test(t.tagName)) frPost('focus', { on: true, r: frFocusBox(t) }); });
 document.addEventListener('focusout', (e) => { const t = e.target; if (t && /^(INPUT|TEXTAREA)$/.test(t.tagName)) setTimeout(() => { const a = document.activeElement; if (!a || !/^(INPUT|TEXTAREA)$/.test(a.tagName)) frPost('focus', { on: false }); }, 60); });
 function frKb() { const a = document.activeElement; return !!((a && a !== document.body && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || document.querySelector('#msc_mbar,#msc_ov,#msc_cu,#msc_sh,#fr_card input')); } /* 안드로이드: 글 칸이 열려 있으면 창이 키보드를 받게 */
-function frTick() { if (document.hidden || !frHost()) return; const r = frRects(); const kb = frKb(); const k = JSON.stringify(r) + kb + innerWidth + 'x' + innerHeight + '@' + (window.devicePixelRatio || 1); const now = Date.now(); if (k === FR.rk && now - FR.rAt < 5000) return; FR.rk = k; FR.rAt = now;
-  frPost('rects', { r, kb, vw: innerWidth, vh: innerHeight, dpr: window.devicePixelRatio || 1, sx: window.screenX || 0, sy: window.screenY || 0 }); }
+function frTick() { if (FR.drag && FR.drag.on && performance.now() - (FR.drag.at || 0) > 4000 && FR.dragEnd) FR.dragEnd(null, 'stale'); /* 끄는 소식이 4초 넘게 없으면(창이 모니터를 옮기며 손 뗌을 놓침) 끝냄 — 창 전체가 계속 마우스를 받지 않게 */
+  if (!frHost() || FR.win === 'set' || (document.hidden && frHostType() !== 'tauri')) return; /* (P5) PC 프로그램은 투명 창이라 '숨음'으로 잘못 보일 때가 있어 늘 보냄 */ if (FR.gearPlace) FR.gearPlace(); const r = frRects(); const kb = frKb(); const card = frCardRect(); const drag = frDragging(); const k = JSON.stringify(r) + kb + JSON.stringify(card) + drag + innerWidth + 'x' + innerHeight + '@' + (window.devicePixelRatio || 1); const now = Date.now(); if (k === FR.rk && now - FR.rAt < 5000) return; FR.rk = k; FR.rAt = now;
+  frPost('rects', { r, kb, card, drag, vw: innerWidth, vh: innerHeight, dpr: window.devicePixelRatio || 1, sx: window.screenX || 0, sy: window.screenY || 0 }); }
+function frTickArm() { if (FR.tk) return; FR.tk = setInterval(frTick, 250); } /* (P5) 로그인 전(연결 카드만 있을 때)도 250ms마다 — 예전엔 로그인 뒤에만 돌아 카드 칸이 프로그램에 안 알려질 수 있었음 */
 /* 캐릭터가 안 나오는 까닭을 카드로(범위 밖 · 캐릭터 안 고름) · 처음 연결이면 캐릭터 보이기 */
 function frState() { if (!S.user || FR.card === 'pair' || FR.card === 'err' || FR.card === 'busy' || typeof M_ === 'undefined' || !M_.doc) return; const dev = mscDev(); if (!mscInScope()) return FR.cardNo === 'scope' ? null : frCard('scope', dev); const mine = mscMine();
   if (!mine.charId || !mscChar(mine.charId)) return FR.cardNo === 'nochar' ? null : frCard('nochar', dev); if (frLS('rn-fr-show') === '1') { frLS('rn-fr-show', null); if (!mscOpen()) try { mscSaveMe({ open: true }, '🐾 책방 친구 프로그램 — 캐릭터 보이기'); } catch (e) {} } if (FR.card === 'scope' || FR.card === 'nochar') frCard(null); }
-window.__rnFriendCmd = function (cmd, arg) { if (cmd === 'geom') { FR.geom = arg || null; return true; }
+window.__rnFriendCmd = function (cmd, arg) { if (cmd === 'geom') { FR.geom = arg || null; if (arg && 'link' in arg) FR.link = arg.link; if (!(FR.drag && FR.drag.on)) { if (arg && Array.isArray(arg.pos)) frPosSet(arg.pos, 1); else if (arg && arg.pos === null) frPosSet([0, 0], 1); } FR.rk = ''; setTimeout(frTick, 60); return true; } /* (P5) pos = 이 모니터에서 놓아 둔 캐릭터 자리(없으면 오른쪽 아래) */
+  if (cmd === 'drag_to') { if (FR.drag && arg && Number.isFinite(+arg.x) && Number.isFinite(+arg.y)) { FR.drag.at = performance.now(); FR.drag.lx = +arg.x; FR.drag.ly = +arg.y; frDragAt(+arg.x, +arg.y); } return true; }
   if (cmd === 'hide' || cmd === 'show') { FR.hidden = cmd === 'hide'; document.documentElement.classList.toggle('rn-fhide', FR.hidden); FR.rk = ''; frTick(); frBeat(); return true; }
   if (cmd === 'bye') return frBeat(true).then(() => { frPost('byeok', null); return true; });
   if (cmd === 'esc') { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); return true; }
@@ -112,7 +126,7 @@ function frCard(kind, arg) { let c = document.getElementById('fr_card'); if (kin
   c.classList.toggle('err', kind === 'err');
   const pill = kind === 'busy' ? '🔐 연결하는 중…' : kind === 'ok' ? '✓ 연결됨' : kind === 'err' ? '⚠ 연결 실패 — 펼치기' : kind === 'pair' || kind === 'nodev' ? '🐾 연결하기' : '🐾 책방 친구';
   const body = kind === 'pair' ? `<h4>${IS_MOBILE_DEV ? '아직 연결 전이에요 — 아래 칸에 코드를 넣거나 웹앱 단추를 누르세요' : '🐾 책방 친구 — 연결이 필요해요'}</h4>${how}${codeRow}<p><button type="button" class="ghost" data-frweb="1" title="기본 브라우저(크롬)로 리드나우 웹앱 열기">🌐 웹앱 열기</button></p>`
-    : kind === 'busy' ? '<h4>🔐 연결하는 중…</h4><p><small>클라우드에서 같은 계정의 로그인 열쇠를 받고 있어요(몇 초).</small></p>'
+    : kind === 'busy' ? `<h4>🔐 연결하는 중…</h4>${arg ? `<p>연결 코드 <b style="font:700 18px/1.2 monospace;letter-spacing:2px">${esc(String(arg).slice(0, 4))}-${esc(String(arg).slice(4, 8))}</b></p>` : ''}<p><small>클라우드에서 같은 계정의 로그인 열쇠를 받고 있어요(몇 초).</small></p>`
     : kind === 'ok' ? `<h4>✓ 연결됨 — 기기 ${esc(arg || '')}</h4><p><small>캐릭터를 불러와요. 다음부터는 켜기만 하면 저절로 로그인돼요.</small></p>`
     : kind === 'err' ? `<h4 class="bad">⚠ 연결 실패</h4><p class="bad">${esc(String(arg || '').slice(0, 220))}</p><p><small>${/지났|사용한|맞지 않음|코드/.test(String(arg)) ? '웹앱에서 연결 단추를 다시 눌러 새 코드를 받아 주세요.' : /권한|열쇠|IAM/i.test(String(arg)) ? '클라우드 권한 준비가 필요해요 — 웹앱 설명서 › 🖥 책방 친구 프로그램 › 처음 한 번(클라우드) 참고.' : '인터넷 연결을 확인하고 다시 해 보세요.'}</small></p>${codeRow}`
     : kind === 'nodev' ? `<h4>🐾 이 프로그램에 기기 이름이 없어요</h4><p><small>웹앱에서 연결 단추를 다시 눌러 주세요(그 크롬의 기기 이름을 함께 받아요).</small></p>${how}${codeRow}`
@@ -121,7 +135,9 @@ function frCard(kind, arg) { let c = document.getElementById('fr_card'); if (kin
   /* (10/29 급한 일 · 정범님 23:31 휴대폰) 머리줄 = 잡고 끌어 옮김 · ▾ 접기(작은 알약만) · 닫을 수 있는 카드는 ✕ — 자리·접힘은 이 기기에 기억 */
   c.innerHTML = `<div class="fr-hd" data-frhd="1" title="잡고 끌면 옮겨져요 · ▾ = 접기"><span class="grip" aria-hidden="true">⠿</span><b>🐾 책방 친구</b><span class="sp"></span><button type="button" class="hb" data-frfold="1" title="접기 — 작은 단추만 남겨요(누르면 다시 펼침)" aria-label="접기">접기 ▾</button>${kind === 'scope' || kind === 'nochar' ? '<button type="button" class="hb" data-frx="1" title="닫기" aria-label="닫기">✕</button>' : ''}</div><div class="fr-bd">${body}</div><button type="button" class="fr-pill" data-frunfold="1" title="눌러서 펼치기 · 끌어서 옮기기">${pill}</button>`;
   c.classList.toggle('fold', frLS(FR_CARD_FOLD) === '1'); frCardPlace(c);
-  FR.rk = ''; if ((kind === 'pair' || kind === 'err' || kind === 'nodev') && !c.classList.contains('fold') && !frNarrow()) setTimeout(() => { const i = document.getElementById('fr_code'); if (i) try { i.focus(); } catch (e) {} }, 50); /* 휴대폰은 저절로 커서를 넣지 않음(자판이 바로 올라와 화면을 덮지 않게) */ setTimeout(frTick, 30); }
+  if (kind === 'pair' && FR.link === false) (c.querySelector('.fr-bd') || c).insertAdjacentHTML('beforeend', '<p class="bad"><small>⚠ 이 PC에 연결 주소(readnow-friend://)가 등록되지 않았어요 — 웹앱 단추로는 안 열릴 수 있으니 웹앱에 나온 코드 8자리를 위 칸에 넣어 주세요.</small></p>');
+  const ci = document.getElementById('fr_code'); if (ci && FR.code && (kind === 'err' || kind === 'nodev')) ci.value = FR.code.slice(0, 4) + '-' + FR.code.slice(4, 8); /* (P5) 웹앱 단추로 받은 코드는 칸에 채워 둠 — Enter만 누르면 다시 */
+  FR.rk = ''; if ((kind === 'pair' || kind === 'err' || kind === 'nodev') && !c.classList.contains('fold') && !frNarrow()) setTimeout(() => { const i = document.getElementById('fr_code'); if (i) try { i.focus(); } catch (e) {} }, 50); /* 휴대폰은 저절로 커서를 넣지 않음(자판이 바로 올라와 화면을 덮지 않게) */ setTimeout(frTick, 30); frTickArm(); }
 /* ── 연결 카드 옮기기·접기(10/29 급한 일) — 자리는 오른쪽·아래 끝에서 떨어진 거리(px)로 기억(화면 크기가 바뀌어도 그 모서리 기준) ── */
 const FR_CARD_POS = 'rn-fr-card-pos', FR_CARD_FOLD = 'rn-fr-card-fold';
 function frNarrow() { return Math.min(innerWidth || 9999, (screen && screen.width) || 9999) <= 480; }
@@ -149,4 +165,52 @@ function frPanHtml() { let P = null; try { P = JSON.parse(frLS('rn-fr-paired') |
   ${frHostType() !== 'web' ? `<button type="button" class="btn ghost sm" data-frout="1" title="이 프로그램의 로그인을 지움 — 두 번 눌러 확정 · 다시 쓰려면 웹앱에서 다시 연결">🔌 연결 끊기(로그아웃)</button>` : ''}`; }
 document.addEventListener('click', (e) => { const o = e.target && e.target.closest && e.target.closest('[data-frout]'); if (!o) return; e.preventDefault(); qrArm(o, async () => { await frBeat(true); frLS('rn-fr-paired', null); frLS('rn-device', null); try { await firebase.auth().signOut(); } catch (x) {} frPost('signout', null); location.replace(location.pathname + location.search); }); });
 /* 시작(index.html 맨 끝에서 부름) */
-function RNF_START() { document.documentElement.classList.add('rn-friend'); firebase.auth().onAuthStateChanged((u) => frAuth(u)); }
+function RNF_START() { document.documentElement.classList.add('rn-friend'); firebase.auth().onAuthStateChanged((u) => frAuth(u));
+  /* (P5) 이미 열린 화면에 연결 링크가 오면(주소 끝 #pair=…만 바뀌어 다시 읽지 않음 — 안드로이드 loadUrl·예전 PC 판) 바로 연결 */
+  addEventListener('beforeunload', () => { FR.leaving = 1; }); /* 다시 읽는 중이면 해시 연결은 새 화면이 함 */
+  addEventListener('hashchange', () => setTimeout(() => { if (FR.leaving || !frPairArgs()) return; FR.xch = 0; frAuth(S.user || (firebase.auth().currentUser || null)); }, 250));
+  if (FR.win === 'set' || !frHost()) return;
+  frPosLoad(); frTickArm(); frPost('need_geom', null); frMoveBind(); frGearBind(); }
+/* ══ (P5 · 프로그램 0.2.0) 캐릭터 자리 옮기기 · 캐릭터 옆 ⚙ ══
+ *  자리: 캐릭터 무리(캐릭터·말풍선·🐾·⚙·💬)를 기본 자리(오른쪽 아래)에서 [dx, dy] CSS px 옮김(margin) — 투명 창은 모니터 작업 영역 전체라 모니터 안에서는 화면이 옮기고,
+ *        끄는 포인터가 다른 모니터로 넘어가면 프로그램이 창을 그 모니터로 옮긴 뒤 drag_to로 포인터 자리를 알려 줌 · 놓으면 win_drag end → 프로그램이 모니터 이름·자리·배율을 기기별 friend.json에 저장
+ *  Ctrl+끌기 = 자리 옮기기(몸 어디든) · 그냥 끌기 = 예전 그대로 손·발 끌기 몸짓 */
+const FR_POS_KEY = 'rn-fr-pos';
+const FR_CL_SEL = '#msc_ch,#msc_ico,#msc_gear,#msc_msgbtn';
+function frShellAtLeast(v) { const h = window.__rnFriendHost; const s = String((h && h.ver) || '0').replace(/^[^0-9]*/, '').split('.').map((x) => parseInt(x, 10) || 0); const t = v.split('.').map((x) => +x); for (let i = 0; i < 3; i++) { if ((s[i] || 0) !== t[i]) return (s[i] || 0) > t[i]; } return true; }
+function frPosApply() { const st = document.documentElement.style; st.setProperty('--fr-mx', -Math.round(FR.pos[0]) + 'px'); st.setProperty('--fr-my', -Math.round(FR.pos[1]) + 'px'); }
+function frPosClamp(p) { const vw = innerWidth, vh = innerHeight; let L = Infinity, T = Infinity, Rr = -Infinity, B = -Infinity;
+  document.querySelectorAll(FR_CL_SEL).forEach((el) => { const q = el.getBoundingClientRect(); if (!q.width || !q.height) return; L = Math.min(L, q.left - FR.pos[0]); T = Math.min(T, q.top - FR.pos[1]); Rr = Math.max(Rr, q.right - FR.pos[0]); B = Math.max(B, q.bottom - FR.pos[1]); });
+  if (!Number.isFinite(L)) { L = vw - 200; T = vh - 300; Rr = vw - 8; B = vh - 8; } /* 아직 캐릭터가 없으면 대강(오른쪽 아래 200×300) */
+  const m = 4; return [Math.round(Math.max(m - L, Math.min(vw - m - Rr, +p[0] || 0))), Math.round(Math.max(m - T, Math.min(vh - m - B, +p[1] || 0)))]; } /* 캐릭터 무리가 창(모니터) 밖으로 나가지 않게 */
+function frPosSet(p, fromHost) { FR.pos = [+p[0] || 0, +p[1] || 0]; frPosApply(); if (!fromHost) frLS(FR_POS_KEY, JSON.stringify({ dx: FR.pos[0], dy: FR.pos[1], dpr: window.devicePixelRatio || 1, at: new Date().toISOString() })); FR.rk = ''; }
+function frPosLoad() { let v = null; try { v = JSON.parse(frLS(FR_POS_KEY) || 'null'); } catch (e) {} if (v && Number.isFinite(+v.dx) && Number.isFinite(+v.dy)) { const k = (+v.dpr || 1) / (window.devicePixelRatio || 1); FR.pos = [v.dx * k, v.dy * k]; } frPosApply(); setTimeout(() => { if (!(FR.drag && FR.drag.on)) { FR.pos = frPosClamp(FR.pos); frPosApply(); } }, 1500); } /* 프로그램이 geom으로 자리를 주면 그것이 먼저(예전 0.1.x 판은 이 기기 저장소 값) */
+function frDragAt(x, y) { const d = FR.drag; if (!d) return; FR.pos = frPosClamp([x - d.gx - innerWidth, y - d.gy - innerHeight]); frPosApply(); }
+function frMoveBind() {
+  const end = (e, why) => { const d = FR.drag; if (!d || (e && e.pointerId != null && e.pointerId !== d.id)) return; FR.drag = null; document.documentElement.classList.remove('fr-moving'); try { d.el.releasePointerCapture(d.id); } catch (x) {}
+    if (!d.on) return; FR.noClick = performance.now(); frPosSet(frPosClamp(FR.pos)); frPost('win_drag', { phase: 'end', x: Math.round(d.lx), y: Math.round(d.ly), dx: FR.pos[0], dy: FR.pos[1], dpr: window.devicePixelRatio || 1, vw: innerWidth, vh: innerHeight, why: why || 'up' }); FR.rk = ''; frTick();
+    try { toast('🐾 캐릭터 자리를 기억했어요(이 PC · 이 모니터)'); } catch (x) {} };
+  addEventListener('pointerdown', (e) => { if (!e.ctrlKey || (e.button && e.button !== 0) || FR.hidden) return; if (!frOnChar(e.clientX, e.clientY) && !(e.target && e.target.closest && e.target.closest('#msc_ch'))) return; const ch = document.documentElement;
+    e.stopPropagation(); e.preventDefault(); /* 손·발 끌기(mscDragBind)보다 먼저 가로챔 */
+    FR.drag = { id: e.pointerId, el: ch, sx: e.clientX, sy: e.clientY, lx: e.clientX, ly: e.clientY, gx: e.clientX - (innerWidth + FR.pos[0]), gy: e.clientY - (innerHeight + FR.pos[1]), on: 0, mt: 0, at: performance.now() }; try { ch.setPointerCapture(e.pointerId); } catch (x) {} }, true);
+  addEventListener('pointermove', (e) => { const d = FR.drag; if (!d || e.pointerId !== d.id) return; e.stopPropagation(); if (e.pointerType === 'mouse' && e.buttons === 0) return end(e, 'nobtn'); /* 창 밖에서 손을 뗐음 */ d.lx = e.clientX; d.ly = e.clientY; d.at = performance.now();
+    if (!d.on) { if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 4) return; d.on = 1; document.documentElement.classList.add('fr-moving'); FR.rk = ''; frTick(); frPost('win_drag', { phase: 'start', x: Math.round(d.sx), y: Math.round(d.sy), dx: FR.pos[0], dy: FR.pos[1], dpr: window.devicePixelRatio || 1, vw: innerWidth, vh: innerHeight }); }
+    frDragAt(e.clientX, e.clientY); const now = performance.now(); if (now - d.mt > 40) { d.mt = now; frPost('win_drag', { phase: 'move', x: Math.round(e.clientX), y: Math.round(e.clientY), dx: FR.pos[0], dy: FR.pos[1], dpr: window.devicePixelRatio || 1 }); } }, true);
+  FR.dragEnd = end; addEventListener('pointerup', (e) => end(e, 'up'), true); addEventListener('pointercancel', (e) => end(e, 'cancel'), true); addEventListener('lostpointercapture', (e) => end(e, 'lost'), true);
+  addEventListener('click', (e) => { if (FR.noClick && performance.now() - FR.noClick < 400) { e.stopPropagation(); e.preventDefault(); } }, true); /* 옮기고 손을 뗄 때 생기는 click은 머리·배 눌림으로 치지 않음 */
+  addEventListener('keydown', (e) => { if (e.key === 'Control') document.documentElement.classList.add('fr-ctrl'); }); addEventListener('keyup', (e) => { if (e.key === 'Control') document.documentElement.classList.remove('fr-ctrl'); }); addEventListener('blur', () => document.documentElement.classList.remove('fr-ctrl'));
+  addEventListener('resize', () => { if (!(FR.drag && FR.drag.on)) { FR.pos = frPosClamp(FR.pos); frPosApply(); } }); }
+/* 캐릭터 옆 ⚙(캐릭터에 마우스를 올리면 나타남 · 캐릭터 상자 바깥 왼쪽 위라 손·발 끌기와 안 겹침): PC 프로그램 0.2.0 이상 = 설정 창(새 창) · 그 밖 = 같은 화면 안 설정(예전 그대로) */
+function frSettingsOpen() { if (frHostType() === 'tauri' && frShellAtLeast('0.2.0') && frPost('open_settings', null)) { try { toast('⚙ 설정 창을 열어요'); } catch (e) {} return true; } try { mscPanel(true); } catch (e) {} return false; }
+function frOnChar(x, y) { const ch = document.getElementById('msc_ch'); if (!ch) return false; const q = ch.getBoundingClientRect(); return q.width > 0 && x >= q.left + q.width * 0.12 && x <= q.right - q.width * 0.12 && y >= q.top && y <= q.bottom; } /* 캐릭터 몸(상자 가운데 76% · 눌리는 칸과 같은 폭) 위인가 */
+function frGearBind() { let g = null, tm = 0, mt = 0;
+  const place = () => { const ch = document.getElementById('msc_ch'); if (!ch || !g) return false; const q = ch.getBoundingClientRect(); if (!q.width) return false; const s = 30; let x = q.left + q.width * 0.12 - s - 2; if (x < 4) x = q.right - q.width * 0.12 + 2; g.style.left = Math.round(Math.min(innerWidth - s - 4, x)) + 'px'; g.style.top = Math.round(Math.max(4, q.top + q.height * 0.04)) + 'px'; return true; };
+  const show = () => { if (FR.hidden || (FR.drag && FR.drag.on)) return; if (!g) { g = document.createElement('button'); g.id = 'msc_frgear'; /* id가 msc_로 시작 = 캐릭터 것(캐릭터가 이 단추를 장애물로 보고 비켜 가지 않게 · mscAvOwn) */ g.type = 'button'; g.className = 'fr-hgear'; g.textContent = '⚙'; g.title = '책방 친구 설정 — PC 프로그램은 설정 창(새 창)으로 · Ctrl을 누른 채 캐릭터를 끌면 자리 옮기기';
+      g.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); frSettingsOpen(); }); g.addEventListener('pointerenter', () => { clearTimeout(tm); tm = 0; }); g.addEventListener('pointerleave', hideSoon); document.body.appendChild(g); }
+    if (!place()) return; clearTimeout(tm); tm = 0; if (g.style.display !== 'flex') { g.style.display = 'flex'; FR.rk = ''; frTick(); } };
+  FR.gearPlace = () => { if (g && g.style.display === 'flex') place(); }; /* 캐릭터가 비켜 가면(장애물 피하기) ⚙도 따라감 — frTick(250ms)이 부름 */
+  const hideSoon = () => { clearTimeout(tm); tm = setTimeout(() => { tm = 0; if (g) { g.style.display = 'none'; FR.rk = ''; frTick(); } }, 1800); };
+  document.addEventListener('pointermove', (e) => { if (e.pointerType === 'touch') return; const now = performance.now(); if (now - mt < 80) return; mt = now; if (frOnChar(e.clientX, e.clientY)) show(); else if (g && g.style.display === 'flex' && !(e.target && e.target.closest && e.target.closest('#msc_frgear'))) { if (!tm) hideSoon(); } }, { passive: true }); /* 캐릭터에 마우스를 올리면 나타나고 · 떠나면 1.8초 뒤 사라짐 */
+  document.documentElement.addEventListener('pointerleave', () => { if (g && g.style.display === 'flex') hideSoon(); });
+  /* 구석 ⚙(#msc_gear)도 PC 프로그램 0.2.0 이상이면 설정 창으로 */
+  document.addEventListener('click', (e) => { const o = e.target && e.target.closest && e.target.closest('#msc_gear'); if (!o || !(frHostType() === 'tauri' && frShellAtLeast('0.2.0'))) return; e.preventDefault(); e.stopImmediatePropagation(); frSettingsOpen(); }, true); }

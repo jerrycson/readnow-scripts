@@ -41,7 +41,7 @@ class MainActivity : Activity() {
         if (d.scheme == "readnow-friend" && d.host == "pair") {
             if (!Settings.canDrawOverlays(this)) { pendingPair = d.toString(); draw(); return }
             startForegroundService(Intent(this, FriendService::class.java).putExtra(FriendService.EXTRA_PAIR, d.toString()))
-            toastLine = "🔐 연결하는 중 — 캐릭터 화면 오른쪽 아래 카드를 보세요"
+            toastLine = "🔐 연결 링크를 받았어요 — 캐릭터 화면의 🐾 책방 친구 카드에서 결과를 보세요(안 되면 그 카드 칸에 코드 8자리)"
         }
     }
 
@@ -88,6 +88,7 @@ class MainActivity : Activity() {
                 startForegroundService(Intent(this, FriendService::class.java).apply { pendingPair?.let { putExtra(FriendService.EXTRA_PAIR, it) } }); pendingPair = null; window.decorView.postDelayed({ draw() }, 500)
             }) else box.addView(btn("■ 캐릭터 끄기", false) { startService(Intent(this, FriendService::class.java).setAction(FriendService.ACT_STOP)); window.decorView.postDelayed({ draw() }, 1800) })
         }
+        if (toastLine == null && FriendService.prefs(this).getString("dev", null).isNullOrEmpty()) box.addView(tv("🐾 연결이 필요해요 — 아래 칸에 코드를 넣거나 웹앱 단추를 누르세요(캐릭터 화면 카드는 머리줄을 끌어 옮기거나 접기 ▾로 작게 할 수 있어요)", 14f, true, Color.parseColor("#B0322A")))
         box.addView(tv("처음 한 번 연결", 17f, true, green))
         box.addView(tv("① 이 폰의 크롬에서 리드나우 웹앱 → ⚙ 설정 → 🐾 책방 친구 카드 → '🖥 이 기기에 책방 친구 프로그램 연결'을 누르면 이 앱이 열리며 저절로 연결돼요.\n② 저절로 안 되면 웹앱에 나온 연결 코드 8자리(10분 안 · 한 번만)를 아래에 넣고 '연결'.\n연결은 한 번이면 끝 — 그 뒤엔 켜기만 하면 저절로 로그인돼요.", 14f))
         val code = EditText(this).apply { hint = "ABCD-EFGH"; textSize = 22f; typeface = Typeface.MONOSPACE; filters = arrayOf(InputFilter.AllCaps(), InputFilter.LengthFilter(9)); gravity = Gravity.CENTER }
@@ -97,7 +98,7 @@ class MainActivity : Activity() {
             if (v.length != 8) { code.error = "8자리(예: ABCD-EFGH)"; return@btn }
             if (!okOverlay()) { code.error = "먼저 1번(다른 앱 위에 표시)을 허용해 주세요"; return@btn }
             startForegroundService(Intent(this, FriendService::class.java).putExtra(FriendService.EXTRA_CODE, v))
-            toastLine = "🔐 연결하는 중 — 캐릭터 화면 오른쪽 아래 카드를 보세요"; draw()
+            toastLine = "🔐 코드를 보냈어요 — 캐릭터 화면의 🐾 책방 친구 카드에서 결과를 보세요"; draw()
         })
         box.addView(btn("🌐 리드나우 웹앱 열기", false) { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://jerrycson.github.io/readnow-scripts/app/"))) })
         box.addView(tv("판 ${try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "?" }} · 새 판은 웹앱 ⚙ 설정 › 🐾 책방 친구 › ⬇ 설치 파일 받기", 12f, color = Color.parseColor("#5B6B66")))

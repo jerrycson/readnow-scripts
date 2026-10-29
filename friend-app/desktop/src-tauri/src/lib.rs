@@ -4,7 +4,9 @@
 //! GitHub Pages의 friend/index.html?host=tauri 를 엶 → 캐릭터 화면은 웹앱 판을 따라 늘 최신(이 껍데기는 거의 안 바뀜).
 //! · 클릭 통과: 화면(JS)이 '눌리는 칸'(rects, CSS px)을 friend_post("rects")로 알려 줌 → 여기서 33ms마다 마우스 위치를 보고
 //!   칸 안이면 창이 클릭을 받고(set_ignore_cursor_events(false)) 밖이면 뒤 프로그램으로 통과(true).
-//! · 트레이: 보이기/숨기기 · 항상 위 · 모니터 바꾸기 · 시작 시 자동 실행 · 업데이트 확인 · 웹앱 열기 · 종료
+//! · 트레이: 보이기/숨기기 · 설정 · 항상 위 · 모니터 바꾸기 · 시작 시 자동 실행 · 업데이트 확인 · 웹앱 열기 · 종료
+//! · (0.2.0 · P5) ⚙ 설정 창: 캐릭터 옆 ⚙(화면 open_settings) 또는 트레이 '설정' → friend/index.html?settings=1&win=set 을 보통 창(1100×760 · 항상 위 아님)으로 · 이미 열려 있으면 앞으로
+//! · (0.2.0) 캐릭터 자리: Ctrl+끌기(화면 win_drag) → 모니터 안에서는 화면이 캐릭터를 옮기고 · 포인터가 다른 모니터로 넘어가면 창을 그 모니터로 옮김(drag_to) · 놓으면 모니터 이름·자리·배율을 friend.json에 저장 → 다시 켜도 같은 자리(그 모니터가 없으면 주 모니터 오른쪽 아래)
 //! · 연결 링크 readnow-friend://pair?t=…&c=…&d=… → 화면을 #pair=… 로 다시 엶(한 번만 쓰는 표 → 같은 계정 로그인)
 //! · 바깥 알림(10/29): ① 같은 PC 창구 http://127.0.0.1:47613/say?m=글(&f=보낸 곳) · /open?p=order|qna|bad (브라우저 요청은 뺌)
 //! · 바깥 알림 ③ 연결 주소 readnow-friend://say?m=글(&f=보낸 곳) · readnow-friend://open?p=order|qna|bad — 허용 명령은 이 셋뿐
@@ -26,6 +28,12 @@ use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_opener::OpenerExt;
 
 const PAGE: &str = "https://jerrycson.github.io/readnow-scripts/friend/index.html?host=tauri";
+/// (0.2.0) ⚙ 설정 창 — 같은 화면을 설정만 보이는 모드로(캐릭터·알림·살아 있음 신호 없음)
+const PAGE_SET: &str = "https://jerrycson.github.io/readnow-scripts/friend/index.html?settings=1&win=set";
+const LABEL_SET: &str = "friend-set";
+/// 두 창(캐릭터·설정)이 같은 WebView2 저장소(로그인·기기 이름)를 쓰려면 브라우저 인자가 똑같아야 함 — 다르면 둘째 창이 안 만들어짐
+/// 창이 투명해도 숨은 창으로 보고 타이머를 늦추지 않게(살아 있음 신호 30초가 밀리지 않게) · 앞 세 개는 Tauri 기본값
+const BROWSER_ARGS: &str = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows";
 const WEBAPP: &str = "https://jerrycson.github.io/readnow-scripts/app/";
 const RELEASES_API: &str = "https://api.github.com/repos/jerrycson/readnow-scripts/releases?per_page=30";
 const LABEL: &str = "friend";
@@ -40,13 +48,58 @@ struct Hit {
     kb_focus: bool,
     /// 화면(JS)이 보고한 배율(devicePixelRatio) — 칸 좌표(CSS px)를 만든 바로 그 값. 0이면 아직 못 받음
     dpr: f64,
+    /// (0.2.0) 연결 카드(코드 칸) 상자 — 카드가 열린 동안 늘 눌림(다른 칸 목록과 따로 · CSS px)
+    card: Option<[f64; 4]>,
+    /// (0.2.0) 커서가 든 글 칸의 상자(카드·입력 줄) — 글 쓰는 동안 이 상자(+여유 24px) 안은 늘 눌림. None이면 예전 화면(창 전체)
+    focus_r: Option<[f64; 4]>,
+    /// (0.2.0) 캐릭터를 끄는 중(Ctrl+끌기 자리 옮김) — 마지막 신호 시각 · 20초 넘게 소식이 없으면 끝난 것으로 봄
+    drag_at: Option<Instant>,
 }
 
-#[derive(Default, Serialize, Deserialize, Clone)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq)]
 struct Prefs {
     monitor: Option<String>,
     on_top: Option<bool>,
     auto_set: Option<bool>,
+    /// (0.2.0) 놓아 둔 캐릭터 자리: 기본 자리(작업 영역 오른쪽 아래)에서 옮긴 [가로, 세로] CSS px
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pos: Option<[f64; 2]>,
+    /// 그 자리를 놓은 모니터 이름(다른 모니터에서는 안 씀 → 오른쪽 아래)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pos_mon: Option<String>,
+    /// 놓을 때 그 모니터 배율(배율이 바뀌면 같은 물리 자리가 되게 환산)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pos_scale: Option<f64>,
+    /// 놓은 자리의 화면 좌표(물리 px · 캐릭터 기준점 = 작업 영역 오른쪽 아래 + 옮긴 양) — 기록용
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pos_xy: Option<[i32; 2]>,
+}
+
+/// 저장된 자리를 지금 모니터(이름·배율)에 맞게: 같은 모니터일 때만 · 배율이 바뀌었으면 물리 자리가 같게 CSS px 환산
+fn pos_for(p: &Prefs, mon: Option<&str>, sf: f64) -> Option<[f64; 2]> {
+    let pos = p.pos?;
+    if p.pos_mon.as_deref() != mon || mon.is_none() || !pos[0].is_finite() || !pos[1].is_finite() {
+        return None;
+    }
+    let k = match p.pos_scale {
+        Some(s0) if s0 > 0.1 && sf > 0.1 => s0 / sf,
+        _ => 1.0,
+    };
+    Some([(pos[0] * k).round(), (pos[1] * k).round()])
+}
+
+/// 점이 상자 [l,t,r,b] 안인가(여유 pad)
+fn in_box(x: f64, y: f64, r: &[f64; 4], pad: f64) -> bool {
+    x >= r[0] - pad && x <= r[2] + pad && y >= r[1] - pad && y <= r[3] + pad
+}
+
+fn box4(v: Option<&serde_json::Value>) -> Option<[f64; 4]> {
+    let a = v?.as_array()?;
+    if a.len() != 4 {
+        return None;
+    }
+    let f = |i: usize| a[i].as_f64();
+    Some([f(0)?, f(1)?, f(2)?, f(3)?])
 }
 
 struct App {
@@ -54,6 +107,14 @@ struct App {
     prefs: Mutex<Prefs>,
     hidden: AtomicBool,
     bye: AtomicBool,
+    /// (0.2.0) 창이 지금 덮고 있는 모니터 이름(fit_to_monitor가 씀)
+    mon_now: Mutex<Option<String>>,
+    /// (0.2.0) 연결 주소 readnow-friend:// 가 이 프로그램으로 등록돼 있나(켤 때 확인 · 화면 카드에 알림)
+    link_ok: Mutex<Option<bool>>,
+    /// 끌기 감시 실을 하나만
+    drag_watch: AtomicBool,
+    /// 설정 창을 만드는 중(두 번 눌러 둘 생기지 않게)
+    set_opening: AtomicBool,
 }
 
 fn prefs_path(app: &AppHandle) -> Option<std::path::PathBuf> {
@@ -78,8 +139,28 @@ fn save_prefs(app: &AppHandle) {
 
 /// 화면 → 프로그램 (원격 화면이 부를 수 있는 단 하나의 명령 · capabilities/default.json)
 #[tauri::command]
-fn friend_post(app: AppHandle, kind: String, data: serde_json::Value) {
+fn friend_post(app: AppHandle, window: tauri::Window, kind: String, data: serde_json::Value) {
     let st = app.state::<Arc<App>>();
+    if window.label() == LABEL_SET {
+        // 설정 창이 부를 수 있는 것: 링크 열기 · 설정 창 닫기 (칸·초점·끌기는 캐릭터 창 것만)
+        match kind.as_str() {
+            "open" => {
+                if let Some(u) = data.get("url").and_then(|x| x.as_str()) {
+                    if u.starts_with("https://") {
+                        let _ = app.opener().open_url(u, None::<&str>);
+                    }
+                }
+            }
+            "settings_close" => {
+                let w = window.clone();
+                std::thread::spawn(move || {
+                    let _ = w.close();
+                });
+            }
+            _ => {}
+        }
+        return;
+    }
     match kind.as_str() {
         "rects" => {
             let mut v = Vec::new();
@@ -97,11 +178,21 @@ fn friend_post(app: AppHandle, kind: String, data: serde_json::Value) {
             h.rects = v;
             // 칸 좌표를 만든 배율을 같이 받음(hit_loop가 물리 px → CSS px 환산에 씀)
             h.dpr = data.get("dpr").and_then(|x| x.as_f64()).filter(|d| *d > 0.1 && *d < 8.0).unwrap_or(0.0);
+            // (0.2.0) 연결 카드는 따로 늘 눌림
+            h.card = box4(data.get("card"));
         }
         "focus" => {
             // 글 칸에 들어가면(on) 창을 앞으로 세우고 클릭·키를 받음 · 나오면(off) 칸 밖 규칙으로 돌아감
+            // (0.2.0) 화면이 글 칸 상자(r)를 주면 그 상자 둘레만 늘 눌림(예전: 창 전체 — 글 칸에 커서가 있는 동안 바탕화면 전체가 안 눌렸음)
             let on = data.get("on").and_then(|x| x.as_bool()).unwrap_or(false);
-            st.hit.lock().unwrap().kb_focus = on;
+            {
+                let mut h = st.hit.lock().unwrap();
+                h.kb_focus = on;
+                h.focus_r = if on { box4(data.get("r")) } else { None };
+                if on {
+                    h.ignoring = false; // 아래에서 바로 받게 함 — hit_loop가 이 상태를 알아야 칸 밖에서 다시 통과로 돌림
+                }
+            }
             if on {
                 if let Some(w) = win(&app) {
                     let _ = w.set_ignore_cursor_events(false);
@@ -117,8 +208,147 @@ fn friend_post(app: AppHandle, kind: String, data: serde_json::Value) {
             }
         }
         "byeok" => st.bye.store(true, Ordering::SeqCst),
+        // (0.2.0) 화면이 다 뜬 뒤 자리·모니터 정보를 다시 달라고 함(켤 때 보낸 geom은 화면이 뜨기 전이라 사라질 수 있음)
+        "need_geom" => fit_to_monitor(&app, true),
+        // (0.2.0) ⚙ → 설정 창
+        "open_settings" => open_settings(&app),
+        // (0.2.0) Ctrl+끌기: start → 끄는 동안 창 전체가 마우스를 받고 포인터 모니터를 지켜봄 · move → 살아 있음 · end → 자리 저장
+        "win_drag" => {
+            let phase = data.get("phase").and_then(|x| x.as_str()).unwrap_or("");
+            match phase {
+                "start" | "move" => {
+                    {
+                        let mut h = st.hit.lock().unwrap();
+                        h.drag_at = Some(Instant::now());
+                        h.ignoring = false;
+                    }
+                    if let Some(w) = win(&app) {
+                        let _ = w.set_ignore_cursor_events(false);
+                    }
+                    if !st.drag_watch.swap(true, Ordering::SeqCst) {
+                        drag_watch(app.clone());
+                    }
+                }
+                "end" => {
+                    st.hit.lock().unwrap().drag_at = None;
+                    drag_end(&app, &data);
+                }
+                _ => {}
+            }
+        }
         _ => {} // ready · paired · notify · signout — 윈도우는 화면이 직접 보여 줌
     }
+}
+
+/// 화면 쪽 프로그램 다리(window.__rnFriendHost) — win = '' 캐릭터 창 · 'set' 설정 창
+fn host_init(win: &str) -> String {
+    format!(
+        "window.__rnFriendHost=window.__rnFriendHost||{{type:'tauri',ver:'{VER}',win:'{win}',post:function(k,d){{try{{var p=window.__TAURI_INTERNALS__&&window.__TAURI_INTERNALS__.invoke('friend_post',{{kind:String(k),data:d==null?null:d}});if(p&&p.catch)p.catch(function(){{}});}}catch(e){{}}}}}};"
+    )
+}
+
+/// (0.2.0) ⚙ 설정 창 열기 — 이미 있으면 앞으로 · 없으면 보통 창(테두리 · 1100×760 · 항상 위 아님)으로 만듦
+/// 창 만들기는 다른 실에서(윈도우에서 명령·메뉴 처리 중에 바로 만들면 멈출 수 있음)
+fn open_settings(app: &AppHandle) {
+    if let Some(w) = app.get_webview_window(LABEL_SET) {
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+        return;
+    }
+    let st = app.state::<Arc<App>>().inner().clone();
+    if st.set_opening.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    let app2 = app.clone();
+    std::thread::spawn(move || {
+        let built = url::Url::parse(PAGE_SET).ok().and_then(|u| {
+            WebviewWindowBuilder::new(&app2, LABEL_SET, WebviewUrl::External(u))
+                .title("🐾 책방 친구 설정")
+                .inner_size(1100.0, 760.0)
+                .min_inner_size(560.0, 420.0)
+                .resizable(true)
+                .decorations(true)
+                .always_on_top(false)
+                .skip_taskbar(false)
+                .center()
+                .focused(true)
+                .initialization_script(&host_init("set"))
+                .additional_browser_args(BROWSER_ARGS)
+                .build()
+                .ok()
+        });
+        match built {
+            Some(w) => {
+                let _ = w.set_focus();
+            }
+            None => js(&app2, "typeof toast==='function'&&toast('⚙ 설정 창을 열지 못했어요 — 트레이 🐾 › 설정으로 다시 해 주세요')"),
+        }
+        st.set_opening.store(false, Ordering::SeqCst);
+    });
+}
+
+/// (0.2.0) 끄는 동안 포인터가 있는 모니터를 지켜봄(30ms) — 다른 모니터로 넘어가면 창을 그 모니터 작업 영역으로 옮기고 화면에 포인터 자리(drag_to)를 알림
+fn drag_watch(app: AppHandle) {
+    std::thread::spawn(move || {
+        let st = app.state::<Arc<App>>().inner().clone();
+        // 한 번 다른 모니터로 넘어간 뒤로는 포인터가 움직일 때마다 drag_to(창이 옮겨 가며 화면이 포인터 소식을 놓쳐도 캐릭터가 따라오게)
+        let mut crossed = false;
+        let mut last = (f64::NAN, f64::NAN);
+        loop {
+            std::thread::sleep(Duration::from_millis(30));
+            let alive = st.hit.lock().unwrap().drag_at.map(|t| t.elapsed() < Duration::from_secs(20)).unwrap_or(false);
+            if !alive {
+                break;
+            }
+            let Ok(cur) = app.cursor_position() else { continue };
+            let Some(m) = app.monitor_from_point(cur.x, cur.y).ok().flatten() else { continue };
+            let now = st.mon_now.lock().unwrap().clone();
+            let cross = m.name().is_some() && m.name().cloned() != now;
+            if cross {
+                st.prefs.lock().unwrap().monitor = m.name().cloned();
+                fit_to_monitor(&app, false);
+                crossed = true;
+            }
+            if !(cross || (crossed && (cur.x, cur.y) != last)) {
+                continue;
+            }
+            last = (cur.x, cur.y);
+            let wa = m.work_area();
+            let sf = m.scale_factor().max(0.1);
+            let x = (cur.x - wa.position.x as f64) / sf;
+            let y = (cur.y - wa.position.y as f64) / sf;
+            js(&app, &format!("window.__rnFriendCmd&&window.__rnFriendCmd('drag_to',{{x:{x:.1},y:{y:.1}}})"));
+        }
+        st.drag_watch.store(false, Ordering::SeqCst);
+    });
+}
+
+/// (0.2.0) 끌기 끝: 지금 창의 모니터에 놓은 자리(dx·dy CSS px)를 기기별 friend.json에 저장
+fn drag_end(app: &AppHandle, data: &serde_json::Value) {
+    let st = app.state::<Arc<App>>();
+    let dx = data.get("dx").and_then(|x| x.as_f64()).unwrap_or(0.0);
+    let dy = data.get("dy").and_then(|x| x.as_f64()).unwrap_or(0.0);
+    if !dx.is_finite() || !dy.is_finite() || dx.abs() > 20000.0 || dy.abs() > 20000.0 {
+        return;
+    }
+    let mon = st.mon_now.lock().unwrap().clone();
+    let Some(w) = win(app) else { return };
+    let m = w.available_monitors().unwrap_or_default().into_iter().find(|m| m.name().cloned() == mon);
+    let sf = m.as_ref().map(|m| m.scale_factor()).unwrap_or(1.0);
+    let xy = m.as_ref().map(|m| {
+        let wa = m.work_area();
+        [wa.position.x + wa.size.width as i32 + (dx * sf).round() as i32, wa.position.y + wa.size.height as i32 + (dy * sf).round() as i32]
+    });
+    {
+        let mut p = st.prefs.lock().unwrap();
+        p.monitor = mon.clone();
+        p.pos = Some([dx.round(), dy.round()]);
+        p.pos_mon = mon;
+        p.pos_scale = Some(sf);
+        p.pos_xy = xy;
+    }
+    save_prefs(app);
 }
 
 fn win(app: &AppHandle) -> Option<WebviewWindow> {
@@ -132,13 +362,15 @@ fn js(app: &AppHandle, code: &str) {
 }
 
 /// 고른 모니터의 작업 영역(작업 표시줄 뺀 곳)에 창을 맞춤 — 배율(DPI)이 달라도 물리 픽셀로
-fn fit_to_monitor(app: &AppHandle) {
+/// with_pos: 저장된 캐릭터 자리도 화면에 줌(끄는 중 모니터를 옮길 때는 빼서 끄는 자리를 덮지 않음)
+fn fit_to_monitor(app: &AppHandle, with_pos: bool) {
     let Some(w) = win(app) else { return };
     let mons = w.available_monitors().unwrap_or_default();
     if mons.is_empty() {
         return;
     }
-    let want = app.state::<Arc<App>>().prefs.lock().unwrap().monitor.clone();
+    let st = app.state::<Arc<App>>();
+    let want = st.prefs.lock().unwrap().monitor.clone();
     let m = want
         .and_then(|n| mons.iter().find(|m| m.name().map(|x| x == &n).unwrap_or(false)).cloned())
         .or_else(|| w.primary_monitor().ok().flatten())
@@ -147,16 +379,34 @@ fn fit_to_monitor(app: &AppHandle) {
     let _ = w.set_position(PhysicalPosition::new(wa.position.x, wa.position.y));
     let _ = w.set_size(PhysicalSize::new(wa.size.width, wa.size.height));
     let sf = m.scale_factor();
+    *st.mon_now.lock().unwrap() = m.name().cloned();
+    let mon_j = serde_json::to_string(&m.name().cloned().unwrap_or_default()).unwrap_or_else(|_| "\"\"".into());
+    let link = match *st.link_ok.lock().unwrap() {
+        Some(true) => "true",
+        Some(false) => "false",
+        None => "null",
+    };
+    let pos = if with_pos {
+        match pos_for(&st.prefs.lock().unwrap(), m.name().map(|s| s.as_str()), sf) {
+            Some(p) => format!(",pos:[{},{}]", p[0], p[1]),
+            None => ",pos:null".to_string(),
+        }
+    } else {
+        String::new()
+    };
     js(
         app,
         &format!(
-            "window.__rnFriendCmd&&window.__rnFriendCmd('geom',{{x:{},y:{},w:{},h:{},scale:{},monitors:{}}})",
+            "window.__rnFriendCmd&&window.__rnFriendCmd('geom',{{x:{},y:{},w:{},h:{},scale:{},monitors:{},mon:{},link:{}{}}})",
             wa.position.x,
             wa.position.y,
             wa.size.width,
             wa.size.height,
             sf,
-            mons.len()
+            mons.len(),
+            mon_j,
+            link,
+            pos
         ),
     );
 }
@@ -173,7 +423,7 @@ fn next_monitor(app: &AppHandle) {
     let n = &mons[(i + 1) % mons.len()];
     app.state::<Arc<App>>().prefs.lock().unwrap().monitor = n.name().cloned();
     save_prefs(app);
-    fit_to_monitor(app);
+    fit_to_monitor(app, true); // 그 모니터에 놓아 둔 자리가 있으면 거기 · 없으면 오른쪽 아래
 }
 
 /// 클릭 통과: 33ms마다 마우스가 눌리는 칸 안인지 봄
@@ -188,10 +438,13 @@ fn hit_loop(app: AppHandle) {
         let s = if h.dpr > 0.0 { h.dpr } else { sf };
         let x = (cur.x - pos.x as f64) / s;
         let y = (cur.y - pos.y as f64) / s;
-        let inside = !st.hidden.load(Ordering::Relaxed)
-            && h.rects.iter().any(|r| x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3]);
-        let typing = h.kb_focus && !st.hidden.load(Ordering::Relaxed);
-        let want_ignore = !(inside || typing);
+        let shown = !st.hidden.load(Ordering::Relaxed);
+        let inside = shown && h.rects.iter().any(|r| in_box(x, y, r, 0.0));
+        // (0.2.0) 연결 카드는 열린 동안 늘 · 글 칸에 커서가 있으면 그 상자 둘레 · 끄는 중이면 창 전체
+        let in_card = shown && h.card.as_ref().map(|r| in_box(x, y, r, 0.0)).unwrap_or(false);
+        let typing = shown && h.kb_focus && h.focus_r.as_ref().map(|r| in_box(x, y, r, 24.0)).unwrap_or(true);
+        let dragging = h.drag_at.map(|t| t.elapsed() < Duration::from_secs(20)).unwrap_or(false);
+        let want_ignore = !(inside || in_card || typing || dragging);
         if want_ignore != h.ignoring {
             h.ignoring = want_ignore;
             let _ = w.set_ignore_cursor_events(want_ignore);
@@ -319,11 +572,22 @@ fn handle_local(app: &AppHandle, mut s: std::net::TcpStream) {
     let _ = s.write_all(resp.as_bytes());
 }
 
-/// readnow-friend://pair?t=…&c=…&d=… → 화면을 #pair=… 로 다시 엶 · (10/29) readnow-friend://say?m=… · …://open?p=…
+/// 같은 링크가 두 길(단일 실행 콜백 + deep-link 이벤트)로 두 번 오는 것 막기
+static LAST_LINK: Mutex<Option<(String, Instant)>> = Mutex::new(None);
+
+/// readnow-friend://pair?t=…&c=…&d=…(&k=코드) → 화면을 #pair=… 로 다시 엶 · (10/29) readnow-friend://say?m=… · …://open?p=…
 fn handle_link(app: &AppHandle, raw: &str) {
     let Ok(u) = url::Url::parse(raw) else { return };
     if u.scheme() != "readnow-friend" {
         return;
+    }
+    if let Ok(mut last) = LAST_LINK.lock() {
+        if let Some((l, t)) = last.as_ref() {
+            if l == raw && t.elapsed() < Duration::from_secs(5) {
+                return;
+            }
+        }
+        *last = Some((raw.to_string(), Instant::now()));
     }
     match u.host_str().unwrap_or("") {
         "say" => {
@@ -342,11 +606,13 @@ fn handle_link(app: &AppHandle, raw: &str) {
     let mut t = String::new();
     let mut c = String::new();
     let mut d = String::new();
+    let mut code = String::new();
     for (k, v) in u.query_pairs() {
         match k.as_ref() {
             "t" => t = v.into_owned(),
             "c" => c = v.into_owned(),
             "d" => d = v.into_owned(),
+            "k" => code = v.chars().filter(|ch| ch.is_ascii_alphanumeric()).take(12).collect(),
             _ => {}
         }
     }
@@ -354,7 +620,9 @@ fn handle_link(app: &AppHandle, raw: &str) {
         return;
     }
     let enc = |s: &str| url::form_urlencoded::byte_serialize(s.as_bytes()).collect::<String>();
-    let target = format!("{PAGE}#pair={}&c={}&d={}", enc(&t), enc(&c), enc(&d));
+    // (0.2.0) 이미 열린 화면이면 주소 끝(#…)만 바뀌어 다시 읽지 않던 것(설치 직후 켜 둔 채 웹앱 단추 → 아무 일 없음) → pl=시각을 붙여 늘 새로 읽음
+    let pl = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_millis()).unwrap_or(0);
+    let target = format!("{PAGE}&pl={pl}#pair={}&c={}&d={}&k={}", enc(&t), enc(&c), enc(&d), enc(&code));
     if let Some(w) = win(app) {
         if let Ok(nu) = url::Url::parse(&target) {
             let _ = w.navigate(nu);
@@ -398,9 +666,10 @@ fn check_update(app: &AppHandle, manual: bool) {
     std::thread::spawn(move || {
         let say = |m: &str| {
             if manual {
-                js(&app, &format!("typeof toast==='function'&&toast({})", serde_json::to_string(m).unwrap_or_default()));
+                js(&app, &format!("typeof toast==='function'&&toast({},0,6000)", serde_json::to_string(m).unwrap_or_default()));
             }
         };
+        say("🖥 업데이트 확인하는 중…");
         let agent = ureq::AgentBuilder::new().timeout(Duration::from_secs(30)).user_agent(&format!("readnow-friend/{VER}")).build();
         let list: serde_json::Value = match agent.get(RELEASES_API).call().and_then(|r| r.into_json().map_err(|e| e.into())) {
             Ok(v) => v,
@@ -430,12 +699,12 @@ fn check_update(app: &AppHandle, manual: bool) {
         }
         let Some((vt, url)) = best else { return say("🖥 아직 올라온 프로그램 판이 없어요") };
         if vt <= ver_tuple(VER) {
-            return say(&format!("🖥 프로그램이 최신이에요 ({VER})"));
+            return say(&format!("🖥 최신 판({VER})입니다"));
         }
         if !url.starts_with("https://github.com/jerrycson/readnow-scripts/releases/download/") {
             return;
         }
-        say("🖥 새 프로그램 판을 받는 중 — 받으면 저절로 설치하고 다시 켜져요");
+        say(&format!("🖥 새 판 {}.{}.{} 받는 중 … 받으면 저절로 설치하고 다시 켜져요", vt.0, vt.1, vt.2));
         let dir = std::env::temp_dir().join("readnow-friend-update");
         let _ = std::fs::create_dir_all(&dir);
         let file = dir.join(format!("readnow-friend-{}.{}.{}-setup.exe", vt.0, vt.1, vt.2));
@@ -472,6 +741,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let on_top = st.prefs.lock().unwrap().on_top.unwrap_or(true);
     let auto = app.autolaunch().is_enabled().unwrap_or(false);
     let show = MenuItem::with_id(app, "show", "숨기기", true, None::<&str>)?;
+    let set = MenuItem::with_id(app, "set", "⚙ 설정", true, None::<&str>)?;
     let top = CheckMenuItem::with_id(app, "top", "항상 위", true, on_top, None::<&str>)?;
     let mon = MenuItem::with_id(app, "mon", "모니터 바꾸기", true, None::<&str>)?;
     let autostart = CheckMenuItem::with_id(app, "auto", "시작 시 자동 실행", true, auto, None::<&str>)?;
@@ -480,7 +750,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
     let quit_i = MenuItem::with_id(app, "quit", "종료", true, None::<&str>)?;
     let sep = PredefinedMenuItem::separator(app)?;
     let sep2 = PredefinedMenuItem::separator(app)?;
-    let menu = Menu::with_items(app, &[&show, &top, &mon, &autostart, &sep, &upd, &web, &sep2, &quit_i])?;
+    let menu = Menu::with_items(app, &[&show, &set, &top, &mon, &autostart, &sep, &upd, &web, &sep2, &quit_i])?;
     let show2 = show.clone();
     let top2 = top.clone();
     let auto2 = autostart.clone();
@@ -504,6 +774,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
                 app.state::<Arc<App>>().prefs.lock().unwrap().on_top = Some(v);
                 save_prefs(app);
             }
+            "set" => open_settings(app),
             "mon" => next_monitor(app),
             "auto" => {
                 let v = auto2.is_checked().unwrap_or(false);
@@ -534,6 +805,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             // 이미 켜져 있을 때 다시 실행(또는 연결 링크) → 새로 켜지 않고 이 창으로
+            // (연결 링크는 deep-link 기능이 on_open_url로도 넘겨 줌 — handle_link가 5초 안 같은 링크를 한 번만 처리)
             for a in argv.iter().skip(1) {
                 if a.starts_with("readnow-friend://") {
                     handle_link(app, a);
@@ -549,7 +821,16 @@ pub fn run() {
             let h = app.handle().clone();
             start_local(h.clone()); // (10/29) ① 같은 PC 바깥 알림 창구 127.0.0.1:47613
             let prefs = load_prefs(&h);
-            let st = Arc::new(App { hit: Mutex::new(Hit { rects: vec![], ignoring: false, kb_focus: false, dpr: 0.0 }), prefs: Mutex::new(prefs.clone()), hidden: AtomicBool::new(false), bye: AtomicBool::new(false) });
+            let st = Arc::new(App {
+                hit: Mutex::new(Hit { rects: vec![], ignoring: false, kb_focus: false, dpr: 0.0, card: None, focus_r: None, drag_at: None }),
+                prefs: Mutex::new(prefs.clone()),
+                hidden: AtomicBool::new(false),
+                bye: AtomicBool::new(false),
+                mon_now: Mutex::new(None),
+                link_ok: Mutex::new(None),
+                drag_watch: AtomicBool::new(false),
+                set_opening: AtomicBool::new(false),
+            });
             app.manage(st);
             // 처음 한 번: 시작 시 자동 실행을 켬(트레이에서 끌 수 있음)
             if prefs.auto_set.is_none() {
@@ -560,10 +841,10 @@ pub fn run() {
             #[cfg(any(windows, target_os = "linux"))]
             {
                 let _ = app.deep_link().register_all(); // 설치 프로그램이 이미 했어도 다시(사용자 레지스트리만)
+                // (0.2.0) 첫 실행 때 등록 확인 — 안 됐으면 연결 카드에 '코드로 연결' 안내(화면 geom.link)
+                *h.state::<Arc<App>>().link_ok.lock().unwrap() = app.deep_link().is_registered("readnow-friend").ok();
             }
-            let init = format!(
-                "window.__rnFriendHost=window.__rnFriendHost||{{type:'tauri',ver:'{VER}',post:function(k,d){{try{{var p=window.__TAURI_INTERNALS__&&window.__TAURI_INTERNALS__.invoke('friend_post',{{kind:String(k),data:d==null?null:d}});if(p&&p.catch)p.catch(function(){{}});}}catch(e){{}}}}}};"
-            );
+            let init = host_init("");
             let url = url::Url::parse(PAGE).expect("PAGE 주소");
             let w = WebviewWindowBuilder::new(app, LABEL, WebviewUrl::External(url))
                 .title("책방 친구")
@@ -576,18 +857,17 @@ pub fn run() {
                 .focused(false)
                 .visible(false)
                 .initialization_script(&init)
-                // 창이 투명해도 숨은 창으로 보고 타이머를 늦추지 않게(살아 있음 신호 30초가 밀리지 않게) · 앞 세 개는 Tauri 기본값
-                .additional_browser_args("--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows")
+                .additional_browser_args(BROWSER_ARGS)
                 .build()?;
             let _ = w.set_ignore_cursor_events(true);
             h.state::<Arc<App>>().hit.lock().unwrap().ignoring = true;
-            fit_to_monitor(&h);
+            fit_to_monitor(&h, true);
             let _ = w.show();
             // 모니터 배율·배치가 바뀌면 다시 맞춤
             let h2 = h.clone();
             w.on_window_event(move |ev| {
                 if let tauri::WindowEvent::ScaleFactorChanged { .. } = ev {
-                    fit_to_monitor(&h2);
+                    fit_to_monitor(&h2, true);
                 }
             });
             let h3 = h.clone();
@@ -598,7 +878,7 @@ pub fn run() {
                     if let Some(w) = win(&h3) {
                         let sig = w.available_monitors().unwrap_or_default().iter().map(|m| format!("{:?}{:?}{:?}", m.name(), m.work_area().position, m.work_area().size)).collect::<Vec<_>>().join("|");
                         if !last.is_empty() && sig != last {
-                            fit_to_monitor(&h3);
+                            fit_to_monitor(&h3, true);
                         }
                         last = sig;
                     }
@@ -631,4 +911,46 @@ pub fn run() {
         })
         .run(tauri::generate_context!())
         .expect("책방 친구 실행 실패");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn prefs_round_trip_and_old_file() {
+        // 예전(0.1.x) friend.json도 그대로 읽힘
+        let old: Prefs = serde_json::from_str(r#"{"monitor":"\\\\.\\DISPLAY1","on_top":true,"auto_set":true}"#).unwrap();
+        assert_eq!(old.pos, None);
+        let p = Prefs { monitor: Some("\\\\.\\DISPLAY2".into()), on_top: Some(true), auto_set: Some(true), pos: Some([-640.0, -120.0]), pos_mon: Some("\\\\.\\DISPLAY2".into()), pos_scale: Some(1.25), pos_xy: Some([3200, 1000]) };
+        let j = serde_json::to_string(&p).unwrap();
+        assert!(j.contains("\"pos\":[-640.0,-120.0]") && j.contains("\"pos_scale\":1.25"), "{j}");
+        let back: Prefs = serde_json::from_str(&j).unwrap();
+        assert_eq!(back, p);
+    }
+
+    #[test]
+    fn pos_only_on_same_monitor_and_rescaled() {
+        let p = Prefs { pos: Some([-600.0, -100.0]), pos_mon: Some("B".into()), pos_scale: Some(1.5), ..Default::default() };
+        assert_eq!(pos_for(&p, Some("B"), 1.5), Some([-600.0, -100.0]));
+        assert_eq!(pos_for(&p, Some("B"), 1.0), Some([-900.0, -150.0])); // 같은 물리 자리
+        assert_eq!(pos_for(&p, Some("A"), 1.5), None); // 다른 모니터 → 오른쪽 아래
+        assert_eq!(pos_for(&p, None, 1.5), None);
+        assert_eq!(pos_for(&Prefs::default(), Some("B"), 1.0), None);
+    }
+
+    #[test]
+    fn boxes() {
+        assert_eq!(box4(Some(&serde_json::json!([1, 2, 3.5, 4]))), Some([1.0, 2.0, 3.5, 4.0]));
+        assert_eq!(box4(Some(&serde_json::json!([1, 2, 3]))), None);
+        assert_eq!(box4(Some(&serde_json::json!(null))), None);
+        assert_eq!(box4(None), None);
+        let r = [10.0, 10.0, 20.0, 20.0];
+        assert!(in_box(15.0, 15.0, &r, 0.0) && !in_box(25.0, 15.0, &r, 0.0) && in_box(25.0, 15.0, &r, 6.0));
+    }
+
+    #[test]
+    fn host_init_has_win() {
+        assert!(host_init("set").contains("win:'set'") && host_init("").contains("win:''") && host_init("").contains("friend_post"));
+    }
 }
