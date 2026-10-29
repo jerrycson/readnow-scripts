@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "friend",
+ "what": "③ 움직임 1묶음 배포(다시)",
+ "since": "2026-10-29T18:37:33Z",
+ "beat": "2026-10-29T18:37:33Z",
  "ask": null,
  "last": {
   "who": "friend",
   "done": "⑤ 화풍 렌더링 1묶음 · 책방 친구 0.15.2 · 웹앱 1.78.257 · 91fff21",
   "at": "2026-10-29T18:36:56Z"
  },
- "host": null
+ "host": "vm-motion"
 }
