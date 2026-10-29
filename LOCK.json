@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "판 내기: 🏅 가게 성적 한 주 전 비교",
+ "since": "2026-10-29T13:47:48Z",
+ "beat": "2026-10-29T13:47:48Z",
  "ask": null,
  "last": {
   "who": "friend",
   "done": "CLAUDE.md 한국어 규칙 정리 1e5cfd5",
   "at": "2026-10-29T13:46:12Z"
  },
- "host": null
+ "host": "vm"
 }
