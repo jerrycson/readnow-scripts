@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "판 내기: 수집기 관제판 계기판·기록 단추 · 툴팁 단추 접기",
+ "since": "2026-10-30T02:12:09Z",
+ "beat": "2026-10-30T02:12:09Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.268 수동 일괄 그룹 조건 넓힘 (eb12d84)",
   "at": "2026-10-30T02:06:23Z"
  },
- "host": null
+ "host": "vm"
 }
