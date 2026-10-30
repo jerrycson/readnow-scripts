@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "r17 body 0.15.14 올림(코디네이터)",
- "since": "2026-10-30T07:12:33Z",
- "beat": "2026-10-30T07:12:33Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "lead",
-  "done": "1.78.278 📐 시장 전체 팔린 비율",
-  "at": "2026-10-30T06:56:13Z"
+  "who": "friend",
+  "done": "r17 body 0.15.14 올림",
+  "at": "2026-10-30T07:14:42Z"
  },
- "host": "vm-body"
+ "host": null
 }
