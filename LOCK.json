@@ -5,9 +5,9 @@
  "beat": null,
  "ask": null,
  "last": {
-  "who": "daily",
-  "done": "🔬 정밀 점검 끝 — 1aacfaf(웹앱 1.78.281 · 수집기 1.89.158 · 머리 그대로) · 보고 src/audits/2026-10-30-fable.md",
-  "at": "2026-10-30T14:05:19Z"
+  "who": "",
+  "done": "",
+  "at": "2026-10-30T19:16:32Z"
  },
  "host": null
 }
