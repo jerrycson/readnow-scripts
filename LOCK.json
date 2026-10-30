@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "💎 희귀본 쪽 · 절판 구분",
- "since": "2026-10-30T04:00:05Z",
- "beat": "2026-10-30T04:00:05Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.274/1.89.155 사람처럼·예스24 틀 수집",
-  "at": "2026-10-30T03:57:36Z"
+  "done": "1.78.275 💎 희귀본",
+  "at": "2026-10-30T04:02:36Z"
  },
- "host": "vm"
+ "host": null
 }
