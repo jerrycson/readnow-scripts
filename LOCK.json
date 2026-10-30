@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "판 내기: 휴대폰 탭 섹션 고르기",
- "since": "2026-10-30T02:38:35Z",
- "beat": "2026-10-30T02:38:35Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "세 기능 연계 고침 1.78.270 (ff41851)",
-  "at": "2026-10-30T02:33:30Z"
+  "done": "1.78.271 휴대폰 섹션 고르기 (cb1f721)",
+  "at": "2026-10-30T02:40:48Z"
  },
- "host": "vm"
+ "host": null
 }
