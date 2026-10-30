@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "판 내기: 수동 일괄 그룹 조건 — 기본(출판사·저자·옮긴이·절판/품절) · 🅰 알라딘 조건",
- "since": "2026-10-30T02:03:35Z",
- "beat": "2026-10-30T02:03:35Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "friend",
-  "done": "0.2.1·0.15.12 9244dac · 웹앱 1.78.267",
-  "at": "2026-10-30T02:03:32Z"
+  "who": "lead",
+  "done": "1.78.268 수동 일괄 그룹 조건 넓힘 (eb12d84)",
+  "at": "2026-10-30T02:06:23Z"
  },
- "host": "vm"
+ "host": null
 }
