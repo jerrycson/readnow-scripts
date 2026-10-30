@@ -1,2 +1,2 @@
-benchdump=none&doc=app_settings/bench,app_settings/value_cfg,app_settings/crit
-# 245252723
+benchdump=266540
+# 299623653
