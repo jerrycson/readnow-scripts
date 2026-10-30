@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "사람다움(실험·감시) · 예스24 틀·팝업 수집 · 메뉴 지도",
+ "since": "2026-10-30T03:49:37Z",
+ "beat": "2026-10-30T03:49:37Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "85d527e 1.78.273/1.89.154 판정 엔진 0.17.0 우리 단독 · 안내판",
   "at": "2026-10-30T03:47:42Z"
  },
- "host": null
+ "host": "vm"
 }
