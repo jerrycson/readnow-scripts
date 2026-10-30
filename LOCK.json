@@ -1,13 +1,13 @@
 {
- "holder": "h4",
- "what": "HOME 힙 누수 — 조회수 실험 수정 iframe 비우기",
- "since": "2026-10-30T03:17:53Z",
- "beat": "2026-10-30T03:17:53Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "lead",
-  "done": "1.78.271 휴대폰 섹션 고르기 (cb1f721)",
-  "at": "2026-10-30T02:40:48Z"
+  "who": "h4",
+  "done": "1.78.272/1.89.153 HOME 누수 줄이기",
+  "at": "2026-10-30T03:19:20Z"
  },
- "host": "vm"
+ "host": null
 }
