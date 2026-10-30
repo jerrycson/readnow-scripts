@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "kpsum",
+ "what": "출판 정보 요약",
+ "since": "2026-10-30T20:49:10Z",
+ "beat": "2026-10-30T20:49:10Z",
  "ask": null,
  "last": {
   "who": "",
   "done": "",
   "at": "2026-10-30T19:16:32Z"
  },
- "host": null
+ "host": "vm"
 }
