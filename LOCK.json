@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "예스24 자동 둘러보기·밤 쉼 1~4:55·워프 금지·새책 상한·카드 💎 정보",
+ "since": "2026-10-30T04:58:32Z",
+ "beat": "2026-10-30T04:58:32Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.275 💎 희귀본",
   "at": "2026-10-30T04:02:36Z"
  },
- "host": null
+ "host": "vm"
 }
