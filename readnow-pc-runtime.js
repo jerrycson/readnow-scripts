@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.153의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.154의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.153' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.153', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.154' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.154', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -710,7 +710,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (drv) { window.__rnLog('수집기', 'ok', `작업 기록을 구글 드라이브 '리드나우 수집기록' 폴더에 저장했습니다: ${fname}${drv.url ? ' · ' + drv.url : ''}`); if (drv.url) window.open(drv.url, '_blank'); }
       else { window.__rnLog('수집기', 'warn', GM_getValue('rnu-drive-url', '') ? '구글 드라이브 저장 실패 (주소·열쇠·배포 권한 확인) — PC의 다운로드 폴더로 내려받습니다' : '구글 드라이브 주소가 설정되지 않아 PC의 다운로드 폴더로 내려받습니다 (웹앱 설정 ⑨)'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([parts.join('\n')], { type: 'text/plain' })); a.download = fname; a.click(); }
       setTimeout(async () => { await jclear(); buf.length = 0; idbPend.length = 0; window.__rnLog('수집기', 'info', `작업 기록을 내려받고 이 PC의 기록을 비웠습니다 (${keys.length}일치, ${parts.length.toLocaleString()}줄)`); lastDrawn = -1; tab === 'hist' ? drawHist() : draw(); }, 1500); };
-    window.__rnJournalToggle = () => { const on = !w.classList.contains('on'); w.classList.toggle('on', on); if (on) jPrefillOnce(); GM_setValue('rnu-jw', on ? 1 : 0); lastDrawn = -1; draw(); drawOv(); };
+    window.__rnJournalToggle = () => { const on = !w.classList.contains('on'); w.classList.toggle('on', on); if (on) jPrefillOnce(); GM_setValue('rnu-jw', on ? 1 : 0); lastDrawn = -1; draw(); drawOv(); try { window.__rnJwSync && window.__rnJwSync(); } catch (e) {} };
+    window.__rnJournalOpen = () => w.classList.contains('on'); /* (1.89.154) 머리줄 🗒 단추가 이 창(큰 기록창)을 열고 닫음 — 단추 색이 창 상태를 따름 */
     (window.__rnRoleReady || Promise.resolve()).then(() => { const r = window.__rnRole ? window.__rnRole() : 'lead'; if (r === 'lead' && !w.classList.contains('on')) window.__rnJournalToggle(); /* (1.88.5) 정범님 10/20: 기록 창은 이 PC의 '일하는 수집기 탭'(lead)에서만 저절로 열림 — 쉬는 탭·등록·주문 팝업 같은 다른 화면 탭에서는 열지 않음(사람이 [기록]을 누르면 열림) · 쉬는 탭이 일하는 탭을 이어받으면 그때 열림 */ try { window.__rnRoleOn && window.__rnRoleOn((r2) => { if (r2 === 'lead' && !w.classList.contains('on')) window.__rnJournalToggle(); }); } catch (e) {} /* (1.88.4) 정범님 10/20: 모든 PC — 수집기가 다시 열리면(일하는 탭) 기록 창을 늘 연 채로 시작 · 닫아도 다음에 열리면 다시 열림 */ /* (1.74.4) 로거는 크롬이 열리고 수집기가 돌면 기록 창을 늘 연 채로 시작 */ }); }; // (1.56.0) 쉬는 탭은 기록 창을 닫은 채로 (기억해 둔 '열림'은 그대로 둠)
   if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
   /* (1.43.0) 가격 감시기 기록 모으기: 감시기 칸(#rn-prc)이 이 화면에 있으면 그 기록 줄·상태를 이 수집기의 GM에 모아 둠(최근 400줄) → 기록 창 🛰 감시 탭.
@@ -770,8 +771,15 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   #rn-ctl .ch .tg{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:6px;width:26px;height:22px;cursor:pointer;font-weight:700}
   #rn-ctl.min #rn-uni,#rn-ctl.min .cb{display:none}
   #rn-ctl .ch .tg.on{background:#fff;color:${G}} #rn-ctl.lead{width:484px}
-  #rn-ctl .dash{padding:7px 12px;border-bottom:1px solid #DCE6E1;background:#FBFDFC;font-size:12.5px;line-height:1.45} #rn-ctl .dash[hidden]{display:none} #rn-ctl .dash .dt{display:flex;align-items:center;gap:6px} #rn-ctl .dash .dt b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #rn-ctl .dash small{color:#6B7A75} #rn-ctl .dash .dd{margin-top:3px;font-size:12px;color:#3F524C} #rn-ctl .dash .dd .big{font-size:14.5px} #rn-ctl .dash.busy{border-left:4px solid ${BLU}} #rn-ctl .dash.pause,#rn-ctl .dash.stop{border-left:4px solid ${AMB};background:#FFFBF3} #rn-ctl .dash.idle{border-left:4px solid #9AA5A1}
-  #rn-ctl.lead .dash{font-size:13.5px;padding:9px 13px} #rn-ctl.lead .dash .dd{font-size:12.8px}
+  /* (1.89.154 정범님 10/30) ✈ 공항 출발 안내판 계기판 — 어두운 판 · 노란 고정폭 글자 · 줄마다 [시각 | 작업 | 지금 하는 것 | 상태] */
+  #rn-ctl .dash{background:#0E1217;color:#F5C518;font:12px/1.35 Consolas,'D2Coding','Malgun Gothic',monospace;padding:6px 8px 7px;border-bottom:2px solid #000} #rn-ctl .dash[hidden]{display:none}
+  #rn-ctl .dash .fh{display:flex;align-items:center;gap:6px;color:#9FB0BF;font:700 10.5px/1.2 system-ui,'Malgun Gothic';letter-spacing:.08em;margin-bottom:4px} #rn-ctl .dash .fh .sp{flex:1} #rn-ctl .dash .fh .ck{color:#F5C518;font:700 12px Consolas,monospace;letter-spacing:.05em}
+  #rn-ctl .dash table{width:100%;border-collapse:separate;border-spacing:0 2px;table-layout:fixed} #rn-ctl .dash th{color:#7D8B98;font:600 10px system-ui,'Malgun Gothic';text-align:left;padding:0 4px;letter-spacing:.06em}
+  #rn-ctl .dash td{background:#161C23;color:#F5C518;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:top} #rn-ctl .dash td:first-child{border-radius:3px 0 0 3px;color:#fff;width:42px} #rn-ctl .dash td:last-child{border-radius:0 3px 3px 0;text-align:right;width:54px}
+  #rn-ctl .dash td.jb{width:31%;font-weight:700} #rn-ctl .dash td .s2{display:block;color:#C9D3DC;font-size:11px;white-space:normal;overflow:hidden;max-height:2.7em} #rn-ctl .dash .pb2{height:4px;background:#2A333D;border-radius:2px;margin-top:2px;overflow:hidden} #rn-ctl .dash .pb2 i{display:block;height:100%;background:#3DDC84}
+  #rn-ctl .dash .st{font:800 10.5px system-ui,'Malgun Gothic';letter-spacing:.04em} #rn-ctl .dash .st.go{color:#3DDC84;animation:rnBlink 1.4s steps(2,start) infinite} #rn-ctl .dash .st.wt{color:#F5C518} #rn-ctl .dash .st.bd{color:#5BC0FF} #rn-ctl .dash .st.dn{color:#7D8B98} #rn-ctl .dash .st.dl{color:#FF5A4F}
+  #rn-ctl .dash tr.now td{background:#1B2A22} #rn-ctl .dash tr.now td.jb{white-space:normal} #rn-ctl .dash tr.old td{color:#7D8B98} @keyframes rnBlink{to{visibility:hidden}}
+  #rn-ctl.lead .dash{font-size:13px;padding:8px 10px 9px} #rn-ctl.lead .dash td .s2{font-size:12px;max-height:6.8em} #rn-ctl.lead .dash td.jb{width:29%} #rn-ctl .dash tr.old td{color:#7D8B98}
   #rn-ctl .rsub.mini{padding:3px 10px;font-size:10.5px;justify-content:flex-end;gap:6px} #rn-ctl .rsub.mini .tx{flex:0 1 auto;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:78%} #rn-ctl .rsub.mini small{display:none} #rn-ctl .rsub.mini button{padding:2px 6px;font-size:10.5px}
   #rn-ov.nolog .lgcard{display:none}
   #rn-ctl .rsub{display:flex;align-items:center;gap:8px;padding:6px 12px;background:#EEF4F1;color:#3F524C;border-bottom:1px solid #DCE6E1;font-size:12px;line-height:1.4} #rn-ctl .rsub[hidden]{display:none} #rn-ctl .rsub .tx{flex:1;min-width:0} #rn-ctl .rsub small{display:block;color:#6B7A75;font-size:11px}
@@ -820,7 +828,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     <div class="cb"><div id="rn-ov"></div></div>`;
   const bar = box.querySelector('#rn-uni'); const body = box.querySelector('.cb'); const ov = box.querySelector('#rn-ov');
   const set = (t) => { if (t === 'hide') t = 'ov'; box.dataset.rnu = t; /* (1.70.0) 알라딘 화면의 body에 표시를 남기지 않음 — 수집기 칸에만 */ GM_setValue('rnu-tab', t); bar.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.t === t)); draw(); };
-  setTimeout(() => { const b = box.querySelector('#rnCtlLog'); if (b) b.onclick = (e) => { e.stopPropagation(); try { GM_setValue(logKey(), logOpen() ? 0 : 1); } catch (x) {} applyLog(); }; }, 0);
+  /* (1.89.154 정범님 10/30 '기록 단추가 작동하지 않아') 🗒 = 큰 기록창(아래 [기록]과 같은 창) 열기·닫기 — 1.89.151은 개요 화면의 작은 '최근 기록' 칸만 숨겨, 다른 화면(상품·매입 등)에서는 눌러도 아무것도 안 바뀌었음 · 창 상태는 기록창 쪽이 기억(본체 탭은 열린 채로 시작 · 쉬는 탭은 닫힌 채로) */
+  { const b = box.querySelector('#rnCtlLog'); b.addEventListener('pointerdown', (e) => e.stopPropagation()); b.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); if (window.__rnJournalToggle) window.__rnJournalToggle(); else { try { window.__rnLog && window.__rnLog('수집기', 'warn', '🗒 기록창이 아직 준비되지 않음 — 잠시 뒤 다시'); } catch (x) {} } setTimeout(() => window.__rnJwSync && window.__rnJwSync(), 0); }); }
   const setMin = (on, keep) => { box.classList.toggle('min', on); if (!keep) GM_setValue('rnu-ctl-min', on ? 1 : 0); box.querySelector('#rnCtlMin').textContent = on ? '+' : '–'; };
   /* (1.89.19) 정범님 10/21: 머리 칸을 끌어 원하는 곳으로 옮기고 그 자리를 이 PC에 기억 — 일하는 수집기(활성)와 쉬는 수집기(비활성) 자리를 따로 · ▁ 단추 = 오른쪽 아래 반투명 아이콘으로(누르면 다시) · 아이콘은 오른쪽 아래에 다른 것이 있으면 그 위로 */
   const roleK = () => (window.__rnRest && window.__rnRest() ? 'rest' : 'act'); let posRole = null, dragMoved = false;
@@ -886,17 +895,32 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const k = cls + h; if (k === subHtml) return; subHtml = k; sub.className = 'rsub ' + cls; sub.hidden = !h; sub.innerHTML = h; };
   /* (10/30 정범님) 머리줄 아래 계기판 — 지금 무슨 작업을 하는지 늘 보임 · 본체(이 PC의 수집기 탭)는 자세히·크게, 쉬는 탭은 한 줄 · 🗒 = 개요의 최근 기록 칸 열기·닫기(본체 기본 열림 · 쉬는 탭 기본 닫힘 · 탭 종류마다 기억) */
   const dash = box.querySelector('#rnCtlDash'); let dashHtml = null; const isLead = () => (window.__rnRole ? window.__rnRole() : 'lead') === 'lead';
-  const logKey = () => 'rnu-ctl-log-' + (isLead() ? 'lead' : 'tab'); const logOpen = () => { try { const v = GM_getValue(logKey(), null); return v == null ? isLead() : !!v; } catch (e) { return isLead(); } };
-  const applyLog = () => { const on = logOpen(); ov.classList.toggle('nolog', !on); const b = box.querySelector('#rnCtlLog'); if (b) b.classList.toggle('on', on); };
-  const drawDash = (S) => { const lead = isLead(); box.classList.toggle('lead', lead); applyLog(); const m = S.main; const sn = window.__rnSchedNext ? window.__rnSchedNext() : { known: false };
-    const nxt = sn.known && sn.on && sn.next ? `다음 자동 ${sn.next.tomorrow ? '내일 ' : ''}${sn.next.t} · ${esc(sn.next.label)}` : '';
-    const where = m && m.tab !== window.__rnTab ? ` <small>(이 PC의 다른 탭)</small>` : '';
-    let h = ''; if (S.kind === 'busy' && m) { const dt = m.jobStart ? Math.max(0, Math.round((Date.now() - (typeof m.jobStart === 'number' ? m.jobStart : Date.parse(m.jobStart))) / 60000)) : null; /* jobStart = 그 작업을 시작한 때 */
-      h = lead && window.__rnOvHtml ? `<div class="dd">${window.__rnOvHtml(m, !!m.crmBusy)}</div><div class="dt" style="margin-top:3px"><small>${dt != null ? `시작한 지 ${dt}분` : ''}${where ? ' · 이 PC의 다른 탭' : ''}</small></div>` : `<div class="dt">▶ <b>${esc(m.job || '작업 중')}</b>${where}${dt != null ? `<small>${dt}분째</small>` : ''}</div>` + (lead ? '' : (m.sub && (m.sub.label || m.sub.name) ? `<div class="dd"><small>${esc(String(m.sub.label || m.sub.name).slice(0, 90))}</small></div>` : '')); }
-    else if (S.kind === 'stop') h = `<div class="dt">■ <b>멈추는 중</b>${m ? `<small>${esc(m.job || '')}</small>` : ''}</div>`;
-    else if (S.kind === 'pause') h = `<div class="dt">■ <b>일시정지됨</b><small>다시 시작 전에는 저절로 시작하지 않음</small></div>`;
-    else h = `<div class="dt">· <b>쉬는 중</b>${S.last ? `<small>마지막: ${esc(S.last.name)} ${hm(S.last.at)}</small>` : ''}</div>${lead && nxt ? `<div class="dd"><small>${nxt}</small></div>` : ''}`;
-    const k = S.kind + (lead ? 'L' : 'F') + h; if (k === dashHtml) return; dashHtml = k; dash.className = 'dash ' + S.kind; dash.hidden = !h; dash.innerHTML = h; };
+  const applyLog = () => { const on = !!(window.__rnJournalOpen && window.__rnJournalOpen()); const b = box.querySelector('#rnCtlLog'); if (b) { b.classList.toggle('on', on); b.title = on ? '🗒 기록창 닫기' : '🗒 기록창 열기 (본체 탭은 열린 채로 시작 · 쉬는 탭은 닫힌 채로)'; } }; window.__rnJwSync = applyLog;
+  /* (1.89.154 정범님 10/30 '쉬는 중 같은 간단한 상태만이 아니라 지금 당장 하고 있는 구체적 업무의 요약을 · 공항 출발/도착 안내판 모양으로')
+   *  줄 = [시각 | 작업 | 지금 하는 것(단계·이번 바퀴 항목·처리 중 항목·n/전체·남은 시간) | 상태]
+   *  ① 진행 중(이 PC의 모든 수집기 탭 — 깜빡이는 초록 '진행') ② 일시정지·멈추는 중(빨강 '지연') ③ 다음 자동 일(⏰ 일정표 — 10분 안이면 파랑 '곧 시작', 아니면 노랑 '대기') ④ 마지막에 끝난 일(회색 '완료')
+   *  본체(이 PC의 수집기 탭)는 다음 일 5개·자세한 둘째 줄, 쉬는 탭은 진행 1줄 + 다음 1줄 */
+  const tHM = (t) => { const d = new Date(typeof t === 'number' ? t : Date.parse(t)); return isNaN(d) ? '--:--' : d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false }); };
+  const nowOf = (m) => { const P = []; const c = m.chain; const cur = m.cur || {}; const crm = m.crm || {};
+    if (c && c.order && c.cur) { const on = c.order.filter((k) => c.on[k]); P.push(`단계 ${Math.max(1, on.indexOf(c.cur) + 1)}/${on.length} ${c.labels[c.cur] || c.cur}`); }
+    if (m.ms && Array.isArray(m.ms.items) && m.ms.items.length) { const it = m.ms.items.find((q) => q.st === 'now'); const dn = m.ms.items.filter((q) => q.st === 'done').length; P.push(`${m.ms.title || '이번 바퀴'} ${dn}/${m.ms.items.length}${it ? ` · ▶ ${it.l}${it.n ? ' ' + it.n : ''}` : ''}`); }
+    if (m.sub && m.sub.order && m.sub.cur) P.push(`세부: ${m.sub.labels[m.sub.cur] || m.sub.cur}`); else if (m.sub && (m.sub.label || m.sub.name)) P.push(String(m.sub.label || m.sub.name));
+    const x = cur.total ? cur : crm.total ? crm : null; if (x) P.push(`${(x.done || 0).toLocaleString()}/${x.total.toLocaleString()}${x.state ? ' ' + x.state : ''}`); else if (cur.state) P.push(String(cur.state));
+    if (cur.sub) P.push(`지금: ${cur.sub}`); if (cur.etaMin != null) P.push(`남은 약 ${cur.etaMin < 60 ? cur.etaMin + '분' : Math.floor(cur.etaMin / 60) + '시간 ' + (cur.etaMin % 60) + '분'}`);
+    const fr = x && x.total ? Math.min(1, (x.done || 0) / x.total) : null; return { txt: P.filter(Boolean).join(' · '), fr }; };
+  let dashTick = 0; const drawDash = (S) => { const lead = isLead(); box.classList.toggle('lead', lead); applyLog(); const R = [];
+    const busy = (S.busy || []).slice().sort((a, b) => (a.tab === window.__rnTab ? -1 : b.tab === window.__rnTab ? 1 : 0));
+    for (const m of (lead ? busy : busy.slice(0, 1))) { const n = nowOf(m); const where = m.tab !== window.__rnTab ? ' <small style="color:#7D8B98">(다른 탭)</small>' : '';
+      const stc = S.paused ? (S.kind === 'stop' ? ['dl', '멈추는 중'] : ['dl', '지연']) : ['go', '진행'];
+      R.push(`<tr class="now"><td>${m.jobStart ? tHM(m.jobStart) : '--:--'}</td><td class="jb">${esc(m.job || '작업')}${where}</td><td><span class="s2" title="${esc(n.txt)}">${esc(n.txt || '준비 중')}</span>${n.fr != null ? `<div class="pb2"><i style="width:${(n.fr * 100).toFixed(1)}%"></i></div>` : ''}</td><td><span class="st ${stc[0]}">${stc[1]}</span></td></tr>`); }
+    if (!busy.length && S.kind === 'pause') R.push(`<tr class="now"><td>${tHM(Date.now())}</td><td class="jb">일시정지</td><td><span class="s2">다시 시작 전에는 저절로 시작하지 않음</span></td><td><span class="st dl">멈춤</span></td></tr>`);
+    const up = window.__rnSchedUpcoming ? window.__rnSchedUpcoming(lead ? 5 : 1) : { known: false };
+    if (up.known && up.on) for (const x of up.list || []) R.push(`<tr><td>${x.tomorrow ? '<small>내일</small>' : ''}${esc(x.t)}</td><td class="jb">${esc(x.label)}</td><td><span class="s2">⏰ ${x.d < 60 ? `${x.d}분 뒤` : `${Math.floor(x.d / 60)}시간${x.d % 60 ? ' ' + (x.d % 60) + '분' : ''} 뒤`}</span></td><td><span class="st ${x.d <= 10 ? 'bd' : 'wt'}">${x.d <= 10 ? '곧 시작' : '대기'}</span></td></tr>`);
+    else if (up.known && !up.on && lead) R.push(`<tr class="old"><td>--:--</td><td class="jb">⏰ 매일 자동</td><td><span class="s2">꺼져 있음(웹앱 ⏰ 일정표)</span></td><td><span class="st dn">결항</span></td></tr>`);
+    if (S.last && (lead || !busy.length)) R.push(`<tr class="old"><td>${tHM(S.last.at)}</td><td class="jb">${esc(S.last.name || '')}</td><td><span class="s2">${S.last.ms ? '걸린 시간 ' + Math.max(1, Math.round(S.last.ms / 60000)) + '분' : '끝남'}</span></td><td><span class="st dn">완료</span></td></tr>`);
+    if (!busy.length && !R.some((r) => r.includes('class="now"'))) R.unshift(`<tr class="now"><td>${tHM(Date.now())}</td><td class="jb">쉬는 중</td><td><span class="s2">지금 하는 일 없음 — 다음 자동 일·웹앱 요청을 기다림</span></td><td><span class="st dn">대기</span></td></tr>`);
+    const h = `<div class="fh">✈ ${lead ? '이 PC 수집기 · 출발 안내' : '이 PC 수집기 (쉬는 탭)'}<span class="sp"></span><span class="ck">${tHM(Date.now())}</span></div><table><tr><th>시각</th><th>작업</th><th>지금 하는 것</th><th style="text-align:right">상태</th></tr>${R.join('')}</table>`;
+    const k = (lead ? 'L' : 'F') + h; if (k === dashHtml) return; dashHtml = k; dash.className = 'dash ' + S.kind; dash.hidden = false; dash.innerHTML = h; };
   sub.addEventListener('click', (e) => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (!b) return; if (b.dataset.r === 'force') { if (window.__rnForceAsk && window.__rnForceAsk()) window.__rnForce(true); } else if (b.dataset.r === 'rest') window.__rnForce(false); subHtml = null; draw(); });
   if (window.__rnRoleOn) window.__rnRoleOn((r) => { if (r === 'lead' && window.__rnLeadSince && Date.now() - window.__rnLeadSince < 3000 && /follow|force/.test(String(lastRole))) promotedAt = Date.now(); if (r === 'follow') setMin(true, true); lastRole = r; subHtml = null; });
   let lastRole = null;

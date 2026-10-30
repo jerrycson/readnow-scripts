@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.153의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.154의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.153' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.153', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.154' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.154', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -4064,6 +4064,13 @@
       else if (s.trig.t === 'every') { const f = s.win ? AS.tMin(s.win.from) : 0; for (let m = f, i = 0; i < 288; m += s.trig.min, i++) { const mm = m % 1440; if (AS.inWin(s, mm)) cand.push(mm); if (m - f >= 1440) break; } }
       for (const m of cand) { if (s.days && !s.days.includes(m > min ? dow : dowT)) continue; const d = m > min ? m - min : m + 1440 - min; if (!best || d < best.d) best = { d, t: AS.hm(m), label: asName(s), tomorrow: m <= min }; } }
     return { known: true, on: true, next: best }; };
+  window.__rnSchedUpcoming = (N) => { /* (1.89.154 정범님 10/30) ✈ 안내판 — 이 PC의 다음 자동 일 여러 개(시각 차례) */ const L = []; if (!SCHED) return { known: false }; if (!SCHED.on) return { known: true, on: false }; const { min } = kstNow(); let best = null;
+    const dow = AS.kst(Date.now()).dow, dowT = (dow + 1) % 7; const own = asOwn(); /* (1.63.8 점검) 요일·PC 거르기·담당 PC도 봄 — 이 PC가 하지 않을 칸을 '다음'으로 보이지 않게 */
+    for (const s of AS.slotsOf(SCHED)) { if (!s.on) continue; if (s.pcs && !s.pcs.includes(String(PC_NAME))) continue; if (!s.pcs && own && own.pc && String(own.pc) !== String(PC_NAME)) continue; let cand = [];
+      if (s.trig.t === 'time') cand = s.trig.times.map((t) => AS.tMin(t)); else if (s.trig.t === 'month' && AS.timesToday) cand = AS.timesToday(s.trig, Date.now()).map((t) => AS.tMin(t)).filter((m) => m > min); /* (1.63.1) 매월 정한 날 — 오늘이 고른 날일 때만 */
+      else if (s.trig.t === 'every') { const f = s.win ? AS.tMin(s.win.from) : 0; for (let m = f, i = 0; i < 288; m += s.trig.min, i++) { const mm = m % 1440; if (AS.inWin(s, mm)) cand.push(mm); if (m - f >= 1440) break; } }
+      for (const m of cand) { if (s.days && !s.days.includes(m > min ? dow : dowT)) continue; const d = m > min ? m - min : m + 1440 - min; L.push({ d, t: AS.hm(m), label: asName(s), tomorrow: m <= min }); } }
+    L.sort((a, b) => a.d - b.d); const seen = new Set(); return { known: true, on: true, list: L.filter((x) => { const k = x.t + x.label; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, N || 5) }; };
   /* (1.57.4) 회차 기록(prd_jobs/autoSched.runs)은 날마다 쌓여 한 문서(1MB) 한도에 닿을 수 있음 → 40일 지난 회차는 달마다 prd_jobs/autoSched_YYYY-MM 문서로 옮겨 보관(지우지 않음 · 옮기기와 빼기를 한 묶음으로 = 둘 다 되거나 둘 다 안 됨) */
   /* (1.63.6 전체 점검) 한 문서의 색인 칸 한도(4만 개)에 먼저 닿음: 15분마다·1시간마다 칸이 40일이면 회차 수천 개 × 칸 8개 → 거의 4만 → 넘으면 모든 PC의 자동 수집 확인·기록이 실패
    *  → 10일 지난 회차는 날마다 prd_jobs/autoSched_YYYY-MM-DD 문서로 옮김(지우지 않음 · 옮기기와 빼기를 한 묶음으로) · 한 번에 최대 3,000개 · 남으면 1시간 뒤 다시 */
