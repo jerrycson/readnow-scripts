@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "📐 시장 전체 팔린 비율",
- "since": "2026-10-30T06:52:21Z",
- "beat": "2026-10-30T06:52:21Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "friend",
-  "done": "r17 face 0.15.13 올림(6047167)",
-  "at": "2026-10-30T06:52:06Z"
+  "who": "lead",
+  "done": "1.78.278 📐 시장 전체 팔린 비율",
+  "at": "2026-10-30T06:54:57Z"
  },
- "host": "vm"
+ "host": null
 }
