@@ -1,2 +1,22 @@
-@health&hours=4
-# 2941018802
+perf=400
+@health&hours=24
+@health&hours=3
+doc=app_settings/write_watch
+doc=prd_jobs/pcBeat
+doc=app_settings/value_model
+doc=app_settings/buyback_stats
+doc=app_settings/extras_study
+doc=app_settings/y24_state
+doc=app_settings/backup_auto
+doc=prd_system/dataBackup
+doc=app_settings/platforms
+logs=1&pc=LOGGER&from=202610301900
+logs=1&pc=JS-MAIN&from=202610301900
+logs=1&pc=HOME&from=202610301900
+logs=1&pc=MJ-MAIN&from=202610300900
+recentUp=prd_listings&mins=180
+rate=prd_listings,prd_book_metrics,prd_listing_changes,ext_basic,ext_pool,ext_used,shp_cmds,y24_listings,perf_logs,bench_items,prd_ids,markH,crm_orders,crm_customers,px_exp,prd_price_decisions&mins=1440
+rate=prd_listings,prd_book_metrics,ext_pool,ext_used,shp_cmds,perf_logs,px_exp,prd_price_decisions,prd_listing_changes&mins=180
+cmds=prdEdit&n=20
+cmds=pxExp&n=20
+# 2782021799
