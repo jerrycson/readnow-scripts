@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "③ 움직임 2묶음 배포 다시(t3)",
- "since": "2026-10-30T00:08:01Z",
- "beat": "2026-10-30T00:23:17Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "friend",
-  "done": "② 몸·옷 3~5묶음 e7f1410 · 웹앱 1.78.265 · friend 0.15.10",
-  "at": "2026-10-30T00:07:30Z"
+  "done": "③ 움직임 2묶음 배포 멈춤: 책방 친구 시험 3번 모두 ✓ · tW1만 2·3회차 ✗ · 혼자 2/3 → 기준대로 멈춤 · 올린 것 없음",
+  "at": "2026-10-30T00:28:35Z"
  },
- "host": "vm-motion"
+ "host": null
 }
