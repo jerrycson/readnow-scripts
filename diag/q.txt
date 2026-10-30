@@ -1,5 +1,2 @@
-samp=y24_listings,y24_listing_changes
-recentUp=y24_listings&mins=240
-doc=app_settings/y24_state,app_settings/sku_seq,app_settings/platforms
-dump=listings
-# 115352929
+samp=bench_items,bench_lookup_items,bench_lookup,mkt_trend_raw,mkt_signals,ext_used,bench_days,ml_sales,prd_metric_changes&sizes=bench_items,bench_lookup_items,ext_used,mkt_trend_raw&n=40&doc=app_settings/value_model,app_settings/extras_study,app_settings/mkt_trend_state&mchg=40
+# 558013331
