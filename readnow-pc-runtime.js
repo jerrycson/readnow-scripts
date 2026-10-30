@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.155의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.156의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.155' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.155', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.156' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.156', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -783,7 +783,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   #rn-ctl .rsub.mini{padding:3px 10px;font-size:10.5px;justify-content:flex-end;gap:6px} #rn-ctl .rsub.mini .tx{flex:0 1 auto;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:78%} #rn-ctl .rsub.mini small{display:none} #rn-ctl .rsub.mini button{padding:2px 6px;font-size:10.5px}
   #rn-ov.nolog .lgcard{display:none}
   #rn-ctl .rsub{display:flex;align-items:center;gap:8px;padding:6px 12px;background:#EEF4F1;color:#3F524C;border-bottom:1px solid #DCE6E1;font-size:12px;line-height:1.4} #rn-ctl .rsub[hidden]{display:none} #rn-ctl .rsub .tx{flex:1;min-width:0} #rn-ctl .rsub small{display:block;color:#6B7A75;font-size:11px}
-  #rn-ctl .rsub.force{background:#FFF6E6;color:#7A4A10;border-bottom-color:#F0DDBA} #rn-ctl .rsub.force small{color:#8A6A3A} #rn-ctl .rsub.lead{background:#F4F8F6;color:#5B6B66} #rn-ctl .rsub.new{background:#E6F3EA;color:#2F7D4F}
+  #rn-ctl .rsub.follow{background:#C62828;color:#fff;border-bottom-color:#8E1B1B;font-weight:700} #rn-ctl .rsub.follow small{color:#FFE3E0} #rn-ctl .rsub.follow button{background:#fff;color:#C62828;border-color:#fff} /* (1.89.156 정범님 10/30) 'ⓘ 이 PC에서는 이미 수집기가 일하는 중'은 빨간 바탕·흰 글자 */ #rn-ctl .rsub.force{background:#FFF6E6;color:#7A4A10;border-bottom-color:#F0DDBA} #rn-ctl .rsub.force small{color:#8A6A3A} #rn-ctl .rsub.lead{background:#F4F8F6;color:#5B6B66} #rn-ctl .rsub.new{background:#E6F3EA;color:#2F7D4F}
   #rn-ctl .rsub button{flex:none;padding:4px 9px;border-radius:6px;border:1px solid #9DB5AC;background:#fff;color:#2F5D50;font:600 11.5px system-ui,'Malgun Gothic';cursor:pointer} #rn-ctl .rsub.force button{border-color:#D9B57A;color:#7A4A10}
   #rn-uni{display:flex;gap:0;border-bottom:1px solid #E1E8E5;background:#F6F9F8;padding:0 6px}
   #rn-uni button{flex:1;padding:8px 4px 7px;border:0;border-bottom:3px solid transparent;background:transparent;color:#4C5E58;cursor:pointer;font:600 12.5px system-ui,'Malgun Gothic'}
@@ -885,7 +885,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const sub = box.querySelector('#rnCtlSub'); let subHtml = null, promotedAt = 0;
   const drawSub = (S) => { const r = window.__rnRole ? window.__rnRole() : 'lead'; const pn = window.__rnPageName || ((x) => x); let cls = '', h = '';
     if (r === 'wait') { h = '<div class="tx">이 PC의 수집기 탭을 확인하는 중…</div>'; }
-    else if (r === 'follow') { const v = window.__rnLead ? window.__rnLead() : null; const lv = v && S.lives.find((x) => x.tab === v.tab);
+    else if (r === 'follow') { cls = 'follow'; const v = window.__rnLead ? window.__rnLead() : null; const lv = v && S.lives.find((x) => x.tab === v.tab);
       h = `<div class="tx">ⓘ 이 PC에서는 이미 수집기가 일하는 중 — <b>${v ? esc(pn(v.page)) : '다른'} 탭</b>${lv ? (lv.busy ? ` · ▶ ${esc(lv.job || '작업 중')}` : ' · 쉬는 중') : ''}<small>이 탭은 쉬는 상태입니다 (저절로 시작하는 작업 없음 · 보기와 일시정지는 됨). 그 탭을 닫으면 이 탭이 이어받습니다.</small></div><button data-r="force" title="한 PC에 수집기 둘 — 누르면 단점을 먼저 알려 드립니다">이 탭도 켜기…</button>`; }
     else if (r === 'force') { h = `<div class="tx">⚠ 이 탭도 수집기로 켜 둠 — 이 PC에 수집기 2개<small>매일 자동·웹앱 요청·맡긴 일은 원래 탭이 맡고, 이 탭은 직접 누른 작업만 합니다. 알라딘 요청 제한에 더 빨리 걸릴 수 있어요.</small></div><button data-r="rest">다시 쉬게 하기</button>`; cls = 'force'; }
     else if (r === 'lead') { const others = S.lives.filter((x) => x.tab !== window.__rnTab && (x.role === 'follow' || x.role === 'force'));

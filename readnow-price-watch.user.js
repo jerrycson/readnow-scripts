@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.27
+// @version      0.10.28
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -10,7 +10,7 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.5
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.17.1
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.17.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-aladin-core.js?v=0.2.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-exec-core.js?v=0.1.1
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
@@ -105,8 +105,8 @@
   const GAP = (k) => (k === 'auto' ? 6000 + Math.random() * 19000 : k === 'read' ? 1500 + Math.random() * 2500 : 0);
   /* (사람처럼) 밤 쉼·조각 — 설정 prd_system/pricing.human = { quiet:'HH:MM-HH:MM'(''이면 끔), sliceSec, restSec:[가장 짧게, 가장 길게] }
    *  근거: 밤 끝 07:00 = 클라우드 '밤'(KST 7시 전) · 조각 75초·쉼 60~600초 = 🔬 조회수 실험 매일 일 값(공용 AS.pxGate와 같음) · 밤 끝 0~60분 흩음은 근거 없음(설정으로 끔: quietJit 0) */
-  const HUM = () => { const h = SET.human && typeof SET.human === 'object' ? SET.human : {}; const pr = Array.isArray(h.restSec) && h.restSec.length === 2 && h.restSec.every((x) => +x >= 10) ? h.restSec.map(Number).sort((a, b) => a - b) : [60, 600];
-    return { quiet: typeof h.quiet === 'string' ? h.quiet : '00:00-07:00', quietJit: Number.isFinite(+h.quietJit) && h.quietJit !== null ? Math.max(0, Math.min(180, +h.quietJit)) : 60, sliceMs: Math.max(15, Math.min(600, +h.sliceSec || 75)) * 1000, rest: pr }; };
+  const HUM = () => { const h = SET.human && typeof SET.human === 'object' ? SET.human : {}; const pr = Array.isArray(h.restSec) && h.restSec.length === 2 && h.restSec.every((x) => +x >= 10) ? h.restSec.map(Number).sort((a, b) => a - b) : [20, 120]; /* (10/30 정범님 '분당 최대 22권 — 이 속도를 전반적으로 유지 · 너무 느려도 안 됨') 조각 사이 쉼 60~600초 → 20~120초(한 바퀴 2000권 약 16시간 → 약 3~4시간 · 조각 안 속도·흩음은 그대로) */
+    return { quiet: typeof h.quiet === 'string' ? h.quiet : '01:00-04:55', quietJit: Number.isFinite(+h.quietJit) && h.quietJit !== null ? Math.max(0, Math.min(180, +h.quietJit)) : 0, /* (10/30 정범님) 밤 쉼 1:00~4:55 */ sliceMs: Math.max(15, Math.min(600, +h.sliceSec || 75)) * 1000, rest: pr }; };
   const dHash = (x0) => { let x = 2166136261; for (const c of String(x0)) x = Math.imul(x ^ c.charCodeAt(0), 16777619); return x >>> 0; };
   function quietNow(now) { now = now || Date.now(); const H = HUM(); const m = String(H.quiet || '').match(/^(\d\d):(\d\d)-(\d\d):(\d\d)$/); if (!m) return null; const a = +m[1] * 60 + +m[2], b = +m[3] * 60 + +m[4]; if (a === b) return null;
     const k = new Date(now + 9 * 3600e3); const cur = k.getUTCHours() * 60 + k.getUTCMinutes(); const day = k.toISOString().slice(0, 10); const d0 = Date.parse(day + 'T00:00:00+09:00'); const endOf = (ds) => ds + (b + dHash(new Date(ds + 3600e3 + 9 * 3600e3).toISOString().slice(0, 10)) % (H.quietJit + 1)) * 60000;

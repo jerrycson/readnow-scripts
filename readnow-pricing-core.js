@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.17.1'; // (0.17.1) 🤖 추격자 다시 보기 간격 ±15% 흩음(같은 입력이면 같은 값) // (0.17.0) 정범님 10/30 재정의 — ① 터무니없는 값 거르기는 남의 매물만(남의 매물이 3개 미만이면 중앙값 대신 정가·우리 최고 판매 비율로 상한) ② 정가 1.5배 넘는 추천 막기 없앰 ③ 🏝 우리 단독이면 soloHigh로 올릴 근거(같은 책 판매가·우리 판매 비율 분포·상한 = 우리가 받아 본 최고 비율) // (0.16.2) 수동 일괄 기준 critTarget — 터무니없는 첫 쪽 매물 빼기(엔진과 같은 기준) · 정가 1.5배 넘는 추천은 하지 않음(10/30 연계 점검) // (0.16.1) 🕘 임시 기준 끝나는 날 한국 날짜 // (0.16.0) 정범님 10/19: 재고 기간 할인(T2 5~10% … T7 70%)을 없앰 — 우리 판매 자료(10/08~10/18 · 상품·일 17만)로 판매 확률은 등록 30일 뒤 약 1.2~1.5‰로 내려간 뒤 1년까지 거의 그대로이고, 수요 낮은 책은 값을 내려도 판매가 늘지 않음 → 기간에 따라 깎을 근거가 없음 · 오래된 재고의 값은 판매가치 엔진(ml-core valueOf: 수요×자리 · 알라딘 매입 검토)이 맡음 · 단계(T1~T8)는 남김(기준 판매자 색 넓히기·불용 판정에 씀) // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
+  const VERSION = '0.17.2'; // (0.17.2) 🏝 새책 상한 = 우리 결제 총액 ≤ 새책 결제 총액(알라딘 판매가+새책 배송) − 100원(79% 없앰) // (0.17.1) 🤖 추격자 다시 보기 간격 ±15% 흩음(같은 입력이면 같은 값) // (0.17.0) 정범님 10/30 재정의 — ① 터무니없는 값 거르기는 남의 매물만(남의 매물이 3개 미만이면 중앙값 대신 정가·우리 최고 판매 비율로 상한) ② 정가 1.5배 넘는 추천 막기 없앰 ③ 🏝 우리 단독이면 soloHigh로 올릴 근거(같은 책 판매가·우리 판매 비율 분포·상한 = 우리가 받아 본 최고 비율) // (0.16.2) 수동 일괄 기준 critTarget — 터무니없는 첫 쪽 매물 빼기(엔진과 같은 기준) · 정가 1.5배 넘는 추천은 하지 않음(10/30 연계 점검) // (0.16.1) 🕘 임시 기준 끝나는 날 한국 날짜 // (0.16.0) 정범님 10/19: 재고 기간 할인(T2 5~10% … T7 70%)을 없앰 — 우리 판매 자료(10/08~10/18 · 상품·일 17만)로 판매 확률은 등록 30일 뒤 약 1.2~1.5‰로 내려간 뒤 1년까지 거의 그대로이고, 수요 낮은 책은 값을 내려도 판매가 늘지 않음 → 기간에 따라 깎을 근거가 없음 · 오래된 재고의 값은 판매가치 엔진(ml-core valueOf: 수요×자리 · 알라딘 매입 검토)이 맡음 · 단계(T1~T8)는 남김(기준 판매자 색 넓히기·불용 판정에 씀) // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -443,7 +443,7 @@
   /* (0.17.0 정범님 10/30) 🏝 soloHigh — 시장(첫 쪽)에 우리 매물만 있을 때 올릴 근거를 찾아 추천가를 정함. 내리지 않음(지금 가격이 바닥).
    *  근거(ctx.solo — 웹앱이 우리 판매 기록으로 만듦): book.max = 이 책(같은 ISBN)을 우리가 판 가장 높은 값 · allR/oopR = 우리 판매의 '판매가/정가' 비율 목록(전체 / 판매 때 새책이 안 팔리던 = 절판·품절 책) · maxR = 우리가 판 가장 높은 정가 비율(상한)
    *  ① 같은 책을 그 값에 판 적이 있으면 그 값  ② 같은 처지(절판·품절이면 그 무리) 우리 판매 비율의 상위 soloQ 분위(기본 0.75 · 근거: 우리 판매 분포 · 설정 crit.soloQ로 바꿈) × 정가
-   *  상한: 정가 × maxR(우리가 실제로 받아 본 가장 높은 비율 — 지어낸 배수 아님) · 새책이 지금 팔리면 새책 판매가 × newPct%(기본 79 — 새책 값에 너무 가까우면 새책을 삼)  · 근거가 하나도 없으면 지금 가격 유지 */
+   *  상한: 정가 × maxR(받아 본 가장 높은 비율 — 지어낸 배수 아님) · 새책이 지금 팔리면 우리 결제 총액 ≤ 새책 결제 총액(알라딘 판매가+새책 배송) − 100원  · 근거가 하나도 없으면 지금 가격 유지 */
   function soloHigh(l, c0, ctx) { const c = c0 || {}; const R = []; const st = (ctx && ctx.solo) || {}; const lp = +(l.priceList || (ctx && ctx.priceList) || 0); const cur = +l.price || 0; const ps = +((ctx && ctx.priceSales) || l.priceSales || 0); const oop = !!(ctx && ctx.oop);
     const q = (a, k) => { const v = (a || []).filter((x) => x > 0).sort((x, y) => x - y); if (v.length < 5) return null; return v[Math.min(v.length - 1, Math.floor(k * (v.length - 1)))]; };
     R.push(`🏝 첫 쪽에 우리 매물뿐(남의 매물 없음) — 맞출 기준이 없으니 깎지 않고 올릴 근거를 찾음${oop ? ' · 새책이 안 팔림(절판·품절)' : ''}`);
@@ -454,7 +454,11 @@
     if (!ev.length) { R.push('우리 판매 기록 근거가 없음(주문 자료를 못 읽었거나 비슷한 판매가 5권 미만) — 지금 가격 유지'); return { t: cur || null, reasons: R }; }
     const best = ev.reduce((a, b) => (b.t > a.t ? b : a)); let t = best.t; R.push(`근거: ${best.why}`); for (const e of ev) if (e !== best) R.push(`(참고) ${e.why}`);
     const hiR = +st.maxR || 0; if (hiR > 0 && t > lp * hiR) { t = snapDown(lp * hiR); R.push(`상한: 우리가 실제로 받아 본 가장 높은 정가 비율 ${hiR.toFixed(2)}배 → ${t.toLocaleString()}원`); }
-    if (ps > 0 && !oop) { const nk = +c.newPct > 0 ? +c.newPct : 79; const cap = snapDown(ps * nk / 100); if (t > cap) { t = cap; R.push(`새책이 ${ps.toLocaleString()}원에 팔리는 중 — 새책 값의 ${nk}%(${cap.toLocaleString()}원) 위로는 새책을 사므로 그까지`); } }
+    if (ps > 0 && !oop) { /* (0.17.2 정범님 10/30) 새책 79% 제한 없앰 — '새책보다 싸기만 하면 됨 · 알라딘 판매가(할인 적용)에 배송비를 더해 견줘 100원만 싸도 우리 것을 살 수 있음' → 우리 결제 총액(판매가+우리 배송비) ≤ 새책 결제 총액 − 100원
+       *  새책 배송: ctx.newShip { fee, freeOver }(웹앱 설정 · 기본 알라딘 국내도서 1만 5천 원 이상 무료·아니면 2,500원 — 바뀌면 설정에서) · 우리 배송: ctx.policy { fee, freeOver, paidOnly } */
+      const ns = (ctx && ctx.newShip) || {}; const nFee = ns.fee != null ? +ns.fee : 2500, nFree = ns.freeOver != null ? +ns.freeOver : 15000; const newTot = ps + (ps >= nFree ? 0 : nFee); const pol = (ctx && ctx.policy) || {}; const oFee = pol.fee != null ? +pol.fee : 0; const oFree = pol.paidOnly ? Infinity : pol.freeOver != null ? +pol.freeOver : Infinity;
+      const lim = newTot - 100; const c1 = lim >= oFree ? lim : null; const c2 = lim - oFee < oFree ? lim - oFee : null; const cap = Math.floor(Math.max(c1 || 0, c2 || 0) / 10) * 10;
+      if (cap > 0 && t > cap) { t = cap; R.push(`새책이 ${ps.toLocaleString()}원(배송 ${(newTot - ps).toLocaleString()}원 · 결제 ${newTot.toLocaleString()}원)에 팔리는 중 — 우리 결제 총액이 그보다 100원 싸게: 판매가 ${cap.toLocaleString()}원 + 배송 ${(cap >= oFree ? 0 : oFee).toLocaleString()}원`); } }
     if (cur && t <= cur) { R.push(`근거 값 ${t.toLocaleString()}원이 지금 가격 이하 — 깎지 않고 지금 가격 유지`); t = cur; } else R.push(`→ ${t.toLocaleString()}원으로 올려 봄(지금 ${cur.toLocaleString()}원 · 최대 인상 % 조건이 있으면 그만큼만)`);
     return { t, reasons: R, ev }; }
   function critTarget(l, page1, d, c0, ctx, buyback) { const c = c0 || {}; const R = []; const out = { t: null, reasons: R, bbHit: null, floor: 0 }; const coef = c.coef || DEFAULTS.gradeCoef;
