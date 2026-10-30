@@ -1,16 +1,1 @@
-@health&hours=24
-doc=prd_jobs/autoSched
-doc=prd_system/autoSched
-doc=prd_system/settings
-doc=prd_jobs/net_20261030
-doc=app_settings/cloud
-logs=1&pc=JS-MAIN&from=202610301400
-logs=1&pc=HOME&from=202610300850
-logs=1&pc=LOGGER&from=202610300300
-rate=ext_pool,ext_basic,prd_listings,prd_book_metrics,crm_orders,crm_customers,crm_interactions,shp_cmds,bench_items,px_exp,prd_price_decisions,strat_log,mkt_signals,y24_listings,rn_logs,perf_logs,prd_metric_changes,prd_ids,sellers,prd_seen&mins=10080
-rate=ext_pool,ext_basic,prd_listings,prd_book_metrics,crm_orders,crm_customers,crm_interactions,shp_cmds,bench_items,px_exp,prd_price_decisions,strat_log,mkt_signals,y24_listings,rn_logs,perf_logs,prd_metric_changes,prd_ids,sellers,prd_seen&mins=1440
-sizes=ext_pool,px_exp,prd_price_decisions,shp_cmds,px_exp_groups
-cmds=startDelivery&n=20
-cmds=shopRead&n=10
-samp=px_exp,prd_price_decisions,px_exp_groups,strat_log,ext_pool
-# 373424625
+@kpin kpin/aud_20261030-135309.json
