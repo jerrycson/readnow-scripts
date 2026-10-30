@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "friend",
+ "what": "🐾 단추 옮기기·쓰레기통·설정 닫기·PC 클릭 판정 0.2.1",
+ "since": "2026-10-30T01:26:34Z",
+ "beat": "2026-10-30T01:26:34Z",
  "ask": null,
  "last": {
   "who": "friend",
   "done": "③ 움직임 2묶음 00a6802 · 웹앱 1.78.266 · friend 0.15.11",
   "at": "2026-10-30T00:55:26Z"
  },
- "host": null
+ "host": "vm-trash"
 }
