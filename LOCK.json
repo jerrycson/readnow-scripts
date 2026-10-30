@@ -1,13 +1,13 @@
 {
- "holder": "daily",
- "what": "🔬 정밀 점검 판 내기 — t3 2~3회차 기다리는 중 · 커밋 a129b2f·55997a3 준비됨",
- "since": "2026-10-30T13:45:51Z",
- "beat": "2026-10-30T13:53:29Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "h4",
-  "done": "",
-  "at": "2026-10-30T11:24:04Z"
+  "who": "daily",
+  "done": "🔬 정밀 점검 끝 — 1aacfaf(웹앱 1.78.281 · 수집기 1.89.158 · 머리 그대로) · 보고 src/audits/2026-10-30-fable.md",
+  "at": "2026-10-30T14:05:19Z"
  },
- "host": "vm"
+ "host": null
 }
