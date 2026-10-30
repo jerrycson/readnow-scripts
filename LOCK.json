@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "friend",
+ "what": "r17 arms 올림(코디네이터)",
+ "since": "2026-10-30T07:21:45Z",
+ "beat": "2026-10-30T07:21:45Z",
  "ask": null,
  "last": {
   "who": "friend",
   "done": "r17 body 0.15.14 올림",
   "at": "2026-10-30T07:14:42Z"
  },
- "host": null
+ "host": "vm-arms"
 }
