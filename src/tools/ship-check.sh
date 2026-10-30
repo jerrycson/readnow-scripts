@@ -37,7 +37,7 @@ chk cloud/index.js "^const VER = '[0-9.]+'" '클라우드'
 for f in $(printf '%s\n' "$changed" | grep -E '^readnow-[a-z0-9-]+-core\.js$|^readnow-registry\.js$'); do chk "$f" "const VERSION = '[0-9.]+'" "$f"; done
 if printf '%s\n' "$changed" | grep -qE '^friend/readnow-friend\.js$'; then a=$(ver $M src/app.html "FRIEND_PIN = '[0-9.]+'"); b=$(ver "$T" src/app.html "FRIEND_PIN = '[0-9.]+'"); gt "$b" "$a" || say "책방 친구 본체가 바뀌었는데 FRIEND_PIN이 그대로($a)"; fi
 # ④ 수집기 머리
-hd() { git show "$1:src/readnow-collector.src.js" 2>/dev/null | sed -n '1,/==\/UserScript==/p' | grep -E '^// @(match|grant|connect|require|include|exclude|run-at|sandbox|inject-into)'; }
+hd() { git show "$1:src/readnow-collector.src.js" 2>/dev/null | sed -n '1,/==\/UserScript==/p' | grep -E '^// @(match|grant|connect|require|include|exclude|run-at|sandbox|inject-into)' | grep -v 'raw\.githubusercontent\.com/jerrycson/readnow-scripts'; } # (10/30) 빌드(split.js) 머리 서명과 같게 — 우리 공용 파일 줄(?v= 판 고정)은 빠른 업데이트가 맡아 머리가 아님
 if [ -z "${RN_HEAD_OK:-}" ] && [ "$(hd $M)" != "$(hd "$T")" ]; then say "수집기 머리(@match·@grant·@connect·@require…)가 main과 다름 — 정범님 허락 뒤 RN_HEAD_OK=1로만"; fi
 # ⑤ 결과물 = 원본 판
 if printf '%s\n' "$changed" | grep -qE '^(src/app\.html|app/)'; then a=$(ver "$T" src/app.html "const APP_VER = '[0-9.]+'"); b=$(ver "$T" app/index.html "APP_VER = '[0-9.]+'"); [ "$a" = "$b" ] || say "app/index.html 판($b)이 원본($a)과 다름 — node split.js && node release.js 뒤 결과물을 함께"; fi
