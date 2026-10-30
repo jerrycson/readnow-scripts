@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "② 몸·옷 3~5묶음 배포",
- "since": "2026-10-29T23:46:44Z",
- "beat": "2026-10-30T00:01:04Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "friend",
-  "done": "⑤ 화풍 렌더링 1묶음 · 책방 친구 0.15.9 · 웹앱 1.78.264 · 1fe73b6",
-  "at": "2026-10-29T23:46:32Z"
+  "done": "② 몸·옷 3~5묶음 e7f1410 · 웹앱 1.78.265 · friend 0.15.10",
+  "at": "2026-10-30T00:07:30Z"
  },
- "host": "vm-body"
+ "host": null
 }
