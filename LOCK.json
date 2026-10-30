@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "판 내기: 세 기능 연계 점검 고침(웹앱·수집기·클라우드·판정 엔진·가격 감시기)",
+ "since": "2026-10-30T02:24:50Z",
+ "beat": "2026-10-30T02:24:50Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.89.151 관제판 계기판 · 툴팁 접기 (78b8a48)",
   "at": "2026-10-30T02:14:45Z"
  },
- "host": null
+ "host": "vm"
 }
