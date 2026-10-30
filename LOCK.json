@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "가격 판정 우리 단독 재정의 · 수집기 안내판 계기판",
+ "since": "2026-10-30T03:40:08Z",
+ "beat": "2026-10-30T03:40:08Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "1.78.272/1.89.153 HOME 누수 줄이기",
   "at": "2026-10-30T03:19:20Z"
  },
- "host": null
+ "host": "vm"
 }
