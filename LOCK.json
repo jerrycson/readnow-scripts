@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "friend",
+ "what": "r17 눈·소품(face) 배포",
+ "since": "2026-10-30T05:07:40Z",
+ "beat": "2026-10-30T05:07:40Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.276/1.89.156",
   "at": "2026-10-30T05:04:50Z"
  },
- "host": null
+ "host": "vm-face"
 }
