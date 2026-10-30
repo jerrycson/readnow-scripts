@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.150
+// @version      1.89.151
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -831,6 +831,18 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   window.__rnLog('수집기', 'info', `탭 열림 · ${location.pathname.split('/').pop()}`);
   try { if (document.wasDiscarded) window.__rnLog('수집기', 'warn', '⚠ 크롬이 이 탭을 메모리 절약으로 내려놓았다가 다시 열었음 — 그동안 수집이 멈춰 있었음. 크롬 설정 → 성능 → 메모리 절약 → \'항상 활성 상태로 유지할 사이트\'에 aladin.co.kr 추가'); } catch (e) {} /* (1.77.3) HOME 탭이 22:24~23:23 소리 없이 멈춘 일 — 까닭을 기록에 남김 */
 })();
+/* (10/30 정범님) 🧰 판매자 툴팁 스크립트(우리 것이 아닌 다른 Tampermonkey 스크립트)의 화면 왼쪽 아래 단추 — 🔄 판매자 전체 갱신 · 멈춤 · 데이터 다운로드 · 마지막 갱신 표시 — 를 작은 아이콘 하나로 접고 폄 · 기본은 접힘 · 이 PC에 기억(GM 'rnu-rh-open')
+ *  그 스크립트 소스는 고치지 않음 — 우리 수집기가 같은 화면에서 그 단추들(id rh-…)만 숨김/보임으로 · 단추가 화면에 없으면 아이콘도 안 보임 */
+(function rnRhFold() { if (window.top !== window) return; const IDS = ['rh-bulk-refresh-btn', 'rh-bulk-pause-btn', 'rh-download-btn', 'rh-last-refresh-label'];
+  let open = false; try { open = !!GM_getValue('rnu-rh-open', 0); } catch (e) {}
+  const st = document.createElement('style'); st.id = 'rn-rh-fold-st'; const css = () => (open ? '' : IDS.map((i) => '#' + i).join(',') + '{display:none !important}'); st.textContent = css();
+  const ico = document.createElement('button'); ico.id = 'rn-rh-ico'; ico.type = 'button'; ico.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:2147483647;width:30px;height:30px;border-radius:50%;border:0;background:rgba(34,34,34,.55);color:#fff;font:15px/30px system-ui;cursor:pointer;padding:0;display:none;box-shadow:0 2px 6px rgba(0,0,0,.25)';
+  const look = () => { ico.textContent = open ? '✕' : '🧰'; ico.title = open ? '판매자 툴팁 단추 접기' : '판매자 툴팁 단추 펴기 (판매자 전체 갱신 · 데이터 다운로드)'; ico.style.left = open ? '420px' : '16px'; };
+  ico.onclick = (e) => { e.preventDefault(); e.stopPropagation(); open = !open; try { GM_setValue('rnu-rh-open', open ? 1 : 0); } catch (x) {} st.textContent = css(); look(); };
+  const has = () => IDS.some((i) => document.getElementById(i));
+  const tick = () => { if (!document.head || !document.body) return; if (!st.isConnected) document.head.appendChild(st); const h = has(); if (h && !ico.isConnected) { look(); document.body.appendChild(ico); } ico.style.display = h ? 'block' : 'none'; };
+  tick(); let n = 0; const t = setInterval(() => { tick(); if (++n > 40 && has()) { clearInterval(t); setInterval(tick, 15000); } }, 1500); /* 그 스크립트가 늦게 단추를 붙여도 잡음 · 찾은 뒤엔 15초마다만 */
+  try { GM_addValueChangeListener('rnu-rh-open', (k, o, v, remote) => { if (!remote) return; open = !!v; st.textContent = css(); look(); }); } catch (e) {} })();
 /* ═════════════ 통합 관제판 (1.38.0) ═════════════
  * 예전: 오른쪽 위에 [▶ 모두][고객·주문][상품·매입][기록][–] 탭만 있고, 일시정지·이어하기·최근 기록이 패널마다 따로 있었음
  *       (상품 패널의 '최근 기록'은 상품 것만, 일시정지는 누른 탭에서만, 이어하기는 맨 앞 하나만, '▶ 모두'는 무엇을 하는지 안 보임)
@@ -854,6 +866,11 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   @keyframes rnblink{50%{opacity:.55}}
   #rn-ctl .ch .tg{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:6px;width:26px;height:22px;cursor:pointer;font-weight:700}
   #rn-ctl.min #rn-uni,#rn-ctl.min .cb{display:none}
+  #rn-ctl .ch .tg.on{background:#fff;color:${G}} #rn-ctl.lead{width:484px}
+  #rn-ctl .dash{padding:7px 12px;border-bottom:1px solid #DCE6E1;background:#FBFDFC;font-size:12.5px;line-height:1.45} #rn-ctl .dash[hidden]{display:none} #rn-ctl .dash .dt{display:flex;align-items:center;gap:6px} #rn-ctl .dash .dt b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #rn-ctl .dash small{color:#6B7A75} #rn-ctl .dash .dd{margin-top:3px;font-size:12px;color:#3F524C} #rn-ctl .dash .dd .big{font-size:14.5px} #rn-ctl .dash.busy{border-left:4px solid ${BLU}} #rn-ctl .dash.pause,#rn-ctl .dash.stop{border-left:4px solid ${AMB};background:#FFFBF3} #rn-ctl .dash.idle{border-left:4px solid #9AA5A1}
+  #rn-ctl.lead .dash{font-size:13.5px;padding:9px 13px} #rn-ctl.lead .dash .dd{font-size:12.8px}
+  #rn-ctl .rsub.mini{padding:3px 10px;font-size:10.5px;justify-content:flex-end;gap:6px} #rn-ctl .rsub.mini .tx{flex:0 1 auto;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:78%} #rn-ctl .rsub.mini small{display:none} #rn-ctl .rsub.mini button{padding:2px 6px;font-size:10.5px}
+  #rn-ov.nolog .lgcard{display:none}
   #rn-ctl .rsub{display:flex;align-items:center;gap:8px;padding:6px 12px;background:#EEF4F1;color:#3F524C;border-bottom:1px solid #DCE6E1;font-size:12px;line-height:1.4} #rn-ctl .rsub[hidden]{display:none} #rn-ctl .rsub .tx{flex:1;min-width:0} #rn-ctl .rsub small{display:block;color:#6B7A75;font-size:11px}
   #rn-ctl .rsub.force{background:#FFF6E6;color:#7A4A10;border-bottom-color:#F0DDBA} #rn-ctl .rsub.force small{color:#8A6A3A} #rn-ctl .rsub.lead{background:#F4F8F6;color:#5B6B66} #rn-ctl .rsub.new{background:#E6F3EA;color:#2F7D4F}
   #rn-ctl .rsub button{flex:none;padding:4px 9px;border-radius:6px;border:1px solid #9DB5AC;background:#fff;color:#2F5D50;font:600 11.5px system-ui,'Malgun Gothic';cursor:pointer} #rn-ctl .rsub.force button{border-color:#D9B57A;color:#7A4A10}
@@ -893,12 +910,14 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   globalThis.__rnHead(st);
   const box = document.createElement('div'); box.id = 'rn-ctl';
   const pc = () => (window.__rnPcName && window.__rnPcName.get()) || '이 PC';
-  box.innerHTML = `<div class="ch" title="눌러서 접기·펼치기"><b>리드나우 수집기</b><small id="rnCtlWho"></small><span class="sp"></span><span class="bdg" id="rnCtlBadge">준비 중</span><button class="tg" id="rnCtlMin" title="접기·펼치기">–</button><button class="tg" id="rnCtlIco" title="작게(오른쪽 아래 아이콘으로) — 아이콘을 누르면 다시">▁</button></div>
+  box.innerHTML = `<div class="ch" title="눌러서 접기·펼치기"><b>리드나우 수집기</b><small id="rnCtlWho"></small><span class="sp"></span><span class="bdg" id="rnCtlBadge">준비 중</span><button class="tg" id="rnCtlLog" title="최근 기록 칸 열기·닫기 (본체 탭은 처음에 열림 · 쉬는 탭은 처음에 닫힘)">🗒</button><button class="tg" id="rnCtlMin" title="접기·펼치기">–</button><button class="tg" id="rnCtlIco" title="작게(오른쪽 아래 아이콘으로) — 아이콘을 누르면 다시">▁</button></div>
+    <div class="dash" id="rnCtlDash" hidden></div>
     <div class="rsub" id="rnCtlSub" hidden></div>
     <div id="rn-uni"><button data-t="ov">개요</button><button data-t="crm">고객·주문</button><button data-t="prd">상품·매입</button><button data-log="1" title="작업 기록 크게 보기 (이 PC의 모든 기록 · 날짜별 · 검색 · 내려받기)">기록</button></div>
     <div class="cb"><div id="rn-ov"></div></div>`;
   const bar = box.querySelector('#rn-uni'); const body = box.querySelector('.cb'); const ov = box.querySelector('#rn-ov');
   const set = (t) => { if (t === 'hide') t = 'ov'; box.dataset.rnu = t; /* (1.70.0) 알라딘 화면의 body에 표시를 남기지 않음 — 수집기 칸에만 */ GM_setValue('rnu-tab', t); bar.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.t === t)); draw(); };
+  setTimeout(() => { const b = box.querySelector('#rnCtlLog'); if (b) b.onclick = (e) => { e.stopPropagation(); try { GM_setValue(logKey(), logOpen() ? 0 : 1); } catch (x) {} applyLog(); }; }, 0);
   const setMin = (on, keep) => { box.classList.toggle('min', on); if (!keep) GM_setValue('rnu-ctl-min', on ? 1 : 0); box.querySelector('#rnCtlMin').textContent = on ? '+' : '–'; };
   /* (1.89.19) 정범님 10/21: 머리 칸을 끌어 원하는 곳으로 옮기고 그 자리를 이 PC에 기억 — 일하는 수집기(활성)와 쉬는 수집기(비활성) 자리를 따로 · ▁ 단추 = 오른쪽 아래 반투명 아이콘으로(누르면 다시) · 아이콘은 오른쪽 아래에 다른 것이 있으면 그 위로 */
   const roleK = () => (window.__rnRest && window.__rnRest() ? 'rest' : 'act'); let posRole = null, dragMoved = false;
@@ -960,11 +979,25 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     else if (r === 'lead') { const others = S.lives.filter((x) => x.tab !== window.__rnTab && (x.role === 'follow' || x.role === 'force'));
       if (promotedAt && Date.now() - promotedAt < 60000) { h = '<div class="tx">✓ 앞서 일하던 수집기 탭이 닫혀, 이 탭이 이 PC의 수집기를 이어받았습니다</div>'; cls = 'new'; }
       else if (others.length) { const f = others.filter((x) => x.role === 'force').length; h = `<div class="tx">이 탭이 이 PC의 수집기 · 다른 수집기 화면 ${others.length}개${f ? ` (그중 ${f}개는 사람이 켜 둠)` : '는 쉬는 중'}</div>`; cls = 'lead'; } }
+    if (r === 'lead' && cls !== 'new') h = ''; /* (10/30 정범님) 본체 탭은 설명 없이 계기판으로 */ if (h && r !== 'lead') { const full = h.replace(/<button[\s\S]*$/, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(); h = h.replace('<div class="tx">', `<div class="tx" title="${esc(full)}">`); cls += ' mini'; } /* 쉬는 탭: 작은 한 줄로 오른쪽에(전체 글은 마우스를 올리면) */
     const k = cls + h; if (k === subHtml) return; subHtml = k; sub.className = 'rsub ' + cls; sub.hidden = !h; sub.innerHTML = h; };
+  /* (10/30 정범님) 머리줄 아래 계기판 — 지금 무슨 작업을 하는지 늘 보임 · 본체(이 PC의 수집기 탭)는 자세히·크게, 쉬는 탭은 한 줄 · 🗒 = 개요의 최근 기록 칸 열기·닫기(본체 기본 열림 · 쉬는 탭 기본 닫힘 · 탭 종류마다 기억) */
+  const dash = box.querySelector('#rnCtlDash'); let dashHtml = null; const isLead = () => (window.__rnRole ? window.__rnRole() : 'lead') === 'lead';
+  const logKey = () => 'rnu-ctl-log-' + (isLead() ? 'lead' : 'tab'); const logOpen = () => { try { const v = GM_getValue(logKey(), null); return v == null ? isLead() : !!v; } catch (e) { return isLead(); } };
+  const applyLog = () => { const on = logOpen(); ov.classList.toggle('nolog', !on); const b = box.querySelector('#rnCtlLog'); if (b) b.classList.toggle('on', on); };
+  const drawDash = (S) => { const lead = isLead(); box.classList.toggle('lead', lead); applyLog(); const m = S.main; const sn = window.__rnSchedNext ? window.__rnSchedNext() : { known: false };
+    const nxt = sn.known && sn.on && sn.next ? `다음 자동 ${sn.next.tomorrow ? '내일 ' : ''}${sn.next.t} · ${esc(sn.next.label)}` : '';
+    const where = m && m.tab !== window.__rnTab ? ` <small>(이 PC의 다른 탭)</small>` : '';
+    let h = ''; if (S.kind === 'busy' && m) { const dt = m.jobStart ? Math.max(0, Math.round((Date.now() - (typeof m.jobStart === 'number' ? m.jobStart : Date.parse(m.jobStart))) / 60000)) : null; /* jobStart = 그 작업을 시작한 때 */
+      h = lead && window.__rnOvHtml ? `<div class="dd">${window.__rnOvHtml(m, !!m.crmBusy)}</div><div class="dt" style="margin-top:3px"><small>${dt != null ? `시작한 지 ${dt}분` : ''}${where ? ' · 이 PC의 다른 탭' : ''}</small></div>` : `<div class="dt">▶ <b>${esc(m.job || '작업 중')}</b>${where}${dt != null ? `<small>${dt}분째</small>` : ''}</div>` + (lead ? '' : (m.sub && (m.sub.label || m.sub.name) ? `<div class="dd"><small>${esc(String(m.sub.label || m.sub.name).slice(0, 90))}</small></div>` : '')); }
+    else if (S.kind === 'stop') h = `<div class="dt">■ <b>멈추는 중</b>${m ? `<small>${esc(m.job || '')}</small>` : ''}</div>`;
+    else if (S.kind === 'pause') h = `<div class="dt">■ <b>일시정지됨</b><small>다시 시작 전에는 저절로 시작하지 않음</small></div>`;
+    else h = `<div class="dt">· <b>쉬는 중</b>${S.last ? `<small>마지막: ${esc(S.last.name)} ${hm(S.last.at)}</small>` : ''}</div>${lead && nxt ? `<div class="dd"><small>${nxt}</small></div>` : ''}`;
+    const k = S.kind + (lead ? 'L' : 'F') + h; if (k === dashHtml) return; dashHtml = k; dash.className = 'dash ' + S.kind; dash.hidden = !h; dash.innerHTML = h; };
   sub.addEventListener('click', (e) => { e.stopPropagation(); const b = e.target.closest('[data-r]'); if (!b) return; if (b.dataset.r === 'force') { if (window.__rnForceAsk && window.__rnForceAsk()) window.__rnForce(true); } else if (b.dataset.r === 'rest') window.__rnForce(false); subHtml = null; draw(); });
   if (window.__rnRoleOn) window.__rnRoleOn((r) => { if (r === 'lead' && window.__rnLeadSince && Date.now() - window.__rnLeadSince < 3000 && /follow|force/.test(String(lastRole))) promotedAt = Date.now(); if (r === 'follow') setMin(true, true); lastRole = r; subHtml = null; });
   let lastRole = null;
-  let prevBusy = 0; function draw() { const S = stateOf(); badge(S); drawSub(S);
+  let prevBusy = 0; function draw() { const S = stateOf(); badge(S); drawSub(S); try { drawDash(S); } catch (e) {}
     if (S.busy.length < prevBusy && window.__rnPrd && window.__rnPrd.refreshResume) { setTimeout(() => { try { window.__rnPrd.refreshResume(); pollCrm(); } catch (e) {} }, 3000); } prevBusy = S.busy.length; /* 어느 탭의 작업이 끝나거나 멈추면 멈춘 작업 목록을 다시 읽음 */ if (box.classList.contains('min') || box.dataset.rnu !== 'ov') return; /* (1.74.1) 1.70.0에서 탭 표시를 body → 수집기 칸(box)으로 옮기며 이 줄만 body를 봐서 개요가 늘 비어 있었음(모든 PC) */
     const P = window.__rnPrd; const R = resList(); const anyBusy = S.busy.length > 0;
     const pi = window.__rnPauseInfo ? window.__rnPauseInfo() : null;
@@ -997,7 +1030,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       ${featHtml(S)}
       <div class="card"><div class="k">멈춘 작업 ${R.length ? `(${R.length})` : ''}<span class="sp"></span><a href="#" data-a="rrf" title="다시 불러오기">↻</a></div>${rs}</div>
       <div class="card"><div class="k">⏰ 다음 자동 수집</div><div>${sched}</div></div>
-      <div class="card"><div class="k">최근 기록 · 이 PC의 모든 탭<span class="sp"></span><a href="#" data-a="log">크게 보기 ›</a></div><div class="lg">${lg}</div></div>
+      <div class="card lgcard"><div class="k">최근 기록 · 이 PC의 모든 탭<span class="sp"></span><a href="#" data-a="log">크게 보기 ›</a></div><div class="lg">${lg}</div></div>
       <div class="card"><div class="k">다른 PC · 판</div>${pcs ? pcs.replace(/class="pc/g, 'class="pc') : '<div class="mut">불러오는 중</div>'}<div class="pc">수집기 v${VER}${(() => { try { const L = window.__rnLiveInfo && window.__rnLiveInfo(); if (!L) return ''; return L.noeval ? ' · ⚡ 빠른 업데이트 안 됨(이 브라우저가 막음 — Tampermonkey 자동 업데이트만)' : L.used === 'live' ? ` · ⚡ 빠른 업데이트로 받은 판 (Tampermonkey 본체 ${esc(L.classic)})` : L.have && L.have !== L.ver ? ` · ⚡ 새 판 ${esc(L.have)} 받아 둠 — 쉬는 사이 바꿈` : ' · ⚡ 빠른 업데이트 켜짐(5분마다 확인)'; } catch (e) { return ''; } })()}${od ? ` · <b style="color:${AMB}">새 판 ${esc(od)} 있음</b> — 쉬는 사이(또는 긴 작업이면 저장 지점에서) 저절로 바꿔 그 자리부터 이어감` : ' · 최신'}${P && P.who ? ' · ' + esc(P.who()) : ''}</div></div>`;
     if (html === lastHtml) return; lastHtml = html; ov.innerHTML = html; // 바뀐 것이 있을 때만 다시 그림 (단추를 누르는 중에 사라지지 않게)
     const lgEl = ov.querySelector('.lg'); if (lgEl && GM_getValue('rnu-log-autoscroll', true)) lgEl.scrollTop = lgEl.scrollHeight; }
