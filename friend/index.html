@@ -34,7 +34,7 @@ html.rn-fhide body>*{visibility:hidden!important}
 .fr-card .fr-how{margin:4px 0}.fr-card .fr-how summary{cursor:pointer;color:#5B6B66;font-size:12.5px}
 @media (max-width:480px){.fr-card{right:10px;bottom:10px;width:calc(100vw - 20px);max-height:40vh;overflow:auto;padding:10px 12px;font-size:13px;line-height:1.4}.fr-card .fr-hd{margin:-10px -12px 6px;position:sticky;top:-10px;z-index:1}.fr-card h4{font-size:14px}.fr-card input{font-size:16px}.fr-card .row{margin-top:6px}}
 /* (P5 · 프로그램 0.2.0) 캐릭터 자리 옮기기(Ctrl+끌기 → 무리 전체를 margin으로) · 캐릭터 옆 ⚙ · 설정 창 */
-html.rn-friend #msc_wrap,html.rn-friend #msc_ico,html.rn-friend #msc_gear,html.rn-friend #msc_msgbtn,html.rn-friend #msc_mlist{margin-right:var(--fr-mx,0px)!important;margin-bottom:var(--fr-my,0px)!important}
+html.rn-friend #msc_wrap,html.rn-friend #msc_ico,html.rn-friend #msc_gear,html.rn-friend #msc_msgbtn,html.rn-friend #msc_mlist{margin-right:var(--fr-mx,var(--msc-mx,0px))!important;margin-bottom:var(--fr-my,var(--msc-my,0px))!important}
 .fr-hgear{position:fixed;z-index:31;display:none;width:30px;height:30px;border-radius:15px;border:1px solid rgba(47,93,80,.35);background:rgba(255,255,255,.88);box-shadow:0 2px 8px rgba(0,0,0,.15);font-size:16px;line-height:1;align-items:center;justify-content:center;padding:0;cursor:pointer;color:#2F5D50}.fr-hgear:hover{background:#fff;border-color:#2F5D50}
 html.fr-ctrl #msc_ch,html.fr-ctrl #msc_ch *,html.fr-moving,html.fr-moving *{cursor:move!important}
 html.fr-setwin,html.fr-setwin body{background:#F3F5F4}
@@ -45,8 +45,8 @@ html.fr-setwin,html.fr-setwin body{background:#F3F5F4}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="readnow-friend-boot.js?v=0.15.11"></script>
-<script src="readnow-friend.js?v=0.15.11"></script>
+<script src="readnow-friend-boot.js?v=0.15.12"></script>
+<script src="readnow-friend.js?v=0.15.12"></script>
 <script>RNF_START();</script>
 </body>
 </html>

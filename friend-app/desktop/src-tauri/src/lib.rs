@@ -54,6 +54,16 @@ struct Hit {
     focus_r: Option<[f64; 4]>,
     /// (0.2.0) 캐릭터를 끄는 중(Ctrl+끌기 자리 옮김) — 마지막 신호 시각 · 20초 넘게 소식이 없으면 끝난 것으로 봄
     drag_at: Option<Instant>,
+    /// (0.2.1) 진단: 마지막 커서(CSS px) · 쓴 배율 · 칸 안이던 횟수(33ms 단위) · 받기/통과 바꾼 횟수 · 칸 안 다시 다짐 계수
+    dbg_xy: [f64; 2],
+    dbg_s: f64,
+    n_in: u64,
+    n_tog: u64,
+    tick: u64,
+    /// (0.2.1) 마지막으로 칸을 받은 때 · 받은 횟수 · 기본 상자를 쓰는 중인지
+    rects_at: Option<Instant>,
+    n_rects: u64,
+    fb: bool,
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -176,6 +186,9 @@ fn friend_post(app: AppHandle, window: tauri::Window, kind: String, data: serde_
             }
             let mut h = st.hit.lock().unwrap();
             h.rects = v;
+            h.rects_at = Some(Instant::now());
+            h.n_rects += 1;
+            h.fb = false;
             // 칸 좌표를 만든 배율을 같이 받음(hit_loop가 물리 px → CSS px 환산에 씀)
             h.dpr = data.get("dpr").and_then(|x| x.as_f64()).filter(|d| *d > 0.1 && *d < 8.0).unwrap_or(0.0);
             // (0.2.0) 연결 카드는 따로 늘 눌림
@@ -208,10 +221,45 @@ fn friend_post(app: AppHandle, window: tauri::Window, kind: String, data: serde_
             }
         }
         "byeok" => st.bye.store(true, Ordering::SeqCst),
+        // (0.2.1) 진단: 화면이 30초마다 물음 → 클릭 통과 상태를 화면에 돌려줌(화면이 살아 있음 신호 문서 dbg에 적음 · 비밀값 없음)
+        "hit_dbg" => {
+            let (xy, s, n_in, n_tog, ign, nr, kb, dpr, n_rects, r_age, fb) = {
+                let h = st.hit.lock().unwrap();
+                (h.dbg_xy, h.dbg_s, h.n_in, h.n_tog, h.ignoring, h.rects.len(), h.kb_focus, h.dpr, h.n_rects, h.rects_at.map(|t| t.elapsed().as_secs_f64()).unwrap_or(-1.0), h.fb)
+            };
+            let (sf, ip, isz) = match win(&app) {
+                Some(w) => (
+                    w.scale_factor().unwrap_or(0.0),
+                    w.inner_position().map(|p| [p.x, p.y]).unwrap_or([0, 0]),
+                    w.inner_size().map(|z| [z.width, z.height]).unwrap_or([0, 0]),
+                ),
+                None => (0.0, [0, 0], [0, 0]),
+            };
+            js(
+                &app,
+                &format!(
+                    "window.__rnFriendCmd&&window.__rnFriendCmd('hitdbg',{{v:'{VER}',x:{:.0},y:{:.0},s:{:.3},sf:{:.3},dpr:{:.3},nIn:{},nTog:{},ign:{},nr:{},kb:{},pos:[{},{}],size:[{},{}],hidden:{},nRects:{},rAge:{:.1},fb:{}}})",
+                    xy[0], xy[1], s, sf, dpr, n_in, n_tog, ign, nr, kb, ip[0], ip[1], isz[0], isz[1], st.hidden.load(Ordering::Relaxed), n_rects, r_age, fb
+                ),
+            );
+        }
         // (0.2.0) 화면이 다 뜬 뒤 자리·모니터 정보를 다시 달라고 함(켤 때 보낸 geom은 화면이 뜨기 전이라 사라질 수 있음)
         "need_geom" => fit_to_monitor(&app, true),
         // (0.2.0) ⚙ → 설정 창
-        "open_settings" => open_settings(&app),
+        "open_settings" => {
+            // (0.2.1) 다시 누르면 닫기 — 화면이 toggle:true를 주고 설정 창이 이미 있으면 닫음
+            let toggle = data.get("toggle").and_then(|x| x.as_bool()).unwrap_or(false);
+            match app.get_webview_window(LABEL_SET) {
+                Some(w) if toggle => {
+                    std::thread::spawn(move || {
+                        let _ = w.close();
+                    });
+                }
+                _ => open_settings(&app),
+            }
+        }
+        // (0.2.1) 🐾 단추를 🗑 쓰레기통에 놓음 → 프로그램 끝내기(트레이 '종료'와 같음)
+        "quit" => quit(&app),
         // (0.2.0) Ctrl+끌기: start → 끄는 동안 창 전체가 마우스를 받고 포인터 모니터를 지켜봄 · move → 살아 있음 · end → 자리 저장
         "win_drag" => {
             let phase = data.get("phase").and_then(|x| x.as_str()).unwrap_or("");
@@ -426,20 +474,101 @@ fn next_monitor(app: &AppHandle) {
     fit_to_monitor(app, true); // 그 모니터에 놓아 둔 자리가 있으면 거기 · 없으면 오른쪽 아래
 }
 
+/// (0.2.1) 클릭 판정 순수 함수 — cur·pos = 물리 px(커서 · 창 안쪽 왼쪽 위) · sf = 창 배율 · dpr = 화면이 알린 배율(0이면 창 배율) · rects = CSS px
+/// 돌려줌: (CSS x, CSS y, 칸 안?) — 화면 배율로 잰 자리와 창 배율로 잰 자리 둘 중 하나라도 칸 안(둘레 3px)이면 안
+fn hit_inside(cur: (f64, f64), pos: (f64, f64), sf: f64, dpr: f64, rects: &[[f64; 4]]) -> (f64, f64, bool) {
+    let sf = if sf > 0.1 { sf } else { 1.0 };
+    let s = if dpr > 0.1 { dpr } else { sf };
+    let (x, y) = ((cur.0 - pos.0) / s, (cur.1 - pos.1) / s);
+    let (x2, y2) = ((cur.0 - pos.0) / sf, (cur.1 - pos.1) / sf);
+    let inside = rects.iter().any(|r| in_box(x, y, r, 3.0) || ((sf - s).abs() > 0.01 && in_box(x2, y2, r, 3.0)));
+    (x, y, inside)
+}
+
+/// (0.2.1) 칸을 못 받을 때 쓰는 기본 상자(CSS px) — 창 오른쪽 아래 너비 340 · 높이 660(창 높이 85%까지)
+fn fallback_box(w: f64, h: f64) -> [f64; 4] {
+    [(w - 340.0).max(0.0), (h - 660.0_f64.min(h * 0.85)).max(0.0), w, h]
+}
+
+#[cfg(test)]
+mod hit_tests {
+    use super::*;
+    const R: [[f64; 4]; 3] = [[1484.0, 696.0, 1524.0, 736.0], [1490.0, 662.0, 1518.0, 690.0], [1341.0, 500.0, 1456.0, 860.0]];
+    #[test]
+    fn same_scale_inside_and_outside() {
+        // 125% 모니터 · 창이 (0,0) · 🐾 가운데 CSS (1504,716) → 물리 (1880,895)
+        assert!(hit_inside((1880.0, 895.0), (0.0, 0.0), 1.25, 1.25, &R).2);
+        assert!(!hit_inside((100.0, 100.0), (0.0, 0.0), 1.25, 1.25, &R).2);
+    }
+    #[test]
+    fn second_monitor_offset() {
+        // 왼쪽 모니터(1920 물리) 오른쪽에 둔 150% 모니터 · 창 시작 (1920, 0)
+        let cur = (1920.0 + 1504.0 * 1.5, 716.0 * 1.5);
+        assert!(hit_inside(cur, (1920.0, 0.0), 1.5, 1.5, &R).2);
+        assert!(!hit_inside((1504.0 * 1.5, 716.0 * 1.5), (1920.0, 0.0), 1.5, 1.5, &R).2);
+    }
+    #[test]
+    fn negative_origin_left_monitor() {
+        // 주 모니터 왼쪽에 둔 모니터(시작 x = -2560)
+        let cur = (-2560.0 + 1504.0 * 1.25, 716.0 * 1.25);
+        assert!(hit_inside(cur, (-2560.0, 0.0), 1.25, 1.25, &R).2);
+    }
+    #[test]
+    fn mixed_scale_still_hits() {
+        // 화면은 1.25로 그렸는데 창 배율이 1.5로 잠깐 어긋남(모니터를 옮기는 중) — 둘 중 하나로 맞으면 안
+        assert!(hit_inside((1504.0 * 1.25, 716.0 * 1.25), (0.0, 0.0), 1.5, 1.25, &R).2);
+        assert!(hit_inside((1504.0 * 1.5, 716.0 * 1.5), (0.0, 0.0), 1.5, 1.25, &R).2);
+    }
+    #[test]
+    fn no_dpr_uses_window_scale() {
+        assert!(hit_inside((1504.0 * 1.25, 716.0 * 1.25), (0.0, 0.0), 1.25, 0.0, &R).2);
+    }
+    #[test]
+    fn edge_pad_3px() {
+        assert!(hit_inside(((1524.0 + 2.5) * 1.25, 716.0 * 1.25), (0.0, 0.0), 1.25, 1.25, &R).2);
+        assert!(!hit_inside(((1524.0 + 4.0) * 1.25, 716.0 * 1.25), (0.0, 0.0), 1.25, 1.25, &R).2);
+    }
+    #[test]
+    fn fallback_box_bottom_right() {
+        let b = fallback_box(1536.0, 864.0);
+        assert!(b[0] > 1100.0 && b[2] == 1536.0 && b[3] == 864.0 && b[1] < 300.0);
+        assert!(hit_inside((1504.0 * 1.25, 716.0 * 1.25), (0.0, 0.0), 1.25, 0.0, &[b]).2);
+        assert!(!hit_inside((200.0, 200.0), (0.0, 0.0), 1.25, 0.0, &[b]).2);
+    }
+}
+
 /// 클릭 통과: 33ms마다 마우스가 눌리는 칸 안인지 봄
 fn hit_loop(app: AppHandle) {
+    let t0 = Instant::now();
     std::thread::spawn(move || loop {
         std::thread::sleep(Duration::from_millis(33));
         let Some(w) = win(&app) else { continue };
         let st = app.state::<Arc<App>>();
         let (Ok(cur), Ok(pos), Ok(sf)) = (w.cursor_position(), w.inner_position(), w.scale_factor()) else { continue };
+        // (0.2.1) 창 크기도 잠금 전에 — 잠금을 쥔 채 메인 실에 묻으면(inner_size) 메인 실의 friend_post('rects')가 같은 잠금을 기다려 서로 멈춤
+        let size = w.inner_size().ok();
         let mut h = st.hit.lock().unwrap();
         // 환산 배율: 화면이 보낸 devicePixelRatio가 있으면 그 값(칸을 그 값으로 계산함) · 없으면 창 배율
+        // (0.2.1) 판정은 순수 함수 hit_inside(단위 시험 있음) — 화면 배율·창 배율 둘 다 · 칸 둘레 3px
         let s = if h.dpr > 0.0 { h.dpr } else { sf };
-        let x = (cur.x - pos.x as f64) / s;
-        let y = (cur.y - pos.y as f64) / s;
+        let (x, y, mut inside) = hit_inside((cur.x, cur.y), (pos.x as f64, pos.y as f64), sf, h.dpr, &h.rects);
+        // (0.2.1) 안전장치: 켠 뒤 10초가 지나도 화면에서 칸(rects)을 한 번도 못 받았으면(화면→프로그램 통로 문제) 오른쪽 아래 기본 상자(캐릭터·🐾·⚙·💬 자리)를 눌리는 칸으로
+        if h.rects_at.is_none() && t0.elapsed() > Duration::from_secs(10) {
+            if let Some(z) = size {
+                let fb = fallback_box(z.width as f64 / sf, z.height as f64 / sf);
+                let (_, _, i2) = hit_inside((cur.x, cur.y), (pos.x as f64, pos.y as f64), sf, 0.0, &[fb]);
+                inside = inside || i2;
+                h.fb = true;
+            }
+        }
         let shown = !st.hidden.load(Ordering::Relaxed);
-        let inside = shown && h.rects.iter().any(|r| in_box(x, y, r, 0.0));
+        let inside = shown && inside;
+        h.dbg_xy = [x, y];
+        h.dbg_s = s;
+        h.tick = h.tick.wrapping_add(1);
+        if inside {
+            h.n_in += 1;
+        }
         // (0.2.0) 연결 카드는 열린 동안 늘 · 글 칸에 커서가 있으면 그 상자 둘레 · 끄는 중이면 창 전체
         let in_card = shown && h.card.as_ref().map(|r| in_box(x, y, r, 0.0)).unwrap_or(false);
         let typing = shown && h.kb_focus && h.focus_r.as_ref().map(|r| in_box(x, y, r, 24.0)).unwrap_or(true);
@@ -447,7 +576,11 @@ fn hit_loop(app: AppHandle) {
         let want_ignore = !(inside || in_card || typing || dragging);
         if want_ignore != h.ignoring {
             h.ignoring = want_ignore;
+            h.n_tog += 1;
             let _ = w.set_ignore_cursor_events(want_ignore);
+        } else if !want_ignore && h.tick % 30 == 0 {
+            // (0.2.1) 칸 안에 머무는 동안 1초마다 '받기'를 다시 다짐 — 창 모양이 바뀌며(모니터 맞춤·항상 위) 통과 상태가 몰래 남는 경우 대비
+            let _ = w.set_ignore_cursor_events(false);
         }
     });
 }
@@ -822,7 +955,7 @@ pub fn run() {
             start_local(h.clone()); // (10/29) ① 같은 PC 바깥 알림 창구 127.0.0.1:47613
             let prefs = load_prefs(&h);
             let st = Arc::new(App {
-                hit: Mutex::new(Hit { rects: vec![], ignoring: false, kb_focus: false, dpr: 0.0, card: None, focus_r: None, drag_at: None }),
+                hit: Mutex::new(Hit { rects: vec![], ignoring: false, kb_focus: false, dpr: 0.0, card: None, focus_r: None, drag_at: None, dbg_xy: [0.0, 0.0], dbg_s: 0.0, n_in: 0, n_tog: 0, tick: 0, rects_at: None, n_rects: 0, fb: false }),
                 prefs: Mutex::new(prefs.clone()),
                 hidden: AtomicBool::new(false),
                 bye: AtomicBool::new(false),
@@ -947,6 +1080,23 @@ mod tests {
         assert_eq!(box4(None), None);
         let r = [10.0, 10.0, 20.0, 20.0];
         assert!(in_box(15.0, 15.0, &r, 0.0) && !in_box(25.0, 15.0, &r, 0.0) && in_box(25.0, 15.0, &r, 6.0));
+    }
+
+    /// (0.2.1) 클릭 먹통 원인 지킴: 윈도우에서 화면→프로그램 요청(ipc 주소 fetch)은 ACL이 Origin 머리(경로 없는 출처)로 맞춤
+    /// → capabilities의 원격 주소 중 하나는 출처 'https://jerrycson.github.io' 자체와 맞아야 함(0.1.0~0.2.0은 경로 붙은 주소뿐이라 늘 거절)
+    #[test]
+    fn capability_matches_origin_header() {
+        use tauri::utils::acl::RemoteUrlPattern;
+        let cap: serde_json::Value = serde_json::from_str(include_str!("../capabilities/default.json")).unwrap();
+        let pats: Vec<RemoteUrlPattern> = cap["remote"]["urls"].as_array().unwrap().iter().map(|u| u.as_str().unwrap().parse().unwrap()).collect();
+        let hit = |u: &str| { let u = url::Url::parse(u).unwrap(); pats.iter().any(|p| p.test(&u)) };
+        assert!(hit("https://jerrycson.github.io"), "Origin 머리(윈도우 fetch 경로)");
+        assert!(hit("https://jerrycson.github.io/readnow-scripts/friend/index.html?host=tauri"), "전체 주소(postMessage 경로)");
+        assert!(!hit("https://evil.example.com"));
+        assert!(!hit("http://jerrycson.github.io"));
+        // 예전 주소 하나만으로는 Origin 머리와 안 맞음(먹통 재현)
+        let old: RemoteUrlPattern = "https://jerrycson.github.io/readnow-scripts/*".parse().unwrap();
+        assert!(!old.test(&url::Url::parse("https://jerrycson.github.io").unwrap()));
     }
 
     #[test]

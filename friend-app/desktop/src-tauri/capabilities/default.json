@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "friend-remote",
-  "description": "GitHub Pages의 책방 친구 화면(friend/)만 프로그램 다리(friend_post)를 부를 수 있음 — 캐릭터 창(friend)과 ⚙ 설정 창(friend-set · 0.2.0 · 링크 열기·창 닫기만 받음)",
+  "description": "(0.2.1) 윈도우 WebView2는 화면→프로그램 요청을 ipc 주소로 보내며 ACL이 Origin 머리(https://jerrycson.github.io · 경로 없음)로 맞춤 → 경로가 붙은 주소만 두면 늘 거절됐음(0.1.0~0.2.0 클릭 먹통 원인) · 그래서 출처 주소를 함께 둠 · GitHub Pages의 책방 친구 화면(friend/)만 프로그램 다리(friend_post)를 부를 수 있음 — 캐릭터 창(friend)과 ⚙ 설정 창(friend-set · 0.2.0 · 링크 열기·창 닫기만 받음)",
   "windows": ["friend", "friend-set"],
-  "remote": { "urls": ["https://jerrycson.github.io/readnow-scripts/*"] },
+  "remote": { "urls": ["https://jerrycson.github.io", "https://jerrycson.github.io/readnow-scripts/*"] },
   "permissions": ["allow-friend-post"]
 }

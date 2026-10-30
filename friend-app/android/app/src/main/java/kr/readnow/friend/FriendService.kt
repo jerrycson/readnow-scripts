@@ -202,6 +202,8 @@ class FriendService : Service() {
                 "paired" -> prefs(this@FriendService).edit().putString("dev", o.optString("dev")).apply()
                 "signout" -> prefs(this@FriendService).edit().remove("dev").apply()
                 "byeok" -> ui.post { finishStop() }
+                // (0.2.1) 🐾 단추를 🗑 쓰레기통에 놓음 → 떠 있는 캐릭터 끄기(알림의 '끄기'와 같음 · 다음 부팅 때도 저절로 켜지지 않음)
+                "quit" -> ui.post { prefs(this@FriendService).edit().putBoolean("on", false).apply(); finishStop() }
             }
         }
     }
