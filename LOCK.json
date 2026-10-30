@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "daily",
+ "what": "🔬 매일 정밀 점검 판 내기 — 웹앱 1.78.281 · 수집기 1.89.158(판매자 연결 13초 · 메모리 seen·nbm · 섹션 표 · 설명서)",
+ "since": "2026-10-30T13:45:51Z",
+ "beat": "2026-10-30T13:45:51Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "",
   "at": "2026-10-30T11:24:04Z"
  },
- "host": null
+ "host": "vm"
 }
