@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "판 내기 마저: 세 기능 연계 고침 push",
+ "since": "2026-10-30T02:33:21Z",
+ "beat": "2026-10-30T02:33:21Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "세 기능 연계 고침 1.78.270·1.89.152·0.35.66·감시기 0.10.25 (06609cf)",
   "at": "2026-10-30T02:32:39Z"
  },
- "host": null
+ "host": "vm"
 }
