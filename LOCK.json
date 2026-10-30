@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "③ 움직임 2묶음 배포(3차 · 진단 커밋 위로 올림)",
- "since": "2026-10-30T00:36:19Z",
- "beat": "2026-10-30T00:55:14Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "friend",
-  "done": "③ 움직임 2묶음 배포 멈춤: 책방 친구 시험 3번 모두 ✓ · tW1만 2·3회차 ✗ · 혼자 2/3 → 기준대로 멈춤 · 올린 것 없음",
-  "at": "2026-10-30T00:28:35Z"
+  "done": "③ 움직임 2묶음 00a6802 · 웹앱 1.78.266 · friend 0.15.11",
+  "at": "2026-10-30T00:55:26Z"
  },
- "host": "vm-motion"
+ "host": null
 }
