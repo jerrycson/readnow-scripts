@@ -1,2 +1,4 @@
-doc=app_settings/fhost_JS-MAIN,app_settings/fhost_HOME,app_settings/fhost_LOGGER,app_settings/fhost_JS-PHONE,app_settings/fhost_JS-SUB,app_settings/fhost_OFFICE,app_settings/mascot
-# 3221617733
+recentUp=y24_probe&mins=43200
+doc=app_settings/y24_state
+recentUp=y24_listings&mins=1440
+# 2774523369
