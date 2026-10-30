@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "📐 시장 전체 팔린 비율",
- "since": "2026-10-30T06:56:08Z",
- "beat": "2026-10-30T06:56:08Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.278 📐 시장 전체 팔린 비율",
-  "at": "2026-10-30T06:55:55Z"
+  "at": "2026-10-30T06:56:13Z"
  },
- "host": "vm"
+ "host": null
 }
