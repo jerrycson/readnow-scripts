@@ -1,17 +1,13 @@
 {
- "holder": "friend",
- "what": "r17 face 배포 올림(코디네이터 이어받음)",
- "since": "2026-10-30T05:07:40Z",
- "beat": "2026-10-30T06:48:40Z",
- "ask": {
-  "who": "friend",
-  "why": "판 내기 기다림: r17 body 판 내기(옷 몸매·끌기 변형·끌기 멈춤)",
-  "at": "2026-10-30T06:13:14Z"
- },
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
+ "ask": null,
  "last": {
-  "who": "lead",
-  "done": "1.78.276/1.89.156",
-  "at": "2026-10-30T05:04:50Z"
+  "who": "friend",
+  "done": "r17 face 0.15.13 올림(6047167)",
+  "at": "2026-10-30T06:52:06Z"
  },
- "host": "vm-face"
+ "host": null
 }
