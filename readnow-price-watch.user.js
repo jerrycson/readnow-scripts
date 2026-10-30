@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.24
+// @version      0.10.25
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -10,7 +10,7 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.5
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.1
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.16.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-aladin-core.js?v=0.2.1
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-exec-core.js?v=0.1.1
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
@@ -182,6 +182,8 @@
     for (let i = 0; i < need.length; i += 10) { const part = need.slice(i, i + 10); const snaps = await Promise.all(part.map((c) => C('sellers').doc('sc_' + c).get())); snaps.forEach((d, k) => sellerCache.set(part[k], d.exists ? d.data() : null)); }
     const out = {}; codes.forEach((c) => { if (c && sellerCache.get(c)) out['sc_' + c] = sellerCache.get(c); }); return out;
   }
+  const CTRLG = new Map(); /* (10/30 위험 4) 비교군 그룹이 살아 있는지 — 10분 기억 */
+  async function ctrlAlive(gid) { if (!gid) return false; const c0 = CTRLG.get(gid); if (c0 && Date.now() - c0.at < 600000) return c0.v; let v = false; try { const g = (await C('prd_price_batches').doc(gid).get()).data(); v = !!(g && !g.archived && !(SET.batchOff || {})[gid]); } catch (e) { v = true; /* 못 읽으면 지키는 쪽 */ } CTRLG.set(gid, { at: Date.now(), v }); return v; }
   async function processOne(l) {
     const key = 'aladin_' + l.usedCode; const now = new Date().toISOString();
     const decRef = C('prd_price_decisions').doc(key); const prevD = (await decRef.get()).data() || {};
@@ -224,7 +226,8 @@
     const needApproval = d.group === 'treat' && d.status !== 'skip';
     // 관리자가 정한 것 중 아직 반영 안 된 것(승인·직접 가격·판매보류풀)은 새 판정이 절대 덮지 않음 — 반영이 먼저
     // 반영 끝났거나 유지·거절한 것은 시장이 그대로면(같은 판정) 그대로 두고, 시장이 바뀌면 다시 결정 대기로
-    const waitingExec = ['approved', 'manual', 'hold', 'unhold'].includes(prevD.approvalState);
+    const ctrlHold = !!(prevD.ctrlOf && prevD.ctrlOf.gid) && (await ctrlAlive(prevD.ctrlOf.gid)); /* (10/30 위험 4) 수동 일괄 그룹의 비교군 = 가격을 바꾸지 않고 두는 상품 — 감시는 판정만 기록 */
+    const waitingExec = ['approved', 'manual', 'hold', 'unhold'].includes(prevD.approvalState) || ctrlHold;
     const batchKeep = !prevD.watch && !!(prevD.approval && prevD.approval.decision === 'batch' && Date.now() - Date.parse(prevD.approval.at || 0) < 7 * 864e5); // (0.8.0) 감시 그룹에 든 상품은 첫 가격이 반영된 뒤부터 감시 // (0.5.0) 수동 일괄로 정한 상품은 7일 동안 엔진이 결정 대기로 되돌리지 않음 (확정 탭·원상복귀가 그대로 동작하게)
     const keepApproval = waitingExec || batchKeep || prevD.approvalState === 'applying' || (prevD.sig === sig && ['kept', 'rejected', 'done', 'cleared', 'cancelled'].includes(prevD.approvalState)); // (0.5.0) 비움·확정 취소도 시장이 그대로면 다시 올리지 않음 · 반영 중인 것은 절대 건드리지 않음
     const rec = { key, usedCode: l.usedCode, listingId: l.listingId || null, bookId: l.bookId, title: l.title || null, sku: l.sku || null, grade: l.grade || null, group: d.group, at: now, status: d.status, action: d.action,
@@ -235,16 +238,21 @@
     if (watched) { const P1c = (rec.page1 || []).map((w) => ({ ...w })); const J = watchJudge(wg, pre, listing, market, sellers, ctx, P1c, used, prevD, now);
       const cur = listing.price; const chg = J.target != null && cur != null && J.target !== cur; const sg = (wg.watch.guardPct ?? 15);
       Object.assign(rec, { watchGid: wg.id, watchMode: wg.watch.mode, presetId: pre ? wg.watch.presetId : null, presetName: pre ? pre.name || null : null, status: J.target == null ? 'queue' : 'ok', action: J.target == null ? 'review' : chg ? 'set' : 'none', target: J.target, delta: chg ? J.target - cur : 0, deltaPct: chg && cur ? (J.target - cur) / cur : 0, reasons: J.reasons, strat: J.strat || null, chaser: J.chaser || null, floorW: J.floor || 0 });
-      const keepW = waitingExec || prevD.approvalState === 'applying';
+      const batchHoldW = !!(prevD.approval && prevD.approval.decision === 'batch' && Date.now() - Date.parse(prevD.approval.at || 0) < 7 * 864e5 && (String(prevD.approval.batchId || '') !== String(wg.id) || wg.watch.mode !== 'semi')); /* (10/30 정범님 '세 기능 연계 만전' · 위험 1) 감시 그룹에 든 상품이라도 수동 일괄로 확정한 지 7일 안이면 감시는 판정만 기록 — 예전엔 감시(자동 · 엔진 설정)가 일괄 확정가를 다음 판정에서 되돌려 가격이 왔다 갔다 함 */
+      const keepW = waitingExec || prevD.approvalState === 'applying' || batchHoldW; if (batchHoldW && chg) rec.reasons = ['수동 일괄 확정 7일 보호 — 감시 판정은 기록만(가격 바꾸지 않음)', ...(rec.reasons || [])].slice(0, 12);
       if (!keepW) { if (chg) { const why = []; const pct = Math.abs(J.target - cur) / cur * 100; if (wg.watch.apply !== 'auto') why.push('관리자 승인 그룹'); else { if (pct > sg) why.push(`변경 ${pct.toFixed(1)}% > 자동 반영 한도 ${sg}%`); if (J.floor && J.target < J.floor) why.push('하한 아래'); if (PR.isExcluded(listing, engineSettings())) why.push('자동 제외 상품'); }
           if (!why.length) Object.assign(rec, { approvalState: 'approved', approval: { decision: 'auto', by: 'engine:' + wg.id, gid: wg.id, at: now, price: J.target, expectPrice: cur, reasons: J.reasons.slice(0, 6) }, autoBlock: [] });
           else Object.assign(rec, { approvalState: 'pending', approval: null, autoBlock: why }); }
         else { Object.assign(rec, { approvalState: prevD.approvalState === 'pending' ? null : prevD.approvalState || null }); if (prevD.approvalState !== 'pending') delete rec.approval; } }
       else Object.assign(rec, { approvalState: prevD.approvalState }); if (keepW) delete rec.approval; }
     if (!watched && prevD.strat && prevD.strat.active) rec.strat = { ...prevD.strat, active: false, end: 'notWatched', endedAt: now }; // 감시를 끄거나 뺀 상품의 전략은 끝냄 (다시 보기 목록에 계속 남지 않게)
-    const b2 = db.batch(); b2.set(decRef, rec, { merge: true });
-    if (prevD.sig !== sig) b2.set(decRef.collection('log').doc(), { at: now, sig, status: d.status, action: d.action, current: rec.current, target: rec.target, ref: rec.ref, reasons: d.reasons, ...W() }); // 바뀐 판정만 이력
-    await b2.commit();
+    /* (10/30 위험 2) 판정 기록은 트랜잭션으로 — 처음 읽은 결정(prevD)과 지금 결정이 다르면(그 사이 웹앱에서 일괄 확정·직접 가격·원상복귀 등) 결정 칸(approvalState·approval·autoBlock)은 쓰지 않고 시장·판정 칸만 · 예전엔 수~수십 초 뒤 merge 쓰기로 다른 기기의 확정을 소리 없이 옛 값으로 덮었음 */
+    const logRef = prevD.sig !== sig ? decRef.collection('log').doc() : null; let raced = false;
+    await db.runTransaction(async (tx) => { const cur = (await tx.get(decRef)).data() || {}; const r2 = { ...rec };
+      raced = (cur.approvalState || null) !== (prevD.approvalState || null) || ((cur.approval && cur.approval.at) || null) !== ((prevD.approval && prevD.approval.at) || null);
+      if (raced) { delete r2.approvalState; delete r2.approval; delete r2.autoBlock; }
+      tx.set(decRef, r2, { merge: true }); if (logRef) tx.set(logRef, { at: now, sig, status: d.status, action: d.action, current: rec.current, target: rec.target, ref: rec.ref, reasons: d.reasons, ...(raced ? { raced: true } : {}), ...W() }); }); // 바뀐 판정만 이력
+    if (raced) log(`판정 중 결정이 바뀜(다른 기기) — 결정은 그대로 두고 판정만 기록: ${l.title || l.usedCode}`);
     return d.status + (needApproval ? '·승인대기' : '');
   }
 
@@ -267,7 +275,7 @@
     const isPrice = a.to != null && a.kind !== 'hold' && a.kind !== 'unhold'; if (isPrice && Number(a.to) !== Number(cur.price)) { ch.price = { from: cur.price ?? a.from ?? null, to: a.to }; up.price = a.to; }
     if (a.toSku && a.toSku !== cur.sku) { ch.sku = { from: cur.sku ?? null, to: a.toSku }; up.sku = a.toSku; } if (a.toStatus && a.toStatus !== cur.status) { ch.status = { from: cur.status ?? null, to: a.toStatus }; up.status = a.toStatus; }
     if (!Object.keys(ch).length) return; const now = new Date().toISOString();
-    tx.set(lref, { ...up, watchSyncAt: now, watchSyncAction: aid, ...W() }, { merge: true });
+    tx.set(lref, { ...up, watchSyncAt: now, watchSyncAction: aid, editAt: now, editBy: 'price-watch:' + (a.kind || 'set'), ...W() }, { merge: true }); /* (10/30 위험 7) editAt·editBy = 사람·관리자 결정이 반영됨 → ⚡ 전략(ml-core stratGuard)이 48시간 손대지 않음(예전엔 watchSyncAt만 써서 반영 직후 전략이 다시 바꿈) */
     tx.set(C('prd_listing_changes').doc(), { listingKey: a.key, at: a.at || now, source: 'price-watch', actionId: aid, kind: a.kind || null, batchId: a.batchId || null, batchName: a.batchName || null, changes: ch, ...W() }); }
   async function settle(ref, x, patch, actionDoc) { let wrote = false; const aref = actionDoc ? C('prd_price_actions').doc() : null; settle.last = aref; const lref = actionDoc && actionDoc.key ? C('prd_listings').doc(actionDoc.key) : null;
     await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const ls = lref ? await tx.get(lref) : null; const v = sn.data() || {}; if (actionDoc) { tx.set(aref, actionDoc); listingSync(tx, lref, ls, actionDoc, aref.id); } if (v.approvalState === 'applying' && v.applyingBy === `${PC}:${TAB}` && sameApproval(v.approval, x.approval)) { tx.set(ref, patch, { merge: true }); wrote = true; } else tx.set(ref, { lastExecAt: patch.executedAt || new Date().toISOString(), lastExecNote: (patch.execNote || '') + ' (그 사이 결정이 바뀌어 상태는 그대로 둠)' }, { merge: true }); }); return wrote; }
@@ -303,7 +311,7 @@
     const offOf = (x) => { const a = x.approval || {}; return a.decision === 'batch' && a.batchId && (SET.batchOff || {})[a.batchId]; }; // (0.6.0) 꺼진 수동 일괄 그룹: 그 그룹이 확정한 것은 건드리지 않고 기다림 (설정은 실시간 — 도는 중에 꺼도 다음 상품부터)
     let offN = 0;
     const post = async (url, body) => { await PACE.wait(sleep); return fetch(url, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' }, body }); };
-    for (const d0 of docs) {
+    let nDone = 0; for (const d0 of docs) { if (++nDone > 200) { log(`반영 대기가 많아(${docs.length}건) 200건까지만 하고 판정과 번갈아 — 나머지는 다음 바퀴`); break; } /* (10/30 위험 10) 큰 일괄 확정이 감시 판정·추격자 다시 보기를 몇 시간 세우지 않게 */
       if (stop || SET.killSwitch || !isMine()) return; const x = d0.data(); const kind = x.approvalState; const now = new Date().toISOString(); const d = d0;
       let xo = null; // 이 결정의 실행 기록 (열려 있으면 실패 때 '실패'로 닫음)
       const xGate = async (kind2) => { const key = `${x.key}@${(x.approval && x.approval.at) || x.at || ''}`; const g = await xBegin(kind2, key, { listingId: x.listingId || null, title: x.title || null, price: (x.approval && x.approval.price) ?? null, decision: (x.approval && x.approval.decision) || kind });
@@ -325,7 +333,7 @@
         const ap = x.approval || {}; const p0 = Math.round(+ap.price);
         if (!(p0 >= 10)) { await fail('관리자가 정한 가격이 없음 (엔진 추천가로 대신하지 않음)', true); continue; }
         if (!ap.at || Date.now() - Date.parse(ap.at) > 72 * 3600e3) { await d.ref.set({ approvalState: 'stale', execNote: '결정한 지 72시간이 넘음 — 시장이 바뀌었을 수 있어 반영하지 않음, 다시 확인 후 결정', ...W() }, { merge: true }); log(`오래된 결정이라 반영 안 함: ${x.title || x.usedCode}`, 1); continue; }
-        try { const L = (await C('prd_listings').doc(x.key).get()).data(); const seenAfter = L && L.lastSeenAt && String(L.lastSeenAt) > String(ap.at);
+        try { const L = (await C('prd_listings').doc(x.key).get()).data(); const seenAfter = L && [L.lastSeenAt, L.editAt, L.watchSyncAt].some((t) => t && String(t) > String(ap.at)); /* (10/30 위험 8) 결정 뒤 수집기가 다시 봤거나 · 웹앱 ✏·전략이 고쳤거나(editAt) · 다른 반영(watchSyncAt)이 있었으면 가격 비교 */
           if (L && seenAfter && L.status && L.status !== '판매중') { await fail(`결정 뒤 상품 상태가 '${L.status}'로 바뀜`, true); continue; }
           if (L && seenAfter && ap.expectPrice != null && L.price != null && +L.price !== +ap.expectPrice && +L.price !== p0) { await fail(`결정 뒤 다른 곳에서 가격이 바뀜 (결정 때 ${(+ap.expectPrice).toLocaleString()} → 지금 ${(+L.price).toLocaleString()})`, true); continue; } } catch (e) {}
       }
@@ -357,7 +365,8 @@
       n++; await xEnd(xo, 'done', `${price} (알라딘 답: ${res.value})`); xo = null; const fromP = (x.approval && x.approval.expectPrice != null ? x.approval.expectPrice : x.current) ?? null;
       const fine = Math.random() < 0.1; const vNew = { state: 'wait', n: 0, si: 0, fine, next: new Date(Date.parse(now) + (fine ? V_FINE : V_STEPS)[0] * 60000).toISOString() }; const actDoc = { key: x.key, usedCode: x.usedCode, listingId: x.listingId, title: x.title, grade: x.grade || null, aladinItemId: x.aladinItemId || null, from: fromP, to: price, engineTarget: x.target ?? null, kind: (x.approval && x.approval.decision) || kind, batchId: (x.approval && x.approval.batchId) || null, batchName: (x.approval && x.approval.batchName) || null, at: now, day: today, kst: kstOf(now), confirmedAt: (x.approval && x.approval.at) || null, by: (x.approval && x.approval.by) || null, pc: PC, result: res.value, engine: PR.VERSION, verify: vNew, ...(fine && x.listingId ? { verifyPg: { state: 'wait', n: 0, si: 0, next: vNew.next } } : {}), ...W() };
       const ap0 = x.approval || {}; const wgA = ap0.decision === 'batch' && ap0.batchId ? (await wgLoad()).get(ap0.batchId) : null; // (0.8.0) 감시 켠 그룹의 첫 가격이 반영되면 그 상품은 이제부터 그 그룹으로 감시
-      const enroll = wgA ? { watch: { gid: wgA.id, since: now, startPrice: fromP, by: ap0.by || null } } : {};
+      const oldG = x.watch && x.watch.gid && wgA && x.watch.gid !== wgA.id ? x.watch.gid : null; if (oldG) log(`감시 그룹 바뀜: ${x.title || x.usedCode} — ${oldG} → ${wgA.id}(수동 일괄 확정이 붙임 · 앞 그룹 기록은 watchPrev에)`, 1); /* (10/30 위험 12) */
+      const enroll = wgA ? { watch: { gid: wgA.id, since: now, startPrice: fromP, by: ap0.by || null }, ...(oldG ? { watchPrev: { gid: oldG, since: (x.watch && x.watch.since) || null, until: now } } : {}) } : {};
       try { await settle(d.ref, x, { approvalState: 'done', executedAt: now, pendingChange: { at: now, price }, execNote: `반영됨 (알라딘 답: ${res.value})`, ...enroll, ...W() }, actDoc); if (VQ && settle.last) VQ.push({ id: settle.last.id, ref: settle.last, ...actDoc }); }
       catch (e) { log(`⚠ 알라딘에는 ${price.toLocaleString()}원으로 들어갔지만 기록 저장 실패: ${x.title || x.usedCode} — ${e.message} (10분 뒤 '막힘 — 확인'으로 표시됨)`, 1); continue; } log(`가격 반영: ${x.title || x.usedCode} ${(x.current || 0).toLocaleString()} → ${price.toLocaleString()}`);
       await sleep(GAP()); await verifyStep(2, 30000); // (0.7.0) 반영하는 사이사이 공개 반영 확인도 (확인 때가 된 것만)
@@ -427,7 +436,8 @@
     const dY = PR.decide(listing, market, sellers, { ...ctx0, settings: SY }), dN = PR.decide(listing, market, sellers, { ...ctx0, settings: SN });
     const tOf = (d, P) => (pre ? PR.critTarget(listing, P, d, pre.crit || {}, { ...ctx0, settings: SN }, used.buyback || null) : { t: d.action === 'set' || d.status === 'ok' || d.status === 'floor' ? d.target ?? listing.price : null, reasons: d.reasons || [], floor: (d.floors && d.floors.applied) || 0 });
     const chaser = PR.chaserOn(P1c, ctx0.chase, listing.grade); const bN = tOf(dN, P1c); const bY = chaser ? tOf(dY, P1c.filter((w) => String(w.sc || '') !== chaser.sellerCode)) : bN;
-    const floor = Math.max(bN.floor || 0, (dN.floors && dN.floors.applied) || 0);
+    const st0 = (prevD.watch && prevD.watch.startPrice) || null; const mdc = +((pre && pre.crit && pre.crit.maxDrop) || 0); const cumFloor = mdc > 0 && st0 > 0 ? Math.round(st0 * (1 - mdc / 100)) : 0; /* (10/30 위험 6) 최대 인하 %를 '감시 시작 가격부터 모두 합한' 한도로도 — 예전엔 한 번 크기만 막아 날마다 쌓여 내려감(모의: 10,000 → 6일 뒤 1,250) · 넘으면 '하한 아래'로 관리자 결정 대기 */
+    const floor = Math.max(bN.floor || 0, (dN.floors && dN.floors.applied) || 0, cumFloor);
     const r = PR.chaseStep({ strat, state: prevD.strat || null, now, cur: listing.price, base: bN.t != null ? bN.t : listing.price, yieldT: bY.t, chaser, floor, start: (prevD.watch && prevD.watch.startPrice) || listing.price });
     const head = `${pre ? `반자동 '${pre.name || wg.watch.presetId}'` : '자동(지금 엔진)'} · 그룹 '${wg.name}'${chaser ? ` · 추격자 전략: ${PR.STRATS[strat.name || 'yield'] || strat.name}` : ''}`;
     return { target: r.t != null ? r.t : bN.t, reasons: [head, ...(chaser ? r.reasons : []), ...(bN.reasons || []).slice(0, 8)], strat: r.state || null, chaser: chaser || null, floor }; }

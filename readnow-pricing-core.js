@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.16.1'; // (0.16.1) 🕘 임시 기준 끝나는 날 한국 날짜 // (0.16.0) 정범님 10/19: 재고 기간 할인(T2 5~10% … T7 70%)을 없앰 — 우리 판매 자료(10/08~10/18 · 상품·일 17만)로 판매 확률은 등록 30일 뒤 약 1.2~1.5‰로 내려간 뒤 1년까지 거의 그대로이고, 수요 낮은 책은 값을 내려도 판매가 늘지 않음 → 기간에 따라 깎을 근거가 없음 · 오래된 재고의 값은 판매가치 엔진(ml-core valueOf: 수요×자리 · 알라딘 매입 검토)이 맡음 · 단계(T1~T8)는 남김(기준 판매자 색 넓히기·불용 판정에 씀) // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
+  const VERSION = '0.16.2'; // (0.16.2) 수동 일괄 기준 critTarget — 터무니없는 첫 쪽 매물 빼기(엔진과 같은 기준) · 정가 1.5배 넘는 추천은 하지 않음(10/30 연계 점검) // (0.16.1) 🕘 임시 기준 끝나는 날 한국 날짜 // (0.16.0) 정범님 10/19: 재고 기간 할인(T2 5~10% … T7 70%)을 없앰 — 우리 판매 자료(10/08~10/18 · 상품·일 17만)로 판매 확률은 등록 30일 뒤 약 1.2~1.5‰로 내려간 뒤 1년까지 거의 그대로이고, 수요 낮은 책은 값을 내려도 판매가 늘지 않음 → 기간에 따라 깎을 근거가 없음 · 오래된 재고의 값은 판매가치 엔진(ml-core valueOf: 수요×자리 · 알라딘 매입 검토)이 맡음 · 단계(T1~T8)는 남김(기준 판매자 색 넓히기·불용 판정에 씀) // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -442,7 +442,10 @@
     const e = eng || {}; if (e.confirmHours != null) S.confirmHours = +e.confirmHours; if (e.discOn) for (const k of Object.keys(tiers)) tiers[k].disc = DEFAULTS.tiers[k].disc; return S; }
   function critTarget(l, page1, d, c0, ctx, buyback) { const c = c0 || {}; const R = []; const out = { t: null, reasons: R, bbHit: null, floor: 0 }; const coef = c.coef || DEFAULTS.gradeCoef;
     const colors = ['dkgreen', 'green', ...(c.colors || [])]; const allow = new Set([...colors, 'aladin']); const gOf = (w) => (w.c === 'aladin' && !(w.g in GRADE_RANK) ? '중' : w.g); // 알라딘측 균일가 = 중 (엔진과 같은 기준)
-    const P = (page1 || []).filter((w) => w); let t = null; const mode = c.mode || 'valid';
+    let P = (page1 || []).filter((w) => w); let t = null; const mode = c.mode || 'valid';
+    { /* (10/30 정범님 '세 기능 연계 만전' · 위험 11) 터무니없는 가격 매물 빼기 — 엔진 decide 3단계와 같은 기준(다른 매물 중앙값 × insaneMult · 정가 × insaneListMult · 2만 원 중 큰 값 초과) · 예전엔 일괄 기준(same·under·topAny)이 첫 쪽 5만 원 매물 하나를 따라 정가 1.5만 원 책에 5만 원을 추천했음 */
+      const S0 = (ctx && ctx.settings) || DEFAULTS; const iM = S0.insaneMult || DEFAULTS.insaneMult || 3, iL = S0.insaneListMult || DEFAULTS.insaneListMult || 1.5;
+      const ps = P.filter((w) => w.c !== 'ours' && w.p > 0).map((w) => w.p).sort((a, b) => a - b); if (ps.length) { const med = ps[Math.floor(ps.length / 2)]; const lp = +(l.priceList || (ctx && ctx.priceList) || 0); const cap = Math.max(med * iM, lp * iL, 20000); const n0 = P.length; P = P.filter((w) => w.c === 'ours' || !(w.p > 0) || w.p <= cap); if (P.length < n0) R.push(`터무니없는 가격 ${n0 - P.length}건 뺌(${Math.round(cap).toLocaleString()}원 넘음)`); } }
     if (mode === 'valid') R.push(...((d && d.reasons) || []).filter((x) => !/희소|보호/.test(x))); // 최상단 배치·같은 등급 동가는 엔진 이유를 섞지 않음
     /* (0.15.1) '무조건 최상단 배치' = 말 그대로 첫 페이지 맨 위(우리 것 빼고 · 판매자 색·등급·배송비 가리지 않음)와 동가 — 예전엔 '기준 판매자'로 고른 색만 봐서, 노랑·주황·빨강 매물이 맨 위면 그 아래 매물을 기준으로 삼아 '이미 부합'·'추천 못 함'이 나왔음. 하한선(매입가·최소 판매가·최대 인하)·처리 기준(내림만 등)은 이 뒤에 그대로 */
     if (mode === 'top') { const top = P.find((w) => w.c !== 'ours' && w.p > 0); if (top) { t = top.p; R.unshift(`최상단 배치: 첫 페이지 맨 위 ${top.n || (top.c === 'aladin' ? '알라딘측' : '매물')} ${gOf(top) || ''} ${(top.p || 0).toLocaleString()}원과 판매가 동가 (판매자·등급·배송비 가리지 않음)`); if (GRADE_RANK[gOf(top)] != null && GRADE_RANK[l.grade] != null && GRADE_RANK[gOf(top)] < GRADE_RANK[l.grade]) R.push(`⚠ 맨 위 매물은 우리(${l.grade})보다 낮은 등급(${gOf(top)}) — 우리 더 좋은 상태를 그 값에 맞춤`); } else R.unshift('최상단 배치: 첫 페이지에 다른 매물이 없음'); }
@@ -481,7 +484,7 @@
     if (t != null && +c.minPrice && t < +c.minPrice) { R.push(`최소 판매가 ${(+c.minPrice).toLocaleString()}원으로 올림`); t = +c.minPrice; }
     if (t != null && +c.maxDrop && l.price && t < l.price * (1 - c.maxDrop / 100)) { const f = snapUp(l.price * (1 - c.maxDrop / 100)); R.push(`지금 가격 대비 최대 ${c.maxDrop}% 인하로 제한 → ${f.toLocaleString()}원`); t = f; }
     if (c.reach && goal != null && t != null && cur != null && t > goal && t < cur) { R.push(`목표 ${goal.toLocaleString()}원까지 못 내림(하한선 ${t.toLocaleString()}원) — 반만 내리면 목표 자리에 못 서고 값만 깎이므로 지금 가격 유지`); t = cur; } // (0.15.0) 목표 자리 아니면 안 내림
-    out.floor = Math.max(0, fbb || 0, +c.minPrice || 0, +c.maxDrop && l.price ? snapUp(l.price * (1 - c.maxDrop / 100)) : 0); out.goal = goal; out.t = t; return out; }
+    out.floor = Math.max(0, fbb || 0, +c.minPrice || 0, +c.maxDrop && l.price ? snapUp(l.price * (1 - c.maxDrop / 100)) : 0); out.goal = goal; { const lp0 = +(l.priceList || (ctx && ctx.priceList) || 0); const iL0 = ((ctx && ctx.settings) || DEFAULTS).insaneListMult || DEFAULTS.insaneListMult || 1.5; if (t != null && lp0 > 0 && t > lp0 * iL0) { R.unshift(`추천가 ${Math.round(t).toLocaleString()}원이 정가 ${lp0.toLocaleString()}원의 ${iL0}배를 넘어 추천하지 않음(첫 쪽 매물 값이 터무니없을 수 있음 · 10/30)`); t = null; } } out.t = t; return out; }
 
   /* ───────────── (0.13.0) 추격자: 기록에서 찾기 + 대응 전략 ─────────────
    *  chaseMap(ourActs, changeDocs, now, S): 우리 가격 변경(반영 기록 at·to)과 그 책의 매물 변화 기록(prd_metric_changes: chg의 판매가가 내려간 것, 우리 것 빼고)으로
