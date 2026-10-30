@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.157의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.158의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.157' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.157', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.158' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.158', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -745,7 +745,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   ico.onclick = (e) => { e.preventDefault(); e.stopPropagation(); open = !open; try { GM_setValue('rnu-rh-open', open ? 1 : 0); } catch (x) {} st.textContent = css(); look(); };
   const has = () => IDS.some((i) => document.getElementById(i));
   const tick = () => { if (!document.head || !document.body) return; if (!st.isConnected) document.head.appendChild(st); const h = has(); if (h && !ico.isConnected) { look(); document.body.appendChild(ico); } ico.style.display = h ? 'block' : 'none'; };
-  tick(); let n = 0; const t = setInterval(() => { tick(); if (++n > 40 && has()) { clearInterval(t); setInterval(tick, 15000); } }, 1500); /* 그 스크립트가 늦게 단추를 붙여도 잡음 · 찾은 뒤엔 15초마다만 */
+  tick(); let n = 0; const t = setInterval(() => { tick(); if (++n > 40) { clearInterval(t); setInterval(tick, 15000); } }, 1500); /* 그 스크립트가 늦게 단추를 붙여도 잡음 · 60초 뒤엔 찾았든 못 찾았든 15초마다만(1.89.158 🔬 정밀 점검 — 단추가 없는 화면에서 1.5초 타이머가 영원히 돌던 것) */
   try { GM_addValueChangeListener('rnu-rh-open', (k, o, v, remote) => { if (!remote) return; open = !!v; st.textContent = css(); look(); }); } catch (e) {} })();
 /* ═════════════ 통합 관제판 (1.38.0) ═════════════
  * 예전: 오른쪽 위에 [▶ 모두][고객·주문][상품·매입][기록][–] 탭만 있고, 일시정지·이어하기·최근 기록이 패널마다 따로 있었음

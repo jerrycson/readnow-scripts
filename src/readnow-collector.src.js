@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.157
+// @version      1.89.158
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -842,7 +842,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   ico.onclick = (e) => { e.preventDefault(); e.stopPropagation(); open = !open; try { GM_setValue('rnu-rh-open', open ? 1 : 0); } catch (x) {} st.textContent = css(); look(); };
   const has = () => IDS.some((i) => document.getElementById(i));
   const tick = () => { if (!document.head || !document.body) return; if (!st.isConnected) document.head.appendChild(st); const h = has(); if (h && !ico.isConnected) { look(); document.body.appendChild(ico); } ico.style.display = h ? 'block' : 'none'; };
-  tick(); let n = 0; const t = setInterval(() => { tick(); if (++n > 40 && has()) { clearInterval(t); setInterval(tick, 15000); } }, 1500); /* 그 스크립트가 늦게 단추를 붙여도 잡음 · 찾은 뒤엔 15초마다만 */
+  tick(); let n = 0; const t = setInterval(() => { tick(); if (++n > 40) { clearInterval(t); setInterval(tick, 15000); } }, 1500); /* 그 스크립트가 늦게 단추를 붙여도 잡음 · 60초 뒤엔 찾았든 못 찾았든 15초마다만(1.89.158 🔬 정밀 점검 — 단추가 없는 화면에서 1.5초 타이머가 영원히 돌던 것) */
   try { GM_addValueChangeListener('rnu-rh-open', (k, o, v, remote) => { if (!remote) return; open = !!v; st.textContent = css(); look(); }); } catch (e) {} })();
 /* ═════════════ 통합 관제판 (1.38.0) ═════════════
  * 예전: 오른쪽 위에 [▶ 모두][고객·주문][상품·매입][기록][–] 탭만 있고, 일시정지·이어하기·최근 기록이 패널마다 따로 있었음
@@ -2058,6 +2058,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     });
   }
   let sellerLinksAt = 0; /* (1.89.141 4시간 점검) loadSellerLinks로 Firebase 판매자 전부를 읽은 시각 — 10분 안이면 다시 읽지 않음(이 PC 판매자로 바꾸면 0) */
+  const selLite = (x) => ({ name: x.name, ourGrade: x.ourGrade, grade: x.grade, aladinGrade: x.aladinGrade, linkedCustomers: x.linkedCustomers }); /* (1.89.158) 연결 사본에 두는 칸 */
   let selSrc = null, selMax = 0, selFullAt = 0; /* (1.89.143 4시간 점검) 고객과 연결된 판매자만 가볍게(id → 이름·등급·연결) · 그 읽기에서 가장 늦은 uploadedAt(ms) · 마지막 통째 읽기 시각 */
   function setSellerLinks(sellers, keep) { if (!keep) { sellerLinksAt = 0; selSrc = null; selFullAt = 0; } sellerLinkMap = new Map(); sellers.forEach((s) => (s.linkedCustomers || []).forEach((l) => { const a = sellerLinkMap.get(l.customerId) || []; a.push({ name: s.name, grade: s.ourGrade || s.grade || null, aladinGrade: s.aladinGrade || null, reasons: l.reasons, level: l.level || null, strong: l.level ? l.level === 'match' : (l.reasons || []).some((r) => r !== '비슷한 이메일') }); sellerLinkMap.set(l.customerId, a); })); }
   /* (1.89.141 4시간 점검 · 🧠) 판매자 1.5만여 명 통째 읽기를 한 번의 올리기 안에서 두 번(고객 요약 다시 계산 → 점수 전체 계산) 하던 것 — 10/29 HOME 실측 주문 든 시간마다 13~15초 · 그때마다 약 1.5만 번 읽기 더. 10분 안에 읽었으면 그것을 씀 */
@@ -2065,7 +2066,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    *  → 2시간 안에는 지난 읽기 뒤 uploadedAt이 바뀐 판매자만 받아 고침(웹앱 syncSellersNow와 같은 방식 · 판매자를 쓰는 곳은 모두 uploadedAt을 찍음) · 2시간마다·이 PC 판매자로 바꾸면·바뀐 것이 2천 명 넘으면 예전처럼 통째로(2천 명씩 나눠)
    *  계산 결과는 같음(연결 정보 출처는 같고 받는 양만 줄임) · 연결 없는 판매자는 들고 있지 않음(🪶) */
   async function loadSellerLinks() { const t = Date.now(); if (sellerLinksAt && t - sellerLinksAt < 10 * 60e3) return;
-    const lite = (x) => ({ name: x.name, ourGrade: x.ourGrade, grade: x.grade, aladinGrade: x.aladinGrade, linkedCustomers: x.linkedCustomers });
+    const lite = selLite;
     const ms = (x) => (x && x.uploadedAt && typeof x.uploadedAt.toMillis === 'function' ? x.uploadedAt.toMillis() : 0);
     try { if (selSrc && selMax && selFullAt && t - selFullAt < 2 * 3600e3) {
         const q = await fdb.collection('sellers').where('uploadedAt', '>', FB.firestore.Timestamp.fromMillis(selMax)).limit(2001).get();
@@ -2326,7 +2327,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     }
 
     const inters = docs.filter((d) => d.col === 'crm_interactions').map((d) => d.data);
-    if (docs.some((d) => d.col === 'sellers')) setSellerLinks(docs.filter((d) => d.col === 'sellers').map((d) => d.data));
+    if (docs.some((d) => d.col === 'sellers')) { const SL = docs.filter((d) => d.col === 'sellers'); /* (1.89.158 🔬 정밀 점검 · 🧠) 전에는 여기서 setSellerLinks(…)가 2시간 증분 사본(selSrc)까지 버려 바로 뒤 고객 요약이 판매자 1.5만 명을 통째로 다시 읽었음(10/30 JS-MAIN 20:05·20:07·21:01 '판매자 연결 13초' — 1.89.143 증분 읽기가 매시 한 번도 성립하지 않은 까닭). 이제 올리는 판매자 문서를 사본에 덧씌우고(연결 있으면 넣고 없으면 뺌) 증분 읽기는 그대로 — 다음 loadSellerLinks는 바뀐 판매자만 받음 */ if (selSrc) SL.forEach((d) => { const x = d.data || {}; if ((x.linkedCustomers || []).length) selSrc.set(d.id, selLite(x)); else selSrc.delete(d.id); }); setSellerLinks(SL.map((d) => d.data), !!selSrc); if (selSrc) sellerLinksAt = 0; }
     if (!(opt && opt.noCust)) for (const c of aggregateCustomers(orderDocs.map((x) => x.order), inters)) docs.push({ col: 'crm_customers', id: c.customerId, data: c });
     buildDocs.lastPending = pending.length;
     return docs.map((d) => ({ ...d, data: clean(d.data) }));
