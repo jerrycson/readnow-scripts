@@ -1,2 +1,2 @@
-logs=1&pc=MJ-MAIN&from=202610301000
-# 258255692
+@health&hours=4
+# 2941018802
