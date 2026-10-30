@@ -349,10 +349,45 @@
         runs.push({ gid: x.g.id, data: { lastRid: day, runs: { [day]: { plan: ids.length, planAdd: sum.add, planChk: sum.chk, planAt: iso, daily: true, ...(o.who ? { planBy: o.who } : {}) } } } }); }
       return { day, n: nAll, groups: G.length, plan, docs, runs, lastPlan: { at: iso, day, groups: G.length, n: nAll, plan, ...(o.who ? { by: o.who } : {}) } }; }
     /* 'held' 매일 일 중 차례가 된 하나 — 매일 일이 하나라도 '대기·하는 중'이면 없음(한 번에 하나) · 사람이 멈춘(paused) 것은 빼고 nextAt이 가장 이른 것 */
-    function pxPickHeld(held, active, now) { const isD = (x) => !!x && x.type === 'pxExp' && !!x.daily; if ((active || []).some((d) => isD(d.x || d))) return null; const H = (held || []).filter((d) => isD(d.x) && !d.x.paused).sort((a, b) => String(a.x.nextAt || '').localeCompare(String(b.x.nextAt || ''))); const d0 = H[0]; return d0 && (Date.parse(d0.x.nextAt || 0) || 0) <= now ? d0.id : null; }
+    function pxPickHeld(held, active, now, cfg) { const isD = (x) => !!x && x.type === 'pxExp' && !!x.daily; if ((active || []).some((d) => isD(d.x || d))) return null; if (pxQuiet(now, pxHuman(cfg)).on) return null; /* (사람처럼) 밤 쉼 동안은 올리지 않음 */ const H = (held || []).filter((d) => isD(d.x) && !d.x.paused).sort((a, b) => String(a.x.nextAt || '').localeCompare(String(b.x.nextAt || ''))); const d0 = H[0]; return d0 && (Date.parse(d0.x.nextAt || 0) || 0) <= now ? d0.id : null; }
+    /* ══ (사람처럼 · 10/30 로봇 점검) 🔬 조회수 실험 매일 일의 '사람 같은 속도' — PC(pxExpPc)·클라우드(pxExpRun)가 같은 계산을 씀
+     *  설정 app_settings/pxDaily.human = { quiet:'HH:MM-HH:MM', quietJit(분), hourCap, sliceSec, edPer:[가장 적게, 가장 많이], ckPer, restSec:[,], failMax, failRestMin:[,], pubPct }
+     *  근거: quiet 끝 07:00 = 클라우드 shipTabRead '밤'(KST 7시 전) · 시작 00:00 = 매일 계획의 하루(KST 날짜) 끝 · sliceSec 75·edPer 3~8·restSec 60~600·failRestMin 20~40 = 지금 실험 코드 값
+     *        ckPer 3~8 = edPer 값을 그대로(확인도 한 조각에 같은 만큼) · pubPct 10 = 가격 감시 '정밀 표본'(fine 10%) · hourCap 30 = 지금 설계의 평균 속도(모의 약 26/시간)에서 몰림만 자름
+     *        quietJit 60(밤 쉼 끝을 날마다 0~60분 흩음)·failMax 3 = 근거 없음, 설정으로 바꿀 수 있음 */
+    const PX_HUMAN_DEF = { quiet: '00:00-07:00', quietJit: 60, hourCap: 30, sliceSec: 75, edPer: [3, 8], ckPer: [3, 8], restSec: [60, 600], failMax: 3, failRestMin: [20, 40], pubPct: 10 };
+    const pxHuman = (cfg) => { const h = (cfg && cfg.human && typeof cfg.human === 'object') ? cfg.human : {}; const o = { ...PX_HUMAN_DEF }; const num = (v, lo, hi) => (Number.isFinite(+v) && v !== null && v !== '' ? Math.min(hi, Math.max(lo, +v)) : null);
+      const pair = (v, d, lo, hi) => (Array.isArray(v) && v.length === 2 && num(v[0], lo, hi) != null && num(v[1], lo, hi) != null ? [Math.min(num(v[0], lo, hi), num(v[1], lo, hi)), Math.max(num(v[0], lo, hi), num(v[1], lo, hi))] : d);
+      if (typeof h.quiet === 'string' && /^\d\d:\d\d-\d\d:\d\d$/.test(h.quiet)) o.quiet = h.quiet; if (h.quiet === '' || h.quiet === false) o.quiet = '';
+      for (const [k, lo, hi] of [['quietJit', 0, 180], ['hourCap', 0, 600], ['sliceSec', 15, 600], ['failMax', 1, 20], ['pubPct', 0, 100]]) { const v = num(h[k], lo, hi); if (v != null) o[k] = v; }
+      o.edPer = pair(h.edPer, o.edPer, 0, 50); o.ckPer = pair(h.ckPer, o.ckPer, 0, 100); o.restSec = pair(h.restSec, o.restSec, 10, 3600); o.failRestMin = pair(h.failRestMin, o.failRestMin, 1, 240); return o; };
+    const dHash = (s) => { let x = 2166136261; for (const c of String(s)) x = Math.imul(x ^ c.charCodeAt(0), 16777619); return x >>> 0; };
+    const kDay0 = (ms) => Date.parse(kst(ms).day + 'T00:00:00+09:00');
+    /* 밤 쉼 — { on, until(ms) } · 끝 시각은 날마다(KST 날짜로) 0~quietJit분 흩음 — PC·클라우드가 같은 날엔 같은 값 */
+    function pxQuiet(now, hc) { hc = hc || PX_HUMAN_DEF; const m = String(hc.quiet || '').match(/^(\d\d:\d\d)-(\d\d:\d\d)$/); if (!m) return { on: false, until: 0 }; const a = tMin(m[1]), b0 = tMin(m[2]); if (a == null || b0 == null || a === b0) return { on: false, until: 0 };
+      const cur = kst(now).min; const d0 = kDay0(now); const endOf = (dayStart) => dayStart + (b0 + (dHash(kst(dayStart + 3600e3).day) % ((+hc.quietJit || 0) + 1))) * 60e3;
+      if (a < b0) { const e = endOf(d0); return cur >= a && now < e ? { on: true, until: e } : { on: false, until: 0 }; }
+      if (cur >= a) return { on: true, until: endOf(d0 + 864e5) }; const e = endOf(d0); return now < e ? { on: true, until: e } : { on: false, until: 0 }; }
+    /* 다음 '일 시작' — 내일 밤 쉼이 끝나는 때(밤 쉼을 껐으면 내일 0시 + 흩음) */
+    const pxNextOpen = (now, hc) => { const q = pxQuiet(kDay0(now) + 864e5 + 60e3, hc); return q.on ? q.until : kDay0(now) + 864e5 + (dHash(kst(now + 864e5).day) % 60) * 60e3; };
+    /* 한 조각을 해도 되나 — o = { now, cfg(app_settings/pxDaily 문서), daily, other(가격 감시 조각 { until, by }), rnd }
+     *  돌려줌 { ok, why, until(ms) } 또는 { ok:true, edMax, ckMax, sliceMs, day, hh, failMax, failRest:[ms,ms], pubPct, restSec } · 사람이 맡긴 일(daily 아님)은 예전대로(상한 없음) */
+    function pxGate(o) { const now = +o.now || Date.now(); const cfg = o.cfg || {}; const hc = pxHuman(cfg); const rnd = typeof o.rnd === 'function' ? o.rnd : Math.random; const R = (a, b) => a + rnd() * (b - a); const I = (p) => Math.round(R(p[0], p[1]));
+      const base = { failMax: hc.failMax, failRest: [hc.failRestMin[0] * 60e3, hc.failRestMin[1] * 60e3], pubPct: hc.pubPct, restSec: hc.restSec };
+      if (!o.daily) return { ok: true, edMax: Infinity, ckMax: Infinity, sliceMs: null, ...base, pubPct: 100 };
+      const q = pxQuiet(now, hc); if (q.on) return { ok: false, why: `밤 쉼(${hc.quiet}) — ${hm(kst(q.until).min)}부터`, until: q.until + Math.round(R(0, 300)) * 1000 };
+      const oth = o.other || null; const oU = oth ? Date.parse(oth.until || 0) || 0 : 0; if (oU > now) return { ok: false, why: `가격 감시가 알라딘을 보는 중(${oth.by || '?'})`, until: oU + Math.round(R(hc.restSec[0], hc.restSec[1])) * 1000 };
+      const day = kst(now).day; const hh = String(Math.floor(kst(now).min / 60)).padStart(2, '0'); const c = ((cfg.cnt || {})[day]) || {}; const ed = +c.ed || 0, ck = +c.ck || 0, hEd = +((c.h || {})[hh]) || 0;
+      const capEd = Math.max(0, +cfg.cap >= 0 ? +cfg.cap : PX_DAILY_DEF.cap), capCk = Math.max(0, +cfg.recap >= 0 ? +cfg.recap : PX_DAILY_DEF.recap);
+      if (ed >= capEd && ck >= capCk) return { ok: false, why: `오늘 상한에 닿음(수정 ${ed}/${capEd} · 확인 ${ck}/${capCk})`, until: pxNextOpen(now, hc) };
+      const edMax = Math.max(0, Math.min(I(hc.edPer), capEd - ed, hc.hourCap - hEd)), ckMax = Math.max(0, Math.min(I(hc.ckPer), capCk - ck));
+      if (!edMax && !ckMax) { const nh = kDay0(now) + (Math.floor(kst(now).min / 60) + 1) * 3600e3; return { ok: false, why: `시간당 상한(수정 ${hEd}/${hc.hourCap})`, until: nh + Math.round(R(hc.restSec[0], hc.restSec[1])) * 1000 }; }
+      return { ok: true, edMax, ckMax, sliceMs: hc.sliceSec * 1000, day, hh, ...base }; }
+    /* 조각 사이 쉼(ms) — 실패로 끊긴 조각은 더 길게 */
+    const pxRest = (g, failStop, rnd) => { const r = typeof rnd === 'function' ? rnd : Math.random; const hc = g || { restSec: PX_HUMAN_DEF.restSec, failRest: [PX_HUMAN_DEF.failRestMin[0] * 60e3, PX_HUMAN_DEF.failRestMin[1] * 60e3] }; return failStop ? Math.round(hc.failRest[0] + r() * (hc.failRest[1] - hc.failRest[0])) : Math.round((hc.restSec[0] + r() * (hc.restSec[1] - hc.restSec[0])) * 1000); };
     /* ⏰ 시간표에 'pxDaily' 칸이 없으면 켜진 칸으로 더함(이미 있으면 켜짐·시각 그대로 — 정범님이 바꾼 것을 덮지 않음) */
     function pxSlotEnsure(slots, at) { const L = Array.isArray(slots) ? slots : []; if (L.some((s) => s && (s.id === PX_SLOT.id || s.job === PX_SLOT.job))) return { slots: L, added: false }; const t = normTimes([at || PX_DAILY_DEF.at]); return { slots: [...L, { ...PX_SLOT, trig: { t: 'time', times: t.length ? t : ['09:00'] } }], added: true }; }
-    return { REST_LISTS, REST_DEF, REST_SAFETY, restOf, PX_DAILY_DEF, pxCfg, PX_SLOT, pxPlan, pxPickHeld, pxSlotEnsure, PUB_KEYS, PUB_LATER, EXT_JOBS, isPubJob, classOf, CLASS, TIER, tierOf, budgetOf, budget, simOf, simSwitch, delayReport, planOf, kst, tMin, hm, hm4, normTimes, mdOk, mdTxt, mdNorm, timesToday, dayStart, toMs, LEGACY, LEG, TRIG, DAYS, sanitize, slotsOf, legacyItems, isEnd, isLost, keyParts, lastDoneMap, inWin, due, dayPlan, nextOf, describe, validate, durations, fmtMs, parseLogLine, ownerOf, OWN_DEAD_MS };
+    return { REST_LISTS, REST_DEF, REST_SAFETY, restOf, PX_DAILY_DEF, pxCfg, PX_SLOT, pxPlan, pxPickHeld, pxSlotEnsure, PX_HUMAN_DEF, pxHuman, pxQuiet, pxNextOpen, pxGate, pxRest, PUB_KEYS, PUB_LATER, EXT_JOBS, isPubJob, classOf, CLASS, TIER, tierOf, budgetOf, budget, simOf, simSwitch, delayReport, planOf, kst, tMin, hm, hm4, normTimes, mdOk, mdTxt, mdNorm, timesToday, dayStart, toMs, LEGACY, LEG, TRIG, DAYS, sanitize, slotsOf, legacyItems, isEnd, isLost, keyParts, lastDoneMap, inWin, due, dayPlan, nextOf, describe, validate, durations, fmtMs, parseLogLine, ownerOf, OWN_DEAD_MS };
   })();
   /* @@AS_ENGINE_END */
   const kstNow = () => { const k = AS.kst(Date.now()); return { day: k.day, min: k.min }; };

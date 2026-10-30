@@ -100,7 +100,24 @@
   const sleep = (ms) => new Promise((r) => { if (wk) { const id = ++wseq; wait.set(id, r); wk.postMessage({ id, ms }); } else setTimeout(r, ms); });
   // 알라딘 요청 속도: 수집기(상품·고객)와 같은 자동 조절 하나를 같이 씀 → 이 PC에서 알라딘으로 가는 전체 속도가 하나로 묶임 (readnow-products-core.js makePacer)
   const PACE = P.makePacer('aladin'); const PACE_Y = P.makePacer('yes24');
-  const GAP = () => 0; // (예전 고정 간격 — 이제 PACE가 대신함)
+  /* (사람처럼 · 10/30 로봇 점검) 책 사이 쉼 — 예전엔 0(속도 조절기만 · 0.7~1.2초 ±15%)이라 수천 권을 같은 박자로 봄
+   *  'read' 1.5~4초 = 🔬 조회수 실험 '확인만 한 것 사이' 값 · 'auto'(엔진 자동 반영 가격 사이) 6~25초 = 실험 '수정 사이' 값 · 그 밖(관리자·수동 일괄 확정 반영)은 예전대로 0 */
+  const GAP = (k) => (k === 'auto' ? 6000 + Math.random() * 19000 : k === 'read' ? 1500 + Math.random() * 2500 : 0);
+  /* (사람처럼) 밤 쉼·조각 — 설정 prd_system/pricing.human = { quiet:'HH:MM-HH:MM'(''이면 끔), sliceSec, restSec:[가장 짧게, 가장 길게] }
+   *  근거: 밤 끝 07:00 = 클라우드 '밤'(KST 7시 전) · 조각 75초·쉼 60~600초 = 🔬 조회수 실험 매일 일 값(공용 AS.pxGate와 같음) · 밤 끝 0~60분 흩음은 근거 없음(설정으로 끔: quietJit 0) */
+  const HUM = () => { const h = SET.human && typeof SET.human === 'object' ? SET.human : {}; const pr = Array.isArray(h.restSec) && h.restSec.length === 2 && h.restSec.every((x) => +x >= 10) ? h.restSec.map(Number).sort((a, b) => a - b) : [60, 600];
+    return { quiet: typeof h.quiet === 'string' ? h.quiet : '00:00-07:00', quietJit: Number.isFinite(+h.quietJit) && h.quietJit !== null ? Math.max(0, Math.min(180, +h.quietJit)) : 60, sliceMs: Math.max(15, Math.min(600, +h.sliceSec || 75)) * 1000, rest: pr }; };
+  const dHash = (x0) => { let x = 2166136261; for (const c of String(x0)) x = Math.imul(x ^ c.charCodeAt(0), 16777619); return x >>> 0; };
+  function quietNow(now) { now = now || Date.now(); const H = HUM(); const m = String(H.quiet || '').match(/^(\d\d):(\d\d)-(\d\d):(\d\d)$/); if (!m) return null; const a = +m[1] * 60 + +m[2], b = +m[3] * 60 + +m[4]; if (a === b) return null;
+    const k = new Date(now + 9 * 3600e3); const cur = k.getUTCHours() * 60 + k.getUTCMinutes(); const day = k.toISOString().slice(0, 10); const d0 = Date.parse(day + 'T00:00:00+09:00'); const endOf = (ds) => ds + (b + dHash(new Date(ds + 3600e3 + 9 * 3600e3).toISOString().slice(0, 10)) % (H.quietJit + 1)) * 60000;
+    if (a < b) { const e = endOf(d0); return cur >= a && now < e ? e : null; } if (cur >= a) return endOf(d0 + 864e5); const e = endOf(d0); return now < e ? e : null; } /* 밤 쉼이면 끝나는 때(ms) · 아니면 null — 🔬 실험(AS.pxQuiet)과 같은 계산 */
+  let restUntil = 0, sliceT0 = 0; /* 한 조각(알라딘을 연달아 보는 동안) 시작 · 쉼이 끝나는 때 */
+  const pxBusy = async () => { try { const x = ((await C('app_settings').doc('pxDaily').get()).data() || {}).slice; const u = x && !x.end ? Date.parse(x.until || 0) || 0 : 0; return u > Date.now() ? { until: u, by: x.by || '?' } : null; } catch (e) { return null; } }; /* 🔬 조회수 실험이 지금 수정 화면을 여는 중인가 — 같은 계정으로 두 곳이 함께 몰리지 않게 */
+  async function sliceOpen(what) { const q = quietNow(); if (q) { prog(`🌙 밤 쉼 — ${new Date(q + 9 * 3600e3).toISOString().slice(11, 16)}부터 ${what}`); return false; } if (Date.now() < restUntil) { prog(`쉬는 중 — ${new Date(restUntil + 9 * 3600e3).toISOString().slice(11, 16)}부터 ${what}`); return false; }
+    if (sliceT0 && Date.now() - sliceT0 < HUM().sliceMs) return true; if (sliceT0) { await sliceClose(); prog(`쉬는 중 — ${new Date(restUntil + 9 * 3600e3).toISOString().slice(11, 16)}부터 ${what}`); return false; } /* 조각 시간을 다 쓴 채 끝난 경우(다음 일에서) — 쉬고 나서 */ const px = await pxBusy(); if (px) { const H = HUM(); restUntil = px.until + Math.round((H.rest[0] + Math.random() * (H.rest[1] - H.rest[0])) * 1000); prog(`🔬 조회수 실험(${px.by})이 알라딘 수정 중 — 겹치지 않게 쉼`); return false; }
+    sliceT0 = Date.now(); try { await RREF.set({ slice: { at: new Date().toISOString(), until: new Date(sliceT0 + HUM().sliceMs).toISOString(), by: PC } }, { merge: true }); } catch (e) {} return true; }
+  function sliceOver() { return !!sliceT0 && Date.now() - sliceT0 > HUM().sliceMs; }
+  async function sliceClose() { if (!sliceT0) return; const H = HUM(); sliceT0 = 0; restUntil = Date.now() + Math.round((H.rest[0] + Math.random() * (H.rest[1] - H.rest[0])) * 1000); try { await RREF.set({ slice: { until: new Date().toISOString(), by: PC, end: true }, restUntil: new Date(restUntil).toISOString() }, { merge: true }); } catch (e) {} }
   // 1분마다 rn_logs/{PC}_{10분 칸} 에 묶어 올림 (수집기와 같은 문서·같은 형식 → 같은 PC 이름이면 한 기록으로 합쳐 보임)
   let logDenied = false;
   (async () => { for (;;) { await sleep(60000); if (!pendLog.length || logDenied || !PC) continue; const out = pendLog.splice(0, pendLog.length); const groups = {};
@@ -156,7 +173,7 @@
       try { const r = await fetch(url, { credentials: 'include' }); if (!r.ok) throw Object.assign(new Error('응답 ' + r.status), { status: r.status }); const AL = window.ReadnowAladin || globalThis.ReadnowAladin; const html = AL ? AL.decode(await r.arrayBuffer(), r.headers.get('content-type')) : await r.text(); const d = new DOMParser().parseFromString(html, 'text/html');
         if (AL && AL.isMaintenance(d)) throw new Error('알라딘 점검 중 — 빈 목록으로 판정하지 않음'); // (0.9.5) 점검 안내 화면을 매물 0개로 읽어 \'단독\'처럼 올리지 않게 (알라딘 창구 공용 기준)
         PACE.ok(); return d; }
-      catch (e) { PACE.fail(PACE.kindOf(e.status)); log(`알라딘 받기 실패(${e.message}) — 30초 뒤 다시`, 1); await sleep(30000); }
+      catch (e) { PACE.fail(PACE.kindOf(e.status)); log(`알라딘 받기 실패(${e.message}) — 30초쯤 뒤 다시`, 1); await sleep(Math.round(30000 * (0.85 + Math.random() * 0.3))); } // (사람처럼) 꼭 30초가 아니게 ±15%(속도 조절기와 같은 흩음)
     }
     throw new Error('알라딘 받기 3번 실패');
   }
@@ -369,7 +386,7 @@
       const enroll = wgA ? { watch: { gid: wgA.id, since: now, startPrice: fromP, by: ap0.by || null }, ...(oldG ? { watchPrev: { gid: oldG, since: (x.watch && x.watch.since) || null, until: now } } : {}) } : {};
       try { await settle(d.ref, x, { approvalState: 'done', executedAt: now, pendingChange: { at: now, price }, execNote: `반영됨 (알라딘 답: ${res.value})`, ...enroll, ...W() }, actDoc); if (VQ && settle.last) VQ.push({ id: settle.last.id, ref: settle.last, ...actDoc }); }
       catch (e) { log(`⚠ 알라딘에는 ${price.toLocaleString()}원으로 들어갔지만 기록 저장 실패: ${x.title || x.usedCode} — ${e.message} (10분 뒤 '막힘 — 확인'으로 표시됨)`, 1); continue; } log(`가격 반영: ${x.title || x.usedCode} ${(x.current || 0).toLocaleString()} → ${price.toLocaleString()}`);
-      await sleep(GAP()); await verifyStep(2, 30000); // (0.7.0) 반영하는 사이사이 공개 반영 확인도 (확인 때가 된 것만)
+      await sleep(GAP(((x.approval || {}).decision === 'auto') ? 'auto' : null)); await verifyStep(2, 30000); // (사람처럼) 엔진 자동 반영끼리는 6~25초 사이를 둠 · 관리자 확정은 예전대로 // (0.7.0) 반영하는 사이사이 공개 반영 확인도 (확인 때가 된 것만)
     }
     if (offN) log(`꺼진 수동 일괄 그룹의 확정 ${offN}건은 반영하지 않고 기다림 (웹앱에서 그룹을 켜면 반영)`); void n;
   }
@@ -387,7 +404,7 @@
   const V_FINE = [2, 4, 6, 8, 10, 13, 16, 20, 25, 30, 35, 40, 50, 60, 75, 90, 105, 120, 150, 180, 240, 300, 360, 480, 600, 720, 960, 1200, 1440, 1800, 2160, 2520, 2880];
   function kstOf(iso) { const d = new Date(Date.parse(iso) + 9 * 3600e3); return { day: d.toISOString().slice(0, 10), hour: d.getUTCHours(), dow: d.getUTCDay() }; }
   const vSteps = (v) => (v && v.fine ? V_FINE : V_STEPS);
-  function vNext(at, steps, si) { const t0 = Date.parse(at); for (let j = si; j < steps.length; j++) { const tt = t0 + steps[j] * 60000; if (tt > Date.now() + 60000) return { si: j, next: new Date(tt).toISOString() }; } return null; } // 지금 이후 첫 확인 때 (놓친 때는 건너뜀)
+  function vNext(at, steps, si) { const t0 = Date.parse(at); for (let j = si; j < steps.length; j++) { const tt = t0 + Math.round(steps[j] * 60000 * (0.85 + Math.random() * 0.3)); /* (사람처럼) 바꾼 뒤 꼭 2·5·10…분이 아니게 ±15% */ if (tt > Date.now() + 60000) return { si: j, next: new Date(tt).toISOString() }; } return null; } // 지금 이후 첫 확인 때 (놓친 때는 건너뜀)
   let VQ = null, VQAt = 0, vqBusy = false;
   async function vqLoad() { if (VQ && Date.now() - VQAt < 10 * 60000) return;
     const [q, qp] = await Promise.all([C('prd_price_actions').where('verify.state', '==', 'wait').get(), C('prd_price_actions').where('verifyPg.state', '==', 'wait').get()]); const M = new Map(); [...q.docs, ...qp.docs].forEach((d) => M.set(d.id, { id: d.id, ref: d.ref, ...d.data() })); const L = [...M.values()];
@@ -399,7 +416,7 @@
   const dueOf = (x) => x && x.state === 'wait' && Date.parse(x.next || 0) <= Date.now();
   async function verifyStep(max, budgetMs) { if (vqBusy) return; vqBusy = true; const t0 = Date.now();
     try { await vqLoad(); const due = VQ.filter((a) => dueOf(a.verify) || dueOf(a.verifyPg)).sort((a, b) => String(Math.min(Date.parse((a.verify || {}).next || 9e15), Date.parse((a.verifyPg || {}).next || 9e15))).localeCompare(String(Math.min(Date.parse((b.verify || {}).next || 9e15), Date.parse((b.verifyPg || {}).next || 9e15))))); let n = 0;
-      while (due.length && n < max && Date.now() - t0 < budgetMs) { if (stop || SET.killSwitch || !isMine()) break; const a = due.shift(); n++; const same = a.aladinItemId ? due.filter((b) => b.aladinItemId === a.aladinItemId && dueOf(b.verify)) : []; same.forEach((b) => due.splice(due.indexOf(b), 1)); await verifyBook([a, ...same]); }
+      while (due.length && n < max && Date.now() - t0 < budgetMs) { if (stop || SET.killSwitch || !isMine() || quietNow()) break; const a = due.shift(); n++; const same = a.aladinItemId ? due.filter((b) => b.aladinItemId === a.aladinItemId && dueOf(b.verify)) : []; same.forEach((b) => due.splice(due.indexOf(b), 1)); await verifyBook([a, ...same]); if (due.length && n < max) await sleep(GAP('read')); } /* (사람처럼) 밤에는 공개 반영 확인도 쉼(놓친 확인 때는 다음 때로 넘어감) · 책 사이 쉼 */
     } catch (e) { log('공개 반영 확인 오류: ' + e.message, 1); } finally { vqBusy = false; } }
   function vJudge(x, a, seen, found, nowIso) { // 한 번 확인 결과로 목록·상품 페이지 확인 상태를 고침 (같은 규칙)
     const n = (x.n || 0) + 1; const steps = vSteps(a.verify); const nx = vNext(a.at, steps, (x.si || 0) + 1); const base = { n, lastCheckAt: nowIso };
@@ -441,35 +458,37 @@
     const r = PR.chaseStep({ strat, state: prevD.strat || null, now, cur: listing.price, base: bN.t != null ? bN.t : listing.price, yieldT: bY.t, chaser, floor, start: (prevD.watch && prevD.watch.startPrice) || listing.price });
     const head = `${pre ? `반자동 '${pre.name || wg.watch.presetId}'` : '자동(지금 엔진)'} · 그룹 '${wg.name}'${chaser ? ` · 추격자 전략: ${PR.STRATS[strat.name || 'yield'] || strat.name}` : ''}`;
     return { target: r.t != null ? r.t : bN.t, reasons: [head, ...(chaser ? r.reasons : []), ...(bN.reasons || []).slice(0, 8)], strat: r.state || null, chaser: chaser || null, floor }; }
-  async function followUps(max) { if (!SET.enabled || SET.judgeOff) return; let L = []; try { const q = await C('prd_price_decisions').where('strat.active', '==', true).get(); L = q.docs.map((d) => ({ id: d.id, ...d.data() })).filter((x) => Date.parse((x.strat || {}).nextAt || 0) <= Date.now()).slice(0, max); } catch (e) { return; }
-    if (!L.length) return; if (!SHOP || SHOP.fee == null) await loadShop(); log(`추격자 전략 다시 보기 ${L.length}건`);
-    for (const x of L) { if (stop || SET.killSwitch || !isMine()) return; try { const l = (await C('prd_listings').doc(x.id).get()).data(); if (l && l.status === '판매중') await processOne(l); else await C('prd_price_decisions').doc(x.id).set({ strat: { ...(x.strat || {}), active: false, end: 'notOnSale', endedAt: new Date().toISOString() }, ...W() }, { merge: true }); } catch (e) { log(`전략 다시 보기 실패: ${x.title || x.id} — ${e.message}`, 1); } await sleep(GAP()); } }
+  async function followUps(max, inSlice) { if (!SET.enabled || SET.judgeOff) return; let L = []; try { const q = await C('prd_price_decisions').where('strat.active', '==', true).get(); L = q.docs.map((d) => ({ id: d.id, ...d.data() })).filter((x) => Date.parse((x.strat || {}).nextAt || 0) <= Date.now()).slice(0, max); } catch (e) { return; }
+    if (!L.length) return; if (!inSlice && !(await sliceOpen('추격자 다시 보기'))) return; if (!SHOP || SHOP.fee == null) await loadShop(); log(`추격자 전략 다시 보기 ${L.length}건`);
+    for (const x of L) { if (stop || SET.killSwitch || !isMine()) return; if (!inSlice && sliceOver()) { await sliceClose(); log('추격자 다시 보기: 한 조각 시간을 다 써 쉼 — 남은 것은 쉰 뒤에'); return; } try { const l = (await C('prd_listings').doc(x.id).get()).data(); if (l && l.status === '판매중') await processOne(l); else await C('prd_price_decisions').doc(x.id).set({ strat: { ...(x.strat || {}), active: false, end: 'notOnSale', endedAt: new Date().toISOString() }, ...W() }, { merge: true }); } catch (e) { log(`전략 다시 보기 실패: ${x.title || x.id} — ${e.message}`, 1); } await sleep(GAP('read')); } }
 
   /* ── 매일 한 바퀴 (중단돼도 이어서) ── */
   async function runCycle() {
     let run = (await RREF.get()).data() || {};
     const fresh = run.cycleId && !run.doneAt && run.ver === VER;
+    if (!fresh && run.doneAt && run.ver === VER && Date.now() - Date.parse(run.doneAt) < 20 * 3600e3) return false; // 하루 한 바퀴 (감시기 버전이 바뀌면 바로 새 바퀴)
+    if (!(await sliceOpen(fresh ? `이어서 ${run.idx || 0}/${(run.keys || []).length}` : '새 바퀴'))) return false; /* (사람처럼 · 10/30 로봇 점검) 밤 쉼 · 조각 사이 쉼 · 🔬 실험이 수정 중이면 겹치지 않게 */
     if (!fresh) {
-      if (run.doneAt && run.ver === VER && Date.now() - Date.parse(run.doneAt) < 20 * 3600e3) return false; // 하루 한 바퀴 (감시기 버전이 바뀌면 바로 새 바퀴)
       const ss = await C('prd_listings').where('status', '==', '판매중').get(); const keys = [];
       ss.forEach((d) => { const l = d.data(); const grp = PR.groupOfListing(l, engineSettings()); if (grp === 'treat' || grp === 'control') keys.push(d.id); });
       { const gs = [...(await wgLoad(true)).keys()]; const on = new Set(ss.docs.map((d) => d.id)); for (let i = 0; i < gs.length; i += 10) { const q = await C('prd_price_decisions').where('watch.gid', 'in', gs.slice(i, i + 10)).get(); q.forEach((d) => { if (on.has(d.id)) keys.push(d.id); }); } } // (0.8.0) 감시 그룹 상품 (판매중만)
-      keys.splice(0, keys.length, ...new Set(keys)); keys.sort(); run = { cycleId: new Date().toISOString(), startedAt: new Date().toISOString(), keys, idx: 0, pc: PC, done: 0, fail: 0, ver: VER };
-      await RREF.set({ ...run, doneAt: null, ...W() }); log(`새 바퀴 시작: 감시 상품 ${keys.length}개`);
+      keys.splice(0, keys.length, ...new Set(keys)); for (let i = keys.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [keys[i], keys[j]] = [keys[j], keys[i]]; } /* (사람처럼) 예전엔 늘 상품 번호 차례(keys.sort) — 바퀴마다 섞음(이어 하기는 저장한 차례 그대로) */ run = { cycleId: new Date().toISOString(), startedAt: new Date().toISOString(), keys, idx: 0, pc: PC, done: 0, fail: 0, ver: VER };
+      await RREF.set({ ...run, doneAt: null, slice: { at: new Date(sliceT0).toISOString(), until: new Date(sliceT0 + HUM().sliceMs).toISOString(), by: PC }, ...W() }); log(`새 바퀴 시작: 감시 상품 ${keys.length}개`);
     }
     running = true; buttons(); await loadShop();
     try {
       for (let i = run.idx; i < run.keys.length; i++) {
         if (stop || SET.killSwitch || !isMine() || !SET.enabled || SET.judgeOff) { log('멈춤'); return true; }
+        if (sliceOver() || quietNow()) { await RREF.set({ idx: i, done: run.done, fail: run.fail, lastAt: new Date().toISOString() }, { merge: true }); await sliceClose(); log(`한 조각 끝(${i}/${run.keys.length}) — ${quietNow() ? '밤 쉼' : '몇 분 쉬고'} 이어서`); prog(''); return true; } /* (사람처럼) 75초쯤 보고 1~10분 쉼 — 쉬는 동안에도 1분마다 확정 가격 반영·공개 확인은 그대로 */
         prog(`${i + 1} / ${run.keys.length} · 성공 ${run.done} · 실패 ${run.fail}`);
         const ld = await C('prd_listings').doc(run.keys[i]).get(); const l = ld.data();
         try { if (l && l.status === '판매중') { const r = await processOne(l); run.done++; if (/승인대기/.test(r)) log(`승인 대기: ${l.title || l.usedCode}`); } }
         catch (e) { run.fail++; log(`실패: ${(l && l.title) || run.keys[i]} — ${e.message}`, 1); }
         if ((i + 1) % 5 === 0 || i === run.keys.length - 1) await RREF.set({ idx: i + 1, done: run.done, fail: run.fail, lastAt: new Date().toISOString() }, { merge: true });
-        if (i % 10 === 9) { await loadSet(); await executeApproved(); await followUps(5); }
-        await sleep(GAP());
+        if (i % 10 === 9) { await loadSet(); await executeApproved(); await followUps(5, true); }
+        await sleep(GAP('read'));
       }
-      await RREF.set({ doneAt: new Date().toISOString(), idx: run.keys.length }, { merge: true }); log(`한 바퀴 끝: 성공 ${run.done} · 실패 ${run.fail}`); prog('');
+      await RREF.set({ doneAt: new Date().toISOString(), idx: run.keys.length }, { merge: true }); log(`한 바퀴 끝: 성공 ${run.done} · 실패 ${run.fail}`); prog(''); await sliceClose();
     } finally { running = false; buttons(); }
     return true;
   }

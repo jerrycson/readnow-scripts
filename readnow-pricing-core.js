@@ -523,7 +523,10 @@
     for (const w of page1 || []) { if (!w || w.c === 'ours') continue; const sc = String(w.sc || w.sellerCode || ''); if (!sc || !(chase && chase[sc] && chase[sc].active)) continue; const r = GRADE_RANK[w.g || w.grade]; if (myR != null && (r == null || r < myR)) continue; const p = +(w.p ?? w.price); if (!(p > 0)) continue; if (!best || p < best.price) best = { sellerCode: sc, name: w.n || w.sellerName || null, price: p, grade: w.g || w.grade || null }; }
     return best; }
   const exitT0 = (o, st) => (o.yieldT != null ? o.yieldT : (st && st.preP) || o.cur);
-  function chaseStep(o) { const C0 = o.strat || {}; const name = C0.name || 'yield'; const R = []; const now = o.now || new Date().toISOString(); const every = Math.max(1, +C0.every || 6) * HOUR; const nextAt = new Date(t(now) + every).toISOString();
+  /* (사람처럼 · 10/30 로봇 점검) 다시 보기 간격을 ±15% 흩음 — 예전엔 꼭 6시간마다(같은 바퀴에서 시작한 상품이 모두 같은 분에 다시 보고 같은 분에 가격을 바꿈)
+   *  근거: 공용 속도 조절기(makePacer)의 흩음 0.85~1.15 · 같은 입력이면 같은 값(시험이 흔들리지 않게 — 추격자·시각으로 정함) */
+  const jit15 = (k) => { let x = 2166136261; for (const c of String(k)) x = Math.imul(x ^ c.charCodeAt(0), 16777619); return 0.85 + ((x >>> 0) % 1000) / 1000 * 0.3; };
+  function chaseStep(o) { const C0 = o.strat || {}; const name = C0.name || 'yield'; const R = []; const now = o.now || new Date().toISOString(); const every = Math.round(Math.max(1, +C0.every || 6) * HOUR * (C0.exact ? 1 : jit15(`${(o.chaser && o.chaser.sellerCode) || ''}|${o.cur}|${now}`))); const nextAt = new Date(t(now) + every).toISOString();
     const fl = Math.max(o.floor || 0, name === 'lure' && o.start && C0.floorPct != null ? snapUp(o.start * (1 - C0.floorPct / 100)) : 0); const maxR = Math.max(1, +C0.maxRounds || 3);
     const ch = o.chaser; const prev = o.state && o.state.active ? o.state : null;
     if (!ch) { if (prev) R.push(`추격자(${prev.scName || prev.sc}) 매물이 첫 페이지에서 사라짐(팔렸거나 내림) → 전략 끝, 원래 기준으로`); return { t: o.base, state: prev ? { ...prev, active: false, endedAt: now, end: 'chaserGone' } : null, reasons: R, active: false }; }
