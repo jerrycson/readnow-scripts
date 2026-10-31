@@ -1,2 +1,2 @@
-@health&hours=3
-# 292847060
+logs&pc=LOGGER&hours=3&q=성능|화면 같지|상한
+# 3142412054
