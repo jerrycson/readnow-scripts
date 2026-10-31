@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.159의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.160의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.159' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.159', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.160' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.160', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -803,6 +803,9 @@
       /* (1.72.1) 19금(성인 인증) 상품: 로그인 없이 열면 알라딘이 짧은 '성인 인증·로그인으로 보내는' 화면을 줌(제목에 '알라딘'이 없어 예전엔 '알라딘 화면 같지 않음' 실패로 셈 — 로거에서 매일 수십 권) → 19금 건너뜀으로 셈 */
       if (/wlogin\.aspx|login\.aspx|성인\s*인증|19세\s*(미만|이상)|청소년\s*(유해|이용불가)|adult/i.test(h)) { if (!PUBONLY && !noLogin) return viaLogin(); ANON.gate++; throw Object.assign(new Error('로그인 없이는 못 보는 화면(19금 등) — 계정과 떼어 두는 중이라 이 장은 건너뜀'), { needLogin: true }); }
       if (/비공개\s*상태입니다/.test(h)) { hidSet(url); throw hidErr(); }
+      /* (1.89.160 4시간 점검 10/31) 탈퇴한 판매자 숍(alert만 오는 화면)·판매자 평가 화면(제목에 '알라딘'이 없음)을 '알라딘 화면 같지 않음'으로 잘못 세어 매일 자동 '6개월 평가 수'·'상위 판매자 평가'가 첫 판매자에서 통째 멈췄음(LOGGER 03:33·04:01) → 탈퇴는 그 판매자만 건너뜀 · 평가 화면은 구매 만족도 표 글이 있으면 정상으로 받음(로그인 판단 규칙·요청 수는 그대로) */
+      if (/탈퇴한\s*판매자입니다/.test(h)) throw Object.assign(new Error('알라딘에서 탈퇴한 판매자 — 이 판매자만 건너뜀'), { goneSeller: true });
+      if (/wshopsurvey\.aspx/i.test(url) && /구매\s*만족도/.test(h) && A.doc.querySelector('td.y_usedsmall, .y_usedtabon')) return A;
       if (!ANON.oddShown || ANON.oddShown < 3) { ANON.oddShown = (ANON.oddShown || 0) + 1; log(`🔎 알라딘 화면 같지 않은 응답(${ANON.oddShown}/3 · 까닭 찾기용) ${String(url).slice(0, 80)} — 앞부분: ${h.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160)}`, 1); }
       throw new Error('로그인 없이 읽은 화면이 알라딘 화면 같지 않음(막힘·오류 화면일 수 있음) — 빈 결과로 쓰지 않음'); }
     if (/wshopitem\.aspx/i.test(url) && /ViewType=Simple/i.test(url) && !A.doc.querySelector('input[name^="chkCart.U"]') && [...A.doc.querySelectorAll('a[href*="ItemId="]')].some((a) => /wproduct\.aspx/i.test(a.getAttribute('href') || ''))) { ANON.view++; throw Object.assign(new Error('로그인 없이 읽은 숍 목록에 장바구니 칸이 없음(보이는 모양이 다름) — 사라진 상품으로 잘못 세지 않게 이 장은 쓰지 않음 · 설정 🔓에서 끄면 예전처럼 로그인으로 읽음'), { anonView: true }); }
@@ -1734,7 +1737,7 @@
       for (; prog.i < prog.list.length; prog.i++) {
         if (stopFlag) { if (w) await b.commit(); await saveProgress(name, prog); throw new Error('멈춤'); }
         const [id, sc] = String(prog.list[prog.i]).split('|');
-        const { doc } = await getDoc(`/shop/usedshop/wshopitem.aspx?SC=${sc}`);
+        let doc; try { ({ doc } = await getDoc(`/shop/usedshop/wshopitem.aspx?SC=${sc}`)); } catch (e) { if (!(e && e.goneSeller)) throw e; log(`SC ${sc}: 알라딘에서 탈퇴한 판매자 — 건너뜀 (7일 뒤 다시)`, 1); b.set(C('sellers').doc(id), { rev6mTriedAt: nowIso(), rev6mTriedVer: RSV.VERSION, shopGone: true, ...W() }, { merge: true }); w++; continue; } /* (1.89.160) */
         const r = RSV.parseShopSummary(doc); let shopSigNow = null; // (1.89.32 3시간 점검) shopSig를 아래 sellers 쓰기 한 번에 함께 — 전엔 같은 문서를 따로 두 번 써 판매자마다 쓰기가 한 번 더 났음
         if (r.status === 'ok' || r.status === 'lt3') { // lt3 = 최근 6개월 평가 3건 미만(알라딘이 '-'로 표시) — 실패가 아니라 '최근 활동 거의 없음'이라는 정보
           { const sNew = { rev6m: r.rev6m ?? null, rev6mLt3: r.rev6mLt3 ?? null, shopPeriods: r.periods ?? null, shopTotal: r.total ?? null, aladinGrade: r.grade ?? null, isPro: r.isPro ?? null, cancel3m: r.cancel3m ?? null, bizInfo: r.info || null, contactNote: r.infoNote || null };
