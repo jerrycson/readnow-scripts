@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.158의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.159의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.158' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.158', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.159' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.159', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -318,7 +318,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const pkey = (u) => { try { return new URL(String(u), 'https://www.aladin.co.kr').pathname.toLowerCase(); } catch (e) { return String(u || '').split('?')[0].toLowerCase(); } };
   function misreadSkip(url) { const t = recent.get(String(url)); if (t && Date.now() - t < 120e3) return true; if (amAlways()) return false; /* 🔒 상시 PC는 '잘못 본 화면 7일 제외'를 받지 않음(2분 안 같은 주소만 거름) */ const m = G(MR, {}) || {}; const e = m[pkey(url)]; return !!(e && e.n >= 3 && Date.now() - e.at < 7 * 864e5); }
   function misreadAdd(url, why) { recent.set(String(url), Date.now()); if (recent.size > 200) recent.delete(recent.keys().next().value); const m = G(MR, {}) || {}; const k = pkey(url); const e = m[k] && Date.now() - m[k].at < 7 * 864e5 ? m[k] : { n: 0 }; m[k] = { n: e.n + 1, at: Date.now(), why: String(why || '').slice(0, 80) }; S(MR, m);
-    L('warn', `🔑 로그인 풀림으로 잘못 봄(${k} · ${m[k].n}번째) — 샵매니저는 로그인돼 있어 다시 로그인하지 않고 그 요청만 다시${m[k].n >= 3 ? ' · 이 화면은 이제 로그인 판단에서 뺌(7일)' : ''}`); }
+    L('warn', `🔑 로그인 풀림으로 잘못 봄(${k} · ${m[k].n}번째) — 샵매니저는 로그인돼 있어 다시 로그인하지 않고 그 요청만 다시${m[k].n >= 3 ? (amAlways() ? ' · 상시 PC라 7일 제외 없음(2분 안 같은 주소만 거름 — 로그인 판단은 늦추지 않음)' : ' · 이 화면은 이제 로그인 판단에서 뺌(7일)') : ''}`); } /* (1.89.159 🔬 정밀 점검) 상시 PC(JS-MAIN·MJ-MAIN·HOME)는 misreadSkip이 7일 제외를 안 받는데 글은 '뺌(7일)'이라 적혀 점검이 헛짚었음 — 글만 사실대로(판단 규칙은 그대로) */
   /* ① 의심 판단 — 'suspect' | 'gate'(그 화면만 로그인 필요) | false */
   function suspect(url, finalUrl, doc, o) { if (!doc) return false; let hasPw = false, hasOut = false; try { hasPw = !!doc.querySelector('input[type="password"]'); hasOut = !!doc.querySelector('a[href*="wC2Cuser_logout"]'); } catch (e) {}
     const j = RULE.judge(url, finalUrl, hasPw, hasOut, doc.title || '', o); if (j === 'suspect' && misreadSkip(url)) return false;

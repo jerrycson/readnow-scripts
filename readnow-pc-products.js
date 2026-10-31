@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.158의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.159의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.158' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.158', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.159' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.159', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2371,7 +2371,8 @@
       for (let k = 0; k < items.length; k++) { const it = items[k]; if (stopFlag) throw new Error('멈춤');
         const ref = C('prd_used_info').doc(String(it.listingId)); const prev = (await ref.get()).data();
         const midNo = it.grade === '중' && !(prev && prev.note); // (1.34.5) '중' 상품인데 유의 사항이 없으면 잘못 읽은 것 → 하루 기다리지 않고 다시 읽음
-        if (!midNo && prev && prev.checkedAt && Date.now() - Date.parse(prev.checkedAt) < 864e5) continue;
+        /* (1.89.159 🔬 정밀 점검 · 🔁 같은 일 되풀이) '중'인데 유의 사항이 정말 없는 상품(알라딘에 안 적음)은 위 규칙으로 발송 요청 읽기 회차(15~20분)마다 다시 읽혀 10/31 JS-MAIN 하루 409번(상품 36개 · 한 상품 34번) · 그 수정 화면(wrecord.aspx)은 로그아웃 고리가 없어 매번 '로그인 풀림으로 잘못 봄' 경고+확인 요청+다시 읽기(하루 386번) → '중'·유의 사항 없음은 3시간에 한 번만 다시 읽음(하루 안 기다리는 뜻은 그대로 · 읽는 내용·저장 같음) */
+        const ageMs = prev && prev.checkedAt ? Date.now() - Date.parse(prev.checkedAt) : Infinity; if (prev && prev.checkedAt && ageMs < (midNo ? 3 * 3600e3 : 864e5)) continue;
         try { const r1 = await readOurUsed(it.listingId, it.grade, prev, at); if (r1.wrote) nInfo++; } catch (e) { if (e.message === '멈춤') throw e; }
         ui('발송 요청 읽기', k + 1, items.length, `우리 매물 유의 사항·사진: ${it.title}`); }
       const sig = JSON.stringify(r.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId), o.deliveryNo])); const cur = (await C('shp_state').doc('current').get()).data();

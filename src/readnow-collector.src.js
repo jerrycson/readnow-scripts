@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.158
+// @version      1.89.159
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -415,7 +415,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const pkey = (u) => { try { return new URL(String(u), 'https://www.aladin.co.kr').pathname.toLowerCase(); } catch (e) { return String(u || '').split('?')[0].toLowerCase(); } };
   function misreadSkip(url) { const t = recent.get(String(url)); if (t && Date.now() - t < 120e3) return true; if (amAlways()) return false; /* 🔒 상시 PC는 '잘못 본 화면 7일 제외'를 받지 않음(2분 안 같은 주소만 거름) */ const m = G(MR, {}) || {}; const e = m[pkey(url)]; return !!(e && e.n >= 3 && Date.now() - e.at < 7 * 864e5); }
   function misreadAdd(url, why) { recent.set(String(url), Date.now()); if (recent.size > 200) recent.delete(recent.keys().next().value); const m = G(MR, {}) || {}; const k = pkey(url); const e = m[k] && Date.now() - m[k].at < 7 * 864e5 ? m[k] : { n: 0 }; m[k] = { n: e.n + 1, at: Date.now(), why: String(why || '').slice(0, 80) }; S(MR, m);
-    L('warn', `🔑 로그인 풀림으로 잘못 봄(${k} · ${m[k].n}번째) — 샵매니저는 로그인돼 있어 다시 로그인하지 않고 그 요청만 다시${m[k].n >= 3 ? ' · 이 화면은 이제 로그인 판단에서 뺌(7일)' : ''}`); }
+    L('warn', `🔑 로그인 풀림으로 잘못 봄(${k} · ${m[k].n}번째) — 샵매니저는 로그인돼 있어 다시 로그인하지 않고 그 요청만 다시${m[k].n >= 3 ? (amAlways() ? ' · 상시 PC라 7일 제외 없음(2분 안 같은 주소만 거름 — 로그인 판단은 늦추지 않음)' : ' · 이 화면은 이제 로그인 판단에서 뺌(7일)') : ''}`); } /* (1.89.159 🔬 정밀 점검) 상시 PC(JS-MAIN·MJ-MAIN·HOME)는 misreadSkip이 7일 제외를 안 받는데 글은 '뺌(7일)'이라 적혀 점검이 헛짚었음 — 글만 사실대로(판단 규칙은 그대로) */
   /* ① 의심 판단 — 'suspect' | 'gate'(그 화면만 로그인 필요) | false */
   function suspect(url, finalUrl, doc, o) { if (!doc) return false; let hasPw = false, hasOut = false; try { hasPw = !!doc.querySelector('input[type="password"]'); hasOut = !!doc.querySelector('a[href*="wC2Cuser_logout"]'); } catch (e) {}
     const j = RULE.judge(url, finalUrl, hasPw, hasOut, doc.title || '', o); if (j === 'suspect' && misreadSkip(url)) return false;
@@ -2068,12 +2068,15 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   async function loadSellerLinks() { const t = Date.now(); if (sellerLinksAt && t - sellerLinksAt < 10 * 60e3) return;
     const lite = selLite;
     const ms = (x) => (x && x.uploadedAt && typeof x.uploadedAt.toMillis === 'function' ? x.uploadedAt.toMillis() : 0);
-    try { if (selSrc && selMax && selFullAt && t - selFullAt < 2 * 3600e3) {
+    /* (1.89.159 🔬 정밀 점검 · 🧠 3번째 같은 종류) 1.89.143(증분)·1.89.158(사본 지킴) 뒤에도 10/31 JS-MAIN 00:02·10:01·12:01·18:35·21:01 '판매자 연결 13~19초'가 남음 — 증분 사본이 있어도 '통째 읽은 뒤 2시간'마다 1.5만 명을 다시 읽는 설계 때문(판매자 연결을 적는 곳은 이 수집기 buildDocs 하나뿐이고 모두 uploadedAt을 찍으므로 증분이 빠뜨리는 것은 삭제된 판매자뿐). 통째 다시 읽기는 24시간에 한 번(탭 시작 뒤 처음·바뀐 것 2천 명 넘음은 예전처럼) · 통째 읽을 때 까닭을 기록에 남겨 다음 점검이 숫자로 봄
+     *  구조 원인(제안): 판매자 1.5만 명 중 연결 있는 수백 명을 찾으려고 전체를 읽는 꼴 — 수집기가 판매자 문서를 올릴 때 linkN(연결 수)을 함께 적고 where('linkN','>',0)으로 읽으면 통째 읽기 자체가 사라짐(옛 문서 보정 1회 필요) */
+    try { if (selSrc && selMax && selFullAt && t - selFullAt < 24 * 3600e3) {
         const q = await fdb.collection('sellers').where('uploadedAt', '>', FB.firestore.Timestamp.fromMillis(selMax)).limit(2001).get();
         if (q.size <= 2000) { let mx = selMax; q.forEach((d) => { const x = d.data(); const u = ms(x); if (u > mx) mx = u; if ((x.linkedCustomers || []).length) selSrc.set(d.id, lite(x)); else selSrc.delete(d.id); }); selMax = mx; setSellerLinks([...selSrc.values()], true); sellerLinksAt = t; return; } }
+      const why = !selSrc ? '탭 시작 뒤 처음' : !(t - selFullAt < 24 * 3600e3) ? '통째 읽은 뒤 24시간 지남' : '바뀐 판매자 2천 명 넘음'; /* (1.89.159) */
       const src = new Map(); let mx = 0; const FPd = FB.firestore.FieldPath.documentId(); let last = null; /* (1.89.142) 2천 명씩 나눠 받고 사이마다 숨 돌림 */
       for (;;) { let q = fdb.collection('sellers').orderBy(FPd).limit(2000); if (last) q = q.startAfter(last); const ss = await q.get(); ss.forEach((d) => { const x = d.data(); const u = ms(x); if (u > mx) mx = u; if ((x.linkedCustomers || []).length) src.set(d.id, lite(x)); }); if (ss.size < 2000) break; last = ss.docs[ss.docs.length - 1]; await sleep(0); }
-      setSellerLinks([...src.values()]); selSrc = src; selMax = mx; selFullAt = t; sellerLinksAt = t; } catch (e) {} }
+      setSellerLinks([...src.values()]); selSrc = src; selMax = mx; selFullAt = t; sellerLinksAt = t; try { log(`🔢 판매자 연결 통째 읽기 — 연결 있는 판매자 ${src.size}명 · ${Math.round((Date.now() - t) / 1000)}초 · 까닭: ${why} (다음 통째 읽기는 24시간 뒤 · 그사이엔 바뀐 판매자만)`); } catch (e) {} } catch (e) {} }
 
   // 이 PC에 주문 데이터가 적으면(다른 PC가 주로 수집한 경우) 고객 연결에 쓸 주문을 Firebase에서 내려받음
   let serverOrdersCache = [];
@@ -5783,7 +5786,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       for (let k = 0; k < items.length; k++) { const it = items[k]; if (stopFlag) throw new Error('멈춤');
         const ref = C('prd_used_info').doc(String(it.listingId)); const prev = (await ref.get()).data();
         const midNo = it.grade === '중' && !(prev && prev.note); // (1.34.5) '중' 상품인데 유의 사항이 없으면 잘못 읽은 것 → 하루 기다리지 않고 다시 읽음
-        if (!midNo && prev && prev.checkedAt && Date.now() - Date.parse(prev.checkedAt) < 864e5) continue;
+        /* (1.89.159 🔬 정밀 점검 · 🔁 같은 일 되풀이) '중'인데 유의 사항이 정말 없는 상품(알라딘에 안 적음)은 위 규칙으로 발송 요청 읽기 회차(15~20분)마다 다시 읽혀 10/31 JS-MAIN 하루 409번(상품 36개 · 한 상품 34번) · 그 수정 화면(wrecord.aspx)은 로그아웃 고리가 없어 매번 '로그인 풀림으로 잘못 봄' 경고+확인 요청+다시 읽기(하루 386번) → '중'·유의 사항 없음은 3시간에 한 번만 다시 읽음(하루 안 기다리는 뜻은 그대로 · 읽는 내용·저장 같음) */
+        const ageMs = prev && prev.checkedAt ? Date.now() - Date.parse(prev.checkedAt) : Infinity; if (prev && prev.checkedAt && ageMs < (midNo ? 3 * 3600e3 : 864e5)) continue;
         try { const r1 = await readOurUsed(it.listingId, it.grade, prev, at); if (r1.wrote) nInfo++; } catch (e) { if (e.message === '멈춤') throw e; }
         ui('발송 요청 읽기', k + 1, items.length, `우리 매물 유의 사항·사진: ${it.title}`); }
       const sig = JSON.stringify(r.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId), o.deliveryNo])); const cur = (await C('shp_state').doc('current').get()).data();

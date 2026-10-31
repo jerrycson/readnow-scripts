@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.158의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.159의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.158' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.158', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.159' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.159', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -976,12 +976,15 @@
   async function loadSellerLinks() { const t = Date.now(); if (sellerLinksAt && t - sellerLinksAt < 10 * 60e3) return;
     const lite = selLite;
     const ms = (x) => (x && x.uploadedAt && typeof x.uploadedAt.toMillis === 'function' ? x.uploadedAt.toMillis() : 0);
-    try { if (selSrc && selMax && selFullAt && t - selFullAt < 2 * 3600e3) {
+    /* (1.89.159 🔬 정밀 점검 · 🧠 3번째 같은 종류) 1.89.143(증분)·1.89.158(사본 지킴) 뒤에도 10/31 JS-MAIN 00:02·10:01·12:01·18:35·21:01 '판매자 연결 13~19초'가 남음 — 증분 사본이 있어도 '통째 읽은 뒤 2시간'마다 1.5만 명을 다시 읽는 설계 때문(판매자 연결을 적는 곳은 이 수집기 buildDocs 하나뿐이고 모두 uploadedAt을 찍으므로 증분이 빠뜨리는 것은 삭제된 판매자뿐). 통째 다시 읽기는 24시간에 한 번(탭 시작 뒤 처음·바뀐 것 2천 명 넘음은 예전처럼) · 통째 읽을 때 까닭을 기록에 남겨 다음 점검이 숫자로 봄
+     *  구조 원인(제안): 판매자 1.5만 명 중 연결 있는 수백 명을 찾으려고 전체를 읽는 꼴 — 수집기가 판매자 문서를 올릴 때 linkN(연결 수)을 함께 적고 where('linkN','>',0)으로 읽으면 통째 읽기 자체가 사라짐(옛 문서 보정 1회 필요) */
+    try { if (selSrc && selMax && selFullAt && t - selFullAt < 24 * 3600e3) {
         const q = await fdb.collection('sellers').where('uploadedAt', '>', FB.firestore.Timestamp.fromMillis(selMax)).limit(2001).get();
         if (q.size <= 2000) { let mx = selMax; q.forEach((d) => { const x = d.data(); const u = ms(x); if (u > mx) mx = u; if ((x.linkedCustomers || []).length) selSrc.set(d.id, lite(x)); else selSrc.delete(d.id); }); selMax = mx; setSellerLinks([...selSrc.values()], true); sellerLinksAt = t; return; } }
+      const why = !selSrc ? '탭 시작 뒤 처음' : !(t - selFullAt < 24 * 3600e3) ? '통째 읽은 뒤 24시간 지남' : '바뀐 판매자 2천 명 넘음'; /* (1.89.159) */
       const src = new Map(); let mx = 0; const FPd = FB.firestore.FieldPath.documentId(); let last = null; /* (1.89.142) 2천 명씩 나눠 받고 사이마다 숨 돌림 */
       for (;;) { let q = fdb.collection('sellers').orderBy(FPd).limit(2000); if (last) q = q.startAfter(last); const ss = await q.get(); ss.forEach((d) => { const x = d.data(); const u = ms(x); if (u > mx) mx = u; if ((x.linkedCustomers || []).length) src.set(d.id, lite(x)); }); if (ss.size < 2000) break; last = ss.docs[ss.docs.length - 1]; await sleep(0); }
-      setSellerLinks([...src.values()]); selSrc = src; selMax = mx; selFullAt = t; sellerLinksAt = t; } catch (e) {} }
+      setSellerLinks([...src.values()]); selSrc = src; selMax = mx; selFullAt = t; sellerLinksAt = t; try { log(`🔢 판매자 연결 통째 읽기 — 연결 있는 판매자 ${src.size}명 · ${Math.round((Date.now() - t) / 1000)}초 · 까닭: ${why} (다음 통째 읽기는 24시간 뒤 · 그사이엔 바뀐 판매자만)`); } catch (e) {} } catch (e) {} }
 
   // 이 PC에 주문 데이터가 적으면(다른 PC가 주로 수집한 경우) 고객 연결에 쓸 주문을 Firebase에서 내려받음
   let serverOrdersCache = [];
