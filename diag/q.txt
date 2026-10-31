@@ -1,2 +1,2 @@
-logs&pc=LOGGER&q=테더링&hours=4
-# 2002710949
+logs=1&pc=LOGGER&from=202610311600
+# 179624645
