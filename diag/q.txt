@@ -1,2 +1,2 @@
-logs&pc=LOGGER&hours=3&q=성능|화면 같지|상한
-# 3142412054
+logs=1&pc=LOGGER&from=202611010100
+# 2351631453
