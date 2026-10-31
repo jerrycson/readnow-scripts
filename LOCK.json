@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "h4",
+ "what": "수집기: 탈퇴 판매자·평가 화면 오분류로 매일 자동 멈춤 고침",
+ "since": "2026-10-31T19:18:15Z",
+ "beat": "2026-10-31T19:18:15Z",
  "ask": null,
  "last": {
   "who": "daily",
   "done": "🔬 매일 정밀 점검 2026-10-31 끝 — db835ea 웹앱 1.78.282 · 수집기 1.89.159",
   "at": "2026-10-31T13:33:02Z"
  },
- "host": null
+ "host": "vm"
 }
