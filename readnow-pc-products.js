@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.160의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.161의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.160' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.160', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.161' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.161', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2426,14 +2426,18 @@
   // 그룹 시장 지표 갱신 (1.30.0): 웹앱 수동 일괄 처리 그룹·감시 묶음의 '이 그룹 시장 지표 갱신'(shp_cmds type 'metrics', keys = 상품 키) — 이 PC가 맡은 것을 차례로, 진행은 그 일 문서에 저장해 끊겨도 이어 함
   async function metricsReqJob() { await loadListings(); const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); return false; }
     try { const qs = await C('shp_cmds').where('status', '==', 'running').get(); const mine = qs.docs.filter((d) => { const v = d.data(); return v.type === 'metrics' && v.claim && v.claim.pc === PC_NAME; });
-      for (const d of mine) { const v = d.data(); const keys = v.keys || []; let i = v.i || 0, ok = v.ok || 0, fail = v.fail || 0; const seenBook = new Set();
-        for (; i < keys.length; i++) { if (stopFlag) { await d.ref.set({ i, ok, fail, uploadedAt: TS() }, { merge: true }); throw new Error('멈춤'); }
-          const l = LISTINGS.get(keys[i]); if (!l) { fail++; continue; } if (l.bookId && seenBook.has(l.bookId)) continue; if (l.bookId) seenBook.add(l.bookId);
-          try { await refreshOne(l, l.bookId || null); ok++; } catch (e) { fail++; log(`시장 지표 실패 ${l.title || l.usedCode}: ${e.message}`, 1); } await mixMaybe(); /* (1.69.0) 🔀 로거: 사이사이 다른 책 (설정 비율) */
-          ui(`그룹 시장 지표: ${v.label || ''}`, i + 1, keys.length, l.title || l.usedCode, `실패 ${fail}`); if (i % 5 === 4) await d.ref.set({ i: i + 1, ok, fail, uploadedAt: TS() }, { merge: true }); }
-        await d.ref.set({ status: 'done', i, ok, fail, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
+      for (const d of mine) { const v = d.data(); const keys = v.keys || []; let i = v.i || 0, ok = v.ok || 0, fail = v.fail || 0, skip = v.skip || 0, dup = v.dup || 0; const seenBook = new Set();
+        /* (1.89.158 정범님 11/01) 진행바·이어 하기 — 이 회차 시작(runAt·runI0) · 처음 시작(startedAt) · 책마다 위치 저장(i·ok·fail·skip·dup·cur·lastAt — 예전엔 5권마다라 끊기면 최대 4권을 다시 읽었음)
+         *  이미 받은 것 건너뛰기: 그 책 시장 지표가 이 일을 맡긴 뒤(since — 웹앱이 '이어서'로 다시 맡겨도 처음 맡긴 때) 이미 새로 받아졌으면 다시 읽지 않음(skip) — 끊겨 i가 덜 저장됐거나, 다른 일(매일 자동 등)이 먼저 받은 책 */
+        const since = Date.parse(v.since || v.createdAt || 0) || 0; const runAt = nowIso(); await d.ref.set({ startedAt: v.startedAt || (v.claim && v.claim.at) || v.createdAt || runAt, runAt, runI0: i, pc: PC_NAME, total: keys.length, uploadedAt: TS() }, { merge: true }).catch(() => {});
+        const fresh = async (bid) => { if (!bid || !since) return false; try { const x = (await C('prd_book_metrics').doc(bid).get()).data(); const t = Date.parse((x && x.lastCheckedAt) || 0) || 0; return t >= since; } catch (e) { return false; } };
+        for (; i < keys.length; i++) { if (stopFlag) { await d.ref.set({ i, ok, fail, skip, dup, stopAt: nowIso(), uploadedAt: TS() }, { merge: true }); throw new Error('멈춤'); }
+          const l = LISTINGS.get(keys[i]); if (!l) { fail++; continue; } if (l.bookId && seenBook.has(l.bookId)) { dup++; continue; } if (l.bookId) seenBook.add(l.bookId);
+          if (await fresh(l.bookId)) { skip++; } else { try { await refreshOne(l, l.bookId || null); ok++; } catch (e) { fail++; log(`시장 지표 실패 ${l.title || l.usedCode}: ${e.message}`, 1); } await mixMaybe(); } /* (1.69.0) 🔀 로거: 사이사이 다른 책 (설정 비율) */
+          ui(`그룹 시장 지표: ${v.label || ''}`, i + 1, keys.length, l.title || l.usedCode, `실패 ${fail}${skip ? ` · 이미 받음 ${skip}` : ''}`); await d.ref.set({ i: i + 1, ok, fail, skip, dup, cur: String(l.title || l.usedCode || '').slice(0, 80), lastAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); }
+        await d.ref.set({ status: 'done', i, ok, fail, skip, dup, cur: null, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
         if (v.batchId) await C('prd_price_batches').doc(v.batchId).set({ lastMetricsAt: nowIso(), lastMetricsN: ok, ...W() }, { merge: true }).catch(() => {});
-        log(`그룹 시장 지표 갱신 끝: ${v.label || ''} 성공 ${ok} · 실패 ${fail}`); }
+        log(`그룹 시장 지표 갱신 끝: ${v.label || ''} 성공 ${ok} · 실패 ${fail}${skip ? ` · 이미 받아 건너뜀 ${skip}` : ''}`); }
     } finally { await releaseLane('aladin'); } }
   // 5분마다: 맡아 둔 그룹 시장 지표가 남았으면 이어서 · 한 시간마다: '매일 자동'을 켠 그룹(수동 일괄 처리 그룹·감시 묶음)이 24시간 지났으면 스스로 맡김
   setInterval(async () => { try { if (running || window.__rnPaused || !auth.currentUser || (window.__rnRest && window.__rnRest())) return; const qs = await C('shp_cmds').where('status', '==', 'running').get();
