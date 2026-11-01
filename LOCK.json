@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "그룹 시장 지표 멈춤 고침",
+ "since": "2026-11-01T03:46:02Z",
+ "beat": "2026-11-01T03:46:02Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.285 엔진 0.17.4",
   "at": "2026-11-01T03:31:35Z"
  },
- "host": null
+ "host": "vm"
 }
