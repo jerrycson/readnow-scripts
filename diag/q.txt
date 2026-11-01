@@ -1,2 +1,2 @@
-doc=prd_jobs/cs_2026-10-25,prd_jobs/cs_2026-10-26,prd_jobs/cs_2026-10-27,prd_jobs/cs_2026-10-28,prd_jobs/cs_2026-10-29,prd_jobs/cs_2026-10-30,prd_jobs/cs_2026-10-31,prd_jobs/cs_2026-11-01,app_settings/cloud,app_settings/cloud_jobs,app_settings/aladin_login,app_settings/ext,app_settings/mkt_trend_state,app_settings/y24_state
-# 2599528016
+cmds=metrics&n=15&rate=prd_book_metrics,prd_metric_changes,shp_enrich,prd_market_more,prd_used_info,ext_basic,ext_used,mkt_kpipa_ctg&mins=10080&doc=rn_status/help_JS-MAIN,rn_status/help_HOME,rn_status/help_MJ-MAIN,rn_status/help_LOGGER,prd_jobs/pcBeat,app_settings/cloud_login
+# 1345727909
