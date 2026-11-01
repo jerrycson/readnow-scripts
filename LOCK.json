@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "시장 지표 이어받기·멈추기",
+ "since": "2026-11-01T04:01:24Z",
+ "beat": "2026-11-01T04:01:24Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "CLAUDE.md 보고 규칙",
   "at": "2026-11-01T03:52:30Z"
  },
- "host": null
+ "host": "vm"
 }
