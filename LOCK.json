@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "지난 갱신 보기",
+ "since": "2026-11-01T07:10:23Z",
+ "beat": "2026-11-01T07:10:23Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.89.176 맡기 고침",
   "at": "2026-11-01T07:09:24Z"
  },
- "host": null
+ "host": "vm"
 }
