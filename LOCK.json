@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "외부 정보 클라우드 켬·벤치마킹 B안 설정",
+ "since": "2026-11-01T05:44:00Z",
+ "beat": "2026-11-01T05:44:00Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.295 클라우드 함께",
   "at": "2026-11-01T05:28:00Z"
  },
- "host": null
+ "host": "vm"
 }
