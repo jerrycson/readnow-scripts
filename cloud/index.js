@@ -513,13 +513,13 @@ async function enrichConfirm(p, cr, force, until, minMs) {
         const E2 = { ...prevE, ...P2 }; await enrichPut(t.lid, P2, true); cr.enrich[t.lid] = E2; n++; await sleep(300); continue; }
       if (prevE && (prevE.mkt || prevE.mktErr) && (!prevE.uiAt || t.mn) && !(force && force.has(t.lid))) { // (0.5.0) 시장은 이미 읽음 — 우리 매물 유의 사항·사진만 채움 (시장을 다시 읽지 않음)
         const gr = prevE.grade || t.it.grade || null; let ui0 = (await C('prd_used_info').doc(String(t.lid)).get()).data(); if (looksBlanked(ui0)) ui0 = await repairUsedInfo(t.lid, ui0); let ui = ui0;
-        if (!ui0 || !ui0.checkedAt || Date.now() - Date.parse(ui0.checkedAt) > 864e5 || (gr === '중' && !(ui0 && ui0.note))) ui = (await refreshUsedInfo(p, t.lid, ui0, null, gr)) || ui0;
+        if (uiNeedRead(ui0)) ui = (await refreshUsedInfo(p, t.lid, ui0, null, gr)) || ui0;
         midAfter(t.lid, gr, ui && ui.note);
         const E2 = { ...prevE, note: (ui && ui.note) || realNote(prevE.note, gr) || null, photos: ui && ui.photos ? ui.photos.filter(ppDescC).slice(0, 2).map((x) => x.src) : prevE.photos || [], uiAt: nowIso() };
         await enrichPut(t.lid, E2, true); cr.enrich[t.lid] = E2; n++; await sleep(300); continue; }
       const our = await ourOf(t.lid); let itemId = our.itemId, via = 'ours';
       if (looksBlanked(our.ui)) { const r = await repairUsedInfo(t.lid, our.ui); if (r && r.note) our.note = r.note; if (r && r.photos) our.photos = r.photos.filter(ppDescC).slice(0, 2).map((x) => x.src); our.ui = r; }
-      const gr0 = our.grade || t.it.grade || null; const uiStale = !our.ui || !our.ui.checkedAt || Date.now() - Date.parse(our.ui.checkedAt) > 864e5 || (gr0 === '중' && !our.note); const uiLater = uiStale && t.needMkt; /* (0.12.8) 시장 먼저 — 유의 사항 다시 읽기(상품 화면 1~2번 · 몇 초)는 다음 차례(uiAt 없이 남겨 두면 위 '유의 사항만' 길로 채움) */
+      const gr0 = our.grade || t.it.grade || null; const uiStale = uiNeedRead(our.ui); void gr0; const uiLater = uiStale && t.needMkt; /* (0.12.8) 시장 먼저 — 유의 사항 다시 읽기(상품 화면 1~2번 · 몇 초)는 다음 차례(uiAt 없이 남겨 두면 위 '유의 사항만' 길로 채움) */
       if (uiStale && !uiLater) { try { const ui = await refreshUsedInfo(p, t.lid, our.ui, null, gr0); if (ui) { our.note = ui.note || our.note; if ((ui.photos || []).length) our.photos = ui.photos.filter(ppDescC).slice(0, 2).map((x) => x.src); } } catch (e) { log('유의 사항 읽기 실패', t.lid, e.message); } } // 주문확인요청 상품도 우리 매물 유의 사항·사진을 바로 읽음 (예전엔 발송 요청 때만)
       let idErr = null; if (!itemId) { /* (0.28.0) 정범님 10/20 '빌리 배스게이트 주문 때 시장이 실제와 완전히 다름' — 예전엔 상품명 검색 첫 후보(이름 90%↑)를 써서 같은 이름의 다른 판 시장을 읽었음 → ISBN으로 찾고 상품 화면 ISBN이 같을 때만 · ISBN이 없을 때만 이름(후보가 딱 하나일 때만) */
         const R = await p.evaluate(async ([isbn, title]) => { const P = window.ReadnowProducts; if (!P || !P.resolveItemId) return { err: '상품 공용 파일 0.18.0이 아님 — 시장을 읽지 않음' }; const get = async (u) => { const r = await fetch(u, { credentials: 'omit', cache: 'no-store' }); return { url: r.url, doc: new DOMParser().parseFromString(await r.text(), 'text/html') }; }; try { return await P.resolveItemId({ isbn, title, get }); } catch (e) { return { err: e.message }; } }, [our.isbn || null, t.it.title || our.title || '']);
@@ -546,16 +546,16 @@ async function refreshUsedInfo(p, lid, prev, at, grade) {
   // (0.5.3) 유의 사항 칸(#usedDecription)이 없으면 위쪽 표지 사진이 있어도 '못 읽음' — 예전엔 표지 사진만으로 '읽음'이 되어 빈 판을 쌓기도 했음
   //   '중' 상품인데 글이 비면 잘못 읽은 것으로 보고 쓰지 않음 → 다음 회차에 다시 · 그래도 못 읽으면 PC 수집기에 맡김(shp_cmds/ui_상품번호)
   if (info.found && !info._box) { info.found = false; }
-  if (info.found && !info.hasNote && grade === '중' && !(prev && prev.note)) { log("'중' 상품인데 유의 사항이 비어 있음 — 쓰지 않음", lid, info._title, info._len, info._url); await ref.set({ lastMissAt: at, lastMissWhy: "'중' 상품인데 유의 사항 글이 비어 있음 (클라우드)", lastMissTitle: info._title || null }, { merge: true }).catch(() => {}); return prev || null; }
+  if (info.found && !info.hasNote && grade === '중' && !(prev && prev.note)) { log("'중' 상품인데 유의 사항이 비어 있음 — 쓰지 않음", lid, info._title, info._len, info._url); await ref.set({ lastMissAt: at, missN: FV.increment(1), lastMissWhy: "'중' 상품인데 유의 사항 글이 비어 있음 (클라우드)", lastMissTitle: info._title || null }, { merge: true }).catch(() => {}); return prev || null; }
   // (0.5.1) 화면에서 유의 사항 칸·사진을 하나도 못 찾으면(다른 화면이 왔거나 읽기 실패) 아무것도 바꾸지 않음 — 예전엔 '빈 판'을 새로 쌓아 있던 유의 사항이 화면에서 사라졌음
-  if (!info.found) { log('유의 사항 칸을 못 찾음 — 기록 그대로 둠', lid, info._title, info._len, info._url); await ref.set({ lastMissAt: at, lastMissTitle: info._title || null }, { merge: true }).catch(() => {}); return prev || null; }
+  if (!info.found) { log('유의 사항 칸을 못 찾음 — 기록 그대로 둠', lid, info._title, info._len, info._url); await ref.set({ lastMissAt: at, missN: FV.increment(1), lastMissTitle: info._title || null }, { merge: true }).catch(() => {}); return prev || null; }
   delete info._title; delete info._len; delete info._url;
-  if (prev && (prev.note || (prev.photos || []).length) && !info.note && !(info.photos || []).length) { await ref.set({ lastMissAt: at, lastMissWhy: '빈 내용 — 그대로 둠' }, { merge: true }).catch(() => {}); return prev; } // 있던 내용을 빈 것으로 바꾸지 않음
+  if (prev && (prev.note || (prev.photos || []).length) && !info.note && !(info.photos || []).length) { await ref.set({ lastMissAt: at, missN: FV.increment(1), lastMissWhy: '빈 내용 — 그대로 둠' }, { merge: true }).catch(() => {}); return prev; } // 있던 내용을 빈 것으로 바꾸지 않음
   const sig2 = JSON.stringify([info.note, info.photos.map((x) => x.file)]);
-  if (prev && prev.sig === sig2) { await ref.set({ checkedAt: at }, { merge: true }); return { ...prev, checkedAt: at }; }
+  if (prev && prev.sig === sig2) { await ref.set({ checkedAt: at, missN: 0 }, { merge: true }); return { ...prev, checkedAt: at, missN: 0 }; }
   const nv = ((prev && prev.versions) || 0) + 1; const b2 = db.batch(); const ver = { note: info.note || null, hasNote: info.hasNote, photos: info.photos.map((x) => ({ src: x.src, where: x.where, file: x.file, ...(x.kind ? { kind: x.kind } : {}) })), sellerPhotoCount: info.sellerPhotoCount, photoDiff: info.photoDiff, found: info.found, sig: sig2, at };
-  b2.set(ref.collection('v').doc(String(nv).padStart(4, '0')), { ...ver, listingId: String(lid), ...W() }); b2.set(ref, { listingId: String(lid), sellerCode: '996008', ours: true, ...ver, versions: nv, firstAt: (prev && prev.firstAt) || at, checkedAt: at, ...W() }, { merge: true }); await b2.commit();
-  return { ...(prev || {}), ...ver, versions: nv, checkedAt: at }; }
+  b2.set(ref.collection('v').doc(String(nv).padStart(4, '0')), { ...ver, listingId: String(lid), ...W() }); b2.set(ref, { listingId: String(lid), sellerCode: '996008', ours: true, ...ver, versions: nv, firstAt: (prev && prev.firstAt) || at, checkedAt: at, missN: 0, ...W() }, { merge: true }); await b2.commit();
+  return { ...(prev || {}), ...ver, versions: nv, checkedAt: at, missN: 0 }; }
 
 // 빈 판으로 덮인 유의 사항 되살리기: 마지막 '제대로 읽은 판'(v/ 기록, 지우지 않고 쌓여 있음)의 내용을 다시 지금 값으로 — 판 기록은 그대로 두고 덧붙임
 const looksBlanked = (x) => !!x && (x.found === false || (!x.note && !(x.photos || []).length && x.writer === 'cloud')) && x.versions > 1;
@@ -641,10 +641,10 @@ async function shipRead(p, until) {
   // 우리 매물 유의 사항·사진 (24시간에 한 번 — PC 수집기와 같은 기록, 바뀐 판만 쌓음)
   let nInfo = 0; const items = r.orders.flatMap((o) => o.items).filter((i) => i.listingId);
   /* (0.12.5 점검 F8) 24시간 안에 확인한 상품(이 클라우드가 기억)은 다시 읽지 않음 — 예전엔 4~5분마다 발송 요청의 모든 상품 문서를 읽었음 · '중' 상품(유의 사항 기다림)은 그대로 */
-  const needI = items.filter((it) => { const c = uiSeen.get(String(it.listingId)); return it.grade === '중' || !c || Date.now() - c > 864e5; });
+  const needI = items.filter((it) => { const c = uiSeen.get(String(it.listingId)); return !c || Date.now() - c > 6 * 3600e3; }); /* (0.35.72) 이 회차 기억은 6시간 — 다시 열지는 아래 uiNeedRead가 정함 */
   const prevA = needI.length ? await db.getAll(...needI.map((it) => C('prd_used_info').doc(String(it.listingId)))) : []; const prevM = new Map(needI.map((it, k) => [it, prevA[k]]));
   for (let ii = 0; ii < items.length; ii++) { const it = items[ii]; if (until && Date.now() > until) break; if (!prevM.has(it)) continue; const prevs = { [ii]: prevM.get(it) }; // 시간 상자: 한 회차가 1분을 넘지 않게 — 남은 것은 다음 회차
-    const ref = C('prd_used_info').doc(String(it.listingId)); let prev = prevs[ii] && prevs[ii].exists ? prevs[ii].data() : undefined; if (looksBlanked(prev)) prev = await repairUsedInfo(it.listingId, prev); const mid = it.grade === '중' && !(prev && prev.note) && (uiNext.get(String(it.listingId)) || 0) <= Date.now(); if (prev && prev.checkedAt) uiSeen.set(String(it.listingId), Date.parse(prev.checkedAt)); if (!mid && prev && prev.checkedAt && Date.now() - Date.parse(prev.checkedAt) < 864e5) continue;
+    const ref = C('prd_used_info').doc(String(it.listingId)); let prev = prevs[ii] && prevs[ii].exists ? prevs[ii].data() : undefined; if (looksBlanked(prev)) prev = await repairUsedInfo(it.listingId, prev); const mid = it.grade === '중' && !(prev && prev.note) && (uiNext.get(String(it.listingId)) || 0) <= Date.now(); if (prev && prev.checkedAt) uiSeen.set(String(it.listingId), Date.parse(prev.checkedAt)); void mid; if (!uiNeedRead(prev)) continue; /* (0.35.72) 읽어 둔 것은 다시 열지 않음 */
     try { const nx = await refreshUsedInfo(p, it.listingId, prev, at, it.grade || null); uiSeen.set(String(it.listingId), Date.now()); if (it.grade === '중') midAfter(it.listingId, it.grade, nx && nx.note); if (nx && (!prev || nx.versions !== prev.versions)) nInfo++; void ref;
       await sleep(600); } catch (e) { log('유의 사항 읽기 실패', it.listingId, e.message); } }
   lastDelivAt = Date.now();
@@ -1523,6 +1523,10 @@ async function usedPages(b) { const itemId = String(b.itemId || '').replace(/\D/
   return { ok: false, err: '읽지 못함: ' + String((lastErr && lastErr.message) || lastErr).slice(0, 200), ms: Date.now() - t0 }; }
 /* 🪟 알라딘 화면을 웹앱 안 창(iframe)에 띄울 수 있는지 — 알라딘이 보내는 X-Frame-Options·CSP frame-ancestors를 봄(하루 기억) */
 let frameMem = null;
+/* (0.35.72 정범님 11/01 '바뀔 일 없는 것을 왜 다시 읽나' · 되풀이 읽기 감사 ①) 우리 매물 유의 사항·사진 — 한 번 읽었으면 다시 열지 않음(수집기 1.89.170과 같은 규칙)
+ *  다시 여는 때: 한 번도 못 읽음 · 고쳤다는 표시(stale — 웹앱 상품 수정) · 못 읽었으면(missN) 1·3·12·24시간·3일·7일로 늘려 가며 · 30일 넘음(샵매니저에서 손으로 고친 것 대비)
+ *  예전: 하루 지나면 다시 · '중'인데 글이 없으면 30분마다 끝없이 */
+const uiNeedRead = (u) => { if (!u || !u.checkedAt) { if (u && u.lastMissAt) { const mN = +u.missN || 1; const back = [1, 3, 12, 24, 72, 168][Math.min(5, mN - 1)] * 3600e3; return Date.now() - Date.parse(u.lastMissAt) >= back; } return true; } const ck = Date.parse(u.checkedAt) || 0; if (u.stale && Date.parse(u.stale) > ck) return true; if (u.lastMissAt && Date.parse(u.lastMissAt) > ck) { const mN = +u.missN || 1; const back = [1, 3, 12, 24, 72, 168][Math.min(5, mN - 1)] * 3600e3; return Date.now() - Date.parse(u.lastMissAt) >= back; } return Date.now() - ck > 30 * 864e5; };
 async function frameCheck() { if (frameMem && Date.now() - frameMem.t < 864e5) return frameMem.r; let r; try { const res = await fetch(AL + '/shop/UsedShop/wuseditemall.aspx?ItemId=1&TabType=0', { redirect: 'follow', headers: { 'User-Agent': 'Mozilla/5.0' } }); const xfo = res.headers.get('x-frame-options'); const csp = res.headers.get('content-security-policy') || ''; const fa = (csp.match(/frame-ancestors[^;]*/i) || [])[0] || null; const blocked = !!(xfo && /deny|sameorigin/i.test(xfo)) || !!(fa && !/\*/.test(fa)); r = { ok: true, blocked, xfo, fa, st: res.status, at: nowIso() }; } catch (e) { r = { ok: false, err: e.message }; } frameMem = { t: Date.now(), r }; return r; }
 
 /* ── (0.32.10) 정범님 10/22: '전체 중고 (N)' 수가 없는 우리 상품(판매중·판매완료 모두)에 이번 한 번만 채움 — 이후 등록·판매 상품은 원래 흐름(등록 조회·주문 때 시장)이 읽으므로 빼고, 다시 돌지 않음
