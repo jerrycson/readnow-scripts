@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "떠나기 확인 창 막기",
+ "since": "2026-11-01T05:58:54Z",
+ "beat": "2026-11-01T05:58:54Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.89.173 팝업 가로채기",
   "at": "2026-11-01T05:58:13Z"
  },
- "host": null
+ "host": "vm"
 }
