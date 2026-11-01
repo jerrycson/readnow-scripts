@@ -1,11 +1,2 @@
-recentUp=prd_book_metrics&mins=90
-doc=app_settings/cloud_met
-doc=rn_status/help_cloud
-cmds=metrics&n=12
-sizes=shp_cmds&n=60
-doc=app_settings/backup_auto
-doc=rn_status/help_JS-MAIN
-doc=prd_jobs/request
-rate=rn_dialogs,px_self,px_evt,px_views,bench_lookup_items,prd_used_info,shp_state,rn_status&mins=1440
-sizes=rn_dialogs&n=20
-# 25827136
+logs=1&pc=LOGGER&from=202611020015
+# 142022509
