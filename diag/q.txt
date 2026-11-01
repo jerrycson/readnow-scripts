@@ -1,2 +1,2 @@
-recentUp=1&coll=prd_metric_changes&n=6
-# 1847815056
+recentUp=prd_book_metrics&mins=180
+# 42974734
