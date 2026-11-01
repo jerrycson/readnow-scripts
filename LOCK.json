@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "그룹 시장 지표 진행바·이어 하기",
+ "since": "2026-11-01T03:25:06Z",
+ "beat": "2026-11-01T03:25:06Z",
  "ask": null,
  "last": {
   "who": "kpsum",
   "done": "요약 75개 넣음 · 남은 60개",
   "at": "2026-10-31T20:57:29Z"
  },
- "host": null
+ "host": "vm"
 }
