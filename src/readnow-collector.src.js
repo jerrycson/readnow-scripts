@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.169
+// @version      1.89.170
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -5747,19 +5747,20 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   /* (1.34.5) 우리 매물 구매 유의 사항·사진 한 건 읽기 → prd_used_info (바뀐 판만 v/ 에 쌓음, 덮어써 지우지 않음)
    *  · 화면에 '유의 사항' 칸(#usedDecription)이 없으면 쓰지 않음 (다른 화면·읽기 실패) — 예전엔 위쪽 표지 사진만 보고 '읽음'으로 쳐 빈 판을 쌓기도 했음
    *  · 있던 유의 사항을 빈 것으로 바꾸지 않음 · '중' 상품인데 글이 비면 잘못 읽은 것으로 보고 쓰지 않음(한 번 더 읽어 봄) */
+  const UI_CACHE = new Map(); /* (1.89.171) 우리 매물 유의 사항 기록 — 이 탭에서 6시간 기억 */
   async function readOurUsed(lid, grade, prev, at) { at = at || nowIso(); const ref = C('prd_used_info').doc(String(lid));
     let info = null, box = false;
     for (let t = 0; t < 2; t++) { const pg = await getDoc(`https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=${lid}${t ? '&_=' + Date.now() : ''}`); info = P.parseUsedItemInfo(pg.doc, null); box = !!pg.doc.getElementById('usedDecription');
       if (box && (info.hasNote || grade !== '중')) break; await sleep(1500); }
     if ((!box || !info.hasNote) && !PUBONLY && P.parseScmEditNote) { try { const sg = await getDoc(`https://www.aladin.co.kr/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=${lid}`); const sc = P.parseScmEditNote(sg.doc); if (sc && sc.found) { const top = (info && info.photos ? info.photos : []).filter((x) => x.where === 'top'); info = { ...(info || {}), note: sc.note, hasNote: sc.hasNote, photos: [...top, ...sc.photos], sellerPhotoCount: sc.photos.length, photoDiff: sc.photos.length > 0 || !!(info && info.photoDiff) }; box = true; } } catch (e) {} } /* (1.77.6) 공개 화면에 안 보이면(주문 중 비공개 등) 샵매니저 상품 수정 화면(bookDesc)에서 — 클라우드 0.16.7과 같은 길 · 로거는 로그인 화면을 열지 않음 */
-    const miss = (why) => ref.set({ lastMissAt: at, lastMissWhy: why, lastMissBy: PC_NAME }, { merge: true }).catch(() => {}).then(() => ({ wrote: false, miss: why, prev }));
+    const miss = (why) => ref.set({ lastMissAt: at, lastMissWhy: why, lastMissBy: PC_NAME, missN: firebase.firestore.FieldValue.increment(1) }, { merge: true }).catch(() => {}).then(() => ({ wrote: false, miss: why, prev })); /* (1.89.171) 못 읽은 횟수 — 다시 읽기 간격을 늘림 */
     if (!box) return miss('상품 화면에 유의 사항 칸이 없음');
     if (!info.hasNote && prev && prev.note) return miss('빈 내용 — 있던 유의 사항 그대로 둠');
     if (!info.hasNote && grade === '중') return miss("'중' 상품인데 유의 사항 글이 비어 있음");
     const sig = JSON.stringify([info.note, info.photos.map((x) => x.file)]);
-    if (prev && prev.sig === sig) { await ref.set({ checkedAt: at }, { merge: true }); return { wrote: false, same: true, note: prev.note }; }
+    if (prev && prev.sig === sig) { await ref.set({ checkedAt: at, missN: 0 }, { merge: true }); return { wrote: false, same: true, note: prev.note }; }
     const nv = ((prev && prev.versions) || 0) + 1; const b = db.batch(); const ver = { note: info.note || null, hasNote: info.hasNote, photos: info.photos.map((x) => ({ src: x.src, where: x.where, file: x.file, ...(x.kind ? { kind: x.kind } : {}) })), sellerPhotoCount: info.sellerPhotoCount, photoDiff: info.photoDiff, found: true, sig, at };
-    b.set(ref.collection('v').doc(String(nv).padStart(4, '0')), { ...ver, listingId: String(lid), ...W() }); b.set(ref, { listingId: String(lid), sellerCode: '996008', ours: true, ...ver, versions: nv, firstAt: (prev && prev.firstAt) || at, checkedAt: at, ...W() }, { merge: true }); await b.commit();
+    b.set(ref.collection('v').doc(String(nv).padStart(4, '0')), { ...ver, listingId: String(lid), ...W() }); b.set(ref, { listingId: String(lid), sellerCode: '996008', ours: true, ...ver, versions: nv, firstAt: (prev && prev.firstAt) || at, checkedAt: at, missN: 0, ...W() }, { merge: true }); await b.commit();
     return { wrote: true, note: info.note || null }; }
   /* (1.34.6) 출고 목록 빠른 반영: 주문확인요청(①)·발송 요청(②) 화면을 읽은 그대로 Firebase에 — 발송준비시작 직후·웹앱이 '다시 읽기'를 맡겼을 때 바로 씀
    *  (예전: 발송준비시작을 눌러도 목록은 다음 '발송 요청 읽기'(다른 작업 중이면 끝난 뒤)나 클라우드 다음 회차까지 그대로 → 웹앱에 계속 주문확인요청으로 남음)
@@ -5786,13 +5787,17 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       ui('발송 요청 읽기', 0, 1, '판매관리 → 발송 요청');
       const g = await getDoc('https://www.aladin.co.kr/scm/worder_delivery.aspx?orderstep=4'); const r = SH.parseDeliveryPage(g.doc); const at = nowIso();
       const want = r.tabCounts['발송 요청']; if (want != null && want > r.orders.length) log(`발송 요청 ${want}건인데 이 쪽에서 ${r.orders.length}건만 읽힘 — 여러 쪽으로 나뉜 경우 (그때 화면을 저장해 보내 주시면 다음 쪽 읽기를 넣겠습니다)`, 1);
-      const items = r.orders.flatMap((o) => o.items).filter((i) => i.listingId); let nInfo = 0;
+      const items = r.orders.flatMap((o) => o.items).filter((i) => i.listingId); let nInfo = 0, nRead = 0;
       for (let k = 0; k < items.length; k++) { const it = items[k]; if (stopFlag) throw new Error('멈춤');
-        const ref = C('prd_used_info').doc(String(it.listingId)); const prev = (await ref.get()).data();
+        /* (1.89.171 정범님 11/01 '수정될 일이 없는 항목을 왜 매번 처음부터 끝까지 다시 읽나') 우리 매물 유의 사항·사진은 우리가 고치지 않는 한 바뀌지 않음 → 한 번 읽었으면 다시 읽지 않음(예전: 하루 지나면 47권 모두 다시 · 못 읽은 것은 15분 회차마다 다시)
+         *  다시 읽는 때: 한 번도 못 읽음 · 못 읽었으면 1·3·12·24시간·3일·7일로 늘려 가며 · 웹앱·수집기가 이 매물을 고쳤다고 표시(stale) · 그래도 30일 넘으면 한 번(사람이 샵매니저에서 직접 고친 것 대비) · Firebase 기록도 이 탭에서 6시간 기억(회차마다 47번 읽지 않음) */
+        const ref = C('prd_used_info').doc(String(it.listingId)); const ck = UI_CACHE.get(String(it.listingId)); const prev = ck && Date.now() - ck.t < 6 * 3600e3 ? ck.v : (await ref.get()).data(); if (!ck || ck.v !== prev) UI_CACHE.set(String(it.listingId), { t: ck && ck.v === prev ? ck.t : Date.now(), v: prev });
+        { const ok0 = prev && prev.checkedAt; const age = ok0 ? Date.now() - Date.parse(prev.checkedAt) : Infinity; const stale = prev && prev.stale && (!ok0 || Date.parse(prev.stale) > Date.parse(prev.checkedAt)); const mN = +(prev && prev.missN) || 0; const back = [1, 3, 12, 24, 72, 168][Math.min(5, Math.max(0, mN - 1))] * 3600e3; const missAge = prev && prev.lastMissAt ? Date.now() - Date.parse(prev.lastMissAt) : Infinity; const missedLast = prev && prev.lastMissAt && (!ok0 || Date.parse(prev.lastMissAt) > Date.parse(prev.checkedAt));
+          if (!stale && ((ok0 && !missedLast && age < 30 * 864e5) || (missedLast && missAge < back))) continue; }
         const midNo = it.grade === '중' && !(prev && prev.note); // (1.34.5) '중' 상품인데 유의 사항이 없으면 잘못 읽은 것 → 하루 기다리지 않고 다시 읽음
         /* (1.89.159 🔬 정밀 점검 · 🔁 같은 일 되풀이) '중'인데 유의 사항이 정말 없는 상품(알라딘에 안 적음)은 위 규칙으로 발송 요청 읽기 회차(15~20분)마다 다시 읽혀 10/31 JS-MAIN 하루 409번(상품 36개 · 한 상품 34번) · 그 수정 화면(wrecord.aspx)은 로그아웃 고리가 없어 매번 '로그인 풀림으로 잘못 봄' 경고+확인 요청+다시 읽기(하루 386번) → '중'·유의 사항 없음은 3시간에 한 번만 다시 읽음(하루 안 기다리는 뜻은 그대로 · 읽는 내용·저장 같음) */
-        const ageMs = prev && prev.checkedAt ? Date.now() - Date.parse(prev.checkedAt) : Infinity; if (prev && prev.checkedAt && ageMs < (midNo ? 3 * 3600e3 : 864e5)) continue;
-        try { const r1 = await readOurUsed(it.listingId, it.grade, prev, at); if (r1.wrote) nInfo++; } catch (e) { if (e.message === '멈춤') throw e; }
+        void midNo; /* (1.89.171) 예전 '하루·3시간마다 다시 읽기'는 위 규칙으로 바뀜 */
+        try { const r1 = await readOurUsed(it.listingId, it.grade, prev, at); if (r1.wrote) nInfo++; UI_CACHE.delete(String(it.listingId)); nRead++; } catch (e) { if (e.message === '멈춤') throw e; }
         ui('발송 요청 읽기', k + 1, items.length, `우리 매물 유의 사항·사진: ${it.title}`); }
       const sig = JSON.stringify(r.orders.map((o) => [o.orderNo, o.items.map((i) => i.listingId), o.deliveryNo])); const cur = (await C('shp_state').doc('current').get()).data();
       const excel = await fetchShipExcel(SH).catch((e) => { log('발송 요청 엑셀 받기 실패: ' + e.message, 1); return null; }); // ALPS 업로드 파일 재료 (알라딘 엑셀 29칸 그대로)
@@ -5812,7 +5817,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       for (const o of r.orders) b.set(C('shp_orders').doc(o.orderNo), { orderNo: o.orderNo, stage: '발송 요청', lastSeenAt: at, ...(cur && (cur.orders || []).some((x) => x.orderNo === o.orderNo) ? {} : { firstSeenAt: at }), buyer: o.buyer, recipient: o.recipient, orderedAt: o.orderedAt, items: o.items, carrier: o.carrier, ...W() }, { merge: true });
       await b.commit(); window.__rnShipAt = Date.now();
       try { const so = await soldOptRead([...(r.orders || []).map((o) => [o, 'deliv']), ...(rcO || []).map((o) => [o, 'confirm'])]); if (so.n || so.fail) log(`고객의 '일부 품절 시' 선택 읽음: ${so.n}건${so.fail ? ` · 못 읽음 ${so.fail}` : ''}${so.left ? ` · 남은 ${so.left}건은 다음에` : ''}`); } catch (e) { log("'일부 품절 시' 선택 읽기 실패: " + e.message, 1); }
-      log(`발송 요청 읽기: 주문 ${r.orders.length}건 · 상품 ${items.length}권 · 주문확인요청 ${r.tabCounts['주문확인요청'] ?? '?'}건${nInfo ? ` · 우리 매물 유의 사항 새로/바뀜 ${nInfo}` : ''}${!cur || cur.sig !== sig ? ' (목록 바뀜 — 판 보관)' : ' (바뀐 것 없음)'}`);
+      log(`발송 요청 읽기: 주문 ${r.orders.length}건 · 상품 ${items.length}권(유의 사항 새로 읽음 ${nRead}권 · 나머지는 읽어 둔 것) · 주문확인요청 ${r.tabCounts['주문확인요청'] ?? '?'}건${nInfo ? ` · 우리 매물 유의 사항 새로/바뀜 ${nInfo}` : ''}${!cur || cur.sig !== sig ? ' (목록 바뀜 — 판 보관)' : ' (바뀐 것 없음)'}`);
     } finally { await releaseLane('aladin'); }
   }
   /* 주문 들어온 책의 지금 시장 (1.33.0, 클라우드 readnow-cloud 0.3.0과 같은 기록 shp_market/{주문번호}__{매물번호})
