@@ -1,2 +1,2 @@
-cmds=metrics&n=15&rate=prd_book_metrics,prd_metric_changes,shp_enrich,prd_market_more,prd_used_info,ext_basic,ext_used,mkt_kpipa_ctg&mins=10080&doc=rn_status/help_JS-MAIN,rn_status/help_HOME,rn_status/help_MJ-MAIN,rn_status/help_LOGGER,prd_jobs/pcBeat,app_settings/cloud_login
-# 1345727909
+logs=1&pc=JS-MAIN&from=202610311200
+# 266265617
