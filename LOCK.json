@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "함께 하기: 새 판 뒤 다시 합류",
- "since": "2026-11-01T04:45:55Z",
- "beat": "2026-11-01T04:45:55Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.290/1.89.167 함께 하기 합류·빼기",
-  "at": "2026-11-01T04:39:26Z"
+  "done": "1.89.168",
+  "at": "2026-11-01T04:46:47Z"
  },
- "host": "vm"
+ "host": null
 }
