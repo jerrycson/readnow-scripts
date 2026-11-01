@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "🤝 등록 조회 함께·감시 묶음 진행바",
+ "since": "2026-11-01T04:50:03Z",
+ "beat": "2026-11-01T04:50:03Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.89.168",
   "at": "2026-11-01T04:46:47Z"
  },
- "host": null
+ "host": "vm"
 }
