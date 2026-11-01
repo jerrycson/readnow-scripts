@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "🤝 그룹 시장 지표 함께 하기",
- "since": "2026-11-01T04:21:02Z",
- "beat": "2026-11-01T04:21:02Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.288/1.89.165 이어받기·멈추기",
-  "at": "2026-11-01T04:03:45Z"
+  "done": "1.78.289/1.89.166 🤝 함께 하기",
+  "at": "2026-11-01T04:24:29Z"
  },
- "host": "vm"
+ "host": null
 }
