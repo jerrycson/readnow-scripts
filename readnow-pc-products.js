@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.170의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.171의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.170' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.170', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.171' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.171', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1333,6 +1333,8 @@
       if (prog.page > 1 || prog.si > 0) log(`이어서 시작: ${statuses[prog.si]} ${prog.page}쪽부터`);
       const cursor = (await C('prd_system').doc('cursor').get()).data() || {};
       const maxKnown = +(cursor.maxListingId || 0);
+      /* (1.89.171 정범님 11/01 '바뀔 일 없는 것을 왜 다시 읽나' · 되풀이 읽기 감사 ③) ⏰ 10분마다 '새로·바뀐 상품' 조회가 하루 493쪽 중 485쪽(98%)이 0건 → 잇달아 0건이면 간격을 늘림(3번째부터 20·40·60분) · 하나라도 새로·바뀐 것이 나오면 곧바로 10분으로 · 사람이 누른 것(자동 아님)은 늘 함 */
+      if (mode === 'daily' && window.__rnAuto) { const z = +cursor.dailyZero || 0, la = Date.parse(cursor.last_scanDaily || 0) || 0; const gap = z < 3 ? 0 : Math.min(60, 10 * Math.pow(2, z - 2)) * 60e3; if (gap && Date.now() - la < gap) { log(`상품 조회(새로·바뀐 것): 최근 ${z}번 잇달아 바뀐 것 없음 — ${Math.round(gap / 60e3)}분마다로 늘림(다음 ${new Date(la + gap + 9 * 3600e3).toISOString().slice(11, 16)}) · 바뀐 것이 나오면 다시 10분`); return true; } }
       let maxSeen = maxKnown;
       for (; prog.si < statuses.length; prog.si++, prog.page = 1) {
         const stName = statuses[prog.si];
@@ -1373,7 +1375,8 @@
       }
       await C('prd_system').doc('cursor').set({ maxListingId: String(maxSeen), ['last_' + name]: nowIso(), ...W() }, { merge: true });
       { const wy = Object.entries(LOPS_WHY).sort((x, y) => y[1] - x[1]); if (wy.length) { prog.stats.writeWhy = Object.fromEntries(wy.slice(0, 12)); log(`${name} 기록 사유: ${wy.slice(0, 8).map(([k, n]) => `${k === 'slim' ? '바뀐 것 없음(안 적음)' : k} ${n.toLocaleString()}`).join(' · ')}`); } } /* (1.89.27) 다음 회차부터 왜 적었는지 숫자로 남김 — 점검이 바로 봄 */
-      try { const add = new Map(QCHK_Q); QCHK_Q.clear(); if (mode === 'full') { const dw = new Date(Date.now() + 9 * 3600e3).getUTCDay(); for (const [k, l] of LISTINGS) if (l.active && l.listingId && qHash(k) % 7 === dw) add.set(k, String(l.listingId)); } /* (1.89.65) 매일 전체 확인 뒤 판매 중 상품의 1/7(요일로 나눔 — 한 주에 모두)을 정보수정 화면으로 다시 셈 */ const nq = await qchkQueue([...add].filter(([, lid]) => lid), mode === 'full' ? '매일 확인(1/7 · 바뀐 것)' : '바뀐·새 상품', name); if (nq.items) { prog.stats.qtyChk = nq.items; log(`🔢 정보수정 화면으로 다시 셀 상품 ${nq.items.toLocaleString()}개를 맡김(${nq.cmds}묶음) — 로그인한 PC가 나눠 함`); } } catch (e) { log('🔢 정보수정 확인 맡기기 실패: ' + e.message, 1); }
+      try { const add = new Map(QCHK_Q); QCHK_Q.clear(); if (mode === 'full') { const dm = new Date(Date.now() + 9 * 3600e3).getUTCDate(); for (const [k, l] of LISTINGS) if (l.active && l.listingId && qHash(k) % 30 === (dm - 1) % 30) add.set(k, String(l.listingId)); } /* (1.89.171 되풀이 읽기 감사 ②) 1/7(한 주에 모두) → 1/30(한 달에 모두) — 하루 2,252개를 열어 고친 것 0이었음 · 목록 숫자·상태가 바뀐 상품·새 상품은 지금처럼 바로(QCHK_Q) */ /* (1.89.65) 매일 전체 확인 뒤 판매 중 상품의 1/7(요일로 나눔 — 한 주에 모두)을 정보수정 화면으로 다시 셈 */ const nq = await qchkQueue([...add].filter(([, lid]) => lid), mode === 'full' ? '매일 확인(1/7 · 바뀐 것)' : '바뀐·새 상품', name); if (nq.items) { prog.stats.qtyChk = nq.items; log(`🔢 정보수정 화면으로 다시 셀 상품 ${nq.items.toLocaleString()}개를 맡김(${nq.cmds}묶음) — 로그인한 PC가 나눠 함`); } } catch (e) { log('🔢 정보수정 확인 맡기기 실패: ' + e.message, 1); }
+      if (mode === 'daily') { const nNew = statuses.reduce((a, k) => a + (+prog.stats[k] || 0), 0) + (+prog.stats.goneFromActive || 0); await C('prd_system').doc('cursor').set({ dailyZero: nNew ? 0 : (+cursor.dailyZero || 0) + 1 }, { merge: true }).catch(() => {}); }
       await finishJob(name, prog.stats);
       log(`${name} 완료 ${JSON.stringify(prog.stats)}`);
     } finally { await releaseLane('aladin'); }

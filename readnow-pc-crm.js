@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.170의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.171의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.170' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.170', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.171' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.171', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -1617,14 +1617,15 @@
       const iss = (await dbAll('issues')).filter((i) => ['V_LINE_COUNT', 'V_TOTAL', 'V_NO_POPUP'].includes(i.type)).map((i) => i.key);
       const lines = await dbAll('orderLines'); const cnt = {}; lines.filter((l) => l.kind === 'sale').forEach((l) => (cnt[l.orderNo] = (cnt[l.orderNo] || 0) + 1));
       const old = (await dbAll('popups')).filter((p) => verNum(p.parserVersion) < verNum(NEED_CORE) && cnt[p._key] != null && p.items.length > cnt[p._key]).map((p) => p._key);
-      Object.assign(job, { queue: [...new Set([...iss, ...old])], qi: 0, startedAt: now() });
+      const rd = ((await dbGet('meta', 'recheckDone').catch(() => null)) || {}).m || {}; /* (1.89.171 되풀이 읽기 감사 ⑥) 같은 파서 판으로 이미 다시 받은 문제 주문은 건너뜀 — 예전엔 같은 6건을 매일 다시 받았음(파서가 새 판이 되면 다시) */
+      Object.assign(job, { queue: [...new Set([...iss, ...old])].filter((o) => rd[o] !== NEED_CORE), qi: 0, startedAt: now() });
     }
     job.status = 'running'; await saveJob(job);
     while (job.qi < job.queue.length) {
       const ono = job.queue[job.qi]; const url = `${BASE}wpopup_order.aspx?ono=${encodeURIComponent(ono)}`;
       setNow(`문제 주문 상세 다시 받는 중: ${ono}`);
       const { doc } = await fetchDoc(url, { expect: (d) => /주문번호/.test(d.body ? d.body.textContent : '') });
-      const p = P.parseOrderPopup(doc, url); popupExtras(doc, p); if (p.orderNo === ono) await savePopup(ono, p);
+      const p = P.parseOrderPopup(doc, url); popupExtras(doc, p); if (p.orderNo === ono) await savePopup(ono, p); try { const r0 = (await dbGet('meta', 'recheckDone').catch(() => null)) || { _key: 'recheckDone', m: {} }; r0.m = { ...(r0.m || {}), [ono]: NEED_CORE }; await dbPut('meta', { _key: 'recheckDone', m: r0.m }); } catch (e) {}
       job.qi += 1; if (job.qi % 5 === 0 || job.qi === job.queue.length) await saveJob(job);
       progress('문제 주문 상세 다시 받기', job.qi, job.queue.length);
       const c = p.items.filter((i) => i.cancelled).length; setNow(`${ono}: 상품 ${p.items.length}개 중 주문 안 취소 ${c}개`);

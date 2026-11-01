@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.170
+// @version      1.89.171
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -2709,14 +2709,15 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       const iss = (await dbAll('issues')).filter((i) => ['V_LINE_COUNT', 'V_TOTAL', 'V_NO_POPUP'].includes(i.type)).map((i) => i.key);
       const lines = await dbAll('orderLines'); const cnt = {}; lines.filter((l) => l.kind === 'sale').forEach((l) => (cnt[l.orderNo] = (cnt[l.orderNo] || 0) + 1));
       const old = (await dbAll('popups')).filter((p) => verNum(p.parserVersion) < verNum(NEED_CORE) && cnt[p._key] != null && p.items.length > cnt[p._key]).map((p) => p._key);
-      Object.assign(job, { queue: [...new Set([...iss, ...old])], qi: 0, startedAt: now() });
+      const rd = ((await dbGet('meta', 'recheckDone').catch(() => null)) || {}).m || {}; /* (1.89.171 되풀이 읽기 감사 ⑥) 같은 파서 판으로 이미 다시 받은 문제 주문은 건너뜀 — 예전엔 같은 6건을 매일 다시 받았음(파서가 새 판이 되면 다시) */
+      Object.assign(job, { queue: [...new Set([...iss, ...old])].filter((o) => rd[o] !== NEED_CORE), qi: 0, startedAt: now() });
     }
     job.status = 'running'; await saveJob(job);
     while (job.qi < job.queue.length) {
       const ono = job.queue[job.qi]; const url = `${BASE}wpopup_order.aspx?ono=${encodeURIComponent(ono)}`;
       setNow(`문제 주문 상세 다시 받는 중: ${ono}`);
       const { doc } = await fetchDoc(url, { expect: (d) => /주문번호/.test(d.body ? d.body.textContent : '') });
-      const p = P.parseOrderPopup(doc, url); popupExtras(doc, p); if (p.orderNo === ono) await savePopup(ono, p);
+      const p = P.parseOrderPopup(doc, url); popupExtras(doc, p); if (p.orderNo === ono) await savePopup(ono, p); try { const r0 = (await dbGet('meta', 'recheckDone').catch(() => null)) || { _key: 'recheckDone', m: {} }; r0.m = { ...(r0.m || {}), [ono]: NEED_CORE }; await dbPut('meta', { _key: 'recheckDone', m: r0.m }); } catch (e) {}
       job.qi += 1; if (job.qi % 5 === 0 || job.qi === job.queue.length) await saveJob(job);
       progress('문제 주문 상세 다시 받기', job.qi, job.queue.length);
       const c = p.items.filter((i) => i.cancelled).length; setNow(`${ono}: 상품 ${p.items.length}개 중 주문 안 취소 ${c}개`);
@@ -4748,6 +4749,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (prog.page > 1 || prog.si > 0) log(`이어서 시작: ${statuses[prog.si]} ${prog.page}쪽부터`);
       const cursor = (await C('prd_system').doc('cursor').get()).data() || {};
       const maxKnown = +(cursor.maxListingId || 0);
+      /* (1.89.171 정범님 11/01 '바뀔 일 없는 것을 왜 다시 읽나' · 되풀이 읽기 감사 ③) ⏰ 10분마다 '새로·바뀐 상품' 조회가 하루 493쪽 중 485쪽(98%)이 0건 → 잇달아 0건이면 간격을 늘림(3번째부터 20·40·60분) · 하나라도 새로·바뀐 것이 나오면 곧바로 10분으로 · 사람이 누른 것(자동 아님)은 늘 함 */
+      if (mode === 'daily' && window.__rnAuto) { const z = +cursor.dailyZero || 0, la = Date.parse(cursor.last_scanDaily || 0) || 0; const gap = z < 3 ? 0 : Math.min(60, 10 * Math.pow(2, z - 2)) * 60e3; if (gap && Date.now() - la < gap) { log(`상품 조회(새로·바뀐 것): 최근 ${z}번 잇달아 바뀐 것 없음 — ${Math.round(gap / 60e3)}분마다로 늘림(다음 ${new Date(la + gap + 9 * 3600e3).toISOString().slice(11, 16)}) · 바뀐 것이 나오면 다시 10분`); return true; } }
       let maxSeen = maxKnown;
       for (; prog.si < statuses.length; prog.si++, prog.page = 1) {
         const stName = statuses[prog.si];
@@ -4788,7 +4791,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       }
       await C('prd_system').doc('cursor').set({ maxListingId: String(maxSeen), ['last_' + name]: nowIso(), ...W() }, { merge: true });
       { const wy = Object.entries(LOPS_WHY).sort((x, y) => y[1] - x[1]); if (wy.length) { prog.stats.writeWhy = Object.fromEntries(wy.slice(0, 12)); log(`${name} 기록 사유: ${wy.slice(0, 8).map(([k, n]) => `${k === 'slim' ? '바뀐 것 없음(안 적음)' : k} ${n.toLocaleString()}`).join(' · ')}`); } } /* (1.89.27) 다음 회차부터 왜 적었는지 숫자로 남김 — 점검이 바로 봄 */
-      try { const add = new Map(QCHK_Q); QCHK_Q.clear(); if (mode === 'full') { const dw = new Date(Date.now() + 9 * 3600e3).getUTCDay(); for (const [k, l] of LISTINGS) if (l.active && l.listingId && qHash(k) % 7 === dw) add.set(k, String(l.listingId)); } /* (1.89.65) 매일 전체 확인 뒤 판매 중 상품의 1/7(요일로 나눔 — 한 주에 모두)을 정보수정 화면으로 다시 셈 */ const nq = await qchkQueue([...add].filter(([, lid]) => lid), mode === 'full' ? '매일 확인(1/7 · 바뀐 것)' : '바뀐·새 상품', name); if (nq.items) { prog.stats.qtyChk = nq.items; log(`🔢 정보수정 화면으로 다시 셀 상품 ${nq.items.toLocaleString()}개를 맡김(${nq.cmds}묶음) — 로그인한 PC가 나눠 함`); } } catch (e) { log('🔢 정보수정 확인 맡기기 실패: ' + e.message, 1); }
+      try { const add = new Map(QCHK_Q); QCHK_Q.clear(); if (mode === 'full') { const dm = new Date(Date.now() + 9 * 3600e3).getUTCDate(); for (const [k, l] of LISTINGS) if (l.active && l.listingId && qHash(k) % 30 === (dm - 1) % 30) add.set(k, String(l.listingId)); } /* (1.89.171 되풀이 읽기 감사 ②) 1/7(한 주에 모두) → 1/30(한 달에 모두) — 하루 2,252개를 열어 고친 것 0이었음 · 목록 숫자·상태가 바뀐 상품·새 상품은 지금처럼 바로(QCHK_Q) */ /* (1.89.65) 매일 전체 확인 뒤 판매 중 상품의 1/7(요일로 나눔 — 한 주에 모두)을 정보수정 화면으로 다시 셈 */ const nq = await qchkQueue([...add].filter(([, lid]) => lid), mode === 'full' ? '매일 확인(1/7 · 바뀐 것)' : '바뀐·새 상품', name); if (nq.items) { prog.stats.qtyChk = nq.items; log(`🔢 정보수정 화면으로 다시 셀 상품 ${nq.items.toLocaleString()}개를 맡김(${nq.cmds}묶음) — 로그인한 PC가 나눠 함`); } } catch (e) { log('🔢 정보수정 확인 맡기기 실패: ' + e.message, 1); }
+      if (mode === 'daily') { const nNew = statuses.reduce((a, k) => a + (+prog.stats[k] || 0), 0) + (+prog.stats.goneFromActive || 0); await C('prd_system').doc('cursor').set({ dailyZero: nNew ? 0 : (+cursor.dailyZero || 0) + 1 }, { merge: true }).catch(() => {}); }
       await finishJob(name, prog.stats);
       log(`${name} 완료 ${JSON.stringify(prog.stats)}`);
     } finally { await releaseLane('aladin'); }
