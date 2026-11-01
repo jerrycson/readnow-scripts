@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "👁 살핀 상품 패널 판 내기",
+ "since": "2026-11-01T07:31:45Z",
+ "beat": "2026-11-01T07:31:45Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "",
   "at": "2026-11-01T07:20:03Z"
  },
- "host": null
+ "host": "vm"
 }
