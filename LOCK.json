@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "끝 처리 요약 카드",
+ "since": "2026-11-01T06:57:22Z",
+ "beat": "2026-11-01T06:57:22Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.89.174",
   "at": "2026-11-01T05:59:38Z"
  },
- "host": null
+ "host": "vm"
 }
