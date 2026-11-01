@@ -1,1 +1,22 @@
-@kpin kpin/aud_20261101-111932.json
+perf=400
+@health&hours=24
+doc=app_settings/write_watch
+doc=prd_jobs/pcBeat
+doc=app_settings/value_model
+doc=app_settings/buyback_stats
+doc=app_settings/extras_study
+doc=prd_system/settings
+doc=app_settings/cloud
+doc=prd_system/dataBackup
+doc=app_settings/y24_state
+doc=prd_system/autoSched
+rate=prd_listings,prd_changes,prd_metric_changes,prd_sellers,shp_cmds,bench_listings,ext_used,perf_logs,px_exp,ext_basic,ext_pool,rn_logs&mins=1440
+rate=prd_listings,prd_changes,prd_metric_changes,prd_sellers,shp_cmds,bench_listings,ext_used,perf_logs,px_exp,ext_basic,ext_pool,rn_logs&mins=180
+rate=prd_listings,prd_changes,prd_metric_changes,prd_sellers,shp_cmds,bench_listings,ext_used,perf_logs,px_exp,ext_basic,ext_pool,rn_logs&mins=10080
+logs=1&pc=JS-MAIN&from=202610312200
+logs=1&pc=LOGGER&from=202610312200
+logs=1&pc=MJ-MAIN&from=202610312200
+logs=1&pc=HOME&from=202610312200
+cmds=metricsReq&n=20
+cmds=pxExp&n=10
+# 2072310612
