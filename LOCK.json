@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "발송 요청 읽기 되풀이 줄이기",
- "since": "2026-11-01T05:03:46Z",
- "beat": "2026-11-01T05:03:46Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.292/1.89.169",
-  "at": "2026-11-01T04:52:23Z"
+  "done": "1.89.170 발송 되풀이",
+  "at": "2026-11-01T05:05:04Z"
  },
- "host": "vm"
+ "host": null
 }
