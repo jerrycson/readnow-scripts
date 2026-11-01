@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.167의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.168의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.167' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.167', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.168' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.168', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -664,7 +664,7 @@
           if (!pubL && legacyOther(d, now)) { const e = new Error('LOCKED'); e.info = d; throw e; } /* 고객 수집(옛 잠금)은 로그인 줄만 막음 */
           const pcs = freshPcs(d, now); const mine = pcs[PC_ID] || { name, tabs: {} };
           const tabs = {}; Object.entries(mine.tabs || {}).forEach(([k, v]) => { if (k !== TAB_ID && v && now - (v.at || 0) < TAB_FRESH) tabs[k] = v; });
-          if (Object.values(tabs).some((v) => v.job === job)) { const e = new Error('SAMEJOB'); e.info = { job, holder: '이 PC의 다른 탭' }; throw e; }
+          if (Object.values(tabs).some((v) => v.job === job) && !(regKey === 'job:metricsReq' && window.__rnRole && window.__rnRole() === 'lead')) { const e = new Error('SAMEJOB'); e.info = { job, holder: '이 PC의 다른 탭' }; throw e; } /* (1.89.168 정범님 11/01 '구간이 끝난 PC는 쉬는 거야?') 새 판으로 바꾸며(안전한 새로고침) 닫힌 옛 탭의 자리 표시가 5분 동안 남아, 이어 하려던 새 탭이 '이 PC의 다른 탭이 하는 중'으로 막혀 쉬었음 — 그룹 시장 지표는 이 탭이 이 PC의 일하는 탭(lead)이면 옛 탭 표시를 보지 않음(일하는 탭은 PC마다 하나뿐) */
           if (!pcs[PC_ID] && Object.keys(pcs).length >= maxN) { const e = new Error('LOCKED'); e.info = { ...(d || {}), prio: Math.min(...Object.values(pcs).map((v) => v.prio ?? 0)), lowPc: Object.entries(pcs).sort((a, b) => (a[1].prio ?? 0) - (b[1].prio ?? 0))[0][0] }; throw e; }
           tabs[TAB_ID] = { at: now, job, prio: myPrio };
           pcs[PC_ID] = { name, at: now, job, prio: Math.max(...Object.values(tabs).map((v) => v.prio ?? 0)), tabs };
