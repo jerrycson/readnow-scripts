@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "🛡 알라딘 팝업 가로채기·멈춘 탭 빨리 넘겨받기",
- "since": "2026-11-01T05:56:52Z",
- "beat": "2026-11-01T05:56:52Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.296 B안 설정",
-  "at": "2026-11-01T05:46:30Z"
+  "done": "1.89.173 팝업 가로채기",
+  "at": "2026-11-01T05:58:13Z"
  },
- "host": "vm"
+ "host": null
 }
