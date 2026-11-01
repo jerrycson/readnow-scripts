@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "지금 가격 단추·매입가 하한 장바구니 판 내기",
- "since": "2026-11-01T07:44:11Z",
- "beat": "2026-11-01T07:44:11Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-01T07:37:37Z"
+  "at": "2026-11-01T07:44:31Z"
  },
- "host": "vm"
+ "host": null
 }
