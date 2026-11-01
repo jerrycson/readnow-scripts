@@ -1,2 +1,2 @@
-doc=prd_jobs/autoSched
-# 2669924281
+doc=app_settings/ml_state,app_settings/kpb,app_settings/kpb_ocr,app_settings/retain_log,app_settings/pxDaily,app_settings/strat_run,app_settings/sys_health,app_settings/ext_run,app_settings/value_model,app_settings/logger_watch,app_settings/ship_notify,prd_jobs/autoSched&rate=prd_book_metrics,shp_cmds,prd_used_info,shp_enrich&mins=1440
+# 205617840
