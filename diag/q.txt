@@ -1,2 +1,2 @@
-logs=1&pc=HOME&from=202611011556
-# 36349568
+recentUp=1&coll=prd_metric_changes&n=6
+# 1847815056
