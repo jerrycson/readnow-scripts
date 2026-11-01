@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "판정 엔진 추정 1건 근거 빼기",
- "since": "2026-11-01T03:29:47Z",
- "beat": "2026-11-01T03:29:47Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "2a1a6fe 1.78.284 📊 시장 지표 진행바",
-  "at": "2026-11-01T03:28:33Z"
+  "done": "1.78.285 엔진 0.17.4",
+  "at": "2026-11-01T03:31:35Z"
  },
- "host": "vm"
+ "host": null
 }
