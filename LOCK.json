@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "알라딘 매입 한 페이지 판 내기",
+ "since": "2026-11-01T08:25:27Z",
+ "beat": "2026-11-01T08:25:27Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-01T07:44:31Z"
  },
- "host": null
+ "host": "vm"
 }
