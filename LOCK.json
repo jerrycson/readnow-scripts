@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "못 하는 PC는 다른 PC로 넘기기",
- "since": "2026-11-01T03:49:36Z",
- "beat": "2026-11-01T03:49:36Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.286/1.89.163 시장 지표 멈춤",
-  "at": "2026-11-01T03:46:34Z"
+  "done": "1.78.287/1.89.164/0.35.70 다른 PC로 넘기기",
+  "at": "2026-11-01T03:51:36Z"
  },
- "host": "vm"
+ "host": null
 }
