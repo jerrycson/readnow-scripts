@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "CLAUDE.md 보고 규칙",
+ "since": "2026-11-01T03:52:26Z",
+ "beat": "2026-11-01T03:52:26Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.287/1.89.164/0.35.70 다른 PC로 넘기기",
   "at": "2026-11-01T03:51:36Z"
  },
- "host": null
+ "host": "vm"
 }
