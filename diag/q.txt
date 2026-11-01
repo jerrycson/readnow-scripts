@@ -1,2 +1,2 @@
-recentUp=prd_book_metrics&mins=180
-# 42974734
+logs=1&pc=JS-MAIN&from=202611011215
+# 14854073
