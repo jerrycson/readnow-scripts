@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "새 시장 지표를 아무도 안 받던 것",
- "since": "2026-11-01T07:08:05Z",
- "beat": "2026-11-01T07:08:05Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.299 끝 처리",
-  "at": "2026-11-01T06:58:51Z"
+  "done": "1.89.176 맡기 고침",
+  "at": "2026-11-01T07:09:24Z"
  },
- "host": "vm"
+ "host": null
 }
