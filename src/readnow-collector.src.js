@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.172
+// @version      1.89.173
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -24,7 +24,7 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.17.4
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.5
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.127
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.128
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.5
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.3
@@ -135,7 +135,31 @@ globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false;
         const noteChip = (open) => { const box = globalThis.__rnById('rn-note-box'); if (!box) return; if (open) box._folded = false; const n = box.querySelectorAll('.rn-note-it').length; let c = box.querySelector('.rn-note-chip'); if (!n) { if (c) c.remove(); return; } if (!c) { c = document.createElement('button'); c.className = 'rn-note-chip'; c.style.cssText = 'order:99;border:1px solid #E7B4AE;background:#fff;color:#8A2420;border-radius:14px;padding:3px 10px;font:12px system-ui,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12)'; c.onclick = () => noteFold(!box._folded); box.appendChild(c); } c.textContent = box._folded ? `⚠ 리드나우 알림 ${n} — 펼치기` : `접기 (${n})`; if (!box._folded) box.querySelectorAll('.rn-note-it').forEach((x) => (x.style.display = '')); };
       if (document.body) show(); else document.addEventListener('DOMContentLoaded', show); } catch (e) {} };
   /* (1.63.8 점검) 남은 알림 팝업(alert) 모두 → 화면 위 알림 띠(멈추지 않음) — alert는 '확인'을 누를 때까지 탭 전체(잠금 신호·⏰ 자동·실시간 듣기)를 멈췄음 · 확인을 묻는 창(confirm)은 사람이 막 누른 때만 뜸 */
-  try { window.alert = (m) => window.__rnNote(String(m == null ? '' : m), 'warn'); } catch (e) {} })();
+  try { window.alert = (m) => window.__rnNote(String(m == null ? '' : m), 'warn'); } catch (e) {}
+  /* (1.89.173 정범님 11/01 '알라딘이 팝업을 띄우면 수집기와 브라우저가 멈춤 · 다른 곳에선 왜 멈췄는지 알 길이 없음') 🛡 알라딘 화면의 진짜 팝업(alert·confirm·prompt)을 가로챔
+   *  까닭: 위 window.alert 바꾸기는 수집기 자기 공간(Tampermonkey 샌드박스)의 것이라 알라딘 화면이 띄우는 팝업은 그대로 탭을 멈췄음 → 화면 쪽(unsafeWindow)과 같은 출처 틀까지
+   *  판단: 사람이 방금(8초 안) 눌렀으면 원래 팝업 그대로(사람이 결정) · 아니면 글을 읽어 갈래 —
+   *   ⓐ 알림(alert): 탭을 멈추지 않고 '확인' 처리 · 글은 기록 · 오류·실패·로그인·세션 글이면 경고로 · 돈·주문 관련 글이면 관리자 알림
+   *   ⓑ 확인 묻기(confirm): 삭제·취소·판매중지·환불·결제·출금·발송처리·반품·교환·일괄·초기화 같은 되돌리기 어려운 일이면 '취소'(하지 않음) + 관리자 확인 알림 · 그 밖도 모르는 것은 '취소' + 알림(안전 쪽) · 수집기 자신이 하는 일은 그 일이 잠깐 따로 정한 답을 씀(그대로)
+   *   ⓒ 값 묻기(prompt): 빈 답(취소) + 알림
+   *  남김: Firebase rn_dialogs(PC·화면·글·판단·관리자 확인 필요) — 웹앱 맨 위 '⚠ 알라딘 팝업 확인' 띠 · 이 PC 바탕화면 알림 · 기록 줄 */
+  try { const DANGER = /삭제|취소|판매\s*중지|일시\s*중지|환불|결제|출금|발송\s*처리|반품|교환|일괄|초기화|탈퇴|해지|변경\s*하시겠|저장\s*하시겠|등록\s*하시겠|주문/; const WARN = /오류|에러|실패|잘못|권한|로그인|세션|만료|접근|차단|제한|초과/; const MONEY = /결제|환불|출금|정산|예치금|주문|취소|반품/;
+    const Q = []; const rec = (kind, msg, decision, needAdmin, why) => { const m = String(msg == null ? '' : msg).slice(0, 500); const x = { kind, msg: m, decision, needAdmin: !!needAdmin, why, page: location.pathname + location.search.slice(0, 120), at: new Date().toISOString() }; Q.push(x);
+        try { window.__rnLog && window.__rnLog('팝업', needAdmin ? 'err' : WARN.test(m) ? 'warn' : 'info', `🛡 알라딘 팝업(${kind}) — "${m.slice(0, 120)}" → ${decision}${needAdmin ? ' · ⚠ 관리자 확인 필요' : ''} (${why})`); } catch (e) {}
+        if (needAdmin) { try { typeof GM_notification === 'function' && GM_notification({ title: '리드나우 — 알라딘 팝업 확인 필요', text: `${m.slice(0, 120)}\n→ 수집기가 '${decision}' 처리함 · 웹앱에서 확인`, timeout: 0 }); } catch (e) {} }
+        flush(); };
+    const flush = () => { try { const F = (typeof firebase !== 'undefined' && firebase) || null; if (!Q.length || !F || !F.apps || !F.apps.length || !F.auth().currentUser) return; const pc = (window.__rnPcName && window.__rnPcName.get()) || null; const L = Q.splice(0); const db = F.firestore(); L.forEach((x) => db.collection('rn_dialogs').add({ ...x, pc, ack: false, uploadedAt: F.firestore.FieldValue.serverTimestamp() }).catch(() => {})); } catch (e) {} };
+    setInterval(flush, 30000);
+    const guard = (w) => { try { if (!w || w.__rnDlg) return; w.__rnDlg = 1; const nA = w.alert, nC = w.confirm, nP = w.prompt;
+        w.alert = function (m) { if (window.__rnHuman(8000)) return nA.call(w, m); const t = String(m == null ? '' : m); rec('알림', t, '확인(탭을 멈추지 않음)', MONEY.test(t) && WARN.test(t), '사람이 없을 때 알림은 닫아도 결과가 바뀌지 않음'); };
+        w.confirm = function (m) { if (window.__rnHuman(8000)) return nC.call(w, m); const t = String(m == null ? '' : m); const dg = DANGER.test(t); rec('확인 묻기', t, '취소(하지 않음)', true, dg ? '되돌리기 어려운 일일 수 있어 사람이 없으면 하지 않음' : '모르는 확인 — 안전하게 하지 않음'); return false; };
+        w.prompt = function (m) { if (window.__rnHuman(8000)) return nP.call(w, m); rec('값 묻기', String(m == null ? '' : m), '빈 답(취소)', true, '값을 넣어야 하는 창 — 사람이 필요'); return null; };
+      } catch (e) {} };
+    guard(G); /* 알라딘 화면 쪽 */
+    const scan = (d, depth) => { try { for (const f of d.querySelectorAll('iframe,frame')) { try { const cw = f.contentWindow; if (cw && cw.location.hostname === location.hostname) { guard(cw); if (depth < 3) scan(cw.document, depth + 1); } } catch (e) {} if (!f.__rnDlgL) { f.__rnDlgL = 1; f.addEventListener('load', () => { try { if (f.contentWindow) { f.contentWindow.__rnDlg = 0; guard(f.contentWindow); } } catch (e) {} }); } } } catch (e) {} };
+    const go = () => { scan(document, 0); try { new MutationObserver(() => scan(document, 0)).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {} };
+    if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
+    window.__rnDlgGuard = guard; } catch (e) {} })();
 function rnPwEye(filter) { /* (1.63.8) 비밀번호 칸 옆 👁 — 누르고 있는 동안만 보이고 떼면 다시 가림(마우스·손가락 모두) */
   const add = (inp) => { if (inp._rnEye || (filter && !filter(inp))) return; inp._rnEye = 1; const b = document.createElement('button'); b.type = 'button'; b.className = 'rn-pweye'; b.textContent = '👁'; b.title = '누르고 있는 동안만 비밀번호가 보임 · 떼면 다시 가림'; b.tabIndex = -1; b.setAttribute('aria-label', '비밀번호 잠깐 보기');
     b.style.cssText = 'margin-left:4px;padding:2px 7px;border:1px solid #C9D3CF;border-radius:6px;background:#fff;cursor:pointer;font-size:14px;line-height:1.2;vertical-align:middle;touch-action:none;user-select:none;-webkit-user-select:none';
@@ -549,10 +573,10 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const hold = () => new Promise((res) => { release = res; });
   // 넘겨받을 차례가 됐는데 이어받을 탭(heir)이 따로 있으면, 그 탭에 양보하고 다시 줄을 섬
   let qAc = null; const queue = () => navigator.locks.request(LK, (() => { try { qAc = new AbortController(); return { signal: qAc.signal }; } catch (e) { qAc = null; return {}; } })(), () => { if (heirOther()) { setTimeout(queue, 1500); return null; } setLead('promote'); return hold(); }).catch(() => {});
-  let stealT = null, seen = null; const STALE = 15 * 60000;
+  let stealT = null, seen = null; const STALE = 5 * 60000; /* (1.89.173 정범님 11/01 '팝업으로 멈추면 다른 곳에선 알 길이 없음') 15분 → 5분 — 알라딘 팝업 등으로 일하는 탭이 얼면 쉬는 탭이 더 빨리 넘겨받음(확인 2분) · 백그라운드 탭도 심장박동은 1분 안이라 5분이면 충분 */
   const stealChk = () => { if (role !== 'follow') { seen = null; return; } const now = Date.now(); const v = GM_getValue(GK, null);
     if (!v || !v.at || now - v.at < STALE || heirOther() || (seen && now - seen.tick > 150000)) { seen = null; if (v && v.at && now - v.at >= STALE) seen = { at: v.at, t0: now, tick: now }; return; }
-    if (!seen || seen.at !== v.at) { seen = { at: v.at, t0: now, tick: now }; return; } seen.tick = now; if (now - seen.t0 < 3 * 60000) return;
+    if (!seen || seen.at !== v.at) { seen = { at: v.at, t0: now, tick: now }; return; } seen.tick = now; if (now - seen.t0 < 2 * 60000) return;
     clearInterval(stealT); stealT = null; seen = null; try { qAc && qAc.abort(); } catch (e) {} L('warn', `🧊 이 PC의 수집기 탭(${window.__rnPageName(v.page)})이 ${Math.round((now - v.at) / 60000)}분 넘게 신호가 없음(브라우저가 탭을 얼렸거나 멈춤) — 이 탭이 수집기를 넘겨받습니다`);
     navigator.locks.request(LK, { steal: true }, () => { setLead('steal'); return hold(); }).catch(() => {}); };
   const watchLead = () => { if (!stealT) stealT = setInterval(stealChk, 60000); };
