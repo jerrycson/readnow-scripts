@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.173
+// @version      1.89.174
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -156,6 +156,8 @@ globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false;
         w.prompt = function (m) { if (window.__rnHuman(8000)) return nP.call(w, m); rec('값 묻기', String(m == null ? '' : m), '빈 답(취소)', true, '값을 넣어야 하는 창 — 사람이 필요'); return null; };
       } catch (e) {} };
     guard(G); /* 알라딘 화면 쪽 */
+    /* (1.89.174) '사이트에서 나가시겠습니까?'(beforeunload) — 수집기가 안전한 새로고침·탭 닫기를 할 때 이 창이 뜨면 탭이 멈춤 → 사람이 방금 누르지 않았으면 화면이 건 떠나기 확인을 지움(기록) */
+    try { const nAdd = G.addEventListener; G.addEventListener = function (t, f, o2) { if (String(t) === 'beforeunload' && !window.__rnHuman(8000)) { rec('떠나기 확인', '화면이 떠나기 확인(beforeunload)을 걸려 함', '걸지 않음', false, '수집기가 새로고침·닫기 할 때 탭이 멈추지 않게'); return; } return nAdd.call(this, t, f, o2); }; setInterval(() => { try { if (G.onbeforeunload && !window.__rnHuman(8000)) { G.onbeforeunload = null; rec('떠나기 확인', '화면에 걸린 떠나기 확인(onbeforeunload)', '지움', false, '수집기가 새로고침·닫기 할 때 탭이 멈추지 않게'); } } catch (e) {} }, 5000); } catch (e) {}
     const scan = (d, depth) => { try { for (const f of d.querySelectorAll('iframe,frame')) { try { const cw = f.contentWindow; if (cw && cw.location.hostname === location.hostname) { guard(cw); if (depth < 3) scan(cw.document, depth + 1); } } catch (e) {} if (!f.__rnDlgL) { f.__rnDlgL = 1; f.addEventListener('load', () => { try { if (f.contentWindow) { f.contentWindow.__rnDlg = 0; guard(f.contentWindow); } } catch (e) {} }); } } } catch (e) {} };
     const go = () => { scan(document, 0); try { new MutationObserver(() => scan(document, 0)).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {} };
     if (document.body) go(); else document.addEventListener('DOMContentLoaded', go);
