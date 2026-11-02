@@ -51,7 +51,7 @@ function msc2HabVis(k) { const A = typeof mscActOf === 'function' ? mscActOf(k) 
 /* ── 서는 자세 '발 디딤 계획' ── */
 const MSC2_MIRC = {};
 function msc2PoseOf(k, mir) { const k2 = k === 'st' ? 'rl' : k; const P0 = MSC2_POSES[k2] || MSC2_POSES.rl; if (!mir) return P0; return (MSC2_MIRC[k2] = MSC2_MIRC[k2] || msc2Mirror(P0)); }
-function msc2Snap(o, W, carry, k, mir) { let P = msc2PoseOf(k, mir); if (o.sd && P.n && typeof msc2SdPose === 'function') P = msc2SdPose(o, P); const sk = msc2Solve(o, W, { ...P, carry }); const J = sk.J; const cp0 = typeof P.cp === 'string' ? MSC2_CP[P.cp] : P.cp || MSC2_CP.light;
+function msc2Snap(o, W, carry, k, mir) { let P = msc2PoseOf(k, mir); if (o.sd && P.n && typeof msc2SdPose === 'function') P = msc2SdPose(o, P); P = msc2PoseTw(P, carry); /* (r18 회차 3) */ const sk = msc2Solve(o, W, { ...P, carry }); const J = sk.J; const cp0 = typeof P.cp === 'string' ? MSC2_CP[P.cp] : P.cp || MSC2_CP.light;
   const w = P.w || 0, aw = Math.abs(w) > 0.01 ? Math.sign(w) : 0, ws = Math.abs(w); const cp = o.kid ? { ...cp0, sh: cp0.sh * 0.65 } : cp0;
   const arms = {}; ['L', 'R'].forEach((S) => { arms[S] = { rel: msc2V.sub(J['wr' + S], J['sh' + S]), el: msc2V.sub(J['el' + S], J['sh' + S]) }; });
   return { k, mir: !!mir, w, cp: { ht: cp.ht * ws * aw, st: cp.st * ws * aw, sh: (cp.sh || 0) * ws * aw, hd: (cp.hd || 0) * ws * aw + (P.hd || 0) * (aw || 1) }, an: { L: J.anL.slice(), R: J.anR.slice() }, turn: { L: J.turnL, R: J.turnR }, hl: { L: J.heelL || 0, R: J.heelR || 0 }, arms, hand: P.hand || {}, prop: P.prop, back: P.back, lean: P.lean || 0, stance: P.stance || 1, cross: P.cross || 0 }; }
@@ -78,19 +78,20 @@ function msc2PlanAt(A, B, pl, t, o, L) { const k7 = o.hc / 7; const an = { L: A.
   if (tx == null) tx = supX(an, w); return { w, cp, an, turn, hl, tx, lift, wu }; }
 /* 한 프레임의 바탕 자세(P 모양) — R.st 목표가 바뀌면 지금 상태에서 새 계획(끊고 들어와도 툭 튀지 않음) */
 const MSC2_OLDST = { lean: 0 }; /* (r16g ③) 노인 굽은 등은 ② 몸 담당 MSC2_POST(16f · 척추 굽음·머리 앞)가 맡음 — 겹치지 않게 0(둘 다 켜면 두 번 굽음) */
+const MSC2_MSK = 0.7; /* (r16g ③) 무게 옮김 간격 0.7배(어른 6~15초 → 4~10초) */
 function msc2Stand(R, V, X, now, dt) { const o = X.o, F = V.life, L = F ? F.L : MSC2_LIFE.af; const ST = R.st || { k: 'st', t0: 0, dur: 1 }; const S = (V.sd = V.sd || {});
   if (!S.clk) S.clk = 0; if (!R.drag) S.clk += Math.min(dt || 0, 0.1);
   const key = ST; if (S.key !== key) { const mir = ST.k === S.tk ? S.mir : F ? F.rnd() < 0.5 : Math.random() < 0.5; const B = msc2Snap(o, X.W, X.carry, ST.k, mir);
     if (!S.cur || ST.dur === 0) { S.A = B; S.B = B; S.pl = { ph: [], T: 0.001 }; S.t0 = S.clk; } else { S.A = S.cur; S.B = B; S.pl = msc2Plan(S.A, B, L, o); S.t0 = S.clk; const tr = Math.max(...['L', 'R'].map((s) => msc2V.len(msc2V.sub(S.A.arms[s].rel, B.arms[s].rel)))); S.pl.T = Math.max(S.pl.T, (0.6 + 0.42 * tr) / Math.sqrt(L.tp || 1)); } /* (15차h) 팔이 멀리 가면 더 오래(손목 최고 속도 ≈ 키의 1.6배/초 아래) */
-    S.key = key; S.tk = ST.k; S.mir = mir; S.msT = S.clk + (L.ms[0] + (F ? F.rnd() : 0.5) * (L.ms[1] - L.ms[0])); S.ms = null; }
+    S.key = key; S.tk = ST.k; S.mir = mir; S.msT = S.clk + (L.ms[0] + (F ? F.rnd() : 0.5) * (L.ms[1] - L.ms[0])) * MSC2_MSK; S.ms = null; }
   const A = S.A, B = S.B, pl = S.pl; const t = S.clk - S.t0; const T = pl.T; const u = msc2Cl01(t / T); const st = msc2PlanAt(A, B, pl, Math.min(t, T + 1), o, L);
   /* 팔·손·몸 기울임 = 계획 전체에 걸쳐(골반보다 2f 늦게 출발 · 끝 정착) */ const ea = msc2Io(msc2Cl01((u - 0.08) / 0.92)); const arms = {};
   const V3 = msc2V; const nl = msc2Nl;
   ['L', 'R'].forEach((s) => { const a = A.arms[s], b = B.arms[s]; const sg = s === 'L' ? -1 : 1; const ua = o.ua, fa = o.fa; const uA = V3.norm(a.el), uB = V3.norm(b.el), fA = V3.norm(V3.sub(a.rel, a.el)), fB = V3.norm(V3.sub(b.rel, b.el)); /* (15차h) 팔은 관절 각으로 섞음(위팔 방향 → 아래팔 방향 · 손목 길은 저절로 호) — IK 극 방향 섞기는 팔꿈치가 뒤집혔음 */
     const du = nl(uA, uB, ea, [sg * 0.8, 0.4, 0.2]), df = nl(fA, fB, msc2Io(msc2Cl01((ea - 0.06) / 0.94)), [sg * 0.3, 0.6, 0.6]); const el = V3.mul(du, ua), rel = V3.add(el, V3.mul(df, fa)); arms[s] = { k: 'iks', t: rel, pole: el, elv: el }; }); /* 아래팔이 2f 늦게 따라옴(겹침) */
   /* 쉬는 동안 작은 무게 옮김(발 제자리) + 몸 흔들림(15.5초) — 1/25 단계로 계단(몸 다시 그리기를 1초 1번 아래로) */
-  let f = 1; if (t >= T && F && !R.drag) { if (!S.ms && S.clk > S.msT) { const r = F.rnd(); S.ms = { a: S.f || 1, b: r < 0.7 ? 0.5 + 0.25 * F.rnd() : 1.12, t0: S.clk, d: (1 + 0.5 * F.rnd()) / Math.sqrt(L.tp), hold: (1.2 + 2.8 * F.rnd()) / L.tp }; }
-    if (S.ms) { const m = S.ms, e = S.clk - m.t0; if (e < m.d) f = m.a + (m.b - m.a) * msc2Io(e / m.d); else if (e < m.d + m.hold) f = m.b; else if (e < 2 * m.d + m.hold) f = m.b + (1 - m.b) * msc2Io((e - m.d - m.hold) / m.d); else { f = 1; S.ms = null; S.msT = S.clk + (L.ms[0] + F.rnd() * (L.ms[1] - L.ms[0])); } }
+  let f = 1; if (t >= T && F && !R.drag) { if (!S.ms && S.clk > S.msT) { const r = F.rnd(); S.ms = { a: S.f || 1, b: r < 0.7 ? 0.3 + 0.3 * F.rnd() : 1.22, t0: S.clk, d: (1 + 0.5 * F.rnd()) / Math.sqrt(L.tp), hold: (1.2 + 2.8 * F.rnd()) / L.tp }; /* (r16g ③) 작은 무게 옮김을 더 뚜렷이(골반 기울기 30~60%까지 풀었다 · 22% 더 실었다 — 예전 50~75%/12%) */ }
+    if (S.ms) { const m = S.ms, e = S.clk - m.t0; if (e < m.d) f = m.a + (m.b - m.a) * msc2Io(e / m.d); else if (e < m.d + m.hold) f = m.b; else if (e < 2 * m.d + m.hold) f = m.b + (1 - m.b) * msc2Io((e - m.d - m.hold) / m.d); else { f = 1; S.ms = null; S.msT = S.clk + (L.ms[0] + F.rnd() * (L.ms[1] - L.ms[0])) * MSC2_MSK; } }
     const bs = F.sn ? Math.sin(F.sn[3].ph) : 0; f = Math.round((f + 0.1 * bs * (L.am || 1)) * 25) / 25; }
   S.f = f; const cp = { ht: st.cp.ht * f, st: st.cp.st * (0.6 + 0.4 * f), sh: st.cp.sh * f, hd: st.cp.hd * (0.7 + 0.3 * f), kf: 0 }; const w = st.w * f; const mid = (st.an.L[0] + st.an.R[0]) / 2; const tx = f === 1 ? st.tx : mid + (st.tx - mid) * Math.min(1.1, f);
   const pick = (k) => (ea < 0.5 ? A[k] : B[k]); const prop = ea < 0.1 ? A.prop : ea > 0.9 ? B.prop : A.prop === B.prop && msc2V.len(msc2V.sub(A.arms.L.rel, B.arms.L.rel)) < 0.05 ? A.prop : null; /* 손이 움직이는 동안 소품은 내려놓음(책이 손 사이로 커지지 않게) */
@@ -108,7 +109,8 @@ function msc2Settle(K) { /* 마지막 돌아옴: 쉼 값을 6% 지나쳤다 정�
 /* (r16g ③ 정범님 '전봇대 · 굳은 자세') 예전(14차) 몸짓 표는 꼬마 머리 큰 그림에 맞춘 몸 움직임이라 v2 어른 몸(키 ≈190)에서는 몸통이 거의 안 움직임(꾸벅 인사 몸 굽힘 4.5° · 폴짝 0.7% · 놀라 뜀 1.2%)
  *  → v2에서만 몸 채널을 키움: 위아래(ty) 2.2배 · 앞으로 굽힘(lean) 3배 · 몸 돌림(rot) 1.5배 — 모양(예비·지나침·정착 순서)은 그대로 · 예전 그림 엔진 표는 안 바뀜 · x(새) 몸짓은 이미 v2 크기 */
 /* (r16g ③) 정면에서 안 보이던 예전 몸짓 따로 고침 — 꾸벅 인사: 몸 굽힘 4.5° → 21°(+머리 내림·몸 눌림 · 정중한 인사 xbow와 같은 그림 말) */
-const MSC2_ACTFIX = { bow: (A) => { A.lean = [[0, 0], [200, -0.4, 'io'], [650, 8.5, 'o'], [1250, 8, 'l'], [1800, 0, 'io']]; A.hy = [[0, 0], [650, 1.6, 'o'], [1250, 1.5, 'l'], [1800, 0, 'io']]; A.sy = [[0, 1], [200, 1.01, 'io'], [650, 0.965, 'o'], [1250, 0.97, 'l'], [1800, 1, 'io']]; A.gy = [[0, 0], [650, 0.5, 'io'], [1250, 0.5, 'l'], [1800, 0, 'io']]; } };
+const MSC2_HDAMP = (k) => (A) => { ['pitch', 'hy'].forEach((c) => { const K = A[c]; if (Array.isArray(K)) A[c] = K.map((e) => (Array.isArray(e) && typeof e[1] === 'number' ? [e[0], e[1] * k].concat(e.slice(2)) : e)); }); }; /* (r16g ③ 3묶음) 끄덕임이 정면에서 거의 안 보임(10°) → 1.7배 */
+const MSC2_ACTFIX = { nod: MSC2_HDAMP(1.7), nodsmile: MSC2_HDAMP(1.6), bow: (A) => { A.lean = [[0, 0], [200, -0.4, 'io'], [650, 8.5, 'o'], [1250, 8, 'l'], [1800, 0, 'io']]; A.hy = [[0, 0], [650, 1.6, 'o'], [1250, 1.5, 'l'], [1800, 0, 'io']]; A.sy = [[0, 1], [200, 1.01, 'io'], [650, 0.965, 'o'], [1250, 0.97, 'l'], [1800, 1, 'io']]; A.gy = [[0, 0], [650, 0.5, 'io'], [1250, 0.5, 'l'], [1800, 0, 'io']]; } };
 const MSC2_RET = { f: 10 };
 const MSC2_AMP = { ty: 2.2, lean: 3, rot: 1.5 };
 function msc2ActAmp(A) { Object.entries(MSC2_AMP).forEach(([c, k]) => { const K = A[c]; if (!K) return; if (typeof K === 'function') A[c] = (t) => K(t) * k; else if (Array.isArray(K)) A[c] = K.map((e) => (Array.isArray(e) && typeof e[1] === 'number' ? [e[0], e[1] * k].concat(e.slice(2)) : e)); }); }

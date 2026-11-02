@@ -1,14 +1,22 @@
 /* ── 팔(위팔 + 아래팔) — 바깥 볼록이 높고(삼각근·세갈래근) 안쪽(두갈래근)은 낮음: 'A is for Arm'(바이블 §1.2) ──
  *  팔꿈치가 거의 펴졌으면(<28°) 위팔·아래팔을 한 실루엣으로 · 많이 굽으면 아래팔을 따로 그려 겹침 선(팔꿈치 교차선) */
 const MSC2_JOIN = 42; /* (16f · 정범님 영상 '팔꿈치가 꺾인 막대') 팔꿈치가 이만큼(°) 안 굽었으면 위팔·아래팔을 한 실루엣으로(바깥 연속 곡선 + 팔꿈치 꼭짓점 1 · 05 §5.7) — 예전 28°: 편한 팔(18~28°)이 아래팔만 따로 그린 관처럼 보였음 */
-function msc2Arm(sk, S, M) { const { o, W, J } = sk; const s = S === 'L' ? -1 : 1; const m = o.sex === 'm' && !o.kid; const sh = J['sh' + S], el = J['el' + S], wr = J['wr' + S], ac = J['ac' + S]; const ua = W.ua, fa = W.fa, wr0 = W.wr;
+/* (r18 회차 4.s1 · 05_부품바꿈_연구 §2.4·§2.7 · 정범님 10/30 '팔을 꼬거나 뒷짐을 졌을 때 기둥 형태로는 불가능 — 다른 형태의 팔을 준비해 필요할 때 쓰고 풀면 일반으로') 아래팔 벌
+ *  일반 기둥 tube = fO·fI(바깥 5점 · 안 4점) · 팔짱 굴곡형 xlFold = 같은 점 수: 팔꿈치 쪽 근육이 접혀 불룩(바깥 +10% · 안 +8%) · 가운데가 반대 팔에 눌려 안쪽 살이 납작(−6%) · 손목 쪽은 눌려 가늘게(−6~8%) · 가운데선이 바깥으로 휨(0.22×아래팔 폭)
+ *  세기 = 벌 몫 sv[0] × 팔꿈치 굽힘 몫(60° 0 → 110° 1) — 벌 수를 늘리지 않고 연속 굴곡(굴곡 = 기본 + 세기 × 차분) · 뒷짐 손목 bkWrist = sv[1]: 손목 쪽이 뒤로 꺾여 가늘어지고(−12%) 손목 끝이 몸 쪽으로 휨 */
+const MSC2_FOLD = { fO: [1.1, 1.06, 1.0, 0.94, 0.93], fI: [1.08, 1.03, 0.94, 0.92], bow: 0.22, wO: [1, 1, 0.96, 0.9, 0.88], wI: [1, 1, 0.95, 0.88], wb: -0.12, f0: 60, f1: 110 };
+function msc2ForeSet(sv, flex, ua, fa, wr0, fO, fI) { const F = MSC2_FOLD; const a = (sv[0] || 0) * Math.max(0, Math.min(1, (flex - F.f0) / (F.f1 - F.f0))), b = sv[1] || 0; const sn = (t) => Math.sin(Math.PI * Math.max(0, Math.min(1, t)));
+  const bw = fa * (F.bow * a * 1 + F.wb * b); const mo = (L, K, KW, sgn) => L.map(([t, d], i) => { const k = 1 + (K[i] - 1) * a + (KW[i] - 1) * b; const c = bw * (b && !a ? Math.max(0, (t - 0.5) * 2) : sn(t)); return [t, d * k + sgn * c]; });
+  return { fO: mo(fO, F.fO, F.wO, 1), fI: mo(fI, F.fI, F.wI, -1), a, b }; }
+function msc2Arm(sk, S, M, sv) { const { o, W, J } = sk; const s = S === 'L' ? -1 : 1; const m = o.sex === 'm' && !o.kid; const sh = J['sh' + S], el = J['el' + S], wr = J['wr' + S], ac = J['ac' + S]; const ua = W.ua, fa = W.fa, wr0 = W.wr;
   const V = msc2V; const flex = 180 - (Math.acos(Math.max(-1, Math.min(1, V.dot(V.norm(V.sub(sh, el)), V.norm(V.sub(wr, el)))))) * 180) / Math.PI;
   /* 바깥 쪽 = 팔이 몸 밖으로 향한 쪽 — 위팔이 몸 앞을 가로지르면(팔짱) 화면 방향이 바뀜: 뼈 방향으로 판단 */
   const side = (A, B) => { const dx = B[0] - A[0], dy = B[1] - A[1]; const n = [dy, -dx]; const mid = [(A[0] + B[0]) / 2]; return Math.sign(n[0] * (mid[0] - 0 + s * 0.001) || s) * (dy >= 0 ? 1 : 1); };
   const so = side(sh, el) * (s * Math.sign(el[1] - sh[1] || 1) > 0 ? 1 : 1);
   const uO = [[0.07, ua * (m ? 1.12 : 1.04)], [0.3, ua * (m ? 1.06 : 1.0)], [0.46, ua * 0.9], [0.7, ua * 0.94], [0.97, ua * 0.76]];
   const uI = [[0.26, ua * 0.86], [0.58, ua * (m ? 1.02 : 0.97)], [0.96, ua * 0.76]];
-  const fO = [[0.04, ua * 0.78], [0.22, fa * 1.0], [0.6, fa * 0.74], [0.93, wr0 * 1.08], [1, wr0]], fI = [[0.05, ua * 0.74], [0.3, fa * 0.94], [0.72, fa * 0.7], [1, wr0 * 0.98]];
+  let fO = [[0.04, ua * 0.78], [0.22, fa * 1.0], [0.6, fa * 0.74], [0.93, wr0 * 1.08], [1, wr0]], fI = [[0.05, ua * 0.74], [0.3, fa * 0.94], [0.72, fa * 0.7], [1, wr0 * 0.98]];
+  if (sv && (sv[0] > 0 || sv[1] > 0)) { const r = msc2ForeSet(sv, flex, ua, fa, wr0, fO, fI); fO = r.fO; fI = r.fI; } /* (r18 회차 4.s1) 부품 바꿈 벌: 팔짱 굴곡형·뒷짐 손목 — 점 수·차례는 일반 기둥과 같음(보간) */
   const P = (q) => [M.X(q[0]), M.Y(q[1])]; void so;
   const oo = (A, B, L, sg) => L.map(([t, d]) => P(msc2Out(A, B, t, d * sg, s)));
   const outU = oo(sh, el, uO, 1), inU = oo(sh, el, uI, -1), outF = oo(el, wr, fO, 1), inF = oo(el, wr, fI, -1); const AC = P(ac);
