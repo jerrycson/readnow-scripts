@@ -1,9 +1,5 @@
-doc=prd_system/autoSched,app_settings/ship_review,app_settings/bbuy_auto,prd_system/pxExp,app_settings/px_cfg,app_settings/kpipa,app_settings/backup_auto,app_settings/y24_link,app_settings/seller_linkn
-recentUp=prd_price_decisions&mins=240
-recentUp=px_exp&mins=240
-recentUp=ext_used&mins=240
-samp=prd_price_decisions,px_exp,prd_lookups,ext_used,prd_jobs
-sizes=sellers,prd_price_decisions,px_exp&n=100
-cmds=metrics&n=12
-cmds=bbuy&n=12
-# 1694510584
+doc=ext_used/9788975341342,ext_used/9788954682152,ext_used/9780973501803,ext_used/B8809462140475
+samp=ext_hist,ext_used,ext_basic,ext_pool,prd_lookups
+rate=ext_hist,ext_used,ext_basic,ext_pool,ext_index&mins=1440
+rate=ext_hist&mins=10080
+# 1615517196
