@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.182
+// @version      1.89.183
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -6333,15 +6333,15 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   async function autoShipPc(orders) { if (AU.busy || PUBONLY || !auth.currentUser || !pcLoggedNow()) return null; if (window.__rnFeat && !window.__rnFeat('ship')) return null; /* 출고 기능을 끈 PC는 판단·발송준비시작 안 함(다른 PC·클라우드) */
     const SHC = window.ReadnowShipping || globalThis.ReadnowShipping, ML = window.ReadnowML || globalThis.ReadnowML; if (!SHC || !SHC.autoShipDecide || !ML || !ML.evalSale) return null;
     AU.busy = true; const out = { sent: 0, review: 0, wait: 0 };
-    try { if (!AU.cfg || Date.now() - AU.cfgAt > 30e3) { const d = (await C('app_settings').doc('ship_auto').get()).data() || {}; const c = SHC.autoCfg(d); c.since = d.since || null; AU.cfg = c; AU.cfgAt = Date.now(); if (c.on && !c.since) { c.since = nowIso(); await C('app_settings').doc('ship_auto').set({ since: c.since, sinceBy: `${PC_NAME} (처음 켜짐 — 이 시각 뒤 주문부터)` }, { merge: true }).catch(() => {}); } }
+    try { if (!AU.cfg || Date.now() - AU.cfgAt > 30e3) { const d = (await C('app_settings').doc('ship_auto').get()).data() || {}; const c = SHC.autoCfg(d); c.since = d.since || null; AU.cfg = c; AU.cfgAt = Date.now(); if ((d.rejudgeAt || null) !== (AU.rjAt || null)) { AU.rjAt = d.rejudgeAt || null; (d.rejudgeOrders || []).forEach((x) => AU.mem.delete(String(x))); } /* (정범님 11/02) 🔄 웹앱 '시장 다시 읽기' 뒤 다시 판단할 주문 — 기억을 지워 다시 봄 */ if (c.on && !c.since) { c.since = nowIso(); await C('app_settings').doc('ship_auto').set({ since: c.since, sinceBy: `${PC_NAME} (처음 켜짐 — 이 시각 뒤 주문부터)` }, { merge: true }).catch(() => {}); } }
       const cfg = AU.cfg; if (!cfg.on) return null;
       if (Date.now() - AU.beatAt > 120e3) { AU.beatAt = Date.now(); C('app_settings').doc('ship_auto').set({ beatAt: nowIso(), beatVer: APP_VER, beatBy: PC_NAME, beats: { [PC_NAME]: nowIso() } }, { merge: true }).catch(() => {}); }
       const cfgRec = { on: cfg.on, minQty: cfg.minQty, qtyMax: cfg.qtyMax, bundleOn: cfg.bundleOn, bundleSize: cfg.bundleSize, bundleWon: cfg.bundleWon, bundleRound: cfg.bundleRound, maxItemWon: cfg.maxItemWon, maxTotalWon: cfg.maxTotalWon, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, lowOn: cfg.lowOn, lowPrice: cfg.lowPrice, lowSku: cfg.lowSku, since: cfg.since }; /* (10/28) ⑥ 저가·YLW 매입가 기준도 그때 설정으로 남김 */ if (AU.mem.size > 3000) AU.mem.clear();
       for (const o of orders || []) { const ono = String(o.orderNo || ''); if (!ono || o.platform === 'cash') continue; let m = AU.mem.get(ono); if (m && m.final) continue; const ref = C('shp_auto').doc(ono);
-        if (!m) { const v0 = (await ref.get()).data() || null; if (v0 && v0.state !== 'wait') { AU.mem.set(ono, { final: true }); continue; } m = { firstAt: (v0 && Date.parse(v0.firstAt || '')) || Date.now(), doc: !!v0 }; AU.mem.set(ono, m); }
+        if (!m) { const v0 = (await ref.get()).data() || null; if (v0 && v0.state !== 'wait') { AU.mem.set(ono, { final: true }); continue; } m = { firstAt: (v0 && Date.parse(v0.firstAt || '')) || Date.now(), doc: !!v0, rj: (v0 && v0.rejudge) || null }; AU.mem.set(ono, m); }
         const base = { orderNo: ono, buyer: o.buyer || null, recipient: o.recipient && !o.recipient.sameAsBuyer ? o.recipient.name || null : null, orderedAt: o.orderedAt || null, firstAt: new Date(m.firstAt).toISOString(), at: nowIso(), by: PC_NAME, ver: APP_VER, cfg: cfgRec };
         const oAt = Date.parse(String(o.orderedAt || '').replace(' ', 'T') + ':00+09:00');
-        if (cfg.since && oAt && oAt < Date.parse(cfg.since) - 60e3) { await auFinal(ref, { ...base, state: 'skip', reasons: ['자동 발송요청을 켜기 전에 들어온 주문 — 사람이 처리'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; }
+        if (!m.rj && cfg.since && oAt && oAt < Date.parse(cfg.since) - 60e3) { await auFinal(ref, { ...base, state: 'skip', reasons: ['자동 발송요청을 켜기 전에 들어온 주문 — 사람이 처리'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; }
         if (!m.hcAt || Date.now() - m.hcAt > 60e3) { m.hcAt = Date.now(); const qs = await C('shp_cmds').where('orderNos', 'array-contains', ono).limit(20).get(); const hd = qs.docs.find((x) => { const y = x.data() || {}; return y.type === 'startDelivery' && !y.auto && !['cancelled', 'cancel'].includes(y.status); });
           if (hd) { await auFinal(ref, { ...base, state: 'human', humanCmd: hd.id, reasons: ['사람이 먼저 발송준비시작을 맡김 — 자동 판단 안 함'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; } }
         if (cfg.custBlock && m.cust === undefined) m.cust = await auCust(o, SHC);
@@ -6351,7 +6351,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         if (D.state === 'wait') { out.wait++; if (!m.doc) { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); if (!sn.exists) tx.set(ref, { ...rec, state: 'wait', waitLeftMs: D.waitLeftMs, ...W() }); }).catch(() => {}); m.doc = true; } continue; }
         if (D.state === 'pass') { const cref = C('shp_cmds').doc('auto_' + ono); const ok = await auFinal(ref, { ...rec, state: 'sent', cmdId: cref.id, decidedAt: nowIso() }, { ref: cref, v: { type: 'startDelivery', orderNos: [ono], status: 'queued', createdAt: nowIso(), by: `🤖 자동 발송요청 (${PC_NAME} 판단)`, auto: true, dev: PC_NAME, uploadedAt: TS() } }).catch((e) => { log(`🤖 자동 발송요청 기록 실패(${ono}): ${e.message}`, 1); return false; });
           m.final = true; if (ok) { out.sent++; log(`🤖 자동 발송요청: 주문 ${ono} 통과 (총 ${Math.round(D.total || 0).toLocaleString()}원) — 이 PC가 바로 발송준비시작`); setTimeout(() => runCmd(cref.id).catch(() => {}), 300); } continue; }
-        const ok = await auFinal(ref, { ...rec, state: 'review', decidedAt: nowIso(), pushWant: true }).catch(() => false); m.final = true; if (ok) { out.review++; log(`🔎 자동 발송요청: 주문 ${ono} 관리자 검토 — ${D.reasons.slice(0, 2).join(' / ')}`, 1); } }
+        const ok = await auFinal(ref, { ...rec, state: 'review', decidedAt: nowIso(), pushWant: !(m.rj && m.rj.prev && m.rj.prev.state === 'review') /* 다시 판단해도 검토면 알림 다시 안 보냄 */ }).catch(() => false); m.final = true; if (ok) { out.review++; log(`🔎 자동 발송요청: 주문 ${ono} 관리자 검토 — ${D.reasons.slice(0, 2).join(' / ')}`, 1); } }
       if (out.sent || out.review) window.__rnAutoShip = { at: nowIso(), ...out }; return out; }
     catch (e) { log('🤖 자동 발송요청 판단 실패: ' + e.message, 1); return null; } finally { AU.busy = false; } }
   window.__rnAutoShipPc = (orders) => autoShipPc(orders);

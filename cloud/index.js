@@ -32,7 +32,7 @@ const { getFirestore, FieldValue, FieldPath } = require('firebase-admin/firestor
 const { getAuth } = require('firebase-admin/auth');
 const puppeteer = require('puppeteer-core');
 
-const VER = '0.35.78'; // (0.35.61 🔬 정밀 점검) 쓰기 감시·숫자 요약에 ext_basic·ext_pool — 하루 74.7만 번 쓰기가 12일 동안 감시 밖(10/29) // (0.35.28 2시간 점검) 성능 요약에 웹앱 판별 [긴 멈춤 수·합초·힙 최고](byVer) — 고친 판이 실제로 나아졌는지 가름 // (0.35.27 2시간 점검) 숫자 요약에 웹앱 성능 기록 요약(perfSum — 긴 멈춤 합·gcLike·기기·화면별 힙·pSelf 상위·mem top) // (0.35.21 2시간 점검) 상품 변경 기록 내역에 상태 from→to·되풀이 상위 상품 // (0.35.20 2시간 점검) 숫자 요약 who에 상품 변경 기록 내역(출처·PC·바뀐 칸·되풀이) // (0.35.17 2시간 점검) 📈 실패 회차 동안 요약을 못 쓴 책 한 번 다시 셈 // (0.35.16 2시간 점검) 📈 시장 흐름 요약 16→128칸(문서 색인 한도) · 실패 회차가 겹쳐 쌓은 사라진 매물 바로잡음 // (0.35.15 2시간 점검) 📈 시장 흐름 모음 시도 시각·실패 까닭을 상태 문서·숫자 요약에 // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
+const VER = '0.35.79'; // (0.35.61 🔬 정밀 점검) 쓰기 감시·숫자 요약에 ext_basic·ext_pool — 하루 74.7만 번 쓰기가 12일 동안 감시 밖(10/29) // (0.35.28 2시간 점검) 성능 요약에 웹앱 판별 [긴 멈춤 수·합초·힙 최고](byVer) — 고친 판이 실제로 나아졌는지 가름 // (0.35.27 2시간 점검) 숫자 요약에 웹앱 성능 기록 요약(perfSum — 긴 멈춤 합·gcLike·기기·화면별 힙·pSelf 상위·mem top) // (0.35.21 2시간 점검) 상품 변경 기록 내역에 상태 from→to·되풀이 상위 상품 // (0.35.20 2시간 점검) 숫자 요약 who에 상품 변경 기록 내역(출처·PC·바뀐 칸·되풀이) // (0.35.17 2시간 점검) 📈 실패 회차 동안 요약을 못 쓴 책 한 번 다시 셈 // (0.35.16 2시간 점검) 📈 시장 흐름 요약 16→128칸(문서 색인 한도) · 실패 회차가 겹쳐 쌓은 사라진 매물 바로잡음 // (0.35.15 2시간 점검) 📈 시장 흐름 모음 시도 시각·실패 까닭을 상태 문서·숫자 요약에 // (0.35.9 자동 점검) who 사진 일 결과·판매 중 여부 // // (0.35.8 자동 점검) 숫자 요약 who: 상품 기록 쓰기 종류(kinds) · 시장 지표 변화 종류 //  // (0.35.7) 🏷 기등록(수량 늘림) 새 실물 SKU를 그 상품 코드 목록에 덧붙임 // (0.35.6) ♻ 기등록 수량 늘리기 = 정보수정 화면 지금 수량 + 늘릴 수(qtyAdd) · 웹앱 기록 숫자로 덮지 않음 // (0.35.5 격일 점검) ☁ 공개 확인 실패 길에서도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂(PC를 영영 밀어내던 것) · 상품 조회 HTTP 오류는 읽기 실패로 · deepscan 바꾸는 말은 쿼리까지 · 진단 mchg(시장 지표 변화 표본) // (0.35.4) deepscan 더 조심(명령·수정 화면 안 엶 · 같은 화면 2번까지 · 시작 화면 지정)
 // // (0.35.5 격일 정밀 점검) ☁ 공개 확인: 읽기 실패 길도 lastAt·tries·90분 판정(2분마다 되풀이·trail 무한 증가 막음) · 예외 때 lease 풂 · 상품 조회 HTTP 오류 = 읽기 실패 · deepscan 바꾸는 말 쿼리까지 · 진단 mchg
 // // (0.35.3) deepscan을 화면마다 따로 읽기(한 번에 60초 넘던 것) // (0.35.2) 진단 deepscan — 샵매니저 메뉴 깊이 2까지 · 북스킹 숍 · 우리 상품 화면 · 온라인 중고 목록을 읽기만(GET · 고객 정보 가림)
 // // (0.35.1) 💾 하루 한 번 prd_system/fbCols(모든 최상위 칸 이름 · app_secrets 뺌) — 로거 수집기 자료 보관이 칸 목록으로 씀
@@ -499,6 +499,7 @@ function midAfter(lid, grade, note) { lid = String(lid); if (grade !== '중' || 
   if (k >= 2) { const ref = C('shp_cmds').doc('ui_' + lid); db.runTransaction(async (tx) => { const sn = await tx.get(ref); const x = sn.exists ? sn.data() : null; if (x && (x.status === 'queued' || x.status === 'running')) { if (!x.cloudTried) tx.update(ref, { cloudTried: true, uploadedAt: FV.serverTimestamp() }); return; } if (x && x.status === 'done' && (x.tries || 0) >= 3) return;
       tx.set(ref, { type: 'usedInfo', listingIds: [lid], grade, status: 'queued', cloudTried: true, createdAt: nowIso(), by: 'cloud', tries: ((x && x.tries) || 0) + 1, uploadedAt: FV.serverTimestamp() }); }).catch(() => {}); } } // 클라우드가 두 번 못 읽으면 PC 수집기에 맡김
 async function enrichConfirm(p, cr, force, until, minMs) {
+  if (mktForce.size) { force = new Set(force || []); for (const k of mktForce.keys()) force.add(k); } /* (0.35.79) 🔄 웹앱 '시장 다시 읽기' */
   const t0 = Date.now(); const stopAt = Math.max(Math.min(t0 + 40000, until || Infinity), t0 + (minMs == null ? 15000 : minMs)); /* (0.12.12 자동 점검) 15초 바닥은 회차 본 단계에서만 — 빠른 고리(끝 무렵)에서도 15초를 넘겨 회차가 다음 1분 예약을 건너뛰게 했음 */ /* (0.12.8) 시장 읽기는 늘 15초 이상 — 앞 단계(맡긴 일 등)가 시간 상자를 다 써도 굶지 않게 */ const ref = C('shp_state').doc('confirm'); let n = 0, fail = 0; const todo = [];
   // (0.5.3) '중' 상품인데 유의 사항이 없으면(등급 글자만 있는 것도) 다시 읽음 — 2·4·8…분(최대 30분) 간격, 세 번째부터는 PC 수집기에도 맡김
   const badId = (e) => !!(e && e.mkt && e.via === 'search' && !e.mkt.isbnOk); /* (0.28.0) 예전 이름 검색으로 정한 시장 — ISBN 확인 없이 읽은 것은 다시(다른 판일 수 있음) */
@@ -533,8 +534,8 @@ async function enrichConfirm(p, cr, force, until, minMs) {
         await C('shp_market').doc(`${t.o.orderNo}__${t.lid}__${at.replace(/[:.]/g, '-')}`).create({ orderNo: t.o.orderNo, listingId: t.lid, listingKey: our.key, bookId: our.bookId, aladinItemId: itemId, via, title: t.it.title || null, orderedAt: t.o.orderedAt || null, at,
           page1: m.u.listings || [], usedTotal: m.u.usedTotal ?? null, mins: m.u.mins || null, buyback: m.u.buyback || null, lastPage: m.u.lastPage || 1, by: 'cloud', ...W() }).catch(() => {}); }
       else { E.mktErr = idErr || '알라딘 상품번호를 못 찾음'; E.mkt = null; skipUntil.set(t.lid, Date.now() + 3600e3); }
-      await enrichPut(t.lid, { ...E, orderNo: t.o.orderNo }, false); cr.enrich[t.lid] = E; n++; await jsleep(300);
-    } catch (e) { fail++; const k = (failN.get(t.lid) || 0) + 1; failN.set(t.lid, k); skipUntil.set(t.lid, Date.now() + Math.min(60, 2 ** k) * 60e3); log('보강 실패', t.lid, `${k}번째 · ${Math.min(60, 2 ** k)}분 뒤 다시`, e.message); enrichPut(t.lid, { mktFail: { msg: String(e.message || e).slice(0, 160), n: k, at: nowIso(), next: new Date(Date.now() + Math.min(60, 2 ** k) * 60e3).toISOString() }, orderNo: t.o.orderNo }, true).catch(() => {}); } /* (0.17.6) 실패 까닭을 웹앱에 — 예전엔 '읽는 중'으로만 보였음 */ } // 실패하면 2·4·8…분(최대 60분) 뒤 다시 — 매분 같은 실패를 되풀이하지 않음
+      await enrichPut(t.lid, { ...E, orderNo: t.o.orderNo }, false); cr.enrich[t.lid] = E; n++; if (mktForce.has(t.lid)) mktDone(t.lid, E.mkt ? 'ok' : 'fail'); await jsleep(300);
+    } catch (e) { fail++; if (mktForce.has(t.lid)) mktDone(t.lid, 'fail'); const k = (failN.get(t.lid) || 0) + 1; failN.set(t.lid, k); skipUntil.set(t.lid, Date.now() + Math.min(60, 2 ** k) * 60e3); log('보강 실패', t.lid, `${k}번째 · ${Math.min(60, 2 ** k)}분 뒤 다시`, e.message); enrichPut(t.lid, { mktFail: { msg: String(e.message || e).slice(0, 160), n: k, at: nowIso(), next: new Date(Date.now() + Math.min(60, 2 ** k) * 60e3).toISOString() }, orderNo: t.o.orderNo }, true).catch(() => {}); } /* (0.17.6) 실패 까닭을 웹앱에 — 예전엔 '읽는 중'으로만 보였음 */ } // 실패하면 2·4·8…분(최대 60분) 뒤 다시 — 매분 같은 실패를 되풀이하지 않음
   return { n, fail, left: todo.length - n - fail }; }
 
 /* 우리 매물의 구매 유의 사항·사진 (알라딘 상품 화면) — 24시간에 한 번, 바뀐 판만 쌓음 (prd_used_info + v/ 판). 주문확인요청·발송 요청 둘 다 씀 */
@@ -655,7 +656,7 @@ async function shipRead(p, until) {
 /* ── ③ 웹앱이 맡긴 일 (read · startDelivery · market = 그 주문 책의 시장 다시 읽기) ── */
 /* (0.12.9) 맡긴 일 두 갈래 — 급한 일(발송준비시작·판매중지·현금 판매중지·다시 읽기)은 회차 맨 앞, 느린 일(우리 매물 유의 사항 다시 읽기·시장 지표·알라딘 구매)은 시장 읽기 뒤 남은 시간에만
  *  예전엔 휴대폰이 맡긴 '중 상품 유의 사항 다시 읽기'가 쌓이면 회차 맨 앞에서 2분까지 써서 주문확인요청 다시 읽기·시장 읽기가 밀렸음 */
-const CMD_SLOW = new Set(['usedInfo', 'market', 'aladinBuy', 'vatRead']); const cmdUrgent = (t) => !CMD_SLOW.has(t), cmdSlow = (t) => CMD_SLOW.has(t);
+const CMD_SLOW = new Set(['usedInfo', 'aladinBuy', 'vatRead']); /* (0.35.79) 'market'은 받기만(가벼움) — 빠른 일로: 느린 일은 시장 읽기 뒤에 받아 다시 읽기가 그 회차에서 버려졌음 */ const cmdUrgent = (t) => !CMD_SLOW.has(t), cmdSlow = (t) => CMD_SLOW.has(t);
 /* (0.35.22) 정범님 10/26 12:39 '수정이 성공하고 공개 반영까지 됐는데 웹앱은 실패로 기록': 유의 사항에 사진을 더한 수정은 사진 수 셈 잘못(새 사진 자리표를 빼고 셈)으로 늘 '값이 그대로(실패)'였음 → 최근 30일 그런 기록을 지금 수정 화면으로 다시 견줘 맞으면 '샵매니저 확인'으로 바로잡고 공개 확인을 다시 돌림(기록은 덧붙임 · 지우지 않음) · 한 번만(app_settings/peRecheck1026) */
 let peReDone = false;
 async function peRecheck(p) { if (peReDone) return; peReDone = true; try { const fl = C('app_settings').doc('peRecheck1026'); const f0 = await fl.get(); if (f0.exists && f0.data().done) return;
@@ -724,7 +725,9 @@ async function runCmds(p, deadline, only) { try { await peRecheck(p); } catch (e
           if (ok) { const cr0 = (await C('shp_state').doc('confirm').get()).data(); if (cr0 && cr0.enrich && cr0.enrich[lid]) await C('shp_state').doc('confirm').update(new FieldPath('enrich', String(lid)), { ...cr0.enrich[lid], note: ui.note, photos: (ui.photos || []).filter(ppDescC).slice(0, 2).map((x) => x.src), uiAt: nowIso() }); } }
         catch (e) { results[lid] = { ok: false, why: e.message, at: nowIso() }; allOk = false; } }
       await d.ref.set(allOk ? { status: 'done', results, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() } : { status: 'queued', cloudTried: true, cloudResults: results, claim: null, uploadedAt: FV.serverTimestamp() }, { merge: true }); }
-    else if (v.type === 'market') { (v.listingIds || []).forEach((x) => force.add(String(x))); await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
+    else if (v.type === 'market') { const lids = (v.listingIds || []).map(String).filter(Boolean); lids.forEach((x) => { force.add(x); mktForce.set(x, d.id); }); /* (0.35.79) 회차 밖 표(mktForce) — 다음 시장 읽기에서 꼭 다시 읽음 */
+      if (v.rerd) { mktJobs.set(d.id, { ref: d.ref, lids: new Set(lids), done: new Set(), fail: new Set(), gone: new Set(), orderNos: (v.orderNos || []).map(String), rejudge: !!v.rejudge, at: Date.now(), by: v.by || null, pAt: 0 }); await d.ref.set({ status: 'running', startAt: nowIso(), runBy: 'cloud', prog: { n: lids.length, done: 0, fail: 0, gone: 0, left: lids.length }, uploadedAt: FV.serverTimestamp() }, { merge: true }); }
+      else await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'aladinBuy') { buy = true; await d.ref.set({ status: 'done', doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); }
     else if (v.type === 'cashStop' && Date.now() > deadline - 60000) { await d.ref.set({ status: 'queued', claim: null, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('판매중지: 이번 회차 남은 시간이 모자라 다음 회차에'); } // (0.9.1) 판매중지는 최대 230초 — 회차 한도를 넘지 않게
     else if (v.type === 'cashStop') { const X = await execMod(); if (!X) { await d.ref.set({ status: 'queued', claim: null, cloudSkip: `클라우드 ${VER}가 실행 문 파일을 못 읽음 — 기록 없이 알라딘을 바꾸지 않음`, uploadedAt: FV.serverTimestamp() }, { merge: true }); continue; }
@@ -1140,7 +1143,7 @@ async function fastLoop(p, until, cr, cm, J) { J = J || {}; const FAST = 15000; 
     kickFlag = false; last = Date.now(); loops++; p = curPage(p); if (pageBroken) { try { p = await getPage(); } catch (e) { break; } }
     try { const cm2 = J.cmds === false ? { n: 0, needRead: false, force: new Set() } : await runCmds(p, until + 20000, cmdUrgent); if (cm2.p) p = curPage(cm2.p); n += cm2.n; let c2; try { c2 = await confirmRead(p); } catch (e) { if (!e.relogin) throw e; await login(p); c2 = await confirmRead(p); }
       if (c2.changed) { changed++; cr = c2; } if (J.ship !== false && (cm2.needRead || (c2.prevTab && c2.tabCounts && c2.prevTab['발송 요청'] !== c2.tabCounts['발송 요청']))) { try { rd = await shipRead(p, Math.min(until + 5000, Date.now() + 20000)); lastDelivAt = Date.now(); } catch (e) { log('빠른 발송 요청 읽기 실패', e.message); } }
-      if (J.enrich !== false) { try { await enrichConfirm(p, c2, cm2.force, Math.min(until, Date.now() + 12000), 0); } catch (e) {} } try { await shipAutoTick(c2, J); } catch (e) { log('🤖 자동 발송요청 판단 실패(빠른 고리)', e.message); } /* (정범님 10/26) 새 주문을 15초 안에 판단 — 통과면 kickFlag로 다음 고리에서 바로 발송준비시작 */ /* (0.12.6) 목록이 그대로여도 아직 시장을 못 읽은 상품이 있으면 빠른 고리에서도 이어 읽음(다 읽었으면 바로 끝남) */
+      if (J.enrich !== false) { try { await enrichConfirm(p, c2, cm2.force, Math.min(until, Date.now() + 12000), 0); } catch (e) {} } try { await mktJobsTick(); } catch (e) {} try { await shipAutoTick(c2, J); } catch (e) { log('🤖 자동 발송요청 판단 실패(빠른 고리)', e.message); } /* (정범님 10/26) 새 주문을 15초 안에 판단 — 통과면 kickFlag로 다음 고리에서 바로 발송준비시작 */ /* (0.12.6) 목록이 그대로여도 아직 시장을 못 읽은 상품이 있으면 빠른 고리에서도 이어 읽음(다 읽었으면 바로 끝남) */
       await C('app_settings').doc('cloud').set({ lastConfirmAt, lastLoopAt: nowIso(), ok: true, err: null }, { merge: true }).catch(() => {}); // 신선함 신호 — 웹앱 '읽은 시각'이 15초마다
     } catch (e) { log('빠른 읽기 실패', e.message); if (e.pageTimeout || pageBroken || isClosed(e)) { try { p = await getPage(); continue; } catch (e2) {} } break; } }
   return { cr, rd, n, loops, changed }; }
@@ -1214,6 +1217,28 @@ async function qnaPushTick() { if (!webpush || Date.now() - qnaPushAt < 60e3) re
  *  사람이 이미 그 주문을 맡겼으면(startDelivery) 손대지 않음 · 켜기 전에 들어온 주문은 'skip'(사람 몫)
  *  기록 shp_auto/{주문번호}: 판단 이유·총액·대표 상품(가장 비싼)·상품마다 판정 근거·그때 설정 — 판정이 정해진 뒤엔 덮지 않고 결과(done·fail)만 덧붙임 · 지우지 않음
  *  알림(웹 푸시): autodone ✅ 자동 주문처리 완료(알라딘에서 발송요청으로 넘어간 것을 확인한 뒤) · autorev 🔎 관리자 검토 필요(이유) — 기기마다 끌 수 있음(웹앱 설정 🔔) */
+/* (0.35.79 정범님 11/02) 🔄 ① 주문확인요청 '시장 다시 읽기'(웹앱 단추 · shp_cmds type 'market' rerd) — 그 탭 모든 상품의 시장을 다음 시장 읽기에서 꼭 다시 읽고(mktForce)
+ *  다 읽으면(또는 4분) 자동 발송요청이 켜 있을 때 그 주문들을 바로 다시 판단: 검토·켜기 전(skip)·대기 주문만 '대기'로 되돌림(전 판단은 rejudge.prev·rjHist에 남김 — 지우지 않음)
+ *  넘긴·완료·사람이 처리·실패·확인 못 함은 그대로(두 번 누르지 않게) · PC가 판단 중이면 ship_auto.rejudgeAt을 보고 PC가 다시 판단 */
+const mktForce = new Map(), mktJobs = new Map();
+function mktDone(lid, k) { const id = mktForce.get(lid); mktForce.delete(lid); const J = id && mktJobs.get(id); if (J) (k === 'ok' ? J.done : J.fail).add(lid); }
+async function mktJobsTick() { if (!mktJobs.size) return null; const live = new Set(); for (const o of lastConfirm || []) for (const it of o.items || []) if (it.listingId) live.add(String(it.listingId)); const out = [];
+  for (const [id, J] of mktJobs) { const open = (l) => !J.done.has(l) && !J.fail.has(l) && !J.gone.has(l); for (const l of J.lids) if (open(l) && !live.has(l)) { J.gone.add(l); if (mktForce.get(l) === id) mktForce.delete(l); }
+    const left = [...J.lids].filter(open); const to = Date.now() - J.at > 4 * 60e3; const prog = { n: J.lids.size, done: J.done.size, fail: J.fail.size, gone: J.gone.size, left: left.length };
+    if (left.length && !to) { if (Date.now() - J.pAt > 4000) { J.pAt = Date.now(); await J.ref.set({ prog, progAt: nowIso() }, { merge: true }).catch(() => {}); } continue; }
+    left.forEach((l) => { if (mktForce.get(l) === id) mktForce.delete(l); }); let res = null;
+    if (J.rejudge) { try { res = await autoRejudge(J, id); } catch (e) { res = { err: String(e.message || e).slice(0, 160) }; } }
+    mktJobs.delete(id); await J.ref.set({ status: 'done', doneAt: nowIso(), prog, ...(to && left.length ? { timeout: true } : {}), ...(res ? { res } : {}), uploadedAt: FV.serverTimestamp() }, { merge: true }).catch(() => {}); out.push(id); log('🔄 시장 다시 읽기 끝', id, JSON.stringify(prog), res ? JSON.stringify(res) : ''); }
+  return out.length ? out : null; }
+async function autoRejudge(J, id) { const SHC = shipCoreNode(); if (!SHC || !SHC.autoCfg) return { err: '출고 공용 파일 없음' }; const cfg = await autoCfgGet(SHC); if (!cfg.on) return { off: true };
+  const at = nowIso(); let rj = 0, keep = 0; const L = [];
+  for (const ono of J.orderNos) { const ref = C('shp_auto').doc(ono); let did = false;
+    await db.runTransaction(async (tx) => { did = false; const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && !['review', 'skip', 'wait'].includes(v.state)) return;
+      const prev = v ? { state: v.state || null, reasons: v.reasons || [], decidedAt: v.decidedAt || null, by: v.by || null, at } : null;
+      tx.set(ref, { orderNo: ono, state: 'wait', firstAt: at, at, reasons: ['🔄 시장 다시 읽음 — 자동 판단 다시'], pushWant: false, rejudge: { at, cmd: id, by: J.by || null, prev }, ...(prev ? { rjHist: FV.arrayUnion(prev) } : {}), ...W() }, { merge: true }); did = true; });
+    if (did) { rj++; autoMem.delete(ono); L.push(ono); } else keep++; }
+  if (L.length) await C('app_settings').doc('ship_auto').set({ rejudgeAt: at, rejudgeOrders: L, rejudgeBy: J.by || null }, { merge: true }).catch(() => {});
+  autoCfgC = null; return { rj, keep }; }
 const autoMem = new Map(); let autoCfgC = null, autoCfgAt = 0, autoBusy = false, autoTrackAt = 0, autoBeatAt = 0, autoTrackBusy = false;
 async function autoCfgGet(SHC) { if (autoCfgC && Date.now() - autoCfgAt < 30e3) return autoCfgC; const ref = C('app_settings').doc('ship_auto'); let d = {};
   try { d = (await ref.get()).data() || {}; } catch (e) { if (autoCfgC) return autoCfgC; throw e; }
@@ -1264,10 +1289,10 @@ async function shipAutoTick(cr, J) { if (autoBusy || !J || J.cmds === false || J
     if (Date.now() - autoBeatAt > 5 * 60e3) { autoBeatAt = Date.now(); C('app_settings').doc('ship_auto').set({ beatAt: nowIso(), beatVer: VER, beatBy: 'cloud', beats: { cloud: nowIso() } }, { merge: true }).catch(() => {}); } /* 살아 있음 신호(5분마다 · 판단한 기기와 함께) — 웹앱이 신호가 10분 넘게 없으면 '자동 판단 신호 없음 — 직접 처리'를 띄움 */
     const cfgRec = { on: cfg.on, minQty: cfg.minQty, qtyMax: cfg.qtyMax, bundleOn: cfg.bundleOn, bundleSize: cfg.bundleSize, bundleWon: cfg.bundleWon, bundleRound: cfg.bundleRound, maxItemWon: cfg.maxItemWon, maxTotalWon: cfg.maxTotalWon, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, lowOn: cfg.lowOn, lowPrice: cfg.lowPrice, lowSku: cfg.lowSku, since: cfg.since }; /* (10/28) ⑥ 저가·YLW 매입가 기준도 그때 설정으로 남김 */
     if (cfg.on) for (const o of L) { const ono = String(o.orderNo || ''); if (!ono || o.platform === 'cash') continue; let m = autoMem.get(ono); if (m && m.final) continue; const ref = C('shp_auto').doc(ono);
-      if (!m) { const sn = await ref.get(); const v = sn.exists ? sn.data() : null; if (v && v.state !== 'wait') { autoMem.set(ono, { final: true }); continue; } m = { firstAt: (v && Date.parse(v.firstAt || '')) || Date.now(), doc: !!v }; autoMem.set(ono, m); }
+      if (!m) { const sn = await ref.get(); const v = sn.exists ? sn.data() : null; if (v && v.state !== 'wait') { autoMem.set(ono, { final: true }); continue; } m = { firstAt: (v && Date.parse(v.firstAt || '')) || Date.now(), doc: !!v, rj: (v && v.rejudge) || null }; autoMem.set(ono, m); }
       const base = { orderNo: ono, buyer: o.buyer || null, recipient: o.recipient && !o.recipient.sameAsBuyer ? o.recipient.name || null : null, orderedAt: o.orderedAt || null, firstAt: new Date(m.firstAt).toISOString(), at: nowIso(), by: 'cloud', ...(viaPc ? { list: viaPc } : {}), ver: VER, cfg: cfgRec };
       const oAt = Date.parse(String(o.orderedAt || '').replace(' ', 'T') + ':00+09:00');
-      if (cfg.since && oAt && oAt < Date.parse(cfg.since) - 60e3) { await autoFinal(ref, { ...base, state: 'skip', reasons: ['자동 발송요청을 켜기 전에 들어온 주문 — 사람이 처리'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; }
+      if (!m.rj && cfg.since && oAt && oAt < Date.parse(cfg.since) - 60e3) { await autoFinal(ref, { ...base, state: 'skip', reasons: ['자동 발송요청을 켜기 전에 들어온 주문 — 사람이 처리'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; }
       const hc = await autoHumanCmd(ono); if (hc) { await autoFinal(ref, { ...base, state: 'human', humanCmd: hc, reasons: ['사람이 먼저 발송준비시작을 맡김 — 자동 판단 안 함'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; }
       if (cfg.custBlock && m.cust === undefined) m.cust = await autoCust(o, SHC);
       const D = SHC.autoShipDecide({ order: o, enrich, cfg, evalSale: ML.evalSale, now: Date.now(), firstAt: m.firstAt, cust: cfg.custBlock ? m.cust : null });
@@ -1276,6 +1301,7 @@ async function shipAutoTick(cr, J) { if (autoBusy || !J || J.cmds === false || J
       if (D.state === 'pass') { const cref = C('shp_cmds').doc('auto_' + ono); const ok = await autoFinal(ref, { ...rec, state: 'sent', cmdId: cref.id, decidedAt: nowIso() }, { ref: cref, v: { type: 'startDelivery', orderNos: [ono], status: 'queued', createdAt: nowIso(), by: viaPc ? `🤖 자동 발송요청 (클라우드 판단 · ${viaPc} 처리)` : '🤖 자동 발송요청 (클라우드 판단)', auto: true, dev: viaPc || 'cloud', uploadedAt: FV.serverTimestamp() } }); /* (10/27) PC가 읽은 목록이면 발송준비시작은 그 PC(dev = PC 이름 → 기다리지 않고 바로) */
         m.final = true; if (ok) { out.sent++; if (!viaPc) kickFlag = true; log('🤖 자동 발송요청 맡김', ono, wonT(D.total), viaPc ? '→ ' + viaPc : ''); } continue; }
       const ok = await autoFinal(ref, { ...rec, state: 'review', decidedAt: nowIso() }); m.final = true;
+      if (ok && m.rj && m.rj.prev && m.rj.prev.state === 'review') { out.review++; continue; } /* (0.35.79) 다시 판단해도 검토면 알림은 다시 보내지 않음 */
       if (ok) { out.review++; const pr = await autoPush('autorev', rec); await ref.set({ push: pr, pushAt: nowIso() }, { merge: true }).catch(() => {}); log('🤖 검토 필요', ono, D.reasons.join(' / ')); } }
     await autoTrack(L, !!cr, out); /* (10/27) 따라가기·알림은 따로(autoTrack) — PC가 판단한 주문도 · 클라우드 회차가 앞에서 멈춰도 */
   } finally { autoBusy = false; }
@@ -1493,6 +1519,7 @@ async function tick(why) {
     const until = t0 + 30000; // (0.9.0) 무거운 일은 30초 안에서 — 나머지 시간은 빠른 고리(15초마다 주문확인요청) · 한 회차는 1분 안에 끝냄 (다음 예약을 건너뛰지 않게) — 못 한 것은 다음 회차에 이어 함
     /* (0.12.6) 주문확인요청 상품의 시장 읽기(보강)를 발송 요청 읽기보다 먼저 — 예전엔 발송 요청 상품의 유의 사항 다시 읽기가 시간 상자(30초)를 다 써서 보강이 굶었고, 휴대폰 출고 화면 시장이 '읽는 중'에 오래 머물렀음 */
     let en = null; if (J.enrich && cr) { en = await tm('enrich', async () => { try { return await enrichConfirm(p, cr, cm.force, until - 4000); } catch (e) { return { err: e.message }; } }); }
+    try { const mj = await mktJobsTick(); if (mj) out0.mktRe = mj; } catch (e) { out0.mktRe = { err: String(e.message || e).slice(0, 120) }; } /* (0.35.79) 🔄 시장 다시 읽기 끝 → 자동 판단 다시 */
     if (cr) { try { const au = await tm('auto', () => shipAutoTick(cr, J)); if (au) out0.auto = au; } catch (e) { out0.auto = { err: String(e.message || e).slice(0, 160) }; log('🤖 자동 발송요청 판단 실패', e.message); } if (kickFlag) await urg(); } /* (정범님 10/26) 🤖 자동 발송요청 — 통과한 주문은 바로 맡긴 일로(같은 회차에 처리) */
     if (J.cmds && Date.now() < t0 + 42000) { const cs = await tm('cmdsSlow', () => step('맡긴 일(느린)', (pp) => runCmds(pp, t0 + 42000, cmdSlow))); if (cs) { cm.n += cs.n; if (cs.needRead) cm.needRead = true; (cs.force || new Set()).forEach((x) => cm.force.add(x)); if (cs.buy) cm.buy = true; } } /* (0.12.9) 느린 맡긴 일은 시장 읽기 뒤 42초 안에서만 — 남은 것은 다음 회차 */
     let rd = null; if (delivDue) rd = await tm('ship', () => step('발송 요청', (pp) => shipRead(pp, Math.max(until, Date.now() + 8000))));
