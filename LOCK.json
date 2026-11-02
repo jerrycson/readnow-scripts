@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "r17 ui 올림",
- "since": "2026-11-02T02:34:07Z",
- "beat": "2026-11-02T02:36:56Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "lead",
-  "done": "",
-  "at": "2026-11-02T02:29:32Z"
+  "who": "friend",
+  "done": "r17 ui 0.15.16·PC 0.2.2 올림",
+  "at": "2026-11-02T02:37:31Z"
  },
- "host": "vm-ui"
+ "host": null
 }
