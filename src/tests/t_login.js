@@ -24,6 +24,13 @@ const sleepReal = (ms) => new Promise((r) => setTimeout(r, ms));
   ok(RULE.judge('https://www.aladin.co.kr/scm/worders.aspx', 'https://www.aladin.co.kr/login/wlogin.aspx', true, false, '') === 'suspect', '샵매니저 → 로그인 주소 = 의심 아님');
   ok(RULE.judge('https://www.aladin.co.kr/scm/wpopup_order.aspx', 'https://www.aladin.co.kr/scm/wpopup_order.aspx', true, false, '로그인') === 'suspect', '샵매니저에 로그인 칸 = 의심 아님');
   ok(RULE.judge('https://www.aladin.co.kr/scm/wpopup_order.aspx', 'https://www.aladin.co.kr/scm/wpopup_order.aspx', false, false, '주문') === false, '샵매니저 팝업(로그인 칸·로그아웃 링크 없음) = 의심하면 안 됨(고객 모듈)');
+  { const EU = 'https://www.aladin.co.kr/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=123'; /* (정범님 11/02) 상품 수정 화면 — 수정 입력 칸이 있으면 로그인 */
+    ok(RULE.judge(EU, EU, false, false, '상품 수정', { scmNeedsLogout: true, editForm: true }) === false, '수정 화면 + 입력 칸인데 로그인 풀림으로 의심함');
+    ok(RULE.judge('/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=123', '/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=123', false, false, '', { scmNeedsLogout: true, editForm: true }) === false, '상대 주소 수정 화면 + 입력 칸인데 의심함');
+    ok(RULE.judge(EU, EU, false, false, '상품 수정', { scmNeedsLogout: true, editForm: false }) === 'suspect', '수정 화면인데 입력 칸이 없으면(다른 화면) 의심해야 함');
+    ok(RULE.judge(EU, 'https://www.aladin.co.kr/login/wlogin.aspx?ReturnUrl=x', true, false, '', { scmNeedsLogout: true, editForm: true }) === 'suspect', '수정 화면이 로그인 화면으로 넘어갔는데 풀림으로 안 봄');
+    ok(RULE.judge(EU, EU, true, false, '로그인', { scmNeedsLogout: true, editForm: true }) === 'suspect', '수정 화면에 로그인 칸이 떴는데 풀림으로 안 봄');
+    const LU = 'https://www.aladin.co.kr/scm/wrecord_edit.aspx?page=1'; ok(RULE.judge(LU, LU, false, false, '', { scmNeedsLogout: true, editForm: true }) === 'suspect', '상품 조회 목록(wrecord_edit)까지 입력 칸 규칙이 번짐'); }
   ok(RULE.judge('https://www.aladin.co.kr/account/wmaininfo.aspx', 'https://www.aladin.co.kr/login/wlogin.aspx', true, false, '') === 'suspect', '내 계정 → 로그인 주소 = 의심');
   ok(RULE.judge('https://www.aladin.co.kr/shop/usedshop/wc2b_sales.aspx', 'https://www.aladin.co.kr/login/wlogin.aspx', true, false, '') === 'suspect', '팔기 장바구니 → 로그인 주소 = 의심');
   ok(RULE.isBlock('로그인 과정에 문제가 발생하였습니다.(에러코드:42FB6013-1A2B)') && RULE.codeOf('로그인 과정에 문제가 발생하였습니다.(에러코드:42FB6013-1A2B)') === '42FB6013-1A2B', '42FB 글·코드');
@@ -63,6 +70,13 @@ const sleepReal = (ms) => new Promise((r) => setTimeout(r, ms));
   // 2-a) 공개 화면은 로그인 판단 안 함
   const pubDoc = { title: '알라딘: 책', querySelector: (s) => (/password/.test(s) ? {} : null) };
   ok(G.suspect('https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=9', 'https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=9', pubDoc) === false, '수집기: 공개 화면을 의심함');
+  { /* (정범님 11/02) 수집기 suspect — 수정 화면(wrecord.aspx) + 수정 입력 칸 = 로그인(확인 요청 없음) · 입력 칸 없음 = 의심 · 로그인 화면으로 넘어감 = 의심 */
+    const EU = 'https://www.aladin.co.kr/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=77'; const c0 = checks;
+    const editDoc = { title: '알라딘 샵매니저', querySelector: (s) => (/frmRecord|UpdateItemId|bookDesc/.test(s) ? {} : null) };
+    const emptyDoc = { title: '', querySelector: () => null }; const loginDoc = { title: '로그인', querySelector: (s) => (/password/.test(s) ? {} : null) };
+    ok(G.suspect(EU, EU, editDoc, { scmNeedsLogout: true }) === false && checks === c0, '수집기: 수정 화면 + 입력 칸을 로그인 풀림으로 의심함');
+    ok(G.suspect(EU + '1', EU + '1', emptyDoc, { scmNeedsLogout: true }) === 'suspect', '수집기: 수정 입력 칸이 없는 수정 화면을 의심 안 함');
+    ok(G.suspect(EU + '2', 'https://www.aladin.co.kr/login/wlogin.aspx?ReturnUrl=x', loginDoc, { scmNeedsLogout: true }) === 'suspect', '수집기: 수정 화면 → 로그인 화면 넘어감을 풀림으로 안 봄'); }
   // 2-b) 의심 → 확인 → 잘못 본 것(로그인 안 함 · 그 요청만 다시 · 3번이면 판단에서 뺌)
   const scmLogin = { title: '로그인', querySelector: (s) => (/password/.test(s) ? {} : null) }; const U = 'https://www.aladin.co.kr/scm/wpopup_order.aspx?ono=1';
   ok(G.suspect(U, U, scmLogin) === 'suspect', '수집기: 샵매니저 로그인 칸을 의심 안 함');
