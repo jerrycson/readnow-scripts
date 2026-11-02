@@ -1,2 +1,2 @@
-extprobe=raw%7Chttps%3A%2F%2Fsearch.kyobobook.co.kr%2Fsearch%3Fkeyword%3D9788937460449%26gbCode%3DTOT%26target%3Dtotal%20https%3A%2F%2Fsearch.kyobobook.co.kr%2Fsearch%3Fkeyword%3D9791189071035%26gbCode%3DTOT%26target%3Dtotal&needle=pdt/97
-# 2147331285
+logs=1&pc=LOGGER&from=202610270000&to=202610292359
+# 1341632438
