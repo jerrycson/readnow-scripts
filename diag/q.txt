@@ -1,2 +1,2 @@
-sizes=ext_pool,ext_basic,bench_state,bench_days,bench_items,ext_hist,ext_used,rn_status,bench_probe&n=300&samp=ext_pool,bench_items,ext_hist,bench_days
-# 1801810968
+extprobe=raw|https://search.kyobobook.co.kr/search?keyword=9788937460449&gbCode=TOT&target=total https://search.kyobobook.co.kr/search?keyword=9791189071035&gbCode=TOT&target=total&needle=pdt/97
+# 1534214614
