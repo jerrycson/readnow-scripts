@@ -5,13 +5,16 @@
  *   GET  /printers → { ok, printers: [{ name, def }] }
  *   POST /print    → { printer, wMm, hMm, imgs: ['data:image/png;base64,...'], copies } → { ok, n }
  * 인쇄: PowerShell + .NET PrintDocument — 프린터 이름 지정 · 용지 = 라벨 크기(mm) · 여백 0 · 장마다 그림 하나를 용지에 꽉 맞춤 · 창 없음(StandardPrintController)
+ *   (1.1.0) /alps… — 📦 ALPS 자동 처리(같은 폴더 readnow-alps.js · 없으면 GitHub에서 받음) · GET /alps = 이 PC 설정 화면
  * 스스로 새 판: 6시간마다 GitHub에서 받아 판 번호가 높으면 바꾸고 끝남 → 실행기가 5초 뒤 다시 켬 */
 'use strict';
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const http = require('http'), https = require('https'), fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process');
 const PORT = 8898; const HOME = __dirname; const RAW = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/readnow-print.js';
 const ORIGINS = [/^https:\/\/jerrycson\.github\.io$/, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
 const LOG = path.join(HOME, 'print.log');
+const RAW_ALPS = RAW.replace(/readnow-print\.js$/, 'readnow-alps.js'); const ALPS_F = path.join(HOME, 'readnow-alps.js');
+let ALPS = null; const loadAlps = () => { try { delete require.cache[require.resolve(ALPS_F)]; ALPS = require(ALPS_F); } catch (e) { ALPS = null; if (fs.existsSync(ALPS_F)) log('ALPS 모듈 읽기 실패: ' + e.message); } }; loadAlps();
 const log = (m) => { const line = `${new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19).replace('T', ' ')} ${m}\n`; try { fs.appendFileSync(LOG, line); } catch (e) {} process.stdout.write(line); };
 const ps = (script, timeout) => new Promise((res) => { const f = path.join(os.tmpdir(), `rnp_${process.pid}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.ps1`); fs.writeFileSync(f, '﻿' + script, 'utf8');
   cp.execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', f], { windowsHide: true, timeout: timeout || 120000, maxBuffer: 8 * 1048576 }, (e, out, err) => { try { fs.unlinkSync(f); } catch (x) {} res({ e, out: String(out || ''), err: String(err || '') }); }); });
@@ -62,17 +65,34 @@ const srv = http.createServer((req, res) => {
   if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) || !okOrg) return J(403, { ok: false, err: '이 PC의 리드나우 웹앱만' });
   if (req.method === 'OPTIONS') { res.writeHead(204, H); return res.end(); }
   const u = new URL(req.url, 'http://127.0.0.1');
-  if (u.pathname === '/status') return J(200, { ok: true, ver: VERSION, pc: os.hostname() });
+  if (u.pathname === '/status') return J(200, { ok: true, ver: VERSION, pc: os.hostname(), alps: ALPS ? ALPS.VERSION : null });
+  if (u.pathname === '/alps' && req.method === 'GET') { if (org || !ALPS) return J(org ? 403 : 503, { ok: false, err: org ? '이 PC 브라우저 주소창에서만' : 'ALPS 모듈이 아직 없음(1분 안에 받음)' }); res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" }); return res.end(ALPS.pageHtml()); }
   if (req.headers['x-rn-print'] !== '1') return J(403, { ok: false, err: 'X-RN-Print 머리가 없음' });
+  if (u.pathname.startsWith('/alps/')) return alpsApi(req, res, u, org, J);
   if (u.pathname === '/printers') return printers().then((L) => J(200, { ok: true, printers: L })).catch((e) => J(500, { ok: false, err: e.message }));
   if (u.pathname === '/print' && req.method === 'POST') return readBody(req, 60 * 1048576, (e, b) => { if (e) return J(400, { ok: false, err: e.message }); let o = null; try { o = JSON.parse(b.toString('utf8')); } catch (x) { return J(400, { ok: false, err: 'bad json' }); }
     printImgs(o).then((n) => J(200, { ok: true, n })).catch((er) => { log('✗ ' + er.message); J(500, { ok: false, err: er.message }); }); });
   return J(404, { ok: false });
 });
+/* 📦 ALPS 자동 처리 길 — 웹앱(jerrycson.github.io)·이 PC 설정 화면만 · 로그인 정보는 설정 화면(127.0.0.1:8898 출처)에서만 받음 */
+function alpsApi(req, res, u, org, J) { if (!ALPS) return J(503, { ok: false, err: 'ALPS 모듈이 아직 없음 — 1분 뒤 다시(도우미가 GitHub에서 받음)' }); const A = ALPS; const p = u.pathname.slice(6); const selfPage = !org || /^http:\/\/(127\.0\.0\.1|localhost):8898$/.test(org);
+  const body = (cb) => readBody(req, 25 * 1048576, (e, b) => { if (e) return J(400, { ok: false, err: e.message }); let o = null; try { o = JSON.parse(b.toString('utf8') || '{}'); } catch (x) { return J(400, { ok: false, err: 'bad json' }); } try { cb(o); } catch (er) { J(400, { ok: false, err: er.message }); } });
+  if (p === 'status') { const c = A.cfg(); return J(200, { ok: true, ver: A.VERSION, helper: VERSION, pc: os.hostname(), cfg: { printer: c.printer, confirmBeforePrint: c.confirmBeforePrint, firstOne: c.firstOne, headless: c.headless }, cred: A.credInfo(), run: A.status() }); }
+  if (req.method !== 'POST' && p !== 'result') return J(405, { ok: false });
+  if (p === 'cred') { if (!selfPage) return J(403, { ok: false, err: '로그인 정보는 이 PC 설정 화면(http://127.0.0.1:8898/alps)에서만' }); return body((o) => A.saveCred(o.id, o.pw).then(() => J(200, { ok: true })).catch((e) => J(400, { ok: false, err: e.message }))); }
+  if (p === 'config') return body((o) => J(200, { ok: true, cfg: A.setCfg(o) }));
+  if (p === 'run') return body((o) => J(200, { ok: true, run: A.start(o) }));
+  if (p === 'input') return body((o) => J(200, A.input(o)));
+  if (p === 'reset') return J(200, { ok: A.reset() });
+  if (p === 'result') { const r = A.result(u.searchParams.get('id')); return r ? J(200, { ok: true, ...r }) : J(404, { ok: false, err: '결과 없음' }); }
+  return J(404, { ok: false }); }
 srv.on('error', (e) => { log('듣기 실패: ' + e.message + ' — 이미 켜져 있으면 그대로 둠'); setTimeout(() => process.exit(0), 1000); });
 srv.listen(PORT, '127.0.0.1', () => log(`리드나우 라벨 인쇄 도우미 ${VERSION} 시작 — 127.0.0.1:${PORT}`));
 
 /* 스스로 새 판 */
 function selfUpdate() { https.get(RAW + '?t=' + Date.now(), { timeout: 20000 }, (r) => { if (r.statusCode !== 200) { r.resume(); return; } let b = ''; r.setEncoding('utf8'); r.on('data', (c) => (b += c)); r.on('end', () => { const v = (b.match(/const VERSION = '([\d.]+)'/) || [])[1]; const n = (x) => String(x || '0').split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); if (!v || n(v) <= n(VERSION)) return;
   const tmp = path.join(HOME, 'readnow-print.new.js'); fs.writeFileSync(tmp, b); const chk = cp.spawnSync(process.execPath, ['--check', tmp]); if (chk.status !== 0) { log(`새 판 ${v} 검사 실패 — 그대로 둠`); return; } fs.renameSync(tmp, path.join(HOME, 'readnow-print.js')); log(`새 판 ${v}로 바꿈 — 다시 켜짐`); setTimeout(() => process.exit(0), 500); }); }).on('error', () => {}).on('timeout', function () { this.destroy(); }); }
-setTimeout(selfUpdate, 60e3); setInterval(selfUpdate, 6 * 3600e3);
+function alpsUpdate() { https.get(RAW_ALPS + '?t=' + Date.now(), { timeout: 20000 }, (r) => { if (r.statusCode !== 200) { r.resume(); return; } let b = ''; r.setEncoding('utf8'); r.on('data', (c) => (b += c)); r.on('end', () => { const v = (b.match(/const VERSION = '([\d.]+)'/) || [])[1]; const n = (x) => String(x || '0').split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); if (!v || (ALPS && n(v) <= n(ALPS.VERSION))) return;
+  if (ALPS && ALPS.status() && !['done', 'error'].includes(ALPS.status().status)) return; /* 처리 중엔 안 바꿈 — 다음 회차 */
+  const tmp = path.join(HOME, 'readnow-alps.new.js'); fs.writeFileSync(tmp, b); const chk = cp.spawnSync(process.execPath, ['--check', tmp]); if (chk.status !== 0) { log(`ALPS 모듈 새 판 ${v} 검사 실패 — 그대로 둠`); return; } fs.renameSync(tmp, ALPS_F); loadAlps(); log(`ALPS 모듈 ${v}로 바꿈`); }); }).on('error', () => {}).on('timeout', function () { this.destroy(); }); }
+if (!process.env.RN_PRINT_NOUPDATE) { setTimeout(selfUpdate, 60e3); setInterval(selfUpdate, 6 * 3600e3); setTimeout(alpsUpdate, ALPS ? 90e3 : 5e3); setInterval(alpsUpdate, 6 * 3600e3); }
