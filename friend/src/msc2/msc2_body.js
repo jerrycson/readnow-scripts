@@ -1,0 +1,145 @@
+/* ── v2 몸 그리기: 뼈대(msc2Solve) → 단면 폭(msc2Widths) → 한 실루엣 ──
+ *  방법(계획 §2.4): 같은 깊이 층 안에서는 '선 먼저(2배 굵기) → 칠 나중' = 안쪽 이음매가 사라짐(인형 관절 X · 골반이 허벅지로 흐름)
+ *  층 사이는 가까운 층의 선이 먼 층 위에 → 팔 앞 가슴 · 몸 앞 팔에 겹침 선 */
+const MSC2_LW = 0.62; /* 바깥 실루엣 선(보이는 굵기) — 안쪽 선은 그 절반(바이블 §0.3) */
+/* 캣멀롬 → 3차 베지어 조각(열린 곡선) — 같은 점 목록에서 자른 조각은 서로 똑같음(몸통·다리가 이음매 없이 맞물림) */
+function msc2Segs(P) { const n = P.length, g = (i) => P[Math.max(0, Math.min(n - 1, i))], S = []; for (let i = 0; i < n - 1; i++) { const p0 = g(i - 1), p1 = g(i), p2 = g(i + 1), p3 = g(i + 2); const k1 = p1[2] ? 0 : 1 / 6, k2 = p2[2] ? 0 : 1 / 6; S.push([p1, [p1[0] + (p2[0] - p0[0]) * k1, p1[1] + (p2[1] - p0[1]) * k1], [p2[0] - (p3[0] - p1[0]) * k2, p2[1] - (p3[1] - p1[1]) * k2], p2]); } return S; }
+const msc2Q = (q) => mscF(q[0]) + ' ' + mscF(q[1]);
+/* 조각들 → 경로 글자 · rev = 거꾸로 · cont = 앞 경로에 이어서(첫 점은 L) */
+function msc2SD(S, rev, cont) { if (!S.length) return ''; if (rev) S = S.slice().reverse().map((s) => [s[3], s[2], s[1], s[0]]); return (cont ? 'L' : 'M') + msc2Q(S[0][0]) + S.map((s) => 'C' + msc2Q(s[1]) + ' ' + msc2Q(s[2]) + ' ' + msc2Q(s[3])).join(''); }
+const msc2Bz = (s, t) => { const m = 1 - t; return [m * m * m * s[0][0] + 3 * m * m * t * s[1][0] + 3 * m * t * t * s[2][0] + t * t * t * s[3][0], m * m * m * s[0][1] + 3 * m * m * t * s[1][1] + 3 * m * t * t * s[2][1] + t * t * t * s[3][1]]; };
+const msc2Smp = (S, per) => { const o = [S[0][0]]; S.forEach((s) => { for (let j = 1; j <= per; j++) o.push(msc2Bz(s, j / per)); }); return o; };
+/* 뼈 A→B 위 t에서, 화면 평면에서 '바깥'(몸 가운데에서 멀어지는 쪽 s = ±1)으로 d — 아래로 향한 뼈 기준 */
+function msc2Out(A, B, t, d, s) { const x = A[0] + (B[0] - A[0]) * t, y = A[1] + (B[1] - A[1]) * t; let dx = B[0] - A[0], dy = B[1] - A[1]; const l = Math.hypot(dx, dy) || 1e-6; return [x + (s * dy * d) / l, y - (s * dx * d) / l]; }
+/* ── 몸 윤곽 점(H) — 쉬는 자세 표를 뼈 틀로 옮김 ── */
+/* (15차g · 정범님 '골반이 허벅지와 따로 놂' · 바이블 §5.3 규칙 1 · 19bab80d '엉덩이에서 허벅지까지 둥글게') 여자 허리→큰돌기 = 한 S 곡선(허리에서 세로로 출발 · 오목 → 볼록 · 큰돌기에서 다시 세로) — 점 넷을 이 곡선에서 뽑음(예전: 허리·능선·돌기 세 점 → 큰 엉덩이에서 능선 모서리·돌기 뾰족)
+ *  극단 먼저: 엉덩이 1에서 볼록이 위로 올라와 둥글게(t^(1−0.25e)) · 0에서는 예전과 거의 같은 모양 */
+function msc2HipArc(o, W, X, pR) { const e = W.hipE || 0; const y0 = o.wa, y1 = o.tro; const h = (t) => { const q = Math.pow(t, 1 - 0.12 * e); return q * q * (3 - 2 * q); }; return [0.3, 0.55, 0.78, 1].map((t) => pR([X(W.wa + (W.hp - W.wa) * h(t)), y0 + (y1 - y0) * t])); }
+/* (P1 · 12 §12.3 버림) msc2NeckTop(턱→정수리 축 16% 근사)은 지움 — 목은 두 고리 로프트(msc2_neck.js) · 몸통 윤곽은 목 밑동(T0·B)에서 시작 */
+function msc2Contour(sk) { const { o, W, J } = sk; const f = o.sex === 'f' && !o.kid, m = o.sex === 'm' && !o.kid; const R = {};
+  const cR = (p) => { if (J.br) p = msc2BrP(o, J.br, p); const a = J.chestRot, c = Math.cos(a), s = Math.sin(a), x = p[0], y = p[1] - o.wa; return [J.waist[0] + x * c - y * s, J.waist[1] + x * s + y * c]; };
+  const gT = Math.tan(J.girdle || 0); const cG = (p) => { const f = Math.max(0, Math.min(1, (o.sh + 0.44 - p[1]) / 0.43)); return cR([p[0], p[1] + p[0] * gT * f]); }; /* (15차h) 어깨뼈 기울기(어깨 꼭대기 = 다 · 겨드랑이 아래 = 0) */
+  const pcY = (o.il + o.cr) / 2; const pR = (p) => { const a = J.pelRot, c = Math.cos(a), s = Math.sin(a), x = p[0], y = p[1] - pcY; return [J.pelvis[0] + x * c - y * s, J.pelvis[1] + x * s + y * c]; };
+  const wR = (p) => { const a = cR(p), b = pR(p); return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; };
+  R.cR = cR; R.pR = pR;
+  const kneeX0 = W.kn + 0.02; /* 쉬는 자세 무릎 x(축 계산용) */
+  ['L', 'R'].forEach((S) => { const s = S === 'L' ? -1 : 1; const X = (x) => s * x;
+    const acX = W.sh - 0.085; const nb = R.nb || (R.nb = msc2NeckBase2(o, W)); /* (P1) 목 밑동(가슴 쪽 고리 · 밑동 폭 ≥ 1.1 × 위 · 승모근 15~25°) — 목 자체는 살 층의 목 로프트(msc2_neck.js)가 그림 */
+    const T = [cG([X(nb.xT0), nb.yT0]), cG([X(nb.wB), nb.yB]), cG([X(nb.wB + (acX - nb.wB) * 0.45), nb.yB + (o.sh - nb.yB) * (m ? 0.3 : 0.42)]), cG([X(acX), o.sh + 0.012]),
+      cG([X(W.ch + (m ? 0.03 : 0.012)), o.sh + 0.44]), cR([X(W.ch * (m ? 1.035 : f ? 0.975 : 0.99)), (o.sh + 0.44 + o.rib) / 2 - (m ? 0.08 : 0)]), cR([X(m ? W.ch * 0.92 : f ? Math.max(W.wa + 0.02, W.ch * 0.9) : W.ch * 0.955), o.rib])/* (16f 3묶음 · a91d443a 여 설정표) 여자 갈비 = 가슴 아래에서 허리로 좁아지는 역사다리꼴(예전 0.955 = 겨드랑이부터 허리 위까지 곧은 통) */,
+      wR([X(W.wa), o.wa])].concat(f ? msc2HipArc(o, W, X, pR) : [pR([X(msc2L(W.wa, W.hp, m ? 0.78 : 0.62)), o.il]), pR([X(W.hp), o.tro])]); /* (15차g) 여자 허리→큰돌기 = msc2HipArc 한 S 곡선 */
+    R['t' + S] = T; R.iIl = f ? T.length - 3 : T.length - 2; R.iTro = T.length - 1; /* 엉덩뼈 능선 · 돌기 자리(몸통 목록 안 번호) */
+    const hip = J['hip' + S], kn = J['kn' + S], an = J['an' + S]; const hipR0 = J.hipX;
+    const hipY0 = hip[1] - J.drop; const tc = Math.max(0.05, Math.min(0.45, (o.cr - hipY0) / (o.kn - hipY0))); /* 샅 높이 = 넓적다리 위 매개 */
+    const ax = (t) => msc2L(hipR0, kneeX0, t); /* 쉬는 축 x */
+    const gap = f ? 0 : m ? 0.035 : 0.02; const kO = kneeX0 + W.kn, kI = kneeX0 - W.kn * 0.92; const topO0 = m ? Math.min(W.hp - 0.03, gap + W.thT) : Math.max(W.hp - 0.012, gap + W.thT); const topO = m ? topO0 : Math.min(topO0, W.hp + 0.015); const thX = topO0 - topO; /* (15차g) 여자 허벅지 밀대 최대에서 넓적다리 위가 엉덩이보다 바깥으로 튀던 혹 → 위는 엉덩이 폭까지만, 남는 살은 넓적다리 가운데·아래로(아래 fO) */ /* 큰돌기가 가장 넓은 곳 — 남자 허벅지 위는 그보다 0.03H 안(곧은 선) · 여자는 엉덩이를 채움(§5.3 규칙 2) */
+    /* 넓적다리: 바깥 볼록이 높고(가쪽넓은근) · 안쪽 볼록은 낮은 물방울(안쪽넓은근) · 여자는 위에서 닿고 무릎 위에서 살짝 벌어짐 */
+    const hE = W.hipE || 0; const fO = m ? [1, 0.75, 0.41, 0.11, 0] : [1, Math.min(0.97, 0.8 + 0.05 * hE + thX * 0.8), Math.min(0.75, 0.44 + 0.1 * hE + thX * 1.2), 0.07 + 0.04 * hE + Math.min(0.08, thX * 0.5), 0]; /* (15차g) 엉덩이 극단: 넓적다리가 무릎까지 더 채워짐(가쪽이 곧게 · 큰돌기 아래 혹 X) */ /* 남자 = 엉덩이에서 무릎까지 거의 곧은 선('직사각형' · 6869d797) */ /* 바깥 넓적다리 = 엉덩이에서 무릎까지 한 볼록 곡선(19bab80d '엉덩이에서 허벅지까지 둥글게' · 남자는 '거의 곧게') — 모든 엉덩이 값이 같은 곡선 가족(극단도 혹 없음) */
+    const thO = [[tc, topO], [tc + (1 - tc) * 0.26, kO + (topO - kO) * fO[1]], [tc + (1 - tc) * 0.6, kO + (topO - kO) * fO[2]], [tc + (1 - tc) * 0.9, kO + (topO - kO) * fO[3]], [1, kO]];
+    const gk = f ? 1 - 0.55 * Math.max(0, (W.thT - 0.37) / 0.12) : 1; /* 허벅지 안쪽 살이 많을수록 틈이 더 아래에서 열림 */ const thI = [[tc, gap], [tc + (1 - tc) * 0.3, f ? 0.045 * gk : 0.06], [tc + (1 - tc) * 0.62, f ? 0.085 * Math.max(0.55, gk) : 0.08], [tc + (1 - tc) * 0.88, f ? 0.06 : 0.075], [1, kI]];
+    const LO = thO.map(([t, x]) => msc2Out(hip, kn, t, x - ax(t), s)), LI = thI.map(([t, x]) => msc2Out(hip, kn, t, -(ax(t) - x), s));
+    /* 정강이: 바깥 종아리 1/4 · 안쪽 1/3(낮음) · 바깥 복사뼈는 낮고 · 안쪽은 높음(바이블 §1.1–1.2) · 남자 종아리는 더 둥글게 */
+    const cw = W.ca, aw = W.an, kw = W.kn; const snO = [[0.1, kw * 1.02], [0.26, cw * (m ? 1.1 : 1.05)], [0.62, msc2L(cw, aw, 0.6) * 1.03], [0.95, aw * 1.13], [1, aw]];
+    const snI = [[0.12, kw * 0.9], [0.34, cw * (m ? 1.0 : 0.96)], [0.72, msc2L(cw, aw, 0.72)], [0.88, aw * 1.16], [1, aw]];
+    { const tT = (o.tro - hipY0) / (o.kn - hipY0); const tq = msc2Out(hip, kn, tT, W.hp - ax(tT), s); const iT = T.length - 1; const tp = T[iT]; const kq = m ? 0.7 : 0.5; T[iT] = [tp[0] + (tq[0] - tp[0]) * kq, tp[1] + (tq[1] - tp[1]) * kq]; } /* 큰돌기는 넙다리뼈에 붙음 → 골반 틀과 넓적다리 틀의 가운데(다리를 벌리거나 돌려도 엉덩이 아래 혹이 생기지 않음) */
+    R['lo' + S] = LO.concat(snO.map(([t, d]) => msc2Out(kn, an, t, d, s))); R['li' + S] = LI.concat(snI.map(([t, d]) => msc2Out(kn, an, t, -d, s)));
+    R['out' + S] = T.concat(R['lo' + S]); R['seg' + S] = msc2Segs(R['out' + S]); R['segI' + S] = msc2Segs(R['li' + S]); R.nT = T.length; });
+  R.crotch = pR([0, o.cr]); R.inL = pR([-0.12, o.il + 0.1]); R.inR = pR([0.12, o.il + 0.1]); return R; }
+/* 화면(viewBox)으로 옮긴 조각 */ const msc2MapSegs = (S, M) => S.map((s) => s.map((q) => [M.X(q[0]), M.Y(q[1])]));
+function msc2Map(o, u) { u = u || MSC2_U; const y0 = MSC2_SOLE - o.so * u; return { u, y0, X: (x) => 50 + x * u, Y: (y) => y0 + y * u, P: (q) => [50 + q[0] * u, y0 + q[1] * u] }; }
+/* 몸통·다리 경로(viewBox) — 몸통 = 오른쪽 목→샅 높이 넓적다리 위 · 샅 · 왼쪽 거슬러 · 다리 = 엉덩뼈 능선부터 발목까지(같은 조각) */
+function msc2SkinPaths(C, M) { const sR = msc2MapSegs(C.segR, M), sL = msc2MapSegs(C.segL, M), iR = msc2MapSegs(C.segIR, M), iL = msc2MapSegs(C.segIL, M); const nT = C.nT; const P = (q) => msc2Q(M.P(q));
+  const torso = msc2SD(sR.slice(0, nT)) + 'L' + msc2Q(iR[0][0]) + 'L' + P(C.crotch) + 'L' + msc2Q(iL[0][0]) + msc2SD(sL.slice(0, nT), 1, 1) + 'Z';
+  const leg = (sg, ig, inn) => msc2SD(sg.slice(C.iIl)) + msc2SD(ig, 1, 1) + 'L' + P(C.crotch) + 'L' + P(inn) + 'Z';
+  return { torso, legL: leg(sL, iL, C.inL), legR: leg(sR, iR, C.inR), sR, sL, iR, iL }; }
+
+/* ══════════ 🐾 P1(16차b · 바이블 v2 10 §10.1.2 · 02 §2.3·§2.6 · 03 §3.2) 한 실루엣 — 얼굴 살 + 목 + 몸통이 한 살 층 · 두 고리 목 로프트 · 등신 한 식 ══════════
+ *  (버림 12 §12.3) 머리를 따로 그려 그룹째 돌리던 얼굴 살 · msc2NeckTop(턱→정수리 축 16% 근사) · msc2_sd.js 목 길이 예외표
+ *  구조: ① 머리 쪽 고리 headBase = 두개골 아래 '턱 밑면' 고리(앞 = 턱 밑 · 옆 = 턱선 안쪽 · 뒤 = 두개골 밑) — 머리 좌표(H)의 3D 점 → 머리 요(2.5D)·피치·롤·위치를 그대로 받아 화면 좌표로 계산
+ *        ② 가슴 쪽 고리 = 쇄골 패임 높이의 목 밑동(밑동 폭 ≥ 1.1 × 위 폭) → 몸통 윤곽 첫 두 점(T0 · B)이 됨 · 승모근은 B에서 어깨 끝으로
+ *        ③ 목 = 두 고리의 바깥 점을 잇는 2차 곡선(위 = 머리 아래 방향 · 아래 = 몸통 윤곽 방향 → 머리가 기울면 목이 휨)
+ *        ④ 얼굴 살 path(턱 포함)를 머리 변환으로 '좌표 계산'해 살 층 sp에 넣음(SVG transform 그룹 아님) → 선 색 채움 + 2배 선 → 살색 채움 = 얼굴·목·몸통 사이 이음선 없음
+ *        ⑤ 턱 그림자 데칼(턱선을 윗변으로 한 V 쐐기 · 목 모양으로 자름) — 머리와 목은 선이 아니라 그림자로 나뉨
+ *        ⑥ 얼굴 덮개(m2-fcv · 몸 옷 위 · 이목구비 아래): 같은 얼굴 살을 한 번 더(채움 + 목과 겹치지 않는 바깥 윤곽만) — 깃·어깨(꼬마 2등신) 위로 얼굴이 오게
+ *  등신 한 식: 목 길이 n(HC)(02 §2.6 · 07 §7.1) — 2.5 이하 0 · 3 = 0.08 · 4 = 0.15 · 6.5 이상 = 객체 값(어른 0.27~0.43) · 사이는 선형 */
+const MSC2_NKBASE = { kf: 0.27, km: 0.27, tf: 0.27, tm: 0.28, af: 0.30, am: 0.30, mf: 0.30, mm: 0.28, of: 0.18, om: 0.18 }; /* 6.5등신 이상에서의 목 길이(바이블 02 §2.2 쇄골 패임 − 턱 · 꼬마 객체를 늘이면 청소년 값으로 감 · 노인은 굽은 자세 뒤 값) — (fix_face) 실제 어른 목 길이는 MSC2_OBJ.sn 표가 정함(몸 영역) · 이 값은 SD 보간·시험 T70 기준이라 그대로 둠 */
+function msc2NeckN(hc, base) { base = base == null ? 0.3 : base; if (!(hc > 2.5)) return 0; if (hc <= 3) return (0.08 * (hc - 2.5)) / 0.5; if (hc <= 4) return 0.08 + 0.07 * (hc - 3); if (hc >= 6.5) return base; return 0.15 + ((base - 0.15) * (hc - 4)) / 2.5; }
+const msc2NeckBase = (k) => MSC2_NKBASE[String(k || '').slice(0, 2)] != null ? MSC2_NKBASE[String(k || '').slice(0, 2)] : 0.3;
+/* 목 위 폭(정면 최소 · × 얼굴 폭 HW) — 02 §2.3-2 · 사람만(동물·로봇·외계인은 종마다 정한 폭) */
+/* (fix_face 3묶음) T67·T16(02 §2.3-1·2) 원래 기대값을 얼굴형으로 맞추는 스위치 — 켜면 목 폭 = 02 §2.3-2 실측 표 + 턱끝이 목 폭만큼 넓어짐(msc2FaceHalf · 여 0.30·남 0.37HW @0.88) = 정범님이 지적한 사다리꼴·네모 상자(시트 40) · 끄면 승인된 아니메 얼굴형 + 아니메 목(03 §3.1) · 코디네이터 판단 전까지 꺼 둠 */
+const MSC2_NKFIT = false;
+const MSC2_NKR = MSC2_NKFIT ? { kid: [0.30, 0.37], tf: [0.40, 0.50], tm: [0.48, 0.60], af: [0.45, 0.60], am: [0.60, 0.70] } : { kid: [0.30, 0.37], tf: [0.43, 0.47], tm: [0.46, 0.55], af: [0.43, 0.47], am: [0.55, 0.63] }; /* (fix_face) 아니메 목 = 03 §3.1 [v1→v2] '아니메 목 여 0.40~0.45HW(실측보다 30% 가늚)'·bb11e66a 0.45~0.5 사이 0.43~0.47' · anat.realism 기본 0 — 02 §2.3-2 실측 범위(여 0.45~0.60)는 '목이 얼굴 폭만 한 기둥'으로 보였음(정범님 10/30 00:30) */
+function msc2NkClamp(o, half) { if (!o || o.ani) return half; const c = o.kid ? 'kid' : (o.k[0] === 't' ? 't' : 'a') + (o.sex === 'f' ? 'f' : 'm'); const r = MSC2_NKR[c]; if (!r) return half; const k = (2 * half) / o.hw; return (Math.max(r[0] + 0.005, Math.min(r[1] - 0.005, k)) * o.hw) / 2; }
+/* 머리 쪽 고리 값(머리 좌표 H) — wn 위 반폭 · dn 깊이 반폭(정면 폭 × 1.2 · 애니 1.15~1.5) · zc 고리 가운데 깊이(앞 끝 = 턱끝 뒤 0.13H) · yF/yS/yB = 앞·옆·뒤 높이 · ins = 턱선 안쪽 최소 여유 */
+const MSC2_NKPC = new Map(); /* 머리 고리 값 저장(객체·목 폭·얼굴형마다 같음 — 다시 그릴 때마다 얼굴 반쪽을 새로 만들지 않게) */
+function msc2NeckP(o, W, ft) { const ck = o.k + '|' + o.hw + '|' + W.nk + '|' + ft + '|' + (o.ani || ''); const c0 = MSC2_NKPC.get(ck); if (c0) return { ...c0 }; const r = msc2NeckP0(o, W, ft); if (MSC2_NKPC.size > 400) MSC2_NKPC.clear(); MSC2_NKPC.set(ck, r); return { ...r }; }
+function msc2NeckP0(o, W, ft) { const hw = o.hw, wn = W.nk, half = msc2FaceHalf(o, ft); const hx = (y) => { for (let i = 1; i < half.length; i++) if (half[i][1] >= y) { const a = half[i - 1], b = half[i]; return a[0] + (b[0] - a[0]) * ((y - a[1]) / (b[1] - a[1] || 1)); } return 0; };
+  let yS = 0; for (let y = 0.97; y >= 0.86 - 1e-9; y -= 0.005) if (hx(y) - wn >= 0.09 * hw) { yS = y; break; } if (!yS) { yS = 0.8; for (let y = 0.9; y >= 0.8 - 1e-9; y -= 0.005) if (hx(y) - wn >= 0.065 * hw) { yS = y; break; } } /* (fix_face) 아니메 턱(볼–턱 직선 · 턱 0.9 높이 폭 0.4)은 예전 U 턱보다 좁아 목선이 턱 모서리 아래(0.80~0.90)에서 나옴 — 487a3c20·bb11e66a '목은 귀 밑 안쪽에서' */ /* 긴 얼굴 + 굵은 목(중년 남 등): 턱끝 위 0.10을 넘어(≤0.12) 목 폭(02 §2.3-2)을 지킴 */ /* 옆 점 높이 = 턱끝 위 0.03~0.10H 중 턱선 안쪽 여유가 0.09HW 되는 가장 낮은 곳(02 §2.3-1 · 평균 0.10HW) */
+  const dn = wn * (o.sex === 'm' && !o.kid && !o.ani ? 1.45 : 1.2) /* (fix_face 3묶음 · T68 태오 1.27) 남 목 깊이/폭 1.2 → 1.45(02 §2.3-8 애니 1.15~1.5) — 3/4에서 목이 더 넓게 보임 */, chinZ = 0.51 * (hw / 2); return { wn, dn, zc: chinZ - 0.13 - dn, yF: Math.min(0.985, yS + 0.03), yS, yB: Math.max(0.58, Math.min(0.72, 0.67 - 0.35 * ((2 * wn) / hw - 0.46))), ins: 0.06 * hw, hw, e: 1 / 3, rb: o.ani === 'robot' ? 1 : 0 }; }
+/* 가슴 쪽 고리 + 승모근 시작(몸 좌표 H) — 몸통 윤곽 첫 점들(msc2Contour가 씀): T0 = 목 아래쪽(목 곡선이 닿는 곳) · B = 밑동(승모근 시작 · 폭 ≥ 1.1 × 위) */
+function msc2NeckBase2(o, W) { const m = o.sex === 'm' && !o.kid; const wn = W.nk, acX = W.sh - 0.085; const al = ((o.kid ? 15 : m ? (o.k[0] === 't' ? 20 : 22) : 18) * Math.PI) / 180; /* 승모근 비탈(02 §2.3-5 편안 15~25°) */
+  const wB = Math.max(wn * 1.12, Math.min(wn * 1.18, acX - 0.04)); let yB = o.sh + 0.012 - Math.tan(al) * (acX - wB); yB = Math.max(1.02, Math.min(o.sn + 0.02, yB)); const yT0 = yB - Math.min(0.06, 0.35 * Math.max(0, yB - 0.97)); return { wB, yB, xT0: wn + (wB - wn) * 0.45, yT0, al }; }
+/* 몸 쪽 점(화면 · 몸 3/4 돌림까지) — msc2BodySvg가 data-b로 넣음: [T0R, BR, IR, D, IL, BL, T0L] */
+function msc2NeckBody(sk, C2, M, Y) { const o = sk.o, W = sk.W; const nb = C2.nb || msc2NeckBase2(o, W); const cR = C2.cR; const P = (q) => { let x = M.X(q[0]); const y = M.Y(q[1]); if (Y) x = Y.body(x, y); return [x, y]; };
+  const T0 = (s) => P(C2['t' + s][0]), B = (s) => P(C2['t' + s][1]), T2 = (s) => P(C2['t' + s][2]); return [T0('R'), B('R'), P(cR([nb.xT0 * 0.55, nb.yB + 0.05])), P(cR([0, nb.yB + 0.1])), P(cR([-nb.xT0 * 0.55, nb.yB + 0.05])), B('L'), T0('L'), T2('R'), T2('L')]; } /* 7·8 = 승모근 가운데(3/4에서 가까운 목 선이 내려와 닿는 곳) */
+/* 2자리 글자 */ const msc2F2 = (v) => String(Math.round(v * 100) / 100);
+const msc2Q2 = (q) => msc2F2(q[0]) + ' ' + msc2F2(q[1]);
+const msc2SD2 = (S) => (S.length ? 'M' + msc2Q2(S[0][0]) + S.map((s) => 'C' + msc2Q2(s[1]) + ' ' + msc2Q2(s[2]) + ' ' + msc2Q2(s[3])).join('') : '');
+/* 얼굴 윤곽(요 2.5D) — msc2Turn과 같은 식(그 함수가 이것을 씀) · 돌려줌 { L, R } 머리 좌표 H(L은 x < 0) */
+function msc2FaceYaw(o, half, yb) { const tb = (yb * Math.PI) / 180, sb = Math.sin(tb), Db = 0.6 * (o.hw / 2) * sb; const sm = (e0, e1, y) => { const q = Math.max(0, Math.min(1, (y - e0) / (e1 - e0))); return q * q * (3 - 2 * q); };
+  const side = (s) => half.map(([x, y]) => { const far = s * sb > 0; const k = 0.3 + 0.55 * sm(0.5, 1.0, y) * (1 - (Math.abs(x) / (o.hw / 2)) * 0.35); let dx = Db * sm(0.3, 0.55, y) * k; if (far) dx += -s * Math.abs(sb) * (o.hw / 2) * (0.09 * Math.exp(-Math.pow((y - 0.55) / 0.07, 2)) - 0.1 * Math.exp(-Math.pow((y - 0.71) / 0.11, 2))); else dx += s * Math.abs(sb) * (o.hw / 2) * (o.kid ? 0 : o.sex === 'm' ? 0.12 : 0.06) * sm(0.55, 0.82, y) * (1 - sm(0.9, 1, y)); /* (fix_face 3묶음 ④ · 03 §3.6 · 02 §2.3-10) 3/4 가까운 턱 = 턱 모서리가 드러나며 넓어짐(남 0.10 · 여 0.06 × 반폭) — 가까운 목선이 턱각을 따라 내려와 3/4 목 폭 = 정면 × 1.3~1.5 */ return [s * x + dx, y]; });
+  return { L: side(-1), R: side(1), yb }; }
+/* 머리 쪽 고리(머리 좌표 H · 요 yb° · 피치 pit°) — 3D 점 → 화면 평면(x, y) · 돌려줌 { pts, iL, iR } */
+function msc2HeadRing(hp, yb, pit, n) { n = n || 36; const t = (yb * Math.PI) / 180, ct = Math.cos(t), st = Math.sin(t), sp = Math.sin((pit * Math.PI) / 180); const pw = (v) => Math.sign(v) * Math.pow(Math.abs(v), hp.e); const pts = []; let iL = 0, iR = 0;
+  for (let i = 0; i < n; i++) { const ph = (i / n) * Math.PI * 2, cp = Math.cos(ph), spp = Math.sin(ph); const x = hp.wn * pw(spp), z = hp.zc + hp.dn * pw(cp); const y = hp.yS + (hp.yF - hp.yS) * Math.max(0, cp) + (hp.yB - hp.yS) * Math.pow(Math.max(0, -cp), 0.8);
+    const X = x * ct + z * st, Z = -x * st + z * ct; pts.push([X, y + 0.13 * sp * (Z / 0.45), Z]); if (X < pts[iL][0]) iL = i; if (X > pts[iR][0]) iR = i; } return { pts, iL, iR }; }
+/* 얼굴 윤곽 x(머리 좌표 · 한쪽) */ const msc2SideAt = (S, y) => { for (let i = 1; i < S.length; i++) if (S[i][1] >= y) { const a = S[i - 1], b = S[i]; return a[0] + (b[0] - a[0]) * ((y - a[1]) / (b[1] - a[1] || 1)); } return S[S.length - 1][0]; };
+/* 다각형 안 점 */ const msc2InPoly = (P, x, y) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const a = P[i], b = P[j]; if (a[1] > y !== b[1] > y && x < ((b[0] - a[0]) * (y - a[1])) / (b[1] - a[1] || 1e-9) + a[0]) c = !c; } return c; };
+/* ── 한 번 계산: 얼굴 살(살 층 · 덮개) · 목 · 턱 그림자 · (로봇) 목 마디 ──
+ *  hp 머리 고리 값(+ u · y0c) · sides 얼굴 윤곽(요) · mat 머리 묶음 행렬 [a b c d e f](머리 그림 좌표 → 화면) · hTy 머리 위아래(CSS) · yb 요 · pit 피치 · br 숨 늘이기 [sx sy tx ty] · Bp 몸 쪽 점(화면) */
+function msc2NeckGeo(hp, sides, mat, hTy, yb, pit, br, Bp) { const u = hp.u, y0c = hp.y0c; const [a, b, c, d, e, f] = mat;
+  const S = (q) => { const X = 50 + q[0] * u, Y = y0c + q[1] * u + hTy; return [a * X + c * Y + e, b * X + d * Y + f]; }; /* 머리 좌표 → 화면 */
+  const I = br ? (q) => [(q[0] - br[2]) / br[0], (q[1] - br[3]) / br[1]] : (q) => q; const Fw = br ? (q) => [q[0] * br[0] + br[2], q[1] * br[1] + br[3]] : (q) => q; /* 화면 ↔ 몸 그림(숨으로 늘인 위 그림) */
+  const L = sides.L, R = sides.R; const FH = L.slice().reverse().concat(R.slice(1, -1)); const Fs = FH.map(S); const segF = msc2Segs(Fs.concat([Fs[0]])); const faceD = msc2SD2(segF) + 'Z'; const faceB = br ? msc2SD2(msc2Segs(Fs.map(I).concat([I(Fs[0])]))) + 'Z' : faceD;
+  /* ① 머리 고리 → 목 윗점(바깥 둘) · 턱선 안쪽 여유(ins) 안으로 */ const rg = msc2HeadRing(hp, yb, pit); const A = { L: rg.pts[rg.iL].slice(0, 2), R: rg.pts[rg.iR].slice(0, 2) };
+  const kq = Math.min(1, Math.abs(Math.sin((yb * Math.PI) / 180)) / Math.sin((40 * Math.PI) / 180)); const nearL = yb > 0; /* 요 + = 얼굴이 화면 오른쪽 → 가까운 쪽 = 왼쪽 */
+  ['L', 'R'].forEach((k) => { const s = k === 'L' ? -1 : 1; const q = A[k]; q[1] = Math.min(0.985, q[1]); const near = (k === 'L') === nearL && yb !== 0; const lim = msc2SideAt(k === 'L' ? L : R, q[1]) - s * hp.ins * (near ? Math.max((2 * hp.wn) / hp.hw < 0.4 ? 0.6 : 0.05, 1 - 1.3 * kq) /* (fix_face 3묶음 · T68 아롱 1.58) 꼬마 가는 목 0.35 → 0.6 */ : 1 - (yb && (2 * hp.wn) / hp.hw > 0.5 ? 0.5 * kq : 0)) /* 굵은 목(남) 3/4 먼 쪽 목선 = 턱끝 바로 안쪽(02 §2.3-10) — 여유 반으로 */ /* 꼬마(가는 목)는 덜 바깥으로 */; if (s * q[0] > s * lim) q[0] = lim; }); /* 3/4 가까운 쪽 목 선 = 귀 밑 턱각에서 턱선을 이어 내려옴(02 §2.3-10) — 턱선 안쪽 여유를 줄임 */ if (A.L[0] > A.R[0] - 0.02) { const m = (A.L[0] + A.R[0]) / 2; A.L[0] = m - 0.01; A.R[0] = m + 0.01; }
+  const AsS = { L: S(A.L), R: S(A.R) }; const dv = (() => { const l = Math.hypot(c, d) || 1; return [c / l, d / l]; })(); /* 머리 아래 방향(롤 따라 기욺) */
+  /* ② 목 옆 곡선: A(화면) → T0(몸) · 위 접선 = 머리 아래 · 아래 접선 = T0→B(몸통 윤곽 첫 마디) → 2차 곡선 조절점 = 두 접선의 만남 */
+  const along = (Q, d) => { for (let i = 0; i < Q.length - 1; i++) { const a = Q[i], b = Q[i + 1], l = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1e-6; if (d <= l || i === Q.length - 2) { const t = Math.min(1, d / l); return [[a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t], [a[0] + (b[0] - a[0]) * Math.min(1, t + 0.05) + (b[0] - a[0]) * 0.02, a[1] + (b[1] - a[1]) * Math.min(1, t + 0.05) + (b[1] - a[1]) * 0.02]]; } d -= l; } return [Q[0], Q[1]]; };
+  const wT = Math.hypot(Bp[0][0] - Bp[6][0], Bp[0][1] - Bp[6][1]); const foot = (k) => { const near = (k === 'L') === nearL && yb !== 0; const Q = k === 'R' ? [Bp[0], Bp[1], Bp[7] || Bp[1]] : [Bp[6], Bp[5], Bp[8] || Bp[5]]; if (!near || !kq) return [Q[0], Q[1]]; const AsN = S(A[k]); const ln = Math.max(0, Math.min(1, (Fw(Q[0])[1] - AsN[1]) / (0.34 * u))); return along(Q, kq * 0.75 * wT * ln * (1 + 5 * Math.max(0, (2 * hp.wn) / hp.hw - 0.5))); }; /* 굵은 목(남자)은 더 내려감 */ /* 목이 짧으면(꼬마) 덜 내려감 */ /* 3/4 가까운 쪽 목 밑동은 승모근 쪽으로 내려가 닿음(목 3/4 폭 = 정면 × 1.3~1.5 · 02 §2.3-10) */
+  const FR = foot('R'), FL = foot('L'); const T0 = { R: Fw(FR[0]), L: Fw(FL[0]) }, Bb = { R: Fw(FR[1]), L: Fw(FL[1]) }; const Tb = { R: FR[0], L: FL[0] }; const ctl = (Aq, T, B2) => { let tx = B2[0] - T[0], ty = B2[1] - T[1]; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl; const Dx = T[0] - Aq[0], Dy = T[1] - Aq[1], dl = Math.hypot(Dx, Dy) || 1; const det = dv[0] * ty - dv[1] * tx; if (Math.abs(det) > 1e-3) { const al = (Dx * ty - Dy * tx) / det, be = (dv[0] * Dy - dv[1] * Dx) / det; if (al > 0.05 * dl && be > 0.05 * dl && al < 1.6 * dl && be < 1.6 * dl) return [Aq[0] + dv[0] * al, Aq[1] + dv[1] * al]; } return [Aq[0] + dv[0] * dl * 0.5, Aq[1] + dv[1] * dl * 0.5]; };
+  const lim = (Aq, T, Cq, sg) => { const cx = T[0] - Aq[0], cy = T[1] - Aq[1], cl = Math.hypot(cx, cy) || 1; let nx = cy / cl, ny = -cx / cl; if (nx * sg < 0) { nx = -nx; ny = -ny; } /* 바깥(목 가운데에서 먼 쪽) 법선 */ const mx = (Aq[0] + T[0]) / 2, my = (Aq[1] + T[1]) / 2; const o = (Cq[0] - mx) * nx + (Cq[1] - my) * ny; const mxO = 0.1 * cl; return o > mxO ? [Cq[0] - (o - mxO) * nx, Cq[1] - (o - mxO) * ny] : Cq; }; /* 목 옆선이 바깥으로 불룩(턱 옆에 살이 튀어나옴)하지 않게 — 조절점 바깥 몫 ≤ 현의 0.1 */
+  const sgR = Math.sign((T0.R[0] - T0.L[0]) || 1); const C = { R: lim(AsS.R, T0.R, ctl(AsS.R, T0.R, Bb.R), sgR), L: lim(AsS.L, T0.L, ctl(AsS.L, T0.L, Bb.L), -sgR) }; const K = S([(A.L[0] + A.R[0]) / 2, Math.min(A.L[1], A.R[1]) - 0.06]);
+  const nb = { R: [I(AsS.R), I(C.R), Tb.R], L: [Tb.L, I(C.L), I(AsS.L)] }; /* 몸 그림 좌표 */
+  const neckD = `M${msc2Q2(nb.R[0])}Q${msc2Q2(nb.R[1])} ${msc2Q2(nb.R[2])}L${msc2Q2(Bp[2])}L${msc2Q2(Bp[3])}L${msc2Q2(Bp[4])}L${msc2Q2(nb.L[0])}Q${msc2Q2(nb.L[1])} ${msc2Q2(nb.L[2])}Q${msc2Q2(I(K))} ${msc2Q2(nb.R[0])}Z`;
+  /* 화면 좌표 목 다각형(덮개 윤곽 자르기 · 시험) */ const qb = (p0, p1, p2, t) => [(1 - t) * (1 - t) * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0], (1 - t) * (1 - t) * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1]]; const NP = []; for (let i = 0; i <= 10; i++) NP.push(qb(AsS.R, C.R, T0.R, i / 10)); /* 목 몸(T0 선 위)만 — 몸통 위쪽(I·D)은 넣지 않음(머리가 몸통 위에 겹친 곳의 턱선은 그대로 그림) */ for (let i = 0; i <= 10; i++) NP.push(qb(T0.L, C.L, AsS.L, i / 10)); for (let i = 1; i < 6; i++) NP.push(qb(AsS.L, K, AsS.R, i / 6));
+  /* ③ 덮개 바깥 윤곽 = 얼굴 윤곽 중 목 밖(가장 긴 이어진 몫) · 끝은 목 선과 만나는 점까지 */ const FS = msc2Smp(segF, 3); /* (fix_face) 얼굴 점이 늘어 마디당 표본 4 → 3(덮개 윤곽 글자 수 · 그림 ≤130KB) */ const n = FS.length - 1; let bx0 = 1e9, bx1 = -1e9, by0 = 1e9, by1 = -1e9; NP.forEach((q) => { if (q[0] < bx0) bx0 = q[0]; if (q[0] > bx1) bx1 = q[0]; if (q[1] < by0) by0 = q[1]; if (q[1] > by1) by1 = q[1]; }); const inN = FS.slice(0, n).map((q) => q[0] >= bx0 && q[0] <= bx1 && q[1] >= by0 && q[1] <= by1 && msc2InPoly(NP, q[0], q[1])); /* 목 상자 밖은 바로 '밖' */ let outD = '', chinD = '';
+  if (!inN.some((v) => v)) outD = 'M' + FS.slice(0, n).map(msc2Q2).join('L') + 'Z'; else { let best = null; for (let i = 0; i < n; i++) if (!inN[i] && inN[(i + n - 1) % n]) { let j = i, len = 0; while (!inN[j % n] && len < n) { j++; len++; } if (!best || len > best.len) best = { i, len }; }
+    if (best) { const pts = []; const cross = (p, q) => { let lo = 0, hi = 1; for (let k = 0; k < 12; k++) { const mid = (lo + hi) / 2; const r = [p[0] + (q[0] - p[0]) * mid, p[1] + (q[1] - p[1]) * mid]; if (msc2InPoly(NP, r[0], r[1])) hi = mid; else lo = mid; } return [p[0] + (q[0] - p[0]) * lo, p[1] + (q[1] - p[1]) * lo]; };
+      pts.push(cross(FS[best.i], FS[(best.i + n - 1) % n])); for (let k = 0; k < best.len; k++) pts.push(FS[(best.i + k) % n]); pts.push(cross(FS[(best.i + best.len - 1) % n], FS[(best.i + best.len) % n])); outD = 'M' + pts.map(msc2Q2).join('L');
+      /* (fix_face · 정범님 10/30 '턱선이 목 안쪽으로 이어지지 않음') 목 위에 겹친 턱끝 몫도 가는 선으로 이어 그림 — 설정표(7f56ba2b·487a3c20)는 턱선이 턱끝까지 이어지고 목선은 그 뒤에서 나옴 · 두 끝은 가늘게 빠져 목선과 만나는 곳에 모서리가 없음 */
+      const cp = [cross(FS[(best.i + best.len - 1) % n], FS[(best.i + best.len) % n])]; for (let k = best.len; k < n; k++) { const q = FS[(best.i + k) % n]; if (inN[(best.i + k) % n]) cp.push(q); } cp.push(pts[0]); const cq = cp.filter((q, i2) => i2 === 0 || i2 === cp.length - 1 || i2 % 3 === 0); if (cq.length > 3) chinD = 'M' + cq.map(msc2Q2).join('L'); } }
+  /* ④ 턱 그림자(V 쐐기 · 02 §2.3-7): 윗변 = 턱선(가까운 쪽은 3/4에서 턱각까지) · 깊이 0.13H(정면) → 0.19H(3/4) · 끝은 가까운 쪽으로 */
+  const th0 = 0.8; /* (fix_face 2묶음 · 감사 A-11 '턱 밑 그늘 없거나 약함') 윗변 시작 0.86 → 0.80(아니메 턱은 좁아 0.86 아래 턱선이 짧았음) · 깊이 0.13 → 0.16 */ const thL = nearL ? th0 - 0.12 * kq : th0 + 0.04 * kq, thR = nearL ? th0 + 0.04 * kq : th0 - 0.12 * kq; const sel = L.filter((q) => q[1] >= thL).concat(R.filter((q) => q[1] >= thR).reverse().slice(1)); const cx = L[L.length - 1][0]; const tip = [cx + (nearL ? -1 : 1) * 0.1 * kq * (yb ? 1 : 0), 1 + 0.16 + 0.05 * kq];
+  const selS = sel.filter((q, i2) => i2 % 2 === 0 || i2 === sel.length - 1).map(S).map(I); /* 점 절반(그림 ≤130KB) */ const csD = selS.length > 1 ? msc2SD2(msc2Segs(selS)) + 'L' + msc2Q2(I(S(tip))) + 'Z' : '';
+  /* ⑤ (로봇) 금속 목 마디 두 줄 */ let rbD = ''; if (hp.rb) [0.42, 0.7].forEach((t) => { const p = qb(T0.L, C.L, AsS.L, 1 - t), q = qb(AsS.R, C.R, T0.R, t); const m = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2 + 0.06 * u]; rbD += `M${msc2Q2(I(p))}Q${msc2Q2(I(m))} ${msc2Q2(I(q))}`; });
+  return { faceD, faceB, neckD, csD, outD, chinD, rbD, A, As: AsS, ring: rg, C, K, NP, Fs, FS }; }
+/* 몸 그림 안 자리표(msc2BodySvg defs) — 얼굴 살·목·턱 그림자는 m2-nox(몸 3/4 점 옮기기에서 뺌 · 머리 변환으로 따로 계산) */
+function msc2NeckDefs(p, NB, hp) { return `<path id="${p}-fc2" class="m2-nox" d="M0 0"/><path id="${p}-nk" class="m2-nox" data-b="${NB.map((q) => msc2Q2(q).replace(' ', ',')).join(' ')}" data-h="${[hp.wn, hp.dn, hp.zc, hp.yF, hp.yS, hp.yB, hp.ins, hp.hw, hp.e, hp.rb, hp.u, hp.y0c].map((v) => +(+v).toFixed(4)).join(',')}" d="M0 0"/><clipPath id="${p}-nkc"><use href="#${p}-nk"/></clipPath>`; }
+const msc2NkH = (s) => { const v = s.split(',').map(Number); return { wn: v[0], dn: v[1], zc: v[2], yF: v[3], yS: v[4], yB: v[5], ins: v[6], hw: v[7], e: v[8], rb: v[9], u: v[10], y0c: v[11] }; };
+const msc2NkB = (s) => s.split(' ').map((q) => q.split(',').map(Number));
+/* 그림 글자에 넣기(한 장 그림 · msc2Build) */
+function msc2NeckFill(svg, p, g) { const rep = (id, dd) => { const k = `id="${p}-${id}"`; const i = svg.indexOf(k); if (i < 0) return; const j = svg.indexOf('d="M0 0"', i); if (j < 0 || j - i > 600) return; svg = svg.slice(0, j) + `d="${dd}"` + svg.slice(j + 8); }; rep('fc2', g.faceB); rep('nk', g.neckD); rep('cs', g.csD || 'M0 0'); rep('nkr', g.rbD || 'M0 0'); return svg; }
+/* 얼굴 덮개 묶음(몸 위 · 머리 묶음 아래) */
+function msc2CoverSvg(p, g, C) { const sk = C.skin, ln = mscLn(sk); return `<g class="m2-fcv" id="${p}-fcv"><path class="m2-fcvo" d="${g.outD}" fill="none" stroke="${ln}" stroke-width="${mscF(MSC2_LW * msc2OutK())}" stroke-linejoin="round" stroke-linecap="butt"/><path class="m2-fcvf" d="${g.faceD}" fill="${sk}"/><path class="m2-fcvc" d="${g.chinD || 'M0 0'}" fill="none" stroke="${ln}" stroke-width="${mscF(MSC2_LW * 0.6)}" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/></g>`; }
+/* 머리 묶음 행렬(translate(tx ty) rotate(r cx cy)) */
+function msc2HMat(tx, ty, r, cx, cy) { const t = (r * Math.PI) / 180, k = Math.cos(t), s = Math.sin(t); return [k, s, -s, k, tx + cx - k * cx + s * cy, ty + cy - s * cx - k * cy]; }
+/* 매 프레임(또는 한 장 그림에 msc2Turn을 쓴 뒤): DOM에서 머리 행렬을 읽어 얼굴 살·목·그림자·덮개를 다시 씀 — 바뀐 게 없으면 건너뜀 */
+function msc2NeckUpd(svg, p, V) { if (!svg) return null; V = V || {}; let E = V.nkE; if (!E || !E.nk || !E.nk.isConnected) { const con = svg.isConnected; const q = (id) => (con ? document.getElementById(p + '-' + id) : svg.querySelector(`[id="${p}-${id}"]`)); const nk = q('nk'); if (!nk) return null; const P0 = E && E.svg === svg && E.cvo && E.cvo.isConnected ? E : null; /* 덮개·머리 묶음은 몸을 다시 그려도 그대로 — 다시 찾지 않음 */
+    E = V.nkE = { svg, nk, fc: q('fc2'), cs: q('cs'), rb: q('nkr'), cvo: P0 ? P0.cvo : svg.querySelector('.m2-fcv .m2-fcvo'), cvf: P0 ? P0.cvf : svg.querySelector('.m2-fcv .m2-fcvf'), cvc: P0 ? P0.cvc : svg.querySelector('.m2-fcv .m2-fcvc'), hg: P0 ? P0.hg : svg.querySelector('.m2-hg'), hp: P0 && P0.hS === nk.getAttribute('data-h') ? P0.hp : msc2NkH(nk.getAttribute('data-h') || ''), hS: nk.getAttribute('data-h'), B: msc2NkB(nk.getAttribute('data-b') || ''), key: '' }; }
+  let m = [1, 0, 0, 1, 0, 0]; try { const t = E.hg && E.hg.transform.baseVal.consolidate(); if (t) { const M2 = t.matrix; m = [M2.a, M2.b, M2.c, M2.d, M2.e, M2.f]; } } catch (er) {}
+  const tc = V.tc || {}; const yb = tc.yb || 0, pit = tc.pit || 0, hTy = V.hTy || 0, br = V.brM || null; const sides = tc.sides || V.nkSides; if (!sides) return null;
+  const key = m.map((x) => Math.round(x * 400)).join(',') + '|' + Math.round(hTy * 40) + '|' + yb + '|' + Math.round(pit * 2) + '|' + (br ? br.map((x) => Math.round(x * 2000)).join(',') : ''); if (key === E.key) return E.g; E.key = key;
+  const g = msc2NeckGeo(E.hp, sides, m, hTy, yb, pit, br, E.B); E.g = g; E.nk.setAttribute('d', g.neckD); if (E.fc) E.fc.setAttribute('d', g.faceB); if (E.cs) E.cs.setAttribute('d', g.csD || 'M0 0'); if (E.rb) E.rb.setAttribute('d', g.rbD || 'M0 0'); if (E.cvo) E.cvo.setAttribute('d', g.outD); if (E.cvf) E.cvf.setAttribute('d', g.faceD); if (E.cvc) E.cvc.setAttribute('d', g.chinD || 'M0 0'); V.nkN = (V.nkN || 0) + 1; return g; }
+
