@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.183의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.184의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.183' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.183', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.184' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.184', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1450,6 +1450,7 @@
       const queue = [...unresolved.map((l) => ({ l, bookId: null })), ...[...byBook.entries()].sort((a, b) => String(checked.get(a[0]) || '').localeCompare(String(checked.get(b[0]) || ''))).map(([bookId, l]) => ({ l, bookId })), ...soldNoBook.map((l) => ({ l, bookId: null }))]; // 순서: 판매 중(번호 없음) → 판매 중 다시 확인 → 판매완료(도서 정보 없음)
       const prog = (await loadProgress('market')) || { i: 0, total: queue.length, done: 0, fail: 0, startedAt: nowIso() };
       const doneSet = new Set(LS.get('market_done', []));
+      { const qTags = new Set(queue.map((q) => q.bookId || 'aladin_' + q.l.usedCode)); for (const t of [...doneSet]) if (!qTags.has(t)) doneSet.delete(t); } /* (4시간 점검 11/03 · 🪶) 완료 표에 지난 회차 찌꺼기가 쌓여 '3,767/836'처럼 전체보다 크게 보이고 10개마다 4천 개짜리 표를 통째로 다시 적던 것 — 이번 대상에 든 책만 남김 */
       for (let i = 0; i < queue.length; i++) {
         if (stopFlag) { await saveProgress('market', prog); LS.set('market_done', [...doneSet]); throw new Error('멈춤'); }
         const { l } = queue[i]; let { bookId } = queue[i];

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.183
+// @version      1.89.184
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -4918,6 +4918,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       const queue = [...unresolved.map((l) => ({ l, bookId: null })), ...[...byBook.entries()].sort((a, b) => String(checked.get(a[0]) || '').localeCompare(String(checked.get(b[0]) || ''))).map(([bookId, l]) => ({ l, bookId })), ...soldNoBook.map((l) => ({ l, bookId: null }))]; // 순서: 판매 중(번호 없음) → 판매 중 다시 확인 → 판매완료(도서 정보 없음)
       const prog = (await loadProgress('market')) || { i: 0, total: queue.length, done: 0, fail: 0, startedAt: nowIso() };
       const doneSet = new Set(LS.get('market_done', []));
+      { const qTags = new Set(queue.map((q) => q.bookId || 'aladin_' + q.l.usedCode)); for (const t of [...doneSet]) if (!qTags.has(t)) doneSet.delete(t); } /* (4시간 점검 11/03 · 🪶) 완료 표에 지난 회차 찌꺼기가 쌓여 '3,767/836'처럼 전체보다 크게 보이고 10개마다 4천 개짜리 표를 통째로 다시 적던 것 — 이번 대상에 든 책만 남김 */
       for (let i = 0; i < queue.length; i++) {
         if (stopFlag) { await saveProgress('market', prog); LS.set('market_done', [...doneSet]); throw new Error('멈춤'); }
         const { l } = queue[i]; let { bookId } = queue[i];
