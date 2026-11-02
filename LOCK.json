@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "알라딘 매입 겹침 결정·추천 탭·수량 상대 줄이기 판 내기",
+ "since": "2026-11-02T02:21:57Z",
+ "beat": "2026-11-02T02:21:57Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-02T01:41:35Z"
  },
- "host": null
+ "host": "vm"
 }
