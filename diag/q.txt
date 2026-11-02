@@ -1,2 +1,2 @@
-doc=app_settings/ratio_study,app_settings/sp_panel,sp_daily/2026-10-17,sp_daily/2026-10-18,sp_daily/2026-10-19,sp_daily/2026-10-20,sp_daily/2026-10-21,sp_daily/2026-10-22,sp_daily/2026-10-23,sp_daily/2026-10-24,sp_daily/2026-10-25,sp_daily/2026-10-26,sp_daily/2026-10-27,sp_daily/2026-10-28,sp_daily/2026-10-29,sp_daily/2026-10-30,sp_daily/2026-10-31,sp_daily/2026-11-01,sp_daily/2026-11-02
-# 3001321178
+y24p=1&y24m=1&ttl=%EB%A7%88%EB%8F%84%EC%B9%B4
+# 202323639
