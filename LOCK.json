@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "friend",
+ "what": "r18 회차 7 옷 색 0.15.17",
+ "since": "2026-11-02T07:07:01Z",
+ "beat": "2026-11-02T07:07:01Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-02T07:03:42Z"
  },
- "host": null
+ "host": "vm-r7"
 }
