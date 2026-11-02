@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "작업 기준 원칙 적기",
+ "since": "2026-11-02T01:41:29Z",
+ "beat": "2026-11-02T01:41:29Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "",
   "at": "2026-11-01T23:18:10Z"
  },
- "host": null
+ "host": "vm"
 }
