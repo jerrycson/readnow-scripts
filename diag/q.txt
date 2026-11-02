@@ -1,2 +1,2 @@
-doc=ext_probe/kyobo_20261102,ext_probe/naverbook_20261102,ext_probe/kyobo_20261101,ext_probe/naverbook_20261101,ext_probe/kyobo_20261031,ext_probe/naverbook_20261031,app_settings/pc_roles,app_settings/ext_run&cmds=regLookup&n=60
-# 2325612637
+recentUp=ext_pool&mins=2&logs=1&pc=LOGGER&from=202611010000
+# 910618496
