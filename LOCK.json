@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "회차1 원본 정리",
- "since": "2026-11-02T02:40:12Z",
- "beat": "2026-11-02T02:40:12Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "friend",
-  "done": "r17 ui 0.15.16·PC 0.2.2 올림",
-  "at": "2026-11-02T02:37:31Z"
+  "done": "r18 회차1 원본 정리 f68e2be (friend/src만)",
+  "at": "2026-11-02T02:40:25Z"
  },
- "host": "vm-r1"
+ "host": null
 }
