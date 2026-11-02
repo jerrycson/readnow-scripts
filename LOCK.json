@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "설명서·연구 페이지 탐색 판 내기",
- "since": "2026-11-02T14:25:55Z",
- "beat": "2026-11-02T14:25:55Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-02T14:10:41Z"
+  "at": "2026-11-02T14:31:45Z"
  },
- "host": "vm"
+ "host": null
 }
