@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "ALPS 로그인 판단 고침 판 내기",
+ "since": "2026-11-02T07:13:26Z",
+ "beat": "2026-11-02T07:13:26Z",
  "ask": null,
  "last": {
   "who": "friend",
   "done": "r18 회차 7 0.15.17 올림",
   "at": "2026-11-02T07:07:30Z"
  },
- "host": null
+ "host": "vm"
 }
