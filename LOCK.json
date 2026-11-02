@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "운영 묶음·품절 연구 판 내기",
+ "since": "2026-11-02T09:22:54Z",
+ "beat": "2026-11-02T09:22:54Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-02T09:16:05Z"
  },
- "host": null
+ "host": "vm"
 }
