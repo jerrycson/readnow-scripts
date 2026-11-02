@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "MJ-MAIN 등록 PC·교보·네이버 판 내기",
+ "since": "2026-11-02T11:59:37Z",
+ "beat": "2026-11-02T11:59:37Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-02T11:36:53Z"
  },
- "host": null
+ "host": "vm"
 }
