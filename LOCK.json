@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "ALPS 세부 진행 열린 채로 판 내기",
- "since": "2026-11-02T08:51:59Z",
- "beat": "2026-11-02T08:51:59Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-02T07:15:30Z"
+  "at": "2026-11-02T08:53:06Z"
  },
- "host": "vm"
+ "host": null
 }
