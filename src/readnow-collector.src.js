@@ -4839,6 +4839,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
 
   /* ───────── 2. 도서 정보·시장 지표 ───────── */
   const BOOK_FIXED = ['title', 'subtitle', 'series', 'contributors', 'publisher', 'aladinPublisherId', 'pubDate', 'originalTitle', 'isbn13', 'pages', 'size', 'weightG', 'categories', 'basicExtra'];
+  /* (정범님 11/02 📕 품절·절판 연구) 새책 상태 글자 하나 — S 판매중 · P 품절 · J 절판 · T 일시품절 · G 구판·합본절판 · R 예약 · X 그 밖 · avEvent = 'YYMMDDHH|전>후'(한국 시각 · 전·후 모두 있고 다를 때만) — 클라우드·웹앱과 같은 뜻 */
+  const avCode = (a) => { a = String(a || ''); if (!a) return null; if (a === 'onSale') return 'S'; if (/^(구판|합본)절판/.test(a)) return 'G'; if (/일시품절/.test(a)) return 'T'; if (/^절판/.test(a)) return 'J'; if (/품절/.test(a)) return 'P'; if (/예약/.test(a)) return 'R'; return 'X'; };
+  const avEvent = (at, from, to) => { const a = avCode(from), b = avCode(to); if (!a || !b || a === b) return null; const t = Date.parse(at); if (!isFinite(t)) return null; return new Date(t + 9 * 3600e3).toISOString().slice(2, 13).replace(/[-T]/g, '') + '|' + a + '>' + b; };
   const METRICS = ['priceList', 'priceSales', 'salesPoint', 'rating', 'commentCount', 'reviewCount', 'availability', 'usedTotal', 'usedTabs', 'usedMins', 'buyback', 'buyerDist', 'relationBuy'];
   async function resolveBookId(listing) {
     for (const k of ['usedCode', 'isbn13', 'aladinCode', 'isbn10']) {
@@ -4969,7 +4972,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const ch = P.diff(prevM, cur, METRICS); for (const k of Object.keys(ch)) if (stabJ(ch[k].from) === stabJ(ch[k].to)) delete ch[k]; /* (1.89.44 자동 점검) 묶음 칸(usedTabs·usedMins·buyback·buyerDist)은 Firestore에서 칸 이름 순으로 돌아와 화면에서 만든 묶음과 JSON 글자가 늘 달라, 바뀐 것 없이도 책을 읽을 때마다 '바뀜' 기록을 남겼음(10/23 24시간 prd_metric_changes 15,545 · 시장 지표 5,878의 2.6배) → 칸 순서와 상관없이 같으면 뺌 */
     const rk = P.rankTransitions(prevM && prevM.activeRanks, page.ranks);
     const b2 = db.batch();
-    b2.set(mRef, { bookId, ...cur, activeRanks: page.ranks, lastCheckedAt: at, dynamicPending: !(buyerDist || relationBuy), checkedBy: PC_NAME, ...(used ? { usedFirstPage: used.listings, usedAt: at } : {}), ...W() }, { merge: true }); /* (1.89.42) usedAt = 첫 쪽을 실제로 읽은 때(⚡ 전략 실행이 오래된 첫 쪽을 새것으로 보지 않게) */
+    const avE = ch.availability ? avEvent(at, ch.availability.from, ch.availability.to) : null; /* (정범님 11/02 📕 품절·절판 연구) 새책 상태가 실제로 바뀐 때만 한 줄(avHist · 지우지 않음 · 같은 문서 쓰기에 얹음 — 쓰기 수 그대로) */
+    b2.set(mRef, { bookId, ...cur, activeRanks: page.ranks, lastCheckedAt: at, dynamicPending: !(buyerDist || relationBuy), checkedBy: PC_NAME, ...(used ? { usedFirstPage: used.listings, usedAt: at } : {}), ...(avE ? { avHist: firebase.firestore.FieldValue.arrayUnion(avE) } : {}), ...W() }, { merge: true }); /* (1.89.42) usedAt = 첫 쪽을 실제로 읽은 때(⚡ 전략 실행이 오래된 첫 쪽을 새것으로 보지 않게) */
     if (Object.keys(ch).length) b2.set(C('prd_metric_changes').doc(), { bookId, at, changes: ch, firstRecord: !prevM, ...W() });
     // 온라인 중고 첫 페이지 매물의 변화 이력 (1.21.0): 이전 관측과 다른 것만 쌓음 — 덮어쓰는 usedFirstPage와 달리 지워지지 않는 기록
     /* (1.57.2) 첫 페이지가 조금이라도 달라지면(순서만 바뀐 것 · 비교 칸 밖의 칸까지) 그때의 첫 페이지 전체(page)를 함께 남김 — 바뀐 칸만 적던 예전엔 순서 변화·다른 칸 변화가 남지 않았음. 같으면 아무것도 쓰지 않음 */
