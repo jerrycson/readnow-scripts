@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "진단 열쇠 바꾸기",
+ "since": "2026-11-02T11:36:47Z",
+ "beat": "2026-11-02T11:36:47Z",
  "ask": null,
  "last": {
   "who": "friend",
   "done": "",
   "at": "2026-11-02T10:58:54Z"
  },
- "host": null
+ "host": "vm"
 }
