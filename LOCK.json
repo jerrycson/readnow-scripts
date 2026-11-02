@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "ALPS 2단계·메뉴 고침 판 내기",
- "since": "2026-11-02T06:48:17Z",
- "beat": "2026-11-02T07:01:34Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-02T06:35:42Z"
+  "at": "2026-11-02T07:03:42Z"
  },
- "host": "vm"
+ "host": null
 }
