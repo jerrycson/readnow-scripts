@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "④ 출고 탭 정렬 판 내기",
+ "since": "2026-11-02T14:01:50Z",
+ "beat": "2026-11-02T14:01:50Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-02T13:51:25Z"
  },
- "host": null
+ "host": "vm"
 }
