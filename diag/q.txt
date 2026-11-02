@@ -1,2 +1,2 @@
-health=1&hours=4
-# 3006125301
+ttl=%EB%B0%94%EC%BC%80%EB%AA%A8%EB%85%B8&doc=app_settings/y24_state,prd_system/pricing,app_settings/platforms&samp=y24_listings&recentUp=y24_listings&mins=600
+# 2606123956
