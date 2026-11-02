@@ -1,2 +1,2 @@
-doc=prd_jobs/cs_2026-10-27,prd_jobs/cs_2026-10-28,prd_jobs/cs_2026-10-29,prd_jobs/cs_2026-10-30,prd_jobs/cs_2026-10-31,prd_jobs/cs_2026-11-01,prd_jobs/cs_2026-11-02,app_settings/write_watch,prd_system/jobStats,app_settings/ext_run,app_settings/oop_study
-# 1809816775
+doc=prd_jobs/autoSched,prd_system/autoSched,crm_system/pc_ctl,crm_system/work_lock,crm_system/pub_lock,app_settings/bench,prd_jobs/request,app_settings/sys_registry,app_settings/pc_live,prd_jobs/autoAck_2026-11,prd_system/autoAck,prd_system/settings,prd_jobs/benchForce,app_settings/ext,app_settings/cloud_jobs,app_settings/cloud,app_settings/ship_notify,crm_system/collectRequest,app_settings/bi_x,crm_system/usage_2026-11-02,app_settings/oop_study,app_settings/rare_study,app_settings/value_model,app_settings/ext_cover_stat&recentUp=rn_status&mins=240
+# 63093860
