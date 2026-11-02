@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "friend",
+ "what": "책방 친구: 웹앱에 태오·서윤 연구 일지 + 설명서 옛 위치 글",
+ "since": "2026-11-02T15:05:53Z",
+ "beat": "2026-11-02T15:05:53Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-02T14:31:45Z"
  },
- "host": null
+ "host": "vm-friend"
 }
