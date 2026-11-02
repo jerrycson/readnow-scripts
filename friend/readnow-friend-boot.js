@@ -66,13 +66,31 @@ function frIpcWarn() { const I = FR.ipc; if (!I || !I.bad || FR.win === 'set' ||
 setTimeout(() => { if (FR.ipc && FR.ipc.bad && !FR.ipc.ok) frIpcWarn(); }, 15e3);
 
 function frOpenUrl(u) { if (!frPost('open', { url: u })) try { window.open(u, '_blank', 'noopener'); } catch (e) {} }
+
+/* ══ (r17 · 정범님 10/30 오후 ① 창 막기) PC 프로그램(WebView2)에서 브라우저 기능 단축키·새 창이 창을 띄우지 않게 — 캐릭터 창·설정 창 둘 다
+ *  Ctrl+P 인쇄 · Ctrl+S 다른 이름으로 저장 · Ctrl+F 찾기 · Ctrl+O·N·T·U·J·H·D·G · F3·F5·F7(커서 브라우징 묻는 창)·F11·F12 · Ctrl+Shift+I·J·C 개발 도구 · Ctrl+휠·+/−/0 확대 · window.open·새 창 링크(가운데·Ctrl·Shift 클릭 포함) → 기본 브라우저로 */
+function frGuardOn() { if (FR.guard || frHostType() !== 'tauri') return; FR.guard = { key: 0, win: 0, link: 0 }; const G = FR.guard; const ed = (t) => !!(t && t.closest && t.closest('input,textarea,select,[contenteditable]'));
+  addEventListener('keydown', (e) => { const c = e.code || '', t = e.target; let bad = false;
+    if (/^F(3|5|7|11|12)$/.test(c) || (c === 'F4' && e.ctrlKey)) bad = true;
+    else if (e.ctrlKey && !e.altKey) { if (e.shiftKey && /^(KeyI|KeyJ|KeyC|KeyP|KeyN|KeyO|KeyS|KeyDelete|Delete)$/.test(c)) bad = true; else if (!e.shiftKey && /^(KeyP|KeyS|KeyF|KeyG|KeyO|KeyN|KeyT|KeyU|KeyJ|KeyH|KeyD|KeyR|KeyW|KeyE|KeyK|KeyL|Equal|Minus|Digit0|NumpadAdd|NumpadSubtract|Numpad0)$/.test(c)) bad = !(ed(t) && /^(KeyZ|KeyY)$/.test(c)); }
+    if (bad) { e.preventDefault(); G.key++; } }, true); /* 막기만(멈추지 않음) — 책방 친구 단축키(Alt·Ctrl 조합)는 그대로 처리됨 */
+  addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { capture: true, passive: false });
+  try { window.open = function (u) { const s = String(u || ''); G.win++; if (/^https:\/\//i.test(s)) frPost('open', { url: s }); return null; }; } catch (e) {}
+  document.addEventListener('click', (e) => { const a = e.target && e.target.closest && e.target.closest('a[href]'); if (!a) return; const h = a.getAttribute('href') || ''; if (h.startsWith('#') || /^javascript:/i.test(h)) return; if (!(a.target === '_blank' || e.ctrlKey || e.shiftKey || e.metaKey || /^https?:/i.test(h))) return; e.preventDefault(); G.link++; try { const u = new URL(h, location.href).href; if (/^https:\/\//i.test(u)) frPost('open', { url: u }); } catch (x) {} }, true);
+  document.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); G.link++; } }, true); }
+frGuardOn();
+/* ══ (r17 · 정범님 10/30 오후 ③ 단축키) 프로그램(0.2.2)이 전역 단축키를 받으면 'gkey'로 넘겨 줌 → 같은 키를 누른 것처럼 화면 단축키 처리 함수로 */
+function frGKey(k) { const P = String(k || '').split('+'); const code = P.pop() || ''; if (!code) return false; const m = new Set(P); const key = /^Key[A-Z]$/.test(code) ? (m.has('Shift') ? code.slice(3) : code.slice(3).toLowerCase()) : /^Digit\d$/.test(code) ? code.slice(5) : ({ Comma: ',', Backquote: '`', Enter: 'Enter', Period: '.', Slash: '/', Semicolon: ';', Quote: "'", Minus: '-', Equal: '=', Space: ' ', BracketLeft: '[', BracketRight: ']', Backslash: '\\' })[code] || code;
+  FR.gkN = (FR.gkN || 0) + 1; FR.gkLast = k; const ev = new KeyboardEvent('keydown', { key, code, altKey: m.has('Alt'), ctrlKey: m.has('Ctrl'), shiftKey: m.has('Shift'), metaKey: m.has('Meta'), bubbles: true, cancelable: true }); (document.activeElement && document.activeElement !== document.documentElement ? document.activeElement : document.body).dispatchEvent(ev); return true; }
+function frGkSync() { if (FR.win === 'set' || frHostType() !== 'tauri' || !frShellAtLeast('0.2.2') || typeof mscGkList !== 'function') return; let L = []; try { L = mscGkList(); } catch (e) {} const k = L.join(','); if (k === FR.gkSent && Date.now() - (FR.gkAt || 0) < 300e3) return; FR.gkSent = k; FR.gkAt = Date.now(); frPost('gkeys', { keys: L }); } /* 바뀌었을 때(+5분마다 다짐) */
+setInterval(frGkSync, 1000);
 /* 본체 고리 */
 window.RNF_HOOKS = {
   go: (k) => frOpenUrl(RNF_APP() + (k === 'order' ? '?go=confirm' : k === 'qna' ? '?go=qna' : '')), /* 말풍선 '보기 ›' = 기본 브라우저로 웹앱 그 화면 */
   msg: (id, d) => { frPost('notify', { id, title: '💬 ' + String(((d && d.from) || {}).name || '책방 친구'), text: String((d && d.text) || '').slice(0, 200), hidden: FR.hidden ? 1 : 0 }); return false; }, /* 안드로이드 알림 · 화면에도 보임 */
   panHtml: () => frPanHtml(), widgetHtml: () => '', off: () => FR.win === 'set' }; /* (P5) 설정 창 = 캐릭터·알림 없이 설정만 */
 
-/* ══ (r16 · 정범님 10/30) 🐾 3초 누르기 옮기기 — 프로그램(PC·안드로이드)에서는 자리를 FR.pos(Ctrl+끌기와 같은 칸)로 · 끄는 동안 창 전체가 손가락·마우스를 받음 · 🗑 = 프로그램 끝내기 ══ */
+/* ══ (r16 · 정범님 10/30) 🐾 2초 누르기 옮기기 — 프로그램(PC·안드로이드)에서는 자리를 FR.pos(Ctrl+끌기와 같은 칸)로 · 끄는 동안 창 전체가 손가락·마우스를 받음 · 🗑 = 프로그램 끝내기 ══ */
 function frMvStart(x, y, f) { if (FR.drag && FR.drag.on && !FR.drag.mv) return; const p0 = FR.pos.slice(); f = f || [0, 0]; FR.pos = [FR.pos[0] + (+f[0] || 0), FR.pos[1] + (+f[1] || 0)]; frPosApply();
   FR.drag = { id: null, mv: 1, el: null, sx: x, sy: y, lx: x, ly: y, gx: x - (innerWidth + FR.pos[0]), gy: y - (innerHeight + FR.pos[1]), on: 1, mt: 0, at: performance.now(), p0 };
   document.documentElement.classList.add('fr-moving'); FR.rk = ''; frTick(); frPost('win_drag', { phase: 'start', x: Math.round(x), y: Math.round(y), dx: FR.pos[0], dy: FR.pos[1], dpr: window.devicePixelRatio || 1, vw: innerWidth, vh: innerHeight, by: 'ico' }); }
@@ -158,6 +176,8 @@ window.__rnFriendCmd = function (cmd, arg) { if (cmd === 'geom') { FR.geom = arg
   if (cmd === 'drag_to') { if (FR.drag && arg && Number.isFinite(+arg.x) && Number.isFinite(+arg.y)) { FR.drag.at = performance.now(); FR.drag.lx = +arg.x; FR.drag.ly = +arg.y; frDragAt(+arg.x, +arg.y); } return true; }
   if (cmd === 'hitdbg') { FR.hitdbg = arg || null; return true; } /* (r16 · 0.2.1) 클릭 통과 진단 — 살아 있음 문서 dbg.hit */
   if (cmd === 'hide' || cmd === 'show') { FR.hidden = cmd === 'hide'; document.documentElement.classList.toggle('rn-fhide', FR.hidden); FR.rk = ''; frTick(); frBeat(); return true; }
+  if (cmd === 'gkey') return frGKey(arg && arg.k); /* (r17 · 0.2.2) 전역 단축키 */
+  if (cmd === 'gkeys') { const ok = (arg && arg.ok) || [], bad = (arg && arg.bad) || []; FR.gk = { ok, bad, at: Date.now() }; const nb = bad.filter((k) => !(FR.gkTold || []).includes(k)); if (nb.length) { FR.gkTold = (FR.gkTold || []).concat(nb); try { toast('⌨ ' + nb.map((k) => (typeof mscMkLbl === 'function' ? mscMkLbl(k) : k)).join(' · ') + ' — 다른 프로그램이 먼저 쓰고 있어 다른 프로그램을 쓰는 중에는 못 받아요(캐릭터 창을 누른 뒤에는 돼요 · 단추 단축키는 💬 줄 ⌨에서 바꿀 수 있어요)', 1, 8000); } catch (e) {} } return true; }
   if (cmd === 'bye') return frBeat(true).then(() => { frPost('byeok', null); return true; });
   if (cmd === 'esc') { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); return true; }
   /* (10/29 정범님 ③) 프로그램 명령 허용 목록 — 이 셋만 받음: say(글 · 120자까지 말함) · open(order·qna·bad 화면) */
@@ -249,11 +269,12 @@ function frMoveBind() {
   addEventListener('keydown', (e) => { if (e.key === 'Control') document.documentElement.classList.add('fr-ctrl'); }); addEventListener('keyup', (e) => { if (e.key === 'Control') document.documentElement.classList.remove('fr-ctrl'); }); addEventListener('blur', () => document.documentElement.classList.remove('fr-ctrl'));
   addEventListener('resize', () => { if (!(FR.drag && FR.drag.on)) { FR.pos = frPosClamp(FR.pos); frPosApply(); } }); }
 /* 캐릭터 옆 ⚙(캐릭터에 마우스를 올리면 나타남 · 캐릭터 상자 바깥 왼쪽 위라 손·발 끌기와 안 겹침): PC 프로그램 0.2.0 이상 = 설정 창(새 창) · 그 밖 = 같은 화면 안 설정(예전 그대로) */
-function frSettingsOpen() { if (frHostType() === 'tauri' && frShellAtLeast('0.2.0') && frPost('open_settings', { toggle: true })) { try { toast(frShellAtLeast('0.2.1') ? '⚙ 설정 창 — 한 번 더 누르면 닫혀요' : '⚙ 설정 창을 열어요'); } catch (e) {} return true; } try { mscPanel(!document.getElementById('msc_ov')); } catch (e) {} return false; } /* (r16) 다시 누르면 닫힘(PC 프로그램 0.2.1부터 설정 창도) */
+function frSettingsOpen() { if (frHostType() === 'tauri' && frShellAtLeast('0.2.0') && frPost('open_settings', frSetAt())) { try { toast(frShellAtLeast('0.2.1') ? '⚙ 설정 창 — 한 번 더 누르면 닫혀요' : '⚙ 설정 창을 열어요'); } catch (e) {} return true; } try { mscPanel(!document.getElementById('msc_ov')); } catch (e) {} return false; } /* (r16) 다시 누르면 닫힘(PC 프로그램 0.2.1부터 설정 창도) */
+function frSetAt() { const o = { toggle: true }; const ch = document.getElementById('msc_ch'); const q = ch && ch.getBoundingClientRect(); if (q && q.width) { o.cx = Math.round((q.left + q.right) / 2); o.cy = Math.round((q.top + q.bottom) / 2); o.dpr = window.devicePixelRatio || 1; } return o; } /* (r17 · 0.2.2) 설정 창을 캐릭터가 있는 모니터에 — 캐릭터 가운데(CSS px · 이 창 안) */
 function frOnChar(x, y) { const ch = document.getElementById('msc_ch'); if (!ch) return false; const q = ch.getBoundingClientRect(); return q.width > 0 && x >= q.left + q.width * 0.12 && x <= q.right - q.width * 0.12 && y >= q.top && y <= q.bottom; } /* 캐릭터 몸(상자 가운데 76% · 눌리는 칸과 같은 폭) 위인가 */
 function frGearBind() { let g = null, tm = 0, mt = 0;
   const place = () => { const ch = document.getElementById('msc_ch'); if (!ch || !g) return false; const q = ch.getBoundingClientRect(); if (!q.width) return false; const s = 30; let x = q.left + q.width * 0.12 - s - 2; if (x < 4) x = q.right - q.width * 0.12 + 2; g.style.left = Math.round(Math.min(innerWidth - s - 4, x)) + 'px'; g.style.top = Math.round(Math.max(4, q.top + q.height * 0.04)) + 'px'; return true; };
-  const show = () => { if (FR.hidden || (FR.drag && FR.drag.on)) return; if (!g) { g = document.createElement('button'); g.id = 'msc_frgear'; /* id가 msc_로 시작 = 캐릭터 것(캐릭터가 이 단추를 장애물로 보고 비켜 가지 않게 · mscAvOwn) */ g.type = 'button'; g.className = 'fr-hgear'; g.textContent = '⚙'; g.title = '책방 친구 설정 — PC 프로그램은 설정 창(새 창)으로 · Ctrl을 누른 채 캐릭터를 끌면 자리 옮기기';
+  const show = () => { if (FR.hidden || (FR.drag && FR.drag.on)) return; if (document.getElementById('msc_gear')) { if (g && g.style.display !== 'none') { g.style.display = 'none'; FR.rk = ''; } return; } /* (r17 · 정범님 '설정 단추 하나가 추가로 캐릭터 왼쪽 위에 떠') 🐾 옆 ⚙가 있으면 둘째 ⚙를 띄우지 않음 */ if (!g) { g = document.createElement('button'); g.id = 'msc_frgear'; /* id가 msc_로 시작 = 캐릭터 것(캐릭터가 이 단추를 장애물로 보고 비켜 가지 않게 · mscAvOwn) */ g.type = 'button'; g.className = 'fr-hgear'; g.textContent = '⚙'; g.title = '책방 친구 설정 — PC 프로그램은 설정 창(새 창)으로 · Ctrl을 누른 채 캐릭터를 끌면 자리 옮기기';
       g.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); frSettingsOpen(); }); g.addEventListener('pointerenter', () => { clearTimeout(tm); tm = 0; }); g.addEventListener('pointerleave', hideSoon); document.body.appendChild(g); }
     if (!place()) return; clearTimeout(tm); tm = 0; if (g.style.display !== 'flex') { g.style.display = 'flex'; FR.rk = ''; frTick(); } };
   FR.gearPlace = () => { if (g && g.style.display === 'flex') place(); }; /* 캐릭터가 비켜 가면(장애물 피하기) ⚙도 따라감 — frTick(250ms)이 부름 */

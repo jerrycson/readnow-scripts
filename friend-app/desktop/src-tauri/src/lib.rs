@@ -11,6 +11,8 @@
 //! · 바깥 알림(10/29): ① 같은 PC 창구 http://127.0.0.1:47613/say?m=글(&f=보낸 곳) · /open?p=order|qna|bad (브라우저 요청은 뺌)
 //! · 바깥 알림 ③ 연결 주소 readnow-friend://say?m=글(&f=보낸 곳) · readnow-friend://open?p=order|qna|bad — 허용 명령은 이 셋뿐
 //! · 껍데기 새 판: GitHub 판(friend-v…)을 6시간마다 확인 → …-setup.exe 를 받아 조용히(/S) 설치하고 다시 켬
+//! · (0.2.2 · 정범님 10/30) 전역 단축키: 화면이 쓰는 단축키 목록(friend_post "gkeys")을 윈도우 전역 단축키로 등록 → 눌리면 화면에 gkey로 넘김(캐릭터 창은 투명·클릭 통과라 키보드 초점이 없어 단축키가 하나도 안 됐음) · 다른 프로그램이 이미 쓰면 화면에 bad로 알림
+//! · (0.2.2) ⚙ 설정 창은 캐릭터가 있는 모니터(작업 영역 가운데)에 · 이미 떠 있으면 그 모니터로 옮겨 앞으로 · window.open·새 창 요청은 막고 https 주소만 기본 브라우저로 · 문맥 메뉴(오른쪽 클릭·길게 누름) 막음(글 칸 빼고)
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex,
@@ -125,6 +127,10 @@ struct App {
     drag_watch: AtomicBool,
     /// 설정 창을 만드는 중(두 번 눌러 둘 생기지 않게)
     set_opening: AtomicBool,
+    /// (0.2.2) 등록한 전역 단축키(단축키 id, 화면 이름 "Alt+KeyM") — 눌리면 이 이름을 화면에 넘김
+    gkeys: Mutex<Vec<(u32, String)>>,
+    /// (0.2.2) 단축키 등록을 한 번에 하나만(다른 실에서 · 처리기는 이 잠금을 안 씀)
+    gk_lock: Mutex<()>,
 }
 
 fn prefs_path(app: &AppHandle) -> Option<std::path::PathBuf> {
@@ -255,8 +261,15 @@ fn friend_post(app: AppHandle, window: tauri::Window, kind: String, data: serde_
                         let _ = w.close();
                     });
                 }
-                _ => open_settings(&app),
+                _ => open_settings(&app, char_pt(&app, &data)),
             }
+        }
+        // (0.2.2) 화면이 쓰는 단축키 목록 → 전역 단축키로(다른 실에서 · 메인 실을 막지 않게)
+        // (0.2.2) 단축키 '다른 모니터로 보내기' — 트레이 '모니터 바꾸기'와 같음
+        "next_monitor" => next_monitor(&app),
+        "gkeys" => {
+            let keys: Vec<String> = data.get("keys").and_then(|x| x.as_array()).map(|a| a.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect()).unwrap_or_default();
+            gkeys_apply(app.clone(), keys);
         }
         // (0.2.1) 🐾 단추를 🗑 쓰레기통에 놓음 → 프로그램 끝내기(트레이 '종료'와 같음)
         "quit" => quit(&app),
@@ -291,15 +304,160 @@ fn friend_post(app: AppHandle, window: tauri::Window, kind: String, data: serde_
 /// 화면 쪽 프로그램 다리(window.__rnFriendHost) — win = '' 캐릭터 창 · 'set' 설정 창
 fn host_init(win: &str) -> String {
     format!(
-        "window.__rnFriendHost=window.__rnFriendHost||{{type:'tauri',ver:'{VER}',win:'{win}',post:function(k,d){{try{{var p=window.__TAURI_INTERNALS__&&window.__TAURI_INTERNALS__.invoke('friend_post',{{kind:String(k),data:d==null?null:d}});if(p&&p.catch)p.catch(function(){{}});}}catch(e){{}}}}}};"
+        "window.__rnFriendHost=window.__rnFriendHost||{{type:'tauri',ver:'{VER}',win:'{win}',post:function(k,d){{try{{var p=window.__TAURI_INTERNALS__&&window.__TAURI_INTERNALS__.invoke('friend_post',{{kind:String(k),data:d==null?null:d}});if(p&&p.catch)p.catch(function(){{}});}}catch(e){{}}}}}};{NOMENU}"
     )
+}
+
+/// (0.2.2) 문맥 메뉴(오른쪽 클릭·펜/손가락 길게 누름 → WebView2 기본 메뉴 '뒤로·새로 고침·다른 이름으로 저장·인쇄·검사' 창) 막기 — 글 칸만 그대로(붙여 넣기)
+const NOMENU: &str = "document.addEventListener('contextmenu',function(e){var t=e.target;if(!(t&&t.closest&&t.closest('input,textarea,[contenteditable]')))e.preventDefault();},true);";
+
+/// (0.2.2) window.open·target=_blank·가운데 클릭 같은 새 창 요청 → 새 WebView 창을 만들지 않음 · https 주소면 기본 브라우저로
+fn new_win_guard(app: AppHandle) -> impl Fn(url::Url, tauri::webview::NewWindowFeatures) -> tauri::webview::NewWindowResponse<tauri::Wry> + Send + 'static {
+    move |u, _f| {
+        if u.scheme() == "https" {
+            let _ = app.opener().open_url(u.as_str(), None::<&str>);
+        }
+        tauri::webview::NewWindowResponse::Deny
+    }
+}
+
+/// (0.2.2) 화면이 준 캐릭터 가운데(CSS px · 캐릭터 창 안) — 없으면 None
+fn char_pt(app: &AppHandle, data: &serde_json::Value) -> Option<(f64, f64)> {
+    let cx = data.get("cx").and_then(|x| x.as_f64())?;
+    let cy = data.get("cy").and_then(|x| x.as_f64())?;
+    if !cx.is_finite() || !cy.is_finite() {
+        return None;
+    }
+    let w = win(app)?;
+    let pos = w.inner_position().ok()?;
+    let sf = w.scale_factor().ok().filter(|s| *s > 0.1).unwrap_or(1.0);
+    let dpr = data.get("dpr").and_then(|x| x.as_f64()).filter(|d| *d > 0.1 && *d < 8.0).unwrap_or(sf);
+    Some(char_phys((pos.x as f64, pos.y as f64), dpr, (cx, cy)))
+}
+
+/// 캐릭터 창 안 CSS px → 화면 물리 px (순수 함수 · 단위 시험)
+fn char_phys(win_pos: (f64, f64), dpr: f64, css: (f64, f64)) -> (f64, f64) {
+    (win_pos.0 + css.0 * dpr, win_pos.1 + css.1 * dpr)
+}
+
+/// (0.2.2) 캐릭터가 있는 모니터: 화면이 준 캐릭터 가운데 → 그 점의 모니터 · 없으면 캐릭터 창(한 모니터의 작업 영역을 덮음)의 가운데
+fn char_monitor(app: &AppHandle, at: Option<(f64, f64)>) -> Option<tauri::Monitor> {
+    let w = win(app)?;
+    let pt = at.or_else(|| {
+        let p = w.inner_position().ok()?;
+        let z = w.inner_size().ok()?;
+        Some((p.x as f64 + z.width as f64 / 2.0, p.y as f64 + z.height as f64 / 2.0))
+    })?;
+    app.monitor_from_point(pt.0, pt.1).ok().flatten().or_else(|| w.current_monitor().ok().flatten())
+}
+
+/// 설정 창 자리(물리 px): 그 모니터 작업 영역 가운데 · 크기 1100×760(그 모니터 배율) · 작업 영역보다 크면 줄임 (순수 함수 · 단위 시험)
+fn set_rect(wa_pos: (i32, i32), wa_size: (u32, u32), sf: f64) -> (i32, i32, u32, u32) {
+    let sf = if sf > 0.1 { sf } else { 1.0 };
+    let w = ((1100.0 * sf).round() as i64).min(wa_size.0 as i64 - 16).max(200) as u32;
+    let h = ((760.0 * sf).round() as i64).min(wa_size.1 as i64 - 16).max(150) as u32;
+    let x = wa_pos.0 + ((wa_size.0 as i64 - w as i64) / 2) as i32;
+    let y = wa_pos.1 + ((wa_size.1 as i64 - h as i64) / 2) as i32;
+    (x, y, w, h)
+}
+
+/// 설정 창을 그 모니터 가운데에 — 배율이 다른 모니터로 넘어가면 윈도우가 크기를 다시 맞추므로 자리·크기·자리 차례로
+fn place_set(w: &WebviewWindow, m: &tauri::Monitor) {
+    let wa = m.work_area();
+    let (x, y, ww, hh) = set_rect((wa.position.x, wa.position.y), (wa.size.width, wa.size.height), m.scale_factor());
+    let _ = w.set_position(PhysicalPosition::new(x, y));
+    let _ = w.set_size(PhysicalSize::new(ww, hh));
+    let _ = w.set_position(PhysicalPosition::new(x, y));
+}
+
+/// (0.2.2) 화면 단축키 이름("Alt+Shift+KeyW" · KeyboardEvent.code 방식) → 전역 단축키 글("Alt+Shift+KeyW") · Alt·Ctrl·Meta 중 하나는 꼭 · 허용 키만 (순수 함수 · 단위 시험)
+fn gk_accel(k: &str) -> Option<String> {
+    let parts: Vec<&str> = k.split('+').collect();
+    if parts.len() < 2 || parts.len() > 4 {
+        return None;
+    }
+    let (mods, key) = parts.split_at(parts.len() - 1);
+    let key = key[0];
+    let mut out: Vec<String> = Vec::new();
+    let mut strong = false;
+    for m in mods {
+        match *m {
+            "Ctrl" => { out.push("Ctrl".into()); strong = true; }
+            "Alt" => { out.push("Alt".into()); strong = true; }
+            "Meta" => { out.push("Super".into()); strong = true; }
+            "Shift" => out.push("Shift".into()),
+            _ => return None,
+        }
+    }
+    let ok = (key.len() == 4 && key.starts_with("Key") && key.as_bytes()[3].is_ascii_uppercase())
+        || (key.len() == 6 && key.starts_with("Digit") && key.as_bytes()[5].is_ascii_digit())
+        || ["Comma", "Period", "Slash", "Semicolon", "Quote", "Backquote", "Enter", "Minus", "Equal", "BracketLeft", "BracketRight", "Backslash", "Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End"].contains(&key)
+        || (key.starts_with('F') && key.len() <= 3 && key[1..].parse::<u8>().map(|n| (1..=12).contains(&n)).unwrap_or(false));
+    /* (0.2.2 · 코디네이터) PC 전체(전역)로는 두 키 조합만 — Alt+Enter(엑셀 칸 안 줄바꿈)·Alt+M·Alt+N·Alt+숫자 같은 한 키 조합은
+       엑셀·워드·브라우저의 단축키를 가로채므로 등록하지 않음(그 키는 책방 친구 창에 초점이 있을 때만 화면이 직접 받음) */
+    if !strong || !ok || out.len() < 2 {
+        return None;
+    }
+    out.push(key.to_string());
+    Some(out.join("+"))
+}
+
+/// (0.2.2) 전역 단축키를 화면 목록대로 다시 등록(다른 실에서) → 결과(ok·bad)를 화면에 알림
+fn gkeys_apply(app: AppHandle, want: Vec<String>) {
+    use std::str::FromStr;
+    use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};
+    std::thread::spawn(move || {
+        let st = app.state::<Arc<App>>().inner().clone();
+        let _g = st.gk_lock.lock().unwrap();
+        let gs = app.global_shortcut();
+        let _ = gs.unregister_all();
+        *st.gkeys.lock().unwrap() = Vec::new();
+        let (mut ok, mut bad, mut list) = (Vec::<String>::new(), Vec::<String>::new(), Vec::<(u32, String)>::new());
+        for k in want.iter().take(40) {
+            if ok.contains(k) || bad.contains(k) {
+                continue;
+            }
+            let sc = gk_accel(k).and_then(|a| Shortcut::from_str(&a).ok());
+            match sc {
+                Some(sc) if gs.register(sc).is_ok() => {
+                    list.push((sc.id(), k.clone()));
+                    ok.push(k.clone());
+                }
+                _ => bad.push(k.clone()),
+            }
+        }
+        *st.gkeys.lock().unwrap() = list;
+        let j = |v: &Vec<String>| serde_json::to_string(v).unwrap_or_else(|_| "[]".into());
+        js(&app, &format!("window.__rnFriendCmd&&window.__rnFriendCmd('gkeys',{{ok:{},bad:{}}})", j(&ok), j(&bad)));
+    });
+}
+
+/// (0.2.2) 전역 단축키가 눌림 → 화면에 그 이름을 넘김(화면이 같은 단축키 처리 함수로 처리)
+fn gk_fire(app: &AppHandle, id: u32) {
+    let name = {
+        let st = app.state::<Arc<App>>();
+        let g = st.gkeys.lock().unwrap();
+        g.iter().find(|(i, _)| *i == id).map(|(_, n)| n.clone())
+    };
+    if let Some(n) = name {
+        let k = serde_json::to_string(&n).unwrap_or_else(|_| "\"\"".into());
+        js(app, &format!("window.__rnFriendCmd&&window.__rnFriendCmd('gkey',{{k:{k}}})"));
+    }
 }
 
 /// (0.2.0) ⚙ 설정 창 열기 — 이미 있으면 앞으로 · 없으면 보통 창(테두리 · 1100×760 · 항상 위 아님)으로 만듦
 /// 창 만들기는 다른 실에서(윈도우에서 명령·메뉴 처리 중에 바로 만들면 멈출 수 있음)
-fn open_settings(app: &AppHandle) {
+fn open_settings(app: &AppHandle, at: Option<(f64, f64)>) {
+    let mon = char_monitor(app, at);
     if let Some(w) = app.get_webview_window(LABEL_SET) {
         let _ = w.unminimize();
+        // (0.2.2) 이미 떠 있는 설정 창이 캐릭터와 다른 모니터에 있으면 캐릭터 모니터 가운데로 옮김
+        if let Some(m) = &mon {
+            let here = w.current_monitor().ok().flatten().and_then(|x| x.name().cloned());
+            if here != m.name().cloned() {
+                place_set(&w, m);
+            }
+        }
         let _ = w.show();
         let _ = w.set_focus();
         return;
@@ -319,15 +477,24 @@ fn open_settings(app: &AppHandle) {
                 .decorations(true)
                 .always_on_top(false)
                 .skip_taskbar(false)
-                .center()
+                .visible(false)
                 .focused(true)
                 .initialization_script(&host_init("set"))
                 .additional_browser_args(BROWSER_ARGS)
+                .on_new_window(new_win_guard(app2.clone()))
                 .build()
                 .ok()
         });
         match built {
             Some(w) => {
+                // (0.2.2) 캐릭터가 있는 모니터 작업 영역 가운데 — 못 찾으면 주 모니터 가운데(예전 center와 같음)
+                match mon.or_else(|| w.primary_monitor().ok().flatten()) {
+                    Some(m) => place_set(&w, &m),
+                    None => {
+                        let _ = w.center();
+                    }
+                }
+                let _ = w.show();
                 let _ = w.set_focus();
             }
             None => js(&app2, "typeof toast==='function'&&toast('⚙ 설정 창을 열지 못했어요 — 트레이 🐾 › 설정으로 다시 해 주세요')"),
@@ -907,7 +1074,7 @@ fn build_tray(app: &AppHandle) -> tauri::Result<()> {
                 app.state::<Arc<App>>().prefs.lock().unwrap().on_top = Some(v);
                 save_prefs(app);
             }
-            "set" => open_settings(app),
+            "set" => open_settings(app, None),
             "mon" => next_monitor(app),
             "auto" => {
                 let v = auto2.is_checked().unwrap_or(false);
@@ -949,6 +1116,16 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec!["--autostart"])))
+        .plugin(
+            // (0.2.2) 전역 단축키 — 눌림(Pressed)만 화면에 넘김
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, sc, ev| {
+                    if ev.state() == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        gk_fire(app, sc.id());
+                    }
+                })
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![friend_post])
         .setup(|app| {
             let h = app.handle().clone();
@@ -963,6 +1140,8 @@ pub fn run() {
                 link_ok: Mutex::new(None),
                 drag_watch: AtomicBool::new(false),
                 set_opening: AtomicBool::new(false),
+                gkeys: Mutex::new(Vec::new()),
+                gk_lock: Mutex::new(()),
             });
             app.manage(st);
             // 처음 한 번: 시작 시 자동 실행을 켬(트레이에서 끌 수 있음)
@@ -991,6 +1170,7 @@ pub fn run() {
                 .visible(false)
                 .initialization_script(&init)
                 .additional_browser_args(BROWSER_ARGS)
+                .on_new_window(new_win_guard(h.clone()))
                 .build()?;
             let _ = w.set_ignore_cursor_events(true);
             h.state::<Arc<App>>().hit.lock().unwrap().ignoring = true;
@@ -1097,6 +1277,50 @@ mod tests {
         // 예전 주소 하나만으로는 Origin 머리와 안 맞음(먹통 재현)
         let old: RemoteUrlPattern = "https://jerrycson.github.io/readnow-scripts/*".parse().unwrap();
         assert!(!old.test(&url::Url::parse("https://jerrycson.github.io").unwrap()));
+    }
+
+    #[test]
+    fn gk_accel_names() {
+        // 한 키 조합은 PC 전체로 등록하지 않음(엑셀 Alt+Enter 등 다른 프로그램 단축키를 가로채지 않게)
+        assert_eq!(gk_accel("Alt+KeyM"), None);
+        assert_eq!(gk_accel("Alt+Enter"), None);
+        assert_eq!(gk_accel("Alt+Digit3"), None);
+        assert_eq!(gk_accel("Alt+Comma"), None);
+        assert_eq!(gk_accel("Alt+F4"), None);
+        assert_eq!(gk_accel("Alt+Shift+KeyW").as_deref(), Some("Alt+Shift+KeyW"));
+        assert_eq!(gk_accel("Ctrl+Alt+KeyQ").as_deref(), Some("Ctrl+Alt+KeyQ"));
+        assert_eq!(gk_accel("Meta+Shift+KeyK").as_deref(), Some("Super+Shift+KeyK"));
+        assert_eq!(gk_accel("Shift+KeyA"), None); // 글자 치기와 겹침
+        assert_eq!(gk_accel("KeyA"), None);
+        assert_eq!(gk_accel("Alt+Hyper+KeyA"), None);
+        assert_eq!(gk_accel("Alt+Shift+Numpad7"), None);
+        // 전역 단축키 해석기가 받는 글인가
+        use std::str::FromStr;
+        for k in ["Alt+Shift+KeyW", "Alt+Shift+KeyR", "Alt+Shift+KeyA", "Alt+Shift+KeyH", "Alt+Shift+KeyS", "Alt+Shift+KeyC", "Alt+Shift+KeyO", "Alt+Shift+Equal", "Alt+Shift+Minus", "Alt+Shift+KeyJ", "Alt+Shift+KeyZ", "Alt+Shift+KeyK", "Alt+Shift+KeyQ", "Ctrl+Alt+KeyQ"] {
+            let a = gk_accel(k).unwrap();
+            assert!(tauri_plugin_global_shortcut::Shortcut::from_str(&a).is_ok(), "{k}");
+        }
+    }
+
+    #[test]
+    fn settings_on_character_monitor() {
+        // 주 모니터 1920×1040 배율 1.25 → 1375×950 가운데
+        assert_eq!(set_rect((0, 0), (1920, 1040), 1.25), (272, 45, 1375, 950));
+        // 왼쪽 음수 좌표 모니터(배율 1) — 그 모니터 안 가운데
+        let (x, y, w, h) = set_rect((-2560, -200), (2560, 1400), 1.0);
+        assert!(x >= -2560 && x + w as i32 <= 0 && y >= -200 && y + h as i32 <= 1200 && w == 1100 && h == 760);
+        // 작은 모니터(배율 2 · 1280×800 물리) — 작업 영역 안으로 줄임
+        let (x, y, w, h) = set_rect((1920, 0), (1280, 800), 2.0);
+        assert!(w <= 1264 && h <= 784 && x >= 1920 && x + w as i32 <= 3200 && y >= 0);
+        // 캐릭터 가운데 CSS → 물리(둘째 모니터 · 배율 1.5)
+        assert_eq!(char_phys((1920.0, 0.0), 1.5, (1000.0, 600.0)), (3420.0, 900.0));
+        assert_eq!(char_phys((-1920.0, -100.0), 1.0, (1800.0, 900.0)), (-120.0, 800.0));
+    }
+
+    #[test]
+    fn nomenu_in_host_init() {
+        let s = host_init("");
+        assert!(s.contains("contextmenu") && s.contains("preventDefault") && s.contains("textarea"));
     }
 
     #[test]

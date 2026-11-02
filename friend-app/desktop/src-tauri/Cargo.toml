@@ -1,6 +1,6 @@
 [package]
 name = "readnow-friend"
-version = "0.2.1"
+version = "0.2.2"
 description = "🐾 책방 친구 — 리드나우 캐릭터를 바탕화면 맨 위에 (껍데기 · 화면은 GitHub Pages friend/)"
 authors = ["리드나우"]
 edition = "2021"
@@ -23,6 +23,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 ureq = { version = "2", default-features = false, features = ["tls", "json"] }
 url = "2"
+
+# (0.2.2 · 정범님 10/30 '단축키가 모두 작동을 하지 않아') 캐릭터 창은 투명·클릭 통과라 키보드 초점이 없음 → 책방 친구 단축키를 전역 단축키로 받아 화면에 넘김(윈도우만 · 안드로이드 앱은 이 껍데기를 안 씀)
+[target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
+tauri-plugin-global-shortcut = "2"
 
 [profile.release]
 codegen-units = 1
