@@ -1,0 +1,58 @@
+// 가짜 ALPS (시험 전용 · 개인정보 없음 · ALPS 저장 화면에서 이름·구조만 따름) — 쓰는 법: ALPS_JQ=<jquery 2.x 파일> node fake-alps.js
+// partner = http://127.0.0.1:8771 (로그인·메인 틀) · pid = http://localhost:8772 (안쪽 화면 · 다른 출처)
+'use strict';
+const http = require('http'), fs = require('fs'), path = require('path');
+const D = __dirname; const JQ = fs.readFileSync(process.env.ALPS_JQ || path.join(D, 'jquery.js')); /* jQuery 2.x 파일 위치(저장소에 넣지 않음) */
+const ST = { rows: [], uploads: [], prints: [], login: [], otp: !!process.env.FAKE_OTP, seed: [], nextInv: 240000000001, dispCount: 3, popAlert: process.env.FAKE_POPALERT || '' };
+const today = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, '');
+const PID = 'http://localhost:8772', PARTNER = 'http://127.0.0.1:8771';
+const MSGBOX = `<script>window.__msg=function(title,text,btns,cb){var d=document.createElement('div');d.className='msgBox';d.innerHTML='<div class="msgBoxTitle"></div><div><div class="msgBoxContainer"><div class="msgBoxContent"><p><span></span></p></div></div><div class="msgBoxButtons"></div></div>';d.querySelector('.msgBoxTitle').textContent=title;d.querySelector('span').textContent=text;(btns||['확인']).forEach(function(v){var b=document.createElement('input');b.type='button';b.className='msgButton';b.value=v;b.onclick=function(){d.remove();setTimeout(function(){cb&&cb(v)},50)};d.querySelector('.msgBoxButtons').appendChild(b)});document.body.appendChild(d)};
+$.alert={info:function(t,m,cb){__msg(t||'안내',m,['확인'],cb)},confirm:function(t,m,ok,cn){__msg(t||'질의',m,['확인','취소'],function(v){v==='확인'?ok&&ok():cn&&cn()})}};
+function ds(rows){var r=rows||[{}];return {getValue:function(i,k){return (r[i]||{})[k]},setValue:function(i,k,v){r[i]=r[i]||{};r[i][k]=v},getRowCount:function(){return r.length},getFilteredRows:function(){return JSON.parse(JSON.stringify(r))},getRows:function(){return r},clearData:function(){r.length=0},appendRows:function(a){a.forEach(function(x){r.push(x)})},getRowPosition:function(){return 0},_r:r}}</script>`;
+const head = (title) => `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><script src="/jquery.js"></script>${MSGBOX}</head><body>`;
+const pages = {
+  login: () => head('ALPS 로그인') + `<form onsubmit="return false"><input type="text" id="userId" name="userId"><input type="password" id="userPw" name="userPw"><input type="text" id="macAddr" name="macAddr" value="normal-browser" readonly><div id="otpBox" style="display:none"><input type="text" id="otpNo" name="otpNo" placeholder="OTP 인증번호"><button type="button" id="otpOk">확인</button></div><button type="button" id="btnLogin">로그인</button></form>
+<script>$('#btnLogin').on('click',function(){fetch('/fake/login',{method:'POST',body:JSON.stringify({id:$('#userId').val(),pw:$('#userPw').val()})}).then(r=>r.json()).then(j=>{if(!j.ok)return $.alert.info(null,'아이디 또는 비밀번호가 틀립니다.');if(j.otp){$('#otpBox').show();return;}location.href='/main/pages/layout/main?token=FAKE-TOKEN';});});
+$('#otpOk').on('click',function(){fetch('/fake/otp',{method:'POST',body:$('#otpNo').val()}).then(r=>r.json()).then(j=>{if(j.ok)location.href='/main/pages/layout/main?token=FAKE-TOKEN';else $.alert.info(null,'인증번호가 틀립니다.');});});</script></body></html>`,
+  main: () => head('ALPS 메인') + `<nav><a href="#;" class="menuLeaf" id="m1">일괄주문접수</a><a href="#;" class="menuLeaf">일괄주문접수(합계운임)</a><a href="#;" class="menuLeaf" id="m2">통합관리 운송장출력</a></nav><div id="tabs"></div>
+<script>$('#m1').data('menu',{menuId:'10782',menuNm:'일괄주문접수',pgmUrl:'${PID}/pid/pages/cus/PIDCUS014U'});$('#m2').data('menu',{menuId:'21847',menuNm:'통합관리 운송장출력',pgmUrl:'${PID}/pid/pages/pic/PIDPIC002U'});
+$.gfnForm={create:function(m){if(document.getElementById('workframe_'+m.menuId))return;var f=document.createElement('iframe');f.id='workframe_'+m.menuId;f.className='workframe';f.style.cssText='width:1200px;height:700px';f.src=m.pgmUrl+'?token=FAKE-TOKEN&menu=x';document.getElementById('tabs').appendChild(f);}};</script></body></html>`,
+  PIDCUS014U: () => head('일괄주문접수') + `<i-combo id="cboOrdSct01"></i-combo><i-combo id="cboShpmFmat01"></i-combo><i-combo id="cboUsrFmat01"></i-combo><i-check id="chkOrdDupCd01"></i-check><i-combo id="cboOrdDupCd01"></i-combo><i-edit id="edtPickYmd01"></i-edit><i-edit id="edtPath"></i-edit><div id="grdList01"></div>
+<form id="fileUpFrm"><input type="file" id="files" name="files" accept=".xlsx,.xls,.csv,.txt"></form><i-button id="btnAttflId01" onclick="fnFileClick(event)">파일열기 및 업로드</i-button>
+<script>var dsOpt01=ds([{pickYmd:'${today()}',ordSct:'01',ordDupCd:'00',usrFmat:''}]);var dsList01=ds([]);var fmtOk=false;
+var items=[{value:'',label:'선택안함'},{label:'A-type[일반]',value:'A^1',matSeq:1},{label:'알라딘',value:'Z^1',matSeq:1,matSctCd:'90000'}];
+cboUsrFmat01._i=0;Object.defineProperty(cboUsrFmat01,'index',{get(){return this._i},set(v){this._i=v;dsOpt01.setValue(0,'usrFmat',items[v].value)}});Object.defineProperty(cboUsrFmat01,'value',{get(){return items[this._i].value}});cboUsrFmat01.getItems=function(){return items};cboUsrFmat01.items=JSON.stringify(items);
+cboShpmFmat01.value='';cboShpmFmat01.index=0;cboOrdSct01.value='01';chkOrdDupCd01.value='N';cboOrdDupCd01.value='00';Object.defineProperty(edtPickYmd01,'value',{get(){return dsOpt01.getValue(0,'pickYmd')}});edtPath.value='';
+var grdList01={getColumns:function(){return fmtOk?[1,2,3,4,5,6,7,8,9,10,11,12]:[]}};
+function fnCheckBeFile(s,e){setTimeout(function(){if(!cboUsrFmat01.value){$.alert.info(null,'파일유형을 선택 하세요.');return e();}fmtOk=true;s();},300)}
+$('input:file[name=files]').change(function(){var f=this.files[0];if(!f)return;edtPath.value=f.name;if(!fmtOk){return $.alert.info(null,'파일형식이 없습니다.');}
+ f.arrayBuffer().then(b=>fetch('/fake/upload?name='+encodeURIComponent(f.name)+'&fmt='+encodeURIComponent(cboUsrFmat01.value)+'&pick='+dsOpt01.getValue(0,'pickYmd'),{method:'POST',body:b})).then(r=>r.json()).then(j=>{dsList01.appendRows(j.rows);$.alert.info(null,'성공건수 : ('+j.ok+')건 \\n실패건수 : ('+j.bad+') 건 \\n완료 하였습니다. \\n\\n\\n오류건이 발생시 오류내역 리스트에서\\n 수정후 오류 수정 버튼을 클릭 하십시오.');});});</script></body></html>`,
+  PIDPIC002U: () => head('통합관리 운송장출력') + `<span id="spRowCnt">0</span>/<span id="spTotCnt">0</span><div id="grdRsrv"></div>
+<script>var dsSearch=ds([{srchPickFrYmd:'',srchPickToYmd:'',srchPrntSctCd:''}]);var dsRsrvList=ds([]);var objNextBtn={enable:false};var dispCount=${ST.dispCount};var chk={};
+var grdRsrv={checkBar:true,get rowCount(){return dsRsrvList.getRowCount()},setRowsCheck:function(a,v){a.forEach(function(i){chk[i]=v})},isCheckedRow:function(i){return !!chk[i]},getDataIndex:function(i){return i},getRowIndex:function(i){return i}};
+function fnSearch(){fetch('/fake/list?from='+dsSearch.getValue(0,'srchPickFrYmd')+'&skip='+dsRsrvList.getRowCount()+'&n='+dispCount).then(r=>r.json()).then(j=>{dsRsrvList.appendRows(j.rows);$('#spRowCnt').text(dsRsrvList.getRowCount());$('#spTotCnt').text(j.tot);objNextBtn.enable=dsRsrvList.getRowCount()<j.tot;});}
+function fnBtnSearch(){dsRsrvList.clearData();chk={};fnSearch();} function fnNext(){fnSearch();}
+var popRows=[];function fnPrntPopValSend(){return {rsrvInfoList:popRows,invTypCd:'200',callBackFunc:function(){}}}
+function fnBtnPrint(t){var L=[];for(var i=0;i<grdRsrv.rowCount;i++)if(chk[i])L.push(dsRsrvList.getRows()[i]);if(!L.length)return $.alert.info(null,'선택된 건이 없습니다.');popRows=L;
+ var go=function(){window.open('${PID}/pid/pages/pic/PIDPIC051U?token=FAKE-TOKEN','prntPop','width=900,height=700');};${ST.popAlert ? `$.alert.confirm('주7일 정보','${ST.popAlert}',go,null);` : 'go();'}}</script></body></html>`,
+  PIDPIC051U: () => head('운송장출력미리보기') + `<iframe id="invPrntViewFrame" src="/blank"></iframe><i-button id="btnPrnt" onclick="fnPopBtnPrnt()">출력</i-button>
+<script>var printerName='';var dsInvList=ds([]);var dsInvKndList=ds([]);var prntPopJson=null;setTimeout(function(){prntPopJson=opener.fnPrntPopValSend();dsInvList.appendRows(prntPopJson.rsrvInfoList);dsInvKndList.appendRows([{dtlCd:'306',dtlCdNm:'라벨 3P(시험)'}]);},500);
+function fnPopBtnPrnt(){var p=printerName;if(!p){return alert('OZ 인쇄 창(시험: 프린터 이름 없음)');}fetch('/fake/print',{method:'POST',body:JSON.stringify({printer:p,mgr:dsInvList.getRows().map(function(r){return r.rsrvMgrNo})})}).then(r=>r.json()).then(function(){setTimeout(function(){$.alert.info(null,'정상적으로 운송장이 출력 되었습니다.',function(){self.close();});},700);});}</script></body></html>`,
+};
+const readB = (req) => new Promise((r) => { const b = []; req.on('data', (c) => b.push(c)); req.on('end', () => r(Buffer.concat(b))); });
+function mk(port) { return http.createServer(async (req, res) => { const u = new URL(req.url, 'http://x'); const send = (code, type, body) => { res.writeHead(code, { 'Content-Type': type, 'Access-Control-Allow-Origin': '*' }); res.end(body); };
+  const J = (o) => send(200, 'application/json; charset=utf-8', JSON.stringify(o)); const H = (s) => send(200, 'text/html; charset=utf-8', s);
+  if (u.pathname === '/jquery.js') return send(200, 'application/javascript', JQ); if (u.pathname === '/blank') return H('<html><body>미리보기</body></html>');
+  if (u.pathname === '/fake/state') return J(ST);
+  if (u.pathname === '/fake/seed' && req.method === 'POST') { const o = JSON.parse(await readB(req)); ST.seed = o.seed || []; ST.rows = o.rows || []; ST.uploads = []; ST.prints = []; ST.login = []; ST.otp = !!o.otp; ST.popAlert = o.popAlert || ''; ST.dispCount = o.dispCount || 3; return J({ ok: true }); }
+  if (u.pathname === '/fake/login') { const o = JSON.parse(await readB(req)); ST.login.push(o.id); const ok = o.id === 'testid' && o.pw === 'test-pw!'; return J({ ok, otp: ok && ST.otp }); }
+  if (u.pathname === '/fake/otp') { const c = String(await readB(req)); return J({ ok: c === '123456' }); }
+  if (u.pathname === '/fake/upload') { const b = await readB(req); ST.uploads.push({ name: u.searchParams.get('name'), fmt: u.searchParams.get('fmt'), pick: u.searchParams.get('pick'), size: b.length, head: b.slice(0, 2).toString('hex') });
+    ST.seed.forEach((s, i) => ST.rows.push({ invNo: '', invPrntNm: '미출력', invPrntYn: 'N', acperNm: s.name, gdsNm: s.title, gdsDtlCont: s.sku, rsrvMgrNo: 'M' + (ST.rows.length + 1), pickYmd: today(), bdpkKey: s.pack || '', bdpkRpnSeq: '1', bdpkSctCd: s.pack ? 'Y' : 'N' }));
+    return J({ ok: ST.seed.length, bad: 0, rows: ST.seed.map(() => ({ trsmYn: 'Y', errorMsg: '' })) }); }
+  if (u.pathname === '/fake/list') { const L = ST.rows.filter((r) => r.pickYmd === u.searchParams.get('from')); const sk = +u.searchParams.get('skip'), n = +u.searchParams.get('n'); return J({ tot: L.length, rows: L.slice(sk, sk + n) }); }
+  if (u.pathname === '/fake/print') { const o = JSON.parse(await readB(req)); ST.prints.push({ printer: o.printer, n: o.mgr.length }); for (const m of o.mgr) { const r = ST.rows.find((x) => x.rsrvMgrNo === m); if (r && !r.invNo) { r.invNo = String(ST.nextInv++); r.invPrntNm = '출력'; r.invPrntYn = 'Y'; } } return J({ ok: true }); }
+  const pg = u.pathname.match(/(PIDCUS014U|PIDPIC002U|PIDPIC051U)$/); if (pg && port === 8772) return H(pages[pg[1]]());
+  if (port === 8771 && u.pathname === '/main/pages/layout/main') return H(pages.main()); if (port === 8771 && u.pathname === '/') return H(pages.login());
+  send(404, 'text/plain', 'no'); }); }
+mk(8771).listen(8771, '127.0.0.1'); mk(8772).listen(8772); console.log('가짜 ALPS 켜짐 8771·8772');

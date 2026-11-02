@@ -46,6 +46,14 @@ $vbs = Join-Path $Dir 'run-print.vbs'
 [IO.File]::WriteAllText($vbs, "CreateObject(`"WScript.Shell`").Run `"`"`"$cmd`"`"`", 0, False`r`n")
 $startup = [Environment]::GetFolderPath('Startup'); $sh = New-Object -ComObject WScript.Shell
 $lk = $sh.CreateShortcut((Join-Path $startup 'ReadNow-Print.lnk')); $lk.TargetPath = 'wscript.exe'; $lk.Arguments = "`"$vbs`""; $lk.WorkingDirectory = $Dir; $lk.Save()
+# (정범님 11/02) 윈도우 시작 때 'ALPS 도우미' 창을 따로 열기 — 도우미가 켜질 때까지(최대 2분) 기다린 뒤 크롬 앱 창으로 http://127.0.0.1:8898/alps
+$chrome = @($env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:LOCALAPPDATA) | Where-Object { $_ } | ForEach-Object { Join-Path $_ 'Google\Chrome\Application\chrome.exe' } | Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($chrome) {
+  $wvbs = Join-Path $Dir 'open-alps-window.vbs'
+  [IO.File]::WriteAllText($wvbs, "Set h = CreateObject(`"MSXML2.ServerXMLHTTP`")`r`nFor i = 1 To 60`r`n  On Error Resume Next`r`n  h.open `"GET`", `"http://127.0.0.1:8898/status`", False`r`n  h.send`r`n  If Err.Number = 0 And h.status = 200 Then Exit For`r`n  Err.Clear`r`n  On Error GoTo 0`r`n  WScript.Sleep 2000`r`nNext`r`nCreateObject(`"WScript.Shell`").Run `"`"`"$chrome`"`" --new-window --app=http://127.0.0.1:8898/alps`", 1, False`r`n")
+  $wl = $sh.CreateShortcut((Join-Path $startup 'ReadNow-ALPS-창.lnk')); $wl.TargetPath = 'wscript.exe'; $wl.Arguments = "`"$wvbs`""; $wl.WorkingDirectory = $Dir; $wl.Save()
+  Ok '윈도우 시작 때 ALPS 도우미 창이 따로 열리게 함(시작 프로그램 ReadNow-ALPS-창 — 지우면 안 열림)'
+} else { Warn '크롬을 못 찾아 ALPS 도우미 창 자동 열기는 건너뜀' }
 $running = Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*readnow-print.js*' }
 if ($running) { $running | ForEach-Object { try { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop } catch {} }; Ok '켜져 있던 인쇄 도우미를 끔 — 새 판으로 다시 켬' }
 else { Start-Process -FilePath 'wscript.exe' -ArgumentList "`"$vbs`"" -WindowStyle Hidden }

@@ -9,11 +9,11 @@
  * 로그인 정보: 이 PC 설정 화면(http://127.0.0.1:8898/alps)에서만 받아 Windows DPAPI(이 PC·이 사용자만 풂)로 잠가 cred.dat에만 · 로그·웹앱·GitHub로 보내지 않음
  * 기록: alps.log에는 단계·숫자만(이름·주소·전화·토큰·주소창 값은 쓰지 않음) */
 'use strict';
-const VERSION = '0.1.0';
+const VERSION = '0.2.1';
 const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process'), crypto = require('crypto');
 const ROOT = process.env.RN_ALPS_HOME || path.join(process.env.USERPROFILE || os.homedir(), 'ReadNow', 'alps');
 try { fs.mkdirSync(ROOT, { recursive: true }); } catch (e) {}
-const F = { cfg: path.join(ROOT, 'config.json'), cred: path.join(ROOT, 'cred.dat'), runs: path.join(ROOT, 'runs.json'), log: path.join(ROOT, 'alps.log'), up: path.join(ROOT, 'up'), chrome: path.join(ROOT, 'chrome') };
+const F = { cfg: path.join(ROOT, 'config.json'), cred: path.join(ROOT, 'cred.dat'), key: path.join(ROOT, 'key.dat'), runs: path.join(ROOT, 'runs.json'), log: path.join(ROOT, 'alps.log'), up: path.join(ROOT, 'up'), chrome: path.join(ROOT, 'chrome') };
 const kst = (d) => new Date((d ? +d : Date.now()) + 9 * 3600e3).toISOString();
 const ymdK = () => kst().slice(0, 10).replace(/-/g, '');
 const log = (m) => { const line = `${kst().slice(0, 19).replace('T', ' ')} ${m}\n`; try { fs.appendFileSync(F.log, line); } catch (e) {} if (!process.env.RN_ALPS_QUIET) process.stdout.write('[alps] ' + line); };
@@ -34,6 +34,11 @@ const CFG_DEF = {
   uploadTimeoutSec: 180,       // 근거: 없음(18건 올림이 수 초) — 설정으로 바꿈
   printTimeoutSec: 600,        // 근거: 없음(ALPS가 10장씩 나눠 인쇄) — 설정으로 바꿈
   humanWaitMin: 15,            // 사람이 번호를 넣거나 '계속'을 누를 때까지 기다리는 시간 · 근거: 없음 — 설정으로 바꿈
+  /* (0.2.0) 다른 기기(휴대폰)에서 시작 — 클라우드에 서명한 요청으로 '나에게 맡긴 일' 묻기 */
+  cloudUrl: '',                // 웹앱이 이 PC를 허락할 때 넣어 줌(app_settings/main.cloudUrl · 비밀 아님)
+  pcName: '',                  // 비우면 윈도우 컴퓨터 이름
+  remotePollSec: 45,           // 일이 없을 때 묻는 간격 · 근거: 없음(정범님 '30초~1분') — 설정으로 바꿈
+  remoteActiveSec: 3,          // 일하는 동안 진행 보내고 답 받는 간격 · 근거: 없음 — 설정으로 바꿈
 };
 const cfg = () => ({ ...CFG_DEF, ...rdJ(F.cfg, {}) });
 const setCfg = (o) => { const c = rdJ(F.cfg, {}); for (const k of Object.keys(CFG_DEF)) if (o && k in o && typeof o[k] === typeof CFG_DEF[k]) c[k] = o[k]; wrJ(F.cfg, c); return cfg(); };
@@ -125,7 +130,13 @@ const PG = {
     if (!pw.length) return { ok: false, why: '비밀번호 칸이 없음' }; const ins = [...document.querySelectorAll('input')].filter((i) => vis(i) && /^(text|email|tel|)$/i.test(i.type));
     const idEl = ins.find((i) => /id|user|usr|login/i.test(i.id + ' ' + i.name)) || ins.find((i) => i.compareDocumentPosition(pw[0]) & 4) || ins[0];
     if (!idEl) return { ok: false, why: '아이디 칸을 못 찾음' }; if (!idEl.value || idEl.value !== a.id) set(idEl, a.id); if (!pw[0].value || a.pw) set(pw[0], a.pw); return { ok: clickBtn(/^(로그인|login)$/i, pw[0]) }; }`,
-  openMenu: `(name) => { if (!window.jQuery || !jQuery.gfnForm) return { ok: false, why: '메뉴 틀이 아직 없음' }; const a = [...document.querySelectorAll('a.menuLeaf')].filter((a) => !a.classList.contains('fav')).find((a) => a.textContent.replace(/\\s+/g, '') === name.replace(/\\s+/g, '')); if (!a) return { ok: false, why: '메뉴 없음: ' + name }; const m = jQuery(a).data('menu'); if (!m) return { ok: false, why: '메뉴 정보 없음' }; jQuery.gfnForm.create(m); return { ok: true }; }`,
+  openMenu: `async (o) => { const name = o.name, code = o.code, until = Date.now() + (o.ms || 60000); const N = (t) => String(t || '').replace(/\\s+/g, ''); let tries = 0;
+    for (;;) { tries++; if (window.jQuery && jQuery.gfnForm) { const L = [...document.querySelectorAll('a.menuLeaf')].filter((a) => !a.classList.contains('fav'));
+        let a = L.find((x) => N(x.textContent) === N(name)); if (!a && code) a = L.find((x) => { const m = jQuery(x).data('menu'); return m && String(m.pgmUrl || m.pgmId || '').indexOf(code) >= 0; });
+        if (a) { const m = jQuery(a).data('menu'); if (m) { jQuery.gfnForm.create(m); return { ok: true, tries }; } }
+        if (Date.now() > until) return { ok: false, why: '메뉴 없음: ' + name + ' (메뉴 ' + L.length + '개 · ' + tries + '번 찾음 · 화면 ' + location.pathname + ')' }; }
+      else if (Date.now() > until) return { ok: false, why: '메뉴 틀이 아직 없음 (화면 ' + location.pathname + ')' };
+      await new Promise((r) => setTimeout(r, 500)); } }`,
   /* 일괄주문접수(PIDCUS014U): 사용자파일 '알라딘' 고르기 → fnCheckBeFile(형식 읽기)까지 */
   upPrep: `(a) => new Promise((res) => { try { const it = typeof cboUsrFmat01.getItems === 'function' ? cboUsrFmat01.getItems() : JSON.parse(cboUsrFmat01.items || '[]'); const k = it.findIndex((x) => String(x.label || '').trim() === a.fmt);
       const info = { pick: String(edtPickYmd01.value || ''), ordSct: String(cboOrdSct01.value || ''), dup: String(chkOrdDupCd01.value || ''), dupCd: String(cboOrdDupCd01.value || ''), labels: it.map((x) => x.label) };
@@ -169,8 +180,8 @@ const toAoa = (rows) => [WB_HEAD, ...rows.filter((r) => r.invNo).map((r) => [r.i
 /* ── 한 번의 실행 ── */
 const STEPS = [['login', '로그인'], ['check', '오늘 목록 겹침 검사'], ['upload', '접수(일괄주문접수)'], ['print', '출력(운송장)'], ['verify', '운송장번호 확인'], ['send', '웹앱으로 넘김']];
 let RUN = null; let BROWSER = null; let WAITER = null;
-const pub = () => RUN && { id: RUN.id, at: RUN.at, fileName: RUN.fileName, status: RUN.status, step: RUN.step, steps: RUN.steps, detail: RUN.detail, need: RUN.need, error: RUN.error, summary: RUN.summary, done: RUN.status === 'done', hasResult: !!(RUN.result && RUN.result.aoa) };
-function stepSet(k, st, pct, detail) { const s = RUN.steps.find((x) => x.k === k); if (!s) return; s.st = st; if (pct != null) s.pct = pct; if (detail != null) s.d = detail; RUN.step = k; if (detail != null) RUN.detail = detail; RUN.upd = Date.now(); if (RUN.onChange) try { RUN.onChange(pub()); } catch (e) {} }
+const pub = () => RUN && { log: RUN.log || [], t0: RUN.t0 || null, id: RUN.id, at: RUN.at, fileName: RUN.fileName, status: RUN.status, step: RUN.step, steps: RUN.steps, detail: RUN.detail, need: RUN.need, error: RUN.error, summary: RUN.summary, done: RUN.status === 'done', hasResult: !!(RUN.result && RUN.result.aoa) };
+function stepSet(k, st, pct, detail) { const s = RUN.steps.find((x) => x.k === k); if (!s) return; /* (0.2.1 정범님 11/02 '훨씬 더 세분화해서 실시간') 단계마다 시작·걸린 시간 · 바뀔 때마다 기록 줄(최근 60) */ const now = Date.now(); if (st === 'run' && !s.t0) s.t0 = now; if (['ok', 'err', 'skip'].includes(st) && s.t0 && !s.ms) s.ms = now - s.t0; if (detail != null && detail !== s.d || st !== s.st) { RUN.log = RUN.log || []; RUN.log.push({ t: kst().slice(11, 19), k, st, d: detail != null ? String(detail).slice(0, 160) : s.d, p: pct != null ? pct : s.pct }); if (RUN.log.length > 60) RUN.log.splice(0, RUN.log.length - 60); } s.st = st; if (pct != null) s.pct = pct; if (detail != null) s.d = detail; RUN.step = k; if (detail != null) RUN.detail = detail; RUN.upd = Date.now(); if (RUN.onChange) try { RUN.onChange(pub()); } catch (e) {} }
 /* 사람에게 묻기: need = { type:'otp'|'continue'|'choice', msg, options? } → /alps/input이 답을 넣음 */
 function askHuman(need) { RUN.need = need; RUN.status = 'wait'; RUN.upd = Date.now(); if (RUN.onChange) try { RUN.onChange(pub()); } catch (e) {} log('사람 기다림: ' + need.type);
   return new Promise((res, rej) => { const lim = cfg().humanWaitMin * 60e3; const tm = setTimeout(() => { WAITER = null; rej(new Error(`${cfg().humanWaitMin}분 동안 답이 없어 멈춤`)); }, lim);
@@ -202,7 +213,7 @@ async function doLogin(B, c) { stepSet('login', 'run', 10, 'ALPS 여는 중');
     await sleep(1000); }
   throw new Error('로그인 화면이 끝나지 않음'); }
 
-async function openPage(B, menuName, re, c) { if (B.frameBy(re) && B.ctxOf(B.frameBy(re))) return; const r = await B.eval(B.mainFrame(), PG.openMenu, menuName, { wait: c.stepTimeoutSec * 1000 }); if (!r.ok) throw new Error(r.why);
+async function openPage(B, menuName, re, c) { if (B.frameBy(re) && B.ctxOf(B.frameBy(re))) return; const r = await B.eval(B.mainFrame(), PG.openMenu, { name: menuName, code: String(re.source).replace(/[^A-Z0-9]/g, ''), ms: c.stepTimeoutSec * 1000 }, { wait: c.stepTimeoutSec * 1000, timeoutMs: c.stepTimeoutSec * 1000 + 5000 }); /* (0.2.1) 로그인 직후 메뉴가 서버에서 늦게 그려져도 다 그려질 때까지 기다림 · 이름이 달라도 화면 코드로 찾음 */ if (!r.ok) throw new Error(r.why);
   const t0 = Date.now(); while (Date.now() - t0 < c.stepTimeoutSec * 1000) { const f = B.frameBy(re); if (f && B.ctxOf(f)) { try { const ok = await B.eval(f, `() => document.readyState === 'complete' && !!window.jQuery`); if (ok) { await sleep(1200); return; } } catch (e) {} } await sleep(400); }
   throw new Error(menuName + ' 화면이 열리지 않음'); }
 
@@ -264,6 +275,38 @@ async function runJob(job) { const c = cfg(); const B = new Browser(); BROWSER =
   } catch (e) { RUN.status = 'error'; RUN.error = e.message; const s = RUN.steps.find((x) => x.st === 'run' || x.st === 'wait'); if (s) s.st = 'err'; log('✗ ' + e.message); }
   finally { RUN.need = null; RUN.upd = Date.now(); if (RUN.onChange) try { RUN.onChange(pub()); } catch (e) {} await B.close(); BROWSER = null; } }
 
+/* ── (0.2.0) 서명 열쇠: Ed25519 · 개인 열쇠는 DPAPI로 잠가 key.dat에만 · 공개 열쇠는 웹앱이 Firestore(app_settings/alps_helpers)에 올림 ── */
+let KEY = null; /* { priv: KeyObject, pub: pem, fp } */
+async function ensureKey() { if (KEY) return KEY; let pem = null;
+  if (fs.existsSync(F.key)) { try { pem = await unprotect(fs.readFileSync(F.key, 'utf8')); } catch (e) { log('서명 열쇠 풀기 실패 — 새로 만듦(웹앱에서 다시 허락 필요)'); pem = null; } }
+  if (!pem) { const { privateKey } = crypto.generateKeyPairSync('ed25519'); pem = privateKey.export({ type: 'pkcs8', format: 'pem' }); fs.writeFileSync(F.key, await protect(pem)); log('서명 열쇠를 새로 만듦'); }
+  const priv = crypto.createPrivateKey(pem); const pub = crypto.createPublicKey(priv).export({ type: 'spki', format: 'pem' });
+  KEY = { priv, pub, fp: crypto.createHash('sha256').update(pub).digest('hex').slice(0, 12) }; return KEY; }
+const pcName = () => (cfg().pcName || process.env.COMPUTERNAME || os.hostname()).trim().toUpperCase();
+async function keyInfo() { const k = await ensureKey(); return { pc: pcName(), pub: k.pub, fp: k.fp }; }
+async function cloudCall(op, o) { const c = cfg(); if (!c.cloudUrl) throw new Error('클라우드 주소 없음'); const k = await ensureKey();
+  const raw = JSON.stringify({ pc: pcName(), ts: Date.now(), nonce: crypto.randomBytes(9).toString('hex'), op, ver: VERSION, ...(o || {}) }); const sig = crypto.sign(null, Buffer.from(raw), k.priv).toString('base64');
+  const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 30000);
+  try { const r = await fetch(c.cloudUrl.replace(/\/+$/, '') + '/alps-helper', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-RN-Sig': sig }, body: raw, signal: ac.signal }); const j = await r.json().catch(() => ({})); if (!r.ok || !j.ok) throw Object.assign(new Error(j.err || 'HTTP ' + r.status), { code: r.status }); return j; } finally { clearTimeout(tm); } }
+/* 원격 고리: 일이 없으면 remotePollSec마다 'poll' · 원격 일을 하는 동안 remoteActiveSec마다 'progress'(진행을 보내고 웹앱이 넣은 답을 받음) */
+const REM = { id: null, seq: 0, last: '', busy: false, err: null, at: null, t: null, linked: null };
+function remoteState() { return { on: !!cfg().cloudUrl, linked: REM.linked, err: REM.err, at: REM.at, job: REM.id }; }
+async function remoteTick() { if (REM.busy) return; REM.busy = true; const c = cfg();
+  try { if (!c.cloudUrl) return;
+    if (REM.id) { const R = pub(); const done = !R || ['done', 'error'].includes(R.status);
+      if (done && R && R.status === 'done' && RUN.result && !REM.sentResult) { await cloudCall('result', { id: REM.id, aoa: RUN.result.aoa }); REM.sentResult = true; }
+      const j = await cloudCall('progress', { id: REM.id, run: R, ackSeq: REM.seq }); REM.at = kst(); REM.err = null; REM.linked = true;
+      const a = j.answer; if (a && a.seq > REM.seq) { REM.seq = a.seq; const r = input(a); log(`원격 답 받음(${a.kind})${r.ok ? '' : ' — ' + r.err}`); }
+      if (done) { log('원격 일 끝 — 결과 보냄'); REM.id = null; } return; }
+    if (RUN && !['done', 'error'].includes(RUN.status)) return; /* 이 PC 웹앱이 맡긴 일이 도는 중 */
+    const j = await cloudCall('poll', {}); REM.at = kst(); REM.err = null; REM.linked = true;
+    if (j.job) { const J = j.job; log(`원격 일 받음(${J.id}) · ${(J.rows || []).length}줄`); try { start({ fileName: J.fileName, b64: J.b64, rows: J.rows, firstOne: J.firstOne, remote: J.id }); REM.id = J.id; REM.seq = 0; REM.sentResult = false; await cloudCall('progress', { id: J.id, run: pub(), ackSeq: 0 }); }
+      catch (e) { await cloudCall('progress', { id: J.id, run: { status: 'error', error: e.message, steps: [] }, ackSeq: 0 }).catch(() => {}); } } }
+  catch (e) { REM.err = e.message; if (e.code === 403) REM.linked = false; if (REM.err !== REM.last) { REM.last = REM.err; log('원격: ' + REM.err.slice(0, 120)); } }
+  finally { REM.busy = false; clearTimeout(REM.t); if (!process.env.RN_ALPS_NOREMOTE) REM.t = setTimeout(remoteTick, (REM.id ? c.remoteActiveSec : c.remotePollSec) * 1000); } }
+function link(o) { const u = String((o && o.cloudUrl) || '').trim(); if (!/^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.run\.app\/?$/i.test(u) && !(TEST_PROTECT && /^http:\/\/127\.0\.0\.1:\d+\/?$/.test(u))) throw new Error('클라우드 주소는 Cloud Run(…run.app)만'); /* 다른 곳이 이 PC에 일을 줄 수 없게 */ setCfg({ cloudUrl: u.replace(/\/+$/, '') }); REM.linked = null; clearTimeout(REM.t); REM.t = setTimeout(remoteTick, 1500); return remoteState(); }
+if (!process.env.RN_ALPS_NOREMOTE) setTimeout(() => { ensureKey().catch((e) => log('서명 열쇠: ' + e.message)); remoteTick(); }, 3000);
+
 /* ── 이 PC 설정 화면 (http://127.0.0.1:8898/alps · 이 PC 안에서만 · 다른 사이트 안에 못 넣음) ── */
 const pageHtml = () => `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ALPS 도우미 설정</title>
 <style>:root{--bg:#F3F5F4;--card:#fff;--tx:#1E2B28;--mu:#5C6B67;--ac:#1F6F5C;--bd:#D6DDDA;--er:#B0322A}@media (prefers-color-scheme:dark){:root{--bg:#141A19;--card:#1E2624;--tx:#E6ECEA;--mu:#9AAAA5;--ac:#5FC3A6;--bd:#33403D;--er:#F08A80}}
@@ -275,10 +318,11 @@ button{padding:8px 14px;border:0;border-radius:8px;background:var(--ac);color:#f
 <label>ALPS 아이디</label><input type="text" id="id" autocomplete="off"><label>비밀번호</label><input type="password" id="pw" autocomplete="new-password"><button id="sv">잠가서 저장</button> <span id="svm" class="mu"></span></div>
 <div class="card"><b>인쇄</b><label>롯데택배 프린터</label><select id="pr"><option value="">(고르기)</option></select>
 <label><input type="checkbox" id="cb"> 인쇄 전에 확인(끄면 자동 — 기본)</label><label><input type="checkbox" id="fo"> 처음엔 1장만 먼저 인쇄 → 확인 → 나머지</label><label><input type="checkbox" id="hl"> 화면 없이(headless) — ALPS가 막으면 끄세요(창을 화면 밖에 둔 일반 크롬)</label><button id="cs">설정 저장</button> <span id="csm" class="mu"></span></div>
+<div class="card"><b>다른 기기(휴대폰)에서 시작</b><div class="mu" id="rem">…</div><div class="mu">이 PC의 서명 열쇠 지문: <b id="fp">…</b> — 웹앱 오늘 출고의 '이 PC 도우미 허락'에 같은 지문이 보이면 허락하세요. 개인 열쇠는 이 PC 안에만(DPAPI) 있습니다.</div></div>
 <div class="card" id="run"><b>지금 일</b><div id="rs" class="mu">없음</div></div>
 <script>const H={'X-RN-Print':'1','Content-Type':'application/json'};const $=(i)=>document.getElementById(i);const esc=(s)=>String(s??'').replace(/[&<>"]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function J(u,b){const r=await fetch(u,b?{method:'POST',headers:H,body:JSON.stringify(b)}:{headers:H,cache:'no-store'});return r.json();}
-async function load(){const s=await J('/alps/status');$('ver').textContent='판 '+s.ver;$('cst').textContent=s.cred.saved?'✓ 저장됨 ('+s.cred.at+')':'— 아직 없음';$('cb').checked=s.cfg.confirmBeforePrint;$('fo').checked=s.cfg.firstOne;$('hl').checked=s.cfg.headless;
+async function load(){const s=await J('/alps/status');$('ver').textContent='판 '+s.ver;$('fp').textContent=s.key?s.key.fp:'-';const r=s.remote||{};$('rem').textContent=!r.on?'아직 연결 안 됨(웹앱에서 이 PC 도우미 허락)':r.linked===false?'⚠ 클라우드가 이 PC를 아직 허락하지 않음':r.err?'⚠ '+r.err:'✓ 연결됨 · 마지막 확인 '+(r.at||'').slice(11,19);$('cst').textContent=s.cred.saved?'✓ 저장됨 ('+s.cred.at+')':'— 아직 없음';$('cb').checked=s.cfg.confirmBeforePrint;$('fo').checked=s.cfg.firstOne;$('hl').checked=s.cfg.headless;
  try{const p=await J('/printers');(p.printers||[]).forEach((x)=>{const o=document.createElement('option');o.value=x.name;o.textContent=x.name+(x.def?' (윈도우 기본)':'');$('pr').appendChild(o);});}catch(e){} $('pr').value=s.cfg.printer||'';}
 $('sv').onclick=async()=>{$('svm').textContent='저장 중…';const r=await J('/alps/cred',{id:$('id').value,pw:$('pw').value});$('pw').value='';$('svm').textContent=r.ok?'✓ 저장함':'✗ '+r.err;load();};
 $('cs').onclick=async()=>{const r=await J('/alps/config',{printer:$('pr').value,confirmBeforePrint:$('cb').checked,firstOne:$('fo').checked,headless:$('hl').checked});$('csm').textContent=r.ok?'✓ 저장함':'✗ '+r.err;};
@@ -289,9 +333,9 @@ load();setInterval(tick,1500);tick();</script></body></html>`;
 
 function start(job, onChange) { if (RUN && !['done', 'error'].includes(RUN.status)) throw new Error('이미 처리 중입니다'); const fn = String(job.fileName || ''); if (!/^판매완료\d{8}\.xlsx$/.test(fn)) throw new Error('파일 이름은 판매완료YYYYMMDD.xlsx');
   if (!job.b64 || job.b64.length > 20 * 1048576) throw new Error('파일이 없거나 너무 큼');
-  RUN = { id: crypto.randomBytes(6).toString('hex'), at: kst(), fileName: fn, status: 'run', steps: STEPS.map(([k, l]) => ({ k, l, st: 'todo', pct: 0, d: '' })), step: 'login', detail: '', need: null, error: null, summary: {}, onChange };
+  RUN = { id: crypto.randomBytes(6).toString('hex'), at: kst(), fileName: fn, status: 'run', t0: Date.now(), log: [], steps: STEPS.map(([k, l]) => ({ k, l, st: 'todo', pct: 0, d: '' })), step: 'login', detail: '', need: null, error: null, summary: {}, onChange };
   log(`시작 ${fn} · ${(job.rows || []).length}줄`); runJob(job); return pub(); }
 function result(id) { return RUN && RUN.id === id && RUN.result ? RUN.result : null; }
 function reset() { if (RUN && !['done', 'error'].includes(RUN.status)) return false; RUN = null; return true; }
 
-module.exports = { VERSION, pageHtml, cfg, setCfg, saveCred, credInfo, start, input, status: pub, result, reset, ROOT, _t: { pairRows, rowsSig, toAoa, PG, Browser, CDP, protect, unprotect } };
+module.exports = { VERSION, pageHtml, cfg, setCfg, saveCred, credInfo, start, input, status: pub, result, reset, ROOT, keyInfo, link, remoteState, remoteTick, _t: { REM, cloudCall, pairRows, rowsSig, toAoa, PG, Browser, CDP, protect, unprotect } };

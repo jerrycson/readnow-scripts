@@ -77,10 +77,11 @@ const srv = http.createServer((req, res) => {
 /* 📦 ALPS 자동 처리 길 — 웹앱(jerrycson.github.io)·이 PC 설정 화면만 · 로그인 정보는 설정 화면(127.0.0.1:8898 출처)에서만 받음 */
 function alpsApi(req, res, u, org, J) { if (!ALPS) return J(503, { ok: false, err: 'ALPS 모듈이 아직 없음 — 1분 뒤 다시(도우미가 GitHub에서 받음)' }); const A = ALPS; const p = u.pathname.slice(6); const selfPage = !org || /^http:\/\/(127\.0\.0\.1|localhost):8898$/.test(org);
   const body = (cb) => readBody(req, 25 * 1048576, (e, b) => { if (e) return J(400, { ok: false, err: e.message }); let o = null; try { o = JSON.parse(b.toString('utf8') || '{}'); } catch (x) { return J(400, { ok: false, err: 'bad json' }); } try { cb(o); } catch (er) { J(400, { ok: false, err: er.message }); } });
-  if (p === 'status') { const c = A.cfg(); return J(200, { ok: true, ver: A.VERSION, helper: VERSION, pc: os.hostname(), cfg: { printer: c.printer, confirmBeforePrint: c.confirmBeforePrint, firstOne: c.firstOne, headless: c.headless }, cred: A.credInfo(), run: A.status() }); }
+  if (p === 'status') { const c = A.cfg(); const k = A.keyInfo ? A.keyInfo().catch(() => null) : Promise.resolve(null); return k.then((key) => J(200, { ok: true, ver: A.VERSION, helper: VERSION, pc: key ? key.pc : os.hostname(), cfg: { printer: c.printer, confirmBeforePrint: c.confirmBeforePrint, firstOne: c.firstOne, headless: c.headless, cloud: !!c.cloudUrl }, cred: A.credInfo(), run: A.status(), key: key ? { fp: key.fp, pub: key.pub } : null, remote: A.remoteState ? A.remoteState() : null })); }
   if (req.method !== 'POST' && p !== 'result') return J(405, { ok: false });
   if (p === 'cred') { if (!selfPage) return J(403, { ok: false, err: '로그인 정보는 이 PC 설정 화면(http://127.0.0.1:8898/alps)에서만' }); return body((o) => A.saveCred(o.id, o.pw).then(() => J(200, { ok: true })).catch((e) => J(400, { ok: false, err: e.message }))); }
-  if (p === 'config') return body((o) => J(200, { ok: true, cfg: A.setCfg(o) }));
+  if (p === 'config') return body((o) => { delete o.cloudUrl; J(200, { ok: true, cfg: A.setCfg(o) }); });
+  if (p === 'link') return body((o) => J(200, { ok: true, remote: A.link(o) })); /* 웹앱이 이 PC를 허락할 때 클라우드 주소를 넣어 줌 */
   if (p === 'run') return body((o) => J(200, { ok: true, run: A.start(o) }));
   if (p === 'input') return body((o) => J(200, A.input(o)));
   if (p === 'reset') return J(200, { ok: A.reset() });
