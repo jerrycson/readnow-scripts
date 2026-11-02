@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "예스24 판 올리기",
+ "since": "2026-11-02T09:15:59Z",
+ "beat": "2026-11-02T09:15:59Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-02T09:15:42Z"
  },
- "host": null
+ "host": "vm"
 }
