@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.176
+// @version      1.89.177
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -8692,8 +8692,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (!g.ok) { if (g.state === 'done' || g.state === 'busy') return ref.set({ status: 'verify', pubNext: new Date(Date.now() + 5000).toISOString(), uploadedAt: TS() }, { merge: true }).catch(() => {}); keys.forEach((k) => mark(k, 'fail', '실행 문: ' + g.why)); return save({ status: 'fail', msg: '실행 문: ' + g.why, doneAt: at() }); }
     const fin = async (st, msg) => { if (X) await X.finish(db, { kind: 'prdEdit', key: id }, st, { msg }).catch(() => {}); };
     const cur = v.cur0 && v.cur0.ok && String(v.cur0.uid) === lid && Date.now() - (+v.cur0.t || 0) < 20e3 ? v.cur0 : await peReadPc(lid); /* (사람처럼 · 10/30 로봇 점검) 🔬 실험이 몇 초 전에 읽은 같은 화면이면 다시 받지 않음(20초 — 근거: 없음, 한 조각 안 같은 상품만) */ if (!cur.ok || cur.uid !== lid) { const why = cur.login === false ? '로그인 풀림' : cur.why || '다른 상품 화면'; keys.forEach((k) => mark(k, 'fail', why)); await save({ status: 'fail', msg: why, doneAt: at() }); return fin('failed', why); }
-    if (v.qtyAdd != null && 'qty' in ch) { /* (1.89.65) 정범님 10/25 기등록 수량 늘리기: 웹앱 기록(샵매니저 목록 숫자)이 아니라 정보수정 화면의 지금 수량 + 늘릴 수 */ const add = Math.round(+v.qtyAdd); if (cur.qty == null || !(add > 0)) { mark('qty', 'fail', '정보수정 화면의 지금 수량을 못 읽어 늘리지 않음'); delete ch.qty; }
-      else { const q0 = +cur.qty; ch.qty = q0 + add; v.before = { ...(v.before || {}), qty: q0 }; trail.push({ at: at(), k: 'qty', st: 'base', m: `정보수정 화면 지금 수량 ${q0} + ${add} → ${q0 + add}${v.qtyWeb != null && +v.qtyWeb !== q0 ? ` (웹앱 기록은 ${v.qtyWeb}였음)` : ''}`, pc: PC_NAME }); await ref.set({ ch: { qty: ch.qty }, before: { qty: q0 }, qtyBase: { q0, to: ch.qty, web: v.qtyWeb ?? null, at: at(), by: PC_NAME } }, { merge: true }).catch(() => {});
+    if (v.qtyAdd != null && 'qty' in ch) { /* (1.89.65) 정범님 10/25 기등록 수량 늘리기: 웹앱 기록(샵매니저 목록 숫자)이 아니라 정보수정 화면의 지금 수량 + 늘릴 수 */ const add = Math.round(+v.qtyAdd); /* (11/02 정범님) 알라딘 매입 판매 처리 — 여러 권 매물에서 한 권만 팔면 '지금 수량 − 1'(음수 qtyAdd) · 0 아래로는 줄이지 않음 */ if (cur.qty == null || !add || +cur.qty + add < 0) { mark('qty', 'fail', cur.qty == null ? '정보수정 화면의 지금 수량을 못 읽어 바꾸지 않음' : !add ? '바꿀 수량이 0' : `정보수정 화면 지금 수량 ${cur.qty}에서 ${-add}권을 뺄 수 없음(이미 팔렸을 수 있음 — 확인 필요)`); delete ch.qty; }
+      else { const q0 = +cur.qty; ch.qty = q0 + add; v.before = { ...(v.before || {}), qty: q0 }; trail.push({ at: at(), k: 'qty', st: 'base', m: `정보수정 화면 지금 수량 ${q0} ${add < 0 ? '−' : '+'} ${Math.abs(add)} → ${q0 + add}${v.qtyWeb != null && +v.qtyWeb !== q0 ? ` (웹앱 기록은 ${v.qtyWeb}였음)` : ''}`, pc: PC_NAME }); await ref.set({ ch: { qty: ch.qty }, before: { qty: q0 }, qtyBase: { q0, to: ch.qty, web: v.qtyWeb ?? null, at: at(), by: PC_NAME } }, { merge: true }).catch(() => {});
         if (v.regItem) await C('reg_items').doc(String(v.regItem)).set({ post: { from: q0, to: q0 + add, base: 'edit', baseAt: at() }, history: firebase.firestore.FieldValue.arrayUnion({ at: at(), by: PC_NAME, what: `♻ 정보수정 화면 수량 ${q0} → ${q0 + add}${v.qtyWeb != null && +v.qtyWeb !== q0 ? ` (웹앱 기록 ${v.qtyWeb}과 달라 정보수정 화면 기준)` : ''}` }), uploadedAt: TS() }, { merge: true }).catch(() => {}); } }
     const J = async (r) => { const t = await r.text(); try { const j = JSON.parse(t); return { ok: !!j.result, msg: j.result ? null : `${j.errorCode || ''} ${j.errorMsg || ''}`.trim() || '실패' }; } catch (e) { return { ok: false, msg: /wlogin/i.test(r.url) ? '로그인 풀림' : '응답을 못 읽음' }; } };
     const H = { 'X-Requested-With': 'XMLHttpRequest' }; const HP = { ...H, 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' };
