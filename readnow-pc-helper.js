@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.178의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.179의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.178' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.178', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.179' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.179', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -282,7 +282,7 @@
       mark(k, r.ok ? 'sent' : 'fail', r.msg); } await save();
     const fk = keys.filter((k) => ['grade', 'note', 'subtitle', 'imgs'].includes(k));
     if (fk.length) { const fr = document.createElement('iframe'); fr.id = 'rnPrdEdit_' + Date.now().toString(36); fr.style.cssText = 'position:fixed;left:-5000px;top:0;width:1280px;height:1000px;border:0;opacity:0;pointer-events:none'; const loaded = (ms) => new Promise((res) => { const t = setTimeout(() => res(false), ms); fr.addEventListener('load', () => { clearTimeout(t); res(true); }, { once: true }); });
-      let err = null, al = []; try { const p0 = loaded(60000); fr.src = '/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=' + encodeURIComponent(lid); document.body.appendChild(fr); if (!(await p0)) throw new Error('수정 화면이 1분 안에 안 열림'); await sleep(1200);
+      let err = null, al = []; try { const p0 = loaded(60000); fr.src = '/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=' + encodeURIComponent(lid); document.body.appendChild(fr); if (!(await p0)) throw new Error('수정 화면이 1분 안에 안 열림'); await sleep(Math.round(1200 * (0.85 + Math.random() * 0.3))); /* (정범님 11/02 · 고정 간격 흩기) ±15% */
         const uf = UW.document.getElementById(fr.id); const W = uf && uf.contentWindow; const d = fr.contentDocument; for (let i = 0; i < 80 && !(W && W.EditorManager && d.getElementById('frmRecord')); i++) await sleep(250); if (!(W && W.EditorManager)) throw new Error('수정 화면 편집기가 안 뜸');
         if (String((d.querySelector('input[name="UpdateItemId"]') || {}).value) !== lid) throw new Error('다른 상품 화면');
         const $ = (x) => d.getElementById(x); const fire = (el) => ['input', 'change', 'keyup', 'blur'].forEach((t) => { try { el.dispatchEvent(new Event(t, { bubbles: true })); } catch (e) {} }); const setV = (x, val) => { const el = $(x); if (!el) return false; el.removeAttribute('readonly'); el.readOnly = false; el.value = val == null ? '' : String(val); fire(el); return true; };
@@ -301,7 +301,7 @@
         const bad = al.filter((a) => !/^\(확인✓\)|^\(사진 창\)/.test(a) && /실패|오류|입력해|선택해|확인해|없습니다|불가|잘못|초과/.test(a)); if (bad.length) throw new Error('알라딘이 막음: ' + bad.join(' / ')); if (!went) throw new Error('보낸 뒤 화면이 바뀌지 않음'); }
       catch (e) { err = e.message; } finally { setTimeout(() => { try { fr.src = 'about:blank'; } catch (e) {} setTimeout(() => { try { fr.remove(); } catch (e) {} }, 500); }, 3000); } /* (4시간 점검 10/30) 수정 화면 iframe은 지우기 전에 빈 쪽으로 돌려 편집기를 놓게 함 — 🔬 조회수 실험 매일 일이 돌기 시작한 09:04부터 HOME 힙이 180MB에서 시간당 약 2GB씩 늘어 99%에서 메모리 정리 새로고침(10/30 10:50) */
       for (const k of fk) mark(k, err ? 'fail' : 'sent', err || al.join(' / ')); await save(); }
-    await sleep(1500); let now2 = await peReadPc(lid); if (!now2.ok) { await sleep(3000); now2 = await peReadPc(lid); } if (ref && typeof ref === 'object' && 'now2' in ref && !ref.id) ref.now2 = now2; /* (사람처럼) 🔬 실험(받이 sink)에 확인 읽기를 넘겨 같은 화면을 또 받지 않게 */ const sm = peSame(ch); const done = [];
+    await sleep(Math.round(1500 * (0.85 + Math.random() * 0.3))); let now2 = await peReadPc(lid); if (!now2.ok) { await sleep(Math.round(3000 * (0.85 + Math.random() * 0.3))); /* (정범님 11/02 · 고정 간격 흩기) 확인 읽기 앞 쉼 ±15% */ now2 = await peReadPc(lid); } if (ref && typeof ref === 'object' && 'now2' in ref && !ref.id) ref.now2 = now2; /* (사람처럼) 🔬 실험(받이 sink)에 확인 읽기를 넘겨 같은 화면을 또 받지 않게 */ const sm = peSame(ch); const done = [];
     for (const k of keys) { if (F[k].st !== 'sent') continue; const s0 = now2.ok ? sm[k](now2) : undefined; if (s0 === true || (s0 === null && now2.ok)) { mark(k, 'scm', '샵매니저 수정 화면에서 확인'); done.push(k); } else if (s0 === false) mark(k, 'fail', '보냈는데 샵매니저 값이 그대로'); else mark(k, 'unk', '보냈지만 샵매니저 화면을 다시 읽지 못함'); }
     const key = v.listingKey || (v.usedCode ? 'aladin_' + v.usedCode : null); const STN = { 1: '판매중', 3: '일시판매중지', 15: '판매중지' };
     if (key && done.length) { const up = {}, chg = {}; const b0 = v.before || {}; for (const k of done) { if (k === 'imgs') continue; const to = k === 'state' ? STN[PE_ST[ch.state]] : k === 'note' ? peTxt(ch.note).slice(0, 2000) : ch[k]; const fld = { price: 'price', qty: 'qty', code: 'sku', state: 'status', grade: 'grade', subtitle: 'subtitle', note: 'myNote' }[k]; up[fld] = to; chg[fld] = { from: b0[k] ?? null, to }; } if ('status' in up) up.active = up.status === '판매중' || up.status === '일시판매중지';

@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.178의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.179의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.178' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.178', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.179' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.179', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -321,7 +321,7 @@
   /* (정범님 10/26) 🔑 로그인 판단은 사람이 아는 방식만(__rnLoginGov · 위 '알라딘 로그인 — 사람처럼'): 샵매니저가 로그인 화면으로 넘어갔거나 로그인 칸이 뜬 때만 '의심' → 주문 화면으로 한 번 더 확인 → 진짜 풀렸을 때만 규칙대로 한 번 로그인
    *  예전: 비밀번호 칸 + 제목이 '샵매니저' 아님 = 로그아웃(어느 화면이든) → 실제로는 로그인돼 있는데 네이버 로그인 흐름을 1분마다(10/26 JS-MAIN 297번) */
   const GOV = window.__rnLoginGov; let LO_C = null;
-  const fetchDoc = AL.makeReader({ pace: PACE_C, sleep, wait: politeWait, beforeEach: () => checkPause(),
+  const fetchDoc = AL.makeReader({ pace: PACE_C, sleep: (ms) => sleep(Math.round(ms * (0.8 + Math.random() * 0.4))) /* (정범님 11/02 · 고정 간격 흩기) 실패 다시 시도 5·15·45·120·300초를 ±20% 흩음(같은 박자 = 로봇 신호) — 이 창구에서 sleep은 다시 시도 기다림에만 씀 */, wait: politeWait, beforeEach: () => checkPause(),
     loggedOut: (fu, doc, url) => { const j = GOV.suspect(url, fu, doc); if (j === 'gate') throw Object.assign(new Error('이 화면만 로그인이 필요함(공개 화면이 로그인 화면으로 넘어감) — 이 장은 건너뜀'), { needLogin: true, gate: true }); LO_C = j ? url : null; return !!j; },
     onLoggedOut: async (fu, loginTries) => {
       if ((await GOV.verify({ url: LO_C || fu, isLoggedIn, why: fu })) === 'misread') return; // 잘못 본 것 — 로그인하지 않고 같은 요청만 다시
@@ -982,9 +982,15 @@
         const q = await fdb.collection('sellers').where('uploadedAt', '>', FB.firestore.Timestamp.fromMillis(selMax)).limit(2001).get();
         if (q.size <= 2000) { let mx = selMax; q.forEach((d) => { const x = d.data(); const u = ms(x); if (u > mx) mx = u; if ((x.linkedCustomers || []).length) selSrc.set(d.id, lite(x)); else selSrc.delete(d.id); }); selMax = mx; setSellerLinks([...selSrc.values()], true); sellerLinksAt = t; return; } }
       const why = !selSrc ? '탭 시작 뒤 처음' : !(t - selFullAt < 24 * 3600e3) ? '통째 읽은 뒤 24시간 지남' : '바뀐 판매자 2천 명 넘음'; /* (1.89.159) */
-      const src = new Map(); let mx = 0; const FPd = FB.firestore.FieldPath.documentId(); let last = null; /* (1.89.142) 2천 명씩 나눠 받고 사이마다 숨 돌림 */
-      for (;;) { let q = fdb.collection('sellers').orderBy(FPd).limit(2000); if (last) q = q.startAfter(last); const ss = await q.get(); ss.forEach((d) => { const x = d.data(); const u = ms(x); if (u > mx) mx = u; if ((x.linkedCustomers || []).length) src.set(d.id, lite(x)); }); if (ss.size < 2000) break; last = ss.docs[ss.docs.length - 1]; await sleep(0); }
-      setSellerLinks([...src.values()]); selSrc = src; selMax = mx; selFullAt = t; sellerLinksAt = t; try { log(`🔢 판매자 연결 통째 읽기 — 연결 있는 판매자 ${src.size}명 · ${Math.round((Date.now() - t) / 1000)}초 · 까닭: ${why} (다음 통째 읽기는 24시간 뒤 · 그사이엔 바뀐 판매자만)`); } catch (e) {} } catch (e) {} }
+      /* (정범님 11/02 · 10/31 정밀 점검 근원 보고서 SELLER_LINKS 2단계) 연결 수 칸(linkN)이 모든 연결 판매자에 적혔으면(app_settings/seller_linkn.done) 서버에 '연결 있는 판매자만' 물음(1.5만 → 수백 건 · 통째 읽기 없음)
+       *  아직이면 한 번만 예전처럼 통째로 읽으며 linkN이 없는 연결 판매자에 linkN만 적음(uploadedAt은 안 바꿈 — 웹앱들이 판매자를 다시 받지 않게 · 연결 없는 판매자는 칸이 없어도 '0'과 같아 쓰지 않음) → 다 적으면 done */
+      const LNREF = fdb.collection('app_settings').doc('seller_linkn'); let lnDone = false; try { const ld = await LNREF.get(); lnDone = !!(ld.exists && ld.data().done); } catch (e) {}
+      if (lnDone) { try { const src = new Map(); let mx = selMax || 0; const qs = await fdb.collection('sellers').where('linkN', '>', 0).get(); qs.forEach((d) => { const x = d.data(); const u = ms(x); if (u > mx) mx = u; if ((x.linkedCustomers || []).length) src.set(d.id, lite(x)); });
+          setSellerLinks([...src.values()]); selSrc = src; selMax = Math.max(mx, selMax || 0); selFullAt = t; sellerLinksAt = t; try { log(`🔢 판매자 연결 골라 받기 — 연결 있는 판매자 ${src.size}명(서버에서 linkN>0만 · 읽기 ${qs.size}건) · ${Math.round((Date.now() - t) / 1000)}초 · 까닭: ${why}`); } catch (e) {} return; } catch (e) { try { log('🔢 판매자 연결 골라 받기 실패 — 예전처럼 통째로: ' + e.message, 1); } catch (e2) {} } }
+      const src = new Map(); let mx = 0; const FPd = FB.firestore.FieldPath.documentId(); let last = null; const fix = []; /* (1.89.142) 2천 명씩 나눠 받고 사이마다 숨 돌림 */
+      for (;;) { let q = fdb.collection('sellers').orderBy(FPd).limit(2000); if (last) q = q.startAfter(last); const ss = await q.get(); ss.forEach((d) => { const x = d.data(); const u = ms(x); if (u > mx) mx = u; const n = (x.linkedCustomers || []).length; if (n) src.set(d.id, lite(x)); if (n && x.linkN !== n) fix.push([d.ref, n]); }); if (ss.size < 2000) break; last = ss.docs[ss.docs.length - 1]; await sleep(0); }
+      setSellerLinks([...src.values()]); selSrc = src; selMax = mx; selFullAt = t; sellerLinksAt = t; try { log(`🔢 판매자 연결 통째 읽기 — 연결 있는 판매자 ${src.size}명 · ${Math.round((Date.now() - t) / 1000)}초 · 까닭: ${why} (다음 통째 읽기는 24시간 뒤 · 그사이엔 바뀐 판매자만)`); } catch (e) {}
+      if (!lnDone) { try { for (let i = 0; i < fix.length; i += 400) { const bt = fdb.batch(); fix.slice(i, i + 400).forEach(([r, n]) => bt.update(r, { linkN: n })); await bt.commit(); await sleep(200); } await LNREF.set({ done: true, at: new Date().toISOString(), by: (window.__rnPcName && window.__rnPcName.get()) || null, fixed: fix.length, linked: src.size }, { merge: true }); log(`🔢 판매자 연결 수(linkN) 처음 한 번 적음 — ${fix.length}명 · 다음부터 연결 있는 판매자만 골라 받음`); } catch (e) { try { log('🔢 판매자 연결 수 적기 실패(다음 통째 읽기에서 다시): ' + e.message, 1); } catch (e2) {} } } } catch (e) {} }
 
   // 이 PC에 주문 데이터가 적으면(다른 PC가 주로 수집한 경우) 고객 연결에 쓸 주문을 Firebase에서 내려받음
   let serverOrdersCache = [];
@@ -1202,13 +1208,14 @@
         if (sh) usedSheet.add(sh._key);
         const doc = { ...lean, ourGrade: sh ? sh.grade : null, sheet: sh ? { sheet: sh.sheet, sheetRow: sh.sheetRow, remark: sh.remark, rating6m: sh.rating6m, reviews6m: sh.reviews6m, bad6m: sh.bad6m, actualDays: sh.actualDays, lowPrice: sh.lowPrice, stock: sh.stock } : null };
         doc.linkedCustomers = linkOf({ phone: doc.phone || (sh && sh.phone), asPhone: doc.asPhone || (sh && sh.asPhone), email: doc.email || (sh && sh.email), returnAddress: doc.returnAddress || (sh && sh.returnAddress), owner: doc.owner || (sh && sh.owner) });
+        doc.linkN = (doc.linkedCustomers || []).length; /* (정범님 11/02 · 판매자 연결 읽기를 서버에서 골라 받기) 연결 수 — loadSellerLinks가 where('linkN','>',0)으로 연결 있는 판매자만 받음 */
         docs.push({ col: 'sellers', id: `sc_${raw._sc}`, data: doc });
         docs.push({ col: 'seller_history', id: `sc_${raw._sc}`, data: history });
       }
       for (const s of sheetS) {
         if (usedSheet.has(s._key)) continue;
         const { _key, importedAt, fileName, type, grade, ...rest } = s;
-        docs.push({ col: 'sellers', id: `sheet_${_key.replace(/^seller_/, '')}`, data: { ...rest, ourGrade: grade, source: 'gsheet', linkedCustomers: linkOf(s) } });
+        docs.push({ col: 'sellers', id: `sheet_${_key.replace(/^seller_/, '')}`, data: (() => { const lc = linkOf(s); return { ...rest, ourGrade: grade, source: 'gsheet', linkedCustomers: lc, linkN: (lc || []).length }; })() });
       }
     }
     for (const s of sheetRows.filter((x) => x.type !== 'seller')) {
