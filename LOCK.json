@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "ALPS 자동 처리 2단계 판 내기",
+ "since": "2026-11-02T06:48:17Z",
+ "beat": "2026-11-02T06:48:17Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-02T06:35:42Z"
  },
- "host": null
+ "host": "vm"
 }
