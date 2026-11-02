@@ -1,13 +1,9 @@
-perf=400
-@health&hours=24
-doc=app_settings/write_watch,prd_jobs/pcBeat,app_settings/value_model,app_settings/buyback_stats,app_settings/extras_study,app_settings/night_ops,app_settings/pc_roles,app_settings/seller_linkn,app_settings/bi_x,prd_system/settings,app_settings/logger_watch,prd_system/dataBackup,app_settings/devops_cfg,prd_jobs/devops_20261102,prd_jobs/net_20261102,app_settings/px_exp,app_settings/price_watch
-logs=1&pc=JS-MAIN&from=202611012150
-logs=1&pc=LOGGER&from=202611012150
-logs=1&pc=HOME&from=202611012150
-logs=1&pc=MJ-MAIN&from=202611012150
-cmds=pxExp&n=20
-cmds=prdEdit&n=20
-rate=prd_listings,prd_listing_changes,prd_metric_changes,prd_book_metrics,sellers,shp_cmds,bench_items,ext_used,ext_basic,ext_pool,perf_logs,px_exp&mins=1440
-rate=prd_listings,prd_listing_changes,prd_metric_changes,prd_book_metrics,sellers,shp_cmds,bench_items,ext_used,ext_basic,ext_pool,perf_logs,px_exp&mins=180
-recentUp=sellers&mins=240
-# 1283528075
+doc=prd_system/autoSched,app_settings/ship_review,app_settings/bbuy_auto,prd_system/pxExp,app_settings/px_cfg,app_settings/kpipa,app_settings/backup_auto,app_settings/y24_link,app_settings/seller_linkn
+recentUp=prd_price_decisions&mins=240
+recentUp=px_exp&mins=240
+recentUp=ext_used&mins=240
+samp=prd_price_decisions,px_exp,prd_lookups,ext_used,prd_jobs
+sizes=sellers,prd_price_decisions,px_exp&n=100
+cmds=metrics&n=12
+cmds=bbuy&n=12
+# 1694510584
