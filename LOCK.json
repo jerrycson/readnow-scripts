@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "ALPS 자동 처리 1단계 판 내기",
- "since": "2026-11-02T06:32:57Z",
- "beat": "2026-11-02T06:32:57Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "friend",
-  "done": "CLAUDE.md 규칙 한 줄",
-  "at": "2026-11-02T05:29:28Z"
+  "who": "lead",
+  "done": "",
+  "at": "2026-11-02T06:35:42Z"
  },
- "host": "vm"
+ "host": null
 }
