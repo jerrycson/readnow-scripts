@@ -1,2 +1,2 @@
-doc=app_settings/ratio_study,app_settings/ratio_cfg,app_settings/oop_cfg,app_settings/oop_study,app_settings/cloud,app_settings/oop_hist&sizes=ml_ratio_study,ml_oop_study&n=20
-# 367429088
+mlx=L
+# 3108030292
