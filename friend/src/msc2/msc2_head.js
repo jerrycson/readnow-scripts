@@ -74,3 +74,41 @@ function msc2XMouth(B, C, t) { const L = { open: [1.55, 0.5, 1.9, 0, 1], grinO: 
   s += mscPs(`M${M(-w * 0.35, dn * 0.62 + 0.75)}Q${M(0, dn * 0.62 + 1.15)} ${M(w * 0.35, dn * 0.62 + 0.75)}Q${M(0, dn * 0.62 + 0.95)} ${M(-w * 0.35, dn * 0.62 + 0.75)}Z`, mscSkS(C.skin), 0.7); /* 아랫입술 아래 그늘 */
   return `<g class="m2-xmo" data-mo="${t}">${s}</g>`; }
 
+/* ── (r18 회차 8 · 02 §2.3 그늘 모양 표 · 실측 r18/round07/그늘_실측.md) 얼굴 셀 그늘 모양 ──
+ *  예전 = 같은 모양을 옮겨 뺀 초승달(msc2Shade) + 앞머리 전체를 0.06H 내려 80% 칠(반투명 · 이마 전체에 같은 두께 띠) + 턱 아래 0.16H 쐐기(80%) + 코 그늘 반투명
+ *  지금 = 부위마다 '정해 둔 모양'(影指定) · 모두 불투명 1号影 한 색(mscSkS) · 단위 H = 머리 높이(정수리~턱)
+ *   bang  drop  앞머리 아래 가장자리를 빛 반대(오른쪽 아래)로 옮긴 띠 — 가운데(|x|<x0)는 거의 없음(실측 0.004H) · 관자 쪽 side(실측 최대 0.036H) · 끊긴 조각 · 이마 안에만
+ *   chin  drop  턱 아래 V(목 위) — 깊이 0.10H(실측 0.093~0.153) · 턱 0.04H 아래 폭 ≈0.22H(목 폭이 자름)
+ *   nose  form  코끝 옆 작은 삼각 하나(그늘 쪽 · 0.04×0.05H · 꼬마는 0.7배)
+ *   cheek form  얼굴 옆 초승달(빛 반대쪽 · 관자~볼뼈) — 옮긴 거리 배율 k(예전 1)
+ *   lid   crease 눈두덩 — 그늘 쪽 눈 눈머리 위 작은 쐐기(눈썹 아래)
+ *   ear   crease 귀 안 오목(이미 불투명 면) — 모양 그대로 · 표에만 올림
+ *  표에서 항목을 지우면(또는 MSC2_SHADOW_ON = 0) 그 부위는 예전 그림 그대로(msc2ShGet이 null) */
+const MSC2_SHADOW_SPEC = {
+  bang: { kind: 'drop', mid: 0.004, side: 0.07, x0: 0.06, x1: 0.15, dx: 0.045, max: 0.066, min: 0.006, lk: 0.8, base: 0.9 },
+  chin: { kind: 'drop', depth: 0.11, kq: 0.04, w: 0.11, sh: 0.04 },
+  nose: { kind: 'form', w: 0.04, h: 0.05 },
+  cheek: { kind: 'form', w: 0.03, lw: 0.04 },
+  lid: { kind: 'crease', w: 0.3, h: 0.02 },
+  ear: { kind: 'crease' } };
+let MSC2_SHADOW_ON = 1;
+const msc2ShGet = (k) => (MSC2_SHADOW_ON && MSC2_SHADOW_SPEC && MSC2_SHADOW_SPEC[k]) || null;
+/* 앞머리 이마 띠: polys = 머리카락(덮개·앞머리 다발) 다각형(그림 좌표) · half = 얼굴 반쪽 · 돌려줌 = 조각 경로 d(없으면 '') */
+function msc2BangBand(S, polys, half, B, hx, hy, u) { if (!polys || !polys.length) return ''; const yE = B.eyeY - B.eh * 0.95; /* 띠 바닥 한계 = 눈 위(눈썹 자리) */
+  const at = (y) => { for (let i = 1; i < half.length; i++) if (half[i][1] >= y) { const a = half[i - 1], b = half[i]; return msc2L(a[0], b[0], (y - a[1]) / (b[1] - a[1] || 1)); } return half[half.length - 1][0]; };
+  const W = at(0.32) * u; const x0 = 50 - W, x1 = 50 + W;
+  const lowAt = (x) => { let m = -1e9; for (const P of polys) { const n = P.length; for (let i = 0; i < n; i++) { const a = P[i], b = P[(i + 1) % n]; if ((a[0] - x) * (b[0] - x) > 0 || a[0] === b[0]) continue; const y = a[1] + ((b[1] - a[1]) * (x - a[0])) / (b[0] - a[0]); if (y > m && y < yE + u * 0.12) m = y; } } return m; };
+  const sm = (e0, e1, v) => { const t = Math.max(0, Math.min(1, (v - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
+  const prof = (x) => { const r = (x - 50) / u, s = sm(S.x0, S.x1, Math.abs(r)); const k = r < 0 ? S.lk : 1; return [(S.mid + (S.side - S.mid) * s) * k * u, S.dx * s * u]; }; /* 빛 = 왼쪽 위 → 빛 쪽(왼쪽 관자)은 lk배 */
+  const xs = new Set(); const N = 36; for (let i = 0; i <= N; i++) xs.add(x0 + ((x1 - x0) * i) / N); polys.forEach((P) => P.forEach((q) => { if (q[0] > x0 && q[0] < x1 && q[1] < yE + u * 0.12) { xs.add(q[0]); xs.add(Math.min(x1, q[0] + prof(q[0])[1])); } }));
+  const X = [...xs].sort((a, b) => a - b); const col = X.map((x) => { const yh = lowAt(x); if (yh < -1e8) return null; const [t, dx] = prof(x); const ys = lowAt(x - dx); let bot = Math.min(Math.max((ys > -1e8 ? ys : yh) + t, yh + t * (S.base || 0)), yh + S.max * u, yE); /* 옮긴 앞머리의 아래 가장자리 + 두께 — 다발 끝 오른쪽에 쐐기 · 왼쪽 비탈은 비어 끊긴 조각이 됨 */ return [x, yh, bot]; });
+  const runs = []; let cur = null; col.forEach((c) => { const ok = c && c[2] - c[1] > S.min * u; if (ok) { if (!cur) runs.push((cur = [])); cur.push(c); } else cur = null; });
+  const F = (v) => Math.round(v * 10) / 10; /* 0.1 단위(그림 크기) */ const simp = (B) => B.filter((q, i) => { if (!i || i === B.length - 1) return true; const a = B[i - 1], b = B[i + 1]; const t = (q[0] - a[0]) / (b[0] - a[0] || 1); return Math.abs(a[1] + (b[1] - a[1]) * t - q[1]) > 0.06; }); /* 거의 곧은 점은 뺌(그림 크기) */
+  return runs.filter((r) => r.length > 1).map((r) => { const top = simp(r.map((c) => [c[0], c[1] - u * 0.03])); const bot = simp(r.map((c) => [c[0], c[2]])).reverse(); return 'M' + top.concat(bot).map((q) => F(q[0]) + ' ' + F(q[1])).join('L') + 'Z'; }).join(''); }
+/* 코 그늘(불투명 작은 삼각 · 그늘 쪽) — mscNose의 반투명 그늘 면을 빼고 이것을 넣음 */
+function msc2NoseSd(nose, S, B, skS) { const x = 50, y = B.noseY, H = B.H, k = B.kid ? 0.7 : 1; const w = S.w * H * k, h = S.h * H * k; const F = (v) => Math.round(v * 20) / 20;
+  const tri = `<path class="m2-sdn" d="M${F(x + w * 0.2)} ${F(y - h)}L${F(x + w)} ${F(y + h * 0.04)}L${F(x + w * 0.05)} ${F(y + h * 0.12)}Z" fill="${skS}"/>`;
+  return nose.replace(new RegExp(`<path d="[^"]*" fill="${skS}" opacity="[\\d.]+"/>`), tri); }
+/* 눈두덩(그늘 쪽 = 오른쪽 눈 눈머리 위 · 눈썹 아래) 작은 쐐기 */
+function msc2LidSd(S, B, skS) { const s = 1, cx = 50 + s * B.ex, iw = B.ew, top = B.eyeY - B.eh * 0.62; const F = (v) => Math.round(v * 20) / 20; const a = cx - iw * 0.98, b = a + iw * S.w * 2, h = S.h * B.H;
+  return `<path class="m2-sdl" d="M${F(a)} ${F(top + h * 0.6)}Q${F(a + (b - a) * 0.35)} ${F(top - h * 0.55)} ${F(b)} ${F(top - h * 0.2)}Q${F(a + (b - a) * 0.45)} ${F(top + h * 0.05)} ${F(a)} ${F(top + h * 0.6)}Z" fill="${skS}"/>`; }
