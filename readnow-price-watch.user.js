@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 가격 감시기
 // @namespace    readnow
-// @version      0.10.30
+// @version      0.10.31
 // @description  판정 엔진으로 감시 묶음(적용·비교)의 온라인 중고 목록을 매일 보고 추천가를 기록하고, 웹앱에서 승인된 가격만 샵매니저에 반영합니다. 수집기와 완전히 따로 돕니다(작업 잠금·진행 기록·로그인 모두 따로, 로그인은 수집기에 맡김).
 // @match        https://www.aladin.co.kr/scm/wrecord_edit.aspx*
 // @noframes
@@ -344,7 +344,7 @@
         if (Date.now() - Date.parse(x.at) > 48 * 3600e3) { await d.ref.set({ approvalState: 'stale', execNote: '판정이 48시간 넘게 지남 — 다시 판정 후 결정', ...W() }, { merge: true }); continue; }
         if (PR.isExcluded({ sku: x.sku }, engineSettings())) { await d.ref.set({ approvalState: 'blocked', execNote: `${x.sku}: 자동 감시 제외 코드 — 직접 가격으로 결정하세요`, ...W() }, { merge: true }); continue; }
         const apA = x.approval || {}; if (apA.decision === 'auto') { const gA = (await wgLoad()).get(apA.gid); if (!gA || gA.watch.apply !== 'auto') { await d.ref.set({ approvalState: 'pending', approval: null, execNote: '자동 반영이 꺼진 그룹 — 결정 대기로', ...W() }, { merge: true }); continue; } // (0.8.0) 판정 뒤 그룹의 자동 반영을 껐으면 반영하지 않음
-          try { const L0 = (await C('prd_listings').doc(x.key).get()).data(); if (L0 && L0.lastSeenAt && String(L0.lastSeenAt) > String(apA.at) && apA.expectPrice != null && L0.price != null && +L0.price !== +apA.expectPrice && +L0.price !== +apA.price) { await fail(`판정 뒤 다른 곳에서 가격이 바뀜 (판정 때 ${(+apA.expectPrice).toLocaleString()} → 지금 ${(+L0.price).toLocaleString()})`, true); continue; } if (L0 && L0.lastSeenAt && String(L0.lastSeenAt) > String(apA.at) && L0.status && L0.status !== '판매중') { await fail(`판정 뒤 상품 상태가 '${L0.status}'로 바뀜`, true); continue; } } catch (e) {} }
+          try { const L0 = (await C('prd_listings').doc(x.key).get()).data(); const seenA = !!(L0 && [L0.lastSeenAt, L0.editAt, L0.watchSyncAt].some((t) => t && String(t) > String(apA.at))); /* (0.10.31 🔬 정밀 점검 11/02 월 💸 연계 위험) 자동 반영도 manual 길과 같이 웹앱 ✏ 손 수정·전략(editAt)·다른 반영(watchSyncAt)을 봄 — 예전엔 수집기가 다시 본 것(lastSeenAt)만 봐서 판정과 반영 사이(1분 넘게)에 사람이 바꾼 값을 엔진 값으로 덮을 수 있었음 */ if (seenA && apA.expectPrice != null && L0.price != null && +L0.price !== +apA.expectPrice && +L0.price !== +apA.price) { await fail(`판정 뒤 다른 곳에서 가격이 바뀜 (판정 때 ${(+apA.expectPrice).toLocaleString()} → 지금 ${(+L0.price).toLocaleString()})`, true); continue; } if (seenA && L0.status && L0.status !== '판매중') { await fail(`판정 뒤 상품 상태가 '${L0.status}'로 바뀜`, true); continue; } } catch (e) {} }
       }
       if (kind === 'manual') { // 관리자 가격·수동 일괄: 적은 가격만, 결정 뒤 상품 상태·가격이 바뀌었으면 막음
         const ap = x.approval || {}; const p0 = Math.round(+ap.price);
