@@ -77,5 +77,6 @@ def build_records():
 
 if __name__ == '__main__':
     open(OUT, 'w', encoding='utf-8').write(build_index())
+    import inject_nav; inject_nav.inject(OUT)  # (11/03) 차례·찾기·바로가기 탐색 틀(nav.html) — 본문은 그대로
     build_records()
     print('wrote', OUT, os.path.getsize(OUT))
