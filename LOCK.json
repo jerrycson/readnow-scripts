@@ -1,13 +1,13 @@
 {
- "holder": "h4",
- "what": "수집기 시장 지표 갱신 완료 표 정리(진행 수가 전체보다 큼)",
- "since": "2026-11-02T23:20:47Z",
- "beat": "2026-11-02T23:20:47Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "lead",
+  "who": "h4",
   "done": "",
-  "at": "2026-11-02T21:16:56Z"
+  "at": "2026-11-02T23:22:34Z"
  },
- "host": "vm"
+ "host": null
 }
