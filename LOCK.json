@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "책방 친구 0.15.19 (회차 5·8)",
- "since": "2026-11-02T10:56:16Z",
- "beat": "2026-11-02T10:56:16Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "friend",
   "done": "",
-  "at": "2026-11-02T10:19:39Z"
+  "at": "2026-11-02T10:58:54Z"
  },
- "host": "vm-friend"
+ "host": null
 }
