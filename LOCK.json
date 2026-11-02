@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "① 주문확인요청 시장 다시 읽기 단추",
- "since": "2026-11-02T21:12:19Z",
- "beat": "2026-11-02T21:12:19Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "kpsum",
-  "done": "요약 1개 넣음 · 남은 0개",
-  "at": "2026-11-02T20:52:48Z"
+  "who": "lead",
+  "done": "",
+  "at": "2026-11-02T21:16:56Z"
  },
- "host": "vm"
+ "host": null
 }
