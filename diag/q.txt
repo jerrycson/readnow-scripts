@@ -1,2 +1,2 @@
-logs=1&pc=JS-MAIN&from=202611012315
-# 1457332529
+logs=1&pc=JS-MAIN&hours=4
+# 1423521972
