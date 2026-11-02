@@ -1,13 +1,13 @@
 {
- "holder": "friend",
- "what": "CLAUDE.md 규칙 한 줄",
- "since": "2026-11-02T05:29:21Z",
- "beat": "2026-11-02T05:29:21Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "friend",
-  "done": "r18 회차1 원본 정리 f68e2be (friend/src만)",
-  "at": "2026-11-02T02:40:25Z"
+  "done": "CLAUDE.md 규칙 한 줄",
+  "at": "2026-11-02T05:29:28Z"
  },
- "host": "vm-doc"
+ "host": null
 }
