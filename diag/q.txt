@@ -1,5 +1,1 @@
-doc=ext_used/9788975341342,ext_used/9788954682152,ext_used/9780973501803,ext_used/B8809462140475
-samp=ext_hist,ext_used,ext_basic,ext_pool,prd_lookups
-rate=ext_hist,ext_used,ext_basic,ext_pool,ext_index&mins=1440
-rate=ext_hist&mins=10080
-# 1615517196
+@kpin kpin/aud_20261102-132309.json
