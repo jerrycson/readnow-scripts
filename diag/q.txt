@@ -1,2 +1,2 @@
-doc=app_settings/main
-# 649027425
+doc=app_settings/main,app_settings/purchase&skuchk=1
+# 56757931
