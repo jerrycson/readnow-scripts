@@ -1,3 +1,2 @@
-logs=1&pc=JS-MAIN&from=202611030800
-# 19216690
-@kpin kpin/aud_20261103-031649.json
+doc=app_settings/main
+# 649027425
