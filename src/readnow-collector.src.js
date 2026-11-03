@@ -3652,7 +3652,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    * ① 판매중지 전(빨강): '지금 판매중지로 바꾸기'(상품 조회/수정의 판매상태 바꾸기와 같은 요청) · '이미 했음'
    * ② 현금 판매 완료(초록, 접힘): '다시 판매중으로 — 반품·교환' (이유·메모 → 알라딘 판매중으로 바꾸고 웹앱 기록에도 남김: 반품 = 그 줄 매출에서 빠짐, 교환·기타 = 매출은 그대로 두고 상품만 다시 판매)
    * 🧪 테스트(이터널 선샤인만): 판매중으로 → 띠가 다시 빨강으로 나타남 → '지금 판매중지로 바꾸기' → 판매중지 목록으로 가서 그 줄을 표시. 웹앱에는 테스트 신호만 보내고 기록은 바꾸지 않음 — 몇 번이든 반복 */
-  const STOP_TXT = { cash: ['💵 현금 판매 완료', '#2e7d32'], elsewhere: ['다른 판매처에서 판매', '#2e7d32'], lost: ['분실·파손', '#8d6e63'], keep: ['보관·개인 소장', '#546e7a'], check: ['검수·확인 대기', '#b58100'], other: ['기타', '#757575'] };
+  const STOP_TXT = { cash: ['💵 현금 판매 완료', '#2e7d32'], elsewhere: ['다른 판매처에서 판매', '#2e7d32'], lost: ['분실·파손', '#8d6e63'], keep: ['보관·개인 소장', '#546e7a'], check: ['검수·확인 대기', '#b58100'], disp: ['🗑 폐기', '#5d4037'], other: ['기타', '#757575'] }; /* (정범님 11/03) disp 폐기 — 웹앱 STOP_REASONS와 같게(🏷 알라딘 매입 폐기·알라딘 폐기 결과) */
   const ST_CODE = { 판매중: 1, 판매대기: 41, 일시판매중지: 3, 판매중지: 15, 판매완료: 18, 판매금지: 16 };
   const isTestItem = (it) => /이터널\s*선샤인/.test(String(it.title || '').replace(/\s+/g, ' '));
   const stopListUrl = (kw) => `/scm/wrecord_edit.aspx?chkItemStockStatus=15&chkItemInDate=0&searchCat1=0&searchType=1&keyword=${encodeURIComponent(kw || '')}&ViewRowsCount=100&page=1&SortOrder=6&itemStockStatus=15&categoryId=0`;
@@ -6679,13 +6679,22 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const C2B_SEARCH = (isbn) => `https://www.aladin.co.kr/shop/usedshop/wc2b_search.aspx?ActionType=1&SearchTarget=All&KeyWord=${encodeURIComponent(isbn)}`;
   const C2B_CART = 'https://www.aladin.co.kr/shop/usedshop/wc2b_sales.aspx?search=1';
   async function c2bCartRead() { await PACE.wait(); const g = await lookDoc(C2B_CART); if (looksLoggedOut(g.finalUrl, g.doc)) throw new Error('알라딘 로그인이 풀림 — 로그인한 뒤 웹앱에서 다시 담기');
-    const list = P.parseC2BCart(g.doc); const set = new Set(); list.forEach((x) => { if (x.isbn13) set.add(x.isbn13); }); return { list, set }; }
+    const list = P.parseC2BCart(g.doc); const set = new Set(); list.forEach((x) => { if (x.isbn13) set.add(x.isbn13); }); const Q = c2bCartQty(g.doc); return { list, set, qty: Q.qty, raw: Q.raw }; }
+  /* (정범님 11/03) 알라딘 팔기 장바구니의 책마다 수량 — 줄(tr.item) 안 수량 칸(이름·id·class에 qty·cnt·수량) 값, 칸이 없으면 줄 하나 = 1권 · 같은 ISBN 줄이 여럿이면 더함 · 칸 모양(raw)도 적어 둠(화면이 바뀌면 맞추려고) */
+  function c2bCartQty(doc) { const qty = new Map(), raw = new Map(); for (const tr of doc.querySelectorAll('tr.item[pkid]')) { const t = String(tr.textContent || '').replace(/\s+/g, ' '); const i13 = (t.match(/ISBN13\s*:\s*(97[89]\d{10})/) || [])[1]; if (!i13) continue;
+      const els = [...tr.querySelectorAll('input,select')].filter((e) => String(e.type || '').toLowerCase() !== 'hidden' || /qty|cnt|수량/i.test(`${e.name || ''} ${e.id || ''}`)); const pick = els.find((e) => /qty|cnt|count|수량|amount/i.test(`${e.name || ''} ${e.id || ''} ${e.className || ''}`));
+      let q = pick ? parseInt(String(pick.value || '').replace(/\D/g, ''), 10) : NaN; if (!(q > 0)) { const m = t.match(/수량\s*[:：]?\s*(\d{1,3})/); q = m ? +m[1] : 1; }
+      qty.set(i13, (qty.get(i13) || 0) + q); raw.set(i13, ((raw.get(i13) ? raw.get(i13) + ' | ' : '') + els.slice(0, 6).map((e) => `${String(e.tagName || '').toLowerCase()}:${e.name || e.id || e.className || '?'}=${String(e.value == null ? '' : e.value).slice(0, 12)}`).join(' ')).slice(0, 300)); }
+    return { qty, raw }; }
+  /* 알림 글에서 알라딘 매입 한도(권수) — '최대 2권', '2권까지', '2권 이상 … 불가/초과' 같은 글의 숫자만(짐작하지 않음) */
+  function c2bLimitOf(msg) { const t = String(msg || ''); if (!/한도|최대|까지|초과|이상|제한/.test(t)) return null; const m = t.match(/(?:최대|한도)\s*(\d{1,2})\s*(?:권|개)/) || t.match(/(\d{1,2})\s*(?:권|개)\s*(?:까지|초과|이상|으로 제한|제한)/); return m ? +m[1] : null; }
   function c2bFrame(url) { return new Promise((resolve) => { let f = globalThis.__rnById('rn-c2b-frame'); if (f) { try { f.src = 'about:blank'; } catch (e) {} f.remove(); }
     f = document.createElement('iframe'); f.id = 'rn-c2b-frame'; f.style.cssText = 'position:fixed;left:-3000px;top:0;width:1300px;height:2000px;visibility:hidden'; document.body.appendChild(f);
     const t0 = Date.now(); let done = false; let iv = null; const fin = (ok) => { if (done) return; done = true; clearInterval(iv); let d = null; try { d = f.contentDocument; } catch (e) {} resolve({ ok, f, doc: d }); };
     f.src = url; iv = setInterval(() => { let d = null; try { d = f.contentDocument; } catch (e) {} if (d && d.URL !== 'about:blank' && d.readyState === 'complete' && (d.querySelector('#searchResult') || Date.now() - t0 > 8000)) fin(true); else if (Date.now() - t0 > 45000) fin(false); }, 400); }); }
-  async function c2bAddOne(it, cartSet) { const isbn = String(it.isbn13 || ''); if (!/^97[89]\d{10}$/.test(isbn)) return { state: 'failed', msg: 'ISBN13이 없음' };
-    if (cartSet.has(isbn)) return { state: 'already', msg: '이미 팔기 장바구니에 있음' };
+  async function c2bAddOne(it, cartSet, cart, ctx) { const isbn = String(it.isbn13 || ''); if (!/^97[89]\d{10}$/.test(isbn)) return { state: 'failed', msg: 'ISBN13이 없음' };
+    /* (정범님 11/03) 같은 책 2권 이상 — 이 책을 원하는 권수(이 페이지의 다른 권 중 담김 + 이번 것)가 알라딘 팔기 장바구니 수량보다 많으면 '팔기 장바구니에 추가'를 한 번 더 누르고 수량 칸·알림 글을 적음(예전: ISBN마다 한 번만 담고 나머지는 '이미 있음') */
+    const cq = (cart && cart.qty) || new Map(); let multi = false, cq0 = null; if (cartSet.has(isbn)) { cq0 = cq.get(isbn) || 1; const want = ctx && ctx.want ? ctx.want(isbn, it.usedCode) : 1; if (want <= cq0) return { state: 'already', msg: '이미 팔기 장바구니에 있음', cartQty: cq0 }; multi = true; }
     await PACE.wait(); const fr = await c2bFrame(C2B_SEARCH(isbn)); const d = fr.doc; if (!fr.ok || !d) return { state: 'failed', msg: '매입가 조회 화면을 못 엶(시간 초과)' };
     if (looksLoggedOut(d.URL, d)) return { state: 'failed', msg: '알라딘 로그인이 풀림' };
     const rows = P.parseC2BSearch(d); const i10 = (() => { if (!/^978/.test(isbn)) return null; const b = isbn.slice(3, 12); let t = 0; for (let k = 0; k < 9; k++) t += (+b[k]) * (10 - k); const c = (11 - (t % 11)) % 11; return b + (c === 10 ? 'X' : String(c)); })(); const row = rows.find((r) => r.isbn13 === isbn) || rows.find((r) => !r.isbn13 && i10 && String(r.isbn10 || '').toUpperCase() === i10) || null; /* (1.59.0) ISBN13이 없는 줄은 ISBN10이 맞을 때만 — 결과가 한 줄이라고 맞춰 보지 않고 담지 않음 */
@@ -6698,20 +6707,69 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const q0 = (d.querySelector('.ItemQtySum') || {}).textContent || ''; (btn.querySelector('a') || btn).click();
     const t0 = Date.now(); while (Date.now() - t0 < 8000) { await sleep(400); let q1 = ''; try { q1 = (fr.f.contentDocument.querySelector('.ItemQtySum') || {}).textContent || ''; } catch (e) {} if (msgs.length || (q1 && q1 !== q0)) break; }
     await sleep(1200); let after = null; try { after = await c2bCartRead(); } catch (e) { return { state: 'failed', msg: '담은 뒤 장바구니를 못 읽음: ' + e.message + (msgs.length ? ' · 알림: ' + msgs.join(' / ').slice(0, 200) : ''), c2b }; }
-    after.set.forEach((x) => cartSet.add(x)); const msg = msgs.join(' / ').slice(0, 300) || null;
-    return after.set.has(isbn) ? { state: 'added', msg, c2b, cartN: after.list.length } : { state: 'failed', msg: msg || '단추를 눌렀지만 장바구니에 없음', c2b, cartN: after.list.length }; }
+    after.set.forEach((x) => cartSet.add(x)); if (cart && after.qty) { cart.qty = after.qty; cart.raw = after.raw; } const msg = msgs.join(' / ').slice(0, 300) || null; const q1 = after.qty ? after.qty.get(isbn) ?? null : null; const lim = c2bLimitOf(msg); const qr = (after.raw && after.raw.get(isbn)) || null;
+    if (multi) return q1 != null && q1 > cq0 ? { state: 'added', msg, c2b, cartN: after.list.length, cartQty: q1, qtyRaw: qr, multi: true, limit: lim } : { state: 'already', msg: `같은 책을 한 권 더 담으려 했지만 장바구니 수량이 ${cq0}권에서 늘지 않음${msg ? ' · 알림: ' + msg : ''}`.slice(0, 300), c2b, cartN: after.list.length, cartQty: q1 != null ? q1 : cq0, qtyRaw: qr, multi: true, limit: lim, cap: msgs.length ? cq0 : null };
+    return after.set.has(isbn) ? { state: 'added', msg, c2b, cartN: after.list.length, cartQty: q1, qtyRaw: qr, limit: lim } : { state: 'failed', msg: msg || '단추를 눌렀지만 장바구니에 없음', c2b, cartN: after.list.length }; }
+  /* ◆c2bAutoStop 시작 — (정범님 11/03) 🛑 장바구니 담김 → 판매중지를 웹앱이 열린 기기에 기대지 않고, 담은 PC 수집기가 담은 직후 같은 자리에서 맡음
+   *  웹앱 bhAutoRun·bhStopRun과 같은 규칙·같은 기록: prd_system/buyback.auto{열쇠} = { cartAt(그 담기의 때), cartState, at, by, dev, st 'claim'|'done'|'fail', pc } 를 트랜잭션으로 먼저 잡은 쪽만 맡음(웹앱이 같은 순간 봐도 한 번만)
+   *  안 하는 것: 자동 꺼 둠(autoCfg.on false) · 자동을 켜기 전 담긴 책 · 이미 판매중지 진행(sold) · 같은 담기를 이미 맡음 · 담긴 뒤 관리자 처리(유지·소재불명·폐기·검토) · '이미 장바구니에 있음'인데 같은 ISBN이 여럿(사람 확인)
+   *  판매중지 = 웹앱과 같은 길: shp_cmds 'prdEdit'(판매상태 → 판매중지 · 클라우드가 먼저, 안 되면 PC) · 여러 권 매물(권마다 SKU · 수량 2권 이상)은 수량 −1(qtyAdd · 판매중지 아님) · 판매중지 이유 '다른 판매처에서 판매'(prd_stop_reasons) · sold{열쇠} 기록
+   *  등록 상품(REG_)·상품 기록 없음 = 기록만 · 앞서 맡긴 같은 칸 수정이 진행 중이면 실패(웹앱 카드의 「판매중지 다시」) */
+  const C2B_STOP_NOTE = '🏷 알라딘 매입 — 팔기 장바구니 담김 확인(PC 수집기가 담은 직후 자동 판매중지)';
+  const c2bT = (x) => Date.parse(x || 0) || 0;
+  async function c2bStopOne(it, code, now) { const FV = firebase.firestore.FieldValue; const reg = /^REG_/.test(code); const ti = code.indexOf('~'); const unit = ti > 0 ? code.slice(ti + 1) : it.unit || null; const uc = String(it.listingUsedCode || (ti > 0 ? code.slice(0, ti) : code));
+    const who = (() => { try { return (auth.currentUser && auth.currentUser.email) || PC_NAME; } catch (e) { return PC_NAME; } })();
+    const base = { at: now, by: who, kind: reg ? 'reg' : 'al', title: it.title || null, isbn13: it.isbn13 || null, grade: it.grade || null, buy: reg ? it.price || null : null, why: 'elsewhere', auto: true, dev: PC_NAME, pc: true };
+    if (reg) return { rec: { ...base, state: 'record', note: '등록 상품 — 알라딘 매물이 없어 기록만' } };
+    const ld = await C('prd_listings').doc('aladin_' + uc).get(); if (!ld.exists) return { rec: { ...base, state: 'record', note: '상품 기록이 없어 판매중지는 맡기지 않음' } };
+    const l = { id: 'aladin_' + uc, ...(ld.data() || {}) }; let old = null; try { const r0 = await C('prd_stop_reasons').doc(l.id).get(); old = r0.exists ? r0.data() || null : null; } catch (e) {}
+    const live = /^(판매중|일시판매중지)$/.test(l.status || ''); const q = +l.qty || 1; const asQty = live && (unit || q >= 2) && q - 1 >= 1; const ch = asQty ? { qty: q - 1 } : { state: '판매중지' };
+    let cmd = null; if (live) { const fk = Object.keys(ch)[0]; const qs = await C('shp_cmds').where('listingKey', '==', l.id).get(); const busy = (qs.docs || []).some((d) => { const x = d.data() || {}; return x.type === 'prdEdit' && ['queued', 'running', 'verify'].includes(x.status) && x.ch && fk in x.ch; });
+      if (busy) return { fail: '앞서 맡긴 판매상태·수량 수정이 진행 중 — 웹앱 카드의 「판매중지 다시」' };
+      const r = C('shp_cmds').doc(); const before = asQty ? { qty: q } : { state: l.status || null };
+      await r.set({ type: 'prdEdit', status: 'queued', claim: null, listingKey: l.id, listingId: String(l.listingId || ''), usedCode: l.usedCode || uc, title: String(l.title || it.title || '').slice(0, 100), ch, before, f: { [fk]: { st: 'queued', at: now } }, createdAt: now, by: who, dev: PC_NAME, from: 'c2bAuto', ...(asQty ? { qtyAdd: -1, qtyWeb: q, regItem: null } : {}), ws: null, trail: [{ at: now, m: `PC 수집기가 맡김 · 🏷 알라딘 매입 팔기 장바구니 담김 → ${asQty ? '수량 −1' : '판매중지'}`, pc: PC_NAME }], uploadedAt: TS() }); cmd = r.id; }
+    if (!asQty) { const h = { at: now, by: who, from: old ? old.reason || null : null, to: 'elsewhere', note: C2B_STOP_NOTE };
+      try { await C('prd_stop_reasons').doc(l.id).set({ listingId: l.listingId || null, usedCode: l.usedCode || uc, sku: l.sku || null, title: l.title || null, reason: 'elsewhere', note: C2B_STOP_NOTE, at: now, by: who, uploadedAt: TS(), history: FV.arrayUnion(h) }, { merge: true }); } catch (e) {} }
+    const rec = asQty ? { ...base, prevReason: old ? old.reason || null : null, state: 'qty', cmd, beforeQty: q, afterQty: q - 1, unit, listingId: l.listingId || null, usedCode: l.usedCode || uc, note: `수량 ${q}권 → ${q - 1}권 맡김(판매중지 아님 — 남은 권은 계속 판매)` }
+      : { ...base, prevReason: old ? old.reason || null : null, state: live ? 'stop' : 'record', cmd, before: l.status || null, listingId: l.listingId || null, usedCode: l.usedCode || uc, note: live ? null : `이미 '${l.status || ''}' — 판매중지는 맡기지 않음` };
+    return { rec }; }
+  async function c2bAutoStop(it, r) { const code = String((it && it.usedCode) || ''); if (!code || !r || !['added', 'already'].includes(r.state) || !r.at) return { st: 'skip', why: '담김 아님' };
+    const ref = C('prd_system').doc('buyback'); const now = nowIso(); const isbn = String(r.isbn13 || it.isbn13 || '');
+    const cl = await db.runTransaction(async (tx) => { const d = await tx.get(ref); const v = (d.exists && d.data()) || {}; const cfg = v.autoCfg || {};
+      if (cfg.on === false) return { why: '자동 판매중지 꺼 둠(웹앱 ⚙ 칸)' };
+      const cs = (v.cart || {})[code]; if (!cs || cs.at !== r.at || !['added', 'already'].includes(cs.state)) return { why: '장바구니 기록이 그사이 바뀜' };
+      if (cfg.since && c2bT(cs.at) < c2bT(cfg.since)) return { why: '자동을 켜기 전에 담긴 책' };
+      const so = (v.sold || {})[code]; if (so && !so.undone) return { why: '이미 판매중지 진행' };
+      const a = (v.auto || {})[code]; if (a && a.cartAt === cs.at) return { why: `이미 맡음(${a.dev || '?'})` }; if (a && a.st === 'claim' && Date.now() - c2bT(a.at) < 10 * 60e3) return { why: `다른 기기(${a.dev || '?'})가 맡는 중` };
+      for (const f of ['keep', 'lost', 'disp', 'rev']) { const x = (v[f] || {})[code]; if (x && x.at && !x.undone && c2bT(x.at) >= c2bT(cs.at)) return { why: '담긴 뒤 관리자가 처리함' }; }
+      if (cs.state === 'already' && isbn) { const sib = Object.entries(v.cart || {}).filter(([k, c]) => k !== code && c && c.isbn13 === isbn && ['added', 'already', 'queued', 'running'].includes(c.state)).length; if (sib) return { why: `같은 ISBN ${sib + 1}권 — '이미 장바구니에 있음'은 사람이 확인` }; }
+      const claim = { cartAt: cs.at, cartState: cs.state, at: now, by: PC_NAME, dev: PC_NAME, st: 'claim', pc: true };
+      tx.set(ref, { auto: { [code]: claim }, ...(cfg.since ? {} : { autoCfg: { on: true, since: cs.at, at: now, by: PC_NAME, why: 'PC 수집기가 처음 켬 — 이 때 뒤 담긴 책만 저절로 판매중지' } }), updatedAt: now }, { merge: true }); return { claim }; });
+    if (!cl || !cl.claim) return { st: 'skip', why: (cl && cl.why) || '?' };
+    let out = null, fin; try { out = await c2bStopOne(it, code, now); fin = out.fail ? { ...cl.claim, st: 'fail', why: out.fail, endAt: nowIso() } : { ...cl.claim, st: 'done', endAt: nowIso() }; } catch (e) { fin = { ...cl.claim, st: 'fail', why: 'PC 처리 오류: ' + String(e && e.message || e).slice(0, 150), endAt: nowIso() }; }
+    const FV = firebase.firestore.FieldValue; const body = { auto: { [code]: fin }, updatedAt: nowIso(), updatedBy: PC_NAME, log: FV.arrayUnion({ act: 'autoStop', codes: [code], n: 1, fail: fin.st === 'fail' ? 1 : 0, dev: PC_NAME, pc: true, at: nowIso(), by: PC_NAME }) };
+    if (out && out.rec) body.sold = { [code]: { ...out.rec, undone: FV.delete() } };
+    await ref.set(body, { merge: true }); return { st: fin.st, why: fin.why || null, state: out && out.rec ? out.rec.state : null, cmd: out && out.rec ? out.rec.cmd : null }; }
+  /* ◆c2bAutoStop 끝 */
   async function c2bAddCmd(ref, v) { const items = v.items || []; const results = {}; let n = 0; log(`알라딘 매입: 팔기 장바구니에 ${items.length}권 담기 (웹앱에서 맡김)`);
     const bbSet = (code, r) => C('prd_system').doc('buyback').set({ cart: { [code]: r } }, { merge: true }).catch(() => {});
     let cart = null; try { cart = await c2bCartRead(); } catch (e) { for (const it of items) { results[it.usedCode] = { state: 'failed', at: nowIso(), msg: e.message, by: PC_NAME }; await bbSet(it.usedCode, results[it.usedCode]); } await ref.set({ status: 'done', results, n: items.length, doneAt: nowIso(), err: e.message, uploadedAt: TS() }, { merge: true }); log('알라딘 매입: ' + e.message, 1); return; }
     let cartN = cart.list.length;
+    /* (정범님 11/03) 같은 책 여러 권 — 이 책을 원하는 권수 = 이 페이지의 다른 열쇠 중 '담김'(added) + 이번 것 · prd_system/buyback을 한 번만 읽음(이 맡긴 일 동안 담은 것은 그 자리에서 더함) */
+    let bbCart = {}; try { const d0 = await C('prd_system').doc('buyback').get(); bbCart = ((d0 && d0.exists && d0.data()) || {}).cart || {}; } catch (e) {}
+    const want = (isbn, code) => 1 + Object.entries(bbCart).filter(([k, c]) => k !== code && c && c.state === 'added' && String(c.isbn13 || '') === isbn).length;
+    let nStop = 0, nStopF = 0;
     for (const it of items) { let r; const xk = `${ref.id}:${it.usedCode}`; const gate = await exBegin('c2bAdd', xk, { usedCode: it.usedCode, isbn13: it.isbn13 || null });
       if (!gate.ok) r = { state: gate.state === 'done' ? 'already' : 'failed', msg: '실행 문: ' + gate.why };
-      else { try { r = await c2bAddOne(it, cart.set); } catch (e) { r = { state: 'failed', msg: e.message }; } await exEnd('c2bAdd', xk, ['added', 'already'].includes(r.state) ? 'done' : 'failed', `${r.state}${r.msg ? ' · ' + r.msg : ''}`); }
-      if (r.cartN != null) cartN = r.cartN; delete r.cartN; r = { ...r, at: nowIso(), by: PC_NAME, isbn13: it.isbn13 || null }; results[it.usedCode] = r; n++;
-      await bbSet(it.usedCode, r); await ref.set({ results, n, cartN, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); }
+      else { try { r = await c2bAddOne(it, cart.set, cart, { want }); } catch (e) { r = { state: 'failed', msg: e.message }; } await exEnd('c2bAdd', xk, ['added', 'already'].includes(r.state) ? 'done' : 'failed', `${r.state}${r.msg ? ' · ' + r.msg : ''}`); }
+      if (r.cartN != null) cartN = r.cartN; delete r.cartN; const lim = r.limit, cap = r.cap, multi = r.multi; delete r.limit; delete r.cap; if (r.cartQty == null) delete r.cartQty; if (!r.qtyRaw) delete r.qtyRaw; r = { ...r, at: nowIso(), by: PC_NAME, isbn13: it.isbn13 || null, ...(['added', 'already'].includes(r.state) ? { stopPc: true } : {}) }; results[it.usedCode] = r; n++; /* stopPc = 이 수집기가 담은 직후 판매중지를 스스로 맡음(웹앱은 2분 기다린 뒤 받침으로만) */
+      await bbSet(it.usedCode, r); if (r.state === 'added') bbCart[it.usedCode] = r;
+      if ((multi || lim) && r.isbn13) { const m = lim || cap || null; await C('prd_system').doc('buyback').set({ limit: { [r.isbn13]: { ...(m ? { m, src: lim ? 'alert' : 'cap' } : {}), qty: r.cartQty ?? null, msg: r.msg || null, raw: r.qtyRaw || null, at: r.at, by: PC_NAME, code: it.usedCode } } }, { merge: true }).catch(() => {}); } /* (정범님 11/03) 알라딘 매입 한도 — 웹앱 카드 '한도 모름'이 숫자로 */
+      if (['added', 'already'].includes(r.state)) { try { const a = await c2bAutoStop(it, r); if (a.st === 'done') nStop++; else if (a.st === 'fail') { nStopF++; log(`알라딘 매입: 담은 직후 판매중지 못 맡김 — ${it.title || it.usedCode} · ${a.why || ''}`, 1); } } catch (e) { nStopF++; log('알라딘 매입: 담은 직후 판매중지 오류 — ' + (e.code || e.message), 1); } }
+      await ref.set({ results, n, cartN, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); }
     try { const f = globalThis.__rnById('rn-c2b-frame'); if (f) { f.src = 'about:blank'; f.remove(); } } catch (e) {}
     const ok = Object.values(results).filter((r) => ['added', 'already'].includes(r.state)).length; await ref.set({ status: 'done', results, n, cartN, doneAt: nowIso(), uploadedAt: TS() }, { merge: true });
-    log(`알라딘 매입: 장바구니 ${ok} / ${items.length}권 (지금 장바구니 ${cartN}권)`, ok === items.length ? 0 : 1); }
+    log(`알라딘 매입: 장바구니 ${ok} / ${items.length}권 (지금 장바구니 ${cartN}권)${nStop || nStopF ? ` · 담은 직후 판매중지 맡김 ${nStop}${nStopF ? ` · 못 맡김 ${nStopF}` : ''}` : ''}`, ok === items.length && !nStopF ? 0 : 1); }
   /* ══════════ (10/26) 💬 웹앱에서 쓴 묻고 답하기 답변 → 샵매니저 (맡긴 일 qnaReply · 로그인한 PC만) ══════════
    *  정범님 10/26 '웹앱 문의 모음에서 문의를 눌러 직접 답변 — 입력하면 실시간으로 샵매니저 묻고 답하기에'
    *  ① 지금 답을 읽음(상세 화면 · 답이 없으면 수정 화면의 답변 칸) → 이미 같은 글이면 보내지 않고 '확인됨'
