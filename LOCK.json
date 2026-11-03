@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "출고 고객 판정 '이 주문 전' 기준",
- "since": "2026-11-03T03:58:23Z",
- "beat": "2026-11-03T03:58:23Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-03T03:45:58Z"
+  "at": "2026-11-03T04:00:36Z"
  },
- "host": "vm"
+ "host": null
 }
