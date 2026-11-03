@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "작업 기준 문서에 정범님 원칙 3개",
- "since": "2026-11-03T03:42:23Z",
- "beat": "2026-11-03T03:42:23Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "h4",
+  "who": "lead",
   "done": "",
-  "at": "2026-11-02T23:22:34Z"
+  "at": "2026-11-03T03:42:36Z"
  },
- "host": "vm"
+ "host": null
 }
