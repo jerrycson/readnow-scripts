@@ -1,2 +1,6 @@
-perf=400
-# 246520781
+@health&hours=24
+logs=1&pc=JS-MAIN&from=202611022150
+logs=1&pc=LOGGER&from=202611022150
+logs=1&pc=HOME&from=202611022150
+logs=1&pc=MJ-MAIN&from=202611022150
+# 230191503
