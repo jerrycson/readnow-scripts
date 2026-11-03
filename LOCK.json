@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "ALPS 0.2.9 재출력·물음 번호",
- "since": "2026-11-03T07:07:14Z",
- "beat": "2026-11-03T07:07:14Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-03T06:57:33Z"
+  "at": "2026-11-03T07:08:31Z"
  },
- "host": "vm"
+ "host": null
 }
