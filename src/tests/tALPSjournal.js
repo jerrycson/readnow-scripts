@@ -8,5 +8,5 @@ const todo = rows.filter((r) => !J2.printed[T.rowKey(r)] && (!T.alpsFlag(r) || (
 ok(todo.map((r) => r.mgr).join() === 'M3', '할 줄 = 기록에 없고 ALPS 출력 표시도 없는 줄만(M3) · 인쇄한 M2 · 출력 표시만 있는 M1은 묻기 전엔 안 함');
 J2.decide['m:M1'] = 'print'; T.jSave('S1', J2); const J3 = T.jLoad('S1'); const todo2 = rows.filter((r) => !J3.printed[T.rowKey(r)] && (!T.alpsFlag(r) || J3.decide[T.rowKey(r)] === 'print'));
 ok(todo2.map((r) => r.mgr).join() === 'M1,M3', "'안 나왔음 — 인쇄'로 고른 출력 표시 줄(M1)은 인쇄 대상");
-ok(T.jLoad('S2').printed && !Object.keys(T.jLoad('S2').printed).length, '다른 파일(서명)은 따로 기록');
+ok(!!T.jLoad('S2').printed['m:M2'], '같은 날 다른 파일(줄 수가 바뀜)이어도 인쇄 끝 기록을 그대로 씀(0.3.5 날짜별)');
 console.log(bad ? `❌ tALPSjournal 실패 ${bad}` : '✓ tALPSjournal 통과'); process.exit(bad ? 1 : 0);
