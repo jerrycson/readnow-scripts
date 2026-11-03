@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "ALPS 0.3.7 올리기",
- "since": "2026-11-03T07:49:17Z",
- "beat": "2026-11-03T07:52:10Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-03T07:47:58Z"
+  "at": "2026-11-03T07:52:16Z"
  },
- "host": "vm"
+ "host": null
 }
