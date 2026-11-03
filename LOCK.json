@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "ALPS 이어서 진행·인쇄 연결·기록",
+ "since": "2026-11-03T06:22:41Z",
+ "beat": "2026-11-03T06:22:41Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-03T05:59:12Z"
  },
- "host": null
+ "host": "vm"
 }
