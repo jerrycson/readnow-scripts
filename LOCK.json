@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "ALPS 도우미 0.3.9 종이 확인·빈 장 되돌리기",
- "since": "2026-11-03T08:07:48Z",
- "beat": "2026-11-03T08:07:48Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-03T07:55:13Z"
+  "at": "2026-11-03T08:12:55Z"
  },
- "host": "vm"
+ "host": null
 }
