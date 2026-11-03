@@ -14,9 +14,10 @@ require('./harness.js')(async (p) => {
   await p.route(/^http:\/\/127\.0\.0\.1:8898\//, async (r) => { const u = new URL(r.request().url()); const J = (o) => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' }, body: JSON.stringify(o) });
     if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST' } });
     const step = (st, err) => ['login', 'check', 'upload', 'print', 'verify', 'send'].map((k, i) => ({ k, l: k, st: i < st ? 'ok' : i === st ? (err ? 'err' : 'run') : 'todo', pct: 50, d: '' }));
-    if (u.pathname === '/alps/status') return J({ ok: true, ver: '0.3.4', pc: 'MJ-MAIN', cfg: { printer: '롯데택배 시험' }, cred: { saved: true }, run: H.run, key: { fp: 'f', pub: 'P' }, remote: { on: false } });
+    if (u.pathname === '/alps/status') return J({ ok: true, ver: '0.3.5', pc: 'MJ-MAIN', cfg: { printer: '롯데택배 시험' }, cred: { saved: true }, run: H.run, key: { fp: 'f', pub: 'P' }, remote: { on: false } });
     if (u.pathname === '/alps/run') { H.body = JSON.parse(r.request().postData()); H.run = { id: 'r1', at: '2026-11-03T14:50', fileName: H.body.fileName, status: 'error', error: '인쇄 프로그램(OZ 웹런처)에 연결이 안 됩니다', steps: step(3, true), summary: { rows: 3, orders: 2, upload: { ok: 3, bad: 0 } } }; return J({ ok: true, run: H.run }); }
     if (u.pathname === '/alps/resume') { H.resume = JSON.parse(r.request().postData() || '{}'); H.run = { id: 'r2', at: '2026-11-03T15:00', fileName: H.run.fileName, status: 'run', steps: step(3), summary: { uploadSkip: 'ALPS 목록에 이미 모두 있음(3줄)' } }; return J({ ok: true, run: H.run }); }
+    if (u.pathname === '/alps/input') { H.fileIn = JSON.parse(r.request().postData() || '{}'); if (H.run) H.run = { ...H.run, need: null, status: 'run' }; return J({ ok: true }); }
     if (u.pathname === '/alps/hist') return J({ ok: true, hist: [{ id: 'r0', at: '2026-11-03T10:00', file: '판매완료20261103.xlsx', status: 'done', rows: 44, orders: 16, boxes: 16, upload: { ok: 44 }, printed: 16, waybills: 16 }] });
     return J({ ok: false }); });
   await p.evaluate(require('./seed.js')); await p.addScriptTag({ content: require('fs').readFileSync(__dirname + '/xlsx.full.min.js', 'utf8') });
@@ -33,6 +34,9 @@ require('./harness.js')(async (p) => {
   if (o.resumeBtn) { await p.click('#alps_resume'); await p.waitForTimeout(2000); }
   Object.assign(o, await p.evaluate(async () => { const w = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; o.after = (S.alps.st || {}).id; await w(500); const d = await db.collection('prd_system').doc('alps_hist').get(); o.saved = d.exists && !!(d.data().runs || {}).r1; await openAlpsHist(); await w(900); o.histTxt = (document.getElementById('ah_b') || {}).textContent || ''; return o; }));
   console.log(JSON.stringify(o).slice(0, 600));
+  H.run = { id: 'r3', fileName: 'f.xlsx', status: 'wait', steps: [], summary: {}, need: { id: 7, type: 'file', msg: '빠진 1줄', miss: [{ name: '가수령', title: '[중고-상] 초록 책', ono: '001-B2' }] } };
+  await p.evaluate(async () => { S.alps.st = { status: 'run', steps: [], summary: {} }; alpsPoll(); await new Promise((r) => setTimeout(r, 4000)); });
+  ok(H.fileIn && H.fileIn.kind === 'file' && H.fileIn.needId === 7 && H.fileIn.rows.length === 1 && H.fileIn.rows[0].title.includes('초록') && H.fileIn.b64, '빠진 줄만 새로 접수: 도우미가 알려 준 1줄만 담은 파일을 웹앱이 만들어 보냄(물음 번호 7)');
   ok(o.big && o.hand && o.histBtn, '📦 ALPS 자동 처리 단추가 크고 따로(손으로 하기는 접기 안) · 📜 기록 단추');
   ok(o.resumeBtn && o.after === 'r2', '멈춘 뒤 「▶ 이어서 진행」 → 도우미 /alps/resume → 새 일(r2)로 이어짐');
   ok(H.body && H.body.rows.length === 3 && H.body.rows.every((r) => r.ono) && new Set(H.body.rows.map((r) => r.ono)).size === 2, '도우미에 줄마다 주문번호를 보냄(상자 수 = 주문 수 확인용): ' + (H.body ? H.body.rows.map((r) => r.ono).join(',') : '-'));
