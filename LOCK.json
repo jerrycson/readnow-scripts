@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "ALPS 0.3.0 출력의심목록",
+ "since": "2026-11-03T07:18:08Z",
+ "beat": "2026-11-03T07:18:08Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-03T07:08:31Z"
  },
- "host": null
+ "host": "vm"
 }
