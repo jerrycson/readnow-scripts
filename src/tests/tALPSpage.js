@@ -6,7 +6,7 @@ process.env.RN_ALPS_HOME = require('path').join(require('os').tmpdir(), 'rnalpst
     if (u.includes('/printers')) return rt.fulfill({ body: '{"printers":[]}', contentType: 'application/json' }); return rt.abort(); });
   await p.goto('http://127.0.0.1:8898/alps'); await p.waitForTimeout(800);
   const r = await p.evaluate(() => ({ ok: getComputedStyle(document.getElementById('cok')).display !== 'none', form: getComputedStyle(document.getElementById('cfm')).display !== 'none', id: document.getElementById('cid').textContent }));
-  await p.click('#cch'); await p.waitForTimeout(300); const r2 = await p.evaluate(() => getComputedStyle(document.getElementById('cfm')).display !== 'none');
+  await p.evaluate(() => document.querySelectorAll('details.card').forEach((d) => (d.open = true))); await p.click('#cch'); await p.waitForTimeout(300); const r2 = await p.evaluate(() => getComputedStyle(document.getElementById('cfm')).display !== 'none');
   await p.click('#cx'); await p.waitForTimeout(300); const r3 = await p.evaluate(() => getComputedStyle(document.getElementById('cok')).display !== 'none');
   await p.waitForTimeout(2300); const win = posted.find((x) => x[0] === 'config' && /win/.test(x[1]));
   let bad = 0; const ok = (c, m) => { console.log((c ? '✓ ' : '❌ ') + m); if (!c) bad++; };
