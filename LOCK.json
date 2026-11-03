@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "ALPS 0.2.6 상자 수 = 받는 사람 수",
- "since": "2026-11-03T06:36:39Z",
- "beat": "2026-11-03T06:36:39Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-03T06:27:32Z"
+  "at": "2026-11-03T06:38:08Z"
  },
- "host": "vm"
+ "host": null
 }
