@@ -1,13 +1,13 @@
-doc=app_settings/write_watch
-doc=prd_jobs/pcBeat
-doc=app_settings/value_model
-doc=app_settings/buyback_stats
-doc=app_settings/extras_study
-doc=prd_system/settings
-doc=prd_system/dataBackup
-doc=app_settings/oop_hist
-doc=prd_system/autoSched
-doc=app_settings/pc_roles
-doc=app_settings/y24_shop
-doc=prd_system/bi_x
-# 137629762
+cmds=pxExp&n=20
+cmds=prdEdit&n=20
+cmds=metrics&n=20
+cmds=bbuy&n=20
+cmds=shipReq&n=20
+cmds=alps&n=20
+recentUp=rn_status&mins=180
+recentUp=ext_hist&mins=180
+recentUp=prd_listings&mins=180
+recentUp=shp_cmds&mins=180
+recentUp=crm_orders&mins=180
+recentUp=ship_runs&mins=180
+# 813924871
