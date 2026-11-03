@@ -1,2 +1,2 @@
-regfind=_ck&recentUp=prd_listings&mins=240
-# 260075737
+doc=app_settings/aladin_login
+# 872428982
