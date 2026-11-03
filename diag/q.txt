@@ -1,10 +1,3 @@
-doc=app_settings/bi_x
-recentUp=ext_hist&mins=1440
-recentUp=rn_status&mins=1440
-recentUp=shp_cmds&mins=1440
-recentUp=prd_listing_changes&mins=1440
-recentUp=perf_logs&mins=60
-doc=app_settings/health_cache
-recentUp=rn_dialogs&mins=1440
-recentUp=devops_reports&mins=1440
-# 744625448
+doc=shp_cmds/7jCEozHIpFPExvrKzK5g
+doc=shp_cmds/lP4KAmuela1pepamNf4N
+# 944322706
