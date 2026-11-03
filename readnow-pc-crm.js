@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.184의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.185의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.184' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.184', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.185' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.185', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -94,7 +94,7 @@
     }
     const tsMs = (t) => (t && t.toMillis ? t.toMillis() : typeof t === 'string' ? Date.parse(t) || 0 : t && t.seconds ? t.seconds * 1000 : 0);
     function reviewCounts(b) { const r = { good: 0, mid: 0, bad: 0 }; b.reviews.forEach((x) => { const k = { 만족: 'good', 보통: 'mid', 불만족: 'bad' }[String(x.rating || '').trim()]; if (k) r[k] += 1; }); return r; }
-    function badges(b) {
+    function badges(b, ono) {
       if (!b || !b.c) return '<span class="rnb rnb-none">기록 없음</span>';
       const c = b.c; const rc = reviewCounts(b); const out = [];
       if (eff(c, 'blacklist').on) out.push('<span class="rnb rnb-bl">블랙리스트</span>');
@@ -103,7 +103,9 @@
       if (rc.bad) out.push(`<span class="rnb rnb-bl">불만족 ${rc.bad}</span>`);
       if (strongSel(c).length) out.push('<span class="rnb rnb-bl">판매자 정보 일치</span>');
       else if ((c.otherRecipientCount || 0) >= 3) out.push(`<span class="rnb rnb-cau">수령인 ${c.otherRecipientCount}명</span>`);
-      out.push((c.saleOrderCount || 0) > 1 ? `<span class="rnb rnb-rep">재구매 ${c.saleOrderCount}회</span>` : '<span class="rnb rnb-new">첫 구매</span>');
+      { /* (정범님 11/03) '이 주문 전' 기준 — 예전엔 이 주문까지 센 전체 주문 수(2 이상이면 재구매)라, 이 주문이 고객 기록에 들어오기 전·후로 같은 고객이 '첫 구매'↔'재구매'로 달라졌음 · 웹앱 출고 카드와 같은 기준 */
+        const mine = !!ono && (c.orderIds || []).some((id) => String(id) === 'aladin_' + ono || String(id).endsWith('_' + ono)); const prior = Math.max(0, (c.saleOrderCount || 0) - (mine ? 1 : 0));
+        out.push(prior >= 1 ? `<span class="rnb rnb-rep" title="이 주문 전 구매 ${prior}건 (모두 ${c.saleOrderCount || 0}건)">재구매 · ${prior + 1}번째</span>` : '<span class="rnb rnb-new" title="이 주문 전 구매 없음">첫 구매</span>'); }
       return out.join('');
     }
     function cardHtml(b, cid) {
@@ -214,7 +216,7 @@
           const cid = o2c.get(ono); const b = cid ? bundles.get(cid) : null;
           as.forEach((a) => {
             if (a.parentNode.querySelector(`.rn-bd[data-ono="${ono}"]`)) return;
-            const span = document.createElement('span'); span.className = 'rn-bd'; span.dataset.ono = ono; span.innerHTML = CARD.badges(b); span.title = '눌러서 리드나우 고객 정보 보기';
+            const span = document.createElement('span'); span.className = 'rn-bd'; span.dataset.ono = ono; span.innerHTML = CARD.badges(b, ono); span.title = '눌러서 리드나우 고객 정보 보기';
             span.onclick = (ev) => {
               ev.preventDefault(); ev.stopPropagation(); if (open) open.remove();
               const box = document.createElement('div'); box.className = 'rncard rnfloat'; const r = span.getBoundingClientRect();

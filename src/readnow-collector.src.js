@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.184
+// @version      1.89.185
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -1231,7 +1231,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     }
     const tsMs = (t) => (t && t.toMillis ? t.toMillis() : typeof t === 'string' ? Date.parse(t) || 0 : t && t.seconds ? t.seconds * 1000 : 0);
     function reviewCounts(b) { const r = { good: 0, mid: 0, bad: 0 }; b.reviews.forEach((x) => { const k = { 만족: 'good', 보통: 'mid', 불만족: 'bad' }[String(x.rating || '').trim()]; if (k) r[k] += 1; }); return r; }
-    function badges(b) {
+    function badges(b, ono) {
       if (!b || !b.c) return '<span class="rnb rnb-none">기록 없음</span>';
       const c = b.c; const rc = reviewCounts(b); const out = [];
       if (eff(c, 'blacklist').on) out.push('<span class="rnb rnb-bl">블랙리스트</span>');
@@ -1240,7 +1240,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (rc.bad) out.push(`<span class="rnb rnb-bl">불만족 ${rc.bad}</span>`);
       if (strongSel(c).length) out.push('<span class="rnb rnb-bl">판매자 정보 일치</span>');
       else if ((c.otherRecipientCount || 0) >= 3) out.push(`<span class="rnb rnb-cau">수령인 ${c.otherRecipientCount}명</span>`);
-      out.push((c.saleOrderCount || 0) > 1 ? `<span class="rnb rnb-rep">재구매 ${c.saleOrderCount}회</span>` : '<span class="rnb rnb-new">첫 구매</span>');
+      { /* (정범님 11/03) '이 주문 전' 기준 — 예전엔 이 주문까지 센 전체 주문 수(2 이상이면 재구매)라, 이 주문이 고객 기록에 들어오기 전·후로 같은 고객이 '첫 구매'↔'재구매'로 달라졌음 · 웹앱 출고 카드와 같은 기준 */
+        const mine = !!ono && (c.orderIds || []).some((id) => String(id) === 'aladin_' + ono || String(id).endsWith('_' + ono)); const prior = Math.max(0, (c.saleOrderCount || 0) - (mine ? 1 : 0));
+        out.push(prior >= 1 ? `<span class="rnb rnb-rep" title="이 주문 전 구매 ${prior}건 (모두 ${c.saleOrderCount || 0}건)">재구매 · ${prior + 1}번째</span>` : '<span class="rnb rnb-new" title="이 주문 전 구매 없음">첫 구매</span>'); }
       return out.join('');
     }
     function cardHtml(b, cid) {
@@ -1351,7 +1353,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
           const cid = o2c.get(ono); const b = cid ? bundles.get(cid) : null;
           as.forEach((a) => {
             if (a.parentNode.querySelector(`.rn-bd[data-ono="${ono}"]`)) return;
-            const span = document.createElement('span'); span.className = 'rn-bd'; span.dataset.ono = ono; span.innerHTML = CARD.badges(b); span.title = '눌러서 리드나우 고객 정보 보기';
+            const span = document.createElement('span'); span.className = 'rn-bd'; span.dataset.ono = ono; span.innerHTML = CARD.badges(b, ono); span.title = '눌러서 리드나우 고객 정보 보기';
             span.onclick = (ev) => {
               ev.preventDefault(); ev.stopPropagation(); if (open) open.remove();
               const box = document.createElement('div'); box.className = 'rncard rnfloat'; const r = span.getBoundingClientRect();
