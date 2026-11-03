@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "알라딘 매입 2차·화면 설명서·매입처 2차 판",
+ "since": "2026-11-03T05:49:37Z",
+ "beat": "2026-11-03T05:49:37Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-03T05:47:07Z"
  },
- "host": null
+ "host": "vm"
 }
