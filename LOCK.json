@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "ALPS 0.2.8 진행 기록",
- "since": "2026-11-03T06:56:26Z",
- "beat": "2026-11-03T06:56:26Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-03T06:47:23Z"
+  "at": "2026-11-03T06:57:33Z"
  },
- "host": "vm"
+ "host": null
 }
