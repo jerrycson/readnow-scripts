@@ -1,2 +1,2 @@
-doc=app_settings/main,app_settings/purchase&skuchk=1
-# 56757931
+regfind=_ck&recentUp=prd_listings&mins=240
+# 260075737
