@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "🏪 매입처 화면 판 내기",
- "since": "2026-11-03T04:11:13Z",
- "beat": "2026-11-03T04:11:13Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-03T04:00:36Z"
+  "at": "2026-11-03T04:17:58Z"
  },
- "host": "vm"
+ "host": null
 }
