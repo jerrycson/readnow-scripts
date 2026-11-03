@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "daily",
+ "what": "🔬 정밀 점검 판 내기(웹앱 1.78.349·수집기 1.89.189·클라우드 0.35.80)",
+ "since": "2026-11-03T13:17:46Z",
+ "beat": "2026-11-03T13:17:46Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "",
   "at": "2026-11-03T11:18:52Z"
  },
- "host": null
+ "host": "vm"
 }
