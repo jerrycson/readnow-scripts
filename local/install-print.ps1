@@ -49,15 +49,27 @@ $lk = $sh.CreateShortcut((Join-Path $startup 'ReadNow-Print.lnk')); $lk.TargetPa
 # (정범님 11/02) 윈도우 시작 때 'ALPS 도우미' 창을 따로 열기 — 도우미가 켜질 때까지(최대 2분) 기다린 뒤 크롬 앱 창으로 http://127.0.0.1:8898/alps
 $chrome = @($env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:LOCALAPPDATA) | Where-Object { $_ } | ForEach-Object { Join-Path $_ 'Google\Chrome\Application\chrome.exe' } | Where-Object { Test-Path $_ } | Select-Object -First 1
 if ($chrome) {
+  # (정범님 11/03) 창 크기 = 로거 도우미와 같게(380×560) · 위치 = 마지막으로 있던 자리(도우미가 %USERPROFILE%\ReadNow\alps\win.txt에 저장 · 화면 밖이면 오른쪽 위) · 창 전용 크롬 프로필(크기·위치 지정이 늘 먹게 — 로거 도우미와 같은 방식)
+  $wps = Join-Path $Dir 'open-alps-window.ps1'
+  [IO.File]::WriteAllText($wps, @"
+Add-Type -AssemblyName System.Windows.Forms
+`$a = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
+`$w = 380; `$h = 560; `$x = `$a.X + `$a.Width - `$w; `$y = `$a.Y
+`$f = Join-Path `$env:USERPROFILE 'ReadNow\alps\win.txt'
+if (Test-Path `$f) { `$p = (Get-Content `$f -Raw).Trim() -split ','; if (`$p.Count -eq 2) { `$px = [int]`$p[0]; `$py = [int]`$p[1]; foreach (`$sc in [System.Windows.Forms.Screen]::AllScreens) { `$b = `$sc.WorkingArea; if (`$px -ge `$b.X - 40 -and `$px -le `$b.X + `$b.Width - 80 -and `$py -ge `$b.Y - 10 -and `$py -le `$b.Y + `$b.Height - 80) { `$x = `$px; `$y = `$py; break } } } }
+Start-Process -FilePath '$chrome' -ArgumentList ("--user-data-dir=```"$Dir\chrome-alpswin```" --app=http://127.0.0.1:8898/alps --no-first-run --no-default-browser-check --hide-crash-restore-bubble --window-position=`$x,`$y --window-size=`$w,`$h")
+"@, (New-Object Text.UTF8Encoding $true))
   $wvbs = Join-Path $Dir 'open-alps-window.vbs'
-  [IO.File]::WriteAllText($wvbs, "Set h = CreateObject(`"MSXML2.ServerXMLHTTP`")`r`nFor i = 1 To 60`r`n  On Error Resume Next`r`n  h.open `"GET`", `"http://127.0.0.1:8898/status`", False`r`n  h.send`r`n  If Err.Number = 0 And h.status = 200 Then Exit For`r`n  Err.Clear`r`n  On Error GoTo 0`r`n  WScript.Sleep 2000`r`nNext`r`nCreateObject(`"WScript.Shell`").Run `"`"`"$chrome`"`" --new-window --app=http://127.0.0.1:8898/alps`", 1, False`r`n")
+  [IO.File]::WriteAllText($wvbs, "Set h = CreateObject(`"MSXML2.ServerXMLHTTP`")`r`nFor i = 1 To 60`r`n  On Error Resume Next`r`n  h.open `"GET`", `"http://127.0.0.1:8898/status`", False`r`n  h.send`r`n  If Err.Number = 0 And h.status = 200 Then Exit For`r`n  Err.Clear`r`n  On Error GoTo 0`r`n  WScript.Sleep 2000`r`nNext`r`nCreateObject(`"WScript.Shell`").Run `"powershell -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"`"$wps`"`"`", 0, False`r`n")
   $wl = $sh.CreateShortcut((Join-Path $startup 'ReadNow-ALPS-창.lnk')); $wl.TargetPath = 'wscript.exe'; $wl.Arguments = "`"$wvbs`""; $wl.WorkingDirectory = $Dir; $wl.Save()
   Ok '윈도우 시작 때 ALPS 도우미 창이 따로 열리게 함(시작 프로그램 ReadNow-ALPS-창 — 지우면 안 열림)'
+  $openNow = $true
 } else { Warn '크롬을 못 찾아 ALPS 도우미 창 자동 열기는 건너뜀' }
 $running = Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*readnow-print.js*' }
 if ($running) { $running | ForEach-Object { try { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop } catch {} }; Ok '켜져 있던 인쇄 도우미를 끔 — 새 판으로 다시 켬' }
 else { Start-Process -FilePath 'wscript.exe' -ArgumentList "`"$vbs`"" -WindowStyle Hidden }
 Start-Sleep -Seconds 6
+if ($openNow) { Start-Process -FilePath 'wscript.exe' -ArgumentList "`"$wvbs`""; Ok 'ALPS 도우미 창을 새 크기(380×560)로 엶 — 예전 창이 떠 있으면 닫아 주세요' }
 try { $s = Invoke-RestMethod -Uri 'http://127.0.0.1:8898/status' -TimeoutSec 5; Ok "인쇄 도우미 켜짐 (판 $($s.ver))" } catch { Warn '인쇄 도우미가 아직 안 켜짐 — 10초 뒤 웹앱에서 다시 확인하세요' }
 
 Say '이 PC의 프린터'

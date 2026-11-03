@@ -9,11 +9,11 @@
  * 로그인 정보: 이 PC 설정 화면(http://127.0.0.1:8898/alps)에서만 받아 Windows DPAPI(이 PC·이 사용자만 풂)로 잠가 cred.dat에만 · 로그·웹앱·GitHub로 보내지 않음
  * 기록: alps.log에는 단계·숫자만(이름·주소·전화·토큰·주소창 값은 쓰지 않음) */
 'use strict';
-const VERSION = '0.2.3'; // (0.2.3 정범님 11/03) 일괄주문접수 '합포장처리'를 늘 켬(체크 · ALPS가 화면을 열 때 해제로 둠 — 손으로 켤 때와 같게 기준 01, 양식이 정한 기준은 그대로) · '타이틀여부'를 늘 '타이틀있음'(Y)으로 맞추고 확인 — 사용자파일 양식을 고르면 ALPS가 '없음'으로 바꿔 제목 줄을 주문으로 읽던 오류(수량(A 타입)에 정수가 아닌 값) · ALPS 업무 오류(BUSINESS_ERROR)는 묻지 않고 그 글로 멈춤
+const VERSION = '0.2.4'; // (0.2.4 정범님 11/03) 저장한 로그인 정보는 '✓ 저장됨 · 아이디 ab***'로 보이고 다시 묻지 않음(바꿀 때만 「바꾸기」) · 창 위치를 기억(win.txt — 다음에 열 때 그 자리) // (0.2.3 정범님 11/03) 일괄주문접수 '합포장처리'를 늘 켬(체크 · ALPS가 화면을 열 때 해제로 둠 — 손으로 켤 때와 같게 기준 01, 양식이 정한 기준은 그대로) · '타이틀여부'를 늘 '타이틀있음'(Y)으로 맞추고 확인 — 사용자파일 양식을 고르면 ALPS가 '없음'으로 바꿔 제목 줄을 주문으로 읽던 오류(수량(A 타입)에 정수가 아닌 값) · ALPS 업무 오류(BUSINESS_ERROR)는 묻지 않고 그 글로 멈춤
 const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process'), crypto = require('crypto');
 const ROOT = process.env.RN_ALPS_HOME || path.join(process.env.USERPROFILE || os.homedir(), 'ReadNow', 'alps');
 try { fs.mkdirSync(ROOT, { recursive: true }); } catch (e) {}
-const F = { cfg: path.join(ROOT, 'config.json'), cred: path.join(ROOT, 'cred.dat'), key: path.join(ROOT, 'key.dat'), runs: path.join(ROOT, 'runs.json'), log: path.join(ROOT, 'alps.log'), up: path.join(ROOT, 'up'), chrome: path.join(ROOT, 'chrome') };
+const F = { cfg: path.join(ROOT, 'config.json'), cred: path.join(ROOT, 'cred.dat'), credMeta: path.join(ROOT, 'cred-meta.json'), win: path.join(ROOT, 'win.txt'), key: path.join(ROOT, 'key.dat'), runs: path.join(ROOT, 'runs.json'), log: path.join(ROOT, 'alps.log'), up: path.join(ROOT, 'up'), chrome: path.join(ROOT, 'chrome') };
 const kst = (d) => new Date((d ? +d : Date.now()) + 9 * 3600e3).toISOString();
 const ymdK = () => kst().slice(0, 10).replace(/-/g, '');
 const log = (m) => { const line = `${kst().slice(0, 19).replace('T', ' ')} ${m}\n`; try { fs.appendFileSync(F.log, line); } catch (e) {} if (!process.env.RN_ALPS_QUIET) process.stdout.write('[alps] ' + line); };
@@ -41,7 +41,7 @@ const CFG_DEF = {
   remoteActiveSec: 3,          // 일하는 동안 진행 보내고 답 받는 간격 · 근거: 없음 — 설정으로 바꿈
 };
 const cfg = () => ({ ...CFG_DEF, ...rdJ(F.cfg, {}) });
-const setCfg = (o) => { const c = rdJ(F.cfg, {}); for (const k of Object.keys(CFG_DEF)) if (o && k in o && typeof o[k] === typeof CFG_DEF[k]) c[k] = o[k]; wrJ(F.cfg, c); return cfg(); };
+const setCfg = (o) => { if (o && o.win && typeof o.win === 'object') { winSave(o.win); if (Object.keys(o).length === 1) return cfg(); } const c = rdJ(F.cfg, {}); for (const k of Object.keys(CFG_DEF)) if (o && k in o && typeof o[k] === typeof CFG_DEF[k]) c[k] = o[k]; wrJ(F.cfg, c); return cfg(); };
 
 /* ── 로그인 정보 잠금: Windows DPAPI(CurrentUser) · 비밀은 PowerShell 표준 입력으로만(임시 파일·명령줄에 안 씀) ── */
 function psStdin(script, input, timeout) { return new Promise((res) => {
@@ -58,9 +58,11 @@ async function unprotect(b64) { if (TEST_PROTECT && /^TEST:/.test(b64)) return B
   const r = await psStdin("Add-Type -AssemblyName System.Security\n$s=[Console]::In.ReadToEnd().Trim()\n$b=[Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String($s),$null,'CurrentUser')\n[Console]::Out.Write([Text.Encoding]::UTF8.GetString($b))", b64);
   if (r.code !== 0) throw new Error('잠금 풀기 실패 — 이 PC·이 윈도우 사용자에서 저장한 것만 풀림'); return r.out; }
 async function saveCred(id, pw) { id = String(id || '').trim(); pw = String(pw || ''); if (!id || !pw) throw new Error('아이디·비밀번호를 모두 넣어 주세요');
-  const blob = await protect(JSON.stringify({ id, pw })); fs.writeFileSync(F.cred, blob); log('로그인 정보 저장(DPAPI 잠금)'); }
+  const blob = await protect(JSON.stringify({ id, pw })); fs.writeFileSync(F.cred, blob); wrJ(F.credMeta, { idMask: idMask(id), at: kst() }); log('로그인 정보 저장(DPAPI 잠금)'); }
+const idMask = (id) => { id = String(id || ''); return id.length <= 2 ? id[0] + '*' : id.slice(0, 2) + '*'.repeat(Math.min(6, id.length - 2)); }; /* 화면 표시용 — 앞 두 글자만(비밀번호는 어디에도 안 보임) */
+const winSave = (o) => { const x = Math.round(+o.x), y = Math.round(+o.y); if (!Number.isFinite(x) || !Number.isFinite(y) || Math.abs(x) > 20000 || Math.abs(y) > 20000) return false; fs.writeFileSync(F.win, `${x},${y}`); return true; }; /* 창 위치 — 시작 때 여는 창(open-alps-window.vbs)이 읽음 */
 async function loadCred() { if (!fs.existsSync(F.cred)) return null; try { return JSON.parse(await unprotect(fs.readFileSync(F.cred, 'utf8'))); } catch (e) { log('로그인 정보 풀기 실패'); return null; } }
-const credInfo = () => ({ saved: fs.existsSync(F.cred), at: fs.existsSync(F.cred) ? kst(fs.statSync(F.cred).mtimeMs).slice(0, 16).replace('T', ' ') : null });
+const credInfo = () => ({ saved: fs.existsSync(F.cred), at: fs.existsSync(F.cred) ? kst(fs.statSync(F.cred).mtimeMs).slice(0, 16).replace('T', ' ') : null, idMask: fs.existsSync(F.cred) ? (rdJ(F.credMeta, {}).idMask || null) : null });
 
 /* ── 아주 작은 CDP 손님 (브라우저 하나에 연결 · flatten 세션) ── */
 class CDP {
@@ -319,16 +321,17 @@ label{display:block;margin:6px 0 2px;color:var(--mu);font-size:13px}input[type=t
 button{padding:8px 14px;border:0;border-radius:8px;background:var(--ac);color:#fff;font:inherit;cursor:pointer;margin-top:8px}.mu{color:var(--mu);font-size:13px}.er{color:var(--er)}.bar{height:8px;background:var(--bd);border-radius:4px;overflow:hidden}.bar i{display:block;height:100%;background:var(--ac)}</style></head><body>
 <h2>📦 ALPS 도우미 <small class="mu" id="ver"></small></h2>
 <div class="card"><b>로그인 정보</b> <span class="mu" id="cst"></span><div class="mu">이 PC·이 윈도우 사용자만 풀 수 있게 잠가(DPAPI) 이 PC 안 파일에만 둡니다. 웹앱·GitHub·Firebase로 보내지 않습니다.</div>
-<label>ALPS 아이디</label><input type="text" id="id" autocomplete="off"><label>비밀번호</label><input type="password" id="pw" autocomplete="new-password"><button id="sv">잠가서 저장</button> <span id="svm" class="mu"></span></div>
+<div id="cok" style="display:none;margin-top:6px"><b>✓ 저장됨</b> <span class="mu" id="cid"></span> — 처리할 때 이것으로 로그인합니다. <button id="cch" style="background:var(--mu)">바꾸기</button></div><div id="cfm"><label>ALPS 아이디</label><input type="text" id="id" autocomplete="off"><label>비밀번호</label><input type="password" id="pw" autocomplete="new-password"><button id="sv">잠가서 저장</button> <button id="cx" style="background:var(--mu);display:none">그대로 두기</button> <span id="svm" class="mu"></span></div></div>
 <div class="card"><b>인쇄</b><label>롯데택배 프린터</label><select id="pr"><option value="">(고르기)</option></select>
 <label><input type="checkbox" id="cb"> 인쇄 전에 확인(끄면 자동 — 기본)</label><label><input type="checkbox" id="fo"> 처음엔 1장만 먼저 인쇄 → 확인 → 나머지</label><label><input type="checkbox" id="hl"> 화면 없이(headless) — ALPS가 막으면 끄세요(창을 화면 밖에 둔 일반 크롬)</label><button id="cs">설정 저장</button> <span id="csm" class="mu"></span></div>
 <div class="card"><b>다른 기기(휴대폰)에서 시작</b><div class="mu" id="rem">…</div><div class="mu">이 PC의 서명 열쇠 지문: <b id="fp">…</b> — 웹앱 오늘 출고의 '이 PC 도우미 허락'에 같은 지문이 보이면 허락하세요. 개인 열쇠는 이 PC 안에만(DPAPI) 있습니다.</div></div>
 <div class="card" id="run"><b>지금 일</b><div id="rs" class="mu">없음</div></div>
 <script>const H={'X-RN-Print':'1','Content-Type':'application/json'};const $=(i)=>document.getElementById(i);const esc=(s)=>String(s??'').replace(/[&<>"]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 async function J(u,b){const r=await fetch(u,b?{method:'POST',headers:H,body:JSON.stringify(b)}:{headers:H,cache:'no-store'});return r.json();}
-async function load(){const s=await J('/alps/status');$('ver').textContent='판 '+s.ver;$('fp').textContent=s.key?s.key.fp:'-';const r=s.remote||{};$('rem').textContent=!r.on?'아직 연결 안 됨(웹앱에서 이 PC 도우미 허락)':r.linked===false?'⚠ 클라우드가 이 PC를 아직 허락하지 않음':r.err?'⚠ '+r.err:'✓ 연결됨 · 마지막 확인 '+(r.at||'').slice(11,19);$('cst').textContent=s.cred.saved?'✓ 저장됨 ('+s.cred.at+')':'— 아직 없음';$('cb').checked=s.cfg.confirmBeforePrint;$('fo').checked=s.cfg.firstOne;$('hl').checked=s.cfg.headless;
+async function load(){const s=await J('/alps/status');$('ver').textContent='판 '+s.ver;$('fp').textContent=s.key?s.key.fp:'-';const r=s.remote||{};$('rem').textContent=!r.on?'아직 연결 안 됨(웹앱에서 이 PC 도우미 허락)':r.linked===false?'⚠ 클라우드가 이 PC를 아직 허락하지 않음':r.err?'⚠ '+r.err:'✓ 연결됨 · 마지막 확인 '+(r.at||'').slice(11,19);$('cst').textContent=s.cred.saved?'('+s.cred.at+' 저장)':'— 아직 없음';if(s.cred.saved&&!window.__credEdit){$('cok').style.display='';$('cfm').style.display='none';$('cid').textContent=s.cred.idMask?'아이디 '+s.cred.idMask:'';}else{$('cok').style.display='none';$('cfm').style.display='';$('cx').style.display=s.cred.saved?'':'none';}$('cb').checked=s.cfg.confirmBeforePrint;$('fo').checked=s.cfg.firstOne;$('hl').checked=s.cfg.headless;
  try{const p=await J('/printers');(p.printers||[]).forEach((x)=>{const o=document.createElement('option');o.value=x.name;o.textContent=x.name+(x.def?' (윈도우 기본)':'');$('pr').appendChild(o);});}catch(e){} $('pr').value=s.cfg.printer||'';}
-$('sv').onclick=async()=>{$('svm').textContent='저장 중…';const r=await J('/alps/cred',{id:$('id').value,pw:$('pw').value});$('pw').value='';$('svm').textContent=r.ok?'✓ 저장함':'✗ '+r.err;load();};
+$('sv').onclick=async()=>{$('svm').textContent='저장 중…';const r=await J('/alps/cred',{id:$('id').value,pw:$('pw').value});$('pw').value='';$('svm').textContent=r.ok?'✓ 저장함':'✗ '+r.err;if(r.ok){window.__credEdit=false;$('id').value='';}load();};$('cch').onclick=()=>{window.__credEdit=true;load();setTimeout(()=>$('id').focus(),50);};$('cx').onclick=()=>{window.__credEdit=false;$('id').value='';$('pw').value='';$('svm').textContent='';load();};
+/* (0.2.4) 창 위치 기억 — 움직이면 이 PC 도우미에 저장, 다음에 시작 때 그 자리에 열림 */ let __wp='';setInterval(()=>{const k=window.screenX+','+window.screenY;if(k!==__wp){__wp=k;J('/alps/config',{win:{x:window.screenX,y:window.screenY}}).catch(()=>{});}},2000);
 $('cs').onclick=async()=>{const r=await J('/alps/config',{printer:$('pr').value,confirmBeforePrint:$('cb').checked,firstOne:$('fo').checked,headless:$('hl').checked});$('csm').textContent=r.ok?'✓ 저장함':'✗ '+r.err;};
 async function tick(){try{if(document.activeElement&&document.activeElement.id==='otp')return;const s=await J('/alps/status');const R=s.run;if(!R){$('rs').textContent='없음';return;}let h='<div>'+esc(R.fileName)+' · '+esc(R.status)+'</div>'+R.steps.map((x)=>'<div>'+({ok:'✓',run:'…',wait:'⏸',err:'✗',skip:'–',todo:'·'}[x.st]||'')+' '+esc(x.l)+' <span class=mu>'+esc(x.d)+'</span><div class=bar><i style="width:'+(x.pct||0)+'%"></i></div></div>').join('');
  if(R.error)h+='<div class=er>'+esc(R.error)+'</div>';if(R.need){h+='<div class=card>'+esc(R.need.msg)+'<br>'+(R.need.type==='otp'?'<input type=text id=otp placeholder="번호"><button data-k=otp>넣기</button>':R.need.type==='choice'?R.need.options.map((o)=>'<button data-p="'+esc(o)+'">'+esc(o)+'</button> ').join(''):'<button data-k=continue>계속</button>')+' <button data-k=stop>멈춤</button></div>';}
