@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "ALPS 도우미 0.2.3 타이틀·합포장",
- "since": "2026-11-03T05:40:49Z",
- "beat": "2026-11-03T05:40:49Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-03T05:16:15Z"
+  "at": "2026-11-03T05:40:53Z"
  },
- "host": "vm"
+ "host": null
 }
