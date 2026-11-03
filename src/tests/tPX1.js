@@ -1,0 +1,5 @@
+const s = require('fs').readFileSync(require('path').join(__dirname, '..', 'readnow-collector.src.js'), 'utf8'); // tPX1 — 판매관리 지난 주문 '이 주문 전' 정확 셈(수집기 priorExact)
+const a = s.indexOf('async function priorExact'); const b = s.indexOf('return { esc, FBx', a); const f = new Function('return (' + s.slice(a, b).trim().replace(/^async function priorExact/, 'async function') + ')')();
+const L = [{ orderNo: 'X1', orderedAt: '2026-01-01 10:00', kind: 'sale' }, { orderNo: 'X2', orderedAt: '2026-02-01 10:00', kind: 'sale' }, { orderNo: 'X3', orderedAt: '2026-03-01 10:00', kind: 'cancel' }, { orderNo: 'X4', orderedAt: '2026-04-01 10:00', kind: 'sale' }];
+const db = { collection: () => ({ where: () => ({ limit: () => ({ get: async () => ({ docs: L.map((x) => ({ data: () => x })) }) }) }) }) };
+(async () => { const b = { c: { customerId: 'c1', saleOrderCount: 3 } }; await f(db, b, ['X1', 'X2', 'X4']); const ok = b.prior.X1 === 0 && b.prior.X2 === 1 && b.prior.X4 === 2; console.log(ok ? '✓ 판매관리 지난 주문 정확 셈 통과' : '❌ ' + JSON.stringify(b.prior)); })();

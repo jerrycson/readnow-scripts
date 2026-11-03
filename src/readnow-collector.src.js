@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.185
+// @version      1.89.186
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -1241,7 +1241,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (strongSel(c).length) out.push('<span class="rnb rnb-bl">판매자 정보 일치</span>');
       else if ((c.otherRecipientCount || 0) >= 3) out.push(`<span class="rnb rnb-cau">수령인 ${c.otherRecipientCount}명</span>`);
       { /* (정범님 11/03) '이 주문 전' 기준 — 예전엔 이 주문까지 센 전체 주문 수(2 이상이면 재구매)라, 이 주문이 고객 기록에 들어오기 전·후로 같은 고객이 '첫 구매'↔'재구매'로 달라졌음 · 웹앱 출고 카드와 같은 기준 */
-        const mine = !!ono && (c.orderIds || []).some((id) => String(id) === 'aladin_' + ono || String(id).endsWith('_' + ono)); const prior = Math.max(0, (c.saleOrderCount || 0) - (mine ? 1 : 0));
+        const mine = !!ono && (c.orderIds || []).some((id) => String(id) === 'aladin_' + ono || String(id).endsWith('_' + ono)); const ex = b.prior && ono && b.prior[ono]; const prior = ex != null ? ex : Math.max(0, (c.saleOrderCount || 0) - (mine ? 1 : 0)); /* ex = 그 고객 주문 기록으로 센 정확한 값(판매관리 지난 주문 — 그 뒤에 산 주문은 빼고) */
         out.push(prior >= 1 ? `<span class="rnb rnb-rep" title="이 주문 전 구매 ${prior}건 (모두 ${c.saleOrderCount || 0}건)">재구매 · ${prior + 1}번째</span>` : '<span class="rnb rnb-new" title="이 주문 전 구매 없음">첫 구매</span>'); }
       return out.join('');
     }
@@ -1303,7 +1303,10 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       .rnb{display:inline-block;margin:0 0 0 3px;padding:0 5px;border-radius:4px;font:bold 11px "Malgun Gothic",sans-serif;cursor:pointer;vertical-align:middle;white-space:nowrap} .rnb-bl{background:#FDECEA;color:#B0322A} .rnb-cau{background:#FFF4E5;color:#A8661B} .rnb-vip{background:#FBF3DC;color:#8A6D1D} .rnb-rep{background:#E6EFEB;color:#2F5D50} .rnb-new{background:#EEF1F3;color:#56636C} .rnb-none{background:#F3F3F3;color:#999}
       .rnfloat{position:fixed;z-index:2147483646}`;
     function style() { if (globalThis.__rnById('rn-card-css')) return; const st = document.createElement('style'); st.id = 'rn-card-css'; st.textContent = CSS; document.head.appendChild(st); }
-    return { esc, FBx, user, loadCfg, loadBundles, badges, cardHtml, bind, style };
+    /* (정범님 11/03) 판매관리 지난 주문: 고객 기록의 주문 수에는 그 주문 '뒤'에 산 주문도 들어 있음 → 재구매 고객만 그 고객 주문 기록을 한 번 읽어(고객마다 한 번 · 이 화면에서만) 그 주문보다 앞선 판매 주문만 셈 */
+    async function priorExact(db, b, onos) { const c = b && b.c; if (!c || (c.saleOrderCount || 0) < 2) return false; try { const qs = await db.collection('crm_orders').where('customerId', '==', c.customerId).limit(500).get(); const L = qs.docs.map((d) => d.data()); const tk = (t) => String(t || '').replace('T', ' ').slice(0, 16); b.prior = b.prior || {};
+        for (const ono of onos) { const me = L.find((x) => String(x.orderNo) === String(ono)); if (!me) continue; const t0 = tk(me.orderedAt); b.prior[ono] = L.filter((x) => x.kind === 'sale' && String(x.orderNo) !== String(ono) && (tk(x.orderedAt) < t0 || (tk(x.orderedAt) === t0 && String(x.orderNo) < String(ono)))).length; } return true; } catch (e) { return false; } }
+    return { esc, FBx, user, loadCfg, loadBundles, badges, cardHtml, bind, style, priorExact };
   })();
 
   // 주문번호 → 알라딘 고객번호: 이 PC에 모아 둔 주문 상세, 없으면 Firebase의 주문 기록
@@ -1348,6 +1351,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         await CARD.loadCfg(db);
         const o2c = await customerIdsForOrders(db, [...byOno.keys()]);
         const bundles = await CARD.loadBundles(db, [...o2c.values()]);
+        { const byC = new Map(); for (const [ono] of byOno) { const cid = o2c.get(ono); if (cid) (byC.get(cid) || byC.set(cid, []).get(cid)).push(ono); } /* 재구매 고객은 정확히 — 끝나면 표시만 다시 */
+          for (const [cid, onos] of byC) { const b = bundles.get(cid); CARD.priorExact(db, b, onos).then((ok) => { if (!ok) return; onos.forEach((ono) => document.querySelectorAll(`.rn-bd[data-ono="${ono}"]`).forEach((sp) => { sp.innerHTML = CARD.badges(b, ono); })); }); } }
         let open = null;
         for (const [ono, as] of byOno) {
           const cid = o2c.get(ono); const b = cid ? bundles.get(cid) : null;
