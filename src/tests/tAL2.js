@@ -1,8 +1,8 @@
 // tAL2 — 정범님 11/03 ALPS: 큰 단추 · 멈춤 뒤 「▶ 이어서 진행」 · 📜 기록 한곳 · 주문번호를 보내 상자 수 확인 · 도우미 상자 수/주문 수 셈
 let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } else console.log('  ✓', m); };
 { process.env.RN_ALPS_HOME = require('path').join(require('os').tmpdir(), 'rnalps-t2-' + Date.now()); const A = require(require('fs').existsSync(__dirname + '/../../local/readnow-alps.js') ? __dirname + '/../../local/readnow-alps.js' : '/home/user/readnow-scripts/local/readnow-alps.js'); const T = A._t;
-  const hits = [{ row: { pack: 'K1' } }, { row: { pack: 'K1' } }, { row: { pack: 'K2' } }, { row: { pack: '' } }];
-  ok(T.boxCount(hits) === 3, '도우미: 합포장 번호가 같은 줄 = 한 상자(K1 2줄 + K2 + 번호 없는 1줄 = 3상자)');
+  const hits = [{ row: { i: 0, pack: 'K1', rk: '박|서울' } }, { row: { i: 1, pack: 'K1', rk: '박|서울' } }, { row: { i: 2, pack: 'K1', rk: '안|부산' } }, { row: { i: 3, pack: 'K1', rk: '' } }];
+  ok(T.boxCount(hits) === 3, '도우미: 수하인(이름·전화·주소)이 같은 줄 = 한 상자 · 합포장키가 같아도 사람이 다르면 다른 상자(3상자)');
   ok(T.orderCount([{ ono: 'A' }, { ono: 'A' }, { ono: 'B' }]) === 2, '도우미: 주문 수 = 주문번호 가짓수');
   T.histAdd({ id: 'h1', at: 'x', fileName: 'f.xlsx', status: 'error', error: '인쇄 프로그램 연결 안 됨', steps: [{ l: '출력', st: 'err' }], summary: { rows: 44, orders: 16, upload: { ok: 44, bad: 0 } }, t0: Date.now() });
   const h = A.history(); ok(h.length === 1 && h[0].rows === 44 && h[0].orders === 16 && h[0].step === '출력', '도우미 기록(hist)에 멈춘 일 · 단계 · 줄/주문 수');
@@ -14,7 +14,7 @@ require('./harness.js')(async (p) => {
   await p.route(/^http:\/\/127\.0\.0\.1:8898\//, async (r) => { const u = new URL(r.request().url()); const J = (o) => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' }, body: JSON.stringify(o) });
     if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST' } });
     const step = (st, err) => ['login', 'check', 'upload', 'print', 'verify', 'send'].map((k, i) => ({ k, l: k, st: i < st ? 'ok' : i === st ? (err ? 'err' : 'run') : 'todo', pct: 50, d: '' }));
-    if (u.pathname === '/alps/status') return J({ ok: true, ver: '0.2.6', pc: 'MJ-MAIN', cfg: { printer: '롯데택배 시험' }, cred: { saved: true }, run: H.run, key: { fp: 'f', pub: 'P' }, remote: { on: false } });
+    if (u.pathname === '/alps/status') return J({ ok: true, ver: '0.2.7', pc: 'MJ-MAIN', cfg: { printer: '롯데택배 시험' }, cred: { saved: true }, run: H.run, key: { fp: 'f', pub: 'P' }, remote: { on: false } });
     if (u.pathname === '/alps/run') { H.body = JSON.parse(r.request().postData()); H.run = { id: 'r1', at: '2026-11-03T14:50', fileName: H.body.fileName, status: 'error', error: '인쇄 프로그램(OZ 웹런처)에 연결이 안 됩니다', steps: step(3, true), summary: { rows: 3, orders: 2, upload: { ok: 3, bad: 0 } } }; return J({ ok: true, run: H.run }); }
     if (u.pathname === '/alps/resume') { H.resume = JSON.parse(r.request().postData() || '{}'); H.run = { id: 'r2', at: '2026-11-03T15:00', fileName: H.run.fileName, status: 'run', steps: step(3), summary: { uploadSkip: 'ALPS 목록에 이미 모두 있음(3줄)' } }; return J({ ok: true, run: H.run }); }
     if (u.pathname === '/alps/hist') return J({ ok: true, hist: [{ id: 'r0', at: '2026-11-03T10:00', file: '판매완료20261103.xlsx', status: 'done', rows: 44, orders: 16, boxes: 16, upload: { ok: 44 }, printed: 16, waybills: 16 }] });
