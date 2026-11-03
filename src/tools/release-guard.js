@@ -8,6 +8,7 @@
  *     - 이번 판 웹앱 UPDATE_LOG 새 줄이 있는데 ❓ 설명서 부분이 그대로 · 등록 화면 코드가 바뀌었는데 📖 등록 백과(rgenData)가 그대로
  *     - 새 탭·새 FEAT(🔍 기능 찾기) 이름이 설명서에 없음 · 새 섹션이 🔍 기능 찾기 목록(featIndex SECS·FEAT)에 없음 · 새 홈 칸(WIDGETS)에 설명 없음
  *     - UPDATE_DATES에 이번 판 날짜 · CHANGELOG에 이번 판 줄
+ *  ③ 📖 화면 설명서(실패 = 빌드 멈춤 · 일부 경고): 상세 화면마다 PG_SCR 줄과 설명서(pgdDefs·PAGE_GUIDES) · 설명서 선택자가 코드에 살아 있나 · 새 칸·단추가 설명서에 있나 — 아래 pgdCheck
  *  쓰는 법(release.js 한 줄): require(이 파일)({ W, O, RN_REPO, bad }) — bad 배열에 넣으면 빌드 실패 */
 const fs = require('fs'); const crypto = require('crypto');
 /* 고르기 없이 휴대폰도 PC와 같은 화면인 탭 — 이유 (새 탭은 여기 넣지 말고 THIN_SEC에 고르기 항목을 만드는 것이 기본) */
@@ -65,10 +66,32 @@ function docCheck(t, old, warn, log) { if (!old) { log('📖 자동 갱신 검�
   const av = (t.match(/const APP_VER = '([\d.]+)'/) || [])[1]; if (av && !new RegExp(`'${av.replace(/\./g, '\\.')}': '\\d{4}-`).test(between(t, 'const UPDATE_DATES = {', '};') || '')) warn(`UPDATE_DATES에 이번 판 ${av} 날짜가 없음 (bump.py가 넣음)`);
   if (av && newWeb.length && !newWeb.includes('웹앱 ' + av)) warn(`UPDATE_LOG에 이번 판 웹앱 ${av} 줄이 없음`);
   log(`📖 자동 갱신 검사(GitHub 판과 견줌): 새 UPDATE_LOG ${newLog.length}줄 · 설명서 ${mNow && mOld && sha(mNow) !== sha(mOld) ? '바뀜' : '그대로'} · 등록 화면 코드 ${sha(rNow) !== sha(rOld) ? '바뀜' : '그대로'} / 📖 등록 백과 ${sha(rgen(t)) !== sha(rgen(old)) ? '바뀜' : '그대로'} · FEAT ${featT(t).length}개(새 ${featT(t).filter((f) => !f0.has(f)).length}) · 홈 칸 ${widgets(t).length}개`); }
+/* ③ 📖 화면 설명서 검사 (정범님 11/03 · 늘): "앞으로 만드는 모든 페이지에 그 페이지 설명서 · 기능이 변경·추가·삭제되면 항상 반영"
+ *  ❌(빌드 멈춤) — S.detail을 여는 함수(상세 화면)가 화면 목록 PG_SCR에 없음 · PG_SCR·탭 줄의 화면에 설명서(pgdDefs 또는 PAGE_GUIDES['id'])가 없음
+ *  ⚠(경고) — 설명서가 가리키는 선택자(walk 셋째 칸 · go.sel)가 코드 어디에도 없음(이름이 바뀌었거나 없어짐) · '작성 중' 자리만 있는 화면 · GitHub 판보다 새로 생긴 칸(sec)·단추 id가 어느 설명서에도 없음 */
+const pgdModel = (t) => { const reg = between(t, 'const PG_SCR = [', '\n];') || ''; const scr = [...reg.matchAll(/\['(\w+)', '[^']*', (\(d\) => [^\]]*?|null), '(\w+)'\]/g)].map((m) => ({ id: m[1], test: m[2], fn: m[3] }));
+  const defs = fnBody(t, 'pgdDefs'); const ids = new Set([...defs.matchAll(/\n  (\w+): (?:P|PEND|\{)\(?/g)].map((m) => m[1]).concat([...defs.matchAll(/(?:^|[ ,\n])(\w+): (?:P|PEND)\(/g)].map((m) => m[1])));
+  const ext = new Set([...t.matchAll(/PAGE_GUIDES\[['"](\w+)['"]\]\s*=/g)].map((m) => m[1]).concat([...t.matchAll(/PAGE_GUIDES\.(\w+)\s*=/g)].map((m) => m[1]))); const pend = new Set([...defs.matchAll(/(\w+): PEND\(/g)].map((m) => m[1]));
+  const sels = []; const blob = defs + '\n' + [...t.matchAll(/PAGE_GUIDES\[['"]\w+['"]\]\s*=\s*\{[\s\S]{0,40000}?\n\};?/g)].map((m) => m[0]).join('\n');
+  for (const m of blob.matchAll(/sel: '([^']+)'/g)) sels.push(m[1]); for (const m of blob.matchAll(/\['[^'\]]*', '[^'\]]*', '([#\[.][^']*|details[^']*|header[^']*)'(?:, '[^']*')?\]/g)) sels.push(m[1]);
+  return { scr, ids, ext, pend, sels: [...new Set(sels)], blob }; };
+const selLives = (t, sel) => sel.split(',').map((x) => x.trim()).some((one) => { const parts = [...one.matchAll(/#([A-Za-z][\w-]*)|\[data-([\w-]+)(?:="([^"]*)")?\]|\.([A-Za-z][\w-]*)/g)]; if (!parts.length) return true;
+  return parts.every((m) => { if (m[1]) return t.includes(`id="${m[1]}"`) || t.includes(`'${m[1]}'`) || t.includes(`#${m[1]}`) || t.includes(`id = '${m[1]}'`); if (m[2]) { if (m[2] === 'sec' && m[3]) return t.includes(`sec('${m[3]}'`) || t.includes(`data-sec="${m[3]}"`); return m[3] == null || m[3] === '' ? t.includes(`data-${m[2]}`) : t.includes(`data-${m[2]}="${m[3]}"`) || t.includes(`data-${m[2]}="\${`) || new RegExp(`data-${m[2]}="\\$\\{|data-${m[2]}=\\\\?"`).test(t); } if (m[4]) return t.includes(m[4]); return true; }); });
+function pgdCheck(t, old, bad, warn, log) { const M = pgdModel(t); if (M.scr.length < 50 || !M.ids.size) { bad.push('화면 설명서 검사: PG_SCR·pgdDefs를 못 읽음 — tools/release-guard.js 읽는 법을 고쳐야 함'); return; }
+  const has = (id) => M.ids.has(id) || M.ext.has(id); const fns = new Set(M.scr.map((x) => x.fn)); const tests = M.scr.map((x) => x.test).join(' ');
+  /* 상세 화면을 여는 함수 = 몸 안에서 S.detail = { 열쇠 … } */ const opens = []; const re = /\n(?:async )?function (\w+)\(/g; let m; const starts = []; while ((m = re.exec(t))) starts.push([m[1], m.index]); starts.forEach(([n, i], k) => { const body = t.slice(i, k + 1 < starts.length ? starts[k + 1][1] : t.length); const km = body.match(/S\.detail = \{ *(?:\.\.\.\([^)]*\), *)?(\w+)/); if (km && !/^(pgd|pgw)/.test(n)) opens.push([n, km[1]]); });
+  const miss = opens.filter(([n, k]) => !fns.has(n) && !new RegExp('d\\.' + k + '\\b').test(tests) && !has(k)); for (const [n, k] of miss) bad.push(`❌ 화면 설명서 목록(PG_SCR)에 없는 화면: ${n}() — S.detail.${k} · PG_SCR에 한 줄 + pgdDefs(또는 PAGE_GUIDES['id'])에 설명서`);
+  for (const s of M.scr) if (!has(s.id)) bad.push(`❌ 화면 설명서 없음: ${s.id} (${s.fn}) — pgdDefs 또는 PAGE_GUIDES['${s.id}']`);
+  const tabs = [...(between(between(t, 'function renderTabs() {', '\n}') || '', 'const t = [', '];') || '').matchAll(/\['(\w+)', '[^']*', ICON\./g)].map((x) => x[1]).concat(['settings', 'pending']); for (const k of tabs) if (!has(k)) bad.push(`❌ 화면 설명서 없음: ${k} 탭 첫 화면`);
+  const code = M.blob.split('\n').reduce((a, ln) => (ln.length > 30 ? a.split(ln).join('') : a), t); /* 설명서 글 자체는 빼고 코드에서 찾음 */ const dead = M.sels.filter((x) => !selLives(code, x)); if (dead.length) warn(`화면 설명서가 가리키는 선택자 ${dead.length}개가 코드에 없음(바뀌었거나 없어짐 — 그 단계는 '이 화면에 아직 없음'으로 보임): ${dead.slice(0, 12).join(' · ')}`);
+  const pendL = [...M.pend].filter((id) => !M.ext.has(id)); if (pendL.length) warn(`화면 설명서 '작성 중'(자리만): ${pendL.join(', ')} — 그 화면 작업자가 PAGE_GUIDES['id']로 넣음`);
+  if (old) { const idsOf = (x) => new Set([...x.matchAll(/\bsec\('([a-z]+_[a-z0-9_]*)'/g)].map((y) => 'sec:' + y[1]).concat([...x.matchAll(/<button[^>]*\bid="([a-z][\w-]*)"/g)].map((y) => '#' + y[1]))); const o = idsOf(old); const nw = [...idsOf(t)].filter((x) => !o.has(x) && !M.blob.includes(x.startsWith('sec:') ? `"${x.slice(4)}"` : x)); if (nw.length) warn(`새로 생긴 칸·단추 ${nw.length}개가 어느 화면 설명서에도 없음(📖 '🧩 지금 화면의 칸' 장에는 저절로 보임 — 손으로 쓴 장에 넣기): ${nw.slice(0, 15).join(' · ')}`); }
+  log(`📖 화면 설명서 검사: 화면 ${M.scr.length}개 + 탭 ${tabs.length}개 · 설명서 ${M.ids.size + [...M.ext].filter((x) => !M.ids.has(x)).length}개(작성 중 ${pendL.length}) · 상세 화면 여는 함수 ${opens.length}개 확인 · 선택자 ${M.sels.length}개(코드에 없음 ${dead.length})`); }
 module.exports = function ({ W, RN_REPO, bad }) { const log = (s) => console.log(s); const warns = []; const warn = (s) => warns.push(s);
   const t = fs.readFileSync(W + 'app.html', 'utf8'); thinCheck(t, bad, log);
   const oldF = RN_REPO + 'app/readnow-webapp.js'; let old = null; try { old = fs.readFileSync(oldF, 'utf8'); } catch (e) {}
   try { docCheck(t, old, warn, log); } catch (e) { warn('자동 갱신 검사 오류: ' + e.message); }
+  try { pgdCheck(t, old, bad, warn, log); } catch (e) { bad.push('화면 설명서 검사 오류: ' + e.message); }
   if (warns.length) console.log('⚠ 자동 갱신 확인 필요 (빌드는 통과 — 판 내기 전에 보고 채우기):\n  ⚠ ' + warns.join('\n  ⚠ '));
   return { warns }; };
-module.exports.thinModel = thinModel; module.exports.PLAIN = PLAIN;
+module.exports.thinModel = thinModel; module.exports.pgdModel = pgdModel; module.exports.pgdCheck = pgdCheck; module.exports.PLAIN = PLAIN;
