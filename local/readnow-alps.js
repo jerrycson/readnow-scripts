@@ -9,11 +9,11 @@
  * 로그인 정보: 이 PC 설정 화면(http://127.0.0.1:8898/alps)에서만 받아 Windows DPAPI(이 PC·이 사용자만 풂)로 잠가 cred.dat에만 · 로그·웹앱·GitHub로 보내지 않음
  * 기록: alps.log에는 단계·숫자만(이름·주소·전화·토큰·주소창 값은 쓰지 않음) */
 'use strict';
-const VERSION = '0.2.4'; // (0.2.4 정범님 11/03) 저장한 로그인 정보는 '✓ 저장됨 · 아이디 ab***'로 보이고 다시 묻지 않음(바꿀 때만 「바꾸기」) · 창 위치를 기억(win.txt — 다음에 열 때 그 자리) // (0.2.3 정범님 11/03) 일괄주문접수 '합포장처리'를 늘 켬(체크 · ALPS가 화면을 열 때 해제로 둠 — 손으로 켤 때와 같게 기준 01, 양식이 정한 기준은 그대로) · '타이틀여부'를 늘 '타이틀있음'(Y)으로 맞추고 확인 — 사용자파일 양식을 고르면 ALPS가 '없음'으로 바꿔 제목 줄을 주문으로 읽던 오류(수량(A 타입)에 정수가 아닌 값) · ALPS 업무 오류(BUSINESS_ERROR)는 묻지 않고 그 글로 멈춤
+const VERSION = '0.2.5'; // (0.2.5 정범님 11/03) ① 인쇄 프로그램(OZ, 이 PC 127.0.0.1:36510) 연결 — 자동 처리용 크롬이 '로컬 네트워크 접근'에 막혀 '설치가 필요합니다'로 멈추던 것: 막는 기능 끄고 허락 · 접수 전에 연결부터 확인(안 되면 아무것도 접수하지 않음) ② ALPS 목록에 이번 주문이 모두 있으면 접수를 건너뛰고 인쇄부터 이어서(일부만 있으면 다시 접수하지 않고 멈춰 물음) · 「이어서 진행」(resume) ③ 인쇄 전 상자 수(합포장) ≠ 주문 수면 멈춰 물음 ④ 처리 기록(성공·실패) hist // (0.2.4 정범님 11/03) 저장한 로그인 정보는 '✓ 저장됨 · 아이디 ab***'로 보이고 다시 묻지 않음(바꿀 때만 「바꾸기」) · 창 위치를 기억(win.txt — 다음에 열 때 그 자리) // (0.2.3 정범님 11/03) 일괄주문접수 '합포장처리'를 늘 켬(체크 · ALPS가 화면을 열 때 해제로 둠 — 손으로 켤 때와 같게 기준 01, 양식이 정한 기준은 그대로) · '타이틀여부'를 늘 '타이틀있음'(Y)으로 맞추고 확인 — 사용자파일 양식을 고르면 ALPS가 '없음'으로 바꿔 제목 줄을 주문으로 읽던 오류(수량(A 타입)에 정수가 아닌 값) · ALPS 업무 오류(BUSINESS_ERROR)는 묻지 않고 그 글로 멈춤
 const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process'), crypto = require('crypto');
 const ROOT = process.env.RN_ALPS_HOME || path.join(process.env.USERPROFILE || os.homedir(), 'ReadNow', 'alps');
 try { fs.mkdirSync(ROOT, { recursive: true }); } catch (e) {}
-const F = { cfg: path.join(ROOT, 'config.json'), cred: path.join(ROOT, 'cred.dat'), credMeta: path.join(ROOT, 'cred-meta.json'), win: path.join(ROOT, 'win.txt'), key: path.join(ROOT, 'key.dat'), runs: path.join(ROOT, 'runs.json'), log: path.join(ROOT, 'alps.log'), up: path.join(ROOT, 'up'), chrome: path.join(ROOT, 'chrome') };
+const F = { cfg: path.join(ROOT, 'config.json'), cred: path.join(ROOT, 'cred.dat'), credMeta: path.join(ROOT, 'cred-meta.json'), win: path.join(ROOT, 'win.txt'), key: path.join(ROOT, 'key.dat'), runs: path.join(ROOT, 'runs.json'), hist: path.join(ROOT, 'hist.json'), lastJob: path.join(ROOT, 'last-job.json'), log: path.join(ROOT, 'alps.log'), up: path.join(ROOT, 'up'), chrome: path.join(ROOT, 'chrome') };
 const kst = (d) => new Date((d ? +d : Date.now()) + 9 * 3600e3).toISOString();
 const ymdK = () => kst().slice(0, 10).replace(/-/g, '');
 const log = (m) => { const line = `${kst().slice(0, 19).replace('T', ' ')} ${m}\n`; try { fs.appendFileSync(F.log, line); } catch (e) {} if (!process.env.RN_ALPS_QUIET) process.stdout.write('[alps] ' + line); };
@@ -82,12 +82,12 @@ class Browser {
   async launch(c) { const exe = this.findChrome(c); if (!exe) throw new Error('크롬을 못 찾음 — 설정의 chromePath에 chrome.exe 위치를 넣어 주세요');
     fs.mkdirSync(F.chrome, { recursive: true }); const portFile = path.join(F.chrome, 'DevToolsActivePort'); try { fs.unlinkSync(portFile); } catch (e) {}
     const args = [c.headless ? '--headless=new' : '--window-position=-32000,-32000', '--remote-debugging-port=0', '--remote-debugging-address=127.0.0.1', `--user-data-dir=${F.chrome}`, '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-sync', '--mute-audio', '--window-size=1600,1000',
-      '--disable-site-isolation-trials', '--disable-features=IsolateOrigins,site-per-process', /* ALPS 바깥 틀(partner)과 안쪽 틀(pid:18210)이 출처가 달라 — 한 프로세스에 두어 iframe 맥락을 바로 씀(그래도 따로 뜨면 자동 붙기로 받음) */
+      '--disable-site-isolation-trials', '--disable-features=IsolateOrigins,site-per-process,LocalNetworkAccessChecks,PrivateNetworkAccessSendPreflights,PrivateNetworkAccessRespectPreflightResults,BlockInsecurePrivateNetworkRequests', /* (0.2.5) ALPS(공개 사이트)가 이 PC 인쇄 프로그램(OZ · 127.0.0.1:36510)에 붙는 것을 새 크롬이 '로컬 네트워크 접근'으로 막아 '설치가 필요합니다'가 떴음 */ /* ALPS 바깥 틀(partner)과 안쪽 틀(pid:18210)이 출처가 달라 — 한 프로세스에 두어 iframe 맥락을 바로 씀(그래도 따로 뜨면 자동 붙기로 받음) */
       '--disable-popup-blocking', 'about:blank'];
     if (process.env.RN_ALPS_NOSANDBOX) args.unshift('--no-sandbox');
     this.proc = cp.spawn(exe, args, { stdio: 'ignore', windowsHide: true }); this.proc.on('exit', () => { this.dead = true; });
     let ws = null; for (let i = 0; i < 100 && !ws; i++) { await sleep(200); if (this.dead) throw new Error('크롬이 바로 꺼짐(이미 같은 프로필 크롬이 떠 있으면 닫아 주세요)'); try { const [port, p2] = fs.readFileSync(portFile, 'utf8').split('\n'); if (port && p2) ws = `ws://127.0.0.1:${port.trim()}${p2.trim()}`; } catch (e) {} }
-    if (!ws) throw new Error('크롬 DevTools 주소를 못 받음'); this.cdp = await CDP.connect(ws); this.cdp.on.push((m, p, sid) => this.onEvent(m, p, sid));
+    if (!ws) throw new Error('크롬 DevTools 주소를 못 받음'); this.cdp = await CDP.connect(ws); this.cdp.on.push((m, p, sid) => this.onEvent(m, p, sid)); for (const origin of ['https://partner.alps.llogis.com', 'https://pid.alps.llogis.com', 'https://pid.alps.llogis.com:18210', 'https://alps.llogis.com', 'https://rpt.alps.llogis.com:18390']) for (const perm of ['localNetworkAccess', 'localNetwork', 'loopbackNetwork']) { try { await this.cdp.send('Browser.grantPermissions', { origin, permissions: [perm] }); } catch (e) {} } /* (0.2.5) 로컬 네트워크 접근 허락(크롬 판마다 이름이 달라 셋 다 · 없는 이름은 그냥 넘어감) */
     await this.cdp.send('Target.setDiscoverTargets', { discover: true });
     const { targetInfos } = await this.cdp.send('Target.getTargets'); for (const t of targetInfos) if (t.type === 'page') await this.attach(t.targetId);
     return this; }
@@ -221,6 +221,13 @@ async function openPage(B, menuName, re, c) { if (B.frameBy(re) && B.ctxOf(B.fra
   const t0 = Date.now(); while (Date.now() - t0 < c.stepTimeoutSec * 1000) { const f = B.frameBy(re); if (f && B.ctxOf(f)) { try { const ok = await B.eval(f, `() => document.readyState === 'complete' && !!window.jQuery`); if (ok) { await sleep(1200); return; } } catch (e) {} } await sleep(400); }
   throw new Error(menuName + ' 화면이 열리지 않음'); }
 
+/* (0.2.5) 인쇄 프로그램(OZ 웹런처) 연결 확인 — ALPS 화면과 같은 주소(wss://127.0.0.1:36510/ozrvservice)로 붙어 봄 · 접수 전에(접수한 뒤 인쇄가 막히면 되돌릴 수 없음) */
+async function ozCheck(B) { const r = await B.eval(B.mainFrame(), `() => new Promise((res) => { let done = false; const fin = (v) => { if (!done) { done = true; try { ws.close(); } catch (e) {} res(v); } }; let ws; try { ws = new WebSocket(location.protocol === 'https:' ? 'wss://127.0.0.1:36510/ozrvservice' : 'ws://127.0.0.1:36480/ozrvservice'); } catch (e) { return res({ ok: false, why: e.message }); } ws.onopen = () => fin({ ok: true }); ws.onerror = () => fin({ ok: false, why: '연결 오류' }); setTimeout(() => fin({ ok: false, why: '6초 안에 답 없음' }), 6000); })`, null, { timeoutMs: 9000 }).catch((e) => ({ ok: false, why: e.message }));
+  return r || { ok: false, why: '확인 못 함' }; }
+const boxCount = (hits) => { const ks = new Set(); let solo = 0; for (const h of hits) { const k = h.row.pack; if (k) ks.add(k); else solo++; } return ks.size + solo; }; /* 합포장 번호(bdpkKey)가 같은 줄 = 한 상자 */
+const orderCount = (rows) => new Set(rows.map((r) => r.ono || r.name)).size;
+function histAdd(R) { try { const L = rdJ(F.hist, []); const sm = R.summary || {}; L.unshift({ id: R.id, at: R.at, end: kst(), file: R.fileName, status: R.status, error: R.error || null, resume: !!R.resume, rows: sm.rows || null, orders: sm.orders || null, boxes: sm.boxes || null, upload: sm.upload ? { ok: sm.upload.ok, bad: sm.upload.bad } : sm.uploadSkip || null, printed: sm.printed || 0, waybills: sm.waybills || 0, notFound: sm.notFound || 0, step: (R.steps.find((x) => x.st === 'err') || {}).l || null, secs: Math.round((Date.now() - (R.t0 || Date.now())) / 1000) }); wrJ(F.hist, L.slice(0, 300)); } catch (e) {} }
+const history = () => rdJ(F.hist, []);
 async function listToday(B, c) { const R = await B.eval(/PIDPIC002U/, PG.search, { today: ymdK(), ms: c.stepTimeoutSec * 1000 }, { timeoutMs: c.stepTimeoutSec * 1000 }); if (!R.ok) throw new Error(R.why || '조회 실패'); await waitDialog(B, /PIDPIC002U/, null, 0); return B.eval(/PIDPIC002U/, PG.rows); }
 
 async function runJob(job) { const c = cfg(); const B = new Browser(); BROWSER = B; B.mainFrame = () => { for (const [id, f] of B.frames) if (!f.parentId && /^https?:/.test(f.url) && !/PIDPIC051U|ozhviewer/.test(f.url)) return id; return null; };
@@ -231,11 +238,18 @@ async function runJob(job) { const c = cfg(); const B = new Browser(); BROWSER =
     /* ② 오늘 목록 겹침 검사 — 이미 같은 수령인·상품이 오늘 ALPS에 있으면 두 번 접수하지 않음 */
     stepSet('check', 'run', 20, '통합관리 운송장출력 여는 중'); await openPage(B, '통합관리 운송장출력', /PIDPIC002U/, c); chkStop();
     stepSet('check', 'run', 60, '오늘 집하일자로 조회'); let rows = await listToday(B, c); let P = pairRows(mine, rows);
-    const before = runs.filter((r) => r.day === ymdK() && r.sig === sig && r.uploaded); let doUpload = true;
-    if (P.hit.length || before.length) { const prn = P.hit.filter((h) => h.row.invNo).length;
-      const ans = job.dup || (await askHuman({ type: 'choice', msg: `오늘 ALPS에 이번 파일과 같은 주문 ${P.hit.length}/${mine.length}줄이 이미 있습니다(그중 운송장 출력 ${prn}줄)${before.length ? ` · 이 PC 기록: 오늘 같은 파일을 ${before.length}번 접수함` : ''}. 다시 접수하면 같은 상자가 두 번 나갈 수 있습니다.`, options: ['접수 건너뛰고 출력만', '그래도 접수', '멈춤'] })).pick;
-      if (ans === '멈춤') throw new Error('사람이 멈춤'); doUpload = ans === '그래도 접수'; }
+    const before = runs.filter((r) => r.day === ymdK() && r.sig === sig && r.uploaded); let doUpload = true; RUN.summary.rows = mine.length; RUN.summary.orders = orderCount(mine);
+    /* (0.2.5 정범님 11/03) ALPS 목록에 상품이 들어간 뒤로는 다시 접수하면 중복 — 목록을 기준으로 정함:
+     *  · 이번 주문이 모두 목록에 있음 → 접수 건너뛰고 인쇄부터 이어서(묻지 않음) · 일부만 있음 → 다시 접수하지 않고 멈춰 물음
+     *  · 목록엔 없는데 이 PC 기록엔 오늘 같은 파일 접수가 있음 → 물음 · 둘 다 없음 → 처음부터(접수) */
+    if (P.hit.length === mine.length) { doUpload = false; RUN.summary.uploadSkip = `ALPS 목록에 이미 모두 있음(${P.hit.length}줄)`; log(`ALPS 목록에 이번 주문 ${P.hit.length}줄이 모두 있음 → 접수 건너뛰고 인쇄부터 이어서`); }
+    else if (P.hit.length) { const prn = P.hit.filter((h) => h.row.invNo).length;
+      const ans = job.dup || (await askHuman({ type: 'choice', msg: `ALPS 오늘 목록에 이번 주문 ${P.hit.length}/${mine.length}줄만 있습니다(운송장 출력 ${prn}줄). 다시 접수하면 이미 있는 줄이 두 번 들어가 상자가 두 번 나갈 수 있어, 접수는 하지 않습니다. 빠진 ${mine.length - P.hit.length}줄: ${P.miss.slice(0, 5).map((m) => m.name + ' ' + String(m.title || '').slice(0, 14)).join(' · ')}`, options: ['있는 줄만 인쇄(빠진 줄은 ALPS에서 손으로)', '멈춤'] })).pick;
+      if (ans === '멈춤') throw new Error('사람이 멈춤(일부만 접수된 상태 — 다시 접수하지 않음)'); doUpload = false; RUN.summary.uploadSkip = `일부만 있음(${P.hit.length}/${mine.length}) — 접수 안 함`; }
+    else if (before.length) { const ans = job.dup || (await askHuman({ type: 'choice', msg: `이 PC 기록에는 오늘 같은 파일을 ${before.length}번 접수했는데 ALPS 오늘 목록에는 하나도 없습니다(집하일자가 다르거나 접수가 지워졌을 수 있음). 그래도 접수할까요?`, options: ['그래도 접수', '멈춤'] })).pick;
+      if (ans === '멈춤') throw new Error('사람이 멈춤'); }
     stepSet('check', 'ok', 100, `오늘 목록 ${rows.length}줄 · 이번 파일과 같은 줄 ${P.hit.length}`);
+    { stepSet('check', 'run', 90, '인쇄 프로그램(OZ) 연결 확인'); const oz = await ozCheck(B); if (!oz.ok) throw new Error(`인쇄 프로그램(OZ 웹런처)에 연결이 안 됩니다(${oz.why})${doUpload ? ' — 아무것도 접수하지 않았습니다' : ' — 접수는 이미 돼 있음 · 고친 뒤 「이어서 진행」'}. MJ-MAIN에서 평소 크롬으로 ALPS 송장 출력이 되는지, 작업 표시줄 오른쪽에 OZ 아이콘이 있는지 확인해 주세요`); log('인쇄 프로그램(OZ) 연결 확인됨'); }
     /* ③ 접수 */
     if (doUpload) { stepSet('upload', 'run', 10, '일괄주문접수 여는 중'); await openPage(B, '일괄주문접수', /PIDCUS014U/, c); chkStop();
       stepSet('upload', 'run', 30, "사용자파일 '알라딘' 고르는 중"); const pr = await B.eval(/PIDCUS014U/, PG.upPrep, { fmt: '알라딘', today: ymdK(), ms: c.stepTimeoutSec * 1000 }, { timeoutMs: c.stepTimeoutSec * 1000 });
@@ -252,6 +266,8 @@ async function runJob(job) { const c = cfg(); const B = new Browser(); BROWSER =
       if (bad) { const er = (await B.eval(/PIDCUS014U/, PG.upRows).catch(() => [])).filter((r) => r.err); RUN.summary.upload.errors = er.slice(0, 50); throw new Error(`접수 오류 ${bad}건 — ALPS 일괄주문접수의 오류내역에서 고친 뒤 '오류수정'을 눌러 주세요: ${er.slice(0, 5).map((r) => r.i + '줄 ' + r.err).join(' · ')}`); }
       if (ok !== mine.length) log(`접수 성공 ${ok}건 ≠ 보낸 줄 ${mine.length}`); stepSet('upload', 'ok', 100, `접수 성공 ${ok}건 · 실패 0`); }
     else stepSet('upload', 'skip', 100, '건너뜀(이미 오늘 접수됨)');
+    { stepSet('print', 'run', 5, '상자 수 확인'); await openPage(B, '통합관리 운송장출력', /PIDPIC002U/, c); const r0 = await listToday(B, c); const P0 = pairRows(mine, r0); const bx = boxCount(P0.hit); RUN.summary.boxes = bx; const oc = RUN.summary.orders;
+      log(`${mine.length}줄 → ALPS 상자 ${bx}개 · 주문 ${oc}건`); if (bx !== oc && !job.boxOk) { const a = await askHuman({ type: 'choice', msg: `ALPS 상자(운송장) ${bx}개 ≠ 주문 ${oc}건 — ${bx > oc ? '합포장이 안 된 주문이 있는 것 같습니다(같은 주문이 여러 상자)' : '여러 주문이 한 상자로 묶였습니다'}. ALPS 통합관리 운송장출력에서 합포장 묶음을 확인한 뒤 고르세요.`, options: ['그대로 인쇄', '멈춤'] }); if (a.pick === '멈춤') throw new Error(`사람이 멈춤 — 상자 ${bx}개 · 주문 ${oc}건 (접수는 돼 있음 · 고친 뒤 「이어서 진행」)`); } }
     /* ④ 출력 */
     let firstOne = job.firstOne != null ? !!job.firstOne : c.firstOne; let round = 0;
     for (;;) { chkStop(); round++; stepSet('print', 'run', 10, '이번 주문 찾는 중'); await openPage(B, '통합관리 운송장출력', /PIDPIC002U/, c); rows = await listToday(B, c); P = pairRows(mine, rows);
@@ -277,8 +293,8 @@ async function runJob(job) { const c = cfg(); const B = new Browser(); BROWSER =
     stepSet('verify', 'run', 30, '다시 조회해 운송장번호 확인'); rows = await listToday(B, c); P = pairRows(mine, rows); const empty = P.hit.filter((h) => !h.row.invNo); if (!P.hit.length) throw new Error('ALPS 오늘 목록에서 이번 파일의 주문을 하나도 못 찾음 — 접수가 됐는지 ALPS에서 확인해 주세요');
     if (empty.length) throw new Error(`운송장번호가 빈 줄 ${empty.length}개 — ALPS 목록에서 확인해 주세요`); stepSet('verify', 'ok', 100, `이번 주문 ${P.hit.length}줄 모두 운송장번호 있음${P.miss.length ? ` · ALPS에서 못 찾은 줄 ${P.miss.length}` : ''}`);
     /* ⑥ 넘김 — 오늘 목록 전체(운송장 있는 줄) — 웹앱 matchInvoices가 이번 주문과 맞춤('ALPS에만 있음'은 따로 보임) */
-    RUN.result = { aoa: toAoa(rows), at: kst() }; RUN.summary.waybills = RUN.result.aoa.length - 1; stepSet('send', 'ok', 100, `운송장 ${RUN.summary.waybills}줄 준비됨`); RUN.status = 'done'; log(`끝: 접수 ${(RUN.summary.upload || {}).ok ?? '건너뜀'} · 인쇄 ${RUN.summary.printed || 0} · 운송장 ${RUN.summary.waybills}`);
-  } catch (e) { RUN.status = 'error'; RUN.error = e.message; const s = RUN.steps.find((x) => x.st === 'run' || x.st === 'wait'); if (s) s.st = 'err'; log('✗ ' + e.message); }
+    RUN.result = { aoa: toAoa(rows), at: kst() }; RUN.summary.waybills = RUN.result.aoa.length - 1; stepSet('send', 'ok', 100, `운송장 ${RUN.summary.waybills}줄 준비됨`); RUN.status = 'done'; histAdd(RUN); log(`끝: 접수 ${(RUN.summary.upload || {}).ok ?? '건너뜀'} · 인쇄 ${RUN.summary.printed || 0} · 운송장 ${RUN.summary.waybills}`);
+  } catch (e) { RUN.status = 'error'; RUN.error = e.message; const s = RUN.steps.find((x) => x.st === 'run' || x.st === 'wait'); if (s) s.st = 'err'; log('✗ ' + e.message); histAdd(RUN); }
   finally { RUN.need = null; RUN.upd = Date.now(); if (RUN.onChange) try { RUN.onChange(pub()); } catch (e) {} await B.close(); BROWSER = null; } }
 
 /* ── (0.2.0) 서명 열쇠: Ed25519 · 개인 열쇠는 DPAPI로 잠가 key.dat에만 · 공개 열쇠는 웹앱이 Firestore(app_settings/alps_helpers)에 올림 ── */
@@ -341,8 +357,11 @@ load();setInterval(tick,1500);tick();</script></body></html>`;
 function start(job, onChange) { if (RUN && !['done', 'error'].includes(RUN.status)) throw new Error('이미 처리 중입니다'); const fn = String(job.fileName || ''); if (!/^판매완료\d{8}\.xlsx$/.test(fn)) throw new Error('파일 이름은 판매완료YYYYMMDD.xlsx');
   if (!job.b64 || job.b64.length > 20 * 1048576) throw new Error('파일이 없거나 너무 큼');
   RUN = { id: crypto.randomBytes(6).toString('hex'), at: kst(), fileName: fn, status: 'run', t0: Date.now(), log: [], steps: STEPS.map(([k, l]) => ({ k, l, st: 'todo', pct: 0, d: '' })), step: 'login', detail: '', need: null, error: null, summary: {}, onChange };
-  log(`시작 ${fn} · ${(job.rows || []).length}줄`); runJob(job); return pub(); }
+  RUN.resume = !!job.resume; try { wrJ(F.lastJob, { fileName: fn, rows: job.rows || [], firstOne: job.firstOne, at: kst() }); fs.mkdirSync(F.up, { recursive: true }); fs.writeFileSync(path.join(F.up, fn), Buffer.from(job.b64, 'base64')); } catch (e) {}
+  log(`${job.resume ? '이어서 ' : '시작 '}${fn} · ${(job.rows || []).length}줄`); runJob(job); return pub(); }
+/* (0.2.5) 「이어서 진행」 — 마지막 일(같은 파일·같은 줄)로 다시: ALPS 목록에 이미 있으면 접수 건너뛰고 인쇄되지 않은 상자부터 · 목록에 없으면 처음부터 */
+function resume(o) { const L = rdJ(F.lastJob, null); if (!L) throw new Error('이어서 할 마지막 일이 없음'); const fp = path.join(F.up, L.fileName); if (!fs.existsSync(fp)) throw new Error('마지막 파일이 이 PC에 없음 — 웹앱에서 ALPS 자동 처리로 다시'); return start({ ...L, b64: fs.readFileSync(fp).toString('base64'), resume: true, firstOne: o && o.firstOne != null ? !!o.firstOne : L.firstOne, boxOk: !!(o && o.boxOk) }, RUN && RUN.onChange); }
 function result(id) { return RUN && RUN.id === id && RUN.result ? RUN.result : null; }
 function reset() { if (RUN && !['done', 'error'].includes(RUN.status)) return false; RUN = null; return true; }
 
-module.exports = { VERSION, pageHtml, cfg, setCfg, saveCred, credInfo, start, input, status: pub, result, reset, ROOT, keyInfo, link, remoteState, remoteTick, _t: { REM, cloudCall, pairRows, rowsSig, toAoa, PG, Browser, CDP, protect, unprotect } };
+module.exports = { VERSION, pageHtml, cfg, setCfg, saveCred, credInfo, start, resume, history, input, status: pub, result, reset, ROOT, keyInfo, link, remoteState, remoteTick, _t: { REM, cloudCall, boxCount, orderCount, histAdd, pairRows, rowsSig, toAoa, PG, Browser, CDP, protect, unprotect } };

@@ -8,7 +8,7 @@
  *   (1.1.0) /alps… — 📦 ALPS 자동 처리(같은 폴더 readnow-alps.js · 없으면 GitHub에서 받음) · GET /alps = 이 PC 설정 화면
  * 스스로 새 판: 6시간마다 GitHub에서 받아 판 번호가 높으면 바꾸고 끝남 → 실행기가 5초 뒤 다시 켬 */
 'use strict';
-const VERSION = '1.1.0';
+const VERSION = '1.1.1'; // (1.1.1 정범님 11/03) ALPS 「이어서 진행」(/alps/resume)·처리 기록(/alps/hist)
 const http = require('http'), https = require('https'), fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process');
 const PORT = 8898; const HOME = __dirname; const RAW = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/readnow-print.js';
 const ORIGINS = [/^https:\/\/jerrycson\.github\.io$/, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
@@ -78,11 +78,13 @@ const srv = http.createServer((req, res) => {
 function alpsApi(req, res, u, org, J) { if (!ALPS) return J(503, { ok: false, err: 'ALPS 모듈이 아직 없음 — 1분 뒤 다시(도우미가 GitHub에서 받음)' }); const A = ALPS; const p = u.pathname.slice(6); const selfPage = !org || /^http:\/\/(127\.0\.0\.1|localhost):8898$/.test(org);
   const body = (cb) => readBody(req, 25 * 1048576, (e, b) => { if (e) return J(400, { ok: false, err: e.message }); let o = null; try { o = JSON.parse(b.toString('utf8') || '{}'); } catch (x) { return J(400, { ok: false, err: 'bad json' }); } try { cb(o); } catch (er) { J(400, { ok: false, err: er.message }); } });
   if (p === 'status') { const c = A.cfg(); const k = A.keyInfo ? A.keyInfo().catch(() => null) : Promise.resolve(null); return k.then((key) => J(200, { ok: true, ver: A.VERSION, helper: VERSION, pc: key ? key.pc : os.hostname(), cfg: { printer: c.printer, confirmBeforePrint: c.confirmBeforePrint, firstOne: c.firstOne, headless: c.headless, cloud: !!c.cloudUrl }, cred: A.credInfo(), run: A.status(), key: key ? { fp: key.fp, pub: key.pub } : null, remote: A.remoteState ? A.remoteState() : null })); }
+  if (p === 'hist') return J(200, { ok: true, hist: A.history ? A.history().slice(0, +(u.searchParams.get('n') || 100)) : [] }); /* (1.1.1) 처리 기록 — 성공·실패 한곳 */
   if (req.method !== 'POST' && p !== 'result') return J(405, { ok: false });
   if (p === 'cred') { if (!selfPage) return J(403, { ok: false, err: '로그인 정보는 이 PC 설정 화면(http://127.0.0.1:8898/alps)에서만' }); return body((o) => A.saveCred(o.id, o.pw).then(() => J(200, { ok: true })).catch((e) => J(400, { ok: false, err: e.message }))); }
   if (p === 'config') return body((o) => { delete o.cloudUrl; J(200, { ok: true, cfg: A.setCfg(o) }); });
   if (p === 'link') return body((o) => J(200, { ok: true, remote: A.link(o) })); /* 웹앱이 이 PC를 허락할 때 클라우드 주소를 넣어 줌 */
   if (p === 'run') return body((o) => J(200, { ok: true, run: A.start(o) }));
+  if (p === 'resume') return body((o) => { if (!A.resume) return J(400, { ok: false, err: 'ALPS 모듈이 옛 판 — 1분 뒤 다시' }); J(200, { ok: true, run: A.resume(o) }); }); /* (1.1.1) 이어서 진행 — 마지막 파일로 · ALPS 목록에 있으면 접수 건너뜀 */
   if (p === 'input') return body((o) => J(200, A.input(o)));
   if (p === 'reset') return J(200, { ok: A.reset() });
   if (p === 'result') { const r = A.result(u.searchParams.get('id')); return r ? J(200, { ok: true, ...r }) : J(404, { ok: false, err: '결과 없음' }); }
