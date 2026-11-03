@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "ALPS 0.3.6",
+ "since": "2026-11-03T07:49:17Z",
+ "beat": "2026-11-03T07:49:17Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-03T07:47:58Z"
  },
- "host": null
+ "host": "vm"
 }
