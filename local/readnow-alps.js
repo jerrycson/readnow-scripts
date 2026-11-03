@@ -9,11 +9,11 @@
  * 로그인 정보: 이 PC 설정 화면(http://127.0.0.1:8898/alps)에서만 받아 Windows DPAPI(이 PC·이 사용자만 풂)로 잠가 cred.dat에만 · 로그·웹앱·GitHub로 보내지 않음
  * 기록: alps.log에는 단계·숫자만(이름·주소·전화·토큰·주소창 값은 쓰지 않음) */
 'use strict';
-const VERSION = '0.2.7'; // (0.2.7 정범님 11/03) 상자 = ALPS가 센 '합포장제외 건수'(서버 prntCnt · #spPrntCnt)와 수하인 이름·전화·주소(ALPS 합포장 기준 01)로 — 0.2.5~0.2.6은 합포장키(bdpkKey)로 묶어 16상자를 6으로 잘못 셌고 '1장 먼저'의 첫 상자도 그 잘못된 묶음이었음 // (0.2.6 정범님 11/03) 상자 수는 주문 수가 아니라 받는 사람 수(합포장 기준 01 = 이름·전화·주소)와 견줌 · 다르면 상자마다 줄 수·받는 사람을 보여 주고 물음 · 겹침 검사 단계가 인쇄 프로그램 확인 뒤에도 '완료'로 // (0.2.5 정범님 11/03) ① 인쇄 프로그램(OZ, 이 PC 127.0.0.1:36510) 연결 — 자동 처리용 크롬이 '로컬 네트워크 접근'에 막혀 '설치가 필요합니다'로 멈추던 것: 막는 기능 끄고 허락 · 접수 전에 연결부터 확인(안 되면 아무것도 접수하지 않음) ② ALPS 목록에 이번 주문이 모두 있으면 접수를 건너뛰고 인쇄부터 이어서(일부만 있으면 다시 접수하지 않고 멈춰 물음) · 「이어서 진행」(resume) ③ 인쇄 전 상자 수(합포장) ≠ 주문 수면 멈춰 물음 ④ 처리 기록(성공·실패) hist // (0.2.4 정범님 11/03) 저장한 로그인 정보는 '✓ 저장됨 · 아이디 ab***'로 보이고 다시 묻지 않음(바꿀 때만 「바꾸기」) · 창 위치를 기억(win.txt — 다음에 열 때 그 자리) // (0.2.3 정범님 11/03) 일괄주문접수 '합포장처리'를 늘 켬(체크 · ALPS가 화면을 열 때 해제로 둠 — 손으로 켤 때와 같게 기준 01, 양식이 정한 기준은 그대로) · '타이틀여부'를 늘 '타이틀있음'(Y)으로 맞추고 확인 — 사용자파일 양식을 고르면 ALPS가 '없음'으로 바꿔 제목 줄을 주문으로 읽던 오류(수량(A 타입)에 정수가 아닌 값) · ALPS 업무 오류(BUSINESS_ERROR)는 묻지 않고 그 글로 멈춤
+const VERSION = '0.2.8'; // (0.2.8 정범님 11/03) ALPS 목록에 들어간 뒤로는 한 번 한 일을 다시 하지 않음 — 인쇄 끝낸 상자를 그 자리에서 이 PC 기록(journal.json · 날짜·파일마다)에 남기고, 이어서 할 때 그 기록 + ALPS 출력 표시를 둘 다 봄 · ALPS엔 '출력'인데 기록엔 인쇄 끝이 없는 상자(인쇄 중 멈춘 것)는 물어 정하고 그 답도 기록 · '1장 먼저'도 한 번만 · 남은 수를 상자·줄로 // (0.2.7 정범님 11/03) 상자 = ALPS가 센 '합포장제외 건수'(서버 prntCnt · #spPrntCnt)와 수하인 이름·전화·주소(ALPS 합포장 기준 01)로 — 0.2.5~0.2.6은 합포장키(bdpkKey)로 묶어 16상자를 6으로 잘못 셌고 '1장 먼저'의 첫 상자도 그 잘못된 묶음이었음 // (0.2.6 정범님 11/03) 상자 수는 주문 수가 아니라 받는 사람 수(합포장 기준 01 = 이름·전화·주소)와 견줌 · 다르면 상자마다 줄 수·받는 사람을 보여 주고 물음 · 겹침 검사 단계가 인쇄 프로그램 확인 뒤에도 '완료'로 // (0.2.5 정범님 11/03) ① 인쇄 프로그램(OZ, 이 PC 127.0.0.1:36510) 연결 — 자동 처리용 크롬이 '로컬 네트워크 접근'에 막혀 '설치가 필요합니다'로 멈추던 것: 막는 기능 끄고 허락 · 접수 전에 연결부터 확인(안 되면 아무것도 접수하지 않음) ② ALPS 목록에 이번 주문이 모두 있으면 접수를 건너뛰고 인쇄부터 이어서(일부만 있으면 다시 접수하지 않고 멈춰 물음) · 「이어서 진행」(resume) ③ 인쇄 전 상자 수(합포장) ≠ 주문 수면 멈춰 물음 ④ 처리 기록(성공·실패) hist // (0.2.4 정범님 11/03) 저장한 로그인 정보는 '✓ 저장됨 · 아이디 ab***'로 보이고 다시 묻지 않음(바꿀 때만 「바꾸기」) · 창 위치를 기억(win.txt — 다음에 열 때 그 자리) // (0.2.3 정범님 11/03) 일괄주문접수 '합포장처리'를 늘 켬(체크 · ALPS가 화면을 열 때 해제로 둠 — 손으로 켤 때와 같게 기준 01, 양식이 정한 기준은 그대로) · '타이틀여부'를 늘 '타이틀있음'(Y)으로 맞추고 확인 — 사용자파일 양식을 고르면 ALPS가 '없음'으로 바꿔 제목 줄을 주문으로 읽던 오류(수량(A 타입)에 정수가 아닌 값) · ALPS 업무 오류(BUSINESS_ERROR)는 묻지 않고 그 글로 멈춤
 const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process'), crypto = require('crypto');
 const ROOT = process.env.RN_ALPS_HOME || path.join(process.env.USERPROFILE || os.homedir(), 'ReadNow', 'alps');
 try { fs.mkdirSync(ROOT, { recursive: true }); } catch (e) {}
-const F = { cfg: path.join(ROOT, 'config.json'), cred: path.join(ROOT, 'cred.dat'), credMeta: path.join(ROOT, 'cred-meta.json'), win: path.join(ROOT, 'win.txt'), key: path.join(ROOT, 'key.dat'), runs: path.join(ROOT, 'runs.json'), hist: path.join(ROOT, 'hist.json'), lastJob: path.join(ROOT, 'last-job.json'), log: path.join(ROOT, 'alps.log'), up: path.join(ROOT, 'up'), chrome: path.join(ROOT, 'chrome') };
+const F = { cfg: path.join(ROOT, 'config.json'), cred: path.join(ROOT, 'cred.dat'), credMeta: path.join(ROOT, 'cred-meta.json'), win: path.join(ROOT, 'win.txt'), key: path.join(ROOT, 'key.dat'), runs: path.join(ROOT, 'runs.json'), hist: path.join(ROOT, 'hist.json'), journal: path.join(ROOT, 'journal.json'), lastJob: path.join(ROOT, 'last-job.json'), log: path.join(ROOT, 'alps.log'), up: path.join(ROOT, 'up'), chrome: path.join(ROOT, 'chrome') };
 const kst = (d) => new Date((d ? +d : Date.now()) + 9 * 3600e3).toISOString();
 const ymdK = () => kst().slice(0, 10).replace(/-/g, '');
 const log = (m) => { const line = `${kst().slice(0, 19).replace('T', ' ')} ${m}\n`; try { fs.appendFileSync(F.log, line); } catch (e) {} if (!process.env.RN_ALPS_QUIET) process.stdout.write('[alps] ' + line); };
@@ -232,6 +232,12 @@ const orderCount = (rows) => new Set(rows.map((r) => r.ono || r.name)).size;
 const rcvCount = (rows) => new Set(rows.map((r) => r.rk || r.name)).size; /* 받는 사람(이름·전화·주소 — 웹앱이 rk로 보냄) — ALPS 합포장 기준 01과 같음 */
 function histAdd(R) { try { const L = rdJ(F.hist, []); const sm = R.summary || {}; L.unshift({ id: R.id, at: R.at, end: kst(), file: R.fileName, status: R.status, error: R.error || null, resume: !!R.resume, rows: sm.rows || null, orders: sm.orders || null, boxes: sm.boxes || null, upload: sm.upload ? { ok: sm.upload.ok, bad: sm.upload.bad } : sm.uploadSkip || null, printed: sm.printed || 0, waybills: sm.waybills || 0, notFound: sm.notFound || 0, step: (R.steps.find((x) => x.st === 'err') || {}).l || null, secs: Math.round((Date.now() - (R.t0 || Date.now())) / 1000) }); wrJ(F.hist, L.slice(0, 300)); } catch (e) {} }
 const history = () => rdJ(F.hist, []);
+/* (0.2.8) 진행 기록(journal) — 날짜·파일(줄 서명)마다 { uploaded, printed{줄열쇠: {at, box}}, decide{줄열쇠: 'skip'|'print'}, firstOneDone } · 한 일마다 바로 씀(멈추거나 꺼져도 남음) · 지우지 않음(30일 지난 것만 정리) */
+const jKey = (sig) => ymdK() + '|' + sig;
+const rowKey = (r) => r.mgr ? 'm:' + r.mgr : 'r:' + (r.rk || r.name) + '|' + nTitle(r.title);
+function jLoad(sig) { const A = rdJ(F.journal, {}); return A[jKey(sig)] || { printed: {}, decide: {} }; }
+function jSave(sig, J) { const A = rdJ(F.journal, {}); const lim = Date.now() - 30 * 864e5; for (const k of Object.keys(A)) { const d = k.slice(0, 8); const t = Date.parse(`${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`); if (t && t < lim) delete A[k]; } A[jKey(sig)] = { ...J, at: kst() }; wrJ(F.journal, A); }
+const alpsFlag = (r) => !!(r.invNo || r.prnt === '출력' || r.prntYn === 'Y');
 async function listToday(B, c) { const R = await B.eval(/PIDPIC002U/, PG.search, { today: ymdK(), ms: c.stepTimeoutSec * 1000 }, { timeoutMs: c.stepTimeoutSec * 1000 }); if (!R.ok) throw new Error(R.why || '조회 실패'); await waitDialog(B, /PIDPIC002U/, null, 0); return B.eval(/PIDPIC002U/, PG.rows); }
 
 async function runJob(job) { const c = cfg(); const B = new Browser(); BROWSER = B; B.mainFrame = () => { for (const [id, f] of B.frames) if (!f.parentId && /^https?:/.test(f.url) && !/PIDPIC051U|ozhviewer/.test(f.url)) return id; return null; };
@@ -274,9 +280,19 @@ async function runJob(job) { const c = cfg(); const B = new Browser(); BROWSER =
       log(`${mine.length}줄 → ALPS 상자 ${bx}개(ALPS 합포장제외 건수 ${alpsCnt ?? '?'}) · 주문 ${oc}건 · 받는 사람 ${rc}명`); if (bx !== rc && !job.boxOk) { const gl = boxesOf(P0.hit.map((h) => h.row)).groups.map((g, i) => `${i + 1}) ${g.length}줄 · ${[...new Set(g.map((r) => r.name))].slice(0, 3).join('·')}`).slice(0, 16).join(' / ');
         const a = await askHuman({ type: 'choice', msg: `ALPS 상자(운송장) ${bx}개 ≠ 받는 사람 ${rc}명(주문 ${oc}건) — ${bx > rc ? '같은 사람인데 상자가 나뉜 줄이 있습니다' : '다른 사람이 한 상자로 묶였습니다'}. 상자마다: ${gl}`, options: ['그대로 인쇄', '멈춤'] }); if (a.pick === '멈춤') throw new Error(`사람이 멈춤 — 상자 ${bx}개 · 받는 사람 ${rc}명 · 주문 ${oc}건 (접수는 돼 있음 · 고친 뒤 「이어서 진행」)`); } }
     /* ④ 출력 */
-    let firstOne = job.firstOne != null ? !!job.firstOne : c.firstOne; let round = 0;
+    let J = jLoad(sig); if (doUpload === false && !J.uploaded) { J.uploaded = 'ALPS 목록에 있음'; jSave(sig, J); }
+    let firstOne = (job.firstOne != null ? !!job.firstOne : c.firstOne) && !J.firstOneDone; if (J.firstOneDone && (job.firstOne != null ? !!job.firstOne : c.firstOne)) log('1장 먼저: 이 파일은 이미 했음 — 다시 하지 않음'); let round = 0;
     for (;;) { chkStop(); round++; stepSet('print', 'run', 10, '이번 주문 찾는 중'); await openPage(B, '통합관리 운송장출력', /PIDPIC002U/, c); rows = await listToday(B, c); P = pairRows(mine, rows);
-      const todo = P.hit.filter((h) => !h.row.invNo && h.row.prnt !== '출력' && h.row.prntYn !== 'Y'); RUN.summary.notFound = P.miss.length;
+      /* (0.2.8) 할 줄 = 도우미 기록에 인쇄 끝이 없는 줄 · ALPS엔 출력 표시인데 기록엔 없는 줄(인쇄 중 멈춘 것 등)은 물어 정함(답도 기록) */
+      const unk = P.hit.filter((h) => alpsFlag(h.row) && !J.printed[rowKey(h.row)] && !J.decide[rowKey(h.row)]);
+      if (unk.length) { const G = boxesOf(unk.map((h) => h.row)).groups; const gl = G.map((g, i) => `${i + 1}) ${[...new Set(g.map((r) => r.name))].join('·')} ${g.length}줄`).slice(0, 12).join(' / ');
+        const a = await askHuman({ type: 'choice', msg: `ALPS에는 '출력'으로 표시됐지만 이 도우미 기록에는 인쇄 끝이 없는 상자 ${G.length}개(${unk.length}줄)가 있습니다 — 예전 실행이 인쇄 중에 멈췄거나, 이 기록을 남기기 전 판으로 인쇄했을 때 생깁니다. 이 상자 송장이 실제로 종이로 나왔나요? ${gl}`, options: G.length > 1 ? ['상자마다 하나씩 고르기', '모두 나왔음 — 건너뜀', '모두 안 나왔음 — 인쇄', '멈춤'] : ['안 나왔음 — 이 상자 인쇄', '나왔음 — 건너뜀', '멈춤'] });
+        if (a.pick === '멈춤') throw new Error('사람이 멈춤 — 출력 표시는 있으나 인쇄 기록이 없는 상자 확인');
+        const setG = (g, v) => g.forEach((r) => { J.decide[rowKey(r)] = v; });
+        if (a.pick === '상자마다 하나씩 고르기') { let k = 0; for (const g of G) { k++; const b = await askHuman({ type: 'choice', msg: `(${k}/${G.length}) ${[...new Set(g.map((r) => r.name))].join('·')} 상자 ${g.length}줄 — 송장이 종이로 나왔나요?`, options: ['나왔음 — 건너뜀', '안 나왔음 — 인쇄', '멈춤'] }); if (b.pick === '멈춤') { jSave(sig, J); throw new Error('사람이 멈춤 — 상자마다 고르는 중(고른 것은 기록됨)'); } setG(g, /안 나왔음/.test(b.pick) ? 'print' : 'skip'); jSave(sig, J); } }
+        else { const v = /안 나왔음/.test(a.pick) ? 'print' : 'skip'; G.forEach((g) => setG(g, v)); jSave(sig, J); }
+        const np = unk.filter((h) => J.decide[rowKey(h.row)] === 'print').length; log(`출력 표시만 있던 ${unk.length}줄 → 인쇄 ${np}줄 · 건너뜀 ${unk.length - np}줄(기록함)`); }
+      const todo = P.hit.filter((h) => !J.printed[rowKey(h.row)] && (!alpsFlag(h.row) || J.decide[rowKey(h.row)] === 'print')); RUN.summary.notFound = P.miss.length;
       if (P.miss.length && round === 1) log(`ALPS 오늘 목록에 없는 줄 ${P.miss.length}`); if (!todo.length) break;
       let pick = todo; if (firstOne) { const BX = boxesOf(rows); const g0 = BX.of.get(todo[0].row.i); pick = todo.filter((h) => BX.of.get(h.row.i) === g0); log(`1장 먼저: 첫 상자 ${pick.length}줄(같은 수하인 이름·전화·주소)`); } /* (0.2.7) 1장 먼저: 첫 상자 = 첫 줄과 수하인 이름·전화·주소가 같은 줄 */
       const ck = await B.eval(/PIDPIC002U/, PG.check, { ds: pick.map((h) => h.row.i) }); if (!ck.ok) throw new Error(`체크가 맞지 않음(${ck.checked}/${ck.want})`);
@@ -291,8 +307,9 @@ async function runJob(job) { const c = cfg(); const B = new Browser(); BROWSER =
       const nd = B.nativeDlg.find((x) => x.type !== 'alert'); if (nd) throw new Error('인쇄 프로그램(OZ 웹런처)이 없다고 합니다 — 평소 크롬에서 ALPS 출력을 한 번 해 설치를 확인해 주세요: ' + nd.msg.slice(0, 120));
       if (!d) throw new Error('인쇄 끝 안내가 오지 않음 — ALPS 목록에서 출력여부를 확인해 주세요'); await B.eval(/PIDPIC051U/, PG.press, d.buttons.includes('확인') ? '확인' : d.buttons[0]).catch(() => {});
       if (/출력이 취소|출력후처리오류/.test(d.text)) throw new Error('ALPS: ' + d.text.slice(0, 200)); RUN.summary.printed = (RUN.summary.printed || 0) + pop.n;
+      { const at = kst(); const BXp = boxesOf(rows); pick.forEach((h) => { J.printed[rowKey(h.row)] = { at, box: BXp.of.get(h.row.i) || null }; delete J.decide[rowKey(h.row)]; }); if (firstOne) J.firstOneDone = at; jSave(sig, J); log(`인쇄 끝 기록: ${pick.length}줄(다시 인쇄하지 않음)`); } /* (0.2.8) 인쇄 끝을 그 자리에서 기록 */
       stepSet('print', 'run', 80, `${pop.n}장 인쇄 끝`); await sleep(1500);
-      if (firstOne) { firstOne = false; await askHuman({ type: 'continue', msg: `1장(첫 상자)을 '${c.printer}'로 인쇄했습니다. 송장이 바르게 나왔으면 '계속' — 나머지 ${todo.length - pick.length}줄을 인쇄합니다.` }); } }
+      if (firstOne) { firstOne = false; const rest = todo.filter((h) => !pick.includes(h)); const rb = boxesOf(rest.map((h) => h.row)).groups.length; const fl = P.hit.filter((h) => alpsFlag(h.row) && !J.printed[rowKey(h.row)] && J.decide[rowKey(h.row)] === 'skip').length; await askHuman({ type: 'continue', msg: `1장(첫 상자)을 '${c.printer}'로 인쇄했습니다. 송장이 바르게 나왔으면 '계속' — 나머지 상자 ${rb}개(${rest.length}줄)를 인쇄합니다.${fl ? ` (이미 나왔다고 정한 ${fl}줄은 건너뜀)` : ''}` }); } }
     stepSet('print', 'ok', 100, `인쇄 ${RUN.summary.printed || 0}장`);
     /* ⑤ 확인 */
     stepSet('verify', 'run', 30, '다시 조회해 운송장번호 확인'); rows = await listToday(B, c); P = pairRows(mine, rows); const empty = P.hit.filter((h) => !h.row.invNo); if (!P.hit.length) throw new Error('ALPS 오늘 목록에서 이번 파일의 주문을 하나도 못 찾음 — 접수가 됐는지 ALPS에서 확인해 주세요');
@@ -369,4 +386,4 @@ function resume(o) { const L = rdJ(F.lastJob, null); if (!L) throw new Error('�
 function result(id) { return RUN && RUN.id === id && RUN.result ? RUN.result : null; }
 function reset() { if (RUN && !['done', 'error'].includes(RUN.status)) return false; RUN = null; return true; }
 
-module.exports = { VERSION, pageHtml, cfg, setCfg, saveCred, credInfo, start, resume, history, input, status: pub, result, reset, ROOT, keyInfo, link, remoteState, remoteTick, _t: { REM, cloudCall, boxCount, boxesOf, orderCount, histAdd, pairRows, rowsSig, toAoa, PG, Browser, CDP, protect, unprotect } };
+module.exports = { VERSION, pageHtml, cfg, setCfg, saveCred, credInfo, start, resume, history, input, status: pub, result, reset, ROOT, keyInfo, link, remoteState, remoteTick, _t: { REM, cloudCall, boxCount, boxesOf, orderCount, jLoad, jSave, rowKey, alpsFlag, histAdd, pairRows, rowsSig, toAoa, PG, Browser, CDP, protect, unprotect } };
