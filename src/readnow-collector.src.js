@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.188
+// @version      1.89.189
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -6350,7 +6350,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         const base = { orderNo: ono, buyer: o.buyer || null, recipient: o.recipient && !o.recipient.sameAsBuyer ? o.recipient.name || null : null, orderedAt: o.orderedAt || null, firstAt: new Date(m.firstAt).toISOString(), at: nowIso(), by: PC_NAME, ver: APP_VER, cfg: cfgRec };
         const oAt = Date.parse(String(o.orderedAt || '').replace(' ', 'T') + ':00+09:00');
         if (!m.rj && cfg.since && oAt && oAt < Date.parse(cfg.since) - 60e3) { await auFinal(ref, { ...base, state: 'skip', reasons: ['자동 발송요청을 켜기 전에 들어온 주문 — 사람이 처리'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; }
-        if (!m.hcAt || Date.now() - m.hcAt > 60e3) { m.hcAt = Date.now(); const qs = await C('shp_cmds').where('orderNos', 'array-contains', ono).limit(20).get(); const hd = qs.docs.find((x) => { const y = x.data() || {}; return y.type === 'startDelivery' && !y.auto && !['cancelled', 'cancel'].includes(y.status); });
+        if (!m.hcAt || Date.now() - m.hcAt > 60e3) { m.hcAt = Date.now(); const qs = await C('shp_cmds').where('orderNos', 'array-contains', ono).limit(20).get(); const hd = qs.docs.find((x) => { const y = x.data() || {}; return (y.type === 'startDelivery' || y.type === 'cancelOrder') && !y.auto && !['cancelled', 'cancel'].includes(y.status); }); /* (1.89.189 정밀 점검) 사람이 ✖ 주문 취소를 맡긴 주문도 '사람이 처리 중' — 클라우드 autoHumanCmd와 같은 규칙 */
           if (hd) { await auFinal(ref, { ...base, state: 'human', humanCmd: hd.id, reasons: ['사람이 먼저 발송준비시작을 맡김 — 자동 판단 안 함'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; } }
         if (cfg.custBlock && m.cust === undefined) m.cust = await auCust(o, SHC);
         const E = {}; for (const it of o.items || []) { const lid = String(it.listingId || ''); if (!lid) continue; try { const e = (await C('shp_enrich').doc(lid).get()).data(); if (e) E[lid] = e; } catch (e2) {} }
@@ -6576,7 +6576,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (hit || v.post === 'need') await regPostCollect(ref, rows, results); }
   /* 등록 뒤 나머지 수집: 신규 등록분 수집(상품 목록에 넣음) → 그 상품들 시장 지표를 맡김. 다른 작업 중이면 다음 확인 때 */
   async function regPostCollect(ref, rows, results) { if (running) { await ref.set({ post: 'need' }, { merge: true }).catch(() => {}); return; }
-    const had = new Set(((await ref.get()).data() || {}).postKeys || []); const keys = rows.map((r) => results[r.regItem]).filter((x) => x && x.state === 'live' && x.usedCode).map((x) => 'aladin_' + x.usedCode).filter((k) => !had.has(k)); if (!keys.length) { await ref.set({ post: 'done' }, { merge: true }).catch(() => {}); return; }
+    const had = new Set(((await ref.get()).data() || {}).postKeys || []); const noIsbn = rows.filter((r) => !(r.isbn13 || r.isbn10 || r.isbn) && results[r.regItem] && results[r.regItem].state === 'live').length; const keys = rows.filter((r) => r.isbn13 || r.isbn10 || r.isbn).map((r) => results[r.regItem]).filter((x) => x && x.state === 'live' && x.usedCode).map((x) => 'aladin_' + x.usedCode).filter((k) => !had.has(k)); /* (1.89.189 정밀 점검) ISBN 없는 상품(옛 잡지 등)은 시장 지표를 맡기지 않음 — 11/03 MJ-MAIN이 '📥 등록 뒤 시장 지표 (1개)' 12건을 맡겼다가 모두 그 자리에서 '성공 0 · 실패 1'(도서 정보를 찾지 못함 · 월간지 1997~2002년호) · 맡긴 일 12개·오류 줄 12개가 헛돎 */ if (noIsbn) log(`📥 등록 뒤 시장 지표: ISBN 없는 상품 ${noIsbn}개는 맡기지 않음(도서 정보를 찾을 수 없어 바로 실패하던 것 · 나중에 그룹 시장 지표가 다룸)`); if (!keys.length) { await ref.set({ post: 'done' }, { merge: true }).catch(() => {}); return; }
     await ref.set({ post: 'done', postAt: nowIso(), postKeys: firebase.firestore.FieldValue.arrayUnion(...keys) }, { merge: true }); /* 먼저 적어 두 번 맡기지 않음 */
     await runJob('scanNew'); await C('shp_cmds').add({ type: 'metrics', keys, label: '📥 등록 뒤 시장 지표 (' + keys.length + '개)', status: 'queued', createdAt: nowIso(), by: PC_NAME + ' (등록 뒤 자동)', uploadedAt: TS() }).catch(() => {});
     log(`📥 등록 뒤 나머지 수집: 신규 등록분 수집 끝 → 시장 지표 ${keys.length}개 맡김`); }
@@ -6725,7 +6725,11 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const l = { id: 'aladin_' + uc, ...(ld.data() || {}) }; let old = null; try { const r0 = await C('prd_stop_reasons').doc(l.id).get(); old = r0.exists ? r0.data() || null : null; } catch (e) {}
     const live = /^(판매중|일시판매중지)$/.test(l.status || ''); const q = +l.qty || 1; const asQty = live && (unit || q >= 2) && q - 1 >= 1; const ch = asQty ? { qty: q - 1 } : { state: '판매중지' };
     let cmd = null; if (live) { const fk = Object.keys(ch)[0]; const qs = await C('shp_cmds').where('listingKey', '==', l.id).get(); const busy = (qs.docs || []).some((d) => { const x = d.data() || {}; return x.type === 'prdEdit' && ['queued', 'running', 'verify'].includes(x.status) && x.ch && fk in x.ch; });
-      if (busy) return { fail: '앞서 맡긴 판매상태·수량 수정이 진행 중 — 웹앱 카드의 「판매중지 다시」' };
+      if (busy) { /* (1.89.189 정밀 점검) 같은 매물(수량 2권 이상) 두 권이 한 장바구니 묶음에 담기면 두 번째 '수량 −1'이 '앞서 맡긴 수정 진행 중'으로 반드시 실패해 1권이 판매중으로 남던 것(겹침 판매 위험) → 아직 PC·클라우드가 잡지 않은 우리(c2bAuto) 수량 명령이면 그 명령에 −1을 더함(웹앱 🏷 판매 처리 bhSell이 같은 매물을 qtyAdd −n 하나로 맡기는 것과 같은 꼴) · 남을 권수가 0이면 예전대로 실패(판매중지 여부는 사람이) */
+        const d0 = asQty ? (qs.docs || []).find((d) => { const x = d.data() || {}; return x.type === 'prdEdit' && x.status === 'queued' && !x.claim && x.from === 'c2bAuto' && x.ch && typeof x.ch.qty === 'number' && x.qtyAdd < 0; }) : null; const x0 = d0 ? d0.data() : null; const nq = x0 ? x0.ch.qty - 1 : 0;
+        if (!d0 || nq < 1) return { fail: '앞서 맡긴 판매상태·수량 수정이 진행 중 — 웹앱 카드의 「판매중지 다시」' };
+        await d0.ref.set({ ch: { qty: nq }, qtyAdd: (+x0.qtyAdd || -1) - 1, trail: FV.arrayUnion({ at: now, m: `같은 매물 한 권 더 담김 → 수량 −1 더(합쳐서 ${Math.abs((+x0.qtyAdd || -1) - 1)}권 · ${x0.ch.qty + 0}→${nq}권)`, pc: PC_NAME }), uploadedAt: TS() }, { merge: true });
+        return { rec: { ...base, prevReason: old ? old.reason || null : null, state: 'qty', cmd: d0.id, beforeQty: x0.ch.qty, afterQty: nq, unit, listingId: l.listingId || null, usedCode: l.usedCode || uc, note: `수량 ${x0.ch.qty}권 → ${nq}권 (앞서 맡긴 수량 명령에 합침 — 판매중지 아님)` } }; }
       const r = C('shp_cmds').doc(); const before = asQty ? { qty: q } : { state: l.status || null };
       await r.set({ type: 'prdEdit', status: 'queued', claim: null, listingKey: l.id, listingId: String(l.listingId || ''), usedCode: l.usedCode || uc, title: String(l.title || it.title || '').slice(0, 100), ch, before, f: { [fk]: { st: 'queued', at: now } }, createdAt: now, by: who, dev: PC_NAME, from: 'c2bAuto', ...(asQty ? { qtyAdd: -1, qtyWeb: q, regItem: null } : {}), ws: null, trail: [{ at: now, m: `PC 수집기가 맡김 · 🏷 알라딘 매입 팔기 장바구니 담김 → ${asQty ? '수량 −1' : '판매중지'}`, pc: PC_NAME }], uploadedAt: TS() }); cmd = r.id; }
     if (!asQty) { const h = { at: now, by: who, from: old ? old.reason || null : null, to: 'elsewhere', note: C2B_STOP_NOTE };

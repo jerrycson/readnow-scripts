@@ -43,11 +43,11 @@ if [ -z "${RN_HEAD_OK:-}" ] && [ "$(hd $M)" != "$(hd "$T")" ]; then say "수집�
 if printf '%s\n' "$changed" | grep -qE '^(src/app\.html|app/)'; then a=$(ver "$T" src/app.html "const APP_VER = '[0-9.]+'"); b=$(ver "$T" app/index.html "APP_VER = '[0-9.]+'"); [ "$a" = "$b" ] || say "app/index.html 판($b)이 원본($a)과 다름 — node split.js && node release.js 뒤 결과물을 함께"; fi
 if printf '%s\n' "$changed" | grep -qE '^(src/readnow-collector\.src\.js|pc-live\.json|readnow-collector\.user\.js)$'; then a=$(ver "$T" src/readnow-collector.src.js '@version +[0-9.]+'); b=$(git show "$T:pc-live.json" 2>/dev/null | python3 -c "import json,sys;print(json.load(sys.stdin).get('ver',''))" 2>/dev/null); [ "$a" = "$b" ] || say "pc-live.json 판($b)이 수집기 원본($a)과 다름"; fi
 # ⑥ 손님 정보(정범님 11/03 — 공개 저장소에 손님 이름·전화번호를 넣지 않음): 이번에 새로 더한 줄에서 찾음 · 이름 목록은 비공개 readnow-chats/secure/pii-words.txt(공개 저장소엔 목록을 두지 않음)
-add=$(git diff -U0 $M "$T" -- . ':!diag' ':!backups' 2>/dev/null | grep -E '^\+' | grep -vE '^\+\+\+ ' || true)
+add=$(git diff -U0 $M "$T" -- . ':!diag' ':!backups' 2>/dev/null | grep -E '^\+' | grep -vE '^\+\+\+ ' || true); add=$(printf '%s\n%s' "$add" "$(git log $M.."$T" --format=%B 2>/dev/null)") # (정밀 점검 11/03) 커밋 글도 함께 — 규칙은 커밋 글·판 설명도 금지인데 새 줄만 보던 것(11/03 규칙 전 커밋 4개에 손님 낱말이 남음)
 if [ -n "$add" ]; then
   PL=${RN_PII:-}; [ -z "$PL" ] && for d in "$(git rev-parse --show-toplevel)/../readnow-chats" /home/user/readnow-chats /home/claude/readnow-chats; do [ -f "$d/secure/pii-words.txt" ] && { PL="$d/secure/pii-words.txt"; break; }; done
   if [ -n "$PL" ] && [ -f "$PL" ]; then nh=$(printf '%s\n' "$add" | grep -oFf <(grep -vE '^\s*(#|$)' "$PL") | sort -u | wc -l); [ "$nh" -gt 0 ] && say "손님 이름 목록에 있는 낱말 ${nh}개가 새 줄에 있음 — 공개 저장소엔 '손님A'처럼 바꿔 넣고, 자세한 일은 readnow-chats에만 (찾기: git diff origin/main | grep -Ff 목록)"; else echo "⚠ 손님 이름 목록(readnow-chats/secure/pii-words.txt)을 못 찾아 이름 검사는 건너뜀 — 전화번호만 봄"; fi
-  ph=$(printf '%s\n' "$add" | grep -oE '(^|[^0-9])01[016789][- .]?[0-9]{3,4}[- .]?[0-9]{4}([^0-9]|$)' | grep -vE '01[016789][- .]?(0000|1234|1111)[- .]?(0000|5678|1111)' | wc -l)
+  ph=$(printf '%s\n' "$add" | grep -oE '(^|[^0-9])(01[016789]|\+?82[- ]?10)[- .]?[0-9]{3,4}[- .]?[0-9]{4}([^0-9]|$)' | grep -vE '01[016789][- .]?(0000|1234|1111)[- .]?(0000|5678|1111)' | wc -l)
   [ "$ph" -gt 0 ] && say "휴대전화 번호 꼴이 새 줄에 ${ph}개 있음 — 시험 자료라면 010-0000-0000처럼"
 fi
 [ $bad = 0 ] && echo "✓ push 전 검사 통과($who · $(printf '%s\n' "$changed" | wc -l)개 파일)"; exit $bad
