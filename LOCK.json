@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "ALPS 도우미 0.2.4 창·로그인 정보",
- "since": "2026-11-03T05:47:02Z",
- "beat": "2026-11-03T05:47:02Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-03T05:40:53Z"
+  "at": "2026-11-03T05:47:07Z"
  },
- "host": "vm"
+ "host": null
 }
