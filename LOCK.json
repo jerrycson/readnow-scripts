@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "초시급: 고서/희귀본 분류·새등록 기본 매입처",
+ "since": "2026-11-03T03:44:32Z",
+ "beat": "2026-11-03T03:44:32Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-03T03:42:36Z"
  },
- "host": null
+ "host": "vm"
 }
