@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "ALPS 0.3.8 안전장치",
+ "since": "2026-11-03T07:54:04Z",
+ "beat": "2026-11-03T07:54:04Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-03T07:52:16Z"
  },
- "host": null
+ "host": "vm"
 }
