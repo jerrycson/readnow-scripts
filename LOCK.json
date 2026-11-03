@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "개인 정보 막기 검사 · 지난 기록에서 손님 이름 지우기",
+ "since": "2026-11-03T09:53:29Z",
+ "beat": "2026-11-03T09:53:29Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-03T08:12:55Z"
  },
- "host": null
+ "host": "vm"
 }
