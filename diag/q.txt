@@ -1,13 +1,10 @@
-cmds=pxExp&n=20
-cmds=prdEdit&n=20
-cmds=metrics&n=20
-cmds=bbuy&n=20
-cmds=shipReq&n=20
-cmds=alps&n=20
-recentUp=rn_status&mins=180
-recentUp=ext_hist&mins=180
-recentUp=prd_listings&mins=180
-recentUp=shp_cmds&mins=180
-recentUp=crm_orders&mins=180
-recentUp=ship_runs&mins=180
-# 813924871
+doc=app_settings/bi_x
+recentUp=ext_hist&mins=1440
+recentUp=rn_status&mins=1440
+recentUp=shp_cmds&mins=1440
+recentUp=prd_listing_changes&mins=1440
+recentUp=perf_logs&mins=60
+doc=app_settings/health_cache
+recentUp=rn_dialogs&mins=1440
+recentUp=devops_reports&mins=1440
+# 744625448
