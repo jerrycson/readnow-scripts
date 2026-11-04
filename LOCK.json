@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "되살리기 막기·진행 카드",
+ "since": "2026-11-04T12:56:21Z",
+ "beat": "2026-11-04T12:56:21Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T12:31:14Z"
  },
- "host": null
+ "host": "vm"
 }
