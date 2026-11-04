@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "🛰 진행바",
- "since": "2026-11-04T07:36:02Z",
- "beat": "2026-11-04T07:36:02Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-04T07:35:30Z"
+  "at": "2026-11-04T07:40:36Z"
  },
- "host": "vm"
+ "host": null
 }
