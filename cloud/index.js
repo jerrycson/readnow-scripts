@@ -1338,7 +1338,8 @@ async function y24OrdTick() { if (Date.now() - y24oTickAt < 90e3) return null; y
  *  기록 shp_auto/{주문번호}: 판단 이유·총액·대표 상품(가장 비싼)·상품마다 판정 근거·그때 설정 — 판정이 정해진 뒤엔 덮지 않고 결과(done·fail)만 덧붙임 · 지우지 않음
  *  알림(웹 푸시): autodone ✅ 자동 주문처리 완료(알라딘에서 발송요청으로 넘어간 것을 확인한 뒤) · autorev 🔎 관리자 검토 필요(이유) — 기기마다 끌 수 있음(웹앱 설정 🔔) */
 /* (0.35.79 정범님 11/02) 🔄 ① 주문확인요청 '시장 다시 읽기'(웹앱 단추 · shp_cmds type 'market' rerd) — 그 탭 모든 상품의 시장을 다음 시장 읽기에서 꼭 다시 읽고(mktForce)
- *  다 읽으면(또는 4분) 자동 발송요청이 켜 있을 때 그 주문들을 바로 다시 판단: 검토·켜기 전(skip)·대기 주문만 '대기'로 되돌림(전 판단은 rejudge.prev·rjHist에 남김 — 지우지 않음)
+ *  다 읽으면(또는 4분) 자동 발송요청이 켜 있을 때 그 주문들을 바로 다시 판단: 🔎 검토 주문만 '대기'로 되돌림(전 판단은 rejudge.prev·rjHist에 남김 — 지우지 않음)
+ *  (11/04 정범님) 켜기 전에 들어와 사람 몫으로 남은 주문(skip)은 다시 판단에 넣지 않음 · ⏸ 보류한 주문(shp_auto.hold.on)도 그대로
  *  넘긴·완료·사람이 처리·실패·확인 못 함은 그대로(두 번 누르지 않게) · PC가 판단 중이면 ship_auto.rejudgeAt을 보고 PC가 다시 판단 */
 const mktForce = new Map(), mktJobs = new Map();
 function mktDone(lid, k) { const id = mktForce.get(lid); mktForce.delete(lid); const J = id && mktJobs.get(id); if (J) (k === 'ok' ? J.done : J.fail).add(lid); }
@@ -1351,14 +1352,14 @@ async function mktJobsTick() { if (!mktJobs.size) return null; const live = new 
     mktJobs.delete(id); await J.ref.set({ status: 'done', doneAt: nowIso(), prog, ...(to && left.length ? { timeout: true } : {}), ...(res ? { res } : {}), uploadedAt: FV.serverTimestamp() }, { merge: true }).catch(() => {}); out.push(id); log('🔄 시장 다시 읽기 끝', id, JSON.stringify(prog), res ? JSON.stringify(res) : ''); }
   return out.length ? out : null; }
 async function autoRejudge(J, id) { const SHC = shipCoreNode(); if (!SHC || !SHC.autoCfg) return { err: '출고 공용 파일 없음' }; const cfg = await autoCfgGet(SHC); if (!cfg.on) return { off: true };
-  const at = nowIso(); let rj = 0, keep = 0; const L = [];
-  for (const ono of J.orderNos) { const ref = C('shp_auto').doc(ono); let did = false;
-    await db.runTransaction(async (tx) => { did = false; const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && !['review', 'skip', 'wait'].includes(v.state)) return;
+  const at = nowIso(); let rj = 0, keep = 0, held = 0; const L = [];
+  for (const ono of J.orderNos) { const ref = C('shp_auto').doc(ono); let did = false, why = null;
+    await db.runTransaction(async (tx) => { did = false; why = null; const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && v.hold && v.hold.on) { why = 'hold'; return; } /* (11/04 정범님) ⏸ 보류한 주문은 다시 판단 안 함 */ if (!v || v.state !== 'review') return; /* (11/04 정범님) 검토 주문만 — 켜기 전에 들어와 사람 몫으로 남은 주문(skip)·대기·판단 기록 없는 주문은 그대로(대기·기록 없음은 어차피 새 시장으로 판단됨) */
       const prev = v ? { state: v.state || null, reasons: v.reasons || [], decidedAt: v.decidedAt || null, by: v.by || null, at } : null;
       tx.set(ref, { orderNo: ono, state: 'wait', firstAt: at, at, reasons: ['🔄 시장 다시 읽음 — 자동 판단 다시'], pushWant: false, rejudge: { at, cmd: id, by: J.by || null, prev }, ...(prev ? { rjHist: FV.arrayUnion(prev) } : {}), ...W() }, { merge: true }); did = true; });
-    if (did) { rj++; autoMem.delete(ono); L.push(ono); } else keep++; }
+    if (did) { rj++; autoMem.delete(ono); L.push(ono); } else if (why === 'hold') held++; else keep++; }
   if (L.length) await C('app_settings').doc('ship_auto').set({ rejudgeAt: at, rejudgeOrders: L, rejudgeBy: J.by || null }, { merge: true }).catch(() => {});
-  autoCfgC = null; return { rj, keep }; }
+  autoCfgC = null; return { rj, keep, ...(held ? { hold: held } : {}) }; }
 /* (11/04 정범님 '신의 아이들은 모두 춤춘다 — 시장 자료 없음을 처음 한 번 보고 끝이야?') ⑩ 시장 자료 없음·단독(검색 전)만으로 검토가 된 주문 다시 보기 — 1분마다 · Firestore만(밤에도)
  *  대상 = shp_auto mktRetry.on(판단한 기기가 남김) + 옛 기록(30분마다 2일 안 검토 중 이유가 시장 자료 없음·단독뿐인 것)
  *  판정 = 공용 출고 파일 autoRetryCheck(한 곳) — 자료가 들어오면 '대기'로 되돌려 다시 판단(전 판단은 rejudge.prev·rjHist에 남김 — 지우지 않음 · 다시 판단해도 검토면 알림 다시 안 보냄)
@@ -1372,8 +1373,9 @@ async function autoMktRetryTick(cfg, SHC) { if (amrBusy || Date.now() - amrAt < 
     if (Date.now() - amrBackAt > 30 * 60e3) { amrBackAt = Date.now(); const cut = new Date(Date.now() - 2 * 864e5).toISOString(); try { (await C('shp_auto').where('decidedAt', '>=', cut).get()).forEach((d) => { const v = d.data() || {}; if (v.state === 'review' && !v.mktRetry && (v.kinds || []).length && v.kinds.every((k) => k === 'nomkt' || k === 'alone')) docs.set(d.id, d); }); } catch (e) {} }
     if (!docs.size) return null; const { L, ok: listOk } = await amrList(); const inList = new Set((L || []).map((o) => String(o.orderNo)));
     const enr = async (lid) => { let e = enrichMem.get(lid); if (!e) { try { const d = await C('shp_enrich').doc(lid).get(); e = d.exists ? d.data() : null; if (e) enrichMem.set(lid, e); } catch (er) {} } return e || null; };
-    const put = (ref, want, patch) => db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data() || {}; if (v.state !== want.state || ((v.mktRetry || {}).at || null) !== (want.at || null)) return false; tx.set(ref, { ...patch, ...W() }, { merge: true }); return true; }).catch(() => false);
+    const put = (ref, want, patch) => db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data() || {}; if (v.state !== want.state || ((v.mktRetry || {}).at || null) !== (want.at || null) || (v.hold && v.hold.on)) return false; /* ⏸ 보류 중이면 쓰지 않음 */ tx.set(ref, { ...patch, ...W() }, { merge: true }); return true; }).catch(() => false);
     for (const [ono, d] of docs) { const v = d.data() || {}; const R0 = v.mktRetry || null; const want = { state: v.state, at: R0 ? R0.at || null : null }; const stopR = (end, why) => (R0 ? put(d.ref, want, { mktRetry: { ...R0, on: false, end, endWhy: why || null, endAt: nowIso() } }) : Promise.resolve(false));
+      if (v.hold && v.hold.on) { out.held = (out.held || 0) + 1; continue; } /* (11/04 정범님) ⏸ 보류한 주문은 다시 읽기 맡김·다시 판단·멈춤 모두 안 함(계획은 그대로 — 풀면 이어서) */
       if (v.state !== 'review') { if (R0 && R0.on) { await stopR('state', '검토 상태가 아님'); out.stop++; } continue; }
       if (listOk && !inList.has(ono)) { if (await stopR('gone', '주문확인요청에서 빠짐(사람이 처리했거나 취소)')) out.stop++; continue; }
       const hc = await autoHumanCmd(ono).catch(() => null); if (hc) { if (await stopR('human', '사람이 발송준비시작·취소를 맡김 — ' + hc)) out.stop++; continue; }
@@ -1386,7 +1388,7 @@ async function autoMktRetryTick(cfg, SHC) { if (amrBusy || Date.now() - amrAt < 
         const did = await put(d.ref, want, { state: 'wait', firstAt: at, at, reasons: ['🔄 ' + X.why + ' — 자동 판단 다시'], pushWant: false, rejudge: { at, auto: 'mkt', why: X.why, lids: X.lids, prev }, rjHist: FV.arrayUnion(prev), ...(R0 ? { mktRetry: { ...R0, on: false, end: 'rejudge', endWhy: X.why, endAt: at } } : {}) });
         if (did) { out.rj++; autoMem.delete(ono); amrRecent.set(ono, Date.now()); log('🔄 시장 자료가 들어와 자동 판단 다시', ono, X.why); } continue; }
       if (X.act === 'reread') { const cref = C('shp_cmds').doc(`mkr_${ono}_${X.n}`); const at = nowIso();
-        const did = await db.runTransaction(async (tx) => { const sn = await tx.get(d.ref); const cs = await tx.get(cref); const w = sn.data() || {}; if (w.state !== 'review' || ((w.mktRetry || {}).at || null) !== want.at) return false;
+        const did = await db.runTransaction(async (tx) => { const sn = await tx.get(d.ref); const cs = await tx.get(cref); const w = sn.data() || {}; if (w.state !== 'review' || ((w.mktRetry || {}).at || null) !== want.at || (w.hold && w.hold.on)) return false;
           if (!cs.exists) tx.set(cref, { type: 'market', listingIds: X.lids, orderNos: [ono], status: 'queued', auto: true, createdAt: at, by: `🤖 자동 발송요청 — 시장 자료 없음 ${X.n}번째 다시 읽기`, dev: 'cloud', uploadedAt: FV.serverTimestamp() });
           tx.set(d.ref, { mktRetry: { ...R0, n: X.n, at, next: X.next, cmd: cref.id, lids: R0.lids }, ...W() }, { merge: true }); return true; }).catch(() => false);
         if (did) { out.rd++; kickFlag = true; log('🔄 시장 자료 없음 — 다시 읽기 맡김', ono, `${X.n}번째`, X.lids.join(',')); } } }
@@ -1397,7 +1399,7 @@ async function autoMktRetryTick(cfg, SHC) { if (amrBusy || Date.now() - amrAt < 
 const autoMem = new Map(); let autoCfgC = null, autoCfgAt = 0, autoBusy = false, autoTrackAt = 0, autoBeatAt = 0, autoTrackBusy = false;
 async function autoCfgGet(SHC) { if (autoCfgC && Date.now() - autoCfgAt < 30e3) return autoCfgC; const ref = C('app_settings').doc('ship_auto'); let d = {};
   try { d = (await ref.get()).data() || {}; } catch (e) { if (autoCfgC) return autoCfgC; throw e; }
-  const cfg = SHC.autoCfg(d); cfg.since = d.since || null; cfg.beatAt = d.beatAt || null; cfg.beatBy = d.beatBy || null; /* (10/27) 누가 판단하고 있나 — PC가 판단 중이면 클라우드는 받침 */ if (cfg.on && !cfg.since) { cfg.since = nowIso(); await ref.set({ since: cfg.since, sinceBy: 'cloud (처음 켜짐 — 이 시각 뒤 주문부터)' }, { merge: true }).catch(() => {}); }
+  const cfg = SHC.autoCfg(d); cfg.since = d.since || null; cfg.beatAt = d.beatAt || null; cfg.beatBy = d.beatBy || null; cfg.holds = d.holds && typeof d.holds === 'object' ? d.holds : {}; /* (11/04 정범님) ⏸ 보류 목록(웹앱 출고 카드 단추) — 빠른 거르기용 · 기록과 최종 확인은 shp_auto/{주문}.hold */ /* (10/27) 누가 판단하고 있나 — PC가 판단 중이면 클라우드는 받침 */ if (cfg.on && !cfg.since) { cfg.since = nowIso(); await ref.set({ since: cfg.since, sinceBy: 'cloud (처음 켜짐 — 이 시각 뒤 주문부터)' }, { merge: true }).catch(() => {}); }
   autoCfgC = cfg; autoCfgAt = Date.now(); return cfg; }
 async function autoCust(o, SHC) { const hits = []; const seen = new Set();
   const look = async (who, field, val, weak, name) => { const qs = await C('crm_customers').where(field, 'array-contains', val).limit(6).get(); qs.forEach((d) => { if (seen.has(who + d.id)) return; seen.add(who + d.id); const r = SHC.custRisk(d.data()); if (r.bl || r.seller) hits.push({ who, name: name || '', cid: d.id, bl: r.bl, seller: r.seller, sellers: r.sellers, blWhy: r.blWhy, weak: !!weak || qs.size > 1 }); }); return qs.size; };
@@ -1412,7 +1414,8 @@ async function autoPush(kind, v) { const n = v.qty || 0; const p = kind === 'aut
   try { return await pushSend(null, p, kind); } catch (e) { return { err: e.message }; } }
 async function autoHumanCmd(ono) { const qs = await C('shp_cmds').where('orderNos', 'array-contains', ono).limit(20).get(); const d = qs.docs.find((x) => { const v = x.data() || {}; return (v.type === 'startDelivery' || v.type === 'cancelOrder') && !v.auto && !['cancelled', 'cancel'].includes(v.status); }); return d ? d.id : null; } /* (0.35.80 정밀 점검) 사람이 ✖ 주문 취소를 맡긴(cx_) 주문도 '사람이 처리 중'으로 — 예전엔 발송준비시작만 봐서 취소 누른 직후 자동 판단이 '통과'로 발송준비할 수 있었음 */
 /* 판정이 '기다림'에서 처음 정해질 때만 씀(트랜잭션) — 두 회차가 겹쳐도 한 번만 맡기고 한 번만 알림 */
-async function autoFinal(ref, rec, cmd) { let did = false; await db.runTransaction(async (tx) => { did = false; const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && v.state && v.state !== 'wait') return;
+async function autoFinal(ref, rec, cmd, m) { let did = false; await db.runTransaction(async (tx) => { did = false; if (m) m.held = false; const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && v.state && v.state !== 'wait') return;
+    if (v && v.hold && v.hold.on) { if (m) m.held = true; return; } /* (11/04 정범님) ⏸ 보류 — 판단을 적지도 맡기지도 않음(m.held → 기억에 '끝'으로 두지 않아 풀면 다시 봄) */
     if (cmd) { const cs = await tx.get(cmd.ref); if (cs.exists) return; tx.set(cmd.ref, cmd.v); }
     tx.set(ref, { ...rec, ...W() }, { merge: true }); did = true; }); return did; }
 /* 맡긴 뒤 결과 따라가기(20초마다) — 판단한 기기(PC·클라우드)와 상관없이 클라우드가 함(휴대폰 알림 열쇠가 클라우드에만 있음) · Firestore만 읽고 써서 알라딘 로그인이 막혀도 됨
@@ -1445,18 +1448,19 @@ async function shipAutoTick(cr, J) { if (autoBusy || !J || J.cmds === false || J
     if (Date.now() - autoBeatAt > 5 * 60e3) { autoBeatAt = Date.now(); C('app_settings').doc('ship_auto').set({ beatAt: nowIso(), beatVer: VER, beatBy: 'cloud', beats: { cloud: nowIso() } }, { merge: true }).catch(() => {}); } /* 살아 있음 신호(5분마다 · 판단한 기기와 함께) — 웹앱이 신호가 10분 넘게 없으면 '자동 판단 신호 없음 — 직접 처리'를 띄움 */
     const cfgRec = { on: cfg.on, minQty: cfg.minQty, qtyMax: cfg.qtyMax, bundleOn: cfg.bundleOn, bundleSize: cfg.bundleSize, bundleWon: cfg.bundleWon, bundleRound: cfg.bundleRound, maxItemWon: cfg.maxItemWon, maxTotalWon: cfg.maxTotalWon, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, lowOn: cfg.lowOn, lowPrice: cfg.lowPrice, lowSku: cfg.lowSku, since: cfg.since }; /* (10/28) ⑥ 저가·YLW 매입가 기준도 그때 설정으로 남김 */
     if (cfg.on) for (const o of L) { const ono = String(o.orderNo || ''); if (!ono || o.platform === 'cash') continue; let m = autoMem.get(ono); if (m && m.final) continue; const ref = C('shp_auto').doc(ono);
-      if (!m) { const sn = await ref.get(); const v = sn.exists ? sn.data() : null; if (v && v.state !== 'wait') { autoMem.set(ono, { final: true }); continue; } m = { firstAt: (v && Date.parse(v.firstAt || '')) || Date.now(), doc: !!v, rj: (v && v.rejudge) || null }; autoMem.set(ono, m); }
+      if (cfg.holds[ono]) { out.hold = (out.hold || 0) + 1; continue; } /* (11/04 정범님) ⏸ 보류 — 이 주문은 자동 판단 안 함(풀면 다음 회차부터) */
+      if (!m) { const sn = await ref.get(); const v = sn.exists ? sn.data() : null; if (v && v.state && v.state !== 'wait') { autoMem.set(ono, { final: true }); continue; } /* 상태 없는 기록(보류만 적힌 것)은 아직 판단 전 */ m = { firstAt: (v && Date.parse(v.firstAt || '')) || Date.now(), doc: !!v, rj: (v && v.rejudge) || null }; autoMem.set(ono, m); }
       const base = { orderNo: ono, buyer: o.buyer || null, recipient: o.recipient && !o.recipient.sameAsBuyer ? o.recipient.name || null : null, orderedAt: o.orderedAt || null, firstAt: new Date(m.firstAt).toISOString(), at: nowIso(), by: 'cloud', ...(viaPc ? { list: viaPc } : {}), ver: VER, cfg: cfgRec };
       const oAt = Date.parse(String(o.orderedAt || '').replace(' ', 'T') + ':00+09:00');
-      if (!m.rj && cfg.since && oAt && oAt < Date.parse(cfg.since) - 60e3) { await autoFinal(ref, { ...base, state: 'skip', reasons: ['자동 발송요청을 켜기 전에 들어온 주문 — 사람이 처리'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; }
-      const hc = await autoHumanCmd(ono); if (hc) { await autoFinal(ref, { ...base, state: 'human', humanCmd: hc, reasons: ['사람이 먼저 발송준비시작을 맡김 — 자동 판단 안 함'], decidedAt: nowIso() }).catch(() => {}); m.final = true; continue; }
+      if (!m.rj && cfg.since && oAt && oAt < Date.parse(cfg.since) - 60e3) { await autoFinal(ref, { ...base, state: 'skip', reasons: ['자동 발송요청을 켜기 전에 들어온 주문 — 사람이 처리'], decidedAt: nowIso() }, null, m).catch(() => {}); m.final = !m.held; continue; }
+      const hc = await autoHumanCmd(ono); if (hc) { await autoFinal(ref, { ...base, state: 'human', humanCmd: hc, reasons: ['사람이 먼저 발송준비시작을 맡김 — 자동 판단 안 함'], decidedAt: nowIso() }, null, m).catch(() => {}); m.final = !m.held; continue; }
       if (cfg.custBlock && m.cust === undefined) m.cust = await autoCust(o, SHC);
       const D = SHC.autoShipDecide({ order: o, enrich, cfg, evalSale: ML.evalSale, now: Date.now(), firstAt: m.firstAt, cust: cfg.custBlock ? m.cust : null });
       const rec = { ...base, qty: D.qty, total: D.total, top: D.top, items: D.items, reasons: D.reasons, kinds: D.kinds, cust: (m.cust && m.cust.hits) || [], custErr: (m.cust && m.cust.err) || null, shipVer: SHC.VERSION || null, mlVer: ML.VERSION || null };
       if (D.state === 'wait') { out.wait++; if (!m.doc) { await ref.create({ ...rec, state: 'wait', waitLeftMs: D.waitLeftMs, ...W() }).catch(() => {}); /* (10/27) 없을 때만 — PC가 그사이 정한 판단을 '기다림'으로 덮지 않게 */ m.doc = true; } continue; }
-      if (D.state === 'pass') { const cref = C('shp_cmds').doc('auto_' + ono); const ok = await autoFinal(ref, { ...rec, state: 'sent', cmdId: cref.id, decidedAt: nowIso() }, { ref: cref, v: { type: 'startDelivery', orderNos: [ono], status: 'queued', createdAt: nowIso(), by: viaPc ? `🤖 자동 발송요청 (클라우드 판단 · ${viaPc} 처리)` : '🤖 자동 발송요청 (클라우드 판단)', auto: true, dev: viaPc || 'cloud', uploadedAt: FV.serverTimestamp() } }); /* (10/27) PC가 읽은 목록이면 발송준비시작은 그 PC(dev = PC 이름 → 기다리지 않고 바로) */
-        m.final = true; if (ok) { out.sent++; if (!viaPc) kickFlag = true; log('🤖 자동 발송요청 맡김', ono, wonT(D.total), viaPc ? '→ ' + viaPc : ''); } continue; }
-      const ok = await autoFinal(ref, { ...rec, state: 'review', decidedAt: nowIso(), ...(SHC.autoRetryInit ? { mktRetry: SHC.autoRetryInit(D, cfg, Date.now()) } : {}) }); m.final = true; /* (11/04) ⑩ 시장 자료 없음·단독만이면 다시 읽기 계획(autoMktRetryTick이 따름) */
+      if (D.state === 'pass') { const cref = C('shp_cmds').doc('auto_' + ono); const ok = await autoFinal(ref, { ...rec, state: 'sent', cmdId: cref.id, decidedAt: nowIso() }, { ref: cref, v: { type: 'startDelivery', orderNos: [ono], status: 'queued', createdAt: nowIso(), by: viaPc ? `🤖 자동 발송요청 (클라우드 판단 · ${viaPc} 처리)` : '🤖 자동 발송요청 (클라우드 판단)', auto: true, dev: viaPc || 'cloud', uploadedAt: FV.serverTimestamp() } }, m); /* (10/27) PC가 읽은 목록이면 발송준비시작은 그 PC(dev = PC 이름 → 기다리지 않고 바로) */
+        if (m.held) { out.hold = (out.hold || 0) + 1; continue; } /* (11/04) 판단하는 사이 ⏸ 보류됨 — 맡기지 않음 */ m.final = true; if (ok) { out.sent++; if (!viaPc) kickFlag = true; log('🤖 자동 발송요청 맡김', ono, wonT(D.total), viaPc ? '→ ' + viaPc : ''); } continue; }
+      const ok = await autoFinal(ref, { ...rec, state: 'review', decidedAt: nowIso(), ...(SHC.autoRetryInit ? { mktRetry: SHC.autoRetryInit(D, cfg, Date.now()) } : {}) }, null, m); if (m.held) { out.hold = (out.hold || 0) + 1; continue; } m.final = true; /* (11/04) ⑩ 시장 자료 없음·단독만이면 다시 읽기 계획(autoMktRetryTick이 따름) */
       if (ok && m.rj && m.rj.prev && m.rj.prev.state === 'review') { out.review++; continue; } /* (0.35.79) 다시 판단해도 검토면 알림은 다시 보내지 않음 */
       if (ok) { out.review++; const pr = await autoPush('autorev', rec); await ref.set({ push: pr, pushAt: nowIso() }, { merge: true }).catch(() => {}); log('🤖 검토 필요', ono, D.reasons.join(' / ')); } }
     await autoTrack(L, !!cr, out); /* (10/27) 따라가기·알림은 따로(autoTrack) — PC가 판단한 주문도 · 클라우드 회차가 앞에서 멈춰도 */
