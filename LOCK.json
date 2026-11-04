@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "추정 칸·일별 순위·언제 뺄까",
+ "since": "2026-11-04T15:37:26Z",
+ "beat": "2026-11-04T15:37:26Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "",
   "at": "2026-11-04T15:21:18Z"
  },
- "host": null
+ "host": "vm"
 }
