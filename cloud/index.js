@@ -653,10 +653,86 @@ async function shipRead(p, until) {
   lastDelivAt = Date.now();
   return { deliv: r.orders.length, items: items.length, changed, nInfo, exErr: R.exErr || null }; }
 
+/* NBFIND-START ══ (정범님 11/04) 🆕 미등록 상품의 새책(새상품) 찾기 — shp_cmds type 'nbFind' (웹앱 대표 탭이 하루 몫을 맡김 · 클라우드만 · 로그인 없이 공개 화면)
+ *  왜: 미등록으로 등록한 상품(알라딘 새책 상품에 붙지 않고 정보를 직접 써서 올린 중고)은 그 상품 화면만으로는 새책(새상품)이 있는지 알 수 없어 판매·품절·절판을 못 보임
+ *      → 알라딘 검색에서 같은 책의 새상품을 찾고, 그 새상품 화면을 읽어 판매·품절·절판을 얻음 · 그래도 없으면 '절판 가능성 높음(추정)'
+ *  한 상품 = ① (지은이·출판사·출간 연도를 모르면) 우리 상품 화면 1장 ② 검색 화면(SearchTarget=All · 새책만 · 0건이면 뒤 낱말 빼고 — 최대 3번) ③ 제목이 맞는 후보 상품 화면 많아야 cfg.maxRead장
+ *      이미 새책을 찾아 둔 상품(st found)은 다시 찾지 않고 그 새책 화면 1장만(판매 상태 새로) — 사람이 '이 새책이 아님'으로 뺀 번호(rej)는 다시 고르지 않음 · 사람이 고른 번호(pick)는 판단 없이 그 새책으로
+ *  같은 책 판단 = 공용 파일 newBookJudge(제목 90%·거꾸로 80%·권 번호 + 지은이·출판사·출간 연도 — 애매하면 '모름') · 여럿이면 newBookPick
+ *  속도(사람처럼): 화면 사이 cfg.gapMin~gapMax(기본 4~9초 무작위) + 공용 makePacer('cloudPub') · 한 조각 cfg.sliceSec(기본 40초) · 조각 사이 restMin~restMax분(기본 3~12분) 무작위 쉼
+ *      · 하루 cfg.dayCap개(기본 60개) — 모두 근거: 없음, 설정으로 바꿈(웹앱 ⚙ 설정 '🆕 미등록 상품 새책 찾기' → app_settings/nb_find.cfg)
+ *      · 알라딘이 막으면(403·429·503·비정상 접근) 그날은 다시 안 함 · 로그인은 절대 안 함(쿠키 없이 · 19금 화면이면 그 상품만 '모름')
+ *  저장: prd_newbook/{상품 열쇠} — 지우지 않음 · 결과가 바뀔 때만 hist에 한 줄 · 사람이 뺀 번호(rej)·고친 기록은 웹앱이 씀 · app_settings/nb_find.cnt[날짜] 하루 센 수 · pend[열쇠] 끝나면 지움 */
+const NB_DEF = { on: true, dayCap: 60, gapMin: 4000, gapMax: 9000, sliceSec: 40, restMin: 3, restMax: 12, maxRead: 3, nightFrom: 23, nightTo: 8 }; /* 밤 23시~아침 8시(한국 시각)는 쉼 — 근거: 없음, 설정으로 바꿈 */
+const NB = { day: '', block: null };
+const nbDay = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+async function nbCfgC() { let x = {}; try { const d = await C('app_settings').doc('nb_find').get(); x = (d && d.exists && d.data()) || {}; } catch (e) {} const c = x.cfg || {}; const n = (k) => (isFinite(+c[k]) && +c[k] >= 0 ? +c[k] : NB_DEF[k]);
+  const cfg = { on: c.on !== false, dayCap: n('dayCap'), gapMin: n('gapMin'), gapMax: Math.max(n('gapMin'), n('gapMax')), sliceSec: Math.min(55, n('sliceSec')), restMin: n('restMin'), restMax: Math.max(n('restMin'), n('restMax')), maxRead: Math.max(1, Math.min(6, n('maxRead'))), nightFrom: Math.min(24, n('nightFrom')), nightTo: Math.min(23, n('nightTo')) };
+  return { cfg, used: +(((x.cnt || {})[nbDay()]) || 0) }; }
+/* 알라딘 화면 안에서 한 상품 — 돌려줌 { st: found|none|unsure|err, why, q, our, nb, cands, block, gate } */
+const nbOneC = (p, it, old, cfg) => p.evaluate(async (it, old, cfg) => { const P = window.ReadnowProducts; if (!P || !P.newBookJudge || !P.parseSearchResults || !P.parseProductPage) return { st: 'err', why: '상품 공용 파일이 옛 판(newBookJudge 없음) — 새 판이 들어오면 다시' };
+  const sl = (ms) => new Promise((r) => setTimeout(r, ms)); let n = 0; const pc = P.makePacer ? P.makePacer('cloudPub') : null;
+  const get = async (u) => { if (n++) await sl(cfg.gapMin + Math.random() * (cfg.gapMax - cfg.gapMin)); if (pc) { if (pc.cooling() > 0) throw Object.assign(new Error('알라딘 읽기 쉼(속도 조절)'), { cool: 1 }); await Promise.race([pc.wait(sl), sl(20000)]); }
+    const r = await fetch(u, { credentials: 'omit', cache: 'no-store' }); const h = await r.text(); if (r.status === 403 || r.status === 429 || r.status === 503 || /captcha|비정상적인\s*접근|접근이\s*(차단|제한)|too many requests/i.test(h.slice(0, 30000))) { if (pc) pc.fail(pc.kindOf ? pc.kindOf(r.status) : 'error'); throw Object.assign(new Error('알라딘이 막음 HTTP ' + r.status), { block: 1 }); }
+    if (pc) pc.ok(); const d = new DOMParser().parseFromString(h, 'text/html'); const gate = /wlogin|login\.aspx|adult/i.test(r.url) || /성인\s*인증|19세\s*(미만|이상)|청소년\s*(유해|이용\s*불가)/.test(h.slice(0, 30000)); return { ok: r.ok, url: r.url, doc: d, gate }; };
+  const nm = (b) => (b && Array.isArray(b.contributors) ? b.contributors.map((c) => c && c.name).filter(Boolean) : []); const yr = (x) => ((String(x || '').match(/(1[89]\d{2}|20\d{2})/) || [])[1] || null);
+  const slimB = (b, itemId) => ({ itemId: String(itemId || (b && b.aladinItemId) || ''), title: String((b && b.title) || '').slice(0, 200), a: nm(b).slice(0, 3).join(', ').slice(0, 120) || null, pb: (b && b.publisher) || null, d: (b && b.pubDate) || null, av: (b && b.availability) || null, avNote: (b && b.availabilityNote) ? String(b.availabilityNote).slice(0, 120) : null, avChk: (b && b.soldoutCheckedAt) || null, ps: b && b.priceSales != null ? b.priceSales : null, pl: b && b.priceList != null ? b.priceList : null });
+  const isE = (b) => !!(b && (b.categories || []).some((c) => /eBook|전자책/i.test(((c && c.path) || []).join(' '))));
+  try { const our = { t: it.t, a: it.a || (old && old.our && old.our.a) || null, pb: it.pb || (old && old.our && old.our.pb) || null, y: it.y || (old && old.our && old.our.y) || null, src: it.a || it.pb || it.y ? 'reg' : (old && old.our && old.our.src) || null };
+    const rej = new Set(((old && old.rej) || []).map(String));
+    const readNb = async (id) => { const g = await get('/shop/wproduct.aspx?ItemId=' + encodeURIComponent(id)); if (g.gate) return { gate: true }; const b = g.ok ? P.parseProductPage(g.doc, g.url) : null; return b && b.title ? { b } : { miss: true }; };
+    const pick = it.pick ? String(it.pick) : null; const keep = !it.full && old && old.st === 'found' && old.nb && old.nb.itemId && !rej.has(String(old.nb.itemId)) ? String(old.nb.itemId) : null;
+    if (pick || keep) { const id = pick || keep; const R = await readNb(id); if (R.gate) return { st: 'unsure', gate: true, why: '새책 화면이 19금(로그인 필요) — 로그인하지 않아 상태를 못 읽음', our, q: (old && old.q) || null };
+      if (!R.b) { if (pick) return { st: 'err', why: `고른 새책(${id}) 화면을 못 읽음`, our }; /* 찾아 둔 새책 화면이 사라짐 → 처음부터 다시 찾음 */ }
+      else { const j = P.newBookJudge(our, R.b); return { st: 'found', how: pick ? 'pick' : (old.nb.how || 'auto'), why: pick ? '사람이 고른 새책' : '찾아 둔 새책 — 판매 상태만 새로 읽음', our, q: (old && old.q) || null, nb: { ...slimB(R.b, id), judge: { v: j.v, why: (j.why || []).slice(0, 5) } }, cands: (old && old.cands) || [] }; } }
+    if (it.lid && (!our.a || !our.pb || !our.y)) { const g = await get('/shop/wproduct.aspx?ItemId=' + encodeURIComponent(it.lid)); if (!g.gate && g.ok) { const b = P.parseProductPage(g.doc, g.url); if (b && b.title) { our.a = our.a || nm(b).slice(0, 3).join(', ') || null; our.pb = our.pb || b.publisher || null; our.y = our.y || yr(b.pubDate); our.src = our.src || 'page'; } } }
+    const tries = (P.aladinQTries ? P.aladinQTries(it.t) : [P.aladinQ ? P.aladinQ(it.t) : it.t]).slice(0, 3); let rows = [], q = tries[0] || '';
+    for (const t of tries) { q = t; const g = await get('/search/wsearchresult.aspx?SearchTarget=All&SearchWord=' + encodeURIComponent(t)); if (!g.ok) return { st: 'err', why: '검색 화면을 못 읽음', our, q };
+      if (!/알라딘/.test(g.doc.title || '') && !g.doc.querySelector('.ss_book_box') && !g.doc.querySelector('link[rel="canonical"]')) return { st: 'err', why: '알라딘 화면 같지 않음(막힘·오류 화면일 수 있음)', our, q };
+      rows = P.parseSearchResults(g.doc).filter((r) => !r.used && !r.ours && String(r.itemId) !== String(it.lid || '') && !/\[?\s*(eBook|전자책)\s*\]?/i.test(r.title)); if (rows.length) break; }
+    const qy = P.aladinQ ? P.aladinQ(it.t) : it.t; const C0 = rows.map((r) => ({ itemId: String(r.itemId), title: r.title, cov: Math.round(P.nameCoverage(qy, r.title) * 1000) / 1000, vol: P.sameVolume(it.t, r.title), rej: rej.has(String(r.itemId)) })).filter((r) => r.cov >= 0.6).sort((a, b) => b.cov - a.cov).slice(0, 8);
+    const top = C0.filter((r) => r.cov >= 0.9 && r.vol && !r.rej); const J = []; let gates = 0;
+    for (const c of top.slice(0, cfg.maxRead)) { const R = await readNb(c.itemId); if (R.gate) { gates++; c.v = 'unsure'; c.why = '19금 — 로그인 없이는 못 봄'; J.push({ v: 'unsure', itemId: c.itemId }); continue; } if (!R.b) { c.v = null; c.why = '화면을 못 읽음'; continue; } if (isE(R.b)) { c.v = 'diff'; c.why = '전자책'; continue; }
+      const j = P.newBookJudge(our, R.b); Object.assign(c, slimB(R.b, c.itemId), { v: j.v, why: (j.why || []).join(' · ').slice(0, 200) }); J.push({ ...j, itemId: c.itemId, b: c }); }
+    const unread = Math.max(0, top.length - cfg.maxRead) + top.slice(0, cfg.maxRead).filter((c) => c.v === null).length; const D = P.newBookPick(J, unread);
+    const cands = C0.map((c) => ({ itemId: c.itemId, title: String(c.title || '').slice(0, 160), cov: c.cov, vol: !!c.vol, ...(c.rej ? { rej: true } : {}), ...(c.v !== undefined ? { v: c.v, why: c.why || null, a: c.a || null, pb: c.pb || null, d: c.d || null, av: c.av || null } : {}) }));
+    if (D.st === 'found') { const c = top.find((x) => String(x.itemId) === D.itemId) || {}; return { st: 'found', how: 'auto', why: D.why, our, q, cands, nb: { itemId: D.itemId, title: c.title || null, a: c.a || null, pb: c.pb || null, d: c.d || null, av: c.av || null, avNote: c.avNote || null, avChk: c.avChk || null, ps: c.ps ?? null, pl: c.pl ?? null, judge: { v: 'same', why: String(c.why || '').split(' · ').slice(0, 5) } } }; }
+    return { st: D.st, why: D.why + (gates ? ` (19금 ${gates}개는 못 봄)` : ''), our, q, cands, tries: tries.length };
+  } catch (e) { return { st: 'err', why: String(e.message || e).slice(0, 160), block: !!e.block, cool: !!e.cool }; } }, it, old || null, cfg);
+async function nbFindRun(p, ref, v, deadline) { const t0 = Date.now(); const { cfg, used } = await nbCfgC(); const day = nbDay(); if (NB.day !== day) { NB.day = day; NB.block = null; }
+  const rnd = (a, b) => a + Math.random() * (b - a); const later = (ms, msg) => ref.set({ status: 'queued', claim: null, notBefore: new Date(Date.now() + ms).toISOString(), waitMsg: msg, uploadedAt: FV.serverTimestamp() }, { merge: true });
+  if (!cfg.on) { await later(3600e3, '꺼 둠(⚙ 설정 🆕 미등록 상품 새책 찾기)'); return; }
+  const kst = new Date(Date.now() + 9 * 3600e3); const at9 = (dd, hh) => Math.max(60e3, Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate() + dd, hh - 9, Math.round(rnd(10, 50))) - Date.now());
+  const nextDay = () => at9(1, 9); /* 다음 날 아침 9시 10~50분(한국 시각) */ const hh = kst.getUTCHours();
+  const man = !!v.manual; /* 사람이 누른 것(상품 상세 '지금 다시 찾기'·'이 새책 아님'·'고르기') — 밤 쉼·하루 몫과 상관없이(그래도 세고, 화면 사이 간격은 같음) */
+  if (!man && (hh >= cfg.nightFrom || hh < cfg.nightTo)) { await later(at9(hh >= cfg.nightFrom ? 1 : 0, cfg.nightTo), `밤에는 쉼(${cfg.nightFrom}시~${cfg.nightTo}시 — 사람처럼)`); return; }
+  if (NB.block) { await later(nextDay(), NB.block); return; }
+  if (!man && used >= cfg.dayCap) { await later(nextDay(), `오늘 몫 ${cfg.dayCap}개를 다 씀 — 내일 이어서`); return; }
+  const items = (v.items || []).filter((x) => x && x.k); const res = { ...(v.res || {}) }; const todo = items.filter((x) => !res[x.k]);
+  const sliceEnd = Math.min((deadline || Infinity) - 25e3, t0 + cfg.sliceSec * 1000); let did = 0, stop = null; const now = () => nowIso();
+  for (const it of todo) { if (Date.now() > sliceEnd || (!man && used + did >= cfg.dayCap)) break; const nref = C('prd_newbook').doc(String(it.k)); let old = null; try { old = (await nref.get()).data() || null; } catch (e) {}
+    if (did) await sleep(Math.round(rnd(cfg.gapMin, cfg.gapMax))); /* 상품 사이도 사람처럼 쉼 */
+    const r = await nbOneC(p, it, old, cfg); did++;
+    if (r.block) { NB.block = `알라딘이 클라우드 읽기를 막음 — 오늘은 다시 안 함 (${r.why})`; stop = NB.block; break; } if (r.cool) { stop = '알라딘 읽기 속도 조절 중 — 조금 뒤 이어서'; did--; break; }
+    const at = now(); res[it.k] = { st: r.st, at, ...(r.nb ? { itemId: r.nb.itemId } : {}) };
+    if (r.st === 'err') { await nref.set({ k: it.k, lid: it.lid || null, t: it.t || null, errAt: at, err: r.why || null, errN: FV.increment ? FV.increment(1) : 1, ...W() }, { merge: true }).catch(() => {}); continue; } /* 읽기 실패는 결과(st)를 덮지 않음 — 다음 차례에 다시 */
+    const sig = r.st + '|' + (r.nb ? r.nb.itemId + '|' + (r.nb.av || '') : ''); const ch = !old || old.sig !== sig;
+    const doc = { k: it.k, lid: it.lid || null, uc: it.uc || null, t: String(it.t || '').slice(0, 200), st: r.st, why: String(r.why || '').slice(0, 300), q: r.q || null, at, our: r.our || null, cands: (r.cands || []).slice(0, 8), sig, err: null, ...(r.gate ? { gate: true } : {}), by: 'cloud', ...W() };
+    if (r.st === 'found') { doc.nb = { ...r.nb, how: r.how || 'auto', at }; if (r.how === 'pick') doc.pickBy = it.by || null; } else if (old && old.nb && old.st === 'found') doc.nbOld = { ...old.nb, until: at }; /* 찾아 뒀던 새책이 사라지면 지우지 않고 nbOld로 */
+    if (r.st !== 'found') doc.nb = null;
+    if (ch) doc.hist = FV.arrayUnion({ at, st: r.st, ...(r.nb ? { itemId: r.nb.itemId, av: r.nb.av || null } : {}), how: r.how || (it.pick ? 'pick' : it.full ? 'full' : 'auto'), by: 'cloud' });
+    await nref.set(doc, { merge: true }); }
+  if (did && FV.increment) await C('app_settings').doc('nb_find').set({ cnt: { [day]: FV.increment(did) }, last: { at: now(), did, by: 'cloud' }, pend: Object.fromEntries(Object.keys(res).filter((k) => !(v.res || {})[k]).map((k) => [k, FV.delete()])) }, { merge: true }).catch(() => {});
+  const left = items.filter((x) => !res[x.k]).length; const prog = { done: items.length - left, total: items.length, at: now() };
+  if (!left) { await ref.set({ status: 'done', res, prog, doneAt: now(), by: 'cloud', notBefore: null, waitMsg: null, uploadedAt: FV.serverTimestamp() }, { merge: true }); log('🆕 새책 찾기: 끝', items.length + '개'); return; }
+  const wait = NB.block ? nextDay() : !man && used + did >= cfg.dayCap ? nextDay() : Math.round(rnd(cfg.restMin, cfg.restMax) * 60e3);
+  await ref.set({ status: 'queued', claim: null, res, prog, notBefore: new Date(Date.now() + wait).toISOString(), waitMsg: stop || (used + did >= cfg.dayCap ? `오늘 몫 ${cfg.dayCap}개를 다 씀 — 내일 이어서` : '사람처럼 쉬는 중 — 몇 분 뒤 이어서'), lastBy: 'cloud', lastAt: now(), uploadedAt: FV.serverTimestamp() }, { merge: true });
+  log('🆕 새책 찾기:', `이번 조각 ${did}개 · ${prog.done}/${prog.total}`); }
+/* NBFIND-END */
 /* ── ③ 웹앱이 맡긴 일 (read · startDelivery · market = 그 주문 책의 시장 다시 읽기) ── */
 /* (0.12.9) 맡긴 일 두 갈래 — 급한 일(발송준비시작·판매중지·현금 판매중지·다시 읽기)은 회차 맨 앞, 느린 일(우리 매물 유의 사항 다시 읽기·시장 지표·알라딘 구매)은 시장 읽기 뒤 남은 시간에만
  *  예전엔 휴대폰이 맡긴 '중 상품 유의 사항 다시 읽기'가 쌓이면 회차 맨 앞에서 2분까지 써서 주문확인요청 다시 읽기·시장 읽기가 밀렸음 */
-const CMD_SLOW = new Set(['usedInfo', 'aladinBuy', 'vatRead']); /* (0.35.79) 'market'은 받기만(가벼움) — 빠른 일로: 느린 일은 시장 읽기 뒤에 받아 다시 읽기가 그 회차에서 버려졌음 */ const cmdUrgent = (t) => !CMD_SLOW.has(t), cmdSlow = (t) => CMD_SLOW.has(t);
+const CMD_SLOW = new Set(['usedInfo', 'aladinBuy', 'vatRead', 'nbFind']); /* (11/04) nbFind = 🆕 미등록 상품 새책 찾기(느린 일 — 시장 읽기 뒤) */ /* (0.35.79) 'market'은 받기만(가벼움) — 빠른 일로: 느린 일은 시장 읽기 뒤에 받아 다시 읽기가 그 회차에서 버려졌음 */ const cmdUrgent = (t) => !CMD_SLOW.has(t), cmdSlow = (t) => CMD_SLOW.has(t);
 /* (0.35.22) 정범님 10/26 12:39 '수정이 성공하고 공개 반영까지 됐는데 웹앱은 실패로 기록': 유의 사항에 사진을 더한 수정은 사진 수 셈 잘못(새 사진 자리표를 빼고 셈)으로 늘 '값이 그대로(실패)'였음 → 최근 30일 그런 기록을 지금 수정 화면으로 다시 견줘 맞으면 '샵매니저 확인'으로 바로잡고 공개 확인을 다시 돌림(기록은 덧붙임 · 지우지 않음) · 한 번만(app_settings/peRecheck1026) */
 let peReDone = false;
 async function peRecheck(p) { if (peReDone) return; peReDone = true; try { const fl = C('app_settings').doc('peRecheck1026'); const f0 = await fl.get(); if (f0.exists && f0.data().done) return;
@@ -687,7 +763,7 @@ async function runCmds(p, deadline, only) { try { await peRecheck(p); } catch (e
   /* (0.35.36) 🚨 정범님 10/26 23:16 'HOME이 놀고 있는데 클라우드 없다고 일을 안 해?': 클라우드가 알라딘에 로그인되지 않은 채(로그인 쉼) HOME이 누른 발송준비시작(22:59 · 3건)을 먼저 맡아 로그인 화면에 보내고 '확인 못 함'으로 끝냈음
    *  → ① 로그인이 필요한 일(노선 scm·shop·buy 등 — 공개 일 빼고)은 클라우드가 지금 로그인된 때만 맡음(아니면 대기로 두어 로그인된 PC가 맡음) ② 사람이 PC에서 누른 일(dev = PC 이름)은 그 PC가 먼저 — 클라우드는 90초 뒤에만 */
   let scmOk = null; const needLogin = (t) => { const k = M && M.kindOf ? M.kindOf(R, t) : null; return t === 'aladinBuy' || !!(k && k.lane === 'scm'); };
-  for (const d of qs.docs) { if (Date.now() > deadline) { log('맡긴 일: 이번 회차 시간을 다 씀 — 남은 일은 다음 회차에'); break; } p = curPage(p); const x0 = d.data(); if (only && !only(x0.type)) continue;
+  for (const d of qs.docs) { if (Date.now() > deadline) { log('맡긴 일: 이번 회차 시간을 다 씀 — 남은 일은 다음 회차에'); break; } p = curPage(p); const x0 = d.data(); if (only && !only(x0.type)) continue; if (x0.notBefore && Date.parse(x0.notBefore) > Date.now()) continue; /* (11/04) 사람처럼 쉬는 중인 조각 일(🆕 새책 찾기) — 정한 때까지 안 받음 */
     if (x0.dev && !/phone|휴대폰|모바일|cloud/i.test(String(x0.dev)) && Date.now() - Date.parse(x0.createdAt || 0) < 90e3) continue;
     if (needLogin(x0.type)) { if (scmOk === null) { try { scmOk = p ? await loggedIn(p) : false; } catch (e) { scmOk = false; } } if (!scmOk) continue;
       if (!x0.cloudTried && Date.now() - (Date.parse(x0.releasedAt || x0.createdAt || 0) || 0) < 20e3 && (await pcReader(40e3).catch(() => null))) continue; } /* (10/27) 차례가 되어 다시 '대기'가 된 일(매일 조각·이어 하기 — releasedAt)도 그때부터 20초는 PC 몫 */ /* (정범님 10/27 '로그인이 필요한 일은 로그인된 PC 먼저 · 클라우드는 받침') — 로그인된 PC(주문확인요청을 40초 안에 읽은 PC)가 있으면 20초 동안 그 PC 몫, 그 뒤에도 대기면 클라우드가 받음 */ if (x0.pcFirst) { if (Date.now() - Date.parse(x0.createdAt || 0) > 15 * 60e3) await db.runTransaction(async (tx) => { const sn = await tx.get(d.ref); const x = sn.data(); if (!x || x.status !== 'queued') return; tx.update(d.ref, { status: 'cancel', cancelWhy: '15분 넘게 아무도 받지 않음(웹앱이 떠남) — 클라우드가 닫음', cancelAt: nowIso(), uploadedAt: FV.serverTimestamp() }); }).catch(() => {}); continue; } /* (0.16.11 자동 점검) 웹앱이 닫혀 남은 'PC 먼저' 일은 15분 뒤 닫음 — 나중에 켜진 PC가 잊힌 조회를 하지 않게 · (0.16.6) 웹앱이 'PC 먼저'로 맡긴 일 — PC가 20초 안에 안 받으면 웹앱이 클라우드를 바로 부름(여기서는 받지 않음) */ if (!M.canHandle(R, x0.type, 'cloud') || String(x0.cloudSkip || '').includes(` ${VER}가`)) continue; /* (0.6.0) 노선표에서 클라우드가 맡는 종류만 (예전: 이 자리의 목록) */ if (x0.type === 'usedInfo' && x0.cloudTried) continue; /* 클라우드가 이미 못 읽은 것 = PC 몫 */ let v = null;
@@ -738,6 +814,7 @@ async function runCmds(p, deadline, only) { try { await peRecheck(p); } catch (e
     else if (v.type === 'tab') { const r = await shipTabRead(p, true); await d.ref.set({ status: 'done', result: r || { skip: 1 }, doneAt: nowIso(), by: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); } /* (0.19.3) 웹앱 출고별 매출 '⟳ 다시 읽기' — 배송&구매확정전만 */
     else if (v.type === 'prdEdit') { await prdEditRun(p, d.ref, v); }
     else if (v.type === 'pxExp') { await pxExpRun(p, d.ref, v, deadline); }
+    else if (v.type === 'nbFind') { await nbFindRun(p, d.ref, v, deadline); } /* (11/04) 🆕 미등록 상품 새책 찾기 — 공개 화면만(로그인 없음) */
     else if (v.type === 'cart') { await cartRun(p, d.ref, v); }
     else if (v.type === 'shopCfg') { await shopCfgRun(p, d.ref, v); }
     else if (v.type === 'shopRead') { await shopReadRun(p, d.ref); } /* (10/27) 🏪 가게 설정 읽기만 — 로그인된 PC 먼저 · 클라우드 받침(로그인이 풀려 있으면 새로 로그인하지 않고 대기로) */
@@ -2187,7 +2264,7 @@ setTimeout(async () => { try { const ref = C('prd_system').doc('autoSched'); con
 /* (0.21.2) 🚨 쓰기 감시(정범님 10/20 — 판매완료 다시 적기가 4일 동안 잡히지 않았던 것): 30분마다 칸별로 최근 1시간에 바뀐 문서 수(count — 문서를 읽지 않음)를 재어
  *  app_settings/write_watch { at, last, hist(48칸), alerts } · 한도를 넘으면 alerts → 웹앱 홈 '오늘 확인할 것' 맨 위 빨간 줄 · 자동 점검도 이 기록을 먼저 봄 */
 const WWX = { ids: null, at: 0 }; /* (10/29) 목록 밖 칸 이름(6시간마다 다시 받음) */
-const WW_LIM = { prd_listings: 2500, prd_book_metrics: 4000, crm_orders: 800, crm_customers: 800, bench_items: 30000, prd_seen: 500, prd_listing_changes: 1500, sellers: 6000, ext_used: 4000, prd_market_nobook: 2000, ext_basic: 4000, ext_pool: 60000 }; /* (0.35.61) ext_basic = 웹앱이 통째로 받는 칸(우리 책만 적혀야 함) · ext_pool = 국중 날짜 차례(시간당 3만 안팎이 정상 — 그 두 배를 넘으면 경보) */
+const WW_LIM = { prd_listings: 2500, prd_book_metrics: 4000, crm_orders: 800, crm_customers: 800, bench_items: 30000, prd_seen: 500, prd_listing_changes: 1500, sellers: 6000, ext_used: 4000, prd_market_nobook: 2000, prd_newbook: 300, ext_basic: 4000, ext_pool: 60000 }; /* (0.35.61) ext_basic = 웹앱이 통째로 받는 칸(우리 책만 적혀야 함) · ext_pool = 국중 날짜 차례(시간당 3만 안팎이 정상 — 그 두 배를 넘으면 경보) */
 async function writeWatch() { try { const since = new Date(Date.now() - 3600e3); const last = {}; for (const c of Object.keys(WW_LIM)) { try { last[c] = (await C(c).where('uploadedAt', '>', since).count().get()).data().count; } catch (e) { last[c] = null; } }
   try { last['prd_listings#mark'] = (await C('prd_listings').where('markAt', '>', since).count().get()).data().count; } catch (e) { last['prd_listings#mark'] = null; }
   /* (10/29 점검 제안 72 · 정범님 '모든 방 조화' 묶음) 위 12칸 밖의 칸도 30분마다 1시간 쓰기 수를 셈 — ext_basic이 목록 밖이라 하루 74.7만 번 쓰기를 12일 못 봤음. listCollections로 새 칸도 저절로 · 경보 기준은 지어내지 않음(목록 밖 칸은 숫자만 보여 줌 · 점검이 보고 한도를 정함) · count는 1천 건마다 읽기 1번 */
