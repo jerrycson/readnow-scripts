@@ -75,9 +75,9 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
     o.band = lostBand(l); l.status = '일시판매중지'; history.back(); await W(300); openStopList({ st: '일시판매중지', g: 'all' }); await W(500); o.pauseList = [...sh.querySelectorAll('.lo-band')].some((b) => b.dataset.locase === x.cid);
     // 상품 카드·상품 상세에도
     o.card = /lo-band/.test(prodCard2(l)); history.back(); await W(300); await openProduct(l.id); await W(600); o.pd = !!sh.querySelector('.lo-band.big') && !!sh.querySelector('.lo-pdon');
-    // 사건마다 끄기(판매중지로) → 다시 일시판매중지
+    // 사건마다 끄기(💰 판매중으로 — 정범님 11/04) → 다시 일시판매중지
     openLostCase(x.cid); await W(800); S.peFld && S.peFld.delete(l.id + ':state'); const n1 = cmds().length; const b1 = () => sh.querySelector('[data-lopause]'); b1().click(); await W(100); b1().click(); await W(700); o.off = [cmds().slice(n1).map((c) => c.ch.state).join(','), (lc(x.cid).stop || {}).how].join('|');
-    S.peFld && S.peFld.delete(l.id + ':state'); const n2 = cmds().length; b1().click(); await W(100); b1().click(); await W(700); o.on = [cmds().slice(n2).map((c) => c.ch.state).join(','), (lc(x.cid).stop || {}).how].join('|');
+    l.status = '판매중'; /* 맡긴 '판매중'이 알라딘에 반영됐다고 침 */ S.peFld && S.peFld.delete(l.id + ':state'); const n2 = cmds().length; b1().click(); await W(100); b1().click(); await W(700); o.on = [cmds().slice(n2).map((c) => c.ch.state).join(','), (lc(x.cid).stop || {}).how].join('|');
     // 종결 → 판매중지(분실) · 되돌리기 → 다시 일시판매중지
     window.prompt = () => '없음'; S.peFld && S.peFld.delete(l.id + ':state'); const n3 = cmds().length; const dbl = async (s) => { sh.querySelector(s).click(); await W(100); sh.querySelector(s).click(); await W(900); }; await dbl('[data-loclose]'); o.close = [cmds().slice(n3).map((c) => c.ch.state).join(','), lc(x.cid).st, !!(lc(x.cid).closed || {}).st8].join('|');
     S.peFld && S.peFld.delete(l.id + ':state'); const n4 = cmds().length; await dbl('[data-loundo="closed"]'); o.reopen = [cmds().slice(n4).map((c) => c.ch.state).join(','), lc(x.cid).st].join('|');
@@ -85,8 +85,8 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
     S.peFld && S.peFld.delete(l.id + ':state'); await dbl('[data-lofound]'); const n5 = cmds().length; await dbl('[data-lonext="sell"]'); o.sell = cmds().slice(n5).map((c) => c.ch.state).join(','); o.noBand = !lostBand(l);
     // 이미 일시판매중지였던 매물 → 맡기지 않고 표시만 · 발견해도 일시판매중지 그대로
     const l2 = [...S.plist.values()].slice(-2)[0]; l2.status = '일시판매중지'; l2.active = true; l2.qty = 1; const n6 = cmds().length; const y = await lostAdd({ key: l2.usedCode, kind: 'al', title: l2.title, skus: [], from: 'prod' }); await W(300); o.pre = [cmds().length - n6, (lc(y.cid).stop || {}).how, (lc(y.cid).stop || {}).pre].join('|');
-    // 옵션 끄면 새 사건은 다시 판매중지
-    history.back(); await W(400); history.back(); await W(400); openLost(); await W(500); sh.querySelector('[data-lopmode="stop"]').click(); await W(400); const l3 = [...S.plist.values()].slice(-3)[0]; l3.status = '판매중'; l3.active = true; l3.qty = 1; const n7 = cmds().length; await lostAdd({ key: l3.usedCode, kind: 'al', title: l3.title, skus: [], from: 'prod' }); await W(300); o.defStop = cmds().slice(n7).map((c) => c.ch.state).join(','); return o; }));
+    // 옵션 끄면(기본) 새 사건은 판매중 그대로 — 알라딘에 아무것도 맡기지 않음 (정범님 11/04)
+    history.back(); await W(400); history.back(); await W(400); openLost(); await W(500); sh.querySelector('[data-lopmode="sell"]').click(); await W(400); const l3 = [...S.plist.values()].slice(-3)[0]; l3.status = '판매중'; l3.active = true; l3.qty = 1; const n7 = cmds().length; const z = await lostAdd({ key: l3.usedCode, kind: 'al', title: l3.title, skus: [], from: 'prod' }); await W(300); o.defStop = [cmds().length - n7, (lc(z.cid).stop || {}).how, (FS.prd_system.lost.cfg || {}).pause].join('|'); return o; }));
   } finally { if (!r.defStop) console.log('부분 결과', JSON.stringify(r).slice(0, 3000)); }
   ran++; console.log(JSON.stringify(r).slice(0, 6000));
   ok(r.card && r.feat && r.pt && r.go, '링크: 상품 탭 첫 화면 🗺 서가 지도 카드 · 🔍 기능 찾기(소재불명 바로 위) · 📱 휴대폰 고르기 pt_map · 🚪 바로 가기');
@@ -110,11 +110,11 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
   ok(r.log.mp && r.log.x === 4 && r.log.y === 2 && r.log.row === 2 && r.log.pos === 3 && r.log.shelf === 'BLKCMN' && r.log.cn === '일반 책장' && r.seen && r.spineCol && r.logTxt, `기록 줄에 지도 자리 ${JSON.stringify(r.log)} · 지도 색 · 그 책등 색`);
   ok(r.cfgPause && r.pauseCmd === '일시판매중지' && r.how === 'pause' && /수색중/.test(r.band) && /일시판매중지/.test(r.band), `⏸ 옵션 → 일시판매중지 맡김(${r.pauseCmd}) · 띠 '${(r.band || '').replace(/<[^>]+>/g, '').trim().slice(0, 40)}'`);
   ok(r.pauseList && r.card && r.pd, '🔎 수색중 띠: ⏸ 판매일시중지 목록 · 상품 카드 · 상품 상세(크게)');
-  ok(r.off === '판매중지|stop' && r.on === '일시판매중지|pause', `사건마다 옵션 끄기 → ${r.off} · 다시 → ${r.on}`);
+  ok(r.off === '판매중|keep' && r.on === '일시판매중지|pause', `사건마다 옵션 끄기(💰 판매중으로) → ${r.off} · 다시 → ${r.on}`);
   ok(r.close === '판매중지|closed|true' && r.reopen === '일시판매중지|open', `종결 → ${r.close} · 되돌리기 → ${r.reopen}`);
   ok(r.sell === '판매중' && r.noBand, `발견 → 판매중 복구 ${r.sell} · 띠 사라짐`);
   ok(r.pre === '0|pause|1', `이미 일시판매중지 → 맡기지 않고 표시만 ${r.pre}`);
-  ok(r.defStop === '판매중지', `옵션 끄면 새 사건은 다시 판매중지(${r.defStop})`);
+  ok(r.defStop === '0|keep|false', `옵션 끄면(기본) 새 사건은 판매중 그대로 — 맡긴 일|처리|설정 ${r.defStop}`);
 }).then(() => H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(500); await p.evaluate(IN);
   // 🏷 (11/04) 카드에 상품코드(U…) 하나·여럿 부여 → 소재불명 다음에 볼 곳 맨 앞 · 상품 상세 '🗺 서가 지도 자리' · 사건 화면 설명서
   const r = await p.evaluate(async () => { const W = window.__W; const sh = document.getElementById('sheet'); window.ask = async () => true; const FS = window.__FS; const o = {};
@@ -168,12 +168,12 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
   // 수집기: 샵매니저 상품 조회/수정 목록·상품 수정 화면에 🔎 수색중 띠(머리 그대로 · 본체만)
   const { chromium } = require('playwright'); const src = fs.readFileSync(fs.existsSync(path.join(__dirname, '../readnow-collector.src.js')) ? path.join(__dirname, '../readnow-collector.src.js') : path.join(__dirname, '../readnow-collector.user.js'), 'utf8');
   const a = src.indexOf('(function rnLostScm()'); const b = src.indexOf('})();', a) + 5; const code = src.slice(a, b); const out = {}; const br = await chromium.launch();
-  for (const [url, html] of [['https://www.aladin.co.kr/scm/wrecord_edit.aspx?x=1', '<table><tr><td><input class="batchChkBox" value="555"></td><td>U900001 책</td><td>판매중</td></tr><tr><td><input class="batchChkBox" value="777"></td><td>9788900000000</td><td>판매중</td></tr><tr><td><input class="batchChkBox" value="888"></td><td>U900009</td><td>판매중</td></tr></table>'], ['https://www.aladin.co.kr/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=777', '<form>수정 화면</form>']]) {
+  for (const [url, html] of [['https://www.aladin.co.kr/scm/wrecord_edit.aspx?x=1', '<table><tr><td><input class="batchChkBox" value="555"></td><td>U900001 책</td><td>판매중</td></tr><tr><td><input class="batchChkBox" value="777"></td><td>9788900000000</td><td>판매중</td></tr><tr><td><input class="batchChkBox" value="888"></td><td>U900009</td><td>판매중</td></tr><tr><td><input class="batchChkBox" value="999"></td><td>U900003</td><td>판매중</td></tr></table>'], ['https://www.aladin.co.kr/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=777', '<form>수정 화면</form>']]) {
     const pg = await br.newPage(); await pg.route(/aladin\.co\.kr/, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: `<html><body>${html}</body></html>` }));
-    await pg.addInitScript(() => { const st = {}; window.GM_getValue = (k, d) => (k in st ? st[k] : d); window.GM_setValue = (k, v) => { st[k] = v; }; const cases = { a: { st: 'open', kind: 'al', key: 'U900001', title: '책 하나', at: new Date(Date.now() - 3 * 864e5).toISOString(), stop: { how: 'pause' }, nS: 2 }, b: { st: 'open', kind: 'al', key: 'U900002', alid: '777', title: '책 둘', at: new Date().toISOString(), stop: { how: 'stop' } }, c: { st: 'found', kind: 'al', key: 'U900009' } }; window.firebase = { apps: [1], auth: () => ({ currentUser: { email: 'x@y' }, onAuthStateChanged: (f) => { f({}); return () => {}; } }), firestore: () => ({ collection: () => ({ doc: () => ({ get: async () => ({ data: () => ({ cases }) }) }) }) }) }; });
+    await pg.addInitScript(() => { const st = {}; window.GM_getValue = (k, d) => (k in st ? st[k] : d); window.GM_setValue = (k, v) => { st[k] = v; }; const cases = { a: { st: 'open', kind: 'al', key: 'U900001', title: '책 하나', at: new Date(Date.now() - 3 * 864e5).toISOString(), stop: { how: 'pause' }, nS: 2 }, b: { st: 'open', kind: 'al', key: 'U900002', alid: '777', title: '책 둘', at: new Date().toISOString(), stop: { how: 'stop' } }, c: { st: 'found', kind: 'al', key: 'U900009' }, d: { st: 'open', kind: 'al', key: 'U900003', title: '책 셋', at: new Date().toISOString(), stop: { how: 'keep' } } }; window.firebase = { apps: [1], auth: () => ({ currentUser: { email: 'x@y' }, onAuthStateChanged: (f) => { f({}); return () => {}; } }), firestore: () => ({ collection: () => ({ doc: () => ({ get: async () => ({ data: () => ({ cases }) }) }) }) }) }; });
     await pg.goto(url); await pg.evaluate(code); await pg.waitForTimeout(2600); out[/UpdateItemId/.test(url) ? 'ed' : 'list'] = await pg.evaluate(() => ({ rows: [...document.querySelectorAll('tr')].map((tr) => (tr.querySelector('.rn-lostb') || {}).textContent || ''), ed: (document.getElementById('rn-lostb-ed') || {}).textContent || '' })); await pg.close(); }
   await br.close(); ran++; console.log(JSON.stringify(out));
-  ok(/수색중/.test(out.list.rows[0]) && /일시판매중지/.test(out.list.rows[0]) && /3일째/.test(out.list.rows[0]) && /수색중/.test(out.list.rows[1]) && !out.list.rows[2], '수집기: 샵매니저 상품 조회/수정 목록 — U코드·상품번호로 🔎 수색중 띠(발견한 사건은 없음)');
+  ok(/수색중/.test(out.list.rows[0]) && /일시판매중지/.test(out.list.rows[0]) && /3일째/.test(out.list.rows[0]) && /수색중/.test(out.list.rows[1]) && !out.list.rows[2] && /수색중/.test(out.list.rows[3]) && /판매중\(손님이 살 수 있음/.test(out.list.rows[3]), '수집기: 샵매니저 상품 조회/수정 목록 — U코드·상품번호로 🔎 수색중 띠(발견한 사건은 없음 · 판매중 그대로인 사건도 띠 — 판매중 표시)');
   ok(/수색중/.test(out.ed.ed) && /책 둘/.test(out.ed.ed), '수집기: 상품 수정 화면 맨 위 🔎 수색중 띠');
   const head = src.slice(0, src.indexOf('==/UserScript==')); ok(!/rnLost/.test(head), '수집기 머리(@match·@grant·@connect·@require)에 손대지 않음');
 }).then(() => { if (ran < 4) { bad++; console.log('  ❌ 시험 도중 멈춤(위 ERRORS의 TEST 줄)'); } console.log(bad ? `❌ tMAP 실패 ${bad}` : '✅ tMAP 모두 통과'); });

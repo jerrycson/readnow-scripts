@@ -1,4 +1,4 @@
-// tLOST — 정범님 11/03: 🔎 소재불명 페이지 — lostAdd 중복 없음 · 판매중지 맡김 한 번(여러 권 = 수량 −1 · 이미 판매중지 = 건너뜀 · 등록 상품 = 기록만) · 상품 상세 단추(두 번)
+// tLOST — 정범님 11/03: 🔎 소재불명 페이지 — lostAdd 중복 없음 · (11/04 정범님) 기본은 판매중 그대로(알라딘을 안 바꿈 · 여러 권도 수량 그대로) · 옵션을 켜면 1권 일시판매중지·여러 권 수량 −1 · 이미 판매중지 = 건너뜀 · 등록 상품 = 기록만 · 옛 기본 판매중지 사건 목록·되돌리기 · 상품 상세 단추(두 번)
 //   · 수색 기록지 저장/문구 단추 · 수색 지도 색 · 고치면 이전 값 남김 · 단서 더하기/제외 · 가설 · 다음에 볼 곳 · 이웃 책 · 발견/종결/되돌리기 · 오래된 사건 · 휴대폰 · 링크 위치(📝 등록 노트 옆 · 기능 찾기 · 휴대폰 고르기)
 // 쓰는 법: RN_PORT=<포트> node tLOST.js
 let bad = 0, ran = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } else console.log('  ✓', m); };
@@ -21,11 +21,17 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
     // 여러 권 매물 → 수량 −1 · 이미 판매중지 → 건너뜀 · 등록 상품 → 기록만
     const pe1 = cmds().length; const rq = await lostAdd({ key: Lq.usedCode + '~q0002', kind: 'al', title: Lq.title, skus: ['q0002'], from: 'bbuy' }); await W(300); const rs = await lostAdd({ key: Ls.usedCode, kind: 'al', title: Ls.title, skus: [], from: 'bbuy' }); const rg = await lostAdd({ key: 'REG_x77', kind: 'reg', title: '등록 상품', skus: ['g0001'], from: 'bbuy' }); await W(300);
     out.kinds = { q: rq.stop && rq.stop.how, qch: cmds().slice(pe1).map((c) => JSON.stringify({ ...c.ch, qtyAdd: c.qtyAdd })), s: rs.stop && rs.stop.how, g: rg.stop && rg.stop.how };
+    // 옵션을 켜면 여러 권 매물 → 수량 −1 (그 뒤 다시 끔)
+    const Lq2 = A[10]; Lq2.qty = 3; Lq2.status = '판매중'; Lq2.active = true; Lq2.sku = 'GRNSTD'; S.lost.cfg = { ...(S.lost.cfg || {}), pause: true }; const peO = cmds().length; const rq2 = await lostAdd({ key: Lq2.usedCode + '~q0003', kind: 'al', title: Lq2.title, skus: ['q0003'], from: 'bbuy' }); await W(300); out.kindsOn = { q: rq2.stop && rq2.stop.how, qch: cmds().slice(peO).map((c) => JSON.stringify({ ...c.ch, qtyAdd: c.qtyAdd })) }; S.lost.cfg = { ...S.lost.cfg, pause: false };
+    // 옛 기본(11/03 판 — 판매중지)으로 맡겨진 수색중 사건 → 목록 위 ⚠ 칸에만(저절로 안 되돌림) · 두 번 눌러 판매중으로
+    const Lo = A[11]; Lo.status = '판매중지'; Lo.active = true; Lo.qty = 1; const ro = await lostAdd({ key: Lo.usedCode, kind: 'al', title: Lo.title, skus: [], from: 'bbuy' }); await W(200); await lostSetCase(ro.cid, { stop: { how: 'stop', cmd: 'old1', at: new Date(Date.now() - 864e5).toISOString(), before: { state: '판매중' }, lid: Lo.id, undone: null } }, null); await W(200);
+    const peB = cmds().length; S.detail = null; sh.classList.remove('on'); openLost(); await W(600); const ob = sh.querySelector('.lo-old'); out.old = { box: !!ob, row: !!(ob && ob.querySelector(`[data-locase="${ro.cid}"]`)), auto: cmds().length - peB }; const obb = sh.querySelector('[data-lopbulk="old"]'); if (obb) { obb.click(); await W(100); sh.querySelector('[data-lopbulk="old"]').click(); await W(900); } out.old.ch = cmds().slice(peB).map((c) => JSON.stringify(c.ch)); out.old.how = (LO().cases[ro.cid].stop || {}).how; out.old.sw = ((LO().cases[ro.cid].stop || {}).sw || []).map((x) => x.from + '>' + x.to).join(','); lostRenderForce(); await W(300); out.old.gone = !sh.querySelector('.lo-old'); out.old.sumTxt = (sh.querySelector('.lo-sum') || {}).textContent;
+    S.detail = null; sh.classList.remove('on');
     const pe2 = cmds().length; await lostAdd({ ...e0, from: 'again' }); await W(200); await lostStop(cid); await W(200); out.once = cmds().length - pe2;
     // ── ③ 상품 상세 단추(두 번 누르기)
     S.detail = null; await openProduct(A[3].id); await W(700); let pb = sh.querySelector(`[data-lostpd="${A[3].id}"]`); out.pdBtn = !!pb; if (pb) { pb.click(); await W(100); out.pdArm = pb.textContent; pb.click(); await W(900); } out.pdCase = lostCases().some((c) => c.key === A[3].usedCode); out.pdAfter = (sh.querySelector('.lo-pd') || {}).textContent;
     // ── ④ 목록·사건 화면
-    S.detail = null; sh.classList.remove('on'); openLost(); await W(700); out.listN = sh.querySelectorAll('.lo-row').length; out.listTxt = (sh.querySelector('.lo-sum') || {}).textContent;
+    S.detail = null; sh.classList.remove('on'); openLost(); await W(700); out.listN = sh.querySelectorAll('.lo-row').length; out.band = (() => { const l = A[0]; const b = lostBand(l); return { keep: /판매중\(살 수 있음\)/.test(b), cls: /lo-band[^"]*sell/.test(b) }; })(); out.listTxt = (sh.querySelector('.lo-sum') || {}).textContent;
     sh.querySelector(`.lo-row[data-locase="${cid}"]`).click(); await W(900); out.caseOpen = !!(S.detail && S.detail.lcid === cid) && !!sh.querySelector('#lo_form');
     out.dossier = (sh.querySelector('.lo-dos') || {}).innerText; out.next = [...sh.querySelectorAll('.lo-nx')].map((x) => x.innerText.replace(/\s+/g, ' ')); out.nbRows = sh.querySelectorAll('.lo-nbr').length; out.nbMe = !!sh.querySelector('.lo-nbr.me');
     // 기록지: 서가·책장·칸·사이·방법·결과·문구 단추
@@ -57,8 +63,8 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
     const dbl = async (sel, ms) => { sh.querySelector(sel).click(); await W(100); sh.querySelector(sel).click(); await W(ms || 900); }; /* 사이에 화면이 다시 그려져도 사람처럼 지금 보이는 단추를 누름 */ await dbl('[data-lofound]', 600); out.found = LO().cases[cid].st;
     await dbl('[data-lonext="sell"]', 800); out.sell = cmds().slice(pe3).map((c) => JSON.stringify(c.ch)); out.undone = !!(LO().cases[cid].stop || {}).undone; out.next1 = (LO().cases[cid].found || {}).next;
     S.peFld && S.peFld.delete(L0.id + ':state'); S.peCmds && S.peCmds.delete(L0.id); const pe4 = cmds().length; await dbl('[data-loundo="found"]'); out.undoFound = { st: LO().cases[cid].st, ch: cmds().slice(pe4).map((c) => JSON.stringify(c.ch)) };
-    await dbl('[data-loclose]'); out.closed = { st: LO().cases[cid].st, loss: (LO().cases[cid].closed || {}).loss, why: (LO().cases[cid].closed || {}).why, reason: (S.stopR.get(L0.id) || {}).reason };
-    await dbl('[data-loundo="closed"]'); out.undoClosed = { st: LO().cases[cid].st, reason: (S.stopR.get(L0.id) || {}).reason };
+    S.peFld && S.peFld.delete(L0.id + ':state'); S.peCmds && S.peCmds.delete(L0.id); const pe5 = cmds().length; await dbl('[data-loclose]'); out.closed = { ch: cmds().slice(pe5).map((c) => JSON.stringify(c.ch)), st: LO().cases[cid].st, loss: (LO().cases[cid].closed || {}).loss, why: (LO().cases[cid].closed || {}).why, reason: (S.stopR.get(L0.id) || {}).reason };
+    S.peFld && S.peFld.delete(L0.id + ':state'); S.peCmds && S.peCmds.delete(L0.id); const pe6 = cmds().length; await dbl('[data-loundo="closed"]'); out.undoClosed = { ch: cmds().slice(pe6).map((c) => JSON.stringify(c.ch)), st: LO().cases[cid].st, reason: (S.stopR.get(L0.id) || {}).reason };
     out.acts = (PG(cid).acts || []).map((a) => a.act).join(','); out.hist = ((LO().cases[cid].hist) || []).map((h) => h.from + '>' + h.to).join(',');
     // ── ⑥ 오래된 사건 · 설정
     await lostSetCase(rs.cid, { lastAt: new Date(Date.now() - 20 * 864e5).toISOString(), at: new Date(Date.now() - 30 * 864e5).toISOString() }); await W(300); history.back(); await W(600); out.backList = !!(S.detail && S.detail.lost && !S.detail.lcid); lostRenderForce(); await W(300);
@@ -68,16 +74,19 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
     // 저장 자리 — prd_system 안(새 컬렉션 없음)
     out.cols = Object.keys(FS).filter((k) => /lost/i.test(k)); out.docs = Object.keys(FS.prd_system || {}).filter((k) => /^lost/.test(k));
     window.__loCid = cid; return out; });
-  ran++; console.log(JSON.stringify(r, null, 0).slice(0, 7000));
+  ran++; console.log(JSON.stringify(r, null, 0).slice(0, 7000)); console.log("old:", JSON.stringify(r.old));
   ok(r.btn && r.btnPrev === 'regnotebtn' && /sortbar/.test(r.btnBar) && r.bbuyAbove, `링크: 상품 탭 '🏷 알라딘 매입' 아래 줄 📝 등록 노트 바로 옆 (앞 단추 ${r.btnPrev})`);
   ok(r.feat && r.ptsec && r.rgen, '🔍 기능 찾기(🗑 매입 품목 휴지통 바로 위) · 📱 휴대폰 고르기 pt_lost · 📖 등록 백과 항목');
   ok(r.add.n === 1 && r.add.same && r.add.isNew.join() === 'true,false,false' && r.add.src === 3, `lostAdd 중복 없음: 같은 key·같은 SKU(RN 머리 붙어도) → 사건 1개 · 출처 ${r.add.src}`);
-  ok(r.add.stop === 'stop' && r.add.pe.length === 1 && /판매중지/.test(r.add.pe[0]) && r.add.reason === 'check', `판매중지 맡김 한 번 ${r.add.pe} · 이유 ${r.add.reason}(판매 끝으로 세지 않음)`);
-  ok(r.once === 0, `다시 넣거나 lostStop을 또 불러도 판매중지를 다시 맡기지 않음 (+${r.once})`);
+  ok(r.add.stop === 'keep' && r.add.pe.length === 0 && r.add.reason == null, `기본(옵션 꺼짐) = 판매중 그대로 — 알라딘에 맡긴 일 ${r.add.pe.length}개 · 판매중지 이유 ${r.add.reason}`);
+  ok(r.once === 0, `다시 넣거나 lostStop을 또 불러도 아무것도 맡기지 않음 (+${r.once})`);
+  ok(r.band.keep && r.band.cls, '🔎 수색중 띠 — 판매중이어도 웹앱 카드에 뚜렷하게(💰 판매중(살 수 있음) · 붉은 테두리)');
   ok(r.add.nb === 5, `이웃 책 사본(같은 날·같은 관리코드) ${r.add.nb}권을 사건에 남김`);
-  ok(r.kinds.q === 'qty' && r.kinds.qch.length === 1 && /"qty":1/.test(r.kinds.qch[0]) && /"qtyAdd":-1/.test(r.kinds.qch[0]) && r.kinds.s === 'already' && r.kinds.g === 'record', `여러 권 → 수량 −1(${r.kinds.qch}) · 이미 판매중지 → ${r.kinds.s} · 등록 상품 → ${r.kinds.g}`);
+  ok(r.kinds.q === 'keep' && r.kinds.qch.length === 0 && r.kinds.s === 'already' && r.kinds.g === 'record', `기본: 여러 권도 수량 그대로(${r.kinds.q}) · 이미 판매중지 → ${r.kinds.s} · 등록 상품 → ${r.kinds.g}`);
+  ok(r.kindsOn.q === 'qty' && r.kindsOn.qch.length === 1 && /"qty":2/.test(r.kindsOn.qch[0]) && /"qtyAdd":-1/.test(r.kindsOn.qch[0]), `옵션 켬: 여러 권 → 수량 −1(${r.kindsOn.qch})`);
+  ok(r.old.box && r.old.row && r.old.auto === 0 && r.old.ch.length === 1 && /"state":"판매중"/.test(r.old.ch[0]) && r.old.how === 'keep' && r.old.sw === 'stop>keep' && r.old.gone && /판매중 그대로/.test(r.old.sumTxt || ''), `옛 기본 판매중지 사건: ⚠ 칸에 보임 · 저절로 안 바꿈(${r.old.auto}) · 두 번 눌러 → ${r.old.ch} · ${r.old.sw}`);
   ok(r.pdBtn && /한 번 더/.test(r.pdArm || '') && r.pdCase && /수색중/.test(r.pdAfter || ''), `상품 상세 '🔎 소재불명으로'(두 번) → 사건 · 단추가 '${(r.pdAfter || '').trim()}'`);
-  ok(r.listN === 5 && r.caseOpen, `목록 ${r.listN}건 · 사건 화면 열림`);
+  ok(r.listN === 7 && r.caseOpen, `목록 ${r.listN}건 · 사건 화면 열림`);
   ok(/ISBN/.test(r.dossier) && /관리코드/.test(r.dossier) && /우리 SKU/.test(r.dossier) && /등록일/.test(r.dossier), '사건 카드: ISBN·관리코드·우리 SKU·등록일');
   ok(r.nbRows === 5 && r.nbMe && r.next.length === 3 && r.next.some((x) => /사이/.test(x)), `이웃 책 ${r.nbRows}줄(이 책 표시) · 다음에 볼 곳 3곳: ${r.next.join(' | ')}`);
   ok(r.log1 && r.log1.shelf === 'BLKCMN' && r.log1.bay === 2 && r.log1.row === 1 && r.log1.res === 'none' && r.log1.how === 'tw,spine' && r.log1.mins === 10 && r.log1.ph && r.log1.betA && r.log1.at, `기록지 저장: ${JSON.stringify(r.log1)}`);
@@ -88,10 +97,10 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
   ok(r.editBtn && r.edited && r.edited.res === 'sus' && /"res":"none"/.test(r.edited.prev), `고치기 → 이전 값 남김 ${r.edited && r.edited.prev}`);
   ok(r.clue.add && r.clueOff, '단서 더하기 · 제외(기록 남김)');
   ok(r.hyp === 'hot' && r.nextHot, "가설 '유력' → 다음에 볼 곳에 오름");
-  ok(r.found === 'found' && r.sell.length === 1 && /판매중"/.test(r.sell[0]) && r.undone && r.next1 === 'sell', `발견 → 판매중 복구 맡김 ${r.sell}`);
-  ok(r.undoFound.st === 'open' && r.undoFound.ch.length === 1 && /판매중지/.test(r.undoFound.ch[0]), `발견 되돌리기 → 다시 수색 · 판매중지 다시 맡김 ${r.undoFound.ch}`);
-  ok(r.closed.st === 'closed' && r.closed.loss > 0 && r.closed.reason === 'lost' && r.closed.why, `종결 → 손실 ${r.closed.loss} · 판매중지 이유 ${r.closed.reason}`);
-  ok(r.undoClosed.st === 'open' && r.undoClosed.reason === 'check' && /open>found/.test(r.hist) && /closed>open/.test(r.hist), `종결 되돌리기 → 다시 수색 · 이유 ${r.undoClosed.reason} · 상태 기록 ${r.hist}`);
+  ok(r.found === 'found' && r.sell.length === 0 && !r.undone && r.next1 === 'sell', `발견 → 판매중 복구: 판매중 그대로였으니 맡길 것 없음(${r.sell.length})`);
+  ok(r.undoFound.st === 'open' && r.undoFound.ch.length === 0, `발견 되돌리기 → 다시 수색 · 판매중 그대로(맡김 ${r.undoFound.ch.length})`);
+  ok(r.closed.st === 'closed' && r.closed.loss > 0 && r.closed.reason === 'lost' && r.closed.why && r.closed.ch.length === 1 && /"state":"판매중지"/.test(r.closed.ch[0]), `종결(판매중 그대로였던 1권) → 판매중지 맡김 ${r.closed.ch} · 손실 ${r.closed.loss} · 이유 ${r.closed.reason}`);
+  ok(r.undoClosed.st === 'open' && r.undoClosed.reason === 'check' && r.undoClosed.ch.length === 1 && /"state":"판매중"/.test(r.undoClosed.ch[0]) && /open>found/.test(r.hist) && /closed>open/.test(r.hist), `종결 되돌리기 → 다시 수색 · 이유 ${r.undoClosed.reason} · 상태 기록 ${r.hist}`);
   ok(/add/.test(r.acts) && /stop/.test(r.acts) && /next/.test(r.acts) && /logEdit/.test(r.acts) && /clue/.test(r.acts) && /hyp/.test(r.acts), `사건 기록: ${r.acts}`);
   ok(r.backList && r.stale.rows === 1 && /⏰/.test(r.stale.sub) && r.stale2.rows === 0 && r.stale2.cfg === 40 && r.stale2.why, `오래된 사건 알림 ${r.stale.rows}건 · 설정 40일 → ${r.stale2.rows}건 · '근거: 없음, 설정으로 바꿈'`);
   ok(r.addHit && r.addCase, '＋ 직접 넣기 → 사건 화면');
