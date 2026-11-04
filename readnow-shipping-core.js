@@ -8,7 +8,7 @@
 // ==========================================================================
 (function (root) {
   'use strict';
-  const VERSION = '0.7.5'; // (0.7.5) 🤖 자동 발송요청 ① 권수·묶음 평균(정범님 10/29): qtyMax 20까지 권수 검토 없음 · 넘으면 bundleSize 20권 묶음(bundleRound ceil 기본)당 총액 평균 ≥ bundleWon 60,000이면 통과 · 미만 검토 · bundleOn 끄면 예전처럼 무조건 검토 · ⑧ maxItemWon·maxTotalWon(기본 0 = 안 씀 · kind 'big') · 돌려줌에 bundle{n,avg,size,won,ok,why} · minQty는 옛 이름(= qtyMax) // (0.7.4) ⑦ 단독 매물 검토(aloneOn · mktOthers · kind 'alone') // 🤖 자동 발송요청 ⑦ 단독 매물(첫 페이지에 우리 매물뿐 — 견줄 다른 판매자 매물 없음)이면 검토(aloneOn · 기본 켬 · kind 'alone') // (0.7.3) 저가·YLW 매입가: 우리 등급 칸이 없으면 가장 가까운 다른 등급 매입가와 견줌(bbPick) // (0.7.2) 🤖 자동 발송요청 YLW·저가 상품 알라딘 매입가 기준(autoLowOf·bbOf) // (0.7.1) 🤖 자동 발송요청 판단(autoShipDecide · AUTO_DEFAULTS · custRisk) — 판매가 비교는 출고 카드 판매가 평가와 같은 ReadnowML.evalSale // (0.7.0) 🇰🇷 법정 공휴일 미리 넣음·택배 수거 달력(pickup off/on)·실제 발송 묶음(pickupRun)·③ 배송&구매확정전 화면 읽기(parseShippedPage — 그날 출고 = 발송일이 그날인 주문) // (0.6.0) planConfirm — 오늘 출고 확정 목록 계산(웹앱 '출고 확정' 단추와 클라우드 출고 시각 자동 확정이 같은 기준) 
+  const VERSION = '0.7.5'; // (11/04 · 판 번호는 합칠 때) ⑨ 미등록·ISBN 없는 상품은 검색으로 찾은 같은 책(srch)을 견줄 대상으로(srchOthers — 같은 책 sure·애매 loose) · ⑩ 시장 자료 없음·단독 검토는 자료가 들어오면 다시 판단(autoRetryInit·autoRetryCheck·autoRetryTxt) // (0.7.5) 🤖 자동 발송요청 ① 권수·묶음 평균(정범님 10/29): qtyMax 20까지 권수 검토 없음 · 넘으면 bundleSize 20권 묶음(bundleRound ceil 기본)당 총액 평균 ≥ bundleWon 60,000이면 통과 · 미만 검토 · bundleOn 끄면 예전처럼 무조건 검토 · ⑧ maxItemWon·maxTotalWon(기본 0 = 안 씀 · kind 'big') · 돌려줌에 bundle{n,avg,size,won,ok,why} · minQty는 옛 이름(= qtyMax) // (0.7.4) ⑦ 단독 매물 검토(aloneOn · mktOthers · kind 'alone') // 🤖 자동 발송요청 ⑦ 단독 매물(첫 페이지에 우리 매물뿐 — 견줄 다른 판매자 매물 없음)이면 검토(aloneOn · 기본 켬 · kind 'alone') // (0.7.3) 저가·YLW 매입가: 우리 등급 칸이 없으면 가장 가까운 다른 등급 매입가와 견줌(bbPick) // (0.7.2) 🤖 자동 발송요청 YLW·저가 상품 알라딘 매입가 기준(autoLowOf·bbOf) // (0.7.1) 🤖 자동 발송요청 판단(autoShipDecide · AUTO_DEFAULTS · custRisk) — 판매가 비교는 출고 카드 판매가 평가와 같은 ReadnowML.evalSale // (0.7.0) 🇰🇷 법정 공휴일 미리 넣음·택배 수거 달력(pickup off/on)·실제 발송 묶음(pickupRun)·③ 배송&구매확정전 화면 읽기(parseShippedPage — 그날 출고 = 발송일이 그날인 주문) // (0.6.0) planConfirm — 오늘 출고 확정 목록 계산(웹앱 '출고 확정' 단추와 클라우드 출고 시각 자동 확정이 같은 기준) 
   const T = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
   const toInt = (s) => { const n = parseInt(String(s || '').replace(/[^\d-]/g, ''), 10); return isNaN(n) ? null : n; };
 
@@ -214,7 +214,7 @@
    *      다른 판매자 매물 = 그 밖의 줄 중 값이 있고 품절(so)이 아니며 바깥 검색 줄(srch)이 아닌 것 — 알라딘측(직접 배송·중고매장)도 견줄 대상으로 셈 · 판매가가 몇이든(저가·YLW 매입가 통과여도) 검토
    *  ※ 더 비싸게 팔린 것은 어느 길에서도 검토가 아님(정범님 10/28 '위로는 얼마든지 비싸도 상관 없어') — 검토는 '싸게'(②·⑥)·권수·고객·시장 없음·(선택)유효 매물 없음뿐
    *  돌려줌: { state: 'wait'|'pass'|'review', reasons:[글], kinds:[qty|big|cheap|bbLow|alone|cust|nomkt|novalid|read], bundle:{n,avg,size,won,ok,why}|null(qtyMax 넘는 주문만), qty, total, top:{title,price,qty,lid,grade}, items:[상품마다 판정 근거 · rule 'bb'|'bbNone'|'pct'], waitLeftMs } */
-  const AUTO_DEFAULTS = { on: true, qtyMax: 20, bundleOn: true, bundleSize: 20, bundleWon: 60000, bundleRound: 'ceil', maxItemWon: 0, maxTotalWon: 0, cheapPct: 25, waitMin: 10, noValid: false, custBlock: true, lowOn: true, lowPrice: 4000, lowSku: 'YLW', aloneOn: true };
+  const AUTO_DEFAULTS = { on: true, qtyMax: 20, bundleOn: true, bundleSize: 20, bundleWon: 60000, bundleRound: 'ceil', maxItemWon: 0, maxTotalWon: 0, cheapPct: 25, waitMin: 10, noValid: false, custBlock: true, lowOn: true, lowPrice: 4000, lowSku: 'YLW', aloneOn: true, srchOn: true, srchDays: 7, mktRetryOn: true, mktRetryMax: 12 }; /* (11/04) ⑨ srchOn·srchDays — 미등록·ISBN 없는 상품은 검색으로 찾은 같은 책을 견줄 대상으로(srchDays = 그 검색 자료를 쓰는 최대 나이 · 근거: 수집기 검색 시세가 기본 7일에 한 번 다시 봄) · ⑩ mktRetryOn·mktRetryMax — 시장 자료가 없어 검토로 간 주문은 시장을 다시 읽게 맡기고 자료가 들어오면 저절로 다시 판단(mktRetryMax 12번 · 근거: 없음, 설정으로 바꿈 — 2·4·8·16·32·60분… 간격이면 약 8시간) */
   /* ⑥ 저가·YLW 상품인지 — 같은 판단을 웹앱(설정 설명·출고 카드)이 같이 씀 · 돌려줌 null(아님) 또는 { sku, price } (어느 조건으로 걸렸나) */
   function autoLowOf(it, cfg, sku) { cfg = autoCfg(cfg); if (!cfg.lowOn) return null; const k = String(sku || (it && it.sku) || '').trim().toUpperCase(); const pre = String(cfg.lowSku || '').trim().toUpperCase(); const pr = +(it && it.price) || 0;
     const bySku = !!(pre && k.startsWith(pre)), byPrice = cfg.lowPrice > 0 && pr > 0 && pr <= cfg.lowPrice; return bySku || byPrice ? { sku: bySku, price: byPrice } : null; }
@@ -229,13 +229,58 @@
   function autoCfg(c) { const x = { ...AUTO_DEFAULTS, ...(c || {}) }; const n = (v, d, lo, hi) => { v = +v; return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
     x.qtyMax = Math.round(n(x.qtyMax, AUTO_DEFAULTS.qtyMax, 1, 999)); x.bundleOn = x.bundleOn !== false; x.bundleSize = Math.round(n(x.bundleSize, AUTO_DEFAULTS.bundleSize, 1, 999)); x.bundleWon = Math.round(n(x.bundleWon, AUTO_DEFAULTS.bundleWon, 0, 1e9));
     x.bundleRound = ['ceil', 'floor', 'round'].includes(x.bundleRound) ? x.bundleRound : AUTO_DEFAULTS.bundleRound; x.maxItemWon = Math.round(n(x.maxItemWon, 0, 0, 1e9)); x.maxTotalWon = Math.round(n(x.maxTotalWon, 0, 0, 1e9)); x.minQty = x.qtyMax; /* minQty = 옛 이름(옛 판 화면·기록 호환) */ x.cheapPct = n(x.cheapPct, AUTO_DEFAULTS.cheapPct, 0, 100); x.waitMin = n(x.waitMin, AUTO_DEFAULTS.waitMin, 1, 120); x.on = x.on !== false; x.noValid = !!x.noValid; x.custBlock = x.custBlock !== false;
-    x.lowOn = x.lowOn !== false; x.aloneOn = x.aloneOn !== false; x.lowPrice = Math.round(n(x.lowPrice, AUTO_DEFAULTS.lowPrice, 0, 1e7)); x.lowSku = String(x.lowSku == null ? AUTO_DEFAULTS.lowSku : x.lowSku).trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 12); return x; }
+    x.lowOn = x.lowOn !== false; x.aloneOn = x.aloneOn !== false; x.srchOn = x.srchOn !== false; x.srchDays = n(x.srchDays, AUTO_DEFAULTS.srchDays, 1, 60); x.mktRetryOn = x.mktRetryOn !== false; x.mktRetryMax = Math.round(n(x.mktRetryMax, AUTO_DEFAULTS.mktRetryMax, 0, 48)); x.lowPrice = Math.round(n(x.lowPrice, AUTO_DEFAULTS.lowPrice, 0, 1e7)); x.lowSku = String(x.lowSku == null ? AUTO_DEFAULTS.lowSku : x.lowSku).trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 12); return x; }
   /* 고객 기록(crm_customers 문서) → ⛔ 블랙리스트 · 🔗 판매자 연관 (웹앱 effFlag·flagsOf와 같은 뜻: 사람이 정한 표시가 먼저, 블랙리스트는 시트 표시도 · 판매자 연관 = 강한 연결 sellerLinks) */
   function custRisk(c) { c = c || {}; const m = (c.flags || {}).blacklist; const bl = m && (m.on === true || m.on === false) ? m.on === true : !!(c.sheetFlags && c.sheetFlags.blacklist);
     const sl = (c.sellerLinks || []).filter((x) => x && x.strong !== false); return { bl, seller: sl.length > 0, sellers: sl.map((x) => x.name || x.sc || x.sellerCode || '').filter(Boolean).slice(0, 3), blWhy: bl ? String((m && m.reason) || (c.sheetFlags && c.sheetFlags.blacklist && c.sheetFlags.blacklist.reason) || '') : '' }; }
   /* ⑦ 단독 매물 — 첫 페이지 줄에서 우리 줄을 뺀 '다른 판매자 매물' 수 (evalSale의 다른 매물과 같은 거르기) */
   const OUR_SC = '996008';
   function mktOthers(rows, lid) { lid = String(lid || ''); return (Array.isArray(rows) ? rows : []).filter((w) => w && +w.p > 0 && !w.so && !w.srch && w.c !== 'ours' && String(w.sc || '') !== OUR_SC && !(lid && String(w.lid || '') === lid)).length; }
+  /* ⑨ (정범님 11/04 '선종 영가집 — 미등록 상품이라 단독은 맞는데 검색으로 같은 책의 다른 판매자 상품을 가져왔잖아')
+   *  미등록 상품(알라딘 도서 정보 없이 우리가 직접 만든 상품)·ISBN 없는 상품은 그 상품 페이지에 다른 판매자가 붙지 않아 '첫 페이지에 우리 매물뿐'으로 보임
+   *  → 클라우드가 주문 뒤 시장을 읽을 때 알라딘 바깥 중고 검색(SearchTarget=Used)으로 같은 책 후보를 함께 읽어 shp_enrich srch에 둠(못 읽으면 수집기 검색 시세 prd_market_nobook)
+   *  같은 책(sure) = 이름 일치(공용 상품 파일 match: 이름 90%↑·권 번호 같음) + 판매 가격이 있음 + 우리 상품이 아님 + 제목 본문(앞 [..]·'/' 뒤·끝 (..) 뗀 것)이 검색어와 글자째 같음
+   *  애매(loose) = 이름 일치는 했지만 제목에 다른 말이 더 붙음(예: '선종영가집 강해'·'… 해설'·'… 영인본') — 같은 책인지 기계가 확신 못 함 → 견줄 대상으로 쓰지 않고, 단독이면 까닭에 적어 검토 */
+  const srchNorm = (t) => { let x = String(t || '').normalize('NFKC').replace(/^\s*\[중고[^\]]*\]\s*/, '').replace(/^(\s*[\[【][^\]】]*[\]】]\s*)+/, ''); x = x.split(/\s*\/\s*/)[0]; for (let i = 0; i < 3; i++) x = x.replace(/\s*[(（\[][^()（）\[\]]*[)）\]]\s*$/, ''); return x.toLowerCase().replace(/[\s\p{P}\p{S}]/gu, ''); };
+  /* 검색 줄 하나 → { id, t, cov, m(같은 상품 후보), o(우리 상품), p(그 상품의 가장 싼 중고 값 — 판매자·알라딘·매장 중) } · 클라우드 저장 모양(ps·pa·pt)과 수집기·등록 조회 모양(channels) 둘 다 받음 */
+  function srchRowsOf(S) { return (S && Array.isArray(S.rows) ? S.rows : []).filter(Boolean).map((c) => { const ch = c.channels || {}; const ps = [c.ps, c.pa, c.pt, ch.seller && ch.seller.min, ch.aladin && ch.aladin.min, ch.store && ch.store.min].map(Number).filter((v) => Number.isFinite(v) && v > 0);
+    return { id: String(c.itemId || c.id || ''), t: String(c.title || c.t || ''), cov: +c.cov || 0, m: c.match != null ? !!c.match : !!c.m, o: !!(c.ours || c.o || /scm996008/.test(String(c.img || ''))), p: ps.length ? Math.min(...ps) : 0 }; }); }
+  function srchOthers(S, self, cfg, now) { cfg = autoCfg(cfg); now = now == null ? Date.now() : +now; const me = new Set((self || []).map((x) => String(x || '')).filter(Boolean)); const q = srchNorm(S && (S.q || S.query)); const sure = [], loose = [];
+    for (const r of srchRowsOf(S)) { if (!r.m || r.o || !(r.p > 0) || (r.id && me.has(r.id))) continue; (q && srchNorm(r.t) === q ? sure : loose).push(r); }
+    sure.sort((a, b) => a.p - b.p); loose.sort((a, b) => a.p - b.p); const at = (S && S.at) || null; const ageD = at ? (now - (Date.parse(at) || 0)) / 864e5 : null;
+    return { sure, loose, min: sure.length ? sure[0].p : null, at, ageD, old: ageD != null && ageD > cfg.srchDays, src: (S && S.src) || null, err: (S && S.err) || null }; }
+  /* ⑩ (정범님 11/04 '신의 아이들은 모두 춤춘다 — 시장 자료 없음을 처음에 한 번 보고 끝이야?') 시장 자료 없음(nomkt)·단독(alone)만으로 검토가 된 주문
+   *  → 판단한 기기가 판단 기록에 mktRetry {on, n, lids, next}를 남기고, 클라우드가 1분마다 봄: 그 상품의 시장 자료(또는 검색으로 찾은 같은 책)가 들어오면 그 주문을 '대기'로 되돌려 다시 판단
+   *     아직 없으면 next 시각에 시장 다시 읽기를 맡김(shp_cmds type 'market') — 간격 2·4·8·16·32·60·60…분(클라우드 시장 읽기 실패 뒤 다시 간격과 같음) · 그 상품이 실패 중이면(mktFail.next) 그 시각까지 · 상품 번호를 못 찾은 상품(mktErr)은 1시간 뒤
+   *  다른 검토 이유(권수·싼 값·고객 등)가 같이 있으면 다시 판단해도 검토라 하지 않음 · 사람이 맡긴(발송준비시작·✖ 취소) 주문·목록에서 빠진 주문은 멈춤(클라우드가 확인) */
+  const RETRY_KINDS = new Set(['nomkt', 'alone']);
+  const retryGapMin = (n) => Math.min(60, 2 ** ((+n || 0) + 1));
+  const mktUsable = (e) => !!(e && e.mkt && !(e.via === 'search' && !e.mkt.isbnOk));
+  function retryLidsOf(items) { return (items || []).filter((p) => p && (p.mkt === 'none' || p.mkt === 'err' || p.srchWait)).map((p) => String(p.lid || '')).filter(Boolean); }
+  function autoRetryInit(D, cfg, now) { cfg = autoCfg(cfg); if (!cfg.mktRetryOn || !D || D.state !== 'review') return null; const ks = D.kinds || []; if (!ks.length || !ks.every((k) => RETRY_KINDS.has(k))) return null;
+    const lids = retryLidsOf(D.items); if (!lids.length) return null; now = now == null ? Date.now() : +now;
+    return { on: true, n: 0, lids, at: new Date(now).toISOString(), next: new Date(now + retryGapMin(0) * 60e3).toISOString() }; }
+  /* 돌려줌 act: 'rejudge'(자료가 들어옴 → 다시 판단) · 'reread'(시장 다시 읽기 맡김 · n·next) · 'wait'(다음 시각 전) · 'init'(옛 기록 — 계획을 새로 시작) · 'stop'(end·why) · 'none'(할 일 없음) */
+  function autoRetryCheck(v, E, now, cfg) { cfg = autoCfg(cfg); now = now == null ? Date.now() : +now; E = E || {}; if (!v || v.state !== 'review') return { act: 'stop', end: 'state', why: '검토 상태가 아님(이미 다시 판단했거나 사람이 처리)' };
+    if (!cfg.mktRetryOn) return { act: 'stop', end: 'off', why: '설정에서 시장 다시 읽기를 끔' };
+    const ks = v.kinds || []; if (!ks.length || !ks.every((k) => RETRY_KINDS.has(k))) return { act: 'stop', end: 'other', why: '시장 자료 말고 다른 검토 이유가 있어 다시 판단해도 검토' };
+    const items = v.items || []; const dAt = Date.parse(v.decidedAt || v.at || '') || 0; const R = v.mktRetry || null;
+    const srchNew = (e) => !!(cfg.srchOn && e && e.srch && (Date.parse(e.srch.at || '') || 0) > dAt);
+    const aloneNew = items.filter((p) => p && p.alone && !p.srchWait && srchNew(E[String(p.lid)])).map((p) => String(p.lid));
+    const lids = R && Array.isArray(R.lids) ? R.lids.map(String) : retryLidsOf(items);
+    const ready = (l) => { const e = E[l]; const p = items.find((x) => x && String(x.lid) === l) || {}; if (p.srchWait) return srchNew(e); return mktUsable(e) || (cfg.srchOn && !!(e && e.srch) && srchOthers(e.srch, [l, e.itemId], cfg, now).sure.length > 0); };
+    const wait = lids.filter((l) => !ready(l));
+    if (!wait.length && (lids.length || aloneNew.length)) return { act: 'rejudge', lids: [...new Set([...lids, ...aloneNew])], why: lids.length ? '시장 자료가 들어옴' : '검색으로 같은 책 다른 판매자 매물을 새로 찾음' };
+    if (!lids.length) return { act: 'none' };
+    if (!R) return { act: 'init' };
+    const n = +R.n || 0; if (n >= cfg.mktRetryMax) return { act: 'stop', end: 'max', why: `${n}번 다시 읽어도 시장 자료가 없음 — 사람이 확인` };
+    let nx = Date.parse(R.next || '') || 0; for (const l of wait) { const e = E[l]; if (e && e.mktFail && e.mktFail.next) nx = Math.max(nx, Date.parse(e.mktFail.next) || 0); if (e && e.mktErr && e.at) nx = Math.max(nx, (Date.parse(e.at) || 0) + 60 * 60e3); }
+    if (now < nx) return { act: 'wait', lids: wait, next: new Date(nx).toISOString() };
+    return { act: 'reread', lids: wait, n: n + 1, next: new Date(now + retryGapMin(n + 1) * 60e3).toISOString() }; }
+  /* 웹앱 출고 카드·알림이 같이 쓰는 한 줄 — 검토 까닭 뒤에 붙임 */
+  function autoRetryTxt(v) { const R = v && v.mktRetry; if (!R) return ''; const hm = (s) => { const t = Date.parse(s || ''); return t ? new Date(t + 9 * 3600e3).toISOString().slice(11, 16) : '-'; };
+    if (R.on) return R.n ? `시장 다시 읽는 중 — ${R.n}번째 맡김 · 다음 ${hm(R.next)} · 자료가 들어오면 저절로 다시 판단` : `시장 자료가 들어오면 저절로 다시 판단 · 다시 읽기 ${hm(R.next)}에 맡김`;
+    if (R.end === 'max') return `${R.n || 0}번 다시 읽어도 시장 자료가 없어 멈춤 — 사람이 확인`; if (R.end === 'human') return '사람이 처리 중이라 다시 읽기 멈춤'; if (R.end === 'gone') return '주문확인요청에서 빠져 다시 읽기 멈춤'; if (R.end === 'off') return '설정에서 시장 다시 읽기를 꺼 멈춤'; return ''; }
   function autoShipDecide(x) { x = x || {}; const cfg = autoCfg(x.cfg); const o = x.order || {}; const items = (o.items || []).filter(Boolean); const E = x.enrich || {}; const ev = typeof x.evalSale === 'function' ? x.evalSale : null;
     const now = x.now != null ? +x.now : Date.now(); const first = x.firstAt != null ? +x.firstAt : now; const W = (v) => Math.round(+v || 0).toLocaleString('ko-KR') + '원'; const sh = (t) => { t = String(t || ''); return t.length > 22 ? t.slice(0, 21) + '…' : t; };
     const qty = items.reduce((a, it) => a + (+it.qty || 1), 0); const total = items.reduce((a, it) => a + (+it.price || 0) * (+it.qty || 1), 0);
@@ -252,17 +297,28 @@
     const per = []; const waitL = [], errL = [];
     for (const it of items) { const lid = String(it.listingId || ''); const e = E[lid] || null; const m = e && e.mkt; const byName = !!(m && e.via === 'search' && !m.isbnOk);
       const b = { lid, title: it.title || '', price: +it.price || 0, qty: +it.qty || 1, grade: it.grade || (e && e.grade) || null };
-      if (!m || byName) { const err = e && e.mktErr && !byName ? String(e.mktErr) : null; per.push({ ...b, mkt: err ? 'err' : 'none', why: err || (byName ? '이름으로 찾은 시장(다른 판일 수 있음)이라 쓰지 않음 — 클라우드가 ISBN으로 다시 읽는 중' : e && e.mktFail ? '시장 읽기 실패 — 다시 읽는 중: ' + String(e.mktFail.msg || '').slice(0, 60) : '시장을 아직 못 읽음') }); (err ? errL : waitL).push(b); continue; }
+      const SO = cfg.srchOn && e && e.srch ? srchOthers(e.srch, [lid, e.itemId], cfg, now) : null; const W0 = (v) => W(v);
+      const srchCheap = (P) => { /* 검색으로 찾은 같은 책 다른 판매자 최저가와 견줌 — 25% 규칙과 같은 기준 · 판매자 색은 모름(검색 화면엔 판매자가 없음) */ const ratio = SO.min ? b.price / SO.min - 1 : null; P.srchRatio = ratio != null ? Math.round(ratio * 1000) / 1000 : null;
+        if (ratio != null && ratio < -cfg.cheapPct / 100) { P.flag = 'cheap'; P.why = `검색으로 찾은 같은 책 다른 판매자 최저가 ${W0(SO.min)}보다 ${Math.round(-ratio * 100)}% 쌈 → 검토`; add('cheap', `「${sh(b.title)}」 ${W(b.price)} — 검색으로 찾은 같은 책 다른 판매자 최저가 ${W0(SO.min)}보다 ${Math.round(-ratio * 100)}% 쌈 (기준 ${cfg.cheapPct}% 넘게)`); }
+        else P.why = `검색으로 찾은 같은 책 다른 판매자 매물 ${SO.sure.length}개 · 최저 ${W0(SO.min)} 대비 ${ratio > 0 ? '+' : ''}${Math.round((ratio || 0) * 100)}%${P.why ? ' · ' + P.why : ''}`; };
+      const srchTag = (P) => { if (!SO) return; P.srchN = SO.sure.length; P.srchLoose = SO.loose.length; P.srchMin = SO.min; P.srchAt = SO.at; if (SO.src) P.srchSrc = SO.src; };
+      if ((!m || byName) && SO && SO.sure.length && !SO.old) { /* ⑨ 시장 페이지를 못 읽었어도(미등록·ISBN 없음 — 상품 번호를 못 찾음 등) 검색으로 찾은 같은 책으로 판단 */
+        const P = { ...b, mkt: 'srch', at: SO.at, nOther: SO.sure.length, alone: false, rule: 'srch' }; srchTag(P); srchCheap(P); per.push(P); continue; }
+      if (!m || byName) { const err = e && e.mktErr && !byName ? String(e.mktErr) : null; per.push({ ...b, mkt: err ? 'err' : 'none', why: err || (byName ? '이름으로 찾은 시장(다른 판일 수 있음)이라 쓰지 않음 — 클라우드가 ISBN으로 다시 읽는 중' : e && e.mktFail ? '시장 읽기 실패 — 다시 읽는 중: ' + String(e.mktFail.msg || '').slice(0, 60) : '시장을 아직 못 읽음') }); if (SO) { const q0 = per[per.length - 1]; srchTag(q0); q0.why += SO.old ? ` · 검색으로 찾은 같은 책 자료가 ${Math.floor(SO.ageD)}일 전 것이라 쓰지 않음` : SO.loose.length ? ` · 검색으로 이름이 비슷한 매물 ${SO.loose.length}개를 찾았지만 같은 책인지 애매` : ' · 검색으로도 같은 책 다른 판매자 매물을 못 찾음'; } (err ? errL : waitL).push(b); continue; }
       const r = ev ? ev({ p: b.price, g: b.grade || '', rows: (m.rows || []).slice(0, 20), lid, ps: m.np && m.np.ps, pl: m.np && m.np.pl, av: m.np && m.np.av }) : null;
       const P = { ...b, mkt: 'ok', at: m.at || null, ratio: r && r.ratio != null ? r.ratio : null, ref: r ? r.ref : null, refHow: r ? r.refHow || '' : '', tier: r ? r.tier || null : null, verdict: r ? r.verdict || '' : '평가 파일 없음', nValid: r && r.feat ? r.feat.nValid : null };
-      P.nOther = mktOthers((m.rows || []).slice(0, 20), lid); const alone = P.nOther === 0; if (alone) P.alone = true;
-      const aloneChk = () => { if (!alone || !cfg.aloneOn) return; if (!P.flag || P.flag === 'novalid') P.flag = 'alone'; P.why = '첫 페이지에 우리 매물뿐 — 견줄 다른 판매자 매물이 없어 사람이 값 확인' + (P.why ? ' · ' + P.why : ''); add('alone', `「${sh(b.title)}」 ${W(b.price)} — 첫 페이지에 우리 매물뿐(단독 매물) · 견줄 다른 판매자 매물이 없음`); };
+      P.nOther = mktOthers((m.rows || []).slice(0, 20), lid); let alone = P.nOther === 0;
+      if (alone && SO) { srchTag(P); if (SO.old) P.srchWhy = `검색으로 찾은 같은 책 자료가 ${Math.floor(SO.ageD)}일 전 것이라 쓰지 않음(${cfg.srchDays}일까지)`; else if (SO.sure.length) { alone = false; P.nOther = SO.sure.length; P.rule0 = 'srch'; } else if (SO.loose.length) P.srchWhy = `검색으로 이름이 비슷한 매물 ${SO.loose.length}개(${SO.loose.slice(0, 2).map((r) => `「${sh(r.t)}」 ${W(r.p)}`).join(' · ')}${SO.loose.length > 2 ? ' 등' : ''})를 찾았지만 같은 책인지 애매 — 사람이 확인`; else P.srchWhy = SO.err && !srchRowsOf(e.srch).length ? `검색을 못 읽음(${String(SO.err).slice(0, 40)})` : '검색으로도 같은 책 다른 판매자 매물을 못 찾음'; }
+      else if (alone && cfg.srchOn && e && e.srchNeed && !e.srch) { P.srchWait = true; P.srchWhy = '미등록·ISBN 없는 상품 — 검색으로 같은 책을 찾는 중(찾으면 저절로 다시 판단)'; }
+      if (alone) P.alone = true;
+      const aloneChk = () => { if (!alone || !cfg.aloneOn) return; if (!P.flag || P.flag === 'novalid') P.flag = 'alone'; P.why = '첫 페이지에 우리 매물뿐 — 견줄 다른 판매자 매물이 없어 사람이 값 확인' + (P.srchWhy ? ' · ' + P.srchWhy : '') + (P.why ? ' · ' + P.why : ''); add('alone', `「${sh(b.title)}」 ${W(b.price)} — 첫 페이지에 우리 매물뿐(단독 매물) · 견줄 다른 판매자 매물이 없음${P.srchWhy ? ' · ' + P.srchWhy : ''}`); };
       const sku = it.sku || (e && e.sku) || null; if (sku) P.sku = String(sku); const low = autoLowOf(it, cfg, sku);
       const lowT = low ? [low.sku ? `관리코드 ${cfg.lowSku}…` : '', low.price ? `${W(cfg.lowPrice)} 이하` : ''].filter(Boolean).join(' · ') : '';
       if (low) { const bp = bbPick(m, b.grade); const bb = bp ? bp.v : null; P.low = lowT; P.bb = bb; if (bp) { P.bbG = bp.g; P.bbAlt = bp.alt; } const bgT = bp ? (bp.alt ? `${bp.g} — 우리 등급(${b.grade || '모름'}) 칸이 없어 가장 가까운 등급` : bp.g) : '';
         if (bb != null) { P.rule = 'bb'; if (b.price < bb) { P.flag = 'bbLow'; add('bbLow', `「${sh(b.title)}」 ${W(b.price)} — 알라딘 매입가(${bgT}) ${W(bb)}보다 쌈 (${lowT} 상품: 매입가 이상이면 통과)`); } else P.why = `${lowT} 상품 — 알라딘 매입가(${bgT}) ${W(bb)} 이상이라 통과 (25% 기준 안 씀)`; aloneChk(); per.push(P); continue; }
         P.rule = 'bbNone'; P.bbWhy = `${lowT} 상품인데 알라딘 매입가(${b.grade || '등급 모름'})를 모름(알라딘이 안 사는 책 — 표에 어느 등급도 매입가가 없음) → 25% 기준으로`; } else P.rule = 'pct';
       if (r && r.tier === 'valid' && r.ratio != null && r.ratio < -cfg.cheapPct / 100) { P.flag = 'cheap'; add('cheap', `「${sh(b.title)}」 ${W(b.price)} — ${r.refHow} ${W(r.ref)}보다 ${Math.round(-r.ratio * 100)}% 쌈 (기준 ${cfg.cheapPct}% 넘게)${P.rule === 'bbNone' ? ' · 알라딘 매입가를 몰라 25% 기준으로 봄' : ''}`); }
+      else if (P.rule0 === 'srch' && (!r || r.tier !== 'valid')) srchCheap(P);
       else if (!r || r.tier !== 'valid') { P.flag = 'novalid'; P.why = '첫 페이지에 유효 매물이 없어 유효 최저가가 없음' + (P.bbWhy ? ' · ' + P.bbWhy : ''); if (cfg.noValid && !(alone && cfg.aloneOn)) add('novalid', `「${sh(b.title)}」 유효 매물이 없어 판매가를 견줄 수 없음`); }
       else if (P.bbWhy) P.why = P.bbWhy;
       aloneChk(); per.push(P); }
@@ -271,6 +327,6 @@
     if (waitL.length && !R.length && left > 0) return { state: 'wait', reasons: [], kinds: [], qty, total, top, bundle: BQ, items: per, waitLeftMs: left, cfg };
     waitL.forEach((b) => add('nomkt', `「${sh(b.title)}」 시장 자료 없음 — ${left > 0 ? '아직 못 읽음(다른 검토 이유가 있어 기다리지 않음)' : `${cfg.waitMin}분 기다려도 못 읽음`}`));
     return { state: R.length ? 'review' : 'pass', reasons: R, kinds: [...kinds], qty, total, top, bundle: BQ, items: per, waitLeftMs: 0, cfg }; }
-  const API = { VERSION, planConfirm, AUTO_DEFAULTS, autoCfg, mktOthers, autoLowOf, bbOf, bbPick, custRisk, autoShipDecide, parseDeliveryPage, parseShippedPage, KR_HOLIDAYS, holName, pickupRun, dayKeyAdd, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays };
+  const API = { VERSION, planConfirm, AUTO_DEFAULTS, autoCfg, mktOthers, autoLowOf, bbOf, bbPick, custRisk, autoShipDecide, srchNorm, srchRowsOf, srchOthers, autoRetryInit, autoRetryCheck, autoRetryTxt, retryGapMin, parseDeliveryPage, parseShippedPage, KR_HOLIDAYS, holName, pickupRun, dayKeyAdd, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; root.ReadnowShipping = API;
 })(typeof window !== 'undefined' ? window : globalThis);
