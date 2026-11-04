@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "추격자 블랙리스트·순위·기록 창",
+ "since": "2026-11-04T14:07:05Z",
+ "beat": "2026-11-04T14:07:05Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T14:00:21Z"
  },
- "host": null
+ "host": "vm"
 }
