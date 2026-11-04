@@ -1,2 +1,2 @@
-logs=1&pc=LOGGER&from=202611030000&to=202611040430&benchdump=903578
-# 170901117
+@health&hours=4
+# 115018179
