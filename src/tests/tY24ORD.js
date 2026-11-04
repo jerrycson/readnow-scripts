@@ -28,7 +28,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     out.alHtml = (() => { try { return alertsHtml(A.map((a) => ({ ...a }))); } catch (e) { return 'ERR ' + e.message; } })().includes('chn-y24');
     // ④ 오늘 출고 🟦 예스24 탭
     S.shipTab = 'y24'; S.ship = S.ship || { orders: [], tabCounts: {}, at: now }; S.shipC = S.shipC || { orders: [], at: now }; openShip(); await W(900); const sh = document.getElementById('sheet'); const t = sh.innerText;
-    out.scr = { tab: !!sh.querySelector('[data-stab="y24"].on'), cards: sh.querySelectorAll('section.y24o').length, same: /같은 손님 주문 2건/.test(t), stop: sh.querySelectorAll('[data-y24ostop]').length, notLive: /판매중 아님/.test(t), mkt: !!sh.querySelector('.y24o-blk .shp-mkl'), sku: /PNKd5001EX/.test(t), cust: /예스24 처음 보는 손님|예스24 2번째 주문/.test(t), sep: /알라딘 고객과 따로/.test(t), courier: /가짜택배/.test(sh.innerHTML) };
+    out.scr = { tab: !!sh.querySelector('[data-ssrc="y24"].on') && !sh.querySelector('[data-stab="y24"]') && !!sh.querySelector('[data-stab="confirm"].on'), /* (11/04) 🟦 탭 대신 판매처 칩 예스24 + 할 일이 있는 가장 앞 단계 */ cards: sh.querySelectorAll('section.y24o').length, same: /같은 손님 주문 2건/.test(t), stop: sh.querySelectorAll('[data-y24ostop]').length, notLive: /판매중 아님/.test(t), mkt: !!sh.querySelector('.y24o-blk .shp-mkl'), sku: /PNKd5001EX/.test(t), cust: /예스24 처음 보는 손님|예스24 2번째 주문/.test(t), sep: /알라딘 고객과 따로/.test(t), courier: /가짜택배/.test(sh.innerHTML) };
     // 그때 시장이 주문 기록에 남음
     await W(300); out.snap = !!(((FS.crm_y24_orders || {}).Y2611040001 || {}).mkt || {})['1'];
     // ⑤ ⛔ 알라딘 판매중지 — 두 번 눌러야
@@ -39,7 +39,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     const A2 = []; y24oAlerts((lv, t, key, x) => A2.push({ lv, t, key, x })); out.alerts2 = A2.map((a) => a.key).join(',');
     // ⑥ 단계 · 송장
     openShip(); await W(500); document.querySelector('[data-y24oman="Y2611040001|ack"]').click(); await W(500); out.ack = !!((((FS.crm_y24_orders || {}).Y2611040001 || {}).man || {}).ack || {}).at;
-    openShip(); await W(500); const inp = document.querySelector('[data-y24ono="Y2611040001"]'); inp.value = '1234567890123'; document.querySelector('[data-y24oinv="Y2611040001"]').click(); await W(600); const inv = (((FS.crm_y24_orders || {}).Y2611040001 || {}).man || {}).inv || {}; out.inv = inv.no + ':' + inv.courier; out.step = y24oStep(S.y24o.m.get('Y2611040001'));
+    S.shipTab = 'deliv'; openShip(); await W(500); /* 접수확인한 주문은 📦 출고 준비 칸으로 옮겨 감 */ out.moved = !!document.querySelector('[data-anc="y24:Y2611040001"]') && !document.querySelector('[data-anc="y24:Y2611040002"]'); const inp = document.querySelector('[data-y24ono="Y2611040001"]'); inp.value = '1234567890123'; document.querySelector('[data-y24oinv="Y2611040001"]').click(); await W(600); const inv = (((FS.crm_y24_orders || {}).Y2611040001 || {}).man || {}).inv || {}; out.inv = inv.no + ':' + inv.courier; out.step = y24oStep(S.y24o.m.get('Y2611040001'));
     const A3 = []; y24oAlerts((lv, t, key, x) => A3.push({ lv, t, key, x })); out.alerts3 = A3.map((a) => a.key + ':' + a.x.n).join(',');
     // ⑦ 신규 주문 목록에서 빠짐
     await db.collection('crm_y24_raw').doc('o2').set({ sig: 'POST /api/Order/NewOrderConfirmList', at: new Date().toISOString(), part: 0, parts: 1, body: JSON.stringify({ RESULT_LIST: [], TOTAL_COUNT: 0 }) }); await y24oScan(true); await W(300); out.left = !!((S.y24o.m.get('Y2611040002') || {}).left || {}).NewOrderConfirmList;
@@ -48,7 +48,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     await y24oScan(true); await W(300); const A4 = []; y24oAlerts((lv, t, key, x) => A4.push({ lv, t, key, x })); out.shape = A4.filter((a) => a.key === 'y24shape').map((a) => a.lv).join(); out.keysHtml = /X_ORDER_KEY/.test(y24oKeysHtml()) && /주문번호 칸을 못 찾음/.test(y24oKeysHtml()) && !/손님A/.test(y24oKeysHtml());
     openAlert('y24shape'); await W(700); out.kbox = /X_ORDER_KEY/.test((document.getElementById('y24o_kbox') || {}).innerText || '');
     // ⑨ ① 탭 위 파란 띠
-    S.shipTab = 'confirm'; openShip(); await W(600); out.banner = !!document.querySelector('.y24o-ban');
+    S.shipTab = 'confirm'; S.shipSrc = 'all'; openShip(); await W(600); out.banner = !!document.querySelector('[data-stab="confirm"].on') && !!document.querySelector('section.y24o[data-anc="y24:Y2611040002"]') && !!document.querySelector('section.y24o .chn-y24') && !document.querySelector('.y24o-ban');
     return out; });
   console.log(JSON.stringify(r));
   ok(r.scan && r.scan.raws >= 1 && r.scan.wrote === 2, '가짜 신규 주문 응답 → 주문 기록 2건: ' + JSON.stringify(r.scan));
@@ -58,14 +58,15 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   ok(/^isbn:aladin_U700000001$/.test(r.m1) && /^isbn:aladin_U700000002$/.test(r.m2), '예스24 매물 번호 → 알라딘 짝 · 바코드+등급 → 알라딘 짝: ' + r.m1 + ' / ' + r.m2);
   ok(r.cust1 === 0 && r.cust2 === 1, '손님 판정은 이 주문 전 기준(같은 손님 두 번째 주문): ' + r.cust1 + ',' + r.cust2);
   ok(r.alerts[0] === 'top:y24ord:2' && r.alerts.includes('top:y24ordal:2') && r.alHtml, '홈 ❗ 예스24 주문 2건 · 🔴 알라딘에서 판매중 2권 · 🟦 표: ' + r.alerts.join(' / '));
-  ok(r.scr.tab && r.scr.cards === 2 && r.scr.same && r.scr.stop === 2 && r.scr.notLive && r.scr.mkt && r.scr.sku && r.scr.cust && r.scr.sep && r.scr.courier, '오늘 출고 🟦 예스24 탭 카드(같은 손님 묶음·판매중지 단추·판매중 아님·시장 블록·SKU·손님 판정·예스24 택배사 목록): ' + JSON.stringify(r.scr));
+  ok(r.scr.tab && r.scr.cards === 2 && r.scr.same && r.scr.stop === 2 && r.scr.notLive && r.scr.mkt && r.scr.sku && r.scr.cust && r.scr.sep && r.scr.courier, '오늘 출고 판매처 칩 예스24 카드(같은 손님 묶음·판매중지 단추·판매중 아님·시장 블록·SKU·손님 판정·예스24 택배사 목록): ' + JSON.stringify(r.scr));
   ok(r.snap, '그때 시장을 주문 기록에 남김');
   ok(r.arm && /aladin_U700000001:\{"state":"판매중지"\}/.test(r.cmd) && r.alStop === 'stop' && r.reason === 'elsewhere', '⛔ 두 번 눌러야 판매중지 맡김(상품 정보 수정 길) · 판매중지 이유 다른 판매처: ' + r.cmd);
   ok(r.cmd2 === '{"qty":1}', '두 권 매물은 수량 2 → 1: ' + r.cmd2);
   ok(!/y24ordal/.test(r.alerts2), '판매중지를 맡기면 🔴 알림이 빠짐: ' + r.alerts2);
+  ok(r.moved, '접수확인함 → 예스24 카드가 📦 출고 준비 칸으로 옮겨 감(새 주문은 🆕 칸에 남음)');
   ok(r.ack && r.inv === '1234567890123:가짜택배' && r.step === 'inv' && r.alerts3 === 'y24ord:1', '단계 ① 접수확인 · ③ 송장 기록 → 처리할 주문 1건으로: ' + r.inv + ' ' + r.alerts3);
   ok(r.left, '더 새 신규 주문 목록에 없으면 \'목록에서 빠짐\' 표시');
   ok(r.shape === 'amber' && r.keysHtml && r.kbox, '모양 모르는 응답 → ▲ 응답 모양 확인 필요 · 칸 이름 보기(값 없이) · 알림에서 바로 열기');
-  ok(r.banner, '① 주문확인요청 탭 위 🟦 예스24 띠');
+  ok(r.banner, '🆕 확인할 주문 칸(판매처 전체)에 예스24 카드가 파란 배지로 함께 — 예전 ① 탭 위 띠 대신');
   console.log(bad ? `❌ ${bad}개 실패` : '✓ 모두 통과');
 });
