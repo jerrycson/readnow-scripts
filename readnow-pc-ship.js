@@ -1,8 +1,8 @@
-/* readnow-pc-ship.js — 리드나우 수집기 1.89.199의 모듈 ④ 출고 — 발송 요청 화면 송장 입력
+/* readnow-pc-ship.js — 리드나우 수집기 1.89.200의 모듈 ④ 출고 — 발송 요청 화면 송장 입력
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { ship: '1.89.199' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['ship', '1.89.199', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { ship: '1.89.200' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['ship', '1.89.200', function () {
 /* ══════════ 송장 입력 (1.28.0): 발송 요청 화면(worder_delivery.aspx?orderstep=4)에서 주문마다 송장번호를 넣고 알라딘의 '입력완료'(deliveryNoComplete)를 누름 ══════════
  * 한 번에 한 주문 → 화면이 다시 열리면 결과 확인 → 다음 주문 (진행은 shp_invoices/{id}.items[].state 에 저장: todo → sent → done / fail / missing)
  * 알라딘 화면의 기능을 그대로 씀(새로 만든 요청 없음). 확인 창은 '예'로, 알림 글은 기록으로 남김
@@ -43,7 +43,7 @@
         ${M.byOrder.map((x) => `<div style="color:${x.status === 'ok' ? '#2e7d32' : x.status === 'partial' ? '#b58100' : '#B0322A'}">${e(x.recipient)} · ${e(x.invoice || '-')} · ${{ ok: '맞음', partial: '일부 상품만 맞음', many: '운송장 여럿', none: '못 찾음' }[x.status]}</div>`).join('')}
         ${okL.length ? `<button id="rn-inv-one" style="margin-top:6px;padding:5px 8px">1건 먼저 입력해 보기</button> <button id="rn-inv-all" style="padding:5px 8px;background:#2F5D50;color:#fff;border:0;border-radius:5px">맞은 ${okL.length}건 모두 입력</button>` : ''}${parL.length ? ` <button id="rn-inv-par" style="padding:5px 8px">일부만 맞은 ${parL.length}건 확인하고 넣기</button>` : ''}`;
       const start = async (limit) => { if (!confirm(`알라딘 발송 요청에 송장번호 ${limit ? 1 : okL.length}건을 입력하고 '입력완료'를 누릅니다. 진행할까요?`)) return;
-        const ref = db.collection('shp_invoices').doc(); await ref.set({ createdAt: nowIso(), by: auth.currentUser.email, from: 'collector', fileName: f.name, limit: limit || 0, status: 'running', claim: { pc: PCN, at: nowIso() }, log: [{ at: nowIso(), lv: 'info', m: `맡김 만듦 — 수집기 발송 요청 화면에서 ${limit ? 1 : okL.length}건`, by: PCN || 'PC' }],
+        const ref = db.collection('shp_invoices').doc(); await ref.set({ createdAt: nowIso(), by: auth.currentUser.email, from: 'collector', fileName: f.name, limit: limit || 0, status: 'running', claim: { pc: PCN, at: nowIso() }, beat: nowIso(), log: [{ at: nowIso(), lv: 'info', m: `맡김 만듦 — 수집기 발송 요청 화면에서 ${limit ? 1 : okL.length}건`, by: PCN || 'PC' }],
           items: okL.map((x) => ({ orderNo: x.orderNo, invoice: x.invoice, recipient: x.recipient, match: x.status, state: 'todo' })), skipped: M.byOrder.filter((x) => !okL.includes(x)).map((x) => ({ orderNo: x.orderNo, recipient: x.recipient, status: x.status, invoices: x.invoices })), extra: M.extra.map((w) => ({ invoice: w.invoice, name: w.name, title: w.title, sku: w.sku })), uploadedAt: TS() });
         GM_setValue('rn-inv-active', { id: ref.id, at: Date.now() }); try { sessionStorage.setItem('rn-inv-tab', ref.id); } catch (e) {} step(ref.id); };
       const o1 = box.querySelector('#rn-inv-one'); if (o1) o1.onclick = () => start(1); const oa = box.querySelector('#rn-inv-all'); if (oa) oa.onclick = () => start(0);
@@ -52,7 +52,7 @@
   async function step(id) {
     const ref = db.collection('shp_invoices').doc(id); const v = (await ref.get()).data();
     /* (정범님 11/04) 🛰 단계마다 한 줄 — 맡김 문서 log(최근 100줄) + 수집기 기록 창 · 화면을 옮기기 직전엔 flush */ const st = window.__rnStep ? window.__rnStep(ref, v && v.log, '송장 입력') : Object.assign(() => {}, { flush: async () => {} });
-    if (!v || ['done', 'stopped', 'paused'].includes(v.status)) { GM_deleteValue('rn-inv-active'); return idle(v ? `지난 송장 입력: ${({ done: '끝남', stopped: '멈춤', paused: '첫 건 확인 대기' })[v.status]}` : ''); }
+    if (!v || ['done', 'stopped', 'paused', 'stale'].includes(v.status)) { GM_deleteValue('rn-inv-active'); return idle(v ? `지난 송장 입력: ${({ done: '끝남', stopped: '멈춤', paused: '첫 건 확인 대기', stale: '오래 멈춤(되살리지 않음)' })[v.status]}` : ''); }
     { const SHx = window.ReadnowShipping || globalThis.ReadnowShipping; let pg = null; try { pg = SHx ? SHx.parseDeliveryPage(document) : null; } catch (er) {} // (1.34.7) 화면을 제대로 읽었을 때만 판단 — 알라딘 오류·점검 화면이면 '끝남/없음'으로 잘못 처리하던 것
       if ((!pg || !pg.tabCounts || !Object.keys(pg.tabCounts).length) && invLoginPage()) { sessionStorage.removeItem('rn-inv-bad'); st('err', '알라딘 로그인이 풀림 — 송장을 넣지 않고 멈춤 · 수집기 PC에서 알라딘에 로그인한 뒤 웹앱 「🔑 로그인 뒤 다시 맡기기」', { res: '로그인 필요', why: '로그인 화면' }); await st.flush(); await ref.set({ status: 'paused', pausedAt: nowIso(), pauseWhy: '알라딘 로그인 풀림 — 로그인 뒤 다시 맡기기', needLogin: true, beat: nowIso(), uploadedAt: TS() }, { merge: true }); GM_deleteValue('rn-inv-active'); return idle('알라딘 로그인이 풀려 멈춤 — 로그인한 뒤 웹앱 오늘 출고 ③ 「🔑 로그인 뒤 다시 맡기기」'); } /* (정범님 11/04 원스톱 F11) 로그인 풀림은 5번 다시 열지 않고 바로 '로그인 필요'로(까닭이 다른데 「나머지 계속」 단추가 뜨던 것) */
       if (!pg || !pg.tabCounts || !Object.keys(pg.tabCounts).length) { const k = +(sessionStorage.getItem('rn-inv-bad') || 0) + 1; sessionStorage.setItem('rn-inv-bad', String(k)); if (k <= 5) { say(`발송 요청 화면을 제대로 못 읽음 — ${k * 5}초 뒤 다시 엶 (${k}/5)`); st('warn', `발송 요청 화면을 제대로 못 읽음 — ${k * 5}초 뒤 다시 엶 (${k}/5)`, { why: '탭 숫자가 안 보임(오류·점검·로그인 화면일 수 있음)' }); await st.flush(); setTimeout(() => { location.href = DELIV; }, k * 5000); return; } sessionStorage.removeItem('rn-inv-bad'); st('err', '발송 요청 화면을 5번 못 읽어 멈춤 — 알라딘 화면 확인 뒤 웹앱에서 다시 시작', { res: '멈춤', why: '발송 요청 화면을 5번 못 읽음' }); await st.flush(); await ref.set({ status: 'paused', pausedAt: nowIso(), pauseWhy: '발송 요청 화면을 5번 못 읽음', uploadedAt: TS() }, { merge: true }); GM_deleteValue('rn-inv-active'); return idle('발송 요청 화면을 5번 못 읽어 멈춤 — 알라딘 화면을 확인한 뒤 웹앱에서 다시 시작'); }

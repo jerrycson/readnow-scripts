@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.199의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.200의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.199' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.199', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.200' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.200', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2866,7 +2866,7 @@
       const bn = String(o.buyer || '').trim(); if (!n && bn) await look('주문인', 'names', bn, true, bn);
       const rn = o.recipient && !o.recipient.sameAsBuyer ? String(o.recipient.name || '').trim() : ''; if (rn && rn !== '상동' && rn !== bn) await look('수령인', 'names', rn, true, rn);
       return { hits }; } catch (e) { return { hits, err: e.message }; } }
-  async function auFinal(ref, rec, cmd, m) { let did = false; await db.runTransaction(async (tx) => { did = false; if (m) m.held = false; const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && v.state && v.state !== 'wait') return;
+  async function auFinal(ref, rec, cmd, m) { let did = false; await db.runTransaction(async (tx) => { did = false; if (m) m.held = false; const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && v.state && v.state !== 'wait') return; if (rec.state === 'skip' && v && v.rejudge) return; /* (11/04 정범님) 그사이 다시 판단(rejudge — 켠 시각 검사 건너뛰기)이 적혔으면 '켜기 전 주문'으로 덮지 않음 — rejudgeAt을 보고 다시 봄 */
       if (v && v.hold && v.hold.on) { if (m) m.held = true; return; } /* (11/04 정범님) ⏸ 보류 — 판단을 적지도 맡기지도 않음(m.held → 기억에 '끝'으로 두지 않아 풀면 다시 봄) */
       if (cmd) { const cs = await tx.get(cmd.ref); if (cs.exists) return; tx.set(cmd.ref, cmd.v); }
       tx.set(ref, { ...rec, ...W() }, { merge: true }); did = true; }); return did; }
@@ -3511,11 +3511,21 @@
     const aid = form.querySelector('input[name="hidAnswerId"]'); return { action, body: B.toString(), btn: bn, answerId: aid ? String(aid.getAttribute('value') || '').trim() : '', n: [...B.keys()].length }; }
   { let invUn = null, back = 5000; const sub = () => { if (PUBONLY || !auth.currentUser || invUn) return; /* (1.64.0) 송장 = 로그인 일 */ invUn = C('shp_invoices').where('status', '==', 'queued').onSnapshot((ss) => { back = 5000; ss.forEach((d) => claimInvoice(d.id).catch((e) => log('송장 입력 맡기 실패: ' + (e.code || e.message), 1))); }, (e) => { log(`송장 듣기가 끊김(${e.code || e.message}) — 다시 들음`, 1); invUn = null; setTimeout(sub, back); back = Math.min(back * 2, 5 * 60000); }); }; auth.onAuthStateChanged((u) => { if (!u) { if (invUn) { invUn(); invUn = null; } return; } sub(); });
     /* (정범님 11/04 원스톱 F9·F10) 2분마다: ① '하는 중'인데 맥박(beat)이 설정 분(기본 10 · 근거: 없음, app_settings/main.oneShot.invStaleMin) 넘게 없는 맡김 = 맡은 탭이 닫힘·PC 꺼짐 → '기다림'으로 되돌려 다시 맡음(입력한 줄 'sent'는 그대로 — 새 탭이 다시 읽어 확인부터) ② '기다림' 맡김을 다시 훑음(쉬는 시간이 끝나도 문서가 안 바뀌면 다시 안 맡던 것) */
-    const INVST = { at: 0, v: 10 }; setInterval(async () => { try { if (PUBONLY || !auth.currentUser || (window.__rnRest && window.__rnRest())) return; const qs = await C('shp_invoices').where('status', '==', 'running').get(); let stale = INVST.v; if (qs.size && Date.now() - INVST.at > 3600e3) { INVST.at = Date.now(); try { const m = (await C('app_settings').doc('main').get()).data() || {}; INVST.v = stale = Math.max(3, Math.min(240, +((m.oneShot || {}).invStaleMin) || 10)); } catch (e) {} } /* 설정은 한 시간에 한 번만 읽음 */
-        for (const d of qs.docs) { const v = d.data() || {}; const last = Math.max(Date.parse(v.beat || '') || 0, Date.parse((v.claim || {}).at || '') || 0, Date.parse((v.stepNow || {}).at || '') || 0); if (!last || Date.now() - last < stale * 60e3) continue; const act = GM_getValue('rn-inv-active', null); if (act && act.id === d.id && Date.now() - act.at < 60e3) continue;
+    /* (정범님 11/04 밤) 되살리는 것은 '새 판이 쓴 맥박(beat) 칸이 있는' 맡김이고 '만든 지 설정 시간(기본 6 · 근거: 없음, app_settings/main.oneShot.invReviveH) 안'인 것만
+     *  원스톱 판 전에 만든 옛 맡김(beat 칸이 아예 없음 — 11/04 16:31 같은 9건을 넣은 맡김이 4개 겹쳐 그중 8건은 이미 입력됨)을 다시 열면 같은 송장을 또 넣으려 할 수 있음
+     *  → 옛 맡김·오래된 맡김은 되살리지 않고 상태를 '오래 멈춤(stale)'으로 닫는 표시만(문서·넣은 줄은 지우지 않음 · 예전 상태는 prevStatus에) */
+    const INVST = { at: 0, v: 10, h: 6 }; setInterval(async () => { try { if (PUBONLY || !auth.currentUser || (window.__rnRest && window.__rnRest())) return; const qs = await C('shp_invoices').where('status', '==', 'running').get(); let stale = INVST.v; if (qs.size && Date.now() - INVST.at > 3600e3) { INVST.at = Date.now(); try { const m = (await C('app_settings').doc('main').get()).data() || {}; INVST.v = stale = Math.max(3, Math.min(240, +((m.oneShot || {}).invStaleMin) || 10)); INVST.h = Math.max(1, Math.min(72, +((m.oneShot || {}).invReviveH) || 6)); } catch (e) {} } /* 설정은 한 시간에 한 번만 읽음 */
+        for (const d of qs.docs) { const v = d.data() || {}; if (invOldNoRevive(v, INVST.h)) { await invCloseOld(d.ref, INVST.h, stale).catch(() => {}); continue; } const last = Math.max(Date.parse(v.beat || '') || 0, Date.parse((v.claim || {}).at || '') || 0, Date.parse((v.stepNow || {}).at || '') || 0); if (!last || Date.now() - last < stale * 60e3) continue; const act = GM_getValue('rn-inv-active', null); if (act && act.id === d.id && Date.now() - act.at < 60e3) continue;
           let moved = false; await db.runTransaction(async (tx) => { moved = false; const sn = await tx.get(d.ref); const cur = sn.data() || {}; const l2 = Math.max(Date.parse(cur.beat || '') || 0, Date.parse((cur.claim || {}).at || '') || 0, Date.parse((cur.stepNow || {}).at || '') || 0); if (cur.status !== 'running' || (l2 && Date.now() - l2 < stale * 60e3)) return; tx.update(d.ref, { status: 'queued', claim: null, reclaimN: (+cur.reclaimN || 0) + 1, reclaimAt: nowIso(), log: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), lv: 'warn', m: `맡은 탭 소식이 ${Math.round((Date.now() - l2) / 60e3)}분 없음(탭 닫힘·PC 꺼짐?) — 다시 맡기기로 되돌림 · 넣은 줄은 다시 읽어 확인부터`, by: PC_NAME || 'PC' }), uploadedAt: TS() }); moved = true; });
           if (moved) { log(`송장 입력 ${d.id}: 맡은 탭 소식 끊김 → 다시 맡기기로 되돌림`, 1); if (act && act.id === d.id) GM_deleteValue('rn-inv-active'); } }
         const q2 = await C('shp_invoices').where('status', '==', 'queued').get(); q2.forEach((d) => claimInvoice(d.id).catch(() => {})); } catch (e) {} }, 2 * 60e3); } /* (1.59.0) 끊기면 다시 붙음 · 다시 로그인해도 하나만 */
+  /* 되살리면 안 되는 맡김 — 맥박(beat) 칸이 없음(원스톱 판 전 옛 맡김) 또는 만든 지 h시간 넘음 · 만든 시각을 모르면 되살리지 않음 */
+  function invOldNoRevive(v, h) { const c = Date.parse((v && v.createdAt) || '') || 0; return !(v && v.beat) || !c || Date.now() - c > (h || 6) * 3600e3; }
+  async function invCloseOld(ref, h, staleMin) { let done = false; await db.runTransaction(async (tx) => { done = false; const sn = await tx.get(ref); const cur = sn.data() || {}; if (cur.status !== 'running' || !invOldNoRevive(cur, h)) return;
+      const l2 = Math.max(Date.parse(cur.beat || '') || 0, Date.parse((cur.claim || {}).at || '') || 0, Date.parse((cur.stepNow || {}).at || '') || 0); if (l2 && Date.now() - l2 < staleMin * 60e3) return; /* 아직 맡은 탭 소식이 있으면 그대로(그 탭이 끝냄) */
+      const why = !cur.beat ? '옛 판 맡김 — 되살리지 않음' : `만든 지 ${h}시간 넘은 맡김 — 되살리지 않음`; const L = { at: nowIso(), lv: 'warn', m: `오래 멈춤(${why}) — 같은 송장을 두 번 넣지 않게 닫음 · 남은 주문은 오늘 출고에서 다시 맡기세요`, by: PC_NAME || 'PC' };
+      tx.update(ref, { status: 'stale', prevStatus: cur.status, staleAt: nowIso(), staleWhy: why, claim: cur.claim || null, log: firebase.firestore.FieldValue.arrayUnion(L), stepNow: L, uploadedAt: TS() }); done = true; });
+    if (done) log(`송장 입력 ${ref.id}: 오래 멈춤으로 닫음 (되살리지 않음)`, 1); return done; }
   async function claimInvoice(id) { const ref = C('shp_invoices').doc(id); let ok = false, seed = null; if ((window.__rnRest && window.__rnRest())) return;
     await db.runTransaction(async (tx) => { ok = false; /* (1.89.13) 트랜잭션이 다시 돌면 앞 시도의 값이 남지 않게 */ const sn = await tx.get(ref); const v = sn.data(); if (!v || v.status !== 'queued') return; tx.update(ref, { status: 'running', claim: { pc: PC_NAME, tab: TAB_ID, at: nowIso() }, beat: nowIso(), uploadedAt: TS() }); ok = true; seed = v.log || null; });
     if (!ok) return; GM_setValue('rn-inv-active', { id, at: Date.now() }); log(`송장 입력 맡음 (${id}) — 발송 요청 화면을 새 탭으로 엽니다`);
