@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.190의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.191의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.190' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.190', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.191' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.191', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -653,7 +653,7 @@
    *  사무실 PC가 사무실 IP(북스킹 계정이 로그인하는 IP)로 벤치마킹·시장 지표를 읽으면 쿠키가 없어도 IP로 이어질 수 있어서. 그 PC가 쉬는 동안에도 사무실 PC가 대신하지 않음(기다림)
    *  · 끄기: 웹앱 설정 → '대량 공개 일은 공개 전용 PC만' (pubPcMode='off') · 출고 시장 받쳐 주기·주문 상품 유의 사항(맡긴 일 usedInfo) 같은 가벼운 일은 그대로 */
   let PUBPC = { since: null, name: null, mode: 'auto' }, pubpcUn = null;
-  auth.onAuthStateChanged((u) => { if (!u || pubpcUn) return; pubpcUn = C('prd_system').doc('settings').onSnapshot((d) => { const v = (d.exists && d.data()) || {}; PUBPC = { since: v.pubPcSince || null, name: v.pubPcName || null, mode: v.pubPcMode || 'auto' }; }, () => {}); });
+  auth.onAuthStateChanged((u) => { if (!u || pubpcUn) return; pubpcUn = C('prd_system').doc('settings').onSnapshot((d) => { const v = (d.exists && d.data()) || {}; PUBPC = { since: v.pubPcSince || null, name: v.pubPcName || null, mode: v.pubPcMode || 'auto' }; if (window.__rnSetSnap) try { window.__rnSetSnap(d); } catch (e) {} }, () => {}); });
   const pubPcMode = () => !PUBONLY && PUBPC.mode !== 'off' && !!PUBPC.since;
   const PUBPC_MSG = () => `🌐 대량 공개 일은 공개 전용 PC(${PUBPC.name || '테더링'})가 함 — 이 PC는 사무실 인터넷이라 하지 않음 (끄기: 웹앱 설정)`;
   const LOCKP = () => C('crm_system').doc(lockDocId().replace('work_lock', 'pub_lock'));
@@ -5034,7 +5034,8 @@
     renderSetup();
     const u = await ensureLogin();
     $('#rnpWho').textContent = `Firebase: ${u.email} 로그인됨`;
-    await loadSettings(); renderSetup(); engineSwitch(); try { if (!PUBONLY) GM_setValue('rn-officeMem', SET.officeMemLogin === true); } catch (e) {} /* (1.72.0 · 기본 끔) 🔑 사무실 PC 로그인 메모리 보관 — 다음 화면부터 */ setInterval(() => { loadSettings().then(engineSwitch).catch(() => {}); }, 5 * 60e3);
+    await loadSettings(); renderSetup(); engineSwitch(); try { if (!PUBONLY) GM_setValue('rn-officeMem', SET.officeMemLogin === true); } catch (e) {} /* (1.72.0 · 기본 끔) 🔑 사무실 PC 로그인 메모리 보관 — 다음 화면부터 */ setInterval(() => { loadSettings().then(engineSwitch).catch(() => {}); }, 30 * 60e3); /* (정범님 11/04 '이유 없는 지연은 바로') 상품 쪽 설정(요청 속도·유의 사항 일수·다시 볼 날짜…)은 이미 듣고 있는 같은 문서(prd_system/settings) 듣기로 바뀌면 곧바로 다시 읽음 — 예전 5분마다 다시 읽기는 30분 받침으로만 · 이 PC 설정 칸에 글을 쓰는 중이면 쓰는 칸을 덮지 않게 끝난 뒤(3초 뒤 다시 봄) */
+    { let first = true, tm = null; window.__rnSetSnap = (d) => { if (first) { first = false; return; } if (d && d.metadata && d.metadata.hasPendingWrites) return; clearTimeout(tm); const go = () => { const a = document.activeElement; if (a && a.closest && a.closest('#rnp') && /INPUT|SELECT|TEXTAREA/.test(a.tagName)) { tm = setTimeout(go, 3000); return; } loadSettings().then(engineSwitch).catch(() => {}); }; tm = setTimeout(go, 800); }; }
     watchPcs(); await refreshResume(); versionWatch(); ctlWatch();
     publishStatus({ running: null });
     ui('대기 중', 0, 0, '', resumeKey ? '멈춘 작업이 있습니다. 위의 이어하기를 누르세요' : '처음이라면: 등록 파일 가져오기 → 상품 일괄 수집 → 이미지');
