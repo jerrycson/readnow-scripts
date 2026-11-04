@@ -530,6 +530,36 @@
   function sameVolume(a, b) { const nums = (x) => (searchQueryOf(x).match(/\d+/g) || []).map(Number).filter((n) => !(n >= 1800 && n <= 2099)).sort((p, q) => p - q).join(','); return nums(a) === nums(b); }
   function nameCoverage(query, title) { const n = (x) => String(x || '').toLowerCase().replace(/[\s\p{P}\p{S}]/gu, ''); const q = n(query), t = n(title); if (!q.length) return 0;
     const dp = new Array(t.length + 1).fill(0); for (let i = 1; i <= q.length; i++) { let prev = 0; for (let j = 1; j <= t.length; j++) { const tmp = dp[j]; dp[j] = q[i - 1] === t[j - 1] ? prev + 1 : Math.max(dp[j], dp[j - 1]); prev = tmp; } } return dp[t.length] / q.length; }
+  /* (정범님 11/04) 🆕 미등록 상품의 새책(새상품) 찾기 — 같은 책인지 판단(제목·지은이·출판사·출간 연도)
+   *  our = { t: 우리 상품명, a: 지은이(쉼표·· 로 여럿), pb: 출판사, y: 출간 연도(4자리) } · b = parseProductPage 결과(새책 상품 화면) 또는 { title, contributors[{name}], publisher, pubDate }
+   *  ① 제목: 우리 검색어(aladinQ)가 새책 제목에 90% 이상 들어 있고(nameCoverage) 거꾸로도 80% 이상(우리 제목이 짧아 더 긴 다른 책에 맞는 것 막음) · 권 번호 같음(sameVolume)
+   *  ② 지은이·출판사·출간 연도: 양쪽에 다 있을 때만 견줌(맞음 true · 다름 false · 견줄 수 없음 null)
+   *  결과 v: 'same'(제목 맞음 + 다른 것 하나 이상 맞음 + 다른 것 없음) · 'diff'(제목이 안 맞거나 하나라도 다름) · 'unsure'(제목만 맞고 견줄 것이 없음 — 애매하면 모름)
+   *  기준 90%·80%는 이 파일의 다른 같은 상품 판단(검색 시세 photoMatch 0.9)과 같은 값 — 거꾸로 80%는 근거: 없음, th로 바꿈 */
+  const nbNorm = (x) => String(x || '').normalize('NFKC').toLowerCase().replace(/\(주\)|㈜|주식회사|^\s*도서출판\s*/g, ' ').replace(/\s*(출판사|출판부|출판)\s*$/, '').replace(/[\(\[][^\)\]]*[\)\]]/g, ' ').replace(/(^|\s)(지음|지은이|옮김|옮긴이|엮음|엮은이|그림|펴냄|글|저|역|편|편저|외)(?=\s|$)/g, ' ').replace(/[\s\p{P}\p{S}]/gu, ''); /* 역할 말(지음·옮김…)은 따로 떨어진 낱말일 때만 뗌 — 이름 속 글자는 그대로 */
+  const nbYear = (x) => { const m = String(x || '').match(/(1[89]\d{2}|20\d{2})/); return m ? +m[1] : null; };
+  const nbNames = (x) => (Array.isArray(x) ? x.map((c) => (c && typeof c === 'object' ? c.name : c)) : String(x || '').split(/[,·;|/]|\s{2,}/)).map(nbNorm).filter((s) => s.length >= 2);
+  function newBookJudge(our, b, th) { th = th || {}; const T1 = th.cov ?? 0.9, T2 = th.rev ?? 0.8; const o = our || {}; const x = b || {}; const why = [];
+    const qt = aladinQ(o.t) || String(o.t || ''); const bt = aladinQ(x.title) || String(x.title || ''); if (!qt || !bt) return { v: 'diff', why: ['제목이 없음'], f: {} };
+    const cov = Math.round(nameCoverage(qt, x.title) * 1000) / 1000, rev = Math.round(nameCoverage(bt, qt) * 1000) / 1000, vol = sameVolume(o.t, x.title);
+    if (!(cov >= T1) || !(rev >= T2)) return { v: 'diff', why: [`제목이 다름(우리→새책 ${Math.round(cov * 100)}% · 새책→우리 ${Math.round(rev * 100)}%)`], cov, rev, f: {} };
+    if (!vol) return { v: 'diff', why: ['권 번호가 다름'], cov, rev, f: {} };
+    const eqN = (p, q) => p === q || (p.length >= 2 && q.length >= 2 && (p.includes(q) || q.includes(p)));
+    const A = nbNames(o.a), BA = nbNames(x.contributors || x.a); const fa = A.length && BA.length ? A.some((p) => BA.some((q) => eqN(p, q))) : null;
+    const P0 = nbNorm(o.pb), P1 = nbNorm(x.publisher || x.pb); const fp = P0 && P1 ? eqN(P0, P1) : null;
+    const Y0 = nbYear(o.y), Y1 = nbYear(x.pubDate || x.d || x.y); const fy = Y0 && Y1 ? Y0 === Y1 : null;
+    const f = { a: fa, pb: fp, y: fy }; const L = { a: '지은이', pb: '출판사', y: '출간 연도' };
+    for (const k of ['a', 'pb', 'y']) { if (f[k] === true) why.push(L[k] + ' 같음'); else if (f[k] === false) why.push(L[k] + ' 다름'); }
+    if (Object.values(f).some((v) => v === false)) return { v: 'diff', why, cov, rev, f };
+    if (Object.values(f).some((v) => v === true)) return { v: 'same', why: ['제목 같음', ...why], cov, rev, f };
+    return { v: 'unsure', why: ['제목만 같음 — 지은이·출판사·출간 연도를 견줄 수 없음(애매하면 모름)'], cov, rev, f }; }
+  /* 여러 후보를 판단한 결과 → 하나로: 같은 책이 딱 하나면 found · 둘 이상이면 unsure(어느 판인지 모름) · 같은 책 없음 + 애매한 것/못 읽은 제목 맞는 후보가 있으면 unsure · 다 다르거나 후보가 없으면 none */
+  function newBookPick(J, unread) { const same = (J || []).filter((j) => j && j.v === 'same'); const ids = [...new Set(same.map((j) => String(j.itemId)))];
+    if (ids.length === 1) return { st: 'found', itemId: ids[0], why: '같은 책 새상품 1개' };
+    if (ids.length > 1) return { st: 'unsure', why: `같은 책으로 보이는 새상품이 ${ids.length}개 — 어느 판인지 몰라 정하지 않음` };
+    if ((J || []).some((j) => j && j.v === 'unsure')) return { st: 'unsure', why: '제목은 같은데 지은이·출판사·출간 연도를 견줄 수 없음 — 사람이 골라 주세요' };
+    if (unread > 0) return { st: 'unsure', why: `제목이 맞는 후보 ${unread}개를 아직 열어 보지 않음` };
+    return { st: 'none', why: (J || []).length ? `제목이 비슷한 새상품 ${(J || []).length}개를 열어 봤지만 모두 다른 책` : '검색에 같은 제목의 새상품이 없음' }; }
   // 우리(판매자) 중고 상품 페이지의 상품 사진: 위쪽 표지 영역(#CoverMainImage·표지 넘김 사진) + '중고상품 구매 유의 사항'(#usedDecription) 안 사진
   // 같은 사진이 크기만 다르게 여러 번 나오므로 파일 이름으로 하나만 남김. 표지 영역 작은 크기(coversum 등)는 cover500으로 바꿔 둔 주소도 함께 줌
   function parseUsedItemPhotos(d) {
@@ -842,7 +872,7 @@
     VERSION, parseDate, splitTitle, classifyCode, collectIds, isbn10Valid, ean13Valid, isbn10to13,
     KEY_SCHEMES, lookupKeys, newBookId,
     tableToRows, parseRegExportRows, parseSoldRows, parseScmList, parseProductPage, parseUsedPage,
-    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, scmSmart, aladinQ, aladinQTries, resolveItemId, isbnN, smHit, smTok, searchChannels, marketNoBook, nameCoverage, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
+    parseBuyerDist, parseRelationBuy, parseClickRelation, parseUsedItemPhotos, parseSearchResults, parseScmSearch, scmSearch, scmSmart, aladinQ, aladinQTries, resolveItemId, isbnN, smHit, smTok, searchChannels, marketNoBook, nameCoverage, newBookJudge, newBookPick, setInfo, isUnregistered, searchQueryOf, sameVolume, parseC2BList, parseC2BDetail, usedSearchRows, diff, rankTransitions, listingKey, listingsDiff, mediaType, MEDIA,
     parseUsedItemInfo, parseUsedItemPreviews, isPreviewPhoto, pvPageNo, previewsFromPhotos, productPhotos, previewsOf, PP_V, photoKind, isProductPhoto, parseUsedItemProductPhotos, productPhotosOf, parseScmEditNote, parseUsedItemPrice, parseC2BSearch, parseC2BCart, makePacer, PACER_DEFAULTS, parseYes24Search, pickYes24Hub, parseYes24Hub, parseYes24Shop, Y24_GRADE, SCM_STATUS, scmAction, parseAjaxResult, peerNoteTargets,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowProducts = api;
