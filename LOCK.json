@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "매입처 1회차 이전 상품 포함·메모 칸",
+ "since": "2026-11-04T00:54:31Z",
+ "beat": "2026-11-04T00:54:31Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "",
   "at": "2026-11-03T23:17:11Z"
  },
- "host": null
+ "host": "vm"
 }
