@@ -90,8 +90,9 @@ const mkO = (ono, lid) => ({ orderNo: ono, buyer: '손님A', orderedAt: ordAt(15
       window.prompt = () => '손님 문의 기다림'; b1.click(); await w(900);
       o.doc1 = (await db.collection('shp_auto').doc('B-1').get()).data(); o.cfg1 = (await db.collection('app_settings').doc('ship_auto').get()).data();
       o.card = (sh().querySelector('[data-anc="o:B-1"]') || {}).outerHTML || ''; o.tab = (sh().querySelector('[data-stab="confirm"]') || {}).innerText || ''; o.btn1 = (sh().querySelector('[data-shold="B-1"]') || {}).textContent || ''; o.sds1 = !!sh().querySelector('[data-sds="B-1"]');
+      try { localStorage.removeItem('rn-ship-holdx'); o.home0 = shipEntryCard(); o.cx0 = alShipCX().x.why; } catch (e) { o.home0 = 'ERR ' + e.message; } /* (11/04) 보류 세기 기본 뺌 */ try { localStorage.setItem('rn-ship-holdx', '1'); } catch (e) {}
       try { o.home = shipEntryCard(); } catch (e) { o.home = 'ERR ' + e.message; }
-      o.cx = alShipCX().x.why;
+      o.cx = alShipCX().x.why; try { localStorage.removeItem('rn-ship-holdx'); } catch (e) {}
       // B-2: 자동으로 맡겨 둔 대기 발송준비시작이 있으면 보류할 때 같이 취소
       S.shipStart = [{ id: 'auto_B-2', type: 'startDelivery', orderNos: ['B-2'], status: 'queued', auto: true }]; window.prompt = () => ''; sh().querySelector('[data-shold="B-2"]').click(); await w(900);
       o.cmd2 = (await db.collection('shp_cmds').doc('auto_B-2').get()).data(); o.doc2 = (await db.collection('shp_auto').doc('B-2').get()).data();
@@ -108,6 +109,7 @@ const mkO = (ono, lid) => ({ orderNo: ono, buyer: '손님A', orderedAt: ordAt(15
     ok(r.cfg1 && r.cfg1.holds && r.cfg1.holds['B-1'] && r.cfg1.holds['B-1'].why === '손님 문의 기다림', '모든 기기가 듣는 ship_auto.holds에 보류 목록');
     ok(/shp-held/.test(r.card) && /⏸ 보류 중/.test(r.card) && /손님 문의 기다림/.test(r.card) && /▶ 보류 풀기/.test(r.btn1) && r.sds1, '보류 카드: 점선 테두리 · ⏸ 보류 중 줄(까닭) · ▶ 보류 풀기 · 발송준비시작 단추는 그대로');
     ok(/⏸ 보류 1/.test(r.tab), '① 탭 숫자에 ⏸ 보류 1: ' + r.tab);
+    ok(!/⏸ 보류/.test(r.home0 || '') && !/⏸ 보류/.test(r.cx0 || ''), '(11/04) 보류 세기 기본 뺌 — 홈 출고 카드·오늘 할 일에 보류 수 없음');
     ok(/⏸ 보류 1/.test(r.home) && /⏸ 보류 1건/.test(r.cx), '홈 출고 카드·오늘 할 일에 보류 수: ' + (r.home || '').replace(/<[^>]+>/g, '').slice(0, 120) + ' / ' + r.cx);
     ok(r.cmd2 && r.cmd2.status === 'cancelled' && /보류/.test(r.cmd2.cancelWhy) && r.doc2 && r.doc2.hold.on && r.doc2.hold.why === null && r.doc2.at, '자동으로 맡겨 둔 대기 발송준비시작은 보류할 때 같이 취소 · 까닭 비워도 됨 · 판단 전 기록에도 at(웹앱이 들음)');
     ok(r.doc3.hold.on === false && (r.doc3.holdHist || []).length === 2 && r.doc3.holdHist[0].on === true && r.doc3.hold.from && r.doc3.hold.from.why === '손님 문의 기다림' && !(r.cfg3.holds || {})['B-1'] && (r.cfg3.holds || {})['B-2'], '▶ 풀기: 지금 상태 on:false · 기록 2줄(지우지 않음) · 빠른 목록에서 그 주문만 빠짐');
