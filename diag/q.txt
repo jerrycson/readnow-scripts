@@ -1,2 +1,2 @@
-doc=app_settings/y24_link
-# 208618091
+y24p=1
+# 1678731527
