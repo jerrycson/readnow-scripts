@@ -27,7 +27,7 @@ H(async (p) => { await p.evaluate(require('./seed.js'));
     S.shipTab = 'deliv'; await openShip(); await W(600);
     const hdOf = () => { const c = document.getElementById('shp_one'); const h = document.getElementById('shp_onefold'); if (!c || !h) return null; const a = c.getBoundingClientRect(), b = h.getBoundingClientRect(); return { first: [...c.children].filter((x) => getComputedStyle(x).display !== 'none')[0] === h, top: Math.round(b.top - a.top), h: Math.round(b.height), wR: Math.round(b.width / a.width * 100), fold: c.classList.contains('fold'), fx: Math.round((h.querySelector('.shp-fx') || h).getBoundingClientRect().right - a.right), txt: h.innerText.replace(/\s+/g, ' ').slice(0, 60) }; };
     o.f0 = hdOf(); const sp = document.querySelector('#shp_onefold .shp-onehs') || document.getElementById('shp_onefold'); sp.click(); await W(400); o.f1 = hdOf();
-    document.getElementById('shp_oneshot').click(); await W(300); o.f2 = { ...hdOf(), calls };
+    document.getElementById('shp_oneshot').click(); await W(100); document.getElementById('shp_oneshot').click(); await W(300); o.f2 = { ...hdOf(), calls };
     document.querySelector('#shp_onefold .shp-onehs').click(); await W(400); o.f3 = hdOf();
     /* ② 멈춘 맡김 끝 처리 */
     const items = (L, st) => L.map((n, i) => ({ orderNo: n, invoice: '24000000' + (100 + i), state: typeof st === 'function' ? st(i) : st }));
