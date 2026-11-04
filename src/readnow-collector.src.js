@@ -6365,7 +6365,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       const bn = String(o.buyer || '').trim(); if (!n && bn) await look('주문인', 'names', bn, true, bn);
       const rn = o.recipient && !o.recipient.sameAsBuyer ? String(o.recipient.name || '').trim() : ''; if (rn && rn !== '상동' && rn !== bn) await look('수령인', 'names', rn, true, rn);
       return { hits }; } catch (e) { return { hits, err: e.message }; } }
-  async function auFinal(ref, rec, cmd, m) { let did = false; await db.runTransaction(async (tx) => { did = false; if (m) m.held = false; const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && v.state && v.state !== 'wait') return;
+  async function auFinal(ref, rec, cmd, m) { let did = false; await db.runTransaction(async (tx) => { did = false; if (m) m.held = false; const sn = await tx.get(ref); const v = sn.exists ? sn.data() : null; if (v && v.state && v.state !== 'wait') return; if (rec.state === 'skip' && v && v.rejudge) return; /* (11/04 정범님) 그사이 다시 판단(rejudge — 켠 시각 검사 건너뛰기)이 적혔으면 '켜기 전 주문'으로 덮지 않음 — rejudgeAt을 보고 다시 봄 */
       if (v && v.hold && v.hold.on) { if (m) m.held = true; return; } /* (11/04 정범님) ⏸ 보류 — 판단을 적지도 맡기지도 않음(m.held → 기억에 '끝'으로 두지 않아 풀면 다시 봄) */
       if (cmd) { const cs = await tx.get(cmd.ref); if (cs.exists) return; tx.set(cmd.ref, cmd.v); }
       tx.set(ref, { ...rec, ...W() }, { merge: true }); did = true; }); return did; }

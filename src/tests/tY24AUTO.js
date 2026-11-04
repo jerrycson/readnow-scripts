@@ -68,7 +68,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   ok(r.mark && r.after === 0 && r.cur === 'cash:cash_x,y24:Y2611030001', 'ALPS 일에 넣음 표시 → 다음 일엔 다시 안 넣음 · 이 일의 목록은 기억(빠진 줄 다시 만들기용)');
   ok(r.match.al === '001-B1:ok:240000000011' && r.match.extra === 0 && r.match.y === 'cash:cash_x:240000000022,y24:Y2611030001:240000000022' && r.yInv === '240000000022' && r.cashInv === '240000000022', `운송장: 알라딘 맞춤 그대로 · 예스24 yInv · 현금 invoice · 맞춤 표엔 알라딘만: ${JSON.stringify(r.match)}`);
   ok(r.inv1 === 'made' && r.inv2 !== 'made' && r.inv3 === 'none' && r.inv4 === null && r.batch.lim === 1 && r.batch.n === 1 && r.batch.no === '001-B1' && r.batch.auto, `알라딘 송장 입력 저절로: 알라딘만 · 첫 번 1건 · 한 일에 한 번 · 이미 맡긴 주문 뺌 · 끄면 안 함: ${JSON.stringify([r.inv1, r.inv2, r.inv3, r.inv4, r.batch])}`);
-  ok(r.q === 'ship||queued|true|240000000022|롯데택배|true|true', `🤖 발송처리 맡김(접수확인 건너뜀 · 첫 건 확인 후 실행 · 한 번만): ${r.q}`);
+  ok(['ship||queued|true|240000000022|롯데택배|true|true', '||queued|true|240000000022|롯데택배|true|true'].includes(r.q), `🤖 발송처리 맡김(접수확인 건너뜀 · 첫 건 확인 후 실행 · 한 번만 · 11/04부터 ALPS 송장 기록 때 이미 저절로 맡겼으면 q1도 null): ${r.q}`);
   ok(r.card.big && r.card.auto && r.card.stg, '카드(📤 보내는 중 칸): 예스24 발송처리에 넣을 송장(크게) · 첫 건 [▶ 이대로 실행] 안내');
   ok(/top:y24auto/.test(r.alert) && r.retry === 'ship:2' && r.doneStep === 'inv', `멈추면 홈 알림 · 다시(seq 2) · 끝나면 ③ 단계: ${r.alert} ${r.retry} ${r.doneStep}`);
   console.log(bad ? `❌ ${bad}개 실패` : '✓ tY24AUTO 모두 통과');

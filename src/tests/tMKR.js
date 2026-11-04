@@ -4,7 +4,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   const R = await p.evaluate(async () => { const o = {}; const w = (ms) => new Promise((r) => setTimeout(r, ms)); const now = new Date().toISOString(); await w(2500); /* (11/04) 앱의 첫 주문확인요청 받기(shp_state/confirm 듣기)가 끝난 뒤 시험 주문을 넣음 — 늦게 오는 첫 받기가 시험 주문을 덮던 것 */
     S.shipC = { at: now, orders: [{ orderNo: 'A1', orderedAt: '2026-11-02 09:00', buyer: '가', items: [{ listingId: 'L1', title: '책1', price: 5000, qty: 1 }, { listingId: 'L2', title: '책2', price: 6000, qty: 1 }] }, { orderNo: 'A2', orderedAt: '2026-11-02 09:10', buyer: '나', items: [{ listingId: 'L3', title: '책3', price: 7000, qty: 1 }] }, { orderNo: 'C1', platform: 'cash', items: [{ listingId: 'L9', title: '현금', price: 1, qty: 1 }] }], enrich: {} };
     const C0 = S.shipC; S.ship = { orders: [], tabCounts: {}, at: now }; S._shipLive = 1; S.shipTab = 'confirm'; S.shipAutoCfg = { on: true };
-    await openShip(); await w(700); const sh = document.getElementById('sheet');
+    window.confirm = () => false; /* (11/04) 켜기 전·판단 기록 없는 주문도 함께? — 이 시험은 '아니요'(검토만) */ await openShip(); await w(700); const sh = document.getElementById('sheet');
     const b = sh.querySelector('#shp_mkre'); o.btn = b ? b.textContent : ''; b.click(); await w(600);
     const qs = await db.collection('shp_cmds').where('type', '==', 'market').get(); const d = qs.docs[0]; o.cmd = d ? d.data() : null; o.line0 = (document.getElementById('shp_mkst') || {}).innerText || ''; o.dis = document.getElementById('shp_mkre').disabled;
     await d.ref.set({ status: 'running', prog: { n: 3, done: 2, fail: 0, gone: 0, left: 1 }, progAt: new Date().toISOString() }, { merge: true }); await w(400); o.line1 = document.getElementById('shp_mkst').innerText;
