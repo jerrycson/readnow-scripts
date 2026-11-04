@@ -3,7 +3,7 @@
 //  ⚠ 사람이 볼 것 수 = 홈 '오늘 확인할 것' 수 · [▶ 오늘 출고 끝까지]가 shipOneShot을 부름 · 🛰 새 진행 표시(단계 줄·막대·세부 줄) · 360px 폭에서 가로 넘침 없음
 // 시험 자료 손님은 '손님A' · 010-0000-0000 (공개 저장소)
 let bad = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); if (!c) bad++; };
-const seedAll = async () => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const now = () => new Date().toISOString(); window.ask = async () => true; S.user = S.user || { email: 'tester@x' }; S.prodLoaded = true;
+const seedAll = async () => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const now = () => new Date().toISOString(); window.ask = async () => true; S.user = S.user || { email: 'tester@x' }; S.prodLoaded = true; try { localStorage.setItem('rn-ship-holdx', '1'); } catch (e) {} /* (11/04) ⏸ 보류 세기는 기본 끔 — 이 시험은 보류도 세는 경우(켬) · 기본 끔은 tSHIPDAY */
   S.app.platforms = { ...(S.app.platforms || {}), y24: { ...((S.app.platforms || {}).y24 || {}), off: false } };
   await db.collection('app_settings').doc('ship_auto').set({ on: false, holds: { 'A-1': { at: now(), by: 'tester@x', why: '시험 보류' } } }); S.shipAutoCfg = { on: false, holds: { 'A-1': { at: now(), by: 'tester@x', why: '시험 보류' } } };
   const it = (t, p, lid) => ({ listingId: lid, title: t, price: p, qty: 1, sku: 'PNK_ms', grade: '상' });
