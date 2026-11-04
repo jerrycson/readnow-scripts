@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.195의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.196의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.195' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.195', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.196' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.196', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -763,6 +763,30 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   window.addEventListener('unhandledrejection', (ev) => { const r = ev.reason; const st = r && r.stack ? String(r.stack).split('\n').slice(1, 5).map((x) => x.trim().replace(/https?:\/\/[^\s)]*\/([^/\s)]+)/g, '$1')).join(' ← ') : ''; window.__rnLog('오류', 'err', `처리되지 않은 오류: ${r && r.message ? r.message : r}${st ? ' · 어디서: ' + st.slice(0, 300) : ''} · ${location.pathname}`); }); /* (1.89.39) 3시간 점검 10/23 'Maximum call stack' — 어느 함수인지 남김(파일·줄) */
   window.__rnLog('수집기', 'info', `탭 열림 · ${location.pathname.split('/').pop()}`);
   try { if (document.wasDiscarded) window.__rnLog('수집기', 'warn', '⚠ 크롬이 이 탭을 메모리 절약으로 내려놓았다가 다시 열었음 — 그동안 수집이 멈춰 있었음. 크롬 설정 → 성능 → 메모리 절약 → \'항상 활성 상태로 유지할 사이트\'에 aladin.co.kr 추가'); } catch (e) {} /* (1.77.3) HOME 탭이 22:24~23:23 소리 없이 멈춘 일 — 까닭을 기록에 남김 */
+})();
+/* ═════════════ (정범님 11/04) 🛰 출고 맡긴 일 단계 기록 — '지금 어떤 것이 실행되고 있는지 세부적으로 · 문제가 생겼을 때 빨리 파악' ═════════════
+ *  맡긴 일 문서(shp_cmds/{id} · shp_invoices/{id})에 단계마다 한 줄 → log(최근 N줄 · {at 시각 · lv ok/info/warn/err · m 한 줄 · by PC · o 주문번호 · inv 송장 · res 결과 · why 까닭}) + stepNow(지금 하는 일 한 줄)
+ *  같은 줄을 이 PC 수집기 기록 창(__rnLog '출고')에도 남김 · Firestore 쓰기는 한 줄마다가 아니라 묶어서(기본 1.5초 · 근거: 없음, 설정 app_settings/main.stepLog {ms, keep}로 바꿈)
+ *  손님 이름·전화·주소는 줄에 넣지 않음(주문번호·송장번호만) · 웹앱 오늘 출고 '🛰 지금 실행 중'이 실시간으로 그리고, 진단(q.shplog)으로 Claude가 읽음 */
+(function rnStepLog() {
+  if (window.__rnStep) return;
+  const CF = { ms: 1500, keep: 100, at: 0 }; const J = new Map();
+  const cfg = () => { if (Date.now() - CF.at < 3600e3) return; CF.at = Date.now(); try { if (!(window.firebase && firebase.apps.length && firebase.auth().currentUser)) { CF.at = 0; return; } firebase.firestore().collection('app_settings').doc('main').get().then((d) => { const s = ((d.exists && d.data()) || {}).stepLog || {}; if (+s.ms >= 300 && +s.ms <= 10000) CF.ms = +s.ms; if (+s.keep >= 20 && +s.keep <= 300) CF.keep = Math.round(+s.keep); }).catch(() => {}); } catch (e) {} };
+  const pcN = () => { try { return (window.__rnPcName && window.__rnPcName.get()) || 'PC'; } catch (e) { return 'PC'; } };
+  const clip = (x, n) => (x == null || x === '' ? undefined : String(x).slice(0, n));
+  const flush = async (k) => { const j = J.get(k); if (!j) return; clearTimeout(j.t); j.t = null; if (!j.dirty) return; j.dirty = false; j.log = j.log.slice(-CF.keep);
+    try { await j.ref.set({ log: j.log, stepNow: j.now, uploadedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }); } catch (e) { j.dirty = true; if (!j.t) j.t = setTimeout(() => flush(k), CF.ms * 4); } };
+  /* 쓰는 법: const st = window.__rnStep(ref, v.log, '송장 입력'); st('info', '화면 엶', { o: 주문번호, inv: 송장 }); await st.flush(); — 화면을 옮기기(새로 열기·입력완료) 직전에는 꼭 flush */
+  window.__rnStep = (ref, seed, mod) => { cfg(); const k = ref.path; let j = J.get(k);
+    if (!j) { j = { ref, log: Array.isArray(seed) ? seed.slice(-CF.keep) : [], now: null, t: null, dirty: false }; J.set(k, j); if (J.size > 30) { const k0 = J.keys().next().value; if (k0 !== k) { flush(k0); J.delete(k0); } } }
+    const f = (lv, m, x) => { x = x || {}; const at = new Date().toISOString(); const e = { at, lv: ['ok', 'info', 'warn', 'err'].includes(lv) ? lv : 'info', m: String(m || '').slice(0, 300), by: pcN() };
+      for (const [kk, n] of [['o', 40], ['inv', 40], ['res', 40], ['why', 200]]) { const vv = clip(x[kk], n); if (vv !== undefined) e[kk] = vv; }
+      j.log.push(e); if (j.log.length > CF.keep * 2) j.log = j.log.slice(-CF.keep); j.now = { at, lv: e.lv, m: e.m, by: e.by, ...(x.big ? { big: 1 } : {}) }; j.dirty = true;
+      try { window.__rnLog && window.__rnLog(mod || '출고', e.lv === 'err' ? 'err' : e.lv === 'warn' ? 'warn' : 'info', `🛰 ${e.m}${e.o ? ' · 주문 ' + e.o : ''}${e.inv ? ' · 송장 ' + e.inv : ''}${e.res ? ' · ' + e.res : ''}${e.why ? ' · 까닭: ' + e.why : ''}`); } catch (er) {}
+      if (!j.t) j.t = setTimeout(() => flush(k), CF.ms); return e; };
+    f.flush = () => flush(k); return f; };
+  window.__rnStep.flushAll = () => Promise.all([...J.keys()].map(flush)); window.__rnStep.cfg = CF;
+  window.addEventListener('beforeunload', () => { try { window.__rnStep.flushAll(); } catch (e) {} });
 })();
 /* (10/30 정범님) 🧰 판매자 툴팁 스크립트(우리 것이 아닌 다른 Tampermonkey 스크립트)의 화면 왼쪽 아래 단추 — 🔄 판매자 전체 갱신 · 멈춤 · 데이터 다운로드 · 마지막 갱신 표시 — 를 작은 아이콘 하나로 접고 폄 · 기본은 접힘 · 이 PC에 기억(GM 'rnu-rh-open')
  *  그 스크립트 소스는 고치지 않음 — 우리 수집기가 같은 화면에서 그 단추들(id rh-…)만 숨김/보임으로 · 단추가 화면에 없으면 아이콘도 안 보임 */
