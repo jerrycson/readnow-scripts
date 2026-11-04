@@ -633,8 +633,11 @@
       minPrice: ['최저가 하한', '원', '이 값 아래로는 어떤 전략도 내리지 않음'], floorPct: ['시작 가격 대비 하한', '%', '감시 시작 가격에서 이만큼 아래까지만'], maxTier: ['재고 기간', '', '예 T3 — 우리 재고가 이보다 오래되면 이 판매자 규칙을 쓰지 않음(그룹 전략)'],
     };
     const ANON_RULES = { second: '되돌아가 2위(간격 비교)', follow: 'n회만 따르기' }; /* 불특정 판매자 규칙 차례: 2위 먼저 보고(간격이 크면), 아니면 n회만 따르기 */
-    const POLICY_DEF = () => ({ on: false, rec: true, sellers: {}, condSets: {}, anon: { trigger: 'chaser', minEvents: 1, rules: { second: false, follow: false }, cond: {} } });
-    const normPolicy = (p) => { const D = POLICY_DEF(); if (!p || typeof p !== 'object') return D; const a = p.anon || {}; return { ...D, ...p, sellers: { ...(p.sellers || {}) }, condSets: { ...(p.condSets || {}) }, anon: { ...D.anon, ...a, rules: { ...D.anon.rules, ...(a.rules || {}) }, cond: { ...(a.cond || {}) } } }; };
+    /* (11/04 정범님 '무시 판매자 빼는 설정 · 빠지지 않는 지금 상태를 기본으로') excl = 무시 판매자를 다른 셈에서도 뺄 곳(곳마다 따로 · 처음 값 모두 꺼짐 = 지금 그대로)
+     *  · 정책 켜짐(on)과 따로 — 이 칸만 켜도 빠짐 · 벤치마킹 수집(읽기)·시장 지표 기록 자체는 그대로(관찰은 계속) · blLog = 🚫 블랙리스트 더하기·해제·메모 기록(지우지 않음) */
+    const EXCL = { mkt: '시장 지표 — 경쟁 매물 셈(최저가 배지 수·시장 관찰·우리가 싼 상품·수동 일괄 시장 조건·기준 시장가·알라딘 매입 비교)', strat: '⚡ 희소 전략 — 경쟁 매물 셈(앞선 매물·다음 매물·희소 분류)', rec: '판매가 추천·가격 판정 — 경쟁 목록(수동 일괄 추천가·사진 가격 추천·판매가 평가)' };
+    const POLICY_DEF = () => ({ on: false, rec: true, sellers: {}, condSets: {}, anon: { trigger: 'chaser', minEvents: 1, rules: { second: false, follow: false }, cond: {} }, excl: { mkt: false, strat: false, rec: false }, blLog: [] });
+    const normPolicy = (p) => { const D = POLICY_DEF(); if (!p || typeof p !== 'object') return D; const a = p.anon || {}; return { ...D, ...p, sellers: { ...(p.sellers || {}) }, condSets: { ...(p.condSets || {}) }, anon: { ...D.anon, ...a, rules: { ...D.anon.rules, ...(a.rules || {}) }, cond: { ...(a.cond || {}) } }, excl: { ...D.excl, ...(p.excl && typeof p.excl === 'object' ? p.excl : {}) }, blLog: Array.isArray(p.blLog) ? p.blLog.slice() : [] }; };
     const condOf = (P, x) => { const o = { ...COND_DEF }; const cs = x && x.condSet && P.condSets[x.condSet] ? P.condSets[x.condSet].cond || {} : {}; for (const src of [cs, (x && x.cond) || {}]) for (const [k, v] of Object.entries(src)) if (k in COND_DEF && v !== '' && v != null) o[k] = v; return o; };
     const sellerOf = (P, sc) => (sc != null ? P.sellers[String(sc)] || null : null);
     const tierN = (x) => (x ? +String(x).replace(/^T/i, '') || null : null);
@@ -720,7 +723,28 @@
         if (sl) { g.sold++; g.days.push((sl.ms - s0) / DAY); if (sp && sl.p) g.ratio.push(sl.p / sp); const c = costOf ? costOf(e.key) : null; if (c != null && sl.p) g.prof.push(sl.p - c); } }
       return [...by.values()].map((g) => ({ k: g.k, n: g.n, sold: g.sold, soldPct: g.n ? g.sold / g.n : 0, daysMed: med(g.days), saleRatio: g.ratio.length ? g.ratio.reduce((a, b) => a + b, 0) / g.ratio.length : null, chgPct: g.chg.length ? g.chg.reduce((a, b) => a + b, 0) / g.chg.length : null, profit: g.prof.length ? Math.round(g.prof.reduce((a, b) => a + b, 0) / g.prof.length) : null, profitN: g.prof.length })); }
 
-    return { VERSION: CVER, STRATS, STRATS_ALL, STRAT_INFO, STANCES, STANCE_DEF_STRAT, COND_DEF, COND_INFO, ANON_RULES, POLICY_DEF, normPolicy, condOf,
+    /* ⑥ 🚫 무시 판매자(블랙리스트) — 다른 셈에서 빼기 · 더하기/해제/메모(정책 사본 P를 고침 · 저장은 부르는 쪽) */
+    function ignored(policy) { const P = normPolicy(policy); return Object.entries(P.sellers).filter(([sc, x]) => x && x.stance === 'ignore' && sc !== '996008').map(([sc]) => sc); }
+    /* 그 곳(mkt·strat·rec)을 켰고 무시 판매자가 있으면 판매자 번호 Set, 아니면 null(= 지금 그대로) */
+    function exclSet(policy, place) { const P = normPolicy(policy); if (!P.excl || !P.excl[place]) return null; const L = ignored(P); return L.length ? new Set(L) : null; }
+    /* 매물 줄(첫 쪽 원본 sellerCode · 블록 sc 둘 다)에서 무시 판매자 줄을 뺌 — set이 없거나 뺄 것이 없으면 같은 배열 그대로 */
+    function dropIgnored(rows, set) { if (!set || !Array.isArray(rows) || !rows.length) return rows; const o = rows.filter((r) => !(r && set.has(String(r.sellerCode != null ? r.sellerCode : r.sc != null ? r.sc : '')))); return o.length === rows.length ? rows : o; }
+    const blNow = (o) => (o && o.at) || new Date().toISOString();
+    function blAdd(P, sc, o) { o = o || {}; sc = String(sc || ''); if (!sc || sc === '996008') return false; const x = P.sellers[sc]; if (x && x.stance === 'ignore') return false; const at = blNow(o);
+      P.sellers[sc] = { ...(x || { strat: '', condSet: '', cond: {}, note: '' }), name: o.name || (x && x.name) || null, stance: 'ignore', blPrev: x ? x.stance || 'auto' : null, blAt: at, blBy: o.by || null, note: o.memo != null && o.memo !== '' ? String(o.memo) : (x && x.note) || '' };
+      (P.blLog = P.blLog || []).push({ sc, name: P.sellers[sc].name, act: 'on', at, by: o.by || null, memo: o.memo || null, prev: x ? x.stance || 'auto' : null }); return true; }
+    /* 해제 — 지정 전 모습으로(지정 전에 없던 판매자면 목록에서 빠짐 · 있던 판매자면 그 태세로) · 기록은 blLog에 남김(지우지 않음) */
+    function blOff(P, sc, o) { o = o || {}; sc = String(sc || ''); const x = P.sellers[sc]; if (!x || x.stance !== 'ignore') return false; const at = blNow(o);
+      (P.blLog = P.blLog || []).push({ sc, name: x.name || null, act: 'off', at, by: o.by || null, memo: o.memo || null, since: x.blAt || null });
+      if (x.blPrev === null) delete P.sellers[sc]; else { const y = { ...x, stance: x.blPrev && x.blPrev !== 'ignore' ? x.blPrev : 'auto' }; delete y.blPrev; delete y.blAt; delete y.blBy; P.sellers[sc] = y; } return true; }
+    function blMemo(P, sc, memo, o) { o = o || {}; sc = String(sc || ''); const x = P.sellers[sc]; if (!x) return false; const v = String(memo || ''); if ((x.note || '') === v) return false; x.note = v; (P.blLog = P.blLog || []).push({ sc, name: x.name || null, act: 'memo', at: blNow(o), by: o.by || null, memo: v }); return true; }
+    /* 목록 — 지금 무시 중(on) + 해제된 판매자(off · 마지막 기록이 해제) */
+    function blList(policy) { const P = normPolicy(policy); const on = ignored(P).map((sc) => { const x = P.sellers[sc]; return { sc, name: x.name || null, at: x.blAt || null, by: x.blBy || null, memo: x.note || '', prev: x.blPrev === undefined ? 'auto' : x.blPrev, on: true }; });
+      const last = new Map(); for (const e of P.blLog || []) if (e && e.sc && e.act !== 'memo') last.set(String(e.sc), e); const off = [];
+      for (const [sc, e] of last) if (e.act === 'off' && !(P.sellers[sc] && P.sellers[sc].stance === 'ignore')) off.push({ sc, name: e.name || null, at: e.since || null, offAt: e.at, offBy: e.by || null, memo: e.memo || '', on: false });
+      return { on, off }; }
+
+    return { VERSION: CVER, STRATS, STRATS_ALL, STRAT_INFO, STANCES, STANCE_DEF_STRAT, COND_DEF, COND_INFO, ANON_RULES, POLICY_DEF, normPolicy, condOf, EXCL, ignored, exclSet, dropIgnored, blAdd, blOff, blMemo, blList,
       events: chaseEvents, state: chaseState, sellerWide: sellerChase, map: chaseMap, collect, mapWithPolicy, find, chaserOn, higherQuiet, plan, step: chaseStep, judge, logEntry, episode, perf, kstDay, inHours,
       chaseEvents, chaseState, sellerChase, chaseMap, chaseStep };
   }
