@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "예스24 주문 칸 이름(상태·시각)",
- "since": "2026-11-04T06:57:30Z",
- "beat": "2026-11-04T06:57:30Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-04T06:48:15Z"
+  "at": "2026-11-04T06:58:57Z"
  },
- "host": "vm"
+ "host": null
 }
