@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "설치 스크립트 캐시 피하기",
+ "since": "2026-11-04T07:27:56Z",
+ "beat": "2026-11-04T07:27:56Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T07:24:13Z"
  },
- "host": null
+ "host": "vm"
 }
