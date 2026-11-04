@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "벤치마킹 B안 강제 길 고침",
+ "since": "2026-11-04T09:29:04Z",
+ "beat": "2026-11-04T09:29:04Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T08:17:21Z"
  },
- "host": null
+ "host": "vm"
 }
