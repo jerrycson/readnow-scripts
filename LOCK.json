@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "11/04 둘째 합친 판 + ALPS 0.4.0",
+ "since": "2026-11-04T05:34:21Z",
+ "beat": "2026-11-04T05:34:21Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "",
   "at": "2026-11-04T03:18:54Z"
  },
- "host": null
+ "host": "vm"
 }
