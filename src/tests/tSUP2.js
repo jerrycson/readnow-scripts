@@ -48,6 +48,7 @@ require('./harness.js')(async (p) => {
     out.before = T.before.map((it) => it.l.id); out.l1 = { st: L1().state, n: L1().n, ids: L1().items.map((it) => it.l.id), unit: Math.round(L1().unit), ack: L1().ack };
     out.order = L1().items.slice(0, 2).map((it) => it.l.id); /* 같은 분: 상품 번호 작은 sbL[2](700012)가 먼저, sbL[1](700099) 뒤 */
     out.after = T.after.map((it) => it.l.id);
+    { const SBx = supByKey(SB.id) || SB; await supLotEdit(SBx, 'L1', { prior: true, memo: '첫 줄\n둘째 줄' }, 'x'); await W(30); const Tp = supLotsOf(SB.id); out.prior = { before: Tp.before.length, first: Tp.lots[0].items[0].l.id, on: Tp.lots[0].prior }; openSupplier(SB.id); await W(500); const cb = sh.querySelector('[data-supprior="L1"]'); const mm = sh.querySelector('[data-supr="L1"] .supmemo'); out.priorUi = { cb: !!cb && cb.checked, memo: !!mm && /📝 메모/.test(mm.textContent) && /둘째 줄/.test(mm.textContent) }; cb.click(); await W(700); const Tq = supLotsOf(SB.id); out.priorOff = { before: Tq.before.length, rec: supCostRecs(SB.id).find((r0) => r0.k === 'L1').prior, hist: (supCostRecs(SB.id).find((r0) => r0.k === 'L1').hist || []).some((h) => h.prior === true) }; await supLotEdit(supByKey(SB.id) || SB, 'L1', { prior: null, memo: '' }, 'x'); history.back(); await W(300); }
     // 상품별 매입가: 회차 안 = 100,000 · 회차 밖 = 매입처 평균
     S.pmatch.clear(); let RM = runMatching(); const cm = (l) => (RM.find((x) => x.id === l.id) || {}); out.mt = { in: [sbL[1], sbL[2], sbL[3], sbL[4]].map((l) => [cm(l).kind, cm(l).cost, cm(l).lot]), out: [cm(sbL[0]).cost, cm(sbL[5]).cost], avg: Math.round(purStats().SUP.by[SB.id].unit) };
     await saveMatches(RM);
@@ -115,6 +116,8 @@ require('./harness.js')(async (p) => {
   ok(r.dup.every(Boolean), '② 같은 이름·같은 부가 코드(대소문자)·김미소 코드 막음');
   ok(r.regHasSb, '② 🏪에서 만든 매입처가 등록 화면 매입처 단추에 이미 있음(같은 srcX)'); ok(r.gyMade, '② 등록 화면 「＋ 매입처」 → 같은 srcX에 더함 · 그 카드에 바로 골라짐'); ok(r.regDup, '② 등록 화면에서도 같은 부가 코드(SB) 막음');
   ok(JSON.stringify(r.before) === JSON.stringify(['aladin_U8100010']), '③ 매입일 앞 등록 상품은 회차 밖'); ok(r.l1.st === 'auto' && r.l1.n === 4 && r.l1.unit === 100000 && r.l1.ack === false, '③ 수량 4권에 닿은 상품에서 자동 종결 · 권당 100,000 ' + JSON.stringify(r.l1));
+  ok(r.prior && r.prior.before === 0 && r.prior.first === 'aladin_U8100010' && r.prior.on, '③ (11/04) 첫 회차 「매입일 앞 등록 상품도 포함」 켬 → 회차 밖 0 · 매입일 앞 상품이 첫 상품 ' + JSON.stringify(r.prior));
+  ok(r.priorUi && r.priorUi.cb && r.priorUi.memo, '③ (11/04) 회차 카드: 포함 선택칸 · 📝 메모 칸(여러 줄) ' + JSON.stringify(r.priorUi)); ok(r.priorOff && r.priorOff.before === 1 && r.priorOff.rec === false && r.priorOff.hist, '③ (11/04) 끄면 되돌아감 · 바꾼 기록 남음 ' + JSON.stringify(r.priorOff));
   ok(JSON.stringify(r.order) === JSON.stringify(['aladin_U8100012', 'aladin_U8100011']), '③ 같은 등록 분은 알라딘 상품 번호 순'); ok(r.after.length === 2, '③ 자동 종결 뒤 상품은 회차 밖(다음 회차 기다림)');
   ok(r.mt.in.every(([k, c, lot]) => k === 'sx' && c === 100000 && lot === 'L1') && r.mt.out.every((c) => c === r.mt.avg), '③ 상품별 매입가: 회차 안 = 회차 권당 · 회차 밖 = 매입처 평균 ' + JSON.stringify(r.mt));
   ok(r.homeAl, '③ 자동 종결 → 홈 오늘 확인할 것 빨간 알림'); ok(r.banner, '③ 🏪 화면 위 알림(4권째 · 확정/다른 시점 단추)');
