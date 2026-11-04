@@ -1,15 +1,9 @@
+cmds=pxExp&n=12
+cmds=y24ack&n=8
+cmds=y24inv&n=8
+cmds=cashStop&n=8
+cmdsince=2026-11-04T06:00&types=startDelivery,prdEdit,pxExp,regLookup,read,metrics,y24ship,alpsRun,waybill,nbFind,market
 recentUp=sellers&mins=240
+recentUp=prd_listings&mins=240
 recentUp=bench_items&mins=240
-recentUp=shp_runs&mins=240
-recentUp=shp_auto&mins=240
-recentUp=cloud_log&mins=240
-recentUp=prd_used_info&mins=240
-recentUp=px_self&mins=240
-recentUp=ext_used&mins=240
-doc=app_settings/bi_x,app_settings/bench_plan,prd_system/benchPlan,app_settings/nb_find_state,prd_system/y24,app_settings/y24_orders,prd_system/health,app_settings/ship_cfg,prd_system/shipOneShot,app_settings/alps,prd_system/tetherBudget,app_settings/tether_budget
-cmds=shipReq&n=15
-cmds=prdEdit&n=15
-cmds=metrics&n=15
-cmds=y24ship&n=10
-cmds=waybill&n=10
-# 433021303
+# 119408924
