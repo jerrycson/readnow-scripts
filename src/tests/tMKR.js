@@ -1,7 +1,7 @@
 // tMKR — 정범님 11/02 '① 주문확인요청 탭에 시장 다시 읽기 단추 · 자동 발송요청이 켜 있으면 다시 읽은 뒤 바로 판단'
 let bad = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); if (!c) bad++; };
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
-  const R = await p.evaluate(async () => { const o = {}; const w = (ms) => new Promise((r) => setTimeout(r, ms)); const now = new Date().toISOString();
+  const R = await p.evaluate(async () => { const o = {}; const w = (ms) => new Promise((r) => setTimeout(r, ms)); const now = new Date().toISOString(); await w(2500); /* (11/04) 앱의 첫 주문확인요청 받기(shp_state/confirm 듣기)가 끝난 뒤 시험 주문을 넣음 — 늦게 오는 첫 받기가 시험 주문을 덮던 것 */
     S.shipC = { at: now, orders: [{ orderNo: 'A1', orderedAt: '2026-11-02 09:00', buyer: '가', items: [{ listingId: 'L1', title: '책1', price: 5000, qty: 1 }, { listingId: 'L2', title: '책2', price: 6000, qty: 1 }] }, { orderNo: 'A2', orderedAt: '2026-11-02 09:10', buyer: '나', items: [{ listingId: 'L3', title: '책3', price: 7000, qty: 1 }] }, { orderNo: 'C1', platform: 'cash', items: [{ listingId: 'L9', title: '현금', price: 1, qty: 1 }] }], enrich: {} };
     const C0 = S.shipC; S.ship = { orders: [], tabCounts: {}, at: now }; S._shipLive = 1; S.shipTab = 'confirm'; S.shipAutoCfg = { on: true };
     await openShip(); await w(700); const sh = document.getElementById('sheet');

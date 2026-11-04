@@ -43,7 +43,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     openAladinSell({ t: 'cart' }); await W(300); out.cartKeys = keysOn(); out.sellBtns = page().querySelectorAll('[data-bbsell]').length;
     // ── ⑤ 판매 처리 — 두 번 눌러 · 판매중지 맡김(prdEdit 판매상태 → 판매중지) · sold 기록 · 판매 끝으로 셈
     const sb1 = page().querySelector(`[data-bbsell="${a0.usedCode}"]`); const pe0 = cmds('prdEdit').length; sb1.click(); await W(150); out.sellArm = sb1.textContent; out.pe1 = cmds('prdEdit').length - pe0; sb1.click(); await W(900);
-    const pe = cmds('prdEdit'); out.pe2 = pe.length - pe0; out.peCh = pe.length ? pe[pe.length - 1].ch : null; out.sold0 = (BB().sold || {})[a0.usedCode]; out.stopR = ((FS.prd_stop_reasons || {})['aladin_' + a0.usedCode] || {}).reason; out.active0 = S.plist.get('aladin_' + a0.usedCode).active;
+    const pe = cmds('prdEdit'); const peA = pe.slice(pe0).filter((x) => (x.listingKey || x.key) === 'aladin_' + a0.usedCode); /* (11/04) 이 책 맡김만 셈 — 장바구니에 담긴 다른 책은 자동 판매중지(받침)가 따로 맡길 수 있음 */ out.pe2 = peA.length; out.peCh = peA.length ? peA[peA.length - 1].ch : null; out.sold0 = (BB().sold || {})[a0.usedCode]; out.stopR = ((FS.prd_stop_reasons || {})['aladin_' + a0.usedCode] || {}).reason; out.active0 = S.plist.get('aladin_' + a0.usedCode).active;
     // 고른 것 판매 처리(등록 상품 포함) — 두 번 눌러
     openAladinSell({ t: 'cart' }); await W(300); S.bbuySel = new Set(keysOn()); openAladinSell(); await W(200); const bs = page().querySelector('#bb_sell'); out.bulkSellTxt = bs && bs.textContent; bs.click(); await W(150); bs.click(); await W(1200);
     out.soldKeys = Object.entries(BB().sold || {}).filter(([, v]) => !v.undone).map(([k, v]) => k + ':' + v.state).sort(); out.doneCard = !!document.querySelector('.bhdone');

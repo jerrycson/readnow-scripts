@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.192의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.193의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.192' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.192', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.193' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.193', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2884,7 +2884,7 @@
         if (D.state === 'wait') { out.wait++; if (!m.doc) { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); if (!sn.exists) tx.set(ref, { ...rec, state: 'wait', waitLeftMs: D.waitLeftMs, ...W() }); }).catch(() => {}); m.doc = true; } continue; }
         if (D.state === 'pass') { const cref = C('shp_cmds').doc('auto_' + ono); const ok = await auFinal(ref, { ...rec, state: 'sent', cmdId: cref.id, decidedAt: nowIso() }, { ref: cref, v: { type: 'startDelivery', orderNos: [ono], status: 'queued', createdAt: nowIso(), by: `🤖 자동 발송요청 (${PC_NAME} 판단)`, auto: true, dev: PC_NAME, uploadedAt: TS() } }).catch((e) => { log(`🤖 자동 발송요청 기록 실패(${ono}): ${e.message}`, 1); return false; });
           m.final = true; if (ok) { out.sent++; log(`🤖 자동 발송요청: 주문 ${ono} 통과 (총 ${Math.round(D.total || 0).toLocaleString()}원) — 이 PC가 바로 발송준비시작`); setTimeout(() => runCmd(cref.id).catch(() => {}), 300); } continue; }
-        const ok = await auFinal(ref, { ...rec, state: 'review', decidedAt: nowIso(), pushWant: !(m.rj && m.rj.prev && m.rj.prev.state === 'review') /* 다시 판단해도 검토면 알림 다시 안 보냄 */ }).catch(() => false); m.final = true; if (ok) { out.review++; log(`🔎 자동 발송요청: 주문 ${ono} 관리자 검토 — ${D.reasons.slice(0, 2).join(' / ')}`, 1); } }
+        const ok = await auFinal(ref, { ...rec, state: 'review', decidedAt: nowIso(), pushWant: !(m.rj && m.rj.prev && m.rj.prev.state === 'review') /* 다시 판단해도 검토면 알림 다시 안 보냄 */, ...(SHC.autoRetryInit ? { mktRetry: SHC.autoRetryInit(D, cfg, Date.now()) } : {}) /* (11/04) ⑩ 시장 자료 없음·단독만이면 다시 읽기 계획 — 클라우드가 1분마다 보고 자료가 들어오면 '대기'로 되돌림(rejudgeAt → 이 PC가 기억을 지우고 다시 판단) */ }).catch(() => false); m.final = true; if (ok) { out.review++; log(`🔎 자동 발송요청: 주문 ${ono} 관리자 검토 — ${D.reasons.slice(0, 2).join(' / ')}`, 1); } }
       if (out.sent || out.review) window.__rnAutoShip = { at: nowIso(), ...out }; return out; }
     catch (e) { log('🤖 자동 발송요청 판단 실패: ' + e.message, 1); return null; } finally { AU.busy = false; } }
   window.__rnAutoShipPc = (orders) => autoShipPc(orders);
