@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "🛰 출고 실시간 기록 판",
+ "since": "2026-11-04T07:34:55Z",
+ "beat": "2026-11-04T07:34:55Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T07:28:01Z"
  },
- "host": null
+ "host": "vm"
 }
