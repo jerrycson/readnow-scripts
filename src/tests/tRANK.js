@@ -3,6 +3,7 @@
 //  ③ 1위·꼴찌·지난 출고일보다 많음·적음 — 그 화면이 뜨고 하루 한 번만 ④ 샘플 보기(경우마다 4가지) ⑤ 끄기 ⑥ 순위 화면(상위·하위·기간·날짜 누르기) ⑦ 360px 넘침 없음 · 움직임 줄이기
 //  (정범님 11/04 두 번째) ⑧ 견줄 날 셋(달력의 어제·지난주 같은 요일·작년 같은 날 · 출고 없는 날은 건너뜀) ⑨ 더 높은 등급이 되면 한 번 더(꼴찌는 따로)
 //  (정범님 11/05) ⑬ 일별 주문 매출(전날 14:01~그날 14:00 · 주말 묶음 나눔 · sales_daily 기록) ⑭ 그림 6가지씩 더함 · 1위 화려/꼴찌 초라 · 뜨는 경우·경우마다 끄기
+//  (정범님 11/05 두 번째) ⑮ 하루 첫 열기·주간·월간·연간 그림 10가지씩 · 기간이 길수록 더 화려 · 연간 순위·연간 보기 · 문구 위트
 //  ⑩ 설정은 공용 app_settings/main.rankFx(관리자 기기 · 예전 기기 값 처음 한 번 옮김 · 관리자 아닌 기기는 못 바꿈) ⑪ 출고별 매출 표 🏆 아이콘 → 그 경우 그림(날짜 누르기와 안 겹침) ⑫ 같은 경우 안에서만 무작위
 // 시험 자료 손님은 '손님A' (공개 저장소) · 쓰는 법: RN_PORT=<포트> node tRANK.js (pw/ 안 — harness.js·seed.js 옆)
 let bad = 0, ran = 0; /* ran = 끝까지 돈 칸 수(브라우저 안에서 멈추면 harness가 삼키므로 따로 셈) */ const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); if (!c) bad++; };
@@ -132,7 +133,7 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
   });
   // ⑦ 휴대폰 360px — 순위 화면·오늘 출고·축하 화면 가로 넘침 없음 · 움직임 줄이기면 그림만
   await H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(400); await p.emulateMedia({ reducedMotion: 'reduce' });
-    const r = await p.evaluate(async (seedSrc) => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; (0, eval)('(' + seedSrc + ')')(); try { localStorage.removeItem('rn-rkfx'); localStorage.removeItem('rn-rkfx-seen'); } catch (e) {}
+    const r = await p.evaluate(async (seedSrc) => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; (0, eval)('(' + seedSrc + ')')(); try { localStorage.removeItem('rn-rkfx'); localStorage.removeItem('rn-rkfx-seen'); } catch (e) {} window.__rkfxNoCap = 1;
       const wide = () => { const sh = document.getElementById('sheet'); const vw = document.documentElement.clientWidth; let w = 0; (sh.classList.contains('on') ? sh : document.getElementById('main') || document.body).querySelectorAll('*').forEach((x) => { const b = x.getBoundingClientRect(); if (!b.width || b.right <= vw + 1) return; for (let y = x.parentElement; y; y = y.parentElement) { const ox = getComputedStyle(y).overflowX; if (ox === 'auto' || ox === 'scroll' || ox === 'hidden') return; } w++; (o.wl = o.wl || []).push(x.className || x.tagName); }); return { doc: document.documentElement.scrollWidth - vw, sh: sh.scrollWidth - sh.clientWidth, w }; };
       __today(70000); S.shipTab = 'confirm'; openShip(); for (let i = 0; i < 30 && !document.getElementById('rkfx'); i++) await Wt(150); o.ship = wide(); o.line = !!document.getElementById('rk_today'); const f = document.getElementById('rkfx'); o.fx = !!f; o.still = f && f.classList.contains('still'); o.noParts = S._rkfx && !S._rkfx.parts; if (f) { const c = f.querySelector('.rkfx-c').getBoundingClientRect(); o.card = [Math.round(c.left), Math.round(c.right), innerWidth]; f.click(); }
       await Wt(100); history.back(); await Wt(300); openSalesRank(); await Wt(300); o.rank = wide(); history.back(); await Wt(300);
@@ -201,7 +202,7 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
       const confSeen = JSON.stringify({ d: td, k: 'top', g: 3, low: 0 }); localStorage.setItem('rn-rkfx-seen', confSeen); o.confSeen = confSeen;
       S.sec.o_shipday = false; if (S.tab === 'orders') S.tab = 'home'; uxTabGo('orders'); for (let i = 0; i < 60 && !document.getElementById('sdbar'); i++) await Wt(150); rankFxClose(); const sdb = document.getElementById('sdbar'); if (sdb) sdb.click(); o.tabDbg0 = [!!sdb, S.sec.o_shipday, S.tab]; for (let i = 0; i < 20 && !fx(); i++) await Wt(150); o.tab = fx(); o.tabDbg = [...o.tabDbg0, (S._rkfxQ || []).join(), JSON.stringify(rkfxSeenO('tab')), !!S._rkfx, (() => { try { const x = rkfxOccInfo('tab'); return x && [x.key, x.I.kind]; } catch (e) { return 'err ' + e.message; } })()]; rankFxClose(); o.tab2r = rkfxOcc('tab');
       // 「오늘 출고 끝까지」 단추 고리(shipOneShotGo) — 지운 뒤 누르면 뜸
-      try { const all = JSON.parse(localStorage.getItem('rn-rkfx-seen-o') || '{}'); delete all.go; localStorage.setItem('rn-rkfx-seen-o', JSON.stringify(all)); } catch (e) {} window.shipOneShot = () => {}; shipOneShotGo(); for (let i = 0; i < 20 && !fx(); i++) await Wt(150); o.btn = fx(); rankFxClose(); delete window.shipOneShot; if (document.getElementById('sheet').classList.contains('on')) { history.back(); await Wt(300); }
+      try { const all = JSON.parse(localStorage.getItem('rn-rkfx-seen-o') || '{}'); delete all.go; localStorage.setItem('rn-rkfx-seen-o', JSON.stringify(all)); } catch (e) {} window.shipOneShot = () => {}; shipOneShotGo(); shipOneShotGo(); for (let i = 0; i < 20 && !fx(); i++) await Wt(150); o.btn = fx(); rankFxClose(); delete window.shipOneShot; if (document.getElementById('sheet').classList.contains('on')) { history.back(); await Wt(300); }
       // 하루 첫 열기(어제 결과) · 주간 · 월간
       o.ydMd = rkMd(D.bk1); o.openR = rkfxOcc('open'); o.open = fx(); rankFxClose(); o.wk = rkPerInfo('week'); o.mo = rkPerInfo('month'); o.wkR = rkfxOcc('week'); o.wkFx = fx(); rankFxClose(); o.wkAgain = rkfxOcc('week'); o.moR = rkfxOcc('month'); o.moFx = fx(); rankFxClose();
       o.wk = o.wk && { d: o.wk.d, unit: o.wk.unit, N: o.wk.N, kind: o.wk.kind, wd: new Date(o.wk.d + 'T12:00:00Z').getUTCDay(), key: o.wk.key }; o.mo = o.mo && { d: o.mo.d, N: o.mo.N, kind: o.mo.kind };
@@ -229,10 +230,56 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
     ok(r.wk && r.wk.unit === '주' && r.wk.wd === 1 && r.wk.N >= 3 && r.wk.kind === 'top' && r.wkR && r.wkFx && r.wkFx.occ === 'week' && /주 중/.test(r.wkFx.txt) && r.wkAgain === false, '주간 마감 — 끝난 주(월~일) 순위 · 1위 · 그 주에 한 번 ' + JSON.stringify(r.wk));
     ok(r.mo && r.mo.N >= 2 && r.moR && r.moFx && r.moFx.occ === 'month' && /달 중/.test(r.moFx.txt), '달 마감 — 끝난 달 순위 ' + JSON.stringify([r.mo, r.moFx && r.moFx.txt.slice(0, 80)]));
     ok(r.qd[0] === 'open' && r.qd[1] === 'week' && r.q2 && r.q2.occ === 'week', '겹치면 줄 섬 — 닫힌 뒤 다음 경우 ' + JSON.stringify(r.qd));
-    ok(r.occN === 6 && r.occOn, '⚙ 설정 🕒 언제 띄울까 — 경우 6가지 · 기본 모두 켬'); ok(r.saved.week === false && Object.keys(r.saved).length === 1, '경우 끄기 저장(공용 app_settings/main.rankFx.on) ' + JSON.stringify(r.saved));
+    ok(r.occN === 7 && r.occOn, '⚙ 설정 🕒 언제 띄울까 — 경우 7가지 · 기본 모두 켬'); ok(r.saved.week === false && Object.keys(r.saved).length === 1, '경우 끄기 저장(공용 app_settings/main.rankFx.on) ' + JSON.stringify(r.saved));
     ok(r.offR === false && !r.offFx && r.onOther === true, '끈 경우(주간)는 안 뜨고 다른 경우(월간)는 뜸');
     ok(r.smp && r.smp.occ === 'week' && /샘플/.test(r.smp.txt) && /주 중/.test(r.smp.txt), '경우마다 샘플(주간 모양): ' + (r.smp && r.smp.txt.slice(0, 100)));
     ok(r.conf, "새 경우들은 확정 순간(rn-rkfx-seen) 기록을 건드리지 않음"); ran++;
   });
-  ok(ran === 5, `시험 칸 다섯이 끝까지 돎(${ran}/5)`); console.log(bad ? `❌ 실패 ${bad}` : '✓ tRANK 모두 통과'); process.exit(bad ? 1 : 0);
+  // (정범님 11/05 두 번째) ⑮ 하루 첫 열기·주간·월간·연간 그림 10가지씩 · 기간이 길수록 더 화려(지속·크기·겹·연출 종류) · 1위 갱신과 다른 연출 · 연간 순위·견줌 · 연간 보기 · 설정
+  await H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(500);
+    const r = await p.evaluate(async (seedSrc) => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; const D = (0, eval)('(' + seedSrc + ')')(); try { ['rn-rkfx', 'rn-rkfx-seen', 'rn-rkfx-seen-o'].forEach((k) => localStorage.removeItem(k)); localStorage.setItem('rn-device', 'JS-MAIN'); } catch (e) {} S.devOk = true; S._rkfxMg = 1; S.app.rankFx = { k: {} };
+      const fx = () => { const e = document.getElementById('rkfx'); return e ? { kind: e.dataset.kind, occ: e.dataset.occ || '', set: e.dataset.set, tier: e.dataset.tier, v: e.dataset.v, txt: e.innerText.replace(/\s+/g, ' ').slice(0, 300) } : null; };
+      o.n = Object.fromEntries(Object.entries(RKFX_OCCV).map(([k, K]) => [k, K.v.length])); o.total = Object.values(RKFX).reduce((a, K) => a + K.v.length, 0) + Object.values(RKFX_OCCV).reduce((a, K) => a + K.v.length, 0);
+      let bad = 0; for (const [oc, K] of Object.entries(RKFX_OCCV)) for (let i = 0; i < K.v.length; i++) { rankFxShow('up', i, null, true, oc); await Wt(25); const f = fx(); if (!f || f.set !== oc || f.v !== String(i) || f.tier !== K.tier || !document.querySelector('#rkfx .rkfx-ic svg')) bad++; rankFxClose(); } o.bad = bad;
+      const look = async (k, oc) => { rankFxShow(k, 0, null, true, oc); await Wt(400); const e = document.getElementById('rkfx'); const c = e.querySelector('.rkfx-c').getBoundingClientRect(); const ic = e.querySelector('.rkfx-ic svg').getBoundingClientRect(); const st = S._rkfx; const x = { tier: e.dataset.tier, dur: +e.dataset.dur, card: Math.round(c.width), ic: Math.round(ic.width), layers: st.layers, modes: (st.modes || []).join(), cap: st.cap, txt: e.innerText.replace(/\s+/g, ' ').slice(0, 160) }; rankFxClose(); return x; };
+      o.morning = await look('up', 'open'); o.week = await look('up', 'week'); o.month = await look('up', 'month'); o.year = await look('top', 'year'); o.grand = await look('top'); o.daily = await look('up');
+      o.yearUnit = /해 중/.test(o.year.txt); o.gone = !document.getElementById('rkfx') && !S._rkfx;
+      // 무작위는 그 경우 10가지 안에서만 · 고정이면 그 그림
+      o.rnd = {}; for (const oc of Object.keys(RKFX_OCCV)) { const vs = new Set(); let out = 0; for (let i = 0; i < 30; i++) { const v = rkfxPickO(oc); if (!(v >= 0 && v < RKFX_OCCV[oc].v.length)) out++; vs.add(v); } o.rnd[oc] = [vs.size, out]; }
+      // 연간 순위 — 그 전전해·그 전해·지난해 자료 · 올해는 진행 중
+      const td = D.td; const Y = +td.slice(0, 4); let q = 0; const sale = (d, price) => { q++; const id = 'aladin_Y' + q; S.orders.set(id, { id, orderNo: 'Y' + q, kind: 'sale', platform: 'aladin', orderedAt: d + 'T09:00:00', shippedAt: d + 'T15:00:00', buyer: { name: '손님A' }, items: [{ title: '시험 책 ' + q, price, qty: 1, lineStatus: 'normal' }] }); };
+      sale(`${Y - 3}-05-10`, 30000); sale(`${Y - 2}-03-03`, 40000); sale(`${Y - 2}-11-11`, 20000); sale(`${Y - 1}-01-15`, 50000); sale(`${Y - 1}-06-20`, 70000); sale(`${Y - 1}-12-31`, 9000); S.ver++; S._sdm = null;
+      const I = rkPerInfo('year'); o.yi = I && { d: I.d, amt: I.amt, N: I.N, rank: I.rank, kind: I.kind, cmps: I.cmps.map((c) => [c.k, c.lab, c.none ? 'none' : c.amt]), bars: I.bars, key: I.key, unit: I.unit };
+      window.__rkfxAuto = 1; o.y1 = rkfxOcc('year'); o.yfx = fx(); await Wt(300); o.ybars = !!(S._rkfx && S._rkfx.bars && S._rkfx.bars.length === 12); rankFxClose(); o.y2 = rkfxOcc('year');
+      S.app.rankFx = { k: { top: { off: true } }, on: {} }; try { localStorage.removeItem('rn-rkfx-seen-o'); } catch (e) {} o.yKindOff = rkfxOcc('year'); rankFxClose(); /* 기간 경우는 1위 끄기와 상관없이 그 경우 켜기를 봄 */
+      S.app.rankFx = { k: {}, on: { year: false } }; try { localStorage.removeItem('rn-rkfx-seen-o'); } catch (e) {} o.yOff = rkfxOcc('year'); o.yOffFx = fx(); rankFxClose(); S.app.rankFx = { k: {} };
+      // 하루 첫 열기 — 어제 결과 한 줄 + 아침 그림
+      o.op = rkfxOcc('open'); o.opfx = fx(); rankFxClose(); o.ydMd = rkMd(D.bk1);
+      // 순위 화면 🎆 연간 보기
+      openSalesRank(); await Wt(300); document.querySelector('[data-rkview="year"]').click(); await Wt(300); o.yrows = [...document.querySelectorAll('#rk_ytbl tr[data-rkyear]')].map((x) => x.innerText.replace(/\s+/g, ' ').slice(0, 60)); o.ybase = !!document.getElementById('rk_ybase'); o.scr = pgdCur();
+      document.querySelector('[data-rkview="day"]').click(); await Wt(300); o.backDay = !!document.getElementById('rk_per'); history.back(); await Wt(300); S._rkSt = null;
+      // 설정 — 🎆 연간 경우 · 기간 경우 그림 고르기(공용 저장) · 경우별 칩 샘플
+      S.sec.set_rankfx = true; for (let i = 0; i < 20 && !document.querySelector('#rkfx_occ select[data-o="year"]'); i++) { S.tab = 'settings'; renderTabs(); renderMain(); await Wt(300); }
+      o.occN = document.querySelectorAll('#rkfx_occ input[data-rkfx="occ"]').length; o.yOn = !!(document.querySelector('#rkfx_occ input[data-o="year"]') || {}).checked; o.selN = ['open', 'week', 'month', 'year'].map((x) => document.querySelectorAll(`#rkfx_occ select[data-o="${x}"] option`).length);
+      const sel = document.querySelector('#rkfx_occ select[data-o="year"]'); sel.value = '4'; sel.dispatchEvent(new Event('change', { bubbles: true })); await Wt(150); o.savedO = ((((window.__FS.app_settings || {}).main || {}).rankFx || {}).o || {}); o.pickFix = [rkfxPickO('year'), rkfxPickO('year'), rkfxPickO('year')];
+      const chip = document.querySelector('#rkfx_occ [data-rkfxo="month"][data-i="7"]'); chip && chip.click(); await Wt(100); o.chip = fx(); rankFxClose(); window.__rkfxAuto = 0;
+      return o; }, seedRank.toString());
+    console.log('  기간:', JSON.stringify({ morning: r.morning, week: r.week, month: r.month, year: r.year, grand: r.grand }));
+    ok(['open', 'week', 'month', 'year'].every((k) => r.n[k] === 10) && r.bad === 0, `하루 첫 열기·주간·월간·연간 그림 10가지씩 모두 뜸(잘못 ${r.bad}) · 모든 그림 ${r.total}가지`);
+    ok(r.morning.tier === 'morning' && r.week.tier === 'week' && r.month.tier === 'month' && r.year.tier === 'year', '경우마다 연출: 아침 · 주간 · 월간 · 연간');
+    ok(r.week.dur < r.month.dur && r.month.dur < r.year.dur && r.week.card < r.month.card && r.month.card < r.year.card && r.week.ic < r.month.ic && r.month.ic < r.year.ic && r.week.layers < r.month.layers && r.month.layers < r.year.layers && r.week.cap < r.month.cap && r.month.cap < r.year.cap, `기간이 길수록 더 화려: 지속 ${r.week.dur}<${r.month.dur}<${r.year.dur} · 카드 ${r.week.card}<${r.month.card}<${r.year.card} · 그림 ${r.week.ic}<${r.month.ic}<${r.year.ic} · 겹 ${r.week.layers}<${r.month.layers}<${r.year.layers}`);
+    ok(r.year.dur > r.grand.dur && r.year.layers > r.grand.layers && /festival/.test(r.year.modes) && /review/.test(r.year.modes) && /finish|cover/.test(r.week.modes) && /moonsky/.test(r.month.modes) && /awards/.test(r.month.modes) && !/festival|review|moonsky|awards|finish|cover/.test(r.grand.modes), `1위 갱신과 다른 연출 — 주간 ${r.week.modes} · 월간 ${r.month.modes} · 연간 ${r.year.modes} · 1위 ${r.grand.modes}`);
+    ok(r.morning.dur > r.daily.dur && /sunrise/.test(r.morning.modes) && r.yearUnit, '아침은 해돋이 연출 · 연간 카드는 「전체 N해 중」');
+    ok(Object.values(r.rnd).every(([n, out]) => n >= 3 && out === 0), '기간 경우 무작위는 그 경우 10가지 안에서만 ' + JSON.stringify(r.rnd)); ok(r.gone, '닫으면 모두 지움');
+    ok(r.yi && r.yi.unit === '해' && r.yi.amt === 129000 && r.yi.N === 3 && r.yi.rank === 1 && r.yi.kind === 'top' && r.yi.cmps[0][1] === '지난해' && r.yi.cmps[0][2] === 60000 && r.yi.cmps[1][1] === '그 전해' && r.yi.cmps[1][2] === 30000 && r.yi.bars.length === 12 && r.yi.bars[0] === 50000 && r.yi.bars[5] === 70000 && r.yi.bars[11] === 9000, '연간 순위 — 지난해 12.9만 원 · 끝난 해 3개 중 1위 · 지난해(6만)·그 전해(3만)와 견줌 · 달별 막대 ' + JSON.stringify(r.yi));
+    ok(r.y1 && r.yfx && r.yfx.occ === 'year' && r.yfx.tier === 'year' && r.ybars && r.y2 === false, '🎆 연말 마감 화면(한 해 돌아보기 막대 12달) · 그해에 한 번');
+    ok(r.yKindOff === true && r.yOff === false && !r.yOffFx, '연간은 그 경우 끄기만 봄(1위 끄기와 상관없음) · 끄면 안 뜸');
+    ok(r.op && r.opfx && r.opfx.set === 'open' && r.opfx.tier === 'morning' && r.opfx.txt.includes('어제 결과') && r.opfx.txt.includes(r.ydMd), '🌅 하루 첫 열기 — 아침 그림 + 어제 결과: ' + (r.opfx && r.opfx.txt.slice(0, 120)));
+    ok(r.yrows.length === 4 && /^🥇1위/.test(r.yrows[0]) && r.ybase && r.scr === 'salesRank' && r.backDay, '순위 화면 🎆 연간 보기(올해 진행 중 포함 4해) · 하루 보기로 돌아감 ' + JSON.stringify(r.yrows));
+    ok(r.occN === 7 && r.yOn && r.selN.every((n) => n === 11), '⚙ 🕒 언제 띄울까 — 🎆 연간 더해 7가지(기본 켬) · 기간 경우마다 그림 고르기(무작위 + 10가지)');
+    ok(r.savedO.year && r.savedO.year.v === 4 && r.pickFix.every((v) => v === 4), '연간 그림 고정 저장(공용 app_settings/main.rankFx.o) → 늘 그 그림');
+    ok(r.chip && r.chip.occ === 'month' && r.chip.set === 'month' && r.chip.v === '7' && /샘플/.test(r.chip.txt), '경우별 그림 칩 샘플(월간 8번째): ' + (r.chip && r.chip.txt.slice(0, 80))); ran++;
+  });
+  ok(ran === 6, `시험 칸 여섯이 끝까지 돎(${ran}/6)`);   { const c = await p.evaluate(async () => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); window.__rkfxNoCap = 0; try { localStorage.removeItem('rn-rkfx-day'); } catch (e) {} S.app = { ...S.app, rankFx: { ...((S.app && S.app.rankFx) || {}), cap: 2 } }; const n = []; for (let i = 0; i < 3; i++) { rankFxShow('up', 0, { d: '2026-11-05', amt: 1, N: 3, kind: 'up' }, false); await Wt(50); n.push(!!document.getElementById('rkfx')); rankFxClose(); await Wt(30); } rankFxShow('up', 0, null, true); await Wt(50); const smp = !!document.getElementById('rkfx'); rankFxClose(); const el = document.getElementById('rkfx_cap'); window.__rkfxNoCap = 1; return { n, smp }; }); ok(c.n[0] && c.n[1] && !c.n[2] && c.smp, '저절로 뜨는 화면은 하루 최대 2번(세 번째는 안 뜸) · 샘플은 셈 밖 ' + JSON.stringify(c)); }
+console.log(bad ? `❌ 실패 ${bad}` : '✓ tRANK 모두 통과'); process.exit(bad ? 1 : 0);
 })();
