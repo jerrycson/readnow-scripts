@@ -1,15 +1,2 @@
-health=1&hours=24&perf=400&doc=prd_jobs/pcBeat,app_settings/write_watch,app_settings/value_model,app_settings/buyback_stats,app_settings/extras_study,prd_system/settings,app_settings/nb_find,prd_system/autoSched,prd_system/dataBackup,prd_system/lost,prd_system/alps_hist,app_settings/y24_shop,app_settings/health_cache,prd_system/tether
-logs=1&pc=LOGGER&from=202611032150
-logs=1&pc=JS-MAIN&from=202611032150
-logs=1&pc=HOME&from=202611032150
-logs=1&pc=MJ-MAIN&from=202611032150
-cmdsince=2026-11-03T12:50
-cmds=shipReq&n=20
-cmds=alpsRun&n=10
-cmds=nbFind&n=10
-recentUp=rn_status&mins=240
-recentUp=ext_hist&mins=240
-recentUp=shp_cmds&mins=240
-recentUp=prd_listings&mins=240
-recentUp=y24_orders&mins=240
-# 2922622631
+logs=1&pc=JS-MAIN&from=202611042200
+# 2843016380
