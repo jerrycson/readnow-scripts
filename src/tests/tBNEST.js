@@ -53,7 +53,7 @@ require('/home/user/w/pw/harness.js')(async (p) => { await p.evaluate(require('/
   ok(/추정\(읽지 않은 날 · 일평균\)/.test(R.legend) && /추정/.test(R.tipEst) && /보기용/.test(R.tipEst), '범례 \'추정(읽지 않은 날 · 일평균)\' · 풍선에 추정·보기용');
   ok(R.realSum === 5 + 3 + 4 + 14 && R.stats === R.stats2 && JSON.parse(R.stats).goneN === 26, '합계·통계는 실제 회차 값만(사라짐 26 · 추정 줄 안 셈 · 설정 바꿔도 같음)');
   ok(R.gap8 === 0 && R.gap2.includes('2026-10-23') && R.gap2.length === 10, '설정: 8일이면 추정 없음 · 2일이면 10/23도 추정');
-  ok(R.sheetEst === 9 && R.sheetLeg && R.inpVal === '3', '판매자 상세 화면에 추정 줄·범례 · 보기 기준 칸 처음 값 3');
+  ok(R.sheetEst === 9 && R.sheetLeg && R.inpVal === '4', '판매자 상세 화면에 추정 줄·범례 · 보기 기준 칸 처음 값 4(읽지 않은 날 3일 이상)');
   ok(R.saved === 5 && R.after5.length === 6 && !R.after5.includes('2026-11-02'), '보기 기준에서 5일로 저장 → 7일 사이만 추정(4일 사이는 그대로)');
   // 360px — 가로로 넘치지 않음(표·그래프는 제 안에서 밀기)
   await p.setViewportSize({ width: 360, height: 760 }); await p.waitForTimeout(500);
