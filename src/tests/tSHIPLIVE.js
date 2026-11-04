@@ -1,0 +1,32 @@
+// tSHIPLIVE — 정범님 11/04 '출고와 관련된 모든 사항을 기록이나 도우미에서 실시간으로 표시 · 관리자가 현재 어떤 것이 실행되고 있는지 세부적으로 · 문제가 생겼을 때 빨리 파악'
+//  웹앱 오늘 출고 '🛰 지금 실행 중': 송장 입력(shp_invoices)·발송준비시작·시장 다시 읽기(shp_cmds)가 실시간으로 · 지금 단계 크게 · 세부 줄 · 빨간 문제 줄 · 📋 복사 · 홈 '오늘 확인할 것' · 단계 줄만 바뀌면 화면 전체를 다시 그리지 않음
+let bad = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); if (!c) bad++; };
+require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  const R = await p.evaluate(async () => { const o = {}; const w = (ms) => new Promise((r) => setTimeout(r, ms)); const now = () => new Date().toISOString(); await w(2500);
+    const inv = db.collection('shp_invoices').doc('inv1'); await inv.set({ createdAt: now(), status: 'running', limit: 0, claim: { pc: 'PC-T' }, items: [{ orderNo: 'O1', invoice: '111122223333', recipient: '손님A', state: 'todo' }, { orderNo: 'O2', invoice: '444455556666', recipient: '손님B', state: 'todo' }], log: [{ at: now(), lv: 'info', m: '맡김 받음 — PC-T가 맡아 발송 요청 화면을 새 탭으로 엶', by: 'PC-T' }], stepNow: { at: now(), lv: 'info', m: '송장 칸에 넣음', by: 'PC-T' } });
+    await db.collection('shp_cmds').doc('sd1').set({ type: 'startDelivery', orderNos: ['A1'], status: 'running', createdAt: now(), claim: { pc: 'cloud' }, log: [{ at: now(), lv: 'info', m: '알라딘에 발송준비시작 보냄', o: 'A1', by: 'cloud' }], stepNow: { at: now(), lv: 'info', m: '알라딘에 발송준비시작 보냄', by: 'cloud', big: 1 } });
+    S.ship = { orders: [{ orderNo: 'O1', orderedAt: '2026-11-04 09:00', buyer: '가', items: [{ listingId: 'L1', title: '책1', price: 5000, qty: 1 }] }], tabCounts: {}, at: now() }; S.shipC = { orders: [], at: now(), enrich: {} }; S._shipLive = 1; S.shipTab = 'deliv';
+    await openShip(); await w(1500); const box = () => document.getElementById('shl_box'); o.t0 = box() ? box().innerText : '';
+    o.inv0 = (document.getElementById('inv_now') || {}).innerText || '';
+    const sp = []; const o0 = window.shipRedrawSoon; window.shipRedrawSoon = function () { const k = new Error().stack; if (/orderBy\.limit\.onSnapshot\.S\.inv/.test(k)) sp.push(k.split('\n').slice(1, 4).join(' | ')); return o0.apply(this, arguments); }; /* 가짜 Firestore는 문서 하나를 쓰면 모든 듣기를 부름 — 송장 입력 듣기(loadInvBatch)가 부른 다시 그리기만 셈 */ await inv.set({ log: [...(await inv.get()).data().log, { at: now(), lv: 'info', m: "'입력완료' 누름 — 알라딘이 처리하고 화면을 다시 열 때까지 기다림", o: 'O1', inv: '111122223333', by: 'PC-T' }], stepNow: { at: now(), lv: 'info', m: "'입력완료' 누름 — 알라딘이 처리하고 화면을 다시 열 때까지 기다림", by: 'PC-T' } }, { merge: true }); await w(1200);
+    o.t1 = box().innerText; o.inv1 = document.getElementById('inv_now').innerText; o.noFull = !sp.length; o.sp = sp; window.shipRedrawSoon = o0;
+    await inv.set({ items: [{ orderNo: 'O1', invoice: '111122223333', state: 'done' }, { orderNo: 'O2', invoice: '444455556666', state: 'fail', err: '송장번호 칸을 못 찾음' }], log: [...(await inv.get()).data().log, { at: now(), lv: 'err', m: '주문은 있지만 송장번호 칸을 못 찾음 — 실패로 두고 다음 주문', o: 'O2', inv: '444455556666', res: '실패', by: 'PC-T' }], stepNow: { at: now(), lv: 'err', m: '주문은 있지만 송장번호 칸을 못 찾음', by: 'PC-T' } }, { merge: true }); await w(1500);
+    const row = document.querySelector('[data-shl="inv:inv1"]'); o.redBox = /B0322A/i.test(box().getAttribute('style') || ''); o.t2 = box().innerText; row.open = true; await w(100);
+    o.redLine = [...row.querySelectorAll('div')].some((d) => /송장번호 칸을 못 찾음/.test(d.textContent) && /B0322A/i.test(d.getAttribute('style') || ''));
+    o.copy = shlCopyTxt(S._shlRows.find((x) => x.id === 'inv:inv1')); o.prob = shipLiveProblems().map((x) => x.id);
+    await openShip(); await w(800); o.keepOpen = document.querySelector('[data-shl="inv:inv1"]').open;
+    o.cpBtn = !!document.querySelector('[data-shlcp="inv:inv1"]') && !!document.getElementById('shl_cpall');
+    o.guide = JSON.stringify((typeof pgdDefs === 'function' ? pgdDefs().ship : null) || '').includes('shl_box');
+    return o; });
+  console.log(JSON.stringify(R).slice(0, 1800));
+  ok(/🛰 지금 실행 중/.test(R.t0) && /알라딘 송장 입력/.test(R.t0) && /발송준비시작/.test(R.t0), '🛰 칸에 송장 입력·발송준비시작 두 줄');
+  ok(/지금: 송장 칸에 넣음/.test(R.t0) && /지금: 알라딘에 발송준비시작 보냄/.test(R.t0), '하는 중인 일은 「▶ 지금」 한 줄');
+  ok(/지금: 송장 칸에 넣음/.test(R.inv0), '② ③ 송장 입력 줄 아래에도 지금 한 줄');
+  ok(/입력완료/.test(R.t1) && /입력완료/.test(R.inv1), '단계 줄이 바뀌면 실시간으로 그 칸이 바뀜');
+  ok(R.noFull, '단계 줄만 바뀐 때는 출고 화면 전체를 다시 그리지 않음(송장 입력 듣기) ' + JSON.stringify(R.sp || []));
+  ok(R.redBox && R.redLine && /문제 1건/.test(R.t2), '실패 줄은 빨강 · 칸 테두리 빨강 · 문제 n건');
+  ok(/못 찾음 — 실패로 두고 다음 주문 · 주문 O2 · 송장 444455556666 · 실패/.test(R.copy) && /shp_invoices\/inv1/.test(R.copy) && !/손님/.test(R.copy), '📋 복사 글: 세부 줄 전부 · 문서 열쇠 · 받는 분 이름 없음');
+  ok(R.prob.includes('inv:inv1'), "홈 '오늘 확인할 것'에 쓰는 문제 목록에 들어감");
+  ok(R.keepOpen && R.cpBtn, '다시 그려도 펼친 줄은 펼친 채 · 복사 단추');
+  ok(R.guide, '출고 화면 설명서에 🛰 지금 실행 중');
+  console.log(bad ? `❌ tSHIPLIVE 실패 ${bad}` : '✓ tSHIPLIVE 통과'); });
