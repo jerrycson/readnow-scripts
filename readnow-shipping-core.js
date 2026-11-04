@@ -8,7 +8,7 @@
 // ==========================================================================
 (function (root) {
   'use strict';
-  const VERSION = '0.7.7'; // (0.7.7) 예스24 예전 주문(y24OrdGone·y24OrdOld)·알라딘 먼저 팔림(y24AlFirst)·허브 요약·ALPS 줄(y24AlpsRows) · '발송처리 예정' 바르게 읽기 // (0.7.6) 예스24 주문 응답 풀기(y24OrdParse·y24OrdGroup·y24OrdMerge·y24OrdLeft) · 검색으로 찾은 같은 책 견주기(srchOthers) · 시장 자료 없음 다시 판단(autoRetry*) // (11/04 · 판 번호는 합칠 때) ⑨ 미등록·ISBN 없는 상품은 검색으로 찾은 같은 책(srch)을 견줄 대상으로(srchOthers — 같은 책 sure·애매 loose) · ⑩ 시장 자료 없음·단독 검토는 자료가 들어오면 다시 판단(autoRetryInit·autoRetryCheck·autoRetryTxt) // (0.7.5) 🤖 자동 발송요청 ① 권수·묶음 평균(정범님 10/29): qtyMax 20까지 권수 검토 없음 · 넘으면 bundleSize 20권 묶음(bundleRound ceil 기본)당 총액 평균 ≥ bundleWon 60,000이면 통과 · 미만 검토 · bundleOn 끄면 예전처럼 무조건 검토 · ⑧ maxItemWon·maxTotalWon(기본 0 = 안 씀 · kind 'big') · 돌려줌에 bundle{n,avg,size,won,ok,why} · minQty는 옛 이름(= qtyMax) // (0.7.4) ⑦ 단독 매물 검토(aloneOn · mktOthers · kind 'alone') // 🤖 자동 발송요청 ⑦ 단독 매물(첫 페이지에 우리 매물뿐 — 견줄 다른 판매자 매물 없음)이면 검토(aloneOn · 기본 켬 · kind 'alone') // (0.7.3) 저가·YLW 매입가: 우리 등급 칸이 없으면 가장 가까운 다른 등급 매입가와 견줌(bbPick) // (0.7.2) 🤖 자동 발송요청 YLW·저가 상품 알라딘 매입가 기준(autoLowOf·bbOf) // (0.7.1) 🤖 자동 발송요청 판단(autoShipDecide · AUTO_DEFAULTS · custRisk) — 판매가 비교는 출고 카드 판매가 평가와 같은 ReadnowML.evalSale // (0.7.0) 🇰🇷 법정 공휴일 미리 넣음·택배 수거 달력(pickup off/on)·실제 발송 묶음(pickupRun)·③ 배송&구매확정전 화면 읽기(parseShippedPage — 그날 출고 = 발송일이 그날인 주문) // (0.6.0) planConfirm — 오늘 출고 확정 목록 계산(웹앱 '출고 확정' 단추와 클라우드 출고 시각 자동 확정이 같은 기준) 
+  const VERSION = '0.7.8'; // (0.7.8) 예스24 주문 칸 이름 후보에 ORD_JOB_PROC(_NM)·ORD_DTS·PAY_DTS·TEL_NO // (0.7.7) 예스24 예전 주문(y24OrdGone·y24OrdOld)·알라딘 먼저 팔림(y24AlFirst)·허브 요약·ALPS 줄(y24AlpsRows) · '발송처리 예정' 바르게 읽기 // (0.7.6) 예스24 주문 응답 풀기(y24OrdParse·y24OrdGroup·y24OrdMerge·y24OrdLeft) · 검색으로 찾은 같은 책 견주기(srchOthers) · 시장 자료 없음 다시 판단(autoRetry*) // (11/04 · 판 번호는 합칠 때) ⑨ 미등록·ISBN 없는 상품은 검색으로 찾은 같은 책(srch)을 견줄 대상으로(srchOthers — 같은 책 sure·애매 loose) · ⑩ 시장 자료 없음·단독 검토는 자료가 들어오면 다시 판단(autoRetryInit·autoRetryCheck·autoRetryTxt) // (0.7.5) 🤖 자동 발송요청 ① 권수·묶음 평균(정범님 10/29): qtyMax 20까지 권수 검토 없음 · 넘으면 bundleSize 20권 묶음(bundleRound ceil 기본)당 총액 평균 ≥ bundleWon 60,000이면 통과 · 미만 검토 · bundleOn 끄면 예전처럼 무조건 검토 · ⑧ maxItemWon·maxTotalWon(기본 0 = 안 씀 · kind 'big') · 돌려줌에 bundle{n,avg,size,won,ok,why} · minQty는 옛 이름(= qtyMax) // (0.7.4) ⑦ 단독 매물 검토(aloneOn · mktOthers · kind 'alone') // 🤖 자동 발송요청 ⑦ 단독 매물(첫 페이지에 우리 매물뿐 — 견줄 다른 판매자 매물 없음)이면 검토(aloneOn · 기본 켬 · kind 'alone') // (0.7.3) 저가·YLW 매입가: 우리 등급 칸이 없으면 가장 가까운 다른 등급 매입가와 견줌(bbPick) // (0.7.2) 🤖 자동 발송요청 YLW·저가 상품 알라딘 매입가 기준(autoLowOf·bbOf) // (0.7.1) 🤖 자동 발송요청 판단(autoShipDecide · AUTO_DEFAULTS · custRisk) — 판매가 비교는 출고 카드 판매가 평가와 같은 ReadnowML.evalSale // (0.7.0) 🇰🇷 법정 공휴일 미리 넣음·택배 수거 달력(pickup off/on)·실제 발송 묶음(pickupRun)·③ 배송&구매확정전 화면 읽기(parseShippedPage — 그날 출고 = 발송일이 그날인 주문) // (0.6.0) planConfirm — 오늘 출고 확정 목록 계산(웹앱 '출고 확정' 단추와 클라우드 출고 시각 자동 확정이 같은 기준) 
   const T = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
   const toInt = (s) => { const n = parseInt(String(s || '').replace(/[^\d-]/g, ''), 10); return isNaN(n) ? null : n; };
 
@@ -342,12 +342,12 @@
     price: [/^(ORD_|GOODS_|USED_)?(SALE|SELL)_?(PRICE|PRC)$/i, /^(ORD|GOODS)_?(PRICE|PRC|UNIT_?PRICE)$/i, /^PRICE$/i],
     amt: [/^(ORD|PAY|TOT|TOTAL|SETTLE|GOODS)_?(AMT|AMOUNT|PRICE_?SUM|SUM)$/i, /AMT$/i],
     fee: [/(DELV|DLV|DELIVERY|SHIP|BAESONG)_?(FEE|AMT|COST|PRICE|PRC|CHARGE)$/i],
-    stCd: [/^ORD(ER)?_?(STAT|STATE|STS|STATUS)(_?(GB|CD))?$/i, /^(DELV|DLV|DELIVERY|CLAIM)_?(STAT|STATE|STS|STATUS)(_?(GB|CD))?$/i, /^(STAT|STATE|STS|STATUS)(_?(GB|CD))?$/i],
-    stNm: [/^ORD(ER)?_?(STAT|STATE|STS|STATUS)(_?(GB|CD))?_?NM$/i, /^(DELV|DLV|DELIVERY|CLAIM)_?(STAT|STATE|STS|STATUS)(_?(GB|CD))?_?NM$/i, /(STAT|STATE|STS|STATUS)(_?(GB|CD))?_?NM$/i],
-    at: [/^ORD(ER)?_?(DT|DATE|DTM|DTTM|DATETIME|TIME|YMD|YMDHMS)$/i, /^(PAY|PAYMENT|ACPT|ACCEPT|REG)_?(DT|DATE|DTM|DTTM|YMD)$/i],
+    stCd: [/^ORD_?JOB_?PROC$/i, /^ORD(ER)?_?(STAT|STATE|STS|STATUS)(_?(GB|CD))?$/i, /^(DELV|DLV|DELIVERY|CLAIM)_?(STAT|STATE|STS|STATUS)(_?(GB|CD))?$/i, /^(STAT|STATE|STS|STATUS)(_?(GB|CD))?$/i],
+    stNm: [/^ORD_?JOB_?PROC_?NM$/i, /^ORD(ER)?_?(STAT|STATE|STS|STATUS)(_?(GB|CD))?_?NM$/i, /^(DELV|DLV|DELIVERY|CLAIM)_?(STAT|STATE|STS|STATUS)(_?(GB|CD))?_?NM$/i, /(STAT|STATE|STS|STATUS)(_?(GB|CD))?_?NM$/i],
+    at: [/^ORD_?DTS$/i, /^PAY_?DTS$/i, /^ORD(ER)?_?(DT|DATE|DTM|DTTM|DATETIME|TIME|YMD|YMDHMS)$/i, /^(PAY|PAYMENT|ACPT|ACCEPT|REG)_?(DT|DATE|DTM|DTTM|YMD)$/i],
     buyer: [/^(ORDR|ORDER|ORD|ORDERER|BUYER|BUY|MEM|MEMBER|CUST)_?(NM|NAME)$/i],
     rcv: [/^(RCVR|RCV|RECV|RECEIVER|RECIPIENT|RCPT|TAKE|DELV_?RCV|ACPR)_?(NM|NAME)$/i],
-    phone: [/^(RCVR|RCV|RECV|RECEIVER|RECIPIENT|RCPT|TAKE|ACPR)_?(HP|MOBILE|CELL|TEL|PHONE)(_?NO)?$/i, /^(HP|MOBILE|CELL)(_?NO)?$/i],
+    phone: [/^(RCVR|RCV|RECV|RECEIVER|RECIPIENT|RCPT|TAKE|ACPR)_?(HP|MOBILE|CELL|TEL|PHONE)(_?NO)?$/i, /^TEL_?NO$/i, /^(HP|MOBILE|CELL)(_?NO)?$/i],
     zip: [/(ZIP|POST)_?(NO|CD|CODE)?$/i],
     addr: [/^(RCVR|RCV|RECV|RECEIVER|RECIPIENT|RCPT|TAKE|DELV|DLV|ACPR)?_?ADDR(ESS)?_?(1|BASE)?$/i],
     addr2: [/ADDR(ESS)?_?(2|DTL|DETAIL)$/i],
