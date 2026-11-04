@@ -1,7 +1,2 @@
-shplog=1&n=80
-shpauto=30
-doc=app_settings/y24_ord_state,app_settings/main,app_settings/shipping,app_settings/ship
-cmds=market&n=20
-cmds=startDelivery&n=15
-list=rn_status
-# 1129113637
+doc=bench_state/266540
+# 226662168
