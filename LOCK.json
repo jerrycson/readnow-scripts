@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "통합 SKU 10글자",
- "since": "2026-11-04T01:52:41Z",
- "beat": "2026-11-04T01:52:41Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-04T01:31:01Z"
+  "at": "2026-11-04T01:59:10Z"
  },
- "host": "vm"
+ "host": null
 }
