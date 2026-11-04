@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "지연 줄이기: 설정·원가 연결·가격 승인",
- "since": "2026-11-04T01:27:51Z",
- "beat": "2026-11-04T01:27:51Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-04T01:21:35Z"
+  "at": "2026-11-04T01:31:01Z"
  },
- "host": "vm"
+ "host": null
 }
