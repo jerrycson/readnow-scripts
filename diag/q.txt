@@ -1,7 +1,8 @@
-doc=app_settings/cloud,app_settings/ship_auto,app_settings/night_ops,app_settings/cloud_jobs,prd_jobs/pcBeat,app_settings/alps_seen,app_settings/platforms
-logs=1&pc=MJ-MAIN&from=202611041620&to=202611041710
-logs=1&pc=HOME&from=202611041620&to=202611041710
-logs=1&pc=HOME&from=202611041800
-logs=1&pc=MJ-MAIN&from=202611041800
-cmds=read&n=8
-# 1131030031
+shplog=alps_913b273e7530&n=200
+shplog=UXNKM7Kkv0Acv1QcNZCy&n=200
+shplog=i6VC4isqHVMVDCT1v7vU&n=200
+shplog=M6HRwiWoLpTccPlo1o36&n=200
+logs=1&pc=JS-MAIN&from=202611041600
+logs=1&pc=HOME&from=202611041710&to=202611041800
+logs=1&pc=MJ-MAIN&from=202611041700&to=202611041800
+# 67968394
