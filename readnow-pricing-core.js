@@ -634,9 +634,11 @@
     };
     const ANON_RULES = { second: '되돌아가 2위(간격 비교)', follow: 'n회만 따르기' }; /* 불특정 판매자 규칙 차례: 2위 먼저 보고(간격이 크면), 아니면 n회만 따르기 */
     /* (11/04 정범님 '무시 판매자 빼는 설정 · 빠지지 않는 지금 상태를 기본으로') excl = 무시 판매자를 다른 셈에서도 뺄 곳(곳마다 따로 · 처음 값 모두 꺼짐 = 지금 그대로)
-     *  · 정책 켜짐(on)과 따로 — 이 칸만 켜도 빠짐 · 벤치마킹 수집(읽기)·시장 지표 기록 자체는 그대로(관찰은 계속) · blLog = 🚫 블랙리스트 더하기·해제·메모 기록(지우지 않음) */
+     *  · 정책 켜짐(on)과 따로 — 이 칸만 켜도 빠짐(11/05부터 '언제 뺄까' excl.when으로 '엔진이 켜졌을 때만'도 고를 수 있음) · 벤치마킹 수집(읽기)·시장 지표 기록 자체는 그대로(관찰은 계속) · blLog = 🚫 블랙리스트 더하기·해제·메모 기록(지우지 않음) */
     const EXCL = { mkt: '시장 지표 — 경쟁 매물 셈(최저가 배지 수·시장 관찰·우리가 싼 상품·수동 일괄 시장 조건·기준 시장가·알라딘 매입 비교)', strat: '⚡ 희소 전략 — 경쟁 매물 셈(앞선 매물·다음 매물·희소 분류)', rec: '판매가 추천·가격 판정 — 경쟁 목록(수동 일괄 추천가·사진 가격 추천·판매가 평가)' };
-    const POLICY_DEF = () => ({ on: false, rec: true, sellers: {}, condSets: {}, anon: { trigger: 'chaser', minEvents: 1, rules: { second: false, follow: false }, cond: {} }, excl: { mkt: false, strat: false, rec: false }, blLog: [] });
+    /* (11/05 정범님 '엔진이 켜졌을 때만 빼야 하면 — 설정에서 켜고 끌 때 선택 가능하게') excl.when = 언제 뺄까 · always 늘(엔진 꺼져도 · 처음 값 = 11/04 동작 그대로) · on 엔진(정책 on)이 켜졌을 때만 */
+    const EXCL_WHEN = { always: '늘(엔진 꺼져도)', on: '엔진이 켜졌을 때만' };
+    const POLICY_DEF = () => ({ on: false, rec: true, sellers: {}, condSets: {}, anon: { trigger: 'chaser', minEvents: 1, rules: { second: false, follow: false }, cond: {} }, excl: { mkt: false, strat: false, rec: false, when: 'always' }, blLog: [] });
     const normPolicy = (p) => { const D = POLICY_DEF(); if (!p || typeof p !== 'object') return D; const a = p.anon || {}; return { ...D, ...p, sellers: { ...(p.sellers || {}) }, condSets: { ...(p.condSets || {}) }, anon: { ...D.anon, ...a, rules: { ...D.anon.rules, ...(a.rules || {}) }, cond: { ...(a.cond || {}) } }, excl: { ...D.excl, ...(p.excl && typeof p.excl === 'object' ? p.excl : {}) }, blLog: Array.isArray(p.blLog) ? p.blLog.slice() : [] }; };
     const condOf = (P, x) => { const o = { ...COND_DEF }; const cs = x && x.condSet && P.condSets[x.condSet] ? P.condSets[x.condSet].cond || {} : {}; for (const src of [cs, (x && x.cond) || {}]) for (const [k, v] of Object.entries(src)) if (k in COND_DEF && v !== '' && v != null) o[k] = v; return o; };
     const sellerOf = (P, sc) => (sc != null ? P.sellers[String(sc)] || null : null);
@@ -725,8 +727,10 @@
 
     /* ⑥ 🚫 무시 판매자(블랙리스트) — 다른 셈에서 빼기 · 더하기/해제/메모(정책 사본 P를 고침 · 저장은 부르는 쪽) */
     function ignored(policy) { const P = normPolicy(policy); return Object.entries(P.sellers).filter(([sc, x]) => x && x.stance === 'ignore' && sc !== '996008').map(([sc]) => sc); }
-    /* 그 곳(mkt·strat·rec)을 켰고 무시 판매자가 있으면 판매자 번호 Set, 아니면 null(= 지금 그대로) */
-    function exclSet(policy, place) { const P = normPolicy(policy); if (!P.excl || !P.excl[place]) return null; const L = ignored(P); return L.length ? new Set(L) : null; }
+    /* (11/05) 지금 빼기가 살아 있나 — '언제 뺄까'(excl.when)가 엔진이 켜졌을 때만(on)이면 정책 on일 때만 · 늘(always · 모르는 값도)이면 언제나. 엔진·웹앱·클라우드 모두 이 판단 하나를 씀 */
+    function exclLive(policy) { const P = normPolicy(policy); return (P.excl && P.excl.when) === 'on' ? !!P.on : true; }
+    /* 그 곳(mkt·strat·rec)을 켰고 '언제 뺄까'에 맞고 무시 판매자가 있으면 판매자 번호 Set, 아니면 null(= 지금 그대로) */
+    function exclSet(policy, place) { const P = normPolicy(policy); if (!P.excl || !P.excl[place] || !exclLive(P)) return null; const L = ignored(P); return L.length ? new Set(L) : null; }
     /* 매물 줄(첫 쪽 원본 sellerCode · 블록 sc 둘 다)에서 무시 판매자 줄을 뺌 — set이 없거나 뺄 것이 없으면 같은 배열 그대로 */
     function dropIgnored(rows, set) { if (!set || !Array.isArray(rows) || !rows.length) return rows; const o = rows.filter((r) => !(r && set.has(String(r.sellerCode != null ? r.sellerCode : r.sc != null ? r.sc : '')))); return o.length === rows.length ? rows : o; }
     const blNow = (o) => (o && o.at) || new Date().toISOString();
@@ -744,7 +748,7 @@
       for (const [sc, e] of last) if (e.act === 'off' && !(P.sellers[sc] && P.sellers[sc].stance === 'ignore')) off.push({ sc, name: e.name || null, at: e.since || null, offAt: e.at, offBy: e.by || null, memo: e.memo || '', on: false });
       return { on, off }; }
 
-    return { VERSION: CVER, STRATS, STRATS_ALL, STRAT_INFO, STANCES, STANCE_DEF_STRAT, COND_DEF, COND_INFO, ANON_RULES, POLICY_DEF, normPolicy, condOf, EXCL, ignored, exclSet, dropIgnored, blAdd, blOff, blMemo, blList,
+    return { VERSION: CVER, STRATS, STRATS_ALL, STRAT_INFO, STANCES, STANCE_DEF_STRAT, COND_DEF, COND_INFO, ANON_RULES, POLICY_DEF, normPolicy, condOf, EXCL, EXCL_WHEN, exclLive, ignored, exclSet, dropIgnored, blAdd, blOff, blMemo, blList,
       events: chaseEvents, state: chaseState, sellerWide: sellerChase, map: chaseMap, collect, mapWithPolicy, find, chaserOn, higherQuiet, plan, step: chaseStep, judge, logEntry, episode, perf, kstDay, inHours,
       chaseEvents, chaseState, sellerChase, chaseMap, chaseStep };
   }
