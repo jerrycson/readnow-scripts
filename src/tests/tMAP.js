@@ -1,4 +1,4 @@
-// tMAP — 정범님 11/03: 🗺 서가 지도 편집 도구(심시티처럼) + 🔎 소재불명 지도 위 수색 + ⏸ 일시판매중지 옵션 + 수집기 샵매니저 🔎 수색중 띠
+// tMAP — 정범님 11/03(11/04 카드 크기·책 자리 정보·색 더함): 🗺 서가 지도 편집 도구(심시티처럼) + 🔎 소재불명 지도 위 수색 + ⏸ 일시판매중지 옵션 + 수집기 샵매니저 🔎 수색중 띠
 //   격자 크기 · 카드 만들기/코드 부여 · 끌어 놓기 · 꾹 눌러 끌어 복사 · 여러 개 고르기·지우기 · 되돌리기/다시 · 저장(바뀐 줄만·판 기록)/불러오기 · 다른 기기 저장 위에 얹기
 //   · 판 되돌리기 · 저장 안 한 바뀜 이어서 · 책장 그림 짚기 색 · 휴대폰 터치(꾹 눌러 복사·두 손가락 확대·카드 끌어 놓기) · 링크 위치(상품 탭 카드·기능 찾기·휴대폰 고르기·바로 가기·설명서)
 // 쓰는 법: RN_PORT=<포트> node tMAP.js
@@ -151,19 +151,120 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
   ok(/서가 지도 자리/.test(r.pd) && /박스 A/.test(r.pd) && /\(4,4\)/.test(r.pd), `상품 상세: '${r.pd.slice(0, 60)}'`);
   ok(r.guide, '📖 소재불명 사건 화면 설명서(lostCase — 작성 중 아님)');
 })).then(() => H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(500); await p.evaluate(IN);
+  // 📐 (11/04) 카드 크기(가로×세로 칸) — 크기 놓기·겹침 막기·돌리기·옮기기·복사·되돌리기·예전 1×1 자료 · 📝 책 자리 정보 · 🎨 색 · 범례
+  const r = {}; const ev = (f, a) => p.evaluate(f, a);
+  await ev(async () => { const W = window.__W; window.ask = async () => true; const now = new Date().toISOString();
+    await db.collection('prd_system').doc('shelfmap_m_mB').set({ rows: { 5: '5.2.cO' }, ver: 1 }, { merge: true });
+    await db.collection('prd_system').doc('shelfmap').set({ maps: { mB: { name: '3층 서고', kind: 'floor', w: 30, h: 30, ver: 1, n: 2, hpg: 1, hb: 0 } }, cards: { cO: { kind: 'shelf', name: '옛 책장', rows: 3, per: 10, codes: [], at: now } }, def: 'mB' }, { merge: true }); await W(300);
+    openShelfMap(); await W(400); document.querySelector('[data-smopen="mB"]').click(); await W(900); });
+  // 예전 1×1 자료 그대로
+  Object.assign(r, await ev(() => { const E = S.smE; const a = smObjAt(E.cells, smK(5, 5)), b = smObjAt(E.cells, smK(6, 5)); return { old: [a.w, a.h, b.w, b.h, smK(a.x, a.y) !== smK(b.x, b.y)].join('|'), oldPal: /놓임 2/.test((document.querySelector('[data-smcard="cO"]') || {}).textContent || '') }; }));
+  // 카드 만들기 — 3×2 (크기 단추) · 관리코드 BLKCMN
+  await p.click('[data-smnew]'); await p.waitForTimeout(150); await p.fill('[data-smcf="name"]', '큰 책장'); await p.fill('[data-smcf="rows"]', '4'); await p.fill('[data-smcf="per"]', '20'); await p.click('[data-smcsz="3x2"]'); await p.waitForTimeout(100); await p.click('[data-smcc="BLKCMN"]'); await p.waitForTimeout(100); await p.click('[data-smcsave]'); await p.waitForTimeout(500);
+  Object.assign(r, await ev(() => { const C = window.__FS.prd_system.shelfmap.cards; const [id, c] = Object.entries(C).find(([, x]) => x.name === '큰 책장') || []; window.__bg = id; S.smE.brush = null; S.smE.mode = 'pan'; smEdPanels(); return { bigCard: c ? [c.sw, c.sh, c.rows, (c.codes || []).join(',')].join('|') : null, palTxt: /3×2칸 차지/.test((document.querySelector(`[data-smcard="${id}"]`) || {}).textContent || '') }; }));
+  // 끌어 놓기 — 끄는 동안 3×2 그림자(초록) · 놓으면 6칸 한 물건
+  const bg = await ev(() => window.__bg); const cardBox = async () => p.locator(`[data-smcard="${bg}"]`).boundingBox();
+  const dragCard = async (cx, cy, probe) => { const bx = await cardBox(); const t = await cellOf(p, cx, cy); await p.mouse.move(bx.x + 30, bx.y + 20); await p.mouse.down(); await p.mouse.move(t.x, t.y, { steps: 6 }); const g = probe ? await ev(() => JSON.stringify(S.smV.ghost)) : null; await p.mouse.up(); await p.waitForTimeout(200); return g; };
+  r.ghost1 = await dragCard(10, 10, true);
+  Object.assign(r, await ev(() => { const E = S.smE; const v = E.cells.get(smK(10, 10)); const keys = [...E.cells.entries()].filter(([, x]) => x === v).map(([k]) => k); return { put: v, putN: keys.length, putSel: E.sel.has(smK(10, 10)) && E.sel.size === 1, ghostClear: !S.smV.ghost }; }));
+  // 겹치는 자리·지도 밖 — 빨간 그림자 · 놓지 않음
+  r.ghostBad = await dragCard(11, 11, true); r.ghostOut = await dragCard(28, 28, true);
+  Object.assign(r, await ev(() => ({ afterBad: S.smE.cells.size })));
+  // 꾹 눌러 끌어 복사 — 3칸 간격(겹치지 않게)
+  { const a = await cellOf(p, 10, 10), b = await cellOf(p, 17, 10); await mouseDrag(p, [a, b], 650); }
+  Object.assign(r, await ev(() => { const E = S.smE; const heads = [...E.cells.entries()].filter(([k, v]) => smIsHead(v, k) && smCid(v) === window.__bg).map(([k]) => `${smX(k)},${smY(k)}`); return { copyHeads: heads.sort().join(' '), copyCells: E.cells.size, copyTop: (E.undo[E.undo.length - 1] || {}).t }; }));
+  // 붓으로 옛 1×1 카드를 (10,12)에 → (10,10) 물건 돌리면 겹침 → 그대로
+  await ev(() => { S.smE.brush = 'cO'; S.smE.mode = 'place'; smEdPanels(); }); { const t = await cellOf(p, 10, 12); await p.mouse.click(t.x, t.y); await p.waitForTimeout(150); }
+  await ev(() => { S.smE.brush = null; S.smE.mode = 'pan'; smEdPanels(); }); { const t = await cellOf(p, 11, 11); await p.mouse.click(t.x, t.y); await p.waitForTimeout(150); }
+  Object.assign(r, await ev(() => ({ tapHead: S.smE.focus === smK(10, 10) && S.smE.sel.has(smK(10, 10)), infoLoc: /\(11,11\)~\(13,12\) 3×2/.test(document.getElementById('sm_info').textContent) })));
+  await p.keyboard.press('r'); await p.waitForTimeout(150);
+  Object.assign(r, await ev(() => ({ rotBlocked: S.smE.cells.get(smK(10, 10)) === smVal(window.__bg, 10, 10, 3, 2) })));
+  // (16,10) 물건 돌리기 → 2×3
+  { const t = await cellOf(p, 17, 11); await p.mouse.click(t.x, t.y); await p.waitForTimeout(150); } await p.click('#sm_rot'); await p.waitForTimeout(150);
+  Object.assign(r, await ev(() => { const E = S.smE; const o = smObjAt(E.cells, smK(16, 12)); return { rot: o ? [o.x, o.y, o.w, o.h].join(',') : null, rotFree: !E.cells.has(smK(18, 10)) }; }));
+  // 옮기기 — (13,10) 물건을 골라 끌어 (13,20)으로 · 겹치는 곳으로는 안 옮김
+  { const t = await cellOf(p, 13, 10); await p.mouse.click(t.x, t.y); await p.waitForTimeout(150); const a = await cellOf(p, 13, 10), b = await cellOf(p, 13, 20); await p.mouse.move(a.x, a.y); await p.mouse.down(); await p.mouse.move(b.x, b.y, { steps: 6 }); r.moveGhost = await ev(() => JSON.stringify(S.smV.ghost)); await p.mouse.up(); await p.waitForTimeout(200); }
+  Object.assign(r, await ev(() => { const E = S.smE; return { moved: E.cells.get(smK(14, 21)) === smVal(window.__bg, 13, 20, 3, 2) && !E.cells.has(smK(13, 10)), moveTop: (E.undo[E.undo.length - 1] || {}).t, movedSel: E.sel.has(smK(13, 20)) }; }));
+  { const a = await cellOf(p, 13, 20), b = await cellOf(p, 9, 10); await mouseDrag(p, [a, b]); }
+  Object.assign(r, await ev(() => ({ moveBlocked: S.smE.cells.get(smK(13, 20)) === smVal(window.__bg, 13, 20, 3, 2) })));
+  await ev(() => smUndo(S.smE)); Object.assign(r, await ev(() => ({ mvUndo: S.smE.cells.get(smK(13, 10)) === smVal(window.__bg, 13, 10, 3, 2) && !S.smE.cells.has(smK(13, 20)) })));
+  await ev(() => smRedo(S.smE)); Object.assign(r, await ev(() => ({ mvRedo: S.smE.cells.get(smK(13, 20)) === smVal(window.__bg, 13, 20, 3, 2) && !S.smE.cells.has(smK(13, 10)) })));
+  await ev(() => smUndo(S.smE));
+  // 여러 개 고르기(네모) → 물건 3개 → 지우기 → ↶
+  await p.click('[data-smmode="select"]'); { const a = await cellOf(p, 9, 9), b = await cellOf(p, 16, 11); await mouseDrag(p, [a, b]); }
+  Object.assign(r, await ev(() => ({ boxSel: [...S.smE.sel].map((k) => `${smX(k)},${smY(k)}`).sort().join(' '), nBefore: S.smE.cells.size })));
+  await p.click('#sm_del'); await p.waitForTimeout(150); Object.assign(r, await ev(() => ({ nDel: S.smE.cells.size }))); await p.click('#sm_undo'); await p.waitForTimeout(150); Object.assign(r, await ev(() => ({ nUndo: S.smE.cells.size })));
+  // 📝 책 자리 정보 — (10,10) 물건 → 2번 칸 3번째 책 짚기 → 상품·표시 글·메모
+  await p.click('[data-smmode="pan"]'); { const t = await cellOf(p, 12, 11); await p.mouse.click(t.x, t.y); await p.waitForTimeout(200); }
+  const k0 = await ev(() => smK(10, 10)); await p.click(`#sm_info [data-smb="${k0}|2|3"]`); await p.waitForTimeout(200);
+  r.nfOpen = await ev(() => !!document.getElementById('sm_nf')); const uc0 = await ev(() => [...S.plist.values()][0].usedCode);
+  await p.fill('[data-smnf="tag"]', '예약'); await p.fill('[data-smnf="uc"]', uc0); await p.fill('[data-smnf="memo"]', '첫 줄\n둘째 줄'); await p.click('[data-smnok]'); await p.waitForTimeout(200);
+  Object.assign(r, await ev(() => { const E = S.smE; const n = E.notes.get('10_10_2_3'); const sp = document.querySelector(`#sm_info [data-smb="${smK(10, 10)}|2|3"]`); return { note: n ? [n.tag, n.uc, n.memo].join('|') : null, spineNt: !!(sp && sp.classList.contains('nt')) && /둘째 줄/.test(sp.title), nl: /자리 정보 1/.test((document.querySelector('#sm_info .sm-nl') || {}).textContent || ''), vNotes: S.smV.notes && S.smV.notes.size, dirtyN: /저장 안 함/.test(document.getElementById('sm_dirty').textContent) }; }));
+  // 마우스 올리기 → 메모
+  r.tip = await ev(async () => { const cv = S.smV.cv; const t = window.__cell(11, 10); cv.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 41, pointerType: 'mouse', clientX: t.x, clientY: t.y })); await window.__W(100); return document.getElementById('sm_tip').textContent; });
+  await ev(() => smUndo(S.smE)); Object.assign(r, await ev(() => ({ ntUndo: !S.smE.notes.has('10_10_2_3') }))); await ev(() => smRedo(S.smE)); Object.assign(r, await ev(() => ({ ntRedo: !!S.smE.notes.get('10_10_2_3') })));
+  // 자리 정보가 붙은 물건 옮기기 → 자리 정보도 따라감 · ↶
+  await ev(() => { S.smE.sel = new Set([smK(10, 10)]); smMoveObjs(S.smE, [smObjAt(S.smE.cells, smK(10, 10))], 0, 5); }); Object.assign(r, await ev(() => ({ ntMove: !!S.smE.notes.get('10_15_2_3') && !S.smE.notes.has('10_10_2_3') }))); await ev(() => smUndo(S.smE)); Object.assign(r, await ev(() => ({ ntMoveUndo: !!S.smE.notes.get('10_10_2_3') && !S.smE.notes.has('10_15_2_3') })));
+  // 저장 → 줄 부호(큰 물건 = 한 덩이) · 자리 정보 문서 · 판 기록 nd
+  await p.click('#sm_save'); await p.waitForTimeout(800);
+  Object.assign(r, await ev(() => { const P = window.__FS.prd_system; const M = P.shelfmap.maps.mB; const h = (P.shelfmap_h_mB || {}).vers || []; const n = ((P.shelfmap_n_mB || {}).n || {})['10_10_2_3'] || {}; window.__v1 = M.ver; return { sRows: JSON.stringify((P.shelfmap_m_mB || {}).rows), sVer: M.ver, sNote: [n.tag, n.memo, !!n.at].join('|'), sNd: !!(h[h.length - 1] || {}).nd, sDirty: S.smE.dirty }; }));
+  // 고치기 → 이력 · 빼기 → gone(지우지 않음) · 판 되돌리기 → 자리 정보도
+  await ev(async () => { const W = window.__W; S.smE.sel = new Set([smK(10, 10)]); S.smE.focus = smK(10, 10); S.smE.pick = { k: smK(10, 10), r: 2, p: 3 }; S.smNF = null; smEdPanels(); await W(100); document.querySelector('[data-smnf="memo"]').value = '고친 메모'; document.querySelector('[data-smnok]').click(); await W(150); document.getElementById('sm_save').click(); await W(800); });
+  Object.assign(r, await ev(async () => { const W = window.__W; const n = window.__FS.prd_system.shelfmap_n_mB.n['10_10_2_3']; const o = { ed: n.memo, edPrev: (n.prev || []).length, hist: /고친 이력 1/.test(document.getElementById('sm_nf').textContent) }; document.querySelector('[data-smnx]').click(); await W(150); document.getElementById('sm_save').click(); await W(800); const n2 = window.__FS.prd_system.shelfmap_n_mB.n['10_10_2_3']; o.gone = !!n2.gone && (n2.prev || []).length === 2 && n2.prev[1].memo === '고친 메모'; o.goneE = !S.smE.notes.has('10_10_2_3');
+    const ok = await smRestore('mB', window.__v1); await W(300); const n3 = window.__FS.prd_system.shelfmap_n_mB.n['10_10_2_3']; o.rest = ok && !n3.gone && n3.memo === '첫 줄\n둘째 줄' && n3.tag === '예약'; o.restRows = JSON.stringify(window.__FS.prd_system.shelfmap_m_mB.rows); return o; }));
+  // 🎨 색 — 바꾸기(모든 기기 저장) · 기본으로 · 범례
+  Object.assign(r, await ev(async () => { const W = window.__W; history.back(); await W(400); document.querySelector('[data-smopen="mB"]').click(); await W(900); const o = { leg: /자리 정보/.test((document.getElementById('sm_leg') || {}).textContent || '') && /못 놓음/.test(document.getElementById('sm_leg').textContent), reNote: !!S.smE.notes.get('10_10_2_3') };
+    document.querySelector('[data-smcolon]').click(); await W(150); const inp = document.querySelector('[data-smcol="note"]'); inp.value = '#00ff00'; inp.dispatchEvent(new Event('change', { bubbles: true })); await W(400); o.col = (((window.__FS.prd_system.shelfmap.cfg || {}).col) || {}).note; o.colC = smC('note'); o.colLog = (window.__FS.prd_system.shelfmap.log || []).some((x) => x.act === 'col');
+    document.querySelector('[data-smcolrst="*"]').click(); await W(400); o.colRst = [(((window.__FS.prd_system.shelfmap.cfg || {}).col) || {}).note, smC('note')].join('|'); o.oldRow = /"5":"5\.2\.cO"/.test(JSON.stringify(window.__FS.prd_system.shelfmap_m_mB.rows)); return o; }));
+  // 🔎 소재불명 — 큰 물건은 한 곳으로 · 물건 안 칸을 눌러도 그 물건 자리
+  Object.assign(r, await ev(async () => { const W = window.__W; const sh = document.getElementById('sheet'); const l = [...S.plist.values()][5]; l.sku = 'BLKCMN'; l.status = '판매중'; l.active = true; l.qty = 1; history.back(); await W(300); history.back(); await W(300);
+    const x = await lostAdd({ key: l.usedCode, kind: 'al', title: l.title, skus: [], from: 'bbuy' }); await W(300); window.__lc2 = x.cid; openLostCase(x.cid); await W(1200); lostRenderForce(); await W(700); const V = S.lostMVV; const N = lostNext(x.cid).filter((n) => /🗺/.test(n.where || '')); return { lHl: V && V.ov ? [...V.ov.hl].map((k) => `${smX(k)},${smY(k)}`).sort().join(' ') : null, lNext: N.map((n) => n.where).join(' / '), lLeg: /자리 정보/.test((sh.querySelector('.lo-mleg') || {}).textContent || '') }; }));
+  await ev(async () => { document.getElementById('lo_mcv').scrollIntoView({ block: 'center' }); await window.__W(300); }); { const t = await cellOf(p, 12, 11); await p.mouse.click(t.x, t.y); await p.waitForTimeout(600); }
+  Object.assign(r, await ev(() => { const sh = document.getElementById('sheet'); const F = S.lostF[window.__lc2]; const sp = sh.querySelector(`.lo-shp [data-smb="${smK(10, 10)}|2|3"]`); return { lTap: [F.x, F.y, S.lostMP.k === smK(10, 10)].join('|'), lPanel: /3×2/.test((sh.querySelector('.lo-shp') || {}).textContent || ''), lNote: !!(sp && sp.classList.contains('nt')) }; }));
+  // 상품 상세 '🗺 서가 지도 자리' — 큰 물건은 차지한 칸까지
+  Object.assign(r, await ev(async () => { const W = window.__W; const l = [...S.plist.values()][6]; await db.collection('prd_system').doc('shelfmap').set({ cards: { [window.__bg]: { items: [l.usedCode] } } }, { merge: true }); await W(400); await openProduct(l.id); await W(600); return { pdBig: ((document.querySelector('.sm-pl') || {}).textContent || '').replace(/\s+/g, ' ') }; }));
+  ran++; console.log(JSON.stringify(r).slice(0, 6000));
+  ok(r.old === '1|1|1|1|true' && r.oldPal, `예전 1×1 자료 그대로 읽힘(칸마다 한 물건) ${r.old}`);
+  ok(r.bigCard === '3|2|4|BLKCMN' && r.palTxt, `카드 크기 3×2 저장 ${r.bigCard} · 카드 목록에 '3×2칸 차지'`);
+  ok(/"w":3,"h":2,"ok":true/.test(r.ghost1 || '') && r.putN === 6 && /~3x2@10,10$/.test(r.put || '') && r.putSel && r.ghostClear, `끌 때 3×2 초록 그림자 → 놓으면 6칸 한 물건 ${r.put}`);
+  ok(/"ok":false/.test(r.ghostBad || '') && /"ok":false/.test(r.ghostOut || '') && r.afterBad === 8, `겹치는 자리·지도 밖 = 빨간 그림자 · 놓지 않음 (칸 ${r.afterBad})`);
+  ok(r.copyHeads === '10,10 13,10 16,10' && r.copyCells === 20 && r.copyTop === '복사 끌기', `꾹 눌러 복사 = 3칸 간격 ${r.copyHeads} (${r.copyCells}칸)`);
+  ok(r.tapHead && r.infoLoc, '큰 물건 안 아무 칸을 눌러도 그 물건 — 정보 (11,11)~(13,12) 3×2');
+  ok(r.rotBlocked && r.rot === '16,10,2,3' && r.rotFree, `⟳ 돌리기: 겹치면 그대로 · 3×2 → ${r.rot}`);
+  ok(/"ok":true/.test(r.moveGhost || '') && r.moved && r.moveTop === '옮기기' && r.movedSel && r.moveBlocked, '✥ 고른 물건 끌어 옮기기(그림자) · 겹치는 곳으로는 안 옮김');
+  ok(r.mvUndo && r.mvRedo, '옮기기 ↶ 되돌리기 · ↷ 다시');
+  ok(r.boxSel === '10,10 13,10 16,10' && r.nDel === r.nBefore - 18 && r.nUndo === r.nBefore, `네모 고르기 = 물건 ${r.boxSel} → 지우기 ${r.nBefore}→${r.nDel} → ↶ ${r.nUndo}`);
+  ok(r.nfOpen && /^예약\|U\d+\|첫 줄\n둘째 줄$/.test(r.note || '') && r.spineNt && r.nl && r.vNotes === 1 && r.dirtyN, `📝 책 짚기 → 자리 정보(상품·표시 글·메모) ${JSON.stringify(r.note)} · 책등 표시 · 지도 점`);
+  ok(/📝 1/.test(r.tip || '') && /둘째 줄|첫 줄/.test(r.tip || ''), `마우스 올리기 → 메모 '${(r.tip || '').slice(0, 60)}'`);
+  ok(r.ntUndo && r.ntRedo && r.ntMove && r.ntMoveUndo, '자리 정보 ↶·↷ · 물건 옮기면 따라감 · ↶');
+  ok(/"10":"10\.3\.[^"]*~3x2@10,10;13\.3\.[^"]*~3x2@13,10;16\.2\.[^"]*~2x3@16,10"/.test(r.sRows || '') && /"5":"5\.2\.cO"/.test(r.sRows) && r.sNote === '예약|첫 줄\n둘째 줄|true' && r.sNd && !r.sDirty, `저장: 큰 물건 줄 부호 한 덩이 · 예전 1×1 그대로 ${(r.sRows || '').slice(0, 160)} · 자리 정보 문서 · 판 기록 nd`);
+  ok(r.ed === '고친 메모' && r.edPrev === 1 && r.hist && r.gone && r.goneE, '자리 정보 고치기 → 이력 1 · 빼기 → gone(이전 값 prev에 남음)');
+  ok(r.rest, `📜 판 되돌리기 → 자리 정보도 그 판으로 (${(r.restRows || '').slice(0, 80)})`);
+  ok(r.leg && r.reNote, '범례(고른·짚은·📝 자리 정보·놓을 수 있음/없음) · 다시 열어도 자리 정보');
+  ok(r.col === '#00ff00' && r.colC === '#00ff00' && r.colLog && /^\|#F9A825$/.test(r.colRst || '') && r.oldRow, `🎨 색 바꾸기(모든 기기 ${r.col}) · ↺ 모두 기본으로 → ${r.colRst}`);
+  ok(r.lHl && r.lHl.split(' ').length >= 3 && r.lHl.split(' ').every((x) => ['10,10', '13,10', '16,10'].includes(x)) && /3×2|2×3/.test(r.lNext) && r.lLeg, `🔎 소재불명: 큰 물건은 한 곳씩 강조 ${r.lHl} · 다음에 볼 곳 '${(r.lNext || '').slice(0, 70)}' · 범례에 📝`);
+  ok(/\(11,11\)~\(13,12\) 3×2/.test(r.pdBig || ''), `상품 상세 서가 지도 자리 '${(r.pdBig || '').slice(0, 90)}'`);
+  ok(r.lTap === '10|10|true' && r.lPanel && r.lNote, `🔎 큰 물건 안 칸을 눌러도 그 물건 자리 ${r.lTap} · 책장 그림 3×2 · 📝 표시`);
+})).then(() => H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(500); await p.evaluate(IN);
   // 📱 휴대폰 — 터치(손가락 포인터)로 카드 끌어 놓기 · 꾹 눌러 복사 · 두 손가락 확대
   const r = await p.evaluate(async () => { const W = window.__W; const sh = document.getElementById('sheet'); window.ask = async () => true; const now = new Date().toISOString();
-    await db.collection('prd_system').doc('shelfmap').set({ maps: { mT: { name: '창고', kind: 'store', w: 30, h: 30, ver: 0, n: 0, hpg: 1, hb: 0 } }, cards: { cT: { kind: 'trolley', name: '트롤리', rows: 3, per: 20, codes: ['BLKCMN'], at: now } }, def: 'mT' }, { merge: true }); await W(300);
+    await db.collection('prd_system').doc('shelfmap').set({ maps: { mT: { name: '창고', kind: 'store', w: 30, h: 30, ver: 0, n: 0, hpg: 1, hb: 0 } }, cards: { cT: { kind: 'trolley', name: '트롤리', rows: 3, per: 20, codes: ['BLKCMN'], at: now }, cW: { kind: 'shelf', name: '긴 책장', rows: 3, per: 10, sw: 2, sh: 1, codes: [], at: now } }, def: 'mT' }, { merge: true }); await W(300);
     openShelfMap(); await W(400); sh.querySelector('[data-smopen="mT"]').click(); await W(900); const o = {}; const cv = sh.querySelector('#sm_cv'); const pal = sh.querySelector('#sm_pal'); o.layout = cv.getBoundingClientRect().bottom <= pal.getBoundingClientRect().top + 2; o.overflow = document.documentElement.scrollWidth > window.innerWidth + 2;
     const pe = (el, type, x, y, id) => el.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: id || 1, pointerType: 'touch', isPrimary: (id || 1) === 1, clientX: x, clientY: y, button: 0, buttons: type === 'pointerup' ? 0 : 1 }));
     const card = sh.querySelector('[data-smcard="cT"]'); const cb = card.getBoundingClientRect(); const t = window.__cell(5, 5); pe(card, 'pointerdown', cb.left + 20, cb.top + 15); for (let i = 1; i <= 6; i++) { pe(card, 'pointermove', cb.left + 20 + (t.x - cb.left - 20) * i / 6, cb.top + 15 + (t.y - cb.top - 15) * i / 6); await W(20); } pe(card, 'pointerup', t.x, t.y); await W(200); o.drop = S.smE.cells.get(smK(5, 5)) === 'cT';
     const a = window.__cell(5, 5), b = window.__cell(5, 9); pe(cv, 'pointerdown', a.x, a.y, 7); await W(650); for (let i = 1; i <= 8; i++) { pe(cv, 'pointermove', a.x, a.y + (b.y - a.y) * i / 8, 7); await W(20); } pe(cv, 'pointerup', b.x, b.y, 7); await W(200); o.copy = [5, 6, 7, 8, 9].every((y) => S.smE.cells.get(smK(5, y)) === 'cT');
     const s0 = S.smV.view.s; const r0 = cv.getBoundingClientRect(); const cx = r0.left + r0.width / 2, cy = r0.top + r0.height / 2; pe(cv, 'pointerdown', cx - 30, cy, 11); pe(cv, 'pointerdown', cx + 30, cy, 12); for (let i = 1; i <= 5; i++) { pe(cv, 'pointermove', cx - 30 - i * 12, cy, 11); pe(cv, 'pointermove', cx + 30 + i * 12, cy, 12); await W(20); } pe(cv, 'pointerup', cx - 90, cy, 11); pe(cv, 'pointerup', cx + 90, cy, 12); await W(200); o.pinch = S.smV.view.s > s0 * 1.8 && S.smE.cells.size === 5;
-    const bs = [...sh.querySelectorAll('.sm-bar .sm-b')].map((x) => x.getBoundingClientRect().height); o.btnH = Math.min(...bs); const c2 = window.__cell(5, 7); pe(cv, 'pointerdown', c2.x, c2.y, 21); pe(cv, 'pointerup', c2.x, c2.y, 21); await W(250); o.shelf = sh.querySelectorAll('#sm_info .sm-row').length; o.wheels = /●/.test((sh.querySelector('#sm_info .sm-wh') || {}).textContent || ''); return o; });
+    const bs = [...sh.querySelectorAll('.sm-bar .sm-b')].map((x) => x.getBoundingClientRect().height); o.btnH = Math.min(...bs); const c2 = window.__cell(5, 7); pe(cv, 'pointerdown', c2.x, c2.y, 21); pe(cv, 'pointerup', c2.x, c2.y, 21); await W(250); o.shelf = sh.querySelectorAll('#sm_info .sm-row').length; o.wheels = /●/.test((sh.querySelector('#sm_info .sm-wh') || {}).textContent || '');
+    // 📐 (11/04) 손가락: 2×1 카드 끌어 놓기(그림자) · 꾹 눌러 2칸 간격 복사 · 골라 끌어 옮기기 · 책 짚어 📝 자리 정보
+    smFit(S.smV); await W(150); const cw = sh.querySelector('[data-smcard="cW"]'); cw.scrollIntoView({ inline: 'center', block: 'nearest' }); await W(100); const wb = cw.getBoundingClientRect(); const t2 = window.__cell(10, 12); pe(cw, 'pointerdown', wb.left + 20, wb.top + 15, 31); for (let i = 1; i <= 6; i++) { pe(cw, 'pointermove', wb.left + 20 + (t2.x - wb.left - 20) * i / 6, wb.top + 15 + (t2.y - wb.top - 15) * i / 6, 31); await W(20); } o.tGhost = JSON.stringify(S.smV.ghost); pe(cw, 'pointerup', t2.x, t2.y, 31); await W(200); o.tDrop = S.smE.cells.get(smK(11, 12)) === smVal('cW', 10, 12, 2, 1);
+    const a2 = window.__cell(10, 12), b2 = window.__cell(15, 12); pe(cv, 'pointerdown', a2.x, a2.y, 32); await W(650); for (let i = 1; i <= 8; i++) { pe(cv, 'pointermove', a2.x + (b2.x - a2.x) * i / 8, a2.y, 32); await W(20); } pe(cv, 'pointerup', b2.x, b2.y, 32); await W(200); o.tCopy = [10, 12, 14].every((x) => S.smE.cells.get(smK(x, 12)) === smVal('cW', x, 12, 2, 1));
+    const c3 = window.__cell(13, 12); pe(cv, 'pointerdown', c3.x, c3.y, 33); pe(cv, 'pointerup', c3.x, c3.y, 33); await W(200); o.tSel = S.smE.sel.has(smK(12, 12)); const d3 = window.__cell(13, 16); pe(cv, 'pointerdown', c3.x, c3.y, 34); for (let i = 1; i <= 6; i++) { pe(cv, 'pointermove', c3.x, c3.y + (d3.y - c3.y) * i / 6, 34); await W(20); } pe(cv, 'pointerup', d3.x, d3.y, 34); await W(200); o.tMove = S.smE.cells.get(smK(12, 16)) === smVal('cW', 12, 16, 2, 1) && !S.smE.cells.has(smK(12, 12));
+    const sp = sh.querySelector(`#sm_info [data-smb="${smK(12, 16)}|1|1"]`); if (sp) sp.click(); await W(200); o.tNf = !!sh.querySelector('#sm_nf'); return o; });
   ran++; console.log(JSON.stringify(r));
   ok(r.layout && !r.overflow && r.btnH >= 40, `📱 휴대폰: 지도 위 · 카드 띠 아래 · 가로 넘침 없음 · 단추 ${Math.round(r.btnH)}px`);
   ok(r.drop && r.copy && r.pinch, `📱 손가락: 카드 끌어 놓기 ${r.drop} · 꾹 눌러 복사 ${r.copy} · 두 손가락 확대 ${r.pinch}`);
   ok(r.shelf === 3 && r.wheels, '📱 트롤리 그림(3칸 · 바퀴)');
+  ok(/"w":2,"h":1,"ok":true/.test(r.tGhost || '') && r.tDrop && r.tCopy && r.tSel && r.tMove && r.tNf, `📱 손가락 큰 물건: 2×1 그림자·놓기 ${r.tDrop} · 2칸 간격 복사 ${r.tCopy} · 골라 끌어 옮기기 ${r.tMove} · 책 짚어 📝 ${r.tNf}`);
 }, { vp: { width: 390, height: 844 }, touch: true })).then(async () => {
   // 수집기: 샵매니저 상품 조회/수정 목록·상품 수정 화면에 🔎 수색중 띠(머리 그대로 · 본체만)
   const { chromium } = require('playwright'); const src = fs.readFileSync(fs.existsSync(path.join(__dirname, '../readnow-collector.src.js')) ? path.join(__dirname, '../readnow-collector.src.js') : path.join(__dirname, '../readnow-collector.user.js'), 'utf8');
@@ -176,4 +277,4 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
   ok(/수색중/.test(out.list.rows[0]) && /일시판매중지/.test(out.list.rows[0]) && /3일째/.test(out.list.rows[0]) && /수색중/.test(out.list.rows[1]) && !out.list.rows[2], '수집기: 샵매니저 상품 조회/수정 목록 — U코드·상품번호로 🔎 수색중 띠(발견한 사건은 없음)');
   ok(/수색중/.test(out.ed.ed) && /책 둘/.test(out.ed.ed), '수집기: 상품 수정 화면 맨 위 🔎 수색중 띠');
   const head = src.slice(0, src.indexOf('==/UserScript==')); ok(!/rnLost/.test(head), '수집기 머리(@match·@grant·@connect·@require)에 손대지 않음');
-}).then(() => { if (ran < 4) { bad++; console.log('  ❌ 시험 도중 멈춤(위 ERRORS의 TEST 줄)'); } console.log(bad ? `❌ tMAP 실패 ${bad}` : '✅ tMAP 모두 통과'); });
+}).then(() => { if (ran < 5) { bad++; console.log('  ❌ 시험 도중 멈춤(위 ERRORS의 TEST 줄)'); } console.log(bad ? `❌ tMAP 실패 ${bad}` : '✅ tMAP 모두 통과'); });
