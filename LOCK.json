@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "등록 뒤 회차 반영 앞당김",
+ "since": "2026-11-04T01:19:12Z",
+ "beat": "2026-11-04T01:19:12Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T00:59:52Z"
  },
- "host": null
+ "host": "vm"
 }
