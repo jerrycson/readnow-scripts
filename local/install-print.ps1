@@ -29,12 +29,13 @@ Ok "Node.js $(& $node -v)"
 
 Say '인쇄 도우미 받기'
 $js = Join-Path $Dir 'readnow-print.js'; $tmp = Join-Path $Dir 'readnow-print.dl.js'
-Invoke-WebRequest -UseBasicParsing -Uri "$RAW/readnow-print.js" -OutFile $tmp
+$Q = "?t=" + [DateTimeOffset]::Now.ToUnixTimeMilliseconds()  # (11/04) GitHub 캐시가 옛 판을 주지 않게
+Invoke-WebRequest -UseBasicParsing -Uri "$RAW/readnow-print.js$Q" -OutFile $tmp
 & $node --check $tmp; if ($LASTEXITCODE -ne 0) { throw '받은 파일 검사 실패 — 잠시 뒤 다시 실행해 주세요' }
 Move-Item -Force $tmp $js
 Ok 'readnow-print.js'
 $ja = Join-Path $Dir 'readnow-alps.js'; $tmpa = Join-Path $Dir 'readnow-alps.dl.js'
-Invoke-WebRequest -UseBasicParsing -Uri "$RAW/readnow-alps.js" -OutFile $tmpa
+Invoke-WebRequest -UseBasicParsing -Uri "$RAW/readnow-alps.js$Q" -OutFile $tmpa
 & $node --check $tmpa; if ($LASTEXITCODE -ne 0) { throw '받은 ALPS 모듈 검사 실패 — 잠시 뒤 다시 실행해 주세요' }
 Move-Item -Force $tmpa $ja
 Ok 'readnow-alps.js (📦 ALPS 자동 처리 · MJ-MAIN)'
