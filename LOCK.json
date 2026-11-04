@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "원칙 정리 PROJECT_STATE",
+ "since": "2026-11-04T09:32:28Z",
+ "beat": "2026-11-04T09:32:28Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T09:31:07Z"
  },
- "host": null
+ "host": "vm"
 }
