@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "출고 1단계 판 1.78.366",
- "since": "2026-11-04T13:39:51Z",
- "beat": "2026-11-04T13:39:51Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "daily",
-  "done": "🔬 정밀 점검 11/04 끝 — eb2258c 웹앱 1.78.365 · 수집기 1.89.199 · 클라우드 0.35.85 · autosched 0.18.15",
-  "at": "2026-11-04T13:28:35Z"
+  "who": "lead",
+  "done": "",
+  "at": "2026-11-04T13:40:04Z"
  },
- "host": "vm"
+ "host": null
 }
