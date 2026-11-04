@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "🛰 오래 멈춤·숨기기",
+ "since": "2026-11-04T08:12:34Z",
+ "beat": "2026-11-04T08:12:34Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T07:40:36Z"
  },
- "host": null
+ "host": "vm"
 }
