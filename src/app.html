@@ -4541,7 +4541,7 @@ const rkfxPrefs = () => { let p = {}; try { p = JSON.parse(localStorage.getItem(
 const rkfxPrefsSet = (p) => { try { localStorage.setItem('rn-rkfx', JSON.stringify(p)); } catch (e) {} };
 const rkfxSeen = () => { try { return JSON.parse(localStorage.getItem('rn-rkfx-seen') || '{}') || {}; } catch (e) { return {}; } };
 function rkfxPick(kind) { const v = (rkfxPrefs().k[kind] || {}).v; const n = RKFX[kind].v.length; return v == null || v === 'rand' ? Math.floor(Math.random() * n) : Math.min(n - 1, Math.max(0, +v || 0)); }
-function rankFxSoon() { clearTimeout(S._rkfxT); S._rkfxT = setTimeout(rankFxCheck, 450); }
+function rankFxSoon() { if (S._rkfxT) return; S._rkfxT = setTimeout(() => { S._rkfxT = null; rankFxCheck(); }, 450); } /* 처음 부른 때부터 0.45초 — 다시 그릴 때마다 처음부터 다시 걸면(예전) 화면이 자주 바뀌는 동안 끝내 안 뜸 */
 /* 하루 한 번 — 이 기기 · 같은 날 이미 띄웠으면 다시 안 띄움 (설정의 '오늘 다시 띄울 수 있게'로 풀기) */
 function rankFxCheck() { const P = rkfxPrefs(); if (P.off || S._rkfx) return; let t = null; try { t = rankToday(); } catch (e) { return; } if (!t || !t.done || !t.kind) return; if ((P.k[t.kind] || {}).off) return; if (rkfxSeen().d === t.d) return;
   try { localStorage.setItem('rn-rkfx-seen', JSON.stringify({ d: t.d, k: t.kind, amt: t.amt, at: new Date().toISOString() })); } catch (e) {} rankFxShow(t.kind, rkfxPick(t.kind), t); }
