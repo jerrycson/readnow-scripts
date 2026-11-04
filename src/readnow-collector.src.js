@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.191
+// @version      1.89.192
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -24,7 +24,7 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.17.5
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.5
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.131
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.132
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.5
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.5
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.3
@@ -9211,13 +9211,14 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const CK = 'rn-skuc'; let LID = {}; let M = null, loading = false, tries = 0, lastTry = 0, miss = 0, refAt = 0, logged = false; let MS = new Set(); const KM = new Set(); /* (1.89.34 자동 점검) MS = 이번 그리기에서 코드 없는 줄 · KM = 다시 받아 봐도 코드가 없던 줄 */
   const RG = () => (typeof ReadnowRegistry !== 'undefined' ? ReadnowRegistry : G.ReadnowRegistry || null);
   const full = (mg, c) => { const R = RG(); return R && R.skuFull ? R.skuFull(mg, c) || c : c; };
-  const load = async (force) => { if ((M && !force) || loading) return; if (!force) { try { const c = GM_getValue(CK, null); if (c && c.at && Date.now() - c.at < 3600e3 && c.m && Object.keys(c.m).length && c.lid && Object.keys(c.lid).length) { M = c.m; LID = c.lid; return; } } catch (e) {} }
+  const load = async (force) => { if ((M && !force) || loading) return; if (!force) { try { const c = GM_getValue(CK, null); if (c && c.at && Date.now() - c.at < 3600e3 && c.m && Object.keys(c.m).length && c.lid && Object.keys(c.lid).length && c.sx) { M = c.m; LID = c.lid; try { const R = RG(); if (R && R.skuSupSet) R.skuSupSet(c.sx); } catch (e) {} return; } } catch (e) {} }
     /* (1.89.22) 정범님 10/21 '적용 안 됨' — 예전엔 로그인이 아직 안 돌아왔으면(화면 열고 2분 안) 그냥 그만둠 → 로그인이 돌아올 때까지 기다림 · 빈 자료는 저장하지 않음 · 목록에 없는 U코드가 보이면 5분에 한 번 다시 읽음 */
     const F = (typeof firebase !== 'undefined' && firebase) || G.firebase; if (!(F && F.apps && F.apps.length)) return; const au = F.auth(); if (!au.currentUser) { await new Promise((r) => { const u = au.onAuthStateChanged((x) => { u(); r(x); }); setTimeout(r, 15000); }); if (!au.currentUser) return; } loading = true;
     try { const fs = F.firestore(); const seq = (await fs.collection('app_settings').doc('sku_seq').get()).data() || {}; const n = +seq.mapN || 0; const m = {};
       for (let i = 0; i <= n; i++) { const d = (await fs.collection('app_settings').doc('sku_map_' + i).get()).data() || {}; for (const [k, v] of Object.entries(d.m || {})) { const u = String(k).replace(/^aladin_/, ''); const cs = ((v && v.c) || []).map((x) => String(x).replace(/^RN(?=[a-z0-9]{5}$)/, '')).filter(Boolean); if (cs.length) m[u] = cs.join(','); } }
       const lid = {}; for (let i = 0; i < 4; i++) { const d = (await fs.collection('app_settings').doc('sku_lid_' + i).get()).data() || {}; Object.assign(lid, d.m || {}); } /* (1.89.24) 정범님 10/21: 목록 둘째 칸이 ISBN인 줄(ISBN 있는 책)은 U코드가 안 보여 못 찾았음 → 상품 번호(체크칸 값) → U코드 표(클라우드 0.31.2) */
-      M = m; LID = lid; refAt = Date.now(); if (Object.keys(m).length) { try { GM_setValue(CK, { at: Date.now(), m, lid }); } catch (e) {} } if (!logged) { logged = true; try { window.__rnLog && window.__rnLog('SKU', 'info', `샵매니저 SKU 표시: 코드 ${Object.keys(m).length}개 · 상품 번호 표 ${Object.keys(lid).length}개 읽음`); } catch (x) {} } }
+      let sx = []; try { sx = ((((await fs.collection('app_settings').doc('main').get()).data() || {}).reg || {}).srcX || []).filter((x) => x && x.id && x.suffix).map((x) => ({ id: x.id, suffix: x.suffix, at: x.at || null, sku2: x.sku2 || null })); const R = RG(); if (R && R.skuSupSet) R.skuSupSet(sx); } catch (e) {} /* (정범님 11/04) SKU 끝 매입처 2글자 표 — 웹앱과 같은 규칙(노선표 skuSupSet) */
+      M = m; LID = lid; refAt = Date.now(); if (Object.keys(m).length) { try { GM_setValue(CK, { at: Date.now(), m, lid, sx }); } catch (e) {} } if (!logged) { logged = true; try { window.__rnLog && window.__rnLog('SKU', 'info', `샵매니저 SKU 표시: 코드 ${Object.keys(m).length}개 · 상품 번호 표 ${Object.keys(lid).length}개 읽음`); } catch (x) {} } }
     catch (e) { try { window.__rnLog && window.__rnLog('SKU', 'warn', '샵매니저 SKU 표시: 코드를 못 읽음 — ' + (e.code || e.message)); } catch (x) {} } finally { loading = false; } };
   const draw = () => { if (!M) return; document.querySelectorAll('input.batchChkBox').forEach((cb) => { const lid = cb.value; const tr = cb.closest('tr'); if (!tr) return; const mgEl = tr.querySelector(`#supCodeChg_val_${CSS.escape(lid)}`); if (!mgEl) return;
       const um = (tr.children[1] ? tr.children[1].textContent : tr.textContent).match(/U\d{6,}/); const uc = (um && um[0]) || LID[lid] || null; const cs = uc && M[uc] ? M[uc].split(',') : null; if (!cs) { miss++; MS.add(uc || 'L' + lid); } const mg = (mgEl.textContent || '').trim();

@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.191의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.192의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.191' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.191', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.192' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.192', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -621,13 +621,14 @@
   const CK = 'rn-skuc'; let LID = {}; let M = null, loading = false, tries = 0, lastTry = 0, miss = 0, refAt = 0, logged = false; let MS = new Set(); const KM = new Set(); /* (1.89.34 자동 점검) MS = 이번 그리기에서 코드 없는 줄 · KM = 다시 받아 봐도 코드가 없던 줄 */
   const RG = () => (typeof ReadnowRegistry !== 'undefined' ? ReadnowRegistry : G.ReadnowRegistry || null);
   const full = (mg, c) => { const R = RG(); return R && R.skuFull ? R.skuFull(mg, c) || c : c; };
-  const load = async (force) => { if ((M && !force) || loading) return; if (!force) { try { const c = GM_getValue(CK, null); if (c && c.at && Date.now() - c.at < 3600e3 && c.m && Object.keys(c.m).length && c.lid && Object.keys(c.lid).length) { M = c.m; LID = c.lid; return; } } catch (e) {} }
+  const load = async (force) => { if ((M && !force) || loading) return; if (!force) { try { const c = GM_getValue(CK, null); if (c && c.at && Date.now() - c.at < 3600e3 && c.m && Object.keys(c.m).length && c.lid && Object.keys(c.lid).length && c.sx) { M = c.m; LID = c.lid; try { const R = RG(); if (R && R.skuSupSet) R.skuSupSet(c.sx); } catch (e) {} return; } } catch (e) {} }
     /* (1.89.22) 정범님 10/21 '적용 안 됨' — 예전엔 로그인이 아직 안 돌아왔으면(화면 열고 2분 안) 그냥 그만둠 → 로그인이 돌아올 때까지 기다림 · 빈 자료는 저장하지 않음 · 목록에 없는 U코드가 보이면 5분에 한 번 다시 읽음 */
     const F = (typeof firebase !== 'undefined' && firebase) || G.firebase; if (!(F && F.apps && F.apps.length)) return; const au = F.auth(); if (!au.currentUser) { await new Promise((r) => { const u = au.onAuthStateChanged((x) => { u(); r(x); }); setTimeout(r, 15000); }); if (!au.currentUser) return; } loading = true;
     try { const fs = F.firestore(); const seq = (await fs.collection('app_settings').doc('sku_seq').get()).data() || {}; const n = +seq.mapN || 0; const m = {};
       for (let i = 0; i <= n; i++) { const d = (await fs.collection('app_settings').doc('sku_map_' + i).get()).data() || {}; for (const [k, v] of Object.entries(d.m || {})) { const u = String(k).replace(/^aladin_/, ''); const cs = ((v && v.c) || []).map((x) => String(x).replace(/^RN(?=[a-z0-9]{5}$)/, '')).filter(Boolean); if (cs.length) m[u] = cs.join(','); } }
       const lid = {}; for (let i = 0; i < 4; i++) { const d = (await fs.collection('app_settings').doc('sku_lid_' + i).get()).data() || {}; Object.assign(lid, d.m || {}); } /* (1.89.24) 정범님 10/21: 목록 둘째 칸이 ISBN인 줄(ISBN 있는 책)은 U코드가 안 보여 못 찾았음 → 상품 번호(체크칸 값) → U코드 표(클라우드 0.31.2) */
-      M = m; LID = lid; refAt = Date.now(); if (Object.keys(m).length) { try { GM_setValue(CK, { at: Date.now(), m, lid }); } catch (e) {} } if (!logged) { logged = true; try { window.__rnLog && window.__rnLog('SKU', 'info', `샵매니저 SKU 표시: 코드 ${Object.keys(m).length}개 · 상품 번호 표 ${Object.keys(lid).length}개 읽음`); } catch (x) {} } }
+      let sx = []; try { sx = ((((await fs.collection('app_settings').doc('main').get()).data() || {}).reg || {}).srcX || []).filter((x) => x && x.id && x.suffix).map((x) => ({ id: x.id, suffix: x.suffix, at: x.at || null, sku2: x.sku2 || null })); const R = RG(); if (R && R.skuSupSet) R.skuSupSet(sx); } catch (e) {} /* (정범님 11/04) SKU 끝 매입처 2글자 표 — 웹앱과 같은 규칙(노선표 skuSupSet) */
+      M = m; LID = lid; refAt = Date.now(); if (Object.keys(m).length) { try { GM_setValue(CK, { at: Date.now(), m, lid, sx }); } catch (e) {} } if (!logged) { logged = true; try { window.__rnLog && window.__rnLog('SKU', 'info', `샵매니저 SKU 표시: 코드 ${Object.keys(m).length}개 · 상품 번호 표 ${Object.keys(lid).length}개 읽음`); } catch (x) {} } }
     catch (e) { try { window.__rnLog && window.__rnLog('SKU', 'warn', '샵매니저 SKU 표시: 코드를 못 읽음 — ' + (e.code || e.message)); } catch (x) {} } finally { loading = false; } };
   const draw = () => { if (!M) return; document.querySelectorAll('input.batchChkBox').forEach((cb) => { const lid = cb.value; const tr = cb.closest('tr'); if (!tr) return; const mgEl = tr.querySelector(`#supCodeChg_val_${CSS.escape(lid)}`); if (!mgEl) return;
       const um = (tr.children[1] ? tr.children[1].textContent : tr.textContent).match(/U\d{6,}/); const uc = (um && um[0]) || LID[lid] || null; const cs = uc && M[uc] ? M[uc].split(',') : null; if (!cs) { miss++; MS.add(uc || 'L' + lid); } const mg = (mgEl.textContent || '').trim();

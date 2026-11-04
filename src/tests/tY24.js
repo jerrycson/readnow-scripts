@@ -49,10 +49,10 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   ok(r.seed.ended === 1 && r.seed.food === 1 && r.seed.x === 9 && r.seed.by === '정범님' && r.seed.seeds, '정범님 11/02 사실이 Firestore 기록으로(판매종료 4 · FOOD LAB 1 · 공개 목록 밖 9 · 누가)');
   ok(r.keep === 2, '사람이 나중에 고친 값은 다시 넣어도 덮지 않음');
   ok(r.isbn === '9789154133123' && r.blu === 'one', '블루레이 880 바코드 ↔ 알라딘 978(자동 제외 KHKDVD여도) 1:1: ' + r.blu);
-  ok(r.bluSku === 'KHKDVDd1001,KHKDVDd1002,KHKDVDd1003', '자체코드 후보 = 관리코드 6자 + SKU, 재고 수만큼: ' + r.bluSku);
+  ok(r.bluSku === 'KHKd1001EX,KHKd1002EX,KHKd1003EX', '자체코드 후보 = 통합 SKU 10글자(서가 3 + 고유 5 + 매입처 2 · 정범님 11/04), 재고 수만큼: ' + r.bluSku);
   ok(!r.kookLive && !/^red/.test(r.kook), '국부론: 사람이 판매종료 → 판매중 아님 · 🔴 아님: ' + r.kook);
   ok(r.sold === 'red', '기록 안 된 알라딘 팔린 책 → 🔴');
-  ok(r.slow === 'one:PNKLUXd3120', '1:1 줄 SKU: ' + r.slow);
+  ok(r.slow === 'one:PNKd3120EX', '1:1 줄 SKU: ' + r.slow);
   ok(r.food === 'many:1:false', 'FOOD LAB 재고 1(사람 기록) · 🟠 아님: ' + r.food);
   ok(/revGone/.test(r.rev), '예스24 사라짐 + 알라딘 판매중 → 반대 방향 알림: ' + r.rev);
   ok(r.xrows === 9 && r.adult >= 8 && r.restrict === 1 && r.mado === false, `공개 목록 밖 기록 줄 ${r.xrows} · 19금 ${r.adult} · 전시제한 ${r.restrict} · 마도정병 판매중 아님`);
@@ -61,8 +61,8 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   ok(r.adm === '9791133424672,true,상,02,3,PNKLUX', '관리자 응답 한 줄 풀기: ' + r.adm);
   ok(r.admN === 1 && r.adultIsbn === '9791133424672:true', '관리자 화면 자료로 19금 매물 ISBN·19금이 채워짐');
   ok(r.scr.title && r.scr.red && r.scr.test && r.scr.bulkOff && r.scr.adm, '연결 표 화면(🔴 · 시험 엑셀 · 일괄은 잠김): ' + JSON.stringify(r.scr));
-  ok(/^28\|바코드\/상품번호\|자체코드\|\d+\|PNKLUX/.test(r.aoa), '엑셀 양식 27행 머리 · 28행 자료: ' + r.aoa);
-  ok(r.test && /:PNKLUX/.test(r.test) && /:1$/.test(r.test), '1줄 시험 엑셀 내려받기 + 기록: ' + r.test);
+  ok(/^28\|바코드\/상품번호\|자체코드\|\d+\|PNKd3120EX\|/.test(r.aoa), '엑셀 양식 27행 머리 · 28행 자료: ' + r.aoa);
+  ok(r.test && /:PNKd3120EX:/.test(r.test) && /:1$/.test(r.test), '1줄 시험 엑셀 내려받기 + 기록: ' + r.test);
   ok(r.j0 === 'wait' && r.j1 === 'fixed' && r.j2 === 'new', `판정 기다림→고쳐짐→새 매물: ${r.j0} ${r.j1} ${r.j2}`);
   ok(/^1:알라딘에서 팔림:true/.test(r.ed || '') && r.redAfter !== 'red', '✏ 판매종료 기록(누가·이유) → 🔴 사라짐: ' + r.ed + ' / ' + r.redAfter);
   console.log(bad ? `❌ tY24 실패 ${bad}` : '✓ tY24 통과'); });
