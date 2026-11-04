@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "ALPS 도우미 0.4.4",
+ "since": "2026-11-04T06:08:31Z",
+ "beat": "2026-11-04T06:08:31Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T06:05:22Z"
  },
- "host": null
+ "host": "vm"
 }
