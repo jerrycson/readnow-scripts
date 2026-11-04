@@ -25969,9 +25969,12 @@ function shipExcKeyMap() { const C = S._shipXk; const r = shipRows(); if (C && C
 const shipExcOfO = (o, src) => { try { if (!o) return null; const s = src || (o.platform === 'cash' ? 'cash' : 'al'); return shipExcKeyMap().get(s + ':' + String(s === 'cash' ? o.id || o._id || o.orderNo : o.orderNo)) || null; } catch (e) { return null; } };
 const shipWarnOf = (o, src) => shipRiskOf(o) > 0 || !!shipExcOfO(o, src);
 function shipRiskOf(o) { if (!o) return 0; let sc = 0; try { const I = o.platform === 'cash' ? null : shipCustInfo(o.orderNo, o); const ics = new Set(((I && I.items) || []).map((x) => x.ic)); if (ics.has('⛔')) sc += 3; if (ics.has('⚠️')) sc += 2; if (ics.has('🔗')) sc += 1; } catch (e) {} try { if (o.platform !== 'cash' && giftGuardOf(o)) sc += 1; } catch (e) {} return sc; }
+/* (정범님 11/05 '출고 준비 탭에서 주문시간순 정렬이 안 돼') 발송 요청 화면에서 주문 시각 칸을 못 읽은 주문은 값이 비어 정렬이 아무 일도 안 했음 → 우리 주문 기록·주문확인요청 목록·처음 본 때에서 채우고, 모두 한국 시각 'YYYY-MM-DD HH:MM' 모양으로 맞춰 견줌 */
+function shipOrdTs(o) { if (!o) return ''; const norm = (v) => { if (!v) return ''; const t = String(v); if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(t)) return t.slice(0, 16); const ms = Date.parse(t); return ms ? new Date(ms + 9 * 3600e3).toISOString().slice(0, 16).replace('T', ' ') : ''; };
+  let v = norm(o.orderedAt); if (v) return v; const no = String(o.orderNo || ''); try { const c = S.orders && S.orders.get(no); v = norm(c && c.orderedAt); if (v) return v; } catch (e) {} try { const c = ((S.shipC && S.shipC.orders) || []).find((x) => String(x.orderNo) === no); v = norm(c && c.orderedAt); if (v) return v; } catch (e) {} return norm(o.firstSeenAt) || '9999'; }
 function shipSortMulti(SH, L, mode) { const P = shipSortPrefs(); const base = SH.sortShipment(L, mode === 'sku' ? 'sku' : 'shelf'); if (base.length < 2) return base;
   const rk = (m) => { const R = new Map(); SH.sortShipment(L, m).forEach((o, i) => R.set(o.orderNo, i)); return R; }; const RK = {}; const risk = new Map(); const rOf = (o) => { if (!risk.has(o.orderNo)) risk.set(o.orderNo, shipRiskOf(o)); return risk.get(o.orderNo); };
-  const amt = (o) => (o.items || []).reduce((a, i) => a + (+i.price || 0) * (+i.qty || 1), 0); const ts = (o) => String(o.orderedAt || '');
+  const amt = (o) => (o.items || []).reduce((a, i) => a + (+i.price || 0) * (+i.qty || 1), 0); const ts = (o) => shipOrdTs(o);
   const cmpOf = (k) => { const [kk, dd] = String(k).split(':'); const d = dd ? +dd : 0;
     if (kk === 'shelf' || kk === 'sku') { RK[kk] = RK[kk] || rk(kk); const R = RK[kk]; return (a, b) => (R.get(a.orderNo) - R.get(b.orderNo)) * (d || 1); }
     if (kk === 'time') return (a, b) => { const x = ts(a), y = ts(b); return (x < y ? -1 : x > y ? 1 : 0) * (d || 1); };
