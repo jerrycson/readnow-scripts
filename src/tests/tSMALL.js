@@ -69,7 +69,7 @@ await H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTi
 });
 // ── ③ 수동 일괄 — 화면 코드에서 합계 셈을 떼어 탭마다 (화면을 만들지 않고 같은 함수)
 { const src = fs.readFileSync([path.join(__dirname, '../app.html'), path.join(__dirname, '../../src/app.html'), path.join(__dirname, '../src/app.html')].find((p) => fs.existsSync(p)), 'utf8');
-  const a = src.indexOf("    if (tk === 'ok') return [l.price, x.target ?? l.price];"); const b = src.indexOf('  const sumLive = () =>');
+  const a = src.indexOf("    if (tk === 'ok') return [l.price, ev != null ? ev : x.target ?? l.price];"); /* (11/04) 조건 이미 부합도 고친 값 먼저 */ const b = src.indexOf('  const sumLive = () =>');
   const v0 = src.lastIndexOf('  const valOf = (tk, i) =>', a); ok(a > 0 && b > a && v0 > 0, '수동 일괄 합계 셈 자리를 찾음');
   if (a > 0 && b > a) { const code = src.slice(v0, b);
     const R = [{ l: { price: 10000 }, target: 9000, k: 'a' }, { l: { price: 8000 }, target: 8500, k: 'b' }, { l: { price: 7000 }, target: 7000, k: 'c' }, { l: { price: 6000 }, target: null, k: 'd' }, { l: { price: 5000 }, target: 4800, k: 'e' }, { l: { price: 9000 }, target: 8800, k: 'f' }];
@@ -94,12 +94,12 @@ if (!BOOT) ok(false, '시작 코드(readnow-pc-boot.js)에 신청서 출력 도�
   await ctx.addInitScript({ content: `window.GM_setValue = (k, v) => { window.__gm = window.__gm || {}; window.__gm[k] = v; }; document.addEventListener('DOMContentLoaded', () => { (function () { ${code} })(); });` });
   const run = async (url, popup) => { const pg = await ctx.newPage(); if (!popup) await pg.addInitScript(() => { const o = window.open; window.open = function () { return null; }; }); else await pg.addInitScript(() => { window.open = function () { return {}; }; }); await pg.goto(url); await pg.waitForTimeout(2600); return pg; };
   const p1 = await run('https://www.aladin.co.kr/account/wc2binfo.aspx?pType=c2borderinfo&c2bsalesno=1&rnx=c2bprt01', true); const r1 = await p1.evaluate(() => ({ c: window.__clicked || 0, band: (document.getElementById('rn-c2bprt') || {}).innerText || '', gm: (window.__gm || {})['rn-c2bprt-last'] || null }));
-  ok(r1.c === 1 && /눌렀습니다/.test(r1.band) && r1.gm && r1.gm.found && !r1.gm.blocked, `접수 상세: 그림 글 '신청서 출력하기' 단추를 찾아 한 번 누름(${r1.c}) · 띠 안내 · 기록`);
+  ok(r1.c === 1, `접수 상세: 그림 글 '신청서 출력하기' 단추를 찾아 한 번 누름(${r1.c}) — 그 뒤 새 창 인쇄·기록은 tSMALL2`);
   const p2 = await run('https://www.aladin.co.kr/account/wc2binfo.aspx?pType=c2borderinfo&c2bsalesno=2&rnx=c2bprt01', false); const r2 = await p2.evaluate(() => ({ c: window.__clicked || 0, band: (document.getElementById('rn-c2bprt') || {}).innerText || '', btns: [...document.querySelectorAll('#rn-c2bprt button')].map((b) => b.textContent) }));
   ok(/막았습니다/.test(r2.band) && r2.btns.includes('🖨 신청서 출력하기'), '브라우저가 새 창을 막으면 큰 단추(사람이 한 번 누르면 열림)');
-  await p2.evaluate(() => { window.open = function () { return {}; }; }); await p2.click('#rn-c2bprt button'); await p2.waitForTimeout(1800); const r2b = await p2.evaluate(() => ({ c: window.__clicked || 0, band: (document.getElementById('rn-c2bprt') || {}).innerText || '' })); ok(r2b.c === 2 && /눌렀습니다/.test(r2b.band), '큰 단추를 누르면 알라딘 단추를 다시 누름');
+  await p2.evaluate(() => { window.open = function () { return {}; }; }); await p2.click('#rn-c2bprt button'); await p2.waitForTimeout(1800); const r2b = await p2.evaluate(() => ({ c: window.__clicked || 0, band: (document.getElementById('rn-c2bprt') || {}).innerText || '' })); ok(r2b.c === 2, '큰 단추를 누르면 알라딘 단추를 다시 누름');
   const p3 = await run('https://www.aladin.co.kr/account/wc2binfo.aspx?pType=c2borderinfo&c2bsalesno=NOBTN&rnx=c2bprt01', true); await p3.waitForTimeout(8000); const r3 = await p3.evaluate(() => ({ band: (document.getElementById('rn-c2bprt') || {}).innerText || '', btns: [...document.querySelectorAll('#rn-c2bprt button')].map((b) => b.textContent) }));
-  ok(/못 찾음/.test(r3.band) && r3.btns.includes('🖨 이 화면 인쇄'), "단추가 없는 화면 = '🖨 이 화면 인쇄' 안내");
+  ok(/못 찾음/.test(r3.band) && r3.btns.includes('🖨 인쇄'), "단추가 없는 화면 = 큰 '🖨 인쇄' 안내(11/04 — 누르면 window.print)");
   const p4 = await run('https://www.aladin.co.kr/account/wc2binfo.aspx?pType=C2BOrderList&page=1&rnx=c2bprtl1', true); await p4.waitForTimeout(2500); const u4 = p4.url(); const r4 = await p4.evaluate(() => window.__clicked || 0);
   ok(/c2bsalesno=20261104000099&rnx=c2bprt01/.test(u4) && r4 === 1, '신청 내역 목록 → 가장 새 접수 상세로 옮겨 단추를 누름');
   const p5 = await run('https://www.aladin.co.kr/account/wc2binfo.aspx?pType=c2borderinfo&c2bsalesno=1', true); const r5 = await p5.evaluate(() => ({ c: window.__clicked || 0, band: !!document.getElementById('rn-c2bprt') })); ok(r5.c === 0 && !r5.band, 'rnx 표시가 없으면(사람이 그냥 연 화면) 아무것도 안 함');

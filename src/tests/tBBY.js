@@ -113,7 +113,7 @@ await H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTi
   ok(r.dispKeys.includes(r.dispKeys.find((k) => k)) && r.delBtn && r.regDel && r.regDel.mode === 'listing' && r.delRec, `폐기 탭 '🗑 샵매니저 삭제' → 확인 → regDel(listing) 맡김`);
   ok(r.lostBtn && r.lost.got === 1 && r.lost.e === 'at,by,from,grade,isbn13,key,kind,price,sku,skus,title' && r.lost.from === 'buyback' && r.lost.kind === 'al' && r.lost.rec && r.lost.rec.sent && r.lost.st === 'skip' && r.lost.stop === 0, `소재불명 → lostAdd(${r.lost.e}) · 제외 탭 · 이 단추는 판매중지를 따로 맡기지 않음(그 페이지가 맡음)`);
   ok(r.lost2 && r.lost2.sent === false && r.lost2.fn === false && r.lost2stop === 1 && r.lost2r === 'lost', '소재불명 페이지(lostAdd)가 없으면 기록 + 여기서 판매중지(이유 분실)');
-  ok(r.realFn === 'function' && r.real && r.real.sent && r.real.cid && r.real.stop === 1 && r.real.st === 'skip' && r.real.of && r.real.of.st === 'open' && r.real.after !== 'skip' && r.real.stop2 === 1, `진짜 소재불명 페이지: 판매중지 한 번(${r.real && r.real.stop}) · 사건 ${r.real && r.real.cid} · 발견 → 소재불명 표시 풂(${r.real && r.real.after})`);
+  ok(r.realFn === 'function' && r.real && r.real.sent && r.real.cid && r.real.stop === 0 && r.real.st === 'skip' && r.real.of && r.real.of.st === 'open' && r.real.after !== 'skip' && r.real.stop2 === 0, `진짜 소재불명 페이지: (11/04 기본 = 판매중 그대로) 판매중지 맡김 없음(${r.real && r.real.stop}) · 사건 ${r.real && r.real.cid} · 발견 → 소재불명 표시 풂(${r.real && r.real.after})`);
   ok(new RegExp('보유 ' + r.holdN + '권').test(r.hold) && /이 페이지 1/.test(r.hold) && /한도 모름/.test(r.hold) && /매입 한도/.test(r.limAsk), `여러 권 보유 표시: ${r.hold} · 담기 확인 창에 한도 경고`);
 });
 // ── 📱 휴대폰

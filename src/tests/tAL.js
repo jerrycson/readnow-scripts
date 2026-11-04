@@ -8,7 +8,7 @@ require('./harness.js')(async (p) => {
     if (!H.up) return r.abort(); const step = (st) => ['login', 'check', 'upload', 'print', 'verify', 'send'].map((k, i) => ({ k, l: k, st: i < st ? 'ok' : i === st ? 'run' : 'todo', pct: 50, d: '' }));
     if (u.pathname === '/alps/status') { H.polls++; if (H.run && H.run.status === 'run' && H.polls > 2 && !H.inputs.length) { H.run.status = 'wait'; H.run.need = { type: 'otp', msg: 'ALPS가 OTP·인증번호를 묻습니다. 번호를 넣어 주세요.' }; }
       if (H.run && H.inputs.length && H.run.status !== 'done') { H.run = { ...H.run, status: 'done', done: true, hasResult: true, need: null, steps: step(6), summary: { upload: { ok: 3 }, printed: 2, waybills: 2 } }; }
-      return J({ ok: true, ver: '0.3.9', pc: 'MJ-MAIN', cfg: { printer: '롯데택배 시험' }, cred: { saved: true }, run: H.run, key: { fp: 'fff000', pub: 'PUB2' }, remote: { on: false } }); }
+      return J({ ok: true, ver: '0.4.0', pc: 'MJ-MAIN', cfg: { printer: '롯데택배 시험' }, cred: { saved: true }, run: H.run, key: { fp: 'fff000', pub: 'PUB2' }, remote: { on: false } }); }
     if (u.pathname === '/alps/run') { H.body = JSON.parse(r.request().postData()); H.run = { id: 'r1', fileName: H.body.fileName, status: 'run', steps: step(1), summary: {} }; return J({ ok: true, run: H.run }); }
     if (u.pathname === '/alps/input') { H.inputs.push(JSON.parse(r.request().postData())); return J({ ok: true }); }
     if (u.pathname === '/alps/result') return J({ ok: true, aoa: [['운송장번호', '수하인명', '상품명', '상품상세내용', '관리번호', '출력여부', '집하일자', '합포장키'], ['240000000011', '나수령', '[중고-최상] 파란 책', 'BLUAAA', 'M1', '출력', '', ''], ['240000000012', '가수령', '분홍 책', 'PNKLUX', 'M2', '출력', '', ''], ['240000000012', '가수령', '분홍 책 둘', 'PNKLUY', 'M3', '출력', '', 'P']] });
