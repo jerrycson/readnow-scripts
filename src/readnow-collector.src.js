@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.189
+// @version      1.89.190
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -6518,7 +6518,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       try { const r2 = await fetch(BULK_URL + '?' + q.toString(), { credentials: 'include' }); http2 = r2.status; h2 = await r2.text(); al2 = RG.pageAlerts(h2); } catch (e) { al2 = ['응답을 못 받음: ' + e.message]; } /* 화면 자체 안내 알림(등록할 상품이 없습니다 등 늘 있는 글)은 빼고 서버가 넣은 알림만 */
       const bad = http2 !== 200 || al2.some((a) => /실패|오류|불가|잘못|없습니다|초과|error/i.test(a)) || (/로그인|wlogin/i.test(h2.slice(0, 3000)) && !/wC2Cuser_logout/.test(h2)); const stt = bad ? 'unknown' : 'registered';
       rows.forEach((r, i) => (results[r.regItem] = { state: stt, at: nowIso(), pkid: m.pairs[i], msg: bad ? `알라딘 답: ${al2.slice(0, 2).join(' / ') || 'HTTP ' + http2} — 공개 확인으로 판단` : null }));
-      await ref.set({ status: 'verify', step: 6, regAt, reg: { http: http2, alerts: al2.slice(0, 5) }, results, by: PC_NAME, ms: Date.now() - t0, uploadedAt: TS() }, { merge: true }).catch((e) => log('등록 결과를 못 적음(공개 확인이 이어서 적음): ' + (e.code || e.message), 1));
+      try { GM_setValue('rn-reg-sent', Date.now()); } catch (e) {} await ref.set({ status: 'verify', step: 6, regAt, reg: { http: http2, alerts: al2.slice(0, 5) }, results, by: PC_NAME, ms: Date.now() - t0, uploadedAt: TS() }, { merge: true }).catch((e) => log('등록 결과를 못 적음(공개 확인이 이어서 적음): ' + (e.code || e.message), 1));
       await regItemsSet(rows, results); await xend(bad ? 'unknown' : 'done', al2.slice(0, 2).join(' / ') || null, { n: rows.length, http: http2, base });
       log(`📥 대량 등록 ${bad ? '보냄(알라딘 답 확인 필요)' : '완료'}: ${rows.length}줄 — 이제 상품 조회에서 공개 확인 (3분마다, 90분까지)`, bad ? 1 : 0); setTimeout(() => regVerifyAll().catch(() => {}), 60000);
     } catch (e) { if (!sent) { await xend('failed', e.message, null); return await stop(e.message); }
@@ -6554,12 +6554,14 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (!base) { rows.forEach((r) => { if (!results[r.regItem] || results[r.regItem].state !== 'live') results[r.regItem] = { ...(results[r.regItem] || {}), state: 'unknown', at: nowIso(), msg: '등록 전 기준이 없어 공개 확인을 못 함 — 알라딘 상품 조회에서 확인' }; }); await ref.set({ results, status: 'done', doneAt: nowIso(), uploadedAt: TS() }, { merge: true }); await regItemsSet(rows, results); return; }
     const found = []; const codes = vf.codes && vf.codes.length ? vf.codes : [...new Set(rows.map((r) => REG_LIST_CODE[+r.state || 1] || 1))];
     for (const code of codes) for (let pg = 1; pg <= 6; pg++) { const g = await lookDoc(listUrl(code, pg)); if (looksLoggedOut(g.finalUrl, g.doc)) throw new Error('알라딘 로그인이 풀림'); const L = P.parseScmList(g.doc, new Date().getFullYear()).rows; const nw = L.filter((x) => +x.listingId > base); found.push(...nw.map((x) => ({ ...x, code }))); if (nw.length < L.length || !L.length) break; }
-    const used = new Set(Object.values(results).map((x) => x && x.listingId).filter(Boolean).map(String)); let hit = 0; const G = RGF().GRADE;
+    const used = new Set(Object.values(results).map((x) => x && x.listingId).filter(Boolean).map(String)); let hit = 0; const G = RGF().GRADE; const liveRows = [];
     for (const r of pend) { const want = { sku: r.code, price: Math.round(+r.price), grade: G[+r.grade || 2], qty: Math.max(1, +r.qty || 1), code: REG_LIST_CODE[+r.state || 1] || 1 };
       const cands = found.filter((x) => !used.has(String(x.listingId)) && String(x.sku || '') === want.sku && +x.price === want.price && x.grade === want.grade && +x.qty === want.qty && x.code === want.code)
         .map((x) => ({ x, isb: r.isbn && (x.isbn13 || x.isbn10) ? regIsbnEq(x.isbn13 || x.isbn10, r.isbn) || regIsbnEq(x.isbn10, r.isbn) : null, /* 미등록 상품(ISBN 없음)은 상품명으로만 */ s: P.nameCoverage ? P.nameCoverage(r.title || '', x.title || '') : 0 }))
         .filter((c) => c.isb === true || (c.isb === null && c.s >= 0.6)).sort((a, b) => (b.isb === true) - (a.isb === true) || b.s - a.s); /* ISBN이 보이면 ISBN이 같아야 · 안 보이면 상품명이 60% 넘게 같아야 */
-      for (const c of cands) { if (!(await regClaim(c.x.listingId, ref.id, r.regItem).catch(() => false))) continue; used.add(String(c.x.listingId)); hit++; results[r.regItem] = { ...(results[r.regItem] || {}), state: 'live', at: nowIso(), usedCode: c.x.usedCode || null, listingId: String(c.x.listingId), by: c.isb ? 'isbn' : 'title', msg: null }; break; } }
+      for (const c of cands) { if (!(await regClaim(c.x.listingId, ref.id, r.regItem).catch(() => false))) continue; used.add(String(c.x.listingId)); hit++; results[r.regItem] = { ...(results[r.regItem] || {}), state: 'live', at: nowIso(), usedCode: c.x.usedCode || null, listingId: String(c.x.listingId), by: c.isb ? 'isbn' : 'title', msg: null }; if (c.x.usedCode) liveRows.push(c.x); break; } }
+    /* (정범님 11/04 '왜 등록 시점에 바로 적용하지 않나') 공개 확인에서 찾은 상품은 그 자리에서 우리 상품 기록(prd_listings)에 씀 — 신규 등록분 수집이 같은 목록 쪽을 같은 함수(listingOps)로 다시 읽어 쓰던 것을 기다리지 않음(회차 진행도·재고·판매 화면이 몇 분 일찍) · 신규 등록분 수집은 그대로 돌고 이미 아는 상품은 건너뜀 */
+    if (liveRows.length) { try { await loadListings(); const seenAt = nowIso(); let ops = []; for (const x of liveRows) { const { code, ...row } = x; ops = ops.concat(listingOps(row, 'scm', seenAt).ops); } if (ops.length) await commitBatches(ops); log(`📥 공개 확인: 찾은 ${liveRows.length}개를 상품 기록에 바로 씀`); } catch (e) { log('📥 찾은 상품을 상품 기록에 바로 못 씀(신규 등록분 수집이 이어서 씀): ' + (e.code || e.message), 1); } }
     const left = rows.filter((r) => !results[r.regItem] || results[r.regItem].state !== 'live').length; const over = vf.until && Date.now() > Date.parse(vf.until);
     const everNew = Math.max(+vf.everNew || 0, found.length); const sentMs = Date.parse(v.regAt || v.sentAt || 0) || 0;
     /* (1.89.29) 정범님 10/22 '애매한 채로 남는 경우 일절 없게': 보낸 뒤 12분 동안 상품 조회(그 판매상태 목록 맨 앞)에 기준 번호보다 새 상품이 '하나도' 안 생겼으면 = 알라딘이 받지 않음(확실) → 실패로 닫고 등록 줄은 결정 대기로 원위치 + 문제 흔적(regProblem) — 다시 맡기기·휴지통·보류는 사람이 고름
@@ -6581,6 +6583,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     await runJob('scanNew'); await C('shp_cmds').add({ type: 'metrics', keys, label: '📥 등록 뒤 시장 지표 (' + keys.length + '개)', status: 'queued', createdAt: nowIso(), by: PC_NAME + ' (등록 뒤 자동)', uploadedAt: TS() }).catch(() => {});
     log(`📥 등록 뒤 나머지 수집: 신규 등록분 수집 끝 → 시장 지표 ${keys.length}개 맡김`); }
   setInterval(() => { regVerifyAll().catch(() => {}); }, 3 * 60000);
+  /* (정범님 11/04) 등록을 보내면 30초 뒤 공개 확인을 한 번 바로 — 예전엔 다음 3분 차례까지(최대 3분) 기다렸음 · 이 PC 안 표시(GM 값)만 보므로 Firebase 읽기는 늘지 않음 · 30초 = 알라딘 목록에 새 상품이 보이기까지 둔 틈(근거: 없음, 설정으로 바꿈 아님 — 3분 차례는 그대로 남아 놓쳐도 이어서 확인) */
+  { let seenPing = 0; try { seenPing = +GM_getValue('rn-reg-sent', 0) || 0; } catch (e) {} setInterval(() => { let t = 0; try { t = +GM_getValue('rn-reg-sent', 0) || 0; } catch (e) {} if (t > seenPing && Date.now() - t >= 30000) { seenPing = t; regVerifyAll().catch(() => {}); } }, 15000); }
   /* ══════════ (1.81.0) 🗑 웹앱에서 지운 등록 상품 → 알라딘에서도 삭제 (shp_cmds regDel) · 🔎 샵매니저에서 지운 최근 상품 → 웹앱에 바로 '삭제' ══════════
    *  정범님 10/18: '시험한 것·관리자가 지운 것이 샵매니저는 물론 웹앱에도 바로' — 매우 심각한 사안
    *  ① regDel {items:[{regItem, listingId, usedCode, title, listingKey}]}: 지금 상태를 샵매니저 목록(최신순)에서 상품 번호로 찾음 → 상품 조회/수정 화면의 판매상태 일괄 변경과 같은 요청으로 '삭제'(17, 공용 상품 파일의 SCM_STATUS)
@@ -9000,9 +9004,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         await C('reg_items').doc(itemId).set({ stage: 'pick', cmdId: null, final: null, autoCmd: null, result: { state: 'fail', at: nowIso(), msg: why0.slice(0, 200) }, lookErr: '🤖 알라딘이 등록을 막음: ' + why0.slice(0, 240), uploadedAt: TS() }, { merge: true }).catch(() => {});
         await P.X.finish(db, { kind: 'regOne', key: P.execKey }, 'failed', { msg: al.join(' / ') }).catch(() => {}); return; }
       if (!went) { keepMs = 10 * 60000; let fu = '', ft = ''; try { fu = String(fr.contentWindow.location.pathname || ''); ft = String((fr.contentDocument.body || {}).innerText || '').replace(/\s+/g, ' ').trim().slice(0, 160); } catch (e) {} /* (1.89.28) 3분 안에 답이 없음 = 아직 모름 → 되돌리지 않고(두 번 등록 막음) 바로 공개 확인으로 · 알림·틀 화면을 남겨 까닭을 봄 */
-        await P.ref.set({ status: 'verify', step: 6, regAt: nowIso(), waitMsg: null, msg: `알라딘에 보냈지만 ${Math.round((Date.now() - tS) / 1000)}초 동안 답(화면 바뀜)이 없음 — 등록됐는지 공개 확인으로 판단 (90분까지)`, reg: { alerts: al.slice(0, 5), auto: true, noNav: true, after: fu || null, text: ft || null }, results: { [itemId]: { state: 'unknown', at: nowIso(), msg: '보낸 뒤 답 없음 — 공개 확인 중' } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
+        try { GM_setValue('rn-reg-sent', Date.now()); } catch (e) {} await P.ref.set({ status: 'verify', step: 6, regAt: nowIso(), waitMsg: null, msg: `알라딘에 보냈지만 ${Math.round((Date.now() - tS) / 1000)}초 동안 답(화면 바뀜)이 없음 — 등록됐는지 공개 확인으로 판단 (90분까지)`, reg: { alerts: al.slice(0, 5), auto: true, noNav: true, after: fu || null, text: ft || null }, results: { [itemId]: { state: 'unknown', at: nowIso(), msg: '보낸 뒤 답 없음 — 공개 확인 중' } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
         log(`🤖 자동 등록: 알라딘에 보냈지만 ${Math.round((Date.now() - tS) / 1000)}초 동안 답이 없음 — 공개 확인으로${al.length ? ' · 알림: ' + al.join(' / ').slice(0, 120) : ''}`, 1); if (window.__rnRegVerifyNow) window.__rnRegVerifyNow(id); return; }
-      const ok = !errA; await P.ref.set({ status: 'verify', step: 6, regAt: nowIso(), waitMsg: null, msg: null, reg: { alerts: al.slice(0, 5), auto: true, went: true }, results: { [itemId]: { state: ok ? 'registered' : 'unknown', at: nowIso(), msg: ok ? null : '알라딘 알림: ' + al.slice(0, 2).join(' / ') } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
+      const ok = !errA; try { GM_setValue('rn-reg-sent', Date.now()); } catch (e) {} await P.ref.set({ status: 'verify', step: 6, regAt: nowIso(), waitMsg: null, msg: null, reg: { alerts: al.slice(0, 5), auto: true, went: true }, results: { [itemId]: { state: ok ? 'registered' : 'unknown', at: nowIso(), msg: ok ? null : '알라딘 알림: ' + al.slice(0, 2).join(' / ') } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
       await C('reg_items').doc(itemId).set({ result: { state: ok ? 'registered' : 'unknown', at: nowIso() }, autoCmd: null, uploadedAt: TS() }, { merge: true }).catch(() => {});
       await P.X.finish(db, { kind: 'regOne', key: P.execKey }, ok ? 'done' : 'unknown', { msg: al.join(' / ') || null }).catch(() => {}); T('공개 확인 시작 — 6초·15초·30초·1분… 상품 조회에서 새 상품을 찾음', 6); if (window.__rnRegVerifyNow) window.__rnRegVerifyNow(id);
     } finally { clean(); } }
@@ -9011,7 +9015,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   /* ── ① 보낸 뒤 화면이 바뀌었으면: 그 일을 공개 확인으로 (보낸 뒤 10분 안 · 이 PC) ── */
   (async () => { const pd = GM_getValue(KEY_PEND, null); if (!pd || Date.now() - pd.at > 10 * 60000 || pd.url === location.href && Date.now() - pd.at < 4000) return; await whenAuth(); if (!auth.currentUser) return;
     GM_deleteValue(KEY_PEND); const ref = C('shp_cmds').doc(pd.cmdId); const ok = !alErr(pd.alerts).length;
-    await ref.set({ status: 'verify', step: 6, regAt: pd.sentAt || nowIso(), reg: { alerts: (pd.alerts || []).slice(0, 5), after: location.pathname }, results: { [pd.itemId]: { state: ok ? 'registered' : 'unknown', at: nowIso(), msg: ok ? null : '알라딘 알림: ' + (pd.alerts || []).slice(0, 2).join(' / ') } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
+    try { GM_setValue('rn-reg-sent', Date.now()); } catch (e) {} await ref.set({ status: 'verify', step: 6, regAt: pd.sentAt || nowIso(), reg: { alerts: (pd.alerts || []).slice(0, 5), after: location.pathname }, results: { [pd.itemId]: { state: ok ? 'registered' : 'unknown', at: nowIso(), msg: ok ? null : '알라딘 알림: ' + (pd.alerts || []).slice(0, 2).join(' / ') } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
     await C('reg_items').doc(pd.itemId).set({ result: { state: ok ? 'registered' : 'unknown', at: nowIso() }, uploadedAt: TS() }, { merge: true }).catch(() => {});
     const X = XC(); if (X) await X.finish(db, { kind: 'regOne', key: pd.execKey }, ok ? 'done' : 'unknown', { msg: (pd.alerts || []).join(' / ') || null }).catch(() => {}); })();
   if (!onRecord) return;

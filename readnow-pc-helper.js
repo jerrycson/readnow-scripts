@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.189의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.190의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.189' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.189', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.190' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.190', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -415,9 +415,9 @@
         await C('reg_items').doc(itemId).set({ stage: 'pick', cmdId: null, final: null, autoCmd: null, result: { state: 'fail', at: nowIso(), msg: why0.slice(0, 200) }, lookErr: '🤖 알라딘이 등록을 막음: ' + why0.slice(0, 240), uploadedAt: TS() }, { merge: true }).catch(() => {});
         await P.X.finish(db, { kind: 'regOne', key: P.execKey }, 'failed', { msg: al.join(' / ') }).catch(() => {}); return; }
       if (!went) { keepMs = 10 * 60000; let fu = '', ft = ''; try { fu = String(fr.contentWindow.location.pathname || ''); ft = String((fr.contentDocument.body || {}).innerText || '').replace(/\s+/g, ' ').trim().slice(0, 160); } catch (e) {} /* (1.89.28) 3분 안에 답이 없음 = 아직 모름 → 되돌리지 않고(두 번 등록 막음) 바로 공개 확인으로 · 알림·틀 화면을 남겨 까닭을 봄 */
-        await P.ref.set({ status: 'verify', step: 6, regAt: nowIso(), waitMsg: null, msg: `알라딘에 보냈지만 ${Math.round((Date.now() - tS) / 1000)}초 동안 답(화면 바뀜)이 없음 — 등록됐는지 공개 확인으로 판단 (90분까지)`, reg: { alerts: al.slice(0, 5), auto: true, noNav: true, after: fu || null, text: ft || null }, results: { [itemId]: { state: 'unknown', at: nowIso(), msg: '보낸 뒤 답 없음 — 공개 확인 중' } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
+        try { GM_setValue('rn-reg-sent', Date.now()); } catch (e) {} await P.ref.set({ status: 'verify', step: 6, regAt: nowIso(), waitMsg: null, msg: `알라딘에 보냈지만 ${Math.round((Date.now() - tS) / 1000)}초 동안 답(화면 바뀜)이 없음 — 등록됐는지 공개 확인으로 판단 (90분까지)`, reg: { alerts: al.slice(0, 5), auto: true, noNav: true, after: fu || null, text: ft || null }, results: { [itemId]: { state: 'unknown', at: nowIso(), msg: '보낸 뒤 답 없음 — 공개 확인 중' } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
         log(`🤖 자동 등록: 알라딘에 보냈지만 ${Math.round((Date.now() - tS) / 1000)}초 동안 답이 없음 — 공개 확인으로${al.length ? ' · 알림: ' + al.join(' / ').slice(0, 120) : ''}`, 1); if (window.__rnRegVerifyNow) window.__rnRegVerifyNow(id); return; }
-      const ok = !errA; await P.ref.set({ status: 'verify', step: 6, regAt: nowIso(), waitMsg: null, msg: null, reg: { alerts: al.slice(0, 5), auto: true, went: true }, results: { [itemId]: { state: ok ? 'registered' : 'unknown', at: nowIso(), msg: ok ? null : '알라딘 알림: ' + al.slice(0, 2).join(' / ') } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
+      const ok = !errA; try { GM_setValue('rn-reg-sent', Date.now()); } catch (e) {} await P.ref.set({ status: 'verify', step: 6, regAt: nowIso(), waitMsg: null, msg: null, reg: { alerts: al.slice(0, 5), auto: true, went: true }, results: { [itemId]: { state: ok ? 'registered' : 'unknown', at: nowIso(), msg: ok ? null : '알라딘 알림: ' + al.slice(0, 2).join(' / ') } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
       await C('reg_items').doc(itemId).set({ result: { state: ok ? 'registered' : 'unknown', at: nowIso() }, autoCmd: null, uploadedAt: TS() }, { merge: true }).catch(() => {});
       await P.X.finish(db, { kind: 'regOne', key: P.execKey }, ok ? 'done' : 'unknown', { msg: al.join(' / ') || null }).catch(() => {}); T('공개 확인 시작 — 6초·15초·30초·1분… 상품 조회에서 새 상품을 찾음', 6); if (window.__rnRegVerifyNow) window.__rnRegVerifyNow(id);
     } finally { clean(); } }
@@ -426,7 +426,7 @@
   /* ── ① 보낸 뒤 화면이 바뀌었으면: 그 일을 공개 확인으로 (보낸 뒤 10분 안 · 이 PC) ── */
   (async () => { const pd = GM_getValue(KEY_PEND, null); if (!pd || Date.now() - pd.at > 10 * 60000 || pd.url === location.href && Date.now() - pd.at < 4000) return; await whenAuth(); if (!auth.currentUser) return;
     GM_deleteValue(KEY_PEND); const ref = C('shp_cmds').doc(pd.cmdId); const ok = !alErr(pd.alerts).length;
-    await ref.set({ status: 'verify', step: 6, regAt: pd.sentAt || nowIso(), reg: { alerts: (pd.alerts || []).slice(0, 5), after: location.pathname }, results: { [pd.itemId]: { state: ok ? 'registered' : 'unknown', at: nowIso(), msg: ok ? null : '알라딘 알림: ' + (pd.alerts || []).slice(0, 2).join(' / ') } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
+    try { GM_setValue('rn-reg-sent', Date.now()); } catch (e) {} await ref.set({ status: 'verify', step: 6, regAt: pd.sentAt || nowIso(), reg: { alerts: (pd.alerts || []).slice(0, 5), after: location.pathname }, results: { [pd.itemId]: { state: ok ? 'registered' : 'unknown', at: nowIso(), msg: ok ? null : '알라딘 알림: ' + (pd.alerts || []).slice(0, 2).join(' / ') } }, uploadedAt: TS() }, { merge: true }).catch(() => {});
     await C('reg_items').doc(pd.itemId).set({ result: { state: ok ? 'registered' : 'unknown', at: nowIso() }, uploadedAt: TS() }, { merge: true }).catch(() => {});
     const X = XC(); if (X) await X.finish(db, { kind: 'regOne', key: pd.execKey }, ok ? 'done' : 'unknown', { msg: (pd.alerts || []).join(' / ') || null }).catch(() => {}); })();
   if (!onRecord) return;
