@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "벤치 새 일정·마감 14시",
+ "since": "2026-11-04T12:25:26Z",
+ "beat": "2026-11-04T12:25:26Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T11:04:07Z"
  },
- "host": null
+ "host": "vm"
 }
