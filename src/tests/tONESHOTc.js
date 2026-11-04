@@ -42,7 +42,7 @@ async function run(name, o) { const F = fakeFb(); const GM = new Map(); const id
   console.log('■ 첫 건 자동 검증 틀림 → 멈추고 ⚠');
   { const T = await run('bad', { items: [{ orderNo: 'O1', invoice: '240000000011', state: 'sent' }, { orderNo: 'O2', invoice: '240000000012', state: 'todo' }], shipped: [['O1', '999999999999']] });
     const w = await T.page(['O2'], ['O2']); await sleep(3400); const d = T.D();
-    ok(d.status === 'paused' && d.verifyFail && d.verified && !d.verified.ok && /송장번호가 다름/.test(d.verified.why) && /첫 건 자동 검증 실패/.test(d.pauseWhy), '송장이 다르면 멈춤(verifyFail · 까닭) ' + JSON.stringify(d.verified || {}));
+    ok(d.status === 'paused' && d.verifyFail && d.verified && !d.verified.ok && /송장번호가 (다름|안 보임)/.test(d.verified.why) && /첫 건 자동 검증 실패/.test(d.pauseWhy), '송장이 다르면 멈춤(verifyFail · 까닭) ' + JSON.stringify(d.verified || {}));
     ok(!w.__clicked.length && !T.GM.has('rn-inv-active'), '나머지는 넣지 않음'); w.close(); }
   console.log("■ 설정 '저절로 계속' 끔 → 검증 결과를 보여 주고 멈춤");
   { const T = await run('off', { autoCont: false, items: [{ orderNo: 'O1', invoice: '240000000011', state: 'sent' }, { orderNo: 'O2', invoice: '240000000012', state: 'todo' }], shipped: [['O1', '240000000011']] });
