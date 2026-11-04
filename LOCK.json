@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "출고 한 흐름·송장 원스톱",
+ "since": "2026-11-04T10:52:55Z",
+ "beat": "2026-11-04T10:52:55Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T09:32:34Z"
  },
- "host": null
+ "host": "vm"
 }
