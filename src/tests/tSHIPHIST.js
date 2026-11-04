@@ -58,7 +58,7 @@ const run = async (p) => { await p.evaluate(require('./seed.js'));
   ok(/숨긴 줄 1개 보기/.test(R.showHid) && R.liveShow.includes('cmd:dDone') && /저절로 숨김/.test(R.ahTxt), "저절로 숨긴 수가 '숨긴 줄 n개 보기'에 함께 · 누르면 다시 보임");
   ok(R.live30.includes('cmd:dDone'), '⚙ 기록 설정 시간(autoHideMin)을 30분으로 바꾸면 다시 보임 — 설정이 먹음');
   ok(R.ahInput && R.histBtn, '⚙ 기록 설정에 저절로 숨김 칸 · 🛰 머리에 📜 출고 처리 기록 단추');
-  ok(!R.rows.some((x) => /dYest|invY/.test(x)) && !R.prob.includes('inv:invY'), '전날 카드(멈춘 송장 입력·오래 멈춘 발송준비시작)는 🛰 칸에서 빠짐');
+  ok(R.rows.some((x) => /dYest|invY/.test(x)), '전날 문제 카드(멈춘 송장 입력·오래 멈춘 발송준비시작)는 해결되거나 숨길 때까지 🛰 칸에 남음(정범님 원칙: 놓치지 않게)');
   ok(/출고 처리 기록/.test(R.title) && R.det && R.pg === 'shipHist' && R.noPopup, '📜 출고 처리 기록 = 웹앱 안 화면(시트) · 화면 설명서 id shipHist');
   const t1 = dOf(R.days1, today); const others = R.days1.filter((x) => x.d !== today);
   ok(t1 && t1.open && t1.cards >= 3 && others.length >= 3 && others.every((x) => !x.open && x.cards === 0), '날짜별 묶음 — 오늘만 펼침 · 지난 날 모두 닫힘(닫힌 날은 카드를 그리지 않음) ' + JSON.stringify(R.days1.map((x) => [x.d, x.open, x.cards])));
