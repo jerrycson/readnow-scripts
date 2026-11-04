@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "벤치 일정 클라우드 적용·검증 고침",
+ "since": "2026-11-04T13:49:19Z",
+ "beat": "2026-11-04T13:49:19Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T13:40:04Z"
  },
- "host": null
+ "host": "vm"
 }
