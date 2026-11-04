@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "출고 한 흐름 다시 올림",
+ "since": "2026-11-04T11:03:09Z",
+ "beat": "2026-11-04T11:03:09Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T11:02:10Z"
  },
- "host": null
+ "host": "vm"
 }
