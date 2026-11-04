@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "11/04 다섯 갈래 합친 판(예스24 주문·출고 판정·새책 찾기·서가 지도·작은 고침·이름)",
+ "since": "2026-11-04T02:54:45Z",
+ "beat": "2026-11-04T02:54:45Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-04T01:59:10Z"
  },
- "host": null
+ "host": "vm"
 }
