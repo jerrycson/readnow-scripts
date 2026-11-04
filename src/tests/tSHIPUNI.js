@@ -66,7 +66,7 @@ H(async (p) => { await p.evaluate(require('./seed.js'));
   ok(R.live && R.live.stp === 4 && R.live.run === 1 && R.live.bar === '50%' && /지금: A-2 발송준비시작 누르는 중/.test(R.live.big) && /1 \/ 2/.test(R.live.meta) && /남은 1건/.test(R.live.meta) && /걸린 시간/.test(R.live.meta) && /예상 남은/.test(R.live.meta) && R.live.prog === 0, '🛰 새 진행: 단계 줄 4 · 지금 단계 · 얇은 막대 50% · 1/2 · 남은 수 · 걸린 시간 · 예상 남은 · 옛 <progress> 없음: ' + JSON.stringify(R.live));
   ok(/warn/.test(R.lines || '') && /ok/.test(R.lines || '') && R.newTop, '세부 줄: 색 점(성공·주의) · 새 줄이 위: ' + R.lines);
   ok(R.live2 && R.live2.bar === '100%' && R.live2.open && /A-2 발송준비시작 넘어감/.test(R.live2.top), '실시간: 막대·세부 줄이 바뀜 · 펼친 채로: ' + JSON.stringify(R.live2));
-  ok(R.flow.stp === 4 && /지금:/.test(R.flow.txt), '오늘 흐름 단계 줄(확인 → 송장 인쇄 → 송장 보내기 → 끝): ' + R.flow.txt);
+  ok(R.flow.stp === 4 && /지금:|다음 할 일:/.test(R.flow.txt), '오늘 흐름 단계 줄(확인 → 송장 인쇄 → 송장 보내기 → 끝): ' + R.flow.txt);
   ok(R.guide.ssrc && R.guide.one && R.guide.exc && R.feat >= 3, '화면 설명서·기능 찾기에 단계 칸·판매처 칩·한 단추·⚠: ' + JSON.stringify(R.guide) + ' feat ' + R.feat);
 }).then(() => H(async (p) => { await p.evaluate(require('./seed.js'));
   const R = await p.evaluate(async (seedSrc) => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); await W(1500); await eval('(' + seedSrc + ')')(); const out = {}; const sh = document.getElementById('sheet');
