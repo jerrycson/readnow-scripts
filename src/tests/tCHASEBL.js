@@ -1,5 +1,6 @@
 // tCHASEBL — 11/04 정범님 "무시 판매자 빼는 설정을 가능하게 해주고 빠지지 않는 지금 상태를 기본으로 해줘. 블랙리스트 목록 화면 만들어."
 // ① 기본(꺼짐) = 셈 그대로 ② 곳마다(시장 지표·⚡ 희소 전략·판매가 추천) 켜면 그 곳만 빠짐 ③ 🚫 블랙리스트 더하기/해제(기록)/메모/찾기·정렬·겹치는 책 ④ 판매자 상세 빠른 단추 ⑤ 클라우드 chaseIgnoreSet(가짜 db)
+// (11/05) ⑥ '언제 뺄까' — 늘(엔진 꺼져도 · 처음 값) / 엔진이 켜졌을 때만 × 엔진 켜짐/꺼짐 네 경우(엔진 순수 함수·웹앱 셈·표시·클라우드 chaseIgnoreSet) · ⚙ 정책 고르기 단추
 // 실행: cd <빌드 사본>/pw && RN_PORT=<포트> node tCHASEBL.js
 const fs = require('fs'); const path = require('path');
 let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } else console.log('  ✓', m); };
@@ -15,6 +16,9 @@ const W = (p, ms) => p.waitForTimeout(ms);
   ok((await mk(pol({ mkt: true }))('strat')) === null, '클라우드: 시장 지표만 켬 → ⚡ 전략은 그대로');
   const s1 = await mk(pol({ strat: true }))('strat'); ok(s1 && s1.size === 1 && s1.has('222'), '클라우드: ⚡ 켬 → 무시 판매자 222만(우리 가게 996008은 빼지 않음)');
   ok((await mk(null)('mkt')) === null, '클라우드: 정책 문서 없음 → null');
+  /* ⑥ 언제 뺄까 × 엔진 켜짐/꺼짐 */
+  const polW = (when, on) => { const d = pol({ strat: true, ...(when ? { when } : {}) }); d.chaseEng.on = on; return d; };
+  for (const [when, on, want] of [['always', false, 1], ['always', true, 1], ['on', false, 0], ['on', true, 1], [null, false, 1]]) { const r = await mk(polW(when, on))('strat'); ok(want ? r && r.size === 1 && r.has('222') : r === null, `클라우드: 언제 뺄까 ${when || '(없음=늘)'} · 엔진 ${on ? '켜짐' : '꺼짐'} → ${want ? '222 뺌' : '빼지 않음(null)'}`); }
 })().then(() => require('./harness.js')(async (p) => { p.on('pageerror', () => { bad++; }); await p.evaluate(require('./seed.js'));
   await p.evaluate(() => { window.confirm = () => true; S.sellers = S.sellers || new Map(); S.sellers.set('sc_111', { id: 'sc_111', sc: '111', name: '추격왕' }); S.sellers.set('sc_222', { id: 'sc_222', sc: '222', name: '조용한책방' }); S.sellers.set('sc_333', { id: 'sc_333', sc: '333', name: '세번째' });
     const row = (sc, name, price, lid, x) => ({ sellerCode: sc, sellerName: name, grade: '최상', price, ship: 2500, listingId: lid, usedCode: null, soldOut: false, ...(x || {}) });
@@ -30,7 +34,11 @@ const W = (p, ms) => p.waitForTimeout(ms);
     const m1 = CH.blMemo(P, '555', '바꾼 까닭', { by: 'a@x' }); const off = CH.blOff(P, '555', { by: 'b@x', at: '2026-11-04T02:00:00Z' }); const L = CH.blList(P);
     const Q = CH.normPolicy({ sellers: { 7: { stance: 'aggressive', name: '칠' } } }); CH.blAdd(Q, '7', { by: 'a' }); const q1 = Q.sellers['7'].stance; CH.blOff(Q, '7', {}); const q2 = Q.sellers['7'] && Q.sellers['7'].stance;
     return { d0, a1, a2, s1, s2: s2 && [...s2], dr: dr.length, m1, off, on: L.on.length, offN: L.off.length, offAt: L.off[0] && L.off[0].offAt, log: P.blLog.map((x) => x.act).join(','), left: !!P.sellers['555'], q1, q2, own: CH.blAdd(P, '996008', {}) }; });
-  ok(e.d0 === '{"mkt":false,"strat":false,"rec":false}', `엔진: 처음 값 세 곳 모두 꺼짐 ${e.d0}`);
+  ok(e.d0 === '{"mkt":false,"strat":false,"rec":false,"when":"always"}', `엔진: 처음 값 세 곳 모두 꺼짐 · 언제 뺄까 = 늘 ${e.d0}`);
+  /* ⑥ 엔진 순수 함수 — 언제 뺄까 × 엔진 켜짐/꺼짐 */
+  const w4 = await p.evaluate(() => { const CH = window.ReadnowChase; const mk = (when, on) => ({ on, sellers: { 9: { stance: 'ignore' } }, excl: { rec: true, ...(when ? { when } : {}) } }); const f = (when, on) => { const X = CH.exclSet(mk(when, on), 'rec'); return [CH.exclLive(mk(when, on)), X ? [...X].join() : null]; };
+    return { aF: f('always', false), aT: f('always', true), oF: f('on', false), oT: f('on', true), nF: f(null, false), xF: f('이상한값', false), lab: CH.EXCL_WHEN }; });
+  ok(JSON.stringify([w4.aF, w4.aT, w4.oF, w4.oT, w4.nF, w4.xF]) === JSON.stringify([[true, '9'], [true, '9'], [false, null], [true, '9'], [true, '9'], [true, '9']]) && w4.lab && w4.lab.always && w4.lab.on, `엔진: 늘×꺼짐 ${w4.aF} · 늘×켜짐 ${w4.aT} · 켜졌을 때만×꺼짐 ${w4.oF} · 켜졌을 때만×켜짐 ${w4.oT} · 없음/모르는 값 = 늘`);
   ok(e.a1 && !e.a2 && e.s1 === null && e.s2.join() === '555' && e.dr === 2, '엔진: 더하기(두 번째는 안 함) · 꺼짐이면 Set 없음 · 켜면 Set · 원본(sellerCode)·블록(sc) 줄 모두 뺌');
   ok(e.m1 && e.off && e.on === 0 && e.offN === 1 && e.offAt === '2026-11-04T02:00:00Z' && e.log === 'on,memo,off' && !e.left, `엔진: 메모·해제 기록(지우지 않음 ${e.log}) · 지정 전에 없던 판매자는 목록에서 빠짐`);
   ok(e.q1 === 'ignore' && e.q2 === 'aggressive' && e.own === false, '엔진: 있던 판매자는 해제하면 원래 태세(공격적)로 · 우리 가게는 지정 안 됨');
@@ -54,7 +62,11 @@ const W = (p, ms) => p.waitForTimeout(ms);
   const sol = await p.evaluate(() => { const l1 = S.plist.get('aladin_U215983411'); const f = (c) => { const R = batchFilter({ ...BATCH_DEF, ...c }); return R.some((x) => x.id === l1.id); }; return { solo: f({ exSolo: true }), badge: f({ mktOn: true, lowBadge: 'has' }) }; }).catch((e) => ({ err: e.message }));
   await setX({ mkt: true }); const sol2 = await p.evaluate(() => { const l1 = S.plist.get('aladin_U215983411'); const f = (c) => { const R = batchFilter({ ...BATCH_DEF, ...c }); return R.some((x) => x.id === l1.id); }; return { solo: f({ exSolo: true }), badge: f({ mktOn: true, lowBadge: 'has' }) }; }).catch((e) => ({ err: e.message }));
   ok(!sol.err && !sol2.err && sol.solo === true && sol2.solo === false, `수동 일괄 '경쟁 없음 빼기': 꺼짐이면 남음(${sol.solo}) · 시장 지표 켜면 무시 판매자만 남은 책은 경쟁 없음으로 빠짐(${sol2.solo}) ${sol.err || sol2.err || ''}`);
-  await setX({});
+  /* ⑥ 웹앱 — 언제 뺄까 × 엔진 켜짐/꺼짐 (시장 지표 켬) */
+  const setW = (when, on) => p.evaluate(([when, on]) => { S.prCfg = { ...S.prCfg, chaseEng: { ...S.prCfg.chaseEng, on, excl: { mkt: true, when } } }; }, [when, on]);
+  for (const [when, on, drop] of [['always', false, true], ['always', true, true], ['on', false, false], ['on', true, true]]) { await setW(when, on); r = await probe();
+    ok(drop ? r.mref === 6000 && r.mkt1 === 1 && /1명 빼고 셈/.test(r.noteM) : r.mref === 4000 && r.mkt1 === 2 && !r.noteM, `웹앱: 언제 뺄까 ${when} · 엔진 ${on ? '켜짐' : '꺼짐'} → ${drop ? '빼고 셈' : '빼지 않음 · 표시 없음'}(기준 시장가 ${r.mref} · 표시 ${r.noteM ? '있음' : '없음'})`); }
+  await setW('always', false); await setX({}); /* 엔진 꺼짐으로 되돌림 */
 
   /* ③ 🚫 블랙리스트 화면 */
   await p.evaluate(() => openChaseEngine({ tab: 'bl', reload: 1 })); await W(p, 400);
@@ -89,6 +101,15 @@ const W = (p, ms) => p.waitForTimeout(ms);
   await p.check('input[data-chex="strat"]'); await W(p, 150); await p.click('#che_save'); await W(p, 400); ce = await p.evaluate(() => window.__FS.prd_system.pricing.chaseEng);
   ok(ce.excl.strat === true && ce.excl.mkt === false && ce.excl.rec === false && ce.on === false, '⚡ 칸만 켜고 저장 → strat만 켜짐(정책 켜짐과 따로)');
   t = await p.evaluate(() => document.getElementById('che_excl').innerText); ok(/무시 판매자 2명 빼고 셈/.test(t), `저장 뒤 '무시 판매자 2명 빼고 셈' 표시`);
+  /* ⑥ ⚙ 정책 › 언제 뺄까 고르기 (엔진 꺼짐) */
+  ok((await p.evaluate(() => [...document.querySelectorAll('input[data-chexw]')].map((x) => x.dataset.chexw + (x.checked ? '*' : '')).join())) === 'always*,on', '⚙ 정책: 언제 뺄까 두 단추 · 처음 값 = 늘');
+  await p.check('input[data-chexw="on"]'); await W(p, 150); await p.click('#che_save'); await W(p, 400); ce = await p.evaluate(() => window.__FS.prd_system.pricing.chaseEng);
+  t = await p.evaluate(() => document.getElementById('che_excl').innerText);
+  ok(ce.excl.when === 'on' && ce.excl.strat === true && ce.on === false && !/빼고 셈/.test(t) && /엔진 꺼짐이라 빼지 않음/.test(t) && !(await p.evaluate(() => cheExclNote('strat'))), `'엔진이 켜졌을 때만' 저장(엔진 꺼짐) → 빼지 않음 표시 · 🚫 표시 없음`);
+  await p.check('input[data-chon="on"]'); await W(p, 150); await p.click('#che_save'); await W(p, 400); t = await p.evaluate(() => document.getElementById('che_excl').innerText);
+  ok(/무시 판매자 2명 빼고 셈/.test(t) && /2명 빼고 셈/.test(await p.evaluate(() => cheExclNote('strat'))), '엔진을 켜고 저장 → 빼고 셈 표시');
+  await p.uncheck('input[data-chon="on"]'); await p.check('input[data-chexw="always"]'); await W(p, 150); await p.click('#che_save'); await W(p, 400); ce = await p.evaluate(() => window.__FS.prd_system.pricing.chaseEng);
+  ok(ce.excl.when === 'always' && ce.on === false && /2명 빼고 셈/.test(await p.evaluate(() => cheExclNote('strat'))), "'늘'로 되돌리고 엔진 끔 → 엔진 꺼져도 빼고 셈(11/04 동작)");
   // ① 지정 판매자에서 태세를 무시로 바꿔도 기록
   await p.fill('#che_add', '333'); await p.click('#che_addb'); await W(p, 200); await p.selectOption('select[data-chs="333|stance"]', 'ignore'); await W(p, 150);
   ok(await p.evaluate(() => S.chE.draft.blLog.slice(-1)[0].act === 'on' && S.chE.draft.blLog.slice(-1)[0].sc === '333' && !!S.chE.draft.sellers['333'].blAt), '① 지정 판매자 태세를 무시로 → 블랙리스트 더함 기록');
