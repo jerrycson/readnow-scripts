@@ -271,6 +271,82 @@
     if (waitL.length && !R.length && left > 0) return { state: 'wait', reasons: [], kinds: [], qty, total, top, bundle: BQ, items: per, waitLeftMs: left, cfg };
     waitL.forEach((b) => add('nomkt', `「${sh(b.title)}」 시장 자료 없음 — ${left > 0 ? '아직 못 읽음(다른 검토 이유가 있어 기다리지 않음)' : `${cfg.waitMin}분 기다려도 못 읽음`}`));
     return { state: R.length ? 'review' : 'pass', reasons: R, kinds: [...kinds], qty, total, top, bundle: BQ, items: per, waitLeftMs: 0, cfg }; }
-  const API = { VERSION, planConfirm, AUTO_DEFAULTS, autoCfg, mktOthers, autoLowOf, bbOf, bbPick, custRisk, autoShipDecide, parseDeliveryPage, parseShippedPage, KR_HOLIDAYS, holName, pickupRun, dayKeyAdd, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays };
+  // ── 🟦 예스24 주문 응답 풀기 (정범님 11/04 '예스24 주문도 웹앱에서 인식하고 알림으로 처리한 뒤 함께 출고') ──
+  // 수집기가 예스24 판매관리('리드나우 연결' 창)에서 가로챈 응답(crm_y24_raw: sig·body·at)을 주문 줄로 · 웹앱(오늘 출고 🟦 예스24 탭)과 클라우드(휴대폰 알림)가 같은 함수를 씀
+  // ⚠ 11/04 현재 주문 목록 응답에 줄이 든 표본이 아직 없음(10/30 받은 신규 주문·발송관리 응답은 모두 빈 목록) → 칸 이름을 모름 → 칸마다 여러 후보 이름으로 찾고, 주문번호 칸을 못 찾으면 '모양 모름'으로 돌려줌(웹앱이 '응답 모양 확인 필요'·칸 이름 보기)
+  //   칸 이름 후보의 근거: 예스24 판매관리 다른 응답의 이름 규칙(GOODS_NO·GOODS_NM·EAN·GOODS_LEVEL_GB_NM·SALE_STATE_GB·ORD_REMAIN_CNT·DELIVERY_LIST·RESULT_LIST·TOTAL_COUNT) · 주문 칸 자체는 근거 없음(첫 실제 응답을 받으면 맞춤)
+  const Y24O_LIST = /^POST \/api\/(Order|Claim)\//i; // 주문·클레임 응답만 (Init·GetCode·GetNewOrderYn 은 코드표·신호라 줄이 없음 → 아래에서 줄 없음으로 끝)
+  const Y24O_STAGE = { NewOrderConfirmList: 'new', OrderDeliveryList: 'deliv', CalculatePlannedList: 'sent', OrderTotalList: null, OrderList: null }; // 그 목록에 있으면 예스24 쪽 단계(근거: 메뉴 이름 — 신규 주문(접수확인 전) · 발송관리(발송 대기) · 정산 예정(발송 뒤))
+  const Y24O_F = {
+    ono: [/^ORD(ER)?_?NO$/i, /^ORD(ER)?_?(NUM|ID|CD)$/i, /^(M|MALL|PAY)_?ORD(ER)?_?NO$/i],
+    line: [/^ORD(ER)?_?(DTL|DETAIL|ITEM|GOODS|PROD)_?(NO|SEQ|SN|ID)$/i, /^ORD(ER)?_?SEQ$/i, /^(DTL|DETAIL)_?(NO|SEQ)$/i],
+    goodsNo: [/^(USED_)?GOODS_?NO$/i, /^(PROD|PRODUCT|ITEM)_?NO$/i],
+    title: [/^GOODS_?(NM|NAME)$/i, /^(PROD|PRODUCT|ITEM)_?(NM|NAME)$/i, /GOODS_?NM/i],
+    qty: [/^ORD(ER)?_?(QTY|CNT|COUNT|QUANTITY)$/i, /^(GOODS_|ITEM_)?(QTY|CNT|QUANTITY)$/i, /QTY$/i],
+    price: [/^(ORD_|GOODS_|USED_)?(SALE|SELL)_?(PRICE|PRC)$/i, /^(ORD|GOODS)_?(PRICE|PRC|UNIT_?PRICE)$/i, /^PRICE$/i],
+    amt: [/^(ORD|PAY|TOT|TOTAL|SETTLE|GOODS)_?(AMT|AMOUNT|PRICE_?SUM|SUM)$/i, /AMT$/i],
+    fee: [/(DELV|DLV|DELIVERY|SHIP|BAESONG)_?(FEE|AMT|COST|PRICE|PRC|CHARGE)$/i],
+    stCd: [/^ORD(ER)?_?(STAT|STATE|STS|STATUS)(_?(GB|CD))?$/i, /^(DELV|DLV|DELIVERY|CLAIM)_?(STAT|STATE|STS|STATUS)(_?(GB|CD))?$/i, /^(STAT|STATE|STS|STATUS)(_?(GB|CD))?$/i],
+    stNm: [/^ORD(ER)?_?(STAT|STATE|STS|STATUS)(_?(GB|CD))?_?NM$/i, /^(DELV|DLV|DELIVERY|CLAIM)_?(STAT|STATE|STS|STATUS)(_?(GB|CD))?_?NM$/i, /(STAT|STATE|STS|STATUS)(_?(GB|CD))?_?NM$/i],
+    at: [/^ORD(ER)?_?(DT|DATE|DTM|DTTM|DATETIME|TIME|YMD|YMDHMS)$/i, /^(PAY|PAYMENT|ACPT|ACCEPT|REG)_?(DT|DATE|DTM|DTTM|YMD)$/i],
+    buyer: [/^(ORDR|ORDER|ORD|ORDERER|BUYER|BUY|MEM|MEMBER|CUST)_?(NM|NAME)$/i],
+    rcv: [/^(RCVR|RCV|RECV|RECEIVER|RECIPIENT|RCPT|TAKE|DELV_?RCV|ACPR)_?(NM|NAME)$/i],
+    phone: [/^(RCVR|RCV|RECV|RECEIVER|RECIPIENT|RCPT|TAKE|ACPR)_?(HP|MOBILE|CELL|TEL|PHONE)(_?NO)?$/i, /^(HP|MOBILE|CELL)(_?NO)?$/i],
+    zip: [/(ZIP|POST)_?(NO|CD|CODE)?$/i],
+    addr: [/^(RCVR|RCV|RECV|RECEIVER|RECIPIENT|RCPT|TAKE|DELV|DLV|ACPR)?_?ADDR(ESS)?_?(1|BASE)?$/i],
+    addr2: [/ADDR(ESS)?_?(2|DTL|DETAIL)$/i],
+    req: [/^(DELV|DLV|DELIVERY)_?(MSG|MEMO|REQ|REQUEST)$/i, /^(REQ|REQUEST)_?(MSG|MEMO)?$/i, /MSG$|MEMO$/i],
+    due: [/^(DELV|DLV|SEND|SHIP|DELIVERY)_?(PLAN|DUE|EXP|EXPECT|LIMIT|SCHD)_?(DT|DATE|YMD)$/i, /(PLAN|DUE|LIMIT)_?(DT|DATE|YMD)$/i],
+    invNo: [/(INVOICE|WAYBILL|INV|SONGJANG|TRACKING)_?(NO|NUM)$/i, /^(DELV|DLV)_?NO$/i],
+    courier: [/^(DELV|DLV|DELIVERY)_?(ENTR|COMP|COMPANY|CO|CORP)_?(NM|NAME)$/i],
+    sentAt: [/^(DELV|DLV|SEND|SHIP)_?(DT|DATE|DTM|YMD)$/i],
+    ean: [/^(EAN|BARCODE|ISBN|ISBN13)$/i],
+    grade: [/^GOODS_?LEVEL_?GB_?NM$/i, /^GOODS_?LEVEL_?GB$/i, /LEVEL.*NM$/i],
+    self: [/(SELF|OWN|ENTR_GOODS|SELLER_GOODS|SELR_GOODS|CUST_GOODS)_?(CD|CODE|NO)$/i],
+  };
+  const Y24O_LV = { '01': '최상', '02': '상', '03': '중', '04': '하' };
+  const y24oKey = (row, res) => { const ks = Object.keys(row || {}); for (const re of res) { const k = ks.find((x) => re.test(x) && !(res !== Y24O_F.stNm && res !== Y24O_F.grade && /_?NM$/i.test(x) && /STAT|STATE|STS/i.test(x))); if (k) return k; } return null; };
+  const y24oVal = (row, f) => { const k = y24oKey(row, Y24O_F[f]); const v = k ? row[k] : null; return v == null || v === '' ? null : v; };
+  const y24oDate = (v) => { if (v == null || v === '') return null; let s = String(v).trim(); const ms = s.match(/^\/Date\((\d+)\)\/$/); if (ms) return new Date(+ms[1]).toISOString(); if (/^\d{13}$/.test(s)) return new Date(+s).toISOString();
+    let m = s.match(/^(\d{4})[-./]?(\d{2})[-./]?(\d{2})(?:[ T]?(\d{2}):?(\d{2})(?::?(\d{2}))?)?/); if (!m) return null; const iso = `${m[1]}-${m[2]}-${m[3]}T${m[4] || '00'}:${m[5] || '00'}:${m[6] || '00'}+09:00`; const t = Date.parse(iso); return isNaN(t) ? null : new Date(t).toISOString(); };
+  const y24oNum = (v) => { if (v == null || v === '') return null; const n = +String(v).replace(/[^\d.-]/g, ''); return isNaN(n) ? null : n; };
+  const y24oStage = (nm, sigStage) => { const s = String(nm || ''); if (/취소|미입금|결제\s*실패/.test(s)) return 'cancel'; if (/반품|교환|클레임|환불/.test(s)) return 'claim'; if (/구매\s*확정|정산/.test(s)) return 'done'; if (/배송\s*중|배송\s*완료|발송\s*완료|출고\s*완료|발송\s*처리/.test(s)) return 'sent'; if (/발송\s*대기|배송\s*준비|발송\s*준비|접수\s*확인|주문\s*확인|상품\s*준비/.test(s)) return 'deliv'; if (/신규|주문\s*접수|결제\s*완료|입금\s*완료|주문\s*완료/.test(s)) return 'new'; return sigStage || null; };
+  function y24oLists(j) { const out = []; const seen = new Set(); const pref = ['RESULT_LIST', 'DELIVERY_LIST', 'ORDER_LIST', 'ORDER_DETAIL_LIST', 'CLAIM_LIST', 'LIST', 'DATA', 'ROWS'];
+    const walk = (v, d, k) => { if (!v || d > 3 || seen.has(v)) return; if (typeof v !== 'object') return; seen.add(v); if (Array.isArray(v)) { if (v.length && v.every((x) => x && typeof x === 'object' && !Array.isArray(x))) out.push({ k, a: v }); else if (!v.length && k) out.push({ k, a: v }); return; } const ks = Object.keys(v).sort((a, b) => (pref.indexOf(a) < 0 ? 99 : pref.indexOf(a)) - (pref.indexOf(b) < 0 ? 99 : pref.indexOf(b))); for (const kk of ks) walk(v[kk], d + 1, kk); };
+    walk(j, 0, null); return out.filter((L) => !(L.a[0] && ('CD_NO' in L.a[0] || 'CD_DTL_NO' in L.a[0]))); /* 코드표(택배사·판매불가 사유 등)는 주문 줄이 아님 */ }
+  // 응답 하나 → { sig, kind(목록 이름), stageHint, lists:[{k, n, keys, map}], rows:[주문 줄], total, unknown(줄은 있는데 주문번호 칸을 모름), empty(목록이 비었음) }
+  function y24OrdParse(sig, body, at) { const S0 = String(sig || ''); const R = { sig: S0, at: at || null, kind: (S0.match(/\/api\/\w+\/(\w+)/) || [])[1] || null, stageHint: null, lists: [], rows: [], total: null, unknown: 0, empty: false, json: true };
+    R.stageHint = Object.prototype.hasOwnProperty.call(Y24O_STAGE, R.kind) ? Y24O_STAGE[R.kind] : null; if (!Y24O_LIST.test(S0)) return R;
+    let j = body; if (typeof body === 'string') { try { j = JSON.parse(body); } catch (e) { R.json = false; return R; } } if (!j || typeof j !== 'object') { R.json = false; return R; } if (j.file) { R.file = true; return R; }
+    if (/Init$/i.test(R.kind || '')) { R.init = true; const C = []; for (const L of y24oLists(j)) { if (!/DELIVERY_?COMPANY|DELV_?(ENTR|COMP)|COURIER/i.test(L.k || '')) continue; for (const x of L.a) { const k = Object.keys(x).find((kk) => /(NM|NAME)$/i.test(kk)); if (k && x[k]) C.push(String(x[k]).trim()); } } R.couriers = [...new Set(C)].slice(0, 40); return R; } /* 화면 처음 자료(코드표·택배사 목록) — 주문 줄 아님 · 택배사 이름만 */
+    R.total = y24oNum(j.TOTAL_COUNT != null ? j.TOTAL_COUNT : j.TOTAL_CNT != null ? j.TOTAL_CNT : j.totalCount);
+    for (const L of y24oLists(j)) { const r0 = L.a[0] || null; const keys = r0 ? Object.keys(r0) : []; const map = {}; if (r0) for (const f of Object.keys(Y24O_F)) { const k = y24oKey(r0, Y24O_F[f]); if (k) map[f] = k; } R.lists.push({ k: L.k, n: L.a.length, keys: keys.slice(0, 120), map });
+      if (!L.a.length) continue; if (!map.ono) { R.unknown += L.a.length; continue; }
+      L.a.forEach((row, i) => { const ono = String(y24oVal(row, 'ono') || '').trim(); if (!ono) { R.unknown++; return; } const g0 = y24oVal(row, 'grade'); const grade = (String(g0 || '').match(/최상|상|중|하/) || [])[0] || Y24O_LV[String(g0 || '').padStart(2, '0')] || null; const ad = [y24oVal(row, 'addr'), y24oVal(row, 'addr2')].filter(Boolean).join(' ');
+        const stNm = y24oVal(row, 'stNm'); const stCd = y24oVal(row, 'stCd');
+        R.rows.push({ ono, line: String(y24oVal(row, 'line') || '') || null, idx: i, goodsNo: y24oVal(row, 'goodsNo') != null ? String(y24oVal(row, 'goodsNo')) : null, title: y24oVal(row, 'title') != null ? String(y24oVal(row, 'title')).slice(0, 200) : null, qty: Math.max(1, y24oNum(y24oVal(row, 'qty')) || 1), price: y24oNum(y24oVal(row, 'price')), amt: y24oNum(y24oVal(row, 'amt')), fee: y24oNum(y24oVal(row, 'fee')),
+          stCd: stCd != null ? String(stCd) : null, stNm: stNm != null ? String(stNm) : null, stage: y24oStage(stNm, R.stageHint), orderedAt: y24oDate(y24oVal(row, 'at')), due: y24oDate(y24oVal(row, 'due')), sentAt: y24oDate(y24oVal(row, 'sentAt')),
+          buyer: y24oVal(row, 'buyer') != null ? String(y24oVal(row, 'buyer')) : null, rcv: y24oVal(row, 'rcv') != null ? String(y24oVal(row, 'rcv')) : null, phone: y24oVal(row, 'phone') != null ? String(y24oVal(row, 'phone')) : null, zip: y24oVal(row, 'zip') != null ? String(y24oVal(row, 'zip')) : null, addr: ad || null, req: y24oVal(row, 'req') != null ? String(y24oVal(row, 'req')).slice(0, 300) : null,
+          invNo: y24oVal(row, 'invNo') != null ? String(y24oVal(row, 'invNo')) : null, courier: y24oVal(row, 'courier') != null ? String(y24oVal(row, 'courier')) : null, ean: y24oVal(row, 'ean') != null ? String(y24oVal(row, 'ean')) : null, grade, self: y24oVal(row, 'self') != null ? String(y24oVal(row, 'self')) : null }); }); }
+    R.empty = !R.rows.length && !R.unknown && R.lists.length > 0; return R; }
+  // 줄들 → 주문(주문번호마다) · 같은 주문의 상품은 items
+  function y24OrdGroup(P) { const M = new Map(); for (const r of (P && P.rows) || []) { const o = M.get(r.ono) || M.set(r.ono, { orderNo: r.ono, items: [], stNm: null, stCd: null, stage: null, orderedAt: null, due: null, sentAt: null, buyer: null, rcv: null, phone: null, zip: null, addr: null, req: null, invNo: null, courier: null, fee: null, amt: null }).get(r.ono);
+      const lk = r.line || (r.goodsNo ? 'g' + r.goodsNo : 'i' + r.idx); if (!o.items.some((x) => x.k === lk)) o.items.push({ k: lk, goodsNo: r.goodsNo, title: r.title, qty: r.qty, price: r.price != null ? r.price : r.amt != null && r.qty ? Math.round(r.amt / r.qty) : null, ean: r.ean, grade: r.grade, self: r.self, stNm: r.stNm });
+      for (const f of ['stNm', 'stCd', 'stage', 'orderedAt', 'due', 'sentAt', 'buyer', 'rcv', 'phone', 'zip', 'addr', 'req', 'invNo', 'courier', 'fee']) if (o[f] == null && r[f] != null) o[f] = r[f]; if (r.amt != null) o.amt = (o.amt || 0) + r.amt; }
+    return [...M.values()]; }
+  // 주문 기록(crm_y24_orders 문서) 고치기 — 같은 응답을 두 번 풀어도 같은 결과(웹앱·클라우드가 함께 풀어도 됨) · 바뀐 것이 없으면 null · 사람이 적은 칸(man·alStop·mkt·log)은 건드리지 않음
+  function y24OrdMerge(prev, o, ctx) { prev = prev || null; const at = (ctx && ctx.at) || new Date().toISOString(); const sig = (ctx && ctx.kind) || 'x'; const P = prev || {};
+    const newer = !P.srcAt || String(at) >= String(P.srcAt); const pick = (f) => (newer ? (o[f] != null ? o[f] : P[f] != null ? P[f] : null) : P[f] != null ? P[f] : o[f] != null ? o[f] : null);
+    const D = { id: 'y24_' + o.orderNo, platform: 'yes24', orderNo: String(o.orderNo), firstSeenAt: P.firstSeenAt && String(P.firstSeenAt) <= String(at) ? P.firstSeenAt : at, lastSeenAt: P.lastSeenAt && String(P.lastSeenAt) > String(at) ? P.lastSeenAt : at,
+      srcAt: newer ? at : P.srcAt, srcKind: newer ? sig : P.srcKind || sig, seen: { ...(P.seen || {}), [sig]: P.seen && String(P.seen[sig] || '') > String(at) ? P.seen[sig] : at },
+      items: newer && o.items && o.items.length ? o.items : P.items || o.items || [], ystage: pick('stage'), stNm: pick('stNm'), stCd: pick('stCd'), orderedAt: P.orderedAt || o.orderedAt || null, due: pick('due'), sentAt: pick('sentAt'), fee: pick('fee'), amt: pick('amt'),
+      buyer: pick('buyer'), recipient: { name: pick('rcv'), phone: pick('phone'), zip: pick('zip'), address: pick('addr'), request: pick('req') }, yInv: pick('invNo') ? { no: pick('invNo'), courier: pick('courier') } : P.yInv || null };
+    if (D.left && newer) delete D.left; if (P.left) { const L = { ...P.left }; if (newer) delete L[sig]; if (Object.keys(L).length) D.left = L; }
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b); const K = ['firstSeenAt', 'lastSeenAt', 'srcAt', 'srcKind', 'seen', 'items', 'ystage', 'stNm', 'stCd', 'orderedAt', 'due', 'sentAt', 'fee', 'amt', 'buyer', 'recipient', 'yInv', 'left'];
+    if (prev && K.every((k) => same(prev[k] == null ? null : prev[k], D[k] == null ? null : D[k]))) return null; if (!D.left) D.left = null; return D; }
+  // 같은 목록의 더 새 응답(전부 받은 목록일 때만)에 없는 주문 → 그 목록에서 빠짐(예: 신규 주문 → 접수확인됐거나 취소) · { orderNo: 빠진 때 }
+  function y24OrdLeft(prevDocs, P) { const out = {}; if (!P || !P.kind || !P.lists.length || P.unknown) return out; const n = P.rows.length; if (P.total != null && P.total > new Set(P.rows.map((r) => r.ono)).size) return out; /* 쪽 나눔으로 일부만 받은 응답이면 판단 안 함 */
+    const here = new Set(P.rows.map((r) => r.ono)); for (const d of prevDocs || []) { if (!d || here.has(String(d.orderNo))) continue; const s = d.seen && d.seen[P.kind]; if (s && String(s) < String(P.at) && !(d.left && d.left[P.kind])) out[d.orderNo] = P.at; } return n >= 0 ? out : {}; }
+  const API = { VERSION, planConfirm, AUTO_DEFAULTS, autoCfg, mktOthers, autoLowOf, bbOf, bbPick, custRisk, autoShipDecide, parseDeliveryPage, parseShippedPage, KR_HOLIDAYS, holName, pickupRun, dayKeyAdd, SHELF_ORDER, shelfOf, shelfRank, shelfName, byShelfTitle, bySku, shelfColor, sortShipment, isBizDay, nextBizDay, dueShipDay, ymd, DEFAULT_CUT, cutMin, cutOf, cutIsSet, ALADIN_XLS_HEAD, parseAladinOrderExcel, alpsUploadAoa, parseAlpsWaybills, matchInvoices, rebuildDays, y24OrdParse, y24OrdGroup, y24OrdMerge, y24OrdLeft, Y24O_F };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; root.ReadnowShipping = API;
 })(typeof window !== 'undefined' ? window : globalThis);
