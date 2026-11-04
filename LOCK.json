@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "원칙 두 줄",
- "since": "2026-11-04T14:00:15Z",
- "beat": "2026-11-04T14:00:15Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-04T13:53:26Z"
+  "at": "2026-11-04T14:00:21Z"
  },
- "host": "vm"
+ "host": null
 }
