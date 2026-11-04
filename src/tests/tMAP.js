@@ -116,6 +116,41 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
   ok(r.pre === '0|pause|1', `이미 일시판매중지 → 맡기지 않고 표시만 ${r.pre}`);
   ok(r.defStop === '판매중지', `옵션 끄면 새 사건은 다시 판매중지(${r.defStop})`);
 }).then(() => H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(500); await p.evaluate(IN);
+  // 🏷 (11/04) 카드에 상품코드(U…) 하나·여럿 부여 → 소재불명 다음에 볼 곳 맨 앞 · 상품 상세 '🗺 서가 지도 자리' · 사건 화면 설명서
+  const r = await p.evaluate(async () => { const W = window.__W; const sh = document.getElementById('sheet'); window.ask = async () => true; const FS = window.__FS; const o = {};
+    const A = [...S.plist.values()].filter((l) => l.usedCode); const l1 = A[1], l2 = A[2]; l1.sku = 'PNKLUX'; l1.status = '판매중'; l1.active = true; l1.qty = 1;
+    await db.collection('prd_system').doc('shelfmap').set({ maps: { mI: { name: '2층 창고', kind: 'store', w: 30, h: 30, ver: 0, n: 0, hpg: 1, hb: 0 } }, cards: {}, def: 'mI' }, { merge: true }); await W(300);
+    openShelfMap(); await W(400); sh.querySelector('[data-smopen="mI"]').click(); await W(900);
+    sh.querySelector('[data-smnew]').click(); await W(150); sh.querySelector('[data-smck="box"]').click(); await W(150); sh.querySelector('[data-smcf="name"]').value = '박스 A';
+    const q = sh.querySelector('#sm_itq'); q.value = `${l1.usedCode}, ZZZ999`; q.dispatchEvent(new Event('input', { bubbles: true })); sh.querySelector('[data-smitadd]').click(); await W(200);
+    o.add1 = (S.smCF.items || []).join(','); o.badKept = (sh.querySelector('#sm_itq') || {}).value;
+    const t2 = String(l2.title || '').replace(/^\[중고[^\]]*\]\s*/, '').slice(0, 6); const q2 = sh.querySelector('#sm_itq'); q2.value = l2.usedCode.slice(0, 7) === t2 ? t2 : (t2.length >= 2 ? t2 : l2.usedCode); q2.dispatchEvent(new Event('input', { bubbles: true })); await W(400); const hit = sh.querySelector(`#sm_itr [data-smita="${l2.usedCode}"]`); o.find = !!hit; if (hit) hit.click(); await W(200);
+    o.chips = sh.querySelectorAll('#sm_its .sm-it').length; sh.querySelector('[data-smcsave]').click(); await W(600);
+    const C = FS.prd_system.shelfmap.cards || {}; const [cid, cd] = Object.entries(C).find(([, c]) => c.name === '박스 A') || []; o.saved = cd ? (cd.items || []).join(',') : null; window.__icid = cid;
+    // 고치기: 하나 빼기 → 이전 값은 prev
+    sh.querySelector(`[data-smcedit="${cid}"]`).click(); await W(200); o.editLoad = (S.smCF.items || []).length; sh.querySelector(`[data-smitx="${l2.usedCode}"]`).click(); await W(150); sh.querySelector('[data-smcsave]').click(); await W(600); const cd2 = FS.prd_system.shelfmap.cards[cid]; o.edited = (cd2.items || []).join(','); o.prev = ((cd2.prev || [])[0] || { v: {} }).v.items.length;
+    o.pal = /상품 1/.test((sh.querySelector(`[data-smcard="${cid}"]`) || {}).textContent || '');
+    // 놓고 저장
+    S.smE.brush = cid; S.smE.mode = 'place'; smEdPanels(); await W(100); const t = window.__cell(3, 3); const cv = sh.querySelector('#sm_cv'); const pe = (type) => cv.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 3, pointerType: 'mouse', isPrimary: true, clientX: t.x, clientY: t.y, button: 0, buttons: type === 'pointerup' ? 0 : 1 })); pe('pointerdown'); pe('pointerup'); await W(200); o.placed = S.smE.cells.get(smK(3, 3)) === cid;
+    S.smE.focus = smK(3, 3); smEdPanels(); await W(100); o.info = /부여한 상품코드 1/.test((sh.querySelector('#sm_info') || {}).textContent || ''); sh.querySelector('#sm_save').click(); await W(800);
+    history.back(); await W(300); history.back(); await W(300);
+    // 소재불명: 이 책 상품코드 카드가 다음에 볼 곳 맨 앞
+    const x = await lostAdd({ key: l1.usedCode, kind: 'al', title: l1.title, skus: [], from: 'prod' }); await W(300); openLostCase(x.cid); await W(1200); lostRenderForce(); await W(700);
+    const N = lostNext(x.cid); o.next0 = N[0] ? String(N[0].why || '') + ' | ' + String(N[0].where || '') : ''; const V = S.lostMVV; o.own = V && V.ov && V.ov.own ? V.ov.own.size : -1;
+    S.lostMP = { cid: x.cid, mp: 'mI', k: smK(3, 3) }; lostRenderForce(); await W(500); o.panel = /이 책 상품코드를 부여한 카드/.test((sh.querySelector('.lo-shp') || {}).textContent || '');
+    o.guide = !!(window.PAGE_GUIDES.lostCase && !window.PAGE_GUIDES.lostCase.pending && window.PAGE_GUIDES.lostCase.walk.length >= 5 && window.PAGE_GUIDES.lostCase.title.includes('사건'));
+    // 상품 상세: 🗺 서가 지도 자리
+    await openProduct(l1.id); await W(600); o.pd = ((sh.querySelector('.sm-pl') || {}).textContent || '').replace(/\s+/g, ' ');
+    return o; });
+  ran++; console.log(JSON.stringify(r));
+  ok(/^U\d+$/.test(r.add1) && r.badKept === 'ZZZ999', `🏷 상품코드 넣기: U코드 → ${r.add1} · 못 찾은 글은 칸에 남김(${r.badKept})`);
+  ok(r.find && r.chips === 2 && r.saved && r.saved.split(',').length === 2, `🏷 제목으로 찾아 ＋ → 카드에 상품코드 ${r.chips}개 저장 (${r.saved})`);
+  ok(r.editLoad === 2 && r.edited.split(',').length === 1 && r.prev === 2 && r.pal, `🏷 카드 고치기: 하나 빼기 → ${r.edited} · 이전 값 남음(${r.prev}) · 카드 목록에 '상품 1'`);
+  ok(r.placed && r.info, '🏷 놓은 칸 정보에 부여한 상품코드');
+  ok(/상품코드/.test(r.next0) && /박스 A/.test(r.next0) && r.own === 1 && r.panel, `🔎 소재불명: 상품코드 카드가 다음에 볼 곳 맨 앞 '${r.next0.slice(0, 70)}' · 지도 강조 ${r.own}`);
+  ok(/서가 지도 자리/.test(r.pd) && /박스 A/.test(r.pd) && /\(4,4\)/.test(r.pd), `상품 상세: '${r.pd.slice(0, 60)}'`);
+  ok(r.guide, '📖 소재불명 사건 화면 설명서(lostCase — 작성 중 아님)');
+})).then(() => H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(500); await p.evaluate(IN);
   // 📱 휴대폰 — 터치(손가락 포인터)로 카드 끌어 놓기 · 꾹 눌러 복사 · 두 손가락 확대
   const r = await p.evaluate(async () => { const W = window.__W; const sh = document.getElementById('sheet'); window.ask = async () => true; const now = new Date().toISOString();
     await db.collection('prd_system').doc('shelfmap').set({ maps: { mT: { name: '창고', kind: 'store', w: 30, h: 30, ver: 0, n: 0, hpg: 1, hb: 0 } }, cards: { cT: { kind: 'trolley', name: '트롤리', rows: 3, per: 20, codes: ['BLKCMN'], at: now } }, def: 'mT' }, { merge: true }); await W(300);
@@ -141,4 +176,4 @@ H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(
   ok(/수색중/.test(out.list.rows[0]) && /일시판매중지/.test(out.list.rows[0]) && /3일째/.test(out.list.rows[0]) && /수색중/.test(out.list.rows[1]) && !out.list.rows[2], '수집기: 샵매니저 상품 조회/수정 목록 — U코드·상품번호로 🔎 수색중 띠(발견한 사건은 없음)');
   ok(/수색중/.test(out.ed.ed) && /책 둘/.test(out.ed.ed), '수집기: 상품 수정 화면 맨 위 🔎 수색중 띠');
   const head = src.slice(0, src.indexOf('==/UserScript==')); ok(!/rnLost/.test(head), '수집기 머리(@match·@grant·@connect·@require)에 손대지 않음');
-}).then(() => { if (ran < 3) { bad++; console.log('  ❌ 시험 도중 멈춤(위 ERRORS의 TEST 줄)'); } console.log(bad ? `❌ tMAP 실패 ${bad}` : '✅ tMAP 모두 통과'); });
+}).then(() => { if (ran < 4) { bad++; console.log('  ❌ 시험 도중 멈춤(위 ERRORS의 TEST 줄)'); } console.log(bad ? `❌ tMAP 실패 ${bad}` : '✅ tMAP 모두 통과'); });
