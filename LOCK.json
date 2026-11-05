@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "gl2 알라딘 매입 근삿값 + 프린터 한 번에 맞추기",
+ "since": "2026-11-05T04:29:10Z",
+ "beat": "2026-11-05T04:29:10Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T04:20:38Z"
  },
- "host": null
+ "host": "vm"
 }
