@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.394 · 출고 공용 0.7.9",
- "since": "2026-11-05T12:19:40Z",
- "beat": "2026-11-05T12:19:40Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-05T12:09:24Z"
+  "at": "2026-11-05T12:30:04Z"
  },
- "host": "vm"
+ "host": null
 }
