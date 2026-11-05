@@ -59,7 +59,7 @@ await H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTi
   ok(o.off && o.off.off && o.offA.on === false && !o.offA.osPause && o.offB.on === false && o.offRun && o.offRun.off, '④ 원래 꺼짐 → 멈춤 기록 없음 · 끝나도 켜지 않음');
   ok(o.keep.on === false && o.keep.P.on === false && o.keep.P.back === false && o.keep.P.prevOn === false, '⑤ 「끝나도 다시 켜지 않음」 → 끝나도 꺼짐');
   ok(o.human.on === true && o.human.since === '2026-11-05T00:00:00.000Z' && o.human.P.on === false && o.human.P.human && o.human2 === true, '⑥ 멈춤 중 사람이 직접 켬 → 켠 시각 그대로 · 멈춤 끝냄 · 끝에 다시 바꾸지 않음');
-  ok(o.cfg.join() === 'true,180,10', '⚙ 기본값: 켬 · 최대 180분 · 소식 10분');
+  ok(o.cfg.join() === 'true,20,5', '⚙ 기본값: 켬 · 최대 20분 · 소식 5분(정범님 11/05 15시)');
 });
 // ── ⑦ 클라우드 받침 — osPauseDue·osPauseTick만 떼어
 if (CLOUD) { const cs = fs.readFileSync(CLOUD, 'utf8'); const i = cs.indexOf('function osPauseDue('); const j = cs.indexOf('\n', cs.indexOf('out.judged = res.rj || 0; return out; }', i)); const fnSrc = cs.slice(i, j);

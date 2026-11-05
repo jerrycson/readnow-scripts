@@ -62,7 +62,7 @@ H(async (p) => { await p.evaluate(require('./seed.js'));
 
     // ③ 칸 순서
     openShip(); await W(400); const secIds = () => [...sh().querySelectorAll('[id^="shs_"]')].filter((x) => x.id !== 'shs_ed').map((x) => x.id.slice(4)).join(','); o.def = secIds();
-    const sumEl = sh().querySelector('.shp-sum'), oneEl = sh().querySelector('#shp_one'); o.sumTop = !!sumEl && !!oneEl && sumEl.getBoundingClientRect().top < oneEl.getBoundingClientRect().top;
+    const sumEl = sh().querySelector('.shp-sum'), oneEl = sh().querySelector('#shp_one'); o.sumTop = !!sumEl && !!oneEl && (sumEl.compareDocumentPosition(oneEl) & Node.DOCUMENT_POSITION_FOLLOWING) > 0; /* (11/05) 총 주문·매출 줄이 붙박이(sticky)라 화면 위치 대신 문서 차례로 견줌 */
     o.oneInHead2 = !!(sh().querySelector('#shp_oneshot') || { closest: () => null }).closest('.shp-head2');
     sh().querySelector('#shp_secord').click(); await W(400); o.edOpen = !!sh().querySelector('#shs_ed'); o.edRows = sh().querySelectorAll('.shs-row').length;
     sh().querySelector('[data-shsmv="live:-1"]').click(); await W(400); o.mv1 = secIds(); o.saved = localStorage.getItem('rn-ship-secord');
