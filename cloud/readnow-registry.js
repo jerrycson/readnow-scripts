@@ -39,6 +39,8 @@
     aladinBuy: { label: '알라딘 구매 내역 읽기 (첫 쪽)', by: ['pc', 'cloud'], lane: 'shop', prio: 5, leaseMin: 60, retry: 1, safe: true, money: false, waitMin: 30, from: '웹앱 매입 탭', note: '(10/27 로컬 먼저) 로그인된 PC가 첫 쪽(최신 주문)을 읽어 새 주문만 pur_aladin_orders에 · 클라우드는 받침' },
     c2bAdd: { label: '알라딘 팔기 장바구니 담기', by: ['pc'], lane: 'shop', prio: 4, leaseMin: 30, retry: 1, safe: true, money: true, waitMin: 24 * 60, from: '웹앱 알라딘 매입',
       note: '담기 전에 장바구니를 먼저 읽어 이미 담긴 책은 건너뜀 → 다시 해도 두 번 담기지 않음 (매입 신청·판매 확정은 하지 않음)' },
+    c2bDel: { label: '알라딘 팔기 장바구니에서 빼기', by: ['pc'], lane: 'shop', prio: 4, leaseMin: 30, retry: 1, safe: true, money: false, waitMin: 24 * 60, from: '웹앱 알라딘 매입 · 📥 등록 환원 · 카드 지우기',
+      note: '(정범님 11/05) 빼기 전에 장바구니를 읽어 그 ISBN 줄이 있을 때만 그 줄 안 단추를 누름(못 찾으면 멈춤) · 다시 해도 장바구니를 다시 읽어 확인 · 같은 책 여러 권이면 한 권만' },
     regBulk: { label: '📥 알라딘 대량 등록', by: ['pc'], lane: 'scm', prio: 3, leaseMin: 30, retry: 0, safe: false, money: true, waitMin: 60, from: '웹앱 상품 등록 (1.5.0)',
       note: '실행 문(exec_log)에 시작을 적을 수 있을 때만 · 미리보기가 넣은 줄과 하나도 다르지 않을 때만 등록완료 · 등록 뒤 상품 조회에서 공개 확인(90분)', stuckNote: '등록완료를 이미 눌렀을 수 있음 — 웹앱 등록 화면·알라딘 상품 조회에서 확인한 뒤 다시 맡기기' },
     regOne: { label: '📥 개별·미등록 등록 (알라딘 등록 화면)', by: ['pc'], lane: 'scm', prio: 3, leaseMin: 30, retry: 0, safe: false, money: true, waitMin: 60, from: '웹앱 상품 등록 → 알라딘 등록 화면 채워서 열기 (1.6.0)',

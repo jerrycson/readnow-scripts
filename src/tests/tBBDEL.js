@@ -44,6 +44,16 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     regRerender(); await W(700); const rows = [...sh().querySelectorAll('.rgbbrow')].map((x) => x.innerText); o.regRowGone = !rows.some((t) => /지우기 시험 책/.test(t)); const rf = sh().querySelector('#rg_bbrmf'); o.regFold = rf ? rf.innerText.replace(/\s+/g, ' ').slice(0, 120) : null;
     const ru = rf && rf.querySelector('[data-bhrmundo]'); if (ru) { ru.click(); await W(100); ru.click(); await W(1200); } const rIt2 = S.regItems.get('rD1') || {}; o.regUndo = { rm: !!bhRmvOf('REG_rD1'), on: regBbRmOn(rIt2), inPage: allTabs().includes('REG_rD1') };
     regRerender(); await W(700); o.regBack = [...sh().querySelectorAll('.rgbbrow')].some((x) => /지우기 시험 책/.test(x.innerText));
+    // ⑧ (정범님 11/05) 등록 환원 → 장바구니에 담겼으면 묻지 않고 빼기 맡김(c2bDel) · 카드에 빼는 중 → 뺌 · 담기 대기면 담기 맡김 취소
+    const mkR = (id, i13) => { const x = { id, stage: 'sel', grade: 2, price: 6000, q: '환원 시험', info: { title: '환원 시험 책 ' + id, isbn13: i13, buyback: { 상: 2400 } }, createdAt: new Date().toISOString() }; S.regItems.set(id, x); FS.reg_items[id] = JSON.parse(JSON.stringify(x)); };
+    mkR('rE1', '9791100000911'); mkR('rE2', '9791100000922'); await regBbSend(['rE1', 'rE2'], { k: 'reg', n: '선택 대기' }, { quiet: true }); await W(400);
+    await db.collection('prd_system').doc('buyback').set({ cart: { REG_rE1: { state: 'added', at: new Date().toISOString(), by: 'PC', isbn13: '9791100000911' } } }, { merge: true }); await W(300);
+    const nA0 = cmds('c2bAdd').length; await bbuyCart(['REG_rE2'], { stay: true, noAsk: true }); await W(700); const addC = cmds('c2bAdd').slice(nA0)[0]; o.addQ = addC && addC.status; o.cmdsSeen = (S.bbuyCmds || []).some((c) => addC && c.id === addC.id);
+    asked.length = 0; const nD0 = cmds('c2bDel').length; await bhBackReg(['REG_rE1', 'REG_rE2']); await W(800);
+    const dC = cmds('c2bDel').slice(nD0); o.back = { asked: asked.length, nDel: dC.length, items: dC.length ? dC[0].items.map((x) => x.usedCode) : [], del: (((BB().cart || {}).REG_rE1 || {}).del || {}).st, stage: (S.regItems.get('rE1') || {}).stage, add2: (FS.shp_cmds[addC.id] || {}).status, cart2: ((BB().cart || {}).REG_rE2 || {}).state };
+    openAladinSell({ t: 'no' }); await W(400); const cE = sh().querySelector('[data-bbit="REG_rE1"]'); o.chipQ = cE ? /장바구니에서 빼는 중/.test(cE.innerText) : null;
+    await db.collection('prd_system').doc('buyback').set({ cart: { REG_rE1: { state: 'removed', del: { st: 'removed', at: new Date().toISOString(), by: 'PC-T', cmd: dC[0] && dC[0].id, qty0: 1, qty1: 0 } } } }, { merge: true }); await W(900);
+    const cE2 = sh().querySelector('[data-bbit="REG_rE1"]'); o.chipOk = cE2 ? /장바구니에서 뺌 ✓/.test(cE2.innerText) : null; o.regChip = /장바구니에서 뺌/.test(regBbAct(S.regItems.get('rE1')) || '');
     o.log = (BB().log || []).filter((x) => /^remove/.test(x.act)).map((x) => x.act);
     return o; });
   console.log(JSON.stringify(r).slice(0, 3000));
@@ -68,4 +78,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   ok(r.regRowGone && r.regFold && /지운 카드 1개/.test(r.regFold), "등록 보냄 탭에서도 사라지고 '🗑 지운 카드' 칸에: " + r.regFold);
   ok(!r.regUndo.rm && !r.regUndo.on && r.regUndo.inPage && r.regBack, '등록 탭에서 되돌리기 → 양쪽에 다시');
   ok(r.log.includes('remove') && r.log.includes('removeUndo'), '알라딘 매입 기록(log)에 지우기·되돌리기');
+  ok(r.back.asked === 0 && r.back.nDel === 1 && r.back.items.join() === 'REG_rE1' && r.back.del === 'queued' && r.back.stage === 'sel', `등록 환원 → 장바구니에 담긴 책은 묻지 않고 🛒 빼기 맡김(c2bDel ${r.back.items.join()}) · 등록 줄은 선택 대기로`);
+  ok(r.addQ === 'queued' && r.cmdsSeen && r.back.add2 === 'cancelled' && r.back.cart2 === 'cancelled' && !r.back.items.includes('REG_rE2'), `담기 대기(아직 PC가 안 잡음)면 담기 맡김을 취소(${r.back.add2}) — 빼기는 맡기지 않음`);
+  ok(r.chipQ && r.chipOk && r.regChip, "카드에 '🛒 장바구니에서 빼는 중' → 수집기가 적으면 '뺌 ✓'(실시간) · 등록 카드에도");
   console.log(bad ? `❌ tBBDEL 실패 ${bad}` : '✓ tBBDEL 통과'); });
