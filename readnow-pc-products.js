@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.206의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.207의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.206' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.206', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.207' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.207', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -103,7 +103,7 @@
    *   알라딘 로그인·출고(주문확인요청·발송 요청·송장·발송준비시작)·고객 일(crm:*)·사람이 이 PC에서 누른 일은 그대로 · 사람이 상품 화면에서 누른 시장 지표 다시 읽기(책 1~3권)도 그대로
    *  문서가 없으면 정범님 11/02 지시대로 MJ-MAIN = 등록 PC — 웹앱 ⚙ '🖥 기기 운영 보고'의 'PC 역할'과 ⏰ 페이지 맨 위에 보이고 관리자가 바꿈(일반으로 돌리면 예전과 똑같이 돎) */
   const PCROLE_DEF = { 'MJ-MAIN': 'reg' };
-  const REG_KEEP_DEF = ['prd:scanNew', 'prd:shipRead', 'prd:deposit', 'prd:buyback', 'prd:aladinBuy']; /* 등록 PC도 하는 ⏰ 일 — 신규 등록분 수집(등록 결과 확인)·발송 요청 읽기(출고)·예치금·팔기·구매 내역(로그인 짧은 일) · 고객 일(crm:*)은 늘 */
+  const REG_KEEP_DEF = ['prd:scanNew', 'prd:shipRead', 'prd:deposit', 'prd:buyback', 'prd:buybackWait', 'prd:aladinBuy']; /* 등록 PC도 하는 ⏰ 일 — 신규 등록분 수집(등록 결과 확인)·발송 요청 읽기(출고)·예치금·팔기·구매 내역(로그인 짧은 일) · 고객 일(crm:*)은 늘 */
   const REG_SKIP_CMDS = new Set(['metrics', 'extLookup', 'extTest', 'pxExp', 'cart']); /* 등록 PC가 받지 않는 맡긴 일(다른 PC·클라우드가 받음) — 이 PC에서 누른 것(dev)·책 1~3권 시장 지표는 받음 */
   const REG_PRIO_CMDS = new Set(['regLookup', 'regAux', 'regBulk', 'regOne', 'regBulkMock', 'regOneMock', 'regDel']); /* 등록 PC가 먼저 받는 맡긴 일 */
   let PCROLES = null, PCROLES_UN = null;
@@ -320,12 +320,12 @@
   const sleep = (ms) => new Promise((r) => { if (worker) { const id = ++wseq; waiters.set(id, r); worker.postMessage({ id, ms }); } else setTimeout(r, ms); });
   const nowIso = () => new Date().toISOString();
 
-  const DEFAULTS = { keyScheme: 'aladinItemId', reloadEveryFrames: 400, reqMinMs: 700, reqStartMs: 1200, reqMaxMs: 20000, delayMs: 700, fallbackNaver: false, fallbackGoogle: false, pubAnon: true, previewImages: false, pageTimeoutSec: 25, dynamicParts: false, recheckDays: 7, topN: 50, rev6mDays: 7, nbDays: 7, photoMatch: 0.9, maxLanes: 1, ipGroups: { HOME: 'home' }, scanFullDays: 7, revAllDays: 7, crmAnyPc: false, autoDaily: true, autoHour: 17, autoPc: 'JS-MAIN', autoGraceMin: 30, reqPc: 'JS-MAIN', dynDaily: 0, dynDays: 30, dynScope: 'all', maxLoginTries: 6, prio: {}, usedInfoDays: 30, shipAutoMin: 15, steps: { usedInfo: true, nbMarket: true, soldInfo: true, poolInfo: true, images: true, photos: true, scanFull: true, revAll: true, crm: true, scanNew: true, aladinBuy: true, buyback: true, market: true, rev6m: true, revTop: true, dynamic: true }, autoLogin: true, loginRetrySec: 60 };
+  const DEFAULTS = { keyScheme: 'aladinItemId', reloadEveryFrames: 400, reqMinMs: 700, reqStartMs: 1200, reqMaxMs: 20000, delayMs: 700, fallbackNaver: false, fallbackGoogle: false, pubAnon: true, previewImages: false, pageTimeoutSec: 25, dynamicParts: false, recheckDays: 7, topN: 50, rev6mDays: 7, nbDays: 7, photoMatch: 0.9, maxLanes: 1, ipGroups: { HOME: 'home' }, scanFullDays: 7, revAllDays: 7, crmAnyPc: false, autoDaily: true, autoHour: 17, autoPc: 'JS-MAIN', autoGraceMin: 30, reqPc: 'JS-MAIN', dynDaily: 0, dynDays: 30, dynScope: 'all', maxLoginTries: 6, prio: {}, usedInfoDays: 30, shipAutoMin: 15, steps: { usedInfo: true, nbMarket: true, soldInfo: true, poolInfo: true, images: true, photos: true, scanFull: true, revAll: true, crm: true, scanNew: true, aladinBuy: true, buyback: true, market: true, rev6m: true, revTop: true, dynamic: true }, autoLogin: true, loginRetrySec: 60, bbWaitMax: 40, bbWaitDays: 30 }; /* (11/05) bbWaitMax = 📮 4시간 가벼운 팔기 확인 한 번에 상세를 열 접수 수 상한 · bbWaitDays = 이보다 오래된 결과 기다림 접수는 4시간 확인에서 뺌 — 근거: 없음, 설정으로 바꿈 */
   let SET = { ...DEFAULTS };
   /* 중요도: 숫자가 클수록 먼저. 알라딘 작업 잠금을 낮은 작업이 쥐고 있으면 높은 작업이 양보를 요청 → 낮은 작업은 진행 위치를 저장하고 멈췄다가, 높은 작업이 끝나면 자동으로 이어감.
    * 기본값 근거: 돈·고객에 바로 닿는 것(주문·고객 > 새 등록 > 알라딘 팔기·구매 정산) → 가격 판단 재료(시장 지표) → 경쟁 분석(판매자) → 장기 분석(구매자 분포) 순 */
   const PRIO_DEFAULT = { crm: 100, scanNew: 90, buyback: 80, aladinBuy: 75, scanFull: 70, market: 60, rev6m: 50, revTop: 45, rev6mAll: 40, dynamic: 30, revAll: 20 };
-  const PRIO_KEY = { bench: 'market', usedInfo: 'market', soldInfo: 'market', poolInfo: 'market', photos: 'market', prodPhotos: 'market', nbMarket: 'market', scanNew: 'scanNew', scanFull: 'scanFull', aladinBuy: 'aladinBuy', buyback: 'buyback', market: 'market', rev6mStale: 'rev6m', rev6m: 'rev6m', rev6mAll: 'rev6mAll', revTop: 'revTop', revAll: 'revAll', dynamic: 'dynamic', dynamic0: 'dynamic', dynAll: 'dynamic', crm: 'crm' };
+  const PRIO_KEY = { bench: 'market', usedInfo: 'market', soldInfo: 'market', poolInfo: 'market', photos: 'market', prodPhotos: 'market', nbMarket: 'market', scanNew: 'scanNew', scanFull: 'scanFull', aladinBuy: 'aladinBuy', buyback: 'buyback', buybackWait: 'buyback', market: 'market', rev6mStale: 'rev6m', rev6m: 'rev6m', rev6mAll: 'rev6mAll', revTop: 'revTop', revAll: 'revAll', dynamic: 'dynamic', dynamic0: 'dynamic', dynAll: 'dynamic', crm: 'crm' };
   let curStage = null; let myLockPrio = 0;
   const prioOf = (k) => { if (k === 'explore') return 1; /* 탐색 수집은 가장 낮음 (무엇이든 양보) */ const pk = PRIO_KEY[k] || k; return +((SET.prio || {})[pk] ?? PRIO_DEFAULT[pk] ?? 50); };
   const curPrio = () => prioOf(curStage || curKey || '');
@@ -2827,6 +2827,11 @@
   async function pxSlotOncePc() { if (PUBONLY || !auth.currentUser || !AS || !AS.pxSlotEnsure) return; const fl = C('app_settings').doc('pxSlot1027'); if (((await fl.get()).data() || {}).done) return; const at = ((await C('app_settings').doc('pxDaily').get()).data() || {}).at || AS.PX_DAILY_DEF.at; let added = false;
     await db.runTransaction(async (tx) => { added = false; const s0 = await tx.get(SCHED_REF()); const D = s0.exists ? s0.data() : {}; const r = AS.pxSlotEnsure(AS.slotsOf(D), at); if (!r.added) return; const clean = r.slots.map(AS.sanitize).filter(Boolean); tx.set(SCHED_REF(), { slots: JSON.parse(JSON.stringify(clean)), items: AS.legacyItems(clean), rev: (+D.rev || 0) + 1, ver: 2, at: nowIso(), by: `${PC_NAME} (정범님 10/27 — 🔬 조회수 실험 매일 칸 기본)` }, { merge: true }); added = true; });
     await fl.set({ done: true, at: nowIso(), added, by: PC_NAME }, { merge: true }); if (added) log(`⏰ 시간표에 '🔬 조회수 실험 그림 매일 계획' 칸을 켜진 채로 넣음(${at}) — 정범님이 따로 설정할 것 없음`); }
+  /* (정범님 11/05 '그렇게 해') ⏰ 시간표에 「📮 알라딘 팔기 — 결과 기다리는 접수만」 칸(4시간마다 · 결과 기다리는 접수가 있을 때만)을 켜진 채로 한 번만 — pxSlotOncePc와 같은 꼴(같은 계산 AS.bbSlotEnsure · 표시 app_settings/bbSlot1105) · 이미 있으면(꺼 둔 것도) 그대로 */
+  async function bbSlotOncePc() { if (PUBONLY || !auth.currentUser || !AS || !AS.bbSlotEnsure) return; const fl = C('app_settings').doc('bbSlot1105'); if (((await fl.get()).data() || {}).done) return; let added = false;
+    await db.runTransaction(async (tx) => { added = false; const s0 = await tx.get(SCHED_REF()); const D = s0.exists ? s0.data() : {}; const r = AS.bbSlotEnsure(AS.slotsOf(D)); if (!r.added) return; const clean = r.slots.map(AS.sanitize).filter(Boolean); tx.set(SCHED_REF(), { slots: JSON.parse(JSON.stringify(clean)), items: AS.legacyItems(clean), rev: (+D.rev || 0) + 1, ver: 2, at: nowIso(), by: `${PC_NAME} (정범님 11/05 — 📮 결과 기다리는 팔기 접수 4시간마다 칸 기본)` }, { merge: true }); added = true; });
+    await fl.set({ done: true, at: nowIso(), added, by: PC_NAME }, { merge: true }); if (added) log("⏰ 시간표에 '📮 알라딘 팔기 — 결과 기다리는 접수만' 칸(4시간마다 · 결과 기다리는 접수가 있을 때만)을 켜진 채로 넣음 — 끄려면 ⏰ 칸 편집기에서"); }
+  auth.onAuthStateChanged((u) => { if (u) { const go = (n) => bbSlotOncePc().catch((e) => { if (n < 3) setTimeout(() => go(n + 1), 5 * 60e3); else log('⏰ 팔기 접수 4시간 칸 넣기 실패: ' + (e.code || e.message), 1); }); setTimeout(() => go(1), 150e3 + Math.random() * 60e3); } });
   auth.onAuthStateChanged((u) => { if (u) { const go = (n) => pxSlotOncePc().catch((e) => { if (n < 3) setTimeout(() => go(n + 1), 5 * 60e3); else log('⏰ 조회수 실험 칸 넣기 실패: ' + (e.code || e.message), 1); }); setTimeout(() => go(1), 90e3 + Math.random() * 60e3); } });
   /* ⑤ ✏ 공개 확인 — 확인할 것이 있으면 20초, 없으면 3분 뒤 다시(빈 질의를 줄임) */
   (function peVLoop() { let wait = 60e3; setTimeout(async function go() { try { if (!PUBONLY && auth.currentUser && pcLoggedNow() && !window.__rnPaused && typeof window.__rnPeVerifyPc === 'function') { const n0 = await C('shp_cmds').where('status', '==', 'verify').where('type', '==', 'prdEdit').limit(1).get(); if (!n0.empty) { await window.__rnPeVerifyPc(); wait = 20e3 + Math.random() * 15e3; } else wait = 180e3 + Math.random() * 60e3; } else wait = 180e3; } catch (e) { wait = 180e3; } setTimeout(go, wait); }, wait); })();
@@ -3833,27 +3838,33 @@
   const C2B_LIST = (page) => `https://www.aladin.co.kr/account/wc2binfo.aspx?pType=C2BOrderList&page=${page}&c2bsalesType=-1&SearchYear=0&SearchMonth=0&C2BSearchActive=0&C2BSearchWord=`;
   const C2B_DETAIL = (no) => `https://www.aladin.co.kr/account/wc2binfo.aspx?pType=c2borderinfo&c2bsalesno=${no}`;
   const isFinal = (o) => !!(o && (o.doneDate || /매입완료|정산완료|완료|취소/.test(o.status || '')) && (o.items || []).every((x) => x.result) && (o.rejV === 1 || (o.reqN || 0) <= (o.items || []).length)); /* (1.88.0) 정범님 10/20: '매입불가 상품 내역'을 안 읽었던 끝난 접수는 한 번 다시 열어 불가 책·사유를 덧붙임(예전 내용은 snapshots에 그대로) */
-  async function buybackJob() {
+  /* (정범님 11/05) 📮 opt.wait = 가벼운 확인(⏰ 칸 bbWait — 결과 기다리는 접수가 있는 동안 4시간마다): 목록은 첫 쪽만(새 접수) + 결과 기다리는 접수(AS.bbWaiting)만 상세 · 이어 하기 기록은 따로(buybackWait — 하루 한 번 전체 읽기와 섞이지 않음)
+   *  끝나면 두 쪽 모두 prd_system/buybackWait { n: 결과 기다리는 접수 수 } — ⏰ 조건 bbWait가 이것을 봄 */
+  const bbWaitOf = (o) => !!(AS && AS.bbWaiting && AS.bbWaiting(o, Date.now(), SET.bbWaitDays ?? 30));
+  async function bbWaitSave(have, why) { try { const L = [...have.entries()].filter(([, o]) => bbWaitOf(o)).map(([no]) => no); BBW.n = L.length; BBW.at = Date.now(); await C('prd_system').doc('buybackWait').set({ n: L.length, list: L.slice(0, 30), at: nowIso(), by: PC_NAME, why }, { merge: true }); return L.length; } catch (e) { return null; } }
+  async function buybackJob(opt) { const WAIT = !!(opt && opt.wait); const PK = WAIT ? 'buybackWait' : 'buyback';
     const lane = await acquireLane('aladin'); if (!lane.ok) { log(lockMsg(lane), 1); ui('다른 PC 작업 중', 0, 0, '', lockMsg(lane)); return false; }
     try {
       const have = new Map(); (await C('pur_buyback').get()).forEach((d) => have.set(d.id, d.data()));
-      const prog = (await loadProgress('buyback')) || { page: 1, list: [], phase: 'list', i: 0, got: 0, upd: 0 };
+      const prog = (await loadProgress(PK)) || { page: 1, list: [], phase: 'list', i: 0, got: 0, upd: 0 };
       if (prog.phase === 'list') {
         for (;;) {
-          if (stopFlag) { await saveProgress('buyback', prog); throw new Error('멈춤'); }
+          if (stopFlag) { await saveProgress(PK, prog); throw new Error('멈춤'); }
           const { doc } = await getDoc(C2B_LIST(prog.page)); const r = P.parseC2BList(doc);
           if (!r.orders.length) break;
-          const fresh = r.orders.filter((no) => !have.has(no) || !isFinal(have.get(no)) || have.get(no).settledAmount === undefined); // 정산액을 아직 안 계산한 예전 기록은 한 번만 다시
+          const fresh = r.orders.filter((no) => (WAIT ? !have.has(no) || bbWaitOf(have.get(no)) : !have.has(no) || !isFinal(have.get(no)) || have.get(no).settledAmount === undefined)); // 정산액을 아직 안 계산한 예전 기록은 한 번만 다시 (가벼운 확인은 새 접수·결과 기다리는 접수만)
           prog.list.push(...fresh.filter((no) => !prog.list.includes(no)));
-          ui('알라딘 팔기 내역: 목록', prog.page, r.lastPage, `${prog.page}/${r.lastPage}쪽 · 볼 접수 ${prog.list.length}건`);
+          ui(WAIT ? '📮 알라딘 팔기 (결과 기다리는 접수)' : '알라딘 팔기 내역: 목록', prog.page, r.lastPage, `${prog.page}/${r.lastPage}쪽 · 볼 접수 ${prog.list.length}건`);
+          if (WAIT) break; // 가벼운 확인: 목록은 첫 쪽만
           // 이미 끝난 접수만 나오는 쪽이 이어지면 그 뒤는 예전 기록 → 멈춤
           if (!fresh.length && prog.page > 1 && r.orders.every((no) => have.has(no))) break;
-          if (prog.page >= r.lastPage) break; prog.page++; await saveProgress('buyback', prog);
+          if (prog.page >= r.lastPage) break; prog.page++; await saveProgress(PK, prog);
         }
-        prog.phase = 'detail'; prog.i = 0; await saveProgress('buyback', prog);
+        if (WAIT) { for (const [no, o] of have) if (bbWaitOf(o) && !prog.list.includes(no)) prog.list.push(no); prog.list = prog.list.slice(0, Math.max(1, +SET.bbWaitMax || 40)); } // 첫 쪽에 안 나온 결과 기다리는 접수도 · 한 번에 상한까지(사람 속도 — 넘친 것은 다음 회차·하루 한 번 전체 읽기)
+        prog.phase = 'detail'; prog.i = 0; await saveProgress(PK, prog);
       }
       for (; prog.i < prog.list.length; prog.i++) {
-        if (stopFlag) { await saveProgress('buyback', prog); throw new Error('멈춤'); }
+        if (stopFlag) { await saveProgress(PK, prog); throw new Error('멈춤'); }
         const no = prog.list[prog.i]; const { doc } = await getDoc(C2B_DETAIL(no)); const x = P.parseC2BDetail(doc);
         const paid = x.items.filter((it) => it.result === 'bought').reduce((a, it) => a + (it.buyPrice || 0), 0);
         const ship = String((x.head || {})['발송방법'] || ''); const boxes = Math.max(1, Math.ceil((x.reqN || 1) / 20)); const conv = /편의점/.test(ship);
@@ -3862,6 +3873,7 @@
         const cur = { orderNo: no, date: x.date, type: x.type, shipDate: x.shipDate, doneDate: x.doneDate, status: x.status, settle: x.settle, discardPolicy: x.discardPolicy, buyer: x.buyer, reqN: x.reqN, reqAmount: x.reqAmount, items: x.items, nRejected: x.nRejected || 0, rejV: x.rejV || null, head: x.head, paidAmount: x.doneDate ? paid : 0,
           buyStated, shipMethod: ship || null, shipFee, shipFeeBoxes: boxes, settledAmount: x.doneDate && /정산\s*완료/.test(x.status || '') ? (buyStated ?? paid) - shipFee : 0 }; // 실제 정산액 = 매입 금액 − 배송비 차감
         const old = have.get(no); const sig = JSON.stringify([cur.status, cur.doneDate, cur.items.map((it) => it.result + ':' + (it.buyPrice || '') + (it.reason ? ':' + it.reason : '')), cur.settledAmount]);
+        have.set(no, { ...(old || {}), ...cur }); // 📮 끝난 뒤 결과 기다리는 접수 수를 셀 때 지금 내용으로
         if (old && old.sig === sig) continue; // 같은 내용이면 기록하지 않음
         /* (1.57.2) 상태가 바뀔 때마다 그때의 전체 내용(책마다 결과·매입가, 정산·금액)을 snapshots에 — 예전 기록에 전체 내용이 없으면 바꾸기 전 내용을 먼저 한 번 남김 */
         const full = (v, at0, tag) => JSON.parse(JSON.stringify({ at: at0, status: v.status || null, doneDate: v.doneDate || null, paid: v.paidAmount ?? null, results: (v.items || []).map((it) => it.result || '-').join(''), items: v.items || [], /* 책마다 받은 칸 그대로 */ settle: v.settle ?? null, reqAmount: v.reqAmount ?? null, buyStated: v.buyStated ?? null, settledAmount: v.settledAmount ?? null, shipFee: v.shipFee ?? null, ...(tag ? { tag } : {}) }));
@@ -3869,10 +3881,11 @@
         await C('pur_buyback').doc(no).set({ ...(old ? {} : { firstSeenAt: nowIso() }), ...cur, sig, source: 'collector', lastSeenAt: nowIso(), snapshots: firebase.firestore.FieldValue.arrayUnion(...snapAdd), ...W() }, { merge: true });
         old ? prog.upd++ : prog.got++;
         ui('알라딘 팔기 내역: 상세', prog.i + 1, prog.list.length, `${no} · ${x.status || ''} · ${x.reqN}권`);
-        if (prog.i % 5 === 0) await saveProgress('buyback', prog);
+        if (prog.i % 5 === 0) await saveProgress(PK, prog);
       }
-      await finishJob('buyback', { newOrders: prog.got, updated: prog.upd });
-      log(`알라딘 팔기 내역: 새 접수 ${prog.got}건, 상태 바뀐 접수 ${prog.upd}건`);
+      const wn = await bbWaitSave(have, WAIT ? 'wait' : 'full');
+      await finishJob(PK, { newOrders: prog.got, updated: prog.upd, ...(wn != null ? { waitN: wn } : {}) });
+      log(`${WAIT ? '📮 알라딘 팔기(결과 기다리는 접수만)' : '알라딘 팔기 내역'}: 새 접수 ${prog.got}건, 상태 바뀐 접수 ${prog.upd}건${wn != null ? ` · 결과 기다리는 접수 ${wn}건${wn ? ' — 4시간마다 다시 봄' : ' — 4시간 확인 쉼(하루 한 번 전체 읽기만)'}` : ''}`);
     } finally { await releaseLane('aladin'); }
   }
 
@@ -4223,8 +4236,12 @@
       await window.__rnSchedResume({ key, slot: r.slot, job: 'prd:bench', k: 'bench', why: r.why || '', tries: r.tries || 0, t0: Date.parse(r.st) || Date.now(), pre: +r.ms || 0, at: Date.now() }); } catch (e) { window.__rnResumePending = 0; } }, 3000);
   let HO_AT = 0, HO_N = 0, HO_BACK = 0; /* (1.72.3) 🔁 넘겨받을 일 — 10분마다 한 번만 확인(읽기 1건) · 담당 PC(정했으면)만 */
   async function handoffDue() { try { const own = asOwn(); if (own && own.pc && String(own.pc) !== String(PC_NAME)) return false; if (Date.now() - HO_AT > 10 * 60e3) { HO_AT = Date.now(); const qs = await C('prd_handoff').where('status', '==', 'todo').limit(300).get(); HO_N = qs.size; } return HO_N > 0; } catch (e) { return false; } }
+  /* (정범님 11/05) ⏰ 조건부 칸 — bbWait: 결과 기다리는 알라딘 팔기 접수가 있나(prd_system/buybackWait.n · 10분에 한 번만 읽음(읽기 1건) · 아직 센 적 없으면(문서 없음) 한 번 해서 셈) */
+  const BBW = { at: 0, n: undefined, ld: false };
+  function bbWaitRead() { if (BBW.ld || Date.now() - BBW.at < 10 * 60e3) return; BBW.ld = true; C('prd_system').doc('buybackWait').get().then((d) => { BBW.n = d.exists ? +((d.data() || {}).n) || 0 : -1; BBW.at = Date.now(); }).catch(() => { BBW.at = Date.now(); }).finally(() => { BBW.ld = false; }); }
+  function schedCond(k) { if (k === 'bbWait') { bbWaitRead(); return BBW.n === -1 || BBW.n > 0; } return false; }
   /* (1.73.0) 지금 할 차례인 칸 — schedTick과 💤 양보 확인이 같이 씀 */
-  function schedDues(now, idleMs) { return AS.due(schedRt(), SCHED_RUNS, { now, pc: PC_NAME, own: asOwn(), anyPc: (job) => ((pubHelpOn() || PUBONLY) && String(job || '').startsWith('prd:') && isPubKey(String(job).slice(4))) || (spreadOn() && !isPubKey(String(job || '').slice(4))), /* (1.89.11) 🔀 정범님 10/21: 켜진 사무실 PC가 로그인·외부 일을 나눠 맡음(같은 회차는 먼저 잡은 PC 하나 — schedStart 트랜잭션) · 비로그인 알라딘 일은 그대로 로거 */ pubAll: PUBONLY, bud: PUBONLY ? BUD : null, budLeft: PUBONLY && BUD ? (job) => budLeft(String(job || '').replace(/^prd:/, '')) : null, benchWait: PUBONLY && BUD && BUD.benchOwe ? (job) => !isBenchKey(String(job || '').replace(/^prd:/, '')) : null, mainBusy: PUBONLY && !!running && isPubKey(running) && tierOfKey(running) === 'main', crmOk: !!(window.__rnCrm && window.__rnCrm.start), idleMs, bootAt: BOOT_AT, stats: JSTATS }).filter((d) => (!PUBONLY || (TGATE.ok && String(d.slot.job || '').startsWith('prd:') && isPubKey(String(d.slot.job).slice(4)))) && !(pubPcMode() && String(d.slot.job || '').startsWith('prd:') && isPubKey(String(d.slot.job).slice(4))) && !(PUBONLY && String(d.slot.job || '').startsWith('prd:') && isPubKey(String(d.slot.job).slice(4)) && !isBenchKey(String(d.slot.job).slice(4)) && tierOfKey(String(d.slot.job).slice(4)) === 'gen' && !benchDoneToday()) && (!REGPC() || regKeepJob(d.slot.job))); } /* (정범님 11/02) 📥 등록 PC는 ⏰ 주요 수집 칸을 잡지 않음(다른 PC가 같은 회차를 잡음) — 고객 일·신규 등록분·발송 요청 읽기 등 남긴 일(pc_roles.keep)만 */ /* (1.89.67) 일반 몫 칸은 오늘 벤치마킹 한 바퀴 뒤에만 시작 */ /* (1.64.0) 공개 전용 PC = 공개 일만 · (1.65.0) 테더링 확인 뒤에만 · (1.66.0) 공개 전용 PC가 있으면 사무실 PC는 공개 일을 빼고 */
+  function schedDues(now, idleMs) { return AS.due(schedRt(), SCHED_RUNS, { now, pc: PC_NAME, own: asOwn(), cond: schedCond, anyPc: (job) => ((pubHelpOn() || PUBONLY) && String(job || '').startsWith('prd:') && isPubKey(String(job).slice(4))) || (spreadOn() && !isPubKey(String(job || '').slice(4))), /* (1.89.11) 🔀 정범님 10/21: 켜진 사무실 PC가 로그인·외부 일을 나눠 맡음(같은 회차는 먼저 잡은 PC 하나 — schedStart 트랜잭션) · 비로그인 알라딘 일은 그대로 로거 */ pubAll: PUBONLY, bud: PUBONLY ? BUD : null, budLeft: PUBONLY && BUD ? (job) => budLeft(String(job || '').replace(/^prd:/, '')) : null, benchWait: PUBONLY && BUD && BUD.benchOwe ? (job) => !isBenchKey(String(job || '').replace(/^prd:/, '')) : null, mainBusy: PUBONLY && !!running && isPubKey(running) && tierOfKey(running) === 'main', crmOk: !!(window.__rnCrm && window.__rnCrm.start), idleMs, bootAt: BOOT_AT, stats: JSTATS }).filter((d) => (!PUBONLY || (TGATE.ok && String(d.slot.job || '').startsWith('prd:') && isPubKey(String(d.slot.job).slice(4)))) && !(pubPcMode() && String(d.slot.job || '').startsWith('prd:') && isPubKey(String(d.slot.job).slice(4))) && !(PUBONLY && String(d.slot.job || '').startsWith('prd:') && isPubKey(String(d.slot.job).slice(4)) && !isBenchKey(String(d.slot.job).slice(4)) && tierOfKey(String(d.slot.job).slice(4)) === 'gen' && !benchDoneToday()) && (!REGPC() || regKeepJob(d.slot.job))); } /* (정범님 11/02) 📥 등록 PC는 ⏰ 주요 수집 칸을 잡지 않음(다른 PC가 같은 회차를 잡음) — 고객 일·신규 등록분·발송 요청 읽기 등 남긴 일(pc_roles.keep)만 */ /* (1.89.67) 일반 몫 칸은 오늘 벤치마킹 한 바퀴 뒤에만 시작 */ /* (1.64.0) 공개 전용 PC = 공개 일만 · (1.65.0) 테더링 확인 뒤에만 · (1.66.0) 공개 전용 PC가 있으면 사무실 PC는 공개 일을 빼고 */
   /* (1.74.0) ⏰ 차례 정하기(정범님 10/16) — 로거·사무실 PC 모두 같은 규칙
    *  0 사람이 누른 일(수집기 단추·웹앱에서 사람이 누른 요청) — 끼어들지 않음(다른 일을 모두 비키게 함)
    *  1 주문·출고 짧은 요청(발송 요청 다시 읽기) — 사람 일 말고는 모두 비키게 함
@@ -4820,6 +4837,7 @@
     shipRead: ['발송 요청 읽기 (오늘 출고)', () => shipReadJob()],
     nbMarket: ['새상품 없는 상품 시세', () => nbMarketJob()],
     buyback: ['알라딘 팔기 내역', () => buybackJob()],
+    buybackWait: ['📮 알라딘 팔기 — 결과 기다리는 접수만 (가볍게)', () => buybackJob({ wait: true })], /* (정범님 11/05) 결과 기다리는 접수가 있는 동안 4시간마다 — ⏰ 칸 bbWait(조건부) */
     dynamic: ['구매자 분포·함께 산 책', () => dynJob(SET.dynDaily || 0)],
     kpipa: ['출판 판매 통계 (KPIPA 판매 보고서)', () => kpipaJob()],
     extBurst: ['🔎 외부 정보 몰아 받기 (출처 하루 최대까지 · 쉴 때)', () => extBurstPar()],
