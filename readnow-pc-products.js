@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.210의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.211의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.210' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.210', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.211' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.211', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -4559,17 +4559,20 @@
   /* (1.73.1) 🖼 탭 없이 그려 읽기 — 로컬 도우미 1.6.0의 /render(크롬을 화면 없이 띄워 그 주소를 그림 · 그 화면의 모든 요청은 와이파이 · 알라딘 막음)로 HTML을 받아 리더와 같은 규칙으로 글 링크를 뽑음
    *  로거: 늘 도우미로만(탭을 열면 그 화면의 광고·글꼴·이미지 주소가 테더링으로 나가 테더링을 낭비했음 — 도우미가 없거나 실패하면 탭을 열지 않고 실패로 둠) · 사무실 PC: 도우미가 있으면 도우미, 없으면 예전처럼 탭 */
   let RENDER_HELPER = null; /* null 모름 · true 됨 · false 없음(10분 기억) */ let RENDER_HELPER_AT = 0;
-  const extRenderHelper = (url, opt) => new Promise((res) => { const o = opt || {}; const wait = Math.min(30000, Math.max(6000, o.max || 12000));
-    GM_xmlhttpRequest({ method: 'POST', url: `http://127.0.0.1:8899/render?url=${encodeURIComponent(url)}&wait=${wait}`, headers: { 'X-RN-Render': '1' }, anonymous: true, timeout: wait + 45000,
+  const extRenderHelper = (url, opt, port) => new Promise((res) => { const o = opt || {}; const wait = Math.min(30000, Math.max(6000, o.max || 12000));
+    GM_xmlhttpRequest({ method: 'POST', url: `http://127.0.0.1:${port || 8899}/render?url=${encodeURIComponent(url)}&wait=${wait}`, headers: { 'X-RN-Render': '1' }, anonymous: true, timeout: wait + 45000,
       onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {} if (r.status === 404 || !j) { res({ ok: false, nohelper: true, why: '도우미에 화면 없이 그려 읽기가 없음(도우미 1.6.0 필요)' }); return; } if (!j.ok) { res({ ok: false, why: '도우미 그리기: ' + (j.why || r.status) }); return; }
         try { const doc = new DOMParser().parseFromString(j.html, 'text/html'); let re; try { re = new RegExp(o.re, o.reFlags || ''); } catch (e) { return res({ ok: false, why: '링크 모양이 잘못됨' }); } const none = o.none ? new RegExp(o.none) : null;
           const abs = (a) => { try { return new URL(a.getAttribute('href'), url).href; } catch (e) { return ''; } };
           const txt = (el) => { const out = []; try { const w = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT); let n; while ((n = w.nextNode())) { const v = n.nodeValue.replace(/\s+/g, ' ').trim(); if (v && !(n.parentElement && /^(SCRIPT|STYLE|NOSCRIPT)$/.test(n.parentElement.tagName))) out.push(v); } } catch (e) {} return out.join('\n'); };
           const box = (a) => { let el = a, best = a; for (let k = 0; k < 6 && el && el.parentElement; k++) { el = el.parentElement; const n = el.querySelectorAll('a[href]').length; const tx = el.textContent || ''; if (tx.length > 1500 || [...el.querySelectorAll('a[href]')].filter((x) => re.test(abs(x))).length > 2) break; best = el; if (/\d[\d,]*\s*원/.test(tx) && n <= 6) break; } return best; };
           const L = [...doc.querySelectorAll('a[href]')].filter((a) => re.test(abs(a))).slice(0, 300).map((a) => ({ h: abs(a), t: (txt(a) || a.getAttribute('title') || a.getAttribute('aria-label') || '').slice(0, 400), c: txt(box(a)).slice(0, 700) }));
-          const body = (doc.body && doc.body.textContent) || ''; res({ ok: true, links: L, none: !L.length && !!(none && none.test(body)), html: o.html ? j.html.slice(0, 1500000) : null, url, via: 'helper', ms: j.ms }); } catch (e) { res({ ok: false, why: '그린 화면 읽기 실패: ' + e.message }); } },
+          const body = (doc.body && doc.body.textContent) || ''; res({ ok: true, links: L, none: !L.length && !!(none && none.test(body)), html: o.html ? j.html.slice(0, 1500000) : null, url, via: port === 8898 ? 'work' : 'helper', ms: j.ms }); } catch (e) { res({ ok: false, why: '그린 화면 읽기 실패: ' + e.message }); } },
       onerror: () => res({ ok: false, nohelper: true, why: '도우미에 닿지 못함' }), ontimeout: () => res({ ok: false, why: '도우미 그리기 시간 초과' }) }); });
-  const extRender = (url, opt) => { const job = EXT_RQ.then(async () => { if (PUBONLY || RENDER_HELPER !== false || Date.now() - RENDER_HELPER_AT > 10 * 60e3) { const r = await extRenderHelper(url, opt); if (r.nohelper) { RENDER_HELPER = false; RENDER_HELPER_AT = Date.now(); } else RENDER_HELPER = true; if (r.ok || PUBONLY || !r.nohelper) return r; /* 로거는 탭을 절대 열지 않음 */ } return extRenderTab(url, opt); }); EXT_RQ = job.catch(() => {}); return job; };
+  /* (정범님 11/05) 🪟 로그인 없는 일 따로 — 이 PC가 작업 창 모드이고 '바깥 사이트 읽기도 따로'(기본 켬)면 로거 도우미(8899)가 없을 때 PC 도우미(8898 · readnow-work.js)의 따로 된 크롬(로그인 안 하는 프로필 · 화면 없이)으로 그림 → 사람 크롬에 리더 탭이 생기지 않음 · 도우미가 없으면 예전처럼 탭 */
+  const workExt = () => { try { const W = window.__rnWork; return !!(W && W.on() && W.cfg().ext !== false); } catch (e) { return false; } };
+  const extRender = (url, opt) => { const job = EXT_RQ.then(async () => { if (PUBONLY || RENDER_HELPER !== false || Date.now() - RENDER_HELPER_AT > 10 * 60e3) { const r = await extRenderHelper(url, opt); if (r.nohelper) { RENDER_HELPER = false; RENDER_HELPER_AT = Date.now(); } else RENDER_HELPER = true; if (r.ok || PUBONLY || !r.nohelper) return r; /* 로거는 탭을 절대 열지 않음 */ }
+      if (workExt()) { const r2 = await extRenderHelper(url, opt, 8898); if (r2.ok || !r2.nohelper) return r2; } return extRenderTab(url, opt); }); EXT_RQ = job.catch(() => {}); return job; };
   const extRenderTab = (url, opt) => new Promise((res) => { const tok = Math.random().toString(36).slice(2, 12) + Date.now().toString(36); const o = opt || {}; const max = Math.min(60000, o.max || 20000);
       try { GM_setValue('rnx_q_' + tok, { re: o.re, reFlags: o.reFlags || '', none: o.none || null, html: !!o.html, max, at: Date.now() }); } catch (e) { return res({ ok: false, why: '저장소 쓰기 실패' }); }
       let tab = null, done = false, lid = null; const fin = (v) => { if (done) return; done = true; try { if (lid != null && typeof GM_removeValueChangeListener === 'function') GM_removeValueChangeListener(lid); } catch (e) {} try { tab && tab.close && tab.close(); } catch (e) {} try { GM_deleteValue('rnx_q_' + tok); GM_deleteValue('rnx_r_' + tok); } catch (e) {} res(v); };
@@ -4935,6 +4938,34 @@
         if (c.cmd === 'resume') { if (!window.__rnPaused) return ctlAck(c.id, 'resume', 'done', '일시정지 상태가 아니었음 (그대로 돎)'); window.__rnResumeOk(); return ctlAck(c.id, 'resume', 'done', '일시정지 풀음 — 매일 자동·요청·이어가기가 다시 돎'); }
         if (c.cmd === 'update') return ctlUpdateNow(c);
         return ctlAck(c.id, c.cmd, 'fail', '모르는 명령 (이 수집기 ' + VER + ')'); } catch (e) { return ctlAck(c.id, c.cmd, 'fail', '오류: ' + e.message); } }, () => {}); }
+  /* ══════════ (정범님 11/05) 🪟 수집 작업 창 — 설정·상태·명령 한 문서 crm_system/work_win
+   *  cfg.pilot = 켤 수 있는 시범 PC(기본 HOME·JS-MAIN · 로거는 늘 뺌) · cfg.pcs.{PC} = { on(기본 끔), ext(로그인 없는 바깥 사이트 읽기도 도우미의 따로 된 크롬으로 · 기본 켬), place('off' 화면 밖 | 'edge' 화면 귀퉁이), win·hwin(작업 창·수집 상태 창을 보일 때 자리·크기 {x,y,w,h,at}) }
+   *  cmds.{PC} = { id, cmd: show(작업 창 보이기)·hide(다시 숨기기)·status(수집 상태 창 열기)·reopen(작업 창 다시 열기), at, by } → acks.{PC} = { id, cmd, ok, msg, at } · state.{PC} = 이 PC 도우미가 본 지금 상태(웹앱이 보여 줌)
+   *  이 PC에서 도우미와 말하는 탭은 하나: 작업 창 탭(살아 있으면) 아니면 이 PC의 수집기 탭 · 1분마다 + 문서가 바뀔 때 · 상태는 바뀌었을 때나 10분마다만 씀(Firebase 쓰기 절약) */
+  const WW = () => C('crm_system').doc('work_win'); let WW_DOC = null, wwBusy = false, wwStSig = '', wwStAt = 0, wwT = null;
+  const WW_PILOT = ['HOME', 'JS-MAIN']; /* 정범님 11/05 Q2 — 시범 PC 둘 · 웹앱에서 cfg.pilot으로 바꿀 수 있음 */
+  const wwUp = (x) => String(x == null ? '' : x).trim().toUpperCase();
+  function wwMine() { const c = (WW_DOC && WW_DOC.cfg) || {}; const pilot = Array.isArray(c.pilot) ? c.pilot : WW_PILOT; const m = (c.pcs || {})[PC_NAME] || {};
+    const okPc = !!PC_NAME && !PUBONLY && !globalThis.__rnPubChrome && wwUp(PC_NAME) !== 'LOGGER' && pilot.some((x) => wwUp(x) === wwUp(PC_NAME));
+    return { okPc, on: okPc && m.on === true, ext: m.ext !== false, place: m.place === 'edge' ? 'edge' : 'off', win: m.win || null, hwin: m.hwin || null, url: m.url || null, profile: m.profile || null, aliveMin: +m.aliveMin || null }; }
+  function wwGm(M) { try { const o = GM_getValue('rn-work-cfg', null) || {}; if (!!o.on === M.on && o.ext === M.ext && (o.aliveMin || null) === M.aliveMin) return; GM_setValue('rn-work-cfg', { on: M.on, ext: M.ext, aliveMin: M.aliveMin, at: Date.now(), pc: PC_NAME });
+      if (!!o.on !== M.on) log(M.on ? '🪟 작업 창 모드 켬(웹앱 관리도구) — 이 PC의 수집은 도우미가 연 작업 창 탭이 맡고, 사람이 연 알라딘 탭은 화면 기능만' : '🪟 작업 창 모드 끔 — 예전처럼 사람이 연 알라딘 탭이 수집을 맡음'); } catch (e) {} }
+  const wwBoss = () => { const W = window.__rnWork; if (!W) return false; if (W.isWork()) return true; return ctlLead() && !W.alive(window.__rnTab); };
+  async function wwApply() { if (wwBusy || !PC_NAME || !auth.currentUser || PUBONLY) return; const M = wwMine(); wwGm(M); const W = window.__rnWork; if (!W || !wwBoss()) return; wwBusy = true;
+    try { const st = await W.call('/work/cfg', { pc: PC_NAME, on: M.on, ext: M.ext, place: M.place, win: M.win, hwin: M.hwin, url: M.url, profile: M.profile, ver: VER });
+      let ack = null; const c = ((WW_DOC && WW_DOC.cmds) || {})[PC_NAME];
+      if (c && c.id && GM_getValue('rnu-ww-seen', null) !== c.id) { GM_setValue('rnu-ww-seen', c.id); const age = Date.now() - Date.parse(c.at || 0); const NM = { show: '🪟 작업 창 보이기', hide: '🙈 작업 창 숨기기', status: '📊 수집 상태 창', reopen: '↻ 작업 창 다시 열기' };
+        if (!(age >= -600000 && age < 30 * 60000)) ack = { ok: false, msg: `${Math.round(age / 60000)}분 지난 명령이라 하지 않음` };
+        else if (!NM[c.cmd]) ack = { ok: false, msg: '모르는 명령 (수집기 ' + VER + ')' };
+        else { const r = await W.call('/work/' + c.cmd, { by: String(c.by || '').slice(0, 80), why: '웹앱 관리도구' }); ack = r && r.ok ? { ok: true, msg: r.msg || '했음' } : { ok: false, msg: (r && r.err) || '도우미 응답 없음' }; }
+        ack = { id: c.id, cmd: c.cmd, ...ack, at: nowIso() }; log(`🪟 웹앱 명령 '${NM[c.cmd] || c.cmd}': ${ack.ok ? '✓ ' : '✗ '}${ack.msg}`, ack.ok ? 0 : 1); }
+      const lead = (() => { try { const v = window.__rnLead && window.__rnLead(); return v ? (v.page === 'rnWork' ? 'work' : 'human') : null; } catch (e) { return null; } })();
+      const S1 = { atMs: Date.now(), at: nowIso(), ver: VER, on: M.on, ext: M.ext, okPc: M.okPc, lead, helper: st && st.ok ? st.ver || '?' : null, err: st && !st.ok ? String(st.err || '').slice(0, 200) : null,
+        ...(st && st.ok ? { open: !!st.open, shown: !!st.shown, rect: st.rect || null, win: st.win || null, hwin: st.hwin || null, hwinOpen: !!st.hwinOpen, beatAt: st.beatAt || null, opens: +st.opens || 0, msg: String(st.msg || '').slice(0, 200), render: st.render || null } : {}) };
+      const sig = JSON.stringify({ ...S1, atMs: 0, at: 0, beatAt: 0, render: 0 });
+      if ((M.okPc || (st && st.ok) || ack) && (ack || sig !== wwStSig || Date.now() - wwStAt > 10 * 60000)) { wwStSig = sig; wwStAt = Date.now(); await WW().set({ state: { [PC_NAME]: S1 }, ...(ack ? { acks: { [PC_NAME]: ack } } : {}) }, { merge: true }).catch(() => {}); }
+    } catch (e) {} finally { wwBusy = false; } }
+  function wwWatch() { if (PUBONLY || globalThis.__rnPubChrome) return; WW().onSnapshot((d) => { WW_DOC = d.exists ? d.data() : null; clearTimeout(wwT); wwT = setTimeout(() => { wwApply().catch(() => {}); }, 800 + Math.random() * 1200); }, () => {}); setInterval(() => { wwApply().catch(() => {}); }, 60000); }
   // (1.26.1) 안전한 새로고침: 바로 location.reload()하면 알라딘이 429(요청 너무 많음)를 돌려줄 때 크롬 오류 화면에 멈춤(그 화면에서는 어떤 스크립트도 못 돎).
   //  ① 서버가 200으로 답할 때까지 기다림(30초 → 1·2·4…15분 간격으로 확인)  ② 새 탭으로 같은 화면을 엶  ③ 새 탭의 수집기가 실제로 떠서 '받았음' 신호를 보내면 이 탭을 닫음
   //  ④ 2분 안에 신호가 없으면(새 탭이 오류 화면) 그 탭을 닫고 ①부터 다시 — 수집기가 떠야만 넘어가므로 오류 화면에 멈추지 않음. 새 탭은 저장된 자리부터 자동으로 이어감
@@ -4954,7 +4985,7 @@
         const hq = (fn) => { try { const q = (GM_getValue('rn-handoff-q', null) || []).filter((x) => x && x.id && Date.now() - (x.at || 0) < 10 * 60000); GM_setValue('rn-handoff-q', fn(q)); } catch (e) {} };
         hq((q) => [...q.filter((x) => x.id !== id), { id, at: Date.now() }]); const unq = () => hq((q) => q.filter((x) => x.id !== id));
         if (lastTab && !lastTab.closed && !(await closeTab(lastTab))) { log(`[안전한 새로고침] 앞서 연 새 탭이 닫히지 않아 새 탭을 또 열지 않고 이 탭을 그 자리에서 새로고침합니다 (탭이 쌓이지 않게)`, 1); if (window.__rnFlush) await window.__rnFlush(); GM_setValue('rn-handoff', { id, at: Date.now() }); location.reload(); return; }
-        log(`${reason}: 새 탭으로 다시 엽니다 (${tryN}번째)`); let tab = null; try { tab = GM_openInTab(location.href.replace(/#.*$/, ''), { active: true, insert: true, setParent: true }); } catch (e) {} lastTab = tab;
+        log(`${reason}: 새 탭으로 다시 엽니다 (${tryN}번째)`); let tab = null; try { tab = GM_openInTab(location.href.replace(/#.*$/, '') + (window.__rnWork && window.__rnWork.mark ? '#rnWork' : ''), { active: true, insert: true, setParent: true }); } catch (e) {} lastTab = tab; /* (11/05) 🪟 작업 창 탭이면 새 탭도 작업 창 탭(같은 창 안 옆자리에 열림) */
         const t0 = Date.now(); while (Date.now() - t0 < 120000) { await sleep(3000); if (ackOk()) { unq(); try { GM_deleteValue('rn-handoff-ack-' + id); } catch (e) {} window.__rnLeadRelease && window.__rnLeadRelease(); log(`[안전한 새로고침] 새 탭이 이어받았습니다 (${Math.round((Date.now() - t0) / 1000)}초 만에) — 남은 기록을 저장하고 이 탭을 닫습니다 · 전체 ${Math.round((Date.now() - tStart) / 60000)}분 걸림`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} await sleep(1500); /* (1.63.8) 닫기가 막힌 탭(사람이 연 탭)은 빈 화면으로 바꿔 코드가 모두 멈추게 — 새 탭이 확인해 남김 */ GM_setValue('rn-handoff-oldblank', { id, at: Date.now() }); location.replace('about:blank'); return; } }
         if (ackOk()) { unq(); try { GM_deleteValue('rn-handoff-ack-' + id); } catch (e) {} window.__rnLeadRelease && window.__rnLeadRelease(); log(`[안전한 새로고침] 새 탭이 이어받았습니다 (2분 끝에 확인) — 이 탭을 닫습니다`); if (window.__rnFlush) await window.__rnFlush(); await sleep(800); try { window.close(); } catch (e) {} await sleep(1500); GM_setValue('rn-handoff-oldblank', { id, at: Date.now() }); location.replace('about:blank'); return; }
         unq(); const closed = await closeTab(tab); if (closed) lastTab = null; log(`[안전한 새로고침] 새 탭이 2분 안에 뜨지 않았습니다(알라딘 오류 화면 — 429 등일 가능성${(() => { try { return typeof st !== 'undefined' ? ` · 직전 서버 확인 ${st || '응답 없음'}` : ''; } catch (e) { return ''; } })()}) → 그 탭을 ${closed ? '닫고 닫힌 것을 확인함' : '닫지 못함 — 다음엔 새 탭을 또 열지 않고 이 탭을 새로고침'} · ${Math.round(wait / 6000) / 10}분 기다렸다 다시`, 1); PACE.fail('429');
@@ -5009,6 +5040,7 @@
     return res;
   }
   window.__rnPrd = { runJob: (k) => runJob(k), busy: () => !!running, pause: () => { if (running || imgRunning) stopFlag = true; } };
+  window.__rnWorkNow = () => ({ job: running ? String(running).slice(0, 80) : null, img: !!imgRunning, crm: !!(window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy()), prog: PROG_NOW ? { i: PROG_NOW.i, n: PROG_NOW.n, l: PROG_NOW.l } : null, uiAt: window.__rnUiAt || null }); /* (11/05) 🪟 작업 창 탭이 도우미 '수집 상태' 창에 알리는 지금 하는 일 */
   let waitTimer = null; const WAIT_N = {};
   function waitThenRun(key) {
     clearInterval(waitTimer); const t0 = Date.now(); $('#rnpCtlStop') && ($('#rnpCtlStop').style.display = '');
@@ -5141,7 +5173,7 @@
     $('#rnpWho').textContent = `Firebase: ${u.email} 로그인됨`;
     await loadSettings(); renderSetup(); engineSwitch(); try { if (!PUBONLY) GM_setValue('rn-officeMem', SET.officeMemLogin === true); } catch (e) {} /* (1.72.0 · 기본 끔) 🔑 사무실 PC 로그인 메모리 보관 — 다음 화면부터 */ setInterval(() => { loadSettings().then(engineSwitch).catch(() => {}); }, 30 * 60e3); /* (정범님 11/04 '이유 없는 지연은 바로') 상품 쪽 설정(요청 속도·유의 사항 일수·다시 볼 날짜…)은 이미 듣고 있는 같은 문서(prd_system/settings) 듣기로 바뀌면 곧바로 다시 읽음 — 예전 5분마다 다시 읽기는 30분 받침으로만 · 이 PC 설정 칸에 글을 쓰는 중이면 쓰는 칸을 덮지 않게 끝난 뒤(3초 뒤 다시 봄) */
     { let first = true, tm = null; window.__rnSetSnap = (d) => { if (first) { first = false; return; } if (d && d.metadata && d.metadata.hasPendingWrites) return; clearTimeout(tm); const go = () => { const a = document.activeElement; if (a && a.closest && a.closest('#rnp') && /INPUT|SELECT|TEXTAREA/.test(a.tagName)) { tm = setTimeout(go, 3000); return; } loadSettings().then(engineSwitch).catch(() => {}); }; tm = setTimeout(go, 800); }; }
-    watchPcs(); await refreshResume(); versionWatch(); ctlWatch();
+    watchPcs(); await refreshResume(); versionWatch(); ctlWatch(); wwWatch();
     publishStatus({ running: null });
     ui('대기 중', 0, 0, '', resumeKey ? '멈춘 작업이 있습니다. 위의 이어하기를 누르세요' : '처음이라면: 등록 파일 가져오기 → 상품 일괄 수집 → 이미지');
     log(`준비됨 · 수집기 ${VER} · 파서 ${P.VERSION}`, 0);

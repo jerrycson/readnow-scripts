@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.210의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.211의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.210' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.210', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.211' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.211', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -130,6 +130,7 @@ window.__rnCloseTab = async (tb) => { if (!tb) return true; try { tb.close(); } 
       L('네이버 로그인 상태가 풀려 있습니다. 새로 열린 창에서 네이버에 로그인해 주세요 ("로그인 상태 유지"를 켜면 다음부터 자동). 로그인하면 수집이 이어집니다 (최대 30분 기다림)', 'err');
       GM_setValue('rnu-need-naver', Date.now()); /* (정범님 10/26) 알림(GM_notification)은 보내지 않음 — 네이버 로그인 자체가 풀린 때만 이 PC 화면에 네이버 창을 띄우고(사람 손 없이는 안 되는 일) 기록에 남김 */
       try { if (window.firebase && firebase.apps.length && firebase.auth().currentUser) firebase.firestore().collection('rn_status').doc('needlogin_' + ((window.__rnPcName && window.__rnPcName.get()) || 'pc')).set({ need: 'naver', pcName: (window.__rnPcName && window.__rnPcName.get()) || '', at: Date.now() }, { merge: true }).catch(() => {}); } catch (e) {}
+      try { window.__rnWorkShow && window.__rnWorkShow('네이버 로그인이 풀려 사람이 로그인해야 함'); } catch (e) {} /* (11/05) 🪟 작업 창에서 일하던 중이면 그 창을 화면 앞으로(숨은 창에 열린 네이버 탭을 사람이 보게) */
       tab = GM_openInTab(NAVER_URL(ret), { active: true, insert: true });
       for (let i = 0; i < 180; i++) { await new Promise((r) => setTimeout(r, 10000)); if (stopped && stopped()) break; if (await isLoggedIn()) { ok = true; break; } }
       await window.__rnCloseTab(tab);
@@ -430,6 +431,38 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const onRemote = (v) => { v = !!v; if (v === window.__rnPaused) return; window.__rnPaused = v; if (v) { stopHere(); window.__rnLog && window.__rnLog('수집기', 'warn', '■ 다른 탭에서 일시정지를 눌렀습니다 — 이 탭의 작업도 지금 항목까지 저장하고 멈춤'); } else window.__rnLog && window.__rnLog('수집기', 'info', '▶ 다른 탭에서 다시 시작을 눌렀습니다 (일시정지 풀림)'); changed(); };
   try { if (typeof GM_addValueChangeListener === 'function') GM_addValueChangeListener('rnu-paused', (k, o, n, remote) => { if (remote) onRemote(n); }); else throw 0; } catch (e) { setInterval(() => onRemote(GM_getValue('rnu-paused', false)), 3000); }
 })();
+/* (정범님 11/05 · 보고서 2026-11-05 ④안) 🪟 수집 작업 창 — 같은 크롬·같은 로그인 안에 PC 도우미(인쇄 도우미의 readnow-work.js)가 '리드나우 작업 창'을 하나 열어 화면 밖·작업 표시줄 밖에 둠
+ *  이 PC가 웹앱 🧭 관리도구 › 🪟 수집 작업 창에서 켜져 있으면(GM rn-work-cfg.on — 수집기가 crm_system/work_win을 읽어 맞춤 · 기본 꺼짐):
+ *   · 작업 창의 탭(도우미가 주소 끝 #rnWork로 연 탭 — 이 탭의 sessionStorage rn-w에 기억 · 주소의 표시는 바로 지움)만 이 PC의 수집기(지도자)가 됨
+ *   · 사람이 연 알라딘 탭은 수집을 맡지 않음(화면 기능만) — 지도자였으면 지금 일을 마친 뒤(쉬는 사이) 작업 창에 넘김
+ *   · 작업 창을 닫거나 3분 넘게 신호가 없으면 예전처럼 사람 탭이 이어받음(지우지 않은 옛 길 = 언제든 되돌리기) · 꺼 두면 모든 탭이 예전과 똑같음
+ *  작업 창 탭은 5초마다 GM rnu-work{tab,at}을 적고, 30초마다 PC 도우미(127.0.0.1:8898/work/beat)에 살아 있음·지금 하는 일·기록 끝을 알림(도우미의 '수집 상태' 창이 보여 줌 · 10분 무응답이면 도우미가 다시 엶)
+ *  머리(@match·@grant·@connect)는 그대로 — 127.0.0.1은 이미 @connect에 있음 */
+(function rnWork() {
+  const TOP = window.top === window; const AL = /(^|\.)aladin\.co\.kr$/i.test(location.hostname); const CK = 'rn-work-cfg', BK = 'rnu-work'; let mark = false;
+  try { if (TOP && AL && /\/scm\//i.test(location.pathname)) { if (/(^#|[#&])rnWork\b/.test(location.hash)) { sessionStorage.setItem('rn-w', '1'); try { history.replaceState(history.state, '', location.href.replace(/#.*$/, '')); } catch (e) {} } mark = sessionStorage.getItem('rn-w') === '1'; } } catch (e) {}
+  const cfg = () => { try { const v = GM_getValue(CK, null); return v && typeof v === 'object' ? v : { on: false }; } catch (e) { return { on: false }; } };
+  const on = () => !!cfg().on;
+  const H = 'http://127.0.0.1:8898';
+  const call = (p, body, ms) => new Promise((res) => { try { GM_xmlhttpRequest({ method: body === undefined ? 'GET' : 'POST', url: H + p, headers: { 'X-RN-Work': '1', 'Content-Type': 'application/json' }, data: body === undefined ? undefined : JSON.stringify(body || {}), anonymous: true, timeout: ms || 15000,
+    onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {} res(j && typeof j === 'object' ? { ...j, _st: r.status } : { ok: false, _st: r.status, err: r.status === 404 ? '도우미에 작업 창 기능이 없음(옛 판)' : '도우미 응답 ' + r.status }); },
+    onerror: () => res({ ok: false, nohelper: true, err: '이 PC 도우미(127.0.0.1:8898)에 닿지 못함' }), ontimeout: () => res({ ok: false, nohelper: true, err: '도우미 응답 시간 초과' }) }); } catch (e) { res({ ok: false, nohelper: true, err: e.message }); } });
+  /* 다른 탭(같은 PC)의 작업 창이 살아 있나 — 3분(백그라운드 탭의 타이머가 1분까지 늦춰져도 넉넉히) · 근거: 없음, 설정으로 바꿈(rn-work-cfg.aliveMin) */
+  const alive = (me) => { if (!on()) return null; try { const v = GM_getValue(BK, null); const lim = Math.max(1, Math.min(10, +cfg().aliveMin || 3)) * 60000; return v && v.tab && v.tab !== me && Date.now() - (+v.at || 0) < lim ? v : null; } catch (e) { return null; } };
+  const TITLE = '🪟 리드나우 작업 창';
+  const W = (window.__rnWork = { mark, on, cfg, call, alive, TITLE, isWork: () => mark && on(), show: (why) => call('/work/show', { why: String(why || '').slice(0, 200), pc: (window.__rnPcName && window.__rnPcName.get()) || '' }) });
+  window.__rnWorkShow = (why) => { if (!W.isWork() && !alive(window.__rnTab)) return Promise.resolve(null); try { window.__rnLog && window.__rnLog('수집기', 'warn', `🪟 사람 손이 필요한 일 — 작업 창을 화면 앞으로 꺼냄 (${why || ''})`); } catch (e) {} return W.show(why); };
+  if (!mark) return;
+  /* 작업 창 탭: 창 제목에 표시(도우미가 이 글로 창을 찾음) · 5초 GM 신호 · 30초 도우미 신호 */
+  const title = () => { try { if (W.isWork() && !String(document.title || '').startsWith(TITLE)) document.title = TITLE + ' · ' + String(document.title || '').replace(/^🪟 리드나우 작업 창 · /, ''); } catch (e) {} };
+  const gmBeat = () => { if (!W.isWork()) return; try { GM_setValue(BK, { tab: window.__rnTab || null, at: Date.now(), role: window.__rnRole ? window.__rnRole() : null }); } catch (e) {} title(); hBeat().catch(() => {}); /* 도우미 신호는 25초에 한 번(켜자마자 곧) */ };
+  let hbAt = 0; const hBeat = async () => { if (!W.isWork() || Date.now() - hbAt < 25000) return; hbAt = Date.now(); let now = null; try { now = window.__rnWorkNow ? window.__rnWorkNow() : null; } catch (e) {}
+    const lines = (() => { try { return (window.__rnLogTail ? window.__rnLogTail(15) : []).map((e) => ({ t: e.t, l: e.l, m: e.m, x: String(e.x || '').slice(0, 300) })); } catch (e) { return []; } })();
+    const r = await call('/work/beat', { pc: (window.__rnPcName && window.__rnPcName.get()) || '', tab: window.__rnTab || null, role: window.__rnRole ? window.__rnRole() : null, ver: (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '', page: location.pathname.split('/').pop(), paused: !!window.__rnPaused, now, lines }, 10000);
+    W.last = { at: Date.now(), ok: !!(r && r.ok), err: r && !r.ok ? r.err : null }; };
+  setInterval(gmBeat, 5000); setInterval(() => { hBeat().catch(() => {}); }, 30000); setTimeout(gmBeat, 300); setTimeout(() => { hBeat().catch(() => {}); }, 4000);
+  addEventListener('pagehide', () => { try { const v = GM_getValue(BK, null); if (v && v.tab === window.__rnTab) GM_deleteValue(BK); } catch (e) {} });
+})();
 /* (1.56.0) 한 PC에 수집기 하나 — 같은 PC(같은 브라우저)에서 수집기 화면(주문조회·판매관리·상품 조회)을 여러 탭·창으로 열어도 '일하는 수집기'는 한 탭뿐
  *  · 먼저 열린 탭 = 이 PC의 수집기(lead): 매일 자동 수집·웹앱 요청·맡긴 일(등록·송장·시장 지표)·이어가기를 모두 맡음
  *  · 나중에 열린 탭 = 쉬는 탭(follow): 관제판·기록 창이 접힌 채로 뜨고, 어떤 작업도 저절로 시작하지 않음. 머리줄 아래 옅은 띠에 '이미 이 PC에서 수집기가 일하는 중'을 표시
@@ -438,15 +471,18 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
  *  고르는 방법: 브라우저의 Web Locks('rn-collector-lead' — 탭이 닫히거나 멈추면 브라우저가 저절로 풀어 줌). 없는 브라우저면 GM 값 심장박동(5초, 15초 조용하면 넘겨받음)
  *  안전한 새로고침(새 탭을 열고 옛 탭을 닫음)으로 열린 새 탭은 '이어받을 탭(heir)'으로 표시해, 다른 쉬는 탭이 아니라 그 탭이 수집기를 이어받음 */
 (function rnRole() {
-  const PANEL = (window.top === window && /\/scm\/(worders|worder_preparatory_complete|wrecord_edit)\.aspx/i.test(location.pathname)) || !!globalThis.__rnPubHome;
+  const W = window.__rnWork || null; const IS_WORK = !!(W && W.mark); /* (정범님 11/05) 🪟 작업 창 탭 — 켜져 있으면 이 탭만 수집기가 되고 사람 탭은 넘김(위 rnWork) */
+  const PANEL = (window.top === window && /\/scm\/(worders|worder_preparatory_complete|wrecord_edit)\.aspx/i.test(location.pathname)) || !!globalThis.__rnPubHome || IS_WORK;
   const ME = window.__rnTab || Math.random().toString(36).slice(2, 8); window.__rnTab = ME;
-  const PAGE = location.pathname.split('/').pop();
+  const PAGE = location.pathname.split('/').pop(); const PG = () => (IS_WORK && W.on() ? 'rnWork' : PAGE);
   const LK = 'rn-collector-lead', GK = 'rnu-lead', HK = 'rnu-lead-heir';
+  /* 사람 탭이 비켜야 하나 — 작업 창 모드가 켜져 있고 다른 탭(작업 창)이 살아 있음 · 작업 창 탭 자신은 비키지 않음 */
+  const workOther = () => (!IS_WORK && W && W.alive ? W.alive(ME) : null);
   let role = PANEL ? 'wait' : 'other'; let release = null; let beatT = null; let readyRes; const subs = [];
   window.__rnRoleReady = new Promise((r) => (readyRes = r)); if (!PANEL) readyRes();
   const L = (lv, m) => { try { window.__rnLog && window.__rnLog('수집기', lv, m); } catch (e) {} };
   const fire = () => { readyRes(); subs.forEach((f) => { try { f(role); } catch (e) {} }); try { window.__rnCtlDraw && window.__rnCtlDraw(); } catch (e) {} };
-  window.__rnPageName = (p) => (/worders/i.test(p || '') ? '주문조회' : /wrecord_edit/i.test(p || '') ? '상품 조회' : /preparatory/i.test(p || '') ? '판매관리' : p || '다른 화면');
+  window.__rnPageName = (p) => (/^rnWork$/.test(p || '') ? '🪟 작업 창' : /worders/i.test(p || '') ? '주문조회' : /wrecord_edit/i.test(p || '') ? '상품 조회' : /preparatory/i.test(p || '') ? '판매관리' : p || '다른 화면');
   window.__rnRole = () => role;
   window.__rnRoleOn = (f) => subs.push(f);
   window.__rnLead = () => { const v = GM_getValue(GK, null); return v && Date.now() - (v.at || 0) < 20000 ? v : null; };
@@ -456,7 +492,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    *  그 뒤 연 수집기 탭 넷이 모두 '이미 일하는 중'으로 쉬었고 7시간 넘게 이 PC 신호(pcBeat)·자동 일이 멈췄음. 쉬는 탭이 수집기 탭의 심장박동(rnu-lead · 5초, 백그라운드에서도 1분 안)을 1분마다 보고,
    *  15분 넘게 그대로인 것을 이 탭이 쉬지 않고 깨어 있는 3분 동안 거듭 확인하면(PC 잠자기에서 막 깬 때는 건너뜀) Web Lock을 넘겨받음(steal). 얼었던 탭이 깨어나면 다른 탭의 새 심장박동을 보고 스스로 쉬는 탭으로 물러남 */
   const lostLead = () => { const v = GM_getValue(GK, null); return v && v.tab !== ME && v.since && Date.now() - (v.at || 0) < 90000 && v.since > (window.__rnLeadSince || 0) ? v : null; }; /* 나보다 나중에 수집기가 된 다른 탭이 지금 뛰고 있으면 = 내 Web Lock은 넘겨짐 */
-  const beat = () => { if (role === 'lead') { try { const o = lostLead(); if (o) return stepDown(o); GM_setValue(GK, { tab: ME, page: PAGE, at: Date.now(), since: window.__rnLeadSince || Date.now() }); } catch (e) {} } };
+  const beat = () => { if (role === 'lead') { try { const o = lostLead(); if (o) return stepDown(o); GM_setValue(GK, { tab: ME, page: PG(), at: Date.now(), since: window.__rnLeadSince || Date.now() }); } catch (e) {} } };
   let stepDown = () => {};
   const heirOther = () => { const h = GM_getValue(HK, null); return h && h.tab !== ME && Date.now() - (h.at || 0) < 3 * 60000 ? h : null; };
   const setLead = (how) => { role = 'lead'; window.__rnLeadSince = Date.now(); const h = GM_getValue(HK, null); if (h && h.tab === ME) GM_deleteValue(HK); beat(); clearInterval(beatT); beatT = setInterval(beat, 5000);
@@ -480,7 +516,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   if (!PANEL) return;
   const hold = () => new Promise((res) => { release = res; });
   // 넘겨받을 차례가 됐는데 이어받을 탭(heir)이 따로 있으면, 그 탭에 양보하고 다시 줄을 섬
-  let qAc = null; const queue = () => navigator.locks.request(LK, (() => { try { qAc = new AbortController(); return { signal: qAc.signal }; } catch (e) { qAc = null; return {}; } })(), () => { if (heirOther()) { setTimeout(queue, 1500); return null; } setLead('promote'); return hold(); }).catch(() => {});
+  let qAc = null; const queue = () => navigator.locks.request(LK, (() => { try { qAc = new AbortController(); return { signal: qAc.signal }; } catch (e) { qAc = null; return {}; } })(), () => { if (heirOther() || workOther()) { setTimeout(queue, 1500); return null; } setLead('promote'); return hold(); }).catch(() => {});
   let stealT = null, seen = null; const STALE = 5 * 60000; /* (1.89.173 정범님 11/01 '팝업으로 멈추면 다른 곳에선 알 길이 없음') 15분 → 5분 — 알라딘 팝업 등으로 일하는 탭이 얼면 쉬는 탭이 더 빨리 넘겨받음(확인 2분) · 백그라운드 탭도 심장박동은 1분 안이라 5분이면 충분 */
   const stealChk = () => { if (role !== 'follow') { seen = null; return; } const now = Date.now(); const v = GM_getValue(GK, null);
     if (!v || !v.at || now - v.at < STALE || heirOther() || (seen && now - seen.tick > 150000)) { seen = null; if (v && v.at && now - v.at >= STALE) seen = { at: v.at, t0: now, tick: now }; return; }
@@ -492,14 +528,22 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     L('warn', `🧊 이 탭이 얼어 있던 사이 다른 탭(${window.__rnPageName(o.page)})이 수집기를 넘겨받았습니다 — 이 탭은 하던 일을 지금 항목까지 저장하고 쉬는 탭으로 물러납니다`); fire(); queue(); watchLead(); };
   const viaGM = () => { // Web Locks가 없는 브라우저: 심장박동
     const tick = () => { if (role === 'lead') return beat(); if (role === 'leaving') return; const v = GM_getValue(GK, null); const fresh = v && v.tab !== ME && Date.now() - (v.at || 0) < 15000;
-      if (!fresh && !heirOther()) { GM_setValue(GK, { tab: ME, page: PAGE, at: Date.now() }); setTimeout(() => { const w = GM_getValue(GK, null); if (w && w.tab === ME) setLead(role === 'wait' ? 'first' : 'promote'); else if (role === 'wait') setFollow(); }, 800); }
+      if (!fresh && !heirOther() && !workOther()) { GM_setValue(GK, { tab: ME, page: PG(), at: Date.now() }); setTimeout(() => { const w = GM_getValue(GK, null); if (w && w.tab === ME) setLead(role === 'wait' ? 'first' : 'promote'); else if (role === 'wait') setFollow(); }, 800); }
       else if (role === 'wait') setFollow(); };
     tick(); setInterval(tick, 5000); };
   try {
     if (!navigator.locks || !navigator.locks.request) throw 0;
-    navigator.locks.request(LK, { ifAvailable: true }, (lk) => { if (!lk || heirOther()) { setFollow(); queue(); watchLead(); return null; } setLead('first'); return hold(); }).catch(() => { if (role === 'wait') viaGM(); }); /* (1.89.120) 이미 정해진 뒤의 거절(넘겨받기로 Web Lock을 뺏김 = AbortError)에는 심장박동 방식으로 바꾸지 않음 — 바꾸면 두 탭이 번갈아 수집기가 됨 */
+    navigator.locks.request(LK, { ifAvailable: true }, (lk) => { if (!lk || heirOther() || workOther()) { setFollow(); queue(); watchLead(); return null; } setLead('first'); return hold(); }).catch(() => { if (role === 'wait') viaGM(); }); /* (1.89.120) 이미 정해진 뒤의 거절(넘겨받기로 Web Lock을 뺏김 = AbortError)에는 심장박동 방식으로 바꾸지 않음 — 바꾸면 두 탭이 번갈아 수집기가 됨 */
   } catch (e) { viaGM(); }
   setTimeout(() => { if (role === 'wait') { L('warn', '수집기 탭 정하기가 5초 안에 끝나지 않아 심장박동 방식으로 바꿉니다'); viaGM(); } }, 5000);
+  /* (정범님 11/05) 🪟 사람 탭이 수집기(지도자)인데 이 PC의 작업 창이 살아 있으면 — 하던 일이 없을 때(쉬는 사이) 작업 창에 넘기고 쉬는 탭으로 물러남(줄은 다시 섬 · 작업 창이 닫히면 이 탭이 이어받음)
+   *  하던 일 중이면 끊지 않고 기다림(기록 한 번) · 쉬는 탭이 켜 둔 탭(force)·떠나는 탭은 건드리지 않음 */
+  if (!IS_WORK) { let waitNoted = 0; setInterval(() => { try { if (role !== 'lead' || window.__rnReloading) return; const w = workOther(); if (!w) { waitNoted = 0; return; }
+    const busy = (window.__rnPrd && window.__rnPrd.busy && window.__rnPrd.busy()) || (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy());
+    if (busy) { if (!waitNoted) { waitNoted = 1; L('info', '🪟 이 PC의 작업 창이 열려 있음 — 지금 하는 일을 마치면 수집을 작업 창에 넘깁니다'); } return; }
+    clearInterval(beatT); role = 'follow'; try { const v = GM_getValue(GK, null); if (v && v.tab === ME) GM_deleteValue(GK); } catch (e) {} const r0 = release; release = null; if (r0) { try { r0(); } catch (e) {} }
+    L('ok', '🪟 수집을 이 PC의 작업 창에 넘겼습니다 — 이 탭은 화면 기능만 합니다 (작업 창을 닫거나 작업 창 모드를 끄면 이 탭이 다시 이어받음)'); fire(); setTimeout(() => { try { if (navigator.locks && navigator.locks.request) { queue(); watchLead(); } } catch (e) {} }, 1500); } catch (e) {} }, 10000); }
+  window.__rnWorkInfo = () => ({ isWork: IS_WORK, on: !!(W && W.on()), role, other: workOther() });
 })();
 (function rnPcName() {
   const keys = () => { let n = null; try { n = GM_getValue('rnu-pcname', null) || GM_getValue('pcName', null) || (GM_getValue('rn-pc', {}) || {}).name || localStorage.getItem('rnu-pcname'); } catch (e) {} return n && String(n).trim() ? String(n).trim() : null; };
