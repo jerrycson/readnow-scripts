@@ -1278,7 +1278,10 @@ let shipCoreC = null, shipCoreT = null;
 function shipCoreNode() { const t = coreGood['readnow-shipping-core.js']; if (!t) return null; if (shipCoreC && shipCoreT === t) return shipCoreC; const m = { exports: {} }; try { vm.runInNewContext(t, { module: m, exports: m.exports, console, Date, JSON, Math, Intl, globalThis: {} }, { filename: 'readnow-shipping-core.js', timeout: 3000 }); } catch (e) { log('출고 공용 파일을 노드에서 못 엶', e.message); return null; } shipCoreC = m.exports; shipCoreT = t; return shipCoreC; }
 const wonT = (n) => Math.round(+n || 0).toLocaleString('ko-KR') + '원';
 /* (0.13.3) 받는 기기 = 웹앱에서 '이 기기에서 알림 받기'로 등록한 기기 모두(관리자 설정 아님) · 기기마다 종류(kind: ship 출고 · logger 로거)를 끌 수 있음(subs[이름].kinds[kind] === false) · names를 주면 그 안에서만 */
-async function pushSend(names, payload, kind) { const K = await pushKeys(); if (!K) return { err: '열쇠 없음' }; const D = (await C('app_settings').doc('push_subs').get()).data() || {}; const subs = D.subs || {}; const list = (names && names.length ? names : Object.keys(subs)).filter((n) => subs[n] && subs[n].sub && !(kind && subs[n].kinds && subs[n].kinds[kind] === false)); const res = {};
+/* (정범님 11/05 '휴대폰 웹앱 알림에서 주문 발생 알림은 꺼 줘 — 기본 끔 · 설정에서 다시 켜기 · 그 주문을 자동 처리 혹은 관리자 검토 사항만') 기본 끔 종류 — 기기가 웹앱 ⚙ 🔔 출고 알림 › 알림 받는 기기에서 이번 바뀜 뒤에 직접 켠 것(subs[이름].kOn[종류] = 켠 시각)만 받음 · 예전 kinds[종류] 값(켬·안 정함)은 보지 않음(이번 한 번 모두 끔으로) */
+const PUSH_OFF_DEF = new Set(['y24']); /* y24 = 🛎 주문 발생(예스24 새 주문) */
+const pushKindOn = (v, kind) => (!kind ? true : PUSH_OFF_DEF.has(kind) ? !!(v.kOn && v.kOn[kind]) : !(v.kinds && v.kinds[kind] === false));
+async function pushSend(names, payload, kind) { const K = await pushKeys(); if (!K) return { err: '열쇠 없음' }; const D = (await C('app_settings').doc('push_subs').get()).data() || {}; const subs = D.subs || {}; const list = (names && names.length ? names : Object.keys(subs)).filter((n) => subs[n] && subs[n].sub && pushKindOn(subs[n], kind)); const res = {};
   for (const n of list) { try { await webpush.sendNotification(subs[n].sub, JSON.stringify(payload), { TTL: 6 * 3600, urgency: 'high' }); res[n] = 'ok'; } catch (e) { res[n] = `실패 ${e.statusCode || ''} ${String(e.body || e.message || '').slice(0, 80)}`; if (e.statusCode === 404 || e.statusCode === 410) await C('app_settings').doc('push_subs').set({ subs: { [n]: { gone: nowIso(), sub: FV.delete() } } }, { merge: true }).catch(() => {}); } } /* (0.13.2 자동 점검) 끊긴 구독은 sub를 지움 — 예전엔 sub가 남아 매번 그 기기에 다시 보냄 */
   return res; }
 /* (정범님 10/27 15:12) '발송요청 확정' 알림 본문 — '리드나우 발송요청 확정' 아래는 다음만(주문번호도 빼고): ① 주문 총액 ② 주문 상품 중 가장 비싼 상품의 상품명·상태·가격 ③ 유효 최저가와 몇 퍼센트 차이
@@ -1329,7 +1332,8 @@ async function qnaPushTick() { if (!webpush || Date.now() - qnaPushAt < 60e3) re
   return out.length ? { sent: out } : null; }
 /* ══════════ 🟦 (정범님 11/04) 예스24 주문 — 수집기가 올린 예스24 판매관리 응답(crm_y24_raw) 중 주문 목록을 출고 공용 파일(y24OrdParse·y24OrdGroup·y24OrdMerge — 웹앱과 같은 함수)로 풀어 crm_y24_orders
  *  · 새 응답만(app_settings/y24_ord_state.cloudRawAt 뒤) · 90초에 한 번 · 같은 응답을 웹앱이 먼저 풀었어도 같은 결과(바뀐 것이 없으면 안 씀) · 사람 기록(man·alStop·mkt·log)은 건드리지 않음
- *  · 휴대폰 알림: 처음 본 지 6시간 안 · 아직 처리 전(새 주문·발송 대기)인 주문마다 한 번(y24_push/{주문번호}로 겹침 막음) · 종류 'y24'(기기마다 끌 수 있음) · 끄기 app_settings/y24_notify.on = false · 예스24 전체 끄기(platforms.y24.off)면 안 함 */
+ *  · 휴대폰 알림: 처음 본 지 6시간 안 · 아직 처리 전(새 주문·발송 대기)인 주문마다 한 번(y24_push/{주문번호}로 겹침 막음) · 종류 'y24' = 🛎 주문 발생 — (정범님 11/05) 기본 끔 · 기기에서 켠 것만(PUSH_OFF_DEF)
+ *  · (정범님 11/05) 대신 🤖 예스24 자동 처리가 끝나면(auto.ack·ship = done) '✅ 자동 주문처리 완료'(종류 autodone) · 멈추면(fail·unsure·hold·gone) '🔎 관리자 검토 필요'(종류 autorev) — 알라딘 자동 발송요청 알림과 같은 종류 · 일(접수확인·발송처리)·차례(seq)·결과마다 한 번(y24_push/{주문번호}~{일}~{차례}~{done|rev}) · 끝난 지 6시간 안 것만 · 끄기 app_settings/y24_notify.on = false · 예스24 전체 끄기(platforms.y24.off)면 안 함 */
 let y24oTickAt = 0;
 async function y24OrdTick() { if (Date.now() - y24oTickAt < 90e3) return null; y24oTickAt = Date.now(); const SH = shipCoreNode(); if (!SH || !SH.y24OrdParse) return null;
   const pf = (await C('app_settings').doc('platforms').get()).data() || {}; if ((pf.y24 || {}).off) return null;
@@ -1340,12 +1344,23 @@ async function y24OrdTick() { if (Date.now() - y24oTickAt < 90e3) return null; y
   for (const w of want) { let body = ''; for (let i = 0; i < (+w.parts || 1); i++) { const d = (await C('crm_y24_raw').doc(i ? w.id + '_' + i : w.id).get()).data(); body += (d && d.body) || ''; } const P = SH.y24OrdParse(w.sig, body, w.at); out.raws++;
     for (const o of SH.y24OrdGroup(P)) { const ref = C('crm_y24_orders').doc(String(o.orderNo)); const prev = (await ref.get()).data() || null; const D = SH.y24OrdMerge(prev, o, { at: w.at, kind: P.kind }); if (D) { await ref.set({ ...D, scanBy: 'cloud', uploadedAt: FV.serverTimestamp() }, { merge: true }); out.wrote++; } } }
   await sref.set({ cloudRawAt: maxAt, cloudAt: nowIso(), cloudLast: out }, { merge: true });
-  const ncfg = (await C('app_settings').doc('y24_notify').get()).data() || {}; if (ncfg.on !== false && webpush) { const cut = new Date(Date.now() - 6 * 3600e3).toISOString(); const os = await C('crm_y24_orders').where('firstSeenAt', '>=', cut).get();
-    for (const d of os.docs) { const v = d.data() || {}; if (!['new', 'deliv', null, undefined].includes(v.ystage)) continue; const M = v.man || {}; if ((M.inv && !M.inv.undo) || (M.out && !M.out.undo) || (M.old && !M.old.undo)) continue; /* (11/04) 📁 예전 주문으로 닫은 것은 알리지 않음 */ const pref = C('y24_push').doc(String(v.orderNo || d.id));
+  const ncfg = (await C('app_settings').doc('y24_notify').get()).data() || {}; if (ncfg.on !== false && webpush) { const cut = new Date(Date.now() - 6 * 3600e3).toISOString(); const os = await C('crm_y24_orders').where('firstSeenAt', '>=', new Date(Date.now() - 3 * 864e5).toISOString()).get(); /* (11/05) 자동 처리 결과 알림 때문에 3일 안 주문까지 봄(주문 발생 알림은 그대로 6시간 안) */
+    for (const d of os.docs) { const v = d.data() || {}; try { out.push += await y24AutoPush(d.id, v, cut); } catch (e) { log('🟦 예스24 자동 처리 알림 실패', d.id, e.message); } }
+    for (const d of os.docs) { const v = d.data() || {}; if (String(v.firstSeenAt || '') < cut) continue; if (!['new', 'deliv', null, undefined].includes(v.ystage)) continue; const M = v.man || {}; if ((M.inv && !M.inv.undo) || (M.out && !M.out.undo) || (M.old && !M.old.undo)) continue; /* (11/04) 📁 예전 주문으로 닫은 것은 알리지 않음 */ const pref = C('y24_push').doc(String(v.orderNo || d.id));
       try { await pref.create({ state: 'sending', at: nowIso(), by: 'cloud', ver: VER }); } catch (e) { continue; } const its = v.items || []; const n = its.reduce((a, x) => a + (+x.qty || 1), 0); const amt = its.reduce((a, x) => a + (+x.price || 0) * (+x.qty || 1), 0);
       const p = { title: `🟦 예스24 새 주문${its[0] && its[0].title ? ' · ' + String(its[0].title).slice(0, 28) : ''}`, body: `${n}권${amt ? ' · ' + wonT(amt) : ''}${its.length > 1 ? ` (상품 ${its.length}개)` : ''} — 예스24에서 접수확인 · 같은 책 알라딘 판매중지 확인 · 누르면 출고 🟦 예스24`, tag: 'rn-y24-' + (v.orderNo || d.id), url: './?go=y24ord', sticky: true };
       let r; try { r = await pushSend(null, p, 'y24'); } catch (e) { r = { err: e.message }; } await pref.set({ state: 'sent', sentAt: nowIso(), res: r }, { merge: true }).catch(() => {}); out.push++; log('🟦 예스24 새 주문 알림', v.orderNo || d.id); } }
   return out.raws || out.push ? out : null; }
+/* (정범님 11/05) 🟦 예스24 주문 — 🤖 자동 처리 결과 알림 · 끝(done) → ✅ 자동 주문처리 완료(autodone) · 멈춤(fail·unsure·hold·gone) → 🔎 관리자 검토 필요(autorev) · 결과가 난 지 6시간 안 것만 · 같은 일·차례·결과는 한 번(트랜잭션 없이 create로 겹침 막음) */
+const Y24_AK = { ack: '주문접수확인', ship: '발송처리' }; const Y24_REV = { fail: '멈춤', unsure: '눌렀지만 바뀐 것을 확인 못 함', hold: '멈춤(사람이 짝을 골라야 함)', gone: '예스24 목록에 없음' };
+async function y24AutoPush(id, v, cut) { const A = v.auto || {}; const ono = String(v.orderNo || id); let n = 0;
+  for (const k of ['ack', 'ship']) { const a = A[k]; if (!a || !a.state) continue; const grp = a.state === 'done' ? 'done' : Y24_REV[a.state] ? 'rev' : null; if (!grp) continue; const t = String(a.endAt || a.at || ''); if (!t || t < cut) continue;
+    const pref = C('y24_push').doc(`${ono}~${k}~${+a.seq || 0}~${grp}`); try { await pref.create({ state: 'sending', at: nowIso(), by: 'cloud', ver: VER, kind: k, st: a.state }); } catch (e) { continue; }
+    const its = v.items || []; const amt = its.reduce((s0, x) => s0 + (+x.price || 0) * (+x.qty || 1), 0); const top = its.reduce((m, x) => (!m || (+x.price || 0) > (+m.price || 0) ? x : m), null); const topT = top ? `「${String(top.title || '').slice(0, 36)}」 ${wonT(top.price)}` : '';
+    const p = grp === 'done' ? { title: `✅ 예스24 자동 주문처리 완료 · ${Y24_AK[k]}${amt ? ' · 총 ' + wonT(amt) : ''}`, body: `${topT ? '대표 ' + topT + ' · ' : ''}주문 ${ono}${k === 'ack' ? ' — 접수확인 끝(송장을 기다림)' : ' — 발송처리 끝'}`, tag: `rn-y24auto-${ono}-${k}`, url: './?go=y24ord' }
+      : { title: `🔎 관리자 검토 필요 · 예스24 ${Y24_AK[k]}${amt ? ' · 총 ' + wonT(amt) : ''}`, body: `🤖 ${Y24_REV[a.state]}${a.msg || a.why ? ': ' + String(a.msg || a.why).slice(0, 70) : ''}${topT ? ' · 대표 ' + topT : ''} · 주문 ${ono} — 오늘 출고 카드에서 확인`, tag: `rn-y24rev-${ono}-${k}`, url: './?go=y24ord', sticky: true };
+    let r; try { r = await pushSend(null, p, grp === 'done' ? 'autodone' : 'autorev'); } catch (e) { r = { err: e.message }; } await pref.set({ state: 'sent', sentAt: nowIso(), res: r }, { merge: true }).catch(() => {}); n++; log(grp === 'done' ? '🟦 예스24 자동 처리 완료 알림' : '🟦 예스24 검토 필요 알림', ono, k, a.state); }
+  return n; }
 /* (정범님 11/04 '예스24에 이미 매물이 있는데 왜 참고값 없음?') 🟦 예스24 주문 카드의 예스24 중고 시장 — 웹앱이 주문 기록에 hubReq를 남기면 공개 허브 화면(/Product/UsedShopHub/Hub/{묶음 번호} · 로그인 없음)을 읽어 y24hub[줄]에
  *  묶음 번호 = y24_listings/{예스24 상품번호}.masterNo(가게 읽기가 처음 한 번 남김) → 없으면 그 상품 화면에서 한 번 찾음 · 사람 속도(화면 사이 3~6초) · 한 회차 최대 4화면 · 하루 최대 80화면(근거: 없음, y24_ord_state.hubCap으로 바꿈) · 읽기만 */
 let y24hubAt = 0;
@@ -1701,7 +1716,7 @@ async function loggerWatchTick() { if (!webpush) return null; const ref = C('app
   const day = kstDay(now); const net = ((await C('prd_jobs').doc('net_' + day).get()).data() || {}).pcs || {}; const st = { ...(W0.st || {}) }; const out = [];
   /* (정범님 11/04 '휴대폰이든 pc든 MJ-MAIN의 부재 알림은 그만 · 다른 pc들도 설정에서') 🔕 웹앱 ⚙ 설정 ① 'PC 부재 알림' = logger_watch.absAlert{PC: {on}} · 안 정한 PC는 MJ-MAIN 끔 · 나머지 켬
    *  끈 PC는 신호 없음(down)을 st에 그대로 적되(muted · 상태 표시용) 푸시는 보내지 않고, 돌아와도 '다시 정상' 푸시를 보내지 않음 · 테더링(로거 알라딘 길)은 그대로 */
-  const ABS = W0.absAlert || {}; const absOn = (n) => { const v = ABS[n]; return v && typeof v.on === 'boolean' ? v.on : !['MJ-MAIN'].includes(n); };
+  const ABS = W0.absAlert || {}; const absOn = (n) => { const v = ABS[n]; return !!(v && v.v >= 2 && v.on === true); }; /* (정범님 11/05 'PC 상태 등은 모든 기기 기본 끔') 모든 PC 기본 끔 · 이번 바뀜 뒤 웹앱에서 켠 것(v: 2)만 알림 — 예전에 적힌 값(MJ-MAIN 끔·나머지 켬 시절)은 이번 한 번 끔으로 */
   for (const [name, b] of lg) { const age = now - (b.atMs || 0); const n = net[name] || {}; const h = n.helper || null; const netAge = n.at ? now - Date.parse(n.at) : null;
     let prob = null; if (!b.pubOnly) { if (age > 10 * 60e3) prob = { k: 'down', msg: `🖥 ${name} 수집기가 ${Math.round(age / 60e3)}분째 신호 없음 — PC가 잠들었거나 꺼졌거나, 크롬이 수집기 탭을 멈췄을 수 있음(크롬 메모리 절약) · ${name}에서 알라딘 상품 조회 탭을 새로고침해 주세요` }; } else if (age > 15 * 60e3) prob = { k: 'down', msg: `🌐 로거(${name})가 ${Math.round(age / 60e3)}분째 신호 없음 — PC·공개 수집 크롬이 꺼졌거나 멈췄을 수 있음(로거 PC 확인)` };
     else if (b.gate && b.gate.ok === false) prob = { k: 'tether', msg: `📱 로거(${name}) 알라딘 길 막힘 — ${b.gate.why || '테더링 확인 안 됨'} · 휴대폰 USB 테더링·도우미(http://127.0.0.1:8899)를 확인해 주세요(그동안 알라딘 일은 안전하게 멈춤)` };
