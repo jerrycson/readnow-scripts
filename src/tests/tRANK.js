@@ -13,7 +13,9 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
   const sale = (d, price, cash) => { k++; const id = (cash ? 'cash_' : 'aladin_') + 'R' + k; S.orders.set(id, { id, orderNo: 'R' + k, kind: 'sale', platform: cash ? 'cash' : 'aladin', orderedAt: d + 'T09:00:00', shippedAt: d + 'T15:00:00', buyer: { name: '손님A' }, items: [{ title: '시험 책 ' + k, price, qty: 1, lineStatus: 'normal' }] }); };
   sale(bk(5), 30000); sale(bk(4), 50000); sale(bk(4), 10000, true); /* 현금 1만 원 → 그날 6만 원 */ sale(bk(3), 45000); sale(bk(2), 20000); sale(bk(2), 25000); /* 4.5만 원 같음 */ sale(bk(1), 40000);
   S.ship = { orders: [], tabCounts: {}, at: new Date().toISOString() }; S.shipC = { orders: [], at: new Date().toISOString(), enrich: {} }; S.shipCFromCache = false;
-  window.__today = (amt) => { S.shpDays.set(td, { day: td, source: 'tab', readAt: new Date().toISOString(), entries: [{ id: 'aladin_T1', orderNo: 'T1', ex: [], items: [{ title: '오늘 시험 책', price: amt, qty: 1 }] }] }); S.shpDaysV++; S._sdm = null; S.ver = (S.ver || 0) + 1; };
+  window.__today = (amt) => { S.orders.delete('aladin_TP'); S.shpDays.set(td, { day: td, source: 'tab', readAt: new Date().toISOString(), entries: [{ id: 'aladin_T1', orderNo: 'T1', ex: [], items: [{ title: '오늘 시험 책', price: amt, qty: 1 }] }] }); S.shpDaysV++; S._sdm = null; S.ver = (S.ver || 0) + 1; };
+  /* (정범님 11/05 15시) 확정 전 = 오늘 출고별 매출 근거가 아직 확정·배송&구매확정전이 아님(알라딘 발송일만) — 예전 '할 일 남음' 대신 */
+  window.__todayPend = (amt) => { S.shpDays.delete(td); S.orders.set('aladin_TP', { id: 'aladin_TP', orderNo: 'TP', kind: 'sale', platform: 'aladin', orderedAt: td + 'T09:00:00', shippedAt: td + 'T15:00:00', buyer: { name: '손님A' }, items: [{ title: '오늘 시험 책', price: amt, qty: 1, lineStatus: 'normal' }] }); S.shpDaysV++; S._sdm = null; S.ver = (S.ver || 0) + 1; };
   return { td, bk1: bk(1), bk2: bk(2), bk3: bk(3), bk4: bk(4) }; };
 (async () => {
   await H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(500);
@@ -30,9 +32,12 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
       // 꼴찌 갱신 · 많음 · 적음 — 날마다 한 번이므로 '오늘 봄'을 지우고 금액을 바꿔 봄
       const run = async (amt) => { try { localStorage.removeItem('rn-rkfx-seen'); } catch (e) {} __today(amt); openShip(); await Wt(900); const f = fx(); const tt = rankToday(); if (document.getElementById('rkfx')) document.getElementById('rkfx').click(); await Wt(80); close(); await Wt(300); return { f, kind: tt.kind, rank: tt.rank }; };
       o.low = await run(20000); o.up = await run(42000); o.down = await run(35000);
-      // 확정 전(오늘 할 일 남음) — 한 줄·화면 없음 (출고 화면은 열 때 목록을 새로 받으므로 함수로 직접)
+      // (정범님 11/05 15시) 할 일이 남아 있어도(발송 요청에 송장 전 주문) 출고별 매출이 확정이면 확정 — 예전엔 이 경우 안 떠서 실제로 하루 내내 확정이 안 됐음
       try { localStorage.removeItem('rn-rkfx-seen'); } catch (e) {} __today(70000); const ship0 = S.ship; S.ship = { orders: [{ orderNo: 'D-9', buyer: '손님A', orderedAt: D.td + ' 10:00', recipient: { name: '손님A' }, items: [{ listingId: '404935009', title: '아직 보낼 책', price: 7000, qty: 1, sku: 'PNK_ms', grade: '상' }] }], tabCounts: {}, at: new Date().toISOString() }; S._shipRowsC = null;
-      const t2 = rankToday(); o.pend = { done: t2.done, left: t2.left }; o.pendLine = !!rankTodayHtml(); rankFxCheck(); await Wt(600); o.pendFx = fx(); o.pendSeen = localStorage.getItem('rn-rkfx-seen');
+      { const t3 = rankToday(); o.pend2 = { done: t3.done, left: t3.left, line: !!rankTodayHtml() }; }
+      // 확정 전(오늘 묶음 근거가 알라딘 발송일만 — 출고별 매출 확정 전) — 한 줄·화면 없음
+      __todayPend(70000); S.ship = { orders: [], tabCounts: {}, at: new Date().toISOString() }; S._shipRowsC = null;
+      const t2 = rankToday(); o.pend = { done: t2.done, left: t2.left, conf: t2.conf }; o.pendLine = !!rankTodayHtml(); rankFxCheck(); await Wt(600); o.pendFx = fx(); o.pendSeen = localStorage.getItem('rn-rkfx-seen');
       S.ship = { orders: [], tabCounts: {}, at: new Date().toISOString() }; S._shipRowsC = null;
       // ⑤ 끄기 — 1위만 끔
       S.app.rankFx = { k: { top: { off: true } } }; try { localStorage.removeItem('rn-rkfx-seen'); } catch (e) {} __today(70000); openShip(); await Wt(900); o.offTop = fx(); o.offDbg = JSON.stringify([rkfxPrefs(), rankToday() && rankToday().kind, localStorage.getItem('rn-rkfx-seen')]); o.offLine = !!document.getElementById('rk_today'); close(); await Wt(300);
@@ -64,7 +69,8 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
     ok(r.low.kind === 'low' && r.low.f && r.low.f.kind === 'low' && r.low.rank === 6, '꼴찌 갱신 → 응원 화면 (6위/6일)');
     ok(r.up.kind === 'up' && r.up.f && r.up.f.kind === 'up' && r.up.rank === 4, '어제(4만 원)보다 많음(4.2만 원) → 응원 화면 · 4위');
     ok(r.down.kind === 'down' && r.down.f && r.down.f.kind === 'down' && r.down.rank === 5, '어제보다 적음(3.5만 원) → 위로 화면 · 5위');
-    ok(!r.pend.done && r.pend.left > 0 && !r.pendLine && !r.pendFx && !r.pendSeen, `오늘 할 일이 남으면(${r.pend.left}건) 한 줄·화면 없음 ` + JSON.stringify([r.pend, r.pendLine, r.pendFx, r.pendDbg]));
+    ok(r.pend2.done && r.pend2.left > 0 && r.pend2.line, `(11/05 15시) 오늘 할 일이 남아도(${r.pend2.left}건) 출고별 매출이 확정이면 확정 · 한 줄 보임 ` + JSON.stringify(r.pend2));
+    ok(!r.pend.done && !r.pend.conf && !r.pendLine && !r.pendFx && !r.pendSeen, `출고별 매출 확정 전(오늘 근거 알라딘 발송일만)이면 한 줄·화면 없음 ` + JSON.stringify([r.pend, r.pendLine, r.pendFx, r.pendDbg]));
     ok(!r.offTop && r.offLine, '1위 화면만 끄면 안 뜸(한 줄은 그대로) ' + JSON.stringify([r.offTop, r.offLine, r.offDbg])); ok(!r.offAll, '모두 끄면 안 뜸');
     ok(r.setBox, '⚙ 설정 › 🏆 매출 축하·응원 칸'); for (const k of ['top', 'low', 'up', 'down']) ok(r.chips[k] >= 4 && r.samples[k] >= 4, `${k}: 그림 ${r.chips[k]}가지 · 샘플 보기로 ${r.samples[k]}가지 모두 뜸`);
     ok(r.pickV === '2' && /샘플/.test(r.sampleTxt || '') && r.saved.k && r.saved.k.down && r.saved.k.down.v === 2 && !r.savedLocal, '그림 고르기 저장(공용 app_settings/main.rankFx · 이 기기 rn-rkfx 아님) → 샘플 보기가 고른 그림으로: ' + (r.sampleTxt || ''));
@@ -196,7 +202,7 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
       const td = D.td; let q = 0; const sale = (d, price) => { q++; const id = 'aladin_P' + q; S.orders.set(id, { id, orderNo: 'P' + q, kind: 'sale', platform: 'aladin', orderedAt: d + 'T09:00:00', shippedAt: d + 'T15:00:00', buyer: { name: '손님A' }, items: [{ title: '시험 책 ' + q, price, qty: 1, lineStatus: 'normal' }] }); };
       for (let i = 9; i <= 30; i++) sale(rkBack(td, i), 1000); for (let i = 40; i <= 70; i += 3) sale(rkBack(td, i), 500); /* 예전 주·달은 작게 → 가장 최근 끝난 주·달이 1위 */ S.ver++; S._sdm = null;
       // ▶ 오늘 출고 끝까지 — 확정 전이면 '오늘 지금까지' · 더 높은 등급이 되면 한 번 더 · 같은 경우는 하루 한 번
-      __today(42000); const ship0 = S.ship; S.ship = { orders: [{ orderNo: 'D-9', buyer: '손님A', orderedAt: td + ' 10:00', recipient: { name: '손님A' }, items: [{ listingId: '404935009', title: '아직 보낼 책', price: 7000, qty: 1, sku: 'PNK_ms', grade: '상' }] }], tabCounts: {}, at: new Date().toISOString() }; S._shipRowsC = null;
+      __todayPend(42000); const ship0 = S.ship; S.ship = { orders: [{ orderNo: 'D-9', buyer: '손님A', orderedAt: td + ' 10:00', recipient: { name: '손님A' }, items: [{ listingId: '404935009', title: '아직 보낼 책', price: 7000, qty: 1, sku: 'PNK_ms', grade: '상' }] }], tabCounts: {}, at: new Date().toISOString() }; S._shipRowsC = null;
       o.go1r = rkfxOcc('go'); o.go1 = fx(); rankFxClose(); o.go2r = rkfxOcc('go'); S.ship = { orders: [], tabCounts: {}, at: new Date().toISOString() }; S._shipRowsC = null; __today(90000); o.go3r = rkfxOcc('go'); o.go3 = fx(); rankFxClose(); o.go4r = rkfxOcc('go');
       // 출고별 매출 열 때 — 따로 셈(끝까지에서 띄웠어도 뜸) · 출고별 매출 칸을 펼치면 뜸 (확정 순간 경우는 이미 본 것으로 둠 — 그 기록은 끝까지 그대로여야 함)
       const confSeen = JSON.stringify({ d: td, k: 'top', g: 3, low: 0 }); localStorage.setItem('rn-rkfx-seen', confSeen); o.confSeen = confSeen;

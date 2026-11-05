@@ -72,7 +72,7 @@ const shownSrc = () => { const L = []; const P = S._rkfxP; const st = S._rkfx; c
     const r3 = await p.evaluate(async (src) => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; const shown = (0, eval)('(' + src.shown + ')'); const td = dstr(new Date()); try {
       window.__rkfxAuto = 1; await window.setFx({ k: {}, seq: 1 }); const kd = new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10);
       const seen = (L) => L.map((x) => `${x.occ}:${x.per}:${x.kind}`).join(',');
-      const head = async () => { rankFxClose(); if (S.sec.o_shipday) { document.getElementById('sdbar').click(); await W(250); } document.getElementById('sdbar').click(); await W(1000); const L = shown(); return L; };
+      const head = async () => { rankFxClose(); document.getElementById('sdbar').click(); await W(1000); const L = shown(); return L; }; /* (11/05 15시) 펼칠 때·접을 때 모두 한 번 누름으로 셈 */
       window.__rkNow = Date.parse(kd + 'T04:59:00+09:00'); o.d5a = rkDay5(); o.h1 = seen(await head()); o.hd1 = !!rkfxHdGet().h;
       o.h1b = seen(await head()); /* 같은 5시 전 — 다시 안 뜸 */
       window.__rkNow = Date.parse(kd + 'T05:01:00+09:00'); o.d5b = rkDay5(); o.h2 = seen(await head()); o.h3 = seen(await head());
@@ -114,7 +114,7 @@ const shownSrc = () => { const L = []; const P = S._rkfxP; const st = S._rkfx; c
     ok(/rec:day:top/.test(r3.h4) && /하루 1위 탈환/.test(r3.h4kt) && r3.h5 === '', '1위 탈환(오늘이 가장 큼) → 누르면 🔁 기록 갱신 카드 · 금액만 더 커지면(주인 그대로) 안 뜸: ' + [r3.h4, r3.h4kt, r3.h5].join(' / '));
     ok(/rec:day:low/.test(r3.h6) && /하루 꼴찌 탈환/.test(r3.h6kt), '꼴찌 탈환(끝난 날) → 누르면 카드: ' + r3.h6 + ' ' + r3.h6kt);
     ok(r3.h7 === '' && r3.h8 === '', '🔁 기록 갱신을 끄면 안 뜸 · 끈 동안의 갱신은 다시 켜도 지나감: ' + [r3.h7, r3.h8].join(' / '));
-    ok(/rec:day:low/.test(r3.h9) && r3.autoCap[0] === true && r3.autoCap[1] === false, '하루 상한을 다 썼어도 사람이 누른 머리는 뜸 · 저절로 뜨는 것은 막힘: ' + JSON.stringify([r3.h9, r3.autoCap]));
+    ok(/rec:day:low/.test(r3.h9) && r3.autoCap[0] === false && r3.autoCap[1] === false, '하루 상한을 다 썼어도 사람이 누른 머리는 뜸 · 저절로 뜨는 것은 막힘(띄운 기록도 안 씀 — 11/05 15시): ' + JSON.stringify([r3.h9, r3.autoCap]));
     ok(r3.h10 === '', '주문 기록을 다 받기 전에는 기록 갱신을 견주지 않음');
     ok(/^ship:day:/.test(r3.s1) && r3.s2 === '' && r3.sSeen && r3.s3 === '' && /^ship:day:/.test(r3.s4), '🚚 출고 카드로 오늘 처음 열면 그날 카드 · 두 번째는 안 뜸 · 다음 날 끄면 안 뜸 · 켜면 뜸: ' + [r3.s1, r3.s2, r3.s3, r3.s4].join(' / '));
     ok(r3.dl0[0] === true && !r3.dl0[1] && r3.dl0[2] && r3.dlQ && !r3.dl1 && r3.dl2.on && r3.dl2.occ === 'go' && r3.smpNow, '⏱ 나타나기까지 1.5초 — 바로 안 뜨고 기다림(그동안 다른 경우는 줄 섬) → 1.5초 뒤 뜸 · 샘플은 바로: ' + JSON.stringify([r3.dl0, r3.dl1, r3.dl2]));
