@@ -9,7 +9,7 @@
 (function (root) {
   const VERSION = '0.1.1';
   const COL = 'exec_log';
-  const KINDS = { price: '가격 반영', hold: '판매보류풀로', unhold: '판매보류풀 해제', startDelivery: '발송준비시작', invoice: '송장 입력', c2bAdd: '팔기 장바구니 담기', c2bDel: '팔기 장바구니에서 빼기', cashStop: '현금 판매 → 판매중지' };
+  const KINDS = { price: '가격 반영', hold: '판매보류풀로', unhold: '판매보류풀 해제', startDelivery: '발송준비시작', invoice: '송장 입력', c2bAdd: '팔기 장바구니 담기', cashStop: '현금 판매 → 판매중지' };
   const safeId = (s) => String(s).replace(/[\/#?\[\]*.]/g, '_').slice(0, 300);
   const docId = (kind, key) => safeId(kind) + '__' + safeId(key);
   const iso = () => new Date().toISOString();
