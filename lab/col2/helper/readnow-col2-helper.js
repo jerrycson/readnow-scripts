@@ -103,7 +103,7 @@ function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const out = { 
   else if (wasH !== !!CFG.headless && B) { closeBrowser('화면 방식 바뀜').then(() => tick('화면 방식 바뀜')); }
   return ch; }
 
-function status() { return { ok: true, ver: VERSION, port: PORT, pc: CFG.pc || os.hostname(), on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen,
+function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen,
   opens: opensHour(), msg: ST.msg, reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: LOGS.slice(-15), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
 
 /* ── 그림자 읽기 ── */
