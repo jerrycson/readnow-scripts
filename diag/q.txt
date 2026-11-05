@@ -1,2 +1,2 @@
-doc=app_settings/pdiag_MJ-PC
-# 2193624339
+@health&hours=3
+# 111234212
