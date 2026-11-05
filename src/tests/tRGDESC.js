@@ -1,4 +1,5 @@
 // (11/05 15시 정범님 '설명은 오른쪽 둘째 줄 · 높이는 예전 그대로'로 자리 기준을 바꿈 — PC: 설명 칸 = 오른쪽 기능 칸(등록 부류~단계) 아래 · 그 폭만 / 휴대폰: 예전처럼 아래 줄 폭 전체 · 자세한 흐름은 tRGDESC2)
+// (11/05 저녁 정범님 '접힌 설명은 그 칸 너비 한 줄 · 넘치면 … · 설명 접기 ○줄 칸 없앰' — ①·⑧·휴대폰 줄 수 기준을 한 줄로 바꿈 · 자세한 것 tRGPRICE)
 // tRGDESC — 정범님 11/05: 📋 한눈에 줄 설명 칸이 '자동으로 접히지 않음' → 평소 2줄(설정)로 접고 · 설명 칸을 등록 부류·상태·가격·수량·코드 줄 아래 줄에 따로(줄 폭 전체 · 휴대폰도)
 //  · 누르면 입력 · Tab/Esc/바깥 누름이면 저장하고 접힘 · 남은 '열림 표시'로 다시 그려도 열린 채 남지 않음 · ⚡ 설명 단추 → 바로 입력 칸 · 스크린샷 크기·줄 수 확인
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 600)); } else console.log('  ✓', m); };
@@ -14,14 +15,14 @@ const seedRows = async (p) => { await p.evaluate(require('./seed.js')); await p.
   await p.waitForTimeout(1500); await p.addStyleTag({ content: '.mkpanel,[class*=mktoast],.dlq,#dlq{display:none!important}' }); };
 // 줄마다: 설명 칸이 위 줄(제목·등록 부류 등)보다 아래인지 · 폭 · 보이는 줄 수 · 넘침
 const geo = (p) => p.evaluate(() => [...document.querySelectorAll('.rgrow')].map((r) => { const R = r.getBoundingClientRect(); const q = r.querySelector(':scope > .rgr-q, :scope > .rgr-qw'); const m = r.querySelector('.rgr-m'), tt = r.querySelector('.rgr-t'), s = r.querySelector('.rgr-s'), bb = r.querySelector('.rgbbn'); const Q = q && q.getBoundingClientRect(); const mob = innerWidth <= 700; const M = m.getBoundingClientRect(), T = tt.getBoundingClientRect(), Sx = s.getBoundingClientRect(); const t = r.querySelector('.rgqf-t'); const lh = t ? parseFloat(getComputedStyle(t).lineHeight) : 0; const pad = t ? parseFloat(getComputedStyle(t).paddingTop) + parseFloat(getComputedStyle(t).paddingBottom) + 2 : 0;
-  return { id: r.dataset.rgexp, below: !!Q && Q.top >= Math.max(M.bottom, Sx.bottom, mob ? T.bottom : -1e9) - 1, wide: !!Q && (mob ? Q.width >= R.width - 40 : Q.left >= T.right - 1 && Q.right >= Sx.right - 2 && Q.left <= M.left + 2), line1: Math.abs(m.getBoundingClientRect().top - tt.getBoundingClientRect().top) < 60, lines: t ? Math.round((t.clientHeight - pad + 2) / lh) : null, over: t ? t.scrollHeight > t.clientHeight + 2 : null, bbBelow: bb ? bb.getBoundingClientRect().top >= Q.bottom - 1 : null, h: Math.round(R.height), inp: !!r.querySelector('.rgq-in') }; }));
+  return { id: r.dataset.rgexp, below: !!Q && Q.top >= Math.max(M.bottom, Sx.bottom, mob ? T.bottom : -1e9) - 1, wide: !!Q && (mob ? Q.width >= R.width - 40 : Q.left >= T.right - 1 && Q.right >= Sx.right - 2 && Q.left <= M.left + 2), line1: Math.abs(m.getBoundingClientRect().top - tt.getBoundingClientRect().top) < 60, lines: t ? Math.round((t.clientHeight - pad + 2) / lh) : null, over: t ? (t.scrollHeight > t.clientHeight + 2 || t.scrollWidth > t.clientWidth + 1) : null, bbBelow: bb ? bb.getBoundingClientRect().top >= Q.bottom - 1 : null, h: Math.round(R.height), inp: !!r.querySelector('.rgq-in') }; }));
 const shot = async (p, name) => { const box = await p.evaluate(() => { const a = document.querySelectorAll('.rgrow'); a[0].scrollIntoView(); const r1 = a[0].getBoundingClientRect(), r2 = a[a.length - 1].getBoundingClientRect(); const y = Math.max(0, r1.top - 6); return { x: 0, y, width: innerWidth, height: Math.min(innerHeight - y, r2.bottom - r1.top + 12) }; }); await p.screenshot({ path: SP + name, clip: box }); const b = fs.readFileSync(SP + name); return { w: b.readUInt32BE(16), h: b.readUInt32BE(20), box }; };
 const G = (L, id) => L.find((x) => x.id === id) || {};
 H(async (p) => { await seedRows(p);
   // ① 접힘 — 기본 2줄 · 짧은 글은 1줄 · 긴 글(줄 바꿈 14줄·한 문단 30문장)·직접 입력 4줄 모두 2줄로 줄임(…)
   let L = await geo(p);
   ok(G(L, 'q001').lines === 1 && !G(L, 'q001').over, '짧은 ⚡ 설명은 한 줄 그대로', G(L, 'q001'));
-  ok(['q002', 'q006', 'm004'].every((id) => G(L, id).lines === 2 && G(L, id).over), '긴 ⚡ 설명(줄 바꿈 14줄 · 긴 문단)·✍ 직접 입력(4줄)은 기본 2줄로 접힘(넘치면 …)', L.filter((x) => /q002|q006|m004/.test(x.id)));
+  ok(['q002', 'q006', 'm004'].every((id) => G(L, id).lines === 1) && ['q002', 'q006'].every((id) => G(L, id).over), '(11/05 저녁 정범님) 긴 ⚡ 설명(줄 바꿈 14줄 · 긴 문단)·✍ 직접 입력(4줄)도 그 칸 너비 한 줄로 접힘(넘치면 …)', L.filter((x) => /q002|q006|m004/.test(x.id)));
   ok(G(L, 'q003').lines === 1 && G(L, 'q003').below, '빈 ⚡ 설명도 오른쪽 둘째 줄에 접힌 칸(⚡ 설명 — 눌러서 입력)', G(L, 'q003'));
   // ② 자리 — 설명 칸 = 등록 부류·상태·가격·수량·코드 줄 아래 · 줄 폭 전체 · 위 줄 배치 그대로 · 🏷 매입 띠는 설명 아래
   ok(L.every((x) => x.below && x.line1), '모든 줄: 설명 칸(또는 ⚡ 설명 단추)이 오른쪽 기능 첫 줄(등록 부류·상태·가격·수량·코드·단계) 아래 · 기능 첫 줄은 한 줄 그대로', L.map((x) => [x.id, x.below, x.line1]));
@@ -56,11 +57,10 @@ H(async (p) => { await seedRows(p);
   const st2 = await p.evaluate(() => ({ inp: !!document.querySelector('.rgrow[data-rgexp="q003"] .rgq-in') }));
   ok(st2.inp, '입력 칸에 커서가 있는 동안 다시 그려도 입력 칸 그대로', st2);
   await p.keyboard.press('Escape'); await p.waitForTimeout(500);
-  // ⑧ 설정 — 설명 접기 ○줄 (이 기기 기억) · 4줄로 바꾸면 4줄
-  const sel0 = await p.evaluate(() => { const s = document.querySelector('select[data-rgqfl]'); return s && s.value; });
-  await p.selectOption('select[data-rgqfl]', '4'); await p.waitForTimeout(800); L = await geo(p);
-  ok(sel0 === '2' && G(L, 'q002').lines === 4 && G(L, 'm004').lines === 4 && !G(L, 'm004').over && (await p.evaluate(() => localStorage.getItem('rn-reg-qfl'))) === '4', "도구 줄 '📝 설명 접기 [2]줄' → 4로 바꾸면 접힌 칸 4줄(4줄 직접 입력은 다 보임) · 이 기기에 기억", { sel0, q2: G(L, 'q002'), m4: G(L, 'm004') });
-  await p.selectOption('select[data-rgqfl]', '2'); await p.waitForTimeout(800);
+  // ⑧ (11/05 저녁 정범님) '설명 접기 ○줄' 칸은 쓸모가 없어 치움 — 기기 저장 값(rn-reg-qfl)이 있어도 한 줄
+  await p.evaluate(() => { localStorage.setItem('rn-reg-qfl', '4'); openRegister(); }); await p.waitForTimeout(800); L = await geo(p);
+  ok(!(await p.evaluate(() => !!document.querySelector('select[data-rgqfl]'))) && G(L, 'q002').lines === 1 && G(L, 'm004').lines === 1 && (await p.evaluate(() => localStorage.getItem('rn-reg-qfl'))) === '4', "'설명 접기 ○줄' 칸 없음 · 예전 저장 값 4가 있어도 한 줄(값은 지우지 않음)", { q2: G(L, 'q002'), m4: G(L, 'm004') });
+  await p.evaluate(() => localStorage.removeItem('rn-reg-qfl'));
   // ⑨ 설명 없음 → ⚡ 설명 단추(아래 줄) → 누르면 바로 입력 칸
   await p.click('.rgrow[data-rgexp="n005"] [data-rgdm]'); await p.waitForTimeout(900);
   const nb = await p.evaluate(() => ({ foc: document.activeElement && document.activeElement.dataset && document.activeElement.dataset.rgq === 'n005', mode: (window.__FS.reg_items.n005 || {}).descMode, exp: [...(S._regOpen || [])] }));
@@ -73,7 +73,7 @@ H(async (p) => { await seedRows(p);
   const L = await geo(p);
   ok(L.every((x) => x.below), '휴대폰 폭(390): 설명 칸이 등록 부류·상태·가격 줄 아래', L.map((x) => [x.id, x.below]));
   ok(L.filter((x) => x.id !== 'n005').every((x) => x.wide), '휴대폰 폭: 설명 칸 줄 폭 전체', L.map((x) => [x.id, x.wide]));
-  ok(['q002', 'q006', 'm004'].every((id) => G(L, id).lines === 2 && G(L, id).over), '휴대폰 폭: 긴 설명도 2줄로 접힘', L.map((x) => [x.id, x.lines]));
+  ok(['q002', 'q006', 'm004'].every((id) => G(L, id).lines === 1) && ['q002', 'q006'].every((id) => G(L, id).over), '휴대폰 폭: 긴 설명도 한 줄로 접힘(넘치면 …)', L.map((x) => [x.id, x.lines]));
   ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), '휴대폰 폭: 가로 넘침 없음');
   const s2 = await shot(p, 'gl3_rgdesc_390.png'); ok(s2.w === 390 && s2.h > 300, `휴대폰 스크린샷 크기 ${s2.w}×${s2.h}`, s2);
   await p.tap('.rgrow[data-rgexp="q002"] .rgqf'); await p.waitForTimeout(300);
