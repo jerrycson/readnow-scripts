@@ -8,6 +8,7 @@
 // 실제와 같은 조건 — 자동 시험 우회 끔(window.__rkfxAuto = 1 · __rkfxCapTest = 1 · __rkfxNoCap 없음) · 축하 설정은 기본값
 // 날짜는 page.clock으로 정함(브라우저 시간대는 기기 그대로 — UTC여도 한국 날짜로 셈하는지 봄)
 // 시험 자료 손님은 '손님A' (공개 저장소) · 쓰는 법: RN_PORT=<포트> node tFX5.js (pw/ 안 — harness.js·seed.js 옆)
+const uq = (s) => [...new Set(String(s || '').split(','))].join(); /* (11/05 밤) 📚·🧾 권수·건수 카드도 하루 카드라 기간 종류만 봄 */
 let bad = 0, ran = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); if (!c) bad++; };
 const H = require('./harness.js');
 /* 브라우저 안에서 — 오늘(td) 기준 70일 주문 + 오늘 주문 3건 · 축하 기록 비움 · 시험 우회 끔 */
@@ -78,10 +79,10 @@ const prep = async (p) => p.evaluate(async () => { const W = (ms) => new Promise
     ok(r.c.slice(0, 3).every((x) => /^day:/.test(x)) && r.c[3] === '' && r.cn === 3, '⚙ 상한 3번이면 기기마다 세 화면: ' + JSON.stringify([r.c, r.cn]));
     ok(r.keep && r.edit && !r.tabOnly, '클라우드가 탭 기준으로 바꿔도(prevConfirm) 확정 처리 · 고친 날도 · 탭만 읽힌 날은 아님: ' + JSON.stringify([r.keep, r.edit, r.tabOnly]));
     ok(/^day:/.test(r.end.L) && r.end.go && r.end.conf && r.end.mark, '▶ 끝까지가 끝남(진행 → 끝) = 확정 처리 — 그 순간 뜸(그때 보던 관련 화면과 한 번으로) · 이 기기에 적음: ' + JSON.stringify(r.end));
-    ok(r.todayPer === 'day' && !r.occW && !r.occM, '평일 — 오늘 카드에 주·월·년 카드 없음: ' + JSON.stringify([r.todayPer, r.occW, r.occM]));
+    ok(uq(r.todayPer) === 'day' && !r.occW && !r.occM, '평일 — 오늘 카드에 주·월·년 카드 없음: ' + JSON.stringify([r.todayPer, r.occW, r.occM]));
     ok(r.ic.sun === 'week' && r.ic.moEnd === 'month' && r.ic.wkd === '' && r.ic.today === '' && r.allIc.every((x) => /:(week|month)$/.test(x)), '매출 금액 아이콘 — 일요일 줄 🗓만 · 10/31 줄 📆만 · 평일·오늘 줄 없음: ' + JSON.stringify([r.ic, r.allIc.slice(0, 8)]));
     ok(r.rp.sun === 'day,week' && /^day(,month)?$/.test(r.rp.moEnd) && r.rp.moEnd.includes('month') === true && r.rp.wkd === 'day' && !/진행 중/.test(JSON.stringify(r.rp)) && /한 주/.test(r.rpWkTxt), '다시 보기 — 일요일 = 하루+주간 · 10/31 = 하루+월간 · 평일 = 하루만 · 진행 중 \'지금까지\' 없음: ' + JSON.stringify([r.rp, r.rpWkTxt]));
-    ok(r.rpClick === 'day,week', '일요일 줄 매출 금액 누름 → 하루·주간 두 장 이어 보이기: ' + r.rpClick);
+    ok(r.rpClick === 'day,week', '일요일 줄 🔁 다시 보기 누름 → 하루·주간 두 장 이어 보이기: ' + r.rpClick);
     ok(r.rpTodayPre === '' && !r.rpTodayConf, '오늘(확정 처리 전) 다시 보기 — 하루 \'지금까지\' 카드 안 넣음: ' + JSON.stringify(r.rpTodayPre));
     ok(r.kd === '2026-11-05' && r.dayKey === '2026-11-05', '기기 횟수는 한국 날짜로 셈: ' + JSON.stringify([r.kd, r.dayKey]));
     ok(r.wire.goPress && r.wire.ship && r.wire.btn, '연결 — 끝까지 누르는 순간 축하 지움 · openShipHome · 출고 확정 단추 뒤: ' + JSON.stringify(r.wire));
@@ -99,7 +100,7 @@ const prep = async (p) => p.evaluate(async () => { const W = (ms) => new Promise
         o.pl = (rkfxTodayItems().find((x) => x.per === 'week') || rkfxTodayItems().find((x) => x.per === 'month') || { I: {} }).I.pl || '';
       } catch (e) { o.err = e.message; } window.__rkfxAuto = 0; window.__rkfxCapTest = 0; return o; });
       ok(!r.err && r.pre === '' && r.prePl === false && r.preRp === '' && r.preOcc === 'false,false,false', `${nm} — 확정 처리 전: 오늘·기간 카드 없음 ` + JSON.stringify([r.td, r.pre, r.preRp, r.err]));
-      ok(r.post === want && r.rp === want && r.shown === want && r.n === 1 && !/지금까지/.test(r.pl), `${nm} — 확정 처리 뒤 ${want} (다시 보기도 같음 · 여러 장 한 번으로 셈 · '지금까지' 아님): ` + JSON.stringify([r.td, r.post, r.rp, r.shown, r.n, r.pl]));
+      ok(uq(r.post) === want && uq(r.rp) === want && uq(r.shown) === want && r.n === 1 && !/지금까지/.test(r.pl), `${nm} — 확정 처리 뒤 ${want} (다시 보기도 같음 · 여러 장 한 번으로 셈 · '지금까지' 아님): ` + JSON.stringify([r.td, r.post, r.rp, r.shown, r.n, r.pl]));
       if (want.includes('year')) ok(Array.isArray(r.yBars) && r.yBars.length === 12, '12/31 — 연간 카드(한 해 돌아보기 달별 막대 12)');
       ran++; });
   }
