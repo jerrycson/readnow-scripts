@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.399 출고별 매출",
- "since": "2026-11-05T13:56:08Z",
- "beat": "2026-11-05T13:56:08Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "daily",
-  "done": "🔬 정밀 점검 11/05 끝 — 02fb836(판) · e773ba4(보고서) · 순서표 놓음",
-  "at": "2026-11-05T13:47:16Z"
+  "who": "lead",
+  "done": "",
+  "at": "2026-11-05T14:20:01Z"
  },
- "host": "vm"
+ "host": null
 }
