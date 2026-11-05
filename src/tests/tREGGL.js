@@ -101,41 +101,50 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   ok(after.pan && after.panAbove && after.bk, '고르면 「✔ 고른 n개 한꺼번에 바꾸기」 창이 고르기 줄 위에', after);
   ok(Math.abs(after.card - before.card) <= 3 && Math.abs(after.bar - before.bar) <= 3, '창이 열려도 고르기 줄·카드가 밀려 내려가지 않음', { before, after });
 
-  // 9) 🏷 알라딘 매입이 나을 수 있음 칸 — 조건에 들면 늘(조회 직후부터) · 값이 바뀌면 그 카드 칸만 바로
+  // 9) 🏷 알라딘 매입 — (정범님 11/05) 근삿값 판정(우리 판매가 ≤ 매입가 × 1.15) · 📋 한눈에 = 줄 아래 아주 얇은 한 줄(줄의 약 ⅓) · 단추 셋 · 🔎 자세히 = 카드 안 '🏷 알라딘 매입' 칸 하나에 모두
   await p.evaluate(() => { localStorage.setItem('rn-reg-view', 'compact'); S._regOpen = new Set(); S.regT = 'sel'; regRerender(); }); await p.waitForTimeout(900);
-  const fl = await p.evaluate(() => { const B = regBbFloor(S.regItems.get('g07')); return B ? B.floor : null; });
-  ok(fl > 3800 && await p.evaluate(() => !document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn')), '판매가 30,000(하한가 위)은 칸 없음 · 하한가 계산됨', fl);
-  // 조회 직후 조건에 든 카드는 처음부터 칸
+  const lim = await p.evaluate(() => { const J = bbNearJ(1, 3800, '상'); return J ? J.lim : null; });
+  ok(lim === 4370 && await p.evaluate(() => !document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn')), '판매가 30,000(매입가 3,800 × 1.15 = 4,370 위)은 띠 없음', lim);
   await p.evaluate(async () => { const t = new Date().toISOString(); const d = { stage: 'sel', grade: 2, qty: 1, price: 1000, ws: regWsCur(), createdAt: t, info: { title: '처음부터 칸 책', isbn13: '9791100000199', categories: [{ path: ['국내도서', '소설/시/희곡'] }], page1: [], priceList: 15000, at: t, buyback: { 상: 3800 } } }; await db.collection('reg_items').doc('g09').set(d); S.regItems.set('g09', { id: 'g09', ...d }); regRerender(); }); await p.waitForTimeout(900);
-  ok(await p.evaluate(() => !!document.querySelector('.rgrow[data-rgexp="g09"] .rgbbn')), '조회 직후 조건에 든 카드는 처음부터 칸 있음');
-  // 판매가를 치는 중 — 그 카드 칸만 바로(화면 전체 다시 그리지 않음: 다른 줄 DOM 그대로)
+  ok(await p.evaluate(() => !!document.querySelector('.rgrow[data-rgexp="g09"] .rgbbn')), '조회 직후 판정에 든 줄은 처음부터 띠 있음(매입가 이하)');
   await p.evaluate(() => { window.__mark = document.querySelector('.rgrow[data-rgexp="g01"]'); });
-  const low = Math.floor((fl - 100) / 100) * 100, high = Math.ceil((fl + 2000) / 100) * 100;
-  await p.fill('.rgrow[data-rgexp="g07"] input.rgr-pin', String(low)); await p.waitForTimeout(80);
-  const b1 = await p.evaluate(() => { const r = document.querySelector('.rgrow[data-rgexp="g07"]'); const n = r && r.querySelector(':scope > .rgbbn'); if (!n) return null; const rr = r.getBoundingClientRect(), nr = n.getBoundingClientRect(); return { inRow: nr.left >= rr.left - 1 && nr.right <= rr.right + 1 && nr.bottom <= rr.bottom + 1, txt: n.textContent, on: (n.querySelector('.rgbbn-v.on') || {}).textContent, cart: !!n.querySelector('[data-rgcartnow]'), send: !!n.querySelector('[data-rgbbsend]'), bg: getComputedStyle(n).backgroundImage, same: window.__mark === document.querySelector('.rgrow[data-rgexp="g01"]') }; });
-  ok(b1 && /알라딘 매입이 나을/.test(b1.txt) && /상 3,800/.test(b1.on || '') && /하한가/.test(b1.txt) && b1.cart && b1.send, '판매가를 하한가 아래로 치면 바로 칸: 등급별 매입가(지금 등급 강조)·차이·까닭·🛒 바로 장바구니·🏷 보내기', b1);
-  ok(b1 && b1.inRow && /gradient/.test(b1.bg) && b1.same, '칸은 그 줄 테두리 안 · 눈에 띄는 배경 · 다른 줄은 다시 그리지 않음', b1);
-  await p.fill('.rgrow[data-rgexp="g07"] input.rgr-pin', String(high)); await p.waitForTimeout(80);
-  ok(await p.evaluate(() => !document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn')), '하한가 위로 치면 그 자리에서 사라짐');
-  await p.fill('.rgrow[data-rgexp="g07"] input.rgr-pin', String(low)); await p.press('.rgrow[data-rgexp="g07"] input.rgr-pin', 'Tab'); await p.waitForTimeout(1300);
-  ok(await p.evaluate(() => !!document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn')), '다시 낮춰 저장하면 다시 나타남(저장 뒤에도 남음)');
-  // 상태를 바꾸면(중 = 하한선 대상 아님) 사라짐 → 되돌리면 나타남 — 그 카드만
-  await p.evaluate(async () => { await regUpd('g07', { grade: 3 }); }); await p.waitForTimeout(60); const gOff = await p.evaluate(() => !document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn'));
-  await p.evaluate(async () => { await regUpd('g07', { grade: 2 }); }); await p.waitForTimeout(60); const gOn = await p.evaluate(() => !!document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn'));
-  ok(gOff && gOn, '상태를 바꾸면 그 카드 칸이 바로 사라지고·나타남', { gOff, gOn });
+  await p.fill('.rgrow[data-rgexp="g07"] input.rgr-pin', '4300'); await p.waitForTimeout(80);
+  const b1 = await p.evaluate(() => { const r = document.querySelector('.rgrow[data-rgexp="g07"]'); const n = r && r.querySelector(':scope > .rgbbn'); if (!n) return null; const rr = r.getBoundingClientRect(), nr = n.getBoundingClientRect(); const bs = [...n.querySelectorAll('button')]; return { inRow: nr.left >= rr.left - 1 && nr.right <= rr.right + 1 && nr.bottom <= rr.bottom + 1, txt: n.textContent, h: n.offsetHeight, rowH: r.offsetHeight - n.offsetHeight, lines: Math.round(n.offsetHeight / parseFloat(getComputedStyle(n).lineHeight || '18')), btn: bs.map((b) => b.textContent.trim()), cart: !!n.querySelector('[data-rgcartnow]'), out: n.querySelector('[data-rgbbout]') ? n.querySelector('[data-rgbbout]').disabled : null, peek: !!n.querySelector('[data-rgbbpeek]'), long: /까닭|등급별|최상 /.test(n.textContent), same: window.__mark === document.querySelector('.rgrow[data-rgexp="g01"]') }; });
+  ok(b1 && /🏷 매입 상 3,800원 · 우리 4,300원\(\+13%\)/.test(b1.txt) && !b1.long, '근삿값 15% 안(4,300) → 바로 얇은 띠: 「🏷 매입 상 3,800원 · 우리 4,300원(+13%)」 요약만(등급별·까닭 긴 글 없음)', b1);
+  ok(b1 && b1.btn.length === 3 && b1.cart && b1.out === true && b1.peek && /장바구니/.test(b1.btn[0]) && /빼기/.test(b1.btn[1]) && /매입 페이지/.test(b1.btn[2]), '단추는 딱 셋: 🛒 장바구니 · ↩ 빼기(장바구니에 없으면 흐림) · 🏷 매입 페이지', b1 && b1.btn);
+  ok(b1 && b1.h <= 24 && b1.h <= b1.rowH * 0.5 && b1.inRow && b1.same, `띠 높이 ${b1 && b1.h}px = 줄(${b1 && b1.rowH}px)의 약 ⅓ · 한 줄 · 줄 테두리 안 · 다른 줄은 다시 그리지 않음`, b1);
+  await p.fill('.rgrow[data-rgexp="g07"] input.rgr-pin', '4400'); await p.waitForTimeout(80);
+  ok(await p.evaluate(() => !document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn')), '4,400(근삿값 밖)으로 치면 그 자리에서 사라짐');
+  await p.fill('.rgrow[data-rgexp="g07"] input.rgr-pin', '4300'); await p.press('.rgrow[data-rgexp="g07"] input.rgr-pin', 'Tab'); await p.waitForTimeout(1300);
+  ok(await p.evaluate(() => !!document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn') && !(S._regOpen && S._regOpen.has('g07'))), '다시 4,300으로 저장하면 띠가 남음 · 자세히는 열리지 않음');
+  // 중 — 판정에 넣고 ⚠ (중 매입가 2,000 · 근삿값 2,300)
+  await p.evaluate(async () => { await regUpd('g07', { grade: 3 }); }); await p.waitForTimeout(80); const gOff = await p.evaluate(() => !document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn'));
+  await p.evaluate(async () => { await regUpd('g07', { price: 2200 }); }); await p.waitForTimeout(120); const g3 = await p.evaluate(() => { const n = document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn'); return n ? n.textContent : null; });
+  await p.evaluate(async () => { await regUpd('g07', { grade: 2, price: 4300 }); }); await p.waitForTimeout(120); const gOn = await p.evaluate(() => !!document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn'));
+  ok(gOff && g3 && /매입 중 2,000원/.test(g3) && /⚠ 중: 알라딘이 안 살 수 있음/.test(g3) && gOn, '중도 판정에 듦(2,200 ≤ 2,000×1.15) · ⚠ 중 경고 · 상태를 바꾸면 그 줄 띠만 바로', { gOff, g3, gOn });
   // 매입가가 새로 들어오면 나타남
   await p.evaluate(async () => { const t = new Date().toISOString(); const d = { stage: 'sel', grade: 2, qty: 1, price: 1000, ws: regWsCur(), createdAt: t, info: { title: '매입가 나중 책', isbn13: '9791100000198', categories: [{ path: ['국내도서', '소설/시/희곡'] }], page1: [], priceList: 15000, at: t } }; await db.collection('reg_items').doc('g10').set(d); S.regItems.set('g10', { id: 'g10', ...d }); regRerender(); }); await p.waitForTimeout(900);
   const bA = await p.evaluate(() => !!document.querySelector('.rgrow[data-rgexp="g10"] .rgbbn')); await p.evaluate(async () => { const it = S.regItems.get('g10'); await regUpd('g10', { info: { ...it.info, buyback: { 상: 3800 } } }); }); await p.waitForTimeout(80);
-  ok(!bA && await p.evaluate(() => !!document.querySelector('.rgrow[data-rgexp="g10"] .rgbbn')), '매입가가 새로 들어오면 그 카드 칸이 나타남', bA);
-  // 칸 안 🛒 바로 장바구니 — 두 번 눌러 담기
+  ok(!bA && await p.evaluate(() => !!document.querySelector('.rgrow[data-rgexp="g10"] .rgbbn')), '매입가가 새로 들어오면 그 줄 띠가 나타남', bA);
+  // 정할 것이 있으면 단추 대신 「⚠ 정할 것 있음」 → 누르면 자세히로
+  const dec = await p.evaluate(async () => { const o = window.regBbnDec; window.regBbnDec = () => ({ id: 'x' }); regBbnSync('g10'); const n = document.querySelector('.rgrow[data-rgexp="g10"] .rgbbn'); const r = { btn: n ? [...n.querySelectorAll('button')].map((b) => b.textContent.trim()) : null }; n.querySelector('[data-rgbbdec]').click(); await new Promise((z) => setTimeout(z, 700)); r.open = !!(S._regOpen && S._regOpen.has('g10')) && !!document.querySelector('#sheet [data-rgbbsec="g10"]'); window.regBbnDec = o; S._regOpen.delete('g10'); regRerender(); return r; });
+  ok(dec.btn && dec.btn.length === 1 && /정할 것 있음/.test(dec.btn[0]) && dec.open, "정할 것(같은 책이 이미 알라딘 매입에 있음)이면 「⚠ 정할 것 있음」 하나 → 누르면 자세히 '🏷 알라딘 매입' 칸으로", dec);
+  // 🏷 매입 페이지 = 잠깐 보기
+  await p.waitForTimeout(700); await p.click('.rgrow[data-rgexp="g09"] .rgbbn [data-rgbbpeek]'); await p.waitForTimeout(700);
+  const pk = await p.evaluate(() => ({ peek: !!S._bbPeek && !!(S.detail && S.detail.bbuy) })); await p.evaluate(() => history.back()); await p.waitForTimeout(900);
+  ok(pk.peek, '「🏷 매입 페이지」 = 등록 화면 위에 알라딘 매입 페이지 잠깐 보기', pk);
+  // 띠 안 🛒 장바구니 — 두 번 눌러 담기
   const cmds = () => p.evaluate(() => Object.values(window.__FS.shp_cmds || {}).filter((v) => v.type === 'c2bAdd').length);
-  await p.waitForTimeout(1500); const n0 = await cmds(); await p.click('.rgrow[data-rgexp="g07"] .rgbbn [data-rgcartnow]'); await p.waitForTimeout(200); const n1 = await cmds(); const arm = await p.evaluate(() => (document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn [data-rgcartnow]') || {}).textContent);
+  await p.evaluate(() => { S.regT = 'sel'; regRerender(); }); await p.waitForTimeout(1500); const n0 = await cmds(); await p.click('.rgrow[data-rgexp="g07"] .rgbbn [data-rgcartnow]'); await p.waitForTimeout(200); const n1 = await cmds(); const arm = await p.evaluate(() => (document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn [data-rgcartnow]') || {}).textContent);
   await p.click('.rgrow[data-rgexp="g07"] .rgbbn [data-rgcartnow]'); await p.waitForTimeout(1500); const n2 = await cmds(); const st7 = await p.evaluate(() => (S.regItems.get('g07') || {}).stage);
-  ok(n1 === n0 && /한 번 더/.test(arm || '') && n2 === n0 + 1 && st7 === 'bb', '칸 안 🛒 바로 장바구니: 한 번은 아무 일 없음 · 두 번이면 알라딘 매입으로 보내고 담기 맡김', { n0, n1, n2, arm, st7 });
-  // 자세히 카드 — 칸 높이 ≈ 카드의 1/3
+  ok(n1 === n0 && /한 번 더/.test(arm || '') && n2 === n0 + 1 && st7 === 'bb', '띠 🛒 장바구니: 한 번은 아무 일 없음 · 두 번이면 알라딘 매입으로 보내고 담기 맡김', { n0, n1, n2, arm, st7 });
+  // 🔎 자세히 — 카드 안 '🏷 알라딘 매입' 칸 하나에 모두 · 다른 곳에 남은 알라딘 매입 단추·매입가 줄 없음
   await p.evaluate(() => { localStorage.setItem('rn-reg-view', 'full'); regRerender(); }); await p.waitForTimeout(1000);
-  const dz = await p.evaluate(() => { const c = document.querySelector('#sheet [data-rgchk="g09"]'); const card = c && c.closest('.card'); const n = card && card.querySelector(':scope > .rgbbn'); return n ? { r: n.offsetHeight / card.offsetHeight, H: card.offsetHeight } : null; });
-  ok(dz && dz.r > 0.22 && dz.r < 0.45, '자세히 카드: 칸이 카드 안 맨 아래 · 높이 약 1/3', dz);
+  const dz = await p.evaluate(() => { const c = document.querySelector('#sheet [data-rgchk="g09"]'); const card = c && c.closest('.card'); const s = card && card.querySelector('[data-rgbbsec="g09"]'); if (!s) return null; const outside = [...card.querySelectorAll('[data-rgbbsend],[data-rgcartnow],.rgbb,[data-rgbb],.rgbbn,.rgbbr,[data-rgbbr]')].filter((el) => !el.closest('.rgbbsec')).length; return { sec: true, last: s.parentElement.lastElementChild === s || card.lastElementChild.contains(s), buy: !!s.querySelector('[data-rgbb] .rgbb'), near: /알라딘 매입이 나을 수 있음/.test(s.textContent) && /최상/.test(s.textContent) && /까닭/.test(s.textContent), send: !!s.querySelector('[data-rgbbsend]'), cart: !!s.querySelector('[data-rgcartnow]'), outside, h: s.offsetHeight }; });
+  ok(dz && dz.buy && dz.near && dz.send && dz.cart && dz.outside === 0, "자세히 카드: '🏷 알라딘 매입' 칸 하나에 매입가·근삿값 판정·등급별 매입가·까닭·보내기·바로 장바구니 — 칸 밖에는 알라딘 매입 단추·줄 없음", dz);
+  await p.fill('#sheet .card:has([data-rgchk="g09"]) input[data-rgpin]', '9000'); await p.waitForTimeout(100);
+  ok(await p.evaluate(() => !/알라딘 매입이 나을 수 있음/.test((document.querySelector('[data-rgbbsec="g09"]') || {}).textContent || '') && !!document.querySelector('[data-rgbbsec="g09"] [data-rgbbsend]')), '자세히: 판매가를 근삿값 밖으로 치면 판정 줄만 바로 사라짐(칸·단추는 그대로)');
+  await p.fill('#sheet .card:has([data-rgchk="g09"]) input[data-rgpin]', '1000'); await p.press('#sheet .card:has([data-rgchk="g09"]) input[data-rgpin]', 'Tab'); await p.waitForTimeout(900);
   await p.evaluate(() => { localStorage.setItem('rn-reg-view', 'compact'); regRerender(); }); await p.waitForTimeout(800);
   // 10) 360px — 창·칸이 화면 안
   await p.setViewportSize({ width: 360, height: 760 }); await p.evaluate(() => { regRerender(); }); await p.waitForTimeout(900);

@@ -342,7 +342,7 @@
     let floored = false;
     if (F.fBuyback && target < F.fBuyback) {
       const gap = (F.fBuyback - target) / F.fBuyback;
-      if (gap >= S.buybackTolerance) { R.push(`목표가 ${target.toLocaleString()}원이 알라딘 매입가 하한가 ${F.fBuyback.toLocaleString()}원보다 ${Math.round(gap * 100)}% 낮음 → 하한가에 멈춤 (알라딘 매입가 ${F.buyback.toLocaleString()}원 — 이 가격에 팔면 알라딘에 파는 것보다 덜 남음)`); target = F.fBuyback; floored = true; out.sellToAladin = true; block.push('알라딘 매입가 하한'); }
+      if (gap >= S.buybackTolerance) { R.push(`목표가 ${target.toLocaleString()}원이 알라딘 매입가 하한가 ${F.fBuyback.toLocaleString()}원보다 ${Math.round(gap * 100)}% 낮음 → 하한가에 멈춤 (알라딘 매입가 ${F.buyback.toLocaleString()}원 — 이 가격에 팔면 알라딘에 파는 것보다 덜 남음)`); out.preFloor = target; /* (웹앱 11/05) 하한가로 올리기 전 시장대로 정한 값 — 알라딘 매입 근삿값 판정이 씀 */ target = F.fBuyback; floored = true; out.sellToAladin = true; block.push('알라딘 매입가 하한'); }
       else R.push(`목표가가 알라딘 매입가 하한가보다 ${Math.round(gap * 100)}% 낮지만 ${Math.round(S.buybackTolerance * 100)}% 안이라 최저가를 그대로 맞춤`);
     }
 

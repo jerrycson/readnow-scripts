@@ -7,7 +7,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     S.sku.map.set(a3.id, { c: ['k0001'] }); S.sku.seqUn = S.sku.seqUn || (() => {}); S.sku.at = Date.now();
     // ── ① 수동 일괄 '알라딘 매입가 하한' 탭: 장바구니 단추 없이 보내기만
     const sh = document.getElementById('sheet'); sh.classList.add('on'); sh.innerHTML = '<div id="b_res"></div>'; S.detail = { batch: 1 };
-    S.batchRes = A.map((l, j) => ({ l, target: l.price - 500, reasons: ['시험'], page1: [], at: '2026-11-01', bbHit: j < 3 ? { buy: 2000 + j, floor: 2100 } : null })); S.batchSt = { picks: {}, decided: {} }; S.batchMeta = {}; S.batchT = 'bb'; S.batchEdit = {};
+    S.batchRes = A.map((l, j) => ({ l, target: l.price - 500, reasons: ['시험'], page1: [], at: '2026-11-01', bbHit: j < 3 ? { buy: l.price - 600 + j, floor: l.price + 400 } : null /* (11/05) 알라딘 매입 근삿값 판정(시장 맞춤가 ≤ 매입가×1.15) 안에 들게 */ })); S.batchSt = { picks: {}, decided: {} }; S.batchMeta = {}; S.batchT = 'bb'; S.batchEdit = {};
     const c = { ...JSON.parse(JSON.stringify(BATCH_DEF)), name: '시험 그룹' }; drawBatchRes(sh, c, 'g1'); await W(300);
     out.bbCards = sh.querySelectorAll('.card.pq.bq[data-mk]').length; out.cartBtnBatch = sh.querySelectorAll('[data-bbcart],[data-rgbbcart]').length; out.sendBtns = sh.querySelectorAll('[data-bhsend]').length; out.hasAll = !!sh.querySelector('#b_bhall'); out.hasOpen = !!sh.querySelector('#b_tobbuy');
     sh.querySelector(`[data-bhsend="${a0.usedCode}"]`).click(); await W(500);
@@ -25,7 +25,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     const rSku = mk('rS', { rnSkus: ['RNk0001'] }); const rA = mk('rA'); const rB = mk('rB', { info: { title: '등록 시험 책 B', isbn13: '9791100000777', buyback: { 상: 2800 } } }); [rSku, rA, rB].forEach((x) => { S.regItems.set(x.id, x); FS.reg_items = FS.reg_items || {}; FS.reg_items[x.id] = JSON.parse(JSON.stringify(x)); });
     const rs = await regBbSend(['rS'], { k: 'reg', n: '선택 대기' }); await W(300); out.skuRes = rs && { nNew: rs.nNew, nHave: rs.nHave, keys: rs.keys, pend: rs.pend.length, case: rs.pend[0] && rs.pend[0].case, stage: (S.regItems.get('rS') || {}).stage }; if (rs && rs.pend[0]) await bdDo(rs.pend[0], 'merge'); await W(300); out.skuRes.stage2 = (S.regItems.get('rS') || {}).stage; out.regSkuKey = !!(BB().moved || {}).REG_rS; out.src3 = Object.values(((BB().moved || {})[a3.usedCode] || {}).src || {}).map((x) => x.k);
     // ── ③ 등록 카드: 🛒 장바구니 단추 없음 · 보내기 두 번 눌러
-    const box = document.createElement('div'); box.id = 'tbhreg'; document.body.appendChild(box); box.innerHTML = regBbHtml(rA, 6000); out.regHtmlCart = /data-rgbbcart|팔기 장바구니 추가/.test(box.innerHTML); const sb = box.querySelector('[data-rgbbsend]'); out.regBtn = sb ? sb.textContent : null;
+    const box = document.createElement('div'); box.id = 'tbhreg'; document.body.appendChild(box); box.innerHTML = regBbSecHtml(rA, 6000, null, 'sel'); /* (11/05) 자세히 카드 '🏷 알라딘 매입' 칸 하나 */ out.regHtmlCart = /data-rgbbcart|팔기 장바구니 추가/.test(box.innerHTML); const sb = box.querySelector('[data-rgbbsend]'); out.regBtn = sb ? sb.textContent : null;
     sb.click(); await W(100); out.regArm = sb.textContent; sb.click(); await W(700); out.regStage = (S.regItems.get('rA') || {}).stage; out.regMoved = !!(BB().moved || {}).REG_rA; out.regCmd = cmds('c2bAdd').length; box.remove();
     // 등록 고른 것·살핀 것 → 일괄 보내기 (regBbSend 여러 개)
     const rm = await regBbSend(['rB', 'rA'], { k: 'reg', n: '고른 상품' }); await W(300); out.regMulti = rm && { nNew: rm.nNew, nHave: rm.nHave, nHere: rm.nHere };
