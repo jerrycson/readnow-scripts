@@ -1,2 +1,2 @@
-shplog=1&n=8
-# 581110689
+doc=app_settings/pdiag_MJ-PC
+# 1399524469
