@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "프린터 줄마다 시험 인쇄 단추",
+ "since": "2026-11-05T04:56:56Z",
+ "beat": "2026-11-05T04:56:56Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T04:41:09Z"
  },
- "host": null
+ "host": "vm"
 }
