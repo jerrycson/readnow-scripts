@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.203의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.204의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.203' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.203', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.204' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.204', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -3215,7 +3215,7 @@
      요청 간격은 이 PC의 알라딘 요청 속도 조절(PACE)을 같이 씀 */
   const C2B_SEARCH = (isbn) => `https://www.aladin.co.kr/shop/usedshop/wc2b_search.aspx?ActionType=1&SearchTarget=All&KeyWord=${encodeURIComponent(isbn)}`;
   const C2B_CART = 'https://www.aladin.co.kr/shop/usedshop/wc2b_sales.aspx?search=1';
-  async function c2bCartRead() { await PACE.wait(); const g = await lookDoc(C2B_CART); if (looksLoggedOut(g.finalUrl, g.doc)) throw new Error('알라딘 로그인이 풀림 — 로그인한 뒤 웹앱에서 다시 담기');
+  async function c2bCartRead() { await PACE.wait(sleep); /* (11/05 정범님 '전이랑 같은 에러' — sleep is not a function: 기다리는 방법을 넘기지 않아 팔기 장바구니 담기·읽기가 늘 실패) */ const g = await lookDoc(C2B_CART); if (looksLoggedOut(g.finalUrl, g.doc)) throw new Error('알라딘 로그인이 풀림 — 로그인한 뒤 웹앱에서 다시 담기');
     const list = P.parseC2BCart(g.doc); const set = new Set(); list.forEach((x) => { if (x.isbn13) set.add(x.isbn13); }); const Q = c2bCartQty(g.doc); return { list, set, qty: Q.qty, raw: Q.raw }; }
   /* (정범님 11/03) 알라딘 팔기 장바구니의 책마다 수량 — 줄(tr.item) 안 수량 칸(이름·id·class에 qty·cnt·수량) 값, 칸이 없으면 줄 하나 = 1권 · 같은 ISBN 줄이 여럿이면 더함 · 칸 모양(raw)도 적어 둠(화면이 바뀌면 맞추려고) */
   function c2bCartQty(doc) { const qty = new Map(), raw = new Map(); for (const tr of doc.querySelectorAll('tr.item[pkid]')) { const t = String(tr.textContent || '').replace(/\s+/g, ' '); const i13 = (t.match(/ISBN13\s*:\s*(97[89]\d{10})/) || [])[1]; if (!i13) continue;
@@ -3232,7 +3232,7 @@
   async function c2bAddOne(it, cartSet, cart, ctx) { const isbn = String(it.isbn13 || ''); if (!/^97[89]\d{10}$/.test(isbn)) return { state: 'failed', msg: 'ISBN13이 없음' };
     /* (정범님 11/03) 같은 책 2권 이상 — 이 책을 원하는 권수(이 페이지의 다른 권 중 담김 + 이번 것)가 알라딘 팔기 장바구니 수량보다 많으면 '팔기 장바구니에 추가'를 한 번 더 누르고 수량 칸·알림 글을 적음(예전: ISBN마다 한 번만 담고 나머지는 '이미 있음') */
     const cq = (cart && cart.qty) || new Map(); let multi = false, cq0 = null; if (cartSet.has(isbn)) { cq0 = cq.get(isbn) || 1; const want = ctx && ctx.want ? ctx.want(isbn, it.usedCode) : 1; if (want <= cq0) return { state: 'already', msg: '이미 팔기 장바구니에 있음', cartQty: cq0 }; multi = true; }
-    await PACE.wait(); const fr = await c2bFrame(C2B_SEARCH(isbn)); const d = fr.doc; if (!fr.ok || !d) return { state: 'failed', msg: '매입가 조회 화면을 못 엶(시간 초과)' };
+    await PACE.wait(sleep); const fr = await c2bFrame(C2B_SEARCH(isbn)); const d = fr.doc; if (!fr.ok || !d) return { state: 'failed', msg: '매입가 조회 화면을 못 엶(시간 초과)' };
     if (looksLoggedOut(d.URL, d)) return { state: 'failed', msg: '알라딘 로그인이 풀림' };
     const rows = P.parseC2BSearch(d); const i10 = (() => { if (!/^978/.test(isbn)) return null; const b = isbn.slice(3, 12); let t = 0; for (let k = 0; k < 9; k++) t += (+b[k]) * (10 - k); const c = (11 - (t % 11)) % 11; return b + (c === 10 ? 'X' : String(c)); })(); const row = rows.find((r) => r.isbn13 === isbn) || rows.find((r) => !r.isbn13 && i10 && String(r.isbn10 || '').toUpperCase() === i10) || null; /* (1.59.0) ISBN13이 없는 줄은 ISBN10이 맞을 때만 — 결과가 한 줄이라고 맞춰 보지 않고 담지 않음 */
     if (!row) return { state: 'notFound', msg: rows.length ? `검색 결과 ${rows.length}줄 중 이 ISBN이 없음` : '매입가 조회 결과 없음' };
