@@ -16,7 +16,7 @@ const P=['Samsung','라벨기','롯데택배'];
 { const m0=s.match(/\\$_.Name -eq '([^']+)'/); if(m0&&/NOPRINTER/.test(s)&&!P.includes(m0[1])){ console.error('NOPRINTER'); process.exit(3); } }
 if(/DEVPKEY_PNPX_IpAddress/.test(s)){ console.log(JSON.stringify({port:S.port||'WSD-abc',ips:['192.168.0.9'],alive:S.dead?[]:['192.168.0.9']})); process.exit(0); }
 if(/-Verb RunAs/.test(s)){ const b=s.match(/'-EncodedCommand','([^']+)'/); const el=Buffer.from(b[1],'base64').toString('utf16le'); S.el=el; S.port=(el.match(/-PortName '([^']+)'/)||[])[1]; fs.writeFileSync(st,JSON.stringify(S)); console.log('OK|0'); process.exit(0); }
-if(/^\(Get-Printer -Name/m.test(s)){ console.log(S.port||'WSD-abc'); process.exit(0); }
+if(/\\(Get-Printer -Name [^\\n]*\\)\\.PortName/.test(s)){ console.log(S.port||'WSD-abc'); process.exit(0); }
 if(/SetDefaultPrinter/.test(s)){ const m=s.match(/\\$_.Name -eq '([^']+)'/); S.def=m[1]; S.calls.push('def:'+m[1]+(/LegacyDefaultPrinterMode -Value 1/.test(s)?'+keep':'')); fs.writeFileSync(st,JSON.stringify(S)); console.log('OK|0|'+S.def); }
 else if(/PrintDocument/.test(s)){ S.calls.push('print@'+S.def); fs.writeFileSync(st,JSON.stringify(S)); console.log(/시험 인쇄/.test(s)?'OK':'OK 1'); }
 else if(/Get-Service Spooler/.test(s)) console.log(JSON.stringify({printers:P.map(n=>({name:n,def:n===S.def,off:false,st:3,err:0,jobs:n==='롯데택배'?[{st:'Error',stc:2,pages:1}]:[]})),spooler:{st:'Running'},legacyDefault:0,events:[],procs:[]}));
@@ -25,7 +25,7 @@ else console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
   const st = () => { try { return JSON.parse(fs.readFileSync(D + '/bin/state.json', 'utf8')); } catch (e) { return { def: 'Samsung', calls: [] }; } };
   const ch = cp.spawn('node', ['readnow-print.js'], { cwd: D, env: { ...process.env, PATH: D + '/bin:' + process.env.PATH } }); await wait(1500);
   try {
-    const s0 = await req('GET', '/status'); ok(s0.j && s0.j.ver === '1.1.4', '도우미 1.1.4 켜짐 ' + (s0.j && s0.j.ver));
+    const s0 = await req('GET', '/status'); ok(s0.j && s0.j.ver === '1.1.5', '도우미 1.1.5 켜짐 ' + (s0.j && s0.j.ver));
     const r0 = await req('GET', '/prn/roles'); ok(r0.j && r0.j.ok && r0.j.roles.auto === true && !r0.j.roles.general, '역할 처음 = 비어 있음 · 자동 켬');
     /* 역할 없으면 라벨 인쇄는 기본을 건드리지 않음 */
     const IMG = 'data:image/png;base64,' + Buffer.from('x').toString('base64');
@@ -55,10 +55,10 @@ else console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
     const calls = []; let roles = { general: '', label: '', invoice: '', auto: true, temp: null }; let def = '롯데택배';
     await p.route(/127\.0\.0\.1:8898/, async (rt) => { const u = new URL(rt.request().url()); const b = rt.request().postData(); const o = b ? JSON.parse(b) : null; calls.push(u.pathname + (o ? ' ' + JSON.stringify(o) : '')); const J = (x) => rt.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' }, body: JSON.stringify(x) });
       if (rt.request().method() === 'OPTIONS') return rt.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST' } });
-      if (u.pathname === '/status') return J({ ok: true, ver: '1.1.4' }); if (u.pathname === '/printers') return J({ ok: true, printers: ['Samsung M2070', '라벨기', '롯데택배'].map((n) => ({ name: n, def: n === def })) });
+      if (u.pathname === '/status') return J({ ok: true, ver: '1.1.5' }); if (u.pathname === '/prn/netfix') return J({ ok: true, ip: '192.168.0.9', from: 'WSD-x', to: 'IP_192.168.0.9' }); if (u.pathname === '/printers') return J({ ok: true, printers: ['Samsung M2070', '라벨기', '롯데택배'].map((n) => ({ name: n, def: n === def })) });
       if (u.pathname === '/prn/roles') { if (o) roles = { ...roles, ...o }; return J({ ok: true, roles }); } if (u.pathname === '/prn/default') { def = o.printer; return J({ ok: true, def }); } if (u.pathname === '/prn/temp') return J({ ok: true });
       if (u.pathname === '/alps/config') return J({ ok: true }); if (u.pathname === '/pdiag/test') return J({ ok: true });
-      if (u.pathname === '/pdiag') return J({ ok: true, ver: '1.1.4', pc: 'MJ-MAIN', at: new Date().toISOString(), hints: [{ lv: 'warn', t: "'Windows에서 기본 프린터 관리'가 켜져 있음" }, { lv: 'bad', t: "윈도우 기본 프린터가 '롯데택배'(택배·라벨 프린터로 보임)" }], printers: [{ name: '롯데택배', def: true, st: 3, jobs: [{ st: 'Error', pages: 1 }] }, { name: 'Samsung M2070', st: 3, jobs: [] }], spooler: { st: 'Running' }, legacyDefault: 0, events: [], tail: ['a'] });
+      if (u.pathname === '/pdiag') return J({ ok: true, ver: '1.1.4', pc: 'MJ-MAIN', at: new Date().toISOString(), hints: [{ lv: 'warn', t: "'Windows에서 기본 프린터 관리'가 켜져 있음" }, { lv: 'bad', t: "윈도우 기본 프린터가 '롯데택배'(택배·라벨 프린터로 보임)" }], printers: [{ name: '롯데택배', def: true, st: 3, jobs: [{ st: 'Error', pages: 1 }] }, { name: 'Samsung M2070', st: 4, port: 'WSD-x', netBad: true, jobs: [{ st: '인쇄 중', pages: 1 }] }], spooler: { st: 'Running' }, legacyDefault: 0, events: [], tail: ['a'] });
       return J({ ok: false }); });
     await p.evaluate(async () => { const C = LBL(); C.mode = 'pc'; lblSave(C); await lphCheck(true); await prnLoad(true); openLblCfg(); }); await p.waitForTimeout(600);
     const v = await p.evaluate(() => { const ov = LBL_OV; return { sel: ov.querySelectorAll('[data-prnrole]').length, auto: !!ov.querySelector('[data-prnauto]:checked'), diag: !!ov.querySelector('[data-prndiag]'), txt: ov.textContent }; });
@@ -73,7 +73,8 @@ else console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
     { const n0 = calls.length; await p.evaluate(() => [...LBL_OV.querySelectorAll('[data-prnrole]')][2].closest('.rgpost-o').querySelector('[data-prntest]').click()); await p.waitForTimeout(500); ok(calls.slice(n0).some((c) => c === '/pdiag/test {"printer":"롯데택배"}'), '송장 시험 인쇄 → 도우미에 그 프린터로 한 장'); }
     await p.click('[data-prndef="invoice"]'); await p.waitForTimeout(500); ok(calls.some((c) => c === '/prn/default {"printer":"롯데택배","keep":true}'), '⭐ 기본으로(송장)');
     await p.click('[data-prndiag]'); await p.waitForTimeout(900); const dg = await p.evaluate(() => ({ open: !!(PRN_OV && PRN_OV.isConnected), t: PRN_OV ? PRN_OV.textContent : '', test: PRN_OV ? PRN_OV.querySelectorAll('[data-prntest]').length : 0, clr: PRN_OV ? PRN_OV.querySelectorAll('[data-prnact="clear"]').length : 0 }));
-    ok(dg.open && /기본 프린터 관리/.test(dg.t) && dg.test === 2 && dg.clr === 1, '🔎 점검 창: 문제 줄·시험 단추·멈춘 작업 취소 ' + JSON.stringify({ test: dg.test, clr: dg.clr }));
+    ok(dg.open && /기본 프린터 관리/.test(dg.t) && dg.test === 2 && dg.clr === 2, '🔎 점검 창: 문제 줄·시험 단추·멈춘 작업 취소 ' + JSON.stringify({ test: dg.test, clr: dg.clr }));
+    { const nb = await p.evaluate(() => !!(PRN_OV && PRN_OV.querySelector('[data-prnnet="Samsung M2070"]'))); ok(nb, '🔎 점검 창: 네트워크(WSD) 프린터 줄에 🩺 연결 고치기'); const n0 = calls.length; await p.click('[data-prnnet="Samsung M2070"]'); await p.waitForTimeout(900); ok(calls.slice(n0).some((c) => c.startsWith('/prn/netfix {"printer":"Samsung M2070"')) && calls.slice(n0).some((c) => c.startsWith('/pdiag/test {"printer":"Samsung M2070"')), '🩺 누르면 연결 고치기 → 시험 한 장'); }
     const saved = await p.evaluate(async () => { const d = await db.collection('app_settings').doc('pdiag_MJ-MAIN').get(); return d.exists ? d.data() : null; }); ok(saved && saved.hints && saved.hints.length === 2 && saved.by, '점검 결과 서버 저장(app_settings/pdiag_MJ-MAIN)');
     const n0 = calls.length; await p.click('[data-prnact="clear"]'); await p.waitForTimeout(200); ok(!calls.slice(n0).some((c) => c.startsWith('/prn/clear')), '멈춘 작업 취소는 한 번 누르면 안 함');
     await p.click('[data-prnact="clear"]'); await p.waitForTimeout(600); ok(calls.slice(n0).some((c) => c.startsWith('/prn/clear {"printer":"롯데택배"')), '두 번 누르면 취소 맡김');
