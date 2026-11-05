@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "클라우드 진단 benchday · 기록 빈 칸",
- "since": "2026-11-05T08:05:04Z",
- "beat": "2026-11-05T08:05:04Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-05T07:59:20Z"
+  "at": "2026-11-05T08:08:57Z"
  },
- "host": "vm"
+ "host": null
 }
