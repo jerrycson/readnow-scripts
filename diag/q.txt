@@ -1,15 +1,4 @@
-recentUp=ext_used&mins=1440
-recentUp=bench_items&mins=600
-recentUp=prd_book_metrics&mins=1440
-recentUp=px_exp&mins=1440
-cmds=nbFind&n=10
-cmds=ship&n=10
-cmds=startShip&n=10
-cmds=metrics&n=10
-doc=prd_system/pxDaily
-doc=app_settings/px_cfg
-doc=prd_system/health_cache
-doc=app_settings/write_watch_cfg
-recentUp=shp_cmds&mins=1440
-recentUp=prd_newbook&mins=2880
-# 208005829
+doc=ext_used/9788949702858
+doc=ext_used/9791190145008
+doc=ext_basic/9780028740225
+# 314875677
