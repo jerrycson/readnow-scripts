@@ -77,7 +77,10 @@ $startup = [Environment]::GetFolderPath('Startup'); $sh = New-Object -ComObject 
 $lk = $sh.CreateShortcut((Join-Path $startup 'ReadNow-Print.lnk')); $lk.TargetPath = 'wscript.exe'; $lk.Arguments = "`"$vbs`""; $lk.WorkingDirectory = $Dir; $lk.Save()
 # (정범님 11/02) 윈도우 시작 때 'ALPS 도우미' 창을 따로 열기 — 도우미가 켜질 때까지(최대 2분) 기다린 뒤 크롬 앱 창으로 http://127.0.0.1:8898/alps
 $chrome = @($env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:LOCALAPPDATA) | Where-Object { $_ } | ForEach-Object { Join-Path $_ 'Google\Chrome\Application\chrome.exe' } | Where-Object { Test-Path $_ } | Select-Object -First 1
-if ($chrome) {
+# (정범님 11/05 HOME) ALPS 로그인 정보(cred.dat)가 있는 PC(MJ-MAIN)에서만 — 다른 PC는 ALPS 창을 열지 않음(도우미가 시작 프로그램 바로가기도 .off로 꺼 둠)
+$alpsPc = Test-Path (Join-Path $env:USERPROFILE 'ReadNow\alps\cred.dat')
+if ($chrome -and -not $alpsPc) { Ok '이 PC에는 ALPS 로그인 정보가 없어 ALPS 창은 열지 않음(ALPS는 MJ-MAIN에서만 씀)' }
+if ($chrome -and $alpsPc) {
   # (정범님 11/03) 창 크기 = 로거 도우미와 같게(380×560) · 위치 = 마지막으로 있던 자리(도우미가 %USERPROFILE%\ReadNow\alps\win.txt에 저장 · 화면 밖이면 오른쪽 위) · 창 전용 크롬 프로필(크기·위치 지정이 늘 먹게 — 로거 도우미와 같은 방식)
   $wps = Join-Path $Dir 'open-alps-window.ps1'
   [IO.File]::WriteAllText($wps, @"
@@ -93,7 +96,7 @@ Start-Process -FilePath '$chrome' -ArgumentList ("--user-data-dir=```"$Dir\chrom
   $wl = $sh.CreateShortcut((Join-Path $startup 'ReadNow-ALPS-창.lnk')); $wl.TargetPath = 'wscript.exe'; $wl.Arguments = "`"$wvbs`""; $wl.WorkingDirectory = $Dir; $wl.Save()
   Ok '윈도우 시작 때 ALPS 도우미 창이 따로 열리게 함(시작 프로그램 ReadNow-ALPS-창 — 지우면 안 열림)'
   $openNow = $true
-} else { Warn '크롬을 못 찾아 ALPS 도우미 창 자동 열기는 건너뜀' }
+} elseif (-not $chrome) { Warn '크롬을 못 찾아 ALPS 도우미 창 자동 열기는 건너뜀' }
 $running = Get-CimInstance Win32_Process -Filter "Name='node.exe'" | Where-Object { $_.CommandLine -like '*readnow-print.js*' }
 if ($running) { $running | ForEach-Object { try { Stop-Process -Id $_.ProcessId -Force -ErrorAction Stop } catch {} }; Ok '켜져 있던 인쇄 도우미를 끔 — 새 판으로 다시 켬' }
 else { Start-Process -FilePath 'wscript.exe' -ArgumentList "`"$vbs`"" -WindowStyle Hidden }

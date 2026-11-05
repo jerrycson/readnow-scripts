@@ -1,0 +1,89 @@
+# 🧪 번외 수집 일꾼 (col2 · 시범)
+
+정범님 지시(11/05): **수집기를 Tampermonkey 탭 밖으로 꺼내되, 지금 업무는 한 순간도 끊지 않고** — 리드나우2처럼 운영과 따로 떨어진 시험 환경에서 만든다.
+근거 보고서: readnow-chats `reports/2026-11-05_collector_offload.md` (정범님 결정 — Q1 가 숨은 작업 창 · Q2 HOME·JS-MAIN · 로그인 없는 일도 따로 떼기 · 상태 창 단추 · 창 위치·크기 기억 · LOGGER 그대로).
+
+운영에 이미 들어간 첫 걸음(인쇄 도우미 1.1.7 + `local/readnow-work.js` 0.1.0 · 수집기 `rnWork`/`rnRole` · 웹앱 🧭 관리도구 › 🪟 수집 작업 창)은 **정범님 크롬 안의** 작업 창입니다. 이 폴더는 그 옆에서 **따로 된 크롬·따로 된 도우미**로 같은 일을 '그림자'로 해 보며, 운영 결과와 똑같은지 견주는 곳입니다.
+
+## 지금 자리
+- 폴더 `/home/user/readnow-col2`(git 가지 `main` · 아직 push 안 함). 저장소 `jerrycson/readnow-col2`로 올릴지는 메인 세션이 정합니다. 폴더 안 경로는 모두 상대 경로라 통째로 옮기면 됩니다.
+- 단계·진행은 [`PLAN.json`](PLAN.json). 지금 = 단계 0~2 끝(뼈대·그림자 읽기 하나·비교 화면) · 단계 3(실제 Firebase·실기기)은 정범님 필요.
+
+## 구조
+| 파일 | 하는 일 |
+|---|---|
+| `col2-config.js` | 한 곳 설정 — `COL2_VER`(판) · 포트 `8797` · `col2_` · `rn3-` · 운영 공용 파일 주소(`CORE_BASE`) · `BOOK_FIXED`(운영과 같음 — 시험이 견줌) · 속도 `PACE` · 지킴이 `WATCH` |
+| `helper/readnow-col2-helper.js` | 번외 도우미(Node 22 · npm 없음) — 127.0.0.1:8797. 숨은 작업 창 · 지킴이 · 보이기/숨기기/다시 열기 · 📊 상태 창(`/`) · 그림자 비교 화면(`/compare`) · 그림자 읽기(`/read/product`) |
+| `helper/col2-cdp.js` | 번외 크롬 띄우기·조종(DevTools 프로토콜 · 운영 ALPS 도우미와 같은 길) · 운영 공용 파일을 **떨어진 칸(isolated world)** 에 넣어 운영 수집기와 똑같이 읽음 |
+| `helper/col2-win.js` | 창 다루기(PowerShell + user32) — **번외 프로필 이름이 명령 줄에 든 크롬 창만** 찾음(정범님 창·운영 작업 창은 안 건드림) |
+| `helper/col2-pace.js` | 그림자 읽기 속도 — 한 장 뒤 8초 안팎 · 한 시간 120 · 하루 800 · 429면 10분×횟수 쉼(`pace.json`에 이어 셈) |
+| `shadow/compare.html` · `col2-compare.js` | 🔎 그림자 비교 화면 — 운영 도서(읽기만)와 그림자 결과를 칸마다 견주고 `col2_books`·`col2_runs`에 씀 |
+| `shadow/col2-compare-core.js` | 견주기(순수 함수) — 같음 / 같음(운영도 지금 이 값을 봄) / 출처 다름(바깥 정보) / 운영 칸 빔 / 다름 |
+| `shadow/col2-store.js` | 막이 — Firestore 쓰기는 `col2_*`만(그 밖은 막고 셈) · 기기 저장 `rn3-`만 |
+| `tests/` | 시험(아래) — Windows 실기기 없이 |
+
+### 그림자 읽기 하나 — 무엇을 어떻게 (운영과 똑같은 결과)
+운영 수집기의 '공개 화면은 쿠키 없이 읽기'(`lookDoc0` · `pubProd` 로그인 없음 길)와 **같은 순서·같은 코드**:
+1. 번외 크롬(로그인 없음)의 작업 탭이 처음 한 번 알라딘 첫 화면에 들어감(사람처럼 들어온 탭).
+2. 그 탭 안 **떨어진 칸**에 운영 공용 파일 `readnow-aladin-core.js`·`readnow-products-core.js`를 GitHub에서 **그대로** 받아 넣음(복사본 없음 · 판 번호를 결과에 남김).
+3. `fetch(상품 화면, { credentials: 'omit' })` → `ReadnowAladin.decode` → `DOMParser` → 점검·로그인 화면 확인 → `ReadnowProducts.parseProductPage`.
+4. 비교 화면이 운영 `prd_ids/itemId_<번호>` → `prd_books/<bookId>`를 **읽기만** 하고, `BOOK_FIXED` 칸마다 견줘 `col2_books/<bookId>`·`col2_runs/<회차>`에 씀.
+
+읽는 주소는 `https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=<숫자>` 하나뿐(판매자 센터·로그인 화면은 코드에 없음). 19금처럼 로그인 화면으로 가면 **건너뜀**(로그인하지 않음).
+
+## 운영을 끊지 않음 — 어떻게 지키나
+| 운영 | 번외(col2) | 확인 |
+|---|---|---|
+| 수집기·공용 파일·도우미·웹앱 파일 | 하나도 고치지 않음 · 공용 파일은 받아 읽기만 | t_isolation · t_shadow(운영 파일 바뀌지 않음) |
+| 인쇄 도우미 8898 · 로거 도우미 8899 | 8797 · 그 포트로는 켜지지 않음 · 운영 도우미 모듈을 불러오지 않음 | t_helper ① · t_isolation ② |
+| 정범님 크롬(Tampermonkey·알라딘 로그인) · 운영 작업 창 | 따로 된 프로필 `col2-work-chrome`(확장 없음 · 로그인 없음) · 창 찾기는 그 프로필 크롬만 | t_helper ③ |
+| 알라딘 판매자 동시 로그인 4대 | 로그인하지 않음 → 자리 0 | t_shadow ①(쿠키 없음 · 로그인 화면으로 안 감) |
+| 속도(요청 사이 최소 0.7초 · 분당 22권 안팎) | 한 장 뒤 8초 안팎 · 시간·하루 상한 · 429면 쉼 · 최소 0.7초 아래로 못 고침 | t_unit ② · t_shadow ① |
+| Firestore 운영 칸 | 읽기만 · 쓰기는 `col2_*`만(막이) | t_unit ③ · t_shadow ② |
+| 기기 저장 `rn-`·`rn2-` | `rn3-` | t_shadow ② · t_isolation ③ |
+| 수집기 머리 HSIG `8559039d5a96110b` | Tampermonkey를 아예 안 씀 | t_isolation ② |
+
+## 켜는 법
+### 지금(개발·시험용 — 단추가 생기기 전)
+PC에 Node 22가 있어야 합니다(MJ-MAIN·LOGGER엔 있음 · JS-MAIN·HOME은 운영 `install-print.ps1`이 넣음).
+```
+node helper\readnow-col2-helper.js          (자료: %USERPROFILE%\ReadNow\col2 · 포트 8797)
+```
+그 뒤 그 PC 크롬 주소창에 `http://127.0.0.1:8797/`(📊 상태 창) 또는 `http://127.0.0.1:8797/compare`(🔎 그림자 비교). 켜기는 화면 안 **두 번 누르기**. 끄면 번외 크롬만 닫힙니다(운영과 상관없음).
+
+### 단추 하나로 켜기 — 설계 (운영 웹앱에 넣는 일은 메인 세션 몫 · 제안)
+정범님은 명령을 입력하지 않습니다. 운영 웹앱에 **단추 하나**를 두고, 그 뒤는 이미 PC에 있는 것들이 알아서:
+1. **웹앱** 🧭 관리도구 › 🪟 수집 작업 창 칸에 PC별 **'🧪 번외 수집(시험)' 스위치**와 '📊 번외 상태 창' 단추 → Firestore `col2_ctl/<PC>` `{ on, at, by }`에 씀(쓰기 칸도 `col2_`).
+2. **그 PC의 수집기**(이미 도는 Tampermonkey · 머리의 `@connect 127.0.0.1` 그대로 — **모듈만** 고침, HSIG 그대로)가 `col2_ctl/<PC>`를 보고 → 운영 인쇄 도우미 `127.0.0.1:8898`에 `/col2/ensure` 한 번.
+3. **운영 인쇄 도우미**에 작은 모듈 `readnow-col2-boot.js` 하나(운영 `readnow-work.js`처럼 GitHub에서 받아 불러 씀 · 6시간 새 판): `readnow-col2` 묶음을 `%USERPROFILE%\ReadNow\col2\app`에 받아 `node --check`로 검사 → **따로 된 프로세스**로 `node readnow-col2-helper.js`를 창 없이 띄움(죽으면 다시 · 끄면 멈춤). 운영 도우미 자신의 일(라벨·ALPS·작업 창)과는 프로세스가 달라 번외가 죽거나 멈춰도 운영은 그대로.
+4. 켜진 뒤 켜기/끄기·보이기·상태 창은 수집기가 `127.0.0.1:8797`에 그대로 전함(웹앱 → Firestore → 수집기 → 번외 도우미).
+- 되돌리기: 스위치 끔 → 번외 도우미 멈춤 → 번외 크롬 닫힘. 운영 쪽 변화는 '부트 모듈 하나 + 수집기 모듈 몇 줄 + 웹앱 칸 하나'뿐이고 모두 기본 끔.
+- 다른 길(덜 추천): ② 웹앱이 `127.0.0.1:8797`을 바로 부르기 — 크롬의 '이 기기 다른 앱 접근' 허락 창이 뜰 수 있고, 꺼져 있을 땐 켤 수 없음(켜는 일은 결국 1~3이 필요). ③ PC마다 바로가기 아이콘 설치 — 처음 한 번 명령 붙여 넣기가 필요.
+
+## 시험 돌리기
+Windows·실제 알라딘·실제 Firebase 없이 돕니다(가짜 알라딘 서버 · 가짜 PowerShell · 진짜 크로미움(Playwright) · 가짜 Firebase).
+```
+bash tests/run-all.sh                 # 모두 (시험 포트 COL2_TEST_PORT 기본 8775)
+node tests/t_unit.js                  # 견주기·속도·막이
+node tests/t_isolation.js             # 운영과 떨어짐(글자 검사 · 운영 BOOK_FIXED와 견줌)
+node tests/t_helper.js                # 도우미 — 출처 막기·운영 포트 거절·숨은 작업 창·지킴이·자리 기억·상태 창
+node tests/t_shadow.js                # 그림자 읽기(운영과 같은 결과·쿠키 없음·떨어진 칸·속도·19금·429) + 비교 화면
+```
+- 운영 저장소 위치 `COL2_PROD_REPO`(기본 `/home/user/readnow-scripts` · 읽기만) · Playwright `COL2_PW`(기본 `/opt/node-tools/node_modules/playwright`).
+- 가짜 PowerShell은 번외 프로필 이름이 명령 줄에 든 프로세스를 `/proc`에서 찾아 '창'으로 봅니다. 상태 창(`--app`)은 잠자는 가짜 프로세스로 흉내.
+
+## Firebase 칸(번외만 씀)
+`col2_books/<bookId 또는 itemId_번호>`(그림자 결과·판정·운영 공용 파일 판) · `col2_runs/<회차>`(한 번 비교 요약) · (설계) `col2_ctl/<PC>`(켜기 스위치).
+읽기만: `prd_ids/itemId_<번호>` · `prd_books/<bookId>`.
+⚠ 실제 Firestore 규칙이 `col2_*` 쓰기를 허락하는지는 아직 확인 안 함(이 작업 환경에선 실제 Firebase에 쓰지 않음) — PLAN 단계 3.
+
+## 운영으로 옮기는 길
+1. 그림자 비교에서 '같음'이 충분히 쌓인 일만(예: 표본 200권 중 다름 0 · 다름은 까닭을 다 밝힘).
+2. 그 일 하나를 운영 수집기 설정에서 **이 PC만 끔**(지우지 않음) → 번외 일꾼이 같은 결과를 **운영 칸에** 쓰도록 한 줄 바꿈(그때부터는 쓰기 막이에 그 칸을 하나씩 허락 — 정범님 허락 뒤).
+3. 하루 지켜봄(멈춤·속도·결과 신선도) → 다음 일. 되돌리기는 언제나 '번외 끔 + 운영 다시 켬' 한 번.
+4. 로그인 일은 운영 작업 창(정범님 크롬 안 · 같은 로그인)에 남기는 것이 기본(로그인 자리 4대 규칙). 번외는 로그인 없는 일부터.
+
+## 알려진 한계(솔직히)
+- 실제 Windows에서 창 다루기(PowerShell)·번외 크롬 화면 밖 자리는 운영 `readnow-work.js`와 같은 코드 꼴이지만 이 폴더 판으로는 아직 실기기에서 돌려 보지 않았습니다.
+- 그림자 읽기는 같은 PC 주소에서 운영 공개 읽기와 겹칠 수 있습니다 — 그래서 속도를 운영보다 훨씬 느리게 두었습니다. 운영이 바쁠 때 쉬는 장치는 다음 단계.
+- 비교 화면의 Firestore 쓰기는 브라우저(구글 로그인)가 합니다 — 도우미 혼자 자동으로 쓰는 길은 PLAN 단계 6.

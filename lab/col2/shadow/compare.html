@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>🔎 번외 수집 그림자 비교</title>
+<style>
+:root{--ink:#26222E;--sub:#6A6478;--line:#DDD8E8;--bg:#F5F4F8;--card:#fff;--pri:#5A4A86;--ok:#1F6F4A;--no:#B0322A;--warn:#8A4A00}
+@media (prefers-color-scheme: dark){:root{--ink:#ECE9F2;--sub:#A9A3B8;--line:#3A3546;--bg:#17151C;--card:#221F29;--pri:#A996E0;--ok:#6FCF9C;--no:#F08C82;--warn:#E8B46A}}
+body{font:13px/1.5 system-ui,'Malgun Gothic',sans-serif;margin:0;background:var(--bg);color:var(--ink)}
+h1{font-size:16px;margin:0;padding:10px 16px;background:#5A4A86;color:#fff}h1 small{font-weight:400;opacity:.85}
+.w{max-width:1100px;margin:0 auto;padding:10px 16px}.c{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:0 0 10px}
+.k{color:var(--sub);font-size:12px}.ok{color:var(--ok);font-weight:700}.no{color:var(--no);font-weight:700}.wa{color:var(--warn);font-weight:700}
+button{font:13px system-ui,'Malgun Gothic';border:1px solid var(--pri);background:var(--card);color:var(--pri);border-radius:6px;padding:4px 10px;margin:2px 4px 2px 0;cursor:pointer}button.p{background:var(--pri);color:#fff}button:disabled{opacity:.5;cursor:default}
+textarea{width:100%;box-sizing:border-box;font:12px ui-monospace,Consolas,monospace;min-height:52px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px}
+input[type=number]{width:60px}
+table{border-collapse:collapse;width:100%;font-size:12.5px}td,th{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:top}
+.f{font:11.5px ui-monospace,Consolas,monospace;word-break:break-all}
+details summary{cursor:pointer}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#26222E;color:#fff;padding:8px 14px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<h1>🔎 번외 수집 그림자 비교 <small id="ver"></small></h1>
+<div class="w">
+  <div class="c k">시험 환경입니다 — 운영 수집기·운영 도우미·웹앱과 따로 돕니다. 운영 자료(prd_books·prd_ids)는 <b>읽기만</b> 하고, 그림자 결과는 <b>col2_*</b> 칸에만 씁니다. 번외 일꾼은 알라딘에 로그인하지 않습니다.</div>
+  <div class="c"><b>번외 도우미</b> <span id="hst" class="k">읽는 중…</span><br>
+    <button id="onb" class="p">▶ 켜기</button><button id="showb">🪟 작업 창 보이기</button><button id="hideb">🙈 숨기기</button><button id="statb">📊 상태 창 열기</button></div>
+  <div class="c"><b>Firebase</b> <span id="fbst" class="k">—</span> <button id="loginb" style="display:none">구글로 로그인</button></div>
+  <div class="c"><b>읽을 책</b> <span class="k">(알라딘 상품 번호 ItemId · 줄이나 쉼표로 나눔 · 한 번에 20권까지)</span>
+    <textarea id="ids" placeholder="예: 123456789"></textarea>
+    <div><button id="pickb">운영 도서에서 표본 고르기</button> <input id="nsample" type="number" min="1" max="20" value="5"> 권 · <button id="runb" class="p">그림자로 읽고 비교</button> <button id="stopb" disabled>멈춤</button> <span id="prog" class="k"></span></div></div>
+  <div class="c"><b>결과</b> <span id="sum" class="k">—</span>
+    <table><thead><tr><th>책</th><th>판정</th><th>칸</th></tr></thead><tbody id="out"></tbody></table></div>
+  <div class="c k" id="blk"></div>
+</div>
+<div id="toast"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="s/col2-config.js"></script>
+<script src="s/col2-store.js"></script>
+<script src="s/col2-compare-core.js"></script>
+<script src="s/col2-compare.js"></script>
+</body>
+</html>

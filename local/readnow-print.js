@@ -19,7 +19,7 @@
  *   (정범님 11/05) /work… · /render — 🪟 수집 작업 창(같은 폴더 readnow-work.js · 없으면 GitHub에서 받음 · 웹앱 관리도구에서 PC별로 켤 때만 창을 다룸) · GET /work = 📊 수집 상태 창
  * 스스로 새 판: 6시간마다 GitHub에서 받아 판 번호가 높으면 바꾸고 끝남 → 실행기가 5초 뒤 다시 켬 */
 'use strict';
-const VERSION = '1.1.7'; // (1.1.7 정범님 11/05 수집 작업 창) readnow-work.js(작업 창·수집 상태 창·바깥 읽기 따로)를 불러 씀 · /work·/render // (1.1.6 정범님 11/05 '인쇄가 여전히 안 돼' — 연결 고치기가 'IP 못 찾음') 프린터 IP 찾기를 넓힘: 삼성 이름 SEC+MAC → 이 PC가 아는 기기 목록(ARP) · 이름으로 찾기 · 같은 망 한 번 훑기 · WSD 장치 목록 넓게 // (1.1.5 정범님 11/05 '일반 테스트가 안 돼') /prn/netfix = 네트워크(WSD) 프린터 연결 고치기 — IP 찾기 → 고정 IP 포트(관리자 허락 창 한 번) · 막힌 대기열 비우기 · 점검에 '연결 끊김' 알림 // (1.1.4 정범님 11/05 'MJ-MAIN 일반 프린터로 출력이 안 돼') /pdiag = 이 PC 인쇄 상태 점검(보기만 · 아무것도 바꾸지 않음) · /pdiag/test = 고른 프린터로 시험 한 장 // (1.1.3 정범님 11/04 원스톱) ALPS 처리 중에는 새 판 받기를 미룸 · /alps/pcheck(프린터 상태)·/alps/update // (1.1.2 정범님 11/03) /alps/journal(오늘 인쇄 기록)·/alps/unprint(안 나왔음으로 되돌리기) // (1.1.1 정범님 11/03) ALPS 「이어서 진행」(/alps/resume)·처리 기록(/alps/hist)
+const VERSION = '1.1.8'; // (1.1.8 정범님 11/05 HOME '왜 ALPS 도우미가 떠?') ALPS 로그인 정보(cred.dat)가 없는 PC는 윈도우 시작 때 ALPS 창을 열지 않음 — 시작 프로그램 바로가기를 .off로 이름만 바꿔 둠(지우지 않음 · 로그인 정보를 넣으면 다시 켬) // (1.1.7 정범님 11/05 수집 작업 창) readnow-work.js(작업 창·수집 상태 창·바깥 읽기 따로)를 불러 씀 · /work·/render // (1.1.6 정범님 11/05 '인쇄가 여전히 안 돼' — 연결 고치기가 'IP 못 찾음') 프린터 IP 찾기를 넓힘: 삼성 이름 SEC+MAC → 이 PC가 아는 기기 목록(ARP) · 이름으로 찾기 · 같은 망 한 번 훑기 · WSD 장치 목록 넓게 // (1.1.5 정범님 11/05 '일반 테스트가 안 돼') /prn/netfix = 네트워크(WSD) 프린터 연결 고치기 — IP 찾기 → 고정 IP 포트(관리자 허락 창 한 번) · 막힌 대기열 비우기 · 점검에 '연결 끊김' 알림 // (1.1.4 정범님 11/05 'MJ-MAIN 일반 프린터로 출력이 안 돼') /pdiag = 이 PC 인쇄 상태 점검(보기만 · 아무것도 바꾸지 않음) · /pdiag/test = 고른 프린터로 시험 한 장 // (1.1.3 정범님 11/04 원스톱) ALPS 처리 중에는 새 판 받기를 미룸 · /alps/pcheck(프린터 상태)·/alps/update // (1.1.2 정범님 11/03) /alps/journal(오늘 인쇄 기록)·/alps/unprint(안 나왔음으로 되돌리기) // (1.1.1 정범님 11/03) ALPS 「이어서 진행」(/alps/resume)·처리 기록(/alps/hist)
 const http = require('http'), https = require('https'), fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process');
 const PORT = 8898; const HOME = __dirname; const RAW = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/readnow-print.js';
 const ORIGINS = [/^https:\/\/jerrycson\.github\.io$/, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
@@ -225,6 +225,11 @@ function alpsApi(req, res, u, org, J) { if (!ALPS) return J(503, { ok: false, er
   return J(404, { ok: false }); }
 srv.on('error', (e) => { log('듣기 실패: ' + e.message + ' — 이미 켜져 있으면 그대로 둠'); setTimeout(() => process.exit(0), 1000); });
 srv.listen(PORT, '127.0.0.1', () => log(`리드나우 라벨 인쇄 도우미 ${VERSION} 시작 — 127.0.0.1:${PORT}`));
+/* (1.1.8) ALPS 창 자동 열기는 ALPS를 쓰는 PC(로그인 정보 cred.dat가 있는 PC)에서만 — 다른 PC는 시작 프로그램 바로가기를 .off로(지우지 않음) · 로그인 정보가 생기면 되살림 */
+function alpsWinStartupFix() { try { if (process.platform !== 'win32') return; const st = path.join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup'); const on = path.join(st, 'ReadNow-ALPS-창.lnk'), off = on + '.off'; const has = fs.existsSync(path.join(process.env.USERPROFILE || '', 'ReadNow', 'alps', 'cred.dat'));
+  if (!has && fs.existsSync(on)) { if (fs.existsSync(off)) fs.renameSync(off, off + '.' + Date.now()); fs.renameSync(on, off); log('ALPS 로그인 정보가 없는 PC — 윈도우 시작 때 ALPS 창 열기를 끔(바로가기 이름만 .off로)'); }
+  else if (has && !fs.existsSync(on) && fs.existsSync(off)) { fs.renameSync(off, on); log('ALPS 로그인 정보가 있음 — 윈도우 시작 때 ALPS 창 열기를 되살림'); } } catch (e) { log('ALPS 창 시작 설정 확인 실패: ' + (e && e.message)); } }
+setTimeout(alpsWinStartupFix, 3000); setInterval(alpsWinStartupFix, 6 * 3600e3);
 
 /* 스스로 새 판 */
 /* (정범님 11/04 원스톱 — 구멍 ①) ALPS가 처리 중(인쇄·접수 중)이면 스스로 새 판으로 바꾸며 꺼지지 않음 — 10분 뒤 다시 봄(예전엔 6시간마다 처리 중인지 보지 않고 process.exit → 인쇄 중 꺼짐 위험) */
