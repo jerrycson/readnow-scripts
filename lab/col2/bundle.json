@@ -1,0 +1,14 @@
+{
+ "_설명": "운영 인쇄 도우미(local/readnow-print.js /col2/ensure)와 설치 파일(local/install-print.ps1 -With col2)이 PC의 %USERPROFILE%\\ReadNow\\col2\\app 에 받아 두는 외부 수집기 묶음 — 파일을 더하면 여기에도 더함(tests/t_isolation이 아니라 운영 src/tests/tCOL2BTN.js가 폴더와 견줌) · 판 번호는 col2-config.js COL2_VER",
+ "files": [
+  "col2-config.js",
+  "helper/readnow-col2-helper.js",
+  "helper/col2-cdp.js",
+  "helper/col2-pace.js",
+  "helper/col2-win.js",
+  "shadow/col2-compare-core.js",
+  "shadow/col2-compare.js",
+  "shadow/col2-store.js",
+  "shadow/compare.html"
+ ]
+}
