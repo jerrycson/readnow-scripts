@@ -16,6 +16,7 @@
  *   GET  /printer → 이 PC 주소창 전용 화면(큰 단추 3개 — 지금 기본을 일반·라벨·송장 중 하나로)
  * 인쇄: PowerShell + .NET PrintDocument — 프린터 이름 지정 · 용지 = 라벨 크기(mm) · 여백 0 · 장마다 그림 하나를 용지에 꽉 맞춤 · 창 없음(StandardPrintController)
  *   (1.1.0) /alps… — 📦 ALPS 자동 처리(같은 폴더 readnow-alps.js · 없으면 GitHub에서 받음) · GET /alps = 이 PC 설정 화면
+ *   (정범님 11/05) /work… · /render — 🪟 수집 작업 창(같은 폴더 readnow-work.js · 없으면 GitHub에서 받음 · 웹앱 관리도구에서 PC별로 켤 때만 창을 다룸) · GET /work = 📊 수집 상태 창
  * 스스로 새 판: 6시간마다 GitHub에서 받아 판 번호가 높으면 바꾸고 끝남 → 실행기가 5초 뒤 다시 켬 */
 'use strict';
 const VERSION = '1.1.6'; // (1.1.6 정범님 11/05 '인쇄가 여전히 안 돼' — 연결 고치기가 'IP 못 찾음') 프린터 IP 찾기를 넓힘: 삼성 이름 SEC+MAC → 이 PC가 아는 기기 목록(ARP) · 이름으로 찾기 · 같은 망 한 번 훑기 · WSD 장치 목록 넓게 // (1.1.5 정범님 11/05 '일반 테스트가 안 돼') /prn/netfix = 네트워크(WSD) 프린터 연결 고치기 — IP 찾기 → 고정 IP 포트(관리자 허락 창 한 번) · 막힌 대기열 비우기 · 점검에 '연결 끊김' 알림 // (1.1.4 정범님 11/05 'MJ-MAIN 일반 프린터로 출력이 안 돼') /pdiag = 이 PC 인쇄 상태 점검(보기만 · 아무것도 바꾸지 않음) · /pdiag/test = 고른 프린터로 시험 한 장 // (1.1.3 정범님 11/04 원스톱) ALPS 처리 중에는 새 판 받기를 미룸 · /alps/pcheck(프린터 상태)·/alps/update // (1.1.2 정범님 11/03) /alps/journal(오늘 인쇄 기록)·/alps/unprint(안 나왔음으로 되돌리기) // (1.1.1 정범님 11/03) ALPS 「이어서 진행」(/alps/resume)·처리 기록(/alps/hist)
@@ -24,8 +25,11 @@ const PORT = 8898; const HOME = __dirname; const RAW = 'https://raw.githubuserco
 const ORIGINS = [/^https:\/\/jerrycson\.github\.io$/, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
 const LOG = path.join(HOME, 'print.log');
 const RAW_ALPS = RAW.replace(/readnow-print\.js$/, 'readnow-alps.js'); const ALPS_F = path.join(HOME, 'readnow-alps.js');
+const RAW_WORK = RAW.replace(/readnow-print\.js$/, 'readnow-work.js'); const WORK_F = path.join(HOME, 'readnow-work.js');
+let WORK = null; const loadWork = () => { try { if (WORK && WORK.stop) WORK.stop(); } catch (e) {} try { delete require.cache[require.resolve(WORK_F)]; WORK = require(WORK_F); WORK.start({ log: (m) => log(m) }); } catch (e) { WORK = null; if (fs.existsSync(WORK_F)) log('작업 창 모듈 읽기 실패: ' + e.message); } }; /* (정범님 11/05) 🪟 — log가 아래에서 정해지므로 처음 불러오기는 log 뒤에서 */
 let ALPS = null; const loadAlps = () => { try { delete require.cache[require.resolve(ALPS_F)]; ALPS = require(ALPS_F); } catch (e) { ALPS = null; if (fs.existsSync(ALPS_F)) log('ALPS 모듈 읽기 실패: ' + e.message); } }; loadAlps();
 const log = (m) => { const line = `${new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 19).replace('T', ' ')} ${m}\n`; try { fs.appendFileSync(LOG, line); } catch (e) {} process.stdout.write(line); };
+loadWork();
 const ps = (script, timeout) => new Promise((res) => { const f = path.join(os.tmpdir(), `rnp_${process.pid}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.ps1`); fs.writeFileSync(f, '﻿' + script, 'utf8');
   cp.execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', f], { windowsHide: true, timeout: timeout || 120000, maxBuffer: 8 * 1048576 }, (e, out, err) => { try { fs.unlinkSync(f); } catch (x) {} res({ e, out: String(out || ''), err: String(err || '') }); }); });
 const psq = (s) => "'" + String(s).replace(/'/g, "''") + "'";
@@ -179,10 +183,12 @@ const srv = http.createServer((req, res) => {
   const org = req.headers.origin || ''; const okOrg = !org || ORIGINS.some((r) => r.test(org)); const host = String(req.headers.host || '');
   const H = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...(org && okOrg ? { 'Access-Control-Allow-Origin': org, 'Vary': 'Origin', 'Access-Control-Allow-Headers': 'Content-Type, X-RN-Print', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Private-Network': 'true' } : {}) };
   const J = (code, o) => { res.writeHead(code, H); res.end(JSON.stringify(o)); };
+  /* (정범님 11/05) 🪟 작업 창·🖼 그려 읽기 — 이 PC 수집기(Tampermonkey · chrome-extension 출처)와 수집 상태 창(같은 출처)만 · 출처 검사는 모듈이 함(웹앱·알라딘 화면은 못 부름) */
+  { const pn = String(req.url || '').split('?')[0]; if (/^\/(work(\/|$)|render$)/.test(pn)) { if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host)) { res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end('{"ok":false}'); } if (!WORK) { res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify({ ok: false, nohelper: true, err: '작업 창 모듈이 아직 없음 — 1분 뒤 다시(도우미가 GitHub에서 받음)' })); } return WORK.api(req, res, new URL(req.url, 'http://127.0.0.1'), { readBody, log }); } }
   if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) || !okOrg) return J(403, { ok: false, err: '이 PC의 리드나우 웹앱만' });
   if (req.method === 'OPTIONS') { res.writeHead(204, H); return res.end(); }
   const u = new URL(req.url, 'http://127.0.0.1');
-  if (u.pathname === '/status') return J(200, { ok: true, ver: VERSION, pc: os.hostname(), alps: ALPS ? ALPS.VERSION : null });
+  if (u.pathname === '/status') return J(200, { ok: true, ver: VERSION, pc: os.hostname(), alps: ALPS ? ALPS.VERSION : null, work: WORK ? WORK.VERSION : null });
   if (u.pathname === '/alps' && req.method === 'GET') { if (org || !ALPS) return J(org ? 403 : 503, { ok: false, err: org ? '이 PC 브라우저 주소창에서만' : 'ALPS 모듈이 아직 없음(1분 안에 받음)' }); res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" }); return res.end(ALPS.pageHtml()); }
   if (u.pathname === '/printer' && req.method === 'GET') { if (org) return J(403, { ok: false, err: '이 PC 브라우저 주소창에서만' }); res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" }); return res.end(prnPageHtml()); }
   if (req.headers['x-rn-print'] !== '1') return J(403, { ok: false, err: 'X-RN-Print 머리가 없음' });
@@ -229,4 +235,7 @@ function selfUpdate() { if (alpsBusy()) { log('새 판 확인 미룸 — ALPS �
 function alpsUpdate() { https.get(RAW_ALPS + '?t=' + Date.now(), { timeout: 20000 }, (r) => { if (r.statusCode !== 200) { r.resume(); return; } let b = ''; r.setEncoding('utf8'); r.on('data', (c) => (b += c)); r.on('end', () => { const v = (b.match(/const VERSION = '([\d.]+)'/) || [])[1]; const n = (x) => String(x || '0').split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); if (!v || (ALPS && n(v) <= n(ALPS.VERSION))) return;
   if (alpsBusy()) { setTimeout(alpsUpdate, UPD_RETRY_MS); return; } /* 처리 중엔 안 바꿈 — 10분 뒤 다시(예전엔 6시간 뒤 다음 회차) */
   const tmp = path.join(HOME, 'readnow-alps.new.js'); fs.writeFileSync(tmp, b); const chk = cp.spawnSync(process.execPath, ['--check', tmp]); if (chk.status !== 0) { log(`ALPS 모듈 새 판 ${v} 검사 실패 — 그대로 둠`); return; } fs.renameSync(tmp, ALPS_F); loadAlps(); log(`ALPS 모듈 ${v}로 바꿈`); }); }).on('error', () => {}).on('timeout', function () { this.destroy(); }); }
+function workUpdate() { https.get(RAW_WORK + '?t=' + Date.now(), { timeout: 20000 }, (r) => { if (r.statusCode !== 200) { r.resume(); return; } let b = ''; r.setEncoding('utf8'); r.on('data', (c) => (b += c)); r.on('end', () => { const v = (b.match(/const VERSION = '([\d.]+)'/) || [])[1]; const n = (x) => String(x || '0').split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); if (!v || (WORK && n(v) <= n(WORK.VERSION))) return;
+  const tmp = path.join(HOME, 'readnow-work.new.js'); fs.writeFileSync(tmp, b); const chk = cp.spawnSync(process.execPath, ['--check', tmp]); if (chk.status !== 0) { log(`작업 창 모듈 새 판 ${v} 검사 실패 — 그대로 둠`); return; } fs.renameSync(tmp, WORK_F); loadWork(); log(`작업 창 모듈 ${v}로 바꿈`); }); }).on('error', () => {}).on('timeout', function () { this.destroy(); }); }
+if (!process.env.RN_PRINT_NOUPDATE) { setTimeout(workUpdate, WORK ? 120e3 : 8e3); setInterval(workUpdate, 6 * 3600e3); }
 if (!process.env.RN_PRINT_NOUPDATE) { setTimeout(selfUpdate, 60e3); setInterval(selfUpdate, 6 * 3600e3); setTimeout(alpsUpdate, ALPS ? 90e3 : 5e3); setInterval(alpsUpdate, 6 * 3600e3); }
