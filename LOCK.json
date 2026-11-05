@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "클라우드 진단 col2",
- "since": "2026-11-05T13:29:17Z",
- "beat": "2026-11-05T13:29:17Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-05T13:28:48Z"
+  "at": "2026-11-05T13:31:57Z"
  },
- "host": "vm"
+ "host": null
 }
