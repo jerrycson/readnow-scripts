@@ -15,16 +15,42 @@ New-Item -ItemType Directory -Force -Path $Dir | Out-Null
 Say "설치 자리: $Dir"
 
 Say 'Node.js 확인'
-$node = $null
-foreach ($p in @("$env:ProgramFiles\nodejs\node.exe", "${env:ProgramFiles(x86)}\nodejs\node.exe")) { if (Test-Path $p) { $node = $p; break } }
-if (-not $node) { $c = Get-Command node -ErrorAction SilentlyContinue; if ($c) { $node = $c.Source } }
-if (-not $node) {
-  Warn 'Node.js가 없어 설치합니다 (winget · 창이 뜨면 허용)'
-  winget install -e --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements | Out-Host
-  foreach ($p in @("$env:ProgramFiles\nodejs\node.exe", "${env:ProgramFiles(x86)}\nodejs\node.exe")) { if (Test-Path $p) { $node = $p; break } }
-  if (-not $node) { throw 'Node.js 설치를 확인하지 못했습니다. https://nodejs.org 에서 LTS를 설치한 뒤 이 줄을 다시 실행해 주세요.' }
+# 11/05 정범님 JS-MAIN: winget이 '관리자 권한 허락' 창을 띄우고 그 창이 뒤에 숨어 설치가 멈춤 →
+# 관리자 허락이 필요 없는 '휴대용 Node'(zip)를 %USERPROFILE%\ReadNow\node 에 풀어 씀(윈도우에 설치하지 않음 · 허락 창 없음)
+$NodeDir = Join-Path $env:USERPROFILE 'ReadNow\node'
+function NodeVer($p) { try { $v = (& $p -v) -replace '^v',''; return [int]($v.Split('.')[0]) } catch { return 0 } }
+function FindNode {
+  $c = @((Join-Path $NodeDir 'node.exe'), "$env:ProgramFiles\nodejs\node.exe", "${env:ProgramFiles(x86)}\nodejs\node.exe")
+  $g = Get-Command node -ErrorAction SilentlyContinue; if ($g) { $c += $g.Source }
+  foreach ($p in $c) { if ($p -and (Test-Path $p) -and ((NodeVer $p) -ge 22)) { return $p } }
+  return $null
 }
-$nv = (& $node -v) -replace '^v',''; if ([int]($nv.Split('.')[0]) -lt 22) { Warn "Node.js $nv — ALPS 자동 처리는 22 이상이 필요해 올립니다(winget)"; winget upgrade -e --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements | Out-Host; winget install -e --id OpenJS.NodeJS.LTS --silent --accept-package-agreements --accept-source-agreements | Out-Host }
+function GetPortableNode {
+  $arch = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'arm64' } else { 'x64' }
+  Warn "Node.js 22 이상이 없어 휴대용 Node를 받습니다(약 30MB · 관리자 허락 창 없음 · $arch)"
+  [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  $idx = Invoke-RestMethod -UseBasicParsing -Uri 'https://nodejs.org/dist/index.json'
+  $rel = $idx | Where-Object { $_.lts -and ([int]($_.version.TrimStart('v').Split('.')[0]) -ge 22) -and ($_.files -contains "win-$arch-zip") } | Select-Object -First 1
+  if (-not $rel) { throw 'Node.js 받을 판을 찾지 못했습니다 — 잠시 뒤 다시 실행해 주세요' }
+  $name = "node-$($rel.version)-win-$arch"
+  $zip = Join-Path $env:TEMP "$name.zip"
+  $ProgressPreference = 'SilentlyContinue'
+  Invoke-WebRequest -UseBasicParsing -Uri "https://nodejs.org/dist/$($rel.version)/$name.zip" -OutFile $zip
+  $ex = Join-Path $env:TEMP "rn-node-$([guid]::NewGuid().ToString('N'))"
+  New-Item -ItemType Directory -Force -Path $ex | Out-Null
+  # 윈도우 10·11에 들어 있는 tar가 zip을 빨리 풂(Expand-Archive는 파일이 많아 몇 분 걸림) · 없으면 Expand-Archive
+  $tar = Join-Path $env:SystemRoot 'System32\tar.exe'
+  if (Test-Path $tar) { & $tar -xf $zip -C $ex; if ($LASTEXITCODE -ne 0) { Expand-Archive -Force -Path $zip -DestinationPath $ex } } else { Expand-Archive -Force -Path $zip -DestinationPath $ex }
+  $src = Join-Path $ex $name
+  if (-not (Test-Path (Join-Path $src 'node.exe'))) { throw '받은 Node.js 파일이 이상합니다 — 잠시 뒤 다시 실행해 주세요' }
+  if (Test-Path $NodeDir) { try { Rename-Item -ErrorAction Stop $NodeDir ("node.old-" + (Get-Date -Format yyyyMMddHHmmss)) } catch { throw '예전 휴대용 Node 폴더를 옮기지 못했습니다(쓰는 중) — PC를 다시 켠 뒤 다시 실행해 주세요' } }
+  Move-Item $src $NodeDir
+  Remove-Item $zip -ErrorAction SilentlyContinue
+  return (Join-Path $NodeDir 'node.exe')
+}
+$node = FindNode
+if (-not $node) { $node = GetPortableNode }
+if ((NodeVer $node) -lt 22) { throw 'Node.js 22 이상을 준비하지 못했습니다 — 잠시 뒤 다시 실행해 주세요' }
 Ok "Node.js $(& $node -v)"
 
 Say '인쇄 도우미 받기'
