@@ -76,6 +76,7 @@ async function collectorPart() {
       await db.collection('shp_runs').doc(day + '_1').set({ id: day + '_1', day, n: 1, status: 'done', createdAt: ago(240), doneAt: ago(230), bt: [{ n: 1, al: ['O9'], y24: [] }] });
       await db.collection('shp_runs').doc(day + '_2').set({ id: day + '_2', day, n: 2, status: 'done', createdAt: ago(60), doneAt: ago(40), bt: [{ n: 1, al: ['O1'], y24: [] }, { n: 2, al: ['O3'], y24: [] }] });
       S.ship.orders = S.ship.orders.filter((x) => x.orderNo !== 'O1'); S.shipC = { orders: [{ orderNo: 'C1', buyer: '손님A', items: [it('C1')] }], at: now(), enrich: {} };
+      S.osShowDone = day + '_2'; /* (11/05 밤) 끝난 지 숨김 시간(60초)이 지난 회차 요약은 「진행 보기」를 눌렀을 때만 보임 — 이 칸은 요약 내용을 봄 */
       await w(500); S._shipRowsC = null; await openShip(); await w(1200); const one = document.getElementById('shp_one'); o.flow = one ? (one.querySelector('.shp-flow') || {}).innerText || '' : ''; o.flowH = one ? one.querySelector('.shp-flow').innerHTML : '';
       /* ④ 일부 상품만 남은 주문 */
       const old = ago(10); S.shipStart = [

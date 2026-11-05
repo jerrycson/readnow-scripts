@@ -51,7 +51,7 @@ console.log('⑩ 시장 자료 없음 — 다시 읽기 계획·다시 판단(�
   let D = SH.autoShipDecide({ ...base, firstAt: NOW - 11 * 60e3, order, enrich: {} });
   ok(D.state === 'review' && D.kinds.join() === 'nomkt', '10분 기다려도 시장 없음 → 검토(nomkt)');
   const R = SH.autoRetryInit(D, {}, NOW); ok(R && R.on && R.n === 0 && R.lids.join() === 'A' && Date.parse(R.next) === NOW + 2 * 60e3, '다시 읽기 계획: 그 상품 · 2분 뒤 첫 다시 읽기');
-  const D2 = SH.autoShipDecide({ ...base, firstAt: NOW - 11 * 60e3, order: ord([it('A', 9000), it('B', 1000)]), enrich: { B: { mkt: { at: iso(NOW), rows: [row('green', '상', 9000)], isbnOk: true }, via: 'ours' } } });
+  const D2 = SH.autoShipDecide({ ...base, firstAt: NOW - 11 * 60e3, order: ord([it('A', 9000), it('B', 5000)]), enrich: { B: { mkt: { at: iso(NOW), rows: [row('green', '상', 9000)], isbnOk: true }, via: 'ours' } } });
   ok(D2.kinds.includes('cheap') && SH.autoRetryInit(D2, {}, NOW) === null, '다른 검토 이유(싼 값)가 같이 있으면 계획 안 함(다시 판단해도 검토)');
   ok(SH.autoRetryInit(D, { mktRetryOn: false }, NOW) === null, '설정 mktRetryOn 끄면 계획 안 함');
   const v = { state: 'review', kinds: D.kinds, items: D.items, decidedAt: iso(NOW), mktRetry: R };
