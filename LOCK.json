@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.391 · 도우미 1.1.9",
- "since": "2026-11-05T11:01:02Z",
- "beat": "2026-11-05T11:01:02Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-05T10:29:30Z"
+  "at": "2026-11-05T11:28:45Z"
  },
- "host": "vm"
+ "host": null
 }
