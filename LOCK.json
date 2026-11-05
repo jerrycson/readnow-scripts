@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "도우미 설치: 휴대용 Node(관리자 허락 창 없음)",
+ "since": "2026-11-05T07:59:10Z",
+ "beat": "2026-11-05T07:59:10Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T07:40:25Z"
  },
- "host": null
+ "host": "vm"
 }
