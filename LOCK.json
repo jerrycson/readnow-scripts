@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "웹앱 1.78.392 축하 카드",
+ "since": "2026-11-05T11:32:56Z",
+ "beat": "2026-11-05T11:32:56Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T11:28:45Z"
  },
- "host": null
+ "host": "vm"
 }
