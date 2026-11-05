@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "장바구니 담기 오류·알라딘 매입 팝업",
+ "since": "2026-11-05T01:46:36Z",
+ "beat": "2026-11-05T01:46:36Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T01:32:20Z"
  },
- "host": null
+ "host": "vm"
 }
