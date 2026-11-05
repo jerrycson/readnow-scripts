@@ -43,8 +43,8 @@ H(async (p) => { await seedRows(p);
   await p.click('.rgrow[data-rgexp="q001"] .rgqf'); await wait(p, 200); await p.keyboard.press('End'); await p.keyboard.type('X'); await wait(p, 250); const ddT = await p.evaluate(() => !!document.querySelector('.rgq-dd')); await p.keyboard.press('Tab'); await wait(p, 900); s = await st(p, 'q001');
   ok(ddT && s.fold && !s.inp && !s.open && !/X$/.test(s.v), '목록이 떠 있을 때 Tab → 첫 문구 넣고 저장 · 접힘', { ddT, s });
   // Enter
-  await p.click('.rgrow[data-rgexp="q001"] .rgqf'); await wait(p, 200); await p.keyboard.press('End'); await p.keyboard.type(' · 엔터'); await p.keyboard.press('Enter'); await wait(p, 900); s = await st(p, 'q001');
-  ok(s.fold && !s.inp && !s.open && !s.foc && /· 엔터$/.test(s.v) && !s.exp.length, 'Enter → 저장하고 접힘(예전엔 저장만 하고 입력 칸이 남았음)', s);
+  await p.click('.rgrow[data-rgexp="q001"] .rgqf'); await wait(p, 200); await p.keyboard.press('End'); await p.keyboard.type(' · 엔터'); await p.keyboard.press('Control+Enter'); await wait(p, 900); s = await st(p, 'q001');
+  ok(s.fold && !s.inp && !s.open && !s.foc && /· 엔터$/.test(s.v) && !s.exp.length, 'Ctrl+Enter → 저장하고 접힘(11/05 밤부터 Enter는 줄바꿈)', s);
   // Esc
   await p.click('.rgrow[data-rgexp="q003"] .rgqf'); await wait(p, 200); await p.keyboard.type('에스케이프'); await p.keyboard.press('Escape'); await wait(p, 900); s = await st(p, 'q003');
   ok(s.fold && !s.inp && s.v === '에스케이프' && (await p.evaluate(() => !!(S.detail && S.detail.reg))), 'Esc → 저장하고 접힘(등록 화면 그대로)', s);
@@ -72,8 +72,8 @@ H(async (p) => { await seedRows(p);
   ok(s.fold && !s.inp && !s.open, '떠난 뒤 3초 안에 다시 그려도 접힌 칸', s);
   // ⚡ 설명 단추(설명 없음) → 바로 입력 칸 → Enter → 접힘
   await p.click('.rgrow[data-rgexp="n005"] [data-rgdm]'); await wait(p, 900); s = await st(p, 'n005'); const nb = s;
-  await p.keyboard.type('단추로 연 설명'); await p.keyboard.press('Enter'); await wait(p, 900); s = await st(p, 'n005');
-  ok(nb.inp && nb.foc && s.fold && !s.inp && s.v === '단추로 연 설명', '⚡ 설명 단추 → 입력 칸(커서) → Enter → 저장하고 접힘', { nb, s });
+  await p.keyboard.type('단추로 연 설명'); await p.keyboard.press('Control+Enter'); await wait(p, 900); s = await st(p, 'n005');
+  ok(nb.inp && nb.foc && s.fold && !s.inp && s.v === '단추로 연 설명', '⚡ 설명 단추 → 입력 칸(커서) → Ctrl+Enter → 저장하고 접힘', { nb, s });
   // 끝 — 열린 칸 없음 · 높이 그대로
   L = await geo(p); ok(!(await p.evaluate(() => document.querySelectorAll('.rgrow .rgq-in').length)) && L.every((x) => x.h <= (x.bb ? OLD_BB : OLD) + 4), '흐름을 다 돈 뒤: 열린 입력 칸 없음 · 줄 높이 그대로', L.map((x) => [x.id, x.h]));
   ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), '가로 넘침 없음(1400)');
@@ -92,9 +92,9 @@ H(async (p) => { await seedRows(p);
   await p.tap('.rgrow[data-rgexp="q001"] .rgqf'); await wait(p, 300); await p.keyboard.type('!'); await p.tap('.rgrow[data-rgexp="q002"] .rgqf'); await wait(p, 900);
   const a1 = await st(p, 'q001'), a2 = await st(p, 'q002');
   ok(a1.fold && !a1.inp && /!$/.test(a1.v) && a2.inp, '휴대폰: 다른 줄 설명을 톡 → 앞 줄 접힘 · 누른 줄 입력 칸', { a1, a2 });
-  // 휴대폰 — 자판의 완료(Enter)
-  await p.keyboard.type('?'); await p.keyboard.press('Enter'); await wait(p, 900); const a3 = await st(p, 'q002');
-  ok(a3.fold && !a3.inp && /\?$/.test(a3.v.split('\n').pop()), '휴대폰: 자판 완료(Enter) → 저장하고 접힘', a3);
+  // 휴대폰 — 자판 Enter = 줄바꿈(11/05 밤) · 다른 곳 톡 → 저장하고 접힘
+  await p.keyboard.type('?'); await p.keyboard.press('Enter'); await p.keyboard.type('새 줄'); await wait(p, 300); const a3o = await st(p, 'q002'); await p.tap('.rgtools'); await wait(p, 900); const a3 = await st(p, 'q002');
+  ok(a3o.inp && a3.fold && !a3.inp && /\?\n새 줄$/.test(a3.v), '휴대폰: 자판 Enter = 줄바꿈(칸 그대로) → 다른 곳 톡 → 줄바꿈 그대로 저장하고 접힘', { a3o, a3 });
   ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), '휴대폰: 가로 넘침 없음');
   console.log(bad ? `❌ tRGDESC2 실패 ${bad}` : '✓ tRGDESC2 통과');
 }, { vp: { width: 390, height: 900 }, touch: true }));

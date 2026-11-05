@@ -67,9 +67,10 @@ H(async (p) => { await seed(p);
     const s = await p.evaluate((id) => { const d = window.__FS.reg_items[id] || {}; const r = document.querySelector(`.rgrow[data-rgexp="${id}"]`); return { mode: d.descMode, v: d.descMode === 'quick' ? d.descQuick : d.descEdit, desc: d.desc, fold: !!r.querySelector('.rgqf'), inp: !!r.querySelector('.rgq-in'), exp: [...(S._regOpen || [])] }; }, id);
     ok(!o.exp.length && o.inp && o.foc && s.mode === mode && /제자리$/.test(s.v) && (mode === 'quick' || s.desc === s.v) && s.fold && !s.inp && !s.exp.length, `${id}(${mode === 'quick' ? '빈 ⚡ 설명' : id === 'd10' ? '한 줄 직접 입력' : '빈 직접 입력'}): 누르면 제자리 입력 · 자세히 안 열림 · 바깥 누름 → 저장(같은 방식 그대로) · 접힘`, { o, s });
   }
-  // 여러 줄 직접 입력은 한 줄 입력 칸에 담을 수 없어 예전처럼 자세히로
+  // (정범님 11/05 밤) 여러 줄 직접 입력도 제자리 여러 줄 칸 — 자세히로 열지 않음 · 줄바꿈 그대로(자세한 확인은 tRGMULTI)
   c = await center(p, '.rgrow[data-rgexp="d09"] .rgqf'); await p.mouse.click(c.x, c.y); await wait(p, 600);
-  ok(await p.evaluate(() => (S._regOpen || new Set()).has('d09')), '여러 줄 직접 입력 설명은 누르면 자세히(줄 바꿈을 지키려고 · 예전 그대로)');
+  { const o = await p.evaluate(() => { const t = document.querySelector('.rgrow[data-rgexp="d09"] textarea.rgq-in'); return { exp: (S._regOpen || new Set()).has('d09'), ta: !!t, v: t && t.value }; }); await p.mouse.click(700, 5); await wait(p, 900);
+    const sv = await p.evaluate(() => (window.__FS.reg_items.d09 || {}).descEdit); ok(!o.exp && o.ta && o.v === '여러 줄 직접 입력 첫 줄\n둘째 줄\n셋째 줄' && sv === o.v, '여러 줄 직접 입력 설명: 누르면 제자리 여러 줄 칸(자세히 안 열림) · 줄바꿈 그대로 · 고치지 않고 나가면 그대로', { o, sv }); }
   await p.evaluate(() => { S._regOpen = new Set(); openRegister(); }); await wait(p, 900);
   // ⑧ 접힌 설명 = 그 칸 너비 한 줄 · 넘치면 … · 줄 수 고르기 칸 없음(기기 저장 값 rn-reg-qfl=5는 지우지 않고 무시)
   const one = await p.evaluate(() => [...document.querySelectorAll('.rgrow .rgqf-t')].map((t) => { const cs = getComputedStyle(t); const lh = parseFloat(cs.lineHeight); const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom); return { id: t.closest('.rgrow').dataset.rgexp, lines: Math.round((t.clientHeight - pad) / lh), ell: cs.textOverflow === 'ellipsis' && cs.whiteSpace === 'nowrap', over: t.scrollWidth > t.clientWidth + 1, inW: t.getBoundingClientRect().right <= t.closest('.rgrow').getBoundingClientRect().right + 1 }; }));
