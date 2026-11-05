@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "daily",
+ "what": "🔬 매일 정밀 점검 11/05 (실측·범위 커밋 검토·고침)",
+ "since": "2026-11-05T12:53:14Z",
+ "beat": "2026-11-05T12:53:14Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T12:35:17Z"
  },
- "host": null
+ "host": "vm"
 }
