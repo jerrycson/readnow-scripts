@@ -1,8 +1,8 @@
-/* readnow-pc-ship.js — 리드나우 수집기 1.89.216의 모듈 ④ 출고 — 발송 요청 화면 송장 입력
+/* readnow-pc-ship.js — 리드나우 수집기 1.89.217의 모듈 ④ 출고 — 발송 요청 화면 송장 입력
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { ship: '1.89.216' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['ship', '1.89.216', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { ship: '1.89.217' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['ship', '1.89.217', function () {
 /* ══════════ 송장 입력 (1.28.0): 발송 요청 화면(worder_delivery.aspx?orderstep=4)에서 주문마다 송장번호를 넣고 알라딘의 '입력완료'(deliveryNoComplete)를 누름 ══════════
  * 한 번에 한 주문 → 화면이 다시 열리면 결과 확인 → 다음 주문 (진행은 shp_invoices/{id}.items[].state 에 저장: todo → sent → done / fail / missing)
  * 알라딘 화면의 기능을 그대로 씀(새로 만든 요청 없음). 확인 창은 '예'로, 알림 글은 기록으로 남김
@@ -122,7 +122,7 @@
       const CB = [...document.querySelectorAll('input[type="checkbox"]')].filter((c) => /^chkOrder\./.test(c.name || '')); for (const c of CB) if (c.checked) c.checked = false;
       for (const x of batch) { document.getElementById('deliveryNo.' + x.orderNo).value = x.invoice; chkOf(x.orderNo).checked = true; }
       const want = new Set(batch.map((x) => 'chkOrder.' + x.orderNo)); const bad = batch.filter((x) => String(document.getElementById('deliveryNo.' + x.orderNo).value) !== String(x.invoice) || !chkOf(x.orderNo).checked); const extra = CB.filter((c) => c.checked && !want.has(c.name));
-      if (bad.length || extra.length) { for (const x of batch) { x.state = 'todo'; delete x.bulk; const el = document.getElementById('deliveryNo.' + x.orderNo); if (el) el.value = ''; } /* (11/05 밤) 우리가 방금 넣은 칸 값은 지움 — 다시 고를 때 '이미 송장 있음'으로 잘못 보지 않게(원래 빈 칸만 여기까지 옴) */ v.bulkOff = { at: nowIso(), why: `넣은 뒤 다시 읽어 보니 ${bad.length ? `송장 칸·체크가 안 맞음 ${bad.length}건` : `우리 주문이 아닌 체크 ${extra.length}개`} — 누르지 않고 한 건씩으로` }; st('warn', '⚡ 여러 건 한 번에 — ' + v.bulkOff.why, { o: (bad[0] || batch[0]).orderNo, res: '한 건씩으로', big: 1 }); await save({ bulkOff: v.bulkOff }); for (const c of CB) c.checked = false; return step(id); }
+      if (bad.length || extra.length) { for (const x of batch) { x.state = 'todo'; delete x.bulk; const el = document.getElementById('deliveryNo.' + x.orderNo); if (el) el.value = ''; if (EXI) { try { await EXI.finish(db, { kind: 'invoice', key: exKey(x), by: PCN }, 'failed', { msg: '여러 건 한 번에 — 넣은 뒤 다시 읽어 보니 칸·체크가 안 맞아 누르지 않음 · 한 건씩으로' }); } catch (er) {} } /* (🔬 정밀 점검 11/05 · 확정) 묶음에서 begin('시작')만 적고 되돌리면 실행 문이 30분 '진행 중'으로 남아 바로 이어지는 한 건씩 길의 begin이 막혀 묶음 전부 '실행 문이 막음 — 넣지 않음'(실패)으로 끝남 */ } /* (11/05 밤) 우리가 방금 넣은 칸 값은 지움 — 다시 고를 때 '이미 송장 있음'으로 잘못 보지 않게(원래 빈 칸만 여기까지 옴) */ v.bulkOff = { at: nowIso(), why: `넣은 뒤 다시 읽어 보니 ${bad.length ? `송장 칸·체크가 안 맞음 ${bad.length}건` : `우리 주문이 아닌 체크 ${extra.length}개`} — 누르지 않고 한 건씩으로` }; st('warn', '⚡ 여러 건 한 번에 — ' + v.bulkOff.why, { o: (bad[0] || batch[0]).orderNo, res: '한 건씩으로', big: 1 }); await save({ bulkOff: v.bulkOff }); for (const c of CB) c.checked = false; return step(id); }
       for (const x of batch) st('info', '송장 칸에 넣고 체크함', { o: x.orderNo, inv: x.invoice }); st('info', `'선택 입력완료' 누름(${batch.length}건) — 알라딘이 처리하고 화면을 다시 열 때까지 기다림`, { o: batch[0].orderNo, big: 1 }); await st.flush();
       const sc = document.createElement('script'); sc.textContent = `(function(){ window.confirm = function(){ return true; }; window.alert = function(m){ try { sessionStorage.setItem('rnInvAlert', String(m)); } catch (e) {} }; deliveryNoSComplete(); })();`;
       document.body.appendChild(sc);
