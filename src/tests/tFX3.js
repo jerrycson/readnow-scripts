@@ -13,7 +13,7 @@ const seedF = () => { const td = dstr(new Date()); const bk = (n) => rkBack(td, 
   for (let i = 1; i <= 70; i++) sale(bk(i), 10000 + ((i * 7919) % 23) * 1000);
   window.__sale = (d, p) => { sale(d, p); S.ver = (S.ver || 0) + 1; S._sdm = null; };
   S.ship = { orders: [], tabCounts: {}, at: new Date().toISOString() }; S.shipC = { orders: [], at: new Date().toISOString(), enrich: {} }; S.shipCFromCache = false; S.ordersLoaded = true; S.shipDayN = 80;
-  window.__today = (amt) => { S.shpDays.set(td, { day: td, source: 'tab', readAt: new Date().toISOString(), entries: [{ id: 'aladin_T1', orderNo: 'T1', ex: [], items: [{ title: '오늘 시험 책', price: amt, qty: 1 }] }] }); S.shpDaysV++; S._sdm = null; S.ver = (S.ver || 0) + 1; };
+  window.__today = (amt) => { S.shpDays.set(td, { day: td, source: 'tab', confirmedAt: new Date().toISOString(), /* (11/05 저녁) 출고 확정 처리 뒤(확정한 날을 클라우드가 탭 기준으로 바꾼 꼴) */ readAt: new Date().toISOString(), entries: [{ id: 'aladin_T1', orderNo: 'T1', ex: [], items: [{ title: '오늘 시험 책', price: amt, qty: 1 }] }] }); S.shpDaysV++; S._sdm = null; S.ver = (S.ver || 0) + 1; };
   try { ['rn-rkfx', 'rn-rkfx-seen', 'rn-rkfx-seen-o', 'rn-rkfx-hd', 'rn-sd-cols', 'rn-rkfx-day'].forEach((x) => localStorage.removeItem(x)); localStorage.setItem('rn-device', 'JS-MAIN'); } catch (e) {} S.devOk = true; S._rkfxMg = 1; window.setFx = (v) => { S.app = { ...(S.app || {}), rankFx: v }; return db.collection('app_settings').doc('main').update({ rankFx: v }).catch(() => db.collection('app_settings').doc('main').set({ rankFx: v }, { merge: true })); }; S.app.rankFx = { k: {} };
   return { td, bk1: bk(1) }; };
 /* 지금 보이는(떠 있거나 기다리는) 카드 모두 */
@@ -91,7 +91,7 @@ const shownSrc = () => { const L = []; const P = S._rkfxP; const st = S._rkfx; c
       // ④ 출고 카드 — 오늘 처음 · 다시는 안 뜸 · 끄기
       localStorage.setItem('rn-rkfx-seen', JSON.stringify({ d: td, k: 'top', g: 3, low: 1 })); /* 확정 순간(conf)은 이미 본 것으로 */ rankFxClose(); if (S.sec.o_shipday && document.getElementById('sdbar')) { document.getElementById('sdbar').click(); await W(300); }
       const ship = async () => { rankFxClose(); const b = document.getElementById('shipentry'); if (!b) return 'no-btn'; b.click(); await W(1400); const L = seen(shown()); rankFxClose(); if (sh0()) { history.back(); await W(400); } return L; }; const sh0 = () => document.getElementById('sheet').classList.contains('on');
-      if (S.tab !== 'orders') S.tab = 'home'; uxTabGo('orders'); for (let i = 0; i < 40 && !document.getElementById('shipentry'); i++) await W(150); o.s1 = await ship(); o.s2 = await ship(); o.sSeen = rkfxSeenO('ship').d === rkDay5();
+      if (S.tab !== 'orders') S.tab = 'home'; uxTabGo('orders'); for (let i = 0; i < 40 && !document.getElementById('shipentry'); i++) await W(150); o.s1 = await ship(); o.s2 = await ship(); o.sSeen = !!rkfxPlSeen().p.ship;
       window.__rkNow = Date.parse(rkBack(kd, -1) + 'T06:00:00+09:00'); await window.setFx({ k: {}, seq: 1, on: { ship: false } }); o.s3 = await ship(); await window.setFx({ k: {}, seq: 1 }); o.s4 = await ship(); delete window.__rkNow;
       // ⑤ 지연 · 터치하기 전까지
       await window.setFx({ k: {}, delay: 1.5 }); try { const a = JSON.parse(localStorage.getItem('rn-rkfx-seen-o') || '{}'); delete a.go; localStorage.setItem('rn-rkfx-seen-o', JSON.stringify(a)); } catch (e) {} o.dl0 = [rkfxOcc('go'), !!document.getElementById('rkfx'), !!(S._rkfx && S._rkfx.pend)]; o.dlQ = rkfxOcc('open') === false && (S._rkfxQ || []).includes('open'); await W(1000); o.dl1 = !!document.getElementById('rkfx'); await W(900); o.dl2 = { on: !!document.getElementById('rkfx'), occ: (document.getElementById('rkfx') || { dataset: {} }).dataset.occ }; S._rkfxQ = []; rankFxClose();
@@ -109,14 +109,14 @@ const shownSrc = () => { const L = []; const P = S._rkfxP; const st = S._rkfx; c
       window.__rkfxAuto = 0; return o; } catch (e) { o.err = e.message + ' ' + (e.stack || '').slice(0, 300); return o; } }, { shown: shownSrc.toString() });
     console.log('  ③~⑥:', JSON.stringify(r3).slice(0, 2500));
     ok(!r3.err, '시험 중 오류 없음(③~⑥) ' + (r3.err || ''));
-    ok(/^tab:day:/.test(r3.h1) && r3.hd1 && r3.h1b === '' && r3.d5a !== r3.d5b, `머리를 처음 누르면 그날 카드(5시 전 = 어제 몫 ${r3.d5a}) · 같은 때 다시 누르면 안 뜸: ` + [r3.h1, r3.h1b].join(' / '));
-    ok(/^tab:day:/.test(r3.h2) && r3.h3 === '', `오전 5시가 지나(${r3.d5b}) 처음 누르면 다시 뜸 · 그 뒤로는 안 뜸: ` + [r3.h2, r3.h3].join(' / '));
+    ok(/^tab:day:/.test(r3.h1) && r3.hd1 && r3.h1b === '', `머리를 확정 처리 뒤 처음 누르면 그날 카드 · 다시 누르면 안 뜸: ` + [r3.h1, r3.h1b].join(' / '));
+    ok(r3.h2 === '' && r3.h3 === '', `(11/05 저녁) 하루는 한국 날짜 — 오전 5시가 지나도(${r3.d5b}) 같은 날이면 다시 안 뜸: ` + [r3.h2, r3.h3].join(' / '));
     ok(/rec:day:top/.test(r3.h4) && /하루 1위 탈환/.test(r3.h4kt) && r3.h5 === '', '1위 탈환(오늘이 가장 큼) → 누르면 🔁 기록 갱신 카드 · 금액만 더 커지면(주인 그대로) 안 뜸: ' + [r3.h4, r3.h4kt, r3.h5].join(' / '));
     ok(/rec:day:low/.test(r3.h6) && /하루 꼴찌 탈환/.test(r3.h6kt), '꼴찌 탈환(끝난 날) → 누르면 카드: ' + r3.h6 + ' ' + r3.h6kt);
     ok(r3.h7 === '' && r3.h8 === '', '🔁 기록 갱신을 끄면 안 뜸 · 끈 동안의 갱신은 다시 켜도 지나감: ' + [r3.h7, r3.h8].join(' / '));
-    ok(/rec:day:low/.test(r3.h9) && r3.autoCap[0] === false && r3.autoCap[1] === false, '하루 상한을 다 썼어도 사람이 누른 머리는 뜸 · 저절로 뜨는 것은 막힘(띄운 기록도 안 씀 — 11/05 15시): ' + JSON.stringify([r3.h9, r3.autoCap]));
+    ok(r3.h9 === '' && r3.autoCap[0] === false && r3.autoCap[1] === false, '(11/05 저녁) 기기 하루 상한을 다 썼으면 머리도 안 뜸(기기마다 N번) · 끝까지 끝도 막힘: ' + JSON.stringify([r3.h9, r3.autoCap]));
     ok(r3.h10 === '', '주문 기록을 다 받기 전에는 기록 갱신을 견주지 않음');
-    ok(/^ship:day:/.test(r3.s1) && r3.s2 === '' && r3.sSeen && r3.s3 === '' && /^ship:day:/.test(r3.s4), '🚚 출고 카드로 오늘 처음 열면 그날 카드 · 두 번째는 안 뜸 · 다음 날 끄면 안 뜸 · 켜면 뜸: ' + [r3.s1, r3.s2, r3.s3, r3.s4].join(' / '));
+    ok(/^ship:day:/.test(r3.s1) && r3.s2 === '' && r3.sSeen && r3.s3 === '' && /^ship:day:/.test(r3.s4), '🚚 출고 카드로 확정 처리 뒤 처음 열면 그날 카드 · 두 번째는 안 뜸 · 다음 날(한국 날짜) 끄면 안 뜸 · 켜면 뜸: ' + [r3.s1, r3.s2, r3.s3, r3.s4].join(' / '));
     ok(r3.dl0[0] === true && !r3.dl0[1] && r3.dl0[2] && r3.dlQ && !r3.dl1 && r3.dl2.on && r3.dl2.occ === 'go' && r3.smpNow, '⏱ 나타나기까지 1.5초 — 바로 안 뜨고 기다림(그동안 다른 경우는 줄 섬) → 1.5초 뒤 뜸 · 샘플은 바로: ' + JSON.stringify([r3.dl0, r3.dl1, r3.dl2]));
     ok(r3.stay.tm === 0 && r3.stay.tm2 > 0, '📌 터치하기 전까지 안 꺼짐 — 저절로 닫는 시계 없음(끄면 있음) ' + JSON.stringify(r3.stay));
     ok(r3.occ === 'conf,go,tab,rec,ship,open,week,month,year', '🕒 언제 띄울까 — 오늘 출고 끝까지·머리·기록 갱신·출고 카드까지 하나하나: ' + r3.occ);
@@ -166,11 +166,11 @@ const shownSrc = () => { const L = []; const P = S._rkfxP; const st = S._rkfx; c
     const R4 = r.r4 || []; ok(R4.length === 4 && R4.map((x) => x.per).join() === 'day,week,month,year' && R4.every((x, i) => !i || x.l > R4[i - 1].r - 1) && R4.every((x) => x.l >= 0 && x.r <= r.vw && x.t < 300) && !r.big && r.ov <= 0, '다 앉음 — 화면 위쪽 한 줄 왼쪽부터 하루·주간·월간·연간 · 겹침·넘침 없음: ' + JSON.stringify(R4.map((x) => [x.per, x.l, x.r, x.t])));
     ok(R4[0] && R4[0].rot === 0 && R4.slice(1).every((x) => x.rot === 360 && /rotate\(360deg\)/.test(x.tf)), '첫 자리 뒤로 갈 때는 돌면서(360°) · 첫 자리는 돌지 않음');
     ok(r.aura === 'rkfxAura' && r.stay === 4, '자기 색 후광(은은히 숨쉼) · 다 앉은 뒤에는 저절로 안 사라짐: ' + r.aura);
-    const RS = r2.rs || []; ok(RS.length === 4 && RS.every((x) => x.l >= 0 && x.r <= r2.vw) && RS.every((x, i) => !i || x.l > RS[i - 1].r - 1) && r2.ov <= 0, `화면이 360px로 바뀌면 자리를 다시 셈(한 줄 · 넘침 없음): ` + JSON.stringify(RS.map((x) => [x.l, x.r])));
+    const RS = r2.rs || []; ok(RS.length === 4 && RS.every((x) => x.l >= 0 && x.r <= r2.vw) && RS.every((x, i) => !i || x.t > RS[i - 1].t) && r2.ov <= 0, `화면이 360px로 바뀌면 자리를 다시 셈(11/05 저녁: 글씨가 읽히게 한 줄에 한 장 · 넘침 없음): ` + JSON.stringify(RS.map((x) => [x.l, x.r, x.t])));
     const R5 = r2.r5 || []; ok(r2.newBig && R5.length === 5 && R5.map((x) => x.per).join() === 'day,day,week,month,year' && R5.every((x) => x.l >= 0 && x.r <= r2.vw), '보이는 중 새 하루 카드 → 크게 보인 뒤 하루 자리(앞쪽)로 · 다른 카드는 비켜 앉음: ' + R5.map((x) => x.per).join());
     ok(r2.gone, '하나를 누르면 모두 사라짐(줄·카드·큰 화면)');
     ok(r3.single && r3.conv && r3.c === 'day,month' && r3.esc, '한 장이 떠 있는 중에 새 카드 → 이어 보이기로(하루 먼저) · Esc면 모두 닫힘: ' + r3.c);
-    const R7 = r3.r7 || []; ok(R7.length === 7 && R7.every((x) => x.l >= 0 && x.r <= r3.vw) && R7.every((x, i) => !i || x.l > R7[i - 1].r - 1) && Math.max(...R7.map((x) => x.t)) - Math.min(...R7.map((x) => x.t)) <= 24 && Math.max(...R7.map((x) => x.t)) < 200 && r3.ov <= 0 && R7.map((x) => x.per).join() === 'day,day,week,week,month,year,year' && r3.gone7, '일곱 장도 휴대폰 폭 한 줄(작게 · 겹침·가로 스크롤 없음): ' + JSON.stringify(R7.map((x) => [x.per, x.l, x.r, x.t])));
+    const R7 = r3.r7 || []; ok(R7.length === 7 && R7.every((x) => x.l >= 0 && x.r <= r3.vw) && R7.every((x, i) => !i || x.t >= R7[i - 1].b - 1) && r3.ov <= 0 && R7.map((x) => x.per).join() === 'day,day,week,week,month,year,year' && r3.gone7, '일곱 장도 휴대폰 폭 — (11/05 저녁) 글씨가 읽히게 한 줄에 한 장씩 아래로(겹침·가로 스크롤 없음 · 위아래로 밀어 봄): ' + JSON.stringify(R7.map((x) => [x.per, x.l, x.r, x.t])));
     ok(r4.now === 4 && !r4.big && r4.order === 'day,week,month,year' && r4.anim === 'none', '움직임 줄이기 — 크게 보이기 없이 바로 네 자리 · 후광 숨쉬기 없음: ' + JSON.stringify(r4)); ran++;
   });
   // ── 칸 셋: 휴대폰(360) — 출고별 매출 표가 넓으면 표 칸 안에서 머리 줄·첫 칸 고정 · 가로 넘침 없음 · 카드 크기

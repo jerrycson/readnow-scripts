@@ -13,7 +13,7 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
   const sale = (d, price, cash) => { k++; const id = (cash ? 'cash_' : 'aladin_') + 'R' + k; S.orders.set(id, { id, orderNo: 'R' + k, kind: 'sale', platform: cash ? 'cash' : 'aladin', orderedAt: d + 'T09:00:00', shippedAt: d + 'T15:00:00', buyer: { name: '손님A' }, items: [{ title: '시험 책 ' + k, price, qty: 1, lineStatus: 'normal' }] }); };
   sale(bk(5), 30000); sale(bk(4), 50000); sale(bk(4), 10000, true); /* 현금 1만 원 → 그날 6만 원 */ sale(bk(3), 45000); sale(bk(2), 20000); sale(bk(2), 25000); /* 4.5만 원 같음 */ sale(bk(1), 40000);
   S.ship = { orders: [], tabCounts: {}, at: new Date().toISOString() }; S.shipC = { orders: [], at: new Date().toISOString(), enrich: {} }; S.shipCFromCache = false;
-  window.__today = (amt) => { S.orders.delete('aladin_TP'); S.shpDays.set(td, { day: td, source: 'tab', readAt: new Date().toISOString(), entries: [{ id: 'aladin_T1', orderNo: 'T1', ex: [], items: [{ title: '오늘 시험 책', price: amt, qty: 1 }] }] }); S.shpDaysV++; S._sdm = null; S.ver = (S.ver || 0) + 1; };
+  window.__today = (amt) => { S.orders.delete('aladin_TP'); S.shpDays.set(td, { day: td, source: 'tab', confirmedAt: new Date().toISOString(), /* (11/05 저녁) 출고 확정 처리 뒤 */ readAt: new Date().toISOString(), entries: [{ id: 'aladin_T1', orderNo: 'T1', ex: [], items: [{ title: '오늘 시험 책', price: amt, qty: 1 }] }] }); S.shpDaysV++; S._sdm = null; S.ver = (S.ver || 0) + 1; };
   /* (정범님 11/05 15시) 확정 전 = 오늘 출고별 매출 근거가 아직 확정·배송&구매확정전이 아님(알라딘 발송일만) — 예전 '할 일 남음' 대신 */
   window.__todayPend = (amt) => { S.shpDays.delete(td); S.orders.set('aladin_TP', { id: 'aladin_TP', orderNo: 'TP', kind: 'sale', platform: 'aladin', orderedAt: td + 'T09:00:00', shippedAt: td + 'T15:00:00', buyer: { name: '손님A' }, items: [{ title: '오늘 시험 책', price: amt, qty: 1, lineStatus: 'normal' }] }); S.shpDaysV++; S._sdm = null; S.ver = (S.ver || 0) + 1; };
   return { td, bk1: bk(1), bk2: bk(2), bk3: bk(3), bk4: bk(4) }; };
@@ -91,7 +91,7 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
       // 날 다시 깔기 — 어제 출고 없음 · 그제 8만(앞선 1위) · 사흘 전 2만(앞선 꼴찌) · 7일 전 3만 · 작년 오늘 5만
       const td = D.td; const bk = (n) => rkBack(td, n); const ya = rkYAgo(td); let k = 0; S.orders = new Map(); const sale = (d, price) => { k++; const id = 'aladin_Q' + k; S.orders.set(id, { id, orderNo: 'Q' + k, kind: 'sale', platform: 'aladin', orderedAt: d + 'T09:00:00', shippedAt: d + 'T15:00:00', buyer: { name: '손님A' }, items: [{ title: '시험 책 ' + k, price, qty: 1, lineStatus: 'normal' }] }); };
       sale(bk(2), 80000); sale(bk(3), 20000); sale(bk(7), 30000); sale(ya, 50000); o.dd = { b7: bk(7), ya };
-      const run = async (amt, clr) => { if (clr) { try { localStorage.removeItem('rn-rkfx-seen'); } catch (e) {} } __today(amt); rankFxClose(); rankFxCheck(); await Wt(150); const f = fx(); const t = rankToday(); rankFxClose(); return { f, kinds: t.kinds, kind: t.kind, cmps: t.cmps.map((c) => [c.k, c.none ? 'none' : c.pct]), seen: JSON.parse(localStorage.getItem('rn-rkfx-seen') || '{}') }; };
+      const run = async (amt, clr) => { if (clr) { try { localStorage.removeItem('rn-rkfx-seen'); } catch (e) {} } __today(amt); rankFxClose(); rkfxPlace('conf', { chk: 1 }); await Wt(150); /* (11/05 저녁) 관련 화면 하나(확정 순간) — 같은 화면은 한 번 · 더 높은 등급이면 한 번 더 */ const f = fx(); const t = rankToday(); rankFxClose(); return { f, kinds: t.kinds, kind: t.kind, cmps: t.cmps.map((c) => [c.k, c.none ? 'none' : c.pct]), seen: JSON.parse(localStorage.getItem('rn-rkfx-seen') || '{}') }; };
       // ⑧ 4만: 어제 없음(건너뜀 — 그제 8만과 견주지 않음) · 지난주 3만보다 많음 · 작년 5만보다 적음 → 응원(🚀) 하나 + 작은 줄
       o.a = await run(40000, 1);
       o.line = (rankTodayHtml() || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
@@ -190,7 +190,7 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
     ok(r.w3 === 1 && r.w3days.join() === '2026-10-14' && r.wed2 === 23000, '한 날만 바뀌면 그날만 씀 ' + JSON.stringify([r.w3, r.w3days, r.wed2])); ran++;
   });
   // (정범님 11/05) ⑭ 축하·응원 늘리기 · 1위 화려함 / 꼴찌 초라함 · 뜨는 경우(끝까지 누를 때·출고별 매출 열 때·하루 첫 열기·주간·월간) · 경우마다 끄기·하루 한 번
-  await H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(500);
+  await H(async (p) => { await p.clock.setSystemTime(new Date('2026-11-08T16:00:00+09:00')); /* (11/05 저녁) 일요일로 정함 — 주간은 일요일에만 */ await p.evaluate(require('./seed.js')); await p.waitForTimeout(500);
     const r = await p.evaluate(async (seedSrc) => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; const D = (0, eval)('(' + seedSrc + ')')(); try { ['rn-rkfx', 'rn-rkfx-seen', 'rn-rkfx-seen-o'].forEach((k) => localStorage.removeItem(k)); localStorage.setItem('rn-device', 'JS-MAIN'); } catch (e) {} S.devOk = true; S._rkfxMg = 1; S.app.rankFx = { k: {} };
       const fx = () => { const e = document.getElementById('rkfx'); return e ? { kind: e.dataset.kind, occ: e.dataset.occ || '', tier: e.dataset.tier, dur: +e.dataset.dur, txt: e.innerText.replace(/\s+/g, ' ').slice(0, 300) } : null; };
       o.n = Object.fromEntries(Object.entries(RKFX).map(([k, K]) => [k, K.v.length]));
@@ -206,19 +206,19 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
       o.go1r = rkfxOcc('go'); o.go1 = fx(); rankFxClose(); o.go2r = rkfxOcc('go'); S.ship = { orders: [], tabCounts: {}, at: new Date().toISOString() }; S._shipRowsC = null; __today(90000); o.go3r = rkfxOcc('go'); o.go3 = fx(); rankFxClose(); o.go4r = rkfxOcc('go');
       // 출고별 매출 열 때 — 따로 셈(끝까지에서 띄웠어도 뜸) · 출고별 매출 칸을 펼치면 뜸 (확정 순간 경우는 이미 본 것으로 둠 — 그 기록은 끝까지 그대로여야 함)
       const confSeen = JSON.stringify({ d: td, k: 'top', g: 3, low: 0 }); localStorage.setItem('rn-rkfx-seen', confSeen); o.confSeen = confSeen;
-      S.sec.o_shipday = false; if (S.tab === 'orders') S.tab = 'home'; uxTabGo('orders'); for (let i = 0; i < 60 && !document.getElementById('sdbar'); i++) await Wt(150); rankFxClose(); const sdb = document.getElementById('sdbar'); if (sdb) sdb.click(); o.tabDbg0 = [!!sdb, S.sec.o_shipday, S.tab]; for (let i = 0; i < 20 && !fx(); i++) await Wt(150); o.tab = fx(); o.tabDbg = [...o.tabDbg0, (S._rkfxQ || []).join(), JSON.stringify(rkfxSeenO('tab')), !!S._rkfx, (() => { try { const x = rkfxOccInfo('tab'); return x && [x.key, x.I.kind]; } catch (e) { return 'err ' + e.message; } })()]; rankFxClose(); o.tab2r = rkfxOcc('tab');
+      S.sec.o_shipday = false; if (S.tab === 'orders') S.tab = 'home'; uxTabGo('orders'); for (let i = 0; i < 60 && !document.getElementById('sdbar'); i++) await Wt(150); await Wt(1200); o.otab = fx(); rankFxClose(); /* (11/05 저녁) 주문·매출 탭에 들어감 = 관련 화면 하나(따로 한 번) */ const sdb = document.getElementById('sdbar'); if (sdb) sdb.click(); o.tabDbg0 = [!!sdb, S.sec.o_shipday, S.tab]; for (let i = 0; i < 20 && !fx(); i++) await Wt(150); o.tab = fx(); o.tabDbg = [...o.tabDbg0, (S._rkfxQ || []).join(), JSON.stringify(rkfxSeenO('tab')), !!S._rkfx, (() => { try { const x = rkfxOccInfo('tab'); return x && [x.key, x.I.kind]; } catch (e) { return 'err ' + e.message; } })()]; rankFxClose(); o.tab2r = rkfxOcc('tab');
       // 「오늘 출고 끝까지」 단추 고리(shipOneShotGo) — 지운 뒤 누르면 뜸
       try { const all = JSON.parse(localStorage.getItem('rn-rkfx-seen-o') || '{}'); delete all.go; localStorage.setItem('rn-rkfx-seen-o', JSON.stringify(all)); } catch (e) {} window.shipOneShot = () => {}; shipOneShotGo(); shipOneShotGo(); for (let i = 0; i < 20 && !fx(); i++) await Wt(150); o.btn = fx(); rankFxClose(); delete window.shipOneShot; if (document.getElementById('sheet').classList.contains('on')) { history.back(); await Wt(300); }
       // 하루 첫 열기(어제 결과) · 주간 · 월간
-      o.ydMd = rkMd(D.bk1); o.openR = rkfxOcc('open'); o.open = fx(); rankFxClose(); o.wk = rkPerInfo('week'); o.mo = rkPerInfo('month'); o.wkR = rkfxOcc('week'); o.wkFx = fx(); rankFxClose(); o.wkAgain = rkfxOcc('week'); o.moR = rkfxOcc('month'); o.moFx = fx(); rankFxClose();
+      o.ydMd = rkMd(D.bk1); o.openR = rkfxOcc('open'); o.open = fx(); rankFxClose(); o.wk = rkPerInfo('week'); o.mo = rkPerInfo('month'); o.wkR = rkfxOcc('week'); o.wkFx = fx(); rankFxClose(); o.wkAgain = rkfxOcc('week'); o.moToday = rkfxOcc('month'); { const it = rkfxPerItems('2026-10-31', true, { all: 1 }).find((x) => x.per === 'month'); o.moR = !!it && rkfxPresent([it], { manual: 1 }); } o.moFx = fx(); rankFxClose(); /* 11/08은 달 마지막 날이 아님 → 오늘은 안 뜸 · 10/31(그 달 마지막 날) 카드 */
       o.wk = o.wk && { d: o.wk.d, unit: o.wk.unit, N: o.wk.N, kind: o.wk.kind, wd: new Date(o.wk.d + 'T12:00:00Z').getUTCDay(), key: o.wk.key }; o.mo = o.mo && { d: o.mo.d, N: o.mo.N, kind: o.mo.kind };
       // 겹치면 줄 섬 — 하나가 떠 있는 동안 부른 경우는 닫힌 뒤 뜸
       try { localStorage.removeItem('rn-rkfx-seen-o'); } catch (e) {} rkfxOcc('open'); const f1 = fx(); rkfxOcc('week'); o.qd = [f1 && f1.occ, (S._rkfxQ || []).join()]; document.getElementById('rkfx').click(); for (let i = 0; i < 20 && !(fx() && fx().occ === 'week'); i++) await Wt(150); o.q2 = fx(); rankFxClose();
       // 설정 — 경우마다 끄기(공용 저장) · 끄면 안 뜸 · 샘플은 경우마다
       S.sec.set_rankfx = true; for (let i = 0; i < 20 && !document.querySelector('#rkfx_occ input[data-o="week"]'); i++) { S.tab = 'settings'; renderTabs(); renderMain(); await Wt(300); } o.occN = document.querySelectorAll('#rkfx_occ input[data-rkfx="occ"]').length; o.occOn = [...document.querySelectorAll('#rkfx_occ input[data-rkfx="occ"]')].every((x) => x.checked);
       const cb = document.querySelector('#rkfx_occ input[data-o="week"]'); cb.checked = false; cb.dispatchEvent(new Event('change', { bubbles: true })); await Wt(150); o.saved = ((((window.__FS.app_settings || {}).main || {}).rankFx || {}).on || {});
-      try { localStorage.removeItem('rn-rkfx-seen-o'); } catch (e) {} o.offR = rkfxOcc('week'); o.offFx = fx(); o.onOther = rkfxOcc('month'); rankFxClose();
-      document.querySelector('[data-rkfxo="week"]').click(); await Wt(100); o.smp = fx(); rankFxClose(); o.conf = localStorage.getItem('rn-rkfx-seen') === o.confSeen; window.__rkfxAuto = 0; S.ship = ship0;
+      try { localStorage.removeItem('rn-rkfx-seen-o'); } catch (e) {} o.offR = rkfxOcc('week'); o.offFx = fx(); o.onOther = rkfxOcc('open'); rankFxClose();
+      document.querySelector('[data-rkfxo="week"]').click(); await Wt(100); o.smp = fx(); rankFxClose(); o.conf = Object.keys(rkfxPlSeen().p).join(); window.__rkfxAuto = 0; S.ship = ship0;
       return o; }, seedRank.toString());
     console.log('  화면:', JSON.stringify({ top: r.top, up: r.up, low: r.low }));
     ok(['top', 'low', 'up', 'down'].every((k) => r.n[k] === 10) && ['wup', 'wdown', 'yup', 'ydown'].every((k) => r.n[k] === 9), '그림 경우마다 6가지씩 더함: ' + JSON.stringify(r.n));
@@ -228,21 +228,21 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
     ok(r.top.num0 !== r.top.num1 && /원/.test(r.top.num1) && r.up.num0 === r.up.num1, `1위는 숫자가 올라감(${r.top.num0} → ${r.top.num1}) · 매일 견줌은 바로 ${r.up.num1}`);
     ok(/grayscale\(1\)/.test(r.low.filt) && r.low.card < r.up.card * 0.7 && r.low.ic < r.up.ic && r.low.cap < r.up.cap && r.low.layers === 2 && r.low.dur > r.up.dur, `꼴찌는 훨씬 초라: 흑백(${r.low.filt}) · 작은 카드 ${r.low.card}px · 작은 그림 ${r.low.ic}px · 회색 비 겹 · 입자 ${r.low.cap} · 느린 페이드(${r.low.dur / 1000}초)`);
     ok(r.gone, '닫으면 겹침·캔버스 모두 지움'); ok(r.autoOff, '자동 시험 브라우저에서는 새 경우를 저절로 띄우지 않음(다른 시험 보호)');
-    ok(r.go1r && r.go1 && r.go1.occ === 'go' && r.go1.kind === 'up' && /오늘 지금까지/.test(r.go1.txt) && /오늘 출고 끝까지/.test(r.go1.txt), '▶ 오늘 출고 끝까지 — 확정 전이면 「오늘 지금까지」로 견줌: ' + (r.go1 && r.go1.txt.slice(0, 120)));
-    ok(r.go2r === false, '같은 경우·같은 등급은 하루 한 번'); ok(r.go3r && r.go3 && r.go3.kind === 'top' && r.go3.tier === 'grand' && r.go4r === false, '더 높은 등급(1위)이 되면 한 번 더 → 다시는 안 뜸');
+    ok(r.go1r === false && !r.go1, '(11/05 저녁) ▶ 오늘 출고 끝까지 — 출고 확정 처리 전이면 안 뜸(예전 \'오늘 지금까지\' 철회): ' + JSON.stringify(r.go1));
+    ok(r.go2r === false, '확정 처리 전 두 번째도 안 뜸'); ok(r.go3r && r.go3 && r.go3.kind === 'top' && r.go3.tier === 'grand' && r.go4r === false, '확정 처리 뒤 끝까지가 끝나면 뜸(1위) → 같은 화면은 다시 안 뜸');
     ok(r.tab && r.tab.occ === 'tab' && r.tab2r === false, '출고별 매출 칸을 펼치면 뜸(경우마다 따로 셈 · 다시는 안 뜸) ' + JSON.stringify([r.tab && [r.tab.occ, r.tab.kind], r.tabDbg]));
-    ok(r.btn && r.btn.occ === 'go', '「▶ 오늘 출고 끝까지」(shipOneShotGo)를 누르면 뜸');
+    ok(!r.btn, '(11/05 저녁) 「▶ 오늘 출고 끝까지」(shipOneShotGo)를 누르는 순간은 안 뜸(끝났을 때 뜸): ' + JSON.stringify(r.btn));
     ok(r.openR && r.open && r.open.occ === 'open' && r.open.txt.includes(r.ydMd), '하루 첫 열기 — 어제 결과: ' + (r.open && r.open.txt.slice(0, 100)));
     ok(r.wk && r.wk.unit === '주' && r.wk.wd === 1 && r.wk.N >= 3 && r.wk.kind === 'top' && r.wkR && r.wkFx && r.wkFx.occ === 'week' && /주 중/.test(r.wkFx.txt) && r.wkAgain === false, '주간 마감 — 끝난 주(월~일) 순위 · 1위 · 그 주에 한 번 ' + JSON.stringify(r.wk));
-    ok(r.mo && r.mo.N >= 2 && r.moR && r.moFx && r.moFx.occ === 'month' && /달 중/.test(r.moFx.txt), '달 마감 — 끝난 달 순위 ' + JSON.stringify([r.mo, r.moFx && r.moFx.txt.slice(0, 80)]));
+    ok(r.mo && r.mo.N >= 2 && r.moToday === false && r.moR && r.moFx && r.moFx.occ === 'month' && /달 중/.test(r.moFx.txt), '달 마감 — 그 달 마지막 날만(11/08은 아님 · 10/31 카드) · 끝난 달 순위 ' + JSON.stringify([r.mo, r.moToday, r.moFx && r.moFx.txt.slice(0, 80)]));
     ok(r.qd[0] === 'open' && r.qd[1] === 'week' && r.q2 && r.q2.occ === 'week', '겹치면 줄 섬 — 닫힌 뒤 다음 경우 ' + JSON.stringify(r.qd));
     ok(r.occN === 9 && r.occOn, '⚙ 설정 🕒 언제 띄울까 — 경우 9가지(11/05 세 번째: 🔁 기록 갱신 · 🚚 출고 카드 더함) · 기본 모두 켬'); ok(r.saved.week === false && Object.keys(r.saved).length === 1, '경우 끄기 저장(공용 app_settings/main.rankFx.on) ' + JSON.stringify(r.saved));
-    ok(r.offR === false && !r.offFx && r.onOther === true, '끈 경우(주간)는 안 뜨고 다른 경우(월간)는 뜸');
+    ok(r.offR === false && !r.offFx && r.onOther === true, '끈 경우(주간)는 안 뜨고 다른 경우(하루 첫 열기)는 뜸');
     ok(r.smp && r.smp.occ === 'week' && /샘플/.test(r.smp.txt) && /주 중/.test(r.smp.txt), '경우마다 샘플(주간 모양): ' + (r.smp && r.smp.txt.slice(0, 100)));
-    ok(r.conf, "새 경우들은 확정 순간(rn-rkfx-seen) 기록을 건드리지 않음"); ran++;
+    ok(/go/.test(r.conf) && /head/.test(r.conf), '(11/05 저녁) 관련 화면마다 띄운 기록(rn-rkfx-pl · 이 기기): ' + r.conf); ran++;
   });
   // (정범님 11/05 두 번째) ⑮ 하루 첫 열기·주간·월간·연간 그림 10가지씩 · 기간이 길수록 더 화려(지속·크기·겹·연출 종류) · 1위 갱신과 다른 연출 · 연간 순위·견줌 · 연간 보기 · 설정
-  await H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(500);
+  await H(async (p) => { await p.clock.setSystemTime(new Date('2026-12-31T10:00:00+09:00')); /* (11/05 저녁) 12/31로 정함 — 연간은 12/31에만 */ await p.evaluate(require('./seed.js')); await p.waitForTimeout(500);
     const r = await p.evaluate(async (seedSrc) => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; const D = (0, eval)('(' + seedSrc + ')')(); try { ['rn-rkfx', 'rn-rkfx-seen', 'rn-rkfx-seen-o'].forEach((k) => localStorage.removeItem(k)); localStorage.setItem('rn-device', 'JS-MAIN'); } catch (e) {} S.devOk = true; S._rkfxMg = 1; S.app.rankFx = { k: {} };
       const fx = () => { const e = document.getElementById('rkfx'); return e ? { kind: e.dataset.kind, occ: e.dataset.occ || '', set: e.dataset.set, tier: e.dataset.tier, v: e.dataset.v, txt: e.innerText.replace(/\s+/g, ' ').slice(0, 300) } : null; };
       o.n = Object.fromEntries(Object.entries(RKFX_OCCV).map(([k, K]) => [k, K.v.length])); o.total = Object.values(RKFX).reduce((a, K) => a + K.v.length, 0) + Object.values(RKFX_OCCV).reduce((a, K) => a + K.v.length, 0);
@@ -256,7 +256,7 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
       const td = D.td; const Y = +td.slice(0, 4); let q = 0; const sale = (d, price) => { q++; const id = 'aladin_Y' + q; S.orders.set(id, { id, orderNo: 'Y' + q, kind: 'sale', platform: 'aladin', orderedAt: d + 'T09:00:00', shippedAt: d + 'T15:00:00', buyer: { name: '손님A' }, items: [{ title: '시험 책 ' + q, price, qty: 1, lineStatus: 'normal' }] }); };
       sale(`${Y - 3}-05-10`, 30000); sale(`${Y - 2}-03-03`, 40000); sale(`${Y - 2}-11-11`, 20000); sale(`${Y - 1}-01-15`, 50000); sale(`${Y - 1}-06-20`, 70000); sale(`${Y - 1}-12-31`, 9000); S.ver++; S._sdm = null;
       const I = rkPerInfo('year'); o.yi = I && { d: I.d, amt: I.amt, N: I.N, rank: I.rank, kind: I.kind, cmps: I.cmps.map((c) => [c.k, c.lab, c.none ? 'none' : c.amt]), bars: I.bars, key: I.key, unit: I.unit };
-      window.__rkfxAuto = 1; o.y1 = rkfxOcc('year'); o.yfx = fx(); await Wt(300); o.ybars = !!(S._rkfx && S._rkfx.bars && S._rkfx.bars.length === 12); rankFxClose(); o.y2 = rkfxOcc('year');
+      window.__rkfxAuto = 1; __today(70000); /* 12/31 오늘 출고 확정 처리 뒤 */ o.y1 = rkfxOcc('year'); o.yfx = fx(); await Wt(300); o.ybars = !!(S._rkfx && S._rkfx.bars && S._rkfx.bars.length === 12); rankFxClose(); o.y2 = rkfxOcc('year');
       S.app.rankFx = { k: { top: { off: true } }, on: {} }; try { localStorage.removeItem('rn-rkfx-seen-o'); } catch (e) {} o.yKindOff = rkfxOcc('year'); rankFxClose(); /* 기간 경우는 1위 끄기와 상관없이 그 경우 켜기를 봄 */
       S.app.rankFx = { k: {}, on: { year: false } }; try { localStorage.removeItem('rn-rkfx-seen-o'); } catch (e) {} o.yOff = rkfxOcc('year'); o.yOffFx = fx(); rankFxClose(); S.app.rankFx = { k: {} };
       // 하루 첫 열기 — 어제 결과 한 줄 + 아침 그림
