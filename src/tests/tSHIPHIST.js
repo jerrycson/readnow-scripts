@@ -5,7 +5,7 @@ let bad = 0; const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ❌ ') + m); 
 const run = async (p) => { await p.evaluate(require('./seed.js'));
   const R = await p.evaluate(async () => { const o = {}; const w = (ms) => new Promise((r) => setTimeout(r, ms)); const ago = (m) => new Date(Date.now() - m * 60e3).toISOString();
     const day0 = Date.parse(new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10) + 'T00:00:00+09:00'); const yest = (h) => new Date(day0 - h * 3600e3).toISOString(); /* 한국 시각 어제 */ const dAgo = (d) => new Date(day0 - d * 864e5 + 10 * 3600e3).toISOString();
-    S.app = S.app || {}; S.app.stepLog = { ...(S.app.stepLog || {}), autoHideMin: 10, recentMin: 30 };
+    S.app = S.app || {}; S.app.stepLog = { ...(S.app.stepLog || {}), autoHideMin: 10, recentMin: 30, sdsHideSec: 0 }; await db.collection('app_settings').doc('main').set({ stepLog: { ...S.app.stepLog } }, { merge: true }); /* 가짜 Firestore가 설정 듣기로 S.app을 다시 채워도 같은 값 */ /* (11/05) 발송준비시작 60초 숨김(tSHP2)은 끄고 일반 10분 규칙을 봄 */
     const C = db.collection('shp_cmds');
     await C.doc('dDone').set({ type: 'startDelivery', orderNos: ['D1'], status: 'done', createdAt: ago(25), doneAt: ago(20), results: { D1: { state: 'done' } }, stepNow: { at: ago(20), lv: 'ok', m: '발송준비시작 끝' }, log: [{ at: ago(20), lv: 'ok', m: '발송준비시작 끝', o: 'D1' }] });
     await C.doc('dFresh').set({ type: 'startDelivery', orderNos: ['T1'], status: 'done', createdAt: ago(5), doneAt: ago(3), results: { T1: { state: 'done' } }, stepNow: { at: ago(3), lv: 'ok', m: '발송준비시작 끝' }, log: [{ at: ago(3), lv: 'ok', m: '발송준비시작 끝', o: 'T1' }] });
