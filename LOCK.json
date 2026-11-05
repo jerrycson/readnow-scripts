@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.396 벤치 회차 빼기(정밀 점검 뒤)",
- "since": "2026-11-05T13:23:58Z",
- "beat": "2026-11-05T13:23:58Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-05T12:35:17Z"
+  "at": "2026-11-05T13:28:48Z"
  },
- "host": "vm"
+ "host": null
 }
