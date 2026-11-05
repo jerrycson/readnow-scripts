@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "CLAUDE.md 약속 장치",
+ "since": "2026-11-05T06:44:09Z",
+ "beat": "2026-11-05T06:44:09Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T06:42:07Z"
  },
- "host": null
+ "host": "vm"
 }
