@@ -1,2 +1,2 @@
-logs=1&pc=MJ-MAIN&from=202611050000
-# 4148478
+doc=app_settings/pdiag_MJ-PC
+# 1118632311
