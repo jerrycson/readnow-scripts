@@ -1,51 +1,53 @@
-// tBBNEAR — 정범님 11/05: 🏷 알라딘 매입 근삿값(매입가 × (1+15%) 이하 · 매입가 이하 포함 · 설정 한 곳 · 모든 곳 같은 판정 · 중 ⚠)
+// tBBNEAR — 정범님 11/05: 🏷 알라딘 매입 기준 차액(직접 팔아 남는 돈 − 매입가 < 500원이면 후보 · 셈 식 · 설정 한 곳 · 모든 곳 같은 판정 · 중 ⚠)
 //  + 🗑 휴지통 이름·탭 · 📋 한눈에 바로 고치기 창 밖 누르면 닫힘 · ⓘ 추가 정보 칩·켜고 끄기 · 자세히 잠금 · 한눈에 설명 칸 접기(앞 10줄·마우스 올리면 전체)
 //  · 한눈에 판매가 칸 누름/입력 → 자세히가 열리지 않음 · 판매가 고르기 칩(추천·최상단·최저 유효)
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 600)); } else console.log('  ✓', m); };
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(500); await p.addStyleTag({ content: '#seenp{display:none!important}' });
-  // ① 판정 하나 — 경계·매입가 이하·중 경고·까닭
-  const j = await p.evaluate(() => { const a = bbNearJ(4370, 3800, '상'), b = bbNearJ(4371, 3800, '상'), c = bbNearJ(3000, 3800, '상'), d = bbNearJ(2200, 2000, '중'), e = bbNearJ(3800, 3800, '최상'); return { a: [a.in, a.tag], b: [b.in, b.tag], c: [c.in, c.below, c.tag, c.why], d: [d.in, d.warn, d.tag], e: [e.in, e.below, e.tag], def: bbNearPct() }; });
-  ok(j.def === 15 && j.a[0] && /15% 안/.test(j.a[1]) && !j.b[0] && /15% 밖/.test(j.b[1]), '기본 근삿값 15% · 4,370(=3,800×1.15)은 안 · 4,371은 밖 — 「매입가보다 n% 높음(근삿값 15% 안)」', j);
-  ok(j.c[0] && j.c[1] && /매입가 이하\(−21\.1%\)/.test(j.c[2]) && /까닭/.test(j.c[3]) && j.e[0] && j.e[1] && /같음/.test(j.e[2]), '매입가 이하도 당연히 들어옴 — 「매입가 이하(−21.1%)」 · 같으면 「같음」 · 까닭 글', j);
+  // ① 판정 하나 — 직접 팔아 남는 돈(판매가 − 수수료 − 포장·택배비) − 매입가 < 기준 차액(기본 500원)이면 후보 · 셈 식 표시 · 중 ⚠ (정범님 11/05 '막연히 % 말고 근거로')
+  const j = await p.evaluate(() => { const buy = 3800; let lo = null; for (let P = 3000; P < 20000; P++) { const J = bbNearJ(P, buy, '상'); if (!J.in) { lo = P; break; } } const A = bbNearJ(lo - 1, buy, '상'), B = bbNearJ(lo, buy, '상'), c = bbNearJ(3000, buy, '상'), d = bbNearJ(2200, 2000, '중'); const pp = bbNetParts(6000);
+    const cons = [3500, 4300, 4800, 5000, 6000, 9000].every((P) => { const J = bbNearJ(P, buy, '상'); return J.in === (J.net - buy < 500) && J.gain === J.net - buy; });
+    return { def: bbMargin(), lo, A: [A.in, A.gain, A.tag], B: [B.in, B.gain, B.tag], c: [c.in, c.below, c.tag, c.formula], d: [d.in, d.warn], pp, f6: bbNearJ(6000, buy, '상').formula, cons, net6: bbSellNet(6000) }; });
+  ok(j.def === 500 && j.A[0] && j.A[1] < 500 && !j.B[0] && j.B[1] >= 500 && /기준/.test(j.A[2]) && /직접 판매/.test(j.B[2]), `기본 기준 차액 500원 · 경계: 판매가 ${j.lo - 1}원(더 남는 돈 ${j.A[1]})은 후보 · ${j.lo}원(${j.B[1]})은 직접 판매`, j);
+  ok(j.cons && j.pp && j.net6 === j.pp.net && j.pp.fee === 600 && /판매가 6,000원 − 수수료 600원\(10%\) − 포장·택배/.test(j.f6) && /남는 돈/.test(j.f6) && /알라딘 매입가 3,800원/.test(j.f6), '셈 식: 판매가 − 수수료(10%) − 포장·택배(포장 + 택배 − 손님 배송비) = 남는 돈 · 매입가와 차액 — 판정 엔진 sellNet과 같은 값', { f6: j.f6, pp: j.pp });
+  ok(j.c[0] && j.c[1] && /매입이 나음/.test(j.c[2]), '직접 팔면 매입가보다 덜 남음 → 「매입이 나음(n원 더 받음)」', j.c);
   ok(j.d[0] && /⚠ 중/.test(j.d[1]) && /알라딘이 매입하지 않을 수 있음/.test(j.d[1]), '중도 판정에 넣고 ⚠ 중 — 알라딘이 매입하지 않을 수 있음', j.d);
   // ② 모든 곳 같은 판정 — 수동 일괄(bbNearX) · 등록 추천 탭(regBbrJ) · 등록 칸(regBbNear) · 상품 상세 · 경영 ⑤
-  const al = await p.evaluate(() => { const l = [...S.plist.values()].find((x) => x.grade === '상' && x.active); S.pmetrics = S.pmetrics || new Map(); S.pmetrics.set(l.bookId, { id: l.bookId, buyback: { 상: 3800 } });
-    const xIn = { l, goal: 4300, target: 5500, bbHit: { buy: 3800, floor: 5500 } }, xOut = { l, goal: 4500, target: 5500, bbHit: { buy: 3800, floor: 5500 } }, xNoHit = { l, goal: 4300, target: 4300 };
+  const al = await p.evaluate((lo) => { const l = [...S.plist.values()].find((x) => x.grade === '상' && x.active); S.pmetrics = S.pmetrics || new Map(); S.pmetrics.set(l.bookId, { id: l.bookId, buyback: { 상: 3800 } });
+    const PIN = lo - 300, POUT = lo + 300; const xIn = { l, goal: PIN, target: 5500, bbHit: { buy: 3800, floor: 5500 } }, xOut = { l, goal: POUT, target: 5500, bbHit: { buy: 3800, floor: 5500 } }, xNoHit = { l, goal: PIN, target: PIN };
     const it = { id: 'nr1', stage: 'sel', grade: 2, info: { title: 't', buyback: { 상: 3800 } } };
-    const pd = pdBhHtml({ ...l, price: 4200 });
-    return { bIn: !!bbNearX(xIn), bOut: !!bbNearX(xOut), bNo: !!bbNearX(xNoHit), rIn: !!regBbrJ(it, xIn), rOut: !!regBbrJ(it, xOut), cIn: !!regBbNear(it, 4300), cOut: !!regBbNear(it, 4500), pd: /15% 안/.test(pd), pdOut: /15% 밖/.test(pdBhHtml({ ...l, price: 9000 })) }; });
-  ok(al.bIn && !al.bOut && al.bNo, "수동 일괄 '알라딘 매입가 하한' 탭: 시장 맞춤가 4,300 들어옴 · 4,500(예전 하한가 규칙이면 듦)은 빠짐 · 하한가에 안 걸렸어도 근삿값 안이면 들어옴", al);
+    const pd = pdBhHtml({ ...l, price: PIN }), pdo = pdBhHtml({ ...l, price: 9000 });
+    return { bIn: !!bbNearX(xIn), bOut: !!bbNearX(xOut), bNo: !!bbNearX(xNoHit), rIn: !!regBbrJ(it, xIn), rOut: !!regBbrJ(it, xOut), cIn: !!regBbNear(it, PIN), cOut: !!regBbNear(it, POUT), pd: /기준 [\d,]+원 안 됨|매입이 나음/.test(pd), pdOut: /넘음/.test(pdo) }; }, j.lo);
+  ok(al.bIn && !al.bOut && al.bNo, "수동 일괄 '알라딘 매입가 하한' 탭: 기준 안 들어옴 · 기준 넘으면 빠짐 · 하한가에 안 걸렸어도 기준 안이면 들어옴", al);
   ok(al.rIn && !al.rOut && al.cIn && !al.cOut, "📥 등록 '알라딘 매입 추천' 탭·'알라딘 매입이 나을 수 있음' 칸 = 같은 판정", al);
-  ok(al.pd && al.pdOut, '상품 상세 🏷 알라딘 매입 줄에 「…(근삿값 15% 안/밖)」 표시', al);
-  // 경영 ⑤ — 판매가 ≤ 매입가 × 1.15
-  const bz = await p.evaluate(() => { const L = [...S.plist.values()].filter((x) => x.active).slice(0, 4); L.forEach((l, i) => S.pmetrics.set(l.bookId, { id: l.bookId, buyback: { [l.grade]: Math.round(l.price / [1.1, 1.2, 0.9, 1.16][i]) }, usedMins: {} })); S._bizAt = 0; S._biz = null; let B = null; try { renderMain && 0; B = (typeof bizData === 'function' ? bizData() : null); } catch (e) {} return { ids: L.map((l) => l.id), B: !!B }; });
-  // (경영 계산 함수 이름이 화면마다 달라 직접 판정만 확인)
-  const bz2 = await p.evaluate((ids) => ids.map((id) => { const l = S.plist.get(id); const bb = S.pmetrics.get(l.bookId).buyback[l.grade]; const J = bbNearJ(l.price, bb, l.grade); return J && J.in; }), bz.ids);
-  ok(bz2.join() === 'true,false,true,false', '경영 ⑤ 알라딘 매입가에 가깝게 파는 상품: 판매가/매입가 1.10·0.90 들어옴 · 1.20·1.16 빠짐(같은 판정)', bz2);
-  // ③ 알라딘 매입 후보 셈(bbuyCompute) — 근삿값 판정 · 중 포함 · 예전 규칙 수 함께
+  ok(al.pd && al.pdOut, '상품 상세 🏷 알라딘 매입 줄에 판정(기준 안/넘음) 표시', al);
+  // 경영 ⑤ — 같은 판정
+  const bz2 = await p.evaluate(() => { const L = [...S.plist.values()].filter((x) => x.active).slice(0, 4); return L.map((l, i) => { const bb = Math.round(l.price / [1.1, 1.6, 0.9, 2.2][i]); const J = bbNearJ(l.price, bb, l.grade); return J && J.in === (J.net - bb < bbMargin()); }); });
+  ok(bz2.every(Boolean), '경영 ⑤ 알라딘 매입가에 가깝게 파는 상품 — 같은 판정(남는 돈 − 매입가 < 기준 차액)', bz2);
+  // ③ 알라딘 매입 후보 셈(bbuyCompute) — 같은 판정 · 중 포함 · 예전 규칙 수 함께
   const bc = await p.evaluate(async () => { S.pmLoaded = true; S.sellersLoaded = true; const L = [...S.plist.values()].filter((x) => x.active); const set = (l, buy, mk) => S.pmetrics.set(l.bookId, { id: l.bookId, buyback: { [l.grade]: buy }, usedFirstPage: [{ price: mk, grade: l.grade, sellerCode: '0', sellerName: '알라딘', ship: 0, soldOut: false }], lastCheckedAt: new Date().toISOString() });
-    const a = L.find((l) => l.grade === '상'), b = L.find((l) => l.grade === '중'), c = L.filter((l) => l.grade === '상')[1]; S.pmetrics = new Map(); set(a, 4000, 4400); set(b, 3000, 3300); set(c, 4000, 8000);
-    S.bbuyRes = null; await bbuyCompute(true); const H = S.bbuyRes.hit; const g = (l) => H.get(l.usedCode); return { a: g(a) && { in: g(a).near.in, mkt: g(a).mkt }, b: g(b) && { warn: g(b).near.warn }, c: !!g(c), all: [...H.values()].every((h) => h.near && h.near.in && h.mkt <= h.near.lim), old: S.bbuyRes.old, pct: S.bbuyRes.pct }; });
-  ok(bc.a && bc.a.in && bc.b && /중/.test(bc.b.warn) && !bc.c && bc.all && bc.pct === 15 && typeof bc.old === 'number', `🏷 알라딘 매입 후보 = 시장 맞춤가 ≤ 매입가×1.15 · 중 포함(⚠) · 근삿값 밖 빠짐 · 예전 하한가 규칙 수(${bc.old})도 함께`, bc);
+    const a = L.find((l) => l.grade === '상'), b = L.find((l) => l.grade === '중'), c = L.filter((l) => l.grade === '상')[1]; S.pmetrics = new Map(); set(a, 4000, 4400); set(b, 3000, 3300); set(c, 4000, 9000);
+    S.bbuyRes = null; await bbuyCompute(true); const H = S.bbuyRes.hit; const g = (l) => H.get(l.usedCode); return { a: g(a) && { in: g(a).near.in, mkt: g(a).mkt }, b: g(b) && { warn: g(b).near.warn }, c: !!g(c), all: [...H.values()].every((h) => h.near && h.near.in && h.near.gain < 500), old: S.bbuyRes.old, pct: S.bbuyRes.pct }; });
+  ok(bc.a && bc.a.in && bc.b && /중/.test(bc.b.warn) && !bc.c && bc.all && bc.pct === 500 && typeof bc.old === 'number', `🏷 알라딘 매입 후보 = 직접 팔아도 500원 넘게 안 남는 책 · 중 포함(⚠) · 기준 넘으면 빠짐 · 예전 하한가 규칙 수(${bc.old})도 함께`, bc);
   // ④ 설정 — 관리자만 · 등록 ⚙ 와 알라딘 매입 ⚙ 같은 값 · 바꾸면 모든 곳
   await p.evaluate(() => { localStorage.setItem('rn-device', 'JS-MAIN'); S.devOk = true; S.user = S.user || { email: 'tester@x' }; });
   await p.evaluate(() => openAladinSell({ t: 'cand' })); await p.waitForTimeout(600);
   const st0 = await p.evaluate(() => { const i = document.querySelector('[data-bbnearpct="bbuy"]'); return { v: i && i.value, dis: i && i.disabled, trash: (document.querySelector('[data-bbt="trash"]') || {}).textContent, candTi: (document.querySelector('[data-bbt="cand"]') || {}).title }; });
-  ok(st0.v === '15' && !st0.dis && /🗑 휴지통 0/.test(st0.trash || '') && /15%/.test(st0.candTi || ''), "알라딘 매입 ⚙ 에 근삿값 칸(15) · 탭 줄 끝 「🗑 휴지통 0」 탭 · 후보 탭 설명 = 근삿값 규칙", st0);
-  await p.fill('[data-bbnearpct="bbuy"]', '20'); await p.press('[data-bbnearpct="bbuy"]', 'Tab'); await p.waitForTimeout(900);
-  const st1 = await p.evaluate(() => { const m = ((window.__FS.app_settings || {}).main) || {}; return { pct: bbNearPct(), fs: m.bbNearPct, log: (m.bbNearLog || []).slice(-1)[0], lim: bbNearJ(1, 3800, '상').lim, inNow: bbNearJ(4500, 3800, '상').in, res: S.bbuyRes && S.bbuyRes.pct }; });
-  ok(st1.pct === 20 && st1.fs === 20 && st1.log && st1.log.from === 15 && st1.log.to === 20 && st1.lim === 4560 && st1.inNow, '근삿값 20%로 바꿈 → 공용 설정(app_settings/main.bbNearPct)·바꾼 기록 · 판정 바로 바뀜(4,500도 들어옴)', st1);
+  ok(st0.v === '500' && !st0.dis && /🗑 휴지통 0/.test(st0.trash || '') && /500원/.test(st0.candTi || ''), "알라딘 매입 ⚙ 에 기준 차액 칸(500원) · 탭 줄 끝 「🗑 휴지통 0」 탭 · 후보 탭 설명 = 순이익 차액 규칙", st0);
+  await p.fill('[data-bbnearpct="bbuy"]', '1000'); await p.press('[data-bbnearpct="bbuy"]', 'Tab'); await p.waitForTimeout(900);
+  const st1 = await p.evaluate((lo) => { const m = ((window.__FS.app_settings || {}).main) || {}; return { mg: bbMargin(), fs: m.bbMargin, log: (m.bbMarginLog || []).slice(-1)[0], inNow: bbNearJ(lo + 100, 3800, '상').in, res: S.bbuyRes && S.bbuyRes.pct }; }, j.lo);
+  ok(st1.mg === 1000 && st1.fs === 1000 && st1.log && st1.log.from === 500 && st1.log.to === 1000 && st1.inNow, '기준 차액 1,000원으로 바꿈 → 공용 설정(app_settings/main.bbMargin)·바꾼 기록 · 판정 바로 바뀜(경계 위 값도 들어옴)', st1);
   await p.evaluate(() => history.back()); await p.waitForTimeout(500);
   await p.evaluate(async () => { const t = new Date().toISOString(); S.regItems = S.regItems || new Map(); const mk = (id, o) => ({ stage: 'sel', isbn: '979110000' + id.slice(-4), grade: 2, qty: 1, price: 9000, ws: regWsCur(), createdAt: t, info: { title: '근삿값 책 ' + id, isbn13: '979110000' + id.slice(-4), categories: [{ path: ['국내도서', '소설/시/희곡'] }], page1: [{ price: 4000, grade: '중', sellerCode: '777', sellerName: '남', ship: 2500 }, { price: 5200, grade: '상', sellerCode: '0', sellerName: '알라딘', ship: 0 }], priceList: 15000, priceSales: 13500, availability: 'onSale', pubDate: '2021-03-04', salesPoint: 1234, at: t, buyback: { 상: 3800 } }, ...o });
     const L = { n001: mk('n001', {}), n002: mk('n002', { descMode: 'quick', descQuick: Array.from({ length: 40 }, (_, i) => `${i + 1}번째 문장 — 띠지 없음 · 모서리 약간 눌림 · 밑줄 없음`).join(' ') }), n003: mk('n003', { stage: 'pick', cmdId: 'cmdLK' }), n004: mk('n004', { info: { title: '정보 적은 책', isbn13: '9791100004444', categories: [{ path: ['국내도서', '소설/시/희곡'] }], priceList: 15000, page1: [], at: t } }) };
+    for (const k of ['n001', 'n002', 'n003']) L[k].info = { ...L[k].info, buyback: { 상: 1000 } }; /* (11/05 순이익 차액 기준) 시장 5,200원으로 팔면 매입가보다 500원 넘게 남는 책 — 추천 탭으로 가지 않고 선택 대기에 남게 */
     for (const [id, d] of Object.entries(L)) { await db.collection('reg_items').doc(id).set(d); S.regItems.set(id, { id, ...d }); }
     localStorage.setItem('rn-reg-view', 'compact'); localStorage.removeItem('rn-reg-ginfo'); S._regOpen = new Set(); S.regT = 'sel'; openRegister(); });
   await p.waitForTimeout(1500);
   const rc = await p.evaluate(() => { const i = document.querySelector('[data-bbnearpct="reg"]'); return { v: i && i.value }; });
-  ok(rc.v === '20', '📥 등록 ⚙ 가격·등록 조건에도 같은 근삿값 칸(20)', rc);
-  await p.evaluate(async () => { await bbNearSet(15, 'reg'); }); await p.waitForTimeout(300);
-  const na = await p.evaluate(async () => { S.devOk = false; regRerender(); await new Promise((r) => setTimeout(r, 500)); const i = document.querySelector('[data-bbnearpct="reg"]'); const r = { dis: i && i.disabled, set: await bbNearSet(30, 'reg'), pct: bbNearPct() }; S.devOk = true; regRerender(); return r; });
-  ok(na.dis && na.set === false && na.pct === 15, '관리자 기기가 아니면 칸이 잠기고 바뀌지 않음', na);
+  ok(rc.v === '1000', '📥 등록 ⚙ 가격·등록 조건에도 같은 기준 차액 칸(1000)', rc);
+  await p.evaluate(async () => { await bbNearSet(500, 'reg'); }); await p.waitForTimeout(300);
+  const na = await p.evaluate(async () => { S.devOk = false; regRerender(); await new Promise((r) => setTimeout(r, 500)); const i = document.querySelector('[data-bbnearpct="reg"]'); const r = { dis: i && i.disabled, set: await bbNearSet(3000, 'reg'), pct: bbMargin() }; S.devOk = true; regRerender(); return r; });
+  ok(na.dis && na.set === false && na.pct === 500, '관리자 기기가 아니면 칸이 잠기고 바뀌지 않음', na);
   await p.waitForTimeout(500);
   // ⑤ ⓘ 추가 정보 칩 — 정가(판매가)·판매중·국내도서·출간일·SP · 값 없는 칩 없음 · 켜고 끄기(카드 모두)
   const gi = await p.evaluate(() => { const r = (id) => { const x = document.querySelector(`.rgrow[data-rgexp="${id}"] .rgginfo-l`); return x ? [...x.querySelectorAll('.rgi')].map((c) => c.textContent) : []; }; return { a: r('n001'), d: r('n004'), btn: (document.querySelector('[data-rgginfo]') || {}).textContent }; });
@@ -80,9 +82,9 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   const rb = await p.evaluate(() => { const r = document.querySelector('.rgrow[data-rgexp="n004"]').getBoundingClientRect(); return [r.left + r.width * 0.55, r.top + 8]; }); await p.mouse.click(rb[0], rb[1]); await p.waitForTimeout(400);
   const outside = await p.evaluate(() => ({ open: document.getElementById('rgglpop').style.display === 'block', exp: [...(S._regOpen || [])], qty: (window.__FS.reg_items.n001 || {}).qty }));
   ok(inside && !outside.open && !outside.exp.length && outside.qty === 1, '창 안 빈 곳은 닫지 않음 · 창 밖(다른 줄 빈 곳)을 누르면 닫힘 — 저장 없음 · 그 줄이 펼쳐지지 않음', { inside, outside });
-  // ⑧ 설명 칸 — 접힌 칸(앞 10줄) · 누르면 입력 · 밖으로 나가면 저장하고 바로 접힘 · 마우스 올리면 전체
+  // ⑧ 설명 칸 — 접힌 칸(기본 2줄 · 11/05 고침 — tRGDESC가 자세히 봄) · 누르면 입력 · 밖으로 나가면 저장하고 바로 접힘 · 마우스 올리면 전체
   const f0 = await p.evaluate(() => { const el = document.querySelector('.rgrow[data-rgexp="n002"] .rgqf .rgqf-t'); if (!el) return null; const lh = parseFloat(getComputedStyle(el).lineHeight); return { lines: Math.round(el.clientHeight / lh), clamp: el.scrollHeight > el.clientHeight + 2, input: !!document.querySelector('.rgrow[data-rgexp="n002"] .rgq-in') }; });
-  ok(f0 && f0.lines === 10 && f0.clamp && !f0.input, '⚡ 설명은 접힌 칸으로 — 앞 10줄만 보이고 넘치면 줄임', f0);
+  ok(f0 && f0.lines === 2 && f0.clamp && !f0.input, '⚡ 설명은 접힌 칸으로 — 평소 2줄만 보이고 넘치면 줄임', f0);
   await p.hover('.rgrow[data-rgexp="n002"] .rgqf'); await p.waitForTimeout(250);
   const tip = await p.evaluate(() => { const z = document.getElementById('rgqtip'); if (!z) return null; const r = z.getBoundingClientRect(); return { full: /40번째 문장/.test(z.textContent), inV: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight, scroll: z.scrollHeight >= z.clientHeight }; });
   ok(tip && tip.full && tip.inV && tip.scroll, '마우스를 올리면 전체 글 겹침 상자(화면 안 · 긴 글은 그 안에서 스크롤)', tip);

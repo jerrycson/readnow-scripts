@@ -18,7 +18,7 @@
  *   (1.1.0) /alps… — 📦 ALPS 자동 처리(같은 폴더 readnow-alps.js · 없으면 GitHub에서 받음) · GET /alps = 이 PC 설정 화면
  * 스스로 새 판: 6시간마다 GitHub에서 받아 판 번호가 높으면 바꾸고 끝남 → 실행기가 5초 뒤 다시 켬 */
 'use strict';
-const VERSION = '1.1.4'; // (1.1.4 정범님 11/05 'MJ-MAIN 일반 프린터로 출력이 안 돼') /pdiag = 이 PC 인쇄 상태 점검(보기만 · 아무것도 바꾸지 않음) · /pdiag/test = 고른 프린터로 시험 한 장 // (1.1.3 정범님 11/04 원스톱) ALPS 처리 중에는 새 판 받기를 미룸 · /alps/pcheck(프린터 상태)·/alps/update // (1.1.2 정범님 11/03) /alps/journal(오늘 인쇄 기록)·/alps/unprint(안 나왔음으로 되돌리기) // (1.1.1 정범님 11/03) ALPS 「이어서 진행」(/alps/resume)·처리 기록(/alps/hist)
+const VERSION = '1.1.5'; // (1.1.5 정범님 11/05 '일반 테스트가 안 돼') /prn/netfix = 네트워크(WSD) 프린터 연결 고치기 — IP 찾기 → 고정 IP 포트(관리자 허락 창 한 번) · 막힌 대기열 비우기 · 점검에 '연결 끊김' 알림 // (1.1.4 정범님 11/05 'MJ-MAIN 일반 프린터로 출력이 안 돼') /pdiag = 이 PC 인쇄 상태 점검(보기만 · 아무것도 바꾸지 않음) · /pdiag/test = 고른 프린터로 시험 한 장 // (1.1.3 정범님 11/04 원스톱) ALPS 처리 중에는 새 판 받기를 미룸 · /alps/pcheck(프린터 상태)·/alps/update // (1.1.2 정범님 11/03) /alps/journal(오늘 인쇄 기록)·/alps/unprint(안 나왔음으로 되돌리기) // (1.1.1 정범님 11/03) ALPS 「이어서 진행」(/alps/resume)·처리 기록(/alps/hist)
 const http = require('http'), https = require('https'), fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process');
 const PORT = 8898; const HOME = __dirname; const RAW = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/readnow-print.js';
 const ORIGINS = [/^https:\/\/jerrycson\.github\.io$/, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
@@ -90,7 +90,7 @@ $o | ConvertTo-Json -Depth 5 -Compress`;
   if (!def) hints.push({ lv: 'bad', t: '윈도우 기본 프린터가 없음' }); else if (isLabel(def.name)) hints.push({ lv: 'bad', t: `윈도우 기본 프린터가 '${def.name}'(택배·라벨 프린터로 보임) — 일반 문서가 그쪽으로 감` });
   if (x.legacyDefault == null || +x.legacyDefault === 0) hints.push({ lv: 'warn', t: "'Windows에서 기본 프린터 관리'가 켜져 있음 — 마지막에 쓴 프린터가 저절로 기본이 됨(택배 송장을 찍은 뒤 일반 인쇄가 택배 프린터로 갈 수 있음)" });
   for (const p of P) { const why = []; if (p.off) why.push('오프라인(연결 끊김으로 봄)'); if (p.st === 7) why.push('상태 오프라인'); if (p.st === 6) why.push('일시 정지'); if (PRN_ERR[p.err]) why.push(PRN_ERR[p.err]); const badJ = p.jobs.filter((j) => /error|오류|paused|일시|offline|blocked|deleting|삭제/i.test(j.st || '') || (+j.stc & (2 | 4 | 32 | 64 | 512 | 1024)));
-    if (badJ.length) why.push(`대기열에 오류·멈춘 작업 ${badJ.length}개`); else if (p.jobs.length) why.push(`대기열에 남은 작업 ${p.jobs.length}개`); if (why.length) hints.push({ lv: badJ.length || p.off || p.st === 6 || p.st === 7 ? 'bad' : 'warn', t: `'${p.name}': ${why.join(' · ')}` }); }
+    const oldJ = p.jobs.filter((j) => { const t = Date.parse(String(j.at || '').replace(/^(\d+)\/(\d+)\/(\d+)/, '$3-$1-$2')); return t && Date.now() - t > 2 * 60e3; }); if (/^WSD-/i.test(p.port || '') && (badJ.length || oldJ.length)) { why.push('네트워크(WSD) 연결이 끊긴 듯 — 작업이 프린터로 안 넘어감(🩺 연결 고치기)'); p.netBad = true; } if (badJ.length) why.push(`대기열에 오류·멈춘 작업 ${badJ.length}개`); else if (p.jobs.length) why.push(`대기열에 남은 작업 ${p.jobs.length}개`); if (why.length) hints.push({ lv: badJ.length || p.off || p.st === 6 || p.st === 7 ? 'bad' : 'warn', t: `'${p.name}': ${why.join(' · ')}` }); }
   const evErr = x.events.filter((e) => /오류|error|경고|warn/i.test(e.lv || '')); if (evErr.length) hints.push({ lv: 'warn', t: `최근 3일 윈도우 인쇄 오류 기록 ${evErr.length}개 — 맨 끝: ${evErr[0].at} #${evErr[0].id} ${String(evErr[0].msg || '').slice(0, 120)}` });
   if (alps && !['done', 'error', 'idle'].includes(alps.status)) hints.push({ lv: 'warn', t: `ALPS 자동 처리가 지금 '${alps.status}' — 처리 중에는 도우미가 '인쇄' 창을 찾아 프린터를 '${(cfgP && cfgP.printer) || '롯데택배'}'로 바꿀 수 있음(그때 연 다른 인쇄 창도 바뀔 수 있음)` });
   if (!hints.length) hints.push({ lv: 'ok', t: '눈에 띄는 문제 없음 — 그 프로그램의 인쇄 창에서 고른 프린터 이름을 확인하고, 아래 「시험 한 장」으로 그 프린터를 시험해 보세요' });
@@ -141,6 +141,31 @@ async function prnSync() { if (PRN_BUSY) return; const R = rolesGet(); if (R.aut
   catch (e) { PRN_FAIL++; prnSync.failAt = Date.now(); log('✗ 자동 바꾸기 실패: ' + e.message); } finally { PRN_BUSY = false; } }
 async function prnUse(role, fn) { const R = rolesGet(); if (R.auto === false || !R.general || !R[role]) return fn(); if (role === 'label') TEMP.label++; try { await prnSync(); return await fn(); } finally { if (role === 'label') TEMP.label = Math.max(0, TEMP.label - 1); setTimeout(() => prnSync(), 1500); } }
 if (process.platform === 'win32') { setInterval(() => prnSync().catch(() => {}), 3000); setTimeout(() => { try { const rf = JSON.parse(fs.readFileSync(ROLES_F, 'utf8')); if (rf.temp) { PRN_CUR = rf.temp.printer; log(`도우미가 켜짐 — 지난번 잠깐 바꾼 기본(${rf.temp.printer})을 일반으로 되돌림`); } } catch (e) {} }, 500); }
+/* (1.1.5 정범님 11/05 '일반 테스트가 안 돼 — 나머진 돼') 네트워크 프린터 연결 고치기 — MJ-PC 삼성 C56x는 WSD(네트워크 자동 연결) 포트라 작업이 대기열 '인쇄 중'에 걸린 채 프린터로 안 넘어감(라벨·송장은 USB라 됨)
+ *  ① 그 프린터의 IP를 찾음(PnP 장치 속성 DEVPKEY_PNPX_IpAddress · 이름이 같은 장치) ② 그 IP가 응답하는지(ping) ③ 관리자 허락 창(UAC) 한 번 → 고정 IP 포트(IP_주소 · 9100 RAW) 만들고 프린터 포트를 그리로 · 인쇄 서비스 다시 시작(막힌 작업 풀림)
+ *  지우지 않음: 예전 WSD 포트는 그대로 둠(되돌리기 = 프린터 속성에서 포트만 다시 고름 · /prn/netfix { undo:1 }) · ALPS 처리 중이면 하지 않음 */
+async function prnNetFix(o) { const printer = String((o && o.printer) || '').trim(); if (!printer) throw new Error('프린터를 고르지 않음'); if (alpsBusy()) throw new Error('ALPS 처리 중 — 끝난 뒤에(인쇄 서비스를 다시 시작하므로)');
+  const find = `[Console]::OutputEncoding = [Text.Encoding]::UTF8
+$name = ${psq(printer)}
+$p = Get-Printer -Name $name -ErrorAction Stop
+$port = Get-PrinterPort -Name $p.PortName -ErrorAction SilentlyContinue
+$ips = @()
+foreach ($d in @(Get-PnpDevice -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -and ($_.FriendlyName -eq $name -or $name.StartsWith($_.FriendlyName) -or $_.FriendlyName.StartsWith(($name -split '\\(')[0])) })) { try { $v = (Get-PnpDeviceProperty -InstanceId $d.InstanceId -KeyName 'DEVPKEY_PNPX_IpAddress' -ErrorAction Stop).Data; if ($v) { $ips += @($v) } } catch {} }
+if ($port -and $port.PrinterHostAddress) { $ips += $port.PrinterHostAddress }
+$ips = @($ips | Where-Object { $_ -match '^\\d+\\.\\d+\\.\\d+\\.\\d+$' } | Select-Object -Unique)
+$alive = @($ips | Where-Object { Test-Connection -ComputerName $_ -Count 1 -Quiet -ErrorAction SilentlyContinue })
+[pscustomobject]@{ port = [string]$p.PortName; ips = $ips; alive = $alive } | ConvertTo-Json -Compress`;
+  const r = await ps(find, 60000); let x = null; try { x = JSON.parse(String(r.out || '').trim().split(/\r?\n/).filter(Boolean).pop()); } catch (e) { throw new Error('프린터 정보를 못 읽음: ' + String(r.err || r.out).replace(/\s+/g, ' ').slice(0, 200)); }
+  const ips = [].concat(x.ips || []), alive = [].concat(x.alive || []); log(`🩺 ${printer}: 포트 ${x.port} · IP ${ips.join(',') || '못 찾음'} · 응답 ${alive.join(',') || '없음'}`);
+  if (!ips.length) return { ok: false, step: 'ip', port: x.port, why: '이 프린터의 IP 주소를 찾지 못함 — 프린터 화면(네트워크 설정)에서 IP를 보고 알려 주세요', ips, alive };
+  if (!alive.length) return { ok: false, step: 'ping', port: x.port, why: `프린터 IP ${ips.join(', ')}가 응답하지 않음 — 프린터 전원·네트워크(같은 와이파이·공유기)를 확인해 주세요`, ips, alive };
+  const ip = alive[0]; const pn = 'IP_' + ip; if (x.port === pn) { /* 이미 고정 IP — 대기열만 풂 */ }
+  const el = `$ErrorActionPreference = 'Stop'; if (-not (Get-PrinterPort -Name '${pn}' -ErrorAction SilentlyContinue)) { Add-PrinterPort -Name '${pn}' -PrinterHostAddress '${ip}' }; Set-Printer -Name ${psq(printer)} -PortName '${pn}'; Restart-Service Spooler -Force`;
+  const sc = `$a = Start-Process powershell.exe -Verb RunAs -WindowStyle Hidden -Wait -PassThru -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-EncodedCommand','${Buffer.from(el, 'utf16le').toString('base64')}')
+Write-Output ('OK|' + $a.ExitCode)`;
+  const r2 = await ps(sc, 180000); const m = String(r2.out || '').match(/OK\|(-?\d+)/); if (!m) return { ok: false, step: 'uac', ip, why: /canceled|취소/i.test(String(r2.err)) ? 'PC에 뜬 관리자 허락 창에서 [예]를 눌러 주세요(아니요를 누르면 바꾸지 않음)' : '바꾸지 못함: ' + String(r2.err || r2.out).replace(/\s+/g, ' ').slice(0, 200) };
+  await new Promise((res) => setTimeout(res, 3000)); let now = ''; try { const r3 = await ps(`(Get-Printer -Name ${psq(printer)}).PortName`, 30000); now = String(r3.out || '').trim(); } catch (e) {}
+  log(`🩺 ${printer}: 포트 ${x.port} → ${now || '?'} (종료 ${m[1]}) · 인쇄 서비스 다시 시작`); return { ok: now === pn, ip, from: x.port, to: now, code: +m[1], why: now === pn ? '' : '포트가 바뀌지 않음(관리자 허락 창에서 아니요였거나 막힘)' }; }
 function readBody(req, max, cb) { const bufs = []; let n = 0, bad = false; req.on('data', (c) => { n += c.length; if (n > max) { bad = true; req.destroy(); } else bufs.push(c); }); req.on('end', () => (bad ? cb(new Error('너무 큼')) : cb(null, Buffer.concat(bufs)))); req.on('error', cb); }
 const srv = http.createServer((req, res) => {
   const org = req.headers.origin || ''; const okOrg = !org || ORIGINS.some((r) => r.test(org)); const host = String(req.headers.host || '');
@@ -158,6 +183,7 @@ const srv = http.createServer((req, res) => {
   if (u.pathname === '/pdiag/test' && req.method === 'POST') return readBody(req, 4096, (e, b) => { let o = {}; try { o = JSON.parse(b.toString('utf8') || '{}'); } catch (x) {} pdiagTest(o.printer).then(() => J(200, { ok: true })).catch((er) => J(500, { ok: false, err: er.message })); });
   if (u.pathname === '/prn/roles') { if (req.method === 'POST') return readBody(req, 4096, (e, b) => { let o = {}; try { o = JSON.parse(b.toString('utf8') || '{}'); } catch (x) {} try { J(200, { ok: true, roles: rolesSet(o) }); } catch (er) { J(500, { ok: false, err: er.message }); } }); return J(200, { ok: true, roles: rolesGet() }); }
   if (u.pathname === '/prn/temp' && req.method === 'POST') return readBody(req, 4096, (e, b) => { let o = {}; try { o = JSON.parse(b.toString('utf8') || '{}'); } catch (x) {} if (o.end) TEMP.web = null; else if (['label', 'invoice', 'general'].includes(o.role)) TEMP.web = { role: o.role, until: Date.now() + Math.max(5, Math.min(300, +o.sec || 120)) * 1000 }; prnSync().then(() => J(200, { ok: true, want: prnWant(rolesGet()), roles: rolesGet() })).catch((er) => J(500, { ok: false, err: er.message })); });
+  if (u.pathname === '/prn/netfix' && req.method === 'POST') return readBody(req, 4096, (e, b) => { let o = {}; try { o = JSON.parse(b.toString('utf8') || '{}'); } catch (x) {} prnNetFix(o).then((r) => J(200, r)).catch((er) => { log('✗ ' + er.message); J(500, { ok: false, err: er.message }); }); });
   if (/^\/prn\/(default|resume|clear)$/.test(u.pathname) && req.method === 'POST') return readBody(req, 4096, (e, b) => { let o = {}; try { o = JSON.parse(b.toString('utf8') || '{}'); } catch (x) {} prnAct(u.pathname.slice(5), o).then((r) => J(200, r)).catch((er) => { log('✗ ' + er.message); J(500, { ok: false, err: er.message }); }); });
   if (u.pathname === '/printers') return printers().then((L) => J(200, { ok: true, printers: L })).catch((e) => J(500, { ok: false, err: e.message }));
   if (u.pathname === '/print' && req.method === 'POST') return readBody(req, 60 * 1048576, (e, b) => { if (e) return J(400, { ok: false, err: e.message }); let o = null; try { o = JSON.parse(b.toString('utf8')); } catch (x) { return J(400, { ok: false, err: 'bad json' }); }

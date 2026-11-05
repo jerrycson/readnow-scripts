@@ -4,7 +4,12 @@
 
 | 판 | 날짜 | 지문 | 보기 |
 |---|---|---|---|
-| v117 (지금) | 2026-11-05 | `af97c860c5b577e5` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v117_2026-11-05.html) · [파일](v117_2026-11-05.html) |
+| v122 (지금) | 2026-11-05 | `0c697af5b0c1abd6` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v122_2026-11-05.html) · [파일](v122_2026-11-05.html) |
+| v121 | 2026-11-05 | `c5eab333701e46e3` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v121_2026-11-05.html) · [파일](v121_2026-11-05.html) |
+| v120 | 2026-11-05 | `d96a873afd1b4b02` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v120_2026-11-05.html) · [파일](v120_2026-11-05.html) |
+| v119 | 2026-11-05 | `b3ad7726e25557a4` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v119_2026-11-05.html) · [파일](v119_2026-11-05.html) |
+| v118 | 2026-11-05 | `9cc338069534ddd5` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v118_2026-11-05.html) · [파일](v118_2026-11-05.html) |
+| v117 | 2026-11-05 | `af97c860c5b577e5` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v117_2026-11-05.html) · [파일](v117_2026-11-05.html) |
 | v116 | 2026-11-05 | `42f0861ff63bb68f` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v116_2026-11-05.html) · [파일](v116_2026-11-05.html) |
 | v115 | 2026-11-05 | `d69623f87bb2b288` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v115_2026-11-05.html) · [파일](v115_2026-11-05.html) |
 | v114 | 2026-11-05 | `b960e48f41e27ce2` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v114_2026-11-05.html) · [파일](v114_2026-11-05.html) |

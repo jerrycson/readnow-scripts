@@ -19,7 +19,7 @@ function fakeFb() { const store = {}; const W = []; const FV = { serverTimestamp
   const app = { firestore: () => db, auth: () => auth }; const fb = { apps: [app], app: () => app, initializeApp: () => app, auth: () => auth, firestore: Object.assign(() => db, { FieldValue: FV }) };
   return { fb, db, store, W }; }
 /* 배송&구매확정전 화면(가짜) — 주문 줄 tr#oListN 안에 주문번호·송장번호 */
-const shippedHtml = (L) => `<html><body><table>${L.map(([o, inv], i) => `<tr id="oList${i + 1}"><td><a onclick="viewOrderDetail('${o}')">${o}</a></td><td>롯데택배 ${inv}</td></tr>`).join('')}</table><a onclick="Page_Set(1)">1</a></body></html>`;
+const shippedHtml = (L) => `<html><body><table>${L.map(([o, inv, how], i) => how === 'href' ? `<tr id="oList${i + 1}"><td><a onclick="viewOrderDetail('${o}')">${o}</a></td><td>9002026110416 2026102418 2 010-0000-0000 <a href="javascript:goTracking('롯데택배','${inv}')">배송조회</a></td></tr>` : `<tr id="oList${i + 1}"><td><a onclick="viewOrderDetail('${o}')">${o}</a></td><td>롯데택배 ${inv}</td></tr>`).join('')}</table><a onclick="Page_Set(1)">1</a></body></html>`; /* (11/05) how='href' = 송장번호가 배송 조회 링크 안에만 있는 꼴(실제 11/05 14:23) */
 async function run(name, o) { const F = fakeFb(); const GM = new Map(); const id = 'alps_t'; const LG = []; const fetched = [];
   F.store['shp_invoices/' + id] = { createdAt: new Date().toISOString(), status: 'running', limit: o.limit ?? 1, verify: o.verify ?? true, autoCont: o.autoCont ?? true, from: 'oneshot', log: [], items: o.items };
   GM.set('rn-inv-active', { id, at: Date.now() });
@@ -28,9 +28,16 @@ async function run(name, o) { const F = fakeFb(); const GM = new Map(); const id
     w.GM_getValue = (k, d) => (GM.has(k) ? GM.get(k) : d); w.GM_setValue = (k, v) => GM.set(k, v); w.GM_deleteValue = (k) => GM.delete(k); w.GM_notification = () => {}; w.deliveryNoComplete = (x) => w.__clicked.push(x);
     w.fetch = async (u) => { fetched.push(String(u)); return { ok: true, text: async () => (o.shipped ? shippedHtml(o.shipped) : '<html><body>빈 화면</body></html>') }; };
     w.ReadnowShipping = { matchInvoices: () => ({}), parseDeliveryPage: () => (extra.noTabs ? { orders: [], tabCounts: {} } : { orders: orders.map((x) => ({ orderNo: x })), tabCounts: { 발송요청: orders.length } }) };
-    w.eval(STEP_SRC); w.eval(INV_SRC); return w; };
+    w.__rnInvVerifyWait = 200; w.eval(STEP_SRC); w.eval(INV_SRC); return w; };
   const D = () => F.store['shp_invoices/' + id]; return { F, GM, LG, fetched, page, D, id }; }
 (async () => {
+  console.log('■ (11/05) 송장번호가 배송 조회 링크 안에만 있어도 검증 맞음 · 긴 숫자 안내에 전화 꼴 없음');
+  { const T = await run('href', { items: [{ orderNo: 'O1', invoice: '265412976706', recipient: '손님A', state: 'todo' }, { orderNo: 'O2', invoice: '265412976707', recipient: '손님B', state: 'todo' }], shipped: [['O1', '265412976706', 'href']] });
+    const w1 = await T.page(['O1', 'O2'], ['O1', 'O2']); await sleep(2600); w1.close(); const w2 = await T.page(['O2'], ['O2']); await sleep(3400); const d = T.D();
+    ok(d.verified && d.verified.ok && !d.verifyFail, '링크(href) 안 송장번호로 첫 건 검증 맞음 ' + JSON.stringify(d.verified || {})); w2.close(); }
+  { const T = await run('href2', { items: [{ orderNo: 'O1', invoice: '265412976706', recipient: '손님A', state: 'todo' }, { orderNo: 'O2', invoice: '265412976707', recipient: '손님B', state: 'todo' }], shipped: [['O1', '999999999999', 'href']] });
+    const w1 = await T.page(['O1', 'O2'], ['O1', 'O2']); await sleep(2600); w1.close(); const w2 = await T.page(['O2'], ['O2']); await sleep(4200); const d = T.D(); const why = (d.verified || {}).why || '';
+    ok(d.verifyFail && /999999999999/.test(why) && !/010/.test(why) && T.fetched.filter((u) => /worder_delivery_complete/.test(u)).length >= 3, '다른 송장이면 두 번 더 읽어 본 뒤 멈춤 · 안내 숫자에 전화 꼴(010…) 없음 ' + why); w2.close(); }
   console.log('■ 첫 건 자동 검증 맞음 → 나머지 저절로');
   { const T = await run('ok', { items: [{ orderNo: 'O1', invoice: '240000000011', recipient: '손님A', state: 'todo' }, { orderNo: 'O2', invoice: '240000000012', recipient: '손님B', state: 'todo' }], shipped: [['O1', '240000000011']] });
     const w1 = await T.page(['O1', 'O2'], ['O1', 'O2']); await sleep(2600); ok(w1.__clicked.join() === 'O1', '첫 화면: 첫 건(O1)만 넣음'); w1.close();
