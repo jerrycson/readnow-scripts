@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "마지막 판 — 매입 후보 판정 하나로",
- "since": "2026-11-05T14:31:36Z",
- "beat": "2026-11-05T14:31:36Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-05T14:20:01Z"
+  "at": "2026-11-05T14:36:45Z"
  },
- "host": "vm"
+ "host": null
 }
