@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "인쇄 도우미 1.1.5 연결 고치기",
+ "since": "2026-11-05T05:03:56Z",
+ "beat": "2026-11-05T05:03:56Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T05:00:02Z"
  },
- "host": null
+ "host": "vm"
 }
