@@ -1,0 +1,77 @@
+/* tPRN — 정범님 11/05 'MJ-MAIN 일반 프린터로 출력이 안 돼' · '일반 삼성·라벨·송장 3개 — 기본은 일반, 매우 쉽게 고르기' · '송장·라벨을 뽑을 때는 자동으로 그 프린터로 → 다시 자동으로 일반'
+ *  ① 도우미(local/readnow-print.js · 가짜 powershell): 역할 저장 · 라벨 인쇄 동안 기본 = 라벨 → 끝나면 일반 · /prn/temp 시작·끝 · /printer 화면은 주소창에서만 · 바꾼 적 없으면 기본을 건드리지 않음
+ *  ② 웹앱: ⚙ 라벨 인쇄 설정 › 🖨 이 PC 프린터 3개(고르기 3칸·⭐ 기본으로·🔁 자동·🔎 점검) · 일반 고르면 역할 저장 + 기본 바꿈 · 🔎 점검 창(문제 줄·표·시험 한 장) + 서버 저장 · 인쇄 창 라벨 = 잠깐 라벨 → 창 닫으면 끝
+ * 실행: cd pw && RN_PORT=<포트> node tPRN.js */
+let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } else console.log('  ✓', m); };
+const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process'), http = require('http');
+const HELP = [path.join(__dirname, '../local/readnow-print.js'), path.join(__dirname, '../../local/readnow-print.js'), '/home/user/readnow-scripts/local/readnow-print.js'].find((p) => fs.existsSync(p));
+const req = (m, p, body, hd) => new Promise((res) => { const r = http.request({ host: '127.0.0.1', port: 8898, path: p, method: m, headers: { 'X-RN-Print': '1', 'Content-Type': 'application/json', ...(hd || {}) } }, (x) => { let b = ''; x.on('data', (c) => (b += c)); x.on('end', () => { let j = null; try { j = JSON.parse(b); } catch (e) {} res({ st: x.statusCode, j, b }); }); }); r.on('error', (e) => res({ st: 0, err: e.message })); if (body) r.write(JSON.stringify(body)); r.end(); });
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+(async () => {
+  /* ① 도우미 */
+  const D = fs.mkdtempSync(path.join(os.tmpdir(), 'tprn_')); fs.mkdirSync(D + '/bin'); fs.copyFileSync(HELP, D + '/readnow-print.js'); const AL = path.join(path.dirname(HELP), 'readnow-alps.js'); if (fs.existsSync(AL)) fs.copyFileSync(AL, D + '/readnow-alps.js');
+  fs.writeFileSync(D + '/bin/powershell.exe', `#!/usr/bin/env node
+const fs=require('fs'); const f=process.argv[process.argv.indexOf('-File')+1]; const s=fs.readFileSync(f,'utf8'); const st=__dirname+'/state.json'; let S={def:'Samsung',calls:[]}; try{S=JSON.parse(fs.readFileSync(st,'utf8'))}catch(e){}
+const P=['Samsung','라벨기','롯데택배'];
+{ const m0=s.match(/\\$_.Name -eq '([^']+)'/); if(m0&&/NOPRINTER/.test(s)&&!P.includes(m0[1])){ console.error('NOPRINTER'); process.exit(3); } }
+if(/SetDefaultPrinter/.test(s)){ const m=s.match(/\\$_.Name -eq '([^']+)'/); S.def=m[1]; S.calls.push('def:'+m[1]+(/LegacyDefaultPrinterMode -Value 1/.test(s)?'+keep':'')); fs.writeFileSync(st,JSON.stringify(S)); console.log('OK|0|'+S.def); }
+else if(/PrintDocument/.test(s)){ S.calls.push('print@'+S.def); fs.writeFileSync(st,JSON.stringify(S)); console.log(/시험 인쇄/.test(s)?'OK':'OK 1'); }
+else if(/Get-Service Spooler/.test(s)) console.log(JSON.stringify({printers:P.map(n=>({name:n,def:n===S.def,off:false,st:3,err:0,jobs:n==='롯데택배'?[{st:'Error',stc:2,pages:1}]:[]})),spooler:{st:'Running'},legacyDefault:0,events:[],procs:[]}));
+else if(/def = \\[bool\\]/.test(s)) console.log(JSON.stringify(P.map(n=>({name:n,def:n===S.def,off:false}))));
+else console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
+  const st = () => { try { return JSON.parse(fs.readFileSync(D + '/bin/state.json', 'utf8')); } catch (e) { return { def: 'Samsung', calls: [] }; } };
+  const ch = cp.spawn('node', ['readnow-print.js'], { cwd: D, env: { ...process.env, PATH: D + '/bin:' + process.env.PATH } }); await wait(1500);
+  try {
+    const s0 = await req('GET', '/status'); ok(s0.j && s0.j.ver === '1.1.4', '도우미 1.1.4 켜짐 ' + (s0.j && s0.j.ver));
+    const r0 = await req('GET', '/prn/roles'); ok(r0.j && r0.j.ok && r0.j.roles.auto === true && !r0.j.roles.general, '역할 처음 = 비어 있음 · 자동 켬');
+    /* 역할 없으면 라벨 인쇄는 기본을 건드리지 않음 */
+    const IMG = 'data:image/png;base64,' + Buffer.from('x').toString('base64');
+    await req('POST', '/print', { printer: '라벨기', imgs: [IMG] }); await wait(2000); ok(st().calls.join() === 'print@Samsung', '역할 안 정했으면 기본을 안 바꾸고 이름으로만 인쇄 ' + st().calls.join());
+    const r1 = await req('POST', '/prn/roles', { general: 'Samsung', label: '라벨기', invoice: '롯데택배' }); ok(r1.j && r1.j.roles.general === 'Samsung' && r1.j.roles.invoice === '롯데택배', '역할 저장');
+    fs.writeFileSync(D + '/bin/state.json', JSON.stringify({ def: 'Samsung', calls: [] }));
+    const p1 = await req('POST', '/print', { printer: '라벨기', imgs: [IMG] }); await wait(2500); ok(p1.j && p1.j.ok, '라벨 인쇄 됨');
+    ok(st().calls.join() === 'def:라벨기+keep,print@라벨기,def:Samsung+keep', '라벨 인쇄 동안만 기본 = 라벨 → 끝나면 일반 · 기본 관리 끔 ' + st().calls.join()); ok(st().def === 'Samsung', '끝나고 기본 = 일반');
+    ok(!JSON.parse(fs.readFileSync(D + '/prn-roles.json', 'utf8')).temp, '되돌린 뒤 잠깐 바꿈 기록 지움');
+    fs.writeFileSync(D + '/bin/state.json', JSON.stringify({ def: 'Samsung', calls: [] }));
+    const t1 = await req('POST', '/prn/temp', { role: 'label', sec: 60 }); ok(t1.j && t1.j.want === 'label' && st().def === '라벨기', '/prn/temp 시작 → 기본 = 라벨');
+    ok(JSON.parse(fs.readFileSync(D + '/prn-roles.json', 'utf8')).temp, '잠깐 바꿈을 파일에 적음(꺼졌다 켜져도 되돌리게)');
+    const t2 = await req('POST', '/prn/temp', { end: 1 }); ok(t2.j && t2.j.want === 'general' && st().def === 'Samsung', '/prn/temp 끝 → 일반');
+    const d1 = await req('POST', '/prn/default', { printer: '롯데택배', keep: true }); ok(d1.j && d1.j.ok && st().def === '롯데택배', '⭐ 기본으로(손으로) 됨');
+    await req('POST', '/print', { printer: '라벨기', imgs: [IMG] }); await wait(2500); ok(st().def === 'Samsung', '손으로 바꾼 뒤 라벨 인쇄 → 끝나면 일반(역할 일반)으로');
+    const d2 = await req('POST', '/prn/default', { printer: '없는것' }); ok(d2.j && !d2.j.ok && /없음/.test(d2.j.err), '없는 프린터 → 까닭');
+    const pg = await req('GET', '/printer', null, { 'X-RN-Print': '' }); ok(pg.st === 200 && /이 PC 기본 프린터/.test(pg.b), '/printer 화면(주소창)');
+    const pg2 = await req('GET', '/printer', null, { Origin: 'https://jerrycson.github.io' }); ok(pg2.st === 403, '/printer는 웹앱에서 못 엶');
+    const dg = await req('GET', '/pdiag'); ok(dg.j && dg.j.ok && dg.j.hints.some((h) => /기본 프린터 관리/.test(h.t)) && dg.j.hints.some((h) => /롯데택배.*오류·멈춘 작업 1개/.test(h.t)), '🔎 점검 → 문제 줄(기본 관리 켜짐·대기열 오류) ' + JSON.stringify(dg.j && dg.j.hints));
+    const tt = await req('POST', '/pdiag/test', { printer: 'Samsung' }); ok(tt.j && tt.j.ok, '🧪 시험 한 장');
+    const off = await req('POST', '/prn/roles', { auto: false }); fs.writeFileSync(D + '/bin/state.json', JSON.stringify({ def: 'Samsung', calls: [] })); await req('POST', '/print', { printer: '라벨기', imgs: [IMG] }); await wait(2000); ok(off.j.roles.auto === false && st().calls.join() === 'print@Samsung', '자동 끄면 기본을 안 바꿈');
+  } finally { ch.kill(); }
+  /* ② 웹앱 */
+  await new Promise((done) => require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+    const calls = []; let roles = { general: '', label: '', invoice: '', auto: true, temp: null }; let def = '롯데택배';
+    await p.route(/127\.0\.0\.1:8898/, async (rt) => { const u = new URL(rt.request().url()); const b = rt.request().postData(); const o = b ? JSON.parse(b) : null; calls.push(u.pathname + (o ? ' ' + JSON.stringify(o) : '')); const J = (x) => rt.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' }, body: JSON.stringify(x) });
+      if (rt.request().method() === 'OPTIONS') return rt.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST' } });
+      if (u.pathname === '/status') return J({ ok: true, ver: '1.1.4' }); if (u.pathname === '/printers') return J({ ok: true, printers: ['Samsung M2070', '라벨기', '롯데택배'].map((n) => ({ name: n, def: n === def })) });
+      if (u.pathname === '/prn/roles') { if (o) roles = { ...roles, ...o }; return J({ ok: true, roles }); } if (u.pathname === '/prn/default') { def = o.printer; return J({ ok: true, def }); } if (u.pathname === '/prn/temp') return J({ ok: true });
+      if (u.pathname === '/alps/config') return J({ ok: true }); if (u.pathname === '/pdiag/test') return J({ ok: true });
+      if (u.pathname === '/pdiag') return J({ ok: true, ver: '1.1.4', pc: 'MJ-MAIN', at: new Date().toISOString(), hints: [{ lv: 'warn', t: "'Windows에서 기본 프린터 관리'가 켜져 있음" }, { lv: 'bad', t: "윈도우 기본 프린터가 '롯데택배'(택배·라벨 프린터로 보임)" }], printers: [{ name: '롯데택배', def: true, st: 3, jobs: [{ st: 'Error', pages: 1 }] }, { name: 'Samsung M2070', st: 3, jobs: [] }], spooler: { st: 'Running' }, legacyDefault: 0, events: [], tail: ['a'] });
+      return J({ ok: false }); });
+    await p.evaluate(async () => { const C = LBL(); C.mode = 'pc'; lblSave(C); await lphCheck(true); await prnLoad(true); openLblCfg(); }); await p.waitForTimeout(600);
+    const v = await p.evaluate(() => { const ov = LBL_OV; return { sel: ov.querySelectorAll('[data-prnrole]').length, auto: !!ov.querySelector('[data-prnauto]:checked'), diag: !!ov.querySelector('[data-prndiag]'), txt: ov.textContent }; });
+    ok(v.sel === 3 && v.auto && v.diag && /이 PC 프린터 3개/.test(v.txt) && /지금 윈도우 기본: 롯데택배/.test(v.txt), '⚙ 라벨 인쇄 설정에 프린터 3칸·자동·점검 ' + JSON.stringify({ sel: v.sel, auto: v.auto }));
+    await p.selectOption('[data-prnrole="general"]', 'Samsung M2070'); await p.waitForTimeout(800);
+    ok(calls.some((c) => c.startsWith('/prn/roles {"general":"Samsung M2070"')) && calls.some((c) => c.startsWith('/prn/default {"printer":"Samsung M2070"')), '일반 고르면 역할 저장 + 윈도우 기본 바꿈 ' + calls.slice(-4).join(' | '));
+    await p.waitForTimeout(400); ok(await p.evaluate(() => /⭐ 지금 기본/.test(LBL_OV.querySelector('[data-prnrole="general"]').closest('.rgpost-o').textContent)), '일반 줄에 ⭐ 지금 기본');
+    await p.selectOption('[data-prnrole="label"]', '라벨기'); await p.waitForTimeout(500); ok(await p.evaluate(() => LBL().printer === '라벨기'), '라벨 역할 = 이 기기 라벨 프린터');
+    await p.selectOption('[data-prnrole="invoice"]', '롯데택배'); await p.waitForTimeout(500); ok(calls.some((c) => c.startsWith('/alps/config {"printer":"롯데택배"')), '송장 역할 = ALPS 설정 프린터');
+    await p.click('[data-prndef="invoice"]'); await p.waitForTimeout(500); ok(calls.some((c) => c === '/prn/default {"printer":"롯데택배","keep":true}'), '⭐ 기본으로(송장)');
+    await p.click('[data-prndiag]'); await p.waitForTimeout(900); const dg = await p.evaluate(() => ({ open: !!(PRN_OV && PRN_OV.isConnected), t: PRN_OV ? PRN_OV.textContent : '', test: PRN_OV ? PRN_OV.querySelectorAll('[data-prntest]').length : 0, clr: PRN_OV ? PRN_OV.querySelectorAll('[data-prnact="clear"]').length : 0 }));
+    ok(dg.open && /기본 프린터 관리/.test(dg.t) && dg.test === 2 && dg.clr === 1, '🔎 점검 창: 문제 줄·시험 단추·멈춘 작업 취소 ' + JSON.stringify({ test: dg.test, clr: dg.clr }));
+    const saved = await p.evaluate(async () => { const d = await db.collection('app_settings').doc('pdiag_MJ-MAIN').get(); return d.exists ? d.data() : null; }); ok(saved && saved.hints && saved.hints.length === 2 && saved.by, '점검 결과 서버 저장(app_settings/pdiag_MJ-MAIN)');
+    const n0 = calls.length; await p.click('[data-prnact="clear"]'); await p.waitForTimeout(200); ok(!calls.slice(n0).some((c) => c.startsWith('/prn/clear')), '멈춘 작업 취소는 한 번 누르면 안 함');
+    await p.click('[data-prnact="clear"]'); await p.waitForTimeout(600); ok(calls.slice(n0).some((c) => c.startsWith('/prn/clear {"printer":"롯데택배"')), '두 번 누르면 취소 맡김');
+    await p.evaluate(() => { if (PRN_OV) PRN_OV.remove(); }); await p.click('[data-prntest]').catch(() => {});
+    /* 인쇄 창 라벨 — 잠깐 라벨 → 창 닫으면 끝 */
+    const n1 = calls.length; const pop = p.waitForEvent('popup'); await p.evaluate(() => { window.__rnOpenRaw = null; regLabelPrintWin([{ sku: 'RN-1', ttl: '', gr: '' }], LBL()); }); const w = await pop; await p.waitForTimeout(800);
+    ok(calls.slice(n1).some((c) => c.startsWith('/prn/temp {"role":"label","sec":120}')), '인쇄 창 라벨 → 잠깐 기본 = 라벨'); await w.close(); await p.waitForTimeout(1600); ok(calls.slice(n1).some((c) => c === '/prn/temp {"end":1}'), '인쇄 창 닫으면 일반으로(끝)');
+  }).then(done));
+  console.log(bad ? `❌ ${bad}개 실패` : '✅ tPRN 모두 통과'); process.exit(bad ? 1 : 0); })();

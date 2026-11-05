@@ -4,11 +4,21 @@
  *   GET  /status   → { ok, ver }
  *   GET  /printers → { ok, printers: [{ name, def }] }
  *   POST /print    → { printer, wMm, hMm, imgs: ['data:image/png;base64,...'], copies } → { ok, n }
+ *   GET  /pdiag    → (1.1.4) 이 PC 인쇄 상태 점검 — 프린터마다 상태·대기열·윈도우 기본 프린터 관리 방식·인쇄 스풀러·최근 인쇄 오류·도우미 기록 · 보기만
+ *   POST /pdiag/test → { printer } → 그 프린터로 A4 시험 한 장(문서 이름 '리드나우 시험 인쇄')
+ *   (1.1.4 정범님 11/05 '일반 삼성·라벨·송장 3개 — 기본값은 일반, 경우에 따라 매우 쉽게 고르기')
+ *   GET/POST /prn/roles → { general, label, invoice } = 이 PC 프린터 세 역할(prn-roles.json · 송장은 ALPS 설정 프린터와 같게)
+ *   POST /prn/default → { printer, keep } → 윈도우 기본 프린터를 그 프린터로 + keep이면 'Windows에서 기본 프린터 관리'를 끔(마지막에 쓴 프린터로 저절로 바뀌지 않게)
+ *   POST /prn/resume → { printer } → 일시 정지된 프린터를 다시 시작 · POST /prn/clear → { printer } → 그 프린터 대기열에서 오류·멈춘 작업만 취소
+ *   (1.1.4 정범님 11/05 '송장·라벨을 뽑을 때는 자동으로 그 프린터로 바꿔 작업한 뒤 다시 자동으로 일반 프린터') 자동 바꾸기(역할 auto 기본 켬):
+ *     라벨 인쇄(/print) 동안 기본 = 라벨 · ALPS 처리 동안 기본 = 송장 → 끝나면(실패해도) 기본 = 일반 · 잠깐 바꾼 것은 파일에 적어 두어 도우미가 꺼졌다 켜져도 되돌림
+ *     POST /prn/temp → { role, sec } 웹앱 인쇄 창(도우미 없이 브라우저 창으로 찍을 때)용 — sec초(최대 300) 뒤 또는 { end: 1 } 때 일반으로
+ *   GET  /printer → 이 PC 주소창 전용 화면(큰 단추 3개 — 지금 기본을 일반·라벨·송장 중 하나로)
  * 인쇄: PowerShell + .NET PrintDocument — 프린터 이름 지정 · 용지 = 라벨 크기(mm) · 여백 0 · 장마다 그림 하나를 용지에 꽉 맞춤 · 창 없음(StandardPrintController)
  *   (1.1.0) /alps… — 📦 ALPS 자동 처리(같은 폴더 readnow-alps.js · 없으면 GitHub에서 받음) · GET /alps = 이 PC 설정 화면
  * 스스로 새 판: 6시간마다 GitHub에서 받아 판 번호가 높으면 바꾸고 끝남 → 실행기가 5초 뒤 다시 켬 */
 'use strict';
-const VERSION = '1.1.3'; // (1.1.3 정범님 11/04 원스톱) ALPS 처리 중에는 새 판 받기를 미룸 · /alps/pcheck(프린터 상태)·/alps/update // (1.1.2 정범님 11/03) /alps/journal(오늘 인쇄 기록)·/alps/unprint(안 나왔음으로 되돌리기) // (1.1.1 정범님 11/03) ALPS 「이어서 진행」(/alps/resume)·처리 기록(/alps/hist)
+const VERSION = '1.1.4'; // (1.1.4 정범님 11/05 'MJ-MAIN 일반 프린터로 출력이 안 돼') /pdiag = 이 PC 인쇄 상태 점검(보기만 · 아무것도 바꾸지 않음) · /pdiag/test = 고른 프린터로 시험 한 장 // (1.1.3 정범님 11/04 원스톱) ALPS 처리 중에는 새 판 받기를 미룸 · /alps/pcheck(프린터 상태)·/alps/update // (1.1.2 정범님 11/03) /alps/journal(오늘 인쇄 기록)·/alps/unprint(안 나왔음으로 되돌리기) // (1.1.1 정범님 11/03) ALPS 「이어서 진행」(/alps/resume)·처리 기록(/alps/hist)
 const http = require('http'), https = require('https'), fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process');
 const PORT = 8898; const HOME = __dirname; const RAW = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/readnow-print.js';
 const ORIGINS = [/^https:\/\/jerrycson\.github\.io$/, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
@@ -57,6 +67,80 @@ Write-Output ('OK ' + $script:files.Count)`;
   if (r.e || !/OK \d+/.test(r.out)) throw new Error(/NOPRINTER/.test(r.err) ? `'${printer}' 프린터를 열 수 없음(꺼져 있거나 이름이 바뀜)` : '인쇄 실패: ' + (r.err || (r.e && r.e.message) || r.out).replace(/\s+/g, ' ').slice(0, 300));
   log(`🖨 ${printer}: 라벨 ${imgs.length}장 × ${copies} (${wMm}×${hMm}mm)`); return imgs.length * copies; }
 
+/* (1.1.4 정범님 11/05 'MJ-MAIN에서 일반 프린터로 출력이 안 돼 — 도우미가 문제인 듯') 이 PC 인쇄 상태 점검 — 보기만(설정·대기열·기본 프린터를 바꾸지 않음)
+ *  읽는 것: 프린터마다 기본 여부·오프라인·상태·오류·포트·드라이버·대기열(작업마다 상태·장수·넣은 때 — 문서 이름은 읽지 않음) · 인쇄 스풀러 서비스 · 'Windows에서 기본 프린터 관리'(켜져 있으면 마지막에 쓴 프린터가 기본이 됨)
+ *           최근 3일 인쇄 오류(윈도우 PrintService 기록) · 이 도우미 기록 끝 40줄 · ALPS 처리 중인지 · 크롬 ALPS 창·OZ 프로그램이 떠 있는지 */
+async function pdiag() { const sc = `[Console]::OutputEncoding = [Text.Encoding]::UTF8
+$o = [ordered]@{}
+$o.printers = @(Get-CimInstance Win32_Printer | ForEach-Object { $n = $_.Name; $J = @(Get-CimInstance Win32_PrintJob | Where-Object { $_.Name -like ($n + ',*') }); [pscustomobject]@{ name = $n; def = [bool]$_.Default; off = [bool]$_.WorkOffline; st = [int]$_.PrinterStatus; err = [int]$_.DetectedErrorState; ext = [int]$_.ExtendedPrinterStatus; port = [string]$_.PortName; drv = [string]$_.DriverName; net = [bool]$_.Network; shared = [bool]$_.Shared; jobs = @($J | ForEach-Object { [pscustomobject]@{ st = [string]$_.JobStatus; stc = [int]$_.StatusMask; pages = [int]$_.TotalPages; at = [string]$_.TimeSubmitted } }) } })
+try { $s = Get-Service Spooler; $o.spooler = [pscustomobject]@{ st = [string]$s.Status; start = [string]$s.StartType } } catch { $o.spooler = $_.Exception.Message }
+try { $w = Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Windows' -ErrorAction Stop; $o.legacyDefault = $w.LegacyDefaultPrinterMode; $o.device = [string]$w.Device } catch { $o.legacyDefault = $null }
+try { $o.events = @(Get-WinEvent -FilterHashtable @{ LogName = 'Microsoft-Windows-PrintService/Admin'; StartTime = (Get-Date).AddDays(-3) } -MaxEvents 30 -ErrorAction Stop | ForEach-Object { [pscustomobject]@{ at = $_.TimeCreated.ToString('MM-dd HH:mm'); id = $_.Id; lv = [string]$_.LevelDisplayName; msg = $(($m = ([string]$_.Message -replace '\\s+', ' ')).Substring(0, [Math]::Min(220, $m.Length))) } }) } catch { $o.events = @() }
+try { $o.op = @(Get-WinEvent -FilterHashtable @{ LogName = 'Microsoft-Windows-PrintService/Operational'; StartTime = (Get-Date).AddDays(-1) } -MaxEvents 40 -ErrorAction Stop | ForEach-Object { [pscustomobject]@{ at = $_.TimeCreated.ToString('MM-dd HH:mm'); id = $_.Id; lv = [string]$_.LevelDisplayName } }) } catch { $o.op = $null }
+$o.procs = @(Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(oz|OZ)|splwow64|PrintIsolationHost|printfilterpipelinesvc' -or ($_.Name -eq 'chrome.exe' -and [string]$_.CommandLine -match 'chrome-alps') } | ForEach-Object { [pscustomobject]@{ n = [string]$_.Name; alps = ([string]$_.CommandLine -match 'chrome-alps'); at = [string]$_.CreationDate } } | Select-Object -First 30)
+$o | ConvertTo-Json -Depth 5 -Compress`;
+  const r = await ps(sc, 90000); let x = null; try { x = JSON.parse(String(r.out || '').trim().split(/\r?\n/).filter(Boolean).pop()); } catch (e) { throw new Error('점검 결과를 못 읽음: ' + String(r.err || r.out || (r.e && r.e.message) || '').replace(/\s+/g, ' ').slice(0, 300)); }
+  const arr = (v) => (v == null ? [] : Array.isArray(v) ? v : [v]); x.printers = arr(x.printers).map((p) => ({ ...p, jobs: arr(p.jobs) })); x.events = arr(x.events); x.op = x.op == null ? null : arr(x.op); x.procs = arr(x.procs);
+  let tail = []; try { tail = fs.readFileSync(LOG, 'utf8').split(/\r?\n/).filter(Boolean).slice(-40); } catch (e) {}
+  let alps = null; try { const s = ALPS && ALPS.status && ALPS.status(); alps = s ? { status: s.status, step: s.step || null } : null; } catch (e) {}
+  let cfgP = null; try { const c = ALPS && ALPS.cfg && ALPS.cfg(); cfgP = c ? { printer: c.printer || '', silentPrint: c.silentPrint !== false, forcePrinter: !!c.forcePrinter, autoPrintDlg: c.autoPrintDlg !== false } : null; } catch (e) {}
+  const P = x.printers; const def = P.find((p) => p.def); const hints = []; const PRN_ERR = { 4: '용지 없음', 6: '토너·리본 없음', 7: '덮개 열림', 8: '용지 걸림', 9: '오프라인', 10: '점검 필요', 11: '배출구 가득' };
+  const isLabel = (n) => /롯데|택배|라벨|label|zebra|tsc|godex|xprinter|bixolon|sewoo|zd\d|gk\d|lp-?\d/i.test(String(n || ''));
+  if (x.spooler && x.spooler.st && x.spooler.st !== 'Running') hints.push({ lv: 'bad', t: `인쇄 스풀러(윈도우 인쇄 서비스)가 '${x.spooler.st}' — 이러면 모든 프린터가 인쇄를 못 함` });
+  if (!def) hints.push({ lv: 'bad', t: '윈도우 기본 프린터가 없음' }); else if (isLabel(def.name)) hints.push({ lv: 'bad', t: `윈도우 기본 프린터가 '${def.name}'(택배·라벨 프린터로 보임) — 일반 문서가 그쪽으로 감` });
+  if (x.legacyDefault == null || +x.legacyDefault === 0) hints.push({ lv: 'warn', t: "'Windows에서 기본 프린터 관리'가 켜져 있음 — 마지막에 쓴 프린터가 저절로 기본이 됨(택배 송장을 찍은 뒤 일반 인쇄가 택배 프린터로 갈 수 있음)" });
+  for (const p of P) { const why = []; if (p.off) why.push('오프라인(연결 끊김으로 봄)'); if (p.st === 7) why.push('상태 오프라인'); if (p.st === 6) why.push('일시 정지'); if (PRN_ERR[p.err]) why.push(PRN_ERR[p.err]); const badJ = p.jobs.filter((j) => /error|오류|paused|일시|offline|blocked|deleting|삭제/i.test(j.st || '') || (+j.stc & (2 | 4 | 32 | 64 | 512 | 1024)));
+    if (badJ.length) why.push(`대기열에 오류·멈춘 작업 ${badJ.length}개`); else if (p.jobs.length) why.push(`대기열에 남은 작업 ${p.jobs.length}개`); if (why.length) hints.push({ lv: badJ.length || p.off || p.st === 6 || p.st === 7 ? 'bad' : 'warn', t: `'${p.name}': ${why.join(' · ')}` }); }
+  const evErr = x.events.filter((e) => /오류|error|경고|warn/i.test(e.lv || '')); if (evErr.length) hints.push({ lv: 'warn', t: `최근 3일 윈도우 인쇄 오류 기록 ${evErr.length}개 — 맨 끝: ${evErr[0].at} #${evErr[0].id} ${String(evErr[0].msg || '').slice(0, 120)}` });
+  if (alps && !['done', 'error', 'idle'].includes(alps.status)) hints.push({ lv: 'warn', t: `ALPS 자동 처리가 지금 '${alps.status}' — 처리 중에는 도우미가 '인쇄' 창을 찾아 프린터를 '${(cfgP && cfgP.printer) || '롯데택배'}'로 바꿀 수 있음(그때 연 다른 인쇄 창도 바뀔 수 있음)` });
+  if (!hints.length) hints.push({ lv: 'ok', t: '눈에 띄는 문제 없음 — 그 프로그램의 인쇄 창에서 고른 프린터 이름을 확인하고, 아래 「시험 한 장」으로 그 프린터를 시험해 보세요' });
+  return { ok: true, ver: VERSION, alpsVer: ALPS ? ALPS.VERSION : null, pc: os.hostname(), at: new Date().toISOString(), hints, def: def ? def.name : null, ...x, alps, alpsCfg: cfgP, tail }; }
+async function pdiagTest(printer) { printer = String(printer || '').trim(); const P = await printers(); if (!P.some((x) => x.name === printer)) throw new Error(`이 PC에 '${printer}' 프린터가 없음`);
+  const sc = `Add-Type -AssemblyName System.Drawing
+$pd = New-Object System.Drawing.Printing.PrintDocument
+$pd.PrinterSettings.PrinterName = ${psq(printer)}
+if (-not $pd.PrinterSettings.IsValid) { Write-Error 'NOPRINTER'; exit 3 }
+$pd.DocumentName = '리드나우 시험 인쇄'
+$pd.PrintController = New-Object System.Drawing.Printing.StandardPrintController
+$pd.add_PrintPage({ param($s, $e) $f = New-Object System.Drawing.Font('Malgun Gothic', 16); $e.Graphics.DrawString(('리드나우 시험 인쇄 — ' + ${psq(printer)} + [Environment]::NewLine + (Get-Date).ToString('yyyy-MM-dd HH:mm:ss') + [Environment]::NewLine + '이 종이가 나오면 윈도우에서 이 프린터로 인쇄가 됩니다'), $f, [System.Drawing.Brushes]::Black, 60, 60); $e.HasMorePages = $false })
+$pd.Print()
+Write-Output 'OK'`;
+  const r = await ps(sc, 120000); if (r.e || !/OK/.test(r.out)) throw new Error(/NOPRINTER/.test(r.err) ? `'${printer}' 프린터를 열 수 없음` : '시험 인쇄 실패: ' + String(r.err || (r.e && r.e.message) || r.out).replace(/\s+/g, ' ').slice(0, 300)); log(`🧪 시험 한 장 → ${printer}`); return true; }
+/* (1.1.4) 이 PC 프린터 세 역할 · 기본 프린터 바꾸기 — 라벨(웹앱 라벨)·송장(ALPS)은 이름으로 곧장 보내므로 기본 프린터와 상관없음 · 기본 = 다른 프로그램(한글·워드·PDF·크롬 인쇄 창 첫 값)이 쓰는 것 */
+const ROLES_F = path.join(HOME, 'prn-roles.json');
+function rolesGet() { let r = {}; try { r = JSON.parse(fs.readFileSync(ROLES_F, 'utf8')); } catch (e) {} try { const c = ALPS && ALPS.cfg && ALPS.cfg(); if (c && c.printer && !r.invoice) r.invoice = c.printer; } catch (e) {} return { general: r.general || '', label: r.label || '', invoice: r.invoice || '', auto: r.auto !== false, at: r.at || null, temp: r.temp || null }; }
+function rolesSet(o) { const r = { ...rolesGet() }; for (const k of ['general', 'label', 'invoice']) if (o[k] != null) r[k] = String(o[k]).trim().slice(0, 200); if (o.auto != null) r.auto = !!o.auto; let old = {}; try { old = JSON.parse(fs.readFileSync(ROLES_F, 'utf8')); } catch (e) {} if (old.temp) r.temp = old.temp; else delete r.temp; r.at = new Date().toISOString(); fs.writeFileSync(ROLES_F, JSON.stringify(r, null, 1)); try { if (o.invoice != null && r.invoice && ALPS && ALPS.setCfg) ALPS.setCfg({ printer: r.invoice }); } catch (e) {} log(`🖨 프린터 역할: 일반 '${r.general}' · 라벨 '${r.label}' · 송장 '${r.invoice}'`); return r; }
+const psFindP = (printer) => `$p = Get-CimInstance Win32_Printer | Where-Object { $_.Name -eq ${psq(printer)} } | Select-Object -First 1\nif (-not $p) { Write-Error 'NOPRINTER'; exit 3 }\n`;
+async function prnAct(act, o) { const printer = String((o && o.printer) || '').trim(); if (!printer) throw new Error('프린터를 고르지 않음');
+  let sc = '[Console]::OutputEncoding = [Text.Encoding]::UTF8\n' + psFindP(printer);
+  if (act === 'default') sc += `${o.keep !== false ? "Set-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Windows' -Name LegacyDefaultPrinterMode -Value 1 -Type DWord\n" : ''}$r = Invoke-CimMethod -InputObject $p -MethodName SetDefaultPrinter\nStart-Sleep -Milliseconds 600\n$d = Get-CimInstance Win32_Printer | Where-Object { $_.Default } | Select-Object -First 1\nWrite-Output ('OK|' + $r.ReturnValue + '|' + $d.Name)`;
+  else if (act === 'resume') sc += `$r = Invoke-CimMethod -InputObject $p -MethodName Resume\nWrite-Output ('OK|' + $r.ReturnValue + '|')`;
+  else if (act === 'clear') sc += `$J = @(Get-CimInstance Win32_PrintJob | Where-Object { $_.Name -like ($p.Name + ',*') -and (([int]$_.StatusMask -band (2 -bor 4 -bor 32 -bor 64 -bor 512 -bor 1024)) -or ([string]$_.JobStatus -match 'Error|오류|Paused|일시|Offline|Blocked')) })\n$n = 0; foreach ($j in $J) { try { Remove-CimInstance -InputObject $j -ErrorAction Stop; $n++ } catch {} }\nWrite-Output ('OK|' + $n + '|' + $J.Count)`;
+  else throw new Error('모르는 일');
+  const r = await ps(sc, 60000); const m = String(r.out || '').match(/OK\|([^|\r\n]*)\|([^\r\n]*)/); if (!m) throw new Error(/NOPRINTER/.test(r.err) ? `이 PC에 '${printer}' 프린터가 없음` : '실패: ' + String(r.err || (r.e && r.e.message) || r.out).replace(/\s+/g, ' ').slice(0, 300));
+  if (act === 'default') { const now = m[2].trim(); if (now !== printer) throw new Error(`윈도우가 기본을 바꾸지 않음(지금 기본 '${now}' · 돌려준 값 ${m[1]})`); log(`⭐ 윈도우 기본 프린터 → ${printer}${o.keep !== false ? " · 'Windows에서 기본 프린터 관리' 끔" : ''}`); return { ok: true, def: now }; }
+  if (act === 'resume') { log(`▶ 프린터 다시 시작 → ${printer} (${m[1]})`); return { ok: +m[1] === 0, code: +m[1] }; }
+  log(`🧹 ${printer}: 오류·멈춘 작업 ${m[1]}/${m[2]}개 취소`); return { ok: true, n: +m[1], of: +m[2] }; }
+function prnPageHtml() { return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>리드나우 프린터</title><style>body{font-family:'Malgun Gothic',sans-serif;margin:0;padding:18px;background:#f6f7f9;color:#222}h1{font-size:20px;margin:0 0 4px}.h{color:#666;font-size:13px;margin:0 0 14px}.r{display:flex;gap:10px;flex-wrap:wrap}.b{flex:1 1 200px;border:2px solid #ccd;border-radius:14px;background:#fff;padding:16px;font-size:17px;cursor:pointer;text-align:left}.b small{display:block;color:#666;font-size:12px;margin-top:4px}.b.on{border-color:#2a7;background:#eefaf2}.b:disabled{opacity:.5}#m{margin-top:14px;font-size:14px;min-height:20px}#d{margin-top:8px;font-size:13px;color:#555}</style></head><body>
+<h1>🖨 이 PC 기본 프린터</h1><p class="h">누르면 윈도우 기본 프린터가 바로 바뀝니다(다른 프로그램 인쇄에 쓰임). 라벨·송장은 리드나우가 이름으로 따로 보내므로 기본이 '일반'이어도 그대로 나옵니다. 역할(어느 프린터가 일반·라벨·송장인지)은 웹앱 ⚙ 라벨 인쇄 설정 › 🖨 이 PC 프린터 3개에서 정합니다.</p>
+<div class="r" id="r"></div><div id="m"></div><div id="d"></div>
+<script>const H={'X-RN-Print':'1','Content-Type':'application/json'};const NM={general:'📄 일반',label:'🏷 라벨',invoice:'🚚 송장'};
+async function load(){const a=await (await fetch('/prn/roles',{headers:H})).json();const p=await (await fetch('/printers',{headers:H})).json();const def=((p.printers||[]).find(x=>x.def)||{}).name||'';const R=a.roles||{};
+document.getElementById('r').innerHTML=Object.keys(NM).map(k=>{const n=R[k]||'';return '<button class="b'+(n&&n===def?' on':'')+'" data-k="'+k+'" '+(n?'':'disabled')+'>'+NM[k]+(n&&n===def?' ✓ 지금 기본':'')+'<small>'+(n?n.replace(/</g,'&lt;'):'아직 안 정함 — 웹앱에서 정하기')+'</small></button>';}).join('');
+document.getElementById('d').textContent='지금 윈도우 기본: '+(def||'(없음)');document.querySelectorAll('[data-k]').forEach(b=>b.onclick=async()=>{const n=R[b.dataset.k];document.getElementById('m').textContent='바꾸는 중…';const r=await (await fetch('/prn/default',{method:'POST',headers:H,body:JSON.stringify({printer:n,keep:true})})).json();document.getElementById('m').textContent=r.ok?'✅ 기본 프린터 → '+n:'✗ '+(r.err||'실패');load();});}
+load();</script></body></html>`; }
+/* (1.1.4) 자동 바꾸기 — want = 지금 기본이어야 할 역할(라벨 인쇄 중 'label' · ALPS 처리 중 'invoice' · 웹앱 인쇄 창 'label' 등 · 없으면 'general') · 3초마다 맞춤(바꿀 때만 PowerShell) */
+const alpsPrinting = () => { try { const x = ALPS && ALPS.status && ALPS.status(); return !!(x && x.status === 'run' && x.step === 'print'); } catch (e) { return false; } }; /* 송장으로 바꾸는 때 = ALPS가 '인쇄' 단계를 돌리는 동안만(사람 답을 기다리는 동안·접수 단계는 일반 그대로 — 그 사이 다른 인쇄가 송장으로 가지 않게) */
+const TEMP = { label: 0, web: null }; let PRN_CUR = null, PRN_BUSY = false, PRN_FAIL = 0;
+function prnWant(R) { if (TEMP.label > 0) return 'label'; if (alpsPrinting()) return 'invoice'; if (TEMP.web && Date.now() < TEMP.web.until) return TEMP.web.role; return 'general'; }
+async function prnSync() { if (PRN_BUSY) return; const R = rolesGet(); if (R.auto === false || !R.general) return; const want = prnWant(R); const name = R[want] || R.general; let rf = {}; try { rf = JSON.parse(fs.readFileSync(ROLES_F, 'utf8')); } catch (e) {}
+  if (want === 'general' && !rf.temp && PRN_CUR == null) return; /* 바꾼 적이 없으면 손대지 않음(사람이 /printer·윈도우 설정에서 고른 기본을 존중) */
+  if (PRN_CUR === name) { if (want === 'general' && rf.temp) { delete rf.temp; try { fs.writeFileSync(ROLES_F, JSON.stringify(rf, null, 1)); } catch (e) {} PRN_CUR = null; } return; }
+  if (PRN_FAIL >= 3 && Date.now() - (prnSync.failAt || 0) < 60e3) return; PRN_BUSY = true;
+  try { await prnAct('default', { printer: name, keep: true }); PRN_CUR = name; PRN_FAIL = 0; if (want !== 'general') { rf.temp = { role: want, printer: name, at: new Date().toISOString() }; } else delete rf.temp; try { fs.writeFileSync(ROLES_F, JSON.stringify(rf, null, 1)); } catch (e) {} log(`🔁 자동 바꾸기: 기본 프린터 = ${want === 'general' ? '일반' : want === 'label' ? '라벨' : '송장'} '${name}'`); if (want === 'general') PRN_CUR = null; }
+  catch (e) { PRN_FAIL++; prnSync.failAt = Date.now(); log('✗ 자동 바꾸기 실패: ' + e.message); } finally { PRN_BUSY = false; } }
+async function prnUse(role, fn) { const R = rolesGet(); if (R.auto === false || !R.general || !R[role]) return fn(); if (role === 'label') TEMP.label++; try { await prnSync(); return await fn(); } finally { if (role === 'label') TEMP.label = Math.max(0, TEMP.label - 1); setTimeout(() => prnSync(), 1500); } }
+if (process.platform === 'win32') { setInterval(() => prnSync().catch(() => {}), 3000); setTimeout(() => { try { const rf = JSON.parse(fs.readFileSync(ROLES_F, 'utf8')); if (rf.temp) { PRN_CUR = rf.temp.printer; log(`도우미가 켜짐 — 지난번 잠깐 바꾼 기본(${rf.temp.printer})을 일반으로 되돌림`); } } catch (e) {} }, 500); }
 function readBody(req, max, cb) { const bufs = []; let n = 0, bad = false; req.on('data', (c) => { n += c.length; if (n > max) { bad = true; req.destroy(); } else bufs.push(c); }); req.on('end', () => (bad ? cb(new Error('너무 큼')) : cb(null, Buffer.concat(bufs)))); req.on('error', cb); }
 const srv = http.createServer((req, res) => {
   const org = req.headers.origin || ''; const okOrg = !org || ORIGINS.some((r) => r.test(org)); const host = String(req.headers.host || '');
@@ -67,11 +151,17 @@ const srv = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://127.0.0.1');
   if (u.pathname === '/status') return J(200, { ok: true, ver: VERSION, pc: os.hostname(), alps: ALPS ? ALPS.VERSION : null });
   if (u.pathname === '/alps' && req.method === 'GET') { if (org || !ALPS) return J(org ? 403 : 503, { ok: false, err: org ? '이 PC 브라우저 주소창에서만' : 'ALPS 모듈이 아직 없음(1분 안에 받음)' }); res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" }); return res.end(ALPS.pageHtml()); }
+  if (u.pathname === '/printer' && req.method === 'GET') { if (org) return J(403, { ok: false, err: '이 PC 브라우저 주소창에서만' }); res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" }); return res.end(prnPageHtml()); }
   if (req.headers['x-rn-print'] !== '1') return J(403, { ok: false, err: 'X-RN-Print 머리가 없음' });
   if (u.pathname.startsWith('/alps/')) return alpsApi(req, res, u, org, J);
+  if (u.pathname === '/pdiag') return pdiag().then((r) => { log('🔎 인쇄 상태 점검: ' + r.hints.map((h) => h.t).join(' / ').slice(0, 300)); J(200, r); }).catch((e) => J(500, { ok: false, err: e.message }));
+  if (u.pathname === '/pdiag/test' && req.method === 'POST') return readBody(req, 4096, (e, b) => { let o = {}; try { o = JSON.parse(b.toString('utf8') || '{}'); } catch (x) {} pdiagTest(o.printer).then(() => J(200, { ok: true })).catch((er) => J(500, { ok: false, err: er.message })); });
+  if (u.pathname === '/prn/roles') { if (req.method === 'POST') return readBody(req, 4096, (e, b) => { let o = {}; try { o = JSON.parse(b.toString('utf8') || '{}'); } catch (x) {} try { J(200, { ok: true, roles: rolesSet(o) }); } catch (er) { J(500, { ok: false, err: er.message }); } }); return J(200, { ok: true, roles: rolesGet() }); }
+  if (u.pathname === '/prn/temp' && req.method === 'POST') return readBody(req, 4096, (e, b) => { let o = {}; try { o = JSON.parse(b.toString('utf8') || '{}'); } catch (x) {} if (o.end) TEMP.web = null; else if (['label', 'invoice', 'general'].includes(o.role)) TEMP.web = { role: o.role, until: Date.now() + Math.max(5, Math.min(300, +o.sec || 120)) * 1000 }; prnSync().then(() => J(200, { ok: true, want: prnWant(rolesGet()), roles: rolesGet() })).catch((er) => J(500, { ok: false, err: er.message })); });
+  if (/^\/prn\/(default|resume|clear)$/.test(u.pathname) && req.method === 'POST') return readBody(req, 4096, (e, b) => { let o = {}; try { o = JSON.parse(b.toString('utf8') || '{}'); } catch (x) {} prnAct(u.pathname.slice(5), o).then((r) => J(200, r)).catch((er) => { log('✗ ' + er.message); J(500, { ok: false, err: er.message }); }); });
   if (u.pathname === '/printers') return printers().then((L) => J(200, { ok: true, printers: L })).catch((e) => J(500, { ok: false, err: e.message }));
   if (u.pathname === '/print' && req.method === 'POST') return readBody(req, 60 * 1048576, (e, b) => { if (e) return J(400, { ok: false, err: e.message }); let o = null; try { o = JSON.parse(b.toString('utf8')); } catch (x) { return J(400, { ok: false, err: 'bad json' }); }
-    printImgs(o).then((n) => J(200, { ok: true, n })).catch((er) => { log('✗ ' + er.message); J(500, { ok: false, err: er.message }); }); });
+    prnUse('label', () => printImgs(o)).then((n) => J(200, { ok: true, n })).catch((er) => { log('✗ ' + er.message); J(500, { ok: false, err: er.message }); }); });
   return J(404, { ok: false });
 });
 /* 📦 ALPS 자동 처리 길 — 웹앱(jerrycson.github.io)·이 PC 설정 화면만 · 로그인 정보는 설정 화면(127.0.0.1:8898 출처)에서만 받음 */
