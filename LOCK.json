@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "도우미 새 판 먼저 받기 — 삼성 연결 고치기",
+ "since": "2026-11-05T05:47:04Z",
+ "beat": "2026-11-05T05:47:04Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T05:36:35Z"
  },
- "host": null
+ "host": "vm"
 }
