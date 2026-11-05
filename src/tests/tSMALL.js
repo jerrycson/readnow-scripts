@@ -48,9 +48,9 @@ await H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTi
     return out; });
   if (process.env.V) console.log(JSON.stringify(r, null, 1));
   console.log('① 신청서 출력');
-  ok(r.cartBtn && /pType=C2BOrderList/.test(r.cartUrl) && /rnx=c2bprtl1/.test(r.cartUrl) && r.latest && r.latest.n === 1, `장바구니 탭 「🖨 방금 신청한 신청서 출력하기」 → 신청 내역 목록(rnx=c2bprtl1) 새 탭 · 기록(latest n=${r.latest && r.latest.n})`);
+  ok(r.cartBtn && /usedstore\/wgate\.aspx\?rnx=c2bprtf1$/.test(r.cartUrl) && r.latest && r.latest.n === 1, `장바구니 탭 「🖨 방금 신청한 신청서 출력하기」 → (11/05) 중고매장 첫 화면(rnx=c2bprtf1 · 번호 없음 = 신청 내역 맨 위) 새 탭 · 기록(latest n=${r.latest && r.latest.n})`);
   ok(r.recvBtn && r.cardBtns >= 2 && /No\. 20261104000077/.test(r.recvStrip) && /2권/.test(r.recvStrip), `접수완료 탭 맨 위 🖨 칸: 접수 번호·권수 + 단추 · 카드마다 단추(${r.cardBtns})`);
-  ok(/pType=c2borderinfo&c2bsalesno=20261104000077&rnx=c2bprt01/.test(r.recvUrl) && r.prt1 && r.prt1.n === 1 && r.prt1.no === '20261104000077' && r.prtLog >= 2 && /✓1/.test(r.recvBtnTxt), `접수 상세 주소(rnx=c2bprt01)로 엶 · 누른 기록 prt(${r.prt1 && r.prt1.n}번 · log ${r.prtLog}) · 단추 옆 ✓1`);
+  ok(/usedstore\/wgate\.aspx\?rnx=c2bprtf1&c2bno=20261104000077$/.test(r.recvUrl) && r.prt1 && r.prt1.n === 1 && r.prt1.no === '20261104000077' && r.prtLog >= 2 && /✓1/.test(r.recvBtnTxt), `(11/05) 중고매장 첫 화면 + 접수 번호(rnx=c2bprtf1&c2bno=…)로 엶 · 누른 기록 prt(${r.prt1 && r.prt1.n}번 · log ${r.prtLog}) · 단추 옆 ✓1`);
   ok(r.guide && r.feat[1], '📖 설명서(flow-print)·🔍 기능 찾기에 있음');
   console.log('② 등록 끝남 표시');
   ok(r.devMine[0] === false && r.devMine[1] === true && r.devMine[2] === true, `맡긴 기기 판별: 다른 기기 아님 · 이 기기 맞음 · (예전 작업대 판별은 다른 기기도 '내 것' = ${r.devMine[2]} — 그래서 떴던 것)`);
