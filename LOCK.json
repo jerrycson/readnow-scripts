@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "신청서 출력 고침",
+ "since": "2026-11-05T03:06:29Z",
+ "beat": "2026-11-05T03:06:29Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T02:35:55Z"
  },
- "host": null
+ "host": "vm"
 }
