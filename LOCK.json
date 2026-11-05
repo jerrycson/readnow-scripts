@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "웹앱 1.78.390 확정 축하",
+ "since": "2026-11-05T09:00:43Z",
+ "beat": "2026-11-05T09:00:43Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T08:43:52Z"
  },
- "host": null
+ "host": "vm"
 }
