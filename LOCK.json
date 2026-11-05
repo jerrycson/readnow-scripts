@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "팔기 접수 4시간 확인",
+ "since": "2026-11-05T03:18:38Z",
+ "beat": "2026-11-05T03:18:38Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "",
   "at": "2026-11-05T03:15:41Z"
  },
- "host": null
+ "host": "vm"
 }
