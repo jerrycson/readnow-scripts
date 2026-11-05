@@ -70,6 +70,25 @@ else console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
     const n0 = calls.length; await p.click('[data-prnact="clear"]'); await p.waitForTimeout(200); ok(!calls.slice(n0).some((c) => c.startsWith('/prn/clear')), '멈춘 작업 취소는 한 번 누르면 안 함');
     await p.click('[data-prnact="clear"]'); await p.waitForTimeout(600); ok(calls.slice(n0).some((c) => c.startsWith('/prn/clear {"printer":"롯데택배"')), '두 번 누르면 취소 맡김');
     await p.evaluate(() => { if (PRN_OV) PRN_OV.remove(); }); await p.click('[data-prntest]').catch(() => {});
+    /* 🔧 한 번에 맞추기 — 짐작 */
+    const g = await p.evaluate(() => { const L = (a, d) => a.map((n) => ({ name: n, def: n === d })); return {
+      a: prnGuess(L(['Microsoft Print to PDF', 'Samsung M2070 Series', 'XP-420B 라벨', '롯데택배'], '롯데택배'), {}, '', '').roles,
+      b: prnGuess(L(['Fax', 'HP LaserJet', 'Canon MF', 'TSC TE200'], 'HP LaserJet'), {}, 'TSC TE200', '').roles,
+      c: prnGuess(L(['Samsung M2070', '라벨기', '롯데택배'], 'Samsung M2070'), { general: '라벨기' }, '', '').roles,
+      d: prnGuess(L(['Samsung M2070', 'ZD420', 'GK420', '롯데택배'], 'Samsung M2070'), {}, '', '').roles }; });
+    ok(g.a.general === 'Samsung M2070 Series' && g.a.label === 'XP-420B 라벨' && g.a.invoice === '롯데택배', '짐작: 삼성=일반 · 라벨 낱말=라벨 · 롯데=송장 (기본이 롯데여도) ' + JSON.stringify(g.a));
+    ok(g.b.invoice === 'TSC TE200' && g.b.general === 'HP LaserJet' && !g.b.label, '짐작: ALPS 설정 프린터 = 송장 · 지금 기본 = 일반 · 라벨 후보 없으면 비움 ' + JSON.stringify(g.b));
+    ok(g.c.general === '라벨기', '짐작: 정해 둔 역할은 그대로');
+    ok(!g.d.label && g.d.general === 'Samsung M2070', '짐작: 라벨 후보 둘이면 고르지 않음 ' + JSON.stringify(g.d));
+    roles = { general: '', label: '', invoice: '', auto: true, temp: null }; def = '롯데택배'; await p.evaluate(() => { const C = LBL(); C.printer = ''; lblSave(C); });
+    const n2 = calls.length; await p.evaluate(() => prnAutoSetup()); await p.waitForTimeout(800);
+    const su = await p.evaluate(() => ({ t: PRN_OV ? PRN_OV.textContent : '', lbl: LBL().printer })); const c2 = calls.slice(n2);
+    ok(roles.general === 'Samsung M2070' && roles.label === '라벨기' && roles.invoice === '롯데택배' && def === 'Samsung M2070', '🔧 한 번에: 역할 셋 저장 + 기본 = 일반 ' + JSON.stringify(roles) + ' 기본 ' + def);
+    ok(c2.some((c) => c.startsWith('/prn/clear {"printer":"롯데택배"')), '🔧 한 번에: 오류 작업이 있는 프린터 대기열 정리');
+    ok(/한 일/.test(su.t) && /일반 = 'Samsung M2070'/.test(su.t) && su.lbl === '라벨기', '🔧 한 번에: 한 일·남은 일 창 · 라벨 프린터도 맞춤');
+    await p.evaluate(() => { if (PRN_OV) PRN_OV.remove(); localStorage.removeItem('rn-prn-auto1'); });
+    roles = { general: '', label: '', invoice: '', auto: true, temp: null }; const n3 = calls.length; await p.evaluate(() => prnAutoOnce()); await p.waitForTimeout(1200); ok(roles.general === 'Samsung M2070' && await p.evaluate(() => !!localStorage.getItem('rn-prn-auto1')), '처음 한 번 저절로 맞춤(역할이 하나도 없을 때)');
+    const n4 = calls.length; await p.evaluate(() => { if (PRN_OV) PRN_OV.remove(); return prnAutoOnce(); }); await p.waitForTimeout(500); ok(!calls.slice(n4).some((c) => c.startsWith('/prn/roles {')), '두 번째는 저절로 안 함');
     /* 인쇄 창 라벨 — 잠깐 라벨 → 창 닫으면 끝 */
     const n1 = calls.length; const pop = p.waitForEvent('popup'); await p.evaluate(() => { window.__rnOpenRaw = null; regLabelPrintWin([{ sku: 'RN-1', ttl: '', gr: '' }], LBL()); }); const w = await pop; await p.waitForTimeout(800);
     ok(calls.slice(n1).some((c) => c.startsWith('/prn/temp {"role":"label","sec":120}')), '인쇄 창 라벨 → 잠깐 기본 = 라벨'); await w.close(); await p.waitForTimeout(1600); ok(calls.slice(n1).some((c) => c === '/prn/temp {"end":1}'), '인쇄 창 닫으면 일반으로(끝)');
