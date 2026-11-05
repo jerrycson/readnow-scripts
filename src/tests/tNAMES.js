@@ -19,7 +19,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     out.findLog = F('이름 바꾼 기록').slice(0, 3);
     out.featOld = featIndex().filter((x) => NAME_LOG.some(([f]) => f.length >= 7 && String(x.t).includes(f))).map((x) => x.t).slice(0, 5);
     // ③ 대표 화면 이름
-    const ns = document.querySelector('#main details[data-sec="set_night"] > summary'); const txt = ns ? ns.textContent : ''; out.setNight = txt.includes('🌙 야간 운영'); out.setNightOld = txt.includes('알라딘 일 간격 늘리고');
+    /* (11/05) 🌙 야간 운영은 🧭 관리도구 칸(mg_night)으로 옮김 */ S.sec.mg_night = true; openMgr(); await new Promise((z) => setTimeout(z, 600)); const ns = document.querySelector('#sheet details[data-sec="mg_night"] > summary'); const txt = ns ? ns.textContent : ''; history.back(); await new Promise((z) => setTimeout(z, 300)); out.setNight = txt.includes('🌙 야간 운영'); out.setNightOld = txt.includes('알라딘 일 간격 늘리고');
     out.cx = CX_TABS.map((x) => x[1]);
     return out; });
   console.log('  NAME_LOG', r.n, '줄 · 표', r.rows, '줄 · 섹션', r.summary.trim());
@@ -28,7 +28,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   else {
     ok(r.rows === r.n, `표 줄 수 = NAME_LOG (${r.rows}/${r.n})`);
     ok(r.shown >= 1 && r.shown < r.rows && r.shownHas, `찾기 칸이 거름 (${r.shown}줄 남음)`);
-    if (r.ids.includes('set_night')) { ok(r.findOld.some((t) => /야간 운영/.test(t)), '예전 이름 「밤 시간」으로 찾아도 「야간 운영」 항목: ' + r.findOld.join(' | ')); ok(r.setNight && !r.setNightOld, '설정 화면 섹션 이름 = 🌙 야간 운영 (예전 꼬리 글 없음)'); }
+    if (r.ids.includes('set_night')) { ok(r.findOld.some((t) => /야간 운영/.test(t)), '예전 이름 「밤 시간」으로 찾아도 「야간 운영」 항목: ' + r.findOld.join(' | ')); ok(r.setNight && !r.setNightOld, '관리도구 칸 이름 = 🌙 야간 운영 (예전 꼬리 글 없음)'); }
     ok(r.findLog.some((t) => /이름 바꾼 기록/.test(t)), '기능 찾기 「이름 바꾼 기록」 → 설정 섹션');
     ok(!r.featOld.length, '기능 찾기 제목에 긴 예전 이름이 남지 않음 ' + r.featOld.join(' | '));
     if (r.ids.includes('cx_done')) ok(r.cx.join(',') === '⚠ 품절취소,판매전취소,기타취소,처리완료,사유기록,취소후판매', '취소 주문 대조 탭 = ' + r.cx.join('·'));
