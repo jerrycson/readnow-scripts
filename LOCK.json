@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "도우미 1.1.6 IP 찾기 · 판매가 표시 · 판매가 진단",
- "since": "2026-11-05T06:39:16Z",
- "beat": "2026-11-05T06:39:16Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-05T06:15:33Z"
+  "at": "2026-11-05T06:42:07Z"
  },
- "host": "vm"
+ "host": null
 }
