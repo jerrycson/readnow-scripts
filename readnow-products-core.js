@@ -793,29 +793,36 @@
   // → 탭·스크립트를 여러 개 열어도 이 PC에서 알라딘으로 가는 요청 속도는 하나로 묶임
   // 자동 조절(AIMD): 시작 1초 간격 → 연속 성공 20번마다 10%씩 빨라짐(최소 간격까지) → 실패·시간초과는 2배, 로그인 풀림은 3배로 즉시 느려짐(최대 간격까지)
   // 목표: 막히지 않는 범위에서 가장 빠르게. 숫자는 설정(상품 수집기 설정 → Firestore prd_system/settings)에서 바꾸고, 그 값이 여기로 전달됨
-  const PACER_DEFAULTS = { minMs: 700, startMs: 1200, maxMs: 20000, upEvery: 20, upMul: 0.9, failMul: 2, loginMul: 3, tooManyMul: 4 };
+  const PACER_DEFAULTS = { minMs: 700, startMs: 1200, maxMs: 20000, upEvery: 20, upMul: 0.9, failMul: 2, loginMul: 3, tooManyMul: 4, floor429Ms: 2000, floor429Min: 30 };
   // 429 = 알라딘이 '요청이 너무 많다'고 거절 → 간격 4배 + 이 PC의 모든 탭·스크립트가 함께 쉼(1분, 거듭되면 2·3…10분). 성공이 쌓이면 다시 빨라짐
+  /* (정범님 11/05 '그렇게 해' — 11/04 매일 정밀 점검 제안 ④-5) 429 뒤 floor429Min분(기본 30) 동안은 간격 바닥을 floor429Ms(기본 2초)로 올려 둠
+   *  예전: 성공 20번마다 10%씩 빨라져 9분이면 바닥(0.7초)으로 돌아왔음(11/04 14시 429 뒤 4,417쪽 vs 13시 4,822쪽) → 다시 429·503으로 번질 위험
+   *  흩음(0.85~1.15배) 뒤에도 바닥 아래로 내려가지 않음 · 쉬는 동안 새 429가 오면 그때부터 다시 floor429Min분 · 0이면 끔
+   *  로그인 자체(로그인 탭 열기·로그인 확인)는 이 속도 조절기를 거치지 않으므로 늦어지지 않음 · 근거: 정밀 점검 제안·정범님 결정 — 숫자는 설정(prd_system/settings floor429Ms·floor429Min)으로 바꿈 */
+  const floorOf = (c, x, now) => (x && +x.floorUntil > now && +c.floor429Ms > 0 ? Math.max(c.minMs, Math.min(c.maxMs, +c.floor429Ms)) : c.minMs);
   function makePacer(key) {
     const LSx = (() => { try { return typeof localStorage !== 'undefined' ? localStorage : null; } catch (e) { return null; } })();
     const K = 'rnPacer:' + key; const mem = {};
     const rd = (k) => { try { return LSx ? JSON.parse(LSx.getItem(k) || 'null') : mem[k] || null; } catch (e) { return null; } };
     const wr = (k, v) => { try { if (LSx) LSx.setItem(k, JSON.stringify(v)); else mem[k] = v; } catch (e) {} };
     const cfg = () => ({ ...PACER_DEFAULTS, ...(rd('rnPacer:cfg') || {}) });
-    const st = () => { const c = cfg(); const x = rd(K) || {}; if (!(x.gap > 0)) x.gap = c.startMs; x.gap = Math.min(c.maxMs, Math.max(c.minMs, x.gap)); return x; };
+    const st = () => { const c = cfg(); const x = rd(K) || {}; if (!(x.gap > 0)) x.gap = c.startMs; x.gap = Math.min(c.maxMs, Math.max(floorOf(c, x, Date.now()), x.gap)); return x; };
     return {
       /* (0.15.2) prio = 사람이 기다리는 조회(등록 조회·사진 가격) — 간격(막히지 않게)은 그대로 지키되 다음 차례를 먼저 받음
        *  예전: 같은 PC에서 자동 수집(전체 재검토 등)이 계속 돌면 조회는 최대 4초씩 자다 깨는 사이 매번 자리를 빼앗겨 두 화면 읽기에 2분 43초(10/17 HOME)
        *  이제: 조회가 '기다리는 중' 표시(prioAt)를 남기고 짧게(0.15초) 깨어 바로 받음 · 다른 요청은 그 표시가 5초 안이면 양보 */
       async wait(sleep, mult = 1, prio = false) { for (;;) { const x = st(); const now = Date.now(); const cool = (x.coolUntil || 0) - now; if (cool > 0) { await sleep(Math.min(cool, prio ? 1000 : 4000)); continue; }
           if (!prio && x.prioAt && now - x.prioAt < 5000) { await sleep(300); continue; } if (prio && (!x.prioAt || now - x.prioAt > 1000)) { x.prioAt = now; wr(K, x); }
-          const gap = x.gap * (mult || 1) * (0.85 + Math.random() * 0.3); const w = (x.last || 0) + gap - now; if (w > 0) { await sleep(Math.min(w, prio ? 150 : 4000)); continue; } x.last = now; if (prio) x.prioAt = 0; wr(K, x); return; } },
-      ok() { const c = cfg(); const x = st(); x.ok = (x.ok || 0) + 1; if (x.ok >= c.upEvery) { x.gap = Math.max(c.minMs, Math.round(x.gap * c.upMul)); x.ok = 0; x.n429 = 0; } wr(K, x); },
+          const gap = Math.max(+x.floorUntil > now ? floorOf(cfg(), x, now) : 0, x.gap * (mult || 1) * (0.85 + Math.random() * 0.3)); const w = (x.last || 0) + gap - now; if (w > 0) { await sleep(Math.min(w, prio ? 150 : 4000)); continue; } x.last = now; if (prio) x.prioAt = 0; wr(K, x); return; } },
+      ok() { const c = cfg(); const x = st(); x.ok = (x.ok || 0) + 1; if (x.ok >= c.upEvery) { x.gap = Math.max(floorOf(c, x, Date.now()), Math.round(x.gap * c.upMul)); x.ok = 0; x.n429 = 0; } wr(K, x); },
       fail(kind) { const c = cfg(); const x = st(); x.ok = 0; x.gap = Math.min(c.maxMs, Math.round(x.gap * (kind === '429' ? c.tooManyMul : kind === 'login' ? c.loginMul : c.failMul))); x.failAt = Date.now(); x.failKind = kind || 'error';
-        if (kind === '429') { x.n429 = (x.n429 || 0) + 1; x.coolUntil = Date.now() + Math.min(10, x.n429) * 60000; } wr(K, x); },
+        if (kind === '429') { x.n429 = (x.n429 || 0) + 1; x.coolUntil = Date.now() + Math.min(10, x.n429) * 60000; if (+c.floor429Min > 0) x.floorUntil = Date.now() + +c.floor429Min * 60000; } wr(K, x); },
+      /* 429 뒤 바닥이 올라가 있는 남은 시간(ms) · 그때 바닥(ms) — 화면·기록용 */
+      floor() { const c = cfg(); const x = st(); const now = Date.now(); const left = Math.max(0, (+x.floorUntil || 0) - now); return { left, ms: left > 0 ? floorOf(c, x, now) : c.minMs }; },
       cooling() { const x = st(); return Math.max(0, (x.coolUntil || 0) - Date.now()); },
       state() { return { ...st(), cfg: cfg() }; },
       kindOf(status) { return status === 429 || status === 503 ? '429' : 'error'; },
-      setCfg(o) { const c = { ...cfg(), ...o }; wr('rnPacer:cfg', { minMs: c.minMs, startMs: c.startMs, maxMs: c.maxMs }); },
+      setCfg(o) { const c = { ...cfg(), ...o }; const n = (v, d) => (Number.isFinite(+v) && +v >= 0 ? +v : d); wr('rnPacer:cfg', { minMs: c.minMs, startMs: c.startMs, maxMs: c.maxMs, floor429Ms: n(c.floor429Ms, PACER_DEFAULTS.floor429Ms), floor429Min: n(c.floor429Min, PACER_DEFAULTS.floor429Min) }); },
     };
   }
 
