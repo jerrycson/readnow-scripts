@@ -1,2 +1,2 @@
-doc=app_settings/pdiag_MJ-PC
-# 1399524469
+recentUp=reg_items&mins=120
+# 1911217807
