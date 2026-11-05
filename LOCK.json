@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "합침 rg5·shp5·rk4",
+ "since": "2026-11-05T08:14:06Z",
+ "beat": "2026-11-05T08:14:06Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T08:08:57Z"
  },
- "host": null
+ "host": "vm"
 }
