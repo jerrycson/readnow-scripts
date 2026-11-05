@@ -82,9 +82,9 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   const rb = await p.evaluate(() => { const r = document.querySelector('.rgrow[data-rgexp="n004"]').getBoundingClientRect(); return [r.left + r.width * 0.55, r.top + 8]; }); await p.mouse.click(rb[0], rb[1]); await p.waitForTimeout(400);
   const outside = await p.evaluate(() => ({ open: document.getElementById('rgglpop').style.display === 'block', exp: [...(S._regOpen || [])], qty: (window.__FS.reg_items.n001 || {}).qty }));
   ok(inside && !outside.open && !outside.exp.length && outside.qty === 1, '창 안 빈 곳은 닫지 않음 · 창 밖(다른 줄 빈 곳)을 누르면 닫힘 — 저장 없음 · 그 줄이 펼쳐지지 않음', { inside, outside });
-  // ⑧ 설명 칸 — 접힌 칸(기본 2줄 · 11/05 고침 — tRGDESC가 자세히 봄) · 누르면 입력 · 밖으로 나가면 저장하고 바로 접힘 · 마우스 올리면 전체
-  const f0 = await p.evaluate(() => { const el = document.querySelector('.rgrow[data-rgexp="n002"] .rgqf .rgqf-t'); if (!el) return null; const lh = parseFloat(getComputedStyle(el).lineHeight); return { lines: Math.round(el.clientHeight / lh), clamp: el.scrollHeight > el.clientHeight + 2, input: !!document.querySelector('.rgrow[data-rgexp="n002"] .rgq-in') }; });
-  ok(f0 && f0.lines === 2 && f0.clamp && !f0.input, '⚡ 설명은 접힌 칸으로 — 평소 2줄만 보이고 넘치면 줄임', f0);
+  // ⑧ 설명 칸 — 접힌 칸(한 줄 · 11/05 저녁 고침 · 예전 기본 2줄 — tRGDESC가 자세히 봄) · 누르면 입력 · 밖으로 나가면 저장하고 바로 접힘 · 마우스 올리면 전체
+  const f0 = await p.evaluate(() => { const el = document.querySelector('.rgrow[data-rgexp="n002"] .rgqf .rgqf-t'); if (!el) return null; const lh = parseFloat(getComputedStyle(el).lineHeight); return { lines: Math.round(el.clientHeight / lh), clamp: el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).textOverflow === 'ellipsis', input: !!document.querySelector('.rgrow[data-rgexp="n002"] .rgq-in') }; });
+  ok(f0 && f0.lines === 1 && f0.clamp && !f0.input, '⚡ 설명은 접힌 칸으로 — 평소 그 칸 너비 한 줄만 보이고 넘치면 … (11/05 저녁 정범님 · 예전 2줄)', f0);
   await p.hover('.rgrow[data-rgexp="n002"] .rgqf'); await p.waitForTimeout(250);
   const tip = await p.evaluate(() => { const z = document.getElementById('rgqtip'); if (!z) return null; const r = z.getBoundingClientRect(); return { full: /40번째 문장/.test(z.textContent), inV: r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight, scroll: z.scrollHeight >= z.clientHeight }; });
   ok(tip && tip.full && tip.inV && tip.scroll, '마우스를 올리면 전체 글 겹침 상자(화면 안 · 긴 글은 그 안에서 스크롤)', tip);
