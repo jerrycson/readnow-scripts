@@ -230,7 +230,7 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
     ok(r.wk && r.wk.unit === '주' && r.wk.wd === 1 && r.wk.N >= 3 && r.wk.kind === 'top' && r.wkR && r.wkFx && r.wkFx.occ === 'week' && /주 중/.test(r.wkFx.txt) && r.wkAgain === false, '주간 마감 — 끝난 주(월~일) 순위 · 1위 · 그 주에 한 번 ' + JSON.stringify(r.wk));
     ok(r.mo && r.mo.N >= 2 && r.moR && r.moFx && r.moFx.occ === 'month' && /달 중/.test(r.moFx.txt), '달 마감 — 끝난 달 순위 ' + JSON.stringify([r.mo, r.moFx && r.moFx.txt.slice(0, 80)]));
     ok(r.qd[0] === 'open' && r.qd[1] === 'week' && r.q2 && r.q2.occ === 'week', '겹치면 줄 섬 — 닫힌 뒤 다음 경우 ' + JSON.stringify(r.qd));
-    ok(r.occN === 7 && r.occOn, '⚙ 설정 🕒 언제 띄울까 — 경우 7가지 · 기본 모두 켬'); ok(r.saved.week === false && Object.keys(r.saved).length === 1, '경우 끄기 저장(공용 app_settings/main.rankFx.on) ' + JSON.stringify(r.saved));
+    ok(r.occN === 9 && r.occOn, '⚙ 설정 🕒 언제 띄울까 — 경우 9가지(11/05 세 번째: 🔁 기록 갱신 · 🚚 출고 카드 더함) · 기본 모두 켬'); ok(r.saved.week === false && Object.keys(r.saved).length === 1, '경우 끄기 저장(공용 app_settings/main.rankFx.on) ' + JSON.stringify(r.saved));
     ok(r.offR === false && !r.offFx && r.onOther === true, '끈 경우(주간)는 안 뜨고 다른 경우(월간)는 뜸');
     ok(r.smp && r.smp.occ === 'week' && /샘플/.test(r.smp.txt) && /주 중/.test(r.smp.txt), '경우마다 샘플(주간 모양): ' + (r.smp && r.smp.txt.slice(0, 100)));
     ok(r.conf, "새 경우들은 확정 순간(rn-rkfx-seen) 기록을 건드리지 않음"); ran++;
@@ -276,7 +276,7 @@ const seedRank = () => { const td = dstr(new Date()); const bk = (n) => dstr(new
     ok(r.yKindOff === true && r.yOff === false && !r.yOffFx, '연간은 그 경우 끄기만 봄(1위 끄기와 상관없음) · 끄면 안 뜸');
     ok(r.op && r.opfx && r.opfx.set === 'open' && r.opfx.tier === 'morning' && r.opfx.txt.includes('어제 결과') && r.opfx.txt.includes(r.ydMd), '🌅 하루 첫 열기 — 아침 그림 + 어제 결과: ' + (r.opfx && r.opfx.txt.slice(0, 120)));
     ok(r.yrows.length === 4 && /^🥇1위/.test(r.yrows[0]) && r.ybase && r.scr === 'salesRank' && r.backDay, '순위 화면 🎆 연간 보기(올해 진행 중 포함 4해) · 하루 보기로 돌아감 ' + JSON.stringify(r.yrows));
-    ok(r.occN === 7 && r.yOn && r.selN.every((n) => n === 11), '⚙ 🕒 언제 띄울까 — 🎆 연간 더해 7가지(기본 켬) · 기간 경우마다 그림 고르기(무작위 + 10가지)');
+    ok(r.occN === 9 && r.yOn && r.selN.every((n) => n === 11), '⚙ 🕒 언제 띄울까 — 🎆 연간 더해 7가지(기본 켬) · 기간 경우마다 그림 고르기(무작위 + 10가지)');
     ok(r.savedO.year && r.savedO.year.v === 4 && r.pickFix.every((v) => v === 4), '연간 그림 고정 저장(공용 app_settings/main.rankFx.o) → 늘 그 그림');
     ok(r.chip && r.chip.occ === 'month' && r.chip.set === 'month' && r.chip.v === '7' && /샘플/.test(r.chip.txt), '경우별 그림 칩 샘플(월간 8번째): ' + (r.chip && r.chip.txt.slice(0, 80))); ran++;
   });
