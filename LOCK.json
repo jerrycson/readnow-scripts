@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "원스톱 이어하기·자동 판정 멈춤·ALPS 칸 합치기",
+ "since": "2026-11-05T06:03:33Z",
+ "beat": "2026-11-05T06:03:33Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T05:51:47Z"
  },
- "host": null
+ "host": "vm"
 }
