@@ -4020,7 +4020,7 @@ function fabItems() { const out = []; const sh = document.getElementById('sheet'
 const FX_MAP = [
   ['#sd_today', 'coin'], /* 💰 출고별 매출 머리 '오늘 매출' — 동전이 튀어 오르고 금빛이 쓸고 지나감 */
   ['#shp_oneshot', 'truck'], /* ▶ 오늘 출고 끝까지 — 첫 누름 부릉(떨림·연기) · 두 번째 누름 🚚 출발 */
-  ['#sds_all', 'stamps'], /* 모두 발송준비시작 — 도장 여러 개가 차례로 쾅쾅 + 색종이 */
+  ['#sds_all', 'stampsAsk'], /* 모두 발송준비시작 — 누르는 순간은 꾹만 · 확인 창에서 「예」를 누른 뒤에만 도장 여러 개 쾅쾅 + 색종이(원래 처리기가 rnFx.go(…,'stamps')를 부름) · 취소면 연출 없음 */
   ['[data-sds]', 'stamp'], /* ✓ 발송준비시작 — 첫 누름 갸웃 · 두 번째 누름 빨간 '준비' 도장 */
   ['.shp-stg [data-stab]', 'tab', 'data-stab'], /* 출고 단계 탭 — 눌리면 납작 · 새로 켜진 탭이 폴짝 + 별 반짝 */
   ['.shp-src[data-ssrc]', 'chip', 'data-ssrc'], /* 판매처 칩 — 누른 자리에서 판매처 색 물결 · 새로 켜진 칩이 한 바퀴 뒤집힘 + ✓ 방울 */
@@ -4058,7 +4058,9 @@ const FX = {
   rgrow(el, R) { fxRing(R, '#2F5D50', 1.12, 260); },
   rgo(el, R) { fxRing(R, '#1F6F5C', 1.2, 300); }
 };
-window.rnFx = { FX, FX_MAP, fxOf, fxBurst, fxPut }; /* 다른 화면에서도 data-fx="coin|truck|stamp|stamps|tab|chip|rgset|rgrow|rgo"로 다시 씀 */
+/* 처리기 안에서 부르는 연출(확인 창 「예」 뒤처럼 누르는 순간이 아닐 때) — 단추가 다시 그려졌으면 같은 선택자로 새 단추를 찾음 · 화면에 없으면 건너뜀 */
+function fxGo(el, k, sel) { try { if ((!el || !el.isConnected) && sel) el = document.querySelector(sel); if (!el || !FX[k]) return; const R = el.getBoundingClientRect(); if (!R.width || !R.height) return; el.dataset.fxk = el.dataset.fxk || k; FX[k](el, R, { armed: true }); } catch (e) {} }
+window.rnFx = { FX, FX_MAP, fxOf, fxBurst, fxPut, go: fxGo }; /* 다른 화면에서도 data-fx="coin|truck|stamp|stamps|tab|chip|rgset|rgrow|rgo"로 다시 씀 */
 (function fxBind() { if (window.__rnFxB) return; window.__rnFxB = 1; let cur = null;
   const up = (e) => { if (!cur) return; const el = cur; cur = null; el.classList.remove('fx-dn'); if (e.type === 'pointerup' && el.isConnected) { const sp = el.dataset.fxk === 'tab' || el.dataset.fxk === 'chip' ? 0 : 1; if (sp) fxKick(el, 'fx-sp', 360); } };
   document.addEventListener('pointerdown', (e) => { if (e.button > 0) return; const f = fxOf(e.target); if (!f) return; if (cur && cur !== f.el) cur.classList.remove('fx-dn'); cur = f.el; f.el.dataset.fxk = f.k; f.el.classList.add('fx-dn'); }, { capture: true, passive: true });
@@ -27545,7 +27547,7 @@ async function openShip() {
     shipSnap([ono]); shipCmd('startDelivery', [ono]); }));
   shipArmPaint(sh);
   sh.querySelectorAll('[data-shold]').forEach((b) => (b.onclick = (ev) => { ev.stopPropagation(); ev.preventDefault(); shipHold(b.dataset.shold, b.dataset.on === '1'); })); /* (11/04) ⏸ 보류 · ▶ 보류 풀기 */
-  { const sa = sh.querySelector('#sds_all'); if (sa) sa.onclick = async () => { const L = (C0.orders || []).filter((o) => cmdCanPress(o.orderNo)).map((o) => o.orderNo); if (await ask(`주문확인요청 ${L.length}건을 모두 발송준비시작 할까요?`, { ok: `${L.length}건 모두 발송준비시작` })) { shipSnap(L); shipCmd('startDelivery', L); phClear('ship', ['*']); } }; }
+  { const sa = sh.querySelector('#sds_all'); if (sa) sa.onclick = async () => { const L = (C0.orders || []).filter((o) => cmdCanPress(o.orderNo)).map((o) => o.orderNo); if (await ask(`주문확인요청 ${L.length}건을 모두 발송준비시작 할까요?`, { ok: `${L.length}건 모두 발송준비시작` })) { if (window.rnFx) window.rnFx.go(sa, 'stamps', '#sds_all'); /* (정범님 11/05 밤) 「예」 뒤에만 도장·색종이 */ shipSnap(L); shipCmd('startDelivery', L); phClear('ship', ['*']); } }; }
   sh.querySelectorAll('[data-exo]').forEach((b) => (b.onclick = () => planSet({ ex: { [b.dataset.exo]: true } }, `빼기 ${b.dataset.exo}`)));
   sh.querySelectorAll('[data-inn]').forEach((b) => (b.onclick = () => { const ono = b.dataset.inn; const FV = firebase.firestore.FieldValue; planSet({ ex: { [ono]: FV.delete() }, moveTo: { [ono]: FV.delete() } }, `다시 넣기 ${ono}`); const cf = (S.shipPlanCarry || {})[ono]; if (cf) db.collection('shp_plan').doc(cf.from).set({ moveTo: { [ono]: FV.delete() }, log: FV.arrayUnion({ at: new Date().toISOString(), by: S.user.email, what: `다시 넣기 ${ono} (${dstr(new Date())}에)` }), uploadedAt: TS() }, { merge: true }).catch(() => {}); }));
   sh.querySelectorAll('[data-mvo]').forEach((b) => (b.onclick = async () => { const SHc = window.ReadnowShipping; const nx = SHc.ymd(SHc.nextBizDay(new Date(), shipOpt().holidays, shipOpt().pickup)); const v = await askText(`${b.dataset.mvo} 주문을 어느 날 출고로 옮길까요? (YYYY-MM-DD)\n그날 출고 확정 때 함께 들어갑니다.`, nx); if (!v) return; if (!/^\d{4}-\d{2}-\d{2}$/.test(v.trim()) || isNaN(Date.parse(v.trim() + 'T12:00:00+09:00'))) return toast('날짜를 2026-10-08처럼 적어 주세요'); { const d0 = v.trim(); const td = dstr(new Date()); if (d0 < td) return toast('지난 날로는 옮길 수 없음 — 오늘 이후로'); const hol = (shipOpt().holidays || []).includes(d0); const wd = new Date(d0 + 'T12:00:00+09:00').getUTCDay(); if ((hol || wd === 0 || wd === 6) && !await ask(`${d0}은 ${hol ? '쉬는 날' : '주말'}입니다 — 그래도 그날로 옮길까요?`)) return; } /* (1.20.0) 지난 날·쉬는 날 막기 */ planSet({ moveTo: { [b.dataset.mvo]: v.trim() } }, `다른 날로 ${b.dataset.mvo} → ${v.trim()}`); }));
