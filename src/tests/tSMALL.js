@@ -37,10 +37,10 @@ await H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTi
     out.batch = null; try { const src3 = openBatch.toString ? '' : ''; } catch (e) {}
     // ── ④ PC 부재 알림
     out.def = [pcAbsOn('MJ-MAIN', {}), pcAbsOn('HOME', {}), pcAbsOn('JS-MAIN', {})];
-    await db.collection('app_settings').doc('logger_watch').set({ alwaysOn: ['HOME', 'MJ-MAIN'], st: { 'MJ-MAIN': { k: 'down', since: new Date(Date.now() - 30 * 60e3).toISOString(), msg: '🖥 MJ-MAIN 수집기가 30분째 신호 없음' }, HOME: { k: 'down', since: new Date(Date.now() - 20 * 60e3).toISOString(), msg: '🖥 HOME 수집기가 20분째 신호 없음' } } }, { merge: true }); await W(800);
+    await db.collection('app_settings').doc('logger_watch').set({ alwaysOn: ['HOME', 'MJ-MAIN'], absAlert: { HOME: { on: true, at: '2026-11-04T10:00:00.000Z' } } /* (11/05) 예전(v 없음) 켬 기록 — 이번 한 번 끔으로 봐야 함 */, st: { 'MJ-MAIN': { k: 'down', since: new Date(Date.now() - 30 * 60e3).toISOString(), msg: '🖥 MJ-MAIN 수집기가 30분째 신호 없음' }, HOME: { k: 'down', since: new Date(Date.now() - 20 * 60e3).toISOString(), msg: '🖥 HOME 수집기가 20분째 신호 없음' } } }, { merge: true }); await W(800);
     localStorage.setItem('rn-devband', '1'); lwBand(S._lwLast); out.band1 = ((document.getElementById('lgwarn') || {}).innerText || ''); out.list1 = devEvList().filter((e) => e.src === 'logger').map((e) => e.name).sort();
     S.detail = null; S.tab = 'settings'; renderTabs(); renderMain(); for (let i = 0; i < 30 && !document.getElementById('st_pcabs'); i++) await W(200); const box = document.getElementById('st_pcabs'); out.setHtml = box ? box.innerText : ''; const chip = box && box.querySelector('[data-pcabs="MJ-MAIN"]'); out.chipMJ = chip ? chip.checked : null; const chipH = box && box.querySelector('[data-pcabs="HOME"]'); out.chipHOME = chipH ? chipH.checked : null;
-    if (chipH) { chipH.checked = false; chipH.onchange(); await W(800); } out.absH = ((FS.app_settings || {}).logger_watch || {}).absAlert || {}; lwBand(S._lwLast); out.band2 = ((document.getElementById('lgwarn') || {}).innerText || ''); out.list2 = devEvList().filter((e) => e.src === 'logger' && !e.end).map((e) => e.name).sort();
+    if (chipH) { chipH.checked = true; chipH.onchange(); await W(800); } out.absH = ((FS.app_settings || {}).logger_watch || {}).absAlert || {}; lwBand(S._lwLast); out.band2 = ((document.getElementById('lgwarn') || {}).innerText || ''); out.list2 = devEvList().filter((e) => e.src === 'logger' && !e.end).map((e) => e.name).sort();
     const box2 = document.getElementById('st_pcabs'); const chipM = box2 && box2.querySelector('[data-pcabs="MJ-MAIN"]'); if (chipM) { chipM.checked = true; chipM.onchange(); await W(800); } out.absM = (((FS.app_settings || {}).logger_watch || {}).absAlert || {})['MJ-MAIN'] || null; lwBand(S._lwLast); out.band3 = ((document.getElementById('lgwarn') || {}).innerText || '');
     out.mgr = (() => { try { S.aoList = ['HOME', 'MJ-MAIN']; S.aoSt = (S._lwLast || {}).st || {}; return mgrAoHtml().replace(/<[^>]+>/g, ' '); } catch (e) { return 'ERR ' + e.message; } })();
     localStorage.setItem('rn-devband', '0'); const lg = document.getElementById('lgwarn'); if (lg) lg.remove(); S.tab = 'home';
@@ -59,10 +59,10 @@ await H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTi
   ok(r.mineReg.fx === 1, '이 기기 + 📥 등록 화면이면 예전처럼 끝남 창');
   ok(r.autoToastGuard && r.failGuard && r.feat[3], '받침 자동 판매중지 알림 = 🏷 알라딘 매입 화면에서만 · 대량 등록 멈춤 알림 = 맡긴 기기만 · 기능 찾기');
   console.log('④ PC 부재 알림');
-  ok(r.def[0] === false && r.def[1] === true && r.def[2] === true, '기본: MJ-MAIN 끔 · HOME·JS-MAIN 켬');
-  ok(!/MJ-MAIN/.test(r.band1) && /HOME/.test(r.band1) && r.list1.join() === 'HOME', `처음: 띠·🖥 기기 상태에 MJ-MAIN 빠짐(HOME만: ${r.list1.join()})`);
-  ok(/🔕 PC 부재 알림/.test(r.setHtml) && r.chipMJ === false && r.chipHOME === true, '⚙ 설정 ① 🔕 PC 부재 알림 칩 — MJ-MAIN 꺼짐 · HOME 켜짐');
-  ok(r.absH.HOME && r.absH.HOME.on === false && !/HOME/.test(r.band2) && !r.list2.includes('HOME'), 'HOME 칩을 끄면 logger_watch.absAlert.HOME = 끔(모든 기기) · 띠·기기 상태에서 빠짐');
+  ok(r.def[0] === false && r.def[1] === false && r.def[2] === false, '기본(정범님 11/05): 모든 PC 끔 — MJ-MAIN·HOME·JS-MAIN');
+  ok(!/MJ-MAIN/.test(r.band1) && !/HOME/.test(r.band1) && r.list1.join() === '', `처음: 예전 HOME 켬 기록(v 없음)도 끔으로 — 띠·🖥 기기 상태에 아무 PC도 없음(${r.list1.join()})`);
+  ok(/🔕 PC 부재 알림/.test(r.setHtml) && /모든 PC 끔/.test(r.setHtml) && r.chipMJ === false && r.chipHOME === false, '⚙ 설정 ① 🔕 PC 부재 알림 칩 — MJ-MAIN·HOME 모두 꺼짐');
+  ok(r.absH.HOME && r.absH.HOME.on === true && r.absH.HOME.v === 2 && /HOME/.test(r.band2) && r.list2.includes('HOME'), 'HOME 칩을 켜면 logger_watch.absAlert.HOME = 켬(v 2 · 모든 기기) · 띠·기기 상태에 나옴');
   ok(r.absM && r.absM.on === true && /MJ-MAIN/.test(r.band3), 'MJ-MAIN을 다시 켜면 띠에 다시 나옴');
   ok(/HOME/.test(r.mgr) && /🔕/.test(r.mgr) && /신호/.test(r.mgr), '관리도구 늘 켜 둘 PC 칸 — 상태(신호)는 그대로 + 🔕 표시');
   ok(r.feat[0], '🔍 기능 찾기에 🔕 PC 부재 알림');
@@ -109,10 +109,10 @@ if (!BOOT) ok(false, '시작 코드(readnow-pc-boot.js)에 신청서 출력 도�
 if (CLOUD) { const cs = fs.readFileSync(CLOUD, 'utf8'); const i = cs.indexOf('async function loggerWatchTick()'); const j = cs.indexOf('\n/* (0.17.0)', i); const fnSrc = cs.slice(i, j);
   const docs = {}; const C = (c) => ({ doc: (id) => ({ get: async () => ({ data: () => (docs[c + '/' + id] ? JSON.parse(JSON.stringify(docs[c + '/' + id])) : undefined) }), set: async (v) => { docs[c + '/' + id] = { ...(docs[c + '/' + id] || {}), ...v }; } }) });
   const sent = []; const now = Date.now();
-  docs['prd_jobs/pcBeat'] = { pcs: { 'MJ-MAIN': { atMs: now - 30 * 60e3 }, HOME: { atMs: now - 30 * 60e3 }, 'JS-MAIN': { atMs: now - 30 * 60e3 } } }; docs['app_settings/logger_watch'] = { alwaysOn: ['HOME', 'MJ-MAIN', 'JS-MAIN'], absAlert: { 'JS-MAIN': { on: false } } };
+  docs['prd_jobs/pcBeat'] = { pcs: { 'MJ-MAIN': { atMs: now - 30 * 60e3 }, HOME: { atMs: now - 30 * 60e3 }, 'JS-MAIN': { atMs: now - 30 * 60e3 } } }; docs['app_settings/logger_watch'] = { alwaysOn: ['HOME', 'MJ-MAIN', 'JS-MAIN'], absAlert: { 'JS-MAIN': { on: false }, HOME: { on: true, v: 2 }, 'MJ-MAIN': { on: true } } }; /* (11/05) 모든 PC 기본 끔 — HOME = 이번에 켠 값(v 2) · MJ-MAIN = 예전 켬 기록(v 없음 → 끔) */
   const tick = new Function('C', 'webpush', 'kstDay', 'nowIso', 'pushSend', fnSrc + '\nreturn loggerWatchTick;')(C, {}, () => '2026-11-04', () => new Date().toISOString(), async (n, p) => { sent.push(p.title); return {}; });
   const tr = await tick(); const st = docs['app_settings/logger_watch'].st || {}; if (process.env.V) console.log('cloud', JSON.stringify({ tr, st, sent }));
-  ok(sent.length === 1 && /HOME/.test(sent[0]) && st['MJ-MAIN'] && st['MJ-MAIN'].k === 'down' && st['MJ-MAIN'].muted && st['JS-MAIN'].muted && !st.HOME.muted, `클라우드: 신호 없는 PC 셋 중 알림 켠 HOME만 푸시(${sent.join(' / ')}) · MJ-MAIN(기본 끔)·JS-MAIN(끔)은 상태만 적음(muted)`);
+  ok(sent.length === 1 && /HOME/.test(sent[0]) && st['MJ-MAIN'] && st['MJ-MAIN'].k === 'down' && st['MJ-MAIN'].muted && st['JS-MAIN'].muted && !st.HOME.muted, `클라우드: 신호 없는 PC 셋 중 알림 켠 HOME만 푸시(${sent.join(' / ')}) · MJ-MAIN(예전 켬 기록 = 이번에 끔)·JS-MAIN(끔)은 상태만 적음(muted)`);
   docs['prd_jobs/pcBeat'].pcs['MJ-MAIN'].atMs = Date.now(); docs['app_settings/logger_watch'].checkedAt = null; sent.length = 0; await tick(); ok(!sent.some((t) => /MJ-MAIN/.test(t)), "끈 PC가 돌아와도 '다시 정상' 푸시 없음"); }
 else ok(false, 'cloud/index.js를 못 찾음');
 console.log(bad ? `❌ tSMALL 실패 ${bad}` : '✓ tSMALL 통과'); process.exit(bad ? 1 : 0); })().catch((e) => { console.log('❌ 오류', e); process.exit(1); });
