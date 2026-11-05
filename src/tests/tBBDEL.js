@@ -12,11 +12,11 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     b0.click(); await W(150); o.arm = b0.textContent; o.rm1 = !!(BB().removed || {})[a0.usedCode];
     b0.click(); await W(900); const R0 = (BB().removed || {})[a0.usedCode]; o.rm2 = R0 && { at: !!R0.at, by: R0.by, from: R0.from, hide: R0.hide };
     o.gone = !allTabs().includes(a0.usedCode) && !keysOn().includes(a0.usedCode); o.moved = !!(BB().moved || {})[a0.usedCode]; o.sent1 = keysOn().length;
-    const fold = sh().querySelector('#bh_rmf'); o.fold = fold ? fold.innerText.replace(/\s+/g, ' ') : null; o.tabTxt = (sh().querySelector('[data-bbt="sent"]') || {}).textContent;
+    o.trTab = (sh().querySelector('[data-bbt="trash"]') || {}).textContent; openAladinSell({ t: 'trash' }); await W(300); const fold = sh().querySelector('#bh_rmf'); o.fold = fold ? fold.innerText.replace(/\s+/g, ' ') : null; o.tabTxt = (sh().querySelector('[data-bbt="sent"]') || {}).textContent; o.trOn = !!sh().querySelector('[data-bbt="trash"].on') && !sh().querySelector('.bbcards:not([hidden]) .bbit');
     o.sendRow = /data-bhsend/.test(bhSendRow(a0, { k: 'batch', n: 'x' })); /* 지운 카드 = 다른 화면에서 다시 보낼 수 있음 */
     // ② 되돌리기
     const u0 = sh().querySelector(`[data-bhrmundo="${a0.usedCode}"]`); u0.click(); await W(150); o.undoArm = u0.textContent; u0.click(); await W(900);
-    o.back = allTabs().includes(a0.usedCode); openAladinSell({ t: 'sent' }); await W(300); o.backCard = keysOn().includes(a0.usedCode); o.undone = !!(((BB().removed || {})[a0.usedCode] || {}).undone); o.foldGone = !sh().querySelector('#bh_rmf');
+    o.back = allTabs().includes(a0.usedCode); openAladinSell({ t: 'sent' }); await W(300); o.backCard = keysOn().includes(a0.usedCode); o.undone = !!(((BB().removed || {})[a0.usedCode] || {}).undone); o.foldGone = /🗑 휴지통 0/.test((sh().querySelector('[data-bbt="trash"]') || {}).textContent || '');
     // ③ 장바구니에 담긴 것 → 물음 · 예 = 장바구니에서 빼기 맡김(PC 수집기 일)
     await db.collection('prd_system').doc('buyback').set({ cart: { [a1.usedCode]: { state: 'added', at: new Date().toISOString(), by: 'PC' } } }, { merge: true }); await W(400);
     openAladinSell({ t: 'cart' }); await W(300); const nDel0 = cmds('c2bDel').length; const b1 = sh().querySelector(`[data-bhrm="${a1.usedCode}"]`); o.cartBtn = !!b1; asked.length = 0; b1.click(); await W(100); b1.click(); await W(1200);
@@ -29,7 +29,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     S.bb = { loaded: true, list: [{ id: 'B9', orderNo: 'B9', date: new Date().toISOString().slice(0, 10), items: [{ isbn13: a2.isbn13, title: a2.title, result: 'bought', buyPrice: 2500, req: '상 2,600', buy: '상 2,500' }] }] }; S._bhBM = null; S._bhSR = null; S._bhV++;
     openAladinSell({ t: 'done' }); await W(300); o.doneKeys = keysOn(); const sr0 = bhSaleRows().sum; const b2 = sh().querySelector(`[data-bhrm="${a2.usedCode}"]`); o.hideBtn = b2 && b2.textContent; o.hideAttr = b2 && b2.dataset.hide;
     b2.click(); await W(100); o.hideArm = b2.textContent; b2.click(); await W(900); const R2 = (BB().removed || {})[a2.usedCode] || {}; o.hide = R2.hide; S._bhSR = null; S._bhV++; const sr1 = bhSaleRows().sum; o.sale = [sr0, sr1];
-    openAladinSell({ t: 'done' }); await W(300); o.doneAfter = keysOn(); o.doneTab = (sh().querySelector('[data-bbt="done"]') || {}).textContent; o.hidFold = /숨기기만 1개/.test((sh().querySelector('#bh_rmf') || {}).innerText || '');
+    openAladinSell({ t: 'done' }); await W(300); o.doneAfter = keysOn(); o.doneTab = (sh().querySelector('[data-bbt="done"]') || {}).textContent; openAladinSell({ t: 'trash' }); await W(300); o.hidFold = /숨기기만 1개/.test((sh().querySelector('#bh_rmf') || {}).innerText || '');
     // ⑤ 여러 개 — 고른 것 지우기
     openAladinSell({ t: 'sent' }); await W(300); S.bbuySel = new Set([a3.usedCode, a0.usedCode]); openAladinSell(); await W(200); const bm = sh().querySelector('#bb_rm'); o.bulkTxt = bm && bm.textContent; bm.click(); await W(100); o.bulk1 = !!bhRmvOf(a3.usedCode); bm.click(); await W(1000);
     o.bulk = [a3.usedCode, a0.usedCode].every((k) => bhRmvOf(k) && !allTabs().includes(k));
@@ -41,9 +41,9 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     history.back(); await W(300); S.regT = 'bb'; openRegister(); await W(900); const rb = sh().querySelector('[data-bhrm="REG_rD1"]'); o.regBtn = rb && rb.textContent; o.regRow0 = /지우기 시험 책/.test(sh().innerText);
     rb.click(); await W(150); o.regArm = rb.textContent; rb.click(); await W(1200);
     const rIt = S.regItems.get('rD1') || {}; o.reg = { stage: rIt.stage, mark: !!(rIt.bbRemoved && rIt.bbRemoved.at), fsMark: !!((FS.reg_items.rD1 || {}).bbRemoved || {}).at, rm: !!bhRmvOf('REG_rD1'), inPage: allTabs().includes('REG_rD1') };
-    regRerender(); await W(700); const rows = [...sh().querySelectorAll('.rgbbrow')].map((x) => x.innerText); o.regRowGone = !rows.some((t) => /지우기 시험 책/.test(t)); const rf = sh().querySelector('#rg_bbrmf'); o.regFold = rf ? rf.innerText.replace(/\s+/g, ' ').slice(0, 120) : null;
+    regRerender(); await W(700); const rows = [...sh().querySelectorAll('.rgbbrow')].map((x) => x.innerText); o.regRowGone = !rows.some((t) => /지우기 시험 책/.test(t)); o.regSubTxt = (sh().querySelector('[data-rgbbsub="trash"]') || {}).textContent; S._rgBbSub = 'trash'; regRerender(); await W(700); const rf = sh().querySelector('#rg_bbrmf'); o.regFold = rf ? rf.innerText.replace(/\s+/g, ' ').slice(0, 120) : null;
     const ru = rf && rf.querySelector('[data-bhrmundo]'); if (ru) { ru.click(); await W(100); ru.click(); await W(1200); } const rIt2 = S.regItems.get('rD1') || {}; o.regUndo = { rm: !!bhRmvOf('REG_rD1'), on: regBbRmOn(rIt2), inPage: allTabs().includes('REG_rD1') };
-    regRerender(); await W(700); o.regBack = [...sh().querySelectorAll('.rgbbrow')].some((x) => /지우기 시험 책/.test(x.innerText));
+    S._rgBbSub = 'go'; regRerender(); await W(700); o.regBack = [...sh().querySelectorAll('.rgbbrow')].some((x) => /지우기 시험 책/.test(x.innerText));
     // ⑧ (정범님 11/05) 등록 환원 → 장바구니에 담겼으면 묻지 않고 빼기 맡김(c2bDel) · 카드에 빼는 중 → 뺌 · 담기 대기면 담기 맡김 취소
     const mkR = (id, i13) => { const x = { id, stage: 'sel', grade: 2, price: 6000, q: '환원 시험', info: { title: '환원 시험 책 ' + id, isbn13: i13, buyback: { 상: 2400 } }, createdAt: new Date().toISOString() }; S.regItems.set(id, x); FS.reg_items[id] = JSON.parse(JSON.stringify(x)); };
     mkR('rE1', '9791100000911'); mkR('rE2', '9791100000922'); await regBbSend(['rE1', 'rE2'], { k: 'reg', n: '선택 대기' }, { quiet: true }); await W(400);
@@ -57,12 +57,12 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
     o.log = (BB().log || []).filter((x) => /^remove/.test(x.act)).map((x) => x.act);
     return o; });
   console.log(JSON.stringify(r).slice(0, 3000));
-  ok(/🗑 지우기/.test(r.btn || ''), '카드마다 「🗑 지우기」');
+  ok(/🗑 휴지통으로/.test(r.btn || ''), '카드마다 「🗑 휴지통으로」(📥 등록 휴지통과 같은 이름)');
   ok(/한 번 더/.test(r.arm) && !r.rm1, '한 번 누르면 아무 일 없이 「한 번 더 누르면」으로만');
   ok(r.rm2 && r.rm2.at && r.rm2.by && r.rm2.from === 'sent' && !r.rm2.hide, '같은 단추 두 번 → 지운 표시(언제·누가·그때 상태 이관)');
   ok(r.gone && r.sent1 === r.sent0 - 1, `모든 탭에서 사라짐(이관 ${r.sent0} → ${r.sent1})`);
   ok(r.moved, '원래 기록(이관 기록)은 그대로 남음');
-  ok(r.fold && /지운 카드 1개/.test(r.fold), "맨 아래 '🗑 지운 카드 1개' 칸: " + (r.fold || '').slice(0, 80));
+  ok(/🗑 휴지통 1/.test(r.trTab || '') && r.trOn && r.fold && /휴지통 1/.test(r.fold) && /되돌리기/.test(r.fold), "탭 줄 끝 「🗑 휴지통 1」 탭 — 옮긴 때·누가·그때 상태·↩ 되돌리기: " + (r.trTab || '') + ' | ' + (r.fold || '').slice(0, 80));
   ok(r.sendRow, '지운 카드는 다른 화면에서 다시 보낼 수 있음(보내기 단추)');
   ok(/한 번 더/.test(r.undoArm) && r.back && r.backCard && r.undone && r.foldGone, '↩ 되돌리기(두 번) → 그때 탭으로 다시 · 되돌린 기록 남음');
   ok(r.cartBtn && r.asked && r.c2b === 1 && r.rmC2b, "장바구니에 담긴 카드 → '🛒 장바구니에서 빼기를 함께 맡길까요?' · 예 = c2bDel 맡김(PC 수집기)");
@@ -71,11 +71,11 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   ok(/숨기기/.test(r.hideBtn || '') && r.hideAttr === '1' && /지울 수 없음, 숨기기만/.test(r.hideArm || ''), '판매완료 카드 = 「🙈 숨기기」 · 「기록에 남아야 하는 상품 — 지울 수 없음, 숨기기만」');
   ok(r.hide === '판매완료' && r.sale[0] === 2500 && r.sale[1] === 2500, `숨겨도 매출 그대로(${r.sale.join(' → ')})`);
   ok(r.doneAfter.length === r.doneKeys.length - 1 && /숨김 1/.test(r.doneTab || '') && r.hidFold, `판매완료 탭에서 안 보임 · 탭 수에 '+숨김 1'(셈 그대로): ${r.doneTab}`);
-  ok(/고른 2개 🗑 지우기/.test(r.bulkTxt || '') && !r.bulk1 && r.bulk, '고른 것 여러 개 지우기(두 번)');
+  ok(/고른 2개 🗑 휴지통으로/.test(r.bulkTxt || '') && !r.bulk1 && r.bulk, '고른 것 여러 개 휴지통으로(두 번)');
   ok(r.resend.ok && r.resend.back && r.resend.why === '다시 보냄', '지운 카드를 다시 보내면 되살림(되돌린 까닭 「다시 보냄」)');
-  ok(r.regSt0 === 'bb' && r.regInPage && /🗑 지우기/.test(r.regBtn || '') && r.regRow0, "📥 등록 '🏷 알라딘 매입으로 보냄' 탭 줄에도 「🗑 지우기」");
+  ok(r.regSt0 === 'bb' && r.regInPage && /🗑 휴지통으로/.test(r.regBtn || '') && r.regRow0, "📥 등록 '🏷 알라딘 매입으로 보냄' 탭 줄에도 「🗑 휴지통으로」");
   ok(/한 번 더/.test(r.regArm) && r.reg.rm && !r.reg.inPage && r.reg.stage === 'bb' && r.reg.mark && r.reg.fsMark, '등록 탭에서 두 번 → 알라딘 매입 페이지에서도 사라짐 · 등록 줄은 지우지 않고 bbRemoved 표시');
-  ok(r.regRowGone && r.regFold && /지운 카드 1개/.test(r.regFold), "등록 보냄 탭에서도 사라지고 '🗑 지운 카드' 칸에: " + r.regFold);
+  ok(r.regRowGone && /🗑 휴지통 1/.test(r.regSubTxt || '') && r.regFold && /휴지통 1/.test(r.regFold), "등록 보냄 탭에서도 사라지고 하위 탭 '🗑 휴지통 1'에: " + r.regSubTxt + ' | ' + r.regFold);
   ok(!r.regUndo.rm && !r.regUndo.on && r.regUndo.inPage && r.regBack, '등록 탭에서 되돌리기 → 양쪽에 다시');
   ok(r.log.includes('remove') && r.log.includes('removeUndo'), '알라딘 매입 기록(log)에 지우기·되돌리기');
   ok(r.back.asked === 0 && r.back.nDel === 1 && r.back.items.join() === 'REG_rE1' && r.back.del === 'queued' && r.back.stage === 'sel', `등록 환원 → 장바구니에 담긴 책은 묻지 않고 🛒 빼기 맡김(c2bDel ${r.back.items.join()}) · 등록 줄은 선택 대기로`);
