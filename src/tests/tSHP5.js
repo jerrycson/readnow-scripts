@@ -105,19 +105,19 @@ const pe = (type, el, x, y) => el.dispatchEvent(new PointerEvent(type, { bubbles
       const vis = (el) => !!el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0;
       o.orig = { top: vis(document.querySelector('.rn-top')), vz: vis(document.getElementById('vzToggle')), view: vis(sh().querySelector('#shp_view')), nav: vis(sh().querySelector(':scope > .shp-nav')) };
       const f = document.getElementById('rnfab'); o.fab = f && vis(f) ? (() => { const r = f.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), r: Math.round(r.right), b: Math.round(r.bottom), n: f.querySelector('small').textContent }; })() : null;
-      f.click(); await W(150); const m = document.getElementById('rnfab_m'); o.opened = m && m.classList.contains('on'); const bs = [...m.querySelectorAll('.rnfab-b')]; o.items = bs.map((b) => b.textContent.trim()); o.minH = Math.min(...bs.map((b) => b.getBoundingClientRect().height)); o.inScreen = bs.every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0; });
+      f.click(); await W(150); const m = document.getElementById('rnfab_m'); o.opened = m && m.classList.contains('on'); const bs = [...m.querySelectorAll('.rnfab-b')]; o.items = bs.map((b) => b.getAttribute('aria-label') || b.textContent.trim()); o.minH = Math.min(...bs.map((b) => b.getBoundingClientRect().height)); o.inScreen = bs.every((b) => { const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0; });
       // 바깥 누르면 접힘(밑 화면은 안 눌림)
       const bg = document.getElementById('rnfab_bg'); const st0 = S.shipView; pe('pointerdown', bg, 40, 300); bg.dispatchEvent(new MouseEvent('click', { bubbles: true })); await W(100); o.outFold = !m.classList.contains('on') && S.shipView === st0;
       // 보기 바꾸기 → 원래 단추가 눌림 · 접힘
-      f.click(); await W(120); { const b = [...m.querySelectorAll('.rnfab-b')].find((x) => /서가별|주문별/.test(x.textContent)); o.viewBefore = S.shipView; if (b) b.click(); await W(500); o.viewAfter = S.shipView; o.viewFold = !m.classList.contains('on'); }
+      f.click(); await W(120); { const b = [...m.querySelectorAll('.rnfab-b')].find((x) => /서가별|주문별/.test(x.getAttribute('aria-label') || x.textContent)); o.viewBefore = S.shipView; if (b) b.click(); await W(500); o.viewAfter = S.shipView; o.viewFold = !m.classList.contains('on'); }
       if (S.shipView === 'shelf') { const sv = sh().querySelector('#shp_view'); if (sv) sv.click(); await W(500); }
       // ▼ 다음 주문은 펼친 채로(거듭 누름)
-      sh().scrollTop = 0; await W(200); f.click(); await W(120); { const b = [...m.querySelectorAll('.rnfab-b')].find((x) => /다음 주문/.test(x.textContent)); const y0 = sh().scrollTop; if (b) b.click(); await W(250); o.navMoved = sh().scrollTop > y0; o.navStay = m.classList.contains('on'); }
+      sh().scrollTop = 0; await W(200); f.click(); await W(120); { const b = [...m.querySelectorAll('.rnfab-b')].find((x) => /다음 주문/.test(x.getAttribute('aria-label') || x.textContent)); const y0 = sh().scrollTop; if (b) b.click(); await W(250); o.navMoved = sh().scrollTop > y0; o.navStay = m.classList.contains('on'); }
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); await W(100); o.escFold = !m.classList.contains('on') && sh().classList.contains('on');
       // 맨 위로
-      sh().scrollTop = 4000; await W(300); f.click(); await W(120); { const b = [...m.querySelectorAll('.rnfab-b')].find((x) => /맨 위로/.test(x.textContent)); if (b) b.click(); await W(900); o.topWent = sh().scrollTop < 50; }
+      sh().scrollTop = 4000; await W(300); f.click(); await W(120); { const b = [...m.querySelectorAll('.rnfab-b')].find((x) => /맨 위로/.test(x.getAttribute('aria-label') || x.textContent)); if (b) b.click(); await W(900); o.topWent = sh().scrollTop < 50; }
       // 홈(출고 닫음): 그래프↔글만
-      history.back(); await W(900); f.click(); await W(120); o.homeItems = [...m.querySelectorAll('.rnfab-b')].map((b) => b.textContent.trim()); { const b = [...m.querySelectorAll('.rnfab-b')].find((x) => /그래프로 보기|글로 보기/.test(x.textContent)); const v0 = S.vz; if (b) b.click(); await W(300); o.vzFlip = S.vz !== v0; if (S.vz !== v0) { document.getElementById('vzToggle').click(); await W(200); } }
+      history.back(); await W(900); f.click(); await W(120); o.homeItems = [...m.querySelectorAll('.rnfab-b')].map((b) => b.getAttribute('aria-label') || b.textContent.trim()); { const b = [...m.querySelectorAll('.rnfab-b')].find((x) => /그래프로 보기|글로 보기/.test(x.getAttribute('aria-label') || x.textContent)); const v0 = S.vz; if (b) b.click(); await W(300); o.vzFlip = S.vz !== v0; if (S.vz !== v0) { document.getElementById('vzToggle').click(); await W(200); } }
       o.sw2 = document.documentElement.scrollWidth; return o; }, seedAll.toString());
     console.log('390', JSON.stringify(R));
     console.log('■ ① 휴대폰 390px');
