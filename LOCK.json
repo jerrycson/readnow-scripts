@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.389 · 수집기 1.89.212",
- "since": "2026-11-05T08:14:06Z",
- "beat": "2026-11-05T08:43:33Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-05T08:08:57Z"
+  "at": "2026-11-05T08:43:52Z"
  },
- "host": "vm"
+ "host": null
 }
