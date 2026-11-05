@@ -14,6 +14,9 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const fs=require('fs'); const f=process.argv[process.argv.indexOf('-File')+1]; const s=fs.readFileSync(f,'utf8'); const st=__dirname+'/state.json'; let S={def:'Samsung',calls:[]}; try{S=JSON.parse(fs.readFileSync(st,'utf8'))}catch(e){}
 const P=['Samsung','라벨기','롯데택배'];
 { const m0=s.match(/\\$_.Name -eq '([^']+)'/); if(m0&&/NOPRINTER/.test(s)&&!P.includes(m0[1])){ console.error('NOPRINTER'); process.exit(3); } }
+if(/DEVPKEY_PNPX_IpAddress/.test(s)){ console.log(JSON.stringify({port:S.port||'WSD-abc',ips:['192.168.0.9'],alive:S.dead?[]:['192.168.0.9']})); process.exit(0); }
+if(/-Verb RunAs/.test(s)){ const b=s.match(/'-EncodedCommand','([^']+)'/); const el=Buffer.from(b[1],'base64').toString('utf16le'); S.el=el; S.port=(el.match(/-PortName '([^']+)'/)||[])[1]; fs.writeFileSync(st,JSON.stringify(S)); console.log('OK|0'); process.exit(0); }
+if(/^\(Get-Printer -Name/m.test(s)){ console.log(S.port||'WSD-abc'); process.exit(0); }
 if(/SetDefaultPrinter/.test(s)){ const m=s.match(/\\$_.Name -eq '([^']+)'/); S.def=m[1]; S.calls.push('def:'+m[1]+(/LegacyDefaultPrinterMode -Value 1/.test(s)?'+keep':'')); fs.writeFileSync(st,JSON.stringify(S)); console.log('OK|0|'+S.def); }
 else if(/PrintDocument/.test(s)){ S.calls.push('print@'+S.def); fs.writeFileSync(st,JSON.stringify(S)); console.log(/시험 인쇄/.test(s)?'OK':'OK 1'); }
 else if(/Get-Service Spooler/.test(s)) console.log(JSON.stringify({printers:P.map(n=>({name:n,def:n===S.def,off:false,st:3,err:0,jobs:n==='롯데택배'?[{st:'Error',stc:2,pages:1}]:[]})),spooler:{st:'Running'},legacyDefault:0,events:[],procs:[]}));
@@ -43,6 +46,8 @@ else console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
     const pg2 = await req('GET', '/printer', null, { Origin: 'https://jerrycson.github.io' }); ok(pg2.st === 403, '/printer는 웹앱에서 못 엶');
     const dg = await req('GET', '/pdiag'); ok(dg.j && dg.j.ok && dg.j.hints.some((h) => /기본 프린터 관리/.test(h.t)) && dg.j.hints.some((h) => /롯데택배.*오류·멈춘 작업 1개/.test(h.t)), '🔎 점검 → 문제 줄(기본 관리 켜짐·대기열 오류) ' + JSON.stringify(dg.j && dg.j.hints));
     const tt = await req('POST', '/pdiag/test', { printer: 'Samsung' }); ok(tt.j && tt.j.ok, '🧪 시험 한 장');
+    { fs.writeFileSync(D + '/bin/state.json', JSON.stringify({ def: 'Samsung', calls: [], dead: true })); const n1 = await req('POST', '/prn/netfix', { printer: 'Samsung' }); ok(n1.j && n1.j.ok === false && n1.j.step === 'ping' && /응답하지 않음/.test(n1.j.why), '🩺 프린터가 응답하지 않으면 바꾸지 않고 까닭 ' + JSON.stringify(n1.j));
+      fs.writeFileSync(D + '/bin/state.json', JSON.stringify({ def: 'Samsung', calls: [] })); const n2 = await req('POST', '/prn/netfix', { printer: 'Samsung' }); const S2 = st(); ok(n2.j && n2.j.ok && n2.j.to === 'IP_192.168.0.9' && /Add-PrinterPort -Name 'IP_192.168.0.9' -PrinterHostAddress '192.168.0.9'/.test(S2.el) && /Set-Printer -Name 'Samsung' -PortName 'IP_192.168.0.9'/.test(S2.el) && /Restart-Service Spooler/.test(S2.el) && !/Remove-PrinterPort/.test(S2.el), '🩺 연결 고치기: 고정 IP 포트 만들고 프린터를 그리로 · 인쇄 서비스 다시 시작 · 예전 포트 안 지움 ' + JSON.stringify(n2.j)); }
     const off = await req('POST', '/prn/roles', { auto: false }); fs.writeFileSync(D + '/bin/state.json', JSON.stringify({ def: 'Samsung', calls: [] })); await req('POST', '/print', { printer: '라벨기', imgs: [IMG] }); await wait(2000); ok(off.j.roles.auto === false && st().calls.join() === 'print@Samsung', '자동 끄면 기본을 안 바꿈');
   } finally { ch.kill(); }
   /* ② 웹앱 */
