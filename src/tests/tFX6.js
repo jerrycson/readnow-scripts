@@ -1,7 +1,7 @@
 // tFX6 — 정범님 11/05 밤 축하·응원 고침
 //  ① 출고별 매출에서 들어간 오늘 출고 › 💰 출고별 매출 탭 — 위 '오늘 출고 매출' 카드 테두리에 빛(그림자·테두리 움직임) 없음
 //  ② 가) HOME PC 재현 — 오늘(11/05)에 10/18·10/19 카드 3장이 뜨던 일: 출고별 매출 표의 날짜 줄(매출 금액 자리)을 눌러 그날 출고 화면으로 가려다 '다시 보기'가 뜸
-//        → 금액은 줄 누르기와 같음(그날 출고 화면) · 다시 보기는 🏆 칸 🔁 단추로만 · 🌅 하루 첫 열기 없음 · 지난날·지난 기간 기록 갱신 카드 없음(그날에만)
+//        → (정범님 11/05 밤 두 번째로 바뀜: 금액 = 그날 카드 모두 재생 · 날짜·줄 다른 곳 = 그날 출고 화면) 예전: 금액은 줄 누르기와 같음(그날 출고 화면) · 다시 보기는 🏆 칸 🔁 단추로만 · 🌅 하루 첫 열기 없음 · 지난날·지난 기간 기록 갱신 카드 없음(그날에만)
 //     나) 카드 금액·순위 = 출고별 매출 표(출고일)와 같음 · 주말 묶음 줄마다 자기 순위(예전엔 10/18·10/19 두 줄에 '일 k위·월 k위'가 똑같이) · ⚙ 일별 주문 매출로 바꿀 수 있음 · sales_daily 기록은 늘 일별 주문 매출
 //  ③ 📚 권수·🧾 건수 최대·최하 — 오늘 카드 · 다시 보기 · 표 아이콘 · 주간(일요일) · ⚙ 기준 날 수
 //  ④ 여러 장 뒤로 가기 연출 — 3D 뒤집기(rotateY)·공중제비(rotateX) 등 7가지 · 무작위 · transform·opacity만 · 움직임 줄이기면 바로 자리 · 휴대폰 넘침 없음
@@ -44,6 +44,7 @@ const prep = async (p) => p.evaluate(async () => { const W = (ms) => new Promise
       const cellOf = (d, cls) => { const tr = document.querySelector(`#sd_tbl tr[data-sday="${d}"]`); return tr ? [...tr.children].find((c) => c.matches(cls)) : null; };
       const amtTd = (d) => { const tr = document.querySelector(`#sd_tbl tr[data-sday="${d}"]`); if (!tr) return null; const ix = sdColOrder().indexOf('amt'); return tr.children[ix]; };
       /* 10/19 줄의 매출 금액 자리를 누름(정범님이 그날 출고 화면으로 가려던 것) */ { const a = amtTd('2026-10-19'); o.amtBtn = !!(a && a.querySelector('button')); a.click(); await W(900); o.amtClick = { fx: sh().map((x) => x.d), sdv: S.detail && S.detail.sdv }; close(); await window.__tbl(); }
+      /* (정범님 11/05 밤 두 번째) 날짜 칸을 누르면 그날 출고 화면 · 카드 안 뜸 */ { const c = cellOf('2026-10-19', 'td.sd-c-d'); c.click(); await W(900); o.dayClick = { fx: sh().length, sdv: S.detail && S.detail.sdv }; close(); await window.__tbl(); }
       /* ── 나) 금액·순위 = 표 */ const M = shipDayModel(); const R = rankModel(); o.base = R.base; const L = [...M.days.values()].filter((x) => x.d <= td && x.n > 0).sort((a, b) => b.amt - a.amt || a.d.localeCompare(b.d)); const rk = new Map(); let kk = 0; L.forEach((x, i) => { if (!i || x.amt !== L[i - 1].amt) kk = i + 1; rk.set(x.d, kk); });
       o.days = ['2026-10-17', '2026-10-18', '2026-10-19'].map((d) => { const I = rankDayInfo(d); const a = amtTd(d); const rc = cellOf(d, '.rkic-td'); return { d, tbl: M.days.get(d).amt, txt: a ? a.textContent.replace(/[^0-9]/g, '') : '', card: I && I.amt, rank: I && I.rank, want: rk.get(d), N: I && I.N, wantN: L.length, rc: rc ? rc.textContent.replace(/\s+/g, ' ').trim() : '', n: I && I.n, tn: M.days.get(d).n, q: I && I.qty, tq: M.days.get(d).qty }; });
       /* 🔁 다시 보기(10/19) — 사람이 누른 것만 · 카드 금액은 표 금액 */ { const b = document.querySelector('#sd_tbl [data-sdfx="2026-10-19"]'); o.rpBtn = !!(b && b.closest('.rkic-td')); b.click(); await W(500); o.rp = sh().map((x) => x.per + ':' + x.d); const el = document.getElementById('rkfx'); o.rpTxt = el ? el.innerText.replace(/\s+/g, ' ') : ''; close(); }
@@ -66,7 +67,7 @@ const prep = async (p) => p.evaluate(async () => { const W = (ms) => new Promise
     console.log('  A 자료:', JSON.stringify(r).slice(0, 3000));
     ok(!r.err, '시험 중 오류 없음 ' + (r.err || ''));
     ok(r.boot.length === 0 && !r.openOcc && !r.openInfo && r.tblFx === 0, '가) 11/05 웹앱을 열고 주문·매출 탭에 가도(확정 처리 전) 아무 카드도 안 뜸 — 🌅 하루 첫 열기(어제 결과) 없음: ' + JSON.stringify([r.boot, r.openOcc]));
-    ok(!r.amtBtn && r.amtClick.fx.length === 0 && r.amtClick.sdv === '2026-10-19', '가) 재현 — 10/19 줄의 매출 금액을 누르면 그날 출고 화면(예전엔 10/18·10/19·주간 카드 3장): ' + JSON.stringify(r.amtClick));
+    ok(!r.amtBtn && r.amtClick.fx.length >= 1 && r.amtClick.fx.every((d) => d === '2026-10-19') && !r.amtClick.sdv && r.dayClick.fx === 0 && r.dayClick.sdv === '2026-10-19', '가) (정범님 11/05 밤 두 번째) 10/19 줄 매출 금액 누름 = 그날(10/19) 카드 모두 재생(다른 날 카드 없음) · 날짜 칸 누름 = 그날 출고 화면: ' + JSON.stringify([r.amtClick, r.dayClick]));
     ok(r.base === 'ship' && r.days.every((x) => x.card === x.tbl && String(x.tbl) === x.txt && x.rank === x.want && x.N === x.wantN && x.n === x.tn && x.q === x.tq), '나) 카드 금액·건수·권수·순위 = 출고별 매출 표(출고일): ' + JSON.stringify(r.days.map((x) => [x.d, x.tbl, x.card, x.rank, x.want, x.N])));
     ok(r.days[1].rc !== r.days[2].rc && r.days.every((x) => !/·/.test(x.rc.replace(/[^·]/g, '').slice(1)) && (new RegExp(x.want + '위').test(x.rc) || /👑|🥈|🥉|🌱/.test(x.rc))), '나) 10/18·10/19 줄 🏆 칸 — 줄마다 자기 순위 하나(예전엔 두 줄 다 「일 k위·월 k위」): ' + JSON.stringify(r.days.map((x) => x.rc)));
     ok(r.rpBtn && r.rp.length >= 1 && r.rp.every((x) => /:2026-10-19$|week:/.test(x)) && /다시 보기/.test(r.rpTxt) && !/어제보다/.test(r.rpTxt), '가) 🔁 단추(🏆 칸)를 누를 때만 그날 다시 보기 · 그날 하루만 · 카드에 「🔁 다시 보기」 · 지난날 카드에 「어제보다」 아님: ' + JSON.stringify([r.rp, r.rpTxt.slice(0, 140)]));
