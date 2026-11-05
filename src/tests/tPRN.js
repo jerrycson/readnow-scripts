@@ -25,7 +25,7 @@ else console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
   const st = () => { try { return JSON.parse(fs.readFileSync(D + '/bin/state.json', 'utf8')); } catch (e) { return { def: 'Samsung', calls: [] }; } };
   const ch = cp.spawn('node', ['readnow-print.js'], { cwd: D, env: { ...process.env, PATH: D + '/bin:' + process.env.PATH } }); await wait(1500);
   try {
-    const s0 = await req('GET', '/status'); ok(s0.j && s0.j.ver === '1.1.5', '도우미 1.1.5 켜짐 ' + (s0.j && s0.j.ver));
+    const s0 = await req('GET', '/status'); ok(s0.j && s0.j.ver === '1.1.6', '도우미 1.1.6 켜짐 ' + (s0.j && s0.j.ver));
     const r0 = await req('GET', '/prn/roles'); ok(r0.j && r0.j.ok && r0.j.roles.auto === true && !r0.j.roles.general, '역할 처음 = 비어 있음 · 자동 켬');
     /* 역할 없으면 라벨 인쇄는 기본을 건드리지 않음 */
     const IMG = 'data:image/png;base64,' + Buffer.from('x').toString('base64');
@@ -52,10 +52,10 @@ else console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
   } finally { ch.kill(); }
   /* ② 웹앱 */
   await new Promise((done) => require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
-    const calls = []; let roles = { general: '', label: '', invoice: '', auto: true, temp: null }; let def = '롯데택배'; let hv = '1.1.5';
+    const calls = []; let roles = { general: '', label: '', invoice: '', auto: true, temp: null }; let def = '롯데택배'; let hv = '1.1.6';
     await p.route(/127\.0\.0\.1:8898/, async (rt) => { const u = new URL(rt.request().url()); const b = rt.request().postData(); const o = b ? JSON.parse(b) : null; calls.push(u.pathname + (o ? ' ' + JSON.stringify(o) : '')); const J = (x) => rt.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' }, body: JSON.stringify(x) });
       if (rt.request().method() === 'OPTIONS') return rt.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST' } });
-      if (u.pathname === '/status') return J({ ok: true, ver: hv }); if (u.pathname === '/alps/update') { setTimeout(() => { hv = '1.1.5'; }, 1000); return J({ ok: true }); } if (u.pathname === '/prn/netfix') return J({ ok: true, ip: '192.168.0.9', from: 'WSD-x', to: 'IP_192.168.0.9' }); if (u.pathname === '/printers') return J({ ok: true, printers: ['Samsung M2070', '라벨기', '롯데택배'].map((n) => ({ name: n, def: n === def })) });
+      if (u.pathname === '/status') return J({ ok: true, ver: hv }); if (u.pathname === '/alps/update') { setTimeout(() => { hv = '1.1.6'; }, 1000); return J({ ok: true }); } if (u.pathname === '/prn/netfix') return J({ ok: true, ip: '192.168.0.9', from: 'WSD-x', to: 'IP_192.168.0.9' }); if (u.pathname === '/printers') return J({ ok: true, printers: ['Samsung M2070', '라벨기', '롯데택배'].map((n) => ({ name: n, def: n === def })) });
       if (u.pathname === '/prn/roles') { if (o) roles = { ...roles, ...o }; return J({ ok: true, roles }); } if (u.pathname === '/prn/default') { def = o.printer; return J({ ok: true, def }); } if (u.pathname === '/prn/temp') return J({ ok: true });
       if (u.pathname === '/alps/config') return J({ ok: true }); if (u.pathname === '/pdiag/test') return J({ ok: true });
       if (u.pathname === '/pdiag') return J({ ok: true, ver: '1.1.4', pc: 'MJ-MAIN', at: new Date().toISOString(), hints: [{ lv: 'warn', t: "'Windows에서 기본 프린터 관리'가 켜져 있음" }, { lv: 'bad', t: "윈도우 기본 프린터가 '롯데택배'(택배·라벨 프린터로 보임)" }], printers: [{ name: '롯데택배', def: true, st: 3, jobs: [{ st: 'Error', pages: 1 }] }, { name: 'Samsung M2070', st: 4, port: 'WSD-x', netBad: true, jobs: [{ st: '인쇄 중', pages: 1 }] }], spooler: { st: 'Running' }, legacyDefault: 0, events: [], tail: ['a'] });
@@ -99,7 +99,7 @@ else console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
     roles = { general: '', label: '', invoice: '', auto: true, temp: null }; const n3 = calls.length; await p.evaluate(() => prnAutoOnce()); await p.waitForTimeout(1200); ok(roles.general === 'Samsung M2070' && await p.evaluate(() => !!localStorage.getItem('rn-prn-auto1')), '처음 한 번 저절로 맞춤(역할이 하나도 없을 때)');
     const n4 = calls.length; await p.evaluate(() => { if (PRN_OV) PRN_OV.remove(); return prnAutoOnce(); }); await p.waitForTimeout(500); ok(!calls.slice(n4).some((c) => c.startsWith('/prn/roles {')), '두 번째는 저절로 안 함');
     /* (11/05 '삼성이 아직도 안 돼') 옛 도우미면 먼저 새 판 받게 하고 바뀔 때까지 기다림 · 옛 도우미 점검에도 WSD 연결 끊김 판단 */
-    { hv = '1.1.4'; const n0 = calls.length; const H = await p.evaluate(async () => { S.lph.at = 0; const h = await prnHelperFresh(false); return { ver: h.ver }; }); ok(H.ver === '1.1.5' && calls.slice(n0).some((c) => c === '/alps/update'), '옛 도우미(1.1.4) → /alps/update 부탁 → 1.1.5로 바뀔 때까지 기다림 ' + JSON.stringify(H));
+    { hv = '1.1.4'; const n0 = calls.length; const H = await p.evaluate(async () => { S.lph.at = 0; const h = await prnHelperFresh(false); return { ver: h.ver }; }); ok(H.ver === '1.1.6' && calls.slice(n0).some((c) => c === '/alps/update'), '옛 도우미(1.1.4) → /alps/update 부탁 → 1.1.6으로 바뀔 때까지 기다림 ' + JSON.stringify(H));
       const nb = await p.evaluate(() => [prnNetBadOf({ port: 'WSD-1', jobs: [{ st: '인쇄 중', at: '11/04/2026 10:00:00' }] }), prnNetBadOf({ port: 'USB001', jobs: [{ st: 'Error' }] }), prnNetBadOf({ port: 'WSD-1', jobs: [] })]); ok(nb.join() === 'true,false,false', '옛 도우미 점검 자료로도 네트워크(WSD) 연결 끊김 판단(오래 걸린 작업) · USB·빈 대기열은 아님', nb); }
     /* 인쇄 창 라벨 — 잠깐 라벨 → 창 닫으면 끝 */
     const n1 = calls.length; const pop = p.waitForEvent('popup'); await p.evaluate(() => { window.__rnOpenRaw = null; regLabelPrintWin([{ sku: 'RN-1', ttl: '', gr: '' }], LBL()); }); const w = await pop; await p.waitForTimeout(800);

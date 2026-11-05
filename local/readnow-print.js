@@ -18,7 +18,7 @@
  *   (1.1.0) /alps… — 📦 ALPS 자동 처리(같은 폴더 readnow-alps.js · 없으면 GitHub에서 받음) · GET /alps = 이 PC 설정 화면
  * 스스로 새 판: 6시간마다 GitHub에서 받아 판 번호가 높으면 바꾸고 끝남 → 실행기가 5초 뒤 다시 켬 */
 'use strict';
-const VERSION = '1.1.5'; // (1.1.5 정범님 11/05 '일반 테스트가 안 돼') /prn/netfix = 네트워크(WSD) 프린터 연결 고치기 — IP 찾기 → 고정 IP 포트(관리자 허락 창 한 번) · 막힌 대기열 비우기 · 점검에 '연결 끊김' 알림 // (1.1.4 정범님 11/05 'MJ-MAIN 일반 프린터로 출력이 안 돼') /pdiag = 이 PC 인쇄 상태 점검(보기만 · 아무것도 바꾸지 않음) · /pdiag/test = 고른 프린터로 시험 한 장 // (1.1.3 정범님 11/04 원스톱) ALPS 처리 중에는 새 판 받기를 미룸 · /alps/pcheck(프린터 상태)·/alps/update // (1.1.2 정범님 11/03) /alps/journal(오늘 인쇄 기록)·/alps/unprint(안 나왔음으로 되돌리기) // (1.1.1 정범님 11/03) ALPS 「이어서 진행」(/alps/resume)·처리 기록(/alps/hist)
+const VERSION = '1.1.6'; // (1.1.6 정범님 11/05 '인쇄가 여전히 안 돼' — 연결 고치기가 'IP 못 찾음') 프린터 IP 찾기를 넓힘: 삼성 이름 SEC+MAC → 이 PC가 아는 기기 목록(ARP) · 이름으로 찾기 · 같은 망 한 번 훑기 · WSD 장치 목록 넓게 // (1.1.5 정범님 11/05 '일반 테스트가 안 돼') /prn/netfix = 네트워크(WSD) 프린터 연결 고치기 — IP 찾기 → 고정 IP 포트(관리자 허락 창 한 번) · 막힌 대기열 비우기 · 점검에 '연결 끊김' 알림 // (1.1.4 정범님 11/05 'MJ-MAIN 일반 프린터로 출력이 안 돼') /pdiag = 이 PC 인쇄 상태 점검(보기만 · 아무것도 바꾸지 않음) · /pdiag/test = 고른 프린터로 시험 한 장 // (1.1.3 정범님 11/04 원스톱) ALPS 처리 중에는 새 판 받기를 미룸 · /alps/pcheck(프린터 상태)·/alps/update // (1.1.2 정범님 11/03) /alps/journal(오늘 인쇄 기록)·/alps/unprint(안 나왔음으로 되돌리기) // (1.1.1 정범님 11/03) ALPS 「이어서 진행」(/alps/resume)·처리 기록(/alps/hist)
 const http = require('http'), https = require('https'), fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process');
 const PORT = 8898; const HOME = __dirname; const RAW = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/readnow-print.js';
 const ORIGINS = [/^https:\/\/jerrycson\.github\.io$/, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
@@ -152,12 +152,20 @@ $port = Get-PrinterPort -Name $p.PortName -ErrorAction SilentlyContinue
 $ips = @()
 foreach ($d in @(Get-PnpDevice -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -and ($_.FriendlyName -eq $name -or $name.StartsWith($_.FriendlyName) -or $_.FriendlyName.StartsWith(($name -split '\\(')[0])) })) { try { $v = (Get-PnpDeviceProperty -InstanceId $d.InstanceId -KeyName 'DEVPKEY_PNPX_IpAddress' -ErrorAction Stop).Data; if ($v) { $ips += @($v) } } catch {} }
 if ($port -and $port.PrinterHostAddress) { $ips += $port.PrinterHostAddress }
+foreach ($d in @(Get-PnpDevice -ErrorAction SilentlyContinue | Where-Object { [string]$_.InstanceId -match 'WSD|DAFWSD|PRINTENUM' -and [string]$_.FriendlyName -match 'SEC|Samsung|C56|Xerox|HP|Canon|Epson|Brother' })) { try { $v = (Get-PnpDeviceProperty -InstanceId $d.InstanceId -KeyName 'DEVPKEY_PNPX_IpAddress' -ErrorAction Stop).Data; if ($v) { $ips += @($v) } } catch {} }
+$mac = $null; if ($name -match 'SEC([0-9A-Fa-f]{12})') { $h = $matches[1].ToUpper(); $mac = ($h -replace '(..)(?=.)', '$1-') }
+$how = @()
+if ($mac) { $nb = @(Get-NetNeighbor -LinkLayerAddress $mac -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.State -ne 'Unreachable' }); if ($nb.Count) { $ips += @($nb | ForEach-Object { $_.IPAddress }); $how += 'ARP' } }
+if (-not $ips.Count) { foreach ($hn in @(($name -split '\\(')[0].Trim(), (($name -split '\\(')[0].Trim() + '.local'))) { try { $a = [System.Net.Dns]::GetHostAddresses($hn) | Where-Object { $_.AddressFamily -eq 'InterNetwork' }; if ($a) { $ips += @($a | ForEach-Object { $_.IPAddressToString }); $how += 'NAME' } } catch {} } }
+if (-not $ips.Count -and $mac) { $me = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress -notmatch '^(127|169\\.254)\\.' -and $_.PrefixLength -ge 16 } | Select-Object -First 1
+  if ($me) { $pre = ($me.IPAddress -split '\\.')[0..2] -join '.'; $tasks = @(); foreach ($i in 1..254) { $pg = New-Object System.Net.NetworkInformation.Ping; $tasks += $pg.SendPingAsync("$pre.$i", 300) }; try { [System.Threading.Tasks.Task]::WaitAll($tasks, 8000) | Out-Null } catch {}
+    Start-Sleep -Milliseconds 500; $nb = @(Get-NetNeighbor -LinkLayerAddress $mac -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.State -ne 'Unreachable' }); if ($nb.Count) { $ips += @($nb | ForEach-Object { $_.IPAddress }); $how += 'SCAN' } } }
 $ips = @($ips | Where-Object { $_ -match '^\\d+\\.\\d+\\.\\d+\\.\\d+$' } | Select-Object -Unique)
-$alive = @($ips | Where-Object { Test-Connection -ComputerName $_ -Count 1 -Quiet -ErrorAction SilentlyContinue })
-[pscustomobject]@{ port = [string]$p.PortName; ips = $ips; alive = $alive } | ConvertTo-Json -Compress`;
+$alive = @($ips | Where-Object { (Test-Connection -ComputerName $_ -Count 1 -Quiet -ErrorAction SilentlyContinue) -or ($mac -and (Get-NetNeighbor -IPAddress $_ -ErrorAction SilentlyContinue | Where-Object { $_.LinkLayerAddress -eq $mac -and $_.State -ne 'Unreachable' })) })
+[pscustomobject]@{ port = [string]$p.PortName; ips = $ips; alive = $alive; mac = $mac; how = ($how -join ',') } | ConvertTo-Json -Compress`;
   const r = await ps(find, 60000); let x = null; try { x = JSON.parse(String(r.out || '').trim().split(/\r?\n/).filter(Boolean).pop()); } catch (e) { throw new Error('프린터 정보를 못 읽음: ' + String(r.err || r.out).replace(/\s+/g, ' ').slice(0, 200)); }
-  const ips = [].concat(x.ips || []), alive = [].concat(x.alive || []); log(`🩺 ${printer}: 포트 ${x.port} · IP ${ips.join(',') || '못 찾음'} · 응답 ${alive.join(',') || '없음'}`);
-  if (!ips.length) return { ok: false, step: 'ip', port: x.port, why: '이 프린터의 IP 주소를 찾지 못함 — 프린터 화면(네트워크 설정)에서 IP를 보고 알려 주세요', ips, alive };
+  const ips = [].concat(x.ips || []), alive = [].concat(x.alive || []); log(`🩺 ${printer}: 포트 ${x.port} · IP ${ips.join(',') || '못 찾음'}${x.how ? '(' + x.how + ')' : ''}${x.mac ? ' · MAC ' + x.mac : ''} · 응답 ${alive.join(',') || '없음'}`);
+  if (!ips.length) return { ok: false, step: 'ip', port: x.port, why: `이 프린터의 IP 주소를 찾지 못함${x.mac ? `(같은 망을 훑어도 MAC ${x.mac} 기기가 응답하지 않음 — 프린터가 꺼졌거나 다른 와이파이·공유기에 붙어 있음)` : ''} — 프린터 전원·네트워크를 확인해 주세요`, ips, alive, mac: x.mac || null };
   if (!alive.length) return { ok: false, step: 'ping', port: x.port, why: `프린터 IP ${ips.join(', ')}가 응답하지 않음 — 프린터 전원·네트워크(같은 와이파이·공유기)를 확인해 주세요`, ips, alive };
   const ip = alive[0]; const pn = 'IP_' + ip; if (x.port === pn) { /* 이미 고정 IP — 대기열만 풂 */ }
   const el = `$ErrorActionPreference = 'Stop'; if (-not (Get-PrinterPort -Name '${pn}' -ErrorAction SilentlyContinue)) { Add-PrinterPort -Name '${pn}' -PrinterHostAddress '${ip}' }; Set-Printer -Name ${psq(printer)} -PortName '${pn}'; Restart-Service Spooler -Force`;
