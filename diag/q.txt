@@ -1,2 +1,2 @@
-doc=prd_system/buyback
-# 12910094
+recentUp=pur_buyback&mins=10080
+# 1878120298
