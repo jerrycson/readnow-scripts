@@ -49,6 +49,11 @@
       boot: { l: '🌅 수집기를 켠 날 처음', d: '그날 PC를 켜서 수집기가 뜨면 n분 뒤 한 번 (그날 아무 PC에서 한 번)' },
     };
     const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+    /* (정범님 11/05 '그렇게 해') 조건부 칸 — 칸에 cond를 붙이면 그 조건이 맞을 때만 회차를 잡음(조건은 쓰는 쪽이 ctx.cond(이름)으로 알려 줌 · 모르면 안 함)
+     *  jobs = 이 조건을 붙일 수 있는 일(편집기 '조건 더하기'에 나옴) */
+    const COND = {
+      bbWait: { l: '📮 결과 기다리는 알라딘 팔기 접수가 있을 때만', d: '알라딘 팔기 내역(pur_buyback)에 검수 결과가 아직 안 난 접수(웹앱 🏷 알라딘 매입 「접수완료」 탭)가 하나라도 있을 때만 — 없으면 이 칸은 쉬고 하루 한 번 전체 읽기만 돎', jobs: ['prd:buybackWait', 'prd:buyback'] },
+    };
     /* ══ (0.6.0) 🧭 일 세 부류 — 기준은 이 한 곳(수집기·웹앱·편집기가 같이 씀) ══
      *  🌐 pub  = 알라딘에 로그인하지 않은 상태로 알라딘에서 가져오는 정보 → 로거(자동 수집 담당 PC)만 · 주요/일반 몫으로 테더링을 나눠 씀
      *  🔐 login = 알라딘에 로그인한 상태로 가져오는 정보(샵매니저 등) → 사무실 PC·클라우드 (로거는 절대 안 함)
@@ -143,15 +148,15 @@
       const win = x.win && wf != null && wt != null ? { from: hm(wf), to: x.win.to === '24:00' || wt === 0 ? '24:00' : hm(wt) } : null;
       return { id: String(x.id), job: String(x.job), on: x.on !== false, ...(isPubJob(x.job) ? { tier: x.tier === 'gen' ? 'gen' : 'main' } : {}), name: x.name ? String(x.name).slice(0, 40) : '', note: x.note ? String(x.note).slice(0, 120) : '', trig,
         days: days && days.length && days.length < 7 ? days : null, win, pcs: Array.isArray(x.pcs) && x.pcs.length ? x.pcs.map(String).slice(0, 10) : null,
-        gapH: clampI(x.gapH, 0, 240, 0), late: clampI(x.late, 0, 1440, 0), maxMin: clampI(x.maxMin, 0, 1440, 0), retry: x.retry && +x.retry.n > 0 ? { n: clampI(x.retry.n, 1, 5, 1), gap: clampI(x.retry.gap, 5, 720, 30) } : null }; }
+        gapH: clampI(x.gapH, 0, 240, 0), late: clampI(x.late, 0, 1440, 0), maxMin: clampI(x.maxMin, 0, 1440, 0), retry: x.retry && +x.retry.n > 0 ? { n: clampI(x.retry.n, 1, 5, 1), gap: clampI(x.retry.gap, 5, 720, 30) } : null, ...(x.cond && COND[x.cond] ? { cond: String(x.cond) } : {}) }; } /* (11/05) cond는 있을 때만(다른 칸 모양은 그대로) */
     /* 설정 문서 → 칸 목록 (예전 문서는 items에서 만들어 냄 · 칸 순서 = 우선순위) */
     function slotsOf(doc) { const D = doc || {}; if (Array.isArray(D.slots)) { const L = D.slots.map(sanitize).filter(Boolean);
         /* 옛 수집기(1.59 이하)는 items만 고침 — 예전 모양 그대로인 예전 칸은 items가 다르면 그 고침을 따름(옛 PC와 새 PC가 다른 시각에 하지 않게) */
-        for (const s of L) { const Lg = LEG[s.id]; const c = (D.items || {})[s.id]; if (!Lg || !c || s.job !== Lg.job || s.trig.t !== 'time' || s.days || s.pcs || s.gapH || s.late || s.maxMin || s.retry) continue; const ts = normTimes(c.times); if (ts.length && ts.join() !== s.trig.times.join()) s.trig.times = ts; if (!!c.on !== s.on) s.on = !!c.on; }
+        for (const s of L) { const Lg = LEG[s.id]; const c = (D.items || {})[s.id]; if (!Lg || !c || s.job !== Lg.job || s.trig.t !== 'time' || s.days || s.pcs || s.gapH || s.late || s.maxMin || s.retry || s.cond) continue; const ts = normTimes(c.times); if (ts.length && ts.join() !== s.trig.times.join()) s.trig.times = ts; if (!!c.on !== s.on) s.on = !!c.on; }
         return L; }
       return LEGACY.map((L) => { const c = (D.items || {})[L.id]; return sanitize({ id: L.id, job: L.job, on: c ? !!c.on : !L.off, trig: { t: 'time', times: c && c.times ? c.times : L.def } }); }); }
     /* 옛 수집기(1.59 이하)가 읽는 items — 예전 칸과 똑같이 할 수 있을 때만 켜 둠(다른 조건이 붙으면 끔: 옛 수집기는 그 조건을 모르니까) */
-    function legacyItems(slots) { const out = {}; for (const L of LEGACY) { const s = slots.find((x) => x.id === L.id); const same = s && s.on && s.job === L.job && s.trig.t === 'time' && s.trig.times.length && !s.days && !s.pcs && !s.gapH && !s.late && !s.maxMin && !s.retry;
+    function legacyItems(slots) { const out = {}; for (const L of LEGACY) { const s = slots.find((x) => x.id === L.id); const same = s && s.on && s.job === L.job && s.trig.t === 'time' && s.trig.times.length && !s.days && !s.pcs && !s.gapH && !s.late && !s.maxMin && !s.retry && !s.cond;
         out[L.id] = same ? { on: true, times: s.trig.times } : { on: false, times: s && s.trig.t === 'time' && s.trig.times.length ? s.trig.times : L.def }; } return out; }
     const isEnd = (st) => ['done', 'error', 'stop', 'timeout', 'lost'].includes(st); /* 'yield'(자리 내주고 기다림)는 끝 아님 */
     const isLost = (r, now) => !!r && r.state === 'running' && (r.beat ? now - toMs(r.beat) > 25 * 60e3 : now - toMs(r.at) > 12 * 3600e3);
@@ -173,6 +178,7 @@
       const last = lastDoneMap(R, ctx.stats, slots); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
       slots.forEach((s, idx) => { if (!s.on) return; const kind = s.job.split(':')[0];
         if (s.days && !s.days.includes(dow)) return; if (s.pcs && !s.pcs.includes(String(ctx.pc)) && !(ctx.pubAll && ctx.anyPc && ctx.anyPc(s.job))) return; /* (0.5.6) 공개 전용 PC는 PC를 정해 둔 칸이라도 공개 일이면 함 */ if (!s.pcs && ctx.own && String(ctx.own.pc || '') !== String(ctx.pc) && !(ctx.anyPc && ctx.anyPc(s.job))) return; /* (0.5.0) 담당 PC(또는 임시로 맡은 PC)만 · (0.5.4) 🌐 공개 읽기 일은 '남는 PC 돕기'를 켠 PC도 (먼저 잡은 PC가 함 — 회차 기록 트랜잭션) */ if (kind === 'crm' && !ctx.crmOk) return;
+        if (s.cond && !(typeof ctx.cond === 'function' && ctx.cond(s.cond))) return; /* (11/05) 조건부 칸 — 조건이 안 맞거나 모르면 조용히 쉼(회차 기록도 안 남김 · 조건이 맞게 되면 그 칸 안에 바로) */
         const mine = todayRuns(R, s.id, day); const busy = mine.some(([, r]) => r && ((r.state === 'running' && !isLost(r, now)) || r.state === 'yield')); /* (0.11.0) 'yield' = 정한 시각 칸에 자리를 내주고 기다리는 회차(같은 회차로 이어감) */
         /* 다시 하기(멈춘 회차) — 먼저 봄 */
         if (s.retry && !busy) { for (const [k, r] of mine) { if (!r || !['error', 'timeout', 'lost'].includes(r.state) && !(r.state === 'running' && isLost(r, now))) continue; const base = k.replace(/~r\d+$/, ''); const n = (+(k.match(/~r(\d+)$/) || [])[1] || 0) + 1; if (n > s.retry.n) continue; const nk = `${base}~r${n}`; if (R[nk]) continue; if (now - toMs(r.at) < s.retry.gap * 60e3) continue; if (ctx.bud && isPubJob(s.job)) { const tr = tierOf(s); if ((tr === 'gen' && ctx.mainBusy) || !(ctx.bud.left[tr] > 0)) return; } /* (0.7.4 자동 점검) 📶 로거: 다시 하기도 그 부류 몫이 있을 때만 · 일반은 주요가 하는 중이면 기다림(예전엔 몫 확인 전에 넘어가 몫을 다 쓴 뒤에도 테더링으로 다시 읽었음) */ out.push({ slot: s, idx, key: nk, mark: 'run', why: `멈춘 회차 다시 (${n}/${s.retry.n})`, merge: [], tries: n }); return; } }
@@ -238,7 +244,7 @@
       else if (t.t === 'stale') a = `마지막으로 끝낸 지 ${t.h}시간 넘으면`;
       else if (t.t === 'idle') a = t.per ? `PC가 ${t.min}분 넘게 쉬면 (하루 ${t.per}번까지 · 다른 일 먼저)` : `PC가 ${t.min}분 넘게 쉴 때마다 그 자리부터 이어서 (다른 일 먼저)`;
       else a = `수집기를 켠 날 처음${t.delay ? ` (${t.delay}분 뒤)` : ''}`;
-      const g = [s.days ? s.days.map((d) => DAYS[d]).join('') + '요일만' : '', s.pcs ? s.pcs.join('·') + '에서만' : '', s.gapH ? `최근 ${s.gapH}시간 안에 했으면 건너뜀` : '', s.late ? `${s.late}분 넘게 늦으면 건너뜀` : '', s.maxMin ? `${s.maxMin}분 넘으면 멈춤` : '', s.retry ? `멈추면 ${s.retry.gap}분 뒤 다시(${s.retry.n}번)` : ''].filter(Boolean);
+      const g = [s.days ? s.days.map((d) => DAYS[d]).join('') + '요일만' : '', s.pcs ? s.pcs.join('·') + '에서만' : '', s.gapH ? `최근 ${s.gapH}시간 안에 했으면 건너뜀` : '', s.late ? `${s.late}분 넘게 늦으면 건너뜀` : '', s.maxMin ? `${s.maxMin}분 넘으면 멈춤` : '', s.retry ? `멈추면 ${s.retry.gap}분 뒤 다시(${s.retry.n}번)` : '', s.cond && COND[s.cond] ? COND[s.cond].l.replace(/^\S+\s/, '') : ''].filter(Boolean);
       return a + W + (g.length ? ' · ' + g.join(' · ') : ''); }
     /* 검사: 고칠 것(빨강)·알릴 것(주황) */
     function validate(slots, nameOf) { const err = [], warn = []; const ids = new Set(); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
@@ -388,7 +394,18 @@
     const pxRest = (g, failStop, rnd) => { const r = typeof rnd === 'function' ? rnd : Math.random; const hc = g || { restSec: PX_HUMAN_DEF.restSec, failRest: [PX_HUMAN_DEF.failRestMin[0] * 60e3, PX_HUMAN_DEF.failRestMin[1] * 60e3] }; return failStop ? Math.round(hc.failRest[0] + r() * (hc.failRest[1] - hc.failRest[0])) : Math.round((hc.restSec[0] + r() * (hc.restSec[1] - hc.restSec[0])) * 1000); };
     /* ⏰ 시간표에 'pxDaily' 칸이 없으면 켜진 칸으로 더함(이미 있으면 켜짐·시각 그대로 — 정범님이 바꾼 것을 덮지 않음) */
     function pxSlotEnsure(slots, at) { const L = Array.isArray(slots) ? slots : []; if (L.some((s) => s && (s.id === PX_SLOT.id || s.job === PX_SLOT.job))) return { slots: L, added: false }; const t = normTimes([at || PX_DAILY_DEF.at]); return { slots: [...L, { ...PX_SLOT, trig: { t: 'time', times: t.length ? t : ['09:00'] } }], added: true }; }
-    return { REST_LISTS, REST_DEF, REST_SAFETY, restOf, PX_DAILY_DEF, pxCfg, PX_SLOT, pxPlan, pxPickHeld, pxSlotEnsure, PX_HUMAN_DEF, pxHuman, pxQuiet, pxNextOpen, pxGate, pxRest, PUB_KEYS, PUB_LATER, EXT_JOBS, isPubJob, classOf, CLASS, TIER, tierOf, budgetOf, budget, simOf, simSwitch, delayReport, planOf, kst, tMin, hm, hm4, normTimes, mdOk, mdTxt, mdNorm, timesToday, dayStart, toMs, LEGACY, LEG, TRIG, DAYS, sanitize, slotsOf, legacyItems, isEnd, isLost, keyParts, lastDoneMap, inWin, due, dayPlan, nextOf, describe, validate, durations, fmtMs, parseLogLine, ownerOf, OWN_DEAD_MS };
+    /* ══ (정범님 11/05 '그렇게 해') 📮 결과를 기다리는 알라딘 팔기 접수가 있는 동안 4시간마다 가볍게 다시 봄 ══
+     *  칸: 'bbWait' — 일 prd:buybackWait(목록 첫 쪽 + 결과 기다리는 접수 상세만) · 4시간마다(근거: 정범님 지시) 02:00부터(02·06·10·14·18·22시 — 하루 한 번 전체 읽기(00시 무렵)와 겹치지 않게) · 조건 bbWait
+     *  하루 한 번 전체 읽기 칸(buyback)은 그대로 둠 */
+    const BB_SLOT = { id: 'bbWait', job: 'prd:buybackWait', on: true, trig: { t: 'every', min: 240 }, win: { from: '02:00', to: '24:00' }, cond: 'bbWait', note: '정범님 11/05 — 결과 기다리는 접수가 있을 때만 4시간마다' };
+    const BB_WAIT_DAYS = 30; /* 근거: 없음, 설정으로 바꿈(수집기 설정 bbWaitDays) — 이보다 오래된 접수는 결과가 안 나도 4시간 확인에서 뺌(하루 한 번 전체 읽기는 그대로 봄) */
+    /* 접수 하나가 '결과 기다림'인가 — 취소 아님 · 끝난 날(doneDate) 없음 · 매입완료/정산완료 아님 · 책 줄이 없거나 결과(result) 안 난 책이 있음 (웹앱 접수완료 탭과 같은 뜻: 결과 없는 접수 줄) */
+    function bbWaiting(o, now, days) { if (!o || typeof o !== 'object') return false; const st = String(o.status || ''); if (/취소/.test(st) || o.doneDate || /매입\s*완료|정산\s*완료/.test(st)) return false;
+      const it = Array.isArray(o.items) ? o.items : []; if (it.length && it.every((x) => x && x.result)) return false;
+      const D = days == null ? BB_WAIT_DAYS : +days; const t = Date.parse(o.date || '') || Date.parse(o.firstSeenAt || '') || NaN; if (D > 0 && Number.isFinite(t) && (now || Date.now()) - t > D * 864e5) return false; return true; }
+    /* ⏰ 시간표에 'bbWait' 칸이 없으면 켜진 칸으로 더함 — 하루 한 번 칸(buyback) 바로 뒤(없으면 맨 뒤) · 이미 있으면(꺼 둔 것도) 그대로(정범님이 바꾼 것을 덮지 않음) — pxSlotEnsure와 같은 꼴 */
+    function bbSlotEnsure(slots) { const L = Array.isArray(slots) ? slots : []; if (L.some((s) => s && (s.id === BB_SLOT.id || s.job === BB_SLOT.job))) return { slots: L, added: false }; const i = L.findIndex((s) => s && s.job === 'prd:buyback'); const S1 = JSON.parse(JSON.stringify(BB_SLOT)); return { slots: i < 0 ? [...L, S1] : [...L.slice(0, i + 1), S1, ...L.slice(i + 1)], added: true }; }
+    return { COND, BB_SLOT, BB_WAIT_DAYS, bbWaiting, bbSlotEnsure, REST_LISTS, REST_DEF, REST_SAFETY, restOf, PX_DAILY_DEF, pxCfg, PX_SLOT, pxPlan, pxPickHeld, pxSlotEnsure, PX_HUMAN_DEF, pxHuman, pxQuiet, pxNextOpen, pxGate, pxRest, PUB_KEYS, PUB_LATER, EXT_JOBS, isPubJob, classOf, CLASS, TIER, tierOf, budgetOf, budget, simOf, simSwitch, delayReport, planOf, kst, tMin, hm, hm4, normTimes, mdOk, mdTxt, mdNorm, timesToday, dayStart, toMs, LEGACY, LEG, TRIG, DAYS, sanitize, slotsOf, legacyItems, isEnd, isLost, keyParts, lastDoneMap, inWin, due, dayPlan, nextOf, describe, validate, durations, fmtMs, parseLogLine, ownerOf, OWN_DEAD_MS };
   })();
   /* @@AS_ENGINE_END */
   const kstNow = () => { const k = AS.kst(Date.now()); return { day: k.day, min: k.min }; };
@@ -403,7 +420,7 @@
     'prd:usedInfo': ['시장', '경쟁 매물 유의사항·사진'], 'prd:dynamic0': ['시장', '구매자 분포 (하루치)'], 'prd:dynamic': ['시장', '구매자 분포·함께 산 책'], 'prd:dynAll': ['시장', '구매자 분포 전체 — 매우 오래 걸림'],
     'prd:revTop': ['판매자', '상위 판매자 평가 갱신'], 'prd:rev6mAll': ['판매자', '6개월 평가 수 (전체)'], 'prd:rev6mStale': ['판매자', '6개월 평가 수 (오래된 것만)'], 'prd:revAll': ['판매자', '판매자 평가 처음 것까지 — 며칠 걸릴 수 있음'],
     'prd:bench': ['판매자', '🎯 집중 벤치마킹 — 웹앱 🎯에서 정한 순서대로 켜진 그룹의 판매자 모두 (멈추면 그 판매자부터 이어서)'], 'prd:benchForce': ['판매자', '🎯 집중 벤치마킹 처음부터 — 이번 바퀴에 이미 읽은 판매자도 처음부터 다시'], 'prd:benchResume': ['판매자', '🎯 못 끝낸 판매자 이어 읽기 — 지난 바퀴에서 못 끝낸 판매자만 읽던 쪽부터(없으면 바로 끝)'], 'prd:benchDetail': ['판매자', '🎯 판매자 상품 페이지 정보'],
-    'prd:aladinBuy': ['매입·팔기', '알라딘 구매 내역 전체 (첫 쪽은 클라우드가 5분마다)'], 'prd:buyback': ['매입·팔기', '알라딘 팔기 접수·매입·정산'], 'prd:poolInfo': ['매입·팔기', '알라딘 구매 풀(미연결) 도서 정보'],
+    'prd:aladinBuy': ['매입·팔기', '알라딘 구매 내역 전체 (첫 쪽은 클라우드가 5분마다)'], 'prd:buyback': ['매입·팔기', '알라딘 팔기 접수·매입·정산'], 'prd:buybackWait': ['매입·팔기', '📮 알라딘 팔기 — 결과 기다리는 접수만 가볍게 (목록 첫 쪽 + 결과 안 난 접수 상세만 · 정범님 11/05: 결과 기다리는 접수가 있는 동안 4시간마다)'], 'prd:poolInfo': ['매입·팔기', '알라딘 구매 풀(미연결) 도서 정보'],
     'prd:shipRead': ['출고', '발송 요청 읽기 (오늘 출고 — 보통 클라우드가 함)'], 'prd:kpipa': ['기타', '출판 판매 통계 (KPIPA 판매 보고서) — 알라딘을 쓰지 않아 다른 수집과 함께 돎'], 'prd:metricsAuto': ['시장', '그룹 시장 지표 맡기기 — 웹앱 수동 일괄 처리 그룹에서 매일 자동을 켠 그룹 중 24시간 지난 것을 시장 지표 일로 맡김'], 'prd:explore': ['기타', '끝없는 탐색 — 끝나지 않으니 최대 시간을 꼭 정함'], 'prd:handoff': ['시장', '🔁 로거가 못 한 일 넘겨받기 — 19금처럼 로그인해야 보이는 책의 시장 지표(로그인한 사무실 PC · 보통은 저절로 먼저 함)'],
     'prd:pxDaily': ['기타', '🔬 조회수 실험 그림 매일 계획 — 「⏰ 매일 자동」을 켠 실험 그룹마다 오늘 붙일 것·다시 확인할 것을 골라 맡긴 일(차례 기다림)로 · 붙이기는 로그인된 PC가 한 조각씩(1~10분 무작위 간격) · 하루 한 번(이미 계획했으면 바로 끝) · 알라딘을 쓰지 않아 다른 수집과 함께 돎'],
     'prd:extBurst': ['기타', '🔎 외부 정보 몰아 받기 — 출처마다 하루 최대에 닿을 때까지 쉬지 않고(평소엔 5분마다 4분씩) · 알라딘을 쓰지 않아 다른 수집과 함께 돎 · ✨ 쉴 때 하는 일용'],
@@ -453,9 +470,9 @@
   /* 오늘 회차 표시 (작은 칩) */
   function asChips(s, plan, S0) { const { min } = kstNow(); const L = plan[s.id] || []; if (!L.length) return s.trig.t === 'time' || s.trig.t === 'every' ? '<i>오늘 회차 없음</i>' : '<i>오늘 아직 안 함 — 조건이 되면</i>';
     /* (0.5.2) 자리(14개)보다 회차가 많으면 지금 가까운 회차만 — 지난 것 3개 + 앞으로 올 것, 양쪽에 숨긴 수 */ const W = 14; let i0 = 0; if (L.length > W) { const nx = L.findIndex((x) => x.min >= min || (x.r && x.r.state === 'running')); const c = nx < 0 ? L.length : nx; i0 = Math.max(0, Math.min(L.length - W, c - 3)); }
-    return (i0 ? `<small class="tsm" title="앞(지난) 회차 ${i0}개 숨김">‹ ${i0}</small> ` : '') + L.slice(i0, i0 + W).map((x) => { const r = x.r; const st = r ? (AS.isLost(r, Date.now()) ? 'lost' : r.state) : x.min <= min && (x.kind === 'time' || x.kind === 'every') ? 'late' : ''; const ic = r ? ST_ICON[st] || '·' : st === 'late' ? (S0.on && s.on ? '⌛' : '–') : x.guess ? '…' : '·';
+    return (i0 ? `<small class="tsm" title="앞(지난) 회차 ${i0}개 숨김">‹ ${i0}</small> ` : '') + L.slice(i0, i0 + W).map((x) => { const r = x.r; const st = r ? (AS.isLost(r, Date.now()) ? 'lost' : r.state) : x.min <= min && (x.kind === 'time' || x.kind === 'every') ? (s.cond ? 'cskip' : 'late') : ''; /* (11/05) 조건부 칸의 지난 빈 회차는 늦음(⌛)이 아니라 조건이 안 맞아 쉼 */ const ic = r ? ST_ICON[st] || '·' : st === 'late' ? (S0.on && s.on ? '⌛' : '–') : x.guess ? '…' : '·';
       const lbl = x.kind === 'after' ? (x.guess ? `~${AS.hm(x.min)}` : AS.hm(x.min)) : x.kind === 'cond' ? AS.hm(x.min) : x.tag;
-      const tip = `${lbl} ${r ? `${ST_TXT[st] || st}${r.by ? ' · ' + r.by : ''}${r.at ? ' · ' + schedFull(r.at) : ''}${r.ms ? ' · ' + AS.fmtMs(r.ms) : ''}${r.why ? ' · ' + r.why : ''}${r.err ? ' · ' + r.err : ''}` : st === 'late' ? '시각 지남 — 알라딘 화면이 열린 PC가 곧 함' : x.guess ? '앞 칸이 끝난 뒤(예상)' : '오늘 예정'}`;
+      const tip = `${lbl} ${r ? `${ST_TXT[st] || st}${r.by ? ' · ' + r.by : ''}${r.at ? ' · ' + schedFull(r.at) : ''}${r.ms ? ' · ' + AS.fmtMs(r.ms) : ''}${r.why ? ' · ' + r.why : ''}${r.err ? ' · ' + r.err : ''}` : st === 'late' ? '시각 지남 — 알라딘 화면이 열린 PC가 곧 함' : st === 'cskip' ? '조건이 안 맞아 쉼(또는 조건이 맞으면 그 칸 안에 함)' : s.cond ? `오늘 예정 — ${(AS.COND[s.cond] || {}).l || '조건'}` : x.guess ? '앞 칸이 끝난 뒤(예상)' : '오늘 예정'}`;
       return `<span class="ts ${st}" title="${esc3(tip)}">${ic} ${esc3(lbl)}${r && r.at && st !== 'running' ? `<small class="tw">${schedHM(r.at)}</small>` : ''}</span>`; }).join('') + (L.length > i0 + W ? ` <small class="tsm" title="뒤(나중) 회차 ${L.length - i0 - W}개 숨김">${L.length - i0 - W} ›</small>` : ''); }
 
   /* ══════════ (1.60.0) ⏰ 칸 편집기 — 수집기 화면 위에 크게 열림 ══════════
@@ -671,7 +688,7 @@
     else if (t.t === 'stale') tf = `<div class="as-f"><span class="lb">오래되면</span>마지막으로 끝낸 지 <input type="number" min="1" max="240" data-fh value="${t.h}"> 시간 넘으면 <span class="as-tip">사람이 직접 누른 것·웹앱 요청·다른 PC도 셈 — 겹쳐 하지 않음</span></div>`;
     else if (t.t === 'idle') tf = `<div class="as-f"><span class="lb">쉬면</span>이 PC가 <input type="number" min="5" max="720" data-fim value="${t.min}"> 분 넘게 아무 일도 안 하면 · <select data-fpm><option value="n" ${t.per ? 'selected' : ''}>하루 정한 번수까지</option><option value="c" ${t.per ? '' : 'selected'}>틈날 때마다 그 자리부터 이어서</option></select>${t.per ? ` <input type="number" min="1" max="24" data-fper value="${t.per}"> 번까지 <span class="as-tip">(1시간 간격)</span>` : ' <span class="as-tip">(그날 끝까지 마치면 그날은 그만)</span>'}</div><div class="as-tip" style="margin:2px 0 0 4px">늘 맨 뒤 차례 — 정한 시각·간격 칸, 다른 칸, 로거가 못 한 일, 웹앱 요청이 없을 때만 시작 · 하는 중에 그런 일이 생기면 지금 자리까지 저장하고 양보(번수에 안 셈)</div>`;
     else tf = `<div class="as-f"><span class="lb">켠 날 처음</span>수집기가 뜬 뒤 <input type="number" min="0" max="240" data-fbd value="${t.delay}"> 분 <span class="as-tip">그날 아무 PC에서 한 번</span></div>`;
-    const g = !!(s.days || s.win || s.pcs || s.gapH || s.late || s.maxMin || s.retry);
+    const g = !!(s.days || s.win || s.pcs || s.gapH || s.late || s.maxMin || s.retry || s.cond);
     return `<div class="as-form" data-form="${esc3(s.id)}">
       <div class="as-f"><span class="lb">할 일</span><select data-fjob>${asOptsJob(s.job)}</select></div>
       <div class="as-f"><span class="lb">평균 걸린 시간</span><span style="font-size:14px">${asDurTxt(s.job, true)}</span>${dur.last ? `<span class="as-tip">마지막 ${schedFull(new Date(dur.last.at).toISOString())}${dur.last.pc ? ' · ' + esc3(dur.last.pc) : ''}</span>` : ''}</div>
@@ -684,6 +701,7 @@
         ${t.t !== 'stale' ? `<div class="as-f"><span class="lb">겹침 막기</span>최근 <input type="number" min="0" max="240" data-fgap value="${s.gapH}"> 시간 안에 이 일을 끝냈으면 건너뜀 <span class="as-tip">(0 = 안 봄 · 사람이 누른 것도 셈)</span></div>` : ''}
         ${t.t === 'time' || t.t === 'month' ? `<div class="as-f"><span class="lb">늦으면</span>정한 시각보다 <input type="number" min="0" max="1440" data-flate value="${s.late}"> 분 넘게 늦으면 그 회차는 건너뜀 <span class="as-tip">(0 = 그날 안에 늦게라도 한 번)</span></div>` : ''}
         <div class="as-f"><span class="lb">최대 시간</span><input type="number" min="0" max="1440" data-fmax value="${s.maxMin}"> 분 넘으면 지금 항목까지 저장하고 멈춤 <span class="as-tip">(0 = 끝까지 · 다음 회차에 그 자리부터)${dur.n && s.maxMin && s.maxMin * 60e3 < dur.avg ? ` <b style="color:#B0322A">평균(${AS.fmtMs(dur.avg)})보다 짧음 — 늘 중간에 멈춤</b>` : ''}</span></div>
+        ${Object.entries(AS.COND).filter(([, v]) => v.jobs.includes(s.job)).map(([k, v]) => `<div class="as-f"><span class="lb">조건부</span><label title="${esc3(v.d)}"><input type="checkbox" data-fcond="${esc3(k)}" ${s.cond === k ? 'checked' : ''}> ${esc3(v.l)}</label></div>`).join('')}
         <div class="as-f"><span class="lb">다시 하기</span><label><input type="checkbox" data-fron ${s.retry ? 'checked' : ''}> 오류로 멈추면</label> <input type="number" min="5" max="720" data-frg value="${s.retry ? s.retry.gap : 30}" ${s.retry ? '' : 'disabled'}> 분 뒤 다시, 최대 <input type="number" min="1" max="5" data-frn value="${s.retry ? s.retry.n : 1}" ${s.retry ? '' : 'disabled'}> 번</div>
       </details>
       <div class="as-pv">📋 <b>${esc3(AS.describe(s, Object.fromEntries((ED.draft || []).map((x) => [x.id, x]))))}</b>${per != null ? ` · ${t.t === 'month' ? `한 달 ${(t.md || []).length * t.at.length}번` : `하루 약 ${Math.round(per * 10) / 10}번`}${dur.n ? ` × ${AS.fmtMs(dur.avg)} = <b>하루 약 ${AS.fmtMs(per * dur.avg)}</b> 사용` : ''}` : ''}</div>
@@ -978,6 +996,7 @@
       qa('[data-fday]').forEach((b) => (b.onclick = () => ed((s) => { const i = +b.dataset.fday; let d = s.days ? s.days.slice() : [0, 1, 2, 3, 4, 5, 6]; d = d.includes(i) ? d.filter((x) => x !== i) : [...d, i]; s.days = d.length ? d : s.days; })));
       if (q1('[data-fwon]')) { const wr = () => ed((s) => { s.win = q1('[data-fwon]').checked ? { from: q1('[data-fwf]').value || '08:00', to: q1('[data-fw24]').checked ? '24:00' : q1('[data-fwt]').value || '22:00' } : null; }); ['[data-fwon]', '[data-fwf]', '[data-fwt]', '[data-fw24]'].forEach((k) => (q1(k).onchange = wr)); }
       qa('[data-fpc]').forEach((cb) => (cb.onchange = () => ed((s) => { const P = [...qa('[data-fpc]')].filter((x) => x.checked).map((x) => x.dataset.fpc); s.pcs = P.length === qa('[data-fpc]').length || !P.length ? null : P; })));
+      qa('[data-fcond]').forEach((cb) => (cb.onchange = () => ed((s) => { if (cb.checked) s.cond = cb.dataset.fcond; else delete s.cond; })));
       { const rw = () => ed((s) => { s.retry = q1('[data-fron]').checked ? { n: num(q1('[data-frn]')) || 1, gap: num(q1('[data-frg]')) || 30 } : null; }); ['[data-fron]', '[data-frg]', '[data-frn]'].forEach((k) => (q1(k).onchange = rw)); }
       { const gd = q1('[data-gd]'); if (gd) gd.ontoggle = () => { ED.gOpen = gd.open ? id : null; }; }
       q1('[data-fclose]').onclick = () => { const fw = F.closest('.as-fw'); if (fw) fw.classList.remove('open'); setTimeout(() => { ED.sel = null; ED.opened = null; asEdDraw(); }, 280); }; }
