@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "등록 바로 장바구니",
- "since": "2026-11-05T01:28:50Z",
- "beat": "2026-11-05T01:28:50Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "h4",
+  "who": "lead",
   "done": "",
-  "at": "2026-11-04T23:16:40Z"
+  "at": "2026-11-05T01:32:20Z"
  },
- "host": "vm"
+ "host": null
 }
