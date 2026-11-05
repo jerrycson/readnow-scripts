@@ -1,6 +1,6 @@
 // tSHP5 — 정범님 11/05 출고 화면 세 가지
-//  ① 오늘 이미 나간(출고 완료) 상자와 같은 손님의 새 주문 → 새 주문 옆 '오늘 이미 나간 상자 #번호와 같은 손님 — 합포장 권함' · 누르면 그 완료 출고(팝업 → 오늘 끝 카드)
-//     같은 손님 = ALPS 합포장 기준 01 '이름.전화.주소'(셋 모두 같아야 · 이름만 같으면 아님) · 송장·출고·맡긴 일은 바꾸지 않음 · 기기 기억엔 해시만
+//  ① 오늘 이미 나간(출고 완료) 상자와 같은 주소의 새 주문 → 새 주문 옆 '오늘 이미 나간 상자 #번호와 같은 주소 — 합포장 권함' · 누르면 그 완료 출고(팝업 → 오늘 끝 카드)
+//     (11/05 밤) 같은 주소 = 받는 분 주소만(시·구·동·건물·동·호수까지 · 이름·전화 안 봄 · 호수 다르거나 없으면 아님) · 송장·출고·맡긴 일은 바꾸지 않음 · 기기 기억엔 해시만 (가짜 주소)
 //  ② 출고 사진: 휴대폰은 누르면 화면 가득 · 옆으로 밀어 다음/이전 · 닫기 ✕·바깥·Esc·아래로 밀기 · PC는 두 번 누르면 같은 화면 · ← →
 //  ③ 휴대폰 떠 있는 단추를 ☰ 하나로(56px) · 한 번 누르면 펼침 · 바깥을 누르면 접힘 · 펼친 단추 48px 이상 · 원래 단추를 그대로 누름
 // 시험 자료 손님은 '손님A'·'손님B' · 010-0000-0000 (공개 저장소)
@@ -12,16 +12,16 @@ const seedAll = async () => { const W = (ms) => new Promise((r) => setTimeout(r,
   S.app.platforms = { ...(S.app.platforms || {}), y24: { ...((S.app.platforms || {}).y24 || {}), off: false } };
   const svg = (c) => `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='400'%3E%3Crect width='300' height='400' fill='%23${c}'/%3E%3C/svg%3E`;
   const it = (t, p, lid, c) => ({ listingId: lid, title: t, price: p, qty: 1, sku: 'PNK_ms', grade: '상', img: svg(c) });
-  const RA = { name: '손님A', phone: '010-0000-0000', address: '시험시 시험로 1' };
+  const RA = { name: '손님A', phone: '010-0000-0000', address: '시험시 시험구 시험로 1, 101동 202호' };
   S.ship = { orders: [
     { orderNo: 'A1', buyer: '손님A', orderedAt: '2026-11-05 08:00', recipient: { ...RA }, items: [it('먼저 나간 책', 5000, '404937001', 'c33')] },
-    { orderNo: 'A2', buyer: '손님A', orderedAt: '2026-11-05 10:00', recipient: { ...RA, phone: '01000000000', address: '시험시  시험로 1' }, items: [it('새로 온 책 하나', 6000, '404937002', '3c3')] }, /* 빈칸·'-'만 다름 = 같은 손님 */
-    { orderNo: 'A3', buyer: '손님A', orderedAt: '2026-11-05 10:10', recipient: { ...RA, phone: '02-000-0009' }, items: [it('전화가 다른 책', 7000, '404937003', '33c')] },
-    { orderNo: 'A4', buyer: '손님A', orderedAt: '2026-11-05 10:20', recipient: { name: '손님A', address: '시험시 시험로 1' }, items: [it('전화가 없는 책', 8000, '404937004', 'cc3')] },
-    { orderNo: 'A6', buyer: '손님B', orderedAt: '2026-11-05 10:30', recipient: { name: '손님B', phone: '02-000-0002', address: '시험시 시험로 2' }, items: [it('빠진 상자와 같은 손님 책', 9000, '404937006', 'c3c')] }], tabCounts: {}, at: now() }; S._shipLive = 1;
+    { orderNo: 'A2', buyer: '손님A', orderedAt: '2026-11-05 10:00', recipient: { ...RA, phone: '01000000000', address: '시험시  시험구 시험로 1 101동 202호 (시험동)' }, items: [it('새로 온 책 하나', 6000, '404937002', '3c3')] }, /* 띄어쓰기·쉼표·괄호 참고 글만 다름 = 같은 주소 */
+    { orderNo: 'A3', buyer: '손님A', orderedAt: '2026-11-05 10:10', recipient: { ...RA, phone: '02-000-0009', address: '시험시 시험구 시험로 1, 101동 203호' }, items: [it('호수가 다른 책', 7000, '404937003', '33c')] },
+    { orderNo: 'A4', buyer: '손님A', orderedAt: '2026-11-05 10:20', recipient: { name: '손님A', phone: '010-0000-0000', address: '시험시 시험구 시험로 1' }, items: [it('호수가 없는 책', 8000, '404937004', 'cc3')] },
+    { orderNo: 'A6', buyer: '손님B', orderedAt: '2026-11-05 10:30', recipient: { name: '손님B', phone: '02-000-0002', address: '시험시 시험구 시험로 2, 3층 301호' }, items: [it('빠진 상자와 같은 손님 책', 9000, '404937006', 'c3c')] }], tabCounts: {}, at: now() }; S._shipLive = 1;
   S.shipC = { orders: [{ orderNo: 'C1', buyer: '손님A', orderedAt: '2026-11-05 11:00', recipient: { ...RA }, items: [it('확인할 주문 책', 5500, '404937009', '3cc')] }], at: now(), enrich: {} }; S.shipCFromCache = false;
   await db.collection('shp_invoices').doc('invS5').set({ createdAt: now(), status: 'done', limit: 0, items: [{ orderNo: 'A1', invoice: '240000001234', recipient: '손님A', state: 'done' }, { orderNo: 'L1', invoice: '240000005678', recipient: '손님B', state: 'done' }], log: [], stepNow: { at: now(), lv: 'ok', m: '송장 입력 끝' } });
-  await db.collection('shp_orders').doc('L1').set({ orderNo: 'L1', buyer: '손님B', recipient: { name: '손님B', phone: '02-000-0002', address: '시험시 시험로 2' } }); /* 발송 요청 목록에서 빠진(송장 입력된) 오늘 출고 */
+  await db.collection('shp_orders').doc('L1').set({ orderNo: 'L1', buyer: '손님B', recipient: { name: '손님B', phone: '02-000-0002', address: '시험시 시험구 시험로 2, 3층 301호' } }); /* 발송 요청 목록에서 빠진(송장 입력된) 오늘 출고 */
   await db.collection('crm_y24_orders').doc('Y1').set({ orderNo: 'Y1', lastSeenAt: now(), firstSeenAt: now(), orderedAt: now(), buyer: '손님A', recipient: { ...RA }, items: [{ k: '1', title: '예스24 새 책', price: 9000, qty: 1, grade: '상' }], ystage: 'new' });
   await db.collection('shp_state').doc('confirm').set(JSON.parse(JSON.stringify(S.shipC))); await db.collection('shp_state').doc('current').set(JSON.parse(JSON.stringify(S.ship)));
   try { y24oWatch(); } catch (e) {} await W(900); S._shipRowsC = null; S._shipSameC = null; };
@@ -62,13 +62,13 @@ const pe = (type, el, x, y) => el.dispatchEvent(new PointerEvent(type, { bubbles
       o.feat = FEAT.filter((f) => /합포장 권함|출고 사진 크게|떠 있는 단추 모음/.test(f.t)).length;
       return o; }, seedAll.toString());
     console.log(JSON.stringify(R));
-    console.log('■ ① 오늘 이미 나간 상자와 같은 손님 — 합포장 권함');
-    ok(R.same.A2 === 'A1#240000001234', '받는 분 이름·전화·주소가 같은 새 주문(빈칸·- 만 다름) → 오늘 끝 상자 A1(송장 …1234) ' + R.same.A2);
-    ok(!R.same.A3 && !R.same.A4, '전화가 다르거나 전화가 없으면(이름·주소만 같음) 권하지 않음 — 실수 0');
+    console.log('■ ① 오늘 이미 나간 상자와 같은 주소 — 합포장 권함');
+    ok(R.same.A2 === 'A1#240000001234', '받는 분 주소가 같은 새 주문(띄어쓰기·쉼표·괄호 참고 글만 다름) → 오늘 끝 상자 A1(송장 …1234) ' + R.same.A2);
+    ok(!R.same.A3 && !R.same.A4, '호수가 다르거나 호수가 없으면(이름·전화·건물은 같아도) 권하지 않음 — 실수 0');
     ok(!R.same.A1, '이미 끝난 주문 자신에게는 안 뜸');
     ok(R.same.A6 === 'L1#240000005678', '발송 요청 목록에서 이미 빠진(송장 입력된) 오늘 출고도 출고 목록 기록(shp_orders)으로 찾음 ' + R.same.A6);
     ok(R.same.C1 === 'A1#240000001234' && R.same.Y1 === 'A1#240000001234', '🆕 확인할 주문·🟦 예스24 새 주문도 같은 판정 ' + R.same.C1 + ' / ' + R.same.Y1);
-    ok(/오늘 이미 나간 상자 #1234와 같은 손님 — 합포장 권함/.test(R.chips.A2) && !R.chips.A3 && !R.chips.A4 && /#5678/.test(R.chips.A6), "새 주문 카드 머리에 '오늘 이미 나간 상자 #1234와 같은 손님 — 합포장 권함' " + JSON.stringify(R.chips));
+    ok(/오늘 이미 나간 상자 #1234와 같은 주소 — 합포장 권함/.test(R.chips.A2) && !R.chips.A3 && !R.chips.A4 && /#5678/.test(R.chips.A6), "새 주문 카드 머리에 '오늘 이미 나간 상자 #1234와 같은 주소 — 합포장 권함' " + JSON.stringify(R.chips));
     ok(/상자 #1234/.test(R.pop) && /240000001234/.test(R.pop) && /A1/.test(R.pop) && /함께/.test(R.pop) && /바꾸지 않음/.test(R.pop) && R.popGo, '누르면 그 완료 출고(상자·송장·주문번호)와 같이 포장 권함 · 저절로 안 바꿈 안내 · 오늘 끝 카드로 가는 단추');
     ok(R.after.tab === 'done' && R.after.card && R.after.flash && R.after.popGone, '「오늘 끝 칸에서 이 출고 보기」 → ✅ 오늘 끝 칸의 그 카드로 가서 깜빡임 ' + JSON.stringify(R.after));
     ok(/240000005678/.test(R.pop6) && /이미 빠진/.test(R.pop6), '빠진 상자는 팝업에 송장·주문으로 보여 줌(카드가 없다는 안내)');
