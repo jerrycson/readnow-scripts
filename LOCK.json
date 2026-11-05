@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "인쇄 도우미 1.1.4 — 프린터 3개·자동 바꾸기·점검",
- "since": "2026-11-05T04:11:05Z",
- "beat": "2026-11-05T04:11:05Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-05T03:25:25Z"
+  "at": "2026-11-05T04:20:38Z"
  },
- "host": "vm"
+ "host": null
 }
