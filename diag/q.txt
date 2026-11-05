@@ -1,2 +1,2 @@
-benchday=2026-11-05&doc=prd_jobs/autoSched
-# 2317722926
+doc=app_settings/bench
+# 939424399
