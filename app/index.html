@@ -449,7 +449,7 @@ html.rnfab-on body:has(#sheet.on) .rnfab-m{bottom:calc(80px + env(safe-area-inse
 .rnfab-in{display:flex;align-items:center;gap:7px;animation:fabIn .46s cubic-bezier(.3,1.6,.55,1) both;animation-delay:calc(var(--i,0) * 42ms);transform-origin:calc(100% - 24px) 50%}
 .rnfab-bi{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:21px;line-height:1;background:rgba(255,255,255,.74);border:1px solid rgba(31,79,69,.28);box-shadow:0 3px 10px rgba(0,0,0,.20);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fabSpin .5s cubic-bezier(.3,1.6,.55,1) both;animation-delay:calc(var(--i,0) * 42ms)}
 .rnfab-t{font-size:11.5px;font-weight:700;color:#fff;background:rgba(18,38,33,.58);padding:3px 8px;border-radius:999px;white-space:nowrap;max-width:46vw;overflow:hidden;text-overflow:ellipsis;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);animation:fabTag .3s ease-out both;animation-delay:calc(var(--i,0) * 42ms + 170ms)}
-.rnfab-b:active .rnfab-bi{scale:.86;background:rgba(226,238,233,.92)}.rnfab-b.on .rnfab-bi{background:rgba(47,93,80,.86);color:#fff;border-color:rgba(255,255,255,.5)}
+.rnfab-b:active .rnfab-bi{scale:.86;background:rgba(226,238,233,.92)}.rnfab-b.on .rnfab-bi{background:rgba(47,93,80,.86);color:#fff;border-color:rgba(255,255,255,.5)}/* (정범님 11/05 밤) 옆 설명 없앰 · 모든 단추(켜진 단추·☰ 포함) 반투명 · 시장줄·서가별/주문별만 아이콘 안에 작은 이름 */.rnfab-t{display:none!important}.rnfab-bi{background:rgba(255,255,255,.46)!important;border-color:rgba(31,79,69,.22)!important}.rnfab-b.on .rnfab-bi{background:rgba(47,93,80,.5)!important;color:#fff}.rnfab-b:active .rnfab-bi{background:rgba(226,238,233,.62)!important}.rnfab{background:rgba(31,79,69,.55)!important;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}.rnfab-bi.mini{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}.rnfab-bi.mini .rnfab-ic{font-size:17px;line-height:1}.rnfab-mn{font-size:8.5px;font-weight:800;line-height:1.05;letter-spacing:-.02em;margin-top:1px;white-space:nowrap}
 .rnfab-none{background:rgba(255,255,255,.86);border-radius:12px;padding:10px 12px;font-size:13px;animation:fabTag .25s ease-out both}
 @keyframes fabIn{0%{opacity:0;translate:0 var(--d,60px);scale:.25}55%{opacity:1;translate:0 -7px;scale:1.1}78%{translate:0 2px;scale:.96}100%{opacity:1;translate:0 0;scale:1}}
 @keyframes fabSpin{0%{rotate:-120deg}60%{rotate:12deg}100%{rotate:0deg}}
@@ -1224,14 +1224,14 @@ html.phui-bon .rgvwf,html.phui-bon .rgpill,html.phui-bon .rn-top{right:calc(var(
 <script src="../readnow-core.js?v=1.4.2"></script>
 <script src="../readnow-pricing-core.js?v=0.17.8"></script>
 <script src="../readnow-shipping-core.js?v=0.7.8"></script>
-<script src="../readnow-products-core.js?v=0.19.6"></script>
+<script src="../readnow-products-core.js?v=0.19.7"></script>
 <script src="../readnow-ext-core.js?v=0.6.6"></script>
 <script src="../readnow-autosched-core.js?v=0.18.16"></script>
-<script src="../readnow-registry.js?v=0.14.141"></script>
+<script src="../readnow-registry.js?v=0.14.142"></script>
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.9.4"></script>
 <script src="../readnow-register-core.js?v=0.7.5"></script>
-<script>const APP_VER = '1.78.392';</script>
-<script src="readnow-webapp.js?v=1.78.392"></script>
+<script>const APP_VER = '1.78.393';</script>
+<script src="readnow-webapp.js?v=1.78.393"></script>
 </body>
 </html>
