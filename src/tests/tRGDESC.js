@@ -1,3 +1,4 @@
+// (11/05 15시 정범님 '설명은 오른쪽 둘째 줄 · 높이는 예전 그대로'로 자리 기준을 바꿈 — PC: 설명 칸 = 오른쪽 기능 칸(등록 부류~단계) 아래 · 그 폭만 / 휴대폰: 예전처럼 아래 줄 폭 전체 · 자세한 흐름은 tRGDESC2)
 // tRGDESC — 정범님 11/05: 📋 한눈에 줄 설명 칸이 '자동으로 접히지 않음' → 평소 2줄(설정)로 접고 · 설명 칸을 등록 부류·상태·가격·수량·코드 줄 아래 줄에 따로(줄 폭 전체 · 휴대폰도)
 //  · 누르면 입력 · Tab/Esc/바깥 누름이면 저장하고 접힘 · 남은 '열림 표시'로 다시 그려도 열린 채 남지 않음 · ⚡ 설명 단추 → 바로 입력 칸 · 스크린샷 크기·줄 수 확인
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 600)); } else console.log('  ✓', m); };
@@ -12,8 +13,8 @@ const seedRows = async (p) => { await p.evaluate(require('./seed.js')); await p.
     localStorage.setItem('rn-reg-view', 'compact'); localStorage.removeItem('rn-reg-qfl'); S._regOpen = new Set(); S.regT = 'sel'; openRegister(); });
   await p.waitForTimeout(1500); await p.addStyleTag({ content: '.mkpanel,[class*=mktoast],.dlq,#dlq{display:none!important}' }); };
 // 줄마다: 설명 칸이 위 줄(제목·등록 부류 등)보다 아래인지 · 폭 · 보이는 줄 수 · 넘침
-const geo = (p) => p.evaluate(() => [...document.querySelectorAll('.rgrow')].map((r) => { const R = r.getBoundingClientRect(); const q = r.querySelector(':scope > .rgr-q, :scope > .rgr-qw'); const m = r.querySelector('.rgr-m'), tt = r.querySelector('.rgr-t'), s = r.querySelector('.rgr-s'), bb = r.querySelector('.rgbbn'); const Q = q && q.getBoundingClientRect(); const t = r.querySelector('.rgqf-t'); const lh = t ? parseFloat(getComputedStyle(t).lineHeight) : 0; const pad = t ? parseFloat(getComputedStyle(t).paddingTop) + parseFloat(getComputedStyle(t).paddingBottom) + 2 : 0;
-  return { id: r.dataset.rgexp, below: !!Q && Q.top >= Math.max(m.getBoundingClientRect().bottom, tt.getBoundingClientRect().bottom, s.getBoundingClientRect().bottom) - 1, wide: !!Q && Q.width >= R.width - 40, line1: Math.abs(m.getBoundingClientRect().top - tt.getBoundingClientRect().top) < 60, lines: t ? Math.round((t.clientHeight - pad + 2) / lh) : null, over: t ? t.scrollHeight > t.clientHeight + 2 : null, bbBelow: bb ? bb.getBoundingClientRect().top >= Q.bottom - 1 : null, h: Math.round(R.height), inp: !!r.querySelector('.rgq-in') }; }));
+const geo = (p) => p.evaluate(() => [...document.querySelectorAll('.rgrow')].map((r) => { const R = r.getBoundingClientRect(); const q = r.querySelector(':scope > .rgr-q, :scope > .rgr-qw'); const m = r.querySelector('.rgr-m'), tt = r.querySelector('.rgr-t'), s = r.querySelector('.rgr-s'), bb = r.querySelector('.rgbbn'); const Q = q && q.getBoundingClientRect(); const mob = innerWidth <= 700; const M = m.getBoundingClientRect(), T = tt.getBoundingClientRect(), Sx = s.getBoundingClientRect(); const t = r.querySelector('.rgqf-t'); const lh = t ? parseFloat(getComputedStyle(t).lineHeight) : 0; const pad = t ? parseFloat(getComputedStyle(t).paddingTop) + parseFloat(getComputedStyle(t).paddingBottom) + 2 : 0;
+  return { id: r.dataset.rgexp, below: !!Q && Q.top >= Math.max(M.bottom, Sx.bottom, mob ? T.bottom : -1e9) - 1, wide: !!Q && (mob ? Q.width >= R.width - 40 : Q.left >= T.right - 1 && Q.right >= Sx.right - 2 && Q.left <= M.left + 2), line1: Math.abs(m.getBoundingClientRect().top - tt.getBoundingClientRect().top) < 60, lines: t ? Math.round((t.clientHeight - pad + 2) / lh) : null, over: t ? t.scrollHeight > t.clientHeight + 2 : null, bbBelow: bb ? bb.getBoundingClientRect().top >= Q.bottom - 1 : null, h: Math.round(R.height), inp: !!r.querySelector('.rgq-in') }; }));
 const shot = async (p, name) => { const box = await p.evaluate(() => { const a = document.querySelectorAll('.rgrow'); a[0].scrollIntoView(); const r1 = a[0].getBoundingClientRect(), r2 = a[a.length - 1].getBoundingClientRect(); const y = Math.max(0, r1.top - 6); return { x: 0, y, width: innerWidth, height: Math.min(innerHeight - y, r2.bottom - r1.top + 12) }; }); await p.screenshot({ path: SP + name, clip: box }); const b = fs.readFileSync(SP + name); return { w: b.readUInt32BE(16), h: b.readUInt32BE(20), box }; };
 const G = (L, id) => L.find((x) => x.id === id) || {};
 H(async (p) => { await seedRows(p);
@@ -21,10 +22,10 @@ H(async (p) => { await seedRows(p);
   let L = await geo(p);
   ok(G(L, 'q001').lines === 1 && !G(L, 'q001').over, '짧은 ⚡ 설명은 한 줄 그대로', G(L, 'q001'));
   ok(['q002', 'q006', 'm004'].every((id) => G(L, id).lines === 2 && G(L, id).over), '긴 ⚡ 설명(줄 바꿈 14줄 · 긴 문단)·✍ 직접 입력(4줄)은 기본 2줄로 접힘(넘치면 …)', L.filter((x) => /q002|q006|m004/.test(x.id)));
-  ok(G(L, 'q003').lines === 1 && G(L, 'q003').below, '빈 ⚡ 설명도 아래 줄에 접힌 칸(⚡ 설명 — 눌러서 입력)', G(L, 'q003'));
+  ok(G(L, 'q003').lines === 1 && G(L, 'q003').below, '빈 ⚡ 설명도 오른쪽 둘째 줄에 접힌 칸(⚡ 설명 — 눌러서 입력)', G(L, 'q003'));
   // ② 자리 — 설명 칸 = 등록 부류·상태·가격·수량·코드 줄 아래 · 줄 폭 전체 · 위 줄 배치 그대로 · 🏷 매입 띠는 설명 아래
-  ok(L.every((x) => x.below && x.line1), '모든 줄: 설명 칸(또는 ⚡ 설명 단추)이 위 줄(제목·등록 부류·상태·가격·수량·코드·단계) 아래 줄 · 위 줄은 한 줄 그대로', L.map((x) => [x.id, x.below, x.line1]));
-  ok(L.filter((x) => x.id !== 'n005').every((x) => x.wide), '설명 칸은 줄 폭 전체', L.map((x) => [x.id, x.wide]));
+  ok(L.every((x) => x.below && x.line1), '모든 줄: 설명 칸(또는 ⚡ 설명 단추)이 오른쪽 기능 첫 줄(등록 부류·상태·가격·수량·코드·단계) 아래 · 기능 첫 줄은 한 줄 그대로', L.map((x) => [x.id, x.below, x.line1]));
+  ok(L.filter((x) => x.id !== 'n005').every((x) => x.wide), '설명 칸은 오른쪽 기능 칸 폭(제목 쪽으로 넘어가지 않음)', L.map((x) => [x.id, x.wide]));
   const b7 = G(L, 'b007'); ok(b7.bbBelow === null || b7.bbBelow === true, '🏷 알라딘 매입 띠가 있으면 설명 칸 아래(맨 밑)', b7);
   const s1 = await shot(p, 'gl3_rgdesc_1400.png'); ok(s1.w === 1400 && s1.h >= 500 && s1.h <= 900, `스크린샷 크기 ${s1.w}×${s1.h}`, s1);
   // ③ 마우스 올리면 전체 글
@@ -33,8 +34,8 @@ H(async (p) => { await seedRows(p);
   ok(tip && tip.full && tip.inV, '마우스를 올리면 전체 글(14번째 줄까지) 겹침 상자 · 화면 안', tip);
   // ④ 누르면 입력 칸 · 자세히 안 열림 · Tab이면 저장하고 접힘
   await p.click('.rgrow[data-rgexp="q001"] .rgqf'); await p.waitForTimeout(250);
-  const o1 = await p.evaluate(() => ({ foc: document.activeElement && document.activeElement.dataset && document.activeElement.dataset.rgq === 'q001', exp: [...(S._regOpen || [])], tip: !!document.getElementById('rgqtip'), wide: (() => { const r = document.querySelector('.rgrow[data-rgexp="q001"]'); return r.querySelector('.rgq-in').getBoundingClientRect().width >= r.getBoundingClientRect().width - 60; })() }));
-  ok(o1.foc && !o1.exp.length && !o1.tip && o1.wide, '누르면 그 자리(아래 줄 폭 전체)에서 입력 칸 · 커서 들어감 · 자세히 안 열림', o1);
+  const o1 = await p.evaluate(() => ({ foc: document.activeElement && document.activeElement.dataset && document.activeElement.dataset.rgq === 'q001', exp: [...(S._regOpen || [])], tip: !!document.getElementById('rgqtip'), wide: (() => { const r = document.querySelector('.rgrow[data-rgexp="q001"]'); const w = r.querySelector('.rgq-in').closest('.rgr-q').getBoundingClientRect(); return w.left >= r.querySelector('.rgr-t').getBoundingClientRect().right - 1 && w.width >= 300; })() }));
+  ok(o1.foc && !o1.exp.length && !o1.tip && o1.wide, '누르면 그 자리(오른쪽 둘째 줄)에서 입력 칸 · 커서 들어감 · 자세히 안 열림', o1);
   await p.keyboard.press('End'); await p.keyboard.type(' · 탭으로 나감'); await p.keyboard.press('Tab'); await p.waitForTimeout(1200);
   const o2 = await p.evaluate(() => ({ fold: !!document.querySelector('.rgrow[data-rgexp="q001"] .rgqf'), inp: !!document.querySelector('.rgrow[data-rgexp="q001"] .rgq-in'), v: (window.__FS.reg_items.q001 || {}).descQuick, open: S._rgqOpen }));
   ok(o2.fold && !o2.inp && o2.v === '깨끗함 · 밑줄 없음 · 탭으로 나감' && !o2.open, 'Tab으로 나가면 저장하고 바로 접힘', o2);
