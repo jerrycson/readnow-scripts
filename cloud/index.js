@@ -165,14 +165,14 @@ const RN_LOGIN_RULE = (function () { /* ⟦알라딘 로그인 규칙 — 수집
  *  사람처럼(정범님 10/26 23:46 · 23:53): ① 한 회사에 사람이 여럿이듯 기기마다 각자 필요할 때 따로 시도(계정 전체 차례 없음 · 같은 기기 안의 여러 탭은 한 탭만 — 수집기 GM 표시) ② 진짜 풀린 것을 확인한 뒤 5~20초 알아차리는 시간 → 한 번
  *   ③ 안 되면(42FB 경고도 같음) 그 기기는 1~10분 사이 무작위(매번 새로) 뒤 다시 — 그 기기에 로그인이 필요한 일이 남아 있는 동안만 · 단계 간격·하루 상한·다음 날 9시 쉼 없음
  *   ④ 클라우드(데이터센터 IP): 2시간 안에 42FB가 있었고 그 뒤 어느 PC도 새 로그인에 성공하지 않았으면 기다림 → PC가 성공하면 그때부터 ①~③ */
-  const DEF = { retrySec: [60, 600], noticeSec: [5, 20], keep: 200, dcWaitMin: 120, credBadMin: 360, maxDev: 4, liveMin: 30, beatSec: [600, 900], always: ['JS-MAIN', 'MJ-MAIN', 'HOME'], alwaysPair: [], phones: [] }; /* maxDev·liveMin·beatSec = 🪑 판매자 로그인 자리(아래) · always·alwaysPair·phones = 🔒 상시 기기(정범님 10/27 15:12 — 아래 '상시 기기') */ /* credBadMin = '아이디·비밀번호가 틀림·자동입력 방지' 글이 뜬 때만(계정 잠김 막기 — 클라우드 0.11.0부터 있던 안전장치 · 42FB와 다름) */
+  const DEF = { retrySec: [60, 600], noticeSec: [5, 20], keep: 200, dcWaitMin: 120, credBadMin: 360, maxDev: 4, liveMin: 30, beatSec: [600, 900], always: ['JS-MAIN', 'MJ-MAIN', 'HOME'], alwaysPair: [], phones: [], ppWinMin: 120, ppN: 3 }; /* maxDev·liveMin·beatSec = 🪑 판매자 로그인 자리(아래) · always·alwaysPair·phones = 🔒 상시 기기(정범님 10/27 15:12 — 아래 '상시 기기') */ /* credBadMin = '아이디·비밀번호가 틀림·자동입력 방지' 글이 뜬 때만(계정 잠김 막기 — 클라우드 0.11.0부터 있던 안전장치 · 42FB와 다름) */
   /* (정범님 10/28 09:39) 🪑 로그인 전용 4대 확정 = JS-MAIN · MJ-MAIN · HOME(각자 한 자리 — 짝 없음) + 클라우드(데이터센터 주소가 풀릴 때까지 🌙 조용히 기다림) · 휴대폰은 자리에 미리 셈하지 않음(웹앱으로 조작 · 우리 코드는 휴대폰에서 로그인하지 않음) */
   const num = (v, lo, hi, d) => { const n = +v; return Number.isFinite(n) && n >= lo && n <= hi ? n : d; };
   const pair = (v, lo, hi, d) => (Array.isArray(v) && v.length === 2 && +v[0] >= lo && +v[1] >= +v[0] && +v[1] <= hi ? v.map(Number) : d);
   /* 기기 이름 목록(관리도구에서 바꿈) — 빈 목록도 됨 · 'cloud'는 상시가 될 수 없음(휴대폰 목록은 이름만 셈) · 짝은 ['A','B'] 또는 Firestore용 글 'A+B'(배열 안 배열은 Firestore가 받지 않음) */
   const names = (v, d, ph) => (Array.isArray(v) ? v.map((x) => String(x == null ? '' : x).trim()).filter((x) => x && x.length <= 40 && (ph || x.toLowerCase() !== 'cloud')).slice(0, 12) : d);
   const pairs = (v, d) => (Array.isArray(v) ? v.map((p) => (Array.isArray(p) ? p : String(p == null ? '' : p).split('+')).map((x) => String(x == null ? '' : x).trim()).filter(Boolean)).filter((p) => p.length >= 2).slice(0, 6) : d);
-  function cfgOf(doc) { const c = (doc && doc.cfg) || {}; return { retrySec: pair(c.retrySec, 10, 3600, DEF.retrySec), noticeSec: pair(c.noticeSec, 0, 120, DEF.noticeSec), keep: Math.round(num(c.keep, 20, 400, DEF.keep)), dcWaitMin: num(c.dcWaitMin, 0, 1440, DEF.dcWaitMin), credBadMin: num(c.credBadMin, 0, 1440, DEF.credBadMin), maxDev: Math.round(num(c.maxDev, 1, 4, DEF.maxDev)), liveMin: num(c.liveMin, 20, 120, DEF.liveMin), beatSec: pair(c.beatSec, 120, 1080, DEF.beatSec), always: names(c.always, DEF.always), alwaysPair: pairs(c.alwaysPair, DEF.alwaysPair), phones: names(c.phones, DEF.phones, true) }; } /* maxDev 1~4(5대부터 약관 위반) · 신호 간격 최대 18분 < 자리 유지 최소 20분(신호가 한 번 늦어도 자리가 풀리지 않게) */
+  function cfgOf(doc) { const c = (doc && doc.cfg) || {}; return { retrySec: pair(c.retrySec, 10, 3600, DEF.retrySec), noticeSec: pair(c.noticeSec, 0, 120, DEF.noticeSec), keep: Math.round(num(c.keep, 20, 400, DEF.keep)), dcWaitMin: num(c.dcWaitMin, 0, 1440, DEF.dcWaitMin), credBadMin: num(c.credBadMin, 0, 1440, DEF.credBadMin), maxDev: Math.round(num(c.maxDev, 1, 4, DEF.maxDev)), liveMin: num(c.liveMin, 20, 120, DEF.liveMin), beatSec: pair(c.beatSec, 120, 1080, DEF.beatSec), always: names(c.always, DEF.always), alwaysPair: pairs(c.alwaysPair, DEF.alwaysPair), phones: names(c.phones, DEF.phones, true), ppWinMin: num(c.ppWinMin, 10, 1440, DEF.ppWinMin), ppN: Math.round(num(c.ppN, 1, 50, DEF.ppN)) }; } /* maxDev 1~4(5대부터 약관 위반) · 신호 간격 최대 18분 < 자리 유지 최소 20분(신호가 한 번 늦어도 자리가 풀리지 않게) */
   const kstDay = (ms) => new Date(+ms + 9 * 3600e3).toISOString().slice(0, 10);
   const kstHm = (ms) => { const k = new Date(+ms + 9 * 3600e3); return `${k.getUTCMonth() + 1}/${k.getUTCDate()} ${String(k.getUTCHours()).padStart(2, '0')}:${String(k.getUTCMinutes()).padStart(2, '0')}`; };
   const between = (a, rnd) => Math.round((a[0] + (Number.isFinite(rnd) ? Math.min(1, Math.max(0, rnd)) : Math.random()) * (a[1] - a[0])) * 1000);
@@ -203,14 +203,18 @@ const RN_LOGIN_RULE = (function () { /* ⟦알라딘 로그인 규칙 — 수집
   const waitMs = (c) => c.retrySec[1] * 1500 + 60e3; /* 기다림 표시가 살아 있는 시간 = 다시 묻는 가장 긴 간격의 1.5배 + 1분(그 뒤엔 더 기다리지 않는 기기로 봄) */
   const priOf = (v, who) => (v && Number.isFinite(+v.pri) && v.pri !== null ? +v.pri : who === 'cloud' ? PRI.cloud : PRI.pc);
   /* 자리 보기 → { max, live(모두 · al = 상시), wait(그 밖 기기만), phones(휴대폰 대수), slots(살아 있는 상시 PC 자리 이름), used(계정 전체로 센 대수), room(그 밖 기기가 쓸 수 있는 자리 — 이미 가진 그 밖 기기 포함 전), cfg } */
+  /* (정범님 11/05) 🪪 기기 표지: 수집기는 설치마다 한 번 만든 무작위 표지를 dev[이름].ids[표지] = 신호 시각으로 함께 적음 → 이름이 같은 PC 2대도 표지가 달라 따로 셈
+   *  idsLive = 자리 신호(cfg.liveMin분) 안에 신호를 적은 표지 수 · 표지가 없던 예전 판·클라우드는 1대 */
+  const idsLive = (v, now, c) => Math.max(1, Object.values((v && v.ids) || {}).filter((t) => now - (+t || 0) < c.liveMin * 60e3).length);
   function seatView(doc, now) { const c = cfgOf(doc); const D = (doc && doc.dev) || {}; const Wt = (doc && doc.wait) || {};
-    const live = Object.entries(D).filter(([, v]) => isLive(v, now, c)).map(([w, v]) => ({ who: w, pri: priOf(v, w), at: +v.at || 0, use: +v.use || +v.at || 0, al: isAlways(c, w) })).sort((a, b) => b.pri - a.pri || b.use - a.use);
+    const live = Object.entries(D).filter(([, v]) => isLive(v, now, c)).map(([w, v]) => ({ who: w, pri: priOf(v, w), at: +v.at || 0, use: +v.use || +v.at || 0, al: isAlways(c, w), n: idsLive(v, now, c) })).sort((a, b) => b.pri - a.pri || b.use - a.use);
     const wait = Object.entries(Wt).filter(([w, v]) => v && now - (+v.at || 0) < waitMs(c) && !isLive(D[w], now, c) && !isAlways(c, w)).map(([w, v]) => ({ who: w, pri: priOf(v, w), since: +v.since || +v.at || 0, at: +v.at || 0 })).sort((a, b) => b.pri - a.pri || a.since - b.since);
-    const slots = [...new Set(live.filter((x) => x.al).map((x) => slotOf(c, x.who)))].sort(); const phones = c.phones.length; const others = live.filter((x) => !x.al).length;
-    return { max: c.maxDev, live, wait, phones, slots, used: phones + slots.length + others, room: Math.max(0, c.maxDev - phones - slots.length), cfg: c }; }
+    const slots = [...new Set(live.filter((x) => x.al).map((x) => slotOf(c, x.who)))].sort(); const phones = c.phones.length; const others = live.filter((x) => !x.al).reduce((a, x) => a + x.n, 0);
+    const dup = live.filter((x) => x.n > 1).map((x) => ({ who: x.who, n: x.n })); const dupX = live.filter((x) => x.al).reduce((a, x) => a + x.n - 1, 0); /* 이름이 같은 PC가 더 있으면 그만큼 더 셈 */
+    return { max: c.maxDev, live, wait, phones, slots, dup, dupX, used: phones + slots.length + dupX + others, room: Math.max(0, c.maxDev - phones - slots.length - dupX), cfg: c }; }
   /* 자리 받기 → { ok:true, patch } | { ok:false, kind:'seat', until, why, patch(기다림 적기) } · o.pri = 이 기기 우선순위(없으면 PC 1 · o.dc면 클라우드 0) · 🔒 상시 기기는 늘 ok(always) */
   function seatAsk(doc, who, now, o, rnd) { o = o || {}; const V = seatView(doc, now); const pri = Number.isFinite(+o.pri) && o.pri !== null ? +o.pri : o.dc ? PRI.cloud : PRI.pc;
-    if (!o.dc && isAlways(V.cfg, who)) { const sl = new Set(V.slots); sl.add(slotOf(V.cfg, who)); const n = V.phones + sl.size + V.live.filter((x) => !x.al).length;
+    if (!o.dc && isAlways(V.cfg, who)) { const sl = new Set(V.slots); sl.add(slotOf(V.cfg, who)); const n = V.phones + sl.size + V.dupX + V.live.filter((x) => !x.al).length;
       return { ok: true, always: true, n, max: V.max, patch: { dev: { [who]: { in: true, at: now, how: '상시', pri, use: now, yield: false } }, wait: { [who]: null } } }; }
     const others = V.live.filter((x) => !x.al && x.who !== who); const W0 = ((doc && doc.wait) || {})[who] || null; const since = W0 && now - (+W0.at || 0) < waitMs(V.cfg) ? +W0.since || +W0.at || now : now;
     const mine = V.live.some((x) => x.who === who); /* 이미 자리를 가진 기기(세션 만료로 다시 로그인 등)는 더 높은 기기에게만 넘김 · 새로 묻는 기기는 같은 우선순위면 먼저 기다린 기기 다음 */
@@ -269,7 +273,7 @@ const RN_LOGIN_RULE = (function () { /* ⟦알라딘 로그인 규칙 — 수집
     return { ok: true, cfg: c }; }
   /* 로그인 한 번 결과 → 계정 문서 고침(patch)과 하루 요약 고침(day) — r = { ok, how, why, blocked, net, credBad } · rnd = 0~1 무작위(다음 시도 간격) */
   function record(doc, who, now, r, rnd) { const c = cfgOf(doc); const net = r.net || ((doc && doc.net) || {})[who] || null; const code = r.ok ? null : codeOf(r.why);
-    const t = { at: now, who, net, ok: !!r.ok, how: r.how || null, why: r.why ? String(r.why).slice(0, 200) : null, code }; if (r.blocked) t.blocked = true; if (r.credBad) t.credBad = true;
+    const t = { at: now, who, net, ok: !!r.ok, how: r.how || null, why: r.why ? String(r.why).slice(0, 200) : null, code }; if (r.blocked) t.blocked = true; if (r.credBad) t.credBad = true; if (r.id) t.id = String(r.id).slice(0, 40); /* 🪪 기기 표지(같은 이름 PC를 가름) */
     const tries = [...((doc && doc.tries) || []), t].slice(-c.keep); const nextAt = r.ok ? 0 : r.credBad && c.credBadMin > 0 && !isAlways(c, who) ? now + c.credBadMin * 60e3 : now + between(c.retrySec, rnd); /* 🔒 상시 기기는 아이디 오류여도 6시간 쉼 없이 1~10분 무작위 */
     const p = { tries, lastTry: t, next: { [who]: nextAt } };
     if (!r.ok) p.dev = { [who]: { in: false, at: now, how: r.how || 'fail' } }; /* 🪑 실패하면 받아 둔 자리를 바로 풀어 줌(다른 기기가 기다리지 않게) */
@@ -292,8 +296,14 @@ const RN_LOGIN_RULE = (function () { /* ⟦알라딘 로그인 규칙 — 수집
     if (hasPw && !hasLogout && !(o.titleOk || /샵매니저/).test(title || '')) return 'suspect';
     if (o.scmNeedsLogout && !hasLogout) return 'suspect';
     return false; }
+  /* (정범님 11/05) 🏓 로그인 번갈아 넘어감(핑퐁) 알아채기 — cfg.ppWinMin분(기본 120) 안의 성공 로그인을 차례로 보며 주인(기기 이름 + 🪪 표지)이 바뀐 횟수를 셈
+   *  바뀐 횟수가 cfg.ppN(기본 3)번을 넘으면 on — 알라딘이 앞 세션을 끊어 기기끼리 서로 밀어내는 것일 수 있음 · 보여 주기만(로그인을 막거나 늦추지 않음) · 근거: 없음, 설정으로 바꿈
+   *  → { on, hops, n(성공 수), win(분), max(ppN), who:[주인 차례 — 최근 8], since } */
+  function pingPong(doc, now) { const c = cfgOf(doc); const from = now - c.ppWinMin * 60e3; const T = ((doc && doc.tries) || []).filter((t) => t && t.ok && +t.at >= from && +t.at <= now).sort((a, b) => +a.at - +b.at);
+    const key = (t) => String(t.who || '?') + (t.id ? '#' + String(t.id) : ''); let hops = 0; for (let i = 1; i < T.length; i++) if (key(T[i]) !== key(T[i - 1])) hops++;
+    return { on: hops > c.ppN, hops, n: T.length, win: c.ppWinMin, max: c.ppN, who: T.slice(-8).map(key), since: T.length ? +T[0].at : null }; }
   const net2 = (ip) => { const m = String(ip || '').match(/^(\d{1,3})\.(\d{1,3})\./); return m ? `${m[1]}.${m[2]}` : null; };
-  return { DEF, cfgOf, kstDay, kstHm, between, isBlock, codeOf, decide, dcQuiet, record, judge, net2, LOGIN_URL, AUTH_URL, SCM_URL, EDIT_URL, PRI, isLive, seatView, seatAsk, seatYield, seatKeep, isAlways, slotOf };
+  return { DEF, cfgOf, kstDay, kstHm, between, isBlock, codeOf, decide, dcQuiet, record, judge, net2, LOGIN_URL, AUTH_URL, SCM_URL, EDIT_URL, PRI, isLive, seatView, seatAsk, seatYield, seatKeep, isAlways, slotOf, idsLive, pingPong };
 })();
 const ALG = () => C('app_settings').doc('aladin_login');
 async function algTx(fn) { let out = null; await db.runTransaction(async (tx) => { out = null; const sn = await tx.get(ALG()); const d = sn.exists ? sn.data() || {} : {}; algCfg = RN_LOGIN_RULE.cfgOf(d); out = fn(d) || {}; if (out.patch) tx.set(ALG(), out.patch, { merge: true }); }); return out; }
