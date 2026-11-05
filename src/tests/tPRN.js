@@ -25,7 +25,7 @@ else console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
   const st = () => { try { return JSON.parse(fs.readFileSync(D + '/bin/state.json', 'utf8')); } catch (e) { return { def: 'Samsung', calls: [] }; } };
   const ch = cp.spawn('node', ['readnow-print.js'], { cwd: D, env: { ...process.env, PATH: D + '/bin:' + process.env.PATH } }); await wait(1500);
   try {
-    const s0 = await req('GET', '/status'); ok(s0.j && s0.j.ver === '1.1.6', '도우미 1.1.6 켜짐 ' + (s0.j && s0.j.ver));
+    const s0 = await req('GET', '/status'); ok(s0.j && s0.j.ver === '1.1.7', '도우미 1.1.7 켜짐 ' + (s0.j && s0.j.ver));
     const r0 = await req('GET', '/prn/roles'); ok(r0.j && r0.j.ok && r0.j.roles.auto === true && !r0.j.roles.general, '역할 처음 = 비어 있음 · 자동 켬');
     /* 역할 없으면 라벨 인쇄는 기본을 건드리지 않음 */
     const IMG = 'data:image/png;base64,' + Buffer.from('x').toString('base64');
