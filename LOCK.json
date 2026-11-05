@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "daily",
+ "what": "🔬 정밀 점검 11/05 — lead 1.78.397 위에 고침 다시 얹어 판 내기(10분 안)",
+ "since": "2026-11-05T13:32:31Z",
+ "beat": "2026-11-05T13:32:31Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T13:31:57Z"
  },
- "host": null
+ "host": "vm"
 }
