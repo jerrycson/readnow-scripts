@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "도우미 1.1.8 · lab/col2",
+ "since": "2026-11-05T10:29:25Z",
+ "beat": "2026-11-05T10:29:25Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T09:13:29Z"
  },
- "host": null
+ "host": "vm"
 }
