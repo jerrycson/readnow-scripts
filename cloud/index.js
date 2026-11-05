@@ -1400,11 +1400,11 @@ async function autoRejudge(J, id) { const SHC = shipCoreNode(); if (!SHC || !SHC
  *  웹앱이 끝까지를 시작할 때 app_settings/ship_auto에 on:false + osPause{on, run, at, until, staleMin, prevOn}를 적고, 끝나면 웹앱이 되돌림(웹앱 osApOn·osApEnd)
  *  끝 신호가 안 오면(창 닫힘·기기 꺼짐) 여기서 되돌림 — 실행이 끝남(done·stop·error·기록 없음) · 돌리던 기기 맥박(owner.beat·upd)이 staleMin분 없음 · 최대 시간(until) 넘김
  *  되돌릴 때 원래 켜져 있었고(prevOn) 그사이 사람이 직접 바꾸지 않았을 때만(on === false) 켬 · 그 뒤 멈춘 사이 들어온 주문(판단 기록 없음)을 바로 한 번 판단(autoRejudge all — 웹앱이 이미 했으면 judgedAt이 있어 안 함) */
-function osPauseDue(P, run, now) { if (!P || !P.on) return null; now = now == null ? Date.now() : +now; const stale = Math.max(1, +P.staleMin || 10);
+function osPauseDue(P, run, now) { if (!P || !P.on) return null; now = now == null ? Date.now() : +now; const stale = Math.max(1, +P.staleMin || 5); /* (정범님 11/05 15시) 기본 소식 5분·최대 20분 — 웹앱이 적은 값(staleMin·until)이 있으면 그것 */
   if (!run) return '원스톱 실행 기록이 없음';
   if (!['run', 'wait'].includes(run.status)) return `원스톱이 ${({ done: '끝남', stop: '사람이 멈춤', error: '오류로 멈춤' })[run.status] || '끝남(' + run.status + ')'}`;
   const beat = Math.max(Date.parse((run.owner || {}).beat || '') || 0, Date.parse(run.upd || '') || 0); if (beat && now - beat > stale * 60e3) return `원스톱을 돌리던 기기 소식이 ${Math.round((now - beat) / 60e3)}분 없음(창 닫힘·기기 꺼짐)`;
-  const until = Date.parse(P.until || '') || 0; if (until && now > until) return `최대 시간 ${P.capMin || Math.round((until - (Date.parse(P.at || '') || until)) / 60e3)}분 넘김`;
+  const at0 = Date.parse(P.at || '') || 0; const until = Date.parse(P.until || '') || (at0 ? at0 + Math.max(1, +P.capMin || 20) * 60e3 : 0); if (until && now > until) return `최대 시간 ${P.capMin || Math.round((until - (Date.parse(P.at || '') || until)) / 60e3)}분 넘김`;
   return null; }
 let opAt = 0; async function osPauseTick() { if (Date.now() - opAt < 45e3) return null; opAt = Date.now(); const ref = C('app_settings').doc('ship_auto'); const d = (await ref.get()).data() || {}; let P = d.osPause; if (!P) return null; const out = {};
   if (P.on) { let run = null; if (P.run) { const sn = await C('shp_runs').doc(String(P.run)).get(); run = sn.exists ? sn.data() || null : null; } const why = osPauseDue(P, run, Date.now()); if (!why) return null;
