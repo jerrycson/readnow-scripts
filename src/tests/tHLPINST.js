@@ -5,5 +5,5 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); l
   await p.evaluate(async () => { const C = LBL(); C.mode = 'pc'; lblSave(C); await lphCheck(true); openLblCfg(); }); await p.waitForTimeout(500);
   ok(await p.evaluate(() => !!(LBL_OV && LBL_OV.querySelector('[data-hlpinst]'))), '도우미가 없으면 라벨 인쇄 설정에 「⬇ 이 PC에 도우미 설치」');
   const dl = p.waitForEvent('download'); await p.click('[data-hlpinst]'); const d = await dl; const path = await d.path(); const txt = require('fs').readFileSync(path, 'utf8');
-  ok(d.suggestedFilename() === '리드나우-도우미-설치.cmd' && /install-print\.ps1/.test(txt) && /powershell -NoProfile -ExecutionPolicy Bypass/.test(txt), '누르면 설치 파일 내려받기(안에 설치 한 줄)', { n: d.suggestedFilename(), txt: txt.slice(0, 200) });
+  ok(d.suggestedFilename() === 'readnow-helper-setup.cmd' && /install-print\.ps1/.test(txt) && /powershell -NoProfile -ExecutionPolicy Bypass/.test(txt), '누르면 설치 파일 내려받기(안에 설치 한 줄)', { n: d.suggestedFilename(), txt: txt.slice(0, 200) });
   up = true; await p.waitForTimeout(6500); ok(await p.evaluate(() => S.lph.ok === true), '도우미가 켜지면 5초 안에 저절로 알아봄'); }).then(() => { console.log(bad ? `❌ ${bad}개 실패` : '✓ tHLPINST 통과'); process.exit(bad ? 1 : 0); });
