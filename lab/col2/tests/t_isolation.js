@@ -1,6 +1,6 @@
 /* t_isolation — 운영과 떨어져 있는지 글자로 검사(실행 없이)
  *  · BOOK_FIXED가 운영 수집기 원본과 같은가(운영이 바뀌면 여기서 알림) · 운영 포트·운영 크롬 프로필 이름을 쓰지 않음 · 운영 도우미 모듈을 불러오지 않음
- *  · Firestore 쓰기는 막이(Col2Store)를 거쳐 col2_* 칸만 · 기기 저장은 rn3- 만 · 브라우저 팝업 없음 · 휴대전화 번호 없음 · 이 폴더는 따로 된 git
+ *  · Firestore 쓰기는 막이(Col2Store)를 거쳐 col2_* 칸만 · 기기 저장은 rn3- 만 · 브라우저 팝업 없음 · 휴대전화 번호 없음 · 이 폴더는 따로 된 git(운영 저장소 안이면 운영 파일 안 고침)
  * 실행: node tests/t_isolation.js */
 const L = require('./lib.js'); const { ok } = L; const fs = require('fs'), path = require('path');
 const COL2 = require('../col2-config.js'); const R = L.ROOT;
@@ -33,7 +33,12 @@ ok(code.every((f) => !/(^|[^.\w])(alert|confirm|prompt)\s*\(/m.test(rd(f).replac
 ok(files.filter((f) => /\.(js|html|md|json)$/.test(f)).every((f) => !/01[016789]-?\d{3,4}-?\d{4}/.test(rd(f).replace(/010-0000-0000/g, ''))), '휴대전화 번호 없음');
 
 console.log('④ 따로 된 폴더');
-ok(fs.existsSync(path.join(R, '.git')) && !path.resolve(R).startsWith(path.resolve(L.PROD_REPO) + path.sep), '이 폴더는 따로 된 git(운영 저장소 밖)');
+{ /* (0.1.1) 이 폴더가 운영 저장소 안(lab/col2)으로 옮겨진 뒤에는 '따로 된 git' 대신 '운영 파일 안 고침'을 봄 — 이 폴더 코드에 운영 파일을 쓰거나 지우는 곳 없음 */
+  const inRepo = fs.existsSync(path.join(R, '..', '..', 'src', 'readnow-collector.src.js'));
+  if (!inRepo) ok(fs.existsSync(path.join(R, '.git')) && !path.resolve(R).startsWith(path.resolve(L.PROD_REPO) + path.sep), '이 폴더는 따로 된 git(운영 저장소 밖)');
+  else { const PROD = /(readnow-collector|readnow-pc-|readnow-[a-z]+-core\.js|readnow-(print|work|local|alps)\.js|app\.html|cloud\/)/;
+    const w = runCode.filter((f) => [...rd(f).matchAll(/(writeFileSync|appendFileSync|renameSync|rmSync|unlinkSync)\(([^;]{0,160})/g)].some((m) => PROD.test(m[2])));
+    ok(!w.length, '운영 파일 안 고침 — 이 폴더 코드에 운영 파일(수집기·공용·도우미·웹앱·클라우드)을 쓰거나 지우는 곳 없음(운영 저장소 lab/col2 안)', w.map(rel).join(',')); } }
 const pl = JSON.parse(rd(path.join(R, 'PLAN.json'))); ok(pl.kind === 'readnow-col2-plan' && Array.isArray(pl.stages) && pl.stages.every((s) => s.n != null && s.name && s.state), 'PLAN.json 모양(단계·상태)');
 ok(/이름표\s*\*\*col2\*\*/.test(rd(path.join(R, 'CLAUDE.md'))) && /col2_\*/.test(rd(path.join(R, 'CLAUDE.md'))) && /rn3-/.test(rd(path.join(R, 'CLAUDE.md'))), 'CLAUDE.md 규칙(이름표 col2 · col2_* · rn3-)');
 L.done('t_isolation');

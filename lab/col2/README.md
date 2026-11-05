@@ -16,7 +16,7 @@
 | `helper/readnow-col2-helper.js` | 번외 도우미(Node 22 · npm 없음) — 127.0.0.1:8797. 숨은 작업 창 · 지킴이 · 보이기/숨기기/다시 열기 · 📊 상태 창(`/`) · 그림자 비교 화면(`/compare`) · 그림자 읽기(`/read/product`) |
 | `helper/col2-cdp.js` | 번외 크롬 띄우기·조종(DevTools 프로토콜 · 운영 ALPS 도우미와 같은 길) · 운영 공용 파일을 **떨어진 칸(isolated world)** 에 넣어 운영 수집기와 똑같이 읽음 |
 | `helper/col2-win.js` | 창 다루기(PowerShell + user32) — **번외 프로필 이름이 명령 줄에 든 크롬 창만** 찾음(정범님 창·운영 작업 창은 안 건드림) |
-| `helper/col2-pace.js` | 그림자 읽기 속도 — 한 장 뒤 8초 안팎 · 한 시간 120 · 하루 800 · 429면 10분×횟수 쉼(`pace.json`에 이어 셈) |
+| `helper/col2-pace.js` | 그림자 읽기 속도 — 한 장 뒤 4초 안팎 · 한 시간 240 · 하루 1,600(정범님 11/05 밤 — 메인으로 돌릴 때까지 사람 속도의 두 배) · 429면 10분×횟수 쉼(`pace.json`에 이어 셈) |
 | `shadow/compare.html` · `col2-compare.js` | 🔎 그림자 비교 화면 — 운영 도서(읽기만)와 그림자 결과를 칸마다 견주고 `col2_books`·`col2_runs`에 씀 |
 | `shadow/col2-compare-core.js` | 견주기(순수 함수) — 같음 / 같음(운영도 지금 이 값을 봄) / 출처 다름(바깥 정보) / 운영 칸 빔 / 다름 |
 | `shadow/col2-store.js` | 막이 — Firestore 쓰기는 `col2_*`만(그 밖은 막고 셈) · 기기 저장 `rn3-`만 |
@@ -31,6 +31,13 @@
 
 읽는 주소는 `https://www.aladin.co.kr/shop/wproduct.aspx?ItemId=<숫자>` 하나뿐(판매자 센터·로그인 화면은 코드에 없음). 19금처럼 로그인 화면으로 가면 **건너뜀**(로그인하지 않음).
 
+## 0.1.1 (정범님 11/05 밤) — 작은 창 · 로그인 없이 · 저절로 · 사람 손 없이 새 판
+- **작은 창**: 📊 상태 창(`/`)·🔎 비교 화면(`/compare`)은 ALPS·로거 도우미처럼 크롬 `--app` 작은 창(380×560 · 화면마다 전용 프로필 `col2-stat-chrome`·`col2-win-chrome` · 옮긴 자리·크기 기억 · 화면 밖이면 오른쪽 위 · 이미 떠 있으면 앞으로). 길: `POST /win/app?p=compare|status`. 웹앱 「🔎 비교 화면 보기」도 이 길(안 되면 새 탭).
+- **로그인 없이(웹앱 대신 기록)**: 비교 화면은 Firebase에 로그인하지 않음. 그 PC에 열린 운영 웹앱(로그인됨)이 1분마다(할 일이 있으면 2초마다) `GET /relay/pending` → 부탁받은 운영 문서(`prd_ids`·`prd_books`만 · 읽기만 · 견줄 칸만)·표본 목록(1,000권)을 `POST /relay/answer`로 넘기고, 맡긴 결과(`col2_*`만)를 대신 쓴 뒤 `POST /relay/ack`. 못 쓴 까닭(오류 코드)은 화면에 보임.
+- **저절로 돌기**: 켜져 있으면 표본 목록(`pool.json`)에서 차례로 그림자 읽기·비교(속도 PACE 그대로 · 새벽 1~5시에도 — `nightOn` 기본 켬) → 결과는 `relay-out.json`에 쌓였다가 웹앱이 올림(웹앱이 닫혀 있어도 계속) · 하루 요약 `col2_runs/auto_<날짜>` · 하루 상한을 다 쓰면 다음 날 이어감. 끄기: `col2.json` `auto:false`.
+- **이 PC 이름**: 두 화면 맨 위(웹앱 기기 이름에서 저절로 · 화면에서 바꾸면 웹앱이 덮지 않음). 알라딘 로그인 칸은 이 단계에 없음(PLAN 7단계).
+- **사람 손 없이 새 판**: ① 새 웹앱이 켜질 때 외부 수집기가 켜져 있던 PC면 `/col2/ensure` 한 번(운영 인쇄 도우미 1.1.9가 GitHub 판이 높으면 새 묶음을 받아 검사 뒤 바꿔 끼우고 다시 켬) ② 번외 도우미도 30분마다 스스로 판을 보고 새 판이면 받아 검사 뒤 바꿔 끼우고 끝냄(인쇄 도우미 지킴이가 1분 안에 다시 켬 · 검사 실패면 옛 판 그대로).
+
 ## 운영을 끊지 않음 — 어떻게 지키나
 | 운영 | 번외(col2) | 확인 |
 |---|---|---|
@@ -38,7 +45,7 @@
 | 인쇄 도우미 8898 · 로거 도우미 8899 | 8797 · 그 포트로는 켜지지 않음 · 운영 도우미 모듈을 불러오지 않음 | t_helper ① · t_isolation ② |
 | 정범님 크롬(Tampermonkey·알라딘 로그인) · 운영 작업 창 | 따로 된 프로필 `col2-work-chrome`(확장 없음 · 로그인 없음) · 창 찾기는 그 프로필 크롬만 | t_helper ③ |
 | 알라딘 판매자 동시 로그인 4대 | 로그인하지 않음 → 자리 0 | t_shadow ①(쿠키 없음 · 로그인 화면으로 안 감) |
-| 속도(요청 사이 최소 0.7초 · 분당 22권 안팎) | 한 장 뒤 8초 안팎 · 시간·하루 상한 · 429면 쉼 · 최소 0.7초 아래로 못 고침 | t_unit ② · t_shadow ① |
+| 속도(요청 사이 최소 0.7초 · 분당 22권 안팎) | 한 장 뒤 4초 안팎 · 시간·하루 상한 · 429면 쉼 · 최소 0.7초 아래로 못 고침 | t_unit ② · t_shadow ① |
 | Firestore 운영 칸 | 읽기만 · 쓰기는 `col2_*`만(막이) | t_unit ③ · t_shadow ② |
 | 기기 저장 `rn-`·`rn2-` | `rn3-` | t_shadow ② · t_isolation ③ |
 | 수집기 머리 HSIG `8559039d5a96110b` | Tampermonkey를 아예 안 씀 | t_isolation ② |
@@ -67,6 +74,7 @@ bash tests/run-all.sh                 # 모두 (시험 포트 COL2_TEST_PORT 기
 node tests/t_unit.js                  # 견주기·속도·막이
 node tests/t_isolation.js             # 운영과 떨어짐(글자 검사 · 운영 BOOK_FIXED와 견줌)
 node tests/t_helper.js                # 도우미 — 출처 막기·운영 포트 거절·숨은 작업 창·지킴이·자리 기억·상태 창
+node tests/t_auto.js                  # 저절로 돌기·대신 기록 쌓기·다시 켜도 이어감·하루 상한·스스로 새 판
 node tests/t_shadow.js                # 그림자 읽기(운영과 같은 결과·쿠키 없음·떨어진 칸·속도·19금·429) + 비교 화면
 ```
 - 운영 저장소 위치 `COL2_PROD_REPO`(기본 `/home/user/readnow-scripts` · 읽기만) · Playwright `COL2_PW`(기본 `/opt/node-tools/node_modules/playwright`).
