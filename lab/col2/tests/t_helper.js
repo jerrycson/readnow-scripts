@@ -18,9 +18,9 @@ const F = require('./fixtures.js');
     ok((await H.api('GET', '/status', null, { Origin: 'https://evil.test' })).st === 403, '다른 웹 페이지 출처 거절');
     const wo = await H.api('GET', '/status', null, { Origin: 'https://jerrycson.github.io' }); ok(wo.st === 200 && wo.h['access-control-allow-origin'] === 'https://jerrycson.github.io' && wo.h['access-control-allow-private-network'] === 'true', '웹앱 출처(Pages)는 받음 + 이 PC 주소 허락 머리');
     ok((await H.req('GET', '/status', null, { 'X-RN-Col2': '1', Host: 'evil.test:' + H.port })).st === 403, 'Host가 127.0.0.1이 아니면 거절(주소 바꿔치기 막음)');
-    const pg = await H.req('GET', '/'); ok(pg.st === 200 && /번외 수집 상태/.test(pg.b) && /작업 창 보이기/.test(pg.b) && !/alert\(|confirm\(|prompt\(/.test(pg.b), '주소창 / = 상태 창 화면(팝업 없음)');
+    const pg = await H.req('GET', '/'); ok(pg.st === 200 && /번외 수집 상태/.test(pg.b) && /🪟 보이기/.test(pg.b) && !/alert\(|confirm\(|prompt\(/.test(pg.b), '주소창 / = 상태 창 화면(팝업 없음)');
     ok((await H.req('GET', '/', null, { Origin: 'https://jerrycson.github.io' })).st === 403, '상태 창 화면은 다른 출처에서 못 엶');
-    const s0 = (await H.api('GET', '/status')).j; ok(s0.on === false && s0.port === H.port && s0.ver === '0.1.0', '처음엔 꺼짐 · 시험 포트 · 판 0.1.0');
+    const s0 = (await H.api('GET', '/status')).j; ok(s0.on === false && s0.port === H.port && s0.ver === '0.1.1', '처음엔 꺼짐 · 시험 포트 · 판 0.1.1');
 
     console.log('③ 숨은 작업 창');
     await wait(1500); ok(T.clog().length === 0 && procs('col2-work-chrome').length === 0, '꺼 두면 번외 크롬을 띄우지 않음');
@@ -29,7 +29,7 @@ const F = require('./fixtures.js');
     ok(/--disable-background-timer-throttling/.test(a1) && /--disable-backgrounding-occluded-windows/.test(a1) && /--disable-renderer-backgrounding/.test(a1), '가려져도 늦추지 않는 플래그(이 크롬에만)');
     ok(/--remote-debugging-address=127\.0\.0\.1/.test(a1) && /--remote-debugging-port=0/.test(a1), '조종 길은 이 PC 안(127.0.0.1)·빈 포트');
     let w = T.win()['col2-work-chrome']; ok(w && w.tool && w.r.x + w.r.w <= 0, '창을 화면 밖·작업 표시줄 밖으로', JSON.stringify(w && w.r));
-    ok((T.win().acts || []).every((x) => /:col2-(work|stat)-chrome$/.test(x)), '창 다루기는 번외 프로필 창만(운영 작업 창·정범님 창 안 건드림)');
+    ok((T.win().acts || []).every((x) => /:col2-(work|stat|win)-chrome$/.test(x)), '창 다루기는 번외 프로필 창만(운영 작업 창·정범님 창 안 건드림)');
     await H.api('POST', '/cfg', { watch: { tickSec: 1, pause: true } }); await wait(1200); /* 시험 동안 1초 지킴이를 멈추고 손으로 돌림(가짜 창 파일을 둘이 동시에 쓰지 않게) */
     T.setWin((S) => { S['col2-work-chrome'].r = { x: 100, y: 100, w: 1280, h: 900 }; S['col2-work-chrome'].tool = false; }); await H.api('POST', '/test/tick', {}); w = T.win()['col2-work-chrome'];
     ok(w.tool && w.r.x < 0, '지킴이: 창이 화면 안으로 나오면 다시 숨김');
@@ -48,6 +48,19 @@ const F = require('./fixtures.js');
     r = await H.api('POST', '/win/status-open', {}); await wait(800); const la = T.clog().find((l) => /--app=/.test(l)) || '';
     ok(r.j.ok && new RegExp(`--app=http://127\\.0\\.0\\.1:${H.port}/`).test(la) && /col2-stat-chrome/.test(la) && /--window-position=1500,10/.test(la) && /--window-size=460,680/.test(la), '📊 상태 창 = 따로 된 프로필 · 저장한 자리·크기', la.slice(0, 140));
     r = await H.api('POST', '/win/status-open', {}); ok(r.j.ok && /앞으로/.test(r.j.msg) && T.clog().filter((l) => /--app=/.test(l)).length === 1, '이미 열려 있으면 새로 띄우지 않고 앞으로');
+
+    console.log('④-2 작은 앱 창(🔎 비교 화면 · 380×560 · 기억한 자리 · 화면 밖이면 오른쪽 위)');
+    const appL = () => T.clog().filter((l) => /--app=\S*\/compare/.test(l));
+    r = await H.api('POST', '/win/app?p=compare', { why: '시험' }); await wait(800); let ca = appL().slice(-1)[0] || '';
+    ok(r.j.ok && /col2-win-chrome/.test(ca) && /--window-size=380,560/.test(ca) && /--window-position=1540,0/.test(ca) && /--no-first-run/.test(ca) && /--disable-extensions/.test(ca), '처음 = 크롬 --app 작은 창 380×560 · 첫 화면 오른쪽 위 · 전용 프로필(col2-win-chrome)', ca.slice(0, 200));
+    r = await H.api('POST', '/win/app?p=compare', {}); ok(r.j.ok && r.j.front && appL().length === 1, '이미 떠 있으면 새로 띄우지 않고 앞으로', r.j.msg);
+    ok((T.win().acts || []).includes('show:col2-win-chrome') && JSON.stringify(T.win()['col2-win-chrome'].r) === JSON.stringify({ x: 1540, y: 0, w: 380, h: 560 }), '앞으로 가져올 때도 작은 크기 그대로(큰 창으로 안 바뀜)', JSON.stringify(T.win()['col2-win-chrome'] && T.win()['col2-win-chrome'].r));
+    await H.api('POST', '/win/hrect', { p: 'compare', x: 100, y: 50, w: 400, h: 600 }); ok((await H.api('GET', '/status')).j.cwin.x === 100 && (await H.api('GET', '/status')).j.hwin.x === 1500, '창이 알린 자리·크기는 그 창 칸(cwin)에만 저장');
+    const killMark = (m) => { for (const pid of procs(m)) try { process.kill(+pid); } catch (e) {} }; killMark('col2-win-chrome'); await wait(500);
+    await H.api('POST', '/win/app?p=compare', {}); await wait(800); ca = appL().slice(-1)[0] || ''; ok(appL().length === 2 && /--window-position=100,50/.test(ca) && /--window-size=400,600/.test(ca), '닫았다 다시 열면 기억한 자리·크기', ca.slice(0, 200));
+    killMark('col2-win-chrome'); await wait(500); await H.api('POST', '/win/hrect', { p: 'compare', x: 6000, y: 3000, w: 380, h: 560 });
+    await H.api('POST', '/win/app?p=compare', {}); await wait(800); ca = appL().slice(-1)[0] || ''; ok(/--window-position=1540,0/.test(ca), '기억한 자리가 화면 밖이면 오른쪽 위', ca.slice(0, 200)); killMark('col2-win-chrome');
+    const pg2 = await H.req('GET', '/'); ok(/data-a="app\?p=compare"/.test(pg2.b) && !/target="_blank"/.test(pg2.b) && /max-width:100%|overflow-x:hidden/.test(pg2.b) && /<details/.test(pg2.b) && /이 PC:/.test(pg2.b) && /알라딘 로그인: 이 단계에선 안 함/.test(pg2.b), '📊 상태 창 = 작은 창 꾸밈(접는 칸) · 비교 화면은 새 탭 대신 작은 창 단추 · 이 PC 이름 · 알라딘 로그인 안 하는 까닭');
 
     console.log('⑤ 지킴이 — 꺼지면 다시 띄움 · 다시 열기 · 끄기');
     await H.api('POST', '/cfg', { watch: { tickSec: 1, pause: false } });

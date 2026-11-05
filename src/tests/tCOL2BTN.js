@@ -98,6 +98,13 @@ async function partWeb() { console.log('③ 웹앱 🧭 관리도구 › 🪟 �
       const S2 = () => ({ ok: true, helper: hv, ver: c2.installed ? '0.1.0' : null, ...c2, dayN: c2.running ? 12 : null, dayCap: 800, hourN: 3, last: c2.running ? { at: '2026-11-05 22:10:00', itemId: '1', ok: true } : null, msg: c2.running ? '작업 창 숨김 · 일할 준비' : '' });
       if (u.pathname === '/col2/status') return J(S2()); if (u.pathname === '/col2/ensure') { c2 = { installed: true, running: true, on: true, want: true }; return J(S2()); } if (u.pathname === '/col2/stop') { c2 = { ...c2, running: false, on: false, want: false }; return J(S2()); }
       return J({ ok: false }, 404); });
+    /* 가짜 외부 수집기(127.0.0.1:8797) — 작은 창 길·대신 기록 길(받은 요청을 적음) */
+    const c2calls = []; await p.route(/127\.0\.0\.1:8797/, async (rt) => { const u = new URL(rt.request().url()); const b = rt.request().postData(); c2calls.push({ p: u.pathname + u.search, b: b ? JSON.parse(b) : null });
+      const J = (x) => rt.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' }, body: JSON.stringify(x) });
+      if (rt.request().method() === 'OPTIONS') return rt.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST' } });
+      if (u.pathname === '/win/app') return J({ ok: true, msg: '🔎 비교 화면을 작은 창으로 엶 (오른쪽 위)' });
+      if (u.pathname === '/relay/pending') return J({ ok: true, want: [{ c: 'prd_books', id: 'c2t1' }, { c: 'app_secrets', id: 'x' }], sample: 0, pool: 5, fields: ['title', 'aladinItemId'], out: [{ k: 'k1', c: 'col2_books', id: 'c2t1', v: { x: 1, cmp: { verdict: 'same' } } }, { k: 'k2', c: 'prd_books', id: 'c2t1', v: { title: '덮어쓰기' } }], hot: false, pc: null, pcSrc: null });
+      return J({ ok: true }); });
     const r = await p.evaluate(async () => { const sl = (ms) => new Promise((x) => setTimeout(x, ms)); localStorage.setItem('rn-device', 'HOME'); S.devOk = true; const T = []; const t0 = window.toast; window.toast = (m, ...a) => { T.push(String(m)); return t0(m, ...a); }; window.__T = T;
       await db.collection('col2_runs').doc('r1').set({ at: '2026-11-05T13:00:00.000Z', n: 20, sameN: 19, diffN: 1, noN: 0, failN: 0 });
       S.lph.at = 0; await lphCheck(true); S.sec.mg_work = true; openMgr(); await sl(900); mgrRedraw(); await sl(600); const sec = () => document.querySelector('[data-sec="mg_work"]'); const row = (pc) => sec().querySelector(`[data-c2row="${pc}"]`);
@@ -118,6 +125,21 @@ async function partWeb() { console.log('③ 웹앱 🧭 관리도구 › 🪟 �
     ok(/판 0\.1\.0/.test(r2.t) && /켜짐/.test(r2.t) && /오늘 읽은 수 12\/800장/.test(r2.t) && /마지막 비교 11-05 22:00 \(20권 · 같음 19 · 다름 1\)/.test(r2.t), '켜진 뒤 상태 줄: 판 · 켜짐 · 오늘 읽은 수 · 마지막 비교', r2.t);
     ok(r2.cmp === 'http://127.0.0.1:8797/compare' && r2.off && !r2.on, '「🔎 비교 화면 보기」(이 PC 8797/compare) · 「⏹ 끄기」 · 켜기 단추는 숨음');
     ok(r2.g && r2.g.on === true && r2.g.st && r2.g.st.running === true && r2.g.st.ver === '0.1.0' && /HOME/.test(r2.g.by || ''), 'Firestore col2_ctl/HOME = { on: true · 상태 · 누가 }', r2.g);
+    /* (정범님 11/05 밤) 🔎 비교 화면 = 작은 앱 창(새 탭 아님) */
+    const pages0 = p.context().pages().length; await p.click('[data-c2cmp="HOME"]'); await p.waitForTimeout(600);
+    const wa = c2calls.find((c) => c.p.startsWith('/win/app')); ok(wa && /p=compare/.test(wa.p) && p.context().pages().length === pages0 && /작은 창/.test(await p.evaluate(() => window.__T.slice(-1)[0] || '')), '「🔎 비교 화면 보기」 = 외부 수집기에 작은 앱 창을 부탁(새 탭 안 엶)', wa);
+    /* (정범님 11/05 밤 '구글로 로그인 실패') 웹앱이 대신 기록 — 운영 문서 넘기기(읽기만·prd_* 만) · 표본 목록 · col2_* 만 대신 씀 */
+    const rr = await p.evaluate(async () => { await db.collection('prd_books').doc('c2t1').set({ title: '시험 책', aladinItemId: '100001', priceSales: 9000, memo: '넘기지 않는 칸' }); S._c2rTried = 0; clearTimeout(S._c2rT); await c2RelayTick(); clearTimeout(S._c2rT);
+      return { b: (await db.collection('col2_books').doc('c2t1').get()).data() || null, pb: (await db.collection('prd_books').doc('c2t1').get()).data() || null }; });
+    const lastOf = (q) => (c2calls.filter((c) => c.p === q).slice(-1)[0] || {}).b || {}; /* 웹앱이 켜진 뒤 저절로 돈 고리도 있으니 맨 끝 것을 봄 */
+    const ans = lastOf('/relay/answer'), ak = lastOf('/relay/ack'), cf = lastOf('/cfg');
+    ok(ans.docs && ans.docs.length === 1 && ans.docs[0].c === 'prd_books' && JSON.stringify(ans.docs[0].v) === JSON.stringify({ title: '시험 책', aladinItemId: '100001' }), '부탁한 운영 문서를 읽어 넘김(견줄 칸만 · prd_ids·prd_books 밖은 안 읽음)', ans.docs);
+    ok(Array.isArray(ans.pool) && ans.pool.length >= 1 && ans.pool.every((b) => b.aladinItemId && b.id && !('memo' in b)), '표본 목록(운영 prd_books에서 · 상품 번호 있는 것만 · 칸 줄임)을 넘김', (ans.pool || []).length);
+    ok(rr.b && rr.b.x === 1 && rr.pb && rr.pb.title === '시험 책' && ak.keys && ak.keys.join() === 'k1' && ak.errs && /col2_/.test(ak.errs.k2 || ''), '맡긴 결과는 col2_* 칸만 대신 씀(운영 칸은 안 씀 · 까닭을 돌려줌) → 다 쓴 것 지움 신호', { ak, pb: rr.pb });
+    ok(cf.pc === 'HOME' && cf.pcSrc === 'web', '이 PC 이름(웹앱 기기 이름)을 외부 수집기에 넘김', cf);
+    /* (정범님 11/05 밤 '새 판이 올라가면 사람 손 없이') 새 웹앱이 켜질 때 외부 수집기가 켜져 있었으면 /col2/ensure 한 번(도우미가 새 묶음을 받아 바꿔 끼움) */
+    const nE = calls.filter((c) => c.startsWith('/col2/ensure')).length; await p.evaluate(async () => { S._c2AE = 0; await c2AutoEnsure(); });
+    const ae = calls.filter((c) => c.startsWith('/col2/ensure')); ok(ae.length === nE + 1 && /저절로/.test(ae.slice(-1)[0]), '새 웹앱이 켜질 때 켜져 있던 외부 수집기는 저절로 /col2/ensure(새 판이면 바꿔 끼움)', ae.slice(-1)[0]);
     /* 끄기 두 번 */
     let n0 = calls.length; await p.click('[data-c2off="HOME"]'); await p.waitForTimeout(400); ok(!calls.slice(n0).some((c) => c.startsWith('/col2/stop')) && await p.evaluate(() => /한 번 더 누르면/.test(document.querySelector('[data-c2off="HOME"]').textContent)), '끄기 한 번 = 안 끔(한 번 더 누르라고 보임)');
     await p.evaluate(() => mgrRedraw()); await p.waitForTimeout(300); ok(await p.evaluate(() => /한 번 더 누르면/.test(document.querySelector('[data-c2off="HOME"]').textContent)), '그 사이 화면이 다시 그려져도 한 번 누른 상태 유지');
