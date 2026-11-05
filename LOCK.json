@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "도우미 설치 단추",
+ "since": "2026-11-05T07:35:35Z",
+ "beat": "2026-11-05T07:35:35Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T07:32:44Z"
  },
- "host": null
+ "host": "vm"
 }
