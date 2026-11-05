@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "daily",
+ "what": "🔬 정밀 점검 11/05 보고서·PROJECT_STATE push(1분)",
+ "since": "2026-11-05T13:47:11Z",
+ "beat": "2026-11-05T13:47:11Z",
  "ask": null,
  "last": {
   "who": "daily",
   "done": "🔬 정밀 점검 11/05 끝 — 02fb836 웹앱 1.78.399 · 수집기 1.89.217 · 클라우드 0.35.99 · ext 0.6.7(머리 그대로) · 보고서는 readnow-chats·src/audits에 이어 씀(저장소 잠금 없이)",
   "at": "2026-11-05T13:37:41Z"
  },
- "host": null
+ "host": "vm"
 }
