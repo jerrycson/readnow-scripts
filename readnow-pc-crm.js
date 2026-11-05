@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.212의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.213의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.212' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.212', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.213' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.213', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -277,9 +277,31 @@
     r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
     r.onblocked = () => window.__rnNote('[리드나우 고객 수집기] 예전 버전 수집기가 열린 다른 탭이 있어 저장소를 새 버전으로 바꿀 수 없습니다. 주문조회 탭을 모두 닫고 하나만 다시 열어 주세요.');
   });
+  /* (lt1 · 4시간 점검이 10번 넘게 '원인 미확정'으로 넘긴 것) 리더 탭 '기록 창 열림' 5분 칸 긴 작업 13~20초 — 화면을 막은 스크립트 1위 'IDBRequest.onsuccess @(페이지)' 한 번 10.6~11.0초(HOME 11/05 12:00~18:05 · xx:02~04·xx:30~34마다)
+   *  원인: ⏰ 고객 문의(xx:02·xx:30)·전체주문(xx:00) 뒤 올리기(taskUpload)·점수(taskScore)가 이 PC 고객 저장소(readnow-crm) 칸을 통째로 읽고(getAll),
+   *        그 읽기가 끝난 자리(onsuccess에서 풀린 약속 뒤 이어지는 일 — 크롬은 이것을 IDBRequest.onsuccess의 시간으로 셈)에서
+   *        올릴 문서 계산 뒷부분(문의·구매평·반품·판매자 1.5만 곳·문서 4만여 개 정리)과 문서 지문 비교(4만여 개)를 쉬지 않고 한 번에 함(1.89.142는 주문 칸만 나눴음)
+   *  고침(결과는 글자 하나까지 같음): ① 칸 읽기를 쪽(처음 200개 · 30ms 넘으면 줄이고 빠르면 늘림)으로 나눠 읽음 ② 큰 반복은 30ms마다 숨 돌림(일하는 워커 타이머 — 숨은 탭에서도 늦어지지 않음)
+   *  시험 src/tests/tLT1idb.js — 같은 자료로 한 번 일 최대 약 2,000ms → 50ms 아래 */
+  let coopT = 0; const COOP_MS = 30; /* 한 번에 쉬지 않고 일하는 최대 시간 — 근거: 크롬 '긴 작업' 기준 50ms보다 여유 있게 */
+  async function crmCoop(force) {
+    const n = performance.now(); if (!force && n - coopT < COOP_MS) return;
+    try { await sleep(0); } catch (e) { await new Promise((r) => setTimeout(r, 0)); } coopT = performance.now();
+  }
+  async function coopMap(arr, fn) {
+    const out = new Array(arr.length); for (let i = 0; i < arr.length; i++) { out[i] = fn(arr[i], i); if ((i & 7) === 7) await crmCoop(); } return out;
+  }
+  async function coopToMap(arr, fn) {
+    const m = new Map(); for (let i = 0; i < arr.length; i++) { const kv = fn(arr[i], i); if (kv) m.set(kv[0], kv[1]); if ((i & 63) === 63) await crmCoop(); } return m;
+  }
+  async function coopFilter(arr, fn) {
+    const out = []; for (let i = 0; i < arr.length; i++) { if (fn(arr[i], i)) out.push(arr[i]); if ((i & 7) === 7) await crmCoop(); } return out;
+  }
   const reqP = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
   const dbGet = (s, k) => reqP(db.transaction(s).objectStore(s).get(k));
-  const dbAll = (s) => reqP(db.transaction(s).objectStore(s).getAll());
+  const dbAll = async (s) => { const out = []; let lo, n = 200; /* (lt1) 쪽으로 나눠 읽음 — 열쇠(_key) 차례 그대로라 통째로 읽은 것과 같은 배열 */
+    for (;;) { const t0 = performance.now(); const part = await reqP(db.transaction(s).objectStore(s).getAll(lo === undefined ? null : IDBKeyRange.lowerBound(lo, true), n)); for (const x of part) out.push(x);
+      if (part.length < n) return out; lo = part[part.length - 1]._key; const dt = performance.now() - t0; n = dt < 10 ? Math.min(2000, n * 2) : dt > 25 ? Math.max(50, n >> 1) : n; await crmCoop(true); } };
   const dbCount = (s) => reqP(db.transaction(s).objectStore(s).count());
   const dbPutRaw = (s, objs) => new Promise((res, rej) => {
     const t = db.transaction(s, 'readwrite'); const st = t.objectStore(s);
@@ -1023,17 +1045,17 @@
     let yc = 0; const lines = await dbAll('orderLines'); const popups = new Map((await dbAll('popups')).map((p) => [p._key, p]));
     const returns = await dbAll('returns'); const qna = await dbAll('qnaDetail'); const reviews = await dbAll('reviews');
     const excel = await dbAll('excelLines'); const sheetRows = await dbAll('sheetRows'); const sellerRawAll = await dbAll('sellerRaw');
-    const byOrder = {}; lines.forEach((l) => { const k = `${l.kind}|${l.orderNo}`; (byOrder[k] = byOrder[k] || []).push(l); });
-    const saleOrders = new Set(lines.filter((l) => l.kind === 'sale').map((l) => l.orderNo));
-    const scmOrders = new Set(lines.map((l) => l.orderNo));
-    const exByOrder = {}; excel.forEach((x) => { if (x.orderNo) (exByOrder[x.orderNo] = exByOrder[x.orderNo] || []).push(x); });
+    const byOrder = {}; for (let i = 0; i < lines.length; i++) { const l = lines[i]; const k = `${l.kind}|${l.orderNo}`; (byOrder[k] = byOrder[k] || []).push(l); if ((i & 255) === 255) await crmCoop(); }
+    const saleOrders = new Set(lines.filter((l) => l.kind === 'sale').map((l) => l.orderNo)); await crmCoop();
+    const scmOrders = new Set(lines.map((l) => l.orderNo)); await crmCoop();
+    const exByOrder = {}; excel.forEach((x) => { if (x.orderNo) (exByOrder[x.orderNo] = exByOrder[x.orderNo] || []).push(x); }); await crmCoop();
     const docs = []; const orderDocs = [];
     const custIdOf = (p, ono) => (p && p.customerKey ? `aladin_${p.customerKey}` : `aladin_nokey_${ono}`);
     const retByOrder = {}; returns.forEach((r) => (retByOrder[r.orderNo] = retByOrder[r.orderNo] || []).push(r));
 
     // ① 샵매니저 주문 (+ 엑셀로 빈 개인정보 채움)
     for (const [k, ls] of Object.entries(byOrder)) {
-      if (++yc % 150 === 0) await sleep(0); /* (1.89.142) 주문 수천 건을 한 번에 돌며 화면을 12초 막던 것을 150건마다 숨 돌림 */
+      ++yc; await crmCoop(); /* (1.89.142) 주문 수천 건을 한 번에 돌며 화면을 12초 막던 것을 150건마다 숨 돌림 → (lt1) 건수 대신 30ms마다(느린 PC에서도 한 번 일이 짧게) */
       const [kind, ono] = k.split('|');
       if (kind === 'cancel' && saleOrders.has(ono)) continue;
       ls.sort((a, b) => (a.page - b.page) || (a.seq - b.seq));
@@ -1119,11 +1141,11 @@
     const phoneToCust = {};
     const notePhones = (o) => { const r = o.recipient || {}; const same = r.sameAsBuyer || (r.name && r.name === o.buyer.name);
       [o.buyer.phone1, o.buyer.phone2, same ? r.phone1 : null, same ? r.phone2 : null].filter(Boolean).forEach((ph) => { const k = ph.replace(/\D/g, ''); (phoneToCust[k] = phoneToCust[k] || new Set()).add(o.customerId); }); };
-    orderDocs.forEach(({ order }) => notePhones(order)); serverOrdersCache.forEach((o) => { if (o && o.buyer) notePhones(o); });
+    await crmCoop(); orderDocs.forEach(({ order }) => notePhones(order)); await crmCoop(); serverOrdersCache.forEach((o) => { if (o && o.buyer) notePhones(o); }); await crmCoop();
 
     // ② 엑셀에만 있는 주문 (수집 기간 밖, 예스24, 직접 판매)
     const exOnly = {}; excel.forEach((x) => { if (x.orderNo && scmOrders.has(x.orderNo)) return; const k = x.orderNo || `direct_${(x.orderedAt || '').slice(0, 16)}_${x.recipientName || x.buyerName || ''}`; (exOnly[k] = exOnly[k] || []).push(x); });
-    for (const [k, xs] of Object.entries(exOnly)) {
+    for (const [k, xs] of Object.entries(exOnly)) { await crmCoop();
       const x0 = xs[0]; const plat = x0.platform === 'unknown' ? 'aladin' : x0.platform;
       const idBase = String(k).replace(/[\/\s]/g, '_');
       const same = !!(x0.recipientName && x0.recipientName === x0.buyerName);
@@ -1153,17 +1175,17 @@
     const orderCust = {}; orderDocs.forEach(({ order }) => { if (order.orderNo) orderCust[order.orderNo] = order.customerId; });
     const qListMap = new Map((await dbAll('qnaList')).map((r) => [r._key, r]));
     // 답변여부: 샵매니저 묻고 답하기 목록의 행 5번째 칸(관리 버튼 앞)을 그대로 — 예: Yes, 취소된 질문
-    for (const q of qna) {
+    for (const q of qna) { await crmCoop();
       const cid = q.customerKey ? `aladin_${q.customerKey}` : null; const ql = qListMap.get(q._key) || {};
       docs.push({ col: 'crm_interactions', id: `aladin_qna_${q._key}`, data: { type: 'qna', platform: 'aladin', questionId: q._key, customerId: cid, orderId: q.orderNo ? `aladin_${q.orderNo}` : null,
         itemId: q.itemId, title: q.title, condition: q.condition, authorMasked: q.authorMasked, body: q.question, answer: q.answer, answerStatus: ql.answered ?? null, createdAt: q.createdDate, source: { scmCollectedAt: q.collectedAt } } });
     }
-    for (const r of reviews) {
+    for (const r of reviews) { await crmCoop();
       const cid = orderCust[r.orderNo] || null; const n = r._key.split('|').pop();
       docs.push({ col: 'crm_interactions', id: `aladin_review_${r.orderNo}_${hashStr(r._key).split(':')[0]}_${n}`, data: { type: 'review', platform: 'aladin', customerId: cid, orderId: `aladin_${r.orderNo}`,
         title: r.title, condition: r.condition, rating: r.rating, body: r.comment, authorMasked: r.authorMasked, createdAt: r.createdDate, source: { scmCollectedAt: r.collectedAt } } });
     }
-    for (const r of returns) {
+    for (const r of returns) { await crmCoop();
       docs.push({ col: 'crm_orderEvents', id: `aladin_return_${r.claimId}`, data: { type: 'return', platform: 'aladin', orderId: `aladin_${r.orderNo}`, customerId: orderCust[r.orderNo] || null,
         claimId: r.claimId, itemId: r.itemId, title: r.title, condition: r.condition, sku: r.sku, registeredAt: r.registeredAt, price: r.price, qty: r.qty, reason: r.reason, status: r.status, tab: r.tab,
         requestedAt: r.requestedAt, approvedAt: r.approvedAt, completedAt: r.completedAt, history: r.history, firstSeenAt: r.firstSeenAt, lastSeenAt: r.lastSeenAt } });
@@ -1172,7 +1194,7 @@
     // ④ 구글 시트 행 → 고객 연결 (확실한 것만 자동, 나머지는 '연결 대기')
     const idx = { phone: {}, email: {}, local: {}, name: {}, isbn: {}, title: {} };
     const addIdx = (m, k, cid) => { if (!k) return; (m[k] = m[k] || new Set()).add(cid); };
-    for (const order of [...orderDocs.map((x) => x.order), ...serverOrdersCache.filter((o) => o && o.buyer)]) {
+    for (const order of [...orderDocs.map((x) => x.order), ...serverOrdersCache.filter((o) => o && o.buyer)]) { await crmCoop();
       const cid = order.customerId; const r = order.recipient || {};
       [order.buyer.phone1, order.buyer.phone2, r.phone1, r.phone2].filter(Boolean).forEach((p) => addIdx(idx.phone, p.replace(/\D/g, ''), cid));
       if (order.buyer.email) { addIdx(idx.email, order.buyer.email.toLowerCase(), cid); addIdx(idx.local, order.buyer.email.split('@')[0].toLowerCase(), cid); }
@@ -1180,7 +1202,7 @@
       [order.buyer.name, r.name].filter(Boolean).forEach((n) => addIdx(idx.name, n.replace(/\(.*\)/, '').trim(), cid));
       order.items.forEach((it) => { addIdx(idx.isbn, it.isbn13, cid + '|' + (order.orderedAt || '')); addIdx(idx.title, normTitle(it.title), cid + '|' + (order.orderedAt || '')); });
     }
-    const qnaByTitle = {}; qna.forEach((q) => { if (q.customerKey && q.title) (qnaByTitle[normTitle(q.title)] = qnaByTitle[normTitle(q.title)] || []).push(q); });
+    await crmCoop(); const qnaByTitle = {}; qna.forEach((q) => { if (q.customerKey && q.title) (qnaByTitle[normTitle(q.title)] = qnaByTitle[normTitle(q.title)] || []).push(q); });
     const pending = [];
     // ── 판매자: 툴팁 데이터(판매자 번호 SC 기준) + 구글 시트(이름 기준, 우리 분류: 전문·개인·허위 매물)를 이름으로 합침
     {
@@ -1188,7 +1210,7 @@
       const normA = (a) => String(a || '').replace(/[\s,.()\-]/g, '').toLowerCase();
       const addrFull = {}; const addrMap = {};
       orderDocs.forEach(({ order }) => { const a = normA((order.recipient || {}).address); if (a.length > 12) { (addrFull[a] = addrFull[a] || new Set()).add(order.customerId); (addrMap[a.slice(0, 16)] = addrMap[a.slice(0, 16)] || new Set()).add(order.customerId); } });
-      const addrKeysByPrefix = {}; Object.keys(addrFull).forEach((a) => (addrKeysByPrefix[a.slice(0, 16)] = addrKeysByPrefix[a.slice(0, 16)] || []).push(a));
+      await crmCoop(); const addrKeysByPrefix = {}; Object.keys(addrFull).forEach((a) => (addrKeysByPrefix[a.slice(0, 16)] = addrKeysByPrefix[a.slice(0, 16)] || []).push(a));
       const linkOf = (f) => {
         const links = new Map(); const addL = (cid, why, level) => { const v = links.get(cid) || { reasons: [], level: 'suspect' }; v.reasons.push(why); if (level === 'match') v.level = 'match'; links.set(cid, v); };
         [f.phone, f.asPhone].filter(Boolean).forEach((ph) => { const k = String(ph).replace(/\D/g, ''); if (k.length >= 9) (idx.phone[k] || []).forEach((cid) => addL(cid, '전화번호 같음', 'match')); });
@@ -1207,10 +1229,10 @@
         if (f.owner) (idx.name[f.owner] || []).forEach((cid) => { if (links.has(cid)) addL(cid, '대표자 이름 같음', links.get(cid).level); });
         return [...links.entries()].map(([cid, v]) => ({ customerId: cid, reasons: uniq(v.reasons), level: v.level }));
       };
-      idx.localStem = {}; Object.entries(idx.local).forEach(([k2, set]) => { const st = k2.replace(/[\d*.]+$/, ''); if (st.length >= 5) set.forEach((cid) => addIdx(idx.localStem, st, cid)); });
+      await crmCoop(); idx.localStem = {}; Object.entries(idx.local).forEach(([k2, set]) => { const st = k2.replace(/[\d*.]+$/, ''); if (st.length >= 5) set.forEach((cid) => addIdx(idx.localStem, st, cid)); });
       const normName = (n) => String(n || '').split(/\n/)[0].replace(/\s+/g, '').replace(/(전문셀러|파워셀러|골드셀러|실버셀러|새내기셀러)$/, '').toLowerCase();
       const sheetS = sheetRows.filter((x) => x.type === 'seller'); const sheetByName = new Map(sheetS.map((x) => [normName(x.name), x])); const usedSheet = new Set();
-      for (const raw of sellerRawAll) {
+      await crmCoop(); for (const raw of sellerRawAll) { await crmCoop();
         const { lean, history } = tooltipSellerDocs(raw); const sh = sheetByName.get(normName(lean.name));
         if (sh) usedSheet.add(sh._key);
         const doc = { ...lean, ourGrade: sh ? sh.grade : null, sheet: sh ? { sheet: sh.sheet, sheetRow: sh.sheetRow, remark: sh.remark, rating6m: sh.rating6m, reviews6m: sh.reviews6m, bad6m: sh.bad6m, actualDays: sh.actualDays, lowPrice: sh.lowPrice, stock: sh.stock } : null };
@@ -1219,13 +1241,13 @@
         docs.push({ col: 'sellers', id: `sc_${raw._sc}`, data: doc });
         docs.push({ col: 'seller_history', id: `sc_${raw._sc}`, data: history });
       }
-      for (const s of sheetS) {
+      for (const s of sheetS) { await crmCoop();
         if (usedSheet.has(s._key)) continue;
         const { _key, importedAt, fileName, type, grade, ...rest } = s;
         docs.push({ col: 'sellers', id: `sheet_${_key.replace(/^seller_/, '')}`, data: (() => { const lc = linkOf(s); return { ...rest, ourGrade: grade, source: 'gsheet', linkedCustomers: lc, linkN: (lc || []).length }; })() });
       }
     }
-    for (const s of sheetRows.filter((x) => x.type !== 'seller')) {
+    for (const s of sheetRows.filter((x) => x.type !== 'seller')) { await crmCoop();
       const score = {};
 
  const why = {}; const add = (cid, n, w) => { score[cid] = (score[cid] || 0) + n; (why[cid] = why[cid] || []).push(w); };
@@ -1251,11 +1273,11 @@
       if (status === 'pending') pending.push(s._key);
     }
 
-    const inters = docs.filter((d) => d.col === 'crm_interactions').map((d) => d.data);
+    await crmCoop(); const inters = docs.filter((d) => d.col === 'crm_interactions').map((d) => d.data); await crmCoop();
     if (docs.some((d) => d.col === 'sellers')) { const SL = docs.filter((d) => d.col === 'sellers'); /* (1.89.158 🔬 정밀 점검 · 🧠) 전에는 여기서 setSellerLinks(…)가 2시간 증분 사본(selSrc)까지 버려 바로 뒤 고객 요약이 판매자 1.5만 명을 통째로 다시 읽었음(10/30 JS-MAIN 20:05·20:07·21:01 '판매자 연결 13초' — 1.89.143 증분 읽기가 매시 한 번도 성립하지 않은 까닭). 이제 올리는 판매자 문서를 사본에 덧씌우고(연결 있으면 넣고 없으면 뺌) 증분 읽기는 그대로 — 다음 loadSellerLinks는 바뀐 판매자만 받음 */ if (selSrc) SL.forEach((d) => { const x = d.data || {}; if ((x.linkedCustomers || []).length) selSrc.set(d.id, selLite(x)); else selSrc.delete(d.id); }); setSellerLinks(SL.map((d) => d.data), !!selSrc); if (selSrc) sellerLinksAt = 0; }
     if (!(opt && opt.noCust)) for (const c of aggregateCustomers(orderDocs.map((x) => x.order), inters)) docs.push({ col: 'crm_customers', id: c.customerId, data: c });
-    buildDocs.lastPending = pending.length;
-    return docs.map((d) => ({ ...d, data: clean(d.data) }));
+    buildDocs.lastPending = pending.length; await crmCoop();
+    return coopMap(docs, (d) => ({ ...d, data: clean(d.data) })); /* (lt1) 문서 4만여 개 정리(clean)를 나눠서 */
   }
 
   /* ── 엑셀·시트 파일 읽기 (브라우저 안에서만) ── */
@@ -1538,8 +1560,8 @@
       if (lb && lb.ver === APP_VER && lb.pv === P.VERSION && tB - lb.at < 2 * 3600e3 && tB >= lb.at && (!dt || dt.at < lb.at) && !pc0 && (lb.soc || 0) === serverOrdersCache.length) skipB = lb; } catch (e) { skipB = null; }
     if (skipB) log(`올릴 문서 계산 건너뜀 — ${Math.round((tB - skipB.at) / 60e3)}분 전 계산 뒤 이 PC에 바뀐 주문·문의·기록 없음 (2시간마다·바뀌면 다시 계산)`);
     const docs = skipB ? [] : (await buildDocs({ noCust: true })).filter((d) => d.col !== 'crm_customers'); // 고객 요약은 아래에서 Firebase 전체 데이터로 계산
-    const sent = skipB ? new Map() : new Map((await dbAll('uploaded')).map((u) => [u._key, u.hash]));
-    const todo = docs.filter((d) => sent.get(`${d.col}/${d.id}`) !== docHash(d));
+    const sent = skipB ? new Map() : await coopToMap(await dbAll('uploaded'), (u) => [u._key, u.hash]);
+    const todo = await coopFilter(docs, (d) => sent.get(`${d.col}/${d.id}`) !== docHash(d)); /* (lt1) 문서 지문 4만여 개 비교를 나눠서(같은 결과) */
     const pendingCust = new Set(((await dbGet('meta', 'pendingCustomers')) || { ids: [] }).ids); // 지난번에 다 못 한 고객 요약
     const pend0 = pendingCust.size; /* (1.89.136 4시간 점검) 이번 올리기가 아무것도 바꾸지 않았는지 — 아래 점수 전체 재계산을 건너뛸지 정할 때 씀 */
     if (!skipB) log(`올릴 문서 ${todo.length.toLocaleString()}개 (바뀐 것만), 다시 계산할 고객 요약은 올린 뒤 정해집니다`);
@@ -1689,9 +1711,9 @@
     const orders = []; os.forEach((d) => orders.push({ _id: d.id, ...d.data() })); const inters = []; is.forEach((d) => inters.push(d.data()));
     let upS = null, upN = 0; for (const a of [orders, inters]) for (const x of a) { const u = x && x.uploadedAt; if (u && typeof u.seconds === 'number' && typeof u.toMillis === 'function' && (upS == null || u.seconds > upS || (u.seconds === upS && (u.nanoseconds || 0) > upN))) { upS = u.seconds; upN = u.nanoseconds || 0; } } /* (1.89.138) 이번에 읽은 것 가운데 가장 늦은 서버 시각 — 다음 건너뛰기 판단은 이것보다 뒤에 적힌 것만 봄 */
     const custs = aggregateCustomers(orders, inters);
-    const sent = new Map((await dbAll('uploaded')).filter((u) => u._key.startsWith('crm_customers/')).map((u) => [u._key, u.hash]));
+    const sent = await coopToMap(await dbAll('uploaded'), (u) => (u._key.startsWith('crm_customers/') ? [u._key, u.hash] : null));
     const hashC = (c) => hashStr(stableStr(clean({ ...c, scores: { ...c.scores, day: undefined } })));
-    const todo0 = custs.filter((c) => sent.get(`crm_customers/${c.customerId}`) !== hashC(c));
+    const todo0 = await coopFilter(custs, (c) => sent.get(`crm_customers/${c.customerId}`) !== hashC(c)); /* (lt1) 고객 5천여 명 지문 비교를 나눠서 */
     /* (1.89.1) 이 PC가 전에 올린 것과 다를 때도 Firebase에 지금 있는 것과 같으면 쓰지 않음 — PC마다 기억이 달라(다른 PC가 이미 올림) 같은 내용을 PC 수만큼 다시 썼음 */
     const todo = []; const canon = (x) => JSON.stringify(x, (k, v) => (v && typeof v === 'object' && !Array.isArray(v) && !v.toMillis ? Object.keys(v).sort().reduce((o, kk) => { o[kk] = v[kk]; return o; }, {}) : v)); const FPid = FB.firestore.FieldPath.documentId(); const sameSkip = [];
     for (let i = 0; i < todo0.length; i += 30) { const part = todo0.slice(i, i + 30); let cur = new Map(); try { const qs = await fdb.collection('crm_customers').where(FPid, 'in', part.map((c) => c.customerId)).get(); qs.forEach((d) => cur.set(d.id, d.data())); } catch (e) { cur = null; }
