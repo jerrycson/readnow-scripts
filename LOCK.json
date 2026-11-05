@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "출고 화면·유심·관리도구·김미소 PDF·알라딘 매입 순이익 판정",
+ "since": "2026-11-05T05:12:43Z",
+ "beat": "2026-11-05T05:12:43Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T05:12:25Z"
  },
- "host": null
+ "host": "vm"
 }
