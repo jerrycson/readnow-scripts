@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.393 ☰ 단추",
- "since": "2026-11-05T11:50:48Z",
- "beat": "2026-11-05T11:50:48Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-05T11:49:14Z"
+  "at": "2026-11-05T12:09:24Z"
  },
- "host": "vm"
+ "host": null
 }
