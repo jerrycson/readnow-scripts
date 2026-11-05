@@ -1,2 +1,2 @@
-logs=1&pc=JS-MAIN&from=202611051219
-# 248048663
+doc=app_settings/alps_helpers,app_settings/pdiag_HOME,app_settings/pdiag_JS-MAIN
+# 311098144
