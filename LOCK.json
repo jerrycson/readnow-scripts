@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "송장 입력 빠르게·출고 준비 줄 고정·멈춤 기준 20·5",
+ "since": "2026-11-05T07:06:32Z",
+ "beat": "2026-11-05T07:06:32Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-05T06:44:14Z"
  },
- "host": null
+ "host": "vm"
 }
