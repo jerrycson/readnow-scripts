@@ -9,7 +9,7 @@ let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } 
 require('./harness.js')(async (p) => {
   await p.route(/cdnjs\.cloudflare\.com\/ajax\/libs\/xlsx\//, (r) => r.fulfill({ body: require('fs').readFileSync(__dirname + '/xlsx.full.min.js'), contentType: 'application/javascript' }));
   /* 가짜 ALPS 도우미(127.0.0.1:8898) — 시작 → 2번 묻고 나면 종이 확인 물음(첫 출력 뒤 한 번) → 답하면 끝 · 운송장 = 받는 분마다 하나 */
-  const H = { n: 0, run: null, body: null, bodies: [], inputs: [], polls: 0, printerBad: null, ver: '0.5.5', hist: [], results: {} };
+  const H = { n: 0, run: null, body: null, bodies: [], inputs: [], polls: 0, printerBad: null, ver: '0.5.6', hist: [], results: {} };
   const step = (st) => ['login', 'check', 'upload', 'print', 'verify', 'send'].map((k, i) => ({ k, l: k, st: i < st ? 'ok' : i === st ? 'run' : 'todo', pct: 50, d: '' }));
   await p.route(/^http:\/\/127\.0\.0\.1:8898\//, async (r) => { const u = new URL(r.request().url()); const J = (o) => r.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' }, body: JSON.stringify(o) });
     if (r.request().method() === 'OPTIONS') return r.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST' } });
@@ -25,8 +25,8 @@ require('./harness.js')(async (p) => {
     return J({ ok: false }); });
   p.on('dialog', (d) => d.accept());
   await p.evaluate(require('./seed.js')); await p.addScriptTag({ content: require('fs').readFileSync(__dirname + '/xlsx.full.min.js', 'utf8') });
-  await p.exposeFunction('__H', (k, v) => { if (k === 'printerBad') H.printerBad = v; if (k === 'hist') H.hist = v; if (k === 'run') H.run = v; return JSON.parse(JSON.stringify({ n: H.n, bodies: H.bodies.map((b) => ({ fileName: b.fileName, firstOne: b.firstOne, rows: b.rows.map((x) => x.ono + '|' + x.name) })), inputs: H.inputs })); });
-  const o = await p.evaluate(async () => { const o = {}; const W = (ms) => new Promise((r) => setTimeout(r, ms)); const FS = window.__FS; window.confirm = () => true; S.user = S.user || { email: 'tester@x' }; S.prodLoaded = true; S.app = S.app || {};
+  await p.exposeFunction('__H', (k, v) => { if (k === 'printerBad') H.printerBad = v; if (k === 'hist') H.hist = v; if (k === 'run') H.run = v; return JSON.parse(JSON.stringify({ n: H.n, bodies: H.bodies.map((b) => ({ fileName: b.fileName, firstOne: b.firstOne, paperCheck: b.paperCheck, rows: b.rows.map((x) => x.ono + '|' + x.name) })), inputs: H.inputs })); });
+  const o = await p.evaluate(async () => { const o = {}; const W = (ms) => new Promise((r) => setTimeout(r, ms)); const FS = window.__FS; window.confirm = () => true; S.user = S.user || { email: 'tester@x' }; S.prodLoaded = true; S.app = S.app || {}; S.app.oneShot = { invFirstTest: true, paperTest: true }; await db.collection('app_settings').doc('main').set({ oneShot: { invFirstTest: true, paperTest: true } }, { merge: true }); /* (11/06 오후) 이 시험 ①~⑧은 예전 시험(첫 건 시험·종이 확인)을 설정에서 켠 원스톱 — 기본(시험 없음)은 맨 끝 ⑨ */
     const untilA = async (f, ms) => until(async () => { const r = runDoc(); if (r.need && r.need.k === 'alps' && r.status === 'wait' && S.alps.ansFor !== ((S.alps.st || {}).id + ':' + r.need.nid)) await osAct('alps:바르게 나왔음'); return f(); }, ms); /* 묶음마다 첫 출력 뒤 종이 확인 한 번 — 답하면서 기다림 */
     const until = async (f, ms) => { const t0 = Date.now(); while (Date.now() - t0 < (ms || 60000)) { try { if (await f()) return true; } catch (e) {} await W(300); } return false; };
     const SH = window.ReadnowShipping; const td = SH.ymd(new Date()); const now = () => new Date().toISOString();
@@ -91,7 +91,7 @@ require('./harness.js')(async (p) => {
     await db.collection('shp_invoices').doc('live1').set({ createdAt: now(), status: 'running', beat: now(), claim: { pc: 'PC-T', at: now() }, items: [] });
     o.re1 = await osInvReclaim('dead1', 10); o.re2 = await osInvReclaim('live1', 10); o.reDoc = { st: FS.shp_invoices.dead1.status, n: FS.shp_invoices.dead1.reclaimN, item: FS.shp_invoices.dead1.items[0].state, claim: FS.shp_invoices.dead1.claim }; for (const k of ['dead1', 'live1']) await db.collection('shp_invoices').doc(k).set({ status: 'stopped' }, { merge: true }); await W(800);
     /* ⑤-2 진행 중 탭 닫힘을 원스톱이 알아채 다시 맡김 → 수집기가 다시 맡아 끝냄 */
-    S.app.oneShot = { invStaleMin: 10 }; await setShip([ord('A-05', '손님I', [{ listingId: '95', title: '보라 책', price: 5000, qty: 1, sku: 'PRPAAA' }])], [row('A-05', 'PRPAAA', '보라 책', '손님I')]);
+    S.app.oneShot = { invStaleMin: 10, invFirstTest: true, paperTest: true }; await db.collection('app_settings').doc('main').set({ oneShot: S.app.oneShot }, { merge: true }); await setShip([ord('A-05', '손님I', [{ listingId: '95', title: '보라 책', price: 5000, qty: 1, sku: 'PRPAAA' }])], [row('A-05', 'PRPAAA', '보라 책', '손님I')]);
     FC.mode = 'die'; const id3 = await window.shipOneShot(); await until(() => runDoc().need && runDoc().need.k === 'alps', 40000); await osAct('alps:바르게 나왔음');
     o.done3 = await untilA(() => runDoc().status === 'done', 90000); o.d4 = { log: (runDoc().log || []).map((x) => x.m).filter((m) => /소식이|다시 맡기기로/.test(m)), inv: ((runDoc().bt || [])[0] || {}).inv, reN: ((FS.shp_invoices || {})[((runDoc().bt || [])[0] || {}).invDoc] || {}).reclaimN };
     /* ⑦ 자정 넘기기 — 어제 날짜 실행이 열린 채(주인 소식 끊김) → 오늘 누르면 새로 만들지 않고 그 id로 이어받음 */
@@ -101,6 +101,9 @@ require('./harness.js')(async (p) => {
     await setShip([ord('A-06', '손님J', [{ listingId: '96', title: '회색 책', price: 5000, qty: 1, sku: 'GRYAAA' }])], [row('A-06', 'GRYAAA', '회색 책', '손님J')]); S.alps.keep = null; S.alps.opened = null; S.alps.chk = false; S.alps.st = null;
     await db.collection('app_settings').doc('main').set({ alpsInvAuto: { on: true } }, { merge: true }); S.app.alpsInvAuto = { ...(S.app.alpsInvAuto || {}), on: true }; const pr = await fetch('http://127.0.0.1:8898/alps/run', { method: 'POST', headers: { 'X-RN-Print': '1', 'Content-Type': 'application/json' }, body: JSON.stringify({ fileName: '판매완료' + td.replace(/-/g, '') + '.xlsx', b64: 'x', rows: [{ name: '손님J', title: '회색 책', sku: 'GRYAAA', ono: 'A-06' }] }) });
     const rid = (await pr.json()).run.id; await __H('run', { id: rid, fileName: 'x.xlsx', status: 'done', done: true, hasResult: true, steps: [], summary: {} }); await openShip(); o.post = await until(() => !!(FS.shp_invoices || {})['alps_' + rid] && ((FS.shp_invoices['alps_' + rid].items || [])[0] || {}).orderNo === 'A-06', 15000); o.postDbg = { rid, ls: localStorage.getItem('rn-alps-post-' + rid), H: Object.keys(FS.shp_invoices || {}), on: S.app.alpsInvAuto };
+    /* ⑨ (정범님 11/06 오후 '진정한 원스톱') 기본 = 첫 건 시험·종이 확인 없음 — 알라딘 맡김은 limit 0·verify 없음 · 도우미에 paperCheck false · 설정 칸 기본 끔 */
+    S.app.oneShot = {}; await db.collection('app_settings').doc('main').set({ oneShot: firebase.firestore.FieldValue.delete() }, { merge: true }); await W(300); S.app.oneShot = {}; o.def = { ft: osCfg().invFirstTest, pt: osCfg().paperTest, way: invSpeed().bulkWay }; o.defSet = /id="os_ift" >/.test(shipOneShotHtml()) && /id="os_ppt" >/.test(shipOneShotHtml());
+    { const rr = await alpsInvAuto({ byOrder: [{ orderNo: 'Z-91', invoice: '240000009991', status: 'ok', recipient: '손님A' }, { orderNo: 'Z-92', invoice: '240000009992', status: 'ok', recipient: '손님A' }] }, 'x', 'def_run', { force: true }); const dd = (FS.shp_invoices || {}).alps_def_run || {}; o.defInv = { rr, limit: dd.limit, verify: dd.verify, way: (dd.speed || {}).bulkWay, log: ((dd.log || [])[0] || {}).m || '' }; }
     o.guide = JSON.stringify((typeof pgdDefs === 'function' ? pgdDefs().ship : null) || '').includes('원스톱');
     return o; });
   console.log(JSON.stringify({ p0: o.p0, H: o.H, inv1: o.inv1 }).slice(0, 1500)); if (process.env.DBG) console.log(JSON.stringify({ vf: o.vfail, vfNeed: o.vfNeed, vfInv: o.vfInvPaused, vfBtn: o.vfBtnShip, login: o.login, ln: o.loginNeed, relog: o.relogBtn, d3: o.d3, d4: o.d4, post: o.post, pd: o.postDbg }));
@@ -108,6 +111,9 @@ require('./harness.js')(async (p) => {
   ok(/시작 전 점검 — 안 되는 것 1가지/.test(o.box1) && o.shl1, '① 원스톱 칸에 빨간 사람 몫 + 🛰 지금 실행 중 한 줄(shp_runs)');
   ok(o.waitPaper && /종이 확인/.test(o.alpsNeed.msg) && o.alpsNeed.soft && o.paperBtn, '② 종이 확인은 첫 출력 뒤 한 번 — 원스톱 칸 단추로 답함(기다림 = 멈춤 아님)');
   ok(o.H.bodies[0] && o.H.bodies[0].firstOne === false && o.H.bodies[0].rows.some((x) => /^현금-cash_a\|/.test(x)) && o.H.bodies[0].rows.some((x) => /^Y2611040001\|/.test(x)) && o.H.bodies[0].rows.filter((x) => /^A-0[12]\|/.test(x)).length === 2, '② 묶음 1 = 알라딘 2 + 현금 1 + 예스24 1 · 첫 출력 일괄(firstOne 끔) · 확인 창 없이 ' + JSON.stringify(o.H.bodies[0]));
+  ok(o.def && o.def.ft === false && o.def.pt === false && o.def.way === 'csv' && o.defSet, '⑨ 기본: 첫 건 시험·종이 확인 끔 · 여러 건 길 csv · 설정 칸 둘 다 안 켜짐 ' + JSON.stringify(o.def));
+  ok(o.defInv && o.defInv.rr === 'made' && o.defInv.limit === 0 && o.defInv.verify === false && o.defInv.way === 'csv' && /처음부터 📄 CSV 일괄등록/.test(o.defInv.log), '⑨ 기본 알라딘 맡김: limit 0 · verify 없음 · 처음부터 CSV ' + JSON.stringify(o.defInv));
+  ok(o.H.bodies[0] && o.H.bodies[0].paperCheck === true, '② 종이 확인을 켠 설정이면 도우미에 paperCheck true를 넘김');
   ok(o.inv1.limit0 === 0 && o.inv1.verify && o.inv1.autoCont === true && o.inv1.from === 'oneshot' && o.inv1.n === 2 && o.inv1.st === 'done' && o.inv1.verified, '② 알라딘 송장: 1건 넣고 자동 검증 → 저절로 나머지 → 끝(사람 없이)');
   ok(o.cashA && o.cashA.no && o.y24 && o.y24.state === 'done' && o.y24.confirm === false && o.Y24C.length === 1, '② 현금 송장 기록 · 예스24 첫 건 발송처리(설정 켬 → [▶ 이대로 실행] 없이) 끝');
   ok(o.cashLine && o.d2.bt.length === 1 && o.sess1.pendLeft >= 1 && o.sess1.endLine && o.sess1.noP1 && !o.sess1.cashB0, '② 진행 중 저장한 현금 판매 → 한 줄 알림 → 이번 세션에 섞지 않고 끝(저절로 다음 묶음 없음 · 남은 주문 ' + o.sess1.pendLeft + '건) ' + JSON.stringify(o.sess1));

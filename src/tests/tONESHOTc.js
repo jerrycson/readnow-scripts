@@ -77,7 +77,7 @@ async function run(name, o) { const F = fakeFb(); const GM = new Map(); const id
     ok(T.ymdK() === today && !(T.jobOpen() && T.jobOpen().id === j.id), '고정을 풀면 오늘 — 어제 묶음은 오늘 칸에 없음'); T.dayPin('20261103'); ok(T.jobOpen() && T.jobOpen().id === j.id, '자정 넘겨 이어 해도 그 일의 날짜로 열린 묶음을 찾음'); T.dayPin(null);
     const as = fs.readFileSync(ALPS, 'utf8'); ok(/RUN\.day = job\.day && \/\^\\d\{8\}\$\/\.test/.test(as) && /day: RUN\.day \}\);/.test(as) && /DAY_PIN = \(RUN && RUN\.day\) \|\| ymdNow\(\)/.test(as) && /BROWSER = null; DAY_PIN = null;/.test(as), '시작할 때 날짜를 정해 마지막 일 파일에 남김 · 이어서 하면 그 날짜 · 끝나면 풂');
     ok(/const pc = await printerCheck\(c\.printer\); if \(pc\.bad\) throw/.test(as) && as.indexOf('printerCheck(c.printer)') < as.indexOf("`${pick.length}줄 출력 — 미리보기 여는 중`"), '인쇄 보내기 직전 프린터 확인 — 이상하면 보내지 않고 멈춤');
-    ok(/const VERSION = '0\.5\.5'/.test(as), 'ALPS 도우미 판 0.5.5'); }
+    ok(/const VERSION = '0\.5\.[5-9]'/.test(as), 'ALPS 도우미 판 0.5.5 이상(0.5.6 = 일마다 종이 확인)'); }
   { const ps = fs.readFileSync(PRINT, 'utf8'); ok(/function selfUpdate\(\) \{ if \(alpsBusy\(\)\) \{[^}]*setTimeout\(selfUpdate, UPD_RETRY_MS\); return; \}/.test(ps) && /if \(alpsBusy\(\)\) \{ log\(`새 판 \$\{v\} 받음 — ALPS 처리 중이라/.test(ps), '인쇄 도우미: ALPS 처리 중엔 스스로 새 판으로 바꾸며 꺼지지 않음(10분 뒤 다시)');
     ok(/if \(alpsBusy\(\)\) \{ setTimeout\(alpsUpdate, UPD_RETRY_MS\); return; \}/.test(ps) && /p === 'pcheck'/.test(ps) && /p === 'update'/.test(ps), 'ALPS 모듈 바꾸기도 10분 뒤 다시 · /alps/pcheck(프린터 상태) · /alps/update(지금 새 판)');
     const chk = cpx.spawnSync(process.execPath, ['--check', PRINT]); ok(chk.status === 0, '인쇄 도우미 문법'); }
