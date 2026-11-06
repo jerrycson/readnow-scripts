@@ -66,11 +66,21 @@ async function loadCore(force) { if (!force && CORE.src.length && now() - CORE.a
 const ST = { opens: [], shown: false, open: false, rect: null, busy: false, msg: '', reads: [], reading: null, lastWin: null, timers: [], hwinOpen: false };
 const opensHour = () => { ST.opens = ST.opens.filter((t) => now() - t < 3600e3); return ST.opens.length; };
 let B = null;
-function newBrowser() { return new Browser({ exe: chromeExe(), profile: path.join(HOME, WORK_MARK), headless: !!CFG.headless, rect: { x: -32000, y: 40, w: W('hideW'), h: W('hideH') } }); }
+function newBrowser() { return new Browser({ exe: chromeExe(), profile: path.join(HOME, WORK_MARK), headless: !!CFG.headless, rect: { x: -32000, y: 40, w: W('hideW'), h: W('hideH') }, stale: () => WIN.run('kill', WORK_MARK) }); }
+/* (0.1.2) 크롬 띄우기 기록 — 바로 꺼진 까닭(종료 코드·마지막 줄)을 상태(웹앱 col2_ctl·상태 창)에 남김 */
+const CH = { fails: 0, last: null, okAt: 0, coolUntil: 0, cools: 0 };
+const coolMs = () => (TEST && CFG.watch && +CFG.watch.coolMs > 0 ? +CFG.watch.coolMs : W('coolMin') * 60e3);
+const hm = (ms) => kst(ms).slice(11, 16);
 let LAUNCHING = null; /* 띄우는 중에는 같은 약속을 나눠 받음 — 지킴이와 단추가 동시에 두 벌 띄우지 않게 */
-function ensureBrowser(why) { if (B && B.alive()) return Promise.resolve(B); if (LAUNCHING) return LAUNCHING; if (opensHour() >= W('opensPerHour')) return Promise.reject(new Error(`한 시간에 ${W('opensPerHour')}번 넘게 다시 띄워 쉼 — 크롬을 확인하세요`));
+/* (0.1.2 정범님 11/06) 한 시간 상한(4번)에 걸리면 그냥 '쉼'이 아니라 원인(마지막 종료 코드·마지막 줄)을 남기고 30분(coolMin) 뒤 다시 해 봄 — 그때 횟수를 새로 셈 */
+function ensureBrowser(why) { if (B && B.alive()) return Promise.resolve(B); if (LAUNCHING) return LAUNCHING;
+  let gone = Promise.resolve(); if (B && B.orphan()) { note('조종 연결만 끊긴 번외 크롬을 닫고 새로 띄움(같은 프로필을 쥔 채 남지 않게)'); const op = B.proc; B.kill(); gone = new Promise((r) => { if (op.exitCode != null || op.signalCode != null) return r(); const t = setTimeout(r, 6000); op.once('exit', () => { clearTimeout(t); setTimeout(r, 300); }); }); }
+  if (CH.coolUntil && now() >= CH.coolUntil) { CH.coolUntil = 0; ST.opens = []; note(`${W('coolMin')}분 쉼이 끝나 번외 크롬을 다시 띄워 봄`); }
+  if (opensHour() >= W('opensPerHour') || CH.coolUntil) { if (!CH.coolUntil) { CH.coolUntil = now() + coolMs(); CH.cools++; note(`한 시간에 ${W('opensPerHour')}번 넘게 다시 띄워 ${W('coolMin')}분 쉼 — 원인: ${CH.last ? CH.last.why : '모름'}`); }
+    return Promise.reject(new Error(`한 시간에 ${W('opensPerHour')}번 넘게 다시 띄워 ${W('coolMin')}분 쉼(${hm(CH.coolUntil)}에 다시) — 원인: ${CH.last ? CH.last.why : '모름'}`)); }
   const b = newBrowser(); B = b; ST.opens.push(now()); ST.shown = false; note(`번외 작업 창을 띄움 — ${why || ''} (최근 한 시간 ${opensHour()}번째 · ${CFG.headless ? '화면 없음' : '화면 밖 창'})`);
-  LAUNCHING = b.launch().then(() => { if (!CFG.headless) placeSoon(); return b; }).finally(() => { LAUNCHING = null; }); return LAUNCHING; }
+  LAUNCHING = gone.then(() => b.launch()).then(() => { CH.okAt = now(); if (b.freed && (b.freed.closed || b.freed.killed)) note(`같은 프로필을 쥔 옛 번외 크롬 ${b.freed.closed + b.freed.killed}개를 먼저 닫고 띄움`); if (!CFG.headless) placeSoon(); return b; },
+    (e) => { CH.fails++; CH.last = { at: kst(), why: e.message, code: b.exit ? b.exit.code : null, signal: b.exit ? b.exit.signal : null, tail: b.exit ? b.exit.tail : null, ms: b.exit ? b.exit.ms : null }; note(e.message); throw e; }).finally(() => { LAUNCHING = null; }); return LAUNCHING; }
 function placeSoon() { let k = 0; const t = setInterval(async () => { k++; if (k > 20 || !CFG.on || ST.shown) return clearInterval(t); const r = await WIN.run('hide', WORK_MARK, { w: W('hideW'), h: W('hideH'), place: CFG.place }); if (r.ok && r.n > 0) { ST.open = true; clearInterval(t); note('작업 창을 화면 밖으로 옮기고 작업 표시줄에서 숨김'); } }, TEST ? 400 : 3000); ST.timers.push(t); }
 async function closeBrowser(why) { ST.closing = true; try { if (LAUNCHING) await LAUNCHING.catch(() => {}); } finally {} if (B) { await B.close(); note(`번외 작업 창을 닫음 — ${why || ''}`); } B = null; ST.open = false; ST.shown = false; ST.closing = false; }
 
@@ -113,7 +123,7 @@ const statusWin = (why) => appWin('status', why);
  *  · 비교 화면이 부탁한 운영 문서(prd_ids·prd_books — 읽기만 · 그 밖 칸은 거절)를 읽어 넘기고
  *  · 비교 화면이 맡긴 결과(col2_* 칸만)를 대신 씀 → 다 쓰면 지움(ack) · 못 쓴 것은 남겨 두고 다음에 다시(까닭 코드를 화면에 보임)
  * 맡긴 결과는 파일(relay-out.json)에 남겨 도우미가 다시 켜져도 잃지 않음 */
-const RC = { ...{ READ_OK: ['prd_ids', 'prd_books'], idleSec: 30, hotSec: 2, gotMin: 10, outMax: 5000, poolN: 1000, poolLow: 50, poolDayH: 24 }, ...(COL2.RELAY || {}) };
+const RC = { ...{ READ_OK: ['prd_ids', 'prd_books'], idleSec: 30, hotSec: 2, gotMin: 10, outMax: 5000, poolN: 1000, poolLow: 50 }, ...(COL2.RELAY || {}) };
 const RELAY_F = path.join(HOME, 'relay-out.json');
 const RL = { want: new Map(), got: new Map(), sampleN: 0, sample: null, out: (() => { try { const v = JSON.parse(fs.readFileSync(RELAY_F, 'utf8')); return Array.isArray(v) ? v : []; } catch (e) { return []; } })(), pullAt: 0, pullBy: '', ackAt: 0, ackN: 0, err: null, errAt: 0, pageAt: 0 };
 const saveOut = () => { try { fs.writeFileSync(RELAY_F, JSON.stringify(RL.out)); } catch (e) { log('맡긴 결과 저장 실패: ' + e.message); } };
@@ -131,11 +141,11 @@ function relayPut(o) { const c = String(o.c || ''); if (!c.startsWith(COL2.PREFI
   RL.pageAt = now(); const k = 'o' + now().toString(36) + Math.random().toString(36).slice(2, 8); RL.out.push({ k, c, id, v: o.v == null ? {} : o.v, merge: !!o.merge, at: now() }); saveOut(); return { code: 200, body: { ok: true, k, relay: relaySum() } }; }
 function relayPending(by) { RL.pullAt = now(); RL.pullBy = String(by || '').slice(0, 80);
   const poolAsk = AU.poolAskAt && now() - AU.poolAskAt < 10 * 60e3 ? 0 : poolNeed(); if (poolAsk) AU.poolAskAt = now();
-  return { ok: true, pool: poolAsk, want: [...RL.want.values()].slice(0, 40).map(({ c, id }) => ({ c, id })), sample: RL.sample ? 0 : RL.sampleN, fields: PROD_FIELDS, out: RL.out.slice(0, 25), hot: now() - RL.pageAt < 120e3, idleSec: RC.idleSec, hotSec: RC.hotSec, pc: CFG.pc || null, pcSrc: CFG.pcSrc || null }; }
+  return { ok: true, pool: poolAsk, poolAfter: AU.lap.after || null, poolLap: AU.lap.n, want: [...RL.want.values()].slice(0, 40).map(({ c, id }) => ({ c, id })), sample: RL.sample ? 0 : RL.sampleN, fields: PROD_FIELDS, out: RL.out.slice(0, 25), hot: now() - RL.pageAt < 120e3, idleSec: RC.idleSec, hotSec: RC.hotSec, pc: CFG.pc || null, pcSrc: CFG.pcSrc || null }; }
 function relayAnswer(o) { let n = 0; for (const d of Array.isArray(o.docs) ? o.docs.slice(0, 200) : []) { const c = String(d && d.c || ''), id = String(d && d.id || ''); if (!RC.READ_OK.includes(c) || !RID.test(id)) continue; const k = c + '/' + id; RL.got.set(k, { v: d.v == null ? null : d.v, at: now() }); RL.want.delete(k); n++; }
   while (RL.got.size > 600) RL.got.delete(RL.got.keys().next().value);
   if (Array.isArray(o.sample)) { RL.sample = { list: o.sample.slice(0, 60).filter((b) => b && RID.test(String(b.id || ''))), at: now() }; RL.sampleN = 0; n++; }
-  if (Array.isArray(o.pool)) { const L = o.pool.filter((b) => b && RID.test(String(b.id || '')) && /^\d{1,13}$/.test(String(b.aladinItemId || ''))).map((b) => ({ itemId: String(b.aladinItemId), bookId: String(b.id), prod: b })); if (L.length) { AU.pool = L; AU.cur = 0; AU.poolAt = now(); AU.poolAskAt = 0; savePool(); note(`웹앱이 표본 목록 ${L.length}권을 넘김 — 차례로 그림자 읽기`); n++; } }
+  if (Array.isArray(o.pool)) { if (poolTake(o)) n++; }
   if (o.err) { RL.err = String(o.err).slice(0, 200); RL.errAt = now(); } return { ok: true, n }; }
 function relayAck(o) { const ks = new Set(Array.isArray(o.keys) ? o.keys.map(String) : []); const b = RL.out.length; RL.out = RL.out.filter((x) => !ks.has(x.k)); const done = b - RL.out.length;
   const errs = o.errs && typeof o.errs === 'object' ? Object.values(o.errs).map(String) : []; if (errs.length) { RL.err = errs[0].slice(0, 200); RL.errAt = now(); } else if (done) RL.err = null;
@@ -153,7 +163,7 @@ function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const out = { 
   return ch; }
 
 function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen,
-  opens: opensHour(), msg: ST.msg, reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: LOGS.slice(-15), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
+  opens: opensHour(), chrome: { fails: CH.fails, last: CH.last, okAt: CH.okAt ? kst(CH.okAt) : null, coolUntil: CH.coolUntil ? kst(CH.coolUntil) : null, cools: CH.cools }, msg: ST.msg, reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: LOGS.slice(-15), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
 
 /* ── 그림자 읽기 ── */
 async function readProduct(o) { const id = String(o.itemId || '').trim(); if (!/^\d{1,13}$/.test(id)) return { code: 400, body: { ok: false, err: '상품 번호(ItemId)가 이상함' } };
@@ -177,14 +187,34 @@ async function readProduct(o) { const id = String(o.itemId || '').trim(); if (!/
  *  · 웹앱이 닫혀 있어도 계속 읽고 결과는 relay-out.json에 쌓음 → 웹앱이 다시 열리면 올림 · 하루 요약은 col2_runs/auto_<날짜> */
 const AC = { on: true, nightOn: true, nightFrom: 1, nightTo: 5, ...(COL2.AUTO || {}) };
 const POOL_F = path.join(HOME, 'pool.json');
-const AU = (() => { let v = {}; try { v = JSON.parse(fs.readFileSync(POOL_F, 'utf8')) || {}; } catch (e) {} return { pool: Array.isArray(v.pool) ? v.pool : [], cur: +v.cur || 0, poolAt: +v.poolAt || 0, day: v.day && v.day.d ? v.day : { d: '', n: 0, same: 0, diff: 0, no: 0, fail: 0 }, poolAskAt: 0, nextAt: 0, msg: '', last: v.last || null, t: null, running: false }; })();
-function savePool() { try { fs.writeFileSync(POOL_F, JSON.stringify({ pool: AU.pool, cur: AU.cur, poolAt: AU.poolAt, day: AU.day, last: AU.last })); } catch (e) { log('표본 목록 저장 실패: ' + e.message); } }
+/* (0.1.2 정범님 11/06 '당연히 표본을 늘려야 — 같은 책을 다시 읽어서 얻는 게 뭐가 있어?') 표본 = 운영 prd_books 전체(2.6만 권 안팎)를 한 바퀴씩
+ *  · 웹앱이 문서 이름 차례(documentId)로 1,000권씩 이어 넘김 — 도우미가 '어디까지 받았나'(lap.after = 마지막 문서 이름)를 pool.json 차례표에 적고 다음 묶음은 그 뒤부터 부탁
+ *  · 한 번 읽은 책은 한 바퀴를 다 돌 때까지 다시 읽지 않음(남은 책이 50권 아래면 다음 1,000권을 미리 부탁해 뒤에 붙임 · 같은 상품 번호는 빼고 붙임)
+ *  · 웹앱이 '끝(poolEnd)'이라 하면 그 묶음까지 읽고 다음 바퀴(lap.n+1)를 처음부터 · 예전 웹앱(이어 넘김을 모름)이 넘긴 무작위 표본은 남은 책이 없을 때만 받음
+ *  · 표본 목록(pool.json · 1,000권 · 크다)은 바뀔 때만 쓰고, 읽은 자리·오늘 셈(pool-at.json · 작다)은 한 권마다 씀 */
+const POOL_AT_F = path.join(HOME, 'pool-at.json');
+const AU = (() => { let v = {}, a = null; try { v = JSON.parse(fs.readFileSync(POOL_F, 'utf8')) || {}; } catch (e) {} try { a = JSON.parse(fs.readFileSync(POOL_AT_F, 'utf8')) || null; } catch (e) {} const x = a || v; const lap = x.lap && typeof x.lap === 'object' ? x.lap : {};
+  return { pool: Array.isArray(v.pool) ? v.pool : [], cur: +x.cur || 0, poolAt: +v.poolAt || 0, day: x.day && x.day.d ? x.day : { d: '', n: 0, same: 0, diff: 0, no: 0, fail: 0 }, lap: { n: +lap.n || 1, after: lap.after || null, end: !!lap.end, read: +lap.read || 0, got: +lap.got || 0, at: lap.at || null, done: Array.isArray(lap.done) ? lap.done.slice(-5) : [] }, poolAskAt: 0, nextAt: 0, msg: '', last: x.last || null, t: null, running: false }; })();
+function savePos() { try { fs.writeFileSync(POOL_AT_F, JSON.stringify({ cur: AU.cur, day: AU.day, last: AU.last, lap: AU.lap })); } catch (e) { log('읽은 자리 저장 실패: ' + e.message); } }
+function savePool() { try { fs.writeFileSync(POOL_F, JSON.stringify({ pool: AU.pool, poolAt: AU.poolAt, n: AU.pool.length })); } catch (e) { log('표본 목록 저장 실패: ' + e.message); } savePos(); }
+/* 웹앱이 넘긴 표본 묶음 받기 — 이어 넘김(poolFor = 우리가 부탁한 자리)이 맞을 때만 뒤에 붙임 · 아니면(늦게 온 옛 답) 버림 */
+function poolTake(o) { const L0 = o.pool.filter((b) => b && RID.test(String(b.id || '')) && /^\d{1,13}$/.test(String(b.aladinItemId || ''))).map((b) => ({ itemId: String(b.aladinItemId), bookId: String(b.id), prod: b }));
+  const paged = Object.prototype.hasOwnProperty.call(o, 'poolFor');
+  if (paged) { if ((o.poolFor || null) !== (AU.lap.after || null) || (o.poolLap != null && +o.poolLap !== AU.lap.n)) { note('늦게 온 표본 묶음은 버림(이미 다음 자리를 받음)'); return false; }
+    const rest = AU.pool.slice(AU.cur); const have = new Set(rest.map((b) => b.itemId)); const add = L0.filter((b) => !have.has(b.itemId) && have.add(b.itemId));
+    AU.pool = rest.concat(add); AU.cur = 0; AU.poolAt = now(); AU.poolAskAt = 0; AU.lap.got += add.length; if (!AU.lap.at) AU.lap.at = kst();
+    const nx = String(o.poolNext || (o.pool.length ? o.pool[o.pool.length - 1].id : '') || ''); if (nx && RID.test(nx)) AU.lap.after = nx; AU.lap.end = !!o.poolEnd || (!nx && !o.pool.length);
+    savePool(); note(`웹앱이 표본 ${add.length}권을 이어 넘김(${AU.lap.n}바퀴 · 이번 바퀴 받은 것 ${AU.lap.got}권${AU.lap.end ? ' · 이 묶음이 끝' : ''}) — 차례로 그림자 읽기`); return true; }
+  if (!L0.length || poolLeft() > 0) return false; /* 예전 웹앱의 무작위 표본 — 남은 책이 있으면 받지 않음(다시 읽기 막음) */
+  AU.pool = L0; AU.cur = 0; AU.poolAt = now(); AU.poolAskAt = 0; savePool(); note(`웹앱이 표본 목록 ${L0.length}권을 넘김(예전 웹앱 · 무작위) — 차례로 그림자 읽기`); return true; }
+/* 한 바퀴 끝 → 다음 바퀴(처음부터) */
+function lapNext() { const L = AU.lap; L.done = (L.done || []).concat([{ n: L.n, read: L.read, from: L.at, to: kst() }]).slice(-5); note(`표본 ${L.n}바퀴를 다 돎(${L.read}권 읽음) — 처음부터 다음 바퀴`); AU.lap = { n: L.n + 1, after: null, end: false, read: 0, got: 0, at: null, done: L.done }; AU.pool = []; AU.cur = 0; AU.poolAskAt = 0; savePool(); }
 const kday = (t) => new Date((t || now()) + 9 * 3600e3).toISOString().slice(0, 10);
 const kHour = () => new Date(now() + 9 * 3600e3).getUTCHours();
 const autoOn = () => CFG.auto == null ? AC.on !== false : CFG.auto !== false;
 const nightOn = () => CFG.nightOn == null ? AC.nightOn !== false : CFG.nightOn !== false;
 const poolLeft = () => Math.max(0, AU.pool.length - AU.cur);
-function poolNeed() { if (!autoOn()) return 0; if (poolLeft() < RC.poolLow || now() - AU.poolAt > RC.poolDayH * 3600e3) return RC.poolN; return 0; }
+function poolNeed() { if (!autoOn()) return 0; if (AU.lap.end) { if (poolLeft() > 0) return 0; lapNext(); } return poolLeft() < RC.poolLow ? RC.poolN : 0; } /* (0.1.2) 하루 지나면 새 표본으로 갈아끼우던 것을 없앰 — 갈아끼우면 남은 책을 버리고 같은 책을 다시 읽게 됨 */
 const untilKstMidnight = () => { const t = now() + 9 * 3600e3; return 86400e3 - (t % 86400e3); };
 /* 같은 문서를 아직 안 올렸으면 새 값으로 바꿔 끼움(하루 요약이 쌓이지 않게) */
 function outReplace(c, id, v, merge) { const i = RL.out.findIndex((x) => x.c === c && x.id === id); const it = { k: 'o' + now().toString(36) + Math.random().toString(36).slice(2, 8), c, id, v, merge: !!merge, at: now() }; if (i >= 0) RL.out[i] = it; else RL.out.push(it); saveOut(); }
@@ -193,23 +223,23 @@ async function autoStep() {
   if (!autoOn()) { AU.msg = '자동 읽기 꺼 둠(설정 auto)'; return 30e3; }
   const h = kHour(); if (!nightOn() && h >= AC.nightFrom && h < AC.nightTo) { AU.msg = `새벽 ${AC.nightFrom}~${AC.nightTo}시 쉼(설정 nightOn 꺼짐)`; return 10 * 60e3; }
   if (ST.reading) return 3000;
-  if (!AU.pool.length) { AU.msg = '표본 목록을 기다림 — 이 PC에서 리드나우 웹앱(로그인된 것)을 열어 두면 넘겨받음'; return 15e3; }
+  if (AU.cur >= AU.pool.length && AU.lap.end && AU.pool.length) lapNext();
+  if (AU.cur >= AU.pool.length) { AU.msg = AU.pool.length ? `다음 ${num(RC.poolN, 1, 5000, 1000).toLocaleString()}권을 기다림(${AU.lap.n}바퀴 · 지금까지 ${AU.lap.read}권) — 이 PC에서 리드나우 웹앱(로그인된 것)이 이어 넘김` : '표본 목록을 기다림 — 이 PC에서 리드나우 웹앱(로그인된 것)을 열어 두면 넘겨받음'; return 15e3; }
   if (RL.out.length >= RC.outMax) { AU.msg = `올리지 못한 결과가 ${RL.out.length}건 — 웹앱이 열릴 때까지 쉼`; return 60e3; }
   const c = PACE.check(); if (!c.ok) { AU.msg = c.why + (c.retryMs == null ? ' — 다음 날 이어감' : ''); return c.retryMs == null ? untilKstMidnight() + 30e3 : Math.min(c.retryMs + 500, 30 * 60e3); }
   if (c.waitMs > 0) { AU.msg = '자동으로 도는 중'; return c.waitMs + 50; }
-  if (AU.cur >= AU.pool.length) AU.cur = 0; /* 다 돌면 처음부터 */
   const it = AU.pool[AU.cur]; AU.cur++; const d = kday(); if (AU.day.d !== d) AU.day = { d, n: 0, same: 0, diff: 0, no: 0, fail: 0 };
   const r = await readProduct({ itemId: it.itemId }); const b = r.body || {};
-  if (r.code !== 200 || !b.ok) { if (b.paced || r.code === 503 || r.code === 409 || r.code === 429) { AU.cur--; savePool(); AU.msg = '잠깐 쉼 — ' + (b.err || b.why || r.code); return r.code === 503 ? 10e3 : 5000; } /* 작업 창 준비 중·읽는 중이면 그 책을 다시(셈하지 않음) */ AU.day.n++; AU.day.fail++; AU.last = { at: kst(), itemId: it.itemId, ok: false, why: b.why || b.err || null }; }
-  else { const sh = CMP.pickPage(b.page, COL2.BOOK_FIXED); const cmp = CMP.compareBook(it.prod || null, sh, COL2.BOOK_FIXED); AU.day.n++; AU.day[cmp.verdict === 'same' ? 'same' : cmp.verdict === 'noprod' ? 'no' : 'diff']++;
+  if (r.code !== 200 || !b.ok) { if (b.paced || r.code === 503 || r.code === 409 || r.code === 429) { AU.cur--; savePos(); AU.msg = '잠깐 쉼 — ' + (b.err || b.why || r.code); return r.code === 503 ? 10e3 : 5000; } /* 작업 창 준비 중·읽는 중이면 그 책을 다시(셈하지 않음) */ AU.day.n++; AU.day.fail++; AU.lap.read++; AU.last = { at: kst(), itemId: it.itemId, ok: false, why: b.why || b.err || null }; }
+  else { const sh = CMP.pickPage(b.page, COL2.BOOK_FIXED); const cmp = CMP.compareBook(it.prod || null, sh, COL2.BOOK_FIXED); AU.day.n++; AU.lap.read++; AU.day[cmp.verdict === 'same' ? 'same' : cmp.verdict === 'noprod' ? 'no' : 'diff']++;
     outReplace('col2_books', it.bookId || 'itemId_' + it.itemId, { itemId: it.itemId, bookId: it.bookId || null, at: new Date().toISOString(), runId: 'auto_' + d, auto: true, page: sh, coreVer: b.coreVer || null, alVer: b.alVer || null, helperVer: VERSION, pc: CFG.pc || os.hostname(), ms: b.ms || null, cmp: { verdict: cmp.verdict, n: cmp.n, diffFields: cmp.diffFields } });
     AU.last = { at: kst(), itemId: it.itemId, ok: true, verdict: cmp.verdict, title: sh.title || null }; }
-  const D2 = AU.day; outReplace('col2_runs', 'auto_' + d, { at: new Date().toISOString(), auto: true, d, n: D2.n, sameN: D2.same, diffN: D2.diff, noN: D2.no, failN: D2.fail, ver: VERSION, pc: CFG.pc || os.hostname() });
-  savePool(); AU.msg = '자동으로 도는 중'; return 1000; }
+  const D2 = AU.day; outReplace('col2_runs', 'auto_' + d, { at: new Date().toISOString(), auto: true, d, n: D2.n, sameN: D2.same, diffN: D2.diff, noN: D2.no, failN: D2.fail, lap: AU.lap.n, lapRead: AU.lap.read, ver: VERSION, pc: CFG.pc || os.hostname() });
+  savePos(); AU.msg = '자동으로 도는 중'; return 1000; }
 async function autoLoop() { if (AU.running) return; AU.running = true; let next = 15e3; try { next = await autoStep(); } catch (e) { AU.msg = '자동 읽기 오류: ' + e.message; next = 60e3; } finally { AU.running = false; }
   AU.nextAt = now() + next; clearTimeout(AU.t); AU.t = setTimeout(autoLoop, next); }
 const autoKick = () => { clearTimeout(AU.t); AU.t = setTimeout(autoLoop, 500); };
-function autoSum() { const p = PACE.state(); return { on: autoOn() && !!CFG.on, auto: autoOn(), nightOn: nightOn(), msg: AU.msg, poolN: AU.pool.length, left: poolLeft(), poolAt: AU.poolAt ? kst(AU.poolAt) : null, nextMs: AU.nextAt ? Math.max(0, AU.nextAt - now()) : null, day: AU.day, dayN: p.dayN, dayCap: p.dayCap, last: AU.last }; }
+function autoSum() { const p = PACE.state(); return { on: autoOn() && !!CFG.on, auto: autoOn(), nightOn: nightOn(), msg: AU.msg, poolN: AU.pool.length, left: poolLeft(), poolAt: AU.poolAt ? kst(AU.poolAt) : null, nextMs: AU.nextAt ? Math.max(0, AU.nextAt - now()) : null, day: AU.day, dayN: p.dayN, dayCap: p.dayCap, last: AU.last, lap: { n: AU.lap.n, read: AU.lap.read, got: AU.lap.got, end: AU.lap.end, after: AU.lap.after, at: AU.lap.at, done: AU.lap.done } }; }
 
 /* ── 스스로 새 판 받기 (0.1.1 · 정범님이 주무시는 동안 사람 손 없이) ──
  * 30분마다 GitHub lab/col2/col2-config.js 판을 보고 더 높으면: bundle.json 목록대로 받아(파일 이름 꼴 검사) .js마다 node --check
@@ -248,7 +278,7 @@ input{font:12px system-ui;padding:2px 4px;max-width:100%;background:var(--card);
 const pcBarHtml = () => `<div class="c pcn" id="pcbar">🖥 이 PC: <b id="pcn">…</b> <span class="k" id="pcs"></span> <button id="pcb">바꾸기</button><span id="pce" style="display:none"><input id="pci" maxlength="40"> <button class="p" id="pcv">저장</button></span>
 <div class="k">🔐 알라딘 로그인: 이 단계에선 안 함 — 운영 수집기와 동시 로그인·판매자 4대 한도·번갈아 넘어감을 막으려고(PLAN 7단계에서 ALPS처럼 이 PC에만 잠가 넣음)</div></div>`;
 /* 이 PC 이름 칸 스크립트(상태 창·비교 화면 같이) — H(머리)·post 함수가 있는 곳에 끼움 */
-const PC_JS = `function autoLine(s){const a=s.auto||{},rl=s.relay||{};if(!a.on)return '<span class="wa">자동 읽기 멈춤</span> <span class="k">'+String(a.msg||(s.on?'':'번외 수집 꺼짐')).replace(/[&<>]/g,'')+'</span>';const nx=a.nextMs!=null?Math.ceil(a.nextMs/1000):null;return '<span class="ok">'+(/도는 중/.test(a.msg||'')?'자동으로 도는 중':'자동')+'</span> · 오늘 '+(a.dayN||0)+'/'+(a.dayCap||0)+'장'+(nx!=null?' · 다음 읽기 '+(nx>=120?Math.round(nx/60)+'분':nx+'초')+' 뒤':'')+' · 마지막 기록 '+(rl.ackAt?Math.max(0,Math.round((Date.now()-rl.ackAt)/60000))+'분 전':'아직')+' · 표본 '+(a.left||0)+'/'+(a.poolN||0)+'권 남음'+(a.msg&&!/도는 중/.test(a.msg)?'<br><span class="k">'+String(a.msg).replace(/[&<>]/g,'')+'</span>':'')}
+const PC_JS = `function autoLine(s){const a=s.auto||{},rl=s.relay||{};if(!a.on)return '<span class="wa">자동 읽기 멈춤</span> <span class="k">'+String(a.msg||(s.on?'':'번외 수집 꺼짐')).replace(/[&<>]/g,'')+'</span>';const nx=a.nextMs!=null?Math.ceil(a.nextMs/1000):null;return '<span class="ok">'+(/도는 중/.test(a.msg||'')?'자동으로 도는 중':'자동')+'</span> · 오늘 '+(a.dayN||0)+'/'+(a.dayCap||0)+'장'+(nx!=null?' · 다음 읽기 '+(nx>=120?Math.round(nx/60)+'분':nx+'초')+' 뒤':'')+' · 마지막 기록 '+(rl.ackAt?Math.max(0,Math.round((Date.now()-rl.ackAt)/60000))+'분 전':'아직')+' · 표본 '+(a.left||0)+'/'+(a.poolN||0)+'권 남음'+(a.lap?' · '+a.lap.n+'바퀴 '+(a.lap.read||0)+'권 읽음':'')+(a.msg&&!/도는 중/.test(a.msg)?'<br><span class="k">'+String(a.msg).replace(/[&<>]/g,'')+'</span>':'')}
 function pcShow(s){const n=document.getElementById('pcn');if(!n)return;n.textContent=s.pc||'—';document.getElementById('pcs').textContent=s.pcSrc==='pc'?'(여기서 바꾼 이름)':s.pcSrc==='web'?'(웹앱 기기 이름에서)':'(윈도우 이름 · 웹앱을 열면 기기 이름으로 바뀜)'}
 document.getElementById('pcb').onclick=()=>{const e=document.getElementById('pce');e.style.display=e.style.display==='none'?'':'none';document.getElementById('pci').value=document.getElementById('pcn').textContent.replace(/^—$/,'')};
 document.getElementById('pcv').onclick=async()=>{const v=document.getElementById('pci').value.trim();if(!v)return;const r=await fetch('/cfg',{method:'POST',headers:{'X-RN-Col2':'1','Content-Type':'application/json'},body:JSON.stringify({pc:v,pcSrc:'pc'})});const s=await r.json();pcShow(s);document.getElementById('pce').style.display='none'};`;
@@ -316,7 +346,10 @@ const srv = http.createServer((req, res) => {
   if (p === '/win/rect') return body((o) => { const out = []; for (const k of ['win', 'hwin']) { const r = rectOk(o[k], k === 'win' ? 400 : 260, k === 'win' ? 300 : 200); if (o[k] && !r) return J(400, { ok: false, err: '자리·크기가 이상함(작업 창은 폭 400·높이 300 이상)' }); if (r) { CFG[k] = { ...r, at: now(), src: 'pc' }; out.push(`${k === 'win' ? '작업 창' : '상태 창'} ${r.x},${r.y} · ${r.w}×${r.h}`); } } saveCfg(); note('자리·크기 저장 — ' + out.join(' / ')); J(200, { ok: true, msg: out.join(' / '), state: status() }); });
   if (p === '/win/hrect') return body((o) => { const key = o.p === 'compare' ? 'cwin' : 'hwin'; const r = rectOk(o, 260, 200); if (r) { const c = CFG[key] || {}; if (c.x !== r.x || c.y !== r.y || c.w !== r.w || c.h !== r.h) { CFG[key] = { ...r, at: now(), src: 'pc' }; saveCfg(); } } J(200, { ok: true }); }); /* 작은 창이 알린 자기 자리·크기(옮기면 다음에 그 자리) */
   if (p === '/read/product') return body(async (o) => { const r = await readProduct(o); J(r.code, r.body); });
+  /* (0.1.2) 운영 인쇄 도우미가 새 판으로 바꾸거나 끌 때 — 번외 크롬을 먼저 닫고(옛 크롬이 프로필을 쥔 채 남지 않게) 이 프로세스를 끝냄 */
+  if (p === '/quit') return body(async (o) => { note('끝내기 부탁 — ' + String(o.by || o.why || '').slice(0, 60)); await closeBrowser('도우미 끝냄').catch(() => {}); J(200, { ok: true, pid: process.pid }); setTimeout(() => process.exit(0), 200); });
   if (TEST && p === '/test/main-eval') return body(async (o) => J(200, { ok: true, v: B && B.alive() ? await B.mainEval(String(o.expr || '')) : null }));
+  if (TEST && p === '/test/drop') return body(async () => { if (B && B.cdp) B.cdp.close(); J(200, { ok: true }); }); /* 시험용: 조종 연결만 끊음(크롬은 살아 있음) */
   if (TEST && p === '/test/kill') return body(async () => { if (B && B.proc) B.proc.kill('SIGKILL'); J(200, { ok: true }); });
   if (TEST && p === '/test/tick') return body(async () => { for (let k = 0; k < 100 && ST.busy; k++) await new Promise((r) => setTimeout(r, 50)); await tick('시험', true); J(200, status()); });
   return J(404, { ok: false });
@@ -324,5 +357,5 @@ const srv = http.createServer((req, res) => {
 srv.on('error', (e) => { log(`✗ 127.0.0.1:${PORT}를 못 엶: ${e.message}`); process.exit(3); });
 srv.listen(PORT, '127.0.0.1', () => { log(`번외 수집 도우미 ${VERSION} 시작 — 127.0.0.1:${PORT} · 번외 수집 ${CFG.on ? '켜짐' : '꺼짐'} · 자료 ${HOME}`);
   loadCore().catch((e) => { CORE.err = e.message; log('운영 공용 파일 받기 실패: ' + e.message); });
-  ST.timers.push(setInterval(() => tick().catch(() => {}), W('tickSec') * 1000)); setTimeout(() => tick('도우미 시작').catch(() => {}), TEST ? 300 : 5000); AU.t = setTimeout(autoLoop, TEST ? 800 : 15e3); ST.timers.push(setInterval(() => selfUpdate().catch(() => {}), UPD.ms)); });
+  ST.timers.push(setInterval(() => tick().catch(() => {}), W('tickSec') * 1000)); setTimeout(() => tick('도우미 시작').catch(() => {}), TEST ? 300 : 5000); AU.t = setTimeout(autoLoop, TEST ? 800 : 15e3); ST.timers.push(setInterval(() => selfUpdate().catch(() => {}), UPD.ms)); setTimeout(() => selfUpdate().catch(() => {}), Math.min(UPD.ms, 2 * 60e3)); /* (0.1.2) 켜진 뒤 2분 안에 한 번(30분 기다리지 않음) */ });
 const bye = () => { try { if (B) B.kill(); } catch (e) {} process.exit(0); }; process.on('SIGTERM', bye); process.on('SIGINT', bye);

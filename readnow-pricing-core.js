@@ -23,7 +23,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.17.8'; // (0.17.8) 하한가로 올리기 전 값 out.preFloor(알라딘 매입 근삿값 표시용 · 판정은 그대로) // (0.17.7) 🚫 빼기 '언제 뺄까'(excl.when · exclLive) // (0.17.6) 🚫 무시 판매자 빼기 설정(excl) · 블랙리스트 기록 // (0.17.5) 🎯 추격자 엔진 ReadnowChase 분리(찾기·정책·고르기·한 걸음·기록) · 지정 판매자 태세 · 불특정 규칙 n회만·되돌아가 2위·그대로 두기 · 옛 chaseStep 그대로 // (0.17.4) 🏝 같은 책 근거 등급 — 확정(우리·장터) 값은 목표 · 사라진 매물 추정은 2건 이상일 때만 · 1건은 참고(정가 9.9배 추천 막음) // (0.17.3) 📐 soloHigh가 시장 전체 팔린 비율(무리별 p75 목표·p95 상한·같은 책 시장 최고값)을 먼저 근거로 · 터무니없는 값 거르기 상한도 무리 p95 // (0.17.2) 🏝 새책 상한 = 우리 결제 총액 ≤ 새책 결제 총액(알라딘 판매가+새책 배송) − 100원(79% 없앰) // (0.17.1) 🤖 추격자 다시 보기 간격 ±15% 흩음(같은 입력이면 같은 값) // (0.17.0) 정범님 10/30 재정의 — ① 터무니없는 값 거르기는 남의 매물만(남의 매물이 3개 미만이면 중앙값 대신 정가·우리 최고 판매 비율로 상한) ② 정가 1.5배 넘는 추천 막기 없앰 ③ 🏝 우리 단독이면 soloHigh로 올릴 근거(같은 책 판매가·우리 판매 비율 분포·상한 = 우리가 받아 본 최고 비율) // (0.16.2) 수동 일괄 기준 critTarget — 터무니없는 첫 쪽 매물 빼기(엔진과 같은 기준) · 정가 1.5배 넘는 추천은 하지 않음(10/30 연계 점검) // (0.16.1) 🕘 임시 기준 끝나는 날 한국 날짜 // (0.16.0) 정범님 10/19: 재고 기간 할인(T2 5~10% … T7 70%)을 없앰 — 우리 판매 자료(10/08~10/18 · 상품·일 17만)로 판매 확률은 등록 30일 뒤 약 1.2~1.5‰로 내려간 뒤 1년까지 거의 그대로이고, 수요 낮은 책은 값을 내려도 판매가 늘지 않음 → 기간에 따라 깎을 근거가 없음 · 오래된 재고의 값은 판매가치 엔진(ml-core valueOf: 수요×자리 · 알라딘 매입 검토)이 맡음 · 단계(T1~T8)는 남김(기준 판매자 색 넓히기·불용 판정에 씀) // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
+  const VERSION = '0.17.9'; // (0.17.9) 🏷 알라딘 매입가 한 곳 — bbValid(정가보다 큰 매입가 무시)·bbPick·bbNetParts·bbNear(매입 후보 판정)·bbFloor(하한 · 기준 차액 넣기는 설정 floorMargin, 기본 끔) // (0.17.8) 하한가로 올리기 전 값 out.preFloor(알라딘 매입 근삿값 표시용 · 판정은 그대로) // (0.17.7) 🚫 빼기 '언제 뺄까'(excl.when · exclLive) // (0.17.6) 🚫 무시 판매자 빼기 설정(excl) · 블랙리스트 기록 // (0.17.5) 🎯 추격자 엔진 ReadnowChase 분리(찾기·정책·고르기·한 걸음·기록) · 지정 판매자 태세 · 불특정 규칙 n회만·되돌아가 2위·그대로 두기 · 옛 chaseStep 그대로 // (0.17.4) 🏝 같은 책 근거 등급 — 확정(우리·장터) 값은 목표 · 사라진 매물 추정은 2건 이상일 때만 · 1건은 참고(정가 9.9배 추천 막음) // (0.17.3) 📐 soloHigh가 시장 전체 팔린 비율(무리별 p75 목표·p95 상한·같은 책 시장 최고값)을 먼저 근거로 · 터무니없는 값 거르기 상한도 무리 p95 // (0.17.2) 🏝 새책 상한 = 우리 결제 총액 ≤ 새책 결제 총액(알라딘 판매가+새책 배송) − 100원(79% 없앰) // (0.17.1) 🤖 추격자 다시 보기 간격 ±15% 흩음(같은 입력이면 같은 값) // (0.17.0) 정범님 10/30 재정의 — ① 터무니없는 값 거르기는 남의 매물만(남의 매물이 3개 미만이면 중앙값 대신 정가·우리 최고 판매 비율로 상한) ② 정가 1.5배 넘는 추천 막기 없앰 ③ 🏝 우리 단독이면 soloHigh로 올릴 근거(같은 책 판매가·우리 판매 비율 분포·상한 = 우리가 받아 본 최고 비율) // (0.16.2) 수동 일괄 기준 critTarget — 터무니없는 첫 쪽 매물 빼기(엔진과 같은 기준) · 정가 1.5배 넘는 추천은 하지 않음(10/30 연계 점검) // (0.16.1) 🕘 임시 기준 끝나는 날 한국 날짜 // (0.16.0) 정범님 10/19: 재고 기간 할인(T2 5~10% … T7 70%)을 없앰 — 우리 판매 자료(10/08~10/18 · 상품·일 17만)로 판매 확률은 등록 30일 뒤 약 1.2~1.5‰로 내려간 뒤 1년까지 거의 그대로이고, 수요 낮은 책은 값을 내려도 판매가 늘지 않음 → 기간에 따라 깎을 근거가 없음 · 오래된 재고의 값은 판매가치 엔진(ml-core valueOf: 수요×자리 · 알라딘 매입 검토)이 맡음 · 단계(T1~T8)는 남김(기준 판매자 색 넓히기·불용 판정에 씀) // (0.15.2) 같은 설정 합치기를 한 번만 — 상품마다 기본 설정 전체를 깊게 복사하던 것(수동 일괄 그룹 6천 개에 30초 넘게 걸림) · 판정 결과는 그대로
 
   // ───────────────────────── 기본 설정 (웹앱 설정에서 모두 바꿈) ─────────────────────────
   // 데이터에는 코드(T1~T8)만 저장하고 이름은 화면용 → 이름을 바꿔도 과거 기록이 깨지지 않음
@@ -145,14 +145,55 @@
     while (hi - lo > 1) { const m = Math.floor((lo + hi) / 2); if (sellNet(m, ctx, S) >= need) hi = m; else lo = m; }
     let p = snapUp(hi); while (sellNet(p, ctx, S) < need) p = snapUp(p + 1); return p;
   }
+  // ───────────────────────── 🏷 알라딘 매입가 — 한 곳 (정범님 11/06) ─────────────────────────
+  // 원칙: '이 책을 손님에게 이 값에 파는 것이 알라딘에 파는 것보다 나은가'에 답하는 곳(웹앱 📥/🏷/경영 매입 후보 · 자동 발송요청 저가 규칙 · 이 엔진의 매입가 하한)은
+  //       모두 아래 셈 하나(bbNear · bbFloor)를 씀 — 순이익 = 판매가 × (1 − 수수료율) − (포장비 + 택배비 − 손님 배송비) ÷ 주문당 권수(반올림) · 차 = 순이익 − 알라딘 매입가 · 차 < 기준 차액(기본 500원 · app_settings/main.bbMargin)이면 매입 후보
+  //       하한가 = 기본(끔): 예전 그대로 순이익 = 매입가가 되는 가장 낮은 가격(minPriceFor) · 설정 floorMargin 켬: 매입 후보가 아니게 되는 가장 낮은 가격(기준 차액 넣음 · 가격 단위 올림)
+  //       (정범님 결정 전이라 기본 끔 — 켜면 하한이 기준 차액만큼 오름: 매입가 7,000원 → 11,000원 → 12,000원 · ctx.floorMargin 또는 판정 설정 floorMargin · 웹앱 app_settings/main.bbFloorOn)
+  // 매입가 거르기(정범님 11/06 '매입가를 잘못 읽으면 추천가가 77배까지 올라감'): 알라딘 매입가가 그 책 정가보다 크면 잘못 읽은 값으로 보고 무시(쓰는 곳 모두) · 정가를 모르면 그대로 씀(noList로 표시해 셀 수 있게)
+  // 등급: 우리 등급 칸 먼저 · 없으면 가장 가까운 등급(같은 거리면 더 좋은 등급 — 정범님 10/28 · alt) · 값을 올리는 하한은 우리 등급 칸만(alt:false · 다른 등급 값으로 값을 올리지 않음) · 중은 ⚠(알라딘이 안 살 수 있음)
+  const BB_MARGIN_DEF = 500; const BB_ORD = ['최상', '상', '중', '하'];
+  const bbW = (v) => Math.round(+v || 0).toLocaleString('ko-KR') + '원';
+  function bbMarginOf(v) { return v != null && v !== '' && Number.isFinite(+v) && +v >= 0 && +v <= 100000 ? Math.round(+v) : BB_MARGIN_DEF; }
+  /* 매입가 하나 거르기 → null(값 없음) · { v, ok: true, noList } · { v, ok: false, list, why }(정가보다 큼 — 잘못 읽은 값) */
+  function bbValid(buy, list) { const v = +buy; if (!Number.isFinite(v) || !(v > 0)) return null; const L = +list; if (!(L > 0)) return { v, ok: true, noList: true };
+    if (v > L) return { v, ok: false, list: L, why: `알라딘 매입가 ${bbW(v)}이 정가 ${bbW(L)}보다 큼 — 잘못 읽은 값으로 보고 무시` }; return { v, ok: true, noList: false }; }
+  /* 매입가 표(mkt.buyback {최상, 상, 중}) 거르기 → { B: 쓸 수 있는 값만, bad: [{ g, v, list, why }], noList } */
+  function bbClean(B, list) { const out = {}, bad = []; let any = false; if (B && typeof B === 'object') for (const g of Object.keys(B)) { const x = bbValid(B[g], list); if (!x) continue; any = true; if (x.ok) out[g] = x.v; else bad.push({ g, v: x.v, list: x.list, why: x.why }); }
+    return { B: out, bad, any, noList: !(+list > 0) }; }
+  /* 견줄 매입가 고르기 → null(쓸 값 없음 · 무시한 값도 없음) · { v, g, alt, warn, bad, noList } — v가 null이면 '값이 있었지만 모두 무시' (bad에 까닭)
+   *  o = { list: 정가, alt: 다른 등급으로 대신(기본 true), grades: 쓸 등급 목록(없으면 모두) } */
+  function bbPick(B, grade, o) { o = o || {}; const C = bbClean(B, o.list); const okG = (g) => !o.grades || o.grades.includes(g); const bad = C.bad.filter((x) => okG(x.g)); const base = { bad, noList: C.noList };
+    const warnOf = (g, alt) => (g === '중' ? '⚠ 중 — 알라딘이 매입하지 않을 수 있음' : '') + (alt ? `${g === '중' ? ' · ' : ''}우리 등급(${grade || '모름'}) 칸이 없어 가장 가까운 ${g} 매입가로 견줌` : '');
+    if (grade && okG(grade) && C.B[grade] != null) return { ...base, v: C.B[grade], g: grade, alt: false, warn: warnOf(grade, false) };
+    if (o.alt !== false) { const gi = BB_ORD.indexOf(grade); const c = Object.keys(C.B).filter(okG).map((k) => { const i = BB_ORD.indexOf(k); return { k, d: i < 0 ? 9 : gi < 0 ? i : Math.abs(i - gi), i: i < 0 ? 9 : i }; }).sort((a, b) => a.d - b.d || a.i - b.i);
+      if (c.length) return { ...base, v: C.B[c[0].k], g: c[0].k, alt: true, warn: warnOf(c[0].k, true) }; }
+    const myBad = bad.filter((x) => x.g === grade || o.alt !== false); return myBad.length ? { ...base, bad: myBad, v: null, g: myBad[0].g, alt: myBad[0].g !== grade, warn: '', why: myBad.map((x) => `${x.g} ${x.why}`).join(' · ') } : null; }
+  /* 직접 팔아 남는 돈(순이익)의 구성 — sellNet과 같은 셈(반올림) · o = { policy: { fee, freeOver }, D: { feeRate, packPerOrder, courierPerOrder, booksPerOrder } (없으면 DEFAULTS) } */
+  function bbNetParts(P, o) { P = +P; if (!(P > 0)) return null; o = o || {}; const D = o.D || {}; const pol = o.policy || {}; const num = (v, d) => (v != null && v !== '' && Number.isFinite(+v) ? +v : d);
+    const fr = num(D.feeRate, DEFAULTS.feeRate), pk = num(D.packPerOrder, DEFAULTS.packPerOrder), cr = num(D.courierPerOrder, DEFAULTS.courierPerOrder), bpo = Math.max(1, num(D.booksPerOrder, DEFAULTS.booksPerOrder));
+    const cust = pol.freeOver != null && pol.freeOver !== '' && P >= +pol.freeOver ? 0 : num(pol.fee, 0); const fee = Math.round(P * fr), shipNet = Math.max(0, cr - cust), per = Math.round((pk + shipNet) / bpo);
+    const net = Math.round(P * (1 - fr) - (pk + shipNet) / bpo); return { fee, fr, pk, cr, cust, shipNet, bpo, per, net }; }
+  /* 🏷 매입 후보 판정 — o = { margin: 기준 차액, policy, D, list: 정가(주면 매입가 거르기) } → null(셀 수 없음) · { in, below, P, buy, k, net, gain, parts, calc } · 무시한 매입가면 { in: false, ignored: { buy, list, why }, calc: 까닭 } */
+  function bbNear(P, buy, o) { P = +P; buy = +buy; if (!(P > 0) || !(buy > 0)) return null; o = o || {}; const k = bbMarginOf(o.margin); const x = bbNetParts(P, o); if (!x) return null;
+    const V = bbValid(buy, o.list); if (V && !V.ok) return { in: false, below: false, P, buy, k, net: x.net, gain: null, parts: x, ignored: { buy, list: V.list, why: V.why }, calc: V.why };
+    const net = x.net, gain = net - buy; const calc = `순이익 ${bbW(net)} − 알라딘 매입가 ${bbW(buy)} = 차 ${gain < 0 ? '−' + bbW(-gain) : bbW(gain)} ${gain < k ? '<' : '≥'} 기준 ${bbW(k)}`;
+    return { in: gain < k, below: gain <= 0, P, buy, k, net, gain, parts: x, calc, ...(V && V.noList ? { noList: true } : {}) }; }
+  /* 매입가 하한가 — o.floorMargin 켬: 매입 후보가 아니게 되는(순이익 − 매입가 ≥ 기준 차액) 가장 낮은 가격(가격 단위 올림) · 끔(기본): 예전 하한(minPriceFor — 순이익 = 매입가) · 무시한 매입가·셀 수 없으면 null */
+  function bbFloor(buy, o) { buy = +buy; if (!(buy > 0)) return null; o = o || {}; const V = bbValid(buy, o.list); if (!V || !V.ok) return null; if (o.floorMargin !== true) return minPriceFor(buy, { policy: o.policy || null }, mergeD(o.D || null)); const k = bbMarginOf(o.margin); const okP = (p) => { const x = bbNetParts(p, o); return !!x && x.net - buy >= k; };
+    let lo = 1, hi = 10000000; if (!okP(hi)) return null; while (hi - lo > 1) { const m = Math.floor((lo + hi) / 2); if (okP(m)) hi = m; else lo = m; } let p = snapUp(hi); let n = 0; while (!okP(p) && n++ < 200) p = snapUp(p + 1); return okP(p) ? p : null; }
+  /* 하한 한 번에(엔진 floors·critTarget·웹앱 📥 등록·📷 사진 가격) — 우리 등급 칸만 · grades(기본 최상·상) · → null · { buy, floor, g, bad, noList } (buy null이면 무시한 값만 있었음) */
+  function bbFloorPick(B, grade, o) { o = o || {}; const pk = bbPick(B, grade, { list: o.list, alt: false, grades: o.grades || ['최상', '상'] }); if (!pk) return null; if (pk.v == null) return { buy: null, floor: null, g: pk.g, bad: pk.bad, noList: pk.noList, why: pk.why };
+    const fl = bbFloor(pk.v, o); return { buy: pk.v, floor: fl, g: pk.g, bad: pk.bad, noList: pk.noList }; }
   // 하한선: 매입가 하한(모든 단계) + 원가 하한(T1~T3) / 처분 하한(T4~: 매입원가는 이미 쓴 돈 → 팔아서 손해만 안 보면 됨)
   // 하한선 = 알라딘 매입가 하나뿐 (정범 결정 2026-10-04: 원가·손해선 같은 다른 제약은 걸지 않음)
   // 매입가 하한가 = 팔아서 손에 남는 돈(판매가 − 수수료 − 주문당 비용)이 알라딘 매입가와 같아지는 판매가.
   // 목표가가 그보다 낮아도 차이가 buybackTolerance(10%) 안이면 그대로 둠(최저가 자리가 더 중요) — 10% 넘게 낮을 때만 하한가에 멈추고 '알라딘에 팔기' 검토로 표시
   function floors(listing, tier, ctx, S) {
-    ctx = ctx || {}; if (!S || S.buybackGrades == null) S = mergeD(S); const bb = listing.grade && ctx.buyback && (S.buybackGrades || []).includes(listing.grade) ? ctx.buyback[listing.grade] : null; // 중은 알라딘이 사지 않음
-    const fBuyback = bb ? minPriceFor(bb, ctx, S) : null;
-    return { buyback: bb || null, fBuyback, tolerance: S.buybackTolerance, applied: fBuyback };
+    ctx = ctx || {}; if (!S || S.buybackGrades == null) S = mergeD(S); /* (정범님 11/06) 공용 bbFloorPick — 우리 등급 칸만(buybackGrades · 중은 알라딘이 사지 않을 수 있어 하한 안 씀) · 정가보다 큰 매입가는 무시 · 하한 = 매입 후보가 아니게 되는 가장 낮은 값(순이익 − 매입가 ≥ 기준 차액 · 웹앱 🏷 매입 후보와 같은 셈) */
+    const FP = listing.grade && ctx.buyback ? bbFloorPick(ctx.buyback, listing.grade, { list: listing.priceList || ctx.priceList || null, grades: S.buybackGrades || [], margin: ctx.bbMargin != null ? ctx.bbMargin : S.bbMargin, floorMargin: (ctx.floorMargin != null ? ctx.floorMargin : S.floorMargin) === true, policy: ctx.policy || null, D: S }) : null;
+    const bb = FP && FP.buy != null ? FP.buy : null; const fBuyback = FP ? FP.floor : null;
+    const fm = (ctx.floorMargin != null ? ctx.floorMargin : S.floorMargin) === true; return { buyback: bb, fBuyback, tolerance: S.buybackTolerance, applied: fBuyback, floorMargin: fm, margin: fm ? bbMarginOf(ctx.bbMargin != null ? ctx.bbMargin : S.bbMargin) : 0, ...(FP && FP.bad.length ? { ignored: FP.bad } : {}), ...(FP && FP.noList ? { noList: true } : {}) };
   }
 
   // ── 관리코드 표시 (일시판매중지 보관함 구분) ── 기준은 여기 한 곳: 앞 3자리 = 서가(절대 안 건드림), 뒤 3자리 = 가격 코드 자리에 표시를 씀
@@ -339,10 +380,11 @@
 
     // 8. 하한선 (알라딘 매입가만)
     const F = floors(listing, tier, ctx, S); out.floors = F;
+    if (F.ignored) R.push(`알라딘 매입가 무시 — ${F.ignored.map((x) => `${x.g} ${x.why}`).join(' · ')} (하한에 안 씀)`);
     let floored = false;
     if (F.fBuyback && target < F.fBuyback) {
       const gap = (F.fBuyback - target) / F.fBuyback;
-      if (gap >= S.buybackTolerance) { R.push(`목표가 ${target.toLocaleString()}원이 알라딘 매입가 하한가 ${F.fBuyback.toLocaleString()}원보다 ${Math.round(gap * 100)}% 낮음 → 하한가에 멈춤 (알라딘 매입가 ${F.buyback.toLocaleString()}원 — 이 가격에 팔면 알라딘에 파는 것보다 덜 남음)`); out.preFloor = target; /* (웹앱 11/05) 하한가로 올리기 전 시장대로 정한 값 — 알라딘 매입 근삿값 판정이 씀 */ target = F.fBuyback; floored = true; out.sellToAladin = true; block.push('알라딘 매입가 하한'); }
+      if (gap >= S.buybackTolerance) { R.push(`목표가 ${target.toLocaleString()}원이 알라딘 매입가 하한가 ${F.fBuyback.toLocaleString()}원보다 ${Math.round(gap * 100)}% 낮음 → 하한가에 멈춤 (알라딘 매입가 ${F.buyback.toLocaleString()}원 — ${F.floorMargin ? `이 가격에 팔면 직접 팔아 남는 돈이 매입가보다 기준 차액 ${F.margin.toLocaleString()}원 넘게 많지 않음 · 알라딘 매입 후보` : '이 가격에 팔면 알라딘에 파는 것보다 덜 남음'})`); out.preFloor = target; /* (웹앱 11/05) 하한가로 올리기 전 시장대로 정한 값 — 알라딘 매입 근삿값 판정이 씀 */ target = F.fBuyback; floored = true; out.sellToAladin = true; block.push('알라딘 매입가 하한'); }
       else R.push(`목표가가 알라딘 매입가 하한가보다 ${Math.round(gap * 100)}% 낮지만 ${Math.round(S.buybackTolerance * 100)}% 안이라 최저가를 그대로 맞춤`);
     }
 
@@ -484,7 +526,7 @@
         if (best) { t = Math.floor(best.p / 10) * 10; R.unshift(`결제 총액 동가: 유효 최저 총액 ${vt.w.n || (vt.w.c === 'aladin' ? '알라딘측' : '')} ${vt.w.p.toLocaleString()} + 배송 ${(+vt.w.s || 0).toLocaleString()} = ${vt.tot.toLocaleString()}원 → 우리 ${t.toLocaleString()} + 배송 ${best.s.toLocaleString()}원${fo != null ? ` (우리 ${fo.toLocaleString()}원 이상 무료)` : ''}`); } else R.unshift(`유효 최저 총액 ${vt.tot.toLocaleString()}원보다 우리 배송비(${fee.toLocaleString()}원)가 커서 맞출 수 없음`); } }
     else if (mode === 'charm') { const cur0 = l.price || 0; const th = CHARM_TH.filter((x) => cur0 >= x && cur0 <= x + Math.max(100, x * 0.02)).pop(); if (th) { t = snapDown(th - 100); R.unshift(`경계(${th.toLocaleString()}원) 바로 위 ${cur0.toLocaleString()}원 → 경계 아래 ${t.toLocaleString()}원 (앞자리 효과)`); } else { t = cur0 || null; R.unshift('경계 바로 위 가격이 아님 — 지금 가격 유지'); } }
     else if (mode === 'newPct') { const ps = +((ctx && ctx.priceSales) || l.priceSales || 0); const k = +c.newPct > 0 ? +c.newPct : 79; if (ps > 0) { t = snapDown(ps * k / 100); R.unshift(`새책 판매가 ${ps.toLocaleString()}원의 ${k}% → ${t.toLocaleString()}원 (새책 값에 너무 가까우면 구매자가 새책을 고름)`); } else R.unshift('새책 판매가를 몰라 계산하지 않음 (시장 지표 필요)'); }
-    else if (d) { t = d.action === 'set' || d.status === 'ok' || d.status === 'floor' ? (d.target ?? l.price) : null; if (d.status === 'floor') out.bbHit = { buy: (buyback || {})[l.grade] || null, floor: d.target ?? null }; } // 엔진의 하한선 = 알라딘 매입가 하나뿐 → 매입가 하한
+    else if (d) { t = d.action === 'set' || d.status === 'ok' || d.status === 'floor' ? (d.target ?? l.price) : null; if (d.status === 'floor') out.bbHit = { buy: (d.floors && d.floors.buyback) || null, floor: d.target ?? null }; } // 엔진의 하한선 = 알라딘 매입가 하나뿐 → 매입가 하한
     /* (0.17.0 정범님 10/30) 🏝 우리 단독 — 첫 쪽에 남의 매물이 없고 우리 것만 있으면 '맞출 기준이 없다'로 끝내지 않고, 깎을 이유가 아니라 올릴 근거를 찾음(soloHigh) · 새책 % 기준·결제 총액·경계 가격처럼 기준을 따로 고른 조건은 그대로 */
     { const oth = P.filter((w) => w.c !== 'ours' && w.p > 0); if (!oth.length && l.price > 0 && !['newPct', 'charm', 'shipMin'].includes(mode)) { const sh = soloHigh(l, c, ctx); t = sh.t; const keep = R.filter((x) => !/다른 매물이 없음|기준이 없어 지금 가격 유지|맞출 맨 위가 없음|매물이 첫 페이지에 \d+개뿐/.test(x)); R.length = 0; R.push(...sh.reasons, ...keep); if (out.cutHi) R.push(`(참고) 남이 ${out.cutHi.toLocaleString()}원에 내놓은 매물이 있음 — 팔린 값이 아니라 부르는 값이고 우리 근거 상한을 넘어 따르지 않음(값을 높게 받을 수 있다는 신호로만 봄)`); out.solo = sh; } }
     const goal = t; // (0.15.0) 조건이 정한 목표가 (기준 대비 %·처리 기준·하한선 전)
@@ -498,8 +540,10 @@
     if (t != null && cur != null && c.dir === 'down' && t > cur) { R.push(`내림만 — 올리지 않음 (${t.toLocaleString()}원 대신 지금 가격)`); t = cur; }
     if (t != null && cur != null && c.dir === 'up' && t < cur) { R.push(`올림만 — 내리지 않음 (${t.toLocaleString()}원 대신 지금 가격)`); t = cur; }
     if (t != null && cur && +c.maxRise > 0 && t > cur * (1 + c.maxRise / 100)) { const f = snapDown(cur * (1 + c.maxRise / 100)); R.push(`지금 가격 대비 최대 ${c.maxRise}% 인상으로 제한 → ${f.toLocaleString()}원`); t = Math.max(cur, f); }
-    const fbb = c.bb && ['최상', '상'].includes(l.grade) && buyback && buyback[l.grade] ? minPriceFor(buyback[l.grade], ctx || {}, mergeD((ctx && ctx.settings) || null)) : null; /* (0.15.3) 사용자 설정(수수료·택배)으로 — decide와 같은 하한 */
-    if (t != null && fbb && t < fbb) { R.push(`알라딘 매입가(${l.grade} ${buyback[l.grade].toLocaleString()}원) 하한 ${fbb.toLocaleString()}원으로 올림`); t = fbb; out.bbHit = { buy: buyback[l.grade], floor: fbb }; }
+    const FPc = c.bb && buyback ? bbFloorPick(buyback, l.grade, { list: l.priceList || (ctx && ctx.priceList) || null, grades: ['최상', '상'], margin: ctx && ctx.bbMargin, floorMargin: !!(ctx && ctx.floorMargin === true), policy: (ctx && ctx.policy) || null, D: mergeD((ctx && ctx.settings) || null) }) : null; /* (0.15.3) 사용자 설정(수수료·택배)으로 — decide와 같은 하한 · (정범님 11/06) 공용 bbFloorPick: 정가보다 큰 매입가 무시 · 기준 차액 넣은 하한 */
+    if (FPc && FPc.bad.length && !R.some((x) => /^알라딘 매입가 무시/.test(x))) R.push(`알라딘 매입가 무시 — ${FPc.bad.map((x) => `${x.g} ${x.why}`).join(' · ')} (하한에 안 씀)`); if (FPc && FPc.bad.length) out.bbIgnored = FPc.bad;
+    const fbb = FPc && FPc.floor ? FPc.floor : null;
+    if (t != null && fbb && t < fbb) { R.push(`알라딘 매입가(${l.grade} ${FPc.buy.toLocaleString()}원) 하한 ${fbb.toLocaleString()}원으로 올림${ctx && ctx.floorMargin === true ? ` — 이보다 싸면 직접 팔아 남는 돈이 매입가보다 기준 차액 ${bbMarginOf(ctx && ctx.bbMargin).toLocaleString()}원 넘게 많지 않음(알라딘 매입 후보)` : ''}`); t = fbb; out.bbHit = { buy: FPc.buy, floor: fbb }; }
     if (t != null && +c.minPrice && t < +c.minPrice) { R.push(`최소 판매가 ${(+c.minPrice).toLocaleString()}원으로 올림`); t = +c.minPrice; }
     if (t != null && +c.maxDrop && l.price && t < l.price * (1 - c.maxDrop / 100)) { const f = snapUp(l.price * (1 - c.maxDrop / 100)); R.push(`지금 가격 대비 최대 ${c.maxDrop}% 인하로 제한 → ${f.toLocaleString()}원`); t = f; }
     if (c.reach && goal != null && t != null && cur != null && t > goal && t < cur) { R.push(`목표 ${goal.toLocaleString()}원까지 못 내림(하한선 ${t.toLocaleString()}원) — 반만 내리면 목표 자리에 못 서고 값만 깎이므로 지금 가격 유지`); t = cur; } // (0.15.0) 목표 자리 아니면 안 내림
@@ -754,6 +798,6 @@
   }
   const Chase = makeChase(); const { chaseEvents, chaseState, sellerChase, chaseMap, chaserOn, chaseStep, STRATS } = Chase; /* 판정 엔진 api의 옛 이름 그대로(같은 함수) */
   if (root && typeof root === 'object') { try { root.ReadnowChase = Chase; } catch (e) {} }
-  const api = { VERSION, CHARM_TH, GRADE_RANK, sameGradeMatch, critSettings, critTarget, soloHigh, ratioQ, ratioPick, ratioGroupName, ratioSrcText, ratioAv, ratioUb, RATIO_QK, chaseMap, chaserOn, chaseStep, STRATS, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, mergeD(S0)), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase, Chase };
+  const api = { VERSION, BB_MARGIN_DEF, bbMarginOf, bbValid, bbClean, bbPick, bbNetParts, bbNear, bbFloor, bbFloorPick, CHARM_TH, GRADE_RANK, sameGradeMatch, critSettings, critTarget, soloHigh, ratioQ, ratioPick, ratioGroupName, ratioSrcText, ratioAv, ratioUb, RATIO_QK, chaseMap, chaserOn, chaseStep, STRATS, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, mergeD(S0)), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase, Chase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowPricing = api;
 })(typeof window !== 'undefined' ? window : this);
