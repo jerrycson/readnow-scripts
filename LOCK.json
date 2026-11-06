@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "송장 검증 급한 고침",
- "since": "2026-11-06T05:10:33Z",
- "beat": "2026-11-06T05:10:33Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "",
-  "at": "2026-11-06T04:16:22Z"
+  "done": "송장 검증 급한 고침 — 수집기 1.89.221 · 웹앱 1.78.405 (36472c1)",
+  "at": "2026-11-06T05:11:32Z"
  },
- "host": "vm"
+ "host": null
 }
