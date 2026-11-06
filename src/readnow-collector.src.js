@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.219
+// @version      1.89.220
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -22,12 +22,12 @@
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.2
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.7
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.17.8
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.10
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.147
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.17.9
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.11
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.148
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.8
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.5
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.4
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.5
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.18.17
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
@@ -9439,7 +9439,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const rows = (u.listings || []).filter((r) => r.price > 0).map((r) => { const ours = String(r.sellerCode) === '996008'; let c = 'unknown'; try { c = ours ? 'ours' : PRC && PRC.isAladinSide(r) ? 'aladin' : sd[r.sellerCode] && RNC ? RNC.classifySellerDoc(sd[r.sellerCode], RSx).cls : 'unknown'; } catch (e) {} return { p: r.price, g: r.grade || null, c, so: r.soldOut ? 1 : 0 }; });
     let stock = 0, sold = null; const isbn = b.isbn13 || null; if (isbn) { try { const qs = await fs.collection('prd_listings').where('isbn13', '==', isbn).get(); let n = 0; qs.forEach((d) => { const v = d.data(); if (v.active) stock++; else if (/판매완료/.test(String(v.status || ''))) n++; }); if (n) sold = { n }; } catch (e) {} }
     const unitCost = main && main.costPerBook != null ? +main.costPerBook : null; const fee = main && main.feeRate != null ? +main.feeRate : 0.1; const avail = b.availability && b.availability !== 'onSale' ? b.availability : '';
-    const ev = (g) => ML.valueRec({ grade: g, sp: b.salesPoint ?? null, used: u.usedTotal ?? null, avail, bb: u.buyback && u.buyback[g] != null ? (ML.bbExpect ? ML.bbExpect(+u.buyback[g], g, '') : +u.buyback[g] || null) : null, /* (1.87.3) 기대 매입가 = 견적 × 우리 실제 등급별 지급 비율(ml-core 0.6.0) */ list: b.priceList ?? null, sales: b.priceSales ?? null, rows, stock, sold }, vm, vc, { stepDown: PRC && PRC.stepDown, feeRate: fee, unitCost });
+    const ev = (g) => ML.valueRec({ grade: g, sp: b.salesPoint ?? null, used: u.usedTotal ?? null, avail, bb: u.buyback && u.buyback[g] != null ? (ML.bbExpect ? ML.bbExpect(+u.buyback[g], g, '', b.priceList) : +u.buyback[g] || null) : null, /* (1.87.3) 기대 매입가 = 견적 × 우리 실제 등급별 지급 비율(ml-core 0.6.0) */ list: b.priceList ?? null, sales: b.priceSales ?? null, rows, stock, sold }, vm, vc, { stepDown: PRC && PRC.stepDown, feeRate: fee, unitCost });
     const E = { 최상: ev('최상'), 상: ev('상'), 중: ev('중') }; const e = E['상']; const B = e.buy || {}; const VC = { buy: ['#1F6F4A', '#E3F4E8'], maybe: ['#8A6A00', '#FFF4D6'], skip: ['#9A2A22', '#FDE2DF'], aladin: ['#22508A', '#E3EEFA'] }[B.verdict] || ['#5B6B66', '#EEF1F0']; const pc = (v) => (v == null ? '-' : Math.round(v * 100) + '%');
     const st = document.createElement('style'); st.textContent = '#rn-vr{position:fixed;right:14px;bottom:14px;z-index:2147483600;width:330px;max-height:70vh;overflow:auto;background:#fff;border:1px solid #2F5D50;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.18);font:12.5px/1.5 system-ui,"Malgun Gothic",sans-serif;color:#1E2B27}#rn-vr .hd{display:flex;gap:6px;align-items:center;padding:6px 10px;background:#2F5D50;color:#fff;border-radius:9px 9px 0 0;cursor:pointer}#rn-vr .bd{padding:7px 10px}#rn-vr.min .bd{display:none}#rn-vr .v{display:inline-block;padding:1px 9px;border-radius:9px;font-weight:800}#rn-vr ul{margin:2px 0 4px 16px;padding:0}#rn-vr .g{display:flex;gap:10px;margin:4px 0}#rn-vr .dem{display:flex;flex-wrap:wrap;gap:3px;margin:0 0 4px}#rn-vr .dc{display:inline-block;padding:0 7px;border-radius:999px;border:1px solid #CFDAD5;background:#F4F7F6;font-size:11.5px;color:#2F4A43}#rn-vr .dc.sp{border-color:#9DBFB2;background:#EAF3EF}#rn-vr .dc.rk{border-color:#E3CF9A;background:#FBF6E8;color:#6B5310;font-weight:600}#rn-vr .dc.rt{border:0;background:transparent;color:#8C9894;font-size:11px}#rn-vr small{color:#6B7B76}';
     document.head.appendChild(st); const box = document.createElement('div'); box.id = 'rn-vr'; try { if (GM_getValue('rn-vr-min', 0)) box.classList.add('min'); } catch (e0) {}
