@@ -1,12 +1,1 @@
-doc=app_settings/pxDaily,app_settings/ext,app_settings/cloud,app_settings/ship_auto,app_settings/logger_watch,app_settings/night_ops,app_settings/aladin_login,prd_system/settings,app_settings/pc_live,app_settings/platforms,app_settings/sys_health
-cmds=invoice&n=20
-cmds=startDelivery&n=10
-cmds=nbFind&n=5
-cmds=metrics&n=10
-cmds=regBulk&n=10
-cmds=alpsRun&n=10
-recentUp=sellers&mins=240
-recentUp=prd_book_metrics&mins=240
-recentUp=bench_items&mins=120
-logs=1&pc=LOGGER&from=202611050000&to=202611052149
-# 290652032
+@kpin kpin/aud_20261106-132454.json
