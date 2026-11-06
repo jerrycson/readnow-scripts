@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.223의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.224의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.223' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.223', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.224' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.224', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -356,7 +356,7 @@
       if ((await GOV.verify({ url: LO_C || fu, isLoggedIn, why: fu })) === 'misread') return; // 잘못 본 것 — 로그인하지 않고 같은 요청만 다시
       if (!settings.autoLogin) throw new StopSignal('LOGIN', '로그인이 풀렸습니다. 직접 로그인한 뒤 이어하기를 눌러 주세요.');
       PACE_C.fail('login'); await autoRelogin(fu, loginTries); },
-    fatal: (e) => e instanceof StopSignal || !!e.gate || !!e.loginWait,
+    fatal: (e) => e instanceof StopSignal || !!e.gate || !!e.loginWait || /🛡 로거 (크롬|엔진): /.test(String((e && e.message) || '')),
     maxOutageMin: () => MAX_OUTAGE_MIN, outageError: (m) => new Error(`알라딘 서버가 ${m}분 넘게 응답하지 않아 멈췄습니다. 나중에 이어하기를 눌러 주세요.`),
     on429: (st) => log(`알라딘이 요청이 너무 많다고 함(${st}) — 이 PC의 모든 수집이 ${Math.round(PACE_C.cooling() / 60000)}분 쉬고 간격 ${PACE_C.state().gap}ms로`, 'warn'),
     onOk: (ms) => { reqTimes.push(ms + PACE_C.state().gap); if (reqTimes.length > 30) reqTimes.shift(); },
