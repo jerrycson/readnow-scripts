@@ -1,7 +1,7 @@
 // tONESHOT — 정범님 11/04 '출고 송장 원스톱: 처리 버튼을 한 번만 누르고 송장 입력까지 · 에러가 생길 때만 관리자가 개입' (웹앱 쪽 · 가짜 ALPS 도우미 + 가짜 수집기·예스24 연결 창)
 //  ① 시작 전 점검: 프린터 이상이면 한 번에 알리고 멈춤(그래도 시작 없음) → 고친 뒤 「다시 점검」
 //  ② 정상 한 바퀴: 알라딘 2 + 💵 현금 1 + 🟦 예스24 1 → ALPS(첫 출력 뒤 종이 확인 한 번) → 맞춤(예스24·현금 송장 기록) → 알라딘 송장 맡김(1건 + 자동 검증 + 저절로 계속) → 예스24 첫 건 발송처리 → 판매처 다시 읽기 → 끝
-//     · 진행 중에 저장한 현금 판매는 다음 묶음에 저절로 · 주소 없는 현금은 ⚠ '주소 적기' · 🛰 한 줄(shp_runs)
+//     · 진행 중에 저장한 현금 판매는 지금 세션에 섞지 않고 남김(정범님 11/06 — 저절로 이어 하지 않음) → ▶ 다시 누르면 새 세션에서 · 주소 없는 현금은 ⚠ '주소 적기' · 🛰 한 줄(shp_runs)
 //  ③ 첫 건 자동 검증 실패 → 멈추고 ⚠(그때만 사람) → 「알라딘에서 확인했음 — 나머지 계속」 ④ 로그인 풀림 → '🔑 로그인했음 — 다시 맡기기'(「나머지 계속」 아님)
 //  ⑤ 송장 입력 탭 닫힘(맥박 끊김) → 다시 맡기기로 되돌림 ⑥ 같은 송장 두 번 막기(다른 맡김 문서) ⑦ 자정 넘기기: 어제 시작한 열린 실행을 날짜가 아니라 id로 이어받음 ⑧ 끝난 ALPS 일을 웹앱이 못 본 채 닫혔어도 다시 열면 이어서
 //  시험 자료 손님은 '손님A…' · 010-0000-0000 (공개 저장소)
@@ -67,12 +67,14 @@ require('./harness.js')(async (p) => {
     o.waitPaper = await until(() => runDoc().need && runDoc().need.k === 'alps', 40000); o.alpsNeed = runDoc().need;
     cash('cash_b', '손님G', '현금 책 둘', 'aladin_U800000004', '어느 시 어느 길 3'); S._saleIdx = null; bump('o'); await osCashSaved('cash_b', S.orders.get('cash_b'));
     cash('cash_c', '손님H', '주소 없는 책', null, ''); S._saleIdx = null; bump('o'); await osCashSaved('cash_c', S.orders.get('cash_c'));
-    o.cashLine = (runDoc().log || []).some((x) => /현금 판매 1건 저장 — 지금 묶음이 끝나면 다음 묶음에 저절로/.test(x.m)); o.cashWarn = (runDoc().warn || []).find((w) => w.act === 'cash:cash_c') || null;
+    o.cashLine = (runDoc().log || []).some((x) => /현금 판매 1건 저장 — 지금 세션에는 섞지 않음/.test(x.m)); o.cashWarn = (runDoc().warn || []).find((w) => w.act === 'cash:cash_c') || null;
     const ob = document.querySelector('#os_box [data-osact="alps:바르게 나왔음"]'); o.paperBtn = !!ob; if (ob) ob.click(); else await osAct('alps:바르게 나왔음');
     o.done1 = await untilA(() => runDoc().status === 'done', 120000); const d2 = runDoc(); o.d2 = { st: d2.status, bt: (d2.bt || []).map((b) => ({ n: b.n, kind: b.kind, al: b.al, y24: b.y24, match: b.match, inv: b.inv, y24s: b.y24s, chk: b.chk })), sum: d2.sum, warn: (d2.warn || []).map((w) => w.k + ':' + (w.act || '')), need: d2.need, log: (d2.log || []).map((x) => x.m).slice(-40) };
+    o.row = (shipLiveRows().find((r) => r.id === 'os:' + id1) || {}); o.row = { t: o.row.t, st: o.row.st, doc: o.row.doc, pg: o.row.pg, bad: o.row.bad };
+    o.sess1 = { pendLeft: d2.pendLeft, endLine: (d2.log || []).some((x) => /이번 세션 끝 — 새로 들어온 주문 \d+건.*이어 하지 않음/.test(x.m)), noP1: !(d2.log || []).some((x) => /다음 묶음으로 이어서/.test(x.m)), cashB0: ((FS.crm_orders || {}).cash_b || {}).invoice || null };
+    /* (정범님 11/06) 남은 현금 판매는 관리자가 ▶ 다시 눌러 새 세션으로 */ const idB = await window.shipOneShot(); o.sess2 = { newId: idB !== id1, done: await untilA(() => runDoc().status === 'done', 120000) }; o.sess2.bt = (runDoc().bt || []).map((b) => ({ y24: b.y24 }));
     o.H = await __H(); const inv1 = (FS.shp_invoices || {})['alps_r1'] || {}; o.inv1 = { limit0: inv1.limit, verify: inv1.verify, autoCont: inv1.autoCont, from: inv1.from, n: (inv1.items || []).length, st: inv1.status, verified: !!(inv1.verified && inv1.verified.ok) };
     o.cashA = ((FS.crm_orders || {}).cash_a || {}).invoice || null; o.cashB = ((FS.crm_orders || {}).cash_b || {}).invoice || null; o.y24 = (((FS.crm_y24_orders || {}).Y2611040001 || {}).auto || {}).ship || null; o.Y24C = Y24C.slice();
-    o.row = (shipLiveRows().find((r) => r.id === 'os:' + id1) || {}); o.row = { t: o.row.t, st: o.row.st, doc: o.row.doc, pg: o.row.pg, bad: o.row.bad };
     o.noPii = !/손님[A-H]/.test(JSON.stringify(FS.shp_runs[id1]));
     /* ⑥ 같은 송장 두 번 막기 — 같은 맞춤으로 다른 ALPS 일 id(다른 문서)에 맡기려 하면 'none' */
     o.dup = await alpsInvAuto({ byOrder: [{ orderNo: 'A-01', invoice: (FS.shp_invoices.alps_r1.items.find((x) => x.orderNo === 'A-01') || {}).invoice, status: 'ok', recipient: '손님A' }] }, 'x', 'other_run', { force: true });
@@ -108,7 +110,8 @@ require('./harness.js')(async (p) => {
   ok(o.H.bodies[0] && o.H.bodies[0].firstOne === false && o.H.bodies[0].rows.some((x) => /^현금-cash_a\|/.test(x)) && o.H.bodies[0].rows.some((x) => /^Y2611040001\|/.test(x)) && o.H.bodies[0].rows.filter((x) => /^A-0[12]\|/.test(x)).length === 2, '② 묶음 1 = 알라딘 2 + 현금 1 + 예스24 1 · 첫 출력 일괄(firstOne 끔) · 확인 창 없이 ' + JSON.stringify(o.H.bodies[0]));
   ok(o.inv1.limit0 === 0 && o.inv1.verify && o.inv1.autoCont === true && o.inv1.from === 'oneshot' && o.inv1.n === 2 && o.inv1.st === 'done' && o.inv1.verified, '② 알라딘 송장: 1건 넣고 자동 검증 → 저절로 나머지 → 끝(사람 없이)');
   ok(o.cashA && o.cashA.no && o.y24 && o.y24.state === 'done' && o.y24.confirm === false && o.Y24C.length === 1, '② 현금 송장 기록 · 예스24 첫 건 발송처리(설정 켬 → [▶ 이대로 실행] 없이) 끝');
-  ok(o.cashLine && o.d2.bt.length === 2 && (o.d2.bt[1].y24 || []).includes('cash:cash_b') && o.cashB && o.cashB.no && o.H.bodies[1] && o.H.bodies[1].rows.some((x) => /^현금-cash_b\|/.test(x)), '② 진행 중 저장한 현금 판매 → 한 줄 알림 → 다음 묶음에 저절로(두 번 누르지 않음)');
+  ok(o.cashLine && o.d2.bt.length === 1 && o.sess1.pendLeft >= 1 && o.sess1.endLine && o.sess1.noP1 && !o.sess1.cashB0, '② 진행 중 저장한 현금 판매 → 한 줄 알림 → 이번 세션에 섞지 않고 끝(저절로 다음 묶음 없음 · 남은 주문 ' + o.sess1.pendLeft + '건) ' + JSON.stringify(o.sess1));
+  ok(o.sess2.newId && o.sess2.done && o.sess2.bt.length === 1 && (o.sess2.bt[0].y24 || []).includes('cash:cash_b') && o.cashB && o.cashB.no && o.H.bodies[1] && o.H.bodies[1].rows.some((x) => /^현금-cash_b\|/.test(x)), '② ▶ 다시 누르면 새 세션에서 그 현금 판매를 보냄 ' + JSON.stringify(o.sess2));
   ok(o.cashWarn && /주소/.test(o.cashWarn.m) && o.cashWarn.btn === '주소 적기', "② 주소 없는 현금 판매 → ⚠ '주소 적기' 단추");
   ok(o.d2.st === 'done' && o.d2.bt[0].chk && o.d2.bt[0].chk.fresh && o.d2.bt[0].chk.left === 0 && o.d2.log.some((m) => /판매처 다시 읽어 확인 — 알라딘 2\/2건 넘어감/.test(m)) && o.d2.log.some((m) => /🏁 끝/.test(m)), '② 판매처를 다시 읽어 넘어갔는지 확인 → 끝 보고');
   ok(o.row.t === '🚚 출고 원스톱' && /^shp_runs\//.test(o.row.doc) && o.row.st === 'done' && o.row.pg && o.row.pg[0] === o.row.pg[1], '🛰 한 줄: 🚚 출고 원스톱 · 문서 shp_runs · 끝이면 진행바 가득');
