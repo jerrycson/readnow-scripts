@@ -31,7 +31,7 @@ async function partHelper() { console.log('① 인쇄 도우미 다리 — /col2
   const stopPH = async () => { if (ph) { ph.kill(); await new Promise((r) => (ph.exitCode != null ? r() : ph.on('exit', r))); ph = null; } };
   let c2pid = null;
   try {
-    await startPH(); const s0 = await P('GET', '/status'); ok(s0.j && s0.j.ver === '1.1.9', '인쇄 도우미 1.1.9 켜짐', s0.j);
+    await startPH(); const s0 = await P('GET', '/status'); ok(s0.j && s0.j.ver === '1.2.0', '인쇄 도우미 1.2.0 켜짐', s0.j);
     ok((await req(8898, 'GET', '/col2/status')).st === 403, '머리(X-RN-Print) 없으면 거절');
     ok((await P('GET', '/col2/status', null, { Origin: 'https://evil.test' })).st === 403, '다른 웹 페이지 출처는 거절');
     const a0 = await P('GET', '/col2/status', null, { Origin: 'https://jerrycson.github.io' }); ok(a0.st === 200 && a0.j.ok && !a0.j.installed && !a0.j.running && !a0.j.want, '처음 = 묶음 없음 · 꺼짐(기본 꺼짐) · 웹앱 출처는 받음', a0.j);
@@ -67,6 +67,13 @@ async function partHelper() { console.log('① 인쇄 도우미 다리 — /col2
     ok(s5.j && s5.j.on, '운영 도우미가 꺼져도(새 판으로 다시 켜짐 등) 외부 수집기는 따로 돎'); c2pid = s5.j && s5.j.pid; if (c2pid) process.kill(c2pid, 'SIGKILL'); await wait(400);
     await startPH(); let s6 = null; for (let k = 0; k < 50; k++) { await wait(300); s6 = await req(C2PORT, 'GET', '/status', null, { 'X-RN-Col2': '1' }); if (s6.j) break; }
     ok(s6.j && s6.j.on, '로그온 때(도우미가 켜질 때) 켜 둔 PC는 외부 수집기를 다시 켬'); c2pid = s6.j && s6.j.pid;
+    /* (1.2.0 정범님 11/06 HOME '0.1.0이 밤새 안 바뀜') 웹앱이 없어도 인쇄 도우미가 1시간마다(시험은 2초) 판을 보고 새 판이면 바꿔 끼움 */
+    await stopPH(); env.RN_COL2_CHECK_MS = '2000'; await startPH();
+    fs.writeFileSync(RAWD + '/col2-config.js', fs.readFileSync(RAWD + '/col2-config.js', 'utf8').replace(/COL2_VER:\s*'[\d.]+'/, "COL2_VER: '9.9.10'"));
+    let s7 = null; for (let k = 0; k < 60; k++) { await wait(500); s7 = await req(C2PORT, 'GET', '/status', null, { 'X-RN-Col2': '1' }); if (s7.j && s7.j.ver === '9.9.10') break; }
+    let cs = null; for (let k = 0; k < 30; k++) { cs = await P('GET', '/col2/status'); if (cs.j && cs.j.chk && cs.j.chk.ver === '9.9.10') break; await wait(300); } ok(s7.j && s7.j.ver === '9.9.10' && s7.j.pid !== c2pid && cs.j && cs.j.chk && cs.j.chk.ok, '웹앱 없이도 인쇄 도우미가 1시간마다 판을 봄 → 새 판이면 받아 바꿔 끼우고 다시 켬(마지막 확인 시각 chk)', { ver: s7.j && s7.j.ver, chk: cs.j && cs.j.chk });
+    ok(/\/quit/.test(fs.readFileSync(HELP, 'utf8')) && /인쇄 도우미/.test(fs.readFileSync(BASE + '/col2.log', 'utf8').match(/끝내기 부탁[^\n]*/g).join('\n')), '바꿔 끼울 때 /quit — 외부 수집기가 번외 크롬을 먼저 닫고 끝남(옛 크롬이 프로필을 쥔 채 남지 않게)');
+    c2pid = s7.j && s7.j.pid; delete env.RN_COL2_CHECK_MS;
     await P('POST', '/col2/stop', {});
   } finally { await stopPH(); if (c2pid) try { process.kill(c2pid, 'SIGKILL'); } catch (e) {} raw.close(); } }
 
@@ -95,14 +102,15 @@ async function partWeb() { console.log('③ 웹앱 🧭 관리도구 › 🪟 �
       if (rt.request().method() === 'OPTIONS') return rt.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST' } });
       if (u.pathname === '/status') return J({ ok: true, ver: hv }); if (u.pathname === '/printers') return J({ ok: true, printers: [] });
       if (u.pathname.startsWith('/col2/') && hv === '1.1.8') return J({ ok: false }, 404);
-      const S2 = () => ({ ok: true, helper: hv, ver: c2.installed ? '0.1.0' : null, ...c2, dayN: c2.running ? 12 : null, dayCap: 800, hourN: 3, last: c2.running ? { at: '2026-11-05 22:10:00', itemId: '1', ok: true } : null, msg: c2.running ? '작업 창 숨김 · 일할 준비' : '' });
+      const S2 = () => ({ ok: true, helper: hv, ver: c2.installed ? '0.1.0' : null, ...c2, chrome: c2.running ? { fails: 4, last: { at: '2026-11-06 10:01:00', why: '번외 크롬이 바로 꺼짐(0.3초 · 종료 코드 0 · 시험)', code: 0 } } : null, auto: c2.running ? { msg: '자동으로 도는 중', left: 900, poolN: 1000, lap: { n: 1, read: 321, end: false } } : null, dayN: c2.running ? 12 : null, dayCap: 800, hourN: 3, last: c2.running ? { at: '2026-11-05 22:10:00', itemId: '1', ok: true } : null, msg: c2.running ? '작업 창 숨김 · 일할 준비' : '' });
       if (u.pathname === '/col2/status') return J(S2()); if (u.pathname === '/col2/ensure') { c2 = { installed: true, running: true, on: true, want: true }; return J(S2()); } if (u.pathname === '/col2/stop') { c2 = { ...c2, running: false, on: false, want: false }; return J(S2()); }
       return J({ ok: false }, 404); });
     /* 가짜 외부 수집기(127.0.0.1:8797) — 작은 창 길·대신 기록 길(받은 요청을 적음) */
-    const c2calls = []; await p.route(/127\.0\.0\.1:8797/, async (rt) => { const u = new URL(rt.request().url()); const b = rt.request().postData(); c2calls.push({ p: u.pathname + u.search, b: b ? JSON.parse(b) : null });
+    const c2calls = []; let pend2 = false; await p.route(/127\.0\.0\.1:8797/, async (rt) => { const u = new URL(rt.request().url()); const b = rt.request().postData(); c2calls.push({ p: u.pathname + u.search, b: b ? JSON.parse(b) : null });
       const J = (x) => rt.fulfill({ status: 200, contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' }, body: JSON.stringify(x) });
       if (rt.request().method() === 'OPTIONS') return rt.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST' } });
       if (u.pathname === '/win/app') return J({ ok: true, msg: '🔎 비교 화면을 작은 창으로 엶 (오른쪽 위)' });
+      if (u.pathname === '/relay/pending' && pend2) return J({ ok: true, want: [], sample: 0, pool: 5, poolAfter: 'b0', poolLap: 1, fields: ['title', 'aladinItemId'], out: [], hot: false, pc: 'HOME', pcSrc: 'web' });
       if (u.pathname === '/relay/pending') return J({ ok: true, want: [{ c: 'prd_books', id: 'c2t1' }, { c: 'app_secrets', id: 'x' }], sample: 0, pool: 5, fields: ['title', 'aladinItemId'], out: [{ k: 'k1', c: 'col2_books', id: 'c2t1', v: { x: 1, cmp: { verdict: 'same' } } }, { k: 'k2', c: 'prd_books', id: 'c2t1', v: { title: '덮어쓰기' } }], hot: false, pc: null, pcSrc: null });
       return J({ ok: true }); });
     const r = await p.evaluate(async () => { const sl = (ms) => new Promise((x) => setTimeout(x, ms)); localStorage.setItem('rn-device', 'HOME'); S.devOk = true; const T = []; const t0 = window.toast; window.toast = (m, ...a) => { T.push(String(m)); return t0(m, ...a); }; window.__T = T;
@@ -137,6 +145,14 @@ async function partWeb() { console.log('③ 웹앱 🧭 관리도구 › 🪟 �
     ok(Array.isArray(ans.pool) && ans.pool.length >= 1 && ans.pool.every((b) => b.aladinItemId && b.id && !('memo' in b)), '표본 목록(운영 prd_books에서 · 상품 번호 있는 것만 · 칸 줄임)을 넘김', (ans.pool || []).length);
     ok(rr.b && rr.b.x === 1 && rr.pb && rr.pb.title === '시험 책' && ak.keys && ak.keys.join() === 'k1' && ak.errs && /col2_/.test(ak.errs.k2 || ''), '맡긴 결과는 col2_* 칸만 대신 씀(운영 칸은 안 씀 · 까닭을 돌려줌) → 다 쓴 것 지움 신호', { ak, pb: rr.pb });
     ok(cf.pc === 'HOME' && cf.pcSrc === 'web', '이 PC 이름(웹앱 기기 이름)을 외부 수집기에 넘김', cf);
+    /* (11/06) 관리도구를 열지 않아도 1분마다 col2_ctl/<PC>.st — 숨은 크롬 실패 까닭·표본 바퀴까지 */
+    const st1 = await p.evaluate(async () => { await db.collection('col2_ctl').doc('HOME').set({ st: null }, { merge: true }); S._c2NoHlp = 0; await c2StTick(); return (await db.collection('col2_ctl').doc('HOME').get()).data(); }).catch((e) => ({ err: String(e) }));
+    ok(st1 && st1.st && st1.st.running && /바로 꺼짐/.test((st1.st.chrome || {}).why || '') && st1.st.lap && st1.st.lap.read === 321 && /HOME/.test(st1.by || ''), '관리도구를 안 열어도 1분마다 col2_ctl/HOME.st 고침(판·켜짐·숨은 크롬 실패 까닭·표본 바퀴)', st1);
+    ok(await p.evaluate(() => { mgrRedraw && S.detail && S.detail.mgr && mgrRedraw(); const r = document.querySelector('[data-c2row="HOME"]'); return !r || /표본 1바퀴 321권째/.test(r.innerText); }), '줄에 표본 바퀴가 보임');
+    /* 표본 이어 넘김 — 외부 수집기 0.1.2가 poolAfter를 알리면 문서 이름 차례로 그 뒤부터 */
+    pend2 = true; const pa = await p.evaluate(async () => { S._c2rTried = 0; clearTimeout(S._c2rT); await c2RelayTick(); clearTimeout(S._c2rT); return 1; }); pend2 = false;
+    const ans2 = (c2calls.filter((c) => c.p === '/relay/answer').slice(-1)[0] || {}).b || {};
+    ok(pa && 'poolFor' in ans2 && ans2.poolFor === 'b0' && ans2.poolLap === 1 && typeof ans2.poolNext === 'string' && typeof ans2.poolEnd === 'boolean' && Array.isArray(ans2.pool), '외부 수집기가 알린 자리(poolAfter) 뒤부터 이어 넘김 · 다음 자리(poolNext)·끝(poolEnd)도 알림', { poolFor: ans2.poolFor, poolNext: ans2.poolNext, poolEnd: ans2.poolEnd, n: (ans2.pool || []).length });
     /* (정범님 11/05 밤 '새 판이 올라가면 사람 손 없이') 새 웹앱이 켜질 때 외부 수집기가 켜져 있었으면 /col2/ensure 한 번(도우미가 새 묶음을 받아 바꿔 끼움) */
     const nE = calls.filter((c) => c.startsWith('/col2/ensure')).length; await p.evaluate(async () => { S._c2AE = 0; await c2AutoEnsure(); });
     const ae = calls.filter((c) => c.startsWith('/col2/ensure')); ok(ae.length === nE + 1 && /저절로/.test(ae.slice(-1)[0]), '새 웹앱이 켜질 때 켜져 있던 외부 수집기는 저절로 /col2/ensure(새 판이면 바꿔 끼움)', ae.slice(-1)[0]);

@@ -31,16 +31,18 @@ const w=S[mark];const n=(k)=>{const v=g(k);return v==null?null:+v};
 if(w&&procs.length){if(act==='hide'){const W=Math.max(400,n('W')||0),H=Math.max(300,n('H')||0);w.r=place==='edge'?{x:1914,y:1074,w:W,h:H}:{x:vs.x-W-400,y:40,w:W,h:H};w.tool=true;w.ic=false}
 else if(act==='show'){w.tool=false;let X=n('X'),Y=n('Y'),W=n('W'),H=n('H');if(!(W>=200&&H>=150)){W=1200;H=820;X=360;Y=130}w.r={x:X,y:Y,w:W,h:H};w.front++}
 else if(act==='close'){procs.forEach((p)=>{try{process.kill(+p)}catch(e){}});delete S[mark]}}
-fs.writeFileSync(${JSON.stringify(WJ)},JSON.stringify(S));const W2=S[mark];
-process.stdout.write('잡음 줄\\n'+JSON.stringify({ok:true,act,vs,wa:vs,n:W2?1:0,list:W2?[{h:1,r:W2.r,vis:true,ic:!!W2.ic,zm:false,tool:!!W2.tool}]:[]}));`);
+let killed=0;if(act==='kill'){procs.forEach((p)=>{try{process.kill(+p,'SIGKILL');killed++}catch(e){}});delete S[mark];S.kills=(S.kills||0)+killed}
+const tmp=${JSON.stringify(WJ)}+'.'+process.pid;fs.writeFileSync(tmp,JSON.stringify(S));fs.renameSync(tmp,${JSON.stringify(WJ)});const W2=act==='kill'?null:S[mark]; /* 한 번에 바꿔 끼움(읽는 쪽이 반쯤 쓴 파일을 보지 않게) */
+process.stdout.write('잡음 줄\\n'+JSON.stringify({ok:true,act,vs,wa:vs,killed,n:W2?1:0,list:W2?[{h:1,r:W2.r,vis:true,ic:!!W2.ic,zm:false,tool:!!W2.tool}]:[]}));`);
   const real = chromium().executablePath();
   fs.writeFileSync(D + '/bin/chrome', `#!/bin/bash
 printf '%s\\n' "$*" >> ${JSON.stringify(D + '/chrome.log')}
 for a in "$@"; do case "$a" in --app=*) exec node -e "setInterval(()=>{},1e9)" -- "$@";; esac; done
+if [ -f ${JSON.stringify(D + '/chrome-die')} ]; then echo "기존 브라우저 세션에서 여는 중입니다." >&2; exit $(cat ${JSON.stringify(D + '/chrome-die')}); fi
 exec ${JSON.stringify(real)} --headless=new --no-sandbox --disable-background-networking --disable-component-update "$@"
 `);
   fs.chmodSync(D + '/bin/powershell.exe', 0o755); fs.chmodSync(D + '/bin/chrome', 0o755);
-  return { WJ, win: () => JSON.parse(fs.readFileSync(WJ, 'utf8')), setWin: (f) => { const S = JSON.parse(fs.readFileSync(WJ, 'utf8')); f(S); fs.writeFileSync(WJ, JSON.stringify(S)); }, clog: () => { try { return fs.readFileSync(D + '/chrome.log', 'utf8').trim().split('\n').filter(Boolean); } catch (e) { return []; } } }; }
+  return { WJ, win: () => JSON.parse(fs.readFileSync(WJ, 'utf8')), setWin: (f) => { const S = JSON.parse(fs.readFileSync(WJ, 'utf8')); f(S); fs.writeFileSync(WJ + '.t', JSON.stringify(S)); fs.renameSync(WJ + '.t', WJ); }, clog: () => { try { return fs.readFileSync(D + '/chrome.log', 'utf8').trim().split('\n').filter(Boolean); } catch (e) { return []; } } }; }
 
 async function startHelper(o) { o = o || {}; const D = o.dir || fs.mkdtempSync(path.join(os.tmpdir(), 'col2t_')); const T = tools(D); fs.mkdirSync(D + '/home', { recursive: true });
   if (o.cfg) fs.writeFileSync(D + '/home/col2.json', JSON.stringify(o.cfg));

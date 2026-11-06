@@ -40,6 +40,7 @@ $out = @{ ok = $true; act = $Act; vs = @{ x = $vs.X; y = $vs.Y; w = $vs.Width; h
 $out.scr = @([System.Windows.Forms.Screen]::AllScreens | ForEach-Object { $b = $_.WorkingArea; @{ x = $b.X; y = $b.Y; w = $b.Width; h = $b.Height } })
 $pids = New-Object 'System.Collections.Generic.HashSet[uint32]'
 Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like ('*' + $Mark + '*') } | ForEach-Object { [void]$pids.Add([uint32]$_.ProcessId) }
+if ($Act -eq 'kill') { $k = 0; foreach ($q in $pids) { try { Stop-Process -Id $q -Force -ErrorAction Stop; $k++ } catch {} }; $out.killed = $k; $out.n = 0; $out.list = @(); $out | ConvertTo-Json -Compress -Depth 5; exit 0 }
 $L = @(); if ($pids.Count) { $L = @([RnCol2Win]::Find($pids)) }
 $out.n = $L.Count; $out.list = @($L | Select-Object -First 4 | ForEach-Object { Info $_ })
 if ($L.Count -gt 0) { $hnd = $L[0]
@@ -58,7 +59,7 @@ $out | ConvertTo-Json -Compress -Depth 5
 `;
 
 function makeWin(o) { const psFile = o.psFile; const D = o.D; const psExe = () => process.env.RN_COL2_PS || 'powershell.exe';
-  /* act: find|hide|show|close · mark: 프로필 폴더 이름(col2-work-chrome · col2-stat-chrome · col2-win-chrome) */
+  /* act: find|hide|show|close|kill(0.1.2 · 이 프로필 이름이 명령 줄에 든 크롬 프로세스만 끝냄 — 바로 꺼짐의 원인인 옛 번외 크롬 치우기) · mark: 프로필 폴더 이름(col2-work-chrome · col2-stat-chrome · col2-win-chrome) */
   function run(act, mark, a) { a = a || {}; return new Promise((res) => {
     try { const want = '﻿' + PS_SRC(D).replace(/\r?\n/g, '\r\n'); let cur = null; try { cur = fs.readFileSync(psFile, 'utf8'); } catch (e) {} if (cur !== want) fs.writeFileSync(psFile, want, 'utf8'); } catch (e) { return res({ ok: false, err: '창 다루기 파일을 못 씀: ' + e.message }); }
     const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', psFile, '-Act', act, '-Mark', mark];
