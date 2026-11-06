@@ -223,10 +223,19 @@
   /* 알라딘 매입가(그 등급) — mkt.buyback {최상, 상, 중} 숫자만 · 0·빈 칸·모르는 등급 = 모름(null) */
   /* (정범님 10/28 11:32) 우리 등급 칸에 매입가가 없으면 다른 등급이라도 매입가가 있으면 그것과 견줌 — 우리 등급에 가장 가까운 등급부터(같은 거리면 더 좋은 등급 = 더 높은 매입가라 더 엄격). 돌려줌 { v, g, alt } */
   const BB_ORD = ['최상', '상', '중', '하'];
-  function bbPick(m, grade) { const B = m && m.buyback; if (!B || typeof B !== 'object') return null; const ok = (x) => Number.isFinite(x) && x > 0;
-    if (grade && ok(+B[grade])) return { v: +B[grade], g: grade, alt: false };
-    const gi = BB_ORD.indexOf(grade); const c = Object.keys(B).filter((k) => ok(+B[k])).map((k) => { const i = BB_ORD.indexOf(k); return { k, d: i < 0 ? 9 : gi < 0 ? i : Math.abs(i - gi), i: i < 0 ? 9 : i }; }).sort((a, b) => a.d - b.d || a.i - b.i);
-    return c.length ? { v: +B[c[0].k], g: c[0].k, alt: true } : null; }
+  /* (정범님 11/06) 판정은 판정 엔진 파일(readnow-pricing-core)의 공용 bbPick·bbNetParts·bbNear 하나 — 그 파일이 함께 있으면(웹앱·수집기·PC·클라우드) 그것을 부르고, 없을 때(노드 시험 등)만 아래 같은 셈(시험 tBBONE이 같은 답인지 봄) */
+  const PRC = () => { const R = root && root.ReadnowPricing; return R && R.bbNear && R.bbPick && R.bbNetParts ? R : null; };
+  /* 정가(매입가 거르기) — 주문 상품 줄 priceList · 시장 자료 새책 칸 np.pl · mkt.priceList */
+  const listOf = (m, it) => +((it && it.priceList) || (m && m.np && m.np.pl) || (m && m.priceList) || 0) || null;
+  /* m = 시장 자료(mkt — buyback 표) · grade = 우리 등급 · list = 정가(주면 정가보다 큰 매입가 무시) → null · { v, g, alt, warn, bad, noList } (v null = 값은 있었지만 모두 무시) */
+  function bbPick(m, grade, list) { const B = m && m.buyback; if (!B || typeof B !== 'object') return null; if (list === undefined) list = listOf(m); const P = PRC(); if (P) return P.bbPick(B, grade, { list });
+    const L = +list; const bad = []; const ok = (k) => { const x = +B[k]; if (!(Number.isFinite(x) && x > 0)) return false; if (L > 0 && x > L) { bad.push({ g: k, v: x, list: L, why: `알라딘 매입가 ${W0(x)}이 정가 ${W0(L)}보다 큼 — 잘못 읽은 값으로 보고 무시` }); return false; } return true; };
+    const keys = Object.keys(B).filter(ok); const noList = !(L > 0); const warnOf = (g, alt) => (g === '중' ? '⚠ 중 — 알라딘이 매입하지 않을 수 있음' : '') + (alt ? `${g === '중' ? ' · ' : ''}우리 등급(${grade || '모름'}) 칸이 없어 가장 가까운 ${g} 매입가로 견줌` : '');
+    if (grade && keys.includes(grade)) return { v: +B[grade], g: grade, alt: false, warn: warnOf(grade, false), bad, noList };
+    const gi = BB_ORD.indexOf(grade); const c = keys.map((k) => { const i = BB_ORD.indexOf(k); return { k, d: i < 0 ? 9 : gi < 0 ? i : Math.abs(i - gi), i: i < 0 ? 9 : i }; }).sort((a, b) => a.d - b.d || a.i - b.i);
+    if (c.length) return { v: +B[c[0].k], g: c[0].k, alt: true, warn: warnOf(c[0].k, true), bad, noList };
+    return bad.length ? { v: null, g: bad[0].g, alt: bad[0].g !== grade, warn: '', bad, noList, why: bad.map((x) => `${x.g} ${x.why}`).join(' · ') } : null; }
+  const W0 = (v) => Math.round(+v || 0).toLocaleString('ko-KR') + '원';
   function bbOf(m, grade) { const x = bbPick(m, grade); return x ? x.v : null; }
   /* (정범님 11/05 밤 '매입가 후보 안에 들지 않는 한 무조건 자동 결정') 🏷 알라딘 매입 후보 판정 — 한 곳
    *  웹앱 📥 등록·🏷 알라딘 매입·수동 일괄·상품 상세·경영(bbNearJ)과 자동 발송요청 저가·관리코드 규칙(autoShipDecide ⑥)이 같이 부름 — 같은 책이면 같은 답
@@ -236,14 +245,16 @@
    *  D가 없으면 판정 엔진 DEFAULTS와 같은 값(BB_NET_DEF) · policy가 없으면 손님 배송비 0원으로 셈(가장 보수적 — 더 자주 후보) */
   const BB_MARGIN_DEF = 500; const BB_NET_DEF = { feeRate: 0.10, packPerOrder: 394, courierPerOrder: 2500, booksPerOrder: 1 };
   function bbMarginOf(v) { return v != null && v !== '' && Number.isFinite(+v) && +v >= 0 && +v <= 100000 ? Math.round(+v) : BB_MARGIN_DEF; }
-  function bbNetParts(P, o) { P = +P; if (!(P > 0)) return null; o = o || {}; const D = o.D || {}; const pol = o.policy || {}; const num = (v, d) => (v != null && Number.isFinite(+v) ? +v : d);
+  function bbNetParts(P, o) { const Q = PRC(); if (Q) return Q.bbNetParts(P, o); P = +P; if (!(P > 0)) return null; o = o || {}; const D = o.D || {}; const pol = o.policy || {}; const num = (v, d) => (v != null && Number.isFinite(+v) ? +v : d);
     const fr = num(D.feeRate, BB_NET_DEF.feeRate), pk = num(D.packPerOrder, BB_NET_DEF.packPerOrder), cr = num(D.courierPerOrder, BB_NET_DEF.courierPerOrder), bpo = Math.max(1, num(D.booksPerOrder, BB_NET_DEF.booksPerOrder));
     const cust = pol.freeOver != null && pol.freeOver !== '' && P >= +pol.freeOver ? 0 : num(pol.fee, 0); const fee = Math.round(P * fr), shipNet = Math.max(0, cr - cust), per = Math.round((pk + shipNet) / bpo);
     const net = Math.round(P * (1 - fr) - (pk + shipNet) / bpo); return { fee, fr, pk, cr, cust, shipNet, bpo, per, net }; }
-  function bbNear(P, buy, o) { P = +P; buy = +buy; if (!(P > 0) || !(buy > 0)) return null; o = o || {}; const k = bbMarginOf(o.margin); const x = bbNetParts(P, o); if (!x) return null;
+  /* o.list = 정가(주면 정가보다 큰 매입가는 무시 → { in: false, ignored }) */
+  function bbNear(P, buy, o) { const Q = PRC(); if (Q) return Q.bbNear(P, buy, o); P = +P; buy = +buy; if (!(P > 0) || !(buy > 0)) return null; o = o || {}; const k = bbMarginOf(o.margin); const x = bbNetParts(P, o); if (!x) return null;
+    const L = +o.list; if (L > 0 && buy > L) { const why = `알라딘 매입가 ${W0(buy)}이 정가 ${W0(L)}보다 큼 — 잘못 읽은 값으로 보고 무시`; return { in: false, below: false, P, buy, k, net: x.net, gain: null, parts: x, ignored: { buy, list: L, why }, calc: why }; }
     const net = x.net, gain = net - buy; const W = (v) => Math.round(+v || 0).toLocaleString('ko-KR') + '원';
     const calc = `순이익 ${W(net)} − 알라딘 매입가 ${W(buy)} = 차 ${gain < 0 ? '−' + W(-gain) : W(gain)} ${gain < k ? '<' : '≥'} 기준 ${W(k)}`;
-    return { in: gain < k, below: gain <= 0, P, buy, k, net, gain, parts: x, calc }; }
+    return { in: gain < k, below: gain <= 0, P, buy, k, net, gain, parts: x, calc, ...(L > 0 ? {} : { noList: true }) }; }
   function autoCfg(c) { const x = { ...AUTO_DEFAULTS, ...(c || {}) }; const n = (v, d, lo, hi) => { v = +v; return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d; };
     x.qtyMax = Math.round(n(x.qtyMax, AUTO_DEFAULTS.qtyMax, 1, 999)); x.bundleOn = x.bundleOn !== false; x.bundleSize = Math.round(n(x.bundleSize, AUTO_DEFAULTS.bundleSize, 1, 999)); x.bundleWon = Math.round(n(x.bundleWon, AUTO_DEFAULTS.bundleWon, 0, 1e9));
     x.bundleRound = ['ceil', 'floor', 'round'].includes(x.bundleRound) ? x.bundleRound : AUTO_DEFAULTS.bundleRound; x.maxItemWon = Math.round(n(x.maxItemWon, 0, 0, 1e9)); x.maxTotalWon = Math.round(n(x.maxTotalWon, 0, 0, 1e9)); x.minQty = x.qtyMax; /* minQty = 옛 이름(옛 판 화면·기록 호환) */ x.cheapPct = n(x.cheapPct, AUTO_DEFAULTS.cheapPct, 0, 100); x.waitMin = n(x.waitMin, AUTO_DEFAULTS.waitMin, 1, 120); x.on = x.on !== false; x.noValid = !!x.noValid; x.custBlock = x.custBlock !== false;
@@ -332,13 +343,13 @@
       const aloneChk = () => { if (!alone || !cfg.aloneOn) return; if (!P.flag || P.flag === 'novalid') P.flag = 'alone'; P.why = '첫 페이지에 우리 매물뿐 — 견줄 다른 판매자 매물이 없어 사람이 값 확인' + (P.srchWhy ? ' · ' + P.srchWhy : '') + (P.why ? ' · ' + P.why : ''); add('alone', `「${sh(b.title)}」 ${W(b.price)} — 첫 페이지에 우리 매물뿐(단독 매물) · 견줄 다른 판매자 매물이 없음${P.srchWhy ? ' · ' + P.srchWhy : ''}`); };
       const sku = it.sku || (e && e.sku) || null; if (sku) P.sku = String(sku); const low = autoLowOf(it, cfg, sku);
       const lowT = low ? [low.sku ? `관리코드 ${cfg.lowSku}…` : '', low.price ? `${W(cfg.lowPrice)} 이하` : ''].filter(Boolean).join(' · ') : '';
-      if (low) { const bp = bbPick(m, b.grade); const bb = bp ? bp.v : null; P.low = lowT; P.bb = bb; if (bp) { P.bbG = bp.g; P.bbAlt = bp.alt; } const bgT = bp ? (bp.alt ? `${bp.g} — 우리 등급(${b.grade || '모름'}) 칸이 없어 가장 가까운 등급` : bp.g) : '';
-        if (bb != null) { P.rule = 'bb'; /* (정범님 11/05 밤) 웹앱 '매입 후보'와 같은 판정(bbNear — 순이익 − 매입가 < 기준 차액) · 예전: 판매가 < 매입가만 */ const J = bbNear(b.price, bb, BBX);
+      if (low) { const lst = listOf(m, it); const bp = bbPick(m, b.grade, lst); const bb = bp ? bp.v : null; P.low = lowT; P.bb = bb; if (bp) { P.bbG = bp.g; P.bbAlt = bp.alt; } if (bp && bp.bad && bp.bad.length) { P.bbBad = bp.bad; /* (정범님 11/06) 정가보다 큰 매입가 = 잘못 읽은 값 → 무시(판단 기록에 남김) */ } if (bp && bp.noList) P.bbNoList = true; const bgT = bp ? (bp.alt ? `${bp.g} — 우리 등급(${b.grade || '모름'}) 칸이 없어 가장 가까운 등급` : bp.g) : '';
+        if (bb != null) { P.rule = 'bb'; /* (정범님 11/05 밤) 웹앱 '매입 후보'와 같은 판정(bbNear — 순이익 − 매입가 < 기준 차액) · 예전: 판매가 < 매입가만 */ const J = bbNear(b.price, bb, { ...BBX, list: lst });
           if (J) { P.bbNet = J.net; P.bbGain = J.gain; P.bbK = J.k; P.bbIn = J.in; P.bbCalc = J.calc; }
           if (J && J.in) { P.flag = 'bbLow'; P.why = `알라딘 매입 후보 — ${J.calc}(알라딘 매입가 등급 ${bgT}) → 검토`; add('bbLow', `「${sh(b.title)}」 ${W(b.price)} — 알라딘 매입 후보: ${J.calc} (알라딘 매입가 등급 ${bgT} · ${lowT} 상품: 매입 후보가 아니면 통과)`); }
           else P.why = `${lowT} 상품 — 알라딘 매입 후보 아님(${J ? J.calc : '셈 못 함'} · 매입가 등급 ${bgT})이라 통과 (25% 기준 안 씀)`; aloneChk(); per.push(P); continue; }
         /* (정범님 11/05 밤 '해당 코드 혹은 금액 이하면 퍼센트 따지지 않고 매입가 후보 안에 들지 않는 한 무조건 자동 결정') 매입가를 모르면 = 알라딘이 사지 않는 책 = 매입가 후보가 아님 → 25% 기준을 쓰지 않고 통과(예전: 25% 기준으로 봄) */
-        P.rule = 'bbNone'; P.bbWhy = `${lowT} 상품 — 알라딘 매입가 없음(알라딘이 안 사는 책 · 매입가 후보 아님)`; P.why = `${lowT} 상품 — 알라딘 매입가 후보가 아니라 통과 (25% 기준 안 씀)`; aloneChk(); per.push(P); continue; } else P.rule = 'pct';
+        P.rule = 'bbNone'; P.bbWhy = P.bbBad ? `${lowT} 상품 — ${P.bbBad.map((q) => `${q.g} ${q.why}`).join(' · ')} → 매입가 모름으로 봄` : `${lowT} 상품 — 알라딘 매입가 없음(알라딘이 안 사는 책 · 매입가 후보 아님)`; P.why = `${lowT} 상품 — 알라딘 매입가 후보가 아니라 통과 (25% 기준 안 씀)${P.bbBad ? ` · ${P.bbBad.map((q) => `${q.g} ${q.why}`).join(' · ')}` : ''}`; aloneChk(); per.push(P); continue; } else P.rule = 'pct';
       if (r && r.tier === 'valid' && r.ratio != null && r.ratio < -cfg.cheapPct / 100) { P.flag = 'cheap'; add('cheap', `「${sh(b.title)}」 ${W(b.price)} — ${r.refHow} ${W(r.ref)}보다 ${Math.round(-r.ratio * 100)}% 쌈 (기준 ${cfg.cheapPct}% 넘게)${P.rule === 'bbNone' ? ' · 알라딘 매입가를 몰라 25% 기준으로 봄' : ''}`); }
       else if (P.rule0 === 'srch' && (!r || r.tier !== 'valid')) srchCheap(P);
       else if (!r || r.tier !== 'valid') { P.flag = 'novalid'; P.why = '첫 페이지에 유효 매물이 없어 유효 최저가가 없음' + (P.bbWhy ? ' · ' + P.bbWhy : ''); if (cfg.noValid && !(alone && cfg.aloneOn)) add('novalid', `「${sh(b.title)}」 유효 매물이 없어 판매가를 견줄 수 없음`); }
