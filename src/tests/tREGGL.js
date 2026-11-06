@@ -37,6 +37,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   await p.click(row('g02') + ' [data-rggl="qty"]'); await p.waitForTimeout(150); await p.keyboard.press('Escape'); await p.waitForTimeout(150);
   ok(await p.evaluate(() => document.getElementById('rgglpop').style.display !== 'block'), 'Esc → 창 닫힘(저장 없음)');
   // 4) 관리 코드 — 자동 완성 · 서가 칩 · 부가코드(매입처) 칩 · 미리보기 · Enter 저장
+  await p.waitForTimeout(500); /* 바로 앞 수량 단추의 누름 움직임(tapfx)이 끝난 뒤 — 움직이는 동안 옆 코드 단추 자리를 덮어 누름이 수량으로 갈 때가 있음 */
   await p.click(row('g02') + ' [data-rggl="code"]'); await p.waitForTimeout(200);
   const c0 = await p.evaluate(() => { const z = document.getElementById('rgglpop'); return { foc: document.activeElement && document.activeElement.dataset.rgglcin === '1', v: z.querySelector('[data-rgglcin]').value, shelf: z.querySelectorAll('[data-rgglb]').length, star: (z.querySelector('[data-rgglb]') || {}).textContent, src: [...z.querySelectorAll('[data-rggls]')].map((b) => b.textContent), pv: z.querySelector('[data-rgglpv]').textContent }; });
   ok(c0.foc && c0.v === 'BLKCMN' && c0.shelf >= 15 && /★/.test(c0.star) && /YLWNOT/.test(c0.star), '코드 창: 직접 입력 칸에 커서·지금 코드 · 서가 칩(★ 슬롯 먼저)', c0);
@@ -84,9 +85,10 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   const fu = await p.evaluate(() => { const c = document.querySelector('[data-rgchk="g02"]'); const card = c && c.closest('.card'); return card ? { pk: !!card.querySelector('.rgacts [data-rgpk2]'), pz: !!card.querySelector('.rgcov[data-pz]') } : null; });
   ok(fu && fu.pk && fu.pz, '자세히 카드에도 → 결정 대기 단추 · 표지 큰 보기', fu);
   // 7) 표지 마우스 올리기 → 앞면·뒷면·옆면 크게(없는 면은 없음)
+  await p.evaluate(() => { try { localStorage.setItem('rn-imgzoom', 'three'); } catch (e) {} }); /* (11/06) 큰 보기는 웹앱 전체 하나의 고름(rn-imgzoom · 기본 앞면만)을 따름 — 세 장으로 골라 놓고 봄 */
   await p.locator('.card:has([data-rgchk="g02"]) img.rgcov').first().hover(); await p.waitForTimeout(400);
   const pz = await p.evaluate(() => { const z = document.getElementById('pzbox'); return z ? { d: z.style.display, f: [...z.querySelectorAll('.pz-f figcaption')].map((x) => x.textContent), no: z.querySelectorAll('.pz-no').length, img: z.querySelectorAll('.pz-f img').length } : null; });
-  ok(pz && pz.d === 'block' && pz.f.join() === '앞면,뒷면,옆면' && pz.img === 1 && pz.no === 2, '표지에 마우스 → 앞면(표지)·뒷면·옆면 큰 보기 · 없는 면 「없음」', pz);
+  ok(pz && pz.d === 'block' && pz.f.map((x) => x.split(' ')[0]).join() === '앞면,뒷면,옆면' /* (11/06) 앞면 글 뒤에 크기(예 '1×1')가 붙음 */ && pz.img === 1 && pz.no === 2, '표지에 마우스 → 앞면(표지)·뒷면·옆면 큰 보기 · 없는 면 「없음」', pz);
   await p.mouse.move(5, 5); await p.waitForTimeout(300);
   // 8) 고르기 줄 = 카드 목록 바로 위 · 고른 상품 창 = 줄 위 · 창이 열려도 줄·카드가 안 밀림
   const tabs = ['q', 'sel', 'pick', 'hold', 'done', 'trash', 'bb', 'bbr'];
