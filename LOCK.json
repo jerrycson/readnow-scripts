@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "daily",
+ "what": "🔬 매일 정밀 점검 11/06 — 실측·코드 범위 02fb836.. 86커밋 점검",
+ "since": "2026-11-06T12:52:42Z",
+ "beat": "2026-11-06T12:52:42Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "수집기 1.89.223 · 웹앱 1.78.408 · 클라우드 0.35.103 · ALPS 도우미 0.5.6 송장 CSV 일괄등록·진정한 원스톱 (6cb385e)",
   "at": "2026-11-06T07:43:54Z"
  },
- "host": null
+ "host": "vm"
 }
