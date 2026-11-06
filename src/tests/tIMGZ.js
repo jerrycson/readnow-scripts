@@ -21,7 +21,7 @@ const seed = async (p, view) => { await p.evaluate(require('./seed.js')); await 
   await W(p, 1600); };
 const setMode = (p, m) => p.evaluate((m) => { const b = document.querySelector(`[data-imgz="${m}"]`); if (b) b.click(); else localStorage.setItem('rn-imgzoom', m); }, m);
 const COV1 = '[data-rgcid="z01"] img.rgcov', COV2 = '[data-rgcid="z02"] img.rgcov';
-H(async (p) => {
+const PCDONE = H(async (p) => {
   console.log('── 자세히 카드(선택 대기)');
   await seed(p, 'full');
   const has = await p.evaluate((s) => !!document.querySelector(s), COV1); ok(has, '선택 대기 자세히 카드에 표지 사진이 있음', has);
@@ -52,6 +52,31 @@ H(async (p) => {
     d.innerHTML = shipImgTag(__P.f1, 'ph', P, true); document.body.appendChild(d); });
   await setMode(p, 'front'); await hover(p, '#tship img'); v = await vis(p); ok(v.n === 1 && v.imgs[0] === 1, '출고 사진 「앞면만」: 창 하나 · 한 장', v);
   await setMode(p, 'three'); await hover(p, '#tship img'); v = await vis(p); ok(v.n === 1 && v.imgs[0] + v.no[0] === 3, '출고 사진 「세 장」: 창 하나 · 세 칸(없는 면은 「없음」)', v);
-  await p.evaluate(() => document.getElementById('tship').remove());
-  console.log(bad ? `❌ 실패 ${bad}` : '✅ tIMGZ 모두 통과');
+  console.log('── 고름 단추 — 웹앱 전체 하나(📦 오늘 출고 · ⚙ 설정 · 등록)');
+  const so = await p.evaluate(async () => { localStorage.setItem('rn-imgzoom', 'front'); let err = null; try { await openShip(); } catch (e) { err = String(e && e.message); } await new Promise((r) => setTimeout(r, 700)); const bar = document.querySelector('#sheet .imgzrow .imgzbar'); return { err, bar: !!bar, on: bar ? (bar.querySelector('.on') || {}).dataset.imgz : null }; });
+  ok(so.bar && so.on === 'front', '📦 오늘 출고 탭 줄 아래 「🖼 사진 크게」 단추 · 지금 고름(앞면만) 표시', so);
+  await p.click('#sheet .imgzrow [data-imgz="three"]'); await W(p, 300);
+  let m = await p.evaluate(() => ({ ls: localStorage.getItem('rn-imgzoom'), on: [...document.querySelectorAll('[data-imgz].on')].map((b) => b.dataset.imgz) }));
+  ok(m.ls === 'three' && m.on.length && m.on.every((x) => x === 'three'), '출고에서 「세 장」을 누르면 이 기기 고름이 세 장 · 화면의 모든 고름 단추가 세 장', m);
+  await p.evaluate(() => { const P = { f: __P.f1, th: __P.f1, b: __P.b1, s: __P.s1, pp: [], t: '출고 책', fromBook: true }; const d = document.createElement('div'); d.id = 'tship'; d.className = 'shp-it'; d.style.cssText = 'position:fixed;left:40px;top:300px;z-index:20000;background:#fff;padding:10px'; d.innerHTML = shipImgTag(__P.f1, 'ph', P, true); document.body.appendChild(d); });
+  await hover(p, '#tship img'); v = await vis(p); ok(v.n === 1 && v.imgs[0] === 3, '출고 「세 장」 → 출고 사진 창 하나 · 세 장', v);
+  await p.click('#sheet .imgzrow [data-imgz="front"]'); await W(p, 300); await hover(p, '#tship img'); v = await vis(p); ok(v.n === 1 && v.imgs[0] === 1, '출고 「앞면만」 → 출고 사진 창 하나 · 한 장', v);
+  await p.evaluate(() => { document.getElementById('tship').remove(); const b = document.querySelector('#sheet #back'); if (b) b.click(); }); await W(p, 400);
+  await p.click('#sheet .imgzrow [data-imgz="three"]').catch(() => {}); await p.evaluate(() => localStorage.setItem('rn-imgzoom', 'three'));
+  await seed(p, 'full'); m = await p.evaluate(() => (document.querySelector('.btabs .imgzbar .on') || {}).dataset.imgz); ok(m === 'three', '출고에서 바꾼 고름이 등록 화면 단추에도(세 장)', m);
+  await hover(p, COV1); v = await vis(p); ok(v.n === 1 && v.imgs[0] === 3, '출고에서 바꾼 고름대로 등록 카드도 세 장 · 창 하나', v);
+  const st = await p.evaluate(async () => { const sh = document.getElementById('sheet'); if (sh) sh.classList.remove('on'); S.detail = null; S.tab = 'settings'; renderTabs(); renderMain(); await new Promise((r) => setTimeout(r, 900)); const z = document.querySelector('#st_imgz'); return { has: !!z, on: z ? (z.querySelector('.on') || {}).dataset.imgz : null, txt: z ? z.innerText.slice(0, 40) : '' }; });
+  ok(st.has && st.on === 'three', '⚙ 설정 ① 이 기기에 「🖼 사진 크게 보기」 한 줄 · 지금 고름 표시', st);
+  await p.click('#st_imgz [data-imgz="front"]'); await W(p, 300); m = await p.evaluate(() => localStorage.getItem('rn-imgzoom')); ok(m === 'front', '⚙ 설정에서 「앞면만」 → 이 기기 고름 앞면만', m);
+  console.log(bad ? `❌ 실패 ${bad}` : '✅ tIMGZ PC 모두 통과');
 });
+/* 휴대폰 390 — 누르면 열기(data-pzt)도 고름을 따름 · 창 하나 */
+PCDONE.then(() => H(async (p) => { console.log('── 휴대폰 390 누르면 열기'); const b0 = bad; await seed(p, 'compact');
+  await p.evaluate(() => { const P = { f: __P.f1, th: __P.f1, b: __P.b1, s: __P.s1, pp: [], t: '출고 책', fromBook: true }; const d = document.createElement('div'); d.id = 'tship'; d.className = 'ss-it'; d.style.cssText = 'position:fixed;left:20px;top:200px;z-index:20000;background:#fff;padding:10px'; d.innerHTML = shipImgTag(__P.f1, 'ss-ph', P, 1); document.body.appendChild(d); });
+  for (const [mo, n] of [['front', 1], ['three', 3]]) { await p.evaluate((mo) => { localStorage.setItem('rn-imgzoom', mo); pzHide(); }, mo); await p.tap('#tship img'); await W(p, 400); const v = await vis(p);
+    ok(v.n === 1 && v.imgs[0] === n, `휴대폰 「${mo === 'front' ? '앞면만' : '세 장'}」 누르면: 창 하나 · ${n}장`, v); await p.evaluate(() => pzHide()); }
+  const r1 = await p.evaluate(() => { const i = document.querySelector('.rgrow img.rgr-cov'); if (!i) return null; i.scrollIntoView({ block: 'center' }); const r = i.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  if (r1) { await p.evaluate(() => localStorage.setItem('rn-imgzoom', 'front')); await p.touchscreen.tap(r1.x, r1.y); await W(p, 500); const v = await vis(p); ok(v.n === 1 && v.imgs[0] === 1, '휴대폰 한눈에 줄 표지 누르면 「앞면만」 창 하나 · 한 장', v); await p.evaluate(() => pzHide()); }
+  else ok(false, '휴대폰 한눈에 줄 표지가 있음');
+  console.log(bad ? `❌ 실패 ${bad}` : '✅ tIMGZ 모두 통과');
+}, { vp: { width: 390, height: 800 }, touch: true }));
