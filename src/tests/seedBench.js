@@ -1,4 +1,4 @@
-// 큰 벤치마킹 기록을 이 기기 보관본(IndexedDB meta)에 넣음 — 🎯 집중 벤치마킹(bkf) 행 N개 · 🔭 벤치마킹 조회(bkb) M개
+// 큰 벤치마킹 기록을 이 기기 보관본(IndexedDB meta)에 넣음 — 🎯 집중 벤치마킹(bkf) 행 N개 · 🔭 매입 상품 조회(bkb) M개
 module.exports = async ({ nf, nb }) => { const R = (n) => Math.floor(Math.random() * n); const day = (d) => new Date(Date.now() - d * 864e5).toISOString().slice(0, 10);
   const NS = 200, NBOOK = 60000; const pg = 3000; let page = []; let pages = 0;
   for (let i = 0; i < nf; i++) { const b = R(NBOOK); const hasI = b % 3 === 0; const sc = String(1000 + R(NS)); const gone = Math.random() < 0.45;

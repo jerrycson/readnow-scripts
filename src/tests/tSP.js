@@ -76,8 +76,8 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
     return { seen, btns, picks: Object.keys(S.batchSt.picks).sort(), T: S.batchT }; });
   ok(b2.seen.length > 0 && b2.btns.some((t) => /선택 대기로/.test(t)), `결정 대기 탭 동작: ${b2.btns.join(' / ')}`);
   ok(b2.T === 'sel' && b2.seen.every((k) => !b2.picks.includes(k)), `결정 대기 탭에서 살핀 ${b2.seen.length}개만 선택 대기로 (남은 결정 대기 ${b2.picks.length}개)`);
-  // ⑬ 🔭 벤치마킹 조회 그룹 — 살핀 책만 복사
+  // ⑬ 🔭 매입 상품 조회 그룹 — 살핀 책만 복사
   const bl = await p.evaluate(async () => { S.detail = { bl: 1 }; S._blW = 1; S._blIW = { gid: 'g', un: () => {} }; S.blG = [{ id: 'g', name: '시험 조회', platforms: ['aladin'], status: 'done' }]; S.blItems = Array.from({ length: 12 }, (_, i) => ({ id: 'g__97889' + i, gid: 'g', title: '조회 책 ' + i, isbn13: '97889' + i, priceSales: 10000, usedMin: 3000 })); S.blView = { v: 'group', id: 'g' }; window.__FS.bench_lookup = { g: { name: '시험 조회', platforms: ['aladin'], status: 'done' } }; window.__FS.bench_lookup_items = Object.fromEntries(S.blItems.map((x) => [x.id, x])); const G0 = S.blG, I0 = S.blItems; await new Promise((r) => setTimeout(r, 300)); S.blG = G0; S.blItems = I0; document.getElementById('sheet').scrollTop = 0; blDraw();
     await new Promise((r) => setTimeout(r, 1000)); const seen = seenKeys(); let clip = null; navigator.clipboard.writeText = async (t) => { clip = t; }; document.querySelector('#seenp [data-spact="0"]').click(); await new Promise((r) => setTimeout(r, 300)); return { rows: document.querySelectorAll("#sheet tr[data-blk]").length, seen, clip, sh: document.getElementById("sheet").innerText.slice(0, 200), det: JSON.stringify(S.detail) }; });
-  ok(bl.seen.length > 0 && bl.seen.length < bl.rows && bl.clip && bl.clip.split('\n').length === bl.seen.length, `벤치마킹 조회: ${bl.rows}권 중 살핀 ${bl.seen.length}권만 복사`);
+  ok(bl.seen.length > 0 && bl.seen.length < bl.rows && bl.clip && bl.clip.split('\n').length === bl.seen.length, `매입 상품 조회: ${bl.rows}권 중 살핀 ${bl.seen.length}권만 복사`);
   console.log(bad ? `❌ tSP 실패 ${bad}` : '✓ tSP 통과'); });
