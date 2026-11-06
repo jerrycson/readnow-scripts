@@ -22,7 +22,7 @@ function fakeFb() { const store = {}; const FV = { serverTimestamp: () => ({ __t
   const app = { firestore: () => db, auth: () => auth }; return { fb: { apps: [app], app: () => app, initializeApp: () => app, auth: () => auth, firestore: Object.assign(() => db, { FieldValue: FV }) }, store }; }
 const shippedHtml = (L) => `<html><body><table>${L.map(([o, inv], i) => `<tr id="oList${i + 1}"><td><a onclick="viewOrderDetail('${o}')">${o}</a></td><td>롯데택배 ${inv}</td></tr>`).join('')}</table></body></html>`;
 async function run(o) { const F = fakeFb(); const GM = new Map(); const id = 'inv_t'; const fetched = [];
-  F.store['shp_invoices/' + id] = { createdAt: new Date().toISOString(), status: 'running', limit: o.limit ?? 0, verify: o.verify ?? false, autoCont: true, from: 'oneshot', log: [], items: o.items, ...(o.speed ? { speed: o.speed } : {}) };
+  F.store['shp_invoices/' + id] = { createdAt: new Date().toISOString(), status: 'running', limit: o.limit ?? 0, verify: o.verify ?? false, autoCont: true, from: 'oneshot', log: [], items: o.items, speed: { bulkWay: 'select', ...(o.speed || {}) } }; /* (11/06 오후) 여러 건 기본 길이 CSV 일괄등록으로 바뀜 — 이 시험은 예전 '선택 입력완료' 길을 고른 맡김으로 봄(CSV 길은 tINVCSV) */
   GM.set('rn-inv-active', { id, at: Date.now() });
   /* rows: [주문번호, {chk, checked}] · bulkBtn: 화면에 '선택 입력완료' 단추 */
   const page = async (orders, opt) => { opt = opt || {}; const chk = opt.chk || orders; const html = `${opt.bulkBtn === false ? '' : '<img src="bu_total3.gif" onclick="javascript:deliveryNoSComplete();">'}<form name="orderItemForm" id="orderItemForm" method="get" action="/scm/worder_delivery.aspx"><input type="hidden" name="ono" value=""><input type="hidden" name="cmd" value="">${orders.map((x) => `${chk.includes(x) ? `<input type="checkbox" name="chkOrder.${x}" value="1"${opt.onclick ? ' onclick="window.__cnt = (window.__cnt || 0) + (this.checked ? 1 : -1)"' : ''}${(opt.pre || []).includes(x) ? ' checked' : ''}>` : ''}<input id="deliveryNo.${x}" name="deliveryNo.${x}">`).join('')}</form>`;
@@ -131,7 +131,7 @@ const it = (no, inv, st) => ({ orderNo: no, invoice: inv, recipient: '손님A', 
     console.log('■ ③ 웹앱 기본값');
     ok(R.def.join() === '20,5,true,true,30', '기본: 최대 20분 · 소식 5분 · 빠르게 켬 · 여러 건 켬 · 30건 ' + R.def.join());
     ok(R.saved.join() === '180,10,false' && R.sp2.fast === false && R.sp2.bulk === false, '이미 저장한 값(180·10분 · 빠르게 끔)은 그대로 · 빠르게 끄면 여러 건도 끔');
-    ok(R.low === 8, '최대 시간은 5분까지 고를 수 있음(예전 하한 30분)'); ok(R.sp.fast && R.sp.bulk && R.sp.bulkMax === 30, '맡김 문서에 적는 속도(speed)');
+    ok(R.low === 8, '최대 시간은 5분까지 고를 수 있음(예전 하한 30분)'); ok(R.sp.fast && R.sp.bulk && R.sp.bulkMax === 30 && R.sp.bulkWay === 'csv', '맡김 문서에 적는 속도(speed · 여러 건 길 기본 csv)');
     ok(R.setUi, '⚙ 원스톱 설정: ⚡ 빠르게 · 여러 건 · 최대 건수 칸'); ok(R.feat === 2, '🔍 기능 찾기 두 줄');
     console.log('■ ② 붙박이 총 주문·매출 줄 (넓은 화면)');
     ok(R.sb, '#shs_sum이 화면 바로 아래 붙박이(position sticky) · 출고 준비 — 주문·판매가·읽은 시각');
