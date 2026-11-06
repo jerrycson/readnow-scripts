@@ -1,15 +1,12 @@
-@health&hours=24
-perf=400
-doc=app_settings/write_watch,prd_jobs/pcBeat,app_settings/value_model,app_settings/buyback_stats,app_settings/extras_study,app_settings/nb_find,prd_system/pxDaily,prd_system/autoSched,prd_system/dataBackup,app_settings/bench,app_settings/backup_auto
-logs=1&pc=LOGGER&from=202611052150
-logs=1&pc=HOME&from=202611052150
-logs=1&pc=JS-MAIN&from=202611052150
-logs=1&pc=MJ-MAIN&from=202611052150
+doc=app_settings/pxDaily,app_settings/ext,app_settings/cloud,app_settings/ship_auto,app_settings/logger_watch,app_settings/night_ops,app_settings/aladin_login,prd_system/settings,app_settings/pc_live,app_settings/platforms,app_settings/sys_health
 cmds=invoice&n=20
-cmds=shipStart&n=20
-cmds=prdEdit&n=20
-cmds=pxExp&n=20
-recentUp=ext_used&mins=240
-recentUp=prd_listings&mins=240
-benchday=2026-11-06
-# 89784068
+cmds=startDelivery&n=10
+cmds=nbFind&n=5
+cmds=metrics&n=10
+cmds=regBulk&n=10
+cmds=alpsRun&n=10
+recentUp=sellers&mins=240
+recentUp=prd_book_metrics&mins=240
+recentUp=bench_items&mins=120
+logs=1&pc=LOGGER&from=202611050000&to=202611052149
+# 290652032
