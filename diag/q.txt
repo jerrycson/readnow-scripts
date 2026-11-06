@@ -1,2 +1,2 @@
-health=1&hours=4
-# 537516104
+@health&hours=3
+# 1995511194
