@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "1106 세 번째 판 등록 개편",
- "since": "2026-11-06T04:15:30Z",
- "beat": "2026-11-06T04:15:30Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "h4",
+  "who": "lead",
   "done": "",
-  "at": "2026-11-06T03:17:15Z"
+  "at": "2026-11-06T04:16:22Z"
  },
- "host": "vm"
+ "host": null
 }
