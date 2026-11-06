@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "원스톱 세션 고침",
+ "since": "2026-11-06T05:33:55Z",
+ "beat": "2026-11-06T05:33:55Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "송장 검증 급한 고침 — 수집기 1.89.221 · 웹앱 1.78.405 (36472c1)",
   "at": "2026-11-06T05:11:32Z"
  },
- "host": null
+ "host": "vm"
 }
