@@ -40,10 +40,14 @@ const kday = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
     const ack = (await H.api('POST', '/relay/ack', { keys: pd.out.map((o) => o.k) })).j; s = (await H.api('GET', '/status')).j;
     ok(ack.done === pd.out.length && s.relay.outN === 0 && s.relay.ackAt && s.relay.pullBy === '웹앱 HOME', '웹앱이 다 쓰면 지움 · 마지막 기록 시각·누가', JSON.stringify(s.relay));
     const ack2 = await H.api('POST', '/relay/ack', { keys: [], errs: { x: 'permission-denied' } }); s = (await H.api('GET', '/status')).j; ok(s.relay.err === 'permission-denied', '웹앱이 못 쓴 까닭(오류 코드)을 상태에 남김(화면에 보임)');
+    await H.api('POST', '/cfg', { on: true, pace: { minGapMs: 300 } });
+    for (let k = 0; k < 40 && !/기다림/.test(((s = (await H.api('GET', '/status')).j).auto.msg || '')); k++) await wait(250);
+    ok(/기다림/.test(s.auto.msg || '') && s.auto.left === 0, '(0.1.2) 표본을 다 읽으면 처음부터 다시 읽지 않고 다음 묶음을 기다림', s.auto.msg);
+    await H.api('POST', '/relay/answer', { pool }); /* 남은 책이 없으니 다음 표본을 받음 */
     await H.api('POST', '/cfg', { on: true, pace: { minGapMs: 300, dayCap: s.pace.dayN + 1 } });
     for (let k = 0; k < 60 && !/다음 날/.test(((s = (await H.api('GET', '/status')).j).auto.msg || '')); k++) await wait(250);
     ok(/하루 .*장까지/.test(s.auto.msg) && /다음 날 이어감/.test(s.auto.msg) && s.auto.nextMs > 60e3, '하루 상한을 다 쓰면 멈추고 다음 날 이어감', s.auto.msg + ' · ' + Math.round(s.auto.nextMs / 60000) + '분 뒤');
-    { const pj = JSON.parse(fs.readFileSync(poolF, 'utf8')); ok(Number.isFinite(pj.cur) && pj.pool.length === 3 && pj.day && pj.day.n >= 3, '읽은 자리(cur)·오늘 셈을 파일에 남겨 다시 켜면 이어 읽음', JSON.stringify({ cur: pj.cur, n: pj.day && pj.day.n })); }
+    { const pj = JSON.parse(fs.readFileSync(poolF, 'utf8')), pa = JSON.parse(fs.readFileSync(path.join(D, 'home', 'pool-at.json'), 'utf8')); ok(Number.isFinite(pa.cur) && pj.pool.length === 3 && pa.day && pa.day.n >= 3, '읽은 자리(cur)·오늘 셈을 파일(pool-at.json)에 남겨 다시 켜면 이어 읽음', JSON.stringify({ cur: pa.cur, n: pa.day && pa.day.n })); }
     const bad = await H.api('POST', '/relay/answer', { docs: [{ c: 'app_secrets', id: 'k', v: { x: 1 } }] }); ok(bad.j.n === 0, '웹앱이 넘긴 것도 prd_ids·prd_books 밖이면 받지 않음');
   } finally { await H.stop(); killDir(D); }
 

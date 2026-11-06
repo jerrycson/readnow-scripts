@@ -23,9 +23,10 @@ else if(/Get-Service Spooler/.test(s)) console.log(JSON.stringify({printers:P.ma
 else if(/def = \\[bool\\]/.test(s)) console.log(JSON.stringify(P.map(n=>({name:n,def:n===S.def,off:false}))));
 else console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
   const st = () => { try { return JSON.parse(fs.readFileSync(D + '/bin/state.json', 'utf8')); } catch (e) { return { def: 'Samsung', calls: [] }; } };
-  const ch = cp.spawn('node', ['readnow-print.js'], { cwd: D, env: { ...process.env, PATH: D + '/bin:' + process.env.PATH } }); await wait(1500);
+  const BKC = D + '/Cdrive'; fs.mkdirSync(BKC); /* (1.2.0 보관 길) D: 디스크가 없는 PC 흉내 — RN_BK_DDRIVE는 없는 폴더 · C: 대신 */
+  let ch = cp.spawn('node', ['readnow-print.js'], { cwd: D, env: { ...process.env, PATH: D + '/bin:' + process.env.PATH, RN_BK_DDRIVE: D + '/noD', RN_BK_CDRIVE: BKC } }); await wait(1500);
   try {
-    const s0 = await req('GET', '/status'); ok(s0.j && s0.j.ver === '1.1.9', '도우미 1.1.9 켜짐 ' + (s0.j && s0.j.ver));
+    const s0 = await req('GET', '/status'); ok(s0.j && s0.j.ver === '1.2.0', '도우미 1.2.0 켜짐 ' + (s0.j && s0.j.ver));
     const r0 = await req('GET', '/prn/roles'); ok(r0.j && r0.j.ok && r0.j.roles.auto === true && !r0.j.roles.general, '역할 처음 = 비어 있음 · 자동 켬');
     /* 역할 없으면 라벨 인쇄는 기본을 건드리지 않음 */
     const IMG = 'data:image/png;base64,' + Buffer.from('x').toString('base64');
@@ -49,7 +50,29 @@ else console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
     { fs.writeFileSync(D + '/bin/state.json', JSON.stringify({ def: 'Samsung', calls: [], dead: true })); const n1 = await req('POST', '/prn/netfix', { printer: 'Samsung' }); ok(n1.j && n1.j.ok === false && n1.j.step === 'ping' && /응답하지 않음/.test(n1.j.why), '🩺 프린터가 응답하지 않으면 바꾸지 않고 까닭 ' + JSON.stringify(n1.j));
       fs.writeFileSync(D + '/bin/state.json', JSON.stringify({ def: 'Samsung', calls: [] })); const n2 = await req('POST', '/prn/netfix', { printer: 'Samsung' }); const S2 = st(); ok(n2.j && n2.j.ok && n2.j.to === 'IP_192.168.0.9' && /Add-PrinterPort -Name 'IP_192.168.0.9' -PrinterHostAddress '192.168.0.9'/.test(S2.el) && /Set-Printer -Name 'Samsung' -PortName 'IP_192.168.0.9'/.test(S2.el) && /Restart-Service Spooler/.test(S2.el) && !/Remove-PrinterPort/.test(S2.el), '🩺 연결 고치기: 고정 IP 포트 만들고 프린터를 그리로 · 인쇄 서비스 다시 시작 · 예전 포트 안 지움 ' + JSON.stringify(n2.j)); }
     const off = await req('POST', '/prn/roles', { auto: false }); fs.writeFileSync(D + '/bin/state.json', JSON.stringify({ def: 'Samsung', calls: [] })); await req('POST', '/print', { printer: '라벨기', imgs: [IMG] }); await wait(2000); ok(off.j.roles.auto === false && st().calls.join() === 'print@Samsung', '자동 끄면 기본을 안 바꿈');
+    /* (1.2.0 정범님 11/06 약속 20) 💾 로거 대신 보관 길 — 로거 도우미와 같은 모양(수집기 BKH()가 부름) */
+    { const raw = (m, p, body, hd) => new Promise((res) => { const r = http.request({ host: '127.0.0.1', port: 8898, path: p, method: m, headers: { ...(hd || {}) } }, (x) => { let b = ''; x.on('data', (c) => (b += c)); x.on('end', () => { let j = null; try { j = JSON.parse(b); } catch (e) {} res({ st: x.statusCode, j }); }); }); r.on('error', (e) => res({ st: 0 })); if (body != null) r.write(body); r.end(); });
+      const IH = { 'X-RN-Img': '1', 'Content-Type': 'application/octet-stream' }, BH = { 'X-RN-Bk': '1', 'Content-Type': 'application/json' };
+      const s1 = await raw('GET', '/img-stat'); ok(s1.st === 200 && s1.j.ok && s1.j.count === 0 && s1.j.drive === 'C' && s1.j.fallback && /D: 디스크가 없어/.test(s1.j.why || '') && s1.j.dir === path.join(BKC, 'ReadNow', 'images') && typeof s1.j.freeGB === 'number', '보관: D: 없는 PC는 C:\\ReadNow\\images로 대신 · 어느 디스크인지·여유(freeGB)를 상태에 ' + JSON.stringify(s1.j && { d: s1.j.drive, dir: s1.j.dir, free: s1.j.freeGB }));
+      ok((await raw('POST', '/img-put?name=a/b.jpg', 'x', { 'Content-Type': 'application/octet-stream' })).st === 403 && (await raw('POST', '/bk-put?col=prd_books&kind=full&day=2026-11-06', '{"lines":[]}', { 'Content-Type': 'application/json' })).st === 403 && (await raw('POST', '/bk-state?pc=MJ-MAIN', '{}', {})).st === 403, '보관: 머리(X-RN-Img·X-RN-Bk) 없으면 쓰기 거절');
+      ok((await raw('OPTIONS', '/img-put?name=a.jpg', null, IH)).st === 403 && (await raw('GET', '/img-stat', null, { Origin: 'https://evil.test' })).st === 403 && (await raw('GET', '/bk-stat', null, { Host: 'evil.test:8898' })).st === 403, '보관: 웹 페이지 출처·미리 묻기(OPTIONS)·127.0.0.1 아닌 Host는 거절');
+      const bads = ['../x.jpg', 'a/../../x.jpg', '/etc/passwd', 'a//b.jpg', 'a\\..\\..\\x', '한글.jpg', ''].map((n) => '/img-put?name=' + encodeURIComponent(n)); let rej = 0; for (const p of bads) if ((await raw('POST', p, 'x', IH)).st === 400) rej++;
+      ok(rej === bads.length && !fs.existsSync(path.join(BKC, 'x.jpg')) && !fs.existsSync(path.join(D, 'x.jpg')), '보관: 사진 이름 거르기(imgName — .. · 절대 경로 · // · 이상한 글자는 거절) ' + rej + '/' + bads.length);
+      const p1 = await raw('POST', '/img-put?name=' + encodeURIComponent('books/b1/cover.jpg'), 'IMG1', IH); const p2 = await raw('POST', '/img-put?name=' + encodeURIComponent('books/b1/cover.jpg'), 'IMG2', IH); const imf = path.join(BKC, 'ReadNow', 'images', 'books', 'b1', 'cover.jpg');
+      ok(p1.j && p1.j.ok && p1.j.size === 4 && p2.j && p2.j.skip && fs.readFileSync(imf, 'utf8') === 'IMG1', '보관: 사진 넣기 · 이미 있으면 덮지 않고 건너뜀(지우거나 바꾸지 않음)');
+      const hv = await raw('POST', '/img-have', JSON.stringify({ names: ['books/b1/cover.jpg', 'books/b2/cover.jpg', '../bad'] }), { ...IH, 'Content-Type': 'application/json' }); ok(hv.j && JSON.stringify(hv.j.missing) === '["books/b2/cover.jpg"]', '보관: /img-have = 없는 것만(이상한 이름은 뺌) ' + JSON.stringify(hv.j));
+      const bp = await raw('POST', '/bk-put?col=' + encodeURIComponent('prd_books/../x') + '&kind=full&day=2026-11-06', JSON.stringify({ lines: [{ id: 'b1', v: { title: '시험 책' } }, { id: 'b2' }] }), BH); const bf = path.join(BKC, 'ReadNow', 'backup', 'firestore', 'prd_booksx', '2026-11-06-full.jsonl');
+      ok(bp.j && bp.j.ok && bp.j.n === 2 && fs.readFileSync(bf, 'utf8').trim().split('\n').length === 2, '보관: /bk-put = 칸 이름 거르기(bkName — / · . 빠짐) · 날짜별 jsonl에 덧붙임');
+      await raw('POST', '/bk-put?col=prd_booksx&kind=full&day=2026-11-06', JSON.stringify({ lines: [{ id: 'b3' }] }), BH); ok(fs.readFileSync(bf, 'utf8').trim().split('\n').length === 3, '보관: 같은 날 다시 쓰면 지우지 않고 덧붙임');
+      ok((await raw('POST', '/bk-put?col=prd_books&kind=full&day=2026-1-6', '{"lines":[]}', BH)).st === 400 && (await raw('POST', '/bk-put?col=' + encodeURIComponent('../..') + '&day=2026-11-06', '{"lines":[]}', BH)).st === 400, '보관: 날짜·칸 이름이 이상하면 거절');
+      await raw('POST', '/bk-state?pc=' + encodeURIComponent('MJ-MAIN/../x'), JSON.stringify({ day: '2026-11-06', read: 3 }), BH); const bs = await raw('GET', '/bk-stat?sizes=1&pc=MJ-MAINx');
+      ok(bs.j && bs.j.ok && bs.j.state && bs.j.state.read === 3 && bs.j.sizes && bs.j.sizes.firestore.prd_booksx > 0 && bs.j.sizes.imagesN === 1 && bs.j.drive === 'C' && fs.existsSync(path.join(BKC, 'ReadNow', 'backup', 'state-MJ-MAINx.json')), '보관: /bk-state 진행 저장 · /bk-stat?sizes=1 폴더별 크기·디스크 ' + JSON.stringify(bs.j && bs.j.sizes && bs.j.sizes.firestore));
+      ok(!/bk-(del|clear|rm)|img-(del|clear|rm)/.test(fs.readFileSync(HELP, 'utf8')), '보관: 지우는 길 없음'); }
   } finally { ch.kill(); }
+  /* D: 디스크가 있는 PC → D:\ReadNow */
+  { await wait(500); const DD = D + '/Ddrive'; fs.mkdirSync(DD); ch = cp.spawn('node', ['readnow-print.js'], { cwd: D, env: { ...process.env, PATH: D + '/bin:' + process.env.PATH, RN_BK_DDRIVE: DD, RN_BK_CDRIVE: BKC } }); await wait(1500);
+    try { const s2 = await new Promise((res) => http.get({ host: '127.0.0.1', port: 8898, path: '/img-stat' }, (x) => { let b = ''; x.on('data', (c) => (b += c)); x.on('end', () => { try { res(JSON.parse(b)); } catch (e) { res(null); } }); }).on('error', () => res(null)));
+      ok(s2 && s2.drive === 'D' && !s2.fallback && s2.dir === path.join(DD, 'ReadNow', 'images'), '보관: D: 디스크가 있으면 D:\\ReadNow\\images (예전 로거 자리와 같음) ' + JSON.stringify(s2 && { d: s2.drive, dir: s2.dir })); } finally { ch.kill(); await wait(500); } }
   /* ② 웹앱 */
   await new Promise((done) => require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
     const calls = []; let roles = { general: '', label: '', invoice: '', auto: true, temp: null }; let def = '롯데택배'; let hv = '1.1.6';

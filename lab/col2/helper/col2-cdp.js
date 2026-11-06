@@ -6,6 +6,13 @@
 'use strict';
 const fs = require('fs'), path = require('path'), cp = require('child_process');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const http = require('http');
+const httpJson = (url, ms) => new Promise((res) => { const r = http.get(url, { timeout: ms || 1500 }, (x) => { let b = ''; x.setEncoding('utf8'); x.on('data', (c) => (b += c)); x.on('end', () => { try { res(JSON.parse(b)); } catch (e) { res(null); } }); }); r.on('error', () => res(null)); r.on('timeout', () => { r.destroy(); res(null); }); });
+const lastLine = (s) => String(s || '').split(/\r?\n/).map((x) => x.trim()).filter(Boolean).slice(-1)[0] || '';
+/* 바로 꺼진 까닭을 사람 말로 — 종료 코드 0이 곧바로면 '같은 프로필을 다른 크롬이 쥐고 있어 그쪽에 넘기고 끝남'이 가장 흔함 */
+function exitWhy(x, freed) { x = x || {}; const code = x.code == null ? (x.signal || '?') : x.code; const sec = Math.round((x.ms || 0) / 100) / 10;
+  const hint = x.code === 0 ? '같은 프로필(col2-work-chrome)을 쥔 다른 크롬에 일을 넘기고 끝난 듯' : x.code === 21 || x.code === 0x15 ? '프로필 잠금(다른 크롬이 쓰는 중)' : /실행 실패/.test(x.tail || '') ? '크롬 실행 파일 문제' : '크롬이 스스로 끝남';
+  return `번외 크롬이 바로 꺼짐(${sec}초 · 종료 코드 ${code} · ${hint}${x.tail ? ' · 마지막 줄: ' + String(x.tail).slice(0, 160) : ''}${freed && (freed.closed || freed.killed) ? ` · 옛 번외 크롬 ${freed.closed + freed.killed}개를 먼저 닫았음` : ''})`; }
 
 class CDP {
   constructor(ws) { this.ws = ws; this.id = 0; this.cb = new Map(); this.on = []; this.closed = false;
@@ -32,7 +39,7 @@ const READ_FN = `async (url, tmo) => { const AL = globalThis.ReadnowAladin, P = 
 
 class Browser {
   constructor(o) { this.o = o; this.proc = null; this.cdp = null; this.sid = null; this.frameId = null; this.ctxId = null; this.dead = true; this.landed = false; this.startedAt = 0; }
-  alive() { return !!(this.proc && !this.dead && this.cdp && !this.cdp.closed); }
+  alive() { return !!(this.proc && !this.dead && this.ready && this.cdp && !this.cdp.closed); } /* (0.1.2) ready = 띄우기를 끝까지 마침(탭 붙이기까지) */
   args() { const o = this.o; const r = o.rect || {}; const a = [];
     if (o.headless) a.push('--headless=new'); else a.push(`--window-position=${Number.isFinite(r.x) ? r.x : -32000},${Number.isFinite(r.y) ? r.y : 40}`);
     a.push(`--window-size=${r.w || 1280},${r.h || 900}`, '--remote-debugging-port=0', '--remote-debugging-address=127.0.0.1', `--user-data-dir=${o.profile}`,
@@ -40,17 +47,35 @@ class Browser {
       /* 가려져도 늦추지 않음(로거 공개 수집 크롬과 같은 세 플래그) — 이 크롬에만 적용(정범님 크롬 바로가기는 그대로) */
       '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding');
     if (process.env.RN_COL2_NOSANDBOX) a.unshift('--no-sandbox'); a.push('about:blank'); return a; }
-  async launch() { const o = this.o; if (!o.exe) throw new Error('크롬을 못 찾음'); fs.mkdirSync(o.profile, { recursive: true }); const pf = path.join(o.profile, 'DevToolsActivePort'); try { fs.unlinkSync(pf); } catch (e) {}
-    this.dead = false; this.landed = false; this.ctxId = null; this.startedAt = Date.now();
-    this.proc = cp.spawn(o.exe, this.args(), { stdio: 'ignore', windowsHide: false, detached: false }); this.proc.on('exit', () => { this.dead = true; this.ctxId = null; }); this.proc.on('error', () => { this.dead = true; });
-    let ws = null; for (let i = 0; i < 150 && !ws; i++) { await sleep(200); if (this.dead) throw new Error('번외 크롬이 바로 꺼짐(같은 프로필 크롬이 이미 떠 있으면 닫아 주세요)'); try { const [port, p2] = fs.readFileSync(pf, 'utf8').split('\n'); if (port && p2) ws = `ws://127.0.0.1:${port.trim()}${p2.trim()}`; } catch (e) {} }
-    if (!ws) { this.kill(); throw new Error('번외 크롬 DevTools 주소를 못 받음'); }
+  /* (0.1.2 정범님 11/06 '숨은 크롬이 켜자마자 꺼짐') 띄우기 전에 이 프로필을 쥐고 있는 옛 번외 크롬을 치움
+   *  크롬은 같은 --user-data-dir를 다른 크롬이 쓰고 있으면 그 크롬에 일을 넘기고 곧바로 끝남(종료 코드 0) → '바로 꺼짐'이 거듭되어 지킴이가 한 시간 4번 상한에 걸림
+   *  옛 번외 크롬이 남는 길: Windows는 부모(도우미)가 죽어도 자식 크롬이 살아남음(인쇄 도우미가 새 판으로 바꾸며 도우미를 끝냄 · 도우미가 죽음) · 조종 연결만 끊기고 크롬은 살아 있음
+   *  ① DevToolsActivePort가 살아 있으면 그 크롬에 Browser.close(점잖게) ② 그래도 남으면 이 프로필 이름이 명령 줄에 든 크롬만 끝냄(o.stale — 정범님 크롬·운영 작업 창은 이름이 달라 안 건드림) ③ 남은 잠금 파일을 치움 */
+  async freeProfile() { const o = this.o; const pf = path.join(o.profile, 'DevToolsActivePort'); const out = { closed: 0, killed: 0, locks: 0 };
+    let port = null; try { port = +String(fs.readFileSync(pf, 'utf8')).split('\n')[0].trim() || null; } catch (e) {}
+    if (port) { const v = await httpJson(`http://127.0.0.1:${port}/json/version`, 1500); if (v && v.webSocketDebuggerUrl) { try { const c = await CDP.connect(v.webSocketDebuggerUrl); await c.send('Browser.close', {}, null, 4000).catch(() => {}); c.close(); out.closed = 1; } catch (e) {} for (let i = 0; i < 25 && (await httpJson(`http://127.0.0.1:${port}/json/version`, 600)); i++) await sleep(200); } }
+    if (o.stale) { try { const r = await o.stale(); out.killed = (r && r.killed) || 0; if (out.killed) await sleep(800); } catch (e) {} }
+    /* 남은 잠금 — 쥔 프로세스가 이미 없을 때만 치움(살아 있는 크롬의 잠금을 지우면 두 크롬이 한 프로필을 써서 망가짐) · Windows lockfile은 쥔 크롬이 있으면 지워지지 않음 */
+    let holder = null; try { const t = fs.readlinkSync(path.join(o.profile, 'SingletonLock')); const pid = +(String(t).match(/-(\d+)$/) || [])[1]; if (pid) { try { process.kill(pid, 0); holder = pid; } catch (e) {} } } catch (e) {}
+    if (!holder) for (const f of ['SingletonLock', 'SingletonSocket', 'SingletonCookie', 'lockfile']) { try { fs.lstatSync(path.join(o.profile, f)); fs.rmSync(path.join(o.profile, f), { force: true }); out.locks++; } catch (e) {} } else out.holder = holder;
+    try { fs.unlinkSync(pf); } catch (e) {} this.freed = out; return out; }
+  async launch() { const o = this.o; if (!o.exe) throw new Error('크롬을 못 찾음'); fs.mkdirSync(o.profile, { recursive: true }); const pf = path.join(o.profile, 'DevToolsActivePort');
+    await this.freeProfile();
+    this.dead = false; this.ready = false; this.landed = false; this.ctxId = null; this.startedAt = Date.now(); this.exit = null; const tail = { s: '' };
+    /* 종료 코드·마지막 출력 줄을 남김(상태 창·웹앱에 원인으로 보임) — 출력은 끝 2KB만 */
+    const keep = (c) => { tail.s = (tail.s + String(c)).slice(-2048); };
+    this.proc = cp.spawn(o.exe, this.args(), { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: false, detached: false }); const pr = this.proc;
+    pr.stdout.on('data', keep); pr.stderr.on('data', keep);
+    pr.on('exit', (code, sig) => { if (this.proc !== pr) return; this.dead = true; this.ctxId = null; this.exit = { code, signal: sig || null, ms: Date.now() - this.startedAt, tail: lastLine(tail.s), at: Date.now() }; });
+    pr.on('error', (e) => { if (this.proc !== pr) return; this.dead = true; this.exit = { code: null, signal: null, ms: Date.now() - this.startedAt, tail: '크롬 실행 실패: ' + e.message, at: Date.now() }; });
+    let ws = null; for (let i = 0; i < 150 && !ws; i++) { await sleep(200); if (this.dead) { await sleep(150); throw new Error(exitWhy(this.exit, this.freed)); } try { const [port, p2] = fs.readFileSync(pf, 'utf8').split('\n'); if (port && p2) ws = `ws://127.0.0.1:${port.trim()}${p2.trim()}`; } catch (e) {} }
+    if (!ws) { this.kill(); throw new Error('번외 크롬 DevTools 주소를 못 받음(30초)' + (tail.s ? ' · 마지막 줄: ' + lastLine(tail.s) : '')); }
     this.cdp = await CDP.connect(ws); this.cdp.on.push((m, p, sid) => { if (m === 'Page.frameNavigated' && sid === this.sid && !p.frame.parentId) { this.ctxId = null; this.frameUrl = p.frame.url; } if (m === 'Runtime.executionContextDestroyed' && p.executionContextId === this.ctxId) this.ctxId = null; });
     const { targetInfos } = await this.cdp.send('Target.getTargets'); let t = targetInfos.find((x) => x.type === 'page'); if (!t) t = { targetId: (await this.cdp.send('Target.createTarget', { url: 'about:blank' })).targetId };
     const { sessionId } = await this.cdp.send('Target.attachToTarget', { targetId: t.targetId, flatten: true }); this.sid = sessionId;
     await this.cdp.send('Page.enable', {}, sessionId); await this.cdp.send('Runtime.enable', {}, sessionId).catch(() => {});
     if (o.headless) { /* 화면 없는 크롬은 이름표에 'HeadlessChrome'이 남음 → 보통 크롬 이름표로(보고서 ①안 주의점) */ try { const v = await this.cdp.send('Browser.getVersion'); const ua = String(v.userAgent || '').replace(/HeadlessChrome/g, 'Chrome'); if (ua) await this.cdp.send('Network.setUserAgentOverride', { userAgent: ua }, sessionId); } catch (e) {} }
-    return this; }
+    this.ready = true; return this; }
   /* 처음 한 번 알라딘 첫 화면에 들어감(사람처럼 들어온 탭 — 이 탭 안에서 같은 출처로 읽음) */
   async land(url, timeoutSec) { if (this.landed) return; const sid = this.sid; const done = new Promise((res) => { const f = (m, p, s) => { if (s === sid && m === 'Page.loadEventFired') { this.cdp.on = this.cdp.on.filter((x) => x !== f); res(true); } }; this.cdp.on.push(f); setTimeout(() => res(false), (timeoutSec || 25) * 1000); });
     const nav = await this.cdp.send('Page.navigate', { url }, sid); if (nav && nav.errorText) throw new Error('알라딘 첫 화면을 못 엶: ' + nav.errorText); this.frameId = nav.frameId; await done; this.landed = true; this.ctxId = null; }
@@ -62,7 +87,9 @@ class Browser {
     if (r.exceptionDetails) return { ok: false, why: '읽기 코드 오류: ' + String((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text).slice(0, 200), kind: 'error' }; return r.result.value; }
   /* 시험용: 알라딘 화면 쪽(보통 칸)에서 우리 변수가 보이는지 */
   async mainEval(expr) { const r = await this.cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true }, this.sid); return r.result ? r.result.value : null; }
-  kill() { try { if (this.cdp) this.cdp.close(); } catch (e) {} try { if (this.proc && !this.dead) this.proc.kill(); } catch (e) {} this.dead = true; this.ctxId = null; this.landed = false; }
+  kill() { try { if (this.cdp) this.cdp.close(); } catch (e) {} try { if (this.proc && this.proc.exitCode == null && !this.proc.killed) this.proc.kill(); } catch (e) {} this.dead = true; this.ctxId = null; this.landed = false; }
+  /* 조종 연결만 끊기고 크롬은 살아 있는지(그대로 두면 같은 프로필을 쥔 채 남아 다음 띄우기가 바로 꺼짐) */
+  orphan() { return !!(this.proc && this.proc.exitCode == null && this.proc.signalCode == null && (!this.cdp || this.cdp.closed)); }
   async close() { try { if (this.cdp && !this.cdp.closed) await this.cdp.send('Browser.close', {}, null, 5000).catch(() => {}); } catch (e) {} await sleep(300); this.kill(); }
 }
-module.exports = { CDP, Browser, READ_FN };
+module.exports = { CDP, Browser, READ_FN, exitWhy };
