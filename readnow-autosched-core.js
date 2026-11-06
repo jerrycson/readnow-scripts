@@ -284,6 +284,12 @@
       if (B.paused) return { away: true, on: true, min: C.min, mins, why: `로거(${nm}) 일시 정지` };
       if (B.gate && B.gate.ok === false) return { away: true, on: true, min: C.min, mins, why: `로거(${nm}) 테더링 길 막힘 — ${String(B.gate.why || '').slice(0, 60)}` };
       return { away: false, on: true, min: C.min, mins, why: `로거(${nm}) 살아 있음(${mins}분 전 신호)` }; }
+    /* (정범님 11/06 약속 20) 🔁 로거 대신 보관 — 설정 app_settings/backup_sub { on, pc(기본 MJ-MAIN), h(기본 6시간 · 근거: 없음, 설정으로 바꿈 · 1~72) } · 이 PC가 그 PC이고 로거 신호가 h시간 넘게 없을 때만 */
+    const BKSUB_DEF = { on: true, pc: 'MJ-MAIN', h: 6 };
+    function bkSubDue(cfg, beats, logger, pc, now) { const c = { ...BKSUB_DEF, ...(cfg || {}) }; const h = +c.h >= 1 && +c.h <= 72 ? +c.h : BKSUB_DEF.h; const up = (x) => String(x || '').trim().toUpperCase();
+      if (c.on === false) return { due: false, h, why: '꺼짐' }; if (!up(pc) || up(pc) !== up(c.pc)) return { due: false, h, why: `대신 보관할 PC는 ${c.pc}` }; if (!up(logger)) return { due: false, h, why: '로거 이름 모름' };
+      const B = ((beats && beats.pcs) || {})[String(logger).trim()] || null; const age = B && +B.atMs > 0 ? now - +B.atMs : Infinity; const due = age > h * 3600e3;
+      return { due, h, age, why: due ? (B && Number.isFinite(age) ? `로거 신호가 ${Math.floor(age / 3600e3)}시간째 없음(기준 ${h}시간)` : '로거 신호 기록 없음') : '로거 살아 있음' }; }
     /* (정범님 11/06 · 11/05 정밀 점검 ④-7) 📶 일반 몫 시간대 나눔 — 벤치마킹이 끝나면 '하루 몫 − 오늘 쓴 테더링'이 한꺼번에 열려 11/05엔 10:03~11:00 한 시간에 다 쓰고 오후 11시간 테더링 일 0이었음
      *  일반 몫(오늘) P = 하루 몫 D − 벤치마킹 몫(끝났으면 실제 쓴 양 · 하는 중이면 max(남겨 둘 몫, 쓴 양)) · 시간대 시작 시각 n개(기본 00·06·12·18시) 중 지금까지 k개가 열림
      *  → 지금까지 쓸 수 있는 일반 몫 = P × k ÷ n − 오늘 일반에 쓴 양(기타 포함) · 안 쓴 몫은 다음 시간대로 이어짐(그날 안)
@@ -428,7 +434,7 @@
       const D = days == null ? BB_WAIT_DAYS : +days; const t = Date.parse(o.date || '') || Date.parse(o.firstSeenAt || '') || NaN; if (D > 0 && Number.isFinite(t) && (now || Date.now()) - t > D * 864e5) return false; return true; }
     /* ⏰ 시간표에 'bbWait' 칸이 없으면 켜진 칸으로 더함 — 하루 한 번 칸(buyback) 바로 뒤(없으면 맨 뒤) · 이미 있으면(꺼 둔 것도) 그대로(정범님이 바꾼 것을 덮지 않음) — pxSlotEnsure와 같은 꼴 */
     function bbSlotEnsure(slots) { const L = Array.isArray(slots) ? slots : []; if (L.some((s) => s && (s.id === BB_SLOT.id || s.job === BB_SLOT.job))) return { slots: L, added: false }; const i = L.findIndex((s) => s && s.job === 'prd:buyback'); const S1 = JSON.parse(JSON.stringify(BB_SLOT)); return { slots: i < 0 ? [...L, S1] : [...L.slice(0, i + 1), S1, ...L.slice(i + 1)], added: true }; }
-    return { LG_AWAY_DEF, lgAwayOf, loggerAway, GEN_PACE_DEF, genPaceOf, genPace, COND, BB_SLOT, BB_WAIT_DAYS, bbWaiting, bbSlotEnsure, REST_LISTS, REST_DEF, REST_SAFETY, restOf, PX_DAILY_DEF, pxCfg, PX_SLOT, pxPlan, pxPickHeld, pxSlotEnsure, PX_HUMAN_DEF, pxHuman, pxQuiet, pxNextOpen, pxGate, pxRest, PUB_KEYS, PUB_LATER, EXT_JOBS, isPubJob, classOf, CLASS, TIER, tierOf, budgetOf, budget, simOf, simSwitch, delayReport, planOf, kst, tMin, hm, hm4, normTimes, mdOk, mdTxt, mdNorm, timesToday, dayStart, toMs, LEGACY, LEG, TRIG, DAYS, sanitize, slotsOf, legacyItems, isEnd, isLost, keyParts, lastDoneMap, inWin, due, dayPlan, nextOf, describe, validate, durations, fmtMs, parseLogLine, ownerOf, OWN_DEAD_MS };
+    return { BKSUB_DEF, bkSubDue, LG_AWAY_DEF, lgAwayOf, loggerAway, GEN_PACE_DEF, genPaceOf, genPace, COND, BB_SLOT, BB_WAIT_DAYS, bbWaiting, bbSlotEnsure, REST_LISTS, REST_DEF, REST_SAFETY, restOf, PX_DAILY_DEF, pxCfg, PX_SLOT, pxPlan, pxPickHeld, pxSlotEnsure, PX_HUMAN_DEF, pxHuman, pxQuiet, pxNextOpen, pxGate, pxRest, PUB_KEYS, PUB_LATER, EXT_JOBS, isPubJob, classOf, CLASS, TIER, tierOf, budgetOf, budget, simOf, simSwitch, delayReport, planOf, kst, tMin, hm, hm4, normTimes, mdOk, mdTxt, mdNorm, timesToday, dayStart, toMs, LEGACY, LEG, TRIG, DAYS, sanitize, slotsOf, legacyItems, isEnd, isLost, keyParts, lastDoneMap, inWin, due, dayPlan, nextOf, describe, validate, durations, fmtMs, parseLogLine, ownerOf, OWN_DEAD_MS };
   })();
   /* @@AS_ENGINE_END */
   const kstNow = () => { const k = AS.kst(Date.now()); return { day: k.day, min: k.min }; };
