@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "1.78.417 empty 표시",
+ "since": "2026-11-07T10:45:48Z",
+ "beat": "2026-11-07T10:45:48Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.416 214de24a",
   "at": "2026-11-07T10:44:51Z"
  },
- "host": null
+ "host": "DESKTOP-STFQ5B9"
 }
