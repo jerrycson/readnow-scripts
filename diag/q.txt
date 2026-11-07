@@ -1,19 +1,2 @@
-health=1&hours=24
-perf=400
-logs=1&pc=LOGGER&from=202611062200
-logs=1&pc=JS-MAIN&from=202611062200
-logs=1&pc=HOME&from=202611062200
-logs=1&pc=MJ-MAIN&from=202611062200
-doc=app_settings/write_watch
-doc=prd_jobs/pcBeat
-doc=app_settings/value_model
-doc=app_settings/buyback_stats
-doc=app_settings/extras_study
-doc=prd_system/pxDaily
-doc=app_settings/nb_find
-doc=app_settings/backup_auto
-doc=prd_system/autoSched
-doc=prd_system/settings
-doc=app_settings/ext_sig
-doc=prd_system/buyback
-# 3053115041
+cmds=pxExp&n=30
+# 284597223
