@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.421 · ext 0.6.9 — 교보 거짓 바뀜",
- "since": "2026-11-07T12:09:55Z",
- "beat": "2026-11-07T12:09:55Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-07T12:06:33Z"
+  "at": "2026-11-07T12:10:36Z"
  },
- "host": "DESKTOP-STFQ5B9"
+ "host": null
 }
