@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.420 · 수집기 1.89.230 · 클라우드 0.35.108 — 예스24 원문 보관",
- "since": "2026-11-07T12:05:47Z",
- "beat": "2026-11-07T12:05:47Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-07T11:48:35Z"
+  "at": "2026-11-07T12:06:33Z"
  },
- "host": "DESKTOP-STFQ5B9"
+ "host": null
 }
