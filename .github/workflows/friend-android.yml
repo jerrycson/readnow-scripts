@@ -15,12 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: '17' }
       - name: 안드로이드 SDK (러너에 이미 있음 — 라이선스만)
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-      - uses: gradle/actions/setup-gradle@v6
+      - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '8.14.3' }
       - name: 판 번호 · 서명 열쇠
         env: { KS: '${{ secrets.FRIEND_KS_B64 }}' }
@@ -44,9 +44,9 @@ jobs:
       - name: 파일 이름 정리
         run: |
           mkdir -p dist-friend; cp friend-app/android/app/build/outputs/apk/release/*.apk "dist-friend/readnow-friend-${FRIEND_VERSION}.apk"; ls -la dist-friend
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@v4
         with: { name: 'readnow-friend-android-${{ env.FRIEND_VERSION }}', path: dist-friend/* }
       - name: GitHub 판에 붙이기
         if: github.event_name != 'pull_request'
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@v2
         with: { tag_name: 'friend-v${{ env.FRIEND_VERSION }}', files: dist-friend/* }

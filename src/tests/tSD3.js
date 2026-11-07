@@ -78,7 +78,7 @@ const prep = async (p) => p.evaluate(async () => { const W = (ms) => new Promise
     ok(r.amtHas && r.amtShown.length >= 3 && r.amtShown[0] === 'day' && r.amtShown.includes('week') && r.amtShown.includes('month') && !r.amtDet && r.replayTag, '금액 누름 = 그날 모두 재생(하루·주·달 여러 장 · 🔁 다시 보기 표시 · 출고 화면 안 열림): ' + JSON.stringify([r.amtShown, r.amtDet, r.amtTxt]));
     ok(r.dayClick.sdv === '2026-05-29' && r.dayClick.fx === 0, '날짜 칸 누름 = 그날 출고 화면(카드 안 뜸): ' + JSON.stringify(r.dayClick));
     ok(r.rpBtn && r.rpShown.length >= 3 && r.rpShown.includes('year'), '🏆 칸 🔁 단추도 그대로(12/31 하루·달·해): ' + JSON.stringify(r.rpShown));
-    ok(r.sum.ship === r.sum.order && r.sum.nShip === r.sum.nOrder && r.sum.days[1] > r.sum.days[0], '순위 셈 — 출고일 기준 합계 = 일별 주문 매출 합계(같은 줄 셈 · 날 나누기만 다름 · 주문 날 수가 더 많음): ' + JSON.stringify(r.sum));
+    ok(r.sum.ship === r.sum.order && r.sum.nShip === r.sum.nOrder && r.sum.days[1] === r.sum.days[0], '순위 셈 — (1.78.410 정범님 11/06) 기본 기준 = 일별 출고 매출 = 날마다 마감까지 주문 → 예전 일별 주문 매출과 합계·날 수 모두 같음: ' + JSON.stringify(r.sum));
     ok(r.top.amt === r.top.rowAmt && r.top.n === r.top.rowN && r.top.rank === 1, '순위 1위 금액·건수 = 출고별 매출 표 그날 줄: ' + JSON.stringify(r.top)); ran++;
   });
   ok(ran === 2, `시험 칸 둘이 끝까지 돎(${ran}/2)`);
