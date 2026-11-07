@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.226
+// @version      1.89.227
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -9351,9 +9351,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         else { if (!base) { res[lid] = { state: 'fail', kind: 'fail', msg: '클라우드 주소(app_settings/main.cloudUrl)가 없음', at: at(), ms: Date.now() - ti, by: PC_NAME }; continue; }
           if (has) { res[lid] = { state: 'done', kind: 'check', msg: '이미 붙어 있음(확인)', at: at(), ms: Date.now() - ti, by: PC_NAME }; await ex.set({ lid, on: true, chkAt: at(), chkN: FV.increment(1), ...(e0.src ? {} : { src: v.gid ? 'g:' + v.gid : 'manual' }), ...W() }, { merge: true }); await sleep(daily ? Math.round(rnd(1500, 4000)) : 300); continue; }
           const empty = !peTxt(cur.noteHtml) && !/<img/i.test(String(cur.noteHtml || ''));
-          if (empty && gr !== '상') { const why = `유의 사항이 비어 있음 — ${gr || '등급 모름'} 상태는 유의 사항이 있는 상품에만 그림을 붙임(정범님 10/27 규칙 · 비어 있는 '상'만 '${AUTO_TXT}'를 적고 붙임)`; res[lid] = { state: 'skip', kind: 'skip', msg: why, gr, at: at(), ms: Date.now() - ti, by: PC_NAME }; await ex.set({ lid, skipAt: at(), skipWhy: why, grade: gr || null, chkAt: at(), ...(e0.skipWhy === why ? {} : { hist: FV.arrayUnion({ at: at(), op: 'skip', r: why }) }), ...W() }, { merge: true }); await sleep(daily ? Math.round(rnd(1500, 4000)) : 300); continue; }
+          const nB = v.bare ? Object.values({ ...prev, ...res }).filter((r) => r && r.kind === 'edit' && r.state === 'done').length : 0; /* (정범님 11/07 밤) 🧪 그림만 시험 — 유의 사항이 빈 상품에만 글 없이 그림만 · 정한 개수(v.bare)까지 */ if (v.bare ? (!empty || nB >= +v.bare) : (empty && gr !== '상')) { const why = v.bare ? (!empty ? '🧪 그림만 시험(정범님 11/07 밤): 유의 사항에 글이 있어 이번 시험 대상 아님' : `🧪 그림만 시험: 정한 ${v.bare}개를 다 붙여 더 붙이지 않음`) : `유의 사항이 비어 있음 — ${gr || '등급 모름'} 상태는 유의 사항이 있는 상품에만 그림을 붙임(정범님 10/27 규칙 · 비어 있는 '상'만 '${AUTO_TXT}'를 적고 붙임)`; res[lid] = { state: 'skip', kind: 'skip', msg: why, gr, at: at(), ms: Date.now() - ti, by: PC_NAME }; await ex.set({ lid, skipAt: at(), skipWhy: why, grade: gr || null, chkAt: at(), ...(e0.skipWhy === why ? {} : { hist: FV.arrayUnion({ at: at(), op: 'skip', r: why }) }), ...W() }, { merge: true }); await sleep(daily ? Math.round(rnd(1500, 4000)) : 300); continue; }
           if (gt && eds >= edMax) { cut = true; break; } /* (사람처럼) 이번 조각 수정 몫을 다 씀 — 이 상품은 다음 조각에 */
-          readd = !!(e0.on || (e0.addedAt && !(e0.removedAt && e0.removedAt >= e0.addedAt))); autoTxt = empty && gr === '상'; kind = 'edit';
+          readd = !!(e0.on || (e0.addedAt && !(e0.removedAt && e0.removedAt >= e0.addedAt))); autoTxt = empty && gr === '상' && !v.bare; kind = 'edit';
           html = (autoTxt ? `<p>${AUTO_TXT}</p>` : String(cur.noteHtml || '')) + `<img src="${tag}" width="1" height="1" alt="">`;
           await ex.set({ lid, ...(e0.before == null ? { before: String(cur.noteHtml || '').slice(0, 20000), beforeAt: at() } : { beforeHist: FV.arrayUnion({ at: at(), html: String(cur.noteHtml || '').slice(0, 5000) }) }), ...(autoTxt ? { autoTxt: AUTO_TXT } : {}), grade: gr || null, by: v.by || null, ...(e0.src ? {} : { src: v.gid ? 'g:' + v.gid : 'manual' }), ...W() }, { merge: true }); }
         if (v.op === 'remove') kind = 'edit'; eds++;

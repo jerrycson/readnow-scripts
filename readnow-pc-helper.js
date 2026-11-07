@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.226의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.227의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.226' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.226', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.227' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.227', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -334,9 +334,9 @@
         else { if (!base) { res[lid] = { state: 'fail', kind: 'fail', msg: '클라우드 주소(app_settings/main.cloudUrl)가 없음', at: at(), ms: Date.now() - ti, by: PC_NAME }; continue; }
           if (has) { res[lid] = { state: 'done', kind: 'check', msg: '이미 붙어 있음(확인)', at: at(), ms: Date.now() - ti, by: PC_NAME }; await ex.set({ lid, on: true, chkAt: at(), chkN: FV.increment(1), ...(e0.src ? {} : { src: v.gid ? 'g:' + v.gid : 'manual' }), ...W() }, { merge: true }); await sleep(daily ? Math.round(rnd(1500, 4000)) : 300); continue; }
           const empty = !peTxt(cur.noteHtml) && !/<img/i.test(String(cur.noteHtml || ''));
-          if (empty && gr !== '상') { const why = `유의 사항이 비어 있음 — ${gr || '등급 모름'} 상태는 유의 사항이 있는 상품에만 그림을 붙임(정범님 10/27 규칙 · 비어 있는 '상'만 '${AUTO_TXT}'를 적고 붙임)`; res[lid] = { state: 'skip', kind: 'skip', msg: why, gr, at: at(), ms: Date.now() - ti, by: PC_NAME }; await ex.set({ lid, skipAt: at(), skipWhy: why, grade: gr || null, chkAt: at(), ...(e0.skipWhy === why ? {} : { hist: FV.arrayUnion({ at: at(), op: 'skip', r: why }) }), ...W() }, { merge: true }); await sleep(daily ? Math.round(rnd(1500, 4000)) : 300); continue; }
+          const nB = v.bare ? Object.values({ ...prev, ...res }).filter((r) => r && r.kind === 'edit' && r.state === 'done').length : 0; /* (정범님 11/07 밤) 🧪 그림만 시험 — 유의 사항이 빈 상품에만 글 없이 그림만 · 정한 개수(v.bare)까지 */ if (v.bare ? (!empty || nB >= +v.bare) : (empty && gr !== '상')) { const why = v.bare ? (!empty ? '🧪 그림만 시험(정범님 11/07 밤): 유의 사항에 글이 있어 이번 시험 대상 아님' : `🧪 그림만 시험: 정한 ${v.bare}개를 다 붙여 더 붙이지 않음`) : `유의 사항이 비어 있음 — ${gr || '등급 모름'} 상태는 유의 사항이 있는 상품에만 그림을 붙임(정범님 10/27 규칙 · 비어 있는 '상'만 '${AUTO_TXT}'를 적고 붙임)`; res[lid] = { state: 'skip', kind: 'skip', msg: why, gr, at: at(), ms: Date.now() - ti, by: PC_NAME }; await ex.set({ lid, skipAt: at(), skipWhy: why, grade: gr || null, chkAt: at(), ...(e0.skipWhy === why ? {} : { hist: FV.arrayUnion({ at: at(), op: 'skip', r: why }) }), ...W() }, { merge: true }); await sleep(daily ? Math.round(rnd(1500, 4000)) : 300); continue; }
           if (gt && eds >= edMax) { cut = true; break; } /* (사람처럼) 이번 조각 수정 몫을 다 씀 — 이 상품은 다음 조각에 */
-          readd = !!(e0.on || (e0.addedAt && !(e0.removedAt && e0.removedAt >= e0.addedAt))); autoTxt = empty && gr === '상'; kind = 'edit';
+          readd = !!(e0.on || (e0.addedAt && !(e0.removedAt && e0.removedAt >= e0.addedAt))); autoTxt = empty && gr === '상' && !v.bare; kind = 'edit';
           html = (autoTxt ? `<p>${AUTO_TXT}</p>` : String(cur.noteHtml || '')) + `<img src="${tag}" width="1" height="1" alt="">`;
           await ex.set({ lid, ...(e0.before == null ? { before: String(cur.noteHtml || '').slice(0, 20000), beforeAt: at() } : { beforeHist: FV.arrayUnion({ at: at(), html: String(cur.noteHtml || '').slice(0, 5000) }) }), ...(autoTxt ? { autoTxt: AUTO_TXT } : {}), grade: gr || null, by: v.by || null, ...(e0.src ? {} : { src: v.gid ? 'g:' + v.gid : 'manual' }), ...W() }, { merge: true }); }
         if (v.op === 'remove') kind = 'edit'; eds++;
