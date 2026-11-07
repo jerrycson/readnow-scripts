@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.411 출고별 매출 출력 회차 기준",
- "since": "2026-11-07T09:13:21Z",
- "beat": "2026-11-07T09:13:21Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "웹앱 1.78.410 f50e2af0",
-  "at": "2026-11-07T08:24:53Z"
+  "done": "웹앱 1.78.411 8ff532e8",
+  "at": "2026-11-07T09:14:07Z"
  },
- "host": "DESKTOP-STFQ5B9"
+ "host": null
 }
