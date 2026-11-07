@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "웹앱 1.78.410 일별 출고 매출·주간 축하",
+ "since": "2026-11-07T08:24:21Z",
+ "beat": "2026-11-07T08:24:21Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "",
   "at": "2026-11-07T07:17:47Z"
  },
- "host": null
+ "host": "DESKTOP-STFQ5B9"
 }
