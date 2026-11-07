@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "1.78.416 실험 그룹",
- "since": "2026-11-07T10:44:31Z",
- "beat": "2026-11-07T10:44:31Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.415 d8b1e6be",
-  "at": "2026-11-07T10:31:46Z"
+  "done": "1.78.416 214de24a",
+  "at": "2026-11-07T10:44:51Z"
  },
- "host": "DESKTOP-STFQ5B9"
+ "host": null
 }
