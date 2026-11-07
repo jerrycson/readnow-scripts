@@ -1,2 +1,2 @@
-health=1&hours=3
-# 1530523487
+logs=1&pc=LOGGER&from=202611071000
+# 740724110
