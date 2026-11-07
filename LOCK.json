@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "1.78.413 수집기 1.89.226 원문 가림 보강",
+ "since": "2026-11-07T09:25:42Z",
+ "beat": "2026-11-07T09:25:42Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.412 2d4e3849",
   "at": "2026-11-07T09:16:36Z"
  },
- "host": null
+ "host": "DESKTOP-STFQ5B9"
 }
