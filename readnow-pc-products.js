@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.225의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.226의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.225' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.225', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.226' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.226', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -807,13 +807,14 @@
     const maskEl = (el) => { try { const tw = el.ownerDocument.createTreeWalker(el, 4); const L = []; while (tw.nextNode()) L.push(tw.currentNode); L.forEach((t) => { if (t.nodeValue.trim()) t.nodeValue = '＊'; }); el.querySelectorAll('input,textarea').forEach((i) => { i.setAttribute('value', '＊'); if (i.tagName === 'TEXTAREA') i.textContent = '＊'; }); } catch (e) {} };
     const clean = (html, pub) => { const d = new DOMParser().parseFromString(String(html || ''), 'text/html');
       d.querySelectorAll('input,textarea').forEach((i) => { if (String(i.type).toLowerCase() === 'password' || INP.test((i.name || '') + ' ' + (i.id || ''))) { i.setAttribute('value', '＊'); if (i.tagName === 'TEXTAREA') i.textContent = '＊'; } });
-      if (!pub) { d.querySelectorAll('th,td,dt,dd,label,span,b,strong,em,div,li,p,font').forEach((el) => { if (el.children.length > 1) return; const t = (el.textContent || '').trim(); if (t && t.length <= 14 && LAB.test(t)) { const sb = el.nextElementSibling; if (sb) maskEl(sb); } });
+      if (!pub) { d.querySelectorAll('[onclick*="addr" i],[onclick*="member" i],[onclick*="buyer" i],[onclick*="receiv" i],.addrLayers,[id^="addrLayer" i],[id^="addrCLayer" i],[id^="addrRLayer" i]').forEach(maskEl); /* (1.89.226) 알라딘 주문 목록은 주문인·수령인 이름을 '주소 보기' 링크(viewAddrLayer) 안에 둠 — 칸 이름 옆이 아니라서 1.89.225가 놓쳤음 */
+        d.querySelectorAll('th,td,dt,dd,label,span,b,strong,em,div,li,p,font').forEach((el) => { if (el.children.length > 1) return; const t = (el.textContent || '').trim(); if (t && t.length <= 14 && LAB.test(t)) { const sb = el.nextElementSibling; if (sb) maskEl(sb); } });
         d.querySelectorAll('table').forEach((tb) => { const rows = [...tb.rows]; const hi = rows.findIndex((r) => [...r.cells].some((c) => LAB.test((c.textContent || '').trim()))); if (hi < 0) return; const cols = [...rows[hi].cells].map((c, i) => (LAB.test((c.textContent || '').trim()) ? i : -1)).filter((i) => i >= 0); rows.slice(hi + 1).forEach((r) => { if (r.cells.length === rows[hi].cells.length) cols.forEach((i) => r.cells[i] && maskEl(r.cells[i])); }); });
         d.querySelectorAll('script:not([src])').forEach((sc) => { const t = sc.textContent || ''; if (/(name|nm|tel|hp|addr|phone|mobile|mail)\w*['"]?\s*[:=]\s*['"]/i.test(t)) sc.textContent = t.replace(/((?:\w*(?:name|nm|tel|hp|addr|phone|mobile|mail)\w*)['"]?\s*[:=]\s*)(['"])[^'"\n]*\2/gi, '$1$2＊$2'); }); }
       let s = '<!doctype html>\n' + d.documentElement.outerHTML;
-      s = s.replace(/01[016789][-\s.)]?\d{3,4}[-\s.]?\d{4}/g, '＊전화').replace(/\b0(2|[3-6][1-5]|50\d?|70)[-)\s.]\d{3,4}[-\s.]\d{4}\b/g, '＊전화').replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '＊메일').replace(/\b\d{6}-?[1-4]\d{6}\b/g, '＊');
+      s = s.replace(/01[016789][-\s.)]?\d{3,4}[-\s.]?\d{4}/g, '＊전화').replace(/\b0(2|[3-6][1-5]|50\d?|70)[-)\s.]\d{3,4}[-\s.]\d{4}\b/g, '＊전화').replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '＊메일').replace(/[\w.+-]{2,}@(?:[\w-]*\.)*\.\.?/g, '＊메일') /* (1.89.226) 앞부분만 보이는 메일(아이디@..) */.replace(/\b\d{6}-?[1-4]\d{6}\b/g, '＊');
       if (!pub) s = s.replace(/[가-힣]{2,}(특별시|광역시|특별자치시|특별자치도|도)\s+[가-힣]+(시|군|구)\s[^<>"']{0,60}/g, '＊주소').replace(/[가-힣]+(시|군|구)\s+[가-힣0-9.]+(로|길)\s*\d+(-\d+)?[^<>"']{0,40}/g, '＊주소');
-      return { s, sk: h32(s.replace(/>[^<]*</g, '><').replace(/\s(value|href|src|title|alt|style|onclick|action|data-[\w-]+)="[^"]*"/gi, '').replace(/\d+/g, '0')) }; };
+      return { s, sk: 'v2' + h32(s.replace(/>[^<]*</g, '><').replace(/\s(value|href|src|title|alt|style|onclick|action|data-[\w-]+)="[^"]*"/gi, '').replace(/\d+/g, '0')) }; };
     const take = (url, html) => { try { if (PUBONLY || GM_getValue('rn-alraw-off', false)) return; const k = keyOf(url); if (!k || busy.has(k) || !html || String(html).length < 500) return; const day = new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10); const M = GM_getValue(DK, {}) || {}; if (M.d !== day || !M.k) { M.d = day; M.k = {}; } if (M.k[k] || Object.keys(M.k).length >= 300) return; M.k[k] = 1; GM_setValue(DK, M); busy.add(k);
       setTimeout(async () => { try { const pub = isPubUrl(url); const { s, sk } = clean(html, pub); const id = sid(k); const ix = C('al_raw_idx').doc(id); const o = (await ix.get()).data() || {}; const age = o.lastSaveAt ? Date.now() - Date.parse(o.lastSaveAt) : 1e15; const FV = firebase.firestore.FieldValue; const at = new Date().toISOString();
         const u0 = (() => { try { const x = new URL(url, location.href); [...x.searchParams.keys()].forEach((n) => { if (!/(^|_)(no|id|code|isbn|page|type|mode|tab|kind|step|sort|cate|cid|sw|st)$/i.test(n)) x.searchParams.set(n, '＊'); }); return x.host + x.pathname + x.search; } catch (e) { return ''; } })().slice(0, 400);
