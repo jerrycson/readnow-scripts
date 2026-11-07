@@ -23,8 +23,9 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await p.fill('#px_daily [data-pxdcfg="cap"]', '200'); await p.dispatchEvent('#px_daily [data-pxdcfg="cap"]', 'change'); await p.waitForTimeout(500);
   chk('capSave', await p.evaluate(() => window.__FS.app_settings.pxDaily.cap === 200 && /하루 최대 붙이기 200/.test(document.body.textContent)));
   // 맡긴 일 — 건너뜀·매일 표시
-  chk('cmdSkip', await p.evaluate(() => { const t = [...document.querySelectorAll('#sheet .pxcmd')].map((x) => x.textContent).join(' '); return /⏰ 매일 붙이기·확인/.test(t) && /⏭/.test(t) && /다음 조각/.test(t); }));
+  chk('cmdSkip', await p.evaluate(() => { const t = [...document.querySelectorAll('#sheet .pxcmd')].map((x) => x.textContent).join(' '); return /⏰ 매일 붙이기·확인/.test(t) && /⏭/.test(t) && /다음 조각|뒤 이어 함/.test(t); })); /* (11/07) 쉼 안내 글이 '…분 뒤 이어 함'으로 바뀐 뒤 옛 기대값 */
   // 🧭 방문 구분
+  /* (11/07 실험 페이지 다시 짬) 🧭 방문 구분은 기본으로 접혀 있고 펼칠 때만 그림 — 접힌 채 비었는지 본 뒤 펼침 */ chk('brkLazy', await p.evaluate(() => { const d = document.querySelector('[data-pxbrk]'); return !!d && !d.open && !d.querySelector('#px_brk').innerHTML; })); await p.evaluate(() => { const d = document.querySelector('[data-pxbrk]'); if (d && !d.open) d.open = true; }); await p.waitForTimeout(400);
   const b1 = await p.evaluate(() => { const b = document.querySelector('#px_brk'); const t = b.textContent.replace(/\s+/g, ' '); return { t: t.slice(0, 400), mob: /휴대폰/.test(t), kakao: /카카오톡/.test(t), rf: /알라딘 모바일 화면/.test(t), hr: !!b.querySelector('.pxhr svg rect'), bot: /Googlebot/.test(t), v6: /IPv6/.test(t), sum: /사람 137/.test(t) }; });
   chk('brk', b1.mob && b1.kakao && b1.rf && b1.hr && b1.bot && b1.v6 && b1.sum, b1);
   await p.click('#px_brk [data-pxbd="30"]'); await p.waitForTimeout(200); const b30 = await p.evaluate(() => document.querySelector('#px_brk').textContent.replace(/\s+/g, ' '));
@@ -59,7 +60,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   // 상품 카드 — '상태 양호합니다.' 적음 · 확인 시각
   chk('card', await p.evaluate(() => { const c = document.querySelector('#sheet .pxcard[data-pxid="600000001"]'); return !!c && /'상태 양호합니다\.' 적음/.test(c.textContent) && /확인 /.test(c.textContent); }));
   // 🔍 기능 찾기
-  chk('feat', await p.evaluate(() => FEAT.filter((f) => /방문 구분|방문자 목록|매일 자동 붙이기|SP×등급 2000|어디에 붙나/.test(f.t)).length === 5));
+  chk('feat', await p.evaluate(() => FEAT.filter((f) => /방문 구분|방문자 목록|매일 자동 붙이기|SP×등급 2000|어디에 붙나/.test(f.t)).length >= 5)); /* (11/07) '방문 구분' 항목이 하나 더 생겨 6 — 다섯 갈래가 다 있는지만 */
   // 휴대폰 너비 — 가로로 넘치지 않음
   await p.setViewportSize({ width: 390, height: 800 }); await p.evaluate(() => pxDraw(true)); await p.waitForTimeout(600);
   const ov = await p.evaluate(() => { const sh = document.querySelector('#sheet'); const W = sh.clientWidth; const wide = [...sh.querySelectorAll('.card')].filter((c) => c.getBoundingClientRect().right > window.innerWidth + 2).map((c) => c.className + ':' + Math.round(c.getBoundingClientRect().right)); return { W, sw: sh.scrollWidth, wide: wide.slice(0, 4) }; });
