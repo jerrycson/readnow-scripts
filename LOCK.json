@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "1.78.415 그림만 시험",
- "since": "2026-11-07T10:31:24Z",
- "beat": "2026-11-07T10:31:24Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.414 4642113c",
-  "at": "2026-11-07T10:29:12Z"
+  "done": "1.78.415 d8b1e6be",
+  "at": "2026-11-07T10:31:46Z"
  },
- "host": "DESKTOP-STFQ5B9"
+ "host": null
 }
