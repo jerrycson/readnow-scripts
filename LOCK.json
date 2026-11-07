@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "웹앱 1.78.418 · 수집기 1.89.229 · 클라우드 0.35.107 · autosched 0.18.18 — 조회수 실험 다음 단계",
+ "since": "2026-11-07T11:31:21Z",
+ "beat": "2026-11-07T11:31:21Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.417 b3f07283",
   "at": "2026-11-07T10:46:10Z"
  },
- "host": null
+ "host": "DESKTOP-STFQ5B9"
 }
