@@ -7,6 +7,9 @@
 //  시험 자료 손님은 '손님A…' · 010-0000-0000 (공개 저장소)
 let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } else console.log('  ✓', m); };
 require('./harness.js')(async (p) => {
+  /* (11/07) Firestore REST(15초마다 출고 목록 다시 읽기 shipRestTick)는 '연결 실패'로 — 시험 틀은 바깥 주소를 모두 404로 답해 웹앱이 '오늘 출고 문서 없음'으로 받아 목록을 잠깐 비웠고,
+     ⑤-2의 P1(묶기)이 그 순간에 걸리면 '보낼 주문이 없음'으로 끝났음(1.78.406 뒤 4번 중 3번 실패의 원인 · 실제로는 문서가 늘 있어 404 없음) */
+  await p.route(/firestore\.googleapis\.com\//, (r) => r.abort());
   await p.route(/cdnjs\.cloudflare\.com\/ajax\/libs\/xlsx\//, (r) => r.fulfill({ body: require('fs').readFileSync(__dirname + '/xlsx.full.min.js'), contentType: 'application/javascript' }));
   /* 가짜 ALPS 도우미(127.0.0.1:8898) — 시작 → 2번 묻고 나면 종이 확인 물음(첫 출력 뒤 한 번) → 답하면 끝 · 운송장 = 받는 분마다 하나 */
   const H = { n: 0, run: null, body: null, bodies: [], inputs: [], polls: 0, printerBad: null, ver: '0.5.6', hist: [], results: {} };
