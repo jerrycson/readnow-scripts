@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.229의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.230의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.229' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.229', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.230' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.230', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -824,6 +824,7 @@
         const ch = !!o.sk && o.sk !== sk; await ix.set({ key: k, url: u0, pub, sk, lastSaveAt: at, lastDoc: base.id, parts: parts.length, bytes: s.length, seenAt: at, n: FV.increment(1), changedAt: ch ? at : o.changedAt || null, by: PC_NAME }, { merge: true });
         log(`📥 알라딘 화면 원문 보관 — ${k}${ch ? ' · 화면 뼈대가 바뀜' : o.sk ? ' · 7일 지나 다시' : ' · 처음'} · ${Math.round(s.length / 1024)}KB · 손님 정보 가림`, 1); } catch (e) {} finally { busy.delete(k); } }, 3000 + Math.random() * 4000); } catch (e) {} };
     return { take, clean, keyOf }; })();
+  try { globalThis.__rnAlraw = ALRAW; } catch (e) {} /* (11/07 ① 예스24 원문 보관) 예스24 모듈(rnY24 — 파일 끝 따로 덩어리)이 같은 화면 가림(clean)을 씀 */
   { const g0 = getDocRaw; getDocRaw = async function (url, opt) { const r = await g0.apply(this, arguments); try { if (r && r.html) ALRAW.take(r.finalUrl || url, r.html); } catch (e) {} return r; }; } /* 📥 읽은 원문을 보관 장치에 건넴(결과는 그대로) */
   try { if (/(^|\.)aladin\.co\.kr$/i.test(location.hostname) && window.top === window) setTimeout(() => { try { const d = document.documentElement.cloneNode(true); d.querySelectorAll('[id^="rn-"],[id^="rn_"],[class^="rn-"],[data-rn]').forEach((x) => x.remove()); ALRAW.take(location.href, d.outerHTML); } catch (e) {} }, 9000); } catch (e) {} /* 📥 수집기가 일하는 알라딘 화면 자체(발송 요청 등 · 수집기 띠는 빼고) */
   /* (1.69.0) 🔀 섞어 읽기(로거) — 맡긴 시장 지표·사진 가격 읽기 사이사이에 '다른 책' 화면을 끼워 읽음: 이 익명 방문자가 보는 책이 우리 책·우리 주문 책만으로 모이지 않게
