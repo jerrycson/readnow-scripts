@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.224
+// @version      1.89.225
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -4357,7 +4357,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    *  · 공개 화면이 로그인 화면으로 넘어감 = 그 화면만 로그인 필요(19금 등) → 그 장만 건너뜀 · 공개 화면이 '비공개 상태입니다'(주문 들어온 우리 매물 등) → 3일 건너뜀(예전 1.89.26과 같음)
    *  · 샵매니저(/scm/)가 로그인 화면·로그인 칸·로그아웃 링크 없음 → '의심' → 샵매니저로 한 번 더 확인 → 잘못 본 것이면 로그인하지 않고 그 요청만 다시 */
   const GOV = window.__rnLoginGov;
-  let LO_URL = null; const getDocRaw = AL.makeReader({ pace: PACE, sleep: (ms) => sleep(Math.round(ms * (0.8 + Math.random() * 0.4))) /* (정범님 11/02 · 고정 간격 흩기) 실패 다시 시도 5·15·45·120·300초를 ±20% 흩음(같은 박자 = 로봇 신호) — 이 창구에서 sleep은 다시 시도 기다림에만 씀 */, wait: politeWait, beforeEach: () => { if (stopFlag) throw new Error('멈춤'); },
+  let LO_URL = null; let getDocRaw = AL.makeReader({ pace: PACE, sleep: (ms) => sleep(Math.round(ms * (0.8 + Math.random() * 0.4))) /* (정범님 11/02 · 고정 간격 흩기) 실패 다시 시도 5·15·45·120·300초를 ±20% 흩음(같은 박자 = 로봇 신호) — 이 창구에서 sleep은 다시 시도 기다림에만 씀 */, wait: politeWait, beforeEach: () => { if (stopFlag) throw new Error('멈춤'); },
     loggedOut: (fu, doc, url, html) => { const j = GOV.suspect(url, fu, doc, { scmNeedsLogout: true }); LO_URL = j === 'suspect' ? url : null;
       if (!j && isPubUrl(url) && doc.querySelector('input[type="password"]') && /비공개\s*상태입니다/.test(String(html || '').slice(0, 300000))) { hidSet(url); throw hidErr(); }
       if (j === 'gate') throw Object.assign(new Error('로그인해야 보이는 화면(19금 등) — 공개 화면은 로그인 판단에 쓰지 않으므로 이 장만 건너뜀'), { needLogin: true, gate: true });
@@ -4373,6 +4373,38 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     on429: (st) => { log(`알라딘이 요청이 너무 많다고 함(${st}) — 이 PC의 모든 수집이 ${Math.round(PACE.cooling() / 60000)}분 쉬고, 간격을 ${PACE.state().gap}ms로 늘림`, 1); ui('알라딘 요청 제한(429) — 쉬는 중', 0, 0, `${Math.round(PACE.cooling() / 1000)}초 뒤 느린 속도로 이어감`); if (lockHeld && LREF === LOCKP) { const cu = Date.now() + Math.max(60e3, PACE.cooling()); PUB_COOL = cu; LOCKP().set({ coolUntil: cu, coolBy: PC_NAME, coolAt: nowIso() }, { merge: true }).catch(() => {}); log(`🌐 같은 인터넷 주소의 공개 읽기 줄 PC 모두 ${Math.round((cu - Date.now()) / 60000)}분 함께 쉼 — 로그인 줄(주문·출고)은 그대로`, 1); } },
     onRecover: () => log('서버 연결 회복, 계속합니다'),
     onRetry: (e, w) => (window.__rnUiAt = Date.now(), log(`요청 실패(${e.name === 'AbortError' ? '응답 시간 초과' : e.message}). ${w}초 뒤 재시도`, 1)) });
+  /* 📥 (정범님 11/06 약속 28 · 11/07 진행) 알라딘 화면 원문 저절로 보관 — 수집기가 읽은 알라딘 화면(getDocRaw 원문)을 화면 꼴(주소 길 + 물음 칸 이름)마다 하루 한 번 살펴
+   *  손님 정보를 가린 뒤, 화면 뼈대(태그·class·id·name — 글자·숫자 뺌)가 바뀌었거나 마지막 보관이 7일 넘었으면 Firestore al_raw(28만 자씩 나눔)·al_raw_idx(꼴마다 한 줄)에 올림
+   *  → 클라우드 진단 alraw로 비공개 저장소(readnow-chats reports/aladin_raw/)에 받음(tools/alraw-pull.sh — 손님 이름 목록으로 한 번 더 가림) · 까닭: 알라딘이 화면을 바꿨을 때 짐작 없이 원문으로 바로 고침
+   *  가림: 이름·전화·주소·메일 칸(칸 이름·표 머리로 찾음) 글자 · 입력 칸 값(name·tel·addr·mail·계좌…) · 스크립트 안 이름·전화 값 · 전화·메일·주민번호·주소 꼴 글자
+   *  로거(공개 전용 PC)는 하지 않음(약속 20 — 로거 고유 일은 벤치마킹) · 하루 꼴 300개까지 · 한 화면 8조각(약 224만 자)까지 · 끄기: 이 PC 저장소 rn-alraw-off · 머리 그대로 */
+  const ALRAW = (() => { const DK = 'rn-alraw-day'; const busy = new Set();
+    const h32 = (x) => { let h = 0x811c9dc5; for (let i = 0; i < x.length; i++) { h ^= x.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
+    const keyOf = (u) => { try { const x = new URL(u, location.href); if (!/(^|\.)aladin\.co\.kr$/i.test(x.hostname)) return null; const qs = [...new Set([...x.searchParams.keys()].map((n) => n.toLowerCase()))].sort().join(','); return (x.hostname.replace(/\.?aladin\.co\.kr$/i, '') + x.pathname.toLowerCase() + (qs ? '?' + qs : '')).slice(0, 200); } catch (e) { return null; } };
+    const sid = (k) => k.replace(/[^0-9A-Za-z]+/g, '_').slice(0, 100) + '_' + h32(k);
+    const LAB = /^(주문자|구매자|주문인|수령인|수령자|수취인|받는\s*(분|사람|이)|받으시는\s*분|보내는\s*(분|사람)|성명|이름|고객명|회원명|주소|배송지|배송\s*주소|주소지|연락처|연락처\s*\d|전화|전화번호|휴대폰|핸드폰|휴대전화|휴대폰\s*번호|이메일|e-?mail|우편번호|입금자|입금자명|예금주|계좌|계좌번호|아이디|ID|배송\s*메시지|배송\s*요청\s*사항|요청\s*사항)\s*[:：]?$/i;
+    const INP = /name|nm$|_nm|nm_|tel|hp|phone|mobile|addr|zip|post|mail|acct|account|bank|pass|pwd|token|jumin|birth|userid|custid|memo|msg|request/i;
+    const maskEl = (el) => { try { const tw = el.ownerDocument.createTreeWalker(el, 4); const L = []; while (tw.nextNode()) L.push(tw.currentNode); L.forEach((t) => { if (t.nodeValue.trim()) t.nodeValue = '＊'; }); el.querySelectorAll('input,textarea').forEach((i) => { i.setAttribute('value', '＊'); if (i.tagName === 'TEXTAREA') i.textContent = '＊'; }); } catch (e) {} };
+    const clean = (html, pub) => { const d = new DOMParser().parseFromString(String(html || ''), 'text/html');
+      d.querySelectorAll('input,textarea').forEach((i) => { if (String(i.type).toLowerCase() === 'password' || INP.test((i.name || '') + ' ' + (i.id || ''))) { i.setAttribute('value', '＊'); if (i.tagName === 'TEXTAREA') i.textContent = '＊'; } });
+      if (!pub) { d.querySelectorAll('th,td,dt,dd,label,span,b,strong,em,div,li,p,font').forEach((el) => { if (el.children.length > 1) return; const t = (el.textContent || '').trim(); if (t && t.length <= 14 && LAB.test(t)) { const sb = el.nextElementSibling; if (sb) maskEl(sb); } });
+        d.querySelectorAll('table').forEach((tb) => { const rows = [...tb.rows]; const hi = rows.findIndex((r) => [...r.cells].some((c) => LAB.test((c.textContent || '').trim()))); if (hi < 0) return; const cols = [...rows[hi].cells].map((c, i) => (LAB.test((c.textContent || '').trim()) ? i : -1)).filter((i) => i >= 0); rows.slice(hi + 1).forEach((r) => { if (r.cells.length === rows[hi].cells.length) cols.forEach((i) => r.cells[i] && maskEl(r.cells[i])); }); });
+        d.querySelectorAll('script:not([src])').forEach((sc) => { const t = sc.textContent || ''; if (/(name|nm|tel|hp|addr|phone|mobile|mail)\w*['"]?\s*[:=]\s*['"]/i.test(t)) sc.textContent = t.replace(/((?:\w*(?:name|nm|tel|hp|addr|phone|mobile|mail)\w*)['"]?\s*[:=]\s*)(['"])[^'"\n]*\2/gi, '$1$2＊$2'); }); }
+      let s = '<!doctype html>\n' + d.documentElement.outerHTML;
+      s = s.replace(/01[016789][-\s.)]?\d{3,4}[-\s.]?\d{4}/g, '＊전화').replace(/\b0(2|[3-6][1-5]|50\d?|70)[-)\s.]\d{3,4}[-\s.]\d{4}\b/g, '＊전화').replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '＊메일').replace(/\b\d{6}-?[1-4]\d{6}\b/g, '＊');
+      if (!pub) s = s.replace(/[가-힣]{2,}(특별시|광역시|특별자치시|특별자치도|도)\s+[가-힣]+(시|군|구)\s[^<>"']{0,60}/g, '＊주소').replace(/[가-힣]+(시|군|구)\s+[가-힣0-9.]+(로|길)\s*\d+(-\d+)?[^<>"']{0,40}/g, '＊주소');
+      return { s, sk: h32(s.replace(/>[^<]*</g, '><').replace(/\s(value|href|src|title|alt|style|onclick|action|data-[\w-]+)="[^"]*"/gi, '').replace(/\d+/g, '0')) }; };
+    const take = (url, html) => { try { if (PUBONLY || GM_getValue('rn-alraw-off', false)) return; const k = keyOf(url); if (!k || busy.has(k) || !html || String(html).length < 500) return; const day = new Date(Date.now() + 9 * 36e5).toISOString().slice(0, 10); const M = GM_getValue(DK, {}) || {}; if (M.d !== day || !M.k) { M.d = day; M.k = {}; } if (M.k[k] || Object.keys(M.k).length >= 300) return; M.k[k] = 1; GM_setValue(DK, M); busy.add(k);
+      setTimeout(async () => { try { const pub = isPubUrl(url); const { s, sk } = clean(html, pub); const id = sid(k); const ix = C('al_raw_idx').doc(id); const o = (await ix.get()).data() || {}; const age = o.lastSaveAt ? Date.now() - Date.parse(o.lastSaveAt) : 1e15; const FV = firebase.firestore.FieldValue; const at = new Date().toISOString();
+        const u0 = (() => { try { const x = new URL(url, location.href); [...x.searchParams.keys()].forEach((n) => { if (!/(^|_)(no|id|code|isbn|page|type|mode|tab|kind|step|sort|cate|cid|sw|st)$/i.test(n)) x.searchParams.set(n, '＊'); }); return x.host + x.pathname + x.search; } catch (e) { return ''; } })().slice(0, 400);
+        if (o.sk === sk && age < 7 * 864e5) { await ix.set({ seenAt: at, seenN: FV.increment(1), by: PC_NAME }, { merge: true }); return; }
+        const parts = []; for (let i = 0; i < s.length; i += 280000) parts.push(s.slice(i, i + 280000)); if (parts.length > 8) return; const base = C('al_raw').doc();
+        for (let i = 0; i < parts.length; i++) await (i ? C('al_raw').doc(base.id + '_' + i) : base).set({ key: k, url: u0, at, day, part: i, parts: parts.length, body: parts[i], pub, sk, prevSk: o.sk || null, by: PC_NAME, uploadedAt: TS() });
+        const ch = !!o.sk && o.sk !== sk; await ix.set({ key: k, url: u0, pub, sk, lastSaveAt: at, lastDoc: base.id, parts: parts.length, bytes: s.length, seenAt: at, n: FV.increment(1), changedAt: ch ? at : o.changedAt || null, by: PC_NAME }, { merge: true });
+        log(`📥 알라딘 화면 원문 보관 — ${k}${ch ? ' · 화면 뼈대가 바뀜' : o.sk ? ' · 7일 지나 다시' : ' · 처음'} · ${Math.round(s.length / 1024)}KB · 손님 정보 가림`, 1); } catch (e) {} finally { busy.delete(k); } }, 3000 + Math.random() * 4000); } catch (e) {} };
+    return { take, clean, keyOf }; })();
+  { const g0 = getDocRaw; getDocRaw = async function (url, opt) { const r = await g0.apply(this, arguments); try { if (r && r.html) ALRAW.take(r.finalUrl || url, r.html); } catch (e) {} return r; }; } /* 📥 읽은 원문을 보관 장치에 건넴(결과는 그대로) */
+  try { if (/(^|\.)aladin\.co\.kr$/i.test(location.hostname) && window.top === window) setTimeout(() => { try { const d = document.documentElement.cloneNode(true); d.querySelectorAll('[id^="rn-"],[id^="rn_"],[class^="rn-"],[data-rn]').forEach((x) => x.remove()); ALRAW.take(location.href, d.outerHTML); } catch (e) {} }, 9000); } catch (e) {} /* 📥 수집기가 일하는 알라딘 화면 자체(발송 요청 등 · 수집기 띠는 빼고) */
   /* (1.69.0) 🔀 섞어 읽기(로거) — 맡긴 시장 지표·사진 가격 읽기 사이사이에 '다른 책' 화면을 끼워 읽음: 이 익명 방문자가 보는 책이 우리 책·우리 주문 책만으로 모이지 않게
    *  다른 책 = 지금까지 읽은 공개 화면에 걸린 책 링크(함께 산 책·같은 분야·중고매장 첫 화면 등)에서 무작위 · 읽은 결과는 쓰지 않음(데이터만 조금) · 테더링 확인·몫·속도 조절은 그대로 따름 */
   const MIXP = []; const MIXS = new Set(); const MIX = { n: 0, at: null, saved: 0, fail: 0 };
