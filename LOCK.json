@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.414",
- "since": "2026-11-07T10:28:39Z",
- "beat": "2026-11-07T10:28:49Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.413 90cbe783",
-  "at": "2026-11-07T09:26:37Z"
+  "done": "1.78.414 4642113c",
+  "at": "2026-11-07T10:29:12Z"
  },
- "host": "DESKTOP-STFQ5B9"
+ "host": null
 }
