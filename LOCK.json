@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.423 — 그림만 시험 나누지 않음",
- "since": "2026-11-07T15:19:35Z",
- "beat": "2026-11-07T15:19:35Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-07T12:11:40Z"
+  "at": "2026-11-07T15:20:02Z"
  },
- "host": "DESKTOP-STFQ5B9"
+ "host": null
 }
