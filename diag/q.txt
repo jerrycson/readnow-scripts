@@ -1,2 +1,2 @@
-logs=1&pc=HOME&from=20261105&to=20261108~
-# 323465395
+doc=app_settings/pxDaily
+# 269906216
