@@ -23,7 +23,7 @@ let bad = 0; const ok = (c, m, info) => { console.log((c ? '  ✓ ' : '  ❌ ') 
   const j = rw[0] ? JSON.parse(rw[0].body) : null;
   ok(ix.length === 1 && rw.length === 1 && ix[0].key === 'POST /api/menu/getmenus' && ix[0].ext === 'json' && !/rnx/.test(ix[0].url), '메뉴 응답 하나를 보관(꼴 = 방식+경로 · rnx 뺌)', ix);
   ok(j && j.Data.length === 21 && j.Data[0].MenuName === '상품 관리 0' && /외 10줄/.test(j.Data[20]), '메뉴 이름(MenuName)은 살림 · 목록 20줄 + "…외 10줄"', j && j.Data.slice(0, 2));
-  const ord = { list: [{ OrderNo: 'Y1', OrdererName: '김손님', ReceiverNm: '이손님', ReceiverTel: '010-1234-5678', ReceiverAddr: '서울시 어딘가', BuyerId: 'abc', ProductName: '어린 왕자', Memo: '문 앞', Price: 9000, Email: 'a@b.com', note: '연락 010 9999 8888' }] };
+  const ord = { list: [{ OrderNo: 'Y1', OrdererName: '김손님', ReceiverNm: '이손님', ReceiverTel: '010-0000-0000', ReceiverAddr: '서울시 어딘가', BuyerId: 'abc', ProductName: '어린 왕자', Memo: '문 앞', Price: 9000, Email: 'a@b.com', note: '연락 010 0000 0000' }] };
   await M.y24RawTake(fsx, FV, { sig: 'POST /api/Order/NewOrderConfirmList', url: '/api/Order/NewOrderConfirmList', page: '/Order/NewOrderConfirm', ctype: 'application/json', body: JSON.stringify(ord) }, ord);
   const o2 = Object.values(store.y24_raw).find((x) => /NewOrderConfirmList/i.test(x.key)); const oj = o2 ? JSON.parse(o2.body).list[0] : {};
   ok(oj.OrdererName === '＊' && oj.ReceiverNm === '＊' && oj.ReceiverTel === '＊' && oj.ReceiverAddr === '＊' && oj.BuyerId === '＊' && oj.Memo === '＊' && oj.Email === '＊', '손님 칸(주문인·수령인·전화·주소·손님 아이디·요청·메일) 가림', oj);
