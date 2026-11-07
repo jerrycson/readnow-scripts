@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "웹앱 1.78.412 수집기 1.89.225 클라우드 0.35.104 알라딘 원문 보관",
+ "since": "2026-11-07T09:15:56Z",
+ "beat": "2026-11-07T09:15:56Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.411 8ff532e8",
   "at": "2026-11-07T09:14:07Z"
  },
- "host": null
+ "host": "DESKTOP-STFQ5B9"
 }
