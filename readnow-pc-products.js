@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.231의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.232의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.231' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.231', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.232' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.232', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -3168,8 +3168,19 @@
     const done = !left || over; await ref.set({ results, status: done ? 'done' : 'verify', ...(done ? { doneAt: nowIso() } : {}), verify: { ...vf, tries: (vf.tries || 0) + 1, lastAt: nowIso(), by: PC_NAME, foundNew: found.length, everNew }, post: hit ? 'need' : v.post || null, uploadedAt: TS() }, { merge: true });
     await regItemsSet(rows, results); if (hit) log(`📥 공개 확인: ${hit}개가 알라딘에 보임 (남은 ${left}개)`);
     if (hit || v.post === 'need') await regPostCollect(ref, rows, results); }
+  /* (정범님 11/08) 👀 등록 때 저절로 조회수 그림 — 알라딘에 보인(live) 상품번호마다 그림 붙이기를 맡김(맡긴 일 pxExp · 그룹 g_all1107 · 그룹의 빈 유의 사항 다루기 empty 그대로 · 없으면 그림만 시험 성공대로 'bare')
+   *  끄기: 웹앱 📥 등록 하위 탭 줄의 '👀 등록 때 그림'(app_settings/main.pxRegAuto = false) · 같은 등록 일에 두 번 맡기지 않음(pxKeys) · 전체 그룹이 아직 없으면 그룹에는 안 더함(클라우드가 그룹을 만들 때 판매 중 상품을 모두 넣음) */
+  async function regPxAuto(ref, rows, results) { const M = (await C('app_settings').doc('main').get()).data() || {}; if (M.pxRegAuto === false || !M.cloudUrl) return; const r0 = (await ref.get()).data() || {}; const had = new Set(r0.pxKeys || []);
+    const lids = [...new Set(rows.map((r) => results[r.regItem]).filter((x) => x && x.state === 'live' && x.listingId).map((x) => String(x.listingId)))].filter((k) => !had.has(k)); if (!lids.length) return;
+    await ref.set({ pxKeys: firebase.firestore.FieldValue.arrayUnion(...lids), pxAt: nowIso() }, { merge: true }); /* 먼저 적어 두 번 맡기지 않음 */
+    const gref = C('px_exp_groups').doc('g_all1107'); const g = await gref.get(); const gd = g.exists ? g.data() || {} : null; const empty = gd && (gd.empty === 'bare' || gd.empty === 'skip') ? gd.empty : 'bare';
+    if (gd) await gref.set({ lids: firebase.firestore.FieldValue.arrayUnion(...lids), lastImportAt: nowIso(), hist: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), op: 'import', n: lids.length, add: lids.length, by: PC_NAME, r: '👀 등록 때 저절로 — 새로 등록한 상품' }), uploadedAt: TS() }, { merge: true });
+    const titles = Object.fromEntries(rows.map((r) => [String((results[r.regItem] || {}).listingId || ''), String(r.title || '').slice(0, 80)]).filter(([k]) => lids.includes(k)));
+    await C('shp_cmds').add({ type: 'pxExp', op: 'add', listingIds: lids, titles, status: 'queued', claim: null, createdAt: nowIso(), by: PC_NAME + ' (등록 때 저절로)', dev: PC_NAME, gid: 'g_all1107', gname: (gd && gd.name) || '🔬 전체 상품(11/07)', empty, uploadedAt: TS() });
+    log(`👀 등록 때 그림: 새로 등록한 ${lids.length}개에 조회수 그림 붙이기를 맡김${gd ? ' · 전체 상품 그룹에 더함' : ''} (빈 유의 사항: ${empty === 'bare' ? '그림만' : '건너뜀'})`); }
   /* 등록 뒤 나머지 수집: 신규 등록분 수집(상품 목록에 넣음) → 그 상품들 시장 지표를 맡김. 다른 작업 중이면 다음 확인 때 */
   async function regPostCollect(ref, rows, results) { if (running) { await ref.set({ post: 'need' }, { merge: true }).catch(() => {}); return; }
+    try { await regPxAuto(ref, rows, results); } catch (e) { log('👀 등록 때 그림 맡기기 실패: ' + (e.code || e.message), 1); }
     const had = new Set(((await ref.get()).data() || {}).postKeys || []); const noIsbn = rows.filter((r) => !(r.isbn13 || r.isbn10 || r.isbn) && results[r.regItem] && results[r.regItem].state === 'live').length; const keys = rows.filter((r) => r.isbn13 || r.isbn10 || r.isbn).map((r) => results[r.regItem]).filter((x) => x && x.state === 'live' && x.usedCode).map((x) => 'aladin_' + x.usedCode).filter((k) => !had.has(k)); /* (1.89.189 정밀 점검) ISBN 없는 상품(옛 잡지 등)은 시장 지표를 맡기지 않음 — 11/03 MJ-MAIN이 '📥 등록 뒤 시장 지표 (1개)' 12건을 맡겼다가 모두 그 자리에서 '성공 0 · 실패 1'(도서 정보를 찾지 못함 · 월간지 1997~2002년호) · 맡긴 일 12개·오류 줄 12개가 헛돎 */ if (noIsbn) log(`📥 등록 뒤 시장 지표: ISBN 없는 상품 ${noIsbn}개는 맡기지 않음(도서 정보를 찾을 수 없어 바로 실패하던 것 · 나중에 그룹 시장 지표가 다룸)`); if (!keys.length) { await ref.set({ post: 'done' }, { merge: true }).catch(() => {}); return; }
     await ref.set({ post: 'done', postAt: nowIso(), postKeys: firebase.firestore.FieldValue.arrayUnion(...keys) }, { merge: true }); /* 먼저 적어 두 번 맡기지 않음 */
     await runJob('scanNew'); await C('shp_cmds').add({ type: 'metrics', keys, label: '📥 등록 뒤 시장 지표 (' + keys.length + '개)', status: 'queued', createdAt: nowIso(), by: PC_NAME + ' (등록 뒤 자동)', uploadedAt: TS() }).catch(() => {});

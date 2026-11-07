@@ -10,7 +10,7 @@ const H = require('./harness.js');
 const reopen = async (p) => p.evaluate(() => { S.sec = JSON.parse(localStorage.getItem('rn-sec') || '{}'); sdOpenInit(); }); /* 웹앱을 다시 연 것처럼 — 시작 때와 같은 줄(rn-sec 읽기 → sdOpenInit) */
 (async () => {
   // ━━ A. PC — 하루 한 번 · 닫기 · 설정 · 10가지
-  await H(async (p) => { await p.clock.setFixedTime(new Date('2026-11-06T07:40:00+09:00')); await p.evaluate(require('./seed.js')); await p.waitForTimeout(500);
+  await H(async (p) => { await p.clock.setFixedTime(new Date('2026-11-06T07:40:00+09:00')); await p.evaluate(require('./seed.js')); await p.waitForTimeout(500); await p.evaluate(() => { localStorage.setItem('rn-device', 'TEST-PC'); S.devOk = true; S.app.adminDevices = ['TEST-PC']; return db.collection('app_settings').doc('main').set({ adminDevices: ['TEST-PC'] }, { merge: true }); }); /* 설정 문서가 다시 읽혀도 관리자 기기 그대로 */ /* (11/08) 아침 인사말 설정이 모든 기기 공용 — 관리자 기기에서만 바꿈 */
     const r = await p.evaluate(async () => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; S.user = S.user || { email: 'tester@x' };
       ['rn-amg', 'rn-amg-seen', 'rn-amg-last'].forEach((k) => localStorage.removeItem(k)); const shown = () => document.getElementById('amg');
       o.autoOff = amgBoot('open') === false && !shown(); /* 자동 시험 브라우저는 저절로 안 뜸 */ window.__amgAuto = 1;
@@ -51,7 +51,7 @@ const reopen = async (p) => p.evaluate(() => { S.sec = JSON.parse(localStorage.g
     ok(r.again && r.chip5 === 'shelf', '다시 보기 · 장면 단추 ' + r.chip5); ok(r.secSd && r.feat >= 2 && r.guide, `📅 열림 설정 칸 · 🔍 기능 찾기 ${r.feat} · 화면 설명서`);
   });
   // ━━ B. 휴대폰 360px · 움직임 줄이기
-  await H(async (p) => { await p.clock.setFixedTime(new Date('2026-11-06T09:10:00+09:00')); await p.evaluate(require('./seed.js')); await p.waitForTimeout(400);
+  await H(async (p) => { await p.clock.setFixedTime(new Date('2026-11-06T09:10:00+09:00')); await p.evaluate(require('./seed.js')); await p.waitForTimeout(400); await p.evaluate(() => { localStorage.setItem('rn-device', 'TEST-PC'); S.devOk = true; S.app.adminDevices = ['TEST-PC']; return db.collection('app_settings').doc('main').set({ adminDevices: ['TEST-PC'] }, { merge: true }); }); /* 설정 문서가 다시 읽혀도 관리자 기기 그대로 */ /* (11/08) 아침 인사말 설정이 모든 기기 공용 — 관리자 기기에서만 바꿈 */
     const m = await p.evaluate(async () => { const W = (ms) => new Promise((r) => setTimeout(r, ms)); const o = { L: [] }; for (let i = 0; i < AMG.length; i++) { amgShow(i, { sec: 0 }); await W(80); const st = document.getElementById('amg_st').getBoundingClientRect(); const x = document.getElementById('amg_x').getBoundingClientRect(); const h = document.querySelector('#amg .amg-h'); o.L.push({ i, l: Math.round(st.left), r: Math.round(st.right), xr: Math.round(x.right), xt: Math.round(x.top), xw: Math.round(x.width), fs: parseFloat(getComputedStyle(h).fontSize), sw: document.documentElement.scrollWidth }); } amgClose(); await W(600); return o; });
     ok(m.L.every((x) => x.l >= 8 && x.r <= 352 && x.xr <= 360 && x.xt >= 0 && x.xw >= 36 && x.sw <= 360 && x.fs >= 20), '휴대폰 360px — 넘침 없음 · 닫기 단추 손가락 크기 · 큰 글 읽힘 ' + JSON.stringify(m.L.slice(0, 3)));
     await p.emulateMedia({ reducedMotion: 'reduce' });
@@ -59,7 +59,7 @@ const reopen = async (p) => p.evaluate(() => { S.sec = JSON.parse(localStorage.g
     ok(s.still && s.op.every((x) => x === '1') && s.an === 'none' && s.dawn === 'none', '움직임 줄이기면 정지 화면(글 바로 다 보임 · 움직임 없음) ' + JSON.stringify(s));
   }, { vp: { width: 360, height: 740 }, touch: true });
   // ━━ C. 출고별 매출 머리 띠 열림 상태
-  await H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(400);
+  await H(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(400); await p.evaluate(() => { localStorage.setItem('rn-device', 'TEST-PC'); S.devOk = true; S.app.adminDevices = ['TEST-PC']; return db.collection('app_settings').doc('main').set({ adminDevices: ['TEST-PC'] }, { merge: true }); }); /* 설정 문서가 다시 읽혀도 관리자 기기 그대로 */ /* (11/08) 아침 인사말 설정이 모든 기기 공용 — 관리자 기기에서만 바꿈 */
     await p.evaluate(() => { localStorage.removeItem('rn-sd-open'); S.sec.o_shipday = true; localStorage.setItem('rn-sec', JSON.stringify(S.sec)); }); await reopen(p);
     const a = await p.evaluate(async () => ({ mode: sdOpenMode(), open: !!S.sec.o_shipday }));
     ok(a.mode === 'closed' && a.open === false, '기본 ① 늘 닫힌 채로 시작 — 지난번 펼쳐 둔 기기도 닫힌 채 ' + JSON.stringify(a));

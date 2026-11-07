@@ -18,7 +18,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await p.evaluate(() => { S.pxOnly = false; S.q = ''; renderMain(); }); await p.waitForTimeout(500);
   // 실험 페이지
   await p.evaluate(() => openPxExp()); await p.waitForTimeout(1200);
-  R.page = await p.evaluate(() => { const sh = document.querySelector('#sheet'); return { t: /상품 조회수 실험/.test(sh.textContent), how: /그림이 불린 횟수/.test(sh.textContent), cards: sh.querySelectorAll('.pxcard').length, svg: sh.querySelectorAll('svg.pxbars rect').length > 10, nums: [...sh.querySelectorAll('.pxcard .pxn b')].slice(0, 3).map((b) => b.textContent), sum: sh.querySelector('#px_sum').textContent }; });
+  R.page = await p.evaluate(() => { const sh = document.querySelector('#sheet'); return { t: /상품 조회수 분석/.test(sh.textContent) /* (11/08) 이름 바뀜 */, how: /그림이 불린 횟수/.test(sh.textContent), cards: sh.querySelectorAll('.pxcard').length, svg: sh.querySelectorAll('svg.pxbars rect').length > 10, nums: [...sh.querySelectorAll('.pxcard .pxn b')].slice(0, 3).map((b) => b.textContent), sum: sh.querySelector('#px_sum').textContent }; });
   await p.click('[data-pxf="all"]'); await p.waitForTimeout(300); R.allCards = await p.evaluate(() => document.querySelectorAll('#sheet .pxcard').length);
   // 실시간: 오늘 조회가 늘면 숫자 칸만 바뀜(카드는 그대로)
   await p.evaluate(async () => { window.__card = document.querySelector('#sheet .pxcard[data-pxid="404935000"]'); const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); await db.collection('px_views').doc('404935000_' + day.replace(/-/g, '')).set({ human: firebase.firestore.FieldValue.increment(4) }, { merge: true }); });
@@ -42,7 +42,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await p.evaluate(() => { STK.px = 'all'; history.back(); }); await p.waitForTimeout(500);
   // 상품 전체 표
   await p.evaluate(() => openProdAll()); await p.waitForTimeout(1200);
-  R.all = await p.evaluate(() => ({ f: /조회수 실험/.test(document.querySelector('#sheet').textContent), band: document.querySelectorAll('#sheet .pxband').length }));
+  R.all = await p.evaluate(() => ({ f: /조회수 실험|조회수 분석|👀 조회수/.test(document.querySelector('#sheet').textContent), band: document.querySelectorAll('#sheet .pxband').length }));
   await p.evaluate(() => history.back()); await p.waitForTimeout(500);
   // 상품 상세
   await p.evaluate(() => openProduct('aladin_U215983410')); await p.waitForTimeout(1200);
@@ -51,7 +51,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await p.evaluate(() => { history.back(); }); await p.waitForTimeout(400); await p.evaluate(() => { history.back(); }); await p.waitForTimeout(400);
   // 경영 탭 카드 · 기능 찾기 · 홈 카드
   await p.evaluate(() => { S.tab = 'biz'; renderTabs(); renderMain(); }); await p.waitForTimeout(1200);
-  R.biz = await p.evaluate(() => !!document.querySelector('#main [data-gopage="pxExp"]') && FEAT.some((f) => /조회수 실험/.test(f.t)) && !!WIDGETS.go_pxExp);
+  R.biz = await p.evaluate(() => !!document.querySelector('#main [data-gopage="pxExp"]') && FEAT.some((f) => /조회수 실험|조회수 분석/.test(f.t)) && !!WIDGETS.go_pxExp);
   console.log(JSON.stringify(R, null, 1)); console.log('errs', errs.join(' | '));
   const ok = R.mark.join() === 'true,false,true,false' && R.top && R.only.rows === 1 && R.only.band === 1 && R.onlyQ === 1 && R.page.t && R.page.how && R.page.cards === 1 && R.page.svg && R.page.nums[0] === '5' && R.allCards === 2 && R.live.same && R.live.today === '9' && R.arm1.n === 0 && /한 번 더/.test(R.arm1.armed) && R.arm2.n === 1 && R.arm2.op === 'add' && String(R.arm2.ids) === '404935005' && R.arm2.st === 'queued' && R.arm2.ask && R.arm2.mark && R.arm2.before === 50 && R.rm[0] === 0 && R.rm[1] === 1 && R.stock.rows === 2 && R.stock.chip && R.all.f && R.all.band >= 1 && R.pd && /오늘 사람 조회 9/.test(R.pd) && R.pdGo && R.biz && !errs.length;
   console.log(ok ? '✓ t94 통과' : '❌ t94 실패');
