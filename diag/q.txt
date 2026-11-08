@@ -1,2 +1,1 @@
-logs=1&pc=LOGGER&from=202611082100
-# 374936
+@kpq kpq=25&kpcap=3000&kpper=150000&r=20261108204950
