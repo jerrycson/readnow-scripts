@@ -1,5 +1,6 @@
 // 🧯 문제 상품 — 시험 상품 통계 빼기·카드 띠·맨 위 고정·알림·기록(생김→풀림)·문제 페이지·두 번 눌러 시험 표시 풀기
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  await p.evaluate(() => { localStorage.setItem('rn-device', 'JS-MAIN'); S.devOk = true; }); /* (11/08) 문제 알림은 그 사람 기기에만 — 시험 상품(작업대 1 → JS)이 보이는 JS-MAIN으로 */
   const errs = []; p.on('pageerror', (e) => errs.push(e.message));
   const ok = []; const chk = (name, v) => { ok.push([name, !!v]); };
   const r1 = await p.evaluate(async () => { S.leader = true; for (const k of ['aladin_U215983411','aladin_U215983415','aladin_U215983417']) { const l0 = S.plist.get(k); if (l0) l0.registeredAt = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }  const before = prodInv(); const t = new Date().toISOString();
