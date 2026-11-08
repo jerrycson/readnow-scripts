@@ -1,4 +1,2 @@
-cmds=pxExp&n=12
-doc=app_settings/pxDaily,app_settings/pxDaily_g_all1107
-benchday=2026-11-08
-# 3018932034
+logs=1&pc=LOGGER&from=202611080000&to=202611081700
+# 1618532565
