@@ -8656,6 +8656,19 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     if (!running || memReload) return; const m = performance && performance.memory; const ratio = m && m.jsHeapSizeLimit ? m.usedJSHeapSize / m.jsHeapSizeLimit : 0;
     if (ratio > 0.65 || frameLoads >= (SET.reloadEveryFrames || 400)) { memReload = true; stopFlag = true; log(`메모리 정리: ${ratio > 0.65 ? `메모리 ${Math.round(ratio * 100)}% 사용` : `숨은 창으로 연 페이지 ${frameLoads}개`} (메모리 ${m ? Math.round(m.usedJSHeapSize / 1048576) + 'MB / 한계 ' + Math.round(m.jsHeapSizeLimit / 1048576) + 'MB' : '모름'}) — 진행 위치를 저장하고 새로고침한 뒤 그 자리부터 이어갑니다`, 1); }
   }, 30000);
+  /* (정범님 11/08 · 리드나우 방) 쉬는 때 메모리 정리 — 11/08 HOME 힙이 🔬 조회수 그림 붙이기 동안 366MB → 3,960MB(한계의 97%)까지 늘고 10:48~14:25 기록이 끊김(탭 멈춤 추정)
+   *  · 까닭: 유의 사항 고치기(prdEditPc)가 알라딘 수정 화면(편집기)을 숨은 틀로 열어 상품마다 수십 MB가 남음(10/30에도 같은 일) · 위 정리는 수집 중(running)일 때만 돌아 맡긴 일만 하던 HOME은 비워지지 않았음
+   *  · 기준: 한계의 45%(근거: 한계 약 4,096MB · 한 조각에 많게는 약 770MB 늘어(11/08 09:26→09:48) 45%면 조각 두 번 넘게 여유 — 설정 SET.idleMemPct로 바꿈)
+   *  · 아무 일도 없을 때만 새로고침: 수집 중 아님 · 맡긴 일 처리 중 아님(__rnCmdCur — 출고 일 포함) · 등록·수정 줄(autoChain) 비었음 · 안전한 새로고침·멈춤·고객 일 아님 · 그 상태가 60초 넘게 이어짐 */
+  let idleMemSince = 0;
+  setInterval(async () => { try {
+    if (running || memReload || verReload || window.__rnReloading || window.__rnPaused) { idleMemSince = 0; return; }
+    const m = performance && performance.memory; const ratio = m && m.jsHeapSizeLimit ? m.usedJSHeapSize / m.jsHeapSizeLimit : 0; if (ratio < (+SET.idleMemPct || 45) / 100) { idleMemSince = 0; return; }
+    const ch = window.__rnAutoChain ? window.__rnAutoChain() : null; const chIdle = !ch || await Promise.race([ch.then(() => true, () => true), new Promise((r) => setTimeout(() => r(false), 80))]);
+    if (window.__rnCmdCur || !chIdle || (window.__rnCrm && window.__rnCrm.busy && window.__rnCrm.busy())) { idleMemSince = 0; return; }
+    if (!idleMemSince) { idleMemSince = Date.now(); return; } if (Date.now() - idleMemSince < 60e3) return;
+    memReload = true; log(`메모리 정리(쉬는 때): 메모리 ${Math.round(ratio * 100)}% (${Math.round(m.usedJSHeapSize / 1048576)}MB / 한계 ${Math.round(m.jsHeapSizeLimit / 1048576)}MB) — 하던 일이 없어 새로고침으로 비움(🔬 조회수 그림 붙이기 등 숨은 틀이 남긴 것)`, 1); safeReload('메모리 정리(쉬는 때)');
+  } catch (e) {} }, 30000);
   // (1.26.0) 수동 실행(개별 수집 버튼을 사람이 누름): 기간 설정(○일 안에 본 것은 건너뜀)을 적용하지 않고 전부 다시 모음.
   //   일괄 수집·자동 실행·새로고침 뒤 이어가기는 지금처럼 기간 설정을 따름. 다시 모아도 기존 기록은 덮어쓰지 않고, 바뀐 것만 시각과 함께 덧붙임
   let FORCE_ALL = false;
@@ -9277,6 +9290,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   window.__rnRegMake = makeFiller;
   /* ── 창 없이 하는 자동 등록 (웹앱 '🤖 자동 등록' → 맡긴 일 regOne auto): 보이지 않는 틀 안에 알라딘 등록 화면을 열고 같은 방법으로 채움 → 못 채운 칸이 하나라도 있으면 보내지 않음 → 보냄 → 화면이 바뀌면 공개 확인 ── */
   let autoChain = Promise.resolve(); /* 한 PC에서 하나씩 (틀이 여럿 동시에 열리지 않게) — 기다리는 일은 1분마다 '살아 있음'(beatAt)을 남겨 지킴이가 멈춘 일로 보지 않게 */
+  window.__rnAutoChain = () => autoChain; /* (11/08) 쉬는 때 메모리 정리가 '등록·수정 줄이 비었나'를 봄 */
   window.__rnRegAuto = (ref, v, id) => { const hb = setInterval(() => ref.set({ beatAt: nowIso(), waitMsg: '이 PC의 앞 자동 등록이 끝나길 기다림' }, { merge: true }).catch(() => {}), 60000);
     const p = autoChain.then(() => { clearInterval(hb); return regAutoOne(ref, v, id); }).catch((e) => console.warn('[리드나우] 자동 등록', e)).finally(() => clearInterval(hb)); autoChain = p; return p; };
   /* ══ (1.89.26) ✏ 상품 정보 수정 → 샵매니저 (맡긴 일 prdEdit) — 정범님 10/21 '클라우드 로그인이 막혔을 때 PC가 대신 받는 길' · 클라우드 0.32와 같은 순서·같은 기록
