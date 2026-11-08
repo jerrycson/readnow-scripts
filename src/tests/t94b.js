@@ -15,7 +15,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await p.click('#sheet .pxcard [data-ipop="pxwho"]'); await p.waitForTimeout(300); R.pop = await p.evaluate(() => { const d = document.querySelector('.rn-ipop'); return d ? /왜 추정인가/.test(d.textContent) && /우리 기기 빼기/.test(d.textContent) : false; });
   await p.mouse.click(5, 300); await p.waitForTimeout(200); R.popClosed = await p.evaluate(() => !document.querySelector('.rn-ipop'));
   // 2) 개수 제한 없음 — 12개 고르기 → 맡긴 일 1개(12개) · 제한 문구 없음
-  await p.click('[data-pxadd]'); await p.waitForTimeout(300); await p.fill('#px_q', '많은 책'); await p.waitForTimeout(500);
+  await p.evaluate(() => { S.sec.px_ops = true; pxDraw(true); }); /* (11/08) 직접 붙이기는 🛠 운영(접힘) 안 */ await p.click('[data-pxadd]'); await p.waitForTimeout(300); await p.fill('#px_q', '많은 책'); await p.waitForTimeout(500);
   const boxes = await p.$$('#px_res [data-pxsel]'); for (const bx of boxes.slice(0, 12)) await bx.check(); await p.waitForTimeout(200);
   R.sel = await p.evaluate(() => ({ n: S.px.P.sel.size, txt: document.querySelector('.pxsel').textContent.slice(0, 12), no10: !/최대 10개/.test(document.querySelector('#sheet').textContent) }));
   await p.click('[data-pxgo1]'); await p.waitForTimeout(200); await p.click('[data-pxgo1]'); await p.waitForTimeout(900);

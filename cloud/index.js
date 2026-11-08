@@ -3396,9 +3396,30 @@ async function metCloudStep(t0) { if (MET.busy) return null; MET.busy = true; co
     if (sig !== MET.beatSig || Date.now() - MET.beatAt > 600e3) { /* (0.35.78 🔬 정밀 점검 11/02) 내용이 같으면 10분에 한 번(예전 110초 → 하루 ~720번 쓰기) · 웹앱은 12분 안 신호를 켜짐으로 봄 */ MET.beatSig = sig; MET.beatAt = Date.now(); await C('rn_status').doc('help_cloud').set({ ...o, atMs: Date.now(), ...W() }, { merge: true }).catch(() => {}); }
     if (out.books) await csFlushC().catch(() => {}); MET.last = { at: nowIso(), ...out }; return out.job || out.err ? out : null;
   } finally { MET.busy = false; } }
+/* (정범님 11/08 '전체(누적) 집계가 없다 · 읽는 문서 수가 크게 늘지 않게') 👀 조회 누적 합 — 웹앱은 최근 30일 px_views만 실시간으로 들음(PX_DAYS)
+ *  → 그보다 오래된 날은 클라우드가 하루 한 번 상품마다 더해 px_sum/s0~s7(상품번호를 8칸으로 나눔)에 둠 · px_sum/meta.thru = 여기까지 더한 날 · 웹앱은 문서 9개만 읽어 '전체'를 셈
+ *  원본 px_views는 그대로(지우지 않음) · 날 하나를 더할 때 8칸과 meta.thru를 한 묶음(batch)으로 함께 적어 두 번 더하지 않음 · 한 번에 최대 3일(읽기 = 그날 px_views 문서 수만큼)
+ *  칸 하나 = { 상품번호: [n, 사람, 로봇, 우리 기기, 기기 1번씩, 알라딘에서, 휴대폰, 쿠키 들고 옴, 쿠키 없이, 추적 거부, 처음 날, 마지막 날, 날 수] } — 숍 그림(shop_자리)도 같은 꼴 */
+/* PXSUM-START (순수 함수 · 시험이 이 칸만 떼어 돌림) */
+const PXSUM_N = 8, PXSUM_WIN = 30; const PXSUM_K = ['n', 'human', 'bot', 'ours', 'uniq', 'fromAladin', 'mobile', 'ck', 'noCk', 'nt'];
+function pxSumShard(lid) { let h = 0; for (const ch of String(lid)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h % PXSUM_N; }
+const pxSumNext = (d) => new Date(Date.parse(d + 'T00:00:00Z') + 864e5).toISOString().slice(0, 10);
+function pxSumAdd(L, day, x) { const lid = String((x && x.lid) || ''); if (!lid || !day) return false; const r = L[lid] || (L[lid] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, day, day, 0]); PXSUM_K.forEach((k, i) => { r[i] += +x[k] || 0; }); if (day < r[10]) r[10] = day; if (day > r[11]) r[11] = day; r[12]++; return true; }
+/* io = { meta() → {thru}, shards() → [L×8], first() → 가장 이른 날 | null, day(d) → [px_views 문서 data], commit(shards, meta) } · target = 더해도 되는 마지막 날(오늘 − 30일) */
+async function pxSumRun(io, target, maxDays) { const m0 = (await io.meta()) || {}; let next; if (m0.thru) { if (m0.thru >= target) return { skip: '다 더함', thru: m0.thru }; next = pxSumNext(m0.thru); } else { const f = await io.first(); if (!f) return { skip: '조회 기록 없음' }; if (f > target) return { skip: '30일 안 기록뿐 — 더할 날 없음', first: f }; next = f; }
+  const SH = await io.shards(); const days = []; let docs = 0; while (next <= target && days.length < (maxDays || 3)) { const L = await io.day(next); let n = 0; for (const x of L) if (pxSumAdd(SH[pxSumShard(x.lid)], next, x)) n++; docs += n; await io.commit(SH, { thru: next, add: n }); days.push(next); next = pxSumNext(next); }
+  return { days, docs, more: next <= target, thru: days[days.length - 1] || m0.thru || null }; }
+/* PXSUM-END */
+let pxSumNextAt = 0;
+async function pxSumTick() { if (Date.now() < pxSumNextAt) return null; const kday = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10); const target = kday(Date.now() - PXSUM_WIN * 864e5); const ref = (id) => C('px_sum').doc(id);
+  const r = await pxSumRun({ meta: async () => (await ref('meta').get()).data() || {}, shards: async () => (await Promise.all(Array.from({ length: PXSUM_N }, (_, i) => ref('s' + i).get()))).map((d) => ((d.exists && d.data()) || {}).L || {}),
+    first: async () => { const q = await C('px_views').orderBy('day').limit(1).get(); return q.empty ? null : String((q.docs[0].data() || {}).day || '') || null; }, day: async (d) => (await C('px_views').where('day', '==', d).get()).docs.map((x) => x.data() || {}),
+    commit: async (SH, mt) => { const b = db.batch(); SH.forEach((L, i) => b.set(ref('s' + i), { L, n: Object.keys(L).length, at: nowIso(), ...W() })); b.set(ref('meta'), { thru: mt.thru, days: FV.increment(1), docs: FV.increment(mt.add), at: nowIso(), ver: VER, win: PXSUM_WIN, shards: PXSUM_N, ...W() }, { merge: true }); await b.commit(); } }, target, 3);
+  pxSumNextAt = Date.now() + (r.more ? 10 : 360) * 60e3; return r.days && r.days.length ? r : null; }
 async function dailyJobs() { if (dailyBusy) return { skipped: true }; dailyBusy = true; lastDailyAt = Date.now(); const out = {}; const J = await cjobs(); out.jobs = J;
   try { const so = await settingsOnce1101(); if (so) { out.setOnce = so; } } catch (e) { out.setOnceErr = e.message; } /* (0.35.72) 정범님 11/01 결정 설정 한 번 */
   try { if (J.px) { try { const r = await pxDailyTick(); if (r && (r.plan || r.promoted || r.built)) { out.px = r; log('🔬 조회수 실험 매일', JSON.stringify(r).slice(0, 300)); } } catch (e) { out.pxErr = e.message; log('🔬 조회수 실험 매일 실패', e.message); } }
+    if (J.px) { try { const r = await pxSumTick(); if (r) { out.pxSum = r; log('👀 조회 누적 합', JSON.stringify(r).slice(0, 200)); } } catch (e) { pxSumNextAt = Date.now() + 30 * 60e3; out.pxSumErr = e.message; log('👀 조회 누적 합 실패', e.message); } } /* (정범님 11/08) 30일보다 오래된 조회를 상품마다 더해 둠 — 웹앱 '전체' */
     if (J.costs && Date.now() > costNextAt) { try { const r = await costDaily(4); out.costs = r; costNextAt = r.skip ? Date.now() + 15 * 60e3 : 0; if (r.done && r.done.length) log('비용 기록', JSON.stringify(r.done)); } catch (e) { costNextAt = Date.now() + 30 * 60e3; out.costsErr = e.message; log('비용 기록 실패', e.message); } }
     if (J.ml && Date.now() > mlNextAt) { try { const r = await mlDaily(); out.ml = r.skip ? undefined : r; mlNextAt = Date.now() + (r.skip ? 15 : 60) * 60e3; if (!r.skip) log('결과 기록', JSON.stringify(r).slice(0, 400)); } catch (e) { mlNextAt = Date.now() + 30 * 60e3; out.mlErr = e.message; log('결과 기록 실패', e.message); C('app_settings').doc('ml_state').set({ lastErr: String(e.message || e).slice(0, 300), lastErrAt: nowIso(), lastErrVer: VER }, { merge: true }).catch(() => {}); } } /* (11/01 점검) 📈 판매 결과 기록이 10/23 뒤 9일째 안 됨(ml_state.lastDay 2026-10-23) — 까닭이 콘솔에만 남아 아무도 못 봄 → 문서에 남김(진단 doc=app_settings/ml_state로 봄) */
     if (Date.now() > extNextAt) { try { const r = await extCloud(90e3); extNextAt = Date.now() + (r.skip ? 5 : 1) * 60e3; if (!r.skip) out.ext = { ms: r.ms, tally: r.tally }; else out.ext = r.skip; } catch (e) { extNextAt = Date.now() + 20 * 60e3; out.extErr = e.message; log('외부 정보 이어 받기 실패', e.message); } } /* (0.10.0) PC가 꺼져 있을 때만 */
