@@ -5,6 +5,8 @@
 'use strict';
 const fs = require('fs'), cp = require('child_process');
 
+/* (0.1.4 정범님 11/09 '번외 수집기 왜 진행 안 해') 창 자리 함수 이름을 R → Get-RnRect — PowerShell은 별칭이 함수보다 먼저라 'R'은 Invoke-History(r)로 불려
+ *  'ID 21433606에 대한 기록을 찾을 수 없습니다'로 find·hide가 창이 있을 때마다 실패했음(HOME col2_ctl 11/09 17:40) */
 const PS_SRC = (D) => `param([string]$Act = 'find', [int]$X = 0, [int]$Y = 0, [int]$W = 0, [int]$H = 0, [string]$Place = 'off', [string]$Mark = 'col2-work-chrome')
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $ErrorActionPreference = 'Stop'
@@ -33,8 +35,8 @@ public static class RnCol2Win {
   public static void Taskbar(IntPtr h, bool hide) { long ex = GetWL(h, -20).ToInt64(); long nx = hide ? ((ex | 0x80L) & ~0x40000L) : ((ex & ~0x80L) | 0x40000L); if (nx == ex) return; ShowWindow(h, 0); SetWL(h, -20, new IntPtr(nx)); ShowWindow(h, 4); }
 }
 '@ }
-function R($h) { $r = New-Object RnCol2Win+RECT; [void][RnCol2Win]::GetWindowRect($h, [ref]$r); @{ x = $r.L; y = $r.T; w = ($r.R - $r.L); h = ($r.B - $r.T) } }
-function Info($h) { @{ h = [int64]$h; r = (R $h); vis = [RnCol2Win]::IsWindowVisible($h); ic = [RnCol2Win]::IsIconic($h); zm = [RnCol2Win]::IsZoomed($h); tool = [RnCol2Win]::Tool($h) } }
+function Get-RnRect($h) { $r = New-Object RnCol2Win+RECT; [void][RnCol2Win]::GetWindowRect($h, [ref]$r); @{ x = $r.L; y = $r.T; w = ($r.R - $r.L); h = ($r.B - $r.T) } }
+function Info($h) { @{ h = [int64]$h; r = (Get-RnRect $h); vis = [RnCol2Win]::IsWindowVisible($h); ic = [RnCol2Win]::IsIconic($h); zm = [RnCol2Win]::IsZoomed($h); tool = [RnCol2Win]::Tool($h) } }
 $vs = [System.Windows.Forms.SystemInformation]::VirtualScreen; $wa = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
 $out = @{ ok = $true; act = $Act; vs = @{ x = $vs.X; y = $vs.Y; w = $vs.Width; h = $vs.Height }; wa = @{ x = $wa.X; y = $wa.Y; w = $wa.Width; h = $wa.Height } }
 $out.scr = @([System.Windows.Forms.Screen]::AllScreens | ForEach-Object { $b = $_.WorkingArea; @{ x = $b.X; y = $b.Y; w = $b.Width; h = $b.Height } })

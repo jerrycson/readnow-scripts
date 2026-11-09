@@ -25,7 +25,11 @@ function makePace(file, getCfg, o) {
     if (c1.waitMs > 0) await sleep(c1.waitMs); const t = now(); S.last = t; S.hour.push(t); S.day.n++; save(); return { ok: true, waited: c0.waitMs + (c1.waitMs || 0) }; }
   function fail(kind) { S.fails++; if (kind === '429') { S.n429 = (S.n429 || 0) + 1; S.coolUntil = now() + Math.min(10, S.n429) * cfg().cool429Min * 60e3; } save(); }
   function ok() { S.oks++; if (S.n429 && now() - S.last > 3600e3) S.n429 = 0; save(); }
+  /* (0.1.4 정범님 11/09) 예전 판이 알라딘에 안 가고도 하루 몫을 세던 것 바로잡기 — 오늘(한국 날짜) 실제로 읽은 수 realN보다 셈이 크면 realN으로 내림(새 판이 처음 켜질 때 한 번만 · 표시 fixOnce — 고친 뒤엔 셈이 실제 요청과 같아 다시 할 까닭 없음)
+   *  · 한 시간 셈도 realN보다 많으면 최근 것만 남김 · 실제 읽기보다 늘리지는 않음(속도 규칙은 그대로) */
+  function trueUp(realN, why) { tidy(); const d = S.day.d; if (S.fixOnce) return null; realN = Math.max(0, +realN || 0); S.fixOnce = d || '-'; const was = S.day.n;
+    if (was <= realN) { save(); return null; } S.day.n = realN; if (S.hour.length > realN) S.hour = S.hour.slice(-realN || S.hour.length); if (!realN) S.hour = []; save(); return { d, was, now: realN, why: why || '' }; }
   function state() { tidy(); const c = cfg(); return { last: S.last || null, hourN: S.hour.length, hourCap: c.hourCap, dayN: S.day.n, dayCap: c.dayCap, minGapMs: c.minGapMs, coolMs: Math.max(0, S.coolUntil - now()), fails: S.fails, oks: S.oks }; }
-  return { check, take, fail, ok, state, _S: () => S };
+  return { check, take, fail, ok, state, trueUp, _S: () => S };
 }
 module.exports = { makePace };

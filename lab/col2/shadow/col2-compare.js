@@ -23,7 +23,9 @@
 
   /* 번외 도우미 상태 */
   let HS = null, arm = 0;
-  async function hload() { try { HS = await hget('/status'); const p = HS.pace;
+  /* (0.1.4 정범님 11/09 스샷 — 11/05의 0.1.0 비교 화면이 그대로 떠 'Firebase 로그인 필요'를 보여 줌) 도우미가 새 판이면 이 화면도 저절로 새로 고침(판마다 한 번 · 되풀이 없음) */
+  const reloadIfNew = (v) => { if (!v || v === C.COL2_VER) return false; if (ST.ls.get('reloadV', null) === v) return false; ST.ls.set('reloadV', v); location.reload(); return true; };
+  async function hload() { try { HS = await hget('/status'); if (reloadIfNew(HS.ver)) return; const p = HS.pace;
       $('hst').innerHTML = `${HS.on ? '<span class="ok">켜짐</span>' : '<span class="no">꺼짐</span>'} · 번외 크롬 ${HS.alive ? '떠 있음' : '없음'}${HS.alive && !HS.headless ? (HS.shown ? ' · 보이는 중' : ' · 숨김') : ''} · 한 장 뒤 ${Math.round(p.minGapMs / 100) / 10}초 안팎 · 이번 시간 ${p.hourN}/${p.hourCap} · 오늘 ${p.dayN}/${p.dayCap}${p.coolMs ? ' · 쉬는 중' : ''} · 도우미 ${E(HS.ver)}`;
       if (window.__pcShow) window.__pcShow(HS); fbShow();
       $('onb').textContent = arm ? (HS.on ? '한 번 더 누르면 끔' : '한 번 더 누르면 켬') : HS.on ? '⏹ 끄기' : '▶ 켜기'; }
