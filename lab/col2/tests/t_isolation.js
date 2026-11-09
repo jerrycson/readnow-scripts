@@ -26,7 +26,10 @@ const GOF = path.join(R, 'helper', 'col2-go.js');
 /* (알라딘 읽기 · 정범님 11/09 밤 '로그인 일도 번외로') 🟧 알라딘 샵매니저 읽기 그림자(col2-al.js·col2-al-compare.js)만 샵매니저 주소를 지님 — 읽기 다섯 길만 · 로그인 칸을 채우지 않음 · 계정 값 없음(아래 검사) */
 const ALF = [path.join(R, 'helper', 'col2-al.js'), path.join(R, 'shadow', 'col2-al-compare.js')];
 ok(ALF.every((f) => fs.existsSync(f) && !/rn-cred|rnp-cred|\.fill\(|type=password[^']*'\)\.value|password'\]\.value|\bpw\.value/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, ''))) && /AC\.isReadUrl\(u\)/.test(rd(ALF[0])) && !/method:\s*'POST'/.test(rd(ALF[1])), '🟧 알라딘 읽기 그림자: 로그인 칸을 채우지 않음 · 계정 값 없음 · 보내기 전에 읽기 길 검사 · POST 없음');
-ok(runCode.filter((f) => f !== GOF && !ALF.includes(f)).every((f) => !/\/scm\/|wlogin|rn-cred|rnp-cred/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, ''))), '판매자 센터(scm)·로그인·알라딘 계정을 다루는 코드 없음(바로 가기 표 밖)');
+/* (그림자 쓰기) 🟧✍ col2-alw.js·col2-alw-core.js는 샵매니저 쓰기 주소 꼴을 '만들기만' — 보내는 코드(http·fetch·크롬 조종)가 없어야 함 */
+const ALWF = [path.join(R, 'helper', 'col2-alw.js'), path.join(R, 'shadow', 'col2-alw-core.js')];
+ok(ALWF.every((f) => fs.existsSync(f) && !/require\(['"](https?|net|tls|child_process|\.\/col2-cdp|\.\/col2-al)['"]\)|fetch\(|XMLHttpRequest|Runtime\.evaluate|http\.request|https\.get|wlogin|rn-cred/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, ''))), '🟧✍ 그림자 쓰기: 요청을 만들기만 · 보내는 코드·로그인·계정 값 없음');
+ok(runCode.filter((f) => f !== GOF && !ALF.includes(f) && !ALWF.includes(f)).every((f) => !/\/scm\/|wlogin|rn-cred|rnp-cred/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, ''))), '판매자 센터(scm)·로그인·알라딘 계정을 다루는 코드 없음(바로 가기 표 밖)');
 { const G = require(GOF); const g = rd(GOF).replace(/\/\*[\s\S]*?\*\//g, '');
   ok(!/fetch\(|require\(|XMLHttpRequest|wlogin|rn-cred|remote-debugging/.test(g) && G.LINKS.filter((l) => /\/scm\/|uscm\.yes24|SC=996008/.test(l.url)).every((l) => l.shop) && G.forPc('logger').every((l) => !l.shop && !/\/scm\/|yes24/.test(l.url)), '바로 가기 표: 읽기·조종 코드 없음 · 판매자·우리 숍 주소는 모두 shop(로거에서 숨김) · 로거 목록엔 알라딘 공개 화면만');
   const hs = rd(path.join(R, 'helper', 'readnow-col2-helper.js')); const go = hs.slice(hs.indexOf('function goOpen'), hs.indexOf('async function miniWin'));

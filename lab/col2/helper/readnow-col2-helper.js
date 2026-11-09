@@ -20,12 +20,13 @@
  *   POST /read/product { itemId } → { ok, page, coreVer, ms, waited } (한 번에 하나 · 속도 규칙)
  *   (0.1.5 정범님 11/09 밤) 🟦 예스24 판매관리 읽기(col2-y24.js — 화면을 열지 않음 · 따로 된 프로필 col2-y24-chrome에 로그인 세션만):
  *     POST /y24/feed {cfg,hold,jobs,ack,jack} ← 이 PC 수집기(알라딘 일하는 탭)가 10초마다 → { y24, recs(받은 응답), took, jres, jstep, tour } · POST /y24/login(로그인 한 번) · POST /y24/run {what: ord|prd|tour}
+ *   (그림자 쓰기) 🟧✍ POST /al/wfeed {by, w:[{id,k,at,in,rq,ok,http}]} ← 이 PC 수집기가 알라딘에 쓰기를 보낸 직후(번호·값만 · 출고 중·로거는 안 알림) → {ack} · 견줌만, 번외는 알라딘에 쓰기를 보내지 않음(col2-alw.js)
  *   📊 옆 창(작은 앱 창 · 자리·크기 기억)은 켜질 때 저절로 뜸(col2.json side:false 로 끔)
  * 켜는 법: 운영 웹앱에 단추를 넣기 전까지는 README '켜는 법' — 이 파일은 운영 도우미가 불러 쓰지 않음(완전히 따로) */
 'use strict';
 const http = require('http'), https = require('https'), fs = require('fs'), path = require('path'), os = require('os');
 const COL2 = require('../col2-config.js');
-const { makePace } = require('./col2-pace.js'); const { makeWin } = require('./col2-win.js'); const { Browser } = require('./col2-cdp.js'); const CMP = require('../shadow/col2-compare-core.js'); const { makeY24 } = require('./col2-y24.js'); const { makeAl } = require('./col2-al.js'); const ALC = require('../shadow/col2-al-compare.js'); /* (알라딘 읽기) 🟧 알라딘 샵매니저 읽기 그림자 */ const JR = require('./col2-journal.js'); const UIC = require('./col2-ui.js'); const GO = require('./col2-go.js'); /* (0.1.7) 옆 창 골격·바로 가기 */ const { makeJobs } = require('./col2-jobs.js'); const { lift } = require('./col2-lift.js'); const TK = require('../shadow/col2-tasks.js'); const vm = require('vm'); /* (0.1.9) 로그인 없는 일 그림자 */
+const { makePace } = require('./col2-pace.js'); const { makeWin } = require('./col2-win.js'); const { Browser } = require('./col2-cdp.js'); const CMP = require('../shadow/col2-compare-core.js'); const { makeY24 } = require('./col2-y24.js'); const { makeAl } = require('./col2-al.js'); const { makeAlw } = require('./col2-alw.js'); /* (그림자 쓰기) 🟧✍ 운영이 보낸 쓰기와 견줌만 — 보내지 않음 */ const ALC = require('../shadow/col2-al-compare.js'); /* (알라딘 읽기) 🟧 알라딘 샵매니저 읽기 그림자 */ const JR = require('./col2-journal.js'); const UIC = require('./col2-ui.js'); const GO = require('./col2-go.js'); /* (0.1.7) 옆 창 골격·바로 가기 */ const { makeJobs } = require('./col2-jobs.js'); const { lift } = require('./col2-lift.js'); const TK = require('../shadow/col2-tasks.js'); const vm = require('vm'); /* (0.1.9) 로그인 없는 일 그림자 */
 const VERSION = COL2.COL2_VER;
 const TEST = process.env.RN_COL2_TEST === '1';
 const PORT = +process.env.RN_COL2_PORT || COL2.PORT;
@@ -63,6 +64,9 @@ const Y24 = makeY24({ HOME, Browser, WIN, TEST, note: (m) => note(m, { k: 'y24',
 const AL = makeAl({ HOME, Browser, WIN, TEST, note: (m, x) => note(m, x || { k: 'al', m: '알라딘' }), log: (m) => log(m), cfg: () => CFG, chromeExe, handoffMs: () => (TEST && CFG.watch && CFG.watch.handoffMs != null ? +CFG.watch.handoffMs : W('handoffSec') * 1000), getText: (u) => getText(u), coreBase: COL2.CORE_BASE, ver: VERSION,
   saveRect: (k, r) => { CFG[k] = { ...r, at: now(), src: 'pc' }; saveCfg(); }, y24Hold: () => { const f = Y24.Y.feed; return !!(f && f.at && now() - f.at < 5 * 60e3 && f.hold && f.hold.on); },
   prodAsk: (c, id) => alAsk(c, id), prodGot: (c, id) => alGot(c, id), prodDrop: (c, id) => RL.want.delete(c + '/' + id), out: (c, id, v, merge) => outReplace(c, id, v, merge) });
+
+/* (그림자 쓰기 · 정범님 11/09 밤 '돈 걸린 쓰기는 하루 그림자 비교 뒤') 🟧✍ 운영 수집기가 보낸 쓰기 요청과 같은 입력으로 번외가 만든 요청을 견줌 — 알라딘에 보내는 길 없음 · 결과는 col2_alw에만(웹앱이 대신 씀) */
+const ALW = makeAlw({ HOME, note: (m, x) => note(m, x || { k: 'al', m: '알라딘 쓰기' }), cfg: () => CFG, ver: VERSION, out: (c, id, v, merge) => outReplace(c, id, v, merge) });
 
 /* ── 운영 공용 파일(그대로 받아 씀 · 6시간마다 새로) ── */
 const CORE = { src: [], ver: {}, at: 0, err: null };
@@ -225,7 +229,7 @@ function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const out = { 
   else if (wasH !== !!CFG.headless && B) { closeBrowser('화면 방식 바뀜').then(() => tick('화면 방식 바뀜')); }
   return ch; }
 
-function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, jobs: jobsSum(), busy: busyNow(), /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), kind: isLoggerPc() ? 'logger' : 'office', pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), y24: Y24.sum(), al: AL.sum(), alWant: CFG.al === true, side: sideOn(), y24Want: CFG.y24 == null ? !TEST : CFG.y24 !== false, y24Jobs: CFG.y24Jobs !== false, upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen, lwin: { open: lwinOpen(), rect: CFG.lwin || null }, /* (0.1.8) 📜 기록창 따로 창이 떠 있는지(🗒 단추 색) */
+function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, jobs: jobsSum(), busy: busyNow(), /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), kind: isLoggerPc() ? 'logger' : 'office', pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), y24: Y24.sum(), al: AL.sum(), alw: ALW.sum(), alWant: CFG.al === true, side: sideOn(), y24Want: CFG.y24 == null ? !TEST : CFG.y24 !== false, y24Jobs: CFG.y24Jobs !== false, upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen, lwin: { open: lwinOpen(), rect: CFG.lwin || null }, /* (0.1.8) 📜 기록창 따로 창이 떠 있는지(🗒 단추 색) */
   opens: opensHour(), chrome: { fails: CH.fails, last: CH.last, okAt: CH.okAt ? kst(CH.okAt) : null, coolUntil: CH.coolUntil ? kst(CH.coolUntil) : null, cools: CH.cools, adopts: CH.adopts, retries: CH.retries }, msg: [ST.msg, CFG.on && AU.msg && AU.msg !== ST.msg ? '자동 읽기: ' + AU.msg : ''].filter(Boolean).join(' · '), /* (0.1.4) 자동 읽기가 왜 쉬는지(하루 몫·표본 기다림·작업 창 준비 실패)도 웹앱 col2_ctl·진단에 보이게 — 예전엔 작업 창 지킴이 글만 보여 멈춘 까닭을 몰랐음 */ reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: JRN.tail(15).map((e) => ({ t: e.t, m: e.x, l: e.l, k: e.k })), pcKind: JRN.kind(), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
 
 /* ── 그림자 읽기 ── */
@@ -348,7 +352,7 @@ async function selfUpdate() { if (UPD.busy) return; UPD.busy = true; UPD.at = no
 const sideOn = () => (CFG.side == null ? !TEST : CFG.side !== false);
 async function sideOpen(why) { if (!sideOn() || !CFG.on) return null; try { const f = await WIN.run('find', STAT_MARK); if (f.ok && f.n) return null; return await appWin('status', why); } catch (e) { return null; } }
 /* 웹앱 관리도구 PC별 한 줄 — 예스24 판매관리 읽기(손님 정보 없음) */
-function alLine() { const a = AL.sum(); return { on: a.on, logger: a.logger, login: a.login, active: a.active, seat: a.seat, pp: a.pp, msg: String(a.msg || '').slice(0, 160), day: { n: a.day.n, same: a.day.same, diff: a.day.diff, wait: a.day.wait } }; } /* (알라딘 읽기) 웹앱 PC 줄 🟧 한 줄(제안) */
+function alLine() { const a = AL.sum(); return { on: a.on, logger: a.logger, login: a.login, active: a.active, seat: a.seat, pp: a.pp, msg: String(a.msg || '').slice(0, 160), day: { n: a.day.n, same: a.day.same, diff: a.day.diff, wait: a.day.wait }, w: ALW.line() }; } /* (알라딘 읽기) 웹앱 PC 줄 🟧 한 줄(제안) */
 function y24Line() { const y = Y24.sum(); return { on: y.on, logger: y.logger, login: y.login, active: y.active, msg: String(y.msg || '').slice(0, 160), ordAt: y.ord.at, ordErr: y.ord.err, prdAt: y.prd.at, prdN: y.prd.n, day: y.day, q: y.q, sent: y.sent, jobsOk: y.jobsOk }; }
 /* 📊 상태 창 — 작은 앱 창(380×560)에 맞게: 글자 작게 · 접는 칸 · 가로 넘침 없음 (ALPS 도우미 화면 모양) */
 const SMALL_CSS = `:root{--ink:#26222E;--sub:#6A6478;--line:#DDD8E8;--bg:#F5F4F8;--card:#fff;--pri:#5A4A86;--ok:#1F6F4A;--no:#B0322A;--warn:#8A4A00}
@@ -483,7 +487,8 @@ const srv = http.createServer((req, res) => {
   if (p === '/busy') return body((o) => { const sec = Math.max(0, Math.min(COL2.BUSY.maxSec, +o.sec || 0)); BUSY.until = sec ? now() + sec * 1000 : 0; BUSY.why = String(o.why || '').slice(0, 80); if (sec) note(`운영이 바쁘다고 알림 — ${sec}초 그림자 일 쉼(${BUSY.why})`, { k: 'rest', m: '그림자 일' }); J(200, { ok: true, busy: busyNow() }); }); /* (0.1.9) 운영이 바쁠 때 쉼 */
   if (p === '/read/product') return body(async (o) => { const r = await readProduct(o); J(r.code, r.body); });
   /* (0.1.5) 🟦 예스24 — 수집기 다리(받기·보냄 확인·맡긴 일·출고 보호·웹앱 설정) · 로그인 한 번 · 지금 읽기 */
-  if (p === '/al/feed') return body((o) => J(200, AL.feed(o, o.by)), 65536); /* (알라딘 읽기) 🟧 이 PC 수집기 다리 — 🪑 자리 · 🚚 출고 보호 · 운영 세션 풀림 */
+  if (p === '/al/feed') return body((o) => J(200, { ...AL.feed(o, o.by), alw: { on: ALW.on() } }), 65536);
+  if (p === '/al/wfeed') return body((o) => J(200, ALW.take(o)), 512 * 1024); /* (그림자 쓰기) 🟧✍ 운영 수집기가 보낸 쓰기 요청 꼴(번호·값만) — 견줌만 · 보내지 않음 */ /* (알라딘 읽기) 🟧 이 PC 수집기 다리 — 🪑 자리 · 🚚 출고 보호 · 운영 세션 풀림 */
   if (p === '/al/login') return body(async (o) => { const r = await AL.login(o.why || '옆 창 단추'); J(200, { ...r, state: status() }); });
   if (p === '/al/run') return body(async (o) => { const r = await AL.runNow(String(o.what || 'confirm')); J(200, { ...r, state: status() }); });
   if (p === '/y24/feed') return body((o) => J(200, Y24.feed(o, o.by)), 1048576);
