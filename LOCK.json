@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "1.78.430 예스24 둘러보기",
- "since": "2026-11-09T03:24:32Z",
- "beat": "2026-11-09T03:24:32Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.429/1.89.236/pricing 0.17.11/shipping 0.7.13/watch 0.10.41 f448185",
-  "at": "2026-11-09T03:17:08Z"
+  "done": "1.78.430/1.89.237 15f461b",
+  "at": "2026-11-09T03:24:45Z"
  },
- "host": "vm"
+ "host": null
 }
