@@ -2,6 +2,7 @@
  *  웹앱 쪽:
  *   ① 번외 대신 읽기(c2RelayTick · C2R.ok)가 운영 칸 세 개(prd_listings/aladin_* · shp_state/confirm·current · crm_interactions/aladin_qna_*)를 읽어 넘김 → 번외 견줌이 '운영 문서 기다림'에서 풀림
  *   ② 넘기는 것은 번호·상태·값만 — 구매자·수령인·주소·전화·문의 글은 넘기지 않음 · 문서 이름 규칙 밖(shp_state/다른 것 · crm_interactions/손님 문서)은 읽지도 않음
+ *   ④ (번외 0.1.9) 로그인 없는 일 칸(prd_book_metrics·bench_items·sellers·seller_review_daily·ext_*)도 넘김 · app_settings는 bench만 · 그것도 외부 수집기가 로거 PC일 때만(약속 0)
  *   ③ 🧭 관리도구 PC 줄에 🟧 한 줄(알라딘 읽기 상태·오늘 읽은 수·같음/다름) · col2_ctl/<PC>.st.al에도 남음 · 브라우저 팝업 없음
  *  시험 자료의 손님은 '손님A' · 전화 010-0000-0000 (공개 저장소)
  * 실행: cd pw && RN_PORT=<포트> node tCOL2AL.js */
@@ -9,14 +10,14 @@ let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, 
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   const calls = []; let al = { on: true, logger: false, login: 'ok', active: true, seat: true, pp: null, msg: '🟧 주문확인요청 읽음', day: { n: 12, same: 3, diff: 1, wait: 0 } };
   const want = [{ c: 'prd_listings', id: 'aladin_U123' }, { c: 'shp_state', id: 'confirm' }, { c: 'shp_state', id: 'current' }, { c: 'crm_interactions', id: 'aladin_qna_777' }, { c: 'shp_state', id: 'secret' }, { c: 'crm_interactions', id: 'cust_1' }, { c: 'crm_orders', id: 'X1' }];
-  let wantNow = want;
+  let wantNow = want; let pcNow = 'HOME';
   const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST' };
   await p.route(/127\.0\.0\.1:8898/, async (rt) => { const u = new URL(rt.request().url()); const J = (x) => rt.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(x) }); if (rt.request().method() === 'OPTIONS') return rt.fulfill({ status: 204, headers: CORS });
     if (u.pathname === '/status') return J({ ok: true, ver: '1.2.2' }); if (u.pathname === '/printers') return J({ ok: true, printers: [] });
     if (u.pathname === '/col2/status') return J({ ok: true, helper: '1.2.2', ver: '0.1.6', installed: true, running: true, on: true, want: true, dayN: 5, dayCap: 1600, msg: '일할 준비' }); return J({ ok: false }); });
   await p.route(/127\.0\.0\.1:8797/, async (rt) => { const u = new URL(rt.request().url()); const b = rt.request().postData(); if (rt.request().method() === 'OPTIONS') return rt.fulfill({ status: 204, headers: CORS }); calls.push({ p: u.pathname, b: b ? JSON.parse(b) : null });
     const J = (x) => rt.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(x) });
-    if (u.pathname === '/relay/pending') { const w = wantNow; wantNow = []; return J({ ok: true, want: w, sample: 0, pool: 0, fields: [], out: [], hot: false, pc: 'HOME', pcSrc: 'web', ver: '0.1.6', al }); }
+    if (u.pathname === '/relay/pending') { const w = wantNow; wantNow = []; return J({ ok: true, want: w, sample: 0, pool: 0, fields: [], out: [], hot: false, pc: pcNow, pcSrc: 'web', ver: '0.1.9', al }); }
     return J({ ok: true }); });
   const r = await p.evaluate(async () => { const sl = (ms) => new Promise((x) => setTimeout(x, ms)); localStorage.setItem('rn-device', 'HOME'); localStorage.setItem('rn-c2seen', '1'); S.devOk = true;
     await db.collection('prd_listings').doc('aladin_U123').set({ usedCode: 'U123', listingId: '9001', status: '판매중', price: 5000, sku: 'A01-00001', grade: '상', qty: 1, qtyList: 1, buyerName: '손님A', memo: '내부 메모' });
@@ -41,4 +42,14 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   al = { ...al, login: 'ok', pp: '번외 로그인 뒤 3분 만에 운영 세션이 풀림' }; const r3 = await p.evaluate(async () => { S._c2rTried = 0; clearTimeout(S._c2rT); await c2RelayTick(); clearTimeout(S._c2rT); mgrRedraw(); await new Promise((x) => setTimeout(x, 400)); const row = document.querySelector('[data-c2row="HOME"]'); return row ? row.innerText : ''; });
   ok(/⛔ 핑퐁 의심으로 멈춤/.test(r3), '핑퐁 의심이면 빨간 한 줄', r3);
   ok(!/alert\(|confirm\(|prompt\(/.test(await p.evaluate(() => [c2alHtml, c2alTrim, c2RelayTick].map(String).join('\n'))), '브라우저 팝업 없음');
+  // ── ④ 0.1.9 칸 · app_settings/bench는 로거 PC에만
+  const r4 = await p.evaluate(async () => { await db.collection('sellers').doc('123').set({ sc: '123', name: '시험 숍' }); await db.collection('ext_fx').doc('2026-11-10').set({ usd: 1400 });
+    await db.collection('app_settings').doc('bench').set({ targets: [{ sc: '555', on: true, note: '메모' }, { sc: '556', on: false }] }); await db.collection('app_settings').doc('main').set({ secret: 1 }); return 1; });
+  const W9 = [{ c: 'sellers', id: '123' }, { c: 'ext_fx', id: '2026-11-10' }, { c: 'prd_book_metrics', id: 'B1' }, { c: 'bench_items', id: 'x' }, { c: 'seller_review_daily', id: 'd' }, { c: 'ext_basic', id: '9788900000001' }, { c: 'ext_used', id: 'u' }, { c: 'ext_foreign', id: 'f' }, { c: 'ext_lib', id: 'l' }, { c: 'ext_ebook', id: 'e' }, { c: 'app_settings', id: 'bench' }, { c: 'app_settings', id: 'main' }];
+  const tickPc = async (pc) => { calls.length = 0; wantNow = W9; pcNow = pc; await p.evaluate(async () => { S._c2rTried = 0; clearTimeout(S._c2rT); await c2RelayTick(); clearTimeout(S._c2rT); }); const a = calls.find((c) => c.p === '/relay/answer'); return (a && a.b.docs) || []; };
+  let D9 = await tickPc('HOME'); const has = (D, c, id) => D.find((d) => d.c === c && d.id === id);
+  ok(['sellers', 'ext_fx', 'prd_book_metrics', 'bench_items', 'seller_review_daily', 'ext_basic', 'ext_used', 'ext_foreign', 'ext_lib', 'ext_ebook'].every((c) => D9.some((d) => d.c === c)) && has(D9, 'sellers', '123').v.name === '시험 숍', '0.1.9 칸(도서 지표·벤치마킹·판매자·숍 평가·외부 정보)도 넘김', D9.map((d) => d.c + '/' + d.id));
+  ok(!D9.some((d) => d.c === 'app_settings'), '사무실 PC 외부 수집기엔 app_settings/bench(로거 고유 일 목록)를 넘기지 않음(약속 0)', D9.map((d) => d.c + '/' + d.id));
+  D9 = await tickPc('LOGGER'); const bn = has(D9, 'app_settings', 'bench');
+  ok(bn && JSON.stringify(bn.v) === JSON.stringify({ targets: [{ sc: '555', on: true }, { sc: '556', on: false }] }) && !has(D9, 'app_settings', 'main'), '로거 PC엔 app_settings/bench만(숍 번호·켜짐만) · 다른 app_settings 문서는 안 넘김', D9.filter((d) => d.c === 'app_settings'));
   console.log(bad ? `❌ tCOL2AL ${bad}개 실패` : '✓ tCOL2AL 모두 통과'); process.exit(bad ? 1 : 0); });

@@ -6,6 +6,7 @@
 //   ③ 🚚 출고 중(hold.on)이면 hold를 넘기고 seat.ok 거짓 · 자리를 내려놓음(약속 0-1)
 //   ④ opLostAt = 운영 세션이 진짜 풀린 시각(rnu-login-lost) — 로그인 모듈이 '로그인됨 → 풀림'에서만 적음
 //   ⑤ 로거 크롬·LOGGER PC에서는 안 돎(약속 0) · 번외가 없으면 자리를 내려놓음
+//   ⑦ ⏳ 운영이 긴 일을 하는 동안 POST /busy {sec, why}(번외 0.1.9가 그림자 일을 쉼) · 끝나면 {sec: 0} 한 번
 //   ⑥ 머리 서명 그대로(split.js 결과 HSIG = 8559039d5a96110b)
 //  사용: node tC2ALB.js (src/tests 또는 w/pw)
 const fs = require('fs'); const path = require('path'); const os = require('os'); const cp = require('child_process');
@@ -36,7 +37,7 @@ const run = async () => { const br = await chromium.launch(); const errs = [];
   const tick = async (p, force) => { await p.evaluate((f) => window.__rnC2alTick && window.__rnC2alTick(f), !!force); await p.waitForTimeout(350); };
   const dev = (p, who) => p.evaluate((w) => { const d = window.__D['app_settings/aladin_login'] || {}; return { dev: (d.dev || {})[w] || null, wait: (d.wait || {})[w] || null }; }, who);
   const AL = { on: true, logger: false, login: 'ok', active: false, seat: false, pp: null };
-  const helperOf = (S) => (pth) => (pth === '/al/feed' ? { ok: true, al: { ...AL, ...S } } : null);
+  const helperOf = (S) => (pth) => (pth === '/al/feed' ? { ok: true, al: { ...AL, ...S } } : pth === '/busy' ? { ok: true } : null);
 
   // ── ①② 자리 받기 → 다음 알림에 seat.ok
   { const S = {}; const { p, HL } = await mk({ 'rnu-login-lost': 1762700000000 }, helperOf(S), {});
@@ -79,6 +80,14 @@ const run = async () => { const br = await chromium.launch(); const errs = [];
   // ── 계정 문서 col2Off → 안 줌
   { const { p, HL } = await mk({}, helperOf({}), { 'app_settings/aladin_login': { col2Off: true } }); await tick(p); await p.waitForTimeout(1700); await tick(p); const f = HL.filter((x) => x.p === '/al/feed').slice(-1)[0]; const d = await dev(p, 'OFFICE1~col2');
     ok(f.b.seat.ok === false && f.b.cfg.off === true && !d.dev, `계정 문서 col2Off면 번외 자리를 주지 않고 cfg.off를 넘김: ${JSON.stringify(f.b)}`); await p.close(); }
+  // ── ⑦ 긴 일 알림 /busy
+  { const { p, HL } = await mk({}, helperOf({}), {}); const bt = async () => { await p.evaluate(() => window.__rnC2busyTick()); await p.waitForTimeout(300); };
+    await bt(); ok(!HL.some((x) => x.p === '/busy'), '하는 일이 없으면 /busy를 보내지 않음');
+    await p.evaluate(() => { window.__rnWorkNow = () => ({ job: '매일 자동 상품 조회', img: false, crm: false }); }); await bt(); let b = HL.filter((x) => x.p === '/busy');
+    ok(b.length === 1 && b[0].b.sec === 180 && b[0].b.why === '매일 자동 상품 조회' && Object.keys(b[0].b).sort().join(',') === 'sec,why', `긴 일을 하는 동안 /busy {sec:180, why}: ${JSON.stringify(b.map((x) => x.b))}`);
+    await bt(); b = HL.filter((x) => x.p === '/busy'); ok(b.length === 2 && b[1].b.sec <= 1800, '하는 동안 1분마다 다시 알림(30분 넘지 않음)');
+    await p.evaluate(() => { window.__rnWorkNow = () => ({ job: null, img: false, crm: false }); }); await bt(); await bt(); b = HL.filter((x) => x.p === '/busy');
+    ok(b.length === 3 && b[2].b.sec === 0, `끝나면 {sec:0} 한 번만: ${JSON.stringify(b.map((x) => x.b))}`); await p.close(); }
   // ── ⑤ 로거 크롬 · LOGGER PC
   { const { p, HL } = await mk({ 'rn-pubChrome': true }, helperOf({}), {}); await tick(p, true); await tick(p, true); ok(HL.length === 0 && !(await dev(p, 'OFFICE1~col2')).dev, '로거 크롬은 다리를 쓰지 않음(약속 0)'); await p.close(); }
   { const { p, HL } = await mk({}, helperOf({}), {}, 'LOGGER-1'); await tick(p, true); ok(HL.length === 0, 'LOGGER PC 이름이어도 다리를 쓰지 않음'); await p.close(); }

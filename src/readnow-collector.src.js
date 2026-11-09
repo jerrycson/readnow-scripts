@@ -10260,6 +10260,13 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       miss = 0; const a = r.al || {}; const want = !!a.on && !a.logger && !a.pp && !(hold && hold.on);
       if (await seatStep(want, who)) nextAt = Date.now() + 1500; /* 자리가 바뀌면 곧바로 알림 */
     } catch (e) {} finally { busy = false; } };
+  /* (11/10 번외 0.1.9) ⏳ 운영이 긴 일을 하는 동안 번외 그림자 일이 쉬게 — 1분마다 이 PC 지금 하는 일(__rnWorkNow: 자동·맡긴 일 · 사진 · 고객 수집)을 보고
+   *  하는 중이면 POST /busy {sec: 180, why: 일 이름} (번외가 30분까지만 받음) · 끝나면 {sec: 0} 한 번 · 로그인·계정 정보 없음이라 로거 크롬도 알림 · 번외가 없으면 10분에 한 번만 */
+  let bzOn = false, bzMiss = 0, bzNext = 0;
+  const c2busyTick = async () => { if (Date.now() < bzNext) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead') return; let w = null; try { w = window.__rnWorkNow ? window.__rnWorkNow() : null; } catch (e) {}
+    const on = !!(w && (w.job || w.img || w.crm)); if (!on && !bzOn) return; const why = on ? String(w.job || (w.img ? '사진 보관' : '고객·주문 수집')).slice(0, 80) : '끝남';
+    const r = await gx('/busy', { sec: on ? 180 : 0, why }); if (!r || !r.ok) { if (++bzMiss >= 3) bzNext = Date.now() + 10 * 60e3; return; } bzMiss = 0; bzOn = on; };
+  G.__rnC2busyTick = c2busyTick; setInterval(() => c2busyTick().catch(() => {}), 60000);
   G.__rnC2alTick = c2alTick; G.__rnC2alSeat = () => ({ ...SEAT }); setTimeout(() => c2alTick().catch(() => {}), 20000); setInterval(() => c2alTick().catch(() => {}), 10000);
 })();
 /* (1.89.8) 🏷 정범님 10/20: 샵매니저 '상품 조회/수정' 목록의 우리 상품 관리코드 아래에 우리 SKU를 작게(관리코드 앞 3자리 + 고유 5칸 · 같은 상품 실물이 여럿이면 '외 n')
