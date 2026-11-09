@@ -26,7 +26,7 @@ else console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
   const BKC = D + '/Cdrive'; fs.mkdirSync(BKC); /* (1.2.0 보관 길) D: 디스크가 없는 PC 흉내 — RN_BK_DDRIVE는 없는 폴더 · C: 대신 */
   let ch = cp.spawn('node', ['readnow-print.js'], { cwd: D, env: { ...process.env, PATH: D + '/bin:' + process.env.PATH, RN_BK_DDRIVE: D + '/noD', RN_BK_CDRIVE: BKC } }); await wait(1500);
   try {
-    const s0 = await req('GET', '/status'); ok(s0.j && s0.j.ver === '1.2.0', '도우미 1.2.0 켜짐 ' + (s0.j && s0.j.ver));
+    const s0 = await req('GET', '/status'); ok(s0.j && /^1\.2\.\d+$/.test(s0.j.ver), '도우미 1.2.x 켜짐 ' + (s0.j && s0.j.ver));
     const r0 = await req('GET', '/prn/roles'); ok(r0.j && r0.j.ok && r0.j.roles.auto === true && !r0.j.roles.general, '역할 처음 = 비어 있음 · 자동 켬');
     /* 역할 없으면 라벨 인쇄는 기본을 건드리지 않음 */
     const IMG = 'data:image/png;base64,' + Buffer.from('x').toString('base64');

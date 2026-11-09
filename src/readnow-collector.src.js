@@ -675,7 +675,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
 (function rnShipGuard() { if (window.top !== window) return;
   const MJ = 'MJ-MAIN';
   /* (정범님 11/09 저녁 shipsafe2) 출고와 관련된 마지막 수집기 판 — 출고·송장·ALPS·발송 쪽을 바꾼 판을 낼 때 이 번호를 그 판 번호로 올림(판 표시 칸 shipRel) · ⚡ 받아 둔 새 판 글에서 이 줄을 읽어 '출고 관련 업데이트'인지 가름 */
-  const RN_SHIP_REL = '1.89.240'; window.__rnShipRel = RN_SHIP_REL;
+  const RN_SHIP_REL = '1.89.241'; window.__rnShipRel = RN_SHIP_REL;
   function shipGuardDecide(o) { const up = (x) => String(x == null ? '' : x).trim().toUpperCase(); const P = up(o.pc); const maxH = Math.max(0.5, Math.min(12, +o.maxH || 1)); const lim = maxH * 3600e3; const live = [], expired = [];
     for (const [id, h] of Object.entries(o.holds || {})) { if (!h || h.end || !(+h.t0 > 0)) continue; const x = { id, pc: up(h.pc), why: String(h.why || '출고'), t0: +h.t0, ref: Math.max(+h.t0, +h.beat || 0) }; (o.now - x.ref >= lim ? expired : live).push(x); }
     const mine = live.filter((h) => P && h.pc === P); const mjOn = !!P && P === up(o.mj || 'MJ-MAIN') && live.length > 0; const src = mine.length ? mine : mjOn ? live : []; const on = src.length > 0; const t0 = on ? Math.min(...src.map((h) => h.t0)) : 0;
