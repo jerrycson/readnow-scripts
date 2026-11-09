@@ -124,7 +124,7 @@ function fakeDb() { const S = {}; const col = (n) => (S[n] = S[n] || new Map());
       o.range = !!(window.ReadnowML && window.ReadnowML.RARE_RANGE); o.pops = pops; return o; });
     ok(R.fn, '웹앱 engExpLine 있음');
     ok(/20분 안에/.test(R.none2 || ''), `감시를 켰는데 아직 장부가 없으면: '${(R.none2 || '').replace(/<[^>]+>/g, '').slice(0, 50)}…'`);
-    ok(/이 무리는 연구에 반영 중/.test(R.line || '') && /대조 12권/.test(R.line || '') && /하루 손해 한도 10,000원/.test(R.line || ''), `화면 한 줄: '${(R.line || '').slice(0, 90)}'`);
+    ok(/이 무리는 연구에 반영 중/.test(R.line || '') && /대조 12권/.test(R.line || '') && /하루 손해 한도/.test(R.line || '') /* (11/10 fence2) 한도 문서가 없으면 '못 받음 — 내리지 않음'(빨강) */, `화면 한 줄: '${(R.line || '').slice(0, 90)}'`);
     ok(R.range && R.pops === 0, '희귀본 범위를 웹앱이 읽음 · 브라우저 팝업 없음');
   }).then(fin);
   function fin() { console.log(bad ? `❌ 실패 ${bad}` : '✓ 모두 통과'); process.exitCode = bad ? 1 : 0; }
