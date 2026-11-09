@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "1.78.435 출고 보호·상태별 조건",
+ "since": "2026-11-09T05:58:10Z",
+ "beat": "2026-11-09T05:58:10Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "시험 tBENCH1109b 맞춤",
   "at": "2026-11-09T05:27:00Z"
  },
- "host": null
+ "host": "vm"
 }
