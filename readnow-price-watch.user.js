@@ -240,7 +240,7 @@
     const lowest = settled ? PR.trackLowest(prevD.lowest || null, { at: now, atLowest: d.status === 'ok' && d.action === 'none' }) : prevD.lowest || null;
     const sig = `${d.status}|${d.action}|${d.target}|${d.ref ? d.ref.sellerCode + ':' + d.ref.price : ''}`;
     // 관리자 판정 기간(2026-10-04~): 적용 묶음은 판정 결과와 관계없이 모두 관리자에게 (유지·기다림·사람 확인도) → 모든 결정을 기록해 분석한 뒤 자동화
-    const needApproval = d.group === 'treat' && d.status !== 'skip';
+    const EXo = d.group === 'treat' ? await engExcl() : null; const needApproval = d.group === 'treat' && d.status !== 'skip' && !(EXo && EXo[key]); /* (11/10 fence2) 사람이 손대 엔진 실험에서 빠진 상품(eng_excl)은 전체 비율 실험 제안을 다시 올리지 않음 */
     // 관리자가 정한 것 중 아직 반영 안 된 것(승인·직접 가격·판매보류풀)은 새 판정이 절대 덮지 않음 — 반영이 먼저
     // 반영 끝났거나 유지·거절한 것은 시장이 그대로면(같은 판정) 그대로 두고, 시장이 바뀌면 다시 결정 대기로
     const ctrlHold = !!(prevD.ctrlOf && prevD.ctrlOf.gid) && (await ctrlAlive(prevD.ctrlOf.gid)); /* (10/30 위험 4) 수동 일괄 그룹의 비교군 = 가격을 바꾸지 않고 두는 상품 — 감시는 판정만 기록 */
@@ -282,6 +282,56 @@
    *  ④ 결정한 지 72시간 넘은 가격은 반영하지 않음(시장이 바뀌었을 수 있음 — 다시 확인)
    *  ⑤ 반영 뒤 '반영됨'으로 바꿀 때도 그 사이 결정이 바뀌었으면 새 결정을 덮지 않음
    *  ⑥ '반영 중'에서 멈춘 것(탭이 닫힘 등)은 10분 뒤 '막힘 — 샵매니저에서 가격 확인'으로 (다시 보내지 않음) */
+  /* FENCE-PURE-START — 🧪 하루 손해 울타리 · 실행 전에 막기(정범님 11/09 밤 '절대로 기준을 넘는 일이 없도록' · 약속 33) — 순수 함수만
+   *  학습 공용(readnow-ml-core.js)과 가격 감시기(readnow-price-watch.user.js)에 글자 그대로 같은 사본 — 시험 tFENCE2가 두 사본이 같은지 봄(감시기 머리 @require를 바꾸지 않으려고 사본)
+   *  원장 eng_fence_ledger/{한국 날짜} = { day, done(오늘 확정 손해: 실험 상품이 시작 값보다 싸게 팔린 차이 합), x{상품: 걸린 손해}, no[막은 기록] }
+   *   x[상품] = { s(실험 시작 값), p(지금 값), a(= s − p, 0 아래면 0 — 오늘 다 팔리면 덜 받을 돈), src, r(진행 중 내림 예약 { id, to, a, at, by, cmd }) }
+   *  셈: 쓴(done) + 걸린 것 모두(상품마다 a와 예약 a 중 큰 값) + 이번 내림 = 오늘 다 팔릴 때 최대 손해 → 한도 이하일 때만 예약(부분 적용 없음)
+   *  한도는 클라우드가 준 값(app_settings/eng_fence_now)만 — 없거나 36시간 넘으면 내리지 않음(실패 때 안전 쪽) · 값이 이상하면 바닥 5,000원 */
+  const FENCE = { min: 5000, max: 30000, staleH: 36, ttlMin: 15, noKeep: 100 };
+  const fenceN = (v) => (v != null && v !== '' && Number.isFinite(+v) ? +v : null);
+  const fenceHeld = (e) => (e ? Math.max(fenceN(e.a) || 0, (e.r && fenceN(e.r.a)) || 0, 0) : 0);
+  /* fenceLimitOf(nw, nowMs) — nw = app_settings/eng_fence_now { dayLoss, at, fix } → { ok, limit, why } */
+  function fenceLimitOf(nw, nowMs, F0) { const F = { ...FENCE, ...(F0 || {}) }; nowMs = nowMs || Date.now(); if (!nw || !nw.at) return { ok: false, limit: null, why: '클라우드가 준 하루 손해 한도가 없음' };
+    const age = (nowMs - Date.parse(nw.at)) / 36e5; if (!(age >= -0.5 && age <= F.staleH)) return { ok: false, limit: null, why: `하루 손해 한도가 ${Number.isFinite(age) ? Math.round(age) + '시간 전' : '언제 것인지 모르는'} 값(${F.staleH}시간 안 것만 씀)` };
+    const v = fenceN(nw.dayLoss); if (v == null || v <= 0 || (!nw.fix && (v < F.min || v > F.max))) return { ok: true, limit: F.min, why: `한도 값(${nw.dayLoss})이 이상해 바닥 ${F.min.toLocaleString()}원` }; return { ok: true, limit: v, why: null }; }
+  /* fenceSum(L, skipKey) — 오늘 쓴(done) · 걸린(held) · 합(used) */
+  function fenceSum(L, skipKey) { L = L || {}; let held = 0, n = 0; for (const [k, e] of Object.entries(L.x || {})) { if (k === skipKey) continue; const h = fenceHeld(e); if (h > 0) { held += h; n++; } } const done = Math.max(0, fenceN(L.done) || 0); return { done, held, used: done + held, n }; }
+  /* fenceRoll(prev, day, nowIso) — 새 날 원장: 어제 걸린 것(x · 예약 포함)을 그대로 이어 받고 쓴 돈은 0부터 */
+  function fenceRoll(prev, day, nowIso) { return { day, from: (prev && prev.day) || null, done: 0, x: JSON.parse(JSON.stringify((prev && prev.x) || {})), no: [], at: nowIso || new Date().toISOString() }; }
+  /* fenceTry(L, q, lim, nowIso) — 내리기 전 검사 · q = { key, from(지금 값), to(내릴 값), start(실험 시작 값 — 원장에 없을 때만), src, by, id(예약 번호), cmd } → { ok, why, e(새 x[key] — 예약), need, left, limit, raise } */
+  function fenceTry(L, q, lim, nowIso) { L = L || {}; q = q || {}; nowIso = nowIso || new Date().toISOString(); const no = (why, o) => ({ ok: false, why, limit: lim && lim.limit, ...(o || {}) });
+    if (!lim || !lim.ok || !(lim.limit > 0)) return no((lim && lim.why) || '하루 손해 한도를 못 받음');
+    const from = fenceN(q.from), to = fenceN(q.to); if (!q.key) return no('상품이 없음'); if (to == null || to < 10) return no('내릴 값이 이상함'); if (from == null || from < 10) return no('지금 값을 모름');
+    if (to >= from) return { ok: true, raise: true, e: null, limit: lim.limit, why: '내림이 아님(값을 올리거나 그대로) — 검사 없음' };
+    const cur = (L.x || {})[q.key] || null; if (cur && cur.r) return no(`같은 상품의 다른 내림(${String(cur.r.at || '').slice(5, 16)})이 아직 끝나지 않음`);
+    const s = cur && fenceN(cur.s) > 0 ? fenceN(cur.s) : fenceN(q.start) > 0 ? fenceN(q.start) : from; if (!(s > 0)) return no('실험 시작 값을 모름');
+    const curA = cur ? fenceHeld(cur) : Math.max(0, s - from); const newA = Math.max(0, s - to); const o = fenceSum(L, q.key); const mine = Math.max(curA, newA); const need = o.used + mine; const left = lim.limit - need;
+    if (need > lim.limit) return no(`오늘 쓴 ${o.done.toLocaleString()}원 + 걸린 ${o.held.toLocaleString()}원 + 이 상품 ${mine.toLocaleString()}원 = ${need.toLocaleString()}원 > 한도 ${lim.limit.toLocaleString()}원 — 내리지 않음`, { need, left });
+    const e = { s, p: cur && fenceN(cur.p) != null ? fenceN(cur.p) : from, a: cur ? fenceN(cur.a) || 0 : Math.max(0, s - from), src: q.src || (cur && cur.src) || null, since: (cur && cur.since) || nowIso, r: { id: String(q.id || nowIso), to, a: newA, at: nowIso, by: q.by || null, cmd: q.cmd || null } };
+    return { ok: true, e, need, left, limit: lim.limit, why: null }; }
+  /* fenceSettle(L, key, rid, ok, price, nowIso) — 예약 끝: ok면 지금 값 = price(알라딘이 받은 값) · 아니면 예약만 풂 → 새 x[key] 또는 null(그 예약이 아님) */
+  function fenceSettle(L, key, rid, ok, price, nowIso) { const cur = ((L || {}).x || {})[key]; if (!cur || !cur.r || String(cur.r.id) !== String(rid)) return null; const p = fenceN(price);
+    if (ok && p != null) return { ...cur, p, a: Math.max(0, (fenceN(cur.s) || 0) - p), r: null, at: nowIso || new Date().toISOString() }; return { ...cur, r: null, at: nowIso || new Date().toISOString() }; }
+  /* fenceNote(L, key, s, price, src, make) — 사람이 정한 값이 반영됨(수동 일괄 첫 반영) 또는 값을 올림 → 걸린 손해만 새로 셈(검사 없음 · make=false면 원장에 있는 상품만) */
+  function fenceNote(L, key, s, price, src, make, nowIso) { const cur = ((L || {}).x || {})[key] || null; if (!cur && !make) return null; const p = fenceN(price); if (p == null) return null; const s0 = cur && fenceN(cur.s) > 0 ? fenceN(cur.s) : fenceN(s); if (!(s0 > 0)) return null;
+    return { ...(cur || {}), s: s0, p, a: Math.max(0, s0 - p), src: (cur && cur.src) || src || null, since: (cur && cur.since) || nowIso || new Date().toISOString(), r: cur ? cur.r || null : null }; }
+  /* fenceNoAdd(L, rec) — 막은 기록(최근 noKeep개 · 같은 날 같은 상품·같은 까닭은 횟수만 올림) */
+  function fenceNoAdd(L, rec, F0) { const F = { ...FENCE, ...(F0 || {}) }; const L0 = ((L || {}).no || []).slice(); const i = L0.findIndex((x) => x && x.key === rec.key && x.why === rec.why); if (i >= 0) { L0[i] = { ...L0[i], n: (L0[i].n || 1) + 1, at: rec.at }; return L0; } L0.push({ ...rec, n: 1 }); return L0.slice(-F.noKeep); }
+  /* FENCE-PURE-END */
+  /* (11/10 fence2) 🧪 하루 손해 울타리 — 감시기가 실험 상품 값을 내리기 전에(🛰 감시 그룹 자동 반영 · 전체 비율 실험 적용 묶음) 원장 eng_fence_ledger/{한국 날짜}에 트랜잭션으로 예약
+   *  한도는 클라우드가 준 app_settings/eng_fence_now만 — 못 받거나 36시간 넘으면 내리지 않음 · 원장을 못 쓰면 내리지 않음(실패 때 안전 쪽) · 셈은 위 FENCE-PURE(학습 공용과 같은 글자) */
+  async function fenceRun(mode, q) { const nowMs = Date.now(); const nowI = new Date(nowMs).toISOString(); const day = kst(nowMs).slice(0, 10); const LC = C('eng_fence_ledger'); const ref = LC.doc(day), head = LC.doc('_head'), nwRef = C('app_settings').doc('eng_fence_now'); let out = null;
+    await db.runTransaction(async (tx) => { out = null; const sn = await tx.get(ref); const nw = (await tx.get(nwRef)).data() || null; let L = sn.exists ? sn.data() : null; let mk = false;
+      if (!L) { const h = (await tx.get(head)).data() || {}; const prev = h.day && h.day < day ? (await tx.get(LC.doc(h.day))).data() || null : null; L = fenceRoll(prev, day, nowI); mk = true; }
+      const lim = fenceLimitOf(nw, nowMs); const patch = { ...(mk ? L : {}), day, limit: lim.ok ? lim.limit : null, limitWhy: lim.why || null, at: nowI, ...W() };
+      if (mode === 'try') { out = fenceTry(L, q, lim, nowI); if (!out.ok) patch.no = fenceNoAdd(L, { at: nowI, key: q.key, src: q.src || null, by: q.by || null, from: q.from ?? null, to: q.to ?? null, why: String(out.why || '').slice(0, 200) }); else if (out.e) patch.x = { ...(mk ? L.x : {}), [q.key]: out.e }; }
+      else if (mode === 'settle') { const e = fenceSettle(L, q.key, q.id, !!q.ok, q.price, nowI); out = { ok: !!e }; if (e) patch.x = { ...(mk ? L.x : {}), [q.key]: e }; }
+      else if (mode === 'note') { const e = fenceNote(L, q.key, q.start, q.price, q.src, !!q.make, nowI); out = { ok: !!e }; if (e) patch.x = { ...(mk ? L.x : {}), [q.key]: e }; else if (!mk) return; }
+      tx.set(ref, patch, { merge: true }); if (mk) tx.set(head, { day, at: nowI }, { merge: true }); });
+    return out; }
+  /* 사람이 손대 엔진 실험에서 빠진 상품(app_settings/eng_excl — 클라우드 engExpTick이 적음) · 5분 기억 · 못 읽으면 null(→ 실험 길 내림은 안 함) */
+  let ENGEX = null, ENGEXAt = 0; async function engExcl(force) { if (!force && ENGEX && Date.now() - ENGEXAt < 5 * 60000) return ENGEX; try { const d = await C('app_settings').doc('eng_excl').get(); ENGEX = ((d.exists && d.data()) || {}).m || {}; ENGEXAt = Date.now(); return ENGEX; } catch (e) { return null; } }
   const sameApproval = (a, b) => JSON.stringify([a && a.at, a && a.price, a && a.decision, a && a.batchId]) === JSON.stringify([b && b.at, b && b.price, b && b.decision, b && b.batchId]);
   async function claim(ref, x, kind) { let ok = false; await db.runTransaction(async (tx) => { const sn = await tx.get(ref); const v = sn.data(); if (!v || v.approvalState !== kind || !sameApproval(v.approval, x.approval)) return;
     const a = v.approval || {}; if (a.decision === 'batch' && a.batchId) { const cfg = (await tx.get(SREF)).data() || {}; if ((cfg.batchOff || {})[a.batchId] || cfg.killSwitch) return; } // (0.6.0) 그룹 끄기·전체 정지를 맡는 순간에 다시 확인 (트랜잭션 — 그 사이 꺼졌으면 맡지 않음)
@@ -375,16 +425,28 @@
         n++; await xEnd(xo, 'done', `${x.sku} → ${newSku}, 일시판매중지`); xo = null; await settle(d.ref, x, { approvalState: 'done', executedAt: now, execNote: `판매보류풀로 옮김: ${x.sku} → ${newSku}, 일시판매중지`, holdInfo: { origSku: x.sku || null, minPrice: (x.approval && x.approval.price) || null, at: now }, ...W() }, { key: x.key, usedCode: x.usedCode, listingId: x.listingId, title: x.title, grade: x.grade || null, aladinItemId: x.aladinItemId || null, kind: 'hold', fromSku: x.sku || null, toSku: newSku, fromStatus: '판매중', toStatus: '일시판매중지', from: x.current ?? null, to: x.current ?? null, minPrice: (x.approval && x.approval.price) || null, at: now, day: today, by: (x.approval && x.approval.by) || null, pc: PC, engine: PR.VERSION, ...W() }); log(`판매보류풀: ${x.title || x.usedCode} (${x.sku} → ${newSku}, 일시판매중지)`); await sleep(GAP()); continue;
       }
       const price = Math.round(kind === 'manual' ? +(x.approval && x.approval.price) : (x.approval && x.approval.price) || x.target); if (!(price >= 10)) { await fail('가격이 없음', true); continue; } // (0.5.0) 관리자 가격은 적은 가격만
-      if (!(await xGate('price'))) continue;
+      /* (11/10 fence2) 🧪 엔진 실험 길 = 🛰 감시 그룹 자동 반영(approval.decision 'auto') · 전체 비율 실험 적용 묶음(group 'treat' 승인) → 사람이 손대 빠진 상품(eng_excl)은 안 바꿈 · 내리기 전에 하루 손해 원장 예약(넘거나 못 받으면 안 내림) */
+      const apF = x.approval || {}; const fSrc = kind === 'approved' ? (apF.decision === 'auto' ? 'pw:' + (apF.gid || '') : x.group === 'treat' ? 'ro' : null) : null; let fz = null; const fzId = `${PC}:${TAB}:${Date.now().toString(36)}`;
+      if (fSrc) { const EX = await engExcl(true); const back = async (note, toPending) => { await d.ref.set({ ...(toPending ? { approvalState: 'pending', approval: null, autoBlock: [note] } : { approvalState: 'blocked' }), execNote: note, fenceNo: { at: now, why: note }, ...W() }, { merge: true }); log(`안 바꿈: ${x.title || x.usedCode} — ${note}`, 1); };
+        if (!EX) { await back('🧪 사람 손댐 목록(eng_excl)을 못 읽어 엔진 실험 값은 바꾸지 않음(안전 쪽) — 다음 바퀴에 다시', apF.decision === 'auto'); continue; }
+        if (EX[x.key]) { await back(`🧪 사람이 손대 엔진 실험에서 빠진 상품(${String(EX[x.key].why || '').slice(0, 40)}) — 엔진은 다시 바꾸지 않음 · 바꾸려면 직접 가격으로`, false); continue; }
+        const from0 = (apF.expectPrice != null ? +apF.expectPrice : x.current != null ? +x.current : null);
+        if (from0 == null || price < from0) { try { fz = await fenceRun('try', { key: x.key, from: from0, to: price, start: (x.watch && x.watch.startPrice) ?? null, src: fSrc, by: 'price-watch:' + (PC || '?'), id: fzId }); } catch (e) { fz = { ok: false, why: '하루 손해 원장을 못 씀(' + (e.code || e.message) + ') — 안전 쪽으로 내리지 않음' }; }
+          if (!fz || !fz.ok) { await back('🧪 하루 손해 한도: ' + ((fz && fz.why) || '모름'), apF.decision === 'auto'); continue; } } }
+      const fzEnd = (ok, p) => (fz && fz.e ? fenceRun('settle', { key: x.key, id: fzId, ok, price: p }).catch((e) => log('하루 손해 원장 정리 실패(클라우드가 20분 안에 정리): ' + (e.code || e.message), 1)) : Promise.resolve());
+      if (!(await xGate('price'))) { await fzEnd(false); continue; }
       let res; try { await PACE.wait(sleep); const r = await fetch(P.scmAction.price(x.listingId, price).url, { credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest' } }); res = P.parseAjaxResult(await r.text()); } catch (e) { res = { ok: false, error: e.message }; }
       if (res.ok) PACE.ok(); else PACE.fail(/로그인/.test(res.error || '') ? 'login' : 'error');
       if (res.ok && parseInt(String(res.value || '').replace(/\D/g, ''), 10) !== price) res = { ok: false, error: `알라딘이 돌려준 값(${res.value})이 보낸 가격(${price})과 다름` };
+      if (!res.ok && !/돌려준 값/.test(res.error || '')) await fzEnd(false); /* (11/10 fence2) 안 들어감 → 예약 풂 · 알라딘이 다른 값으로 받았으면 예약 그대로(수집기가 다시 읽은 값으로 클라우드가 정리 — 안전 쪽) */
       if (!res.ok) { await fail(res.error, /돌려준 값/.test(res.error || '')); /* 알라딘이 다른 값으로 받았으면 다시 보내지 않음 */ if (/로그인/.test(res.error || '')) { state('<b style="color:#B0322A">알라딘 로그인 풀림</b> — 수집기가 다시 로그인할 때까지 기다림'); return; } continue; }
-      n++; await xEnd(xo, 'done', `${price} (알라딘 답: ${res.value})`); xo = null; const fromP = (x.approval && x.approval.expectPrice != null ? x.approval.expectPrice : x.current) ?? null;
+      n++; await fzEnd(true, price); await xEnd(xo, 'done', `${price} (알라딘 답: ${res.value})`); xo = null; const fromP = (x.approval && x.approval.expectPrice != null ? x.approval.expectPrice : x.current) ?? null;
       const fine = Math.random() < 0.1; const vNew = { state: 'wait', n: 0, si: 0, fine, next: new Date(Date.parse(now) + (fine ? V_FINE : V_STEPS)[0] * 60000).toISOString() }; const actDoc = { key: x.key, usedCode: x.usedCode, listingId: x.listingId, title: x.title, grade: x.grade || null, aladinItemId: x.aladinItemId || null, from: fromP, to: price, engineTarget: x.target ?? null, kind: (x.approval && x.approval.decision) || kind, batchId: (x.approval && x.approval.batchId) || null, batchName: (x.approval && x.approval.batchName) || null, at: now, day: today, kst: kstOf(now), confirmedAt: (x.approval && x.approval.at) || null, by: (x.approval && x.approval.by) || null, pc: PC, result: res.value, engine: PR.VERSION, verify: vNew, ...(fine && x.listingId ? { verifyPg: { state: 'wait', n: 0, si: 0, next: vNew.next } } : {}), ...W() };
       const ap0 = x.approval || {}; const wgA = ap0.decision === 'batch' && ap0.batchId ? (await wgLoad()).get(ap0.batchId) : null; // (0.8.0) 감시 켠 그룹의 첫 가격이 반영되면 그 상품은 이제부터 그 그룹으로 감시
       const oldG = x.watch && x.watch.gid && wgA && x.watch.gid !== wgA.id ? x.watch.gid : null; if (oldG) log(`감시 그룹 바뀜: ${x.title || x.usedCode} — ${oldG} → ${wgA.id}(수동 일괄 확정이 붙임 · 앞 그룹 기록은 watchPrev에)`, 1); /* (10/30 위험 12) */
       const enroll = wgA ? { watch: { gid: wgA.id, since: now, startPrice: fromP, by: ap0.by || null }, ...(oldG ? { watchPrev: { gid: oldG, since: (x.watch && x.watch.since) || null, until: now } } : {}) } : {};
+      if (wgA && fromP != null) fenceRun('note', { key: x.key, start: fromP, price, src: 'pw:' + wgA.id, make: true }).catch(() => {}); /* (11/10 fence2) 수동 일괄 첫 반영(사람이 정한 값 — 막지 않음)도 실험 상품의 걸린 손해(시작 값 − 지금 값)로 원장에 */
+      else if (!fz && fSrc && fromP != null && price > fromP) fenceRun('note', { key: x.key, price, make: false }).catch(() => {}); /* 엔진이 값을 올림 → 걸린 손해를 줄여 적음(원장에 있는 상품만) */
       try { await settle(d.ref, x, { approvalState: 'done', executedAt: now, pendingChange: { at: now, price }, execNote: `반영됨 (알라딘 답: ${res.value})`, ...enroll, ...W() }, actDoc); if (VQ && settle.last) VQ.push({ id: settle.last.id, ref: settle.last, ...actDoc }); }
       catch (e) { log(`⚠ 알라딘에는 ${price.toLocaleString()}원으로 들어갔지만 기록 저장 실패: ${x.title || x.usedCode} — ${e.message} (10분 뒤 '막힘 — 확인'으로 표시됨)`, 1); continue; } log(`가격 반영: ${x.title || x.usedCode} ${(x.current || 0).toLocaleString()} → ${price.toLocaleString()}`);
       await sleep(GAP(((x.approval || {}).decision === 'auto') ? 'auto' : null)); await verifyStep(2, 30000); // (사람처럼) 엔진 자동 반영끼리는 6~25초 사이를 둠 · 관리자 확정은 예전대로 // (0.7.0) 반영하는 사이사이 공개 반영 확인도 (확인 때가 된 것만)
