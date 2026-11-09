@@ -14,7 +14,7 @@ const until = async (f, n, ms) => { let v; for (let k = 0; k < (n || 40); k++) {
 (async () => {
   const A = await L.fakeAladin(F.productHtml);
   console.log('① 크롬이 곧바로 끝남 → 원인을 남김 · 4번 넘으면 30분(시험 2.5초) 쉼 · 쉼이 끝나면 다시');
-  let H = await L.startHelper({ aladin: A.base, cfg: { headless: true, watch: { tickSec: 1, coolMs: 2500 }, auto: false } }); const D = H.D;
+  let H = await L.startHelper({ aladin: A.base, cfg: { headless: true, watch: { tickSec: 1, coolMs: 2500, handoffMs: 300 }, auto: false } }); const D = H.D;
   try {
     fs.writeFileSync(D + '/chrome-die', '0'); /* 가짜 크롬 = '기존 브라우저 세션에서 여는 중' 한 줄을 남기고 종료 코드 0으로 곧바로 끝남(Windows 크롬이 같은 프로필을 다른 크롬에 넘길 때와 같은 꼴) */
     await H.api('POST', '/cfg', { on: true });
