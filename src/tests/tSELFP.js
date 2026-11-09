@@ -24,9 +24,10 @@ const LA = { co: '업체A', rep: '대표A', biz: '1234567890', tel: '010-0000-00
 (async () => {
   console.log('① 법정 고지 — 사업자 판매자 가게 문서의 숨은 판매자 정보 표');
   const L = X.y24LegalOf(legalDoc(LA)); const J = JSON.stringify(L);
-  ok(L && L.co === '업체A' && L.rep === '대표A' && L.bizNo === '123-45-67890' && L.kind === '도서' && L.carrier === '가나택배', '업체명·대표자명·사업자 등록번호(꼴 맞춤)·종목·택배사', L);
+  ok(L && L.co === '업체A' && L.repH && L.bizNo === '123-45-67890' && L.kind === '도서' && L.carrier === '가나택배', '업체명·사업자 등록번호(꼴 맞춤)·종목·택배사는 원문 · 대표자명은 지문(repH)만', L);
   ok(L.telH && L.mailH && L.tel === 1 && L.mail === 1 && !J.includes('0000-0000') && !J.includes('shopa@'), '상담 전화·메일은 원문 없이 지문만(있었다는 표시 + 해시)', { telH: L.telH, mailH: L.mailH });
-  ok(L.retF === '서울가나구다라동12-3505호' && L.retK === '서울가나구다라동12-3' && L.fromF === L.retF && L.hqK === L.retK, '주소 열쇠: 호수까지(F)·건물까지(K) · 괄호 건물 이름·띄어쓰기 무시 · 시도 줄임', { retF: L.retF, retK: L.retK, hqK: L.hqK });
+  ok(L.retF && L.retK && L.retF !== L.retK && L.fromF === L.retF && L.hqK === L.retK && L.retR === '서울특별시 가나구' && L.hqR === L.retR, '주소: 호수까지(F)·건물까지(K) 지문 · 괄호 건물 이름·띄어쓰기 무시 · 지역은 시·도+시·군·구까지만 원문', { retF: L.retF, retK: L.retK, retR: L.retR });
+  ok(!J.includes('대표A') && !/다라동|12-3|마바빌딩|505호|101호/.test(J) && !('rep' in L) && !('hq' in L) && !('from' in L) && !('ret' in L), '원문 대표자명·전체 주소가 저장 객체 어디에도 없음(개인사업자 집 주소 보호)', Object.keys(L));
   ok(!J.includes('000-00-00000'), '화면 아래 예스24 자기 사업자 정보(꼬리말)는 섞이지 않음');
   ok(X.y24LegalOf('<div class="shop-satis">개인 판매자 가게</div>') === null, '개인 판매자(표 없음) → null');
   const card = X.y24SellerCard({ main: legalDoc(LA), top: '<h3 class="used-shop-name"><span class="iconC isSeller">사업자</span> 업체A님의 가게</h3>', rating: '' }, 'shopA', { at: '2026-11-10T00:00:00Z' });
@@ -61,7 +62,7 @@ const LA = { co: '업체A', rep: '대표A', biz: '1234567890', tel: '010-0000-00
   const alSellers = [{ id: 'sc_111', bizNo: '123-45-67890', company: '업체A', phone: '010-0000-0000' }, { id: 'sc_333', bizNo: '5556667778', company: '(주)업체C', returnAddress: '서울특별시 가나구 다라동 12-3 (마바빌딩) 909호' }];
   const R = X.sfpRun({ rows, changes: CH, cards, alRows, alSellers });
   const ab = R.pairs.find((e) => e.a === 'shopA' && e.b === 'shopB'); const ac = R.pairs.find((e) => e.a === 'shopA' && e.b === 'shopC');
-  ok(ab && ab.strong && ab.why.includes('사업자 등록번호 같음') && ab.why.includes('반품지 같은 호수') && ab.why.includes('가게 공지 글 같음') && ab.why.some((w) => /같은 책 4권/.test(w)) && ab.why.some((w) => /함께 값 바꿈 2번/.test(w)), '가게A·B: 같은 사업자 번호·같은 반품지 호수·같은 공지·같은 책·함께 값 바꿈 → 강한 짝', ab);
+  ok(ab && ab.strong && !ab.why.includes('대표자명 같음') && ab.why.includes('사업자 등록번호 같음') && ab.why.includes('반품지 같은 호수') && ab.why.includes('가게 공지 글 같음') && ab.why.some((w) => /같은 책 4권/.test(w)) && ab.why.some((w) => /함께 값 바꿈 2번/.test(w)), '가게A·B: 같은 사업자 번호·같은 반품지 호수·같은 공지·같은 책·함께 값 바꿈 → 강한 짝', ab);
   ok(ac && !ac.strong && ac.why.includes('반품지 같은 건물') && !ac.why.includes('반품지 같은 호수'), '가게A·C: 같은 건물 다른 호수 → 약한 짝(같은 상가일 수 있음)', ac);
   ok(!R.pairs.some((e) => e.a === 'shopD' || e.b === 'shopD'), '겹침 없는 개인 판매자 D는 짝 없음');
   const many = {}; for (let i = 0; i < 40; i++) many['s' + i] = { legal: { retK: '같은상가', retF: '같은상가' + i + '호' } }; ok(X.sfpPairs(many, null, null).length === 0, '흔한 건물(바구니 30곳 넘음)은 약한 신호에서 뺌(짝 폭발 막음)');
@@ -70,7 +71,7 @@ const LA = { co: '업체A', rep: '대표A', biz: '1234567890', tel: '010-0000-00
   ok(c333 && c333.lv === 'strong' && c333.why.includes('반품지 같은 호수') && c333.why.includes('업체명 같음'), '예스24 가게C ↔ 알라딘 333: 반품지 호수·업체명((주) 무시)', c333);
   const lA = R.cross.list.find((x) => x.sid === 'shopA' && x.sc === '111'); ok(lA && lA.both === 3 && lA.eq === 3 && lA.eqR === 1 && lA.lift > 1 && R.cross.base > 0, '같은 책·같은 등급·같은 값 3/3권 · 전체 평균 대비 배수(lift)', { lA, base: R.cross.base });
   ok(R.fps.shopA.legal && R.fps.shopA.hab.books === 4 && R.fps.shopA.time.px === 3 && R.n.legal === 3, '판매자마다 지문 한 장(법정 고지·버릇·시간 행동)', R.n);
-  ok(!JSON.stringify(R).includes('010-0000') && !JSON.stringify(R).includes('@example.com'), '결과 어디에도 전화·메일 원문 없음');
+  ok(!/010-0000|@example\.com|대표A|다라동|마바빌딩|505호/.test(JSON.stringify(R)), '결과 어디에도 전화·메일·대표자·전체 주소 원문 없음');
 
   console.log('④ 클라우드 회차 — 가짜 Firestore · 새로 읽는 화면 0');
   const src = fs.readFileSync(path.join(ROOT, 'cloud', 'index.js'), 'utf8'); const i0 = src.indexOf('let sfpAt = 0;'); const i1 = src.indexOf('/* (정범님 11/09) 🟦 예스24 시장 지표 — 알라딘 시장 지표와 따로'); ok(i0 > 0 && i1 > i0, '클라우드에 sellerFpTick 있음');
@@ -85,11 +86,11 @@ const LA = { co: '업체A', rep: '대표A', biz: '1234567890', tel: '010-0000-00
   F1.D.y24_mkt_changes = {}; CH.forEach((c, i) => { F1.D.y24_mkt_changes['c' + i] = { ...c, at: new Date(Date.now() - (10 - i) * 864e5).toISOString() }; }); F1.D.y24_mkt_changes.old = { ...CH[1], at: '2020-01-01T00:00:00Z' };
   F1.D.y24_sellers = cards; F1.D.prd_books = { bk1: { isbn13: '9780000000001' }, bk2: { isbn13: '9780000000002' }, bk3: { isbn13: '9780000000003' } }; F1.D.prd_book_metrics = {}; ['bk1', 'bk2', 'bk3'].forEach((b, i) => { F1.D.prd_book_metrics[b] = { usedFirstPage: alRows['978000000000' + (i + 1)].map((x) => ({ sellerCode: x.sc, price: x.p, grade: x.g })).concat([{ sellerCode: '996008', price: 1, grade: '상' }]) }; });
   F1.D.sellers = { sc_111: alSellers[0], sc_333: alSellers[1], sc_444: { company: '사업자 번호 없음' } }; const before = JSON.stringify({ m: F1.D.y24_mkt, c: F1.D.y24_mkt_changes, s: F1.D.y24_sellers, p: F1.D.prd_book_metrics, al: F1.D.sellers });
-  const R1 = await run(F1); const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const RUN = (F1.D.seller_fp_runs || {})[day];
+  const R1 = await run(F1); const ALL = JSON.stringify({ fp: F1.D.seller_fp, runs: F1.D.seller_fp_runs }); const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); const RUN = (F1.D.seller_fp_runs || {})[day];
   ok(R1.out && R1.fetched === 0 && R1.out.sellers === 4 && R1.out.legal === 3, '하루 한 번 셈 · 예스24·알라딘에 새 요청 0', R1.out);
   ok(F1.D.seller_fp && F1.D.seller_fp.y24_shopA && F1.D.seller_fp.y24_shopA.legal.bizNo === '123-45-67890' && F1.D.seller_fp.y24_shopA.day === day, 'seller_fp/y24_{아이디}에 판매자 지문', Object.keys(F1.D.seller_fp || {}));
   ok(RUN && RUN.pairs.length >= 2 && RUN.cross.legal.length >= 2 && RUN.cross.list.some((x) => x.sid === 'shopA' && x.sc === '111' && x.eq === 3) && RUN.books.al === 3 && RUN.alSellers === 2, 'seller_fp_runs/{날짜}: 판매자 짝·알라딘 맞대기(우리 가게 996008 줄은 뺌 · 사업자 번호 없는 판매자는 안 읽음)', RUN && { pairs: RUN.pairs.length, legal: RUN.cross.legal.length, list: RUN.cross.list.length, al: RUN.books });
-  ok(RUN.n.changes === 8, `최근 60일 바뀜 기록만(오래된 것 뺌)`, RUN.n);
+  ok(!/대표A|다라동|마바빌딩|505호|010-0000/.test(ALL), '클라우드가 쓴 seller_fp·seller_fp_runs에도 대표자·전체 주소·전화 원문 없음'); ok(RUN.n.changes === 8, `최근 60일 바뀜 기록만(오래된 것 뺌)`, RUN.n);
   ok(JSON.stringify({ m: F1.D.y24_mkt, c: F1.D.y24_mkt_changes, s: F1.D.y24_sellers, p: F1.D.prd_book_metrics, al: F1.D.sellers }) === before, '원래 기록(y24_mkt·바뀜·카드·알라딘 첫 쪽·판매자)은 하나도 안 바꿈');
   ok(F1.D.app_settings.seller_fp_state.day === day && F1.D.app_settings.seller_fp_state.lastRun.sellers === 4, '오늘 몫 표시 · 마지막 결과 요약', F1.D.app_settings.seller_fp_state.lastRun);
   const R1b = await run(F1); ok(R1b.out === null, '같은 날 두 번 돌지 않음');
