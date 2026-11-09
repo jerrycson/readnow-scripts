@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "Hosting 설정 스크립트",
- "since": "2026-11-09T13:09:26Z",
- "beat": "2026-11-09T13:09:26Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "웹앱 1.78.440 판 냄",
-  "at": "2026-11-09T12:40:38Z"
+  "done": "Hosting 설정 스크립트",
+  "at": "2026-11-09T13:09:43Z"
  },
- "host": "vm"
+ "host": null
 }
