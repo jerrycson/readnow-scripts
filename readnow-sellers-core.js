@@ -7,7 +7,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '1.3.4'; // (1.3.4) 🔬 정밀 점검 11/09 — 원 표시(won)도 만든 숫자 형식(NF_KO)을 다시 씀(웹앱 기기 기록 느린 함수 won 1,020ms/14번) // (1.3.3) 시트 허위 표시는 점수에서 빼고 참고 글로만 // (1.3.2) 🕘 기간 자르기 한국 날짜 // (1.3.1) 숫자 글자 형식 다시 씀(빠르게)
+  const VERSION = '1.3.5'; // (1.3.5) 판매자 가치 무게(sellerW) — 활동·배송 약속·독립·실제 팔림 // (1.3.4) 🔬 정밀 점검 11/09 — 원 표시(won)도 만든 숫자 형식(NF_KO)을 다시 씀(웹앱 기기 기록 느린 함수 won 1,020ms/14번) // (1.3.3) 시트 허위 표시는 점수에서 빼고 참고 글로만 // (1.3.2) 🕘 기간 자르기 한국 날짜 // (1.3.1) 숫자 글자 형식 다시 씀(빠르게)
   const DEFAULT_THRESHOLDS = { modelHigh: 70, modelLow: 35, gainHigh: 60, gainLow: 40 };
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const numK = (v) => { if (v == null || v === '') return null; if (typeof v === 'number') return Number.isFinite(v) ? v : null; const n = parseFloat(String(v).replace(/[^\d.\-]/g, '')); return Number.isFinite(n) ? n : null; };

@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.247의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.248의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.247' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.247', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.248' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.248', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -104,11 +104,12 @@
   const alWhy = (L) => { const t = (L || []).join(' / '); return /카테고리|분류/.test(t) ? ' → 알라딘에 분류가 없는 상품 — 웹앱 등록 카드의 🗂 분류 칸에서 분류를 고른 뒤 다시 올리기' : /대표\s*이미지|이미지를/.test(t) ? ' → 알라딘에 상품 이미지가 없음 — 카드의 대표(기본) 이미지 칸에 사진을 넣거나 ⚙ 설정 「이미지 없는 상품: 대신 넣을 그림」을 켠 뒤 다시' : ''; };
   /* (1.89.132 · MJ 10/28 '이미지 없는 ISBN은 등록이 안 됨') 알라딘 상품에 그림이 없으면 등록 화면 대표 이미지 칸(mainCover)이 비어 '대표 이미지를 등록해주세요'로 막힘(엑셀 대량 등록에는 그림 칸이 없어 막히지 않음)
    *  → 정범님 10/28 15:15 결정: 우리 사진(카드 대표 칸)이 없으면 ① 웹앱 ⚙ 설정에서 바꾼 그림(Firebase 저장소) → ② 기본 그림 '북스킹 실사진 준비 중'(저장소 app/img/booksking-preparing.jpg)을 대표 이미지로 올림 · 웹앱 설정 「이미지 없는 상품: 대신 넣을 그림」(기본 켬)이 꺼져 있으면 보내지 않고 까닭을 남김 */
-  const COVER_FB_DEF = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/app/img/booksking-preparing.jpg';
-  async function fbCoverFile(fb) { const tries = []; if (fb && fb.path) tries.push(['설정에서 바꾼 그림', fb]); tries.push(['기본 그림(북스킹 실사진 준비 중)', { url: (fb && fb.def) || COVER_FB_DEF, name: 'booksking-preparing.jpg' }]); let last = null;
+  const COVER_FB_DEF = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/app/img/booksking-preparing.jpg'; const COVER_FB_NEW = 'https://readnow.kr/app/img/booksking-preparing.jpg';
+  async function fbCoverFile(fb) { const tries = []; if (fb && fb.path) tries.push(['설정에서 바꾼 그림', fb]); tries.push(['기본 그림(새 주소)', { url: COVER_FB_NEW, name: 'booksking-preparing.jpg', pageFetch: true }]); /* (11/10 big1) 🌐 readnow.kr 먼저(화면 fetch — 머리 @connect를 늘리지 않음) · 안 되면 예전 주소 */ tries.push(['기본 그림(북스킹 실사진 준비 중)', { url: (fb && fb.def) || COVER_FB_DEF, name: 'booksking-preparing.jpg' }]); let last = null;
     for (const [lb, x] of tries) { try { return { file: await getPhoto(x), lb }; } catch (e) { last = `${lb}: ${e.message}`; } } throw new Error('대신 넣을 그림을 받지 못함 — ' + last); }
   /* 사진 받기: 웹앱이 사진 폴더에서 Firebase 저장소(reg_photos/…)에 올려 둔 것 → 이 PC로 (알라딘 화면에 넣을 파일) */
   async function getPhoto(x) { if (!x || (!x.path && !x.url)) throw new Error('저장소 경로 없음'); const url = x.path ? await firebase.storage().ref(x.path).getDownloadURL() : String(x.url); /* (1.89.132) url = 저장소(GitHub)에 둔 기본 그림 */
+    if (x.pageFetch) { const r = await fetch(url, { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status); const b = await r.blob(); if (!/^image\//.test(b.type || '') || b.size < 1000) throw new Error('그림이 아님'); return new File([b], x.name || 'photo.jpg', { type: b.type }); }
     const blob = await new Promise((res, rej) => GM_xmlhttpRequest({ method: 'GET', url, responseType: 'blob', timeout: 60000, onload: (r) => (r.status === 200 ? res(r.response) : rej(new Error('HTTP ' + r.status))), onerror: () => rej(new Error('받기 실패')), ontimeout: () => rej(new Error('시간 초과')) }));
     return new File([blob], x.name || 'photo.jpg', { type: blob.type || 'image/jpeg' }); }
   function makeFiller(doc, W0, opt) { opt = opt || {};

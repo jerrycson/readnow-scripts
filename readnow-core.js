@@ -1,4 +1,4 @@
-// ReadNow Core Library — 1.4.2 (판매자 분류의 유일한 기준: sellerBg → evaluateBackground·classifySellerDoc 가 모두 이것만 씀)
+// ReadNow Core Library — 1.4.3 (판매자 분류의 유일한 기준: sellerBg → evaluateBackground·classifySellerDoc 가 모두 이것만 씀)
 // 여러 Tampermonkey 스크립트(중고가 검토 도우미, 판매자 정보 툴팁, 앞으로 만들 판매가 자동 결정 시스템 등)가
 // @require 로 함께 가져다 쓰는 공용 로직 모음입니다.
 //
@@ -445,6 +445,6 @@
     sellerLegend,
     sellerInfoFromDoc,
     classifySellerDoc,
-    CORE_VERSION: '1.4.2',
+    CORE_VERSION: '1.4.3', /* (1.4.3) 판매자 분류가 정범님 옛 시트 허위 표시를 읽지 않음(참고 글로만) */
   };
 })(typeof unsafeWindow !== 'undefined' ? unsafeWindow : window);
