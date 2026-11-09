@@ -69,9 +69,9 @@ const D = 864e5; const NOW = Date.now(); const kdt = (ms) => new Date(ms + 9 * 3
     ok(/const lock = ML\.fenceLock \? ML\.fenceLock\(l, \{ key: lid, excl: ENGO\[lid\] \|\| null, dec: dec \|\| null/.test(SRC) && /fence: ENGF\[a\.id\] \|\| null, lock,/.test(SRC), '클라우드 ⚡ 전략: 상품마다 🔒 검사 재료를 넘김(옛 공용 파일이면 안전 쪽으로 막음)'); }
   { const groups = [{ id: 'g', auto: true, on: true, lids: ['100', '200', '300'] }]; const L = new Map([['100', { reg: kdt(NOW - 20 * D) }], ['200', { reg: kdt(NOW - 200 * D) }], ['300', {}]]);
     const R = AS.pxPlan({ now: NOW, cfg: { cap: 10, recap: 10 }, groups, listings: L, exp: new Map(), busy: new Set(), rnd: () => 0.5 }); const ids = (R.docs || []).concat(R.runs || []).map((x) => JSON.stringify(x)).join(' ');
-    ok(R.newLock === 2 && /"200"/.test(ids) && !/"100"/.test(ids) && !/"300"/.test(ids), `🔬 조회수 실험: 등록 3개월 안·등록 때 모름은 새로 붙이지 않음(빠진 수 ${R.newLock})`, { newLock: R.newLock, ids: ids.slice(0, 200) });
+    ok(R.newLock === 0 && R.lockIn && R.lockIn.new === 2 && /"200"/.test(ids) && /"100"/.test(ids) && /"300"/.test(ids), `🔬 조회수 실험(값·비용 안 건드림 — eng3): 등록 3개월 안·등록 때 모름도 붙임 · 세어 기록만(${R.lockIn && R.lockIn.new})`, { newLock: R.newLock, lockIn: R.lockIn, ids: ids.slice(0, 200) });
     const R2 = AS.pxPlan({ now: NOW, cfg: { cap: 10, recap: 10 }, groups, listings: L, exp: new Map([['100', { on: true, addedAt: '2026-11-01' }]]), busy: new Set(), rnd: () => 0.5 }); ok(/"100"/.test(JSON.stringify(R2.docs || []).concat(JSON.stringify(R2.runs || []))) || (R2.plan[0] && R2.plan[0].chk === 1), '이미 붙은 것의 확인은 그대로(떼기·확인은 막지 않음)', R2.plan); }
-  ok(/function engLockLine\(l\)/.test(APP) && /🔒 등록 3개월 안 — 연구·엔진만 안 건드림/.test(APP) && /\$\{engLockLine\(l\)\}/.test(APP), '웹앱 상품 카드 가격 감시 칸에 🔒 한 줄(fence4: 연구·엔진만)');
+  ok(/function engLockLine\(l\)/.test(APP) && /🔒 등록 3개월 안 — 연구·엔진이 값·비용을 건드리지 않음\(관찰·값 안 바꾸는 시험은 함\)/.test(APP) && /\$\{engLockLine\(l\)\}/.test(APP), '웹앱 상품 카드 가격 감시 칸에 🔒 한 줄(eng3: 연구·엔진이 값·비용을 안 건드림)');
 
   console.log('⑤ 시트 허위 표시는 참고만');
   { const s = { sc: '1', reviewCount: '500', outstockRate: '1.0', rating: '0.99', aladinGrade: '전문셀러' }; const A = RS.score(s, {}), B = RS.score({ ...s, grade: 'fake' }, {});
@@ -92,8 +92,8 @@ const D = 864e5; const NOW = Date.now(); const kdt = (ms) => new Date(ms + 9 * 3
       box.innerHTML = engLockLine({ id: 'aladin_2', registeredAt: kdt(NOW - 300 * 864e5), editBy: 'a@b.c', editAt: new Date(NOW - 864e5).toISOString() }); o.humT = box.textContent;
       o.none = engLockLine({ id: 'aladin_3', registeredAt: kdt(NOW - 300 * 864e5) }); o.pops = pops; return o; }, NOW);
     ok(R.fn && R.ml, `웹앱 engLockLine·학습 공용 fenceLock 있음`, R);
-    ok(/🔒 등록 3개월 안 — 연구·엔진만 안 건드림/.test(R.newT || '') && /까지/.test(R.newT || '') && /🛰 감시 그룹 자동 반영·🎯 추격자·직접 가격·수동 일괄·상품 수정은 정범님 설정대로 그대로/.test(R.newT || ''), `카드 줄(새 상품): '${(R.newT || '').slice(0, 120)}'`);
-    ok(/🔒 사람이 손댄 상품 — 연구·엔진만 안 건드림/.test(R.humT || '') && R.none === '' && R.pops === 0, `카드 줄(사람 손댐) · 오래된 상품은 줄 없음 · 팝업 없음`, R);
+    ok(/🔒 등록 3개월 안 — 연구·엔진이 값·비용을 건드리지 않음\(관찰·값 안 바꾸는 시험은 함\)/.test(R.newT || '') && /까지/.test(R.newT || '') && /🛰 감시 그룹 자동 반영·🎯 추격자·직접 가격·수동 일괄·상품 수정은 정범님 설정대로 그대로/.test(R.newT || ''), `카드 줄(새 상품): '${(R.newT || '').slice(0, 120)}'`);
+    ok(/🔒 사람이 손댄 상품 — 연구·엔진이 값·비용을 건드리지 않음\(관찰·값 안 바꾸는 시험은 함\)/.test(R.humT || '') && R.none === '' && R.pops === 0, `카드 줄(사람 손댐) · 오래된 상품은 줄 없음 · 팝업 없음`, R);
   }).then(fin);
   function fin() { console.log(bad ? `❌ tFENCE3 실패 ${bad}` : '✓ tFENCE3 모두 통과'); process.exitCode = bad ? 1 : 0; }
 })().catch((e) => { console.log('❌ 시험 오류', e.stack); process.exitCode = 1; });
