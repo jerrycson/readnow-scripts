@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.239의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.240의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.239' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.239', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.240' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.240', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -471,14 +471,14 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    *  탭이 'Out of Memory'·'DNS_PROBE_FINISHED_NXDOMAIN' 화면으로 죽으면 스크립트가 안 돌아 알림이 끊김 → 도우미가 크롬이 떠 있고 인터넷이 되면 새 탭으로 알라딘 주문조회를 엶(1시간 2번까지 · 크롬은 죽이지 않음)
    *  도우미가 없거나 옛 판이면(닿지 못함·404) 10분에 한 번만 다시 물음 · 작업 창 탭은 위 /work/beat가 같은 일을 함 */
   if (TOP && AL && !globalThis.__rnPubChrome) { let leadNext = 0; setInterval(() => { try { if (mark || Date.now() < leadNext || !window.__rnRole || window.__rnRole() !== 'lead') return; leadNext = Date.now() + 55000;
-    call('/work/lead', { pc: (window.__rnPcName && window.__rnPcName.get()) || '', page: location.pathname.split('/').pop(), paused: !!window.__rnPaused, ver: (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '' }, 8000).then((r) => { if (!r || !r.ok) leadNext = Date.now() + 10 * 60e3; }).catch(() => {}); } catch (e) {} }, 15000); }
+    call('/work/lead', { pc: (window.__rnPcName && window.__rnPcName.get()) || '', page: location.pathname.split('/').pop(), paused: !!window.__rnPaused, ship: window.__rnSgShip ? window.__rnSgShip() : null, ver: (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '' }, 8000).then((r) => { if (!r || !r.ok) leadNext = Date.now() + 10 * 60e3; }).catch(() => {}); } catch (e) {} }, 15000); }
   if (!mark) return;
   /* 작업 창 탭: 창 제목에 표시(도우미가 이 글로 창을 찾음) · 5초 GM 신호 · 30초 도우미 신호 */
   const title = () => { try { if (W.isWork() && !String(document.title || '').startsWith(TITLE)) document.title = TITLE + ' · ' + String(document.title || '').replace(/^🪟 리드나우 작업 창 · /, ''); } catch (e) {} };
   const gmBeat = () => { if (!W.isWork()) return; try { GM_setValue(BK, { tab: window.__rnTab || null, at: Date.now(), role: window.__rnRole ? window.__rnRole() : null }); } catch (e) {} title(); hBeat().catch(() => {}); /* 도우미 신호는 25초에 한 번(켜자마자 곧) */ };
   let hbAt = 0; const hBeat = async () => { if (!W.isWork() || Date.now() - hbAt < 25000) return; hbAt = Date.now(); let now = null; try { now = window.__rnWorkNow ? window.__rnWorkNow() : null; } catch (e) {}
     const lines = (() => { try { return (window.__rnLogTail ? window.__rnLogTail(15) : []).map((e) => ({ t: e.t, l: e.l, m: e.m, x: String(e.x || '').slice(0, 300) })); } catch (e) { return []; } })();
-    const r = await call('/work/beat', { pc: (window.__rnPcName && window.__rnPcName.get()) || '', tab: window.__rnTab || null, role: window.__rnRole ? window.__rnRole() : null, ver: (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '', page: location.pathname.split('/').pop(), paused: !!window.__rnPaused, now, lines }, 10000);
+    const r = await call('/work/beat', { pc: (window.__rnPcName && window.__rnPcName.get()) || '', tab: window.__rnTab || null, role: window.__rnRole ? window.__rnRole() : null, ver: (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '', page: location.pathname.split('/').pop(), paused: !!window.__rnPaused, ship: window.__rnSgShip ? window.__rnSgShip() : null, now, lines }, 10000);
     W.last = { at: Date.now(), ok: !!(r && r.ok), err: r && !r.ok ? r.err : null }; };
   setInterval(gmBeat, 5000); setInterval(() => { hBeat().catch(() => {}); }, 30000); setTimeout(gmBeat, 300); setTimeout(() => { hBeat().catch(() => {}); }, 4000);
   addEventListener('pagehide', () => { try { const v = GM_getValue(BK, null); if (v && v.tab === window.__rnTab) GM_deleteValue(BK); } catch (e) {} });
@@ -565,6 +565,50 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     L('ok', '🪟 수집을 이 PC의 작업 창에 넘겼습니다 — 이 탭은 화면 기능만 합니다 (작업 창을 닫거나 작업 창 모드를 끄면 이 탭이 다시 이어받음)'); fire(); setTimeout(() => { try { if (navigator.locks && navigator.locks.request) { queue(); watchLead(); } } catch (e) {} }, 1500); } catch (e) {} }, 10000); }
   window.__rnWorkInfo = () => ({ isWork: IS_WORK, on: !!(W && W.on()), role, other: workOther() });
 })();
+/* (정범님 11/09 shipfz1 · 약속 0-1 '출고 처리 중에는 절대로 어떤 것도 출고 작업 중인 컴퓨터와 MJ-MAIN을 건드리지 않아 … 출고가 끝나면 정지된 시점부터 손실 없이 정확히 이어 감') 🚚 출고 보호
+ *  · '출고 중' 판단은 여기 한 곳(shipGuardDecide) — 출고 표 shp_runs/_guard.holds{ 칸: { pc, why, t0, end } } + 이 PC 수집기가 막 맡은 출고 일(GM rn-sg-local · 서버를 거치지 않고 바로)
+ *    칸을 적는 곳: 웹앱(▶ 오늘 출고 끝까지 · 📦 ALPS 송장 인쇄) · 수집기(출고 맡긴 일 = 발송준비시작·발송 요청 다시 읽기·주문 취소·현금 판매 중지 · 송장 입력 맡김(CSV 일괄·한 건씩) · 🚨 발송 요청 다시 읽기)
+ *  · 보호하는 PC: 그 출고 일을 하는 PC(칸의 pc) + MJ-MAIN(살아 있는 칸이 하나라도 있으면 무조건)
+ *  · 끝: 칸에 end가 적힘 · 끝 소식이 안 오면(탭이 죽음 등) 시작(t0)에서 maxH(기본 3시간 — 근거: 없음, 설정 oneShot.guardMaxH로 바꿈) 지나면 풀고 기록
+ *  · 보호 중 멈추는 것: 새로고침 길 모두(⚡ 새 판 바꾸기·안전한 새로고침·메모리 정리·죽은 탭 되살리기·원격 업데이트) · 새로 시작하는 자동 일(⏰ 매일 자동·맡긴 일·쉴 때 하는 일)
+ *    이미 돌던 자동 일은 상품 하나 끝난 틈에 자리를 저장하고 비킴(⏸ 자리 내줌 → 같은 회차로 이어 감) · PC 도우미(127.0.0.1:8898)에도 /work/lead로 알려 스스로 새 판·되살리기를 미룸
+ *  · 미룬 것은 GM rn-sg-def(이 PC 공용 줄)에 적고 기록 창에 '🚚 출고 중 — ○○ 미룸(출고 끝나면 이어 감)' 한 번 → 풀리면 '🚚 출고 끝 — 미룬 n가지 이어 감' 뒤 적어 둔 차례대로 이어 감
+ *    (새로고침이 끼어 있으면 그것 하나만 — 새 탭이 저장된 자리부터 모두 이어 감) */
+(function rnShipGuard() { if (window.top !== window) return;
+  const MJ = 'MJ-MAIN';
+  function shipGuardDecide(o) { const up = (x) => String(x == null ? '' : x).trim().toUpperCase(); const P = up(o.pc); const maxH = Math.max(0.5, Math.min(12, +o.maxH || 3)); const lim = maxH * 3600e3; const live = [], expired = [];
+    for (const [id, h] of Object.entries(o.holds || {})) { if (!h || h.end || !(+h.t0 > 0)) continue; const x = { id, pc: up(h.pc), why: String(h.why || '출고'), t0: +h.t0 }; (o.now - x.t0 >= lim ? expired : live).push(x); }
+    const mine = live.filter((h) => P && h.pc === P); const mjOn = !!P && P === up(o.mj || 'MJ-MAIN') && live.length > 0; const src = mine.length ? mine : mjOn ? live : []; const on = src.length > 0; const t0 = on ? Math.min(...src.map((h) => h.t0)) : 0;
+    return { on, why: !on ? null : mine.length ? mine.map((h) => h.why).join(' · ') : `MJ-MAIN 보호 — ${live.map((h) => `${h.pc || '?'} ${h.why}`).join(' · ')}`, since: t0, until: on ? t0 + lim : 0, maxH, mine: mine.length, live: live.length, mj: mjOn, expired }; } /* ⟦shipGuardDecide 끝⟧ */
+  function sgDefAdd(L, it) { L = Array.isArray(L) ? L : []; if (L.some((x) => x && x.k === it.k)) return { L, added: false }; return { L: [...L, it], added: true }; }
+  function sgResumePlan(items) { const L = (items || []).slice().sort((a, b) => (a.at || 0) - (b.at || 0)); const r = L.find((x) => x.reload); return r ? [r] : L; } /* ⟦sgResumePlan 끝⟧ */
+  const GK = 'rn-sg-doc', LK = 'rn-sg-local', DK = 'rn-sg-def', CK = 'rn-sg-cfg';
+  const gv = (k, d) => { try { const v = GM_getValue(k, d); return v == null ? d : v; } catch (e) { return d; } }; const sv = (k, v) => { try { GM_setValue(k, v); } catch (e) {} };
+  const L = (lv, m) => { try { window.__rnLog && window.__rnLog('수집기', lv, m); } catch (e) {} };
+  const pcName = () => { try { return (window.__rnPcName && window.__rnPcName.get()) || gv('rnu-pcname', '') || ''; } catch (e) { return ''; } };
+  const TAB = Math.random().toString(36).slice(2, 9); const CBS = new Map(); const expNoted = {}; let cache = null, cacheAt = 0;
+  function hold() { const now = Date.now(); if (cache && now - cacheAt < 1500) return cache; const d = gv(GK, null) || {}; const H = { ...(d.holds || {}) }; const pc = pcName(); const loc = gv(LK, {}) || {}; for (const [id, h] of Object.entries(loc)) if (h && !H[id]) H[id] = { ...h, pc }; /* 서버에 같은 칸이 있으면 서버 것(끝 표시 포함)을 믿음 */
+    const c = gv(CK, {}) || {}; cache = shipGuardDecide({ now, pc, holds: H, maxH: (d.cfg && d.cfg.maxH) || c.maxH || 3, mj: (d.cfg && d.cfg.mj) || c.mj || MJ }); cacheAt = now; return cache; }
+  window.__rnShipHold = hold; window.__rnSgOn = () => { try { return !!hold().on; } catch (e) { return false; } };
+  /* 미룸 — k 하나에 한 번만 적고 한 번만 기록 · fn = 출고가 끝나면 이 탭이 다시 할 일(없으면 그 일이 스스로 다시 봄) · o.reload = 새로고침(끝나면 이것 하나만) */
+  window.__rnShipDefer = (k, name, fn, o) => { const r = sgDefAdd(gv(DK, []), { k, name: String(name || k).slice(0, 80), tab: TAB, at: Date.now(), reload: !!(o && o.reload) }); if (typeof fn === 'function' && !CBS.has(k)) CBS.set(k, { k, name, fn, reload: !!(o && o.reload), at: Date.now() }); if (r.added) { sv(DK, r.L); L('warn', `🚚 출고 중 — ${name} 미룸(출고 끝나면 이어 감) · ${hold().why || ''}`); } return true; };
+  window.__rnShipWait = (k, name, fn, o) => { if (!window.__rnSgOn()) return false; window.__rnShipDefer(k, name, fn, o); return true; };
+  window.__rnShipDefN = () => (gv(DK, []) || []).length;
+  window.__rnSgShip = () => { try { const h = hold(); return h.on ? { on: true, until: h.until, why: String(h.why || '').slice(0, 120) } : { on: false }; } catch (e) { return null; } }; /* PC 도우미(127.0.0.1:8898)에 알림 — 도우미가 스스로 새 판 받기·되살리기를 미룸(until = 최대 시간 · 수집기 탭이 죽어도 그때까지) */
+  window.__rnShipGuardFeed = (data, src) => { const at = (data && data._at) || Date.now(); const cur = gv(GK, null); if (cur && src === 'web' && (cur.at || 0) > at) return; sv(GK, { holds: (data && data.holds) || {}, cfg: (data && data.cfg) || {}, at, src: src || 'fs' }); cache = null; };
+  window.__rnShipLocal = (id, why, end) => { const o = gv(LK, {}) || {}; if (end) { if (!o[id]) return false; delete o[id]; } else { if (o[id]) return false; o[id] = { why: String(why || '출고').slice(0, 80), t0: Date.now() }; } sv(LK, o); cache = null; return true; };
+  /* 5초마다: 최대 시간 지난 칸 기록 · 풀렸으면 미룬 것 이어 감 · 웹앱 화면 다리(data-rn-sgdoc 받기 · data-rn-shiphold 알리기) */
+  const APP = /^jerrycson\.github\.io$/i.test(location.hostname); let lastFeed = '';
+  async function sgTick() { try {
+    if (APP) { const a = document.documentElement.getAttribute('data-rn-sgdoc'); if (a && a !== lastFeed) { lastFeed = a; try { const v = JSON.parse(a); window.__rnShipGuardFeed({ holds: v.holds, cfg: v.cfg, _at: +v.at || Date.now() }, 'web'); } catch (e) {} } }
+    const h = hold();
+    for (const x of h.expired || []) if (!expNoted[x.id]) { expNoted[x.id] = 1; const P = String(pcName()).trim().toUpperCase(); if (x.pc === P || P === MJ) L('warn', `🚚 출고 보호 최대 시간(${h.maxH}시간) 지나 풀림 — '${x.why}'(${x.pc || '?'}) 끝 소식이 오지 않음`); }
+    if (!h.on) { const all = gv(DK, []) || []; if (all.length) { sv(DK, []); L('info', `🚚 출고 끝 — 미룬 ${all.length}가지 이어 감 (${all.map((x) => x.name).join(' · ').slice(0, 300)})`); }
+      if (CBS.size) { const plan = sgResumePlan([...CBS.values()]); CBS.clear(); for (const it of plan) { try { await it.fn(); } catch (e) { L('err', `🚚 이어 가기 실패 — ${it.name}: ${e.message}`); } await new Promise((r) => setTimeout(r, 1500)); } } }
+    if (APP) { const n = (gv(DK, []) || []).length; document.documentElement.setAttribute('data-rn-shiphold', JSON.stringify({ on: !!h.on, why: h.why || '', n, since: h.since || 0, until: h.until || 0, at: Date.now() })); }
+  } catch (e) {} }
+  window.__rnShipTick = sgTick; setInterval(sgTick, 5000); setTimeout(sgTick, 1200);
+})();
 /* (정범님 11/09 oom1) 🩺 죽은 수집기 탭 되살리기 — HOME·MJ-MAIN 수집기 탭이 크롬 '앗, 이런! Out of Memory'·'DNS_PROBE_FINISHED_NXDOMAIN'(집 인터넷 흔들림) 화면으로 죽으면 그 화면엔 스크립트가 안 돌아 사람이 새로고침해야 했음
  *  · 같은 PC 같은 크롬에 이 스크립트가 도는 다른 탭(웹앱 탭 · 수집기가 아닌 알라딘 화면)이 있으면 그 탭이 1분마다 봄: 이 PC 수집기 탭이 마지막으로 살아 있던 때(rnu-lead-seen · 30초마다)가
  *    reviveMin(기본 10분 — 근거: 없음, 설정 GM 'rn-revive-cfg'로 바꿈) 넘게 지났고 · 그 전 6시간 안엔 살아 있었고(이 PC가 수집기 PC) · 마지막에 일시정지가 아니었고 · 이 탭이 3분 넘게 깨어 지켜봤으면(PC 잠자기에서 막 깬 때 제외)
@@ -576,7 +620,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const AL = /(^|\.)aladin\.co\.kr$/i.test(location.hostname); const APP = /^jerrycson\.github\.io$/i.test(location.hostname) && /^\/readnow-scripts\/app\//.test(location.pathname);
   if (!APP && !(AL && /^\/(scm|shop|usedstore)\//i.test(location.pathname) && !/\/scm\/(wrecord_edit|worders|worder_preparatory_complete)\.aspx/i.test(location.pathname))) return;
   const URL0 = 'https://www.aladin.co.kr/scm/worders.aspx';
-  function reviveDecide(o) { const S = o.seen; const M = 60e3; if (o.off) return { act: 'none', why: '꺼 둠' }; if (!S || !S.at || o.now - S.at > o.aliveH * 3600e3) return { act: 'none', why: '이 PC 수집기 기록 없음(또는 오래됨)' }; if (o.now - S.at < o.staleMin * M) return { act: 'none', why: '살아 있음' }; if (S.paused) return { act: 'none', why: '일시정지 중이었음' };
+  function reviveDecide(o) { const S = o.seen; const M = 60e3; if (o.off) return { act: 'none', why: '꺼 둠' }; if (!S || !S.at || o.now - S.at > o.aliveH * 3600e3) return { act: 'none', why: '이 PC 수집기 기록 없음(또는 오래됨)' }; if (o.now - S.at < o.staleMin * M) return { act: 'none', why: '살아 있음' }; if (S.paused) return { act: 'none', why: '일시정지 중이었음' }; if (o.ship) return { act: 'none', ship: true, why: '🚚 출고 중 — 되살리기 미룸(출고 끝나면 이어 감)' }; /* (11/09 shipfz1) 출고 중인 PC·MJ-MAIN은 건드리지 않음 */
     if (!o.watchFrom || o.now - o.watchFrom < 3 * M) return { act: 'none', why: '지켜보는 중(잠자기에서 깬 때 대비)' }; const opens = (o.opens || []).filter((t) => o.now - t < 3600e3); if (o.last && o.now - o.last < o.staleMin * M) return { act: 'none', why: '방금 새 탭을 엶 — 뜨길 기다림' }; if (opens.length >= o.perHour) return { act: 'limit', why: `1시간에 ${o.perHour}번 넘게 열어 쉼` };
     if (o.net === false) return { act: 'wait-net', why: '인터넷이 안 됨 — 기다렸다 다시' }; return { act: 'open' }; } /* ⟦reviveDecide 끝⟧ */
   const L = (lv, m) => { try { window.__rnLog && window.__rnLog('수집기', lv, m); } catch (e) {} };
@@ -584,8 +628,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   let watchFrom = 0, tickAt = 0, noted = '';
   setInterval(async () => { try { const now = Date.now(); if (!tickAt || now - tickAt > 150000) watchFrom = now; tickAt = now; /* 이 탭이 멈췄던(잠자기) 틈이 있으면 다시 지켜보기 시작 */
     const cfg = GM_getValue('rn-revive-cfg', null) || {}; const seen = GM_getValue('rnu-lead-seen', null); const R = GM_getValue('rn-revive', null) || {};
-    const base = { now, seen, watchFrom, off: cfg.on === false, staleMin: Math.max(5, Math.min(120, +cfg.staleMin || 10)), aliveH: Math.max(1, Math.min(48, +cfg.aliveH || 6)), perHour: Math.max(1, Math.min(4, +cfg.perHour || 2)), opens: R.opens || [], last: R.last || 0 };
-    let d = reviveDecide(base); if (d.act !== 'open') { if (d.act !== 'none' && noted !== d.why) { noted = d.why; L('warn', `🩺 이 PC 수집기 탭이 ${Math.round((now - (seen && seen.at || now)) / 60e3)}분 넘게 신호 없음 — ${d.why}`); } return; }
+    const base = { now, seen, watchFrom, ship: !!(window.__rnSgOn && window.__rnSgOn()), off: cfg.on === false, staleMin: Math.max(5, Math.min(120, +cfg.staleMin || 10)), aliveH: Math.max(1, Math.min(48, +cfg.aliveH || 6)), perHour: Math.max(1, Math.min(4, +cfg.perHour || 2)), opens: R.opens || [], last: R.last || 0 };
+    let d = reviveDecide(base); if (d.ship) { window.__rnShipDefer && window.__rnShipDefer('revive', '죽은 수집기 탭 되살리기'); return; } if (d.act !== 'open') { if (d.act !== 'none' && noted !== d.why) { noted = d.why; L('warn', `🩺 이 PC 수집기 탭이 ${Math.round((now - (seen && seen.at || now)) / 60e3)}분 넘게 신호 없음 — ${d.why}`); } return; }
     d = reviveDecide({ ...base, net: await net() }); if (d.act !== 'open') { if (noted !== d.why) { noted = d.why; L('warn', `🩺 이 PC 수집기 탭이 멈춘 듯하지만 ${d.why}`); } return; }
     const R2 = GM_getValue('rn-revive', null) || {}; if (R2.last && Date.now() - R2.last < base.staleMin * 60e3) return; /* 다른 탭이 방금 엶 */ const opens = [...(R2.opens || []).filter((t) => Date.now() - t < 3600e3), Date.now()];
     GM_setValue('rn-revive', { last: Date.now(), opens, by: location.hostname }); noted = ''; L('warn', `🩺 이 PC 수집기 탭이 ${Math.round((now - seen.at) / 60e3)}분 동안 신호 없음(크롬 'Out of Memory'·인터넷 끊김 화면 추정) — 새 탭으로 알라딘 주문조회를 엶(1시간 ${opens.length}/${base.perHour}번째) · 저장된 자리부터 이어 함`);
