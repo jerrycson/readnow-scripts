@@ -14,21 +14,22 @@
 // @match        http://localhost:8899/*
 // @match        http://rn.local/*
 // @match        https://jerrycson.github.io/*
+// @match        https://readnow.kr/*
 // @include      /^https?:\/\/[^\/]+\/.*[?&]rnx=[a-z0-9]{6,}/
 // @noframes
-// @updateURL    https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
-// @downloadURL  https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-orders-core.js?v=0.3.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.4
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.7
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.17.12
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.14
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.162
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.14
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.5
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.9
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.18.21
+// @updateURL    https://readnow.kr/readnow-collector.user.js
+// @downloadURL  https://readnow.kr/readnow-collector.user.js
+// @require      https://readnow.kr/readnow-orders-core.js?v=0.3.0
+// @require      https://readnow.kr/readnow-sellers-core.js?v=1.3.4
+// @require      https://readnow.kr/readnow-products-core.js?v=0.19.7
+// @require      https://readnow.kr/readnow-core.js?v=1.4.2
+// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.12
+// @require      https://readnow.kr/readnow-shipping-core.js?v=0.7.14
+// @require      https://readnow.kr/readnow-registry.js?v=0.14.162
+// @require      https://readnow.kr/readnow-ext-core.js?v=0.6.14
+// @require      https://readnow.kr/readnow-register-core.js?v=0.7.5
+// @require      https://readnow.kr/readnow-ml-core.js?v=0.9.9
+// @require      https://readnow.kr/readnow-autosched-core.js?v=0.18.21
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
@@ -59,6 +60,7 @@
 // @connect      127.0.0.1
 // @connect      localhost
 // @connect      rn.local
+// @connect      readnow.kr
 // @connect      githubusercontent.com
 // @connect      github.io
 // @connect      github.com
@@ -716,7 +718,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   window.__rnShipGuardFeed = (data, src) => { const at = (data && data._at) || Date.now(); const cur = gv(GK, null); if (cur && src === 'web' && (cur.at || 0) > at) return; sv(GK, { holds: (data && data.holds) || {}, cfg: (data && data.cfg) || {}, at, src: src || 'fs' }); cache = null; };
   window.__rnShipLocal = (id, why, end) => { const o = gv(LK, {}) || {}; if (end) { if (!o[id]) return false; delete o[id]; } else { if (o[id]) return false; o[id] = { why: String(why || '출고').slice(0, 80), t0: Date.now(), tab: TAB }; } sv(LK, o); cache = null; return true; };
   /* 5초마다: 최대 시간 지난 칸 기록 · 풀렸으면 미룬 것 이어 감 · 웹앱 화면 다리(data-rn-sgdoc 받기 · data-rn-shiphold 알리기) */
-  const APP = /^jerrycson\.github\.io$/i.test(location.hostname); let lastFeed = '', lastNow = '';
+  const APP = /^(jerrycson\.github\.io|readnow\.kr)$/i.test(location.hostname); let lastFeed = '', lastNow = '';
   async function sgTick() { try {
     if (APP) { const a = document.documentElement.getAttribute('data-rn-sgdoc'); if (a && a !== lastFeed) { lastFeed = a; try { const v = JSON.parse(a); window.__rnShipGuardFeed({ holds: v.holds, cfg: v.cfg, _at: +v.at || Date.now() }, 'web'); } catch (e) {} } }
     { /* (shipsafe2) 이 탭이 맡은 출고 칸은 5분마다 맥박(beat) — 1시간보다 긴 출고(송장 입력이 길 때)도 끝까지 보호 · 탭이 죽으면 맥박이 끊겨 1시간 뒤 풀림 */ const loc = gv(LK, {}) || {}; const own = Object.keys(loc).filter((id) => loc[id] && loc[id].tab === TAB && Date.now() - (+loc[id].beat || +loc[id].t0 || 0) > 5 * 60e3); if (own.length) { for (const id of own) loc[id].beat = Date.now(); sv(LK, loc); cache = null; try { window.__rnSgBeat && window.__rnSgBeat(own); } catch (e) {} } }
@@ -737,7 +739,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
  *  · 쉬는 탭(같은 화면 두 번째 탭)은 이미 5분 넘게 신호 없는 수집기 탭을 넘겨받으므로(rnRole) 이것은 그런 탭도 없을 때를 위한 것 · 공개 수집 크롬(로거)은 로컬 도우미 지킴이가 맡아 여기선 안 함
  *  · 열 주소는 주문조회(/scm/worders.aspx) — 수집기는 주문조회·상품 조회·판매관리 화면에서만 돎(/scm/wmain.aspx엔 수집기가 안 뜸) */
 (function rnRevive() { if (window.top !== window || globalThis.__rnPubHome || globalThis.__rnPubChrome) return;
-  const AL = /(^|\.)aladin\.co\.kr$/i.test(location.hostname); const APP = /^jerrycson\.github\.io$/i.test(location.hostname) && /^\/readnow-scripts\/app\//.test(location.pathname);
+  const AL = /(^|\.)aladin\.co\.kr$/i.test(location.hostname); const APP = /^(jerrycson\.github\.io|readnow\.kr)$/i.test(location.hostname) && /^\/(readnow-scripts\/)?app\//.test(location.pathname);
   if (!APP && !(AL && /^\/(scm|shop|usedstore)\//i.test(location.pathname) && !/\/scm\/(wrecord_edit|worders|worder_preparatory_complete)\.aspx/i.test(location.pathname))) return;
   const URL0 = 'https://www.aladin.co.kr/scm/worders.aspx';
   function reviveDecide(o) { const S = o.seen; const M = 60e3; if (o.off) return { act: 'none', why: '꺼 둠' }; if (!S || !S.at || o.now - S.at > o.aliveH * 3600e3) return { act: 'none', why: '이 PC 수집기 기록 없음(또는 오래됨)' }; if (o.now - S.at < o.staleMin * M) return { act: 'none', why: '살아 있음' }; if (S.paused) return { act: 'none', why: '일시정지 중이었음' }; if (o.ship) return { act: 'none', ship: true, why: '🚚 출고 중 — 되살리기 미룸(출고 끝나면 이어 감)' }; /* (11/09 shipfz1) 출고 중인 PC·MJ-MAIN은 건드리지 않음 */
@@ -10242,7 +10244,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
 /* ══════════ (1.89.78) 🔐 잠금 백업 다리 — 정범님 10/25 22:58 '알라딘 로그인 정보까지 모든 정보를 백업 · 암호는 내가 정함'
  *  웹앱 화면(jerrycson.github.io)에서만 · 웹앱 ⚙ 설정 🔐 잠금 백업의 단추를 사람이 직접 누른 뒤 15초 안의 요청에만 답함(isTrusted 누름 — 다른 스크립트가 몰래 꺼내 가지 못하게)
  *  get = 이 PC Tampermonkey 저장소 전부(rn-cred 포함)를 같은 화면의 웹앱에 넘김 → 웹앱이 정범님 암호로 잠가 이 기기에만 내려받음(어디에도 올리지 않음) · put = 잠금 백업에서 되돌리기(같은 이름 덮음) */
-(function rnVault() { if (window.top !== window || !/^jerrycson\.github\.io$/i.test(location.hostname) || !/^\/readnow-scripts\/app\//.test(location.pathname)) return; let lastGet = 0, lastPut = 0; const UW = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window; /* (1.89.85 검토) 웹앱 주소에서만 · 정확한 단추만 · 한 번 쓰면 닫힘 · 답은 웹앱이 건넨 전용 통로(MessageChannel)로만 */
+(function rnVault() { if (window.top !== window || !/^(jerrycson\.github\.io|readnow\.kr)$/i.test(location.hostname) || !/^\/(readnow-scripts\/)?app\//.test(location.pathname)) return; let lastGet = 0, lastPut = 0; const UW = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window; /* (1.89.85 검토) 웹앱 주소에서만 · 정확한 단추만 · 한 번 쓰면 닫힘 · 답은 웹앱이 건넨 전용 통로(MessageChannel)로만 */
   document.addEventListener('click', (e) => { if (!e.isTrusted || !e.target || !e.target.closest) return; if (e.target.closest('button#vlt_make')) lastGet = Date.now(); if (e.target.closest('button[data-vltput]')) lastPut = Date.now(); }, true);
   const say = (m) => { try { window.postMessage(m, location.origin); } catch (e) {} }; const hi = () => say({ __rnVaultHi: 1, ver: (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || null }); /* 인사(판 번호)만 화면 전체로 · 저장소 내용은 전용 통로로만 */
   window.addEventListener('message', (e) => { if ((e.source !== window && e.source !== UW) || e.origin !== location.origin || !e.data || typeof e.data !== 'object') return; const d = e.data; if (d.__rnVaultPing) return hi(); if (!d.__rnVault) return; const port = e.ports && e.ports[0]; if (!port) return; const re = (m) => { try { port.postMessage({ __rnVaultRe: 1, id: d.id, ...m }); port.close(); } catch (x) {} };
