@@ -15,7 +15,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await p.click('#sheet .pxcard [data-ipop="pxwho"]'); await p.waitForTimeout(300); R.pop = await p.evaluate(() => { const d = document.querySelector('.rn-ipop'); return d ? /왜 추정인가/.test(d.textContent) && /우리 기기 빼기/.test(d.textContent) : false; });
   await p.mouse.click(5, 300); await p.waitForTimeout(200); R.popClosed = await p.evaluate(() => !document.querySelector('.rn-ipop'));
   // 2) 개수 제한 없음 — 12개 고르기 → 맡긴 일 1개(12개) · 제한 문구 없음
-  await p.click('[data-pxadd]'); await p.waitForTimeout(300); await p.fill('#px_q', '많은 책'); await p.waitForTimeout(500);
+  await p.evaluate(() => { S.sec.px_ops = true; pxDraw(true); }); /* (11/08) 직접 붙이기는 🛠 운영(접힘) 안 */ await p.click('[data-pxadd]'); await p.waitForTimeout(300); await p.fill('#px_q', '많은 책'); await p.waitForTimeout(500);
   const boxes = await p.$$('#px_res [data-pxsel]'); for (const bx of boxes.slice(0, 12)) await bx.check(); await p.waitForTimeout(200);
   R.sel = await p.evaluate(() => ({ n: S.px.P.sel.size, txt: document.querySelector('.pxsel').textContent.slice(0, 12), no10: !/최대 10개/.test(document.querySelector('#sheet').textContent) }));
   await p.click('[data-pxgo1]'); await p.waitForTimeout(200); await p.click('[data-pxgo1]'); await p.waitForTimeout(900);
@@ -39,16 +39,16 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await p.evaluate(async () => { S.batchId = 'gB'; S.batchRes = null; S.batchC = { ...S.batchC, name: '시험 그룹 B' }; await pxBatchSend(); }); await p.waitForTimeout(600);
   // 5) 실험 페이지 그룹 칸
   await p.evaluate(() => openPxExp('g:gA')); await p.waitForTimeout(1200);
-  R.grp = await p.evaluate(() => { const d = document.querySelector('#sheet details[data-pxgid="gA"]'); return d ? { open: d.open, t: d.querySelector('.pxgsum').textContent.replace(/\s+/g, ' '), rows: d.querySelectorAll('.pxgrow').length, other: /다른 곳에서 이미 실험 중 — 개별로 더한 실험/.test(d.textContent), notSale: /판매 중 아님/.test(d.textContent), btn: d.querySelector('[data-pxgadd]').textContent } : null; });
+  R.grp = await p.evaluate(() => { const d = document.querySelector('#sheet details[data-pxgid="gA"]'); return d ? { open: d.open, t: d.querySelector('.pxgsum').textContent.replace(/\s+/g, ' '), rows: d.querySelectorAll('.pxgrow').length, other: /그림 붙음 — 다른 곳에서 붙임: 개별로 붙임/.test(d.textContent), notSale: /판매 중 아님/.test(d.textContent), btn: d.querySelector('[data-pxgadd]').textContent } : null; });
   await p.click('#sheet [data-pxgadd="gA"]'); await p.waitForTimeout(200); await p.click('#sheet [data-pxgadd="gA"]'); await p.waitForTimeout(1000);
   R.gadd = await p.evaluate(() => { const C = Object.values(window.__FS.shp_cmds).filter((c) => c.gid === 'gA'); const g = window.__FS.px_exp_groups.gA; return { n: C.length, ids: C[0] && C[0].listingIds.slice().sort(), gname: C[0] && C[0].gname, on: g.on, src: (window.__FS.px_exp['404935001'] || {}).src, h: g.hist.map((x) => x.op).join(',') }; });
   // 그룹 B: 404935002는 그룹 A가 붙이는 중 → 건너뜀(두 번 안 붙임)
   await p.evaluate(async () => { S.px.P.gopen.add('gB'); pxDraw(true); }); await p.waitForTimeout(300);
   R.gB1 = await p.evaluate(() => { const X = pxGrpPlan(S.px.grp.get('gB')); return { add: X.add, run: X.run }; });
-  // 클라우드가 A를 끝냈다고 치고(on · src g:gA) → B에는 '다른 곳에서 이미 실험 중 — 그룹 「시험 그룹 A」'
+  // 클라우드가 A를 끝냈다고 치고(on · src g:gA) → B에는 '그림 붙음 — 다른 곳에서 붙임: 그룹 「시험 그룹 A」'(11/08 말투)
   await p.evaluate(async () => { for (const [id, c] of Object.entries(window.__FS.shp_cmds)) if (c.gid === 'gA') { await db.collection('shp_cmds').doc(id).set({ status: 'done' }, { merge: true }); for (const k of c.listingIds) await db.collection('px_exp').doc(k).set({ on: true, addedAt: new Date().toISOString() }, { merge: true }); } S.px.cmdBy.forEach((c) => { c.status = 'done'; c._local = 0; }); pxChanged(); });
   await p.waitForTimeout(1200);
-  R.gB2 = await p.evaluate(() => { const X = pxGrpPlan(S.px.grp.get('gB')); const d = document.querySelector('#sheet details[data-pxgid="gB"]'); return { add: X.add, other: X.other, txt: d ? /다른 곳에서 이미 실험 중 — 그룹 「시험 그룹 A」/.test(d.textContent) : false }; });
+  R.gB2 = await p.evaluate(() => { const X = pxGrpPlan(S.px.grp.get('gB')); const d = document.querySelector('#sheet details[data-pxgid="gB"]'); return { add: X.add, other: X.other, txt: d ? /그림 붙음 — 다른 곳에서 붙임: 그룹 「시험 그룹 A」/.test(d.textContent) : false }; });
   await p.click('#sheet [data-pxgadd="gB"]'); await p.waitForTimeout(200); await p.click('#sheet [data-pxgadd="gB"]'); await p.waitForTimeout(900);
   R.gBadd = await p.evaluate(() => { const C = Object.values(window.__FS.shp_cmds).filter((c) => c.gid === 'gB'); return C.map((c) => c.listingIds.join(',')); });
   await p.evaluate(async () => { for (const [id, c] of Object.entries(window.__FS.shp_cmds)) if (c.gid === 'gB') { await db.collection('shp_cmds').doc(id).set({ status: 'done' }, { merge: true }); for (const k of c.listingIds) await db.collection('px_exp').doc(k).set({ on: true, addedAt: new Date().toISOString() }, { merge: true }); } S.px.cmdBy.forEach((c) => { c.status = 'done'; c._local = 0; }); pxChanged(); });
@@ -63,7 +63,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   // 8) 우리 기기 등록 그림
   R.ping = await p.evaluate(() => { const got = []; const I = window.Image; window.Image = function () { const o = {}; Object.defineProperty(o, 'src', { set: (v) => got.push(v) }); return o; }; try { localStorage.removeItem('rn-pxself-at'); localStorage.setItem('rn-device', '사무실1'); pxSelfPing(); pxSelfPing(); } finally { window.Image = I; } return got; });
   // 9) 기능 찾기
-  R.feat = await p.evaluate(() => FEAT.filter((f) => /조회수 실험으로 보내기|우리 기기 조회 빼기/.test(f.t)).length);
+  R.feat = await p.evaluate(() => FEAT.filter((f) => /조회수 (실험|분석)으로 보내기|우리 기기 조회 빼기/.test(f.t)).length);
   console.log(JSON.stringify(R, null, 1)); console.log('errs', errs.join(' | '));
   const ok = R.nums.today && R.nums.ub30 && R.nums.ours && R.nums.ib && /우리 기기 오늘 5 · 7일 6번\(뺌\)/.test(R.nums.sum) && R.pop && R.popClosed && R.sel.n === 12 && R.sel.no10 && R.q12.n === 1 && R.q12.ids[0] === 12 && R.q12.src === 'manual'
     && R.q120.r.n === 108 && R.q120.r.skipped === 12 && R.q120.r.parts === 3 && R.q120.sizes.join() === '50,50,8' && R.q120.parts.join() === '1/3,2/3,3/3' && R.bar && R.sendArm.armed && !R.sendArm.g

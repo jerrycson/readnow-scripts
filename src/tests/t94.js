@@ -25,14 +25,14 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   await p.waitForTimeout(1200);
   R.live = await p.evaluate(() => ({ same: window.__card === document.querySelector('#sheet .pxcard[data-pxid="404935000"]'), today: document.querySelector('#sheet .pxcard[data-pxid="404935000"] .pxn b').textContent }));
   // 더하기 — 찾고 고르고 두 번 눌러 맡김
-  await p.evaluate(() => { S.app.cloudUrl = 'https://cloud.test'; }); await p.click('[data-pxadd]'); await p.waitForTimeout(400); await p.fill('#px_q', '테스트 책 5'); await p.waitForTimeout(500);
+  await p.evaluate(() => { S.app.cloudUrl = 'https://cloud.test'; S.sec.px_ops = true; pxDraw(true); }); /* (11/08) 직접 붙이기는 🛠 운영(접힘) 안 */ await p.click('[data-pxadd]'); await p.waitForTimeout(400); await p.fill('#px_q', '테스트 책 5'); await p.waitForTimeout(500);
   await p.check('[data-pxsel="404935005"]'); await p.waitForTimeout(200);
   await p.click('[data-pxgo1]'); await p.waitForTimeout(300);
   R.arm1 = await p.evaluate(() => ({ armed: (document.querySelector('[data-pxgo1]') || {}).textContent, n: Object.values(window.__FS.shp_cmds || {}).filter((c) => c.type === 'pxExp').length }));
   await p.click('[data-pxgo1]'); await p.waitForTimeout(900);
   R.arm2 = await p.evaluate(() => { const C = Object.values(window.__FS.shp_cmds || {}).filter((c) => c.type === 'pxExp'); const e = (window.__FS.px_exp || {})['404935005'] || {}; return { n: C.length, op: C[0] && C[0].op, ids: C[0] && C[0].listingIds, st: C[0] && C[0].status, ask: !!e.askAt, hist: (e.hist || []).length, mark: pxMark(S.plist.get('aladin_U215983415')), before: (window.__FS.px_exp || {})['404935000'].before.length }; });
   // 끝내기 — 두 번
-  await p.evaluate(() => { S.px.P.f = 'all'; pxDraw(true); }); await p.waitForTimeout(300);
+  await p.evaluate(() => { S.px.P.f = 'all'; pxCdOpen().add('404935000'); pxDraw(true); }); await p.waitForTimeout(300); /* (11/08) 그림 빼기는 카드 ▸ 자세히 안 */
   await p.click('[data-pxrm="404935000"]'); await p.waitForTimeout(200); const n1 = await p.evaluate(() => Object.values(window.__FS.shp_cmds || {}).filter((c) => c.type === 'pxExp' && c.op === 'remove').length);
   await p.click('[data-pxrm="404935000"]'); await p.waitForTimeout(800); const n2 = await p.evaluate(() => Object.values(window.__FS.shp_cmds || {}).filter((c) => c.type === 'pxExp' && c.op === 'remove').length); R.rm = [n1, n2];
   // 재고 품목 거르기
