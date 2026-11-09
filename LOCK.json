@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "1.78.431 단축키·빼기",
+ "since": "2026-11-09T03:30:36Z",
+ "beat": "2026-11-09T03:30:36Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.430/1.89.237 15f461b",
   "at": "2026-11-09T03:24:45Z"
  },
- "host": null
+ "host": "vm"
 }
