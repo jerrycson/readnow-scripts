@@ -10,7 +10,7 @@ echo "⓪ GitHub 확인 통로에 Hosting 작업도 허용"
 REPO=jerrycson/readnow-scripts
 RID=$(curl -fsS "https://api.github.com/repos/$REPO" | grep -m1 -oP '"id":\s*\K[0-9]+' || true)
 if [ -n "$RID" ]; then
-  COND="assertion.repository_id=='$RID' && assertion.ref=='refs/heads/main' && (assertion.workflow_ref.startsWith('$REPO/.github/workflows/deploy-cloud.yml@') || assertion.workflow_ref.startsWith('$REPO/.github/workflows/deploy-hosting.yml@'))"
+  COND="assertion.repository_id=='$RID' && assertion.ref=='refs/heads/main' && (assertion.workflow_ref.startsWith('$REPO/.github/workflows/deploy-cloud.yml@') || assertion.workflow_ref.startsWith('$REPO/.github/workflows/deploy-hosting.yml@') || assertion.workflow_ref.startsWith('$REPO/.github/workflows/hosting-domain.yml@'))"
   gcloud iam workload-identity-pools providers update-oidc readnow-scripts --location=global --workload-identity-pool=github --attribute-condition="$COND" >/dev/null
   echo "   통로 조건: 이 저장소 main의 클라우드 배포·Hosting 두 작업만"
 else echo "   ⚠ 저장소 번호를 못 읽음 — 한 번 더 실행해 주세요"; exit 1; fi

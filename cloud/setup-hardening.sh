@@ -23,7 +23,7 @@ echo "② GitHub 확인 통로 조이기"
 RID=$(curl -fsS "https://api.github.com/repos/$REPO" | grep -m1 -oP '"id":\s*\K[0-9]+')
 if [ -n "$RID" ]; then
 echo "   저장소 고유 번호 $RID"
-COND="assertion.repository_id=='$RID' && assertion.ref=='refs/heads/main' && (assertion.workflow_ref.startsWith('$REPO/.github/workflows/deploy-cloud.yml@') || assertion.workflow_ref.startsWith('$REPO/.github/workflows/deploy-hosting.yml@'))"
+COND="assertion.repository_id=='$RID' && assertion.ref=='refs/heads/main' && (assertion.workflow_ref.startsWith('$REPO/.github/workflows/deploy-cloud.yml@') || assertion.workflow_ref.startsWith('$REPO/.github/workflows/deploy-hosting.yml@') || assertion.workflow_ref.startsWith('$REPO/.github/workflows/hosting-domain.yml@'))"
 gcloud iam workload-identity-pools providers update-oidc "$PROV" --location=global --workload-identity-pool="$POOL" \
   --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.repository_id=assertion.repository_id,attribute.ref=assertion.ref,attribute.workflow_ref=assertion.workflow_ref" \
   --attribute-condition="$COND" >/dev/null
