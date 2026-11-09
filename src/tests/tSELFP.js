@@ -55,8 +55,8 @@ const LA = { co: '업체A', rep: '대표A', biz: '1234567890', tel: '010-0000-00
   ok(TL.pairs['shopA|shopB'] && TL.pairs['shopA|shopB'].px === 2, '같은 관찰 회차에 함께 값 바꾼 짝(2번)', TL.pairs);
 
   console.log('③ 판매자끼리 겹침 · 예스24↔알라딘 맞대기');
-  const cards = { shopA: { biz: true, legal: L, notes: [{ t: '안내', b: '주말 발송 없음' }] }, shopB: { biz: true, legal: X.y24LegalOf(legalDoc({ ...LA, co: '업체B', rep: '대표B', tel: '010-0000-0001', mail: 'b@example.com' })), notes: [{ t: '안내', b: '주말 발송 없음' }] },
-    shopC: { biz: true, legal: X.y24LegalOf(legalDoc({ ...LA, co: '업체C', biz: '9998887776', tel: '010-0000-0002', mail: 'c@example.com', from: '서울특별시 가나구 다라동 12-3 (마바빌딩) 909호', ret: '서울특별시 가나구 다라동 12-3 (마바빌딩) 909호' })) }, shopD: { biz: false, legal: null } };
+  const cards = { shopA: { biz: true, legal: L, notes: [{ t: '안내', b: '주말 발송 없음' }] }, shopB: { biz: true, legal: X.y24LegalOf(legalDoc({ ...LA, co: '업체B', rep: '대표B', tel: '010-1234-5678', mail: 'b@example.com' })), notes: [{ t: '안내', b: '주말 발송 없음' }] },
+    shopC: { biz: true, legal: X.y24LegalOf(legalDoc({ ...LA, co: '업체C', biz: '9998887776', tel: '010-1111-1111', mail: 'c@example.com', from: '서울특별시 가나구 다라동 12-3 (마바빌딩) 909호', ret: '서울특별시 가나구 다라동 12-3 (마바빌딩) 909호' })) }, shopD: { biz: false, legal: null } };
   const rows = []; ['9780000000001', '9780000000002', '9780000000003', '9780000000004'].forEach((isbn, i) => { rows.push({ isbn, sid: 'shopA', p: 10000 + i * 100, g: '상', s: 3000, fo: 30000 }); rows.push({ isbn, sid: 'shopB', p: 10500 + i * 100, g: '상', s: 3000, fo: 30000 }); if (i < 1) rows.push({ isbn, sid: 'shopD', p: 9000, g: '중', s: 2500, fo: 20000 }); });
   const alRows = { '9780000000001': [{ sc: '111', p: 10000, g: '상' }, { sc: '222', p: 7000, g: '중' }], '9780000000002': [{ sc: '111', p: 10100, g: '상' }, { sc: '222', p: 7100, g: '중' }], '9780000000003': [{ sc: '111', p: 10200, g: '상' }, { sc: '222', p: 7000, g: '중' }], '9780000000004': [{ sc: '222', p: 9000, g: '하' }] };
   const alSellers = [{ id: 'sc_111', bizNo: '123-45-67890', company: '업체A', phone: '010-0000-0000' }, { id: 'sc_333', bizNo: '5556667778', company: '(주)업체C', returnAddress: '서울특별시 가나구 다라동 12-3 (마바빌딩) 909호' }];
