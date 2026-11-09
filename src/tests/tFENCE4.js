@@ -1,6 +1,6 @@
 // tFENCE4 — 11/10 일꾼 fence4 · 정범님 11/09 밤 '감시 그룹 자동 반영과 추격자는 손해를 감수할 수밖에 없는 기능 — 내가 결정해서 할 일인데 기능을 왜 꺼?'
 //  ① 🛰 감시 그룹 자동 반영·🎯 추격자(정범님 운영 기능)는 연구 울타리(🔒 잠금 90일·14일 · 사람 손댐 목록 · 무손해 모드 · 하루 손해 한도)로 막지 않음 — 원장엔 얼마 내렸는지 기록만
-//  ② 연구·엔진(⚡ 전략 실행 · 전체 비율 실험 · 🔬 조회수 실험 새로 붙이기)은 '정범님이 손대 진행 중인 상품'(켜진 감시 그룹·추격자 그룹) · 등록 3개월 안 · 고친 지 14일 안을 안 건드림
+//  ② 값·상태를 바꾸는 연구·엔진(⚡ 전략 실행 · 전체 비율 실험)은 · (eng3 11/10) 🔬 조회수 실험 새로 붙이기는 값·비용을 안 건드려 잠긴 상품도 함 · '정범님이 손대 진행 중인 상품'(켜진 감시 그룹·추격자 그룹) · 등록 3개월 안 · 고친 지 14일 안을 안 건드림
 //  ③ 💸 비용 드는 연구 허락: app_settings/research_cost_ok(웹앱 두 번 누르기로만 · 기본 없음)이 없으면 값 내리기·판매 상태 바꾸기를 막고 '정범님 허락 필요'로 기록 · 한도 = 허락 한도와 하루 손해 한도 중 작은 값
 //  ④ 지금 손해 관련 설정(무손해 기본 켜짐 · 하루 손해 한도 10,000원 셈)은 그대로
 // 시험 자료에 손님 정보 없음(상품 번호·꾸민 값만)
@@ -38,10 +38,10 @@ const APPP = find(['../app.html', '../../src/app.html', '../../app.html']); cons
   { const groups = [{ id: 'g', auto: true, on: true, lids: ['100', '200', '300', '400', '500'] }]; const old = kdt(NOW - 200 * D);
     const L = new Map([['100', { reg: old, ops: true }], ['200', { reg: old }], ['300', { reg: old, hu: iso(NOW - 3 * D) }], ['400', { reg: old, hu: iso(NOW - 20 * D) }], ['500', { reg: kdt(NOW - 10 * D) }]]);
     const R = AS.pxPlan({ now: NOW, cfg: { cap: 10, recap: 10 }, groups, listings: L, exp: new Map(), busy: new Set(), rnd: () => 0.5 }); const ids = (R.docs || []).map((x) => (x.data.listingIds || []).join(',')).join(',');
-    ok(/200/.test(ids) && /400/.test(ids) && !/100/.test(ids) && !/300/.test(ids) && !/500/.test(ids) && R.opsLock === 2 && R.newLock === 1, `🔬 조회수 실험 새로 붙이기: 진행 중·고친 지 14일 안·등록 3개월 안은 빼고 오래된 것만(붙임 ${ids} · 진행 중/고침 ${R.opsLock} · 새 상품 ${R.newLock})`, { ids, R: [R.opsLock, R.newLock] });
+    ok(['100', '200', '300', '400', '500'].every((k) => ids.includes(k)) && R.opsLock === 0 && R.newLock === 0 && R.lockIn && R.lockIn.ops === 2 && R.lockIn.new === 1 && R.lastPlan.lockIn.ops === 2, `🔬 조회수 실험 새로 붙이기(값·비용 안 건드림 — eng3 정범님 11/09 밤 바로잡음): 진행 중·고친 지 14일 안·등록 3개월 안도 넣음 · 몇 개인지 세어 기록만(붙임 ${ids} · 진행 중/고침 ${R.lockIn && R.lockIn.ops} · 새 상품 ${R.lockIn && R.lockIn.new})`, { ids, R: [R.opsLock, R.newLock, R.lockIn] });
     const R2 = AS.pxPlan({ now: NOW, cfg: { cap: 10, recap: 10 }, groups, listings: L, exp: new Map([['100', { on: true, addedAt: '2026-10-01' }]]), busy: new Set(), rnd: () => 0.5 }); ok(R2.plan[0] && R2.plan[0].chk === 1, '이미 붙은 것의 확인·떼기는 그대로(진행 중이어도)', R2.plan);
-    const px = SRC.slice(SRC.indexOf('async function pxOpsSet('), SRC.indexOf('async function pxDailyTick(') + 6000); ok(/where\('watch\.gid', 'in', ids\.slice\(i, i \+ 10\)\)/.test(px) && /if \(!OPS\) \{/.test(px) && /ops: OPS\.has\(String\(x\.listingId\)\)/.test(px) && /hu: \/@\/\.test\(String\(x\.editBy/.test(px), '클라우드 조회수 계획: 켜진 감시 그룹 상품·사람이 고친 때를 넘김 · 못 읽으면 그날 계획 쉼(안전 쪽)');
-    ok(!COL || (/ops: OPS\.has\(String\(l\.listingId\)\)/.test(COL) && /hu: \/@\/\.test\(String\(l\.editBy/.test(COL)), 'PC 수집기 조회수 계획도 같은 재료'); }
+    const px = SRC.slice(SRC.indexOf('async function pxOpsSet('), SRC.indexOf('async function pxDailyTick(') + 6000); ok(/where\('watch\.gid', 'in', ids\.slice\(i, i \+ 10\)\)/.test(px) && !/if \(!OPS\) \{/.test(px) && /const OPS = \(await pxOpsSet\(\)\) \|\| new Set\(\);/.test(px) && /ops: OPS\.has\(String\(x\.listingId\)\)/.test(px) && /hu: \/@\/\.test\(String\(x\.editBy/.test(px), '클라우드 조회수 계획: 켜진 감시 그룹 상품·사람이 고친 때를 넘김(세기만) · 못 읽어도 계획은 그대로(값·비용 안 건드림)');
+    ok(!COL || (/ops: OPS\.has\(String\(l\.listingId\)\)/.test(COL) && /hu: \/@\/\.test\(String\(l\.editBy/.test(COL) && !/상품을 못 읽어 오늘 계획은 쉼\(안전 쪽\) — ' \+ e\.message, 1\); return false; \}/.test(COL)), 'PC 수집기 조회수 계획도 같은 재료 · 못 읽어도 계획은 그대로'); }
 
   console.log('② 🛰 감시 자동 반영·🎯 추격자 — 연구 울타리 없이 그룹 설정대로');
   { ok(!/if \(!keepW && chg && LOCK && wg\.watch\.apply === 'auto'\)/.test(PW) && /if \(wg\.watch\.apply !== 'auto'\) why\.push\('관리자 승인 그룹'\);/.test(PW), '판정: 🔒 연구 잠금으로 자동 반영을 판정만으로 바꾸지 않음 · 승인 그룹 까닭 글에 🔒 안 붙임');
@@ -76,7 +76,7 @@ const APPP = find(['../app.html', '../../src/app.html', '../../app.html']); cons
   ok(/function costOkCard\(\)/.test(APP) && /sxArm\('data-costok', '1', `💸 허락: \$\{whatL\} · 하루 \$\{num\(lim\)\}원 · \$\{until\}까지`\)/.test(APP) && /via: 'twice'/.test(APP) && /\+ top \+ costC \+ tabs \+ body/.test(APP), "⚡ 전략 화면 맨 위 '💸 비용 드는 연구 허락' — 두 번 누르기 단추 글에 대상·하루 한도·끝나는 날");
   ok(/sxArm\('data-costoff', '1', '허락 거두기', 'warn'\)/.test(APP) && /hist: firebase\.firestore\.FieldValue\.arrayUnion/.test(APP), '거두기도 두 번 누르기 · 허락·거두기 이력은 지우지 않고 덧붙임');
   { const cardFn = APP.slice(APP.indexOf('function costOkCard()'), APP.indexOf('function costOkCard()') + 4000); ok(!/\b(alert|confirm|prompt)\(/.test(cardFn) && !/\b(alert|confirm|prompt)\(/.test(APP.slice(APP.indexOf("const ok = sh.querySelector('[data-costok]')"), APP.indexOf("const ok = sh.querySelector('[data-costok]')") + 2500)), '브라우저 팝업(alert·confirm·prompt) 없음'); }
-  ok(/🔒 등록 3개월 안 — 연구·엔진만 안 건드림/.test(APP) && /🛰 감시 그룹 자동 반영·🎯 추격자·직접 가격·수동 일괄·상품 수정은 정범님 설정대로 그대로 됨/.test(APP) && !/'🔒 등록 3개월 안 — 엔진 안 건드림'/.test(APP), "상품 카드: '연구·엔진만 안 건드림'으로 분명히(감시 그룹 상품에 오해 없게)");
+  ok(/🔒 등록 3개월 안 — 연구·엔진이 값·비용을 건드리지 않음\(관찰·값 안 바꾸는 시험은 함\)/.test(APP) && /🛰 감시 그룹 자동 반영·🎯 추격자·직접 가격·수동 일괄·상품 수정은 정범님 설정대로 그대로 됨/.test(APP) && !/'🔒 등록 3개월 안 — 엔진 안 건드림'/.test(APP), "상품 카드: '연구·엔진이 값·비용을 건드리지 않음(관찰·값 안 바꾸는 시험은 함)'으로 분명히(eng3)");
   ok(/🛰 감시 자동 반영·🎯 추격자는 정범님 그룹 설정대로\(연구 울타리 없음/.test(APP) && /\$\{costOkTxt\(F\.co\)\}/.test(APP), '울타리 줄: 감시·추격자는 그룹 설정대로 · 허락 상태 한 줄');
 
   console.log('⑤ 가격 감시기 모의 실행(jsdom · 가짜 Firestore · 알라딘 흉내)');
