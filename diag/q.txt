@@ -1,2 +1,2 @@
-doc=app_settings/ml_state,app_settings/strat_run,app_settings/strat_cnt,app_settings/sp_panel,app_settings/sp_obs,app_settings/extras_study,app_settings/ratio_study,app_settings/badge_study,app_settings/buyback_stats,app_settings/value_factors,app_settings/kpb,app_settings/kpb_ocr,app_settings/pxDaily,app_settings/mkt_trend_state,app_settings/freeship_stats,app_settings/value_cfg,app_settings/oop_hist,app_settings/strat,app_settings/cloud_jobs
-# 2228522134
+@health&hours=3
+# 3142825298
