@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "1.78.428 출고 중 제외·추격자 그룹별",
+ "since": "2026-11-09T03:16:06Z",
+ "beat": "2026-11-09T03:16:06Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.427/1.89.235/work 0.1.1/col2 0.1.3 db06e0a",
   "at": "2026-11-09T03:09:36Z"
  },
- "host": null
+ "host": "vm"
 }
