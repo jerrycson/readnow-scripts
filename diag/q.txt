@@ -1,2 +1,2 @@
-samp=prd_books,prd_book_metrics,prd_metric_changes,prd_rank_periods,prd_dyn_history,prd_market_nobook,prd_explore,sellers,seller_reviews,seller_review_daily,seller_rev6m,seller_history,ext_basic,ext_used,ext_foreign,ext_lib,ext_ebook,ext_pool,ext_hist,ext_probe&extidx=1&health=1&hours=24&metcov=1&doc=prd_system/autoSched,app_settings/ext,app_settings/bench,app_settings/seller_queue
-# 610122884
+samp=bench_books,mkt_kpipa,mkt_kpipa_posts,ext_fx,ext_cand,prd_handoff,prd_used_info,prd_market_more,prd_market_watch,prd_listing_changes,pur_matches,seller_queue,prd_lookups,prd_newbook,col2_books&doc=app_settings/ext_run,app_settings/bi_x,app_settings/ext_cover_stat,prd_jobs/autoSched&logs=1&pc=LOGGER&from=202611080000&to=202611082359&kpstat=1
+# 3045730751
