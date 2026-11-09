@@ -8,7 +8,7 @@
 // @updateURL    https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-price-watch.user.js
 // @downloadURL  https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-price-watch.user.js
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.2
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.2
+// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.3
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.7
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.17.12
 // @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-aladin-core.js?v=0.2.1
