@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "1.78.432 알라딘창·링크 통합",
+ "since": "2026-11-09T03:34:09Z",
+ "beat": "2026-11-09T03:34:09Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.431 8ac5e79",
   "at": "2026-11-09T03:30:45Z"
  },
- "host": null
+ "host": "vm"
 }
