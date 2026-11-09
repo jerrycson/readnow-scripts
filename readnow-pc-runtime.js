@@ -1,11 +1,29 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.241의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.242의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.241' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.241', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.242' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.242', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
+/* (11/10 정범님 11/09 밤 '내가 따로 손댈 일 없이 적용되는 거야?') 🛡 Microsoft Clarity(방문 녹화)를 수집기가 알라딘 화면마다 손 0으로 막음 — 사무실 PC마다 웹앱 단추·관리자 허락 창을 누를 일 없게
+ *  왜 이 길: 수집기 머리는 @run-at document-idle(화면 글을 다 읽은 뒤 깨어남)이고 머리·로더를 바꾸면 PC마다 Tampermonkey 업데이트를 사람이 눌러야 함(약속 5) → '화면 맨 처음'에는 못 끼어듦
+ *    그러나 알라딘의 Clarity는 화면 끝의 구글 태그 관리자(GTM-NFVWV75 · async) → Clarity 태그(clarity.ms/tag/u5bx3exnb0 · async) → 본체(scripts.clarity.ms/0.8.75/clarity.js · async) 세 파일을 차례로 받아야 시작함(11/07 샵매니저 원문 aladin_raw wrecord_edit로 확인)
+ *    → 수집기가 깨어날 때 본체가 아직 안 돌았으면: window.clarity 자리에 '이미 Clarity가 있음' 표(v)를 단 빈 함수를 먼저 둠
+ *       · 근거(clarity-js 0.8.75 원문 queue.ts process): window.clarity.v가 있으면 'CL001 Multiple Clarity tags'만 남기고 시작하지 않음 → 녹화·기록·보내기 0 · 태그 조각(a[b]=a[b]||…)도 우리 함수를 그대로 둠 · 덮어쓰기는 무시(오류 안 냄)
+ *    → 이미 돌고 있으면(본체가 먼저 돈 화면): 공식 clarity('stop')으로 바로 멈춘 뒤 같은 표를 덮음(다시 시작 못 하게) — 1.89.235는 숨은 틀을 만들 때만 멈췄음 → 이제 알라딘 화면마다 깨어나자마자
+ *    → 같은 출처 틀(iframe — 수집기의 숨은 수정·등록 틀 · 알라딘 화면 속 틀): 틀 문서가 바뀔 때마다 0.1초 안에 같은 표를 넣음(틀 속 Clarity도 세 파일을 받아야 시작) · 이미 돌면 멈춤
+ *  한계(정직하게): 파일 받기 자체(GTM·태그)는 못 막음(그건 hosts — 웹앱 🛡 단추 · 이제 선택) · 드물게 본체가 수집기보다 먼저 돈 화면은 깨어나자마자 멈춤(그 사이 몇 초는 녹화됨)
+ *  알라딘 화면 동작·요청 수는 그대로 · 로거 크롬(rn-pubChrome)은 건드리지 않음(로거 도우미가 이미 막음 · 약속 0) · 끄기: 이 PC 수집기 저장소 rn-clarity-off = true · 셈은 PC 신호(pcBeat.blk.cg)로 웹앱 🖥 기기 운영 보고에 */
+(function rnClarityGuard() { const G = globalThis; try { if (window.top !== window || !/(^|\.)aladin\.co\.kr$/i.test(location.hostname) || G.__rnPubChrome || GM_getValue('rn-clarity-off', false)) return; } catch (e) { return; }
+  const UW = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window; const S = { on: true, pre: 0, stop: 0, frPre: 0, frStop: 0, since: Date.now() }; G.__rnClarityGuard = S;
+  const guard = (w) => { try { const c = w.clarity; if (c && c.__rnBlk) return 'had'; let ran = false; if (typeof c === 'function' && c.v) { try { c('stop'); ran = true; } catch (e) {} }
+      const f = function () {}; f.v = 'rn-block'; f.t = true; f.q = []; f.__rnBlk = 1; Object.defineProperty(w, 'clarity', { configurable: true, enumerable: false, get: () => f, set: () => {} }); return ran ? 'stop' : 'pre'; } catch (e) { return null; } };
+  const r0 = guard(UW); if (r0 === 'pre') S.pre++; else if (r0 === 'stop') S.stop++;
+  const FR = new WeakMap(); /* 틀 → 표를 넣은 문서(문서가 바뀌면 다시) */
+  const scan = () => { try { const L = document.querySelectorAll('iframe,frame'); for (let i = 0; i < L.length; i++) { const f = L[i]; let w = null, d = null; try { w = f.contentWindow; d = w && w.document; } catch (e) { continue; } if (!w || !d || FR.get(f) === d) continue; let same = false; try { same = w.location.hostname === location.hostname; } catch (e) {} if (!same) continue; FR.set(f, d); const r = guard(w); if (r === 'pre') S.frPre++; else if (r === 'stop') S.frStop++; } } catch (e) {} };
+  setInterval(scan, 100); setTimeout(() => { try { window.__rnLog && window.__rnLog('수집기', 'info', `🛡 이 화면의 Microsoft Clarity(방문 녹화) — ${S.stop ? '이미 돌고 있어 바로 멈춤' : '시작 전에 막음'}(사람 손 0 · 끄기: 이 PC 저장소 rn-clarity-off)`); } catch (e) {} }, 4000);
+})();
 /* (1.88.5) ⏱ 탭 성능 기록 — 정범님 10/20 '수집기 때문에 크롬 전체가 엄청 느려짐'(두 번째) · 짐작이 아니라 실측: 탭마다 5분에 한 번 작업 기록(rn_logs)에 한 줄
  *  역할·화면·힙(MB)·화면 요소 수·긴 작업(50ms 넘게 화면을 막은 것) 횟수·합계·되풀이 타이머(setInterval)마다 쓴 시간 상위·Tampermonkey 저장소 쓰기(GM_setValue) 횟수·크기 상위 · 값은 숫자와 함수 앞부분만(고객 정보 없음) */
 (function rnPerfProbe() { const G = globalThis; if (window.top !== window || G.__rnPerf) return; const P = G.__rnPerf = { t0: Date.now(), iv: new Map(), gm: new Map(), lt: { n: 0, ms: 0, max: 0 } };

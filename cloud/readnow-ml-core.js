@@ -6,7 +6,7 @@
  *   → ④ 새 모델이 지금 모델보다 3번 연속 확실히 나으면(로그 손실 1% 넘게 낮음) 승격. 처음 '지금 모델'은 기준선(자리 1위 여부·등급별 평균 판매율)
  * 쓰는 곳: 웹앱 전략도구의 조언 금액(그림자 표시), 앞으로 판정 엔진의 '권당 하루 기대 순이익'. 알라딘에 아무것도 바꾸지 않음 — 계산만. */
 (function (root) {
-  const VERSION = '0.9.5'; // (0.9.5) 🏷 기대 매입가(bbExpect)에 정가를 받아 정가보다 큰 견적은 무시 · 글을 '기대 매입가'로 // (0.9.4) ⚡ 희소 전략 경쟁 매물 셈에서 무시 판매자 빼기(넘길 때만) // (0.9.3) 판매가 평가 v0.3-rule: 유효 최저가 = 같은 등급 + 더 좋은 등급 중 가장 싼 값 · 등급 글자 없는 줄은 중 // (0.9.2) 📝 판매가 평가 사유별 묶음 sevReasonGroups(세기만 · 가중치 없음) // (0.9.1) ⚡ 전략 독립 검토 고침 — 자기가 멈춘 것만 내놓기·기다림 되풀이 막기·빈 첫 쪽/우리 줄 없음/오래된 신호 안 씀·등급 모르는 매물도 경쟁·🐢는 매입가 알 때만·사람 수정 감지·되돌림 쉬기·설정 값 범위 // (0.9.0) ⚡ 전략 실행(STRATS · stratDecide · stratGuard — 웹앱 미리 보기와 클라우드 실행이 같은 판단) // (0.8.2) extrasOf: 도서관·바코드·가격표 스티커와 넘버링 도장은 특전·한정에서 뺌 // (0.8.1) bbAccept: 불가 내역을 다 읽기 전엔 우리 상태별 매입률을 쓰지 않음 // (0.8.0) valueTrain 무게(w)·판매 수(y) — 벤치마킹 사라짐 표본 · extrasOf(유의 사항의 박스·미개봉·특전·한정판·사인) // (0.7.0) // (0.7.0) 기대 매입가에 매입될 확률(bbAccept — 매입불가 상품 내역까지 읽은 실측) // (0.6.0) 알라딘 매입 기대값(bbExpect — 우리 실제 매입 기록의 등급별 지급 비율 · 유의 사항에 하자가 있으면 매입 없음) · 하자 표시(defectOf) // (0.5.1) rawRow: 첫 페이지 못 읽으면 자리 null · top(맨 윗줄이 우리 = 최저가배지) // (0.5.0) 정범님 10/19 '정가가 고객의 첫 기준' — 정가 대비 우리 값 칸(<35%·35~50%·50%+)을 수요×자리 칸 안에서 배움(cells3 · 줄이 적으면 수요×자리 값으로 당김) · valueOf·valueRec가 씀 // (0.4.0) 🧠 valueRec — 등록·매입 때 판매가치 엔진으로 추천가·판매 확률·매입 판단(살 이유·사지 말 이유) 한 곳 // (0.3.0) 🧠 판매가치 엔진 v1(VALUE) — 수요(Sales Point)×자리(첫 페이지 순위)×값(동급 최저 대비)의 하루 판매 확률 표를 우리 판매 자료로 매일 배움 · 희소/희귀 분류 · 상품마다 전략과 기대 판매 // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
+  const VERSION = '0.9.6'; // (0.9.6) 멈춤 감시 stallCheck(36시간) · 그날 값으로 되짚는 asOfMetrics·listingAsOf // (0.9.5) 🏷 기대 매입가(bbExpect)에 정가를 받아 정가보다 큰 견적은 무시 · 글을 '기대 매입가'로 // (0.9.4) ⚡ 희소 전략 경쟁 매물 셈에서 무시 판매자 빼기(넘길 때만) // (0.9.3) 판매가 평가 v0.3-rule: 유효 최저가 = 같은 등급 + 더 좋은 등급 중 가장 싼 값 · 등급 글자 없는 줄은 중 // (0.9.2) 📝 판매가 평가 사유별 묶음 sevReasonGroups(세기만 · 가중치 없음) // (0.9.1) ⚡ 전략 독립 검토 고침 — 자기가 멈춘 것만 내놓기·기다림 되풀이 막기·빈 첫 쪽/우리 줄 없음/오래된 신호 안 씀·등급 모르는 매물도 경쟁·🐢는 매입가 알 때만·사람 수정 감지·되돌림 쉬기·설정 값 범위 // (0.9.0) ⚡ 전략 실행(STRATS · stratDecide · stratGuard — 웹앱 미리 보기와 클라우드 실행이 같은 판단) // (0.8.2) extrasOf: 도서관·바코드·가격표 스티커와 넘버링 도장은 특전·한정에서 뺌 // (0.8.1) bbAccept: 불가 내역을 다 읽기 전엔 우리 상태별 매입률을 쓰지 않음 // (0.8.0) valueTrain 무게(w)·판매 수(y) — 벤치마킹 사라짐 표본 · extrasOf(유의 사항의 박스·미개봉·특전·한정판·사인) // (0.7.0) // (0.7.0) 기대 매입가에 매입될 확률(bbAccept — 매입불가 상품 내역까지 읽은 실측) // (0.6.0) 알라딘 매입 기대값(bbExpect — 우리 실제 매입 기록의 등급별 지급 비율 · 유의 사항에 하자가 있으면 매입 없음) · 하자 표시(defectOf) // (0.5.1) rawRow: 첫 페이지 못 읽으면 자리 null · top(맨 윗줄이 우리 = 최저가배지) // (0.5.0) 정범님 10/19 '정가가 고객의 첫 기준' — 정가 대비 우리 값 칸(<35%·35~50%·50%+)을 수요×자리 칸 안에서 배움(cells3 · 줄이 적으면 수요×자리 값으로 당김) · valueOf·valueRec가 씀 // (0.4.0) 🧠 valueRec — 등록·매입 때 판매가치 엔진으로 추천가·판매 확률·매입 판단(살 이유·사지 말 이유) 한 곳 // (0.3.0) 🧠 판매가치 엔진 v1(VALUE) — 수요(Sales Point)×자리(첫 페이지 순위)×값(동급 최저 대비)의 하루 판매 확률 표를 우리 판매 자료로 매일 배움 · 희소/희귀 분류 · 상품마다 전략과 기대 판매 // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
   const HORIZON_D = 7; // 7일 안에 팔렸나
   const GR = ['최상', '상', '중'];
   /* rawRow: 하루 모습 한 줄 (클라우드 ml_days ML_VER 1과 같은 칸) — l = 상품(prd_listings), m = 시장 지표(prd_book_metrics), a = 마지막 가격 변경 {at, from, batchId}, wg = 감시 그룹, nowMs = 그날 끝 */
@@ -334,6 +334,37 @@
     if (d.act === 'pause' || d.act === 'resume') { const lf = Date.parse(st.flipAt || '') || 0; if (lf && (now - lf) / 36e5 < C.flipH) no.push(`판매 상태를 ${Math.round((now - lf) / 36e5)}시간 전에 바꿈(${C.flipH}시간에 한 번 — 깜빡임 막기)`); if (d.act === 'pause' && !/^판매중$/.test(l.status || '')) no.push('이미 판매중이 아님'); if (d.act === 'resume' && !/일시판매중지/.test(l.status || '')) no.push('일시판매중지가 아님'); }
     if (d.act === 'price') { const cur = +l.price || 0, to = +d.to || 0; if (!(to >= 10)) no.push('새 값이 이상함'); if (cur && Math.abs(to - cur) / cur > C.maxStep + 1e-9) no.push(`한 번에 ${Math.round(Math.abs(to - cur) / cur * 100)}% — ${Math.round(C.maxStep * 100)}%까지만`); const fl = stratFloor(ctx, C); if (to < fl.v && to < cur) no.push(`바닥값 ${fl.v.toLocaleString()}원(${fl.why}) 아래로 내림`); if (to === cur) no.push('값이 같음'); }
     return { ok: !no.length, no }; }
-  const api = { VERSION, VDEF, setBuyback, bbExpect, bbAccept, BB_ACC, extrasOf, EX_LABEL, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, sevReasonGroups, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue, STRATS, STRAT_K, SDEF, stratDecide, stratGuard, stratMarket, stratFloor, stratCeil, stratParams, stratRarity };
+  /* ── (11/09 엔진 점검 · 하루 모습 멈춤 고침) 🫀 엔진 심장 박동 + 빠진 하루 모습 다시 만들기 (순수 함수 — 클라우드·웹앱·시험이 같은 것) ──
+   *  stallCheck(docs, nowMs, cfg) → 엔진마다 { k, name, at(마지막 학습·기록 시각 ms), ageH, red } · docs = { ml_state, value_model, sp_obs }
+   *   기준 시간 STALL_H = 36시간(근거: 없음, 설정으로 바꿈 — app_settings/ml_state.stallH) · 자료 날짜(…days 마지막 날)는 '그다음 날 0시(한국)'에 그 자료가 다 모인 것으로 셈
+   *  asOfMetrics(cur, ev, cutMs) → 그때(cutMs)의 시장 지표 추정 — cur = 지금 prd_book_metrics · ev = 그 책의 prd_metric_changes(오름차순 · at ms)
+   *   칸 값(salesPoint·priceList·usedTotal·buyback…) = cut 앞 마지막 바뀜의 to → 없으면 cut 뒤 첫 바뀜의 from → 그것도 없으면 지금 값(그사이 안 바뀜)
+   *   첫 페이지(usedFirstPage) = cut 앞 마지막 'usedListings' 기록의 page → 없고 cut 뒤에도 기록이 없으면 지금 페이지 → cut 뒤에만 있으면 모름(빈 페이지 = 자리 모름)
+   *   읽은 때(lastCheckedAt)는 모름으로 둠(바뀐 때만 기록이 남아 '읽은 지 며칠'을 지어내지 않음) */
+  const STALL_H = 36;
+  function stallCheck(docs, nowMs, cfg) { docs = docs || {}; nowMs = nowMs || Date.now(); const st = docs.ml_state || {}, vm = docs.value_model || {}, so = docs.sp_obs || {};
+    const H = +((cfg && cfg.stallH) || st.stallH) || STALL_H; const ms = (v) => { const t = Date.parse(v || ''); return Number.isFinite(t) ? t : null; };
+    const dayDone = (L) => { const d = (Array.isArray(L) ? L.slice().sort() : []).pop(); return d ? Date.parse(d + 'T00:00:00+09:00') + 864e5 : null; };
+    const L = [
+      { k: 'ml_days', name: '📸 하루 모습 기록(ml_days)', at: ms(st.at) || (st.lastDay ? Date.parse(st.lastDay + 'T01:00:00+09:00') : null) },
+      { k: 'ml_learn', name: '📈 팔릴 확률 스스로 배우기', at: ms((st.learn || {}).at) },
+      { k: 'value_model', name: '🧠 판매가치 표 배우기', at: ms(vm.trainedAt) },
+      { k: 'value_data', name: '🧠 판매가치 표의 우리 자료(하루 모습 마지막 날)', at: dayDone(vm.days) },
+      { k: 'sp_obs', name: '🔬 SP 변화 관찰 자료(마지막 날)', at: dayDone(so.days) }];
+    return { stallH: H, rows: L.map((x) => { const ageH = x.at == null ? null : Math.round((nowMs - x.at) / 36e5 * 10) / 10; return { ...x, ageH, red: x.at == null || ageH > H }; }) }; }
+  function asOfMetrics(cur, ev, cutMs) { cur = cur || {}; ev = ev || []; const m = { ...cur }; delete m.lastCheckedAt; const seen = new Set();
+    for (const e of ev) { if (!e.changes) continue; for (const [f, v] of Object.entries(e.changes)) { if (!v || typeof v !== 'object' || !('to' in v)) continue; if (e.at <= cutMs) { m[f] = v.to; seen.add(f); } else if (!seen.has(f)) { m[f] = v.from; seen.add(f); } } }
+    const pg = ev.filter((e) => e.kind === 'usedListings'); const before = pg.filter((e) => e.at <= cutMs).pop(); const after = pg.find((e) => e.at > cutMs);
+    if (before) { m.usedFirstPage = before.page || []; if (before.usedTotal != null) m.usedTotal = before.usedTotal; } else if (after) m.usedFirstPage = []; /* cut 앞 페이지를 모름 → 자리 모름(p1 0) */
+    return m; }
+  /* listingAsOf(l, acts, sold, cutMs) → 그때 판매중이었던 상품이면 { ...l, price: 그때 값 } · 아니면 null
+   *  판매중 = 등록이 cut 앞 · 지금 판매중이거나, cut 뒤에 팔렸거나(sold = 판매 시각 ms), 판매완료가 아닌데 cut 뒤에도 목록에서 봄(lastSeenAt)
+   *  그때 값 = cut 앞 마지막 가격 변경의 to → 없으면 cut 뒤 첫 변경의 from → 없으면 지금 값 (acts 오름차순 · at ms) */
+  function listingAsOf(l, acts, sold, cutMs) { if (!l) return null; const reg = Date.parse(String(l.registeredAt || '').slice(0, 10) + 'T00:00:00+09:00'); if (!(reg <= cutMs)) return null;
+    const soldBefore = sold != null && sold <= cutMs; if (soldBefore) return null; const seen = Date.parse(l.lastSeenAt || '') || 0;
+    const on = l.active === true || (sold != null && sold > cutMs) || (!/판매완료/.test(String(l.status || '')) && seen > cutMs); if (!on) return null;
+    let price = l.price ?? null; const A = (acts || []).filter((a) => a.to != null); const b = A.filter((a) => a.at <= cutMs).pop(); const f = A.find((a) => a.at > cutMs); if (b) price = b.to; else if (f && f.from != null) price = f.from;
+    return { ...l, price }; }
+  const api = { VERSION, VDEF, setBuyback, bbExpect, bbAccept, BB_ACC, extrasOf, EX_LABEL, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, sevReasonGroups, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue, STRATS, STRAT_K, SDEF, stratDecide, stratGuard, stratMarket, stratFloor, stratCeil, stratParams, stratRarity, STALL_H, stallCheck, asOfMetrics, listingAsOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowML = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
