@@ -18,7 +18,7 @@ const F = require('./fixtures.js');
     ok((await H.api('GET', '/status', null, { Origin: 'https://evil.test' })).st === 403, '다른 웹 페이지 출처 거절');
     const wo = await H.api('GET', '/status', null, { Origin: 'https://jerrycson.github.io' }); ok(wo.st === 200 && wo.h['access-control-allow-origin'] === 'https://jerrycson.github.io' && wo.h['access-control-allow-private-network'] === 'true', '웹앱 출처(Pages)는 받음 + 이 PC 주소 허락 머리');
     ok((await H.req('GET', '/status', null, { 'X-RN-Col2': '1', Host: 'evil.test:' + H.port })).st === 403, 'Host가 127.0.0.1이 아니면 거절(주소 바꿔치기 막음)');
-    const pg = await H.req('GET', '/'); ok(pg.st === 200 && /번외 수집 상태/.test(pg.b) && /🪟 보이기/.test(pg.b) && !/alert\(|confirm\(|prompt\(/.test(pg.b), '주소창 / = 상태 창 화면(팝업 없음)');
+    const pg = await H.req('GET', '/'); ok(pg.st === 200 && /📊 번외 수집기/.test(pg.b) && /🪟 보이기/.test(pg.b) && !/alert\(|confirm\(|prompt\(/.test(pg.b), '주소창 / = 상태 창 화면(팝업 없음)');
     ok((await H.req('GET', '/', null, { Origin: 'https://jerrycson.github.io' })).st === 403, '상태 창 화면은 다른 출처에서 못 엶');
     const s0 = (await H.api('GET', '/status')).j; ok(s0.on === false && s0.port === H.port && s0.ver === require('../col2-config.js').COL2_VER, '처음엔 꺼짐 · 시험 포트 · 판 = col2-config.js COL2_VER(판 올릴 때마다 시험을 고치지 않게)');
 

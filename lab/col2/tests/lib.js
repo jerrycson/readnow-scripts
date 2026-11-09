@@ -29,7 +29,7 @@ const S=JSON.parse(fs.readFileSync(${JSON.stringify(WJ)},'utf8'));const vs={x:0,
 if(!procs.length)delete S[mark];else if(!S[mark])S[mark]={r:{x:300,y:200,w:1280,h:900},tool:false,ic:false,front:0};
 const w=S[mark];const n=(k)=>{const v=g(k);return v==null?null:+v};
 if(w&&procs.length){if(act==='hide'){const W=Math.max(400,n('W')||0),H=Math.max(300,n('H')||0);w.r=place==='edge'?{x:1914,y:1074,w:W,h:H}:{x:vs.x-W-400,y:40,w:W,h:H};w.tool=true;w.ic=false}
-else if(act==='show'){w.tool=false;let X=n('X'),Y=n('Y'),W=n('W'),H=n('H');if(!(W>=200&&H>=150)){W=1200;H=820;X=360;Y=130}w.r={x:X,y:Y,w:W,h:H};w.front++}
+else if(act==='show'){w.tool=false;let X=n('X'),Y=n('Y'),W=n('W'),H=n('H');if(!(W>=60&&H>=40)){W=1200;H=820;X=360;Y=130}w.r={x:X,y:Y,w:W,h:H};w.top=g('Top')==='1';w.front++}
 else if(act==='close'){procs.forEach((p)=>{try{process.kill(+p)}catch(e){}});delete S[mark]}}
 let killed=0;if(act==='kill'){procs.forEach((p)=>{try{process.kill(+p,'SIGKILL');killed++}catch(e){}});delete S[mark];S.kills=(S.kills||0)+killed}
 const tmp=${JSON.stringify(WJ)}+'.'+process.pid;fs.writeFileSync(tmp,JSON.stringify(S));fs.renameSync(tmp,${JSON.stringify(WJ)});const W2=act==='kill'?null:S[mark]; /* 한 번에 바꿔 끼움(읽는 쪽이 반쯤 쓴 파일을 보지 않게) */

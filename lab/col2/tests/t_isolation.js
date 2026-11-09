@@ -21,7 +21,13 @@ ok(runCode.every((f) => !/chrome-(workwin|render|pub)\b|alps[\\/]+chrome/.test(r
 ok(runCode.every((f) => !/require\([^)]*readnow-(work|print|local|alps)/.test(rd(f))), '운영 도우미 모듈을 불러오지 않음(완전히 따로)');
 ok(runCode.every((f) => !/리드나우 작업 창/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, ''))), "운영 작업 창 표시('리드나우 작업 창')로 창을 찾지 않음");
 ok(runCode.every((f) => !/GM_|unsafeWindow|Tampermonkey\.|@grant/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, ''))), 'Tampermonkey(GM_*)를 쓰지 않음 — 운영 수집기 저장소·탭 알림과 안 섞임');
-ok(runCode.every((f) => !/\/scm\/|wlogin|rn-cred|rnp-cred/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, ''))), '판매자 센터(scm)·로그인·알라딘 계정을 다루는 코드 없음');
+/* (0.1.7) 🔗 바로 가기 표(helper/col2-go.js)만 판매자 센터 주소를 지님 — 정범님 평소 크롬에 주소만 넘기고 읽거나 조종하지 않음(아래 검사) */
+const GOF = path.join(R, 'helper', 'col2-go.js');
+ok(runCode.filter((f) => f !== GOF).every((f) => !/\/scm\/|wlogin|rn-cred|rnp-cred/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, ''))), '판매자 센터(scm)·로그인·알라딘 계정을 다루는 코드 없음(바로 가기 표 밖)');
+{ const G = require(GOF); const g = rd(GOF).replace(/\/\*[\s\S]*?\*\//g, '');
+  ok(!/fetch\(|require\(|XMLHttpRequest|wlogin|rn-cred|remote-debugging/.test(g) && G.LINKS.filter((l) => /\/scm\/|uscm\.yes24|SC=996008/.test(l.url)).every((l) => l.shop) && G.forPc('logger').every((l) => !l.shop && !/\/scm\/|yes24/.test(l.url)), '바로 가기 표: 읽기·조종 코드 없음 · 판매자·우리 숍 주소는 모두 shop(로거에서 숨김) · 로거 목록엔 알라딘 공개 화면만');
+  const hs = rd(path.join(R, 'helper', 'readnow-col2-helper.js')); const go = hs.slice(hs.indexOf('function goOpen'), hs.indexOf('async function miniWin'));
+  ok(go.length > 100 && !/user-data-dir|remote-debugging|Browser\(|mainEval/.test(go.replace(/\/\*[\s\S]*?\*\//g, '')) && /GO\.chromeArgs/.test(go), '바로 가기는 평소 크롬(데이터 폴더·조종 길 없이)에 주소만 넘김'); }
 
 console.log('③ 쓰기·저장·팝업');
 const shadow = code.filter((f) => /^shadow\//.test(rel(f)));

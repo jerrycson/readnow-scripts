@@ -9,7 +9,7 @@
  *   · ⛔ 멈춘 까닭 띠(꺼짐·자동 읽기 쉼·크롬 쉼·429 쉼·예스24 로그인 필요·기록 못 올림·공용 파일 실패 — 맨 위에 바로)
  *   · 회차 요약(한 시간 = 한 회차: 읽은 화면·같음/다름/운영 칸 없음·실패·평균 걸린 시간·쉼 까닭) · ↗ 따로 창(작은 앱 창 380×560 · 자리·크기 기억 · 약속 15)
  *   · PC 종류(🛰 로거 / 🏢 사무실)에 맞는 일 이름·회차 요약 — 로거는 예스24 칸·단추가 아예 없음(약속 0)
- *   · 단축키: Alt+L 열기·닫기 · Esc 닫기 · / 찾기 칸으로 (운영 기록창엔 단축키가 없었음 — 새로 더함)
+ *   · 단축키: Alt+L 열기·닫기 · Esc 닫기 · / 찾기 칸으로 (운영 기록창엔 단축키가 없었음 — 새로 더함 · 0.1.7부터 ⚙ 설정에서 바꿈)
  * 기기 저장은 Col2Store.ls(rn3-)로만 · 브라우저 팝업 없음 · 열려 있을 때만 2초마다 새 줄을 받음(닫혀 있으면 받지 않음 — 메모리·CPU 아낌) */
 (function (root) {
   'use strict';
@@ -125,7 +125,7 @@
       try { let j = await api('GET', '/log/lines?after=' + S.after); if (j && j.ok && S.boot && j.boot !== S.boot) { S.lines = []; S.after = 0; j = await api('GET', '/log/lines?after=0'); } /* 도우미가 다시 켜지면 줄 차례가 새로 매겨짐 → 처음부터 다시 받음 */ if (j && j.ok) { S.boot = j.boot; if (j.lines && j.lines.length) { S.lines = S.lines.concat(j.lines); if (S.lines.length > 5000) S.lines = S.lines.slice(-5000); S.after = j.lines[j.lines.length - 1].s; } S.pc = j.kind || 'office'; S.name = j.pc || ''; S.rounds = j.rounds || []; S.today = j.today; if (j.state) S.st = j.state;
           $('#rnjT').textContent = `⠿ 작업 기록 — ${S.name}${S.pc === 'logger' ? ' · 🛰 로거' : ' · 🏢 사무실'}`; } else S.st = null; }
       catch (e) { S.st = null; } finally { S.busy = false; } drawOv(); draw(); }
-    function setOpen(on) { w.classList.toggle('on', on); ls.set('jw-open', on ? 1 : 0); if (o.btn) { o.btn.classList.toggle('on', on); o.btn.title = on ? '🗒 기록창 닫기 (Alt+L)' : '🗒 기록창 열기 (Alt+L)'; }
+    function setOpen(on) { w.classList.toggle('on', on); ls.set('jw-open', on ? 1 : 0); if (o.btn) { o.btn.classList.toggle('on', on); const kl = o.label ? o.label('log') : 'Alt+L'; o.btn.title = on ? `🗒 기록창 닫기 (${kl})` : `🗒 기록창 열기 (${kl})`; }
       clearInterval(S.loadT); S.loadT = null; if (on) { S.drawn = ''; load(); S.loadT = setInterval(() => { if (!doc.hidden) load(); }, 2000); } }
     const toggle = () => setOpen(!w.classList.contains('on'));
     w.querySelectorAll('[data-jt]').forEach((bt) => (bt.onclick = () => { S.tab = bt.dataset.jt; w.querySelectorAll('[data-jt]').forEach((x) => x.classList.toggle('on', x === bt)); if (S.tab === 'hist') drawHist(); else draw(true); }));
@@ -148,10 +148,12 @@
     $('#rnjD').onclick = async () => { const b = $('#rnjD'); if (!S.arm || Date.now() - S.arm > 4000) { S.arm = Date.now(); b.textContent = '한 번 더 누르면 받고 비움'; setTimeout(() => { if (Date.now() - S.arm >= 4000) { S.arm = 0; b.textContent = '내려받기·비우기'; } }, 4100); return; }
       S.arm = 0; b.textContent = '받는 중…'; try { const t = await api('GET', '/log/all', null, true); dl(fname('all'), t); const j = await api('POST', '/log/clear', { why: '기록창 내려받기·비우기' }); S.lines = []; S.after = 0; b.textContent = j && j.ok ? `✓ 받고 비움(${j.moved}일치 · 파일은 old에)` : '✗ 비우지 못함'; await load(); draw(true); } catch (e) { b.textContent = '✗ ' + e.message; } setTimeout(() => { b.textContent = '내려받기·비우기'; }, 3000); };
     /* 단축키 — Alt+L 열기·닫기 · Esc 닫기(기록창 안에서) · / 찾기 칸 */
+    /* (0.1.7) o.match(e, 'log'|'close'|'find') 가 있으면 정범님이 ⚙에서 바꾼 키로(Col2UI.logMatch) — 없으면 예전 키 그대로 */
+    const M = o.match || ((e, a) => (a === 'log' ? e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'l' || e.key === 'L' || e.code === 'KeyL') : a === 'close' ? e.key === 'Escape' : a === 'find' ? e.key === '/' : false));
     doc.addEventListener('keydown', (e) => { const inField = /^(INPUT|SELECT|TEXTAREA)$/.test((e.target && e.target.tagName) || '');
-      if (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'l' || e.key === 'L' || e.code === 'KeyL')) { e.preventDefault(); if (!full) toggle(); return; }
-      if (!w.classList.contains('on')) return; if (e.key === 'Escape' && !full && (w.contains(e.target) || !inField)) { setOpen(false); return; }
-      if (e.key === '/' && !inField) { e.preventDefault(); $('#rnjQ').focus(); } });
+      if (M(e, 'log')) { e.preventDefault(); if (!full) toggle(); return; }
+      if (!w.classList.contains('on')) return; if (M(e, 'close') && !full && (w.contains(e.target) || !inField)) { setOpen(false); return; }
+      if (M(e, 'find') && (!inField || e.altKey || e.ctrlKey)) { e.preventDefault(); $('#rnjQ').focus(); } });
     if (o.btn) o.btn.onclick = (e) => { e.preventDefault(); toggle(); };
     setOpen(full ? true : !!ls.get('jw-open', 0));
     return { toggle, open: () => w.classList.contains('on'), setOpen, setState: (s) => { S.st = s; if (w.classList.contains('on')) drawOv(); }, el: w, S }; }

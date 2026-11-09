@@ -12,6 +12,9 @@
   "shadow/col2-store.js",
   "shadow/compare.html",
   "helper/col2-journal.js",
-  "helper/col2-logwin.js"
+  "helper/col2-logwin.js",
+  "helper/col2-ui.js",
+  "helper/col2-go.js",
+  "helper/col2-help.js"
  ]
 }
