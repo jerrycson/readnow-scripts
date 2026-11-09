@@ -186,6 +186,12 @@
   /* 하한 한 번에(엔진 floors·critTarget·웹앱 📥 등록·📷 사진 가격) — 우리 등급 칸만 · grades(기본 최상·상) · → null · { buy, floor, g, bad, noList } (buy null이면 무시한 값만 있었음) */
   function bbFloorPick(B, grade, o) { o = o || {}; const pk = bbPick(B, grade, { list: o.list, alt: false, grades: o.grades || ['최상', '상'] }); if (!pk) return null; if (pk.v == null) return { buy: null, floor: null, g: pk.g, bad: pk.bad, noList: pk.noList, why: pk.why };
     const fl = bbFloor(pk.v, o); return { buy: pk.v, floor: fl, g: pk.g, bad: pk.bad, noList: pk.noList }; }
+  /* (정범님 11/09 '알라딘 매입 조건에서 상품 상태가 중이면 해당하지 않으니 빼라') 매입 등급 판정 — 한 곳
+   *  우리 상품 상태(등급 칸 grade: 최상·상·중·하)가 알라딘이 사는 등급(DEFAULTS.buybackGrades = 최상·상 — '알라딘은 중 상태를 사지 않음')이 아니면 '알라딘 매입' 조건에서 뺌
+   *  쓰는 곳: 🤖 자동 발송요청 저가·관리코드 규칙(출고 공용 autoShipDecide ⑥ — 클라우드·PC 수집기·PC 도우미가 실행) · 웹앱 출고 카드 '매입가' 알약(shipLowBB) — 같은 상품이면 같은 답
+   *  등급을 모르거나 모르는 글자면 빼지 않음(예전 그대로) → null(뺄 것 아님) · { g, why } */
+  function bbGradeOut(grade, S0) { const g = String(grade == null ? '' : grade).trim(); if (!g || !(g in GRADE_RANK)) return null; const L = S0 && Array.isArray(S0.buybackGrades) ? S0.buybackGrades : DEFAULTS.buybackGrades; if (L.includes(g)) return null;
+    return { g, why: `상품 상태 '${g}' — 알라딘은 '${g}' 상태를 매입하지 않아 알라딘 매입 조건에서 뺌` }; }
   // 하한선: 매입가 하한(모든 단계) + 원가 하한(T1~T3) / 처분 하한(T4~: 매입원가는 이미 쓴 돈 → 팔아서 손해만 안 보면 됨)
   // 하한선 = 알라딘 매입가 하나뿐 (정범 결정 2026-10-04: 원가·손해선 같은 다른 제약은 걸지 않음)
   // 매입가 하한가 = 팔아서 손에 남는 돈(판매가 − 수수료 − 주문당 비용)이 알라딘 매입가와 같아지는 판매가.
@@ -770,6 +776,23 @@
         if (sl) { g.sold++; g.days.push((sl.ms - s0) / DAY); if (sp && sl.p) g.ratio.push(sl.p / sp); const c = costOf ? costOf(e.key) : null; if (c != null && sl.p) g.prof.push(sl.p - c); } }
       return [...by.values()].map((g) => ({ k: g.k, n: g.n, sold: g.sold, soldPct: g.n ? g.sold / g.n : 0, daysMed: med(g.days), saleRatio: g.ratio.length ? g.ratio.reduce((a, b) => a + b, 0) / g.ratio.length : null, chgPct: g.chg.length ? g.chg.reduce((a, b) => a + b, 0) / g.chg.length : null, profit: g.prof.length ? Math.round(g.prof.reduce((a, b) => a + b, 0) / g.prof.length) : null, profitN: g.prof.length })); }
 
+    /* ⑦ 🧭 어느 추격자 전략을 쓸까 — 그룹마다 개별 전략 (정범님 11/09 '추격자 전략을 그룹마다 따로')
+     *  규칙: 전체 추격자 전략(prd_system/pricing.autoChase — 웹앱 '자동 감시의 추격자 전략')이 기본 · 그룹(수동 일괄 감시 그룹)에 개별 전략(그룹 watch.chase)이 있으면 그 상품엔 개별이 먼저
+     *        · 반자동 그룹에 개별 전략이 없으면 예전처럼 그 조건 묶음의 전략 · 한 상품이 여러 그룹에 걸리는 등 애매하면 전체 전략
+     *  가격 감시기(감시 그룹 판정)·웹앱(그룹 감시 칸·결정 카드 한 줄)이 모두 이 함수 하나를 부름(판단을 따로 만들지 않음)
+     *  o = { global: 전체 전략 { name, every, … } | null, groups: [{ id, name, chase: 그룹 개별 전략 | null, preset: { name, chase } | null }] (그 상품이 걸린 그룹 — 같은 id는 하나로) }
+     *  → { strat, src: 'group'|'preset'|'global', gid, gname, why, text } — text = 화면 한 줄('어느 전략이 왜') */
+    const stratOk = (c) => !!(c && typeof c === 'object' && c.name && STRATS_ALL[c.name]);
+    function stratFor(o) { o = o || {}; const G0 = { name: 'yield' }; const glob = stratOk(o.global) ? o.global : { ...(o.global && typeof o.global === 'object' ? o.global : {}), ...G0 };
+      const seen = new Set(); const gs = (o.groups || []).filter((g) => g && g.id != null && !seen.has(String(g.id)) && seen.add(String(g.id)));
+      const nm = (c) => STRATS_ALL[c.name] || c.name; const out = (strat, src, g, why) => ({ strat, src, gid: g ? String(g.id) : null, gname: g ? g.name || String(g.id) : null, why, text: `추격자 전략: ${nm(strat)} — ${why}` });
+      if (!gs.length) return out(glob, 'global', null, '전체 추격자 전략(그룹 없음)');
+      if (gs.length > 1) return out(glob, 'global', null, `여러 그룹(${gs.slice(0, 3).map((g) => `'${g.name || g.id}'`).join('·')}${gs.length > 3 ? ' 등' : ''})에 걸려 애매 — 전체 추격자 전략`);
+      const g = gs[0];
+      if (stratOk(g.chase)) return out({ ...glob, ...g.chase }, 'group', g, `그룹 '${g.name || g.id}' 개별 전략`);
+      if (g.preset && stratOk(g.preset.chase)) return out(g.preset.chase, 'preset', g, `그룹 '${g.name || g.id}'의 반자동 조건 묶음 '${g.preset.name || '?'}' 전략(그룹 개별 전략 없음)`);
+      return out(glob, 'global', g, `그룹 '${g.name || g.id}'에 개별 전략 없음 — 전체 추격자 전략`); }
+
     /* ⑥ 🚫 무시 판매자(블랙리스트) — 다른 셈에서 빼기 · 더하기/해제/메모(정책 사본 P를 고침 · 저장은 부르는 쪽) */
     function ignored(policy) { const P = normPolicy(policy); return Object.entries(P.sellers).filter(([sc, x]) => x && x.stance === 'ignore' && sc !== '996008').map(([sc]) => sc); }
     /* (11/05) 지금 빼기가 살아 있나 — '언제 뺄까'(excl.when)가 엔진이 켜졌을 때만(on)이면 정책 on일 때만 · 늘(always · 모르는 값도)이면 언제나. 엔진·웹앱·클라우드 모두 이 판단 하나를 씀 */
@@ -794,11 +817,11 @@
       return { on, off }; }
 
     return { VERSION: CVER, STRATS, STRATS_ALL, STRAT_INFO, STANCES, STANCE_DEF_STRAT, COND_DEF, COND_INFO, ANON_RULES, POLICY_DEF, normPolicy, condOf, EXCL, EXCL_WHEN, exclLive, ignored, exclSet, dropIgnored, blAdd, blOff, blMemo, blList,
-      events: chaseEvents, state: chaseState, sellerWide: sellerChase, map: chaseMap, collect, mapWithPolicy, find, chaserOn, higherQuiet, plan, step: chaseStep, judge, logEntry, episode, perf, kstDay, inHours,
+      events: chaseEvents, state: chaseState, sellerWide: sellerChase, map: chaseMap, collect, mapWithPolicy, find, chaserOn, higherQuiet, plan, step: chaseStep, judge, logEntry, episode, perf, stratFor, kstDay, inHours,
       chaseEvents, chaseState, sellerChase, chaseMap, chaseStep };
   }
   const Chase = makeChase(); const { chaseEvents, chaseState, sellerChase, chaseMap, chaserOn, chaseStep, STRATS } = Chase; /* 판정 엔진 api의 옛 이름 그대로(같은 함수) */
   if (root && typeof root === 'object') { try { root.ReadnowChase = Chase; } catch (e) {} }
-  const api = { VERSION, BB_MARGIN_DEF, bbMarginOf, bbValid, bbClean, bbPick, bbNetParts, bbNear, bbFloor, bbFloorPick, CHARM_TH, GRADE_RANK, sameGradeMatch, critSettings, critTarget, soloHigh, ratioQ, ratioPick, ratioGroupName, ratioSrcText, ratioAv, ratioUb, RATIO_QK, chaseMap, chaserOn, chaseStep, STRATS, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, mergeD(S0)), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase, Chase };
+  const api = { VERSION, BB_MARGIN_DEF, bbMarginOf, bbValid, bbClean, bbPick, bbNetParts, bbNear, bbFloor, bbFloorPick, bbGradeOut, CHARM_TH, GRADE_RANK, sameGradeMatch, critSettings, critTarget, soloHigh, ratioQ, ratioPick, ratioGroupName, ratioSrcText, ratioAv, ratioUb, RATIO_QK, chaseMap, chaserOn, chaseStep, STRATS, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, mergeD(S0)), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase, Chase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowPricing = api;
 })(typeof window !== 'undefined' ? window : this);
