@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "1.78.426 벤치마킹 급한 판",
- "since": "2026-11-09T03:04:28Z",
- "beat": "2026-11-09T03:04:28Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.425/1.89.233/0.35.110/ext 0.6.10 e2c168e",
-  "at": "2026-11-09T02:46:00Z"
+  "done": "1.78.426/1.89.234 2bf5245",
+  "at": "2026-11-09T03:04:43Z"
  },
- "host": "vm"
+ "host": null
 }
