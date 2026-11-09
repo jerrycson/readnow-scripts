@@ -2221,7 +2221,8 @@ const COST_RATES = { asOf: '2026-10-08', usdKrwFallback: 1400,
   runCpuSec: 0.0000336, runGiBSec: 0.0000035, runReq: 0.4 / 1e6, runFreeUsdMonth: 180000 * 0.000024 + 360000 * 0.0000025 + 2e6 * 0.4 / 1e6, runCpu: 1, runGiB: 2, // cloud.google.com/run/pricing — 서울=Tier 2(요청 처리 중에만 CPU), 무료 = Tier 1 단가로 한 달 $6.02 할인
   visionUnit: 1.5 / 1000, visionFreeMonth: 1000, // cloud.google.com/vision/pricing (글자 읽기)
   gcsGiBMonth: 0.02, gcsFreeGiB: 5, gcsFreeRegions: ['US-CENTRAL1', 'US-EAST1', 'US-WEST1'], // cloud.google.com/storage/pricing (Standard 한 지역; 무료 5GB는 미국 세 지역만)
-  arGiBMonth: 0.10, arFreeGiB: 0.5 }; // Artifact Registry(클라우드 이미지 보관)
+  arGiBMonth: 0.10, arFreeGiB: 0.5, // Artifact Registry(클라우드 이미지 보관)
+  hostStoreGiBMonth: 0.026, hostFreeGiB: 10, hostXferGiB: 0.15, hostFreeXferGiBMonth: 10 }; // (cost2 · 2026-11-09 확인) firebase.google.com/pricing — Hosting(Blaze) 저장 10GB·전송 한 달 10GB 무료 뒤 $0.026/GB·$0.15/GB · 결과물 새 호스팅(비공개 이전 ①)
 const PROJECT = process.env.FB_PROJECT || 'readnow-3a385';
 async function gToken() { const r = await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token', { headers: { 'Metadata-Flavor': 'Google' } }); if (!r.ok) throw new Error('토큰 못 받음 ' + r.status); return (await r.json()).access_token; }
 async function gGet(tok, url) { const r = await fetch(url, { headers: { Authorization: 'Bearer ' + tok } }); const j = await r.json().catch(() => ({})); if (!r.ok) throw new Error((j.error && j.error.message) || 'HTTP ' + r.status); return j; }
@@ -2234,7 +2235,10 @@ async function costUsage(tok, day) { const [s, e] = dayRange(day); const U = {};
   await tryM('fsRead', 'metric.type="firestore.googleapis.com/document/read_count"'); await tryM('fsWrite', 'metric.type="firestore.googleapis.com/document/write_count"'); await tryM('fsDelete', 'metric.type="firestore.googleapis.com/document/delete_count"');
   await tryM('runSec', 'metric.type="run.googleapis.com/container/billable_instance_time" AND resource.labels.service_name="readnow-cloud"'); await tryM('runReq', 'metric.type="run.googleapis.com/request_count" AND resource.labels.service_name="readnow-cloud"');
   await tryM('vision', 'metric.type="serviceruntime.googleapis.com/api/request_count" AND resource.type="consumed_api" AND resource.labels.service="vision.googleapis.com"');
-  await tryM('gcsBytes', 'metric.type="storage.googleapis.com/storage/total_bytes"', 'ALIGN_MEAN'); return U; }
+  await tryM('gcsBytes', 'metric.type="storage.googleapis.com/storage/total_bytes"', 'ALIGN_MEAN');
+  /* (cost2) Firebase Hosting 저장·전송 — Hosting을 아직 안 쓰면 0(측정값 없음) · 못 읽어도 빨간 오류 칸에 넣지 않음(hostErr만) */
+  for (const [k, f, al] of [['hostXfer', 'metric.type="firebasehosting.googleapis.com/network/sent_bytes_count"'], ['hostStore', 'metric.type="firebasehosting.googleapis.com/storage/total_bytes"', 'ALIGN_MEAN']]) { try { U[k] = await mSum(tok, f, s, e, al); } catch (er) { U[k] = null; U.hostErr = `${k}: ${er.message}`.slice(0, 160); } }
+  return U; }
 async function costDaily(maxDays) { const ST = C('app_settings').doc('costs_auto'); const st = (await ST.get()).data() || {}; const today = kstDay(Date.now()); const kNow = new Date(Date.now() + 9 * 3600e3);
   if (kNow.getUTCHours() === 0 && kNow.getUTCMinutes() < 20) return { skip: '0시 20분 뒤에' }; // 어제 측정값이 다 모인 뒤
   let day = st.lastDay ? kstDay(Date.parse(st.lastDay + 'T12:00:00+09:00') + 864e5) : kstDay(Date.now() - 42 * 864e5); if (day >= today) return { skip: '다 적음' };
@@ -2244,7 +2248,7 @@ async function costDaily(maxDays) { const ST = C('app_settings').doc('costs_auto
   if (fsBytes == null) fsBytes = st.fsBytes ?? null; const R = COST_RATES; const done = [];
   for (let n = 0; n < (maxDays || 4) && day < today; n++, day = kstDay(Date.parse(day + 'T12:00:00+09:00') + 864e5)) {
     const U = await costUsage(tok, day); const fx = await fxRate(day); const ym = day.slice(0, 7); const dim = new Date(+ym.slice(0, 4), +ym.slice(5, 7), 0).getDate();
-    const mo = (st.month && st.month.ym === ym) ? st.month : { ym, runUsd: 0, runDisc: 0, vision: 0 }; // 달 무료 한도는 그 달 누적으로
+    const mo = (st.month && st.month.ym === ym) ? { hostXfer: 0, ...st.month } : { ym, runUsd: 0, runDisc: 0, vision: 0, hostXfer: 0 }; // 달 무료 한도는 그 달 누적으로
     const lines = []; const L = (key, service, item, qty, unit, free, billable, unitUsd, usd, note) => lines.push({ key, service, item, qty, unit, free, billable, unitUsd, usd: Math.round(usd * 1e6) / 1e6, note: note || null });
     const fz = (q, f) => Math.max(0, (q || 0) - f);
     if (U.fsRead != null) L('fs_read', 'Firestore', '문서 읽기', U.fsRead, '건', R.fsFreeRead, fz(U.fsRead, R.fsFreeRead), R.fsRead, fz(U.fsRead, R.fsFreeRead) * R.fsRead, '하루 무료 5만 건(미국 태평양 자정 기준)');
@@ -2257,12 +2261,39 @@ async function costDaily(maxDays) { const ST = C('app_settings').doc('costs_auto
     if (U.vision != null && U.vision > 0) { const before = mo.vision; mo.vision += U.vision; const bill = Math.max(0, mo.vision - R.visionFreeMonth) - Math.max(0, before - R.visionFreeMonth); L('vision', 'Vision API', '책등 글자 읽기', U.vision, '건', R.visionFreeMonth, bill, R.visionUnit, bill * R.visionUnit, '한 달 무료 1,000건 (이 달 누적 ' + mo.vision + '건)'); }
     if (U.gcsBytes != null) { const g = U.gcsBytes / 2 ** 30; const free = R.gcsFreeRegions.includes(bucketLoc) ? R.gcsFreeGiB : 0; L('gcs', 'Cloud Storage', '사진 저장', Math.round(g * 1000) / 1000, 'GiB', free, Math.max(0, g - free), R.gcsGiBMonth / dim, Math.max(0, g - free) * R.gcsGiBMonth / dim, `버킷 위치 ${bucketLoc}${free ? ' (무료 5GB 지역)' : ''}`); }
     if (arBytes != null) { const g = arBytes / 2 ** 30; L('ar', 'Artifact Registry', '클라우드 이미지 보관', Math.round(g * 1000) / 1000, 'GiB', R.arFreeGiB, Math.max(0, g - R.arFreeGiB), R.arGiBMonth / dim, Math.max(0, g - R.arFreeGiB) * R.arGiBMonth / dim, '배포할 때마다 쌓임 — deploy.sh가 최근 3개만 남기게 정리'); }
+    if (U.hostStore > 0) { const g = U.hostStore / 2 ** 30; L('host_store', 'Firebase Hosting', '결과물 저장', Math.round(g * 1000) / 1000, 'GiB', R.hostFreeGiB, Math.max(0, g - R.hostFreeGiB), R.hostStoreGiBMonth / dim, Math.max(0, g - R.hostFreeGiB) * R.hostStoreGiBMonth / dim, '웹앱·설명서·수집기 모듈 새 호스팅 · 무료 10GB'); }
+    if (U.hostXfer > 0) { const g = U.hostXfer / 2 ** 30; const before = mo.hostXfer; mo.hostXfer += g; const bill = Math.max(0, mo.hostXfer - R.hostFreeXferGiBMonth) - Math.max(0, before - R.hostFreeXferGiBMonth); L('host_xfer', 'Firebase Hosting', '내려받기 전송', Math.round(g * 1000) / 1000, 'GiB', R.hostFreeXferGiBMonth, bill, R.hostXferGiB, bill * R.hostXferGiB, `한 달 무료 10GB (이 달 누적 ${mo.hostXfer.toFixed(2)}GB)`); }
     const ref = C('app_settings').doc('costs_auto_' + ym); const rec = { rate: fx.rate, rateSrc: fx.src, lines: lines.map((x) => ({ ...x, krw: Math.round(x.usd * fx.rate) })), basis: '공식 단가 × 측정 사용량 − 무료 한도 (추정 — 실제는 청구서)', ratesAsOf: R.asOf, src: 'Cloud Monitoring', at: nowIso(), errs: U.err || null };
     await db.runTransaction(async (tx) => { const sn = await tx.get(ref); if (sn.exists && (sn.data().days || {})[day]) return; tx.set(ref, { ym, cat: '데이터 관리', vendor: 'Google Cloud (Firebase)', days: { [day]: rec }, ...W() }, { merge: true }); }); // 이미 적은 날은 그대로
     st.month = mo; st.lastDay = day; await ST.set({ lastDay: day, month: mo, bucketLoc, fsBytes, fsBytesAt: fsBytes != null ? (st.fsBytesAt && Date.now() - Date.parse(st.fsBytesAt) < 7 * 864e5 ? st.fsBytesAt : nowIso()) : null, arBytes, at: nowIso(), errs: U.err || null, ratesAsOf: R.asOf }, { merge: true });
     done.push({ day, krw: lines.reduce((a, x) => a + Math.round(x.usd * fx.rate), 0), err: U.err || null }); }
   return { done }; }
 let costNextAt = 0;
+/* ── (cost2 · 정범님 11/09 '새 비용도 웹앱에 집계') GitHub Actions 실행 분 매일 기록 → app_settings/costs_gh_YYYY-MM { days: { 날짜: { runs, min, win, kinds } } } · 상태 app_settings/costs_gh
+ *  저장소가 공개인 동안은 무료 — 웹앱 '기타 지출'이 비공개 전환 날(설정)부터 '무료 분 넘는 분 × 분 단가'로 셈. 여기서는 분만 셈(돈 계산은 웹앱 한 곳)
+ *  분 = 실행마다 (마지막 고친 시각 − 시작 시각)을 분 올림(실제 청구는 작업마다 올림이라 조금 더 많을 수 있음 — 어림) · 건너뛴 실행 0 · 윈도우 실행 분은 win에 따로(비공개 청구 ×2)
+ *  kinds = pages(Pages 빌드) · diag(진단 물음 커밋) · health(매시 예약) · deploy(클라우드 배포·pc-live 알림) · hosting · friend · other — 옛 항목이 끝났는지 웹앱이 봄
+ *  열쇠: GH_TOKEN 환경 변수(있으면 · 비공개 뒤에는 있어야 셈) — 없으면 인증 없이(공개일 때만 · 시간당 60번 한도라 한 번에 하루 몇 쪽만) */
+const GH_REPO = process.env.GH_REPO || 'jerrycson/readnow-scripts';
+const ghKind = (r) => { const n = String(r.name || ''), t = String(r.display_title || ''); if (/pages build/i.test(n)) return 'pages'; if (/^diag:/.test(t)) return 'diag'; if (r.event === 'schedule') return 'health'; if (/Hosting/i.test(n)) return 'hosting'; if (/친구|friend/i.test(n)) return 'friend'; if (/Cloud Run/i.test(n)) return 'deploy'; return 'other'; };
+function ghRunMin(r) { if (r.conclusion === 'skipped') return 0; const a = Date.parse(r.run_started_at || r.created_at), b = Date.parse(r.updated_at); return isFinite(a) && isFinite(b) && b > a ? Math.max(1, Math.ceil((b - a) / 60e3)) : 1; }
+async function ghRunsDay(day, fetchF) { const F = fetchF || fetch; const s0 = Date.parse(day + 'T00:00:00+09:00'); const s = new Date(s0).toISOString().slice(0, 19) + 'Z', e = new Date(s0 + 864e5 - 1000).toISOString().slice(0, 19) + 'Z';
+  const H = { Accept: 'application/vnd.github+json', 'User-Agent': 'readnow-cloud' }; if (process.env.GH_TOKEN) H.Authorization = 'Bearer ' + process.env.GH_TOKEN;
+  const out = { runs: 0, min: 0, win: 0, open: 0, kinds: {} };
+  for (let pg = 1; pg <= 10; pg++) { const r = await F(`https://api.github.com/repos/${GH_REPO}/actions/runs?per_page=100&page=${pg}&created=${s}..${e}`, { headers: H }); if (!r.ok) throw new Error('GitHub ' + r.status + (r.status === 404 ? ' (비공개면 GH_TOKEN 필요)' : ''));
+    const j = await r.json(); const L = j.workflow_runs || [];
+    for (const x of L) { if (x.status !== 'completed') { out.open++; continue; } const m = ghRunMin(x); const k = ghKind(x); out.runs++; out.min += m; if (/windows/i.test(String(x.name || ''))) out.win += m; const K = out.kinds[k] || (out.kinds[k] = { n: 0, min: 0 }); K.n++; K.min += m; }
+    if (L.length < 100) break; }
+  return out; }
+async function ghActDaily(maxDays, fetchF) { const ST = C('app_settings').doc('costs_gh'); const st = (await ST.get()).data() || {}; const today = kstDay(Date.now());
+  let day = st.lastDay ? kstDay(Date.parse(st.lastDay + 'T12:00:00+09:00') + 864e5) : kstDay(Date.now() - 35 * 864e5); if (day >= today) return { skip: '다 적음' }; const done = [];
+  try { for (let n = 0; n < (maxDays || 3) && day < today; n++, day = kstDay(Date.parse(day + 'T12:00:00+09:00') + 864e5)) {
+      const R = await ghRunsDay(day, fetchF); if (R.open && day === kstDay(Date.now() - 864e5)) break; /* 어제 실행이 아직 도는 중 — 다음 회차에 */ const ym = day.slice(0, 7); const ref = C('app_settings').doc('costs_gh_' + ym);
+      await db.runTransaction(async (tx) => { const sn = await tx.get(ref); if (sn.exists && (sn.data().days || {})[day]) return; tx.set(ref, { ym, cat: '데이터 관리', vendor: 'GitHub', repo: GH_REPO, basis: '실행마다 분 올림(어림) · 윈도우 분은 win(비공개 청구 ×2)', days: { [day]: { ...R, at: nowIso() } }, ...W() }, { merge: true }); }); // 이미 적은 날은 그대로
+      st.lastDay = day; await ST.set({ lastDay: day, at: nowIso(), repo: GH_REPO, auth: !!process.env.GH_TOKEN, lastErr: null }, { merge: true }); done.push({ day, runs: R.runs, min: R.min }); } }
+  catch (e) { await ST.set({ lastErr: String(e.message || e).slice(0, 200), lastErrAt: nowIso(), auth: !!process.env.GH_TOKEN }, { merge: true }).catch(() => {}); if (!done.length) throw e; }
+  return { done }; }
+let ghNextAt = 0;
 /* ── (0.12.4) 💳 Google Cloud 실제 비용 — 결제 계정 '예산' 알림(Pub/Sub)이 하루 여러 번 이 달 실제 누적 비용(costAmount)을 /billing 으로 밀어 줌
  *  setup-billing.sh(Cloud Shell에서 한 번)가 예산(이 프로젝트만 · 메일 안 보냄)·주제·밀어 주기 구독을 만듦 → app_settings/costs_bill_YYYY-MM
  *  { ym, cur, mtd(마지막 값), at, days: { 날짜: { first, last, at } } } — 날마다 처음 값은 그대로 두고(덮어쓰지 않음) 마지막 값만 고침 · 열쇠 = TICK_KEY에서 만든 값(주소에만 · 비밀번호 아님) */
@@ -3668,6 +3699,7 @@ async function dailyJobs() { if (dailyBusy) return { skipped: true }; dailyBusy 
     if (J.ml && Date.now() > mlNextAt) { try { const r = await djTO(djRun('ml'), 10 * 60e3, '결과 기록'); out.ml = r.skip ? undefined : r; mlNextAt = Date.now() + (r.skip ? 15 : 60) * 60e3; if (!r.skip) log('결과 기록', JSON.stringify(r).slice(0, 400)); } catch (e) { mlNextAt = Date.now() + 30 * 60e3; out.mlErr = e.message; log('결과 기록 실패', e.message); C('app_settings').doc('ml_state').set({ lastErr: String(e.message || e).slice(0, 300), lastErrAt: nowIso(), lastErrVer: VER }, { merge: true }).catch(() => {}); } } /* (11/01 점검) 📈 판매 결과 기록이 10/23 뒤 9일째 안 됨(ml_state.lastDay 2026-10-23) — 까닭이 콘솔에만 남아 아무도 못 봄 → 문서에 남김(진단 doc=app_settings/ml_state로 봄) */
     if (J.ml && Date.now() > mlRebNextAt) { try { const r = await djTO(djRun('reb'), 6 * 60e3, '빠진 하루 모습 메우기'); mlRebNextAt = Date.now() + (r.more ? 20 : 360) * 60e3; if (r.made && r.made.length) { out.mlReb = r; log('빠진 하루 모습 메움', JSON.stringify(r).slice(0, 400)); } } catch (e) { mlRebNextAt = Date.now() + 60 * 60e3; out.mlRebErr = e.message; log('빠진 하루 모습 메우기 실패', e.message); } } /* (11/09) 10/24~ 빠진 날을 남은 기록으로 다시 만듦(있는 날은 덮지 않음 · rebuilt 표시) */
     if (J.costs && Date.now() > costNextAt) { try { const r = await djTO(djRun('cost'), 3 * 60e3, '비용 기록'); out.costs = r; costNextAt = r.skip ? Date.now() + 15 * 60e3 : 0; if (r.done && r.done.length) log('비용 기록', JSON.stringify(r.done)); } catch (e) { costNextAt = Date.now() + 30 * 60e3; out.costsErr = e.message; log('비용 기록 실패', e.message); } }
+    if (J.costs && Date.now() > ghNextAt) { try { const r = await djTO(ghActDaily(3), 60e3, 'GitHub 실행 분'); ghNextAt = Date.now() + (r.skip ? 180 : 10) * 60e3; if (r.done && r.done.length) log('GitHub 실행 분', JSON.stringify(r.done)); } catch (e) { ghNextAt = Date.now() + 360 * 60e3; out.ghErr = e.message; log('GitHub 실행 분 실패', e.message); } } /* (cost2) 비공개 전환 뒤 Actions 비용 근거 */
     if (Date.now() > extNextAt) { try { const r = await extCloud(90e3); extNextAt = Date.now() + (r.skip ? 5 : 1) * 60e3; if (!r.skip) out.ext = { ms: r.ms, tally: r.tally }; else out.ext = r.skip; } catch (e) { extNextAt = Date.now() + 20 * 60e3; out.extErr = e.message; log('외부 정보 이어 받기 실패', e.message); } } /* (0.10.0) PC가 꺼져 있을 때만 */
     if (J.retain !== false && Date.now() > retainNextAt) { try { const r = await retainSweep(); retainNextAt = Date.now() + (r.more ? 15 : 360) * 60e3; if (r.n) { out.retain = r; log('보관 기한 지난 기계 기록 지움', JSON.stringify(r).slice(0, 300)); } } catch (e) { retainNextAt = Date.now() + 60 * 60e3; out.retainErr = e.message; log('보관 기한 정리 실패', e.message); } }
     if (J.kpb && Date.now() > kpbNextAt) { try { const r = await kpbTick(110e3); kpbNextAt = Date.now() + (r.backfillDone && !r.n ? 360 : 8) * 60e3; out.kpb = { n: r.n, have: r.have, ms: r.ms, err: r.err.slice(0, 5), backfillDone: r.backfillDone }; if (r.n) log('출판 정보 게시판', JSON.stringify(out.kpb).slice(0, 300)); } catch (e) { kpbNextAt = Date.now() + 30 * 60e3; out.kpbErr = e.message; log('출판 정보 게시판 실패', e.message); } } /* (0.15.0) 📰 처음엔 8분마다 이어 받기 · 다 받은 뒤엔 6시간마다 새 글 */
