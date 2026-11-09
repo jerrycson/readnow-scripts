@@ -78,8 +78,8 @@ async function run(name, o) { const F = fakeFb(); const GM = new Map(); const id
     const as = fs.readFileSync(ALPS, 'utf8'); ok(/RUN\.day = job\.day && \/\^\\d\{8\}\$\/\.test/.test(as) && /day: RUN\.day \}\);/.test(as) && /DAY_PIN = \(RUN && RUN\.day\) \|\| ymdNow\(\)/.test(as) && /BROWSER = null; DAY_PIN = null;/.test(as), '시작할 때 날짜를 정해 마지막 일 파일에 남김 · 이어서 하면 그 날짜 · 끝나면 풂');
     ok(/const pc = await printerCheck\(c\.printer\); if \(pc\.bad\) throw/.test(as) && as.indexOf('printerCheck(c.printer)') < as.indexOf("`${pick.length}줄 출력 — 미리보기 여는 중`"), '인쇄 보내기 직전 프린터 확인 — 이상하면 보내지 않고 멈춤');
     ok(/const VERSION = '0\.5\.[5-9]'/.test(as), 'ALPS 도우미 판 0.5.5 이상(0.5.6 = 일마다 종이 확인)'); }
-  { const ps = fs.readFileSync(PRINT, 'utf8'); ok(/function selfUpdate\(\) \{ if \(alpsBusy\(\)\) \{[^}]*setTimeout\(selfUpdate, UPD_RETRY_MS\); return; \}/.test(ps) && /if \(alpsBusy\(\)\) \{ log\(`새 판 \$\{v\} 받음 — ALPS 처리 중이라/.test(ps), '인쇄 도우미: ALPS 처리 중엔 스스로 새 판으로 바꾸며 꺼지지 않음(10분 뒤 다시)');
-    ok(/if \(alpsBusy\(\)\) \{ setTimeout\(alpsUpdate, UPD_RETRY_MS\); return; \}/.test(ps) && /p === 'pcheck'/.test(ps) && /p === 'update'/.test(ps), 'ALPS 모듈 바꾸기도 10분 뒤 다시 · /alps/pcheck(프린터 상태) · /alps/update(지금 새 판)');
+  { const ps = fs.readFileSync(PRINT, 'utf8'); ok(/function selfUpdate\(\) \{ if \(alpsBusy\(\)( \|\| shipHold\(\))?\) \{[^}]*setTimeout\(selfUpdate, UPD_RETRY_MS\); return; \}/.test(ps) && /if \(alpsBusy\(\)( \|\| shipHold\(\))?\) \{ log\(`새 판 \$\{v\} 받음 — (ALPS 처리 중|\$\{shipHold\(\) \? '🚚 출고 중' : 'ALPS 처리 중'\})이라/.test(ps), '인쇄 도우미: ALPS 처리 중(·🚚 출고 중 — 11/09 shipfz1)엔 스스로 새 판으로 바꾸며 꺼지지 않음(10분 뒤 다시)');
+    ok(/if \(alpsBusy\(\)( \|\| shipHold\(\))?\) \{ [^\n]*?setTimeout\(alpsUpdate, UPD_RETRY_MS\); return; \}/.test(ps) && /p === 'pcheck'/.test(ps) && /p === 'update'/.test(ps), 'ALPS 모듈 바꾸기도 10분 뒤 다시 · /alps/pcheck(프린터 상태) · /alps/update(지금 새 판)');
     const chk = cpx.spawnSync(process.execPath, ['--check', PRINT]); ok(chk.status === 0, '인쇄 도우미 문법'); }
   console.log(bad ? `❌ tONESHOTc 실패 ${bad}` : '✓ tONESHOTc 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 시험 오류', e); process.exit(1); });
