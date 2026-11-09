@@ -1,2 +1,2 @@
-doc=app_settings/ml_state,app_settings/costs_auto,prd_jobs/devops_2026-11-09,prd_jobs/devops_2026-11-08,ml_days/2026-10-23,ml_days/2026-10-24,app_settings/cloud
-# 588816843
+doc=prd_jobs/devops_2026-11-02,prd_jobs/devops_2026-11-03,prd_jobs/devops_2026-11-04,prd_jobs/devops_2026-11-05,prd_jobs/devops_2026-11-06,prd_jobs/devops_2026-11-07,app_settings/settings_once,app_settings/px_daily,app_settings/value_model
+# 1182730466
