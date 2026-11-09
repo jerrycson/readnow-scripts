@@ -30,6 +30,8 @@ details summary{cursor:pointer}
     <div><button id="pickb">운영 도서 표본</button> <input id="nsample" type="number" min="1" max="20" value="5">권 <button id="runb" class="p">그림자로 읽고 비교</button> <button id="stopb" disabled>멈춤</button><br><span id="prog" class="k"></span></div></div>
   <details class="c" id="resd" open><summary>결과 <span id="sum" class="k" style="font-weight:400">—</span></summary>
     <div class="tw"><table><thead><tr><th>책</th><th>판정</th><th>칸</th></tr></thead><tbody id="out"></tbody></table></div></details>
+  <details class="c" id="jobsd" open><summary>일별 그림자 <span id="jobsum" class="k" style="font-weight:400">—</span></summary>
+    <div class="k" id="jobrule"></div><div class="tw"><table><thead><tr><th>일</th><th>오늘</th><th>같음</th><th>다름 까닭</th><th>넘기기</th></tr></thead><tbody id="jobs"></tbody></table></div></details>
   <div class="c k" id="blk" style="display:none"></div>
   <details class="c"><summary>이 화면은</summary><div class="k">시험 환경입니다 — 운영 수집기·운영 도우미·웹앱과 따로 돕니다. 운영 자료(prd_books·prd_ids)는 <b>읽기만</b> 하고, 그림자 결과는 <b>col2_*</b> 칸에만 씁니다. 이 화면은 구글에 로그인하지 않습니다 — 이 PC에 열린 리드나우 웹앱이 운영 자료를 넘겨주고 결과를 대신 기록합니다. 번외 일꾼은 알라딘에 로그인하지 않습니다.</div></details>
 </div>
@@ -38,5 +40,7 @@ details summary{cursor:pointer}
 <script src="s/col2-store.js"></script>
 <script src="s/col2-compare-core.js"></script>
 <script src="s/col2-compare.js"></script>
+<script src="s/col2-tasks.js"></script>
+<script src="s/col2-jobview.js"></script>
 </body>
 </html>

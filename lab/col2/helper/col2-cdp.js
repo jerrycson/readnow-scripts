@@ -37,6 +37,20 @@ const READ_FN = `async (url, tmo) => { const AL = globalThis.ReadnowAladin, P = 
   if (!/알라딘/.test(doc.title || '') && !doc.querySelector('link[rel="canonical"]')) return { ok: false, why: '알라딘 상품 화면이 아님(제목·canonical 없음)', kind: 'error' };
   const page = P.parseProductPage(doc, r.url); return { ok: true, page, finalUrl: r.url, len: html.length, ms: Date.now() - t0, coreVer: P.VERSION, alVer: AL.VERSION }; }`;
 
+/* (0.1.9) 그림자 일 읽기 — 같은 길(쿠키 없이 fetch → decode → DOMParser → 점검·로그인 화면 확인) 뒤 정한 해석 함수 하나만(P=상품 · S=판매자 · L=운영 본체에서 떼어 온 함수)
+ *  해석 함수 이름은 정해 둔 것만(아래 표) — 다른 글자를 실행하지 않음 */
+const PARSE_OK = ['P.parseProductPage', 'P.parseUsedPage', 'S.parseShopSummary', 'S.parseSurveyPage', 'L.benchParse'];
+const READ_JOB_FN = `async (url, pn, tmo) => { const AL = globalThis.ReadnowAladin, M = { P: globalThis.ReadnowProducts, S: globalThis.ReadnowSellers, L: globalThis.Col2Lift };
+  const [ns, fn] = String(pn).split('.'); const f = M[ns] && M[ns][fn]; if (!AL || typeof f !== 'function') return { ok: false, why: '해석 함수가 안 들어감: ' + pn, kind: 'error' };
+  const ac = new AbortController(); const to = setTimeout(() => ac.abort(), tmo); let r, buf; const t0 = Date.now();
+  try { r = await fetch(url, { credentials: 'omit', cache: 'no-store', signal: ac.signal }); buf = r.ok ? await r.arrayBuffer() : null; } catch (e) { return { ok: false, why: e.name === 'AbortError' ? '알라딘이 ' + Math.round(tmo / 1000) + '초 안에 답하지 않음' : '읽기 실패: ' + e.message, kind: e.name === 'AbortError' ? 'timeout' : 'error' }; } finally { clearTimeout(to); }
+  if (!r.ok) return { ok: false, status: r.status, why: '서버 응답 ' + r.status, kind: r.status === 429 || r.status === 503 ? '429' : 'error' };
+  const html = AL.decode(buf, r.headers.get('content-type')); const doc = new DOMParser().parseFromString(html, 'text/html');
+  if (AL.isMaintenance(doc)) return { ok: false, why: '알라딘 점검 중', kind: 'error' };
+  if (AL.looksLoggedOut(r.url, doc) || /adult/i.test(r.url || '')) return { ok: false, needLogin: true, why: '로그인 없이는 못 보는 화면 — 번외 일꾼은 로그인하지 않으므로 건너뜀' };
+  let page; try { page = ns === 'P' && fn === 'parseProductPage' ? f(doc, r.url) : f(doc); } catch (e) { return { ok: false, why: '해석 오류: ' + e.message, kind: 'error' }; }
+  return { ok: true, page: JSON.parse(JSON.stringify(page == null ? null : page)), finalUrl: r.url, len: html.length, ms: Date.now() - t0 }; }`;
+
 class Browser {
   constructor(o) { this.o = o; this.proc = null; this.cdp = null; this.sid = null; this.frameId = null; this.ctxId = null; this.dead = true; this.landed = false; this.startedAt = 0; }
   alive() { return !!(!this.dead && (this.adopted || this.proc) && this.ready && this.cdp && !this.cdp.closed); } /* (0.1.2) ready = 띄우기를 끝까지 마침(탭 붙이기까지) */
@@ -104,6 +118,9 @@ class Browser {
     this.ctxId = ctx; return ctx; }
   async read(url, srcs, timeoutSec) { const ctx = await this.world(srcs); const r = await this.cdp.send('Runtime.evaluate', { expression: `(${READ_FN})(${JSON.stringify(url)}, ${(timeoutSec || 30) * 1000})`, contextId: ctx, awaitPromise: true, returnByValue: true }, this.sid, ((timeoutSec || 30) + 10) * 1000);
     if (r.exceptionDetails) return { ok: false, why: '읽기 코드 오류: ' + String((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text).slice(0, 200), kind: 'error' }; return r.result.value; }
+  async readJob(url, pn, srcs, timeoutSec) { if (!PARSE_OK.includes(pn)) return { ok: false, why: '정하지 않은 해석 함수: ' + pn, kind: 'error' }; const ctx = await this.world(srcs);
+    const r = await this.cdp.send('Runtime.evaluate', { expression: `(${READ_JOB_FN})(${JSON.stringify(url)}, ${JSON.stringify(pn)}, ${(timeoutSec || 30) * 1000})`, contextId: ctx, awaitPromise: true, returnByValue: true }, this.sid, ((timeoutSec || 30) + 10) * 1000);
+    if (r.exceptionDetails) return { ok: false, why: '읽기 코드 오류: ' + String((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text).slice(0, 200), kind: 'error' }; return r.result.value; }
   /* 시험용: 알라딘 화면 쪽(보통 칸)에서 우리 변수가 보이는지 */
   async mainEval(expr) { const r = await this.cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true }, this.sid); return r.result ? r.result.value : null; }
   /* 넘겨받은 크롬(adopted)은 우리 자식 프로세스가 아니라 proc.kill로 못 닫음 → 조종 길로 Browser.close · 남으면 다음 띄우기의 freeProfile이 이 프로필 크롬만 끝냄 */
@@ -113,4 +130,4 @@ class Browser {
   orphan() { if (this.adopted) return !!(this.cdp && this.cdp.closed); return !!(this.proc && this.proc.exitCode == null && this.proc.signalCode == null && (!this.cdp || this.cdp.closed)); }
   async close() { try { if (this.cdp && !this.cdp.closed) await this.cdp.send('Browser.close', {}, null, 5000).catch(() => {}); } catch (e) {} await sleep(300); this.kill(); }
 }
-module.exports = { CDP, Browser, READ_FN, exitWhy };
+module.exports = { CDP, Browser, READ_FN, READ_JOB_FN, PARSE_OK, exitWhy };

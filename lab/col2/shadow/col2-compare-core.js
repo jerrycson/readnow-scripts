@@ -28,6 +28,23 @@
   /* 그림자 결과에서 저장할 칸만(작게) */
   function pickPage(page, fields) { const o = {}; for (const f of ['aladinItemId', ...(fields || []), 'priceList', 'priceSales']) o[f] = page && page[f] !== undefined ? page[f] : null; return o; }
   const show = (v) => (v == null ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v));
-  const api = { compareBook, pickPage, stab, empty, LABEL, show };
+  /* (0.1.9) 그림자 일 견주기 — map = { 운영 칸: 그림자 칸 } · move = 시간 따라 움직이는 칸(운영이 moveMin분 넘게 전에 읽었으면 다름을 '때가 다름'으로 밝힘)
+   *  까닭: same · move · fill(운영 빔) · lack(그림자 빔 — 까닭 모름으로 셈) · diff(까닭 모름) */
+  function compareMap(prod, sh, map, o) { o = o || {}; const rows = []; const n = { same: 0, move: 0, fill: 0, lack: 0, diff: 0 }; if (!prod) return { rows, n, verdict: 'noprod', reasons: [] };
+    const age = o.prodAt ? (Date.now() - Date.parse(o.prodAt)) / 60e3 : Infinity; const mv = new Set(o.move || []);
+    for (const [pf, sf] of Object.entries(map || {})) { const a = prod[pf], b = sh ? sh[sf] : null; if (empty(a) && empty(b)) continue; let k;
+      if (stab(a) === stab(b)) k = 'same'; else if (mv.has(pf) && !(age < (o.moveMin || 60))) k = 'move'; else if (empty(a)) k = 'fill'; else if (empty(b)) k = 'lack'; else k = 'diff';
+      n[k]++; rows.push({ f: pf, k, prod: a == null ? null : a, shadow: b == null ? null : b }); }
+    const reasons = [...new Set(rows.filter((r) => r.k !== 'same').map((r) => r.k))]; return { rows, n, verdict: reasons.length ? 'diff' : 'same', reasons, diffFields: rows.filter((r) => r.k !== 'same').map((r) => r.f) }; }
+  /* (0.1.9) 외부 정보 — 운영이 저장한 지문(ext_<묶음>/<ISBN>.src.<출처>.sig)과 같은 방식(ReadnowExt.sig·sameSig)으로 견줌
+   *  basic(도서 정보)은 바뀌지 않는 값이라 다르면 '까닭 모름' · 장터·외국·전자책·도서관은 운영이 oldH시간 넘게 전에 봤으면 '운영 값이 오래됨' */
+  function compareExt(X, src, prev, res, o) { o = o || {}; if (!res || res.skip) return { verdict: 'skip', reasons: [], why: res && res.skip };
+    if (!res.ok) return { verdict: 'fail', reasons: [], why: res.why || '못 읽음' }; if (!prev) return { verdict: 'noprod', reasons: [] };
+    let d = res.d == null ? null : JSON.parse(JSON.stringify(res.d)); const sg = X.sig({ none: !!res.none, d }, src); const same = X.sameSig ? X.sameSig(src, prev, sg) : prev.sig === sg ? 'sig' : '';
+    if (same) return { verdict: 'same', reasons: [], how: same, sig: sg, prodSig: prev.sig || null };
+    const grp = (X.SOURCES[src] || {}).grp; const age = (Date.now() - Date.parse(prev.chk || prev.at || 0)) / 3600e3; let r;
+    if (res.none && prev.d && !prev.none) r = 'none'; else if (grp !== 'basic' && !(age < (o.oldH || 6))) r = 'old'; else r = 'diff';
+    return { verdict: 'diff', reasons: [r], sig: sg, prodSig: prev.sig || null, ageH: Number.isFinite(age) ? Math.round(age * 10) / 10 : null }; }
+  const api = { compareBook, pickPage, stab, empty, LABEL, show, compareMap, compareExt };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Col2Compare = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
