@@ -20,7 +20,7 @@
  * 창 다루기는 PowerShell + user32(EnumWindows·SetWindowPos·창 모양 WS_EX_TOOLWINDOW) — 사람 크롬의 다른 창은 건드리지 않음(제목 표시가 있는 창만)
  * 크롬 플래그·정책·바로가기는 바꾸지 않음 */
 'use strict';
-const VERSION = '0.1.2'; // (0.1.2) 🚚 출고 중엔 작업 창 다루기·되살리기 미룸 // (0.1.1) 정범님 11/09 죽은 수집기 탭 되살리기(/work/lead 신호 · 13분 끊기면 사람 크롬에 새 탭 · 1시간 2번 · work.json revive:false로 끔)
+const VERSION = '0.1.3'; // (0.1.3) 창 크기 함수 R이 PowerShell 별칭(Invoke-History)에 가려 창 찾기가 실패하던 것 — 이름을 Get-RnRect로 · (0.1.2) 🚚 출고 중엔 작업 창 다루기·되살리기 미룸 // (0.1.1) 정범님 11/09 죽은 수집기 탭 되살리기(/work/lead 신호 · 13분 끊기면 사람 크롬에 새 탭 · 1시간 2번 · work.json revive:false로 끔)
 const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process'), dns = require('dns');
 const HOME = process.env.RN_WORK_HOME || path.join(__dirname, 'work'); try { fs.mkdirSync(HOME, { recursive: true }); } catch (e) {}
 const CFG_F = path.join(HOME, 'work.json'); const PS_F = path.join(HOME, 'work-win.ps1');
@@ -71,8 +71,8 @@ public static class RnWork {
   public static void Taskbar(IntPtr h, bool hide) { long ex = GetWL(h, -20).ToInt64(); long nx = hide ? ((ex | 0x80L) & ~0x40000L) : ((ex & ~0x80L) | 0x40000L); if (nx == ex) return; ShowWindow(h, 0); SetWL(h, -20, new IntPtr(nx)); ShowWindow(h, 4); }
 }
 '@ }
-function R($h) { $r = New-Object RnWork+RECT; [void][RnWork]::GetWindowRect($h, [ref]$r); @{ x = $r.L; y = $r.T; w = ($r.R - $r.L); h = ($r.B - $r.T) } }
-function Info($h) { @{ h = [int64]$h; r = (R $h); vis = [RnWork]::IsWindowVisible($h); ic = [RnWork]::IsIconic($h); zm = [RnWork]::IsZoomed($h); tool = [RnWork]::Tool($h) } }
+function Get-RnRect($h) { $r = New-Object RnWork+RECT; [void][RnWork]::GetWindowRect($h, [ref]$r); @{ x = $r.L; y = $r.T; w = ($r.R - $r.L); h = ($r.B - $r.T) } }
+function Info($h) { @{ h = [int64]$h; r = (Get-RnRect $h); vis = [RnWork]::IsWindowVisible($h); ic = [RnWork]::IsIconic($h); zm = [RnWork]::IsZoomed($h); tool = [RnWork]::Tool($h) } }
 $vs = [System.Windows.Forms.SystemInformation]::VirtualScreen; $wa = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
 $out = @{ ok = $true; act = $Act; vs = @{ x = $vs.X; y = $vs.Y; w = $vs.Width; h = $vs.Height }; wa = @{ x = $wa.X; y = $wa.Y; w = $wa.Width; h = $wa.Height } }
 if ($Act -like 'hf*') { <# hfind·hfront = 수집 상태 창(창 전용 프로필 chrome-workwin) · hide는 작업 창 #>
