@@ -1,9 +1,9 @@
-// tY24RAW — 정범님 11/07 밤 ①: 수집기 예스24 원문 보관(y24_raw·y24_raw_idx) — 손님 칸만 가림·화면 글 칸(MenuName·상품명) 살림·목록 20줄·하루 한 번·뼈대 같으면 다시 안 올림·로그인 길 안 남김·화면 문서는 알라딘 가림(clean)
+// tY24RAW — 정범님 11/07 밤 ①: 수집기 예스24 원문 보관(y24_raw·y24_raw_idx) — 손님 칸만 가림·화면 글 칸(MenuName·상품명) 살림·목록 20줄(메뉴·코드 목록은 11/09부터 안 자름)·하루 한 번·뼈대 같으면 다시 안 올림·로그인 길 안 남김·화면 문서는 알라딘 가림(clean)
 //  사용: node tY24RAW.js (src/tests 또는 w/pw)
 const fs = require('fs'); const path = require('path');
 const src = fs.readFileSync([path.join(__dirname, '../readnow-collector.src.js'), path.join(__dirname, '../readnow-collector.user.js')].find((p) => fs.existsSync(p)), 'utf8');
 const a = src.indexOf("  const Y24R_DK = 'rn-y24raw-day';"); const b = src.indexOf('  let busy = false; const drain = async', a); if (a < 0 || b < 0) { console.log('❌ tY24RAW — 코드 덩어리를 못 찾음'); process.exit(0); }
-const code = src.slice(a, b);
+const code = ((src.match(/\n  const y24Cnt = [^\n]*\n/) || [''])[0]) + src.slice(a, b); /* (11/09) 원문 목록에 건수(cnt) — 덩어리 위 y24Cnt도 함께 */
 const shape = (v, d) => { if (d > 6) return '…'; if (Array.isArray(v)) return v.length ? [shape(v[0], d + 1)] : []; if (v && typeof v === 'object') { const o = {}; Object.keys(v).slice(0, 80).forEach((k) => (o[k] = shape(v[k], d + 1))); return o; } return v === null ? 'null' : typeof v; };
 const SECRET = /login|logout|passw|pwd|auth|cert|token|member\/(info|modify)|sellerinfo/i;
 const GMs = {}; const GM_getValue = (k, d) => (k in GMs ? GMs[k] : d); const GM_setValue = (k, v) => { GMs[k] = JSON.parse(JSON.stringify(v)); };
@@ -22,7 +22,7 @@ let bad = 0; const ok = (c, m, info) => { console.log((c ? '  ✓ ' : '  ❌ ') 
   const ix = Object.values(store.y24_raw_idx); const rw = Object.values(store.y24_raw);
   const j = rw[0] ? JSON.parse(rw[0].body) : null;
   ok(ix.length === 1 && rw.length === 1 && ix[0].key === 'POST /api/menu/getmenus' && ix[0].ext === 'json' && !/rnx/.test(ix[0].url), '메뉴 응답 하나를 보관(꼴 = 방식+경로 · rnx 뺌)', ix);
-  ok(j && j.Data.length === 21 && j.Data[0].MenuName === '상품 관리 0' && /외 10줄/.test(j.Data[20]), '메뉴 이름(MenuName)은 살림 · 목록 20줄 + "…외 10줄"', j && j.Data.slice(0, 2));
+  ok(j && j.Data.length === 30 && j.Data[0].MenuName === '상품 관리 0' && j.Data[29].MenuName === '상품 관리 29', '메뉴 이름(MenuName)은 살림 · (11/09) 메뉴 목록은 줄을 자르지 않음(다른 목록 20줄 자름은 tY24TOUR)', j && j.Data.slice(0, 2));
   const ord = { list: [{ OrderNo: 'Y1', OrdererName: '김손님', ReceiverNm: '이손님', ReceiverTel: '010-0000-0000', ReceiverAddr: '서울시 어딘가', BuyerId: 'abc', ProductName: '어린 왕자', Memo: '문 앞', Price: 9000, Email: 'a@b.com', note: '연락 010 0000 0000' }] };
   await M.y24RawTake(fsx, FV, { sig: 'POST /api/Order/NewOrderConfirmList', url: '/api/Order/NewOrderConfirmList', page: '/Order/NewOrderConfirm', ctype: 'application/json', body: JSON.stringify(ord) }, ord);
   const o2 = Object.values(store.y24_raw).find((x) => /NewOrderConfirmList/i.test(x.key)); const oj = o2 ? JSON.parse(o2.body).list[0] : {};
