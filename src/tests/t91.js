@@ -1,5 +1,6 @@
 // 🧯 문제 상품 카드 — 출처 줄(작업대) · 작업대에서 보기(카드로 가서 빨간 테두리) · 상품 상세 이동
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  await p.evaluate(() => { localStorage.setItem('rn-device', 'JS-MAIN'); S.devOk = true; }); /* (11/08) 문제 알림은 그 사람 기기에만 — 시험 상품(작업대 1 → JS)이 보이는 JS-MAIN으로 */
   const errs = []; p.on('pageerror', (e) => errs.push(e.message));
   const r = await p.evaluate(async () => { S.leader = true; for (const k of ['aladin_U215983411','aladin_U215983415','aladin_U215983417']) { const l0 = S.plist.get(k); if (l0) l0.registeredAt = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }  const t = new Date().toISOString();
     await db.collection('reg_items').doc('rt1').set({ test: true, stage: 'done', ws: 'main', by: 'a@b.c', confirmedAt: t, createdAt: t, final: { title: '테스트 책 1' }, info: { title: '테스트 책 1' }, result: { state: 'live', listingId: '404935001', usedCode: 'U215983411' } });

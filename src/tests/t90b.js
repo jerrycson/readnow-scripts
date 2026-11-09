@@ -1,5 +1,6 @@
 // 🧯 문제 상품 — 상품 전체 표 맨 위·띠 · 홈 알림 · DUPES 맨 위 · 문제 없을 때 그대로
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  await p.evaluate(() => { localStorage.setItem('rn-device', 'JS-MAIN'); S.devOk = true; }); /* (11/08) 문제 알림은 그 사람 기기에만 — 시험 상품(작업대 1 → JS)이 보이는 JS-MAIN으로 */
   const errs = []; p.on('pageerror', (e) => errs.push(e.message));
   const r = await p.evaluate(async () => { S.leader = true; for (const k of ['aladin_U215983411','aladin_U215983415','aladin_U215983417']) { const l0 = S.plist.get(k); if (l0) l0.registeredAt = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }  const t = new Date().toISOString(); const l7 = S.plist.get('aladin_U215983417'); S.plist.set(l7.id, { ...l7, sku: 'DUPES' }); const l8 = S.plist.get('aladin_U215983418'); S.plist.set(l8.id, { ...l8, sku: 'DUPES', registeredAt: '2026-10-29T00:00:00' });
     const all0 = [...S.plist.values()]; const same = probPin(all0) === all0;

@@ -1,5 +1,6 @@
 // (10/26 wX3) ❓ 답할 문의 알림 설정·이동 · 🏷 출고 SKU · 📊 출고 시장 요약 · ✅/🟡 사실·추정 표시(문제 상품)
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
+  await p.evaluate(() => { localStorage.setItem('rn-device', 'JS-MAIN'); S.devOk = true; }); /* (11/08) 문제 알림은 그 사람 기기에만 — 시험 상품(작업대 1 → JS)이 보이는 JS-MAIN으로 */
   const errs = []; p.on('pageerror', (e) => errs.push(e.message));
   const R = {};
   // 1) factTag · IPOP.fact
