@@ -1,2 +1,1 @@
-cmds=prdEdit&n=20&doc=app_settings/nb_find,app_settings/px_daily,prd_system/autoSched,app_settings/write_watch
-# 2672324769
+@kpin kpin/aud_20261109-135846.json
