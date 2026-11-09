@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.249의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.250의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.249' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.249', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.250' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.250', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -912,6 +912,56 @@
   { let tm = null, lastK = ''; const relay = async () => { tm = null; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || !(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return; let S0 = null; try { S0 = GM_getValue('rn-y24jstep', null); } catch (e) {} if (!S0 || !S0.id) return; const k = S0.id + '|' + S0.at; if (k === lastK) return; lastK = k; const [ono, kind, seq] = String(S0.id).split(':'); if (!ono || !kind) return;
       const ref = firebase.firestore().collection('crm_y24_orders').doc(ono); try { await firebase.firestore().runTransaction(async (tx) => { const cur = (await tx.get(ref)).data() || {}; const a = (cur.auto || {})[kind] || {}; if (String(a.seq) !== String(seq) || a.state !== 'sent') return; tx.set(ref, { auto: { [kind]: { ...a, stepNow: { at: S0.at, lv: S0.lv, m: S0.m, by: (window.__rnPcName && window.__rnPcName.get()) || 'PC' }, steps: (S0.steps || []).slice(-30) } } }, { merge: true }); }); } catch (e) {} };
     try { GM_addValueChangeListener('rn-y24jstep', () => { if (!tm) tm = setTimeout(() => relay().catch(() => {}), (window.__rnStep && window.__rnStep.cfg && window.__rnStep.cfg.ms) || 1500); }); } catch (e) {} }
+})();
+/* (11/10 정범님 11/09 밤 '로그인 일(알라딘 샵매니저)도 번외로' · lab/col2/LOGIN_PLAN.md ⑤-1) 🟧 번외 수집기 알라딘 다리 — 이 PC 알라딘 일하는 탭(lead)이 10초마다 번외 도우미(127.0.0.1:8797)에 알림(예스24 다리 c2yTick과 같은 꼴)
+ *  보냄 POST /al/feed { by, seat:{ok,why}, hold, opLostAt, cfg:{off} }
+ *   · 🪑 seat = 계정 문서 app_settings/aladin_login.dev['<이 PC>~col2'] 자리를 받았을 때만 ok(트랜잭션 · 운영 규칙 __rnLoginRule.seatAsk·seatKeep 그대로 · 우선순위 -1 = 클라우드(0)보다도 뒤)
+ *       다른 기기가 자리를 기다리면 번외가 먼저 넘김(양보) · 신호는 10~15분마다(규칙 beatSec) · 번외가 알라딘 읽기를 안 하면(꺼짐·출고 중·도우미 없음) 자리를 내려놓음
+ *       계정 문서에 col2Off: true 를 두면 번외 자리를 주지 않음(끔 · 웹앱/정범님)
+ *   · 🚚 hold = 출고 보호(__rnSgShip — 이 PC 출고 중·MJ-MAIN 보호면 번외도 멈춤 · 약속 0-1)
+ *   · opLostAt = 이 PC 운영 수집기가 '로그인됨 → 진짜 풀림'을 확인한 시각(rnu-login-lost) — 번외 로그인 뒤 15분 안이면 번외가 멈춤(핑퐁 막기)
+ *  로거 크롬은 안 돎(약속 0 — 계정·쿠키 금지) · 번외가 없으면 5분에 한 번만 물음 · 머리(@connect 127.0.0.1) 그대로 · 손님 정보는 보내지도 받지도 않음 */
+(function rnC2al() { if (window.top !== window) return; const G = globalThis; if (!/(^|\.)aladin\.co\.kr$/i.test(location.hostname)) return;
+  const gv = (k, d) => { try { const v = GM_getValue(k, d); return v == null ? d : v; } catch (e) { return d; } };
+  const B = 'http://127.0.0.1:8797', PRI = -1; let busy = false, miss = 0, nextAt = 0; const SEAT = { ok: false, why: '아직 자리를 묻지 않음', at: 0, until: 0, gap: 12 * 60e3, had: false, off: false };
+  const pcOf = () => { try { return (window.__rnPcName && window.__rnPcName.get()) || ''; } catch (e) { return ''; } };
+  const isLogger = () => !!(G.__rnPubChrome || G.__rnPubHome || gv('rn-pubChrome', false)) || /^LOGGER/i.test(pcOf());
+  const fsx = () => { try { return G.firebase && firebase.apps.length && firebase.auth().currentUser ? firebase.firestore() : null; } catch (e) { return null; } };
+  const gx = (p, b) => new Promise((res) => { try { GM_xmlhttpRequest({ method: 'POST', url: B + p, headers: { 'X-RN-Col2': '1', 'Content-Type': 'application/json' }, data: JSON.stringify(b), timeout: 15000, anonymous: true, onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {} res(r.status === 200 ? j : null); }, onerror: () => res(null), ontimeout: () => res(null) }); } catch (e) { res(null); } });
+  const L = (lv, m) => { try { window.__rnLog && window.__rnLog('로그인', lv, m); } catch (e) {} };
+  /* 🪑 자리 받기·지키기·내려놓기(한 트랜잭션) — want 거짓이면 내려놓기만 */
+  async function seatTx(want, who) { const db = fsx(), RULE = G.__rnLoginRule; if (!db || !RULE) return { ok: false, why: '계정 상태 문서를 못 읽음(Firebase 로그인 전)', until: Date.now() + 60e3 };
+    const REF = db.collection('app_settings').doc('aladin_login'); let out = null;
+    await db.runTransaction(async (t) => { out = null; const sn = await t.get(REF); const d = (sn.exists && sn.data()) || {}; const now = Date.now(); const me = (d.dev || {})[who], w0 = (d.wait || {})[who];
+      const drop = (how, why, until) => { if ((me && me.in) || w0) t.set(REF, { dev: { [who]: { in: false, at: now, how, pri: PRI, yield: false } }, wait: { [who]: null } }, { merge: true }); out = { ok: false, why, until: until || 0, off: !!d.col2Off }; };
+      if (!want) return drop('번외 쉼', '번외가 알라딘 읽기를 하지 않음');
+      if (d.col2Off) return drop('번외 끔', '계정 문서에서 번외 자리를 꺼 둠(col2Off)', now + 10 * 60e3);
+      const V = RULE.seatView(d, now); const mine = V.live.some((x) => x.who === who); const others = V.wait.filter((x) => x.who !== who);
+      if (mine && others.length) { t.set(REF, { dev: { [who]: { in: false, at: now, how: '번외 양보', pri: PRI, yield: true } } }, { merge: true }); out = { ok: false, why: `${others[0].who}가 자리를 기다려 번외가 넘김(그림자는 자리 차례 맨 뒤)`, until: now + RULE.between(V.cfg.retrySec, Math.random()) }; return; }
+      const r = mine ? RULE.seatKeep(d, who, now, { pri: PRI, use: now }, Math.random()) : RULE.seatAsk(d, who, now, { pri: PRI }, Math.random());
+      if (r && r.patch) t.set(REF, r.patch, { merge: true }); out = { ok: !!(r && r.ok), why: r && r.ok ? `자리 받음(${r.n}/${r.max}대)` : String((r && r.why) || '자리 기다림').slice(0, 200), until: (r && r.until) || 0, gap: RULE.between(V.cfg.beatSec, Math.random()) }; });
+    return out || { ok: false, why: '계정 상태 문서를 못 읽음', until: Date.now() + 60e3 }; }
+  async function seatStep(want, who) { const now = Date.now();
+    if (!want) { if (!SEAT.had) { SEAT.ok = false; return false; } const r = await seatTx(false, who).catch(() => null); if (r) { SEAT.had = false; SEAT.ok = false; SEAT.why = r.why; SEAT.at = now; L('info', '🟧 번외 알라딘 그림자 자리를 내려놓음 — ' + r.why); } return !!r; }
+    if (SEAT.ok ? now - SEAT.at < SEAT.gap : now < SEAT.until) return false;
+    const was = SEAT.ok; let r = null; try { r = await seatTx(true, who); } catch (e) { r = { ok: false, why: '자리 트랜잭션 실패: ' + (e.code || e.message), until: now + 60e3 }; }
+    SEAT.ok = !!r.ok; SEAT.why = r.why; SEAT.at = now; SEAT.until = r.until || now + 60e3; SEAT.off = !!r.off; if (r.gap) SEAT.gap = r.gap; SEAT.had = true; /* 받았거나 기다림 줄에 섰음 — 그만둘 때 내려놓음 */
+    if (was !== SEAT.ok) L(SEAT.ok ? 'info' : 'warn', `🟧 번외 알라딘 그림자 자리 — ${r.why}`); return was !== SEAT.ok; }
+  const c2alTick = async (now0) => { if (now0 === true) { SEAT.at = 0; SEAT.until = 0; nextAt = 0; } /* 참 = 자리를 곧바로 다시 봄(사람이 누름·시험) */ if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || isLogger()) return; if (!fsx()) return;
+    busy = true; try { const pc = pcOf(); if (!pc) return; const who = pc + '~col2'; let hold = null; try { hold = window.__rnSgShip ? window.__rnSgShip() : null; } catch (e) {}
+      const r = await gx('/al/feed', { by: pc, seat: { ok: SEAT.ok && !(hold && hold.on), why: hold && hold.on ? '🚚 출고 중 — 자리를 쓰지 않음' : SEAT.why }, hold, opLostAt: +gv('rnu-login-lost', 0) || 0, cfg: { off: SEAT.off } });
+      if (!r || !r.ok) { miss++; if (miss >= 3) nextAt = Date.now() + 5 * 60e3; await seatStep(false, who); return; }
+      miss = 0; const a = r.al || {}; const want = !!a.on && !a.logger && !a.pp && !(hold && hold.on);
+      if (await seatStep(want, who)) nextAt = Date.now() + 1500; /* 자리가 바뀌면 곧바로 알림 */
+    } catch (e) {} finally { busy = false; } };
+  /* (11/10 번외 0.1.9) ⏳ 운영이 긴 일을 하는 동안 번외 그림자 일이 쉬게 — 1분마다 이 PC 지금 하는 일(__rnWorkNow: 자동·맡긴 일 · 사진 · 고객 수집)을 보고
+   *  하는 중이면 POST /busy {sec: 180, why: 일 이름} (번외가 30분까지만 받음) · 끝나면 {sec: 0} 한 번 · 로그인·계정 정보 없음이라 로거 크롬도 알림 · 번외가 없으면 10분에 한 번만 */
+  let bzOn = false, bzMiss = 0, bzNext = 0;
+  const c2busyTick = async () => { if (Date.now() < bzNext) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead') return; let w = null; try { w = window.__rnWorkNow ? window.__rnWorkNow() : null; } catch (e) {}
+    const on = !!(w && (w.job || w.img || w.crm)); if (!on && !bzOn) return; const why = on ? String(w.job || (w.img ? '사진 보관' : '고객·주문 수집')).slice(0, 80) : '끝남';
+    const r = await gx('/busy', { sec: on ? 180 : 0, why }); if (!r || !r.ok) { if (++bzMiss >= 3) bzNext = Date.now() + 10 * 60e3; return; } bzMiss = 0; bzOn = on; };
+  G.__rnC2busyTick = c2busyTick; setInterval(() => c2busyTick().catch(() => {}), 60000);
+  G.__rnC2alTick = c2alTick; G.__rnC2alSeat = () => ({ ...SEAT }); setTimeout(() => c2alTick().catch(() => {}), 20000); setInterval(() => c2alTick().catch(() => {}), 10000);
 })();
 /* (1.89.8) 🏷 정범님 10/20: 샵매니저 '상품 조회/수정' 목록의 우리 상품 관리코드 아래에 우리 SKU를 작게(관리코드 앞 3자리 + 고유 5칸 · 같은 상품 실물이 여럿이면 '외 n')
  *  자료 = app_settings/sku_seq(mapN) + sku_map_0…N (웹앱 상품 상세와 같은 것) · 이 PC Tampermonkey 저장소에 1시간 보관(rn-skuc — 화면을 열 때마다 다시 읽지 않게) · 로그인한 샵매니저 화면에서만(로거는 열지 않음)

@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.249의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.250의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.249' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.249', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.250' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.250', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -390,7 +390,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   /* 일반 확인(샵매니저 주문 화면 한 번) — 모듈이 자기 확인 함수를 주면 그것을 씀 */
   async function checkIn() { try { const AL = globalThis.ReadnowAladin; const r = await fetch('https://www.aladin.co.kr/scm/worders.aspx?searchType=1&limitDate=1', { credentials: 'include' }); const h = await r.text(); const d = new DOMParser().parseFromString(h, 'text/html'); return r.ok && !(AL ? AL.looksLoggedOut(r.url, d, { titleOk: /샵매니저/ }) : /\/login\/|wlogin/i.test(r.url)); } catch (e) { return false; } }
   /* ② 의심이면 한 번 더 확인 → 'misread'(로그인돼 있음 — 잘못 본 것) | 'out'(진짜 풀림) */
-  async function verify(o) { if (!ready()) return 'out'; /* 이미 풀린 것을 알고 다음 시도를 기다리는 중 — 다시 묻지 않음 */ const ok = await (o.isLoggedIn || checkIn)(); if (ok) { misreadAdd(o.url || '', o.why || ''); markIn('확인'); return 'misread'; } L('warn', `🔑 샵매니저 확인: 로그인이 풀려 있음(${pkey(o.url || '')}에서 알아챔)`); devPut(false, 'out'); return 'out'; }
+  async function verify(o) { if (!ready()) return 'out'; /* 이미 풀린 것을 알고 다음 시도를 기다리는 중 — 다시 묻지 않음 */ const ok = await (o.isLoggedIn || checkIn)(); if (ok) { misreadAdd(o.url || '', o.why || ''); markIn('확인'); return 'misread'; } L('warn', `🔑 샵매니저 확인: 로그인이 풀려 있음(${pkey(o.url || '')}에서 알아챔)`); lostMark(); devPut(false, 'out'); return 'out'; }
+  /* (11/10 🟧 번외 알라딘 다리) 운영 세션이 '로그인됨 → 진짜 풀림'으로 바뀐 시각(rnu-login-lost) — 번외 다리(rnC2al)가 opLostAt으로 넘김 → 번외 로그인 뒤 15분 안이면 번외가 멈춤(핑퐁 막기) · 이미 풀린 채 다시 시도할 때는 적지 않음 */
+  function lostMark() { try { if (PUB()) return; const s = st(); if (s.in !== false) S('rnu-login-lost', Date.now()); } catch (e) {} }
   const waitErr = (o, d) => { const msg = `🔑 알라딘 로그인 쉼 — ${d.why}${d.until ? ` · ${RULE.kstHm(d.until)}에 다시 해 봄` : ''} (이 일은 건너뜀 · 로그인이 필요한 맡긴 일은 로그인된 다른 PC·클라우드가 맡음)`; const e = o.mkErr ? o.mkErr(msg, d) : new Error(msg); e.loginWait = true; e.until = d.until || 0; e.kind = d.kind; e.why0 = d.why; return e; };
   let inFlight = null, provider = null; const needs = new Map();
   /* ③ 진짜 풀렸을 때 — 사람처럼 한 번 로그인 → 참(로그인됨 · 하던 일 이어 감) 또는 throw(쉼 · 그 일만 건너뜀)
@@ -402,6 +404,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     /* 🪑 로그인 일을 다시 하기 전에 판매자 로그인 자리부터(자리 기다림이었거나 30분 넘게 자리 신호가 없던 PC) — 세션이 살아 있어도 자리 없이 쓰지 않음 */
     if (!amAlways() && !seatFresh() && !(await hold('다시 로그인 전'))) { /* 🔒 상시 PC는 자리를 묻지 않음(아래 decide가 신호만 적음) */ const s1 = st(); throw waitErr(o, { why: s1.why || '판매자 로그인 자리 기다림', until: +s1.until || 0, kind: 'seat' }); }
     if (await isIn()) { markIn('확인'); return true; }
+    lostMark(); /* (11/10) 진짜 풀림 — 번외 다리에 알릴 시각 */
     const cant = o.canLogin ? o.canLogin() : null; if (cant) { markOut(Date.now() + 10 * 60e3, cant); throw waitErr(o, { why: cant, until: Date.now() + 10 * 60e3, kind: 'nocred' }); }
     /* 같은 PC의 다른 탭이 로그인하는 중이면 그 결과를 기다림(각 탭이 따로 로그인하지 않게) */
     for (let i = 0; i < 40; i++) { const b = G('rnu-login-busy', null); if (!b || Date.now() - b.at > 4 * 60e3 || b.tab === window.__rnTab) break; say('같은 PC의 다른 탭이 알라딘에 로그인하는 중 — 기다림'); await sleep(6000); if (await isIn()) { markIn('다른 탭'); return true; } if (o.stopped && o.stopped()) throw waitErr(o, { why: '멈춤', kind: 'stop' }); }
