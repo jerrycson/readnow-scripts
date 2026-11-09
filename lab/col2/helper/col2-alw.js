@@ -22,13 +22,15 @@ function makeAlw(o) { const { HOME, note } = o; const cfg = () => o.cfg() || {};
   const P = () => ({ ...(cfg().alwPass || {}) });
   const repMs = () => (+(cfg().alwRepMin) || 10) * 60e3; /* 같은 일을 10분 안에 다시 = 되풀이 · 근거: 없음, 설정(col2.json alwRepMin)으로 바꿈 */
   const dayOf = (d, k) => { const D = S.days[d] || (S.days[d] = {}); return D[k] || (D[k] = W.dayNew()); };
-  const okEv = (e) => e && typeof e === 'object' && /^[\w.-]{1,80}$/.test(String(e.id || '')) && W.KINDS[e.k] && Number.isFinite(+e.at) && Array.isArray(e.rq) && e.rq.length <= 10;
+  const okEv = (e) => e && typeof e === 'object' && /^[\w.-]{1,80}$/.test(String(e.id || '')) && W.KINDS[e.k] && Number.isFinite(+e.at) && Array.isArray(e.rq) && e.rq.length <= 20;
 
+  /* 같은 송장 두 번 금지(약속 10) — 그 일에 든 송장(한 건·여러 건·CSV) 가운데 하나라도 다른 주문에 이미 썼거나, 한 일 안에서 두 주문에 같은 송장이면 막음(먼저 다 보고 나서 적음) */
+  const invDup = (L) => { const seen = {}; for (const x of L) { const was = S.inv[x.invH]; if ((was && String(was) !== String(x.ono)) || (seen[x.invH] && seen[x.invH] !== String(x.ono))) return true; seen[x.invH] = String(x.ono); } return false; };
   function one(e) { const at = +e.at; const d = kday(at); const k = e.k; const st = dayOf(d, k); const input = W.pickIn(k, W.scrubIn(e.in || {})); let verdict, res = null, why = null, built = null;
     const key = W.keyOf(k, input); const prev = S.keys[key];
     if (prev && at - prev < repMs() && at >= prev) { verdict = 'refuse'; why = `같은 일을 ${Math.round((at - prev) / 1000)}초 만에 다시 — 번외라면 보내지 않음(되풀이 0)`; st.opRep++; }
-    else if (input.invH && !W.invCheck(S.inv, input.ono, input.invH).ok) { verdict = 'refuse'; why = '같은 송장을 다른 주문에 — 번외라면 보내지 않음(약속 10)'; st.dupInv++; }
-    else { try { built = W.build(k, input); res = W.compare(e.rq, built); verdict = res.verdict; } catch (er) { verdict = 'bad'; why = String(er.message || er).slice(0, 160); } S.keys[key] = at; }
+    else if (invDup(W.invsOf(k, input))) { verdict = 'refuse'; why = '같은 송장을 다른 주문에 — 번외라면 보내지 않음(약속 10)'; st.dupInv++; }
+    else { try { built = W.build(k, input, e.rq); res = W.compare(e.rq, built); verdict = res.verdict; } catch (er) { verdict = 'bad'; why = String(er.message || er).slice(0, 160); } S.keys[key] = at; for (const x of W.invsOf(k, input)) W.invCheck(S.inv, x.ono, x.invH); }
     st.n += verdict === 'refuse' ? 0 : 1; st[verdict === 'same' ? 'same' : verdict === 'diff' ? 'diff' : verdict === 'bad' ? 'bad' : 'refuse']++;
     const doc = { kind: k, t: W.KINDS[k].t, w: W.KINDS[k].w, at: new Date(at).toISOString(), pc: pcName(), ver: o.ver, verdict, why, in: input, op: (e.rq || []).map(W.reClean), c2: built, diffs: res ? res.diffs : [], opOk: e.ok == null ? null : !!e.ok, http: +e.http || null, sent: 0, by: 'col2-alw' };
     o.out('col2_alw', `${k}_${stamp(at)}_${String(e.id).slice(-6).replace(/[^\w-]/g, '_')}`, doc, false);
