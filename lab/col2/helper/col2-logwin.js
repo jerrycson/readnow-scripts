@@ -126,8 +126,14 @@
           $('#rnjT').textContent = `⠿ 작업 기록 — ${S.name}${S.pc === 'logger' ? ' · 🛰 로거' : ' · 🏢 사무실'}`; } else S.st = null; }
       catch (e) { S.st = null; } finally { S.busy = false; } drawOv(); draw(); }
     function setOpen(on) { w.classList.toggle('on', on); ls.set('jw-open', on ? 1 : 0); if (o.btn) { o.btn.classList.toggle('on', on); const kl = o.label ? o.label('log') : 'Alt+L'; o.btn.title = on ? `🗒 기록창 닫기 (${kl})` : `🗒 기록창 열기 (${kl})`; }
-      clearInterval(S.loadT); S.loadT = null; if (on) { S.drawn = ''; load(); S.loadT = setInterval(() => { if (!doc.hidden) load(); }, 2000); } }
-    const toggle = () => setOpen(!w.classList.contains('on'));
+      if (pop()) syncBtn(); clearInterval(S.loadT); S.loadT = null; if (on) { S.drawn = ''; load(); S.loadT = setInterval(() => { if (!doc.hidden) load(); }, 2000); } }
+    /* (0.1.8 정범님 11/10 새벽 '기록창이 수집기 창 안에서만 — 창 밖으로 뜨게') o.mode() === 'pop'이면 🗒·Alt+L = 따로 작은 앱 창(도우미 /win/log — 없으면 엶 · 작게 내렸거나 화면 밖이면 앞으로 · 보이면 닫음)
+     *  안쪽 칸은 ⚙ › 창 › '🗒 기록창 여는 곳'에서 고름 · 따로 창을 못 열면 그때만 안쪽 칸으로(까닭을 띠에) */
+    const pop = () => !full && typeof o.mode === 'function' && o.mode() === 'pop';
+    const S2 = { popOpen: false, busy: false };
+    function syncBtn(st) { if (!o.btn || full) return; if (st && st.lwin) S2.popOpen = !!st.lwin.open; const on = pop() ? S2.popOpen : w.classList.contains('on'); o.btn.classList.toggle('on', on); const kl = o.label ? o.label('log') : 'Alt+L'; o.btn.title = (on ? '🗒 기록창 닫기' : '🗒 기록창 열기') + (pop() ? ' — 따로 작은 창' : '') + ` (${kl})`; }
+    async function popToggle(act) { if (S2.busy) return; S2.busy = true; try { const j = await api('POST', '/win/log', { act: act || 'toggle', why: '🗒 기록' }); if (j && j.ok) { S2.popOpen = !!j.open; syncBtn(); } else { setOpen(true); OV.insertAdjacentHTML('afterbegin', `<div class="stop warn">따로 창을 못 열어 옆 창 안에 엶: ${esc((j && (j.err || j.msg)) || '')}</div>`); } } catch (e) { setOpen(true); } finally { S2.busy = false; } }
+    const toggle = () => { if (full) { api('POST', '/win/log', { act: 'close', why: '기록창 안 단축키' }).catch(() => {}); return; } if (pop()) { if (w.classList.contains('on')) { setOpen(false); return; } popToggle('toggle'); return; } setOpen(!w.classList.contains('on')); };
     w.querySelectorAll('[data-jt]').forEach((bt) => (bt.onclick = () => { S.tab = bt.dataset.jt; w.querySelectorAll('[data-jt]').forEach((x) => x.classList.toggle('on', x === bt)); if (S.tab === 'hist') drawHist(); else draw(true); }));
     $('#rnjF').onchange = () => { ls.set('jw-f', $('#rnjF').value); S.tab === 'hist' ? drawHist() : draw(true); };
     $('#rnjQ').oninput = () => (S.tab === 'hist' ? drawHist() : draw(true));
@@ -151,12 +157,12 @@
     /* (0.1.7) o.match(e, 'log'|'close'|'find') 가 있으면 정범님이 ⚙에서 바꾼 키로(Col2UI.logMatch) — 없으면 예전 키 그대로 */
     const M = o.match || ((e, a) => (a === 'log' ? e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'l' || e.key === 'L' || e.code === 'KeyL') : a === 'close' ? e.key === 'Escape' : a === 'find' ? e.key === '/' : false));
     doc.addEventListener('keydown', (e) => { const inField = /^(INPUT|SELECT|TEXTAREA)$/.test((e.target && e.target.tagName) || '');
-      if (M(e, 'log')) { e.preventDefault(); if (!full) toggle(); return; }
+      if (M(e, 'log')) { e.preventDefault(); toggle(); return; } /* (0.1.8) 따로 창 안에서 누르면 그 창을 닫음 */
       if (!w.classList.contains('on')) return; if (M(e, 'close') && !full && (w.contains(e.target) || !inField)) { setOpen(false); return; }
       if (M(e, 'find') && (!inField || e.altKey || e.ctrlKey)) { e.preventDefault(); $('#rnjQ').focus(); } });
     if (o.btn) o.btn.onclick = (e) => { e.preventDefault(); toggle(); };
-    setOpen(full ? true : !!ls.get('jw-open', 0));
-    return { toggle, open: () => w.classList.contains('on'), setOpen, setState: (s) => { S.st = s; if (w.classList.contains('on')) drawOv(); }, el: w, S }; }
+    setOpen(full ? true : !pop() && !!ls.get('jw-open', 0)); syncBtn();
+    return { toggle, open: () => w.classList.contains('on'), setOpen, syncBtn, popOpen: () => S2.popOpen, setState: (s) => { S.st = s; syncBtn(s); if (w.classList.contains('on')) drawOv(); }, el: w, S }; }
 
   const api = { ...CORE, CSS, mount };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Col2Log = api;

@@ -125,6 +125,22 @@ async function appWin(pg, why) { const A = APPS[pg]; if (!A) return { ok: false,
   if (pg === 'status') ST.hwinOpen = true; note(`${A.name}을 작은 창으로 엶 (${why || ''} · ${rc.w}×${rc.h}${rc.x != null ? ` · ${rc.x},${rc.y}` : ''}${rc.from === 'corner' ? ' · 오른쪽 위' : ''})`);
   return { ok: true, msg: `${A.name}을 작은 창으로 엶` + (rc.from === 'saved' ? ` (기억한 자리 ${rc.x},${rc.y} · ${rc.w}×${rc.h})` : rc.from === 'corner' ? ' (오른쪽 위)' : ''), rect: rc }; }
 const statusWin = (why) => appWin('status', why);
+/* (0.1.8 정범님 11/10 새벽 '번외 수집기의 기록창이 해당 수집기 창 안에서만 허용돼 — 창 밖으로 뜨게 해서 조작할 수 있게') 📜 기록창 = 따로 작은 앱 창(기본)
+ *  logWin(act) — act: toggle(🗒·Alt+L) · open · close · beat(따로 창이 살아 있다는 소식) · bye(따로 창이 닫힘)
+ *   toggle: 없으면 엶 · 작게 내렸거나 화면 밖이면 앞으로 · 화면에 보이면 닫음(닫기 전 자리·크기 기억 — 화면 안일 때만) · open: 없으면 엶·있으면 앞으로
+ *   창은 /log 화면 하나(프로필 col2-log-chrome · 380×560 · 기억한 자리 · 화면 밖이면 오른쪽 위 — appWin과 같은 셈 · 약속 15) */
+const LW = { open: false, at: 0, beat: 0 };
+const lwinOpen = () => !!(LW.open && (Date.now() - Math.max(LW.at, LW.beat) < 45e3));
+const onScr = (r, f) => { const scr = (f && f.ok && (Array.isArray(f.scr) && f.scr.length ? f.scr : f.wa ? [f.wa] : [])) || []; if (!r || !scr.length) return true; return scr.some((b) => r.x + r.w > b.x + 40 && r.x < b.x + b.w - 40 && r.y > b.y - 20 && r.y < b.y + b.h - 40); };
+async function logWin(act, why) { act = String(act || 'toggle'); const t = Date.now();
+  if (act === 'beat') { LW.open = true; LW.beat = t; return { ok: true, open: true }; }
+  if (act === 'bye') { LW.open = false; LW.at = t; return { ok: true, open: false }; }
+  let f = null; try { f = await WIN.run('find', LOG_MARK); } catch (e) { f = null; } const it = f && f.ok && f.n ? f.list[0] : null;
+  if (it && (act === 'close' || (act === 'toggle' && !it.ic && onScr(it.r, f)))) {
+    if (!it.ic && it.r && onScr(it.r, f)) { const r = rectOk(it.r, 260, 200); if (r) { CFG.lwin = { ...r, at: now(), src: 'pc' }; saveCfg(); } }
+    const r = await WIN.run('close', LOG_MARK); LW.open = false; LW.at = t; note(`📜 기록창(따로 창)을 닫음 (${why || act})`, { k: 'win', m: '창' }); return r.ok ? { ok: true, open: false, closed: true, msg: '📜 기록창을 닫음' } : { ...r, open: true }; }
+  if (act === 'close') { LW.open = false; LW.at = t; return { ok: true, open: false, msg: '기록창이 이미 닫혀 있음' }; }
+  const r = await appWin('log', why || '🗒 기록'); if (r && r.ok) { LW.open = true; LW.at = t; } return { ...r, open: !!(r && r.ok) }; }
 
 /* ── 웹앱 대신 기록 (0.1.1 정범님 11/05 밤 '비교 화면 구글로 로그인이 실패') ──
  * 비교 화면(이 도우미가 내주는 127.0.0.1 화면)은 Firebase에 로그인하지 않음. 그 PC에 열려 있는 운영 웹앱(이미 구글 로그인)이
@@ -172,7 +188,7 @@ function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const out = { 
   else if (wasH !== !!CFG.headless && B) { closeBrowser('화면 방식 바뀜').then(() => tick('화면 방식 바뀜')); }
   return ch; }
 
-function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), kind: isLoggerPc() ? 'logger' : 'office', pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), y24: Y24.sum(), side: sideOn(), y24Want: CFG.y24 == null ? !TEST : CFG.y24 !== false, y24Jobs: CFG.y24Jobs !== false, upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen,
+function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), kind: isLoggerPc() ? 'logger' : 'office', pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), y24: Y24.sum(), side: sideOn(), y24Want: CFG.y24 == null ? !TEST : CFG.y24 !== false, y24Jobs: CFG.y24Jobs !== false, upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen, lwin: { open: lwinOpen(), rect: CFG.lwin || null }, /* (0.1.8) 📜 기록창 따로 창이 떠 있는지(🗒 단추 색) */
   opens: opensHour(), chrome: { fails: CH.fails, last: CH.last, okAt: CH.okAt ? kst(CH.okAt) : null, coolUntil: CH.coolUntil ? kst(CH.coolUntil) : null, cools: CH.cools, adopts: CH.adopts, retries: CH.retries }, msg: [ST.msg, CFG.on && AU.msg && AU.msg !== ST.msg ? '자동 읽기: ' + AU.msg : ''].filter(Boolean).join(' · '), /* (0.1.4) 자동 읽기가 왜 쉬는지(하루 몫·표본 기다림·작업 창 준비 실패)도 웹앱 col2_ctl·진단에 보이게 — 예전엔 작업 창 지킴이 글만 보여 멈춘 까닭을 몰랐음 */ reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: JRN.tail(15).map((e) => ({ t: e.t, m: e.x, l: e.l, k: e.k })), pcKind: JRN.kind(), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
 
 /* ── 그림자 읽기 ── */
@@ -313,8 +329,8 @@ document.getElementById('pcv').onclick=async()=>{const v=document.getElementById
 /* (0.1.6) 📜 기록창 붙이기 — 옆 창(🗒 단추 · Alt+L)과 따로 창(/log) 같이 · 기기 저장은 Col2Store.ls(rn3-) */
 const LOG_BOOT = (full) => `<script src="/s/col2-store.js"></script><script src="/s/col2-logwin.js"></script>${full ? '<script src="/s/col2-ui.js"></script>' : ''}<script>(function(){const H={'X-RN-Col2':'1','Content-Type':'application/json'};
 async function api(m,p,b,text){const r=await fetch(p,{method:m,headers:H,cache:'no-store',body:b?JSON.stringify(b):undefined});return text?r.text():r.json()}
-${full ? 'Col2UI.loadKeys(api);' : ''}window.__jw=Col2Log.mount({api,ls:Col2Store.ls,full:${full ? 'true' : 'false'},btn:document.getElementById('jwBtn'),match:window.Col2UI&&Col2UI.logMatch,label:window.Col2UI&&Col2UI.keyLabel});
-${full ? `let last='';setInterval(()=>{const v={p:'log',x:screenX,y:screenY,w:outerWidth,h:outerHeight};const k=JSON.stringify(v);if(k!==last&&v.w>200&&v.h>150){last=k;fetch('/win/hrect',{method:'POST',headers:H,body:k}).catch(()=>{})}},15000);` : ''}})();</script>`;
+${full ? 'Col2UI.loadKeys(api);' : ''}window.__jw=Col2Log.mount({api,ls:Col2Store.ls,full:${full ? 'true' : 'false'},btn:document.getElementById('jwBtn'),match:window.Col2UI&&Col2UI.logMatch,label:window.Col2UI&&Col2UI.keyLabel,mode:window.Col2UI&&Col2UI.logMode});
+${full ? `let last='';setInterval(()=>{const v={p:'log',x:screenX,y:screenY,w:outerWidth,h:outerHeight};const k=JSON.stringify(v);if(k!==last&&v.w>200&&v.h>150){last=k;fetch('/win/hrect',{method:'POST',headers:H,body:k}).catch(()=>{})}},15000);const beat=()=>fetch('/win/log',{method:'POST',headers:H,body:JSON.stringify({act:'beat'})}).catch(()=>{});beat();setInterval(beat,15000);addEventListener('pagehide',()=>{try{fetch('/win/log',{method:'POST',headers:H,keepalive:true,body:JSON.stringify({act:'bye'})})}catch(e){}});` : ''}})();</script>`;
 function logPageHtml() { return `<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>📜 번외 수집 기록</title>
 <style>${SMALL_CSS}</style><body>${LOG_BOOT(true)}</body></html>`; }
 /* (0.1.7 정범님 11/09 밤 '모든 것을 내가 설정·조정하는 골격 · 접고 열고 · 아이콘으로 최소화 · 불편·중복 추리기') 📊 옆 창 = 머리띠 + 칸(카드)
@@ -408,6 +424,7 @@ const srv = http.createServer((req, res) => {
   if (p === '/go') return body((o) => { const r = goOpen(o); J(r.code, r.body); });
   if (p === '/win/mini') return body((o) => miniWin(o).then((r) => J(200, r)));
   if (p === '/log/clear') return body((o) => { const r = JRN.clear(); note(`📜 기록을 내려받고 화면에서 비움(${r.moved}일치 · 파일은 지우지 않고 journal\\old 로 옮김) — ${String(o.why || '').slice(0, 40)}`, { k: 'sys', l: 'ok', m: '기록' }); J(200, r); });
+  if (p === '/win/log') return body((o) => logWin(o.act, o.why || '').then((r) => J(200, r))); /* (0.1.8) 📜 기록창 따로 창 열기·앞으로·닫기 */
   if (p === '/win/app') return body((o) => appWin(String(u.searchParams.get('p') || o.p || 'compare'), o.why || '').then((r) => J(200, { ...r, state: status() })));
   if (p === '/relay/get') return body((o) => { const r = relayGet(o); J(r.code, r.body); });
   if (p === '/relay/sample') return body((o) => J(200, relaySample(o)));

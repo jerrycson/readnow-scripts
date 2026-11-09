@@ -49,6 +49,8 @@ const JR = require('../helper/col2-journal.js'); const LW = require('../helper/c
     ok((await H.api('GET', '/log/lines?after=0')).j.lines.every((e) => !/zzsecretzz/.test(e.x)), '기록 길(/log/lines)에도 쿠키 값 없음');
     ok((await H.req('GET', '/log/lines?after=0')).st === 403, '기록 길은 머리(X-RN-Col2) 없으면 거절');
     const ctx = await br.newContext({ viewport: { width: 380, height: 560 }, acceptDownloads: true }); const p = await ctx.newPage(); p.on('pageerror', (e) => errs.push(e.message)); p.on('dialog', (d) => { dialogs.push(d.message()); d.dismiss(); });
+    await H.api('POST', '/ui', { ui: { logPop: false, at: Date.now() + 864e5 }, quiet: true }); /* (0.1.8) 아래 ③은 옆 창 안 칸(⚙에서 고른 경우) — 따로 창(기본)은 ③-2 */
+    await p.addInitScript(() => { try { if (!sessionStorage.getItem('t-init')) { sessionStorage.setItem('t-init', '1'); localStorage.setItem('rn3-ui', JSON.stringify({ logPop: false, at: Date.now() + 2 * 864e5 })); } } catch (e) {} });
     await p.goto(`http://127.0.0.1:${H.port}/`); await p.waitForSelector('#jwBtn');
     const vis = () => p.evaluate(() => { const w = document.getElementById('rn-jw'); return !!w && getComputedStyle(w).display !== 'none'; });
     ok(!(await vis()), '처음엔 닫힘(옆 창 상태가 가려지지 않게 · 연 상태는 기억)');
@@ -84,6 +86,28 @@ const JR = require('../helper/col2-journal.js'); const LW = require('../helper/c
     const pg = (await H.req('GET', '/')).b + (await H.req('GET', '/log')).b + fs.readFileSync(path.join(L.ROOT, 'helper', 'col2-logwin.js'), 'utf8');
     ok(!/(^|[^.\w])(alert|confirm|prompt)\s*\(/m.test(pg.replace(/\/\*[\s\S]*?\*\//g, '')), '팝업 함수 없음');
     ok(!dialogs.length && !errs.length, '브라우저 팝업·화면 오류 없음', (dialogs.concat(errs)).slice(0, 3).join(' | '));
+    console.log('③-2 (0.1.8) 🗒 기록창 = 따로 작은 창(기본) — 옆 창 밖으로');
+    { const st = async () => (await H.api('GET', '/status')).j; const spawns = () => H.T.clog().filter((l) => /--app=\S*\/log/.test(l)).length; const acts = () => H.T.win().acts || []; const btnOn = () => p.evaluate(() => document.getElementById('jwBtn').classList.contains('on'));
+      ok(require(path.join(L.ROOT, 'helper', 'col2-ui.js')).normalize({}).logPop === true, '기본값 = 따로 작은 창(설정이 없으면)');
+      if (await vis()) await p.click('#rnjX'); await H.api('POST', '/win/log', { act: 'close', why: '시험 처음' }); await wait(400);
+      await p.click('#setBtn'); await wait(300); await p.check('#lpop1'); await wait(500); await p.click('#setBtn'); await wait(200);
+      ok((await H.api('GET', '/ui')).j.ui.logPop === true, '⚙ › 창 › 🗒 기록창 여는 곳 = 따로 작은 창으로 바꿔 저장(PC마다)');
+      const n0 = spawns(); await p.click('#jwBtn'); await wait(1000); let s = await st();
+      const la = H.T.clog().filter((l) => /--app=\S*\/log/.test(l)).pop() || '';
+      ok(spawns() === n0 + 1 && /col2-log-chrome/.test(la) && /--window-size=\d+,\d+/.test(la) && !(await vis()) && s.lwin && s.lwin.open && (await btnOn()), '🗒 한 번 = 따로 작은 앱 창(따로 된 프로필 · 기억한 크기) · 옆 창 안 칸은 안 열림 · 단추 색 켜짐', la.slice(0, 140));
+      { H.T.setWin((S) => { S['col2-log-chrome'] = { r: { x: 300, y: 200, w: 1280, h: 900 }, tool: false, front: 0, ...(S['col2-log-chrome'] || {}), ic: true }; }); const a0 = acts().length; await p.click('#jwBtn'); await wait(900); const A1 = acts().slice(a0); s = await st();
+        ok(A1.includes('show:col2-log-chrome') && !A1.includes('close:col2-log-chrome') && spawns() === n0 + 1 && s.lwin.open, '이미 떠 있는데 작게 내렸으면 🗒 = 앞으로(새로 띄우지 않음)', A1.join(',')); }
+      H.T.setWin((S) => { if (S['col2-log-chrome']) { S['col2-log-chrome'].ic = false; S['col2-log-chrome'].r = { x: -4000, y: 50, w: 400, h: 580 }; } }); { const a0 = acts().length; await p.click('#jwBtn'); await wait(900); const A1 = acts().slice(a0);
+        ok(A1.includes('show:col2-log-chrome') && !A1.includes('close:col2-log-chrome'), '화면 밖에 있으면 🗒 = 화면 안으로 앞으로(약속 15)', A1.join(',')); }
+      H.T.setWin((S) => { if (S['col2-log-chrome']) S['col2-log-chrome'].r = { x: 900, y: 120, w: 410, h: 600 }; }); { const a0 = acts().length; await p.click('#jwBtn'); await wait(1000); const A1 = acts().slice(a0); s = await st();
+        ok(A1.includes('close:col2-log-chrome') && !s.lwin.open && !(await btnOn()) && s.lwin.rect && s.lwin.rect.x === 900 && s.lwin.rect.w === 410, '보이는데 다시 누르면 닫힘 · 닫기 전 자리·크기 기억(900,120 · 410×600)', JSON.stringify(s.lwin)); }
+      await p.keyboard.press('Alt+L'); await wait(1000); const la2 = H.T.clog().filter((l) => /--app=\S*\/log/.test(l)).pop() || ''; s = await st();
+      ok(spawns() === n0 + 2 && /--window-size=410,600/.test(la2) && /--window-position=900,120/.test(la2) && s.lwin.open, 'Alt+L = 따로 창을 기억한 자리·크기로 다시 엶', la2.slice(-80));
+      await p2.reload(); await wait(900); ok((await H.api('GET', '/status')).j.lwin.open, '따로 창이 살아 있다는 소식(15초마다) — 단추 색이 맞음');
+      { const a0 = acts().length; await p2.keyboard.press('Alt+L'); await wait(900); ok(acts().slice(a0).includes('close:col2-log-chrome') && !(await st()).lwin.open, '따로 창 안에서 Alt+L = 그 창을 닫음'); }
+      await p.click('#setBtn'); await wait(300); await p.check('#lpop0'); await wait(400); await p.click('#setBtn'); await wait(200); const n2 = spawns(); await p.click('#jwBtn'); await wait(700);
+      ok(await vis() && spawns() === n2 && (await H.api('GET', '/ui')).j.ui.logPop === false, '⚙에서 "이 옆 창 안"을 고르면 예전처럼 옆 창 안 칸'); await p.click('#rnjX');
+      ok(!dialogs.length && !errs.length, '③-2 팝업·화면 오류 없음', (dialogs.concat(errs)).slice(0, 3).join(' | ')); }
     console.log('④ 로거 PC 화면');
     await H.api('POST', '/cfg', { pc: 'LOGGER-1', pcSrc: 'pc' }); await H.api('POST', '/test/note', { x: '🟦 예스24 로그인 필요', k: 'y24' }); await H.api('POST', '/test/note', { x: '판매관리 주문 송장 확인' });
     const lj = (await H.api('GET', '/log/lines?after=0')).j; ok(lj.kind === 'logger' && !lj.lines.some((e) => /예스24|판매관리|주문|송장/.test(e.x)), '로거: 기록에 우리 숍·예스24 흔적 없음');

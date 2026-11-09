@@ -68,7 +68,7 @@ const UI = require('../helper/col2-ui.js'); const GO = require('../helper/col2-g
     ok((await H.api('POST', '/ui', { ui: { keys: { log: 'Alt+J', help: 'Alt+J' } } })).st === 400, '도우미도 겹친 단축키는 거절');
     await p.click('[data-kid="help"] [data-k="def"]'); await wait(600); ok(!/겹침/.test(await p.textContent('#setKeys')) && (await H.api('GET', '/ui')).j.ui.keys.help === 'Alt+H', '[기본] = 기본값으로');
     await p.keyboard.press('Escape');
-    const jw = () => p.evaluate(() => { const w = document.getElementById('rn-jw'); return !!w && getComputedStyle(w).display !== 'none'; });
+    const jw = async () => { await wait(700); const inner = await p.evaluate(() => { const w = document.getElementById('rn-jw'); return !!w && getComputedStyle(w).display !== 'none'; }); return inner || !!(await H.api('GET', '/status')).j.lwin.open; }; /* (0.1.8) 기록창 기본 = 따로 작은 창 — 옆 창 안 칸이거나 따로 창이 떠 있으면 열림 */
     await p.keyboard.press('Alt+L'); ok(!(await jw()), '바꾼 뒤엔 옛 키 Alt+L 로 안 열림'); await p.keyboard.press('Alt+K'); ok(await jw(), '새 키 Alt+K = 기록창 열기'); await p.keyboard.press('Alt+K'); ok(!(await jw()), 'Alt+K 다시 = 닫기');
     ok(/Alt\+K/.test(await p.getAttribute('#jwBtn', 'title')), '🗒 단추 풍선 글도 새 키');
     console.log('  · ▁ 작은 단추 · 복원');
