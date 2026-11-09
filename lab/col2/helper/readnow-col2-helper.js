@@ -163,15 +163,20 @@ function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const out = { 
   return ch; }
 
 function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen,
-  opens: opensHour(), chrome: { fails: CH.fails, last: CH.last, okAt: CH.okAt ? kst(CH.okAt) : null, coolUntil: CH.coolUntil ? kst(CH.coolUntil) : null, cools: CH.cools, adopts: CH.adopts, retries: CH.retries }, msg: ST.msg, reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: LOGS.slice(-15), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
+  opens: opensHour(), chrome: { fails: CH.fails, last: CH.last, okAt: CH.okAt ? kst(CH.okAt) : null, coolUntil: CH.coolUntil ? kst(CH.coolUntil) : null, cools: CH.cools, adopts: CH.adopts, retries: CH.retries }, msg: [ST.msg, CFG.on && AU.msg && AU.msg !== ST.msg ? '자동 읽기: ' + AU.msg : ''].filter(Boolean).join(' · '), /* (0.1.4) 자동 읽기가 왜 쉬는지(하루 몫·표본 기다림·작업 창 준비 실패)도 웹앱 col2_ctl·진단에 보이게 — 예전엔 작업 창 지킴이 글만 보여 멈춘 까닭을 몰랐음 */ reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: LOGS.slice(-15), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
 
 /* ── 그림자 읽기 ── */
 async function readProduct(o) { const id = String(o.itemId || '').trim(); if (!/^\d{1,13}$/.test(id)) return { code: 400, body: { ok: false, err: '상품 번호(ItemId)가 이상함' } };
   if (!CFG.on) return { code: 409, body: { ok: false, err: '번외 수집이 꺼져 있음(먼저 켜기)' } }; if (ST.reading) return { code: 429, body: { ok: false, err: '다른 책을 읽는 중 — 한 번에 한 권' } };
   ST.reading = { itemId: id, at: now() }; const t0 = now();
-  try { const pc = await PACE.take(); if (!pc.ok) return { code: 429, body: { ok: false, err: pc.why, retryMs: pc.retryMs, paced: true } };
-    let core; try { core = await loadCore(); } catch (e) { return { code: 503, body: { ok: false, err: e.message } }; }
-    let br; try { br = await ensureBrowser('읽기'); await br.land(ALADIN + '/', W('pageTimeoutSec')); } catch (e) { PACE.fail('error'); return { code: 503, body: { ok: false, err: '작업 창 준비 실패: ' + e.message } }; }
+  /* (0.1.4 정범님 11/09 '번외 수집기 왜 진행 안 해' — HOME 오늘 1600/1600인데 읽은 책 0 · col2_runs 0) 예전엔 차례(PACE.take — 시간·하루 셈)를 먼저 받고 작업 창을 준비해,
+   *  숨은 크롬이 안 뜨거나 30분 쉬는 동안 10초마다 다시 해 볼 때마다 알라딘에 한 번도 안 갔는데 하루 몫이 한 장씩 줄었음(시간 240 × 약 7시간 = 1,600 → 다음 날까지 멈춤)
+   *  → 이제는 지금 읽어도 되나(check — 셈하지 않음)만 보고 · 공용 파일·작업 창 준비가 끝난 뒤에야 차례를 받음(셈은 알라딘에 실제로 요청할 때만) */
+  const fail0 = (code, err) => { ST.reads.push({ at: kst(), itemId: id, ok: false, why: err, ms: now() - t0, pre: true }); if (ST.reads.length > 50) ST.reads.shift(); return { code, body: { ok: false, err } }; };
+  try { const c0 = PACE.check(); if (!c0.ok) return { code: 429, body: { ok: false, err: c0.why, retryMs: c0.retryMs, paced: true } };
+    let core; try { core = await loadCore(); } catch (e) { return fail0(503, e.message); }
+    let br; try { br = await ensureBrowser('읽기'); await br.land(ALADIN + '/', W('pageTimeoutSec')); } catch (e) { PACE.fail('error'); return fail0(503, '작업 창 준비 실패: ' + e.message); }
+    const pc = await PACE.take(); if (!pc.ok) return { code: 429, body: { ok: false, err: pc.why, retryMs: pc.retryMs, paced: true } };
     const url = ALADIN + COL2.READ_PATH + id; const r = await br.read(url, core.src, 30) || { ok: false, why: '빈 응답' };
     if (r.ok) PACE.ok(); else if (!r.needLogin) PACE.fail(r.kind || 'error');
     const rec = { at: kst(), itemId: id, ok: !!r.ok, why: r.why || null, ms: now() - t0, title: r.page ? r.page.title : null }; ST.reads.push(rec); if (ST.reads.length > 50) ST.reads.shift();
@@ -195,6 +200,8 @@ const POOL_F = path.join(HOME, 'pool.json');
 const POOL_AT_F = path.join(HOME, 'pool-at.json');
 const AU = (() => { let v = {}, a = null; try { v = JSON.parse(fs.readFileSync(POOL_F, 'utf8')) || {}; } catch (e) {} try { a = JSON.parse(fs.readFileSync(POOL_AT_F, 'utf8')) || null; } catch (e) {} const x = a || v; const lap = x.lap && typeof x.lap === 'object' ? x.lap : {};
   return { pool: Array.isArray(v.pool) ? v.pool : [], cur: +x.cur || 0, poolAt: +v.poolAt || 0, day: x.day && x.day.d ? x.day : { d: '', n: 0, same: 0, diff: 0, no: 0, fail: 0 }, lap: { n: +lap.n || 1, after: lap.after || null, end: !!lap.end, read: +lap.read || 0, got: +lap.got || 0, at: lap.at || null, done: Array.isArray(lap.done) ? lap.done.slice(-5) : [] }, poolAskAt: 0, nextAt: 0, msg: '', last: x.last || null, t: null, running: false }; })();
+/* (0.1.4) 켜질 때 한 번 — 옛 판이 알라딘에 안 가고 센 오늘 몫을 실제로 읽은 수(pool-at.json 오늘 셈)로 바로잡음 → 그날 바로 다시 돎 */
+{ const real = AU.day && AU.day.d === new Date(now() + 9 * 3600e3).toISOString().slice(0, 10) ? +AU.day.n || 0 : 0; const fx = PACE.trueUp(real, '옛 판이 작업 창 준비 실패 때도 하루 몫을 셈'); if (fx) note(`오늘 몫 바로잡음 — ${fx.was}장으로 세어 있었으나 실제로 읽은 것은 ${fx.now}장(옛 판이 숨은 크롬 준비 실패 때도 셈) · 오늘 남은 몫으로 다시 돎`); }
 function savePos() { try { fs.writeFileSync(POOL_AT_F, JSON.stringify({ cur: AU.cur, day: AU.day, last: AU.last, lap: AU.lap })); } catch (e) { log('읽은 자리 저장 실패: ' + e.message); } }
 function savePool() { try { fs.writeFileSync(POOL_F, JSON.stringify({ pool: AU.pool, poolAt: AU.poolAt, n: AU.pool.length })); } catch (e) { log('표본 목록 저장 실패: ' + e.message); } savePos(); }
 /* 웹앱이 넘긴 표본 묶음 받기 — 이어 넘김(poolFor = 우리가 부탁한 자리)이 맞을 때만 뒤에 붙임 · 아니면(늦게 온 옛 답) 버림 */
@@ -300,7 +307,7 @@ ${pcBarHtml()}
 ${PC_JS}
 const T=(ms)=>new Date(+ms+9*3600e3).toISOString().slice(11,19);
 async function post(p,b){const r=await fetch(p,{method:'POST',headers:H,body:JSON.stringify(b||{})});return r.json()}
-async function load(){try{const r=await fetch('/status',{headers:H,cache:'no-store'});const s=await r.json();S=s;pcShow(s);const rl=s.relay||{};
+async function load(){try{const r=await fetch('/status',{headers:H,cache:'no-store'});const s=await r.json();if(s.ver&&s.ver!=='${VERSION}'&&new URLSearchParams(location.search).get('v')!==s.ver){location.replace(location.pathname+'?v='+encodeURIComponent(s.ver));return}S=s;pcShow(s);const rl=s.relay||{};
 $('st').innerHTML='번외 수집 '+(s.on?'<span class="ok">켜짐</span>':'<span class="no">꺼짐</span>')+' · 번외 크롬 '+(s.alive?'<span class="ok">떠 있음</span>':'<span class="no">없음</span>')+(s.alive&&!s.headless?(s.shown?' · <b>보이는 중</b>':' · 숨김'):'')+(s.headless?' · 화면 없음':'')+'<br><span class="k">'+E(s.msg||'')+' · 최근 한 시간 다시 띄움 '+s.opens+'번 · 운영 공용 파일 '+E(Object.entries(s.core.ver||{}).map(([k,v])=>k.replace(/^readnow-|-core\\.js$/g,'')+' '+v).join(' · ')||'아직 안 받음')+'</span><br>'+autoLine(s)+'<br><span class="k">기록: 웹앱이 대신 기록함 · '+(rl.ackAt?'마지막 기록 '+Math.max(0,Math.round((Date.now()-rl.ackAt)/60000))+'분 전':'아직 기록 없음')+(rl.outN?' · 남은 '+rl.outN+'건':'')+(rl.err?' · <span class="no">실패: '+E(rl.err)+'</span>':'')+'</span>';
 $('onb').textContent=arm?(s.on?'한 번 더 누르면 끔':'한 번 더 누르면 켬'):(s.on?'⏹ 끄기':'▶ 켜기');$('onb').className=s.on?'warn':'p';
 const p=s.pace;$('pc').textContent='한 장 뒤 '+Math.round(p.minGapMs/100)/10+'초 안팎 · 이번 시간 '+p.hourN+'/'+p.hourCap+'장 · 오늘 '+p.dayN+'/'+p.dayCap+'장'+(p.coolMs?' · 쉬는 중 '+Math.ceil(p.coolMs/60000)+'분':'');

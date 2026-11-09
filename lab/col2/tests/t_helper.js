@@ -20,7 +20,7 @@ const F = require('./fixtures.js');
     ok((await H.req('GET', '/status', null, { 'X-RN-Col2': '1', Host: 'evil.test:' + H.port })).st === 403, 'Host가 127.0.0.1이 아니면 거절(주소 바꿔치기 막음)');
     const pg = await H.req('GET', '/'); ok(pg.st === 200 && /번외 수집 상태/.test(pg.b) && /🪟 보이기/.test(pg.b) && !/alert\(|confirm\(|prompt\(/.test(pg.b), '주소창 / = 상태 창 화면(팝업 없음)');
     ok((await H.req('GET', '/', null, { Origin: 'https://jerrycson.github.io' })).st === 403, '상태 창 화면은 다른 출처에서 못 엶');
-    const s0 = (await H.api('GET', '/status')).j; ok(s0.on === false && s0.port === H.port && s0.ver === '0.1.2', '처음엔 꺼짐 · 시험 포트 · 판 0.1.2');
+    const s0 = (await H.api('GET', '/status')).j; ok(s0.on === false && s0.port === H.port && s0.ver === require('../col2-config.js').COL2_VER, '처음엔 꺼짐 · 시험 포트 · 판 = col2-config.js COL2_VER(판 올릴 때마다 시험을 고치지 않게)');
 
     console.log('③ 숨은 작업 창');
     await wait(1500); ok(T.clog().length === 0 && procs('col2-work-chrome').length === 0, '꺼 두면 번외 크롬을 띄우지 않음');
