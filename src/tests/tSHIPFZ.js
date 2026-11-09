@@ -1,5 +1,5 @@
 // tSHIPFZ — 정범님 11/09 약속 0-1 '출고 처리 중에는 절대로 어떤 것도 출고 작업 중인 컴퓨터와 MJ-MAIN을 건드리지 않아 … 끝나면 정지된 시점부터 손실 없이 정확히 이어 감' (shipfz1)
-//  ① '출고 중' 판단 한 곳(shipGuardDecide): 출고 하는 PC · MJ-MAIN 무조건 · 끝 표시 · 최대 시간(기본 3시간 · 설정) 풀림 · 이름 대소문자
+//  ① '출고 중' 판단 한 곳(shipGuardDecide): 출고 하는 PC · MJ-MAIN 무조건 · 끝 표시 · 최대 시간(기본 1시간 · 설정 — 11/09 저녁 shipsafe2) 풀림 · 이름 대소문자
 //  ② 가짜 화면(수집기 바탕 모듈): 출고 중 새 판 도착·메모리 높음·되살리기 조건·매일 자동 새 회차·맡긴 일·안전한 새로고침 → 모두 미룸(기록 한 번씩) · 출고 끝 → 차례대로 이어 감(새로고침이 있으면 그것 하나만)
 //  ③ 자리 손실 없음: 돌던 🔬 조회수 실험 맡김이 출고 시작에 상품 사이에서 멈추고 results 저장 → 출고 끝 뒤 같은 맡김이 남은 상품부터
 //  ④ 새로고침·자동 일 길마다 출고 보호가 걸려 있음(원본 글 확인) · 쉬는 때 메모리 정리 판단 · 되살리기 판단(웹앱 탭·PC 도우미) · 도우미 스스로 새 판 미룸
@@ -28,12 +28,12 @@ function mkRt(o) { o = o || {}; const GM = { 'rnu-pcname': o.pc || 'JS-MAIN', ..
   const { shipGuardDecide } = new Function(cut('function shipGuardDecide(o)', '/* ⟦shipGuardDecide 끝⟧ */') + '; return { shipGuardDecide };')();
   const now = 1.8e12; const hJS = { a: { pc: 'JS-MAIN', why: '▶ 오늘 출고 끝까지', t0: now - 20 * MIN } };
   ok(!shipGuardDecide({ now, pc: 'JS-MAIN', holds: {} }).on, '① 출고 칸이 없으면 보호 안 함');
-  { const d = shipGuardDecide({ now, pc: 'JS-MAIN', holds: hJS }); ok(d.on && d.mine === 1 && /오늘 출고 끝까지/.test(d.why) && d.until === hJS.a.t0 + 3 * H, '① 출고 하는 PC(JS-MAIN) → 보호 · 최대 시간 기본 3시간'); }
+  { const d = shipGuardDecide({ now, pc: 'JS-MAIN', holds: hJS }); ok(d.on && d.mine === 1 && /오늘 출고 끝까지/.test(d.why) && d.until === hJS.a.t0 + 1 * H, '① 출고 하는 PC(JS-MAIN) → 보호 · 최대 시간 기본 1시간(정범님 11/09 저녁)'); }
   { const d = shipGuardDecide({ now, pc: 'MJ-MAIN', holds: hJS }); ok(d.on && d.mj && /MJ-MAIN 보호 — JS-MAIN/.test(d.why), '① MJ-MAIN은 다른 PC가 출고 중이어도 무조건 보호'); }
   ok(!shipGuardDecide({ now, pc: 'HOME', holds: hJS }).on, '① 출고와 상관없는 PC(HOME)는 그대로 일함');
   ok(shipGuardDecide({ now, pc: ' js-main ', holds: hJS }).on, '① PC 이름은 대소문자·빈칸 무시');
   ok(!shipGuardDecide({ now, pc: 'JS-MAIN', holds: { a: { ...hJS.a, end: now - MIN } } }).on && !shipGuardDecide({ now, pc: 'MJ-MAIN', holds: { a: { ...hJS.a, end: now - MIN } } }).on, '① 끝 표시(end)가 오면 두 PC 모두 풀림');
-  { const old = { a: { pc: 'JS-MAIN', why: 'x', t0: now - 3 * H - 1000 } }; const d = shipGuardDecide({ now, pc: 'MJ-MAIN', holds: old }); ok(!d.on && d.expired.length === 1, '① 끝 소식이 안 오면 3시간 지나 풀림(최대 시간)'); ok(shipGuardDecide({ now, pc: 'MJ-MAIN', holds: old, maxH: 5 }).on, '① 최대 시간은 설정(oneShot.guardMaxH)으로 바뀜'); }
+  { const old = { a: { pc: 'JS-MAIN', why: 'x', t0: now - 1 * H - 1000 } }; const d = shipGuardDecide({ now, pc: 'MJ-MAIN', holds: old }); ok(!d.on && d.expired.length === 1, '① 끝 소식이 안 오면 1시간 지나 풀림(최대 시간)'); ok(shipGuardDecide({ now, pc: 'MJ-MAIN', holds: old, maxH: 5 }).on, '① 최대 시간은 설정(oneShot.guardMaxH)으로 바뀜'); }
   ok(/oneShot\.guardMaxH/.test(s) && /근거: 없음, 설정 oneShot\.guardMaxH로 바꿈/.test(s), "① 주석에 '근거: 없음, 설정으로 바꿈'");
   ok((s.match(/function shipGuardDecide\(/g) || []).length === 1 && !/function shipGuardDecide\(/.test(fs.readFileSync(APPF || __filename, 'utf8')), '① 판단 함수는 수집기 한 곳뿐(웹앱은 그 결과 data-rn-shiphold를 읽음)');
 
@@ -59,10 +59,10 @@ function mkRt(o) { o = o || {}; const GM = { 'rnu-pcname': o.pc || 'JS-MAIN', ..
   // MJ-MAIN 보호 — 서버 출고 표(다른 PC가 적은 칸)로
   { const R = mkRt({ pc: 'MJ-MAIN' }); const W = R.W; ok(!W.__rnSgOn(), '② MJ-MAIN: 출고 없으면 보호 아님');
     W.__rnShipGuardFeed({ holds: { os_d1: { pc: 'JS-MAIN', why: '▶ 오늘 출고 끝까지', t0: R.clock.now - MIN } } }, 'fs'); ok(W.__rnSgOn() && W.__rnShipHold().mj, '② MJ-MAIN: 다른 PC(JS-MAIN)가 출고를 시작하면 보호');
-    ok(W.__rnSgShip().on && W.__rnSgShip().until === R.clock.now - MIN + 3 * H, '② PC 도우미에 보낼 알림(until = 최대 시간)');
+    ok(W.__rnSgShip().on && W.__rnSgShip().until === R.clock.now - MIN + 1 * H, '② PC 도우미에 보낼 알림(until = 최대 시간)');
     W.__rnShipWait('verReload', '⚡ 새 판'); W.__rnShipGuardFeed({ holds: { os_d1: { pc: 'JS-MAIN', why: 'x', t0: R.clock.now - MIN, end: R.clock.now } } }, 'fs'); await R.tick(); ok(!W.__rnSgOn() && R.logs.some((x) => /출고 끝 — 미룬 1가지/.test(x)), '② JS-MAIN 출고 끝 → MJ-MAIN도 풀리고 이어 감');
-    W.__rnShipGuardFeed({ holds: { os_d2: { pc: 'JS-MAIN', why: '▶ 오늘 출고 끝까지', t0: R.clock.now - MIN } } }, 'fs'); ok(W.__rnSgOn(), '② 새 출고 → 다시 보호'); R.clock.now += 3 * H; await R.tick();
-    ok(!W.__rnSgOn() && R.logs.filter((x) => /최대 시간\(3시간\) 지나 풀림/.test(x)).length === 1, '② 끝 소식 없이 3시간 → 풀리고 기록(한 번만)'); await R.tick(); ok(R.logs.filter((x) => /최대 시간/.test(x)).length === 1, '② 최대 시간 기록은 되풀이하지 않음'); }
+    W.__rnShipGuardFeed({ holds: { os_d2: { pc: 'JS-MAIN', why: '▶ 오늘 출고 끝까지', t0: R.clock.now - MIN } } }, 'fs'); ok(W.__rnSgOn(), '② 새 출고 → 다시 보호'); R.clock.now += 1 * H; await R.tick();
+    ok(!W.__rnSgOn() && R.logs.filter((x) => /최대 시간\(1시간\) 지나 풀림/.test(x)).length === 1, '② 끝 소식 없이 1시간 → 풀리고 기록(한 번만)'); await R.tick(); ok(R.logs.filter((x) => /최대 시간/.test(x)).length === 1, '② 최대 시간 기록은 되풀이하지 않음'); }
   // 웹앱 화면 다리
   { const R = mkRt({ pc: 'MJ-MAIN', host: 'jerrycson.github.io' }); R.attrs['data-rn-sgdoc'] = JSON.stringify({ holds: { alps_r1: { pc: 'MJ-MAIN', why: '📦 ALPS 송장 인쇄', t0: R.clock.now } }, at: R.clock.now }); await R.tick(); R.W.__rnShipWait('x', 'y');
     const h = JSON.parse(R.attrs['data-rn-shiphold'] || '{}'); ok(h.on === true && /ALPS/.test(h.why) && h.at === R.clock.now, '② 웹앱 화면: 웹앱이 건넨 출고 표(data-rn-sgdoc)를 받아 판단 → data-rn-shiphold로 알림'); R.W.__rnShipWait('x2', 'y'); await R.tick(); ok(JSON.parse(R.attrs['data-rn-shiphold']).n === 2, '② 웹앱 화면에 미룬 수(n)도 알림'); }
@@ -128,7 +128,7 @@ function mkRt(o) { o = o || {}; const GM = { 'rnu-pcname': o.pc || 'JS-MAIN', ..
     const r3 = await p.evaluate(async () => { document.documentElement.removeAttribute('data-rn-shiphold'); S.sg.def = []; S.os.drive = true; S.os.doc = { id: '2026-11-09_1', status: 'run', owner: { tab: OS_TAB } }; await sgTick(); const g1 = JSON.parse(JSON.stringify(((window.__FS || {}).shp_runs || {})._guard || null)); const h = sgHere();
       S.os.doc = { ...S.os.doc, status: 'done' }; S.os.drive = false; await sgTick(); const g2 = JSON.parse(JSON.stringify(((window.__FS || {}).shp_runs || {})._guard || null)); return { g1, g2, h }; });
     const k = 'os_2026-11-09_1'; const e1 = r3.g1 && r3.g1.holds && r3.g1.holds[k]; const e2 = r3.g2 && r3.g2.holds && r3.g2.holds[k];
-    ok(e1 && e1.t0 > 0 && !e1.end && /오늘 출고 끝까지/.test(e1.why) && r3.g1.cfg && r3.g1.cfg.maxH === 3, '⑤ 원스톱이 돌면 출고 표에 칸(이 기기·시작 시각·최대 3시간)');
+    ok(e1 && e1.t0 > 0 && !e1.end && /오늘 출고 끝까지/.test(e1.why) && r3.g1.cfg && r3.g1.cfg.maxH === 1, '⑤ 원스톱이 돌면 출고 표에 칸(이 기기·시작 시각·최대 1시간)');
     ok(r3.h.on && !r3.h.col, '⑤ 수집기가 없는 기기(휴대폰 등)는 이 탭 흐름으로 보호');
     ok(e2 && e2.end > 0 && e2.t0 === e1.t0, '⑤ 원스톱이 끝나면 그 칸에 end(지우지 않음)');
     ok(nav.length === 0, '⑤ 여기까지 화면을 다시 열지 않음');
