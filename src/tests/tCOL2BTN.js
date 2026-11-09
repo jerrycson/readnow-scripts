@@ -31,7 +31,7 @@ async function partHelper() { console.log('① 인쇄 도우미 다리 — /col2
   const stopPH = async () => { if (ph) { ph.kill(); await new Promise((r) => (ph.exitCode != null ? r() : ph.on('exit', r))); ph = null; } };
   let c2pid = null;
   try {
-    await startPH(); const s0 = await P('GET', '/status'); ok(s0.j && s0.j.ver === '1.2.0', '인쇄 도우미 1.2.0 켜짐', s0.j);
+    await startPH(); const s0 = await P('GET', '/status'); ok(s0.j && /^1\.2\./.test(String(s0.j.ver)), '인쇄 도우미 1.2.x 켜짐(11/09 정밀 점검 — 1.2.2로 올라 기대값 1.2.0이 깨짐)', s0.j);
     ok((await req(8898, 'GET', '/col2/status')).st === 403, '머리(X-RN-Print) 없으면 거절');
     ok((await P('GET', '/col2/status', null, { Origin: 'https://evil.test' })).st === 403, '다른 웹 페이지 출처는 거절');
     const a0 = await P('GET', '/col2/status', null, { Origin: 'https://jerrycson.github.io' }); ok(a0.st === 200 && a0.j.ok && !a0.j.installed && !a0.j.running && !a0.j.want, '처음 = 묶음 없음 · 꺼짐(기본 꺼짐) · 웹앱 출처는 받음', a0.j);

@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.245의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.246의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.245' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.245', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.246' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.246', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -897,7 +897,7 @@
   const IMG_B = 'readnow-3a385.firebasestorage.app'; const HLP = 'http://127.0.0.1:8899'; /* (정범님 11/06 약속 20 '로거 혼자 맡는 일을 만들지 않음') 🔁 로거 대신 보관 — 로거 신호가 app_settings/backup_sub.h시간(기본 6 · 근거: 없음, 설정으로 바꿈) 넘게 없으면 backup_sub.pc(기본 MJ-MAIN)의 수집기가 같은 자료·사진 보관을 그 PC 인쇄 도우미(127.0.0.1:8898)로 함 · 도우미에 보관 길이 없으면 무엇이 필요한지 backup_sub.state에 적고 쉼 */
   const BKSUB_DEF = { on: true, pc: 'MJ-MAIN', h: 6 }; const BKSUB_HLP = 'http://127.0.0.1:8898'; const BKS = { cfg: null, at: 0, stAt: 0, msg: '' };
   const bkSubCfg = () => { if (!BKS.at || Date.now() - BKS.at > 10 * 60e3) { BKS.at = Date.now(); try { C('app_settings').doc('backup_sub').get().then((d) => { BKS.cfg = d.exists ? d.data() : {}; }).catch(() => {}); } catch (e) {} } return { ...BKSUB_DEF, ...(BKS.cfg || {}) }; };
-  const bkSubOn = () => { try { if (PUBONLY || !pubPcMode() || !AS || !AS.bkSubDue) return false; return !!AS.bkSubDue(bkSubCfg(), typeof BEATS !== 'undefined' ? BEATS : {}, PUBPC.name, PC_NAME, Date.now()).due; } catch (e) { return false; } };
+  const bkSubOn = () => { try { if (PUBONLY || !pubPcMode() || !AS || !AS.bkSubDue) return false; const B = typeof BEATS !== 'undefined' ? BEATS : {}; const lg = String(PUBPC.name || '').trim(); /* (1.89.246 🔬 정밀 점검 11/09) 로거 신호 기록을 아직 못 읽었으면(끊김·막 켬) '없음'을 부재로 보지 않음 — 11/09 15:33 MJ-MAIN(출고 PC)이 로거가 살아 있는데 낮에 대신 보관을 시작(dataBackupSub run · 0건 · 끝 못 냄) · 대신 보관은 02~05시(한국) 창에서만 · 🚚 출고 보호 중엔 안 함(11/06 ④-8) */ if (!(B && B.pcs && lg && B.pcs[lg] && +B.pcs[lg].atMs > 0)) return false; const hr = new Date(Date.now() + 9 * 3600e3).getUTCHours(); if (hr < 2 || hr >= 5) return false; if (typeof window.__rnShipGuardOn === 'function' && window.__rnShipGuardOn()) return false; return !!AS.bkSubDue(bkSubCfg(), B, PUBPC.name, PC_NAME, Date.now()).due; } catch (e) { return false; } };
   const BKH = () => (PUBONLY ? HLP : BKSUB_HLP);
   const bkSubNote = (msg) => { if (PUBONLY || (BKS.msg === msg && Date.now() - BKS.stAt < 6 * 3600e3)) return; BKS.msg = msg; BKS.stAt = Date.now(); try { C('app_settings').doc('backup_sub').set({ state: { pc: PC_NAME, at: nowIso(), msg: String(msg).slice(0, 300) } }, { merge: true }).catch(() => {}); log('🔁 로거 대신 보관: ' + msg, 1); } catch (e) {} };
   const imgRep = (fin) => C('prd_system').doc('imgMirror').set({ ...IMGM, pc: PC_NAME, fin: !!fin, uploadedAt: TS() }, { merge: true }).catch(() => {});
@@ -5022,7 +5022,8 @@
     const ref = C('crm_system').doc('collector_version');
     /* (1.72.0) 판 알림을 머리 서명마다 따로(h_서명.ver) — 머리가 다른 PC(옛 Tampermonkey 본체)는 이 판을 받을 수 없으니, 예전 칸(ver)을 올리지 않아 그 PC들이 새로고침을 되풀이하지 않게(HOME에서 새 탭 옮기기가 되풀이되던 원인) · 같은 머리 PC끼리만 서로 맞춤 */
     const HS = (() => { try { return (window.__rnLiveInfo && window.__rnLiveInfo().hsig) || 'x'; } catch (e) { return 'x'; } })(); const HK = 'h_' + HS;
-    try { await db.runTransaction(async (tx) => { const d = (await tx.get(ref)).data() || {}; const cur = (d[HK] || {}).ver; if (verNum(VER) > verNum(cur)) tx.set(ref, { [HK]: { ver: VER, by: PC_NAME, at: nowIso() } }, { merge: true }); }); } catch (e) {}
+    /* (1.89.246 🔬 정밀 점검 11/09) 이 거래가 인터넷이 흔들릴 때 끝나지 않으면(Firestore 거래는 연결될 때까지 기다림) 아래 ⚡ 빠른 업데이트 받침(__rnLiveReady · pc_live 듣기)이 영영 걸리지 않음 — 11/09 로거가 12:48 새 탭(1.89.238)을 집 인터넷 흔들림 중에 열어 14:30~21:44 새 판 7개(1.89.239~245)를 받아 두고도 9시간 동안 바꾸지 못함('새 수집기 … 있습니다' 줄 0) → 20초만 기다리고 넘어감(판 알림 쓰기는 다음 탭이 함) */
+    try { await Promise.race([db.runTransaction(async (tx) => { const d = (await tx.get(ref)).data() || {}; const cur = (d[HK] || {}).ver; if (verNum(VER) > verNum(cur)) tx.set(ref, { [HK]: { ver: VER, by: PC_NAME, at: nowIso() } }, { merge: true }); }), new Promise((r) => setTimeout(r, 20000))]); } catch (e) {}
     // 더 새 버전이 생겨도 이 PC의 작업은 멈추지 않음. 하던 작업은 이 버전으로 끝까지 계속하고,
     // ① 아무 작업도 없을 때(2분 이상 쉼) 또는 ② 모두 일괄 수집의 단계와 단계 사이에서만 새로고침 → 새 버전으로 그 자리부터 자동으로 이어감.
     // 같은 버전으로는 한 번만 시도 (동기화 전이라 새로고침해도 예전 버전이면, 그 버전으로 그냥 계속).

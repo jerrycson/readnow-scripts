@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.245의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.246의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.245' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.245', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.246' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.246', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -526,7 +526,7 @@
         job.qi += 1; if (job.qi % 5 === 0 || job.qi === job.queue.length) await saveJob(job);
         progress(`${label} 주문 상세`, job.qi, job.queue.length);
         const who = p.buyer && p.buyer.name ? p.buyer.name : '개인정보 없음';
-        setNow(`${label} 주문 상세 ${ono} (${fmtDate(p.orderedDate)} 주문, ${who}): 상품 ${p.items.length}개, 판매총액 ${p.totalAmount != null ? p.totalAmount.toLocaleString() + '원' : '-'}, ${p.stage || ''}`);
+        setNow(`${label} 주문 상세 ${ono} (${fmtDate(p.orderedDate)} 주문, ${who ? String(who).slice(0, 1) + '○○' : '-'}): 상품 ${p.items.length}개, 판매총액 ${p.totalAmount != null ? p.totalAmount.toLocaleString() + '원' : '-'}, ${p.stage || ''}`); /* (1.89.246 🔬 정밀 점검 11/09) 기록 줄(rn_logs · 진단 원문)에 주문인 이름이 그대로 남았음 — 첫 글자만 */
       }
     }
     job.status = 'done'; job.finishedAt = now(); if (job.mode === 'full') job.fullDoneAt = now(); job.touched = []; await saveJob(job); shareJobDone(job);

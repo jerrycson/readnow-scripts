@@ -7,12 +7,12 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '1.3.3'; // (1.3.3) 시트 허위 표시는 점수에서 빼고 참고 글로만 // (1.3.2) 🕘 기간 자르기 한국 날짜 // (1.3.1) 숫자 글자 형식 다시 씀(빠르게)
+  const VERSION = '1.3.4'; // (1.3.4) 🔬 정밀 점검 11/09 — 원 표시(won)도 만든 숫자 형식(NF_KO)을 다시 씀(웹앱 기기 기록 느린 함수 won 1,020ms/14번) // (1.3.3) 시트 허위 표시는 점수에서 빼고 참고 글로만 // (1.3.2) 🕘 기간 자르기 한국 날짜 // (1.3.1) 숫자 글자 형식 다시 씀(빠르게)
   const DEFAULT_THRESHOLDS = { modelHigh: 70, modelLow: 35, gainHigh: 60, gainLow: 40 };
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const numK = (v) => { if (v == null || v === '') return null; if (typeof v === 'number') return Number.isFinite(v) ? v : null; const n = parseFloat(String(v).replace(/[^\d.\-]/g, '')); return Number.isFinite(n) ? n : null; };
-  const won = (n) => (n == null ? '-' : Math.round(n).toLocaleString('ko-KR') + '원');
-  const NF_KO = (() => { try { return new Intl.NumberFormat('ko-KR'); } catch (e) { return null; } })(); /* (1.3.1) 숫자 글자 — 만든 형식을 다시 씀(toLocaleString은 부를 때마다 형식을 새로 만들어 웹앱 기기 기록에서 가장 오래 걸린 함수 중 하나) */
+  const NF_KO = (() => { try { return new Intl.NumberFormat('ko-KR'); } catch (e) { return null; } })();
+  const won = (n) => (n == null ? '-' : (NF_KO ? NF_KO.format(Math.round(n)) : Math.round(n).toLocaleString('ko-KR')) + '원'); /* (1.3.4 🔬 정밀 점검 11/09) 원 표시도 만든 형식을 다시 씀 — 11/09 웹앱 기기 기록 느린 함수 won@sellers-core 1,020ms(14번) */ /* (1.3.1) 숫자 글자 — 만든 형식을 다시 씀(toLocaleString은 부를 때마다 형식을 새로 만들어 웹앱 기기 기록에서 가장 오래 걸린 함수 중 하나) */
   const numTxt = (n) => (n == null ? '-' : NF_KO ? NF_KO.format(Math.round(n)) : Math.round(n).toLocaleString('ko-KR'));
 
   // 판매자 기록(웹앱 sellers 문서 / 툴팁 정보) → 계산용 값
