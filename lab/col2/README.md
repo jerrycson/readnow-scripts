@@ -17,6 +17,7 @@
 | `helper/col2-cdp.js` | 번외 크롬 띄우기·조종(DevTools 프로토콜 · 운영 ALPS 도우미와 같은 길) · 운영 공용 파일을 **떨어진 칸(isolated world)** 에 넣어 운영 수집기와 똑같이 읽음 |
 | `helper/col2-win.js` | 창 다루기(PowerShell + user32) — **번외 프로필 이름이 명령 줄에 든 크롬 창만** 찾음(정범님 창·운영 작업 창은 안 건드림) |
 | `helper/col2-y24.js` | (0.1.5) 🟦 예스24 판매관리 읽기 — 따로 된 프로필 col2-y24-chrome 세션 · 화면이 보내는 조건·머리글을 배워 API 직접 · 받은 응답은 이 PC 수집기가 예전 길로 올림 · 맡긴 일 |
+| `helper/col2-al.js` · `shadow/col2-al-compare.js` | (알라딘 읽기 · 합칠 때 판 정함) 🟧 알라딘 샵매니저 **읽기만** 그림자 — 따로 된 프로필 col2-al-chrome · 로그인 한 번 · 화면 없이 탭 안 fetch · 읽기 다섯 길만 · 손님 정보 버림 · 운영 칸과 견줘 col2_al에만 · 기본 꺼짐 · 설계 [`LOGIN_PLAN.md`](LOGIN_PLAN.md) |
 | `helper/col2-journal.js` · `col2-logwin.js` | (0.1.6) 📜 기록창 — 기록 바탕(가림·로거·날짜별 보관·회차 요약) · 옆 창 🗒 단추·Alt+L로 여닫는 기록창 |
 | `helper/col2-ui.js` · `col2-go.js` · `col2-help.js` | (0.1.7) 📊 옆 창 골격(칸 접기·순서·숨기기 · ▁ 작은 단추 · ⚙ 설정 · 단축키) · 🔗 바로 가기 표(평소 크롬 · 로거에서 숨김) · ❓ 설명서 |
 | `helper/col2-pace.js` | 그림자 읽기 속도 — 한 장 뒤 4초 안팎 · 한 시간 240 · 하루 1,600(정범님 11/05 밤 — 메인으로 돌릴 때까지 사람 속도의 두 배) · 429면 10분×횟수 쉼(`pace.json`에 이어 셈) |
@@ -76,6 +77,14 @@
 - 듣는 길: `POST /y24/feed` · `/y24/login` · `/y24/run {what: ord|prd|tour}` · `/cfg {y24, y24Jobs, side}` · 상태 `y24`·`side` · `/relay/pending`의 `y24`(웹앱 PC 줄).
 - 시험: `tests/t_y24.js`(가짜 예스24 판매관리 — 로그인 한 번·비번 안 남음·화면 없이 직접 부름·머리글 바뀜·출고 중·세션 풀림·맡긴 일·같은 송장·첫 건 확인·로거·옆 창) · 운영 `src/tests/tY24COL2.js`(수집기 다리) · `src/tests/tCOL2SIDE.js`(웹앱 단추·한 줄).
 - **판**: 합칠 때 `COL2_VER` 0.1.5 · 확인 못 한 것: 실제 예스24의 등록상품 화면 주소(`/Product/ProductList`로 짐작 — API 길에서 따옴)·실제 머리글 이름·세션 유지 시간·실제 Windows 창 숨김.
+
+## 🟧 알라딘 샵매니저 읽기 그림자 (정범님 11/09 밤 '로그인 일도 번외로' · 판은 합칠 때 메인이 정함) — 설계 [`LOGIN_PLAN.md`](LOGIN_PLAN.md)
+- **읽기만**(로그인 확인 · 상품 조회 목록 상태별 첫 쪽 · 주문확인요청 · 발송 요청 · 묻고 답하기 첫 쪽) — 쓰기(가격·판매중지·등록·발송·취소…)는 설계만. 값을 바꾸는 길은 `isReadUrl`이 막음(GET으로 바뀌는 `ajaxCmd`·`worder_process`·`NoticeEdit?edit=del` 포함).
+- **기본 꺼짐** — 옆 창 ⚙ › 일 켜기·끄기 '🟧 알라딘 샵매니저 읽기' → 옆 창 [🔐 알라딘 로그인] 한 번(정범님이 직접 · 저장 안 함 · 저절로 다시 로그인 안 함).
+- 읽으려면 이 PC 수집기 다리 `POST /al/feed {seat:{ok}, hold, opLostAt}`가 있어야 함(🪑 자리·🚚 출고 보호·핑퐁 막기) — 운영 수집기 쪽 다리는 메인 세션 몫(LOGIN_PLAN ⑤). 다리가 없으면 알라딘에 한 번도 안 감.
+- 견주기: 웹앱 대신 읽기로 `prd_listings`·`shp_state`·`crm_interactions/aladin_qna_*`를 받아(손님 정보 버림) 칸마다 → `col2_al/<일>_<시각>`·`col2_al/day_<날짜>_<PC>`. 웹앱 `C2R.ok`에 세 칸이 들어가기 전엔 '운영 문서 기다림'.
+- 듣는 길: `POST /al/feed` · `/al/login` · `/al/run {what: chk|confirm|deliv|list|qna}` · `/cfg {al}` · 상태 `al` · `/relay/pending`의 `al`.
+- 시험: `tests/t_al.js`(가짜 알라딘 샵매니저 — 기본 꺼짐·다리 없음·자리 없음이면 안 감 · 로그인 한 번·비번 안 남음 · 화면 없이 직접 · 바꾸는 길 0 · 견줌(같음·판매가 다름) · 손님 정보 0 · 출고 중 · 429 · 세션 풀림(재로그인 0) · 핑퐁 · 로거 거절).
 
 ## 0.1.6 (정범님 11/09 밤 '번외 수집기도 기록창을 쉽게 열고 닫게 · 기존 기록창을 똑같이 → 훨씬 편하고 쓸모 있게') — 📜 기록창
 **여는 법**: 📊 옆 창 맨 위 보라 띠 오른쪽 **[🗒 기록]** 한 번(다시 누르면 닫힘 · 단추 색 = 창 상태) · 단축키 **Alt+L**(열기·닫기) · **Esc**(닫기) · **/**(찾기 칸) · 창 안 **[↗ 따로 창]** = 기록창만 작은 앱 창(380×560 · 따로 된 프로필 `col2-log-chrome` · 옮긴 자리·크기 기억 · 화면 밖이면 오른쪽 위 · 주소 `http://127.0.0.1:8797/log`). 연 상태·자리·크기·거르기는 그 PC에 기억(`rn3-` 열쇠).
@@ -191,6 +200,7 @@ node tests/t_quota.js                 # (0.1.4) 하루 몫은 실제 요청 때�
 node tests/t_logwin.js                # (0.1.6) 📜 기록창 — 열고 닫기·거르기·찾기·접기·묶음·회차·멈춘 까닭·로거 가림
 node tests/t_ui.js                    # (0.1.7) 📊 옆 창 골격 — 바로 가기·설명서·단축키·칸·작게·설정
 node tests/t_y24.js                   # (0.1.5) 🟦 예스24 판매관리 읽기(화면 안 엶)·로그인 한 번·맡긴 일·옆 창
+node tests/t_al.js                    # 🟧 알라딘 샵매니저 읽기 그림자(읽기만)·로그인 한 번·자리·출고 중·핑퐁·로거·손님 정보 0
 node tests/t_shadow.js                # 그림자 읽기(운영과 같은 결과·쿠키 없음·떨어진 칸·속도·19금·429) + 비교 화면
 ```
 - 운영 저장소 위치 `COL2_PROD_REPO`(기본 `/home/user/readnow-scripts` · 읽기만) · Playwright `COL2_PW`(기본 `/opt/node-tools/node_modules/playwright`).

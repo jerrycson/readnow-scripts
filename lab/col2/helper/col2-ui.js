@@ -11,6 +11,7 @@
     { id: 'now', icon: '▶', t: '지금', open: true },
     { id: 'y24', icon: '🟦', t: '예스24 판매관리 읽기', open: true, office: true },
     { id: 'go', icon: '🔗', t: '바로 가기', open: true },
+    { id: 'al', icon: '🟧', t: '알라딘 샵매니저 읽기(그림자)', open: true, office: true }, /* (알라딘 읽기) 읽기만 · 기본 꺼짐 */
     { id: 'reads', icon: '📥', t: '최근 그림자 읽기', open: false },
     { id: 'work', icon: '🪟', t: '숨은 작업 창·점검', open: false },
     { id: 'tail', icon: '🧾', t: '도우미 글 끝(옛 칸)', open: false, hide: true },
@@ -124,6 +125,17 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
         + '<br><span class="k">한 장 뒤 ' + Math.round((p.minGapMs || 0) / 100) / 10 + '초 안팎 · 이번 시간 ' + (p.hourN || 0) + '/' + (p.hourCap || 0) + '장' + (p.coolMs ? ' · 쉬는 중 ' + Math.ceil(p.coolMs / 60000) + '분' : '') + (rl.outN ? ' · 웹앱이 아직 안 올린 결과 ' + rl.outN + '건' : '') + '</span>';
       $('onb').textContent = arm ? (s.on ? '한 번 더 누르면 끔' : '한 번 더 누르면 켬') : (s.on ? '⏹ 끄기' : '▶ 켜기'); $('onb').className = s.on ? 'warn' : 'p';
       const cs = cardOf('now') && cardOf('now').querySelector('.cs'); if (cs) cs.textContent = W.length ? '⛔ ' + W[0].t : s.on ? '잘 돎' : '꺼짐'; }
+    function drawAl(s) { const a = s.al || {}; if (!$('al')) return; let h; if (a.logger) h = '<span class="k">로거 PC — 알라딘 로그인 일 안 함(약속 0)</span>'; else if (!a.on) h = '<span class="wa">꺼 둠</span> <span class="k">(기본 꺼짐 · ⚙ 설정 › 일 켜기·끄기에서 켬 · 읽기만)</span>';
+      else if (a.pp) h = '<span class="no">⛔ 핑퐁 의심으로 멈춤</span><br><span class="k">' + E(a.pp) + '</span>';
+      else if (a.login === 'need') h = '<span class="no">🔐 알라딘 샵매니저 로그인 필요</span><br><span class="k">아래 단추를 한 번 누르면 알라딘 창이 앞으로 나옵니다 — 그 창에서 직접 로그인하면 저절로 숨음(아이디·비밀번호는 저장하지 않음 · 저절로 다시 로그인하지 않음)' + (a.loginMsg ? ' · 까닭: ' + E(a.loginMsg) : '') + '</span>';
+      else if (a.login === 'wait') h = '<span class="wa">🔐 알라딘 로그인 창이 열려 있음</span>';
+      else { const d = a.day || {}; h = (a.active ? '<span class="ok">그림자 읽는 중</span>' : '<span class="wa">쉬는 중</span>') + '<br><span class="k">오늘 ' + (d.n || 0) + '장 · 견줌 같음 ' + (d.same || 0) + ' · 다름 ' + (d.diff || 0) + ' · 운영 문서 기다림 ' + (d.wait || 0) + '</span>'; }
+      if (a.on && a.msg && a.login !== 'need') h += '<br><span class="k">' + E(a.msg) + '</span>'; $('al').innerHTML = h;
+      const want = a.logger || !a.on ? '' : a.login !== 'ok' || a.pp ? 'lg' : 'run'; if ($('alb').dataset.w !== want) { $('alb').dataset.w = want;
+        $('alb').innerHTML = want === 'lg' ? '<button class="p" id="allg">🔐 알라딘 로그인 (처음 한 번)</button>' : want === 'run' ? '<button data-a="confirm">📦 주문확인요청 지금</button><button data-a="list">📋 상품 목록 지금</button>' : '';
+        const lg = $('allg'); if (lg) lg.onclick = async () => { msg('…'); const j = await post('/al/login', { why: '옆 창 단추' }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); };
+        $('alb').querySelectorAll('[data-a]').forEach((b) => (b.onclick = async () => { const j = await post('/al/run', { what: b.dataset.a }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); })); }
+      const cs = cardOf('al') && cardOf('al').querySelector('.cs'); if (cs) cs.textContent = a.logger ? '' : !a.on ? '꺼 둠' : a.pp ? '⛔ 멈춤' : a.login === 'need' ? '🔐 로그인 필요' : a.active ? '읽는 중' : '쉼'; }
     function drawY24(s) { const y = s.y24 || {}; let h; if (y.logger) h = '<span class="k">로거 PC — 예스24 판매관리 읽기 안 함(약속 0)</span>'; else if (!y.on) h = '<span class="wa">꺼 둠</span> <span class="k">' + E(s.on ? '(⚙ 설정 › 일 켜기·끄기에서 켬)' : '(번외 수집이 꺼져 있음)') + '</span>';
       else if (y.login === 'need') h = '<span class="no">🔐 예스24 로그인 필요</span><br><span class="k">아래 단추를 한 번 누르면 예스24 창이 앞으로 나옵니다 — 그 창에서 로그인하면 저절로 숨고 읽기를 이어 갑니다(아이디·비밀번호는 저장하지 않음)' + (y.loginMsg ? ' · 까닭: ' + E(y.loginMsg) : '') + '</span>';
       else if (y.login === 'wait') h = '<span class="wa">🔐 예스24 로그인 창이 열려 있음</span> <span class="k">— 그 창에서 로그인하면 저절로 숨김</span>';
@@ -140,7 +152,7 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
       if (!edit && !UI.cards.rect.hide) { const f = (q, v) => ['x', 'y', 'w', 'h'].forEach((k) => { const i = $(q + k); if (i) i.value = v && v[k] != null ? v[k] : ''; }); f('w', s.win); f('h', s.hwin); } }
     function drawHead(s) { const k = s.kind === 'logger' ? 'logger' : 'office'; if (k !== kind) { kind = k; ls.set('kind', k); apply(); drawGo(); } $('hdP').textContent = '🖥 이 PC: ' + (s.pc || '—') + (kind === 'logger' ? ' · 🛰 로거' : ' · 🏢 사무실'); doc.title = '📊 번외 수집기 — ' + (s.pc || ''); }
     async function load() { lastLoad = Date.now(); try { const s = await api('GET', '/status'); if (s.ver && s.ver !== o.ver && new URLSearchParams(location.search).get('v') !== s.ver) { location.replace(location.pathname + '?v=' + encodeURIComponent(s.ver)); return; }
-        S = s; if (root.pcShow) root.pcShow(s); if (root.__jw && root.__jw.setState) root.__jw.setState(s); drawHead(s); drawMini(); if (UI.mini) return; drawNow(s); if (kind !== 'logger') drawY24(s); drawWork(s); drawLists(s); if (isOpen('set')) drawToggles(); }
+        S = s; if (root.pcShow) root.pcShow(s); if (root.__jw && root.__jw.setState) root.__jw.setState(s); drawHead(s); drawMini(); if (UI.mini) return; drawNow(s); if (kind !== 'logger') drawAl(s); if (kind !== 'logger') drawY24(s); drawWork(s); drawLists(s); if (isOpen('set')) drawToggles(); }
       catch (e) { S = null; drawMini(); if ($('stop')) $('stop').innerHTML = '<div class="no">⛔ 도우미에 닿지 못함: ' + E(e.message) + '</div>'; } }
     /* 지금 칸 켜기 — 두 번 누르기 */
     $('onb').onclick = async () => { if (!arm) { arm = Date.now(); if (S) drawNow(S); setTimeout(() => { if (arm && Date.now() - arm >= 4000) { arm = 0; if (S) drawNow(S); } }, 4100); return; } arm = 0; const j = await post('/cfg', { on: !(S && S.on), src: 'pc' }); msg(j.on ? '✓ 켰습니다' : '✓ 껐습니다'); load(); };
@@ -162,7 +174,7 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
       $('helpBody').querySelectorAll('[data-hj]').forEach((a) => (a.onclick = (e) => { e.preventDefault(); const t = $('helpBody').querySelector('#' + a.dataset.hj); if (t) { t.open = true; t.scrollIntoView({ block: 'start' }); } })); }
     /* ── ⚙ 설정 ── */
     function drawToggles() { if (!S || !$('tgbox')) return; const y = S.y24 || {}; const cb = (id, v, k) => { const e = $(id); if (!e) return; e.checked = !!v; e.onchange = async () => { await post('/cfg', { [k]: e.checked, src: 'pc' }); load(); }; };
-      $('tgy').style.display = kind === 'logger' ? 'none' : ''; cb('tg_y24', S.y24Want, 'y24'); cb('tg_y24j', S.y24Jobs, 'y24Jobs'); cb('tg_side', S.side, 'side'); }
+      $('tgy').style.display = kind === 'logger' ? 'none' : ''; cb('tg_y24', S.y24Want, 'y24'); cb('tg_y24j', S.y24Jobs, 'y24Jobs'); cb('tg_side', S.side, 'side'); cb('tg_al', S.alWant, 'al'); }
     function drawKeysHint() { const b = (id, a, base) => { const e = $(id); if (e) e.title = base + ' (' + keyLabel(a) + ')'; }; b('helpBtn', 'help', '❓ 이 수집기 설명서'); b('setBtn', 'set', '⚙ 설정 — 칸·단축키·창·바로 가기·내보내기'); b('miniBtn', 'mini', '▁ 작은 단추로 줄이기'); }
     function drawSet() { const ids = UI.order.filter((id) => !absent(id) && cardOf(id));
       $('setCards').innerHTML = ids.map((id, i) => { const c = cardDef(id), v = UI.cards[id]; return `<div class="row" data-cid="${id}"><label class="rt"><input type="checkbox" data-c="show" ${v.hide ? '' : 'checked'}> ${c.icon} ${E(c.t)}</label><label class="k"><input type="checkbox" data-c="open" ${v.open ? 'checked' : ''}> 펼침</label><button data-c="up" ${i ? '' : 'disabled'} title="위로">▲</button><button data-c="down" ${i < ids.length - 1 ? '' : 'disabled'} title="아래로">▼</button></div>`; }).join('');

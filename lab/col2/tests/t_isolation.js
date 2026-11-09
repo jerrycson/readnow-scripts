@@ -23,7 +23,10 @@ ok(runCode.every((f) => !/리드나우 작업 창/.test(rd(f).replace(/\/\*[\s\S
 ok(runCode.every((f) => !/GM_|unsafeWindow|Tampermonkey\.|@grant/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, ''))), 'Tampermonkey(GM_*)를 쓰지 않음 — 운영 수집기 저장소·탭 알림과 안 섞임');
 /* (0.1.7) 🔗 바로 가기 표(helper/col2-go.js)만 판매자 센터 주소를 지님 — 정범님 평소 크롬에 주소만 넘기고 읽거나 조종하지 않음(아래 검사) */
 const GOF = path.join(R, 'helper', 'col2-go.js');
-ok(runCode.filter((f) => f !== GOF).every((f) => !/\/scm\/|wlogin|rn-cred|rnp-cred/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, ''))), '판매자 센터(scm)·로그인·알라딘 계정을 다루는 코드 없음(바로 가기 표 밖)');
+/* (알라딘 읽기 · 정범님 11/09 밤 '로그인 일도 번외로') 🟧 알라딘 샵매니저 읽기 그림자(col2-al.js·col2-al-compare.js)만 샵매니저 주소를 지님 — 읽기 다섯 길만 · 로그인 칸을 채우지 않음 · 계정 값 없음(아래 검사) */
+const ALF = [path.join(R, 'helper', 'col2-al.js'), path.join(R, 'shadow', 'col2-al-compare.js')];
+ok(ALF.every((f) => fs.existsSync(f) && !/rn-cred|rnp-cred|\.fill\(|type=password[^']*'\)\.value|password'\]\.value|\bpw\.value/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, ''))) && /AC\.isReadUrl\(u\)/.test(rd(ALF[0])) && !/method:\s*'POST'/.test(rd(ALF[1])), '🟧 알라딘 읽기 그림자: 로그인 칸을 채우지 않음 · 계정 값 없음 · 보내기 전에 읽기 길 검사 · POST 없음');
+ok(runCode.filter((f) => f !== GOF && !ALF.includes(f)).every((f) => !/\/scm\/|wlogin|rn-cred|rnp-cred/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, ''))), '판매자 센터(scm)·로그인·알라딘 계정을 다루는 코드 없음(바로 가기 표 밖)');
 { const G = require(GOF); const g = rd(GOF).replace(/\/\*[\s\S]*?\*\//g, '');
   ok(!/fetch\(|require\(|XMLHttpRequest|wlogin|rn-cred|remote-debugging/.test(g) && G.LINKS.filter((l) => /\/scm\/|uscm\.yes24|SC=996008/.test(l.url)).every((l) => l.shop) && G.forPc('logger').every((l) => !l.shop && !/\/scm\/|yes24/.test(l.url)), '바로 가기 표: 읽기·조종 코드 없음 · 판매자·우리 숍 주소는 모두 shop(로거에서 숨김) · 로거 목록엔 알라딘 공개 화면만');
   const hs = rd(path.join(R, 'helper', 'readnow-col2-helper.js')); const go = hs.slice(hs.indexOf('function goOpen'), hs.indexOf('async function miniWin'));
@@ -36,7 +39,7 @@ ok(writes.length >= 2 && writes.every((c) => c.startsWith('col2_')), 'Firestore 
 ok(shadow.filter((f) => rel(f) !== 'shadow/col2-store.js').every((f) => !/\.collection\(|\.doc\(/.test(rd(f))), 'Firestore는 막이(col2-store.js)로만 — 화면 코드가 직접 칸을 열지 않음');
 ok(code.filter((f) => rel(f) !== 'shadow/col2-store.js').every((f) => !/localStorage|sessionStorage/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, ''))), '기기 저장은 col2-store.js(rn3-)로만');
 ok(code.every((f) => !/(^|[^.\w])(alert|confirm|prompt)\s*\(/m.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, ''))), '브라우저 팝업(alert·confirm·prompt) 없음');
-ok(files.filter((f) => /\.(js|html|md|json)$/.test(f)).every((f) => !/01[016789]-?\d{3,4}-?\d{4}/.test(rd(f).replace(/010-0000-0000/g, ''))), '휴대전화 번호 없음');
+ok(files.filter((f) => /\.(js|html|md|json)$/.test(f)).every((f) => !/01[016789]-?\d{3,4}-?\d{4}/.test(rd(f).replace(/010-0000-0000|010-1234-5678/g, ''))), '휴대전화 번호 없음');
 
 console.log('④ 따로 된 폴더');
 { /* (0.1.1) 이 폴더가 운영 저장소 안(lab/col2)으로 옮겨진 뒤에는 '따로 된 git' 대신 '운영 파일 안 고침'을 봄 — 이 폴더 코드에 운영 파일을 쓰거나 지우는 곳 없음 */

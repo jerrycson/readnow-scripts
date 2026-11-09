@@ -36,7 +36,7 @@ const UI = require('../helper/col2-ui.js'); const GO = require('../helper/col2-g
     const order = () => p.evaluate(() => [...document.querySelectorAll('#cards > details.card')].filter((e) => e.style.display !== 'none').map((e) => e.dataset.card));
     const hd = await p.evaluate(() => ({ t: document.getElementById('hdP').textContent, b: ['jwBtn', 'helpBtn', 'setBtn', 'miniBtn'].map((i) => !!document.getElementById(i)), sw: document.documentElement.scrollWidth }));
     ok(/이 PC: MJ-TEST · 🏢 사무실/.test(hd.t) && hd.b.every(Boolean) && hd.sw <= 380, '머리띠 = 이 PC 이름·종류 · 🗒 ❓ ⚙ ▁ · 380 폭 안(가로 넘침 없음)', JSON.stringify(hd));
-    ok(JSON.stringify(await order()) === JSON.stringify(['now', 'y24', 'go', 'reads', 'work']), '처음 칸 = 지금 · 예스24 · 바로 가기 · 최근 읽기 · 작업 창(옛 칸 둘은 숨김 — 지우지 않음)', (await order()).join(','));
+    ok(JSON.stringify(await order()) === JSON.stringify(['now', 'y24', 'go', 'al', 'reads', 'work']), '처음 칸 = 지금 · 예스24 · 바로 가기 · 🟧 알라딘 읽기 · 최근 읽기 · 작업 창(옛 칸 둘은 숨김 — 지우지 않음)', (await order()).join(','));
     ok(await p.evaluate(() => !document.querySelector('[data-card="work"]').open && !document.querySelector('[data-card="reads"]').open && document.querySelector('[data-card="now"]').open), '점검용 칸(작업 창·최근 읽기)은 처음엔 접힘');
     console.log('  · 🔗 바로 가기');
     const goIds = await p.evaluate(() => [...document.querySelectorAll('#gobox [data-go]')].map((b) => b.dataset.go));
@@ -51,7 +51,7 @@ const UI = require('../helper/col2-ui.js'); const GO = require('../helper/col2-g
     await p.keyboard.press('Escape'); ok(!(await vis('#ovHelp')), 'Esc = 설명서 닫기'); await p.keyboard.press('Alt+H'); ok(await vis('#ovHelp'), 'Alt+H = 설명서 열기'); await p.click('[data-ovx="help"]');
     const hp = await ctx.newPage(); hp.on('pageerror', (e) => errs.push(e.message)); await hp.goto(`http://127.0.0.1:${H.port}/help`); await hp.waitForFunction(() => /단축키/.test(document.body.textContent), null, { timeout: 5000 }).catch(() => {}); ok(/로거와 사무실 차이/.test(await hp.textContent('body')), '따로 주소 /help 도 같은 설명서'); await hp.close();
     console.log('  · ⚙ 칸 숨기기·순서·접기');
-    await p.click('#setBtn'); ok(await vis('#ovSet') && (await p.evaluate(() => document.querySelectorAll('#setCards [data-cid]').length)) === 7, '⚙ = 설정 겹창 · 칸 7개(숨긴 것도 다시 켤 수 있게)');
+    await p.click('#setBtn'); ok(await vis('#ovSet') && (await p.evaluate(() => document.querySelectorAll('#setCards [data-cid]').length)) === 8, '⚙ = 설정 겹창 · 칸 8개(숨긴 것도 다시 켤 수 있게)');
     await p.click('[data-cid="go"] [data-c="show"]'); await wait(600); ok(!(await order()).includes('go') && (await H.api('GET', '/ui')).j.ui.cards.go.hide, '바로 가기 칸 숨김 → 화면에서 빠지고 도우미(col2.json)에 저장');
     await p.click('[data-cid="go"] [data-c="show"]'); await p.click('[data-cid="go"] [data-c="up"]'); await p.click('[data-cid="go"] [data-c="up"]'); await wait(600);
     ok(JSON.stringify((await order()).slice(0, 3)) === JSON.stringify(['go', 'now', 'y24']), '▲ 두 번 → 바로 가기가 맨 위', (await order()).join(','));

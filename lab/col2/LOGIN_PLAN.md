@@ -1,0 +1,96 @@
+# 🟧 알라딘 로그인 일을 번외 수집기로 — 설계 (2026-11-10 새벽 · col2)
+
+정범님 11/09 밤: 모든 PC가 결국 번외 수집기 하나로 기존 일을 모두 처리 — 로그인 일(알라딘 샵매니저·중고 판매 관리·예스24 판매관리)도 번외로.
+본보기 = 예스24 판매관리(0.1.5 `helper/col2-y24.js` — 로그인 한 번 · 화면 없이 직접 부름). 일정은 비공개 `reports/COL2_REPLACE_PLAN.md` ③(11/12~15).
+**오늘 낸 것 = 설계 + 알라딘 '읽기' 그림자(`helper/col2-al.js` · `shadow/col2-al-compare.js` · 시험 `tests/t_al.js`).** 쓰기는 하나도 만들지 않았습니다(아래 ④는 설계만).
+
+## ① 알라딘 로그인 일 전부 (운영 수집기 `src/readnow-collector.src.js`·`readnow-pc-*.js`에서 셈 — 38가지: 읽기 22 · 쓰기 16)
+
+표의 칸: **꼴** = 보내는 요청 · **쿠키** = 알라딘 로그인 쿠키 필요 여부 · **막이** = CSRF·화면 상태 값(ASP.NET `__VIEWSTATE` 등) · **되풀이 위험** = 두 번 하면 생기는 일 · **돈** = 돈이 걸림. 번외 지금 = 오늘 번외가 하는가.
+
+### 읽기 (값을 바꾸지 않음)
+| # | 일 | 꼴(주소) | 쿠키 | 막이 | 손님 정보 | 되풀이 위험 | 돈 | 번외 지금 |
+|---|---|---|---|---|---|---|---|---|
+| R1 | 로그인 확인 | GET `/scm/wmain.aspx` · `/scm/worders.aspx?searchType=1&limitDate=1`(로그아웃 고리 있나) | 필요 | 없음 | 없음 | 없음(읽기) | — | ✅ 그림자 |
+| R2 | 상품 조회 목록(새로·바뀐·매일·전체 재검토) | GET `/scm/wrecord_edit.aspx?chkItemStockStatus=<상태>&…&ViewRowsCount=100&page=N&SortOrder=6` → `parseScmList` → `prd_listings` | 필요 | 없음 | 없음 | 쪽 수만큼 요청(속도) | — | ✅ 그림자(상태별 첫 쪽) |
+| R3 | 상품 찾기(판매중지·삭제 대상 키워드) | GET 같은 화면 `searchType=…&keyword=` | 필요 | 없음 | 없음 | — | — | 설계 |
+| R4 | 상품 정보수정 화면 읽기(수량 확인·설명 메모·공개 확인·지움 확인) | GET `/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=` | 필요 | 화면에 `__VIEWSTATE`(읽기엔 안 씀) | 없음 | **열기만 해도 수정 화면** — 단추는 안 누름 | — | 설계(쓰기 W6과 같은 화면이라 뒤로) |
+| R5 | 주문확인요청(빠른 읽기 15초) | GET `/scm/worder_preparatory_complete.aspx` → `parseDeliveryPage` → `shp_state/confirm`·`shp_orders` | 필요 | 없음 | **구매자·수령인·주소·전화** | — | 출고 시각 | ✅ 그림자(번호만) |
+| R6 | 발송 요청 | GET `/scm/worder_delivery.aspx?orderstep=4` → `shp_state/current`·`shp_snapshots` | 필요 | 없음 | **있음** | — | 출고 | ✅ 그림자(번호·송장 칸만) |
+| R7 | 배송&구매확정전(출고별 매출) | GET `/scm/worder_delivery_complete.aspx?page=` → `parseShippedPage` | 필요 | 없음 | 있음 | — | 매출 셈 | 설계 |
+| R8 | 주문 엑셀 받기(송장 맞추기) | **POST** `/scm/worder_excel.aspx`(양식) → `parseAladinOrderExcel` | 필요 | 양식 값 | 있음 | 읽기지만 POST | — | 설계 |
+| R9 | 주문조회 목록(고객) | GET `/scm/worders.aspx?page=&searchType=&limitDate=0` → `parseOrderList` → `crm_orders` | 필요 | 없음 | 있음 | — | — | 설계 |
+| R10 | 주문 상세 팝업 | GET `/scm/wpopup_order.aspx?ono=` → `parseOrderPopup` | 필요 | 없음 | **주소·전화 전부** | — | — | 설계(손님 정보라 마지막) |
+| R11 | 반품 목록 | GET `/scm/wreturn.aspx?returnStatus=&page=` | 필요 | 없음 | 있음 | — | 환불 | 설계 |
+| R12 | 묻고 답하기 목록 | GET `/scm/wUsedShopC2CQnASellerList.aspx?page=` → `parseQnaList` | 필요 | 없음 | 가린 작성자·글 | — | — | ✅ 그림자(번호·답변 상태만) |
+| R13 | 문의 상세 | GET `/scm/wUsedShopC2CAnswer.aspx?questionid=`(·`&method=edit` 읽기) | 필요 | 답변 양식 | 있음 | `method=edit`는 답변 화면 | — | 설계 |
+| R14 | 구매평 목록 | GET `/scm/wShopSurveySellerList.aspx?page=` | 필요 | 없음 | 가린 작성자 | — | — | 설계 |
+| R15 | 가게 설정·공지 읽기 | GET `/scm/wC2Cuser_account_make.aspx?action=2` · `/scm/NoticeEdit.aspx` | 필요 | 양식 | 없음 | 같은 화면이 저장 화면 | 배송비 | 설계 |
+| R16 | 부가가치세 조회 | 메뉴 고리를 찾아 GET(바꾸는 주소는 거름 · `vatReadPc`) | 필요 | 없음 | 없음 | — | 세금 셈 | 설계 |
+| R17 | 예치금(환급액) | GET `/account/wSubPayInfo.aspx?pType=SubPayDepositMoney` | 필요 | 없음 | 없음 | — | 정산 | 설계 |
+| R18 | 매입 신청 내역(우리가 알라딘에 판 책) | GET `/account/wc2binfo.aspx?pType=C2BOrderList…` · `c2borderinfo` | 필요 | 없음 | 우리 계좌 꼴 | — | 매입 대금 | 설계 |
+| R19 | 구매 내역(우리가 산 주문) | GET `/account/wmaininfo.aspx?pType=MyAccount` · `wordersinfo.aspx?ONO=` | 필요 | 없음 | 우리 주소 | — | — | 설계 |
+| R20 | 매입가 조회·팔기 장바구니 보기 | GET `/shop/usedshop/wc2b_search.aspx` · `wc2b_sales.aspx?search=1` | 필요 | 없음 | 없음 | 장바구니 화면은 W15와 같은 곳 | 매입가 | 설계 |
+| R21 | 추천 판매가 | GET `/shop/usedshop/c2c_sales_ajax.aspx?method=recomPriceSales` | 필요 | 없음 | 없음 | — | 가격 판단 | 설계 |
+| R22 | 등록 보조(ISBN·분류·출판사·저자·대학 분류 팝업) | GET `/scm/wpopup_*.aspx` · POST `wpopup_category.aspx/GetCategoryData`(JSON 읽기) | 필요 | 없음 | 없음 | — | — | 설계(등록 W7과 함께) |
+
+### 쓰기 (값을 바꿈 — 오늘은 하나도 만들지 않음)
+| # | 일 | 꼴 | 쿠키 | 막이 | 되풀이 위험 | 돈 |
+|---|---|---|---|---|---|---|
+| W1 | 판매가 바꾸기 | **GET** `/scm/ajaxCmd.aspx?cmd=chg.pricesales&ItemId&priceSales` | 필요 | 없음(**GET 한 번으로 바뀜**) | 같은 값이면 무해 · 틀린 값이면 바로 손해 | **큼** |
+| W2 | 수량 바꾸기 | **GET** `ajaxCmd cmd=chg.stock&realStock` | 필요 | 없음 | 0으로 두 번 = 판매 막힘 | 있음 |
+| W3 | 관리코드(SKU) 바꾸기 | POST `ajaxCmd` `cmd=chg.supplieritemcode` | 필요 | 없음 | 서가 위치가 틀어짐 | 간접 |
+| W4 | 판매 상태 바꾸기(판매중지·재개·일시중지) | POST `/scm/wrecord_edit_usedbatch.aspx` `fn=stockstatusbulkchg&stockStatusBefore&stockStatusToDo&items` | 필요 | 이전 상태 값 | 묶음이라 한 번에 여러 권 | 있음 |
+| W5 | 상품 삭제 | 같은 묶음 `stockStatusToDo=17` | 필요 | 이전 상태 값 | **되돌릴 수 없음** · SKU 다시 쓰지 않음 | 있음 |
+| W6 | 상품 정보 수정(설명·등급·사진) | 수정 화면 양식 + 사진 올리기 `/scm/upload/imgUpPopup.aspx`·`wimage_upload_scm.aspx`(multipart) | 필요 | `__VIEWSTATE`·`__EVENTVALIDATION` | 사진 두 번 = 겹침 | 등급 = 가격 |
+| W7 | 상품 등록(한 권) | `/scm/wrecord.aspx?ISBN=`·`?ItemId=` 양식(숨은 창) | 필요 | 화면 상태 값 | **두 번 = 같은 책 두 매물** | 있음 |
+| W8 | 대량 등록 | POST `/scm/UsedItemBulkReg.aspx`(파일) | 필요 | 화면 값 | 두 번 = 묶음째 겹침 | 있음 |
+| W9 | 발송준비시작(주문 확인) | **GET** `/scm/worder_process.aspx?cmd=StartDelivery&ono=` | 필요 | 없음(**GET**) | 이미 넘어간 주문엔 무해 | 출고 약속 |
+| W10 | 송장 입력·입력완료 | 발송 요청 화면 양식(`#rninv` 탭) | 필요 | 화면 값 | **같은 송장 두 번 금지(약속 10)** | 배송비·평판 |
+| W11 | 송장 일괄 올리기 | POST `/scm/worder_deliveryNoBulk.aspx`(CSV) | 필요 | 화면 값 | 같은 송장 두 주문 | 같음 |
+| W12 | 판매 불가 통보(주문 취소) | `/scm/ReportNotSalesLayer.aspx?ono=` 양식 | 필요 | 양식 값 | **되돌릴 수 없음** · 판매자 점수 | **큼** |
+| W13 | 문의 답변 | `wUsedShopC2CAnswer.aspx?method=edit` 양식 | 필요 | 양식 값 | 두 번 = 답 겹침 | — |
+| W14 | 가게 설정 저장 · 공지 등록·수정·삭제 | `wC2Cuser_account_make.aspx` 양식 · `NoticeEdit.aspx`(삭제는 **GET** `edit=del&pkid=`) | 필요 | 양식 값 | 공지 삭제 되돌릴 수 없음 | 배송비 |
+| W15 | 팔기 장바구니 담기(알라딘 매입 신청) | 매입가 화면 단추 → `wc2b_sales.aspx` | 필요 | 화면 값 | 두 번 = 같은 책 두 번 신청 | 매입 |
+| W16 | 로그인(아이디·네이버) | `/login/wlogin.aspx` POST · 네이버 창 | — | 화면 값 | **번갈아 넘어감(핑퐁) → 42FB 새 로그인 막힘(10/26)** | 계정 전체 |
+
+## ② 번외가 '로그인 한 번 · 화면 없이 직접' 부르는 길 (오늘 만든 것)
+1. 따로 된 크롬 프로필 `col2-al-chrome`(그 PC에만 · 확장·Tampermonkey 없음 · 화면 밖 · 작업 표시줄 숨김). 정범님이 옆 창 **[🔐 알라딘 로그인]** 한 번 → 창이 앞으로 → 정범님이 직접 로그인 → 저절로 숨음.
+   - 아이디·비밀번호 저장 안 함(번외는 로그인 칸을 건드리지 않음 · 크롬 비밀번호 저장 끔). 쿠키는 그 프로필 폴더에만, 번외 코드는 쿠키를 읽지도 않음.
+   - **저절로 다시 로그인하지 않음** — 세션이 풀리면 '🔐 로그인 필요'로 멈춤. (운영 수집기는 자동 재로그인을 하므로, 번외까지 하면 같은 계정 로그인이 두 배 — 핑퐁 위험.)
+2. 샵매니저 첫 화면(`/scm/wmain.aspx`)에 한 번 들어간 뒤로는 화면을 열지 않고 그 탭 안 떨어진 칸에서 `fetch(credentials:'include')`(운영 수집기 getDoc과 같은 주소) → 운영 공용 파일 넷(`readnow-aladin-core`·`products-core`·`shipping-core`·`orders-core`)을 GitHub에서 그대로 받아 해석.
+   - 알라딘 샵매니저는 ASP.NET 화면이라 읽기에 따로 된 열쇠·머리글이 없음(예스24처럼 머리글을 배울 일 없음) → 쿠키만으로 GET.
+   - 보내기 전 `isReadUrl` 검사 — 읽기 다섯 길 밖은 알라딘에 안 감. `ajaxCmd`·`worder_process`·`NoticeEdit`처럼 **GET 한 번으로 값이 바뀌는 길**은 경로 이름으로 먼저 막음.
+   - 화면 안에서 해석한 뒤 **번호·상태·값만** 받음(구매자·수령인·주소·전화·문의 글·작성자는 번외 밖으로 안 나옴).
+3. 견주기: 운영 칸(`prd_listings/aladin_<U코드>` · `shp_state/confirm`·`current` · `crm_interactions/aladin_qna_<번호>`)을 그 PC 운영 웹앱이 대신 읽어 넘김(웹앱 대신 읽기 길 · 손님 정보는 받는 순간 버림 `trimProd`) → 칸마다 견줌 → `col2_al/<일>_<시각>` · `col2_al/day_<날짜>_<PC>`에만(웹앱이 대신 씀).
+4. 속도: 한 장 뒤 3~6초 · 시간 30장 · 하루 300장 · 밤 1~5시 쉼 · 429면 30분 쉼 · 일마다 간격(로그인 확인 20분 · 주문확인요청·발송 요청 30분 · 상품 목록 60분 · 문의 120분) — 운영 출고 읽기(15초)와 **같은 계정·같은 IP**라 그림자가 늘 먼저 물러남(근거: 없음, 설정 `col2.json alcfg`).
+
+## ③ 로그인 자리 규칙 (기존 규칙 그대로 + 번외 몫)
+- **판매자 동시 로그인 ≤4대**(약관 19조 · `app_settings/aladin_login.dev` · 자리 차례 사람>출고>PC>클라우드). 번외 크롬 세션은 **새 기기 하나**로 봄(같은 PC라도 쿠키가 따로라 알라딘이 따로 셀 수 있음 — 확인 못 함).
+  - 그래서 번외는 **수집기 다리가 '이 PC 번외 세션에 자리 있음(seat.ok)'을 알려 줄 때만** 읽음 → 자리 차례 **맨 뒤**(클라우드보다도 뒤). 다리가 없거나 자리가 없으면 알라딘에 한 번도 안 감(시험 ①).
+  - 옮긴 뒤(⑤ 단계 9): 그 PC Tampermonkey 쪽이 로그인 일을 끄면 번외가 그 PC 자리 이름을 이어받음 → 다시 PC당 한 자리.
+- **상시 PC(JS-MAIN·MJ-MAIN·HOME = JS-MAIN과 한 자리)는 무엇도 로그인을 막거나 늦추지 않음**(10/27 절대 원칙) — 번외 그림자는 상시 PC의 운영 로그인을 막지 않도록, 자기 쪽에서만 물러남(자리 기다림·429 쉼·핑퐁 멈춤 모두 번외만 멈춤).
+- **로그인 번갈아 넘어감(핑퐁) 막기**: 번외는 저절로 재로그인 0 · 다리가 '번외 로그인 뒤 15분 안에 운영 세션이 풀림(opLostAt)'을 알리면 곧바로 멈춤 → 정범님 확인 뒤 다시(시험 ⑤). 11/04 정밀 점검 발견 사-5(핑퐁을 알아채는 규칙 없음)의 번외 쪽 답.
+- **출고 PC·MJ-MAIN 출고 중 안 건드림(약속 0-1)**: 다리가 알려 준 출고 보호(hold.on — 예스24 다리 것도 같이 봄)면 읽기·로그인 단추 모두 멈춤 → 끝나면 그 자리부터.
+- **로거는 로그인 일 절대 안 함(약속 0)**: 이름 LOGGER… 이면 켜 둬도 알라딘 크롬을 안 띄우고, 로그인 단추도 거절하고, 옆 창에 칸 자체가 없음(시험 ⑥). 로거와 사무실이 같은 프로필·같은 차례를 나누지 않음.
+
+## ④ 쓰기 일의 안전 (설계 — 11/12~15에 만들 때 이대로)
+1. **같은 일 두 번 금지**: 맡긴 일마다 이름표(id) → `al-jdone.json`(예스24 `y24-jdone.json`과 같은 꼴) · 다시 넘겨받아도 두 번 안 함. 묶음 쓰기(W4·W5)는 보내기 직전 그 상품들의 지금 상태를 다시 읽어 `stockStatusBefore`와 맞을 때만.
+2. **같은 송장 두 번 금지(약속 10)**: `al-inv.json` — 송장번호 → 주문번호. 다른 주문에 같은 송장이면 아무것도 누르지 않고 멈춤(예스24와 같은 길 · 운영 `rn-inv` 규칙과 같은 판단).
+3. **되풀이 0·실수 0**: 쓰기 뒤 반드시 다시 읽어 확인(R2·R4·R5·R6) → '확실하지 않음'이면 다시 보내지 않고 사람에게. 되돌릴 수 없는 일(W5 삭제·W12 판매 불가 통보·W14 공지 삭제)은 **첫 건 '확인 후 실행'**(그 창을 앞으로 꺼내 [▶ 이대로 실행] — 브라우저 팝업 아님).
+4. **돈 걸린 쓰기는 하루 그림자 비교 뒤 넘김**(정범님 11/09 '당긴 일정'에서도 건너뛰지 않음): W1 가격·W2 수량·W4/W5 상태·W7/W8 등록·W12 취소·W15 매입은 먼저 '그림자 쓰기'(번외가 **보낼 요청을 만들기만** 하고 보내지 않음) → 같은 시각 운영 수집기가 실제로 보낸 요청과 칸마다 견줌(`col2_al_w/`) → 하루 다름 0이면 그 일 하나만 정범님 허락으로 넘김.
+5. GET으로 바뀌는 길(W1·W2·W9·W14 삭제)은 쓰기 모듈만 부를 수 있는 따로 된 함수로 — 읽기 모듈(`isReadUrl`)에서는 영원히 막힘.
+6. 쓰기도 다리의 자리·출고 보호·핑퐁 조건을 그대로 따름 · 로거는 쓰기 모듈 자체를 불러오지 않음.
+
+## ⑤ 운영 쪽에 넘길 제안 (메인 세션 lead 몫 — 운영 파일은 여기서 안 고침)
+1. **수집기 다리 `POST 127.0.0.1:8797/al/feed`**(예스24 다리 `/y24/feed` 옆 · 10초마다 · 모듈만 고침 — 머리 HSIG `8559039d5a96110b` 그대로): `{ by, seat: {ok, why}, hold: {on, why}, opLostAt, cfg: {off} }`
+   - `seat.ok` = `aladin_login.dev`에 `<PC>~col2` 자리를 `seatAsk`로 받았을 때만 true(차례 맨 뒤 · 30분 일 없으면 풀림 규칙 그대로).
+   - `opLostAt` = 이 PC 운영 수집기가 '진짜 풀림'을 확인한 시각(`relogin0` 들어가기 직전).
+2. **웹앱 대신 읽기 `C2R.ok`에 세 칸 더하기**(읽기만): `prd_listings`(문서 이름 `aladin_*`) · `shp_state`(`confirm`·`current`만) · `crm_interactions`(`aladin_qna_*`만). 웹앱에서도 같은 칸만 남겨 넘기면 더 좋음(번외도 받는 순간 버림). 이것이 들어가기 전까지 견줌은 '운영 문서 기다림(wait)'으로 남고 그림자 읽기 자체는 돎.
+3. 웹앱 🧭 관리도구 PC 줄에 🟧 한 줄(`/relay/pending`의 `al` — 로그인 필요·자리·견줌 같음/다름).
+
+## ⑥ 남은 위험 (솔직히)
+- 알라딘이 '같은 PC 두 세션'을 어떻게 세는지 모름 — 4대 셈이 1대 늘 수 있음 → 그래서 자리 차례 맨 뒤 · 기본 꺼짐.
+- 실제 샵매니저 화면 모양(로그아웃 고리 · 탭 숫자 글)은 운영 공용 파일을 그대로 쓰므로 운영과 같이 맞고 같이 틀림 — 가짜 서버 시험은 공용 파일이 기대하는 꼴로 만든 것.
+- 운영 기록이 오래돼 생기는 '다름'(그사이 주문이 들어오고 나감) — 견줌 결과에 운영 기록 나이(`opAgeMin`)·`timing` 표시 · 하루 요약에서 걸러 봄.
+- 실기기(Windows 창 숨김·실제 로그인 유지 시간)는 아직 안 돌려 봄.
