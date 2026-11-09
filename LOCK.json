@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "1.78.439 판 내기",
+ "since": "2026-11-09T09:04:22Z",
+ "beat": "2026-11-09T09:04:22Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-09T09:03:57Z"
  },
- "host": null
+ "host": "vm"
 }
