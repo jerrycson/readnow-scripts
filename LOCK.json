@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "daily",
+ "what": "🔬 정밀 점검 11/09 판 내기 — 웹앱 1.78.441 · 수집기 1.89.246 · 판매자 공용 1.3.4 · 감시기 0.10.44",
+ "since": "2026-11-09T13:49:10Z",
+ "beat": "2026-11-09T13:49:10Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "Hosting 설정 스크립트",
   "at": "2026-11-09T13:09:43Z"
  },
- "host": null
+ "host": "vm"
 }
