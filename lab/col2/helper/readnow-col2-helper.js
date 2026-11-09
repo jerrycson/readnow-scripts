@@ -26,7 +26,7 @@
 'use strict';
 const http = require('http'), https = require('https'), fs = require('fs'), path = require('path'), os = require('os');
 const COL2 = require('../col2-config.js');
-const { makePace } = require('./col2-pace.js'); const { makeWin } = require('./col2-win.js'); const { Browser } = require('./col2-cdp.js'); const CMP = require('../shadow/col2-compare-core.js'); const { makeY24 } = require('./col2-y24.js'); const { makeAl } = require('./col2-al.js'); const { makeAlw } = require('./col2-alw.js'); /* (그림자 쓰기) 🟧✍ 운영이 보낸 쓰기와 견줌만 — 보내지 않음 */ const ALC = require('../shadow/col2-al-compare.js'); /* (알라딘 읽기) 🟧 알라딘 샵매니저 읽기 그림자 */ const JR = require('./col2-journal.js'); const UIC = require('./col2-ui.js'); const GO = require('./col2-go.js'); /* (0.1.7) 옆 창 골격·바로 가기 */ const { makeJobs } = require('./col2-jobs.js'); const { lift } = require('./col2-lift.js'); const TK = require('../shadow/col2-tasks.js'); const vm = require('vm'); /* (0.1.9) 로그인 없는 일 그림자 */
+const { makePace } = require('./col2-pace.js'); const { makeWin } = require('./col2-win.js'); const { Browser } = require('./col2-cdp.js'); const CMP = require('../shadow/col2-compare-core.js'); const { makeY24 } = require('./col2-y24.js'); const { makeAl } = require('./col2-al.js'); const { makeAlw } = require('./col2-alw.js'); /* (그림자 쓰기) 🟧✍ 운영이 보낸 쓰기와 견줌만 — 보내지 않음 */ const ALC = require('../shadow/col2-al-compare.js'); /* (알라딘 읽기) 🟧 알라딘 샵매니저 읽기 그림자 */ const JR = require('./col2-journal.js'); const UIC = require('./col2-ui.js'); const GO = require('./col2-go.js'); /* (0.1.7) 옆 창 골격·바로 가기 */ const { makeJobs } = require('./col2-jobs.js'); const { lift } = require('./col2-lift.js'); const TK = require('../shadow/col2-tasks.js'); const vm = require('vm'); const { SHIM } = require('./col2-shim.js'); /* (0.1.10) 떼어 온 함수의 받침 */ /* (0.1.9) 로그인 없는 일 그림자 */
 const VERSION = COL2.COL2_VER;
 const TEST = process.env.RN_COL2_TEST === '1';
 const PORT = +process.env.RN_COL2_PORT || COL2.PORT;
@@ -43,9 +43,14 @@ const now = () => Date.now(); const BOOT = Date.now().toString(36) + process.pid
 const kst = (ms) => new Date((ms || now()) + 9 * 3600e3).toISOString().slice(0, 19).replace('T', ' ');
 /* (0.1.6) 📜 기록창 — 줄마다 종류·수준·일 이름(col2-journal.js) · 남기기 전에 비밀값 꼴 가림 · 로거 PC는 우리 숍·계정 흔적을 남기지 않음 */
 const isLoggerPc = () => /^LOGGER/i.test(String((typeof CFG !== 'undefined' && CFG && CFG.pc) || os.hostname() || ''));
-const clean = (m) => { const t = JR.scrub(m); return isLoggerPc() ? JR.loggerScrub(t) : t; };
+/* (0.1.10) 🔑 운영 키 — 웹앱이 메모리로만 넘김(POST /relay/keys) · 파일(col2.json·jobs.json·relay-out.json·col2.log)·기록창·상태·col2_*에 값을 남기지 않음 · 로거 PC는 받지 않음 */
+const KEYS = { v: null, at: 0, n: 0, by: '' };
+const keyVals = () => (KEYS.v ? Object.values(KEYS.v).filter((x) => typeof x === 'string' && x.length >= 4).sort((a, b) => b.length - a.length) : []);
+const redact = (t) => { let s0 = String(t == null ? '' : t); for (const k of keyVals()) s0 = s0.split(k).join('«키»'); for (const k of keyVals()) { const e = encodeURIComponent(k); if (e !== k) s0 = s0.split(e).join('«키»'); } return s0; };
+const redactV = (v) => (KEYS.v ? JSON.parse(redact(JSON.stringify(v === undefined ? null : v))) : v);
+const clean = (m) => { const t = JR.scrub(redact(m)); return isLoggerPc() ? JR.loggerScrub(t) : t; };
 const log = (m) => { const line = `${kst()} 🧪 ${clean(m)}\n`; try { fs.appendFileSync(LOG_F, line); } catch (e) {} try { process.stdout.write(line); } catch (e) {} };
-const JRN = JR.makeJournal({ home: HOME, isLogger: () => isLoggerPc() }); const note = (m, o) => { const e = JRN.add(m, o); if (e) log(e.x); return e; };
+const JRN = JR.makeJournal({ home: HOME, isLogger: () => isLoggerPc() }); const note = (m, o) => { const e = JRN.add(redact(m), o); if (e) log(e.x); return e; };
 
 /* ── 설정(col2.json) ── */
 function loadCfg() { try { const v = JSON.parse(fs.readFileSync(CFG_F, 'utf8')); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } }
@@ -82,7 +87,8 @@ async function loadCore(force) { if (!force && CORE.src.length && now() - CORE.a
   CORE.moreErr = null;
   for (const f of COL2.CORE_MORE || []) { try { const t = await getF(f, /VERSION\s*=\s*'[\d.]+'/); out.push(t); ver[f] = (t.match(/VERSION\s*=\s*'([\d.]+)'/) || [])[1] || '?'; } catch (e) { CORE.moreErr = `${f}을 못 받음`; } }
   try { const L = COL2.LIFT; const lt = lift(await getF(L.file, /@version/), L.fns); if (lt.code) { out.push(lt.code); ver['lift:' + L.file] = lt.ver + '·' + lt.sig; } CORE.lift = { got: lt.got, miss: lt.miss, err: lt.err, ver: lt.ver, sig: lt.sig }; } catch (e) { CORE.lift = { err: e.message }; }
-  for (const f of COL2.CORE_NODE || []) { try { const t = await getF(f, /VERSION\s*=\s*'[\d.]+'/); const sb = { module: { exports: {} }, console, URL, URLSearchParams, TextDecoder, TextEncoder, setTimeout, clearTimeout }; sb.globalThis = sb; vm.createContext(sb); vm.runInContext(t, sb, { filename: f }); CORE.ext = sb.module.exports && sb.module.exports.run ? sb.module.exports : sb.ReadnowExt || null; ver[f] = CORE.ext ? CORE.ext.VERSION : '?'; } catch (e) { CORE.moreErr = `${f}을 못 넣음(${e.message})`; } }
+  out.push(SHIM); /* (0.1.10) 떼어 온 함수가 부르는 바깥 이름의 받침(메모리 칸 · 쿠키 없는 읽기 · 그린 화면 답) — 떨어진 칸에만 */
+  for (const f of COL2.CORE_NODE || []) { try { const t = await getF(f, /VERSION\s*=\s*'[\d.]+'/); const sb = { module: { exports: {} }, console, URL, URLSearchParams, TextDecoder, TextEncoder, setTimeout, clearTimeout, btoa, atob }; /* (0.1.10) btoa — 운영(브라우저)처럼 eBay 키 묶음 만들 때 */ sb.globalThis = sb; vm.createContext(sb); vm.runInContext(t, sb, { filename: f }); CORE.ext = sb.module.exports && sb.module.exports.run ? sb.module.exports : sb.ReadnowExt || null; ver[f] = CORE.ext ? CORE.ext.VERSION : '?'; } catch (e) { CORE.moreErr = `${f}을 못 넣음(${e.message})`; } }
   CORE.src = out; CORE.ver = ver; CORE.at = now(); if (B) B.ctxId = null; return CORE; }
 
 /* ── 숨은 작업 창(번외 크롬) ── */
@@ -174,6 +180,7 @@ function alAsk(c, id) { if (!ALC.PROD_ID[c] || !ALC.PROD_ID[c].test(id)) return;
 function alGot(c, id) { const g = RL.got.get(c + '/' + id); return g && now() - g.at < RC.gotMin * 60e3 * 3 ? g.v : undefined; }
 function relayGet(o) { const c = String(o.c || ''), id = String(o.id || ''); if (!RC.READ_OK.includes(c) || !RID.test(id)) return { code: 400, body: { ok: false, err: `웹앱이 대신 읽을 수 있는 칸은 ${RC.READ_OK.join('·')} 뿐` } };
   if (RC.READ_ID && RC.READ_ID[c] && !RC.READ_ID[c].includes(id)) return { code: 400, body: { ok: false, err: `${c} 칸은 ${RC.READ_ID[c].join('·')} 문서만 대신 읽음` } }; /* (0.1.9) app_settings는 bench만 */
+  if (RC.READ_RE && RC.READ_RE[c] && !new RegExp(RC.READ_RE[c]).test(id)) return { code: 400, body: { ok: false, err: `${c} 칸 문서 이름 꼴이 아님` } }; /* (0.1.10) mkt_kpipa는 날짜(8자리) 문서만 */
   RL.pageAt = now(); const k = c + '/' + id; const g = RL.got.get(k); if (g && now() - g.at < RC.gotMin * 60e3) return { code: 200, body: { ok: true, have: true, v: g.v } };
   if (!RL.want.has(k)) RL.want.set(k, { c, id, at: now() }); return { code: 200, body: { ok: true, have: false, relay: relaySum() } }; }
 function relaySample(o) { const n = num(o.n, 1, 60, 15); RL.pageAt = now(); if (o.ask) { RL.sample = null; RL.sampleN = n; return { ok: true, have: false, relay: relaySum() }; }
@@ -184,11 +191,14 @@ function relayPut(o) { const c = String(o.c || ''); if (!c.startsWith(COL2.PREFI
   RL.pageAt = now(); const k = 'o' + now().toString(36) + Math.random().toString(36).slice(2, 8); RL.out.push({ k, c, id, v: o.v == null ? {} : o.v, merge: !!o.merge, at: now() }); saveOut(); return { code: 200, body: { ok: true, k, relay: relaySum() } }; }
 function relayPending(by) { RL.pullAt = now(); RL.pullBy = String(by || '').slice(0, 80);
   const poolAsk = AU.poolAskAt && now() - AU.poolAskAt < 10 * 60e3 ? 0 : poolNeed(); if (poolAsk) AU.poolAskAt = now();
-  return { ok: true, pool: poolAsk, poolAfter: AU.lap.after || null, poolLap: AU.lap.n, want: [...RL.want.values()].sort((a, b) => (a.al ? 1 : 0) - (b.al ? 1 : 0)).slice(0, 40).map(({ c, id }) => ({ c, id })) /* (알라딘 읽기) 예전 칸(prd_ids·prd_books) 부탁이 먼저 — 알라딘 그림자 부탁이 자동 그림자 읽기를 굶기지 않게 */, sample: RL.sample ? 0 : RL.sampleN, fields: PROD_FIELDS, out: RL.out.slice(0, 25), hot: now() - RL.pageAt < 120e3, idleSec: RC.idleSec, hotSec: RC.hotSec, pc: CFG.pc || null, pcSrc: CFG.pcSrc || null, ver: VERSION, y24: y24Line(), al: alLine() }; } /* (0.1.5) y24 = 웹앱 🧭 관리도구 PC별 상태 한 줄(예스24 판매관리 읽기) */
-function relayAnswer(o) { let n = 0; for (const d of Array.isArray(o.docs) ? o.docs.slice(0, 200) : []) { const c = String(d && d.c || ''), id = String(d && d.id || ''); if (ALC.PROD_ID[c]) { const v = ALC.trimProd(c, id, d.v); if (v === undefined) continue; const k = c + '/' + id; RL.got.set(k, { v, at: now() }); RL.want.delete(k); n++; continue; } /* (알라딘 읽기) 알라딘 그림자 운영 칸 — 견줄 칸만 남김 */ if (!RC.READ_OK.includes(c) || !RID.test(id) || (RC.READ_ID && RC.READ_ID[c] && !RC.READ_ID[c].includes(id))) continue; const k = c + '/' + id; RL.got.set(k, { v: d.v == null ? null : d.v, at: now() }); RL.want.delete(k); n++; }
+  return { ok: true, pool: poolAsk, poolAfter: AU.lap.after || null, poolLap: AU.lap.n, want: [...RL.want.values()].sort((a, b) => (a.al ? 1 : 0) - (b.al ? 1 : 0)).slice(0, 40).map(({ c, id }) => ({ c, id })) /* (알라딘 읽기) 예전 칸(prd_ids·prd_books) 부탁이 먼저 — 알라딘 그림자 부탁이 자동 그림자 읽기를 굶기지 않게 */, sample: RL.sample ? 0 : RL.sampleN, fields: PROD_FIELDS, out: RL.out.slice(0, 25), hot: now() - RL.pageAt < 120e3, idleSec: RC.idleSec, hotSec: RC.hotSec, pc: CFG.pc || null, pcSrc: CFG.pcSrc || null, ver: VERSION, y24: y24Line(), al: alLine(), keys: keysWant(), lists: listWant() }; } /* (0.1.10) keys = 운영 키를 메모리로 넘겨 달라(사무실 PC만 · 이름만) · lists = 운영 문서 목록(prd_market_nobook)을 넘겨 달라 */ /* (0.1.5) y24 = 웹앱 🧭 관리도구 PC별 상태 한 줄(예스24 판매관리 읽기) */
+function relayAnswer(o) { let n = 0; for (const d of Array.isArray(o.docs) ? o.docs.slice(0, 200) : []) { const c = String(d && d.c || ''), id = String(d && d.id || ''); if (ALC.PROD_ID[c]) { const v = ALC.trimProd(c, id, d.v); if (v === undefined) continue; const k = c + '/' + id; RL.got.set(k, { v, at: now() }); RL.want.delete(k); n++; continue; } /* (알라딘 읽기) 알라딘 그림자 운영 칸 — 견줄 칸만 남김 */ if (!RC.READ_OK.includes(c) || !RID.test(id) || (RC.READ_ID && RC.READ_ID[c] && !RC.READ_ID[c].includes(id)) || (RC.READ_RE && RC.READ_RE[c] && !new RegExp(RC.READ_RE[c]).test(id))) continue; const k = c + '/' + id; RL.got.set(k, { v: d.v == null ? null : d.v, at: now() }); RL.want.delete(k); n++; }
   while (RL.got.size > 1500) RL.got.delete(RL.got.keys().next().value);
   if (Array.isArray(o.sample)) { RL.sample = { list: o.sample.slice(0, 60).filter((b) => b && RID.test(String(b.id || ''))), at: now() }; RL.sampleN = 0; n++; }
   if (Array.isArray(o.pool)) { if (poolTake(o)) n++; }
+  if (o.lists && typeof o.lists === 'object') for (const c of RC.LIST_OK || []) { const L = Array.isArray(o.lists[c]) ? o.lists[c].slice(0, 200) : null; if (!L) continue; LW2.at[c] = now(); LW2.ask.delete(c);
+    if (isLoggerPc()) { note('로거 PC는 우리 상품 목록을 받지 않음(약속 0) — 받은 목록을 버림', { k: 'sys', l: 'warn', m: '그림자 일' }); continue; }
+    const docs = L.filter((d) => d && RID.test(String(d.id || '')) && d.v && typeof d.v === 'object').map((d) => ({ id: String(d.id), v: nbTrim(d.v) })); for (const d of docs) RL.got.set(c + '/' + d.id, { v: d.v, at: now() }); n += JOBS.feedNb(docs); }
   if (o.err) { RL.err = String(o.err).slice(0, 200); RL.errAt = now(); } return { ok: true, n }; }
 function relayAck(o) { const ks = new Set(Array.isArray(o.keys) ? o.keys.map(String) : []); const b = RL.out.length; RL.out = RL.out.filter((x) => !ks.has(x.k)); const done = b - RL.out.length;
   const errs = o.errs && typeof o.errs === 'object' ? Object.values(o.errs).map(String) : []; if (errs.length) { RL.err = errs[0].slice(0, 200); RL.errAt = now(); } else if (done) RL.err = null;
@@ -206,8 +216,27 @@ async function extHttp(o) { const ac = new AbortController(); const tm = setTime
   try { const r = await fetch(extUrl(o.url), { method: o.method || 'GET', headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36', 'Accept-Language': 'ko-KR,ko;q=0.9', ...(o.headers || {}) }, body: o.data, redirect: 'follow', signal: ac.signal, credentials: 'omit' });
     const buf = Buffer.from(await r.arrayBuffer()); const cs = ((r.headers.get('content-type') || '').match(/charset=([\w-]+)/i) || [])[1] || 'utf-8'; let text; try { text = new TextDecoder(cs.toLowerCase()).decode(buf); } catch (e) { text = buf.toString('utf8'); } return { status: r.status, text }; }
   catch (e) { throw new Error(e.name === 'AbortError' ? '30초 안에 답하지 않음' : '연결 실패: ' + e.message); } finally { clearTimeout(tm); } }
+/* (0.1.10) 🔑 키 받기 — 웹앱(이 PC 운영 웹앱 · 이미 로그인)이 app_secrets/ext.keys 중 번외가 쓸 이름만 POST /relay/keys {keys} · 로거 PC는 거절 */
+const KTTL = () => num((CFG.keys || {}).ttlH, 1, 72, COL2.KEYS.ttlH) * 3600e3;
+const keysLive = () => !!(KEYS.v && now() - KEYS.at < KTTL());
+function keysPut(o, org) { if (isLoggerPc()) { note('🔑 로거 PC는 운영 키를 받지 않음(우리 계정 키 — 약속 0) · 거절함', { k: 'sys', l: 'warn', m: '키' }); return { code: 403, body: { ok: false, err: '로거 PC는 운영 키를 받지 않음(약속 0)' } }; }
+  if (/^chrome-extension:/i.test(org || '')) return { code: 403, body: { ok: false, err: '웹앱만' } };
+  const K = o && o.keys && typeof o.keys === 'object' ? o.keys : null; if (!K) return { code: 400, body: { ok: false, err: 'keys가 없음' } }; const v = {};
+  for (const k of TK.KEY_OK) if (typeof K[k] === 'string' && K[k].trim() && K[k].length <= 400 && !TK.keyLogger(k)) v[k] = K[k].trim();
+  const was = keyVals(); KEYS.v = Object.keys(v).length ? v : null; KEYS.at = now(); KEYS.n = Object.keys(v).length; KEYS.by = String((o && o.by) || '').slice(0, 60);
+  if (!was.length || was.join('|') !== keyVals().join('|')) note(`🔑 운영 키 ${KEYS.n}개를 메모리에만 받음(${Object.keys(v).join('·') || '없음'} — 값은 어디에도 남기지 않음 · ${Math.round(KTTL() / 3600e3)}시간 뒤 버리고 다시 부탁)`, { k: 'sys', m: '키' });
+  return { code: 200, body: { ok: true, n: KEYS.n, names: Object.keys(v) } }; }
+const keysWant = () => { if (isLoggerPc() || keysLive() && now() - KEYS.at < KTTL() * 0.8) return null; let pl = []; try { pl = JOBS.plan(); } catch (e) {} const ks = pl.filter((k) => TK.byK[k] && TK.byK[k].keys); if (!ks.length) return null; return TK.KEY_OK.filter((k) => !TK.keyLogger(k)); };
+function keysFor(src) { if (isLoggerPc() || !keysLive()) return {}; const X = CORE.ext; const names = new Set(); try { for (const k of (X && X.SOURCES[src] && X.SOURCES[src].keys) || []) names.add(k); for (const e of (X && X.KEYS) || []) if ((e.for || []).includes(src)) names.add(e.k); } catch (e) {} const o = {}; for (const k of names) if (KEYS.v[k] && !TK.keyLogger(k)) o[k] = KEYS.v[k]; return o; }
+const keysSum = () => (isLoggerPc() ? { logger: true, n: 0, names: [] } : { n: keysLive() ? KEYS.n : 0, names: keysLive() ? Object.keys(KEYS.v) : [], at: KEYS.at ? kst(KEYS.at) : null, want: !!keysWant() });
+/* (0.1.10) 운영 문서 목록 부탁 — 🔍 새상품 없는 시세(사무실 PC만): 운영이 이미 본 prd_market_nobook 문서 listN개 · everyH시간에 한 번 */
+const LW2 = { at: {}, ask: new Set() };
+const listWant = () => { if (isLoggerPc()) return []; let pl = []; try { pl = JOBS.plan(); } catch (e) {} if (!pl.includes('nbMarket')) return []; const c = 'prd_market_nobook'; const nb = COL2.NB;
+  if (JOBS.qLen('nbMarket') > 0 || (LW2.at[c] && now() - LW2.at[c] < num((CFG.jobs || {}).nbEveryH, 1, 168, nb.everyH) * 3600e3)) return []; return [{ c, n: nb.listN, after: (JOBS._S().nbAfter || null) }]; };
+/* 받은 운영 문서는 견줄 칸만(이력·옛 판은 버림) */
+const nbTrim = (v) => { const m = v.market || {}; return { usedCode: v.usedCode || null, listingId: v.listingId || null, title: v.title || null, query: v.query || null, at: v.at || null, src: v.src || null, candSig: v.candSig || null, median: m.median ?? null, low: m.low ?? null, n: m.n ?? null, our: Array.isArray(v.history) && v.history.length ? v.history[v.history.length - 1].our ?? null : v.our ?? null }; };
 const JOBS = makeJobs({ home: HOME, VERSION, PASS: COL2.PASS, BUSY: COL2.BUSY, OWN_SC: COL2.OWN_SC, aladin: ALADIN, cfg: () => ({ on: !TEST, ...(CFG.jobs || {}) }), kind: () => (isLoggerPc() ? 'logger' : 'office'), pc: () => CFG.pc || os.hostname(), pace: PACE,
-  core: () => loadCore(), ext: () => CORE.ext || null, browser: async () => { const br = await ensureBrowser('그림자 일'); await br.land(ALADIN + '/', W('pageTimeoutSec')); return br; }, http: extHttp, busy: busyNow,
+  core: () => loadCore(), ext: () => CORE.ext || null, keysFor: (src) => keysFor(src), redact: (v) => redactV(v), KPIPA: COL2.KPIPA, test: TEST, kpBase: TEST ? process.env.RN_COL2_KPIPA_BASE || '' : '', extUrl: (u) => extUrl(u), /* (0.1.10) */ browser: async () => { const br = await ensureBrowser('그림자 일'); await br.land(ALADIN + '/', W('pageTimeoutSec')); return br; }, http: extHttp, busy: busyNow,
   want: (c, id) => { const r = relayGet({ c, id }); return r.code === 200 ? r.body : { err: r.body.err }; }, out: (c, id, v) => outReplace(c, id, v), note: (m, o) => note(m, o) });
 const prodPlan = () => TK.plan(isLoggerPc() ? 'logger' : 'office', CFG.jobs || {}).includes('product'); /* 공개 상품 화면 그림자(0.1.2~)는 그림자 일 켜기와 상관없이 — 로거는 하지 않음 */
 /* 상태에 싣는 그림자 일 요약(작게) — 일마다 오늘 견줌·같음 비율·넘길 수 있음 */
@@ -229,7 +258,7 @@ function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const out = { 
   else if (wasH !== !!CFG.headless && B) { closeBrowser('화면 방식 바뀜').then(() => tick('화면 방식 바뀜')); }
   return ch; }
 
-function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, jobs: jobsSum(), busy: busyNow(), /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), kind: isLoggerPc() ? 'logger' : 'office', pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), y24: Y24.sum(), al: AL.sum(), alw: ALW.sum(), alWant: CFG.al === true, side: sideOn(), y24Want: CFG.y24 == null ? !TEST : CFG.y24 !== false, y24Jobs: CFG.y24Jobs !== false, upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen, lwin: { open: lwinOpen(), rect: CFG.lwin || null }, /* (0.1.8) 📜 기록창 따로 창이 떠 있는지(🗒 단추 색) */
+function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, jobs: jobsSum(), keys: keysSum(), /* (0.1.10) 키 이름·수만(값 없음) */ busy: busyNow(), /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), kind: isLoggerPc() ? 'logger' : 'office', pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), y24: Y24.sum(), al: AL.sum(), alw: ALW.sum(), alWant: CFG.al === true, side: sideOn(), y24Want: CFG.y24 == null ? !TEST : CFG.y24 !== false, y24Jobs: CFG.y24Jobs !== false, upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen, lwin: { open: lwinOpen(), rect: CFG.lwin || null }, /* (0.1.8) 📜 기록창 따로 창이 떠 있는지(🗒 단추 색) */
   opens: opensHour(), chrome: { fails: CH.fails, last: CH.last, okAt: CH.okAt ? kst(CH.okAt) : null, coolUntil: CH.coolUntil ? kst(CH.coolUntil) : null, cools: CH.cools, adopts: CH.adopts, retries: CH.retries }, msg: [ST.msg, CFG.on && AU.msg && AU.msg !== ST.msg ? '자동 읽기: ' + AU.msg : ''].filter(Boolean).join(' · '), /* (0.1.4) 자동 읽기가 왜 쉬는지(하루 몫·표본 기다림·작업 창 준비 실패)도 웹앱 col2_ctl·진단에 보이게 — 예전엔 작업 창 지킴이 글만 보여 멈춘 까닭을 몰랐음 */ reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: JRN.tail(15).map((e) => ({ t: e.t, m: e.x, l: e.l, k: e.k })), pcKind: JRN.kind(), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
 
 /* ── 그림자 읽기 ── */
@@ -291,7 +320,7 @@ const poolLeft = () => Math.max(0, AU.pool.length - AU.cur);
 function poolNeed() { if (!autoOn()) return 0; if (AU.lap.end) { if (poolLeft() > 0) return 0; lapNext(); } return poolLeft() < RC.poolLow ? RC.poolN : 0; } /* (0.1.2) 하루 지나면 새 표본으로 갈아끼우던 것을 없앰 — 갈아끼우면 남은 책을 버리고 같은 책을 다시 읽게 됨 */
 const untilKstMidnight = () => { const t = now() + 9 * 3600e3; return 86400e3 - (t % 86400e3); };
 /* 같은 문서를 아직 안 올렸으면 새 값으로 바꿔 끼움(하루 요약이 쌓이지 않게) */
-function outReplace(c, id, v, merge) { const i = RL.out.findIndex((x) => x.c === c && x.id === id); const it = { k: 'o' + now().toString(36) + Math.random().toString(36).slice(2, 8), c, id, v, merge: !!merge, at: now() }; if (i >= 0) RL.out[i] = it; else RL.out.push(it); saveOut(); }
+function outReplace(c, id, v, merge) { v = redactV(v); /* (0.1.10) 키 값이 섞여도 남기지 않음 */ const i = RL.out.findIndex((x) => x.c === c && x.id === id); const it = { k: 'o' + now().toString(36) + Math.random().toString(36).slice(2, 8), c, id, v, merge: !!merge, at: now() }; if (i >= 0) RL.out[i] = it; else RL.out.push(it); saveOut(); }
 async function autoStep() {
   if (!CFG.on) { AU.msg = '번외 수집 꺼짐'; return 30e3; }
   if (!autoOn()) { AU.msg = '자동 읽기 꺼 둠(설정 auto)'; return 30e3; }
@@ -300,8 +329,8 @@ async function autoStep() {
   /* (0.1.9) 그림자 일 — 공개 상품 화면 읽기와 번갈아 하나씩(같은 속도 규칙 PACE를 함께 씀) · 상품 그림자를 하지 않는 PC(로거)는 표본 책을 일 차례로만 넘기고 그림자 일만 */
   { const bz = busyNow(); if (bz) { AU.msg = '운영이 바빠 쉼 — ' + bz.why; JOBS.step().catch(() => {}); return COL2.BUSY.restMs; } }
   if (!prodPlan() && AU.cur < AU.pool.length && JOBS.bookQ() < 50) { const L = AU.pool.slice(AU.cur, AU.cur + 100); AU.cur += L.length; AU.lap.read += L.length; JOBS.feedBooks(L); savePos(); }
-  if (!prodPlan() || (AU.turn = (AU.turn || 0) + 1) % 2 === 0) { if (RL.out.length < RC.outMax) { ST.reading = { job: true, at: now() }; let j; try { j = await JOBS.step(); } catch (e) { j = { did: false, rest: 10e3, why: e.message }; } finally { ST.reading = null; }
-      if (j.did) { AU.msg = '그림자 일 도는 중'; return 1000; } if (!prodPlan()) { if (AU.cur >= AU.pool.length && AU.lap.end && AU.pool.length) lapNext(); AU.msg = '그림자 일: ' + (j.why || '쉼') + (AU.cur >= AU.pool.length ? ' · 표본 책을 기다림(이 PC 웹앱이 넘김)' : ''); return Math.max(1000, Math.min(j.rest || 15e3, 30 * 60e3)); } } }
+  if (!prodPlan() || AU.cur >= AU.pool.length || (AU.turn = (AU.turn || 0) + 1) % 2 === 0) { /* (0.1.10) 읽을 표본 책이 없을 때는 그림자 일을 차례마다(예전엔 한 번 걸러 15초씩 쉬어 사무실 PC 그림자 일이 16초에 하나) */ if (RL.out.length < RC.outMax) { ST.reading = { job: true, at: now() }; let j; try { j = await JOBS.step(); } catch (e) { j = { did: false, rest: 10e3, why: e.message }; } finally { ST.reading = null; }
+      if (j.did) { AU.msg = '그림자 일 도는 중'; return 1000; } if (!prodPlan() || (AU.cur >= AU.pool.length && /차례 기다림|운영 값 기다림/.test(j.why || ''))) { if (AU.cur >= AU.pool.length && AU.lap.end && AU.pool.length) lapNext(); AU.msg = '그림자 일: ' + (j.why || '쉼') + (AU.cur >= AU.pool.length ? ' · 표본 책을 기다림(이 PC 웹앱이 넘김)' : ''); return Math.max(1000, Math.min(j.rest || 15e3, 30 * 60e3)); } } }
   if (AU.cur >= AU.pool.length && AU.lap.end && AU.pool.length) lapNext();
   if (AU.cur >= AU.pool.length) { AU.msg = AU.pool.length ? `다음 ${num(RC.poolN, 1, 5000, 1000).toLocaleString()}권을 기다림(${AU.lap.n}바퀴 · 지금까지 ${AU.lap.read}권) — 이 PC에서 리드나우 웹앱(로그인된 것)이 이어 넘김` : '표본 목록을 기다림 — 이 PC에서 리드나우 웹앱(로그인된 것)을 열어 두면 넘겨받음'; return 15e3; }
   if (RL.out.length >= RC.outMax) { AU.msg = `올리지 못한 결과가 ${RL.out.length}건 — 웹앱이 열릴 때까지 쉼`; return 60e3; }
@@ -481,6 +510,7 @@ const srv = http.createServer((req, res) => {
   if (p === '/relay/put') return body((o) => { const r = relayPut(o); J(r.code, r.body); });
   if (p === '/relay/answer') return body((o) => { const r = relayAnswer(o); if (AU.pool.length) autoKick(); J(200, r); }, 24 * 1048576); /* 표본 목록(1,000권)이 커서 넉넉히 */
   if (p === '/relay/ack') return body((o) => J(200, relayAck(o)));
+  if (p === '/relay/keys') return body((o) => { const r = keysPut(o, org); J(r.code, r.body); }); /* (0.1.10) 🔑 운영 키(메모리로만) */
   if (p === '/win/show') return act(show); if (p === '/win/hide') return act(hide); if (p === '/win/reopen') return act(reopen); if (p === '/win/status-open') return act(statusWin);
   if (p === '/win/rect') return body((o) => { const out = []; for (const k of ['win', 'hwin']) { const r = rectOk(o[k], k === 'win' ? 400 : 260, k === 'win' ? 300 : 200); if (o[k] && !r) return J(400, { ok: false, err: '자리·크기가 이상함(작업 창은 폭 400·높이 300 이상)' }); if (r) { CFG[k] = { ...r, at: now(), src: 'pc' }; out.push(`${k === 'win' ? '작업 창' : '상태 창'} ${r.x},${r.y} · ${r.w}×${r.h}`); } } saveCfg(); note('자리·크기 저장 — ' + out.join(' / ')); J(200, { ok: true, msg: out.join(' / '), state: status() }); });
   if (p === '/win/hrect') return body((o) => { const key = o.p === 'compare' ? 'cwin' : o.p === 'log' ? 'lwin' : 'hwin'; if (key === 'hwin' && CFG.ui && CFG.ui.mini) return J(200, { ok: true, mini: true }); /* (0.1.7) 작은 단추일 땐 원래 크기를 덮지 않음 */ const r = rectOk(o, 260, 200); if (r) { const c = CFG[key] || {}; if (c.x !== r.x || c.y !== r.y || c.w !== r.w || c.h !== r.h) { CFG[key] = { ...r, at: now(), src: 'pc' }; saveCfg(); } } J(200, { ok: true }); }); /* 작은 창이 알린 자기 자리·크기(옮기면 다음에 그 자리) */

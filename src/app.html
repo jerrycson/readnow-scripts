@@ -26859,7 +26859,8 @@ document.addEventListener('click', async (e) => { const b = e.target.closest && 
 /* (정범님 11/05 밤 '비교 화면 구글로 로그인이 실패' · '자야 되니까 번외 수집기가 돌아가게만') 🧪 외부 수집기 대신 기록 — 이 PC에 외부 수집기(127.0.0.1:8797)가 있으면
  *  웹앱이 열려 있는 동안(어느 탭이든 · 로그인된 때) 1분마다: 외부 수집기가 맡긴 결과를 col2_* 칸에만 대신 쓰고(다 쓰면 지움 신호) · 부탁한 운영 문서(prd_ids·prd_books — 읽기만)와 표본 목록(prd_books 1,000권 안팎)을 넘겨줌
  *  할 일이 남아 있으면 2초마다 · 외부 수집기를 본 적 없는 기기는 처음 한 번만 물어봄(연결 거절 기록이 쌓이지 않게) · 이 PC 이름(기기 이름)도 넘겨줌(외부 수집기 화면에서 바꾼 이름은 덮지 않음) */
-const C2R = { base: 'http://127.0.0.1:8797', ok: ['prd_ids', 'prd_books', 'prd_listings', 'shp_state', 'crm_interactions', 'prd_book_metrics', 'bench_items', 'sellers', 'seller_review_daily', 'ext_basic', 'ext_used', 'ext_foreign', 'ext_lib', 'ext_ebook', 'ext_fx', 'app_settings'] };
+const C2R = { base: 'http://127.0.0.1:8797', ok: ['prd_ids', 'prd_books', 'prd_listings', 'shp_state', 'crm_interactions', 'prd_book_metrics', 'bench_items', 'sellers', 'seller_review_daily', 'ext_basic', 'ext_used', 'ext_foreign', 'ext_lib', 'ext_ebook', 'ext_fx', 'app_settings', 'mkt_kpipa', 'prd_market_nobook'] };
+/* (11/10 번외 0.1.10 '남은 9가지도 그림자로') 📚 KPIPA(mkt_kpipa — 이름 8자리 날짜만) · 🔍 새상품 없는 시세(prd_market_nobook — 사무실 PC에만 · 줄인 칸만) 견줄 운영 칸 더함(읽기만) */
 /* (11/10 번외 0.1.9 '로그인 없는 일 전부 그림자') 견줄 운영 칸 더 — 도서 지표·벤치마킹·판매자·숍 평가·외부 정보(읽기만 · 손님 정보 없는 칸)
  *  app_settings는 bench 문서(🎯 벤치마킹 대상 숍 번호)만 · 그것도 외부 수집기가 로거 PC일 때만(사무실 PC엔 로거 고유 일 목록을 넘기지 않음 · 약속 0) · 숍 번호·켜짐만 남김 */
 const c2IsLogger = (pd) => (pd && pd.kind ? pd.kind === 'logger' : /^LOGGER/i.test(String((pd && pd.pc) || deviceName() || '')));
@@ -26867,6 +26868,25 @@ const c2BenchTrim = (v) => ({ targets: (Array.isArray(v && v.targets) ? v.target
 /* (11/10 정범님 11/09 밤 '로그인 일도 번외로' · lab/col2/LOGIN_PLAN.md ⑤-2) 🟧 번외 알라딘 그림자가 견줄 운영 칸 세 개 — 읽기만 · 문서 이름 규칙 안만 · 번호·상태·값만 남기고 넘김(구매자·수령인·주소·전화·문의 글은 넘기지 않음)
  *  번외 도우미 shadow/col2-al-compare.js trimProd와 같은 칸(번외도 받는 순간 다시 거름) */
 const C2AL_ID = { prd_listings: /^aladin_[\w-]{1,40}$/, shp_state: /^(confirm|current)$/, crm_interactions: /^aladin_qna_\d{1,15}$/ };
+/* (11/10 번외 0.1.10) 🔑 운영 키 · 🔍 운영 문서 목록 — 외부 수집기가 로거 PC가 아닐 때만(약속 0 — 우리 계정 키·우리 상품 이름을 로거에 두지 않음)
+ *  키: 외부 수집기가 부탁 목록 keys에 '이름'만 실음 → 그 이름 중 정한 것만 app_secrets/ext.keys에서 골라 POST /relay/keys(이 PC 127.0.0.1로만)
+ *   값은 이 함수 안 변수에만 — S·localStorage·화면·토스트·기록·진단·Firestore 다른 칸·콘솔에 남기지 않음 · 실패 글에도 값을 섞지 않음 · 10분에 한 번까지만 읽음
+ *  목록: lists [{c:'prd_market_nobook', n, after}] → 그 칸 문서 n개(문서 이름 차례 · after 뒤부터)를 견줄 칸만 줄여 POST /relay/answer {lists} */
+const C2_KEY_OK = ['aladinTtb', 'kakaoRest', 'nlKey', 'd4lKey', 'ebayAppId', 'ebayCertId', 'googleBooks', 'eximKey'];
+const c2NotLogger = (pd) => !c2IsLogger(pd) && !/^LOGGER/i.test(String((pd && pd.pc) || '')) && !/^LOGGER/i.test(String(deviceName() || ''));
+const C2_LIST_ID = { mkt_kpipa: /^\d{8}$/ };
+function c2nbTrim(v) { if (!v || typeof v !== 'object') return null; const o = {}; for (const k of ['usedCode', 'listingId', 'title', 'query', 'at', 'src', 'candSig', 'our']) if (v[k] !== undefined) o[k] = v[k];
+  const m = v.market && typeof v.market === 'object' ? v.market : null; if (m) o.market = { median: m.median ?? null, low: m.low ?? null, n: m.n ?? null };
+  const h = Array.isArray(v.history) && v.history.length ? v.history[v.history.length - 1] : null; if (h && typeof h === 'object') o.history = [{ our: h.our ?? null, at: h.at ?? null }]; return o; }
+async function c2KeysGive(pd, f) { const want = Array.isArray(pd && pd.keys) ? pd.keys.map(String).filter((k) => C2_KEY_OK.includes(k)) : []; if (!want.length || !c2NotLogger(pd)) return 0;
+  if (S._c2kAt && Date.now() - S._c2kAt < 10 * 60e3) return 0; S._c2kAt = Date.now();
+  let K = null; try { const d = await db.collection('app_secrets').doc('ext').get(); K = d.exists && d.data() && typeof d.data().keys === 'object' ? d.data().keys : null; } catch (e) { return 0; }
+  const keys = {}; for (const k of want) if (K && typeof K[k] === 'string' && K[k].trim()) keys[k] = K[k].trim(); K = null; if (!Object.keys(keys).length) return 0;
+  try { await f('/relay/keys', { keys, by: c2By() }); } catch (e) {} return 1; }
+async function c2ListsGive(pd) { const L = Array.isArray(pd && pd.lists) ? pd.lists : []; if (!L.length || !c2NotLogger(pd)) return null; const out = {};
+  for (const w of L.slice(0, 3)) { if (!w || w.c !== 'prd_market_nobook' || out[w.c]) continue; const n = Math.max(1, Math.min(200, +w.n || 20));
+    try { let q = db.collection(w.c).orderBy(firebase.firestore.FieldPath.documentId()); if (w.after && /^[\w.-]{1,150}$/.test(String(w.after))) q = q.startAfter(String(w.after)); const g = await q.limit(n).get(); const A = []; g.forEach((d) => { if (A.length >= n) return; const v = c2nbTrim(d.data()); if (v) A.push({ id: d.id, v }); }); out[w.c] = A; } catch (e) {} }
+  return Object.keys(out).length ? out : null; }
 function c2alTrim(c, v) { if (!v || typeof v !== 'object') return null; const pick = (ks) => { const o = {}; for (const k of ks) if (v[k] !== undefined) o[k] = v[k]; return o; };
   if (c === 'prd_listings') return pick(['usedCode', 'listingId', 'status', 'price', 'sku', 'grade', 'qty', 'qtyList', 'active', 'lastSeenAt', 'seenBy_scm']);
   if (c === 'shp_state') return { at: v.at || null, tabCounts: v.tabCounts && typeof v.tabCounts === 'object' ? { ...v.tabCounts } : null, orders: Array.isArray(v.orders) ? v.orders.map((o) => ({ orderNo: String((o && o.orderNo) || ''), items: Array.isArray(o && o.items) ? o.items.map((i) => ({ listingId: i && i.listingId != null ? String(i.listingId) : null })) : [], deliveryNo: (o && o.deliveryNo) || null })) : null };
@@ -26880,7 +26900,7 @@ async function c2RelayTick() { let next = 60e3;
     const F = Array.isArray(pd.fields) ? pd.fields : null; const trim = (v) => { if (!v || !F) return v; const o = {}; for (const k of F) if (v[k] !== undefined) o[k] = v[k]; return o; };
     if (deviceName() && pd.pcSrc !== 'pc' && pd.pc !== deviceName()) f('/cfg', { pc: deviceName(), pcSrc: 'web' }).catch(() => {});
     const docs = []; let err = null;
-    for (const w of (pd.want || []).slice(0, 40)) { if (!C2R.ok.includes(w.c) || /\//.test(String(w.id)) || (C2AL_ID[w.c] && !C2AL_ID[w.c].test(String(w.id))) || (w.c === 'app_settings' && !(String(w.id) === 'bench' && c2IsLogger(pd)))) continue; try { const d = await db.collection(w.c).doc(String(w.id)).get(); docs.push({ c: w.c, id: w.id, v: d.exists ? (w.c === 'prd_books' ? trim(d.data()) : C2AL_ID[w.c] ? c2alTrim(w.c, d.data()) : w.c === 'app_settings' ? c2BenchTrim(d.data()) : d.data()) : null }); } catch (e) { err = '운영 문서 읽기 실패: ' + (e.code || e.message); } }
+    for (const w of (pd.want || []).slice(0, 40)) { if (!C2R.ok.includes(w.c) || /\//.test(String(w.id)) || (C2AL_ID[w.c] && !C2AL_ID[w.c].test(String(w.id))) || (w.c === 'app_settings' && !(String(w.id) === 'bench' && c2IsLogger(pd))) || (C2_LIST_ID[w.c] && !C2_LIST_ID[w.c].test(String(w.id))) || (w.c === 'prd_market_nobook' && !c2NotLogger(pd))) continue; try { const d = await db.collection(w.c).doc(String(w.id)).get(); docs.push({ c: w.c, id: w.id, v: d.exists ? (w.c === 'prd_books' ? trim(d.data()) : C2AL_ID[w.c] ? c2alTrim(w.c, d.data()) : w.c === 'app_settings' ? c2BenchTrim(d.data()) : w.c === 'prd_market_nobook' ? c2nbTrim(d.data()) : d.data()) : null }); } catch (e) { err = '운영 문서 읽기 실패: ' + (e.code || e.message); } }
     const pick = async (n) => { let L = []; try { const k = Math.random().toString(36).slice(2, 4); const q = await db.collection('prd_books').orderBy(firebase.firestore.FieldPath.documentId()).startAt(k).limit(n).get(); q.forEach((d) => L.push({ id: d.id, ...trim(d.data()) })); } catch (e) {}
       if (L.length < n / 2) { const q = await db.collection('prd_books').limit(n).get(); L = []; q.forEach((d) => L.push({ id: d.id, ...trim(d.data()) })); } return L; };
     let sample = null, pool = null;
@@ -26890,7 +26910,9 @@ async function c2RelayTick() { let next = 60e3;
     if (pd.pool && Object.prototype.hasOwnProperty.call(pd, 'poolAfter')) { try { const n = Math.min(2000, +pd.pool || 1000); let q = db.collection('prd_books').orderBy(firebase.firestore.FieldPath.documentId()); if (pd.poolAfter) q = q.startAfter(String(pd.poolAfter)); const g = await q.limit(n).get(); const L = []; let last = null; g.forEach((d) => { last = d.id; L.push({ id: d.id, ...trim(d.data()) }); });
         pool = L.filter((b) => b.aladinItemId); poolX = { poolFor: pd.poolAfter || null, poolLap: pd.poolLap, poolNext: last, poolEnd: L.length < n }; } catch (e) { err = '표본 이어 읽기 실패: ' + (e.code || e.message); } }
     else if (pd.pool) { try { pool = (await pick(Math.min(2000, +pd.pool || 1000))).filter((b) => b.aladinItemId); } catch (e) { err = '표본 목록 읽기 실패: ' + (e.code || e.message); } }
-    if (docs.length || sample || pool || err) await f('/relay/answer', { docs, sample, pool, err, ...(pool ? poolX : {}) });
+    await c2KeysGive(pd, f); /* (0.1.10) 🔑 값은 그 함수 안에서만 — 여기로 돌아오지 않음 */
+    const lists = await c2ListsGive(pd);
+    if (docs.length || sample || pool || err || lists) await f('/relay/answer', { docs, sample, pool, err, ...(pool ? poolX : {}), ...(lists ? { lists } : {}) });
     const keys = [], errs = {}; for (const o of (pd.out || []).slice(0, 25)) { if (!/^col2_[\w-]+$/.test(String(o.c || '')) || !/^[\w.-]{1,150}$/.test(String(o.id || ''))) { errs[o.k] = '쓰지 않음(col2_ 칸 아님)'; continue; }
       try { await db.collection(o.c).doc(o.id).set(o.v || {}, o.merge ? { merge: true } : undefined); keys.push(o.k); } catch (e) { errs[o.k] = e.code || e.message; } }
     if (keys.length || Object.keys(errs).length) await f('/relay/ack', { keys, errs });

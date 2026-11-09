@@ -20,7 +20,9 @@ ok(runCode.every((f) => !/(127\.0\.0\.1|localhost):88(98|99)\b/.test(rd(f).repla
 ok(runCode.every((f) => !/chrome-(workwin|render|pub)\b|alps[\\/]+chrome/.test(rd(f))), '운영 크롬 프로필 이름(chrome-workwin·chrome-render·chrome-pub·alps\\chrome)을 쓰지 않음');
 ok(runCode.every((f) => !/require\([^)]*readnow-(work|print|local|alps)/.test(rd(f))), '운영 도우미 모듈을 불러오지 않음(완전히 따로)');
 ok(runCode.every((f) => !/리드나우 작업 창/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, ''))), "운영 작업 창 표시('리드나우 작업 창')로 창을 찾지 않음");
-ok(runCode.every((f) => !/GM_|unsafeWindow|Tampermonkey\.|@grant/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, ''))), 'Tampermonkey(GM_*)를 쓰지 않음 — 운영 수집기 저장소·탭 알림과 안 섞임');
+ok(runCode.filter((f) => rel(f) !== 'helper/col2-shim.js').every((f) => !/GM_|unsafeWindow|Tampermonkey\.|@grant/.test(rd(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, ''))), 'Tampermonkey(GM_*)를 쓰지 않음 — 운영 수집기 저장소·탭 알림과 안 섞임');
+{ const sh = rd(path.join(L.ROOT, 'helper', 'col2-shim.js')).replace(/\/\*[\s\S]*?\*\//g, ''); const gm = [...new Set(sh.match(/GM_\w+/g) || [])];
+  ok(gm.length === 1 && gm[0] === 'GM_xmlhttpRequest' && /G\.GM_xmlhttpRequest = /.test(sh) && !/unsafeWindow|GM_setValue|GM_getValue|GM_openInTab/.test(sh), "(0.1.10) 받침(col2-shim.js)은 떨어진 칸 안에서 GM_xmlhttpRequest '대신'을 만들기만 — Tampermonkey 저장소·탭은 안 씀", gm.join(',')); }
 /* (0.1.7) 🔗 바로 가기 표(helper/col2-go.js)만 판매자 센터 주소를 지님 — 정범님 평소 크롬에 주소만 넘기고 읽거나 조종하지 않음(아래 검사) */
 const GOF = path.join(R, 'helper', 'col2-go.js');
 /* (알라딘 읽기 · 정범님 11/09 밤 '로그인 일도 번외로') 🟧 알라딘 샵매니저 읽기 그림자(col2-al.js·col2-al-compare.js)만 샵매니저 주소를 지님 — 읽기 다섯 길만 · 로그인 칸을 채우지 않음 · 계정 값 없음(아래 검사) */

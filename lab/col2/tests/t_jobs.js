@@ -59,7 +59,7 @@ function webapp(H, DB, okCols) { const got = []; let stop = false;
   ok(TK.pathOf(TK.byK.shopSum, { sc: COL2.OWN_SC[0] }, COL2.OWN_SC) === null && TK.pathOf(TK.byK.shopSum, { sc: '12345' }, COL2.OWN_SC) === '/shop/usedshop/wshopitem.aspx?SC=12345' && TK.pathOf(TK.byK.metrics, { itemId: '1;x' }) === null && TK.ALLOW.every((re) => !re.test('/scm/wmain.aspx')), '주소는 정한 공개 화면 꼴만 · 우리 숍은 열지 않음 · 이상한 값 거절');
   { const D = TK.dayNew('d'); for (let i = 0; i < 29; i++) TK.dayAdd(D, 'x', 'same'); TK.dayAdd(D, 'x', 'diff', ['move']); const a = TK.passOf(D.t.x, COL2.PASS); TK.dayAdd(D, 'x', 'diff', ['diff']); const b = TK.passOf(D.t.x, COL2.PASS); const c = TK.passOf({ n: 29, same: 29, diff: 0, un: 0, fail: 0 }, COL2.PASS);
     ok(a.can && a.n === 30 && a.rate === 96.7 && !b.can && /까닭 모를 다름 1/.test(b.why) && !c.can && /표본 29\/30/.test(c.why), "'넘길 수 있음' = 하루 표본 30 이상 · 까닭 모를 다름 0(까닭을 밝힌 다름은 막지 않음) · 못 읽음 20% 이하", a.rule); }
-  { const lt = lift(fs.readFileSync(path.join(L.PROD_REPO, COL2.LIFT.file), 'utf8'), COL2.LIFT.fns); ok(!lt.err && lt.got.length === 3 && !lt.miss.length && /benchParse/.test(lt.code), '🎯 벤치마킹 해석 함수는 운영 본체에서 그대로 떼어 씀(고치지 않음)', lt.ver + ' · ' + lt.sig); }
+  { const lt = lift(fs.readFileSync(path.join(L.PROD_REPO, COL2.LIFT.file), 'utf8'), COL2.LIFT.fns); ok(!lt.err && lt.got.length === COL2.LIFT.fns.length && !lt.miss.length && /benchParse/.test(lt.code), '🎯 벤치마킹 해석 함수는 운영 본체에서 그대로 떼어 씀(고치지 않음)', lt.ver + ' · ' + lt.sig); }
   ok(CMP.compareMap({ a: 1, b: 2, lastCheckedAt: new Date(Date.now() - 3 * 3600e3).toISOString() }, { a: 1, b: 3 }, { a: 'a', b: 'b' }, { move: ['b'], prodAt: new Date(Date.now() - 3 * 3600e3).toISOString() }).reasons.join() === 'move' && CMP.compareMap({ a: 1 }, { a: 2 }, { a: 'a' }).reasons.join() === 'diff' && CMP.compareMap(null, {}, {}).verdict === 'noprod', '견주기: 움직이는 값이 운영이 읽은 뒤 바뀜 = 까닭 밝힘 · 그 밖 다름 = 까닭 모름');
 
   const A = await fake(); const IDS = ['100001', '100002', '100003'];
@@ -74,7 +74,7 @@ function webapp(H, DB, okCols) { const got = []; let stop = false;
   DB['ext_fx/' + kday()] = { date: kday(), rates: { USD: 1 / FX.rates.USD, EUR: 1 / FX.rates.EUR, JPY: 1 / FX.rates.JPY, GBP: 1 / FX.rates.GBP }, src: 'frankfurter', at: new Date().toISOString() };
   { const r = await EXTX.fxRun({ keys: {}, http: async (o) => { const x = new URL(o.url); const q = await fetch(A.base + '/__ext/' + x.host + x.pathname + x.search); return { status: q.status, text: await q.text() }; } }); DB['ext_fx/' + kday()].rates = r.rates; DB['ext_fx/' + kday()].src = r.src; }
   A.reqs.length = 0; /* 위는 시험이 운영 값을 만들려고 한 요청 */
-  let H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base }, cfg: { pc: 'MJ-TEST', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, off: EXT_OFF, pass: { minN: 2, waitMin: 0.1 } } } }); const D = H.D;
+  let H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base }, cfg: { pc: 'MJ-TEST', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, off: [...EXT_OFF, 'kpipa', 'nbMarket'], pass: { minN: 2, waitMin: 0.1 } } } }); const D = H.D;
   const W = webapp(H, DB, ['prd_ids', 'prd_books', 'ext_ebook', 'ext_fx']);
   try {
     await H.api('POST', '/relay/answer', { pool });
@@ -89,7 +89,7 @@ function webapp(H, DB, okCols) { const got = []; let stop = false;
     ok(A.reqs.filter((q) => /^\/(shop|__ext)/.test(q.path)).every((q) => q.cookie === null), '모든 그림자 읽기는 쿠키 없이(로그인 없음)');
     const ts = A.reqs.filter((q) => /^\/(shop|__ext)/.test(q.path)).map((q) => q.t); const gaps = ts.slice(1).map((t, i) => t - ts[i]); if (Math.min(...gaps) < 100) console.log('    (요청 차례)', A.reqs.map((q) => q.t % 100000 + ' ' + q.path.slice(0, 60)).join('\n     '));
     ok(gaps.length >= 5 && Math.min(...gaps) >= 200 * 0.85 - 60, '그림자 일도 같은 속도 규칙(한 장 뒤 기다림 · 상품 읽기와 함께 셈)', Math.min(...gaps) + 'ms');
-    const jv = (await H.api('GET', '/jobs')).j; ok(jv.ok && jv.kind === 'office' && jv.tasks.find((t) => t.k === 'bench').notMine === '로거 고유 일(사무실 PC는 안 함)' && jv.tasks.find((t) => t.k === 'ext.ttb').state === 'hold' && jv.core.lift && jv.core.lift.got.length === 3 && jv.core.ext, '/jobs — 일 목록·이 PC가 하는지·까닭·오늘 셈(로거 일은 사무실이 안 함 · 키 필요한 일은 hold)');
+    const jv = (await H.api('GET', '/jobs')).j; ok(jv.ok && jv.kind === 'office' && jv.tasks.find((t) => t.k === 'bench').notMine === '로거 고유 일(사무실 PC는 안 함)' && jv.tasks.find((t) => t.k === 'ext.ttb').who === 'office' && jv.core.lift && jv.core.lift.got.length === COL2.LIFT.fns.length && jv.core.ext, '/jobs — 일 목록·이 PC가 하는지·까닭·오늘 셈(로거 일은 사무실이 안 함 · 키 필요한 일은 사무실 PC만)');
     const st = (await H.api('GET', '/status')).j; ok(st.jobs && st.jobs.kind === 'office' && st.jobs.mine.some((x) => x.k === 'product' && x.can), '상태에 그림자 일 요약(웹앱 col2_ctl·진단에 보임)');
     console.log('  운영이 바쁘면 쉼');
     await H.api('POST', '/busy', { sec: 30, why: '시험 — 운영 바쁨' }); await wait(1200); const n0 = A.reqs.length; await wait(2500);
@@ -107,7 +107,7 @@ function webapp(H, DB, okCols) { const got = []; let stop = false;
   for (const x of bp) DB2[`bench_items/12345_${x.id}`] = { sc: '12345', id: x.id, title: x.t, price: x.p, grade: x.g };
   DB2['app_settings/bench'] = { targets: [{ sc: '12345', on: true }, { sc: COL2.OWN_SC[0], on: true }] };
   A.reqs.length = 0;
-  H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base }, cfg: { pc: 'LOGGER-T', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, pass: { minN: 1, waitMin: 0.1 } } } }); const D2 = H.D;
+  H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base }, cfg: { pc: 'LOGGER-T', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, off: ['dynamic'], pass: { minN: 1, waitMin: 0.1 } } } }); const D2 = H.D;
   const W2 = webapp(H, DB2, ['prd_ids', 'prd_books', 'prd_book_metrics', 'sellers', 'seller_review_daily', 'bench_items', 'app_settings']);
   try {
     await H.api('POST', '/relay/answer', { pool: pool.slice(0, 1) });
@@ -122,7 +122,7 @@ function webapp(H, DB, okCols) { const got = []; let stop = false;
   } finally { W2.stop(); await H.stop(); killDir(D2); }
 
   console.log('③ 운영 값을 못 받으면');
-  H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base }, cfg: { pc: 'LOGGER-U', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, off: ['usedPage'], pass: { minN: 1, waitMin: 0.05 } } } }); const D3 = H.D;
+  H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base }, cfg: { pc: 'LOGGER-U', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, off: ['usedPage', 'dynamic'], pass: { minN: 1, waitMin: 0.05 } } } }); const D3 = H.D;
   const W3 = webapp(H, {}, ['prd_ids', 'prd_books']); /* 지금 웹앱처럼 prd_* 만 넘김 */
   try { await H.api('POST', '/relay/answer', { pool: pool.slice(0, 1) });
     const jd = await until(() => { const o = W3.last('col2_jday'); return o && o.v.tasks.metrics && o.v.tasks.metrics.noprod >= 1 ? o : null; }, 120);

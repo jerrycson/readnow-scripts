@@ -21,6 +21,7 @@
   "helper/col2-jobs.js",
   "helper/col2-lift.js",
   "helper/col2-al.js",
+  "helper/col2-shim.js",
   "shadow/col2-al-compare.js",
   "helper/col2-alw.js",
   "shadow/col2-alw-core.js"
