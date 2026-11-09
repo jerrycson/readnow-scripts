@@ -60,17 +60,18 @@
     const order = (Array.isArray(u.order) ? u.order.map(String).filter((x, i, a) => ids.includes(x) && a.indexOf(x) === i) : []).concat(ids.filter((x) => !(Array.isArray(u.order) && u.order.includes(x))));
     const cards = {}; for (const c of CARDS) { const v = (u.cards && typeof u.cards === 'object' && u.cards[c.id]) || {}; cards[c.id] = { open: v.open == null ? !!c.open : !!v.open, hide: v.hide == null ? !!c.hide : !!v.hide }; }
     const keys = defKeys(); if (u.keys && typeof u.keys === 'object') for (const A of ACTIONS) if (u.keys[A.id] != null) { const n = normCombo(u.keys[A.id]); if (n != null) keys[A.id] = n; }
-    const prof = String(u.goProf == null ? '' : u.goProf); return { v: 1, order, cards, keys, mini: !!u.mini, miniW: num(u.miniW, 60, 400, MINI.w), miniH: num(u.miniH, 40, 400, MINI.h), miniTop: u.miniTop == null ? MINI.top : !!u.miniTop, goProf: /^[\w .-]{0,40}$/.test(prof) ? prof.trim() : '', at: num(u.at, 0, 9e15, 0) }; }
+    const prof = String(u.goProf == null ? '' : u.goProf); return { v: 1, order, cards, keys, mini: !!u.mini, miniW: num(u.miniW, 60, 400, MINI.w), miniH: num(u.miniH, 40, 400, MINI.h), miniTop: u.miniTop == null ? MINI.top : !!u.miniTop, goProf: /^[\w .-]{0,40}$/.test(prof) ? prof.trim() : '', logPop: u.logPop == null ? true : !!u.logPop, at: num(u.at, 0, 9e15, 0) }; } /* (0.1.8) logPop = 🗒 기록창을 따로 작은 창으로(기본 · 정범님 11/10 새벽) · false면 예전처럼 옆 창 안 */
   /* 내보낼 파일 꼴(비밀값·계정 없음 — 칸·단축키·창·바로 가기 프로필 이름·일 켜기 셋뿐) */
   const EXPORT_KIND = 'readnow-col2-settings';
   function exportDoc(ui, opts, meta) { return { kind: EXPORT_KIND, v: 1, ver: meta && meta.ver, pc: meta && meta.pc, at: new Date().toISOString(), ui: normalize(ui), opts: { side: !!(opts && opts.side), y24: !!(opts && opts.y24), y24Jobs: !!(opts && opts.y24Jobs) } }; }
   function importDoc(txt) { let j; try { j = typeof txt === 'string' ? JSON.parse(txt) : txt; } catch (e) { return { ok: false, err: '설정 파일이 아님(JSON 아님)' }; }
     if (!j || j.kind !== EXPORT_KIND) return { ok: false, err: '번외 수집기 설정 파일이 아님' }; const ui = normalize(j.ui); const ck = check(ui.keys); const o = j.opts || {};
     return { ok: true, ui, opts: { side: o.side != null ? !!o.side : null, y24: o.y24 != null ? !!o.y24 : null, y24Jobs: o.y24Jobs != null ? !!o.y24Jobs : null }, from: { pc: j.pc || '', ver: j.ver || '', at: j.at || '' }, keyErrs: ck.errs }; }
-  const CUR = { keys: defKeys() };
+  const CUR = { keys: defKeys(), logPop: true };
   const keysNow = () => CUR.keys;
   /* /log 따로 창처럼 골격 없이 기록창만 있는 화면도 바꾼 단축키를 씀 */
-  async function loadKeys(api) { try { const j = await api('GET', '/ui'); if (j && j.ok) CUR.keys = normalize(j.ui).keys; } catch (e) {} return CUR.keys; }
+  async function loadKeys(api) { try { const j = await api('GET', '/ui'); if (j && j.ok) { const u = normalize(j.ui); CUR.keys = u.keys; CUR.logPop = u.logPop; } } catch (e) {} return CUR.keys; }
+  const logMode = () => ((CUR.logPopFn ? CUR.logPopFn() : CUR.logPop) ? 'pop' : 'in'); /* (0.1.8) 기록창 여는 곳 — col2-logwin mount(o.mode)가 누를 때마다 봄 */
   const logMatch = (e, a) => match(e, CUR.keys[a]);
   const keyLabel = (a) => CUR.keys[a] || '끔';
 
@@ -92,7 +93,7 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
     const doc = document, api = o.api, ls = o.ls; const $ = (i) => doc.getElementById(i);
     const E = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
     const st0 = doc.createElement('style'); st0.textContent = CSS; doc.head.appendChild(st0);
-    let UI = normalize(ls.get('ui', null)); CUR.keys = UI.keys; let S = null, kind = ls.get('kind', 'office'), saveT = null, armReset = 0, armImp = 0, imp = null, cap = null, edit = 0, arm = 0, lastLoad = 0;
+    let UI = normalize(ls.get('ui', null)); CUR.keys = UI.keys; CUR.logPopFn = () => UI.logPop; /* (0.1.8) 설정을 받거나·가져오거나·기본값으로 돌려도 늘 지금 UI 값 */ let S = null, kind = ls.get('kind', 'office'), saveT = null, armReset = 0, armImp = 0, imp = null, cap = null, edit = 0, arm = 0, lastLoad = 0;
     const post = (p, b) => api('POST', p, b || {});
     const msg = (t, el) => { const m = el || $('m'); if (m) m.textContent = t; };
     /* 칸 놓기 — 순서대로 옮기고, 숨긴 칸·로거에 없는 칸은 감춤(지우지 않음) */
@@ -168,9 +169,11 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
       const ck = check(UI.keys);
       $('setKeys').innerHTML = ACTIONS.map((A) => { const bad = ck.errs.filter((x) => x.a === A.id); return `<div class="row" data-kid="${A.id}"><span class="rt">${E(A.t)}</span><button class="kb${cap === A.id ? ' cap' : ''}" data-k="cap">${cap === A.id ? '키를 누르세요…' : E(UI.keys[A.id] || '끔')}</button><button data-k="off" title="이 단축키 끄기">끔</button><button data-k="def" title="기본값 ${E(A.def)}">기본</button>${bad.length ? `<div class="bad" style="flex-basis:100%">✗ ${E(bad.map((x) => x.why).join(' · '))}</div>` : ''}</div>`; }).join('');
       $('setWin').innerHTML = `<div class="row"><span class="rt">▁ 작은 단추 크기(폭·높이)</span><input class="n" id="mw" value="${UI.miniW}"> <input class="n" id="mh" value="${UI.miniH}"></div><div class="row"><label class="rt"><input type="checkbox" id="mtop" ${UI.miniTop ? 'checked' : ''}> 작은 단추는 늘 다른 창 위에</label></div>`
+        + `<div class="row"><span class="rt">🗒 기록창 여는 곳</span><label><input type="radio" name="lpop" id="lpop1" ${UI.logPop ? 'checked' : ''}> 따로 작은 창(기본 · 옆 창 밖에서 옮기고 크기 조절)</label> <label><input type="radio" name="lpop" id="lpop0" ${UI.logPop ? '' : 'checked'}> 이 옆 창 안</label></div>`
         + `<div class="row"><span class="rt">🔗 바로 가기를 열 평소 크롬 프로필 이름 <span class="k">(비우면 마지막에 쓴 프로필 · 예: Default · Profile 1)</span></span><input id="gprof" maxlength="40" value="${E(UI.goProf)}" style="width:110px"></div>`;
       $('mw').onchange = $('mh').onchange = () => { UI.miniW = num($('mw').value, 60, 400, MINI.w); UI.miniH = num($('mh').value, 40, 400, MINI.h); save(); drawSet(); };
       $('mtop').onchange = () => { UI.miniTop = $('mtop').checked; save(); };
+      const lp = (v) => () => { UI.logPop = v; save(); if (v && root.__jw && root.__jw.open()) root.__jw.setOpen(false); if (root.__jw && root.__jw.syncBtn) root.__jw.syncBtn(S); msg(v ? '✓ 🗒 기록창은 따로 작은 창으로' : '✓ 🗒 기록창은 이 옆 창 안으로', $('setm')); }; $('lpop1').onchange = lp(true); $('lpop0').onchange = lp(false);
       $('gprof').onchange = () => { const v = $('gprof').value.trim(); if (!/^[\w .-]{0,40}$/.test(v)) { msg('✗ 프로필 이름엔 영문·숫자·빈칸·점·줄표만', $('setm')); return; } UI.goProf = v; save(); drawGo(); };
       drawToggles(); }
     $('setCards').addEventListener('click', (ev) => { const b = ev.target.closest('button,input'); const row = ev.target.closest('[data-cid]'); if (!b || !row) return; const id = row.dataset.cid, c = b.dataset.c;
@@ -210,6 +213,6 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
     load();
     return { get ui() { return UI; }, setMini, openOv, load, apply }; }
 
-  const api = { CARDS, ACTIONS, RESERVED, MINI, keyName, comboOf, normCombo, match, check, defKeys, normalize, exportDoc, importDoc, EXPORT_KIND, keysNow, loadKeys, logMatch, keyLabel, CSS, side };
+  const api = { CARDS, ACTIONS, RESERVED, MINI, keyName, comboOf, normCombo, match, check, defKeys, normalize, exportDoc, importDoc, EXPORT_KIND, keysNow, loadKeys, logMatch, keyLabel, logMode, CSS, side };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Col2UI = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
