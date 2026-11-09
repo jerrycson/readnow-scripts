@@ -4,7 +4,7 @@
 
 | 판 | 날짜 | 지문 | 보기 |
 |---|---|---|---|
-| v153 (지금) | 2026-11-09 | `b84d808b375993be` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v153_2026-11-09.html) · [파일](v153_2026-11-09.html) |
+| v154 (지금) | 2026-11-09 | `27c9dff027e56b21` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v154_2026-11-09.html) · [파일](v154_2026-11-09.html) |
 | v152 | 2026-11-09 | `b66a5ba030dcab77` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v152_2026-11-09.html) · [파일](v152_2026-11-09.html) |
 | v151 | 2026-11-09 | `8bc16d65d7854e59` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v151_2026-11-09.html) · [파일](v151_2026-11-09.html) |
 | v150 | 2026-11-09 | `f76677c6402d184a` | [펼쳐 보기](https://jerrycson.github.io/readnow-scripts/manual/v150_2026-11-09.html) · [파일](v150_2026-11-09.html) |
