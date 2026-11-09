@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.440 판 내기",
- "since": "2026-11-09T12:40:09Z",
- "beat": "2026-11-09T12:40:09Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "",
-  "at": "2026-11-09T09:04:31Z"
+  "done": "웹앱 1.78.440 판 냄",
+  "at": "2026-11-09T12:40:38Z"
  },
- "host": "vm"
+ "host": null
 }
