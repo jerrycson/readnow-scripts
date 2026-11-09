@@ -105,7 +105,7 @@ $R.sleep = ($e1 -eq 0 -and $e2 -eq 0)
 #   공개 수집 크롬에만 해당되는 것이 아니라 이 Windows 사용자의 모든 크롬 프로필에 적용(쓰지 않는 크롬에도 들어가지만 해는 없음) · 크롬을 다시 켜면 적용
 try {
   $tk = 'HKCU:\SOFTWARE\Policies\Google\Chrome\TabDiscardingExceptions'; New-Item -Path $tk -Force | Out-Null
-  $tw = @('[*.]aladin.co.kr', 'jerrycson.github.io', '127.0.0.1', 'localhost', 'rn.local'); $th = @(); $tm = 0
+  $tw = @('[*.]aladin.co.kr', 'jerrycson.github.io', 'readnow.kr', '127.0.0.1', 'localhost', 'rn.local'); $th = @(); $tm = 0
   foreach ($n in (Get-Item $tk).Property) { $th += (Get-ItemProperty -Path $tk -Name $n).$n; if ($n -match '^\d+$' -and [int]$n -gt $tm) { $tm = [int]$n } }
   foreach ($w in $tw) { if ($th -notcontains $w) { $tm++; New-ItemProperty -Path $tk -Name "$tm" -Value $w -PropertyType String -Force | Out-Null } }
   $R.tabs = $true

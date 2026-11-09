@@ -7,7 +7,7 @@
 # 되돌리기: $env:RN_UNDO = '1'; irm https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local/keep-tabs.ps1 | iex
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $pk = 'HKCU:\SOFTWARE\Policies\Google\Chrome\TabDiscardingExceptions'
-$want = @('[*.]aladin.co.kr', 'jerrycson.github.io', '127.0.0.1', 'localhost', 'rn.local')
+$want = @('[*.]aladin.co.kr', 'jerrycson.github.io', 'readnow.kr', '127.0.0.1', 'localhost', 'rn.local')
 if ($env:RN_UNDO -eq '1') { if (Test-Path $pk) { foreach ($n in (Get-Item $pk).Property) { $v = (Get-ItemProperty -Path $pk -Name $n).$n; if ($want -contains $v) { Remove-ItemProperty -Path $pk -Name $n } } }; Remove-Item Env:\RN_UNDO -ErrorAction SilentlyContinue; Write-Host '되돌림 — 크롬을 다시 켜면 빠짐' -ForegroundColor Green; return }
 # (도우미 1.6.7 자동 점검) HKCU\SOFTWARE\Policies는 Windows 기본 권한에서 관리자만 쓸 수 있음 → 관리자 터미널이면 컴퓨터 정책(HKLM)에, 아니면 사용자 정책을 시도하고 안 되면 무엇을 할지 알려 줌
 $isAdm = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)

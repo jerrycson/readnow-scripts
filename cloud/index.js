@@ -44,13 +44,17 @@ const FV = FieldValue;
  *  공용 파일이 바뀌면 자동 배포가 클라우드를 다시 올림(.github/workflows/deploy-cloud.yml의 paths) · CODE_SHA가 없으면(손으로 올린 판) 예전처럼 main */
 const CODE_SHA = /^[0-9a-f]{40}$/.test(process.env.CODE_SHA || '') ? process.env.CODE_SHA : null;
 const RAW = process.env.CORE_BASE || `https://raw.githubusercontent.com/jerrycson/readnow-scripts/${CODE_SHA || 'refs/heads/main'}/`;
+/* (11/10 big1) 공용 파일은 이미지 안 사본(cores_<파일> · 자동 배포가 올린 바로 그 커밋의 것을 함께 넣음 · cores_commit.js = 그 커밋)부터 읽음 — 같은 커밋이 아니거나 없으면 예전처럼 GitHub(같은 커밋)
+ *  저장소 주소가 바뀌거나 GitHub이 잠깐 안 돼도 클라우드 자동 일이 공용 파일을 못 받아 멈추지 않게 · CORE_BASE(손으로 정한 주소)가 있으면 그것만 */
+const CORE_LOCAL_OK = (() => { try { return !process.env.CORE_BASE && !!CODE_SHA && require('./cores_commit.js') === CODE_SHA; } catch (e) { return false; } })();
+const coreFetch = async (f) => { if (CORE_LOCAL_OK) { try { const t = require('fs').readFileSync(require('path').join(__dirname, 'cores_' + f), 'utf8'); return { ok: true, status: 200, local: true, text: async () => t }; } catch (e) {} } return fetch(RAW + f + '?t=' + Date.now()); };
 const CORES_OPTIONAL = new Set(['readnow-register-core.js']); // 없어도 주문 읽기 등은 그대로 (등록 엔진 번호 맞춤만 글자 비교로)
 const CORES = ['readnow-shipping-core.js', 'readnow-products-core.js', 'readnow-pricing-core.js', 'readnow-sellers-core.js', 'readnow-core.js', 'readnow-register-core.js']; // (0.9.3) 등록 엔진 공용 파일: 상품 번호(ISBN·바코드) 맞춤 한 곳 // 출고·상품 파서 + 판매자 분류(웹앱 블록 색과 같은 기준)
 const ALADIN_ID = process.env.ALADIN_ID || '', ALADIN_PW = process.env.ALADIN_PW || '', TICK_KEY = process.env.TICK_KEY || '';
 delete process.env.ALADIN_ID; delete process.env.ALADIN_PW; delete process.env.TICK_KEY; /* (0.11.0) 읽은 뒤 환경 변수에서 지움 — 브라우저(자식 프로세스)·GitHub에서 받아 실행하는 공용 파일이 process.env로 볼 수 없게 */
 process.on('unhandledRejection', (e) => { try { console.error('처리 안 된 오류', e && e.message ? e.message : String(e)); } catch (x) {} }); process.on('uncaughtException', (e) => { try { console.error('잡히지 않은 오류', e && e.message ? e.message : String(e)); } catch (x) {} }); /* (0.11.0) 한 요청의 오류로 서버 전체가 꺼지지 않게 */
 const ALLOW = (process.env.ALLOW_EMAILS || 'jerrycson@gmail.com').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
-const ORIGINS = (process.env.ALLOW_ORIGINS || 'https://jerrycson.github.io').split(',').map((s) => s.trim());
+const ORIGINS = [...new Set([...(process.env.ALLOW_ORIGINS || 'https://jerrycson.github.io').split(',').map((s) => s.trim()).filter(Boolean), 'https://readnow.kr'])]; /* (11/10 big1) 새 웹앱 주소(readnow.kr)도 늘 허락 — Cloud Run 환경 변수(ALLOW_ORIGINS)를 손으로 바꾸지 않아도 됨 · 옛 주소는 그대로 */
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
 const AL = 'https://www.aladin.co.kr';
 const nowIso = () => new Date().toISOString();
@@ -65,7 +69,7 @@ let coreSrc = null, coreAt = 0, coreVer = {}; const coreGood = {}; /* (0.11.0) �
 const vm = require('vm');
 async function cores() {
   if (coreSrc && Date.now() - coreAt < 30 * 60e3) return coreSrc;
-  const out = await Promise.all(CORES.map(async (f) => { let t = null, why = null; try { const r = await fetch(RAW + f + '?t=' + Date.now()); if (r.ok) { t = await r.text(); try { new vm.Script(t, { filename: f }); } catch (e) { why = '문법 오류: ' + e.message; t = null; } } else why = 'HTTP ' + r.status; } catch (e) { why = e.message; }
+  const out = await Promise.all(CORES.map(async (f) => { let t = null, why = null; try { const r = await coreFetch(f); if (r.ok) { t = await r.text(); try { new vm.Script(t, { filename: f }); } catch (e) { why = '문법 오류: ' + e.message; t = null; } } else why = 'HTTP ' + r.status; } catch (e) { why = e.message; }
     if (t != null) { coreGood[f] = t; coreVer[f] = (t.match(/VERSION\s*[:=]\s*['"]([\d.]+)/) || [])[1] || '?'; return t; }
     if (coreGood[f]) { log(`${f} 받기 실패(${why}) — 마지막으로 받은 판으로 계속`); return coreGood[f]; }
     if (CORES_OPTIONAL.has(f)) { log(`${f} 받기 실패 (${why}) — 이 파일 없이 계속`); return ''; } throw new Error(`${f} 받기 실패 (${why})`); })); // 다섯 파일을 한꺼번에 받음 (차례로 받던 것보다 빠름)
@@ -79,14 +83,14 @@ let REG_LOCAL = null; try { REG_LOCAL = require('./readnow-registry.js'); } catc
 let REGM = REG_LOCAL || REG_MIN, regAt = 0;
 const vn = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (parseInt(x, 10) || 0), 0);
 async function regMod() { if (Date.now() - regAt < 30 * 60e3) return REGM; regAt = Date.now();
-  try { const r = await fetch(RAW + 'readnow-registry.js?t=' + Date.now()); if (r.ok) { const t = await r.text(); const m = { exports: {} }; new Function('module', 'exports', t)(m, m.exports); if (m.exports && m.exports.VERSION && vn(m.exports.VERSION) >= vn((REG_LOCAL || REG_MIN).VERSION)) { try { const R0 = m.exports.merge({}); m.exports.canHandle(R0, 'read', 'cloud'); REGM = m.exports; } catch (e) { log('GitHub 노선표가 돌지 않음 — 함께 올린 판 씀', e.message); } } } } catch (e) { log('노선표 파일 받기 실패 — 함께 올린 판 씀', e.message); }
+  try { const r = await coreFetch('readnow-registry.js'); if (r.ok) { const t = await r.text(); const m = { exports: {} }; new Function('module', 'exports', t)(m, m.exports); if (m.exports && m.exports.VERSION && vn(m.exports.VERSION) >= vn((REG_LOCAL || REG_MIN).VERSION)) { try { const R0 = m.exports.merge({}); m.exports.canHandle(R0, 'read', 'cloud'); REGM = m.exports; } catch (e) { log('GitHub 노선표가 돌지 않음 — 함께 올린 판 씀', e.message); } } } } catch (e) { log('노선표 파일 받기 실패 — 함께 올린 판 씀', e.message); }
   coreVer['readnow-registry.js'] = REGM.VERSION; return REGM; }
 /* (0.7.0) 실행도구의 한 문 (readnow-exec-core.js) — 알라딘을 바꾸는 일(발송준비시작·판매중지)은 exec_log에 시작을 먼저 적고, 같은 일이 이미 끝났거나 하는 중이면 하지 않음.
  *  함께 올린 파일 → 없으면 GitHub에서 받음 → 그것도 안 되면 기록 없이 하지 않고 대기로 남김(PC 수집기가 맡을 수 있음) */
 let EXEC_LOCAL = null; try { EXEC_LOCAL = require('./readnow-exec-core.js'); } catch (e) { console.log(new Date().toISOString(), '함께 올린 실행 문 파일 없음 — GitHub에서 받음', e.message); }
 let EXECM = EXEC_LOCAL, execAt = 0;
 async function execMod() { if (EXECM) coreVer['readnow-exec-core.js'] = EXECM.VERSION; /* (0.9.3) 함께 올린 파일이 있을 때도 판을 신호에 (예전엔 여기서 먼저 돌아가 관리도구에 '?'로 빨갛게) */ if (EXECM && (EXEC_LOCAL || Date.now() - execAt < 30 * 60e3)) return EXECM; execAt = Date.now();
-  try { const r = await fetch(RAW + 'readnow-exec-core.js?t=' + Date.now()); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', await r.text())(m, m.exports); if (m.exports && m.exports.begin) EXECM = m.exports; } } catch (e) { log('실행 문 파일 받기 실패', e.message); }
+  try { const r = await coreFetch('readnow-exec-core.js'); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', await r.text())(m, m.exports); if (m.exports && m.exports.begin) EXECM = m.exports; } } catch (e) { log('실행 문 파일 받기 실패', e.message); }
   if (EXECM) coreVer['readnow-exec-core.js'] = EXECM.VERSION; return EXECM; }
 async function regNow() { const M = await regMod(); let doc = null; try { const d = await C('app_settings').doc('sys_registry').get(); doc = d.exists ? d.data() : null; } catch (e) {} return { M, R: M.merge(doc) }; }
 /* 맡긴 일 살피기 (1분마다, 회차 끝에): 멈춘 일·늦은 일·모르는 종류 → 되돌리기·사람 확인·알림. 상태 문서는 바뀐 때(또는 10분마다)만 씀 */
@@ -955,7 +959,7 @@ async function pxExpRun(p, ref, v, deadline) { const base = String((await C('app
 const PX_DAILY_DEF = { on: true, at: '09:00', cap: 3000, recap: 300 }; /* (정범님 11/08) 하루 붙이기 3,000 — 공용 파일을 못 받을 때 받침 */
 /* (정범님 10/27 '로컬(PC) 먼저') 계획 계산은 공용 파일 readnow-autosched-core.js의 AS.pxPlan 한 곳(PC 수집기 ⏰ 칸 'pxDaily'와 같은 것) — GitHub에서 받아 씀(30분마다 새로) · 못 받으면 이번 회차는 계획하지 않음(PC가 함) */
 let ASM = null, asAt = 0;
-async function asMod() { if (ASM && Date.now() - asAt < 30 * 60e3) return ASM; asAt = Date.now(); try { const r = await fetch(RAW + 'readnow-autosched-core.js?t=' + Date.now()); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', 'globalThis', await r.text())(m, m.exports, {}); if (m.exports && m.exports.AS && m.exports.AS.pxPlan) { ASM = m.exports; coreVer['readnow-autosched-core.js'] = ASM.VERSION; } } } catch (e) { log('⏰ 공용 파일(autosched) 받기 실패', e.message); } return ASM; }
+async function asMod() { if (ASM && Date.now() - asAt < 30 * 60e3) return ASM; asAt = Date.now(); try { const r = await coreFetch('readnow-autosched-core.js'); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', 'globalThis', await r.text())(m, m.exports, {}); if (m.exports && m.exports.AS && m.exports.AS.pxPlan) { ASM = m.exports; coreVer['readnow-autosched-core.js'] = ASM.VERSION; } } } catch (e) { log('⏰ 공용 파일(autosched) 받기 실패', e.message); } return ASM; }
 const PX_PC_GRACE = 60; /* 정한 시각 + 60분까지는 로그인된 PC(⏰ 칸)가 계획 — 그동안 PC 신호(주문확인요청을 40초 안에 읽음)가 있으면 클라우드는 계획하지 않음 */
 /* (11/10 fence4) 정범님이 손대 진행 중인 상품 = 켜진 🛰 감시 그룹(🎯 추격자 포함)에 든 결정 문서 → listingId·문서 키 모음 · 못 읽으면 null · (11/10 eng3) 조회수 계획에선 세어 기록만(빼지 않음) */
 async function pxOpsSet() { try { const out = new Set(); const gs = await C('prd_price_batches').where('watch.on', '==', true).get(); const ids = gs.docs.filter((d) => !(d.data() || {}).archived).map((d) => d.id);
@@ -3453,7 +3457,7 @@ async function mlRebuild(budgetMs) { const t0 = Date.now(); const ML = await mlM
 let ML_LOCAL = null; try { ML_LOCAL = require('./readnow-ml-core.js'); } catch (e) { console.log(new Date().toISOString(), '함께 올린 학습 파일 없음 — GitHub에서 받음', e.message); }
 let MLM = ML_LOCAL, mlmAt = 0;
 async function mlMod() { if (MLM) coreVer['readnow-ml-core.js'] = MLM.VERSION; if (MLM && (ML_LOCAL || Date.now() - mlmAt < 30 * 60e3)) return MLM; mlmAt = Date.now();
-  try { const r = await fetch(RAW + 'readnow-ml-core.js?t=' + Date.now()); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', await r.text())(m, m.exports); if (m.exports && m.exports.train) MLM = m.exports; } } catch (e) { log('학습 파일 받기 실패', e.message); }
+  try { const r = await coreFetch('readnow-ml-core.js'); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', await r.text())(m, m.exports); if (m.exports && m.exports.train) MLM = m.exports; } } catch (e) { log('학습 파일 받기 실패', e.message); }
   if (MLM) coreVer['readnow-ml-core.js'] = MLM.VERSION; return MLM; }
 function trainOff(ML, X, Y) { if (!ML_LOCAL) return Promise.resolve(ML.train(X, Y)); // 함께 올린 파일이 있을 때만 일꾼을 씀 (없으면 이 자리에서)
   return new Promise((res) => { try { const { Worker } = require('worker_threads'); const w = new Worker(`const { parentPort, workerData } = require('worker_threads'); const ML = require(workerData.path); parentPort.postMessage(ML.train(workerData.X, workerData.Y));`, { eval: true, workerData: { path: require.resolve('./readnow-ml-core.js'), X, Y } });
@@ -3522,7 +3526,7 @@ async function mlLearn() { const ML = await mlMod(); if (!ML) return { skip: '�
  *  한 번에 최대 90초(/daily 10분마다) — 비용: PC가 꺼져 있는 동안 하루 최대 약 3.6시간어치 실행(1 vCPU) · 알라딘 로그인은 쓰지 않음(손님으로 외부 사이트만)
  *  책 목록: 판매중·일시판매중지 상품(ISBN, 판매가 높은 순)을 하루 한 번 만들어 ext_cand에 나눠 저장 → 회차마다 상품 전체를 다시 읽지 않음(읽기 비용) */
 const EBAYDEL = { t: null, at: 0 }; let EXTM = null, extmAt = 0; const EXT_C = { cache: {}, next: {}, idx: null, idxAt: 0, cand: null, candAt: 0, cur: {}, errs: {}, pauseUntil: {}, used: {}, usedDay: null, keys: null, keysAt: 0 };
-async function extMod() { if (EXTM && Date.now() - extmAt < 30 * 60e3) return EXTM; extmAt = Date.now(); try { const r = await fetch(RAW + 'readnow-ext-core.js?t=' + Date.now()); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', await r.text())(m, m.exports); if (m.exports && m.exports.run) EXTM = m.exports; } } catch (e) { log('외부 정보 공용 파일 받기 실패', e.message); } if (EXTM) coreVer['readnow-ext-core.js'] = EXTM.VERSION; return EXTM; }
+async function extMod() { if (EXTM && Date.now() - extmAt < 30 * 60e3) return EXTM; extmAt = Date.now(); try { const r = await coreFetch('readnow-ext-core.js'); if (r.ok) { const m = { exports: {} }; new Function('module', 'exports', await r.text())(m, m.exports); if (m.exports && m.exports.run) EXTM = m.exports; } } catch (e) { log('외부 정보 공용 파일 받기 실패', e.message); } if (EXTM) coreVer['readnow-ext-core.js'] = EXTM.VERSION; return EXTM; }
 const extKst = (ms) => new Date((ms || Date.now()) + 9 * 3600e3).toISOString().slice(0, 10);
 const EXT_RUN = () => C('app_settings').doc('ext_run'); const EXT_BACKOFF = [1, 3, 7, 14, 30];
 const extHttp = async (o) => { const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000); try { const r = await fetch(o.url, { method: o.method || 'GET', headers: { 'User-Agent': UA, 'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8', ...(o.headers || {}) }, body: o.data, signal: ctl.signal, redirect: 'follow' }); return { status: r.status, text: await r.text() }; } catch (e) { throw new Error(e.name === 'AbortError' ? '응답 없음(30초)' : '연결 실패: ' + e.message); } finally { clearTimeout(t); } };
