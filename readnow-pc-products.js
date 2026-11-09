@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.238의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.239의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.238' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.238', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.239' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.239', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -660,14 +660,16 @@
    *  로거가 돌아오면 새 회차는 다시 로거(하던 회차는 끝까지) · 판정은 공용 AS.loggerAway */
   const LGA = { prev: null, at: 0, r: null };
   const loggerAway = () => { if (PUBONLY || !pubPcMode() || !AS || !AS.loggerAway) return false; try { if (!LGA.r || Date.now() - LGA.at > 30e3) { LGA.at = Date.now(); LGA.r = AS.loggerAway(SCHED || {}, typeof BEATS !== 'undefined' ? BEATS : {}, PUBPC.name, Date.now()); if (LGA.prev !== null && LGA.prev !== LGA.r.away) log(LGA.r.away ? `🔁 ${LGA.r.why} — 벤치마킹 말고 로거 비로그인 일(시장 지표 등)을 사무실 담당 PC가 이어받음` : `🔁 ${LGA.r.why} — 비로그인 일 새 회차는 다시 로거가 맡음`, 1); LGA.prev = LGA.r.away; } return !!LGA.r.away; } catch (e) { return false; } };
-  const lgTakeKey = (k) => loggerAway() && (!isBenchKey(k) || benchTakeKey(k)); /* 이 비로그인 일을 지금 사무실 PC가 이어받아도 되나 */
+  /* (정범님 11/09 최우선 법칙) 알라딘이 로거를 우리와 엮게 하지 않음 — 사무실 PC(북스킹 계정 IP)가 로거의 비로그인 일·벤치마킹을 이어받지 않음(같은 목록·같은 자리를 사무실 IP로 이어 가면 엮임) · 설정 loggerTakeOk가 true일 때만(기본 끔) */
+  const lgTakeKey = (k) => SET.loggerTakeOk === true && loggerAway() && (!isBenchKey(k) || benchTakeKey(k)); /* 이 비로그인 일을 지금 사무실 PC가 이어받아도 되나 */
   /* (11/09 오후 정범님 '로거가 멈춰도 다른 PC가 이어받음') 🎯 매시 '못 끝낸 판매자 이어 읽기'(benchResume)만 — 로거가 30분 넘게(app_settings/bench.awayMin · 근거: 없음, 설정으로 바꿈) 알라딘 일을 못 하면 사무실 담당 PC가 맡음
    *  매일 한 바퀴(benchForce 등)는 그대로 로거 몫 · 같은 회차는 먼저 잡은 PC 하나(schedStart) · 같은 판매자 동시 읽기는 판매자 잡기(bclaim)가 막음 */
   const BAW_K = 'rn-benchAway'; let BAW = null;
   function benchAwayLong() { if (PUBONLY || !pubPcMode() || REGPC() || !asOwnMine()) return false; const away = loggerAway(); const now = Date.now(); if (!BAW) { try { BAW = GM_getValue(BAW_K, null) || {}; } catch (e) { BAW = {}; } }
     const m = +((BENCH_CFG || {}).awayMin); const r = benchAwayStep(BAW, away, now, (m >= 5 && m <= 240 ? m : 30) * 60e3); const flip = !!r.long !== !!BAW.long; BAW = r; if (flip || now - (+BAW.saved || 0) > 60e3) { BAW.saved = now; try { GM_setValue(BAW_K, BAW); } catch (e) {} }
     if (flip && r.long) log(`🔁 로거가 ${Math.round((now - r.since) / 60e3)}분째 알라딘 일을 못 함 — 🎯 매시 '못 끝낸 판매자 이어 읽기'를 이 PC(사무실 담당)가 맡음(같은 판매자 동시 읽기는 판매자 잡기가 막음)`, 1); return r.long; }
-  const benchTakeKey = (k) => String(k || '').replace(/^(job:|prd:)/, '').split('#')[0] === 'benchResume' && benchAwayLong();
+  /* (정범님 11/09 '사무실 PC가 벤치마킹을 맡으면 알라딘이 사무실과 로거를 엮어 로거가 우리 PC인 걸 알게 됨') 집중 벤치마킹은 로거만 — 사무실 PC는 대신 읽지 않음(설정 benchOfficeOk을 true로 해야만 · 기본 끔) */
+  const benchTakeKey = (k) => SET.benchOfficeOk === true && String(k || '').replace(/^(job:|prd:)/, '').split('#')[0] === 'benchResume' && benchAwayLong();
   const PUBPC_MSG = () => `🌐 대량 공개 일은 공개 전용 PC(${PUBPC.name || '테더링'})가 함 — 이 PC는 사무실 인터넷이라 하지 않음 (끄기: 웹앱 설정)`;
   const LOCKP = () => C('crm_system').doc(lockDocId().replace('work_lock', 'pub_lock'));
   const pubMax = () => Math.max(1, Math.min(10, +SET.pubLanes || 3));
@@ -4307,7 +4309,7 @@
       log(`🌐 남는 PC 돕기: ${mainB[1].name || '다른 PC'}가 도는 🎯 한 바퀴에 같이 들어감 — 남은 판매자 ${left.length}명 중 아무도 안 읽는 판매자부터`); window.__rnHelper = true; try { await runJob('benchHelp'); } finally { window.__rnHelper = false; } } catch (e) {} }, 120e3);
   /* (11/09 정범님) ⚡ 지금 임시 회차 — 1분마다 확인 · 한 번 끝나면(끝·진짜 오류·기한 지남) 다시 하지 않음 · 새로고침·멈춤으로 끊기면 같은 날 다시 이어 감(11/09 오후) · 다른 일을 하는 중이면 끝난 뒤 · 시작 못 하면(알라딘 차례가 바쁨) 다음 확인 때 다시 */
   let BXN_OFF = false; setInterval(async () => { try { if (BXN_OFF || Date.now() > BXN.until) return; if (!auth.currentUser || running || schedBusy || window.__rnPaused || window.__rnReloading || !SCHED || !AS) return;
-      let role = null; const ctx = {}; if (PUBONLY) { role = 'logger'; ctx.netOk = !!TGATE.ok; if (!ctx.netOk) return; } else if (pubPcMode() && asOwnMine() && !REGPC()) { role = 'office'; ctx.away = loggerAway(); } else return;
+      let role = null; const ctx = {}; if (PUBONLY) { role = 'logger'; ctx.netOk = !!TGATE.ok; if (!ctx.netOk) return; } else if (SET.benchOfficeOk === true && pubPcMode() && asOwnMine() && !REGPC()) { role = 'office'; ctx.away = loggerAway(); } else return;
       const c = await benchXnowClaim(role, ctx); if (c.final) BXN_OFF = true; if (!c.go) return;
       log(`🎯 ⚡ 지금 임시 회차(정범님 11/09 — 저녁 회차와 별개로 한 번) 시작: ${c.why} · 오늘 못 끝낸 판매자를 아직 안 읽은 판매자부터, 시작했다 못 끝낸 큰 숍은 저장된 자리부터`, 1);
       const hb = setInterval(benchXnowBeat, 60e3); let res, err = null; try { res = await runJob('benchResume', { xnow: true }); err = lastRunErr; } catch (e) { err = e.message; } finally { clearInterval(hb); }

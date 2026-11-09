@@ -42,7 +42,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   const col = pick(path.join(__dirname, '../readnow-collector.user.js'), path.join(__dirname, '../readnow-collector.src.js'), path.join(__dirname, '../../src/readnow-collector.src.js'));
   const S = col ? fs.readFileSync(col, 'utf8') : ''; const W = {};
   W.filter = /isPubKey\(String\(d\.slot\.job\)\.slice\(4\)\) && !lgTakeKey\(String\(d\.slot\.job\)\.slice\(4\)\)\)/.test(S);
-  W.bench = /const lgTakeKey = \(k\) => loggerAway\(\) && \(!isBenchKey\(k\) \|\| benchTakeKey\(k\)\)/.test(S) && /const benchTakeKey = \(k\) => String\(k \|\| ''\)\.replace\(\/\^\(job:\|prd:\)\/, ''\)\.split\('#'\)\[0\] === 'benchResume' && benchAwayLong\(\)/.test(S); /* (11/09 오후) 벤치마킹은 매시 이어 읽기(benchResume)만 로거 30분 부재 뒤 넘겨받음 */
+  W.bench = /const lgTakeKey = \(k\) => SET\.loggerTakeOk === true && loggerAway\(\) && \(!isBenchKey\(k\) \|\| benchTakeKey\(k\)\)/.test(S) && /const benchTakeKey = \(k\) => SET\.benchOfficeOk === true && /.test(S); /* (정범님 11/09 최우선 법칙) 사무실 PC의 로거 일 이어받기는 설정을 켤 때만 — 기본 끔 */
   W.lane = /!\(window\.__rnAuto && lgTakeKey\(curKey\)/.test(S);
   W.budWait = /budWait: PUBONLY && BUD && BUD\.genPace/.test(S) && /b\.genPace = gp; if \(gp && gp\.on && b\.left && b\.left\.gen > gp\.left\)/.test(S);
   W.beat = /pace: BUD && BUD\.genPace \?/.test(S);
