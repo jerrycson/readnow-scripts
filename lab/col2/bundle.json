@@ -10,6 +10,8 @@
   "shadow/col2-compare-core.js",
   "shadow/col2-compare.js",
   "shadow/col2-store.js",
-  "shadow/compare.html"
+  "shadow/compare.html",
+  "helper/col2-journal.js",
+  "helper/col2-logwin.js"
  ]
 }

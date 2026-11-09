@@ -25,7 +25,7 @@
 'use strict';
 const http = require('http'), https = require('https'), fs = require('fs'), path = require('path'), os = require('os');
 const COL2 = require('../col2-config.js');
-const { makePace } = require('./col2-pace.js'); const { makeWin } = require('./col2-win.js'); const { Browser } = require('./col2-cdp.js'); const CMP = require('../shadow/col2-compare-core.js'); const { makeY24 } = require('./col2-y24.js');
+const { makePace } = require('./col2-pace.js'); const { makeWin } = require('./col2-win.js'); const { Browser } = require('./col2-cdp.js'); const CMP = require('../shadow/col2-compare-core.js'); const { makeY24 } = require('./col2-y24.js'); const JR = require('./col2-journal.js');
 const VERSION = COL2.COL2_VER;
 const TEST = process.env.RN_COL2_TEST === '1';
 const PORT = +process.env.RN_COL2_PORT || COL2.PORT;
@@ -33,15 +33,18 @@ if (COL2.PROD_PORTS.includes(PORT)) { console.error(`✗ 포트 ${PORT}는 운�
 const ROOT = path.join(__dirname, '..');
 const HOME = process.env.RN_COL2_HOME || path.join(os.homedir(), 'ReadNow', 'col2'); fs.mkdirSync(HOME, { recursive: true });
 const CFG_F = path.join(HOME, 'col2.json'), LOG_F = path.join(HOME, 'col2.log'), CORE_D = path.join(HOME, 'core');
-const WORK_MARK = 'col2-work-chrome', STAT_MARK = 'col2-stat-chrome', WIN_MARK = 'col2-win-chrome';
+const WORK_MARK = 'col2-work-chrome', STAT_MARK = 'col2-stat-chrome', WIN_MARK = 'col2-win-chrome', LOG_MARK = 'col2-log-chrome';
 /* (0.1.1) 작은 앱 창 — 화면마다 따로 된 프로필(창 찾기·자리 기억이 서로 안 섞이게) · 자리·크기는 col2.json 의 key 칸 */
-const APPS = { status: { mark: STAT_MARK, key: 'hwin', path: '/', name: '📊 상태 창' }, compare: { mark: WIN_MARK, key: 'cwin', path: '/compare', name: '🔎 비교 화면' } };
+const APPS = { status: { mark: STAT_MARK, key: 'hwin', path: '/', name: '📊 상태 창' }, compare: { mark: WIN_MARK, key: 'cwin', path: '/compare', name: '🔎 비교 화면' }, log: { mark: LOG_MARK, key: 'lwin', path: '/log', name: '📜 기록창' } }; /* (0.1.6) 기록창 ↗ 따로 창 */
 const ALADIN = TEST && process.env.RN_COL2_ALADIN ? process.env.RN_COL2_ALADIN.replace(/\/$/, '') : COL2.ALADIN;
 const D = COL2.WATCH;
-const now = () => Date.now();
+const now = () => Date.now(); const BOOT = Date.now().toString(36) + process.pid;
 const kst = (ms) => new Date((ms || now()) + 9 * 3600e3).toISOString().slice(0, 19).replace('T', ' ');
-const log = (m) => { const line = `${kst()} 🧪 ${m}\n`; try { fs.appendFileSync(LOG_F, line); } catch (e) {} try { process.stdout.write(line); } catch (e) {} };
-const LOGS = []; const note = (m) => { LOGS.push({ t: now(), m }); if (LOGS.length > 30) LOGS.shift(); log(m); };
+/* (0.1.6) 📜 기록창 — 줄마다 종류·수준·일 이름(col2-journal.js) · 남기기 전에 비밀값 꼴 가림 · 로거 PC는 우리 숍·계정 흔적을 남기지 않음 */
+const isLoggerPc = () => /^LOGGER/i.test(String((typeof CFG !== 'undefined' && CFG && CFG.pc) || os.hostname() || ''));
+const clean = (m) => { const t = JR.scrub(m); return isLoggerPc() ? JR.loggerScrub(t) : t; };
+const log = (m) => { const line = `${kst()} 🧪 ${clean(m)}\n`; try { fs.appendFileSync(LOG_F, line); } catch (e) {} try { process.stdout.write(line); } catch (e) {} };
+const JRN = JR.makeJournal({ home: HOME, isLogger: () => isLoggerPc() }); const note = (m, o) => { const e = JRN.add(m, o); if (e) log(e.x); return e; };
 
 /* ── 설정(col2.json) ── */
 function loadCfg() { try { const v = JSON.parse(fs.readFileSync(CFG_F, 'utf8')); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } }
@@ -55,7 +58,7 @@ const PACE = makePace(path.join(HOME, 'pace.json'), paceCfg);
 const WIN = makeWin({ psFile: path.join(HOME, 'col2-win.ps1'), D });
 function chromeExe() { if (process.env.RN_COL2_CHROME) return process.env.RN_COL2_CHROME; return [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.LOCALAPPDATA].filter(Boolean).map((b) => path.join(b, 'Google', 'Chrome', 'Application', 'chrome.exe')).find((f) => fs.existsSync(f)) || null; }
 /* (0.1.5) 🟦 예스24 판매관리 읽기 — col2-y24.js (이 도우미는 Firestore에 쓰지 않음 · 받은 것은 이 PC 수집기가 예전 길로 올림) */
-const Y24 = makeY24({ HOME, Browser, WIN, TEST, note: (m) => note(m), log: (m) => log(m), cfg: () => CFG, chromeExe, handoffMs: () => (TEST && CFG.watch && CFG.watch.handoffMs != null ? +CFG.watch.handoffMs : W('handoffSec') * 1000), getText: (u) => getText(u), coreBase: COL2.CORE_BASE, saveRect: (k, r) => { CFG[k] = { ...r, at: now(), src: 'pc' }; saveCfg(); } });
+const Y24 = makeY24({ HOME, Browser, WIN, TEST, note: (m) => note(m, { k: 'y24', m: '예스24' }), log: (m) => log(m), cfg: () => CFG, chromeExe, handoffMs: () => (TEST && CFG.watch && CFG.watch.handoffMs != null ? +CFG.watch.handoffMs : W('handoffSec') * 1000), getText: (u) => getText(u), coreBase: COL2.CORE_BASE, saveRect: (k, r) => { CFG[k] = { ...r, at: now(), src: 'pc' }; saveCfg(); } });
 
 /* ── 운영 공용 파일(그대로 받아 씀 · 6시간마다 새로) ── */
 const CORE = { src: [], ver: {}, at: 0, err: null };
@@ -170,7 +173,7 @@ function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const out = { 
   return ch; }
 
 function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), y24: Y24.sum(), side: sideOn(), y24Want: CFG.y24 == null ? !TEST : CFG.y24 !== false, y24Jobs: CFG.y24Jobs !== false, upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen,
-  opens: opensHour(), chrome: { fails: CH.fails, last: CH.last, okAt: CH.okAt ? kst(CH.okAt) : null, coolUntil: CH.coolUntil ? kst(CH.coolUntil) : null, cools: CH.cools, adopts: CH.adopts, retries: CH.retries }, msg: [ST.msg, CFG.on && AU.msg && AU.msg !== ST.msg ? '자동 읽기: ' + AU.msg : ''].filter(Boolean).join(' · '), /* (0.1.4) 자동 읽기가 왜 쉬는지(하루 몫·표본 기다림·작업 창 준비 실패)도 웹앱 col2_ctl·진단에 보이게 — 예전엔 작업 창 지킴이 글만 보여 멈춘 까닭을 몰랐음 */ reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: LOGS.slice(-15), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
+  opens: opensHour(), chrome: { fails: CH.fails, last: CH.last, okAt: CH.okAt ? kst(CH.okAt) : null, coolUntil: CH.coolUntil ? kst(CH.coolUntil) : null, cools: CH.cools, adopts: CH.adopts, retries: CH.retries }, msg: [ST.msg, CFG.on && AU.msg && AU.msg !== ST.msg ? '자동 읽기: ' + AU.msg : ''].filter(Boolean).join(' · '), /* (0.1.4) 자동 읽기가 왜 쉬는지(하루 몫·표본 기다림·작업 창 준비 실패)도 웹앱 col2_ctl·진단에 보이게 — 예전엔 작업 창 지킴이 글만 보여 멈춘 까닭을 몰랐음 */ reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: JRN.tail(15).map((e) => ({ t: e.t, m: e.x, l: e.l, k: e.k })), pcKind: JRN.kind(), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
 
 /* ── 그림자 읽기 ── */
 async function readProduct(o) { const id = String(o.itemId || '').trim(); if (!/^\d{1,13}$/.test(id)) return { code: 400, body: { ok: false, err: '상품 번호(ItemId)가 이상함' } };
@@ -179,7 +182,7 @@ async function readProduct(o) { const id = String(o.itemId || '').trim(); if (!/
   /* (0.1.4 정범님 11/09 '번외 수집기 왜 진행 안 해' — HOME 오늘 1600/1600인데 읽은 책 0 · col2_runs 0) 예전엔 차례(PACE.take — 시간·하루 셈)를 먼저 받고 작업 창을 준비해,
    *  숨은 크롬이 안 뜨거나 30분 쉬는 동안 10초마다 다시 해 볼 때마다 알라딘에 한 번도 안 갔는데 하루 몫이 한 장씩 줄었음(시간 240 × 약 7시간 = 1,600 → 다음 날까지 멈춤)
    *  → 이제는 지금 읽어도 되나(check — 셈하지 않음)만 보고 · 공용 파일·작업 창 준비가 끝난 뒤에야 차례를 받음(셈은 알라딘에 실제로 요청할 때만) */
-  const fail0 = (code, err) => { ST.reads.push({ at: kst(), itemId: id, ok: false, why: err, ms: now() - t0, pre: true }); if (ST.reads.length > 50) ST.reads.shift(); return { code, body: { ok: false, err } }; };
+  const fail0 = (code, err) => { ST.reads.push({ at: kst(), itemId: id, ok: false, why: err, ms: now() - t0, pre: true }); if (ST.reads.length > 50) ST.reads.shift(); if (!o.quiet) note(`그림자 읽기 ${id} — ✗ ${err}`, { k: 'read', l: 'warn', m: '알라딘' }); return { code, body: { ok: false, err } }; };
   try { const c0 = PACE.check(); if (!c0.ok) return { code: 429, body: { ok: false, err: c0.why, retryMs: c0.retryMs, paced: true } };
     let core; try { core = await loadCore(); } catch (e) { return fail0(503, e.message); }
     let br; try { br = await ensureBrowser('읽기'); await br.land(ALADIN + '/', W('pageTimeoutSec')); } catch (e) { PACE.fail('error'); return fail0(503, '작업 창 준비 실패: ' + e.message); }
@@ -187,8 +190,8 @@ async function readProduct(o) { const id = String(o.itemId || '').trim(); if (!/
     const url = ALADIN + COL2.READ_PATH + id; const r = await br.read(url, core.src, 30) || { ok: false, why: '빈 응답' };
     if (r.ok) PACE.ok(); else if (!r.needLogin) PACE.fail(r.kind || 'error');
     const rec = { at: kst(), itemId: id, ok: !!r.ok, why: r.why || null, ms: now() - t0, title: r.page ? r.page.title : null }; ST.reads.push(rec); if (ST.reads.length > 50) ST.reads.shift();
-    note(`그림자 읽기 ${id} — ${r.ok ? '✓ ' + (r.page && r.page.title || '') : '✗ ' + r.why}`);
-    return { code: 200, body: { ...r, ok: !!r.ok, itemId: id, url, waited: pc.waited, helperVer: VERSION, core: core.ver, pc: CFG.pc || os.hostname() } };
+    if (!o.quiet) note(`그림자 읽기 ${id} — ${r.ok ? '✓ ' + (r.page && r.page.title || '') : '✗ ' + r.why}`, { k: 'read', l: r.ok ? 'ok' : r.needLogin ? 'warn' : 'err', m: '알라딘', d: { id, ok: !!r.ok, ms: rec.ms, why: r.ok ? null : r.why } });
+    return { code: 200, body: { ...r, ok: !!r.ok, itemId: id, url, waited: pc.waited, tookMs: rec.ms, helperVer: VERSION, core: core.ver, pc: CFG.pc || os.hostname() } };
   } catch (e) { PACE.fail('error'); return { code: 500, body: { ok: false, err: e.message } }; } finally { ST.reading = null; } }
 
 /* ── 화면 ── */
@@ -243,15 +246,19 @@ async function autoStep() {
   const c = PACE.check(); if (!c.ok) { AU.msg = c.why + (c.retryMs == null ? ' — 다음 날 이어감' : ''); return c.retryMs == null ? untilKstMidnight() + 30e3 : Math.min(c.retryMs + 500, 30 * 60e3); }
   if (c.waitMs > 0) { AU.msg = '자동으로 도는 중'; return c.waitMs + 50; }
   const it = AU.pool[AU.cur]; AU.cur++; const d = kday(); if (AU.day.d !== d) AU.day = { d, n: 0, same: 0, diff: 0, no: 0, fail: 0 };
-  const r = await readProduct({ itemId: it.itemId }); const b = r.body || {};
-  if (r.code !== 200 || !b.ok) { if (b.paced || r.code === 503 || r.code === 409 || r.code === 429) { AU.cur--; savePos(); AU.msg = '잠깐 쉼 — ' + (b.err || b.why || r.code); return r.code === 503 ? 10e3 : 5000; } /* 작업 창 준비 중·읽는 중이면 그 책을 다시(셈하지 않음) */ AU.day.n++; AU.day.fail++; AU.lap.read++; AU.last = { at: kst(), itemId: it.itemId, ok: false, why: b.why || b.err || null }; }
+  const r = await readProduct({ itemId: it.itemId, quiet: true }); const b = r.body || {};
+  if (r.code !== 200 || !b.ok) { if (b.paced || r.code === 503 || r.code === 409 || r.code === 429) { AU.cur--; savePos(); AU.msg = '잠깐 쉼 — ' + (b.err || b.why || r.code); return r.code === 503 ? 10e3 : 5000; } /* 작업 창 준비 중·읽는 중이면 그 책을 다시(셈하지 않음) */ AU.day.n++; AU.day.fail++; AU.lap.read++; AU.last = { at: kst(), itemId: it.itemId, ok: false, why: b.why || b.err || null }; note(`그림자 읽기 ${it.itemId} — ✗ ${b.why || b.err || r.code}`, { k: 'read', l: b.needLogin ? 'warn' : 'err', m: '알라딘', d: { id: it.itemId, ok: false, ms: b.tookMs || b.ms || null, why: b.why || b.err || null } }); }
   else { const sh = CMP.pickPage(b.page, COL2.BOOK_FIXED); const cmp = CMP.compareBook(it.prod || null, sh, COL2.BOOK_FIXED); AU.day.n++; AU.lap.read++; AU.day[cmp.verdict === 'same' ? 'same' : cmp.verdict === 'noprod' ? 'no' : 'diff']++;
     outReplace('col2_books', it.bookId || 'itemId_' + it.itemId, { itemId: it.itemId, bookId: it.bookId || null, at: new Date().toISOString(), runId: 'auto_' + d, auto: true, page: sh, coreVer: b.coreVer || null, alVer: b.alVer || null, helperVer: VERSION, pc: CFG.pc || os.hostname(), ms: b.ms || null, cmp: { verdict: cmp.verdict, n: cmp.n, diffFields: cmp.diffFields } });
-    AU.last = { at: kst(), itemId: it.itemId, ok: true, verdict: cmp.verdict, title: sh.title || null }; }
+    AU.last = { at: kst(), itemId: it.itemId, ok: true, verdict: cmp.verdict, title: sh.title || null };
+    note(`그림자 읽기 ${it.itemId} — ✓ ${sh.title || ''} · ${{ same: '같음', noprod: '운영 칸 없음' }[cmp.verdict] || '다름' + (cmp.diffFields && cmp.diffFields.length ? '(' + cmp.diffFields.slice(0, 4).join('·') + ')' : '')}`, { k: 'read', l: cmp.verdict === 'same' || cmp.verdict === 'noprod' ? 'ok' : 'warn', m: '알라딘', d: { id: it.itemId, ok: true, ms: b.tookMs || b.ms || null, v: cmp.verdict } }); }
   const D2 = AU.day; outReplace('col2_runs', 'auto_' + d, { at: new Date().toISOString(), auto: true, d, n: D2.n, sameN: D2.same, diffN: D2.diff, noN: D2.no, failN: D2.fail, lap: AU.lap.n, lapRead: AU.lap.read, ver: VERSION, pc: CFG.pc || os.hostname() });
   savePos(); AU.msg = '자동으로 도는 중'; return 1000; }
 async function autoLoop() { if (AU.running) return; AU.running = true; let next = 15e3; try { next = await autoStep(); } catch (e) { AU.msg = '자동 읽기 오류: ' + e.message; next = 60e3; } finally { AU.running = false; }
-  AU.nextAt = now() + next; clearTimeout(AU.t); AU.t = setTimeout(autoLoop, next); }
+  AU.nextAt = now() + next; clearTimeout(AU.t); AU.t = setTimeout(autoLoop, next); restNote(); }
+/* (0.1.6) 쉼 까닭이 바뀔 때만 기록창에 한 줄(10초마다 같은 줄이 쌓이지 않게) · 다시 돌면 '다시 읽기 시작' */
+let restWas = null; function restNote() { const m = String(AU.msg || ''); const run = /도는 중/.test(m); const key = run ? '' : m.replace(/\d[\d,.]*/g, '#');
+  if (key === restWas) return; const was = restWas; restWas = key; if (run) { if (was) note('▶ 자동 읽기 다시 시작', { k: 'rest', l: 'ok', m: '쉼' }); return; } if (m) note('⏸ 자동 읽기 쉼 — ' + m, { k: 'rest', l: /429|오류|실패/.test(m) ? 'warn' : 'info', m: '쉼' }); }
 const autoKick = () => { clearTimeout(AU.t); AU.t = setTimeout(autoLoop, 500); };
 function autoSum() { const p = PACE.state(); return { on: autoOn() && !!CFG.on, auto: autoOn(), nightOn: nightOn(), msg: AU.msg, poolN: AU.pool.length, left: poolLeft(), poolAt: AU.poolAt ? kst(AU.poolAt) : null, nextMs: AU.nextAt ? Math.max(0, AU.nextAt - now()) : null, day: AU.day, dayN: p.dayN, dayCap: p.dayCap, last: AU.last, lap: { n: AU.lap.n, read: AU.lap.read, got: AU.lap.got, end: AU.lap.end, after: AU.lap.after, at: AU.lap.at, done: AU.lap.done } }; }
 
@@ -294,7 +301,8 @@ details.c>summary{cursor:pointer;list-style:none;font-weight:700}details.c>summa
 button{font:12px system-ui,'Malgun Gothic';border:1px solid var(--pri);background:var(--card);color:var(--pri);border-radius:6px;padding:3px 7px;margin:2px 3px 2px 0;cursor:pointer;max-width:100%}button.p{background:var(--pri);color:#fff}button.warn{border-color:var(--no);color:var(--no)}button:disabled{opacity:.5;cursor:default}
 input{font:12px system-ui;padding:2px 4px;max-width:100%;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:4px}input.n{width:52px}
 .ln{font:11px/1.4 ui-monospace,Consolas,monospace;white-space:pre-wrap;max-height:160px;overflow:auto;background:var(--bg);border-radius:6px;padding:5px}
-.pcn{font-size:12px}.pcn input{width:120px}`;
+.pcn{font-size:12px}.pcn input{width:120px}
+h1 .jwb{margin:0 0 0 auto;background:#fff;color:#5A4A86;border:0;font-weight:700;padding:2px 8px}h1 .jwb.on{background:#2F5D50;color:#fff}`;
 const pcBarHtml = () => `<div class="c pcn" id="pcbar">🖥 이 PC: <b id="pcn">…</b> <span class="k" id="pcs"></span> <button id="pcb">바꾸기</button><span id="pce" style="display:none"><input id="pci" maxlength="40"> <button class="p" id="pcv">저장</button></span>
 <div class="k">🔐 알라딘 로그인: 이 단계에선 안 함(운영 수집기와 동시 로그인·판매자 4대 한도를 막으려고) · 예스24: 판매관리 읽기용 세션만 이 PC 따로 된 크롬에(아이디·비번 저장 안 함)</div></div>`;
 /* 이 PC 이름 칸 스크립트(상태 창·비교 화면 같이) — H(머리)·post 함수가 있는 곳에 끼움 */
@@ -302,9 +310,16 @@ const PC_JS = `function autoLine(s){const a=s.auto||{},rl=s.relay||{};if(!a.on)r
 function pcShow(s){const n=document.getElementById('pcn');if(!n)return;n.textContent=s.pc||'—';document.getElementById('pcs').textContent=s.pcSrc==='pc'?'(여기서 바꾼 이름)':s.pcSrc==='web'?'(웹앱 기기 이름에서)':'(윈도우 이름 · 웹앱을 열면 기기 이름으로 바뀜)'}
 document.getElementById('pcb').onclick=()=>{const e=document.getElementById('pce');e.style.display=e.style.display==='none'?'':'none';document.getElementById('pci').value=document.getElementById('pcn').textContent.replace(/^—$/,'')};
 document.getElementById('pcv').onclick=async()=>{const v=document.getElementById('pci').value.trim();if(!v)return;const r=await fetch('/cfg',{method:'POST',headers:{'X-RN-Col2':'1','Content-Type':'application/json'},body:JSON.stringify({pc:v,pcSrc:'pc'})});const s=await r.json();pcShow(s);document.getElementById('pce').style.display='none'};`;
+/* (0.1.6) 📜 기록창 붙이기 — 옆 창(🗒 단추 · Alt+L)과 따로 창(/log) 같이 · 기기 저장은 Col2Store.ls(rn3-) */
+const LOG_BOOT = (full) => `<script src="/s/col2-store.js"></script><script src="/s/col2-logwin.js"></script><script>(function(){const H={'X-RN-Col2':'1','Content-Type':'application/json'};
+async function api(m,p,b,text){const r=await fetch(p,{method:m,headers:H,cache:'no-store',body:b?JSON.stringify(b):undefined});return text?r.text():r.json()}
+window.__jw=Col2Log.mount({api,ls:Col2Store.ls,full:${full ? 'true' : 'false'},btn:document.getElementById('jwBtn')});
+${full ? `let last='';setInterval(()=>{const v={p:'log',x:screenX,y:screenY,w:outerWidth,h:outerHeight};const k=JSON.stringify(v);if(k!==last&&v.w>200&&v.h>150){last=k;fetch('/win/hrect',{method:'POST',headers:H,body:k}).catch(()=>{})}},15000);` : ''}})();</script>`;
+function logPageHtml() { return `<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>📜 번외 수집 기록</title>
+<style>${SMALL_CSS}</style><body>${LOG_BOOT(true)}</body></html>`; }
 function statusHtml() { return `<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>📊 번외 수집 상태</title>
 <style>${SMALL_CSS}</style>
-<h1>📊 번외 수집 상태 <small>col2 ${VERSION} · 시험 환경(운영과 따로)</small></h1><div class="b">
+<h1>📊 번외 수집 상태 <small>col2 ${VERSION} · 시험 환경(운영과 따로)</small><button id="jwBtn" class="jwb" title="🗒 기록창 열기 (Alt+L)">🗒 기록</button></h1><div class="b">
 ${pcBarHtml()}
 <div class="c" id="st">읽는 중…</div>
 <div class="c" id="y24c"><b>🟦 예스24 판매관리 읽기</b> <span class="k">(화면을 열지 않음 · 숨은 크롬)</span><div id="y24">—</div><div id="y24b"></div></div>
@@ -345,12 +360,12 @@ document.querySelectorAll('input.n').forEach((i)=>i.oninput=()=>{edit=Date.now()
 document.querySelectorAll('[data-a]').forEach((b)=>b.onclick=async()=>{$('m').textContent='…';try{const j=await post('/win/'+b.dataset.a,{why:'상태 창'});$('m').textContent=(j.ok?'✓ ':'✗ ')+(j.msg||j.err||'')}catch(e){$('m').textContent='✗ '+e.message}load()});
 document.querySelectorAll('[data-s]').forEach((b)=>b.onclick=async()=>{const q=b.dataset.s==='win'?'w':'h';const v={};['x','y','w','h'].forEach((k)=>v[k]=+$(q+k).value);try{const j=await post('/win/rect',{[b.dataset.s]:v});$('m').textContent=(j.ok?'✓ 저장 — ':'✗ ')+(j.msg||j.err||'');edit=0}catch(e){$('m').textContent='✗ '+e.message}load()});
 let last='';setInterval(()=>{const v={x:screenX,y:screenY,w:outerWidth,h:outerHeight};const k=JSON.stringify(v);if(k!==last&&v.w>200&&v.h>150){last=k;fetch('/win/hrect',{method:'POST',headers:H,body:k}).catch(()=>{})}},15000);
-load();setInterval(()=>{if(!edit||Date.now()-edit>60000){edit=0;load()}},4000)})();</script></html>`; }
+load();setInterval(()=>{if(!edit||Date.now()-edit>60000){edit=0;load()}},4000)})();</script>${LOG_BOOT(false)}</html>`; }
 
 /* ── 듣는 길 ── */
 function readBody(req, max, cb) { const bufs = []; let n = 0, bad = false; req.on('data', (c) => { n += c.length; if (n > max) { bad = true; req.destroy(); } else bufs.push(c); }); req.on('end', () => (bad ? cb(new Error('너무 큼')) : cb(null, Buffer.concat(bufs)))); }
 const OK_ORG = (o) => o === `http://127.0.0.1:${PORT}` || o === `http://localhost:${PORT}` || o === COL2.WEB_ORIGIN || /^chrome-extension:\/\//i.test(o);
-const STATIC = { 'col2-config.js': path.join(ROOT, 'col2-config.js') }; for (const f of ['col2-store.js', 'col2-compare-core.js', 'col2-compare.js']) STATIC[f] = path.join(ROOT, 'shadow', f);
+const STATIC = { 'col2-config.js': path.join(ROOT, 'col2-config.js') }; for (const f of ['col2-store.js', 'col2-compare-core.js', 'col2-compare.js']) STATIC[f] = path.join(ROOT, 'shadow', f); STATIC['col2-logwin.js'] = path.join(__dirname, 'col2-logwin.js');
 const srv = http.createServer((req, res) => {
   const host = String(req.headers.host || ''); if (!new RegExp(`^(127\\.0\\.0\\.1|localhost):${PORT}$`).test(host)) { res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end('{"ok":false,"err":"이 PC 안에서만"}'); }
   const org = req.headers.origin || ''; const u = new URL(req.url, 'http://127.0.0.1');
@@ -358,17 +373,23 @@ const srv = http.createServer((req, res) => {
   const J = (c, o) => { res.writeHead(c, { 'Content-Type': 'application/json; charset=utf-8', ...H }); res.end(JSON.stringify(o)); };
   if (org && !OK_ORG(org)) return J(403, { ok: false, err: '이 PC의 번외 화면·웹앱만' }); /* 알라딘 화면·다른 웹 페이지는 못 부름 */
   if (req.method === 'OPTIONS') { res.writeHead(204, H); return res.end(); }
-  if (req.method === 'GET' && (u.pathname === '/' || u.pathname === '/compare')) { if (org) return J(403, { ok: false, err: '이 PC 주소창·앱 창에서만' });
-    const html = u.pathname === '/' ? statusHtml() : fs.readFileSync(path.join(ROOT, 'shadow', 'compare.html'), 'utf8').replace('<!--PCBAR-->', pcBarHtml() + `<script>(function(){${PC_JS}window.__pcShow=pcShow;window.autoLine=autoLine})();</script>`).replace('/*SMALL_CSS*/', SMALL_CSS); res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" }); return res.end(html); }
+  if (req.method === 'GET' && (u.pathname === '/' || u.pathname === '/compare' || u.pathname === '/log')) { if (org) return J(403, { ok: false, err: '이 PC 주소창·앱 창에서만' });
+    const html = u.pathname === '/' ? statusHtml() : u.pathname === '/log' ? logPageHtml() : fs.readFileSync(path.join(ROOT, 'shadow', 'compare.html'), 'utf8').replace('<!--PCBAR-->', pcBarHtml() + `<script>(function(){${PC_JS}window.__pcShow=pcShow;window.autoLine=autoLine})();</script>`).replace('/*SMALL_CSS*/', SMALL_CSS); res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" }); return res.end(html); }
   if (req.method === 'GET' && u.pathname.startsWith('/s/')) { const f = STATIC[u.pathname.slice(3)]; if (!f) return J(404, { ok: false }); res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(fs.readFileSync(f)); }
   if (req.headers['x-rn-col2'] !== '1') return J(403, { ok: false, err: 'X-RN-Col2 머리가 없음' });
   if (u.pathname === '/status' && req.method === 'GET') return J(200, status());
+  /* (0.1.6) 📜 기록창 — 새 줄(차례 after 뒤) · 날짜 목록 · 그날 줄 · 모두 글로(내려받기) */
+  if (u.pathname === '/log/lines' && req.method === 'GET') return J(200, { ok: true, boot: BOOT, lines: JRN.since(u.searchParams.get('after'), u.searchParams.get('n')), kind: JRN.kind(), pc: CFG.pc || os.hostname(), today: new Date(now() + 9 * 3600e3).toISOString().slice(0, 10), rounds: JRN.rounds(6), state: status() });
+  if (u.pathname === '/log/days' && req.method === 'GET') return J(200, { ok: true, days: JRN.days() });
+  if (u.pathname === '/log/day' && req.method === 'GET') return J(200, { ok: true, lines: JRN.day(u.searchParams.get('d')) });
+  if (u.pathname === '/log/all' && req.method === 'GET') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', ...H }); return res.end(JRN.allText()); }
   if (u.pathname === '/relay/pending' && req.method === 'GET') return J(200, relayPending(u.searchParams.get('by')));
   if (req.method !== 'POST') return J(405, { ok: false });
   const body = (cb, max) => readBody(req, max || 256 * 1024, (e, b) => { if (e) return J(400, { ok: false, err: e.message }); let o = {}; try { o = JSON.parse(b.toString('utf8') || '{}') || {}; } catch (x) { return J(400, { ok: false, err: 'bad json' }); } Promise.resolve().then(() => cb(o)).catch((er) => J(500, { ok: false, err: er.message })); });
   const act = (fn) => body((o) => fn(o.why || '').then((r) => J(200, { ...r, state: status() })));
   const p = u.pathname;
   if (p === '/cfg') return body((o) => { setCfg(o); J(200, status()); });
+  if (p === '/log/clear') return body((o) => { const r = JRN.clear(); note(`📜 기록을 내려받고 화면에서 비움(${r.moved}일치 · 파일은 지우지 않고 journal\\old 로 옮김) — ${String(o.why || '').slice(0, 40)}`, { k: 'sys', l: 'ok', m: '기록' }); J(200, r); });
   if (p === '/win/app') return body((o) => appWin(String(u.searchParams.get('p') || o.p || 'compare'), o.why || '').then((r) => J(200, { ...r, state: status() })));
   if (p === '/relay/get') return body((o) => { const r = relayGet(o); J(r.code, r.body); });
   if (p === '/relay/sample') return body((o) => J(200, relaySample(o)));
@@ -377,7 +398,7 @@ const srv = http.createServer((req, res) => {
   if (p === '/relay/ack') return body((o) => J(200, relayAck(o)));
   if (p === '/win/show') return act(show); if (p === '/win/hide') return act(hide); if (p === '/win/reopen') return act(reopen); if (p === '/win/status-open') return act(statusWin);
   if (p === '/win/rect') return body((o) => { const out = []; for (const k of ['win', 'hwin']) { const r = rectOk(o[k], k === 'win' ? 400 : 260, k === 'win' ? 300 : 200); if (o[k] && !r) return J(400, { ok: false, err: '자리·크기가 이상함(작업 창은 폭 400·높이 300 이상)' }); if (r) { CFG[k] = { ...r, at: now(), src: 'pc' }; out.push(`${k === 'win' ? '작업 창' : '상태 창'} ${r.x},${r.y} · ${r.w}×${r.h}`); } } saveCfg(); note('자리·크기 저장 — ' + out.join(' / ')); J(200, { ok: true, msg: out.join(' / '), state: status() }); });
-  if (p === '/win/hrect') return body((o) => { const key = o.p === 'compare' ? 'cwin' : 'hwin'; const r = rectOk(o, 260, 200); if (r) { const c = CFG[key] || {}; if (c.x !== r.x || c.y !== r.y || c.w !== r.w || c.h !== r.h) { CFG[key] = { ...r, at: now(), src: 'pc' }; saveCfg(); } } J(200, { ok: true }); }); /* 작은 창이 알린 자기 자리·크기(옮기면 다음에 그 자리) */
+  if (p === '/win/hrect') return body((o) => { const key = o.p === 'compare' ? 'cwin' : o.p === 'log' ? 'lwin' : 'hwin'; const r = rectOk(o, 260, 200); if (r) { const c = CFG[key] || {}; if (c.x !== r.x || c.y !== r.y || c.w !== r.w || c.h !== r.h) { CFG[key] = { ...r, at: now(), src: 'pc' }; saveCfg(); } } J(200, { ok: true }); }); /* 작은 창이 알린 자기 자리·크기(옮기면 다음에 그 자리) */
   if (p === '/read/product') return body(async (o) => { const r = await readProduct(o); J(r.code, r.body); });
   /* (0.1.5) 🟦 예스24 — 수집기 다리(받기·보냄 확인·맡긴 일·출고 보호·웹앱 설정) · 로그인 한 번 · 지금 읽기 */
   if (p === '/y24/feed') return body((o) => J(200, Y24.feed(o, o.by)), 1048576);
@@ -386,6 +407,7 @@ const srv = http.createServer((req, res) => {
   /* (0.1.2) 운영 인쇄 도우미가 새 판으로 바꾸거나 끌 때 — 번외 크롬을 먼저 닫고(옛 크롬이 프로필을 쥔 채 남지 않게) 이 프로세스를 끝냄 */
   if (p === '/quit') return body(async (o) => { note('끝내기 부탁 — ' + String(o.by || o.why || '').slice(0, 60)); await closeBrowser('도우미 끝냄').catch(() => {}); await Y24.close('도우미 끝냄').catch(() => {}); J(200, { ok: true, pid: process.pid }); setTimeout(() => process.exit(0), 200); });
   if (TEST && p === '/test/main-eval') return body(async (o) => J(200, { ok: true, v: B && B.alive() ? await B.mainEval(String(o.expr || '')) : null }));
+  if (TEST && p === '/test/note') return body(async (o) => { const L = Array.isArray(o.lines) ? o.lines : [o]; const out = L.map((x) => note(String(x.x || ''), { l: x.l, k: x.k, m: x.m, d: x.d })); J(200, { ok: true, n: out.filter(Boolean).length }); }); /* 시험용: 기록 줄 넣기 */
   if (TEST && p === '/test/drop') return body(async () => { if (B && B.cdp) B.cdp.close(); J(200, { ok: true }); }); /* 시험용: 조종 연결만 끊음(크롬은 살아 있음) */
   if (TEST && p === '/test/kill') return body(async () => { if (B && B.proc) B.proc.kill('SIGKILL'); J(200, { ok: true }); });
   if (TEST && p === '/test/tick') return body(async () => { for (let k = 0; k < 100 && ST.busy; k++) await new Promise((r) => setTimeout(r, 50)); await tick('시험', true); J(200, status()); });
