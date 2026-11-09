@@ -91,7 +91,7 @@ const sha = (t) => crypto.createHash('sha256').update(t, 'utf8').digest('hex');
   /* ⑤ 머리 그대로 */
   console.log('⑤ 수집기 머리·본체 그대로');
   { const T = fs.mkdtempSync(path.join(os.tmpdir(), 'tbig1s_')); let base = null; try { base = cp.execSync('git -C "' + ROOT + '" show origin/main:src/readnow-collector.src.js', { encoding: 'utf8', maxBuffer: 64 << 20, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) {}
-    if (!base) ok(true, '(origin/main 없음 — 건너뜀)'); else { fs.writeFileSync(T + '/o.js', base); cp.execFileSync(process.execPath, [path.join(ROOT, 'src/split.js'), T + '/o.js', T + '/a'], { stdio: 'ignore' }); cp.execFileSync(process.execPath, [path.join(ROOT, 'src/split.js'), path.join(ROOT, 'src/readnow-collector.src.js'), T + '/b'], { stdio: 'ignore' });
+    if (/const RAW = 'https:\/\/readnow\.kr\/'/.test(rd('src/split.js'))) ok(true, '(머리 바꾼 판 가지 — 이 비교는 tBIG1H가 맡음)'); else if (!base) ok(true, '(origin/main 없음 — 건너뜀)'); else { fs.writeFileSync(T + '/o.js', base); cp.execFileSync(process.execPath, [path.join(ROOT, 'src/split.js'), T + '/o.js', T + '/a'], { stdio: 'ignore' }); cp.execFileSync(process.execPath, [path.join(ROOT, 'src/split.js'), path.join(ROOT, 'src/readnow-collector.src.js'), T + '/b'], { stdio: 'ignore' });
       for (const f of ['readnow-collector.user.js', 'readnow-pc-boot.js', 'pc-live-head.txt']) ok(fs.readFileSync(T + '/a/' + f, 'utf8') === fs.readFileSync(T + '/b/' + f, 'utf8'), f + ' 글자 하나 안 바뀜(머리 서명 그대로)'); } }
   console.log(bad ? `tBIG1 ❌ ${bad}개 실패` : 'tBIG1 ✅ 모두 통과'); process.exit(bad ? 1 : 0);
 })();
