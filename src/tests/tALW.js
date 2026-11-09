@@ -15,7 +15,7 @@ const run = (vw) => async (p) => { console.log(`— 화면 폭 ${vw}px`); await 
   ok(r1.a === '🪟' && /🌍/.test(r1.b || '') && r1.al === '🪟 알라딘 창', '한눈에 줄 제목 옆 🪟 · 외국 도서는 🌍', r1);
   ok(r1.sw <= r1.iw + 1, '화면이 옆으로 넘치지 않음', r1);
   await p.click('.rgrow[data-rgexp="w01"] [data-rgalw]'); await p.waitForTimeout(500);
-  const r2 = await p.evaluate(() => { const d = document.querySelector('.alpv'); const f = d && d.querySelector('iframe.alpv-live'); const r = d && d.getBoundingClientRect(); return { open: !!d, src: f && f.getAttribute('src'), bar: d && (d.querySelector('.alpv-x') || {}).innerText, seg: d ? [...d.querySelectorAll('[data-alpv^="pg:"]')].map((b) => b.textContent) : [], frn: !!(d && d.querySelector('.alpv-frn')), exp: !!document.querySelector('[data-rgfold="w01"]'), inV: r ? r.left >= 0 && r.right <= innerWidth + 1 && r.top >= 0 && r.bottom <= innerHeight + 1 : false }; });
+  const r2 = await p.evaluate(() => { const d = document.querySelector('.alpv'); const f = d && d.querySelector('iframe.alpv-live'); const r = d && d.getBoundingClientRect(); return { open: !!d, src: f && f.getAttribute('src'), bar: d && (d.querySelector('.alpv-x') || {}).innerText, seg: d ? [...d.querySelectorAll('[data-alpv^="pg:"]')].map((b) => b.textContent) : [], frn: !!(d && d.querySelector('[data-alpv="p:abebooks"]')), exp: !!document.querySelector('[data-rgfold="w01"]'), inV: r ? r.left >= 0 && r.right <= innerWidth + 1 && r.top >= 0 && r.bottom <= innerHeight + 1 : false }; });
   ok(r2.open && /wproduct\.aspx\?ItemId=30001$/.test(r2.src || ''), '누르면 웹앱 안 창에 그 상품 알라딘 상품 페이지(ItemId)', r2);
   ok(/🪟 알라딘 창/.test(r2.bar || '') && /🗗 작은 창/.test(r2.bar || '') && /X-Frame-Options/.test(r2.bar || ''), '창 위 띠: 🪟 알라딘 창 이름 · 🗗 작은 창 · 막힐 때 까닭 한 줄', r2.bar);
   ok(r2.seg.includes('상품 페이지') && r2.seg.includes('전체중고') && !r2.frn && !r2.exp && r2.inV, '국내 도서: 상품 페이지·전체중고 · 외국 링크 없음 · 줄은 그대로 · 창은 화면 안', r2);
@@ -28,9 +28,9 @@ const run = (vw) => async (p) => { console.log(`— 화면 폭 ${vw}px`); await 
   ok(await p.evaluate(() => !document.querySelector('.alpv') && !!document.querySelector('.rgrow[data-rgexp="w01"]')), 'Esc로 닫으면 등록 화면 그대로');
   // 4) 외국 도서 — 외국 사이트 ISBN 검색 링크(새 탭) · 상품 번호 없으면 ISBN 상품 검색
   await p.click('.rgrow[data-rgexp="w02"] [data-rgalw]'); await p.waitForTimeout(500);
-  const r4 = await p.evaluate(() => { const d = document.querySelector('.alpv'); const A = d ? [...d.querySelectorAll('.alpv-frn a')].map((a) => [a.textContent, a.getAttribute('href'), a.getAttribute('target')]) : []; const f = d && d.querySelector('iframe.alpv-live'); return { A, src: f && f.getAttribute('src'), seg: d ? [...d.querySelectorAll('[data-alpv^="pg:"]')].map((b) => b.textContent) : [] }; });
+  const r4 = await p.evaluate(() => { const d = document.querySelector('.alpv'); const A = d ? [...d.querySelectorAll('.alpv-plat [data-alpv^="p:"]')].map((b) => [b.textContent, REF_PLAT.find((x) => 'p:' + x.k === b.dataset.alpv).u(ALPV.ctx)]) : []; const f = d && d.querySelector('iframe.alpv-live'); return { A, src: f && f.getAttribute('src'), seg: d ? [...d.querySelectorAll('[data-alpv^="pg:"]')].map((b) => b.textContent) : [] }; });
   const nm = r4.A.map((a) => a[0]).join(' ');
-  ok(['AbeBooks', 'BookFinder', 'Amazon', 'eBay', 'Biblio'].every((n) => nm.includes(n)) && r4.A.every((a) => a[1].includes('0141439513') && a[2] === '_blank'), '외국 도서: AbeBooks·BookFinder·Amazon·eBay·Biblio ISBN 검색 링크(새 탭)', r4.A);
+  ok(['AbeBooks', 'BookFinder', 'Amazon', 'eBay', 'Biblio'].every((n) => nm.includes(n)) && r4.A.filter((a) => /AbeBooks|BookFinder|Amazon|eBay|Biblio/.test(a[0])).every((a) => a[1].includes('0141439513')), '외국 도서: 창 위 칩 AbeBooks·BookFinder·Amazon·eBay·Biblio(ISBN 검색 · 11/09 칩으로)', r4.A);
   ok(/SearchWord=0141439513/.test(r4.src || '') && r4.seg.includes('상품 검색'), '상품 번호가 없으면 ISBN으로 알라딘 상품 검색', r4);
   // 5) ✕로 닫기
   await p.click('.alpv [data-alpv="x"]'); await p.waitForTimeout(300);
