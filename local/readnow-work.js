@@ -21,7 +21,7 @@
  * 크롬 플래그·정책·바로가기는 바꾸지 않음 */
 'use strict';
 const VERSION = '0.1.0';
-const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process');
+const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process'), dns = require('dns');
 const HOME = process.env.RN_WORK_HOME || path.join(__dirname, 'work'); try { fs.mkdirSync(HOME, { recursive: true }); } catch (e) {}
 const CFG_F = path.join(HOME, 'work.json'); const PS_F = path.join(HOME, 'work-win.ps1');
 const MARK = '리드나우 작업 창'; const HMARK = '리드나우 수집 상태';
@@ -111,9 +111,29 @@ function openWork(why) { const ch = chromeExe(); if (!ch) { ST.msg = '크롬을 
 /* 연 뒤 1분 동안 3초마다 찾아 화면 밖으로(수집기가 탭 제목에 표시를 붙여야 찾을 수 있음) */
 function placeSoon() { let k = 0; const t = setInterval(async () => { k++; if (k > 20 || !CFG.on || ST.shown) return clearInterval(t); const r = await win('hide', { w: C('hideW'), h: C('hideH'), place: CFG.place }); if (r.ok && r.n > 0) { ST.open = true; ST.n = r.n; clearInterval(t); log('작업 창을 화면 밖으로 옮기고 작업 표시줄에서 숨김'); } }, 3000); ST.timers.push(t); }
 
+/* ── (정범님 11/09 oom1) 🩺 죽은 수집기 탭 되살리기 — 작업 창 모드가 꺼진 PC(HOME·MJ-MAIN처럼 사람이 연 알라딘 탭이 수집기)
+ *  수집기 탭(일하는 탭)이 1분마다 /work/lead로 '살아 있음'을 알림 → 그 신호가 reviveMin(기본 13분 — 근거: 없음, work.json reviveMin으로 바꿈 · 웹앱 탭 쪽 되살리기 10분보다 늦게 = 웹앱 탭이 없을 때의 뒷받침) 넘게 끊겼고
+ *  · 사람 크롬이 떠 있고(작업 창·상태 창·그리기·공개 수집 프로필은 뺌 — 크롬이 꺼져 있으면 띄우지 않음) · 인터넷이 되면(www.aladin.co.kr 이름 찾기만 — 알라딘에 요청하지 않음 · 안 되면 다음 1분에 다시)
+ *  → 사람 크롬에 새 탭으로 알라딘 주문조회를 엶(크롬·다른 탭은 죽이지 않음) · 1시간 2번까지(work.json revivePerHour) · 도우미가 켜진 뒤 신호를 한 번이라도 받았을 때만 · 마지막 신호가 일시정지면 안 함 · work.json revive:false로 끔 */
+const RV = { last: 0, opens: [], msg: '' };
+function reviveDecide(o) { const M = 60e3; if (o.off) return { act: 'none', why: '꺼 둠' }; if (o.workOn) return { act: 'none', why: '작업 창 모드가 따로 지킴' }; const L = o.lead; if (!L || !L.at) return { act: 'none', why: '수집기 신호를 아직 못 받음' };
+  if (o.now - L.at < o.staleMin * M) return { act: 'none', why: '살아 있음' }; if (o.now - L.at > o.aliveH * 3600e3) return { act: 'none', why: '신호가 끊긴 지 너무 오래(사람이 닫은 듯)' }; if (L.paused) return { act: 'none', why: '일시정지 중이었음' };
+  if (o.last && o.now - o.last < o.staleMin * M) return { act: 'none', why: '방금 새 탭을 엶 — 뜨길 기다림' }; const n = (o.opens || []).filter((t) => o.now - t < 3600e3).length; if (n >= o.perHour) return { act: 'limit', why: `1시간에 ${o.perHour}번 넘게 열어 쉼` };
+  if (o.chrome === false) return { act: 'none', why: '사람 크롬이 꺼져 있음(띄우지 않음)' }; if (o.net === false) return { act: 'wait-net', why: '인터넷이 안 됨 — 기다렸다 다시' }; if (o.chrome == null || o.net == null) return { act: 'check' }; return { act: 'open' }; } /* ⟦reviveDecide 끝⟧ */
+const RV_DEPS = {
+  chrome: () => new Promise((res) => { cp.execFile(psExe(), ['-NoProfile', '-NonInteractive', '-Command', "@(Get-CimInstance Win32_Process -Filter \"Name='chrome.exe'\" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -notlike '*--type=*' -and $_.CommandLine -notlike '*chrome-workwin*' -and $_.CommandLine -notlike '*chrome-render*' -and $_.CommandLine -notlike '*chrome-pub*' -and $_.CommandLine -notlike '*chrome-helper*' }).Count"], { windowsHide: true, timeout: 30000 }, (e, out) => res(e ? null : (parseInt(String(out).trim(), 10) || 0) > 0)); }),
+  net: () => new Promise((res) => { dns.lookup('www.aladin.co.kr', { family: 4 }, (e) => res(!e)); }),
+  open: (url) => { const ch = chromeExe(); if (!ch) return false; const prof = /^[A-Za-z0-9 _-]{1,40}$/.test(String(CFG.profile || '')) ? ['--profile-directory=' + CFG.profile] : []; try { const p = cp.spawn(ch, [...prof, url], { detached: true, stdio: 'ignore', windowsHide: false }); p.on('error', (e) => log('되살리기 탭 열기 실패: ' + e.message)); p.unref(); return true; } catch (e) { log('되살리기 탭 열기 실패: ' + e.message); return false; } } };
+async function reviveTick() { const base = { now: now(), lead: ST.lead, off: CFG.revive === false, workOn: !!CFG.on, staleMin: num(CFG.reviveMin, 5, 120, 13), aliveH: num(CFG.reviveAliveH, 1, 48, 6), perHour: num(CFG.revivePerHour, 1, 4, 2), last: RV.last, opens: RV.opens };
+  let d = reviveDecide(base); if (d.act === 'check') { const [chrome, net] = await Promise.all([RV_DEPS.chrome(), RV_DEPS.net()]); d = reviveDecide({ ...base, chrome: chrome === true, net }); } /* 크롬 확인이 실패(PowerShell 오류)하면 꺼진 것으로 봄 — 크롬이 꺼져 있을 때 열기 명령을 내면 크롬을 새로 띄우게 되므로 */
+  if (d.act === 'none' && /살아 있음|못 받음/.test(d.why)) { RV.msg = ''; return d; } if (d.act !== 'open') { if (RV.msg !== d.why) { RV.msg = d.why; if (d.act !== 'none' || ST.lead) log(`🩺 수집기 탭 신호 ${ST.lead ? Math.round((now() - ST.lead.at) / 60e3) + '분' : '?'} 없음 — ${d.why}`); } return d; }
+  RV.opens = [...RV.opens.filter((t) => now() - t < 3600e3), now()]; RV.last = now(); RV.msg = '새 탭으로 알라딘 주문조회를 엶'; const ok = RV_DEPS.open(DEF_URL);
+  log(`🩺 수집기 탭이 ${Math.round((now() - ST.lead.at) / 60e3)}분 동안 신호 없음(크롬 'Out of Memory'·인터넷 끊김 화면 추정) — ${ok ? '사람 크롬에 새 탭으로 알라딘 주문조회를 엶' : '새 탭을 못 엶'} (1시간 ${RV.opens.length}/${base.perHour}번째)`); return { act: ok ? 'opened' : 'fail' }; }
+
 /* ── 지킴이(1분) ── */
 async function tick(why) { if (ST.busy) return; ST.busy = true;
-  try { const f = await win('find'); if (!f.ok) { ST.msg = f.err; return; } ST.open = f.n > 0; ST.n = f.n; ST.rect = f.list[0] ? f.list[0].r : null;
+  try { if (!CFG.on) { try { await reviveTick(); } catch (e) {} } /* (11/09 oom1) 창 찾기가 실패해도 되살리기는 봄 */
+    const f = await win('find'); if (!f.ok) { ST.msg = f.err; return; } ST.open = f.n > 0; ST.n = f.n; ST.rect = f.list[0] ? f.list[0].r : null;
     if (!CFG.on) { if (f.n) { await win('close'); ST.open = false; ST.shown = false; ST.msg = '작업 창 모드 꺼짐 — 작업 창을 닫음(사람 탭이 수집을 이어받음)'; log(ST.msg); } return; }
     const beatAge = now() - (ST.beatAt || 0); const sinceOpen = now() - (ST.openedAt || 0);
     if (!f.n) { if (beatAge < C('reopenMin') * 60e3) { ST.msg = '작업 창 탭은 신호를 보내는데 창 제목을 못 찾음(그 창에서 다른 탭을 앞에 둠?)'; return; }
@@ -142,7 +162,7 @@ function setCfg(o) { const was = !!CFG.on; const out = { ...CFG };
   const ch = JSON.stringify(out) !== JSON.stringify(CFG); CFG = out; if (ch) saveCfg();
   if (was !== !!CFG.on) { log(CFG.on ? '작업 창 모드 켬(웹앱 설정)' : '작업 창 모드 끔(웹앱 설정) — 작업 창을 닫음'); setTimeout(() => tick('설정 바뀜'), 500); } return ch; }
 function status() { const b = ST.beat; return { ok: true, ver: VERSION, pc: CFG.pc || os.hostname(), on: !!CFG.on, ext: CFG.ext !== false, place: CFG.place || 'off', open: ST.open, n: ST.n, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen,
-  beatAt: ST.beatAt ? new Date(ST.beatAt).toISOString() : null, beatAge: ST.beatAt ? Math.round((now() - ST.beatAt) / 1000) : null, beat: b ? { role: b.role, page: b.page, ver: b.ver, paused: !!b.paused, now: b.now || null, lines: (b.lines || []).slice(-15) } : null, opens: opensHour(), msg: ST.msg, render: ST.render, at: kst() }; }
+  beatAt: ST.beatAt ? new Date(ST.beatAt).toISOString() : null, beatAge: ST.beatAt ? Math.round((now() - ST.beatAt) / 1000) : null, beat: b ? { role: b.role, page: b.page, ver: b.ver, paused: !!b.paused, now: b.now || null, lines: (b.lines || []).slice(-15) } : null, opens: opensHour(), msg: ST.msg, render: ST.render, revive: { on: CFG.revive !== false, leadAge: ST.lead ? Math.round((now() - ST.lead.at) / 1000) : null, opens: RV.opens.filter((t) => now() - t < 3600e3).length, msg: RV.msg }, at: kst() }; }
 
 /* ── 🖼 로그인 없는 바깥 사이트 그려 읽기(로거 도우미 /render와 같은 꼴 · 따로 된 프로필 chrome-render · 화면 없음) ── */
 const ALADIN = /(^|\.)aladin\.co\.kr$/i;
@@ -193,6 +213,7 @@ function api(req, res, u, h) { const readBody = h.readBody; const org = req.head
   const act = (fn) => body((o) => fn(o.why || o.by || '').then((r) => J(200, { ...r, state: status() })));
   if (p === 'cfg') return body((o) => { setCfg(o); J(200, status()); });
   if (p === 'beat') return body((o) => { ST.beat = { role: o.role || null, page: String(o.page || '').slice(0, 60), ver: String(o.ver || '').slice(0, 20), paused: !!o.paused, now: o.now && typeof o.now === 'object' ? o.now : null, lines: Array.isArray(o.lines) ? o.lines.slice(-15) : [], tab: o.tab || null }; ST.beatAt = now(); if (o.pc && !CFG.pc) { CFG.pc = String(o.pc).slice(0, 40); saveCfg(); } J(200, { ok: true, on: !!CFG.on, shown: ST.shown }); });
+  if (p === 'lead') return body((o) => { ST.lead = { at: now(), page: String(o.page || '').slice(0, 60), paused: !!o.paused, ver: String(o.ver || '').slice(0, 20) }; if (o.pc && !CFG.pc) { CFG.pc = String(o.pc).slice(0, 40); saveCfg(); } J(200, { ok: true }); }); /* (11/09 oom1) 🩺 수집기 탭 살아 있음 */
   if (p === 'show') return act(show); if (p === 'hide') return act(hide); if (p === 'reopen') return act(reopen); if (p === 'status-win' || p === 'status') return act(statusWin);
   if (p === 'win') return body((o) => { const out = []; for (const k of ['win', 'hwin']) { const r = rectOk(o[k], k === 'win' ? 400 : 260, k === 'win' ? 300 : 200); if (o[k] && !r) return J(400, { ok: false, err: '자리·크기가 이상함(폭 400·높이 300 이상 · 작업 창 기준)' }); if (r) { CFG[k] = { ...r, at: now(), src: 'pc' }; out.push(`${k === 'win' ? '작업 창' : '상태 창'} ${r.x},${r.y} · ${r.w}×${r.h}`); } } saveCfg(); log('자리·크기 저장 — ' + out.join(' / ')); J(200, { ok: true, msg: out.join(' / '), state: status() }); });
   if (p === 'hrect') return body((o) => { const r = rectOk(o, 260, 200); if (r) { const c = CFG.hwin || {}; if (c.x !== r.x || c.y !== r.y || c.w !== r.w || c.h !== r.h) { CFG.hwin = { ...r, at: now(), src: 'pc' }; saveCfg(); } } J(200, { ok: true }); });
@@ -200,4 +221,4 @@ function api(req, res, u, h) { const readBody = h.readBody; const org = req.head
 
 function start(h) { if (h && h.log) LOG = h.log; stop(); const t = setInterval(() => tick().catch(() => {}), C('tickSec') * 1000); ST.timers.push(t); setTimeout(() => tick('도우미 시작').catch(() => {}), 8000); log(`수집 작업 창 모듈 ${VERSION} 시작 — 작업 창 모드 ${CFG.on ? '켜짐' : '꺼짐'}`); }
 function stop() { ST.timers.forEach((t) => clearInterval(t)); ST.timers = []; }
-module.exports = { VERSION, api, start, stop, status, setCfg, tick, _ST: ST, _cfg: () => CFG };
+module.exports = { VERSION, api, start, stop, status, setCfg, tick, reviveDecide, reviveTick, _ST: ST, _RV: RV, _RV_DEPS: RV_DEPS, _cfg: () => CFG };
