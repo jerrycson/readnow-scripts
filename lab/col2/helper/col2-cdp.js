@@ -39,7 +39,7 @@ const READ_FN = `async (url, tmo) => { const AL = globalThis.ReadnowAladin, P = 
 
 class Browser {
   constructor(o) { this.o = o; this.proc = null; this.cdp = null; this.sid = null; this.frameId = null; this.ctxId = null; this.dead = true; this.landed = false; this.startedAt = 0; }
-  alive() { return !!(this.proc && !this.dead && this.ready && this.cdp && !this.cdp.closed); } /* (0.1.2) ready = 띄우기를 끝까지 마침(탭 붙이기까지) */
+  alive() { return !!(!this.dead && (this.adopted || this.proc) && this.ready && this.cdp && !this.cdp.closed); } /* (0.1.2) ready = 띄우기를 끝까지 마침(탭 붙이기까지) */
   args() { const o = this.o; const r = o.rect || {}; const a = [];
     if (o.headless) a.push('--headless=new'); else a.push(`--window-position=${Number.isFinite(r.x) ? r.x : -32000},${Number.isFinite(r.y) ? r.y : 40}`);
     a.push(`--window-size=${r.w || 1280},${r.h || 900}`, '--remote-debugging-port=0', '--remote-debugging-address=127.0.0.1', `--user-data-dir=${o.profile}`,
@@ -54,21 +54,40 @@ class Browser {
   async freeProfile() { const o = this.o; const pf = path.join(o.profile, 'DevToolsActivePort'); const out = { closed: 0, killed: 0, locks: 0 };
     let port = null; try { port = +String(fs.readFileSync(pf, 'utf8')).split('\n')[0].trim() || null; } catch (e) {}
     if (port) { const v = await httpJson(`http://127.0.0.1:${port}/json/version`, 1500); if (v && v.webSocketDebuggerUrl) { try { const c = await CDP.connect(v.webSocketDebuggerUrl); await c.send('Browser.close', {}, null, 4000).catch(() => {}); c.close(); out.closed = 1; } catch (e) {} for (let i = 0; i < 25 && (await httpJson(`http://127.0.0.1:${port}/json/version`, 600)); i++) await sleep(200); } }
-    if (o.stale) { try { const r = await o.stale(); out.killed = (r && r.killed) || 0; if (out.killed) await sleep(800); } catch (e) {} }
+    if (o.stale) { try { const r = await o.stale(); out.killed = (r && r.killed) || 0; if (r && r.left) out.left = r.left; if (out.killed) await sleep(800); } catch (e) {} }
     /* 남은 잠금 — 쥔 프로세스가 이미 없을 때만 치움(살아 있는 크롬의 잠금을 지우면 두 크롬이 한 프로필을 써서 망가짐) · Windows lockfile은 쥔 크롬이 있으면 지워지지 않음 */
     let holder = null; try { const t = fs.readlinkSync(path.join(o.profile, 'SingletonLock')); const pid = +(String(t).match(/-(\d+)$/) || [])[1]; if (pid) { try { process.kill(pid, 0); holder = pid; } catch (e) {} } } catch (e) {}
     if (!holder) for (const f of ['SingletonLock', 'SingletonSocket', 'SingletonCookie', 'lockfile']) { try { fs.lstatSync(path.join(o.profile, f)); fs.rmSync(path.join(o.profile, f), { force: true }); out.locks++; } catch (e) {} } else out.holder = holder;
-    try { fs.unlinkSync(pf); } catch (e) {} this.freed = out; return out; }
-  async launch() { const o = this.o; if (!o.exe) throw new Error('크롬을 못 찾음'); fs.mkdirSync(o.profile, { recursive: true }); const pf = path.join(o.profile, 'DevToolsActivePort');
-    await this.freeProfile();
-    this.dead = false; this.ready = false; this.landed = false; this.ctxId = null; this.startedAt = Date.now(); this.exit = null; const tail = { s: '' };
+    try { fs.unlinkSync(pf); } catch (e) {} if (!this.retried) this.freed0 = out; this.freed = out; return out; }
+  /* (0.1.3 정범님 11/09 '번외 수집기 재개' — HOME 400번 '바로 꺼짐(0.1초 · 종료 코드 0)' · 매번 '옛 번외 크롬 1개를 먼저 닫았음')
+   *  매번 1개를 닫았다는 것 = 우리가 띄운 크롬이 0으로 끝난 뒤에도 같은 프로필(col2-work-chrome)을 쥔 크롬이 살아서 조종 주소(DevToolsActivePort)까지 새로 썼다는 뜻
+   *  → 크롬이 일을 다른 크롬(스스로 다시 띄운 것 · 프로필을 쥔 것)에 넘기고 끝난 것. 0.1.2는 이걸 '실패'로 보고 다음 바퀴에 그 크롬을 닫고 또 띄워 끝없이 되풀이
+   *  고침: ① 띄운 크롬이 0(또는 21)으로 곧바로 끝나면 바로 실패로 보지 않고 handoffMs 동안 이 프로필의 조종 주소가 생기는지 봄 → 생기면 그 크롬을 '넘겨받아' 그대로 씀
+   *        ② 조종 주소가 안 생기면(조종 길 없는 크롬이 쥐고 있음) 이 프로필 이름이 명령 줄에 든 크롬만 끝내고 잠금을 치운 뒤 한 번 더 띄움
+   *        ③ 그래도 안 되면 그때 실패(종료 코드·마지막 줄은 그대로 남김) — 정범님 크롬은 프로필 이름이 달라 절대 안 건드림 */
+  async spawnOnce(pf) { const o = this.o; this.dead = false; this.ready = false; this.landed = false; this.ctxId = null; this.adopted = false; this.startedAt = Date.now(); this.exit = null; const tail = { s: '' };
     /* 종료 코드·마지막 출력 줄을 남김(상태 창·웹앱에 원인으로 보임) — 출력은 끝 2KB만 */
     const keep = (c) => { tail.s = (tail.s + String(c)).slice(-2048); };
     this.proc = cp.spawn(o.exe, this.args(), { stdio: ['ignore', 'pipe', 'pipe'], windowsHide: false, detached: false }); const pr = this.proc;
     pr.stdout.on('data', keep); pr.stderr.on('data', keep);
-    pr.on('exit', (code, sig) => { if (this.proc !== pr) return; this.dead = true; this.ctxId = null; this.exit = { code, signal: sig || null, ms: Date.now() - this.startedAt, tail: lastLine(tail.s), at: Date.now() }; });
+    pr.on('exit', (code, sig) => { if (this.proc !== pr) return; if (!this.adopted) this.dead = true; this.ctxId = this.adopted ? this.ctxId : null; this.exit = { code, signal: sig || null, ms: Date.now() - this.startedAt, tail: lastLine(tail.s), at: Date.now() }; });
     pr.on('error', (e) => { if (this.proc !== pr) return; this.dead = true; this.exit = { code: null, signal: null, ms: Date.now() - this.startedAt, tail: '크롬 실행 실패: ' + e.message, at: Date.now() }; });
-    let ws = null; for (let i = 0; i < 150 && !ws; i++) { await sleep(200); if (this.dead) { await sleep(150); throw new Error(exitWhy(this.exit, this.freed)); } try { const [port, p2] = fs.readFileSync(pf, 'utf8').split('\n'); if (port && p2) ws = `ws://127.0.0.1:${port.trim()}${p2.trim()}`; } catch (e) {} }
+    const hoMs = Number.isFinite(+o.handoffMs) ? +o.handoffMs : 10000; let ws = null, goneAt = 0;
+    for (let i = 0; i < 150 && !ws; i++) { await sleep(200);
+      try { const [port, p2] = fs.readFileSync(pf, 'utf8').split('\n'); if (port && p2) ws = `ws://127.0.0.1:${port.trim()}${p2.trim()}`; } catch (e) {}
+      if (ws && this.dead) { /* 띄운 크롬은 끝났는데 이 프로필의 조종 주소가 새로 생김 = 다른 크롬이 넘겨받음 → 살아 있으면 그대로 씀 */
+        const v = await httpJson(`http://127.0.0.1:${ws.split(':')[2].split('/')[0]}/json/version`, 1500); if (!v || !v.webSocketDebuggerUrl) { ws = null; try { fs.unlinkSync(pf); } catch (e) {} } else { this.adopted = true; this.dead = false; } }
+      if (!ws && this.dead) { if (!goneAt) goneAt = Date.now(); const handoff = this.exit && (this.exit.code === 0 || this.exit.code === 21 || this.exit.code === 0x15);
+        if (!handoff || Date.now() - goneAt >= hoMs) return { ws: null, tail }; } }
+    return { ws, tail }; }
+  async launch() { const o = this.o; if (!o.exe) throw new Error('크롬을 못 찾음'); fs.mkdirSync(o.profile, { recursive: true }); const pf = path.join(o.profile, 'DevToolsActivePort');
+    await this.freeProfile(); this.retried = 0;
+    let r = await this.spawnOnce(pf);
+    if (!r.ws && this.dead && this.exit && (this.exit.code === 0 || this.exit.code === 21 || this.exit.code === 0x15)) { /* ② 조종 길 없는 크롬이 프로필을 쥐고 있음 → 그 크롬만 끝내고 한 번 더 */
+      const first = this.exit; this.retried = 1; this.firstExit = first; const f2 = await this.freeProfile(); this.freed = { closed: (this.freed0 ? this.freed0.closed : 0) + f2.closed, killed: (this.freed0 ? this.freed0.killed : 0) + f2.killed, locks: f2.locks };
+      r = await this.spawnOnce(pf); }
+    const ws = r.ws, tail = r.tail;
+    if (!ws && this.dead) { await sleep(150); throw new Error(exitWhy(this.exit, this.freed) + (this.retried ? ' · 프로필을 쥔 크롬을 닫고 한 번 더 띄워도 같음' : '')); }
     if (!ws) { this.kill(); throw new Error('번외 크롬 DevTools 주소를 못 받음(30초)' + (tail.s ? ' · 마지막 줄: ' + lastLine(tail.s) : '')); }
     this.cdp = await CDP.connect(ws); this.cdp.on.push((m, p, sid) => { if (m === 'Page.frameNavigated' && sid === this.sid && !p.frame.parentId) { this.ctxId = null; this.frameUrl = p.frame.url; } if (m === 'Runtime.executionContextDestroyed' && p.executionContextId === this.ctxId) this.ctxId = null; });
     const { targetInfos } = await this.cdp.send('Target.getTargets'); let t = targetInfos.find((x) => x.type === 'page'); if (!t) t = { targetId: (await this.cdp.send('Target.createTarget', { url: 'about:blank' })).targetId };
@@ -87,9 +106,11 @@ class Browser {
     if (r.exceptionDetails) return { ok: false, why: '읽기 코드 오류: ' + String((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text).slice(0, 200), kind: 'error' }; return r.result.value; }
   /* 시험용: 알라딘 화면 쪽(보통 칸)에서 우리 변수가 보이는지 */
   async mainEval(expr) { const r = await this.cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true }, this.sid); return r.result ? r.result.value : null; }
-  kill() { try { if (this.cdp) this.cdp.close(); } catch (e) {} try { if (this.proc && this.proc.exitCode == null && !this.proc.killed) this.proc.kill(); } catch (e) {} this.dead = true; this.ctxId = null; this.landed = false; }
+  /* 넘겨받은 크롬(adopted)은 우리 자식 프로세스가 아니라 proc.kill로 못 닫음 → 조종 길로 Browser.close · 남으면 다음 띄우기의 freeProfile이 이 프로필 크롬만 끝냄 */
+  kill() { const c = this.cdp, ad = this.adopted && c && !c.closed; if (ad) { try { c.send('Browser.close', {}, null, 3000).catch(() => {}); } catch (e) {} setTimeout(() => { try { c.close(); } catch (e) {} }, 300); } else { try { if (c) c.close(); } catch (e) {} }
+    try { if (this.proc && this.proc.exitCode == null && !this.proc.killed) this.proc.kill(); } catch (e) {} this.dead = true; this.ctxId = null; this.landed = false; }
   /* 조종 연결만 끊기고 크롬은 살아 있는지(그대로 두면 같은 프로필을 쥔 채 남아 다음 띄우기가 바로 꺼짐) */
-  orphan() { return !!(this.proc && this.proc.exitCode == null && this.proc.signalCode == null && (!this.cdp || this.cdp.closed)); }
+  orphan() { if (this.adopted) return !!(this.cdp && this.cdp.closed); return !!(this.proc && this.proc.exitCode == null && this.proc.signalCode == null && (!this.cdp || this.cdp.closed)); }
   async close() { try { if (this.cdp && !this.cdp.closed) await this.cdp.send('Browser.close', {}, null, 5000).catch(() => {}); } catch (e) {} await sleep(300); this.kill(); }
 }
 module.exports = { CDP, Browser, READ_FN, exitWhy };

@@ -66,9 +66,9 @@ async function loadCore(force) { if (!force && CORE.src.length && now() - CORE.a
 const ST = { opens: [], shown: false, open: false, rect: null, busy: false, msg: '', reads: [], reading: null, lastWin: null, timers: [], hwinOpen: false };
 const opensHour = () => { ST.opens = ST.opens.filter((t) => now() - t < 3600e3); return ST.opens.length; };
 let B = null;
-function newBrowser() { return new Browser({ exe: chromeExe(), profile: path.join(HOME, WORK_MARK), headless: !!CFG.headless, rect: { x: -32000, y: 40, w: W('hideW'), h: W('hideH') }, stale: () => WIN.run('kill', WORK_MARK) }); }
+function newBrowser() { return new Browser({ exe: chromeExe(), profile: path.join(HOME, WORK_MARK), headless: !!CFG.headless, rect: { x: -32000, y: 40, w: W('hideW'), h: W('hideH') }, stale: () => WIN.run('kill', WORK_MARK), handoffMs: TEST && CFG.watch && +CFG.watch.handoffMs >= 0 && CFG.watch.handoffMs != null ? +CFG.watch.handoffMs : W('handoffSec') * 1000 }); }
 /* (0.1.2) 크롬 띄우기 기록 — 바로 꺼진 까닭(종료 코드·마지막 줄)을 상태(웹앱 col2_ctl·상태 창)에 남김 */
-const CH = { fails: 0, last: null, okAt: 0, coolUntil: 0, cools: 0 };
+const CH = { fails: 0, last: null, okAt: 0, coolUntil: 0, cools: 0, adopts: 0, retries: 0 }; /* (0.1.3) adopts = 넘겨받아 쓴 횟수 · retries = 한 번 더 띄워 된 횟수 */
 const coolMs = () => (TEST && CFG.watch && +CFG.watch.coolMs > 0 ? +CFG.watch.coolMs : W('coolMin') * 60e3);
 const hm = (ms) => kst(ms).slice(11, 16);
 let LAUNCHING = null; /* 띄우는 중에는 같은 약속을 나눠 받음 — 지킴이와 단추가 동시에 두 벌 띄우지 않게 */
@@ -79,7 +79,7 @@ function ensureBrowser(why) { if (B && B.alive()) return Promise.resolve(B); if 
   if (opensHour() >= W('opensPerHour') || CH.coolUntil) { if (!CH.coolUntil) { CH.coolUntil = now() + coolMs(); CH.cools++; note(`한 시간에 ${W('opensPerHour')}번 넘게 다시 띄워 ${W('coolMin')}분 쉼 — 원인: ${CH.last ? CH.last.why : '모름'}`); }
     return Promise.reject(new Error(`한 시간에 ${W('opensPerHour')}번 넘게 다시 띄워 ${W('coolMin')}분 쉼(${hm(CH.coolUntil)}에 다시) — 원인: ${CH.last ? CH.last.why : '모름'}`)); }
   const b = newBrowser(); B = b; ST.opens.push(now()); ST.shown = false; note(`번외 작업 창을 띄움 — ${why || ''} (최근 한 시간 ${opensHour()}번째 · ${CFG.headless ? '화면 없음' : '화면 밖 창'})`);
-  LAUNCHING = gone.then(() => b.launch()).then(() => { CH.okAt = now(); if (b.freed && (b.freed.closed || b.freed.killed)) note(`같은 프로필을 쥔 옛 번외 크롬 ${b.freed.closed + b.freed.killed}개를 먼저 닫고 띄움`); if (!CFG.headless) placeSoon(); return b; },
+  LAUNCHING = gone.then(() => b.launch()).then(() => { CH.okAt = now(); if (b.freed && (b.freed.closed || b.freed.killed)) note(`같은 프로필을 쥔 옛 번외 크롬 ${b.freed.closed + b.freed.killed}개를 먼저 닫고 띄움`); if (b.adopted) { CH.adopts++; note('띄운 크롬이 같은 프로필의 다른 크롬에 일을 넘기고 끝나 — 그 크롬(조종 길 살아 있음)을 넘겨받아 그대로 씀'); } if (b.retried) { CH.retries++; note(`첫 띄우기가 바로 꺼져(종료 코드 ${b.firstExit ? b.firstExit.code : '?'}) 이 프로필을 쥔 크롬만 닫고 한 번 더 띄워 됨`); } if (!CFG.headless) placeSoon(); return b; },
     (e) => { CH.fails++; CH.last = { at: kst(), why: e.message, code: b.exit ? b.exit.code : null, signal: b.exit ? b.exit.signal : null, tail: b.exit ? b.exit.tail : null, ms: b.exit ? b.exit.ms : null }; note(e.message); throw e; }).finally(() => { LAUNCHING = null; }); return LAUNCHING; }
 function placeSoon() { let k = 0; const t = setInterval(async () => { k++; if (k > 20 || !CFG.on || ST.shown) return clearInterval(t); const r = await WIN.run('hide', WORK_MARK, { w: W('hideW'), h: W('hideH'), place: CFG.place }); if (r.ok && r.n > 0) { ST.open = true; clearInterval(t); note('작업 창을 화면 밖으로 옮기고 작업 표시줄에서 숨김'); } }, TEST ? 400 : 3000); ST.timers.push(t); }
 async function closeBrowser(why) { ST.closing = true; try { if (LAUNCHING) await LAUNCHING.catch(() => {}); } finally {} if (B) { await B.close(); note(`번외 작업 창을 닫음 — ${why || ''}`); } B = null; ST.open = false; ST.shown = false; ST.closing = false; }
@@ -163,7 +163,7 @@ function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const out = { 
   return ch; }
 
 function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen,
-  opens: opensHour(), chrome: { fails: CH.fails, last: CH.last, okAt: CH.okAt ? kst(CH.okAt) : null, coolUntil: CH.coolUntil ? kst(CH.coolUntil) : null, cools: CH.cools }, msg: ST.msg, reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: LOGS.slice(-15), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
+  opens: opensHour(), chrome: { fails: CH.fails, last: CH.last, okAt: CH.okAt ? kst(CH.okAt) : null, coolUntil: CH.coolUntil ? kst(CH.coolUntil) : null, cools: CH.cools, adopts: CH.adopts, retries: CH.retries }, msg: ST.msg, reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: LOGS.slice(-15), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
 
 /* ── 그림자 읽기 ── */
 async function readProduct(o) { const id = String(o.itemId || '').trim(); if (!/^\d{1,13}$/.test(id)) return { code: 400, body: { ok: false, err: '상품 번호(ItemId)가 이상함' } };
