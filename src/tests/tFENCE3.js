@@ -22,14 +22,14 @@ const D = 864e5; const NOW = Date.now(); const kdt = (ms) => new Date(ms + 9 * 3
   ok(ML.fenceNoLoss(null) === true && ML.fenceNoLoss({}) === true && ML.fenceNoLoss({ noLossMode: true }) === true && ML.fenceNoLoss({ noLossMode: false }) === false && ML.fenceNoLoss({ noLossMode: 'false' }) === true, '설정이 없거나 못 읽으면 켜짐 · 정범님이 false로 둘 때만 꺼짐(글자 "false"도 켜짐 — 안전 쪽)');
   { const cut = (s) => { const a = s.indexOf('/* FENCE-PURE-START'), b = s.indexOf('/* FENCE-PURE-END */'); return a > 0 && b > a ? s.slice(a, b) : null; }; ok(cut(MLSRC) && cut(MLSRC) === cut(PW), '학습 공용과 가격 감시기의 셈 사본(FENCE-PURE)이 글자 그대로 같음(새 함수 fenceNoLoss·fenceLock·fenceBase 포함)'); }
   { const st = SRC.slice(SRC.indexOf('async function stratTick('), SRC.indexOf('async function stratPreCheck(')); const iN = st.indexOf('if (NOLOSS) {'), iT = st.indexOf("fenceTxCloud(ML, 'try'"), iCmd = st.indexOf("await ref.set({ type: 'prdEdit'");
-    ok(iN > 0 && iT > iN && iCmd > iN && /NOLOSS = ML\.fenceNoLoss \? ML\.fenceNoLoss\(/.test(st) && /catch \(e\) \{ NOLOSS = true; \}/.test(st), '⚡ 전략: 무손해 모드면 맡기기(샵매니저 수정) 전에 건너뜀 · 설정을 못 읽으면 켜진 것으로');
+    ok(iN > 0 && iT > iN && iCmd > iN && /NOLOSS = ML\.fenceNoLoss \? ML\.fenceNoLoss\(/.test(st) && /catch \(e\) \{ NOLOSS = true;/.test(st), '⚡ 전략: 무손해 모드면 맡기기(샵매니저 수정) 전에 건너뜀 · 설정을 못 읽으면 켜진 것으로');
     const pc = SRC.slice(SRC.indexOf('async function stratPreCheck('), SRC.indexOf('async function stratPreCheck(') + 1500); ok(/무손해 모드 — 전략 실행은 값·판매 상태를 바꾸지 않음/.test(pc), '⚡ 전략: 실행 직전 다시 확인에서도 무손해 모드면 취소(이미 맡긴 것)'); }
   { const ex = SRC.slice(SRC.indexOf('async function engExpTick('), SRC.indexOf('/* FENCE2-START')); ok(/if \(EF0\.noLossMode === undefined\) \{ try \{ await C\('app_settings'\)\.doc\('eng_fence'\)\.set\(\{ noLossMode: true/.test(ex) && /merge: true/.test(ex) && /observeOnly: NOLOSS/.test(ex), '클라우드: 설정에 없으면 다음 회차에 noLossMode:true를 한 번 적음(덧붙임 · 지우지 않음) · 실험 문서에 관찰만 표시'); }
   { const ex = PW.slice(PW.indexOf('async function executeApproved'), PW.indexOf('/* ── (0.7.0) 공개 반영 확인')); const iR = ex.indexOf("if (fSrc === 'ro' && fenceNoLoss(await engFence(true)))"), iL = ex.indexOf('const LK = fenceLock(LSx'), iT = ex.indexOf("fenceRun('try'"), iA = ex.indexOf('P.scmAction.price(x.listingId, price)');
     ok(iR > 0 && iL > iR && iT > iL && iA > iT, '감시기: 전체 비율 실험 승인은 무손해 모드면 안 바꿈 → 🔒 검사 → 원장 예약 → 알라딘에 보냄(차례)');
     ok(/if \(LSx === undefined\) \{ await back\('🔒 상품 기록을 못 읽어/.test(ex), '감시기: 상품 기록을 못 읽으면 안 바꿈(안전 쪽)');
     ok(/needApproval = d\.group === 'treat' && d\.status !== 'skip' && !\(EXo && EXo\[key\]\) && !NOLOSS && !LOCK/.test(PW), '감시기 판정: 무손해 모드·🔒 상품은 전체 비율 실험 제안을 올리지 않음(판정만)');
-    ok(/if \(!keepW && chg && LOCK && wg\.watch\.apply === 'auto'\)/.test(PW), '감시기 판정: 🛰 자동 반영 그룹도 🔒 상품은 판정만 기록(결정 대기로도 안 올림)'); }
+    ok(!/if \(!keepW && chg && LOCK && wg\.watch\.apply === 'auto'\)/.test(PW) && /\(11\/10 fence4 · 정범님 11\/09 밤 '감시 그룹 자동 반영과 추격자는 내가 결정해서 할 일/.test(PW), '(fence4로 바뀜) 감시기 판정: 🛰 자동 반영 그룹은 🔒 연구 잠금을 안 씀 — 정범님 그룹 설정대로(tFENCE4가 자세히)'); }
   { const F = { ...process.env }; const pwF = PW.slice(PW.indexOf('  /* FENCE-PURE-START'), PW.indexOf('  const sameApproval')); ok(/async function engFence\(force\)/.test(pwF) && /catch \(e\) \{ return null; \}/.test(pwF.slice(pwF.indexOf('async function engFence'))), '감시기: 무손해 설정을 못 읽으면 null → 켜짐'); void F; }
 
   console.log('② 손해 셈 (나) — 사람이 확정한 값 기준');
@@ -71,7 +71,7 @@ const D = 864e5; const NOW = Date.now(); const kdt = (ms) => new Date(ms + 9 * 3
     const R = AS.pxPlan({ now: NOW, cfg: { cap: 10, recap: 10 }, groups, listings: L, exp: new Map(), busy: new Set(), rnd: () => 0.5 }); const ids = (R.docs || []).concat(R.runs || []).map((x) => JSON.stringify(x)).join(' ');
     ok(R.newLock === 2 && /"200"/.test(ids) && !/"100"/.test(ids) && !/"300"/.test(ids), `🔬 조회수 실험: 등록 3개월 안·등록 때 모름은 새로 붙이지 않음(빠진 수 ${R.newLock})`, { newLock: R.newLock, ids: ids.slice(0, 200) });
     const R2 = AS.pxPlan({ now: NOW, cfg: { cap: 10, recap: 10 }, groups, listings: L, exp: new Map([['100', { on: true, addedAt: '2026-11-01' }]]), busy: new Set(), rnd: () => 0.5 }); ok(/"100"/.test(JSON.stringify(R2.docs || []).concat(JSON.stringify(R2.runs || []))) || (R2.plan[0] && R2.plan[0].chk === 1), '이미 붙은 것의 확인은 그대로(떼기·확인은 막지 않음)', R2.plan); }
-  ok(/function engLockLine\(l\)/.test(APP) && /🔒 등록 3개월 안 — 엔진 안 건드림/.test(APP) && /\$\{engLockLine\(l\)\}/.test(APP), '웹앱 상품 카드 가격 감시 칸에 🔒 한 줄');
+  ok(/function engLockLine\(l\)/.test(APP) && /🔒 등록 3개월 안 — 연구·엔진만 안 건드림/.test(APP) && /\$\{engLockLine\(l\)\}/.test(APP), '웹앱 상품 카드 가격 감시 칸에 🔒 한 줄(fence4: 연구·엔진만)');
 
   console.log('⑤ 시트 허위 표시는 참고만');
   { const s = { sc: '1', reviewCount: '500', outstockRate: '1.0', rating: '0.99', aladinGrade: '전문셀러' }; const A = RS.score(s, {}), B = RS.score({ ...s, grade: 'fake' }, {});
@@ -92,8 +92,8 @@ const D = 864e5; const NOW = Date.now(); const kdt = (ms) => new Date(ms + 9 * 3
       box.innerHTML = engLockLine({ id: 'aladin_2', registeredAt: kdt(NOW - 300 * 864e5), editBy: 'a@b.c', editAt: new Date(NOW - 864e5).toISOString() }); o.humT = box.textContent;
       o.none = engLockLine({ id: 'aladin_3', registeredAt: kdt(NOW - 300 * 864e5) }); o.pops = pops; return o; }, NOW);
     ok(R.fn && R.ml, `웹앱 engLockLine·학습 공용 fenceLock 있음`, R);
-    ok(/🔒 등록 3개월 안 — 엔진 안 건드림/.test(R.newT || '') && /까지/.test(R.newT || '') && /직접 가격·수동 일괄·상품 수정은 그대로/.test(R.newT || ''), `카드 줄(새 상품): '${(R.newT || '').slice(0, 120)}'`);
-    ok(/🔒 사람이 손댄 상품 — 엔진 안 건드림/.test(R.humT || '') && R.none === '' && R.pops === 0, `카드 줄(사람 손댐) · 오래된 상품은 줄 없음 · 팝업 없음`, R);
+    ok(/🔒 등록 3개월 안 — 연구·엔진만 안 건드림/.test(R.newT || '') && /까지/.test(R.newT || '') && /🛰 감시 그룹 자동 반영·🎯 추격자·직접 가격·수동 일괄·상품 수정은 정범님 설정대로 그대로/.test(R.newT || ''), `카드 줄(새 상품): '${(R.newT || '').slice(0, 120)}'`);
+    ok(/🔒 사람이 손댄 상품 — 연구·엔진만 안 건드림/.test(R.humT || '') && R.none === '' && R.pops === 0, `카드 줄(사람 손댐) · 오래된 상품은 줄 없음 · 팝업 없음`, R);
   }).then(fin);
   function fin() { console.log(bad ? `❌ tFENCE3 실패 ${bad}` : '✓ tFENCE3 모두 통과'); process.exitCode = bad ? 1 : 0; }
 })().catch((e) => { console.log('❌ 시험 오류', e.stack); process.exitCode = 1; });

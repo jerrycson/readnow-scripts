@@ -502,11 +502,13 @@
   /* fenceRegMs(l, regAt) — 등록 때(ms) · 상품 기록 registeredAt(샵매니저 '등록' 시각 · 한국 시각 꼴 'YYYY-MM-DDTHH:MM' 또는 날짜만) → 등록 기록(regAt) → 처음 본 때(firstSeenAt) · 모르면 null */
   function fenceRegMs(l, regAt) { const P = (v) => { if (!v) return null; let t = String(v).trim(); if (/^\d{4}-\d{2}-\d{2}$/.test(t)) t += 'T00:00:00+09:00'; else if (/^\d{4}-\d{2}-\d{2}[T ]\d{1,2}:\d{2}(:\d{2})?$/.test(t)) t = t.replace(' ', 'T') + '+09:00'; const ms = Date.parse(t); return Number.isFinite(ms) ? ms : null; };
     l = l || {}; return P(l.registeredAt) ?? P(regAt) ?? P(l.regAt) ?? P(l.firstSeenAt) ?? null; }
-  /* fenceLock(l, o) — 엔진·전략·감시 자동 반영·추격자·전체 비율 실험·연구가 값·상태를 바꾸지 않는 상품(읽기만) → { kind, why, until } 또는 null
-   *  o = { key, excl(app_settings/eng_excl.m[키]), dec(prd_price_decisions 문서), regAt(등록 기록 때), nowMs, gid(이 감시 그룹 — 같은 그룹의 수동 일괄은 정범님이 엔진에 맡긴 것이라 셈하지 않음), F }
-   *  ① 등록 90일(3개월) 안 — 정범님 11/09 밤 결정 · 등록 때를 모르면 안전 쪽으로 안 건드림 ② 사람이 손대 실험에서 빠진 상품(eng_excl — 기한 없음, 예전 그대로)
+  /* fenceLock(l, o) — 연구·엔진(⚡ 전략 실행 · 전체 비율 실험 · 🔬 조회수 실험 새로 붙이기 · 엔진 실험)이 값·상태를 바꾸지 않는 상품(읽기만) → { kind, why, until } 또는 null
+   *  (11/10 fence4 · 정범님 11/09 밤 '감시 그룹 자동 반영과 추격자는 내가 결정해서 하는 기능 — 기능을 왜 꺼?') 🛰 감시 그룹 자동 반영·🎯 추격자(정범님 운영 기능)에는 쓰지 않음 — 그 기능은 그룹 설정대로
+   *  o = { key, excl(app_settings/eng_excl.m[키]), dec(prd_price_decisions 문서), regAt(등록 기록 때), nowMs, gid(이 감시 그룹 — 같은 그룹의 수동 일괄은 정범님이 엔진에 맡긴 것이라 셈하지 않음), ops(정범님이 손대 진행 중 — { why }), F }
+   *  ⓪ (fence4) 정범님이 손대 진행 중인 상품(켜진 🛰 감시 그룹·🎯 추격자 그룹에 듦 — o.ops) ① 등록 90일(3개월) 안 — 정범님 11/09 밤 결정 · 등록 때를 모르면 안전 쪽으로 안 건드림 ② 사람이 손대 실험에서 빠진 상품(eng_excl — 기한 없음, 예전 그대로)
    *  ③ 사람이 14일 안에 손댐(✏ 상품 수정 · 직접 가격 · 다른 그룹의 수동 일괄 — 상품 기록 editBy·결정 approval.by가 메일) */
   function fenceLock(l, o) { o = o || {}; const F = { ...FENCE, ...(o.F || {}) }; const now = o.nowMs || Date.now(); const day = 864e5; const ymd = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
+    if (o.ops) return { kind: 'ops', why: `정범님이 손대 진행 중인 상품(${String(o.ops.why || o.ops || '').slice(0, 50)}) — 연구·엔진은 안 건드림`, until: null };
     const reg = fenceRegMs(l, o.regAt); if (reg == null) return { kind: 'new', why: '등록 때를 모름 — 등록 3개월 안일 수 있어 엔진이 안 건드림(안전 쪽)', until: null };
     if (now - reg < F.newDays * day) return { kind: 'new', why: `등록 ${Math.max(0, Math.floor((now - reg) / day))}일 — 등록 3개월(${F.newDays}일) 안이라 엔진이 안 건드림`, until: ymd(reg + F.newDays * day) };
     if (o.excl) return { kind: 'human', why: `사람이 손대 엔진 실험에서 빠진 상품(${String(o.excl.why || '').slice(0, 40)}) — 엔진은 다시 안 건드림`, until: null };
@@ -522,7 +524,17 @@
     if (hp && fenceN(hp.p) > 0) return { s: fenceN(hp.p), human: true, why: '사람이 마지막으로 확정한 값' }; if (fenceN(w.humanPrice) > 0) return { s: fenceN(w.humanPrice), human: true, why: '감시 그룹에 넣을 때 사람이 확정한 값' };
     if (fenceHumanBy(ap.by) && ['batch', 'manual'].includes(ap.decision) && fenceN(ap.price) > 0) return { s: fenceN(ap.price), human: true, why: '사람이 정한 결정 값' };
     if (fenceN(w.startPrice) > 0) return { s: fenceN(w.startPrice), why: '사람 확정 값 기록이 없어 감시 시작 전 값(더 많이 셈 — 안전 쪽)' }; const f = fenceN(fb); return f > 0 ? { s: f, why: '사람 확정 값이 없어 엔진이 처음 내리기 전 값' } : null; }
+  /* (11/10 fence4 · 정범님 11/09 밤 '비용이 드는 연구는 반드시 내 허락을 받은 뒤에만 — 철저히 단속') 💸 비용 드는 연구 허락
+   *  fenceCostOk(rec, q) — rec = app_settings/research_cost_ok(웹앱 ⚡ 전략 화면에서 정범님이 두 번 누르기로만 만듦 · 기본 없음) · q = { what('strat' ⚡ 전략 실행 · 'ro' 전체 비율 실험), nowMs }
+   *   → { ok, limit(허락한 하루 한도 원), why } — 기록이 없거나·꺼짐·사람 메일이 아님·두 번 누르기로 만든 것이 아님·기한이 지남·대상이 아님·한도가 없으면 막음('💸 정범님 허락 필요') */
+  function fenceCostOk(rec, q) { q = q || {}; const now = q.nowMs || Date.now(); const no = (why) => ({ ok: false, limit: 0, why: '💸 정범님 허락 필요 — ' + why });
+    if (!rec || rec.on !== true) return no('비용 드는 연구(값 내리기·판매 상태 바꾸기) 허락 기록이 없음');
+    if (!fenceHumanBy(rec.by)) return no('허락한 사람이 로그인 메일이 아님'); if (rec.via !== 'twice') return no('웹앱 두 번 누르기로 만든 허락이 아님');
+    const at = Date.parse(rec.at || ''); if (!Number.isFinite(at) || at > now + 60e3) return no('허락한 때를 모름');
+    let u = String(rec.until || '').trim(); if (/^\d{4}-\d{2}-\d{2}$/.test(u)) u += 'T23:59:59+09:00'; const until = Date.parse(u); if (!Number.isFinite(until)) return no('허락 끝나는 날을 모름'); if (now > until) return no(`허락 기한(${String(rec.until).slice(0, 10)})이 지남`);
+    const what = (Array.isArray(rec.what) ? rec.what : [rec.what]).map(String); if (!q.what || !what.includes(String(q.what))) return no(`허락 대상이 아님(${q.what || '모름'} — 허락: ${what.join('·') || '없음'})`);
+    const lim = fenceN(rec.limit); if (!(lim > 0)) return no('허락 한도가 없음'); return { ok: true, limit: lim, why: null, by: rec.by, until: rec.until }; }
   /* FENCE-PURE-END */
-  const api = { VERSION, VDEF, setBuyback, bbExpect, bbAccept, BB_ACC, extrasOf, EX_LABEL, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, sevReasonGroups, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue, STRATS, STRAT_K, SDEF, stratDecide, stratGuard, stratMarket, stratFloor, stratCeil, stratParams, stratRarity, STALL_H, stallCheck, asOfMetrics, listingAsOf, EXP_DEF, AGE_EDGES, isHumanBy, expCell, expPair, humanTouch, busyOf, dayLossLimit, dayLossOf, expScore, engDecOk, RARE_RANGE, rareClamp, rarePick, REBUILT_W, mlSplitDays, FENCE, fenceLimitOf, fenceSum, fenceHeld, fenceRoll, fenceTry, fenceSettle, fenceNote, fenceNoAdd, fenceNoLoss, fenceRegMs, fenceLock, fenceBase };
+  const api = { VERSION, VDEF, setBuyback, bbExpect, bbAccept, BB_ACC, extrasOf, EX_LABEL, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, sevReasonGroups, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue, STRATS, STRAT_K, SDEF, stratDecide, stratGuard, stratMarket, stratFloor, stratCeil, stratParams, stratRarity, STALL_H, stallCheck, asOfMetrics, listingAsOf, EXP_DEF, AGE_EDGES, isHumanBy, expCell, expPair, humanTouch, busyOf, dayLossLimit, dayLossOf, expScore, engDecOk, RARE_RANGE, rareClamp, rarePick, REBUILT_W, mlSplitDays, FENCE, fenceLimitOf, fenceSum, fenceHeld, fenceRoll, fenceTry, fenceSettle, fenceNote, fenceNoAdd, fenceNoLoss, fenceRegMs, fenceLock, fenceBase, fenceCostOk };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowML = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
