@@ -48,7 +48,7 @@ const APPP = find(['../app.html', '../../src/app.html', '../../app.html']); cons
     const ex = PW.slice(PW.indexOf('async function executeApproved'), PW.indexOf('/* ── (0.7.0) 공개 반영 확인')); const iO = ex.indexOf('if (fOps) {'), iR = ex.indexOf("else if (fSrc) { const EX = await engExcl(true);"), iA = ex.indexOf('P.scmAction.price(x.listingId, price)');
     ok(iO > 0 && iR > iO && iA > iR && /const fOps = !!fSrc && fSrc !== 'ro';/.test(ex), '반영: 감시 자동 반영(pw:)은 기록 길 · 전체 비율 실험(ro)만 연구 울타리 길(차례)');
     const ops = ex.slice(iO, iR); ok(/fenceRun\('rec'/.test(ops) && !/back\(|continue;/.test(ops) && !/engExcl|fenceLock|fenceNoLoss|fenceCostOk/.test(ops), '감시 자동 반영 길엔 막는 것(사람 손댐 목록·🔒·무손해·허락·한도)이 없음 · 원장 기록이 실패해도 막지 않음');
-    ok(/if \(mode === 'rec'\) \{ const r0 = fenceTry\(L, q, \{ ok: true, limit: Number\.MAX_SAFE_INTEGER \}, nowI\); out = \{ ok: true, rec: true, e: r0 && r0\.e \? \{ \.\.\.r0\.e, ops: true \} : null \};/.test(PW), "원장 'rec': 한도 없이 얼마 내렸는지만 적음(ops 표시)"); }
+    ok(/if \(mode === 'rec'\) \{ const r0 = fenceTry\(L, q, \{ ok: true, limit: Number\.MAX_SAFE_INTEGER \}, nowI\); out = \{ ok: true, rec: true, e: r0 && r0\.e \? \{ \.\.\.r0\.e, ops: true, r: \{ \.\.\.r0\.e\.r, ops: true \} \} : null \};/.test(PW), "원장 'rec': 한도 없이 얼마 내렸는지만 적음(ops 표시 · fence5: 예약에도 ops — 그 몫은 연구 한도 셈 밖)"); }
 
   console.log('③ 💸 비용 드는 연구 허락');
   { const H = ML.fenceCostOk; const base = { on: true, by: 'a@b.c', at: iso(NOW - 3600e3), until: iso(NOW + 2 * D), what: ['strat'], limit: 3000, via: 'twice' };

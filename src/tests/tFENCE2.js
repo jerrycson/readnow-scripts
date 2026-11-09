@@ -83,7 +83,7 @@ function fakeDb() { const S = new Map(); const DEL = { __del: 1 }; const kk = (n
       await F.C('eng_fence_ledger').doc('2026-11-09').set({ done: 4000 }, { merge: true });
       Date.now = () => T0 + 2 * 60e3; const b = await CL.fenceTxCloud(ML, 'try', { key: 'aladin_K2', from: 9000, to: 2000, id: 'k2', cmd: 'k2' }); const L9 = await Lget(F, '2026-11-09'), L10 = await Lget(F, '2026-11-10');
       ok(CL.fenceDay(T0) === '2026-11-09' && CL.fenceDay(T0 + 2 * 60e3) === '2026-11-10' && a.ok, '날짜 경계 = 한국 0시(UTC 14:59 → 11/09 · 15:01 → 11/10)');
-      ok(L10 && L10.from === '2026-11-09' && L10.x.aladin_K && L10.x.aladin_K.a === 3000 && b.ok && b.need === 10000 && !(L10.done > 0) && L9.done === 4000, `새 날 원장: 어제 걸린 3,000원은 이어 받고 어제 쓴 4,000원은 0부터 → 3,000 + 이번 7,000 = ${b.need}원(한도 딱 · 허락) — 어제 쓴 돈과 섞이지 않음`);
+      ok(L10 && L10.v === 2 && L10.from === '2026-11-09' && L10.x.aladin_K && L10.x.aladin_K.a === 3000 && L10.x.aladin_K.t === 0 && b.ok && b.need === 7000 && L10.spent === 7000 - 7000 + 0 && L9.done === 4000, `(fence5) 새 날 원장: 어제 내려 둔 3,000원은 기록(a)으로만 이어 받고 그날 몫은 0부터 → 이번 7,000 = ${b.need}원(예전엔 3,000 + 7,000 — 누적 노출) — 어제 몫과 섞이지 않음`);
     } finally { Date.now = realNow; } }
 
   /* ── ④ 정리(fenceReconcile) ── */
@@ -104,9 +104,9 @@ function fakeDb() { const S = new Map(); const DEL = { __del: 1 }; const kk = (n
     const r = await CL.fenceReconcile(ML, { full: true, mem, sales, src }); const L = await Lget(F);
     ok(L.x.aladin_M1 && L.x.aladin_M1.a === 2000 && L.x.aladin_M5 && L.x.aladin_M5.a === 0, '하루 셈: 진행 중 실험의 처리 상품을 모두 원장에 걸음(시작 9,000 − 지금 7,000 = 2,000 · 시작보다 비싸면 0)');
     ok(!L.x.aladin_M3 && !L.x.aladin_M4, '사람이 손대 빠진 상품(M3)·대조(M4)는 원장에서 뺌');
-    ok(!L.x.aladin_M2 && L.done === 1000 && r.done === 1000, `오늘 팔린 M2(시작 8,000 → 판 7,000)는 '쓴 돈'으로 옮김: ${L.done}원(앞서 적힌 500원보다 큼)`);
+    ok(!L.x.aladin_M2 && L.sold === 1000 && r.sold === 1000 && L.spent === 500 + 2000 + 1000, `(fence5) 오늘 팔린 M2(시작 8,000 → 판 7,000)의 덜 받은 돈은 sold(참고 ${L.sold}원) · 한도 셈은 옛 원장 그대로 엄하게(옛 done 500 + 빠진 M3 몫 2,000 + 남은 R1 1,000 = ${L.spent}원)`);
     ok(L.x.aladin_R1 && L.x.aladin_R1.a === 1000, '전체 비율 실험(ro) 상품은 판매중이면 원장에 그대로');
-    await F.C('eng_fence_ledger').doc(day).set({ done: 4000 }, { merge: true }); await CL.fenceReconcile(ML, { full: true, mem, sales, src }); ok((await Lget(F)).done === 4000, '쓴 돈은 같은 날 안에서 줄지 않음(먼저 뺀 상품의 손해를 다시 못 봐도 안전 쪽)'); }
+    const sp0 = (await Lget(F)).spent; await CL.fenceReconcile(ML, { full: true, mem, sales, src }); const L2 = await Lget(F); ok(L2.spent >= sp0 && L2.sold === 1000 && L2.done === 500, `(fence5) 오늘 몫(spent ${L2.spent}원)·팔린 돈은 같은 날 안에서 줄지 않음 · 옛 원장의 done은 건드리지 않음`); }
 
   /* ── ⑤ 연결(코드 차례) ── */
   { const st = SRC.slice(SRC.indexOf('async function stratTick('), SRC.indexOf('async function stratPreCheck(')); const iF = st.indexOf("fenceTxCloud(ML, 'try'"), iRec = st.indexOf("C('strat_items').doc('c' + mtH(x.lid, STR.SH)).set({ m: { [x.lid]: nst } }"), iCmd = st.indexOf("await ref.set({ type: 'prdEdit'");
@@ -122,7 +122,7 @@ function fakeDb() { const S = new Map(); const DEL = { __del: 1 }; const kk = (n
     ok(!g.ok && g.no.some((x) => /다시 건드리지 않음/.test(x)), '사람 손댐: ⚡ 안전 검사가 eng_excl 상품을 막음(그대로)'); }
 
   /* ── ⑥ 웹앱 카드 줄 ── */
-  ok(/function fenceLine\(id, on\)/.test(APP) && /오늘 쓴 \$\{num\(u\.done\)\}원 · 예약 \$\{num\(u\.held\)\}원/.test(APP), '웹앱: 그룹·전략 카드 줄에 오늘 쓴·예약·남은');
+  ok(/function fenceLine\(id, on\)/.test(APP) && /오늘 내린 몫 \$\{num\(u\.done\)\}원 · 진행 중 \$\{num\(u\.held\)\}원/.test(APP), '웹앱: 그룹·전략 카드 줄에 오늘 내린 몫·진행 중·남은(fence5)');
   const hp = ['/home/user/wb-fence2/pw/harness.js', path.join(__dirname, 'harness.js')].find((x) => fs.existsSync(x));
   if (!hp || !process.env.RN_PORT) { console.log('  (웹앱 화면 시험은 harness·RN_PORT가 없어 건너뜀)'); return fin(); }
   require(hp)(async (p) => { await p.waitForTimeout(600);
@@ -135,7 +135,7 @@ function fakeDb() { const S = new Map(); const DEL = { __del: 1 }; const kk = (n
       S.engF = {}; await db.collection('app_settings').doc('eng_fence_now').set({ at: new Date(Date.now() - 50 * 3600e3).toISOString(), dayLoss: 10000 }); document.getElementById('tF').innerHTML = engExpLine('pw_g9', true); await Wt(500); document.getElementById('tF').innerHTML = engExpLine('pw_g9', true); o.stale = document.getElementById('tF').textContent;
       o.ml = !!(window.ReadnowML && window.ReadnowML.fenceSum); o.pops = pops; return o; });
     ok(R.fn, '웹앱 fenceLine 있음');
-    ok(/하루 손해 한도 10,000원/.test(R.line || '') && /오늘 쓴 1,500원/.test(R.line || '') && /예약 3,000원/.test(R.line || '') && /남은 5,500원/.test(R.line || '') && /막은 연구 내림 2번/.test(R.line || '') && /🛰 감시 자동 반영·🎯 추격자는 정범님 그룹 설정대로/.test(R.line || ''), `카드 줄(fence4: 연구 한도 · 감시·추격자는 그룹 설정대로): '${(R.line || '').replace(/\s+/g, ' ').slice(0, 160)}'`);
+    ok(/하루 손해 한도 10,000원/.test(R.line || '') && /오늘 내린 몫 3,500원/.test(R.line || '') && /진행 중 1,000원/.test(R.line || '') && /남은 5,500원/.test(R.line || '') && /막은 연구 내림 2번/.test(R.line || '') && /🛰 감시 자동 반영·🎯 추격자는 정범님 그룹 설정대로/.test(R.line || ''), `카드 줄(fence4: 연구 한도 · 감시·추격자는 그룹 설정대로): '${(R.line || '').replace(/\s+/g, ' ').slice(0, 160)}'`);
     ok(/한도를 못 받음/.test(R.stale || '') && /내리지 않음/.test(R.stale || ''), `한도가 오래되면 빨강: '${(R.stale || '').replace(/\s+/g, ' ').slice(-90)}'`);
     ok(R.pops === 0, `브라우저 팝업 없음 · 공용 셈 함수 ${R.ml ? '읽음' : '없음(대신 간단 셈)'}`);
   }).then(fin);

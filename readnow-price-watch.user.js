@@ -289,40 +289,63 @@
    *  ⑥ '반영 중'에서 멈춘 것(탭이 닫힘 등)은 10분 뒤 '막힘 — 샵매니저에서 가격 확인'으로 (다시 보내지 않음) */
   /* FENCE-PURE-START — 🧪 하루 손해 울타리 · 실행 전에 막기(정범님 11/09 밤 '절대로 기준을 넘는 일이 없도록' · 약속 33) — 순수 함수만
    *  학습 공용(readnow-ml-core.js)과 가격 감시기(readnow-price-watch.user.js)에 글자 그대로 같은 사본 — 시험 tFENCE2가 두 사본이 같은지 봄(감시기 머리 @require를 바꾸지 않으려고 사본)
-   *  원장 eng_fence_ledger/{한국 날짜} = { day, done(오늘 확정 손해: 실험 상품이 시작 값보다 싸게 팔린 차이 합), x{상품: 걸린 손해}, no[막은 기록] }
-   *   x[상품] = { s(실험 시작 값), p(지금 값), a(= s − p, 0 아래면 0 — 오늘 다 팔리면 덜 받을 돈), src, r(진행 중 내림 예약 { id, to, a, at, by, cmd }) }
-   *  셈: 쓴(done) + 걸린 것 모두(상품마다 a와 예약 a 중 큰 값) + 이번 내림 = 오늘 다 팔릴 때 최대 손해 → 한도 이하일 때만 예약(부분 적용 없음)
+   *  (11/10 fence5 · 정범님 11/10 새벽 '감시와 전략은 곧 사용 — 미리 정밀히 검토해서 원인을 찾고 고쳐줘' · 11/09 정밀 점검 ⑤-2) 뜻 = **그날 엔진이 실제로 내린 몫**(정범님 확정 값 기준 (나))
+   *   예전(fence2~4): x[상품].a(= 시작 값 − 지금 값 · 내려 둔 값 전체)를 날마다 그대로 이어 받아 '쓴 + 걸린 a 모두'를 셈 → 팔리거나 값이 오르기 전엔 날이 바뀌어도 안 풀림(누적 노출 한도 · 내림 10여 건 뒤 다음 날도 멈춤)
+   *   지금: 내림 한 번마다 '정범님 확정 값 아래로 새로 내려간 몫'(d = max(0, s − 내릴 값) − max(0, s − 지금 값))만 그날 몫(t)에 더함 · 값을 올려도 그날 몫은 돌려받지 않음(안전 쪽) · 새 날은 몫 0부터(내려 둔 값은 a로 기록만)
+   *  원장 eng_fence_ledger/{한국 날짜} = { v:2, day, spent(= gone + 상품마다 t · 오늘 엔진이 내린 몫 합 · 같은 날 줄지 않음), done(옛 판 읽기용 = spent), gone(오늘 원장에서 빠진 상품의 그날 몫), ops·opsGone(🛰 감시 자동 반영·🎯 추격자가 내린 몫 — 기록만 · 한도 셈 밖), sold(오늘 실험 상품이 시작 값보다 싸게 팔려 덜 받은 돈 — 참고), x{상품}, no[막은 기록] }
+   *   x[상품] = { s(손해 셈 기준 값 — 정범님 확정 값), p(지금 값), a(= s − p, 0 아래면 0 — 내려 둔 값 · 기록), t(오늘 엔진이 내린 몫), od(오늘 감시·추격자가 내린 몫), src, r(진행 중 내림 예약 { id, to, from, d(이 내림의 몫), a(= s − to · 옛 판 읽기용), at, by, cmd, ops }) }
+   *  셈: 오늘 내린 몫(spent) + 진행 중 예약 몫(감시·추격자 것은 뺌) + 이번 내림 몫 ≤ 한도일 때만 예약(부분 적용 없음)
+   *  옛 원장(v 없음 · 그날 fence4가 만든 것): 상품마다 t가 없으면 a(내려 둔 값 전체)를, 옛 done(팔린 손해)도 쓴 몫으로 셈 — 그날만 예전처럼 엄하게(안전 쪽) · 다음 날 새 원장부터 새 뜻
    *  한도는 클라우드가 준 값(app_settings/eng_fence_now)만 — 없거나 36시간 넘으면 내리지 않음(실패 때 안전 쪽) · 값이 이상하면 바닥 5,000원 */
   const FENCE = { min: 5000, max: 30000, staleH: 36, ttlMin: 15, noKeep: 100, newDays: 90, humanDays: 14 }; /* (11/10 fence3) newDays 90 = 정범님 11/09 밤 '등록 3개월 이내 상품도 포함' · humanDays 14 = 사람 손댄 뒤 엔진이 안 건드리는 날 수(EXP_DEF.humanCoolD와 같음) */
   const fenceN = (v) => (v != null && v !== '' && Number.isFinite(+v) ? +v : null);
-  const fenceHeld = (e) => (e ? Math.max(fenceN(e.a) || 0, (e.r && fenceN(e.r.a)) || 0, 0) : 0);
+  const fenceHeld = (e) => (e ? Math.max(fenceN(e.a) || 0, (e.r && fenceN(e.r.a)) || 0, 0) : 0); /* 내려 둔 값(옛 뜻의 걸린 손해) — 기록·옛 원장용 */
+  const fenceV2 = (L) => !!(L && +L.v >= 2);
+  /* fenceT(e, L) — 그 상품의 오늘 엔진 몫(확정) · 옛 원장에서 t가 없으면 내려 둔 값 전체(안전 쪽) · fenceRD(e) — 진행 중 예약의 몫(감시·추격자 예약은 0) */
+  const fenceT = (e, L) => (!e ? 0 : fenceN(e.t) != null ? Math.max(0, fenceN(e.t)) : fenceV2(L) ? 0 : Math.max(0, fenceN(e.a) || 0));
+  const fenceRD = (e) => { const r = e && e.r; if (!r || r.ops) return 0; if (fenceN(r.d) != null) return Math.max(0, fenceN(r.d)); return Math.max(0, (fenceN(r.a) || 0) - Math.max(0, fenceN(e.a) || 0)); };
+  const fenceGone = (L) => { L = L || {}; return Math.max(0, fenceN(L.gone) || 0) + (fenceV2(L) ? 0 : Math.max(0, fenceN(L.done) || 0)); };
+  /* fenceStep(s, from, to) — 내림 한 번의 몫 = 기준(s) 아래로 새로 내려간 만큼(기준보다 위에서 내린 몫은 손해 아님) */
+  const fenceStep = (s, from, to) => Math.max(0, Math.max(0, s - to) - Math.max(0, s - from));
   /* fenceLimitOf(nw, nowMs) — nw = app_settings/eng_fence_now { dayLoss, at, fix } → { ok, limit, why } */
   function fenceLimitOf(nw, nowMs, F0) { const F = { ...FENCE, ...(F0 || {}) }; nowMs = nowMs || Date.now(); if (!nw || !nw.at) return { ok: false, limit: null, why: '클라우드가 준 하루 손해 한도가 없음' };
     const age = (nowMs - Date.parse(nw.at)) / 36e5; if (!(age >= -0.5 && age <= F.staleH)) return { ok: false, limit: null, why: `하루 손해 한도가 ${Number.isFinite(age) ? Math.round(age) + '시간 전' : '언제 것인지 모르는'} 값(${F.staleH}시간 안 것만 씀)` };
     const v = fenceN(nw.dayLoss); if (v == null || v <= 0 || (!nw.fix && (v < F.min || v > F.max))) return { ok: true, limit: F.min, why: `한도 값(${nw.dayLoss})이 이상해 바닥 ${F.min.toLocaleString()}원` }; return { ok: true, limit: v, why: null }; }
-  /* fenceSum(L, skipKey) — 오늘 쓴(done) · 걸린(held) · 합(used) */
-  function fenceSum(L, skipKey) { L = L || {}; let held = 0, n = 0; for (const [k, e] of Object.entries(L.x || {})) { if (k === skipKey) continue; const h = fenceHeld(e); if (h > 0) { held += h; n++; } } const done = Math.max(0, fenceN(L.done) || 0); return { done, held, used: done + held, n }; }
-  /* fenceRoll(prev, day, nowIso) — 새 날 원장: 어제 걸린 것(x · 예약 포함)을 그대로 이어 받고 쓴 돈은 0부터 */
-  function fenceRoll(prev, day, nowIso) { return { day, from: (prev && prev.day) || null, done: 0, x: JSON.parse(JSON.stringify((prev && prev.x) || {})), no: [], at: nowIso || new Date().toISOString() }; }
-  /* fenceTry(L, q, lim, nowIso) — 내리기 전 검사 · q = { key, from(지금 값), to(내릴 값), start(실험 시작 값 — 원장에 없을 때만), src, by, id(예약 번호), cmd } → { ok, why, e(새 x[key] — 예약), need, left, limit, raise } */
+  /* fenceSum(L, skipKey) — done(오늘 엔진이 내린 몫 · 확정) · held(진행 중 예약 몫) · used(합 — 한도와 견줌) · ops(감시·추격자가 내린 몫 — 기록만) · sold(팔려 덜 받은 돈 — 참고) · expo(내려 둔 값 합 — 참고) */
+  function fenceSum(L, skipKey) { L = L || {}; let done = fenceGone(L), held = 0, ops = Math.max(0, fenceN(L.opsGone) || 0), expo = 0, n = 0;
+    for (const [k, e] of Object.entries(L.x || {})) { if (!e) continue; ops += Math.max(0, fenceN(e.od) || 0); expo += Math.max(0, fenceN(e.a) || 0); if (k === skipKey) continue; const t = fenceT(e, L), h = fenceRD(e); done += t; held += h; if (t > 0 || h > 0) n++; }
+    return { done, held, used: done + held, n, ops, sold: Math.max(0, fenceN(L.sold) || 0), expo, v2: fenceV2(L) }; }
+  /* fenceStamp(L) — 원장을 고칠 때 함께 적는 합계 칸(spent · v2 원장은 옛 판이 읽는 done도 같은 값) */
+  function fenceStamp(L) { const u = fenceSum(L); return fenceV2(L) ? { spent: u.done, done: u.done, ops: u.ops } : { spent: u.done, ops: u.ops }; }
+  /* fenceRoll(prev, day, nowIso) — 새 날 원장(v2): 상품 기록(s·p·a·예약)은 이어 받고 그날 몫(t·od)·쓴 몫은 0부터 · 예약은 끝날 때 오늘 몫으로(안 끝난 예약도 오늘 셈에 듦 — 안전 쪽) */
+  function fenceRoll(prev, day, nowIso) { const X = JSON.parse(JSON.stringify((prev && prev.x) || {}));
+    for (const e of Object.values(X)) { if (!e) continue; if (e.r && fenceN(e.r.d) == null) e.r.d = fenceRD({ ...e, r: { ...e.r, ops: false } }); if (e.r && fenceN(e.r.from) == null && fenceN(e.p) != null) e.r.from = fenceN(e.p); e.t = 0; e.od = 0; }
+    return { v: 2, day, from: (prev && prev.day) || null, done: 0, spent: 0, gone: 0, ops: 0, opsGone: 0, sold: 0, x: X, no: [], at: nowIso || new Date().toISOString() }; }
+  /* fenceTry(L, q, lim, nowIso) — 내리기 전 검사 · q = { key, from(지금 값), to(내릴 값), human(정범님 확정 값), start(시작 값 — 원장에 없을 때만), src, by, id(예약 번호), cmd } → { ok, why, e(새 x[key] — 예약), d(이번 몫), need, left, limit, raise } */
   function fenceTry(L, q, lim, nowIso) { L = L || {}; q = q || {}; nowIso = nowIso || new Date().toISOString(); const no = (why, o) => ({ ok: false, why, limit: lim && lim.limit, ...(o || {}) });
     if (!lim || !lim.ok || !(lim.limit > 0)) return no((lim && lim.why) || '하루 손해 한도를 못 받음');
     const from = fenceN(q.from), to = fenceN(q.to); if (!q.key) return no('상품이 없음'); if (to == null || to < 10) return no('내릴 값이 이상함'); if (from == null || from < 10) return no('지금 값을 모름');
     if (to >= from) return { ok: true, raise: true, e: null, limit: lim.limit, why: '내림이 아님(값을 올리거나 그대로) — 검사 없음' };
     const cur = (L.x || {})[q.key] || null; if (cur && cur.r) return no(`같은 상품의 다른 내림(${String(cur.r.at || '').slice(5, 16)})이 아직 끝나지 않음`);
-    /* (11/10 fence3 · 정범님 11/09 밤 손해 셈 (나)) 기준 = 정범님(사람)이 마지막으로 확정한 값(q.human — fenceBase) → 엔진이 그보다 더 내린 몫만 손해 · 사람 확정 값이 없으면 원장의 시작 값 → q.start → 지금 값 */
+    /* (11/10 fence3 · 정범님 11/09 밤 손해 셈 (나)) 기준 = 정범님(사람)이 마지막으로 확정한 값(q.human — fenceBase) → 엔진이 그보다 더 내린 몫만 손해 · 사람 확정 값이 없으면 원장의 기준 값 → q.start → 지금 값 */
     const hu = fenceN(q.human) > 0 ? fenceN(q.human) : null; const s = hu || (cur && fenceN(cur.s) > 0 ? fenceN(cur.s) : fenceN(q.start) > 0 ? fenceN(q.start) : from); if (!(s > 0)) return no('실험 시작 값을 모름');
-    const curA = cur ? (hu && hu !== fenceN(cur.s) ? Math.max(0, s - (fenceN(cur.p) != null ? fenceN(cur.p) : from), (cur.r && fenceN(cur.r.a)) || 0) : fenceHeld(cur)) : Math.max(0, s - from); const newA = Math.max(0, s - to); const o = fenceSum(L, q.key); const mine = Math.max(curA, newA); const need = o.used + mine; const left = lim.limit - need;
-    if (need > lim.limit) return no(`오늘 쓴 ${o.done.toLocaleString()}원 + 걸린 ${o.held.toLocaleString()}원 + 이 상품 ${mine.toLocaleString()}원 = ${need.toLocaleString()}원 > 한도 ${lim.limit.toLocaleString()}원 — 내리지 않음`, { need, left });
-    const p0 = cur && fenceN(cur.p) != null ? fenceN(cur.p) : from; const e = { s, p: p0, a: cur ? (hu ? Math.max(0, s - p0) : fenceN(cur.a) || 0) : Math.max(0, s - from), ...(hu ? { base: 'human' } : {}), src: q.src || (cur && cur.src) || null, since: (cur && cur.since) || nowIso, r: { id: String(q.id || nowIso), to, a: newA, at: nowIso, by: q.by || null, cmd: q.cmd || null } };
-    return { ok: true, e, need, left, limit: lim.limit, why: null }; }
-  /* fenceSettle(L, key, rid, ok, price, nowIso) — 예약 끝: ok면 지금 값 = price(알라딘이 받은 값) · 아니면 예약만 풂 → 새 x[key] 또는 null(그 예약이 아님) */
-  function fenceSettle(L, key, rid, ok, price, nowIso) { const cur = ((L || {}).x || {})[key]; if (!cur || !cur.r || String(cur.r.id) !== String(rid)) return null; const p = fenceN(price);
-    if (ok && p != null) return { ...cur, p, a: Math.max(0, (fenceN(cur.s) || 0) - p), r: null, at: nowIso || new Date().toISOString() }; return { ...cur, r: null, at: nowIso || new Date().toISOString() }; }
-  /* fenceNote(L, key, s, price, src, make, nowIso, reset) — 사람이 정한 값이 반영됨(수동 일괄·직접 가격) 또는 값을 올림 → 걸린 손해만 새로 셈(검사 없음 · make=false면 원장에 있는 상품만)
-   *  (11/10 fence3 · 손해 셈 (나)) reset = 사람이 확정한 값 → 기준(s)을 그 값으로 다시 놓음(사람이 내린 몫은 손해가 아님 · 걸린 손해 0) */
+    /* (fence5) 이번 몫 = 기준 아래로 새로 내려간 만큼 · 출발 값은 '부른 쪽이 본 지금 값'과 원장의 지금 값 중 높은 쪽(그 사이 다른 길로 내려간 몫까지 엔진 몫으로 — 안전 쪽) */
+    const pc = cur && fenceN(cur.p) != null ? fenceN(cur.p) : null; const f0 = pc != null ? Math.max(from, pc) : from; const V2 = fenceV2(L);
+    /* 옛 원장(v 없음)은 그날만 예전 셈 그대로(새 상품은 기준 아래 전체 · 사람 확정 값이 바뀐 상품은 그 값 아래 전체) — 안전 쪽 */
+    const tCur = cur && fenceN(cur.t) == null && !V2 && hu && hu !== fenceN(cur.s) ? Math.max(0, s - (pc != null ? pc : from)) : fenceT(cur, L); const d = !V2 && !cur ? Math.max(0, s - to) : fenceStep(s, f0, to);
+    const o = fenceSum(L, q.key); const need = o.used + tCur + d; const left = lim.limit - need;
+    if (need > lim.limit) return no(`오늘 엔진이 내린 ${o.done.toLocaleString()}원 + 진행 중 ${o.held.toLocaleString()}원${tCur ? ` + 이 상품 오늘 ${tCur.toLocaleString()}원` : ''} + 이번 ${d.toLocaleString()}원 = ${need.toLocaleString()}원 > 한도 ${lim.limit.toLocaleString()}원 — 내리지 않음`, { need, left, d });
+    const p0 = pc != null ? pc : from; const e = { ...(cur || {}), s, p: p0, a: Math.max(0, s - p0), t: tCur, od: Math.max(0, fenceN(cur && cur.od) || 0), ...(hu ? { base: 'human' } : {}), src: q.src || (cur && cur.src) || null, since: (cur && cur.since) || nowIso, r: { id: String(q.id || nowIso), to, from: f0, d, a: Math.max(0, s - to), at: nowIso, by: q.by || null, cmd: q.cmd || null } };
+    return { ok: true, e, d, need, left, limit: lim.limit, why: null }; }
+  /* fenceSettle(L, key, rid, ok, price, nowIso) — 예약 끝: ok면 지금 값 = price(알라딘이 받은 값) · 실제로 내려간 몫을 오늘 몫(t — 감시·추격자 예약이면 od)에 더함 · 아니면 예약만 풂 → 새 x[key] 또는 null(그 예약이 아님) */
+  function fenceSettle(L, key, rid, ok, price, nowIso) { const cur = ((L || {}).x || {})[key]; if (!cur || !cur.r || String(cur.r.id) !== String(rid)) return null; const p = fenceN(price); const at = nowIso || new Date().toISOString(); const tCur = fenceT(cur, L); const od0 = Math.max(0, fenceN(cur.od) || 0);
+    if (ok && p != null) { const s = fenceN(cur.s) || 0; const f0 = fenceN(cur.r.from) != null ? fenceN(cur.r.from) : fenceN(cur.p) != null ? fenceN(cur.p) : p; const d = fenceStep(s, f0, p); /* 알라딘이 다른 값으로 받으면 그 값으로 셈(실제 몫) */
+      return { ...cur, p, a: Math.max(0, s - p), t: cur.r.ops ? tCur : tCur + d, od: cur.r.ops ? od0 + d : od0, r: null, at }; }
+    return { ...cur, t: tCur, od: od0, r: null, at }; }
+  /* fenceNote(L, key, s, price, src, make, nowIso, reset) — 사람이 정한 값이 반영됨(수동 일괄·직접 가격) 또는 값을 올림 → 기록만 새로(검사 없음 · make=false면 원장에 있는 상품만)
+   *  (11/10 fence3 · 손해 셈 (나)) reset = 사람이 확정한 값 → 기준(s)을 그 값으로 다시 놓음(사람이 내린 몫은 손해가 아님) · (fence5) 그날 이미 엔진이 내린 몫(t)은 그대로 둠(돌려받지 않음) */
   function fenceNote(L, key, s, price, src, make, nowIso, reset) { const cur = ((L || {}).x || {})[key] || null; if (!cur && !make) return null; const p = fenceN(price); if (p == null) return null; const s0 = reset && fenceN(s) > 0 ? fenceN(s) : cur && fenceN(cur.s) > 0 ? fenceN(cur.s) : fenceN(s); if (!(s0 > 0)) return null;
-    return { ...(cur || {}), s: s0, p, a: Math.max(0, s0 - p), ...(reset ? { base: 'human', baseAt: nowIso || new Date().toISOString() } : {}), src: (cur && cur.src) || src || null, since: (cur && cur.since) || nowIso || new Date().toISOString(), r: cur ? cur.r || null : null }; }
+    return { ...(cur || {}), s: s0, p, a: Math.max(0, s0 - p), t: fenceT(cur, L), od: Math.max(0, fenceN(cur && cur.od) || 0), ...(reset ? { base: 'human', baseAt: nowIso || new Date().toISOString() } : {}), src: (cur && cur.src) || src || null, since: (cur && cur.since) || nowIso || new Date().toISOString(), r: cur ? cur.r || null : null }; }
   /* fenceNoAdd(L, rec) — 막은 기록(최근 noKeep개 · 같은 날 같은 상품·같은 까닭은 횟수만 올림) */
   function fenceNoAdd(L, rec, F0) { const F = { ...FENCE, ...(F0 || {}) }; const L0 = ((L || {}).no || []).slice(); const i = L0.findIndex((x) => x && x.key === rec.key && x.why === rec.why); if (i >= 0) { L0[i] = { ...L0[i], n: (L0[i].n || 1) + 1, at: rec.at }; return L0; } L0.push({ ...rec, n: 1 }); return L0.slice(-F.noKeep); }
   /* ── (11/10 fence3 · 정범님 11/09 밤 '손해가 적용되는 곳을 모두 멈춰 · 손해를 보지 않고 진행할 방법') 무손해 기본 · 사람 확정 값 기준 · 엔진이 안 건드리는 상품 ──
@@ -371,11 +394,12 @@
     await db.runTransaction(async (tx) => { out = null; const sn = await tx.get(ref); const nw = (await tx.get(nwRef)).data() || null; let L = sn.exists ? sn.data() : null; let mk = false;
       if (!L) { const h = (await tx.get(head)).data() || {}; const prev = h.day && h.day < day ? (await tx.get(LC.doc(h.day))).data() || null : null; L = fenceRoll(prev, day, nowI); mk = true; }
       const lim0 = fenceLimitOf(nw, nowMs); const lim = lim0.ok && q && q.cap > 0 && q.cap < lim0.limit ? { ...lim0, limit: q.cap, why: `정범님 허락 한도 ${(+q.cap).toLocaleString()}원` } : lim0; const patch = { ...(mk ? L : {}), day, limit: lim0.ok ? lim0.limit : null, limitWhy: lim0.why || null, at: nowI, ...W() }; /* (11/10 fence4) cap = 💸 정범님 허락 한도(하루 손해 한도보다 작으면 그것) · 원장 limit 칸은 예전 그대로 */
-      if (mode === 'rec') { const r0 = fenceTry(L, q, { ok: true, limit: Number.MAX_SAFE_INTEGER }, nowI); out = { ok: true, rec: true, e: r0 && r0.e ? { ...r0.e, ops: true } : null }; if (out.e) patch.x = { ...(mk ? L.x : {}), [q.key]: out.e }; else if (!mk) return; } /* (11/10 fence4) 🛰 감시 자동 반영·🎯 추격자 = 정범님 운영 기능 → 한도로 막지 않고 얼마 내렸는지만 원장에(ops 표시 · 연구 한도 셈에는 안전 쪽으로 함께 들어감) */
+      if (mode === 'rec') { const r0 = fenceTry(L, q, { ok: true, limit: Number.MAX_SAFE_INTEGER }, nowI); out = { ok: true, rec: true, e: r0 && r0.e ? { ...r0.e, ops: true, r: { ...r0.e.r, ops: true } } : null }; if (out.e) patch.x = { ...(mk ? L.x : {}), [q.key]: out.e }; else if (!mk) return; } /* (11/10 fence4) 🛰 감시 자동 반영·🎯 추격자 = 정범님 운영 기능 → 한도로 막지 않고 얼마 내렸는지만 원장에(ops 표시) · (fence5) 그 몫은 od·ops 칸에 따로 — 연구 하루 한도 셈에는 넣지 않음(정범님 운영 기능 · 기록 분리) */
       else if (mode === 'no') { patch.no = fenceNoAdd(L, { at: nowI, key: q.key, src: q.src || null, by: q.by || null, from: q.from ?? null, to: q.to ?? null, why: String(q.why || '').slice(0, 200) }); out = { ok: true }; } /* (fence4) 💸 허락 없어 막은 기록 */
       else if (mode === 'try') { out = fenceTry(L, q, lim, nowI); if (!out.ok) patch.no = fenceNoAdd(L, { at: nowI, key: q.key, src: q.src || null, by: q.by || null, from: q.from ?? null, to: q.to ?? null, why: String(out.why || '').slice(0, 200) }); else if (out.e) patch.x = { ...(mk ? L.x : {}), [q.key]: out.e }; }
       else if (mode === 'settle') { const e = fenceSettle(L, q.key, q.id, !!q.ok, q.price, nowI); out = { ok: !!e }; if (e) patch.x = { ...(mk ? L.x : {}), [q.key]: e }; }
       else if (mode === 'note') { const e = fenceNote(L, q.key, q.start, q.price, q.src, !!q.make, nowI, !!q.reset); out = { ok: !!e }; if (e) patch.x = { ...(mk ? L.x : {}), [q.key]: e }; else if (!mk) return; }
+      Object.assign(patch, fenceStamp({ ...L, x: { ...(L.x || {}), ...(patch.x || {}) } })); /* (fence5) 합계 칸(spent · v2 원장은 옛 판이 읽는 done도) — 같은 트랜잭션 안에서 */
       tx.set(ref, patch, { merge: true }); if (mk) tx.set(head, { day, at: nowI }, { merge: true }); });
     return out; }
   /* 사람이 손대 엔진 실험에서 빠진 상품(app_settings/eng_excl — 클라우드 engExpTick이 적음) · 5분 기억 · 못 읽으면 null(→ 실험 길 내림은 안 함) */
