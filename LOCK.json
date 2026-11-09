@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "Hosting 1단계 함께 내기",
+ "since": "2026-11-09T08:49:40Z",
+ "beat": "2026-11-09T08:49:40Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-09T07:56:33Z"
  },
- "host": null
+ "host": "vm"
 }
