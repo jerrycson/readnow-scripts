@@ -334,6 +334,37 @@
     if (d.act === 'pause' || d.act === 'resume') { const lf = Date.parse(st.flipAt || '') || 0; if (lf && (now - lf) / 36e5 < C.flipH) no.push(`판매 상태를 ${Math.round((now - lf) / 36e5)}시간 전에 바꿈(${C.flipH}시간에 한 번 — 깜빡임 막기)`); if (d.act === 'pause' && !/^판매중$/.test(l.status || '')) no.push('이미 판매중이 아님'); if (d.act === 'resume' && !/일시판매중지/.test(l.status || '')) no.push('일시판매중지가 아님'); }
     if (d.act === 'price') { const cur = +l.price || 0, to = +d.to || 0; if (!(to >= 10)) no.push('새 값이 이상함'); if (cur && Math.abs(to - cur) / cur > C.maxStep + 1e-9) no.push(`한 번에 ${Math.round(Math.abs(to - cur) / cur * 100)}% — ${Math.round(C.maxStep * 100)}%까지만`); const fl = stratFloor(ctx, C); if (to < fl.v && to < cur) no.push(`바닥값 ${fl.v.toLocaleString()}원(${fl.why}) 아래로 내림`); if (to === cur) no.push('값이 같음'); }
     return { ok: !no.length, no }; }
-  const api = { VERSION, VDEF, setBuyback, bbExpect, bbAccept, BB_ACC, extrasOf, EX_LABEL, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, sevReasonGroups, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue, STRATS, STRAT_K, SDEF, stratDecide, stratGuard, stratMarket, stratFloor, stratCeil, stratParams, stratRarity };
+  /* ── (11/09 엔진 점검 · 하루 모습 멈춤 고침) 🫀 엔진 심장 박동 + 빠진 하루 모습 다시 만들기 (순수 함수 — 클라우드·웹앱·시험이 같은 것) ──
+   *  stallCheck(docs, nowMs, cfg) → 엔진마다 { k, name, at(마지막 학습·기록 시각 ms), ageH, red } · docs = { ml_state, value_model, sp_obs }
+   *   기준 시간 STALL_H = 36시간(근거: 없음, 설정으로 바꿈 — app_settings/ml_state.stallH) · 자료 날짜(…days 마지막 날)는 '그다음 날 0시(한국)'에 그 자료가 다 모인 것으로 셈
+   *  asOfMetrics(cur, ev, cutMs) → 그때(cutMs)의 시장 지표 추정 — cur = 지금 prd_book_metrics · ev = 그 책의 prd_metric_changes(오름차순 · at ms)
+   *   칸 값(salesPoint·priceList·usedTotal·buyback…) = cut 앞 마지막 바뀜의 to → 없으면 cut 뒤 첫 바뀜의 from → 그것도 없으면 지금 값(그사이 안 바뀜)
+   *   첫 페이지(usedFirstPage) = cut 앞 마지막 'usedListings' 기록의 page → 없고 cut 뒤에도 기록이 없으면 지금 페이지 → cut 뒤에만 있으면 모름(빈 페이지 = 자리 모름)
+   *   읽은 때(lastCheckedAt)는 모름으로 둠(바뀐 때만 기록이 남아 '읽은 지 며칠'을 지어내지 않음) */
+  const STALL_H = 36;
+  function stallCheck(docs, nowMs, cfg) { docs = docs || {}; nowMs = nowMs || Date.now(); const st = docs.ml_state || {}, vm = docs.value_model || {}, so = docs.sp_obs || {};
+    const H = +((cfg && cfg.stallH) || st.stallH) || STALL_H; const ms = (v) => { const t = Date.parse(v || ''); return Number.isFinite(t) ? t : null; };
+    const dayDone = (L) => { const d = (Array.isArray(L) ? L.slice().sort() : []).pop(); return d ? Date.parse(d + 'T00:00:00+09:00') + 864e5 : null; };
+    const L = [
+      { k: 'ml_days', name: '📸 하루 모습 기록(ml_days)', at: ms(st.at) || (st.lastDay ? Date.parse(st.lastDay + 'T01:00:00+09:00') : null) },
+      { k: 'ml_learn', name: '📈 팔릴 확률 스스로 배우기', at: ms((st.learn || {}).at) },
+      { k: 'value_model', name: '🧠 판매가치 표 배우기', at: ms(vm.trainedAt) },
+      { k: 'value_data', name: '🧠 판매가치 표의 우리 자료(하루 모습 마지막 날)', at: dayDone(vm.days) },
+      { k: 'sp_obs', name: '🔬 SP 변화 관찰 자료(마지막 날)', at: dayDone(so.days) }];
+    return { stallH: H, rows: L.map((x) => { const ageH = x.at == null ? null : Math.round((nowMs - x.at) / 36e5 * 10) / 10; return { ...x, ageH, red: x.at == null || ageH > H }; }) }; }
+  function asOfMetrics(cur, ev, cutMs) { cur = cur || {}; ev = ev || []; const m = { ...cur }; delete m.lastCheckedAt; const seen = new Set();
+    for (const e of ev) { if (!e.changes) continue; for (const [f, v] of Object.entries(e.changes)) { if (!v || typeof v !== 'object' || !('to' in v)) continue; if (e.at <= cutMs) { m[f] = v.to; seen.add(f); } else if (!seen.has(f)) { m[f] = v.from; seen.add(f); } } }
+    const pg = ev.filter((e) => e.kind === 'usedListings'); const before = pg.filter((e) => e.at <= cutMs).pop(); const after = pg.find((e) => e.at > cutMs);
+    if (before) { m.usedFirstPage = before.page || []; if (before.usedTotal != null) m.usedTotal = before.usedTotal; } else if (after) m.usedFirstPage = []; /* cut 앞 페이지를 모름 → 자리 모름(p1 0) */
+    return m; }
+  /* listingAsOf(l, acts, sold, cutMs) → 그때 판매중이었던 상품이면 { ...l, price: 그때 값 } · 아니면 null
+   *  판매중 = 등록이 cut 앞 · 지금 판매중이거나, cut 뒤에 팔렸거나(sold = 판매 시각 ms), 판매완료가 아닌데 cut 뒤에도 목록에서 봄(lastSeenAt)
+   *  그때 값 = cut 앞 마지막 가격 변경의 to → 없으면 cut 뒤 첫 변경의 from → 없으면 지금 값 (acts 오름차순 · at ms) */
+  function listingAsOf(l, acts, sold, cutMs) { if (!l) return null; const reg = Date.parse(String(l.registeredAt || '').slice(0, 10) + 'T00:00:00+09:00'); if (!(reg <= cutMs)) return null;
+    const soldBefore = sold != null && sold <= cutMs; if (soldBefore) return null; const seen = Date.parse(l.lastSeenAt || '') || 0;
+    const on = l.active === true || (sold != null && sold > cutMs) || (!/판매완료/.test(String(l.status || '')) && seen > cutMs); if (!on) return null;
+    let price = l.price ?? null; const A = (acts || []).filter((a) => a.to != null); const b = A.filter((a) => a.at <= cutMs).pop(); const f = A.find((a) => a.at > cutMs); if (b) price = b.to; else if (f && f.from != null) price = f.from;
+    return { ...l, price }; }
+  const api = { VERSION, VDEF, setBuyback, bbExpect, bbAccept, BB_ACC, extrasOf, EX_LABEL, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, sevReasonGroups, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue, STRATS, STRAT_K, SDEF, stratDecide, stratGuard, stratMarket, stratFloor, stratCeil, stratParams, stratRarity, STALL_H, stallCheck, asOfMetrics, listingAsOf };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowML = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
