@@ -125,7 +125,7 @@ const MIN = 60e3;
     const api = (p, body) => new Promise((res) => { const req = { method: 'POST', headers: { 'x-rn-work': '1' } }; const out = { writeHead(c) { this.c = c; }, end(b) { res({ c: this.c, j: JSON.parse(b) }); } }; M.api(req, out, new URL('http://127.0.0.1:8898' + p), { readBody: (r, n, cb) => cb(null, Buffer.from(JSON.stringify(body))) }); });
     const r1 = await api('/work/lead', { pc: 'HOME', page: 'worders.aspx', paused: false }); ok(r1.c === 200 && Date.now() - ST.lead.at < 2000, '⑤ 도우미 /work/lead가 신호를 받음');
     const st = M.status(); ok(st.revive && st.revive.leadAge != null && st.revive.opens === 2, '⑤ 도우미 상태에 되살리기(신호 나이·연 횟수)가 보임');
-    ok(/const VERSION = '0\.1\.0'/.test(fs.readFileSync(WK, 'utf8')), '⑤ (일꾼은 도우미 판 번호를 올리지 않음 — 메인이 0.1.0 → 다음 판으로 올려야 PC가 받음)');
+    ok(/const VERSION = '0\.1\.([1-9]|\d{2,})'/.test(fs.readFileSync(WK, 'utf8')), '⑤ 도우미 판 번호가 0.1.0보다 올라감(PC가 새 판을 받음 · 1.78.427에서 0.1.1)');
   }
 
   console.log(bad ? `❌ tOOM1 실패 ${bad}개` : '✓ tOOM1 모두 통과'); process.exit(bad ? 1 : 0);

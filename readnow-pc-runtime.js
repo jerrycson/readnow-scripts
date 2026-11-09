@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.234의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.235의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.234' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.234', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.235' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.235', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -467,6 +467,11 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const TITLE = '🪟 리드나우 작업 창';
   const W = (window.__rnWork = { mark, on, cfg, call, alive, TITLE, isWork: () => mark && on(), show: (why) => call('/work/show', { why: String(why || '').slice(0, 200), pc: (window.__rnPcName && window.__rnPcName.get()) || '' }) });
   window.__rnWorkShow = (why) => { if (!W.isWork() && !alive(window.__rnTab)) return Promise.resolve(null); try { window.__rnLog && window.__rnLog('수집기', 'warn', `🪟 사람 손이 필요한 일 — 작업 창을 화면 앞으로 꺼냄 (${why || ''})`); } catch (e) {} return W.show(why); };
+  /* (정범님 11/09 oom1) 🩺 죽은 탭 되살리기 — 이 PC의 수집기 탭(일하는 탭)이 1분마다 PC 도우미(127.0.0.1:8898 · readnow-work.js)에 '살아 있음'을 알림(/work/lead)
+   *  탭이 'Out of Memory'·'DNS_PROBE_FINISHED_NXDOMAIN' 화면으로 죽으면 스크립트가 안 돌아 알림이 끊김 → 도우미가 크롬이 떠 있고 인터넷이 되면 새 탭으로 알라딘 주문조회를 엶(1시간 2번까지 · 크롬은 죽이지 않음)
+   *  도우미가 없거나 옛 판이면(닿지 못함·404) 10분에 한 번만 다시 물음 · 작업 창 탭은 위 /work/beat가 같은 일을 함 */
+  if (TOP && AL && !globalThis.__rnPubChrome) { let leadNext = 0; setInterval(() => { try { if (mark || Date.now() < leadNext || !window.__rnRole || window.__rnRole() !== 'lead') return; leadNext = Date.now() + 55000;
+    call('/work/lead', { pc: (window.__rnPcName && window.__rnPcName.get()) || '', page: location.pathname.split('/').pop(), paused: !!window.__rnPaused, ver: (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '' }, 8000).then((r) => { if (!r || !r.ok) leadNext = Date.now() + 10 * 60e3; }).catch(() => {}); } catch (e) {} }, 15000); }
   if (!mark) return;
   /* 작업 창 탭: 창 제목에 표시(도우미가 이 글로 창을 찾음) · 5초 GM 신호 · 30초 도우미 신호 */
   const title = () => { try { if (W.isWork() && !String(document.title || '').startsWith(TITLE)) document.title = TITLE + ' · ' + String(document.title || '').replace(/^🪟 리드나우 작업 창 · /, ''); } catch (e) {} };
@@ -507,7 +512,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    *  그 뒤 연 수집기 탭 넷이 모두 '이미 일하는 중'으로 쉬었고 7시간 넘게 이 PC 신호(pcBeat)·자동 일이 멈췄음. 쉬는 탭이 수집기 탭의 심장박동(rnu-lead · 5초, 백그라운드에서도 1분 안)을 1분마다 보고,
    *  15분 넘게 그대로인 것을 이 탭이 쉬지 않고 깨어 있는 3분 동안 거듭 확인하면(PC 잠자기에서 막 깬 때는 건너뜀) Web Lock을 넘겨받음(steal). 얼었던 탭이 깨어나면 다른 탭의 새 심장박동을 보고 스스로 쉬는 탭으로 물러남 */
   const lostLead = () => { const v = GM_getValue(GK, null); return v && v.tab !== ME && v.since && Date.now() - (v.at || 0) < 90000 && v.since > (window.__rnLeadSince || 0) ? v : null; }; /* 나보다 나중에 수집기가 된 다른 탭이 지금 뛰고 있으면 = 내 Web Lock은 넘겨짐 */
-  const beat = () => { if (role === 'lead') { try { const o = lostLead(); if (o) return stepDown(o); GM_setValue(GK, { tab: ME, page: PG(), at: Date.now(), since: window.__rnLeadSince || Date.now() }); } catch (e) {} } };
+  const beat = () => { if (role === 'lead') { try { const o = lostLead(); if (o) return stepDown(o); GM_setValue(GK, { tab: ME, page: PG(), at: Date.now(), since: window.__rnLeadSince || Date.now() }); if (Date.now() - seenAt > 30000) { seenAt = Date.now(); GM_setValue('rnu-lead-seen', { at: seenAt, page: PG(), paused: !!window.__rnPaused }); } } catch (e) {} } }; let seenAt = 0; /* (11/09 oom1) 🩺 'rnu-lead-seen' = 이 PC 수집기 탭이 마지막으로 살아 있던 때(30초마다 · 탭을 닫아도 지우지 않음) — 죽은 탭 되살리기(rnRevive)가 봄 */
   let stepDown = () => {};
   const heirOther = () => { const h = GM_getValue(HK, null); return h && h.tab !== ME && Date.now() - (h.at || 0) < 3 * 60000 ? h : null; };
   const setLead = (how) => { role = 'lead'; window.__rnLeadSince = Date.now(); const h = GM_getValue(HK, null); if (h && h.tab === ME) GM_deleteValue(HK); beat(); clearInterval(beatT); beatT = setInterval(beat, 5000);
@@ -559,6 +564,33 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     clearInterval(beatT); role = 'follow'; try { const v = GM_getValue(GK, null); if (v && v.tab === ME) GM_deleteValue(GK); } catch (e) {} const r0 = release; release = null; if (r0) { try { r0(); } catch (e) {} }
     L('ok', '🪟 수집을 이 PC의 작업 창에 넘겼습니다 — 이 탭은 화면 기능만 합니다 (작업 창을 닫거나 작업 창 모드를 끄면 이 탭이 다시 이어받음)'); fire(); setTimeout(() => { try { if (navigator.locks && navigator.locks.request) { queue(); watchLead(); } } catch (e) {} }, 1500); } catch (e) {} }, 10000); }
   window.__rnWorkInfo = () => ({ isWork: IS_WORK, on: !!(W && W.on()), role, other: workOther() });
+})();
+/* (정범님 11/09 oom1) 🩺 죽은 수집기 탭 되살리기 — HOME·MJ-MAIN 수집기 탭이 크롬 '앗, 이런! Out of Memory'·'DNS_PROBE_FINISHED_NXDOMAIN'(집 인터넷 흔들림) 화면으로 죽으면 그 화면엔 스크립트가 안 돌아 사람이 새로고침해야 했음
+ *  · 같은 PC 같은 크롬에 이 스크립트가 도는 다른 탭(웹앱 탭 · 수집기가 아닌 알라딘 화면)이 있으면 그 탭이 1분마다 봄: 이 PC 수집기 탭이 마지막으로 살아 있던 때(rnu-lead-seen · 30초마다)가
+ *    reviveMin(기본 10분 — 근거: 없음, 설정 GM 'rn-revive-cfg'로 바꿈) 넘게 지났고 · 그 전 6시간 안엔 살아 있었고(이 PC가 수집기 PC) · 마지막에 일시정지가 아니었고 · 이 탭이 3분 넘게 깨어 지켜봤으면(PC 잠자기에서 막 깬 때 제외)
+ *    → 인터넷 확인(알라딘이 아닌 gstatic 204 — 알라딘 요청을 늘리지 않음 · 안 되면 기다렸다 다음 1분에 다시) → 새 탭(뒤쪽)으로 알라딘 주문조회를 엶(그 탭의 수집기가 이어받아 저장된 자리부터)
+ *  · 1시간에 2번까지 · 한 번 연 뒤 reviveMin 동안은 다시 열지 않음(새 탭이 뜨길 기다림) · 여러 탭이 같이 보면 GM 'rn-revive' 한 칸으로 한 탭만 · 크롬·다른 탭은 닫거나 죽이지 않음
+ *  · 쉬는 탭(같은 화면 두 번째 탭)은 이미 5분 넘게 신호 없는 수집기 탭을 넘겨받으므로(rnRole) 이것은 그런 탭도 없을 때를 위한 것 · 공개 수집 크롬(로거)은 로컬 도우미 지킴이가 맡아 여기선 안 함
+ *  · 열 주소는 주문조회(/scm/worders.aspx) — 수집기는 주문조회·상품 조회·판매관리 화면에서만 돎(/scm/wmain.aspx엔 수집기가 안 뜸) */
+(function rnRevive() { if (window.top !== window || globalThis.__rnPubHome || globalThis.__rnPubChrome) return;
+  const AL = /(^|\.)aladin\.co\.kr$/i.test(location.hostname); const APP = /^jerrycson\.github\.io$/i.test(location.hostname) && /^\/readnow-scripts\/app\//.test(location.pathname);
+  if (!APP && !(AL && /^\/(scm|shop|usedstore)\//i.test(location.pathname) && !/\/scm\/(wrecord_edit|worders|worder_preparatory_complete)\.aspx/i.test(location.pathname))) return;
+  const URL0 = 'https://www.aladin.co.kr/scm/worders.aspx';
+  function reviveDecide(o) { const S = o.seen; const M = 60e3; if (o.off) return { act: 'none', why: '꺼 둠' }; if (!S || !S.at || o.now - S.at > o.aliveH * 3600e3) return { act: 'none', why: '이 PC 수집기 기록 없음(또는 오래됨)' }; if (o.now - S.at < o.staleMin * M) return { act: 'none', why: '살아 있음' }; if (S.paused) return { act: 'none', why: '일시정지 중이었음' };
+    if (!o.watchFrom || o.now - o.watchFrom < 3 * M) return { act: 'none', why: '지켜보는 중(잠자기에서 깬 때 대비)' }; const opens = (o.opens || []).filter((t) => o.now - t < 3600e3); if (o.last && o.now - o.last < o.staleMin * M) return { act: 'none', why: '방금 새 탭을 엶 — 뜨길 기다림' }; if (opens.length >= o.perHour) return { act: 'limit', why: `1시간에 ${o.perHour}번 넘게 열어 쉼` };
+    if (o.net === false) return { act: 'wait-net', why: '인터넷이 안 됨 — 기다렸다 다시' }; return { act: 'open' }; } /* ⟦reviveDecide 끝⟧ */
+  const L = (lv, m) => { try { window.__rnLog && window.__rnLog('수집기', lv, m); } catch (e) {} };
+  const net = () => new Promise((res) => { const t = setTimeout(() => res(false), 8000); fetch('https://www.gstatic.com/generate_204?rn=' + Date.now(), { mode: 'no-cors', cache: 'no-store' }).then(() => { clearTimeout(t); res(true); }, () => { clearTimeout(t); res(false); }); });
+  let watchFrom = 0, tickAt = 0, noted = '';
+  setInterval(async () => { try { const now = Date.now(); if (!tickAt || now - tickAt > 150000) watchFrom = now; tickAt = now; /* 이 탭이 멈췄던(잠자기) 틈이 있으면 다시 지켜보기 시작 */
+    const cfg = GM_getValue('rn-revive-cfg', null) || {}; const seen = GM_getValue('rnu-lead-seen', null); const R = GM_getValue('rn-revive', null) || {};
+    const base = { now, seen, watchFrom, off: cfg.on === false, staleMin: Math.max(5, Math.min(120, +cfg.staleMin || 10)), aliveH: Math.max(1, Math.min(48, +cfg.aliveH || 6)), perHour: Math.max(1, Math.min(4, +cfg.perHour || 2)), opens: R.opens || [], last: R.last || 0 };
+    let d = reviveDecide(base); if (d.act !== 'open') { if (d.act !== 'none' && noted !== d.why) { noted = d.why; L('warn', `🩺 이 PC 수집기 탭이 ${Math.round((now - (seen && seen.at || now)) / 60e3)}분 넘게 신호 없음 — ${d.why}`); } return; }
+    d = reviveDecide({ ...base, net: await net() }); if (d.act !== 'open') { if (noted !== d.why) { noted = d.why; L('warn', `🩺 이 PC 수집기 탭이 멈춘 듯하지만 ${d.why}`); } return; }
+    const R2 = GM_getValue('rn-revive', null) || {}; if (R2.last && Date.now() - R2.last < base.staleMin * 60e3) return; /* 다른 탭이 방금 엶 */ const opens = [...(R2.opens || []).filter((t) => Date.now() - t < 3600e3), Date.now()];
+    GM_setValue('rn-revive', { last: Date.now(), opens, by: location.hostname }); noted = ''; L('warn', `🩺 이 PC 수집기 탭이 ${Math.round((now - seen.at) / 60e3)}분 동안 신호 없음(크롬 'Out of Memory'·인터넷 끊김 화면 추정) — 새 탭으로 알라딘 주문조회를 엶(1시간 ${opens.length}/${base.perHour}번째) · 저장된 자리부터 이어 함`);
+    try { GM_openInTab(URL0, { active: false, insert: true, setParent: false }); } catch (e) { L('err', '🩺 새 탭 열기 실패: ' + e.message); }
+  } catch (e) {} }, 60000);
 })();
 (function rnPcName() {
   const keys = () => { let n = null; try { n = GM_getValue('rnu-pcname', null) || GM_getValue('pcName', null) || (GM_getValue('rn-pc', {}) || {}).name || localStorage.getItem('rnu-pcname'); } catch (e) {} return n && String(n).trim() ? String(n).trim() : null; };

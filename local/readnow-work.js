@@ -20,7 +20,7 @@
  * 창 다루기는 PowerShell + user32(EnumWindows·SetWindowPos·창 모양 WS_EX_TOOLWINDOW) — 사람 크롬의 다른 창은 건드리지 않음(제목 표시가 있는 창만)
  * 크롬 플래그·정책·바로가기는 바꾸지 않음 */
 'use strict';
-const VERSION = '0.1.0';
+const VERSION = '0.1.1'; // (0.1.1) 정범님 11/09 죽은 수집기 탭 되살리기(/work/lead 신호 · 13분 끊기면 사람 크롬에 새 탭 · 1시간 2번 · work.json revive:false로 끔)
 const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process'), dns = require('dns');
 const HOME = process.env.RN_WORK_HOME || path.join(__dirname, 'work'); try { fs.mkdirSync(HOME, { recursive: true }); } catch (e) {}
 const CFG_F = path.join(HOME, 'work.json'); const PS_F = path.join(HOME, 'work-win.ps1');
