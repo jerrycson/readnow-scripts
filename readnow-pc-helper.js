@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.250의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.251의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.250' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.250', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.251' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.251', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -298,11 +298,12 @@
         if (v.regItem) await C('reg_items').doc(String(v.regItem)).set({ post: { from: q0, to: q0 + add, base: 'edit', baseAt: at() }, history: firebase.firestore.FieldValue.arrayUnion({ at: at(), by: PC_NAME, what: `♻ 정보수정 화면 수량 ${q0} → ${q0 + add}${v.qtyWeb != null && +v.qtyWeb !== q0 ? ` (웹앱 기록 ${v.qtyWeb}과 달라 정보수정 화면 기준)` : ''}` }), uploadedAt: TS() }, { merge: true }).catch(() => {}); } }
     const J = async (r) => { const t = await r.text(); try { const j = JSON.parse(t); return { ok: !!j.result, msg: j.result ? null : `${j.errorCode || ''} ${j.errorMsg || ''}`.trim() || '실패' }; } catch (e) { return { ok: false, msg: /wlogin/i.test(r.url) ? '로그인 풀림' : '응답을 못 읽음' }; } };
     const H = { 'X-Requested-With': 'XMLHttpRequest' }; const HP = { ...H, 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' };
-    for (const k of ['price', 'qty', 'code', 'state']) { if (!(k in ch)) continue; let r; try { if (k === 'price') r = await J(await fetch(`/scm/ajaxCmd.aspx?cmd=chg.pricesales&ItemId=${encodeURIComponent(lid)}&priceSales=${Math.round(ch.price)}&_=${Date.now()}`, { credentials: 'include', headers: H }));
-        else if (k === 'qty') r = await J(await fetch(`/scm/ajaxCmd.aspx?cmd=chg.stock&ItemId=${encodeURIComponent(lid)}&realStock=${Math.round(ch.qty)}&_=${Date.now()}`, { credentials: 'include', headers: H }));
-        else if (k === 'code') r = await J(await fetch('/scm/ajaxCmd.aspx', { method: 'POST', credentials: 'include', headers: HP, body: `cmd=chg.supplieritemcode&ItemId=${encodeURIComponent(lid)}&supCode=${escape(ch.code)}` }));
-        else { const to = PE_ST[ch.state]; if (to == null) r = { ok: false, msg: '모르는 판매상태' }; else if (to === cur.state) r = { ok: true, msg: '이미 그 상태' }; else { const rr = await fetch('/scm/wrecord_edit_usedbatch.aspx', { method: 'POST', credentials: 'include', headers: HP, body: `fn=stockstatusbulkchg&stockStatusBefore=${cur.state}&stockStatusToDo=${to}&items=${lid}` }); const t = await rr.text(); const al = (t.match(/alert\(['"]([^'"]{1,200})['"]\)/) || [])[1] || null; r = { ok: rr.ok && !/실패|오류|불가/.test(al || ''), msg: al }; } } } catch (e) { r = { ok: false, msg: e.message }; }
-      mark(k, r.ok ? 'sent' : 'fail', r.msg); } await save();
+    const c2wR = [], c2wCh = {}; let c2wOk = true; const c2wSt = cur.state; /* 🟧✍ 그림자 쓰기 — 이 차례로 보낸 요청 */
+    for (const k of ['price', 'qty', 'code', 'state']) { if (!(k in ch)) continue; let r; try { if (k === 'price') { c2wCh.price = ch.price; c2wR.push({ m: 'GET', u: `/scm/ajaxCmd.aspx?cmd=chg.pricesales&ItemId=${encodeURIComponent(lid)}&priceSales=${Math.round(ch.price)}` }); r = await J(await fetch(`/scm/ajaxCmd.aspx?cmd=chg.pricesales&ItemId=${encodeURIComponent(lid)}&priceSales=${Math.round(ch.price)}&_=${Date.now()}`, { credentials: 'include', headers: H })); }
+        else if (k === 'qty') { c2wCh.qty = ch.qty; c2wR.push({ m: 'GET', u: `/scm/ajaxCmd.aspx?cmd=chg.stock&ItemId=${encodeURIComponent(lid)}&realStock=${Math.round(ch.qty)}` }); r = await J(await fetch(`/scm/ajaxCmd.aspx?cmd=chg.stock&ItemId=${encodeURIComponent(lid)}&realStock=${Math.round(ch.qty)}&_=${Date.now()}`, { credentials: 'include', headers: H })); }
+        else if (k === 'code') { c2wCh.code = ch.code; c2wR.push({ m: 'POST', u: '/scm/ajaxCmd.aspx', b: `cmd=chg.supplieritemcode&ItemId=${encodeURIComponent(lid)}&supCode=${escape(ch.code)}` }); r = await J(await fetch('/scm/ajaxCmd.aspx', { method: 'POST', credentials: 'include', headers: HP, body: `cmd=chg.supplieritemcode&ItemId=${encodeURIComponent(lid)}&supCode=${escape(ch.code)}` })); }
+        else { const to = PE_ST[ch.state]; if (to == null) r = { ok: false, msg: '모르는 판매상태' }; else if (to === cur.state) r = { ok: true, msg: '이미 그 상태' }; else { c2wCh.state = ch.state; c2wR.push({ m: 'POST', u: '/scm/wrecord_edit_usedbatch.aspx', b: `fn=stockstatusbulkchg&stockStatusBefore=${cur.state}&stockStatusToDo=${to}&items=${lid}` }); const rr = await fetch('/scm/wrecord_edit_usedbatch.aspx', { method: 'POST', credentials: 'include', headers: HP, body: `fn=stockstatusbulkchg&stockStatusBefore=${cur.state}&stockStatusToDo=${to}&items=${lid}` }); const t = await rr.text(); const al = (t.match(/alert\(['"]([^'"]{1,200})['"]\)/) || [])[1] || null; r = { ok: rr.ok && !/실패|오류|불가/.test(al || ''), msg: al }; } } } catch (e) { r = { ok: false, msg: e.message }; }
+      mark(k, r.ok ? 'sent' : 'fail', r.msg); if (!r.ok) c2wOk = false; } try { window.__rnC2w && window.__rnC2w('edit', { lid, ch: c2wCh, cur: { state: c2wSt } }, c2wR, c2wOk); } catch (e) {} /* 🟧✍ 그림자 쓰기 알림(보낸 것만 · 번호·값만) */ await save();
     const fk = keys.filter((k) => ['grade', 'note', 'subtitle', 'imgs'].includes(k));
     if (fk.length) { clarityQuiet('수정 틀'); const fr = document.createElement('iframe'); fr.id = 'rnPrdEdit_' + Date.now().toString(36); fr.__rnLive = 1; fr.style.cssText = 'position:fixed;left:-5000px;top:0;width:1280px;height:1000px;border:0;opacity:0;pointer-events:none'; const loaded = (ms) => new Promise((res) => { const t = setTimeout(() => res(false), ms); fr.addEventListener('load', () => { clearTimeout(t); res(true); }, { once: true }); });
       let err = null, al = []; try { const p0 = loaded(60000); fr.src = '/scm/wrecord.aspx?action=2&bookid=0&UpdateItemId=' + encodeURIComponent(lid); document.body.appendChild(fr); if (!(await p0)) throw new Error('수정 화면이 1분 안에 안 열림'); await sleep(Math.round(1200 * (0.85 + Math.random() * 0.3))); /* (정범님 11/02 · 고정 간격 흩기) ±15% */
@@ -913,6 +914,38 @@
       const ref = firebase.firestore().collection('crm_y24_orders').doc(ono); try { await firebase.firestore().runTransaction(async (tx) => { const cur = (await tx.get(ref)).data() || {}; const a = (cur.auto || {})[kind] || {}; if (String(a.seq) !== String(seq) || a.state !== 'sent') return; tx.set(ref, { auto: { [kind]: { ...a, stepNow: { at: S0.at, lv: S0.lv, m: S0.m, by: (window.__rnPcName && window.__rnPcName.get()) || 'PC' }, steps: (S0.steps || []).slice(-30) } } }, { merge: true }); }); } catch (e) {} };
     try { GM_addValueChangeListener('rn-y24jstep', () => { if (!tm) tm = setTimeout(() => relay().catch(() => {}), (window.__rnStep && window.__rnStep.cfg && window.__rnStep.cfg.ms) || 1500); }); } catch (e) {} }
 })();
+/* (11/10 정범님 11/09 밤 '돈 걸린 쓰기는 하루 그림자 쓰기 비교 뒤 하나씩 넘김' · lab/col2/LOGIN_PLAN.md ④-4) 🟧✍ 번외 '그림자 쓰기' 알림 — 쓰기를 알라딘에 실제로 보낸 직후 그 요청 꼴만 적어 둠
+ *  window.__rnC2w(종류, 입력, [{m,u,b}], 성공) — 남기는 값은 번호·값 칸(KEEP)뿐 · 글 칸(답변·송장 번호)은 '#h해시/길이' · 그 밖 칸은 이름만 · 전화 꼴은 가림(손님 이름·전화·주소·문의 글 없음)
+ *   · 같은 규칙이 번외 lab/col2/shadow/col2-alw-core.js scrub에 글자 그대로 있음(src/tests/tC2W.js가 두 쪽 결과가 같음을 확인)
+ *   · 적는 곳은 이 PC 저장소 rn-c2wq(40개까지) → 아래 다리(rnC2al)가 10초마다 번외 도우미 POST /al/wfeed로 넘기고 받았다는 것만 지움
+ *   · 적는 때: 다리가 90초 안에 '번외가 쓰기 그림자를 받음 · 출고 중 아님'(rn-c2w-ok)을 적어 둔 때만 — 🚚 출고 중(이 PC 출고·MJ-MAIN 보호)·로거 크롬·번외 없음이면 아무것도 적지 않음(약속 0·0-1)
+ *   · 이 함수는 알라딘 요청을 바꾸거나 늦추지 않음(보낸 뒤에 부름 · 실패해도 조용히) · 머리 그대로 */
+(function rnC2w() { const G = globalThis; if (!/(^|\.)aladin\.co\.kr$/i.test(location.hostname)) return;
+  const gv = (k, d) => { try { const v = GM_getValue(k, d); return v == null ? d : v; } catch (e) { return d; } };
+  const KEEP = /^(cmd|ItemId|priceSales|realStock|supCode|fn|stockStatusBefore|stockStatusToDo|items|ono|ordersItem|cancelReason|questionid|method|orderstep|edit|pkid|action|UpdateItemId|bookid)$/;
+  const HASH = /^(txtAnswer|answer|deliveryNo|invoiceNo|invNo|songjangNo)$/i;
+  const PHONE = /01[016789][-\s.]?\d{3,4}[-\s.]?\d{4}/g;
+  const fnv = (s) => { let h = 0x811c9dc5; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); };
+  const hashTxt = (v) => '#h' + fnv(v) + '/' + String(v).length;
+  const val = (v) => String(v == null ? '' : v).slice(0, 200).replace(PHONE, '#전화');
+  function scrub(r) { r = r || {}; let u; try { u = new URL(String(r.u || ''), 'https://www.aladin.co.kr'); } catch (e) { return { m: String(r.m || 'GET').toUpperCase(), p: '?', q: {}, b: null, x: [] }; }
+    const x = new Set(); const put = (o, k, v) => { if (k === '_') return; if (KEEP.test(k)) { const s = val(v); if (k in o) o[k] = [].concat(o[k], s); else o[k] = s; } else if (HASH.test(k)) o[k] = hashTxt(v); else x.add(String(k).slice(0, 60)); };
+    const q = {}; u.searchParams.forEach((v, k) => put(q, k, v));
+    let b = null; const B = r.b;
+    if (B != null) { b = {}; if (typeof B === 'string' || (typeof URLSearchParams !== 'undefined' && B instanceof URLSearchParams)) new URLSearchParams(String(B)).forEach((v, k) => put(b, k, v));
+      else if (Array.isArray(B.keys)) B.keys.forEach((k) => x.add(String(k).slice(0, 60))); }
+    return { m: String(r.m || 'GET').toUpperCase(), p: u.pathname, q, b, x: [...x].sort() }; }
+  function scrubIn(v, d) { d = d || 0; if (v == null) return null; if (typeof v === 'number' || typeof v === 'boolean') return v; if (typeof v === 'string') return val(v).slice(0, 80);
+    if (d >= 3) return null; if (Array.isArray(v)) return v.slice(0, 200).map((x) => scrubIn(x, d + 1)); if (typeof v === 'object') { const o = {}; for (const k of Object.keys(v).slice(0, 30)) o[String(k).slice(0, 40)] = HASH.test(k) && typeof v[k] === 'string' && !/^#h/.test(v[k]) ? hashTxt(v[k]) : scrubIn(v[k], d + 1); return o; } return null; }
+  G.__rnC2wScrub = scrub; G.__rnC2wScrubIn = scrubIn;
+  G.__rnC2w = (k, input, reqs, ok, http) => { try {
+      if (G.__rnPubChrome || G.__rnPubHome || gv('rn-pubChrome', false)) return false; /* 로거 크롬 — 안 함(약속 0) */
+      const g = gv('rn-c2w-ok', null); if (!g || !g.on || g.hold || Date.now() - (+g.at || 0) > 90e3) return false; /* 번외가 받는다고 한 때만 · 출고 중 아님 */
+      try { const h = window.__rnSgShip ? window.__rnSgShip() : null; if (h && h.on) return false; } catch (e) {} /* 🚚 출고 중(약속 0-1) — 아무것도 적지 않음 */
+      if (!Array.isArray(reqs) || !reqs.length) return false;
+      const ev = { id: String(k).slice(0, 10) + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), k: String(k).slice(0, 10), at: Date.now(), in: scrubIn(input || {}), rq: reqs.slice(0, 10).map(scrub), ok: ok == null ? null : !!ok, http: +http || null };
+      const q = gv('rn-c2wq', []); q.push(ev); GM_setValue('rn-c2wq', q.slice(-40)); return true; } catch (e) { return false; } };
+})();
 /* (11/10 정범님 11/09 밤 '로그인 일(알라딘 샵매니저)도 번외로' · lab/col2/LOGIN_PLAN.md ⑤-1) 🟧 번외 수집기 알라딘 다리 — 이 PC 알라딘 일하는 탭(lead)이 10초마다 번외 도우미(127.0.0.1:8797)에 알림(예스24 다리 c2yTick과 같은 꼴)
  *  보냄 POST /al/feed { by, seat:{ok,why}, hold, opLostAt, cfg:{off} }
  *   · 🪑 seat = 계정 문서 app_settings/aladin_login.dev['<이 PC>~col2'] 자리를 받았을 때만 ok(트랜잭션 · 운영 규칙 __rnLoginRule.seatAsk·seatKeep 그대로 · 우선순위 -1 = 클라우드(0)보다도 뒤)
@@ -950,8 +983,10 @@
   const c2alTick = async (now0) => { if (now0 === true) { SEAT.at = 0; SEAT.until = 0; nextAt = 0; } /* 참 = 자리를 곧바로 다시 봄(사람이 누름·시험) */ if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || isLogger()) return; if (!fsx()) return;
     busy = true; try { const pc = pcOf(); if (!pc) return; const who = pc + '~col2'; let hold = null; try { hold = window.__rnSgShip ? window.__rnSgShip() : null; } catch (e) {}
       const r = await gx('/al/feed', { by: pc, seat: { ok: SEAT.ok && !(hold && hold.on), why: hold && hold.on ? '🚚 출고 중 — 자리를 쓰지 않음' : SEAT.why }, hold, opLostAt: +gv('rnu-login-lost', 0) || 0, cfg: { off: SEAT.off } });
-      if (!r || !r.ok) { miss++; if (miss >= 3) nextAt = Date.now() + 5 * 60e3; await seatStep(false, who); return; }
-      miss = 0; const a = r.al || {}; const want = !!a.on && !a.logger && !a.pp && !(hold && hold.on);
+      if (!r || !r.ok) { miss++; if (miss >= 3) nextAt = Date.now() + 5 * 60e3; try { GM_setValue('rn-c2w-ok', { on: false, hold: !!(hold && hold.on), at: Date.now() }); } catch (e) {} await seatStep(false, who); return; }
+      miss = 0; const a = r.al || {};
+      { /* 🟧✍ 그림자 쓰기 — 번외가 받는다고 하고 출고 중이 아닐 때만 적고(rnC2w) 넘김 · 출고 중엔 넘기지도 않음(약속 0-1) */ const wOn = !!(r.alw && r.alw.on) && !(hold && hold.on); try { GM_setValue('rn-c2w-ok', { on: wOn, hold: !!(hold && hold.on), at: Date.now() }); } catch (e) {}
+        const wq = gv('rn-c2wq', []); if (wOn && Array.isArray(wq) && wq.length) { const r2 = await gx('/al/wfeed', { by: pc, w: wq.slice(0, 20) }); if (r2 && r2.ok && Array.isArray(r2.ack) && r2.ack.length) { const A = new Set(r2.ack.map(String)); GM_setValue('rn-c2wq', gv('rn-c2wq', []).filter((x) => !(x && A.has(String(x.id))))); } } } const want = !!a.on && !a.logger && !a.pp && !(hold && hold.on);
       if (await seatStep(want, who)) nextAt = Date.now() + 1500; /* 자리가 바뀌면 곧바로 알림 */
     } catch (e) {} finally { busy = false; } };
   /* (11/10 번외 0.1.9) ⏳ 운영이 긴 일을 하는 동안 번외 그림자 일이 쉬게 — 1분마다 이 PC 지금 하는 일(__rnWorkNow: 자동·맡긴 일 · 사진 · 고객 수집)을 보고

@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.250의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.251의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.250' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.250', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.251' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.251', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -184,6 +184,7 @@
   async function setAladinStatus(listingId, before, to) { // 상품 조회/수정 화면의 판매상태 일괄 변경과 같은 요청
     const fd = new URLSearchParams({ fn: 'stockstatusbulkchg', stockStatusBefore: String(before), stockStatusToDo: String(to), items: String(listingId) });
     const rr = await fetch('/scm/wrecord_edit_usedbatch.aspx', { method: 'POST', body: fd, credentials: 'include' }); const txt = await rr.text(); const al = (txt.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || '';
+    try { window.__rnC2w && window.__rnC2w('state', { lid: String(listingId), before, to }, [{ m: 'POST', u: '/scm/wrecord_edit_usedbatch.aspx', b: fd.toString() }], rr.ok && !/실패|오류|error/i.test(al), rr.status); } catch (e) {} /* 🟧✍ 그림자 쓰기 알림(번호·값만 · 출고 중엔 안 적음) */
     if (!rr.ok || /실패|오류|error/i.test(al)) throw new Error(al || ('HTTP ' + rr.status)); return al; }
   async function statusCodeOf(it) { try { const ld = (await C('prd_listings').doc(it.listingKey || ('aladin_' + it.aladinUsedCode)).get()).data(); if (ld && ST_CODE[ld.status]) return ST_CODE[ld.status]; } catch (er) {} return null; }
   const sendSignal = (phase, t, extra) => C('shp_cmds').add({ type: 'cashTest', status: 'signal', phase, orderId: t.id, lineNo: t.it.lineNo, title: t.it.title, listingId: t.it.listingId || null, at: nowIso(), createdAt: nowIso(), by: PC_NAME, ...(extra || {}), uploadedAt: TS() }).catch(() => {});
@@ -2740,7 +2741,7 @@
     if (v.type === 'startDelivery') { const SH = window.ReadnowShipping || globalThis.ReadnowShipping; const results = {};
       let k0 = 0; for (const ono of v.orderNos || []) { k0++; const gate = await exBegin('startDelivery', `${id}:${ono}`, { ono }); if (!gate.ok) { results[ono] = { state: gate.state === 'done' ? 'done' : 'unknown', at: nowIso(), msg: '실행 문: ' + gate.why, gate: gate.state }; if (st) st(gate.state === 'done' ? 'info' : 'warn', `${k0}/${v.orderNos.length} 실행 문이 막음 — 보내지 않음${gate.state === 'done' ? '(이미 끝난 주문)' : '(다른 곳이 하는 중일 수 있음)'}`, { o: ono, res: gate.state === 'done' ? '이미 끝남' : '막음', why: gate.why }); continue; } results[ono] = { state: 'sent', at: nowIso() };
         if (st) st('info', `${k0}/${v.orderNos.length} 알라딘에 발송준비시작 보냄`, { o: ono, big: 1 });
-        try { const rr = await fetch(`https://www.aladin.co.kr/scm/worder_process.aspx?cmd=StartDelivery&ono=${encodeURIComponent(ono)}`, { credentials: 'include' }); const tx2 = await rr.text(); const al = (tx2.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || null;
+        try { const rr = await fetch(`https://www.aladin.co.kr/scm/worder_process.aspx?cmd=StartDelivery&ono=${encodeURIComponent(ono)}`, { credentials: 'include' }); try { window.__rnC2w && window.__rnC2w('start', { ono }, [{ m: 'GET', u: `/scm/worder_process.aspx?cmd=StartDelivery&ono=${encodeURIComponent(ono)}` }], rr.ok, rr.status); } catch (e) {} /* 🟧✍ 그림자 쓰기 알림(출고 중이면 적지 않음 — 약속 0-1) */ const tx2 = await rr.text(); const al = (tx2.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || null;
           results[ono] = { state: rr.ok && !/실패|오류|불가|잘못|없습니다|않습니다|error/i.test(al || '') ? 'sent' : 'fail', at: nowIso(), http: rr.status, msg: al }; } catch (e) { results[ono] = { state: 'fail', at: nowIso(), msg: e.message }; }
         if (st) { const r0 = results[ono]; st(r0.state === 'fail' ? 'err' : r0.msg ? 'warn' : 'info', r0.state === 'fail' ? `알라딘 답: 실패${r0.http ? ' (HTTP ' + r0.http + ')' : ''}${r0.msg ? ' · 알라딘 안내 글: ' + r0.msg : ''}` : `알라딘 답 받음${r0.http ? ' (HTTP ' + r0.http + ')' : ''}${r0.msg ? ' · 알라딘 안내 글: ' + r0.msg : ''} — 뒤에 목록으로 확인`, { o: ono, res: r0.state === 'fail' ? '실패' : '보냄', why: r0.state === 'fail' ? r0.msg || null : null }); }
         await ref.set({ results, beatAt: nowIso(), uploadedAt: TS() }, { merge: true }).catch(() => {}); await sleep(800); } // (1.34.7) 한 건마다 결과·살아 있음 신호
@@ -3318,6 +3319,7 @@
       for (const [code, L] of by) { await ref.set({ step: 2, msg: `${REG_ST[code]} ${L.length}개 → 삭제 요청`, results: res }, { merge: true }); await PACE_P.wait(sleep);
         const fd = new URLSearchParams({ fn: 'stockstatusbulkchg', stockStatusBefore: String(code), stockStatusToDo: '17', items: L.map((x) => String(x.listingId)).join(',') });
         const rr = await fetch('https://www.aladin.co.kr/scm/wrecord_edit_usedbatch.aspx', { method: 'POST', body: fd, credentials: 'include' }); const txt = await rr.text(); const al = (txt.match(/alert\(['"]([^'"]{2,200})['"]\)/) || [])[1] || '';
+        try { window.__rnC2w && window.__rnC2w('del', { lids: L.map((x) => String(x.listingId)), before: code }, [{ m: 'POST', u: '/scm/wrecord_edit_usedbatch.aspx', b: fd.toString() }], rr.ok && !/실패|오류|error/i.test(al), rr.status); } catch (e) {} /* 🟧✍ 그림자 쓰기 알림 */
         L.forEach((x) => { res[kOf(x)] = { state: 'sent', at: nowIso(), msg: `삭제 요청 HTTP ${rr.status}${al ? ' · ' + al : ''}`, listingId: String(x.listingId), before: x._before }; sentL.push(x); }); if (!rr.ok || /실패|오류|error/i.test(al)) throw new Error('알라딘이 삭제를 거절: ' + (al || 'HTTP ' + rr.status)); await sleep(1500); }
       let nOk = 0, nBad = 0, k1 = 0; for (const [, L] of by) for (const it of L) { k1++; await ref.set({ step: 3, msg: `${k1}/${sentL.length} 다시 찾아 정말 지워졌는지 확인`, results: res }, { merge: true }); const F2 = await delFind(it);
         if (!F2.found && F2.sure) { res[kOf(it)] = { state: 'deleted', at: nowIso(), msg: '알라딘에서 지움 (ISBN으로 모든 상태 목록에 없음 확인)', listingId: String(it.listingId), before: it._before }; await regMarkDeleted(it, `웹앱에서 지움 → 알라딘 삭제 (${PC_NAME})`, { deletedBy: v.by || null, deletedCmd: ref.id, deletedFrom: it._before || null }); await delChangeLog(it, ref.id, v, 'deleted'); nOk++; }
@@ -3680,7 +3682,7 @@
     let st = 'failed', why = null;
     try { const q = new URLSearchParams(); for (const e of els) { if (!e.name || e.disabled) continue; if (e.type === 'radio') { if (e.name === 'cancelReason' && String(e.value) === reason) q.append(e.name, e.value); continue; } if (e.type === 'checkbox') { if (e.name === 'ordersItem' && want.includes(String(e.value))) q.append(e.name, e.value); continue; } if (['hidden', 'text'].includes(e.type)) q.append(e.name, e.value); }
       act.search = q.toString(); await ex({ step: 'send', msg: `${PC_NAME}: 알라딘 '선택 상품 품절 취소'와 같은 요청을 보냄 (${want.length}권 · 사유 ${reason === '1' ? '고객 취소 요청' : '품절 취소'})` });
-      await PACE.wait(sleep); const r1 = await fetch(act.href, { credentials: 'include', cache: 'no-store' }); const h1 = AL.decode(await r1.arrayBuffer(), r1.headers.get('content-type')); const alerts = [...h1.matchAll(/alert\(\s*['"]([^'"]{1,200})['"]/g)].map((m) => m[1]).slice(0, 6);
+      await PACE.wait(sleep); const r1 = await fetch(act.href, { credentials: 'include', cache: 'no-store' }); try { window.__rnC2w && window.__rnC2w('cancel', { ono, items: want, reason, keys: [...new Set([...q.keys()].filter((k) => !['ono', 'ordersItem', 'cancelReason'].includes(k)))] }, [{ m: 'GET', u: act.pathname + act.search }], r1.ok, r1.status); } catch (e) {} /* 🟧✍ 그림자 쓰기 알림(출고 중이면 적지 않음) */ const h1 = AL.decode(await r1.arrayBuffer(), r1.headers.get('content-type')); const alerts = [...h1.matchAll(/alert\(\s*['"]([^'"]{1,200})['"]/g)].map((m) => m[1]).slice(0, 6);
       await ex({ step: 'verify', msg: `${PC_NAME}: ${TAB}을(를) 다시 읽어 빠졌는지 확인하는 중 (응답 HTTP ${r1.status}${alerts.length ? ' · ' + alerts.join(' / ').slice(0, 80) : ''})`, alerts, http: r1.status });
       let after = null, gDoc = null; for (let k = 0; k < 3; k++) { if (k) await sleep(2500); try { const g2 = await cxGet(LIST, true); if (!g2.lo) { after = cxListOf(SH, g2.doc, stage); gDoc = g2.doc; } } catch (e) { why = '확인 읽기 실패: ' + e.message; } if (after && after.okP) { const o1 = after.orders.find((o) => o.orderNo === ono); if (!o1 || want.every((x) => !(o1.items || []).some((it) => String(it.listingId) === x))) break; } }
       const okSaid = alerts.some((a) => /취소되었습니다|취소 되었습니다/.test(a)); let result;
