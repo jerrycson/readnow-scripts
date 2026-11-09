@@ -80,6 +80,8 @@
     // 희소 후보: 우리 말고 유효 판매자 0~1곳 + 전체 판매자 2곳 이하
     rareMaxValid: 1, rareMaxAll: 2,
     // 추격자
+    peerUse: false,    // (sv1 11/10) 🧭 true = 비교 매물 판매자 색을 '판매자 가치 무게'(readnow-sellers-core peerW · 엔진 근거 · 옛 시트 표시 안 읽음)로 · 기본 끔(넘기는 기준은 research PEER_W 셈 식)
+    peerShadow: true,  // (sv1 11/10) 그림자 — 지금 판정은 그대로 두고 판매자 가치로 한 번 더 판정해 out.peerShadow에 기록만(값·상태 안 바꿈)
     useYes24Proxy: false,  // 예스24 대조로 무효·보류(주황 등) 매물을 경쟁 매물로 올리는 기능 — 관리자 판정 기간에는 끔 (주황이 기준이 되는 일이 없게, 정범 지정 2026-10-04)
     chase: { windowHours: 24, lookbackDays: 7, minEvents: 3, halfLifeDays: 14, releaseDays: 30, sellerMinBooks: 3,
       // (0.10.0) 추격자 양보(방임): 기준 판매자가 추격자면 따라 내리지 않고 그 매물이 팔릴 때까지 기다림 — 다음 유효 매물을 기준으로, 없으면 지금 가격 유지.
@@ -254,7 +256,7 @@
     const ctx = ctxIn || {}; const S = mergeD(ctx.settings); const now = t(ctx.now) || Date.now();
     const R = []; const block = []; const out = { v: VERSION, key: listing.key, at: new Date(now).toISOString(), current: listing.price, reasons: R, autoBlock: block };
     out.group = groupOfListing(listing, S);
-    const done = (status, extra) => { Object.assign(out, { status }, extra || {}); out.auto = out.action === 'set' && block.length === 0 && autoAllowed(out, S); out.execute = out.group === 'treat' && out.action === 'set'; if (out.group === 'control') out.reasons.push('비교군 — 판정만 기록, 가격은 바꾸지 않음'); return out; };
+    const done = (status, extra) => { Object.assign(out, { status }, extra || {}); peerShadowOf(out, listing, market, sellers, ctx, S); out.auto = out.action === 'set' && block.length === 0 && autoAllowed(out, S); out.execute = out.group === 'treat' && out.action === 'set'; if (out.group === 'control') out.reasons.push('비교군 — 판정만 기록, 가격은 바꾸지 않음'); return out; };
 
     // 0. 대상: 판매중만
     if (listing.status && listing.status !== '판매중') { R.push(`판매 상태가 '${listing.status}' — 수정 모드는 판매중만`); return done('skip', { action: 'none' }); }
@@ -318,12 +320,15 @@
     // 4. 판매자 색 붙이기
     const Core = coreOf(ctx); const RSx = rsOf(ctx);
     if (!ctx.classify && !(Core && Core.classifySellerDoc)) { R.push('기준 파일 readnow-core.js(1.2.0)를 못 읽음 — 판매자 분류 없이 판정하지 않음'); return done('queue', { action: 'review', why: 'noCore' }); }
-    const classify = ctx.classify || ((r) => Core.classifySellerDoc(sellers && r.sellerCode ? sellers['sc_' + r.sellerCode] || sellers[r.sellerCode] || null : null, RSx));
+    const docOf = (r) => (sellers && r.sellerCode ? sellers['sc_' + r.sellerCode] || sellers[r.sellerCode] || null : null);
+    const peerOn = !!(S.peerUse && RSx && RSx.peerW); /* (sv1 11/10) 판매자 가치 무게 — 시트 '허위' 표시를 읽지 않음 · 엔진 근거 ctx.peerEv[판매자 번호] = { grp, sold, passed } */
+    const peerCls = (r) => { const p = RSx.peerW(docOf(r), ctx.peerEv ? ctx.peerEv[String(r.sellerCode)] || null : null, S.peerCfg || null); r.peerW = p.w; return { cls: p.cls, why: p.why }; };
+    const classify = ctx.classify || (peerOn ? peerCls : (r) => Core.classifySellerDoc(docOf(r), RSx));
     sane.forEach((r) => { if (isAladinSide(r, S)) { r.color = 'aladin'; r.why = '알라딘측'; } else { const c = classify(r, listing); r.color = c.cls; r.why = c.why; } });
-    // 예스24 대조 (대행형 판별): 허위 매물로 직접 표시한 판매자는 사람이 정한 것이 우선이라 제외
+    // 예스24 대조 (대행형 판별): (sv1 11/10) 옛 시트 허위 표시로 빼던 것 없앰(근거 아님) — 판매자 가치 길에서는 엔진 무리 근거로 뺌
     if (S.useYes24Proxy) sane.forEach((r) => {
       if (!['red', 'orange', 'yellow'].includes(r.color) || r.color === 'unknown') return;
-      const doc = sellers && r.sellerCode ? sellers['sc_' + r.sellerCode] || sellers[r.sellerCode] : null; if (doc && (doc.ourGrade || doc.grade) === 'fake') return;
+      if (peerOn && ctx.peerEv && (ctx.peerEv[String(r.sellerCode)] || {}).grp) return; /* (sv1) 판매자 가치 길에서는 시트 대신 엔진 무리 근거로 제외 */
       const pc = proxyCheck(r, ctx.yes24, S); r.proxy = pc; if (pc.verdict === 'sameSeller' || pc.verdict === 'profitable') { r.color = 'proxy'; r.why = pc.why; }
     });
     const tot = (r) => r.price + (r.ship || 0);
@@ -427,6 +432,17 @@
     if (delta > 0 && out.deltaPct > S.maxAutoRaisePct) block.push(`한 번에 ${Math.round(out.deltaPct * 100)}% 인상`);
     R.push(`${delta > 0 ? '올림' : '내림'} ${cur.toLocaleString()} → ${target.toLocaleString()}원 (${rule})`);
     return done(floored ? 'floor' : 'ok', { action: 'set' });
+  }
+
+  // (sv1 11/10) 🧭 판매자 가치 그림자 — 같은 입력을 판매자 가치 무게로 한 번 더 판정해 요약만 붙임(지금 판정·값·상태는 그대로)
+  //  넘기는 기준(셈 식)은 research/ENGINES PEER_W.md · 매일 엔진 한 걸음(peer_w.py)이 그림자 기록과 판매 결과를 맞대 무게를 고침
+  const PEER_NOSET = {}; const PEER_SET = new WeakMap();
+  function peerShadowOf(out, listing, market, sellers, ctx, S) {
+    if (!S.peerShadow || S.peerUse || ctx._peerShadow || ctx.classify || out.status === 'skip') return; const RSx = rsOf(ctx); if (!RSx || !RSx.peerW) return;
+    const base = ctx.settings && typeof ctx.settings === 'object' ? ctx.settings : PEER_NOSET; let SS = PEER_SET.get(base); if (!SS) { SS = { ...(base === PEER_NOSET ? {} : base), peerUse: true, peerShadow: false }; PEER_SET.set(base, SS); } /* 같은 설정이면 같은 그림자 설정 객체(설정 합치기 기억이 맞게) */
+    try { const d = decide(listing, market, sellers, { ...ctx, _peerShadow: true, settings: SS });
+      out.peerShadow = { status: d.status, action: d.action, target: d.target ?? null, ref: d.ref ? { sc: d.ref.sellerCode || null, price: d.ref.price, color: d.ref.color } : null, same: (d.target ?? null) === (out.target ?? null) && d.action === out.action, inPool: d.counts ? d.counts.inPool : null, ev: !!ctx.peerEv };
+    } catch (e) { out.peerShadow = { err: String(e && e.message || e).slice(0, 120) }; }
   }
 
   // 실험 묶음: 상품코드를 0~99 칸에 고정 배정 (FNV 해시). 0..treat-1 = 적용, 그다음 control 칸 = 비교군(판정만 기록, 절대 안 바꿈), 나머지 = 꺼짐

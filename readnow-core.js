@@ -255,7 +255,7 @@
       { cls: 'green', bg: CLASS_BG.green, name: '유효', use: '가격 비교에서 무조건 참고', cond: `평가 100~999개 + 취소율 ${R.good}% 미만 · 평가 200개 이상 + 취소율 ${R.good}~${R.yellow}% · 1,000개 이상인데 취소율 모름` },
       { cls: 'yellow', bg: CLASS_BG.yellow, name: '보류 노랑', use: '기본 제외 · 상품 조건이 맞으면 유효로 (장기 재고부터 포함)', cond: `평가 200개 이상 + 취소율 ${R.yellow}~${R.orange}% · 평가 200~999개 + 취소율 모름 · 평가 100~199개 + 취소율 ${R.good}~${R.yellow}% · 평가 ${R.minActive}~99개 + 취소율 ${R.good}% 미만` },
       { cls: 'orange', bg: CLASS_BG.orange, name: '보류 주황', use: '기본 제외 · 무효에 가까움 (청산 재고부터 포함)', cond: `취소율 ${R.orange}~${R.red}%(평가 수 상관없음) · 평가 ${R.minActive}~99개 + 취소율 ${R.good}% 이상 · 평가 100~199개 + 취소율 ${R.yellow}% 이상 · 평가 ${R.minActive}~199개 + 취소율 모름` },
-      { cls: 'red', bg: CLASS_BG.red, name: '무효', use: '판매가 정할 때 무시', cond: `허위 매물 표시 · 최근 6개월 평가 ${R.minActive}개 미만(없음 포함) · 품절취소율 ${R.red}% 이상` },
+      { cls: 'red', bg: CLASS_BG.red, name: '무효', use: '판매가 정할 때 무시', cond: `최근 6개월 평가 ${R.minActive}개 미만(없음 포함) · 품절취소율 ${R.red}% 이상 (옛 시트 허위 표시는 근거가 아니라 넣지 않음)` },
     ];
   }
 
@@ -369,7 +369,7 @@
   //  · 평가 수 = 최근 6개월 평가 수 (숍 화면 '최근 6개월, N개 평가'. 3건 미만 '-'는 없음 → 평가 없음)
   //    이유(정범): 오래 팔았어도 최근 6개월 활동·평가가 없으면 그 전 이력은 지금 물건을 보낼지 판단하는 데 쓸모없음
   //  · 품절취소율 = % (숍 화면 최근 3개월 값 우선. 시트 기록의 비율·툴팁 기록의 %를 여기서 맞춤)
-  //  · 허위 매물로 표시한 판매자는 색과 관계없이 무효
+  //  · (sv1 11/10) 옛 시트 허위 매물 표시는 넣지 않음 — 참고 글(sheetNote)로만 (예전: 색과 관계없이 무효)
   // 반환 cls: 'dkgreen'·'green'(유효) · 'yellow'(보류 노랑) · 'orange'(보류 주황) · 'red'(무효) · 'unknown'(판매자 기록 없음 = 아직 안 모음). 기준은 위 sellerBg 하나
   // =========================================================================
   function sellerInfoFromDoc(doc, RS) {
@@ -393,10 +393,13 @@
     if (!doc) return { cls: 'unknown', bg: null, why: '판매자 기록 없음 (아직 안 모음)', font: [], info: null };
     const info = sellerInfoFromDoc(doc, RS);
     /* (1.4.2 · 정범님 10/19 '부자의 언어 — 전부 무효 빨강인데 실제는 아님') 최근 6개월 평가 수를 한 번도 모으지 않은 판매자(기록은 있지만 숍 화면을 안 읽음)는 '비활동(무효)'이 아니라 '모름' — 예전엔 평가 없음 = 무효 빨강으로 칠했음 */
-    if ((doc.ourGrade || doc.grade) !== 'fake') { const r6 = RS && RS.rev6m ? RS.rev6m(doc) : null; const has = r6 ? (r6.n != null || r6.lt3) : (doc.rev6m != null || doc.rev6mLt3 || (doc.reviewCount != null && doc.reviewCount !== '')); if (!has) return { cls: 'unknown', bg: null, why: '최근 6개월 평가 수를 아직 안 모음 — 무효가 아니라 모름 (수집기가 숍 화면을 읽으면 칠해짐)', font: [], info, nodata: true }; }
-    const sb = sellerBg(info, { fake: (doc.ourGrade || doc.grade) === 'fake' });
+    /* (sv1 11/10 · 정범님 11/10 새벽 '시트의 무효 판매자 — 내 판단은 빼고 너와 엔진의 근거로') 옛 시트 '허위 매물' 표시(ourGrade·grade 'fake')는 분류에 넣지 않음 — 참고 글(sheetNote)로만.
+       11/09 자료 모의: 시트 표시 판매자 15곳이 모두 두 축(활동·품절취소율 8~48%)만으로 이미 보류 주황·무효 → 우리 매물 14,577개 판정 0개 바뀜(research/ENGINES PEER_W.md) */
+    const sheetNote = (doc.ourGrade || doc.grade) === 'fake' ? '참고: 옛 시트 허위 매물 표시(정범님 옛 표시 · 근거 아님 — 분류에 안 넣음)' : null;
+    { const r6 = RS && RS.rev6m ? RS.rev6m(doc) : null; const has = r6 ? (r6.n != null || r6.lt3) : (doc.rev6m != null || doc.rev6mLt3 || (doc.reviewCount != null && doc.reviewCount !== '')); if (!has) return { cls: 'unknown', bg: null, why: '최근 6개월 평가 수를 아직 안 모음 — 무효가 아니라 모름 (수집기가 숍 화면을 읽으면 칠해짐)', font: [], info, nodata: true, sheetNote }; }
+    const sb = sellerBg(info, null);
     const b = evaluateBackground(info, NaN);
-    return { cls: sb.cls, bg: sb.bg, why: sb.why, font: b.fontReasons || [], info };
+    return { cls: sb.cls, bg: sb.bg, why: sb.why, font: b.fontReasons || [], info, sheetNote };
   }
 
   // =========================================================================
