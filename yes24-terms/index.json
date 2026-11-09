@@ -1,0 +1,24 @@
+{
+ "saved": "2026-11-09",
+ "by": "화면 원문 저장본 · 본문만 남김(메뉴·광고·회사 정보 줄 뺌)",
+ "rule": "바뀐 판은 <key>_<시행일>.txt로 옛 판을 남기고(지우지 않음) docs[]에 changes를 덧붙임 · 웹앱 📚 공식 자료 FACTS_DOCS의 url이 이 파일들을 가리킴",
+ "docs": [
+  {
+   "key": "service",
+   "title": "예스24 서비스 이용약관",
+   "file": "service.txt",
+   "url": "https://www.yes24.com/notice/service.aspx",
+   "ver": "2026-05-01 시행(부칙 제1조)",
+   "changes": []
+  },
+  {
+   "key": "used-seller-guide",
+   "title": "예스24 중고샵 판매관리 이용가이드(상품 등록 부분)",
+   "file": "used-seller-guide.txt",
+   "url": "예스24 중고샵 판매관리 화면 › 이용안내(판매자 로그인 뒤)",
+   "ver": "2026-11-09 저장",
+   "note": "FAQ·상품배송·정산·고객서비스·사업자회원 전환·중고샵표준서비스안내 칸은 저장본에 없음",
+   "changes": []
+  }
+ ]
+}
