@@ -8345,7 +8345,12 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         const r = await extOne(src, b, 'auto'); did = true; const t = (tally[src] = tally[src] || {}); t[r.st] = (t[r.st] || 0) + 1; skipRun[src] = r.st === 'skip' ? (skipRun[src] || 0) + 1 : 0; if (skipRun[src] >= 20) done.add(src); /* (1.58.0) 중고닷이 아직 안 본 책만 남으면 이번 바퀴엔 그만 — 책마다 기록을 한 번씩 읽어 읽기 수가 수천 번 나던 것 */ if (Date.now() - t0 > box) break; }
       if (!did) { if (srcs.every((s) => done.has(s) || (EXT_S.pauseUntil[s] || 0) > Date.now() || (EXT_S.used[s] || 0) >= cfg.src[s].cap)) break; await sleep(400); } }
     const parts = Object.entries(tally).map(([s, t]) => `${X.SOURCES[s].label} ${Object.entries(t).map(([k, v]) => `${{ new: '새로', changed: '바뀜', same: '같음', err: '못 읽음', skip: '건너뜀', mismatch: '다른 책', none1: '없음(한 번 — 다음에 확인)', keep: '없음(받아 둔 값 그대로)', viaJm: '중고닷에서 찾아 직접 안 물음' }[k] || k} ${v}`).join('·')}`);
-    if (parts.length) log(`🌐 외부 정보 ${Math.round((Date.now() - t0) / 1000)}초: ${parts.join(' / ')}`); return tally; }
+    if (parts.length) log(`🌐 외부 정보 ${Math.round((Date.now() - t0) / 1000)}초: ${parts.join(' / ')}`);
+    /* (정범님 11/08 '로거 외부 정보가 제대로 안 모임' — eBay·DVDPrime·국립중앙도서관·알라딘 TTB·카카오·네이버가 하루 기록 0줄) 이번 바퀴에 한 권도 묻지 않은 출처는 까닭이 기록에 없어
+     *  '안 도는 것'인지 '할 책이 없는 것'인지 몰랐음 → 3시간에 한 번 출처마다 까닭을 한 줄로(요청은 늘지 않음 · 이미 아는 값만 봄) */
+    if (!EXT_S.idleAt || Date.now() - EXT_S.idleAt > 3 * 3600e3) { EXT_S.idleAt = Date.now(); const why0 = (s0) => { const d0 = X.SOURCES[s0]; if (d0.ended) return '서비스 끝(묻지 않음)'; if (!cfg.src[s0].on) return '설정에서 끔'; if (PUBONLY && /aladin/i.test(d0.host || '')) return '로거는 알라딘에 묻지 않음(계정 보호)'; if (!X.keysReady(s0, keys)) return '키 없음'; if (EXT_S.authPause && EXT_S.authPause[s0] != null) return '키 문제로 쉼'; if ((EXT_S.pauseUntil[s0] || 0) > Date.now()) return `쉼(앞으로 ${Math.ceil((EXT_S.pauseUntil[s0] - Date.now()) / 3600e3)}시간 안)`; if ((EXT_S.used[s0] || 0) >= cfg.src[s0].cap) return `오늘 하루 최대(${cfg.src[s0].cap}) 다 씀`; if (done.has(s0)) return '다시 볼 책 없음(모두 다시 볼 날 전)'; return '이번 바퀴엔 차례가 안 옴'; };
+      const idle = X.ORDER.filter((s0) => !tally[s0]).map((s0) => `${X.SOURCES[s0].label} — ${why0(s0)}`); if (idle.length) log(`🌐 외부 정보 이번 바퀴에 안 물은 출처: ${idle.join(' · ')}`); }
+    return tally; }
   /* (1.74.0) 🔎 외부 정보 몰아 받기 — 평소 5분마다 4분씩 받던 것을 쉴 때 쉬지 않고(출처마다 하루 최대·요청 간격은 그대로) · 더 받을 것이 없거나(모든 출처 하루 최대·할 책 없음) 맡음을 못 받으면 끝 */
   /* ══ (1.76.0) 📚 로거 와이파이 일: 하루 종일 도서 정보(외부 — 교보 > 예스24 > 네이버)와 표지 사진 — 정범님 10/16
    *  로거는 베일 속에(알라딘이 절대 알 수 없게): 이 일은 알라딘 주소를 하나도 열지 않음(도서 정보·표지 모두 외부 · 셋 다 없으면 'none'으로 적고 알라딘 도서 정보는 사무실 PC의 판매완료 상품 정보·도서 정보 일이 맡음)

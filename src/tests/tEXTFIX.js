@@ -120,6 +120,21 @@ const S = (src, d, none) => X.sig({ none: !!none, d }, src);
     // 알라딘 구매 풀(우리 상품 아님)은 출처 기록에 '없음'을 새로 적지 않음(ext_basic이 늘지 않게)
     saved.length = 0; for (const k of ['kyobo', 'yes24', 'naverbook']) answers[k] = { ok: true, none: true }; st = { own: false }; await extBasicFor3('9791160803143', true, st); ok(st.allNone && saved.length === 0, '알라딘 구매 풀 책(우리 상품 아님) · 셋 다 없음 → 없음 · 출처 기록은 새로 적지 않음');
   }
+  { // extFill: 한 권도 안 물은 출처는 까닭을 한 줄로(3시간에 한 번) — 11/08 eBay·DVDPrime·국중·TTB·카카오·네이버 기록 0줄
+    const a0 = csrc.indexOf('  async function extFill(cfg) {'); const end = '    return tally; }'; const a1 = csrc.indexOf(end, a0); ok(a0 > 0 && a1 > a0, '수집기에서 extFill 덩어리를 찾음');
+    const CODE = csrc.slice(a0, a1 + end.length); const cfg = X.cfgOf({ src: { ridi: { on: false } } }); const logs = []; const asked = [];
+    const EXT_S = { errs: {}, pauseUntil: { daangn: Date.now() + 2 * 3600e3 }, used: { joongna: cfg.src.joongna.cap }, next: {}, cache: {}, cur: {}, authPause: { lib: 'k' } };
+    const keys = { kakaoRest: 'k', nlKey: 'k', ebayAppId: 'a', ebayCertId: 'c', d4lKey: 'k', aladinTtb: 'k' }; // 국중·카카오 키 있음 · 네이버 키 없음
+    const books = [{ isbn: '9788937460449', title: '데미안', p: 9000 }];
+    const env = { EXT: () => X, extKeys: async () => keys, extIdxLoad: async () => {}, extUsedLoad: async () => {}, extCands: async () => books, PUBONLY: true, EXT_S, nightExtMs: () => 0, PAR_STOP: {}, window: {}, auth: { currentUser: {} }, extLease: async () => true,
+      extEligible: (s, b) => X.eligible(s, b, cfg), extDue: (s) => s === 'kakao' && !asked.includes('kakao'), extOne: async (s) => { asked.push(s); return { src: s, st: 'same' }; }, sleep: async () => {}, log: (m) => logs.push(m) };
+    const extFill = new Function(...Object.keys(env), CODE + '\nreturn extFill;')(...Object.values(env));
+    await extFill(cfg); const L = logs.find((m) => /이번 바퀴에 안 물은 출처/.test(m)) || '';
+    ok(asked.join(',') === 'kakao' && !/카카오/.test(L), '할 책이 있는 출처(카카오)만 물음 · 그 출처는 까닭 줄에 없음');
+    ok(/알라딘 TTB[^·]*— 로거는 알라딘에 묻지 않음/.test(L) && /서비스 종료\) — 서비스 끝/.test(L) && /리디 — 설정에서 끔/.test(L) && /도서관 정보나루[^·]*— 키 문제로 쉼/.test(L), '까닭: TTB 로거 제외 · 네이버 API 서비스 끝 · 끈 출처 · 키 문제');
+    ok(/당근 — 쉼\(앞으로 2시간 안\)/.test(L) && /중고나라 — 오늘 하루 최대\(300\) 다 씀/.test(L) && /eBay[^·]*— 다시 볼 책 없음/.test(L) && /DVDPrime 장터 — 다시 볼 책 없음/.test(L) && /국립중앙도서관[^·]*— 다시 볼 책 없음/.test(L), '까닭: 쉼 · 하루 최대 · 다시 볼 책 없음(eBay는 외국 책만 · DVDPrime은 영상·음반만)');
+    logs.length = 0; await extFill(cfg); ok(!logs.some((m) => /안 물은 출처/.test(m)), '까닭 줄은 3시간에 한 번만(기록이 넘치지 않게)');
+  }
   { // biTick·refreshOne 연결 — 소스 글로 확인
     ok(/e && e\.extPart\) \{ mark = \{ at: nowIso\(\), none: true, part: true/.test(csrc) && /BI\.tmpRun = 0; CS && CS\.add\('bi', 'part'/.test(csrc), '와이파이 도서 정보 · 일부만이면 표시(part)하고 다음 책으로(차례를 멈추지 않음)');
     ok(/x\.part \? BI_PART_DAYS : 120/.test(csrc) && /const BI_PART_DAYS = 1;/.test(csrc), '일부만 표시는 하루 뒤 다시(셋 다 없음은 예전처럼 120일)');
