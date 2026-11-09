@@ -190,8 +190,28 @@
    *  우리 상품 상태(등급 칸 grade: 최상·상·중·하)가 알라딘이 사는 등급(DEFAULTS.buybackGrades = 최상·상 — '알라딘은 중 상태를 사지 않음')이 아니면 '알라딘 매입' 조건에서 뺌
    *  쓰는 곳: 🤖 자동 발송요청 저가·관리코드 규칙(출고 공용 autoShipDecide ⑥ — 클라우드·PC 수집기·PC 도우미가 실행) · 웹앱 출고 카드 '매입가' 알약(shipLowBB) — 같은 상품이면 같은 답
    *  등급을 모르거나 모르는 글자면 빼지 않음(예전 그대로) → null(뺄 것 아님) · { g, why } */
-  function bbGradeOut(grade, S0) { const g = String(grade == null ? '' : grade).trim(); if (!g || !(g in GRADE_RANK)) return null; const L = S0 && Array.isArray(S0.buybackGrades) ? S0.buybackGrades : DEFAULTS.buybackGrades; if (L.includes(g)) return null;
+  function bbGradeOut(grade, S0, T) { if (T && typeof T === 'object') { const R = bbGrRow(grade, T); if (R.on) return null; const g = R.k === '모름' ? String(grade == null ? '' : grade).trim() || '모름' : R.k;
+      return { g, k: R.k, row: R, why: R.def ? `상품 상태 '${g}' — 알라딘은 '${g}' 상태를 매입하지 않아 알라딘 매입 조건에서 뺌` : `상품 상태 '${g}' — ⚙ 상태별 매입 조건 '${R.k}' 줄을 꺼 알라딘 매입 조건에서 뺌` }; }
+    const g = String(grade == null ? '' : grade).trim(); if (!g || !(g in GRADE_RANK)) return null; const L = S0 && Array.isArray(S0.buybackGrades) ? S0.buybackGrades : DEFAULTS.buybackGrades; if (L.includes(g)) return null;
     return { g, why: `상품 상태 '${g}' — 알라딘은 '${g}' 상태를 매입하지 않아 알라딘 매입 조건에서 뺌` }; }
+  /* (정범님 11/09 '설정에서 모든 상태에 대한 세세한 조건을 조정할 수 있게') 상태(등급)별 알라딘 매입 조건 표 — 🤖 자동 발송요청 ⑥ 저가·관리코드 규칙(출고 공용 autoShipDecide)·웹앱 출고 카드 칩이 같이 읽음
+   *  저장 = app_settings/ship_auto.bbGr { 최상|상|중|하|모름: { on, margin, match, lowPrice, rest, cheapPct } } (자동 발송요청 설정 문서 · 새 모음 없음)
+   *   on       = 알라딘 매입 후보로 볼지 (기본: 최상·상 켬 — DEFAULTS.buybackGrades · 중·하 끔 — 알라딘이 사지 않음 · 모름 켬 = 예전 그대로)
+   *   margin   = 기준 차액(원) 덮어쓰기 · null = 전체 값(app_settings/main.bbMargin · 기본 500원) — 근거: 없음, 설정으로 바꿈
+   *   match    = 견줄 알라딘 매입가 등급 'near'(우리 등급 칸이 없으면 가장 가까운 등급 — 정범님 10/28 · 기본) | 'same'(같은 등급만 — 없으면 매입가 모름)
+   *   lowPrice = 저가 기준(원 이하면 ⑥에 듦) 덮어쓰기 · null = 전체 값(lowPrice 4,000원) — 근거: 없음, 설정으로 바꿈
+   *   rest     = 매입 후보로 안 볼 때(꺼짐)·매입가 모를 때 'pass'(퍼센트 따지지 않고 통과 — 정범님 11/05 밤 · 기본) | 'pct'(유효 최저가 대비 기준으로 봄)
+   *   cheapPct = rest 'pct'일 때 쓰는 기준(%) 덮어쓰기 · null = 전체 값(cheapPct 25) — 근거: 없음, 설정으로 바꿈
+   *  등급 글자를 모르거나 비었으면 '모름' 줄 */
+  const BB_GR_KEYS = ['최상', '상', '중', '하', '모름'];
+  function bbGrDef(k) { return { on: k === '모름' || DEFAULTS.buybackGrades.includes(k), margin: null, match: 'near', lowPrice: null, rest: 'pass', cheapPct: null }; }
+  function bbGrNorm(T) { const out = {}; const nn = (v, hi) => (v == null || v === '' || !Number.isFinite(+v) ? null : Math.round(Math.min(hi, Math.max(0, +v))));
+    for (const k of BB_GR_KEYS) { const d = bbGrDef(k), r = (T && typeof T === 'object' && T[k] && typeof T[k] === 'object') ? T[k] : {};
+      out[k] = { on: typeof r.on === 'boolean' ? r.on : d.on, margin: nn(r.margin, 100000), match: r.match === 'same' ? 'same' : 'near', lowPrice: nn(r.lowPrice, 1e7), rest: r.rest === 'pct' ? 'pct' : 'pass', cheapPct: nn(r.cheapPct, 100) }; }
+    return out; }
+  const bbGrKey = (grade) => { const g = String(grade == null ? '' : grade).trim(); return g in GRADE_RANK ? g : '모름'; };
+  /* 그 상품 상태의 줄 → { k, on, margin, match, lowPrice, rest, cheapPct, def(모두 기본값인가), set:[바꾼 칸] } */
+  function bbGrRow(grade, T) { const k = bbGrKey(grade); const r = bbGrNorm(T)[k]; const d = bbGrDef(k); const set = Object.keys(d).filter((q) => r[q] !== d[q]); return { k, ...r, def: !set.length, set }; }
   // 하한선: 매입가 하한(모든 단계) + 원가 하한(T1~T3) / 처분 하한(T4~: 매입원가는 이미 쓴 돈 → 팔아서 손해만 안 보면 됨)
   // 하한선 = 알라딘 매입가 하나뿐 (정범 결정 2026-10-04: 원가·손해선 같은 다른 제약은 걸지 않음)
   // 매입가 하한가 = 팔아서 손에 남는 돈(판매가 − 수수료 − 주문당 비용)이 알라딘 매입가와 같아지는 판매가.
@@ -822,6 +842,6 @@
   }
   const Chase = makeChase(); const { chaseEvents, chaseState, sellerChase, chaseMap, chaserOn, chaseStep, STRATS } = Chase; /* 판정 엔진 api의 옛 이름 그대로(같은 함수) */
   if (root && typeof root === 'object') { try { root.ReadnowChase = Chase; } catch (e) {} }
-  const api = { VERSION, BB_MARGIN_DEF, bbMarginOf, bbValid, bbClean, bbPick, bbNetParts, bbNear, bbFloor, bbFloorPick, bbGradeOut, CHARM_TH, GRADE_RANK, sameGradeMatch, critSettings, critTarget, soloHigh, ratioQ, ratioPick, ratioGroupName, ratioSrcText, ratioAv, ratioUb, RATIO_QK, chaseMap, chaserOn, chaseStep, STRATS, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, mergeD(S0)), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase, Chase };
+  const api = { VERSION, BB_MARGIN_DEF, bbMarginOf, bbValid, bbClean, bbPick, bbNetParts, bbNear, bbFloor, bbFloorPick, bbGradeOut, BB_GR_KEYS, bbGrDef, bbGrNorm, bbGrRow, CHARM_TH, GRADE_RANK, sameGradeMatch, critSettings, critTarget, soloHigh, ratioQ, ratioPick, ratioGroupName, ratioSrcText, ratioAv, ratioUb, RATIO_QK, chaseMap, chaserOn, chaseStep, STRATS, DEFAULTS, LABEL, priceStep, snapDown, snapUp, stepDown, tierOf, setTierRange, trackLowest, bucketOf, groupOf, groupOfListing, isExcluded, isAladinSide: (r, S0) => isAladinSide(r, mergeD(S0)), proxyCheck, SKU_TAGS, skuTag, skuWith, specialHit, sellNet, minPriceFor, floors, decide, chaseEvents, chaseState, sellerChase, Chase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowPricing = api;
 })(typeof window !== 'undefined' ? window : this);
