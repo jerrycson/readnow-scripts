@@ -6,7 +6,7 @@
  *   → ④ 새 모델이 지금 모델보다 3번 연속 확실히 나으면(로그 손실 1% 넘게 낮음) 승격. 처음 '지금 모델'은 기준선(자리 1위 여부·등급별 평균 판매율)
  * 쓰는 곳: 웹앱 전략도구의 조언 금액(그림자 표시), 앞으로 판정 엔진의 '권당 하루 기대 순이익'. 알라딘에 아무것도 바꾸지 않음 — 계산만. */
 (function (root) {
-  const VERSION = '0.9.6'; // (0.9.6) 멈춤 감시 stallCheck(36시간) · 그날 값으로 되짚는 asOfMetrics·listingAsOf // (0.9.5) 🏷 기대 매입가(bbExpect)에 정가를 받아 정가보다 큰 견적은 무시 · 글을 '기대 매입가'로 // (0.9.4) ⚡ 희소 전략 경쟁 매물 셈에서 무시 판매자 빼기(넘길 때만) // (0.9.3) 판매가 평가 v0.3-rule: 유효 최저가 = 같은 등급 + 더 좋은 등급 중 가장 싼 값 · 등급 글자 없는 줄은 중 // (0.9.2) 📝 판매가 평가 사유별 묶음 sevReasonGroups(세기만 · 가중치 없음) // (0.9.1) ⚡ 전략 독립 검토 고침 — 자기가 멈춘 것만 내놓기·기다림 되풀이 막기·빈 첫 쪽/우리 줄 없음/오래된 신호 안 씀·등급 모르는 매물도 경쟁·🐢는 매입가 알 때만·사람 수정 감지·되돌림 쉬기·설정 값 범위 // (0.9.0) ⚡ 전략 실행(STRATS · stratDecide · stratGuard — 웹앱 미리 보기와 클라우드 실행이 같은 판단) // (0.8.2) extrasOf: 도서관·바코드·가격표 스티커와 넘버링 도장은 특전·한정에서 뺌 // (0.8.1) bbAccept: 불가 내역을 다 읽기 전엔 우리 상태별 매입률을 쓰지 않음 // (0.8.0) valueTrain 무게(w)·판매 수(y) — 벤치마킹 사라짐 표본 · extrasOf(유의 사항의 박스·미개봉·특전·한정판·사인) // (0.7.0) // (0.7.0) 기대 매입가에 매입될 확률(bbAccept — 매입불가 상품 내역까지 읽은 실측) // (0.6.0) 알라딘 매입 기대값(bbExpect — 우리 실제 매입 기록의 등급별 지급 비율 · 유의 사항에 하자가 있으면 매입 없음) · 하자 표시(defectOf) // (0.5.1) rawRow: 첫 페이지 못 읽으면 자리 null · top(맨 윗줄이 우리 = 최저가배지) // (0.5.0) 정범님 10/19 '정가가 고객의 첫 기준' — 정가 대비 우리 값 칸(<35%·35~50%·50%+)을 수요×자리 칸 안에서 배움(cells3 · 줄이 적으면 수요×자리 값으로 당김) · valueOf·valueRec가 씀 // (0.4.0) 🧠 valueRec — 등록·매입 때 판매가치 엔진으로 추천가·판매 확률·매입 판단(살 이유·사지 말 이유) 한 곳 // (0.3.0) 🧠 판매가치 엔진 v1(VALUE) — 수요(Sales Point)×자리(첫 페이지 순위)×값(동급 최저 대비)의 하루 판매 확률 표를 우리 판매 자료로 매일 배움 · 희소/희귀 분류 · 상품마다 전략과 기대 판매 // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
+  const VERSION = '0.9.7'; // (0.9.7) 엔진 실험 함수(ENGX) · 하루 손해 한도(지난 30일 하루 평균 주문 매출×5% · 바닥 5천·천장 3만 · 지금 약 1만 원) · 실험 상품 전체 5% 이하 · 사람이 14일 안에 손댄 상품은 실험·대조에서 빼고 실험 중 손대면 그 순간 빠짐 · 희귀본 범위 RARE_RANGE·rarePick // (0.9.6) 멈춤 감시 stallCheck(36시간) · 그날 값으로 되짚는 asOfMetrics·listingAsOf // (0.9.5) 🏷 기대 매입가(bbExpect)에 정가를 받아 정가보다 큰 견적은 무시 · 글을 '기대 매입가'로 // (0.9.4) ⚡ 희소 전략 경쟁 매물 셈에서 무시 판매자 빼기(넘길 때만) // (0.9.3) 판매가 평가 v0.3-rule: 유효 최저가 = 같은 등급 + 더 좋은 등급 중 가장 싼 값 · 등급 글자 없는 줄은 중 // (0.9.2) 📝 판매가 평가 사유별 묶음 sevReasonGroups(세기만 · 가중치 없음) // (0.9.1) ⚡ 전략 독립 검토 고침 — 자기가 멈춘 것만 내놓기·기다림 되풀이 막기·빈 첫 쪽/우리 줄 없음/오래된 신호 안 씀·등급 모르는 매물도 경쟁·🐢는 매입가 알 때만·사람 수정 감지·되돌림 쉬기·설정 값 범위 // (0.9.0) ⚡ 전략 실행(STRATS · stratDecide · stratGuard — 웹앱 미리 보기와 클라우드 실행이 같은 판단) // (0.8.2) extrasOf: 도서관·바코드·가격표 스티커와 넘버링 도장은 특전·한정에서 뺌 // (0.8.1) bbAccept: 불가 내역을 다 읽기 전엔 우리 상태별 매입률을 쓰지 않음 // (0.8.0) valueTrain 무게(w)·판매 수(y) — 벤치마킹 사라짐 표본 · extrasOf(유의 사항의 박스·미개봉·특전·한정판·사인) // (0.7.0) // (0.7.0) 기대 매입가에 매입될 확률(bbAccept — 매입불가 상품 내역까지 읽은 실측) // (0.6.0) 알라딘 매입 기대값(bbExpect — 우리 실제 매입 기록의 등급별 지급 비율 · 유의 사항에 하자가 있으면 매입 없음) · 하자 표시(defectOf) // (0.5.1) rawRow: 첫 페이지 못 읽으면 자리 null · top(맨 윗줄이 우리 = 최저가배지) // (0.5.0) 정범님 10/19 '정가가 고객의 첫 기준' — 정가 대비 우리 값 칸(<35%·35~50%·50%+)을 수요×자리 칸 안에서 배움(cells3 · 줄이 적으면 수요×자리 값으로 당김) · valueOf·valueRec가 씀 // (0.4.0) 🧠 valueRec — 등록·매입 때 판매가치 엔진으로 추천가·판매 확률·매입 판단(살 이유·사지 말 이유) 한 곳 // (0.3.0) 🧠 판매가치 엔진 v1(VALUE) — 수요(Sales Point)×자리(첫 페이지 순위)×값(동급 최저 대비)의 하루 판매 확률 표를 우리 판매 자료로 매일 배움 · 희소/희귀 분류 · 상품마다 전략과 기대 판매 // (0.2.2) 판매가 평가 v0.2 — 유효 안에서 기준이 없으면 노랑 → 주황 → 빨강 판매자 매물 안에서 같은 순서로 · out.tier // (0.2.1) 판매가 평가 v0.1 — 동급이 없으면 위 등급(우리보다 쌈)·아래 등급(우리보다 비쌈) 유효 최저가와 견줌 · refKind(same·hi·lo·conv·new)·refG // (0.2.0) 💬 판매가 평가 evalSale v0 — 팔린 상품의 그때 시장으로 '싸게/적정/잘 받음' (정범님 평가를 정답으로 모아 다음 판이 배움)
   const HORIZON_D = 7; // 7일 안에 팔렸나
   const GR = ['최상', '상', '중'];
   /* rawRow: 하루 모습 한 줄 (클라우드 ml_days ML_VER 1과 같은 칸) — l = 상품(prd_listings), m = 시장 지표(prd_book_metrics), a = 마지막 가격 변경 {at, from, batchId}, wg = 감시 그룹, nowMs = 그날 끝 */
@@ -328,7 +328,7 @@
     if (!/^(판매중|일시판매중지)$/.test(l.status || '')) no.push(`판매 상태가 ${l.status || '모름'} — 판매중·일시판매중지만`); if (!(+l.qty > 0)) no.push('수량 0');
     if (!l.listingId) no.push('알라딘 상품 번호(listingId) 없음 — 샵매니저 수정을 할 수 없음'); if (st.hold) no.push(`사람이 ↩ 되돌림(${String(st.hold.at || '').slice(0, 10)}) — 이 상품은 전략에서 쉼`); const reg = Date.parse(l.registeredAt || '') || null; if (reg && (now - reg) / 36e5 < C.newH) no.push(`등록 ${C.newH}시간 안(시장 기록이 아직 안정되지 않음)`);
     const M = d.M || stratMarket(ctx, C); if (d.k !== 'drip' && d.k !== 'floor') { if (!M.ok) no.push('첫 쪽 매물 기록 없음'); else if (M.ageH == null || M.ageH > C.maxAgeH) no.push(`시장 지표가 ${M.ageH == null ? '언제 것인지 모름' : Math.round(M.ageH) + '시간 전'}(${C.maxAgeH}시간 안 것만)`); }
-    if (ctx.busy) no.push('앞서 맡긴 수정이 아직 진행 중'); { const tg = String(l.sku || '').slice(3, 6).toUpperCase(); if (tg === 'PND' || tg === 'BAD') no.push(`관리코드 ${tg} — 가격 감시가 보류(PND)·은퇴(BAD)로 둔 상품은 사람이 정함`); } if (ctx.watch) no.push('가격 감시 묶음·결정이 이 상품을 맡고 있음(겹치면 서로 덮음)');
+    if (ctx.busy) no.push('앞서 맡긴 수정이 아직 진행 중'); { const tg = String(l.sku || '').slice(3, 6).toUpperCase(); if (tg === 'PND' || tg === 'BAD') no.push(`관리코드 ${tg} — 가격 감시가 보류(PND)·은퇴(BAD)로 둔 상품은 사람이 정함`); } if (ctx.watch) no.push('가격 감시 묶음·결정이 이 상품을 맡고 있음(겹치면 서로 덮음)'); if (ctx.engOut) no.push(`사람이 손대 실험에서 빠진 상품(${String(ctx.engOut.why || '').slice(0, 40)}) — 엔진은 다시 건드리지 않음`); if (ctx.fence) no.push(`🧪 실험 울타리: ${String(ctx.fence).slice(0, 80)}`);
     const hEd = Date.parse(l.editAt || '') || 0; if (hEd && !/strategy|전략/.test(String(l.editBy || '')) && (now - hEd) / 36e5 < C.humanLockH) no.push(`사람이 ${Math.round((now - hEd) / 36e5)}시간 전에 고침 — ${C.humanLockH}시간 동안 사람 값이 우선`);
     const last = Date.parse((st.last && st.last.at) || '') || 0; if (st.last && st.last.act === 'price' && last && (now - last) / 864e5 < 7 && +l.price !== +st.last.to && +l.price !== +st.last.from) no.push(`전략이 ${Number(st.last.to).toLocaleString()}원으로 바꾼 뒤 값이 ${Number(l.price).toLocaleString()}원 — 사람이 고친 것으로 보고 7일 동안 손대지 않음`); if (last && (now - last) / 36e5 < C.coolH) no.push(`이 상품에 ${Math.round((now - last) / 36e5)}시간 전에 이미 함(${C.coolH}시간에 한 번)`);
     if (d.act === 'pause' || d.act === 'resume') { const lf = Date.parse(st.flipAt || '') || 0; if (lf && (now - lf) / 36e5 < C.flipH) no.push(`판매 상태를 ${Math.round((now - lf) / 36e5)}시간 전에 바꿈(${C.flipH}시간에 한 번 — 깜빡임 막기)`); if (d.act === 'pause' && !/^판매중$/.test(l.status || '')) no.push('이미 판매중이 아님'); if (d.act === 'resume' && !/일시판매중지/.test(l.status || '')) no.push('일시판매중지가 아님'); }
@@ -365,6 +365,95 @@
     const on = l.active === true || (sold != null && sold > cutMs) || (!/판매완료/.test(String(l.status || '')) && seen > cutMs); if (!on) return null;
     let price = l.price ?? null; const A = (acts || []).filter((a) => a.to != null); const b = A.filter((a) => a.at <= cutMs).pop(); const f = A.find((a) => a.at > cutMs); if (b) price = b.to; else if (f && f.from != null) price = f.from;
     return { ...l, price }; }
-  const api = { VERSION, VDEF, setBuyback, bbExpect, bbAccept, BB_ACC, extrasOf, EX_LABEL, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, sevReasonGroups, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue, STRATS, STRAT_K, SDEF, stratDecide, stratGuard, stratMarket, stratFloor, stratCeil, stratParams, stratRarity, STALL_H, stallCheck, asOfMetrics, listingAsOf };
+  /* ══ 🧪 엔진 실험 장부 ENGX (11/10 일꾼 eng2 · 정범님 11/09 저녁 답) — 순수 함수만: 클라우드(engExpTick)·웹앱·시험이 같은 셈
+   *  ① 정범님이 수동 일괄 그룹의 🛰 감시를 켜거나 ⚡ 전략을 배정하면 → 그 무리가 저절로 실험(처리)으로 장부에 들어가고(결정·결과 칸)
+   *     같은 수의 대조 무리를 '비슷한 상품'으로 짝지음(expPair · 짝 기준 expCell) → 매일 채점(expScore)
+   *  ② 울타리: 엔진 실험은 판매중 상품의 5% 이하(정범님 11/09 '좋아') · 하루 손해 한도(dayLossLimit) · 사람이 손댄 상품과 겹치지 않음(humanTouch·busyOf)
+   *  ③ 💎 희귀본 문턱을 엔진이 고를 범위(RARE_RANGE · rarePick) ④ 되살린 하루 모습(rebuilt)의 학습·검증 나누기(mlSplitDays · REBUILT_W) */
+  const EXP_DEF = {
+    maxShare: 0.05,      // 엔진 실험(처리+대조) 상품 ≤ 판매중의 5% — 정범님 11/09 '5% 이하는 좋아'
+    dayLossPct: 0.05,    // 하루 손해 한도 = 지난 30일 하루 평균 주문 매출 × 5% (= 실험 몫 상한 5%가 하루에 버는 매출만큼까지만 잃을 수 있음) — 근거: 실험 몫과 같은 비율(DECISIONS_1109)
+    dayLossMin: 5000, dayLossMax: 30000, dayLossFix: null, // 바닥·천장(근거: 없음, 설정으로 바꿈 app_settings/eng_fence) · dayLossFix = 사람이 고정한 값(있으면 그것)
+    revDays: 30,         // 평균 매출을 볼 날 수
+    stopDays: 2,         // 한도를 이 날 수 연속 넘으면 그 실험을 멈춤(사람 확인) — 근거: 없음, 설정으로 바꿈
+    humanCoolD: 14,      // 사람이 손댄 뒤 이 날 수 안의 상품은 엔진 실험·대조에 넣지 않음 — 근거: 판매 창 7일(HORIZON_D)의 두 배(사람 손댐 효과가 결과에 섞이지 않게)
+    ctrlRatio: 1,        // 대조 수 = 처리 수 × 1 (정범님 '같은 수의 대조 무리')
+    minArm: 5,           // 무리마다 이만큼은 있어야 효과를 셈(그 아래는 '아직 모름')
+    humanOut: true,      // 실험 중 사람이 손대면 그 순간 실험에서 빼고 엔진은 다시 건드리지 않음
+  };
+  const AGE_EDGES = [90, 180, 365]; // 재고 기간 경계 — 판정 엔진 tierBounds 앞 셋과 같음(신규·정상·둔화·장기 이상)
+  const isHumanBy = (by) => /@/.test(String(by || '')); // 사람 = 로그인 메일(엔진은 'engine:…'·'price-watch:…'·'strategy'·'cloud')
+  /* 짝 기준 칸 — 판매가치 엔진이 판매 확률이 갈린다고 배운 칸(수요 SP 단계 × 첫 쪽 자리 1~3위/밖 × 정가 대비) + 등급 + 재고 기간
+   *  lvl 0 = 다섯 개 모두 · 1 = 재고 기간 뺌 · 2 = 등급도 뺌 · 3 = 수요×자리만 (같은 칸이 없을 때만 한 단계씩 넓힘) · 모르는 값은 '?'끼리 */
+  function expCell(r, lvl) { r = r || {}; const q = (v) => (v == null ? '?' : v); const d = spBand(r.sp), p = r.p1 === 0 ? null : posBand(r.rank), lb = listBand(r.price, r.list);
+    const a = r.age == null ? null : r.age < AGE_EDGES[0] ? 0 : r.age < AGE_EDGES[1] ? 1 : r.age < AGE_EDGES[2] ? 2 : 3; const g = r.grade == null || r.grade < 0 ? null : r.grade;
+    const parts = [q(d), q(p), q(lb), q(g), q(a)]; return parts.slice(0, [5, 4, 3, 2][Math.max(0, Math.min(3, lvl | 0))]).join('|'); }
+  const hash32 = (s) => { let h = 2166136261; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h; };
+  /* expPair(T, P, o) — T 처리 줄 · P 후보 줄(하루 모습 rawRow 꼴: key·sp·rank·p1·price·list·grade·age) → 처리마다 같은 칸(좁은 단계부터)에서 값이 가장 가까운 후보 하나(겹쳐 쓰지 않음)
+   *  o: { seed(실험 id — 같으면 늘 같은 짝), exclude(Set 키), ratio(처리 하나당 대조 수), maxLvl(3) } → { pairs:[{t, c, lvl, dp}], miss:[처리 키], byLvl:[…] } */
+  function expPair(T, P, o) { o = o || {}; const ex = o.exclude || new Set(); const ratio = Math.max(1, o.ratio | 0 || 1); const maxLvl = o.maxLvl == null ? 3 : o.maxLvl; const seed = String(o.seed || '');
+    const tk = new Set((T || []).map((r) => r.key)); const idx = [0, 1, 2, 3].map(() => new Map());
+    for (const r of P || []) { if (!r || tk.has(r.key) || ex.has(r.key) || !(r.price > 0)) continue; for (let l = 0; l <= 3; l++) { const k = expCell(r, l); const L = idx[l].get(k) || idx[l].set(k, []).get(k); L.push(r); } }
+    const used = new Set(); const pairs = [], miss = [], byLvl = [0, 0, 0, 0];
+    for (const t of (T || []).slice().sort((a, b) => String(a.key).localeCompare(String(b.key)))) { for (let k = 0; k < ratio; k++) { let pick = null, pl = null, best = Infinity, bh = 0;
+        for (let l = 0; l <= maxLvl && !pick; l++) { for (const c of idx[l].get(expCell(t, l)) || []) { if (used.has(c.key)) continue; const dp = t.price > 0 ? Math.abs(Math.log(c.price / t.price)) : 0; const h = hash32(seed + '|' + t.key + '|' + c.key); if (dp < best - 1e-9 || (Math.abs(dp - best) <= 1e-9 && h < bh)) { best = dp; bh = h; pick = c; pl = l; } } }
+        if (!pick) { if (!k) miss.push(t.key); break; } used.add(pick.key); byLvl[pl]++; pairs.push({ t: t.key, c: pick.key, lvl: pl, dp: Math.round(best * 1000) / 1000 }); } }
+    return { pairs, miss, byLvl }; }
+  /* humanTouch(l, dec, nowMs, o) — 사람(정범님·관리자)이 이 상품에 손댄 흔적 → { why, at } 또는 null
+   *  o.since(ISO) = 그 뒤만 봄(실험 중 감시) · 없으면 최근 humanCoolD일 · o.gid = 이 실험 그룹이 한 일(같은 그룹 다시 확정)은 셈하지 않음
+   *  흔적: ✏ 상품 수정(prd_listings.editAt·editBy 메일) · 가격 결정·수동 일괄(prd_price_decisions.approval.by 메일) · 새로 등록(registeredAt — since 없을 때만) */
+  function humanTouch(l, dec, nowMs, o) { o = o || {}; nowMs = nowMs || Date.now(); const cool = (o.coolD != null ? +o.coolD : EXP_DEF.humanCoolD) * 864e5; const since = o.since ? Date.parse(o.since) : nowMs - cool; const hits = [];
+    const t = (s) => { const v = Date.parse(s || ''); return Number.isFinite(v) && v > since && v <= nowMs + 60e3; };
+    if (l && isHumanBy(l.editBy) && t(l.editAt)) hits.push({ why: '사람이 상품 정보를 고침(✏ 수정)', at: l.editAt });
+    if (l && !o.since && l.registeredAt && t(String(l.registeredAt).length <= 10 ? String(l.registeredAt) + 'T00:00:00+09:00' : l.registeredAt)) hits.push({ why: '최근 사람이 등록함', at: l.registeredAt });
+    const ap = (dec && dec.approval) || {}; if (isHumanBy(ap.by) && t(ap.at) && !(o.gid && (ap.batchId === o.gid))) hits.push({ why: ap.decision === 'batch' ? `사람이 수동 일괄로 값을 정함${ap.batchName ? `(${String(ap.batchName).slice(0, 20)})` : ''}` : `사람이 가격 결정을 함(${ap.decision || '결정'})`, at: ap.at });
+    return hits.length ? hits.sort((a, b) => String(a.at).localeCompare(String(b.at)))[0] : null; }
+  /* busyOf(l, dec, o) — 대조·엔진 실험에 넣을 수 없는 상품의 까닭(사람 일과 겹침·다른 실험) 또는 null · o.strat = 전략 배정 상품 Set · o.members = 다른 실험 상품 Set · o.excludeSku */
+  function busyOf(l, dec, o) { o = o || {}; if (!l) return '상품 기록 없음'; if (l.status && l.status !== '판매중') return '판매중 아님';
+    const sku = String(l.sku || '').toUpperCase(); if ((o.excludeSku || ['KHKDVD']).some((x) => x && sku.startsWith(String(x).toUpperCase()))) return '자동 제외 관리코드';
+    if (o.members && o.members.has(l.id || l.key)) return '이미 다른 실험에 있음'; if (o.strat && o.strat.has(l.id || l.key)) return '⚡ 전략 배정 중'; if (o.excl && o.excl.has(l.id || l.key)) return '사람이 손대 엔진이 다시 건드리지 않는 상품';
+    if (dec) { if (dec.watch && dec.watch.gid) return '🛰 감시 그룹 상품'; if (dec.ctrlOf && dec.ctrlOf.gid) return '수동 일괄 비교군'; if (['approved', 'applying', 'manual', 'hold', 'unhold', 'pending'].includes(dec.approvalState)) return '가격 결정이 진행 중'; if (dec.strat && dec.strat.active) return '🎯 추격자 전략 진행 중'; }
+    return null; }
+  /* 하루 손해 한도(원): 사람이 고정한 값이 있으면 그것 · 아니면 하루 평균 주문 매출 × dayLossPct (1,000원 단위 · 바닥·천장) */
+  function dayLossLimit(avgRev, cfg) { const E = { ...EXP_DEF, ...(cfg || {}) }; if (E.dayLossFix != null && +E.dayLossFix > 0) return +E.dayLossFix; const v = Math.round(((+avgRev || 0) * E.dayLossPct) / 1000) * 1000; return Math.max(E.dayLossMin, Math.min(E.dayLossMax, v || E.dayLossMin)); }
+  /* 하루 손해(원) = 그날 팔린 '처리' 상품마다 (실험 시작 값 − 판 값)의 양수 합 — 실험이 값을 내려 덜 받은 돈(올려서 못 판 것은 대조와 견주는 expScore가 잼)
+   *  mem: [{ key, usedCode, arm, start, at(들어온 때) }] · sales: Map(usedCode → [{ at(ms), price }]) · [t0, t1) = 그날 */
+  function dayLossOf(mem, sales, t0, t1) { let loss = 0, n = 0; const list = []; for (const m of mem || []) { if (m.arm !== 'treat' || !(m.start > 0)) continue; const S0 = (sales && sales.get(String(m.usedCode))) || []; const join = Date.parse(m.at || '') || 0;
+      for (const s of S0) { if (s.at >= t0 && s.at < t1 && s.at >= join) { const d = m.start - (+s.price || 0); n++; if (d > 0) { loss += d; list.push({ key: m.key, d }); } } } } return { loss, n, list }; }
+  /* expScore(mem, sales, nowMs) — 무리마다 들어온 뒤 첫 판매(빠진 상품은 빠질 때까지) · 7일·30일 지난 상품만으로 판매율 · 처리 − 대조 차이와 95% 범위(두 비율 차의 정규 근사) */
+  function expScore(mem, sales, nowMs, cfg) { const E = { ...EXP_DEF, ...(cfg || {}) }; nowMs = nowMs || Date.now(); const arms = { treat: null, control: null };
+    for (const arm of ['treat', 'control']) { const L = (mem || []).filter((m) => m.arm === arm); const o = { n: L.length, sold: 0, rev: 0, days: [], d7: [0, 0], d30: [0, 0], out: 0 };
+      for (const m of L) { const join = Date.parse(m.at || '') || nowMs; const end = Math.min(nowMs, Date.parse(m.outAt || '') || Infinity); if (m.outAt) o.out++; const s = ((sales && sales.get(String(m.usedCode))) || []).filter((x) => x.at >= join && x.at <= end).sort((a, b) => a.at - b.at)[0] || null;
+        if (s) { o.sold++; o.rev += +s.price || 0; o.days.push((s.at - join) / 864e5); }
+        for (const [h, k] of [[7, 'd7'], [30, 'd30']]) { if (nowMs - join >= h * 864e5 || (s && s.at - join <= h * 864e5)) { o[k][0]++; if (s && s.at - join <= h * 864e5) o[k][1]++; } } }
+      o.rate = o.n ? o.sold / o.n : null; o.r7 = o.d7[0] ? o.d7[1] / o.d7[0] : null; o.r30 = o.d30[0] ? o.d30[1] / o.d30[0] : null; o.daysMed = o.days.length ? o.days.slice().sort((a, b) => a - b)[Math.floor(o.days.length / 2)] : null; delete o.days; arms[arm] = o; }
+    const eff = (k) => { const a = arms.treat[k], b = arms.control[k]; if (a[0] < E.minArm || b[0] < E.minArm) return null; const pa = a[1] / a[0], pb = b[1] / b[0]; const se = Math.sqrt((pa * (1 - pa)) / a[0] + (pb * (1 - pb)) / b[0]) || 0; const d = pa - pb; return { d, lo: d - 1.96 * se, hi: d + 1.96 * se, nT: a[0], nC: b[0] }; };
+    const e7 = eff('d7'), e30 = eff('d30'); const e = e30 || e7; const verdict = !e ? '아직 모름(무리마다 ' + E.minArm + '권 넘게 기한이 차야 함)' : e.lo > 0 ? '처리 쪽이 더 팔림(95% 확실)' : e.hi < 0 ? '대조 쪽이 더 팔림(95% 확실)' : '차이를 아직 가를 수 없음';
+    return { at: new Date(nowMs).toISOString(), arms, eff7: e7, eff30: e30, verdict }; }
+  /* 결정 장부 한 줄 검사(FRAMEWORK 규칙 ②) — why·undo 없으면 거절 · 엔진 결정(act engine)은 conf(0~1)도 있어야 함 */
+  function engDecOk(d) { const no = []; if (!d || typeof d !== 'object') return { ok: false, no: ['결정이 비었음'] }; if (!Array.isArray(d.why) || !d.why.length) no.push('근거(why) 없음'); if (!d.undo || typeof d.undo !== 'object') no.push('되돌리는 법(undo) 없음');
+    if (d.act === 'engine' && !(d.conf >= 0 && d.conf <= 1)) no.push('엔진 결정에 확신(conf 0~1) 없음'); if (!d.entity) no.push('대상 없음'); return { ok: !no.length, no }; }
+  /* 💎 희귀본 문턱 — 엔진이 스스로 고를 수 있는 범위(정범님 11/09 '너가 고심해서 정해줘' · 근거 DECISIONS_1109 3장)
+   *  minShare(무리에서 정가 이상에 팔린 몫) 15~35% · minN(무리 최소 책 수) 30~100 · estMin(사라짐 추정 건수) 2~3 · 고르는 규칙 = 정밀도 60% 이상 지키며 후보 수 최대 · 한 번에 한 칸씩(몫 5%p · 책 수 10권) */
+  const RARE_RANGE = { minShare: [0.15, 0.35], minN: [30, 100], estMin: [2, 3], precMin: 0.6, stepShare: 0.05, stepN: 10, minCand: 20 };
+  function rareClamp(v, k, R) { R = R || RARE_RANGE; const r = R[k]; return r ? Math.max(r[0], Math.min(r[1], +v)) : +v; }
+  /* rarePick(table, cur, R) — table: 백테스트 줄 [{ minN, minShare, prec(정밀도), n(후보 수) }] · cur: 지금 { minN, minShare } → 고른 값 + 까닭 (범위 밖 줄·정밀도 모자란 줄·후보 minCand 미만 줄은 버림 · 한 번에 한 칸만 움직임) */
+  function rarePick(table, cur, R) { R = { ...RARE_RANGE, ...(R || {}) }; cur = { minN: rareClamp((cur && cur.minN) ?? 30, 'minN', R), minShare: rareClamp((cur && cur.minShare) ?? 0.2, 'minShare', R) };
+    const ok = (table || []).filter((x) => x && x.minN >= R.minN[0] && x.minN <= R.minN[1] && x.minShare >= R.minShare[0] - 1e-9 && x.minShare <= R.minShare[1] + 1e-9 && x.prec >= R.precMin && x.n >= R.minCand);
+    if (!ok.length) return { ...cur, moved: false, why: `범위 안에서 정밀도 ${Math.round(R.precMin * 100)}%·후보 ${R.minCand}권을 넘는 문턱이 없음 — 지금 값 그대로` };
+    const best = ok.slice().sort((a, b) => b.n - a.n || b.prec - a.prec || a.minShare - b.minShare)[0]; const step = (a, b, s) => (Math.abs(b - a) <= s + 1e-9 ? b : a + Math.sign(b - a) * s);
+    const nx = { minN: step(cur.minN, best.minN, R.stepN), minShare: Math.round(step(cur.minShare, best.minShare, R.stepShare) * 1000) / 1000 };
+    return { ...nx, moved: nx.minN !== cur.minN || nx.minShare !== cur.minShare, best, why: `정밀도 ${Math.round(best.prec * 100)}% · 후보 ${best.n}권이 범위 안 최선(minN ${best.minN} · 몫 ${Math.round(best.minShare * 100)}%)${nx.minN !== best.minN || nx.minShare !== best.minShare ? ' — 한 번에 한 칸씩 다가감' : ''}` }; }
+  /* 🩹 되살린 하루 모습(ml_state.rebuiltDays) — 정범님 11/09 '최선을 고심해서 결정해줘' (DECISIONS_1109 4장)
+   *  배우기에는 쓰되 무게 절반(REBUILT_W · 줄을 둘에 하나만) · 검증·채점에는 쓰지 않음 · 언제든 rebuilt 표시로 거름(머리 문서 rebuilt:true)
+   *  mlSplitDays(lab, rebuilt) → { train, val, wait, mode } — 검증 = 끝에서 이어진 진짜 날(최대 7 · 최소 3 — 그러면 그 앞 되살린 날까지 모두 배움) · 모자라면 진짜 날 마지막 7일로 검증하고 그 사이 되살린 날은 기다림(미래로 배우지 않음) */
+  const REBUILT_W = 0.5;
+  function mlSplitDays(lab, rebuilt, o) { o = o || {}; const R = new Set(rebuilt || []); const L = [...new Set(lab || [])].sort(); const vMax = o.valMax || 7, vMin = o.valMin || 3;
+    let i = L.length; while (i > 0 && !R.has(L[i - 1]) && L.length - i < vMax) i--; const tail = L.slice(i);
+    if (tail.length >= vMin) return { train: L.slice(0, i), val: tail, wait: [], mode: 'tail' };
+    const real = L.filter((d) => !R.has(d)); if (real.length < vMin) return { train: L.filter((d) => !R.has(d)), val: [], wait: L.filter((d) => R.has(d)), mode: 'none' };
+    const val = real.slice(-vMax); const v0 = val[0]; /* 진짜 날 마지막 7일(사이에 낀 되살린 날은 검증에도 배우기에도 안 씀 — 검증 첫날 뒤 날로 배우면 미래로 배우는 셈) */
+    return { train: L.filter((d) => d < v0), val, wait: L.filter((d) => d > v0 && R.has(d)), mode: 'before' }; }
+  const api = { VERSION, VDEF, setBuyback, bbExpect, bbAccept, BB_ACC, extrasOf, EX_LABEL, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, sevReasonGroups, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue, STRATS, STRAT_K, SDEF, stratDecide, stratGuard, stratMarket, stratFloor, stratCeil, stratParams, stratRarity, STALL_H, stallCheck, asOfMetrics, listingAsOf, EXP_DEF, AGE_EDGES, isHumanBy, expCell, expPair, humanTouch, busyOf, dayLossLimit, dayLossOf, expScore, engDecOk, RARE_RANGE, rareClamp, rarePick, REBUILT_W, mlSplitDays };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowML = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
