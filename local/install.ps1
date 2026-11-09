@@ -10,6 +10,8 @@
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $RAW = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local'
+# (11/10 big1) 🌐 새 주소(readnow.kr)가 열려 있으면 거기서 · 아니면 지금처럼 GitHub
+try { $null = Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Uri ('https://readnow.kr/hosting-stamp.json?t=' + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()); $RAW = 'https://readnow.kr/local' } catch {}
 function Say($m) { Write-Host "▶ $m" -ForegroundColor Cyan }
 function Ok($m) { Write-Host "  ✓ $m" -ForegroundColor Green }
 function Warn($m) { Write-Host "  ⚠ $m" -ForegroundColor Yellow }
@@ -126,7 +128,7 @@ foreach (`$n in (`$names | Select-Object -Unique)) { Get-NetIPInterface -Interfa
   # (도우미 1.6.7 자동 점검) 크롬 '메모리 절약'이 수집기 탭을 잠재우지 않게 — TabDiscardingExceptions(컴퓨터 정책 HKLM · 사용자 정책 HKCU는 관리자만 쓸 수 있어 스스로 갖추기가 못 넣을 수 있음)
   $tdk = 'HKLM:\SOFTWARE\Policies\Google\Chrome\TabDiscardingExceptions'; New-Item -Path $tdk -Force | Out-Null
   $tdh = @(); $tdm = 0; foreach ($n in (Get-Item $tdk).Property) { $tdh += (Get-ItemProperty -Path $tdk -Name $n).$n; if ($n -match '^\d+$' -and [int]$n -gt $tdm) { $tdm = [int]$n } }
-  foreach ($w in @('[*.]aladin.co.kr', 'jerrycson.github.io', '127.0.0.1', 'localhost', 'rn.local')) { if ($tdh -notcontains $w) { $tdm++; New-ItemProperty -Path $tdk -Name "$tdm" -Value $w -PropertyType String -Force | Out-Null } }
+  foreach ($w in @('[*.]aladin.co.kr', 'jerrycson.github.io', 'readnow.kr', '127.0.0.1', 'localhost', 'rn.local')) { if ($tdh -notcontains $w) { $tdm++; New-ItemProperty -Path $tdk -Name "$tdm" -Value $w -PropertyType String -Force | Out-Null } }
   Ok "크롬 정책: 알라딘·웹앱·도우미 탭은 메모리 절약으로 잠재우지 않음(크롬을 다시 켜면 적용)"
 }
 

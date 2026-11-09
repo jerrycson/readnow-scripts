@@ -12,6 +12,8 @@ if (-not $With -and $env:RN_WITH) { $With = "$env:RN_WITH".ToLower() }
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $RAW = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/local'
+# (11/10 big1) 🌐 새 주소(readnow.kr)가 열려 있으면 거기서 · 아니면 지금처럼 GitHub
+try { $null = Invoke-WebRequest -UseBasicParsing -TimeoutSec 8 -Uri ('https://readnow.kr/hosting-stamp.json?t=' + [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()); $RAW = 'https://readnow.kr/local' } catch {}
 function Say($m) { Write-Host "▶ $m" -ForegroundColor Cyan }
 function Ok($m) { Write-Host "  ✓ $m" -ForegroundColor Green }
 function Warn($m) { Write-Host "  ⚠ $m" -ForegroundColor Yellow }
@@ -81,7 +83,7 @@ try { Invoke-WebRequest -UseBasicParsing -Uri "$RAW/readnow-blk.js$Q" -OutFile $
 if ($With -eq 'col2') { try {
   Say '🧪 외부 수집기(시험) 받기 — 운영 수집기와 따로 · 로그인하지 않음 · 기본 꺼짐이던 것을 이 PC만 켬'
   $C2 = Join-Path $env:USERPROFILE 'ReadNow\col2'; $C2App = Join-Path $C2 'app'; $C2New = Join-Path $C2 'app.new'
-  $C2RAW = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/lab/col2'
+  $C2RAW = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/lab/col2'; if ($RAW -like 'https://readnow.kr/*') { $C2RAW = 'https://readnow.kr/lab/col2' }
   New-Item -ItemType Directory -Force -Path $C2 | Out-Null
   if (Test-Path $C2New) { Remove-Item -Recurse -Force $C2New }
   $man = Invoke-RestMethod -UseBasicParsing -Uri "$C2RAW/bundle.json$Q"
