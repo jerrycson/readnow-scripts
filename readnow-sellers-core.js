@@ -154,6 +154,36 @@
     const sh = numK(s.reviews6m ?? (s.sheet && s.sheet.reviews6m)); if (sh != null) return { n: sh, src: '구글 시트', at: null };
     return { n: null, src: null, at: null };
   }
-  const api = { VERSION, DEFAULT_THRESHOLDS, normalize, score, linkLevel, quadrant, modelReasons, gainReasons, fromTooltip, MODEL_TXT, GAIN_TXT, GAIN_SHORT, parseSurveyPage, reviewStats, parseShopSummary, rev6m };
+  // ── 🧭 판매자 가치 무게 peerW (sv1 11/10 · 정범님 11/10 새벽: 옛 시트 '허위' 표시를 근거에서 빼고 엔진 근거로) ──
+  // 묻는 것: '이 판매자의 매물을 우리 값 판단의 비교 대상으로 얼마나 믿을지(0~1)'. 사람 표시(ourGrade·grade 'fake')는 읽지 않음.
+  // w = 활동(act) × 배송 약속(ship) × 독립(indep) × 실제 팔림(real)
+  //   act  = 1 − exp(−최근 6개월 평가 수 ÷ tau)  — 평가는 실제 배송된 주문에서만 생김(알라딘 공식 숫자). 3건 미만('-')은 1건으로
+  //   ship = (1 − 최근 3개월 품절취소율) ^ k     — 손님이 주문해도 '없는 재고'로 취소될 몫(알라딘 공식 숫자). 모르면 shipUnknown
+  //   indep = 엔진 무리 근거(비지도 튀는 무리·같은 값 짝 가족)에 들면 indepGroup — 근거 자료(ev)는 매일 엔진이 만든 것(판매자 번호는 코드에 없음)
+  //   real = (팔림 + m) ÷ (팔림 + 지나침 + m)    — 매일 엔진 한 걸음: 그 판매자 매물이 사라짐(팔림) · 우리보다 싼데 손님이 우리를 삼(지나침)
+  // 첫 값(tau·k·띠)은 '시트를 뺀 지금 기준(sellerBg 두 축 — 4,365곳 분석·아마존 2.5%)'과 가장 많이 맞게 맞춘 값(research/ENGINES PEER_W.md) → 매일 판매 결과로 고쳐 감
+  const PEER_CFG = { tau: 40, k: 4, shipUnknown: 0.9, indepGroup: 0.2, realM: 5, cuts: { dk: 0.9, g: 0.86, y: 0.69, o: 0.41 }, dkMinRev: 1000 }; // 첫 값 = 11/09 판매자 6,476곳을 우리 책 첫 쪽 칸 수(14만 칸) 무게로 '비교군 넣음/뺌' 경계 일치 98.0%가 되게 맞춤(research/ENGINES PEER_W.md) · indepGroup·realM은 근거 없는 첫 값(설정 · 매일 엔진이 고침)
+  function peerW(doc, ev, cfg) {
+    const C = { ...PEER_CFG, ...(cfg || {}), cuts: { ...PEER_CFG.cuts, ...((cfg && cfg.cuts) || {}) } };
+    if (!doc) return { w: null, cls: 'unknown', why: '판매자 기록 없음 (아직 안 모음)', parts: null };
+    const r6 = rev6m(doc); const lt3 = !!r6.lt3;
+    if (r6.n == null && !lt3) return { w: null, cls: 'unknown', why: '최근 6개월 평가 수를 아직 안 모음 — 모름', parts: null };
+    const n6 = r6.n != null ? Math.max(0, +r6.n) : 1;
+    let c = null; if (doc.cancel3m != null && doc.cancel3m !== '') c = Number(doc.cancel3m); else if (doc.outstockRate != null && doc.outstockRate !== '') { const o = Number(doc.outstockRate); c = doc.sc ? o / 100 : o > 1 ? o / 100 : o; }
+    if (c != null && !Number.isFinite(c)) c = null;
+    const act = 1 - Math.exp(-(lt3 ? 1 : n6) / C.tau);
+    const ship = c == null ? C.shipUnknown : Math.pow(clamp(1 - c, 0, 1), C.k);
+    const E = ev || null; const grp = E && E.grp ? String(E.grp) : null;
+    const indep = grp ? C.indepGroup : 1;
+    const so = E && +E.sold > 0 ? +E.sold : 0, pa = E && +E.passed > 0 ? +E.passed : 0;
+    const real = (so + C.realM) / (so + pa + C.realM);
+    const w = Math.round(act * ship * indep * real * 1000) / 1000;
+    const K = C.cuts; const cls = w >= K.dk && n6 >= C.dkMinRev ? 'dkgreen' : w >= K.g ? 'green' : w >= K.y ? 'yellow' : w >= K.o ? 'orange' : 'red';
+    const why = [`활동 ${act.toFixed(2)}(6개월 평가 ${lt3 ? '3건 미만' : numTxt(n6) + '개'})`, `배송 약속 ${ship.toFixed(2)}(${c == null ? '취소율 모름' : '품절취소율 ' + (c * 100).toFixed(1) + '%'})`];
+    if (grp) why.push(`독립 ${indep}(엔진 무리 근거: ${grp === 'fam' ? '같은 값 짝 가족' : '튀는 무리'})`);
+    if (so || pa) why.push(`실제 팔림 ${real.toFixed(2)}(팔림 ${so} · 지나침 ${pa})`);
+    return { w, cls, why: `판매자 가치 ${w.toFixed(2)} = ` + why.join(' × '), parts: { act, ship, indep, real, n6: lt3 ? null : n6, lt3, cancel: c, grp } };
+  }
+  const api = { VERSION, DEFAULT_THRESHOLDS, PEER_CFG, peerW, normalize, score, linkLevel, quadrant, modelReasons, gainReasons, fromTooltip, MODEL_TXT, GAIN_TXT, GAIN_SHORT, parseSurveyPage, reviewStats, parseShopSummary, rev6m };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowSellers = api;
 })(typeof window !== 'undefined' ? window : this);
