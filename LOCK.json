@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "1.78.433 벤치마킹 두 번째",
- "since": "2026-11-09T03:45:50Z",
- "beat": "2026-11-09T03:45:50Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.432 67d9b76",
-  "at": "2026-11-09T03:34:18Z"
+  "done": "1.78.433/1.89.238 4465b1e",
+  "at": "2026-11-09T03:45:57Z"
  },
- "host": "vm"
+ "host": null
 }
