@@ -4,14 +4,14 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   const ok = []; const chk = (name, v, info) => { ok.push([name, !!v]); if (!v && info !== undefined) console.log('  ✗ ' + name + ' :: ' + JSON.stringify(info)); };
   /* 문제 7가지
    *  A 🧪 '작업대 1' 등록 시험 상품(U…11)            → JS
-   *  B 🧪 '박문정' 작업대 등록 시험 상품(U…15)        → MJ
+   *  B 🧪 'MJ 작업대' 등록 시험 상품(U…15)        → MJ
    *  G 🧪 '작업대 3'(사람 모름) 등록 시험 상품(U…17)  → 관리자
    *  C 🗑 작업대 모름 삭제 실패(맡긴 기기 없음 · U…12) → 관리자
-   *  F 🗑 등록 화면(박문정 작업대 줄)에서 맡긴 삭제 실패(U…16) → MJ
+   *  F 🗑 등록 화면(MJ 작업대 줄)에서 맡긴 삭제 실패(U…16) → MJ
    *  D ⏱ 반영 실패 — 맡긴 기기 MJ-PHONE(U…13)       → MJ
    *  E ⏱ 반영 실패 — 맡긴 기기 HOME(관리자 기기 · U…14) → 관리자 */
   await p.evaluate(async () => { S.leader = true; const today = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); for (const k of ['aladin_U215983411', 'aladin_U215983415', 'aladin_U215983417']) { const l0 = S.plist.get(k); if (l0) l0.registeredAt = today; }
-    await db.collection('app_settings').doc('main').set({ reg: { wsList: [{ id: 'main', name: '작업대 1' }, { id: 'w2', name: '박문정' }, { id: 'w3', name: '작업대 3' }] } }, { merge: true }); /* 작업대 목록은 모든 기기 공용(app_settings/main.reg.wsList) */
+    await db.collection('app_settings').doc('main').set({ reg: { wsList: [{ id: 'main', name: '작업대 1' }, { id: 'w2', name: 'MJ 작업대' }, { id: 'w3', name: '작업대 3' }] } }, { merge: true }); /* 작업대 목록은 모든 기기 공용(app_settings/main.reg.wsList) */
     const t = new Date().toISOString();
     await db.collection('reg_items').doc('rA').set({ test: true, stage: 'done', ws: 'main', confirmedAt: t, createdAt: t, final: { title: '시험 책 A' }, result: { state: 'live', listingId: '404935001', usedCode: 'U215983411' } });
     await db.collection('reg_items').doc('rB').set({ test: true, stage: 'done', ws: 'w2', confirmedAt: t, createdAt: t, final: { title: '시험 책 B' }, result: { state: 'live', listingId: '404935005', usedCode: 'U215983415' } });
@@ -63,24 +63,24 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
     const b2 = sh.querySelector('[data-probown]'); if (b2) b2.click(); await new Promise((r) => setTimeout(r, 200)); out.home2 = sh.querySelectorAll('.probcur').length; history.back(); await new Promise((r) => setTimeout(r, 300));
     localStorage.setItem('rn-device', 'MJ-MAIN'); S.probP.all = true; out.mjForce = probAll(true).size; return out; });
   console.log('페이지:', JSON.stringify(pg));
-  chk('MJ 기기 페이지 = 자기 몫 3 · 전체 보기 없음', pg.mj.cur === 3 && !pg.mj.btn && pg.mj.logs === 3 && pg.mj.own.some((x) => /MJ/.test(x) && /박문정/.test(x)), pg.mj);
+  chk('MJ 기기 페이지 = 자기 몫 3 · 전체 보기 없음', pg.mj.cur === 3 && !pg.mj.btn && pg.mj.logs === 3 && pg.mj.own.some((x) => /MJ/.test(x) && /MJ 작업대/.test(x)), pg.mj);
   chk('HOME 페이지 기본 = 관리자 몫 3', pg.home0.cur === 3 && pg.home0.logs === 3, pg.home0);
   chk('HOME 👥 전체 보기 = 7 (알림·띠는 그대로 내 몫)', pg.btn && pg.home1.cur === 7 && pg.home1.logs === 7 && pg.home1.mineAfter === 3 && pg.home2 === 3, pg);
   chk('사람 기기는 전체 보기를 억지로 켜도 자기 몫', pg.mjForce === 3, pg.mjForce);
 
-  // 5) ⚙ 설정 ① — 짝을 바꾸면 바로(박문정 작업대 → JS) · 기본값 되돌리기
+  // 5) ⚙ 설정 ① — 짝을 바꾸면 바로(MJ 작업대 → JS) · 기본값 되돌리기
   const st = await p.evaluate(async () => { localStorage.setItem('rn-device', 'JS-MAIN'); S.devOk = true; S.user.displayName = 'Jerry S'; const sh = document.getElementById('sheet'); if (sh) sh.classList.remove('on'); S.detail = null; S.tab = 'settings'; renderTabs(); renderMain(); await new Promise((r) => setTimeout(r, 900));
-    const box = document.getElementById('st_po'); if (!box) return { box: false }; box.open = true; const ta = box.querySelector('#st_po_ws'); const before = ta.value; const wsNow = box.textContent.includes('박문정 → MJ');
-    ta.value = '작업대 1 = JS\n박문정 = JS'; box.querySelector('[data-posave]').click(); await new Promise((r) => setTimeout(r, 600));
+    const box = document.getElementById('st_po'); if (!box) return { box: false }; box.open = true; const ta = box.querySelector('#st_po_ws'); const before = ta.value; const wsNow = box.textContent.includes('MJ 작업대 → MJ');
+    ta.value = '작업대 1 = JS\nMJ 작업대 = JS'; box.querySelector('[data-posave]').click(); await new Promise((r) => setTimeout(r, 600));
     const saved = (window.__FS.app_settings || {}).main || {}; localStorage.setItem('rn-device', 'MJ-MAIN'); const mjAfter = [...probAll().keys()].sort(); localStorage.setItem('rn-device', 'JS-MAIN'); const jsAfter = probAll().size;
     S.tab = 'settings'; renderMain(); await new Promise((r) => setTimeout(r, 400)); const box2 = document.getElementById('st_po'); box2.querySelector('[data-podef]').click(); const defTx = box2.querySelector('#st_po_ws').value; box2.querySelector('[data-posave]').click(); await new Promise((r) => setTimeout(r, 600));
     localStorage.setItem('rn-device', 'MJ-MAIN'); const mjBack = probAll().size; localStorage.setItem('rn-device', 'JS-MAIN');
-    const bad = document.getElementById('st_po'); bad.querySelector('#st_po_ws').value = '박문정 = 누구'; const t0 = (window.__FS.app_settings.main.probOwn || {}).at; bad.querySelector('[data-posave]').click(); await new Promise((r) => setTimeout(r, 300)); const t1 = (window.__FS.app_settings.main.probOwn || {}).at;
+    const bad = document.getElementById('st_po'); bad.querySelector('#st_po_ws').value = 'MJ 작업대 = 누구'; const t0 = (window.__FS.app_settings.main.probOwn || {}).at; bad.querySelector('[data-posave]').click(); await new Promise((r) => setTimeout(r, 300)); const t1 = (window.__FS.app_settings.main.probOwn || {}).at;
     return { box: true, before, wsNow, savedWs: saved.probOwn && saved.probOwn.ws, mjAfter, jsAfter, defTx, mjBack, badKept: t0 === t1, log: !!((window.__FS.app_settings || {}).log) }; });
   console.log('설정:', JSON.stringify(st));
-  chk('설정 칸 · 기본 짝', st.box && /박문정 = MJ/.test(st.before) && /작업대 1 = JS/.test(st.before) && st.wsNow, st);
-  chk('짝 바꾸면 바로(박문정 → JS: MJ 기기는 D만 · JS 기기는 6)', st.savedWs && st.savedWs['박문정'] === 'JS' && JSON.stringify(st.mjAfter) === JSON.stringify(['aladin_U215983413']) && st.jsAfter === 6, st);
-  chk('처음 값 되돌리기', /박문정 = MJ/.test(st.defTx) && st.mjBack === 3, st);
+  chk('설정 칸 · 기본 짝(작업대 1 = JS · MJ 작업대는 이름 규칙으로 MJ — 공개 코드에 직원 실명 없음)', st.box && !/MJ 작업대 = /.test(st.before) && /작업대 1 = JS/.test(st.before) && st.wsNow, st);
+  chk('짝 바꾸면 바로(MJ 작업대 → JS: MJ 기기는 D만 · JS 기기는 6)', st.savedWs && st.savedWs['MJ 작업대'] === 'JS' && JSON.stringify(st.mjAfter) === JSON.stringify(['aladin_U215983413']) && st.jsAfter === 6, st);
+  chk('처음 값 되돌리기', /작업대 1 = JS/.test(st.defTx) && !/MJ 작업대 = /.test(st.defTx) && st.mjBack === 3, st);
   chk('잘못 쓴 줄은 저장 안 함 · 바꾼 기록 남김', st.badKept && st.log, st);
 
   // 6) 작업대 이름 규칙 — 이름에 사람 표·별칭 · 모르면 관리자

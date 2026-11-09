@@ -3121,10 +3121,11 @@ async function engExpTick(force) { if (ENGX.busy) return null; const now = Date.
   catch (e) { log('🧪 엔진 실험 장부 실패', e.message); try { await C('app_settings').doc('eng_exp_state').set({ err: String(e.message).slice(0, 200), errAt: nowIso() }, { merge: true }); } catch (x) {} return { err: e.message }; } finally { ENGX.busy = false; } }
 /* FENCE2-START (11/10 일꾼 fence2 · 정범님 11/09 밤 '하루 손해 한도 1만 원 — 절대로 기준을 넘는 일이 없도록 · 돈이 걸린 일은 절대 실수가 있어서는 안 돼' · 약속 33: 사후 기록이 아니라 실행 전에 막기)
  *  🧪 하루 손해 울타리 원장 eng_fence_ledger/{한국 날짜} — 셈은 공용 ml-core FENCE-PURE(fenceTry·fenceSettle·fenceRoll·fenceLimitOf)
- *   ① ⚡ 전략이 값을 내리기 전에(stratTick · 샵매니저 수정 맡김 전) 트랜잭션으로 '오늘 쓴 + 걸린 것 모두 + 이번 내림 ≤ 한도'를 보고 예약(넘으면 그 내림만 안 함 · 부분 적용 없음 · strat_log 'fence'와 원장 no에 기록)
- *   ② 같은 날 여러 기기·회차가 동시에 내려도 한도를 두 번 쓰지 않음 — 원장 문서 하나를 트랜잭션으로만 고침(감시기도 같은 원장·같은 셈) · 날짜 경계 = 한국 0시(새 날 원장은 어제 걸린 것을 이어 받음)
+ *   ① ⚡ 전략이 값을 내리기 전에(stratTick · 샵매니저 수정 맡김 전) 트랜잭션으로 '오늘 엔진이 내린 몫 + 진행 중 예약 몫 + 이번 내림 몫 ≤ 한도'(fence5 — 그날 실제로 내린 몫)를 보고 예약(넘으면 그 내림만 안 함 · 부분 적용 없음 · strat_log 'fence'와 원장 no에 기록)
+ *   ② 같은 날 여러 기기·회차가 동시에 내려도 한도를 두 번 쓰지 않음 — 원장 문서 하나를 트랜잭션으로만 고침(감시기도 같은 원장·같은 셈) · 날짜 경계 = 한국 0시(새 날 원장은 상품 기록·안 끝난 예약을 이어 받고 그날 몫은 0부터 — fence5)
  *   ③ 정리(fenceReconcile): 20분마다 끝난 예약을 확정(수정 맡김 끝 = 그 값 · 취소 = 풂 · 실패·모름 = 수집기가 다시 읽은 값이 나올 때까지 예약 그대로 — 안전 쪽)
- *      하루 한 번 전체 셈: 진행 중 실험의 처리 상품을 모두 원장에 걸고(시작 값 − 지금 값) · 오늘 팔린 것은 '쓴 돈'으로 옮기고 원장에서 뺌 · 사람이 손대 빠진 상품·판매중 아닌 상품은 뺌 */
+ *      하루 한 번 전체 셈: 진행 중 실험의 처리 상품을 모두 원장에 기록(시작 값 − 지금 값 = 내려 둔 값 a · 기록만) · 오늘 팔린 손해는 sold(참고) · 사람이 손대 빠진 상품·판매중 아닌 상품은 뺌(그날 몫은 gone에 남김)
+ *   (11/10 fence5 · 정범님 11/10 새벽) 한도와 견주는 것 = 그날 엔진이 실제로 내린 몫(spent — 정범님 확정 값 아래로 새로 내려간 만큼 · 예약 중 몫 포함) · 새 날은 0부터 · 🛰 감시·🎯 추격자 몫은 ops 칸에 기록만(한도 셈 밖) */
 const fenceDay = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
 async function fenceTxCloud(ML, mode, q) { const nowMs = Date.now(); const nowI = new Date(nowMs).toISOString(); const day = fenceDay(nowMs); const LC = C('eng_fence_ledger'); const ref = LC.doc(day), head = LC.doc('_head'), nwRef = C('app_settings').doc('eng_fence_now'); let out = null;
   await db.runTransaction(async (tx) => { out = null; const s = await tx.get(ref); const nw = (await tx.get(nwRef)).data() || null; let L = s.exists ? s.data() : null; let mk = false;
@@ -3132,6 +3133,7 @@ async function fenceTxCloud(ML, mode, q) { const nowMs = Date.now(); const nowI 
     const lim0 = ML.fenceLimitOf(nw, nowMs); const lim = lim0.ok && q && q.cap > 0 && q.cap < lim0.limit ? { ...lim0, limit: q.cap, why: `정범님 허락 한도 ${(+q.cap).toLocaleString()}원` } : lim0; const patch = { ...(mk ? L : {}), day, limit: lim0.ok ? lim0.limit : null, limitWhy: lim0.why || null, at: nowI, ...W() }; /* (11/10 fence4) cap = 💸 정범님 허락 한도(더 작으면) · 원장 limit 칸은 예전 그대로 */
     if (mode === 'try') { out = ML.fenceTry(L, q, lim, nowI); if (!out.ok) patch.no = ML.fenceNoAdd(L, { at: nowI, key: q.key, src: q.src || null, by: q.by || null, from: q.from ?? null, to: q.to ?? null, why: String(out.why || '').slice(0, 200) }); else if (out.e) patch.x = { ...(mk ? L.x : {}), [q.key]: out.e }; }
     else if (mode === 'settle') { const e = ML.fenceSettle(L, q.key, q.id, !!q.ok, q.price, nowI); out = { ok: !!e }; if (e) patch.x = { ...(mk ? L.x : {}), [q.key]: e }; }
+    if (ML.fenceStamp) Object.assign(patch, ML.fenceStamp({ ...L, x: { ...(L.x || {}), ...(patch.x || {}) } })); /* (fence5) 합계 칸(spent · v2 원장은 옛 판이 읽는 done도) */
     tx.set(ref, patch, { merge: true }); if (mk) tx.set(head, { day, at: nowI }, { merge: true }); });
   return out; }
 /* fenceReconcile(ML, o) — o.full: 하루 한 번 전체 셈(o.mem: 실험 id → 상품 줄 · o.sales: usedCode → 판매) · 아니면 예약 정리만 */
@@ -3153,16 +3155,17 @@ async function fenceReconcile(ML, o) { o = o || {}; const nowMs = Date.now(); co
   const firstSale = (u, from) => ((o.sales && o.sales.get(String(u))) || []).filter((z) => z.at >= from).sort((a, b) => a.at - b.at)[0] || null; const live = (l) => !!(l && l.price != null && !/판매완료|판매중지|삭제/.test(String(l.status || '')) && l.active !== false);
   await db.runTransaction(async (tx) => { const s = await tx.get(ref); if (!s.exists && !o.full) return; let L = s.exists ? s.data() : null; let mk = false;
     if (!L) { const h = (await tx.get(LC.doc('_head'))).data() || {}; const prev = h.day && h.day < day ? (await tx.get(LC.doc(h.day))).data() || null : null; L = ML.fenceRoll(prev, day, nowI); mk = true; }
-    const X = { ...(L.x || {}) }; const patch = {}; const FVd = FV.delete(); let n = 0;
-    for (const [k, d0] of dec) { const e = ML.fenceSettle({ x: X }, k, d0.rid, d0.ok, d0.price, nowI); if (e) { X[k] = e; patch[k] = e; n++; } } res.settled = n;
+    const X = { ...(L.x || {}) }; const patch = {}; const FVd = FV.delete(); let n = 0; const gone0 = Math.max(0, +L.gone || 0), opsGone0 = Math.max(0, +L.opsGone || 0); let gone = gone0, opsGone = opsGone0; /* (fence5) 원장에서 빠지는 상품의 그날 몫은 gone으로(같은 날 줄지 않음) · 감시·추격자 몫은 opsGone(기록만) */
+    for (const [k, d0] of dec) { const e = ML.fenceSettle({ ...L, x: X }, k, d0.rid, d0.ok, d0.price, nowI); if (e) { X[k] = e; patch[k] = e; n++; } } res.settled = n;
     if (o.full) { const lossL = []; const keys = new Set([...Object.keys(X), ...cand.keys()]);
       for (const k of keys) { const e = X[k] || null, c = cand.get(k) || null, l = LS.get(k); const u = (c && c.usedCode) || String(k).replace(/^aladin_/, ''); const s0 = (e && +e.s > 0 && +e.s) || (c && c.start) || null; const join = Date.parse((e && e.since) || (c && c.at) || '') || 0; const sold = firstSale(u, join);
         if (sold && sold.at >= t0d && s0) lossL.push({ key: k, usedCode: u, arm: 'treat', start: s0, at: new Date(join).toISOString() });
         if (e && e.r) continue; /* 진행 중 예약은 끝날 때까지 그대로 */
-        if (sold || !live(l) || !(c || (e && e.src === 'ro'))) { if (e) { patch[k] = FVd; delete X[k]; } continue; } /* 팔림(손해는 '쓴 돈'으로) · 판매중 아님 · 실험에서 빠짐(사람 손댐·그룹에서 빠짐) → 원장에서 뺌 */
-        const p = +l.price; const ne = { s: s0, p, a: Math.max(0, s0 - p), src: (e && e.src) || (c && c.src) || null, since: (e && e.since) || (c && c.at) || nowI, r: null }; if (!e || e.s !== ne.s || e.p !== ne.p || e.a !== ne.a) { X[k] = ne; patch[k] = ne; } }
-      const lt = ML.dayLossOf(lossL, o.sales || new Map(), t0d, nowMs + 60e3); res.done = Math.max(Math.max(0, +L.done || 0), lt.loss); /* 오늘 쓴 돈은 줄지 않음(먼저 뺀 상품의 손해를 다시 못 볼 수 있어 큰 값) */ res.n = Object.keys(X).length; }
-    const up = { day, at: nowI, ...W() }; if (o.full) { up.done = res.done; up.doneAt = nowI; up.doneN = (res.n != null ? res.n : null); }
+        if (sold || !live(l) || !(c || (e && e.src === 'ro'))) { if (e) { gone += ML.fenceT ? ML.fenceT(e, L) : Math.max(0, +e.a || 0); opsGone += Math.max(0, +e.od || 0); patch[k] = FVd; delete X[k]; } continue; } /* 팔림 · 판매중 아님 · 실험에서 빠짐(사람 손댐·그룹에서 빠짐) → 원장에서 뺌 · (fence5) 그날 엔진이 내린 몫은 gone에 남겨 한도가 다시 열리지 않음 */
+        const p = +l.price; const ne = { ...(e || {}), s: s0, p, a: Math.max(0, s0 - p), t: ML.fenceT ? ML.fenceT(e, L) : 0, od: Math.max(0, +(e && e.od) || 0), src: (e && e.src) || (c && c.src) || null, since: (e && e.since) || (c && c.at) || nowI, r: null }; if (!e || e.s !== ne.s || e.p !== ne.p || e.a !== ne.a || e.t == null) { X[k] = ne; patch[k] = ne; } } /* (fence5) 새로 건 상품은 그날 몫 0(내려 둔 값 a는 기록만 · 엔진 내림은 모두 fenceTry 예약을 거침) · 옛 칸(base·ops)은 지우지 않음 */
+      const lt = ML.dayLossOf(lossL, o.sales || new Map(), t0d, nowMs + 60e3); res.sold = Math.max(Math.max(0, +L.sold || 0), lt.loss); /* 오늘 팔려 덜 받은 돈(참고 · 한도 셈 밖 — fence5) · 같은 날 줄지 않음 */ res.n = Object.keys(X).length; }
+    const up = { day, at: nowI, ...W() }; if (gone !== gone0) up.gone = gone; if (opsGone !== opsGone0) up.opsGone = opsGone; if (o.full) { up.sold = res.sold; up.doneAt = nowI; up.doneN = (res.n != null ? res.n : null); }
+    if (ML.fenceStamp) { Object.assign(up, ML.fenceStamp({ ...L, gone, opsGone, x: X })); res.spent = up.spent; } /* (fence5) 합계 칸 — 오늘 엔진이 내린 몫(spent · v2 원장은 옛 판이 읽는 done도 같은 값) */
     if (mk) tx.set(ref, { ...L, ...up, x: Object.fromEntries(Object.entries(X)) }, { merge: true }); else if (Object.keys(patch).length || o.full) tx.set(ref, { ...up, x: patch }, { merge: true });
     if (mk) tx.set(LC.doc('_head'), { day, at: nowI }, { merge: true }); });
   return res; }
@@ -3218,7 +3221,7 @@ async function stratTick(force) { if (STR.busy) return null; const runRef = C('a
         /* ⓪-1 (11/10 fence4 · 정범님 11/09 밤 '비용이 드는 연구는 반드시 내 허락을 받은 뒤에만') 💸 값 내리기·판매 상태 바꾸기는 허락 기록(대상 ⚡ 전략 · 기한 · 한도)이 있어야만 — 없으면 막고 '정범님 허락 필요'로 기록 · 값 올리기는 비용이 아니라 그대로 */
         const costly = x.d.act !== 'price' || +x.d.to < +l.price; const CO = costly ? (ML.fenceCostOk ? ML.fenceCostOk(COSTREC, { what: 'strat' }) : { ok: false, why: '💸 정범님 허락 필요 — 학습 공용이 옛 판(허락 검사 없음)' }) : { ok: true, limit: 0 };
         if (!CO.ok) { sum[a.id] = { ...(sum[a.id] || {}), costNeed: ((sum[a.id] || {}).costNeed || 0) + 1 }; costNeed.push({ at: nowIso(), aid: a.id, k: a.k, lid: x.lid, act: x.d.act, from: x.d.act === 'price' ? +l.price : l.status || null, to: x.d.act === 'price' ? +x.d.to : ch.state, why: String(CO.why || '').slice(0, 160) }); await C('strat_log').add({ at: nowIso(), aid: a.id, k: a.k, lid: x.lid, title: String(l.title || '').slice(0, 80), act: 'costNeed', from: x.d.act === 'price' ? +l.price : l.status || null, to: x.d.act === 'price' ? x.d.to : ch.state, why: String(CO.why || '').slice(0, 200), mode: 'auto', day: today, uploadedAt: FV.serverTimestamp() }).catch(() => {}); continue; }
-        /* ⓪ (11/10 fence2) 🧪 하루 손해 울타리 — 값을 내리기 전에 원장(eng_fence_ledger/오늘)에 예약: 오늘 쓴 + 걸린 것 모두 + 이번 내림 ≤ 한도일 때만(넘거나 원장을 못 쓰면 이 내림은 안 함 · 부분 적용 없음 · 기록) · (fence4) 한도 = 하루 손해 한도와 💸 허락 한도 중 작은 값 */
+        /* ⓪ (11/10 fence2) 🧪 하루 손해 울타리 — 값을 내리기 전에 원장(eng_fence_ledger/오늘)에 예약: 오늘 엔진이 내린 몫 + 진행 중 + 이번 내림 몫 ≤ 한도일 때만(fence5)(넘거나 원장을 못 쓰면 이 내림은 안 함 · 부분 적용 없음 · 기록) · (fence4) 한도 = 하루 손해 한도와 💸 허락 한도 중 작은 값 */
         let fz = null; if (x.d.act === 'price' && +x.d.to < +l.price) { try { fz = await fenceTxCloud(ML, 'try', { key: x.lid, from: +l.price, to: +x.d.to, src: 'st:' + a.id, by: 'strategy', id: ref.id, cmd: ref.id, cap: CO.limit || null }); } catch (e) { fz = { ok: false, why: '하루 손해 원장을 못 씀(' + e.message + ') — 안전 쪽으로 내리지 않음' }; }
           if (!fz || !fz.ok) { sum[a.id] = { ...(sum[a.id] || {}), fence: ((sum[a.id] || {}).fence || 0) + 1 }; await C('strat_log').add({ at: nowIso(), aid: a.id, k: a.k, lid: x.lid, title: String(l.title || '').slice(0, 80), act: 'fence', from: +l.price, to: x.d.to, why: ('🧪 하루 손해 울타리 — ' + ((fz && fz.why) || '모름')).slice(0, 200), mode: 'auto', day: today, uploadedAt: FV.serverTimestamp() }).catch(() => {}); continue; } }
         const fzUndo = () => (fz && fz.e ? fenceTxCloud(ML, 'settle', { key: x.lid, id: ref.id, ok: false }).catch(() => {}) : Promise.resolve());
