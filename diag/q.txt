@@ -1,2 +1,2 @@
-doc=app_settings/cloud_jobs
-# 973231672
+doc=app_settings/ml_state,app_settings/costs_auto,prd_jobs/devops_2026-11-09,prd_jobs/devops_2026-11-08,ml_days/2026-10-23,ml_days/2026-10-24,app_settings/cloud
+# 588816843
