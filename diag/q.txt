@@ -1,2 +1,2 @@
-samp=bench_books,mkt_kpipa,mkt_kpipa_posts,ext_fx,ext_cand,prd_handoff,prd_used_info,prd_market_more,prd_market_watch,prd_listing_changes,pur_matches,seller_queue,prd_lookups,prd_newbook,col2_books&doc=app_settings/ext_run,app_settings/bi_x,app_settings/ext_cover_stat,prd_jobs/autoSched&logs=1&pc=LOGGER&from=202611080000&to=202611082359&kpstat=1
-# 3045730751
+benchday=2026-11-09&doc=prd_jobs/autoSched,app_settings/bench
+# 11686402
