@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "1.78.427 메모리·번외 판",
+ "since": "2026-11-09T03:09:20Z",
+ "beat": "2026-11-09T03:09:20Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.426/1.89.234 2bf5245",
   "at": "2026-11-09T03:04:43Z"
  },
- "host": null
+ "host": "vm"
 }
