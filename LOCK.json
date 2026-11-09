@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "1.78.429 출고 중 제외·추격자",
- "since": "2026-11-09T03:17:00Z",
- "beat": "2026-11-09T03:17:00Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
-  "done": "1.78.428/pricing 0.17.11/shipping 0.7.13/watch 0.10.41 320dc83",
-  "at": "2026-11-09T03:16:18Z"
+  "done": "1.78.429/1.89.236/pricing 0.17.11/shipping 0.7.13/watch 0.10.41 f448185",
+  "at": "2026-11-09T03:17:08Z"
  },
- "host": "vm"
+ "host": null
 }
