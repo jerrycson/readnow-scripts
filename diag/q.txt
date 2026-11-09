@@ -1,2 +1,2 @@
-cmds=shipStart&n=20&recentUp=ext_used&mins=240&benchday=2026-11-09
-# 235905007
+cmds=prdEdit&n=20&doc=app_settings/nb_find,app_settings/px_daily,prd_system/autoSched,app_settings/write_watch
+# 2672324769
