@@ -23,6 +23,7 @@
 | `shadow/compare.html` · `col2-compare.js` | 🔎 그림자 비교 화면 — 운영 도서(읽기만)와 그림자 결과를 칸마다 견주고 `col2_books`·`col2_runs`에 씀 |
 | `shadow/col2-compare-core.js` | 견주기(순수 함수) — 같음 / 같음(운영도 지금 이 값을 봄) / 출처 다름(바깥 정보) / 운영 칸 빔 / 다름 |
 | `shadow/col2-store.js` | 막이 — Firestore 쓰기는 `col2_*`만(그 밖은 막고 셈) · 기기 저장 `rn3-`만 |
+| `shadow/col2-tasks.js` · `helper/col2-jobs.js` · `helper/col2-lift.js` · `shadow/col2-jobview.js` | (0.1.9) 로그인 없는 일 목록·그림자 일 돌리기·운영 본체 함수 떼어 쓰기·비교 화면 '일별 그림자' 칸 |
 | `tests/` | 시험(아래) — Windows 실기기 없이 |
 
 ### 그림자 읽기 하나 — 무엇을 어떻게 (운영과 똑같은 결과)
@@ -147,6 +148,28 @@
 - 길: `POST /win/log {act: toggle|open|close|beat|bye}` · 창 다루기 `find`·`show`·`close`(번외 프로필 이름이 명령 줄에 든 크롬만 — 정범님 크롬은 안 건드림).
 - 시험: `tests/t_logwin.js` ③-2(🗒 한 번 = 따로 창 · 작게 내린 창은 앞으로 · 화면 밖 창은 화면 안으로 · 다시 누르면 닫힘·자리 기억 · Alt+L로 기억한 자리에 다시 · 따로 창 안 Alt+L = 닫힘 · ⚙에서 안쪽 칸 고르기 · 팝업 없음) · `tests/t_ui.js`(바꾼 단축키로 따로 창).
 - 확인 못 한 것: 실제 Windows에서 '앞으로'가 다른 창 뒤에 가려진 경우(작게 내리지도 화면 밖도 아님)엔 닫힘으로 보임 — 그럴 땐 한 번 더 누르면 다시 앞에 뜸.
+
+## 0.1.9 (정범님 11/09 밤 '로그인 없는 일 전부 그림자' · 당긴 일정 ②) — 그림자 일 · 로거 설정 묶음
+- **일 목록** `shadow/col2-tasks.js`(27개 · 18개 돎 · 9개 hold) — 일마다 운영 일 이름(JOBS) · 주소 꼴 · 해석 함수 · 운영 Firestore 칸 · 누가(로거/사무실/나눔) · 안 도는 까닭.
+
+| 일 | 운영 일 | 해석(운영 코드 그대로) | 운영 칸 | 누가 |
+|---|---|---|---|---|
+| 📘 공개 상품 화면 도서 정보 | market·poolInfo·explore·benchDetail | products-core parseProductPage | prd_books | 사무실(0.1.2~ 그대로) |
+| 📈 시장 지표(상품 화면 값) | market·metricsReq·metricsAuto | parseProductPage | prd_book_metrics | 🛰 로거 고유 |
+| 🏷 온라인 중고 첫 쪽 | market | parseUsedPage | prd_book_metrics | 🛰 로거 고유 |
+| 🏪 숍 요약(6개월 평가 수) | rev6mAll·rev6mStale | sellers-core parseShopSummary | sellers | 🛰 로거 고유 |
+| ⭐ 숍 구매 평가 첫 쪽 | revTop·revAll | parseSurveyPage(첫 쪽에 다 든 날만) | seller_review_daily | 🛰 로거 고유 |
+| 🎯 집중 벤치마킹 숍 첫 쪽 | bench·benchForce·benchHelp·benchResume | 운영 본체 benchParse(떼어 씀 · `helper/col2-lift.js`) | bench_items | 🛰 로거 고유 |
+| 🔎 외부 정보 12출처(교보·예스24·구글·중고닷·예스24 중고·번개장터·중고나라·당근·DVDPrime·AbeBooks·리디·환율) | extBurst | ext-core `ReadnowExt.run`·`fxRun` → 운영 저장 지문 `sig`·`sameSig` | ext_basic·ext_used·ext_foreign·ext_ebook·ext_fx | 사무실(나눔 켜면 ISBN 끝자리로 로거와 나눔) |
+| hold: 구매자 분포(화면 그리기) · 새상품 없는 시세(검색어=우리 상품 이름 — 로거 약속 0) · KPIPA(본체 안 흩어진 코드) · 네이버 도서(그려 읽기) · TTB·카카오·국중·eBay·정보나루(운영 키 필요) | | | | |
+
+- **로거 설정 묶음**: 같은 프로그램 · PC 이름이 `LOGGER…`면 로거 고유 일만(공개 상품 도서 정보·외부 정보는 안 함) · 사무실 PC는 로거 고유 일을 하지 않음 → 두 PC 할 일이 하나도 안 겹침. 차례표(`jobs.json`)는 PC마다 따로(서로 이어받지 않음). 외부 정보 나눔은 `col2.json jobs.extShare:true`(로거 홀수 · 사무실 짝수). 우리 숍(`OWN_SC`)은 어느 PC도 열지 않음.
+- **속도**: 그림자 일도 같은 `PACE`(한 장 뒤 4초 안팎 · 시간 240 · 하루 1,600 · 429면 쉼)를 상품 그림자와 **함께** 셈(번갈아 하나씩). **운영이 바쁘면 쉼**: 이 PC 수집기가 예스24 다리로 알린 🚚 출고 보호(hold) · `POST /busy {sec, why}`(최대 30분).
+- **견주기** `col2-compare-core.js` `compareMap`·`compareExt` — 같음 / 때가 다름(움직이는 값을 운영이 1시간 넘게 전에 읽음) / 운영 칸 빔 / 운영 값이 오래됨(장터 6시간) / 운영은 '없음' 전 값을 지킴 / 출처 다름 = **까닭 밝힘** · 다름·그림자 칸 빔 = **까닭 모름**. 운영 값을 못 받으면(15분) '운영 값 없음'(셈에서 뺌).
+- **기록**: `col2_jobs/<일>_<문서>`(한 건) · `col2_jday/<날짜>_<PC>`(일마다 n·같음·다름 까닭·넘길 수 있음) — 운영 칸에는 쓰지 않음. 🔎 비교 화면 '일별 그림자' 칸 · `GET /jobs` · 📜 기록창 한 줄씩 + '✅ 넘길 수 있음' 줄.
+- **넘길 수 있음** = 그날(한국 날짜) 그 일에서 견준 표본 **n ≥ 30** · **까닭 모를 다름 0** · 못 읽음 ≤ 20% (`PASS` · 근거: 없음, `col2.json jobs.pass`로 바꿈). 넘기기는 정범님 확인 뒤 다음 단계.
+- **lead에 제안(운영 쪽 고침이라 여기서 안 함)**: ① 웹앱 `C2R.ok`에 `prd_book_metrics·bench_items·sellers·seller_review_daily·ext_basic·ext_used·ext_foreign·ext_lib·ext_ebook·ext_fx`와 `app_settings/bench`(그 문서만) 더하기 — 그 전까지 이 칸들은 '운영 값 없음'으로만 남음 ② 운영 수집기가 바쁠 때(긴 일·출고) `POST 127.0.0.1:8797/busy` 알리기(지금은 출고 보호만 들어옴).
+- 시험 `tests/t_jobs.js`(가짜 서버 그림자 — 사무실·로거·운영 값 못 받음). 시험에선 그림자 일 기본 꺼짐(`jobs.on`) · 바깥 주소는 가짜 서버로만.
 
 ## 운영을 끊지 않음 — 어떻게 지키나
 | 운영 | 번외(col2) | 확인 |
