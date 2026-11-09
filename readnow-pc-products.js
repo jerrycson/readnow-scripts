@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.248의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.249의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.248' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.248', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.249' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.249', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -521,7 +521,7 @@
     const key = curKey || pubKey; if (!key) return Promise.resolve(); pubKey = key;
     const G = window.ReadnowRegistry || globalThis.ReadnowRegistry; const gv = (n) => (typeof unsafeWindow !== 'undefined' && unsafeWindow[n]) || window[n] || globalThis[n]; // (1.36.0) 읽은 공용 파일 판을 신호에 실음 → 웹앱 관리도구가 노선표의 판과 비교
     const cores = G ? G.loadedVers({ ReadNowCore: gv('ReadNowCore'), ReadnowSellers: gv('ReadnowSellers'), ReadnowProducts: gv('ReadnowProducts'), ReadnowPricing: gv('ReadnowPricing'), ReadnowShipping: gv('ReadnowShipping'), ReadnowOrders: gv('ReadnowOrders'), ReadnowAladin: gv('ReadnowAladin'), ReadnowExec: gv('ReadnowExec'), ReadnowRegistry: G, ReadnowRegister: gv('ReadnowRegister'), ReadnowExt: gv('ReadnowExt') }) : null; // (1.43.1) 알라딘 창구·실행 문 판도 · (1.44.0) 등록 엔진 판도 (예전엔 빠져 관리도구에 '?'로 빨갛게)
-    return C('rn_status').doc(`prd_${PC_ID}_${key}`).set({ tool: '상품 수집기', pcName: LS.get('pcName', PC_ID), running: running || null, key, ...lastUi, ...(extra || {}), ver: APP_VER, cores, mods: window.__rnMods || null, tm: (() => { try { const I = window.__rnLiveInfo ? window.__rnLiveInfo() : null; return I ? { classic: I.classic || null, used: I.used || null, hwait: I.hwait || null, hsig: I.hsig || null } : null; } catch (e) { return null; } })(), /* (1.72.0) 이 PC Tampermonkey 본체 판·머리 — 웹앱에 'Tampermonkey 업데이트 필요' */ ledgerDown: window.__rnLedgerDown || null, /* (1.44.0) 실행 기록을 못 적는 중이면 관리도구에 빨갛게 */ atMs: Date.now(), ...W() }, { merge: true }).catch(() => {});
+    return C('rn_status').doc(`prd_${PC_ID}_${key}`).set({ tool: '상품 수집기', pcName: LS.get('pcName', PC_ID), running: running || null, key, ...lastUi, ...(extra || {}), ver: APP_VER, cores, mods: window.__rnMods || null, tm: (() => { try { const I = window.__rnLiveInfo ? window.__rnLiveInfo() : null; return I ? { classic: I.classic || null, used: I.used || null, hwait: I.hwait || null, hsig: I.hsig || null, hg: 1 } : null; } catch (e) { return null; } })(), /* (1.72.0) 이 PC Tampermonkey 본체 판·머리 — 웹앱에 'Tampermonkey 업데이트 필요' */ ledgerDown: window.__rnLedgerDown || null, /* (1.44.0) 실행 기록을 못 적는 중이면 관리도구에 빨갛게 */ atMs: Date.now(), ...W() }, { merge: true }).catch(() => {});
   }
   let running = null; let stopFlag = false;
   /* (1.66.0) 🔆 작업이 도는 동안 화면 꺼짐·화면 보호기 막기(Wake Lock) — 화면 보호기가 켜지면 크롬이 창을 '안 보임'으로 보고 타이머를 늦춰 수집이 멈춘 것처럼 됐음 · 공개 전용 PC(로거)는 늘 */
@@ -5081,7 +5081,7 @@
   let ctlReload = null; // 하던 작업이 저장 지점에서 멈추면 runJob이 새로고침
   let CTL_DOC = null; let ctlDraw = () => {}; // 수집기 화면의 '🛰 PC 원격' 줄(watchPcs)이 씀
   const ctlLead = () => { try { const r = window.__rnRole ? window.__rnRole() : 'lead'; return r === 'lead' || r === 'force'; } catch (e) { return true; } };
-  const ctlAck = (id, cmd, state, msg) => { log(`🛰 원격 ${({ stop: '■ 중단', resume: '▶ 다시 시작', update: '⟳ 업데이트' })[cmd] || cmd}: ${msg}`, state === 'fail' || state === 'nosync' ? 1 : 0);
+  const ctlAck = (id, cmd, state, msg) => { log(`🛰 원격 ${({ stop: '■ 중단', resume: '▶ 다시 시작', update: '⟳ 업데이트', headget: '🌐 머리 받기' })[cmd] || cmd}: ${msg}`, state === 'fail' || state === 'nosync' ? 1 : 0);
     return CTL().set({ acks: { [PC_NAME]: { id, cmd, state, msg, ver: VER, at: nowIso() } }, log: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), pc: PC_NAME, id, cmd, state, msg: String(msg).slice(0, 200), ver: VER }) }, { merge: true }).catch(() => {}); };
   window.__rnCtlSend = async (pc, cmd) => { const want = ((await C('crm_system').doc('collector_version').get().catch(() => null)) || { data: () => ({}) }).data() || {}; const id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
     await CTL().set({ cmds: { [pc]: { id, cmd, at: nowIso(), by: `${PC_NAME} 수집기`, want: Object.entries(want || {}).reduce((m, [k, x]) => (/^h_/.test(k) && x && x.ver && verNum(x.ver) > verNum(m) ? x.ver : m), (want && want.ver) || null) } }, log: firebase.firestore.FieldValue.arrayUnion({ at: nowIso(), pc, id, cmd, state: 'sent', msg: `${PC_NAME} 수집기에서 보냄`, ver: null }) }, { merge: true }); return id; };
@@ -5112,8 +5112,26 @@
       if (!(age >= -600000 && age < 6 * 3600e3)) return ctlAck(c.id, c.cmd, 'expired', `${Math.round(age / 3600e3)}시간 지난 명령이라 하지 않음`);
       try { if (c.cmd === 'stop') { if (window.__rnPaused) return ctlAck(c.id, 'stop', 'done', '이미 일시정지 상태'); window.__rnPauseAll(`🛰 원격 중단 — ${c.by || ''}`); return ctlAck(c.id, 'stop', 'done', `일시정지함 — 하던 작업은 지금 항목까지 저장하고 멈춤${running ? ` ('${running}')` : ''}`); }
         if (c.cmd === 'resume') { if (!window.__rnPaused) return ctlAck(c.id, 'resume', 'done', '일시정지 상태가 아니었음 (그대로 돎)'); window.__rnResumeOk(); return ctlAck(c.id, 'resume', 'done', '일시정지 풀음 — 매일 자동·요청·이어가기가 다시 돎'); }
+        if (c.cmd === 'headget') { if (window.__rnShipWait && window.__rnShipWait('ctlHead', '🛰 🌐 머리 받기(설치 화면 띄우기)', () => headgetNow(c))) return ctlAck(c.id, 'headget', 'wait', '🚚 출고 중 — 출고가 끝나면 설치 화면을 띄움(그때까지 미룸)'); return headgetNow(c); }
         if (c.cmd === 'update') { if (window.__rnShipWait && window.__rnShipWait('ctlUpd', '🛰 원격 업데이트', () => ctlUpdateNow(c))) return ctlAck(c.id, 'update', 'done', '🚚 출고 중 — 출고가 끝나면 바로 업데이트(그때까지 미룸)'); return ctlUpdateNow(c); }
         return ctlAck(c.id, c.cmd, 'fail', '모르는 명령 (이 수집기 ' + VER + ')'); } catch (e) { return ctlAck(c.id, c.cmd, 'fail', '오류: ' + e.message); } }, () => {}); }
+  /* ══════════ (11/10 headbtn · 약속 4) 🌐 머리 받기 — 웹앱 ⚙ 관리도구 › 🛰 PC 원격 › 🌐 머리 받기가 보낸 명령 headget
+   *  cmds.{PC} = { id, cmd: 'headget', want(readnow.kr 수집기 판), hs(readnow.kr 머리 서명), watch(이 PC에 감시기가 있으면 true), logger } → 이 PC에서 Tampermonkey 설치 화면(readnow.kr/readnow-collector.user.js)을 띄움 · 감시기가 있으면 이어서 감시기 설치 화면
+   *  무인 설치는 Tampermonkey가 허락하지 않음 — 이 PC 앞에 사람이 있어 [업데이트]를 눌러야 바뀜(대답에 그대로 적음) · 이미 새 머리면 아무것도 안 함 · 🚚 출고 중엔 미룸(위 __rnShipWait)
+   *  로거(공개 수집 크롬)는 로거 차례(약속 0): 하던 일이 끝나 쉬는 사이에만 · 설치 화면 하나만(감시기·우리 숍·알라딘 로그인 화면은 열지 않음) · 로더가 같은 판 설치 화면을 이미 열었으면(rn-live-hopen) 다시 안 엶
+   *  작업 창 모드 PC: 맡은 탭이 화면 밖 작업 창이면 작업 창을 화면 앞으로 꺼낸 뒤 엶(사람이 보게) */
+  const HG_BASE = 'https://readnow.kr/';
+  const headgetPlan = (o) => { const c = o.c || {}; const hs = String(c.hs || ''); const v = String(c.want || ''); if (!hs) return { st: 'fail', msg: '명령에 새 머리 서명이 없음 — 웹앱을 새로고침한 뒤 다시' }; if (o.hsig && o.hsig === hs) return { st: 'done', msg: `이미 새 머리(${hs}) — 할 일 없음` };
+    const q = v ? '?v=' + encodeURIComponent(v) : '?t=' + (o.now || 0); if (o.pub) { if (v && o.hopen === v) return { st: 'done', msg: `로거 로더가 새 판 ${v} 설치 화면을 이미 열어 둠 — 로거 크롬에서 [업데이트]만` }; return { st: 'open', urls: [HG_BASE + 'readnow-collector.user.js' + q], pub: true }; }
+    return { st: 'open', urls: [HG_BASE + 'readnow-collector.user.js' + q].concat(c.watch ? [HG_BASE + 'readnow-price-watch.user.js?t=' + (o.now || 0)] : []), pub: false }; }; /* ⟦headgetPlan 끝⟧ */
+  async function headgetNow(c) { const pub = !!(PUBONLY || globalThis.__rnPubChrome); let hsig = null; try { hsig = (window.__rnLiveInfo && window.__rnLiveInfo().hsig) || null; } catch (e) {}
+    const P = headgetPlan({ c, hsig, pub, hopen: (() => { try { return GM_getValue('rn-live-hopen', ''); } catch (e) { return ''; } })(), now: Date.now() }); if (P.st !== 'open') return ctlAck(c.id, 'headget', P.st, P.msg);
+    if (pub && (running || imgRunning)) { await ctlAck(c.id, 'headget', 'wait', `로거 차례 — 하던 일('${running || '이미지'}')이 끝나 쉬는 사이에 설치 화면을 띄움`); for (let w = 0; w < 360 && (running || imgRunning); w++) await sleep(20000); if (running || imgRunning) return ctlAck(c.id, 'headget', 'fail', '2시간 안에 쉬는 사이가 없어 띄우지 않음 — 다시 보내거나 로거가 스스로 여는 설치 화면(2분마다 확인)을 기다림'); }
+    try { if (window.__rnWork && window.__rnWork.isWork() && window.__rnWorkShow) await window.__rnWorkShow('🌐 머리 받기 — Tampermonkey 설치 화면'); } catch (e) {}
+    const opened = []; for (let i = 0; i < P.urls.length; i++) { if (i) await sleep(4000); try { GM_openInTab(P.urls[i], { active: true, insert: true, setParent: true }); opened.push(/price-watch/.test(P.urls[i]) ? '감시기' : '수집기'); } catch (e) { log('🌐 머리 받기 — 설치 화면을 못 엶: ' + e.message, 1); } }
+    if (pub && c.want) { try { GM_setValue('rn-live-hopen', String(c.want)); } catch (e) {} }
+    if (!opened.length) return ctlAck(c.id, 'headget', 'fail', '설치 화면을 못 엶 — 그 PC 크롬에서 https://readnow.kr/readnow-collector.user.js 를 직접 여세요');
+    return ctlAck(c.id, 'headget', 'opened', `${opened.join('·')} 설치 화면을 띄움 — 이 PC 앞에서 Tampermonkey [업데이트]를 눌러야 바뀜(무인 설치 안 됨)${pub ? ' · 로거 차례(설치 화면만)' : ''}`); }
   /* ══════════ (정범님 11/05) 🪟 수집 작업 창 — 설정·상태·명령 한 문서 crm_system/work_win
    *  cfg.pilot = 켤 수 있는 시범 PC(기본 HOME·JS-MAIN · 로거는 늘 뺌) · cfg.pcs.{PC} = { on(기본 끔), ext(로그인 없는 바깥 사이트 읽기도 도우미의 따로 된 크롬으로 · 기본 켬), place('off' 화면 밖 | 'edge' 화면 귀퉁이), win·hwin(작업 창·수집 상태 창을 보일 때 자리·크기 {x,y,w,h,at}) }
    *  cmds.{PC} = { id, cmd: show(작업 창 보이기)·hide(다시 숨기기)·status(수집 상태 창 열기)·reopen(작업 창 다시 열기), at, by } → acks.{PC} = { id, cmd, ok, msg, at } · state.{PC} = 이 PC 도우미가 본 지금 상태(웹앱이 보여 줌)
