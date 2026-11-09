@@ -56,7 +56,7 @@ function fakeDb() { const S = new Map(); const DEL = { __del: 1 }; const kk = (n
   { const cut = (s) => { const a = s.indexOf('/* FENCE-PURE-START'), b = s.indexOf('/* FENCE-PURE-END */'); return a > 0 && b > a ? s.slice(a, b) : null; }; const A = cut(MLSRC), B = cut(PW);
     ok(A && B && A === B, `하루 손해 셈 사본이 학습 공용과 가격 감시기에 글자 그대로 같음(${A ? A.length : 0}자)`);
     const hd = (s) => s.slice(0, s.indexOf('// ==/UserScript==')).split('\n').filter((l) => !/@version/.test(l)).join('\n'); const orig = (() => { try { return require('child_process').execSync('git show origin/main:readnow-price-watch.user.js', { cwd: path.dirname(PWP), stdio: ['ignore', 'pipe', 'ignore'] }).toString(); } catch (e) { return null; } })();
-    if (orig) ok(hd(orig) === hd(PW) && /@version\s+0\.10\.42/.test(PW), '감시기 머리(@match·@grant·@connect·@require) 그대로 · @version도 그대로(올리는 것은 메인 세션)'); else console.log('  (감시기 머리 비교: git 기록을 못 읽어 건너뜀)'); }
+    const vOf = (s) => (String(s).match(/@version\s+(\S+)/) || [])[1] || null; if (orig) ok(hd(orig) === hd(PW) && vOf(PW) === vOf(orig), '감시기 머리(@match·@grant·@connect·@require) 그대로 · @version도 그대로(올리는 것은 메인 세션)'); else console.log('  (감시기 머리 비교: git 기록을 못 읽어 건너뜀)'); }
 
   /* ── ③ 원장 트랜잭션 · 동시성 · 날짜 경계 ── */
   const cA = SRC.indexOf('/* FENCE2-START'), cB = SRC.indexOf('/* FENCE2-END */'); ok(cA > 0 && cB > cA, '클라우드에 하루 손해 원장 칸(FENCE2)이 있음');
@@ -135,7 +135,7 @@ function fakeDb() { const S = new Map(); const DEL = { __del: 1 }; const kk = (n
       S.engF = {}; await db.collection('app_settings').doc('eng_fence_now').set({ at: new Date(Date.now() - 50 * 3600e3).toISOString(), dayLoss: 10000 }); document.getElementById('tF').innerHTML = engExpLine('pw_g9', true); await Wt(500); document.getElementById('tF').innerHTML = engExpLine('pw_g9', true); o.stale = document.getElementById('tF').textContent;
       o.ml = !!(window.ReadnowML && window.ReadnowML.fenceSum); o.pops = pops; return o; });
     ok(R.fn, '웹앱 fenceLine 있음');
-    ok(/하루 손해 한도 10,000원/.test(R.line || '') && /오늘 쓴 1,500원/.test(R.line || '') && /예약 3,000원/.test(R.line || '') && /남은 5,500원/.test(R.line || '') && /막은 내림 2번/.test(R.line || ''), `카드 줄: '${(R.line || '').replace(/\s+/g, ' ').slice(0, 160)}'`);
+    ok(/하루 손해 한도 10,000원/.test(R.line || '') && /오늘 쓴 1,500원/.test(R.line || '') && /예약 3,000원/.test(R.line || '') && /남은 5,500원/.test(R.line || '') && /막은 연구 내림 2번/.test(R.line || '') && /🛰 감시 자동 반영·🎯 추격자는 정범님 그룹 설정대로/.test(R.line || ''), `카드 줄(fence4: 연구 한도 · 감시·추격자는 그룹 설정대로): '${(R.line || '').replace(/\s+/g, ' ').slice(0, 160)}'`);
     ok(/한도를 못 받음/.test(R.stale || '') && /내리지 않음/.test(R.stale || ''), `한도가 오래되면 빨강: '${(R.stale || '').replace(/\s+/g, ' ').slice(-90)}'`);
     ok(R.pops === 0, `브라우저 팝업 없음 · 공용 셈 함수 ${R.ml ? '읽음' : '없음(대신 간단 셈)'}`);
   }).then(fin);
