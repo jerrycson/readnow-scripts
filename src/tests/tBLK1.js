@@ -105,10 +105,10 @@ console.log('?');`); fs.chmodSync(D + '/bin/powershell.exe', 0o755);
     try { ok(fs.readFileSync(HO, 'utf8') === BASE, '④ 되돌려 둔 PC는 저절로 다시 넣지 않음'); } finally { ch.kill(); } }
 
   // ── ⑤ 수집기·웹앱 ──
-  { const c = fs.readFileSync(COL, 'utf8'); ok(/function blkRead\(\)/.test(c) && /\.\.\.\(BLKST \? \{ blk: BLKST \} : \{\}\)/.test(c) && /if \(PUBONLY \|\| Date\.now\(\) - BLKAT < 30 \* 60e3\) return/.test(c), '⑤ 수집기: 30분마다 상태를 읽어 PC 신호 pcBeat.blk에 실음 · 공개 전용 PC(로거)는 안 읽음');
+  { const c = fs.readFileSync(COL, 'utf8'); ok(/function blkRead\(\)/.test(c) && /\.\.\.\(BLKST \|\| globalThis\.__rnClarityGuard \? \{ blk: \{ \.\.\.\(BLKST \|\| \{\}\)/.test(c) && /if \(PUBONLY \|\| Date\.now\(\) - BLKAT < 30 \* 60e3\) return/.test(c), '⑤ 수집기: 30분마다 상태를 읽어 PC 신호 pcBeat.blk에 실음 · 공개 전용 PC(로거)는 안 읽음');
     const head = c.slice(0, c.indexOf('==/UserScript==')); ok(!/blk/i.test(head), '⑤ 수집기 머리(==UserScript==)는 안 바뀜');
     const a = fs.readFileSync(APP, 'utf8'); ok(/function blkBeatTxt\(k\)/.test(a) && /blkBeatTxt\(b\.blk\)/.test(a) && /🛡 추적 차단: 됨/.test(a) && /🛡 추적 차단: 안 됨/.test(a), "⑤ 웹앱 기기 운영 보고: PC마다 '🛡 추적 차단: 됨/안 됨(까닭)'");
-    ok(/data-blk="install"/.test(a) && /data-blk="undo"/.test(a) && /관리자 허락 창에서 「예」/.test(a) && !/confirm\(Q/.test(a), "⑤ 웹앱: '이 PC에 추적 차단 넣기' 단추 · 되돌리기 · 묻기는 ask()(브라우저 팝업 아님)");
+    ok(/data-blk="install"/.test(a) && /data-blk="undo"/.test(a) && /관리자 허락 창 「예」 한 번/.test(a) && !/confirm\(Q/.test(a), "⑤ 웹앱: '이 PC에 추적 차단 넣기' 단추 · 되돌리기 · 묻기는 ask()(브라우저 팝업 아님)");
     ok(/휴대폰은 자동 설치 길이 없어 하지 않음/.test(a), '⑤ 휴대폰은 하지 않는다는 안내'); }
   fs.rmSync(T, { recursive: true, force: true }); fs.rmSync(D, { recursive: true, force: true });
   console.log(bad ? `\n❌ ${bad}개 실패` : '\n✓ tBLK1 모두 통과'); process.exit(bad ? 1 : 0);

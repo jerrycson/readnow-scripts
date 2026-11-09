@@ -116,7 +116,7 @@ const run = async () => { const br = await chromium.launch(); const errs = [];
   await br.close(); return errs; };
 
 // ── ⑤ 가림 새 규칙 · 메뉴 목록 안 자름 · 건수(cnt) — 알라딘 쪽 덩어리만 떼어 돌림(tY24RAW와 같은 방식)
-const unit = async () => { const a = src.indexOf("  const Y24R_DK = 'rn-y24raw-day';"); const b = src.indexOf('  let busy = false; const drain = async', a); const cl = src.match(/\n  const y24Cnt = [^\n]*\n/);
+const unit = async () => { const a = src.indexOf("  const Y24R_DK = 'rn-y24raw-day';"); const b = (() => { const n = src.indexOf('  /* (11/10) 줄 한 개 올리기', a); return n > 0 ? n : src.indexOf('  let busy = false; const drain = async', a); })(); /* (11/10) 올리기 함수를 따로 뺀 뒤엔 그 앞까지 */ const cl = src.match(/\n  const y24Cnt = [^\n]*\n/);
   if (a < 0 || b < 0 || !cl) { ok(false, '가림 덩어리를 못 찾음'); return; }
   const shape = (v, d) => { if (d > 6) return '…'; if (Array.isArray(v)) return v.length ? [shape(v[0], d + 1)] : []; if (v && typeof v === 'object') { const o = {}; Object.keys(v).slice(0, 80).forEach((k) => (o[k] = shape(v[k], d + 1))); return o; } return v === null ? 'null' : typeof v; };
   const GMs = {}; const store = { y24_raw: {}, y24_raw_idx: {} }; let nid = 0;
