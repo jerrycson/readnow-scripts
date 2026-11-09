@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "1.78.434 로거 보호·공인 IP",
+ "since": "2026-11-09T05:26:18Z",
+ "beat": "2026-11-09T05:26:18Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.433/1.89.238 4465b1e",
   "at": "2026-11-09T03:45:57Z"
  },
- "host": null
+ "host": "vm"
 }
