@@ -15,7 +15,15 @@
     /* (0.1.9) 그림자 일에 더 쓰는 운영 공용 파일(그대로 받아 씀) — 판매자(숍 요약·평가 쪽)는 번외 크롬 떨어진 칸에 · 외부 정보(교보·장터 등)는 도우미(Node)에서 운영과 같은 ReadnowExt.run */
     CORE_MORE: ['readnow-sellers-core.js'], CORE_NODE: ['readnow-ext-core.js'],
     /* (0.1.9) 운영 수집기 본체 안에만 있는 해석 함수(🎯 벤치마킹 숍 목록) — 본체 파일을 그대로 받아 이 이름의 함수 글자만 떼어 씀(고치지 않음 · 복사본 없음) */
-    LIFT: { file: 'src/readnow-collector.src.js', fns: ['coverKey', 'benchParseSimple', 'benchParse'] },
+    LIFT: { file: 'src/readnow-collector.src.js', fns: ['coverKey', 'benchParseSimple', 'benchParse',
+      /* (0.1.10) 👥 구매자 분포(숨은 창 그려 읽기) · 🔍 새상품 없는 시세 · 🖼 그린 화면 해석(도우미 /render 답) · 📚 KPIPA — 모두 글자 그대로(받침은 helper/col2-shim.js) */
+      'getProductFull', 'nbMarketJob', 'extRenderHelper', 'KP_PAGE', 'kpReq', 'kpYmd', 'kpAdd', 'kpParse', 'kpSig', 'kpToken', 'kpFetch'] },
+    /* (0.1.10) 📚 KPIPA 그림자 — 하루 한 번(한국 시각 after 뒤 · 운영 14:30 규칙) 최근 days일 · 근거: 없음, 설정으로 바꿈 */
+    KPIPA: { host: 'https://bnk.kpipa.or.kr', days: 7, after: '14:40' },
+    /* (0.1.10) 🔍 새상품 없는 시세 그림자 — 사무실 PC만 · 운영이 본 prd_market_nobook 문서를 한 번에 listN개씩 웹앱이 넘김(everyH시간에 한 번) · 근거: 없음, 설정으로 바꿈 */
+    NB: { listN: 20, everyH: 6 },
+    /* (0.1.10) 🔑 운영 키 — 웹앱이 메모리로만 넘김 · ttlH시간 지나면 버리고 다시 부탁(파일에 안 씀) · 로거는 받지 않음 · 근거: 없음, 설정으로 바꿈 */
+    KEYS: { ttlH: 6 },
     /* (0.1.9) 우리 숍 번호 — 그림자는 어느 PC든 우리 숍 화면을 열지 않음(로거 약속 0 · 운영 판매자 센터 일과 안 겹치게) */
     OWN_SC: ['996008'],
     /* (0.1.9) '넘길 수 있음' 셈 — 하루(한국 날짜) 한 일에서 견준 표본 minN개 이상 · 까닭 모를 다름 0 · 못 읽음 maxFailPct% 이하 · 근거: 없음, 설정으로 바꿈(col2.json pass) */
@@ -38,7 +46,7 @@
      * 웹앱이 대신 읽어 줄 수 있는 운영 칸은 READ_OK 뿐(읽기만) */
     /* (0.1.9 정범님 11/09 밤 '로그인 없는 일 전부 그림자') 그림자 일이 운영 결과와 견주려고 읽는 칸(읽기만) — 웹앱(C2R.ok)이 이 칸을 넘겨주기 전까지는 '운영 값 못 받음'으로 남김(웹앱 고침은 lead 몫 · README '0.1.9')
      * app_settings 는 READ_ID 의 문서(bench — 🎯 벤치마킹 대상 숍 번호)만 */
-    RELAY: { READ_OK: ['prd_ids', 'prd_books', 'prd_book_metrics', 'bench_items', 'sellers', 'seller_review_daily', 'ext_basic', 'ext_used', 'ext_foreign', 'ext_lib', 'ext_ebook', 'ext_fx', 'app_settings'], READ_ID: { app_settings: ['bench'] }, idleSec: 30, hotSec: 2, gotMin: 10, outMax: 5000, poolN: 1000, poolLow: 50 }, /* (0.1.2) poolN = 웹앱이 한 번에 이어 넘기는 수 · 표본은 운영 prd_books 전체를 한 바퀴씩(하루마다 갈아끼우던 poolDayH는 없앰 — 같은 책 다시 읽기만 늘림) */
+    RELAY: { READ_OK: ['prd_ids', 'prd_books', 'prd_book_metrics', 'bench_items', 'sellers', 'seller_review_daily', 'ext_basic', 'ext_used', 'ext_foreign', 'ext_lib', 'ext_ebook', 'ext_fx', 'app_settings', 'mkt_kpipa', 'prd_market_nobook'], READ_ID: { app_settings: ['bench'] }, READ_RE: { mkt_kpipa: '^\\d{8}$' }, LIST_OK: ['prd_market_nobook'], idleSec: 30, hotSec: 2, gotMin: 10, outMax: 5000, poolN: 1000, poolLow: 50 }, /* (0.1.2) poolN = 웹앱이 한 번에 이어 넘기는 수 · 표본은 운영 prd_books 전체를 한 바퀴씩(하루마다 갈아끼우던 poolDayH는 없앰 — 같은 책 다시 읽기만 늘림) */
     /* (0.1.1 정범님 11/05 밤 '자야 되니까 번외 수집기가 돌아가게만 · 새벽 1~5시에도 돌려') 저절로 돌기 — 웹앱이 넘긴 표본 목록에서 차례로 그림자 읽기·비교(속도는 PACE 그대로)
      * nightOn: 새벽 1~5시(한국 시각)에도 읽음(기본 켬 · 운영 수집기의 밤 쉼 규칙과 따로) · 도우미 col2.json 의 auto:false / nightOn:false 로 끔 · 근거: 없음, 설정으로 바꿈 */
     AUTO: { on: true, nightOn: true, nightFrom: 1, nightTo: 5 }, /* 근거: 없음, 설정으로 바꿈 */

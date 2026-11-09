@@ -180,6 +180,30 @@
 - **lead에 제안(운영 쪽 고침이라 여기서 안 함)**: ① 웹앱 `C2R.ok`에 `prd_book_metrics·bench_items·sellers·seller_review_daily·ext_basic·ext_used·ext_foreign·ext_lib·ext_ebook·ext_fx`와 `app_settings/bench`(그 문서만) 더하기 — 그 전까지 이 칸들은 '운영 값 없음'으로만 남음 ② 운영 수집기가 바쁠 때(긴 일·출고) `POST 127.0.0.1:8797/busy` 알리기(지금은 출고 보호만 들어옴).
 - 시험 `tests/t_jobs.js`(가짜 서버 그림자 — 사무실·로거·운영 값 못 받음). 시험에선 그림자 일 기본 꺼짐(`jobs.on`) · 바깥 주소는 가짜 서버로만.
 
+## 다음 판(0.1.10 제안 · 판 번호는 합칠 때 메인이 정함 — 정범님 11/10 '아직 안 도는 9가지도 그림자로') — 27가지 모두 그림자
+`shadow/col2-tasks.js` 27개 모두 `run`. 쓰기는 여전히 `col2_jobs`·`col2_jday`만(운영 칸엔 안 씀) · 견주는 운영 칸은 읽기만.
+
+| 일 | 어떻게(운영 코드 그대로) | 누가 | 견주기 |
+|---|---|---|---|
+| 👥 구매자 분포·함께 산 책 | 번외 크롬 안 **쿠키 없는 따로 된 칸**(새 브라우저 맥락 · 보이지 않는 탭)에 상품 화면을 실제로 그림 → 운영 본체 `getProductFull`을 글자 그대로 떼어 그 화면에서 부름(받침 `loadInFrame` = 운영 숨은 창처럼 400ms마다 내려 보며 지연 로딩 칸이 찰 때까지) · 요청 3장 몫 | 🛰 로거 고유 | `prd_book_metrics` buyerDist·relationBuyIds·clickRelation(움직이는 값 · 기준 dynAt) |
+| 🔍 새상품 없는 시세 | 운영 본체 `nbMarketJob`을 글자 그대로 — Firestore 대신 메모리 칸 받침(`helper/col2-shim.js`) · 그 상품 한 건만 · 검색 화면은 쿠키 없이 | **사무실 PC만**(검색어 = 우리 상품 이름 · 로거엔 목록을 보내도 버림) | 운영이 본 `prd_market_nobook` 문서(웹앱이 목록으로 넘김) median·low·n·candSig |
+| 📚 KPIPA | 운영 본체 `kpFetch`·`kpToken`·`kpReq`·`kpParse`·`kpSig`·`kpYmd`·`kpAdd`·`KP_PAGE` 글자 그대로 — KPIPA 화면 탭(따로 된 칸 · 보안 표·쿠키는 그 칸에만)에서 `GM_xmlhttpRequest` 받침 = 같은 출처 fetch · 하루 한 번(14:40 뒤) 최근 7일 × 판매채널별·도서유형별 | 사무실 PC | 날짜마다 `mkt_kpipa/<날짜>`[종류].series(칸 순서 상관없음 = 운영 kpSig) · 3시간 넘은 운영 값이면 '오래됨' |
+| 🔎 네이버 도서(그려 읽기) | 운영 `extRender`와 같은 꼴: 따로 된 칸 탭에 그려 HTML(운영 도우미 `/render` 답 꼴) → 운영 본체 `extRenderHelper` 글자 그대로가 해석 → ext-core `naverbook` · **모든 외부 정보 출처에 그려 읽기를 넘김**(운영과 같게 — 번개장터·중고닷 등도 운영처럼 그려 읽음) | 나눔(기본 사무실) | 운영 지문 `sig`·`sameSig` |
+| 🔑 TTB·카카오·국중·eBay·정보나루 | ext-core `ReadnowExt.run`에 운영 키(아래) | **사무실 PC만** | 운영 지문 |
+
+### 🔑 운영 키 받는 길(비밀값은 파일·기록·Firestore·대화에 안 남김)
+- **운영은 어디서 받나(코드 확인)**: 수집기 `extKeys()` = Firestore `app_secrets/ext` 문서의 `keys`(웹앱 설정 ⑱에서 넣음) · 10분 기억. 키 이름은 ext-core `KEYS`(aladinTtb·kakaoRest·nlKey·d4lKey·ebayAppId·ebayCertId · 없어도 되는 googleBooks·eximKey).
+- **번외는 같은 길**: 그 PC에 열린 운영 웹앱(이미 로그인)이 `app_secrets/ext.keys`를 읽어 번외 도우미에 `POST /relay/keys {keys}`로 **메모리로만** 넘김. 도우미는 부탁할 때 `GET /relay/pending`의 `keys`에 **이름만** 싣고, 받은 값은 변수 하나에만(6시간 뒤 버리고 다시 부탁 · `KEYS.ttlH`). `col2.json`·`jobs.json`·`relay-out.json`·`col2.log`·📜 기록창·상태·`/jobs`·`col2_*`에는 이름·수만. 바깥이 오류 글에 키를 섞어 돌려줘도 기록 전에 `«키»`로 가림(값·URL 인코딩 둘 다).
+- **로거 구분(약속 0)**: TTB 키 = 우리 알라딘 계정(판매자와 같은 계정)으로 받은 키 · 나머지도 우리 이름의 개발자 계정 키 → **로거는 어느 키도 받지 않음**(`/relay/keys` 403 · 부탁도 안 함 · 키 쓰는 출처는 차림표에서 사무실 PC 일). 규칙표 `col2-tasks.js KEY_RULE`.
+- **lead에 제안(웹앱 고침 — 여기서 안 함)**: `c2RelayTick`에 ① `pd.keys`(이름 목록)가 오면 로거가 아닐 때만 `app_secrets/ext`를 읽어 그 이름만 골라 `POST /relay/keys {keys, by}` — 값은 변수에만, 기록·토스트·진단에 남기지 않음 · ② `pd.lists`에 `{c:'prd_market_nobook', n}`이 오면 로거가 아닐 때만 그 칸 문서 n개를 `POST /relay/answer {lists:{prd_market_nobook:[{id,v}]}}`(v는 usedCode·listingId·title·query·at·src·candSig·market·history 끝 한 줄만) · ③ `C2R.ok`에 `mkt_kpipa`(이름 8자리 날짜만)·`prd_market_nobook` 더하기. 그 전까지 이 일들은 '키 없음(건너뜀)'·'운영 값 못 받음'으로 남음.
+
+### 📚 KPIPA — 공용 파일로 옮기는 안(보고 · 지금은 본체를 안 고침)
+- 지금: 본체 `src/readnow-collector.src.js`의 `kpParse·kpSig·kpYmd·kpAdd`(순수)와 `kpToken·kpFetch`(요청 함수를 받으면 순수)를 `col2-lift.js`가 글자 그대로 떼어 씀 — 본체가 바뀌면 다음 받기(6시간)에 그대로 따라감 · 떼어 오기 실패는 `/jobs core.lift.miss`로 보임.
+- 옮기는 안: `readnow-kpipa-core.js`(공용) = `parse(html)`·`sig(o)`·`ymd/add`·`fetchRange(req, type, from, to)`(req = `GM_xmlhttpRequest` 감싼 것을 넘겨받음). 본체는 `@require`가 아니라 **이미 있는 공용 파일 로더**(모듈 수가 바뀌면 머리 HSIG가 바뀜 — `@require` 더하기는 금지)로만 받을 수 있을 때 옮김 · 그 전엔 떼어 쓰기가 머리를 안 바꾸는 유일한 길이라 지금 길을 권함.
+
+- 시험 `tests/t_more.js`: ⓪ 차림표(27가지 run · 키 규칙 · 떼어 온 함수) · ① 사무실 PC — 새상품 없는 시세(같음 1 · 때가 다름 1) · KPIPA(14건: 같음 11 · 오래됨 1 · 운영 칸 빔 1 · 까닭 모름 1 · 보안 표·쿠키는 KPIPA 칸만) · 네이버 그려 읽기(같음 2) · 키 출처 5곳(운영과 같은 지문) · 키가 파일·출력·col2_*·상태에 없음 · ② 로거 PC — 구매자 분포(그려야 참 · 같음 1 · 때가 다름 1 · 쿠키 없음) · 키 403 · 키·목록 부탁 안 함 · 목록을 보내도 버림 · 키 출처·검색·KPIPA에 안 감.
+- 함께 고침: 표본 책을 다 읽은 사무실 PC가 그림자 일을 한 번 걸러 15초씩 쉬던 것(16초에 하나) → 차례마다 · `bundle.json`에 빠져 있던 `helper/col2-al.js`·`shadow/col2-al-compare.js`(+ 새 `helper/col2-shim.js`) — 빠져 있으면 PC가 묶음을 받아 새 판으로 바꿀 때 도우미가 켜지지 않음(운영 `src/tests/tCOL2BTN.js` 두 줄 실패가 그것).
+
 ## 운영을 끊지 않음 — 어떻게 지키나
 | 운영 | 번외(col2) | 확인 |
 |---|---|---|
@@ -225,6 +249,8 @@ node tests/t_ui.js                    # (0.1.7) 📊 옆 창 골격 — 바로 �
 node tests/t_y24.js                   # (0.1.5) 🟦 예스24 판매관리 읽기(화면 안 엶)·로그인 한 번·맡긴 일·옆 창
 node tests/t_al.js                    # 🟧 알라딘 샵매니저 읽기 그림자(읽기만)·로그인 한 번·자리·출고 중·핑퐁·로거·손님 정보 0
 node tests/t_shadow.js                # 그림자 읽기(운영과 같은 결과·쿠키 없음·떨어진 칸·속도·19금·429) + 비교 화면
+node tests/t_jobs.js                  # (0.1.9) 로그인 없는 일 그림자 · 로거 설정 묶음
+node tests/t_more.js                  # (다음 판) 남은 9가지 — 그려 읽기·검색 시세·KPIPA·운영 키(메모리로만 · 로거 안 줌)
 ```
 - 운영 저장소 위치 `COL2_PROD_REPO`(기본 `/home/user/readnow-scripts` · 읽기만) · Playwright `COL2_PW`(기본 `/opt/node-tools/node_modules/playwright`).
 - 가짜 PowerShell은 번외 프로필 이름이 명령 줄에 든 프로세스를 `/proc`에서 찾아 '창'으로 봅니다. 상태 창(`--app`)은 잠자는 가짜 프로세스로 흉내.

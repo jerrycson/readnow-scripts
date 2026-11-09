@@ -121,6 +121,33 @@ class Browser {
   async readJob(url, pn, srcs, timeoutSec) { if (!PARSE_OK.includes(pn)) return { ok: false, why: '정하지 않은 해석 함수: ' + pn, kind: 'error' }; const ctx = await this.world(srcs);
     const r = await this.cdp.send('Runtime.evaluate', { expression: `(${READ_JOB_FN})(${JSON.stringify(url)}, ${JSON.stringify(pn)}, ${(timeoutSec || 30) * 1000})`, contextId: ctx, awaitPromise: true, returnByValue: true }, this.sid, ((timeoutSec || 30) + 10) * 1000);
     if (r.exceptionDetails) return { ok: false, why: '읽기 코드 오류: ' + String((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text).slice(0, 200), kind: 'error' }; return r.result.value; }
+  /* (0.1.10 정범님 11/10 '아직 안 도는 9가지도 그림자로') 그려 읽기 — 이 번외 크롬 안 쿠키 없는 따로 된 칸(새 브라우저 맥락 · 일 하나 끝나면 버림)의 보이지 않는 탭
+   *  운영 숨은 창(credentialless iframe · 알림 창 못 띄움)·도우미 /render(따로 된 프로필 · 화면 없이)와 같은 뜻: 로그인 없음 · 쿠키 없음 · 알림 창은 저절로 닫음 · 작업 창 화면에는 탭이 안 보임 */
+  async openTab(url, timeoutSec) { const c = this.cdp; const { browserContextId: bc } = await c.send('Target.createBrowserContext', { disposeOnDetach: true });
+    let tid; try { tid = (await c.send('Target.createTarget', { url: 'about:blank', browserContextId: bc, hidden: true, background: true })).targetId; } catch (e) { tid = (await c.send('Target.createTarget', { url: 'about:blank', browserContextId: bc, newWindow: true, background: true, left: -32000, top: 40, width: 1300, height: 2000 })).targetId; }
+    const T = { tid, bc, sid: null, ctx: null };
+    try { T.sid = (await c.send('Target.attachToTarget', { targetId: tid, flatten: true })).sessionId; await c.send('Page.enable', {}, T.sid); await c.send('Runtime.enable', {}, T.sid).catch(() => {});
+      const dlg = (m, p, s) => { if (s === T.sid && m === 'Page.javascriptDialogOpening') c.send('Page.handleJavaScriptDialog', { accept: false }, T.sid).catch(() => {}); }; c.on.push(dlg); T.off = () => { c.on = c.on.filter((x) => x !== dlg); };
+      const done = new Promise((res) => { const f = (m, p, s) => { if (s === T.sid && m === 'Page.loadEventFired') { c.on = c.on.filter((x) => x !== f); res(true); } }; c.on.push(f); setTimeout(() => { c.on = c.on.filter((x) => x !== f); res(false); }, (timeoutSec || 25) * 1000); });
+      const nav = await c.send('Page.navigate', { url }, T.sid); if (nav && nav.errorText) throw new Error('화면을 못 엶: ' + nav.errorText); T.loaded = await done; return T; }
+    catch (e) { await this.closeTab(T); throw e; } }
+  async closeTab(T) { if (!T) return; try { T.off && T.off(); } catch (e) {} try { await this.cdp.send('Target.closeTarget', { targetId: T.tid }, null, 5000); } catch (e) {} try { await this.cdp.send('Target.disposeBrowserContext', { browserContextId: T.bc }, null, 5000); } catch (e) {} }
+  async tabWorld(T, srcs) { if (T.ctx) return T.ctx; const ft = await this.cdp.send('Page.getFrameTree', {}, T.sid); const w = await this.cdp.send('Page.createIsolatedWorld', { frameId: ft.frameTree.frame.id, worldName: 'rn3-col2', grantUniveralAccess: false }, T.sid);
+    for (const s of srcs || []) { const r = await this.cdp.send('Runtime.evaluate', { expression: s, contextId: w.executionContextId, returnByValue: true }, T.sid); if (r.exceptionDetails) throw new Error('운영 공용 파일 넣기 실패: ' + String(r.exceptionDetails.text || '').slice(0, 120)); }
+    return (T.ctx = w.executionContextId); }
+  async evalIn(sid, ctx, expr, ms) { const r = await this.cdp.send('Runtime.evaluate', { expression: expr, contextId: ctx, awaitPromise: true, returnByValue: true }, sid, ms || 60000);
+    if (r.exceptionDetails) return { ok: false, why: '읽기 코드 오류: ' + String((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text).slice(0, 200), kind: 'error' }; return r.result.value; }
+  /* 도우미 /render와 같은 꼴 { ok, html, ms } — opt.re(링크 꼴)가 보이거나 wait(ms)가 지나면 그때 화면 HTML */
+  async render(url, opt) { const o = opt || {}; const wait = Math.max(3000, Math.min(30000, +o.wait || 12000)); const t0 = Date.now(); let T = null;
+    try { T = await this.openTab(url, Math.ceil(wait / 1000) + 10); const ctx = await this.tabWorld(T, []); const re = o.re ? JSON.stringify([o.re, o.reFlags || '']) : 'null';
+      const html = await this.evalIn(T.sid, ctx, `(async () => { const R = ${re}; const re = R ? new RegExp(R[0], R[1]) : null; const t0 = Date.now(); for (;;) { const hit = re && [...document.querySelectorAll('a[href]')].some((a) => re.test(a.href)); if (hit || Date.now() - t0 > ${wait}) break; await new Promise((r) => setTimeout(r, 400)); } await new Promise((r) => setTimeout(r, 300)); return document.documentElement ? document.documentElement.outerHTML : ''; })()`, wait + 15000);
+      if (typeof html !== 'string' || !html) return { ok: false, why: '그리기 실패: ' + ((html && html.why) || '빈 화면') }; return { ok: true, html: html.slice(0, 3000000), ms: Date.now() - t0 }; }
+    catch (e) { return { ok: false, why: '그리기 실패: ' + e.message }; } finally { await this.closeTab(T); } }
+  /* 따로 된 칸 탭에서 화면을 열고(그려) 운영 공용 파일·떼어 온 함수·받침을 넣은 뒤 expr 하나를 부름 — 끝나면 탭·칸을 버림 */
+  async tabJob(url, srcs, expr, timeoutSec) { let T = null; try { T = await this.openTab(url, timeoutSec || 25); const ctx = await this.tabWorld(T, srcs); return await this.evalIn(T.sid, ctx, expr, ((timeoutSec || 25) + 40) * 1000); }
+    catch (e) { return { ok: false, why: '그려 읽기 실패: ' + e.message, kind: 'error' }; } finally { await this.closeTab(T); } }
+  /* 알라딘 탭(이미 들어온 탭)의 떨어진 칸에서 expr 하나 — 떼어 온 함수(검색 시세)·그린 HTML 해석(운영 extRenderHelper) */
+  async mainJob(srcs, expr, timeoutSec) { const ctx = await this.world(srcs); return this.evalIn(this.sid, ctx, expr, ((timeoutSec || 30) + 10) * 1000); }
   /* 시험용: 알라딘 화면 쪽(보통 칸)에서 우리 변수가 보이는지 */
   async mainEval(expr) { const r = await this.cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true }, this.sid); return r.result ? r.result.value : null; }
   /* 넘겨받은 크롬(adopted)은 우리 자식 프로세스가 아니라 proc.kill로 못 닫음 → 조종 길로 Browser.close · 남으면 다음 띄우기의 freeProfile이 이 프로필 크롬만 끝냄 */
