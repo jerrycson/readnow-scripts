@@ -6,7 +6,7 @@ name: 결과물 함께 내기 (Firebase Hosting)
 on:
   push:
     branches: [main]
-    paths: ['index.html', 'pc-live.json', 'readnow-*.js', 'app/**', 'manual/**', 'friend/**', 'aladin-terms/**', 'local/**', 'lab/col2/**', 'firebase.json', 'hosting/**', '.github/workflows/deploy-hosting.yml']
+    paths: ['index.html', 'pc-live.json', 'readnow-*.js', 'app/**', 'manual/**', 'friend/**', 'aladin-terms/**', 'yes24-terms/**', 'local/**', 'lab/col2/**', 'firebase.json', 'hosting/**', '.github/workflows/deploy-hosting.yml']
   workflow_dispatch:
 concurrency: { group: deploy-hosting, cancel-in-progress: true }
 permissions: { contents: read, id-token: write }

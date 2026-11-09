@@ -10,7 +10,7 @@ const fs = require('fs'), path = require('path'), cp = require('child_process');
 const ROOT = path.resolve(process.argv[2] || path.join(__dirname, '..'));
 const OUT = path.resolve(process.argv[3] || path.join(ROOT, '.hosting', 'public'));
 /* [뿌리 기준 경로, 폴더면 true] */
-const KEEP = [['index.html'], ['pc-live.json'], ['app', true], ['manual', true], ['friend', true], ['aladin-terms', true], ['local', true], ['lab/col2', true]];
+const KEEP = [['index.html'], ['pc-live.json'], ['app', true], ['manual', true], ['friend', true], ['aladin-terms', true], ['yes24-terms', true], ['local', true], ['lab/col2', true]];
 const TOP_JS = /^readnow-[a-z0-9-]+(\.user)?\.js$/; /* 뿌리의 수집기·감시기·공용 파일(readnow-*.js · *.user.js) */
 const SKIP = (rel) => /(^|\/)\./.test(rel) || /\.md$/i.test(rel) || /\.storage\.json$/i.test(rel) || /(^|\/)node_modules\//.test(rel);
 
