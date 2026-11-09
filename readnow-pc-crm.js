@@ -1,8 +1,8 @@
-/* readnow-pc-crm.js — 리드나우 수집기 1.89.244의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
+/* readnow-pc-crm.js — 리드나우 수집기 1.89.245의 모듈 ① 고객·주문 — 전체·취소 주문, 반품, 문의, 구매평, 고객 점수, 대조
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.244' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.244', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { crm: '1.89.245' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['crm', '1.89.245', function () {
 /* ═════════════ 고객·주문 (예전 고객 수집기) ═════════════ */
 
 
@@ -937,8 +937,8 @@
     R.push({ k: 'record', label: '기록된 문제', pts: np, max: 10, text: `취소·불만 기록 ${cn}건` });
     // ⑥ 판매자 연결 (30): 허위 매물 판매자와 연결되면 되팔이·대행 가능성이 매우 큼
     const sl = (sellerLinkMap.get(c.customerId) || []).filter((x) => x.strong !== false); const hasFake = sl.some((x) => x.grade === 'fake'); // 이메일이 비슷하기만 한 약한 연결은 점수에 넣지 않음
-    const sp = hasFake ? 30 : sl.length ? 15 : 0;
-    R.push({ k: 'seller', label: '판매자 연결', pts: sp, max: 30, text: sl.length ? `판매자 ${sl.map((x) => x.name).slice(0, 3).join(', ')}${hasFake ? ' (허위 매물)' : ''}` : '연결 없음' });
+    const sp = sl.length ? 15 : 0; /* (11/10 fence3 · 정범님 11/09 밤 '옛 시트 허위 표시는 판단 근거로 쓰지 않음') 예전: 시트 허위 매물 판매자와 이어지면 30점 → 이어짐만 15점 · 시트 표시는 글로만(참고) */
+    R.push({ k: 'seller', label: '판매자 연결', pts: sp, max: 30, text: sl.length ? `판매자 ${sl.map((x) => x.name).slice(0, 3).join(', ')}${hasFake ? ' (참고: 옛 시트 허위 매물 표시 — 점수에 안 넣음)' : ''}` : '연결 없음' });
     const value = V.reduce((s, x) => s + x.pts, 0); const risk = Math.min(100, R.reduce((s, x) => s + x.pts, 0));
     const top = (arr) => arr.filter((x) => x.pts > 0).sort((a, b) => b.pts - a.pts).slice(0, 3).map((x) => `${x.label}: ${x.text}`);
     const vipOn = value >= SCORE_RULES.vip.minValue && risk < SCORE_RULES.vip.maxRisk && orders >= SCORE_RULES.vip.minOrders && !(SCORE_RULES.vip.excludeSellers && sl.length);

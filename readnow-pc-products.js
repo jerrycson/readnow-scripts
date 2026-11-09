@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.244의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.245의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.244' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.244', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.245' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.245', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -2936,7 +2936,7 @@
     const now = Date.now(); const day = AS.kst(now).day; let mine = false, by0 = null; await db.runTransaction(async (tx) => { mine = false; const x = (await tx.get(cref)).data() || {}; by0 = x.lastBy || null; if (x.lastDay === day) return; tx.set(cref, { lastDay: day, lastStartAt: nowIso(), lastBy: PC_NAME }, { merge: true }); mine = true; });
     if (!mine) { log(`🔬 조회수 실험 매일: 오늘 계획은 이미 함(${by0 || '?'}) — 붙이기는 차례대로 이어짐`); return 'skip'; }
     try { const gs = await C('px_exp_groups').where('auto', '==', true).get(); const groups = gs.docs.map((d) => ({ id: d.id, ...d.data() }));
-      await loadListings('inc'); const L = new Map(); for (const [k, l] of LISTINGS) { if (!l || l.active === false || !l.listingId || String(k).startsWith('yes24_') || !['판매중', '일시판매중지'].includes(l.status)) continue; L.set(String(l.listingId), { gr: l.grade || '', t: String(l.title || '').slice(0, 80) }); }
+      await loadListings('inc'); const L = new Map(); for (const [k, l] of LISTINGS) { if (!l || l.active === false || !l.listingId || String(k).startsWith('yes24_') || !['판매중', '일시판매중지'].includes(l.status)) continue; L.set(String(l.listingId), { gr: l.grade || '', t: String(l.title || '').slice(0, 80), reg: l.registeredAt || null, seen: l.firstSeenAt || null }); /* (11/10 fence3) 등록 3개월 안은 새로 붙이지 않음(pxPlan) */ }
       const [ex, ...bq] = await Promise.all([C('px_exp').get(), ...['held', 'queued', 'running'].map((st) => C('shp_cmds').where('status', '==', st).get())]); const E = new Map(); ex.forEach((d) => { const x = d.data() || {}; E.set(d.id, { on: x.on, addedAt: x.addedAt, removedAt: x.removedAt, skipAt: x.skipAt, chkAt: x.chkAt, state: x.state, src: x.src, chkFail: x.chkFail }); }); const busy = new Set(); bq.forEach((qs) => qs.forEach((d) => { const x = d.data() || {}; if (x.type === 'pxExp') (x.listingIds || []).forEach((y) => busy.add(String(y))); }));
       const R = AS.pxPlan({ now, cfg, groups, listings: L, exp: E, busy, by: `${PC_NAME} ⏰ 매일`, dev: null, who: PC_NAME });
       if (!R.groups) { await cref.set({ lastPlan: { at: nowIso(), day, groups: 0, msg: R.msg, by: PC_NAME } }, { merge: true }); log('🔬 조회수 실험 매일: ' + R.msg); return 'skip'; }
