@@ -25,7 +25,7 @@
 'use strict';
 const http = require('http'), https = require('https'), fs = require('fs'), path = require('path'), os = require('os');
 const COL2 = require('../col2-config.js');
-const { makePace } = require('./col2-pace.js'); const { makeWin } = require('./col2-win.js'); const { Browser } = require('./col2-cdp.js'); const CMP = require('../shadow/col2-compare-core.js'); const { makeY24 } = require('./col2-y24.js'); const JR = require('./col2-journal.js');
+const { makePace } = require('./col2-pace.js'); const { makeWin } = require('./col2-win.js'); const { Browser } = require('./col2-cdp.js'); const CMP = require('../shadow/col2-compare-core.js'); const { makeY24 } = require('./col2-y24.js'); const JR = require('./col2-journal.js'); const UIC = require('./col2-ui.js'); const GO = require('./col2-go.js'); /* (0.1.7) 옆 창 골격·바로 가기 */
 const VERSION = COL2.COL2_VER;
 const TEST = process.env.RN_COL2_TEST === '1';
 const PORT = +process.env.RN_COL2_PORT || COL2.PORT;
@@ -172,7 +172,7 @@ function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const out = { 
   else if (wasH !== !!CFG.headless && B) { closeBrowser('화면 방식 바뀜').then(() => tick('화면 방식 바뀜')); }
   return ch; }
 
-function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), y24: Y24.sum(), side: sideOn(), y24Want: CFG.y24 == null ? !TEST : CFG.y24 !== false, y24Jobs: CFG.y24Jobs !== false, upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen,
+function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), kind: isLoggerPc() ? 'logger' : 'office', pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), y24: Y24.sum(), side: sideOn(), y24Want: CFG.y24 == null ? !TEST : CFG.y24 !== false, y24Jobs: CFG.y24Jobs !== false, upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen,
   opens: opensHour(), chrome: { fails: CH.fails, last: CH.last, okAt: CH.okAt ? kst(CH.okAt) : null, coolUntil: CH.coolUntil ? kst(CH.coolUntil) : null, cools: CH.cools, adopts: CH.adopts, retries: CH.retries }, msg: [ST.msg, CFG.on && AU.msg && AU.msg !== ST.msg ? '자동 읽기: ' + AU.msg : ''].filter(Boolean).join(' · '), /* (0.1.4) 자동 읽기가 왜 쉬는지(하루 몫·표본 기다림·작업 창 준비 실패)도 웹앱 col2_ctl·진단에 보이게 — 예전엔 작업 창 지킴이 글만 보여 멈춘 까닭을 몰랐음 */ reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: JRN.tail(15).map((e) => ({ t: e.t, m: e.x, l: e.l, k: e.k })), pcKind: JRN.kind(), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
 
 /* ── 그림자 읽기 ── */
@@ -311,61 +311,75 @@ function pcShow(s){const n=document.getElementById('pcn');if(!n)return;n.textCon
 document.getElementById('pcb').onclick=()=>{const e=document.getElementById('pce');e.style.display=e.style.display==='none'?'':'none';document.getElementById('pci').value=document.getElementById('pcn').textContent.replace(/^—$/,'')};
 document.getElementById('pcv').onclick=async()=>{const v=document.getElementById('pci').value.trim();if(!v)return;const r=await fetch('/cfg',{method:'POST',headers:{'X-RN-Col2':'1','Content-Type':'application/json'},body:JSON.stringify({pc:v,pcSrc:'pc'})});const s=await r.json();pcShow(s);document.getElementById('pce').style.display='none'};`;
 /* (0.1.6) 📜 기록창 붙이기 — 옆 창(🗒 단추 · Alt+L)과 따로 창(/log) 같이 · 기기 저장은 Col2Store.ls(rn3-) */
-const LOG_BOOT = (full) => `<script src="/s/col2-store.js"></script><script src="/s/col2-logwin.js"></script><script>(function(){const H={'X-RN-Col2':'1','Content-Type':'application/json'};
+const LOG_BOOT = (full) => `<script src="/s/col2-store.js"></script><script src="/s/col2-logwin.js"></script>${full ? '<script src="/s/col2-ui.js"></script>' : ''}<script>(function(){const H={'X-RN-Col2':'1','Content-Type':'application/json'};
 async function api(m,p,b,text){const r=await fetch(p,{method:m,headers:H,cache:'no-store',body:b?JSON.stringify(b):undefined});return text?r.text():r.json()}
-window.__jw=Col2Log.mount({api,ls:Col2Store.ls,full:${full ? 'true' : 'false'},btn:document.getElementById('jwBtn')});
+${full ? 'Col2UI.loadKeys(api);' : ''}window.__jw=Col2Log.mount({api,ls:Col2Store.ls,full:${full ? 'true' : 'false'},btn:document.getElementById('jwBtn'),match:window.Col2UI&&Col2UI.logMatch,label:window.Col2UI&&Col2UI.keyLabel});
 ${full ? `let last='';setInterval(()=>{const v={p:'log',x:screenX,y:screenY,w:outerWidth,h:outerHeight};const k=JSON.stringify(v);if(k!==last&&v.w>200&&v.h>150){last=k;fetch('/win/hrect',{method:'POST',headers:H,body:k}).catch(()=>{})}},15000);` : ''}})();</script>`;
 function logPageHtml() { return `<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>📜 번외 수집 기록</title>
 <style>${SMALL_CSS}</style><body>${LOG_BOOT(true)}</body></html>`; }
-function statusHtml() { return `<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>📊 번외 수집 상태</title>
+/* (0.1.7 정범님 11/09 밤 '모든 것을 내가 설정·조정하는 골격 · 접고 열고 · 아이콘으로 최소화 · 불편·중복 추리기') 📊 옆 창 = 머리띠 + 칸(카드)
+ *  칸 내용 HTML은 여기 · 다룸(순서·숨김·접기·작게·단축키·설정·설명서·바로 가기)은 col2-ui.js · 새 기능은 <details class="c card" data-card="이름"> 하나 + col2-ui.js CARDS 한 줄
+ *  0.1.6까지 있던 것은 지우지 않음 — 쓸모 적은 칸은 처음엔 숨김(⚙ 설정 › 칸에서 다시 켬) · 무엇을 왜는 README '0.1.7' 표 */
+function statusHtml() { return `<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>📊 번외 수집기</title>
 <style>${SMALL_CSS}</style>
-<h1>📊 번외 수집 상태 <small>col2 ${VERSION} · 시험 환경(운영과 따로)</small><button id="jwBtn" class="jwb" title="🗒 기록창 열기 (Alt+L)">🗒 기록</button></h1><div class="b">
-${pcBarHtml()}
-<div class="c" id="st">읽는 중…</div>
-<div class="c" id="y24c"><b>🟦 예스24 판매관리 읽기</b> <span class="k">(화면을 열지 않음 · 숨은 크롬)</span><div id="y24">—</div><div id="y24b"></div></div>
-<div class="c"><button class="p" id="onb">켜기</button><button data-a="show">🪟 보이기</button><button data-a="hide">🙈 숨기기</button><button data-a="reopen">↻ 다시 열기</button><button data-a="app?p=compare">🔎 비교 화면</button><div id="m" class="k" style="min-height:1.4em"></div></div>
-<div class="c"><b>속도</b> <span id="pc" class="k">—</span></div>
-<details class="c" open><summary>최근 그림자 읽기</summary><div id="rd" class="ln">—</div></details>
-<details class="c"><summary>기록 끝</summary><div id="ln" class="ln">—</div></details>
-<details class="c"><summary>자리·크기 <span class="k">(x · y · 폭 · 높이)</span></summary>
+<h1 id="hd"><span id="hdT">📊 <small id="hdP">🖥 이 PC: …</small></span><button id="jwBtn" class="jwb" title="🗒 기록창 열기 (Alt+L)">🗒 기록</button><button id="helpBtn" class="jwb" title="❓ 설명서">❓</button><button id="setBtn" class="jwb" title="⚙ 설정">⚙</button><button id="miniBtn" class="jwb" title="▁ 작은 단추로 줄이기">▁</button></h1>
+<div class="b" id="cards">
+<details class="c card" data-card="now" open><summary>▶ 지금 <span class="cs"></span></summary><div id="stop"></div><div id="st">읽는 중…</div><button class="p" id="onb">켜기</button> <span class="k">col2 ${VERSION} · 시험 환경(운영과 따로)</span></details>
+<details class="c card" data-card="y24" open><summary>🟦 예스24 판매관리 읽기 <span class="cs"></span></summary><div class="k">화면을 열지 않음 · 숨은 크롬</div><div id="y24">—</div><div id="y24b"></div></details>
+<details class="c card" data-card="go" open><summary>🔗 바로 가기 <span class="cs"></span></summary><div id="gobox"></div></details>
+<details class="c card" data-card="reads"><summary>📥 최근 그림자 읽기 <span class="cs"></span></summary><div id="rd" class="ln">—</div></details>
+<details class="c card" data-card="work"><summary>🪟 숨은 작업 창·점검 <span class="cs"></span></summary><div id="wk" class="k">—</div><button data-a="show">🪟 보이기</button><button data-a="hide">🙈 숨기기</button><button data-a="reopen">↻ 다시 열기</button><button data-a="app?p=compare">🔎 비교 화면</button><div class="k">점검할 때만 — 일은 저절로 돕니다(비교 화면은 손으로 몇 권 시험할 때)</div></details>
+<details class="c card" data-card="tail"><summary>🧾 도우미 글 끝 <span class="cs"></span></summary><div id="ln" class="ln">—</div></details>
+<details class="c card" data-card="rect"><summary>📐 창 자리·크기 숫자 <span class="k">(x · y · 폭 · 높이)</span></summary>
 <div style="margin-top:4px">🪟 작업 창(보일 때)<br><input class="n" id="wx"> <input class="n" id="wy"> <input class="n" id="ww"> <input class="n" id="wh"> <button data-s="win">저장</button></div>
 <div>📊 이 창<br><input class="n" id="hx"> <input class="n" id="hy"> <input class="n" id="hw"> <input class="n" id="hh"> <button data-s="hwin">저장</button></div>
 <div class="k">작업 창을 보이게 한 뒤 옮기거나 크기를 바꾸고 🙈 숨기기를 누르면 그 자리·크기가 저장됩니다 · 이 창은 옮기면 저절로 저장</div></details>
-<details class="c"><summary>켜기·끄기 <span class="k">(이 PC만)</span></summary><label><input type="checkbox" id="tg_y24"> 🟦 예스24 판매관리 읽기</label><br><label><input type="checkbox" id="tg_y24j"> 🤖 예스24 맡긴 일(주문접수확인·발송처리)도 여기서</label><br><label><input type="checkbox" id="tg_side"> 📊 켜질 때 이 옆 창 저절로 띄우기</label></details>
-<div class="k">이 번외 일꾼은 알라딘에 로그인하지 않고(따로 된 크롬 프로필), 운영 수집기·운영 도우미(8898·8899)와 상관없이 돕니다. 예스24는 따로 된 크롬(col2-y24-chrome)에 판매관리 세션만 지니고, 받은 응답은 이 PC 리드나우 수집기가 예전 길로 올립니다. 끄면 번외 크롬만 닫힙니다.</div></div>
-<script>(function(){const H={'X-RN-Col2':'1','Content-Type':'application/json'};const $=(i)=>document.getElementById(i);const E=(t)=>String(t==null?'':t).replace(/[&<>]/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;'})[c]);let edit=0,S=null,arm=0;
+</div><div id="m" class="k b" style="min-height:1.4em;padding-top:0"></div>
+<button id="miniIc" title="눌러서 펼치기"><span class="dot"></span>📊<small></small></button>
+<div id="ovSet" class="ov2"><div class="oh"><b>⚙ 설정 — 이 PC만</b><button data-ovx="set">닫기</button></div><div class="obody"><div id="setm" class="k" style="min-height:1.3em"></div>
+<h3>칸 — 보이기 · 처음 펼침 · 순서</h3><div id="setAll"><button data-all="open">모두 펼치기</button><button data-all="close">모두 접기</button></div><div id="setCards"></div>
+<h3>단축키 — 키 단추를 누르고 원하는 키를 누름</h3><div id="setKeys"></div>
+<h3>창 · 바로 가기</h3><div id="setWin"></div>
+<h3>일 켜기·끄기 (이 PC만)</h3><div id="tgbox"><div id="tgy"><label><input type="checkbox" id="tg_y24"> 🟦 예스24 판매관리 읽기</label><br><label><input type="checkbox" id="tg_y24j"> 🤖 예스24 맡긴 일(주문접수확인·발송처리)도 여기서</label></div><label><input type="checkbox" id="tg_side"> 📊 켜질 때 이 옆 창 저절로 띄우기</label></div>
+<h3>이 PC 이름</h3>${pcBarHtml()}
+<h3>내보내기 · 가져오기</h3><button id="setExp">⤓ 설정 내보내기</button> <label class="k">⤒ 가져올 파일 <input type="file" id="setImpF" accept=".json,application/json" style="max-width:150px"></label> <button id="setImp" class="p" style="display:none">가져오기</button>
+<h3>기본값</h3><button id="setReset" class="warn">↺ 기본값 되돌리기</button> <span class="k">칸·단축키·창만 — 일 켜기·이 PC 이름은 그대로</span>
+</div></div>
+<div id="ovHelp" class="ov2"><div class="oh"><b>❓ 번외 수집기 설명서</b><button data-ovx="help">닫기</button></div><div class="obody" id="helpBody"></div></div>
+<script src="/s/col2-store.js"></script><script src="/s/col2-logwin.js"></script><script src="/s/col2-go.js"></script><script src="/s/col2-help.js"></script><script src="/s/col2-ui.js"></script>
+<script>(function(){const H={'X-RN-Col2':'1','Content-Type':'application/json'};
 ${PC_JS}
-const T=(ms)=>new Date(+ms+9*3600e3).toISOString().slice(11,19);
-const hm=(ms)=>ms?new Date(+ms+9*3600e3).toISOString().slice(11,16):'—';
-function y24Show(s){const y=s.y24||{};let h;if(y.logger)h='<span class="k">로거 PC — 예스24 판매관리 읽기 안 함(약속 0)</span>';else if(!y.on)h='<span class="wa">꺼 둠</span> <span class="k">'+E(s.on?'(아래 켜기·끄기에서 켬)':'(번외 수집이 꺼져 있음)')+'</span>';
-else if(y.login==='need')h='<span class="no">🔐 예스24 로그인 필요</span><br><span class="k">아래 단추를 한 번 누르면 예스24 창이 앞으로 나옵니다 — 그 창에서 로그인하면 저절로 숨고 읽기를 이어 갑니다(아이디·비밀번호는 저장하지 않음)'+(y.loginMsg?' · 까닭: '+E(y.loginMsg):'')+'</span>';
-else if(y.login==='wait')h='<span class="wa">🔐 예스24 로그인 창이 열려 있음</span> <span class="k">— 그 창에서 로그인하면 저절로 숨김</span>';
-else h=(y.active?'<span class="ok">읽는 중</span>':'<span class="wa">쉬는 중</span>')+' · 로그인 '+(y.login==='ok'?'<span class="ok">살아 있음</span>':'확인 중')+'<br><span class="k">주문 두 목록 마지막 '+hm(y.ord&&y.ord.at)+(y.ord&&y.ord.nextMs!=null?' · 다음 '+Math.ceil(y.ord.nextMs/60000)+'분 뒤':'')+' · 등록상품 '+(y.prd&&y.prd.at?hm(y.prd.at)+' 매물 '+y.prd.n:'아직')+' · 오늘 물음 '+((y.day&&y.day.calls)||0)+'번 · 받은 응답 '+((y.day&&y.day.recs)||0)+'개 · 올림 '+(y.sent||0)+(y.q?' · 남음 '+y.q:'')+'</span>'+(y.ord&&y.ord.err?'<br><span class="no">'+E(y.ord.err)+'</span>':'');
-if(y.on&&y.msg&&y.login!=='need')h+='<br><span class="k">'+E(y.msg)+'</span>';$('y24').innerHTML=h;
-$('y24b').innerHTML=y.logger||!y.on?'':(y.login!=='ok'?'<button class="p" id="y24lg">🔐 예스24 로그인 (처음 한 번)</button>':'<button data-y="ord">🔁 주문 지금</button><button data-y="prd">📋 등록상품 전부</button><button data-y="tour">🛰 둘러보기</button>');
-const lg=$('y24lg');if(lg)lg.onclick=async()=>{$('m').textContent='…';const j=await post('/y24/login',{why:'옆 창 단추'});$('m').textContent=(j.ok?'✓ ':'✗ ')+(j.msg||j.err||'');load()};
-document.querySelectorAll('[data-y]').forEach((b)=>b.onclick=async()=>{const j=await post('/y24/run',{what:b.dataset.y});$('m').textContent=(j.ok?'✓ ':'✗ ')+(j.msg||j.err||'');load()});
-const cb=(id,v,k)=>{const e=$(id);if(!e)return;e.checked=!!v;e.onchange=async()=>{await post('/cfg',{[k]:e.checked,src:'pc'});load()}};cb('tg_y24',s.y24Want,'y24');cb('tg_y24j',s.y24Jobs,'y24Jobs');cb('tg_side',s.side,'side');}
-async function post(p,b){const r=await fetch(p,{method:'POST',headers:H,body:JSON.stringify(b||{})});return r.json()}
-async function load(){try{const r=await fetch('/status',{headers:H,cache:'no-store'});const s=await r.json();if(s.ver&&s.ver!=='${VERSION}'&&new URLSearchParams(location.search).get('v')!==s.ver){location.replace(location.pathname+'?v='+encodeURIComponent(s.ver));return}S=s;pcShow(s);const rl=s.relay||{};
-$('st').innerHTML='번외 수집 '+(s.on?'<span class="ok">켜짐</span>':'<span class="no">꺼짐</span>')+' · 번외 크롬 '+(s.alive?'<span class="ok">떠 있음</span>':'<span class="no">없음</span>')+(s.alive&&!s.headless?(s.shown?' · <b>보이는 중</b>':' · 숨김'):'')+(s.headless?' · 화면 없음':'')+'<br><span class="k">'+E(s.msg||'')+' · 최근 한 시간 다시 띄움 '+s.opens+'번 · 운영 공용 파일 '+E(Object.entries(s.core.ver||{}).map(([k,v])=>k.replace(/^readnow-|-core\\.js$/g,'')+' '+v).join(' · ')||'아직 안 받음')+'</span><br>'+autoLine(s)+'<br><span class="k">기록: 웹앱이 대신 기록함 · '+(rl.ackAt?'마지막 기록 '+Math.max(0,Math.round((Date.now()-rl.ackAt)/60000))+'분 전':'아직 기록 없음')+(rl.outN?' · 남은 '+rl.outN+'건':'')+(rl.err?' · <span class="no">실패: '+E(rl.err)+'</span>':'')+'</span>';
-y24Show(s);
-$('onb').textContent=arm?(s.on?'한 번 더 누르면 끔':'한 번 더 누르면 켬'):(s.on?'⏹ 끄기':'▶ 켜기');$('onb').className=s.on?'warn':'p';
-const p=s.pace;$('pc').textContent='한 장 뒤 '+Math.round(p.minGapMs/100)/10+'초 안팎 · 이번 시간 '+p.hourN+'/'+p.hourCap+'장 · 오늘 '+p.dayN+'/'+p.dayCap+'장'+(p.coolMs?' · 쉬는 중 '+Math.ceil(p.coolMs/60000)+'분':'');
-$('rd').innerHTML=s.reads.length?s.reads.slice().reverse().map((x)=>E(x.at.slice(11))+' '+E(x.itemId)+' '+(x.ok?'✓ '+E(x.title||''):'✗ '+E(x.why||''))).join('\\n'):'—';
-$('ln').innerHTML=s.logs.length?s.logs.map((e)=>T(e.t)+' '+E(e.m)).join('\\n'):'—';
-if(!edit){const f=(q,v)=>{['x','y','w','h'].forEach((k)=>{$(q+k).value=v&&v[k]!=null?v[k]:''})};f('w',s.win);f('h',s.hwin);}}catch(e){$('st').textContent='도우미에 닿지 못함: '+e.message}}
-$('onb').onclick=async()=>{if(!arm){arm=Date.now();load();setTimeout(()=>{if(arm&&Date.now()-arm>=4000){arm=0;load()}},4100);return}arm=0;const j=await post('/cfg',{on:!(S&&S.on),src:'pc'});$('m').textContent=j.on?'✓ 켰습니다':'✓ 껐습니다';load()};
-document.querySelectorAll('input.n').forEach((i)=>i.oninput=()=>{edit=Date.now()});
-document.querySelectorAll('[data-a]').forEach((b)=>b.onclick=async()=>{$('m').textContent='…';try{const j=await post('/win/'+b.dataset.a,{why:'상태 창'});$('m').textContent=(j.ok?'✓ ':'✗ ')+(j.msg||j.err||'')}catch(e){$('m').textContent='✗ '+e.message}load()});
-document.querySelectorAll('[data-s]').forEach((b)=>b.onclick=async()=>{const q=b.dataset.s==='win'?'w':'h';const v={};['x','y','w','h'].forEach((k)=>v[k]=+$(q+k).value);try{const j=await post('/win/rect',{[b.dataset.s]:v});$('m').textContent=(j.ok?'✓ 저장 — ':'✗ ')+(j.msg||j.err||'');edit=0}catch(e){$('m').textContent='✗ '+e.message}load()});
-let last='';setInterval(()=>{const v={x:screenX,y:screenY,w:outerWidth,h:outerHeight};const k=JSON.stringify(v);if(k!==last&&v.w>200&&v.h>150){last=k;fetch('/win/hrect',{method:'POST',headers:H,body:k}).catch(()=>{})}},15000);
-load();setInterval(()=>{if(!edit||Date.now()-edit>60000){edit=0;load()}},4000)})();</script>${LOG_BOOT(false)}</html>`; }
+window.pcShow=pcShow;window.autoLine=autoLine;
+async function api(m,p,b){const r=await fetch(p,{method:m,headers:H,cache:'no-store',body:b?JSON.stringify(b):undefined});return r.json()}
+window.__side=Col2UI.side({api,ls:Col2Store.ls,ver:'${VERSION}'});})();</script>${LOG_BOOT(false)}</html>`; }
+/* (0.1.7) ❓ 설명서 따로 주소 /help — 옆 창 겹창과 같은 글 */
+function helpPageHtml() { return `<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>❓ 번외 수집기 설명서</title>
+<style>${SMALL_CSS}</style><h1>❓ 번외 수집기 설명서 <small>col2 ${VERSION}</small></h1><div class="b" id="helpBody">읽는 중…</div>
+<script src="/s/col2-help.js"></script><script src="/s/col2-ui.js"></script><script>(async function(){const H={'X-RN-Col2':'1','Content-Type':'application/json'};const g=async(p)=>(await fetch(p,{headers:H,cache:'no-store'})).json();
+let ui={},kind='office';try{ui=(await g('/ui')).ui;kind=(await g('/status')).kind||'office'}catch(e){}const n=Col2UI.normalize(ui);const B=document.getElementById('helpBody');B.innerHTML=Col2Help.html({kind,keys:n.keys,actions:Col2UI.ACTIONS,cards:Col2UI.CARDS,ver:'${VERSION}'});
+B.querySelectorAll('[data-go]').forEach((b)=>b.onclick=async()=>{const r=await fetch('/go',{method:'POST',headers:H,body:JSON.stringify({id:b.dataset.go})});const j=await r.json();b.title=(j.ok?'✓ ':'✗ ')+(j.msg||j.err||'')});
+B.querySelectorAll('[data-hj]').forEach((a)=>a.onclick=(e)=>{e.preventDefault();const t=document.getElementById(a.dataset.hj);if(t){t.open=true;t.scrollIntoView()}})})();</script></html>`; }
+
+/* (0.1.7) ⚙ 설정(PC마다 col2.json ui) · 🔗 바로 가기(평소 크롬) · ▁ 작은 단추 */
+const uiNow = () => UIC.normalize(CFG.ui);
+function uiSet(o) { if (o.reset) { const m = uiNow().mini; CFG.ui = { ...UIC.normalize({}), mini: m, at: now() }; saveCfg(); note('⚙ 옆 창 설정을 기본값으로(칸·단축키·창)', { k: 'sys', m: '설정' }); return { code: 200, body: { ok: true, ui: uiNow() } }; }
+  const n = UIC.normalize(o.ui); const ck = UIC.check(n.keys); if (!ck.ok) return { code: 400, body: { ok: false, err: '단축키가 겹치거나 못 쓰는 키', errs: ck.errs } };
+  const was = JSON.stringify({ ...uiNow(), at: 0 }); n.at = num(n.at, 1, 9e15, now()); CFG.ui = n; saveCfg(); if (JSON.stringify({ ...n, at: 0 }) !== was && !o.quiet) log('⚙ 옆 창 설정 저장'); return { code: 200, body: { ok: true, ui: n } }; }
+function goOpen(o) { const kind = isLoggerPc() ? 'logger' : 'office'; const r = GO.urlOf(String(o.id || ''), o.q, kind); if (r.err) { if (r.logger) note('🔗 바로 가기 거절 — 로거 PC는 우리 숍·계정 화면을 열지 않음(약속 0)', { k: 'sys', l: 'warn', m: '바로 가기' }); return { code: r.logger ? 403 : 404, body: { ok: false, err: r.err } }; }
+  const prof = uiNow().goProf; const args = GO.chromeArgs(r.url, prof); /* 평소 크롬 — 데이터 폴더(--user-data-dir)·조종 길을 붙이지 않음 = 정범님이 로그인해 둔 그 크롬에 새 탭 */
+  if (TEST) { try { fs.appendFileSync(path.join(HOME, 'go.log'), JSON.stringify({ at: now(), args }) + '\n'); } catch (e) {} }
+  else { const ch = chromeExe(); if (!ch) return { code: 500, body: { ok: false, err: '크롬을 못 찾음' } }; try { const pr = require('child_process').spawn(ch, args, { detached: true, stdio: 'ignore' }); pr.on('error', () => {}); pr.unref(); } catch (e) { return { code: 500, body: { ok: false, err: e.message } }; } }
+  note(`🔗 바로 가기 — ${r.link.t}${r.q ? ' · 찾기' : ''} → 평소 크롬`, { k: 'sys', m: '바로 가기' }); return { code: 200, body: { ok: true, msg: `평소 크롬${prof ? '(' + prof + ')' : ''}에 새 탭으로 엶 — ${r.link.t}` } }; }
+async function miniWin(o) { const on = o.on === true; const u = uiNow(); u.mini = on; u.at = now(); CFG.ui = u; saveCfg();
+  const f = await WIN.run('find', STAT_MARK); if (!f.ok) return { ok: false, err: f.err }; if (!f.n) return { ok: false, err: '옆 창이 작은 앱 창이 아님(주소창 탭) — 화면만 작게 바꿈' }; const it = f.list[0] || {};
+  if (on) { if (it.r && it.r.w >= 260 && it.r.h >= 200) { CFG.hwin = { ...it.r, at: now(), src: 'pc' }; saveCfg(); } const w = num(o.w, 60, 400, UIC.MINI.w), h = num(o.h, 40, 400, UIC.MINI.h); const b = it.r || { x: 0, y: 0, w: D.appW };
+    const r = await WIN.run('show', STAT_MARK, { x: b.x + b.w - w, y: b.y, w, h, top: o.top !== false }); note(`▁ 옆 창을 작은 단추로(${w}×${h}${o.top !== false ? ' · 늘 위' : ''}) — ${String(o.why || '').slice(0, 30)}`, { k: 'win', l: 'detail', m: '옆 창' }); return r.ok ? { ok: true, msg: '작은 단추로 줄임' } : r; }
+  const rc = appRect(rectOk(CFG.hwin, 260, 200), f); const r = await WIN.run('show', STAT_MARK, rc.x != null ? rc : {}); note('▁ 옆 창을 원래 자리·크기로 — ' + String(o.why || '').slice(0, 30), { k: 'win', l: 'detail', m: '옆 창' }); return r.ok ? { ok: true, msg: '원래 자리·크기로' + (rc.x != null ? ` (${rc.x},${rc.y} · ${rc.w}×${rc.h})` : '') } : r; }
 
 /* ── 듣는 길 ── */
 function readBody(req, max, cb) { const bufs = []; let n = 0, bad = false; req.on('data', (c) => { n += c.length; if (n > max) { bad = true; req.destroy(); } else bufs.push(c); }); req.on('end', () => (bad ? cb(new Error('너무 큼')) : cb(null, Buffer.concat(bufs)))); }
 const OK_ORG = (o) => o === `http://127.0.0.1:${PORT}` || o === `http://localhost:${PORT}` || o === COL2.WEB_ORIGIN || /^chrome-extension:\/\//i.test(o);
-const STATIC = { 'col2-config.js': path.join(ROOT, 'col2-config.js') }; for (const f of ['col2-store.js', 'col2-compare-core.js', 'col2-compare.js']) STATIC[f] = path.join(ROOT, 'shadow', f); STATIC['col2-logwin.js'] = path.join(__dirname, 'col2-logwin.js');
+const STATIC = { 'col2-config.js': path.join(ROOT, 'col2-config.js') }; for (const f of ['col2-store.js', 'col2-compare-core.js', 'col2-compare.js']) STATIC[f] = path.join(ROOT, 'shadow', f); for (const f of ['col2-logwin.js', 'col2-ui.js', 'col2-go.js', 'col2-help.js']) STATIC[f] = path.join(__dirname, f);
 const srv = http.createServer((req, res) => {
   const host = String(req.headers.host || ''); if (!new RegExp(`^(127\\.0\\.0\\.1|localhost):${PORT}$`).test(host)) { res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end('{"ok":false,"err":"이 PC 안에서만"}'); }
   const org = req.headers.origin || ''; const u = new URL(req.url, 'http://127.0.0.1');
@@ -373,11 +387,12 @@ const srv = http.createServer((req, res) => {
   const J = (c, o) => { res.writeHead(c, { 'Content-Type': 'application/json; charset=utf-8', ...H }); res.end(JSON.stringify(o)); };
   if (org && !OK_ORG(org)) return J(403, { ok: false, err: '이 PC의 번외 화면·웹앱만' }); /* 알라딘 화면·다른 웹 페이지는 못 부름 */
   if (req.method === 'OPTIONS') { res.writeHead(204, H); return res.end(); }
-  if (req.method === 'GET' && (u.pathname === '/' || u.pathname === '/compare' || u.pathname === '/log')) { if (org) return J(403, { ok: false, err: '이 PC 주소창·앱 창에서만' });
-    const html = u.pathname === '/' ? statusHtml() : u.pathname === '/log' ? logPageHtml() : fs.readFileSync(path.join(ROOT, 'shadow', 'compare.html'), 'utf8').replace('<!--PCBAR-->', pcBarHtml() + `<script>(function(){${PC_JS}window.__pcShow=pcShow;window.autoLine=autoLine})();</script>`).replace('/*SMALL_CSS*/', SMALL_CSS); res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" }); return res.end(html); }
+  if (req.method === 'GET' && (u.pathname === '/' || u.pathname === '/compare' || u.pathname === '/log' || u.pathname === '/help')) { if (org) return J(403, { ok: false, err: '이 PC 주소창·앱 창에서만' });
+    const html = u.pathname === '/' ? statusHtml() : u.pathname === '/log' ? logPageHtml() : u.pathname === '/help' ? helpPageHtml() : fs.readFileSync(path.join(ROOT, 'shadow', 'compare.html'), 'utf8').replace('<!--PCBAR-->', pcBarHtml() + `<script>(function(){${PC_JS}window.__pcShow=pcShow;window.autoLine=autoLine})();</script>`).replace('/*SMALL_CSS*/', SMALL_CSS); res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" }); return res.end(html); }
   if (req.method === 'GET' && u.pathname.startsWith('/s/')) { const f = STATIC[u.pathname.slice(3)]; if (!f) return J(404, { ok: false }); res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-store' }); return res.end(fs.readFileSync(f)); }
   if (req.headers['x-rn-col2'] !== '1') return J(403, { ok: false, err: 'X-RN-Col2 머리가 없음' });
   if (u.pathname === '/status' && req.method === 'GET') return J(200, status());
+  if (u.pathname === '/ui' && req.method === 'GET') { const n = uiNow(); return J(200, { ok: true, ui: n, errs: UIC.check(n.keys).errs, kind: isLoggerPc() ? 'logger' : 'office' }); }
   /* (0.1.6) 📜 기록창 — 새 줄(차례 after 뒤) · 날짜 목록 · 그날 줄 · 모두 글로(내려받기) */
   if (u.pathname === '/log/lines' && req.method === 'GET') return J(200, { ok: true, boot: BOOT, lines: JRN.since(u.searchParams.get('after'), u.searchParams.get('n')), kind: JRN.kind(), pc: CFG.pc || os.hostname(), today: new Date(now() + 9 * 3600e3).toISOString().slice(0, 10), rounds: JRN.rounds(6), state: status() });
   if (u.pathname === '/log/days' && req.method === 'GET') return J(200, { ok: true, days: JRN.days() });
@@ -389,6 +404,9 @@ const srv = http.createServer((req, res) => {
   const act = (fn) => body((o) => fn(o.why || '').then((r) => J(200, { ...r, state: status() })));
   const p = u.pathname;
   if (p === '/cfg') return body((o) => { setCfg(o); J(200, status()); });
+  if (p === '/ui') return body((o) => { const r = uiSet(o); J(r.code, r.body); });
+  if (p === '/go') return body((o) => { const r = goOpen(o); J(r.code, r.body); });
+  if (p === '/win/mini') return body((o) => miniWin(o).then((r) => J(200, r)));
   if (p === '/log/clear') return body((o) => { const r = JRN.clear(); note(`📜 기록을 내려받고 화면에서 비움(${r.moved}일치 · 파일은 지우지 않고 journal\\old 로 옮김) — ${String(o.why || '').slice(0, 40)}`, { k: 'sys', l: 'ok', m: '기록' }); J(200, r); });
   if (p === '/win/app') return body((o) => appWin(String(u.searchParams.get('p') || o.p || 'compare'), o.why || '').then((r) => J(200, { ...r, state: status() })));
   if (p === '/relay/get') return body((o) => { const r = relayGet(o); J(r.code, r.body); });
@@ -398,7 +416,7 @@ const srv = http.createServer((req, res) => {
   if (p === '/relay/ack') return body((o) => J(200, relayAck(o)));
   if (p === '/win/show') return act(show); if (p === '/win/hide') return act(hide); if (p === '/win/reopen') return act(reopen); if (p === '/win/status-open') return act(statusWin);
   if (p === '/win/rect') return body((o) => { const out = []; for (const k of ['win', 'hwin']) { const r = rectOk(o[k], k === 'win' ? 400 : 260, k === 'win' ? 300 : 200); if (o[k] && !r) return J(400, { ok: false, err: '자리·크기가 이상함(작업 창은 폭 400·높이 300 이상)' }); if (r) { CFG[k] = { ...r, at: now(), src: 'pc' }; out.push(`${k === 'win' ? '작업 창' : '상태 창'} ${r.x},${r.y} · ${r.w}×${r.h}`); } } saveCfg(); note('자리·크기 저장 — ' + out.join(' / ')); J(200, { ok: true, msg: out.join(' / '), state: status() }); });
-  if (p === '/win/hrect') return body((o) => { const key = o.p === 'compare' ? 'cwin' : o.p === 'log' ? 'lwin' : 'hwin'; const r = rectOk(o, 260, 200); if (r) { const c = CFG[key] || {}; if (c.x !== r.x || c.y !== r.y || c.w !== r.w || c.h !== r.h) { CFG[key] = { ...r, at: now(), src: 'pc' }; saveCfg(); } } J(200, { ok: true }); }); /* 작은 창이 알린 자기 자리·크기(옮기면 다음에 그 자리) */
+  if (p === '/win/hrect') return body((o) => { const key = o.p === 'compare' ? 'cwin' : o.p === 'log' ? 'lwin' : 'hwin'; if (key === 'hwin' && CFG.ui && CFG.ui.mini) return J(200, { ok: true, mini: true }); /* (0.1.7) 작은 단추일 땐 원래 크기를 덮지 않음 */ const r = rectOk(o, 260, 200); if (r) { const c = CFG[key] || {}; if (c.x !== r.x || c.y !== r.y || c.w !== r.w || c.h !== r.h) { CFG[key] = { ...r, at: now(), src: 'pc' }; saveCfg(); } } J(200, { ok: true }); }); /* 작은 창이 알린 자기 자리·크기(옮기면 다음에 그 자리) */
   if (p === '/read/product') return body(async (o) => { const r = await readProduct(o); J(r.code, r.body); });
   /* (0.1.5) 🟦 예스24 — 수집기 다리(받기·보냄 확인·맡긴 일·출고 보호·웹앱 설정) · 로그인 한 번 · 지금 읽기 */
   if (p === '/y24/feed') return body((o) => J(200, Y24.feed(o, o.by)), 1048576);

@@ -7,7 +7,7 @@ const fs = require('fs'), cp = require('child_process');
 
 /* (0.1.4 정범님 11/09 '번외 수집기 왜 진행 안 해') 창 자리 함수 이름을 R → Get-RnRect — PowerShell은 별칭이 함수보다 먼저라 'R'은 Invoke-History(r)로 불려
  *  'ID 21433606에 대한 기록을 찾을 수 없습니다'로 find·hide가 창이 있을 때마다 실패했음(HOME col2_ctl 11/09 17:40) */
-const PS_SRC = (D) => `param([string]$Act = 'find', [int]$X = 0, [int]$Y = 0, [int]$W = 0, [int]$H = 0, [string]$Place = 'off', [string]$Mark = 'col2-work-chrome')
+const PS_SRC = (D) => `param([string]$Act = 'find', [int]$X = 0, [int]$Y = 0, [int]$W = 0, [int]$H = 0, [string]$Place = 'off', [string]$Mark = 'col2-work-chrome', [int]$Top = 0)
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
@@ -52,10 +52,10 @@ if ($L.Count -gt 0) { $hnd = $L[0]
     if ($Place -eq 'edge') { $x = $wa.X + $wa.Width - 6; $y = $wa.Y + $wa.Height - 6 } else { $x = $vs.X - $w - 400; $y = $vs.Y + 40 }
     [RnCol2Win]::Taskbar($hnd, $true); [void][RnCol2Win]::SetWindowPos($hnd, [IntPtr]1, $x, $y, $w, $hh, 0x0010) }
   elseif ($Act -eq 'show') { [RnCol2Win]::Taskbar($hnd, $false); if ([RnCol2Win]::IsIconic($hnd)) { [void][RnCol2Win]::ShowWindow($hnd, 9) }
-    $w = $W; $hh = $H; $x = $X; $y = $Y; if ($w -lt 200 -or $hh -lt 150) { $w = [Math]::Min(${D.showW}, $wa.Width); $hh = [Math]::Min(${D.showH}, $wa.Height); $x = $wa.X + [int](($wa.Width - $w) / 2); $y = $wa.Y + [int](($wa.Height - $hh) / 2) }
+    $w = $W; $hh = $H; $x = $X; $y = $Y; <# (0.1.7) 60×40 이상이면 준 크기 그대로(▁ 작은 단추 132×104) — 그보다 작거나 없으면 가운데 기본 크기 #> if ($w -lt 60 -or $hh -lt 40) { $w = [Math]::Min(${D.showW}, $wa.Width); $hh = [Math]::Min(${D.showH}, $wa.Height); $x = $wa.X + [int](($wa.Width - $w) / 2); $y = $wa.Y + [int](($wa.Height - $hh) / 2) }
     $okp = $false; foreach ($sc in [System.Windows.Forms.Screen]::AllScreens) { $b = $sc.WorkingArea; if ($x -ge $b.X - 60 -and $x -le $b.X + $b.Width - 120 -and $y -ge $b.Y - 20 -and $y -le $b.Y + $b.Height - 80) { $okp = $true } }
     if (-not $okp) { $x = $wa.X + [int](($wa.Width - [Math]::Min($w, $wa.Width)) / 2); $y = $wa.Y + 20 }
-    [void][RnCol2Win]::SetWindowPos($hnd, [IntPtr](-1), $x, $y, $w, $hh, 0x0040); [void][RnCol2Win]::SetWindowPos($hnd, [IntPtr](-2), 0, 0, 0, 0, 0x0043); [void][RnCol2Win]::SetForegroundWindow($hnd) }
+    [void][RnCol2Win]::SetWindowPos($hnd, [IntPtr](-1), $x, $y, $w, $hh, 0x0040); if ($Top -ne 1) { [void][RnCol2Win]::SetWindowPos($hnd, [IntPtr](-2), 0, 0, 0, 0, 0x0043) }; [void][RnCol2Win]::SetForegroundWindow($hnd) }
   elseif ($Act -eq 'close') { foreach ($q in $L) { [void][RnCol2Win]::PostMessage($q, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) } }
   $out.list = @($L | Select-Object -First 4 | ForEach-Object { Info $_ }) }
 $out | ConvertTo-Json -Compress -Depth 5
@@ -68,6 +68,7 @@ function makeWin(o) { const psFile = o.psFile; const D = o.D; const psExe = () =
     const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', psFile, '-Act', act, '-Mark', mark];
     for (const k of ['X', 'Y', 'W', 'H']) { const v = a[k.toLowerCase()]; if (v != null && Number.isFinite(+v)) args.push('-' + k, String(Math.round(+v))); }
     if (a.place) args.push('-Place', a.place === 'edge' ? 'edge' : 'off');
+    if (a.top) args.push('-Top', '1'); /* (0.1.7) ▁ 작은 단추 — 늘 다른 창 위에(그 밖 show는 앞으로 꺼낸 뒤 보통 창으로) */
     cp.execFile(psExe(), args, { windowsHide: true, timeout: 45000, maxBuffer: 4 * 1048576 }, (e, out, err) => { const line = String(out || '').trim().split(/\r?\n/).reverse().find((l) => /^\{/.test(l.trim())); let j = null; try { j = JSON.parse(line); } catch (x) {}
       if (!j) return res({ ok: false, err: '창 다루기 실패: ' + String(err || (e && e.message) || '응답 없음').slice(0, 200) }); j.list = Array.isArray(j.list) ? j.list : j.list ? [j.list] : []; res(j); }); }); }
   return { run };

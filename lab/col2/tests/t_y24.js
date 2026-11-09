@@ -48,7 +48,7 @@ async function attach(home) { const pf = path.join(home, 'col2-y24-chrome', 'Dev
     console.log('① 로그인 한 번(정범님 손) — 아이디·비번은 저장하지 않음');
     let s = await until(async () => { const v = await y(); return v.login === 'need' ? v : null; }, 80);
     ok(s && s.login === 'need' && /로그인 필요/.test(s.msg), "숨은 예스24 크롬이 첫 화면에서 로그인 화면을 봄 → '로그인 필요'", s && s.msg);
-    const html = (await H.req('GET', '/')).b; ok(/🟦 예스24 판매관리 읽기/.test(html) && /id="y24lg"|y24lg/.test(html) && /예스24 로그인 \(처음 한 번\)/.test(html), '옆 창에 예스24 칸과 [🔐 예스24 로그인] 단추');
+    const html = (await H.req('GET', '/')).b + (await H.req('GET', '/s/col2-ui.js')).b; ok(/🟦 예스24 판매관리 읽기/.test(html) && /data-card="y24"/.test(html) && /id="y24lg"|y24lg/.test(html) && /예스24 로그인 \(처음 한 번\)/.test(html), '옆 창에 예스24 칸과 [🔐 예스24 로그인] 단추');
     let r = await H.api('POST', '/y24/login', { why: '시험' }); ok(r.j.ok && /앞으로/.test(r.j.msg) && H.T.win().acts.includes('show:col2-y24-chrome'), '단추 → 예스24 창을 앞으로 꺼냄(로그인 화면)', r.j.msg);
     s = await y(); ok(s.login === 'wait', "로그인 기다리는 중 표시", s.login);
     const A = await attach(HOME); await A.pg.waitForSelector('input[type=password]'); await A.pg.fill('input[name=id]', 'seller'); await A.pg.fill('input[type=password]', PW_SECRET); await A.pg.click('button'); await A.br.close().catch(() => {});
