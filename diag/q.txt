@@ -1,2 +1,2 @@
-y24raw=1&y24p=1
-# 2075423453
+doc=prd_system/pricing,app_settings/strat_run,app_settings/oop_cfg,app_settings/oop_study,app_settings/ml_state,sales_daily/2026,app_settings/value_cfg
+# 236735334
