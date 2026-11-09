@@ -1,1 +1,2 @@
-@kpq kpq=25&kpcap=3000&kpper=150000&r=20261109205007
+@health&hours=4
+# 1090727372
