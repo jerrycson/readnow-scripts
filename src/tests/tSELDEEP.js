@@ -50,8 +50,9 @@ const SA = { name: '가게A', co: '업체A', rep: '대표A', biz: '123-45-67890'
   ok(I.legal.retF && I.legal.retK && I.legal.hqF && I.legal.telH && I.legal.repH && I.info['반품 주소'] === SA.ret, '원문과 함께 맞대기 열쇠(예스24와 같은 함수) · 칸 이름 그대로 원문(info)', Object.keys(I.info));
   ok(I.periods['최근 6개월'].count === 120 && I.periods['전체 기간'].rating === 0.9 && I.cancel3m === 0.215 && I.items === 12345 && I.lids.join() === '3000100,3000102' && /6,000원/.test(I.shipTxt), '만족도 표·품절 취소율·상품 수·첫 쪽 매물 번호·배송비 글', { p: I.periods, c: I.cancel3m, items: I.items });
   ok(X.alShopInfoOf('<div id="sellerInfoLayer"><p>최근 7일 내 거래 고객에게만 연락처 제공</p></div>').infoNote && !X.alShopInfoOf('<div id="sellerInfoLayer"><p>최근 7일 내 거래 고객에게만 연락처 제공</p></div>').legal, '개인셀러(연락처 비공개 안내뿐) → 고지 없음·안내 글만');
-  const S = X.alSurveyRows(alSurvey); ok(S.rows.length === 4 && S.rows[0].d === '2026-11-01' && S.rows[0].r === 'good' && S.rows[3].r === 'bad' && S.rows[2].r === 'good' && S.last === 3 && !JSON.stringify(S).includes('손님**'), '알라딘 평가 줄(날짜·만족도·글 원문) · 손님 아이디는 가린 것도 안 남김', S.rows[3]);
-  const YR = X.y24RatingRows(y24Rating); ok(YR.length === 3 && YR[0].s === 5 && YR[0].d === '2026-11-04' && YR[1].c === '빠른 배송 감사합니다' && !JSON.stringify(YR).includes('손님'), '예스24 평가 줄(점수·글 원문·날짜)', YR);
+  const S = X.alSurveyRows(alSurvey); ok(S.rows.length === 4 && S.rows[0].d === '2026-11-01' && S.rows[0].r === 'good' && S.rows[3].r === 'bad' && S.rows[2].r === 'good' && S.last === 3 && S.rows.every((x) => x.u === '손님**'), '알라딘 평가 줄(날짜·만족도·글 원문) · 평가 쓴 아이디도 원문 그대로(11/10 fence3 — 정범님 정보 수집 막지 말 것)', S.rows[3]);
+  { const F = X.sfpRevFp(S.rows); ok(F.idN === 1 && F.uRep === 1 && F.ids[0].u === '손님**' && F.ids[0].c === 4, '⑨ 같은 아이디 반복(진짜 손님인지 꾸민 평가인지 가릴 근거)', F); }
+  const YR = X.y24RatingRows(y24Rating); ok(YR.length === 3 && YR[0].s === 5 && YR[0].d === '2026-11-04' && YR[1].c === '빠른 배송 감사합니다' && YR.every((x) => x.u === '손님**'), '예스24 평가 줄(점수·글 원문·날짜·평가 쓴 아이디 원문)', YR);
   ok(X.y24ShopIds(y24List).join() === '200000101,200000103,200000105', '예스24 가게 목록 → 매물 번호');
   const GD = X.y24GoodsDesc(y24Goods); ok(GD && GD.g === '상' && /모서리/.test(GD.t) && GD.h, '예스24 낱개 매물 → 상태 설명 문장 + 지문', GD);
   const F = X.ftcParse(ftcTable(SA)); const f0 = F.rows[0] || {};
@@ -104,7 +105,10 @@ const SA = { name: '가게A', co: '업체A', rep: '대표A', biz: '123-45-67890'
   // 둘째 회차: 자동으로 더한 예스24 가게(설정 → 자동 → 시트 차례)
   const R3 = await run(F1, SITE({})); const Y1 = F1.D.seller_deep.y24_shopa01 || {};
   ok(R3.calls.length === 7 && R3.calls.filter((u) => /Product\/Goods/.test(u)).length === 2 && Y1.legal && Y1.legal.rep === '대표A' && Y1.notesRaw[0].b.includes('010-1234-5678') && Y1.reviews.length === 3 && Y1.seqIds.length === 3 && Y1.desc.length === 2 && Y1.entr === '9000002' && Y1.cats.length === 2, '예스24 가게: 첫 화면·공지·평가·분야·목록·낱개 2개(7화면) · 공지 원문(전화 가림 없이)·평가 글·매물 번호·설명 문장', { calls: R3.calls.length, k: Object.keys(Y1) });
-  // 셋째: 시트 허위 매물 번호 — 공정위는 사업자 번호 하나에 하루 한 번
+  // (11/10 fence3) 시트 허위 매물 표시는 기본으로 대상 고르기에 안 씀(정범님 11/09 밤 — 허위 판단 근거로 쓰지 않음) · 정범님이 fake:true로 켤 때만
+  const R2a = await run(F1, SITE({})); ok(R2a.calls.length === 0 && !(F1.D.seller_deep || {}).al_9000099, '시트 허위 매물 표시는 기본으로 깊이 읽기 대상에 안 넣음(판단 근거로 안 씀)', R2a.calls);
+  F1.D.app_settings.seller_deep_state.fake = true;
+  // 셋째: 시트 허위 매물 번호(정범님이 켰을 때만) — 공정위는 사업자 번호 하나에 하루 한 번
   const R2 = await run(F1, SITE({ al: { ...SA, name: '가게B' } })); ok(R2.calls.length === 2 && !R2.calls.some((u) => /ftc/.test(u)) && F1.D.seller_deep.al_9000099 && F1.D.seller_deep.al_9000099.ftc && F1.D.seller_deep.al_9000099.why === '시트 허위 매물', '시트 허위 매물 표시(번호 있는 것)도 대상 · 같은 사업자 번호 공정위는 오늘 다시 안 물음(저장된 결과 씀)', R2.calls);
   ok(F1.D.app_settings.seller_deep_state.n === 12, '오늘 쓴 화면 수 3+2+7', F1.D.app_settings.seller_deep_state.n);
   // 모두 새로 읽었으면 아무것도 안 읽음

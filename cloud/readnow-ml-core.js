@@ -328,7 +328,7 @@
     if (!/^(판매중|일시판매중지)$/.test(l.status || '')) no.push(`판매 상태가 ${l.status || '모름'} — 판매중·일시판매중지만`); if (!(+l.qty > 0)) no.push('수량 0');
     if (!l.listingId) no.push('알라딘 상품 번호(listingId) 없음 — 샵매니저 수정을 할 수 없음'); if (st.hold) no.push(`사람이 ↩ 되돌림(${String(st.hold.at || '').slice(0, 10)}) — 이 상품은 전략에서 쉼`); const reg = Date.parse(l.registeredAt || '') || null; if (reg && (now - reg) / 36e5 < C.newH) no.push(`등록 ${C.newH}시간 안(시장 기록이 아직 안정되지 않음)`);
     const M = d.M || stratMarket(ctx, C); if (d.k !== 'drip' && d.k !== 'floor') { if (!M.ok) no.push('첫 쪽 매물 기록 없음'); else if (M.ageH == null || M.ageH > C.maxAgeH) no.push(`시장 지표가 ${M.ageH == null ? '언제 것인지 모름' : Math.round(M.ageH) + '시간 전'}(${C.maxAgeH}시간 안 것만)`); }
-    if (ctx.busy) no.push('앞서 맡긴 수정이 아직 진행 중'); { const tg = String(l.sku || '').slice(3, 6).toUpperCase(); if (tg === 'PND' || tg === 'BAD') no.push(`관리코드 ${tg} — 가격 감시가 보류(PND)·은퇴(BAD)로 둔 상품은 사람이 정함`); } if (ctx.watch) no.push('가격 감시 묶음·결정이 이 상품을 맡고 있음(겹치면 서로 덮음)'); if (ctx.engOut) no.push(`사람이 손대 실험에서 빠진 상품(${String(ctx.engOut.why || '').slice(0, 40)}) — 엔진은 다시 건드리지 않음`); if (ctx.fence) no.push(`🧪 실험 울타리: ${String(ctx.fence).slice(0, 80)}`);
+    if (ctx.busy) no.push('앞서 맡긴 수정이 아직 진행 중'); { const tg = String(l.sku || '').slice(3, 6).toUpperCase(); if (tg === 'PND' || tg === 'BAD') no.push(`관리코드 ${tg} — 가격 감시가 보류(PND)·은퇴(BAD)로 둔 상품은 사람이 정함`); } if (ctx.watch) no.push('가격 감시 묶음·결정이 이 상품을 맡고 있음(겹치면 서로 덮음)'); if (ctx.engOut) no.push(`사람이 손대 실험에서 빠진 상품(${String(ctx.engOut.why || '').slice(0, 40)}) — 엔진은 다시 건드리지 않음`); if (ctx.fence) no.push(`🧪 실험 울타리: ${String(ctx.fence).slice(0, 80)}`); if (ctx.lock) no.push(`🔒 ${String(ctx.lock.why || '엔진이 안 건드리는 상품').slice(0, 90)}`); /* (11/10 fence3) 등록 3개월 안·사람이 손댐 */
     const hEd = Date.parse(l.editAt || '') || 0; if (hEd && !/strategy|전략/.test(String(l.editBy || '')) && (now - hEd) / 36e5 < C.humanLockH) no.push(`사람이 ${Math.round((now - hEd) / 36e5)}시간 전에 고침 — ${C.humanLockH}시간 동안 사람 값이 우선`);
     const last = Date.parse((st.last && st.last.at) || '') || 0; if (st.last && st.last.act === 'price' && last && (now - last) / 864e5 < 7 && +l.price !== +st.last.to && +l.price !== +st.last.from) no.push(`전략이 ${Number(st.last.to).toLocaleString()}원으로 바꾼 뒤 값이 ${Number(l.price).toLocaleString()}원 — 사람이 고친 것으로 보고 7일 동안 손대지 않음`); if (last && (now - last) / 36e5 < C.coolH) no.push(`이 상품에 ${Math.round((now - last) / 36e5)}시간 전에 이미 함(${C.coolH}시간에 한 번)`);
     if (d.act === 'pause' || d.act === 'resume') { const lf = Date.parse(st.flipAt || '') || 0; if (lf && (now - lf) / 36e5 < C.flipH) no.push(`판매 상태를 ${Math.round((now - lf) / 36e5)}시간 전에 바꿈(${C.flipH}시간에 한 번 — 깜빡임 막기)`); if (d.act === 'pause' && !/^판매중$/.test(l.status || '')) no.push('이미 판매중이 아님'); if (d.act === 'resume' && !/일시판매중지/.test(l.status || '')) no.push('일시판매중지가 아님'); }
@@ -463,7 +463,7 @@
    *   x[상품] = { s(실험 시작 값), p(지금 값), a(= s − p, 0 아래면 0 — 오늘 다 팔리면 덜 받을 돈), src, r(진행 중 내림 예약 { id, to, a, at, by, cmd }) }
    *  셈: 쓴(done) + 걸린 것 모두(상품마다 a와 예약 a 중 큰 값) + 이번 내림 = 오늘 다 팔릴 때 최대 손해 → 한도 이하일 때만 예약(부분 적용 없음)
    *  한도는 클라우드가 준 값(app_settings/eng_fence_now)만 — 없거나 36시간 넘으면 내리지 않음(실패 때 안전 쪽) · 값이 이상하면 바닥 5,000원 */
-  const FENCE = { min: 5000, max: 30000, staleH: 36, ttlMin: 15, noKeep: 100 };
+  const FENCE = { min: 5000, max: 30000, staleH: 36, ttlMin: 15, noKeep: 100, newDays: 90, humanDays: 14 }; /* (11/10 fence3) newDays 90 = 정범님 11/09 밤 '등록 3개월 이내 상품도 포함' · humanDays 14 = 사람 손댄 뒤 엔진이 안 건드리는 날 수(EXP_DEF.humanCoolD와 같음) */
   const fenceN = (v) => (v != null && v !== '' && Number.isFinite(+v) ? +v : null);
   const fenceHeld = (e) => (e ? Math.max(fenceN(e.a) || 0, (e.r && fenceN(e.r.a)) || 0, 0) : 0);
   /* fenceLimitOf(nw, nowMs) — nw = app_settings/eng_fence_now { dayLoss, at, fix } → { ok, limit, why } */
@@ -480,20 +480,49 @@
     const from = fenceN(q.from), to = fenceN(q.to); if (!q.key) return no('상품이 없음'); if (to == null || to < 10) return no('내릴 값이 이상함'); if (from == null || from < 10) return no('지금 값을 모름');
     if (to >= from) return { ok: true, raise: true, e: null, limit: lim.limit, why: '내림이 아님(값을 올리거나 그대로) — 검사 없음' };
     const cur = (L.x || {})[q.key] || null; if (cur && cur.r) return no(`같은 상품의 다른 내림(${String(cur.r.at || '').slice(5, 16)})이 아직 끝나지 않음`);
-    const s = cur && fenceN(cur.s) > 0 ? fenceN(cur.s) : fenceN(q.start) > 0 ? fenceN(q.start) : from; if (!(s > 0)) return no('실험 시작 값을 모름');
-    const curA = cur ? fenceHeld(cur) : Math.max(0, s - from); const newA = Math.max(0, s - to); const o = fenceSum(L, q.key); const mine = Math.max(curA, newA); const need = o.used + mine; const left = lim.limit - need;
+    /* (11/10 fence3 · 정범님 11/09 밤 손해 셈 (나)) 기준 = 정범님(사람)이 마지막으로 확정한 값(q.human — fenceBase) → 엔진이 그보다 더 내린 몫만 손해 · 사람 확정 값이 없으면 원장의 시작 값 → q.start → 지금 값 */
+    const hu = fenceN(q.human) > 0 ? fenceN(q.human) : null; const s = hu || (cur && fenceN(cur.s) > 0 ? fenceN(cur.s) : fenceN(q.start) > 0 ? fenceN(q.start) : from); if (!(s > 0)) return no('실험 시작 값을 모름');
+    const curA = cur ? (hu && hu !== fenceN(cur.s) ? Math.max(0, s - (fenceN(cur.p) != null ? fenceN(cur.p) : from), (cur.r && fenceN(cur.r.a)) || 0) : fenceHeld(cur)) : Math.max(0, s - from); const newA = Math.max(0, s - to); const o = fenceSum(L, q.key); const mine = Math.max(curA, newA); const need = o.used + mine; const left = lim.limit - need;
     if (need > lim.limit) return no(`오늘 쓴 ${o.done.toLocaleString()}원 + 걸린 ${o.held.toLocaleString()}원 + 이 상품 ${mine.toLocaleString()}원 = ${need.toLocaleString()}원 > 한도 ${lim.limit.toLocaleString()}원 — 내리지 않음`, { need, left });
-    const e = { s, p: cur && fenceN(cur.p) != null ? fenceN(cur.p) : from, a: cur ? fenceN(cur.a) || 0 : Math.max(0, s - from), src: q.src || (cur && cur.src) || null, since: (cur && cur.since) || nowIso, r: { id: String(q.id || nowIso), to, a: newA, at: nowIso, by: q.by || null, cmd: q.cmd || null } };
+    const p0 = cur && fenceN(cur.p) != null ? fenceN(cur.p) : from; const e = { s, p: p0, a: cur ? (hu ? Math.max(0, s - p0) : fenceN(cur.a) || 0) : Math.max(0, s - from), ...(hu ? { base: 'human' } : {}), src: q.src || (cur && cur.src) || null, since: (cur && cur.since) || nowIso, r: { id: String(q.id || nowIso), to, a: newA, at: nowIso, by: q.by || null, cmd: q.cmd || null } };
     return { ok: true, e, need, left, limit: lim.limit, why: null }; }
   /* fenceSettle(L, key, rid, ok, price, nowIso) — 예약 끝: ok면 지금 값 = price(알라딘이 받은 값) · 아니면 예약만 풂 → 새 x[key] 또는 null(그 예약이 아님) */
   function fenceSettle(L, key, rid, ok, price, nowIso) { const cur = ((L || {}).x || {})[key]; if (!cur || !cur.r || String(cur.r.id) !== String(rid)) return null; const p = fenceN(price);
     if (ok && p != null) return { ...cur, p, a: Math.max(0, (fenceN(cur.s) || 0) - p), r: null, at: nowIso || new Date().toISOString() }; return { ...cur, r: null, at: nowIso || new Date().toISOString() }; }
-  /* fenceNote(L, key, s, price, src, make) — 사람이 정한 값이 반영됨(수동 일괄 첫 반영) 또는 값을 올림 → 걸린 손해만 새로 셈(검사 없음 · make=false면 원장에 있는 상품만) */
-  function fenceNote(L, key, s, price, src, make, nowIso) { const cur = ((L || {}).x || {})[key] || null; if (!cur && !make) return null; const p = fenceN(price); if (p == null) return null; const s0 = cur && fenceN(cur.s) > 0 ? fenceN(cur.s) : fenceN(s); if (!(s0 > 0)) return null;
-    return { ...(cur || {}), s: s0, p, a: Math.max(0, s0 - p), src: (cur && cur.src) || src || null, since: (cur && cur.since) || nowIso || new Date().toISOString(), r: cur ? cur.r || null : null }; }
+  /* fenceNote(L, key, s, price, src, make, nowIso, reset) — 사람이 정한 값이 반영됨(수동 일괄·직접 가격) 또는 값을 올림 → 걸린 손해만 새로 셈(검사 없음 · make=false면 원장에 있는 상품만)
+   *  (11/10 fence3 · 손해 셈 (나)) reset = 사람이 확정한 값 → 기준(s)을 그 값으로 다시 놓음(사람이 내린 몫은 손해가 아님 · 걸린 손해 0) */
+  function fenceNote(L, key, s, price, src, make, nowIso, reset) { const cur = ((L || {}).x || {})[key] || null; if (!cur && !make) return null; const p = fenceN(price); if (p == null) return null; const s0 = reset && fenceN(s) > 0 ? fenceN(s) : cur && fenceN(cur.s) > 0 ? fenceN(cur.s) : fenceN(s); if (!(s0 > 0)) return null;
+    return { ...(cur || {}), s: s0, p, a: Math.max(0, s0 - p), ...(reset ? { base: 'human', baseAt: nowIso || new Date().toISOString() } : {}), src: (cur && cur.src) || src || null, since: (cur && cur.since) || nowIso || new Date().toISOString(), r: cur ? cur.r || null : null }; }
   /* fenceNoAdd(L, rec) — 막은 기록(최근 noKeep개 · 같은 날 같은 상품·같은 까닭은 횟수만 올림) */
   function fenceNoAdd(L, rec, F0) { const F = { ...FENCE, ...(F0 || {}) }; const L0 = ((L || {}).no || []).slice(); const i = L0.findIndex((x) => x && x.key === rec.key && x.why === rec.why); if (i >= 0) { L0[i] = { ...L0[i], n: (L0[i].n || 1) + 1, at: rec.at }; return L0; } L0.push({ ...rec, n: 1 }); return L0.slice(-F.noKeep); }
+  /* ── (11/10 fence3 · 정범님 11/09 밤 '손해가 적용되는 곳을 모두 멈춰 · 손해를 보지 않고 진행할 방법') 무손해 기본 · 사람 확정 값 기준 · 엔진이 안 건드리는 상품 ──
+   *  fenceNoLoss(cfg) — app_settings/eng_fence.noLossMode: 없거나 못 읽으면 true(안전 쪽) · false는 정범님이 직접 끌 때만 → true면 연구·엔진 실험(⚡ 전략 실행 · 전체 비율 실험 · 실험 장부)은 값·판매 상태를 바꾸지 않고 관찰만 */
+  function fenceNoLoss(cfg) { return !(cfg && cfg.noLossMode === false); }
+  const fenceHumanBy = (by) => /@/.test(String(by || '')); /* 사람 = 로그인 메일 (학습 공용 isHumanBy와 같은 규칙 · 감시기 사본에서도 쓰려고 여기 따로) */
+  /* fenceRegMs(l, regAt) — 등록 때(ms) · 상품 기록 registeredAt(샵매니저 '등록' 시각 · 한국 시각 꼴 'YYYY-MM-DDTHH:MM' 또는 날짜만) → 등록 기록(regAt) → 처음 본 때(firstSeenAt) · 모르면 null */
+  function fenceRegMs(l, regAt) { const P = (v) => { if (!v) return null; let t = String(v).trim(); if (/^\d{4}-\d{2}-\d{2}$/.test(t)) t += 'T00:00:00+09:00'; else if (/^\d{4}-\d{2}-\d{2}[T ]\d{1,2}:\d{2}(:\d{2})?$/.test(t)) t = t.replace(' ', 'T') + '+09:00'; const ms = Date.parse(t); return Number.isFinite(ms) ? ms : null; };
+    l = l || {}; return P(l.registeredAt) ?? P(regAt) ?? P(l.regAt) ?? P(l.firstSeenAt) ?? null; }
+  /* fenceLock(l, o) — 엔진·전략·감시 자동 반영·추격자·전체 비율 실험·연구가 값·상태를 바꾸지 않는 상품(읽기만) → { kind, why, until } 또는 null
+   *  o = { key, excl(app_settings/eng_excl.m[키]), dec(prd_price_decisions 문서), regAt(등록 기록 때), nowMs, gid(이 감시 그룹 — 같은 그룹의 수동 일괄은 정범님이 엔진에 맡긴 것이라 셈하지 않음), F }
+   *  ① 등록 90일(3개월) 안 — 정범님 11/09 밤 결정 · 등록 때를 모르면 안전 쪽으로 안 건드림 ② 사람이 손대 실험에서 빠진 상품(eng_excl — 기한 없음, 예전 그대로)
+   *  ③ 사람이 14일 안에 손댐(✏ 상품 수정 · 직접 가격 · 다른 그룹의 수동 일괄 — 상품 기록 editBy·결정 approval.by가 메일) */
+  function fenceLock(l, o) { o = o || {}; const F = { ...FENCE, ...(o.F || {}) }; const now = o.nowMs || Date.now(); const day = 864e5; const ymd = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10);
+    const reg = fenceRegMs(l, o.regAt); if (reg == null) return { kind: 'new', why: '등록 때를 모름 — 등록 3개월 안일 수 있어 엔진이 안 건드림(안전 쪽)', until: null };
+    if (now - reg < F.newDays * day) return { kind: 'new', why: `등록 ${Math.max(0, Math.floor((now - reg) / day))}일 — 등록 3개월(${F.newDays}일) 안이라 엔진이 안 건드림`, until: ymd(reg + F.newDays * day) };
+    if (o.excl) return { kind: 'human', why: `사람이 손대 엔진 실험에서 빠진 상품(${String(o.excl.why || '').slice(0, 40)}) — 엔진은 다시 안 건드림`, until: null };
+    const hs = []; const t = (v) => { const ms = Date.parse(v || ''); return Number.isFinite(ms) && now - ms < F.humanDays * day && ms <= now + 60e3 ? ms : null; };
+    if (l && fenceHumanBy(l.editBy) && t(l.editAt)) hs.push([t(l.editAt), '사람이 상품 정보를 고침(✏ 수정)']);
+    const ap = (o.dec && o.dec.approval) || {}; if (fenceHumanBy(ap.by) && t(ap.at) && !(o.gid && ap.decision === 'batch' && String(ap.batchId || '') === String(o.gid))) hs.push([t(ap.at), ap.decision === 'batch' ? '사람이 수동 일괄로 값을 정함' : '사람이 가격을 정함']);
+    const hp = o.dec && o.dec.humanPx; if (hp && fenceHumanBy(hp.by) && t(hp.at) && !(o.gid && hp.how === 'batch' && String(hp.gid || '') === String(o.gid))) hs.push([t(hp.at), '사람이 확정한 값이 반영됨']);
+    if (hs.length) { hs.sort((a, b) => b[0] - a[0]); return { kind: 'human', why: `${hs[0][1]} — ${F.humanDays}일 동안 엔진이 안 건드림(사람 값이 우선)`, until: ymd(hs[0][0] + F.humanDays * day) }; }
+    return null; }
+  /* fenceBase(dec, fb) — 손해 셈 기준 (나) = 정범님(사람)이 마지막으로 확정한 값 → { s, human(①~③이면 true — fenceTry q.human으로 넘김), why } 또는 null
+   *  ① 결정 문서 humanPx(사람이 정한 값이 알라딘에 들어간 때 감시기가 남김) ② 감시 그룹 humanPrice(수동 일괄 첫 반영 값) ③ 사람이 낸 결정(수동 일괄·직접 가격) ④ 감시 시작 전 값(옛 기록 — 사람이 내린 몫까지 세어 더 많이 셈 · 안전 쪽) ⑤ fb(엔진이 처음 내리기 전 값) */
+  function fenceBase(dec, fb) { dec = dec || {}; const w = dec.watch || {}; const ap = dec.approval || {}; const hp = dec.humanPx || null;
+    if (hp && fenceN(hp.p) > 0) return { s: fenceN(hp.p), human: true, why: '사람이 마지막으로 확정한 값' }; if (fenceN(w.humanPrice) > 0) return { s: fenceN(w.humanPrice), human: true, why: '감시 그룹에 넣을 때 사람이 확정한 값' };
+    if (fenceHumanBy(ap.by) && ['batch', 'manual'].includes(ap.decision) && fenceN(ap.price) > 0) return { s: fenceN(ap.price), human: true, why: '사람이 정한 결정 값' };
+    if (fenceN(w.startPrice) > 0) return { s: fenceN(w.startPrice), why: '사람 확정 값 기록이 없어 감시 시작 전 값(더 많이 셈 — 안전 쪽)' }; const f = fenceN(fb); return f > 0 ? { s: f, why: '사람 확정 값이 없어 엔진이 처음 내리기 전 값' } : null; }
   /* FENCE-PURE-END */
-  const api = { VERSION, VDEF, setBuyback, bbExpect, bbAccept, BB_ACC, extrasOf, EX_LABEL, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, sevReasonGroups, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue, STRATS, STRAT_K, SDEF, stratDecide, stratGuard, stratMarket, stratFloor, stratCeil, stratParams, stratRarity, STALL_H, stallCheck, asOfMetrics, listingAsOf, EXP_DEF, AGE_EDGES, isHumanBy, expCell, expPair, humanTouch, busyOf, dayLossLimit, dayLossOf, expScore, engDecOk, RARE_RANGE, rareClamp, rarePick, REBUILT_W, mlSplitDays, FENCE, fenceLimitOf, fenceSum, fenceHeld, fenceRoll, fenceTry, fenceSettle, fenceNote, fenceNoAdd };
+  const api = { VERSION, VDEF, setBuyback, bbExpect, bbAccept, BB_ACC, extrasOf, EX_LABEL, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, sevReasonGroups, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue, STRATS, STRAT_K, SDEF, stratDecide, stratGuard, stratMarket, stratFloor, stratCeil, stratParams, stratRarity, STALL_H, stallCheck, asOfMetrics, listingAsOf, EXP_DEF, AGE_EDGES, isHumanBy, expCell, expPair, humanTouch, busyOf, dayLossLimit, dayLossOf, expScore, engDecOk, RARE_RANGE, rareClamp, rarePick, REBUILT_W, mlSplitDays, FENCE, fenceLimitOf, fenceSum, fenceHeld, fenceRoll, fenceTry, fenceSettle, fenceNote, fenceNoAdd, fenceNoLoss, fenceRegMs, fenceLock, fenceBase };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowML = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

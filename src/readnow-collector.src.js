@@ -2256,8 +2256,8 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     R.push({ k: 'record', label: '기록된 문제', pts: np, max: 10, text: `취소·불만 기록 ${cn}건` });
     // ⑥ 판매자 연결 (30): 허위 매물 판매자와 연결되면 되팔이·대행 가능성이 매우 큼
     const sl = (sellerLinkMap.get(c.customerId) || []).filter((x) => x.strong !== false); const hasFake = sl.some((x) => x.grade === 'fake'); // 이메일이 비슷하기만 한 약한 연결은 점수에 넣지 않음
-    const sp = hasFake ? 30 : sl.length ? 15 : 0;
-    R.push({ k: 'seller', label: '판매자 연결', pts: sp, max: 30, text: sl.length ? `판매자 ${sl.map((x) => x.name).slice(0, 3).join(', ')}${hasFake ? ' (허위 매물)' : ''}` : '연결 없음' });
+    const sp = sl.length ? 15 : 0; /* (11/10 fence3 · 정범님 11/09 밤 '옛 시트 허위 표시는 판단 근거로 쓰지 않음') 예전: 시트 허위 매물 판매자와 이어지면 30점 → 이어짐만 15점 · 시트 표시는 글로만(참고) */
+    R.push({ k: 'seller', label: '판매자 연결', pts: sp, max: 30, text: sl.length ? `판매자 ${sl.map((x) => x.name).slice(0, 3).join(', ')}${hasFake ? ' (참고: 옛 시트 허위 매물 표시 — 점수에 안 넣음)' : ''}` : '연결 없음' });
     const value = V.reduce((s, x) => s + x.pts, 0); const risk = Math.min(100, R.reduce((s, x) => s + x.pts, 0));
     const top = (arr) => arr.filter((x) => x.pts > 0).sort((a, b) => b.pts - a.pts).slice(0, 3).map((x) => `${x.label}: ${x.text}`);
     const vipOn = value >= SCORE_RULES.vip.minValue && risk < SCORE_RULES.vip.maxRisk && orders >= SCORE_RULES.vip.minOrders && !(SCORE_RULES.vip.excludeSellers && sl.length);
@@ -6615,7 +6615,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     const now = Date.now(); const day = AS.kst(now).day; let mine = false, by0 = null; await db.runTransaction(async (tx) => { mine = false; const x = (await tx.get(cref)).data() || {}; by0 = x.lastBy || null; if (x.lastDay === day) return; tx.set(cref, { lastDay: day, lastStartAt: nowIso(), lastBy: PC_NAME }, { merge: true }); mine = true; });
     if (!mine) { log(`🔬 조회수 실험 매일: 오늘 계획은 이미 함(${by0 || '?'}) — 붙이기는 차례대로 이어짐`); return 'skip'; }
     try { const gs = await C('px_exp_groups').where('auto', '==', true).get(); const groups = gs.docs.map((d) => ({ id: d.id, ...d.data() }));
-      await loadListings('inc'); const L = new Map(); for (const [k, l] of LISTINGS) { if (!l || l.active === false || !l.listingId || String(k).startsWith('yes24_') || !['판매중', '일시판매중지'].includes(l.status)) continue; L.set(String(l.listingId), { gr: l.grade || '', t: String(l.title || '').slice(0, 80) }); }
+      await loadListings('inc'); const L = new Map(); for (const [k, l] of LISTINGS) { if (!l || l.active === false || !l.listingId || String(k).startsWith('yes24_') || !['판매중', '일시판매중지'].includes(l.status)) continue; L.set(String(l.listingId), { gr: l.grade || '', t: String(l.title || '').slice(0, 80), reg: l.registeredAt || null, seen: l.firstSeenAt || null }); /* (11/10 fence3) 등록 3개월 안은 새로 붙이지 않음(pxPlan) */ }
       const [ex, ...bq] = await Promise.all([C('px_exp').get(), ...['held', 'queued', 'running'].map((st) => C('shp_cmds').where('status', '==', st).get())]); const E = new Map(); ex.forEach((d) => { const x = d.data() || {}; E.set(d.id, { on: x.on, addedAt: x.addedAt, removedAt: x.removedAt, skipAt: x.skipAt, chkAt: x.chkAt, state: x.state, src: x.src, chkFail: x.chkFail }); }); const busy = new Set(); bq.forEach((qs) => qs.forEach((d) => { const x = d.data() || {}; if (x.type === 'pxExp') (x.listingIds || []).forEach((y) => busy.add(String(y))); }));
       const R = AS.pxPlan({ now, cfg, groups, listings: L, exp: E, busy, by: `${PC_NAME} ⏰ 매일`, dev: null, who: PC_NAME });
       if (!R.groups) { await cref.set({ lastPlan: { at: nowIso(), day, groups: 0, msg: R.msg, by: PC_NAME } }, { merge: true }); log('🔬 조회수 실험 매일: ' + R.msg); return 'skip'; }

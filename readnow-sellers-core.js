@@ -47,7 +47,7 @@
     add(10, n.items == null ? null : Math.log10(n.items + 1) / 5, '상품력 (보유 상품 수)', n.items == null ? '' : `보유 ${numTxt(n.items)}개`);
     const known = mp.filter((x) => x.pts != null).length;
     let model = known >= 3 && wsum ? Math.round((got / wsum) * 100) : null; const gates = [];
-    if (n.fake) { gates.push('허위 매물 판매자 — 상도 위반'); model = model != null ? Math.min(model, 15) : 10; }
+    const notes = []; if (n.fake) notes.push('참고: 옛 시트에 \'허위 매물\' 표시 — 판단·점수에 넣지 않음(정범님 11/09 밤 · 근거로 쓰지 않음)'); /* (11/10 fence3) 예전: 상도 위반 문 + 점수 15 상한 */
     if (n.outRatio != null && n.outRatio > 0.05) { gates.push(`품절 취소율 ${(n.outRatio * 100).toFixed(1)}% — 없는 재고를 파는 방식으로 의심`); if (model != null) model = Math.min(model, 30); }
     // 득실: 50에서 시작
     const gp = []; let gain = 50; const g = (v, label) => { if (!v) return; gain += v; gp.push({ v, label }); };
@@ -59,11 +59,11 @@
     if (n.shippingFee != null) { if (n.shippingFee >= 3000) g(5, `배송비 ${won(n.shippingFee)} — 우리 쪽이 상대적으로 쌈`); else if (n.shippingFee <= 1500) g(-5, `배송비 ${won(n.shippingFee)} — 싼 배송비로 고객을 끌어감`); }
     if (n.rating != null && n.rating < 0.97) g(5, `평점 ${(n.rating * 100).toFixed(1)}% — 고객이 떠날 여지`);
     if (n.outRatio != null && n.outRatio > 0.01) g(5, `품절 취소 ${(n.outRatio * 100).toFixed(1)}% — 취소된 고객이 다른 판매자로 옴`);
-    if (n.fake) g(-20, '허위 매물 — 가짜 최저가로 고객을 빼앗고 가격 판단을 흐림');
+    /* (11/10 fence3) 예전: 옛 시트 허위 매물이면 득실 −20 → 참고 표시(notes)로만 */
     gain = clamp(Math.round(gain), 0, 100);
     const mcls = model == null ? 'na' : model >= T.modelHigh ? 'good' : model <= T.modelLow || gates.length ? 'bad' : 'mid';
     const gcls = gain >= T.gainHigh ? 'good' : gain <= T.gainLow ? 'bad' : 'mid';
-    return { model, mcls, mp, gates, gain, gcls, gp, norm: n };
+    return { model, mcls, mp, gates, gain, gcls, gp, notes, norm: n };
   }
   const MODEL_TXT = { good: '모범', mid: '보통', bad: '불량', na: '판단 보류' };
   const GAIN_TXT = { good: '우리에게 이득', mid: '중립', bad: '우리에게 불익' };
