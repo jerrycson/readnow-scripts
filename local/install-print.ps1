@@ -75,6 +75,8 @@ Move-Item -Force $tmpa $ja
 if ($alpsPc) { Ok 'readnow-alps.js (📦 ALPS 자동 처리 · MJ-MAIN)' } else { Ok 'readnow-alps.js (도우미 모듈 — 이 PC에서는 쓰지 않음 · 창도 안 엶)' }
 $jw = Join-Path $Dir 'readnow-work.js'; $tmpw = Join-Path $Dir 'readnow-work.dl.js'
 try { Invoke-WebRequest -UseBasicParsing -Uri "$RAW/readnow-work.js$Q" -OutFile $tmpw; & $node --check $tmpw; if ($LASTEXITCODE -eq 0) { Move-Item -Force $tmpw $jw; Ok 'readnow-work.js (🪟 수집 작업 창 — 웹앱 관리도구에서 PC별로 켤 때만 움직임)' } else { Warn '작업 창 모듈 검사 실패 — 도우미가 나중에 스스로 받음' } } catch { Warn '작업 창 모듈을 못 받음 — 도우미가 나중에 스스로 받음' }
+$jb = Join-Path $Dir 'readnow-blk.js'; $tmpb = Join-Path $Dir 'readnow-blk.dl.js'  <# (정범님 11/09 blk1) 🛡 추적 차단 모듈 — 없어도 도우미가 나중에 스스로 받음 #>
+try { Invoke-WebRequest -UseBasicParsing -Uri "$RAW/readnow-blk.js$Q" -OutFile $tmpb; & $node --check $tmpb; if ($LASTEXITCODE -eq 0) { Move-Item -Force $tmpb $jb; Ok 'readnow-blk.js (🛡 추적 차단 — Microsoft Clarity 방문 녹화 주소만 hosts에서 막음 · 관리자 허락은 웹앱 단추로 한 번)' } else { Warn '추적 차단 모듈 검사 실패 — 도우미가 나중에 스스로 받음' } } catch { Warn '추적 차단 모듈을 못 받음 — 도우미가 나중에 스스로 받음' }
 
 if ($With -eq 'col2') { try {
   Say '🧪 외부 수집기(시험) 받기 — 운영 수집기와 따로 · 로그인하지 않음 · 기본 꺼짐이던 것을 이 PC만 켬'

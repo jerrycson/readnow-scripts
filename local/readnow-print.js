@@ -41,6 +41,13 @@ function updBootPlan(p, ver) { if (!p || !p.to) return { act: 'none' }; if (ver 
   if (d.act === 'clear') { mv({ ok: null, why: d.why }); return; }
   if (d.act === 'rollback') { try { fs.copyFileSync(path.join(HOME, p.bak), __filename); fs.writeFileSync(UPD_SKIP, JSON.stringify({ v: p.to, at: new Date().toISOString() })); } catch (e) { log('되돌리기 실패: ' + e.message); return; } mv({ ok: false, why: `새 판 ${p.to}이 켜지다 ${d.n - 1}번 죽어 옛 판 ${p.from}으로 되돌림` }); log(`🔄 새 판 ${p.to}이 켜지다 ${d.n - 1}번 죽음 — 보관한 옛 판 ${p.from}으로 되돌리고 다시 켬(그 판은 다시 받지 않음)`); setTimeout(() => process.exit(0), 300); return; }
   try { fs.writeFileSync(UPD_PEND, JSON.stringify({ ...p, boots: d.n })); } catch (e) {} UPD_NOW = { what: '인쇄 도우미', from: p.from, to: p.to, at: Date.now(), st: 'boot' }; setTimeout(() => { UPD_NOW = null; mv({ ok: true }); log(`🔄 새 판 ${VERSION} 60초 버팀 — 바꾸기 끝(옛 판 보관 ${p.bak})`); }, +process.env.RN_UPD_OKMS || 60e3); })();
+/* (정범님 11/09 blk1) 🛡 추적 차단 — 같은 폴더 readnow-blk.js(없으면 GitHub에서 받음) · 알라딘 샵매니저의 Microsoft Clarity(방문 녹화) 주소만 hosts에서 0.0.0.0
+ *  ① 저절로: 시작 3분 뒤·6시간마다 빠졌으면 바로 써 봄(도우미가 관리자 권한일 때만 됨 · 보통은 '관리자 권한 필요'로 끝남 — 허락 창은 저절로 띄우지 않음)
+ *  ② 사람 한 번: 웹앱 🧭 관리도구 › 🖥 기기 운영 보고 '🛡 이 PC에 추적 차단 넣기' → POST /blk/install → 관리자 허락 창 '예' 한 번(이 PC 앞에서)
+ *  ③ 되돌리기: POST /blk/undo(우리 줄만 '#'으로 꺼 둠 · 지우지 않음) · 되돌린 PC는 ①이 다시 넣지 않음(blk-cfg.json off)
+ *  🚚 출고 중(약속 0-1)엔 ①·②·③ 모두 미룸 · 상태는 GET /blk/status(웹앱·이 PC 수집기 → PC 신호 pcBeat.blk → 기기 운영 보고 한 줄) */
+const RAW_BLK = RAW.replace(/readnow-print\.js$/, 'readnow-blk.js'); const BLK_F = path.join(HOME, 'readnow-blk.js'); const BLK_CFG = path.join(HOME, 'blk-cfg.json');
+let BLK = null; const loadBlk = () => { try { delete require.cache[require.resolve(BLK_F)]; BLK = require(BLK_F); } catch (e) { BLK = null; if (fs.existsSync(BLK_F)) log('추적 차단 모듈 읽기 실패: ' + e.message); } }; loadBlk();
 const ps = (script, timeout) => new Promise((res) => { const f = path.join(os.tmpdir(), `rnp_${process.pid}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.ps1`); fs.writeFileSync(f, '﻿' + script, 'utf8');
   cp.execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', f], { windowsHide: true, timeout: timeout || 120000, maxBuffer: 8 * 1048576 }, (e, out, err) => { try { fs.unlinkSync(f); } catch (x) {} res({ e, out: String(out || ''), err: String(err || '') }); }); });
 const psq = (s) => "'" + String(s).replace(/'/g, "''") + "'";
@@ -233,6 +240,8 @@ const srv = http.createServer((req, res) => {
   { const pn = String(req.url || '').split('?')[0]; if (/^\/(work(\/|$)|render$)/.test(pn)) { if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host)) { res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end('{"ok":false}'); } if (!WORK) { res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end(JSON.stringify({ ok: false, nohelper: true, err: '작업 창 모듈이 아직 없음 — 1분 뒤 다시(도우미가 GitHub에서 받음)' })); } return WORK.api(req, res, new URL(req.url, 'http://127.0.0.1'), { readBody, log }); } }
   /* (1.2.0) 💾 로거 대신 보관 길 — 이 PC 수집기만(127.0.0.1 · 웹 페이지 출처는 거절 · 쓰기는 X-RN-Img/X-RN-Bk 머리) */
   { const pn = String(req.url || '').split('?')[0]; if (/^\/(img-(stat|have|put)|bk-(stat|put|state))$/.test(pn)) { if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) || (org && !/^chrome-extension:\/\//i.test(org))) { res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end('{"ok":false,"err":"이 PC 수집기만"}'); } const u0 = new URL(req.url, 'http://127.0.0.1'); return pn.startsWith('/img-') ? imgApi(u0, req, res) : bkApi(u0, req, res); } }
+  /* (blk1) 🛡 추적 차단 상태 — 이 PC 수집기(Tampermonkey · chrome-extension 출처)도 읽음(PC 신호에 실음) · 바꾸기(/blk/install·/blk/undo)는 아래에서 웹앱만 */
+  { const pn = String(req.url || '').split('?')[0]; if (pn === '/blk/status' && req.method === 'GET' && /^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) && org && /^chrome-extension:\/\//i.test(org)) { res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': org }); return res.end(JSON.stringify(blkStatus())); } }
   if (!/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) || !okOrg) return J(403, { ok: false, err: '이 PC의 리드나우 웹앱만' });
   if (req.method === 'OPTIONS') { res.writeHead(204, H); return res.end(); }
   const u = new URL(req.url, 'http://127.0.0.1');
@@ -241,6 +250,7 @@ const srv = http.createServer((req, res) => {
   if (u.pathname === '/printer' && req.method === 'GET') { if (org) return J(403, { ok: false, err: '이 PC 브라우저 주소창에서만' }); res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "frame-ancestors 'none'" }); return res.end(prnPageHtml()); }
   if (req.headers['x-rn-print'] !== '1') return J(403, { ok: false, err: 'X-RN-Print 머리가 없음' });
   if (u.pathname.startsWith('/alps/')) return alpsApi(req, res, u, org, J);
+  if (u.pathname.startsWith('/blk/')) return blkApi(req, res, u, J); /* (blk1) 🛡 추적 차단 */
   if (u.pathname.startsWith('/col2/')) return col2Api(req, res, u, J); /* (1.1.9) 🧪 외부 수집기 다리 */
   if (u.pathname === '/pdiag') return pdiag().then((r) => { log('🔎 인쇄 상태 점검: ' + r.hints.map((h) => h.t).join(' / ').slice(0, 300)); J(200, r); }).catch((e) => J(500, { ok: false, err: e.message }));
   if (u.pathname === '/pdiag/test' && req.method === 'POST') return readBody(req, 4096, (e, b) => { let o = {}; try { o = JSON.parse(b.toString('utf8') || '{}'); } catch (x) {} pdiagTest(o.printer).then(() => J(200, { ok: true })).catch((er) => J(500, { ok: false, err: er.message })); });
@@ -353,5 +363,36 @@ function alpsUpdate() { https.get(RAW_ALPS + '?t=' + Date.now(), { timeout: 2000
 function workUpdate() { https.get(RAW_WORK + '?t=' + Date.now(), { timeout: 20000 }, (r) => { if (r.statusCode !== 200) { r.resume(); return; } let b = ''; r.setEncoding('utf8'); r.on('data', (c) => (b += c)); r.on('end', () => { const v = (b.match(/const VERSION = '([\d.]+)'/) || [])[1]; const n = (x) => String(x || '0').split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); if (!v || (WORK && n(v) <= n(WORK.VERSION))) return;
   if (shipHold()) { log(`작업 창 모듈 새 판 ${v} — 🚚 출고 중이라 바꾸기 미룸(10분 뒤 다시)`); setTimeout(workUpdate, UPD_RETRY_MS); return; }
   const tmp = path.join(HOME, 'readnow-work.new.js'); fs.writeFileSync(tmp, b); const chk = cp.spawnSync(process.execPath, ['--check', tmp]); if (chk.status !== 0) { log(`작업 창 모듈 새 판 ${v} 검사 실패 — 그대로 둠`); return; } const prevW = WORK && WORK.VERSION; const bkW = WORK_F + '.prev'; try { if (fs.existsSync(WORK_F)) fs.copyFileSync(WORK_F, bkW); } catch (e) {} fs.renameSync(tmp, WORK_F); loadWork(); if (!WORK || WORK.VERSION !== v) { if (fs.existsSync(bkW)) { try { fs.copyFileSync(bkW, WORK_F); } catch (e) {} loadWork(); } log(`작업 창 모듈 새 판 ${v}을 읽지 못함 — 옛 판 ${prevW || '?'}으로 되돌림`); return; } log(`작업 창 모듈 ${v}로 바꿈`); }); }).on('error', () => {}).on('timeout', function () { this.destroy(); }); }
+/* (blk1) 🛡 추적 차단 — 상태·넣기·되돌리기 */
+const BLKS = { at: null, msg: '', try: null, busy: false };
+function blkCfg() { try { return JSON.parse(fs.readFileSync(BLK_CFG, 'utf8')) || {}; } catch (e) { return {}; } }
+function blkCfgSet(o) { const c = { ...blkCfg(), ...o }; try { fs.writeFileSync(BLK_CFG, JSON.stringify(c)); } catch (e) {} return c; }
+function blkStatus() { if (!BLK) return { ok: false, mod: false, on: false, why: '추적 차단 모듈이 아직 없음(도우미가 GitHub에서 받는 중)', helper: VERSION };
+  let txt = null, rerr = null; try { txt = fs.readFileSync(BLK.hostsPath(), 'utf8'); } catch (e) { rerr = e.code || e.message; } const st = txt == null ? { on: false, n: 0, total: BLK.HOSTS.length, miss: BLK.HOSTS } : BLK.status(txt); const c = blkCfg(); const ub = BLK.ubolState ? BLK.ubolState() : { on: false };
+  let why = ''; if (rerr) why = 'hosts를 못 읽음(' + rerr + ')'; else if (st.on) why = ''; else if (c.off) why = '되돌려 둠(' + String(c.offAt || '').slice(0, 16).replace('T', ' ') + ' · 다시 넣으려면 웹앱 단추)';
+  else if (c.okAt && !st.on) why = '넣었는데 사라짐 — Windows 보안 등이 hosts를 되돌렸을 수 있음(대신 uBlock Origin Lite 길)'; else if (BLKS.try && BLKS.try.perm) why = '관리자 권한 필요 — 이 PC 웹앱 🧭 관리도구 › 🖥 기기 운영 보고에서 단추 한 번 + 허락 창 「예」'; else if (BLKS.try && BLKS.try.why) why = BLKS.try.why; else why = '아직 안 넣음';
+  return { ok: true, mod: true, on: !!st.on, n: st.n, total: st.total, miss: (st.miss || []).length, why, ubol: !!ub.on, off: !!c.off, okAt: c.okAt || null, ship: shipHold(), helper: VERSION, blk: BLK.BLK_VER, at: new Date().toISOString(), msg: BLKS.msg }; }
+/* ① 저절로(사람 손 0) — 관리자 권한으로 돌 때만 실제로 써짐 · 허락 창은 띄우지 않음 */
+function blkAuto(why) { if (!BLK || BLKS.busy || process.env.RN_BLK_NOAUTO) return null; if (shipHold()) { BLKS.msg = '🚚 출고 중 — 추적 차단 확인 미룸'; setTimeout(() => blkAuto('출고 뒤'), UPD_RETRY_MS); return null; }
+  const c = blkCfg(); if (c.off) return null; const s0 = blkStatus(); if (s0.on) { if (!c.okAt) blkCfgSet({ okAt: new Date().toISOString(), via: 'already' }); return s0; }
+  const r = BLK.writeHosts('apply'); BLKS.try = r; BLKS.at = new Date().toISOString(); if (r.ok) { blkCfgSet({ okAt: BLKS.at, via: 'auto' }); log(`🛡 추적 차단 넣음(저절로 · ${why || ''}) — clarity 주소 ${r.added || 0}개`); } else if (!r.perm) log('🛡 추적 차단 저절로 넣기 실패: ' + r.why); return blkStatus(); }
+/* ② 사람 한 번 — 관리자 허락 창(UAC) → node readnow-blk.js <kind> (관리자) → 결과 파일 */
+async function blkElevated(kind) { if (!BLK) throw new Error('추적 차단 모듈이 아직 없음 — 1분 뒤 다시'); if (shipHold()) return { ok: false, ship: true, why: '🚚 출고 중 — 출고가 끝난 뒤에(약속 0-1)' }; if (BLKS.busy) return { ok: false, why: '이미 하는 중' };
+  BLKS.busy = true; try { const direct = kind === 'apply' || kind === 'undo' ? BLK.writeHosts(kind) : BLK.writeUbol(kind, HOME); /* 이미 관리자면 허락 창 없이 끝 */
+    let r = direct; if (!direct.ok && direct.perm) { const out = path.join(os.tmpdir(), `rnblk_${process.pid}_${Date.now()}.json`);
+      const sc = `$a = Start-Process -FilePath ${psq(process.execPath)} -Verb RunAs -WindowStyle Hidden -Wait -PassThru -ArgumentList @(${psq('"' + BLK_F + '"')}, ${psq(kind)}, '-', ${psq('"' + out + '"')})\nWrite-Output ('OK|' + $a.ExitCode)`;
+      const x = await ps(sc, 180000); const m = String(x.out || '').match(/OK\|(-?\d+)/); if (!m) { r = { ok: false, uac: true, why: /canceled|취소/i.test(String(x.err)) ? 'PC에 뜬 관리자 허락 창에서 [예]를 눌러 주세요(아니요를 누르면 바꾸지 않음)' : '바꾸지 못함: ' + String(x.err || x.out).replace(/\s+/g, ' ').slice(0, 200) }; }
+      else { try { r = JSON.parse(fs.readFileSync(out, 'utf8')); } catch (e) { r = { ok: false, why: '결과 파일이 없음(종료 ' + m[1] + ')' }; } try { fs.unlinkSync(out); } catch (e) {} } }
+    BLKS.try = r; BLKS.at = new Date().toISOString(); const now = BLKS.at;
+    if (r.ok && kind === 'apply') blkCfgSet({ off: false, offAt: null, okAt: now, via: direct.ok ? 'direct' : 'uac' }); else if (r.ok && kind === 'undo') blkCfgSet({ off: true, offAt: now, okAt: null }); else if (r.ok && kind === 'ubol') blkCfgSet({ ubolAt: now }); else if (r.ok && kind === 'ubol-undo') blkCfgSet({ ubolAt: null });
+    log(`🛡 추적 차단 ${{ apply: '넣기', undo: '되돌리기', ubol: 'uBlock Origin Lite 넣기', 'ubol-undo': 'uBlock Origin Lite 빼기' }[kind]} — ${r.ok ? '됨' : '안 됨: ' + (r.why || '')}`); return { ...r, status: blkStatus() }; } finally { BLKS.busy = false; } }
+function blkApi(req, res, u, J) { const p = u.pathname.slice(5); if (p === 'status' && req.method === 'GET') return J(200, blkStatus());
+  const K = { install: 'apply', undo: 'undo', ubol: 'ubol', 'ubol-undo': 'ubol-undo' }[p]; if (!K || req.method !== 'POST') return J(404, { ok: false });
+  return blkElevated(K).then((r) => J(200, r)).catch((e) => J(500, { ok: false, why: e.message })); }
+function blkUpdate() { https.get(RAW_BLK + '?t=' + Date.now(), { timeout: 20000 }, (r) => { if (r.statusCode !== 200) { r.resume(); return; } let b = ''; r.setEncoding('utf8'); r.on('data', (c) => (b += c)); r.on('end', () => { const v = (b.match(/const BLK_VER = '([\d.]+)'/) || [])[1]; const n = (x) => String(x || '0').split('.').reduce((a, y) => a * 1000 + (+y || 0), 0); if (!v || (BLK && n(v) <= n(BLK.BLK_VER))) return;
+  if (shipHold() || BLKS.busy) { setTimeout(blkUpdate, UPD_RETRY_MS); return; }
+  const tmp = path.join(HOME, 'readnow-blk.new.js'); fs.writeFileSync(tmp, b); const chk = cp.spawnSync(process.execPath, ['--check', tmp]); if (chk.status !== 0) { log(`추적 차단 모듈 새 판 ${v} 검사 실패 — 그대로 둠`); return; } fs.renameSync(tmp, BLK_F); loadBlk(); log(`추적 차단 모듈 ${v}로 바꿈`); setTimeout(() => blkAuto('모듈 새 판'), 5000); }); }).on('error', () => {}).on('timeout', function () { this.destroy(); }); }
+if (!process.env.RN_PRINT_NOUPDATE) { setTimeout(blkUpdate, BLK ? 150e3 : 10e3); setInterval(blkUpdate, 6 * 3600e3); }
+setTimeout(() => blkAuto('도우미 시작'), +process.env.RN_BLK_AUTO_MS || 180e3); setInterval(() => blkAuto('6시간마다'), 6 * 3600e3);
 if (!process.env.RN_PRINT_NOUPDATE) { setTimeout(workUpdate, WORK ? 120e3 : 8e3); setInterval(workUpdate, 6 * 3600e3); }
 if (!process.env.RN_PRINT_NOUPDATE) { setTimeout(selfUpdate, 60e3); setInterval(selfUpdate, 6 * 3600e3); setTimeout(alpsUpdate, ALPS ? 90e3 : 5e3); setInterval(alpsUpdate, 6 * 3600e3); }
