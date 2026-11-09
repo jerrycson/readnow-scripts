@@ -1,13 +1,13 @@
 {
- "holder": "kpsum",
- "what": "출판 정보 요약",
- "since": "2026-11-09T20:49:18Z",
- "beat": "2026-11-09T20:49:18Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "lead",
-  "done": "웹앱 1.78.447 판 냄",
-  "at": "2026-11-09T18:23:42Z"
+  "who": "kpsum",
+  "done": "요약 0개 넣음 · 남은 0개",
+  "at": "2026-11-09T20:50:45Z"
  },
- "host": "vm"
+ "host": null
 }
