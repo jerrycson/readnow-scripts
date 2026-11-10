@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.456 예스24·구매평",
- "since": "2026-11-10T05:03:10Z",
- "beat": "2026-11-10T05:03:10Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-10T04:22:49Z"
+  "at": "2026-11-10T05:03:14Z"
  },
- "host": "vm"
+ "host": null
 }
