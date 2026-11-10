@@ -61,9 +61,9 @@ function makeAl(o) {
     A.launching = b.launch().then(() => { b.cdp.on.push(onDialog); hideSoon(); return b; }, (e) => { A.fails++; A.lastErr = e.message; throw e; }).finally(() => { A.launching = null; }); return A.launching; }
   function hideSoon() { if (cfg().headless) return; let k = 0; const t = setInterval(async () => { k++; if (k > 20 || A.shown || !alive()) return clearInterval(t); const r = await WIN.run('hide', MARK, { w: 1280, h: 900, place: cfg().place }); if (r.ok && r.n > 0) clearInterval(t); }, TEST ? 400 : 3000); }
   async function close(why) { const b = A.br; A.br = null; A.shown = false; A.landed = false; if (b) { try { await b.close(); } catch (e) {} note(`🟧 알라딘 샵매니저 크롬을 닫음 — ${why || ''}`); } }
-  async function nav(url, sec) { const b = A.br; const sid = b.sid; let f; const done = new Promise((res) => { f = (m, p, s) => { if (s === sid && m === 'Page.loadEventFired') res(true); }; b.cdp.on.push(f); setTimeout(() => res(false), (sec || 30) * 1000); });
+  async function nav(url, sec, sid0) { const b = A.br; const sid = sid0 || b.sid; let f; const done = new Promise((res) => { f = (m, p, s) => { if (s === sid && m === 'Page.loadEventFired') res(true); }; b.cdp.on.push(f); setTimeout(() => res(false), (sec || 30) * 1000); });
     try { const r = await b.cdp.send('Page.navigate', { url }, sid); if (r && r.errorText) throw new Error('알라딘 화면을 못 엶: ' + r.errorText); if (r && r.frameId) b.frameId = r.frameId; await done; } finally { b.cdp.on = b.cdp.on.filter((x) => x !== f); } b.ctxId = null; }
-  async function ev(expr, ms) { const b = A.br; const r = await b.cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }, b.sid, ms || 40000); if (r.exceptionDetails) throw new Error('화면 코드 오류: ' + String((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text).slice(0, 160)); return r.result ? r.result.value : null; }
+  async function ev(expr, ms, sid0) { const b = A.br; const r = await b.cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }, sid0 || b.sid, ms || 40000); if (r.exceptionDetails) throw new Error('화면 코드 오류: ' + String((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text).slice(0, 160)); return r.result ? r.result.value : null; }
   const onScm = (s) => s && (s.h === HOST || s.h === HOST.split(':')[0]) && /^\/scm\//i.test(s.p || '');
   const isLoginSt = (s) => !s || s.pw || /login/i.test(s.p || '') || !onScm(s) || !s.out;
   function setLogin(st, why) { if (A.login !== st) { A.login = st; if (st === 'need') { A.loginMsg = why || ''; note('🔐 알라딘 샵매니저 로그인이 필요 — 옆 창의 [🔐 알라딘 로그인] 단추를 한 번 눌러 주세요(' + (why || '') + ' · 이 PC에 계정을 저장해 두었으면 스스로 다시 로그인)'); } if (st === 'ok') { A.loginAt = now(); note('🟧 알라딘 샵매니저 세션 살아 있음 — 그림자 읽기 시작(읽기만)'); } } }
@@ -137,10 +137,22 @@ function makeAl(o) {
   function feed(b, by) { b = b || {}; A.feed = { at: now(), seat: b.seat && typeof b.seat === 'object' ? { ok: b.seat.ok === true, why: String(b.seat.why || '').slice(0, 120) } : A.feed.seat, hold: b.hold && typeof b.hold === 'object' ? { on: !!b.hold.on, why: String(b.hold.why || '').slice(0, 120) } : null, opLostAt: +b.opLostAt || 0, off: !!(b.cfg && b.cfg.off), by: String(by || b.by || '').slice(0, 80) };
     if (A.feed.opLostAt && A.loginAt && A.feed.opLostAt >= A.loginAt && A.feed.opLostAt - A.loginAt < 15 * 60e3 && !A.pp) { A.pp = `번외 로그인(${new Date(A.loginAt + 9 * 3600e3).toISOString().slice(11, 16)}) 뒤 ${Math.round((A.feed.opLostAt - A.loginAt) / 60e3)}분 만에 운영 세션이 풀림`; note('⛔ 알라딘 핑퐁 의심 — ' + A.pp + ' → 번외 알라딘 읽기를 멈춤(운영 로그인이 먼저)', { k: 'al', l: 'err', m: '알라딘' }); }
     if (!A.busy) kick(200); return { ok: true, al: sum() }; }
+  /* (정범님 11/10 '저장을 누르면 먼저 맞는지 확인') 🔐 알라딘 — 번외 자리(<PC>~col2)를 받았고 세션이 풀려 있을 때만 본 창에서 넣은 값으로 로그인해 봄(맞으면 그대로 로그인 된 채)
+   *  · 세션이 살아 있으면 확인하려면 로그인을 하나 더 해야 해서(판매자 동시 로그인 ≤4대 — 다른 PC가 끊길 수 있음) 하지 않고 까닭만 · 출고 중·핑퐁 의심·로거면 안 함 */
+  async function verify(id, pw) { if (isLogger()) return { ok: false, why: '로거 PC에서는 알라딘 계정을 쓰지 않습니다(약속 0)' }; if (!enabled()) return { ok: false, wait: true, why: '🟧 알라딘 샵매니저 읽기(또는 번외 수집)가 꺼져 있어 확인할 수 없음 — 켠 뒤 다시' };
+    if (holdOn()) return { ok: false, wait: true, why: '🚚 출고 중 — 끝난 뒤 다시 저장해 주세요(약속 0-1)' }; if (A.pp) return { ok: false, wait: true, why: '핑퐁 의심으로 멈춘 동안은 로그인하지 않음' };
+    if (!seatOk()) return { ok: false, wait: true, why: '🪑 번외 로그인 자리를 아직 못 받아 확인할 수 없음 — 자리를 받은 뒤 다시(판매자 동시 로그인 4대 규칙)' };
+    for (let k = 0; k < 60 && A.busy; k++) await sleep(500); if (A.busy) return { ok: false, wait: true, why: '다른 일을 하는 중 — 잠시 뒤 다시' };
+    A.busy = true; let f = null; const L = { m: '' };
+    try { await ensure('계정 확인'); await nav(BASE + '/scm/wmain.aspx', 30); if (!isLoginSt(await ev(JS_STATE))) return { ok: false, wait: true, why: '알라딘 샵매니저가 지금 로그인돼 있음 — 확인하려면 로그인을 하나 더 해야 해서(동시 로그인 자리를 하나 더 써 다른 PC가 끊길 수 있음) 지금은 확인·저장하지 않음 · 세션이 풀렸을 때(옆 창 「로그인 필요」) 다시 [확인하고 저장]' };
+      const sid = A.br.sid; f = (m, p, s) => { if (s === sid && m === 'Page.javascriptDialogOpening') L.m = String(p.message || '').replace(/\s+/g, ' ').slice(0, 120); }; A.br.cdp.on.push(f);
+      const r = await o.relogin.tryWith('al', { name: '알라딘 샵매니저', loginUrl: BASE + '/scm/wmain.aspx', nav, ev, sleep: sleepR, type: (t) => A.br.cdp.send('Input.insertText', { text: t }, sid), settle: () => sleep(TEST ? 300 : 1500), lastMsg: () => L.m, check: async () => { await nav(BASE + '/scm/wmain.aspx', 30); return !isLoginSt(await ev(JS_STATE)); } }, id, pw);
+      if (r.ok) setLogin('ok'); return { ...r, where: 'main' }; }
+    catch (e) { return { ok: false, why: String(e.message || e).slice(0, 140) }; } finally { if (f && A.br) A.br.cdp.on = A.br.cdp.on.filter((x) => x !== f); A.busy = false; } }
   function sum() { return { on: enabled(), own: ownOn(), want: cfg().al === true, logger: isLogger(), login: A.login, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
       active: enabled() && A.login === 'ok' && alive() && feedOk() && seatOk() && !holdOn() && !A.pp, msg: A.msg, hour: A.hour.n, day: A.day, last: A.last, cmpWait: A.cmpQ.length, feedAt: A.feed.at || null, feedBy: A.feed.by || null, core: A.core.ver, reads: A.reads.slice(-8) }; }
   async function runNow(what) { const k = KINDS.includes(what) ? what : 'confirm'; A.next[k] = 0; kick(100); return { ok: true, msg: `🟧 ${AC.READ[k].t}을 곧 읽음(읽기만)` }; }
   const start = () => { KINDS.forEach((k, i) => (A.next[k] = TEST ? 0 : now() + (i + 1) * 60e3)); kick(TEST ? 500 : 25e3); };
-  return { start, kick, feed, sum, login, close, runNow, MARK, A };
+  return { start, kick, feed, sum, login, verify, close, runNow, MARK, A };
 }
 module.exports = { makeAl };
