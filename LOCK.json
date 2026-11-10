@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.470 화면 고침",
- "since": "2026-11-10T12:29:16Z",
- "beat": "2026-11-10T12:29:16Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-10T12:23:04Z"
+  "at": "2026-11-10T12:29:27Z"
  },
- "host": "vm"
+ "host": null
 }
