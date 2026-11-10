@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "머리 판 1.89.258 (정범님 허락)",
- "since": "2026-11-10T06:49:55Z",
- "beat": "2026-11-10T06:49:55Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-10T06:24:30Z"
+  "at": "2026-11-10T06:50:03Z"
  },
- "host": "vm"
+ "host": null
 }
