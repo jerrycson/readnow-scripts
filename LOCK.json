@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "h4",
+ "what": "4시간 점검: ⏰ 시간표 평균 시간 한 번만 셈",
+ "since": "2026-11-10T19:22:25Z",
+ "beat": "2026-11-10T19:22:25Z",
  "ask": null,
  "last": {
   "who": "h4",
   "done": "",
   "at": "2026-11-10T15:21:29Z"
  },
- "host": null
+ "host": "vm"
 }
