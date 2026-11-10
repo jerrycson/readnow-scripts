@@ -62,6 +62,20 @@ function webapp(H, DB, okCols) { const got = []; let stop = false;
   { const lt = lift(fs.readFileSync(path.join(L.PROD_REPO, COL2.LIFT.file), 'utf8'), COL2.LIFT.fns); ok(!lt.err && lt.got.length === COL2.LIFT.fns.length && !lt.miss.length && /benchParse/.test(lt.code), '🎯 벤치마킹 해석 함수는 운영 본체에서 그대로 떼어 씀(고치지 않음)', lt.ver + ' · ' + lt.sig); }
   ok(CMP.compareMap({ a: 1, b: 2, lastCheckedAt: new Date(Date.now() - 3 * 3600e3).toISOString() }, { a: 1, b: 3 }, { a: 'a', b: 'b' }, { move: ['b'], prodAt: new Date(Date.now() - 3 * 3600e3).toISOString() }).reasons.join() === 'move' && CMP.compareMap({ a: 1 }, { a: 2 }, { a: 'a' }).reasons.join() === 'diff' && CMP.compareMap(null, {}, {}).verdict === 'noprod', '견주기: 움직이는 값이 운영이 읽은 뒤 바뀜 = 까닭 밝힘 · 그 밖 다름 = 까닭 모름');
 
+  { /* (11/10 밤 col2n) 하루 한 번만 받는 일은 일마다 기준 수 */ const D = TK.dayNew('d'); for (let i = 0; i < 14; i++) TK.dayAdd(D, 'kpipa', 'same'); TK.dayAdd(D, 'ext.fx', 'same'); for (let i = 0; i < 14; i++) TK.dayAdd(D, 'ext.kyobo', 'same');
+    const a = TK.passOf(D.t.kpipa, COL2.PASS, 'kpipa'), b = TK.passOf(D.t['ext.fx'], COL2.PASS, 'ext.fx'), c = TK.passOf(D.t['ext.kyobo'], COL2.PASS, 'ext.kyobo'), e = TK.passOf(D.t.kpipa, { ...COL2.PASS, minNBy: { kpipa: 20 } }, 'kpipa');
+    ok(a.can && b.can && !c.can && /표본 14\/30/.test(c.why) && !e.can && /표본 14\/20/.test(e.why) && COL2.KPIPA.after === '00:20', '📚 KPIPA(하루 14줄)·💱 환율(하루 한 문서)은 일마다 기준 수 · 설정 minNBy로 바꿈 · 다른 일은 30 그대로 · KPIPA는 하루 몫이 남은 밤부터', [a.why, b.why, c.why, e.why].join(' / ')); }
+  { /* (11/10 밤 col2n) 표본이 모자란 일부터 — 하루 몫(1,600장)이 낮에 다 쓰여도 일마다 표본 30개가 고르게 쌓이게 */
+    const os = require('os'); const { makeJobs } = require('../helper/col2-jobs.js'); const Hd = fs.mkdtempSync(path.join(os.tmpdir(), 'c2pick-'));
+    const D0 = TK.dayNew(kday()); for (let i = 0; i < 40; i++) TK.dayAdd(D0, 'ext.kyobo', 'same'); for (let i = 0; i < 5; i++) TK.dayAdd(D0, 'ext.ridi', 'same'); TK.dayAdd(D0, 'ext.google', 'fail');
+    fs.writeFileSync(path.join(Hd, 'jobs.json'), JSON.stringify({ day: D0, wait: [{ k: 'ext.yes24' }, { k: 'ext.yes24' }, { k: 'ext.yes24' }] }));
+    const J = makeJobs({ home: Hd, cfg: () => ({}), kind: () => 'office', pc: () => 'T', PASS: COL2.PASS, out() {}, note() {} });
+    const L4 = ['ext.kyobo', 'ext.ridi', 'ext.google', 'ext.yes24']; const pk = []; for (let i = 0; i < 4; i++) pk.push(J.pickK(L4));
+    ok(pk.every((k) => k === 'ext.google') && J.tried('ext.kyobo') === 40 && J.tried('ext.yes24') === 3 && J.tried('ext.google') === 1, '그림자 일은 오늘 해 본 수(견줌·못 읽음·운영 값 기다림 포함)가 가장 적은 일부터 고름(표본을 일찍 채운 일이 몫을 먹지 않음)', pk.join());
+    const J2 = makeJobs({ home: fs.mkdtempSync(path.join(os.tmpdir(), 'c2pick-')), cfg: () => ({}), kind: () => 'office', pc: () => 'T', PASS: COL2.PASS, out() {}, note() {} }); const seen = new Set(); for (let i = 0; i < 4; i++) seen.add(J2.pickK(L4));
+    ok(seen.size === 4, '모두 같으면 예전처럼 차례대로 돌아감', [...seen].join());
+    fs.rmSync(Hd, { recursive: true, force: true }); }
+
   const A = await fake(); const IDS = ['100001', '100002', '100003'];
   const PB = await L.prodBooks(F.productHtml, IDS, COL2.BOOK_FIXED); const pool = PB.map((b, i) => ({ id: 'b' + (i + 1), ...b, title: F.BOOKS[IDS[i]].title }));
 
