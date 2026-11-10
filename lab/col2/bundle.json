@@ -24,6 +24,8 @@
   "helper/col2-shim.js",
   "shadow/col2-al-compare.js",
   "helper/col2-alw.js",
-  "shadow/col2-alw-core.js"
+  "shadow/col2-alw-core.js",
+  "helper/col2-cred.js",
+  "helper/col2-relogin.js"
  ]
 }
