@@ -1,13 +1,13 @@
 {
- "holder": "daily",
- "what": "정밀 점검 — 판 내기(1.78.471·1.89.259·번외 0.1.19)",
- "since": "2026-11-10T12:54:46Z",
- "beat": "2026-11-10T13:45:48Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "lead",
-  "done": "",
-  "at": "2026-11-10T12:29:27Z"
+  "who": "daily",
+  "done": "🔬 정밀 점검 11/10 끝 — f7df6d3b 웹앱 1.78.471 · 수집기 1.89.259 · 번외 0.1.19 · 보고 src/audits/2026-11-10-fable.md",
+  "at": "2026-11-10T13:46:50Z"
  },
- "host": "vm"
+ "host": null
 }
