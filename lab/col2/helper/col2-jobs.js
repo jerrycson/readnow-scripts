@@ -64,8 +64,13 @@ function makeJobs(ctx) {
     settle(); benchFeed();
     if (inPlan('kpipa') && S.kpDay !== kday() && kpNeed()) { S.kpDay = kday(); push('kpipa', { day: kday() }, kday()); }
     if (inPlan('ext.fx') && S.fxDay !== kday() && TK.shareOk(kind(), kday().slice(-1), C())) { S.fxDay = kday(); push('ext.fx', { day: kday() }, kday()); }
-    const L = plan().filter((k) => k !== 'product' && (S.q[k] || []).length); if (!L.length) return { did: false, why: S.wait.length ? `운영 값 기다림 ${S.wait.length}건` : '그림자 일 차례 없음', rest: S.wait.length ? 5000 : 15e3 };
+    const L = plan().filter((k) => k !== 'product' && (S.q[k] || []).length);
+    /* (11/10) 🗣 판매자 구매평·문의 글 모으기(로거만) — 몫(처음 큼 → 점점 다른 일과 같게)만큼 차례를 받음 · 속도 규칙은 같이 셈 */
+    const V = ctx.voice; const vTurn = !!(V && V.wantTurn(L.length));
+    if (!L.length && !vTurn) return { did: false, why: S.wait.length ? `운영 값 기다림 ${S.wait.length}건` : '그림자 일 차례 없음', rest: S.wait.length ? 5000 : 15e3 };
     const pc = ctx.pace.check(); if (!pc.ok) return { did: false, rest: pc.retryMs == null ? 30 * 60e3 : Math.min(pc.retryMs + 500, 30 * 60e3), why: pc.why }; if (pc.waitMs > 0) return { did: false, rest: pc.waitMs + 50, why: '차례 기다림' };
+    if (vTurn) { let r; try { r = await V.step(L.length); } catch (e) { r = { did: false, rest: 10e3, why: '🗣 ' + e.message }; } return r; }
+    if (V) V.otherTurn();
     const k = L[S.rr++ % L.length]; const t = TK.byK[k]; const a = S.q[k].shift(); (S.seen[k] || (S.seen[k] = {}))[a.key] = kday(); { const sk = Object.keys(S.seen[k]); if (sk.length > SEENMAX) for (const x of sk.slice(0, sk.length - SEENMAX)) delete S.seen[k][x]; }
     const t0 = now(); let r;
     if (t.reader === 'al') { const p = TK.pathOf(t, a, own()); if (!p) { record(t, a, a.key, 'skip', [], { why: '정한 주소 꼴이 아님(또는 우리 숍)' }); return { did: true }; }
@@ -106,7 +111,7 @@ function makeJobs(ctx) {
     return br.tabJob(base + KP_PATH, core.src, expr, 90); }
   /* 읽은 것 → 운영 문서를 기다리는 줄 */
   function queue(t, a, r, ms) { const pg = r.page;
-    if (t.k === 'usedPage' && pg && Array.isArray(pg.listings)) { const n = feedShops([...new Set(pg.listings.map((x) => x && x.sellerCode).filter(Boolean))].slice(0, 5), a.itemId); if (n) ctx.note(`🏷 중고 첫 쪽에서 숍 ${n}곳을 숍 요약·평가 그림자 차례에 넣음`, { k: 'read', m: '그림자 일' }); }
+    if (t.k === 'usedPage' && pg && Array.isArray(pg.listings)) { const n = feedShops([...new Set(pg.listings.map((x) => x && x.sellerCode).filter(Boolean))].slice(0, 5), a.itemId); if (n) ctx.note(`🏷 중고 첫 쪽에서 숍 ${n}곳을 숍 요약·평가 그림자 차례에 넣음`, { k: 'read', m: '그림자 일' });  if (ctx.voice && ctx.voice.on()) ctx.voice.feed([...new Set(pg.listings.map((x) => x && x.sellerCode).filter(Boolean))].slice(0, 5), 'quiet'); }
     if (t.k === 'bench') { const rows = Array.isArray(pg) ? pg.slice(0, t.rows || 10) : []; if (!rows.length) { record(t, a, a.key, 'fail', [], { why: '첫 쪽에서 상품을 못 읽음', ms }); return; }
       for (const x of rows) S.wait.push({ k: t.k, a, id: TK.docId(t, { sc: a.sc, id: x.id }), c: t.col, sh: x, at: now(), ms }); return; }
     if (t.k === 'kpipa') { const rows = pg && pg.rows ? pg.rows : {}; let c = 0; for (const type of ['onOff', 'bookType']) for (const x of rows[type] || []) { if (!x || !/^\d{8}$/.test(String(x.date))) continue; c++; S.wait.push({ k: t.k, a, id: String(x.date), c: t.col, sh: { type, series: x.series, end: pg.end }, at: now(), ms }); }
