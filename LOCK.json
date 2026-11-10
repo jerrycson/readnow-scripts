@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "웹앱 1.78.463 출고 소재불명",
+ "since": "2026-11-10T06:08:56Z",
+ "beat": "2026-11-10T06:08:56Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-10T05:56:56Z"
  },
- "host": null
+ "host": "vm"
 }
