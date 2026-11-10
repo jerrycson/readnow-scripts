@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "웹앱 1.78.458 매입가",
+ "since": "2026-11-10T05:09:27Z",
+ "beat": "2026-11-10T05:09:27Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-10T05:04:06Z"
  },
- "host": null
+ "host": "vm"
 }
