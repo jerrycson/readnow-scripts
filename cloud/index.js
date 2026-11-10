@@ -3660,6 +3660,7 @@ async function extCloudRun(X, cfg, budgetMs) {
  *  WX-START (시험 tWX1110이 이 칸만 떼어 가짜 Firestore·가짜 http로 돌림 — 바깥 것은 D로만) */
 const WX_STN = { 108: '서울', 119: '수원', 112: '인천', 159: '부산', 143: '대구', 133: '대전', 156: '광주', 131: '청주', 146: '전주', 105: '강릉', 184: '제주' };
 const WX_DEF = { stns: [108, 119, 112], backDays: 730, chunkDays: 30, perDay: 40, hourKst: 9 };
+const WX_PV = 2; /* (11/10 밤) 읽기 판 — 2 = 두세 줄 머리 읽기. wx_run.pv가 이보다 낮으면(예전 읽기로 평균 기온이 비고 비가 0으로 쌓임) 지점마다 처음부터 다시 모음(같은 문서를 덮어씀 · 지우지 않음) */
 const WX_COLS = ['TM', 'STN', 'WS_AVG', 'WR_DAY', 'WD_MAX', 'WS_MAX', 'WS_MAX_TM', 'WD_INS', 'WS_INS', 'WS_INS_TM', 'TA_AVG', 'TA_MAX', 'TA_MAX_TM', 'TA_MIN', 'TA_MIN_TM', 'TD_AVG', 'TS_AVG', 'TG_MIN', 'HM_AVG', 'HM_MIN', 'HM_MIN_TM', 'PV_AVG', 'EV_S', 'EV_L', 'FG_DUR', 'PA_AVG', 'PS_AVG', 'PS_MAX', 'PS_MAX_TM', 'PS_MIN', 'PS_MIN_TM', 'CA_TOT', 'SS_DAY', 'SS_DUR', 'SS_CMB', 'SI_DAY', 'SI_60M_MAX', 'SI_60M_MAX_TM', 'RN_DAY', 'RN_D99', 'RN_DUR']; /* 머리 줄이 없을 때만 쓰는 차례(기상청 도움말 순서 — 머리 줄이 있으면 그 이름으로 찾음) */
 /* (정범님 11/10 저녁 '승인까지 했는데 403 활용신청이 필요') 기상청 API허브는 같은 ASOS 일자료를 API 여러 개로 나눠 활용신청을 따로 받음 → 아래 차례로 시험해 되는 것을 씀(이름을 app_secrets/kma.api에 저장 · 모으기도 그것으로)
  *  ① 일자료 기간 조회 kma_sfcdd3(한 번에 30일) ② 일자료 하루 조회 kma_sfcdd(하루씩 · stn=0 전국 한 번에) ③ OpenAPI 종관기상관측 일자료 조회서비스 AsosDalyInfoService(typ02 · JSON · 한 번에 30일)
@@ -3671,9 +3672,23 @@ const WX_APIS = [
 ];
 const wxApi = (id) => WX_APIS.find((x) => x.id === id) || WX_APIS[0];
 const wxUrl = (key, tm1, tm2, stn) => WX_APIS[0].url(key, tm1, tm2, stn);
-/* 기상청 글 응답 → 줄 · 머리 줄(# … TM … STN …)에서 칸 이름을 찾고, 없으면 WX_COLS 차례(guess) · 빠진 값(-9·-99·-999)은 null · 비는 비 안 온 날을 음수로 주므로 0 + rnNA */
-function wxParse(text) { const L = String(text || '').split(/\r?\n/); let cols = null; const rows = [];
-  for (const ln of L) { const s = ln.trim(); if (!s) continue; if (s[0] === '#') { const t = s.replace(/^#+/, '').trim().split(/[\s,]+/); if (t.includes('STN') && t.length >= 5 && t.some((x) => /^(TM|YYMMDD|YYYYMMDD)$/.test(x))) cols = t; continue; }
+/* 기상청 글 응답 → 줄 · 머리 줄(# … TM … STN …)에서 칸 이름을 찾고, 없으면 WX_COLS 차례(guess) · 빠진 값(-9·-99·-999)은 null · 비는 비 안 온 날을 음수로 주므로 0 + rnNA
+ *  (11/10 밤 정범님 '시험: 2026-11-02 서울 평균 ? · 비 0mm') 실제 kma_sfcdd3·kma_sfcdd 답은 칸 이름이 두세 줄로 나뉨 — '# YYMMDD STN WS … TA TA TA …' 아래 '#        ID  AVG … AVG MAX MAX …'(그 아래 'TM' 줄이 더 있기도)
+ *  → 첫 줄만 읽어 'TA'·'RN'만 있고 'TA_AVG'·'RN_DAY'를 못 찾아 평균 기온이 비고 비는 늘 0이었음 → 바로 아래 '#' 줄들(대문자 이름만 · 단위 줄 '- m/s'는 뺌)을 글자 자리로 맞춰 'TA'+'AVG' = 'TA_AVG'로 이음
+ *  그래도 TA_AVG가 없고 첫 줄 이름 차례가 기상청 도움말(WX_COLS) 차례와 같으면 WX_COLS 이름을 그대로 씀 */
+const wxToks = (s) => { const o = []; const re = /[^\s,]+/g; let m; while ((m = re.exec(s))) o.push({ t: m[0], a: m.index, b: m.index + m[0].length }); return o; };
+function wxHeadCols(lines) { const T0 = wxToks(lines[0]); const names = T0.map((x) => [x.t]); const KEEP = /^(TM|YYMMDD|YYYYMMDD|STN)$/;
+  for (const ln of lines.slice(1)) { const T = wxToks(ln); T.forEach((x) => { let bi = -1, bo = 0; T0.forEach((h, i) => { const ov = Math.min(h.b, x.b) - Math.max(h.a, x.a); if (ov > bo) { bo = ov; bi = i; } }); if (bi < 0) { let bd = 1e9; T0.forEach((h, i) => { const d = Math.abs(h.a - x.a); if (d < bd) { bd = d; bi = i; } }); } if (bi >= 0 && !KEEP.test(T0[bi].t)) names[bi].push(x.t); }); }
+  let cols = names.map((n) => n.join('_'));
+  if (!cols.includes('TA_AVG')) { const base = (n) => String(n).split('_')[0]; let same = 0, tot = 0; for (let i = 2; i < Math.min(T0.length, WX_COLS.length); i++) { tot++; if (base(T0[i].t) === base(WX_COLS[i])) same++; } if (tot >= 8 && same / tot >= 0.9) cols = [T0[0].t, 'STN', ...WX_COLS.slice(2)]; }
+  return cols; }
+function wxParse(text) { const L = String(text || '').split(/\r?\n/); let cols = null; let hdr = null; let hdrOpen = false; const rows = [];
+  const isHead = (t) => t.includes('STN') && t.length >= 5 && t.some((x) => /^(TM|YYMMDD|YYYYMMDD)$/.test(x));
+  for (const ln of L) { const s = ln.trim(); if (!s) continue; if (s[0] === '#') { const body = ln.replace(/^(\s*)#+/, (m) => ' '.repeat(m.length)); const t = body.trim().split(/[\s,]+/);
+      if (!cols && isHead(t)) { hdr = [body]; hdrOpen = true; cols = wxHeadCols(hdr); continue; }
+      if (hdrOpen && hdr.length < 3 && t.length && t.length < wxToks(hdr[0]).length && t.every((x) => /^[A-Z][A-Z0-9_]*$/.test(x))) { hdr.push(body); cols = wxHeadCols(hdr); continue; }
+      hdrOpen = false; continue; } /* 단위 줄·구분 줄이 나오면 머리 줄 잇기 끝 */
+    hdrOpen = false;
     const v = s.split(/[\s,]+/); if (!/^\d{8}/.test(v[0] || '')) continue; const C2 = cols || WX_COLS; const ix = (n) => C2.indexOf(n); const num = (n, lo) => { const i = ix(n); if (i < 0 || v[i] == null) return null; const x = +v[i]; return Number.isFinite(x) && x > lo ? x : null; };
     const tmI = Math.max(0, C2.findIndex((x) => /^(TM|YYMMDD|YYYYMMDD)$/.test(x))); const d8 = String(v[tmI] || v[0]).slice(0, 8); const stn = +v[ix('STN') >= 0 ? ix('STN') : 1]; if (!/^\d{8}$/.test(d8) || !stn) continue;
     const rnI = ix('RN_DAY'); const rnRaw = rnI >= 0 && v[rnI] != null ? +v[rnI] : null; const rnNA = !(Number.isFinite(rnRaw) && rnRaw >= 0);
@@ -3731,7 +3746,7 @@ function wxMake(D) { const S = { nextAt: 0, key: null, api: null, keyAt: 0 };
     let run = {}, cfgD = {}; try { const a = await D.C('app_settings').doc('wx_run').get(); run = a.exists ? a.data() || {} : {}; const b = await D.C('app_settings').doc('wx').get(); cfgD = b.exists ? b.data() || {} : {}; } catch (e) { S.nextAt = D.now() + 10 * 60e3; return { skip: '상태를 못 읽음' }; }
     const c = { ...WX_DEF, ...((cfgD && cfgD.cfg) || {}) }; const stns = (Array.isArray(c.stns) && c.stns.length ? c.stns : WX_DEF.stns).map(Number).filter((x) => x > 0).slice(0, 12); if (cfgD.on === false) { S.nextAt = D.now() + 30 * 60e3; return { skip: '꺼 둠' }; }
     const today = ymd(D.now()); const hourK = new Date(D.now() + 9 * 3600e3).getUTCHours(); const want = add(today, hourK >= c.hourKst ? -1 : -2); const floor = add(want, -Math.max(1, +c.backDays || 730) + 1); const chunk = api.range ? Math.max(1, Math.min(31, +c.chunkDays || 30)) : Math.max(1, Math.min(10, +c.dayChunk || 3));
-    const cnt = { ...((run.cnt) || {}) }; const B = { used: +cnt[today] || 0, cap: +c.perDay || 40, calls: 0 }; const st = { ...((run.stn) || {}) }; const out = { calls: 0, rows: 0, err: [], api: api.id }; let more = false, badKey = null; const cache = new Map();
+    const cnt = { ...((run.cnt) || {}) }; const B = { used: +cnt[today] || 0, cap: +c.perDay || 40, calls: 0 }; const reset = (+run.pv || 0) < WX_PV && !!run.stn && Object.keys(run.stn).length > 0; const st = reset ? Object.fromEntries(stns.map((x) => [x, { hi: null, lo: null, loDone: false, n: 0, err: null }])) : { ...((run.stn) || {}) }; const out = { calls: 0, rows: 0, err: [], api: api.id, ...(reset ? { reread: true } : {}) }; let more = false, badKey = null; const cache = new Map();
     for (const stn of stns) { if (B.used >= B.cap) { more = true; break; } const s = { ...(st[stn] || {}) }; let tm1 = null, tm2 = null, dir = null;
       if (!s.hi || s.hi < want) { tm1 = s.hi ? add(s.hi, 1) : add(want, -chunk + 1); if (tm1 < floor) tm1 = floor; tm2 = add(tm1, chunk - 1); if (tm2 > want) tm2 = want; dir = 'fwd'; }
       else if (!s.loDone && s.lo) { tm2 = add(s.lo, -1); if (tm2 < floor) { s.loDone = true; st[stn] = s; continue; } tm1 = add(tm2, -chunk + 1); if (tm1 < floor) tm1 = floor; dir = 'back'; }
@@ -3746,7 +3761,7 @@ function wxMake(D) { const S = { nextAt: 0, key: null, api: null, keyAt: 0 };
     /* 쓰던 API가 '활용신청 필요'로 바뀌면 다른 ASOS 일자료 API를 한 번 차례로 찾아 바꿔 씀(열쇠는 그대로) */
     let switched = null; if (badKey) { const p = await check(key, api.id); B.used += p.calls || 0; out.calls += p.calls || 0; if (p.ok && p.api !== api.id) { switched = p.api; badKey = null; S.api = p.api; await D.C('app_secrets').doc('kma').set({ api: p.api }, { merge: true }).catch(() => {}); for (const k of Object.keys(st)) if (st[k] && st[k].err) st[k] = { ...st[k], err: null }; } else if (!p.ok) badKey = p.why || badKey; }
     cnt[today] = B.used; for (const k of Object.keys(cnt)) if (k < add(today, -14)) delete cnt[k];
-    const up = { stn: st, cnt, last: { at: D.nowIso(), ...out }, ...(badKey ? { keyBad: { at: D.nowIso(), why: badKey } } : {}), ...(switched ? { key: { api: switched, apiNm: wxApi(switched).nm, apiAt: D.nowIso() } } : {}) }; await D.C('app_settings').doc('wx_run').set(up, { merge: true }).catch(() => {});
+    const up = { stn: st, cnt, pv: WX_PV, last: { at: D.nowIso(), ...out }, ...(badKey ? { keyBad: { at: D.nowIso(), why: badKey } } : {}), ...(switched ? { key: { api: switched, apiNm: wxApi(switched).nm, apiAt: D.nowIso() } } : {}) }; await D.C('app_settings').doc('wx_run').set(up, { merge: true }).catch(() => {});
     S.nextAt = D.now() + (badKey ? 6 * 3600e3 : switched || (more && B.used < B.cap) ? 10 * 60e3 : 3 * 3600e3); if (badKey) S.key = null; return { ...out, more, badKey: badKey ? true : undefined, switched: switched || undefined }; }
   return { check, saveKey, tick, keyGet, _S: S }; }
 /* WX-END */

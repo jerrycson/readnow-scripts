@@ -61,6 +61,18 @@ const W = ctx.wxMake({ C, batch, http, now: () => NOW, nowIso: () => new Date(NO
   store.app_settings.wx = { cfg: { perDay: 7 } }; NOW += 11 * 60e3; t = await W.tick(); ok(t && t.calls === 1 && col('app_settings').wx_run.cnt['20261110'] === 7, '하루 최대(설정 7) = 그날 7번째에서 멈춤', { t, cnt: col('app_settings').wx_run.cnt });
   // ⑧ 머리 줄 없는 응답도 차례로 읽음(guess)
   const P = ctx.wxParse(day('20261101')); ok(P.rows.length === 1 && P.rows[0].guess && P.rows[0].taMax === 17.8 && P.rows[0].rn === 0.5, '머리 줄이 없으면 기상청 도움말 차례로 읽고 guess 표시', P.rows[0]);
+  // ⑧-3 (11/10 밤 정범님 '시험: 2026-11-02 서울 평균 ? · 비 0mm') 실제 기상청 답은 칸 이름이 두세 줄로 나뉨('# YYMMDD STN … TA TA …' / '#  ID … AVG MAX …' / '# … TM …') · 값은 쉼표로 나뉘기도
+  { const NM = ['YYMMDD', 'STN', ...HEAD.split(' ').slice(3)]; const part = (n, k) => { const q = n === 'STN' ? ['STN', 'ID'] : n.split('_'); return k < 2 ? (q[k] || '') : q.slice(2).join('_'); };
+    const hl = (k, right) => '#' + NM.map((n) => (right ? part(n, k).padStart(8) : ' ' + part(n, k).padEnd(7))).join('');
+    const dat = (d8) => day(d8).trim().split(/\s+/).join(', ');
+    for (const [nm, txt] of [['두 줄 머리(왼쪽 맞춤) · 쉼표 값', ['#START7777', '#--------------------------------', hl(0), hl(1), dat('20261102'), '#7777END']], ['세 줄 머리(오른쪽 맞춤) · 띄어쓰기 값', ['#START7777', hl(0, 1), hl(1, 1), hl(2, 1), day('20261102'), '#7777END']], ['세 줄 머리 + 단위 줄', ['#START7777', hl(0), hl(1), hl(2), '#  KST  -  m/s  0.1m', dat('20261102'), '#7777END']], ['첫 줄만(이름 반쪽) — 도움말 차례로', ['#START7777', hl(0), dat('20261102'), '#7777END']]]) {
+      const P2 = ctx.wxParse(txt.join('\n')); const x = P2.rows[0] || {};
+      ok(P2.rows.length === 1 && x.d === '2026-11-02' && x.stn === 108 && x.ta === 12.3 && x.taMax === 17.8 && x.taMin === 6.9 && x.rn === 0.5 && !x.rnNA && x.hm === 55 && x.ss === 9.5 && x.ca === 3.4 && !x.guess, `실제 답 모양 「${nm}」 = 평균 12.3도 · 최고 17.8 · 최저 6.9 · 비 0.5mm · 습도·일조·구름`, x); } }
+  // ⑧-4 예전 읽기(판 없음)로 쌓인 상태 = 지점마다 처음부터 다시 모음(덮어씀) · 한 번만
+  { ok(col('app_settings').wx_run.pv === 2, '새로 쓰는 상태에 읽기 판(pv 2)', col('app_settings').wx_run.pv);
+    store.app_settings.wx_run.pv = undefined; store.app_settings.wx_run.stn['108'] = { ...store.app_settings.wx_run.stn['108'], loDone: true }; store.app_settings.wx = { cfg: { perDay: 40 } }; NOW += 11 * 60e3; W._S.nextAt = 0;
+    const t4 = await W.tick(); const s4 = col('app_settings').wx_run; ok(t4 && t4.reread && s4.pv === 2 && s4.stn['108'].loDone === false && s4.stn['108'].hi && t4.calls >= 1 && col('wx_days')['108_' + s4.stn['108'].hi].ta === 12.3, '예전 판 상태 → 처음부터 다시(뒤로 채우기 다시 · 평균 기온 읽힘)', { t4, s: s4.stn['108'] });
+    NOW += 11 * 60e3; const t5 = await W.tick(); ok(!t5 || !t5.reread, '다시 모으기는 한 번만', t5); }
   // ⑨ 열쇠가 나중에 틀리게 되면(만료) — 멈추고 keyBad · 6시간 쉼
   // ⑧-2 쓰던 기간 조회가 나중에 '활용신청 필요'가 되면 — 하루 조회를 찾아 바꿔 쓰고 keyBad 아님
   approved = new Set(['sfcdd']); NOW += 864e5; calls.length = 0; t = await W.tick(); ok(t && t.switched === 'sfcdd' && !t.badKey && col('app_secrets').kma.api === 'sfcdd' && col('app_settings').wx_run.key.api === 'sfcdd' && col('app_settings').wx_run.key.tail === 'ijk9' && !col('app_settings').wx_run.keyBad, '쓰던 API가 403 활용신청 = 다른 ASOS 일자료 API(하루 조회)로 바꿔 씀 · 열쇠 끝 4자리 그대로', { t, run: col('app_settings').wx_run.key });
