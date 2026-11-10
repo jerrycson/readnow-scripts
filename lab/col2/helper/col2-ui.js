@@ -187,7 +187,7 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
         $('crr_' + pf).style.display = r.stop ? '' : 'none'; const a = $('cra_' + pf); a.checked = r.auto !== false; a.disabled = !r.has;
         if (!box.dataset.bound) { a.onchange = async () => { await post('/cred/auto', { pf, on: a.checked }); load(); };
           $('crr_' + pf).onclick = async () => { await post('/cred/reset', { pf }); load(); };
-          $('crb_' + pf).onclick = async () => { const i = $('cri_' + pf), p = $('crp_' + pf); const j = await post('/cred/save', { pf, id: i.value, pw: p.value }); p.value = ''; if (j && j.ok) i.value = ''; msg(j && j.ok ? '✓ 이 PC에 잠가 저장함' : '✗ ' + ((j && j.err) || '저장 못 함'), $('setm')); load(); }; } }
+          $('crb_' + pf).onclick = async () => { const i = $('cri_' + pf), p = $('crp_' + pf), b = $('crb_' + pf); if (b.disabled) return; b.disabled = true; b.textContent = '확인하는 중…'; msg('🔐 넣은 아이디·비밀번호로 이 PC에서 실제로 로그인해 보는 중(20~40초) — 맞으면 저장', $('setm')); let j = null; try { j = await post('/cred/save', { pf, id: i.value, pw: p.value }); } finally { b.disabled = false; b.textContent = '확인하고 저장'; } p.value = ''; if (j && j.ok) i.value = ''; msg(j && j.ok ? '✓ 로그인 확인됨 — 이 PC에 잠가 저장함' : '✗ ' + ((j && j.err) || '저장 못 함'), $('setm')); load(); }; } }
       box.dataset.bound = '1'; }
     function drawKeysHint() { const b = (id, a, base) => { const e = $(id); if (e) e.title = base + ' (' + keyLabel(a) + ')'; }; b('helpBtn', 'help', '❓ 이 수집기 설명서'); b('setBtn', 'set', '⚙ 설정 — 칸·단축키·창·바로 가기·내보내기'); b('miniBtn', 'mini', '▁ 작은 단추로 줄이기'); }
     function drawSet() { const ids = UI.order.filter((id) => !absent(id) && cardOf(id));

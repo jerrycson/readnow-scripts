@@ -33,14 +33,21 @@ function fakeY24() { const S = { pw: PW, sess: new Set(), log: [], captcha: fals
     await R.run('y24', ctxFail); ok(!/멈춤/.test(R.why('y24', {}) || ''), '한 번 실패는 멈추지 않음'); await R.run('y24', ctxFail); ok(/멈춤 — 연속 2번 실패/.test(R.why('y24', {}) || ''), '연속 2번 실패면 멈춤', R.why('y24', {}));
     R.reset('y24'); ok(/한 시간 3번/.test(R.why('y24', {}) || '') === false, '멈춤 풀기'); await R.run('y24', ctxFail); R.reset('y24'); ok(/한 시간 3번까지/.test(R.why('y24', {}) || ''), '한 시간 3번까지', R.why('y24', {}));
     const R2 = makeRelogin({ HOME: fs.mkdtempSync(path.join(os.tmpdir(), 'c2rl_')), cred: { has: () => true, PF: {}, sum: () => ({}) }, cfg: () => ({}), isLogger: () => false, note: () => {} }); await R2.run('y24', ctxFail); ok(/5분 기다림/.test(R2.why('y24', {}) || ''), '기본은 앞 시도 뒤 5분 기다림');
-    const R3 = makeRelogin({ HOME: D0, cred: { has: () => true, PF: {}, sum: () => ({}) }, cfg: () => ({}), isLogger: () => true, note: () => {} }); ok(/로거/.test(R3.why('y24', {})), '로거 PC는 안 함'); }
+    const R3 = makeRelogin({ HOME: D0, cred: { has: () => true, PF: {}, sum: () => ({}) }, cfg: () => ({}), isLogger: () => true, note: () => {} }); ok(/로거/.test(R3.why('y24', {})), '로거 PC는 안 함');
+    /* (11/10) 저장 전 확인 로그인 속도 — 앞 확인 뒤 40초 · 한 시간 4번 · 로거 거절 · 맞으면 멈춤 풂 */
+    const R4 = makeRelogin({ HOME: fs.mkdtempSync(path.join(os.tmpdir(), 'c2rl_')), cred: { has: () => true, PF: {}, sum: () => ({}) }, cfg: () => ({}), isLogger: () => false, note: () => {} });
+    const v1 = await R4.tryWith('y24', ctxFail, 'a', 'b'); const v2 = await R4.tryWith('y24', ctxFail, 'a', 'b'); ok(!v1.ok && !v1.wait && v2.wait && /40초|초 뒤/.test(v2.why), '확인 로그인: 틀리면 까닭 · 바로 다시는 기다리라고(앞 확인 뒤 40초)', [v1, v2]);
+    const R5 = makeRelogin({ HOME: fs.mkdtempSync(path.join(os.tmpdir(), 'c2rl_')), cred: { has: () => true, PF: {}, sum: () => ({}) }, cfg: () => ({ relogin: { vGapSec: 0 } }), isLogger: () => false, note: () => {} });
+    for (let i = 0; i < 4; i++) await R5.tryWith('y24', ctxFail, 'a', 'b'); const v5 = await R5.tryWith('y24', ctxFail, 'a', 'b'); ok(v5.wait && /한 시간 4번/.test(v5.why), '확인 로그인은 한 시간 4번까지(계정 잠김 막기)', v5);
+    const R6 = makeRelogin({ HOME: fs.mkdtempSync(path.join(os.tmpdir(), 'c2rl_')), cred: { has: () => true, PF: {}, sum: () => ({}) }, cfg: () => ({}), isLogger: () => true, note: () => {} }); ok(/로거/.test((await R6.tryWith('y24', ctxFail, 'a', 'b')).why), '로거 PC는 확인 로그인도 안 함');
+    const { ppStop } = require(path.join(L.ROOT, 'helper', 'col2-y24.js')); const T0 = Date.now(); ok(!ppStop([T0 - 1e3, T0 - 2e3], T0) && ppStop([T0 - 1e3, T0 - 2e3, T0 - 3e3], T0) && !ppStop([T0 - 4 * 3600e3, T0 - 1e3, T0 - 2e3], T0) && !ppStop([T0, T0, T0], T0, 0), '(11/10 예스24 계속 풀림) 로그인 뒤 금방 다시 풀림이 3시간에 3번이면 스스로 다시 로그인 멈춤(다른 곳 로그인과 서로 끊기 의심) · 0이면 끔'); }
 
   const Y = await fakeY24();
   const env = { RN_COL2_Y24: Y.base, RN_COL2_Y24_SCALE: '0.05', RN_COL2_CORE_DIR: L.PROD_REPO };
   const D = fs.mkdtempSync(path.join(require('os').tmpdir(), 'col2t_')); const HOME = D + '/home'; fs.mkdirSync(D + '/bin', { recursive: true }); fs.writeFileSync(D + '/bin/dpapi', `#!/usr/bin/env node
 const A=process.argv;const act=A[A.indexOf('-Act')+1];let t='';process.stdin.on('data',(c)=>t+=c);process.stdin.on('end',()=>{const k=Buffer.from('rn3-test-key');const x=(b)=>Buffer.from(b.map((v,i)=>v^k[i%k.length]));
 if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toString('base64'));else process.stdout.write('ok:'+x([...Buffer.from(t.trim(),'base64')]).toString('utf8'))});`); fs.chmodSync(D + '/bin/dpapi', 0o755);
-  const H = await L.startHelper({ dir: D, cfg: { on: true, y24: true, auto: false, headless: true, pc: 'MJ-TEST', pcSrc: 'pc', relogin: { gapMin: 0, perHour: 20, perDay: 50 }, y24cfg: { keepMin: 0.02, prdH: 0, tourH: 0 }, watch: { tickSec: 60, handoffMs: 200 } }, env: { ...env, RN_COL2_DPAPI: D + '/bin/dpapi' } });
+  const H = await L.startHelper({ dir: D, cfg: { on: true, y24: true, auto: false, headless: true, pc: 'MJ-TEST', pcSrc: 'pc', relogin: { gapMin: 0, perHour: 20, perDay: 50, vGapSec: 0 }, y24cfg: { keepMin: 0.02, prdH: 0, tourH: 0, ppN: 0 }, watch: { tickSec: 60, handoffMs: 200 } }, env: { ...env, RN_COL2_DPAPI: D + '/bin/dpapi' } });
   const st = async () => (await H.api('GET', '/status')).j; const y = async () => (await st()).y24;
   const feed = (b) => H.api('POST', '/y24/feed', { by: '시험 수집기', cfg: { ordMin: 0 }, hold: { on: false }, ...(b || {}) });
   const logins = () => Y.S.log.filter((x) => x.login);
@@ -53,15 +60,22 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
     ok(JSON.stringify((await st()).relogin) === '{}' || !Object.values((await st()).relogin).some((v) => v.has), '로거 PC 상태엔 저장됨 표시도 없음');
     await H.api('POST', '/cfg', { pc: 'MJ-TEST', pcSrc: 'pc' });
     console.log('② 잠가 저장 → 세션이 풀리면 스스로 다시 로그인');
-    r = await H.api('POST', '/cred/save', { pf: 'y24', id: ID, pw: PW }, { Origin: `http://127.0.0.1:${H.port}` }); ok(r.j.ok && r.j.relogin.y24.has && !JSON.stringify(r.j).includes(PW) && !JSON.stringify(r.j).includes(ID), '잠가 저장 · 답에는 저장됨 표시만(값 없음)');
+    /* (정범님 11/10 '저장을 누르면 먼저 맞는지 확인') 틀린 비밀번호 → 실제로 로그인해 보고 저장 안 함 · 까닭 */
+    r = await H.api('POST', '/cred/save', { pf: 'y24', id: ID, pw: 'wrong-' + PW }, { Origin: `http://127.0.0.1:${H.port}` }); ok(!r.j.ok && /다시 넣어 주세요/.test(r.j.err) && /틀렸거나/.test(r.j.err) && !fs.existsSync(path.join(HOME, 'cred', 'y24.dat')) && logins().length === 1 && !logins()[0].okPw && !JSON.stringify(r.j).includes(PW), '틀린 비밀번호 = 저장 전에 실제로 로그인해 봄 → 저장 안 함 · 「다시 넣어 주세요 · 까닭」', r.j.err);
+    Y.S.log.length = 0;
+    r = await H.api('POST', '/cred/save', { pf: 'y24', id: ID, pw: PW }, { Origin: `http://127.0.0.1:${H.port}` }); ok(r.j.ok && r.j.relogin.y24.has && !JSON.stringify(r.j).includes(PW) && !JSON.stringify(r.j).includes(ID), '잠가 저장 · 답에는 저장됨 표시만(값 없음)', r.j && r.j.err);
     const cf = fs.readFileSync(path.join(HOME, 'cred', 'y24.dat'), 'utf8'); ok(!cf.includes(PW) && !cf.includes(ID) && JSON.parse(cf).v === 1, '잠근 파일에도 원문은 없음(잠근 값만)');
     await feed(); s = await until(async () => { await feed(); const v = await y(); return v.login === 'ok' ? v : null; }, 120);
-    ok(s && s.login === 'ok' && logins().length === 1 && logins()[0].okId && logins()[0].okPw, '세션이 풀려 있으니 저장된 계정으로 한 번 로그인 → 살아남', JSON.stringify(logins()));
-    let jl = (await H.api('GET', '/log/lines?after=0')).j.lines.map((e) => e.x).join('\n'); ok(/스스로 다시 로그인함/.test(jl) && /스스로 다시 로그인 됨/.test(jl), '기록에 다시 로그인한 일·결과');
+    ok(s && s.login === 'ok' && logins().length === 1 && logins()[0].okId && logins()[0].okPw, '세션이 풀려 있었으니 확인 로그인이 곧 다시 로그인 → 살아남(로그인 한 번)', JSON.stringify(logins()));
+    let jl = (await H.api('GET', '/log/lines?after=0')).j.lines.map((e) => e.x).join('\n'); ok(/계정 확인 — 로그인 됨/.test(jl) && /맞지 않아 저장하지 않음/.test(jl), '기록에 확인 로그인 결과(맞음·틀림 — 값 없음)');
+    /* 세션이 살아 있을 때 저장 = 따로 된 임시 창에서 확인 · 본 세션은 그대로 */ { const sess0 = [...Y.S.sess]; const n0 = logins().length; r = await H.api('POST', '/cred/save', { pf: 'y24', id: ID, pw: PW }, { Origin: `http://127.0.0.1:${H.port}` });
+      ok(r.j.ok && logins().length === n0 + 1 && sess0.every((x) => Y.S.sess.has(x)) && (await y()).login === 'ok', '세션이 살아 있을 때 = 쿠키가 따로인 임시 창에서 로그인해 확인 · 살아 있던 세션 그대로', { ok: r.j, n: logins().length - n0 }); }
     const n1 = logins().length; Y.S.sess.clear(); await H.api('POST', '/y24/run', { what: 'ord' }); await feed();
     s = await until(async () => { await feed(); return logins().length > n1 && (await y()).login === 'ok'; }, 160); ok(s, '다시 세션이 풀리면(로그아웃) 스스로 또 로그인', logins().length - n1);
+    jl = (await H.api('GET', '/log/lines?after=0')).j.lines.map((e) => e.x).join('\n'); ok(/스스로 다시 로그인함/.test(jl) && /스스로 다시 로그인 됨/.test(jl), '기록에 다시 로그인한 일·결과');
     console.log('③ 비밀번호·아이디가 잠근 파일 밖 어디에도 없음');
     { const leak = []; const walk = (d) => { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); let s0; try { s0 = fs.lstatSync(p); } catch (e) { continue; } if (s0.isSymbolicLink()) continue; if (s0.isDirectory()) walk(p); else if (s0.size < 64e6) { const b = fs.readFileSync(p); if (b.includes(PW) || b.includes(Buffer.from(PW, 'utf16le'))) leak.push(path.relative(HOME, p) + '(비번)'); if (b.includes(ID) || b.includes(Buffer.from(ID, 'utf16le'))) leak.push(path.relative(HOME, p) + '(아이디)'); } } }; walk(HOME);
+      { let P0 = {}; try { P0 = JSON.parse(fs.readFileSync(path.join(HOME, 'col2-y24-chrome', 'Default', 'Preferences'), 'utf8')); } catch (e) {} ok(P0.session && P0.session.restore_on_startup === 1 && P0.profile && P0.profile.password_manager_leak_detection === false && P0.profile.password_manager_enabled === false, "(11/10 예스24 계속 풀림) 번외 예스24 크롬 프로필 = '중단한 위치에서 계속'(세션 쿠키 지킴) · 비밀번호 저장·유출 확인 끔", { s: P0.session, p: P0.profile && { e: P0.profile.password_manager_enabled, l: P0.profile.password_manager_leak_detection } }); }
       ok(!leak.length, '도우미 폴더 전부(설정·기록·journal·relogin.json·크롬 프로필 포함)에 비밀번호·아이디 원문 없음', leak); }
     { const all = JSON.stringify(await st()) + (await H.req('GET', '/log/all', null, { 'X-RN-Col2': '1' })).b + H.out(); ok(!all.includes(PW) && !all.includes(ID), '상태(/status — 웹앱이 col2_ctl로 올리는 것)·기록창·도우미 출력에도 없음'); }
     console.log('④ 출고 중엔 다시 로그인도 미룸');
@@ -79,11 +93,16 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
     Y.S.captcha = true; const n4 = logins().length; Y.S.sess.clear(); await H.api('POST', '/y24/run', { what: 'ord' });
     s = await until(async () => { await feed(); const v = await st(); return v.relogin.y24.stop ? v : null; }, 160);
     ok(s && s.relogin.y24.stop.human && /보안/.test(s.relogin.y24.stop.why) && logins().length === n4, '보안 문자가 보이면 한 번도 누르지 않고 멈춤 · 정범님께 알림', s && s.relogin.y24.stop);
+    { const n5 = logins().length; const r6 = await H.api('POST', '/cred/save', { pf: 'y24', id: ID, pw: PW }, { Origin: `http://127.0.0.1:${H.port}` }); ok(!r6.j.ok && r6.j.human && /보안/.test(r6.j.err) && /직접 한 번/.test(r6.j.err) && logins().length === n5, '저장 전 확인에서 보안 문자가 보이면 = 저장 안 함 · 그 사실과 직접 로그인 안내(누르지 않음)', r6.j.err);
+      await feed({ hold: { on: true, why: '시험 출고' } }); const r7 = await H.api('POST', '/cred/save', { pf: 'y24', id: ID, pw: PW }, { Origin: `http://127.0.0.1:${H.port}` }); ok(!r7.j.ok && r7.j.wait && /출고 중/.test(r7.j.err) && logins().length === n5, '🚚 출고 중엔 확인 로그인도 안 함 → 「지금은 확인할 수 없어 저장하지 않았습니다」', r7.j.err); await feed(); }
     Y.S.captcha = false;
     console.log('⑧ 화면 — 계정 칸 · 로거는 칸이 없음');
     { const pg = await (await (await L.chromium().launch()).newContext()).newPage(); await pg.goto(`http://127.0.0.1:${H.port}/`); await wait(1500); await pg.click('#setBtn').catch(() => {}); await wait(500);
       const v1 = await pg.evaluate(() => { const b = document.getElementById('crbox'); return { has: !!b, shown: !!b && getComputedStyle(b).display !== 'none', st: (document.getElementById('crs_y24') || {}).textContent || '', pwType: (document.getElementById('crp_y24') || {}).type }; });
       ok(v1.has && v1.shown && /저장됨/.test(v1.st) && v1.pwType === 'password' && !v1.st.includes(ID), '⚙에 🔐 계정 칸(비밀번호는 가린 칸 · 상태엔 저장됨만)', v1);
+      const v9 = await pg.evaluate(() => { const g = document.getElementById('tgy'); const own = document.getElementById('ownbox'); const first = g && g.querySelector('input[type=checkbox]'); const em = own && [...own.querySelectorAll('span')].find((x) => x.textContent.includes('🏠')); return { first: first && first.id, txt: own ? own.innerText : '', emSize: em ? parseFloat(getComputedStyle(em).fontSize) : 0, btn: (document.getElementById('crb_y24') || {}).textContent, btnA: (document.getElementById('crb_al') || {}).textContent }; });
+      ok(v9.first === 'tg_alown' && /🏠/.test(v9.txt) && /켜기/.test(v9.txt) && /켜면:/.test(v9.txt) && v9.emSize >= 20, "(정범님 11/10) '일 켜기·끄기' 맨 위 = 🏠 큰 글씨 '켜기 — 이 PC 알라딘 로그인 자리를 번외가 이어받음' + 켜면 무엇이 바뀌는지 한 줄", v9);
+      ok(v9.btn === '확인하고 저장' && v9.btnA === '확인하고 저장', "계정 단추 = '확인하고 저장'(저장 전에 실제로 로그인해 봄)", v9);
       await H.api('POST', '/cfg', { pc: 'LOGGER-1', pcSrc: 'pc' }); await pg.reload(); await wait(1800); await pg.click('#setBtn').catch(() => {}); await wait(500);
       const v2 = await pg.evaluate(() => { const b = document.getElementById('crbox'); return !b || getComputedStyle(b).display === 'none'; }); ok(v2, '로거 PC 화면엔 계정 칸 자체가 안 보임(약속 0)');
       await pg.context().browser().close(); await H.api('POST', '/cfg', { pc: 'MJ-TEST', pcSrc: 'pc' }); }
