@@ -32,7 +32,9 @@ function makeAl(o) {
     cmpQ: [], last: {}, core: { src: null, ver: {}, at: 0, err: null }, reads: [] };
   const pcName = () => String(cfg().pc || require('os').hostname() || '');
   const isLogger = () => /^LOGGER/i.test(pcName());
-  const enabled = () => !!cfg().on && cfg().al === true && !isLogger(); /* 기본 꺼짐 — 정범님이 PC마다 켬(옆 창 ⚙) */
+  const enabled = () => !!cfg().on && cfg().al === true && !isLogger();
+  /* (11/10 정범님 'HOME 한 대에서 그 PC 자리를 번외가 이어받음') 🏠 이어받기 — 다리(운영 수집기)가 이 값을 보고 운영 자리를 먼저 놓은 뒤 번외 자리를 보통 PC 차례로 받음 */
+  const ownOn = () => enabled() && cfg().alOwn === true; /* 기본 꺼짐 — 정범님이 PC마다 켬(옆 창 ⚙) */
   const feedOk = () => now() - A.feed.at < C().feedMin * 60e3;
   const holdOn = () => !!((feedOk() && A.feed.hold && A.feed.hold.on) || (o.y24Hold && o.y24Hold()));
   const seatOk = () => !!(feedOk() && A.feed.seat && A.feed.seat.ok);
@@ -64,7 +66,7 @@ function makeAl(o) {
   async function ev(expr, ms) { const b = A.br; const r = await b.cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }, b.sid, ms || 40000); if (r.exceptionDetails) throw new Error('화면 코드 오류: ' + String((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text).slice(0, 160)); return r.result ? r.result.value : null; }
   const onScm = (s) => s && (s.h === HOST || s.h === HOST.split(':')[0]) && /^\/scm\//i.test(s.p || '');
   const isLoginSt = (s) => !s || s.pw || /login/i.test(s.p || '') || !onScm(s) || !s.out;
-  function setLogin(st, why) { if (A.login !== st) { A.login = st; if (st === 'need') { A.loginMsg = why || ''; note('🔐 알라딘 샵매니저 로그인이 필요 — 옆 창의 [🔐 알라딘 로그인] 단추를 한 번 눌러 주세요(' + (why || '') + ' · 저절로 다시 로그인하지 않음)'); } if (st === 'ok') { A.loginAt = now(); note('🟧 알라딘 샵매니저 세션 살아 있음 — 그림자 읽기 시작(읽기만)'); } } }
+  function setLogin(st, why) { if (A.login !== st) { A.login = st; if (st === 'need') { A.loginMsg = why || ''; note('🔐 알라딘 샵매니저 로그인이 필요 — 옆 창의 [🔐 알라딘 로그인] 단추를 한 번 눌러 주세요(' + (why || '') + ' · 이 PC에 계정을 저장해 두었으면 스스로 다시 로그인)'); } if (st === 'ok') { A.loginAt = now(); note('🟧 알라딘 샵매니저 세션 살아 있음 — 그림자 읽기 시작(읽기만)'); } } }
 
   /* ── 읽기 한 장(화면 없이 · 떨어진 칸 fetch) ── */
   async function readOne(kind, arg) { const u = AC.READ[kind].url(arg); if (!AC.isReadUrl(u)) throw new Error('읽기 목록 밖 주소라 보내지 않음: ' + u); /* 이 줄 밖으로는 알라딘에 아무것도 안 감 */
@@ -105,6 +107,10 @@ function makeAl(o) {
   async function loginPoll() { if (now() - A.loginWait > 15 * 60e3) { A.login = 'need'; A.loginMsg = '로그인 기다림 15분 넘음'; await hide('로그인 기다림 15분 넘음').catch(() => {}); return; } let s = null; try { s = await ev(JS_STATE, 5000); } catch (e) { return; }
     if (s && s.rs === 'complete' && !s.pw && !/login/i.test(s.p || '') && (s.h === HOST || s.h === HOST.split(':')[0])) { if (!onScm(s)) { try { await nav(BASE + '/scm/wmain.aspx', 30); s = await ev(JS_STATE, 5000); } catch (e) { return; } } if (!isLoginSt(s)) { setLogin('ok'); await hide('로그인 됨').catch(() => {}); A.next.chk = now() + (TEST ? 0 : 60e3); } } }
 
+  /* (11/10 정범님 '다른 플랫폼들도 끊길 경우 스스로 로그인') 🔐 알라딘 — 번외 자리(<PC>~col2)를 받은 때만 · 출고 중·핑퐁 의심·로거면 안 함(col2-relogin.js) */
+  async function autoRe() { const R = o.relogin; if (!R) return ''; const w = R.why('al', { hold: holdOn(), seat: seatOk(), pp: A.pp }); if (w) return w;
+    const r = await R.run('al', { name: '알라딘 샵매니저', loginUrl: BASE + '/scm/wmain.aspx', nav, ev, sleep: sleepR, type: (t) => A.br.cdp.send('Input.insertText', { text: t }, A.br.sid), settle: () => sleep(TEST ? 300 : 1500), check: async () => { await nav(BASE + '/scm/wmain.aspx', 30); return !isLoginSt(await ev(JS_STATE)); } });
+    if (r.ok) { setLogin('ok'); A.next.chk = now() + C().chkMin * 60e3; return 'ok'; } return r.why; }
   /* ── 한 바퀴 ── */
   async function step() { const c = C();
     if (!enabled()) { if (A.br) await close(isLogger() ? '로거 PC' : '꺼짐'); A.msg = isLogger() ? '로거 PC — 알라딘 로그인 일 안 함(약속 0 · 계정·쿠키 금지)' : !cfg().on ? '번외 수집 꺼짐' : '알라딘 샵매니저 읽기 꺼 둠(기본 꺼짐 · 옆 창 ⚙에서 켬)'; return 30e3; }
@@ -113,12 +119,12 @@ function makeAl(o) {
     if (holdOn()) { A.msg = '🚚 출고 중(이 PC 출고 보호) — 알라딘 그림자 읽기 멈춤 · 끝나면 이어감'; return 15e3; }
     if (!feedOk()) { A.msg = '이 PC 리드나우 수집기(다리)가 안 보여 쉼 — 출고 보호·로그인 자리를 모르면 읽지 않음'; return 15e3; }
     if (A.feed.off) { A.msg = '웹앱(관리도구)에서 이 PC 알라딘 그림자를 꺼 둠'; return 60e3; }
-    if (!seatOk()) { A.msg = '🪑 로그인 자리 기다림 — ' + ((A.feed.seat && A.feed.seat.why) || '다리가 이 PC 번외 세션 자리를 아직 안 줌') + '(판매자 동시 로그인 ≤4대 · 그림자는 맨 뒤)'; return 30e3; }
+    if (!seatOk()) { A.msg = '🪑 로그인 자리 기다림 — ' + ((A.feed.seat && A.feed.seat.why) || '다리가 이 PC 번외 세션 자리를 아직 안 줌') + (ownOn() ? '(🏠 이어받기 — 운영 자리를 놓은 뒤 받음 · 판매자 동시 로그인 ≤4대)' : '(판매자 동시 로그인 ≤4대 · 그림자는 맨 뒤)'); return 30e3; }
     if (night()) { A.msg = '🌙 밤 1~5시 — 알라딘 그림자 읽기 쉼'; return 5 * 60e3; }
     if (now() < A.coolUntil) { A.msg = `알라딘 429 뒤 쉼 — ${Math.ceil((A.coolUntil - now()) / 60e3)}분 남음`; return 30e3; }
     try { await ensure(A.br ? '알라딘 크롬이 꺼져 있음' : '켜짐'); } catch (e) { A.msg = '알라딘 크롬 준비 실패: ' + e.message; return 60e3; }
     if (!A.landed) { try { await nav(BASE + '/scm/wmain.aspx', 30); A.landed = true; const s = await ev(JS_STATE); A.hour.n++; A.day.n++; if (isLoginSt(s)) setLogin('need', '샵매니저 첫 화면이 로그인 화면'); else { setLogin('ok'); A.next.chk = now() + c.chkMin * 60e3; } } catch (e) { A.msg = '샵매니저 첫 화면 실패: ' + e.message; A.landed = false; return 60e3; } }
-    if (A.login === 'need') { A.msg = '🔐 알라딘 샵매니저 로그인 필요 — 옆 창 [🔐 알라딘 로그인]을 한 번(저절로 다시 로그인하지 않음)'; return 15e3; }
+    if (A.login === 'need') { const ar = await autoRe(); if (ar === 'ok') return 300; A.msg = '🔐 알라딘 샵매니저 로그인 필요 — 옆 창 [🔐 알라딘 로그인]을 한 번' + (ar ? ' · 스스로 다시 로그인: ' + ar : '(저장된 계정이 없으면 저절로 다시 로그인하지 않음)'); return 15e3; }
     cmpTick();
     if (capLeft() <= 0) { A.msg = `이번 시간·오늘 몫을 다 씀(시간 ${c.hourCap} · 하루 ${c.dayCap}장)`; return 60e3; }
     const due = KINDS.find((k) => now() >= (A.next[k] || 0));
@@ -131,7 +137,7 @@ function makeAl(o) {
   function feed(b, by) { b = b || {}; A.feed = { at: now(), seat: b.seat && typeof b.seat === 'object' ? { ok: b.seat.ok === true, why: String(b.seat.why || '').slice(0, 120) } : A.feed.seat, hold: b.hold && typeof b.hold === 'object' ? { on: !!b.hold.on, why: String(b.hold.why || '').slice(0, 120) } : null, opLostAt: +b.opLostAt || 0, off: !!(b.cfg && b.cfg.off), by: String(by || b.by || '').slice(0, 80) };
     if (A.feed.opLostAt && A.loginAt && A.feed.opLostAt >= A.loginAt && A.feed.opLostAt - A.loginAt < 15 * 60e3 && !A.pp) { A.pp = `번외 로그인(${new Date(A.loginAt + 9 * 3600e3).toISOString().slice(11, 16)}) 뒤 ${Math.round((A.feed.opLostAt - A.loginAt) / 60e3)}분 만에 운영 세션이 풀림`; note('⛔ 알라딘 핑퐁 의심 — ' + A.pp + ' → 번외 알라딘 읽기를 멈춤(운영 로그인이 먼저)', { k: 'al', l: 'err', m: '알라딘' }); }
     if (!A.busy) kick(200); return { ok: true, al: sum() }; }
-  function sum() { return { on: enabled(), want: cfg().al === true, logger: isLogger(), login: A.login, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
+  function sum() { return { on: enabled(), own: ownOn(), want: cfg().al === true, logger: isLogger(), login: A.login, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
       active: enabled() && A.login === 'ok' && alive() && feedOk() && seatOk() && !holdOn() && !A.pp, msg: A.msg, hour: A.hour.n, day: A.day, last: A.last, cmpWait: A.cmpQ.length, feedAt: A.feed.at || null, feedBy: A.feed.by || null, core: A.core.ver, reads: A.reads.slice(-8) }; }
   async function runNow(what) { const k = KINDS.includes(what) ? what : 'confirm'; A.next[k] = 0; kick(100); return { ok: true, msg: `🟧 ${AC.READ[k].t}을 곧 읽음(읽기만)` }; }
   const start = () => { KINDS.forEach((k, i) => (A.next[k] = TEST ? 0 : now() + (i + 1) * 60e3)); kick(TEST ? 500 : 25e3); };

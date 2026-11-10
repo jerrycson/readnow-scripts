@@ -23,7 +23,7 @@ function fakeAladin(pages) { const reqs = []; const srv = http.createServer((q, 
 
 function tools(D) { fs.mkdirSync(D + '/bin', { recursive: true }); const WJ = D + '/win.json'; fs.writeFileSync(WJ, JSON.stringify({}));
   fs.writeFileSync(D + '/bin/powershell.exe', `#!/usr/bin/env node
-const fs=require('fs');const A=process.argv;const g=(k)=>{const j=A.indexOf('-'+k);return j<0?null:A[j+1]};const act=g('Act')||'find',mark=g('Mark')||'',place=g('Place')||'off';
+const fs=require('fs');const A=process.argv;if(fs.existsSync(${JSON.stringify(D)}+'/ps-slow'))Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,+fs.readFileSync(${JSON.stringify(D)}+'/ps-slow','utf8')||3000);const g=(k)=>{const j=A.indexOf('-'+k);return j<0?null:A[j+1]};const act=g('Act')||'find',mark=g('Mark')||'',place=g('Place')||'off';
 const procs=fs.readdirSync('/proc').filter((p)=>/^\\d+$/.test(p)&&+p!==process.pid).filter((p)=>{try{const c=fs.readFileSync('/proc/'+p+'/cmdline','utf8');return c.includes(mark)&&c.includes(${JSON.stringify(D)})}catch(e){return false}});
 const S=JSON.parse(fs.readFileSync(${JSON.stringify(WJ)},'utf8'));const vs={x:0,y:0,w:1920,h:1080};S.acts=(S.acts||[]).concat([act+':'+mark]);
 if(!procs.length)delete S[mark];else if(!S[mark])S[mark]={r:{x:300,y:200,w:1280,h:900},tool:false,ic:false,front:0};
@@ -37,10 +37,17 @@ process.stdout.write('잡음 줄\\n'+JSON.stringify({ok:true,act,vs,wa:vs,killed
   const real = chromium().executablePath();
   fs.writeFileSync(D + '/bin/chrome', `#!/bin/bash
 printf '%s\\n' "$*" >> ${JSON.stringify(D + '/chrome.log')}
-for a in "$@"; do case "$a" in --app=*) exec node -e "setInterval(()=>{},1e9)" -- "$@";; esac; done
+for a in "$@"; do case "$a" in --app=*) exec node ${JSON.stringify(D + '/bin/fakeapp.js')} "$@";; esac; done
 if [ -f ${JSON.stringify(D + '/chrome-die')} ]; then echo "기존 브라우저 세션에서 여는 중입니다." >&2; exit $(cat ${JSON.stringify(D + '/chrome-die')}); fi
 exec ${JSON.stringify(real)} --headless=new --no-sandbox --disable-background-networking --disable-component-update "$@"
 `);
+  /* (11/10) 작은 앱 창 흉내 — /log 창은 진짜 크롬처럼 화면을 불러 3초마다(시험은 0.3초) 살아 있다는 소식(beat: 보임·자리 — 가짜 창 상태 win.json에서) · app-die면 그 코드로 곧바로 끝남 · app-silent면 소식 없이 잠만 잠 */
+  fs.writeFileSync(D + '/bin/fakeapp.js', `const fs=require('fs'),http=require('http');const A=process.argv.slice(2);const g=(k)=>{const a=A.find((x)=>x.startsWith(k+'='));return a?a.slice(k.length+1):null};
+const D=${JSON.stringify(D)};if(fs.existsSync(D+'/app-die')){process.stderr.write('기존 브라우저 세션에서 여는 중입니다.');process.exit(+fs.readFileSync(D+'/app-die','utf8')||1)}
+const url=g('--app')||'',mark=(g('--user-data-dir')||'').split('/').pop();const sz=(g('--window-size')||'380,560').split(',').map(Number),ps=(g('--window-position')||'1500,0').split(',').map(Number);
+const id='fk'+process.pid;let n=0;const beat=()=>{if(fs.existsSync(D+'/app-silent'))return;let w=null;try{w=JSON.parse(fs.readFileSync(D+'/win.json','utf8'))[mark]||null}catch(e){}const r=w&&w.r?w.r:{x:ps[0],y:ps[1],w:sz[0],h:sz[1]};const u=new URL(url);
+const q=http.request({host:u.hostname,port:u.port,path:'/win/log',method:'POST',headers:{'X-RN-Col2':'1','Content-Type':'application/json'}},(x)=>x.resume());q.on('error',()=>{});q.end(JSON.stringify({act:'beat',id,vis:w&&w.ic?'hidden':'visible',x:r.x,y:r.y,w:r.w,h:r.h}));n++};
+if(/\\/log$/.test(url)){beat();setInterval(beat,300)}else setInterval(()=>{},1e9);`);
   fs.chmodSync(D + '/bin/powershell.exe', 0o755); fs.chmodSync(D + '/bin/chrome', 0o755);
   return { WJ, win: () => JSON.parse(fs.readFileSync(WJ, 'utf8')), setWin: (f) => { const S = JSON.parse(fs.readFileSync(WJ, 'utf8')); f(S); fs.writeFileSync(WJ + '.t', JSON.stringify(S)); fs.renameSync(WJ + '.t', WJ); }, clog: () => { try { return fs.readFileSync(D + '/chrome.log', 'utf8').trim().split('\n').filter(Boolean); } catch (e) { return []; } } }; }
 

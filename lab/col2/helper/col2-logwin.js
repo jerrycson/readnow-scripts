@@ -75,6 +75,7 @@
 #rn-jw .tm{color:#9AA5A1}#rn-jw .md{display:inline-block;min-width:34px;color:#2F5D50}#rn-jw .xn{color:#fff;background:#8A9692;border-radius:8px;padding:0 5px;font-size:10.5px}#rn-jw mark{background:#FFE58A;color:inherit}#rn-jw mark.cur{background:#F5A623}
 #rn-jw .gh{position:sticky;top:-5px;background:#E4ECE8;color:#2F5D50;font:600 11.5px system-ui,'Malgun Gothic';padding:1px 4px;border-radius:4px;margin-top:3px}
 #rn-jw details.jd{border-bottom:1px solid #E4ECE8}#rn-jw details.jd>summary{cursor:pointer;padding:3px 2px;font:600 12px system-ui,'Malgun Gothic';color:#2F5D50}#rn-jw details.jd>summary small{color:#8A9692;font-weight:400}
+#rnjMsg{position:fixed;left:6px;right:6px;bottom:6px;z-index:2147483600;background:#2F5D50;color:#fff;font:12px/1.4 system-ui,'Malgun Gothic';padding:4px 8px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .4s}#rnjMsg.on{opacity:.96}#rnjMsg.warn{background:#A35A00}
 @media (prefers-color-scheme: dark){#rn-jw .t2,#rn-jw .ov{background:#23302C;color:#E4ECE8;border-color:#3A4B45}#rn-jw .info{color:#E4ECE8}#rn-jw .b>div{border-color:#2B3632}#rn-jw .gh{background:#2B3A35;color:#BFE0D2}#rn-jw .t2 button{background:#1B2421;color:#BFD0CA;border-color:#3A4B45}}`;
 
   /* mount({ el(붙일 곳), full(따로 창), api(path,o) → JSON, ls(Col2Store.ls), status() → 마지막 상태(없으면 /status를 직접) , btn(여닫는 단추 · 상태 따라 색) }) */
@@ -130,10 +131,26 @@
     /* (0.1.8 정범님 11/10 새벽 '기록창이 수집기 창 안에서만 — 창 밖으로 뜨게') o.mode() === 'pop'이면 🗒·Alt+L = 따로 작은 앱 창(도우미 /win/log — 없으면 엶 · 작게 내렸거나 화면 밖이면 앞으로 · 보이면 닫음)
      *  안쪽 칸은 ⚙ › 창 › '🗒 기록창 여는 곳'에서 고름 · 따로 창을 못 열면 그때만 안쪽 칸으로(까닭을 띠에) */
     const pop = () => !full && typeof o.mode === 'function' && o.mode() === 'pop';
-    const S2 = { popOpen: false, busy: false };
+    const S2 = { popOpen: false, busy: false, fell: false, tok: 0, sayT: null };
     function syncBtn(st) { if (!o.btn || full) return; if (st && st.lwin) S2.popOpen = !!st.lwin.open; const on = pop() ? S2.popOpen : w.classList.contains('on'); o.btn.classList.toggle('on', on); const kl = o.label ? o.label('log') : 'Alt+L'; o.btn.title = (on ? '🗒 기록창 닫기' : '🗒 기록창 열기') + (pop() ? ' — 따로 작은 창' : '') + ` (${kl})`; }
-    async function popToggle(act) { if (S2.busy) return; S2.busy = true; try { const j = await api('POST', '/win/log', { act: act || 'toggle', why: '🗒 기록' }); if (j && j.ok) { S2.popOpen = !!j.open; syncBtn(); } else { setOpen(true); OV.insertAdjacentHTML('afterbegin', `<div class="stop warn">따로 창을 못 열어 옆 창 안에 엶: ${esc((j && (j.err || j.msg)) || '')}</div>`); } } catch (e) { setOpen(true); } finally { S2.busy = false; } }
-    const toggle = () => { if (full) { api('POST', '/win/log', { act: 'close', why: '기록창 안 단축키' }).catch(() => {}); return; } if (pop()) { if (w.classList.contains('on')) { setOpen(false); return; } popToggle('toggle'); return; } setOpen(!w.classList.contains('on')); };
+    /* (11/10 아침 정범님 '기록 단추가 작동하지 않아 — 안 뜨고 더뎌진 느낌만') 누른 뒤 무슨 일이 일어났는지 옆 창 아래에 한 줄(#rnjMsg · 8초 뒤 흐려짐)
+     *  도우미 답은 2.5초까지만 기다림(화면이 굳지 않게) · 띄우는 중이면 2초 안에 따로 창의 소식(beat)이 없을 때 옆 창 안 칸으로 저절로 바꿔 보임
+     *  그 뒤 20초 안에 따로 창이 늦게 뜨면 저절로 안 칸을 닫고 알림 — 확인은 뒤에서(단추는 곧바로 다시 누를 수 있음) */
+    const ML = full ? null : doc.createElement('div'); if (ML) { ML.id = 'rnjMsg'; ML.setAttribute('role', 'status'); doc.body.appendChild(ML); }
+    const say = (t, lv) => { if (!ML) return; ML.textContent = t; ML.className = 'on' + (lv ? ' ' + lv : ''); clearTimeout(S2.sayT); S2.sayT = setTimeout(() => { ML.className = ''; }, 8000); };
+    const ask = (b, ms) => Promise.race([api('POST', '/win/log', b).catch((e) => ({ ok: false, err: e.message })), new Promise((r) => setTimeout(() => r({ ok: false, slow: true, err: `도우미가 ${ms / 1000}초 안에 답하지 않음` }), ms))]);
+    const FALL_MS = (o.fallMs | 0) || 2000;
+    async function popToggle(act) { if (S2.busy) return; S2.busy = true; const t0 = Date.now(); let j = null;
+      try { j = await ask({ act: act || 'toggle', why: '🗒 기록' }, 2500); } finally { S2.busy = false; }
+      if (!j || !j.ok) { setOpen(true); S2.fell = true; say(`⚠ 따로 창을 못 열어 옆 창 안에 엶 — ${(j && (j.err || j.msg)) || '까닭 모름'}`, 'warn'); return; }
+      S2.popOpen = !!j.open; syncBtn(); if (j.closed) { say('📜 따로 기록창을 닫음'); return; } if (j.front) { say('📜 따로 기록창을 앞으로 꺼냄'); return; }
+      if (!j.pending) { say(j.msg || '📜 따로 기록창'); return; }
+      const at = j.at || t0; say(j.msg || '📜 따로 기록창을 띄우는 중…'); const tok = (S2.tok = (S2.tok || 0) + 1);
+      for (;;) { await new Promise((r) => setTimeout(r, 250)); if (S2.tok !== tok) return; const st = await ask({ act: 'state' }, 1500); const el = Date.now() - t0;
+        if (st && st.ok && st.live && st.seenAt >= at) { S2.popOpen = true; syncBtn(); if (S2.fell && w.classList.contains('on')) { setOpen(false); say(`📜 따로 기록창이 늦게 떴음(${(el / 1000).toFixed(1)}초) — 옆 창 안 칸은 닫음`); } else say(`📜 따로 기록창이 떴음 (${(el / 1000).toFixed(1)}초)`); S2.fell = false; return; }
+        if (el >= FALL_MS && !S2.fell) { S2.fell = true; setOpen(true); say(`⚠ 따로 창이 ${FALL_MS / 1000}초 안에 안 떠서 옆 창 안에 엶 — ${(st && st.err) || '아직 소식 없음'} · 뒤에서 계속 띄워 봄`, 'warn'); }
+        if (el > 20000) { if (S2.fell) say(`⚠ 따로 기록창이 끝내 안 뜸 — ${(st && st.err) || '소식 없음'} · 옆 창 안 칸으로 보세요(⚙ › 창에서 '이 옆 창 안'을 고르면 늘 이쪽)`, 'warn'); S2.popOpen = !!(st && st.live); syncBtn(); return; } } }
+    const toggle = () => { if (full) { api('POST', '/win/log', { act: 'close', why: '기록창 안 단축키' }).catch(() => {}); return; } if (pop()) { if (w.classList.contains('on')) { S2.tok++; S2.fell = false; setOpen(false); return; } popToggle('toggle'); return; } setOpen(!w.classList.contains('on')); };
     w.querySelectorAll('[data-jt]').forEach((bt) => (bt.onclick = () => { S.tab = bt.dataset.jt; w.querySelectorAll('[data-jt]').forEach((x) => x.classList.toggle('on', x === bt)); if (S.tab === 'hist') drawHist(); else draw(true); }));
     $('#rnjF').onchange = () => { ls.set('jw-f', $('#rnjF').value); S.tab === 'hist' ? drawHist() : draw(true); };
     $('#rnjQ').oninput = () => (S.tab === 'hist' ? drawHist() : draw(true));
@@ -162,7 +179,7 @@
       if (M(e, 'find') && (!inField || e.altKey || e.ctrlKey)) { e.preventDefault(); $('#rnjQ').focus(); } });
     if (o.btn) o.btn.onclick = (e) => { e.preventDefault(); toggle(); };
     setOpen(full ? true : !pop() && !!ls.get('jw-open', 0)); syncBtn();
-    return { toggle, open: () => w.classList.contains('on'), setOpen, syncBtn, popOpen: () => S2.popOpen, setState: (s) => { S.st = s; syncBtn(s); if (w.classList.contains('on')) drawOv(); }, el: w, S }; }
+    return { toggle, say, open: () => w.classList.contains('on'), setOpen, syncBtn, popOpen: () => S2.popOpen, setState: (s) => { S.st = s; syncBtn(s); if (w.classList.contains('on')) drawOv(); }, el: w, S }; }
 
   const api = { ...CORE, CSS, mount };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Col2Log = api;

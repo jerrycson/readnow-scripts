@@ -32,7 +32,7 @@ function makeAlw(o) { const { HOME, note } = o; const cfg = () => o.cfg() || {};
     else if (invDup(W.invsOf(k, input))) { verdict = 'refuse'; why = '같은 송장을 다른 주문에 — 번외라면 보내지 않음(약속 10)'; st.dupInv++; }
     else { try { built = W.build(k, input, e.rq); res = W.compare(e.rq, built); verdict = res.verdict; } catch (er) { verdict = 'bad'; why = String(er.message || er).slice(0, 160); } S.keys[key] = at; for (const x of W.invsOf(k, input)) W.invCheck(S.inv, x.ono, x.invH); }
     st.n += verdict === 'refuse' ? 0 : 1; st[verdict === 'same' ? 'same' : verdict === 'diff' ? 'diff' : verdict === 'bad' ? 'bad' : 'refuse']++;
-    const doc = { kind: k, t: W.KINDS[k].t, w: W.KINDS[k].w, at: new Date(at).toISOString(), pc: pcName(), ver: o.ver, verdict, why, in: input, op: (e.rq || []).map(W.reClean), c2: built, diffs: res ? res.diffs : [], opOk: e.ok == null ? null : !!e.ok, http: +e.http || null, sent: 0, by: 'col2-alw' };
+    const doc = { kind: k, t: W.KINDS[k].t, w: W.KINDS[k].w, at: new Date(at).toISOString(), pc: pcName(), ver: o.ver, verdict, why, in: input, op: (e.rq || []).map(W.reClean), c2: built, diffs: res ? res.diffs : [], opOk: e.ok == null ? null : !!e.ok, http: +e.http || null, late: e.late === 1 || e.late === true ? 1 : 0, /* (11/10) 🚚 출고 중 그 PC에 쌓였다가 출고 뒤 한꺼번에 온 것 */ sent: 0, by: 'col2-alw' };
     o.out('col2_alw', `${k}_${stamp(at)}_${String(e.id).slice(-6).replace(/[^\w-]/g, '_')}`, doc, false);
     S.last = { k, verdict, at: doc.at };
     if (verdict !== 'same') note(`✍ 그림자 쓰기 ${W.KINDS[k].t} — ${verdict === 'diff' ? `운영이 보낸 요청과 다름 ${res.diffs.length}칸(${res.diffs.slice(0, 2).map((x) => x.f).join('·')})` : verdict === 'refuse' ? why : '번외가 요청을 못 만듦: ' + why} · 번외는 보내지 않음`, { k: 'al', l: verdict === 'refuse' ? 'ok' : 'warn', m: '알라딘 쓰기' });
@@ -46,6 +46,7 @@ function makeAlw(o) { const { HOME, note } = o; const cfg = () => o.cfg() || {};
     for (const [k0, t] of Object.entries(S.keys)) if (now() - t > 86400e3) delete S.keys[k0]; /* 되풀이 셈은 하루까지만(셈 칸 · 기록은 col2_alw에 그대로) */
     { const ks = Object.keys(S.inv); if (ks.length > 20000) ks.slice(0, ks.length - 20000).forEach((x) => delete S.inv[x]); }
     for (const d of days) o.out('col2_alw', `day_${d}_${pcName().replace(/[^\w-]/g, '_')}`, { day: d, pc: pcName(), ver: o.ver, kinds: daySum(d), sent: 0, at: new Date().toISOString() }, false);
+    { const late = L.filter((e) => e && (e.late === 1 || e.late === true)).length; if (late) note(`🚚 출고 중 그 PC에 쌓였던 쓰기 ${late}건을 출고가 끝난 뒤 한꺼번에 받아 견줌`, { k: 'al', m: '알라딘 쓰기' }); }
     if (L.length) save(); return { ok: true, on: true, ack }; }
   /* 넘길 수 있는 일 — 지난 하루(한국 날짜)가 기준을 넘었고 오늘 지금까지 다름·못 만듦이 없음 */
   function hand() { const t = kday(), y = kday(now() - 86400e3); const DY = daySum(y), DT = daySum(t); return Object.keys(W.KINDS).filter((k) => DY[k].pass.ok && !DT[k].diff && !DT[k].bad); }

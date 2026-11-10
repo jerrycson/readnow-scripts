@@ -1,0 +1,66 @@
+/* col2-relogin.js — 🔐 번외 수집기 '스스로 다시 로그인' (정범님 11/10 아침 '번외에서 예스24가 자주 로그아웃돼 — 필요할 때 스스로 다시 로그인 · 다른 플랫폼들도 끊길 경우를 생각해서')
+ * 언제 하나(모두 맞을 때만):
+ *   · 그 일(예스24·알라딘)이 켜져 있고 세션이 풀려 '로그인 필요'가 됨 · 그 PC에 아이디·비밀번호가 저장돼 있고(col2-cred.js · DPAPI) '스스로 다시 로그인'이 켜짐
+ *   · 로거 PC 아님(약속 0) · 🚚 출고 중(이 PC 출고·MJ-MAIN 보호) 아님 — 출고 중엔 끝날 때까지 미룸(약속 0-1)
+ *   · 알라딘은 번외 자리(<PC>~col2)를 받은 때만(판매자 동시 로그인 ≤4대 — 자리 규칙과 부딪히지 않게) · 핑퐁 의심으로 멈춘 동안은 안 함
+ *   · 속도 제한: 앞 시도 뒤 gapMin분 · 한 시간 perHour번 · 하루 perDay번 · 연속 failStop번 실패면 멈추고 알림(정범님이 [다시 해 보기]를 누를 때까지)
+ *   · 보안 문자·2단계 인증·추가 인증 화면이 보이면 그 자리에서 멈추고 알림(사람 손이 필요한 일 — 몇 번이고 두드리지 않음)
+ * 하는 법(사람처럼): 로그인 화면 → 아이디 칸을 눌러 한 글자씩이 아니라 붙여 넣듯(CDP Input.insertText — 화면 코드에 값이 실리지 않음) → 1~2초 → 비밀번호 칸 → 1~2초 → [로그인]
+ *   → 그 일의 첫 화면을 다시 열어 로그인됐는지 확인 · 다시 로그인한 일·시각·결과는 기록(비밀번호·아이디는 빼고) · 상태 relogin.json(값 없음)
+ * 근거: 없음, 설정(col2.json relogin)으로 바꿈 */
+'use strict';
+const fs = require('fs'), path = require('path');
+const DEF = { perHour: 3, perDay: 10, gapMin: 5, failStop: 2 };
+/* 사람 손이 필요한 화면 — 보안 문자·자동 입력 방지·2단계·인증 번호·추가 인증 */
+const JS_HUMAN = `(()=>{const t=(document.body&&document.body.innerText||'').slice(0,20000);const q=(s)=>!!document.querySelector(s);
+if(q('iframe[src*="recaptcha"],iframe[src*="hcaptcha"],.g-recaptcha,[name*="captcha" i],[id*="captcha" i],img[src*="captcha" i],[name*="otp" i],[id*="otp" i]'))return'보안 문자·인증 번호 칸';
+const m=t.match(/(보안\\s*문자|자동\\s*입력\\s*방지|자동입력방지|2단계\\s*인증|2차\\s*인증|추가\\s*인증|본인\\s*인증|인증\\s*번호를?\\s*입력|기기\\s*인증|새로운\\s*기기)/);return m?m[1]:''})()`;
+/* 로그인 칸 찾기(비밀번호 칸이 있는 양식의 보이는 글 칸) — 값은 넣지 않고 표시만 */
+const JS_FORM = `(()=>{const vis=(e)=>!!e&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden';const pw=[...document.querySelectorAll('input[type=password]')].find(vis);
+if(!pw)return{pw:false};const f=pw.form||document;const id=[...f.querySelectorAll('input')].filter((e)=>vis(e)&&e!==pw&&/^(text|email|tel|)$/i.test(e.getAttribute('type')||'')).pop();
+document.querySelectorAll('[data-rn3-id],[data-rn3-pw]').forEach((e)=>{e.removeAttribute('data-rn3-id');e.removeAttribute('data-rn3-pw')});pw.setAttribute('data-rn3-pw','1');pw.setAttribute('autocomplete','off');if(id){id.setAttribute('data-rn3-id','1');id.setAttribute('autocomplete','off')}return{pw:true,id:!!id}})()`;
+const JS_FOCUS = (a) => `(()=>{const e=document.querySelector('[${a}]');if(!e)return false;e.focus();e.select&&e.select();if(e.value){e.value='';e.dispatchEvent(new Event('input',{bubbles:true}))}return document.activeElement===e})()`;
+const JS_LEN = (a) => `(()=>{const e=document.querySelector('[${a}]');return e?e.value.length:-1})()`;
+const JS_SUBMIT = `(()=>{const pw=document.querySelector('[data-rn3-pw]');if(!pw)return'none';const f=pw.form;const bs=f?[...f.querySelectorAll('button,input[type=submit],input[type=image],a')]:[];
+const b=bs.find((x)=>/^(submit|image)$/i.test(x.type||'')&&!/취소|찾기|가입/.test(x.innerText||x.value||''))||bs.find((x)=>/로그인|login/i.test((x.innerText||x.value||x.alt||'').trim()));
+if(b){b.click();return'click'}if(f){f.requestSubmit?f.requestSubmit():f.submit();return'submit'}pw.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',code:'Enter',keyCode:13,bubbles:true}));return'enter'})()`;
+
+function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () => Date.now(); const F = path.join(HOME, 'relogin.json');
+  const C = () => ({ ...DEF, ...(((o.cfg() || {}).relogin) || {}) });
+  let S = {}; try { S = JSON.parse(fs.readFileSync(F, 'utf8')) || {}; } catch (e) { S = {}; }
+  const save = () => { try { fs.writeFileSync(F + '.t', JSON.stringify(S)); fs.renameSync(F + '.t', F); } catch (e) {} };
+  const P = (pf) => (S[pf] = S[pf] || { tries: [], fails: 0, stop: null, last: null, auto: true, n: 0 });
+  const isLogger = () => { try { return !!o.isLogger(); } catch (e) { return true; } };
+  const autoOn = (pf) => P(pf).auto !== false;
+  /* 지금 해도 되나 → null(됨) | 까닭 */
+  function why(pf, ctx) { const p = P(pf), c = C(), t = now(); p.tries = p.tries.filter((x) => t - x < 86400e3);
+    if (isLogger()) return '로거 PC — 계정을 쓰지 않음(약속 0)'; if (!cred.has(pf)) return '저장된 계정 없음(⚙ › 🔐 스스로 다시 로그인에서 넣으면 됨)'; if (!autoOn(pf)) return '스스로 다시 로그인 꺼 둠';
+    if (p.stop) return `멈춤 — ${p.stop.why} (⚙ › 🔐에서 [다시 해 보기])`; if (ctx.hold) return '🚚 출고 중 — 끝난 뒤 다시 로그인(약속 0-1)'; if (ctx.seat === false) return '🪑 번외 로그인 자리를 아직 못 받음 — 자리를 받으면 다시 로그인';
+    if (ctx.pp) return '핑퐁 의심으로 멈춘 동안은 안 함'; const last = p.tries[p.tries.length - 1] || 0; if (t - last < c.gapMin * 60e3) return `앞 시도 뒤 ${c.gapMin}분 기다림`;
+    if (p.tries.filter((x) => t - x < 3600e3).length >= c.perHour) return `한 시간 ${c.perHour}번까지 — 다음 시간에`; if (p.tries.length >= c.perDay) return `하루 ${c.perDay}번까지 — 내일`; return null; }
+  /* 한 번 다시 로그인 — ctx = { name, loginUrl, nav(url,sec), ev(js,ms), type(text), check()→참/거짓, sleep(ms) } → { ok, why, human } */
+  async function run(pf, ctx) { const p = P(pf), c = C(); p.tries.push(now()); p.n++; save(); const nm = ctx.name; let res = null;
+    note(`🔐 ${nm} 세션이 풀려 저장된 계정으로 스스로 다시 로그인함(오늘 ${p.tries.length}번째 · 비밀번호는 기록하지 않음)`);
+    try { await ctx.nav(ctx.loginUrl, 30); const h0 = await ctx.ev(JS_HUMAN, 10000).catch(() => '');
+      if (h0) res = { ok: false, human: true, why: `로그인 화면에 ${h0} — 사람 손이 필요` };
+      else { const f = await ctx.ev(JS_FORM, 10000); if (!f || !f.pw || !f.id) res = { ok: false, why: '로그인 칸을 못 찾음(화면이 바뀐 듯)' };
+        else { let k = await cred.open(pf); if (!k.ok) res = { ok: false, why: k.err };
+          else { try { await ctx.sleep(800, 1800); if (!(await ctx.ev(JS_FOCUS('data-rn3-id')))) throw new Error('아이디 칸을 못 누름'); await ctx.type(k.id); await ctx.sleep(900, 2000);
+              if (!(await ctx.ev(JS_FOCUS('data-rn3-pw')))) throw new Error('비밀번호 칸을 못 누름'); await ctx.type(k.pw); const n = await ctx.ev(JS_LEN('data-rn3-pw')); if (n !== k.pw.length) throw new Error('비밀번호가 다 들어가지 않음');
+            } finally { k = null; } /* 풀린 값은 여기서 버림 */
+            if (!res) { await ctx.sleep(900, 2000); const go = await ctx.ev(JS_SUBMIT); await ctx.sleep(2500, 4000); if (ctx.settle) await ctx.settle();
+              const h1 = await ctx.ev(JS_HUMAN, 10000).catch(() => ''); if (h1) res = { ok: false, human: true, why: `로그인 뒤 ${h1} 화면 — 사람 손이 필요` };
+              else res = (await ctx.check()) ? { ok: true, how: go } : { ok: false, why: '로그인 뒤에도 로그인 화면(아이디·비밀번호가 틀렸거나 막힘)' }; } } } } }
+    catch (e) { res = { ok: false, why: String(e && e.message || e).slice(0, 120) }; }
+    p.last = { at: now(), ok: res.ok, why: res.ok ? null : res.why };
+    if (res.ok) { p.fails = 0; note(`🔐 ${nm} 스스로 다시 로그인 됨 — 하던 일을 이어 감`, { l: 'ok' }); }
+    else { p.fails++; if (res.human) { p.stop = { at: now(), why: res.why, human: true }; note(`⛔ ${nm} 스스로 다시 로그인 멈춤 — ${res.why} · 옆 창 [🔐 ${nm} 로그인]으로 직접 한 번 해 주세요`, { l: 'err' }); }
+      else if (p.fails >= c.failStop) { p.stop = { at: now(), why: `연속 ${p.fails}번 실패 — ${res.why}` }; note(`⛔ ${nm} 스스로 다시 로그인 연속 ${p.fails}번 실패 — 멈추고 알림(계정 잠김을 막으려고) · 까닭: ${res.why} · 옆 창에서 직접 로그인하거나 ⚙ › 🔐에서 계정을 고친 뒤 [다시 해 보기]`, { l: 'err' }); }
+      else note(`🔐 ${nm} 스스로 다시 로그인 실패 — ${res.why} · ${c.gapMin}분 뒤 한 번 더`, { l: 'warn' }); }
+    save(); return res; }
+  const reset = (pf) => { const p = P(pf); p.stop = null; p.fails = 0; save(); note(`🔐 ${(cred.PF[pf] || {}).name || pf} 스스로 다시 로그인 — 멈춤을 풀고 다시 해 봄`); return { ok: true }; };
+  const setAuto = (pf, on) => { P(pf).auto = !!on; save(); return { ok: true }; };
+  const sum = () => { const out = {}; const cs = cred.sum(); for (const k of Object.keys(cred.PF)) { const p = P(k); out[k] = { ...cs[k], auto: autoOn(k), stop: p.stop, last: p.last, today: p.tries.filter((x) => now() - x < 86400e3).length, n: p.n }; } return out; };
+  return { why, run, reset, setAuto, sum, C };
+}
+module.exports = { makeRelogin, DEF, JS_HUMAN, JS_FORM, JS_SUBMIT };

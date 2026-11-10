@@ -2,7 +2,7 @@
 //  수집기(머리 그대로) 🟧✍ 그림자 쓰기 알림(rnC2w) + 알라딘 다리(rnC2al)가 넘김:
 //   ① 쓰기를 보낸 직후 __rnC2w(종류, 입력, 요청, 성공) → 이 PC 저장소 rn-c2wq에 요청 꼴(번호·값만)만 적음 → 다리가 POST /al/wfeed로 넘기고 받았다는 것(ack)만 지움
 //   ② 번외가 '받음'(alw.on)이라고 한 때만 적음 · 번외가 없거나 끄면 적지 않음
-//   ③ 🚚 출고 중(이 PC 출고·MJ-MAIN 보호)엔 적지도 넘기지도 않음(약속 0-1) · 로거 크롬은 안 함(약속 0)
+//   ③ 🚚 출고 중(이 PC 출고·MJ-MAIN 보호)엔 넘기지 않고 이 PC 저장소 rn-c2wq-ship에만 쌓음(약속 0-1 · 11/10 정범님 '출고 끝난 뒤 한꺼번에') → 끝나면 한꺼번에(late 1) · 로거 크롬은 안 함(약속 0)
 //   ④ 손님 정보 0 — 글 칸은 해시·길이 · 그 밖 칸은 이름만 · 전화 꼴 가림 · 가림 규칙이 번외(lab/col2/shadow/col2-alw-core.js scrub)와 글자 하나까지 같은 결과
 //   ⑤ 쓰기 자리 다섯(상품 값 바꾸기·판매상태·삭제·발송준비시작·판매 불가 통보)이 보낸 뒤에 알림 · 보낸 요청과 같은 꼴 · ⑥ 머리 서명 그대로
 //  시험 자료의 손님은 '손님A'·010-1234-5678 꼴만(공개 저장소) · 사용: node tC2W.js (src/tests)
@@ -91,15 +91,18 @@ const run = async () => { const br = await chromium.launch(); const errs = [];
       const all = JSON.stringify(await q(p)); ok(!PII.some((w) => all.includes(w)) && !all.includes(SECRET) && !all.includes('11월 휴무') && !all.includes('시험 부제'), '양식 쓰기 알림에 손님 이름·전화·주소·문의 글·비밀번호·공지 글 원문 없음(글은 해시·길이만)', PII.concat(SECRET).filter((w) => all.includes(w)));
       ok(!HL.some((x) => x.aladin), '양식 알림이 알라딘에 아무 요청도 더하지 않음');
       await tick(p); ok((await q(p)).length === 0, '양식 쓰기 알림도 /al/wfeed로 넘기고 지움'); }
-    // ③ 출고 중 — 적지도 넘기지도 않음
+    // ③ 출고 중 — 넘기지 않고 이 PC 저장소에만 쌓음 → 끝나면 한꺼번에
     await note(p, ...EDIT); ok((await q(p)).length === 1, '(출고 전 한 줄)');
     await p.evaluate(() => { window.__HOLD = 1; }); const n0 = HL.filter((x) => x.p === '/al/wfeed').length; await tick(p);
     ok(HL.filter((x) => x.p === '/al/wfeed').length === n0, '🚚 출고 중엔 /al/wfeed를 보내지 않음(약속 0-1)');
-    ok((await note(p, ...EDIT)) === false && (await q(p)).length === 1, '🚚 출고 중엔 새로 적지도 않음');
-    { let n = 0; for (const [k, i, r] of [['inv', { ono: '111-A1', invH: '1' }, [{ m: 'GET', u: '/scm/worder_delivery.aspx?deliveryNo.111-A1=1' }]], ['invs', { L: [] }, [{ m: 'GET', u: '/scm/worder_delivery.aspx' }]], ['invcsv', { L: [] }, [{ m: 'POST', u: '/scm/worder_deliveryNoBulk.aspx', b: { keys: ['csvFile'] } }]], ['answer', { questionid: 1 }, [{ m: 'POST', u: '/scm/wUsedShopC2CAnswer.aspx?questionid=1', b: 'txtAnswer=x' }]], ['reg', { item: 'r' }, [{ m: 'POST', u: '/scm/wrecord.aspx', b: 'priceSales=1' }]]]) if ((await note(p, k, i, r)) !== false) n++;
-      ok(n === 0 && (await q(p)).length === 1, '🚚 출고 중엔 송장(한 건·여러 건·CSV)·문의 답·등록도 적지 않음(약속 0-1)'); }
+    const sq = () => p.evaluate(() => window.__GM['rn-c2wq-ship'] || []);
+    ok((await note(p, ...EDIT)) === true && (await q(p)).length === 1 && (await sq()).length === 1 && (await sq())[0].late === 1, '🚚 출고 중엔 보낼 줄(rn-c2wq)에 넣지 않고 이 PC 출고 뒤 줄(rn-c2wq-ship)에만 쌓음');
+    { let n = 0; for (const [k, i, r] of [['inv', { ono: '111-A1', invH: '1' }, [{ m: 'GET', u: '/scm/worder_delivery.aspx?deliveryNo.111-A1=1' }]], ['invs', { L: [] }, [{ m: 'GET', u: '/scm/worder_delivery.aspx' }]], ['invcsv', { L: [] }, [{ m: 'POST', u: '/scm/worder_deliveryNoBulk.aspx', b: { keys: ['csvFile'] } }]], ['answer', { questionid: 1 }, [{ m: 'POST', u: '/scm/wUsedShopC2CAnswer.aspx?questionid=1', b: 'txtAnswer=x' }]], ['reg', { item: 'r' }, [{ m: 'POST', u: '/scm/wrecord.aspx', b: 'priceSales=1' }]]]) if ((await note(p, k, i, r)) === true) n++;
+      ok(n === 5 && (await q(p)).length === 1 && (await sq()).length === 6, '🚚 출고 중 송장(한 건·여러 건·CSV)·문의 답·등록도 출고 뒤 줄에만 쌓음(약속 0-1)', { n, sq: (await sq()).length });
+      await tick(p); ok(HL.filter((x) => x.p === '/al/wfeed').length === n0, '🚚 쌓은 뒤에도 출고 중엔 /al/wfeed를 보내지 않음'); }
     const okH = await p.evaluate(() => window.__GM['rn-c2w-ok']); ok(okH.on === false && okH.hold === true, '다리가 출고 중(hold)을 적어 둠 — 틀(iframe) 안 쓰기도 이것을 봄', okH);
-    await p.evaluate(() => { window.__HOLD = 0; }); await tick(p); ok((await q(p)).length === 0, '출고가 끝나면 출고 전 줄만 넘김');
+    await p.evaluate(() => { window.__HOLD = 0; }); await tick(p); ok((await q(p)).length === 0 && (await sq()).length === 0, '출고가 끝나면 출고 전 줄과 출고 중 쌓은 줄을 한꺼번에 넘김');
+    { const late = HL.filter((x) => x.p === '/al/wfeed').slice(n0).flatMap((x) => x.b.w || []).filter((e) => e.late === 1); ok(late.length === 6, `출고 중 쌓은 6건은 late 1로 넘어감: ${late.length}`); }
     // 번외가 끔
     S.alw = false; await tick(p); ok((await note(p, ...EDIT)) === false, '번외가 쓰기 그림자를 끄면 적지 않음');
     // 번외가 사라짐(오래됨)

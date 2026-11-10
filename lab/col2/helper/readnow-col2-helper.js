@@ -26,7 +26,7 @@
 'use strict';
 const http = require('http'), https = require('https'), fs = require('fs'), path = require('path'), os = require('os');
 const COL2 = require('../col2-config.js');
-const { makePace } = require('./col2-pace.js'); const { makeWin } = require('./col2-win.js'); const { Browser } = require('./col2-cdp.js'); const CMP = require('../shadow/col2-compare-core.js'); const { makeY24 } = require('./col2-y24.js'); const { makeAl } = require('./col2-al.js'); const { makeAlw } = require('./col2-alw.js'); /* (그림자 쓰기) 🟧✍ 운영이 보낸 쓰기와 견줌만 — 보내지 않음 */ const ALC = require('../shadow/col2-al-compare.js'); /* (알라딘 읽기) 🟧 알라딘 샵매니저 읽기 그림자 */ const JR = require('./col2-journal.js'); const UIC = require('./col2-ui.js'); const GO = require('./col2-go.js'); /* (0.1.7) 옆 창 골격·바로 가기 */ const { makeJobs } = require('./col2-jobs.js'); const { lift } = require('./col2-lift.js'); const TK = require('../shadow/col2-tasks.js'); const vm = require('vm'); const { SHIM } = require('./col2-shim.js'); /* (0.1.10) 떼어 온 함수의 받침 */ /* (0.1.9) 로그인 없는 일 그림자 */
+const { makePace } = require('./col2-pace.js'); const { makeCred } = require('./col2-cred.js'); const { makeRelogin } = require('./col2-relogin.js'); const { makeWin } = require('./col2-win.js'); const { Browser } = require('./col2-cdp.js'); const CMP = require('../shadow/col2-compare-core.js'); const { makeY24 } = require('./col2-y24.js'); const { makeAl } = require('./col2-al.js'); const { makeAlw } = require('./col2-alw.js'); /* (그림자 쓰기) 🟧✍ 운영이 보낸 쓰기와 견줌만 — 보내지 않음 */ const ALC = require('../shadow/col2-al-compare.js'); /* (알라딘 읽기) 🟧 알라딘 샵매니저 읽기 그림자 */ const JR = require('./col2-journal.js'); const UIC = require('./col2-ui.js'); const GO = require('./col2-go.js'); /* (0.1.7) 옆 창 골격·바로 가기 */ const { makeJobs } = require('./col2-jobs.js'); const { lift } = require('./col2-lift.js'); const TK = require('../shadow/col2-tasks.js'); const vm = require('vm'); const { SHIM } = require('./col2-shim.js'); /* (0.1.10) 떼어 온 함수의 받침 */ /* (0.1.9) 로그인 없는 일 그림자 */
 const VERSION = COL2.COL2_VER;
 const TEST = process.env.RN_COL2_TEST === '1';
 const PORT = +process.env.RN_COL2_PORT || COL2.PORT;
@@ -61,12 +61,16 @@ function paceCfg() { const p = { ...COL2.PACE, ...(CFG.pace || {}) }; const floo
 function rectOk(r, minW, minH) { if (!r || typeof r !== 'object') return null; const o = { x: num(r.x, -20000, 20000, NaN), y: num(r.y, -20000, 20000, NaN), w: num(r.w, minW || 200, 8000, NaN), h: num(r.h, minH || 150, 8000, NaN) }; if (![o.x, o.y, o.w, o.h].every(Number.isFinite)) return null; return { ...o, at: +r.at || now() }; }
 
 const PACE = makePace(path.join(HOME, 'pace.json'), paceCfg);
-const WIN = makeWin({ psFile: path.join(HOME, 'col2-win.ps1'), D });
+const WIN0 = makeWin({ psFile: path.join(HOME, 'col2-win.ps1'), D }); /* (11/10) 창 다루기 답의 화면 칸을 기억(기록창 띄울 자리 셈 — PowerShell을 다시 부르지 않게) */
+const WIN = { run: (a, m, x) => WIN0.run(a, m, x).then((r) => { if (r && r.ok && (r.scr || r.wa)) LW_SCR = r; return r; }) };
 function chromeExe() { if (process.env.RN_COL2_CHROME) return process.env.RN_COL2_CHROME; return [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.LOCALAPPDATA].filter(Boolean).map((b) => path.join(b, 'Google', 'Chrome', 'Application', 'chrome.exe')).find((f) => fs.existsSync(f)) || null; }
 /* (0.1.5) 🟦 예스24 판매관리 읽기 — col2-y24.js (이 도우미는 Firestore에 쓰지 않음 · 받은 것은 이 PC 수집기가 예전 길로 올림) */
-const Y24 = makeY24({ HOME, Browser, WIN, TEST, note: (m) => note(m, { k: 'y24', m: '예스24' }), log: (m) => log(m), cfg: () => CFG, chromeExe, handoffMs: () => (TEST && CFG.watch && CFG.watch.handoffMs != null ? +CFG.watch.handoffMs : W('handoffSec') * 1000), getText: (u) => getText(u), coreBase: COL2.CORE_BASE, saveRect: (k, r) => { CFG[k] = { ...r, at: now(), src: 'pc' }; saveCfg(); } });
+/* (11/10 정범님 '수집기에 아이디랑 비밀번호를 입력해서 필요할 때 스스로 다시 로그인') 🔐 계정은 이 PC 안 DPAPI 잠근 파일에만(col2-cred.js) · 언제·얼마나는 col2-relogin.js · 로거는 저장·풀기 모두 거절 */
+const CRED = makeCred({ HOME, isLogger: () => isLoggerPc() });
+const RLG = makeRelogin({ HOME, cred: CRED, cfg: () => CFG, isLogger: () => isLoggerPc(), note: (m, x) => note(m, { k: 'sys', m: '로그인', ...(x || {}) }) });
+const Y24 = makeY24({ relogin: RLG, HOME, Browser, WIN, TEST, note: (m) => note(m, { k: 'y24', m: '예스24' }), log: (m) => log(m), cfg: () => CFG, chromeExe, handoffMs: () => (TEST && CFG.watch && CFG.watch.handoffMs != null ? +CFG.watch.handoffMs : W('handoffSec') * 1000), getText: (u) => getText(u), coreBase: COL2.CORE_BASE, saveRect: (k, r) => { CFG[k] = { ...r, at: now(), src: 'pc' }; saveCfg(); } });
 /* (알라딘 읽기 · 정범님 11/09 밤 '로그인 일도 번외로') 🟧 알라딘 샵매니저 '읽기' 그림자 — col2-al.js(기본 꺼짐 · 읽기만 · 운영 칸과 견준 결과는 col2_al에만 · 웹앱이 대신 씀) */
-const AL = makeAl({ HOME, Browser, WIN, TEST, note: (m, x) => note(m, x || { k: 'al', m: '알라딘' }), log: (m) => log(m), cfg: () => CFG, chromeExe, handoffMs: () => (TEST && CFG.watch && CFG.watch.handoffMs != null ? +CFG.watch.handoffMs : W('handoffSec') * 1000), getText: (u) => getText(u), coreBase: COL2.CORE_BASE, ver: VERSION,
+const AL = makeAl({ relogin: RLG, HOME, Browser, WIN, TEST, note: (m, x) => note(m, x || { k: 'al', m: '알라딘' }), log: (m) => log(m), cfg: () => CFG, chromeExe, handoffMs: () => (TEST && CFG.watch && CFG.watch.handoffMs != null ? +CFG.watch.handoffMs : W('handoffSec') * 1000), getText: (u) => getText(u), coreBase: COL2.CORE_BASE, ver: VERSION,
   saveRect: (k, r) => { CFG[k] = { ...r, at: now(), src: 'pc' }; saveCfg(); }, y24Hold: () => { const f = Y24.Y.feed; return !!(f && f.at && now() - f.at < 5 * 60e3 && f.hold && f.hold.on); },
   prodAsk: (c, id) => alAsk(c, id), prodGot: (c, id) => alGot(c, id), prodDrop: (c, id) => RL.want.delete(c + '/' + id), out: (c, id, v, merge) => outReplace(c, id, v, merge) });
 
@@ -150,18 +154,58 @@ const statusWin = (why) => appWin('status', why);
  *  logWin(act) — act: toggle(🗒·Alt+L) · open · close · beat(따로 창이 살아 있다는 소식) · bye(따로 창이 닫힘)
  *   toggle: 없으면 엶 · 작게 내렸거나 화면 밖이면 앞으로 · 화면에 보이면 닫음(닫기 전 자리·크기 기억 — 화면 안일 때만) · open: 없으면 엶·있으면 앞으로
  *   창은 /log 화면 하나(프로필 col2-log-chrome · 380×560 · 기억한 자리 · 화면 밖이면 오른쪽 위 — appWin과 같은 셈 · 약속 15) */
-const LW = { open: false, at: 0, beat: 0 };
-const lwinOpen = () => !!(LW.open && (Date.now() - Math.max(LW.at, LW.beat) < 45e3));
-const onScr = (r, f) => { const scr = (f && f.ok && (Array.isArray(f.scr) && f.scr.length ? f.scr : f.wa ? [f.wa] : [])) || []; if (!r || !scr.length) return true; return scr.some((b) => r.x + r.w > b.x + 40 && r.x < b.x + b.w - 40 && r.y > b.y - 20 && r.y < b.y + b.h - 40); };
-async function logWin(act, why) { act = String(act || 'toggle'); const t = Date.now();
-  if (act === 'beat') { LW.open = true; LW.beat = t; return { ok: true, open: true }; }
-  if (act === 'bye') { LW.open = false; LW.at = t; return { ok: true, open: false }; }
-  let f = null; try { f = await WIN.run('find', LOG_MARK); } catch (e) { f = null; } const it = f && f.ok && f.n ? f.list[0] : null;
-  if (it && (act === 'close' || (act === 'toggle' && !it.ic && onScr(it.r, f)))) {
-    if (!it.ic && it.r && onScr(it.r, f)) { const r = rectOk(it.r, 260, 200); if (r) { CFG.lwin = { ...r, at: now(), src: 'pc' }; saveCfg(); } }
-    const r = await WIN.run('close', LOG_MARK); LW.open = false; LW.at = t; note(`📜 기록창(따로 창)을 닫음 (${why || act})`, { k: 'win', m: '창' }); return r.ok ? { ok: true, open: false, closed: true, msg: '📜 기록창을 닫음' } : { ...r, open: true }; }
-  if (act === 'close') { LW.open = false; LW.at = t; return { ok: true, open: false, msg: '기록창이 이미 닫혀 있음' }; }
-  const r = await appWin('log', why || '🗒 기록'); if (r && r.ok) { LW.open = true; LW.at = t; } return { ...r, open: !!(r && r.ok) }; }
+/* (11/10 아침 정범님 '번외 수집기의 기록 단추가 작동하지 않아 — 기록창은 안 뜨고 뭔가 더뎌진 느낌만') 고친 까닭(README '기록 단추 고장'):
+ *  ① 누를 때마다 PowerShell 창 찾기(powershell.exe 켜기 · C# 엮기 · 크롬 프로세스 훑기 — 사무실 PC에서 한 번에 몇 초~수십 초)를 두 번 차례로 기다린 뒤에야 크롬을 띄움
+ *     → 그동안 단추가 잠기고(누르면 무시) 화면에 아무 말이 없음 · 1분 지킴이·예스24 PowerShell과 겹쳐 CPU가 튐(더뎌짐)
+ *  ② 창 찾기가 보이지 않는 크롬 창(제목만 있는 숨은 창)을 먼저 집으면 '보이는 창'으로 보고 그 창을 닫거나 앞으로 → 아무것도 안 뜸
+ *  ③ 같은 프로필을 쥔 채 굳은 크롬이 남아 있으면 새로 띄운 크롬이 그쪽에 넘기고 곧바로 끝남 → 창이 안 뜸(다시 해 볼 길이 없었음)
+ * 이제: 창의 살아 있음·보임·자리는 /log 화면이 3초마다 직접 알림(beat: id · vis · 자리) — 누르면 PowerShell을 기다리지 않고 곧바로 정함
+ *  창이 없으면 → 크롬을 바로 띄움 · 작게 내렸거나(화면 숨김)·화면 밖이면 → 앞으로 · 보이면 → 닫음 (PowerShell은 뒤에서 · 답은 늘 곧바로)
+ *  띄운 뒤 lwRetryMs(6초) 안에 소식이 없으면 같은 프로필의 굳은 크롬을 끝내고 한 번 더 띄움 · 옆 창은 2초 안에 소식이 없으면 안쪽 칸으로 바꿔 보임 */
+const LW = { pages: {}, dead: {}, at: 0, spawnAt: 0, spawnN: 0, retried: false, step: '', err: '', exit: null, seenAt: 0 };
+const LW_STALE = 75e3; /* 작게 내린 창은 크롬이 타이머를 1분에 한 번까지 늦춤 — 그보다 조금 길게 */
+const lwRetryMs = () => (TEST && CFG.watch && +CFG.watch.lwRetryMs > 0 ? +CFG.watch.lwRetryMs : 6000);
+var LW_SCR = null; /* 마지막으로 안 화면 칸(창 다루기 답에서) — 띄울 자리 셈에만 */
+const lwLive = () => { const t = now(); return Object.entries(LW.pages).filter(([id, p]) => !LW.dead[id] && t - p.beat < LW_STALE).map(([id, p]) => ({ id, ...p })).sort((a, b) => b.beat - a.beat); };
+const lwinOpen = () => lwLive().length > 0 || !!(LW.spawnAt && now() - LW.spawnAt < 8000 && !LW.err);
+const onScr = (r, f) => { const scr = (f && f.ok && (Array.isArray(f.scr) && f.scr.length ? f.scr : f.wa ? [f.wa] : [])) || []; if (!r || !scr.length) return !(r && r.x <= -10000); return scr.some((b) => r.x + r.w > b.x + 40 && r.x < b.x + b.w - 40 && r.y > b.y - 20 && r.y < b.y + b.h - 40); };
+const lwGone = () => { const t = now(); for (const id of Object.keys(LW.pages)) LW.dead[id] = t; LW.spawnAt = 0; LW.at = t; };
+const lwBg = (name, fn) => { LW.step = name; return Promise.resolve().then(fn).then(() => { if (LW.step === name) LW.step = ''; }, (e) => { LW.err = `${name} 실패: ${e.message}`; LW.step = ''; note(`📜 따로 기록창 ${name} 실패 — ${e.message}`, { k: 'win', m: '창', l: 'warn' }); }); };
+const appArgs = (A, rc) => [`--user-data-dir=${path.join(HOME, A.mark)}`, `--app=http://127.0.0.1:${PORT}${A.path}`, '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--hide-crash-restore-bubble', `--window-size=${rc.w},${rc.h}`, ...(rc.x != null ? [`--window-position=${rc.x},${rc.y}`] : [])];
+function lwSpawn(why) { const rc = appRect(rectOk(CFG.lwin, 260, 200), LW_SCR); const ch = chromeExe();
+  if (!ch) { LW.err = '크롬을 못 찾음(Chrome이 설치된 곳을 모름)'; note('📜 ' + LW.err, { k: 'win', m: '창', l: 'warn' }); return { ok: false, err: LW.err }; }
+  LW.err = ''; LW.exit = null; const at = LW.spawnAt = now(); LW.spawnN++;
+  try { const p = require('child_process').spawn(ch, appArgs(APPS.log, rc), { detached: true, stdio: 'ignore' });
+    p.on('error', (e) => { if (LW.spawnAt === at) LW.err = '크롬을 못 띄움: ' + e.message; });
+    p.on('exit', (code, sig) => { LW.exit = { code, sig, ms: now() - at }; if (code && LW.spawnAt === at && LW.seenAt < at) LW.err = `크롬이 ${Math.round((now() - at) / 100) / 10}초 만에 끝남(끝 코드 ${code})`; }); p.unref(); }
+  catch (e) { LW.err = '크롬을 못 띄움: ' + e.message; return { ok: false, err: LW.err }; }
+  note(`📜 기록창을 따로 작은 창으로 띄움 (${why || ''} · ${rc.w}×${rc.h}${rc.x != null ? ` · ${rc.x},${rc.y}` : ''})`, { k: 'win', m: '창' });
+  setTimeout(() => { if (LW.spawnAt !== at || LW.seenAt >= at) return;
+    if (!LW.retried) { LW.retried = true; note(`📜 따로 기록창이 ${lwRetryMs() / 1000}초 안에 안 떠서 같은 프로필의 굳은 크롬을 끝내고 한 번 더 띄움${LW.err ? ' — ' + LW.err : ''}`, { k: 'win', m: '창', l: 'warn' });
+      lwBg('다시 띄우기', async () => { await WIN.run('kill', LOG_MARK); if (LW.spawnAt === at && LW.seenAt < at) lwSpawn('굳은 크롬을 끝내고 다시'); }); return; }
+    LW.err = LW.err || `두 번 띄워도 ${lwRetryMs() / 1000}초 안에 소식이 없음`; note('📜 따로 기록창이 안 뜸 — ' + LW.err + ' · 옆 창 안 기록 칸을 쓰세요(⚙ › 창에서 고를 수 있음)', { k: 'win', m: '창', l: 'warn' }); }, lwRetryMs());
+  return { ok: true, rect: rc }; }
+const lwState = () => { const L = lwLive(); const p = L[0] || null; return { ok: true, open: lwinOpen(), live: L.length, first: p ? p.first : 0, vis: p ? p.vis : null, seenAt: LW.seenAt, spawnAt: LW.spawnAt, spawnN: LW.spawnN, retried: LW.retried, step: LW.step, err: LW.err, exit: LW.exit, rect: CFG.lwin || null }; };
+/* logWin(act) — act: toggle(🗒·Alt+L) · open · close · beat(/log 화면이 3초마다 · id·vis·자리) · bye(그 화면이 닫힘) · state(옆 창이 뜸을 확인) */
+async function logWin(act, why, o) { act = String(act || 'toggle'); o = o || {}; const t = now();
+  if (act === 'beat') { const id = String(o.id || 'x').replace(/[^\w-]/g, '').slice(0, 40) || 'x'; if (LW.dead[id]) return { ok: true, open: false, gone: true };
+    const pg = LW.pages[id] || (LW.pages[id] = { first: t }); pg.beat = t; pg.vis = o.vis === 'hidden' ? 'hidden' : o.vis === 'visible' ? 'visible' : null;
+    const nb = ['x', 'y', 'w', 'h'].map((k) => +o[k]); pg.r = nb.every(Number.isFinite) && nb[2] > 0 ? { x: nb[0], y: nb[1], w: nb[2], h: nb[3] } : null;
+    if (LW.seenAt < (LW.spawnAt || 0) && t >= LW.spawnAt) note(`📜 따로 기록창이 떴음 (띄운 뒤 ${Math.round((t - LW.spawnAt) / 100) / 10}초)`, { k: 'win', m: '창' });
+    LW.seenAt = t; LW.retried = false; LW.err = ''; for (const [k, v] of Object.entries(LW.pages)) if (t - v.beat > 600e3) delete LW.pages[k]; for (const [k, v] of Object.entries(LW.dead)) if (t - v > 3600e3) delete LW.dead[k];
+    return { ok: true, open: true }; }
+  if (act === 'bye') { const id = String(o.id || '').replace(/[^\w-]/g, '').slice(0, 40); if (id) LW.dead[id] = t; else lwGone(); LW.at = t; return { ok: true, open: lwinOpen() }; }
+  if (act === 'state') return lwState();
+  const pg = lwLive()[0];
+  if (pg) { const seen = pg.vis !== 'hidden' && t - pg.beat < 10e3 && onScr(pg.r, LW_SCR);
+    if (act === 'close' || (act === 'toggle' && seen)) { if (seen) { const r = rectOk(pg.r, 260, 200); if (r) { CFG.lwin = { ...r, at: now(), src: 'pc' }; saveCfg(); } }
+      lwGone(); lwBg('닫기', async () => { const r = await WIN.run('close', LOG_MARK); if (!r.ok) throw new Error(r.err); }); note(`📜 기록창(따로 창)을 닫음 (${why || act})`, { k: 'win', m: '창' });
+      return { ok: true, open: false, closed: true, msg: '📜 따로 기록창을 닫음' }; }
+    lwBg('앞으로', async () => { const rc = appRect(rectOk(CFG.lwin, 260, 200), LW_SCR); const f = await WIN.run('show', LOG_MARK, rc.x != null ? rc : {}); if (!f.ok) throw new Error(f.err); if (!f.n) { lwGone(); lwSpawn('앞으로 꺼낼 창이 없어 새로'); } });
+    note(`📜 기록창(따로 창)을 앞으로 (${pg.vis === 'hidden' ? '작게 내려 있었음' : '화면 밖이었음'})`, { k: 'win', m: '창' }); return { ok: true, open: true, front: true, msg: '📜 따로 기록창을 앞으로 꺼냄' }; }
+  if (act === 'close') { lwGone(); return { ok: true, open: false, msg: '기록창이 이미 닫혀 있음' }; }
+  if (LW.spawnAt && t - LW.spawnAt < lwRetryMs() + 2000 && !LW.err) return { ok: true, open: true, pending: true, at: LW.spawnAt, msg: '📜 따로 기록창을 띄우는 중 — 조금만 기다려 주세요' };
+  LW.retried = false; const r = lwSpawn(why || '🗒 기록'); return r.ok ? { ok: true, open: true, spawned: true, pending: true, at: LW.spawnAt, msg: '📜 따로 기록창을 띄우는 중' } : { ...r, open: false }; }
 
 /* ── 웹앱 대신 기록 (0.1.1 정범님 11/05 밤 '비교 화면 구글로 로그인이 실패') ──
  * 비교 화면(이 도우미가 내주는 127.0.0.1 화면)은 Firebase에 로그인하지 않음. 그 PC에 열려 있는 운영 웹앱(이미 구글 로그인)이
@@ -242,8 +286,8 @@ const prodPlan = () => TK.plan(isLoggerPc() ? 'logger' : 'office', CFG.jobs || {
 /* 상태에 싣는 그림자 일 요약(작게) — 일마다 오늘 견줌·같음 비율·넘길 수 있음 */
 function jobsSum() { try { const v = JOBS.view(); return { kind: v.kind, d: v.d, wait: v.wait, mine: v.tasks.filter((t) => t.mine).map((t) => ({ k: t.k, q: t.q, n: t.today ? t.today.n : 0, rate: t.today ? t.today.pass.rate : null, can: !!(t.today && t.today.pass.can) })) }; } catch (e) { return { err: e.message }; } }
 
-function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const out = { ...CFG };
-  if (o.on != null) out.on = o.on === true; if (o.place != null) out.place = o.place === 'edge' ? 'edge' : 'off'; if (o.headless != null) out.headless = o.headless === true; if (o.auto != null) out.auto = o.auto !== false; if (o.nightOn != null) out.nightOn = o.nightOn !== false; if (o.y24 != null) out.y24 = o.y24 !== false; if (o.y24Jobs != null) out.y24Jobs = o.y24Jobs !== false; if (o.side != null) out.side = o.side !== false; if (o.al != null) out.al = o.al === true; /* (알라딘 읽기) 🟧 알라딘 샵매니저 읽기 그림자 — 기본 꺼짐 */ /* (0.1.5) 예스24 판매관리 읽기 · 맡긴 일 · 옆 창 저절로 띄우기 */ if (o.pc != null && String(o.pc).trim()) { const nv = String(o.pc).trim().slice(0, 40); const src = o.pcSrc === 'pc' ? 'pc' : 'web'; if (src === 'pc' || out.pcSrc !== 'pc' || o.pcForce) { out.pc = nv; out.pcSrc = src; } } /* (0.1.1) 이 PC 이름 — 웹앱 기기 이름에서 저절로 · 도우미 화면에서 바꾸면(pcSrc pc) 웹앱이 덮지 않음 */
+function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const CFG0 = CFG; const out = { ...CFG };
+  if (o.on != null) out.on = o.on === true; if (o.place != null) out.place = o.place === 'edge' ? 'edge' : 'off'; if (o.headless != null) out.headless = o.headless === true; if (o.auto != null) out.auto = o.auto !== false; if (o.nightOn != null) out.nightOn = o.nightOn !== false; if (o.y24 != null) out.y24 = o.y24 !== false; if (o.y24Jobs != null) out.y24Jobs = o.y24Jobs !== false; if (o.side != null) out.side = o.side !== false; if (o.al != null) out.al = o.al === true; if (o.alOwn != null) { out.alOwn = o.alOwn === true && !isLoggerPc(); if (out.alOwn) out.al = true; } /* (11/10 정범님 'HOME을 번외 전용으로 — 그 PC 자리를 번외가 이어받음') 🏠 켜면 알라딘 읽기도 켬 · 로거는 늘 끔(약속 0) */ /* (알라딘 읽기) 🟧 알라딘 샵매니저 읽기 그림자 — 기본 꺼짐 */ /* (0.1.5) 예스24 판매관리 읽기 · 맡긴 일 · 옆 창 저절로 띄우기 */ if (o.pc != null && String(o.pc).trim()) { const nv = String(o.pc).trim().slice(0, 40); const src = o.pcSrc === 'pc' ? 'pc' : 'web'; if (src === 'pc' || out.pcSrc !== 'pc' || o.pcForce) { out.pc = nv; out.pcSrc = src; } } /* (0.1.1) 이 PC 이름 — 웹앱 기기 이름에서 저절로 · 도우미 화면에서 바꾸면(pcSrc pc) 웹앱이 덮지 않음 */
   for (const k of ['cwin']) { const r = rectOk(o[k], 260, 200); if (r && (!out[k] || r.at > (+out[k].at || 0))) out[k] = { ...r, src: o.src || 'web' }; }
   for (const k of ['win', 'hwin']) { const r = rectOk(o[k], k === 'win' ? 400 : 260, k === 'win' ? 300 : 200); if (r && (!out[k] || r.at > (+out[k].at || 0))) out[k] = { ...r, src: o.src || 'web' }; }
   if (o.pace && typeof o.pace === 'object') { const p = { ...(out.pace || {}) }; for (const k of Object.keys(COL2.PACE)) if (k !== 'floorMs' && o.pace[k] != null && Number.isFinite(+o.pace[k])) p[k] = +o.pace[k]; out.pace = p; }
@@ -253,12 +297,13 @@ function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const out = { 
   const ch = JSON.stringify(out) !== JSON.stringify(CFG); CFG = out; if (ch) saveCfg();
   if (was !== !!CFG.on) { note(CFG.on ? '번외 수집 켬' : '번외 수집 끔 — 작업 창을 닫음'); setTimeout(() => tick('설정 바뀜'), 50); if (CFG.on) { autoKick(); sideOpen('켬'); } }
   if (o.y24 != null || was !== !!CFG.on) Y24.kick(200);
-  if (o.al != null || was !== !!CFG.on) AL.kick(200);
+  if (o.alOwn != null && !!CFG.alOwn !== !!(CFG0.alOwn)) note(CFG.alOwn ? '🏠 이 PC 알라딘 로그인 자리를 번외가 이어받음 — 운영 수집기는 다음 알림(10초 안)에 이 PC 자리를 놓고, 번외가 그 자리를 받음' : '🏠 이어받기 끔 — 번외는 자리를 놓고, 운영 수집기가 예전처럼 이 PC 자리를 받음', { k: 'al', m: '알라딘' });
+  if (o.al != null || o.alOwn != null || was !== !!CFG.on) AL.kick(200);
   if (o.side === true) sideOpen('옆 창 켬');
   else if (wasH !== !!CFG.headless && B) { closeBrowser('화면 방식 바뀜').then(() => tick('화면 방식 바뀜')); }
   return ch; }
 
-function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, jobs: jobsSum(), keys: keysSum(), /* (0.1.10) 키 이름·수만(값 없음) */ busy: busyNow(), /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), kind: isLoggerPc() ? 'logger' : 'office', pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), y24: Y24.sum(), al: AL.sum(), alw: ALW.sum(), alWant: CFG.al === true, side: sideOn(), y24Want: CFG.y24 == null ? !TEST : CFG.y24 !== false, y24Jobs: CFG.y24Jobs !== false, upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen, lwin: { open: lwinOpen(), rect: CFG.lwin || null }, /* (0.1.8) 📜 기록창 따로 창이 떠 있는지(🗒 단추 색) */
+function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, jobs: jobsSum(), keys: keysSum(), /* (0.1.10) 키 이름·수만(값 없음) */ busy: busyNow(), /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), kind: isLoggerPc() ? 'logger' : 'office', pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), y24: Y24.sum(), al: AL.sum(), alw: ALW.sum(), alWant: CFG.al === true, relogin: RLG.sum(), /* (11/10) 🔐 저장됨·켬·멈춤·마지막 결과만(아이디·비밀번호 값 없음) */ alOwn: CFG.alOwn === true && !isLoggerPc(), /* (11/10) 🏠 이 PC 알라딘 자리를 번외가 이어받음 */ side: sideOn(), y24Want: CFG.y24 == null ? !TEST : CFG.y24 !== false, y24Jobs: CFG.y24Jobs !== false, upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen, lwin: { open: lwinOpen(), rect: CFG.lwin || null, err: LW.err || '', step: LW.step || '' }, /* (0.1.8) 📜 기록창 따로 창이 떠 있는지(🗒 단추 색) */
   opens: opensHour(), chrome: { fails: CH.fails, last: CH.last, okAt: CH.okAt ? kst(CH.okAt) : null, coolUntil: CH.coolUntil ? kst(CH.coolUntil) : null, cools: CH.cools, adopts: CH.adopts, retries: CH.retries }, msg: [ST.msg, CFG.on && AU.msg && AU.msg !== ST.msg ? '자동 읽기: ' + AU.msg : ''].filter(Boolean).join(' · '), /* (0.1.4) 자동 읽기가 왜 쉬는지(하루 몫·표본 기다림·작업 창 준비 실패)도 웹앱 col2_ctl·진단에 보이게 — 예전엔 작업 창 지킴이 글만 보여 멈춘 까닭을 몰랐음 */ reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: JRN.tail(15).map((e) => ({ t: e.t, m: e.x, l: e.l, k: e.k })), pcKind: JRN.kind(), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
 
 /* ── 그림자 읽기 ── */
@@ -407,7 +452,7 @@ document.getElementById('pcv').onclick=async()=>{const v=document.getElementById
 const LOG_BOOT = (full) => `<script src="/s/col2-store.js"></script><script src="/s/col2-logwin.js"></script>${full ? '<script src="/s/col2-ui.js"></script>' : ''}<script>(function(){const H={'X-RN-Col2':'1','Content-Type':'application/json'};
 async function api(m,p,b,text){const r=await fetch(p,{method:m,headers:H,cache:'no-store',body:b?JSON.stringify(b):undefined});return text?r.text():r.json()}
 ${full ? 'Col2UI.loadKeys(api);' : ''}window.__jw=Col2Log.mount({api,ls:Col2Store.ls,full:${full ? 'true' : 'false'},btn:document.getElementById('jwBtn'),match:window.Col2UI&&Col2UI.logMatch,label:window.Col2UI&&Col2UI.keyLabel,mode:window.Col2UI&&Col2UI.logMode});
-${full ? `let last='';setInterval(()=>{const v={p:'log',x:screenX,y:screenY,w:outerWidth,h:outerHeight};const k=JSON.stringify(v);if(k!==last&&v.w>200&&v.h>150){last=k;fetch('/win/hrect',{method:'POST',headers:H,body:k}).catch(()=>{})}},15000);const beat=()=>fetch('/win/log',{method:'POST',headers:H,body:JSON.stringify({act:'beat'})}).catch(()=>{});beat();setInterval(beat,15000);addEventListener('pagehide',()=>{try{fetch('/win/log',{method:'POST',headers:H,keepalive:true,body:JSON.stringify({act:'bye'})})}catch(e){}});` : ''}})();</script>`;
+${full ? `let last='';setInterval(()=>{const v={p:'log',x:screenX,y:screenY,w:outerWidth,h:outerHeight};const k=JSON.stringify(v);if(k!==last&&v.w>200&&v.h>150){last=k;fetch('/win/hrect',{method:'POST',headers:H,body:k}).catch(()=>{})}},15000);const id=Math.random().toString(36).slice(2,10)+Date.now().toString(36);const beat=()=>fetch('/win/log',{method:'POST',headers:H,body:JSON.stringify({act:'beat',id,vis:document.visibilityState,x:screenX,y:screenY,w:outerWidth,h:outerHeight})}).catch(()=>{});beat();setInterval(beat,3000);document.addEventListener('visibilitychange',beat);addEventListener('pagehide',()=>{try{fetch('/win/log',{method:'POST',headers:H,keepalive:true,body:JSON.stringify({act:'bye',id})})}catch(e){}});` : ''}})();</script>`;
 function logPageHtml() { return `<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>📜 번외 수집 기록</title>
 <style>${SMALL_CSS}</style><body>${LOG_BOOT(true)}</body></html>`; }
 /* (0.1.7 정범님 11/09 밤 '모든 것을 내가 설정·조정하는 골격 · 접고 열고 · 아이콘으로 최소화 · 불편·중복 추리기') 📊 옆 창 = 머리띠 + 칸(카드)
@@ -434,7 +479,7 @@ function statusHtml() { return `<!doctype html><html lang="ko"><meta charset="ut
 <h3>칸 — 보이기 · 처음 펼침 · 순서</h3><div id="setAll"><button data-all="open">모두 펼치기</button><button data-all="close">모두 접기</button></div><div id="setCards"></div>
 <h3>단축키 — 키 단추를 누르고 원하는 키를 누름</h3><div id="setKeys"></div>
 <h3>창 · 바로 가기</h3><div id="setWin"></div>
-<h3>일 켜기·끄기 (이 PC만)</h3><div id="tgbox"><div id="tgy"><label><input type="checkbox" id="tg_y24"> 🟦 예스24 판매관리 읽기</label><br><label><input type="checkbox" id="tg_al"> 🟧 알라딘 샵매니저 읽기(그림자 · 읽기만)</label><br><label><input type="checkbox" id="tg_y24j"> 🤖 예스24 맡긴 일(주문접수확인·발송처리)도 여기서</label></div><label><input type="checkbox" id="tg_side"> 📊 켜질 때 이 옆 창 저절로 띄우기</label></div>
+<h3>일 켜기·끄기 (이 PC만)</h3><div id="tgbox"><div id="tgy"><label><input type="checkbox" id="tg_y24"> 🟦 예스24 판매관리 읽기</label><br><label><input type="checkbox" id="tg_al"> 🟧 알라딘 샵매니저 읽기(그림자 · 읽기만)</label><br><label title="켜면 이 PC의 운영 수집기(Tampermonkey)는 알라딘 로그인 자리를 놓고 로그인 일·샵매니저 작업 창 다시 열기를 하지 않음 · 그 자리를 번외가 받음(번외가 30분 넘게 안 보이면 운영이 저절로 되찾음)"><input type="checkbox" id="tg_alown"> 🏠 이 PC 알라딘 로그인 자리를 번외가 이어받음(운영 수집기는 이 PC에서 로그인 일 안 함)</label><br><label><input type="checkbox" id="tg_y24j"> 🤖 예스24 맡긴 일(주문접수확인·발송처리)도 여기서</label></div><label><input type="checkbox" id="tg_side"> 📊 켜질 때 이 옆 창 저절로 띄우기</label></div><div id="crbox"><h3>🔐 스스로 다시 로그인 (이 PC만)</h3><div class="k">아이디·비밀번호는 이 PC 안 Windows 잠금(DPAPI · 이 PC 이 사용자만 풂) 파일에만 — GitHub·Firebase·기록·화면 어디에도 나가지 않음 · 출고 중엔 미룸 · 한 시간 3번까지 · 연속 2번 실패하거나 보안 문자·2단계 인증이 나오면 멈추고 알림 · 알라딘은 번외 자리를 받은 때만</div><div class="row cr" data-pf="y24"><b>🟦 예스24 판매관리</b> <span class="k" id="crs_y24">—</span><br><input id="cri_y24" placeholder="아이디" autocomplete="off" spellcheck="false" style="width:9em"> <input id="crp_y24" type="password" placeholder="비밀번호" autocomplete="new-password" style="width:9em"> <button id="crb_y24">잠가 저장</button><br><label><input type="checkbox" id="cra_y24"> 세션이 풀리면 스스로 다시 로그인</label> <button id="crr_y24" style="display:none">다시 해 보기</button></div><div class="row cr" data-pf="al"><b>🟧 알라딘 샵매니저</b> <span class="k" id="crs_al">—</span><br><input id="cri_al" placeholder="아이디" autocomplete="off" spellcheck="false" style="width:9em"> <input id="crp_al" type="password" placeholder="비밀번호" autocomplete="new-password" style="width:9em"> <button id="crb_al">잠가 저장</button><br><label><input type="checkbox" id="cra_al"> 세션이 풀리면 스스로 다시 로그인</label> <button id="crr_al" style="display:none">다시 해 보기</button></div></div>
 <h3>이 PC 이름</h3>${pcBarHtml()}
 <h3>내보내기 · 가져오기</h3><button id="setExp">⤓ 설정 내보내기</button> <label class="k">⤒ 가져올 파일 <input type="file" id="setImpF" accept=".json,application/json" style="max-width:150px"></label> <button id="setImp" class="p" style="display:none">가져오기</button>
 <h3>기본값</h3><button id="setReset" class="warn">↺ 기본값 되돌리기</button> <span class="k">칸·단축키·창만 — 일 켜기·이 PC 이름은 그대로</span>
@@ -503,7 +548,7 @@ const srv = http.createServer((req, res) => {
   if (p === '/go') return body((o) => { const r = goOpen(o); J(r.code, r.body); });
   if (p === '/win/mini') return body((o) => miniWin(o).then((r) => J(200, r)));
   if (p === '/log/clear') return body((o) => { const r = JRN.clear(); note(`📜 기록을 내려받고 화면에서 비움(${r.moved}일치 · 파일은 지우지 않고 journal\\old 로 옮김) — ${String(o.why || '').slice(0, 40)}`, { k: 'sys', l: 'ok', m: '기록' }); J(200, r); });
-  if (p === '/win/log') return body((o) => logWin(o.act, o.why || '').then((r) => J(200, r))); /* (0.1.8) 📜 기록창 따로 창 열기·앞으로·닫기 */
+  if (p === '/win/log') return body((o) => logWin(o.act, o.why || '', o).then((r) => J(200, r))); /* (0.1.8) 📜 기록창 따로 창 열기·앞으로·닫기 */
   if (p === '/win/app') return body((o) => appWin(String(u.searchParams.get('p') || o.p || 'compare'), o.why || '').then((r) => J(200, { ...r, state: status() })));
   if (p === '/relay/get') return body((o) => { const r = relayGet(o); J(r.code, r.body); });
   if (p === '/relay/sample') return body((o) => J(200, relaySample(o)));
@@ -519,6 +564,12 @@ const srv = http.createServer((req, res) => {
   /* (0.1.5) 🟦 예스24 — 수집기 다리(받기·보냄 확인·맡긴 일·출고 보호·웹앱 설정) · 로그인 한 번 · 지금 읽기 */
   if (p === '/al/feed') return body((o) => J(200, { ...AL.feed(o, o.by), alw: { on: ALW.on() } }), 65536);
   if (p === '/al/wfeed') return body((o) => J(200, ALW.take(o)), 512 * 1024); /* (그림자 쓰기) 🟧✍ 운영 수집기가 보낸 쓰기 요청 꼴(번호·값만) — 견줌만 · 보내지 않음 */ /* (알라딘 읽기) 🟧 이 PC 수집기 다리 — 🪑 자리 · 🚚 출고 보호 · 운영 세션 풀림 */
+  /* (11/10) 🔐 계정 저장·켜고 끄기·멈춤 풀기 — 이 도우미 화면(옆 창 ⚙)에서만(다른 출처 거절) · 값은 답·기록·상태 어디에도 싣지 않음 · 로거는 거절 */
+  if (/^\/cred\//.test(p)) { const og = String(req.headers.origin || ''); if (og && og !== `http://127.0.0.1:${PORT}`) return J(403, { ok: false, err: '이 도우미 화면에서만' }); if (isLoggerPc()) return J(403, { ok: false, err: '로거 PC에는 계정을 저장하지 않습니다(약속 0)' });
+    if (p === '/cred/save') return body(async (o) => { const r = await CRED.save(String(o.pf || ''), o.id, o.pw); o.id = o.pw = null; if (r.ok) { note(`🔐 ${(CRED.PF[o.pf] || {}).name} 계정을 이 PC에 잠가 저장함(Windows DPAPI · 이 PC 이 사용자만 풂 · 값은 기록하지 않음)`, { k: 'sys', m: '로그인' }); RLG.reset(String(o.pf)); } J(200, { ok: r.ok, err: r.err || null, relogin: RLG.sum() }); }, 4096);
+    if (p === '/cred/auto') return body((o) => { if (!CRED.PF[o.pf]) return J(400, { ok: false, err: '모르는 플랫폼' }); RLG.setAuto(String(o.pf), o.on !== false); J(200, { ok: true, relogin: RLG.sum() }); });
+    if (p === '/cred/reset') return body((o) => { if (!CRED.PF[o.pf]) return J(400, { ok: false, err: '모르는 플랫폼' }); RLG.reset(String(o.pf)); (o.pf === 'y24' ? Y24 : AL).kick(300); J(200, { ok: true, relogin: RLG.sum() }); });
+    return J(404, { ok: false }); }
   if (p === '/al/login') return body(async (o) => { const r = await AL.login(o.why || '옆 창 단추'); J(200, { ...r, state: status() }); });
   if (p === '/al/run') return body(async (o) => { const r = await AL.runNow(String(o.what || 'confirm')); J(200, { ...r, state: status() }); });
   if (p === '/y24/feed') return body((o) => J(200, Y24.feed(o, o.by)), 1048576);
