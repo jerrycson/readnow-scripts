@@ -23,11 +23,15 @@
     { id: 'close', t: '열린 겹창(기록창·설정·설명서) 닫기', def: 'Esc' },
     { id: 'find', t: '기록창 찾기 칸으로', def: '/' },
     { id: 'help', t: '❓ 설명서 열기·닫기', def: 'Alt+H' },
-    { id: 'set', t: '⚙ 설정 열기·닫기', def: 'Alt+S' },
-    { id: 'mini', t: '▁ 작은 단추로 줄이기·펼치기', def: 'Alt+M' },
-    { id: 'go', t: '🔗 바로 가기 칸으로(찾기 칸에 커서)', def: 'Alt+G' },
-    { id: 'reload', t: '↻ 상태 지금 새로 보기', def: 'Alt+R' },
+    { id: 'set', t: '⚙ 설정 열기·닫기', def: 'Alt+O' }, /* (11/10 ux2 · 웹앱과 맞춤) 예전 Alt+S = 웹앱 등록 「🔎 검색창」과 같은 글자 */
+    { id: 'mini', t: '▁ 작은 단추로 줄이기·펼치기', def: 'Alt+Shift+M' }, /* 예전 Alt+M = 웹앱 「💬 팀 채팅 입력 줄」 */
+    { id: 'go', t: '🔗 바로 가기 칸으로(찾기 칸에 커서)', def: 'Ctrl+K' }, /* 예전 Alt+G = 웹앱 「📖 화면 설명서」 · Ctrl+K = 웹앱 '검색창으로'와 같은 뜻(11/10) */
+    { id: 'reload', t: '↻ 상태 지금 새로 보기', def: 'Alt+U' }, /* 예전 Alt+R = 웹앱 「🪟 알라딘 화면」 */
   ];
+  /* (11/10 ux2) 웹앱(리드나우)에서 다른 일을 하는 키 — 고를 수는 있지만 ⚠ 노랑 알림(같은 PC에서 오가면 손이 헷갈림) · 같은 뜻인 키(Ctrl+K·Alt+K 찾기 칸 · Alt+H 설명서 · Esc 닫기 · / 찾기)와 웹앱에 기록창이 없는 Alt+L은 뺌
+   *  예전 기본값(OLD_DEF)은 저장된 설정에서도 한 번 새 기본값으로 옮김(kv 2) — 사람이 일부러 고른 다른 키는 그대로 */
+  const WEBAPP = { 'Alt+S': '등록 「🔎 검색창」', 'Alt+G': '「📖 화면 설명서」', 'Alt+M': '「💬 팀 채팅 입력 줄」', 'Alt+R': '「🪟 알라딘 화면」', 'Alt+E': '「📑 옆에서 크게」', 'Alt+N': '「💬 대화 기록」·등록 「빼기」', 'Alt+B': '「→ 결정 대기」', 'Alt+A': '「🪟 알라딘 창」', 'Alt+Z': '「시장 지표 위 가격」', 'Alt+C': '「시장 지표 아래 가격」', 'Alt+X': '「+5%」', 'Alt+F': '등록 「늘 포커스」', 'Alt+V': '등록 「보기 바꾸기」', 'Alt+P': '등록 「판매가 칸」', 'Alt+J': '등록 「지금 할 카드 다음」', 'Alt+Q': '「하위 탭 이전」', 'Alt+W': '「하위 탭 다음」', 'Alt+1': '「탭 이전」', 'Alt+2': '「탭 다음」', 'Alt+,': '「💬 입력 줄 펼치기」', 'Alt+ArrowUp': '「이전 카드」', 'Alt+ArrowDown': '「다음 카드」', 'Alt+Home': '「맨 위로」', 'Alt+End': '「맨 아래로」', 'Alt+Shift+F': '등록 「⚡ 상태 모음 빠른 찾기」', 'Alt+Shift+D': '등록 「📚 옆 서랍」', 'Alt+Shift+N': '등록 「💬 대화 기록」', 'Alt+Shift+A': '책방 친구 「👥 모두에게로」', 'Alt+Shift+W': '책방 친구 「🤫 속삭임 상대」', 'Alt+Shift+R': '책방 친구 「🤫 속삭임 답장」' };
+  const OLD_DEF = { set: 'Alt+S', mini: 'Alt+M', go: 'Alt+G', reload: 'Alt+R' };
   /* 크롬·윈도우가 쓰는 단축키 — 고르지 못하게(눌러도 크롬이 먼저 가져감) */
   const RESERVED = ['Ctrl+W', 'Ctrl+Shift+W', 'Ctrl+R', 'Ctrl+Shift+R', 'F5', 'Ctrl+F5', 'Alt+F4', 'Alt+F', 'Alt+E', 'Ctrl+T', 'Ctrl+Shift+T', 'Ctrl+N', 'Ctrl+Shift+N', 'Ctrl+Q', 'Ctrl+Shift+Q', 'F12', 'Ctrl+Shift+I', 'Ctrl+Shift+J', 'Ctrl+P', 'Ctrl+L', 'Alt+Space', 'Ctrl+Tab', 'Alt+Tab', 'Alt+Home', 'Alt+ArrowLeft', 'Alt+ArrowRight', 'F11', 'Ctrl+D', 'Ctrl+H', 'Ctrl+J', 'Ctrl+F', 'Ctrl+S', 'Ctrl+O', 'Ctrl+U', 'Ctrl+C', 'Ctrl+V', 'Ctrl+X', 'Ctrl+A', 'Ctrl+Z', 'F1', 'F3', 'F6', 'F7', 'F10'];
   const MINI = { w: 132, h: 104, top: true }; /* 작은 단추 창 크기 — 근거: 없음, 설정으로 바꿈(크롬이 이보다 작게 못 줄이면 크롬 최소 크기) */
@@ -53,15 +57,16 @@
       if (!hasMod && (/^[A-Z0-9]$/.test(key) || ENTRY.includes(key))) errs.push({ a: A.id, why: `${c} 하나만은 글 쓰다 잘못 눌림 — Alt·Ctrl과 함께` });
       else if (RESERVED.includes(c)) errs.push({ a: A.id, why: `${c}는 크롬·윈도우가 먼저 씀` });
       if (seen[c]) errs.push({ a: A.id, why: `${c}가 '${ACTIONS.find((x) => x.id === seen[c]).t}'와 겹침`, with: seen[c] }); else seen[c] = A.id; }
-    return { ok: !errs.length, errs }; }
+    const warns = []; for (const A of ACTIONS) { const c = keys[A.id]; if (c && WEBAPP[c]) warns.push({ a: A.id, why: `⚠ ${c}는 웹앱(리드나우)에서 ${WEBAPP[c]} — 같은 PC에서 오가면 헷갈릴 수 있음(창이 달라 실제로 부딪히진 않음)` }); }
+    return { ok: !errs.length, errs, warns }; }
   const defKeys = () => Object.fromEntries(ACTIONS.map((a) => [a.id, a.def]));
   const num = (v, lo, hi, d) => { const n = Math.round(+v); return Number.isFinite(n) && n >= lo && n <= hi ? n : d; };
   /* 설정 한 꼴로 — 모르는 칸·이상한 값은 버리고 기본값 · keys 는 겹치면 그대로 두고 check 가 알림 */
   function normalize(u) { u = u && typeof u === 'object' ? u : {}; const ids = CARDS.map((c) => c.id);
     const order = (Array.isArray(u.order) ? u.order.map(String).filter((x, i, a) => ids.includes(x) && a.indexOf(x) === i) : []).concat(ids.filter((x) => !(Array.isArray(u.order) && u.order.includes(x))));
     const cards = {}; for (const c of CARDS) { const v = (u.cards && typeof u.cards === 'object' && u.cards[c.id]) || {}; cards[c.id] = { open: v.open == null ? !!c.open : !!v.open, hide: v.hide == null ? !!c.hide : !!v.hide }; }
-    const keys = defKeys(); if (u.keys && typeof u.keys === 'object') for (const A of ACTIONS) if (u.keys[A.id] != null) { const n = normCombo(u.keys[A.id]); if (n != null) keys[A.id] = n; }
-    const prof = String(u.goProf == null ? '' : u.goProf); return { v: 1, order, cards, keys, mini: !!u.mini, miniW: num(u.miniW, 60, 400, MINI.w), miniH: num(u.miniH, 40, 400, MINI.h), miniTop: u.miniTop == null ? MINI.top : !!u.miniTop, goProf: /^[\w .-]{0,40}$/.test(prof) ? prof.trim() : '', logPop: u.logPop == null ? true : !!u.logPop, at: num(u.at, 0, 9e15, 0) }; } /* (0.1.8) logPop = 🗒 기록창을 따로 작은 창으로(기본 · 정범님 11/10 새벽) · false면 예전처럼 옆 창 안 */
+    const keys = defKeys(); const mig = u.kv !== 2; if (u.keys && typeof u.keys === 'object') for (const A of ACTIONS) if (u.keys[A.id] != null) { const n = normCombo(u.keys[A.id]); if (n != null && !(mig && OLD_DEF[A.id] && n === OLD_DEF[A.id])) keys[A.id] = n; } /* (11/10 ux2) 예전 기본값 → 새 기본값(한 번) */
+    const prof = String(u.goProf == null ? '' : u.goProf); return { v: 1, kv: 2, order, cards, keys, mini: !!u.mini, miniW: num(u.miniW, 60, 400, MINI.w), miniH: num(u.miniH, 40, 400, MINI.h), miniTop: u.miniTop == null ? MINI.top : !!u.miniTop, goProf: /^[\w .-]{0,40}$/.test(prof) ? prof.trim() : '', logPop: u.logPop == null ? true : !!u.logPop, at: num(u.at, 0, 9e15, 0) }; } /* (0.1.8) logPop = 🗒 기록창을 따로 작은 창으로(기본 · 정범님 11/10 새벽) · false면 예전처럼 옆 창 안 */
   /* 내보낼 파일 꼴(비밀값·계정 없음 — 칸·단축키·창·바로 가기 프로필 이름·일 켜기 셋뿐) */
   const EXPORT_KIND = 'readnow-col2-settings';
   function exportDoc(ui, opts, meta) { return { kind: EXPORT_KIND, v: 1, ver: meta && meta.ver, pc: meta && meta.pc, at: new Date().toISOString(), ui: normalize(ui), opts: { side: !!(opts && opts.side), y24: !!(opts && opts.y24), y24Jobs: !!(opts && opts.y24Jobs) } }; }
@@ -188,7 +193,7 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
     function drawSet() { const ids = UI.order.filter((id) => !absent(id) && cardOf(id));
       $('setCards').innerHTML = ids.map((id, i) => { const c = cardDef(id), v = UI.cards[id]; return `<div class="row" data-cid="${id}"><label class="rt"><input type="checkbox" data-c="show" ${v.hide ? '' : 'checked'}> ${c.icon} ${E(c.t)}</label><label class="k"><input type="checkbox" data-c="open" ${v.open ? 'checked' : ''}> 펼침</label><button data-c="up" ${i ? '' : 'disabled'} title="위로">▲</button><button data-c="down" ${i < ids.length - 1 ? '' : 'disabled'} title="아래로">▼</button></div>`; }).join('');
       const ck = check(UI.keys);
-      $('setKeys').innerHTML = ACTIONS.map((A) => { const bad = ck.errs.filter((x) => x.a === A.id); return `<div class="row" data-kid="${A.id}"><span class="rt">${E(A.t)}</span><button class="kb${cap === A.id ? ' cap' : ''}" data-k="cap">${cap === A.id ? '키를 누르세요…' : E(UI.keys[A.id] || '끔')}</button><button data-k="off" title="이 단축키 끄기">끔</button><button data-k="def" title="기본값 ${E(A.def)}">기본</button>${bad.length ? `<div class="bad" style="flex-basis:100%">✗ ${E(bad.map((x) => x.why).join(' · '))}</div>` : ''}</div>`; }).join('');
+      $('setKeys').innerHTML = ACTIONS.map((A) => { const bad = ck.errs.filter((x) => x.a === A.id); return `<div class="row" data-kid="${A.id}"><span class="rt">${E(A.t)}</span><button class="kb${cap === A.id ? ' cap' : ''}" data-k="cap">${cap === A.id ? '키를 누르세요…' : E(UI.keys[A.id] || '끔')}</button><button data-k="off" title="이 단축키 끄기">끔</button><button data-k="def" title="기본값 ${E(A.def)}">기본</button>${bad.length ? `<div class="bad" style="flex-basis:100%">✗ ${E(bad.map((x) => x.why).join(' · '))}</div>` : ''}${(ck.warns || []).filter((x) => x.a === A.id).map((x) => `<div class="warn" style="flex-basis:100%;color:#8A5A00">${E(x.why)}</div>`).join('')}</div>`; }).join('');
       $('setWin').innerHTML = `<div class="row"><span class="rt">▁ 작은 단추 크기(폭·높이)</span><input class="n" id="mw" value="${UI.miniW}"> <input class="n" id="mh" value="${UI.miniH}"></div><div class="row"><label class="rt"><input type="checkbox" id="mtop" ${UI.miniTop ? 'checked' : ''}> 작은 단추는 늘 다른 창 위에</label></div>`
         + `<div class="row"><span class="rt">🗒 기록창 여는 곳</span><label><input type="radio" name="lpop" id="lpop1" ${UI.logPop ? 'checked' : ''}> 따로 작은 창(기본 · 옆 창 밖에서 옮기고 크기 조절)</label> <label><input type="radio" name="lpop" id="lpop0" ${UI.logPop ? '' : 'checked'}> 이 옆 창 안</label></div>`
         + `<div class="row"><span class="rt">🔗 바로 가기를 열 평소 크롬 프로필 이름 <span class="k">(비우면 마지막에 쓴 프로필 · 예: Default · Profile 1)</span></span><input id="gprof" maxlength="40" value="${E(UI.goProf)}" style="width:110px"></div>`;
@@ -234,6 +239,6 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
     load();
     return { get ui() { return UI; }, setMini, openOv, load, apply }; }
 
-  const api = { CARDS, ACTIONS, RESERVED, MINI, keyName, comboOf, normCombo, match, check, defKeys, normalize, exportDoc, importDoc, EXPORT_KIND, keysNow, loadKeys, logMatch, keyLabel, logMode, CSS, side };
+  const api = { CARDS, ACTIONS, RESERVED, WEBAPP, OLD_DEF, MINI, keyName, comboOf, normCombo, match, check, defKeys, normalize, exportDoc, importDoc, EXPORT_KIND, keysNow, loadKeys, logMatch, keyLabel, logMode, CSS, side };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Col2UI = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

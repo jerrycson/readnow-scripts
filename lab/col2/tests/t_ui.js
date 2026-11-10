@@ -9,6 +9,10 @@ const UI = require('../helper/col2-ui.js'); const GO = require('../helper/col2-g
   ok(UI.normCombo('alt+l') === 'Alt+L' && UI.normCombo('shift+alt+x') === 'Alt+Shift+X' && UI.normCombo('esc') === 'Esc' && UI.normCombo('Shift+?') === '?' && UI.normCombo('Hyper+L') === null && UI.normCombo('') === '', '단축키 글을 한 꼴로(이상하면 버림)');
   ok(UI.comboOf({ altKey: true, code: 'KeyL', key: 'ㅣ' }) === 'Alt+L' && UI.comboOf({ key: '/', code: 'Slash' }) === '/' && UI.comboOf({ key: '?', shiftKey: true, code: 'Slash' }) === '?' && UI.comboOf({ key: 'Escape' }) === 'Esc' && UI.comboOf({ key: 'Alt', altKey: true }) === '', '누른 키 → 이름(한글 입력 중에도 Alt+L)');
   const dk = UI.defKeys(); ok(UI.check(dk).ok && dk.log === 'Alt+L' && dk.close === 'Esc' && dk.find === '/', '기본 단축키는 겹치지 않음(Alt+L · Esc · / …)');
+  { const w0 = UI.check(dk).warns || []; ok(dk.set === 'Alt+O' && dk.go === 'Ctrl+K' && dk.mini === 'Alt+Shift+M' && dk.reload === 'Alt+U' && dk.help === 'Alt+H' && !w0.length, '(11/10) 기본 단축키가 웹앱과 다른 일로 겹치지 않음(설정 Alt+O · 바로 가기 Ctrl+K · 작게 Alt+Shift+M · 새로 보기 Alt+U)', w0);
+    const w1 = UI.check({ ...dk, set: 'Alt+S' }); ok(w1.ok && w1.warns.some((x) => x.a === 'set' && /웹앱/.test(x.why) && /검색창/.test(x.why)), '웹앱에서 다른 일을 하는 키를 고르면 ⚠ 노란 알림(저장은 됨)', w1.warns);
+    const mg = UI.normalize({ keys: { set: 'Alt+S', go: 'Alt+G', mini: 'Alt+M', reload: 'Alt+R', log: 'Alt+J' } }); const mg2 = UI.normalize({ kv: 2, keys: { set: 'Alt+S' } });
+    ok(mg.kv === 2 && mg.keys.set === 'Alt+O' && mg.keys.go === 'Ctrl+K' && mg.keys.mini === 'Alt+Shift+M' && mg.keys.reload === 'Alt+U' && mg.keys.log === 'Alt+J' && mg2.keys.set === 'Alt+S', '예전 기본값만 한 번 새 기본값으로 옮김 · 일부러 고른 키·옮긴 뒤 고른 키는 그대로', mg.keys); }
   let ck = UI.check({ ...dk, help: 'Alt+L' }); ok(!ck.ok && ck.errs.some((e) => e.a === 'help' && /겹침/.test(e.why)), '겹침 검사 — 같은 키 두 번', ck.errs.map((e) => e.why).join(' · '));
   ck = UI.check({ ...dk, set: 'Ctrl+W', mini: 'K' }); ok(!ck.ok && ck.errs.some((e) => e.a === 'set' && /크롬/.test(e.why)) && ck.errs.some((e) => e.a === 'mini' && /Alt·Ctrl/.test(e.why)), '크롬이 쓰는 키·글자 하나만은 못 고름');
   ok(UI.check({ ...dk, help: '' }).ok, '비우면 끔(겹침 아님)');
@@ -80,8 +84,8 @@ const UI = require('../helper/col2-ui.js'); const GO = require('../helper/col2-g
     const hw0 = (await H.api('GET', '/status')).j.hwin; await H.api('POST', '/win/hrect', { x: 5, y: 5, w: 300, h: 300 }); ok(JSON.stringify((await H.api('GET', '/status')).j.hwin) === JSON.stringify(hw0) && hw0.w === 1280, '작게 둔 동안엔 원래 자리·크기를 덮지 않음');
     await p.click('#miniIc'); await wait(900); W = H.T.win()['col2-stat-chrome'];
     ok(!(await p.evaluate(() => document.body.classList.contains('mini'))) && await vis('#cards') && W.r.w === 1280 && W.r.x === 300 && !W.top && !(await H.api('GET', '/ui')).j.ui.mini, '작은 단추 누르면 원래 자리·크기(보통 창)로', JSON.stringify(W.r));
-    await p.keyboard.press('Alt+M'); await wait(500); ok(await p.evaluate(() => document.body.classList.contains('mini')), 'Alt+M = 작게'); await p.keyboard.press('Alt+M'); await wait(500); ok(!(await p.evaluate(() => document.body.classList.contains('mini'))), 'Alt+M 다시 = 펼침');
-    await p.keyboard.press('Alt+G'); ok(await p.evaluate(() => document.activeElement && document.activeElement.id === 'goq'), 'Alt+G = 바로 가기 찾기 칸으로');
+    await p.keyboard.press('Alt+Shift+M'); await wait(500); ok(await p.evaluate(() => document.body.classList.contains('mini')), 'Alt+Shift+M = 작게'); await p.keyboard.press('Alt+Shift+M'); await wait(500); ok(!(await p.evaluate(() => document.body.classList.contains('mini'))), 'Alt+Shift+M 다시 = 펼침');
+    await p.keyboard.press('Control+k'); ok(await p.evaluate(() => document.activeElement && document.activeElement.id === 'goq'), 'Ctrl+K = 바로 가기 찾기 칸으로(웹앱 검색창 Ctrl+K와 같은 뜻 · 11/10)');
     console.log('  · 내보내기 · 가져오기 · 기본값');
     await p.click('#setBtn'); const [dl] = await Promise.all([p.waitForEvent('download', { timeout: 8000 }), p.click('#setExp')]); const ftxt = fs.readFileSync(await dl.path(), 'utf8'); const fj = JSON.parse(ftxt);
     ok(/^readnow-col2-settings-MJ-TEST-\d{4}-\d{2}-\d{2}\.json$/.test(dl.suggestedFilename()) && fj.kind === 'readnow-col2-settings' && fj.ui.keys.log === 'Alt+K' && fj.ui.order[0] === 'go' && !/cookie|password|token|rn-cred|y24-tpl/i.test(ftxt), '⤓ 내보내기 = 설정 파일(칸 순서·단축키 · 비밀값 없음)', dl.suggestedFilename());
