@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "웹앱 1.78.460 열쇠 확인·날씨",
+ "since": "2026-11-10T05:28:46Z",
+ "beat": "2026-11-10T05:28:46Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-10T05:14:57Z"
  },
- "host": null
+ "host": "vm"
 }
