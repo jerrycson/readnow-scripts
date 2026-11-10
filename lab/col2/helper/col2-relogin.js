@@ -25,6 +25,19 @@ const JS_SUBMIT = `(()=>{const pw=document.querySelector('[data-rn3-pw]');if(!pw
 const b=bs.find((x)=>/^(submit|image)$/i.test(x.type||'')&&!/취소|찾기|가입/.test(x.innerText||x.value||''))||bs.find((x)=>/로그인|login/i.test((x.innerText||x.value||x.alt||'').trim()));
 if(b){b.click();return'click'}if(f){f.requestSubmit?f.requestSubmit():f.submit();return'submit'}pw.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',code:'Enter',keyCode:13,bubbles:true}));return'enter'})()`;
 
+/* 로그인 한 번(사람처럼) — getK()는 {ok,id,pw}|{ok:false,err}를 주는 함수(저장된 계정 풀기 또는 지금 넣은 값) · 풀린 값은 이 안에서만 쓰고 버림 → {ok, how}|{ok:false, why, human} */
+async function doLogin(ctx, getK) { let res = null;
+  await ctx.nav(ctx.loginUrl, 30); const h0 = await ctx.ev(JS_HUMAN, 10000).catch(() => '');
+      if (h0) res = { ok: false, human: true, why: `로그인 화면에 ${h0} — 사람 손이 필요` };
+      else { const f = await ctx.ev(JS_FORM, 10000); if (!f || !f.pw || !f.id) res = { ok: false, why: '로그인 칸을 못 찾음(화면이 바뀐 듯)' };
+        else { let k = await getK(); if (!k.ok) res = { ok: false, why: k.err };
+          else { try { await ctx.sleep(800, 1800); if (!(await ctx.ev(JS_FOCUS('data-rn3-id')))) throw new Error('아이디 칸을 못 누름'); await ctx.type(k.id); await ctx.sleep(900, 2000);
+              if (!(await ctx.ev(JS_FOCUS('data-rn3-pw')))) throw new Error('비밀번호 칸을 못 누름'); await ctx.type(k.pw); const n = await ctx.ev(JS_LEN('data-rn3-pw')); if (n !== k.pw.length) throw new Error('비밀번호가 다 들어가지 않음');
+            } finally { k = null; } /* 풀린 값은 여기서 버림 */
+            if (!res) { await ctx.sleep(900, 2000); const go = await ctx.ev(JS_SUBMIT); await ctx.sleep(2500, 4000); if (ctx.settle) await ctx.settle();
+              const h1 = await ctx.ev(JS_HUMAN, 10000).catch(() => ''); if (h1) res = { ok: false, human: true, why: `로그인 뒤 ${h1} 화면 — 사람 손이 필요` };
+              else res = (await ctx.check()) ? { ok: true, how: go } : { ok: false, why: '로그인 뒤에도 로그인 화면(아이디·비밀번호가 틀렸거나 막힘)' }; } } } }
+  return res; }
 function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () => Date.now(); const F = path.join(HOME, 'relogin.json');
   const C = () => ({ ...DEF, ...(((o.cfg() || {}).relogin) || {}) });
   let S = {}; try { S = JSON.parse(fs.readFileSync(F, 'utf8')) || {}; } catch (e) { S = {}; }
@@ -41,16 +54,7 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
   /* 한 번 다시 로그인 — ctx = { name, loginUrl, nav(url,sec), ev(js,ms), type(text), check()→참/거짓, sleep(ms) } → { ok, why, human } */
   async function run(pf, ctx) { const p = P(pf), c = C(); p.tries.push(now()); p.n++; save(); const nm = ctx.name; let res = null;
     note(`🔐 ${nm} 세션이 풀려 저장된 계정으로 스스로 다시 로그인함(오늘 ${p.tries.length}번째 · 비밀번호는 기록하지 않음)`);
-    try { await ctx.nav(ctx.loginUrl, 30); const h0 = await ctx.ev(JS_HUMAN, 10000).catch(() => '');
-      if (h0) res = { ok: false, human: true, why: `로그인 화면에 ${h0} — 사람 손이 필요` };
-      else { const f = await ctx.ev(JS_FORM, 10000); if (!f || !f.pw || !f.id) res = { ok: false, why: '로그인 칸을 못 찾음(화면이 바뀐 듯)' };
-        else { let k = await cred.open(pf); if (!k.ok) res = { ok: false, why: k.err };
-          else { try { await ctx.sleep(800, 1800); if (!(await ctx.ev(JS_FOCUS('data-rn3-id')))) throw new Error('아이디 칸을 못 누름'); await ctx.type(k.id); await ctx.sleep(900, 2000);
-              if (!(await ctx.ev(JS_FOCUS('data-rn3-pw')))) throw new Error('비밀번호 칸을 못 누름'); await ctx.type(k.pw); const n = await ctx.ev(JS_LEN('data-rn3-pw')); if (n !== k.pw.length) throw new Error('비밀번호가 다 들어가지 않음');
-            } finally { k = null; } /* 풀린 값은 여기서 버림 */
-            if (!res) { await ctx.sleep(900, 2000); const go = await ctx.ev(JS_SUBMIT); await ctx.sleep(2500, 4000); if (ctx.settle) await ctx.settle();
-              const h1 = await ctx.ev(JS_HUMAN, 10000).catch(() => ''); if (h1) res = { ok: false, human: true, why: `로그인 뒤 ${h1} 화면 — 사람 손이 필요` };
-              else res = (await ctx.check()) ? { ok: true, how: go } : { ok: false, why: '로그인 뒤에도 로그인 화면(아이디·비밀번호가 틀렸거나 막힘)' }; } } } } }
+    try { res = await doLogin(ctx, () => cred.open(pf)); }
     catch (e) { res = { ok: false, why: String(e && e.message || e).slice(0, 120) }; }
     p.last = { at: now(), ok: res.ok, why: res.ok ? null : res.why };
     if (res.ok) { p.fails = 0; note(`🔐 ${nm} 스스로 다시 로그인 됨 — 하던 일을 이어 감`, { l: 'ok' }); }
@@ -58,9 +62,19 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
       else if (p.fails >= c.failStop) { p.stop = { at: now(), why: `연속 ${p.fails}번 실패 — ${res.why}` }; note(`⛔ ${nm} 스스로 다시 로그인 연속 ${p.fails}번 실패 — 멈추고 알림(계정 잠김을 막으려고) · 까닭: ${res.why} · 옆 창에서 직접 로그인하거나 ⚙ › 🔐에서 계정을 고친 뒤 [다시 해 보기]`, { l: 'err' }); }
       else note(`🔐 ${nm} 스스로 다시 로그인 실패 — ${res.why} · ${c.gapMin}분 뒤 한 번 더`, { l: 'warn' }); }
     save(); return res; }
+  /* (정범님 11/10 '아이디/비번을 넣는 곳은 저장을 누르면 먼저 맞는지 확인 → 맞으면 저장 · 틀리면 다시 넣어 주세요와 까닭') 저장 전 확인 로그인 — 지금 넣은 값으로 한 번(값은 이 안에서만 · 기록 안 함)
+   *  속도: 확인은 한 시간 vPerHour번(기본 4) · 앞 확인 뒤 vGapSec초(기본 40) — 틀린 비밀번호를 거듭 넣어 계정이 잠기지 않게 · 스스로 다시 로그인 셈(tries)과 따로 · 멈춤(stop)은 맞으면 풂 */
+  async function tryWith(pf, ctx, id, pw) { const p = P(pf), c = C(), t = now(); p.vt = (p.vt || []).filter((x) => t - x < 3600e3); const vh = +c.vPerHour || 4, vg = (c.vGapSec == null ? 40 : +c.vGapSec) * 1000;
+    if (isLogger()) return { ok: false, why: '로거 PC — 계정을 쓰지 않음(약속 0)' }; if (p.vt.length >= vh) return { ok: false, wait: true, why: `확인 로그인은 한 시간 ${vh}번까지(계정 잠김 막기) — 조금 뒤 다시` };
+    const last = p.vt[p.vt.length - 1] || 0; if (t - last < vg) return { ok: false, wait: true, why: `앞 확인 바로 뒤 — ${Math.ceil((vg - (t - last)) / 1000)}초 뒤 다시` };
+    p.vt.push(t); save(); const nm = ctx.name; note(`🔐 ${nm} — 넣은 아이디·비밀번호가 맞는지 이 PC에서 실제로 로그인해 봄(저장 전 확인 · 값은 기록하지 않음)`);
+    let res; try { res = await doLogin(ctx, async () => ({ ok: true, id: String(id == null ? '' : id), pw: String(pw == null ? '' : pw) })); } catch (e) { res = { ok: false, why: String(e && e.message || e).slice(0, 120) }; } finally { id = pw = null; }
+    res = res || { ok: false, why: '모름' }; if (!res.ok && ctx.lastMsg) { const m = String(ctx.lastMsg() || '').slice(0, 120); if (m) res.why += ` · ${nm} 알림: '${m}'`; }
+    p.lastV = { at: now(), ok: !!res.ok, why: res.ok ? null : res.why, human: !!res.human }; if (res.ok) { p.stop = null; p.fails = 0; } save();
+    note(res.ok ? `🔐 ${nm} 계정 확인 — 로그인 됨(맞음)` : `🔐 ${nm} 계정 확인 — 맞지 않아 저장하지 않음 · ${res.why}`, { l: res.ok ? 'ok' : 'warn' }); return res; }
   const reset = (pf) => { const p = P(pf); p.stop = null; p.fails = 0; save(); note(`🔐 ${(cred.PF[pf] || {}).name || pf} 스스로 다시 로그인 — 멈춤을 풀고 다시 해 봄`); return { ok: true }; };
   const setAuto = (pf, on) => { P(pf).auto = !!on; save(); return { ok: true }; };
   const sum = () => { const out = {}; const cs = cred.sum(); for (const k of Object.keys(cred.PF)) { const p = P(k); out[k] = { ...cs[k], auto: autoOn(k), stop: p.stop, last: p.last, today: p.tries.filter((x) => now() - x < 86400e3).length, n: p.n }; } return out; };
-  return { why, run, reset, setAuto, sum, C };
+  return { why, run, tryWith, reset, setAuto, sum, C };
 }
-module.exports = { makeRelogin, DEF, JS_HUMAN, JS_FORM, JS_SUBMIT };
+module.exports = { makeRelogin, doLogin, DEF, JS_HUMAN, JS_FORM, JS_SUBMIT };
