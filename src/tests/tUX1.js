@@ -82,6 +82,34 @@ require('./harness.js')(G(async (p) => {
   await p.evaluate(() => { const c = document.querySelector('[data-ux2cfg="setgrp"]'); c.checked = false; c.dispatchEvent(new Event('change', { bubbles: true })); }); await p.waitForTimeout(600); await p.evaluate(() => renderMainNow()); await p.waitForTimeout(300);
   const so = await p.evaluate(() => { const m = document.querySelector('#main'); const t = [...m.children].map((c) => ux2SgTitle(c)); return { h: m.querySelectorAll('.ux2-sgh').length, i18: t.findIndex((x) => /^⑱/.test(x)), i17: t.findIndex((x) => /^⑰/.test(x)) }; });
   ok(so.h === 0 && so.i18 >= 0 && so.i18 < so.i17, '⑧ 끄면 예전 차례 그대로(되돌리기)', so); await p.evaluate(() => localStorage.removeItem('rn-ux2'));
+  // ── (오후) ⑨ 등록 화면 배치
+  await p.evaluate(() => { S.tab = 'home'; renderTabs(); renderMainNow(); openRegister(); }); await p.waitForTimeout(1500);
+  const rg = await p.evaluate(() => { const y = (s) => { const e = document.querySelector('#sheet > ' + s); return e ? Math.round(e.getBoundingClientRect().top) : null; }; const h = (s) => { const e = document.querySelector('#sheet > ' + s); return e ? Math.round(e.getBoundingClientRect().height) : null; }; return { sh: y('.sh'), q: y('.rgsearch'), set: y('.rgsetrow'), ws: y('.rgws'), live: y('.rglive'), setH: h('.rgsetrow'), inp: !!document.getElementById('rg_in') }; });
+  ok(rg.inp && rg.q < rg.set && rg.q < rg.ws && rg.q < rg.live && rg.q - rg.sh < 90, '⑨ 등록: 넣고 조회 칸이 머리줄 바로 아래 맨 위', rg);
+  ok(rg.setH <= 60 && rg.set < rg.ws, '⑨ 등록: 조건 세 칸은 닫혀 있으면 한 줄 요약', rg);
+  await p.evaluate(() => { const d = document.querySelector('#sheet .rgsetrow > details.regcfg'); d.open = true; }); await p.waitForTimeout(150); ok(await p.evaluate(() => document.querySelector('#sheet > .rgsetrow').getBoundingClientRect().height > 200), '⑨ 요약을 누르면 그 칸이 펼쳐짐'); await p.evaluate(() => { document.querySelector('#sheet .rgsetrow > details.regcfg').open = false; });
+  await p.evaluate(() => { ux2Put('regtop', 0); ux2Apply(); }); await p.waitForTimeout(150);
+  const rg0 = await p.evaluate(() => { const y = (s) => Math.round(document.querySelector('#sheet > ' + s).getBoundingClientRect().top); return { q: y('.rgsearch'), ws: y('.rgws'), set: y('.rgsetrow') }; });
+  ok(rg0.ws < rg0.set && rg0.set < rg0.q, '⑨ 끄면 예전 배치(작업대 → 조건 → 넣고 조회)', rg0); await p.evaluate(() => { localStorage.removeItem('rn-ux2'); ux2Apply(); }); await shut(p);
+  // ── ⑭ 판매자 → 시장조사 안
+  await p.evaluate(() => { S.tab = 'market'; renderTabs(); renderMainNow(); }); await p.waitForTimeout(700);
+  const mk = await p.evaluate(() => ({ sel: getComputedStyle(document.querySelector('#tabs [data-tab="sellers"]')).display, sub: !!document.querySelector('#main > .ux2-mksub [data-ux2mk="sellers"]') }));
+  ok(mk.sel === 'none' && mk.sub, '⑭ 탭 줄에 판매자 없음 · 시장조사 맨 위 🏪 경쟁 판매자 칩', mk);
+  await p.click('#main .ux2-mksub [data-ux2mk="sellers"]'); await p.waitForTimeout(900);
+  ok(await p.evaluate(() => S.tab === 'sellers' && document.querySelector('#tabs [data-tab="market"]').classList.contains('on') && !!document.querySelector('#main > .ux2-mksub [data-ux2mk="sellers"].on')), '⑭ 칩 → 판매자 화면 · 탭 줄은 시장조사가 켜짐');
+  ok(await p.evaluate(() => /시장조사/.test(FEAT_TABS.sellers) && featIndex().filter((f) => /(^|· )판매자 탭/.test(f.w || '')).length === 0), '⑭ 기능 찾기 길 안내가 시장조사 › 경쟁 판매자로');
+  await p.evaluate(() => { ux2Put('selmk', 0); renderTabs(); }); ok(await p.evaluate(() => getComputedStyle(document.querySelector('#tabs [data-tab="sellers"]')).display !== 'none'), '⑭ 끄면 판매자 탭 다시'); await p.evaluate(() => { localStorage.removeItem('rn-ux2'); S.tab = 'home'; renderTabs(); renderMainNow(); });
+  // ── ⑪ 두 번 누르기
+  await p.evaluate(() => { window.__tw = { n: 0, no: 0 }; const mk = (id, msg, opt) => { const b = document.createElement('button'); b.id = id; b.className = 'btn'; b.textContent = '시험 단추 ' + id; b.style.cssText = 'position:fixed;top:200px;left:' + (id === 'twA' ? 40 : 300) + 'px;z-index:99999'; b.onclick = async () => { if (await ask(msg, opt)) window.__tw.n++; else window.__tw.no++; }; document.body.appendChild(b); }; mk('twA', '이 3권을 알라딘에서 판매중지할까요?\n- 책 하나\n- 책 둘\n- 책 셋', { ok: '⛔ 3권 판매중지' }); mk('twB', '송장 2건을 다시 넣을까요?', {}); });
+  await p.click('#twA'); await p.waitForTimeout(150);
+  const a1 = await p.evaluate(() => ({ lab: document.getElementById('twA').textContent, box: !!document.querySelector('.askbox'), tip: (document.querySelector('.ux2-armtip') || {}).textContent || '', n: window.__tw.n }));
+  ok(/⚠ ⛔ 3권 판매중지 — 한 번 더/.test(a1.lab) && !a1.box && /책 셋/.test(a1.tip) && a1.n === 0, '⑪ 첫 누름 = 단추가 「⚠ 무엇 — 한 번 더」 · 창 없음 · 대상 미리 보기', a1);
+  await p.click('#twA'); await p.waitForTimeout(150); ok(await p.evaluate(() => window.__tw.n === 0 && document.getElementById('twA').classList.contains('ux2-armed')), '⑪ 0.4초 안 겹누름은 무시(무장 그대로)');
+  await p.waitForTimeout(400); await p.click('#twA'); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => window.__tw.n === 1 && /시험 단추/.test(document.getElementById('twA').textContent) && !document.querySelector('.ux2-armtip')), '⑪ 4초 안에 한 번 더 = 실행 · 단추 글 돌아옴');
+  await p.click('#twA'); await p.waitForTimeout(4400); ok(await p.evaluate(() => window.__tw.n === 1 && window.__tw.no >= 1 && /시험 단추/.test(document.getElementById('twA').textContent)), '⑪ 4초 지나면 풀림(실행 안 함)');
+  await p.click('#twB'); await p.waitForTimeout(200); ok(await p.evaluate(() => !!document.querySelector('.askbox')), '⑪ 송장·출고 확인은 예전처럼 창'); await p.click('.askbox .ask-no'); await p.waitForTimeout(250);
+  await p.evaluate(() => ux2Put('twice', 0)); await p.click('#twA'); await p.waitForTimeout(200); ok(await p.evaluate(() => !!document.querySelector('.askbox')), '⑪ 끄면 예전 확인 창'); await p.click('.askbox .ask-no'); await p.evaluate(() => { localStorage.removeItem('rn-ux2'); ['twA', 'twB'].forEach((id) => document.getElementById(id).remove()); });
 }), { vp: { width: 1400, height: 900 } }).then(() => require('./harness.js')(G(async (p) => {
   // 휴대폰: ④ 머리 칸 높이 · ② 빠른 작업은 검색창 아래 한 줄 · ① 알림 자리는 아래 탭 줄 위
   await p.evaluate(require('./seed.js')); await p.waitForTimeout(600); await p.evaluate(() => { S.tab = 'home'; renderTabs(); renderMainNow(); ux2Apply(); }); await p.waitForTimeout(300);
@@ -91,4 +119,10 @@ require('./harness.js')(G(async (p) => {
   await p.evaluate(() => { const x = document.createElement('div'); x.id = 'dlp'; x.innerHTML = '<div style="background:#fff;padding:8px">⬇ 시험</div>'; document.body.appendChild(x); }); await p.waitForTimeout(300);
   const d = await p.evaluate(() => ({ b: document.getElementById('dlp').getBoundingClientRect().bottom, t: document.getElementById('tabs').getBoundingClientRect().top }));
   ok(d.b <= d.t, '📱 내려받기 띠가 아래 탭 줄(홈·고객 단추)을 덮지 않음', d);
+  const tb = await p.evaluate(() => [...document.querySelectorAll('#tabs > button')].filter((b) => getComputedStyle(b).display !== 'none').map((b) => b.dataset.tab || 'more'));
+  ok(tb.join() === 'home,products,orders,purchase,more', '⑫ 휴대폰 아래 탭 = 홈·상품·주문·매입·⋯', tb);
+  await p.click('[data-ux2tmore]'); await p.waitForTimeout(200); const mm = await p.evaluate(() => [...document.querySelectorAll('#ux2tmenu [data-ux2tgo]')].map((b) => b.dataset.ux2tgo));
+  ok(mm.join() === 'search,biz,market,projects', '⑫ ⋯ 안 = 고객·경영·시장조사·프로젝트(판매자는 시장조사 안)', mm);
+  await p.click('#ux2tmenu [data-ux2tgo="search"]'); await p.waitForTimeout(600); ok(await p.evaluate(() => S.tab === 'search' && !document.getElementById('ux2tmenu') && document.querySelector('[data-ux2tmore]').classList.contains('on') && /고객/.test(document.querySelector('[data-ux2tmore]').textContent)), '⑫ ⋯에서 고르면 그 탭 · ⋯ 자리에 지금 탭 이름');
+  await p.evaluate(() => { ux2Put('tabs5', 0); renderTabs(); }); ok(await p.evaluate(() => [...document.querySelectorAll('#tabs > button')].filter((b) => getComputedStyle(b).display !== 'none').length === 8), '⑫ 끄면 탭 모두(판매자는 ⑭로 시장조사 안)'); await p.evaluate(() => localStorage.removeItem('rn-ux2'));
 }), { vp: { width: 390, height: 844 }, touch: true })).then(() => { console.log(bad ? `❌ tUX1 실패 ${bad}` : '✓ tUX1 통과'); process.exit(bad ? 1 : 0); });

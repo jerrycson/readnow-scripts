@@ -137,7 +137,7 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); a
   ok(pk.peek, '「🏷 매입 페이지」 = 등록 화면 위에 알라딘 매입 페이지 잠깐 보기', pk);
   // 띠 안 🛒 장바구니 — 두 번 눌러 담기
   const cmds = () => p.evaluate(() => Object.values(window.__FS.shp_cmds || {}).filter((v) => v.type === 'c2bAdd').length);
-  await p.evaluate(() => { S.regT = 'sel'; regRerender(); }); await p.waitForTimeout(1500); const n0 = await cmds(); await p.click('.rgrow[data-rgexp="g07"] .rgbbn [data-rgcartnow]'); await p.waitForTimeout(200); const n1 = await cmds(); const arm = await p.evaluate(() => (document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn [data-rgcartnow]') || {}).textContent);
+  await p.evaluate(() => { S.regT = 'sel'; regRerender(); }); await p.waitForTimeout(1500); const n0 = await cmds(); await p.click('.rgrow[data-rgexp="g07"] .rgbbn [data-rgcartnow]'); await p.waitForTimeout(450); /* (11/10 ux2 ⑪) 0.4초 안 두 번째 누름은 무시 */ const n1 = await cmds(); const arm = await p.evaluate(() => (document.querySelector('.rgrow[data-rgexp="g07"] .rgbbn [data-rgcartnow]') || {}).textContent);
   await p.click('.rgrow[data-rgexp="g07"] .rgbbn [data-rgcartnow]'); await p.waitForTimeout(1500); const n2 = await cmds(); const st7 = await p.evaluate(() => (S.regItems.get('g07') || {}).stage);
   ok(n1 === n0 && /한 번 더/.test(arm || '') && n2 === n0 + 1 && st7 === 'bb', '띠 🛒 장바구니: 한 번은 아무 일 없음 · 두 번이면 알라딘 매입으로 보내고 담기 맡김', { n0, n1, n2, arm, st7 });
   // 🔎 자세히 — 카드 안 '🏷 알라딘 매입' 칸 하나에 모두 · 다른 곳에 남은 알라딘 매입 단추·매입가 줄 없음

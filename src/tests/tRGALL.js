@@ -68,7 +68,7 @@ H(async (p) => { await seed(p, 'compact');
   // ⑦ 선택 대기 전체에서 🛒 알라딘 매입으로 보내기(두 번) → 🛒 보기·전체에서 바로 빠짐 · 되돌리기
   await tab(p, 'sel'); const bb0 = await p.evaluate(() => !!document.querySelector('.rgrow[data-rgexp="s2"] .rgxdec.bbr [data-rgbbr][data-v="send"]'));
   ok(bb0, '전체의 🛒 카드 안에 「🏷 알라딘 매입으로 보내기」 · 「등록으로 진행」', bb0);
-  await p.click('.rgrow[data-rgexp="s2"] [data-rgbbr][data-v="send"]'); await wait(p, 200); await p.click('.rgrow[data-rgexp="s2"] [data-rgbbr][data-v="send"]'); await wait(p, 1800);
+  await p.click('.rgrow[data-rgexp="s2"] [data-rgbbr][data-v="send"]'); await wait(p, 450); /* (11/10 ux2 ⑪) */ await p.click('.rgrow[data-rgexp="s2"] [data-rgbbr][data-v="send"]'); await wait(p, 1800);
   B = await bar(p); R = await rows(p); const sb = await p.evaluate(() => ({ stage: S.regItems.get('s2').stage, moved: !!((((window.__FS.prd_system || {}).buyback || {}).moved || {}).REG_s2), bbT: (document.querySelector('.btabs [data-rgt="bb"]') || {}).textContent || '' }));
   ok(sb.stage === 'bb' && sb.moved && B.all.n === 3 && B.bbr.n === 0 && R.join() === 's1:#1,gone:s2:#2,s3:#3,s4:#4' && /알라딘 매입으로 보냄 1/.test(sb.bbT.replace(/\s+/g, ' ')), '🛒 보내기 → 단계 bb · 🏷 알라딘 매입 페이지로 · 전체 3 · 🛒 0 · 자리 줄 #2 · 「🏷 알라딘 매입으로 보냄 1」 탭으로 옮겨짐', { sb, B, R });
   await p.click('#sheet [data-rgundo="s2"]'); await wait(p, 1800); B = await bar(p);
