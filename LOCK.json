@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "판 검사 고침",
+ "since": "2026-11-10T00:14:12Z",
+ "beat": "2026-11-10T00:14:12Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "웹앱 1.78.451 판 냄",
   "at": "2026-11-10T00:12:34Z"
  },
- "host": null
+ "host": "vm"
 }
