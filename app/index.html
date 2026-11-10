@@ -747,6 +747,8 @@ button.armed{background:#C0392B!important;color:#fff!important;border-color:#C03
 .rgsub button.rgsub-all{font-weight:800;border-right:2px solid #2F5D50}.rgsub-bbr{border:2px dotted #B7791F!important;color:#8A5A12!important;border-radius:6px}.rgsub-bbr.on{background:#B7791F!important;color:#fff!important}
 .rgsubh{display:flex;flex-wrap:wrap;gap:3px 12px;align-items:center;font-size:11.5px;color:#5E6E69;margin:3px 0 4px}.rgsubh label{display:inline-flex;gap:3px;align-items:center;cursor:pointer}.rgsubh input[type=number]{width:50px;font-size:11.5px;padding:1px 3px}.rgsubh kbd{font-size:10.5px}
 .rgkcs{display:inline-flex;gap:3px;flex-wrap:wrap;vertical-align:middle;margin-right:4px}.rgkc{display:inline-flex;align-items:center;gap:2px;font-size:10.5px;font-weight:700;line-height:1.25;padding:0 6px;border-radius:9px;border:1px solid currentColor;background:#fff;white-space:nowrap}.rgkc i{font-style:normal;font-size:8.5px}
+/* (11/10) 📤 예스24 이전 화면 카드 · 등록 카드 🟦 예스24도 단추 */ .bt-cards{display:flex;flex-direction:column;gap:8px;margin:8px 0}.y24rc{border-radius:10px;border:1px solid var(--line,#ddd);background:var(--card,#fff);overflow:hidden}.y24rc.ok{border-left:4px solid #1F6F4A}.y24rc.no{border-left:4px solid #bbb}.y24rc.led{border-left:4px solid #3F7FD1}.y24rc>.card{margin:0;border:0;box-shadow:none}.y24rbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 10px;background:rgba(63,127,209,.07);font-size:12.5px}.y24rbar-r{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.y24rtabs{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.y24rtabs>button,.y24vw>button{border:1px solid var(--line,#ccc);background:transparent;border-radius:14px;padding:3px 10px;font-size:12.5px;cursor:pointer}.y24rtabs>button.on,.y24vw>button.on{background:#3F7FD1;color:#fff;border-color:#3F7FD1}.y24rtabs-sep{color:#aaa;margin:0 2px}.y24vw{margin-left:auto;display:inline-flex;gap:2px}.rgy24w{font-size:10.5px;font-weight:700;border:1px dashed #3F7FD1;color:#3F7FD1;background:transparent;border-radius:9px;padding:0 6px;margin-right:4px;cursor:pointer;opacity:.55;vertical-align:middle}.rgy24w.on{opacity:1;border-style:solid;background:#3F7FD1;color:#fff}@media (max-width:700px){.y24rbar-r{margin-left:0}.y24vw{margin-left:0}}
+.ledchs{display:flex;flex-wrap:wrap;gap:3px;max-width:420px}.ledch{display:inline-block;font-size:11.5px;border:1px solid var(--line,#ddd);border-radius:8px;padding:1px 6px;white-space:nowrap;color:#777}.ledch.on{color:inherit;border-color:#1F6F4A;background:rgba(31,111,74,.07)}.ledch.off{opacity:.45;border-style:dashed}.ledch.act{border-color:#B0322A;background:#FFF1EF;color:#B0322A}.ledch i{font-style:normal;font-weight:700}.ledcards{display:flex;gap:6px;flex-wrap:wrap}.ledcard{margin:0;padding:6px 10px;flex:1 1 150px;max-width:240px}.ledcard.off{opacity:.6;border-style:dashed}.ledcfg{margin-top:6px;font-size:12.5px}.ledcfg-r{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:3px 0}
 .rgkc.k-bulk{color:#2E7D5B}.rgkc.k-one{color:#1F5FAF}.rgkc.k-new{color:#7A3FB0}.rgkc.k-dup{color:#0F6E66;border-style:dashed;border-radius:3px}.rgkc.k-bbr{color:#8A5A12;border-style:dotted;border-width:1.5px;border-radius:3px}
 .rgrow .rgr-mt .rgkcs{margin:0}.rgxdec{display:flex;flex-wrap:wrap;gap:3px 8px;align-items:center;margin:4px 0;padding:3px 8px;border-radius:8px;font-size:12px;line-height:1.3}.rgxdec .btn.sm{padding:2px 8px}.rgxdec.dup{background:#EEF8F6;border:1.5px dashed #2A9D8F}.rgxdec.bbr{background:#FFF7EA;border:1.5px dotted #B7791F}.rgxdec-t small{color:#6B7A75}
 .rgrow>.rgxdec,.rgrow>.rgxres{grid-column:1/-1;flex-basis:100%}.rgxres{margin:2px 0;padding:2px 8px;border-radius:6px;background:#EAF6EE;color:#1E6B3C;font-size:12px;font-weight:600}
@@ -1263,13 +1265,13 @@ body.mkt-off .mktx{display:none!important}body.mkt-off .mktbar{justify-content:f
 <script src="../readnow-pricing-core.js?v=0.17.13"></script>
 <script src="../readnow-shipping-core.js?v=0.7.14"></script>
 <script src="../readnow-products-core.js?v=0.19.7"></script>
-<script src="../readnow-ext-core.js?v=0.6.14"></script>
+<script src="../readnow-ext-core.js?v=0.6.15"></script>
 <script src="../readnow-autosched-core.js?v=0.18.22"></script>
-<script src="../readnow-registry.js?v=0.14.164"></script>
+<script src="../readnow-registry.js?v=0.14.165"></script>
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.9.11"></script>
 <script src="../readnow-register-core.js?v=0.7.5"></script>
-<script>const APP_VER = '1.78.455';</script>
-<script src="readnow-webapp.js?v=1.78.455"></script>
+<script>const APP_VER = '1.78.456';</script>
+<script src="readnow-webapp.js?v=1.78.456"></script>
 </body>
 </html>

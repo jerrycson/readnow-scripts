@@ -1,7 +1,7 @@
 {
  "ver": "1.89.254",
  "hsig": "8559039d5a96110b",
- "at": "2026-11-10T04:18:56.488Z",
+ "at": "2026-11-10T04:30:21.057Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -41,15 +41,15 @@
   },
   {
    "f": "readnow-registry.js",
-   "v": "0.14.164",
-   "sha": "0963b78f402bf9f8f820101a6ab8894ecd9ef5e8d5a941e073cbd62215bae719",
-   "n": 78353
+   "v": "0.14.165",
+   "sha": "faa1238cd0e4c100b4e5f574b548a95d869a9b09934cf199b2ae0e0d254a1fef",
+   "n": 78395
   },
   {
    "f": "readnow-ext-core.js",
-   "v": "0.6.14",
-   "sha": "07c50953eccc16d702a95738c3293121f0228d99c6bac71c0f04eab9188dcc58",
-   "n": 199612
+   "v": "0.6.15",
+   "sha": "7cffeece03c8e70f4191f27163104a4b1bb4a14d90f87ab9e74a46b0f3cd215a",
+   "n": 223427
   },
   {
    "f": "readnow-register-core.js",
