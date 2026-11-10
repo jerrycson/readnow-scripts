@@ -66,7 +66,7 @@ const day = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
     ok(!/대표A|업체A|010-0000-0000|어느 길|가게A/.test(J) && out.seller_fp_state.lastRun.mat.mktDocs === 1 && out.y24_mkt_state.seedAfter === '9780000000002', '법정 고지 원문·전화·주소·판매자 이름은 진단에 없음 · 설정 상태는 가린 채', { hit, st: out.seller_fp_state, y: out.y24_mkt_state });
     ok(/\|seller_fp_runs\|eng_fence_ledger\|y24_mkt\)\\\/\[A-Za-z0-9_\\-\.\]\+\$\/\.test\(p0\)/.test(SRC) && !/okPath = [^\n]*y24_sellers/.test(SRC), 'okPath에 seller_fp_runs·eng_fence_ledger·y24_mkt(문서 그대로 읽기 · y24_sellers는 원문 안 냄 — 세기만)');
     ok(/diagScrub\(d\.data\(\)\)/.test(SRC) && /if \(q\.sfp\) \{ try \{ out\.sfp = await diagSfp\(q\)/.test(SRC), '세 칸 문서 읽기는 가림(diagScrub) · 진단 줄 sfp=1');
-    const sc = new Function('C', SRC.slice(SRC.indexOf('const DIAG_PII_K'), SRC.indexOf('async function diagSfp')) + '\nreturn diagScrub;')(null); const s1 = sc({ page1: [{ id: '1', sid: 'shopA', sn: '가게A', cmt: '글' }], note: '전화 010-1234-5678 · 01098765432 · a@b.co', isbn: '9780100000002', legal: { rep: '대표A' } });
+    const sc = new Function('C', SRC.slice(SRC.indexOf('const DIAG_PII_K'), SRC.indexOf('async function diagSfp')) + '\nreturn diagScrub;')(null); const s1 = sc({ page1: [{ id: '1', sid: 'shopA', sn: '가게A', cmt: '글' }], note: '전화 010-1234-5678 · 01000000000 · a@b.co', isbn: '9780100000002', legal: { rep: '대표A' } });
     ok(!s1.legal && !s1.page1[0].sn && !s1.page1[0].cmt && s1.page1[0].sid === 'shopA' && !/1234|9876|a@b/.test(s1.note) && s1.isbn === '9780100000002', 'diagScrub: 법정 고지·이름·공지 칸 지움 · 글 속 전화·메일 가림 · ISBN은 그대로', s1); }
 
   console.log('④ 수집기 — 새 판 받침을 거래보다 먼저 · 지킴이');
