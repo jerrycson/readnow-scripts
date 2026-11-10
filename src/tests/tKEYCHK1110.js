@@ -16,7 +16,7 @@ let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, 
       const put = async (v) => { const i = document.getElementById('wx_key'); i.value = v; document.getElementById('wx_save').click(); await W(500); return (document.getElementById('wx_msg') || {}).textContent || ''; };
       o.dbg = { adm: isAdminDevice(), len: box && box.innerHTML.length, vis: box && box.getClientRects().length }; o.m1 = await put('WRONGKEY123456'); o.dbg.toast = document.getElementById('toast').textContent; o.left1 = document.getElementById('wx_key').value; wxMode = 'net'; o.m2 = await put('SOMEKEY1234567'); wxMode = 'ok'; o.m3 = await put('GOODKEY_ab12'); await W(800); o.after = document.getElementById('wx_box').textContent;
       o.wxCalls = calls.filter((c) => c.path === '/wx-key').length;
-      o.feat = featIndex().some((x) => /기상청 날씨/.test(x.t) && x.go && /set_wx/.test(x.go.sel || ''));
+      o.feat = featIndex().some((x) => /기상청 날씨/.test(x.t) && x.go && (x.go.sec === 'set_wx' || /set_wx/.test(x.go.sel || '')));
       /* ⑱ 외부 정보 키 */ const e2 = document.querySelector('details[data-sec="set_ext"]'); e2.open = true; e2.dispatchEvent(new Event('toggle')); await W(1200); adm(); S.ext.keys = { keys: {} }; S.ext.keysErr = null; extRedraw(); await W(300);
       const setK = (k, v) => { const i = document.querySelector(`[data-extkey="${k}"]`); if (i) i.value = v; return !!i; }; const save = async () => { document.getElementById('ext_keysave').click(); await W(700); return (document.getElementById('ext_kchk') || {}).textContent || ''; };
       const sec = async () => { const s = await db.collection('app_secrets').doc('ext').get(); return s.exists ? (s.data() || {}).keys || {} : {}; };
