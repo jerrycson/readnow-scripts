@@ -185,13 +185,17 @@ try{return await ${fn}(document,window,${JSON.stringify({ id: j.id, ono: j.ono, 
     catch (e) { return { ok: false, err: e.message }; } finally { Y.busy = false; } }
   async function loginPoll() { if (Y.login !== 'wait') return; if (now() - Y.loginWait > 15 * 60e3) { Y.login = 'need'; await hide('로그인 기다림 15분 넘음').catch(() => {}); return; } let s = null; try { s = await ev(JS_STATE, 5000); } catch (e) { return; }
     if (s && !isLoginSt(s) && s.rs === 'complete') { setLogin('ok'); await hide('로그인 됨').catch(() => {}); Y.ord.next = now() + 3000; } }
+  /* (11/10 정범님 '예스24가 자주 로그아웃돼 — 스스로 다시 로그인') 🔐 저장된 계정(col2-cred · DPAPI)으로 한 번 — 언제·얼마나는 col2-relogin.js(출고 중·로거·속도 제한·보안 문자면 안 함) */
+  async function autoRe() { const R = o.relogin; if (!R) return ''; if (!feedOk()) return '이 PC 수집기(다리)가 안 보임'; const w = R.why('y24', { hold: holdOn() }); if (w) return w;
+    const r = await R.run('y24', { name: '예스24 판매관리', loginUrl: BASE + '/', nav, ev, sleep: sleepR, type: (t) => Y.br.cdp.send('Input.insertText', { text: t }, Y.br.sid), settle: () => sleep(TEST ? 300 : 1500), check: async () => { await nav(BASE + '/', 30); return !isLoginSt(await ev(JS_STATE)); } });
+    if (r.ok) { setLogin('ok'); Y.keepAt = now(); Y.ord.next = now() + 3000; return 'ok'; } return r.why; }
   /* ── 한 바퀴 ── */
   async function step() { const c = C();
     if (!enabled()) { if (Y.br) await close(isLogger() ? '로거 PC' : '꺼짐'); Y.msg = isLogger() ? '로거 PC — 예스24 판매관리 읽기 안 함(약속 0 · 계정·쿠키 금지)' : !cfg().on ? '번외 수집 꺼짐' : '예스24 판매관리 읽기 꺼 둠'; return 30e3; }
     if (Y.login === 'wait') { await loginPoll(); if (Y.login === 'wait') { Y.msg = '🔐 예스24 로그인 창이 열려 있음 — 로그인하면 저절로 숨김'; return 3000; } }
     try { await ensure(Y.br ? '예스24 크롬이 꺼져 있음' : '켜짐'); } catch (e) { Y.msg = '예스24 크롬 준비 실패: ' + e.message; return 60e3; }
     if (!Y.landed) { Y.landed = true; try { await nav(BASE + '/', 30); const s = await ev(JS_STATE); if (isLoginSt(s)) setLogin('need', '판매관리 첫 화면이 로그인 화면'); else { setLogin('ok'); Y.keepAt = now(); } } catch (e) { Y.msg = '예스24 첫 화면 실패: ' + e.message; Y.landed = false; return 60e3; } }
-    if (Y.login === 'need') { Y.msg = '🔐 예스24 로그인 필요 — 옆 창의 [🔐 예스24 로그인] 단추를 한 번(그 뒤엔 세션 유지)'; return 15e3; }
+    if (Y.login === 'need') { const ar = await autoRe(); if (ar === 'ok') return 300; Y.msg = '🔐 예스24 로그인 필요 — 옆 창의 [🔐 예스24 로그인] 단추를 한 번(그 뒤엔 세션 유지)' + (ar ? ' · 스스로 다시 로그인: ' + ar : ''); return 15e3; }
     if (holdOn()) { Y.msg = '🚚 출고 중(이 PC 출고 보호) — 예스24 읽기 멈춤 · 끝나면 이어감'; return 15e3; }
     if (!feedOk()) { Y.msg = '이 PC 리드나우 수집기(알라딘 탭)가 안 보여 쉼 — 받은 것을 올릴 곳이 없음(수집기가 다시 보이면 이어감)'; return 15e3; }
     if (Y.feed.cfg && Y.feed.cfg.off) { Y.msg = '웹앱 설정에서 예스24 모으기를 꺼 둠'; return 60e3; }

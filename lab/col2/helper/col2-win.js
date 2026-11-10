@@ -45,6 +45,8 @@ Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction SilentlyC
 if ($Act -eq 'kill') { $k = 0; foreach ($q in $pids) { try { Stop-Process -Id $q -Force -ErrorAction Stop; $k++ } catch {} }; foreach ($q in $pids) { try { Wait-Process -Id $q -Timeout 5 -ErrorAction SilentlyContinue } catch {} }
   $left = @(Get-CimInstance Win32_Process -Filter "Name='chrome.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like ('*' + $Mark + '*') }).Count; $out.killed = $k; $out.left = $left; $out.n = 0; $out.list = @(); $out | ConvertTo-Json -Compress -Depth 5; exit 0 }
 $L = @(); if ($pids.Count) { $L = @([RnCol2Win]::Find($pids)) }
+<# (11/10) 보이는 창을 먼저 — 크롬의 보이지 않는 창(제목만 있는 숨은 창)을 먼저 집어 닫기·앞으로를 엉뚱한 창에 하지 않게 #>
+if ($L.Count -gt 1) { $L = @(@($L | Where-Object { [RnCol2Win]::IsWindowVisible($_) }) + @($L | Where-Object { -not [RnCol2Win]::IsWindowVisible($_) })) }
 $out.n = $L.Count; $out.list = @($L | Select-Object -First 4 | ForEach-Object { Info $_ })
 if ($L.Count -gt 0) { $hnd = $L[0]
   if ($Act -eq 'hide') { if ([RnCol2Win]::IsIconic($hnd) -or [RnCol2Win]::IsZoomed($hnd)) { [void][RnCol2Win]::ShowWindow($hnd, 4) }
@@ -63,7 +65,11 @@ $out | ConvertTo-Json -Compress -Depth 5
 
 function makeWin(o) { const psFile = o.psFile; const D = o.D; const psExe = () => process.env.RN_COL2_PS || 'powershell.exe';
   /* act: find|hide|show|close|kill(0.1.2 · 이 프로필 이름이 명령 줄에 든 크롬 프로세스만 끝냄 — 바로 꺼짐의 원인인 옛 번외 크롬 치우기 · 0.1.3 끝날 때까지 5초 기다리고 남은 수 left) · mark: 프로필 폴더 이름(col2-work-chrome · col2-stat-chrome · col2-win-chrome) */
-  function run(act, mark, a) { a = a || {}; return new Promise((res) => {
+  /* (11/10 정범님 '더뎌진 느낌') PowerShell은 한 번에 2개까지만(지킴이·예스24·기록창이 겹쳐 CPU가 튀지 않게) — 나머지는 차례를 기다림 */
+  let busy = 0; const q = []; const MAX = 2;
+  const pump = () => { while (busy < MAX && q.length) { const [f, res] = q.shift(); busy++; f().then((r) => { busy--; res(r); pump(); }); } };
+  function run(act, mark, a) { return new Promise((res) => { q.push([() => run1(act, mark, a), res]); pump(); }); }
+  function run1(act, mark, a) { a = a || {}; return new Promise((res) => {
     try { const want = '﻿' + PS_SRC(D).replace(/\r?\n/g, '\r\n'); let cur = null; try { cur = fs.readFileSync(psFile, 'utf8'); } catch (e) {} if (cur !== want) fs.writeFileSync(psFile, want, 'utf8'); } catch (e) { return res({ ok: false, err: '창 다루기 파일을 못 씀: ' + e.message }); }
     const args = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', psFile, '-Act', act, '-Mark', mark];
     for (const k of ['X', 'Y', 'W', 'H']) { const v = a[k.toLowerCase()]; if (v != null && Number.isFinite(+v)) args.push('-' + k, String(Math.round(+v))); }

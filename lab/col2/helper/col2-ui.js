@@ -174,7 +174,16 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
       $('helpBody').querySelectorAll('[data-hj]').forEach((a) => (a.onclick = (e) => { e.preventDefault(); const t = $('helpBody').querySelector('#' + a.dataset.hj); if (t) { t.open = true; t.scrollIntoView({ block: 'start' }); } })); }
     /* ── ⚙ 설정 ── */
     function drawToggles() { if (!S || !$('tgbox')) return; const y = S.y24 || {}; const cb = (id, v, k) => { const e = $(id); if (!e) return; e.checked = !!v; e.onchange = async () => { await post('/cfg', { [k]: e.checked, src: 'pc' }); load(); }; };
-      $('tgy').style.display = kind === 'logger' ? 'none' : ''; cb('tg_y24', S.y24Want, 'y24'); cb('tg_y24j', S.y24Jobs, 'y24Jobs'); cb('tg_side', S.side, 'side'); cb('tg_al', S.alWant, 'al'); }
+      $('tgy').style.display = kind === 'logger' ? 'none' : ''; cb('tg_y24', S.y24Want, 'y24'); cb('tg_y24j', S.y24Jobs, 'y24Jobs'); cb('tg_side', S.side, 'side'); cb('tg_al', S.alWant, 'al'); cb('tg_alown', S.alOwn, 'alOwn'); drawCred(); }
+    /* (11/10 정범님 '수집기에 아이디·비밀번호 — 필요할 때 스스로 다시 로그인') 🔐 계정 칸 — 로거 PC는 칸 자체를 숨김(약속 0) · 넣은 값은 [잠가 저장] 뒤 곧바로 칸에서 지움 · 상태 글엔 값 없음 */
+    function drawCred() { const box = $('crbox'); if (!box) return; box.style.display = kind === 'logger' ? 'none' : ''; if (kind === 'logger') return; const R = S.relogin || {};
+      for (const pf of ['y24', 'al']) { const r = R[pf] || {}; const st = $('crs_' + pf); if (!st) continue; const d = (t) => (t ? new Date(t + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ') : '');
+        st.textContent = (r.has ? `✓ 저장됨(${d(r.at)})` : '저장 안 됨') + (r.stop ? ` · ⛔ 멈춤 — ${r.stop.why}` : r.last ? ` · 마지막 다시 로그인 ${d(r.last.at)} ${r.last.ok ? '됨' : '실패 — ' + (r.last.why || '')}` : '') + (r.today ? ` · 오늘 ${r.today}번` : '');
+        $('crr_' + pf).style.display = r.stop ? '' : 'none'; const a = $('cra_' + pf); a.checked = r.auto !== false; a.disabled = !r.has;
+        if (!box.dataset.bound) { a.onchange = async () => { await post('/cred/auto', { pf, on: a.checked }); load(); };
+          $('crr_' + pf).onclick = async () => { await post('/cred/reset', { pf }); load(); };
+          $('crb_' + pf).onclick = async () => { const i = $('cri_' + pf), p = $('crp_' + pf); const j = await post('/cred/save', { pf, id: i.value, pw: p.value }); p.value = ''; if (j && j.ok) i.value = ''; msg(j && j.ok ? '✓ 이 PC에 잠가 저장함' : '✗ ' + ((j && j.err) || '저장 못 함'), $('setm')); load(); }; } }
+      box.dataset.bound = '1'; }
     function drawKeysHint() { const b = (id, a, base) => { const e = $(id); if (e) e.title = base + ' (' + keyLabel(a) + ')'; }; b('helpBtn', 'help', '❓ 이 수집기 설명서'); b('setBtn', 'set', '⚙ 설정 — 칸·단축키·창·바로 가기·내보내기'); b('miniBtn', 'mini', '▁ 작은 단추로 줄이기'); }
     function drawSet() { const ids = UI.order.filter((id) => !absent(id) && cardOf(id));
       $('setCards').innerHTML = ids.map((id, i) => { const c = cardDef(id), v = UI.cards[id]; return `<div class="row" data-cid="${id}"><label class="rt"><input type="checkbox" data-c="show" ${v.hide ? '' : 'checked'}> ${c.icon} ${E(c.t)}</label><label class="k"><input type="checkbox" data-c="open" ${v.open ? 'checked' : ''}> 펼침</label><button data-c="up" ${i ? '' : 'disabled'} title="위로">▲</button><button data-c="down" ${i < ids.length - 1 ? '' : 'disabled'} title="아래로">▼</button></div>`; }).join('');

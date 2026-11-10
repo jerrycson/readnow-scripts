@@ -39,7 +39,7 @@ const JR = require('../helper/col2-journal.js'); const LW = require('../helper/c
 
   console.log('③ 옆 창 기록창 — 진짜 크로미움');
   const A = await L.fakeAladin(() => null);
-  const H = await L.startHelper({ aladin: A.base, cfg: { pc: 'MJ-TEST', watch: { tickSec: 60 } } });
+  const H = await L.startHelper({ aladin: A.base, cfg: { pc: 'MJ-TEST', watch: { tickSec: 60, lwRetryMs: 1500 } } });
   const br = await L.chromium().launch(); const errs = [], dialogs = [];
   try {
     const lines = [{ x: '번외 수집 켬', l: 'ok' }, { x: '자세한 줄', l: 'detail' }];
@@ -95,11 +95,11 @@ const JR = require('../helper/col2-journal.js'); const LW = require('../helper/c
       const n0 = spawns(); await p.click('#jwBtn'); await wait(1000); let s = await st();
       const la = H.T.clog().filter((l) => /--app=\S*\/log/.test(l)).pop() || '';
       ok(spawns() === n0 + 1 && /col2-log-chrome/.test(la) && /--window-size=\d+,\d+/.test(la) && !(await vis()) && s.lwin && s.lwin.open && (await btnOn()), '🗒 한 번 = 따로 작은 앱 창(따로 된 프로필 · 기억한 크기) · 옆 창 안 칸은 안 열림 · 단추 색 켜짐', la.slice(0, 140));
-      { H.T.setWin((S) => { S['col2-log-chrome'] = { r: { x: 300, y: 200, w: 1280, h: 900 }, tool: false, front: 0, ...(S['col2-log-chrome'] || {}), ic: true }; }); const a0 = acts().length; await p.click('#jwBtn'); await wait(900); const A1 = acts().slice(a0); s = await st();
+      { H.T.setWin((S) => { S['col2-log-chrome'] = { r: { x: 300, y: 200, w: 1280, h: 900 }, tool: false, front: 0, ...(S['col2-log-chrome'] || {}), ic: true }; }); await wait(450); /* (11/10) 창이 알리는 보임·자리(진짜는 바뀌는 즉시 · 가짜는 0.3초마다) */ const a0 = acts().length; await p.click('#jwBtn'); await wait(900); const A1 = acts().slice(a0); s = await st();
         ok(A1.includes('show:col2-log-chrome') && !A1.includes('close:col2-log-chrome') && spawns() === n0 + 1 && s.lwin.open, '이미 떠 있는데 작게 내렸으면 🗒 = 앞으로(새로 띄우지 않음)', A1.join(',')); }
-      H.T.setWin((S) => { if (S['col2-log-chrome']) { S['col2-log-chrome'].ic = false; S['col2-log-chrome'].r = { x: -4000, y: 50, w: 400, h: 580 }; } }); { const a0 = acts().length; await p.click('#jwBtn'); await wait(900); const A1 = acts().slice(a0);
+      H.T.setWin((S) => { if (S['col2-log-chrome']) { S['col2-log-chrome'].ic = false; S['col2-log-chrome'].r = { x: -4000, y: 50, w: 400, h: 580 }; } }); await wait(450); { const a0 = acts().length; await p.click('#jwBtn'); await wait(900); const A1 = acts().slice(a0);
         ok(A1.includes('show:col2-log-chrome') && !A1.includes('close:col2-log-chrome'), '화면 밖에 있으면 🗒 = 화면 안으로 앞으로(약속 15)', A1.join(',')); }
-      H.T.setWin((S) => { if (S['col2-log-chrome']) S['col2-log-chrome'].r = { x: 900, y: 120, w: 410, h: 600 }; }); { const a0 = acts().length; await p.click('#jwBtn'); await wait(1000); const A1 = acts().slice(a0); s = await st();
+      H.T.setWin((S) => { if (S['col2-log-chrome']) S['col2-log-chrome'].r = { x: 900, y: 120, w: 410, h: 600 }; }); await wait(450); { const a0 = acts().length; await p.click('#jwBtn'); await wait(1000); const A1 = acts().slice(a0); s = await st();
         ok(A1.includes('close:col2-log-chrome') && !s.lwin.open && !(await btnOn()) && s.lwin.rect && s.lwin.rect.x === 900 && s.lwin.rect.w === 410, '보이는데 다시 누르면 닫힘 · 닫기 전 자리·크기 기억(900,120 · 410×600)', JSON.stringify(s.lwin)); }
       await p.keyboard.press('Alt+L'); await wait(1000); const la2 = H.T.clog().filter((l) => /--app=\S*\/log/.test(l)).pop() || ''; s = await st();
       ok(spawns() === n0 + 2 && /--window-size=410,600/.test(la2) && /--window-position=900,120/.test(la2) && s.lwin.open, 'Alt+L = 따로 창을 기억한 자리·크기로 다시 엶', la2.slice(-80));
@@ -108,6 +108,31 @@ const JR = require('../helper/col2-journal.js'); const LW = require('../helper/c
       await p.click('#setBtn'); await wait(300); await p.check('#lpop0'); await wait(400); await p.click('#setBtn'); await wait(200); const n2 = spawns(); await p.click('#jwBtn'); await wait(700);
       ok(await vis() && spawns() === n2 && (await H.api('GET', '/ui')).j.ui.logPop === false, '⚙에서 "이 옆 창 안"을 고르면 예전처럼 옆 창 안 칸'); await p.click('#rnjX');
       ok(!dialogs.length && !errs.length, '③-2 팝업·화면 오류 없음', (dialogs.concat(errs)).slice(0, 3).join(' | ')); }
+    console.log('③-3 (11/10 아침 정범님 "기록 단추가 작동하지 않아") 기록창이 확실히 뜸 · 못 뜨면 2초 안에 옆 창 안으로 · 굳지 않음 · 한 줄 알림');
+    { const st = async () => (await H.api('GET', '/status')).j; const spawns = () => H.T.clog().filter((l) => /--app=\S*\/log/.test(l)).length; const acts = () => H.T.win().acts || [];
+      const msgT = () => p.evaluate(() => { const m = document.getElementById('rnjMsg'); return m ? m.textContent : ''; });
+      await H.api('POST', '/win/log', { act: 'close', why: '시험' }); await wait(400); await p.click('#setBtn'); await wait(300); await p.check('#lpop1'); await wait(400); await p.click('#setBtn'); await wait(200);
+      /* ① PowerShell이 아주 느려도(4초) 누름의 답은 곧바로 · 크롬은 PowerShell을 기다리지 않고 바로 뜸 */
+      fs.writeFileSync(path.join(H.D, 'ps-slow'), '4000'); const n0 = spawns(), a0 = acts().length; const t0 = Date.now(); const r1 = await H.api('POST', '/win/log', { act: 'toggle', why: '시험' }); const ms = Date.now() - t0;
+      ok(r1.j && r1.j.ok && r1.j.spawned && ms < 500, '창 찾기 PowerShell이 4초 걸려도 🗒 답은 곧바로(PowerShell을 기다리지 않음)', ms + 'ms');
+      await wait(700); ok(spawns() === n0 + 1 && acts().length === a0 && (await st()).lwin.open, '크롬을 바로 띄우고 창이 떴다는 소식으로 확인(PowerShell 0번)', `띄움 ${spawns() - n0} · PowerShell ${acts().length - a0}`);
+      fs.unlinkSync(path.join(H.D, 'ps-slow')); await H.api('POST', '/win/log', { act: 'close', why: '시험' }); await wait(600);
+      /* ② 단추로 띄우면 한 줄 알림 '떴음' */
+      await p.click('#jwBtn'); await wait(900); ok(/떴음/.test(await msgT()) && !(await vis()), '🗒 누른 뒤 한 줄 — "따로 기록창이 떴음 (n초)" · 옆 창 안 칸은 안 열림', await msgT());
+      await p.click('#jwBtn'); await wait(700); ok(/닫음/.test(await msgT()) && !(await st()).lwin.open, '다시 누르면 한 줄 — "닫음"', await msgT()); await wait(400);
+      /* ③ 크롬이 곧바로 끝나면(띄우기 실패) 2초 안에 옆 창 안 칸으로 저절로 · 까닭 한 줄 */
+      fs.writeFileSync(path.join(H.D, 'app-die'), '21'); const tc = Date.now(); await p.click('#jwBtn'); let fellMs = null; for (let k = 0; k < 30; k++) { await wait(100); if (await vis()) { fellMs = Date.now() - tc; break; } }
+      ok(fellMs != null && fellMs <= 2600, '따로 창을 못 띄우면 2초 안에 옆 창 안 기록 칸으로 저절로', fellMs + 'ms'); ok(/옆 창 안에 엶/.test(await msgT()) && /끝 코드 21|소식/.test(await msgT()), '까닭을 한 줄로(크롬 끝 코드)', await msgT());
+      ok(await p.evaluate(async () => { const t = Date.now(); await new Promise((r) => setTimeout(r, 50)); return Date.now() - t < 400; }), '기다리는 동안 화면이 굳지 않음');
+      fs.unlinkSync(path.join(H.D, 'app-die')); await p.click('#jwBtn'); await wait(300); ok(!(await vis()), '그 칸은 🗒으로 다시 닫힘'); await wait(2500);
+      /* ④ 같은 프로필을 쥔 굳은 크롬(새 크롬이 넘기고 소식 없음) → 정한 시간 뒤 굳은 크롬을 끝내고 한 번 더 띄움 · 늦게 뜨면 옆 창 안 칸을 닫음 */
+      fs.writeFileSync(path.join(H.D, 'app-silent'), '1'); const n1 = spawns(), k0 = acts().filter((x) => x === 'kill:col2-log-chrome').length; await p.click('#jwBtn'); await wait(2400);
+      ok(await vis(), '소식이 없으면 2초 뒤 옆 창 안 칸'); await wait(900);
+      ok(acts().filter((x) => x === 'kill:col2-log-chrome').length === k0 + 1 && spawns() === n1 + 2, '굳은 크롬을 끝내고(그 프로필만) 한 번 더 띄움', `띄움 ${spawns() - n1} · 끝냄 ${acts().filter((x) => x === 'kill:col2-log-chrome').length - k0}`);
+      fs.unlinkSync(path.join(H.D, 'app-silent')); await wait(1500); ok(!(await vis()) && /늦게 떴음/.test(await msgT()) && (await st()).lwin.open, '따로 창이 늦게 뜨면 옆 창 안 칸은 저절로 닫고 한 줄', await msgT());
+      const jl = (await H.api('GET', '/log/lines?after=0')).j.lines.map((e) => e.x).join('\n'); ok(/따로 기록창이 떴음/.test(jl) && /굳은 크롬을 끝내고/.test(jl), '기록창에도 남음(띄움·떴음·다시 띄움)');
+      await H.api('POST', '/win/log', { act: 'close', why: '시험 끝' }); await wait(400);
+      ok(!dialogs.length && !errs.length, '③-3 팝업·화면 오류 없음', (dialogs.concat(errs)).slice(0, 3).join(' | ')); }
     console.log('④ 로거 PC 화면');
     await H.api('POST', '/cfg', { pc: 'LOGGER-1', pcSrc: 'pc' }); await H.api('POST', '/test/note', { x: '🟦 예스24 로그인 필요', k: 'y24' }); await H.api('POST', '/test/note', { x: '판매관리 주문 송장 확인' });
     const lj = (await H.api('GET', '/log/lines?after=0')).j; ok(lj.kind === 'logger' && !lj.lines.some((e) => /예스24|판매관리|주문|송장/.test(e.x)), '로거: 기록에 우리 숍·예스24 흔적 없음');
