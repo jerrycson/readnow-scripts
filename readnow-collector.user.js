@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.257
+// @version      1.89.258
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -14,34 +14,35 @@
 // @match        http://localhost:8899/*
 // @match        http://rn.local/*
 // @match        https://jerrycson.github.io/*
+// @match        https://readnow.kr/*
 // @include      /^https?:\/\/[^\/]+\/.*[?&]rnx=[a-z0-9]{6,}/
 // @noframes
-// @updateURL    https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
-// @downloadURL  https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-collector.user.js
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-orders-core.js?v=0.3.0
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-sellers-core.js?v=1.3.5
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-products-core.js?v=0.19.7
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-core.js?v=1.4.3
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pricing-core.js?v=0.17.13
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-shipping-core.js?v=0.7.14
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-registry.js?v=0.14.166
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ext-core.js?v=0.6.16
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-register-core.js?v=0.7.5
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-ml-core.js?v=0.9.11
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-autosched-core.js?v=0.18.22
+// @updateURL    https://readnow.kr/readnow-collector.user.js
+// @downloadURL  https://readnow.kr/readnow-collector.user.js
+// @require      https://readnow.kr/readnow-orders-core.js?v=0.3.0
+// @require      https://readnow.kr/readnow-sellers-core.js?v=1.3.5
+// @require      https://readnow.kr/readnow-products-core.js?v=0.19.7
+// @require      https://readnow.kr/readnow-core.js?v=1.4.3
+// @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.13
+// @require      https://readnow.kr/readnow-shipping-core.js?v=0.7.14
+// @require      https://readnow.kr/readnow-registry.js?v=0.14.166
+// @require      https://readnow.kr/readnow-ext-core.js?v=0.6.16
+// @require      https://readnow.kr/readnow-register-core.js?v=0.7.5
+// @require      https://readnow.kr/readnow-ml-core.js?v=0.9.11
+// @require      https://readnow.kr/readnow-autosched-core.js?v=0.18.22
 // @require      https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js
 // @require      https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-aladin-core.js?v=0.2.1
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-exec-core.js?v=0.1.1
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pc-boot.js?v=1.89.257
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pc-runtime.js?v=1.89.257
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pc-crm.js?v=1.89.257
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pc-products.js?v=1.89.257
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pc-ship.js?v=1.89.257
-// @require      https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/readnow-pc-helper.js?v=1.89.257
+// @require      https://readnow.kr/readnow-aladin-core.js?v=0.2.1
+// @require      https://readnow.kr/readnow-exec-core.js?v=0.1.1
+// @require      https://readnow.kr/readnow-pc-boot.js?v=1.89.258
+// @require      https://readnow.kr/readnow-pc-runtime.js?v=1.89.258
+// @require      https://readnow.kr/readnow-pc-crm.js?v=1.89.258
+// @require      https://readnow.kr/readnow-pc-products.js?v=1.89.258
+// @require      https://readnow.kr/readnow-pc-ship.js?v=1.89.258
+// @require      https://readnow.kr/readnow-pc-helper.js?v=1.89.258
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_deleteValue
@@ -68,6 +69,7 @@
 // @connect      127.0.0.1
 // @connect      localhost
 // @connect      rn.local
+// @connect      readnow.kr
 // @connect      githubusercontent.com
 // @connect      github.io
 // @connect      github.com
@@ -109,14 +111,14 @@
 // @connect      *
 // @run-at       document-idle
 // ==/UserScript==
-/* 리드나우 수집기 1.89.257 본체 — 개편 3단계: 코드는 GitHub의 모듈 파일 5개(위 @require), 여기는 모두 왔는지만 확인.
+/* 리드나우 수집기 1.89.258 본체 — 개편 3단계: 코드는 GitHub의 모듈 파일 5개(위 @require), 여기는 모두 왔는지만 확인.
  * 올리는 순서: ① GitHub에 readnow-aladin-core.js · readnow-pc-*.js 5개 → ② 이 본체를 Tampermonkey에 붙여넣기 (먼저 붙이면 Tampermonkey가 파일을 못 받아 알림)
  * 모듈 판이 본체와 다르면(Tampermonkey가 옛 파일을 기억 · GitHub에 안 올림) 오른쪽 위에 빨간 띠 + 작업 기록에 남김 */
 (function rnLive() { /* (1.72.0) 이 본체(로더)는 '고르기·시작·새 판 확인'만 — 화면마다 할 일(로거 잠금·저장소 비우기·그림자 칸·바깥 사이트 리더·첫 화면 표시)은 readnow-pc-boot.js(시작 코드)로 옮겨 빠른 업데이트로 바뀜 · 이 로더 글이 바뀌면 머리 서명도 바뀜(Tampermonkey 업데이트 필요를 정직하게 알림)
    * (1.63.8) ⚡ 빠른 업데이트 — Tampermonkey의 자동 업데이트(최소 몇 시간마다)를 기다리지 않고, 이 본체가 5분마다 GitHub의 pc-live.json(판 번호·파일 목록·지문)을 보고
    *  새 판이면 파일들을 받아 지문(sha256)이 모두 맞을 때만 이 PC(Tampermonkey 저장소)에 받아 둠 → 수집기가 쉬는 사이(또는 긴 작업이면 저장 지점에서) 새로고침 → 받아 둔 새 판으로 뜸
    *  받아 둔 판이 이 본체의 판보다 새것이면 그것을, 아니면(또는 시작에 실패하면) 위 @require의 이 판을 씀 — 실패한 판은 다시 쓰지 않음 · 머리(화면·권한)가 바뀐 판은 Tampermonkey 업데이트를 기다림 */
-  const G = globalThis; const CLASSIC = '1.89.257'; const HSIG = '8559039d5a96110b'; const RAWL = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/'; const Q0 = (G.__rnModQ || []).slice();
+  const G = globalThis; const CLASSIC = '1.89.258'; const HSIG = '8ab2f661d1d8afa8'; const RAWL = 'https://readnow.kr/'; const RAWL2 = 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/refs/heads/main/'; const Q0 = (G.__rnModQ || []).slice();
   const vn = (v) => String(v || '0').split('.').reduce((a, x) => a * 1000 + (+x || 0), 0); const gv = (k, d) => { try { return GM_getValue(k, d); } catch (e) { return d; } }; const sv = (k, v) => { try { GM_setValue(k, v); } catch (e) {} };
   const L = gv('rn-live', null); const bad = gv('rn-live-bad', null); const prevFV = G.__RN_FILE_VER; let used = 'classic'; const B0 = G.__rnBoot; const PM0 = Object.assign({}, G.ReadnowPcMods || {}); /* (1.72.0) 받아 둔 판을 버리면 모듈 판 표시도 이 판으로 되돌림 */
   { const PG = gv('rn-pages', null); const onAl0 = /(^|\.)aladin\.co\.kr$/i.test(location.hostname); if (PG && Array.isArray(PG.re) && onAl0 && !gv('rn-pubChrome', false)) { let ok = false; try { ok = PG.re.some((x) => new RegExp(x, 'i').test(location.href)); } catch (e) { ok = true; } if (!ok) return; } } /* (1.72.0) 지난번 시작 코드가 알려 준 '깨어날 화면'이 아니면 무거운 코드를 읽지도 않고 끝(알라딘 다른 화면이 느려지지 않게) · 로거 크롬은 잠금 때문에 늘 시작 코드까지 */ /* (1.72.0) 이 판(@require)의 시작 코드 */
@@ -135,10 +137,10 @@
   if (window.top !== window) return;
   const sha = async (t) => { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join(''); };
   let busy = false; const chk = async (force) => { if (busy || gv('rn-live-noeval', null) || gv('rn-live-off', false)) return; /* 이 브라우저가 받아 둔 코드를 돌리지 못하게 막음 — Tampermonkey 자동 업데이트만 씀 · (1.63.11 자동 점검) 빠른 업데이트를 꺼 둔 PC도 받지 않음(받아 두면 새로고침해도 이 판으로 떠 끝없이 새로고침) */ if (!force && Date.now() - (+gv('rn-live-at', 0) || 0) < 4 * 60e3) { const H = gv('rn-live', null); const bd0 = gv('rn-live-bad', null); if (H && H.ver && vn(H.ver) > vn(G.__rnLiveVer) && H.hsig === HSIG && !(bd0 && bd0.ver === H.ver)) { /* (1.63.11 자동 점검) 시작에 실패한 판은 지름길로도 다시 부르지 않음 */ try { window.__rnLiveReady && window.__rnLiveReady(H.ver); } catch (e) {} } return; } busy = true; sv('rn-live-at', Date.now());
-    try { const r = await fetch(RAWL + 'pc-live.json?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) throw new Error('pc-live.json HTTP ' + r.status); const M = await r.json(); sv('rn-live-seen', { ver: M.ver, at: Date.now() });
+    try { let M = null, B = RAWL, e0 = null; for (const b of [RAWL, RAWL2]) { try { const r = await fetch(b + 'pc-live.json?t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) throw new Error('pc-live.json HTTP ' + r.status); const m = await r.json(); if (m && m.ver && (!M || vn(m.ver) > vn(M.ver))) { M = m; B = b; } } catch (x) { e0 = e0 || x; } } if (!M) throw e0 || new Error('pc-live.json 없음'); /* (11/10 big1-head) 새 주소·옛 주소 중 판 높은 것(같으면 새 주소) — 저장소가 비공개가 되면 옛 주소는 저절로 빠짐 */ sv('rn-live-seen', { ver: M.ver, at: Date.now() });
       if (!M || !M.ver || !Array.isArray(M.files) || vn(M.ver) <= vn(G.__rnLiveVer)) return; const bd = gv('rn-live-bad', null); if (bd && bd.ver === M.ver) return;
       if (M.hsig !== HSIG) { G.__rnLiveHsigWait = M.ver; sv('rn-live-hwait', { ver: M.ver, hsig: M.hsig, mine: HSIG, at: Date.now() }); if (G.__rnPubChrome && gv('rn-live-hopen', '') !== M.ver) { sv('rn-live-hopen', M.ver); try { GM_openInTab(RAWL + 'readnow-collector.user.js?v=' + M.ver, { active: true, insert: true }); } catch (e) {} } /* (1.70.5) 로거 크롬: 머리가 바뀐 새 판이면 Tampermonkey 설치 화면을 바로 열어 줌('업데이트'만 누르면 됨) */ if (gv('rn-live-hnote', '') !== M.ver) { sv('rn-live-hnote', M.ver); try { window.__rnLog && window.__rnLog('수집기', 'warn', '⚡ 새 판 ' + M.ver + '은 머리(화면·권한)가 바뀐 판이라 빠른 업데이트로 못 바꿈 — Tampermonkey 업데이트(대시보드 → 업데이트 확인)를 기다림'); } catch (e) {} } return; }
-      const H = gv('rn-live', null); if (!(H && H.ver === M.ver && H.hsig === HSIG)) { let code = ''; for (const f of M.files) { const t = await (await fetch(RAWL + f.f + '?v=' + f.v + '&h=' + String(f.sha).slice(0, 10), { cache: 'no-store' })).text(); const h = await sha(t); if (h !== f.sha) throw new Error(f.f + ' 지문이 다름(GitHub 캐시가 아직 옛 파일 — 다음 확인 때 다시)'); code += '\n;' + t + '\n'; }
+      const H = gv('rn-live', null); if (!(H && H.ver === M.ver && H.hsig === HSIG)) { let code = ''; for (const f of M.files) { let t = await (await fetch(B + f.f + '?v=' + f.v + '&h=' + String(f.sha).slice(0, 10), { cache: 'no-store' })).text(); let h = await sha(t); if (h !== f.sha && B !== RAWL2) { try { t = await (await fetch(RAWL2 + f.f + '?v=' + f.v + '&h=' + String(f.sha).slice(0, 10), { cache: 'no-store' })).text(); h = await sha(t); } catch (x) {} } if (h !== f.sha) throw new Error(f.f + ' 지문이 다름(GitHub 캐시가 아직 옛 파일 — 다음 확인 때 다시)'); code += '\n;' + t + '\n'; }
         sv('rn-live', { ver: M.ver, hsig: HSIG, code, at: Date.now(), n: M.files.length }); try { window.__rnLog && window.__rnLog('수집기', 'info', '⚡ 새 판 ' + M.ver + '을 GitHub에서 받아 둠(파일 ' + M.files.length + '개 · 지문 확인) — 쉬는 사이 새로고침해 바꿈'); } catch (e) {} }
       try { window.__rnLiveReady && window.__rnLiveReady(M.ver); } catch (e) {} }
     catch (e) { const m = String(e && e.message || e); if (gv('rn-live-err', '') !== m) { sv('rn-live-err', m); try { window.__rnLog && window.__rnLog('수집기', 'warn', '⚡ 빠른 업데이트 확인 실패: ' + m); } catch (x) {} } } finally { busy = false; } };
@@ -146,7 +148,7 @@
   setTimeout(() => chk(false), 20000); setInterval(() => chk(false), (G.__rnPubChrome ? 2 : 5) * 60e3); /* (1.70.5) 로거는 2분마다 */ })();
 (function rnModCheck() {
   if (window.top !== window) return;
-  const want = [["boot","readnow-pc-boot.js"],["runtime","readnow-pc-runtime.js"],["crm","readnow-pc-crm.js"],["products","readnow-pc-products.js"],["ship","readnow-pc-ship.js"],["helper","readnow-pc-helper.js"]]; const V = globalThis.__rnLiveVer || '1.89.257'; const got = (typeof globalThis !== 'undefined' && globalThis.ReadnowPcMods) || window.ReadnowPcMods || {};
+  const want = [["boot","readnow-pc-boot.js"],["runtime","readnow-pc-runtime.js"],["crm","readnow-pc-crm.js"],["products","readnow-pc-products.js"],["ship","readnow-pc-ship.js"],["helper","readnow-pc-helper.js"]]; const V = globalThis.__rnLiveVer || '1.89.258'; const got = (typeof globalThis !== 'undefined' && globalThis.ReadnowPcMods) || window.ReadnowPcMods || {};
   const bad = want.filter(([k]) => got[k] !== V).map(([k, f]) => `${f} ${got[k] ? got[k] + ' (본체 ' + V + ')' : '못 받음'}`);
   window.__rnModsOk = !bad.length; window.__rnMods = { ...got, aladin: (globalThis.ReadnowAladin || {}).VERSION || null, exec: (globalThis.ReadnowExec || {}).VERSION || null };
   if (!bad.length) return;

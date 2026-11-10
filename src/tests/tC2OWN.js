@@ -69,7 +69,7 @@ const run = async () => { const br = await chromium.launch(); const errs = [];
   ok(/paused: !!window\.__rnPaused \|\| \(\(\) => \{ try \{ const o = GM_getValue\('rn-c2own', null\)/.test(src), "④ 죽은 탭 되살리기 — 이어받는 동안 '일시정지'로 알려 새 샵매니저 탭을 열지 않음");
   ok(!/\balert\(|\bconfirm\(|\bprompt\(/.test(BR), '다리에 브라우저 팝업 없음');
   { const split = path.join(__dirname, '../split.js'); const out = fs.mkdtempSync(path.join(os.tmpdir(), 'c2own-')); cp.execFileSync('node', [split, SRCF, out], { stdio: 'pipe' });
-    const h = (fs.readFileSync(path.join(out, 'readnow-collector.user.js'), 'utf8').match(/const HSIG = '([0-9a-f]+)'/) || [])[1]; ok(h === '8559039d5a96110b', `머리 서명 그대로: ${h}`); fs.rmSync(out, { recursive: true, force: true }); }
+    const h = (fs.readFileSync(path.join(out, 'readnow-collector.user.js'), 'utf8').match(/const HSIG = '([0-9a-f]+)'/) || [])[1]; { const WANT = /const RAW = 'https:\/\/readnow\.kr\/'/.test(fs.readFileSync(path.join(__dirname, '../split.js'), 'utf8')) ? '8ab2f661d1d8afa8' : '8559039d5a96110b'; /* (11/10 head2) 머리 바꾼 판 가지에선 새 머리 */ ok(h === WANT, `머리 서명 그대로: ${h}`); } fs.rmSync(out, { recursive: true, force: true }); }
   ok(!errs.length, '화면 오류 없음', errs); await br.close();
   console.log(bad ? `❌ tC2OWN ${bad}개 실패` : '✅ tC2OWN 모두 통과'); process.exit(bad ? 1 : 0); };
 run().catch((e) => { console.log('❌ tC2OWN 오류', e); process.exit(1); });

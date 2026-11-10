@@ -115,9 +115,9 @@ const NEW = '8ab2f661d1d8afa8', OLD = '8559039d5a96110b';
 
   console.log('⑦ 수집기 머리 그대로');
   { const T = fs.mkdtempSync(path.join(os.tmpdir(), 'thb_')); cp.execFileSync(process.execPath, [path.join(ROOT, 'src/split.js'), path.join(ROOT, 'src/readnow-collector.src.js'), T + '/b'], { stdio: 'ignore' });
-    const head = fs.readFileSync(T + '/b/pc-live-head.txt', 'utf8').split('\n')[0].trim(); ok(head === OLD, '나누기 결과 머리 서명 = ' + OLD + ' (이번 판은 머리 안 바뀜) · 지금 ' + head);
+    const head = fs.readFileSync(T + '/b/pc-live-head.txt', 'utf8').split('\n')[0].trim(); const HB = /const RAW = 'https:\/\/readnow\.kr\/'/.test(rd('src/split.js')); /* (11/10 head2) 머리 바꾼 판 가지 — 새 머리 · origin/main과 비교는 tBIG1H가 맡음 */ ok(head === (HB ? NEW : OLD), '나누기 결과 머리 서명 = ' + (HB ? NEW + ' (머리 바꾼 판)' : OLD + ' (이번 판은 머리 안 바뀜)') + ' · 지금 ' + head);
     let base0 = null; try { base0 = cp.execSync('git -C "' + ROOT + '" show origin/main:src/readnow-collector.src.js', { encoding: 'utf8', maxBuffer: 64 << 20, stdio: ['ignore', 'pipe', 'ignore'] }); } catch (e) {}
-    if (base0) { fs.writeFileSync(T + '/o.js', base0); cp.execFileSync(process.execPath, [path.join(ROOT, 'src/split.js'), T + '/o.js', T + '/a'], { stdio: 'ignore' }); for (const f of ['readnow-collector.user.js', 'readnow-pc-boot.js']) ok(fs.readFileSync(T + '/a/' + f, 'utf8') === fs.readFileSync(T + '/b/' + f, 'utf8'), f + ' 글자 하나 안 바뀜(origin/main과)'); } }
+    if (base0 && !HB) { fs.writeFileSync(T + '/o.js', base0); cp.execFileSync(process.execPath, [path.join(ROOT, 'src/split.js'), T + '/o.js', T + '/a'], { stdio: 'ignore' }); for (const f of ['readnow-collector.user.js', 'readnow-pc-boot.js']) ok(fs.readFileSync(T + '/a/' + f, 'utf8') === fs.readFileSync(T + '/b/' + f, 'utf8'), f + ' 글자 하나 안 바뀜(origin/main과)'); } }
 
   console.log('⑧ 클라우드 진단 heads');
   { const S = rd('cloud/index.js'); const h = cut(S, '      if (q.heads) {', "      if (q.doc) {");

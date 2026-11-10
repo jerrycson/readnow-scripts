@@ -155,7 +155,7 @@ const run = async () => { const br = await chromium.launch(); const errs = [];
     ok(/✍ 쓰기 그림자\(보내지 않음 · 견줌만\): 오늘 7건 · 같음 <b>85\.7%<\/b> \(6\/7\)/.test(h) && /다름 <b[^>]*>1<\/b>/.test(h) && /번외라면 안 보냄 1/.test(h) && /넘길 수 있음\(허락 뒤\): 상품 값 바꾸기/.test(h), '🧭 PC 줄 🟧에 쓰기 그림자 같음 비율 · 다름 · 넘길 수 있음', h);
     ok(!JSON.stringify(sm).includes('손님A'), '웹앱이 남기는 요약(col2_ctl)엔 정해진 칸만'); ok(!/쓰기 그림자/.test(f.c2alHtml(f.c2alSum({ ...A, w: null }))), '번외가 쓰기 그림자를 안 알리면 줄 없음'); }
   { const split = path.join(__dirname, '../split.js'); const out = fs.mkdtempSync(path.join(os.tmpdir(), 'c2w-')); cp.execFileSync('node', [split, SRCF, out], { stdio: 'pipe' });
-    const h = (fs.readFileSync(path.join(out, 'readnow-collector.user.js'), 'utf8').match(/const HSIG = '([0-9a-f]+)'/) || [])[1]; ok(h === '8559039d5a96110b', `머리 서명 그대로: ${h}`); fs.rmSync(out, { recursive: true, force: true }); }
+    const h = (fs.readFileSync(path.join(out, 'readnow-collector.user.js'), 'utf8').match(/const HSIG = '([0-9a-f]+)'/) || [])[1]; { const WANT = /const RAW = 'https:\/\/readnow\.kr\/'/.test(fs.readFileSync(path.join(__dirname, '../split.js'), 'utf8')) ? '8ab2f661d1d8afa8' : '8559039d5a96110b'; /* (11/10 head2) 머리 바꾼 판 가지에선 새 머리 */ ok(h === WANT, `머리 서명 그대로: ${h}`); } fs.rmSync(out, { recursive: true, force: true }); }
   ok(!errs.length, '화면 오류 없음', errs); await br.close();
   console.log(bad ? `❌ tC2W ${bad}개 실패` : '✅ tC2W 모두 통과'); process.exit(bad ? 1 : 0); };
 run().catch((e) => { console.log('❌ tC2W 오류', e); process.exit(1); });

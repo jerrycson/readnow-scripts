@@ -7,7 +7,7 @@
 //   ④ opLostAt = 운영 세션이 진짜 풀린 시각(rnu-login-lost) — 로그인 모듈이 '로그인됨 → 풀림'에서만 적음
 //   ⑤ 로거 크롬·LOGGER PC에서는 안 돎(약속 0) · 번외가 없으면 자리를 내려놓음
 //   ⑦ ⏳ 운영이 긴 일을 하는 동안 POST /busy {sec, why}(번외 0.1.9가 그림자 일을 쉼) · 끝나면 {sec: 0} 한 번
-//   ⑥ 머리 서명 그대로(split.js 결과 HSIG = 8559039d5a96110b)
+//   ⑥ 머리 서명 그대로(split.js 결과 HSIG = 8559039d5a96110b · 머리 바꾼 판 가지에선 8ab2f661d1d8afa8)
 //  사용: node tC2ALB.js (src/tests 또는 w/pw)
 const fs = require('fs'); const path = require('path'); const os = require('os'); const cp = require('child_process');
 let chromium; try { ({ chromium } = require('playwright')); } catch (e) { try { ({ chromium } = require('/opt/node22/lib/node_modules/playwright')); } catch (e2) { try { ({ chromium } = require('/opt/node-tools/node_modules/playwright')); } catch (e3) { ({ chromium } = require('/home/claude/.npm-global/lib/node_modules/playwright')); } } }
@@ -100,7 +100,7 @@ const run = async () => { const br = await chromium.launch(); const errs = [];
   // ── 팝업 없음 · ⑥ 머리 서명 그대로
   ok(!/\balert\(|\bconfirm\(|\bprompt\(/.test(BR), '다리에 브라우저 팝업 없음');
   { const split = [path.join(__dirname, '../split.js')].find((p) => fs.existsSync(p)); if (split && /readnow-collector\.src\.js$/.test(SRCF)) { const out = fs.mkdtempSync(path.join(os.tmpdir(), 'c2alb-')); cp.execFileSync('node', [split, SRCF, out], { stdio: 'pipe' });
-      const h = (fs.readFileSync(path.join(out, 'readnow-collector.user.js'), 'utf8').match(/const HSIG = '([0-9a-f]+)'/) || [])[1]; ok(h === '8559039d5a96110b', `머리 서명 그대로: ${h}`); fs.rmSync(out, { recursive: true, force: true }); }
+      const h = (fs.readFileSync(path.join(out, 'readnow-collector.user.js'), 'utf8').match(/const HSIG = '([0-9a-f]+)'/) || [])[1]; { const WANT = /const RAW = 'https:\/\/readnow\.kr\/'/.test(fs.readFileSync(path.join(__dirname, '../split.js'), 'utf8')) ? '8ab2f661d1d8afa8' : '8559039d5a96110b'; /* (11/10 head2) 머리 바꾼 판 가지에선 새 머리 */ ok(h === WANT, `머리 서명 그대로: ${h}`); } fs.rmSync(out, { recursive: true, force: true }); }
     else console.log('  · 머리 서명 비교는 저장소(src)에서만'); }
   ok(!errs.length, '화면 오류 없음', errs); await br.close();
   console.log(bad ? `❌ tC2ALB ${bad}개 실패` : '✅ tC2ALB 모두 통과'); process.exit(bad ? 1 : 0); };

@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.257의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.258의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.257' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.257', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.258' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.258', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -636,7 +636,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   window.__rnShipGuardFeed = (data, src) => { const at = (data && data._at) || Date.now(); const cur = gv(GK, null); if (cur && src === 'web' && (cur.at || 0) > at) return; sv(GK, { holds: (data && data.holds) || {}, cfg: (data && data.cfg) || {}, at, src: src || 'fs' }); cache = null; };
   window.__rnShipLocal = (id, why, end) => { const o = gv(LK, {}) || {}; if (end) { if (!o[id]) return false; delete o[id]; } else { if (o[id]) return false; o[id] = { why: String(why || '출고').slice(0, 80), t0: Date.now(), tab: TAB }; } sv(LK, o); cache = null; return true; };
   /* 5초마다: 최대 시간 지난 칸 기록 · 풀렸으면 미룬 것 이어 감 · 웹앱 화면 다리(data-rn-sgdoc 받기 · data-rn-shiphold 알리기) */
-  const APP = /^jerrycson\.github\.io$/i.test(location.hostname); let lastFeed = '', lastNow = '';
+  const APP = /^(jerrycson\.github\.io|readnow\.kr)$/i.test(location.hostname); let lastFeed = '', lastNow = '';
   async function sgTick() { try {
     if (APP) { const a = document.documentElement.getAttribute('data-rn-sgdoc'); if (a && a !== lastFeed) { lastFeed = a; try { const v = JSON.parse(a); window.__rnShipGuardFeed({ holds: v.holds, cfg: v.cfg, _at: +v.at || Date.now() }, 'web'); } catch (e) {} } }
     { /* (shipsafe2) 이 탭이 맡은 출고 칸은 5분마다 맥박(beat) — 1시간보다 긴 출고(송장 입력이 길 때)도 끝까지 보호 · 탭이 죽으면 맥박이 끊겨 1시간 뒤 풀림 */ const loc = gv(LK, {}) || {}; const own = Object.keys(loc).filter((id) => loc[id] && loc[id].tab === TAB && Date.now() - (+loc[id].beat || +loc[id].t0 || 0) > 5 * 60e3); if (own.length) { for (const id of own) loc[id].beat = Date.now(); sv(LK, loc); cache = null; try { window.__rnSgBeat && window.__rnSgBeat(own); } catch (e) {} } }
@@ -657,7 +657,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
  *  · 쉬는 탭(같은 화면 두 번째 탭)은 이미 5분 넘게 신호 없는 수집기 탭을 넘겨받으므로(rnRole) 이것은 그런 탭도 없을 때를 위한 것 · 공개 수집 크롬(로거)은 로컬 도우미 지킴이가 맡아 여기선 안 함
  *  · 열 주소는 주문조회(/scm/worders.aspx) — 수집기는 주문조회·상품 조회·판매관리 화면에서만 돎(/scm/wmain.aspx엔 수집기가 안 뜸) */
 (function rnRevive() { if (window.top !== window || globalThis.__rnPubHome || globalThis.__rnPubChrome) return;
-  const AL = /(^|\.)aladin\.co\.kr$/i.test(location.hostname); const APP = /^jerrycson\.github\.io$/i.test(location.hostname) && /^\/readnow-scripts\/app\//.test(location.pathname);
+  const AL = /(^|\.)aladin\.co\.kr$/i.test(location.hostname); const APP = /^(jerrycson\.github\.io|readnow\.kr)$/i.test(location.hostname) && /^\/(readnow-scripts\/)?app\//.test(location.pathname);
   if (!APP && !(AL && /^\/(scm|shop|usedstore)\//i.test(location.pathname) && !/\/scm\/(wrecord_edit|worders|worder_preparatory_complete)\.aspx/i.test(location.pathname))) return;
   const URL0 = 'https://www.aladin.co.kr/scm/worders.aspx';
   function reviveDecide(o) { const S = o.seen; const M = 60e3; if (o.off) return { act: 'none', why: '꺼 둠' }; if (!S || !S.at || o.now - S.at > o.aliveH * 3600e3) return { act: 'none', why: '이 PC 수집기 기록 없음(또는 오래됨)' }; if (o.now - S.at < o.staleMin * M) return { act: 'none', why: '살아 있음' }; if (S.paused) return { act: 'none', why: '일시정지 중이었음' }; if (o.ship) return { act: 'none', ship: true, why: '🚚 출고 중 — 되살리기 미룸(출고 끝나면 이어 감)' }; /* (11/09 shipfz1) 출고 중인 PC·MJ-MAIN은 건드리지 않음 */
