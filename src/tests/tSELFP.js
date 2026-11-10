@@ -96,6 +96,7 @@ const LA = { co: '업체A', rep: '대표A', biz: '1234567890', tel: '010-0000-00
   ok(/505호/.test(ALL) && F1.D.seller_fp.y24_shopA.legal.rep === '대표A', '클라우드가 쓴 seller_fp에 법정 고지 원문(비공개 Firestore)'); ok(RUN.n.changes === 8, `최근 60일 바뀜 기록만(오래된 것 뺌)`, RUN.n);
   ok(JSON.stringify({ m: F1.D.y24_mkt, c: F1.D.y24_mkt_changes, s: F1.D.y24_sellers, p: F1.D.prd_book_metrics, al: F1.D.sellers }) === before, '원래 기록(y24_mkt·바뀜·카드·알라딘 첫 쪽·판매자)은 하나도 안 바꿈');
   ok(F1.D.app_settings.seller_fp_state.day === day && F1.D.app_settings.seller_fp_state.lastRun.sellers === 4, '오늘 몫 표시 · 마지막 결과 요약', F1.D.app_settings.seller_fp_state.lastRun);
+  { const fk = F1.D.seller_fp.y24_shopA.fk; ok(fk && typeof fk.p === 'number' && fk.lv && Array.isArray(fk.why) && RUN.y24fk && RUN.y24fk.n.sellers === 4 && RUN.y24fk.toAl && RUN.y24fk.fam, '(y24eng) 예스24 허위 판정 그림자: seller_fp.fk(가능성·단계·까닭) · seller_fp_runs.y24fk(무리·실제 팔림·알라딘 참고 근거) · 새 요청 0', { fk, n: RUN.y24fk && RUN.y24fk.n }); }
   const R1b = await run(F1); ok(R1b.out === null, '같은 날 두 번 돌지 않음');
   const F2 = mkFS(); F2.D.app_settings = { seller_fp_state: { on: false } }; ok((await run(F2, true)).out === null, '끄기(on:false)면 아무것도 안 함');
   const F3 = mkFS(); F3.D.app_settings = { seller_fp_state: { hour: 24 } }; const R3 = await run(F3); ok(R3.out === null && !F3.D.seller_fp, '정한 시각(hour) 전에는 안 돎');

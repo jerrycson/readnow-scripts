@@ -2831,8 +2831,16 @@ async function sellerFpTick(force) { if (!force && Date.now() - sfpAt < 20 * 60e
     for (let i = 0; i < isbns.length; i += 30) { const bs = await C('prd_books').where('isbn13', 'in', isbns.slice(i, i + 30)).select('isbn13').get(); for (const b of bs.docs) { const I = (b.data() || {}).isbn13; const m = (await C('prd_book_metrics').doc(b.id).get()).data(); if (I && m && Array.isArray(m.usedFirstPage)) alRows[I] = m.usedFirstPage.filter((r) => r && r.sellerCode && String(r.sellerCode) !== '996008' && !r.soldOut).map((r) => ({ sc: String(r.sellerCode), p: +r.price || null, g: r.grade || null })); } }
     const alSellers = []; try { (await C('sellers').where('bizNo', '>', '').select('bizNo', 'company', 'phone', 'asPhone', 'returnAddress').limit(+st.alMax || 20000).get()).forEach((d) => alSellers.push({ id: d.id, ...(d.data() || {}) })); } catch (e) { log('판매자 지문: 알라딘 판매자 사업자 정보 읽기 실패', e.message); }
     const R = X.sfpRun({ rows, changes, cards, alRows, alSellers }, st.cfg || null); const at = nowIso(); let w = 0;
+    /* (정범님 11/10 · y24eng) 🟦 예스24 허위 매물 판정 — 그림자(값·매물 안 바꿈) · 새로 읽는 화면 0 · 판매자마다 seller_fp/y24_{아이디}.fk · 오늘 셈 seller_fp_runs/{날짜}.y24fk(무리·실제 팔림·알라딘 같은 판매자·알라딘 쪽 참고 근거)
+     *  실제 팔림: y24_mkt_changes 첫 쪽 사라짐(sold) · 우리 예스24 매물이 사라질(팔림) 때 그 가게 더 싼 매물이 남음(passed — y24_listings goneAt) · 알라딘 같은 판매자: 맞대기 고지(cross.legal) → 알라딘 sellers 문서 → 판매자 가치(peerW) */
+    let FK = null; if (X.y24FakeSeller) { try { const fcfg = ((await C('app_settings').doc('y24_mkt_state').get()).data() || {}).fake || null; const own = st.ownSellers || ['jerrycson']; const ourSold = [];
+        try { (await C('y24_listings').where('goneAt', '>=', since).select('isbn13', 'goneAt', 'price', 'grade').limit(+st.soldMax || 3000).get()).forEach((d) => { const v = d.data() || {}; if (v.isbn13 && v.goneAt) ourSold.push({ isbn: String(v.isbn13), at: v.goneAt, g: v.grade || null, p: +v.price || 0 }); }); } catch (e) {}
+        const real = X.y24RealEv(changes, ourSold, { own }); const fam = X.y24FamOf(R.pairs); let al = {};
+        try { const N = typeof nodeCls === 'function' ? await nodeCls() : null; if (N && N.RS && N.RS.peerW) { const docs = {}; for (const sc of [...new Set(R.cross.legal.map((x) => String(x.sc).replace(/^sc_/, '')))].slice(0, +st.alPeerMax || 300)) { let d = await C('sellers').doc('sc_' + sc).get(); if (!d.exists) d = await C('sellers').doc(sc).get(); if (d.exists) docs['sc_' + sc] = d.data() || {}; } al = X.y24AlLinks(R.cross, docs, N.RS.peerW); } } catch (e) { log('예스24 허위 판정: 알라딘 같은 판매자 근거 실패', e.message); }
+        const by = {}; for (const sid of Object.keys(R.fps)) by[sid] = X.y24FakeSeller(sid, cards[sid] || null, { fam: fam[sid] || null, real: real[sid] || null, al: al[sid] || null }, fcfg); for (const sid of Object.keys(R.fps)) R.fps[sid].fk = by[sid];
+        const cnt = { fake: 0, sus: 0, ok: 0, unk: 0, est: 0 }; for (const f of Object.values(by)) { cnt[f.lv] = (cnt[f.lv] || 0) + 1; if (f.est) cnt.est++; } FK = { fam, real, al, toAl: X.y24ToAlEv(by, R.cross), n: { ...cnt, sellers: Object.keys(by).length, ourSold: ourSold.length } }; } catch (e) { log('예스24 허위 판정 실패', e.message); } }
     for (const [sid, f] of Object.entries(R.fps)) { await C('seller_fp').doc('y24_' + sid).set({ ...f, day, at }); w++; }
-    const sum = { day, at, n: R.n, mat, books: { y24: isbns.length, al: Object.keys(alRows).length }, alSellers: alSellers.length, pairs: R.pairs, cross: R.cross, ms: Date.now() - t0 };
+    const sum = { day, at, n: R.n, mat, books: { y24: isbns.length, al: Object.keys(alRows).length }, alSellers: alSellers.length, pairs: R.pairs, cross: R.cross, ...(FK ? { y24fk: FK } : {}), ms: Date.now() - t0 };
     await C('seller_fp_runs').doc(day).set(sum); await sref.set({ lastRun: { at, sellers: R.n.sellers, legal: R.n.legal, pairs: R.pairs.length, crossLegal: R.cross.legal.length, crossList: R.cross.list.length, mat, ms: sum.ms } }, { merge: true });
     log(`🧬 판매자 지문: 판매자 ${R.n.sellers}곳(법정 고지 ${R.n.legal}) · 겹침 짝 ${R.pairs.length} · 알라딘 맞대기 고지 ${R.cross.legal.length}·같은 값 ${R.cross.list.length} · 새로 읽은 화면 0 · ${Math.round(sum.ms / 1000)}초`);
     return { sellers: R.n.sellers, legal: R.n.legal, pairs: R.pairs.length, cross: R.cross.legal.length + R.cross.list.length, wrote: w }; }
@@ -2924,6 +2932,11 @@ async function sellerDeepRun(X, st, sref, force) { const now = Date.now(); const
  *  사람 속도: 화면 사이 4~8초(공용 Y24_PACE) · 한 회차 tickMax(기본 6)화면 · 하루 cap(기본 120)화면 · 403/429/캡차면 stopH(기본 6)시간 멈춤 — 모두 app_settings/y24_mkt_state(근거: 없음, 설정으로 바꿈) · 끄기 on:false
  *  지우지 않음: 바뀐 첫 쪽은 y24_mkt_changes에 이전 지문·이후 첫 쪽 통째로 쌓음 */
 let y24mAt = 0;
+/* (y24eng) 예스24 허위 판정 맥락 — 판매자 지문 하루 셈(seller_fp_runs/{날짜}.y24fk)을 6시간 기억 · 없으면 빈 맥락(가게 카드·줄 신호만으로 판정 → 표본이 적어 '추정') */
+let y24FkC = null, y24FkAt = 0;
+async function y24FkCtx() { if (y24FkC && Date.now() - y24FkAt < 6 * 3600e3) return y24FkC; y24FkAt = Date.now(); let K = { fam: {}, real: {}, al: {} };
+  try { const s = (await C('app_settings').doc('seller_fp_state').get()).data() || {}; const day = s.day || (s.lastRun && String(s.lastRun.at || '').slice(0, 10)) || null; if (day) { const v = (await C('seller_fp_runs').doc(day).get()).data() || {}; if (v.y24fk) K = { fam: v.y24fk.fam || {}, real: v.y24fk.real || {}, al: v.y24fk.al || {}, day }; } } catch (e) {}
+  y24FkC = K; return K; }
 async function y24MktTick() { if (Date.now() - y24mAt < 120e3) return null; y24mAt = Date.now(); const X = await extMod(); if (!X || !X.y24MktRec || !X._y24HubPage) return null;
   const sref = C('app_settings').doc('y24_mkt_state'); const st = (await sref.get()).data() || {}; const G = X.y24Gate(st, Date.now()); if (!G.ok) return G.stopped ? { stop: G.why } : null;
   const cut = new Date(Date.now() - 2 * 864e5).toISOString(); let want = null;
@@ -2950,9 +2963,11 @@ async function y24MktTick() { if (Date.now() - y24mAt < 120e3) return null; y24m
     const cards = {}; const sids = [...new Set(rec.page1.map((x) => x.sid).filter(Boolean))]; for (const sid of sids) { const d = (await C('y24_sellers').doc(sid).get()).data(); if (d) cards[sid] = d; }
     let sm = Math.max(0, +st.sellerMax || 1); for (const sid of sids) { if (sm <= 0 || stop) break; const c0 = cards[sid]; if (c0 && Date.now() - (Date.parse(c0.at) || 0) < 14 * 864e5) continue; sm--; try { const U = X.y24ShopUrls(sid); const pg = { main: await get(U.main), top: await get(U.top), rating: await get(U.rating) }; const entr = (pg.main.match(/entrNo=(\d+)/) || [])[1]; if (entr) { try { pg.left = await get(X.y24ShopUrls(sid, entr).left); } catch (e) { if (stop) throw e; } }
         const card = X.y24SellerCard(pg, sid, { at }); if (c0) await C('y24_seller_changes').add({ sid, at, prev: c0 }).catch(() => {}); /* 덮기 전 옛 카드를 남김 */ await C('y24_sellers').doc(sid).set(card); cards[sid] = card; } catch (e) { if (stop) throw e; break; } }
-    rec.page1 = X.y24TrustAll(rec, cards, st.trust || null); const D = X.y24MktDiff(prev.page1 ? prev : null, rec);
+    rec.page1 = X.y24TrustAll(rec, cards, st.trust || null);
+    if (X.y24FakeAll) { try { const K = await y24FkCtx(); rec.page1 = X.y24FakeAll(rec, { cards, fam: K.fam, real: K.real, al: K.al, own: st.ownSellers || ['jerrycson'], ownNos }, st.fake || null); rec.fkSum = X.y24FakeSum(rec.page1); } catch (e) { log('예스24 허위 판정(줄) 실패', e.message); } } /* (정범님 11/10 · y24eng) 그림자 — 값 안 바꿈 · 줄마다 fk{p·lv·conf·n·est·why} */
+    const D = X.y24MktDiff(prev.page1 ? prev : null, rec);
     await ref.set({ ...W, ...rec, ours, bb, err: null, req: prev.req || null, lastDiff: D.same ? prev.lastDiff || null : { at, add: D.add.length, gone: D.gone.length, px: D.px.length, min: D.min, total: D.total, first: D.first } }, { merge: true });
-    if (!D.same) await C('y24_mkt_changes').add({ isbn, hubId, at, kind: 'y24Listings', prevSig: prev.sig || null, sig: rec.sig, diff: { add: D.add, gone: D.gone, px: D.px.slice(0, 30), min: D.min, total: D.total, first: D.first }, page: rec.page1.map((x) => ({ r: x.r, id: x.id, g: x.g, p: x.p, s: x.s, sid: x.sid, ts: x.tr ? x.tr.s : null })), total: rec.total, n: rec.n });
+    if (!D.same) await C('y24_mkt_changes').add({ isbn, hubId, at, kind: 'y24Listings', prevSig: prev.sig || null, sig: rec.sig, diff: { add: D.add, gone: D.gone, px: D.px.slice(0, 30), min: D.min, total: D.total, first: D.first }, page: rec.page1.map((x) => ({ r: x.r, id: x.id, g: x.g, p: x.p, s: x.s, sid: x.sid, ts: x.tr ? x.tr.s : null, fk: x.fk ? x.fk.lv : null, fp: x.fk ? x.fk.p : null })), total: rec.total, n: rec.n });
     out.n = rec.n; out.total = rec.total; out.changed = !D.same; }
   catch (e) { const m = String(e.message || e).slice(0, 120); if (m !== 'budget') await ref.set({ at, err: m }, { merge: true }).catch(() => {}); out.err = m; }
   return fin();

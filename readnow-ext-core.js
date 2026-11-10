@@ -338,6 +338,121 @@
     if (ctx && ctx.gMed && row.p > 0 && row.p < ctx.gMed * C.cheapPct) add(C.cheap, `같은 등급 가운데 값의 ${Math.round(C.cheapPct * 100)}% 아래`);
     s = Math.max(0, Math.min(100, Math.round(s))); return { s, lv: s >= C.good ? 'good' : s < C.bad ? 'warn' : 'mid', why }; };
   const y24TrustAll = (rec, cards, cfg) => { const P = (rec && rec.page1) || []; const med = {}; const by = {}; P.forEach((x) => { (by[x.g || '?'] = by[x.g || '?'] || []).push(x.p); }); Object.keys(by).forEach((g) => { med[g] = median(by[g]); }); return P.map((x) => ({ ...x, tr: y24TrustOf(x, cards && x.sid ? cards[x.sid] || null : null, { gMed: by[x.g || '?'] && by[x.g || '?'].length >= 3 ? med[x.g || '?'] : null }, cfg) })); };
+  /* ══ (정범님 11/10 · y24eng) 🟦 예스24 허위 매물 판정(그림자) · 예스24 판매가 엔진
+   *  ① 허위 판정 y24FakeOf/y24FakeAll — 알라딘 판매자 가치(readnow-sellers-core peerW = 활동 × 배송 약속 × 독립 × 실제 팔림)를 예스24 자료에 맞게 옮기고 예스24 고유 신호를 더함
+   *     · 활동: 가게 평가 수(ratingN)·마지막 평가 날(lastRv) — 평가는 실제 배송된 주문에서만 생김 → 오래 평가가 없는 가게의 매물 = 팔리지 않는(없는 재고) 매물일 수 있음
+   *     · 배송 약속: 예스24엔 품절취소율 공개 숫자가 없음 → 평균 발송일(send)·최근 90일 낮은 평점(lowRecent)·만족도(rating)로 대신
+   *     · 독립: 판매자 지문 겹침(seller_fp_runs pairs 강한 짝 — 같은 사업자 번호·전화·반품지·번호 이웃)에 든 무리(fam)
+   *     · 실제 팔림: y24_mkt_changes에서 그 판매자 매물이 첫 쪽에서 사라짐(팔림 추정 · sold) · 우리 매물이 팔릴 때 그 판매자의 같은·더 좋은 등급 더 싼 매물이 그대로 남음(지나침 · passed) — y24RealEv
+   *     · 예스24 고유: 공지·한마디의 직거래·계좌·카톡·전화로만 · 반품 불가 · 무료배송 기준 1,000원 이하 · 중고 한 권인데 남은 수 2+ · 같은 등급 가운데 값의 30% 아래 · 같은 책 첫 쪽에 같은 가게 여러 줄 · 새 가게 · 사업자 표시
+   *     · 알라딘과 근거 나눔(약속 40): 판매자 지문 맞대기(seller_fp_runs cross.legal — 사업자 등록번호·상담 전화·반품지 호수·업체명)로 같은 판매자면 알라딘 판매자 가치(peerW) 색을 근거로 씀(y24AlLinks)
+   *       · 반대 방향: 예스24 판정을 알라딘 판매자 번호 쪽 참고 근거로 내보냄(y24ToAlEv) — 알라딘 값 엔진(decide)에는 아직 넣지 않음(그림자 · 넣는 것은 정범님 허락 뒤)
+   *     · 그림자: 값·매물을 바꾸지 않음 · 근거(why)·확신도(conf 0~1)·표본 수(n)를 늘 남기고, 표본이 모자라면 est:true(화면에 '추정')
+   *  ② 판매가 y24PriceOf — 새로 올릴 때 처음 값: 그 책 예스24 중고에 우리뿐이거나 허위 매물만 → 알라딘 우리 값 + upPct(기본 20%) · 유효 경쟁 매물이 있으면 → 유효 매물 중 동급 최저(알라딘 decide와 같은 방식)
+   *     · 동급 최저: 같은 등급 + 더 좋은 등급(등급 계수로 우리 등급 값으로 환산 — 알라딘 gradeCoef 최상 1 · 상 0.95 · 중 0.85) · 배송비 포함 총액 동가(우리 배송비를 알 때)
+   *     · 값 단위: 알라딘 값 규칙(readnow-pricing-core priceStep — 자릿수 구간 시작값의 5% · 1,000~9,999원 → 50원)과 같게 · round:'10'이면 예전 📤 화면처럼 10원 반올림
+   *     · 약속 36 경계: use:'new'(처음 등록 값 = 정범님 등록 작업)는 막지 않음 · use:'auto'(엔진·연구가 이미 올린 값을 저절로 바꿈)는 lock(진행 중·등록 3개월 안·고친 지 14일 안)이면 hold — 부르는 쪽이 readnow-ml-core fenceLock 결과를 lock으로 넘김
+   *  기준값은 근거: 없음(첫 값 · 알라딘 기준을 옮긴 것) — 설정으로 바꿈(허위 y24_mkt_state.fake · 판매가 app_settings/platforms y24.val) */
+  const Y24_FAKE = { base: -1, cut: { fake: 0.7, sus: 0.45 }, minN: 3, dormantDays: 180, cheapPct: 0.3, realM: 5,
+    w: { dormant: 1.6, rn0: 0.9, lowAct: 0.4, actGood: -0.8, slowSend: 0.6, fastSend: -0.3, lowRecent: 0.7, loRate: 0.5, hiRate: -0.2, direct: 1.8, offline: 0.8, noReturn: 0.4, fakeFree: 0.5, multi: 0.9, cheap: 1.2, dupBook: 0.7, newShop: 0.5, biz: -0.3, fam: 0.8, real: 3, sold: -0.6, alRed: 1.2, alOrange: 0.6, alYellow: 0.2, alGreen: -0.8, alDk: -1 } };
+  const Y24_FK_TAG = { fake: '허위', sus: '의심', ok: '유효', unk: '모름', own: '우리' };
+  const y24FakeCfg = (cfg) => ({ ...Y24_FAKE, ...(cfg || {}), cut: { ...Y24_FAKE.cut, ...((cfg && cfg.cut) || {}) }, w: { ...Y24_FAKE.w, ...((cfg && cfg.w) || {}) } });
+  /* 한 줄(첫 쪽 매물) + 판매자 카드 + 맥락 → { p(허위 가능성 0~1), lv, tag, conf, n, est, why[], src[] }
+   *  ctx = { gMed(같은 등급 가운데 값 · 3줄 이상일 때) · dup(같은 책 첫 쪽에 이 가게 줄 수) · fam(지문 무리 이름) · real{sold,passed} · al{sc,lv,w,cls} · now } */
+  const y24FakeOf = (row, card, ctx, cfg) => { const C = y24FakeCfg(cfg); row = row || {}; ctx = ctx || {}; const c = card || null; const W = C.w; let z = C.base; const why = []; const src = new Set();
+    const add = (v, w, s) => { if (!v) return; z += v; why.push((v > 0 ? '+' : '') + (Math.round(v * 10) / 10) + ' ' + w); if (s) src.add(s); };
+    const now = +ctx.now || Date.now(); const rn = c && c.ratingN != null ? +c.ratingN : row.rn != null ? +row.rn : null; const rt = c && c.rating != null ? +c.rating : row.rt != null ? +row.rt : null;
+    /* 활동(알라딘 act 축) */
+    if (rn != null) { src.add('평가 수'); if (rn === 0) add(W.rn0, '평가 0명 — 실제 배송된 주문 흔적 없음'); else if (rn < 10) add(W.lowAct, `평가 ${rn}명 — 활동 적음`); }
+    const lastMs = c && c.lastRv ? Date.parse(String(c.lastRv).slice(0, 10) + 'T00:00:00+09:00') : NaN; const dAgo = Number.isFinite(lastMs) ? Math.floor((now - lastMs) / 864e5) : null;
+    if (dAgo != null) { src.add('마지막 평가 날'); if (dAgo > C.dormantDays) add(W.dormant, `마지막 평가 ${dAgo}일 전 — ${C.dormantDays}일 넘게 팔린 흔적 없음(잠든 가게의 매물)`); else if (rn != null && rn >= 100) add(W.actGood, `평가 ${rn}명 · 마지막 평가 ${dAgo}일 전 — 꾸준히 팔림`); }
+    /* 배송 약속(알라딘 ship 축 대신) */
+    if (c) { src.add('가게 카드'); if (c.send != null) { if (c.send >= 5) add(W.slowSend, `평균 발송 ${c.send}일`); else if (c.send <= 2) add(W.fastSend, `평균 발송 ${c.send}일`); }
+      if (+c.lowRecent >= 2) add(W.lowRecent, `최근 90일 낮은 평점 ${c.lowRecent}건`); if (c.items != null && c.items < 30 && !(rn > 0)) add(W.newShop, `판매 중 ${c.items}개·평가 없음(새 가게)`); if (c.biz) add(W.biz, '사업자 표시');
+      const F = new Set(c.flags || []); if (F.has('direct')) add(W.direct, '가게 공지에 직거래·계좌·카톡 글귀'); if (F.has('offline') || F.has('phone')) add(W.offline, '가게 공지에 전화·문자로만 문의'); if (F.has('noReturn')) add(W.noReturn, '가게 공지에 반품·교환 불가'); }
+    else if (row.biz) add(W.biz, '사업자 표시');
+    if (rt != null && rn) { if (rt <= 2) add(W.loRate, `만족도 ${rt}점`); else if (rt >= 4 && rn >= 10) add(W.hiRate, `만족도 ${rt}점`); }
+    /* 예스24 줄 신호 */
+    const cm = String(row.cmt || ''); if (Y24_FLAG.direct.test(cm)) add(W.direct, '한마디에 직거래·계좌·카톡', '한마디'); else if (Y24_FLAG.offline.test(cm)) add(W.offline, '한마디에 전화·문자로만', '한마디'); else if (Y24_FLAG.noReturn.test(cm)) add(W.noReturn, '한마디에 반품·교환 불가', '한마디');
+    if (row.fo != null && +row.fo <= 1000) add(W.fakeFree, `무료배송 기준 ${row.fo}원(사실상 무료 — 배송비를 값에 얹었을 수 있음)`, '배송비');
+    if (row.rem != null && +row.rem > 1 && !row.sk) add(W.multi, `중고 한 권인데 남은 수 ${row.rem}(같은 매물로 여러 권 — 실물 확인 안 된 재고)`, '남은 수');
+    if (ctx.gMed && row.p > 0 && row.p < ctx.gMed * C.cheapPct) add(W.cheap, `같은 등급 가운데 값(${ctx.gMed}원)의 ${Math.round(C.cheapPct * 100)}% 아래 — 미끼 값`, '값 패턴');
+    if (+ctx.dup >= 2) add(W.dupBook, `같은 책 첫 쪽에 이 가게 매물 ${ctx.dup}줄`, '같은 책 여러 줄');
+    /* 독립(알라딘 indep 축) */
+    if (ctx.fam) add(W.fam, `판매자 지문 무리(${ctx.fam}) — 같은 사업자·전화·반품지 묶음`, '판매자 지문');
+    /* 실제 팔림(알라딘 real 축) */
+    const so = ctx.real && +ctx.real.sold > 0 ? +ctx.real.sold : 0, pa = ctx.real && +ctx.real.passed > 0 ? +ctx.real.passed : 0;
+    if (so || pa) { src.add('실제 팔림'); const r = (so + C.realM) / (so + pa + C.realM); if (pa) add(W.real * (1 - r), `우리 매물이 팔릴 때 이 가게 더 싼 매물이 남음 ${pa}번(팔림 ${so} · 실제 팔림 ${r.toFixed(2)})`); else if (so >= 3) add(W.sold, `첫 쪽에서 사라짐(팔림 추정) ${so}번`); }
+    /* 알라딘과 같은 판매자(약속 40) */
+    const A = ctx.al || null; if (A && A.cls) { const how = `알라딘 같은 판매자(${A.lv === 'strong' ? '사업자 번호·전화·반품지' : '업체명·건물'} 같음) 판매자 가치 ${A.w != null ? A.w : '-'}`; const s = A.lv === 'strong' ? 1 : 0.5;
+      const v = A.cls === 'red' ? W.alRed : A.cls === 'orange' ? W.alOrange : A.cls === 'yellow' ? W.alYellow : A.cls === 'dkgreen' ? W.alDk : A.cls === 'green' ? W.alGreen : 0; if (v) add(v * s, how, '알라딘 같은 판매자'); else src.add('알라딘 같은 판매자'); }
+    const p = 1 / (1 + Math.exp(-z)); const n = src.size; const conf = Math.round((1 - Math.exp(-n / 2.5)) * 100) / 100; const est = n < C.minN;
+    const lv = !c && rn == null && n === 0 ? 'unk' : p >= C.cut.fake ? 'fake' : p >= C.cut.sus ? 'sus' : 'ok';
+    return { p: Math.round(p * 1000) / 1000, lv, tag: (Y24_FK_TAG[lv] || lv) + (est && lv !== 'unk' ? ' 추정' : ''), conf, n, est, why, src: [...src] }; };
+  /* 한 책 첫 쪽 전체 — 줄마다 fk를 붙임(우리 줄은 lv 'own') · ctx = { cards, fam{sid}, real{sid}, al{sid}, own[](가게 아이디), ownNos[](매물 번호), now } */
+  const y24FakeAll = (rec, ctx, cfg) => { ctx = ctx || {}; const P = (rec && rec.page1) || []; const cards = ctx.cards || {}; const own = new Set((ctx.own || ['jerrycson']).map((x) => String(x).toLowerCase())); const ownNos = new Set((ctx.ownNos || []).map(String));
+    const isOwn = (x) => ownNos.has(String(x.id)) || (x.sid && own.has(String(x.sid).toLowerCase())); const by = {}, dup = {}; P.forEach((x) => { if (isOwn(x)) return; (by[x.g || '?'] = by[x.g || '?'] || []).push(x.p); if (x.sid) dup[x.sid] = (dup[x.sid] || 0) + 1; });
+    return P.map((x) => { if (isOwn(x)) return { ...x, fk: { lv: 'own', tag: Y24_FK_TAG.own, p: 0, conf: 1, n: 0, est: false, why: [], src: [] } }; const g = x.g || '?'; const sid = x.sid || null;
+      return { ...x, fk: y24FakeOf(x, sid ? cards[sid] || null : null, { gMed: by[g] && by[g].length >= 3 ? median(by[g]) : null, dup: sid ? dup[sid] : 0, fam: sid && ctx.fam ? ctx.fam[sid] || null : null, real: sid && ctx.real ? ctx.real[sid] || null : null, al: sid && ctx.al ? ctx.al[sid] || null : null, now: ctx.now }, cfg) }; }); };
+  /* 한 책 판정 요약(화면·문서용) — { n, fake, sus, ok, unk, own, est(추정 줄 수), weak(표본 모자란 판정이 반 넘음) } */
+  const y24FakeSum = (rows) => { const s = { n: 0, fake: 0, sus: 0, ok: 0, unk: 0, own: 0, est: 0 }; for (const x of rows || []) { const f = x && x.fk; if (!f) continue; s.n++; s[f.lv] = (s[f.lv] || 0) + 1; if (f.est && f.lv !== 'own') s.est++; } const o = s.n - s.own; s.weak = o > 0 && s.est * 2 > o; return s; };
+  /* 실제 팔림 근거 — y24_mkt_changes(책마다 시각 차례 · page = 그때 첫 쪽) + 우리 매물 팔림(ourSold [{isbn, at, g, p}]) → { sid: { sold, passed } }
+   *  sold: 앞 첫 쪽에 있던 매물이 다음 첫 쪽에서 사라짐 — 밀려남(첫 쪽 24줄이 차고 그 값이 새 첫 쪽 가장 비싼 값보다 비쌈)은 셈하지 않음
+   *  passed: 우리 매물이 팔린 때 바로 앞 첫 쪽에 그 가게의 같은·더 좋은 등급 더 싼 매물이 있었고, 뒤 첫 쪽에도 그대로 있음(뒤 기록이 없으면 앞만) */
+  const Y24_GR = { '최상': 3, '상': 2, '중': 1, '하': 0 };
+  const y24RealEv = (changes, ourSold, o) => { o = o || {}; const own = new Set((o.own || ['jerrycson']).map((x) => String(x).toLowerCase())); const E = {}; const e = (sid) => E[sid] || (E[sid] = { sold: 0, passed: 0 }); const byI = {};
+    for (const c of changes || []) { if (!c || !c.isbn || !Array.isArray(c.page)) continue; (byI[c.isbn] = byI[c.isbn] || []).push(c); }
+    for (const L of Object.values(byI)) { L.sort((a, b) => String(a.at).localeCompare(String(b.at))); for (let i = 1; i < L.length; i++) { const A = L[i - 1].page, B = L[i].page; const ids = new Set(B.map((x) => String(x.id))); const full = B.length >= 24; const maxB = B.length ? Math.max(...B.map((x) => +x.p || 0)) : 0;
+        for (const x of A) { if (!x || !x.sid || own.has(String(x.sid).toLowerCase()) || ids.has(String(x.id))) continue; if (full && +x.p >= maxB) continue; e(x.sid).sold++; } } }
+    for (const s of ourSold || []) { const L = s && byI[s.isbn]; if (!L) continue; const at = String(s.at || ''); let pre = null, post = null; for (const c of L) { if (String(c.at) <= at) pre = c; else if (!post) post = c; } if (!pre) continue;
+      const myR = Y24_GR[s.g] != null ? Y24_GR[s.g] : -1; const postIds = post ? new Set(post.page.map((x) => String(x.id))) : null; const seen = new Set();
+      for (const x of pre.page) { if (!x || !x.sid || own.has(String(x.sid).toLowerCase()) || seen.has(x.sid)) continue; const r = Y24_GR[x.g] != null ? Y24_GR[x.g] : -1; if (myR >= 0 && r < myR) continue; if (!(+x.p > 0 && +x.p < +s.p)) continue; if (postIds && !postIds.has(String(x.id))) continue; seen.add(x.sid); e(x.sid).passed++; } }
+    return E; };
+  /* 판매자 지문 겹침 짝 → 무리 이름 { sid: '사업자 번호 같음' … } (강한 짝만) */
+  const y24FamOf = (pairs) => { const F = {}; for (const p of pairs || []) { if (!p || !p.strong) continue; const w = (p.why || [])[0] || '강한 겹침'; if (!F[p.a]) F[p.a] = w; if (!F[p.b]) F[p.b] = w; } return F; };
+  /* 예스24 ↔ 알라딘 같은 판매자(seller_fp_runs cross.legal) → { sid: { sc, lv, w, cls, why } } · peerW = readnow-sellers-core peerW · alDocs = { sc 또는 'sc_'+sc: 알라딘 sellers 문서 } · alEv = { sc: 엔진 근거 } */
+  const y24AlLinks = (cross, alDocs, peerW, alEv) => { const out = {}; if (typeof peerW !== 'function') return out; const L = (cross && cross.legal) || [];
+    for (const x of L) { if (!x || !x.sid || !x.sc) continue; const sc = String(x.sc).replace(/^sc_/, ''); const doc = (alDocs || {})['sc_' + sc] || (alDocs || {})[sc] || null; if (!doc) continue; let r = null; try { r = peerW(doc, (alEv || {})[sc] || null); } catch (e) { r = null; } if (!r || !r.cls || r.cls === 'unknown') continue;
+      const cur = out[x.sid]; if (cur && (cur.lv === 'strong' || x.lv !== 'strong')) continue; out[x.sid] = { sc, lv: x.lv || 'mid', w: r.w, cls: r.cls, why: (x.why || []).join('·') }; } return out; };
+  /* 반대 방향(그림자): 예스24 판정 → 알라딘 판매자 번호 쪽 참고 근거 { sc: { sid, p, lv, conf, n, est, why } } — 알라딘 값 엔진에는 아직 안 넣음 */
+  const y24ToAlEv = (fkBySid, cross) => { const out = {}; for (const x of (cross && cross.legal) || []) { if (!x || !x.sid || !x.sc) continue; const f = (fkBySid || {})[x.sid]; if (!f || f.lv === 'unk') continue; const sc = String(x.sc).replace(/^sc_/, ''); const cur = out[sc]; if (cur && cur.conf >= f.conf) continue;
+      out[sc] = { sid: x.sid, p: f.p, lv: f.lv, conf: f.conf, n: f.n, est: !!f.est, how: (x.why || []).join('·'), why: `예스24 같은 판매자(${(x.why || []).join('·')}) 판정 ${Y24_FK_TAG[f.lv] || f.lv}${f.est ? ' 추정' : ''} ${f.p}` }; } return out; };
+  /* 판매자 하나 판정(줄 신호 없이 가게만) — 하루 셈(sellerFpTick)이 seller_fp/y24_{sid}.fk로 남김 */
+  const y24FakeSeller = (sid, card, ctx, cfg) => y24FakeOf({ sid, biz: card && card.biz ? 1 : 0 }, card || null, ctx || {}, cfg);
+  /* ── ② 판매가 ── */
+  const Y24_VAL = { upPct: 20, coef: { '최상': 1, '상': 0.95, '중': 0.85, '하': 0.7 }, better: true, dropSus: 'conf', unkValid: true, minPct: 0.5, round: 'step' }; /* 하 0.7은 근거: 없음(알라딘 gradeCoef엔 하 없음) */
+  const y24ValCfg = (cfg) => { const c = { ...Y24_VAL, ...(cfg || {}), coef: { ...Y24_VAL.coef, ...((cfg && cfg.coef) || {}) } }; const n = (v) => v != null && v !== '' && Number.isFinite(+v); c.upPct = n(c.upPct) ? Math.max(0, Math.min(100, +c.upPct)) : Y24_VAL.upPct; c.minPct = n(c.minPct) ? Math.max(0, Math.min(1, +c.minPct)) : Y24_VAL.minPct; return c; };
+  const y24Step = (p) => { if (!(p > 0)) return 1; const band = Math.pow(10, Math.floor(Math.log10(p))); return band < 100 ? 1 : band * 0.05; }; /* readnow-pricing-core priceStep과 같은 규칙(고칠 땐 둘 다) */
+  const y24SnapNear = (p, how) => { if (!(p > 0)) return 0; if (how === '10') return Math.round(p / 10) * 10; let s = y24Step(p); let v = Math.round(p / s) * s; const s2 = y24Step(v); if (s2 !== s) v = Math.round(p / s2) * s2; return Math.round(v); };
+  const y24SnapDown = (p) => { if (!(p > 0)) return 0; let s = y24Step(p); let v = Math.floor(p / s) * s; const s2 = y24Step(v); if (s2 !== s) v = Math.floor(p / s2) * s2; return Math.round(v); };
+  const y24Dropped = (fk, C) => { if (!fk) return !C.unkValid; if (fk.lv === 'own') return true; if (fk.lv === 'fake') return true; if (fk.lv === 'sus') return C.dropSus === 'all' || (C.dropSus === 'conf' && !fk.est); if (fk.lv === 'unk') return !C.unkValid; return false; };
+  /* L = { alPrice(알라딘 우리 값), grade, priceList(정가), ourShip(예스24 우리 배송비 · 모르면 null) } · mkt = y24_mkt 문서(page1 줄에 fk가 있으면 그대로, 없으면 fkCtx로 셈) · o = { cfg, use:'new'|'auto', lock:{ locked, why }, fkCtx, fkCfg }
+   *  → { price, mode(solo·fakeOnly·worseOnly·match·noData·hold), t, ref, n{all,valid,fake,sus,unk}, why[], warn[], est, chk, use } */
+  const y24PriceOf = (L, mkt, o) => { o = o || {}; L = L || {}; const C = y24ValCfg(o.cfg); const use = o.use === 'auto' ? 'auto' : 'new'; const why = [], warn = []; const al = +L.alPrice || 0; const res = (x) => { const r = { use, why, warn, est: false, chk: false, ref: null, n: null, ...x }; warn.push(...y24ValWarn(r, L)); return r; };
+    if (use === 'auto' && o.lock && o.lock.locked) return res({ price: null, mode: 'hold', hold: true, t: '🔒 안 바꿈(약속 36)', why: [`약속 36 — ${o.lock.why || '진행 중·등록 3개월 안·고친 지 14일 안'} 상품은 엔진이 값을 저절로 바꾸지 않음(처음 등록 값 산출은 막지 않음)`] });
+    if (!(al > 0)) return res({ price: 0, mode: 'noData', t: '알라딘 값 없음', why: ['알라딘 우리 값이 없어 셈 못 함'], chk: true });
+    const up = () => y24SnapNear(al * (1 + C.upPct / 100), C.round);
+    if (!mkt || (!mkt.none && !Array.isArray(mkt.page1))) return res({ price: y24SnapNear(al, C.round), mode: 'noData', t: '예스24 시장 지표 없음 — 알라딘 값 그대로', why: ['이 책 예스24 시장 지표(y24_mkt)가 아직 없음 — 알라딘 값 그대로 두고 사람 확인(시장 지표를 읽으면 다시 셈)'], est: true, chk: true });
+    if (mkt.none) { why.push(`예스24 중고에 이 책이 없음(우리뿐) → 알라딘 값 ${al}원 + ${C.upPct}%`); return res({ price: up(), mode: 'solo', t: `우리뿐 +${C.upPct}%`, n: { all: 0, valid: 0, fake: 0, sus: 0, unk: 0 } }); }
+    const rows = mkt.page1.some((x) => x && x.fk) ? mkt.page1 : y24FakeAll(mkt, o.fkCtx || {}, o.fkCfg); const others = rows.filter((x) => x && +x.p > 0 && !(x.fk && x.fk.lv === 'own'));
+    const n = { all: others.length, valid: 0, fake: 0, sus: 0, unk: 0 }; const valid = []; for (const x of others) { const f = x.fk; if (f && n[f.lv] != null) n[f.lv]++; if (!y24Dropped(f, C)) valid.push(x); } n.valid = valid.length;
+    const weak = others.filter((x) => !x.fk || x.fk.est || x.fk.lv === 'unk').length; const est = others.length > 0 && weak * 2 > others.length; if (est) why.push(`판매자 판정 표본이 모자람 — ${others.length}줄 중 ${weak}줄이 추정·모름`);
+    if (mkt.full === false || (mkt.total != null && mkt.total > others.length + 1)) why.push(`첫 쪽(최저가순 ${rows.length}줄)만 봄 · 전체 ${mkt.total != null ? mkt.total : '?'}개`);
+    if (!others.length) { why.push(`예스24 중고에 우리 매물뿐 → 알라딘 값 ${al}원 + ${C.upPct}%`); return res({ price: up(), mode: 'solo', t: `우리뿐 +${C.upPct}%`, n, est }); }
+    if (!valid.length) { why.push(`다른 매물 ${others.length}줄이 모두 허위·의심(${n.fake ? `허위 ${n.fake}` : ''}${n.sus ? ` 의심 ${n.sus}` : ''}) → 알라딘 값 ${al}원 + ${C.upPct}%`); return res({ price: up(), mode: 'fakeOnly', t: `허위만 +${C.upPct}%`, n, est }); }
+    const gr = (g) => (Y24_GR[g] != null ? Y24_GR[g] : -1); const myR = gr(L.grade); const myC = C.coef[L.grade]; const ship = (x) => (x.s != null ? +x.s : 0); const ourShip = L.ourShip != null && L.ourShip !== '' ? +L.ourShip : null;
+    const eff = (x) => { const c = C.coef[x.g]; const conv = myR >= 0 && x.g !== L.grade && c && myC ? Math.round(+x.p * (myC / c)) : null; return { x, conv, tot: (conv != null ? conv : +x.p) + (ourShip != null ? ship(x) : 0) }; };
+    const cand = valid.filter((x) => myR < 0 || (C.better ? gr(x.g) >= myR : x.g === L.grade)).map(eff);
+    if (!cand.length) { const w = valid.slice().sort((a, b) => a.p - b.p)[0]; why.push(`유효 매물이 모두 우리(${L.grade})보다 나쁜 등급 — 가장 싼 ${w.g || '-'} ${w.p}원 · 동급 경쟁 없음 → 알라딘 값 ${al}원 + ${C.upPct}%`); return res({ price: up(), mode: 'worseOnly', t: `동급 없음 +${C.upPct}%`, n, est, worse: { g: w.g || null, p: +w.p } }); }
+    const best = cand.reduce((a, b) => (b.tot < a.tot ? b : a)); const R = best.x; let base, how;
+    if (best.conv != null) { base = y24SnapDown(best.conv); if (base >= +R.p) base = y24SnapDown(+R.p - 1); how = `더 좋은 등급(${R.g}) 유효 매물 ${R.p}원 × 등급 계수 ${myC}/${C.coef[R.g]} = ${best.conv}원(단위 내림)`; }
+    else if (ourShip != null) { base = Math.max(10, +R.p + ship(R) - ourShip); how = `같은 등급 유효 최저 ${R.p}원 + 배송비 ${ship(R)}원 = 총액 동가(우리 배송비 ${ourShip}원)`; }
+    else { base = +R.p; how = `같은 등급 유효 최저 ${R.p}원과 판매가 동가(우리 예스24 배송비를 몰라 판매가끼리)`; }
+    why.push(how + ` · 기준 판매자 ${R.sn || R.sid || '-'}(${(R.fk && R.fk.tag) || '판정 없음'})`); let chk = false; const fl = C.minPct > 0 ? y24SnapNear(al * C.minPct, C.round) : 0;
+    if (fl && base < fl) { why.push(`동급 최저 ${base}원이 알라딘 값의 ${Math.round(C.minPct * 100)}%(${fl}원) 아래 — ${fl}원으로 두고 사람 확인`); base = fl; chk = true; }
+    return res({ price: base, mode: 'match', t: '유효 동급 최저', ref: { id: R.id, sid: R.sid || null, sn: R.sn || null, g: R.g || null, p: +R.p, s: R.s != null ? +R.s : null, conv: best.conv, fk: R.fk ? { lv: R.fk.lv, p: R.fk.p, conf: R.fk.conf, est: R.fk.est } : null }, n, est, chk }); };
+  /* 정가보다 비싸면 알림만(막지 않음 · 약속 00) — 예스24 대량 등록 화면 원문(2026-11-07 저장): '출간한지 18개월 미만의 신간도서는 도서정가제에 적용되므로 10% 이하 할인율(단, 실제 중고도서는 제외)' */
+  const y24ValWarn = (v, L) => { const w = []; if (v && v.price > 0 && L && +L.priceList > 0 && v.price > +L.priceList) w.push(`예스24 판매가 ${v.price}원이 정가 ${L.priceList}원보다 비쌈 — 알림만(막지 않음)`); return w; };
   /* ══ (11/10) 판매자 지문(seller_fp) — 판매자마다 '법정 고지 열쇠 · 운영 버릇 · 시간 행동' 칸을 셈하고, 판매자끼리·플랫폼끼리(예스24↔알라딘) 겹침을 셈
    *  새로 읽는 화면 없음: 이미 쌓인 기록(y24_mkt 첫 쪽 · y24_mkt_changes · y24_sellers · 알라딘 sellers · prd_book_metrics 첫 쪽)만 씀 · 셈은 순수 함수(클라우드 sellerFpTick이 하루 한 번 부름)
    *  법정 고지: 사업자 판매자의 가게 첫 화면(…/mall/{아이디}/main)·평가 화면 문서 안에 '판매자 정보' 숨은 팝업(#dPop_forecast) 표가 있음
@@ -803,6 +918,6 @@
     if (s.grp === 'used' && src !== 'yes24used' && !a.title) return { skip: '제목 없음' }; try { return await f(a); } catch (e) { return { ok: false, why: e.message || String(e), auth: !!e.auth }; } }
   /* (0.5.0) 출처 키의 지문 — 키가 바뀌었는지(키 문제로 쉬던 출처를 다시 깨움) · 값 자체는 남기지 않음 */ function keySig(src, keys) { const s0 = SOURCES[src]; if (!s0 || !s0.keys) return ''; let h = 0; const t = s0.keys.map((k) => String((keys || {})[k] || '')).join('|'); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return String(h); }
 
-  const api = { naverPage, kyoboPick, nvCatalogId, keySig, linkItems, NEED_RENDER, ridiHtml, matchPost, volsOf, VERSION, VIA_JOONGMO, eligible, mediaQuery, mediaCore, simMedia, dpParse, dpPost, dpPick, dpLinePrice, dpContacts, _dpDate: (s, n) => dpDate(s, n), keyOf, isIsbnKey, jmParse, KEYS, GROUPS, SOURCES, ORDER, BASIC_ORDER, BASIC_FIELDS, CFG_DEF, cfgOf, keysReady, isKrIsbn, coreTitle, sim, marketQuery, jsonBlobs, findListings, tableKV, meta, strip, ymd, toNum, run, fxRun, toKrw, median, lowQ, dropOutliers, foreignStats, usedStats, mergeBasic, sig, sumOf, sameSig, shard, stOf, FX_CUR, _adp: ADP, _pageBook: pageBook, _y24HubPage: y24HubPage, y24SearchUrl, y24GoodsListUrl, y24HubUrl, y24BuybackUrl, y24ShopUrls, y24HubIds, Y24_PACE, y24PaceMs, y24Blocked, y24Gate, y24StopOf, y24MktRec, y24MktDiff, y24Page1Sig, y24OurRank, y24Buyback, y24SellerCard, y24TrustOf, y24TrustAll, Y24_TRUST, y24Mask, y24LegalOf, sfpAddrKey, sfpRegion, sfpH, sfpHabits, sfpTimeline, sfpPairs, sfpCross, sfpRun, SFP_CFG, sfpLegalKeys, alShopUrls, alShopInfoOf, alSurveyRows, y24RatingRows, y24ShopListUrl, y24ShopIds, y24GoodsDesc, ftcUrl, ftcApiUrl, ftcParse, ftcApiParse, sfpRetPara, sfpRevFp, sfpIdBlocks, sfpSeq, sfpIdShape, sfpCatSim, sfpCustIdx, sfpAddrMatch, sfpDeep, SDP_CFG, sdpSig }; /* (11/04) 예스24 중고 허브 화면 읽기 — 클라우드 예스24 주문 시장 */
+  const api = { naverPage, kyoboPick, nvCatalogId, keySig, linkItems, NEED_RENDER, ridiHtml, matchPost, volsOf, VERSION, VIA_JOONGMO, eligible, mediaQuery, mediaCore, simMedia, dpParse, dpPost, dpPick, dpLinePrice, dpContacts, _dpDate: (s, n) => dpDate(s, n), keyOf, isIsbnKey, jmParse, KEYS, GROUPS, SOURCES, ORDER, BASIC_ORDER, BASIC_FIELDS, CFG_DEF, cfgOf, keysReady, isKrIsbn, coreTitle, sim, marketQuery, jsonBlobs, findListings, tableKV, meta, strip, ymd, toNum, run, fxRun, toKrw, median, lowQ, dropOutliers, foreignStats, usedStats, mergeBasic, sig, sumOf, sameSig, shard, stOf, FX_CUR, _adp: ADP, _pageBook: pageBook, _y24HubPage: y24HubPage, y24SearchUrl, y24GoodsListUrl, y24HubUrl, y24BuybackUrl, y24ShopUrls, y24HubIds, Y24_PACE, y24PaceMs, y24Blocked, y24Gate, y24StopOf, y24MktRec, y24MktDiff, y24Page1Sig, y24OurRank, y24Buyback, y24SellerCard, y24TrustOf, y24TrustAll, Y24_TRUST, Y24_FAKE, Y24_FK_TAG, y24FakeCfg, y24FakeOf, y24FakeAll, y24FakeSum, y24RealEv, y24FamOf, y24AlLinks, y24ToAlEv, y24FakeSeller, Y24_VAL, y24ValCfg, y24SnapNear, y24PriceOf, y24ValWarn, y24Mask, y24LegalOf, sfpAddrKey, sfpRegion, sfpH, sfpHabits, sfpTimeline, sfpPairs, sfpCross, sfpRun, SFP_CFG, sfpLegalKeys, alShopUrls, alShopInfoOf, alSurveyRows, y24RatingRows, y24ShopListUrl, y24ShopIds, y24GoodsDesc, ftcUrl, ftcApiUrl, ftcParse, ftcApiParse, sfpRetPara, sfpRevFp, sfpIdBlocks, sfpSeq, sfpIdShape, sfpCatSim, sfpCustIdx, sfpAddrMatch, sfpDeep, SDP_CFG, sdpSig }; /* (11/04) 예스24 중고 허브 화면 읽기 — 클라우드 예스24 주문 시장 */
   if (typeof module === 'object' && module.exports) module.exports = api; root.ReadnowExt = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
