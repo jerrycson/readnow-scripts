@@ -19,7 +19,8 @@
       /* (0.1.10) 👥 구매자 분포(숨은 창 그려 읽기) · 🔍 새상품 없는 시세 · 🖼 그린 화면 해석(도우미 /render 답) · 📚 KPIPA — 모두 글자 그대로(받침은 helper/col2-shim.js) */
       'getProductFull', 'nbMarketJob', 'extRenderHelper', 'KP_PAGE', 'kpReq', 'kpYmd', 'kpAdd', 'kpParse', 'kpSig', 'kpToken', 'kpFetch'] },
     /* (0.1.10) 📚 KPIPA 그림자 — 하루 한 번(한국 시각 after 뒤 · 운영 14:30 규칙) 최근 days일 · 근거: 없음, 설정으로 바꿈 */
-    KPIPA: { host: 'https://bnk.kpipa.or.kr', days: 7, after: '14:40' },
+    /* (11/10 밤 col2n) after 14:40 → 00:20 — 하루 몫(1,600장)이 낮 12시쯤 다 쓰여 14:40 뒤엔 차례가 없어 KPIPA 그림자가 한 번도 못 돎 · 날짜 셈은 운영 규칙 그대로(14:30 전이면 그제까지 — kpRead) */
+    KPIPA: { host: 'https://bnk.kpipa.or.kr', days: 7, after: '00:20' },
     /* (0.1.10) 🔍 새상품 없는 시세 그림자 — 사무실 PC만 · 운영이 본 prd_market_nobook 문서를 한 번에 listN개씩 웹앱이 넘김(everyH시간에 한 번) · 근거: 없음, 설정으로 바꿈 */
     NB: { listN: 20, everyH: 6 },
     /* (0.1.10) 🔑 운영 키 — 웹앱이 메모리로만 넘김 · ttlH시간 지나면 버리고 다시 부탁(파일에 안 씀) · 로거는 받지 않음 · 근거: 없음, 설정으로 바꿈 */
@@ -49,7 +50,8 @@
     RELAY: { READ_OK: ['prd_ids', 'prd_books', 'prd_book_metrics', 'bench_items', 'sellers', 'seller_review_daily', 'ext_basic', 'ext_used', 'ext_foreign', 'ext_lib', 'ext_ebook', 'ext_fx', 'app_settings', 'mkt_kpipa', 'prd_market_nobook'], READ_ID: { app_settings: ['bench'] }, READ_RE: { mkt_kpipa: '^\\d{8}$' }, LIST_OK: ['prd_market_nobook'], idleSec: 30, hotSec: 2, gotMin: 10, outMax: 5000, poolN: 1000, poolLow: 50 }, /* (0.1.2) poolN = 웹앱이 한 번에 이어 넘기는 수 · 표본은 운영 prd_books 전체를 한 바퀴씩(하루마다 갈아끼우던 poolDayH는 없앰 — 같은 책 다시 읽기만 늘림) */
     /* (0.1.1 정범님 11/05 밤 '자야 되니까 번외 수집기가 돌아가게만 · 새벽 1~5시에도 돌려') 저절로 돌기 — 웹앱이 넘긴 표본 목록에서 차례로 그림자 읽기·비교(속도는 PACE 그대로)
      * nightOn: 새벽 1~5시(한국 시각)에도 읽음(기본 켬 · 운영 수집기의 밤 쉼 규칙과 따로) · 도우미 col2.json 의 auto:false / nightOn:false 로 끔 · 근거: 없음, 설정으로 바꿈 */
-    AUTO: { on: true, nightOn: true, nightFrom: 1, nightTo: 5 }, /* 근거: 없음, 설정으로 바꿈 */
+    /* (11/10 밤 col2n) prodShare — 공개 상품 화면 그림자가 하루 몫(PACE.dayCap)의 이 비율을 넘게 읽은 날엔 그림자 일(외부 정보·시세·KPIPA 등)에 차례를 먼저 줌(그림자 일이 쉴 때만 상품 화면) · 11/10 HOME: 상품 1,020장이 하루 1,600장 몫의 대부분을 써 낮 12시쯤 다 쓰고 그 뒤 그림자 일 표본이 쌓이지 않음 · 근거: 없음, 설정으로 바꿈(col2.json prodShare · 0~1) */
+    AUTO: { on: true, nightOn: true, nightFrom: 1, nightTo: 5, prodShare: 0.4 }, /* 근거: 없음, 설정으로 바꿈 */
     /* 운영 웹앱과 같은 Firebase(공개 설정값 — 운영 app.html에 이미 공개돼 있음) · 쓰기는 col2_* 만 */
     FIREBASE: { apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385', storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15' },
     FIREBASE_SDK: 'https://www.gstatic.com/firebasejs/10.12.2/',

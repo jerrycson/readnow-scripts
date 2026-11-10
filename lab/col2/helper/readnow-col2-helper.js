@@ -368,6 +368,8 @@ const kday = (t) => new Date((t || now()) + 9 * 3600e3).toISOString().slice(0, 1
 const kHour = () => new Date(now() + 9 * 3600e3).getUTCHours();
 const autoOn = () => CFG.auto == null ? AC.on !== false : CFG.auto !== false;
 const nightOn = () => CFG.nightOn == null ? AC.nightOn !== false : CFG.nightOn !== false;
+const prodShare = () => { const v = CFG.prodShare != null ? +CFG.prodShare : +AC.prodShare; return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1; };
+const prodFull = () => { const d = AU.day && AU.day.d === new Date(now() + 9 * 3600e3).toISOString().slice(0, 10) ? +AU.day.n || 0 : 0; return d > 0 && d >= Math.floor(paceCfg().dayCap * prodShare()); }; /* (11/10 밤 col2n) 상품 화면 하루 몫 다 씀 → 그림자 일 표본 먼저 */
 const poolLeft = () => Math.max(0, AU.pool.length - AU.cur);
 function poolNeed() { if (!autoOn()) return 0; if (AU.lap.end) { if (poolLeft() > 0) return 0; lapNext(); } return poolLeft() < RC.poolLow ? RC.poolN : 0; } /* (0.1.2) 하루 지나면 새 표본으로 갈아끼우던 것을 없앰 — 갈아끼우면 남은 책을 버리고 같은 책을 다시 읽게 됨 */
 const untilKstMidnight = () => { const t = now() + 9 * 3600e3; return 86400e3 - (t % 86400e3); };
@@ -381,7 +383,7 @@ async function autoStep() {
   /* (0.1.9) 그림자 일 — 공개 상품 화면 읽기와 번갈아 하나씩(같은 속도 규칙 PACE를 함께 씀) · 상품 그림자를 하지 않는 PC(로거)는 표본 책을 일 차례로만 넘기고 그림자 일만 */
   { const bz = busyNow(); if (bz) { AU.msg = '운영이 바빠 쉼 — ' + bz.why; JOBS.step().catch(() => {}); return COL2.BUSY.restMs; } }
   if (!prodPlan() && AU.cur < AU.pool.length && JOBS.bookQ() < 50) { const L = AU.pool.slice(AU.cur, AU.cur + 100); AU.cur += L.length; AU.lap.read += L.length; JOBS.feedBooks(L); savePos(); }
-  if (!prodPlan() || AU.cur >= AU.pool.length || (AU.turn = (AU.turn || 0) + 1) % 2 === 0) { /* (0.1.10) 읽을 표본 책이 없을 때는 그림자 일을 차례마다(예전엔 한 번 걸러 15초씩 쉬어 사무실 PC 그림자 일이 16초에 하나) */ if (RL.out.length < RC.outMax) { ST.reading = { job: true, at: now() }; let j; try { j = await JOBS.step(); } catch (e) { j = { did: false, rest: 10e3, why: e.message }; } finally { ST.reading = null; }
+  if (!prodPlan() || AU.cur >= AU.pool.length || prodFull() || (AU.turn = (AU.turn || 0) + 1) % 2 === 0) { /* (11/10 밤) prodFull = 오늘 상품 화면이 하루 몫의 prodShare를 넘음 → 그림자 일 먼저 */ /* (0.1.10) 읽을 표본 책이 없을 때는 그림자 일을 차례마다(예전엔 한 번 걸러 15초씩 쉬어 사무실 PC 그림자 일이 16초에 하나) */ if (RL.out.length < RC.outMax) { ST.reading = { job: true, at: now() }; let j; try { j = await JOBS.step(); } catch (e) { j = { did: false, rest: 10e3, why: e.message }; } finally { ST.reading = null; }
       if (j.did) { AU.msg = '그림자 일 도는 중'; return 1000; } if (!prodPlan() || (AU.cur >= AU.pool.length && /차례 기다림|운영 값 기다림/.test(j.why || ''))) { if (AU.cur >= AU.pool.length && AU.lap.end && AU.pool.length) lapNext(); AU.msg = '그림자 일: ' + (j.why || '쉼') + (AU.cur >= AU.pool.length ? ' · 표본 책을 기다림(이 PC 웹앱이 넘김)' : ''); return Math.max(1000, Math.min(j.rest || 15e3, 30 * 60e3)); } } }
   if (AU.cur >= AU.pool.length && AU.lap.end && AU.pool.length) lapNext();
   if (AU.cur >= AU.pool.length) { AU.msg = AU.pool.length ? `다음 ${num(RC.poolN, 1, 5000, 1000).toLocaleString()}권을 기다림(${AU.lap.n}바퀴 · 지금까지 ${AU.lap.read}권) — 이 PC에서 리드나우 웹앱(로그인된 것)이 이어 넘김` : '표본 목록을 기다림 — 이 PC에서 리드나우 웹앱(로그인된 것)을 열어 두면 넘겨받음'; return 15e3; }
@@ -404,7 +406,7 @@ async function autoLoop() { if (AU.running) return; AU.running = true; let next 
 let restWas = null; function restNote() { const m = String(AU.msg || ''); const run = /도는 중/.test(m); const key = run ? '' : m.replace(/\d[\d,.]*/g, '#');
   if (key === restWas) return; const was = restWas; restWas = key; if (run) { if (was) note('▶ 자동 읽기 다시 시작', { k: 'rest', l: 'ok', m: '쉼' }); return; } if (m) note('⏸ 자동 읽기 쉼 — ' + m, { k: 'rest', l: /429|오류|실패/.test(m) ? 'warn' : 'info', m: '쉼' }); }
 const autoKick = () => { clearTimeout(AU.t); AU.t = setTimeout(autoLoop, 500); };
-function autoSum() { const p = PACE.state(); return { on: autoOn() && !!CFG.on, auto: autoOn(), nightOn: nightOn(), msg: AU.msg, poolN: AU.pool.length, left: poolLeft(), poolAt: AU.poolAt ? kst(AU.poolAt) : null, nextMs: AU.nextAt ? Math.max(0, AU.nextAt - now()) : null, day: AU.day, dayN: p.dayN, dayCap: p.dayCap, last: AU.last, lap: { n: AU.lap.n, read: AU.lap.read, got: AU.lap.got, end: AU.lap.end, after: AU.lap.after, at: AU.lap.at, done: AU.lap.done } }; }
+function autoSum() { const p = PACE.state(); return { on: autoOn() && !!CFG.on, auto: autoOn(), nightOn: nightOn(), msg: AU.msg, poolN: AU.pool.length, left: poolLeft(), poolAt: AU.poolAt ? kst(AU.poolAt) : null, nextMs: AU.nextAt ? Math.max(0, AU.nextAt - now()) : null, day: AU.day, dayN: p.dayN, dayCap: p.dayCap, prodShare: prodShare(), prodFull: prodFull(), /* (11/10 밤) 상품 화면 하루 몫을 다 써 그림자 일 먼저 */ last: AU.last, lap: { n: AU.lap.n, read: AU.lap.read, got: AU.lap.got, end: AU.lap.end, after: AU.lap.after, at: AU.lap.at, done: AU.lap.done } }; }
 
 /* ── 스스로 새 판 받기 (0.1.1 · 정범님이 주무시는 동안 사람 손 없이) ──
  * 30분마다 GitHub lab/col2/col2-config.js 판을 보고 더 높으면: bundle.json 목록대로 받아(파일 이름 꼴 검사) .js마다 node --check

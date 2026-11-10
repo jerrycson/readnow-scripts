@@ -29,7 +29,7 @@
     { k: 'nbMarket', name: '🔍 새상품 없는 상품 시세(알라딘 중고 검색)', ops: ['nbMarket'], cls: 'pub', reader: 'nb', col: 'prd_market_nobook', id: '{key}', input: 'nb', who: 'office', state: 'run',
       map: { median: 'median', low: 'low', n: 'n', candSig: 'candSig' }, move: ['median', 'low', 'n', 'candSig'], at: 'at',
       note: '(0.1.10) 검색어가 우리 상품 이름이라 사무실 PC만(로거엔 우리 매물·상품 이름을 두지 않음 — 약속 0) · 대상 = 운영이 이미 본 prd_market_nobook 문서(웹앱이 대신 넘김 · 읽기만) · 운영 본체 nbMarketJob을 글자 그대로 떼어 메모리 칸 받침으로 한 건만 돌림(운영 칸엔 안 씀)' },
-    { k: 'kpipa', name: '📚 출판 판매 통계(KPIPA)', ops: ['kpipa'], cls: 'ext', reader: 'kp', col: 'mkt_kpipa', id: '{date}', input: 'day', who: 'office', state: 'run', cost: 3,
+    { k: 'kpipa', name: '📚 출판 판매 통계(KPIPA)', ops: ['kpipa'], cls: 'ext', reader: 'kp', col: 'mkt_kpipa', id: '{date}', input: 'day', who: 'office', state: 'run', cost: 3, minN: 14, /* 하루 한 번 7일 × 2종류 = 14줄이 다 견줘져야 */
       note: '(0.1.10) 운영 본체 kpParse·kpFetch·kpToken·kpReq·kpSig·kpYmd·kpAdd를 글자 그대로 떼어 KPIPA 화면 탭(쿠키 없는 따로 된 칸)에서 부름 · 하루 한 번 최근 7일(판매채널별·도서유형별) · 날짜마다 운영 mkt_kpipa/<날짜>와 견줌 · 공용 파일로 옮기는 안은 README' },
   ];
   /* 🔎 외부 정보(운영 extBurst·extJob) — 출처마다 한 일 · 칸 = 운영 GROUPS[grp].col · 견주기 = 운영 저장 지문(ReadnowExt.sig · sameSig)
@@ -44,7 +44,7 @@
   /* (0.1.10) 그려 읽기(render)는 번외 크롬 따로 된 칸 탭으로 돎(운영 도우미 /render와 같은 꼴 · 해석은 운영 본체 extRenderHelper 그대로) · 키(key)는 사무실 PC만(웹앱이 메모리로만 넘김 · 로거엔 안 줌) */
   for (const [src, label, grp, st] of EXT) T.push({ k: 'ext.' + src, src, name: '🔎 ' + label, ops: ['extBurst'], cls: 'ext', reader: 'ext', col: GCOL[grp], grp, id: '{isbn}', input: 'book', who: st === 'key' ? 'office' : 'share', state: 'run',
     ...(st === 'key' ? { keys: true, note: '운영 키(Firestore app_secrets/ext.keys)는 이 PC 운영 웹앱이 읽어 번외 도우미 메모리로만 넘김(파일·기록·Firestore에 안 남김) · 우리 계정 키라 로거엔 주지 않음 → 사무실 PC만' } : st === 'render' ? { render: true, note: '글자로 받으면 늘 막힘(418) — 번외 크롬 따로 된 칸 탭에 그려 읽음' } : {}) });
-  T.push({ k: 'ext.fx', src: 'fx', name: '💱 환율(수출입은행 → frankfurter)', ops: ['extBurst'], cls: 'ext', reader: 'ext', col: 'ext_fx', id: '{day}', input: 'day', who: 'share', state: 'run', note: '키 없는 frankfurter 길만(수출입은행은 키 필요) — 운영과 출처가 다르면 까닭 \'출처 다름\'' });
+  T.push({ k: 'ext.fx', src: 'fx', name: '💱 환율(수출입은행 → frankfurter)', ops: ['extBurst'], cls: 'ext', reader: 'ext', col: 'ext_fx', id: '{day}', input: 'day', who: 'share', state: 'run', minN: 1, /* 하루 한 문서뿐 */ note: '키 없는 frankfurter 길만(수출입은행은 키 필요) — 운영과 출처가 다르면 까닭 \'출처 다름\'' });
 
   /* (0.1.10) 🔑 키 규칙 — 운영 키는 Firestore app_secrets/ext.keys(운영 수집기 extKeys가 읽는 곳 · 웹앱 설정 ⑱에서 넣음)
    *  번외는 그 PC 운영 웹앱이 대신 읽어 도우미 메모리로만 넘김(POST /relay/keys) · 파일·기록창·col2_*·상태엔 이름만(값 없음)
@@ -76,7 +76,8 @@
   const UNEXPLAINED = ['diff', 'lack'];
   const WHY = { diff: '다름(까닭 모름)', lack: '그림자 칸 빔(해석이 달라졌을 수)', move: '때가 다름(움직이는 값 · 운영이 읽은 뒤 바뀜)', fill: '운영 칸 빔(그림자만 값)', seen: '운영도 지금 이 값을 봄(처음 값 지킴)', ext: '출처 다름(운영은 바깥 정보 값)', old: '운영 값이 오래됨(그 뒤 바뀔 수 있음)', none: "운영은 '없음' 전 값을 지킴", cfg: '설정 차이(번외는 기본 설정)' };
   /* '넘길 수 있음' — 하루 표본 n ≥ minN · 까닭 모를 다름(un) 0 · 못 읽음 비율 ≤ maxFailPct% (같음 비율은 보여 주기만 — 까닭을 다 밝힌 다름은 막지 않음) */
-  function passOf(s, P) { P = { minN: 30, maxFailPct: 20, ...(P || {}) }; s = s || { n: 0, same: 0, diff: 0, un: 0, fail: 0, noprod: 0 };
+  /* (11/10 밤 col2n) 하루 한 번만 받는 일은 하루 표본 30을 채울 수 없음 — 📚 KPIPA(하루 한 번 최근 7일 × 2종류 = 14줄) · 💱 환율(하루 한 문서) → 일마다 기준 수(t.minN) · col2.json jobs.pass.minNBy {일: 수}로 바꿈 */
+  function passOf(s, P, k) { P = { minN: 30, maxFailPct: 20, ...(P || {}) }; const t0 = k ? byK[k] : null; const by = P.minNBy && k != null ? +P.minNBy[k] : NaN; if (Number.isFinite(by) && by > 0) P.minN = by; else if (t0 && t0.minN) P.minN = t0.minN; s = s || { n: 0, same: 0, diff: 0, un: 0, fail: 0, noprod: 0 };
     const tried = s.n + s.fail; const failPct = tried ? Math.round((s.fail / tried) * 1000) / 10 : 0; const rate = s.n ? Math.round((s.same / s.n) * 1000) / 10 : null;
     const why = []; if (s.n < P.minN) why.push(`표본 ${s.n}/${P.minN}`); if (s.un) why.push(`까닭 모를 다름 ${s.un}`); if (failPct > P.maxFailPct) why.push(`못 읽음 ${failPct}%`);
     return { n: s.n, rate, failPct, un: s.un || 0, can: !why.length, why: why.join(' · ') || '넘길 수 있음', rule: `하루 표본 ${P.minN}개 이상 · 까닭 모를 다름 0 · 못 읽음 ${P.maxFailPct}% 이하` }; }

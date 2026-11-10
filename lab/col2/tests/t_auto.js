@@ -26,6 +26,7 @@ const kday = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
     if (s.auto.day.fail) console.log('    (읽기 기록)', JSON.stringify(s.reads), JSON.stringify(s.auto.last));
     ok(s.auto.day.n >= 3 && s.auto.poolN === 3 && A.reqs.filter((q) => /wproduct/.test(q.path)).length >= 3, '단추를 누르지 않아도 표본에서 차례로 그림자 읽기(이상한 번호는 목록에서 뺌)', JSON.stringify(s.auto.day));
     ok(s.auto.day.same >= 3 && s.auto.on && s.auto.dayCap === 1600, '운영 문서와 견줘 같음으로 셈 · 하루 상한 1,600', JSON.stringify({ d: s.auto.day, cap: s.auto.dayCap }));
+    ok(s.auto.prodShare === COL2.AUTO.prodShare && COL2.AUTO.prodShare > 0 && COL2.AUTO.prodShare < 1 && s.auto.prodFull === (s.auto.day.n >= Math.floor(1600 * COL2.AUTO.prodShare)), `(11/10 밤) 상품 화면이 하루 몫의 ${Math.round(COL2.AUTO.prodShare * 100)}%를 넘게 읽은 날은 그림자 일 먼저(prodFull) — 지금은 아님`, JSON.stringify({ sh: s.auto.prodShare, full: s.auto.prodFull, n: s.auto.day.n }));
     ok(s.relay.outN >= 4 && !s.relay.ackAt, '웹앱이 아직 안 가져가도 결과를 쌓아 둠', s.relay.outN);
     const pg = await H.req('GET', '/'); ok(/function autoLine/.test(pg.b) && /자동으로 도는 중/.test(pg.b) && /다음 읽기/.test(pg.b) && /마지막 기록/.test(pg.b), "상태 창에 '자동으로 도는 중 · 오늘 n/상한 · 다음 읽기 n초 뒤 · 마지막 기록 n분 전'");
     const outF = path.join(D, 'home', 'relay-out.json'), poolF = path.join(D, 'home', 'pool.json');
