@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "웹앱 1.78.469 예스24 자동 올림",
+ "since": "2026-11-10T12:22:55Z",
+ "beat": "2026-11-10T12:22:55Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-10T12:12:44Z"
  },
- "host": null
+ "host": "vm"
 }
