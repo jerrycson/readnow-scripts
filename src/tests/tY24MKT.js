@@ -72,6 +72,7 @@ const searchDoc = `<div class="itemUnit"><a href="/Product/UsedShopHub/Hub/777">
   ok(R1.waits.length === R1.calls.length - 1 && R1.waits.every((w) => w >= 3900 && w <= 8000), '사람 속도: 화면 사이마다 4~8초 쉼', R1.waits);
   ok(Object.values(F1.D.y24_mkt_changes || {}).length === 1 && Object.values(F1.D.y24_mkt_changes)[0].kind === 'y24Listings' && JSON.stringify(F1.D.prd_book_metrics) === '{"b1":{"usedTotal":5}}' && !F1.D.prd_metric_changes, '첫 쪽 기록은 y24_mkt_changes에만(알라딘 prd_book_metrics·prd_metric_changes 안 건드림)');
   ok(Object.keys(F1.D.y24_sellers || {}).length === 1 && F1.D.app_settings.y24_mkt_state.n === R1.out.pages, '판매자 카드 한 곳(한 회차 상한) · 오늘 쓴 화면 수 기록', { sellers: Object.keys(F1.D.y24_sellers || {}), st: F1.D.app_settings.y24_mkt_state });
+  ok(M1.page1.every((x) => x.fk && typeof x.fk.p === 'number') && M1.fkSum && M1.fkSum.n === M1.page1.length && Object.values(F1.D.y24_mkt_changes)[0].page.every((x) => 'fk' in x), '(y24eng) 줄마다 허위 판정 그림자 fk · 책 요약 fkSum · 바뀜 기록에도 단계', M1.fkSum);
   // 같은 첫 쪽을 다시 읽으면 바뀜 기록이 늘지 않음
   F1.D.y24_mkt['9791100000017'].req = { at: new Date(Date.now() + 1000).toISOString() }; const R1b = await run(F1, ok200); ok(R1b.out && Object.values(F1.D.y24_mkt_changes).length === 1, '같은 첫 쪽이면 바뀜 기록 안 더함', R1b.out);
   // 하루 상한

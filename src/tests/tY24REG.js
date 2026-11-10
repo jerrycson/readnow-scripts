@@ -8,7 +8,7 @@ const APP = process.env.RN_APP || [path.resolve(__dirname, '..', 'app.html'), pa
 const T = fs.readFileSync(APP, 'utf8'); const cut = (a, b) => { const i = T.indexOf(a); const j = T.indexOf(b); if (i < 0 || j < i) throw new Error('덩어리 못 찾음: ' + a); return T.slice(i, j); };
 const F = new Function(cut('/* ◆y24reg 시작', '/* ◆y24reg 끝 */') + cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + '\nreturn { Y24R_BAN, Y24R_DEF, Y24R_HEAD, y24RegCfg, y24RegPrice, y24RegState, y24RegGate, y24RegJudge, y24RegAoa, y24RegFilter, ledBuild };')();
 console.log('① 순수 셈');
-{ const c = F.y24RegCfg({ day: '0', pct: 99, staleDays: 'x' }); ok(c.day === 1 && c.pct === 50 && c.staleDays === F.Y24R_DEF.staleDays, '설정 울타리(하루 상한 1~300 · ±50% · 날 수 기본값)'); ok(F.y24RegPrice(12345, 0) === 12350 && F.y24RegPrice(10000, -10) === 9000 && F.y24RegPrice(0, 0) === 0, '판매가 10원 단위 · ±%'); }
+{ const c = F.y24RegCfg({ day: '0', pct: 99, staleDays: 'x' }); ok(c.day === 0 && c.pct === 50 && c.staleDays === F.Y24R_DEF.staleDays && F.y24RegCfg({ day: 999 }).day === 300 && F.Y24R_DEF.day === 0, '설정 울타리(하루 상한 0=없음(기본 · 정범님 11/10)~300 · ±50% · 날 수 기본값)'); ok(F.y24RegPrice(12345, 0) === 12350 && F.y24RegPrice(10000, -10) === 9000 && F.y24RegPrice(0, 0) === 0, '판매가 10원 단위 · ±%'); }
 const L = (o) => ({ id: 'aladin_U1', title: '시험 책', isbn: '9788900000001', grade: '상', price: 8000, qty: 1, live: true, skus: ['A01BC123PK'], dupes: false, adult: false, ...o });
 const X0 = () => ({ onY24: new Map(), selfSet: new Set(), led: {}, ledSku: new Set(), cfg: F.Y24R_DEF });
 { const j = F.y24RegJudge(L(), X0()); ok(j.ok && j.row.isbn === '9788900000001' && j.row.self === 'A01BC123PK' && j.row.price === 8000 && j.row.qty === 1, '판매중·ISBN·등급·SKU 있음 → 올릴 줄(자체코드 = SKU)');
