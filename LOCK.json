@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "웹앱 1.78.462 첫 화면 편집",
+ "since": "2026-11-10T05:56:47Z",
+ "beat": "2026-11-10T05:56:47Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-10T05:38:38Z"
  },
- "host": null
+ "host": "vm"
 }
