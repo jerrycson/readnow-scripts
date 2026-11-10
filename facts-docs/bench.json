@@ -1,0 +1,2066 @@
+{
+ "v": 1,
+ "at": "2026-11-10",
+ "round": 1,
+ "about": "성공 기업 사례와 견준 기준점 — 사례(회사·화면·원문 주소) · 우리 적용 방식 · 적용 상태 · 충돌 따짐 · 빈 곳 · 모을 정보. 매일 견줌 엔진이 고침(공개 판 — 사례 요약·적용 상태만).",
+ "obsVer": null,
+ "surfaces": {
+  "web": "웹앱",
+  "ui2": "리드나우 2",
+  "col2": "번외 수집기",
+  "ledger": "통합 장부",
+  "shop": "우리숍(booksqueen.com)"
+ },
+ "states": {
+  "done": "적용됨",
+  "branch": "가지에 있음(판 전)",
+  "doing": "진행 중",
+  "prop": "제안",
+  "hold": "보류",
+  "ask": "정범님 결정 기다림",
+  "no": "안 씀"
+ },
+ "kinds": {
+  "seller_center": "판매자 센터",
+  "multichannel": "통합 솔루션",
+  "used_book": "헌책 판매 도구",
+  "own_shop": "자사몰·결제",
+  "review": "구매평 분석",
+  "channel_api": "판매처 공식 연동"
+ },
+ "topics": {
+  "notify_area": "떠 있는 알림을 한 자리에",
+  "confirm_style": "확인 방식 하나로(되돌리기·대상 보이는 확인)",
+  "quick_actions": "자주 쓰는 일 입구를 맨 위에",
+  "order_todo": "처리할 주문 숫자를 먼저",
+  "scan_first": "스캔(ISBN)이 첫 동작",
+  "list_views": "한 목록 + 보기 탭(저장한 거르기)",
+  "filter_chips": "조건은 탭이 아니라 거르기 칩",
+  "unified_search": "어디서든 같은 검색 + 범위 칩",
+  "header_slim": "머리 칸을 얇게(상태는 점 하나)",
+  "settings_search": "설정 갈래 목차 + 설정 찾기",
+  "settings_one_place": "한 일의 설정은 한 곳",
+  "error_human": "오류는 '무엇이 왜 · 무엇을 하나'로",
+  "shortcut_common": "단축키는 어디서나 같은 뜻",
+  "bottom_tabs": "휴대폰 아래 탭 4~5개 + 더 보기",
+  "nav_grouping": "메뉴를 할 일 갈래로",
+  "max_qty": "판매처별 수량 상한",
+  "no_min_qty": "최소 수량 규칙 두지 않음(과판매)",
+  "stop_other": "한 곳 팔리면 다른 곳 내림",
+  "sku_link": "판매처 매물 ↔ 실물(SKU) 한 줄로 이음",
+  "buffer": "판매처별 수량 완충",
+  "sync_delay": "반영이 늦은 판매처는 더 조심",
+  "channel_price": "판매처별 판매가(할인·할증)",
+  "notify_once": "같은 알림은 바뀔 때 한 번",
+  "one_ledger": "판매처를 한 시스템(한 장부)에",
+  "channel_api": "판매처 공식 연동(API)",
+  "channel_fee": "판매처 수수료·정산을 한 표로",
+  "review_topics": "구매평 주제 칩 → 그 글만",
+  "review_lift": "불만 끌림(lift) 순위",
+  "pg_checkout": "자사몰 결제(PG 결제창)",
+  "escrow": "구매안전서비스",
+  "law_notice": "법 표시(사업자 정보·청약철회·처리방침)",
+  "shop_platform": "숍 솔루션에 얹을까 직접 만들까"
+ },
+ "cases": [
+  {
+   "id": "shopify_frame",
+   "co": "Shopify",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "관리자 화면 틀(Polaris Frame) — 토스트·저장 막대를 한 자리에서 차례로",
+   "urls": [
+    "https://polaris.shopify.com/components/contextual-save-bar",
+    "https://shopify.dev/docs/apps/build/app-home/migrate-from-polaris-react/contextual-save-bar"
+   ],
+   "grade": "공식",
+   "fits": [
+    "web",
+    "ui2",
+    "shop"
+   ],
+   "topics": [
+    "notify_area",
+    "confirm_style"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "ebay_hub",
+   "co": "eBay",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "Seller Hub 첫 화면(Overview) — 할 일·발송 기다리는 주문을 맨 위에",
+   "urls": [
+    "https://www.developer.ebay.com/api-docs/user-guides/static/trading-user-guide/seller-hub.html",
+    "https://export.ebay.com/en/services-tools/seller-hub/managing-your-sales-in-seller-hub/"
+   ],
+   "grade": "공식",
+   "fits": [
+    "web",
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "quick_actions",
+    "order_todo"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "amazon_app",
+   "co": "Amazon",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "Amazon Seller 앱 — 첫 화면 스캔 단추로 바코드(ISBN) 찍어 바로 등록",
+   "urls": [
+    "https://sell.amazon.com/tools/amazon-seller-app",
+    "https://sell.amazon.in/seller-blog/four-easy-ways-to-list-your-products-on-amazon"
+   ],
+   "grade": "공식",
+   "fits": [
+    "web",
+    "ui2"
+   ],
+   "topics": [
+    "quick_actions",
+    "scan_first"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "shopify_views",
+   "co": "Shopify",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "상품 화면 — 한 목록 + 보기(views) 탭(판매 중·초안·보관) · 거르기를 저장하면 늘 있는 탭",
+   "urls": [
+    "https://help.shopify.com/manual/products/searching-filtering",
+    "https://changelog.shopify.com/posts/manage-your-products-with-statuses"
+   ],
+   "grade": "공식",
+   "fits": [
+    "web",
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "list_views",
+    "filter_chips"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "linnworks_views",
+   "co": "Linnworks",
+   "region": "해외",
+   "kind": "multichannel",
+   "screen": "Open Orders — 보기와 거르기 저장",
+   "urls": [
+    "https://linnworks.com/tutorial/open-orders-views-and-filters"
+   ],
+   "grade": "공식",
+   "fits": [
+    "web",
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "list_views"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "shopify_search",
+   "co": "Shopify",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "관리자 검색 — 어디서든 Ctrl/⌘+K · 앱·고객·주문·상품 함께 찾고 거르기 칩으로 좁힘 · 설정도 찾음 · 윗줄은 검색·알림·계정뿐",
+   "urls": [
+    "https://help.shopify.com/en/manual/shopify-admin/admin-search"
+   ],
+   "grade": "공식",
+   "fits": [
+    "web",
+    "ui2",
+    "col2"
+   ],
+   "topics": [
+    "unified_search",
+    "header_slim",
+    "settings_search",
+    "shortcut_common"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "shopify_orders",
+   "co": "Shopify",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "주문 처리 — 미처리 탭과 분석(Analytics)을 다른 화면으로",
+   "urls": [
+    "https://help.shopify.com/manual/fulfillment/fulfilling-orders"
+   ],
+   "grade": "공식",
+   "fits": [
+    "web",
+    "ui2"
+   ],
+   "topics": [
+    "order_todo"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "shopify_shipping",
+   "co": "Shopify",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "배송 및 배달 한 페이지 · 라벨 일괄 구매(오류 주문은 고치거나 빼야 진행 · '무엇이 왜'로 안내)",
+   "urls": [
+    "https://help.shopify.com/en/manual/shipping",
+    "https://help.shopify.com/manual/shipping/shopify-shipping/shipping-labels/bulk-order-fulfillment"
+   ],
+   "grade": "공식",
+   "fits": [
+    "web",
+    "ui2"
+   ],
+   "topics": [
+    "settings_one_place",
+    "error_human",
+    "confirm_style"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "bibliopolis",
+   "co": "Bibliopolis",
+   "region": "해외",
+   "kind": "used_book",
+   "screen": "헌책 판매자 도구 — '상품 추가' 맨 위 ISBN → 찾은 정보 가져오기 → 가격·상태·설명",
+   "urls": [
+    "https://www.bibliopolis.com/help/article/isbn-lookup"
+   ],
+   "grade": "공식",
+   "fits": [
+    "web",
+    "ui2"
+   ],
+   "topics": [
+    "scan_first"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "linnworks_maxlisted",
+   "co": "Linnworks",
+   "region": "해외",
+   "kind": "multichannel",
+   "screen": "Max Listed Quantity(판매처에 보내는 수량 상한) · End When(재고가 정한 값 이하면 0) · 과판매 원인(수량을 더 크게 보이는 매물·SKU 안 이어짐)",
+   "urls": [
+    "https://help.linnworks.com/support/solutions/articles/7000032976-max-listed-quantity-and-its-uses",
+    "https://help.linnworks.com/support/solutions/articles/7000005535-overselling"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ledger",
+    "shop"
+   ],
+   "topics": [
+    "max_qty",
+    "stop_other",
+    "sku_link"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "linnworks_buffer",
+   "co": "Linnworks",
+   "region": "해외",
+   "kind": "multichannel",
+   "screen": "판매처별 수량 완충(buffer)",
+   "urls": [
+    "https://www.linnworks.com/blog/sync-online-sales-with-quantity-updates-and-buffers/"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ledger"
+   ],
+   "topics": [
+    "buffer"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "sellbrite_rules",
+   "co": "Sellbrite",
+   "region": "해외",
+   "kind": "multichannel",
+   "screen": "Inventory Rules — Maximum Quantity · Percentage of Available(내림) · Minimum Quantity는 과판매를 부른다고 경고 · 판매처에서 수량을 직접 고치면 과판매",
+   "urls": [
+    "https://support.sellbrite.com/en/articles/3367329-create-inventory-rules",
+    "https://intercom.help/sellbrite/en/articles/4723907-how-does-inventory-sync-work"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ledger"
+   ],
+   "topics": [
+    "max_qty",
+    "no_min_qty"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "listingmirror",
+   "co": "ListingMirror",
+   "region": "해외",
+   "kind": "multichannel",
+   "screen": "판매처별 Max Quantity · hold back · 과판매 원인 = 수량을 안 보내는 판매처·반영 지연·오류 상태 매물",
+   "urls": [
+    "https://success.listingmirror.com/article/102-how-did-i-get-an-order-for-a-sku-with-zero-quantity-in-stock",
+    "https://www.listingmirror.com/inventory-syncing/"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ledger"
+   ],
+   "topics": [
+    "max_qty",
+    "sync_delay"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "rithum",
+   "co": "Rithum(ChannelAdvisor)",
+   "region": "해외",
+   "kind": "multichannel",
+   "screen": "quantity buffer · 판매처 매물을 재고 단위(창고)에 명시적으로 이음",
+   "urls": [
+    "https://www.rithum.com/products/brands/inventory-management/"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ledger"
+   ],
+   "topics": [
+    "sku_link",
+    "buffer"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "godomall",
+   "co": "고도몰(NHN커머스)",
+   "region": "국내",
+   "kind": "multichannel",
+   "screen": "다채널 통합 운영 — 한 곳에서 팔리면 모든 마켓 품절",
+   "urls": [
+    "https://www.godo.co.kr/main/blog/32/"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ledger",
+    "shop"
+   ],
+   "topics": [
+    "stop_other"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "cafe24_market",
+   "co": "카페24",
+   "region": "국내",
+   "kind": "multichannel",
+   "screen": "마켓 연동 — 주문만 연동이면 재고·가격 동기화 안 됨 · 마켓별 판매가 할인/할증",
+   "urls": [
+    "https://docs.channel.io/cafe24pro/ko/articles/마켓-연동-상품-가져오기-주문-수집은-어떻게-다른가요-3eb46d9b"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ledger",
+    "shop"
+   ],
+   "topics": [
+    "channel_price",
+    "stop_other"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "tosspayments",
+   "co": "토스페이먼츠",
+   "region": "국내",
+   "kind": "own_shop",
+   "screen": "결제위젯 · 이용 요금(가입비 22만·연관리비 11만) · 구매안전서비스 이용확인증 · 통신판매업 신고 안내",
+   "urls": [
+    "https://www.tosspayments.com/about/fee",
+    "https://www.tosspayments.com/blog/articles/semo-4",
+    "https://www.tosspayments.com/blog/articles/sales-registration"
+   ],
+   "grade": "공식",
+   "fits": [
+    "shop"
+   ],
+   "topics": [
+    "pg_checkout",
+    "escrow",
+    "law_notice"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "naver_center_home",
+   "co": "네이버 스마트스토어센터",
+   "region": "국내",
+   "kind": "seller_center",
+   "screen": "홈(2025-05 개편) — 접속하자마자 신규 주문·취소·반품 현황 숫자",
+   "urls": [
+    "https://sellernow.co.kr/post/500170"
+   ],
+   "grade": "보도",
+   "fits": [
+    "web",
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "order_todo"
+   ],
+   "w": 0.8,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "sabangnet",
+   "co": "사방넷",
+   "region": "국내",
+   "kind": "multichannel",
+   "screen": "통합 판매 관리 2.0 · 한 곳 팔리면 다른 마켓 품절 · 같은 판매처를 두 시스템에 함께 등록하면 중복 출고 경고 · 월 25만~52만 원",
+   "urls": [
+    "https://byline.network/2026/04/21_1298773/",
+    "https://sellernow.co.kr/post/287742"
+   ],
+   "grade": "보도",
+   "fits": [
+    "ledger"
+   ],
+   "topics": [
+    "stop_other",
+    "one_ledger"
+   ],
+   "w": 0.8,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "playauto",
+   "co": "플레이오토",
+   "region": "국내",
+   "kind": "multichannel",
+   "screen": "통합 판매 관리 — 판매처별 상품 등록·판매가 · 품절 알림은 바뀔 때 한 번",
+   "urls": [
+    "https://m.etnews.com/20260806000100"
+   ],
+   "grade": "보도",
+   "fits": [
+    "ledger",
+    "web"
+   ],
+   "topics": [
+    "channel_price",
+    "notify_once"
+   ],
+   "w": 0.8,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "portone_compare",
+   "co": "포트원",
+   "region": "국내",
+   "kind": "own_shop",
+   "screen": "PG 비교 2026(중개 · 여러 PG를 한 연동으로)",
+   "urls": [
+    "https://blog.portone.io/opi_pg-comparison2026/"
+   ],
+   "grade": "보도",
+   "fits": [
+    "shop"
+   ],
+   "topics": [
+    "pg_checkout"
+   ],
+   "w": 0.8,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "naver_commerce_api",
+   "co": "네이버 커머스API",
+   "region": "국내",
+   "kind": "channel_api",
+   "screen": "내스토어 애플리케이션 등록 · 권한 · 호출 IP 등록 · 채널 상품 수정은 전체를 다시 보냄",
+   "urls": [
+    "https://solapi.com/guides/smart-store-hook",
+    "https://github.com/commerce-api-naver/commerce-api/discussions/3463"
+   ],
+   "grade": "보도",
+   "fits": [
+    "ledger"
+   ],
+   "topics": [
+    "channel_api",
+    "sku_link"
+   ],
+   "w": 0.8,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "smartstore_fee",
+   "co": "네이버 스마트스토어",
+   "region": "국내",
+   "kind": "channel_api",
+   "screen": "판매수수료 개편(2025-06) — 유입 경로별 2.73%·0.91% + 결제 수수료 별도",
+   "urls": [
+    "https://inside.ampm.co.kr/insight/9853"
+   ],
+   "grade": "보도",
+   "fits": [
+    "ledger"
+   ],
+   "topics": [
+    "channel_fee"
+   ],
+   "w": 0.8,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "cafe24_shop",
+   "co": "카페24 · 아임웹 · 고도몰(숍 솔루션)",
+   "region": "국내",
+   "kind": "own_shop",
+   "screen": "남의 숍 솔루션에 자사몰을 얹는 길(ⓑ 반쯤) — 고지·약관 틀 제공 · 'PRO 매출 2%' 보도는 엇갈림",
+   "urls": [
+    "https://wikidocs.net/blog/@history/25902/",
+    "https://kmong.com/article/3094"
+   ],
+   "grade": "보도",
+   "fits": [
+    "shop"
+   ],
+   "topics": [
+    "shop_platform"
+   ],
+   "w": 0.8,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "seller_app_tabs",
+   "co": "Shopify 모바일 앱 등 판매자 앱",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "휴대폰 아래 탭 4~5개 + 더 보기",
+   "urls": [],
+   "grade": "관찰",
+   "fits": [
+    "web",
+    "ui2"
+   ],
+   "topics": [
+    "bottom_tabs"
+   ],
+   "w": 0.5,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "amazon_menu",
+   "co": "Amazon Seller Central",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "메뉴를 카탈로그·재고·가격·주문·광고·보고서처럼 할 일 갈래로",
+   "urls": [],
+   "grade": "관찰",
+   "fits": [
+    "web",
+    "ui2"
+   ],
+   "topics": [
+    "nav_grouping"
+   ],
+   "w": 0.5,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "amazon_review_topics",
+   "co": "Amazon · 쿠팡",
+   "region": "해외",
+   "kind": "review",
+   "screen": "리뷰 '자주 언급된 주제' 칩 · 상품평 요약 — 주제 칩을 누르면 그 글만",
+   "urls": [],
+   "grade": "관찰",
+   "fits": [
+    "web",
+    "shop"
+   ],
+   "topics": [
+    "review_topics"
+   ],
+   "w": 0.5,
+   "dw": 0.0,
+   "new": false
+  },
+  {
+   "id": "review_mining",
+   "co": "리뷰 분석 도구(리뷰 마이닝)",
+   "region": "해외",
+   "kind": "review",
+   "screen": "불만 끌림(lift) 순위 — 불만족 글에서 유난히 많이 나오는 주제",
+   "urls": [],
+   "grade": "관찰",
+   "fits": [
+    "web"
+   ],
+   "topics": [
+    "review_lift"
+   ],
+   "w": 0.5,
+   "dw": 0.0,
+   "new": false
+  }
+ ],
+ "items": [
+  {
+   "id": "W01",
+   "surf": "web",
+   "topics": [
+    "notify_area"
+   ],
+   "cases": [
+    "shopify_frame"
+   ],
+   "t": "알림 자리 하나",
+   "how": "내려받기 띠·새 기록 받는 중·사진 못 불러옴을 왼쪽 아래 한 자리에 쌓고 아래 탭 줄 위로 띄움 · 2가지 넘으면 '🔔 알림 n가지' 한 줄",
+   "st": "branch",
+   "ver": "work/ux2-1110 2e06328",
+   "conflict": "💰 매입가 단추는 위치만 맞춤 · 출고 보호·⚠ 사람이 볼 것은 숨기지 않음 · 출고 화면 숨김 규칙 그대로",
+   "probe": "ux2DockSync",
+   "metric": "탭 줄·등록 단추 가림 0(시험 tUX1)",
+   "auto": null
+  },
+  {
+   "id": "W02",
+   "surf": "web",
+   "topics": [
+    "quick_actions"
+   ],
+   "cases": [
+    "ebay_hub",
+    "amazon_app"
+   ],
+   "t": "머리 칸 빠른 작업 3개",
+   "how": "검색창 옆(휴대폰은 아래 한 줄) 📥 등록(진행 수) · 🚚 오늘 출고(남은 수) · ＋ 매입 — 여는 것만",
+   "st": "branch",
+   "ver": "work/ux2-1110 2e06328",
+   "conflict": "출고 단추는 열기만(원스톱 시작 아님 → 출고 보호와 무관) · 등록 단축키와 안 겹침",
+   "probe": "ux2QaPaint",
+   "metric": "등록·오늘 출고까지 누름 수(탭 1번 + 스크롤 → 1번)",
+   "auto": null
+  },
+  {
+   "id": "W03",
+   "surf": "web",
+   "topics": [
+    "list_views"
+   ],
+   "cases": [
+    "shopify_views",
+    "linnworks_views"
+   ],
+   "t": "상품 목록 하나 + 보기 탭",
+   "how": "1단계 입구만 하나로(누르면 지금 목록을 그 보기로) → 2단계 목록 엔진 합치기",
+   "st": "prop",
+   "ver": "",
+   "conflict": "소재불명·반품 재등록은 결정 단추가 있는 일감 목록 → 보기 탭에서도 고유 단추 그대로(단추 대조 시험 필요) · 휴대폰 고르기에 보기 탭",
+   "probe": "",
+   "metric": "'그 상품 어디서 봤지' 헛걸음",
+   "auto": null
+  },
+  {
+   "id": "W04",
+   "surf": "web",
+   "topics": [
+    "header_slim"
+   ],
+   "cases": [
+    "shopify_search"
+   ],
+   "t": "머리 칸 상태 세 줄 → 점 하나",
+   "how": "이름 옆 점(초록·주황·빨강) · 누르면 펼침 · 끊김·수집 멈춤이면 저절로 펼침 · 성능 칩 '(앱 사본 없음)'",
+   "st": "branch",
+   "ver": "work/ux2-1110 2e06328",
+   "conflict": "관리자 기기·LOGGER는 펼친 채 기본(기기별) · 스크롤 접힘과 맞물림",
+   "probe": "ux2HdrState",
+   "metric": "휴대폰 머리 칸 높이 265px → 약 150px",
+   "auto": null
+  },
+  {
+   "id": "W05",
+   "surf": "web",
+   "topics": [
+    "unified_search",
+    "shortcut_common"
+   ],
+   "cases": [
+    "shopify_search"
+   ],
+   "t": "검색 범위 칩 + Ctrl+K",
+   "how": "결과 위 찾는 곳 칩(전체·고객·상품·주문·판매자·매입 · 기본 이 탭) · 0건이면 '전체에서 찾기'",
+   "st": "branch",
+   "ver": "work/ux2-1110 2e06328",
+   "conflict": "기본은 지금처럼 '이 탭'(습관) · 큰 자료 탭은 '전체'를 누를 때만 받음 · 등록 바코드 칸과 별개",
+   "probe": "ux2ScopeBar",
+   "metric": "0건 검색 뒤 다른 탭으로 다시 찾는 횟수",
+   "auto": null
+  },
+  {
+   "id": "W06",
+   "surf": "web",
+   "topics": [
+    "order_todo"
+   ],
+   "cases": [
+    "naver_center_home",
+    "ebay_hub",
+    "shopify_orders"
+   ],
+   "t": "주문·매출 탭 '📋 처리할 주문' 줄",
+   "how": "주문확인요청·발송요청·송장 실패·취소요청·반품·답할 문의 수 → 누르면 그 단계 칸",
+   "st": "branch",
+   "ver": "work/ux2-1110 2e06328",
+   "conflict": "숫자는 오늘 출고 단계 칸과 같은 셈(두 곳 숫자 어긋나지 않게) · 예스24 숫자는 예스24 쪽 셈을 부르기만",
+   "probe": "ux2OrdBar",
+   "metric": "취소 요청을 늦게 봐 이미 포장한 일",
+   "auto": null
+  },
+  {
+   "id": "W07",
+   "surf": "web",
+   "topics": [
+    "settings_one_place"
+   ],
+   "cases": [
+    "shopify_shipping"
+   ],
+   "t": "출고 설정 7곳 → 오늘 출고 ⚙ 하나",
+   "how": "판매처·원스톱·ALPS·알림·택배 계약·마감 시각·칸 순서를 왼쪽 목차로 · 설정 탭은 같은 칸을 부르는 바로 가기",
+   "st": "prop",
+   "ver": "",
+   "conflict": "약속 0-1 — 설정 바꾸기가 새로고침을 일으키지 않는지 시험 · 설명서 길 안내 같은 판에",
+   "probe": "",
+   "metric": "같은 값이 두 곳에 있는 설정 수(지금 7곳)",
+   "auto": null
+  },
+  {
+   "id": "W08",
+   "surf": "web",
+   "topics": [
+    "settings_search"
+   ],
+   "cases": [
+    "shopify_search"
+   ],
+   "t": "설정 7묶음 + 설정 찾기",
+   "how": "이 기기·등록·출고·가격·수집·알림·보안 묶음 · 묶음 안 번호 차례 · 맨 위 🔎 설정 찾기(기능 찾기 자료 재사용)",
+   "st": "branch",
+   "ver": "work/ux2-1110 2e06328",
+   "conflict": "설명서·기능 찾기의 '설정 ⑫' 같은 번호 길 안내",
+   "probe": "ux2SetGroup",
+   "metric": "설정 찾는 시간",
+   "auto": null
+  },
+  {
+   "id": "W09",
+   "surf": "web",
+   "topics": [
+    "scan_first"
+   ],
+   "cases": [
+    "amazon_app",
+    "bibliopolis"
+   ],
+   "t": "등록 ISBN 칸 맨 위 + 조건 한 줄",
+   "how": "넣고 조회 칸을 맨 위에 붙임 · 조건 요약 한 줄(✎ 누르면 카드 3개) · 기본과 다른 값은 노란색 · 처음 2주 '예전 배치' 스위치",
+   "st": "doing",
+   "ver": "11/10 진행 결정",
+   "conflict": "등록 작업 중 — 손 습관이 흔들림 → 되돌리기 스위치 · 알라딘 매입·매입가 단추는 위치만",
+   "probe": "",
+   "metric": "상품마다 스크롤 1~2번 줄어듦",
+   "auto": null
+  },
+  {
+   "id": "W10",
+   "surf": "web",
+   "topics": [
+    "filter_chips"
+   ],
+   "cases": [
+    "shopify_views"
+   ],
+   "t": "등록 아래층 탭 → 거르기 칩",
+   "how": "위층(한 상품 = 한 단계)은 그대로 · 아래층은 여러 개 고르는 작은 칩 · 확정 후 처리 대기·보류·휴지통은 오른쪽 회색 묶음",
+   "st": "prop",
+   "ver": "",
+   "conflict": "🛒 알라딘 매입 칩은 모양만 · '마지막 하위 탭 기억' → '마지막 거르기 기억'",
+   "probe": "",
+   "metric": "'같은 상품이 여러 칸에' 안내가 필요 없어짐",
+   "auto": null
+  },
+  {
+   "id": "W11",
+   "surf": "web",
+   "topics": [
+    "confirm_style"
+   ],
+   "cases": [
+    "shopify_frame",
+    "shopify_shipping"
+   ],
+   "t": "확인 방식 — 두 번 누르기 기본 + 보완",
+   "how": "0.4초 안 두 번째 누름 무시 · 무장한 단추에 대상·수 표시 · 되돌릴 수 없는 일은 대상이 보이는 확인",
+   "st": "doing",
+   "ver": "11/10 결정 — 두 번 누르기 유지",
+   "conflict": "출고 원스톱·ALPS 확인 흐름은 손대지 않음 · 등록 두 번 누르기(11/05 결정) 그대로",
+   "probe": "",
+   "metric": "실수로 두 번 눌러 생긴 일",
+   "auto": null
+  },
+  {
+   "id": "W12",
+   "surf": "web",
+   "topics": [
+    "bottom_tabs"
+   ],
+   "cases": [
+    "seller_app_tabs"
+   ],
+   "t": "휴대폰 아래 탭 5 + ⋯ 더 보기",
+   "how": "휴대폰만 홈·상품·주문·매입·⋯ · 어떤 5개를 둘지는 기기별",
+   "st": "doing",
+   "ver": "11/10 진행 결정",
+   "conflict": "release-guard·tTHIN이 탭 줄의 모든 탭을 검사 → ⋯ 안 탭도 탭으로 세게 · 📱 앱 바로 가기 그대로",
+   "probe": "",
+   "metric": "휴대폰 오누름",
+   "auto": null
+  },
+  {
+   "id": "W13",
+   "surf": "web",
+   "topics": [
+    "error_human"
+   ],
+   "cases": [
+    "shopify_shipping"
+   ],
+   "t": "오류 글 한국어(공용 errKo)",
+   "how": "권한·연결·시간 초과·한도·빈 응답·없음을 한국어로 + (원래 오류) · 약 470곳",
+   "st": "branch",
+   "ver": "work/ux2-1110 2e06328",
+   "conflict": "알림 '완료' 열쇠는 원래 오류 코드로(문구가 바뀌어 다시 뜨지 않게)",
+   "probe": "errKo",
+   "metric": "화면에 영어 원문 오류가 보인 곳 수(346 → 0)",
+   "auto": null
+  },
+  {
+   "id": "W14",
+   "surf": "web",
+   "topics": [
+    "nav_grouping"
+   ],
+   "cases": [
+    "amazon_menu"
+   ],
+   "t": "판매자 탭 → 시장 탭 안",
+   "how": "경쟁 판매자·책방대조·집중 벤치마킹 바로 가기를 시장 탭 첫 칸으로 · 아래 탭 한 칸 비움",
+   "st": "doing",
+   "ver": "11/10 진행 결정",
+   "conflict": "판매자 목록은 열 때만 받기(메모리) · 바로 가기 링크·설명서 길 안내",
+   "probe": "",
+   "metric": "매일 쓰는 탭이 앞으로",
+   "auto": null
+  },
+  {
+   "id": "C01",
+   "surf": "col2",
+   "topics": [
+    "shortcut_common"
+   ],
+   "cases": [
+    "shopify_search"
+   ],
+   "t": "번외 단축키를 웹앱과 맞춤",
+   "how": "설정 Alt+O · 바로 가기 Ctrl+K · 작게 Alt+Shift+M · 새로 보기 Alt+U · 웹앱과 다른 일로 겹치면 ⚠ 노란 알림",
+   "st": "branch",
+   "ver": "work/ux2-1110 2e06328",
+   "conflict": "웹앱 Alt+S(등록 입력칸)·Alt+G(백과)는 등록 습관이라 그대로 · 번외 쪽을 바꿈",
+   "probe": "",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "L01",
+   "surf": "ledger",
+   "topics": [
+    "max_qty",
+    "sync_delay"
+   ],
+   "cases": [
+    "linnworks_maxlisted",
+    "sellbrite_rules",
+    "listingmirror"
+   ],
+   "t": "예스24 수량 상한 기본 1권",
+   "how": "실물이 여러 권이어도 예스24엔 1권(⚙ 1~10) — 내리기가 사람 손이라 늦을 수 있는 판매처",
+   "st": "done",
+   "ver": "1.78.456",
+   "conflict": "알라딘 수량은 안 건드림",
+   "probe": "mcPlan",
+   "metric": "이중 판매 건수(예스24 연결 표 사례)",
+   "auto": null
+  },
+  {
+   "id": "L02",
+   "surf": "ledger",
+   "topics": [
+    "stop_other",
+    "notify_once"
+   ],
+   "cases": [
+    "godomall",
+    "sabangnet",
+    "linnworks_maxlisted",
+    "playauto"
+   ],
+   "t": "🔻 내릴 일(한 곳 팔리면 다른 곳 내림)",
+   "how": "남은 실물 = 실물 수 − 최근 14일 주문 권수 · 판매중 수량이 더 크면 내리기/줄이기 · 홈 알림 한 번 · 판매처 수량을 더하지 않음",
+   "st": "done",
+   "ver": "1.78.456",
+   "conflict": "예스24 판매중지는 아직 사람 손(알림 + 바로 가기) — 자동은 L03",
+   "probe": "mcPlan",
+   "metric": "주문 들어온 뒤 다른 판매처에서 내리기까지 걸린 시간",
+   "auto": null
+  },
+  {
+   "id": "L03",
+   "surf": "ledger",
+   "topics": [
+    "stop_other"
+   ],
+   "cases": [
+    "godomall",
+    "sabangnet"
+   ],
+   "t": "예스24 판매중지 자동",
+   "how": "사람이 예스24에서 판매중지를 1건 실제로 누를 때 수집기 그림자가 요청 모양을 받으면 자동으로",
+   "st": "hold",
+   "ver": "",
+   "conflict": "짐작한 요청을 보내면 계정 위험 — 요청 모양을 받기 전 자동 금지",
+   "probe": "",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "L04",
+   "surf": "ledger",
+   "topics": [
+    "sku_link"
+   ],
+   "cases": [
+    "rithum",
+    "linnworks_maxlisted"
+   ],
+   "t": "예스24 자체코드 = 우리 SKU",
+   "how": "올린 매물이 실물과 저절로 짝지어짐(연결 표·통합 장부)",
+   "st": "done",
+   "ver": "1.78.450",
+   "conflict": "SKU 없는 옛 상품은 알라딘 수량으로 어림",
+   "probe": "y24RegAoa",
+   "metric": "짝 못 찾은 예스24 매물 수",
+   "auto": null
+  },
+  {
+   "id": "L05",
+   "surf": "ledger",
+   "topics": [
+    "no_min_qty"
+   ],
+   "cases": [
+    "sellbrite_rules"
+   ],
+   "t": "최소 수량 규칙 없음 · 실물 수 기준",
+   "how": "상한만 둠 · 예스24 수량은 우리 장부 기준(판매처에서 직접 고친 수량은 믿지 않음)",
+   "st": "done",
+   "ver": "1.78.456",
+   "conflict": "",
+   "probe": "mcPlan",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "L06",
+   "surf": "ledger",
+   "topics": [
+    "channel_price"
+   ],
+   "cases": [
+    "cafe24_market",
+    "playauto"
+   ],
+   "t": "판매처별 판매가",
+   "how": "예스24 판매가 엔진(우리뿐·허위만이면 알라딘 +20% · 경쟁이 있으면 유효 동급 최저) · 알라딘 값은 안 건드림",
+   "st": "done",
+   "ver": "1.78.456",
+   "conflict": "약속 36(값 연구는 진행 중·3개월 안·14일 안 고친 상품 안 건드림)",
+   "probe": "y24EngVal",
+   "metric": "예스24 판매 수·판매가 대비 알라딘 값",
+   "auto": null
+  },
+  {
+   "id": "L07",
+   "surf": "ledger",
+   "topics": [
+    "one_ledger",
+    "channel_fee"
+   ],
+   "cases": [
+    "sabangnet",
+    "smartstore_fee"
+   ],
+   "t": "🧾 통합 장부(실물 한 권 = SKU 한 줄)",
+   "how": "외부 통합 솔루션을 들이지 않고 우리 한 원장 + 판매처 어댑터 — 1단계 읽기 전용 화면(판매처별 판매중·30일 주문·수수료·정산 어림·⚠ 이중 판매)",
+   "st": "done",
+   "ver": "1.78.450",
+   "conflict": "사방넷 등은 알라딘·예스24 중고 매물을 못 다룸 → 판매처가 두 시스템으로 갈라지면 한 권 잠금이 연동에 기댐",
+   "probe": "ledBuild",
+   "metric": "경영 탭 매출과 장부 합계가 맞는 날 수(1~2주 대조)",
+   "auto": null
+  },
+  {
+   "id": "L08",
+   "surf": "ledger",
+   "topics": [
+    "sku_link",
+    "one_ledger"
+   ],
+   "cases": [
+    "rithum"
+   ],
+   "t": "판매처 짝 칸·실물 원장 굳히기(ch_links · inv_items)",
+   "how": "사람 짝 우선 → 클라우드가 SKU 상태를 채움(읽기 시험) → 팔림 → 나머지 내리기 일",
+   "st": "prop",
+   "ver": "",
+   "conflict": "지금 알라딘 중심 칸은 그대로 두고 얇은 한 겹만(지우지 않음)",
+   "probe": "",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "L09",
+   "surf": "ledger",
+   "topics": [
+    "buffer"
+   ],
+   "cases": [
+    "linnworks_buffer",
+    "rithum"
+   ],
+   "t": "판매처별 수량 완충",
+   "how": "따로 두지 않음 — 중고 실물은 대개 1권이라 상한 1이 완충 몫을 함",
+   "st": "no",
+   "ver": "",
+   "conflict": "완충을 더 두면 1권짜리가 어디에도 안 올라감",
+   "probe": "",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "L10",
+   "surf": "ledger",
+   "topics": [
+    "channel_api"
+   ],
+   "cases": [
+    "naver_commerce_api"
+   ],
+   "t": "네이버 커머스API 어댑터",
+   "how": "클라우드 몫(PC 수집기 필요 없음 · 고정 IP 등록) · 상품 수정은 조회 → 고침 → 보냄",
+   "st": "prop",
+   "ver": "",
+   "conflict": "수집기 머리와 무관 · 시크릿은 Secret Manager",
+   "probe": "",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "V01",
+   "surf": "web",
+   "topics": [
+    "review_topics"
+   ],
+   "cases": [
+    "amazon_review_topics"
+   ],
+   "t": "🗣 구매평·문의 연구 주제 칩 → 그 글만",
+   "how": "배송·포장·상태·설명 차이·파손·가격·응대 주제 칩 · 대표 글",
+   "st": "done",
+   "ver": "1.78.456",
+   "conflict": "글 원문·아이디는 연구 요약에 없음",
+   "probe": "voStats",
+   "metric": "주제를 찾은 구매평 몫(목표 80%)",
+   "auto": null
+  },
+  {
+   "id": "V02",
+   "surf": "web",
+   "topics": [
+    "review_lift"
+   ],
+   "cases": [
+    "review_mining"
+   ],
+   "t": "불만 끌림 순위",
+   "how": "불만족 중 몫 ÷ 전체 몫",
+   "st": "done",
+   "ver": "1.78.456",
+   "conflict": "",
+   "probe": "voStats",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "S01",
+   "surf": "shop",
+   "topics": [
+    "pg_checkout"
+   ],
+   "cases": [
+    "tosspayments",
+    "portone_compare"
+   ],
+   "t": "자사몰 결제",
+   "how": "결제 전 원장에서 SKU를 잡아 둠 · 금액은 원장 값으로 다시 맞춤 · 실패·시간 넘김이면 풂",
+   "st": "prop",
+   "ver": "",
+   "conflict": "우리 클라우드가 멈추면 결제 전에 멈춤(돈 사고 없음) · 손님 브라우저는 Firestore를 직접 읽지 않음",
+   "probe": "",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "S02",
+   "surf": "shop",
+   "topics": [
+    "escrow",
+    "law_notice"
+   ],
+   "cases": [
+    "tosspayments"
+   ],
+   "t": "구매안전·법 표시 화면",
+   "how": "사업자 정보·통신판매업 신고번호·청약철회·처리방침을 숍 첫 판에(PG 심사 조건)",
+   "st": "prop",
+   "ver": "",
+   "conflict": "",
+   "probe": "",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "S03",
+   "surf": "shop",
+   "topics": [
+    "shop_platform"
+   ],
+   "cases": [
+    "cafe24_shop"
+   ],
+   "t": "숍 솔루션에 얹을까 직접 만들까",
+   "how": "추천 = 숍 솔루션 대신 같은 Firebase 프로젝트의 둘째 Hosting 사이트(booksqueen.com) — 숍만 검색 허용",
+   "st": "ask",
+   "ver": "",
+   "conflict": "같은 사이트 다른 경로면 숍 주소로 관리 웹앱까지 열림",
+   "probe": "",
+   "metric": "",
+   "auto": null
+  }
+ ],
+ "gaps": [
+  {
+   "surf": "ui2",
+   "topic": "order_todo",
+   "t": "처리할 주문 숫자를 먼저",
+   "kind": "gap",
+   "cases": [
+    "ebay_hub",
+    "naver_center_home",
+    "shopify_orders"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 8.4
+  },
+  {
+   "surf": "web",
+   "topic": "order_todo",
+   "t": "처리할 주문 숫자를 먼저",
+   "kind": "behind",
+   "cases": [
+    "ebay_hub",
+    "naver_center_home",
+    "shopify_orders"
+   ],
+   "items": [
+    "W06"
+   ],
+   "carry": null,
+   "pri": 8.4
+  },
+  {
+   "surf": "shop",
+   "topic": "stop_other",
+   "t": "한 곳 팔리면 다른 곳 내림",
+   "kind": "gap",
+   "cases": [
+    "linnworks_maxlisted",
+    "godomall",
+    "cafe24_market"
+   ],
+   "items": [],
+   "carry": "ledger",
+   "pri": 6.0
+  },
+  {
+   "surf": "ui2",
+   "topic": "confirm_style",
+   "t": "확인 방식 하나로(되돌리기·대상 보이는 확인)",
+   "kind": "own",
+   "cases": [
+    "shopify_frame",
+    "shopify_shipping"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 6.0
+  },
+  {
+   "surf": "ui2",
+   "topic": "quick_actions",
+   "t": "자주 쓰는 일 입구를 맨 위에",
+   "kind": "own",
+   "cases": [
+    "ebay_hub",
+    "amazon_app"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 6.0
+  },
+  {
+   "surf": "ui2",
+   "topic": "scan_first",
+   "t": "스캔(ISBN)이 첫 동작",
+   "kind": "gap",
+   "cases": [
+    "amazon_app",
+    "bibliopolis"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 6.0
+  },
+  {
+   "surf": "web",
+   "topic": "confirm_style",
+   "t": "확인 방식 하나로(되돌리기·대상 보이는 확인)",
+   "kind": "behind",
+   "cases": [
+    "shopify_frame",
+    "shopify_shipping"
+   ],
+   "items": [
+    "W11"
+   ],
+   "carry": null,
+   "pri": 6.0
+  },
+  {
+   "surf": "web",
+   "topic": "quick_actions",
+   "t": "자주 쓰는 일 입구를 맨 위에",
+   "kind": "behind",
+   "cases": [
+    "ebay_hub",
+    "amazon_app"
+   ],
+   "items": [
+    "W02"
+   ],
+   "carry": null,
+   "pri": 6.0
+  },
+  {
+   "surf": "web",
+   "topic": "scan_first",
+   "t": "스캔(ISBN)이 첫 동작",
+   "kind": "behind",
+   "cases": [
+    "amazon_app",
+    "bibliopolis"
+   ],
+   "items": [
+    "W09"
+   ],
+   "carry": null,
+   "pri": 6.0
+  },
+  {
+   "surf": "ledger",
+   "topic": "order_todo",
+   "t": "처리할 주문 숫자를 먼저",
+   "kind": "gap",
+   "cases": [
+    "ebay_hub",
+    "naver_center_home"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 5.4
+  },
+  {
+   "surf": "ledger",
+   "topic": "list_views",
+   "t": "한 목록 + 보기 탭(저장한 거르기)",
+   "kind": "gap",
+   "cases": [
+    "shopify_views",
+    "linnworks_views"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 4.0
+  },
+  {
+   "surf": "ui2",
+   "topic": "list_views",
+   "t": "한 목록 + 보기 탭(저장한 거르기)",
+   "kind": "gap",
+   "cases": [
+    "shopify_views",
+    "linnworks_views"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 4.0
+  },
+  {
+   "surf": "web",
+   "topic": "list_views",
+   "t": "한 목록 + 보기 탭(저장한 거르기)",
+   "kind": "behind",
+   "cases": [
+    "shopify_views",
+    "linnworks_views"
+   ],
+   "items": [
+    "W03"
+   ],
+   "carry": null,
+   "pri": 4.0
+  },
+  {
+   "surf": "shop",
+   "topic": "pg_checkout",
+   "t": "자사몰 결제(PG 결제창)",
+   "kind": "behind",
+   "cases": [
+    "tosspayments",
+    "portone_compare"
+   ],
+   "items": [
+    "S01"
+   ],
+   "carry": null,
+   "pri": 3.6
+  },
+  {
+   "surf": "col2",
+   "topic": "header_slim",
+   "t": "머리 칸을 얇게(상태는 점 하나)",
+   "kind": "gap",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 3.0
+  },
+  {
+   "surf": "col2",
+   "topic": "unified_search",
+   "t": "어디서든 같은 검색 + 범위 칩",
+   "kind": "gap",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 3.0
+  },
+  {
+   "surf": "ledger",
+   "topic": "quick_actions",
+   "t": "자주 쓰는 일 입구를 맨 위에",
+   "kind": "gap",
+   "cases": [
+    "ebay_hub"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 3.0
+  },
+  {
+   "surf": "shop",
+   "topic": "confirm_style",
+   "t": "확인 방식 하나로(되돌리기·대상 보이는 확인)",
+   "kind": "gap",
+   "cases": [
+    "shopify_frame"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 3.0
+  },
+  {
+   "surf": "shop",
+   "topic": "notify_area",
+   "t": "떠 있는 알림을 한 자리에",
+   "kind": "gap",
+   "cases": [
+    "shopify_frame"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 3.0
+  },
+  {
+   "surf": "ui2",
+   "topic": "header_slim",
+   "t": "머리 칸을 얇게(상태는 점 하나)",
+   "kind": "gap",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 3.0
+  },
+  {
+   "surf": "ui2",
+   "topic": "notify_area",
+   "t": "떠 있는 알림을 한 자리에",
+   "kind": "own",
+   "cases": [
+    "shopify_frame"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 3.0
+  },
+  {
+   "surf": "ui2",
+   "topic": "unified_search",
+   "t": "어디서든 같은 검색 + 범위 칩",
+   "kind": "gap",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 3.0
+  },
+  {
+   "surf": "web",
+   "topic": "header_slim",
+   "t": "머리 칸을 얇게(상태는 점 하나)",
+   "kind": "behind",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [
+    "W04"
+   ],
+   "carry": null,
+   "pri": 3.0
+  },
+  {
+   "surf": "web",
+   "topic": "notify_area",
+   "t": "떠 있는 알림을 한 자리에",
+   "kind": "behind",
+   "cases": [
+    "shopify_frame"
+   ],
+   "items": [
+    "W01"
+   ],
+   "carry": null,
+   "pri": 3.0
+  },
+  {
+   "surf": "web",
+   "topic": "unified_search",
+   "t": "어디서든 같은 검색 + 범위 칩",
+   "kind": "behind",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [
+    "W05"
+   ],
+   "carry": null,
+   "pri": 3.0
+  },
+  {
+   "surf": "col2",
+   "topic": "shortcut_common",
+   "t": "단축키는 어디서나 같은 뜻",
+   "kind": "behind",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [
+    "C01"
+   ],
+   "carry": null,
+   "pri": 2.0
+  },
+  {
+   "surf": "ledger",
+   "topic": "filter_chips",
+   "t": "조건은 탭이 아니라 거르기 칩",
+   "kind": "gap",
+   "cases": [
+    "shopify_views"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 2.0
+  },
+  {
+   "surf": "shop",
+   "topic": "channel_price",
+   "t": "판매처별 판매가(할인·할증)",
+   "kind": "gap",
+   "cases": [
+    "cafe24_market"
+   ],
+   "items": [],
+   "carry": "ledger",
+   "pri": 2.0
+  },
+  {
+   "surf": "shop",
+   "topic": "max_qty",
+   "t": "판매처별 수량 상한",
+   "kind": "gap",
+   "cases": [
+    "linnworks_maxlisted"
+   ],
+   "items": [],
+   "carry": "ledger",
+   "pri": 2.0
+  },
+  {
+   "surf": "shop",
+   "topic": "sku_link",
+   "t": "판매처 매물 ↔ 실물(SKU) 한 줄로 이음",
+   "kind": "gap",
+   "cases": [
+    "linnworks_maxlisted"
+   ],
+   "items": [],
+   "carry": "ledger",
+   "pri": 2.0
+  },
+  {
+   "surf": "ui2",
+   "topic": "error_human",
+   "t": "오류는 '무엇이 왜 · 무엇을 하나'로",
+   "kind": "gap",
+   "cases": [
+    "shopify_shipping"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 2.0
+  },
+  {
+   "surf": "ui2",
+   "topic": "filter_chips",
+   "t": "조건은 탭이 아니라 거르기 칩",
+   "kind": "gap",
+   "cases": [
+    "shopify_views"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 2.0
+  },
+  {
+   "surf": "ui2",
+   "topic": "shortcut_common",
+   "t": "단축키는 어디서나 같은 뜻",
+   "kind": "gap",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 2.0
+  },
+  {
+   "surf": "web",
+   "topic": "error_human",
+   "t": "오류는 '무엇이 왜 · 무엇을 하나'로",
+   "kind": "behind",
+   "cases": [
+    "shopify_shipping"
+   ],
+   "items": [
+    "W13"
+   ],
+   "carry": null,
+   "pri": 2.0
+  },
+  {
+   "surf": "web",
+   "topic": "filter_chips",
+   "t": "조건은 탭이 아니라 거르기 칩",
+   "kind": "behind",
+   "cases": [
+    "shopify_views"
+   ],
+   "items": [
+    "W10"
+   ],
+   "carry": null,
+   "pri": 2.0
+  },
+  {
+   "surf": "web",
+   "topic": "shortcut_common",
+   "t": "단축키는 어디서나 같은 뜻",
+   "kind": "behind",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [
+    "W05"
+   ],
+   "carry": null,
+   "pri": 2.0
+  },
+  {
+   "surf": "web",
+   "topic": "channel_price",
+   "t": "판매처별 판매가(할인·할증)",
+   "kind": "gap",
+   "cases": [
+    "playauto"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 1.6
+  },
+  {
+   "surf": "web",
+   "topic": "notify_once",
+   "t": "같은 알림은 바뀔 때 한 번",
+   "kind": "own",
+   "cases": [
+    "playauto"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 1.6
+  },
+  {
+   "surf": "col2",
+   "topic": "settings_search",
+   "t": "설정 갈래 목차 + 설정 찾기",
+   "kind": "gap",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 1.0
+  },
+  {
+   "surf": "shop",
+   "topic": "escrow",
+   "t": "구매안전서비스",
+   "kind": "behind",
+   "cases": [
+    "tosspayments"
+   ],
+   "items": [
+    "S02"
+   ],
+   "carry": null,
+   "pri": 1.0
+  },
+  {
+   "surf": "shop",
+   "topic": "law_notice",
+   "t": "법 표시(사업자 정보·청약철회·처리방침)",
+   "kind": "behind",
+   "cases": [
+    "tosspayments"
+   ],
+   "items": [
+    "S02"
+   ],
+   "carry": null,
+   "pri": 1.0
+  },
+  {
+   "surf": "ui2",
+   "topic": "bottom_tabs",
+   "t": "휴대폰 아래 탭 4~5개 + 더 보기",
+   "kind": "gap",
+   "cases": [
+    "seller_app_tabs"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 1.0
+  },
+  {
+   "surf": "ui2",
+   "topic": "settings_one_place",
+   "t": "한 일의 설정은 한 곳",
+   "kind": "gap",
+   "cases": [
+    "shopify_shipping"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 1.0
+  },
+  {
+   "surf": "ui2",
+   "topic": "settings_search",
+   "t": "설정 갈래 목차 + 설정 찾기",
+   "kind": "gap",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 1.0
+  },
+  {
+   "surf": "web",
+   "topic": "bottom_tabs",
+   "t": "휴대폰 아래 탭 4~5개 + 더 보기",
+   "kind": "behind",
+   "cases": [
+    "seller_app_tabs"
+   ],
+   "items": [
+    "W12"
+   ],
+   "carry": null,
+   "pri": 1.0
+  },
+  {
+   "surf": "web",
+   "topic": "settings_one_place",
+   "t": "한 일의 설정은 한 곳",
+   "kind": "behind",
+   "cases": [
+    "shopify_shipping"
+   ],
+   "items": [
+    "W07"
+   ],
+   "carry": null,
+   "pri": 1.0
+  },
+  {
+   "surf": "web",
+   "topic": "settings_search",
+   "t": "설정 갈래 목차 + 설정 찾기",
+   "kind": "behind",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [
+    "W08"
+   ],
+   "carry": null,
+   "pri": 1.0
+  },
+  {
+   "surf": "ledger",
+   "topic": "channel_api",
+   "t": "판매처 공식 연동(API)",
+   "kind": "behind",
+   "cases": [
+    "naver_commerce_api"
+   ],
+   "items": [
+    "L10"
+   ],
+   "carry": null,
+   "pri": 0.8
+  },
+  {
+   "surf": "shop",
+   "topic": "shop_platform",
+   "t": "숍 솔루션에 얹을까 직접 만들까",
+   "kind": "behind",
+   "cases": [
+    "cafe24_shop"
+   ],
+   "items": [
+    "S03"
+   ],
+   "carry": null,
+   "pri": 0.8
+  },
+  {
+   "surf": "shop",
+   "topic": "review_topics",
+   "t": "구매평 주제 칩 → 그 글만",
+   "kind": "gap",
+   "cases": [
+    "amazon_review_topics"
+   ],
+   "items": [],
+   "carry": "web",
+   "pri": 0.5
+  },
+  {
+   "surf": "ui2",
+   "topic": "nav_grouping",
+   "t": "메뉴를 할 일 갈래로",
+   "kind": "own",
+   "cases": [
+    "amazon_menu"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 0.5
+  },
+  {
+   "surf": "web",
+   "topic": "nav_grouping",
+   "t": "메뉴를 할 일 갈래로",
+   "kind": "behind",
+   "cases": [
+    "amazon_menu"
+   ],
+   "items": [
+    "W14"
+   ],
+   "carry": null,
+   "pri": 0.5
+  }
+ ],
+ "events": [],
+ "collect": [
+  {
+   "t": "쿠팡 윙 판매자 센터 공식 도움말(주문·정산·상품 등록 화면)",
+   "why": "국내 최대 판매자 센터인데 공식 근거를 못 찾아 쓰지 않았음",
+   "for": "web · ui2",
+   "by": "사람"
+  },
+  {
+   "t": "사방넷·플레이오토·셀러허브의 '판매처 마스터 품절' 설정 화면 원문",
+   "why": "업계 일반 설명만 근거 — 정확한 규칙(품절 시점·되살림)을 몰라 🔻 내릴 일을 그 수준까지 견주지 못함",
+   "for": "ledger L02",
+   "by": "사람"
+  },
+  {
+   "t": "국내 헌책 판매 도구·헌책방 통합 관리 사례(국내)",
+   "why": "헌책 판매 도구 사례가 해외 하나(Bibliopolis)뿐",
+   "for": "web · ui2",
+   "by": "사람"
+  },
+  {
+   "t": "Firebase Hosting 여러 사이트(multisite) 공식 문서",
+   "why": "우리숍을 둘째 사이트로 두는 설계의 공식 근거를 아직 붙이지 않음",
+   "for": "shop S03",
+   "by": "사람"
+  },
+  {
+   "t": "네이버 커머스API 공식 문서(상품 수정 전체 보냄 규칙 · 2RPS)",
+   "why": "지금은 토론 글·안내 글 근거(보도 등급)",
+   "for": "ledger L10",
+   "by": "사람"
+  },
+  {
+   "t": "자사몰 장바구니·비회원 주문 화면 사례(국내 중고책·중고 거래)",
+   "why": "우리숍 앞면 설계 근거가 아직 없음",
+   "for": "shop",
+   "by": "사람"
+  },
+  {
+   "t": "판매자 센터 '휴대폰 아래 탭' 공식 디자인 지침",
+   "why": "W12의 근거가 화면 관찰뿐",
+   "for": "web W12",
+   "by": "사람"
+  },
+  {
+   "t": "효과 숫자 — 적용 전·뒤 같은 기간의 쓰임·실수·속도(예: 등록 1권당 걸린 시간 · 두 번 눌러 생긴 되돌리기 수 · 이중 판매 건수)",
+   "why": "엔진이 사례 가중치를 '적용됨'만이 아니라 효과로 고치려면 필요",
+   "for": "모든 done 줄",
+   "by": "사람"
+  },
+  {
+   "t": "Shopify 모바일 앱 등 판매자 앱 — 휴대폰 아래 탭 4~5개 + 더 보기 원문 주소",
+   "why": "화면을 보고 짐작한 근거(관찰 등급) — 공식 원문이 있으면 가중치 한도가 오름",
+   "for": "web, ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "Amazon Seller Central — 메뉴를 카탈로그·재고·가격·주문·광고·보고서처럼 할 일 갈래로 원문 주소",
+   "why": "화면을 보고 짐작한 근거(관찰 등급) — 공식 원문이 있으면 가중치 한도가 오름",
+   "for": "web, ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "Amazon · 쿠팡 — 리뷰 '자주 언급된 주제' 칩 · 상품평 요약 — 주제 칩을 누르면 그 글만 원문 주소",
+   "why": "화면을 보고 짐작한 근거(관찰 등급) — 공식 원문이 있으면 가중치 한도가 오름",
+   "for": "web, shop",
+   "by": "엔진"
+  },
+  {
+   "t": "리뷰 분석 도구(리뷰 마이닝) — 불만 끌림(lift) 순위 — 불만족 글에서 유난히 많이 나오는 주제 원문 주소",
+   "why": "화면을 보고 짐작한 근거(관찰 등급) — 공식 원문이 있으면 가중치 한도가 오름",
+   "for": "web",
+   "by": "엔진"
+  },
+  {
+   "t": "웹앱에 견줄 헌책 판매 도구 공식 사례(지금 1개)",
+   "why": "갈래마다 공식 사례 2개 넘게 있어야 한 회사 방식에 치우치지 않음",
+   "for": "web",
+   "by": "엔진"
+  },
+  {
+   "t": "번외 수집기에 견줄 판매자 센터 공식 사례(지금 1개)",
+   "why": "갈래마다 공식 사례 2개 넘게 있어야 한 회사 방식에 치우치지 않음",
+   "for": "col2",
+   "by": "엔진"
+  },
+  {
+   "t": "통합 장부에 견줄 판매처 공식 연동 공식 사례(지금 0개)",
+   "why": "갈래마다 공식 사례 2개 넘게 있어야 한 회사 방식에 치우치지 않음",
+   "for": "ledger",
+   "by": "엔진"
+  },
+  {
+   "t": "우리숍(booksqueen.com)에 견줄 자사몰·결제 공식 사례(지금 1개)",
+   "why": "갈래마다 공식 사례 2개 넘게 있어야 한 회사 방식에 치우치지 않음",
+   "for": "shop",
+   "by": "엔진"
+  },
+  {
+   "t": "우리숍(booksqueen.com)에 견줄 구매평 분석 공식 사례(지금 0개)",
+   "why": "갈래마다 공식 사례 2개 넘게 있어야 한 회사 방식에 치우치지 않음",
+   "for": "shop",
+   "by": "엔진"
+  },
+  {
+   "t": "L01 예스24 수량 상한 기본 1권 — 효과 숫자: 이중 판매 건수(예스24 연결 표 사례)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ledger",
+   "by": "엔진"
+  },
+  {
+   "t": "L02 🔻 내릴 일(한 곳 팔리면 다른 곳 내림) — 효과 숫자: 주문 들어온 뒤 다른 판매처에서 내리기까지 걸린 시간",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ledger",
+   "by": "엔진"
+  },
+  {
+   "t": "L04 예스24 자체코드 = 우리 SKU — 효과 숫자: 짝 못 찾은 예스24 매물 수",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ledger",
+   "by": "엔진"
+  },
+  {
+   "t": "L06 판매처별 판매가 — 효과 숫자: 예스24 판매 수·판매가 대비 알라딘 값",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ledger",
+   "by": "엔진"
+  },
+  {
+   "t": "L07 🧾 통합 장부(실물 한 권 = SKU 한 줄) — 효과 숫자: 경영 탭 매출과 장부 합계가 맞는 날 수(1~2주 대조)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ledger",
+   "by": "엔진"
+  },
+  {
+   "t": "V01 🗣 구매평·문의 연구 주제 칩 → 그 글만 — 효과 숫자: 주제를 찾은 구매평 몫(목표 80%)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "web",
+   "by": "엔진"
+  }
+ ]
+}
