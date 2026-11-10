@@ -39,8 +39,8 @@ const READ_FN = `async (url, tmo) => { const AL = globalThis.ReadnowAladin, P = 
 
 /* (0.1.9) 그림자 일 읽기 — 같은 길(쿠키 없이 fetch → decode → DOMParser → 점검·로그인 화면 확인) 뒤 정한 해석 함수 하나만(P=상품 · S=판매자 · L=운영 본체에서 떼어 온 함수)
  *  해석 함수 이름은 정해 둔 것만(아래 표) — 다른 글자를 실행하지 않음 */
-const PARSE_OK = ['P.parseProductPage', 'P.parseUsedPage', 'S.parseShopSummary', 'S.parseSurveyPage', 'L.benchParse'];
-const READ_JOB_FN = `async (url, pn, tmo) => { const AL = globalThis.ReadnowAladin, M = { P: globalThis.ReadnowProducts, S: globalThis.ReadnowSellers, L: globalThis.Col2Lift };
+const PARSE_OK = ['P.parseProductPage', 'P.parseUsedPage', 'S.parseShopSummary', 'S.parseSurveyPage', 'L.benchParse', /* (11/10) 🗣 판매자 목소리 — 번외 해석(shadow/col2-voice-core.js) */ 'V.findQnaLink', 'V.parseQnaPage'];
+const READ_JOB_FN = `async (url, pn, tmo) => { const AL = globalThis.ReadnowAladin, M = { P: globalThis.ReadnowProducts, S: globalThis.ReadnowSellers, L: globalThis.Col2Lift, V: globalThis.Col2Voice };
   const [ns, fn] = String(pn).split('.'); const f = M[ns] && M[ns][fn]; if (!AL || typeof f !== 'function') return { ok: false, why: '해석 함수가 안 들어감: ' + pn, kind: 'error' };
   const ac = new AbortController(); const to = setTimeout(() => ac.abort(), tmo); let r, buf; const t0 = Date.now();
   try { r = await fetch(url, { credentials: 'omit', cache: 'no-store', signal: ac.signal }); buf = r.ok ? await r.arrayBuffer() : null; } catch (e) { return { ok: false, why: e.name === 'AbortError' ? '알라딘이 ' + Math.round(tmo / 1000) + '초 안에 답하지 않음' : '읽기 실패: ' + e.message, kind: e.name === 'AbortError' ? 'timeout' : 'error' }; } finally { clearTimeout(to); }
