@@ -2640,7 +2640,7 @@ function mscApply() { if (M_.doc) mscDevMigrate(); const inS = mscInScope() && !
   if (S.tab === 'home') { const w = document.querySelector('#wc_mascot .wbody'); if (w) w.innerHTML = mscWidget(); } mscOneEach(); }
 
 function mscIcoClick() { if ((M_.mv && M_.mv.on) || (M_.mvNoClick && performance.now() - M_.mvNoClick < 700)) return; /* (r16) 2초 눌러 옮긴 뒤 손을 뗄 때 생기는 click은 켜기·끄기로 치지 않음 */ const mine = mscMine(); if (!mine.charId || !mine.name || !mscChar(mine.charId)) { if (document.getElementById('msc_ov')) return mscPanel(false); if (!M_.doc || (mscProg() && !mscDev())) { M_.icoWaitN = (M_.icoWaitN || 0) + 1; return toast('🐾 책방 친구 설정을 불러오는 중이에요 — 잠깐 뒤에 다시 눌러 주세요'); } /* (r17) 아직 이 기기 설정을 못 받은 때 누르면 '캐릭터 고르기' 창이 떠 버리던 것 */ /* (r16) 연 단추를 다시 누르면 닫힘 */ toast(mine.name && mine.charGone ? '🐾 고른 캐릭터가 지워졌어요 — 다시 골라 주세요' : '🐾 먼저 내 이름과 캐릭터를 골라 주세요'); return mscPanel(true); }
-  const nv = !mscOpen(); try { localStorage.setItem('rn-msc-open', nv ? '1' : '0'); } catch (e) {} M_.doc = { ...(M_.doc || {}), me: { ...((M_.doc || {}).me || {}), [mscDev()]: { ...mine, open: nv } } }; mscApply(); mscSaveMe({ open: nv }, nv ? '🐾 책방 친구 보이기 — 이 기기에 저장(다시 열어도 그대로)' : '🐾 책방 친구 숨김 — 이 기기에 저장'); }
+  const nv = !mscOpen(); try { localStorage.setItem('rn-msc-open', nv ? '1' : '0'); } catch (e) {} M_.doc = { ...(M_.doc || {}), me: { ...((M_.doc || {}).me || {}), [mscDev()]: { ...mine, open: nv } } }; mscOpenLocal(nv); mscApply(); mscSaveMe({ open: nv }, nv ? '🐾 책방 친구 보이기 — 이 기기에 저장(다시 열어도 그대로)' : '🐾 책방 친구 숨김 — 이 기기에 저장'); }
 
 /* ══ (r16 · 정범님 10/30 오전) 🐾 단추 1.5초 누르기 = 옮기기 모드 · 🗑 쓰레기통에 놓으면 끄기
  *  1.5초 전에 떼면 예전처럼 켜기·끄기 · 누르는 1.5초 동안 단추 둘레 원이 차오름(8px 넘게 움직이면 그만) · 1.5초가 되면 단추가 커져 흔들리고 화면 아래 가운데에 🗑가 나타남
@@ -2687,9 +2687,11 @@ function mscMvEnd(mv, how) { const H = mscMvHost(); const hot = how === 1 && msc
   if (hot || how === 3) { if (H) H.mvEnd(false); else mscPosSetVar(mv.p0); if (hot) mscQuit(); else toast('🐾 옮기기를 그만뒀어요(제자리)'); }
   else if (H) H.mvEnd(true); else { const p = mscPosClamp(M_.pos || [0, 0]); mscPosSetVar(p); mscPosSave(p); }
   setTimeout(() => mscAvoidSoon(300), 400); }
+/* (웹앱 1.78 · 11/10 정범님 '껐는데 다시 켜짐') 이 기기 칸(dev.<기기>.me)이 예전 칸(me.<기기>)보다 먼저라(mscMine) 예전 칸만 고치면 바로 다음 mscApply가 옛 값(켬)으로 다시 보였음 — 두 칸 모두 화면 안 값에 */
+function mscOpenLocal(nv) { const dev = mscDev(); if (!dev) return; const sl = mscDevSlot(dev); if (sl && sl.mig) mscDevLocal(dev, { me: { ...(sl.me || {}), open: !!nv } }); }
 function mscApplyTitle() { const ic = document.getElementById('msc_ico'); if (!ic) return; const mine = mscMine(); const open = mscOpen() && !!mine.charId && !!mscChar(mine.charId); ic.title = (open ? '책방 친구 숨기기 (다시 누르면 보임)' : '책방 친구 보이기') + ' · 1.5초 누르면 옮기기(🗑에 놓으면 끄기)'; }
 /* 🗑에 놓음 = 끄기: 프로그램이면 껍데기가 끝냄(RNF_HOOKS.quit) · 웹앱 안·브라우저 탭이면 이 기기에서 캐릭터 끔(🐾는 남아 다시 켤 수 있음 · 웹앱은 그대로) */
-function mscQuit() { const H = RNF_H(); if (H.quit && H.quit()) return; M_.quitN = (M_.quitN || 0) + 1; try { localStorage.setItem('rn-msc-open', '0'); } catch (e) {} const dev = mscDev(); if (dev) { M_.doc = { ...(M_.doc || {}), me: { ...((M_.doc || {}).me || {}), [dev]: { ...mscMine(), open: false } } }; mscApply(); mscSaveMe({ open: false }); } else mscApply();
+function mscQuit() { const H = RNF_H(); if (H.quit && H.quit()) return; M_.quitN = (M_.quitN || 0) + 1; try { localStorage.setItem('rn-msc-open', '0'); } catch (e) {} const dev = mscDev(); if (dev) { M_.doc = { ...(M_.doc || {}), me: { ...((M_.doc || {}).me || {}), [dev]: { ...mscMine(), open: false } } }; mscOpenLocal(false); mscApply(); mscSaveMe({ open: false }); } else mscApply();
   toast('🐾 책방 친구를 껐어요 — 다시 켜려면 🐾 단추를 한 번 눌러요(이 기기)', 0, 5000); }
 /* ══ (r17 · 정범님 10/30 오후 ① '단추를 누르면 가끔 창이 나타나 — 나타나지 않게') 책방 친구 단추·캐릭터에서 뜰 수 있는 창을 모두 막음
  *  · 오른쪽 클릭·펜/손가락 길게 누름 → 문맥 메뉴(WebView2 기본 메뉴 · 휴대폰 '복사·공유' 콜아웃) · 글 고르기 확대경 · 끌기 시작(이모지·그림을 끌어 다른 창에 놓기)

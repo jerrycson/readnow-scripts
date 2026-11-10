@@ -12,7 +12,7 @@ const seed = async (p) => { await p.evaluate(require('./seed.js')); await p.wait
     for (const [k, d] of Object.entries(R)) { await db.collection('reg_items').doc(k).set(d); S.regItems.set(k, { id: k, ...d }); }
     S.pbooks = S.pbooks || new Map(); S.pbooks.set('bkx2', { id: 'bkx2', title: '번호 없는 책(우리 도서에 있음)', isbn13: '9791100000038', aladinItemId: 40002 });
     await db.collection('prd_lookups').add({ key: '9791100000045', itemId: '50003', isbn13: '9791100000045', title: '번호 없는 책(예전 조회에 있음)', at: '2026-09-01T00:00:00Z' });
-    try { S.ver++; localStorage.setItem('rn-reg-view', 'compact'); localStorage.setItem('rn-alpv-mode4', 'live'); localStorage.removeItem('rn-refplat'); } catch (e) {} ALPV.mode = null; S.regT = 'sel'; openRegister(); });
+    try { S.ver++; localStorage.setItem('rn-reg-view', 'compact'); localStorage.setItem('rn-alpv-mode4', 'live'); localStorage.removeItem('rn-refplat'); localStorage.removeItem('rn-alpv-view'); localStorage.removeItem('rn-alpv-rect'); } catch (e) {} ALPV.mode = null; S.regT = 'sel'; openRegister(); });
   await p.waitForTimeout(1500); };
 const RW = (k) => `.rgrow[data-rgexp="${k}"] [data-rgalw]`;
 // 바깥 창 흉내 — 창 열기를 적어 두고 가짜 창을 돌려줌(창이 이미 있으면 주소만 바꾸는지 봄)
@@ -78,7 +78,7 @@ const run = (phone) => async (p) => { console.log(`— ${phone ? '휴대폰(안�
   const w1 = await p.evaluate(() => ({ L: window.__OW, opener: window.__LW && window.__LW.opener, focus: window.__LW && window.__LW.focusN, open: !!document.querySelector('.alpv') }));
   const opens = w1.L.filter((x) => x.u), navs = w1.L.filter((x) => x.nav);
   ok(opens.length === 1 && opens[0].n === 'rn_alwin' && navs.length === 4, '↗ 카드·↗ 다른 카드·창 머리줄 새 탭↗·🗗 작은 창·가운데 단추 = 지정 창 하나(처음만 만들고 다음부터 주소만 바꿈)', w1.L);
-  ok(/wproduct\.aspx\?ItemId=30001/.test(opens[0].u) && /ItemId=40002/.test(navs[0].nav), '↗은 🪟 창이 처음 여는 그 화면', { o: opens[0].u, n: navs[0].nav });
+  ok(/wuseditemall\.aspx\?ItemId=30001&TabType=0/.test(opens[0].u) && /wuseditemall\.aspx\?ItemId=40002&TabType=0/.test(navs[0].nav), '↗ = 그 상품의 전체중고(중고 모두보기 · 정범님 11/10 12시 — 예전엔 🪟 창 처음 화면)', { o: opens[0].u, n: navs[0].nav });
   ok(w1.focus === 5 && w1.open, '누를 때마다 지정 창을 앞으로 · 🪟 창은 그대로', w1);
   ok(phone ? opens[0].f === null : /popup,width=\d+,height=\d+/.test(opens[0].f || ''), phone ? '휴대폰: 창 크기 없이 이름 붙은 새 탭 하나(다시 씀)' : 'PC: 따로 뜨는 지정 창', opens[0]);
   // 지정 창을 닫았으면 다시 만듦(같은 이름)

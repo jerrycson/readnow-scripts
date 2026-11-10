@@ -8,7 +8,7 @@ const APP = process.env.RN_APP || [path.resolve(__dirname, '..', 'app.html'), pa
 const T = fs.readFileSync(APP, 'utf8'); const cut = (a, b) => { const i = T.indexOf(a); const j = T.indexOf(b); if (i < 0 || j < i) throw new Error('덩어리 못 찾음: ' + a); return T.slice(i, j); };
 const F = new Function(cut('/* ◆y24reg 시작', '/* ◆y24reg 끝 */') + cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + '\nreturn { Y24R_BAN, Y24R_DEF, Y24R_HEAD, y24RegCfg, y24RegPrice, y24RegState, y24RegGate, y24RegJudge, y24RegAoa, y24RegFilter, ledBuild };')();
 console.log('① 순수 셈');
-{ const c = F.y24RegCfg({ day: '0', pct: 99, staleDays: 'x' }); ok(c.day === 1 && c.pct === 50 && c.staleDays === F.Y24R_DEF.staleDays, '설정 울타리(하루 상한 1~300 · ±50% · 날 수 기본값)'); ok(F.y24RegPrice(12345, 0) === 12350 && F.y24RegPrice(10000, -10) === 9000 && F.y24RegPrice(0, 0) === 0, '판매가 10원 단위 · ±%'); }
+{ const c = F.y24RegCfg({ day: '0', pct: 99, staleDays: 'x' }); ok(c.day === 0 && c.pct === 50 && c.staleDays === F.Y24R_DEF.staleDays && F.y24RegCfg({ day: 999 }).day === 300 && F.Y24R_DEF.day === 0, '설정 울타리(하루 상한 0=없음(기본 · 정범님 11/10)~300 · ±50% · 날 수 기본값)'); ok(F.y24RegPrice(12345, 0) === 12350 && F.y24RegPrice(10000, -10) === 9000 && F.y24RegPrice(0, 0) === 0, '판매가 10원 단위 · ±%'); }
 const L = (o) => ({ id: 'aladin_U1', title: '시험 책', isbn: '9788900000001', grade: '상', price: 8000, qty: 1, live: true, skus: ['A01BC123PK'], dupes: false, adult: false, ...o });
 const X0 = () => ({ onY24: new Map(), selfSet: new Set(), led: {}, ledSku: new Set(), cfg: F.Y24R_DEF });
 { const j = F.y24RegJudge(L(), X0()); ok(j.ok && j.row.isbn === '9788900000001' && j.row.self === 'A01BC123PK' && j.row.price === 8000 && j.row.qty === 1, '판매중·ISBN·등급·SKU 있음 → 올릴 줄(자체코드 = SKU)');
@@ -20,7 +20,10 @@ const X0 = () => ({ onY24: new Map(), selfSet: new Set(), led: {}, ledSku: new S
   const X3 = X0(); X3.ledSku.add('A01BC123PK'); ok(/같은 SKU/.test(why({ id: 'aladin_U2' }, X3)), '되풀이 0 ② 다른 줄이라도 같은 SKU는 빠짐');
   const X4 = X0(); X4.selfSet.add('A01BC123PK'); ok(/자체코드/.test(why({}, X4)), '예스24 자체코드에 이미 있는 SKU는 빠짐');
   const X5 = X0(); X5.onY24.set('9788900000001|상', ['200000001']); ok(/같은 책·등급/.test(why({}, X5)) && F.y24RegJudge(L({ grade: '최상' }), X5).ok, '예스24에 같은 ISBN·등급이 있으면 빠짐(등급이 다르면 후보)');
-  ok(F.y24RegJudge(L({ qty: 3, skus: ['S1', 'S2'] }), X0()).row.qty === 2, '재고 = 실물 SKU 수를 넘지 않음'); }
+  ok(F.y24RegJudge(L({ qty: 3, skus: ['S1', 'S2'] }), { ...X0(), cfg: { ...F.Y24R_DEF, maxQty: 5 } }).row.qty === 2, '재고 = 실물 SKU 수를 넘지 않음');
+  ok(F.y24RegJudge(L({ qty: 3, skus: ['S1', 'S2', 'S3'] }), X0()).row.qty === 1 && F.y24RegJudge(L({ qty: 3, skus: ['S1', 'S2', 'S3'] }), X0()).row.self === 'S1' && F.Y24R_DEF.maxQty === 1 && F.y24RegCfg({ maxQty: 99 }).maxQty === 10, '(y24ui) 예스24 수량 상한 기본 1권(Max Listed) · 1~10');
+  ok(/주문 진행 중/.test(why({ held: '주문 12345678' })), '(y24ui) 최근 주문에 들어온 상품(실물이 묶임)은 올리지 않음');
+  ok(F.y24RegJudge(L({ unpub: { until: '2027-01-01' } }), X0()).row.unpub.until === '2027-01-01', '(y24ui) 미출간 표시가 올릴 줄에 따라감(막지는 않음)'); }
 { const aoa = F.y24RegAoa([{ isbn: '9788900000001', qty: 1, grade: '상', price: 8000, title: '시험 책(새책급)', self: 'A01BC123PK' }]);
   ok(aoa.length === 28 && aoa[26].slice(1).join('|') === F.Y24R_HEAD.join('|') && aoa[27][1] === '9788900000001' && aoa[27][7] === 'A01BC123PK' && aoa[27][4] === 8000 && !/새책/.test(aoa[27][5]) && aoa[27][10] === 1 && aoa[27][11] === 1, '엑셀: 27행 머리 B~L · 28행 바코드·재고·등급·판매가·상품명(금지 낱말 지움)·자체코드·판매상태·판매형태');
   const head = (T.match(/const Y24_XH = (\[[^\]]+\])/) || [])[1]; ok(head && JSON.stringify(eval(head)) === JSON.stringify(F.Y24R_HEAD), '🔗 연결 표 1줄 시험 엑셀과 같은 머리 칸'); }
@@ -42,10 +45,30 @@ const X0 = () => ({ onY24: new Map(), selfSet: new Set(), led: {}, ledSku: new S
   const r1 = V.rows.find((r) => r.key === 'S1'); const r2 = V.rows.find((r) => r.key === 'S2'); const r9 = V.rows.find((r) => r.key === 'y24:901');
   ok(V.rows.length === 4 && r1.ch.yes24 && r1.ch.yes24.no === '900' && r2.ch.yes24.no === '902' && r9 && !r9.ch.aladin, '예스24 매물을 자체코드 = SKU → 🔗 짝 순서로 붙이고, 짝 없는 것은 따로 한 줄');
   ok(V.n.both === 2 && V.n.onlyY === 1 && V.n.none === 1 && V.n.onlyAl === 0, '어디에 올라 있나 셈(둘 다 2 · 예스24만 1 · 판매 안 함 1)');
-  ok(r2.risk.includes('이중 판매 위험') && r2.risk.includes('예스24 재고 많음') && V.n.risk === 1 && V.n.reg === 1, '위험(🔗 연결 표 깃발) · 📤 올림 중(풀린 줄은 셈 안 함)');
+  ok(r2.risk.includes('이중 판매 위험') && r2.risk.includes('예스24 재고 많음') && V.n.reg === 1, '위험(🔗 연결 표 깃발) · 📤 올림 중(풀린 줄은 셈 안 함)');
+  /* (y24ui) 예전엔 판매처 수량을 더해(알라딘 1 + 예스24 1) 알라딘에서 1권 팔린 책1을 위험으로 못 봤음 → 실물 수 기준으로 책1도 🔻 예스24 내리기 */
+  ok(r1.mc.P === 1 && r1.mc.rem === 0 && r1.mc.acts.some((a) => a.ch === 'yes24' && a.k === 'down') && r1.risk.includes('이중 판매 위험') && V.n.risk === 2 && V.n.down === 2, '(y24ui) 실물 수 기준: 알라딘에서 팔린 1권 → 예스24 내리기(판매처 수량을 더하지 않음)');
+  ok(r2.mc.acts.some((a) => a.ch === 'aladin' && a.k === 'down') && r2.mc.acts.some((a) => a.ch === 'yes24'), '(y24ui) 예스24에서 팔린 1권 → 알라딘도 내리기');
   const s = V.sum; ok(s.aladin.ord === 1 && s.aladin.fee === 1080 && s.aladin.net === 8920 && s.yes24.ord === 1 && s.yes24.fee === 900 && s.yes24.net === 8100 && s.yes24.cancel === 1 && s.cash.amt === 3000 && s.cash.fee === 0, '판매처별 30일 주문·수수료(예스24 10%)·정산 어림 · 30일 밖·취소 뺌');
   ok(s.aladin.live === 2 && s.aladin.val === 13000 && s.yes24.live === 3 && s.yes24.qty === 4, '판매처별 판매중 줄·권·금액');
   ok(r1.ord.aladin.n === 1 && r2.ord.yes24.n === 1, '주문 줄을 상품(id)·SKU로 장부 줄에 붙임'); }
+{ /* (y24ui) 판매처 목록 · 미출간 · 여러 판매처 안전 셈 */ const G = new Function(cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + '\nreturn { chList, CH_DEF, y24Unpub, mcPlan, ledBuild, MC_DAYS };')();
+  const C = G.chList({ yes24: { fee: 0.12, n: '예스24' }, naver: { on: 1 }, coupang: { n: '쿠팡', on: 0, ord: 9 }, 'Bad Key': { n: 'x' }, aladin: { on: 0 } });
+  ok(C.map((c) => c.k).join() === 'aladin,yes24,naver,shop,cash,coupang' && C.find((c) => c.k === 'yes24').fee === 0.12 && C.find((c) => c.k === 'naver').on === 1 && C.find((c) => c.k === 'shop').host === 'booksqueen.com' && C.find((c) => c.k === 'aladin').role === 'master', '판매처 목록 = 설정 하나(네이버 켬·우리숍 booksqueen.com·새 판매처 쿠팡 · 틀린 열쇠 뺌 · 기준 판매처 역할은 그대로)');
+  ok(G.chList({ x1: { n: 'a' }, x2: { n: 'b' }, x3: { n: 'c' }, x4: { n: 'd' }, x5: { n: 'e' }, x6: { n: 'f' } }).length === 10, '판매처 많아도 10곳까지');
+  const now = '2026-11-10T03:00:00Z';
+  ok(G.y24Unpub('2026-08-15', '9791100000001', [], now).until === '2027-02-15' && G.y24Unpub('20260815', '9788900000001', ['국내도서>소설'], now).days > 90, '📅 출간 6개월 안 국내도서(979-11·978-89 · 날짜 꼴 둘)');
+  ok(!G.y24Unpub('2026-03-01', '9791100000001', [], now) && !G.y24Unpub('2026-09-01', '9780000000002', [], now) && !G.y24Unpub('2026-09-01', '9788900000001', ['외국도서>영미'], now) && !G.y24Unpub('', '9788900000001', [], now) && G.y24Unpub('2026-09', '9788900000001', [], now).until === '2027-03-01', '6개월 지남·외국 ISBN·외국도서 분류·출간일 없음 → 아님 · 달만 있으면 1일로');
+  const P = (r) => G.mcPlan(r, G.chList());
+  const a = P({ nsku: 1, ch: { aladin: { live: true, qty: 1 }, yes24: { live: true, qty: 1 } }, ord14: {} }); ok(!a.acts.length && a.rem === 1 && a.P === 1, '안 팔림: 알라딘 1·예스24 1 = 실물 1 → 할 일 없음(더하지 않음)');
+  const b = P({ nsku: 3, ch: { aladin: { live: true, qty: 2 }, yes24: { live: true, qty: 3 } }, ord14: { aladin: { n: 1, first: '2026-11-09' } } }); ok(b.rem === 2 && b.acts.length === 1 && b.acts[0].ch === 'yes24' && b.acts[0].k === 'qty' && b.acts[0].to === 2, '3권 중 1권 팔림 → 예스24 수량 3 → 2로');
+  const c = P({ nsku: 1, ch: { aladin: { live: false, qty: 0 }, yes24: { live: true, qty: 1 } }, ord14: { aladin: { n: 1, first: '2026-11-08T01:00:00Z' }, yes24: { n: 1, first: '2026-11-08T02:00:00Z' } } }); ok(c.over && c.keep === 'aladin' && c.acts[0].k === 'down', '⛔ 과판매(동시 주문): 먼저 온 알라딘 주문만 보냄 · 예스24 내리기');
+  const d = P({ nsku: 0, ch: { aladin: { live: false, qty: 1, st: '판매중지' }, yes24: { live: true, qty: 1 } }, ord14: {} }); ok(!d.acts.length, '사람이 알라딘만 판매중지(팔림 없음) → 예스24는 그대로');
+  const V = G.ledBuild({ now, chs: G.chList({ naver: { on: 1 } }), al: [{ id: 'a1', title: '책', skus: ['S1'], live: true, qty: 1, price: 5000 }], other: [{ ch: 'naver', no: 'n9', sku: 'S1', live: true, qty: 1, price: 5500 }, { ch: 'zz', no: 'q', sku: 'S1', live: true }], ord: [{ ch: 'naver', no: 'o9', at: '2026-11-09T00:00:00Z', amt: 5500, lines: [{ sku: 'S1', qty: 1, amt: 5500 }] }] });
+  const r = V.rows[0]; ok(V.rows.length === 1 && r.ch.naver && r.ch.naver.no === 'n9' && !r.ch.zz && r.mc.acts.some((x) => x.ch === 'aladin' && x.k === 'down') && V.sum.naver.ord === 1 && V.n.multi === 1 && 'shop' in r.ch, '3번째 판매처(네이버) 매물·주문이 같은 실물 줄로 · 목록에 없는 판매처는 뺌 · 네이버에서 팔리면 알라딘 내리기'); }
+{ /* (y24ui) 등록 카드 함수 · 예스24 함께 · 화면 코드 꼴 */ ok(/function regCardFns\(F, RG, T, V\)/.test(T) && /const \{ card, card0 \} = regCardFns\(F, RG, T\);/.test(T), '등록 카드 그리기 = 바깥 함수 하나(등록 탭·📤 화면이 같이 씀)');
+  ok(/regKindChips\(it\) \+ y24wChip\(it\)/.test(T) && /regKindChips\(it\) \+ y24wChip\(it, true\)/.test(T) && /\$\{y24wRow\(L\)\}<div class=\"rgbk-r\">/.test(T), '등록 카드(자세히·한눈에)·고른 상품 창에 🟦 예스24도(고르기 줄 높이는 그대로)');
+  const yb = cut('/* ══ 🟦 등록에서 예스24도 함께', '/* (11/10 개편) 📤 예스24 이전 화면'); ok(!/collection\('reg_items'\)/.test(yb) && /doc\('y24_reg'\)/.test(yb), '예스24 함께 = 올림 장부 문서에만 적음(등록 줄 reg_items는 안 건드림)'); }
 { const blk = cut('/* ══════════ 📤 예스24 새로 올리기', '/* ══════════ 🟦 예스24 주문'); ok(!/01[016789]-?\d{3,4}-?\d{4}/.test(blk) && !/\balert\(|\bconfirm\(|\bprompt\(/.test(blk), '새 코드에 휴대전화 번호 꼴·브라우저 창 없음');
   ok(/PAGE_GUIDES\['y24Reg'\]/.test(blk) && /PAGE_GUIDES\['ledger'\]/.test(blk) && /\['y24Reg', '📤 예스24에 새로 올리기', \(d\) => d\.bigTable === 'y24reg', 'openY24Reg'\]/.test(T) && /\['ledger', '🧾 통합 장부', \(d\) => d\.bigTable === 'ledger', 'openLedger'\]/.test(T), '화면 설명서·화면 목록(PG_SCR) 둘 다');
   ok(!/collection\('(inv_items|ch_links|ord_ch|led_days)'\)/.test(blk), '통합 장부는 새 칸에 쓰지 않음(읽기 전용 · 설계만)'); }
@@ -67,7 +90,16 @@ const X0 = () => ({ onY24: new Map(), selfSet: new Set(), led: {}, ledSku: new S
       const res = await y24RegCommit(y24RegRows().filter((r) => r.k === 'ok').slice(0, 2).map((r) => r.row)); o.gate2 = res && res.gate.mode; o.n2 = res && res.ok.length;
       S._bt_y24reg.f.k = 'led'; openY24Reg(); await Wt(400); const okb = document.querySelector(`[data-y24rok="${lid}"]`); okb.click(); await Wt(200); okb.click(); await Wt(800); o.okMark = !!(y24RegLed()[lid] || {}).ok;
       const G = y24RegGate(y24RegLed(), y24RegC(), new Date().toISOString(), y24RegCfgNow()); o.gate3 = G.mode;
-      openLedger(); await Wt(600); o.led1 = sh.classList.contains('on') && /통합 장부/.test(sh.textContent) && /자사 숍/.test(sh.textContent) && /예스24/.test(sh.textContent); o.ledRows = ledNow().rows.length; o.ledReg = ledNow().n.reg;
+      openLedger(); await Wt(600); o.led1 = sh.classList.contains('on') && /통합 장부/.test(sh.textContent) && /우리숍|자사 숍/.test(sh.textContent) && !!sh.querySelector('.ledchs') && !!sh.querySelector('.ledcfg') && /예스24/.test(sh.textContent); o.ledRows = ledNow().rows.length; o.ledReg = ledNow().n.reg;
+      /* (y24ui) 카드 = 등록 탭 카드 그리기 · 보기 · 끊긴 단추 · 📅 참조 · 등록에서 함께 */
+      S._bt_y24reg.f.k = 'all'; openY24Reg(); await Wt(500); o.cards = sh.querySelectorAll('.y24rc').length; o.rgCard = sh.querySelectorAll('.y24rc .rgc2').length; o.noAct = !sh.querySelector('.y24rc [data-rgpurge],.y24rc [data-rgtest],.y24rc [data-pcf],.y24rc .rgchk'); o.tabs = sh.querySelectorAll('.y24rtabs [data-btf]').length; o.cardErr = /카드를 못 그림/.test(sh.textContent);
+      sh.querySelector('[data-y24view="compact"]').click(); await Wt(400); o.compact = sh.querySelectorAll('.y24rc .rgrow, .y24rc [class*="rgr-"]').length > 0 && sh.querySelectorAll('.y24rc').length === o.cards; sh.querySelector('[data-y24view="full"]').click(); await Wt(300);
+      const l0 = [...S.plist.values()].find((x) => aladinLive(x)); l0.bookId = l0.bookId || 'bkY'; S.pbooks.set(l0.bookId, { ...(S.pbooks.get(l0.bookId) || {}), id: l0.bookId, title: l0.title, isbn13: l0.isbn13, pubDate: new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10), categories: ['국내도서>소설'] }); S.ver++; S._y24R = null; S._bt_y24reg.f.k = 'ref'; openY24Reg(); await Wt(400); o.ref = y24RegRows().filter((r) => r.unpub && r.k !== 'led').length; o.refCards = sh.querySelectorAll('.y24rc').length; o.refTag = /예스24 미출간/.test(sh.textContent); o.refNote = /실물은 「전체」/.test(sh.textContent);
+      /* 등록에서 함께 — 확정(올라감) 등록 줄 하나 + 고르기 줄 */ const l1 = [...S.plist.values()].find((x) => aladinLive(x) && !y24RegLed()[x.id]); S.regItems = S.regItems || new Map(); const rid = 'rgY1'; const rd = { stage: 'done', isbn: l1.isbn13, grade: 2, qty: 1, price: 9000, createdAt: new Date().toISOString(), ws: regWsCur(), info: { title: l1.title, isbn13: l1.isbn13, categories: [], page1: [] }, final: { price: 9000, qty: 1, code: 'A01' }, result: { state: 'live', usedCode: String(l1.id).replace(/^aladin_/, '') } }; await db.collection('reg_items').doc(rid).set(rd); S.regItems.set(rid, { id: rid, ...rd });
+      o.chipOff = y24wChip(S.regItems.get(rid)) && !/ on"/.test(y24wChip(S.regItems.get(rid))); o.chipCompactOff = y24wChip(S.regItems.get(rid), true) === ''; S.regChk = new Set([rid]); o.bar = /함께 올리기/.test(y24wRow([S.regItems.get(rid)])) && /data-y24wbulk="1"/.test(regChkPanelHtml([rid], regCfg()));
+      await y24WantSet([rid], true); o.wantLid = (y24W()[rid] || {}).lid === l1.id; S._y24R = null; o.wantRow = y24RegRows().some((r) => r.lid === l1.id && r.want === rid); S._bt_y24reg.f.k = 'want'; openY24Reg(); await Wt(400); o.wantPick = S._y24Pick.has(l1.id) || y24RegRows().some((r) => r.lid === l1.id && r.k !== 'ok'); o.wantTab = sh.querySelectorAll('.y24rc').length >= 1 && /등록에서 고름/.test(sh.textContent);
+      o.chipOn = / on"/.test(y24wChip(S.regItems.get(rid))) && /예스24/.test(y24wChip(S.regItems.get(rid), true)); await y24WantSet([rid], false); o.wantOff = (y24W()[rid] || {}).on === 0 && !!(y24W()[rid] || {}).by; S.regChk = new Set();
+      S.regT = 'done'; openRegister(); await Wt(900); o.regOpen = !!document.querySelector('#sheet .rgc2, #sheet [data-rgcid], #sheet .rgtools, #sheet .btabs'); history.back(); await Wt(300);
       o.go = GO_PAGES.some((g) => g[0] === 'ledger') && GO_PAGES.some((g) => g[0] === 'y24Reg'); o.feat = FEAT.filter((f) => /📤 예스24에 새로 올리기|🧾 통합 장부/.test(f.t)).length;
       return o; } catch (e) { return { err: e.message + ' · ' + JSON.stringify(o).slice(0, 400) }; } });
     if (o && o.err) { ok(false, '화면 시험 오류: ' + o.err); return; }
@@ -80,5 +112,12 @@ const X0 = () => ({ onY24: new Map(), selfSet: new Set(), led: {}, ledSku: new S
     ok(o.gate2 === 'wait' && o.n2 === 0 && dl.length === 1, '첫 건 결과 전엔 더 못 올림(트랜잭션 안에서도 막힘 · 엑셀 안 생김)');
     ok(o.okMark && o.gate3 === 'bulk', "'올라감 확인'(두 번 누르기) 뒤 여러 건이 열림");
     ok(o.led1 && o.ledRows > 0 && o.ledReg === 1 && o.go && o.feat === 2, '🧾 통합 장부 화면 · 📤 올림 1 · 바로 가기·기능 찾기');
+    ok(o.cards > 0 && o.rgCard === o.cards && !o.cardErr && o.tabs >= 6, `(y24ui) 📤 카드 = 등록 탭 카드(${o.rgCard}/${o.cards}) · 보기 ${o.tabs}개`);
+    ok(o.noAct, '(y24ui) 카드 안 단추 동작은 끊김(🗑·🧪·샵매니저 고치기·고르기 칸 없음)');
+    ok(o.compact, '(y24ui) 📋 한눈에 보기도 등록 카드 그대로');
+    ok(o.ref >= 1 && o.refCards === o.ref && o.refTag && o.refNote, `(y24ui) 📅 참조 = 출간 6개월 안 국내도서만(${o.ref}) · 실물은 전체에 그대로`);
+    ok(o.chipOff && o.chipCompactOff && o.bar, '(y24ui) 등록 카드 🟦 예스24도 — 기본 끔(한눈에는 안 보임) · 고르기 줄 단추');
+    ok(o.wantLid && o.wantRow && o.wantPick && o.wantTab && o.chipOn && o.wantOff, '(y24ui) 고르면 → 올라간 상품이 📤 「🟦 등록에서 고름」에 미리 골라짐 · 끄면 on 0(기록 남음)');
+    ok(o.regOpen, '(y24ui) 등록 화면이 그대로 열림');
     ok(!dlg.length, '브라우저 창 0: ' + dlg.join(' / ')); });
   console.log(bad ? `❌ tY24REG ${bad}개 실패` : '✓ tY24REG 모두 통과'); process.exit(bad ? 1 : 0); })();
