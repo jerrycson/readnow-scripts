@@ -28,6 +28,7 @@
   "helper/col2-alw.js",
   "shadow/col2-alw-core.js",
   "helper/col2-cred.js",
-  "helper/col2-relogin.js"
+  "helper/col2-relogin.js",
+  "helper/col2-y24reg.js"
  ]
 }

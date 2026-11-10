@@ -49,7 +49,7 @@ const L=[...document.querySelectorAll('button,a,input[type=button],input[type=su
 if(document.readyState==='complete'&&!busy&&L.length){L[0].click();return{clicked:true,n:L.length}}
 if(Date.now()-t0>${ms})return{clicked:false};await new Promise((r)=>setTimeout(r,200))}})()`;
 
-function makeY24(o) {
+function makeY24(o) { let REG = null;
   const { HOME, Browser, WIN, note, log, TEST } = o; const cfg = () => o.cfg(); const now = () => Date.now();
   const BASE = (TEST && process.env.RN_COL2_Y24 ? process.env.RN_COL2_Y24 : 'https://uscm.yes24.com').replace(/\/$/, ''); const HOST = new URL(BASE).host;
   const MARK = 'col2-y24-chrome'; const PROF = path.join(HOME, MARK);
@@ -98,7 +98,8 @@ function makeY24(o) {
     const rec = { id: 'c2y' + now().toString(36) + (++Y.seq).toString(36), sig, url: it.u, page: it.page || '/', at: it.at || now(), status: it.st || 0, ctype: String(it.ct || '').slice(0, 60), req: sec ? null : String(it.post || '').slice(0, 4000), json: isJ, body: sec ? null : text.slice(0, 1500000), src: 'col2' };
     const sz = rec.body ? rec.body.length : 0; Y.q.push(rec); Y.qBytes += sz; Y.recN++; dayAdd('recs'); while (Y.q.length > 200 || Y.qBytes > 6e6) { const x = Y.q.shift(); Y.qBytes -= x && x.body ? x.body.length : 0; Y.drop++; } }
   function onDialog(p) { const br = Y.br; const j = Y.job; let accept = false; const msg = String(p.message || '').slice(0, 120);
-    if (j) { const ship = j.kind === 'ship'; const OK = ship ? /발송\s*처리/ : /접수\s*확인|주문\s*접수|접수\s*하시/; const BAD = /취소|판매\s*불가|삭제|지정\s*택배|반품|교환|환불/; accept = p.type === 'alert' || (OK.test(msg) && !BAD.test(msg)); if (!accept) j.refused = msg; (j.msgs = j.msgs || []).push(msg); }
+    if (REG && REG.cur()) accept = REG.dialog(p); /* (11/10 y24auto) 🟦 자동 올림 일 동안만 — 그 [등록] 확인 물음에만 '예' */
+    else if (j) { const ship = j.kind === 'ship'; const OK = ship ? /발송\s*처리/ : /접수\s*확인|주문\s*접수|접수\s*하시/; const BAD = /취소|판매\s*불가|삭제|지정\s*택배|반품|교환|환불/; accept = p.type === 'alert' || (OK.test(msg) && !BAD.test(msg)); if (!accept) j.refused = msg; (j.msgs = j.msgs || []).push(msg); }
     else accept = p.type === 'alert'; /* 맡긴 일이 아니면 확인 물음은 늘 '아니오'(쓰기 일이 실수로 확인되지 않게) */
     br.cdp.send('Page.handleJavaScriptDialog', { accept }, br.sid).catch(() => {}); }
   async function ensure(why) { if (alive()) return Y.br; if (Y.launching) return Y.launching; Y.opens = Y.opens.filter((t) => now() - t < 3600e3); if (Y.opens.length >= 4) throw new Error('예스24 크롬을 한 시간에 4번 넘게 다시 띄워 쉼'); Y.opens.push(now());
@@ -121,6 +122,11 @@ function makeY24(o) {
     Y.calling = true; dayAdd('calls');
     try { return await ev(`(async()=>{try{const r=await fetch(${JSON.stringify(t.u)},{method:${JSON.stringify(t.m || 'POST')},headers:${JSON.stringify(H)},body:${JSON.stringify(body)},credentials:'include',cache:'no-store'});const tx=await r.text();let j=null;try{j=JSON.parse(tx)}catch(e){}
       const L=j&&(j.PRODUCT_LIST||j.RESULT_LIST||j.LIST);return{st:r.status,ok:!!j,n:Array.isArray(L)?L.length:null,ids:Array.isArray(L)?L.map((z)=>String(z&&z.GOODS_NO||'')).slice(0,500):null,login:/login/i.test(new URL(r.url).pathname)}}catch(e){return{st:0,ok:false,err:String(e.message||e)}}})()`, 45000); }
+    finally { await sleep(400); Y.calling = false; } }
+  /* (11/10 y24auto) 등록상품 목록 한 쪽 — 줄마다 { no 상품번호 · self 판매자상품코드 · ean } (자동 올림 확인용 · 읽기만) */
+  async function rawList(t, bodyOver) { const H = hdrFresh(t.h, Y.hdr && Y.hdr.h); if (bodyOver.isJ && !Object.keys(H).some((x) => /content-type/i.test(x))) H['Content-Type'] = 'application/json'; Y.calling = true; dayAdd('calls');
+    try { return await ev(`(async()=>{try{const r=await fetch(${JSON.stringify(t.u)},{method:${JSON.stringify(t.m || 'POST')},headers:${JSON.stringify(H)},body:${JSON.stringify(bodyOver.body)},credentials:'include',cache:'no-store'});const j=await r.json().catch(()=>null);const L=j&&(j.PRODUCT_LIST||j.RESULT_LIST||j.LIST);
+      const pk=(z,re)=>{const k=Object.keys(z||{}).find((x)=>re.test(x));return k?String(z[k]==null?'':z[k]):''};return{st:r.status,rows:Array.isArray(L)?L.map((z)=>({no:pk(z,/^GOODS_NO$/i),self:pk(z,/^ENTR_GOODS_CD$|SELF|OWN_?CD/i),ean:pk(z,/^EAN$|ISBN/i)})):null}}catch(e){return{st:0,err:String(e.message||e)}}})()`, 45000); }
     finally { await sleep(400); Y.calling = false; } }
   const bad = (r) => !r || r.login || r.st === 401 || r.st === 403 || (r.st === 200 && !r.ok);
   /* 🔁 주문 두 목록(신규 주문·발송관리) — 모양을 모르면 화면을 열어 배우고 · 401이면 화면을 다시 열어 새 머리글로 한 번 더 · 그래도 로그인 화면이면 '로그인 필요' */
@@ -220,6 +226,7 @@ try{return await ${fn}(document,window,${JSON.stringify({ id: j.id, ono: j.ono, 
     if (Y.feed.cfg && Y.feed.cfg.off) { Y.msg = '웹앱 설정에서 예스24 모으기를 꺼 둠'; return 60e3; }
     if (Y.q.length >= 190) { Y.msg = `올리지 못한 예스24 응답 ${Y.q.length}개 — 수집기가 받아 갈 때까지 쉼`; return 15e3; }
     if (jobsOn() && jobPick()) { await jobOnce(); Y.msg = '🤖 맡긴 일 끝 — 다음'; return 500; }
+    if (REG && REG.pick()) { await REG.once(); Y.keepAt = now(); Y.msg = '🟦 예스24 자동 올림 한 묶음 끝 — ' + (REG.R.msg || ''); return 1500; }
     const ordMin = ordMinNow();
     if (ordMin > 0 && now() >= Y.ord.next) { const r = await ordOnce(); Y.ord.next = now() + ordMin * 60e3 * (0.7 + Math.random() * 0.6) * (TEST ? SC : 1); Y.keepAt = now(); Y.msg = r === 'ok' ? '🔁 주문 두 목록 읽음' : r === 'login' ? '🔐 로그인 필요' : Y.ord.err; return 1000; }
     if (c.prdH > 0 && now() >= Y.prd.next && Y.login === 'ok') { Y.prd.next = now() + c.prdH * 3600e3; await prdAll(); Y.keepAt = now(); return 1000; }
@@ -238,9 +245,12 @@ try{return await ${fn}(document,window,${JSON.stringify({ id: j.id, ono: j.ono, 
   const jobsOk = () => enabled() && jobsOn() && Y.login === 'ok' && alive() && !holdOn();
   function sum() { return { on: enabled(), logger: isLogger(), login: Y.login, drops: quickDrops(), loginAt: Y.loginAt || null, loginMsg: Y.loginMsg || null, alive: alive(), shown: Y.shown, active: enabled() && Y.login === 'ok' && alive() && feedOk(), jobsOk: jobsOk(), msg: Y.msg, q: Y.q.length, drop: Y.drop, sent: Y.sentN, recs: Y.recN, day: Y.day,
       ord: { at: Y.ord.at || null, n: Y.ord.n, err: Y.ord.err, nextMs: Y.ord.next ? Math.max(0, Y.ord.next - now()) : null }, prd: { at: Y.prd.at || null, n: Y.prd.n, pages: Y.prd.pages, err: Y.prd.err, on: Y.prd.on }, tour: Y.tour ? { at: Y.tour.at, end: Y.tour.end, stop: Y.tour.stop, sum: Y.tour.sum || null } : null,
-      tpl: Object.keys(Y.tpl), hold: holdOn() ? Y.feed.hold : null, feedAt: Y.feed.at || null, feedBy: Y.feed.by || null, jobs: { wait: Y.jobs.filter((j) => !Y.jd[j.id]).length, res: Object.keys(Y.jres).length }, act: Y.act.err }; }
+      reg: REG ? (() => { const r = REG.state(); return { ok1: r.ok1, done: r.done, wait: r.wait.length, cur: r.cur, why: r.why, msg: r.msg }; })() : null, tpl: Object.keys(Y.tpl), hold: holdOn() ? Y.feed.hold : null, feedAt: Y.feed.at || null, feedBy: Y.feed.by || null, jobs: { wait: Y.jobs.filter((j) => !Y.jd[j.id]).length, res: Object.keys(Y.jres).length }, act: Y.act.err }; }
   async function runNow(what) { if (what === 'prd') Y.prd.next = 0; else if (what === 'tour') Y.tourNext = 0; else Y.ord.next = 0; kick(100); return { ok: true, msg: what === 'prd' ? '📋 등록상품 전부 읽기를 곧 시작' : what === 'tour' ? '🛰 둘러보기를 곧 시작' : '🔁 주문 두 목록을 곧 읽음' }; }
   const start = () => { Y.tourNext = now() + (TEST ? 3600e3 : 30 * 60e3); Y.prd.next = now() + (TEST ? 3600e3 : 20 * 60e3); kick(TEST ? 500 : 20e3); }; /* 켜진 뒤 첫 등록상품·둘러보기는 20·30분 뒤(근거: 없음 — 주문 읽기 먼저) */
-  return { start, kick, feed, sum, login, verify, close, runNow, MARK, Y, _t: { ordShift, hdrFresh, pickMenus, cutAct } };
+  /* (11/10 y24auto) 🟦 예스24 자동 올림 — helper/col2-y24reg.js(웹앱이 장부에 먼저 적고 맡김 → 이 숨은 크롬이 대량 등록 엑셀 업로드) */
+  REG = require('./col2-y24reg.js').makeY24Reg({ HOME, TEST, note, log, SC, Y, BASE, JS_STATE, nav, ev, isLoginSt, setLogin, learn, ordShift, rawList, kick, pcName, isLogger, enabled, holdOn, login: () => Y.login });
+  REG.cur = () => !!REG.R.cur;
+  return { start, kick, feed, sum, login, verify, close, runNow, reg: REG, MARK, Y, _t: { ordShift, hdrFresh, pickMenus, cutAct } };
 }
 module.exports = { makeY24, ppStop, ordShift, hdrFresh, pickMenus, cutAct, SAFE, DANGER, SECRET };

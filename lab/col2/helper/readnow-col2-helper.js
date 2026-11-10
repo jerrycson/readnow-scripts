@@ -545,6 +545,7 @@ const srv = http.createServer((req, res) => {
   if (u.pathname === '/log/days' && req.method === 'GET') return J(200, { ok: true, days: JRN.days() });
   if (u.pathname === '/log/day' && req.method === 'GET') return J(200, { ok: true, lines: JRN.day(u.searchParams.get('d')) });
   if (u.pathname === '/log/all' && req.method === 'GET') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', ...H }); return res.end(JRN.allText()); }
+  if (u.pathname === '/y24/reg/state' && req.method === 'GET') return J(200, Y24.reg.state()); /* (11/10 y24auto) 🟦 예스24 자동 올림 — 맡김·결과(웹앱이 받아 장부에 적음) */
   if (u.pathname === '/relay/pending' && req.method === 'GET') return J(200, relayPending(u.searchParams.get('by')));
   if (req.method !== 'POST') return J(405, { ok: false });
   const body = (cb, max) => readBody(req, max || 256 * 1024, (e, b) => { if (e) return J(400, { ok: false, err: e.message }); let o = {}; try { o = JSON.parse(b.toString('utf8') || '{}') || {}; } catch (x) { return J(400, { ok: false, err: 'bad json' }); } Promise.resolve().then(() => cb(o)).catch((er) => J(500, { ok: false, err: er.message })); });
@@ -582,6 +583,8 @@ const srv = http.createServer((req, res) => {
     return J(404, { ok: false }); }
   if (p === '/al/login') return body(async (o) => { const r = await AL.login(o.why || '옆 창 단추'); J(200, { ...r, state: status() }); });
   if (p === '/al/run') return body(async (o) => { const r = await AL.runNow(String(o.what || 'confirm')); J(200, { ...r, state: status() }); });
+  if (p === '/y24/reg/put') return body((o) => { const r = Y24.reg.put(o); J(r.code, r.body); }, 4 * 1048576);
+  if (p === '/y24/reg/ack') return body((o) => J(200, Y24.reg.ack(o.ids)));
   if (p === '/y24/feed') return body((o) => J(200, Y24.feed(o, o.by)), 1048576);
   if (p === '/y24/login') return body(async (o) => { const r = await Y24.login(o.why || '옆 창 단추'); J(200, { ...r, state: status() }); });
   if (p === '/y24/run') return body(async (o) => { const r = await Y24.runNow(String(o.what || 'ord')); J(200, { ...r, state: status() }); });
