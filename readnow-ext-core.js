@@ -420,14 +420,15 @@
   /* 판매자 하나 판정(줄 신호 없이 가게만) — 하루 셈(sellerFpTick)이 seller_fp/y24_{sid}.fk로 남김 */
   const y24FakeSeller = (sid, card, ctx, cfg) => y24FakeOf({ sid, biz: card && card.biz ? 1 : 0 }, card || null, ctx || {}, cfg);
   /* ── ② 판매가 ── */
-  const Y24_VAL = { upPct: 20, coef: { '최상': 1, '상': 0.95, '중': 0.85, '하': 0.7 }, better: true, dropSus: 'conf', unkValid: true, minPct: 0.5, round: 'step' }; /* 하 0.7은 근거: 없음(알라딘 gradeCoef엔 하 없음) */
-  const y24ValCfg = (cfg) => { const c = { ...Y24_VAL, ...(cfg || {}), coef: { ...Y24_VAL.coef, ...((cfg && cfg.coef) || {}) } }; const n = (v) => v != null && v !== '' && Number.isFinite(+v); c.upPct = n(c.upPct) ? Math.max(0, Math.min(100, +c.upPct)) : Y24_VAL.upPct; c.minPct = n(c.minPct) ? Math.max(0, Math.min(1, +c.minPct)) : Y24_VAL.minPct; return c; };
+  const Y24_VAL = { upPct: 20, coef: { '최상': 1, '상': 0.95, '중': 0.85, '하': 0.7 }, better: true, dropSus: 'conf', unkValid: true, cheapPct: 25, round: 'step' }; /* (정범님 11/10 오후) cheapPct = 출고 자동 결정(readnow-shipping-core AUTO_DEFAULTS.cheapPct · autoShipDecide ②)과 같은 기준 · 웹앱은 출고 자동 결정 설정값을 그대로 넘김(y24EngVal) */ /* 하 0.7은 근거: 없음(알라딘 gradeCoef엔 하 없음) */
+  const y24ValCfg = (cfg) => { const c = { ...Y24_VAL, ...(cfg || {}), coef: { ...Y24_VAL.coef, ...((cfg && cfg.coef) || {}) } }; const n = (v) => v != null && v !== '' && Number.isFinite(+v); c.upPct = n(c.upPct) ? Math.max(0, Math.min(100, +c.upPct)) : Y24_VAL.upPct; c.cheapPct = n(c.cheapPct) ? Math.max(0, Math.min(100, +c.cheapPct)) : Y24_VAL.cheapPct; return c; }; /* 출고 autoCfg와 같은 울타리 0~100 */
   const y24Step = (p) => { if (!(p > 0)) return 1; const band = Math.pow(10, Math.floor(Math.log10(p))); return band < 100 ? 1 : band * 0.05; }; /* readnow-pricing-core priceStep과 같은 규칙(고칠 땐 둘 다) */
   const y24SnapNear = (p, how) => { if (!(p > 0)) return 0; if (how === '10') return Math.round(p / 10) * 10; let s = y24Step(p); let v = Math.round(p / s) * s; const s2 = y24Step(v); if (s2 !== s) v = Math.round(p / s2) * s2; return Math.round(v); };
   const y24SnapDown = (p) => { if (!(p > 0)) return 0; let s = y24Step(p); let v = Math.floor(p / s) * s; const s2 = y24Step(v); if (s2 !== s) v = Math.floor(p / s2) * s2; return Math.round(v); };
   const y24Dropped = (fk, C) => { if (!fk) return !C.unkValid; if (fk.lv === 'own') return true; if (fk.lv === 'fake') return true; if (fk.lv === 'sus') return C.dropSus === 'all' || (C.dropSus === 'conf' && !fk.est); if (fk.lv === 'unk') return !C.unkValid; return false; };
-  /* L = { alPrice(알라딘 우리 값), grade, priceList(정가), ourShip(예스24 우리 배송비 · 모르면 null) } · mkt = y24_mkt 문서(page1 줄에 fk가 있으면 그대로, 없으면 fkCtx로 셈) · o = { cfg, use:'new'|'auto', lock:{ locked, why }, fkCtx, fkCfg }
-   *  → { price, mode(solo·fakeOnly·worseOnly·match·noData·hold), t, ref, n{all,valid,fake,sus,unk}, why[], warn[], est, chk, use } */
+  /* stop(사람 확인): 유효 동급 최저가 알라딘 값보다 cheapPct%(기본 25 · 출고 자동 결정과 같은 값) 넘게 쌈 → price null · sug 제안 값 · chk
+   * L = { alPrice(알라딘 우리 값), grade, priceList(정가), ourShip(예스24 우리 배송비 · 모르면 null) } · mkt = y24_mkt 문서(page1 줄에 fk가 있으면 그대로, 없으면 fkCtx로 셈) · o = { cfg, use:'new'|'auto', lock:{ locked, why }, fkCtx, fkCfg }
+   *  → { price, mode(solo·fakeOnly·worseOnly·match·stop·noData·hold), t, ref, n{all,valid,fake,sus,unk}, why[], warn[], est, chk, use } */
   const y24PriceOf = (L, mkt, o) => { o = o || {}; L = L || {}; const C = y24ValCfg(o.cfg); const use = o.use === 'auto' ? 'auto' : 'new'; const why = [], warn = []; const al = +L.alPrice || 0; const res = (x) => { const r = { use, why, warn, est: false, chk: false, ref: null, n: null, ...x }; warn.push(...y24ValWarn(r, L)); return r; };
     if (use === 'auto' && o.lock && o.lock.locked) return res({ price: null, mode: 'hold', hold: true, t: '🔒 안 바꿈(약속 36)', why: [`약속 36 — ${o.lock.why || '진행 중·등록 3개월 안·고친 지 14일 안'} 상품은 엔진이 값을 저절로 바꾸지 않음(처음 등록 값 산출은 막지 않음)`] });
     if (!(al > 0)) return res({ price: 0, mode: 'noData', t: '알라딘 값 없음', why: ['알라딘 우리 값이 없어 셈 못 함'], chk: true });
@@ -448,9 +449,14 @@
     if (best.conv != null) { base = y24SnapDown(best.conv); if (base >= +R.p) base = y24SnapDown(+R.p - 1); how = `더 좋은 등급(${R.g}) 유효 매물 ${R.p}원 × 등급 계수 ${myC}/${C.coef[R.g]} = ${best.conv}원(단위 내림)`; }
     else if (ourShip != null) { base = Math.max(10, +R.p + ship(R) - ourShip); how = `같은 등급 유효 최저 ${R.p}원 + 배송비 ${ship(R)}원 = 총액 동가(우리 배송비 ${ourShip}원)`; }
     else { base = +R.p; how = `같은 등급 유효 최저 ${R.p}원과 판매가 동가(우리 예스24 배송비를 몰라 판매가끼리)`; }
-    why.push(how + ` · 기준 판매자 ${R.sn || R.sid || '-'}(${(R.fk && R.fk.tag) || '판정 없음'})`); let chk = false; const fl = C.minPct > 0 ? y24SnapNear(al * C.minPct, C.round) : 0;
-    if (fl && base < fl) { why.push(`동급 최저 ${base}원이 알라딘 값의 ${Math.round(C.minPct * 100)}%(${fl}원) 아래 — ${fl}원으로 두고 사람 확인`); base = fl; chk = true; }
-    return res({ price: base, mode: 'match', t: '유효 동급 최저', ref: { id: R.id, sid: R.sid || null, sn: R.sn || null, g: R.g || null, p: +R.p, s: R.s != null ? +R.s : null, conv: best.conv, fk: R.fk ? { lv: R.fk.lv, p: R.fk.p, conf: R.fk.conf, est: R.fk.est } : null }, n, est, chk }); };
+    why.push(how + ` · 기준 판매자 ${R.sn || R.sid || '-'}(${(R.fk && R.fk.tag) || '판정 없음'})`);
+    const refO = { id: R.id, sid: R.sid || null, sn: R.sn || null, g: R.g || null, p: +R.p, s: R.s != null ? +R.s : null, conv: best.conv, fk: R.fk ? { lv: R.fk.lv, p: R.fk.p, conf: R.fk.conf, est: R.fk.est } : null };
+    /* (정범님 11/10 오후) 멈춤 = 출고 자동 결정 ②와 같은 조건: 비율 = 정할 값 ÷ 기준 − 1 이 −cheapPct% 보다 작으면(= 기준보다 cheapPct% '넘게' 쌈 · 같으면 통과) 자동으로 정하지 않고 사람 확인
+     *  출고: 우리 판매가 ÷ 주문 뒤 시장 유효 최저가 − 1 < −25% → '검토'(자동 발송요청 안 함) · 여기: 예스24 동급 최저 값 ÷ 알라딘 우리 값 − 1 < −25% → stop(값을 안 정함 · 제안 값 sug만) */
+    const ratio = base / al - 1; if (ratio < -C.cheapPct / 100) { why.push(`유효 동급 최저 ${base}원이 알라딘 값 ${al}원보다 ${Math.round(-ratio * 100)}% 쌈(기준 ${C.cheapPct}% 넘게 — 출고 자동 결정과 같은 조건) → 자동으로 정하지 않고 사람 확인`);
+      return res({ price: null, sug: base, ratio: Math.round(ratio * 1000) / 1000, mode: 'stop', stop: true, t: `⛔ 사람 확인 — 알라딘 값보다 ${Math.round(-ratio * 100)}% 쌈`, ref: refO, n, est, chk: true }); }
+    const chk = false;
+    return res({ price: base, ratio: Math.round(ratio * 1000) / 1000, mode: 'match', t: '유효 동급 최저', ref: refO, n, est, chk }); };
   /* 정가보다 비싸면 알림만(막지 않음 · 약속 00) — 예스24 대량 등록 화면 원문(2026-11-07 저장): '출간한지 18개월 미만의 신간도서는 도서정가제에 적용되므로 10% 이하 할인율(단, 실제 중고도서는 제외)' */
   const y24ValWarn = (v, L) => { const w = []; if (v && v.price > 0 && L && +L.priceList > 0 && v.price > +L.priceList) w.push(`예스24 판매가 ${v.price}원이 정가 ${L.priceList}원보다 비쌈 — 알림만(막지 않음)`); return w; };
   /* ══ (11/10) 판매자 지문(seller_fp) — 판매자마다 '법정 고지 열쇠 · 운영 버릇 · 시간 행동' 칸을 셈하고, 판매자끼리·플랫폼끼리(예스24↔알라딘) 겹침을 셈

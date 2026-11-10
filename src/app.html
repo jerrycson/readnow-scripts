@@ -8596,7 +8596,7 @@ function y24RegJudge(l, X) { const cfg = (X && X.cfg) || Y24R_DEF; const no = (w
   const qty = Math.max(1, Math.min((l.skus || []).length || 1, +l.qty || 1, cfg.maxQty || 1));
   /* (y24eng) X.val(l) = 엔진 판매가(y24EngRegVal) — 처음 등록 값(약속 36 경계 밖 · 막지 않음) · 시장 지표가 없으면(noData) 예전처럼 알라딘 값 ±% */
   let v = null; try { v = X && typeof X.val === 'function' ? X.val(l) : null; } catch (e) { v = null; } const useV = v && v.price > 0 && v.mode !== 'noData';
-  const val = v ? { mode: v.mode, t: v.t, est: !!v.est, chk: !!v.chk, n: v.n || null, ref: v.ref || null, why: (v.why || []).slice(0, 6), warn: v.warn || [], up: v.mode === 'solo' || v.mode === 'fakeOnly' || v.mode === 'worseOnly' } : null;
+  const val = v ? { mode: v.mode, t: v.t, est: !!v.est, chk: !!v.chk, stop: !!v.stop, sug: v.sug || null, n: v.n || null, ref: v.ref || null, why: (v.why || []).slice(0, 6), warn: v.warn || [], up: v.mode === 'solo' || v.mode === 'fakeOnly' || v.mode === 'worseOnly' } : null;
   return { ok: true, l, row: { unpub: l.unpub || null, lid: l.id, title: String(l.title || '').slice(0, 100), isbn: l.isbn, grade: l.grade, qty, alPrice: +l.price, price: useV ? v.price : y24RegPrice(l.price, cfg.pct), val, skus: l.skus.slice(0, qty), self: l.skus.slice(0, qty).join(',') } }; }
 /* 바코드용 대량 등록 엑셀 칸(27행 머리 B~L · 28행부터 · 한 파일 300줄 — 🔗 연결 표 1줄 시험 엑셀과 같은 양식) */
 const Y24R_HEAD = ['바코드/상품번호', '재고', '등급', '판매가', '상품명', '적립율', '자체코드', '홍보문구', '상품설명', '판매상태', '판매형태'];
@@ -9333,13 +9333,13 @@ async function y24mReq(l, auto) { const i = y24mIsbn(l); if (!i) return toast('I
   try { await db.collection('y24_mkt').doc(i).set({ isbn: i, req: { at, by: (S.user && S.user.email) || null, dev: (typeof deviceName === 'function' && deviceName()) || null, auto: !!auto } }, { merge: true }); } catch (e) { S.y24m.req[i].txt = '맡기기 실패: ' + (e.code || e.message); } S._prodDraw && S._prodDraw(); }
 document.addEventListener('click', (e) => { const b = e.target.closest && e.target.closest('[data-y24mreq]'); if (!b) return; e.preventDefault(); const l = S.plist && S.plist.get(b.dataset.y24mreq); if (l) y24mReq(l, false); });
 /* ══ (정범님 11/10 · y24eng) 🟦 예스24 판매가·허위 매물 판정 엔진을 화면에서 꺼내 쓰는 곳 — 셈은 공용 파일 readnow-ext-core.js(y24PriceOf·y24FakeAll · 클라우드와 같은 기준) · 값·매물을 바꾸지 않음(읽기·셈만)
- *  y24EngCfg()        — 판매가 설정 app_settings/platforms y24.val { upPct(우리뿐·허위만일 때 알라딘 값 위 %, 기본 20) · minPct · round('step'|'10') · ourShip(예스24 우리 배송비) · dropSus } · 허위 판정 설정 y24.fake
+ *  y24EngCfg()        — 판매가 설정 app_settings/platforms y24.val { upPct(우리뿐·허위만일 때 알라딘 값 위 %, 기본 20) · cheapPct(비우면 출고 자동 결정 설정값 · 유효 동급 최저가 알라딘 값보다 이만큼 넘게 싸면 멈춤·사람 확인) · round('step'|'10') · ourShip(예스24 우리 배송비) · dropSus } · 허위 판정 설정 y24.fake
  *  y24EngMkt(isbn)    — 받아 둔 예스24 시장 지표 문서(y24_mkt · 엔진용 S.y24e.m → 없으면 상품 카드용 S.y24m.m)
  *  y24EngLoad(isbns)  — 여러 책 y24_mkt를 30권씩 받아 S.y24e.m에 둠(한 번에 최대 Y24E_MAX권 · 같은 책은 10분 안에 다시 안 받음) → S.y24m.v++ · 📤 화면이면 다시 그림
  *  y24EngWant(isbns)  — 아직 안 받은 책만 골라 y24EngLoad를 늦춰 부름(그리기마다 불러도 됨)
  *  y24EngRows(isbn)   — 그 책 첫 쪽 줄마다 fk(허위 판정 그림자: p 허위 가능성 · lv fake/sus/ok/unk/own · tag '허위'·'허위 추정'·'의심'·'유효'·'모름' · conf 확신도 · n 표본 수 · est 추정 · why 까닭) — 클라우드가 붙였으면 그대로
  *  y24EngSum(isbn)    — 그 책 판정 요약 { n, fake, sus, ok, unk, own, est, weak(추정이 반 넘음 → 화면에 '추정') }
- *  y24EngVal(l, o)    — 알라딘 상품 l → { price, mode(solo 우리뿐·fakeOnly 허위만·worseOnly 동급 없음·match 유효 동급 최저·noData·hold), t, n, ref, why[], warn[], est, chk, use }
+ *  y24EngVal(l, o)    — 알라딘 상품 l → { price, mode(solo 우리뿐·fakeOnly 허위만·worseOnly 동급 없음·match 유효 동급 최저·stop 멈춤(price null · sug 제안 값)·noData·hold), t, n, ref, why[], warn[], est, chk, use }
  *                       o.use 'new'(기본 · 새로 올릴 때 처음 값 = 정범님 등록 작업 · 약속 36이 막지 않음) · 'auto'(이미 올린 값을 엔진이 저절로 바꿈 — fenceLock(진행 중·등록 3개월·고친 지 14일)이면 hold)
  *  y24EngRegVal(r)    — 📤 새로 올리기 y24RegJudge의 X.val(y24RegL 줄 → 위 결과) */
 const Y24E_MAX = 400; S.y24e = S.y24e || { m: new Map(), tried: new Map(), want: new Set(), t: null, busy: false };
@@ -9353,6 +9353,7 @@ function y24EngRows(isbn) { const X = EXTF(); const d = y24EngMkt(isbn); if (!d 
 function y24EngSum(isbn) { const X = EXTF(); const d = y24EngMkt(isbn); if (!d) return null; if (d.fkSum) return d.fkSum; return X && X.y24FakeSum ? X.y24FakeSum(y24EngRows(isbn)) : null; }
 function y24EngVal(l, o) { o = o || {}; const X = EXTF(); if (!X || !X.y24PriceOf || !l) return null; const isbn = y24Isbn(l.isbn13 || l.isbn || l.isbn10); const d = isbn ? y24EngMkt(isbn) : null; const C = y24EngCfg(); const cfg = { ...(C.val || {}) };
   const L = { alPrice: +l.price || 0, grade: y24G(l.grade), priceList: +l.priceList || 0, ourShip: cfg.ourShip != null ? cfg.ourShip : null };
+  if (cfg.cheapPct == null) { try { const A = typeof shipAutoCfgNow === 'function' ? shipAutoCfgNow() : null; if (A && A.cheapPct != null) cfg.cheapPct = A.cheapPct; } catch (e) {} } /* (정범님 11/10 오후) 멈춤 기준 = 출고 자동 결정 설정의 cheapPct(기본 25%)를 그대로 — y24.val.cheapPct를 따로 두면 그것 */
   let lock = null; if (o.use === 'auto') { try { const M = window.ReadnowML; if (M && M.fenceLock) { const f = M.fenceLock(l, { key: l.id, nowMs: Date.now(), ...(o.fence || {}) }); lock = f ? { locked: true, why: f.why, kind: f.kind } : { locked: false }; } } catch (e) { lock = null; } if (!lock) lock = { locked: true, why: '울타리(fenceLock)를 못 읽음 — 안전하게 안 바꿈' }; } /* 약속 36: 'auto'만 울타리 · 'new'(처음 등록 값)는 막지 않음 */
   return X.y24PriceOf(L, d ? { ...d, page1: Array.isArray(d.page1) ? y24EngRows(isbn) : d.page1 } : null, { cfg, use: o.use === 'auto' ? 'auto' : 'new', lock, fkCfg: C.fake }); }
 const y24EngRegVal = (r) => { const l0 = (S.plist && S.plist.get(r.id)) || null; return y24EngVal({ ...(l0 || {}), price: r.price, grade: r.grade, isbn13: r.isbn, priceList: l0 ? l0.priceList : 0 }, { use: 'new' }); };
