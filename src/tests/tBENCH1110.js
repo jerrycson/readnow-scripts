@@ -50,7 +50,7 @@ const path = require('path'); const fs = require('fs');
     ok(r.ledLink, '🧾 통합 장부 머리에 🏢 링크 ' + (r.ledErr || ''));
     ok(r.open && r.nIt === NI && r.links > 20, `화면이 열리고 적용 줄 ${r.nIt}/${NI} · 원문 링크 ${r.links}개`);
     ok(r.gapRows > 5 && r.wRows === (B.cases || []).length && r.col > 5 && r.no >= 1, `빈 곳 ${r.gapRows}줄 · 가중치 ${r.wRows}줄 · 모을 정보 ${r.col} · 안 쓴 사례 ${r.no}`);
-    ok(r.yes >= 5 && r.notYet >= 1, `이 판 확인 — 있음 ${r.yes} · 아직 없음 ${r.notYet}(가지에 있는 기능)`);
+    ok(r.yes >= 5 && (r.yes + r.notYet) >= 15, `이 판 확인 — 있음 ${r.yes} · 아직 없음 ${r.notYet}(화면 고침 판이 들어가면 아직 없음 0도 맞음)`);
     ok(r.obs && r.obs.mc === true && r.obs.n >= 5 && r.obs.day && /^\d+\.\d+\.\d+$/.test(r.obs.ver || ''), '관리자 기기 관측 app_settings/bench_obs(판 번호 · 확인 함수 참거짓) ' + JSON.stringify(r.obs));
     ok(r.obsW2 === 0, '관측은 하루 한 번');
     ok(r.noAdminObs, '관리자가 아닌 기기는 관측을 쓰지 않음');
