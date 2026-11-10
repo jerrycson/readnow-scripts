@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.259의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.260의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.259' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.259', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.260' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.260', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -4537,7 +4537,9 @@
   if (typeof document !== 'undefined') { let mvAt = 0; const wake = () => { if (!schedDrawSlow || !schedDrawT) return; clearTimeout(schedDrawT); schedDrawT = 0; schedDrawSlow = false; schedDrawSoon(); }; document.addEventListener('pointermove', () => { const t = Date.now(); if (t - mvAt < 5000) return; mvAt = t; schedMoveAt = t; wake(); }, { capture: true, passive: true }); document.addEventListener('pointerdown', () => setTimeout(wake, 0), true); document.addEventListener('keydown', () => setTimeout(wake, 0), true); }
   if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden && schedDrawDue) schedDrawSoon(); });
   function schedDraw() { const el = globalThis.__rnById('rnpSched'); if (!el || !AS) return; const S0 = SCHED || { on: false }; const { day } = kstNow(); schedDrawDay = day; const slots = AS.slotsOf(S0); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
-    const plan = AS.dayPlan(S0, SCHED_RUNS, { now: Date.now() }, asAvgMs);
+    /* (1.89.260 4시간 점검 · 🧠 근원) 한 번 그릴 때 일마다 평균 걸린 시간은 한 번만 셈 — dayPlan이 앞으로 할 회차마다(10분 간격 칸이면 하루 144개) avg를 불렀고, 그때마다 durations가 실행 기록 전부를 훑어(같은 일이면 결과가 같음) 11/11 LOGGER에서 5분마다 한 번 2.1~2.4초 멈춤. 모의 자료(칸 30·기록 3천): 2,916번 10.6초 → 12번 0.05초 · 결과 같음 */
+    const avgC = new Map(); const avgOnce = (j) => { if (!avgC.has(j)) avgC.set(j, asAvgMs(j)); return avgC.get(j); };
+    const plan = AS.dayPlan(S0, SCHED_RUNS, { now: Date.now() }, avgOnce);
     /* (1.60.1) 한눈에: 지금 하는 자동 일 · 다음 · 켜진 칸 수 */ const runK = Object.entries(SCHED_RUNS).filter(([k, r]) => r && r.state === 'running' && !AS.isLost(r, Date.now()) && k.split('@')[1] === day).map(([k, r]) => `${asName(byId[r.slot || k.split('@')[0]] || { job: r.job || '' })}${r.par ? '(동시)' : ''} · ${r.by || ''}`); const nx = window.__rnSchedNext ? window.__rnSchedNext() : null;
     const live = `<div class="hint2" style="margin:3px 0;padding:4px 6px;border-radius:6px;background:${runK.length ? '#FFF4E5' : '#EEF4F1'};color:#1E2B28;font-size:11.5px">${runK.length ? `▶ 지금 자동으로 하는 중: <b>${esc3(runK.join(' / '))}</b>` : '⏸ 지금 자동으로 하는 일 없음'}${nx && nx.next ? ` · 다음 <b>${nx.next.tomorrow ? '내일 ' : ''}${esc3(nx.next.t)}</b> ${esc3(nx.next.label)}` : ''} · 켜진 칸 ${slots.filter((x) => x.on).length}/${slots.length}${(() => { const b = asBuiltins().filter((x) => x.on); return b.length ? ` · 늘 도는 일 ${b.map((x) => esc3(x.label.split(' (')[0])).join('·')}` : ''; })()}</div>`;
     const rowOf = (s, ix) => `<div class="sr${s.on ? ' on' : ''}"><label class="sw2"><input type="checkbox" data-sk="${esc3(s.id)}" ${s.on ? 'checked' : ''}><span></span></label><div class="sb"><b>${ix + 1}. ${esc3(asName(s))}${E ? E.missTag(s) : ''}${PAR_JOBS[s.job.slice(4)] ? ' <i style="font-style:normal;background:#3F7FD1;color:#fff;border-radius:6px;padding:0 4px;font-size:10px">동시</i>' : ''}</b><small>${esc3(AS.describe(s, byId))} · ${E ? E.durTxt(s.job) : ''}</small><div class="tl">${E ? E.chips(s, plan, S0) : ''}</div></div></div>`;

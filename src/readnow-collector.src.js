@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.259
+// @version      1.89.260
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -8235,7 +8235,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   if (typeof document !== 'undefined') { let mvAt = 0; const wake = () => { if (!schedDrawSlow || !schedDrawT) return; clearTimeout(schedDrawT); schedDrawT = 0; schedDrawSlow = false; schedDrawSoon(); }; document.addEventListener('pointermove', () => { const t = Date.now(); if (t - mvAt < 5000) return; mvAt = t; schedMoveAt = t; wake(); }, { capture: true, passive: true }); document.addEventListener('pointerdown', () => setTimeout(wake, 0), true); document.addEventListener('keydown', () => setTimeout(wake, 0), true); }
   if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (!document.hidden && schedDrawDue) schedDrawSoon(); });
   function schedDraw() { const el = globalThis.__rnById('rnpSched'); if (!el || !AS) return; const S0 = SCHED || { on: false }; const { day } = kstNow(); schedDrawDay = day; const slots = AS.slotsOf(S0); const byId = Object.fromEntries(slots.map((s) => [s.id, s]));
-    const plan = AS.dayPlan(S0, SCHED_RUNS, { now: Date.now() }, asAvgMs);
+    /* (1.89.260 4시간 점검 · 🧠 근원) 한 번 그릴 때 일마다 평균 걸린 시간은 한 번만 셈 — dayPlan이 앞으로 할 회차마다(10분 간격 칸이면 하루 144개) avg를 불렀고, 그때마다 durations가 실행 기록 전부를 훑어(같은 일이면 결과가 같음) 11/11 LOGGER에서 5분마다 한 번 2.1~2.4초 멈춤. 모의 자료(칸 30·기록 3천): 2,916번 10.6초 → 12번 0.05초 · 결과 같음 */
+    const avgC = new Map(); const avgOnce = (j) => { if (!avgC.has(j)) avgC.set(j, asAvgMs(j)); return avgC.get(j); };
+    const plan = AS.dayPlan(S0, SCHED_RUNS, { now: Date.now() }, avgOnce);
     /* (1.60.1) 한눈에: 지금 하는 자동 일 · 다음 · 켜진 칸 수 */ const runK = Object.entries(SCHED_RUNS).filter(([k, r]) => r && r.state === 'running' && !AS.isLost(r, Date.now()) && k.split('@')[1] === day).map(([k, r]) => `${asName(byId[r.slot || k.split('@')[0]] || { job: r.job || '' })}${r.par ? '(동시)' : ''} · ${r.by || ''}`); const nx = window.__rnSchedNext ? window.__rnSchedNext() : null;
     const live = `<div class="hint2" style="margin:3px 0;padding:4px 6px;border-radius:6px;background:${runK.length ? '#FFF4E5' : '#EEF4F1'};color:#1E2B28;font-size:11.5px">${runK.length ? `▶ 지금 자동으로 하는 중: <b>${esc3(runK.join(' / '))}</b>` : '⏸ 지금 자동으로 하는 일 없음'}${nx && nx.next ? ` · 다음 <b>${nx.next.tomorrow ? '내일 ' : ''}${esc3(nx.next.t)}</b> ${esc3(nx.next.label)}` : ''} · 켜진 칸 ${slots.filter((x) => x.on).length}/${slots.length}${(() => { const b = asBuiltins().filter((x) => x.on); return b.length ? ` · 늘 도는 일 ${b.map((x) => esc3(x.label.split(' (')[0])).join('·')}` : ''; })()}</div>`;
     const rowOf = (s, ix) => `<div class="sr${s.on ? ' on' : ''}"><label class="sw2"><input type="checkbox" data-sk="${esc3(s.id)}" ${s.on ? 'checked' : ''}><span></span></label><div class="sb"><b>${ix + 1}. ${esc3(asName(s))}${E ? E.missTag(s) : ''}${PAR_JOBS[s.job.slice(4)] ? ' <i style="font-style:normal;background:#3F7FD1;color:#fff;border-radius:6px;padding:0 4px;font-size:10px">동시</i>' : ''}</b><small>${esc3(AS.describe(s, byId))} · ${E ? E.durTxt(s.job) : ''}</small><div class="tl">${E ? E.chips(s, plan, S0) : ''}</div></div></div>`;
