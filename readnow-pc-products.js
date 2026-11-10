@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.256의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.257의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.256' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.256', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.257' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.257', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -3676,12 +3676,15 @@
     if (!F) return fail("알라딘 취소 창에서 '주문 상품 취소' 양식을 못 찾음 — 창을 여는 주소가 다를 수 있음(확인 필요 · 아무것도 보내지 않음)", { probe });
     const act = new URL(F.getAttribute('action') || '', L.r.url || CX_LAYER(ono)); if (act.host !== 'www.aladin.co.kr' || !/\/scm\/ReportNotSalesLayer\.aspx$/i.test(act.pathname) || String(F.getAttribute('method') || 'GET').toUpperCase() !== 'GET') return fail(`취소 양식이 보내는 곳이 예상과 다름(${act.pathname} ${F.getAttribute('method') || ''}) — 아무것도 보내지 않음`, { probe, layerText });
     const els = [...F.elements]; const onoEl = els.find((e) => e.name === 'ono'); const boxes = els.filter((e) => e.name === 'ordersItem' && e.type === 'checkbox').map((e) => String(e.value)); const rads = els.filter((e) => e.name === 'cancelReason' && e.type === 'radio').map((e) => String(e.value));
-    if (!onoEl || String(onoEl.value) !== ono) return fail(`취소 창의 주문번호(${onoEl ? onoEl.value : '없음'})가 이 주문과 다름 — 아무것도 보내지 않음`, { probe, layerText });
+    /* (11/10 정범님 '취소가 안 돼') 알라딘 샵매니저는 이 창을 불러온 뒤 자기 화면 코드로 ono 칸에 주문번호를, rdUrl 칸에 목록 주소를 채워 넣음(scm_order.js showReportNotSalesLayer — $j('#ono').val(ono) · $j('#rdUrl').val(location.href)) → 받은 그대로의 창에는 ono가 '1' 같은 자리 값이라 늘 '다름'으로 막혔음
+     *  이제 샵매니저와 똑같이 채움 — 단 칸 값이 다른 '진짜 주문번호 꼴'이면 그대로 막음 · 이 주문 창이 맞는지는 아래 '고른 상품 체크칸이 모두 이 창에 있음'(상품 번호는 주문마다 다름)으로 한 번 더 확인 */
+    const onoV = onoEl ? String(onoEl.value || '') : null; if (!onoEl || (onoV !== ono && /^\d{3}-[A-Z]\d{9}$/.test(onoV))) return fail(`취소 창의 주문번호(${onoEl ? onoV : '없음'})가 이 주문과 다름 — 아무것도 보내지 않음`, { probe, layerText });
+    const fillV = { ono, rdUrl: LIST || CX_LIST }; /* 샵매니저 화면 코드가 채우는 두 칸 */
     const bMiss = want.filter((x) => !boxes.includes(x)); if (bMiss.length || !rads.includes(reason)) return fail(`취소 창에 ${bMiss.length ? '고른 상품 ' + bMiss.join(', ') : '취소 사유 ' + reason}이(가) 없음 — 아무것도 보내지 않음`, { probe, layerText, result: { state: 'formMismatch', boxes, rads } });
     const xk = `${ref.id}:${v.tries || 1}`; const gate = await exBegin('cancelOrder', xk, { ono, n: want.length, reason: +reason, whole: want.length === have.length, stage });
     if (!gate.ok) return fail('실행 문: ' + (gate.why || '같은 취소를 이미 보낸 기록이 있음') + ` — 샵매니저 ${TAB}에서 확인`, { result: { state: gate.state === 'done' ? 'unknown' : 'gate', stage } });
     let st = 'failed', why = null;
-    try { const q = new URLSearchParams(); for (const e of els) { if (!e.name || e.disabled) continue; if (e.type === 'radio') { if (e.name === 'cancelReason' && String(e.value) === reason) q.append(e.name, e.value); continue; } if (e.type === 'checkbox') { if (e.name === 'ordersItem' && want.includes(String(e.value))) q.append(e.name, e.value); continue; } if (['hidden', 'text'].includes(e.type)) q.append(e.name, e.value); }
+    try { const q = new URLSearchParams(); for (const e of els) { if (!e.name || e.disabled) continue; if (e.type === 'radio') { if (e.name === 'cancelReason' && String(e.value) === reason) q.append(e.name, e.value); continue; } if (e.type === 'checkbox') { if (e.name === 'ordersItem' && want.includes(String(e.value))) q.append(e.name, e.value); continue; } if (['hidden', 'text'].includes(e.type)) { if (q.has(e.name) && fillV[e.name] != null) continue; q.append(e.name, fillV[e.name] != null ? fillV[e.name] : e.value); } }
       act.search = q.toString(); await ex({ step: 'send', msg: `${PC_NAME}: 알라딘 '선택 상품 품절 취소'와 같은 요청을 보냄 (${want.length}권 · 사유 ${reason === '1' ? '고객 취소 요청' : '품절 취소'})` });
       await PACE.wait(sleep); const r1 = await fetch(act.href, { credentials: 'include', cache: 'no-store' }); try { window.__rnC2w && window.__rnC2w('cancel', { ono, items: want, reason, keys: [...new Set([...q.keys()].filter((k) => !['ono', 'ordersItem', 'cancelReason'].includes(k)))] }, [{ m: 'GET', u: act.pathname + act.search }], r1.ok, r1.status); } catch (e) {} /* 🟧✍ 그림자 쓰기 알림(출고 중이면 적지 않음) */ const h1 = AL.decode(await r1.arrayBuffer(), r1.headers.get('content-type')); const alerts = [...h1.matchAll(/alert\(\s*['"]([^'"]{1,200})['"]/g)].map((m) => m[1]).slice(0, 6);
       await ex({ step: 'verify', msg: `${PC_NAME}: ${TAB}을(를) 다시 읽어 빠졌는지 확인하는 중 (응답 HTTP ${r1.status}${alerts.length ? ' · ' + alerts.join(' / ').slice(0, 80) : ''})`, alerts, http: r1.status });
