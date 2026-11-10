@@ -5,9 +5,13 @@
 //  ④ 새로 생긴 카드(제목이 숫자뿐이어도)가 저절로 편집 목록에 들어가는지
 //  ⑤ (11/10) 상품 탭 가격 감시 칸은 엔진 상태가 바뀌어도 열쇠 #p_watch 하나(예전엔 제목에 '판정 중·A단계' 등이 섞여 열쇠가 바뀜)
 //  ⑥ 예전 열쇠('b:가격감시판정엔진…')로 저장한 숨김·자리를 새 열쇠로 옮김 — 화면은 그대로 숨고 · 관리자 기기가 서버 값을 한 번 새 열쇠로
+//  ⑦ (11/10 밤 정범님 '편집 목록에 숫자만(2. 10,028 · 8. 1 · 9. 10)·이름 뒤 상태 글') 모든 탭(넓은 화면·휴대폰) 편집 줄 이름이 숫자·빈칸·상태 글이 아님
+//     + 고정 열쇠(data-blk)를 붙인 칸마다 예전 열쇠(글자에서 만든 'b:…')가 TOB_ALIAS로 새 열쇠로 옮겨지는지 · 다른 칸 열쇠는 안 건드리는지
+//  ⑧ 숫자가 굵은 칸(👀 그림 붙은 상품 10개 · 진행 중 1개 · 먼저 처리할 상품 5개 · 표에 없는 새 칸 <b>10,028</b>)도 이름이 글자로
 require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   const errs = []; p.on('pageerror', (e) => errs.push(e.message));
-  const R = { miss: [], sheet: [] }; const W = (ms) => p.waitForTimeout(ms);
+  const R = { miss: [], sheet: [], names: [], alias: [] };
+  const BADN = (l) => !l || !/[가-힣A-Za-z]/.test(l) || /^[\d,.\s]+$/.test(l) || /판정 중|판정 쉼|전체 정지|읽는 중|받는 중|없음|이 기기|내 몫|[\d,]+\s*(개|건|권|곳|명|종)(?![가-힣])|—\s*판매중|\d{1,2}월 \d{1,2}일/.test(l); const W = (ms) => p.waitForTimeout(ms);
   const TABS = ['search', 'products', 'sellers', 'orders', 'purchase', 'biz', 'market', 'projects'];
   await p.evaluate(() => { localStorage.setItem('rn-device', 'JS-MAIN'); S.devOk = true; S.app.tabOrder = {}; S.app.tabHide = {}; });
   const go = async (t) => { await p.evaluate((t) => { S.q = ''; S.tab = t; renderTabs(); S._userAt = Date.now(); renderMain(); }, t); await W(900); };
@@ -18,15 +22,21 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   for (const vp of [{ width: 1400, height: 900 }, { width: 390, height: 844 }]) { await p.setViewportSize(vp);
     for (const t of TABS) { await go(t); const a = await audit(); a.miss.forEach((x) => R.miss.push(`${vp.width} ${t}: ${x}`));
       const btn = await p.$('#main .taborder [data-taborder]'); if (!btn) { R.sheet.push(`${vp.width} ${t}: 편집 단추 없음`); continue; }
-      await btn.click(); await W(350); const rows = await p.evaluate(() => [...document.querySelectorAll('#sheet [data-ok]')].map((x) => x.dataset.ok));
+      (await p.evaluate(() => { const m = document.getElementById('main'); const bad = []; for (const b of tobBlocks(m)) { const el = b.el; if (!el.dataset.blkname) { if (tobAlias(b.k) !== b.k) bad.push('남의 칸 ' + b.k + '→' + tobAlias(b.k)); continue; } if (/^(p_reg|p_watch)$/.test(el.dataset.blk)) continue;
+        const sv = [el.dataset.blk, el.dataset.blkname]; delete el.dataset.blk; delete el.dataset.blkname; const old = tobKeyOf(el); el.dataset.blk = sv[0]; el.dataset.blkname = sv[1]; if (old && tobAlias(old) !== '#' + sv[0]) bad.push(old + '→' + tobAlias(old) + ' ≠ #' + sv[0]); } return bad; })).forEach((x) => R.alias.push(`${vp.width} ${t}: ${x}`));
+      await btn.click(); await W(350);
+      (await p.evaluate(() => [...document.querySelectorAll('#sheet [data-ok] > span:first-child')].map((x) => x.textContent.replace(/^\d+\.\s*/, '').replace(/🏠 홈 카드|숨김/g, '').trim()))).forEach((l) => { if (BADN(l)) R.names.push(`${vp.width} ${t}: ${l}`); });
+      const rows = await p.evaluate(() => [...document.querySelectorAll('#sheet [data-ok]')].map((x) => x.dataset.ok));
       if (JSON.stringify(rows) !== JSON.stringify(a.keys)) R.sheet.push(`${vp.width} ${t}: 편집 줄 ${rows.length} ≠ 화면 ${a.keys.length}`);
       if (t === 'products') R.regRow = R.regRow === false ? false : rows.includes('#p_reg');
-      if (t === 'orders') R.oTop = R.oTop === false ? false : rows.some((k) => /주문상품전체보기/.test(k));
+      if (t === 'orders') R.oTop = R.oTop === false ? false : rows.includes('#o_top'); /* (11/10 밤) 🧾 주문 상품 전체 보기 줄 = 고정 열쇠 #o_top(예전 'b:🧾주문상품전체보기'는 별칭으로 옮김) */
       await p.evaluate(() => history.back()); await W(300); } }
   await p.setViewportSize({ width: 1400, height: 900 });
   // ③ 등록 줄에 '진행 중 0개'가 붙어도 제 열쇠
   await p.evaluate(() => { S.regItems = S.regItems || new Map(); }); await go('products');
   R.regBold = await p.evaluate(() => { const c = document.querySelector('#main [data-blk="p_reg"]'); return !!c && !!c.querySelector('b') && tobBlocks(document.getElementById('main')).some((b) => b.k === '#p_reg' && b.el === c); });
+  // (11/10 밤) 칸 이름표(data-blk)가 붙은 칸을 눌러도 🛡 추적 차단 도우미(/blk/…)를 부르지 않음 — 그 단추(install·undo·ubol)만
+  R.blkClick = await p.evaluate(async () => { const f0 = window.fetch; let hit = 0; window.fetch = (u, o) => { if (/\/blk\//.test(String(u))) hit++; return f0(u, o); }; let n = 0; for (const k of ['p_reg', 'p_prob', 'p_batch', 'p_watch']) { const c = document.querySelector(`#main [data-blk="${k}"]`); if (c) { n++; c.dispatchEvent(new MouseEvent('click', { bubbles: true })); } } await new Promise((r) => setTimeout(r, 300)); window.fetch = f0; return { hit, n }; });
   // 숨기기 저장 → 등록 줄이 실제로 숨겨지고, 보이기로 되돌림
   await p.click('#main .taborder [data-taborder]'); await W(300); await p.click('#sheet [data-tobhide="#p_reg"]'); await W(150); await p.click('#ord_save'); await W(900); await go('products');
   R.regHidden = await p.evaluate(() => { const c = document.querySelector('#main [data-blk="p_reg"]'); return !!c && c.style.display === 'none' && ((S.app.tabHide || {}).products || []).includes('#p_reg'); });
@@ -46,8 +56,14 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
     window.__FSW = []; S._userAt = Date.now(); renderMain(); await W(); r.again = (window.__FSW || []).filter((x) => /app_settings/.test(x.n)).length; /* 한 번만 */
     S.prCfg && (S.prCfg = { ...S.prCfg, killSwitch: !S.prCfg.killSwitch }); S._userAt = Date.now(); renderMain(); await W(); r.hidAfterEngine = (m.querySelector('[data-blk="p_watch"]') || {}).style.display === 'none'; if (S.prCfg) S.prCfg = { ...S.prCfg, killSwitch: !S.prCfg.killSwitch };
     S.app.tabOrder = {}; S.app.tabHide = {}; S._userAt = Date.now(); renderMain(); await W(); return r; });
+  // ⑧ 숫자가 굵은 칸 이름
+  await go('products');
+  R.numNames = await p.evaluate((src) => { const BADN = eval(src); const m = document.getElementById('main'); m.insertAdjacentHTML('beforeend', '<div class="pxtop zz"><button class="pxchip">👀 그림 붙은 상품 <b>10</b>개만 보기</button> <button class="linkbtn">👀 조회수 분석 ›</button></div><div class="card probtop on zz"><div class="probtop-h"><button class="problink">🧯 문제 기록</button><b>먼저 처리할 상품 5개</b></div></div><div class="stats zz"><div class="stat"><b>10,028</b><span>상품</span></div></div><div class="card zz" title="시험 카드 — 설명"><b>10</b><span>새 칸 글</span></div>');
+    const B = tobBlocks(m).filter((b) => b.el.classList.contains('zz')); const L = B.map((b) => [b.k, tobLabel(b.el, b.k)]); const reg = m.querySelector('[data-blk="p_reg"]'); if (reg) L.push(['#p_reg', tobLabel(reg, '#p_reg')]);
+    m.querySelectorAll('.zz').forEach((x) => x.remove()); const old = [tobAlias('b:👀그림붙은상품개만보기👀조회'), tobAlias('b:먼저처리할상품개'), tobAlias('b:🧯문제기록지금풀어야할문제'), tobAlias('b:🧾주문상품전체보기')];
+    return { L, bad: L.filter(([, l]) => BADN(l)), px: L.some(([k]) => k === '#p_px'), old }; }, BADN.toString());
   console.log(JSON.stringify(R, null, 1).slice(0, 4000), errs.join('|'));
-  const ok = !R.miss.length && !R.sheet.length && R.regRow && R.oTop && R.regBold && R.regHidden && R.regBack && R.newCard && R.watchKey.length === 4 && R.watchKey.every((k) => k === '#p_watch')
+  const ok = !R.miss.length && !R.sheet.length && R.blkClick.hit === 0 && R.blkClick.n >= 3 && !R.names.length && !R.alias.length && R.numNames.L.length === 5 && !R.numNames.bad.length && R.numNames.px && R.numNames.old.join() === '#p_px,#p_prob,#p_prob,#o_top' && R.regRow && R.oTop && R.regBold && R.regHidden && R.regBack && R.newCard && R.watchKey.length === 4 && R.watchKey.every((k) => k === '#p_watch')
     && R.watchMig.hid && R.watchMig.first === '#p_watch' && R.watchMig.regHid && R.watchMig.memO === 0 && R.watchMig.memH === '#p_watch,#p_reg' && R.watchMig.wrote === 1 && R.watchMig.wO && R.watchMig.wH === '["#p_watch","#p_reg"]' && R.watchMig.again === 0 && R.watchMig.hidAfterEngine && !errs.length;
   console.log(ok ? '✓ tTOBALL 통과' : '❌ tTOBALL 실패');
 });
