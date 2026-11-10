@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.258의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.259의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.258' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.258', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.259' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.259', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -955,7 +955,7 @@
       const mk = (late) => ({ id: String(k).slice(0, 10) + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), k: String(k).slice(0, 10), at: Date.now(), in: scrubIn(input || {}), rq: reqs.slice(0, 20).map(scrub), ok: ok == null ? null : !!ok, http: +http || null, ...(late ? { late: 1 } : {}) });
       /* (11/10 정범님 '출고 끝난 뒤 한꺼번에 알림 — 지금 진행') 🚚 출고 중(이 PC 출고·MJ-MAIN 보호 · 약속 0-1)이면 이 PC 저장소 rn-c2wq-ship(300개까지)에만 쌓음 — 네트워크·번외·화면은 하나도 건드리지 않음
        *  번외가 그림자 쓰기를 받던 PC(rn-c2w-ok.alw · 6시간 안)만 · 출고 보호가 풀리면 아래 다리가 한꺼번에 /al/wfeed로 넘김(late 1) · 쌓는 데 드는 시간은 src/tests/tC2SHIP.js가 잼 */
-      if (ship) { if (!g || !(g.alw || g.on) || Date.now() - (+g.at || 0) > 6 * 3600e3) return false; const q = gv('rn-c2wq-ship', []); q.push(mk(true)); GM_setValue('rn-c2wq-ship', q.slice(-300)); return true; }
+      if (ship) { if (!g || !(g.alw || g.on) || Date.now() - (+g.at || 0) > 6 * 3600e3) return false; const q = gv('rn-c2wq-ship', []); q.push(mk(true)); const cap = (a) => { let s = JSON.stringify(a); while (a.length > 1 && s.length > 524288) { a = a.slice(Math.ceil(a.length / 10)); s = JSON.stringify(a); } return a; }; GM_setValue('rn-c2wq-ship', cap(q.slice(-300))); return true; } /* (1.89.259 🔬 정밀 점검 11/10 🪶) 개수(300)만 자르던 묶음을 512KB로도 — 송장·엑셀 입력(in 최대 400줄)이 든 항목이 쌓이면 출고 중 GM_setValue마다 수 MB를 통째로 다시 적었음(HOME rn-c2wq 하루 8.7MB) · 가장 오래된 것부터 버림(late 표시는 그대로) */
       if (!g || !g.on || Date.now() - (+g.at || 0) > 90e3) return false; /* 번외가 받는다고 한 때만 · 출고 중 아님 */
       const q = gv('rn-c2wq', []); q.push(mk(false)); GM_setValue('rn-c2wq', q.slice(-40)); return true; } catch (e) { return false; } };
 })();

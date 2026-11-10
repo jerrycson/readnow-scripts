@@ -3,12 +3,13 @@
 (function (root) {
   'use strict';
   const COL2 = {
-    COL2_VER: '0.1.18', /* 번외 일꾼 판 번호 — 운영 APP_VER·수집기 @version과 따로 */
+    COL2_VER: '0.1.19', /* 번외 일꾼 판 번호 — 운영 APP_VER·수집기 @version과 따로 */
     PORT: 8797, /* 번외 도우미 포트 — 운영 인쇄 도우미 8898·로거 도우미 8899와 겹치면 켜지 않음 */
     PROD_PORTS: [8898, 8899],
     PREFIX: 'col2_', /* Firestore 쓰기는 이 머리 칸만 */
     LS: 'rn3-', /* 기기 저장 열쇠 머리 */
     WEB_ORIGIN: 'https://jerrycson.github.io', /* 비교 화면을 Pages에 올리면 이 출처 — 웹앱과 같은 출처라 구글 로그인을 나눠 씀 */
+    WEB_ORIGINS: ['https://jerrycson.github.io', 'https://readnow.kr'], /* (0.1.19 🔬 정밀 점검 11/10) 웹앱이 부를 수 있는 출처 모두 — 11/10 readnow.kr(Hosting) 판부터 새 주소에서 열면 도우미 8899·8898·클라우드는 받는데 번외만 403으로 거절해 그림자·🟦 자동 올림 맡김이 조용히 멈췄음 */
     /* 운영 공용 파일을 그대로 받아 씀(복사하지 않음) — 판은 받은 파일의 VERSION을 기록에 남김 */
     CORE_BASE: 'https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/',
     CORE_FILES: ['readnow-aladin-core.js', 'readnow-products-core.js'],

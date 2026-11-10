@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.258
+// @version      1.89.259
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -10290,7 +10290,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       const mk = (late) => ({ id: String(k).slice(0, 10) + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), k: String(k).slice(0, 10), at: Date.now(), in: scrubIn(input || {}), rq: reqs.slice(0, 20).map(scrub), ok: ok == null ? null : !!ok, http: +http || null, ...(late ? { late: 1 } : {}) });
       /* (11/10 정범님 '출고 끝난 뒤 한꺼번에 알림 — 지금 진행') 🚚 출고 중(이 PC 출고·MJ-MAIN 보호 · 약속 0-1)이면 이 PC 저장소 rn-c2wq-ship(300개까지)에만 쌓음 — 네트워크·번외·화면은 하나도 건드리지 않음
        *  번외가 그림자 쓰기를 받던 PC(rn-c2w-ok.alw · 6시간 안)만 · 출고 보호가 풀리면 아래 다리가 한꺼번에 /al/wfeed로 넘김(late 1) · 쌓는 데 드는 시간은 src/tests/tC2SHIP.js가 잼 */
-      if (ship) { if (!g || !(g.alw || g.on) || Date.now() - (+g.at || 0) > 6 * 3600e3) return false; const q = gv('rn-c2wq-ship', []); q.push(mk(true)); GM_setValue('rn-c2wq-ship', q.slice(-300)); return true; }
+      if (ship) { if (!g || !(g.alw || g.on) || Date.now() - (+g.at || 0) > 6 * 3600e3) return false; const q = gv('rn-c2wq-ship', []); q.push(mk(true)); const cap = (a) => { let s = JSON.stringify(a); while (a.length > 1 && s.length > 524288) { a = a.slice(Math.ceil(a.length / 10)); s = JSON.stringify(a); } return a; }; GM_setValue('rn-c2wq-ship', cap(q.slice(-300))); return true; } /* (1.89.259 🔬 정밀 점검 11/10 🪶) 개수(300)만 자르던 묶음을 512KB로도 — 송장·엑셀 입력(in 최대 400줄)이 든 항목이 쌓이면 출고 중 GM_setValue마다 수 MB를 통째로 다시 적었음(HOME rn-c2wq 하루 8.7MB) · 가장 오래된 것부터 버림(late 표시는 그대로) */
       if (!g || !g.on || Date.now() - (+g.at || 0) > 90e3) return false; /* 번외가 받는다고 한 때만 · 출고 중 아님 */
       const q = gv('rn-c2wq', []); q.push(mk(false)); GM_setValue('rn-c2wq', q.slice(-40)); return true; } catch (e) { return false; } };
 })();

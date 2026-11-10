@@ -526,7 +526,7 @@ async function miniWin(o) { const on = o.on === true; const u = uiNow(); u.mini 
 
 /* ── 듣는 길 ── */
 function readBody(req, max, cb) { const bufs = []; let n = 0, bad = false; req.on('data', (c) => { n += c.length; if (n > max) { bad = true; req.destroy(); } else bufs.push(c); }); req.on('end', () => (bad ? cb(new Error('너무 큼')) : cb(null, Buffer.concat(bufs)))); }
-const OK_ORG = (o) => o === `http://127.0.0.1:${PORT}` || o === `http://localhost:${PORT}` || o === COL2.WEB_ORIGIN || /^chrome-extension:\/\//i.test(o);
+const OK_ORG = (o) => o === `http://127.0.0.1:${PORT}` || o === `http://localhost:${PORT}` || o === COL2.WEB_ORIGIN || (Array.isArray(COL2.WEB_ORIGINS) && COL2.WEB_ORIGINS.includes(o)) || /^chrome-extension:\/\//i.test(o); /* (0.1.19) readnow.kr도 */
 const STATIC = { 'col2-config.js': path.join(ROOT, 'col2-config.js') }; for (const f of ['col2-store.js', 'col2-compare-core.js', 'col2-compare.js', 'col2-tasks.js', 'col2-jobview.js']) STATIC[f] = path.join(ROOT, 'shadow', f); for (const f of ['col2-logwin.js', 'col2-ui.js', 'col2-go.js', 'col2-help.js']) STATIC[f] = path.join(__dirname, f);
 const srv = http.createServer((req, res) => {
   const host = String(req.headers.host || ''); if (!new RegExp(`^(127\\.0\\.0\\.1|localhost):${PORT}$`).test(host)) { res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' }); return res.end('{"ok":false,"err":"이 PC 안에서만"}'); }
