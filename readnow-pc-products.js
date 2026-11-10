@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.253의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.254의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.253' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.253', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.254' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.254', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -5026,8 +5026,6 @@
     const ref = C('crm_system').doc('collector_version');
     /* (1.72.0) 판 알림을 머리 서명마다 따로(h_서명.ver) — 머리가 다른 PC(옛 Tampermonkey 본체)는 이 판을 받을 수 없으니, 예전 칸(ver)을 올리지 않아 그 PC들이 새로고침을 되풀이하지 않게(HOME에서 새 탭 옮기기가 되풀이되던 원인) · 같은 머리 PC끼리만 서로 맞춤 */
     const HS = (() => { try { return (window.__rnLiveInfo && window.__rnLiveInfo().hsig) || 'x'; } catch (e) { return 'x'; } })(); const HK = 'h_' + HS;
-    /* (1.89.246 🔬 정밀 점검 11/09) 이 거래가 인터넷이 흔들릴 때 끝나지 않으면(Firestore 거래는 연결될 때까지 기다림) 아래 ⚡ 빠른 업데이트 받침(__rnLiveReady · pc_live 듣기)이 영영 걸리지 않음 — 11/09 로거가 12:48 새 탭(1.89.238)을 집 인터넷 흔들림 중에 열어 14:30~21:44 새 판 7개(1.89.239~245)를 받아 두고도 9시간 동안 바꾸지 못함('새 수집기 … 있습니다' 줄 0) → 20초만 기다리고 넘어감(판 알림 쓰기는 다음 탭이 함) */
-    try { await Promise.race([db.runTransaction(async (tx) => { const d = (await tx.get(ref)).data() || {}; const cur = (d[HK] || {}).ver; if (verNum(VER) > verNum(cur)) tx.set(ref, { [HK]: { ver: VER, by: PC_NAME, at: nowIso() } }, { merge: true }); }), new Promise((r) => setTimeout(r, 20000))]); } catch (e) {}
     // 더 새 버전이 생겨도 이 PC의 작업은 멈추지 않음. 하던 작업은 이 버전으로 끝까지 계속하고,
     // ① 아무 작업도 없을 때(2분 이상 쉼) 또는 ② 모두 일괄 수집의 단계와 단계 사이에서만 새로고침 → 새 버전으로 그 자리부터 자동으로 이어감.
     // 같은 버전으로는 한 번만 시도 (동기화 전이라 새로고침해도 예전 버전이면, 그 버전으로 그냥 계속).
@@ -5073,6 +5071,13 @@
         if (running && curKey === after && tries > 2) { clearInterval(t); window.__rnResumePending = 0; GM_setValue('rnu-resume-after-reload', null); return; } /* (1.72.1) 다른 길(⏰ 같은 회차 이어가기)로 이미 그 일이 다시 도는 중 — 끝난 뒤 '10분 동안 시작하지 못함' 경고를 잘못 적던 것 */
         if (running || (window.__rnRest && window.__rnRest())) return; /* (1.56.0) 이 PC의 수집기 탭이 이어감 */ if (tries > 200) { clearInterval(t); window.__rnResumePending = 0; GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 이어가기 '${JOBS[after][0]}'를 10분 동안 시작하지 못했습니다 — 개요 탭 '멈춘 작업'의 이어하기를 눌러 주세요`, 1); return; }
         if (!AS || !SCHED || !auth.currentUser) return; try { if (PUBONLY && !TGATE.ok) return; } catch (e) {} /* (1.71.2) ⏰ 설정·로그인·(로거) 테더링 확인을 기다림 */ clearInterval(t); window.__rnResumePending = 0; const rs = GM_getValue('rnu-resume-slot', null); GM_setValue('rnu-resume-slot', null); if (rs && rs.k === after && Date.now() - (rs.at || 0) < 30 * 60e3 && window.__rnSchedResume) { GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 ⏰ '${JOBS[after][0]}' (${rs.why})을(를) 같은 회차로 저장된 자리부터 이어갑니다 (수집기 ${VER})`); window.__rnSchedResume(rs); return; } GM_setValue('rnu-resume-after-reload', null); log(`새로고침 뒤 '${JOBS[after][0]}'을(를) 저장된 자리부터 이어갑니다 (수집기 ${VER})`); window.__rnAuto = true; runJob(after).finally(() => { window.__rnAuto = false; }); }, 3000); } }
+    /* (11/10 아침 확인) ⚡ 받아 둔 새 판 지킴이 — 11/10 로거가 09:16에 1.89.253을 받아 두고도 쉬는 사이(09:01~10:00 할 일 없음)에 안 바꿈('새 수집기 … 있습니다' 줄 0):
+     *  그 탭(1.89.238)은 아래 판 알림 거래가 끝나지 않아 받침(__rnLiveReady)이 영영 걸리지 않았음(1.89.246에서 20초 기다림으로 고침) → 이제 받침·판 알림 듣기를 거래보다 먼저 걸고(거래는 맨 끝 · 기다리지 않아도 됨)
+     *  + 5분마다 '받아 둔 판이 이 판보다 새것인데 아직 바꿀 준비(__rnOutdated)가 없으면' 받침을 다시 부름 — 쉬는 사이·저장 지점 규칙(출고 보호·🧩 끄기 포함)은 그대로 · 이 PC 혼자의 일(다른 PC와 엮이지 않음) */
+    setInterval(() => { try { if (window.__rnOutdated || GM_getValue('rn-live-off', false)) return; const LV = GM_getValue('rn-live', null), bd = GM_getValue('rn-live-bad', null); const info = window.__rnLiveInfo ? window.__rnLiveInfo() : null;
+      if (!LV || !LV.ver || verNum(LV.ver) <= verNum(VER) || !info || !info.hsig || LV.hsig !== info.hsig || (bd && bd.ver === LV.ver)) return; log(`⚡ 받아 둔 새 판 ${LV.ver}로 아직 바꿀 준비가 안 됨 — 지킴이가 다시 걸어 둠(쉬는 사이·저장 지점에서 바꿈)`); window.__rnLiveReady && window.__rnLiveReady(LV.ver); } catch (e) {} }, 5 * 60e3);
+    /* (1.89.246 🔬 정밀 점검 11/09) 이 거래가 인터넷이 흔들릴 때 끝나지 않으면(Firestore 거래는 연결될 때까지 기다림) 아래 ⚡ 빠른 업데이트 받침(__rnLiveReady · pc_live 듣기)이 영영 걸리지 않음 — 11/09 로거가 12:48 새 탭(1.89.238)을 집 인터넷 흔들림 중에 열어 14:30~21:44 새 판 7개(1.89.239~245)를 받아 두고도 9시간 동안 바꾸지 못함('새 수집기 … 있습니다' 줄 0) → 20초만 기다리고 넘어감(판 알림 쓰기는 다음 탭이 함) */
+    try { await Promise.race([db.runTransaction(async (tx) => { const d = (await tx.get(ref)).data() || {}; const cur = (d[HK] || {}).ver; if (verNum(VER) > verNum(cur)) tx.set(ref, { [HK]: { ver: VER, by: PC_NAME, at: nowIso() } }, { merge: true }); }), new Promise((r) => setTimeout(r, 20000))]); } catch (e) {}
   }
   /* ══════════ (1.59.2) 🛰 원격 조작 — 웹앱(⚙ 관리도구 › ① 도구)이나 다른 PC 수집기에서 이 PC를 골라 ■ 중단 · ▶ 다시 시작 · ⟳ 업데이트
    *  명령은 Firebase crm_system/pc_ctl 한 문서: cmds.{PC 이름} = { id, cmd, at, by, want(그때 가장 새 판) } · 결과는 acks.{PC 이름} = { id, cmd, state, msg, ver, at } · 보낸·받은 기록은 log에 덧붙임(지우지 않음)
