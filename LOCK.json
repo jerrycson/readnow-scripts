@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "웹앱 1.78.466 기상청",
+ "since": "2026-11-10T06:53:25Z",
+ "beat": "2026-11-10T06:53:25Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-10T06:50:03Z"
  },
- "host": null
+ "host": "vm"
 }
