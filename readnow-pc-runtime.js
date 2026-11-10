@@ -1,8 +1,8 @@
-/* readnow-pc-runtime.js — 리드나우 수집기 1.89.252의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
+/* readnow-pc-runtime.js — 리드나우 수집기 1.89.253의 바탕 — 이 PC 이름·네이버 다시 로그인·일시정지(모든 탭)·작업 기록·탭끼리 나누는 상태·통합 관제판
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.252' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.252', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { runtime: '1.89.253' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['runtime', '1.89.253', function () {
 /* (1.64.0) 🌐 공개 전용 PC: 알라딘에 로그인하지 않는 PC가 공개 화면(우리 숍 목록 ?rnPub=1)에서 수집기를 띄움 — 로그인이 필요 없는 일만 함 · 이 PC는 알라딘 계정과 아무 연결이 없음 */
 /* (1.68.2) 로거 첫 화면을 '우리 숍 목록 + ?rnPub=1'(알라딘 서버 기록에 우리 숍 번호와 낯선 표시가 함께 남음)에서 누구나 여는 '중고매장' 첫 화면 + #rnPub(# 뒤는 알라딘 서버로 가지 않음)으로 · 예전 주소로 열리면 새 주소로 바로 옮김 */
 globalThis.__rnPubHome = (() => { try { if (window.top !== window) return false; if (/^\/shop\/usedshop\/wshopitem\.aspx$/i.test(location.pathname) && /[?&]rnPub=1(&|$)/.test(location.search)) { location.replace('https://www.aladin.co.kr/usedstore/wgate.aspx'); return false; } return !!globalThis.__rnEngine || (/^\/usedstore\/wgate\.aspx$/i.test(location.pathname) && (/^#rnPub\b/.test(location.hash) || !!globalThis.__rnPubHomeR)); /* (1.72.0) 🧪 로거 엔진 화면도 로거 첫 화면 */ /* (1.71.1 자동 점검) 본체가 #rnPub 표시를 주소에서 지우므로 본체가 알아본 '로거 첫 화면'(__rnPubHomeR)도 받음 */ } catch (e) { return false; } })();
@@ -353,25 +353,38 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const myPri = () => (ago(HUM) < CFG.liveMin * 60e3 ? RULE.PRI.human : ago(SHIP) < CFG.liveMin * 60e3 ? RULE.PRI.ship : RULE.PRI.pc);
   /* 🔒 상시 기기(정범님 10/27 15:12 절대 원칙 · 규칙 cfg.always — 기본 JS-MAIN·MJ-MAIN·HOME): 이 PC는 자리 기다림·로그인 쉼·잘못 본 화면 7일 제외를 받지 않음
    *  → 쉼 끝 시각(until)은 그 시각을 적은 때 + 1~10분 간격의 최대(retrySec)를 넘지 않게 자름 · 예전 판이 남긴 '자리 기다림' 표시는 무시 */
-  const amAlways = () => !PUB() && RULE.isAlways(CFG, who());
+  /* (11/10 정범님 'HOME을 번외 수집기용으로 — 그 PC 자리를 번외가 이어받음') 🏠 이어받기 — 번외 도우미(127.0.0.1:8797) ⚙ '이 PC 알라딘 로그인 자리를 번외가 이어받음'을 다리(rnC2al)가 10초마다 받아 rn-c2own에 적음
+   *  켜져 있는 동안 이 PC 운영 수집기는: 자리를 놓고(dev[이 PC] in 거짓 · how '번외가 이어받음') 로그인 일·다시 로그인·자리 신호를 하지 않음(🔒 상시 PC여도) · 샵매니저를 읽으려던 일은 '로그인 쉼'으로 그 일만 건너뜀
+   *  번외가 30분 넘게 안 보이면(도우미 꺼짐 등) 이 표시는 저절로 풀려 예전처럼 이 PC가 자리를 받음(일이 끊기지 않게) · 로거 크롬은 늘 아님 */
+  const OWN = 'rn-c2own'; const ownOn = () => { if (PUB()) return false; const o = G(OWN, null); return !!(o && o.on && Date.now() - (+o.at || 0) < 30 * 60e3 && (!o.pc || String(o.pc).toUpperCase() === String(who()).toUpperCase())); };
+  const amAlways = () => !PUB() && !ownOn() && RULE.isAlways(CFG, who());
   const untilOf = (s) => { const u = +(s && s.until) || 0; return amAlways() ? Math.min(u, (+(s && s.at) || 0) + CFG.retrySec[1] * 1000) : u; };
-  const seatOf = (s) => !!(s && s.seat) && !amAlways();
+  const seatOf = (s) => (!!(s && s.seat) && !amAlways()) || ownOn(); /* 🏠 이어받기 중이면 늘 '자리 없음'과 같게(로그인 일 안 함) */
   const seatAt = () => +((G(SEAT, null) || {}).at) || 0; const seatFresh = () => Date.now() - seatAt() < CFG.liveMin * 60e3 && !seatOf(st());
   let devAt = 0, devIn = null, beatGap = 0; const inCb = [];
   function devPut(inn, how, extra) { const now = Date.now(); if (devIn === inn && now - devAt < beatGap && !extra) return; devIn = inn; devAt = now; beatGap = RULE.between(CFG.beatSec); const db = fs(); const v = { dev: { [who()]: { in: inn, at: now, how: how || null, pri: myPri(), use: +G(USE, 0) || now, yield: false, ids: { [devId()]: now }, ...(extra || {}) } } }; if (inn) S(SEAT, { at: now }); if (db) REF(db).set(v, { merge: true }).catch(() => {}); else S('rnu-login-acct', deep(G('rnu-login-acct', {}) || {}, v)); }
   /* 자리 지키기·받기(트랜잭션) → 참(자리 있음) | 거짓(자리 기다림·양보 — 이 PC 상태를 '자리 기다림'으로) */
   let holding = null;
   function hold(why) { if (holding) return holding; holding = hold0(why).finally(() => { holding = null; }); return holding; }
-  async function hold0(why) { const me = who(); if (PUB()) return false; const out = await tx((doc) => RULE.seatKeep(doc, me, Date.now(), { pri: myPri(), use: +G(USE, 0) || Date.now() }, Math.random())).catch(() => null);
+  /* 🏠 이어받기 — 운영 자리를 놓음(한 트랜잭션 · 기다림 줄에서도 뺌) · 이 PC 상태를 '자리 기다림(own)'으로 · 이미 놓았으면 계정 문서를 다시 쓰지 않음 */
+  let ownDropAt = 0;
+  async function ownDrop(why) { if (PUB()) return false; const me = who(); const now = Date.now(); const s0 = st(); const fresh = s0.seat === 'own' && now - ownDropAt < 10 * 60e3;
+    if (fresh) return true; S(SEAT, null); devIn = false; devAt = now; S(ST, { in: false, at: now, until: now + 10 * 60e3, why: '🏠 이 PC 알라딘 자리는 번외 수집기가 이어받음 — 운영은 로그인 일을 하지 않음', seat: 'own' });
+    const out = await tx((doc) => { const D0 = ((doc && doc.dev) || {})[me], W0 = ((doc && doc.wait) || {})[me]; if (D0 && D0.in === false && D0.how === '번외가 이어받음' && !W0) return {}; return { patch: { dev: { [me]: { in: false, at: now, how: '번외가 이어받음', pri: RULE.PRI.pc, yield: false } }, wait: { [me]: null } } }; }).catch(() => null);
+    if (!out) return false; ownDropAt = now; L('info', `🏠 이 PC 알라딘 로그인 자리를 놓음 — 번외 수집기가 이어받음${why ? ' · ' + why : ''} (운영은 로그인 일·다시 로그인·샵매니저 작업 창 다시 열기를 하지 않음 · 번외가 30분 넘게 안 보이면 저절로 되찾음)`); return true; }
+  /* 🏠 이어받기 끝(번외 ⚙에서 끔 · 번외가 30분 넘게 안 보임) — 이 PC 상태를 '모름'으로 돌리고 곧바로 자리를 다시 받음 */
+  function ownEnd(why) { const s = st(); if (s.seat !== 'own' || ownOn()) return false; ownDropAt = 0; S(ST, { at: Date.now(), how: '이어받기 끝' }); L('info', `🏠 번외 이어받기 끝 — 이 PC가 다시 알라딘 로그인 자리를 받음${why ? ' · ' + why : ''}`); hold('이어받기 끝').catch(() => {}); inCb.forEach((f) => { try { f(); } catch (e) {} }); return true; }
+  setInterval(() => { try { if (!PUB() && window.top === window && st().seat === 'own' && !ownOn()) ownEnd('번외 표시가 30분 넘게 안 바뀜'); } catch (e) {} }, 60e3);
+  async function hold0(why) { const me = who(); if (PUB()) return false; if (ownOn()) { await ownDrop(why); return false; } const out = await tx((doc) => RULE.seatKeep(doc, me, Date.now(), { pri: myPri(), use: +G(USE, 0) || Date.now() }, Math.random())).catch(() => null);
     if (!out) return seatOf(st()) ? false : true; /* 계정 문서를 못 읽음 — 지금 상태 그대로(🔒 상시 PC는 늘 참) */
     if (out.ok) { devIn = true; devAt = Date.now(); beatGap = RULE.between(CFG.beatSec); S(SEAT, { at: Date.now() }); const s = st(); if (s.seat) { S(ST, { in: true, at: Date.now(), how: out.always ? '🔒 상시' : '자리 받음' }); L('info', `🪑 알라딘 판매자 로그인 자리를 받음(${out.n}/${out.max}대) — 로그인이 필요한 일을 다시 함`); inCb.forEach((f) => { try { f(); } catch (e) {} }); } return true; }
     devIn = false; devAt = Date.now(); S(SEAT, null); S(ST, { in: false, at: Date.now(), until: out.until, why: out.why, seat: out.kind });
     L('warn', `🪑 ${out.why} — 로그인이 필요한 일은 받지 않음(로그인된 다른 기기가 맡음) · 이 PC에 로그인 일이 남아 있으면 ${RULE.kstHm(out.until)}에 다시 자리를 물음${why ? ' · ' + why : ''}`); return false; }
   /* 로그인 일을 했다는 표시(1분에 한 번만 저장) — 신호 때가 되면 자리 지키기 */
   let useAt = 0;
-  function seen() { if (PUB()) return; const now = Date.now(); if (now - useAt > 60e3) { useAt = now; S(USE, now); } const s = st(); if (s.in === false) return; /* 풀림·자리 기다림은 다시 로그인 흐름이 맡음 */
+  function seen() { if (PUB() || ownOn()) return; const now = Date.now(); if (now - useAt > 60e3) { useAt = now; S(USE, now); } const s = st(); if (s.in === false) return; /* 풀림·자리 기다림은 다시 로그인 흐름이 맡음 */
     if (now - seatAt() < (beatGap || CFG.beatSec[0] * 1000)) return; S(SEAT, { at: now }); /* 이 PC 여러 탭 중 한 번만 */ hold().catch(() => {}); }
-  function markIn(how) { const s = st(); S(ST, { in: true, at: Date.now(), how: how || null }); if (seatFresh()) devPut(true, how); else hold(how).catch(() => {}); /* 자리 신호가 30분 넘게 없던 PC는 자리부터 */ if (s.in === false) { L('info', `🔑 알라딘 로그인 확인됨(${how || '확인'}) — 로그인이 필요한 일을 다시 받음`); inCb.forEach((f) => { try { f(); } catch (e) {} }); } }
+  function markIn(how) { if (ownOn()) return; /* 🏠 이어받기 중 — 이 PC 자리를 다시 적지 않음 */ const s = st(); S(ST, { in: true, at: Date.now(), how: how || null }); if (seatFresh()) devPut(true, how); else hold(how).catch(() => {}); /* 자리 신호가 30분 넘게 없던 PC는 자리부터 */ if (s.in === false) { L('info', `🔑 알라딘 로그인 확인됨(${how || '확인'}) — 로그인이 필요한 일을 다시 받음`); inCb.forEach((f) => { try { f(); } catch (e) {} }); } }
   function markOut(until, why) { const s0 = st(); if (seatOf(s0) && +s0.until > Date.now()) return; S(ST, { in: false, at: Date.now(), until: until || 0, why: why || null }); S(SEAT, null); devPut(false, 'out'); }
   /* 로그인이 필요한 일을 지금 받아도 되나(맡긴 일 pcCan) — 로그인돼 있거나(모름 포함), 풀렸어도 다시 해 볼 때가 됐으면 참 */
   const ready = () => { if (PUB()) return false; const s = st(); if (seatOf(s)) return false; /* 🪑 자리 기다림 — 자리를 받을 때까지(다시 로그인 흐름 relogin이 물음) · 🔒 상시 PC는 자리 기다림이 없음 */ return s.in !== false || Date.now() >= untilOf(s); };
@@ -400,6 +413,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   function relogin(o) { if (inFlight) return inFlight.then(() => true, (e) => { throw waitErr(o, { why: (e && e.why0) || '같은 탭의 다른 일이 방금 로그인하지 못함', until: (e && e.until) || +st().until || 0, kind: (e && e.kind) || 'local' }); }); inFlight = relogin0(o).finally(() => { inFlight = null; }); return inFlight; }
   async function relogin0(o) { const me = who(); const isIn = o.isLoggedIn || checkIn; const say = (m) => { try { o.say && o.say(m); } catch (e) {} };
     if (PUB()) throw waitErr(o, { why: '🛡 로거는 알라딘에 로그인하지 않음', kind: 'pub' });
+    if (ownOn()) { await ownDrop('다시 로그인 대신'); throw waitErr(o, { why: '🏠 이 PC 알라딘 자리는 번외 수집기가 이어받음', until: Date.now() + 10 * 60e3, kind: 'seat' }); }
     { const s0 = st(); const u0 = untilOf(s0); if (!o.force && s0.in === false && Date.now() < u0) throw waitErr(o, { why: s0.why || '다음 시도를 기다림', until: u0, kind: seatOf(s0) ? 'seat' : 'retry' }); }
     /* 🪑 로그인 일을 다시 하기 전에 판매자 로그인 자리부터(자리 기다림이었거나 30분 넘게 자리 신호가 없던 PC) — 세션이 살아 있어도 자리 없이 쓰지 않음 */
     if (!amAlways() && !seatFresh() && !(await hold('다시 로그인 전'))) { /* 🔒 상시 PC는 자리를 묻지 않음(아래 decide가 신호만 적음) */ const s1 = st(); throw waitErr(o, { why: s1.why || '판매자 로그인 자리 기다림', until: +s1.until || 0, kind: 'seat' }); }
@@ -429,7 +443,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     throw waitErr(o, { why: blocked ? '알라딘 경고 42FB(계정 새 로그인 막힘)' : why, until, kind: 'retry' }); }
   /* 로그인이 필요한 일이 남아 있는 동안 다시 시도 — 모듈이 '할 일 있음'(need)과 로그인 방법(provide)을 알려 줌 · 20초마다 보고 다음 시도 때가 됐고 할 일이 있으면 한 번 */
   const anyNeed = () => [...needs.values()].some((f) => { try { return !!f(); } catch (e) { return false; } });
-  setInterval(() => { try { if (PUB() || window.top !== window || inFlight || !provider) return; const s = st(); if (s.in !== false || Date.now() < untilOf(s) || !anyNeed()) return; L('info', `🔑 이 PC에 로그인이 필요한 일이 남아 있어 다시 로그인해 봄${amAlways() ? '(🔒 상시 PC)' : ''}`); relogin(provider()).catch(() => {}); } catch (e) {} }, 20e3);
+  setInterval(() => { try { if (PUB() || ownOn() || window.top !== window || inFlight || !provider) return; const s = st(); if (s.in !== false || Date.now() < untilOf(s) || !anyNeed()) return; L('info', `🔑 이 PC에 로그인이 필요한 일이 남아 있어 다시 로그인해 봄${amAlways() ? '(🔒 상시 PC)' : ''}`); relogin(provider()).catch(() => {}); } catch (e) {} }, 20e3);
   /* 로그인 화면 경고 잡기 — 알라딘 로그인 화면(/login/…)에서: ⓐ 화면 글·화면 안 스크립트에 막힘 글이 있으면 ⓑ 그 뒤에 뜨는 경고창(alert) 글을 화면 쪽에 심은 고리로 받아 'rn-login-alert'에 남김
    *  ⚠ 화면을 읽어 들이는 도중에 바로 뜨는 경고창은 이 스크립트가 깨어나기 전이라 못 잡을 수 있음(그때는 '샵매니저가 안 열림'으로만 남음) — 클라우드는 경고창을 늘 잡음 */
   if (/(^|\.)aladin\.co\.kr$/i.test(location.hostname) && /login/i.test(location.pathname) && !PUB()) {
@@ -449,7 +463,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     try { const on = (e) => { if (e && e.isTrusted) human(); }; addEventListener('pointerdown', on, true); addEventListener('keydown', on, true); } catch (e) {}
     try { if (RULE.SCM_URL.test(location.pathname) && document.querySelector && document.querySelector('a[href*="wC2Cuser_logout"]')) setTimeout(() => { try { seen(); } catch (e) {} }, 3000 + Math.random() * 7000); } catch (e) {}
   }
-  window.__rnLoginGov = { RULE, suspect, verify, relogin, ready, markIn, markOut, state: st, misreadSkip, hold, seen, always: amAlways,
+  window.__rnLoginGov = { RULE, suspect, verify, relogin, ready, markIn, markOut, state: st, misreadSkip, hold, seen, always: amAlways, own: ownOn, ownDrop, ownEnd, /* (11/10) 🏠 이어받기 */
     human, ship: () => { if (ago(SHIP) > 60e3) S(SHIP, Date.now()); }, pri: myPri,
     provide: (fn) => { provider = fn; }, need: (k, fn) => { if (fn) needs.set(k, fn); else needs.delete(k); }, onIn: (fn) => inCb.push(fn),
     /* 맡긴 일 종류가 알라딘 로그인이 필요한가 — 노선표 lane 'scm' + 내 계정·팔기 장바구니 */
@@ -492,7 +506,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    *  탭이 'Out of Memory'·'DNS_PROBE_FINISHED_NXDOMAIN' 화면으로 죽으면 스크립트가 안 돌아 알림이 끊김 → 도우미가 크롬이 떠 있고 인터넷이 되면 새 탭으로 알라딘 주문조회를 엶(1시간 2번까지 · 크롬은 죽이지 않음)
    *  도우미가 없거나 옛 판이면(닿지 못함·404) 10분에 한 번만 다시 물음 · 작업 창 탭은 위 /work/beat가 같은 일을 함 */
   if (TOP && AL && !globalThis.__rnPubChrome) { let leadNext = 0; setInterval(() => { try { if (mark || Date.now() < leadNext || !window.__rnRole || window.__rnRole() !== 'lead') return; leadNext = Date.now() + 55000;
-    call('/work/lead', { pc: (window.__rnPcName && window.__rnPcName.get()) || '', page: location.pathname.split('/').pop(), paused: !!window.__rnPaused, ship: window.__rnSgShip ? window.__rnSgShip() : null, ver: (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '' }, 8000).then((r) => { if (!r || !r.ok) leadNext = Date.now() + 10 * 60e3; }).catch(() => {}); } catch (e) {} }, 15000); }
+    call('/work/lead', { pc: (window.__rnPcName && window.__rnPcName.get()) || '', page: location.pathname.split('/').pop(), paused: !!window.__rnPaused || (() => { try { const o = GM_getValue('rn-c2own', null); return !!(o && o.on && Date.now() - (+o.at || 0) < 30 * 60e3); } catch (e) { return false; } })(), /* (11/10) 🏠 번외 이어받기 중이면 도우미가 죽은 탭 되살리기(샵매니저 주문조회를 새로 엶)를 하지 않게 '일시정지'로 알림 */ ship: window.__rnSgShip ? window.__rnSgShip() : null, ver: (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version) || '' }, 8000).then((r) => { if (!r || !r.ok) leadNext = Date.now() + 10 * 60e3; }).catch(() => {}); } catch (e) {} }, 15000); }
   if (!mark) return;
   /* 작업 창 탭: 창 제목에 표시(도우미가 이 글로 창을 찾음) · 5초 GM 신호 · 30초 도우미 신호 */
   const title = () => { try { if (W.isWork() && !String(document.title || '').startsWith(TITLE)) document.title = TITLE + ' · ' + String(document.title || '').replace(/^🪟 리드나우 작업 창 · /, ''); } catch (e) {} };

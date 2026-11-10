@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.252의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.253의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.252' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.252', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.253' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.253', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -5144,7 +5144,8 @@
   const wwUp = (x) => String(x == null ? '' : x).trim().toUpperCase();
   function wwMine() { const c = (WW_DOC && WW_DOC.cfg) || {}; const pilot = Array.isArray(c.pilot) ? c.pilot : WW_PILOT; const m = (c.pcs || {})[PC_NAME] || {};
     const okPc = !!PC_NAME && !PUBONLY && !globalThis.__rnPubChrome && wwUp(PC_NAME) !== 'LOGGER' && pilot.some((x) => wwUp(x) === wwUp(PC_NAME));
-    return { okPc, on: okPc && m.on === true, ext: m.ext !== false, place: m.place === 'edge' ? 'edge' : 'off', win: m.win || null, hwin: m.hwin || null, url: m.url || null, profile: m.profile || null, aliveMin: +m.aliveMin || null }; }
+    const own = (() => { try { const o = GM_getValue('rn-c2own', null); return !!(o && o.on && Date.now() - (+o.at || 0) < 30 * 60e3); } catch (e) { return false; } })(); /* (11/10) 🏠 번외가 이 PC 알라딘 자리를 이어받는 동안 샵매니저 작업 창을 켜지(다시 열지) 않음 */
+    return { okPc, on: okPc && m.on === true && !own, own, ext: m.ext !== false, place: m.place === 'edge' ? 'edge' : 'off', win: m.win || null, hwin: m.hwin || null, url: m.url || null, profile: m.profile || null, aliveMin: +m.aliveMin || null }; }
   function wwGm(M) { try { const o = GM_getValue('rn-work-cfg', null) || {}; if (!!o.on === M.on && o.ext === M.ext && (o.aliveMin || null) === M.aliveMin) return; GM_setValue('rn-work-cfg', { on: M.on, ext: M.ext, aliveMin: M.aliveMin, at: Date.now(), pc: PC_NAME });
       if (!!o.on !== M.on) log(M.on ? '🪟 작업 창 모드 켬(웹앱 관리도구) — 이 PC의 수집은 도우미가 연 작업 창 탭이 맡고, 사람이 연 알라딘 탭은 화면 기능만' : '🪟 작업 창 모드 끔 — 예전처럼 사람이 연 알라딘 탭이 수집을 맡음'); } catch (e) {} }
   const wwBoss = () => { const W = window.__rnWork; if (!W) return false; if (W.isWork()) return true; return ctlLead() && !W.alive(window.__rnTab); };
