@@ -1,2 +1,15 @@
-col2=1
-# 1765418784
+@health&hours=24
+perf=400
+doc=app_settings/write_watch
+doc=prd_jobs/pcBeat
+doc=prd_system/autoSched
+doc=app_settings/value_model
+doc=app_settings/buyback_stats
+doc=app_settings/extras_study
+logs=1&pc=LOGGER&from=202611092150
+logs=1&pc=JS-MAIN&from=202611092150
+logs=1&pc=HOME&from=202611092150
+logs=1&pc=MJ-MAIN&from=202611092150
+cmds=startDelivery&n=20
+cmds=invoice&n=20
+# 3258232427
