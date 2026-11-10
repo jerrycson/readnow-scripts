@@ -163,6 +163,7 @@ body.withrank.rankopen #rank,body.rkpop.rankopen #rank{display:block;position:fi
   body.withrank main{max-width:none;margin:0;padding-right:calc(max(12px,calc((100vw - 1100px)/2 - 12px)) + 356px);padding-left:max(12px,calc((100vw - 1100px)/2))}
   body.withrank #rank{display:block;position:fixed;top:124px;right:max(12px,calc((100vw - 1100px)/2 - 12px));width:340px;bottom:70px;overflow:auto;padding:0;background:none;border:0;box-shadow:none}
   body.withrank .rkx,body.withrank .rankbtn{display:none}
+  body.withrank header.top:not(.cond) ~ #rank{top:calc(var(--hdrh,116px) + 8px)} /* (11/10 ux1) 머리 칸이 세 줄로 커지면 순위 칸 위쪽(일별·주별…)이 머리 밑에 깔렸음 */
 }
 .tbtns{display:flex;gap:6px}.tbtns .me{white-space:nowrap}
 #modal{display:none;position:fixed;inset:0;z-index:30;background:rgba(20,30,27,.45);padding:calc(10px + env(safe-area-inset-top,0)) 10px 10px}
@@ -1725,6 +1726,9 @@ const ICON = {
   agent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 21h20L12 3z"/><path d="M12 10v5M12 18h.01"/></svg>',
   orders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5M4 19h16"/><path d="M8 16v-5M12 16V8M16 16v-3"/></svg>',
   book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5z"/><path d="M4 19a2 2 0 0 1 2-2h13"/></svg>',
+  people: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.2a6.5 6.5 0 0 1 3.5 5.8"/></svg>', /* (11/10 ux1) 판매자 탭 — 예전엔 ⚠ 세모(경고처럼 보임) */
+  inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13h5l1.5 3h5L16 13h5"/><path d="M5 5h14l2 8v6H3v-6l2-8z"/><path d="M12 3v7M9.5 7.5 12 10l2.5-2.5"/></svg>', /* (11/10 ux1) 매입 탭 — 들어오는 상자 */
+  brief: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/></svg>', /* (11/10 ux1) 경영 탭 — 가방 (주문·매출과 같은 막대 그림이던 것) */
   home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>',
   gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/><path d="M8 11h6M11 8v6"/></svg>',
@@ -1753,7 +1757,7 @@ function shell() {
   //  → 화면을 다시 계산하는 일이 없어 버벅이지 않음(0.65.2는 펼치는 동안 높이를 계속 다시 재서 본문까지 출렁였음). 80px 넘게 내리면 띠, 맨 위 근처·위로 40px 넘게 올림·띠 누름이면 펼침
   if (!S.condBound) { S.condBound = 1; let top = 0, cond = false, raf = 0; const Y = () => Math.max(window.scrollY || 0, document.body.scrollTop || 0, document.documentElement.scrollTop || 0);
     const slim = document.createElement('div'); slim.id = 'slimbar'; slim.innerHTML = '<b>리드나우(북스킹)</b><span class="sl-hint">눌러서 메뉴</span><span class="sl-dl" id="sldl"></span>'; document.body.appendChild(slim);
-    const pad = () => { const h = document.querySelector('header.top'); if (h) { const v = h.offsetHeight + 'px'; if (document.body.style.paddingTop !== v) document.body.style.paddingTop = v; } };
+    const pad = () => { const h = document.querySelector('header.top'); if (h) { const v = h.offsetHeight + 'px'; if (document.body.style.paddingTop !== v) document.body.style.paddingTop = v; try { document.documentElement.style.setProperty('--hdrh', v); } catch (e) {} /* (11/10 ux1) 오른쪽 순위 칸 위치 */ } };
     try { const ro = new ResizeObserver(pad); const wt = setInterval(() => { const h = document.querySelector('header.top'); if (h) { ro.observe(h); pad(); clearInterval(wt); } }, 200); } catch (e) {}
     const setC = (on) => { const h = document.querySelector('header.top'); if (!h || cond === on) return; cond = on; h.classList.toggle('cond', on); slim.classList.toggle('on', on); top = Y(); };
     document.addEventListener('scroll', (e) => { const t = e.target; if (t !== document && t !== document.body && t !== document.documentElement) return; if (raf) return;
@@ -1772,7 +1776,7 @@ function shell() {
 }
 function renderTabs() {
   const pc = S.pending.length;
-  const t = [['home', '홈', ICON.home], ['search', '고객', ICON.search], ['products', '상품', ICON.book], ['sellers', '판매자', ICON.agent], ['orders', '주문·매출', ICON.orders], ['purchase', '매입', ICON.orders], ['biz', '경영', ICON.orders], ['market', '시장조사', ICON.globe], ['projects', '프로젝트', ICON.flask] /* (11/02 · ROADMAP 5-2 · 정범님 10/29) 맨 오른쪽 — 북스킹 사업과 직접 관계없는 프로젝트 모음 */];
+  const t = [['home', '홈', ICON.home], ['search', '고객', ICON.search], ['products', '상품', ICON.book], ['sellers', '판매자', ICON.people], ['orders', '주문·매출', ICON.orders], ['purchase', '매입', ICON.inbox], ['biz', '경영', ICON.brief], ['market', '시장조사', ICON.globe], ['projects', '프로젝트', ICON.flask] /* (11/02 · ROADMAP 5-2 · 정범님 10/29) 맨 오른쪽 — 북스킹 사업과 직접 관계없는 프로젝트 모음 */];
   $('#tabs').innerHTML = t.map(([k, l, i]) => `<button class="${S.tab === k || (k === 'search' && S.tab === 'flags') ? 'on' : ''}" data-tab="${k}">${i}${l}${k === 'pending' && pc ? `<span class="badge">${pc}</span>` : ''}</button>`).join('');
   updPaint(); $('#tabs').querySelectorAll('button').forEach((b) => (b.onclick = () => uxTabGo(b.dataset.tab)));
   const hp = $('#hpend'); if (hp) { hp.classList.toggle('on', S.tab === 'pending'); hp.innerHTML = `연결 확정${pc ? `<span class="badge">${pc}</span>` : ''}`; }
@@ -19776,6 +19780,7 @@ function prErrText(code, what) { // 읽기 실패를 사람 말로
   const em = (S.user && S.user.email) || '이 계정';
   if (/PERMISSION|permission/i.test(String(code))) return `이 계정(${em})은 '${what}'을(를) 읽을 권한이 없습니다 — Firestore 보안 규칙의 허용 계정에 이 계정을 넣어야 합니다 (규칙을 보내 주시면 고친 문구를 드립니다)`;
   if (/unavailable|network|Failed to fetch/i.test(String(code))) return `'${what}'을(를) 읽는 중 연결이 끊김 — 전파가 약하면 잠시 뒤 '새로 읽기'`;
+  if (/JSON|Unexpected end|Unexpected token/i.test(String(code))) return `'${what}' 응답이 비었거나 잘려 읽지 못함 — 서버가 잠시 빈 답을 보낸 것으로 보임 · 잠시 뒤 '새로 읽기' (원래 오류: ${String(code).slice(0, 80)})`; /* (11/10 ux1) 영어 오류 그대로 보이던 것 */
   return `'${what}' 읽기 실패: ${code}`;
 }
 function loadPriceRun() { if (S.prRunLoading) return; S.prRunLoading = true; const _u = updBegin('pricing', !S.prRun); Promise.all([db.collection('prd_system').doc('pricing_run').get(), db.collection('prd_price_decisions').get()]).finally(_u).then(([r, ds]) => { S.prRun = r.exists ? r.data() : {}; S.prDec = new Map(); ds.forEach((d) => S.prDec.set(d.id, d.data())); S.prRunLoading = false; S._bizAt = 0; if (S.tab === 'products' || S.tab === 'home') renderMain(); }).catch((e) => { S.prRun = { err: e.code || e.message }; S.prDec = new Map(); S.prRunLoading = false; }); }
