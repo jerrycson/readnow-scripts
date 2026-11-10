@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "daily",
+ "what": "🔬 매일 정밀 점검 11/10 — 실측·코드 범위 4de810f..091ffc2",
+ "since": "2026-11-10T12:54:46Z",
+ "beat": "2026-11-10T12:54:46Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-10T12:29:27Z"
  },
- "host": null
+ "host": "vm"
 }
