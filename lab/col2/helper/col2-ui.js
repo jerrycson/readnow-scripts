@@ -182,13 +182,41 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
       $('tgy').style.display = kind === 'logger' ? 'none' : ''; cb('tg_y24', S.y24Want, 'y24'); cb('tg_y24j', S.y24Jobs, 'y24Jobs'); cb('tg_side', S.side, 'side'); cb('tg_al', S.alWant, 'al'); cb('tg_alown', S.alOwn, 'alOwn'); drawCred(); }
     /* (11/10 정범님 '수집기에 아이디·비밀번호 — 필요할 때 스스로 다시 로그인') 🔐 계정 칸 — 로거 PC는 칸 자체를 숨김(약속 0) · 넣은 값은 [잠가 저장] 뒤 곧바로 칸에서 지움 · 상태 글엔 값 없음 */
     function drawCred() { const box = $('crbox'); if (!box) return; box.style.display = kind === 'logger' ? 'none' : ''; if (kind === 'logger') return; const R = S.relogin || {};
-      for (const pf of ['y24', 'al']) { const r = R[pf] || {}; const st = $('crs_' + pf); if (!st) continue; const d = (t) => (t ? new Date(t + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ') : '');
-        st.textContent = (r.has ? `✓ 저장됨(${d(r.at)})` : '저장 안 됨') + (r.stop ? ` · ⛔ 멈춤 — ${r.stop.why}` : r.last ? ` · 마지막 다시 로그인 ${d(r.last.at)} ${r.last.ok ? '됨' : '실패 — ' + (r.last.why || '')}` : '') + (r.today ? ` · 오늘 ${r.today}번` : '');
-        $('crr_' + pf).style.display = r.stop ? '' : 'none'; const a = $('cra_' + pf); a.checked = r.auto !== false; a.disabled = !r.has;
+      for (const pf of ['y24', 'al']) { const r = R[pf] || {}; const st = $('crs_' + pf); if (!st) continue;
+        const ck = !r.has ? '' : r.chk === 'pending' ? ' · ⚠ 확인 기다림(다음 다시 로그인 때 확인)' : r.chk === 'bad' ? ' · ⛔ 저장된 값이 맞지 않음 — 다시 넣어 주세요' : ' · 확인됨';
+        st.textContent = (r.has ? `✓ 저장됨(${hmd(r.at)})${ck}` : '저장 안 됨') + (r.stop ? ` · ⛔ 멈춤 — ${r.stop.why}` : r.last ? ` · 마지막 다시 로그인 ${hmd(r.last.at)} ${r.last.ok ? '됨' : '실패 — ' + (r.last.why || '')}` : '') + (r.today ? ` · 오늘 ${r.today}번` : '');
+        $('crr_' + pf).style.display = r.stop ? '' : 'none'; const a = $('cra_' + pf); a.checked = r.auto !== false; a.disabled = !r.has; credLine(pf, r.job);
         if (!box.dataset.bound) { a.onchange = async () => { await post('/cred/auto', { pf, on: a.checked }); load(); };
           $('crr_' + pf).onclick = async () => { await post('/cred/reset', { pf }); load(); };
-          $('crb_' + pf).onclick = async () => { const i = $('cri_' + pf), p = $('crp_' + pf), b = $('crb_' + pf); if (b.disabled) return; b.disabled = true; b.textContent = '확인하는 중…'; msg('🔐 넣은 아이디·비밀번호로 이 PC에서 실제로 로그인해 보는 중(20~40초) — 맞으면 저장', $('setm')); let j = null; try { j = await post('/cred/save', { pf, id: i.value, pw: p.value }); } finally { b.disabled = false; b.textContent = '확인하고 저장'; } p.value = ''; if (j && j.ok) i.value = ''; msg(j && j.ok ? '✓ 로그인 확인됨 — 이 PC에 잠가 저장함' : '✗ ' + ((j && j.err) || '저장 못 함'), $('setm')); load(); }; } }
+          $('crb_' + pf).onclick = () => credGo(pf, false); $('crf_' + pf).onclick = () => credForce(pf); } }
       box.dataset.bound = '1'; }
+    /* (11/10 밤 정범님 '입력하면 예스24는 「확인 중」만 오래 있다가 그냥 풀리고, 알라딘은 아예 안 먹혀') 🔐 [확인하고 저장]
+     *  · 누르면 곧바로 '⏳ 확인 중 — 무엇을 하는 중(몇 초째)' — 도우미 relogin.<pf>.job(값 없음)을 1초마다 읽음
+     *  · 끝난 결과는 그 칸 아래 줄에 그대로 남음(다시 그려도·창을 다시 열어도 — 도우미가 결과를 지님) · 도우미 답이 끊겨도 결과를 기다려 보임(예전엔 아무 글 없이 단추만 돌아옴)
+     *  · 확인을 끝내지 못했으면(시간 넘음·자리 없음 등 — '틀림'이 아닐 때만) [그래도 잠가 저장] 두 번 누르기 · 비밀번호 칸은 그때까지 그대로(맞으면·틀리면 비움) */
+    const hmd = (t) => (t ? new Date(t + 9 * 3600e3).toISOString().slice(5, 16).replace('T', ' ') : '');
+    const CRB = { y24: null, al: null }; const armF = { y24: 0, al: 0 };
+    function credLine(pf, jb, extra) { const m = $('crm_' + pf), b = $('crb_' + pf), fb = $('crf_' + pf); if (!m) return; const on = !!(jb && jb.on) || !!CRB[pf];
+      b.disabled = on; b.textContent = on ? '확인하는 중…' : '확인하고 저장';
+      if (on) { const at0 = (jb && jb.on && jb.at0) || (CRB[pf] && CRB[pf].t0) || Date.now(); const sec = Math.max(0, Math.round((Date.now() - at0) / 1000)); const ph = (jb && jb.on && jb.phase) || '도우미에 보내는 중';
+        m.className = 'k'; m.textContent = `⏳ 확인 중 — ${ph} (${sec}초째${jb && jb.max ? ' · 길어도 ' + jb.max + '초면 끝냄' : ''})${extra ? ' · ' + extra : ''}`; fb.style.display = 'none'; return; }
+      const res = jb && jb.res; if (!res) { if (!m.dataset.keep) m.textContent = ''; fb.style.display = 'none'; return; }
+      m.className = res.ok ? (res.kind === 'ok' ? 'ok' : 'wa') : 'no'; m.textContent = `${res.msg}${jb.end ? ' (' + hmd(jb.end) + ')' : ''}`; m.dataset.keep = '1';
+      const can = !res.ok && res.canForce && jb.end && Date.now() - jb.end < 15 * 60e3 && !!$('crp_' + pf).value; fb.style.display = can ? '' : 'none'; if (!armF[pf]) fb.textContent = '그래도 잠가 저장'; }
+    async function credPoll(pf) { let miss = 0; while (CRB[pf]) { await new Promise((r) => setTimeout(r, 1000)); if (!CRB[pf]) break; try { const s = await api('GET', '/status'); miss = 0; const jb = (s.relogin || {})[pf];
+          if (CRB[pf].lost && jb && !jb.on && jb.res && jb.end >= CRB[pf].t0 - 2000) { CRB[pf] = null; S = s; credLine(pf, jb); load(); break; }
+          if (CRB[pf].lost && !(jb && jb.on)) { CRB[pf].lostN = (CRB[pf].lostN || 0) + 1; if (CRB[pf].lostN > 15) { CRB[pf] = null; credLine(pf, null); const m = $('crm_' + pf); if (m) { m.className = 'no'; m.textContent = '✗ 도우미 답이 끊겨 확인 결과를 모름(저장 안 됐을 수 있음) — 다시 [확인하고 저장]을 눌러 주세요'; m.dataset.keep = '1'; } break; } } credLine(pf, jb && jb.on ? jb : null, CRB[pf].lost ? '도우미 답이 끊겨 결과를 기다리는 중' : '');
+        } catch (e) { if (++miss > 20) { CRB[pf] = null; const m = $('crm_' + pf); credLine(pf, null); if (m) { m.className = 'no'; m.textContent = '✗ 도우미에 닿지 못해 결과를 모름 — 도우미가 다시 켜진 뒤 ⚙ › 🔐 칸의 「저장됨」 표시를 보거나 다시 눌러 주세요'; m.dataset.keep = '1'; } } } } }
+    async function credGo(pf, force) { const i = $('cri_' + pf), p = $('crp_' + pf); if (CRB[pf]) return; if (!force && (!i.value.trim() || !p.value)) { const m = $('crm_' + pf); m.className = 'no'; m.textContent = '✗ 아이디와 비밀번호를 모두 넣어 주세요'; m.dataset.keep = '1'; return; }
+      CRB[pf] = { t0: Date.now() }; credLine(pf, null); msg(force ? '🔐 확인 없이 잠가 저장하는 중' : '🔐 넣은 아이디·비밀번호로 이 PC에서 실제로 로그인해 보는 중 — 맞으면 저장(진행은 그 칸 아래 줄)', $('setm')); credPoll(pf);
+      let j = null; try { j = await post('/cred/save', { pf, id: i.value, pw: p.value, ...(force ? { force: true } : {}) }); } catch (e) { if (CRB[pf]) CRB[pf].lost = true; return; } /* 답이 끊겨도 credPoll이 결과를 기다림 */
+      CRB[pf] = null; const kd = j && j.kind; if (j && (j.ok || kd === 'bad')) p.value = ''; if (j && j.ok) i.value = '';
+      const m = $('crm_' + pf); m.dataset.keep = '1'; const text = j ? (j.ok ? j.msg || '✓ 저장함' : '✗ ' + (j.err || '저장 못 함')) : '✗ 저장 못 함';
+      if (j && j.relogin) { S = { ...(S || {}), relogin: j.relogin }; credLine(pf, j.relogin[pf] && j.relogin[pf].job && !j.relogin[pf].job.on ? j.relogin[pf].job : null); }
+      if (!j || !j.relogin || !(j.relogin[pf] || {}).job || (j.relogin[pf].job.res || {}).msg == null) { m.className = j && j.ok ? 'ok' : 'no'; m.textContent = text; }
+      msg(text, $('setm')); load(); }
+    function credForce(pf) { const fb = $('crf_' + pf); if (!armF[pf] || Date.now() - armF[pf] > 4000) { armF[pf] = Date.now(); fb.textContent = '한 번 더 누르면 확인 없이 잠가 저장'; setTimeout(() => { if (armF[pf] && Date.now() - armF[pf] >= 4000) { armF[pf] = 0; fb.textContent = '그래도 잠가 저장'; } }, 4100); return; }
+      armF[pf] = 0; fb.textContent = '그래도 잠가 저장'; credGo(pf, true); }
     function drawKeysHint() { const b = (id, a, base) => { const e = $(id); if (e) e.title = base + ' (' + keyLabel(a) + ')'; }; b('helpBtn', 'help', '❓ 이 수집기 설명서'); b('setBtn', 'set', '⚙ 설정 — 칸·단축키·창·바로 가기·내보내기'); b('miniBtn', 'mini', '▁ 작은 단추로 줄이기'); }
     function drawSet() { const ids = UI.order.filter((id) => !absent(id) && cardOf(id));
       $('setCards').innerHTML = ids.map((id, i) => { const c = cardDef(id), v = UI.cards[id]; return `<div class="row" data-cid="${id}"><label class="rt"><input type="checkbox" data-c="show" ${v.hide ? '' : 'checked'}> ${c.icon} ${E(c.t)}</label><label class="k"><input type="checkbox" data-c="open" ${v.open ? 'checked' : ''}> 펼침</label><button data-c="up" ${i ? '' : 'disabled'} title="위로">▲</button><button data-c="down" ${i < ids.length - 1 ? '' : 'disabled'} title="아래로">▼</button></div>`; }).join('');

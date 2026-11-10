@@ -40,6 +40,14 @@ function fakeY24() { const S = { pw: PW, sess: new Set(), log: [], captcha: fals
     const R5 = makeRelogin({ HOME: fs.mkdtempSync(path.join(os.tmpdir(), 'c2rl_')), cred: { has: () => true, PF: {}, sum: () => ({}) }, cfg: () => ({ relogin: { vGapSec: 0 } }), isLogger: () => false, note: () => {} });
     for (let i = 0; i < 4; i++) await R5.tryWith('y24', ctxFail, 'a', 'b'); const v5 = await R5.tryWith('y24', ctxFail, 'a', 'b'); ok(v5.wait && /한 시간 4번/.test(v5.why), '확인 로그인은 한 시간 4번까지(계정 잠김 막기)', v5);
     const R6 = makeRelogin({ HOME: fs.mkdtempSync(path.join(os.tmpdir(), 'c2rl_')), cred: { has: () => true, PF: {}, sum: () => ({}) }, cfg: () => ({}), isLogger: () => true, note: () => {} }); ok(/로거/.test((await R6.tryWith('y24', ctxFail, 'a', 'b')).why), '로거 PC는 확인 로그인도 안 함');
+    /* (11/10 밤 정범님 '확인 중만 오래 있다 그냥 풀려') 틀림(사이트가 틀렸다고 함)과 확인 못 함(화면이 안 열림·시간 넘음)을 가름 · 진행 단계 · 시간 넘음이면 다음 단계에서 멈춤 */
+    { const R7 = makeRelogin({ HOME: fs.mkdtempSync(path.join(os.tmpdir(), 'c2rl_')), cred: { has: () => true, PF: {}, sum: () => ({}) }, cfg: () => ({ relogin: { vGapSec: 0, vPerHour: 50 } }), isLogger: () => false, note: () => {} });
+      const form = { pw: true, id: true }; const ctxBad = { name: '예스24', loginUrl: 'x', nav: async () => {}, ev: async (js) => (/captcha/.test(js) ? '' : /getClientRects/.test(js) ? form : /value\.length/.test(js) ? 1 : /focus\(\)/.test(js) ? true : 'click'), sleep: async () => {}, type: async () => {}, check: async () => false };
+      const b1 = await R7.tryWith('y24', ctxBad, 'a', 'b'); ok(!b1.ok && b1.bad && !b1.unsure, "넣고 눌렀는데도 로그인 화면 = '틀림'(bad)", b1);
+      const u1 = await R7.tryWith('y24', { ...ctxFail, nav: async () => { throw new Error('크롬 응답 없음: Page.navigate'); } }, 'a', 'b'); ok(!u1.ok && u1.unsure && !u1.bad && /크롬 응답 없음/.test(u1.why), "화면이 안 열리면 '확인 못 함'(unsure) — 틀림이 아님", u1);
+      const jb = R7.jobStart('y24', 9); const seen = []; const ctxPh = { ...ctxFail, phase: (t) => { seen.push(t); return jb.ph(t); } }; await R7.tryWith('y24', ctxPh, 'a', 'b'); ok(seen.length >= 3 && /로그인 화면 여는 중/.test(seen[0]), '진행 단계를 차례로 알림', seen.join(' → '));
+      jb.abort = true; const u2 = await R7.tryWith('y24', ctxPh, 'a', 'b'); ok(u2.unsure && /9초 안에 끝나지 않아 확인을 멈춤/.test(u2.why), '시간 넘음 표시가 서면 다음 단계에서 멈춤(더 진행하지 않음)', u2.why);
+      R7.jobEnd('y24', { ok: false, kind: 'unsure', msg: '✗ 확인 못 함', canForce: true }); ok(!R7.jobOn('y24') && !R7.anyJob(), '확인 끝 = 도는 확인 없음'); }
     const { ppStop } = require(path.join(L.ROOT, 'helper', 'col2-y24.js')); const T0 = Date.now(); ok(!ppStop([T0 - 1e3, T0 - 2e3], T0) && ppStop([T0 - 1e3, T0 - 2e3, T0 - 3e3], T0) && !ppStop([T0 - 4 * 3600e3, T0 - 1e3, T0 - 2e3], T0) && !ppStop([T0, T0, T0], T0, 0), '(11/10 예스24 계속 풀림) 로그인 뒤 금방 다시 풀림이 3시간에 3번이면 스스로 다시 로그인 멈춤(다른 곳 로그인과 서로 끊기 의심) · 0이면 끔'); }
 
   const Y = await fakeY24();

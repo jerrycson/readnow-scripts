@@ -31,18 +31,22 @@ function makeCred(o) { const { HOME } = o; const D = path.join(HOME, 'cred'); co
   const fileOf = (pf) => path.join(D, pf + '.dat');
   const read = (pf) => { try { const j = JSON.parse(fs.readFileSync(fileOf(pf), 'utf8')); return j && j.v === 1 && j.id && j.pw ? j : null; } catch (e) { return null; } };
   /* 저장 — {ok} | {ok:false, err} · 값은 돌려주지 않음 */
-  async function save(pf, id, pw) { if (isLogger()) return { ok: false, err: '로거 PC에는 계정을 저장하지 않습니다(약속 0)' }; if (!PF[pf]) return { ok: false, err: '모르는 플랫폼' };
+  /* (11/10 밤 정범님 '비밀번호 저장이 안 돼') chk = 'ok'(실제 로그인으로 확인함) | 'pending'(확인 못 한 채 잠가 저장 — 다음 다시 로그인 때 확인) | 'bad'(다시 로그인 때 틀림이 드러남) */
+  async function save(pf, id, pw, chk) { chk = chk === 'pending' ? 'pending' : 'ok'; if (isLogger()) return { ok: false, err: '로거 PC에는 계정을 저장하지 않습니다(약속 0)' }; if (!PF[pf]) return { ok: false, err: '모르는 플랫폼' };
     id = String(id == null ? '' : id); pw = String(pw == null ? '' : pw); if (!id.trim() || !pw) return { ok: false, err: '아이디와 비밀번호를 모두 넣어 주세요' }; if (id.length > 200 || pw.length > 200) return { ok: false, err: '너무 깁니다' };
     const a = await run('protect', id); if (!a.ok) return a; const b = await run('protect', pw); if (!b.ok) return b;
     try { fs.mkdirSync(OLD, { recursive: true }); if (fs.existsSync(fileOf(pf))) fs.renameSync(fileOf(pf), path.join(OLD, `${pf}-${Date.now()}.dat`));
-      const tmp = fileOf(pf) + '.t'; fs.writeFileSync(tmp, JSON.stringify({ v: 1, how: process.env.RN_COL2_DPAPI ? 'test' : 'dpapi-user', at: Date.now(), id: a.v, pw: b.v })); fs.renameSync(tmp, fileOf(pf)); } catch (e) { return { ok: false, err: '잠근 파일을 못 씀' }; }
+      const tmp = fileOf(pf) + '.t'; fs.writeFileSync(tmp, JSON.stringify({ v: 1, how: process.env.RN_COL2_DPAPI ? 'test' : 'dpapi-user', at: Date.now(), chk, chkAt: Date.now(), id: a.v, pw: b.v })); fs.renameSync(tmp, fileOf(pf)); } catch (e) { return { ok: false, err: '잠근 파일을 못 씀' }; }
     return { ok: true }; }
   /* 풀기 — 로그인 칸에 넣기 바로 전에만 · {ok, id, pw} (부른 쪽이 쓰고 버림) */
   async function open(pf) { if (isLogger()) return { ok: false, err: '로거 PC — 계정을 쓰지 않음' }; const j = read(pf); if (!j) return { ok: false, err: '저장된 계정 없음' };
     const a = await run('unprotect', j.id); if (!a.ok) return a; const b = await run('unprotect', j.pw); if (!b.ok) return b; return { ok: true, id: a.v, pw: b.v }; }
+  /* 확인 표시만 바꿈(잠근 값은 그대로) — 다시 로그인으로 맞음/틀림이 드러났을 때 */
+  function mark(pf, chk) { const j = read(pf); if (!j || !/^(ok|pending|bad)$/.test(chk)) return false; j.chk = chk; j.chkAt = Date.now(); try { const tmp = fileOf(pf) + '.t'; fs.writeFileSync(tmp, JSON.stringify(j)); fs.renameSync(tmp, fileOf(pf)); return true; } catch (e) { return false; } }
+  const chkOf = (pf) => { const j = isLogger() ? null : read(pf); return j ? (j.chk || 'ok') : null; }; /* 옛 파일(chk 없음)은 확인하고 저장한 것 */
   /* 화면·상태용 — 값 없음 */
   const has = (pf) => !isLogger() && !!read(pf);
-  const sum = () => { const out = {}; for (const k of Object.keys(PF)) { const j = isLogger() ? null : read(k); out[k] = { name: PF[k].name, has: !!j, at: j ? j.at : null }; } return out; };
-  return { save, open, has, sum, PF };
+  const sum = () => { const out = {}; for (const k of Object.keys(PF)) { const j = isLogger() ? null : read(k); out[k] = { name: PF[k].name, has: !!j, at: j ? j.at : null, chk: j ? (j.chk || 'ok') : null, chkAt: j ? (j.chkAt || j.at) : null }; } return out; };
+  return { save, open, has, sum, mark, chkOf, PF };
 }
 module.exports = { makeCred, PF, PS };
