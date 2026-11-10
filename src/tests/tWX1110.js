@@ -9,22 +9,42 @@ const C = (c) => ({ doc: (id) => ({ get: async () => ({ exists: !!col(c)[id], da
 const batch = () => { const ops = []; return { set: (r, v, o) => ops.push(() => r.set(v, o)), commit: async () => { for (const f of ops) await f(); } }; };
 const KEY = 'AbCdEf12345_gH-ijk9'; let NOW = Date.parse('2026-11-10T03:00:00Z'); /* 한국 12시 */ const calls = []; let mode = 'ok';
 const day = (d8) => `${d8} 108  1.9  1234  270  5.1 1530  290  8.2 1532  12.3  17.8 1412   6.9  0610   3.1   13.0   4.2  55.0  30.0 1500  7.7  1.2  1.8  0.0 1012.3 1020.1 1023.4 0900 1018.2 1600   3.4  9.5  9.0  92.0 13.21 1.82 1200  0.5  0.0  1.0`;
-const http = async (o) => { calls.push(o.url); const q = new URL(o.url).searchParams; const k = q.get('authKey'); if (mode === 'net') throw new Error('connect ECONNREFUSED ' + o.url);
+let approved = new Set(['sfcdd3']); /* (11/10 저녁) 정범님이 승인받은 API — 시험마다 바꿈 */
+const apiOf = (u) => (/kma_sfcdd3\.php/.test(u) ? 'sfcdd3' : /kma_sfcdd\.php/.test(u) ? 'sfcdd' : /AsosDalyInfoService/.test(u) ? 'asosDaly' : '?');
+const HEAD = '# TM STN WS_AVG WR_DAY WD_MAX WS_MAX WS_MAX_TM WD_INS WS_INS WS_INS_TM TA_AVG TA_MAX TA_MAX_TM TA_MIN TA_MIN_TM TD_AVG TS_AVG TG_MIN HM_AVG HM_MIN HM_MIN_TM PV_AVG EV_S EV_L FG_DUR PA_AVG PS_AVG PS_MAX PS_MAX_TM PS_MIN PS_MIN_TM CA_TOT SS_DAY SS_DUR SS_CMB SI_DAY SI_60M_MAX SI_60M_MAX_TM RN_DAY RN_D99 RN_DUR';
+const dline = (d8, stn) => { let ln = day(d8).replace(/^(\d{8}) 108/, `$1 ${stn}`); if (d8.endsWith('5')) ln = ln.replace(/ 0\.5  0\.0  1\.0$/, ' -9.0 -9.0 -9.0'); return ln; };
+const days = (t1, t2) => { const o = []; for (let t = Date.parse(t1.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3T12:00:00Z')); ; t += 864e5) { const d8 = new Date(t).toISOString().slice(0, 10).replace(/-/g, ''); if (d8 > t2) break; o.push(d8); } return o; };
+const http = async (o) => { calls.push(o.url); const q = new URL(o.url).searchParams; const k = q.get('authKey'); const A = apiOf(o.url); if (mode === 'net') throw new Error('connect ECONNREFUSED ' + o.url);
   if (k !== KEY) return { status: 403, text: `{"result":{"status":403,"message":"인증키가 유효하지 않습니다 authKey=${k}"}}` };
-  const t1 = q.get('tm1'), t2 = q.get('tm2'), stn = q.get('stn'); const L = ['#START7777', '# TM STN WS_AVG WR_DAY WD_MAX WS_MAX WS_MAX_TM WD_INS WS_INS WS_INS_TM TA_AVG TA_MAX TA_MAX_TM TA_MIN TA_MIN_TM TD_AVG TS_AVG TG_MIN HM_AVG HM_MIN HM_MIN_TM PV_AVG EV_S EV_L FG_DUR PA_AVG PS_AVG PS_MAX PS_MAX_TM PS_MIN PS_MIN_TM CA_TOT SS_DAY SS_DUR SS_CMB SI_DAY SI_60M_MAX SI_60M_MAX_TM RN_DAY RN_D99 RN_DUR', '# KST - m/s ...'];
-  for (let t = Date.parse(t1.replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3T12:00:00Z')); ; t += 864e5) { const d8 = new Date(t).toISOString().slice(0, 10).replace(/-/g, ''); if (d8 > t2) break; let ln = day(d8).replace(/^(\d{8}) 108/, `$1 ${stn}`); if (d8.endsWith('5')) ln = ln.replace(/ 0\.5  0\.0  1\.0$/, ' -9.0 -9.0 -9.0'); L.push(ln); }
-  L.push('#7777END'); return { status: 200, text: L.join('\n') }; };
-const ctx = { console, Date, Math, String, JSON, Number, Object, Array, encodeURIComponent, URL };
-vm.runInNewContext(code + '\nthis.wxMake = wxMake; this.wxParse = wxParse; this.WX_DEF = WX_DEF;', ctx);
+  if (!approved.has(A)) return { status: 403, text: '{"result":{"status":403,"message":"활용신청이 필요한 API 입니다. 활용신청 후 다시 시도해 주시오."}}' };
+  if (A === 'sfcdd3') { const stn = q.get('stn'); return { status: 200, text: ['#START7777', HEAD, '# KST - m/s ...', ...days(q.get('tm1'), q.get('tm2')).map((d) => dline(d, stn)), '#7777END'].join('\n') }; }
+  if (A === 'sfcdd') { const tm = q.get('tm'), stn = +q.get('stn'); const S0 = stn ? [stn] : [108, 119, 112, 159, 184]; return { status: 200, text: ['#START7777', HEAD.replace('# TM', '# YYMMDD'), ...S0.map((x) => dline(tm, x)), '#7777END'].join('\n') }; }
+  if (A === 'asosDaly') { const stn = q.get('stnIds'); const item = days(q.get('startDt'), q.get('endDt')).map((d) => ({ stnId: stn, stnNm: '서울', tm: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`, avgTa: '12.3', minTa: '6.9', maxTa: '17.8', sumRn: d.endsWith('5') ? '' : '0.5', avgRhm: '55.0', sumSsHr: '9.5', avgTca: '3.4' }));
+    return { status: 200, text: JSON.stringify({ response: { header: { resultCode: '00', resultMsg: 'NORMAL_SERVICE' }, body: { dataType: 'JSON', items: { item }, totalCount: item.length } } }) }; }
+  return { status: 404, text: 'not found' }; };
+const ctx = { console, Date, Math, String, JSON, Number, Object, Array, encodeURIComponent, URL, Map };
+vm.runInNewContext(code + '\nthis.wxMake = wxMake; this.wxParse = wxParse; this.wxParseJson = wxParseJson; this.WX_DEF = WX_DEF; this.WX_APIS = WX_APIS;', ctx);
 const W = ctx.wxMake({ C, batch, http, now: () => NOW, nowIso: () => new Date(NOW).toISOString() });
 (async () => {
   // ① 모양이 아닌 값(아이디·비번을 넣은 듯) — 부르지도 않고 거절
   let r = await W.saveKey('jerry 1234'); ok(!r.ok && r.bad && /아이디·비밀번호가 아니라/.test(r.why) && calls.length === 0 && !col('app_secrets').kma, '띄어쓰기 섞인 값 = 「아이디·비밀번호가 아니라 … 인증키」 안내 · 기상청을 부르지 않음 · 저장 안 함', r);
   // ② 틀린 열쇠 — 시험 호출 403 → 저장 안 함 · 까닭 · 오류 글에 열쇠 값 없음
-  r = await W.saveKey('WrongKey_000000000'); ok(!r.ok && r.bad && /인증키가 맞지 않거나/.test(r.why) && /활용신청/.test(r.why) && !/WrongKey_000000000/.test(JSON.stringify(r)) && !col('app_secrets').kma, '틀린 열쇠 = 저장 안 함 · 「인증키가 맞지 않거나 … 활용신청」 · 답에 열쇠 값이 안 보임(••••)', r);
-  ok(calls.length === 1 && /kma_sfcdd3\.php/.test(calls[0]) && /stn=108/.test(calls[0]) && /tm1=20261102&tm2=20261102/.test(calls[0]), '시험 호출 = 지상관측 일자료 기간 조회 · 서울 108 · 8일 전 하루 한 번', calls);
+  r = await W.saveKey('WrongKey_000000000'); ok(!r.ok && r.bad && r.wrong && /인증키가 맞지 않음/.test(r.why) && !/WrongKey_000000000/.test(JSON.stringify(r)) && !col('app_secrets').kma, '틀린 열쇠 = 저장 안 함 · 「인증키가 맞지 않음」 · 답에 열쇠 값이 안 보임(••••)', r);
+  ok(calls.length === 3 && /kma_sfcdd3\.php/.test(calls[0]) && /stn=108/.test(calls[0]) && /tm1=20261102&tm2=20261102/.test(calls[0]) && /kma_sfcdd\.php\?tm=20261102&stn=108/.test(calls[1]) && /AsosDalyInfoService\/getWthrDataList.*startDt=20261102&endDt=20261102&stnIds=108/.test(calls[2]), '시험 호출 = 기간 조회 → 하루 조회 → OpenAPI 차례 · 서울 108 · 8일 전 하루', calls);
   // ③ 기상청 서버가 안 닿음 — 확인 못 함 → 저장 안 함
   mode = 'net'; r = await W.saveKey(KEY); mode = 'ok'; ok(!r.ok && r.unsure && /저장하지 않았습니다/.test(r.why) && !r.why.includes(KEY) && !col('app_secrets').kma, '서버가 안 닿음 = 「확인 못 함 — 저장하지 않았습니다」 · 오류 글에 열쇠 값 없음', r);
+  // ③-2 (정범님 11/10 저녁) 열쇠는 맞는데 셋 모두 '활용신청이 필요' — 저장 안 함 · 신청할 API 이름 그대로 · 반영 늦을 수 있음
+  approved = new Set(); calls.length = 0; r = await W.saveKey(KEY); ok(!r.ok && r.bad && r.need && /kma_sfcdd3/.test(r.why) && /kma_sfcdd\)/.test(r.why) && /AsosDalyInfoService/.test(r.why) && /종관기상관측\(ASOS\) › 일자료 「기간 조회」/.test(r.why) && /API 활용신청/.test(r.why) && /반영이 늦을 수/.test(r.why) && /활용신청이 필요한 API/.test(r.why) && !r.why.includes(KEY) && calls.length === 3 && !col('app_secrets').kma, '셋 모두 403 활용신청 = 저장 안 함 · 메뉴·API 이름 셋 그대로 · 승인 반영 늦음 안내 · 기상청 답', r);
+  // ③-3 기간 조회는 403 · 하루 조회만 승인 → 하루 조회로 저장
+  approved = new Set(['sfcdd']); calls.length = 0; r = await W.saveKey(KEY, '관리자'); ok(r.ok && r.api === 'sfcdd' && /하루/.test(r.apiNm) && r.sample.ta === 12.3 && col('app_secrets').kma.api === 'sfcdd' && col('app_settings').wx_run.key.api === 'sfcdd' && calls.length === 2, '기간 조회 403 → 하루 조회가 됨 = 그 API 이름 저장(app_secrets/kma.api · 상태 key.api)', { r, calls });
+  { const W2 = ctx.wxMake({ C, batch, http, now: () => NOW, nowIso: () => new Date(NOW).toISOString() }); calls.length = 0; const t2 = await W2.tick(); const s0 = col('app_settings').wx_run.stn;
+    ok(t2 && t2.api === 'sfcdd' && t2.calls === 3 && calls.every((u) => /kma_sfcdd\.php\?tm=\d{8}&stn=0/.test(u)) && t2.rows === 9 && s0['108'].hi === '20261109' && s0['108'].lo === '20261107' && s0['119'].hi === '20261109' && col('wx_days')['119_20261108'].src === 'kma_sfcdd', '하루 조회로 모으기 = 하루씩 전국(stn=0) 한 번을 세 지점이 나눠 씀(3번에 3일×3지점)', { t2, calls, s0 }); }
+  // ③-4 OpenAPI(AsosDalyInfoService)만 승인 → 그것으로 저장 · JSON 읽기
+  approved = new Set(['asosDaly']); calls.length = 0; r = await W.saveKey(KEY, '관리자'); ok(r.ok && r.api === 'asosDaly' && r.sample.ta === 12.3 && r.sample.rn === 0.5 && calls.length === 3, 'OpenAPI만 승인 = 셋째 차례에서 됨 · JSON 읽기', r);
+  { const J = ctx.wxParseJson(JSON.stringify({ response: { header: { resultCode: '00' }, body: { items: { item: [{ stnId: '108', tm: '2026-11-05', avgTa: '3.1', maxTa: '8', minTa: '-2.5', sumRn: '', avgRhm: '40', sumSsHr: '7.1', avgTca: '' }] } } } })); const x = J.rows[0];
+    ok(x.d8 === '20261105' && x.taMin === -2.5 && x.rn === 0 && x.rnNA && x.ca === null && x.ss === 7.1, 'OpenAPI JSON 한 줄 = 빈 강수는 0 + rnNA · 빈 구름은 null', x);
+    const E = ctx.wxParseJson(JSON.stringify({ response: { header: { resultCode: '03', resultMsg: 'NO_DATA' } } })); ok(E && E.err && E.err.code === '03' && !E.rows.length, 'OpenAPI 결과 코드 03(자료 없음)을 알아봄', E); }
+  delete store.app_secrets; delete store.wx_days; delete store.wx_sum; store.app_settings = {}; approved = new Set(['sfcdd3']); calls.length = 0;
   // ④ 맞는 열쇠 — 저장 · 상태엔 끝 4자리만 · 보기 하루치
   r = await W.saveKey(KEY, '관리자'); const run = col('app_settings').wx_run || {};
   ok(r.ok && r.sample && r.sample.d === '2026-11-02' && r.sample.ta === 12.3 && col('app_secrets').kma.key === KEY && run.key.tail === 'ijk9' && !JSON.stringify(run).includes(KEY) && !JSON.stringify(r).includes(KEY), '맞는 열쇠 = app_secrets/kma에만 저장 · 상태(wx_run)엔 끝 4자리 · 답에 값 없음 · 보기 「11/02 서울 12.3도」', { r, run });
@@ -42,6 +62,9 @@ const W = ctx.wxMake({ C, batch, http, now: () => NOW, nowIso: () => new Date(NO
   // ⑧ 머리 줄 없는 응답도 차례로 읽음(guess)
   const P = ctx.wxParse(day('20261101')); ok(P.rows.length === 1 && P.rows[0].guess && P.rows[0].taMax === 17.8 && P.rows[0].rn === 0.5, '머리 줄이 없으면 기상청 도움말 차례로 읽고 guess 표시', P.rows[0]);
   // ⑨ 열쇠가 나중에 틀리게 되면(만료) — 멈추고 keyBad · 6시간 쉼
+  // ⑧-2 쓰던 기간 조회가 나중에 '활용신청 필요'가 되면 — 하루 조회를 찾아 바꿔 쓰고 keyBad 아님
+  approved = new Set(['sfcdd']); NOW += 864e5; calls.length = 0; t = await W.tick(); ok(t && t.switched === 'sfcdd' && !t.badKey && col('app_secrets').kma.api === 'sfcdd' && col('app_settings').wx_run.key.api === 'sfcdd' && col('app_settings').wx_run.key.tail === 'ijk9' && !col('app_settings').wx_run.keyBad, '쓰던 API가 403 활용신청 = 다른 ASOS 일자료 API(하루 조회)로 바꿔 씀 · 열쇠 끝 4자리 그대로', { t, run: col('app_settings').wx_run.key });
+  approved = new Set(['sfcdd3']);
   store.app_secrets.kma.key = 'Expired_Key_0000'; W._S.key = null; NOW += 864e5; t = await W.tick(); ok(t && t.badKey && /인증키/.test(col('app_settings').wx_run.keyBad.why) && !JSON.stringify(col('app_settings').wx_run).includes('Expired_Key_0000'), '열쇠가 틀리게 되면 keyBad(까닭 · 값 없음)로 알리고 멈춤', col('app_settings').wx_run.keyBad);
   // ⑩ 정적: 웹앱 ⚙ 칸·안내·클라우드 길 · 열쇠를 log로 찍지 않음
   ok(/path === '\/wx-key'/.test(src) && /path === '\/key-check'/.test(src) && /WX\.tick\(\)/.test(src), '클라우드 길 /wx-key · /key-check · /daily에서 WX.tick');

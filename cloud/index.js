@@ -3652,7 +3652,7 @@ async function extCloudRun(X, cfg, budgetMs) {
 /* ══════════ 🌦 (정범님 11/10) 기상청 API허브 날씨 — 🧠 소비심리 연구 재료(날씨와 판매) ══════════
  *  열쇠: 웹앱 ⚙ 설정 › 🌦 기상청 날씨에서 넣음 → 웹앱이 POST /wx-key → 여기서 **시험 호출로 먼저 확인**(서울 108 · 8일 전 하루) → 맞을 때만 app_secrets/kma {key} 저장(틀리면 저장 안 하고 까닭)
  *    · 열쇠 값은 기록(log)·상태 문서·응답·오류 글 어디에도 싣지 않음(상태엔 끝 4자리만) · 백업 파일엔 안 들어감(app_secrets)
- *  모으기: /daily(10분마다) 안에서 한 번에 지점 하나씩 한 번만 부름 — 지상관측 › 종관기상관측(ASOS) › 일자료 기간 조회(kma_sfcdd3.php · 한 번에 30일)
+ *  모으기: /daily(10분마다) 안에서 한 번에 지점 하나씩 한 번만 부름 — 지상관측 › 종관기상관측(ASOS) › 일자료(확인 때 되는 API를 WX_APIS 차례로 골라 app_secrets/kma.api에 저장 · 기본 기간 조회 kma_sfcdd3 · 한 번에 30일)
  *    · 앞으로: 어제(한국 9시 뒤) 것까지 · 뒤로: 처음 켠 때부터 backDays(기본 730일) 거슬러 채움 · 하루 최대 perDay번(기본 40 — 근거: 없음, 무료 범위보다 훨씬 적게 · app_settings/wx.cfg로 바꿈)
  *    · 지점 기본: 서울 108 · 수원 119 · 인천 112(손님이 많은 수도권 — 근거: 없음, 설정으로 바꿈)
  *  자료: wx_days/{지점}_{YYYYMMDD} {d, stn, nm, ta 평균기온, taMax, taMin, rn 강수mm, rnNA, hm 습도, ss 일조시간, ca 구름, raw 원문 한 줄} · wx_sum/{지점}.rows[YYYYMMDD] = [강수, 최고, 평균, 최저, 습도] (연구가 한 문서로 받음 → weather.csv)
@@ -3661,7 +3661,16 @@ async function extCloudRun(X, cfg, budgetMs) {
 const WX_STN = { 108: '서울', 119: '수원', 112: '인천', 159: '부산', 143: '대구', 133: '대전', 156: '광주', 131: '청주', 146: '전주', 105: '강릉', 184: '제주' };
 const WX_DEF = { stns: [108, 119, 112], backDays: 730, chunkDays: 30, perDay: 40, hourKst: 9 };
 const WX_COLS = ['TM', 'STN', 'WS_AVG', 'WR_DAY', 'WD_MAX', 'WS_MAX', 'WS_MAX_TM', 'WD_INS', 'WS_INS', 'WS_INS_TM', 'TA_AVG', 'TA_MAX', 'TA_MAX_TM', 'TA_MIN', 'TA_MIN_TM', 'TD_AVG', 'TS_AVG', 'TG_MIN', 'HM_AVG', 'HM_MIN', 'HM_MIN_TM', 'PV_AVG', 'EV_S', 'EV_L', 'FG_DUR', 'PA_AVG', 'PS_AVG', 'PS_MAX', 'PS_MAX_TM', 'PS_MIN', 'PS_MIN_TM', 'CA_TOT', 'SS_DAY', 'SS_DUR', 'SS_CMB', 'SI_DAY', 'SI_60M_MAX', 'SI_60M_MAX_TM', 'RN_DAY', 'RN_D99', 'RN_DUR']; /* 머리 줄이 없을 때만 쓰는 차례(기상청 도움말 순서 — 머리 줄이 있으면 그 이름으로 찾음) */
-const wxUrl = (key, tm1, tm2, stn) => `https://apihub.kma.go.kr/api/typ01/url/kma_sfcdd3.php?tm1=${tm1}&tm2=${tm2}&stn=${stn}&help=0&authKey=${encodeURIComponent(key)}`;
+/* (정범님 11/10 저녁 '승인까지 했는데 403 활용신청이 필요') 기상청 API허브는 같은 ASOS 일자료를 API 여러 개로 나눠 활용신청을 따로 받음 → 아래 차례로 시험해 되는 것을 씀(이름을 app_secrets/kma.api에 저장 · 모으기도 그것으로)
+ *  ① 일자료 기간 조회 kma_sfcdd3(한 번에 30일) ② 일자료 하루 조회 kma_sfcdd(하루씩 · stn=0 전국 한 번에) ③ OpenAPI 종관기상관측 일자료 조회서비스 AsosDalyInfoService(typ02 · JSON · 한 번에 30일)
+ *  근거: apihub typ01/url 경로·인자는 공개 사용 예(kma_sfcdd.php tm·stn·disp·help · kma_sfcdd3.php tm1·tm2·stn) · typ02는 공공데이터포털 같은 이름 서비스의 API허브 판(startDt·endDt·stnIds) — 이 환경에서 apihub가 막혀 실제 호출은 못 해 봄 */
+const WX_APIS = [
+  { id: 'sfcdd3', nm: '지상관측 › 종관기상관측(ASOS) › 일자료 「기간 조회」(kma_sfcdd3)', range: true, url: (key, tm1, tm2, stn) => `https://apihub.kma.go.kr/api/typ01/url/kma_sfcdd3.php?tm1=${tm1}&tm2=${tm2}&stn=${stn}&help=0&authKey=${encodeURIComponent(key)}` },
+  { id: 'sfcdd', nm: '지상관측 › 종관기상관측(ASOS) › 일자료 「조회」(하루 · kma_sfcdd)', range: false, url: (key, tm1, tm2, stn) => `https://apihub.kma.go.kr/api/typ01/url/kma_sfcdd.php?tm=${tm1}&stn=${stn}&disp=0&help=0&authKey=${encodeURIComponent(key)}` },
+  { id: 'asosDaly', nm: '지상관측 › 종관기상관측(ASOS) › 「종관기상관측 일자료 조회서비스」(OpenAPI · AsosDalyInfoService)', range: true, json: true, url: (key, tm1, tm2, stn) => `https://apihub.kma.go.kr/api/typ02/openApi/AsosDalyInfoService/getWthrDataList?pageNo=1&numOfRows=999&dataType=JSON&dataCd=ASOS&dateCd=DAY&startDt=${tm1}&endDt=${tm2}&stnIds=${stn}&authKey=${encodeURIComponent(key)}` },
+];
+const wxApi = (id) => WX_APIS.find((x) => x.id === id) || WX_APIS[0];
+const wxUrl = (key, tm1, tm2, stn) => WX_APIS[0].url(key, tm1, tm2, stn);
 /* 기상청 글 응답 → 줄 · 머리 줄(# … TM … STN …)에서 칸 이름을 찾고, 없으면 WX_COLS 차례(guess) · 빠진 값(-9·-99·-999)은 null · 비는 비 안 온 날을 음수로 주므로 0 + rnNA */
 function wxParse(text) { const L = String(text || '').split(/\r?\n/); let cols = null; const rows = [];
   for (const ln of L) { const s = ln.trim(); if (!s) continue; if (s[0] === '#') { const t = s.replace(/^#+/, '').trim().split(/[\s,]+/); if (t.includes('STN') && t.length >= 5 && t.some((x) => /^(TM|YYMMDD|YYYYMMDD)$/.test(x))) cols = t; continue; }
@@ -3670,49 +3679,75 @@ function wxParse(text) { const L = String(text || '').split(/\r?\n/); let cols =
     const rnI = ix('RN_DAY'); const rnRaw = rnI >= 0 && v[rnI] != null ? +v[rnI] : null; const rnNA = !(Number.isFinite(rnRaw) && rnRaw >= 0);
     rows.push({ d8, d: `${d8.slice(0, 4)}-${d8.slice(4, 6)}-${d8.slice(6, 8)}`, stn, ta: num('TA_AVG', -50), taMax: num('TA_MAX', -50), taMin: num('TA_MIN', -60), rn: rnNA ? 0 : rnRaw, rnNA, hm: num('HM_AVG', -1), ss: num('SS_DAY', -1), ca: num('CA_TOT', -1), guess: !cols, raw: s.slice(0, 600) }); }
   return { rows, cols: !!cols }; }
-function wxMake(D) { const S = { nextAt: 0, key: null, keyAt: 0 };
+/* OpenAPI(AsosDalyInfoService) JSON 답 → 같은 줄 모양 · {err:{code,msg}} = 기상청 결과 코드가 정상(00)이 아님 · null = JSON이 아님 */
+function wxParseJson(text) { let j; try { j = JSON.parse(String(text || '')); } catch (e) { return null; } const R = (j && j.response) || null; if (!R) return null;
+  const h = R.header || {}; const code = String(h.resultCode == null ? '' : h.resultCode); if (code && code !== '00') return { rows: [], cols: true, err: { code, msg: String(h.resultMsg || '') } };
+  let it = (((R.body || {}).items || {}).item) || []; if (!Array.isArray(it)) it = [it]; const rows = [];
+  const num = (v, lo) => { if (v == null || v === '') return null; const x = +v; return Number.isFinite(x) && x > lo ? x : null; };
+  for (const x of it) { const d8 = String(x.tm || '').replace(/-/g, '').slice(0, 8); const stn = +x.stnId; if (!/^\d{8}$/.test(d8) || !stn) continue; const rr = x.sumRn === '' || x.sumRn == null ? null : +x.sumRn; const rnNA = !(Number.isFinite(rr) && rr >= 0);
+    rows.push({ d8, d: `${d8.slice(0, 4)}-${d8.slice(4, 6)}-${d8.slice(6, 8)}`, stn, ta: num(x.avgTa, -50), taMax: num(x.maxTa, -50), taMin: num(x.minTa, -60), rn: rnNA ? 0 : rr, rnNA, hm: num(x.avgRhm, -1), ss: num(x.sumSsHr, -1), ca: num(x.avgTca, -1), guess: false, raw: JSON.stringify(x).slice(0, 600) }); }
+  return { rows, cols: true }; }
+function wxMake(D) { const S = { nextAt: 0, key: null, api: null, keyAt: 0 };
   const ymd = (ms) => new Date(ms + 9 * 3600e3).toISOString().slice(0, 10).replace(/-/g, ''); const msOf = (d8) => Date.parse(`${d8.slice(0, 4)}-${d8.slice(4, 6)}-${d8.slice(6, 8)}T12:00:00+09:00`); const add = (d8, n) => ymd(msOf(d8) + n * 864e5);
   const scrub = (m, key) => { let t = String(m || ''); if (key) t = t.split(key).join('••••').split(encodeURIComponent(key)).join('••••'); return t.replace(/authKey=[^&\s]+/gi, 'authKey=••••').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160); };
-  const BADW = /인증|auth|key|키|등록되지|권한|활용\s*신청|미신청|승인|forbidden|unauthori|denied|invalid/i;
-  async function keyGet() { if (S.key && D.now() - S.keyAt < 30 * 60e3) return S.key; try { const d = await D.C('app_secrets').doc('kma').get(); S.key = d.exists ? String((d.data() || {}).key || '') || null : null; } catch (e) { S.key = null; } S.keyAt = D.now(); return S.key; }
-  async function call(key, tm1, tm2, stn) { let r; try { r = await D.http({ method: 'GET', url: wxUrl(key, tm1, tm2, stn) }); } catch (e) { return { net: true, why: '기상청 서버에 닿지 못함 — ' + scrub(e.message, key) }; }
-    const P = wxParse(r.text); const rows = P.rows.filter((x) => x.stn === +stn); if (rows.length) return { rows, cols: P.cols };
-    const msg = scrub(r.text, key); if (r.status === 401 || r.status === 403 || BADW.test(msg)) return { bad: true, why: `인증키가 맞지 않거나, 이 API(지상관측 › 종관기상관측(ASOS) › 일자료 기간 조회)를 아직 활용신청하지 않았음${msg ? ' — 기상청 답: ' + msg : ''} (HTTP ${r.status})` };
-    if (r.status >= 500 || r.status === 429) return { net: true, why: `기상청 서버가 지금 답을 못 함 (HTTP ${r.status})` }; return { rows: [], empty: true, why: `자료 없음 (HTTP ${r.status}${msg ? ' · ' + msg : ''})` }; }
-  /* 확인 — {ok, sample} | {ok:false, bad|unsure, why} · 값은 돌려주지 않음 */
-  async function check(key) { key = String(key == null ? '' : key).trim();
-    if (!key) return { ok: false, bad: true, why: '인증키를 넣어 주세요' };
-    if (/\s/.test(key) || !/^[A-Za-z0-9_\-+=/.]{8,200}$/.test(key)) return { ok: false, bad: true, why: '인증키 모양이 아님 — 아이디·비밀번호가 아니라, 기상청 API허브에 로그인한 뒤 마이페이지에 보이는 인증키(영문·숫자 한 줄)를 그대로 붙여 넣어 주세요' };
-    const d = ymd(D.now() - 8 * 864e5); const r = await call(key, d, d, 108);
-    if (r.rows && r.rows.length) { const x = r.rows[0]; return { ok: true, sample: { d: x.d, stn: 108, nm: '서울', ta: x.ta, rn: x.rn } }; }
-    if (r.bad) return { ok: false, bad: true, why: r.why }; if (r.net) return { ok: false, unsure: true, why: r.why + ' — 저장하지 않았습니다. 잠시 뒤 다시 눌러 주세요' };
-    return { ok: false, bad: true, why: '시험으로 서울 하루치를 물었는데 자료가 오지 않음 — 인증키나 활용신청을 확인해 주세요 · ' + r.why }; }
-  async function saveKey(key, by) { key = String(key == null ? '' : key).trim(); const r = await check(key); if (!r.ok) return r; const at = D.nowIso();
-    await D.C('app_secrets').doc('kma').set({ key, at, by: by || null }); await D.C('app_settings').doc('wx_run').set({ key: { at, by: by || null, tail: key.slice(-4) }, keyBad: null }, { merge: true });
-    S.key = key; S.keyAt = D.now(); S.nextAt = 0; return { ok: true, sample: r.sample }; }
-  async function put(stn, rows) { if (!rows.length) return 0; const nm = WX_STN[stn] || String(stn); const at = D.nowIso(); const sum = {};
-    for (let i = 0; i < rows.length; i += 400) { const b = D.batch(); for (const x of rows.slice(i, i + 400)) { const { d8, guess, ...v } = x; b.set(D.C('wx_days').doc(`${stn}_${d8}`), { ...v, stn, nm, src: 'kma_sfcdd3', guess: !!guess, at }); sum[d8] = [x.rn, x.taMax, x.ta, x.taMin, x.hm]; } await b.commit(); }
+  const BADW = /인증|auth|key|키|등록되지|권한|활용\s*신청|미신청|승인|forbidden|unauthori|denied|invalid/i; const NEEDW = /활용\s*신청|미신청|승인|권한|denied|forbidden/i; const WRONGW = /유효하지\s*않|등록되지\s*않|잘못된|invalid|not\s*registered|SERVICE_KEY/i;
+  async function keyGet() { if (S.key && D.now() - S.keyAt < 30 * 60e3) return S.key; try { const d = await D.C('app_secrets').doc('kma').get(); const v = d.exists ? d.data() || {} : {}; S.key = String(v.key || '') || null; S.api = v.api || null; } catch (e) { S.key = null; } S.keyAt = D.now(); return S.key; }
+  /* 한 번 부르기 — {rows} | {bad, need(활용신청 안 됨), wrong(열쇠 틀림), why} | {net, why} | {rows:[], empty, why} */
+  async function call(api, key, tm1, tm2, stn) { let r; try { r = await D.http({ method: 'GET', url: api.url(key, tm1, tm2, stn) }); } catch (e) { return { net: true, why: '기상청 서버에 닿지 못함 — ' + scrub(e.message, key) }; }
+    const J = api.json ? wxParseJson(r.text) : null; const P = J || wxParse(r.text); const rows = P.rows.filter((x) => !+stn || x.stn === +stn); if (rows.length) return { rows, cols: P.cols };
+    const msg = scrub(J && J.err ? `${J.err.code} ${J.err.msg}` : r.text, key); const jc = J && J.err ? J.err.code : '';
+    if (jc === '03') return { rows: [], empty: true, why: `자료 없음 (${msg})` }; /* 03 NODATA */
+    if (r.status === 401 || r.status === 403 || BADW.test(msg) || /^(20|30|31|32|33)$/.test(jc)) { const need = NEEDW.test(msg) || jc === '20'; const wrong = !need && (r.status === 401 || WRONGW.test(msg) || /^(30|31)$/.test(jc));
+      return { bad: true, need, wrong, why: `${need ? '이 API를 아직 활용신청하지 않았거나 승인이 아직 반영되지 않음' : wrong ? '인증키가 맞지 않음' : '인증키가 맞지 않거나, 이 API를 아직 활용신청하지 않았음'} — ${api.nm}${msg ? ' — 기상청 답: ' + msg : ''} (HTTP ${r.status})` }; }
+    if (r.status >= 500 || r.status === 429) return { net: true, why: `기상청 서버가 지금 답을 못 함 (HTTP ${r.status})` }; return { rows: [], empty: true, why: `자료 없음 — ${api.nm} (HTTP ${r.status}${msg ? ' · ' + msg : ''})` }; }
+  /* 확인 — 되는 API를 차례로 찾음 · {ok, api, apiNm, sample, calls} | {ok:false, bad|unsure, why, tried, calls} · 열쇠 값은 돌려주지 않음 */
+  async function check(key, first) { key = String(key == null ? '' : key).trim();
+    if (!key) return { ok: false, bad: true, why: '인증키를 넣어 주세요', calls: 0 };
+    if (/\s/.test(key) || !/^[A-Za-z0-9_\-+=/.]{8,200}$/.test(key)) return { ok: false, bad: true, why: '인증키 모양이 아님 — 아이디·비밀번호가 아니라, 기상청 API허브에 로그인한 뒤 마이페이지에 보이는 인증키(영문·숫자 한 줄)를 그대로 붙여 넣어 주세요', calls: 0 };
+    const d = ymd(D.now() - 8 * 864e5); const order = first ? [...WX_APIS.filter((x) => x.id !== first), wxApi(first)] : WX_APIS; /* first = 지금 쓰다 막힌 API — 다른 것부터 */ const tried = []; let calls = 0;
+    for (const api of order) { const r = await call(api, key, d, d, 108); calls++;
+      if (r.rows && r.rows.length) { const x = r.rows[0]; return { ok: true, api: api.id, apiNm: api.nm, sample: { d: x.d, stn: 108, nm: '서울', ta: x.ta, rn: x.rn }, tried: tried.map((t) => t.id), calls }; }
+      if (r.net) return { ok: false, unsure: true, why: r.why + ' — 저장하지 않았습니다. 잠시 뒤 다시 눌러 주세요', tried: tried.map((t) => t.id), calls };
+      tried.push({ id: api.id, nm: api.nm, need: !!r.need, wrong: !!r.wrong, bad: !!r.bad, why: r.why }); }
+    const last = tried[tried.length - 1] || {}; const tail = (t) => { const m = /기상청 답: (.*)$/.exec(t.why || ''); return m ? ' · 기상청 답: ' + m[1] : ''; };
+    if (tried.every((t) => t.wrong)) return { ok: false, bad: true, wrong: true, why: '인증키가 맞지 않음(기상청이 열쇠를 모름) — API허브 마이페이지의 인증키를 다시 복사해 붙여 넣어 주세요' + tail(last), tried: tried.map((t) => t.id), calls };
+    if (tried.some((t) => t.bad)) { const list = WX_APIS.map((a, i) => `${'①②③④'[i]} ${a.nm}`).join(' · ');
+      return { ok: false, bad: true, need: true, why: `이 인증키로 쓸 수 있는 종관기상관측(ASOS) 일자료 API가 없음 — 셋 모두 '활용신청이 필요'라고 답함. 기상청 API허브(apihub.kma.go.kr) › ${list} 중 하나를 [API 활용신청] 해 주세요(①이 가장 좋음 · 한 번에 30일씩). 승인받은 API가 이 셋이 아니면(예: 시간자료 kma_sfctm2 · 단기예보) 일자료 것을 따로 신청해야 합니다. 이미 승인됐다면 반영이 늦을 수 있으니(근거: 없음 — 보통 몇 분~한두 시간으로 알려짐) 마이페이지 「API 활용 현황」에서 '승인'과 같은 인증키인지 보고 잠시 뒤 다시 [확인하고 저장]을 눌러 주세요${tail(tried.find((t) => t.need) || last)}`, tried: tried.map((t) => t.id), calls }; }
+    return { ok: false, bad: true, why: '시험으로 서울 하루치를 물었는데 세 API 모두 자료가 오지 않음 — 인증키나 활용신청을 확인해 주세요 · ' + (last.why || ''), tried: tried.map((t) => t.id), calls }; }
+  async function saveKey(key, by) { key = String(key == null ? '' : key).trim(); const r = await check(key); if (!r.ok) { delete r.calls; return r; } const at = D.nowIso();
+    await D.C('app_secrets').doc('kma').set({ key, api: r.api, at, by: by || null }); await D.C('app_settings').doc('wx_run').set({ key: { at, by: by || null, tail: key.slice(-4), api: r.api, apiNm: r.apiNm }, keyBad: null }, { merge: true });
+    S.key = key; S.api = r.api; S.keyAt = D.now(); S.nextAt = 0; return { ok: true, api: r.api, apiNm: r.apiNm, sample: r.sample }; }
+  async function put(stn, rows, apiId) { if (!rows.length) return 0; const nm = WX_STN[stn] || String(stn); const at = D.nowIso(); const sum = {};
+    for (let i = 0; i < rows.length; i += 400) { const b = D.batch(); for (const x of rows.slice(i, i + 400)) { const { d8, guess, ...v } = x; b.set(D.C('wx_days').doc(`${stn}_${d8}`), { ...v, stn, nm, src: 'kma_' + (apiId || 'sfcdd3'), guess: !!guess, at }); sum[d8] = [x.rn, x.taMax, x.ta, x.taMin, x.hm]; } await b.commit(); }
     await D.C('wx_sum').doc(String(stn)).set({ stn, nm, at, rows: sum }, { merge: true }); return rows.length; }
+  /* 한 구간 받기 — 기간 API는 한 번 · 하루 API는 하루씩(전국 stn=0 한 번을 이 회차 지점끼리 나눠 씀) · {rows, lo, hi(받은 범위) | bad | net} */
+  async function span(api, key, tm1, tm2, stn, dir, B, cache) { if (api.range) { if (B.used >= B.cap) return { stop: true }; const r = await call(api, key, tm1, tm2, stn); B.used++; B.calls++; return r.bad || r.net ? r : { rows: r.rows || [], lo: tm1, hi: tm2 }; }
+    const days = []; for (let d = tm1; d <= tm2; d = add(d, 1)) days.push(d); if (dir === 'back') days.reverse(); const rows = []; let lo = null, hi = null;
+    for (const d of days) { let r = cache.get(d); if (!r) { if (B.used >= B.cap) break; r = await call(api, key, d, d, 0); B.used++; B.calls++; if (!r.bad && !r.net) cache.set(d, r); }
+      if (r.bad || r.net) { if (lo) break; return r; } rows.push(...(r.rows || []).filter((x) => x.stn === +stn)); lo = !lo || d < lo ? d : lo; hi = !hi || d > hi ? d : hi; }
+    return lo ? { rows, lo, hi } : { stop: true }; }
   /* 한 번 — /daily에서 · 지점마다 한 번씩만 부름(10분 뒤 다음) */
-  async function tick() { if (D.now() < S.nextAt) return null; const key = await keyGet(); if (!key) { S.nextAt = D.now() + 30 * 60e3; return { skip: '열쇠 없음(⚙ 설정 › 🌦 기상청 날씨)' }; }
+  async function tick() { if (D.now() < S.nextAt) return null; const key = await keyGet(); if (!key) { S.nextAt = D.now() + 30 * 60e3; return { skip: '열쇠 없음(⚙ 설정 › 🌦 기상청 날씨)' }; } const api = wxApi(S.api);
     let run = {}, cfgD = {}; try { const a = await D.C('app_settings').doc('wx_run').get(); run = a.exists ? a.data() || {} : {}; const b = await D.C('app_settings').doc('wx').get(); cfgD = b.exists ? b.data() || {} : {}; } catch (e) { S.nextAt = D.now() + 10 * 60e3; return { skip: '상태를 못 읽음' }; }
     const c = { ...WX_DEF, ...((cfgD && cfgD.cfg) || {}) }; const stns = (Array.isArray(c.stns) && c.stns.length ? c.stns : WX_DEF.stns).map(Number).filter((x) => x > 0).slice(0, 12); if (cfgD.on === false) { S.nextAt = D.now() + 30 * 60e3; return { skip: '꺼 둠' }; }
-    const today = ymd(D.now()); const hourK = new Date(D.now() + 9 * 3600e3).getUTCHours(); const want = add(today, hourK >= c.hourKst ? -1 : -2); const floor = add(want, -Math.max(1, +c.backDays || 730) + 1); const chunk = Math.max(1, Math.min(31, +c.chunkDays || 30));
-    const cnt = { ...((run.cnt) || {}) }; let used = +cnt[today] || 0; const st = { ...((run.stn) || {}) }; const out = { calls: 0, rows: 0, err: [] }; let more = false, badKey = null;
-    for (const stn of stns) { if (used >= c.perDay) { more = true; break; } const s = { ...(st[stn] || {}) }; let tm1 = null, tm2 = null, dir = null;
+    const today = ymd(D.now()); const hourK = new Date(D.now() + 9 * 3600e3).getUTCHours(); const want = add(today, hourK >= c.hourKst ? -1 : -2); const floor = add(want, -Math.max(1, +c.backDays || 730) + 1); const chunk = api.range ? Math.max(1, Math.min(31, +c.chunkDays || 30)) : Math.max(1, Math.min(10, +c.dayChunk || 3));
+    const cnt = { ...((run.cnt) || {}) }; const B = { used: +cnt[today] || 0, cap: +c.perDay || 40, calls: 0 }; const st = { ...((run.stn) || {}) }; const out = { calls: 0, rows: 0, err: [], api: api.id }; let more = false, badKey = null; const cache = new Map();
+    for (const stn of stns) { if (B.used >= B.cap) { more = true; break; } const s = { ...(st[stn] || {}) }; let tm1 = null, tm2 = null, dir = null;
       if (!s.hi || s.hi < want) { tm1 = s.hi ? add(s.hi, 1) : add(want, -chunk + 1); if (tm1 < floor) tm1 = floor; tm2 = add(tm1, chunk - 1); if (tm2 > want) tm2 = want; dir = 'fwd'; }
       else if (!s.loDone && s.lo) { tm2 = add(s.lo, -1); if (tm2 < floor) { s.loDone = true; st[stn] = s; continue; } tm1 = add(tm2, -chunk + 1); if (tm1 < floor) tm1 = floor; dir = 'back'; }
       else { st[stn] = s; continue; }
-      const r = await call(key, tm1, tm2, stn); used++; out.calls++;
+      const r = await span(api, key, tm1, tm2, stn, dir, B, cache); out.calls = B.calls; if (r.stop) { more = true; break; }
       if (r.bad) { badKey = r.why; s.err = r.why; s.errAt = D.nowIso(); st[stn] = s; break; }
       if (r.net) { s.err = r.why; s.errAt = D.nowIso(); st[stn] = s; out.err.push(`${stn}: ${r.why}`); more = true; continue; }
-      const n = await put(stn, r.rows || []); out.rows += n; s.n = (+s.n || 0) + n; s.err = null;
-      if (dir === 'fwd') { const got = (r.rows || []).map((x) => x.d8).sort(); const top = got.length ? got[got.length - 1] : null; if (top) s.hi = top > (s.hi || '') ? top : s.hi; else if (tm2 < add(want, -3)) s.hi = tm2; /* 오래된 빈 구간은 건너뜀 · 최근 사흘은 자료가 늦게 올 수 있어 다시 물음 */ if (!s.lo || tm1 < s.lo) s.lo = tm1; }
-      else { s.lo = tm1; if (tm1 <= floor) s.loDone = true; }
+      const n = await put(stn, r.rows || [], api.id); out.rows += n; s.n = (+s.n || 0) + n; s.err = null;
+      if (dir === 'fwd') { const got = (r.rows || []).map((x) => x.d8).sort(); const top = got.length ? got[got.length - 1] : null; if (top) s.hi = top > (s.hi || '') ? top : s.hi; else if (r.hi < add(want, -3)) s.hi = r.hi; /* 오래된 빈 구간은 건너뜀 · 최근 사흘은 자료가 늦게 올 수 있어 다시 물음 */ if (!s.lo || r.lo < s.lo) s.lo = r.lo; }
+      else { s.lo = r.lo; if (r.lo <= floor) s.loDone = true; }
       st[stn] = s; if (s.hi < want || !s.loDone) more = true; }
-    cnt[today] = used; for (const k of Object.keys(cnt)) if (k < add(today, -14)) delete cnt[k];
-    const up = { stn: st, cnt, last: { at: D.nowIso(), ...out }, ...(badKey ? { keyBad: { at: D.nowIso(), why: badKey } } : {}) }; await D.C('app_settings').doc('wx_run').set(up, { merge: true }).catch(() => {});
-    S.nextAt = D.now() + (badKey ? 6 * 3600e3 : more && used < c.perDay ? 10 * 60e3 : 3 * 3600e3); if (badKey) S.key = null; return { ...out, more, badKey: badKey ? true : undefined }; }
+    /* 쓰던 API가 '활용신청 필요'로 바뀌면 다른 ASOS 일자료 API를 한 번 차례로 찾아 바꿔 씀(열쇠는 그대로) */
+    let switched = null; if (badKey) { const p = await check(key, api.id); B.used += p.calls || 0; out.calls += p.calls || 0; if (p.ok && p.api !== api.id) { switched = p.api; badKey = null; S.api = p.api; await D.C('app_secrets').doc('kma').set({ api: p.api }, { merge: true }).catch(() => {}); for (const k of Object.keys(st)) if (st[k] && st[k].err) st[k] = { ...st[k], err: null }; } else if (!p.ok) badKey = p.why || badKey; }
+    cnt[today] = B.used; for (const k of Object.keys(cnt)) if (k < add(today, -14)) delete cnt[k];
+    const up = { stn: st, cnt, last: { at: D.nowIso(), ...out }, ...(badKey ? { keyBad: { at: D.nowIso(), why: badKey } } : {}), ...(switched ? { key: { api: switched, apiNm: wxApi(switched).nm, apiAt: D.nowIso() } } : {}) }; await D.C('app_settings').doc('wx_run').set(up, { merge: true }).catch(() => {});
+    S.nextAt = D.now() + (badKey ? 6 * 3600e3 : switched || (more && B.used < B.cap) ? 10 * 60e3 : 3 * 3600e3); if (badKey) S.key = null; return { ...out, more, badKey: badKey ? true : undefined, switched: switched || undefined }; }
   return { check, saveKey, tick, keyGet, _S: S }; }
 /* WX-END */
 const WX = wxMake({ C, batch: () => db.batch(), http: (o) => extHttp(o), now: () => Date.now(), nowIso: () => nowIso() });
