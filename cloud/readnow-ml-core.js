@@ -336,21 +336,26 @@
     return { ok: !no.length, no }; }
   /* ── (11/09 엔진 점검 · 하루 모습 멈춤 고침) 🫀 엔진 심장 박동 + 빠진 하루 모습 다시 만들기 (순수 함수 — 클라우드·웹앱·시험이 같은 것) ──
    *  stallCheck(docs, nowMs, cfg) → 엔진마다 { k, name, at(마지막 학습·기록 시각 ms), ageH, red } · docs = { ml_state, value_model, sp_obs }
-   *   기준 시간 STALL_H = 36시간(근거: 없음, 설정으로 바꿈 — app_settings/ml_state.stallH) · 자료 날짜(…days 마지막 날)는 '그다음 날 0시(한국)'에 그 자료가 다 모인 것으로 셈
+   *   기준 시간 STALL_H = 36시간(근거: 없음, 설정으로 바꿈 — app_settings/ml_state.stallH)
+   *   (11/10 고침) 자료 날짜 D(…days 마지막 날)의 나이 셈 시작:
+   *     · ml_days 등 '그날 모습'은 D+1 0시(한국)에 다 모인 것으로 셈(dayDone(L, 1))
+   *     · value_data·sp_obs는 D 자료를 D+1 23시쯤 배우기 회차가 넣으므로 시작 = D + DATA_LAG_D(2)일 0시(dayDone(L, 2))
+   *       예) D=11/08 → 11/09 23:10 배우기에서 들어옴 → 나이는 11/10 0시부터 → 11/10 23:10 배우기에서 D=11/09로 바뀌면 나이 23시간
+   *       한 회차를 거르면 11/11 12시(0시+36시간)에 빨강 — 예전(+1일)은 날마다 낮 12시~23시 약 11시간 빨강이 떴음
    *  asOfMetrics(cur, ev, cutMs) → 그때(cutMs)의 시장 지표 추정 — cur = 지금 prd_book_metrics · ev = 그 책의 prd_metric_changes(오름차순 · at ms)
    *   칸 값(salesPoint·priceList·usedTotal·buyback…) = cut 앞 마지막 바뀜의 to → 없으면 cut 뒤 첫 바뀜의 from → 그것도 없으면 지금 값(그사이 안 바뀜)
    *   첫 페이지(usedFirstPage) = cut 앞 마지막 'usedListings' 기록의 page → 없고 cut 뒤에도 기록이 없으면 지금 페이지 → cut 뒤에만 있으면 모름(빈 페이지 = 자리 모름)
    *   읽은 때(lastCheckedAt)는 모름으로 둠(바뀐 때만 기록이 남아 '읽은 지 며칠'을 지어내지 않음) */
-  const STALL_H = 36;
+  const STALL_H = 36, DATA_LAG_D = 2; // DATA_LAG_D: 자료 날짜 D가 배우기에 들어오는 날 + 1(근거: value_model·sp_obs는 D+1 23시 회차가 D를 넣음 — 11/10 아침 확인 실측)
   function stallCheck(docs, nowMs, cfg) { docs = docs || {}; nowMs = nowMs || Date.now(); const st = docs.ml_state || {}, vm = docs.value_model || {}, so = docs.sp_obs || {};
     const H = +((cfg && cfg.stallH) || st.stallH) || STALL_H; const ms = (v) => { const t = Date.parse(v || ''); return Number.isFinite(t) ? t : null; };
-    const dayDone = (L) => { const d = (Array.isArray(L) ? L.slice().sort() : []).pop(); return d ? Date.parse(d + 'T00:00:00+09:00') + 864e5 : null; };
+    const dayDone = (L, lag) => { const d = (Array.isArray(L) ? L.slice().sort() : []).pop(); return d ? Date.parse(d + 'T00:00:00+09:00') + (lag || 1) * 864e5 : null; };
     const L = [
       { k: 'ml_days', name: '📸 하루 모습 기록(ml_days)', at: ms(st.at) || (st.lastDay ? Date.parse(st.lastDay + 'T01:00:00+09:00') : null) },
       { k: 'ml_learn', name: '📈 팔릴 확률 스스로 배우기', at: ms((st.learn || {}).at) },
       { k: 'value_model', name: '🧠 판매가치 표 배우기', at: ms(vm.trainedAt) },
-      { k: 'value_data', name: '🧠 판매가치 표의 우리 자료(하루 모습 마지막 날)', at: dayDone(vm.days) },
-      { k: 'sp_obs', name: '🔬 SP 변화 관찰 자료(마지막 날)', at: dayDone(so.days) }];
+      { k: 'value_data', name: '🧠 판매가치 표의 우리 자료(마지막 날 D · D+2일 0시부터 셈 — D는 D+1 23시 배우기에서 들어옴)', at: dayDone(vm.days, DATA_LAG_D), rule: 'D+2일 0시' },
+      { k: 'sp_obs', name: '🔬 SP 변화 관찰 자료(마지막 날 D · D+2일 0시부터 셈 — D는 D+1 23시에 들어옴)', at: dayDone(so.days, DATA_LAG_D), rule: 'D+2일 0시' }];
     return { stallH: H, rows: L.map((x) => { const ageH = x.at == null ? null : Math.round((nowMs - x.at) / 36e5 * 10) / 10; return { ...x, ageH, red: x.at == null || ageH > H }; }) }; }
   function asOfMetrics(cur, ev, cutMs) { cur = cur || {}; ev = ev || []; const m = { ...cur }; delete m.lastCheckedAt; const seen = new Set();
     for (const e of ev) { if (!e.changes) continue; for (const [f, v] of Object.entries(e.changes)) { if (!v || typeof v !== 'object' || !('to' in v)) continue; if (e.at <= cutMs) { m[f] = v.to; seen.add(f); } else if (!seen.has(f)) { m[f] = v.from; seen.add(f); } } }
@@ -558,6 +563,6 @@
     const what = (Array.isArray(rec.what) ? rec.what : [rec.what]).map(String); if (!q.what || !what.includes(String(q.what))) return no(`허락 대상이 아님(${q.what || '모름'} — 허락: ${what.join('·') || '없음'})`);
     const lim = fenceN(rec.limit); if (!(lim > 0)) return no('허락 한도가 없음'); return { ok: true, limit: lim, why: null, by: rec.by, until: rec.until }; }
   /* FENCE-PURE-END */
-  const api = { VERSION, VDEF, setBuyback, bbExpect, bbAccept, BB_ACC, extrasOf, EX_LABEL, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, sevReasonGroups, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue, STRATS, STRAT_K, SDEF, stratDecide, stratGuard, stratMarket, stratFloor, stratCeil, stratParams, stratRarity, STALL_H, stallCheck, asOfMetrics, listingAsOf, EXP_DEF, AGE_EDGES, isHumanBy, expCell, expPair, humanTouch, busyOf, dayLossLimit, dayLossOf, expScore, engDecOk, RARE_RANGE, rareClamp, rarePick, REBUILT_W, mlSplitDays, FENCE, fenceLimitOf, fenceSum, fenceHeld, fenceT, fenceRD, fenceGone, fenceStep, fenceStamp, fenceRoll, fenceTry, fenceSettle, fenceNote, fenceNoAdd, fenceNoLoss, fenceRegMs, fenceLock, fenceBase, fenceCostOk };
+  const api = { VERSION, VDEF, setBuyback, bbExpect, bbAccept, BB_ACC, extrasOf, EX_LABEL, defectOf, BB_PAY, valueRec, valueRate3, listBand, spBand, usedBand, posBand, ratioBand, valueTrain, valueRate, ratioMult, valueOf, HORIZON_D, FEATURES, SALE_EVAL_VER, evalSale, sevReasonGroups, rawRow, withPrice, feats, train, trainBase, predict, evaluate, shouldPromote, dailyValue, STRATS, STRAT_K, SDEF, stratDecide, stratGuard, stratMarket, stratFloor, stratCeil, stratParams, stratRarity, STALL_H, DATA_LAG_D, stallCheck, asOfMetrics, listingAsOf, EXP_DEF, AGE_EDGES, isHumanBy, expCell, expPair, humanTouch, busyOf, dayLossLimit, dayLossOf, expScore, engDecOk, RARE_RANGE, rareClamp, rarePick, REBUILT_W, mlSplitDays, FENCE, fenceLimitOf, fenceSum, fenceHeld, fenceT, fenceRD, fenceGone, fenceStep, fenceStamp, fenceRoll, fenceTry, fenceSettle, fenceNote, fenceNoAdd, fenceNoLoss, fenceRegMs, fenceLock, fenceBase, fenceCostOk };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowML = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

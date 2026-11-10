@@ -102,6 +102,14 @@ function fakeDb() { const S = {}; const col = (n) => (S[n] = S[n] || new Map());
     ok(s.stallH === 36 && red.join(',') === 'ml_days,ml_learn,value_data,sp_obs', `11/09 실제 모습: 빨강 = ${red.join(',')} (판매가치 표는 매일 다시 배우지만 우리 자료가 10/23에 멈춤)`);
     const fresh = ML.stallCheck({ ml_state: { lastDay: '2026-11-09', at: '2026-11-08T16:05:00Z', learn: { at: '2026-11-08T17:10:00Z' } }, value_model: { trainedAt: '2026-11-08T17:20:00Z', days: ['2026-11-08'] }, sp_obs: { days: ['2026-11-08'] } }, now);
     ok(!fresh.rows.some((x) => x.red), '날마다 돌면 빨강 없음');
+    { /* (11/10 아침 확인) value_data·sp_obs는 D 자료가 D+1 23시 배우기에 들어옴 → 나이는 D+2일 0시부터 */
+      const d10 = { ml_state: { lastDay: '2026-11-10', at: '2026-11-09T16:10:00Z', learn: { at: '2026-11-09T17:00:00Z' } }, value_model: { trainedAt: '2026-11-09T14:10:00Z', days: ['2026-11-08'] }, sp_obs: { days: ['2026-11-08'] } };
+      const r = (iso, k) => ML.stallCheck(d10, Date.parse(iso)).rows.find((x) => x.k === k);
+      ok(ML.DATA_LAG_D === 2 && ['value_data', 'sp_obs'].every((k) => !r('2026-11-10T03:00:00Z', k).red && !r('2026-11-10T13:59:00Z', k).red), '11/10 실제 모습: 자료 마지막 날 11/08 · 낮 12시~23시(한국)에도 빨강 없음(예전엔 약 11시간 빨강)');
+      ok(Math.round(r('2026-11-10T14:00:00Z', 'value_data').ageH) === 23, '11/10 23시(한국) 나이 = 23시간(11/10 0시부터 셈)');
+      ok(['value_data', 'sp_obs'].every((k) => r('2026-11-11T03:10:00Z', k).red && !r('2026-11-11T02:50:00Z', k).red), '배우기 한 회차를 거르면 11/11 12시(한국 · 0시+36시간)부터 빨강');
+      ok(/D\+2일 0시부터 셈/.test(r('2026-11-10T03:00:00Z', 'sp_obs').name), '화면 글(엔진 이름)에 셈 기준 D+2일 0시');
+      const ml = r('2026-11-10T03:00:00Z', 'ml_days'); ok(ml.at === Date.parse('2026-11-10T01:10:00+09:00') && !ml.red, 'ml_days(하루 모습)는 예전 셈 그대로'); }
     ok(ML.stallCheck({ ml_state: { ...docs.ml_state, stallH: 1000 } }, now).rows.find((x) => x.k === 'ml_days').red === false, '기준 시간은 ml_state.stallH로 바꿈');
     ok(/H\.mlStall = sc \?/.test(SRC) && /ML\.stallCheck\(\{ ml_state: ms0, value_model: vm, sp_obs/.test(SRC), '클라우드 진단 health에 mlStall(4시간 점검이 읽는 숫자 요약)'); }
 
