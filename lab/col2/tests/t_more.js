@@ -76,10 +76,10 @@ const allFiles = (D) => { const out = []; const walk = (d) => { for (const f of 
 
 (async () => {
   console.log('⓪ 차림표');
-  ok(TK.TASKS.length === 27 && TK.TASKS.every((t) => t.state === 'run'), '로그인 없는 운영 일 27가지가 모두 그림자로 돎', TK.TASKS.length);
-  ok(['dynamic', 'nbMarket', 'kpipa', 'ext.naverbook', 'ext.ttb', 'ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].every((k) => TK.byK[k] && TK.byK[k].state === 'run'), '남았던 9가지(구매자 분포·새상품 없는 시세·KPIPA·네이버 도서·TTB·카카오·국중·eBay·정보나루) 돎');
+  ok(TK.TASKS.length === 27 && TK.TASKS.filter((t) => t.state === 'run').length === 26 && TK.byK['ext.ttb'].state === 'ended', '로그인 없는 운영 일 27가지 — 26가지가 그림자로 돎 · 알라딘 TTB는 종료됨(ttb1 11/11 — OpenAPI 2026-10-30 종료)', TK.TASKS.length);
+  ok(['dynamic', 'nbMarket', 'kpipa', 'ext.naverbook', 'ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].every((k) => TK.byK[k] && TK.byK[k].state === 'run'), '남았던 9가지(구매자 분포·새상품 없는 시세·KPIPA·네이버 도서·TTB·카카오·국중·eBay·정보나루) 돎');
   const lg = TK.plan('logger', { extShare: true }), of = TK.plan('office', {});
-  ok(lg.includes('dynamic') && !lg.includes('nbMarket') && !lg.some((k) => TK.byK[k].keys) && of.includes('nbMarket') && of.includes('kpipa') && ['ext.ttb', 'ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].every((k) => of.includes(k)) && !of.includes('dynamic'), '로거 = 구매자 분포(로거 고유) · 새상품 없는 시세·키 쓰는 출처는 사무실 PC만(나눔이 켜져도 로거엔 안 감)', 'logger ' + lg.length + ' · office ' + of.length);
+  ok(lg.includes('dynamic') && !lg.includes('nbMarket') && !lg.some((k) => TK.byK[k].keys) && of.includes('nbMarket') && of.includes('kpipa') && ['ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].every((k) => of.includes(k)) && !of.includes('ext.ttb') && !lg.includes('ext.ttb') && !of.includes('dynamic'), '로거 = 구매자 분포(로거 고유) · 새상품 없는 시세·키 쓰는 출처는 사무실 PC만(나눔이 켜져도 로거엔 안 감)', 'logger ' + lg.length + ' · office ' + of.length);
   ok(TK.KEY_OK.length >= 6 && TK.KEY_OK.every((k) => !TK.keyLogger(k)) && /알라딘 계정/.test(TK.KEY_RULE.aladinTtb.who), '키 규칙: TTB는 우리 알라딘 계정 키 · 나머지도 우리 개발자 계정 키 → 로거엔 어느 키도 안 줌', TK.KEY_OK.join(','));
   ok(!LIFTED.err && !LIFTED.miss.length && ['getProductFull', 'nbMarketJob', 'extRenderHelper', 'kpFetch', 'kpParse', 'kpToken', 'kpReq'].every((n) => LIFTED.got.includes(n)), '운영 본체 함수를 글자 그대로 떼어 씀(구매자 분포·검색 시세·그린 화면 해석·KPIPA — 본체는 안 고침)', LIFTED.ver + ' · ' + LIFTED.sig + ' · ' + LIFTED.got.length + '개');
   ok(EXTX.KEYS.filter((k) => k.for.some((s) => ['ttb', 'kakao', 'nl', 'ebay', 'lib'].includes(s))).every((k) => TK.KEY_OK.includes(k.k)), '운영 외부 정보 공용 파일이 그 출처에 쓰는 키 이름이 모두 키 규칙에 있음');
@@ -105,7 +105,7 @@ const allFiles = (D) => { const out = []; const walk = (d) => { for (const f of 
     for (const src of ['ttb', 'kakao', 'nl', 'ebay', 'lib']) { const r = await EXTX.run(src, { isbn, title: b.title, author: '', keys: KEYS, http: extHttp(A.base), cache: {}, cfg: EXTX.cfgOf({}) }); if (!r.ok) continue; const col = { ebay: 'ext_foreign', lib: 'ext_lib' }[src] || 'ext_basic'; const k = col + '/' + isbn; DB[k] = DB[k] || { isbn, src: {} }; DB[k].src[src] = { at: nowI, chk: nowI, sig: EXTX.sig({ none: !!r.none, d: r.d }, src), none: !!r.none, d: r.d }; }
     const url = `https://search.shopping.naver.com/book/catalog/${NV_ID[isbn]}`; const o = EXTX.naverPage(await rendered(A.base + '/__ext/search.shopping.naver.com/book/catalog/' + NV_ID[isbn]), isbn, url); o.d.id = NV_ID[isbn]; o.d.rendered = true;
     DB['ext_basic/' + isbn] = DB['ext_basic/' + isbn] || { isbn, src: {} }; DB['ext_basic/' + isbn].src.naverbook = { at: nowI, chk: nowI, sig: EXTX.sig({ none: false, d: o.d }, 'naverbook'), none: false, d: o.d }; }
-  ok(DB['ext_basic/' + ISBN1].src.ttb && DB['ext_basic/' + ISBN1].src.kakao && DB['ext_basic/' + ISBN1].src.nl && DB['ext_foreign/' + ISBN1] && DB['ext_lib/' + ISBN1] && DB['ext_basic/' + ISBN1].src.naverbook.d.title, '운영 값(키를 넣은 운영 공용 파일 · 그린 네이버 화면)을 가짜 응답으로 만듦');
+  ok(!DB['ext_basic/' + ISBN1].src.ttb && DB['ext_basic/' + ISBN1].src.kakao && DB['ext_basic/' + ISBN1].src.nl && DB['ext_foreign/' + ISBN1] && DB['ext_lib/' + ISBN1] && DB['ext_basic/' + ISBN1].src.naverbook.d.title, '운영 값(키를 넣은 운영 공용 파일 · 그린 네이버 화면)을 가짜 응답으로 만듦', { cols: Object.keys(DB).filter((k) => /^ext_/.test(k)), src: Object.keys((DB['ext_basic/' + ISBN1] || {}).src || {}) });
   A.reqs.length = 0;
 
   console.log('① 사무실 PC — 새상품 없는 시세 · KPIPA · 네이버(그려 읽기) · 키 쓰는 출처 5곳');
@@ -113,7 +113,7 @@ const allFiles = (D) => { const out = []; const walk = (d) => { for (const f of 
   let H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base, RN_COL2_KPIPA_BASE: A.base }, cfg: { pc: 'MJ-MORE', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 150 }, watch: { tickSec: 1 }, jobs: { on: true, fx: { after: '00:00', keyWaitMin: 0 }, off: OFF1, kpipa: { after: '00:00' }, pass: { minN: 1, waitMin: 0.2 } } } }); const D1 = H.D;
   const W = webapp(H, DB, ['prd_ids', 'prd_books', 'prd_market_nobook', 'mkt_kpipa', 'ext_basic', 'ext_foreign', 'ext_lib'], { keys: KEYS, handoff: { jobs: { kpipa: { on: true, pc: 'MJ-MORE', at: new Date().toISOString() }, 'ext.nl': { on: true, pc: 'OTHER-PC', at: new Date().toISOString() } } } });
   try { await H.api('POST', '/relay/answer', { pool });
-    const want = ['nbMarket', 'kpipa', 'ext.naverbook', 'ext.ttb', 'ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'];
+    const want = ['nbMarket', 'kpipa', 'ext.naverbook', 'ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'];
     const jd = await until(() => { const o = W.last('col2_jday'); const t = o && o.v.tasks; return t && t.nbMarket && t.nbMarket.n >= 2 && t.kpipa && t.kpipa.n >= 13 && want.slice(2).every((k) => t[k] && t[k].n + t[k].fail >= 2) ? o : null; }, 480);
     const T = jd && jd.v.tasks; if (!T || process.env.T_DEBUG) { console.log('    (디버그)', JSON.stringify(W.last('col2_jday') && W.last('col2_jday').v.tasks).slice(0, 2500)); fs.writeFileSync(process.env.T_DEBUG || '/dev/null', H.out() + '\n=====\n' + JSON.stringify(W.got.filter((x) => x.c === 'col2_jobs').map((x) => x.v)) + '\n=====\n' + JSON.stringify((await H.api('GET', '/jobs')).j.tasks.filter((t) => t.mine).map((t) => [t.k, t.q]))); }
     ok(W.seen.keysAsk >= 1 && W.seen.keysPut.includes(200), '🔑 도우미가 키를 부탁(이름만) → 웹앱이 메모리로 넘김(POST /relay/keys)', JSON.stringify(W.seen));
@@ -122,9 +122,9 @@ const allFiles = (D) => { const out = []; const walk = (d) => { for (const f of 
     { const HOF = require('../shadow/col2-handoff.js'); const HD = { jobs: { kpipa: { on: true, pc: 'MJ-MORE', at: new Date().toISOString() } } }; await until(() => W.ops.length >= 3, 40); const kp = W.ops.filter((x) => x.job === 'kpipa');
       ok(kp.length === 3 && kp.every((x) => x.c === 'mkt_kpipa' && /^\d{8}$/.test(x.id) && HOF.writeOk(HD, x, 'MJ-MORE').ok && !HOF.writeOk(HD, x, 'HOME').ok) && kp.filter((x) => x.hist && x.hist.old).length === 2 && !W.ops.some((x) => x.job !== 'kpipa'), '🔀 KPIPA를 이 PC로 넘기면 같지 않은 3줄(오래됨·빈 칸·다름)만 운영 칸 mkt_kpipa에 맡김 · 바뀐 2줄은 옛 값을 history로 · 같은 11줄은 안 씀 · 다른 PC로 넘긴 일(국중)은 안 씀', JSON.stringify(kp.map((x) => x.id + ':' + Object.keys(x.v).join('/') + (x.hist ? '+h' : '')))); }
     ok(T && T['ext.naverbook'].same === 2, '🔎 네이버 도서(그려 읽기 · 운영 extRenderHelper·naverPage 그대로): 2권 운영과 같은 지문', T && JSON.stringify(T['ext.naverbook']));
-    ok(T && ['ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].every((k) => T[k].same === 2) && T['ext.ttb'].same === 1 && T['ext.ttb'].fail === 1, '🔑 카카오·국중·eBay·정보나루 2권씩 · TTB 1권 운영과 같음(TTB 1권은 바깥이 오류)', T && JSON.stringify(['ext.ttb', 'ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].map((k) => [k, T[k].same, T[k].fail])));
+    ok(T && ['ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].every((k) => T[k].same === 2) && !T['ext.ttb'], '🔑 카카오·국중·eBay·정보나루 2권씩 운영과 같음 · TTB는 종료됨이라 돌리지 않음', T && JSON.stringify(['ext.ttb', 'ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].map((k) => [k, T[k].same, T[k].fail])));
     const ttbFail = W.got.filter((x) => x.c === 'col2_jobs' && x.v.task === 'ext.ttb' && x.v.verdict === 'fail').slice(-1)[0];
-    ok(ttbFail && /«키»/.test(ttbFail.v.why) && !leak(JSON.stringify(ttbFail)).length, '바깥이 오류 글에 키를 섞어 돌려줘도 기록엔 «키»로 가림', ttbFail && ttbFail.v.why);
+    ok(!ttbFail, '(ttb1 11/11) TTB 종료 — 번외 TTB 일 기록 없음(헛호출 0)', ttbFail && ttbFail.v.why);
     const kpReq = A.reqs.filter((q) => q.path.startsWith('/home/v3/')); ok(kpReq.length === 4 && kpReq[0].cookie === null && kpReq.slice(1).every((q) => /JSESSIONID=/.test(q.cookie || '') && !/rnTestSid/.test(q.cookie || '')), 'KPIPA: 화면 열기 1번 + 보안 표 1번(운영 kpToken) + 조회 2번(판매채널별·도서유형별) · 쿠키는 그 칸에서 받은 KPIPA 것만(알라딘 쿠키 안 섞임)', kpReq.map((q) => q.path.split('?')[0].split('/').pop()).join(','));
     ok(A.reqs.filter((q) => /^\/search\//.test(q.path)).length === 2 && A.reqs.filter((q) => /^\/search\//.test(q.path)).every((q) => q.cookie === null), '🔍 검색 화면은 쿠키 없이 · 상품마다 한 번', A.reqs.filter((q) => /^\/search\//.test(q.path)).length);
     ok(A.reqs.some((q) => /book\/catalog/.test(q.path)) && A.reqs.filter((q) => /naver/.test(q.path)).every((q) => q.cookie === null), '🔎 네이버 화면은 따로 된 칸 탭에서 그림(쿠키 없음)');
@@ -135,7 +135,7 @@ const allFiles = (D) => { const out = []; const walk = (d) => { for (const f of 
     ok(!leak(JSON.stringify(W.got)).length, '🔑 키 값이 col2_* 결과(웹앱이 대신 쓸 것)에 없음', W.got.length + '건');
     const st = (await H.api('GET', '/status')).j; const jv = (await H.api('GET', '/jobs')).j; const pd = (await H.api('GET', '/relay/pending?by=x')).j;
     ok(st.keys && st.keys.n === 6 && st.keys.names.includes('aladinTtb') && !leak(JSON.stringify(st) + JSON.stringify(jv) + JSON.stringify(pd)).length, '🔑 상태·/jobs·부탁 목록엔 키 이름·수만(값 없음)', JSON.stringify(st.keys));
-    ok(A.reqs.filter((q) => q.path.startsWith('/__ext/www.aladin.co.kr/ttb')).every((q) => q.cookie === null), 'TTB 요청에도 쿠키 없음(키만)');
+    ok(A.reqs.filter((q) => q.path.startsWith('/__ext/www.aladin.co.kr/ttb')).length === 0, 'TTB 요청 0번(알라딘 OpenAPI 종료 — 묻지 않음)');
     const kr = await H.api('POST', '/relay/keys', { keys: { aladinTtb: 'x', naverSecret: 'y', other: 'z' } }); ok(kr.j && kr.j.ok && kr.j.names.join() === 'aladinTtb', '받는 키 이름은 정한 것만(그 밖은 버림)', kr.j && kr.j.names.join());
   } finally { W.stop(); await H.stop(); killDir(D1); }
 

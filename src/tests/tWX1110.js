@@ -88,7 +88,7 @@ const W = ctx.wxMake({ C, batch, http, now: () => NOW, nowIso: () => new Date(NO
     vm.runInNewContext(kc + '\nthis.keyCheck = keyCheck;', ctx2);
     const k1 = await ctx2.keyCheck({ k: 'kakaoRest', v: 'BADKAKAO' }); ok(!k1.ok && k1.bad && /키가 맞지 않음/.test(k1.why) && !JSON.stringify(k1).includes('BADKAKAO'), '카카오 401 = 틀림(bad) · 답에 값 없음', k1);
     const k2 = await ctx2.keyCheck({ k: 'kakaoRest', v: 'GOODKAKAO' }); ok(k2.ok, '카카오 맞는 키 = 맞음', k2);
-    const k3 = await ctx2.keyCheck({ k: 'aladinTtb', v: 'BADTTB' }); ok(!k3.ok && k3.bad && /TTBKey/.test(k3.why), '알라딘 TTB 잘못된 키 = 틀림 · 까닭(알라딘 답)', k3);
+    const h0 = H.length; const k3 = await ctx2.keyCheck({ k: 'aladinTtb', v: 'BADTTB' }); ok(!k3.ok && k3.unsure && /서비스가 끝나/.test(k3.why) && H.length === h0, '(ttb1 11/11) 알라딘 TTB = 끝난 서비스(2026-10-30) — 묻지 않고 확인 못 함', k3);
     net = true; const k4 = await ctx2.keyCheck({ k: 'kakaoRest', v: 'GOODKAKAO' }); net = false; ok(!k4.ok && k4.unsure, '서버가 안 닿음 = 확인 못 함(unsure)', k4);
     const k5 = await ctx2.keyCheck({ k: 'naverId', v: 'ANY' }); ok(!k5.ok && k5.unsure && /서비스가 끝나/.test(k5.why), '네이버 책 검색(끝난 서비스) = 확인 못 함', k5);
     const k6 = await ctx2.keyCheck({ k: 'kakaoRest', v: 'A B' }); ok(!k6.ok && k6.bad && /띄어쓰기/.test(k6.why), '띄어쓰기 섞임 = 다시 붙여 넣기', k6); }
