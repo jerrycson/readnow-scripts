@@ -18,6 +18,8 @@ function fakeNv() { const S = { log: [], tok: null, ip: false, r429: 0, r401: 0,
   const srv = http.createServer((q, s) => { const u = new URL(q.url, 'http://x'); let b = ''; q.on('data', (c) => (b += c)); q.on('end', () => {
       const J = (code, o) => { s.writeHead(code, { 'Content-Type': 'application/json;charset=UTF-8' }); s.end(JSON.stringify(o)); }; S.log.push({ m: q.method, p: u.pathname, q: u.search, auth: q.headers.authorization || null, b });
       if (u.pathname === '/img') { S.imgGet = (S.imgGet || 0) + 1; s.writeHead(200, { 'Content-Type': 'image/jpeg' }); return s.end(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 0xff, 0xd9])); } /* (naver2) 사진 받기 대역(RN_COL2_NVIMG) */
+      if (u.pathname === '/myip') { S.ipHits = (S.ipHits || 0) + 1; if (S.myipFail) { s.writeHead(500); return s.end('x'); } s.writeHead(200, { 'Content-Type': 'text/plain' }); return s.end(String(S.myip || '') + '\n'); } /* (nvfix1) 공인 IP 확인 대역(RN_COL2_NVIP) — 네이버 요청 수에 안 셈 */
+      if (S.onReq) { try { S.onReq(u.pathname); } catch (e) {} }
       if (S.ip) return J(403, { code: 'GW.IP_NOT_ALLOWED', message: '호출이 허용되지 않은 IP입니다.', traceId: 't1' });
       if (u.pathname === '/v1/oauth2/token') { const f = new URLSearchParams(b); S.tokN++; const want = B.nvSign(ID, SECRET, f.get('timestamp')); if (f.get('client_id') !== ID || f.get('client_secret_sign') !== want || f.get('grant_type') !== 'client_credentials' || f.get('type') !== 'SELF') return J(400, { code: 'BAD', message: 'client_secret_sign 불일치' }); S.tok = 'TOK' + Math.random().toString(36).slice(2); return J(200, { access_token: S.tok, expires_in: 10800, token_type: 'Bearer' }); }
       if (q.headers.authorization !== 'Bearer ' + S.tok) return J(401, { code: 'GW.AUTHN', message: '요청을 보낼 권한이 없습니다.' });
@@ -57,12 +59,20 @@ const allText = (dir) => { let t = ''; const walk = (d) => { for (const f of fs.
     const op = g.ok && g.body.originProduct; ok(g.ok && op.saleType === 'OLD' && op.statusType === 'SALE' && op.detailAttribute.productInfoProvidedNotice.productInfoProvidedNoticeType === 'BOOKS' && op.detailAttribute.isbnInfo.isbn13.length === 13 && op.detailAttribute.bookInfo.publishDay === '2020-03-15' && op.detailAttribute.bookInfo.authors.length === 2 && op.images.optionalImages.length === 1 && op.detailAttribute.sellerCodeInfo.sellerManagementCode === 'SKU1' && op.deliveryInfo.deliveryFee.deliveryFeeType === 'PAID' && /\[중고-상\]$/.test(op.name), '등록 몸 — 중고(OLD)·BOOKS 고시·ISBN·출간일·저자 둘·사진·관리코드=SKU·유료 배송·이름 끝 [중고-상]', op && op.name);
     ok(/API 호출 IP/.test(NVM.nvErr(403, { code: 'GW.IP_NOT_ALLOWED' }).msg) && NVM.nvErr(401, { code: 'GW.AUTHN' }).auth && NVM.nvErr(429, {}).rate, '게이트웨이 오류 → 한국어 까닭·할 일');
     ok(NVM.kstIso(Date.UTC(2026, 10, 11, 0, 0, 0, 5)) === '2026-11-11T09:00:00.005+09:00', '날짜 꼴 yyyy-MM-ddTHH:mm:ss.SSS+09:00(원문 restful-api)'); }
+  { const W = { m: 35, name: 'Wi-Fi', desc: 'Intel(R) Wi-Fi 6 AX201', media: 9, pmt: 'Native 802.11', itype: 71 }; const K = NVM.netKind; /* (nvfix1) 🛑 나가는 길 가르기 */
+    ok(K(W) === 'wifi' && K({ ...W, media: 0, pmt: '' }) === 'unknown' && K({ ...W, itype: 6 }) !== 'wifi' && K({ desc: 'Remote NDIS based Internet Sharing Device', itype: 6 }) === 'tether' && K({ desc: 'Apple Mobile Device Ethernet', itype: 6, media: 14 }) === 'tether' && K({ desc: 'Bluetooth Device (Personal Area Network)', media: 10 }) === 'tether' && K({ ...W, desc: 'Microsoft Wi-Fi Direct Virtual Adapter' }) === 'tether' && K({ desc: 'Realtek PCIe GbE', itype: 6, media: 14 }) === 'wired' && K(null) === 'unknown', '길 가르기 — 와이파이(802.11·무선 71)만 와이파이 · RNDIS·애플·블루투스·Wi-Fi Direct = 테더링 · 이더넷 = 유선 · 모르면 모름');
+    const P = NVM.netPick; ok(P([W]).ok && !P(null).ok && !P([]).ok && !P([{ ...W, m: 40 }, { desc: 'Remote NDIS', itype: 6, m: 10 }]).ok && P([W, { desc: 'Remote NDIS', itype: 6, m: 90 }]).ok && !P([W, { desc: 'Remote NDIS', itype: 6, m: 35 }]).ok && !P([{ m: 'x' }]).ok, '가장 앞 길이 와이파이일 때만 · 같은 우선순위에 다른 길이 있으면 막음 · 목록 없음/빔 = 막음');
+    ok(NVM.ipv4(' 203.0.113.7\n') === '203.0.113.7' && !NVM.ipv4('256.1.1.1') && !NVM.ipv4('<html>') && !NVM.ipv4(''), '공인 IP 꼴 확인'); }
 
   const F = await fakeNv(); const D = fs.mkdtempSync(path.join(os.tmpdir(), 'col2nv_')); fs.mkdirSync(D + '/bin', { recursive: true });
   fs.writeFileSync(D + '/bin/dpapi', `#!/usr/bin/env node
 const A=process.argv;const act=A[A.indexOf('-Act')+1];let t='';process.stdin.on('data',(c)=>t+=c);process.stdin.on('end',()=>{const k=Buffer.from('rn3-test-key');const x=(b)=>Buffer.from(b.map((v,i)=>v^k[i%k.length]));
 if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toString('base64'));else process.stdout.write('ok:'+x([...Buffer.from(t.trim(),'base64')]).toString('utf8'))});`); fs.chmodSync(D + '/bin/dpapi', 0o755);
-  const env = { RN_COL2_NV: F.base, RN_COL2_DPAPI: D + '/bin/dpapi', RN_COL2_NVIMG: F.base + '/img' }; const cfg0 = { on: false, y24: false, al: false, auto: false, side: false, headless: true, pcSrc: 'pc', nvcfg: { minGapMs: 0, ordMin: 0.02, prdH: 0.0005, cool429Sec: 1 } };
+  /* (nvfix1) 🛑 와이파이 문 대역 — 경로 파일(RN_COL2_NET · 바꾸면 다음 요청부터)과 공인 IP 확인(RN_COL2_NVIP) · 등록 고정 IP = nvcfg.ip */
+  const NETF = D + '/net.json'; const WIFI = [{ m: 35, name: 'Wi-Fi', desc: 'Intel(R) Wi-Fi 6 AX201 160MHz', media: 9, pmt: 'Native 802.11', itype: 71, pnp: 'PCI\\VEN_8086', gw: '192.168.0.1', ip: '192.168.0.20' }];
+  const TETH = [{ m: 25, name: '이더넷 3', desc: 'Remote NDIS based Internet Sharing Device', media: 0, pmt: 'Unspecified', itype: 6, pnp: 'USB\\VID_04E8' }, ...WIFI]; const net = (v) => fs.writeFileSync(NETF, JSON.stringify(v)); net(WIFI); F.S.myip = '203.0.113.7';
+  const nvN = () => F.S.log.filter((x) => x.p !== '/img' && x.p !== '/myip').length; /* 네이버(가짜) 요청 수 */
+  const env = { RN_COL2_NV: F.base, RN_COL2_DPAPI: D + '/bin/dpapi', RN_COL2_NVIMG: F.base + '/img', RN_COL2_NET: NETF, RN_COL2_NVIP: F.base + '/myip' }; const cfg0 = { on: false, y24: false, al: false, auto: false, side: false, headless: true, pcSrc: 'pc', nvcfg: { ip: '203.0.113.7', minGapMs: 0, ordMin: 0.02, prdH: 0.0005, cool429Sec: 1 } };
 
   console.log('③ 로거가 아닌 PC');
   { const H = await L.startHelper({ dir: D + '/office', port: L.PORT + 7, cfg: { ...cfg0, pc: 'HOME' }, env });
@@ -118,6 +128,37 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
   /* IP 막힘 */
   { F.S.ip = true; const r = await H.api('POST', '/nv/cmd', { k: 'test' }); F.S.ip = false; ok(r.j && r.j.test && r.j.test.ok === false && r.j.test.ip && /API 호출 IP/.test(r.j.test.msg), 'IP 막힘 — 로거 공인 IP를 넣으라는 안내', r.j && r.j.test && r.j.test.msg);
     const r2 = await H.api('POST', '/nv/cmd', { k: 'test' }); ok(r2.j && r2.j.test && r2.j.test.ok, '다시 시험 — 맞음'); }
+  /* (nvfix1 · 정범님 11/11 절대 지시) 🛑 와이파이만 — 테더링·모름이면 바깥 요청 0건 */
+  console.log('⑤ 🛑 와이파이 문');
+  { const blockCase = async (name, setup, re, wantIp0) => { await setup(); const n0 = nvN(), i0 = F.S.ipHits || 0; const r = await H.api('POST', '/nv/cmd', { k: 'test' }); await wait(2500); /* 그사이 저절로 도는 주문·상품 읽기도 막혀야 함 */
+      const s = (await H.api('GET', '/nv/st')).j.nv; const dn = nvN() - n0, di = (F.S.ipHits || 0) - i0;
+      ok(r.j && r.j.test && r.j.test.ok === false && /🛑 와이파이 아님 — 네이버 일 멈춤/.test(r.j.test.msg) && re.test(r.j.test.msg) && dn === 0 && (wantIp0 ? di === 0 : true) && s.net && s.net.ok === false && re.test(s.net.why), `${name} — 네이버 요청 0건${wantIp0 ? ' · 공인 IP 확인도 0건' : ''} · 상태에 까닭`, { dn, di, msg: r.j && r.j.test && r.j.test.msg, net: s.net }); return { dn, di }; };
+    await blockCase('휴대폰 USB 테더링(RNDIS)이 먼저', () => net(TETH), /휴대폰 테더링/, true);
+    await blockCase('블루투스 테더링', () => net([{ m: 20, name: '블루투스 네트워크 연결', desc: 'Bluetooth Device (Personal Area Network)', media: 10, itype: 6 }, ...WIFI]), /휴대폰 테더링/, true);
+    await blockCase('아이폰 USB(Apple Mobile Device Ethernet)', () => net([{ m: 20, name: '이더넷 2', desc: 'Apple Mobile Device Ethernet', media: 14, pmt: '802.3', itype: 6 }]), /휴대폰 테더링/, true);
+    await blockCase('길을 모름(경로 읽기 실패)', () => net({ fail: true }), /읽지 못함/, true);
+    await blockCase('나가는 길 없음', () => net([]), /기본 경로/, true);
+    await blockCase('유선(이더넷)', () => net([{ m: 15, name: '이더넷', desc: 'Realtek PCIe GbE Family Controller', media: 14, pmt: '802.3', itype: 6 }]), /유선/, true);
+    await blockCase('와이파이와 테더링이 같은 우선순위', () => net([{ ...WIFI[0], m: 30 }, { ...TETH[0], m: 30 }]), /같은 우선순위/, true);
+    await blockCase('와이파이지만 공인 IP가 등록한 고정 IP와 다름(휴대폰 핫스팟 등)', () => { net(WIFI); F.S.myip = '198.51.100.44'; }, /198\.51\.100\.44가 등록한 고정 IP 203\.0\.113\.7와 다름/, false);
+    await blockCase('와이파이지만 공인 IP 확인 실패', () => { F.S.myip = '203.0.113.7'; F.S.myipFail = true; }, /공인 IP 확인 실패/, false);
+    F.S.myipFail = false;
+    { const b = await H.api('POST', '/nv/cmd', { k: 'ip', ip: '1.2.3' }); ok(b.j && b.j.ok === false, '고정 IP 꼴이 아니면 거절', b.j); const g = await H.api('POST', '/nv/cmd', { k: 'ip', ip: '198.51.100.9', by: '시험' }); ok(g.j && g.j.ok && g.j.nv.ipReg === '198.51.100.9', '등록 고정 IP 바꾸기(웹앱 칸) — 상태에 보임', g.j && g.j.nv && g.j.nv.ipReg); }
+    await blockCase('등록 고정 IP를 바꾼 뒤 지금 IP와 다름', () => {}, /203\.0\.113\.7가 등록한 고정 IP 198\.51\.100\.9와 다름/, false);
+    await H.api('POST', '/nv/cmd', { k: 'ip', ip: '203.0.113.7', by: '시험' });
+    { const n0 = nvN(); const r = await H.api('POST', '/nv/cmd', { k: 'test' }); const s = (await H.api('GET', '/nv/st')).j.nv; ok(r.j && r.j.test && r.j.test.ok && nvN() > n0 && s.net && s.net.ok && s.net.kind === 'wifi' && s.net.ip === '203.0.113.7', '와이파이 + 등록 IP 같음 — 다시 부름(🟢)', { msg: r.j && r.j.test && r.j.test.msg, net: s.net }); }
+    /* 중간에 바뀜 — 발주 확인 둘을 맡겨 첫째가 네이버에 닿는 순간 테더링으로 → 둘째는 보내지 않고 줄에서 기다림 → 와이파이로 돌아오면 이어서 */
+    await H.api('POST', '/nv/cmd', { k: 'write', on: true, by: '시험' }); const c0 = F.S.confirmed.length; let flip = 0; F.S.onReq = (p) => { if (/confirm$/.test(p) && !flip) { flip = 1; net(TETH); } };
+    const j1 = await H.api('POST', '/nv/cmd', { k: 'job', job: { id: 'conf|PO1|mid', k: 'confirm', ids: ['PO1'] } }); const j2 = await H.api('POST', '/nv/cmd', { k: 'job', job: { id: 'conf|PO2|mid', k: 'confirm', ids: ['PO2'] } });
+    await until(async () => flip, 40); const n1 = nvN(); await wait(3000); const s1 = (await H.api('GET', '/nv/st')).j.nv; const f1 = await H.api('POST', '/nv/feed', {}); const jr2 = (f1.j.jres || {})['conf|PO2|mid'];
+    ok(j1.j.queued && j2.j.queued && F.S.confirmed.length === c0 + 1 && nvN() === n1 && s1.jobs === 1 && jr2 && jr2.st === 'queued' && /와이파이 아님/.test(jr2.wait || '') && s1.net && !s1.net.ok && !(f1.j.out || []).some((x) => x.c === 'col2_naver_jobs' && x.v.id === 'conf|PO2|mid'), '중간에 테더링으로 바뀜 — 그 자리에서 멈춤 · 남은 발주 확인은 대기(실패로 안 남김) · 그 뒤 네이버 요청 0건', { c: F.S.confirmed.length - c0, dn: nvN() - n1, jobs: s1.jobs, jr2, net: s1.net });
+    F.S.onReq = null; net(WIFI); const okB = await until(async () => F.S.confirmed.length === c0 + 2, 60); const s2 = (await H.api('GET', '/nv/st')).j.nv;
+    ok(okB && s2.jobs === 0 && s2.net && s2.net.ok, '와이파이로 돌아오면 기다리던 일을 이어서 한 번만 함', { c: F.S.confirmed.length - c0, jobs: s2.jobs });
+    await H.api('POST', '/nv/cmd', { k: 'write', on: false, by: '시험' });
+    /* 사진 저장소 요청도 문 뒤 — 테더링이면 사진도 안 받음 */
+    await H.api('POST', '/nv/cmd', { k: 'write', on: true, by: '시험' }); net(TETH); const g0 = F.S.imgGet || 0; const n2 = nvN();
+    await H.api('POST', '/nv/cmd', { k: 'job', job: { id: 'nvreg:L9:1', k: 'reg', book: { title: '등록 시험 책', isbn13: '9788900000011', author: '저자1', publisher: '출판사', pubDate: '2020-03-15', grade: '상', price: 8000, qty: 1, sku: 'SKU9' }, g: { leafCategoryId: '50005000', deliveryCompany: 'HYUNDAI', baseFee: 0, returnFee: 3000, exchangeFee: 6000, asTel: '010-0000-0000', asGuide: '문의', shippingAddressId: 101, returnAddressId: 102 }, imgs: ['https://firebasestorage.googleapis.com/v0/b/readnow-3a385.firebasestorage.app/o/p%2F2.jpg?alt=media'] } });
+    await wait(3000); ok((F.S.imgGet || 0) === g0 && nvN() === n2, '테더링이면 사진 저장소에서도 안 받음 · 네이버 0건', { img: (F.S.imgGet || 0) - g0, dn: nvN() - n2 }); net(WIFI); await wait(2500); await H.api('POST', '/nv/cmd', { k: 'write', on: false, by: '시험' }); }
   /* 값이 어디에도 없음 */
   { await H.stop(); const t = allText(HOMEd) + H.out(); ok(!t.includes(SECRET) && !t.includes(ID) && !t.includes('TOK') , '자료 폴더(설정·상태·기록·journal)·도우미 출력 어디에도 시크릿·아이디·토큰 없음'); }
   F.srv.close(); try { fs.rmSync(D, { recursive: true, force: true }); } catch (e) {}

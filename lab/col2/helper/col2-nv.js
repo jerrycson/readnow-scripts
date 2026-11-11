@@ -32,6 +32,21 @@ function nvOrd(x) { const o = (x && x.order) || {}, p = (x && x.productOrder) ||
 function nvPrd(c) { const L = []; for (const ch of (c && c.channelProducts) || []) { if (ch.channelServiceType && ch.channelServiceType !== 'STOREFARM') continue;
     L.push({ originNo: String(c.originProductNo || ch.originProductNo || ''), no: String(ch.channelProductNo || ''), name: String(ch.name || '').slice(0, 200), sku: ch.sellerManagementCode ? String(ch.sellerManagementCode) : null, price: num(ch.salePrice), disc: ch.discountedPrice != null ? num(ch.discountedPrice) : null, qty: num(ch.stockQuantity), st: String(ch.statusType || ''), disp: ch.channelProductDisplayStatusType || null, live: ch.statusType === 'SALE' && ch.channelProductDisplayStatusType !== 'SUSPENSION', cat: ch.categoryId || null, regAt: ch.regDate || null, modAt: ch.modifiedDate || null }); }
   return L; }
+/* (11/11 nvfix1 · 정범님 절대 지시 '로거 번외가 네이버 일을 할 때는 절대로 테더링을 쓰지 않고 오로지 와이파이만') 🛑 나가는 길 가르기 — 순수 셈(시험이 바로 부름)
+ *  L = Windows 기본 경로(0.0.0.0/0) 목록 [{ m: 경로+인터페이스 metric, name, desc, media(NdisPhysicalMedium), pmt(PhysicalMediaType), itype(InterfaceType), pnp, gw, ip }] — 연결된(Up) 것만
+ *  와이파이 = 802.11(media 9 또는 PhysicalMediaType에 802.11) 이고 InterfaceType 71(무선) 이고 이름·설명에 테더링 장치 낌새(RNDIS·블루투스·Android·iPhone·Apple Mobile·휴대폰·핫스팟·Wi-Fi Direct·모바일 광대역)가 없을 때만
+ *  가장 낮은 metric 길이 와이파이여도 같은 metric에 다른 길이 있으면 모름(어느 길로 나갈지 Windows 마음) — 모르면 막음(fail-closed) */
+const NET_TETHER = /rndis|remote ndis|bluetooth|android|iphone|apple mobile|ipheth|tether|테더링|휴대폰|핫스팟|hotspot|wi-?fi direct|mobile broadband|모바일 광대역|wwan|usb ethernet|usb 10\/100|samsung|galaxy|pixel|xiaomi|lg-?electronics/i;
+function netKind(x) { if (!x || typeof x !== 'object') return 'unknown'; const t = `${x.name || ''} ${x.desc || ''} ${x.pnp || ''}`; if (NET_TETHER.test(t) || +x.media === 10 || +x.media === 8) return 'tether';
+  const w = (+x.media === 9 || /802\.11/i.test(String(x.pmt || ''))) && +x.itype === 71; if (w) return 'wifi'; if (+x.itype === 6 || +x.media === 14 || /802\.3/i.test(String(x.pmt || ''))) return 'wired'; return 'unknown'; }
+const NET_KO = { wifi: '와이파이', tether: '휴대폰 테더링', wired: '유선(이더넷)', unknown: '알 수 없는 길' };
+function netPick(L) { if (!Array.isArray(L)) return { ok: false, kind: 'unknown', why: '나가는 길을 읽지 못함' }; const A = L.filter((x) => x && Number.isFinite(+x.m)).sort((a, b) => +a.m - +b.m);
+  if (!A.length) return { ok: false, kind: 'unknown', why: '나가는 길(기본 경로)이 없음 — 인터넷 연결 없음' }; const b = A[0]; const k = netKind(b); const tie = A.filter((x) => +x.m === +b.m && x !== b && netKind(x) !== 'wifi');
+  const nm = String(b.name || b.desc || '').slice(0, 60);
+  if (k !== 'wifi') return { ok: false, kind: k, name: nm, why: `지금 나가는 길이 ${NET_KO[k]}(${nm})` };
+  if (tie.length) return { ok: false, kind: 'unknown', name: nm, why: `와이파이(${nm})와 ${NET_KO[netKind(tie[0])]}(${String(tie[0].name || tie[0].desc || '').slice(0, 40)})가 같은 우선순위 — 어느 길로 나갈지 모름` };
+  return { ok: true, kind: 'wifi', name: nm, gw: b.gw || null, lip: b.ip || null }; }
+const ipv4 = (t) => { const m = String(t || '').trim().match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/); return m && m.slice(1).every((x) => +x <= 255) ? m.slice(1).map((x) => String(+x)).join('.') : null; };
 /* 우리 상품 한 권 → 원상품 등록 몸(POST /v2/products) — 원문 RAW_API.md '상품 등록 요청 칸 전체 나무' · 중고(saleType OLD) · 상품정보제공고시 BOOKS · ISBN(도서_중고는 isbn13 필수)
  * b = { title, isbn13, author, publisher, pubDate, pages, size, grade, gradeNote, price, qty, sku, images:[네이버에 올린 주소], desc }
  * g = 판매자 설정 { leafCategoryId, deliveryCompany, baseFee, freeOver, returnFee, exchangeFee, asTel, asGuide, returnAddressId, shippingAddressId }
@@ -56,6 +71,7 @@ function nvBody(b, g) { b = b || {}; g = g || {}; const miss = []; const need = 
   return { ok: true, body }; }
 /* 게이트웨이 오류 → 한국어 까닭·할 일(원문 docs/trouble-shooting 게이트웨이 오류 표) */
 function nvErr(http, j) { const c = String((j && j.code) || ''); const tr = j && j.traceId ? ` · 추적 번호 ${String(j.traceId).slice(0, 60)}` : '';
+  if (c === 'NOWIFI') return { code: c, msg: String(j.message || '🛑 와이파이 아님 — 네이버 일 멈춤').slice(0, 240), later: true, net: true }; /* (nvfix1) 바깥에 안 나감 — 길이 와이파이·등록 IP로 돌아오면 저절로 다시 */
   if (c === 'GW.IP_NOT_ALLOWED') return { code: c, msg: '호출이 허용되지 않은 IP — 커머스API센터 › 애플리케이션 › API 호출 IP에 로거 PC 공인 IP를 넣어 주세요' + tr, ip: true };
   if (c === 'GW.AUTHN' || http === 401) return { code: c || 'AUTHN', msg: '인증 실패 — 애플리케이션 ID·시크릿을 다시 확인해 주세요(커머스API센터 › 애플리케이션 상세)' + tr, auth: true };
   if (c === 'GW.RATE_LIMIT' || c === 'GW.QUOTA_LIMIT' || http === 429) return { code: c || '429', msg: '요청이 많아 잠시 쉼(네이버 요청량 제한)' + tr, rate: true };
@@ -74,8 +90,8 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
   const D = path.join(HOME, 'cred'), OLD = path.join(D, 'old'); const CF = path.join(D, 'naver.dat'), KF = path.join(D, 'nv-key.dat'); const SF = path.join(HOME, 'nv-state.json'), JDF = path.join(HOME, 'nv-jdone.json'), INVF = path.join(HOME, 'nv-inv.json');
   const rd = (f, d) => { try { const v = JSON.parse(fs.readFileSync(f, 'utf8')); return v && typeof v === 'object' ? v : d; } catch (e) { return d; } };
   const wr = (f, v) => { try { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f + '.t', JSON.stringify(v)); fs.renameSync(f + '.t', f); return true; } catch (e) { log('네이버 파일 저장 실패: ' + e.message); return false; } };
-  const ST = rd(SF, {}); const st = { ordCur: ST.ordCur || 0, ordAt: ST.ordAt || 0, ordN: ST.ordN || 0, ordErr: ST.ordErr || null, prdAt: ST.prdAt || 0, prdN: ST.prdN || 0, prdErr: ST.prdErr || null, test: ST.test || null, write: ST.write || { on: false }, seen: ST.seen || [], sig: ST.sig || {}, cats: ST.cats || null };
-  const save = () => wr(SF, { ordCur: st.ordCur, ordAt: st.ordAt, ordN: st.ordN, ordErr: st.ordErr, prdAt: st.prdAt, prdN: st.prdN, prdErr: st.prdErr, test: st.test, write: st.write, seen: st.seen.slice(-60), sig: st.sig, cats: st.cats });
+  const ST = rd(SF, {}); const st = { ordCur: ST.ordCur || 0, ordAt: ST.ordAt || 0, ordN: ST.ordN || 0, ordErr: ST.ordErr || null, prdAt: ST.prdAt || 0, prdN: ST.prdN || 0, prdErr: ST.prdErr || null, test: ST.test || null, write: ST.write || { on: false }, seen: ST.seen || [], sig: ST.sig || {}, cats: ST.cats || null, ip: ST.ip || null };
+  const save = () => wr(SF, { ordCur: st.ordCur, ordAt: st.ordAt, ordN: st.ordN, ordErr: st.ordErr, prdAt: st.prdAt, prdN: st.prdN, prdErr: st.prdErr, test: st.test, write: st.write, seen: st.seen.slice(-60), sig: st.sig, cats: st.cats, ip: st.ip });
   const M = { key: null, pub: null, cred: null, tok: null, tokExp: 0, last: 0, cool: 0, coolN: 0, busy: false, q: [], qk: new Set(), jobs: [], jres: {}, jd: rd(JDF, {}), inv: rd(INVF, {}), calls: { d: '', n: 0 }, t: null, step: '' };
 
   /* ── Windows DPAPI(그 PC 같은 사용자만 풂) — col2-cred.js와 같은 잠그개(PS) · 값은 표준 입력으로만 ── */
@@ -104,8 +120,28 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
   /* ── 부르기(속도·쉼·토큰) ── */
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const kday = () => new Date(now() + 9 * 3600e3).toISOString().slice(0, 10);
+  /* ── 🛑 와이파이 문(정범님 11/11 절대 지시) — 네이버·사진 저장소로 나가는 요청 하나하나 바로 앞에서 ①기본 경로가 와이파이인지(Windows 경로·어댑터 · 이 PC 안에서만 읽음) ②지금 공인 IP가 네이버에 등록한 고정 IP와 같은지
+   *  ①이 와이파이가 아니면 바깥 요청 0건(공인 IP 확인도 안 함) · 하나라도 모르거나 다르면 부르지 않음(fail-closed) · 운영 수집기가 넘기는 '테더링 문'은 믿지 않음(이 PC가 직접 확인)
+   *  공인 IP 확인은 바깥 IP 확인 주소 둘(api.ipify.org → checkip.amazonaws.com)만 · 그 답도 와이파이 확인 뒤에만 · 결과 M.net(상태·화면 '🛑 와이파이 아님 — 네이버 일 멈춤') */
+  const NET_PS = "$ErrorActionPreference='Stop'; $o=@(); foreach($r in @(Get-NetRoute -AddressFamily IPv4 -DestinationPrefix '0.0.0.0/0')){ $a=Get-NetAdapter -InterfaceIndex $r.ifIndex -ErrorAction SilentlyContinue; $i=Get-NetIPInterface -InterfaceIndex $r.ifIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue; if(-not $a -or -not $i -or $a.Status -ne 'Up' -or [string]$i.ConnectionState -ne 'Connected'){ continue }; $ip=(Get-NetIPAddress -InterfaceIndex $r.ifIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue | Select-Object -First 1).IPAddress; $o+=[pscustomobject]@{ m=([int]$r.RouteMetric+[int]$i.InterfaceMetric); name=[string]$a.Name; desc=[string]$a.InterfaceDescription; media=[int]$a.NdisPhysicalMedium; pmt=[string]$a.PhysicalMediaType; itype=[int]$a.InterfaceType; pnp=[string]$a.PnpDeviceID; gw=[string]$r.NextHop; ip=[string]$ip } }; 'ok:' + (ConvertTo-Json -Compress -Depth 3 -InputObject @($o))";
+  function netRoutes() { return new Promise((res) => {
+      if (TEST) { const f = process.env.RN_COL2_NET; if (!f) return res(null); try { const v = JSON.parse(fs.readFileSync(f, 'utf8')); return res(v && v.fail ? null : v); } catch (e) { return res(null); } } /* 시험: 파일 내용 = 경로 목록(바꾸면 다음 요청부터 반영) · 없거나 fail이면 모름 */
+      if (process.platform !== 'win32') return res(null);
+      try { cp.execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', NET_PS], { windowsHide: true, timeout: 15000, maxBuffer: 262144 }, (e, out) => { const t = String(out || ''); const i = t.indexOf('ok:'); if (e || i < 0) return res(null); try { const v = JSON.parse(t.slice(i + 3).trim() || '[]'); res(Array.isArray(v) ? v : v && typeof v === 'object' ? [v] : null); } catch (er) { res(null); } }); } catch (e) { res(null); } }); }
+  async function pubIp() { const U = TEST ? [process.env.RN_COL2_NVIP].filter(Boolean) : ['https://api.ipify.org', 'https://checkip.amazonaws.com']; M.ipN = (M.ipN || 0);
+    for (const u of U) { try { const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 8000); M.ipN++; const r = await fetch(u, { signal: ac.signal, redirect: 'error', cache: 'no-store' }); const t = await r.text(); clearTimeout(tm); const ip = r.ok ? ipv4(t) : null; if (ip) return ip; } catch (e) {} } return null; }
+  const regIp = () => ipv4(st.ip) || ipv4(NC().ip);
+  async function netGate(what) { const t0 = now(); const fin = (o) => { const was = M.net; M.net = { ...o, at: now(), ms: now() - t0, what: String(what || '').slice(0, 40) }; if (!o.ok && (!was || was.ok || was.why !== o.why)) note(`🛑 와이파이 아님 — 네이버 일 멈춤: ${o.why}`, { k: 'rest', l: 'warn', m: '네이버' }); if (o.ok && was && !was.ok) note('🟢 와이파이·등록 IP 확인 — 네이버 일 다시', { k: 'sys', l: 'ok', m: '네이버' }); M.netN = (M.netN || 0) + 1; return o; };
+    const p = netPick(await netRoutes()); if (!p.ok) return fin({ ok: false, kind: p.kind, why: p.why }); /* 와이파이가 아니면 여기서 끝 — 바깥 요청 0건 */
+    const reg = regIp(); const ip = await pubIp(); if (!ip) return fin({ ok: false, kind: 'wifi', name: p.name, why: '공인 IP 확인 실패 — 지금 길을 확인하지 못해 부르지 않음' });
+    if (!reg) return fin({ ok: false, kind: 'wifi', name: p.name, ip, why: `네이버에 등록한 고정 IP를 아직 안 넣음(지금 공인 IP ${ip}) — 웹앱 ⚙ 🟩 칸 「등록한 고정 IP」` });
+    if (ip !== reg) return fin({ ok: false, kind: 'wifi', name: p.name, ip, why: `지금 공인 IP ${ip}가 등록한 고정 IP ${reg}와 다름 — 와이파이가 다른 망(휴대폰 핫스팟 등)일 수 있음` });
+    const p2 = netPick(await netRoutes()); if (!p2.ok || p2.name !== p.name) return fin({ ok: false, kind: p2.kind, why: p2.ok ? `확인하는 사이 길이 바뀜(${p.name} → ${p2.name})` : p2.why }); /* 공인 IP를 묻는 사이에 바뀌었나 */
+    return fin({ ok: true, kind: 'wifi', name: p.name, ip }); }
+  const netBlock = (g) => ({ http: 0, j: { code: 'NOWIFI', message: '🛑 와이파이 아님 — 네이버 일 멈춤: ' + g.why }, net: true });
   let chain = Promise.resolve(); /* 한 번에 하나씩 */
   function raw(method, p, opt) { const run = async () => { const gap = Math.max(TEST ? 0 : 300, +NC().minGapMs || 600); const w = M.last + gap - now(); if (w > 0) await sleep(w); if (M.cool > now()) return { http: 0, j: { code: 'COOL' }, cool: true };
+      { const g = await netGate(p.split('?')[0]); if (!g.ok) return netBlock(g); } /* 🛑 바로 앞에서 — 와이파이·등록 IP가 아니면 네이버에 한 건도 안 보냄 */
       M.last = now(); if (M.calls.d !== kday()) M.calls = { d: kday(), n: 0 }; M.calls.n++;
       const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), (opt && opt.ms) || 30000); let r, txt = '';
       try { r = await fetch(BASE() + p, { method, headers: { Accept: 'application/json;charset=UTF-8', ...((opt && opt.headers) || {}) }, body: opt && opt.body, signal: ac.signal, redirect: 'error' }); txt = await r.text(); } catch (e) { clearTimeout(tm); return { http: 0, j: { code: 'NET', message: '네이버에 닿지 못함(' + (e.name === 'AbortError' ? '시간 넘음' : '연결') + ')' } }; }
@@ -118,16 +154,16 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
     const body = new URLSearchParams({ client_id: cr.id, timestamp: String(ts), client_secret_sign: sign, grant_type: 'client_credentials', type: 'SELF' }).toString(); sign = null;
     const r = await raw('POST', '/v1/oauth2/token', { body, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
     if (r.ok && r.j && r.j.access_token) { M.tok = String(r.j.access_token); M.tokExp = now() + Math.max(60, +r.j.expires_in || 10800) * 1000; return { ok: true }; }
-    M.tok = null; const e = r.cool ? { code: 'COOL', msg: '요청량 제한으로 쉬는 중' } : nvErr(r.http, r.j); return { ok: false, err: e.msg, code: e.code, auth: !!e.auth, ip: !!e.ip, later: !!(e.later || e.rate || r.http === 0) }; }
-  async function call(method, p, body, q) { const t = await token(); if (!t.ok) return { ok: false, err: t.err, code: t.code, ip: t.ip };
+    if (!r.net) M.tok = null; const e = r.cool ? { code: 'COOL', msg: '요청량 제한으로 쉬는 중' } : nvErr(r.http, r.j); return { ok: false, err: e.msg, code: e.code, auth: !!e.auth, ip: !!e.ip, later: !!(e.later || e.rate || r.http === 0), net: !!r.net }; }
+  async function call(method, p, body, q) { const t = await token(); if (!t.ok) return { ok: false, err: t.err, code: t.code, ip: t.ip, net: !!t.net, later: !!t.later };
     const qs = q ? '?' + new URLSearchParams(Object.entries(q).filter(([, v]) => v != null && v !== '').flatMap(([k, v]) => (Array.isArray(v) ? v.map((x) => [k, x]) : [[k, v]]))).toString() : '';
     const go = () => raw(method, p + qs, { body: body == null ? undefined : JSON.stringify(body), headers: { Authorization: 'Bearer ' + M.tok, ...(body == null ? {} : { 'Content-Type': 'application/json' }) } });
     let r = await go(); if (r.http === 401) { const t2 = await token(true); if (t2.ok) r = await go(); } /* 원문 docs/auth 'API 인증 실패 후 재시도' */
-    if (r.ok) return { ok: true, j: r.j }; const e = r.cool ? { code: 'COOL', msg: '요청량 제한으로 쉬는 중' } : nvErr(r.http, r.j); return { ok: false, err: e.msg, code: e.code, ip: !!e.ip, later: !!(e.later || e.rate || r.cool), http: r.http, j: r.j }; }
+    if (r.ok) return { ok: true, j: r.j }; const e = r.cool ? { code: 'COOL', msg: '요청량 제한으로 쉬는 중' } : nvErr(r.http, r.j); return { ok: false, err: e.msg, code: e.code, ip: !!e.ip, later: !!(e.later || e.rate || r.cool), http: r.http, j: r.j, net: !!r.net }; }
 
   /* ── 연결 시험 = 토큰 받기 + 상품 1건 조회(읽기만) ── */
   async function test(cr, why) { M.step = '연결 시험'; const t0 = now(); const t = await token(true, cr); let res;
-    if (!t.ok) res = { ok: false, at: now(), msg: t.err, code: t.code || null, auth: !!t.auth, ip: !!t.ip, later: !!t.later };
+    if (!t.ok) res = { ok: false, at: now(), msg: t.err, code: t.code || null, auth: !!t.auth, ip: !!t.ip, later: !!t.later, ...(t.net ? { net: true } : {}) };
     else { M.cred = cr || M.cred; const r = await call('POST', '/v1/products/search', { page: 1, size: 1 }); res = r.ok ? { ok: true, at: now(), msg: `✅ 연결됨 — 토큰 받음 · 상품 목록 읽기 맞음(전체 ${num(r.j && r.j.totalElements)}건)`, n: num(r.j && r.j.totalElements), ms: now() - t0 } : { ok: false, at: now(), msg: '토큰은 받았으나 상품 읽기 실패 — ' + r.err, code: r.code || null, ip: !!r.ip }; }
     st.test = { ...res, why: String(why || '').slice(0, 40) }; save(); M.step = ''; note(`🟩 네이버 연결 시험 — ${res.ok ? '맞음' : '실패: ' + res.msg}`, { k: 'sys', l: res.ok ? 'ok' : 'warn', m: '네이버' }); return res; }
   /* 봉투로 받은 ID·시크릿 → 시험 → 저장 · 인증이 틀리면 저장 안 함 · IP·일시 오류면 '확인 기다림'으로 잠가 저장(다음 시험 때 확인) */
@@ -149,24 +185,24 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
   const sigOf = (v) => crypto.createHash('sha1').update(JSON.stringify(v)).digest('hex').slice(0, 12);
 
   /* ── 주문 읽기: 변경 상품 주문(last-changed-statuses · 24시간 창 · more 이어 받기) → 상세(query · 300개씩) ── */
-  async function pullOrd(why) { const C = NC(); const t0 = now(); let from = st.ordCur || t0 - (+C.firstH || 72) * 3600e3; const ids = new Set(); let calls = 0, more = null, err = null;
+  async function pullOrd(why) { const C = NC(); const t0 = now(); let from = st.ordCur || t0 - (+C.firstH || 72) * 3600e3; const ids = new Set(); let calls = 0, more = null, err = null, net = false;
     M.step = '주문 변경 읽기';
     while (calls < (+C.maxCalls || 60) / 2 && from < t0) { const to = Math.min(from + 24 * 3600e3 - 1, t0); const q = { lastChangedFrom: kstIso(more ? more.from : from), lastChangedTo: kstIso(to), ...(more ? { moreSequence: more.seq } : {}) };
-      const r = await call('GET', '/v1/pay-order/seller/product-orders/last-changed-statuses', null, q); calls++; if (!r.ok) { err = r.err; break; }
+      const r = await call('GET', '/v1/pay-order/seller/product-orders/last-changed-statuses', null, q); calls++; if (!r.ok) { err = r.err; net = !!r.net; break; }
       const d = (r.j && r.j.data) || {}; for (const x of d.lastChangeStatuses || []) if (x && x.productOrderId) ids.add(String(x.productOrderId));
       if (d.more && d.more.moreFrom && d.more.moreSequence) { more = { from: Date.parse(d.more.moreFrom) || from, seq: String(d.more.moreSequence) }; continue; } more = null; from = to + 1; }
     const L = [...ids]; let n = 0;
-    for (let i = 0; i < L.length && !err; i += 300) { M.step = `주문 상세 ${i}/${L.length}`; const r = await call('POST', '/v1/pay-order/seller/product-orders/query', { productOrderIds: L.slice(i, i + 300), quantityClaimCompatibility: true }); if (!r.ok) { err = r.err; break; }
+    for (let i = 0; i < L.length && !err; i += 300) { M.step = `주문 상세 ${i}/${L.length}`; const r = await call('POST', '/v1/pay-order/seller/product-orders/query', { productOrderIds: L.slice(i, i + 300), quantityClaimCompatibility: true }); if (!r.ok) { err = r.err; net = !!r.net; break; }
       for (const x of (r.j && r.j.data) || []) { const v = nvOrd(x); if (!v.id) continue; v.ch = 'naver'; v.seenAt = new Date().toISOString(); const s = sigOf({ ...v, seenAt: 0 }); if (st.sig['o' + v.id] === s) continue; st.sig['o' + v.id] = s; push('crm_naver_orders', v.id, v); n++; } }
     if (!err) st.ordCur = Math.max(st.ordCur || 0, from - 5 * 60e3); /* 5분 겹쳐 읽음(같은 줄은 지문으로 거름) */
     st.ordAt = now(); st.ordN = n; st.ordErr = err; trimSig(); save(); M.step = '';
-    note(`🟩 네이버 주문 읽기 — 바뀐 상품 주문 ${L.length}건 · 새로 넘길 ${n}건${err ? ' · 실패: ' + err : ''} (${why || ''})`, { k: err ? 'err' : 'read', l: err ? 'warn' : 'detail', m: '네이버' }); return { ok: !err, n, ids: L.length, err }; }
+    note(`🟩 네이버 주문 읽기 — 바뀐 상품 주문 ${L.length}건 · 새로 넘길 ${n}건${err ? ' · 실패: ' + err : ''} (${why || ''})`, { k: err ? 'err' : 'read', l: err ? 'warn' : 'detail', m: '네이버' }); return { ok: !err, n, ids: L.length, err, net }; }
   /* ── 상품 목록 읽기(search · 100개씩 · 바뀐 줄만 넘김) ── */
-  async function pullPrd(why) { const C = NC(); let page = 1, total = 0, n = 0, err = null; M.step = '상품 목록 읽기';
-    for (; page <= Math.max(1, +C.maxCalls || 60); page++) { const r = await call('POST', '/v1/products/search', { page, size: 100, orderType: 'NO' }); if (!r.ok) { err = r.err; break; } const cs = (r.j && r.j.contents) || []; total = num(r.j && r.j.totalElements) || total;
+  async function pullPrd(why) { const C = NC(); let page = 1, total = 0, n = 0, err = null, net = false; M.step = '상품 목록 읽기';
+    for (; page <= Math.max(1, +C.maxCalls || 60); page++) { const r = await call('POST', '/v1/products/search', { page, size: 100, orderType: 'NO' }); if (!r.ok) { err = r.err; net = !!r.net; break; } const cs = (r.j && r.j.contents) || []; total = num(r.j && r.j.totalElements) || total;
       for (const c of cs) for (const v of nvPrd(c)) { if (!v.originNo) continue; const s = sigOf(v); if (st.sig['p' + v.originNo] === s) continue; st.sig['p' + v.originNo] = s; push('nv_listings', v.originNo, { ...v, ch: 'naver', seenAt: new Date().toISOString() }); n++; }
       if (cs.length < 100 || (r.j && r.j.last)) break; }
-    st.prdAt = now(); st.prdN = total; st.prdErr = err; save(); M.step = ''; note(`🟩 네이버 상품 목록 — 전체 ${total}건 · 바뀐 ${n}건${err ? ' · 실패: ' + err : ''} (${why || ''})`, { k: err ? 'err' : 'read', l: err ? 'warn' : 'detail', m: '네이버' }); return { ok: !err, total, n, err }; }
+    st.prdAt = now(); st.prdN = total; st.prdErr = err; save(); M.step = ''; note(`🟩 네이버 상품 목록 — 전체 ${total}건 · 바뀐 ${n}건${err ? ' · 실패: ' + err : ''} (${why || ''})`, { k: err ? 'err' : 'read', l: err ? 'warn' : 'detail', m: '네이버' }); return { ok: !err, total, n, err, net }; }
   const trimSig = () => { const ks = Object.keys(st.sig); if (ks.length > 20000) for (const k of ks.slice(0, ks.length - 20000)) delete st.sig[k]; };
   /* 도서 › 중고 카테고리 찾기(등록 설정용 · 읽기만) */
   async function cats() { const r = await call('GET', '/v1/categories', null, { last: true }); if (!r.ok) return { ok: false, err: r.err }; const L = (Array.isArray(r.j) ? r.j : (r.j && r.j.contents) || []).filter((c) => /^도서/.test(String(c.wholeCategoryName || '')) && /중고/.test(String(c.wholeCategoryName || ''))).slice(0, 40).map((c) => ({ id: String(c.id), n: String(c.wholeCategoryName) })); st.cats = { at: now(), L }; save(); return { ok: true, L }; }
@@ -183,7 +219,7 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
    *  원문: 등록 몸의 이미지 주소는 반드시 이 API로 올리고 받은 주소여야 함(RAW_API.md 'images') · 사진은 메모리에서만(파일로 남기지 않음) */
   const IMG_OK = /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/readnow-3a385\.firebasestorage\.app\/o\//;
   async function upImgs(urls) { const L = (urls || []).map(String).filter((u) => IMG_OK.test(u)).slice(0, 10); if (!L.length) return { ok: false, err: '사진 주소 없음(우리 사진 저장소 주소만 받음)' }; const fd = new FormData(); let n = 0;
-    for (const u of L) { try { const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 30000); const r = await fetch(TEST && process.env.RN_COL2_NVIMG ? process.env.RN_COL2_NVIMG + '?u=' + encodeURIComponent(u) : u, { signal: ac.signal, redirect: 'error' }); clearTimeout(tm); if (!r.ok) continue; const b = Buffer.from(await r.arrayBuffer()); if (!b.length || b.length > 10 * 1048576) continue; const ty = /png/i.test(r.headers.get('content-type') || '') ? 'image/png' : 'image/jpeg'; fd.append('imageFiles', new Blob([b], { type: ty }), `p${++n}.${ty === 'image/png' ? 'png' : 'jpg'}`); } catch (e) {} }
+    for (const u of L) { { const g = await netGate('사진 받기'); if (!g.ok) return { ok: false, err: '🛑 와이파이 아님 — 네이버 일 멈춤: ' + g.why, later: true, net: true }; } /* (nvfix1) 사진 저장소 요청도 하나하나 앞에서 */ try { const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 30000); const r = await fetch(TEST && process.env.RN_COL2_NVIMG ? process.env.RN_COL2_NVIMG + '?u=' + encodeURIComponent(u) : u, { signal: ac.signal, redirect: 'error' }); clearTimeout(tm); if (!r.ok) continue; const b = Buffer.from(await r.arrayBuffer()); if (!b.length || b.length > 10 * 1048576) continue; const ty = /png/i.test(r.headers.get('content-type') || '') ? 'image/png' : 'image/jpeg'; fd.append('imageFiles', new Blob([b], { type: ty }), `p${++n}.${ty === 'image/png' ? 'png' : 'jpg'}`); } catch (e) {} }
     if (!n) return { ok: false, err: '사진을 내려받지 못함' }; const t = await token(); if (!t.ok) return { ok: false, err: t.err };
     const go = () => raw('POST', '/v1/product-images/upload', { body: fd, headers: { Authorization: 'Bearer ' + M.tok }, ms: 60000 }); let r = await go(); if (r.http === 401) { const t2 = await token(true); if (t2.ok) r = await go(); }
     if (!r.ok) { const e = r.cool ? { msg: '요청량 제한으로 쉬는 중' } : nvErr(r.http, r.j); return { ok: false, err: '사진 올리기 실패 — ' + e.msg, later: !!(e.later || e.rate || r.cool) }; }
@@ -195,6 +231,7 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
     else if (j.k === 'reg') { const g = { ...(NC().reg || {}), ...(j.g || {}) }; let book = { ...(j.book || {}) }; const m0 = nvBody({ ...book, images: book.images && book.images.length ? book.images : ['x'] }, g); /* 사진 말고 빠진 칸이 있으면 사진을 올리지 않음 */
       if (!m0.ok) r = { ok: false, err: '빠진 칸: ' + m0.miss.join('·') }; else { if (!(book.images && book.images.length)) { M.step = '사진 올리기'; const u = await upImgs(j.imgs); if (u.ok) book.images = u.urls; else r = { ok: false, err: u.err, later: u.later }; }
         if (!r) { const b = nvBody(book, g); if (!b.ok) r = { ok: false, err: '빠진 칸: ' + b.miss.join('·') }; else r = await call('POST', '/v2/products', b.body); } } }
+    if (r && r.net) { M.step = ''; return { wait: true, why: r.err }; } /* (nvfix1) 길이 와이파이가 아니게 됨 — 이 할 일은 끝·실패로 남기지 않고 줄 맨 앞에서 기다림(같은 할 일 두 번 안 함 장부도 그대로) */
     /* 원문: 발주 확인·발송 처리 응답 data.successProductOrderIds / failProductOrderInfos */
     const d = (r && r.j && r.j.data) || {}; const fails = (d.failProductOrderInfos || []).map((x) => `${x.productOrderId}: ${x.message || x.code || ''}`).slice(0, 5);
     const res = r.ok && !fails.length ? { st: 'done', at: now(), ok: true, ...(j.k === 'reg' ? { originNo: r.j && r.j.originProductNo ? String(r.j.originProductNo) : null, chNo: r.j && r.j.smartstoreChannelProductNo ? String(r.j.smartstoreChannelProductNo) : null } : {}) } : { st: 'fail', at: now(), ok: false, err: (r.ok ? '일부 실패 — ' + fails.join(' · ') : r.err).slice(0, 300), later: !!r.later };
@@ -210,22 +247,24 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
   let nextOrd = 0, nextPrd = 0;
   async function tick(why) { if (M.busy || !mine()) return; M.busy = true; try { if (!(await keyReady()).ok) return; const cr = await credLoad(); if (!cr) return; if (M.cool > now()) return;
       if (st.test && st.test.auth) return; /* 인증이 틀린 값으로 되풀이해 두드리지 않음 — 새 값을 넣거나 다시 시험하면 풀림 */
-      while (M.jobs.length && wOn()) { const j = M.jobs.shift(); await jobRun(j); if (M.cool > now()) break; }
-      const C = NC(); if (now() >= nextOrd) { nextOrd = now() + Math.max(1, +C.ordMin || 10) * 60e3; await pullOrd(why || '주기'); }
-      if (now() >= nextPrd) { nextPrd = now() + Math.max(0.5, +C.prdH || 6) * 3600e3; await pullPrd(why || '주기'); } }
+      while (M.jobs.length && wOn()) { const j = M.jobs.shift(); const jr = await jobRun(j); if (jr && jr.wait) { M.jobs.unshift(j); M.jres[j.id] = { st: 'queued', at: now(), wait: String(jr.why || '').slice(0, 200) }; break; } if (M.cool > now()) break; }
+      if (M.net && !M.net.ok) { nextOrd = Math.min(nextOrd, now() + 60e3); return; } /* (nvfix1) 🛑 길이 막혔으면 남은 일(읽기 포함)은 대기 — 1분 뒤 다시 확인 */
+      const C = NC(); if (now() >= nextOrd) { nextOrd = now() + Math.max(1, +C.ordMin || 10) * 60e3; const r1 = await pullOrd(why || '주기'); if (r1 && r1.net) { nextOrd = now() + 60e3; return; } } /* (nvfix1) 길이 바뀌어 멈췄으면 상품 읽기로 넘어가지 않음 · 1분 뒤 다시 */
+      if (now() >= nextPrd) { nextPrd = now() + Math.max(0.5, +C.prdH || 6) * 3600e3; const r2 = await pullPrd(why || '주기'); if (r2 && r2.net) nextPrd = now() + 60e3; } }
     catch (e) { log('네이버 돌기 오류: ' + e.message); } finally { M.busy = false; } }
   function kick(ms) { clearTimeout(M.t); M.t = setTimeout(() => tick('바로').catch(() => {}), ms || 500); }
   function start() { setInterval(() => tick().catch(() => {}), TEST ? 1000 : 60e3); if (mine()) setTimeout(() => keyReady().catch(() => {}), TEST ? 100 : 3000); kick(TEST ? 400 : 20e3); }
 
   /* ── 웹앱 다리 ── */
   function sum() { const on = mine(); return { on, why: on ? '' : '네이버 일은 로거 PC만(정범님 11/11 지정)', pub: on ? M.pub : null, cred: on ? credSum() : { has: false }, test: st.test, write: st.write, step: M.step,
-    ord: { at: st.ordAt, n: st.ordN, err: st.ordErr, cur: st.ordCur }, prd: { at: st.prdAt, n: st.prdN, err: st.prdErr }, cool: M.cool > now() ? M.cool : 0, q: M.q.length, jobs: M.jobs.length, calls: M.calls.n, cats: st.cats }; }
+    ord: { at: st.ordAt, n: st.ordN, err: st.ordErr, cur: st.ordCur }, prd: { at: st.prdAt, n: st.prdN, err: st.prdErr }, cool: M.cool > now() ? M.cool : 0, q: M.q.length, jobs: M.jobs.length, calls: M.calls.n, cats: st.cats, net: M.net || null, ipReg: regIp() }; } /* (nvfix1) net = 🛑 와이파이 문 마지막 판단(ok·kind·why·ip) · ipReg = 등록한 고정 IP(비밀 아님) */
   async function cmd(c) { c = c || {}; const k = String(c.k || ''); if (!mine()) return { ok: false, err: '네이버 일은 로거 PC만' };
     if (k === 'cred') return credPut(c.env, c.by); if (k === 'test') return retest('웹앱 단추 · ' + String(c.by || '').slice(0, 30));
     if (k === 'sync') { nextOrd = 0; if (c.prd) nextPrd = 0; kick(200); return { ok: true }; }
     if (k === 'write') return setWrite(c.on === true, c.by); if (k === 'job') return jobPut(c.job, c.by); if (k === 'cats') return cats();
+    if (k === 'ip') { const ip = ipv4(c.ip); if (!ip) return { ok: false, err: '고정 IP 꼴이 아님(예: 211.0.0.1)' }; st.ip = ip; save(); note(`🟩 네이버에 등록한 고정 IP를 ${ip}로 둠 — ${String(c.by || '').slice(0, 30)}`, { k: 'sys', l: 'ok', m: '네이버' }); kick(500); return { ok: true, ip }; } /* (nvfix1) 와이파이 문이 견줄 IP */
     return { ok: false, err: '모르는 명령' }; }
   function feed(o2) { for (const k of (o2 && o2.ack) || []) { const i = M.q.findIndex((x) => x.k === k); if (i >= 0) { M.q.splice(i, 1); M.qk.delete(k); } } return { ok: true, st: sum(), out: M.q.slice(0, 150), jres: M.jres }; }
   return { start, tick, kick, sum, cmd, feed, keyReady, M, st };
 }
-module.exports = { makeNv, nvOrd, nvPrd, nvBody, nvErr, kstIso };
+module.exports = { makeNv, nvOrd, nvPrd, nvBody, nvErr, kstIso, netKind, netPick, ipv4 };
