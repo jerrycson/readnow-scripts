@@ -1,2 +1,2 @@
-doc=app_settings/adapt_health&blist=ItemEditorChoice&cid=1
-# 103016553
+blist=Bestseller&doc=app_settings/adapt_cfg
+# 2425610510
