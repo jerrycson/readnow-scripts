@@ -1,2 +1,2 @@
-doc=app_settings/ship_auto,app_settings/strat,app_settings/mkt_trend_state
-# 2218112172
+doc=seller_fp_runs/2026-11-11_deep,seller_fp_runs/2026-11-11,seller_fp_runs/2026-11-10_deep,seller_fp_runs/2026-11-10
+# 3204817449
