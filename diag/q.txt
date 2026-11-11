@@ -1,2 +1,2 @@
-blist=Bestseller&doc=app_settings/adapt_cfg
-# 2425610510
+blist=BlogBest
+# 132028292
