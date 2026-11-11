@@ -2,6 +2,10 @@
   "_설명": "🛍 우리숍 booksqueen.com — Firebase Hosting 둘째 사이트 설정(관리 사이트 readnow-3a385와 따로 · 검색 허용 · 관리 화면 0) · site 이름은 처음 만들 때 비어 있는 것(hosting/site.js)",
   "site": "booksqueen",
   "public": ".hosting/shop",
+  "_rewrites_설명": "(11/11 shop2) 검색 노출 — /b/<상품 번호>(책 한 권 HTML)·/sitemap*.xml은 클라우드(Cloud Run readnow-cloud · 서울)가 판매중 목록에서 만듦 · 정적 파일이 먼저라 손님 화면은 그대로",
+  "rewrites": [
+    { "source": "/b/**", "run": { "serviceId": "readnow-cloud", "region": "asia-northeast3" } },
+    { "source": "/sitemap*.xml", "run": { "serviceId": "readnow-cloud", "region": "asia-northeast3" } } ],
   "headers": [
     { "source": "**", "headers": [
       { "key": "X-Content-Type-Options", "value": "nosniff" },

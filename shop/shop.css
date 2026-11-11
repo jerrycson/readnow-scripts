@@ -77,3 +77,11 @@ fieldset { border: 1px solid var(--line); border-radius: var(--r); background: v
 .foot { margin-top: 40px; padding-top: 18px; padding-bottom: 40px; border-top: 1px solid var(--line); font-size: 12.5px; color: var(--mut); } .fl1 { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; } .fl1 a { text-decoration: none; color: var(--ink); }
 .biz { line-height: 1.7; }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px); background: #222; color: #fff; padding: 10px 16px; border-radius: 10px; font-size: 14.5px; opacity: 0; transition: .2s; pointer-events: none; max-width: calc(100% - 32px); z-index: 30; } .toast.on { opacity: 1; transform: translateX(-50%); }
+/* (11/11 shop2) 🔎 책 한 권 미리 만든 주소 /b/<상품> — 클라우드가 그림(자바스크립트 없이 읽힘) */
+.bp { padding-top: 12px; padding-bottom: 24px; } .bp .hint { color: var(--mut); font-size: 13px; }
+.bp .bk { display: grid; grid-template-columns: 1fr; gap: 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; margin-top: 8px; }
+@media (min-width: 720px) { .bp .bk { grid-template-columns: 340px 1fr; } }
+.bp-ph { display: flex; gap: 8px; overflow-x: auto; } .bp-ph img { width: min(320px, 80vw); height: auto; border-radius: 8px; flex: none; background: var(--line); }
+.bp-tx h1 { font-size: 22px; margin: 0 0 4px; line-height: 1.35; } .bp-tx .pr b { font-size: 24px; } .bp-tx .pr s { color: var(--mut); margin-left: 6px; } .bp-tx .pr em { color: var(--red); font-style: normal; font-weight: 700; margin-left: 4px; }
+.bp .stt { padding: 8px 10px; border-radius: 8px; background: rgba(31, 111, 74, .1); } .bp .stt.st-o { background: rgba(201, 162, 74, .18); } .bp .stt.st-x { background: rgba(176, 50, 42, .12); color: var(--red); }
+.bp .bk.sold img { filter: grayscale(.8); opacity: .75; }

@@ -74,20 +74,20 @@
     if (!c.open) { main().innerHTML = `${closedBar(c)}<p class="center"><a href="#/cart">장바구니로</a></p>`; return; } const S0 = B.cartSum(L, c);
     const fld = (k, lb, typ, ph, extra) => `<label class="f" data-f="${k}"><span>${lb}</span><input id="f_${k}" type="${typ || 'text'}" ${ph ? `placeholder="${esc(ph)}"` : ''} ${extra || ''}><em></em></label>`;
     main().innerHTML = `<h1 class="pt">주문서</h1><form id="of" novalidate>
-      <fieldset><legend>주문하시는 분</legend>${fld('name', '이름', 'text', '', 'autocomplete="name" maxlength="30"')}${fld('phone', '휴대폰', 'tel', '010-0000-0000', 'autocomplete="tel" inputmode="numeric"')}</fieldset>
+      <fieldset><legend>주문하시는 분</legend>${fld('name', '이름', 'text', '', 'autocomplete="name" maxlength="30"')}${fld('phone', '휴대폰', 'tel', '010-0000-0000', 'autocomplete="tel" inputmode="numeric"')}${fld('email', '메일 (선택)', 'email', '주문 안내를 메일로도 받으려면', 'autocomplete="email" maxlength="80"')}<div class="hint">주문 접수·입금 확인·보냄 알림은 휴대폰 문자(메일을 적으시면 메일도)로 — 알림 보내기는 준비 중이라 지금은 주문 뒤 받는 조회 주소로 확인해 주세요</div></fieldset>
       <fieldset><legend>받는 분</legend><label class="ck"><input type="checkbox" id="f_same" checked> 주문하시는 분과 같음</label><div id="rcv" hidden>${fld('rname', '이름', 'text', '', 'maxlength="30"')}${fld('rphone', '휴대폰', 'tel', '010-0000-0000', 'inputmode="numeric"')}</div>
         ${fld('zip', '우편번호', 'text', '5자리', 'inputmode="numeric" maxlength="5" autocomplete="postal-code"')}${fld('addr1', '주소', 'text', '도로명 또는 지번 주소', 'autocomplete="address-line1" maxlength="120"')}${fld('addr2', '상세 주소', 'text', '동·호수', 'autocomplete="address-line2" maxlength="80"')}${fld('memo', '배송 메모', 'text', '예) 문 앞에 두세요', 'maxlength="100"')}</fieldset>
       <fieldset><legend>결제</legend>${c.pay.how === 'bank' ? `<div class="pay on">🏦 <b>무통장 입금</b><small>주문을 마치면 계좌를 보여 드립니다 · ${c.payDays}일 안에 입금해 주세요</small></div>${fld('dep', '입금하실 분', 'text', '주문하시는 분과 다르면', 'maxlength="20"')}` : '<div class="pay">⏳ <b>결제 안내 준비 중</b><small>주문을 받으면 가게에서 결제 방법을 연락드립니다</small></div>'}
         <div class="pay off">💳 카드·간편결제 <small>준비 중</small></div></fieldset>
       <fieldset><legend>주문할 책 ${S0.n}권</legend>${L.map((x) => `<div class="ol"><span>${esc(x.t)}</span>${gTag(x.g)}<b>${won(x.p)}</b></div>`).join('')}<div class="sum"><div><span>책값</span><b>${won(S0.sum)}</b></div><div><span>배송비</span><b>${won(S0.fee)}</b></div><div class="tot"><span>합계</span><b>${won(S0.total)}</b></div></div></fieldset>
       <fieldset class="agree"><label class="ck" data-f="agreeP"><input type="checkbox" id="f_agreeP"> (필수) 개인정보 수집·이용 동의 <a href="#/p/privacy" target="_blank">내용 보기</a><em></em></label>
-        <div class="hint">모으는 것: 이름·휴대폰·주소(배송용) · 쓰는 곳: 주문 확인·배송·문의 답 · 보관: 거래 기록 보관 기간(전자상거래법 5년) 뒤 파기</div>
+        <div class="hint">모으는 것: 이름·휴대폰·주소(배송용)·메일(적으셨을 때만) · 쓰는 곳: 주문 확인·주문 알림·배송·문의 답 · 보관: 거래 기록 보관 기간(전자상거래법 5년) 뒤 파기</div>
         <label class="ck" data-f="agreeT"><input type="checkbox" id="f_agreeT"> (필수) 주문할 책·값·배송비·<a href="#/p/terms" target="_blank">구매 조건(교환·환불)</a>을 확인했습니다<em></em></label></fieldset>
       <input type="text" id="f_hp" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
       <button class="btn wide" id="go" type="submit">${won(S0.total)} 주문하기</button><div id="oerr" class="err" hidden></div></form>`;
     const same = $('#f_same'); same.onchange = () => { $('#rcv').hidden = same.checked; };
     ['phone', 'rphone'].forEach((k) => { const el = $('#f_' + k); if (el) el.oninput = () => { el.value = B.phoneFmt(el.value); }; });
-    const val = () => { const g = (k) => { const el = $('#f_' + k); return el ? (el.type === 'checkbox' ? el.checked : el.value) : ''; }; return { name: g('name'), phone: g('phone'), same: g('same'), rname: g('rname'), rphone: g('rphone'), zip: g('zip'), addr1: g('addr1'), addr2: g('addr2'), memo: g('memo'), dep: g('dep'), agreeP: g('agreeP'), agreeT: g('agreeT'), hp: g('hp') }; };
+    const val = () => { const g = (k) => { const el = $('#f_' + k); return el ? (el.type === 'checkbox' ? el.checked : el.value) : ''; }; return { name: g('name'), phone: g('phone'), email: g('email'), same: g('same'), rname: g('rname'), rphone: g('rphone'), zip: g('zip'), addr1: g('addr1'), addr2: g('addr2'), memo: g('memo'), dep: g('dep'), agreeP: g('agreeP'), agreeT: g('agreeT'), hp: g('hp') }; };
     $('#of').onsubmit = async (e) => { e.preventDefault(); const f = val(); const E = B.formCheck(f); $$('[data-f]').forEach((el) => { const m = E[el.dataset.f]; el.classList.toggle('bad', !!m); const em = $('em', el); if (em) em.textContent = m || ''; });
       const ks = Object.keys(E); if (ks.length) { const first = $(`[data-f="${ks[0]}"]`); if (first) first.scrollIntoView({ block: 'center', behavior: 'smooth' }); toast('빠진 칸을 채워 주세요'); return; }
       const go = $('#go'); go.disabled = true; go.textContent = '주문 넣는 중…'; $('#oerr').hidden = true;
@@ -113,9 +113,9 @@
 
   async function policy(k) { let c = {}; try { c = await cfg(); } catch (e) {} const z = c.biz || {}; const v = (x) => (x ? esc(x) : '<i>준비 중</i>'); const nm = esc(z.name || c.name || '북스퀸');
     const P = { privacy: ['개인정보 처리방침', `<p>${nm}(이하 '가게')는 개인정보 보호법 제30조에 따라 손님의 개인정보를 아래처럼 처리합니다.</p>
-      <h3>1. 모으는 것과 쓰는 곳</h3><p>주문 때: 주문하시는 분·받는 분의 이름, 휴대폰 번호, 주소(우편번호·상세 주소), 배송 메모, 입금하실 분 이름 — 주문 확인·입금 확인·배송·교환·환불·문의 답에만 씁니다. 회원 가입은 없습니다.</p>
+      <h3>1. 모으는 것과 쓰는 곳</h3><p>주문 때: 주문하시는 분·받는 분의 이름, 휴대폰 번호, 주소(우편번호·상세 주소), 배송 메모, 입금하실 분 이름, 메일 주소(선택 — 적으셨을 때만) — 주문 확인·입금 확인·주문 알림(접수·입금 확인·보냄)·배송·교환·환불·문의 답에만 씁니다. 회원 가입은 없습니다.</p>
       <h3>2. 보관 기간</h3><p>전자상거래 등에서의 소비자보호에 관한 법률에 따라 계약·청약철회·대금 결제·재화 공급 기록 5년, 소비자 불만·분쟁 처리 기록 3년 보관한 뒤 지체 없이 파기합니다.</p>
-      <h3>3. 맡기는 곳(위탁)</h3><p>택배사(배송) · Google Firebase(주문 기록 보관 서버) — 결제 대행사(PG)를 쓰게 되면 이 칸에 더합니다.</p>
+      <h3>3. 맡기는 곳(위탁)</h3><p>택배사(배송) · Google Firebase(주문 기록 보관 서버) — 결제 대행사(PG)·알림 보내기 서비스(문자·메일)를 쓰게 되면 이 칸에 더합니다.</p>
       <h3>4. 손님의 권리</h3><p>언제든 열람·정정·삭제·처리 정지를 요구하실 수 있습니다 — 아래 연락처로 말씀해 주세요.</p>
       <h3>5. 파기</h3><p>보관 기간이 끝난 기록은 다시 살릴 수 없게 지웁니다.</p><h3>6. 쿠키·기기 저장</h3><p>이 화면은 장바구니와 '내 주문' 조회 주소만 손님 기기(브라우저 저장소)에 둡니다. 광고 추적은 쓰지 않습니다.</p>
       <h3>7. 개인정보 보호책임자</h3><p>${v(z.cpo || z.ceo)} · ${v(z.tel)} · ${v(z.email)}</p><p class="hint">시행 2026-11-11</p>`],
