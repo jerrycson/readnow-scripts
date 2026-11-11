@@ -15,8 +15,8 @@ const ROOT = [path.join(__dirname, '../..'), path.join(__dirname, '..')].find((p
     const send = (c, j) => { s.writeHead(c, { 'content-type': 'application/json' }); s.end(JSON.stringify(j)); };
     if (deny) return send(403, { error: { message: 'PERMISSION_DENIED' } });
     if (q.headers.authorization !== 'Bearer t0k') return send(401, {});
-    if (q.method === 'GET' && q.url === '/v1beta1/projects/-/sites/rn-test/customDomains/readnow.kr') return have ? send(200, CD) : send(404, { error: { message: 'not found' } });
-    if (q.method === 'POST' && q.url === '/v1beta1/projects/-/sites/rn-test/customDomains?customDomainId=readnow.kr') { if (race) { have = true; return send(409, { error: { message: 'ALREADY_EXISTS' } }); } have = true; return send(200, { name: 'operations/x', done: false }); }
+    if (q.method === 'GET' && q.url === '/v1beta1/projects/readnow-3a385/sites/rn-test/customDomains/readnow.kr') return have ? send(200, CD) : send(404, { error: { message: 'not found' } });
+    if (q.method === 'POST' && q.url === '/v1beta1/projects/readnow-3a385/sites/rn-test/customDomains?customDomainId=readnow.kr') { if (race) { have = true; return send(409, { error: { message: 'ALREADY_EXISTS' } }); } have = true; return send(200, { name: 'operations/x', done: false }); }
     if (q.method === 'GET' && q.url === '/v1beta1/sites/rn-test/domains') return send(200, { domains: [] });
     send(404, {}); }); });
   await new Promise((r) => srv.listen(0, '127.0.0.1', r)); const API = `http://127.0.0.1:${srv.address().port}`;

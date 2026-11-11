@@ -5,7 +5,7 @@
  *    · HOSTING_API=<주소> → 시험용 가짜 서버 · 토큰은 자동 작업(OIDC)이 받은 1회용 — 출력에 남기지 않음
  *  출력: Firebase가 바라는 DNS 레코드(A·TXT·CNAME·ACME) · 지금 DNS에서 찾은 것 · 주인 확인·호스트·인증서 상태 · 남은 문제
  *    → 표준 출력과 GITHUB_STEP_SUMMARY(있으면)에 그대로 · domain-status.json(작업 결과물)
- *  API: v1beta1 projects/-/sites/<사이트>/customDomains (POST ?customDomainId=<도메인> · GET <도메인>) */
+ *  API: v1beta1 projects/<프로젝트>/sites/<사이트>/customDomains (POST ?customDomainId=<도메인> · GET <도메인>) */
 'use strict';
 const fs = require('fs'), path = require('path');
 const ROOT = path.join(__dirname, '..');
@@ -52,7 +52,9 @@ function describe(cd, domain) {
 }
 
 async function run(domain, site, mode) {
-  const base = `${API}/v1beta1/projects/-/sites/${site}/customDomains`;
+  /* (11/11 shop3) 'projects/-'(아무 프로젝트)는 customDomains에서 새 사이트를 못 찾음(HTTP 404 Resource projects/-/sites/booksqueen not found — 사이트는 있었음) → 프로젝트 이름을 그대로 */
+  const proj = process.env.DOMAIN_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || 'readnow-3a385';
+  const base = `${API}/v1beta1/projects/${proj}/sites/${site}/customDomains`;
   let cd = null, made = false;
   try { cd = await call('GET', `${base}/${encodeURIComponent(domain)}`); }
   catch (e) { if (e.status !== 404) throw e; }
