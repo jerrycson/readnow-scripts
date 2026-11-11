@@ -126,7 +126,7 @@ const S = (src, d, none) => X.sig({ none: !!none, d }, src);
     const EXT_S = { errs: {}, pauseUntil: { daangn: Date.now() + 2 * 3600e3 }, used: { joongna: cfg.src.joongna.cap }, next: {}, cache: {}, cur: {}, authPause: { lib: 'k' } };
     const keys = { kakaoRest: 'k', nlKey: 'k', ebayAppId: 'a', ebayCertId: 'c', d4lKey: 'k', aladinTtb: 'k' }; // 국중·카카오 키 있음 · 네이버 키 없음
     const books = [{ isbn: '9788937460449', title: '데미안', p: 9000 }];
-    const env = { EXT: () => X, extKeys: async () => keys, extIdxLoad: async () => {}, extUsedLoad: async () => {}, extCands: async () => books, PUBONLY: true, EXT_S, nightExtMs: () => 0, PAR_STOP: {}, window: {}, auth: { currentUser: {} }, extLease: async () => true,
+    const env = { EXT: () => X, extKeys: async () => keys, extIdxLoad: async () => {}, extUsedLoad: async () => {}, extCands: async () => books, c2HoLive: async () => null /* (rel3) col2rep3 🔀 번외로 넘기기 — 넘긴 일 없음 */, PUBONLY: true, EXT_S, nightExtMs: () => 0, PAR_STOP: {}, window: {}, auth: { currentUser: {} }, extLease: async () => true,
       extEligible: (s, b) => X.eligible(s, b, cfg), extDue: (s) => s === 'kakao' && !asked.includes('kakao'), extOne: async (s) => { asked.push(s); return { src: s, st: 'same' }; }, sleep: async () => {}, log: (m) => logs.push(m) };
     const extFill = new Function(...Object.keys(env), CODE + '\nreturn extFill;')(...Object.values(env));
     await extFill(cfg); const L = logs.find((m) => /이번 바퀴에 안 물은 출처/.test(m)) || '';
