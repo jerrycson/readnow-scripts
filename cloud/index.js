@@ -3975,6 +3975,20 @@ function consBuild(I) { const hol = I.hol || (() => null); const today = I.today
   const hotCat = cats.filter((c) => c.se[consSeason(+today.slice(5, 7))] != null).sort((a, b) => b.se[consSeason(+today.slice(5, 7))] - a.se[consSeason(+today.slice(5, 7))])[0]; if (hotCat && hotCat.se[consSeason(+today.slice(5, 7))] >= 1.1) sig.push({ k: 'cat', for: ['stock', 'mkt'], lv: 'up', e: consR(hotCat.se[consSeason(+today.slice(5, 7))] - 1), conf: '추정', n: hotCat.n, t: `${consSeason(+today.slice(5, 7))}에 몫이 커지는 분야: ${hotCat.c}(평소 몫의 ${hotCat.se[consSeason(+today.slice(5, 7))].toFixed(2)}배)`, act: '이 분야 매입·노출을 늘림' });
   const tot = { orders: nOrd, items: R.reduce((s, r) => s + r.q, 0), rev: R.reduce((s, r) => s + r.p * r.q, 0) };
   return { v: CONS_V, at: null, range: { from: first, to: last, days: keys.length, used: relK.length }, tot, pf: Object.entries(pf).map(([k, n]) => ({ k, t: CONS_PF[k] || k, n })).sort((a, b) => b.n - a.n), dow, hours, months, eff: G, pb: { bands: CONS_PBS, ...pbOut }, cats, catCover: consR(catN / (tot.items || 1)), wx: { st: W.st, days: Object.keys(W.days).length, match: wn }, breaks: BR.B.filter((b) => b.to >= first).map((b) => ({ from: b.from, to: b.to, name: b.name, myeong: b.myeong })), next, score, live, hist: histOut, sig }; }
+/* (11/11 cons2) 분야 기억 고침 — prd_books 문서 번호는 'bk_<도서 번호>'(ISBN이 아님)라 'isbn_'+ISBN으로 읽던 1,500권이 모두 '모름'으로 박혀(다시 안 읽음) 분야 칸이 비었음
+ *  → ISBN 칸(isbn13)으로 찾음(lookup = 바깥이 넘김: ISBN 묶음 → Map(ISBN → 분류 경로|null)) · '모름'은 m에 넣지 않고 u{ISBN: 마지막 본 날}에 두어 7일 뒤 다시 · cv 2 아래 옛 기억(전부 '모름')은 버림
+ *  분류 꼴 = [{path:[…]}] 또는 [[…]] 둘 다 · 2단계(예 '국내도서 > 소설/시/희곡') */
+const CONS_CV = 2;
+const consCatName = (cats) => { const c0 = Array.isArray(cats) ? cats[0] : null; const p = Array.isArray(c0) ? c0 : (c0 && c0.path) || []; return p.length > 1 ? p.slice(0, 2).map((x) => String(x).trim()).join(' > ') : null; };
+const consIsbnOk = (x) => /^97[89]\d{10}$/.test(String(x || ''));
+async function consCatFill(I) { const cc = I.cc && I.cc.cv === CONS_CV ? I.cc : {}; const L = Array.isArray(cc.L) ? cc.L.slice() : []; const M = { ...(cc.m || {}) }; const U = { ...(cc.u || {}) }; const today = I.today; const want = I.want; const max = I.max || 6000;
+  const due = (k) => M[k] == null && consIsbnOk(k) && !(U[k] && U[k] > consAdd(today, -7)); const todo = [...want].filter(due).slice(0, max); let got = 0, miss = 0, err = null;
+  for (let i = 0; i < todo.length; i += 30) { const part = todo.slice(i, i + 30); let R; try { R = await I.lookup(part); } catch (e) { err = String((e && e.message) || e).slice(0, 120); break; }
+    for (const k of part) { const nm = R && R.get(k); if (nm) { let j = L.indexOf(nm); if (j < 0) { L.push(nm); j = L.length - 1; } M[k] = j; delete U[k]; got++; } else { U[k] = today; miss++; } } }
+  for (const k of Object.keys(M)) if (!want.has(k)) delete M[k]; for (const k of Object.keys(U)) if (!want.has(k)) delete U[k];
+  const left = [...want].filter(due).length; return { doc: { cv: CONS_CV, L, m: M, u: U }, changed: todo.length > 0 || cc.cv !== CONS_CV, asked: todo.length, got, miss, left, err, cats: Object.fromEntries(Object.entries(M).map(([k, j]) => [k, L[j]])) }; }
+/* (11/11 cons2) 일조 채우기 — wx_sum 줄에 일조(6번째 칸)가 11/11 전 날엔 없어 '해 많은 날·흐린 날' 표본 0 → wx_days(날마다 문서에 ss가 처음부터 있음)로 채움 · 바뀐 날만 돌려줌 */
+function consSsFill(rows, ss) { const up = {}; for (const [d8, v] of Object.entries(rows || {})) { if (!Array.isArray(v) || (v.length > 5 && v[5] != null)) continue; const x = ss[d8]; if (x == null || !Number.isFinite(+x)) continue; const a = v.slice(0, 5); while (a.length < 5) a.push(null); a.push(+x); up[d8] = a; } return up; }
 /* CONS-END */
 /* 클라우드 쪽 — 재료 읽기·분야 기억·저장(하루 한 번 · 웹앱 '지금 다시 셈' = app_settings/cons_cfg.reqAt) */
 let consNextAt = 0;
@@ -3984,13 +3998,16 @@ async function consStudy(force) { const ref = C('app_settings').doc('cons_study'
   const t0 = Date.now(); const lines = []; (await C('ml_sales').get()).forEach((d) => { if (d.id === '_meta') return; (d.data().rows || []).forEach((r) => lines.push(r)); });
   const wx = {}; for (const stn of [108, 119, 112]) { try { const d = await C('wx_sum').doc(String(stn)).get(); if (d.exists) wx[stn] = d.data(); } catch (e) {} }
   const SHC = shipCoreNode(); const hol = SHC && SHC.holName ? (k) => SHC.holName(k) : () => null; const today = kstDay(Date.now());
-  /* 분야 — 최근 1년 판매 ISBN만 · 한 번에 1,500권까지 prd_books 분류 2단계를 읽어 cons_cat에 기억(다음부터 새 ISBN만) */
+  /* 일조 채우기(한 번 · 11/11 cons2) — 지점 wx_sum에 일조 칸이 빈 날이 30일 넘으면 wx_days에서 채움 · ssFill 표시로 다시 안 함 */
+  for (const stn of Object.keys(wx)) { const s0 = wx[stn] || {}; const R0 = s0.rows || {}; const lack = Object.values(R0).filter((v) => Array.isArray(v) && !(v.length > 5 && v[5] != null)).length; if (s0.ssFill || lack < 30) continue;
+    try { const ss = {}; (await C('wx_days').where(FieldPath.documentId(), '>=', `${stn}_`).where(FieldPath.documentId(), '<', `${stn}_~`).select('ss').get()).forEach((d) => { const v = (d.data() || {}).ss; if (v != null) ss[d.id.slice(String(stn).length + 1)] = v; }); const up = consSsFill(R0, ss);
+      await C('wx_sum').doc(String(stn)).set({ ...(Object.keys(up).length ? { rows: up } : {}), ssFill: nowIso() }, { merge: true }); for (const [d8, v] of Object.entries(up)) R0[d8] = v; log('🧠 소비심리 일조 채움', stn, Object.keys(up).length, '날'); } catch (e) { log('🧠 소비심리 일조 채우기 실패', stn, e.message); } }
+  /* 분야 — 최근 1년 판매 ISBN만 · prd_books를 ISBN 칸(isbn13)으로 30개씩 찾아 분류 2단계를 cons_cat에 기억(다음부터 새 ISBN만 · 못 찾은 것은 7일 뒤 다시) */
   const cut = consAdd(today, -365); const want = new Set(); lines.forEach((r) => { const x = String(r).split('\u0001'); if (x[1] && String(x[2] || '') >= cut) want.add(x[1]); });
-  const cref = C('app_settings').doc('cons_cat'); let cc = {}; try { cc = (await cref.get()).data() || {}; } catch (e) {} const L = Array.isArray(cc.L) ? cc.L.slice() : []; const M = { ...(cc.m || {}) };
-  const todo = [...want].filter((i) => M[i] == null).slice(0, 1500); for (let i = 0; i < todo.length; i += 100) { const part = todo.slice(i, i + 100); try { const got = await db.getAll(...part.map((x) => C('prd_books').doc('isbn_' + x)), { fieldMask: ['categories'] }); got.forEach((g, j) => { const c0 = g.exists ? ((g.data() || {}).categories || [])[0] : null; const p = c0 && c0.path; const nm = p && p.length > 1 ? p.slice(0, 2).join(' > ') : '모름'; let ix = L.indexOf(nm); if (ix < 0) { L.push(nm); ix = L.length - 1; } M[part[j]] = ix; }); } catch (e) { break; } }
-  for (const k of Object.keys(M)) if (!want.has(k)) delete M[k]; if (todo.length) await cref.set({ L, m: M, at: nowIso(), ...W() }).catch(() => {});
-  const cats = {}; for (const [k, ix] of Object.entries(M)) if (L[ix] && L[ix] !== '모름') cats[k] = L[ix];
-  const out = consBuild({ lines, wx, hol, today, cats, hist: old.hist }); out.at = nowIso(); out.ms = Date.now() - t0; out.catTodo = Math.max(0, [...want].filter((i) => M[i] == null).length);
+  const cref = C('app_settings').doc('cons_cat'); let cc = {}; try { cc = (await cref.get()).data() || {}; } catch (e) {}
+  const lookup = async (part) => { const R = new Map(); (await C('prd_books').where('isbn13', 'in', part).select('isbn13', 'categories').get()).forEach((d) => { const v = d.data() || {}; const k = String(v.isbn13 || ''); const nm = consCatName(v.categories); if (k && nm && !R.get(k)) R.set(k, nm); }); return R; };
+  const CF = await consCatFill({ want, cc, today, lookup, max: 9000 }); if (CF.changed) await cref.set({ ...CF.doc, at: nowIso(), last: { asked: CF.asked, got: CF.got, miss: CF.miss, left: CF.left, err: CF.err }, ...W() }).catch(() => {}); const cats = CF.cats;
+  const out = consBuild({ lines, wx, hol, today, cats, hist: old.hist }); out.at = nowIso(); out.ms = Date.now() - t0; out.catTodo = CF.left; out.catMiss = Object.keys(CF.doc.u).length; if (CF.err) out.catErr = CF.err;
   await ref.set({ ...out, ...W() }); log('🧠 소비심리 셈', out.range ? `${out.range.from}~${out.range.to}` : out.why, '날씨 맞춘 날', out.wx ? out.wx.match : 0); return { n: out.tot ? out.tot.orders : 0, ms: out.ms, wx: out.wx ? out.wx.match : 0 }; }
 /* ── (정범님 11/10 '열쇠를 넣는 모든 곳은 저장 전에 먼저 맞는지 확인') 🌐 외부 연결 키 확인 — 웹앱 설정 ⑱ [키 저장] 전에 POST /key-check {k, v, with}
  *  같은 공용 파일(readnow-ext-core.js)의 그 출처를 시험 책(『데미안』 9788937460449)으로 한 번 불러 봄 · 값은 저장·기록하지 않음(저장은 웹앱이 '맞음'을 받은 뒤)
