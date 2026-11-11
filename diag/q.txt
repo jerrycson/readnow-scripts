@@ -1,2 +1,2 @@
-recentUp=ext_basic&mins=120&perf=0
-# 182267042
+doc=app_settings/cons_study
+# 2975421361
