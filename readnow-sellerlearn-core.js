@@ -59,6 +59,15 @@
   const rowsOf = (L) => (Array.isArray(L) ? L : []).map((r) => { if (typeof r !== 'string') return r; try { return JSON.parse(r); } catch (e) { return null; } }).filter(Array.isArray);
   /* 주제 분류 = 알라딘 분류 길의 앞 두 칸(예 '국내도서>소설/시/희곡') — 벤치마킹 'a>b>c' 글자와 우리 책 categories[0].path 목록 둘 다 */
   function topicKey(c) { if (!c) return null; const p = Array.isArray(c) ? c.map(String) : String(c).split(/\s*[>›]\s*/); const q = p.filter(Boolean); if (!q.length) return null; return q.slice(0, 2).join('>'); }
+  /* (sell3) 분야 굵은 갈래 — 알라딘 분류 길('국내도서>소설/시/희곡>…')과 국립중앙도서관 KDC('KDC>813.6' · 부가기호 앞자리 7 = 아동)를 같은 14갈래로
+   *  판매자 숍 목록엔 분류가 없어 클라우드가 ① 우리 책 정보(ISBN·새책 번호 → prd_books 분류) ② 국중 날짜 차례 정보(ext_pool KDC)로 메움 — 새 요청 0 */
+  const GENRE_T = { lit: '문학', ess: '에세이', hum: '인문·역사', rel: '종교', soc: '사회·정치', biz: '경제·자기계발', sci: '과학·기술', it: '컴퓨터', life: '실용·취미', art: '예술', kid: '어린이·청소년', comic: '만화', study: '수험·교재', lang: '외국어' };
+  const GEN_AL = [[/만화|라이트노벨/, 'comic'], [/어린이|유아|청소년|초등|중학교참고서|좋은부모/, 'kid'], [/수험서|자격증|고등학교참고서|대학교재|전문서적|취업/, 'study'], [/외국어|영어|일본어|중국어/, 'lang'], [/소설|시\/희곡|희곡|문학|고전/, 'lit'], [/에세이/, 'ess'],
+    [/인문|역사|철학/, 'hum'], [/종교|역학/, 'rel'], [/사회과학|정치|법/, 'soc'], [/경제경영|자기계발/, 'biz'], [/과학|공학|의학/, 'sci'], [/컴퓨터|모바일/, 'it'], [/건강|취미|요리|살림|여행|가정|육아|스포츠|레저|잡지/, 'life'], [/예술|대중문화|사진|건축|디자인|음악/, 'art']];
+  const KDC_G = { 0: null, 1: 'hum', 2: 'rel', 3: 'soc', 4: 'sci', 5: 'sci', 6: 'art', 7: 'lang', 8: 'lit', 9: 'hum' };
+  function genreOf(c) { if (!c) return null; const s0 = String(Array.isArray(c) ? c.join('>') : c); const m = /^KDC>(\d)(\d?)(\d?)([^>]*)(?:>add(\d))?/.exec(s0);
+    if (m) { if (m[5] === '7') return 'kid'; const k3 = m[1] + m[2] + m[3]; if (/^65[78]/.test(k3) && /^\.?1/.test(m[4] || '') ) return 'comic'; if (/^(32[0-9]|33[0-9])$/.test(k3)) return 'biz'; if (/^(00[4-5])$/.test(k3) || /^56/.test(k3)) return 'it'; if (/^(59|69)/.test(k3)) return 'life'; if (/^37/.test(k3)) return 'study'; return KDC_G[+m[1]] || null; }
+    const p = s0.split(/\s*[>›]\s*/).filter(Boolean); const seg = p.length >= 2 ? p.slice(1, 3).join('>') : p[0] || ''; for (const [re, g] of GEN_AL) if (re.test(seg)) return g; return null; }
   const BANDS = [3000, 6000, 10000, 20000, 40000]; const BAND_LAB = ['~3천', '3~6천', '6천~1만', '1~2만', '2~4만', '4만~'];
   const bandOf = (p) => { p = num(p); if (!p) return '?'; const i = BANDS.findIndex((x) => p < x); return BAND_LAB[i < 0 ? BANDS.length : i]; };
   const dayN = (d) => { const s = String(d || '').replace(/-/g, ''); if (!/^\d{8}$/.test(s)) return null; return Math.round(Date.UTC(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)) / 864e5); };
@@ -103,18 +112,21 @@
    *  look = { isbn → { sp, pub, au } } (있으면 SP·출판사·저자) */
   function profile(runs, look, opt) { const O = { minRuns: 2, ...(opt || {}) }; const R0 = (runs || []).filter(runUse); if (R0.length < O.minRuns) return null; const R = benchSpread(R0); /* (sell2·bavg1) 빈 날에 고르게 나눈 회차 · 사람 값 먼저 */
     if (R.length < O.minRuns) return null; let days = 0, sold = 0, rev = 0, add = 0, exT = 0; const addByDay = []; const lastDay = R[R.length - 1].day;
-    const kw = {}; const cat = {}, catAdd = {}, band = {}, grade = {}, yr = { new12: 0, y3: 0, old: 0, unk: 0 }, life = [], price = [], sp = [], pub = {}, au = {}; let listN = 0, spKnown = 0, paKnown = 0, addListN = 0;
+    const kw = {}; const cat = {}, catAdd = {}, band = {}, grade = {}, yr = { new12: 0, y3: 0, old: 0, unk: 0 }, life = [], price = [], sp = [], pub = {}, au = {}; let listN = 0, spKnown = 0, paKnown = 0, addListN = 0; const gen = {}, disc = []; let genKnown = 0, ymFill = 0; /* (sell3) */
     const GA = goneAdj(R); let cutN = 0; R.forEach((v, i) => { const s = GA[i].s; days += s; sold += GA[i].g; rev += GA[i].rev; if (GA[i].cut) cutN++; /* 사라짐 전부(첫 바퀴부터 있던 것 포함) = 판매 가늠 */ const a = (num(v.add) ?? 0) * (s / Math.max(0.5, +v.spanDays)); add += a; exT += (num(v.total) || 0) * s; addByDay.push(...splitInt(num(v.add) ?? 0, Math.max(1, Math.min(60, Math.round(+v.spanDays || 1))))); }); /* (rel4) 나눈 날 조각은 하루 · 안 나눈 회차(맨 앞·60일 넘게 떨어짐)는 그 날 수로 */ /* (11/11) ⏸ 날마다 — 며칠치 회차의 새로 올림을 빈 날까지 나눠(사람이 채운 날 값 먼저) · 예전엔 회차 하나 = 하루 */
     for (const v of R) {
-      for (const r of rowsOf(v.goneList)) { const lf = num(r[4]); listN++; const p = num(r[2]); if (p) price.push(p); if (lf != null) life.push(lf); /* 걸린 날은 첫 바퀴 뒤 올린 것만 앎 */ words(r[1]).forEach((w) => inc(kw, w)); inc(cat, topicKey(r[8]) || '분류 모름'); inc(band, bandOf(p)); inc(grade, r[3] || '?'); const pa = pubAgeM(r[9], v.day); if (pa == null) yr.unk++; else if (pa <= 12) yr.new12++; else if (pa <= 36) yr.y3++; else yr.old++;
-        const L = look && r[7] ? look[r[7]] : null; if (L) { if (L.sp != null) { sp.push(+L.sp); spKnown++; } if (L.pub || L.au) { paKnown++; inc(pub, L.pub || null); inc(au, L.au || null); } } }
+      for (const r of rowsOf(v.goneList)) { const lf = num(r[4]); listN++; const p = num(r[2]); if (p) price.push(p); if (lf != null) life.push(lf); /* 걸린 날은 첫 바퀴 뒤 올린 것만 앎 */ words(r[1]).forEach((w) => inc(kw, w));
+        /* (sell3) 채운 정보 — ISBN(r[7]) 또는 상품 번호('#'+r[0] · 클라우드가 bench_items의 채운 칸으로 만듦) */ const L = look ? ((r[7] && look[r[7]]) || look['#' + r[0]] || null) : null; const cat0 = r[8] || (L && L.cat) || null; inc(cat, topicKey(cat0) || '분류 모름'); const gk = genreOf(cat0); inc(gen, gk || '모름'); if (gk) genKnown++; if (L && L.pl > 0 && p) disc.push(p / L.pl);
+        inc(band, bandOf(p)); inc(grade, r[3] || '?'); const pa = pubAgeM(r[9] || (L && L.ym) || null, v.day); if (pa != null && !r[9]) ymFill++; if (pa == null) yr.unk++; else if (pa <= 12) yr.new12++; else if (pa <= 36) yr.y3++; else yr.old++;
+        if (L) { if (L.sp != null) { sp.push(+L.sp); spKnown++; } if (L.pub || L.au) { paKnown++; inc(pub, L.pub || null); inc(au, L.au || null); } } }
       for (const r of rowsOf(v.addList)) { addListN++; inc(catAdd, topicKey(r[8]) || '분류 모름'); } }
     const regDays = addByDay.filter((x) => x > 0).length; const mA = addByDay.reduce((x, y) => x + y, 0) / (addByDay.length || 1); const sdA = Math.sqrt(addByDay.reduce((x, y) => x + (y - mA) ** 2, 0) / (addByDay.length || 1));
     const catS = share(cat, listN).slice(0, 8).map((x) => ({ ...x, addS: addListN ? r4((catAdd[x.k] || 0) / addListN) : null }));
     const top = (m, n) => share(m, Object.values(m).reduce((x, y) => x + y, 0)).slice(0, n);
     return { runs: R0.length, spread: R.length - R0.length, days: r3(days), lastDay, cutRuns: cutN, sold: Math.round(sold), soldPerDay: r3(sold / days), revPerDay: Math.round(rev / days), addPerDay: r3(add / days), stock: num(R[R.length - 1].total), turn: exT ? r4(sold / exT) : null,
       regDaysShare: r3(regDays / (addByDay.length || 1)), regDays: addByDay.length, humanRuns: R0.filter((v) => v.edit || fillOf(v)).length, addCv: mA ? r3(sdA / mA) : null, listN, cats: catS, bands: share(band, listN), grades: share(grade, listN).slice(0, 6), years: { ...yr, new12S: listN ? r4(yr.new12 / listN) : null },
-      lifeMed: med(life), lifeN: life.length, words: top(kw, 12).filter((x) => x.n >= 3), catKnownS: listN ? r3(1 - (cat['분류 모름'] || 0) / listN) : null, priceMed: med(price), spMed: med(sp), spKnownS: listN ? r3(spKnown / listN) : null, pubs: top(pub, 6), authors: top(au, 6), paKnownS: listN ? r3(paKnown / listN) : null }; }
+      lifeMed: med(life), lifeN: life.length, words: top(kw, 12).filter((x) => x.n >= 3), catKnownS: listN ? r3(1 - (cat['분류 모름'] || 0) / listN) : null, priceMed: med(price), spMed: med(sp), spKnownS: listN ? r3(spKnown / listN) : null, pubs: top(pub, 6), authors: top(au, 6), paKnownS: listN ? r3(paKnown / listN) : null,
+      gens: share(gen, listN).filter((x) => x.k !== '모름').slice(0, 8), genKnownS: listN ? r3(genKnown / listN) : null, ymFillN: ymFill, discMed: disc.length >= 20 ? r3(med(disc)) : null }; }
 
   /* ── 롤모델 고르기 ── profiles = [{ sc, name, p: profile, f: 판정 사실 }] · opt.by: rev(하루 판매가 합)·sold(하루 판매 수)·turn(회전율)·rev6(6개월 평가 수)
    *  거름(블랙리스트 추적의 반대 조건): 허위·추격 무시는 늘 뺌 · 평점 ≥ minRating · 품절 취소율 ≤ maxCancel(모르면 통과 표시) · 숍 크기 ourStock 기준 sizeLo~sizeHi배(켰을 때) */
@@ -195,9 +207,10 @@
   const KIND_T = { comic: '만화', kid: '어린이·학습', study: '수험·교재', lit: '문학', hum: '인문·역사', biz: '경제·자기계발', art: '예술' };
   const FEAT_T = { pMed: '가격 가운데(로그)', pCv: '가격 들쭉날쭉', sCheap: '3천원 아래 몫', sMid: '6천~2만 몫', sHigh: '2만원 넘는 몫', sLux: '4만원 넘는 몫', gTop: '상태 최상 몫', gLow: '상태 중·하 몫', low: '최저가 배지 몫', set: '세트·전권 몫', ageMed: '앞 쪽 상품 나이(일)',
     engT: '영문 제목 몫', dup: '같은 제목 겹침 몫', tLen: '제목 길이', wDiv: '제목 낱말 다양성', rare: '다른 판매자에 없는 제목 몫(희귀)', newPub: '출간 1년 안 몫(화제 신간)', oldPub: '출간 10년 넘은 몫', disc: '정가 대비 값', covB: '표지 밝기', covS: '표지 채도', covC: '표지 색 다양성', spMed: 'SP 가운데(로그)', spHi: 'SP 1천 넘는 몫',
+    pubAge: '출간 나이 가운데(로그 달)', spLo: 'SP 50 아래 몫(화제 없음)', pubTop: '한 출판사 몰림', pubDiv: '출판사 고르기', pubBig: '큰 출판사 몫', genDiv: '장르 고르기', covDark: '어두운 표지 몫', covDull: '흐린(무채) 표지 몫', covBold: '굵은 제목체 표지 몫', covMy: '명조 표지 몫',
     aFem: '앞 쪽 구매자 여성 몫', aAge: '앞 쪽 구매자 나이 평균', aFit: '앞 쪽과 우리 고객층 닮음', aYoung: '앞 쪽 구매자 10·20대 몫', aOld: '앞 쪽 구매자 50·60대 몫' };
   Object.keys(KIND).forEach((k) => (FEAT_T['k_' + k] = KIND_T[k] + ' 몫'));
-  const featT = (k) => { if (FEAT_T[k]) return FEAT_T[k]; if (k.includes('*')) return k.split('*').map(featT).join(' × '); if (k.startsWith('w:')) return `제목 '${k.slice(2)}' 몫`; if (k.startsWith('c:')) return `분야 '${k.slice(2).split('>').pop()}' 몫`; if (k === 'catDiv') return '분야 다양성'; if (k.includes('*')) return k.split('*').map(featT).join(' × '); return k; };
+  const featT = (k) => { if (FEAT_T[k]) return FEAT_T[k]; if (k.includes('*')) return k.split('*').map(featT).join(' × '); if (k.startsWith('w:')) return `제목 '${k.slice(2)}' 몫`; if (k.startsWith('g:')) return `장르 '${GENRE_T[k.slice(2)] || k.slice(2)}' 몫`; if (k.startsWith('c:')) return `분야 '${k.slice(2).split('>').pop()}' 몫`; if (k === 'catDiv') return '분야 다양성'; if (k.includes('*')) return k.split('*').map(featT).join(' × '); return k; };
   const YT = { g1: '다음 회차 사라짐/일', g2: '2회차 뒤 사라짐/일', g3: '다음 3일 사라짐/일', r1: '다음 회차 매출/일', r3: '다음 3일 매출/일' };
 
   /* 한 숍의 상품 줄(지금 목록 + 회차마다 사라진 것) → 상품 번호 큰 것(나중 등록)부터 · 그날 살아 있던 것 중 앞 FP개 = 그날 앞 페이지
@@ -208,35 +221,49 @@
       for (const r of rowsOf(v.goneList)) { const id = String(r[0]); const o = M.get(id); if (o && o.gone === Infinity) continue; if (o) { o.gone = Math.min(o.gone, d); continue; } M.set(id, { id, p: num(r[2]), first: dayN(r[5]), g: r[3] || null, t: String(r[1] || ''), low: r[6] ? 1 : 0, isbn: r[7] || null, cat: r[8] || null, ym: r[9] || null, gone: d }); }
       for (const r of rowsOf(v.addList)) { const o = M.get(String(r[0])); if (!o) continue; if (o.pl == null && num(r[6])) o.pl = num(r[6]); if (!o.ym && r[4]) o.ym = r[4]; if (!o.isbn && r[5]) o.isbn = r[5]; if (!o.cat && r[8]) o.cat = r[8]; } }
     const L = [...M.values()]; L.forEach((x) => (x.h = hashT(x.t))); return L.sort((a, b) => (+b.id || 0) - (+a.id || 0)); }
+  /* (sell3) 채운 정보 합치기 — F = Map(상품 번호 → { sp, isbn, pub, au, ym, pl, cat, cv }) · 줄에 빈 칸만 채움(지우지 않음)
+   *  cv = 서가 표지 셈(shop_cover)과 같은 'rrggbb.갈래'(대표색 · my 명조 · bd 굵은 제목체 · go 고딕) → cov { b 밝기 0~1, s 채도 0~1, hb 색상 칸 0~11(무채 12), fg } */
+  function covOf(cv) { const m = /^([0-9a-f]{6})(?:\.([a-z]{2}))?$/i.exec(String(cv || '')); if (!m) return null; const v = parseInt(m[1], 16); const r = (v >> 16) & 255, g = (v >> 8) & 255, b = v & 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b); const s = mx ? (mx - mn) / mx : 0;
+    let h = 0; if (mx > mn) { const d = mx - mn; h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h = (h * 60 + 360) % 360; } return { b: r3((0.299 * r + 0.587 * g + 0.114 * b) / 255), s: r3(s), hb: s < 0.15 ? 12 : Math.floor(h / 30) % 12, fg: m[2] || null }; }
+  function fillItems(L, F) { if (!F || !L) return { n: 0 }; const get = (id) => (F instanceof Map ? F.get(String(id)) : F[String(id)]); let n = 0;
+    for (const x of L) { const f = get(x.id); if (!f) continue; n++; if (x.sp == null && f.sp != null && Number.isFinite(+f.sp)) x.sp = +f.sp; if (!x.isbn && f.isbn) x.isbn = f.isbn; if (!x.pub && f.pub) x.pub = String(f.pub).slice(0, 30); if (!x.au && f.au) x.au = String(f.au).slice(0, 30);
+      if (!x.ym && f.ym) x.ym = String(f.ym).slice(0, 7); if (x.pl == null && +f.pl > 0) x.pl = +f.pl; if (!x.cat && f.cat) x.cat = f.cat; if (!x.cov && f.cv) x.cov = covOf(f.cv); } return { n }; }
+  /* 앞 페이지 채움률(줄마다 · 특징이 아님) — SP·출간 연월·출판사·분야·표지·정가를 아는 몫 */
+  function frontFill(F) { const n = (F || []).length; if (!n) return null; const k = (fn) => r3(F.filter(fn).length / n); return { n, sp: k((x) => x.sp != null), ym: k((x) => !!x.ym), pub: k((x) => !!x.pub), cat: k((x) => !!genreOf(x.cat)), cov: k((x) => !!x.cov), pl: k((x) => x.pl > 0) }; }
+  /* 한 숍 채움률 — 지금 있는 상품(gone = Infinity) · 오늘 앞 FP개 */
+  function fillStat(L, FP) { const live = (L || []).filter((x) => x.gone === Infinity); const fr = live.slice(0, FP || 240); return { live: live.length, all: frontFill(live), front: frontFill(fr) }; }
   function frontAt(L, d, FP) { const out = []; for (const it of L) { if ((it.first == null || it.first <= d) && it.gone > d) { out.push(it); if (out.length >= FP) break; } } return out; }
   /* 앞 페이지 구성 특징 — ctx = { rare(h) → 다른 판매자 수 · kw: [낱말] · look: isbn → { sp, bd } · U: 우리 고객층 12칸 } */
-  function frontFeat(F, d, ctx) { const n = F.length; if (n < 24) return null; const C = ctx || {}; const sh = (fn) => r4(F.filter(fn).length / n); const P = F.map((x) => x.p).filter((p) => p > 0); const shP = (fn) => (P.length ? r4(P.filter(fn).length / P.length) : null);
+  function frontFeat(F, d, ctx) { const n = F.length; if (n < 24) return null; const C = ctx || {}; const MF = C.minFill != null ? +C.minFill : 0.3; /* (sell3) 채움 기준 — 아는 몫이 이보다 적으면 그 특징을 만들지 않음 */ const sh = (fn) => r4(F.filter(fn).length / n); const P = F.map((x) => x.p).filter((p) => p > 0); const shP = (fn) => (P.length ? r4(P.filter(fn).length / P.length) : null);
     const T = F.map((x) => String(x.t || '').toLowerCase()); const W = T.map(words); const allW = W.flat(); const f = {
       pMed: P.length ? r4(Math.log(med(P))) : null, pCv: P.length > 2 ? r3(sd(P) / mean(P)) : null, sCheap: shP((p) => p < 3000), sMid: shP((p) => p >= 6000 && p < 20000), sHigh: shP((p) => p >= 20000), sLux: shP((p) => p >= 40000),
       gTop: sh((x) => x.g === '최상'), gLow: sh((x) => /^(중|하)/.test(x.g || '')), low: sh((x) => x.low), set: r4(T.filter((t) => /세트|전\s?\d+\s?권|\d+\s?~\s?\d+/.test(t)).length / n), ageMed: med(F.map((x) => (x.first != null ? d - x.first : null))),
       engT: r4(T.filter((t) => t.trim() && /^[\x00-\x7f]+$/.test(t.trim())).length / n), dup: r4(1 - new Set(F.map((x) => x.h)).size / n), tLen: med(T.map((t) => t.length)), wDiv: allW.length ? r4(new Set(allW).size / allW.length) : null };
     for (const [k, L] of Object.entries(KIND)) f['k_' + k] = r4(T.filter((t) => L.some((w) => t.includes(w))).length / n);
     if (C.rare) f.rare = sh((x) => x.h && C.rare(x.h) === 0);
-    const ys = F.map((x) => pubAgeM(x.ym, String(d != null ? new Date(d * 864e5).toISOString().slice(0, 7) : ''))).filter((x) => x != null); if (ys.length >= n * 0.3) { f.newPub = r4(ys.filter((m) => m <= 12).length / ys.length); f.oldPub = r4(ys.filter((m) => m > 120).length / ys.length); }
-    const ds = F.filter((x) => x.p > 0 && x.pl > 0).map((x) => x.p / x.pl); if (ds.length >= n * 0.3) f.disc = r3(med(ds));
-    const cv = F.map((x) => x.cov).filter(Boolean); if (cv.length >= n * 0.3) { f.covB = r3(med(cv.map((c) => num(c.b)))); f.covS = r3(med(cv.map((c) => num(c.s)))); f.covC = r3(med(cv.map((c) => num(c.c)))); } /* 표지 수치 칸(밝기 b·채도 s·색 다양성 c 0~1) — 모으는 곳이 생기면 저절로 들어옴 */
+    const ys = F.map((x) => pubAgeM(x.ym, String(d != null ? new Date(d * 864e5).toISOString().slice(0, 7) : ''))).filter((x) => x != null); if (ys.length >= n * MF && ys.length >= 8) { f.newPub = r4(ys.filter((m) => m <= 12).length / ys.length); f.oldPub = r4(ys.filter((m) => m > 120).length / ys.length); f.pubAge = r4(Math.log1p(med(ys))); }
+    const ds = F.filter((x) => x.p > 0 && x.pl > 0).map((x) => x.p / x.pl); if (ds.length >= n * MF && ds.length >= 8) f.disc = r3(med(ds));
+    const cv = F.map((x) => x.cov).filter(Boolean); if (cv.length >= n * MF && cv.length >= 8) { f.covB = r3(med(cv.map((c) => num(c.b)))); f.covS = r3(med(cv.map((c) => num(c.s)))); f.covC = cv.some((c) => c.hb != null) ? r3(new Set(cv.map((c) => c.hb)).size / Math.min(13, cv.length)) : r3(med(cv.map((c) => num(c.c))));
+      /* (sell3) '거부감·싸구려로 보임'을 셀 첫 재료(어림) — 어두운 표지·흐린(무채) 표지·굵은 제목체·명조 몫 */ f.covDark = r4(cv.filter((c) => c.b != null && c.b < 0.3).length / cv.length); f.covDull = r4(cv.filter((c) => c.s != null && c.s < 0.15).length / cv.length); const fgN = cv.filter((c) => c.fg).length; if (fgN >= 8) { f.covBold = r4(cv.filter((c) => c.fg === 'bd').length / fgN); f.covMy = r4(cv.filter((c) => c.fg === 'my').length / fgN); } } /* 표지 수치 칸(밝기 b·채도 s·색 다양성 c 0~1) — 모으는 곳이 생기면 저절로 들어옴 */
     /* (sell2) 분야·SP 자리 — 일꾼 adapt1이 검색 결과 목록으로 판매자 상품의 분류·SP·출판사를 메우면(줄의 cat·sp 칸 또는 look[isbn]) '제목 낱말' 대신 실제 분야·SP로 */
-    const cats = F.map((x) => topicKey(x.cat)).filter(Boolean); if (cats.length >= n * 0.3) { const cc = {}; cats.forEach((k) => (cc[k] = (cc[k] || 0) + 1)); Object.entries(cc).filter(([, m]) => m >= 3).forEach(([k, m]) => (f['c:' + k] = r4(m / cats.length))); f.catDiv = r4(Object.keys(cc).length / cats.length); }
-    const spRow = F.map((x) => num(x.sp)).filter((v) => v != null); if (spRow.length >= n * 0.3) { f.spMed = r4(Math.log1p(med(spRow))); f.spHi = r4(spRow.filter((v) => v > 1000).length / spRow.length); }
+    const gs = F.map((x) => genreOf(x.cat)).filter(Boolean); if (gs.length >= n * MF && gs.length >= 8) { const gc = {}; gs.forEach((k) => (gc[k] = (gc[k] || 0) + 1)); Object.keys(GENRE_T).forEach((k) => (f['g:' + k] = r4((gc[k] || 0) / gs.length))); f.genDiv = r4(Object.keys(gc).length / Math.min(14, gs.length)); } /* (sell3) 장르 몫 · 고르기 */
+    const pb = F.map((x) => (x.pub ? String(x.pub).replace(/\s+/g, '') : null)).filter(Boolean); if (pb.length >= n * MF && pb.length >= 8) { const pc = {}; pb.forEach((k) => (pc[k] = (pc[k] || 0) + 1)); f.pubTop = r4(Math.max(...Object.values(pc)) / pb.length); f.pubDiv = r4(Object.keys(pc).length / pb.length); if (C.bigPub) f.pubBig = r4(pb.filter((k) => C.bigPub.has(k)).length / pb.length); } /* (sell3) 출판사 갈래 — 한 출판사 몰림·고르기·큰 출판사 몫 */
+    const cats = F.map((x) => topicKey(x.cat)).filter(Boolean); if (cats.length >= n * MF) { const cc = {}; cats.forEach((k) => (cc[k] = (cc[k] || 0) + 1)); Object.entries(cc).filter(([, m]) => m >= 3).forEach(([k, m]) => (f['c:' + k] = r4(m / cats.length))); f.catDiv = r4(Object.keys(cc).length / cats.length); }
+    const spRow = F.map((x) => num(x.sp)).filter((v) => v != null); if (spRow.length >= n * MF && spRow.length >= 8) { f.spMed = r4(Math.log1p(med(spRow))); f.spHi = r4(spRow.filter((v) => v > 1000).length / spRow.length); f.spLo = r4(spRow.filter((v) => v < 50).length / spRow.length); } /* (sell3) spLo = 화제 없는 책(SP 50 아래) 몫 */
     if (C.look) { const sp = [], A = []; for (const x of F) { const L = (x.isbn && C.look[x.isbn]) || (x.bid && C.look[x.bid]) || null; if (!L) continue; if (L.sp != null) sp.push(+L.sp); if (L.bd) { const a = audFeat(L.bd); if (a) A.push(a); } }
-      if (sp.length >= n * 0.3 && f.spMed == null) { f.spMed = r4(Math.log1p(med(sp))); f.spHi = r4(sp.filter((s) => s > 1000).length / sp.length); }
-      if (A.length >= n * 0.3) { f.aFem = r4(mean(A.map((a) => a.fem))); f.aAge = r3(mean(A.map((a) => a.age))); f.aYoung = r4(mean(A.map((a) => a.young))); f.aOld = r4(mean(A.map((a) => a.old))); if (C.U) f.aFit = r4(mean(A.map((a) => cosv(a.v, C.U)))); } }
+      if (sp.length >= n * MF && f.spMed == null) { f.spMed = r4(Math.log1p(med(sp))); f.spHi = r4(sp.filter((s) => s > 1000).length / sp.length); }
+      if (A.length >= n * MF) { f.aFem = r4(mean(A.map((a) => a.fem))); f.aAge = r3(mean(A.map((a) => a.age))); f.aYoung = r4(mean(A.map((a) => a.young))); f.aOld = r4(mean(A.map((a) => a.old))); if (C.U) f.aFit = r4(mean(A.map((a) => cosv(a.v, C.U)))); } }
     for (const w of C.kw || []) f['w:' + w] = r4(T.filter((t) => t.includes(w)).length / n);
     return f; }
   /* 숍 하나의 날짜 줄(패널) — 회차마다 그날 앞 페이지 구성 · 그 회차·다음 회차들의 사라짐·매출(몰아서 내림은 자름) */
   function shopFronts(runs, L, FP) { const R = benchSpread(runs); /* 나눈 날마다 = 하루 줄 · 사람이 고친 값 먼저 */ if (R.filter((v) => !v._vf).length < 5) return null; R.sort((a, b) => String(a.day).localeCompare(String(b.day))); if (R.length < 5) return null; const GA = goneAdj(R); const fp = FP || 240;
     const rate = R.map((v, i) => ({ d: dayN(v.day), s: GA[i].s, g: GA[i].g / GA[i].s, r: GA[i].rev / GA[i].s, a: (num(v.add) || 0) / Math.max(0.5, +v.spanDays), T: num(v.total) || 0 }));
-    const slim = (x) => ({ sp: x.sp, p: x.p, g: x.g, t: x.t, low: x.low, first: x.first, ym: x.ym, isbn: x.isbn, cat: x.cat, pl: x.pl, cov: x.cov, h: x.h, bid: x.bid });
+    const slim = (x) => ({ sp: x.sp, p: x.p, g: x.g, t: x.t, low: x.low, first: x.first, ym: x.ym, isbn: x.isbn, cat: x.cat, pl: x.pl, cov: x.cov, h: x.h, bid: x.bid, pub: x.pub });
     return { rate, fronts: rate.map((q) => frontAt(L, q.d, fp).map(slim)) }; }
   function panelFrom(g, pre, ctx) { if (!pre) return []; const { rate, fronts } = pre; const R = rate;
     const win = (i, days) => { let s = 0, gg = 0, r = 0, a = 0; for (let j = i + 1; j < R.length && R[j].d - R[i].d <= days + 0.5; j++) { s += R[j].s; gg += R[j].g * R[j].s; r += R[j].r * R[j].s; a += R[j].a * R[j].s; } return s > 0 ? { g: gg / s, r: r / s, a: a / s } : null; };
     const out = []; for (let i = 0; i < R.length - 1; i++) { const d = R[i].d; const x = frontFeat(fronts[i], d, ctx); if (!x) continue; const n1 = R[i + 1], n2 = R[i + 2] || null, w3 = win(i, 3);
-      out.push({ g, t: i, d, x, y: { g1: Math.log1p(n1.g), g2: n2 ? Math.log1p(n2.g) : null, g3: w3 ? Math.log1p(w3.g) : null, r1: Math.log1p(n1.r), r3: w3 ? Math.log1p(w3.r) : null }, c: [Math.log1p(R[i].g), Math.log1p(n1.a), Math.log1p(R[i].T)] }); }
+      out.push({ g, t: i, d, x, fill: frontFill(fronts[i]), y: { g1: Math.log1p(n1.g), g2: n2 ? Math.log1p(n2.g) : null, g3: w3 ? Math.log1p(w3.g) : null, r1: Math.log1p(n1.r), r3: w3 ? Math.log1p(w3.r) : null }, c: [Math.log1p(R[i].g), Math.log1p(n1.a), Math.log1p(R[i].T)] }); }
     return out; }
   const shopPanel = (g, runs, L, ctx, FP) => panelFrom(g, shopFronts(runs, L, FP), ctx);
   /* 희귀(다른 판매자에 없는 제목) — 숍마다 제목 지문을 줄 세운 Int32Array로 → 몇 곳에 있나 */
@@ -274,6 +301,15 @@
     /* 작은 p는 더 많이 섞어 다시(199번이면 가장 작은 p가 0.005라 시험이 많으면 보정 뒤 못 넘음) */ for (let i = 0; i < T.length; i++) if (T[i].p <= 0.03) { const t2 = test1(rows, T[i].f, T[i].y, { ...O, B: O.B2 || 1999 }, R); if (t2) T[i] = { ...t2, combo: T[i].combo }; }
     const q = bh(T.map((t) => t.p)); T.forEach((t, i) => (t.q = r4(q[i]))); const sig = T.filter((t) => t.q < O.q).sort((a, b) => a.q - b.q || Math.abs(b.r) - Math.abs(a.r));
     return { tests: T.length, rows: rows.length, groups: new Set(rows.map((r) => r.g)).size, sig: sig.length, sigRep: sig.filter((t) => t.rep).length, top: T.slice().sort((a, b) => a.q - b.q || a.p - b.p || Math.abs(b.r) - Math.abs(a.r)).slice(0, 30), all: T }; }
+
+  /* (sell3) 채움 기준별 다시 셈 — build(minFill) → 날짜 줄 · 새 재료 특징(SP·출간·출판사·분야·표지)만 시험 · 기준을 낮추면 줄은 늘고 잡음도 늚
+   *  돌려줌 [{ t 기준, rows, rowsNew 새 특징 있는 줄, shops, feats, tests, sig, sigRep, top:[…3] }] */
+  const NEWF = /^(spMed|spHi|spLo|newPub|oldPub|pubAge|disc|pubTop|pubDiv|pubBig|genDiv|g:|c:|catDiv|cov)/;
+  function fillSens(build, opt) { const O = { ts: [0.1, 0.3, 0.5], ys: ['g3', 'r3'], B: 199, B2: 499, top: 3, ...(opt || {}) }; const out = [];
+    for (const t of O.ts) { const rows = build(t) || []; const feats = [...new Set(rows.flatMap((r) => Object.keys(r.x).filter((k) => NEWF.test(k))))]; const rn = rows.filter((r) => Object.keys(r.x).some((k) => NEWF.test(k)));
+      if (!feats.length) { out.push({ t, rows: rows.length, rowsNew: 0, shops: 0, feats: 0, tests: 0, sig: 0, sigRep: 0, top: [] }); continue; }
+      const ex = explore(rows, { feats, ys: O.ys, B: O.B, B2: O.B2, top: O.top, seed: 29 }); out.push({ t, rows: rows.length, rowsNew: rn.length, shops: new Set(rn.map((r) => r.g)).size, feats: feats.length, tests: ex.tests, sig: ex.sig, sigRep: ex.sigRep, top: ex.top.slice(0, 5).map((x) => ({ f: x.f, ft: featT(x.f), y: x.y, yt: YT[x.y] || x.y, r: x.r, q: x.q, rep: x.rep, n: x.n, groups: x.groups })) }); }
+    return out; }
 
   /* ── 가설 원장(스스로 진화) — 날마다 검증 결과로 베타 점수: 성공 = q<0.1 · 처음과 같은 방향 · 앞뒤 절반 재현 ──
    *  지지(3번 넘게 보고 점수 0.6 넘음) · 기각(3번 넘게 보고 0.25 아래) · 후보 · 다음 날 시험할 새 가설 = 잘 버틴 가설 × 다른 특징(곱) */
@@ -353,6 +389,6 @@
     const W = {}; for (const o of out) if (o.lift != null) (W[o.kind] = W[o.kind] || []).push(o.lift); return { items: out, w: Object.fromEntries(Object.entries(W).map(([k, a]) => [k, r3(mean(a))])) }; }
 
   const api = { VERSION, VERDICT, CONDS, DEFAULT_ORDER, condOf, normOrder, moveKey, dragKey, condHit, judge, pass, topicKey, bandOf, pubAgeM, runUse, profile, ROLE_DEF, roleRank, followPlan, FRONT_DEF, frontOne, frontPool, ourFront, spearman, pearson, boot, med, rowsOf,
-    KIND, FEAT_T, YT, featT, hashT, shopItems, frontAt, frontFeat, shopFronts, panelFrom, shopPanel, hashSet, hasH, rareOf, topWords, explore, test1, bh, benchSpread, benchFix, hypEvolve, oosScore, AGE_K, audVec, audFeat, cosv, audStudy, ourPanel, isBad, condEvolve, roleEvolve, followEval, dayN, words };
+    KIND, FEAT_T, YT, featT, hashT, shopItems, frontAt, frontFeat, shopFronts, panelFrom, shopPanel, hashSet, hasH, rareOf, topWords, explore, test1, bh, benchSpread, benchFix, hypEvolve, oosScore, genreOf, GENRE_T, covOf, fillItems, frontFill, fillStat, fillSens, NEWF, AGE_K, audVec, audFeat, cosv, audStudy, ourPanel, isBad, condEvolve, roleEvolve, followEval, dayN, words };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowSellerLearn = api;
 })(typeof window !== 'undefined' ? window : this);
