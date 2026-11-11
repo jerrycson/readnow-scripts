@@ -1,9 +1,9 @@
 {
  "v": 1,
- "at": "2026-11-10",
- "round": 1,
+ "at": "2026-11-11",
+ "round": 3,
  "about": "성공 기업 사례와 견준 기준점 — 사례(회사·화면·원문 주소) · 우리 적용 방식 · 적용 상태 · 충돌 따짐 · 빈 곳 · 모을 정보. 매일 견줌 엔진이 고침(공개 판 — 사례 요약·적용 상태만).",
- "obsVer": null,
+ "obsVer": "1.78.479",
  "surfaces": {
   "web": "웹앱",
   "ui2": "리드나우 2",
@@ -64,27 +64,28 @@
  },
  "cases": [
   {
-   "id": "shopify_frame",
+   "id": "shopify_search",
    "co": "Shopify",
    "region": "해외",
    "kind": "seller_center",
-   "screen": "관리자 화면 틀(Polaris Frame) — 토스트·저장 막대를 한 자리에서 차례로",
+   "screen": "관리자 검색 — 어디서든 Ctrl/⌘+K · 앱·고객·주문·상품 함께 찾고 거르기 칩으로 좁힘 · 설정도 찾음 · 윗줄은 검색·알림·계정뿐",
    "urls": [
-    "https://polaris.shopify.com/components/contextual-save-bar",
-    "https://shopify.dev/docs/apps/build/app-home/migrate-from-polaris-react/contextual-save-bar"
+    "https://help.shopify.com/en/manual/shopify-admin/admin-search"
    ],
    "grade": "공식",
    "fits": [
     "web",
     "ui2",
-    "shop"
+    "col2"
    ],
    "topics": [
-    "notify_area",
-    "confirm_style"
+    "unified_search",
+    "header_slim",
+    "settings_search",
+    "shortcut_common"
    ],
-   "w": 1.0,
-   "dw": 0.0,
+   "w": 1.3,
+   "dw": 0.3,
    "new": false
   },
   {
@@ -107,8 +108,32 @@
     "quick_actions",
     "order_todo"
    ],
-   "w": 1.0,
-   "dw": 0.0,
+   "w": 1.2,
+   "dw": 0.2,
+   "new": false
+  },
+  {
+   "id": "shopify_frame",
+   "co": "Shopify",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "관리자 화면 틀(Polaris Frame) — 토스트·저장 막대를 한 자리에서 차례로",
+   "urls": [
+    "https://polaris.shopify.com/components/contextual-save-bar",
+    "https://shopify.dev/docs/apps/build/app-home/migrate-from-polaris-react/contextual-save-bar"
+   ],
+   "grade": "공식",
+   "fits": [
+    "web",
+    "ui2",
+    "shop"
+   ],
+   "topics": [
+    "notify_area",
+    "confirm_style"
+   ],
+   "w": 1.1,
+   "dw": 0.1,
    "new": false
   },
   {
@@ -130,8 +155,53 @@
     "quick_actions",
     "scan_first"
    ],
-   "w": 1.0,
-   "dw": 0.0,
+   "w": 1.1,
+   "dw": 0.1,
+   "new": false
+  },
+  {
+   "id": "shopify_orders",
+   "co": "Shopify",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "주문 처리 — 미처리 탭과 분석(Analytics)을 다른 화면으로",
+   "urls": [
+    "https://help.shopify.com/manual/fulfillment/fulfilling-orders"
+   ],
+   "grade": "공식",
+   "fits": [
+    "web",
+    "ui2"
+   ],
+   "topics": [
+    "order_todo"
+   ],
+   "w": 1.1,
+   "dw": 0.1,
+   "new": false
+  },
+  {
+   "id": "shopify_shipping",
+   "co": "Shopify",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "배송 및 배달 한 페이지 · 라벨 일괄 구매(오류 주문은 고치거나 빼야 진행 · '무엇이 왜'로 안내)",
+   "urls": [
+    "https://help.shopify.com/en/manual/shipping",
+    "https://help.shopify.com/manual/shipping/shopify-shipping/shipping-labels/bulk-order-fulfillment"
+   ],
+   "grade": "공식",
+   "fits": [
+    "web",
+    "ui2"
+   ],
+   "topics": [
+    "settings_one_place",
+    "error_human",
+    "confirm_style"
+   ],
+   "w": 1.1,
+   "dw": 0.1,
    "new": false
   },
   {
@@ -175,76 +245,6 @@
    ],
    "topics": [
     "list_views"
-   ],
-   "w": 1.0,
-   "dw": 0.0,
-   "new": false
-  },
-  {
-   "id": "shopify_search",
-   "co": "Shopify",
-   "region": "해외",
-   "kind": "seller_center",
-   "screen": "관리자 검색 — 어디서든 Ctrl/⌘+K · 앱·고객·주문·상품 함께 찾고 거르기 칩으로 좁힘 · 설정도 찾음 · 윗줄은 검색·알림·계정뿐",
-   "urls": [
-    "https://help.shopify.com/en/manual/shopify-admin/admin-search"
-   ],
-   "grade": "공식",
-   "fits": [
-    "web",
-    "ui2",
-    "col2"
-   ],
-   "topics": [
-    "unified_search",
-    "header_slim",
-    "settings_search",
-    "shortcut_common"
-   ],
-   "w": 1.0,
-   "dw": 0.0,
-   "new": false
-  },
-  {
-   "id": "shopify_orders",
-   "co": "Shopify",
-   "region": "해외",
-   "kind": "seller_center",
-   "screen": "주문 처리 — 미처리 탭과 분석(Analytics)을 다른 화면으로",
-   "urls": [
-    "https://help.shopify.com/manual/fulfillment/fulfilling-orders"
-   ],
-   "grade": "공식",
-   "fits": [
-    "web",
-    "ui2"
-   ],
-   "topics": [
-    "order_todo"
-   ],
-   "w": 1.0,
-   "dw": 0.0,
-   "new": false
-  },
-  {
-   "id": "shopify_shipping",
-   "co": "Shopify",
-   "region": "해외",
-   "kind": "seller_center",
-   "screen": "배송 및 배달 한 페이지 · 라벨 일괄 구매(오류 주문은 고치거나 빼야 진행 · '무엇이 왜'로 안내)",
-   "urls": [
-    "https://help.shopify.com/en/manual/shipping",
-    "https://help.shopify.com/manual/shipping/shopify-shipping/shipping-labels/bulk-order-fulfillment"
-   ],
-   "grade": "공식",
-   "fits": [
-    "web",
-    "ui2"
-   ],
-   "topics": [
-    "settings_one_place",
-    "error_human",
-    "confirm_style"
    ],
    "w": 1.0,
    "dw": 0.0,
@@ -465,8 +465,8 @@
    "topics": [
     "order_todo"
    ],
-   "w": 0.8,
-   "dw": 0.0,
+   "w": 0.88,
+   "dw": 0.08,
    "new": false
   },
   {
@@ -684,12 +684,12 @@
    ],
    "t": "알림 자리 하나",
    "how": "내려받기 띠·새 기록 받는 중·사진 못 불러옴을 왼쪽 아래 한 자리에 쌓고 아래 탭 줄 위로 띄움 · 2가지 넘으면 '🔔 알림 n가지' 한 줄",
-   "st": "branch",
-   "ver": "work/ux2-1110 2e06328",
+   "st": "done",
+   "ver": "1.78.479",
    "conflict": "💰 매입가 단추는 위치만 맞춤 · 출고 보호·⚠ 사람이 볼 것은 숨기지 않음 · 출고 화면 숨김 규칙 그대로",
    "probe": "ux2DockSync",
    "metric": "탭 줄·등록 단추 가림 0(시험 tUX1)",
-   "auto": null
+   "auto": "웹앱이 이 판에서 확인"
   },
   {
    "id": "W02",
@@ -703,12 +703,12 @@
    ],
    "t": "머리 칸 빠른 작업 3개",
    "how": "검색창 옆(휴대폰은 아래 한 줄) 📥 등록(진행 수) · 🚚 오늘 출고(남은 수) · ＋ 매입 — 여는 것만",
-   "st": "branch",
-   "ver": "work/ux2-1110 2e06328",
+   "st": "done",
+   "ver": "1.78.479",
    "conflict": "출고 단추는 열기만(원스톱 시작 아님 → 출고 보호와 무관) · 등록 단축키와 안 겹침",
    "probe": "ux2QaPaint",
    "metric": "등록·오늘 출고까지 누름 수(탭 1번 + 스크롤 → 1번)",
-   "auto": null
+   "auto": "웹앱이 이 판에서 확인"
   },
   {
    "id": "W03",
@@ -740,12 +740,12 @@
    ],
    "t": "머리 칸 상태 세 줄 → 점 하나",
    "how": "이름 옆 점(초록·주황·빨강) · 누르면 펼침 · 끊김·수집 멈춤이면 저절로 펼침 · 성능 칩 '(앱 사본 없음)'",
-   "st": "branch",
-   "ver": "work/ux2-1110 2e06328",
+   "st": "done",
+   "ver": "1.78.479",
    "conflict": "관리자 기기·LOGGER는 펼친 채 기본(기기별) · 스크롤 접힘과 맞물림",
    "probe": "ux2HdrState",
    "metric": "휴대폰 머리 칸 높이 265px → 약 150px",
-   "auto": null
+   "auto": "웹앱이 이 판에서 확인"
   },
   {
    "id": "W05",
@@ -759,12 +759,12 @@
    ],
    "t": "검색 범위 칩 + Ctrl+K",
    "how": "결과 위 찾는 곳 칩(전체·고객·상품·주문·판매자·매입 · 기본 이 탭) · 0건이면 '전체에서 찾기'",
-   "st": "branch",
-   "ver": "work/ux2-1110 2e06328",
+   "st": "done",
+   "ver": "1.78.479",
    "conflict": "기본은 지금처럼 '이 탭'(습관) · 큰 자료 탭은 '전체'를 누를 때만 받음 · 등록 바코드 칸과 별개",
    "probe": "ux2ScopeBar",
    "metric": "0건 검색 뒤 다른 탭으로 다시 찾는 횟수",
-   "auto": null
+   "auto": "웹앱이 이 판에서 확인"
   },
   {
    "id": "W06",
@@ -779,12 +779,12 @@
    ],
    "t": "주문·매출 탭 '📋 처리할 주문' 줄",
    "how": "주문확인요청·발송요청·송장 실패·취소요청·반품·답할 문의 수 → 누르면 그 단계 칸",
-   "st": "branch",
-   "ver": "work/ux2-1110 2e06328",
+   "st": "done",
+   "ver": "1.78.479",
    "conflict": "숫자는 오늘 출고 단계 칸과 같은 셈(두 곳 숫자 어긋나지 않게) · 예스24 숫자는 예스24 쪽 셈을 부르기만",
    "probe": "ux2OrdBar",
    "metric": "취소 요청을 늦게 봐 이미 포장한 일",
-   "auto": null
+   "auto": "웹앱이 이 판에서 확인"
   },
   {
    "id": "W07",
@@ -815,12 +815,12 @@
    ],
    "t": "설정 7묶음 + 설정 찾기",
    "how": "이 기기·등록·출고·가격·수집·알림·보안 묶음 · 묶음 안 번호 차례 · 맨 위 🔎 설정 찾기(기능 찾기 자료 재사용)",
-   "st": "branch",
-   "ver": "work/ux2-1110 2e06328",
+   "st": "done",
+   "ver": "1.78.479",
    "conflict": "설명서·기능 찾기의 '설정 ⑫' 같은 번호 길 안내",
    "probe": "ux2SetGroup",
    "metric": "설정 찾는 시간",
-   "auto": null
+   "auto": "웹앱이 이 판에서 확인"
   },
   {
    "id": "W09",
@@ -907,12 +907,12 @@
    ],
    "t": "오류 글 한국어(공용 errKo)",
    "how": "권한·연결·시간 초과·한도·빈 응답·없음을 한국어로 + (원래 오류) · 약 470곳",
-   "st": "branch",
-   "ver": "work/ux2-1110 2e06328",
+   "st": "done",
+   "ver": "1.78.479",
    "conflict": "알림 '완료' 열쇠는 원래 오류 코드로(문구가 바뀌어 다시 뜨지 않게)",
    "probe": "errKo",
    "metric": "화면에 영어 원문 오류가 보인 곳 수(346 → 0)",
-   "auto": null
+   "auto": "웹앱이 이 판에서 확인"
   },
   {
    "id": "W14",
@@ -1235,53 +1235,102 @@
    "probe": "",
    "metric": "",
    "auto": null
+  },
+  {
+   "id": "U01",
+   "surf": "ui2",
+   "topics": [
+    "notify_area"
+   ],
+   "cases": [
+    "shopify_frame"
+   ],
+   "t": "알림 한 자리(리드나우 2)",
+   "how": "새 웹앱 알림도 왼쪽 아래 한 기둥에 차례로(최대 3 · 같은 글은 한 줄 ×횟수) · 지금 웹앱 알림 자리(#ux2dock)·💰 매입가 단추가 있으면 그 위로 · 왼쪽 떠 있는 단추 위젯이 있으면 그 옆으로 · 되돌리기 단추 자리",
+   "st": "done",
+   "ver": "ui2 0.4.5",
+   "conflict": "지금 웹앱 알림 자리를 옮기지 않고 그 위에 쌓음(지금 웹앱 쪽 설정·출고 숨김 규칙 그대로) · 페이지 단추를 가리지 않게 글은 누름이 통과",
+   "probe": "U2.notesBottom",
+   "metric": "떠 있는 것과 겹침 0(시험 t_bench · t_coexist)",
+   "auto": null
+  },
+  {
+   "id": "U02",
+   "surf": "ui2",
+   "topics": [
+    "quick_actions"
+   ],
+   "cases": [
+    "ebay_hub",
+    "amazon_app"
+   ],
+   "t": "머리줄 빠른 작업 3개(리드나우 2)",
+   "how": "지금 웹앱 머리줄 위젯이 없는 페이지(📥 할 일·새로 만든 페이지)의 새 웹앱 머리줄에 📥 등록(진행 수) · 🚚 오늘 출고(남은 수) · ＋ 매입 — 숫자 셈·여는 함수는 지금 웹앱 것 그대로 · 지금 웹앱 🧩 화면 고침에서 끄면 함께 꺼짐",
+   "st": "done",
+   "ver": "ui2 0.4.5",
+   "conflict": "지금 웹앱 머리줄이 보이는 페이지에선 숨김(두 벌 없음) · 쓰기 허락 열쇠는 그 화면 위젯과 같음(screen:register 등)",
+   "probe": "U2.find.paintQa",
+   "metric": "📥 할 일 페이지에서 등록까지 누름 1번(시험 t_bench)",
+   "auto": null
+  },
+  {
+   "id": "U03",
+   "surf": "ui2",
+   "topics": [
+    "unified_search",
+    "shortcut_common"
+   ],
+   "cases": [
+    "shopify_search"
+   ],
+   "t": "🔎 어디서나 찾기 Ctrl+K(리드나우 2)",
+   "how": "한 칸에서 페이지·기능(지금 웹앱 🔍 기능 찾기)·옛 화면·이 웹앱 위젯·자료(고객·상품·주문)를 함께 · 범위 칩 6 · 초성 · 최근 연 것 · 없으면 '🌐 전체에서 찾기' · 자료 찾기 = 지금 웹앱 검색창에 넣어 지금 웹앱 검색 그대로",
+   "st": "done",
+   "ver": "ui2 0.4.5",
+   "conflict": "등록·출고 같은 옛 화면이 열려 있거나 편집 중이면 Ctrl+K는 손대지 않음(지금 웹앱 규칙 그대로) · 등록 단축키(Alt+S·Alt+G) 안 건드림",
+   "probe": "U2.find.open",
+   "metric": "기능·화면을 찾는 누름 수(시험 t_bench)",
+   "auto": null
+  },
+  {
+   "id": "U04",
+   "surf": "ui2",
+   "topics": [
+    "error_human"
+   ],
+   "cases": [
+    "shopify_shipping"
+   ],
+   "t": "오류 글 한국어(리드나우 2)",
+   "how": "새 웹앱 오류 알림·위젯 오류 칸의 영어 원문 → 무엇을 할지 한국어 + 원문 괄호(지금 웹앱 errKo가 있으면 그대로 써서 같은 말) · 앞의 한국어 설명은 그대로",
+   "st": "done",
+   "ver": "ui2 0.4.5",
+   "conflict": "알림 '완료' 열쇠를 글로 만들지 않음(새 웹앱엔 없음) · 지금 웹앱 오류 글은 지금 웹앱이 고침",
+   "probe": "U2.errKo",
+   "metric": "영어만 보이는 오류 알림 0(시험 t_bench)",
+   "auto": null
+  },
+  {
+   "id": "U05",
+   "surf": "ui2",
+   "topics": [
+    "order_todo"
+   ],
+   "cases": [
+    "naver_center_home",
+    "ebay_hub"
+   ],
+   "t": "📥 할 일 받은편지함에 등록·출고 숫자",
+   "how": "받은편지함 맨 위에 📥 등록 진행 중 · 🚚 오늘 출고 남은 일(빠른 작업과 같은 셈) · 모든 줄이 눌러서 그 화면으로(막은 쓰기 → 🩺 충돌 감시 · 따라잡기·계약 → 🔁 따라잡기 표)",
+   "st": "done",
+   "ver": "ui2 0.4.5",
+   "conflict": "숫자는 지금 웹앱 셈 그대로라 두 곳이 어긋나지 않음 · 출고는 열기만",
+   "probe": "U2.data.alias",
+   "metric": "받은편지함 줄 중 눌러도 안 가는 줄 0(시험 t_bench)",
+   "auto": null
   }
  ],
  "gaps": [
-  {
-   "surf": "ui2",
-   "topic": "order_todo",
-   "t": "처리할 주문 숫자를 먼저",
-   "kind": "gap",
-   "cases": [
-    "ebay_hub",
-    "naver_center_home",
-    "shopify_orders"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 8.4
-  },
-  {
-   "surf": "web",
-   "topic": "order_todo",
-   "t": "처리할 주문 숫자를 먼저",
-   "kind": "behind",
-   "cases": [
-    "ebay_hub",
-    "naver_center_home",
-    "shopify_orders"
-   ],
-   "items": [
-    "W06"
-   ],
-   "carry": null,
-   "pri": 8.4
-  },
-  {
-   "surf": "shop",
-   "topic": "stop_other",
-   "t": "한 곳 팔리면 다른 곳 내림",
-   "kind": "gap",
-   "cases": [
-    "linnworks_maxlisted",
-    "godomall",
-    "cafe24_market"
-   ],
-   "items": [],
-   "carry": "ledger",
-   "pri": 6.0
-  },
   {
    "surf": "ui2",
    "topic": "confirm_style",
@@ -1293,33 +1342,7 @@
    ],
    "items": [],
    "carry": null,
-   "pri": 6.0
-  },
-  {
-   "surf": "ui2",
-   "topic": "quick_actions",
-   "t": "자주 쓰는 일 입구를 맨 위에",
-   "kind": "own",
-   "cases": [
-    "ebay_hub",
-    "amazon_app"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 6.0
-  },
-  {
-   "surf": "ui2",
-   "topic": "scan_first",
-   "t": "스캔(ISBN)이 첫 동작",
-   "kind": "gap",
-   "cases": [
-    "amazon_app",
-    "bibliopolis"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 6.0
+   "pri": 6.6
   },
   {
    "surf": "web",
@@ -1334,22 +1357,20 @@
     "W11"
    ],
    "carry": null,
-   "pri": 6.0
+   "pri": 6.6
   },
   {
-   "surf": "web",
-   "topic": "quick_actions",
-   "t": "자주 쓰는 일 입구를 맨 위에",
-   "kind": "behind",
+   "surf": "ui2",
+   "topic": "scan_first",
+   "t": "스캔(ISBN)이 첫 동작",
+   "kind": "gap",
    "cases": [
-    "ebay_hub",
-    "amazon_app"
+    "amazon_app",
+    "bibliopolis"
    ],
-   "items": [
-    "W02"
-   ],
+   "items": [],
    "carry": null,
-   "pri": 6.0
+   "pri": 6.3
   },
   {
    "surf": "web",
@@ -1364,7 +1385,7 @@
     "W09"
    ],
    "carry": null,
-   "pri": 6.0
+   "pri": 6.3
   },
   {
    "surf": "ledger",
@@ -1376,8 +1397,22 @@
     "naver_center_home"
    ],
    "items": [],
-   "carry": null,
-   "pri": 5.4
+   "carry": "web",
+   "pri": 6.24
+  },
+  {
+   "surf": "shop",
+   "topic": "stop_other",
+   "t": "한 곳 팔리면 다른 곳 내림",
+   "kind": "gap",
+   "cases": [
+    "linnworks_maxlisted",
+    "godomall",
+    "cafe24_market"
+   ],
+   "items": [],
+   "carry": "ledger",
+   "pri": 6.0
   },
   {
    "surf": "ledger",
@@ -1421,6 +1456,54 @@
    "pri": 4.0
   },
   {
+   "surf": "col2",
+   "topic": "header_slim",
+   "t": "머리 칸을 얇게(상태는 점 하나)",
+   "kind": "gap",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [],
+   "carry": "web",
+   "pri": 3.9
+  },
+  {
+   "surf": "col2",
+   "topic": "unified_search",
+   "t": "어디서든 같은 검색 + 범위 칩",
+   "kind": "gap",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [],
+   "carry": "web",
+   "pri": 3.9
+  },
+  {
+   "surf": "ui2",
+   "topic": "header_slim",
+   "t": "머리 칸을 얇게(상태는 점 하나)",
+   "kind": "gap",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [],
+   "carry": "web",
+   "pri": 3.9
+  },
+  {
+   "surf": "ledger",
+   "topic": "quick_actions",
+   "t": "자주 쓰는 일 입구를 맨 위에",
+   "kind": "gap",
+   "cases": [
+    "ebay_hub"
+   ],
+   "items": [],
+   "carry": "web",
+   "pri": 3.6
+  },
+  {
    "surf": "shop",
    "topic": "pg_checkout",
    "t": "자사몰 결제(PG 결제창)",
@@ -1436,42 +1519,6 @@
    "pri": 3.6
   },
   {
-   "surf": "col2",
-   "topic": "header_slim",
-   "t": "머리 칸을 얇게(상태는 점 하나)",
-   "kind": "gap",
-   "cases": [
-    "shopify_search"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 3.0
-  },
-  {
-   "surf": "col2",
-   "topic": "unified_search",
-   "t": "어디서든 같은 검색 + 범위 칩",
-   "kind": "gap",
-   "cases": [
-    "shopify_search"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 3.0
-  },
-  {
-   "surf": "ledger",
-   "topic": "quick_actions",
-   "t": "자주 쓰는 일 입구를 맨 위에",
-   "kind": "gap",
-   "cases": [
-    "ebay_hub"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 3.0
-  },
-  {
    "surf": "shop",
    "topic": "confirm_style",
    "t": "확인 방식 하나로(되돌리기·대상 보이는 확인)",
@@ -1481,7 +1528,7 @@
    ],
    "items": [],
    "carry": null,
-   "pri": 3.0
+   "pri": 3.3
   },
   {
    "surf": "shop",
@@ -1492,86 +1539,8 @@
     "shopify_frame"
    ],
    "items": [],
-   "carry": null,
-   "pri": 3.0
-  },
-  {
-   "surf": "ui2",
-   "topic": "header_slim",
-   "t": "머리 칸을 얇게(상태는 점 하나)",
-   "kind": "gap",
-   "cases": [
-    "shopify_search"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 3.0
-  },
-  {
-   "surf": "ui2",
-   "topic": "notify_area",
-   "t": "떠 있는 알림을 한 자리에",
-   "kind": "own",
-   "cases": [
-    "shopify_frame"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 3.0
-  },
-  {
-   "surf": "ui2",
-   "topic": "unified_search",
-   "t": "어디서든 같은 검색 + 범위 칩",
-   "kind": "gap",
-   "cases": [
-    "shopify_search"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 3.0
-  },
-  {
-   "surf": "web",
-   "topic": "header_slim",
-   "t": "머리 칸을 얇게(상태는 점 하나)",
-   "kind": "behind",
-   "cases": [
-    "shopify_search"
-   ],
-   "items": [
-    "W04"
-   ],
-   "carry": null,
-   "pri": 3.0
-  },
-  {
-   "surf": "web",
-   "topic": "notify_area",
-   "t": "떠 있는 알림을 한 자리에",
-   "kind": "behind",
-   "cases": [
-    "shopify_frame"
-   ],
-   "items": [
-    "W01"
-   ],
-   "carry": null,
-   "pri": 3.0
-  },
-  {
-   "surf": "web",
-   "topic": "unified_search",
-   "t": "어디서든 같은 검색 + 범위 칩",
-   "kind": "behind",
-   "cases": [
-    "shopify_search"
-   ],
-   "items": [
-    "W05"
-   ],
-   "carry": null,
-   "pri": 3.0
+   "carry": "web",
+   "pri": 3.3
   },
   {
    "surf": "col2",
@@ -1584,8 +1553,8 @@
    "items": [
     "C01"
    ],
-   "carry": null,
-   "pri": 2.0
+   "carry": "web",
+   "pri": 2.6
   },
   {
    "surf": "ledger",
@@ -1637,18 +1606,6 @@
   },
   {
    "surf": "ui2",
-   "topic": "error_human",
-   "t": "오류는 '무엇이 왜 · 무엇을 하나'로",
-   "kind": "gap",
-   "cases": [
-    "shopify_shipping"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 2.0
-  },
-  {
-   "surf": "ui2",
    "topic": "filter_chips",
    "t": "조건은 탭이 아니라 거르기 칩",
    "kind": "gap",
@@ -1656,32 +1613,6 @@
     "shopify_views"
    ],
    "items": [],
-   "carry": null,
-   "pri": 2.0
-  },
-  {
-   "surf": "ui2",
-   "topic": "shortcut_common",
-   "t": "단축키는 어디서나 같은 뜻",
-   "kind": "gap",
-   "cases": [
-    "shopify_search"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 2.0
-  },
-  {
-   "surf": "web",
-   "topic": "error_human",
-   "t": "오류는 '무엇이 왜 · 무엇을 하나'로",
-   "kind": "behind",
-   "cases": [
-    "shopify_shipping"
-   ],
-   "items": [
-    "W13"
-   ],
    "carry": null,
    "pri": 2.0
   },
@@ -1695,20 +1626,6 @@
    ],
    "items": [
     "W10"
-   ],
-   "carry": null,
-   "pri": 2.0
-  },
-  {
-   "surf": "web",
-   "topic": "shortcut_common",
-   "t": "단축키는 어디서나 같은 뜻",
-   "kind": "behind",
-   "cases": [
-    "shopify_search"
-   ],
-   "items": [
-    "W05"
    ],
    "carry": null,
    "pri": 2.0
@@ -1746,8 +1663,46 @@
     "shopify_search"
    ],
    "items": [],
+   "carry": "web",
+   "pri": 1.3
+  },
+  {
+   "surf": "ui2",
+   "topic": "settings_search",
+   "t": "설정 갈래 목차 + 설정 찾기",
+   "kind": "gap",
+   "cases": [
+    "shopify_search"
+   ],
+   "items": [],
+   "carry": "web",
+   "pri": 1.3
+  },
+  {
+   "surf": "ui2",
+   "topic": "settings_one_place",
+   "t": "한 일의 설정은 한 곳",
+   "kind": "gap",
+   "cases": [
+    "shopify_shipping"
+   ],
+   "items": [],
    "carry": null,
-   "pri": 1.0
+   "pri": 1.1
+  },
+  {
+   "surf": "web",
+   "topic": "settings_one_place",
+   "t": "한 일의 설정은 한 곳",
+   "kind": "behind",
+   "cases": [
+    "shopify_shipping"
+   ],
+   "items": [
+    "W07"
+   ],
+   "carry": null,
+   "pri": 1.1
   },
   {
    "surf": "shop",
@@ -1790,30 +1745,6 @@
    "pri": 1.0
   },
   {
-   "surf": "ui2",
-   "topic": "settings_one_place",
-   "t": "한 일의 설정은 한 곳",
-   "kind": "gap",
-   "cases": [
-    "shopify_shipping"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 1.0
-  },
-  {
-   "surf": "ui2",
-   "topic": "settings_search",
-   "t": "설정 갈래 목차 + 설정 찾기",
-   "kind": "gap",
-   "cases": [
-    "shopify_search"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 1.0
-  },
-  {
    "surf": "web",
    "topic": "bottom_tabs",
    "t": "휴대폰 아래 탭 4~5개 + 더 보기",
@@ -1823,34 +1754,6 @@
    ],
    "items": [
     "W12"
-   ],
-   "carry": null,
-   "pri": 1.0
-  },
-  {
-   "surf": "web",
-   "topic": "settings_one_place",
-   "t": "한 일의 설정은 한 곳",
-   "kind": "behind",
-   "cases": [
-    "shopify_shipping"
-   ],
-   "items": [
-    "W07"
-   ],
-   "carry": null,
-   "pri": 1.0
-  },
-  {
-   "surf": "web",
-   "topic": "settings_search",
-   "t": "설정 갈래 목차 + 설정 찾기",
-   "kind": "behind",
-   "cases": [
-    "shopify_search"
-   ],
-   "items": [
-    "W08"
    ],
    "carry": null,
    "pri": 1.0
@@ -1922,7 +1825,67 @@
    "pri": 0.5
   }
  ],
- "events": [],
+ "events": [
+  {
+   "item": "W01",
+   "d": 0.1,
+   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
+   "cases": [
+    "shopify_frame"
+   ]
+  },
+  {
+   "item": "W02",
+   "d": 0.1,
+   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
+   "cases": [
+    "ebay_hub",
+    "amazon_app"
+   ]
+  },
+  {
+   "item": "W04",
+   "d": 0.1,
+   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
+   "cases": [
+    "shopify_search"
+   ]
+  },
+  {
+   "item": "W05",
+   "d": 0.1,
+   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
+   "cases": [
+    "shopify_search"
+   ]
+  },
+  {
+   "item": "W06",
+   "d": 0.1,
+   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
+   "cases": [
+    "naver_center_home",
+    "ebay_hub",
+    "shopify_orders"
+   ]
+  },
+  {
+   "item": "W08",
+   "d": 0.1,
+   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
+   "cases": [
+    "shopify_search"
+   ]
+  },
+  {
+   "item": "W13",
+   "d": 0.1,
+   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
+   "cases": [
+    "shopify_shipping"
+   ]
+  }
+ ],
  "collect": [
   {
    "t": "쿠팡 윙 판매자 센터 공식 도움말(주문·정산·상품 등록 화면)",
@@ -2027,6 +1990,48 @@
    "by": "엔진"
   },
   {
+   "t": "W01 알림 자리 하나 — 효과 숫자: 탭 줄·등록 단추 가림 0(시험 tUX1)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "web",
+   "by": "엔진"
+  },
+  {
+   "t": "W02 머리 칸 빠른 작업 3개 — 효과 숫자: 등록·오늘 출고까지 누름 수(탭 1번 + 스크롤 → 1번)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "web",
+   "by": "엔진"
+  },
+  {
+   "t": "W04 머리 칸 상태 세 줄 → 점 하나 — 효과 숫자: 휴대폰 머리 칸 높이 265px → 약 150px",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "web",
+   "by": "엔진"
+  },
+  {
+   "t": "W05 검색 범위 칩 + Ctrl+K — 효과 숫자: 0건 검색 뒤 다른 탭으로 다시 찾는 횟수",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "web",
+   "by": "엔진"
+  },
+  {
+   "t": "W06 주문·매출 탭 '📋 처리할 주문' 줄 — 효과 숫자: 취소 요청을 늦게 봐 이미 포장한 일",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "web",
+   "by": "엔진"
+  },
+  {
+   "t": "W08 설정 7묶음 + 설정 찾기 — 효과 숫자: 설정 찾는 시간",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "web",
+   "by": "엔진"
+  },
+  {
+   "t": "W13 오류 글 한국어(공용 errKo) — 효과 숫자: 화면에 영어 원문 오류가 보인 곳 수(346 → 0)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "web",
+   "by": "엔진"
+  },
+  {
    "t": "L01 예스24 수량 상한 기본 1권 — 효과 숫자: 이중 판매 건수(예스24 연결 표 사례)",
    "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
    "for": "ledger",
@@ -2060,6 +2065,36 @@
    "t": "V01 🗣 구매평·문의 연구 주제 칩 → 그 글만 — 효과 숫자: 주제를 찾은 구매평 몫(목표 80%)",
    "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
    "for": "web",
+   "by": "엔진"
+  },
+  {
+   "t": "U01 알림 한 자리(리드나우 2) — 효과 숫자: 떠 있는 것과 겹침 0(시험 t_bench · t_coexist)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U02 머리줄 빠른 작업 3개(리드나우 2) — 효과 숫자: 📥 할 일 페이지에서 등록까지 누름 1번(시험 t_bench)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U03 🔎 어디서나 찾기 Ctrl+K(리드나우 2) — 효과 숫자: 기능·화면을 찾는 누름 수(시험 t_bench)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U04 오류 글 한국어(리드나우 2) — 효과 숫자: 영어만 보이는 오류 알림 0(시험 t_bench)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U05 📥 할 일 받은편지함에 등록·출고 숫자 — 효과 숫자: 받은편지함 줄 중 눌러도 안 가는 줄 0(시험 t_bench)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
    "by": "엔진"
   }
  ]
