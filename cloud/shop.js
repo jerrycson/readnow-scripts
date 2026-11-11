@@ -25,6 +25,8 @@ const BAD_SKU = /^\s*DUPES/i;
 
 const s = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n || 200);
 const num = (v) => { const x = Math.round(+v); return Number.isFinite(x) && x > 0 ? x : 0; };
+/* (shelf2) 판형 '148*210*20mm' → '148x210x20'(가로x세로x두께 mm · 서가 책장 책 키·두께) · 이상하면 null */
+const szOf = (v) => { const m = /(\d{2,3})\s*[*x×]\s*(\d{2,3})(?:\s*[*x×]\s*(\d{1,3}))?/i.exec(String(v || '')); if (!m) return null; const w = +m[1], h = +m[2], d = m[3] ? +m[3] : 0; if (w < 60 || h < 80 || w > 450 || h > 500 || d > 200) return null; return w + 'x' + h + (d ? 'x' + d : ''); };
 const imgOf = (im, thumb) => { if (!im) return null; if (typeof im === 'string') return /^https:\/\//.test(im) ? im : null; const p = thumb ? im.thumb || im.stored : im.stored || im.thumb; if (p) return IMG_BASE + encodeURIComponent(p) + '?alt=media'; return typeof im.src === 'string' && /^https:\/\//.test(im.src) ? im.src : null; };
 const catOf = (b) => { const p = String((b && b.categories && b.categories[0] && (b.categories[0].path || b.categories[0].name)) || ''); const seg = p.split('>').map((x) => x.trim()).filter(Boolean); return s(seg[1] || seg[0] || '', 24) || null; };
 const pd = (v) => { const d = String(v || '').replace(/[^\d]/g, ''); return d.length >= 6 ? d.slice(0, 4) + '-' + d.slice(4, 6) : null; };
@@ -40,18 +42,25 @@ function pubItem(id, l, b) {
   const cover = imgOf(b.images && b.images.front, true) || imgOf(b.cover, true);
   const author = s(b.author || (b.contributors || []).slice(0, 2).map((c) => c && c.name).filter(Boolean).join(', ') || l.author, 60) || null;
   return { id: String(id), t, a: author, pb: s(b.publisher || l.publisher, 40) || null, pd: pd(b.pubDate), c: catOf(b), g: s(l.grade, 4) || null, p, lp: num(b.priceList || l.priceList) || null,
-    im: cover || ph[0] || null, ph, sp: imgOf(b.images && b.images.spine, false) || null, bk: imgOf(b.images && b.images.back, true) || null, pg: num(b.pages) || null, isbn: /^97[89]\d{10}$/.test(String(l.isbn13 || b.isbn13 || '')) ? String(l.isbn13 || b.isbn13) : null, q: Math.max(1, +l.qty || 1), at: tsIso(l.registeredAt) || tsIso(l.firstSeenAt) || null };
+    im: cover || ph[0] || null, ph, sp: imgOf(b.images && b.images.spine, false) || null, bk: imgOf(b.images && b.images.back, true) || null, pg: num(b.pages) || null, sz: szOf(b.size), isbn: /^97[89]\d{10}$/.test(String(l.isbn13 || b.isbn13 || '')) ? String(l.isbn13 || b.isbn13) : null, q: Math.max(1, +l.qty || 1), at: tsIso(l.registeredAt) || tsIso(l.firstSeenAt) || null };
 }
 /* ══ (11/11 shelf1) 📚 서가 책장 — 판매중 책 전부를 가볍게(칸 이름 cols · 줄마다 배열 · 그림 주소 앞부분은 pre 번호로 줄임) · 4,000권씩 나눠 받음
  *  판매지수(sp)는 숫자를 내보내지 않고 순위(sr · 1이 가장 많이 팔림)만 — 공개 요약 칸 밖의 시장 지표를 새지 않게 · 주문 중 'o' · 다른 판매처에서 팔린 책은 뺌 */
-const SHELF_COLS = ['id', 't', 'a', 'c', 'p', 'lp', 'g', 'at', 'im', 'sp', 'bk', 'st', 'sr', 'pg', 'pb'];
+const SHELF_COLS = ['id', 't', 'a', 'c', 'p', 'lp', 'g', 'at', 'im', 'sp', 'bk', 'st', 'sr', 'pg', 'pb', 'sz', 'lk']; /* (shelf2) sz 판형 · lk 영구 책등 모양 */
 const SHELF_PRE = [IMG_BASE, 'https://image.aladin.co.kr/product/'];
 const SHELF_PART = 4000; /* 근거: 한 묶음 ≈ 4,000권 × 250바이트 ≈ 1MB(gzip ≈ 200KB) — 휴대폰 첫 화면이 1~2초 안에 그려지게 */
 const preOf = (u) => { if (!u) return null; for (let i = 0; i < SHELF_PRE.length; i++) if (u.startsWith(SHELF_PRE[i])) return '~' + i + u.slice(SHELF_PRE[i].length); return u; };
-function shelfRows(all, held, sold, sp) { const H = held || new Set(); const X = sold || new Set(); const SP = sp || new Map();
+function shelfRows(all, held, sold, sp, lk) { const H = held || new Set(); const X = sold || new Set(); const SP = sp || new Map(); const LK = lk || new Map();
   const L = (all || []).filter((x) => x && !X.has(x.id)).slice().sort((a, b) => String(a.at || '').localeCompare(String(b.at || '')) || String(a.id).localeCompare(String(b.id))); /* 등록순(오래된 것 먼저) */
   const R = L.map((x) => [x.id, SP.has(x.id) ? +SP.get(x.id) || 0 : -1]).filter((r) => r[1] >= 0).sort((a, b) => b[1] - a[1]); const rank = new Map(R.map((r, i) => [r[0], i + 1]));
-  return L.map((x) => [x.id, x.t, x.a || null, x.c || null, x.p, x.lp || null, x.g || null, x.at ? String(x.at).slice(0, 10) : null, preOf(x.im), preOf(x.sp), preOf(x.bk), H.has(x.id) ? 'o' : 's', rank.get(x.id) || null, x.pg || null, x.pb || null]); }
+  return L.map((x) => [x.id, x.t, x.a || null, x.c || null, x.p, x.lp || null, x.g || null, x.at ? String(x.at).slice(0, 10) : null, preOf(x.im), preOf(x.sp), preOf(x.bk), H.has(x.id) ? 'o' : 's', rank.get(x.id) || null, x.pg || null, x.pb || null, x.sz || null, LK.get(x.id) || null]); }
+/* (shelf2) 📚 책등 모양 영구 저장 — shop_spines/b00~b31 문서(상품 번호 해시로 32칸 · {m:{상품:모양}}) · 손님 화면이 정해 보내면 '먼저 정한 것'이 이김
+ *  모양 글 = '세대.출처.디자인.색.무늬.글꼴.모양.장식.방향'(shop/shelf-core.js encode) · 세대(lookGen)가 지금 설정과 다른 것은 안 씀(지우지 않음 — 관리 화면 '다시 정하기') */
+const SPINE_RE = /^(\d{1,4})\.[scrt]\.\d{1,2}\.\d{1,3}\.\d{1,2}\.\d{1,2}\.\d{1,2}\.\d\.[vh]$/;
+const SPINE_N = 32; const spineBucket = (id) => { let h = 2166136261 >>> 0; const t = String(id); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return 'b' + String(h % SPINE_N).padStart(2, '0'); };
+/* 들어온 것 거르기 → 새로 받을 [상품, 모양] (have = 이미 있는 Map · ok = 판매중 상품인지 · gen = 지금 세대) */
+function spineTake(L, have, ok, gen) { const out = []; const seen = new Set(); for (const r of Array.isArray(L) ? L.slice(0, 300) : []) { if (!Array.isArray(r)) continue; const id = s(r[0], 80), code = String(r[1] || ''); const m = SPINE_RE.exec(code);
+    if (!id || !m || +m[1] !== gen || seen.has(id) || !ok(id)) continue; const was = have.get(id); const wm = was && SPINE_RE.exec(was); if (wm && +wm[1] === gen) continue; seen.add(id); out.push([id, code]); } return out; }
 const shelfParts = (rows) => { const P = []; for (let i = 0; i < rows.length; i += SHELF_PART) P.push({ rows: rows.slice(i, i + SHELF_PART) }); if (!P.length) P.push({ rows: [] }); return P; };
 /* shop_holds 한 장이 지금 살아 있나 — until(다른 판매처 팔림 표시 · 하루)이 지나면 풂 */
 const holdOn = (h, now) => !!(h && h.on && !(h.until && Date.parse(h.until) < (now || Date.now())));
@@ -156,13 +165,17 @@ function sitemapXml(items, o) { o = o || {}; const base = o.base || BASE; const 
 
 function makeShop({ db, C, FV, log }) {
   const CAT = { items: new Map(), books: new Map(), gone: new Map(), sp: new Map(), full: 0, delta: 0, busy: null, err: null }; const SHELF = { key: '', parts: [] }; /* (11/11 shelf1) sp = 상품 → 알라딘 판매지수(밖으로는 순위만) · SHELF = 서가 책장 묶음 기억 */
+  const SPN = { m: new Map(), at: 0, v: 0, dirty: new Map(), t: null, busy: null }; /* (shelf2) 책등 모양 영구 저장 — 10분마다 다시 읽음 · 받은 것은 15초 모아 칸(문서)마다 한 번 씀 */
+  const spinesLoad = async () => { if (SPN.at && Date.now() - SPN.at < 600e3) return; if (SPN.busy) return SPN.busy; SPN.busy = (async () => { try { const ss = await C('shop_spines').get(); ss.forEach((d) => { const m = (d.data() || {}).m || {}; for (const k in m) if (typeof m[k] === 'string' && !SPN.dirty.has(k)) SPN.m.set(k, m[k]); }); SPN.v++; } catch (e) { log && log('🛍 책등 모양 읽기 실패', e.message); } SPN.at = Date.now(); SPN.busy = null; })(); return SPN.busy; };
+  const spinesFlush = async () => { SPN.t = null; const by = new Map(); for (const [id, code] of SPN.dirty) { const b = spineBucket(id); if (!by.has(b)) by.set(b, {}); by.get(b)[id] = code; } SPN.dirty.clear(); const at = new Date().toISOString();
+    for (const [b, m] of by) { try { await C('shop_spines').doc(b).set({ m, at, uploadedAt: FV.serverTimestamp(), writer: 'cloud-shop' }, { merge: true }); } catch (e) { log && log('🛍 책등 모양 쓰기 실패', b, e.message); } } };
   let CFG = { v: null, at: 0 }; let HELD = { v: new Set(), x: new Set(), at: 0 }; const RL = new Map();
   const cfg = async () => { if (CFG.v && Date.now() - CFG.at < 60e3) return CFG.v; try { const d = await C('app_settings').doc('shop').get(); CFG = { v: { ...DEF, ...(d.exists ? d.data() : {}) }, at: Date.now() }; } catch (e) { CFG = { v: CFG.v || { ...DEF }, at: Date.now() - 50e3 }; } return CFG.v; };
   const held = async (force) => { if (!force && Date.now() - HELD.at < 20e3) return HELD.v; try { const ss = await C('shop_holds').where('on', '==', 1).get(); const v = new Set(); const x = new Set(); const now = Date.now(); ss.forEach((d) => { const h = d.data() || {}; if (!holdOn(h, now)) return; (h.sold ? x : v).add(d.id); }); HELD = { v, x, at: now }; } catch (e) { HELD.at = Date.now() - 10e3; } return HELD.v; };
   const soldX = async () => { await held(); return HELD.x || new Set(); }; /* (11/11 shop2) 다른 판매처에서 팔림(🤖 자동 내림이 적음) */
   async function booksFor(ids) { const need = [...new Set(ids.filter((x) => x && !CAT.books.has(x)))]; for (let i = 0; i < need.length; i += 200) { const ss = await db.getAll(...need.slice(i, i + 200).map((x) => C('prd_books').doc(String(x)))); const part = need.slice(i, i + 200); let ms = []; try { ms = await db.getAll(...part.map((x) => C('prd_book_metrics').doc(String(x)))); } catch (e) {} const SPM = new Map(); ms.forEach((d) => { if (d.exists) { const v = (d.data() || {}).salesPoint; if (v != null && !isNaN(+v)) SPM.set(d.id, +v); } });
       ss.forEach((d) => CAT.books.set(d.id, d.exists ? slimB({ ...d.data(), ...(SPM.has(d.id) ? { _sp: SPM.get(d.id) } : {}) }) : null)); } }
-  const slimB = (b) => ({ title: b.title, author: b.author, contributors: (b.contributors || []).slice(0, 2).map((c) => ({ name: c && c.name })), publisher: b.publisher, pubDate: b.pubDate, categories: (b.categories || []).slice(0, 1), images: b.images && (b.images.front || b.images.spine || b.images.back) ? { front: b.images.front || null, spine: b.images.spine || null, back: b.images.back || null } : null, cover: b.cover, priceList: b.priceList, isbn13: b.isbn13, adult: b.adult, pages: b.pages || null, sp: b._sp != null ? b._sp : (b.salesPoint != null ? +b.salesPoint || 0 : null) }); /* (11/11 shelf1) 📚 서가 책장 — 책등·뒤표지 그림·쪽수(책 두께)·판매지수(순서만 공개) */
+  const slimB = (b) => ({ title: b.title, author: b.author, contributors: (b.contributors || []).slice(0, 2).map((c) => ({ name: c && c.name })), publisher: b.publisher, pubDate: b.pubDate, categories: (b.categories || []).slice(0, 1), images: b.images && (b.images.front || b.images.spine || b.images.back) ? { front: b.images.front || null, spine: b.images.spine || null, back: b.images.back || null } : null, cover: b.cover, priceList: b.priceList, isbn13: b.isbn13, adult: b.adult, pages: b.pages || null, size: b.size || null, sp: b._sp != null ? b._sp : (b.salesPoint != null ? +b.salesPoint || 0 : null) }); /* (11/11 shelf1) 📚 서가 책장 — 책등·뒤표지 그림·쪽수(책 두께)·판매지수(순서만 공개) */
   const put = (id, l) => { const bk0 = l && l.bookId ? CAT.books.get(String(l.bookId)) : null; const it = pubItem(id, l, bk0); const k = String(id); if (it) { CAT.items.set(k, it); if (bk0 && bk0.sp != null) CAT.sp.set(k, bk0.sp); else CAT.sp.delete(k); CAT.gone.delete(k); } else { const was = CAT.items.get(k); if (was) goneAdd(k, was); CAT.items.delete(k); } };
   /* (11/11 shop2) 팔렸거나 내린 책 — '품절' 화면용 요약(공개 요약 그대로 · 30일 · 최대 GONE_MAX) */
   const goneAdd = (k, it) => { CAT.gone.set(k, { ...it, goneAt: new Date().toISOString() }); if (CAT.gone.size > GONE_MAX) { const old = CAT.gone.keys().next().value; CAT.gone.delete(old); } };
@@ -239,15 +252,19 @@ function makeShop({ db, C, FV, log }) {
         res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=1800, s-maxage=3600' }); res.end(xml); return true; } }
       if (path === '/shop/cfg') { await ready(); return send(200, { ok: true, ...pubCfg(await cfg(), CAT.meta), err: CAT.err && !CAT.items.size ? '목록 준비 중' : null }, 'public, max-age=60'); }
       if (path === '/shop/list') { await ready(); const H = await held(); const r = listItems([...CAT.items.values()], q, H, await soldX()); return send(200, { ok: true, ...r, at: CAT.meta && CAT.meta.at }, 'public, max-age=30'); }
-      if (path === '/shop/shelf') { await ready(); const H = await held(); const X = await soldX(); const key = [CAT.meta && CAT.meta.at, HELD.at, CAT.items.size].join('|');
-        if (SHELF.key !== key) { SHELF.parts = shelfParts(shelfRows([...CAT.items.values()], H, X, CAT.sp)); SHELF.key = key; SHELF.gz = new Map(); }
+      if (path === '/shop/shelf') { await ready(); const H = await held(); const X = await soldX(); await spinesLoad(); if (SPN.kv !== SPN.v && !(Date.now() - (SPN.kvAt || 0) < 60e3)) { SPN.kv = SPN.v; SPN.kvAt = Date.now(); } /* 새 모양은 1분에 한 번만 묶음에 다시 넣음(gzip 다시 만들기 줄임) */ const key = [CAT.meta && CAT.meta.at, HELD.at, CAT.items.size, SPN.kv].join('|');
+        if (SHELF.key !== key) { SHELF.parts = shelfParts(shelfRows([...CAT.items.values()], H, X, CAT.sp, SPN.m)); SHELF.key = key; SHELF.gz = new Map(); }
         const k = Math.max(0, Math.min(SHELF.parts.length - 1, parseInt(q.k, 10) || 0)); const P = SHELF.parts[k] || { rows: [] };
         const body = JSON.stringify({ ok: true, v: 1, n: SHELF.parts.reduce((a, x) => a + x.rows.length, 0), k, kn: SHELF.parts.length, at: CAT.meta && CAT.meta.at, pre: SHELF_PRE, cols: SHELF_COLS, rows: P.rows });
         const gz = /\bgzip\b/.test(String(req.headers['accept-encoding'] || '')); const hd = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60', 'X-Robots-Tag': 'noindex', Vary: 'Accept-Encoding, Origin' };
         if (gz) { let z = SHELF.gz.get(k); if (!z) { z = zlib.gzipSync(body, { level: 6 }); SHELF.gz.set(k, z); } res.writeHead(200, { ...hd, 'Content-Encoding': 'gzip' }); res.end(z); } else { res.writeHead(200, hd); res.end(body); } return true; }
+      if (path === '/shop/check') { /* (shelf2 · 원칙 56) 장바구니 살펴보기 — 담은 책이 아직 판매중인지·값이 바뀌었는지(최대 50권 · 손님 정보 없음) */ await ready(); const H = await held(); const X = await soldX(); const ids = [...new Set(String(q.ids || '').split(',').map((x) => s(x, 80)).filter(Boolean))].slice(0, 50); const st = {}, p = {};
+        for (const id of ids) { const it = CAT.items.get(id); st[id] = !it || X.has(id) ? 'x' : H.has(id) ? 'o' : 's'; if (it) p[id] = it.p; } return send(200, { ok: true, st, p }); }
       if (path === '/shop/item') { await ready(); const H = await held(); const X = await soldX(); const it0 = CAT.items.get(s(q.id, 80)); const it = it0 && !X.has(it0.id) ? it0 : null; if (!it) return send(404, { ok: false, err: '판매가 끝났거나 없는 책입니다' });
         const same = it.isbn ? [...CAT.items.values()].filter((x) => x.isbn === it.isbn && x.id !== it.id && !X.has(x.id)).slice(0, 6).map((x) => ({ id: x.id, g: x.g, p: x.p, st: H.has(x.id) ? 'o' : 's' })) : [];
         return send(200, { ok: true, item: { ...it, st: H.has(it.id) ? 'o' : 's' }, same }, 'public, max-age=30'); }
+      if (path === '/shop/spines' && req.method === 'POST') { if (limited('sp' + ipKey(req), 40, 600e3)) return send(429, { ok: false, err: '잠시 뒤 다시' }); const body = await readBody(req); await ready(); await spinesLoad(); const c = await cfg(); const gen = Math.max(0, Math.round(+((c.shelf || {}).lookGen) || 0));
+        const take = spineTake(body.L, SPN.m, (id) => CAT.items.has(id), gen); for (const [id, code] of take) { SPN.m.set(id, code); SPN.dirty.set(id, code); } if (take.length) { SPN.v++; if (!SPN.t) SPN.t = setTimeout(() => spinesFlush().catch(() => {}), 15e3); } return send(200, { ok: true, n: take.length, gen }); }
       if (path === '/shop/order' && req.method === 'POST') { const body = await readBody(req); const [code, obj] = await order(req, body); return send(code, obj); }
       if (path === '/shop/order') { const r = await lookup(q.no, q.t); if (!r) return send(404, { ok: false, err: '주문을 찾을 수 없습니다(주문 번호·조회 주소 확인)' }); return send(200, view(r.o)); }
       if (path === '/shop/cancel' && req.method === 'POST') { const body = await readBody(req); const r = await lookup(body.no, body.t); if (!r) return send(404, { ok: false, err: '주문을 찾을 수 없습니다' });
@@ -261,7 +278,7 @@ function makeShop({ db, C, FV, log }) {
   const readBody = (req) => new Promise((ok, no) => { const ch = []; let n = 0; req.on('data', (c) => { n += c.length; if (n > 32e3) { no(Object.assign(new Error('너무 큼'), { code: 413 })); req.destroy(); } else ch.push(c); }); req.on('end', () => { try { ok(ch.length ? JSON.parse(Buffer.concat(ch).toString('utf8')) : {}); } catch (e) { ok({}); } }); req.on('error', no); });
   let CHK = null; /* (11/11 shop3) 🔍 문 열기 전 점검 — 5분 기억(관리 기기 여럿이 열어도 한 번) */
   async function check(force) { if (!force && CHK && Date.now() - CHK.t < 5 * 60e3) return CHK.v; try { await build(); } catch (e) {} const it = [...CAT.items.values()].find((x) => x && x.ph && x.ph.length) || [...CAT.items.values()][0] || null; const v = await selfCheck({ item: it }); v.n = CAT.items.size; CHK = { t: Date.now(), v }; return v; }
-  return { handle, build, check, _cat: CAT };
+  return { handle, build, check, _cat: CAT, _spn: SPN, spinesFlush };
 }
 
 /* (11/11 shop3) 🔍 문 열기 전 점검 — 공개 주소를 클라우드가 직접 열어 봄(브라우저는 다른 출처라 상태 번호를 못 읽음) · 손님 정보 없음 · 결과 5분 기억
@@ -283,4 +300,4 @@ async function selfCheck(o) { o = o || {}; const f = o.fetch || fetch; const dns
   const pu = it && ((it.ph && it.ph[0]) || null); if (pu) { const p = await chkGet(pu, f); out.ph = p.err ? { ok: false, why: p.err.t } : { ok: p.st === 200 && /^image\//.test(p.ct), st: p.st, why: p.st === 200 ? '' : p.st === 403 || p.st === 401 ? 'Storage 규칙이 사진 공개 읽기를 막음(손님 화면에 사진이 안 보임)' : 'HTTP ' + p.st }; } else out.ph = { ok: null, why: '실물 사진이 있는 공개 책이 아직 없음(표지만)' };
   return out; }
 
-module.exports = { selfCheck, chkWhy, makeShop, shelfPub, shelfRows, shelfParts, SHELF_COLS, SHELF_PRE, SHELF_PART, pubItem, listItems, kstDay, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };
+module.exports = { selfCheck, chkWhy, makeShop, shelfPub, shelfRows, shelfParts, spineTake, spineBucket, SPINE_RE, szOf, SHELF_COLS, SHELF_PRE, SHELF_PART, pubItem, listItems, kstDay, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };

@@ -12,6 +12,13 @@
   const cartDel = (cart, id) => (cart || []).filter((x) => x && x.id !== id);
   const shipFee = (sum, cfg) => { const f = Math.max(0, +((cfg || {}).shipFee) || 0); const fo = Math.max(0, +((cfg || {}).freeOver) || 0); return sum <= 0 ? 0 : fo && sum >= fo ? 0 : f; };
   const cartSum = (cart, cfg) => { const sum = (cart || []).reduce((a, x) => a + (+x.p || 0), 0); const fee = shipFee(sum, cfg); return { n: (cart || []).length, sum, fee, total: sum + fee }; };
+  /* (shelf2 · 원칙 56) 장바구니 살펴보기 — 클라우드 /shop/check 결과(st: 상품 → s 판매중·o 주문 중·x 팔림/내림 · p: 지금 값)로 고침 → { cart, gone:[{…, why}], moved:[{t, a, b}] }
+   *  근거: 쿠팡·아마존 장바구니는 품절·가격 바뀜을 결제 전에 먼저 알림 — 주문 단추를 누른 뒤에야 '팔린 책' 오류가 나지 않게 */
+  const cartFix = (cart, st, p) => { const out = [], gone = [], moved = []; for (const x of cart || []) { if (!x || !x.id) continue; const k = st && st[x.id];
+      if (k === 'x' || k === 'o') { gone.push({ ...x, why: k === 'o' ? '다른 분이 먼저 주문한 책' : '방금 팔렸거나 판매를 멈춘 책' }); continue; }
+      const np = p && +p[x.id]; if (np > 0 && np !== +x.p) { moved.push({ id: x.id, t: x.t, a: +x.p || 0, b: np }); out.push({ ...x, p: np }); } else out.push(x); } return { cart: out, gone, moved }; };
+  /* 배송비 무료까지 남은 돈(무료 기준이 없으면 null) */
+  const freeLeft = (sum, cfg) => { const fo = Math.max(0, +((cfg || {}).freeOver) || 0); const f = Math.max(0, +((cfg || {}).shipFee) || 0); if (!fo || !f || sum <= 0) return null; return Math.max(0, fo - sum); };
   /* 주문서 검사(서버도 같은 검사를 다시 함 — 여기는 손님에게 바로 알려 주기용) */
   const PHONE = /^01[016789]\d{7,8}$/;
   const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,80}\.[a-z]{2,}$/i;
@@ -34,5 +41,5 @@
   function route(h) { const s = String(h || '').replace(/^#/, '') || '/'; const [p, qs] = s.split('?'); const q = {}; (qs || '').split('&').filter(Boolean).forEach((kv) => { const [k, v] = kv.split('='); try { q[decodeURIComponent(k)] = decodeURIComponent((v || '').replace(/\+/g, ' ')); } catch (e) {} });
     const seg = p.split('/').filter(Boolean); return { name: seg[0] || 'home', arg: seg[1] ? decodeURIComponent(seg[1]) : null, q }; }
   const qs = (o) => Object.entries(o || {}).filter(([, v]) => v != null && v !== '').map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-  return { won, esc, GRADE, gradeOf, offPct, cartAdd, cartDel, cartSum, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs, ago, freshIds };
+  return { won, esc, GRADE, gradeOf, offPct, cartAdd, cartDel, cartSum, cartFix, freeLeft, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs, ago, freshIds };
 });

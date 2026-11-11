@@ -92,3 +92,13 @@ h2 #nwh { flex: 1; margin-left: 8px; } .fresh { display: inline-block; font-size
 .bqs-wait { padding: 60px 0; text-align: center; color: var(--mut); }
 .wcard { display: flex; flex-direction: column; } .wcard .card { flex: 1; } .wact { display: flex; gap: 6px; margin-top: 6px; } .wact .btn { min-height: 38px; flex: 1; padding: 0 8px; font-size: 14px; } .wact .btn + .btn { flex: 0 0 44px; }
 @media (max-width: 520px) { .logo small { display: none; } .nav { gap: 0; } .nav a { white-space: nowrap; padding: 8px 6px; font-size: 14px; } }
+
+/* (shelf2 · 원칙 56) 장바구니·주문서 — 무료 배송까지 막대 · 살펴본 알림 · 휴대폰에서 주문 단추가 늘 손 닿는 곳 · 칸 바로 검사 */
+.free { margin: 12px 0 0; font-size: 14px; } .free i { display: block; height: 8px; margin-top: 6px; border-radius: 4px; background: linear-gradient(90deg, #c9a24a var(--p), rgba(0, 0, 0, .1) var(--p)); } .free.ok { color: #2f7d4f; font-weight: 700; }
+.fresh ul { margin: 6px 0 0; padding-left: 20px; } .fresh li { margin: 2px 0; }
+.more2 { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; font-size: 14px; margin: 2px 0 6px; }
+.toast .undo { margin-left: 8px; border: 0; border-radius: 8px; padding: 4px 10px; background: #f3d58a; color: #1d2b45; font: inherit; font-weight: 700; cursor: pointer; }
+legend .edit { font-size: 13px; font-weight: 500; margin-left: 8px; }
+label.f.good input { border-color: #2f7d4f; }
+@media (max-width: 640px) { .gobar { position: sticky; bottom: 0; z-index: 5; margin: 0 -16px; padding: 6px 16px calc(6px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--bg) 30%); } .gobar .btn.wide { margin: 4px 0; } }
+.toast.on:has(.undo) { pointer-events: auto; }

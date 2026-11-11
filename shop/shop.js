@@ -75,29 +75,42 @@
       const a = $('#add'); if (a) a.onclick = () => add(false); const n = $('#now'); if (n) n.onclick = () => add(true); }
     catch (e) { main().innerHTML = errBox(e) + '<p class="center"><a href="#/">첫 화면으로</a></p>'; bindAgain(() => item(id)); } }
 
-  async function cartPage() { let c = null; try { c = await cfg(); } catch (e) { c = { shipFee: 0, open: 0 }; } const L = cart(); const S0 = B.cartSum(L, c);
-    main().innerHTML = `<h1 class="pt">장바구니</h1>${L.length ? `<div class="rows">${L.map((x) => `<div class="row"><a href="#/b/${encodeURIComponent(x.id)}" class="ri">${x.im ? `<img src="${esc(x.im)}" alt="">` : '📕'}</a><div class="rt"><a href="#/b/${encodeURIComponent(x.id)}">${esc(x.t)}</a><div>${gTag(x.g)} <b>${won(x.p)}</b></div></div><button class="x" data-del="${esc(x.id)}" aria-label="빼기">✕</button></div>`).join('')}</div>
-      <div class="sum"><div><span>책 ${S0.n}권</span><b>${won(S0.sum)}</b></div><div><span>배송비</span><b>${won(S0.fee)}</b></div><div class="tot"><span>합계</span><b>${won(S0.total)}</b></div></div>
-      ${c.open ? '<a class="btn wide" href="#/order">주문하기</a>' : '<button class="btn wide" disabled>문을 연 뒤에 주문할 수 있습니다</button>'}<p class="hint">헌책은 모두 한 권뿐이라 장바구니에 담아도 잡아 두지 않습니다 — 주문을 마치면 그때 '주문 중'으로 잡힙니다.</p>`
-      : '<div class="empty">장바구니가 비었습니다<br><a class="btn" href="#/">책 둘러보기</a></div>'}`;
-    $$('[data-del]').forEach((b) => (b.onclick = () => { setCart(B.cartDel(cart(), b.dataset.del)); cartPage(); })); }
+  /* (shelf2 · 원칙 56) 담은 책 살펴보기 — 팔린 책은 빼고 값이 바뀐 책은 새 값으로 · 무엇이 바뀌었는지 알림 글(없으면 '') · 클라우드가 옛 판(404)이거나 연결이 안 되면 그대로 */
+  async function cartFresh() { const L = cart(); if (!L.length) return ''; let r; try { r = await api('/shop/check?' + B.qs({ ids: L.map((x) => x.id).join(',') })); } catch (e) { return ''; }
+    const f = B.cartFix(cart(), r.st, r.p); if (!f.gone.length && !f.moved.length) return ''; setCart(f.cart);
+    return `<div class="bar wait fresh" role="status">🔎 <b>담아 두신 책을 살펴보았습니다</b><ul>${f.gone.map((x) => `<li><b>${esc(x.t)}</b> — ${esc(x.why)}이라 장바구니에서 뺐습니다</li>`).join('')}${f.moved.map((x) => `<li><b>${esc(x.t)}</b> — 값이 ${won(x.a)} → <b>${won(x.b)}</b>로 바뀌었습니다</li>`).join('')}</ul></div>`; }
+  const freeBar = (S0, c) => { const left = B.freeLeft(S0.sum, c); if (left == null) return ''; const pct = Math.min(100, Math.round(S0.sum / c.freeOver * 100));
+    return `<div class="free${left ? '' : ' ok'}"><div>${left ? `🚚 <b>${won(left)}</b> 더 담으면 배송비 무료` : '🎉 배송비 무료!'}</div><i style="--p:${pct}%"></i></div>`; };
+  async function cartPage(note) { let c = null; try { c = await cfg(); } catch (e) { c = { shipFee: 0, open: 0 }; } const L = cart(); const S0 = B.cartSum(L, c);
+    main().innerHTML = `<h1 class="pt">장바구니</h1>${note || ''}${L.length ? `<div class="rows">${L.map((x) => `<div class="row"><a href="#/b/${encodeURIComponent(x.id)}" class="ri">${x.im ? `<img src="${esc(x.im)}" alt="">` : '📕'}</a><div class="rt"><a href="#/b/${encodeURIComponent(x.id)}">${esc(x.t)}</a><div>${gTag(x.g)} <b>${won(x.p)}</b></div></div><button class="x" data-del="${esc(x.id)}" aria-label="빼기: ${esc(x.t)}">✕</button></div>`).join('')}</div>
+      ${freeBar(S0, c)}<div class="sum"><div><span>책 ${S0.n}권</span><b>${won(S0.sum)}</b></div><div><span>배송비</span><b>${S0.fee ? won(S0.fee) : '무료'}</b></div><div class="tot"><span>합계</span><b>${won(S0.total)}</b></div></div>
+      ${c.open ? `<a class="btn wide" href="#/order" id="toOrder">${won(S0.total)} 주문하기 ›</a>` : '<button class="btn wide" disabled>문을 연 뒤에 주문할 수 있습니다</button>'}<div class="more2"><a href="#/list?s=new">＋ 책 더 둘러보기</a><a href="#/shelf">📚 서가 책장에서 더 보기</a></div><p class="hint">헌책은 모두 한 권뿐이라 장바구니에 담아도 잡아 두지 않습니다 — 주문을 마치면 그때 '주문 중'으로 잡힙니다.</p>`
+      : `<div class="empty">장바구니가 비었습니다<br><a class="btn" href="#/">책 둘러보기</a> <a class="btn ghost" href="#/shelf">📚 서가 책장</a></div>`}`;
+    $$('[data-del]').forEach((b) => (b.onclick = () => { const x = cart().find((y) => y.id === b.dataset.del); setCart(B.cartDel(cart(), b.dataset.del)); cartPage(''); if (x) undoToast(x); }));
+    if (note === undefined && L.length) { const n = await cartFresh(); if (n && B.route(location.hash).name === 'cart') cartPage(n); } }
+  /* 뺀 책 되돌리기(실수로 ✕ — 4초) */
+  function undoToast(x) { const t = $('#toast'); t.innerHTML = `「${esc(x.t)}」 뺐습니다 <button type="button" class="undo">되돌리기</button>`; t.classList.add('on'); clearTimeout(tT); tT = setTimeout(() => t.classList.remove('on'), 4200);
+    const u = $('.undo', t); if (u) u.onclick = () => { const r = B.cartAdd(cart(), x, (ST.cfg || {}).maxItems); if (!r.why) { setCart(r.cart); if (B.route(location.hash).name === 'cart') cartPage(''); } t.classList.remove('on'); }; }
 
-  async function orderPage() { const L = cart(); if (!L.length) { location.hash = '#/cart'; return; } let c; try { c = await cfg(true); } catch (e) { main().innerHTML = errBox(e); bindAgain(orderPage); return; }
-    if (!c.open) { main().innerHTML = `${closedBar(c)}<p class="center"><a href="#/cart">장바구니로</a></p>`; return; } const S0 = B.cartSum(L, c);
+  async function orderPage() { if (!cart().length) { location.hash = '#/cart'; return; } let c; try { c = await cfg(true); } catch (e) { main().innerHTML = errBox(e); bindAgain(orderPage); return; }
+    if (!c.open) { main().innerHTML = `${closedBar(c)}<p class="center"><a href="#/cart">장바구니로</a></p>`; return; } const note = await cartFresh(); if (B.route(location.hash).name !== 'order') return; const L = cart(); if (!L.length) { location.hash = '#/cart'; return; } const S0 = B.cartSum(L, c);
     const fld = (k, lb, typ, ph, extra) => `<label class="f" data-f="${k}"><span>${lb}</span><input id="f_${k}" type="${typ || 'text'}" ${ph ? `placeholder="${esc(ph)}"` : ''} ${extra || ''}><em></em></label>`;
-    main().innerHTML = `<h1 class="pt">주문서</h1><form id="of" novalidate>
+    main().innerHTML = `<h1 class="pt">주문서</h1>${note}<form id="of" novalidate>
       <fieldset><legend>주문하시는 분</legend>${fld('name', '이름', 'text', '', 'autocomplete="name" maxlength="30"')}${fld('phone', '휴대폰', 'tel', '010-0000-0000', 'autocomplete="tel" inputmode="numeric"')}${fld('email', '메일 (선택)', 'email', '주문 안내를 메일로도 받으려면', 'autocomplete="email" maxlength="80"')}<div class="hint">주문 접수·입금 확인·보냄 알림은 휴대폰 문자(메일을 적으시면 메일도)로 — 알림 보내기는 준비 중이라 지금은 주문 뒤 받는 조회 주소로 확인해 주세요</div></fieldset>
       <fieldset><legend>받는 분</legend><label class="ck"><input type="checkbox" id="f_same" checked> 주문하시는 분과 같음</label><div id="rcv" hidden>${fld('rname', '이름', 'text', '', 'maxlength="30"')}${fld('rphone', '휴대폰', 'tel', '010-0000-0000', 'inputmode="numeric"')}</div>
         ${fld('zip', '우편번호', 'text', '5자리', 'inputmode="numeric" maxlength="5" autocomplete="postal-code"')}${fld('addr1', '주소', 'text', '도로명 또는 지번 주소', 'autocomplete="address-line1" maxlength="120"')}${fld('addr2', '상세 주소', 'text', '동·호수', 'autocomplete="address-line2" maxlength="80"')}${fld('memo', '배송 메모', 'text', '예) 문 앞에 두세요', 'maxlength="100"')}</fieldset>
       <fieldset><legend>결제</legend>${c.pay.how === 'bank' ? `<div class="pay on">🏦 <b>무통장 입금</b><small>주문을 마치면 계좌를 보여 드립니다 · ${c.payDays}일 안에 입금해 주세요</small></div>${fld('dep', '입금하실 분', 'text', '주문하시는 분과 다르면', 'maxlength="20"')}` : '<div class="pay">⏳ <b>결제 안내 준비 중</b><small>주문을 받으면 가게에서 결제 방법을 연락드립니다</small></div>'}
         <div class="pay off">💳 카드·간편결제 <small>준비 중</small></div></fieldset>
-      <fieldset><legend>주문할 책 ${S0.n}권</legend>${L.map((x) => `<div class="ol"><span>${esc(x.t)}</span>${gTag(x.g)}<b>${won(x.p)}</b></div>`).join('')}<div class="sum"><div><span>책값</span><b>${won(S0.sum)}</b></div><div><span>배송비</span><b>${won(S0.fee)}</b></div><div class="tot"><span>합계</span><b>${won(S0.total)}</b></div></div></fieldset>
+      <fieldset id="oitems">${itemsH(L, c)}</fieldset>
       <fieldset class="agree"><label class="ck" data-f="agreeP"><input type="checkbox" id="f_agreeP"> (필수) 개인정보 수집·이용 동의 <a href="#/p/privacy" target="_blank">내용 보기</a><em></em></label>
         <div class="hint">모으는 것: 이름·휴대폰·주소(배송용)·메일(적으셨을 때만) · 쓰는 곳: 주문 확인·주문 알림·배송·문의 답 · 보관: 거래 기록 보관 기간(전자상거래법 5년) 뒤 파기</div>
         <label class="ck" data-f="agreeT"><input type="checkbox" id="f_agreeT"> (필수) 주문할 책·값·배송비·<a href="#/p/terms" target="_blank">구매 조건(교환·환불)</a>을 확인했습니다<em></em></label></fieldset>
       <input type="text" id="f_hp" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <button class="btn wide" id="go" type="submit">${won(S0.total)} 주문하기</button><div id="oerr" class="err" hidden></div></form>`;
+      <div class="gobar"><button class="btn wide" id="go" type="submit">${won(S0.total)} 주문하기</button></div><div id="oerr" class="err" hidden></div></form>`;
     const same = $('#f_same'); same.onchange = () => { $('#rcv').hidden = same.checked; };
+    /* (shelf2 · 원칙 56) 칸을 떠날 때 그 칸만 바로 검사(빨간 글은 손댄 칸만 · 고치면 바로 사라짐) — 마지막에 한꺼번에 틀렸다고 하지 않게 */
+    const touched = new Set(); const live = () => { const E = B.formCheck(val()); $$('[data-f]').forEach((el) => { const k = el.dataset.f; if (!touched.has(k)) return; const m = E[k]; el.classList.toggle('bad', !!m); el.classList.toggle('good', !m); const em = $('em', el); if (em) em.textContent = m || ''; }); };
+    $$('[data-f]').forEach((el) => { const i = $('input', el); if (!i) return; i.addEventListener(i.type === 'checkbox' ? 'change' : 'blur', () => { touched.add(el.dataset.f); live(); }); i.addEventListener('input', () => { if (touched.has(el.dataset.f)) live(); }); });
     ['phone', 'rphone'].forEach((k) => { const el = $('#f_' + k); if (el) el.oninput = () => { el.value = B.phoneFmt(el.value); }; });
     const val = () => { const g = (k) => { const el = $('#f_' + k); return el ? (el.type === 'checkbox' ? el.checked : el.value) : ''; }; return { name: g('name'), phone: g('phone'), email: g('email'), same: g('same'), rname: g('rname'), rphone: g('rphone'), zip: g('zip'), addr1: g('addr1'), addr2: g('addr2'), memo: g('memo'), dep: g('dep'), agreeP: g('agreeP'), agreeT: g('agreeT'), hp: g('hp') }; };
     $('#of').onsubmit = async (e) => { e.preventDefault(); const f = val(); const E = B.formCheck(f); $$('[data-f]').forEach((el) => { const m = E[el.dataset.f]; el.classList.toggle('bad', !!m); const em = $('em', el); if (em) em.textContent = m || ''; });
@@ -105,9 +118,10 @@
       const go = $('#go'); go.disabled = true; go.textContent = '주문 넣는 중…'; $('#oerr').hidden = true;
       try { const r = await api('/shop/order', { method: 'POST', body: JSON.stringify(B.orderBody(f, cart())) }); const mine = LS.get('bq-orders', []).filter((x) => x.no !== r.no); mine.unshift({ no: r.no, t: r.t, at: new Date().toISOString(), total: r.total, n: r.items.length }); LS.set('bq-orders', mine.slice(0, 20));
         setCart([]); location.hash = `#/done/${encodeURIComponent(r.no)}?t=${r.t}&new=1`; }
-      catch (er) { go.disabled = false; go.textContent = `${won(S0.total)} 주문하기`; const bad = er.j && er.j.bad; if (bad && bad.length) { const ids = new Set(bad.map((x) => x.id)); setCart(cart().filter((x) => !ids.has(x.id))); }
+      catch (er) { go.disabled = false; const bad = er.j && er.j.bad; if (bad && bad.length) { const ids = new Set(bad.map((x) => x.id)); setCart(cart().filter((x) => !ids.has(x.id))); $('#oitems').innerHTML = itemsH(cart(), c); } /* 뺀 뒤 합계·단추 값도 새로 */ const S1 = B.cartSum(cart(), c); go.textContent = `${won(S1.total)} 주문하기`; if (!cart().length) go.disabled = true;
         $('#oerr').hidden = false; $('#oerr').innerHTML = `<b>⚠ ${esc(er.message)}</b>${bad && bad.length ? `<ul>${bad.map((x) => `<li>${esc(x.t || (L.find((y) => y.id === x.id) || {}).t || x.id)} — ${esc(x.why)}</li>`).join('')}</ul><small>그 책은 장바구니에서 뺐습니다 — 나머지로 다시 주문해 주세요</small> <a href="#/cart">장바구니 보기</a>` : ''}`; } }; }
 
+  const itemsH = (L, c) => { const S0 = B.cartSum(L, c); return `<legend>주문할 책 ${S0.n}권 <a class="edit" href="#/cart">고치기</a></legend>${L.map((x) => `<div class="ol"><span>${esc(x.t)}</span>${gTag(x.g)}<b>${won(x.p)}</b></div>`).join('')}<div class="sum"><div><span>책값</span><b>${won(S0.sum)}</b></div><div><span>배송비</span><b>${S0.fee ? won(S0.fee) : '무료'}</b></div><div class="tot"><span>합계</span><b>${won(S0.total)}</b></div></div>`; };
   async function done(no, q) { main().innerHTML = loading(2);
     try { const o = await api('/shop/order?' + B.qs({ no, t: q.t })); if (B.route(location.hash).arg !== no) return; const cxl = o.st === 'new';
       main().innerHTML = `<div class="done">${q.new ? '<div class="ok">✅ 주문을 받았습니다</div>' : ''}<h1 class="pt">주문 ${esc(o.no)}</h1><div class="stt st-${esc(o.st)}">${esc(o.stTxt)}</div>
@@ -146,7 +160,7 @@
   function wishBadge() { const n = wish().length; const b = $('#wishN'); if (b) { b.textContent = n; b.hidden = !n; } }
   const SHL = { h: null, items: null, at: 0, js: null };
   const loadRes = (tag, attr) => new Promise((ok, no) => { const e = document.createElement(tag); Object.assign(e, attr); e.onload = ok; e.onerror = () => no(new Error('책장 화면을 받지 못했습니다')); document.head.appendChild(e); });
-  const shelfJs = () => SHL.js || (SHL.js = Promise.all([window.BQS ? 1 : loadRes('script', { src: 'shelf-core.js?v=0.1.0' }), loadRes('link', { rel: 'stylesheet', href: 'shelf.css?v=0.1.0' })]).then(() => (window.BQShelf ? 1 : loadRes('script', { src: 'shelf.js?v=0.1.0' }))).catch((e) => { SHL.js = null; throw e; }));
+  const shelfJs = () => SHL.js || (SHL.js = Promise.all([window.BQS ? 1 : loadRes('script', { src: 'shelf-core.js?v=0.2.0' }), loadRes('link', { rel: 'stylesheet', href: 'shelf.css?v=0.2.0' })]).then(() => (window.BQShelf ? 1 : loadRes('script', { src: 'shelf.js?v=0.2.0' }))).catch((e) => { SHL.js = null; throw e; }));
   async function shelfItems(prog) { if (SHL.items && Date.now() - SHL.at < 5 * 60e3) return SHL.items; const S = window.BQS; let all = [];
     try { const J0 = await api('/shop/shelf?k=0'); all = S.unpack(J0); prog(all.length, J0.n); for (let k = 1; k < J0.kn; k++) { const J = await api('/shop/shelf?k=' + k); const base = all.length; all = all.concat(S.unpack(J).map((x) => ({ ...x, _o: base + x._o }))); prog(all.length, J0.n); } }
     catch (e) { if (e.status !== 404) throw e; /* 클라우드 옛 판 — 새로 들어온 차례 쪽을 모음(최대 40쪽) */ all = []; for (let p = 0; p < 40; p++) { const r = await api('/shop/list?' + B.qs({ s: 'new', p })); const base = all.length; all = all.concat(r.items.map((x, i) => ({ ...x, c: x.c || null, at: x.at || null, _o: -(base + i) }))); prog(all.length, r.total); if (!r.more) break; } }
@@ -159,6 +173,7 @@
     SHL.h = window.BQShelf.mount(main(), { cfg: raw, sort: q.s, start: q.i != null ? { i: +q.i } : null, shop: { open: !!(c && c.open) || !!demo }, toast,
       load: (prog) => (demo ? Promise.resolve(S.demoItems(demo)) : shelfItems(prog)),
       cart: { n: () => cart().length, has: (id) => cart().some((y) => y.id === id), add: (x) => { if (demo) return '시범 자료라 담지 않습니다(움직임만 보기는 ⚙ 보기에서)'; const r = B.cartAdd(cart(), x, c.maxItems); if (r.why) return r.why; setCart(r.cart); return null; } },
+      saveLooks: demo ? null : (L, g) => api('/shop/spines', { method: 'POST', body: JSON.stringify({ g, L }) }).catch(() => {}), /* (shelf2) 책등 모양 영구 저장 — 먼저 정한 것이 이김 */
       wish: { get: wish, set: setWish }, open: (id) => { if (!demo) location.hash = '#/b/' + encodeURIComponent(id); else toast('시범 자료 — 자세히 화면 없음'); },
       onState: (s) => { const h = '#/shelf?' + B.qs({ s: s.s, i: s.i, demo: demo || '', cfg: q.cfg || '' }); if (location.hash !== h) history.replaceState(null, '', h); } });
     if (demo) main().insertAdjacentHTML('afterbegin', `<div class="bar info">🧪 시범 자료 ${demo.toLocaleString('ko-KR')}권 — 실제 책이 아닙니다</div>`); if (q.cfg) main().insertAdjacentHTML('afterbegin', '<div class="bar info">👀 설정 미리 보기 — 저장하지 않은 설정으로 보고 있습니다</div>'); }

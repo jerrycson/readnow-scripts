@@ -1,4 +1,4 @@
-/* 📚 북스퀸 서가 책장 (11/11 shelf1) — 크기는 모두 --z(확대)·--rh(선반 높이)·--bw(책 두께) 곱셈이라 확대해도 JS가 책마다 손대지 않음 */
+/* 📚 북스퀸 서가 책장 (11/11 shelf1 · shelf2) — 크기는 모두 --z(확대)·--rh(선반 높이)·--bw(책 두께) 곱셈이라 확대해도 JS가 책마다 손대지 않음 */
 .bqs { --z: 1; --rh: 190; --pk: calc(14px * var(--z)); --wd: #8a5a32; --wd2: #6e4524; --plank: #a06c3f; --plank2: #774b27; --back: #3a2616; --room: #f3ead9; --ink2: #2a2117;
   position: relative; margin: 0 -16px; padding: 0 16px 120px; background: radial-gradient(120% 60% at 50% 0%, rgba(255, 236, 196, .55), transparent 70%), var(--room); color: var(--ink2); min-height: 80vh; }
 .bqs.wood-walnut { --wd: #5a3a24; --wd2: #3f2716; --plank: #6b4529; --plank2: #4a2e19; --back: #241710; }
@@ -6,6 +6,40 @@
 .bqs.wood-cherry { --wd: #8e3b2a; --wd2: #6d2a1d; --plank: #a24a34; --plank2: #7a3222; --back: #3a1712; }
 .bqs.wood-white { --wd: #ece8e1; --wd2: #cfc9bf; --plank: #f6f3ee; --plank2: #d8d2c8; --back: #bdb6aa; }
 .bqs.wood-black { --wd: #2b2b2e; --wd2: #18181a; --plank: #3a3a3e; --plank2: #222225; --back: #121214; }
+/* (shelf2) 책장 종류 더함 — 소나무·북유럽·철제·고서점·도서관·벽돌·사다리·파이프 */
+.bqs.wood-pine { --wd: #cf9f5f; --wd2: #a87a40; --plank: #ddb173; --plank2: #b58547; --back: #5a3d1f; }
+.bqs.wood-pine .bqs-case { background-image: radial-gradient(ellipse 4px 9px at 6px 22%, #7a5126 45%, transparent 75%), radial-gradient(ellipse 5px 7px at calc(100% - 6px) 64%, #7a5126 45%, transparent 75%), linear-gradient(90deg, var(--wd2), var(--wd) 12px, var(--wd) calc(100% - 12px), var(--wd2)); }
+.bqs.wood-nordic { --wd: #f5f2ec; --wd2: #e2dbcd; --plank: #f1ebde; --plank2: #d6c39e; --back: #e7e2d8; }
+.bqs.wood-nordic .bqs-case { box-shadow: 0 14px 30px rgba(0, 0, 0, .14); border-radius: 3px; }
+.bqs.wood-nordic .bqs-bay { border-left-width: calc(4px * var(--z)); background-image: linear-gradient(to bottom, rgba(0, 0, 0, .1), transparent calc(12px * var(--z))), linear-gradient(to bottom, transparent calc(100% - var(--pk)), #e8dcc2 calc(100% - var(--pk)), #e8dcc2 calc(100% - var(--pk) + 2px), #c9ae7c calc(100% - var(--pk) + 2px), #c9ae7c calc(100% - var(--pk) + 3px), #f1ebde calc(100% - var(--pk) + 3px)), none; }
+.bqs.wood-nordic .bqs-foot { height: calc(26px * var(--z)); background: linear-gradient(90deg, transparent 6%, #c9ae7c 6% 8%, transparent 8% 92%, #c9ae7c 92% 94%, transparent 94%), linear-gradient(var(--wd), var(--wd) 30%, transparent 30%); }
+.bqs.wood-steel { --wd: #8f979f; --wd2: #69717a; --plank: #bfc5cb; --plank2: #7d858d; --back: #353b42; }
+.bqs.wood-steel .bqs-case { background: linear-gradient(90deg, #5d646c, #a9b0b7 5px, #8f979f 9px, #8f979f calc(100% - 9px), #a9b0b7 calc(100% - 5px), #5d646c); border-radius: 2px; }
+.bqs.wood-steel .bqs-bay { border-left-color: transparent; background-origin: border-box; background-image: radial-gradient(circle at calc(3px * var(--z)) 50%, #22272c calc(1.5px * var(--z)), transparent calc(1.9px * var(--z))), linear-gradient(90deg, #7b838b calc(6px * var(--z)), transparent calc(6px * var(--z))), linear-gradient(to bottom, rgba(0, 0, 0, .45), transparent calc(16px * var(--z))), linear-gradient(to bottom, transparent calc(100% - var(--pk)), #d5dadf calc(100% - var(--pk)), #8a929a);
+  background-size: 100% calc(12px * var(--z)), 100% 100%, 100% calc(var(--rh) * var(--z) * 1px), 100% calc(var(--rh) * var(--z) * 1px); }
+.bqs.wood-steel .bqs-bay:first-child { background-image: linear-gradient(to bottom, rgba(0, 0, 0, .45), transparent calc(16px * var(--z))), linear-gradient(to bottom, transparent calc(100% - var(--pk)), #d5dadf calc(100% - var(--pk)), #8a929a); background-size: 100% calc(var(--rh) * var(--z) * 1px), 100% calc(var(--rh) * var(--z) * 1px); }
+.bqs.wood-antique { --wd: #4c2616; --wd2: #2c1309; --plank: #5e2f19; --plank2: #3a1a0c; --back: #1a0c06; }
+.bqs.wood-antique .bqs-top { position: relative; padding-top: calc(16px * var(--z)); border-bottom: 3px solid #b8892f; font-family: 'Noto Serif KR', serif; } .bqs.wood-antique .bqs-top b { color: #ecc66d; letter-spacing: .08em; }
+.bqs.wood-antique .bqs-top::before { content: ""; position: absolute; left: 0; right: 0; top: calc(-10px * var(--z)); height: calc(12px * var(--z)); background: radial-gradient(circle at 50% 100%, #4c2616 62%, transparent 64%) 0 0 / calc(26px * var(--z)) 100% repeat-x; }
+.bqs.wood-antique .bqs-case { background: linear-gradient(90deg, #2c1309, #6a3720 6px, #4c2616 12px, #4c2616 calc(100% - 12px), #6a3720 calc(100% - 6px), #2c1309); }
+.bqs.wood-antique .bqs-foot { height: calc(26px * var(--z)); background: radial-gradient(circle at 50% 0, #4c2616 55%, transparent 57%) 0 100% / calc(30px * var(--z)) calc(10px * var(--z)) repeat-x, linear-gradient(#5e2f19, #2c1309); border-top: 2px solid #b8892f; }
+.bqs.wood-library { --wd: #7e8c88; --wd2: #5f6c68; --plank: #cdd3d0; --plank2: #98a19e; --back: #2c3331; }
+.bqs.wood-library .bqs-top { background: #5f6c68; } .bqs.wood-library .bqs-top b { display: inline-block; padding: 2px 14px; border-radius: 3px; background: #fffef8; color: #1f2430; text-shadow: none; font-family: 'Noto Sans KR', sans-serif; box-shadow: 0 1px 3px rgba(0, 0, 0, .35); }
+.bqs.wood-library .bqs-case { background: linear-gradient(90deg, #4f5a57, #8e9b97 6px, #7e8c88 12px, #7e8c88 calc(100% - 12px), #8e9b97 calc(100% - 6px), #4f5a57); border-radius: 2px; }
+.bqs.wood-brick { --wd: #b0563a; --wd2: #7e3a26; --plank: #d8ad72; --plank2: #ae8146; --back: #cdbfa8; }
+.bqs.wood-brick .bqs-case { box-shadow: none; padding: 0 calc(22px * var(--z)); background: repeating-linear-gradient(to bottom, #b0563a 0 calc(11px * var(--z)), #e3d5bf calc(11px * var(--z)) calc(13px * var(--z))) left / calc(20px * var(--z)) 100% no-repeat, repeating-linear-gradient(to bottom, #a24d33 0 calc(11px * var(--z)), #e3d5bf calc(11px * var(--z)) calc(13px * var(--z))) right / calc(20px * var(--z)) 100% no-repeat; }
+.bqs.wood-brick .bqs-bay { border-left: 0; background-image: linear-gradient(to bottom, rgba(0, 0, 0, .12), transparent calc(10px * var(--z))), linear-gradient(to bottom, transparent calc(100% - var(--pk)), var(--plank) calc(100% - var(--pk)), var(--plank2)), none; }
+.bqs.wood-brick .bqs-top { margin: 0 calc(-22px * var(--z)); background: none; color: #3a2a1c; text-shadow: none; } .bqs.wood-brick .bqs-foot { margin: 0 calc(-22px * var(--z)); background: repeating-linear-gradient(90deg, #b0563a 0 calc(28px * var(--z)), #e3d5bf calc(28px * var(--z)) calc(30px * var(--z))); }
+.bqs.wood-ladder { --wd: #a8774a; --wd2: #7c5330; --plank: #b98656; --plank2: #8d6036; --back: #4a3420; }
+.bqs.wood-ladder .bqs-case { background: linear-gradient(90deg, var(--wd2), var(--wd) 10px, var(--back) 10px calc(100% - 10px), var(--wd) calc(100% - 10px), var(--wd2)); }
+.bqs.wood-ladder .bqs-top { background: linear-gradient(var(--back), var(--back)) calc(24px * var(--z)) 0 / calc(100% - 48px * var(--z)) 100% no-repeat; padding-top: calc(18px * var(--z)); position: relative; }
+.bqs.wood-ladder .bqs-top::before, .bqs.wood-ladder .bqs-top::after { content: ""; position: absolute; top: 0; bottom: 0; width: 10px; background: linear-gradient(90deg, var(--wd2), var(--wd)); border-radius: 5px 5px 0 0; } .bqs.wood-ladder .bqs-top::before { left: calc(12px * var(--z)); } .bqs.wood-ladder .bqs-top::after { right: calc(12px * var(--z)); }
+.bqs.wood-ladder .bqs-case::after { content: ""; position: absolute; right: calc(26px * var(--z)); top: calc(-6px * var(--z)); bottom: calc(-16px * var(--z)); width: calc(40px * var(--z)); pointer-events: none; z-index: 3; opacity: .9; transform: rotate(-5deg); transform-origin: 50% 100%;
+  background: linear-gradient(90deg, #5e3c1f 0 4px, transparent 4px calc(100% - 4px), #5e3c1f calc(100% - 4px)), repeating-linear-gradient(transparent 0 calc(34px * var(--z)), #7d5230 calc(34px * var(--z)) calc(39px * var(--z))); }
+.bqs.wood-pipe { --wd: #2a2a2d; --wd2: #141416; --plank: #a8784a; --plank2: #6f4a28; --back: #2e2a26; }
+.bqs.wood-pipe .bqs-case { background: linear-gradient(90deg, #111, #555 4px, #222 9px, var(--back) 9px calc(100% - 9px), #222 calc(100% - 9px), #555 calc(100% - 4px), #111); }
+.bqs.wood-pipe .bqs-bay { border-left-color: #3a3a3e; } .bqs.wood-pipe .bqs-top { background: linear-gradient(#8a5f38, #5f3f22); }
+.bqs.wood-white .bqs-top, .bqs.wood-maple .bqs-top, .bqs.wood-nordic .bqs-top { color: #2a2117; text-shadow: none; }
 .bqs.room-paper { --room: #f7f2e7; } .bqs.room-green { --room: #dfe7da; } .bqs.room-night { --room: #1b1d26; --ink2: #ece7dc; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bqs.room-warm { --room: #23201b; --ink2: #ece7dc; } }
 .bqs-bar { position: sticky; top: 60px; z-index: 6; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 0; background: linear-gradient(var(--room) 75%, transparent); }
@@ -25,7 +59,8 @@
 .bqs-ring { position: relative; transform-style: preserve-3d; height: 100%; will-change: transform; }
 .bqs-case { position: absolute; top: 0; left: 0; right: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; padding: 0 calc(12px * var(--z)); border-radius: 6px 6px 2px 2px;
   background: linear-gradient(90deg, var(--wd2), var(--wd) 12px, var(--wd) calc(100% - 12px), var(--wd2)); box-shadow: 0 18px 40px rgba(0, 0, 0, .28); }
-.bqs-case:not(.cur) { pointer-events: none; } .bqs.turning .bqs-case { pointer-events: none; }
+/* (shelf2) 고침: 둥근 배치 판(ring)이 translateZ(R)로 눈앞에 떠 있어 R < 원근 거리(넓이 1400px 아래 · 책장 4개 등)면 판이 누름을 가로챔 → 판은 누름 없음 · 지금 책장만 받음 */
+.bqs-ring { pointer-events: none; } .bqs-case.cur { pointer-events: auto; } .bqs-case:not(.cur) { pointer-events: none; } .bqs.turning .bqs-case { pointer-events: none; }
 .bqs-top { padding: 8px 6px 6px; color: #f6ead6; font-size: 15px; text-shadow: 0 1px 1px rgba(0, 0, 0, .5); text-align: center; background: linear-gradient(var(--wd), var(--wd2)); margin: 0 calc(-12px * var(--z)); border-radius: 6px 6px 0 0; }
 .bqs.wood-white .bqs-top, .bqs.wood-maple .bqs-top { color: #2a2117; text-shadow: none; } .bqs-top small { opacity: .8; font-size: 12px; }
 .bqs-bays { display: grid; grid-template-columns: repeat(var(--k), minmax(0, 1fr)); }
@@ -36,59 +71,135 @@
 .bqs-foot { height: calc(18px * var(--z)); margin: 0 calc(-12px * var(--z)); background: linear-gradient(var(--wd), var(--wd2)); border-radius: 0 0 2px 2px; }
 .bqs-load { position: absolute; inset: 40px 0 auto; text-align: center; font-size: 15px; } .bqs-lbar { width: min(320px, 70%); height: 6px; margin: 0 auto 10px; border-radius: 3px; background: rgba(0, 0, 0, .12); overflow: hidden; } .bqs-lbar i { display: block; height: 100%; width: 8%; background: #c9a24a; transition: width .3s; }
 .bqs-empty { padding: 60px 0; text-align: center; }
-/* ── 책등 */
-.sp { --w: calc(var(--bw) * var(--z) * 1px); position: relative; flex: 0 0 auto; width: var(--w); height: calc(var(--rh) * var(--z) * 1px); margin: 0 calc(.6px * var(--z)); padding: 0; border: 0; background: none; cursor: pointer; color: var(--k); font-size: 0; -webkit-tap-highlight-color: transparent; }
+/* ── 책등 (shelf2: 짜임 = 디자인 data-d · 겉감 = 무늬 data-p(::before) · 몸 = 모양 data-s · 장식색 --g · 글 = .tx 안 .tt·.au) */
+.sp { --w: calc(var(--bw) * var(--z) * 1px); position: relative; flex: 0 0 auto; width: var(--w); height: calc(var(--rh) * var(--z) * 1px); margin: 0 calc(.6px * var(--z)); padding: 0; border: 0; background: none; cursor: pointer; color: var(--k); font-size: 0; -webkit-tap-highlight-color: transparent; font-synthesis: none; }
 .sp .sk { position: absolute; left: 0; right: 0; bottom: var(--pk); height: calc((100% - var(--pk) - 10px * var(--z)) * var(--bh) / 100); border-radius: 2px 2px 1px 1px; overflow: hidden; background-color: var(--c); transition: transform .18s ease, box-shadow .18s ease;
   box-shadow: inset 2px 0 2px rgba(255, 255, 255, .22), inset -3px 0 4px rgba(0, 0, 0, .35), 1px 0 1px rgba(0, 0, 0, .35); transform-origin: 50% 100%; }
+.sp .sk::before, .sp .sk::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1; }
 .sp:hover .sk { transform: translateY(calc(-5px * var(--z))); }
-.sp.out .sk { transform: translateY(-12%) scale(1.04); box-shadow: inset 2px 0 2px rgba(255, 255, 255, .25), inset -3px 0 4px rgba(0, 0, 0, .35), 0 10px 16px rgba(0, 0, 0, .45); z-index: 2; }
+.sp.out .sk { transform: translateY(-9%) scale(1.06, 1.02); box-shadow: inset 2px 0 2px rgba(255, 255, 255, .25), inset -3px 0 4px rgba(0, 0, 0, .35), 0 10px 16px rgba(0, 0, 0, .45); z-index: 2; }
 .sp:focus-visible { outline: none; } .sp:focus-visible .sk { outline: 3px solid #ffd54a; outline-offset: 2px; }
 .sp.tiltl .sk { transform: rotate(-3.5deg); transform-origin: 0 100%; } .sp.tiltr .sk { transform: rotate(3.5deg); transform-origin: 100% 100%; }
-.sp .tt, .sp .au { position: absolute; left: 50%; transform: translateX(-50%); writing-mode: vertical-rl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.08; color: var(--k); }
-.sp .tt { top: 7%; bottom: 30%; font-size: clamp(7px, calc(var(--w) * .42), 20px); font-weight: 700; letter-spacing: .02em; }
-.sp .au { bottom: 5%; height: 21%; font-size: clamp(6px, calc(var(--w) * .3), 13px); opacity: .88; }
-.sp:not(:has(.au)) .tt { bottom: 8%; }
+.sp .tx { position: absolute; z-index: 2; left: 6%; right: 6%; top: 6%; bottom: 5%; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 3%; pointer-events: none; }
+.sp .tt, .sp .au { writing-mode: vertical-rl; overflow: hidden; line-height: 1.08; color: var(--k); text-align: center; word-break: break-all; overflow-wrap: anywhere; max-width: 100%; min-height: 0; font-weight: var(--fw, 700); }
+.sp .tt { flex: 0 1 auto; max-height: 70%; font-size: calc(var(--ft) * var(--z) * 1px); letter-spacing: .01em; }
+.sp .au { flex: 0 1 auto; max-height: 24%; font-size: calc(var(--fa) * var(--z) * 1px); opacity: .9; }
+.sp:not(:has(.au)) .tt { max-height: 92%; }
+.sp.cut .tt, .sp.cut .au { white-space: nowrap; text-overflow: ellipsis; }
+.sp.cut .tt { font-size: clamp(7px, calc(var(--w) * .42), 20px); } .sp.cut .au { font-size: clamp(6px, calc(var(--w) * .3), 13px); }
 .sp[data-o="v"] .tt, .sp[data-o="v"] .au { text-orientation: mixed; letter-spacing: -.02em; } .sp[data-o="h"] .tt, .sp[data-o="h"] .au { text-orientation: sideways; }
-.sp .si { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; } .sp.img.ok .tt, .sp.img.ok .au { display: none; }
-.sp.held .sk { filter: saturate(.55) brightness(.85); } .sp .hb { position: absolute; left: -2px; right: -2px; bottom: calc(var(--pk) + 22%); padding: 2px 0; background: #b0322a; color: #fff; font-size: calc(9px * var(--z)); writing-mode: vertical-rl; text-align: center; display: none; }
+.sp .si { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; z-index: 3; } .sp.img.ok .tx { display: none; } .sp.img.ok .sk::before, .sp.img.ok .sk::after { display: none; }
+.sp.held .sk { filter: saturate(.55) brightness(.85); } .sp .hb { position: absolute; left: -2px; right: -2px; bottom: calc(var(--pk) + 22%); padding: 2px 0; background: #b0322a; color: #fff; font-size: calc(9px * var(--z)); writing-mode: vertical-rl; text-align: center; display: none; z-index: 4; }
 .sp.held .hb { display: block; left: auto; right: 0; width: calc(12px * var(--z)); }
-.sp .rb { position: absolute; top: calc(4px * var(--z)); left: 50%; width: calc(9px * var(--z)); height: calc(26px * var(--z)); margin-left: calc(-4.5px * var(--z)); background: #d62839; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%); display: none; z-index: 3; }
+.sp .rb { position: absolute; top: calc(4px * var(--z)); left: 50%; width: calc(9px * var(--z)); height: calc(26px * var(--z)); margin-left: calc(-4.5px * var(--z)); background: #d62839; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%); display: none; z-index: 4; }
 .sp.wished .rb { display: block; top: calc(100% - var(--pk) - (100% - var(--pk) - 10px * var(--z)) * var(--bh) / 100 - 6px * var(--z)); }
 /* 표찰(분야 나눔) */
 .lab { flex: 0 0 auto; width: calc(34px * var(--z)); height: calc(var(--rh) * var(--z) * 1px); position: relative; margin: 0 calc(3px * var(--z)); }
 .lab span, .lab small { position: absolute; left: 50%; transform: translateX(-50%); writing-mode: vertical-rl; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #2a2117; }
 .lab::before { content: ""; position: absolute; left: 0; right: 0; bottom: var(--pk); height: calc((100% - var(--pk)) * .74); background: linear-gradient(#fff8e6, #efe0bd); border-radius: calc(5px * var(--z)) calc(5px * var(--z)) 1px 1px; box-shadow: 0 2px 4px rgba(0, 0, 0, .35); }
 .lab span { top: 30%; max-height: 50%; font-size: calc(14px * var(--z)); font-weight: 800; } .lab small { bottom: calc(var(--pk) + 4%); font-size: calc(10px * var(--z)); opacity: .7; }
-/* ── 책등 디자인 30 (--c 바탕 · --c2 곁색 · --k 글자색) */
+/* ── 디자인 50 (짜임 — .sk 바탕 그림 · --c 바탕 · --c2 곁색 · --g 장식색 · --k 글자색) */
 .sp[data-d="2"] .sk { background-image: linear-gradient(var(--c2) 0 7%, transparent 7% 93%, var(--c2) 93%); }
-.sp[data-d="3"] .sk { background-image: linear-gradient(transparent 5%, #d9b45a 5% 6%, transparent 6% 8%, #d9b45a 8% 9%, transparent 9% 91%, #d9b45a 91% 92%, transparent 92% 94%, #d9b45a 94% 95%, transparent 95%); }
+.sp[data-d="3"] .sk { background-image: linear-gradient(transparent 5%, var(--g) 5% 6%, transparent 6% 8%, var(--g) 8% 9%, transparent 9% 91%, var(--g) 91% 92%, transparent 92% 94%, var(--g) 94% 95%, transparent 95%); }
 .sp[data-d="4"] .sk { background-image: linear-gradient(transparent 6%, var(--c2) 6% 64%, transparent 64%); }
-.sp[data-d="5"] .sk { background-image: repeating-linear-gradient(90deg, transparent 0 3px, rgba(255, 255, 255, .13) 3px 4px); }
-.sp[data-d="6"] .sk { background-image: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, .16), transparent 40%), radial-gradient(circle at 70% 70%, rgba(0, 0, 0, .22), transparent 45%), repeating-radial-gradient(circle at 40% 50%, rgba(0, 0, 0, .05) 0 1px, transparent 1px 3px); }
-.sp[data-d="7"] .sk { background-image: repeating-linear-gradient(45deg, rgba(255, 255, 255, .07) 0 1px, transparent 1px 3px), repeating-linear-gradient(-45deg, rgba(0, 0, 0, .08) 0 1px, transparent 1px 3px); }
-.sp[data-d="8"] .sk { background-image: linear-gradient(90deg, rgba(0, 0, 0, .3), rgba(255, 255, 255, .18) 45%, rgba(0, 0, 0, .25)); }
-.sp[data-d="9"] .sk { background-image: linear-gradient(var(--c2) 0 34%, transparent 34%); }
-.sp[data-d="10"] .sk { background-image: linear-gradient(transparent 0 70%, var(--c2) 70%); }
-.sp[data-d="11"] .sk { background-image: linear-gradient(45deg, rgba(255, 255, 255, .1) 25%, transparent 25% 75%, rgba(255, 255, 255, .1) 75%), linear-gradient(-45deg, rgba(255, 255, 255, .1) 25%, transparent 25% 75%, rgba(255, 255, 255, .1) 75%); background-size: 10px 10px; }
-.sp[data-d="12"] .sk { background-image: radial-gradient(rgba(255, 255, 255, .22) 1.2px, transparent 1.6px); background-size: 7px 7px; }
-.sp[data-d="13"] .sk { background-image: linear-gradient(90deg, rgba(255, 255, 255, .12) 50%, transparent 50%), linear-gradient(rgba(0, 0, 0, .12) 50%, transparent 50%); background-size: 8px 8px; }
-.sp[data-d="14"] .sk { background-image: radial-gradient(circle at 50% 0, transparent 5px, rgba(255, 255, 255, .14) 5px 7px, transparent 7px); background-size: 100% 10px; }
-.sp[data-d="15"] .sk { background-image: repeating-linear-gradient(transparent 0 12%, var(--c2) 12% 14%, transparent 14% 16%); }
-.sp[data-d="16"] .sk { box-shadow: inset 0 0 0 2px var(--c), inset 0 0 0 3px #d9b45a, inset -3px 0 4px rgba(0, 0, 0, .35); }
-.sp[data-d="17"] .sk { background-image: linear-gradient(160deg, transparent 0 38%, var(--c2) 38% 50%, transparent 50%); }
-.sp[data-d="18"] .sk { background-image: linear-gradient(var(--c) 0 16%, #f4efe4 16% 84%, var(--c) 84%); } .sp[data-d="18"] .tt, .sp[data-d="18"] .au { color: #1b1712; }
-.sp[data-d="19"] .sk { background-image: linear-gradient(transparent 14%, rgba(0, 0, 0, .35) 14% 15%, rgba(255, 255, 255, .25) 15% 16.5%, transparent 16.5% 32%, rgba(0, 0, 0, .35) 32% 33%, rgba(255, 255, 255, .25) 33% 34.5%, transparent 34.5% 66%, rgba(0, 0, 0, .35) 66% 67%, rgba(255, 255, 255, .25) 67% 68.5%, transparent 68.5% 84%, rgba(0, 0, 0, .35) 84% 85%, rgba(255, 255, 255, .25) 85% 86.5%, transparent 86.5%); }
-.sp[data-d="20"] .sk { background-image: linear-gradient(var(--k) 0 4%, transparent 4% 88%, var(--c2) 88%); }
-.sp[data-d="21"] .sk { background-image: radial-gradient(circle, rgba(255, 255, 255, .25) 1px, transparent 2px), radial-gradient(circle, rgba(255, 210, 220, .2) 1.5px, transparent 2.5px); background-size: 9px 11px, 13px 9px; background-position: 0 0, 4px 5px; }
-.sp[data-d="22"] .sk { background-image: repeating-linear-gradient(60deg, rgba(255, 255, 255, .09) 0 2px, transparent 2px 6px), repeating-linear-gradient(-60deg, rgba(0, 0, 0, .1) 0 2px, transparent 2px 6px); }
-.sp[data-d="23"] .sk { background-image: radial-gradient(1px 1px at 20% 30%, #fff, transparent), radial-gradient(1px 1px at 70% 60%, #fff, transparent), radial-gradient(1.4px 1.4px at 40% 80%, #ffe9a8, transparent), radial-gradient(1px 1px at 80% 15%, #fff, transparent), linear-gradient(var(--c), var(--c2)); }
-.sp[data-d="24"] .sk { background-image: linear-gradient(90deg, transparent 20%, rgba(255, 255, 255, .35) 30%, transparent 42%); }
-.sp[data-d="25"] .sk { background-image: linear-gradient(rgba(214, 186, 140, .35), rgba(120, 90, 50, .3)); filter: sepia(.25); }
-.sp[data-d="26"] .sk { background-image: linear-gradient(170deg, var(--c2) 50%, transparent 50%); }
-.sp[data-d="27"] .sk { background-image: radial-gradient(circle at 50% 12%, var(--c2) 0 28%, transparent 30%), radial-gradient(circle at 50% 90%, var(--c2) 0 22%, transparent 24%); background-size: 100% 100%; }
-.sp[data-d="28"] .sk { background-image: linear-gradient(135deg, var(--c2) 25%, transparent 25%), linear-gradient(225deg, var(--c2) 25%, transparent 25%); background-size: 10px 10px; background-position: 0 92%; background-repeat: repeat-x; }
-.sp[data-d="29"] .sk { background-image: linear-gradient(transparent 76%, #1b1712 76% 77%, #d9b45a 77% 86%, #1b1712 86% 87%, transparent 87%); }
-.sp[data-d="30"] .sk { background-image: radial-gradient(circle at 50% 88%, #f4efe4 0 calc(var(--w) * .3), transparent calc(var(--w) * .3 + 1px)), linear-gradient(transparent 79%, rgba(0, 0, 0, .25) 79% 80%, transparent 80%); }
+.sp[data-d="5"] .sk { background-image: linear-gradient(var(--c2) 0 34%, transparent 34%); }
+.sp[data-d="6"] .sk { background-image: linear-gradient(transparent 0 70%, var(--c2) 70%); }
+.sp[data-d="7"] .sk { background-image: linear-gradient(90deg, var(--g) 0 2px, transparent 2px calc(100% - 2px), var(--g) calc(100% - 2px)), linear-gradient(var(--g) 0 2px, transparent 2px calc(100% - 2px), var(--g) calc(100% - 2px)); background-size: calc(100% - 6px) calc(100% - 6px); background-position: center; background-repeat: no-repeat; }
+.sp[data-d="8"] .sk { background-image: linear-gradient(160deg, transparent 0 38%, var(--c2) 38% 50%, transparent 50%); }
+.sp[data-d="9"] .sk { background-image: linear-gradient(var(--c) 0 16%, #f4efe4 16% 84%, var(--c) 84%); }
+.sp[data-d="10"] .sk { background-image: linear-gradient(transparent 14%, rgba(0, 0, 0, .35) 14% 15%, var(--g) 15% 16.5%, transparent 16.5% 32%, rgba(0, 0, 0, .35) 32% 33%, var(--g) 33% 34.5%, transparent 34.5% 66%, rgba(0, 0, 0, .35) 66% 67%, var(--g) 67% 68.5%, transparent 68.5% 84%, rgba(0, 0, 0, .35) 84% 85%, var(--g) 85% 86.5%, transparent 86.5%); }
+.sp[data-d="11"] .sk { background-image: linear-gradient(var(--k) 0 4%, transparent 4% 88%, var(--c2) 88%); }
+.sp[data-d="12"] .sk { background-image: linear-gradient(170deg, var(--c2) 50%, transparent 50%); }
+.sp[data-d="13"] .sk { background-image: radial-gradient(circle at 50% 12%, var(--c2) 0 28%, transparent 30%), radial-gradient(circle at 50% 90%, var(--c2) 0 22%, transparent 24%); }
+.sp[data-d="14"] .sk { background-image: linear-gradient(135deg, var(--c2) 25%, transparent 25%), linear-gradient(225deg, var(--c2) 25%, transparent 25%); background-size: 10px 10px; background-position: 0 92%; background-repeat: repeat-x; }
+.sp[data-d="15"] .sk { background-image: linear-gradient(transparent 76%, #1b1712 76% 77%, var(--g) 77% 86%, #1b1712 86% 87%, transparent 87%); }
+.sp[data-d="16"] .sk { background-image: radial-gradient(circle at 50% 88%, #f4efe4 0 calc(var(--w) * .3), transparent calc(var(--w) * .3 + 1px)), linear-gradient(transparent 79%, rgba(0, 0, 0, .25) 79% 80%, transparent 80%); }
+.sp[data-d="17"] .sk { background-image: linear-gradient(90deg, transparent 50%, var(--c2) 50%); }
+.sp[data-d="18"] .sk { background-image: linear-gradient(transparent 40%, var(--c2) 40% 60%, transparent 60%); }
+.sp[data-d="19"] .sk { background-image: linear-gradient(transparent 8%, var(--c2) 8% 10%, transparent 10% 12%, var(--c2) 12% 14%, transparent 14% 16%, var(--c2) 16% 18%, transparent 18%); }
+.sp[data-d="20"] .sk { background-image: linear-gradient(transparent 4%, var(--c2) 4% 22%, transparent 22% 86%, var(--g) 86% 90%, transparent 90%); }
+.sp[data-d="21"] .sk { background-image: linear-gradient(90deg, var(--g) 0 1px, transparent 1px calc(100% - 1px), var(--g) calc(100% - 1px)), linear-gradient(var(--g) 0 1px, transparent 1px calc(100% - 1px), var(--g) calc(100% - 1px)), linear-gradient(90deg, var(--g) 0 1px, transparent 1px calc(100% - 1px), var(--g) calc(100% - 1px)), linear-gradient(var(--g) 0 1px, transparent 1px calc(100% - 1px), var(--g) calc(100% - 1px));
+  background-size: calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 9px) calc(100% - 9px), calc(100% - 9px) calc(100% - 9px); background-position: center; background-repeat: no-repeat; }
+.sp[data-d="22"] .sk { background-image: linear-gradient(to top right, var(--c2) 50%, transparent 50%), linear-gradient(to top left, var(--c2) 50%, transparent 50%); background-size: 50% 12%; background-position: 0 100%, 100% 100%; background-repeat: no-repeat; }
+.sp[data-d="23"] .sk { background-image: radial-gradient(ellipse 70% 14% at 50% 0, var(--c2) 98%, transparent 100%); }
+.sp[data-d="24"] .sk { background-image: linear-gradient(45deg, transparent 42%, var(--g) 42% 58%, transparent 58%), linear-gradient(-45deg, transparent 42%, var(--g) 42% 58%, transparent 58%); background-size: 100% 12%; background-position: 0 50%; background-repeat: no-repeat; }
+.sp[data-d="25"] .sk { background-image: linear-gradient(transparent 3%, var(--g) 3% 3.6%, transparent 3.6% 5%, var(--g) 5% 5.6%, transparent 5.6% 7%, var(--g) 7% 7.6%, transparent 7.6%); }
+.sp[data-d="26"] .sk { background-image: linear-gradient(var(--g), var(--g)); background-size: 54% 6%; background-position: 50% 94%; background-repeat: no-repeat; }
+.sp[data-d="27"] .sk { background-image: linear-gradient(transparent 80%, #d7263d 80% 82%, #ff9f1c 82% 84%, #ffbf00 84% 86%, #1b998b 86% 88%, #3a86ff 88% 90%, #6a4c93 90% 92%, transparent 92%); }
+.sp[data-d="28"] .sk { background-image: linear-gradient(var(--c2) 0 16%, var(--g) 16% 17%, transparent 17% 83%, var(--g) 83% 84%, var(--c2) 84%); }
+.sp[data-d="29"] .sk { background-image: linear-gradient(90deg, transparent 12%, var(--g) 12% 16%, transparent 16% 84%, var(--g) 84% 88%, transparent 88%); }
+.sp[data-d="30"] .sk { background-image: linear-gradient(transparent 30%, var(--c2)); }
+.sp[data-d="31"] .sk { background-image: linear-gradient(var(--c2), transparent 70%); }
+.sp[data-d="32"] .sk { background-image: linear-gradient(90deg, rgba(0, 0, 0, .3), rgba(255, 255, 255, .2) 45%, rgba(0, 0, 0, .25)); }
+.sp[data-d="33"] .sk { background-image: linear-gradient(rgba(214, 186, 140, .38), rgba(120, 90, 50, .32)); }
+.sp[data-d="34"] .sk { background-image: radial-gradient(circle at 50% 84%, var(--c2) 0 calc(var(--w) * .42), transparent calc(var(--w) * .42 + 1px)); }
+.sp[data-d="35"] .sk { background-image: radial-gradient(circle at 50% 50%, transparent calc(var(--w) * .3), var(--g) calc(var(--w) * .3) calc(var(--w) * .34), transparent calc(var(--w) * .34)); }
+.sp[data-d="36"] .sk { background-image: radial-gradient(circle at 50% 6%, var(--g) 0 2px, transparent 3px), radial-gradient(circle at 30% 10%, var(--g) 0 1.2px, transparent 2px), radial-gradient(circle at 70% 11%, var(--g) 0 1.2px, transparent 2px), linear-gradient(transparent 15%, var(--g) 15% 16%, transparent 16%); }
+.sp[data-d="37"] .sk { background-image: linear-gradient(#fffef6, #fffef6), linear-gradient(transparent 1px, #2a2a2a 1px 2px, transparent 2px 5px, #2a2a2a 5px 6px, transparent 6px); background-size: 74% 11%, 50% 11%; background-position: 50% 92%, 50% 92%; background-repeat: no-repeat; }
+.sp[data-d="38"] .sk { background-image: linear-gradient(transparent 62%, var(--c2) 62% 63%, var(--g) 63% 92%, var(--c2) 92% 93%, transparent 93%); }
+.sp[data-d="39"] .sk { background-image: linear-gradient(90deg, transparent 18%, rgba(255, 255, 255, .45) 24%, transparent 30%, transparent 70%, rgba(255, 255, 255, .18) 76%, transparent 80%); }
+.sp[data-d="40"] .sk { background-image: linear-gradient(165deg, transparent 6%, var(--c2) 6% 12%, transparent 12%); }
+.sp[data-d="41"] .sk { background-image: conic-gradient(var(--c2) 25%, transparent 0 50%, var(--c2) 0 75%, transparent 0); background-size: 8px 8px; background-repeat: repeat-x; background-position: 0 4%; }
+.sp[data-d="42"] .sk { background-image: linear-gradient(135deg, var(--c2) 25%, transparent 25%), linear-gradient(225deg, var(--c2) 25%, transparent 25%), linear-gradient(45deg, var(--c2) 25%, transparent 25%), linear-gradient(-45deg, var(--c2) 25%, transparent 25%); background-size: 8px 8px; background-repeat: repeat-x; background-position: 0 3%, 0 3%, 0 97%, 0 97%; }
+.sp[data-d="43"] .sk { background-image: linear-gradient(to bottom right, var(--c) 50%, var(--c2) 50%); }
+.sp[data-d="44"] .sk { background-image: linear-gradient(#f4efe4, #f4efe4); background-size: 76% 72%; background-position: 50% 45%; background-repeat: no-repeat; }
+.sp[data-d="45"] .sk { background-image: radial-gradient(circle, var(--g) 0 1px, transparent 1.5px), radial-gradient(circle, var(--g) 0 1px, transparent 1.5px); background-size: 6px 6px; background-position: 0 6%, 0 94%; background-repeat: repeat-x; }
+.sp[data-d="46"] .sk { background-image: linear-gradient(var(--c2) 0 33%, transparent 33% 66%, var(--c2) 66%); }
+.sp[data-d="47"] .sk { background-image: linear-gradient(transparent 4%, var(--k) 4% 5%, transparent 5% 84%, var(--g) 84% 92%, transparent 92%); }
+.sp[data-d="48"] .sk { background-image: linear-gradient(transparent 46%, var(--g) 46% 54%, transparent 54%), linear-gradient(60deg, transparent 45%, var(--g) 45% 55%, transparent 55%), linear-gradient(-60deg, transparent 45%, var(--g) 45% 55%, transparent 55%); background-size: 100% 100%, 50% 12%, 50% 12%; background-position: 0 0, 0 55%, 100% 55%; background-repeat: no-repeat; }
+.sp[data-d="49"] .sk { background-image: repeating-linear-gradient(transparent 0 3px, var(--g) 3px 5px), repeating-linear-gradient(transparent 0 3px, var(--g) 3px 5px), repeating-linear-gradient(90deg, transparent 0 3px, var(--g) 3px 5px), repeating-linear-gradient(90deg, transparent 0 3px, var(--g) 3px 5px);
+  background-size: 1px calc(100% - 8px), 1px calc(100% - 8px), calc(100% - 8px) 1px, calc(100% - 8px) 1px; background-position: 4px 4px, calc(100% - 4px) 4px, 4px 4px, 4px calc(100% - 4px); background-repeat: no-repeat; }
+.sp[data-d="50"] .sk { background-image: linear-gradient(to bottom right, var(--c2) 50%, transparent 50%), linear-gradient(to bottom left, var(--c2) 50%, transparent 50%), linear-gradient(to top right, var(--c2) 50%, transparent 50%), linear-gradient(to top left, var(--c2) 50%, transparent 50%); background-size: 50% 7%; background-position: 0 0, 100% 0, 0 100%, 100% 100%; background-repeat: no-repeat; }
+/* ── 무늬 40 (겉감 결 — 흰·검은 반투명이라 어느 색 위에도 · 1 = 민결) */
+.sp[data-p="2"] .sk::before { background: repeating-linear-gradient(45deg, rgba(255, 255, 255, .07) 0 1px, transparent 1px 3px), repeating-linear-gradient(-45deg, rgba(0, 0, 0, .08) 0 1px, transparent 1px 3px); }
+.sp[data-p="3"] .sk::before { background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .06) 0 1px, transparent 1px 2px), repeating-linear-gradient(90deg, rgba(0, 0, 0, .07) 0 1px, transparent 1px 3px); }
+.sp[data-p="4"] .sk::before { background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, .16), transparent 40%), radial-gradient(circle at 70% 70%, rgba(0, 0, 0, .22), transparent 45%), repeating-radial-gradient(circle at 40% 50%, rgba(0, 0, 0, .05) 0 1px, transparent 1px 3px); }
+.sp[data-p="5"] .sk::before { background: radial-gradient(ellipse 120% 30% at 20% 30%, rgba(255, 255, 255, .18), transparent 60%), radial-gradient(ellipse 90% 20% at 80% 60%, rgba(0, 0, 0, .2), transparent 60%), radial-gradient(ellipse 140% 25% at 40% 85%, rgba(255, 255, 255, .12), transparent 60%); }
+.sp[data-p="6"] .sk::before { background: radial-gradient(rgba(255, 255, 255, .22) 1.1px, transparent 1.5px) 0 0 / 6px 6px; }
+.sp[data-p="7"] .sk::before { background: radial-gradient(rgba(255, 255, 255, .2) 3px, transparent 3.5px) 0 0 / 14px 16px, radial-gradient(rgba(255, 255, 255, .2) 3px, transparent 3.5px) 7px 8px / 14px 16px; }
+.sp[data-p="8"] .sk::before { background: repeating-linear-gradient(90deg, transparent 0 3px, rgba(255, 255, 255, .13) 3px 4px); }
+.sp[data-p="9"] .sk::before { background: repeating-linear-gradient(90deg, transparent 0 5px, rgba(0, 0, 0, .14) 5px 9px); }
+.sp[data-p="10"] .sk::before { background: repeating-linear-gradient(transparent 0 6px, rgba(255, 255, 255, .12) 6px 8px); }
+.sp[data-p="11"] .sk::before { background: repeating-linear-gradient(45deg, transparent 0 5px, rgba(255, 255, 255, .12) 5px 8px); }
+.sp[data-p="12"] .sk::before { background: linear-gradient(90deg, rgba(255, 255, 255, .12) 50%, transparent 50%) 0 0 / 8px 8px, linear-gradient(rgba(0, 0, 0, .12) 50%, transparent 50%) 0 0 / 8px 8px; }
+.sp[data-p="13"] .sk::before { background: linear-gradient(90deg, rgba(255, 255, 255, .16) 50%, transparent 50%) 0 0 / 6px 6px, linear-gradient(rgba(255, 255, 255, .16) 50%, transparent 50%) 0 0 / 6px 6px; }
+.sp[data-p="14"] .sk::before { background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(0, 0, 0, .18) 6px 8px, transparent 8px 10px, rgba(255, 255, 255, .12) 10px 11px), repeating-linear-gradient(transparent 0 6px, rgba(0, 0, 0, .18) 6px 8px, transparent 8px 10px, rgba(255, 255, 255, .12) 10px 11px); }
+.sp[data-p="15"] .sk::before { background: repeating-linear-gradient(60deg, rgba(255, 255, 255, .09) 0 2px, transparent 2px 6px), repeating-linear-gradient(-60deg, rgba(0, 0, 0, .1) 0 2px, transparent 2px 6px); }
+.sp[data-p="16"] .sk::before { background: radial-gradient(circle at 50% 0, transparent 5px, rgba(255, 255, 255, .14) 5px 7px, transparent 7px) 0 0 / 100% 10px; }
+.sp[data-p="17"] .sk::before { background: radial-gradient(circle at 50% 100%, transparent 4px, rgba(255, 255, 255, .15) 4px 5px, transparent 5px) 0 0 / 10px 6px, radial-gradient(circle at 50% 100%, transparent 4px, rgba(255, 255, 255, .15) 4px 5px, transparent 5px) 5px 3px / 10px 6px; }
+.sp[data-p="18"] .sk::before { background: linear-gradient(45deg, rgba(255, 255, 255, .1) 25%, transparent 25% 75%, rgba(255, 255, 255, .1) 75%) 0 0 / 10px 10px, linear-gradient(-45deg, rgba(255, 255, 255, .1) 25%, transparent 25% 75%, rgba(255, 255, 255, .1) 75%) 0 0 / 10px 10px; }
+.sp[data-p="19"] .sk::before { background: radial-gradient(circle, transparent 3px, rgba(255, 255, 255, .14) 3px 4px, transparent 4px) 0 0 / 9px 8px, radial-gradient(circle, transparent 3px, rgba(255, 255, 255, .14) 3px 4px, transparent 4px) 4.5px 4px / 9px 8px; }
+.sp[data-p="20"] .sk::before { background: radial-gradient(1px 1px at 20% 30%, #fff, transparent), radial-gradient(1px 1px at 70% 60%, #fff, transparent), radial-gradient(1.4px 1.4px at 40% 80%, #ffe9a8, transparent), radial-gradient(1px 1px at 80% 15%, #fff, transparent), radial-gradient(1px 1px at 30% 50%, rgba(255, 255, 255, .8), transparent); background-size: 100% 60px; }
+.sp[data-p="21"] .sk::before { background: radial-gradient(circle, rgba(255, 255, 255, .25) 1px, transparent 2px) 0 0 / 9px 11px, radial-gradient(circle, rgba(255, 210, 220, .22) 1.5px, transparent 2.5px) 4px 5px / 13px 9px; }
+.sp[data-p="22"] .sk::before { background: radial-gradient(ellipse 3px 6px at 30% 50%, rgba(255, 255, 255, .18) 90%, transparent) 0 0 / 12px 16px, radial-gradient(ellipse 3px 6px at 70% 50%, rgba(0, 0, 0, .14) 90%, transparent) 6px 8px / 12px 16px; }
+.sp[data-p="23"] .sk::before { background: linear-gradient(135deg, rgba(255, 255, 255, .12) 25%, transparent 25%) -4px 0 / 8px 8px, linear-gradient(225deg, rgba(255, 255, 255, .12) 25%, transparent 25%) -4px 0 / 8px 8px, linear-gradient(315deg, rgba(255, 255, 255, .12) 25%, transparent 25%) 0 0 / 8px 8px, linear-gradient(45deg, rgba(255, 255, 255, .12) 25%, transparent 25%) 0 0 / 8px 8px; }
+.sp[data-p="24"] .sk::before { background: repeating-radial-gradient(circle at 50% 40%, transparent 0 5px, rgba(255, 255, 255, .1) 5px 6px); }
+.sp[data-p="25"] .sk::before { background: radial-gradient(circle at 50% 100%, transparent 3px, rgba(255, 255, 255, .14) 3px 4px, transparent 4px 6px, rgba(255, 255, 255, .14) 6px 7px, transparent 7px) 0 0 / 14px 8px; }
+.sp[data-p="26"] .sk::before { background: linear-gradient(90deg, rgba(255, 255, 255, .12) 50%, rgba(0, 0, 0, .1) 50%) 0 0 / 8px 4px, linear-gradient(rgba(0, 0, 0, .1) 50%, rgba(255, 255, 255, .08) 50%) 4px 4px / 8px 8px; }
+.sp[data-p="27"] .sk::before { background: linear-gradient(rgba(0, 0, 0, .18) 1px, transparent 1px) 0 0 / 100% 7px, linear-gradient(90deg, rgba(0, 0, 0, .18) 1px, transparent 1px) 0 0 / 12px 14px, linear-gradient(90deg, rgba(0, 0, 0, .18) 1px, transparent 1px) 6px 7px / 12px 14px; }
+.sp[data-p="28"] .sk::before { background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, .1) 0 2px, transparent 3px) 0 0 / 7px 9px, radial-gradient(circle at 60% 70%, rgba(0, 0, 0, .08) 0 1.5px, transparent 2.5px) 0 0 / 11px 7px; }
+.sp[data-p="29"] .sk::before { background: radial-gradient(ellipse 60% 18% at 30% 25%, rgba(120, 90, 50, .3), transparent 70%), radial-gradient(ellipse 50% 14% at 70% 70%, rgba(120, 90, 50, .25), transparent 70%); }
+.sp[data-p="30"] .sk::before { background: radial-gradient(circle, rgba(255, 230, 150, .5) 0 .6px, transparent 1px) 0 0 / 5px 7px, radial-gradient(circle, rgba(255, 255, 255, .45) 0 .6px, transparent 1px) 2px 3px / 7px 5px; }
+.sp[data-p="31"] .sk::before { background: repeating-linear-gradient(transparent 0 7px, rgba(255, 255, 255, .16) 7px 8px); }
+.sp[data-p="32"] .sk::before { background: linear-gradient(rgba(255, 255, 255, .12) 1px, transparent 1px) 0 0 / 6px 6px, linear-gradient(90deg, rgba(255, 255, 255, .12) 1px, transparent 1px) 0 0 / 6px 6px; }
+.sp[data-p="33"] .sk::before { background: linear-gradient(transparent 40%, rgba(255, 255, 255, .14) 40% 60%, transparent 60%) 0 0 / 10px 10px, linear-gradient(90deg, transparent 40%, rgba(255, 255, 255, .14) 40% 60%, transparent 60%) 0 0 / 10px 10px; background-blend-mode: normal; }
+.sp[data-p="34"] .sk::before { background: linear-gradient(to top right, rgba(255, 255, 255, .13) 50%, transparent 50%) 0 0 / 10px 10px; }
+.sp[data-p="35"] .sk::before { background: repeating-linear-gradient(-30deg, transparent 0 10px, rgba(255, 255, 255, .14) 10px 16px); }
+.sp[data-p="36"] .sk::before { background: repeating-linear-gradient(75deg, transparent 0 2px, rgba(0, 0, 0, .12) 2px 3px); }
+.sp[data-p="37"] .sk::before { background: radial-gradient(ellipse 10px 6px at 30% 50%, rgba(255, 255, 255, .16) 80%, transparent) 0 0 / 18px 22px, radial-gradient(ellipse 8px 5px at 60% 40%, rgba(255, 255, 255, .14) 80%, transparent) 9px 11px / 18px 22px; }
+.sp[data-p="38"] .sk::before { background: repeating-linear-gradient(20deg, transparent 0 4px, rgba(255, 255, 255, .07) 4px 5px), repeating-linear-gradient(-70deg, transparent 0 6px, rgba(0, 0, 0, .06) 6px 7px), repeating-linear-gradient(110deg, transparent 0 9px, rgba(255, 255, 255, .06) 9px 10px); }
+.sp[data-p="39"] .sk::before { background: repeating-linear-gradient(90deg, rgba(0, 0, 0, .14) 0 1px, rgba(255, 255, 255, .1) 1px 2px, transparent 2px 3px); }
+.sp[data-p="40"] .sk::before { background: linear-gradient(90deg, rgba(255, 255, 255, .0), rgba(255, 255, 255, .22) 40%, rgba(0, 0, 0, .18)); }
+/* ── 모양 10 (책 몸 — 모서리·등 볼록·머리띠 · 1 = 반듯) */
+.sp[data-s="2"] .sk { border-radius: 4px 4px 2px 2px; box-shadow: inset 4px 0 6px rgba(255, 255, 255, .28), inset -6px 0 8px rgba(0, 0, 0, .45), 1px 0 1px rgba(0, 0, 0, .35); }
+.sp[data-s="3"] .sk { border-radius: calc(7px * var(--z)) calc(7px * var(--z)) 3px 3px; }
+.sp[data-s="4"] .sk::after { inset: 0 0 auto; height: calc(4px * var(--z)); background: repeating-linear-gradient(90deg, #b8322a 0 2px, #f1e6cf 2px 4px); }
+.sp[data-s="5"] .sk { clip-path: polygon(0 2.5%, 14% 0, 86% 0, 100% 3.5%, 100% 100%, 0 100%); }
+.sp[data-s="6"] .sk { border-radius: 1px; box-shadow: inset 1px 0 1px rgba(255, 255, 255, .2), inset -1px 0 2px rgba(0, 0, 0, .25), 1px 0 1px rgba(0, 0, 0, .25); }
+.sp[data-s="7"] .sk { box-shadow: inset 0 0 0 calc(1.5px * var(--z)) rgba(255, 255, 255, .28), inset -3px 0 4px rgba(0, 0, 0, .35), 1px 0 1px rgba(0, 0, 0, .35); }
+.sp[data-s="8"] .sk::after { background: linear-gradient(90deg, transparent 14%, rgba(255, 255, 255, .42) 22%, transparent 32%); }
+.sp[data-s="9"] .sk { clip-path: polygon(8% 0, 92% 0, 100% 2.5%, 100% 100%, 0 100%, 0 2.5%); }
+.sp[data-s="10"] .sk { border-radius: 3px 6px 1px 1px; filter: saturate(.78) brightness(.96); } .sp[data-s="10"] .sk::after { background: radial-gradient(ellipse 80% 10% at 50% 96%, rgba(60, 40, 20, .3), transparent 70%), linear-gradient(90deg, rgba(255, 255, 255, .1), transparent 30%); }
 /* ── 좌우 화살표(가까이 가면 살아남) */
 .bqs-arrow { --near: 0; position: fixed; top: 50%; z-index: 20; width: 58px; height: 58px; margin-top: -29px; border-radius: 50%; border: 0; background: rgba(29, 43, 69, calc(.25 + var(--near) * .65)); color: #fff; font-size: 34px; line-height: 1; cursor: pointer;
   opacity: calc(.2 + var(--near) * .8); transform: scale(calc(.85 + var(--near) * .3)); transition: opacity .2s, transform .2s, background .2s; box-shadow: 0 4px 16px rgba(0, 0, 0, calc(var(--near) * .35)); }
@@ -107,6 +218,17 @@
 .bqs-pop .pa > * { min-height: 42px; padding: 0 12px; border-radius: 10px; border: 0; background: rgba(255, 255, 255, .14); color: #fff; font: inherit; font-size: 14.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; text-decoration: none; }
 .bqs-pop .pa .pc { background: #c9a24a; color: #1d2b45; } .bqs-pop .pa .pw.on { background: #d62839; } .bqs-pop .pa [disabled] { opacity: .55; cursor: default; }
 .bqs-pop .px { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; border: 0; border-radius: 50%; background: none; color: #fff; font-size: 16px; cursor: pointer; }
+/* (shelf2) 책등 표면 단추 — 그 책등 색 그대로(--c · --k · 장식색 --g 테) · 누른 높이에 🛒 · 제목 이름표는 단추 위 */
+.bqs-pop.onsp { min-width: 0; max-width: none; width: 60px; padding: 5px 4px; border-radius: 10px; background: var(--c, #1d2b45); color: var(--k, #fff); border: 2px solid var(--g, #c9a24a); box-shadow: 0 10px 26px rgba(0, 0, 0, .45), inset 2px 0 3px rgba(255, 255, 255, .2), inset -3px 0 4px rgba(0, 0, 0, .3); animation: bqsSp .14s ease-out; }
+.bqs-pop.onsp::after { display: none; } .bqs-pop.onsp .pa { flex-direction: column; flex-wrap: nowrap; gap: 4px; margin: 0; }
+.bqs-pop.onsp .pa > * { min-height: 0; height: 50px; width: 100%; padding: 0; flex-direction: column; justify-content: center; gap: 1px; border-radius: 8px; background: rgba(255, 255, 255, .9); color: #1d2b45; font-size: 11px; box-shadow: 0 1px 2px rgba(0, 0, 0, .3); }
+.bqs-pop.onsp .pa > * i { font-style: normal; font-size: 19px; line-height: 1; } .bqs-pop.onsp .pa > * small { font-size: 11px; font-weight: 800; letter-spacing: -.02em; }
+.bqs-pop.onsp .pa .pc { background: #c9a24a; color: #1d2b45; } .bqs-pop.onsp .pa .pw.on { background: #d62839; color: #fff; } .bqs-pop.onsp .pa a.pb { background: #2f7d4f; color: #fff; }
+.bqs-pop.onsp .pa > *:not([disabled]):hover { transform: scale(1.06); } .bqs-pop.onsp .pa > *:focus-visible { outline: 3px solid #ffd54a; outline-offset: 1px; }
+.bqs-pop.onsp .pcap { position: absolute; bottom: calc(100% + 8px); left: 0; width: max-content; max-width: min(280px, calc(100vw - 16px)); padding: 6px 30px 6px 10px; border-radius: 10px; background: #1d2b45; color: #fff; box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+.bqs-pop.onsp .pcap.below { bottom: auto; top: calc(100% + 8px); } .bqs-pop.onsp .pcap b { display: block; font-size: 14px; line-height: 1.3; } .bqs-pop.onsp .pcap small { color: #e9e3d6; font-size: 12.5px; }
+.bqs-pop.onsp .px { top: 3px; right: 3px; width: 26px; height: 26px; font-size: 14px; }
+@keyframes bqsSp { from { opacity: 0; transform: scaleY(.6); } }
 @keyframes bqsPop { from { opacity: 0; transform: translateY(6px) scale(.96); } }
 .bqs-cart { position: fixed; z-index: 30; right: max(16px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); width: 66px; height: 66px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; background: #fffdf8; box-shadow: 0 8px 24px rgba(0, 0, 0, .3); border: 3px solid #c9a24a; }
 .bqs-cart-i { font-size: 32px; } .bqs-cart b { position: absolute; top: -4px; right: -4px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px; background: #b0322a; color: #fff; font-size: 13px; line-height: 24px; text-align: center; display: none; } .bqs-cart.has b { display: block; }
