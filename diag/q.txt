@@ -1,1 +1,2 @@
-@kpin kpin/aud_20261111-073250.json
+doc=prd_books/bk_1000100,app_settings/cons_study
+# 1682525824
