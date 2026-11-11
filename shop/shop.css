@@ -111,3 +111,7 @@ label.f.good input { border-color: #2f7d4f; }
 .sum .dc b { color: var(--red); } .nb { margin: 6px 0 0; } .cprow { display: flex; gap: 6px; } .cprow input { flex: 1; min-width: 0; }
 .grid.rel { margin-bottom: 16px; }
 .card .pr { flex-wrap: wrap; row-gap: 0; } s.was { white-space: nowrap; margin-right: 2px; } .row s.was { margin: 0 4px; }
+
+/* (shelf4 · 원칙 56) 책 한 권 찜 단추 · 주문서 모두 동의 */
+.buy .wishb { flex: 0 0 52px; font-size: 22px; padding: 0; } .buy .wishb.on { color: #c62828; border-color: #c62828; }
+.agree .ck.all { padding: 10px 12px; border: 1px solid var(--line, #ddd); border-radius: 10px; margin-bottom: 8px; background: #fffaf0; } .agree .ck.all small { opacity: .7; font-weight: 400; }
