@@ -3696,7 +3696,7 @@ async function extCloudRun(X, cfg, budgetMs) {
  *  모으기: /daily(10분마다) 안에서 한 번에 지점 하나씩 한 번만 부름 — 지상관측 › 종관기상관측(ASOS) › 일자료(확인 때 되는 API를 WX_APIS 차례로 골라 app_secrets/kma.api에 저장 · 기본 기간 조회 kma_sfcdd3 · 한 번에 30일)
  *    · 앞으로: 어제(한국 9시 뒤) 것까지 · 뒤로: 처음 켠 때부터 backDays(기본 730일) 거슬러 채움 · 하루 최대 perDay번(기본 40 — 근거: 없음, 무료 범위보다 훨씬 적게 · app_settings/wx.cfg로 바꿈)
  *    · 지점 기본: 서울 108 · 수원 119 · 인천 112(손님이 많은 수도권 — 근거: 없음, 설정으로 바꿈)
- *  자료: wx_days/{지점}_{YYYYMMDD} {d, stn, nm, ta 평균기온, taMax, taMin, rn 강수mm, rnNA, hm 습도, ss 일조시간, ca 구름, raw 원문 한 줄} · wx_sum/{지점}.rows[YYYYMMDD] = [강수, 최고, 평균, 최저, 습도] (연구가 한 문서로 받음 → weather.csv)
+ *  자료: wx_days/{지점}_{YYYYMMDD} {d, stn, nm, ta 평균기온, taMax, taMin, rn 강수mm, rnNA, hm 습도, ss 일조시간, ca 구름, raw 원문 한 줄} · wx_sum/{지점}.rows[YYYYMMDD] = [강수, 최고, 평균, 최저, 습도, 일조(11/11 더함 — 🧠 소비심리 '해 많은 날·흐린 날')] (연구가 한 문서로 받음 → weather.csv)
  *  상태: app_settings/wx_run {key{at,by,tail}, stn{지점:{hi,lo,loDone,err,errAt,n}}, cnt{날짜:번}, last, keyBad}
  *  WX-START (시험 tWX1110이 이 칸만 떼어 가짜 Firestore·가짜 http로 돌림 — 바깥 것은 D로만) */
 const WX_STN = { 108: '서울', 119: '수원', 112: '인천', 159: '부산', 143: '대구', 133: '대전', 156: '광주', 131: '청주', 146: '전주', 105: '강릉', 184: '제주' };
@@ -3774,7 +3774,7 @@ function wxMake(D) { const S = { nextAt: 0, key: null, api: null, keyAt: 0 };
     await D.C('app_secrets').doc('kma').set({ key, api: r.api, at, by: by || null }); await D.C('app_settings').doc('wx_run').set({ key: { at, by: by || null, tail: key.slice(-4), api: r.api, apiNm: r.apiNm }, keyBad: null }, { merge: true });
     S.key = key; S.api = r.api; S.keyAt = D.now(); S.nextAt = 0; return { ok: true, api: r.api, apiNm: r.apiNm, sample: r.sample }; }
   async function put(stn, rows, apiId) { if (!rows.length) return 0; const nm = WX_STN[stn] || String(stn); const at = D.nowIso(); const sum = {};
-    for (let i = 0; i < rows.length; i += 400) { const b = D.batch(); for (const x of rows.slice(i, i + 400)) { const { d8, guess, ...v } = x; b.set(D.C('wx_days').doc(`${stn}_${d8}`), { ...v, stn, nm, src: 'kma_' + (apiId || 'sfcdd3'), guess: !!guess, at }); sum[d8] = [x.rn, x.taMax, x.ta, x.taMin, x.hm]; } await b.commit(); }
+    for (let i = 0; i < rows.length; i += 400) { const b = D.batch(); for (const x of rows.slice(i, i + 400)) { const { d8, guess, ...v } = x; b.set(D.C('wx_days').doc(`${stn}_${d8}`), { ...v, stn, nm, src: 'kma_' + (apiId || 'sfcdd3'), guess: !!guess, at }); sum[d8] = [x.rn, x.taMax, x.ta, x.taMin, x.hm, x.ss == null ? null : x.ss]; } await b.commit(); }
     await D.C('wx_sum').doc(String(stn)).set({ stn, nm, at, rows: sum }, { merge: true }); return rows.length; }
   /* 한 구간 받기 — 기간 API는 한 번 · 하루 API는 하루씩(전국 stn=0 한 번을 이 회차 지점끼리 나눠 씀) · {rows, lo, hi(받은 범위) | bad | net} */
   async function span(api, key, tm1, tm2, stn, dir, B, cache) { if (api.range) { if (B.used >= B.cap) return { stop: true }; const r = await call(api, key, tm1, tm2, stn); B.used++; B.calls++; return r.bad || r.net ? r : { rows: r.rows || [], lo: tm1, hi: tm2 }; }
@@ -3807,6 +3807,123 @@ function wxMake(D) { const S = { nextAt: 0, key: null, api: null, keyAt: 0 };
   return { check, saveKey, tick, keyGet, _S: S }; }
 /* WX-END */
 const WX = wxMake({ C, batch: () => db.batch(), http: (o) => extHttp(o), now: () => Date.now(), nowIso: () => nowIso() });
+/* ══════════ 🧠 (정범님 11/11 '날씨는 왜 소비심리에 포함되어 있지 않아? … 정보나 그래프가 없어?') 소비심리 연구 — 우리 실제 판매로 '언제·왜 사나'를 잼 ══════════
+ *  목적: ① 판매가·가격 감시(언제 올리고 내릴지) ② 등록·노출 때(어느 요일·시간·날씨에 올리면 잘 팔리나) ③ 재고·매입(계절·휴일 수요) ④ 마케팅·우리숍 문구(시간대) 결정에 쓰는 신호 → 맞았는지 스스로 채점
+ *  재료(손님 정보 없음): 판매 장부 ml_sales(주문 시각·판매가·권수·줄 상태·판매처만 — crm_orders에서 이미 손님 칸을 뺀 것) · 날씨 wx_sum/{지점}(서울·수원·인천 평균) · 공휴일 = 공용 출고 파일 KR_HOLIDAYS · 분야 = prd_books 분류(app_settings/cons_cat에 ISBN마다 기억)
+ *  셈: 하루 주문 수(같은 판매처·같은 분 = 한 주문) → 상대값 = 그날 ÷ '같은 달 같은 요일' 평균(요일·달 흐름을 걸러 냄) → 묶음 효과 = 그 날들 상대값 평균 ÷ 나머지 평균 − 1 · 95% 범위 = 부트스트랩(씨앗 고정)
+ *    믿음: 표본 8일 미만 '자료 부족' · 범위가 0을 넘나들거나 20일 미만 '추정' · 그 밖 '믿을 만' — 화면은 늘 표본 수·믿음을 함께 보임
+ *  결과: app_settings/cons_study(작게 · 하루 한 번 덮어씀 · hist에 내일 예측을 쌓아 다음 날 실제와 채점) · 관찰만 — 값·등록·돈을 바꾸지 않음(약속 36 무손해 · 다른 엔진엔 그림자 신호로만)
+ *  CONS-START (시험 tCONS1111이 이 칸만 떼어 돌림 — 바깥 것은 인자로만) */
+const CONS_V = 1;
+const CONS_DOW = ['월', '화', '수', '목', '금', '토', '일'];
+const CONS_HB = ['00~02', '03~05', '06~08', '09~11', '12~14', '15~17', '18~20', '21~23'];
+const CONS_PB = (p) => (p < 2000 ? '2천 미만' : p < 4000 ? '2~4천' : p < 7000 ? '4~7천' : p < 10000 ? '7천~1만' : p < 20000 ? '1~2만' : '2만 이상');
+const CONS_PBS = ['2천 미만', '2~4천', '4~7천', '7천~1만', '1~2만', '2만 이상'];
+const CONS_PF = { aladin: '알라딘', yes24: '예스24', cash: '현금', naver: '네이버', shop: '우리숍' };
+const consAdd = (k, n) => new Date(Date.parse(k + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+const consDow = (k) => (new Date(k + 'T12:00:00Z').getUTCDay() + 6) % 7; /* 월 = 0 */
+const consSeason = (m) => (m >= 3 && m <= 5 ? '봄' : m >= 6 && m <= 8 ? '여름' : m >= 9 && m <= 11 ? '가을' : '겨울');
+function consRng(seed) { let s = seed >>> 0 || 1; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+const consR = (x, d) => (x == null || !Number.isFinite(x) ? null : Math.round(x * 10 ** (d == null ? 3 : d)) / 10 ** (d == null ? 3 : d));
+/* 효과 한 개 — A(그 날 상대값들)·B(나머지) → {n, e, lo, hi, conf} */
+function consEff(A, B, rnd) { const n = A.length; if (!n || B.length < 3) return { n, e: null, lo: null, hi: null, conf: '자료 부족' }; const mean = (a) => a.reduce((s, x) => s + x, 0) / a.length; const mB = mean(B); if (!(mB > 0)) return { n, e: null, lo: null, hi: null, conf: '자료 부족' };
+  const e = mean(A) / mB - 1; const bs = []; for (let i = 0; i < 300; i++) { let sa = 0, sb = 0; for (let j = 0; j < n; j++) sa += A[Math.floor(rnd() * n)]; for (let j = 0; j < B.length; j++) sb += B[Math.floor(rnd() * B.length)]; bs.push(sa / n / (sb / B.length) - 1); } bs.sort((a, b) => a - b);
+  const lo = bs[Math.floor(bs.length * 0.025)], hi = bs[Math.floor(bs.length * 0.975)]; const conf = n < 8 ? '자료 부족' : n < 20 || (lo <= 0 && hi >= 0) ? '추정' : '믿을 만';
+  return { n, e: consR(e), lo: consR(lo), hi: consR(hi), conf }; }
+/* 판매 장부 줄('code\u0001isbn\u0001at\u0001price\u0001qty\u0001line\u0001pf') → 정상 줄만 {d, h, mk(분), pf, p, q, isbn} · 시각은 장부 그대로(한국 시각) */
+function consRows(lines) { const out = []; for (const r of lines || []) { const x = String(r).split('\u0001'); if ((x[5] || 'normal') !== 'normal') continue; const at = String(x[2] || '').replace(' ', 'T'); if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(at)) continue;
+    out.push({ d: at.slice(0, 10), h: +at.slice(11, 13), mk: at.slice(0, 16), pf: x[6] || 'aladin', p: +x[3] || 0, q: Math.max(1, +x[4] || 1), isbn: x[1] || null }); } return out; }
+/* 날씨 — 지점들 wx_sum.rows[YYYYMMDD] = [강수, 최고, 평균, 최저, 습도, 일조?] → 날마다 지점 평균 {rn, tx, ta, tn, ss} */
+function consWx(sums) { const by = {}; const st = []; for (const [stn, s] of Object.entries(sums || {})) { const R = (s && s.rows) || {}; const ks = Object.keys(R).sort(); const ta = []; let rainD = 0;
+    for (const d8 of ks) { const v = R[d8]; if (!Array.isArray(v)) continue; const d = `${d8.slice(0, 4)}-${d8.slice(4, 6)}-${d8.slice(6, 8)}`; const o = (by[d] = by[d] || { rn: [], tx: [], ta: [], tn: [], ss: [] }); const pushN = (a, x) => { if (x != null && Number.isFinite(+x)) a.push(+x); };
+      pushN(o.rn, v[0]); pushN(o.tx, v[1]); pushN(o.ta, v[2]); pushN(o.tn, v[3]); pushN(o.ss, v[5]); if (v[2] != null) ta.push(+v[2]); if (+v[0] >= 1) rainD++; }
+    st.push({ stn: +stn, nm: (s && s.nm) || String(stn), n: ks.length, from: ks[0] ? `${ks[0].slice(0, 4)}-${ks[0].slice(4, 6)}-${ks[0].slice(6, 8)}` : null, to: ks.length ? `${ks[ks.length - 1].slice(0, 4)}-${ks[ks.length - 1].slice(4, 6)}-${ks[ks.length - 1].slice(6, 8)}` : null, ta: ta.length ? consR(ta.reduce((a, b) => a + b, 0) / ta.length, 1) : null, rainD }); }
+  const avg = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : null); const days = {}; for (const [d, o] of Object.entries(by)) days[d] = { rn: avg(o.rn), tx: avg(o.tx), ta: avg(o.ta), tn: avg(o.tn), ss: avg(o.ss) };
+  return { days, st: st.sort((a, b) => a.stn - b.stn) }; }
+/* 쉬는 날 묶음 — 주말·공휴일이 3일 넘게 이어지면 '긴 연휴'(설·추석 이름이 들면 명절) · 앞·뒤 평일 3일 */
+function consBreaks(from, to, hol) { const off = (k) => consDow(k) >= 5 || !!hol(k); const B = []; let k = consAdd(from, -10); const end = consAdd(to, 20);
+  while (k <= end) { if (off(k)) { let e = k; while (off(consAdd(e, 1)) && e <= end) e = consAdd(e, 1); const len = Math.round((Date.parse(e) - Date.parse(k)) / 864e5) + 1; if (len >= 3) { const names = []; for (let x = k; x <= e; x = consAdd(x, 1)) { const nm = hol(x); if (nm) names.push(nm); } B.push({ from: k, to: e, len, myeong: names.some((n) => /설|추석/.test(n)), name: names.find((n) => /설|추석/.test(n)) || names[0] || '긴 연휴' }); } k = consAdd(e, 1); } else k = consAdd(k, 1); }
+  const tag = {}; for (const b of B) { for (let x = b.from; x <= b.to; x = consAdd(x, 1)) tag[x] = { ...(tag[x] || {}), in: b }; let p = consAdd(b.from, -1), c = 0; while (c < 3) { if (!off(p)) { tag[p] = { ...(tag[p] || {}), pre: b }; c++; } p = consAdd(p, -1); } let q = consAdd(b.to, 1); c = 0; while (c < 3) { if (!off(q)) { tag[q] = { ...(tag[q] || {}), post: b }; c++; } q = consAdd(q, 1); } }
+  return { B, tag }; }
+/* 본 셈 — I = { lines(판매 장부 줄), wx(wx_sum 지점별), hol(날짜 → 공휴일 이름|null), today(한국 날짜), cats({isbn: 분야}), hist(지난 결과의 hist) } */
+function consBuild(I) { const hol = I.hol || (() => null); const today = I.today; const last = consAdd(today, -1); const R = consRows(I.lines).filter((r) => r.d <= last); if (!R.length) return { v: CONS_V, empty: true, why: '판매 장부가 비었음' };
+  const rnd = consRng(20261111); const first = R.reduce((m, r) => (r.d < m ? r.d : m), R[0].d); const W = consWx(I.wx); const BR = consBreaks(first, consAdd(today, 14), hol);
+  /* 날마다 */ const D = {}; for (let k = first; k <= last; k = consAdd(k, 1)) D[k] = { o: 0, it: 0, rev: 0, keys: new Set() };
+  const hr = { wk: new Array(8).fill(0), we: new Array(8).fill(0) }; const pf = {}; const pb = { all: {}, we: {}, rain: {}, dry: {} }; const catT = {}; let nOrd = 0;
+  for (const r of R) { const x = D[r.d]; if (!x) continue; const ok = r.pf + '|' + r.mk; x.it += r.q; x.rev += r.p * r.q; const isWe = consDow(r.d) >= 5 || !!hol(r.d); const w = W.days[r.d]; const rainy = w && w.rn != null ? w.rn >= 1 : null;
+    if (!x.keys.has(ok)) { x.keys.add(ok); x.o++; nOrd++; (isWe ? hr.we : hr.wk)[Math.min(7, Math.floor(r.h / 3))]++; pf[r.pf] = (pf[r.pf] || 0) + 1; }
+    const b = CONS_PB(r.p); const addPb = (g) => { pb[g][b] = (pb[g][b] || 0) + r.q; }; addPb('all'); if (isWe) addPb('we'); if (rainy === true) addPb('rain'); if (rainy === false) addPb('dry');
+    const c = I.cats && r.isbn ? I.cats[r.isbn] : null; if (c) { const m = +r.d.slice(5, 7); const T = (catT[c] = catT[c] || { n: 0, se: {}, we: 0 }); T.n += r.q; const s = consSeason(m); T.se[s] = (T.se[s] || 0) + r.q; if (isWe) T.we += r.q; } }
+  const keys = Object.keys(D).sort(); keys.forEach((k) => { delete D[k].keys; });
+  /* 상대값 — 같은 달 같은 요일 평균(그 칸이 2일 미만이면 그 달 평균) */ const cell = {}, mon = {}; for (const k of keys) { const c = k.slice(0, 7) + '|' + consDow(k); (cell[c] = cell[c] || []).push(D[k].o); (mon[k.slice(0, 7)] = mon[k.slice(0, 7)] || []).push(D[k].o); }
+  const mean = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0); const rel = {}; for (const k of keys) { const c = cell[k.slice(0, 7) + '|' + consDow(k)]; const base = c.length >= 2 ? mean(c) : mean(mon[k.slice(0, 7)]); rel[k] = base > 0 ? D[k].o / base : null; }
+  const relK = keys.filter((k) => rel[k] != null && mon[k.slice(0, 7)].length >= 14); /* 앞뒤 끊긴 달(14일 미만)은 셈에서 뺌 */
+  /* 요일 지수 — 그날 ÷ 그 달 하루 평균 */ const dow = CONS_DOW.map((t, i) => { const v = relK.filter((k) => consDow(k) === i).map((k) => D[k].o / (mean(mon[k.slice(0, 7)]) || 1)); const rest = relK.filter((k) => consDow(k) !== i).map((k) => D[k].o / (mean(mon[k.slice(0, 7)]) || 1)); const f = consEff(v, rest, rnd); const idx = v.length ? mean(v) : null; return { k: i, t, n: v.length, idx: consR(idx), e: f.e, lo: f.lo, hi: f.hi, conf: f.conf }; });
+  /* 달마다 */ const months = Object.keys(mon).sort().map((m) => { const ks = keys.filter((k) => k.slice(0, 7) === m); const s = (f) => ks.reduce((a, k) => a + D[k][f], 0); return { m, days: ks.length, o: consR(s('o') / ks.length, 2), it: consR(s('it') / ks.length, 2), rev: Math.round(s('rev') / ks.length) }; });
+  const fullM = months.filter((x) => x.days >= 14); const allO = mean(fullM.map((x) => x.o)) || 1; months.forEach((x) => { x.idx = x.days >= 14 ? consR(x.o / allO) : null; });
+  /* 묶음 효과 */ const G = []; const grp = (k, t, cat, test) => { const A = [], B = []; for (const d of relK) { const v = test(d); if (v == null) continue; (v ? A : B).push(rel[d]); } const f = consEff(A, B, rnd); G.push({ k, t, cat, ...f }); };
+  grp('hol', '평일 공휴일', 'cal', (d) => (consDow(d) < 5 ? !!hol(d) && !(BR.tag[d] && BR.tag[d].in) : null));
+  grp('brk', '긴 연휴 동안(3일 넘게 쉼)', 'cal', (d) => !!(BR.tag[d] && BR.tag[d].in));
+  grp('myeong', '명절(설·추석) 연휴 동안', 'cal', (d) => !!(BR.tag[d] && BR.tag[d].in && BR.tag[d].in.myeong));
+  grp('pre', '긴 연휴 앞 평일 3일', 'cal', (d) => (consDow(d) < 5 && !hol(d) ? !!(BR.tag[d] && BR.tag[d].pre) : null));
+  grp('post', '긴 연휴 뒤 평일 3일', 'cal', (d) => (consDow(d) < 5 && !hol(d) ? !!(BR.tag[d] && BR.tag[d].post) : null));
+  grp('pay', '월급 뒤 3일(10~12일·25~27일)', 'cal', (d) => { const x = +d.slice(8, 10); return (x >= 10 && x <= 12) || (x >= 25 && x <= 27); });
+  grp('mstart', '달 첫 5일', 'cal', (d) => +d.slice(8, 10) <= 5);
+  const wxOf = (d) => W.days[d] || null; const wn = relK.filter((d) => wxOf(d) && wxOf(d).ta != null).length;
+  grp('rain', '비 온 날(1mm 넘게)', 'wx', (d) => { const w = wxOf(d); return w && w.rn != null ? w.rn >= 1 : null; });
+  grp('rainH', '큰비(10mm 넘게)', 'wx', (d) => { const w = wxOf(d); return w && w.rn != null ? w.rn >= 10 : null; });
+  grp('rainPrev', '비 온 다음 날', 'wx', (d) => { const w = wxOf(consAdd(d, -1)); return w && w.rn != null ? w.rn >= 1 : null; });
+  grp('cold', '추운 날(평균 0도 아래)', 'wx', (d) => { const w = wxOf(d); return w && w.ta != null ? w.ta < 0 : null; });
+  grp('cool', '쌀쌀한 날(0~10도)', 'wx', (d) => { const w = wxOf(d); return w && w.ta != null ? w.ta >= 0 && w.ta < 10 : null; });
+  grp('mild', '선선한 날(10~20도)', 'wx', (d) => { const w = wxOf(d); return w && w.ta != null ? w.ta >= 10 && w.ta < 20 : null; });
+  grp('warm', '따뜻한 날(20~25도)', 'wx', (d) => { const w = wxOf(d); return w && w.ta != null ? w.ta >= 20 && w.ta < 25 : null; });
+  grp('hot', '더운 날(평균 25도 넘게)', 'wx', (d) => { const w = wxOf(d); return w && w.ta != null ? w.ta >= 25 : null; });
+  grp('heat', '폭염(최고 33도 넘게)', 'wx', (d) => { const w = wxOf(d); return w && w.tx != null ? w.tx >= 33 : null; });
+  grp('sunny', '해 많은 날(일조 8시간 넘게)', 'wx', (d) => { const w = wxOf(d); return w && w.ss != null ? w.ss >= 8 : null; });
+  grp('cloudy', '흐린 날(일조 3시간 아래)', 'wx', (d) => { const w = wxOf(d); return w && w.ss != null ? w.ss < 3 : null; });
+  const eff = (k) => G.find((g) => g.k === k) || {};
+  /* 시간대 몫 */ const sh = (a) => { const t = a.reduce((s, x) => s + x, 0) || 1; return a.map((x) => consR(x / t)); }; const hours = CONS_HB.map((t, i) => ({ t, wk: sh(hr.wk)[i], we: sh(hr.we)[i], nWk: hr.wk[i], nWe: hr.we[i] }));
+  /* 값대 몫 */ const pbOut = {}; for (const [g, o] of Object.entries(pb)) { const t = Object.values(o).reduce((s, x) => s + x, 0); pbOut[g] = { n: t, sh: CONS_PBS.map((b) => consR(t ? (o[b] || 0) / t : 0)) }; }
+  /* 분야(계절·주말) */ const catN = Object.values(catT).reduce((s, x) => s + x.n, 0); const seT = {}; Object.values(catT).forEach((x) => Object.entries(x.se).forEach(([s, n]) => { seT[s] = (seT[s] || 0) + n; })); const weT = Object.values(catT).reduce((s, x) => s + x.we, 0);
+  const cats = Object.entries(catT).sort((a, b) => b[1].n - a[1].n).slice(0, 10).map(([c, x]) => ({ c, n: x.n, sh: consR(x.n / (catN || 1)), se: Object.fromEntries(['봄', '여름', '가을', '겨울'].map((s) => [s, seT[s] >= 30 && x.n >= 20 ? consR(((x.se[s] || 0) / seT[s]) / (x.n / catN)) : null])), we: weT >= 30 && x.n >= 20 ? consR((x.we / weT) / (x.n / catN)) : null }));
+  /* 앞으로 14일 — 요일 지수 × (믿을 만·추정인 날짜 효과) */ const calF = (d) => { let f = 1; const why = []; const T = BR.tag[d] || {}; const use = (k) => { const g = eff(k); if (g.e != null && g.conf !== '자료 부족') { f *= 1 + g.e; why.push(`${g.t} ${g.e >= 0 ? '+' : ''}${Math.round(g.e * 100)}%`); } };
+    if (T.in) use(T.in.myeong ? 'myeong' : 'brk'); else if (consDow(d) < 5 && hol(d)) use('hol'); if (T.pre && !T.in) use('pre'); if (T.post && !T.in) use('post'); return { f, why }; };
+  const next = []; for (let i = 0; i < 14; i++) { const d = consAdd(today, i); const di = dow[consDow(d)]; const c = calF(d); const idx = (di.idx || 1) * c.f; next.push({ d, w: CONS_DOW[consDow(d)], hol: hol(d) || null, idx: consR(idx), why: [`${CONS_DOW[consDow(d)]}요일 ${di.idx != null ? '×' + di.idx.toFixed(2) : ''}`, ...c.why] }); }
+  /* 채점 — 최근 60일: 그날 앞 자료만으로 요일 지수(+날짜 효과 없이) 예측 → 실제(앞 28일 평균 대비)와 방향이 맞았나 · 기준 = '늘 보통'(1.0) 오차 */
+  const sc = { n: 0, hit: 0, dir: 0, mae: 0, mae0: 0, last: [] }; const tail = keys.slice(-60); for (const d of tail) { const prior = keys.filter((k) => k < d && k >= consAdd(d, -365)); if (prior.length < 56) continue; const p28 = prior.slice(-28); const base = mean(p28.map((k) => D[k].o)); if (!(base > 0)) continue;
+    const pm = {}; prior.forEach((k) => { (pm[k.slice(0, 7)] = pm[k.slice(0, 7)] || []).push(D[k].o); }); const sameD = prior.filter((k) => consDow(k) === consDow(d) && pm[k.slice(0, 7)].length >= 14).map((k) => D[k].o / (mean(pm[k.slice(0, 7)]) || 1)); const p = sameD.length ? mean(sameD) : 1; const a = D[d].o / base;
+    sc.n++; sc.mae += Math.abs(a - p); sc.mae0 += Math.abs(a - 1); if (Math.abs(p - 1) >= 0.05) { sc.dir++; if ((a - 1) * (p - 1) > 0) sc.hit++; } sc.last.push({ d, p: consR(p, 2), a: consR(a, 2) }); }
+  const score = { n: sc.n, dir: sc.dir, hit: sc.hit, rate: sc.dir ? consR(sc.hit / sc.dir) : null, mae: sc.n ? consR(sc.mae / sc.n) : null, mae0: sc.n ? consR(sc.mae0 / sc.n) : null, last: sc.last.slice(-21) };
+  /* 실제 신호 채점 — 지난 회차가 남긴 '내일 예측'(hist) 가운데 이제 실제가 나온 날 */ const hist = (Array.isArray(I.hist) ? I.hist : []).filter((h) => h && h.d).slice(-90); const live = { n: 0, hit: 0, dir: 0 }; hist.forEach((h) => { if (h.d > last || !D[h.d]) return; const p28 = keys.filter((k) => k < h.d).slice(-28); const base = mean(p28.map((k) => D[k].o)); if (!(base > 0)) return; h.a = consR(D[h.d].o / base, 2); live.n++; if (Math.abs(h.p - 1) >= 0.05) { live.dir++; if ((h.a - 1) * (h.p - 1) > 0) live.hit++; } });
+  live.rate = live.dir ? consR(live.hit / live.dir) : null; const tm = next[1]; if (tm && !hist.some((h) => h.d === tm.d)) hist.push({ d: tm.d, p: tm.idx, at: today }); const histOut = hist.slice(-90);
+  /* 지금 할 일 신호 */ const sig = []; const pct = (x) => (x == null ? '?' : `${x >= 0 ? '+' : ''}${Math.round(x * 100)}%`); const cw = (g) => `표본 ${g.n}일 · ${g.conf}`;
+  if (tm) { const e = tm.idx - 1; const up = e >= 0.05, dn = e <= -0.05; sig.push({ k: 'tmr', for: ['reg', 'price'], lv: up ? 'up' : dn ? 'down' : 'flat', e: consR(e), conf: dow[consDow(tm.d)].conf, n: dow[consDow(tm.d)].n, t: `내일(${tm.d.slice(5)} ${tm.w}${tm.hol ? ' · ' + tm.hol : ''}) 주문 평소 대비 ${pct(e)} 예상 — ${tm.why.join(' · ')}`, act: up ? '오늘 밤에 새 상품 등록을 몰아 내일 첫 화면에 걸리게 · 값 내리기는 미룸(잘 팔리는 날엔 안 내려도 팔림)' : dn ? '등록은 다음 바쁜 날 전날 밤으로 미룸 · 이날 값을 내려도 효과가 작게 보일 수 있으니 값 판단은 바쁜 날 결과로' : '평소대로' }); }
+  const pk = hours.slice().sort((a, b) => b.wk - a.wk)[0]; const pkWe = hours.slice().sort((a, b) => b.we - a.we)[0]; if (pk && nOrd >= 50) sig.push({ k: 'peak', for: ['reg', 'mkt'], lv: 'info', conf: nOrd >= 300 ? '믿을 만' : '추정', n: nOrd, t: `평일 주문이 가장 몰리는 때 ${pk.t}시(${Math.round(pk.wk * 100)}%) · 주말·공휴일은 ${pkWe.t}시(${Math.round(pkWe.we * 100)}%)`, act: `새 상품은 그 앞(평일 ${CONS_HB[(CONS_HB.indexOf(pk.t) + 7) % 8]}시)에 올려 몰리는 때 첫 화면에 · 우리숍 문구·알림도 그 때에 맞춤` });
+  const up14 = next.slice(1).find((x) => x.why.length > 1); if (up14) sig.push({ k: 'cal', for: ['reg', 'stock', 'price'], lv: up14.idx >= 1 ? 'up' : 'down', e: consR(up14.idx - 1), conf: '추정', t: `${up14.d.slice(5)}(${up14.w}${up14.hol ? ' · ' + up14.hol : ''}) — ${up14.why.slice(1).join(' · ')} → 그날 평소 대비 ${pct(up14.idx - 1)}`, act: up14.idx >= 1 ? '그 앞날 밤까지 등록·재고 채우기' : '그 앞에 끝낼 등록을 당기고 그날은 쉼 · 연휴 뒤에 몰릴 주문 대비' });
+  const rg = eff('rain'); if (rg.n) { const w1 = W.days[last]; sig.push({ k: 'wx', for: ['reg', 'mkt'], lv: rg.e == null ? 'info' : rg.e >= 0.05 ? 'up' : rg.e <= -0.05 ? 'down' : 'flat', e: rg.e, conf: rg.conf, n: rg.n, t: `비 온 날 주문 ${pct(rg.e)}(${cw(rg)})${w1 ? ` · 어제(${last.slice(5)}) 수도권 ${w1.rn != null ? '비 ' + consR(w1.rn, 1) + 'mm' : ''}${w1.ta != null ? ' · 평균 ' + consR(w1.ta, 1) + '도' : ''}` : ''}`, act: rg.e != null && rg.e >= 0.05 && rg.conf !== '자료 부족' ? '비 예보가 있는 날 전날 밤 등록 몰기(예보 자동 받기는 기상청 단기예보 API 활용신청 뒤)' : '아직 비가 판매를 크게 바꾼다는 근거 없음 — 날씨는 평소대로' }); }
+  else sig.push({ k: 'wx', for: ['reg'], lv: 'info', conf: '자료 부족', n: 0, t: `날씨와 맞춘 판매 날 ${wn}일 — 기상청 날씨가 쌓이는 중`, act: '날씨 자료가 판매 날과 30일 넘게 겹치면 효과가 나옴' });
+  const nm = (() => { const m = +today.slice(5, 7); const nx = m === 12 ? 1 : m + 1; const ly = (mm) => months.find((x) => +x.m.slice(5, 7) === mm && x.m < today.slice(0, 7) && x.idx != null); const a = ly(m), b = ly(nx); return a && b ? { a, b, e: b.o / a.o - 1 } : null; })();
+  if (nm) sig.push({ k: 'season', for: ['stock'], lv: nm.e >= 0.05 ? 'up' : nm.e <= -0.05 ? 'down' : 'flat', e: consR(nm.e), conf: '추정', n: 1, t: `작년 ${+nm.b.m.slice(5)}월 하루 주문은 ${+nm.a.m.slice(5)}월보다 ${pct(nm.e)}(${nm.a.o} → ${nm.b.o}건/일 · 한 해 한 번뿐이라 추정)`, act: nm.e >= 0.05 ? '다음 달 앞두고 매입·등록을 늘림' : nm.e <= -0.05 ? '다음 달은 매입을 줄이고 묵은 재고 정리' : '매입은 평소대로' });
+  const hotCat = cats.filter((c) => c.se[consSeason(+today.slice(5, 7))] != null).sort((a, b) => b.se[consSeason(+today.slice(5, 7))] - a.se[consSeason(+today.slice(5, 7))])[0]; if (hotCat && hotCat.se[consSeason(+today.slice(5, 7))] >= 1.1) sig.push({ k: 'cat', for: ['stock', 'mkt'], lv: 'up', e: consR(hotCat.se[consSeason(+today.slice(5, 7))] - 1), conf: '추정', n: hotCat.n, t: `${consSeason(+today.slice(5, 7))}에 몫이 커지는 분야: ${hotCat.c}(평소 몫의 ${hotCat.se[consSeason(+today.slice(5, 7))].toFixed(2)}배)`, act: '이 분야 매입·노출을 늘림' });
+  const tot = { orders: nOrd, items: R.reduce((s, r) => s + r.q, 0), rev: R.reduce((s, r) => s + r.p * r.q, 0) };
+  return { v: CONS_V, at: null, range: { from: first, to: last, days: keys.length, used: relK.length }, tot, pf: Object.entries(pf).map(([k, n]) => ({ k, t: CONS_PF[k] || k, n })).sort((a, b) => b.n - a.n), dow, hours, months, eff: G, pb: { bands: CONS_PBS, ...pbOut }, cats, catCover: consR(catN / (tot.items || 1)), wx: { st: W.st, days: Object.keys(W.days).length, match: wn }, breaks: BR.B.filter((b) => b.to >= first).map((b) => ({ from: b.from, to: b.to, name: b.name, myeong: b.myeong })), next, score, live, hist: histOut, sig }; }
+/* CONS-END */
+/* 클라우드 쪽 — 재료 읽기·분야 기억·저장(하루 한 번 · 웹앱 '지금 다시 셈' = app_settings/cons_cfg.reqAt) */
+let consNextAt = 0;
+async function consStudy(force) { const ref = C('app_settings').doc('cons_study'); let old = {}; try { old = (await ref.get()).data() || {}; } catch (e) {}
+  let req = null; try { req = ((await C('app_settings').doc('cons_cfg').get()).data() || {}).reqAt || null; } catch (e) {}
+  if (!force && old.at && Date.now() - Date.parse(old.at) < 20 * 3600e3 && !(req && Date.parse(req) > Date.parse(old.at))) return { skip: 1 };
+  const t0 = Date.now(); const lines = []; (await C('ml_sales').get()).forEach((d) => { if (d.id === '_meta') return; (d.data().rows || []).forEach((r) => lines.push(r)); });
+  const wx = {}; for (const stn of [108, 119, 112]) { try { const d = await C('wx_sum').doc(String(stn)).get(); if (d.exists) wx[stn] = d.data(); } catch (e) {} }
+  const SHC = shipCoreNode(); const hol = SHC && SHC.holName ? (k) => SHC.holName(k) : () => null; const today = kstDay(Date.now());
+  /* 분야 — 최근 1년 판매 ISBN만 · 한 번에 1,500권까지 prd_books 분류 2단계를 읽어 cons_cat에 기억(다음부터 새 ISBN만) */
+  const cut = consAdd(today, -365); const want = new Set(); lines.forEach((r) => { const x = String(r).split('\u0001'); if (x[1] && String(x[2] || '') >= cut) want.add(x[1]); });
+  const cref = C('app_settings').doc('cons_cat'); let cc = {}; try { cc = (await cref.get()).data() || {}; } catch (e) {} const L = Array.isArray(cc.L) ? cc.L.slice() : []; const M = { ...(cc.m || {}) };
+  const todo = [...want].filter((i) => M[i] == null).slice(0, 1500); for (let i = 0; i < todo.length; i += 100) { const part = todo.slice(i, i + 100); try { const got = await db.getAll(...part.map((x) => C('prd_books').doc('isbn_' + x)), { fieldMask: ['categories'] }); got.forEach((g, j) => { const c0 = g.exists ? ((g.data() || {}).categories || [])[0] : null; const p = c0 && c0.path; const nm = p && p.length > 1 ? p.slice(0, 2).join(' > ') : '모름'; let ix = L.indexOf(nm); if (ix < 0) { L.push(nm); ix = L.length - 1; } M[part[j]] = ix; }); } catch (e) { break; } }
+  for (const k of Object.keys(M)) if (!want.has(k)) delete M[k]; if (todo.length) await cref.set({ L, m: M, at: nowIso(), ...W() }).catch(() => {});
+  const cats = {}; for (const [k, ix] of Object.entries(M)) if (L[ix] && L[ix] !== '모름') cats[k] = L[ix];
+  const out = consBuild({ lines, wx, hol, today, cats, hist: old.hist }); out.at = nowIso(); out.ms = Date.now() - t0; out.catTodo = Math.max(0, [...want].filter((i) => M[i] == null).length);
+  await ref.set({ ...out, ...W() }); log('🧠 소비심리 셈', out.range ? `${out.range.from}~${out.range.to}` : out.why, '날씨 맞춘 날', out.wx ? out.wx.match : 0); return { n: out.tot ? out.tot.orders : 0, ms: out.ms, wx: out.wx ? out.wx.match : 0 }; }
 /* ── (정범님 11/10 '열쇠를 넣는 모든 곳은 저장 전에 먼저 맞는지 확인') 🌐 외부 연결 키 확인 — 웹앱 설정 ⑱ [키 저장] 전에 POST /key-check {k, v, with}
  *  같은 공용 파일(readnow-ext-core.js)의 그 출처를 시험 책(『데미안』 9788937460449)으로 한 번 불러 봄 · 값은 저장·기록하지 않음(저장은 웹앱이 '맞음'을 받은 뒤)
  *  → {ok} 맞음 | {ok:false, bad, why} 틀림(다시 넣어 주세요) | {ok:false, unsure, why} 확인 못 함(서버가 안 닿음·서비스 끝남 — 웹앱이 한 번 더 누르면 그대로 저장) */
@@ -4006,6 +4123,7 @@ async function dailyJobs() { if (dailyBusy) return { skipped: true }; dailyBusy 
     if (J.costs && Date.now() > costNextAt) { try { const r = await djTO(djRun('cost'), 3 * 60e3, '비용 기록'); out.costs = r; costNextAt = r.skip ? Date.now() + 15 * 60e3 : 0; if (r.done && r.done.length) log('비용 기록', JSON.stringify(r.done)); } catch (e) { costNextAt = Date.now() + 30 * 60e3; out.costsErr = e.message; log('비용 기록 실패', e.message); } }
     if (J.costs && Date.now() > ghNextAt) { try { const r = await djTO(ghActDaily(3), 60e3, 'GitHub 실행 분'); ghNextAt = Date.now() + (r.skip ? 180 : 10) * 60e3; if (r.done && r.done.length) log('GitHub 실행 분', JSON.stringify(r.done)); } catch (e) { ghNextAt = Date.now() + 360 * 60e3; out.ghErr = e.message; log('GitHub 실행 분 실패', e.message); } } /* (cost2) 비공개 전환 뒤 Actions 비용 근거 */
     try { const r = await WX.tick(); if (r && !r.skip) { out.wx = r; if (r.calls) log('🌦 기상청 날씨', JSON.stringify(r).slice(0, 300)); } } catch (e) { out.wxErr = String(e.message || e).slice(0, 160); } /* (정범님 11/10) 🌦 소비심리 연구 날씨 — 열쇠가 있을 때만 · 10분에 지점마다 한 번 */
+    if (Date.now() > consNextAt) { try { const r = await djTO(consStudy(), 3 * 60e3, '소비심리 셈'); consNextAt = Date.now() + (r.skip ? 15 : 60) * 60e3; if (!r.skip) out.cons = r; } catch (e) { consNextAt = Date.now() + 60 * 60e3; out.consErr = String(e.message || e).slice(0, 160); log('🧠 소비심리 셈 실패', e.message); } } /* (정범님 11/11) 🧠 소비심리 — 우리 판매 × 요일·시간·휴일·날씨 · 하루 한 번(app_settings/cons_study) */
     if (Date.now() > extNextAt) { try { const r = await extCloud(90e3); extNextAt = Date.now() + (r.skip ? 5 : 1) * 60e3; if (!r.skip) out.ext = { ms: r.ms, tally: r.tally }; else out.ext = r.skip; } catch (e) { extNextAt = Date.now() + 20 * 60e3; out.extErr = e.message; log('외부 정보 이어 받기 실패', e.message); } } /* (0.10.0) PC가 꺼져 있을 때만 */
     if (J.retain !== false && Date.now() > retainNextAt) { try { const r = await retainSweep(); retainNextAt = Date.now() + (r.more ? 15 : 360) * 60e3; if (r.n) { out.retain = r; log('보관 기한 지난 기계 기록 지움', JSON.stringify(r).slice(0, 300)); } } catch (e) { retainNextAt = Date.now() + 60 * 60e3; out.retainErr = e.message; log('보관 기한 정리 실패', e.message); } }
     if (J.kpb && Date.now() > kpbNextAt) { try { const r = await kpbTick(110e3); kpbNextAt = Date.now() + (r.backfillDone && !r.n ? 360 : 8) * 60e3; out.kpb = { n: r.n, have: r.have, ms: r.ms, err: r.err.slice(0, 5), backfillDone: r.backfillDone }; if (r.n) log('출판 정보 게시판', JSON.stringify(out.kpb).slice(0, 300)); } catch (e) { kpbNextAt = Date.now() + 30 * 60e3; out.kpbErr = e.message; log('출판 정보 게시판 실패', e.message); } } /* (0.15.0) 📰 처음엔 8분마다 이어 받기 · 다 받은 뒤엔 6시간마다 새 글 */
@@ -4157,7 +4275,7 @@ const server = http.createServer(async (req, res) => {
       if (tok) { try { const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(tok)); const j = r.ok ? await r.json() : {}; if (j.email === 'gh-deployer@readnow-3a385.iam.gserviceaccount.com' && String(j.email_verified) === 'true' && String(j.aud || '') === 'readnow-diag' && Number(j.exp) * 1000 > Date.now()) who = j.email; } catch (e) {} }
       if (!who) return send(403, { ok: false });
       const q = Object.fromEntries(new URL(req.url, 'http://x').searchParams); const out = { ok: true, at: new Date().toISOString() };
-      const okPath = (p0) => /^(prd_jobs|prd_system|app_settings|rn_status|rn_logs|mkt_kpipa_ctg|shp_enrich|sp_daily|ml_value_factors|seller_fp_runs|eng_fence_ledger|y24_mkt)\/[A-Za-z0-9_\-.]+$/.test(p0) && !/app_secrets|push_subs|secret|cred|_keys?$|apikey/i.test(p0); /* (자동 점검 2026-10-16) 알림 기기 구독(푸시 주소·열쇠)·키 문서는 진단으로 내보내지 않음 */
+      const okPath = (p0) => /^(prd_jobs|prd_system|app_settings|rn_status|rn_logs|mkt_kpipa_ctg|shp_enrich|sp_daily|ml_value_factors|seller_fp_runs|eng_fence_ledger|y24_mkt|wx_sum)\/[A-Za-z0-9_\-.]+$/.test(p0) && !/app_secrets|push_subs|secret|cred|_keys?$|apikey/i.test(p0); /* (자동 점검 2026-10-16) 알림 기기 구독(푸시 주소·열쇠)·키 문서는 진단으로 내보내지 않음 */
       if (q.y24) { try { out.y24 = await y24Of(String(q.y24), '', q.g || null); } catch (e) { out.y24 = { err: e.message }; } } /* (0.17.10) 💡 예스24 중고 참고값 시험(공개 화면만) */
       if (q.y24) { /* (0.17.11) 💡 예스24 중고 참고값 시험 — 공개 화면만 · 글로 받은 화면에 묶음(허브)이 있는지와 계산 결과 */ const u0 = `https://www.yes24.com/product/search?domain=USED_GOODS&query=${String(q.y24).replace(/\D/g, '')}`; try { const r = await extHttp({ url: u0 }); const t = String(r.text || ''); out.y24raw = { status: r.status, len: t.length, title: (t.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || null, hubLinks: (t.match(/UsedShopHub\/Hub\/\d+/gi) || []).length, itemUnit: (t.match(/class=["']itemUnit["']/gi) || []).length, head: t.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 400) }; } catch (e) { out.y24raw = { err: e.message }; } try { out.y24 = await y24Of(String(q.y24), '', q.g || null); } catch (e) { out.y24 = { err: e.message }; } }
       if (q.rgt) { /* (0.20.0) 📐 범위 적용 시험(읽기만) — rgt=wnew|only1, rgs=판매처, rgo=정렬, rgp=쪽, rgk=1(품절/절판 체크) · 첫 상품 2개는 ISBN 찾기·TTB까지 */ try { const r = { src: q.rgt, seller: q.rgs || 'New', itemType: q.rgi || '', sort: q.rgo || '6', rev: q.rgr === '1', orgStock: q.rgk === '1' }; const p = await getPage(); const url = rgUrl(r, +q.rgp || 1); const R = await rgReadPage(p, url); const keys = await extKeysC();
