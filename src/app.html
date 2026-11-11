@@ -17258,7 +17258,7 @@ const GO_PAGES = [
   ['ledger', '🧾 통합 장부', '알라딘·예스24·현금(앞으로 자사 숍·네이버)을 실물 한 권(SKU) 한 줄로 — 어디에 올라 있나·30일 주문·수수료·정산 어림·⚠ 이중 판매 위험(읽기 전용)', () => openLedger()], /* (11/10) */
   ['research', '🔬 연구 모음', '흩어진 연구 한곳 — 연구마다 무엇을 묻나·지금 상태(돌고 있음·자료 모으는 중·결과 있음)·마지막 갱신·최신 결과·[열기]·원본 위치 · 🌦 기상청 날씨 표', () => openResearch()], /* (11/11 hub1) */
   ['benchCase', '🏢 성공 사례 견줌', '성공 기업 사례(판매자 센터·통합 솔루션·헌책 도구·자사몰)와 우리 기능 대조 — 적용 장부(우리 방식·상태·판 번호·충돌 따짐) · 빈 곳 · 사례 가중치 · 모을 정보 · 매일 견줌 엔진이 고침', () => openBenchCase()], /* (11/10 bench1) */
-  ['y24Reg', '📤 예스24에 새로 올리기', '알라딘 판매중 상품 → 예스24 바코드용 대량 등록 엑셀(자체코드 = SKU) · 1건 미리 보기 → 두 번 눌러 확정 · 올림 장부(되풀이 0)', () => openY24Reg()], /* (11/10) */
+  ['y24Reg', '📤 예스24에 새로 올리기', '알라딘 판매중 상품 → 예스24 바코드용 대량 등록 엑셀(자체코드 = SKU) · 1건 미리 보기 → 두 번 눌러 확정 · 올림 장부(되풀이 0)', () => openY24Reg()], ['y24Ops', '🧰 예스24 운영', '예스24 판매관리 일 한 곳 — 할 일 숫자(주문·반품·문의·발송 지연) · 💲 판매가 바꾸기 · 반품·문의·정산 화면', () => openY24Ops()], /* (11/10) */
   ['facts', '📚 공식 자료', '법·세금·약관·API·수수료·판매처 약관 공식 원문 모음(⚖ 중고책 법 기준 · 📜 예스24 이용약관 등) — 출처 링크·확인 날짜·🟢🟡⚪ 등급 · 탭 · 펼침/접힘 · 찾기', () => openFacts()], /* (11/10) */
   ['alTerms', '📜 알라딘 규약', '알라딘 규약 9개(이용약관·판매자·샵매니저·처리방침·약정서 등) 원문 · 요약 · ⚑ 중요한 조항 · 우리 운영 대조표 · 조회수 실험 판단 · 제휴 전략', () => openAlTerms()], /* (10/27) */
   ['probs', '🧯 문제 상품·해결 기록', '시험 상품이 알라딘에 있음·삭제 못 함·반영 실패 — 해결 단추와 생김·풀림 기록', () => openProblems()], /* (10/26) */
@@ -17301,7 +17301,7 @@ const NAV_X = {
   lblCfg: ['🖨 라벨 인쇄 설정', '라벨기·크기·프린터 고르기', () => openLblCfg()],
   y24Link: ['🔗 예스24 연결 표', '예스24 매물 ↔ 우리 상품(SKU) 짝 맞추기', () => openY24Link()],
   ledOrd: ['📋 판매처 주문 모음', '모든 판매처 주문을 한 표로(통합 장부)', () => { S._ledView = 'ord'; openLedger(); }, () => typeof openLedgerOrd === 'function'], /* 통합 장부 안 📋 주문 모음 보기(omni2) */
-  naver: ['🟩 네이버 스마트스토어', '준비 중 — 커머스 API를 잇고 통합 장부 ⚙ 판매처 목록에 더하면 장부·주문 모음에 저절로', () => toast('🟩 네이버 스마트스토어는 아직 잇기 전입니다 — 🧾 통합 장부 › ⚙ 판매처 목록에 더하면 장부·주문 모음에 저절로 들어옵니다')],
+  naver: ['🟩 네이버 스마트스토어', '⚙ 설정 › 🟩 네이버 칸 — 커머스API ID·시크릿 · 연결 시험 · 로거 번외가 읽은 주문·매물은 🧾 통합 장부에', () => featGo({ go: { tab: 'settings', sec: 'set_naver' } })], /* (11/11 판 내기 합침) naver1의 ⚙ 칸으로 */
   wx: ['🌦 기상청 날씨', '소비심리 연구 재료 — 인증키·지점·모은 기간', () => featGo({ go: { tab: 'settings', sec: 'set_wx' } })],
   evo: ['🧬 진화 증거', '연구마다 엔진이 날마다 다시 셈하나 — 챔피언·도전자·추세(🔬 연구 모음 안)', () => openResearch(), () => typeof openResearch === 'function'],
   mgr: ['🧭 관리도구', '노선표·건강판 · PC 원격 조작 · 늘 켜 둘 PC', () => openMgr()],
@@ -17309,8 +17309,8 @@ const NAV_X = {
 };
 const NAV_HUB = {
   purchase: [['🛒 매입 기록', ['purForm', 'purAll', 'purItems', 'suppliers', 'matchNone', 'kimiso', 'hdCalc']], ['🔭 살 책 찾기', ['benchLookup', 'photoPrice', 'aladinPool']], ['📥 등록으로', ['register', 'regNote', 'relink', 'unclear']], ['🏷 처분', ['aladinSell', 'holdPool']]],
-  products: [['📦 재고', ['prodAll', 'stockView', 'stopList', 'shelfmap', 'lost', 'dupes', 'bookSearch', 'unknownCats', 'probs']], ['📥 등록', ['register', 'regNote', 'relink']], ['💹 가격', ['value', 'priceQueue', 'batch', 'chase', 'stratRun', 'priceMon', 'priceHist', 'presets', 'exclude', 'groupPerf', 'sevList']], ['🛒 판매처로', ['ledger', 'y24Reg', 'y24All', 'y24Link']], ['📊 분석', ['keywords', 'mktCount', 'pxExp']]],
-  channels: [['🧾 한 장부', ['ledger', 'ledOrd']], ['🟥 알라딘', ['alTerms', 'aladinSell', 'refund']], ['🟦 예스24', ['y24Reg', 'y24All', 'y24Link']], ['🛍 우리숍', ['shopAdm']], ['🟩 네이버', ['naver']], ['📚 규칙·비용', ['facts', 'costBasis', 'benchCase']]],
+  products: [['📦 재고', ['prodAll', 'stockView', 'stopList', 'shelfmap', 'lost', 'dupes', 'bookSearch', 'unknownCats', 'probs']], ['📥 등록', ['register', 'regNote', 'relink']], ['💹 가격', ['value', 'priceQueue', 'batch', 'chase', 'stratRun', 'priceMon', 'priceHist', 'presets', 'exclude', 'groupPerf', 'sevList']], ['🛒 판매처로', ['ledger', 'y24Ops', 'y24Reg', 'y24All', 'y24Link']], ['📊 분석', ['keywords', 'mktCount', 'pxExp']]],
+  channels: [['🧾 한 장부', ['ledger', 'ledOrd']], ['🟥 알라딘', ['alTerms', 'aladinSell', 'refund']], ['🟦 예스24', ['y24Ops', 'y24Reg', 'y24All', 'y24Link']], ['🛍 우리숍', ['shopAdm']], ['🟩 네이버', ['naver']], ['📚 규칙·비용', ['facts', 'costBasis', 'benchCase']]],
   orders: [['📦 출고', ['ship', 'shipDay', 'shipHist', 'invBatch', 'pickup', 'lblCfg']], ['🧾 주문', ['ordAll', 'ledOrd', 'shopAdm', 'cancelHits', 'refund']], ['💰 매출', ['shipSales', 'salesRank', 'forecast', 'sevList']], ['🗺 손님 분포', ['region', 'audience']]],
   search: [['👥 손님 이해', ['audience', 'region', 'voice', 'cons']]],
   sellers: [['🎯 경쟁 판매자', ['benchHub', 'benchLookup', 'mkCmps', 'obsEdit']], ['🗣 손님 목소리', ['voice']]],
