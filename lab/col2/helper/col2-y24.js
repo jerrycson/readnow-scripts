@@ -16,12 +16,32 @@
 const fs = require('fs'), path = require('path'); const { dlgOk: DLG, ACT_SRC, JS_ACT } = require('./col2-relogin.js');
 /* (11/10) 로그인 뒤 곧 다시 풀린 때(drops) 3시간 안 n번(기본 3 · 0이면 끔 · col2.json y24cfg.ppN)이면 스스로 다시 로그인 멈춤 */
 const ppStop = (drops, t, n) => { n = n == null ? 3 : +n; return n > 0 && (drops || []).filter((x) => t - x < 3 * 3600e3).length >= n; };
+/* (11/11 y24ops2 · 진단 11/11 14:10 '예스24 판매관리 로그인이 모든 PC에서 풀림 — HOME·JS-MAIN 번외가 같은 판매자 세션을 서로 끊는 핑퐁')
+ *  🔒 예스24 세션을 쥘 PC 하나 — 웹앱 app_settings/platforms.y24Holder(기본 HOME · 정범님이 예스24 번외를 HOME에서 쓰심)를 이 PC 수집기가 feed cfg.holder로 넘겨줌
+ *   · 쥔 PC만 로그인·스스로 다시 로그인·판매관리 읽기/쓰기 · 다른 PC 번외는 예스24 크롬을 닫고(로그아웃 안 함) '예스24는 ○○이 맡음'만 보임
+ *   · 수집기가 아직 holder를 안 넘기는 옛 판이면 마지막으로 받은 값(y24-holder.json) → col2.json y24Holder → 기본 HOME
+ *   · 쥔 PC가 소식이 없어도 저절로 넘기지 않음(핑퐁 막기) — 바꾸기는 웹앱 ⚙ 설정 › 🟦 예스24 › [이 PC가 예스24 맡기](두 번 누름)뿐 */
+const HOLD_DEF = 'HOME';
+const holdNm = (v) => String(v == null ? '' : v).trim().toUpperCase().slice(0, 40);
+function holderOf(feedH, savedH, localH, def) { return holdNm(feedH) || holdNm(savedH) || holdNm(localH) || holdNm(def); }
+const isHolder = (pc, h) => !h || holdNm(pc) === h; /* 맡은 PC를 정하지 않은 때(시험)만 누구나 */
+/* (11/11 y24ops2) 「이미 로그인된 예스24」 화면 — 판매관리 로그인 화면이 POST /api/Login/AlreadyLoginedYes24Init 을 부르는 화면(진단 11/11: 11:40 뒤 36번 · 그 사이 주문 목록 401) → 되풀이 로그인하지 않고 멈춤 */
+const ALREADY_RE = /AlreadyLogined/i;
 const SAFE = /^\s*(조회|검색|조회하기|검색하기|찾기)\s*$/;
 const DANGER = /저장|등록|발송|처리|삭제|취소|승인|출금|신청|확인|답변|수정|변경|전송|보내|접수|결제|환불|판매불가|중지|연장|적용|일괄/;
 const SECRET = /login|logout|passw|pwd|auth|cert|token|member\/(info|modify)|sellerinfo/i; /* 수집기 rnY24와 같음 — 원문을 남기지 않는 길 */
 const ORD_KINDS = ['NewOrderConfirmList', 'OrderDeliveryList'];
 const JPATH = { ship: '/Order/OrderDeliveryList', ack: '/Order/NewOrderConfirmList' };
 const KIND_RE = /\/api\/(Order\/(NewOrderConfirmList|OrderDeliveryList)|Product\/(ProductList))(?:\?|$)/i;
+/* (11/11 y24ops1) 🧰 예스24 운영 화면 — 반품·교환 요청 · 반품현황 · 상품 문의 · 정산내역 · 배송중/정산예정을 정한 간격(기본 3시간)마다 이 숨은 탭에서 열고 [조회]만(읽기)
+ *  받은 응답은 둘러보기·주문 읽기와 같은 줄로 올라감(수집기 y24UpOne · 손님 칸은 수집기가 가림) · 여기엔 건수만 남김(웹앱 🧰 예스24 운영 '할 일 숫자') · 근거: readnow-chats reports/yes24_raw GUIDE.md 3·4·5장 */
+const OPS_PAGES = [{ k: 'ret', p: '/Claim/ReturnManagementS1', n: '반품·교환 요청(승인/거부)' }, { k: 'clm', p: '/Claim/CancelReturnList', n: '반품현황' }, { k: 'qa', p: '/CustomerService/QAList', n: '상품 문의' }, { k: 'plan', p: '/Order/CalculatePlannedList', n: '배송중/정산예정' }, { k: 'calc', p: '/Calculation/CalculationHistoryList', n: '정산내역' }];
+/* 첫 화면 요약(POST /api/Common/GetMain) → 숫자만(손님 정보 없음 · 주소 칸은 버림) */
+const MAIN_K = { ORDER_COUNT: 'ord', PREPARE_DELIVERY: 'prep', DELIVERING: 'deliv', COMPLETE_DELIVERY: 'done', RETURN_RECEIPT: 'retIn', RETURN_ENTERING: 'retGo', DEPOSIT: 'dep', POSTPONE: 'post', NOREPLY: 'noreply', ASSESSMENT: 'assess', VISITED: 'visit' };
+function mainSum(j) { if (!j || typeof j !== 'object') return null; const o = {}; let n = 0; for (const [k, v] of Object.entries(MAIN_K)) if (j[k] != null && j[k] !== '' && isFinite(+j[k])) { o[v] = +j[k]; n++; } return n ? o : null; }
+/* 상품 문의 응답 → 미답변 수(NO_ANSWER_COUNT) · 반품 요청 합계(SearchReturnTotal) */
+function opsNum(u, j) { if (!j || typeof j !== 'object') return null; if (/\/api\/CustomerService\/QAList/i.test(u) && j.NO_ANSWER_COUNT != null && isFinite(+j.NO_ANSWER_COUNT)) return { qaNo: +j.NO_ANSWER_COUNT };
+  if (/\/api\/Claim\/SearchReturnTotal/i.test(u)) { const o = {}; for (const [k, v] of [['RETURN_REQUEST', 'retReq'], ['RETURN_ENTER', 'retEnter'], ['RETURN_COMPLETE', 'retDone']]) if (j[k] != null && isFinite(+j[k])) o[v] = +j[k]; return Object.keys(o).length ? o : null; } return null; }
 const pageOf = (api) => { const m = String(api || '').match(/\/api\/([^/]+)\/([^/?]+)/i); return m ? '/' + m[1] + '/' + m[2] : '/'; };
 /* 날짜 조건이 들어 있으면 끝 날짜를 오늘로(기간 길이는 그대로) — 수집기 rnY24 ordShift와 같은 셈 */
 function ordShift(T, nowMs) { let o = null, isJ = false; try { o = JSON.parse(T.b); isJ = o && typeof o === 'object'; } catch (e) {} if (!isJ) o = Object.fromEntries(new URLSearchParams(T.b || '')); const ks = Object.keys(o); const dk = (re) => ks.find((k) => re.test(k) && /^\d{4}-?\d{2}-?\d{2}/.test(String(o[k] || '')));
@@ -59,16 +79,20 @@ function makeY24(o) { let REG = null, W = null;
   const SC = TEST && +process.env.RN_COL2_Y24_SCALE > 0 ? +process.env.RN_COL2_Y24_SCALE : 1; /* 시험만 기다림을 줄임 — 실제는 1(사람 속도 그대로) */
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms)); const sleepR = (a, b) => sleep((a + Math.random() * (b - a)) * SC);
   const Y = { br: null, launching: null, login: 'unknown', loginAt: 0, loginMsg: '', loginWait: 0, shown: false, busy: false, msg: '', tpl: {}, hdr: null, learnK: null, calling: false, q: [], qBytes: 0, drop: 0, sentN: 0, recN: 0, seq: 0,
-    ord: { at: 0, n: 0, err: null, next: 0, renewAt: 0 }, prd: { at: 0, n: 0, pages: 0, err: null, on: false, next: 0 }, tour: null, tourNext: 0, menus: null, keepAt: 0,
+    ord: { at: 0, n: 0, err: null, next: 0, renewAt: 0 }, ops: null, opsNext: 0, main: null, opsNum: {}, prd: { at: 0, n: 0, pages: 0, err: null, on: false, next: 0 }, tour: null, tourNext: 0, menus: null, keepAt: 0,
     feed: { at: 0, cfg: null, hold: null, by: '' }, jobs: [], jres: {}, jstep: null, job: null, jd: rd(JD_F, {}), inv: rd(INV_F, {}), act: { src: null, at: 0, err: null }, day: { d: '', calls: 0, recs: 0 }, t: null, opens: [], fails: 0, lastErr: null };
   { const t = rd(TPL_F, {}); for (const [k, v] of Object.entries(t)) if (v && v.u) Y.tpl[k] = { u: v.u, b: v.b || '', m: v.m || 'POST', h: {}, at: +v.at || 0 }; }
   const saveTpl = () => { const o2 = {}; for (const [k, v] of Object.entries(Y.tpl)) o2[k] = { u: v.u, b: v.b, m: v.m, at: v.at }; wr(TPL_F, o2); }; /* 머리글은 파일에 안 남김 */
   const kday = () => new Date(now() + 9 * 3600e3).toISOString().slice(0, 10); const dayAdd = (k) => { const d = kday(); if (Y.day.d !== d) Y.day = { d, calls: 0, recs: 0 }; Y.day[k]++; };
-  const C = () => ({ ordMin: 5, prdH: 24, tourH: 24, keepMin: 20, feedMin: 5, ...(cfg().y24cfg || {}) }); /* 근거: 없음, 설정(col2.json y24cfg)으로 바꿈 · ordMin은 웹앱 설정(app_settings/platforms.y24.ordMin)을 수집기가 넘겨줌 */
+  const C = () => ({ ordMin: 5, prdH: 24, tourH: 24, opsH: 3, keepMin: 20, feedMin: 5, ...(cfg().y24cfg || {}) }); /* 근거: 없음, 설정(col2.json y24cfg)으로 바꿈 · ordMin은 웹앱 설정(app_settings/platforms.y24.ordMin)을 수집기가 넘겨줌 */
   const ordMinNow = () => { const v = Y.feed.cfg && Y.feed.cfg.ordMin != null ? +Y.feed.cfg.ordMin : C().ordMin; return Number.isFinite(v) && v > 0 ? v : 0; };
   const pcName = () => String(cfg().pc || require('os').hostname() || '');
   const isLogger = () => /^LOGGER/i.test(pcName());
-  const enabled = () => !!cfg().on && (cfg().y24 == null ? !TEST : cfg().y24 !== false) && !isLogger(); /* 시험에선 켤 때만(다른 시험의 크롬 수를 바꾸지 않게) */
+  const HOLD_F = path.join(HOME, 'y24-holder.json'); Y.holdF = rd(HOLD_F, {});
+  const holder = () => holderOf(Y.feed.cfg && Y.feed.cfg.holder, Y.holdF.h, cfg().y24Holder, TEST ? process.env.RN_COL2_Y24_HOLDER_DEF || '' : HOLD_DEF); /* 시험은 맡은 PC를 정한 때만 규칙(다른 시험 PC 이름 그대로) */
+  const mine = () => isHolder(pcName(), holder());
+  const enabled = () => !!cfg().on && (cfg().y24 == null ? !TEST : cfg().y24 !== false) && !isLogger() && mine(); /* 시험에선 켤 때만(다른 시험의 크롬 수를 바꾸지 않게) · (11/11) 예스24를 맡은 PC만 */
+  const notMineMsg = () => `🔒 예스24는 ${holder()}이(가) 맡음 — 이 PC 번외는 예스24 로그인·읽기·쓰기를 하지 않음(같은 판매자 세션을 서로 끊지 않게 · 바꾸려면 웹앱 ⚙ 설정 › 🟦 예스24 › [이 PC가 예스24 맡기])`;
   const jobsOn = () => cfg().y24Jobs !== false;
   const feedOk = () => now() - Y.feed.at < C().feedMin * 60e3;
   const holdOn = () => !!(feedOk() && Y.feed.hold && Y.feed.hold.on);
@@ -82,7 +106,7 @@ function makeY24(o) { let REG = null, W = null;
   const REQ = new Map();
   function onEv(m, p, sid) { const br = Y.br; if (!br || sid !== br.sid) return;
     if ((m === 'Page.frameNavigated' && p.frame && !p.frame.parentId) || (m === 'Page.navigatedWithinDocument' && p.url)) { pageSeen(m === 'Page.frameNavigated' ? p.frame.url : p.url); return; }
-    if (m === 'Network.requestWillBeSent') { let u; try { u = new URL(p.request.url); } catch (e) { return; } if (u.host !== HOST || !/\/api\//i.test(u.pathname)) return; const pu = u.pathname + u.search;
+    if (m === 'Network.requestWillBeSent') { let u; try { u = new URL(p.request.url); } catch (e) { return; } if (u.host !== HOST || !/\/api\//i.test(u.pathname)) return; if (ALREADY_RE.test(u.pathname)) alreadySeen('로그인 화면 ' + u.pathname.slice(0, 50)); const pu = u.pathname + u.search;
       const it = { m: p.request.method, u: pu, post: p.request.postData || '', h: p.request.headers || {}, mine: Y.calling, page: (() => { try { return new URL(br.frameUrl || BASE).pathname; } catch (e) { return '/'; } })(), at: now() }; REQ.set(p.requestId, it); if (REQ.size > 300) REQ.delete(REQ.keys().next().value);
       if (!it.post && p.request.hasPostData) br.cdp.send('Network.getRequestPostData', { requestId: p.requestId }, sid).then((x) => { it.post = (x && x.postData) || ''; learnFrom(it); }).catch(() => {}); else learnFrom(it);
       if (!Y.calling) Y.hdr = { h: it.h, at: now() }; return; }
@@ -95,7 +119,7 @@ function makeY24(o) { let REG = null, W = null;
   /* 받은 응답 → 수집기와 같은 꼴 줄 · 로그인·비밀번호 길은 원문을 남기지 않음 · 파일(엑셀 등)은 크기·종류만 */
   function take(it, b) { const sig = (it.m || 'GET').toUpperCase() + ' ' + it.u.split('?')[0]; const sec = SECRET.test(it.u.split('?')[0]); let text = '';
     if (b) text = b.base64Encoded ? JSON.stringify({ file: true, ctype: it.ct || '', bytes: Math.round(String(b.body || '').length * 0.75) }) : String(b.body || '');
-    const isJ = /json/i.test(it.ct || '') || /^\s*[\[{]/.test(text.slice(0, 2)); if (/\/api\/Product\/ProductList(?:\?|$)/i.test(it.u) && !it.mine) Y.plAt = now(); /* (11/11 y24w) 화면이 [조회]로 받은 등록상품 목록 — 예스24 쓰기가 '응답이 왔는지' 봄 */ if (/\/api\/Menu\/GetMenus/i.test(it.u) && !Y.menus) { try { const mm = pickMenus(JSON.parse(text)); if (mm && mm.length) Y.menus = mm; } catch (e) {} }
+    const isJ = /json/i.test(it.ct || '') || /^\s*[\[{]/.test(text.slice(0, 2)); if (/\/api\/Product\/ProductList(?:\?|$)/i.test(it.u) && !it.mine) Y.plAt = now(); /* (11/11 y24w) 화면이 [조회]로 받은 등록상품 목록 — 예스24 쓰기가 '응답이 왔는지' 봄 */ if (isJ && /\/api\/(Common\/GetMain|CustomerService\/QAList|Claim\/SearchReturnTotal)(?:\?|$)/i.test(it.u) && +it.st === 200) { try { const jj = JSON.parse(text); const m = /GetMain/i.test(it.u) ? mainSum(jj) : null; if (m) Y.main = { ...m, at: now() }; const x = opsNum(it.u, jj); if (x) Y.opsNum = { ...Y.opsNum, ...x, at: now() }; } catch (e) {} } /* (11/11 y24ops1) 숫자만 */ if (/\/api\/Menu\/GetMenus/i.test(it.u) && !Y.menus) { try { const mm = pickMenus(JSON.parse(text)); if (mm && mm.length) Y.menus = mm; } catch (e) {} }
     if (Y.tourCur && it.page && it.page.toLowerCase() === Y.tourCur && !/\/api\/(Common|Menu)\//i.test(it.u) && isJ) { try { Y.tourResp = { cnt: y24Cnt(JSON.parse(text)), at: now() }; } catch (e) {} }
     const rec = { id: 'c2y' + now().toString(36) + (++Y.seq).toString(36), sig, url: it.u, page: it.page || '/', at: it.at || now(), status: it.st || 0, ctype: String(it.ct || '').slice(0, 60), req: sec ? null : String(it.post || '').slice(0, 4000), json: isJ, body: sec ? null : text.slice(0, 1500000), src: 'col2' };
     const sz = rec.body ? rec.body.length : 0; Y.q.push(rec); Y.qBytes += sz; Y.recN++; dayAdd('recs'); while (Y.q.length > 200 || Y.qBytes > 6e6) { const x = Y.q.shift(); Y.qBytes -= x && x.body ? x.body.length : 0; Y.drop++; } }
@@ -118,13 +142,17 @@ function makeY24(o) { let REG = null, W = null;
   async function ev(expr, ms, sid0) { const b = Y.br; const r = await b.cdp.send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true }, sid0 || b.sid, ms || 40000); if (r.exceptionDetails) throw new Error('화면 코드 오류: ' + String((r.exceptionDetails.exception && r.exceptionDetails.exception.description) || r.exceptionDetails.text).slice(0, 160)); return r.result ? r.result.value : null; }
   const isLoginSt = (s) => !s || s.pw || /login/i.test(s.p || '') || (s.h && s.h !== HOST.split(':')[0] && s.h !== HOST);
   /* (11/11 정범님 '실제로는 로그아웃인데 번외가 잘못 인식') 창의 실제 주소로도 판정 — 본 창이 로그인 화면(/Login/…)으로 가면 '살아 있음'을 곧바로 '로그인 필요'로 · 화면 표시(sum.pg)도 그 주소대로 */
-  function pageSeen(u) { let pth = ''; try { pth = new URL(u).pathname; } catch (e) {} const lg = isLoginUrl(u); Y.pg = { login: lg, p: pth.slice(0, 60), at: now() }; if (lg && Y.login === 'ok' && !Y.inLogin) setLogin('need', '창 주소가 로그인 화면으로 바뀜(' + pth.slice(0, 40) + ')'); }
+  /* (11/11 y24ops2) 「이미 로그인된 예스24」 화면을 봄 → 스스로 다시 로그인·주문 다시 배우기를 멈춤(사람이 [🔐 예스24 로그인]을 누르거나 세션이 다시 살아나면 풀림) */
+  function alreadySeen(where) { if (Y.login === 'wait') return; /* 사람이 [🔐 예스24 로그인]으로 연 창 — 그 화면에서 사람이 이어 감 */ const t = now(); Y.already = { at: t, n: ((Y.already && Y.already.n) || 0) + 1, where: String(where || '').slice(0, 60), first: (Y.already && Y.already.first) || t };
+    if (!Y.alNoted || t - Y.alNoted > 3600e3) { Y.alNoted = t; note(`⛔ 「이미 로그인된 예스24」 화면이 뜸(${Y.already.where}) — 되풀이 로그인하지 않고 멈춤 · 까닭: 같은 예스24 계정이 다른 곳(다른 PC 번외·사람 크롬)에서 로그인돼 이 PC 세션이 끊김 · 예스24를 맡은 PC(${holder()})에서 옆 창 [🔐 예스24 로그인]을 한 번 누르면 풀림`); }
+    if (Y.login === 'ok' && !Y.inLogin) setLogin('need', '「이미 로그인된 예스24」 화면 — 다른 곳 로그인으로 세션이 끊김'); }
+  function pageSeen(u) { let pth = ''; try { pth = new URL(u).pathname; } catch (e) {} if (ALREADY_RE.test(pth)) alreadySeen('창 주소 ' + pth.slice(0, 40)); const lg = isLoginUrl(u); Y.pg = { login: lg, p: pth.slice(0, 60), at: now() }; if (lg && Y.login === 'ok' && !Y.inLogin) setLogin('need', '창 주소가 로그인 화면으로 바뀜(' + pth.slice(0, 40) + ')'); }
   /* 그 창에서 사람이 지금 입력하는 중인가 — 마지막 진짜 키·마우스가 humanSec초(기본 90) 안이면 참 · 그 창을 막 띄운 뒤 humanSec초 동안도 참(사람이 자리에 올 때까지) */
   const humanMs = () => (C().humanSec == null ? 90 : +C().humanSec) * 1000 * (TEST ? SC : 1);
   async function humanNow() { let a = null; try { a = await ev(JS_ACT, 5000); } catch (e) { a = null; } const since = now() - (Y.loginWait || 0); if (a && a.age != null && a.age < humanMs()) return { busy: true, why: `예스24 창에서 사람이 입력하는 중(마지막 입력 ${Math.round(a.age / 1000)}초 전)` };
     if ((!a || a.age == null) && since < humanMs()) return { busy: true, why: `예스24 로그인 창을 띄운 지 ${Math.round(since / 1000)}초 — 사람이 칠 수 있게 ${Math.round(humanMs() / 1000)}초 기다림` }; return { busy: false, age: a && a.age }; }
   async function endWait(why) { if (Y.login !== 'wait') return; Y.login = 'need'; Y.loginMsg = why; note('🔐 예스24 로그인 창에서 입력이 없어 기다림을 끝냄 — ' + why); await hide('입력 없음').catch(() => {}); }
-  function setLogin(st, why) { if (Y.login !== st) { if (st === 'need' && Y.login === 'ok' && Y.loginAt && now() - Y.loginAt < (C().ppMin == null ? 30 : +C().ppMin) * 60e3) { Y.drops = (Y.drops || []).filter((t) => now() - t < 3 * 3600e3).concat([now()]); } Y.login = st; if (st === 'need') { note('🔐 예스24 로그인이 필요 — 옆 창의 [🔐 예스24 로그인] 단추를 한 번 눌러 주세요(' + (why || '') + ')'); Y.loginMsg = why || ''; } if (st === 'ok') { Y.loginAt = now(); note('🟦 예스24 로그인 세션 살아 있음 — 판매관리 읽기 시작'); } } }
+  function setLogin(st, why) { if (Y.login !== st) { if (st === 'need' && Y.login === 'ok' && Y.loginAt && now() - Y.loginAt < (C().ppMin == null ? 30 : +C().ppMin) * 60e3) { Y.drops = (Y.drops || []).filter((t) => now() - t < 3 * 3600e3).concat([now()]); } Y.login = st; if (st === 'need') { note('🔐 예스24 로그인이 필요 — 옆 창의 [🔐 예스24 로그인] 단추를 한 번 눌러 주세요(' + (why || '') + ')'); Y.loginMsg = why || ''; } if (st === 'ok') { Y.loginAt = now(); Y.already = null; note('🟦 예스24 로그인 세션 살아 있음 — 판매관리 읽기 시작'); } } }
   /* 화면을 열고 [조회](읽기 단추)만 눌러 그 화면이 보내는 조건 모양·머리글을 배움 · 그 응답도 그대로 줄에 들어감(사람이 화면에서 [조회]를 누른 것과 같음) */
   async function learn(pg, k) { const t0 = now(); Y.learnK = k || '*'; try { await nav(BASE + pg, 30); const s = await ev(JS_STATE); if (isLoginSt(s)) return 'login'; const c = await ev(JS_CLICK(15000 * SC + 2000), 30000); if (c && c.login) return 'login'; if (!c || !c.clicked) return 'nobtn';
       for (let i = 0; i < 40 && k && !(Y.tpl[k] && Y.tpl[k].at >= t0); i++) await sleep(200); await sleep(300); return !k || (Y.tpl[k] && Y.tpl[k].at >= t0) ? 'ok' : 'notpl'; } finally { Y.learnK = null; } }
@@ -199,10 +227,10 @@ try{return await ${fn}(document,window,${JSON.stringify({ id: j.id, ono: j.ono, 
   async function show(why) { const w = cfg().ywin && cfg().ywin.w >= 400 ? cfg().ywin : {}; const r = await WIN.run('show', MARK, w); Y.shown = true; note(`🟦 예스24 창을 앞으로 (${why || ''})`); return r; }
   async function hide(why) { const f = await WIN.run('find', MARK); const it = f.ok && f.list && f.list[0]; if (Y.shown && it && it.r && !it.ic && !it.tool && it.r.w >= 400 && it.r.h >= 300 && f.vs && it.r.x + it.r.w > f.vs.x) o.saveRect('ywin', it.r); const r = await WIN.run('hide', MARK, { w: 1280, h: 900, place: cfg().place }); Y.shown = false; note(`🟦 예스24 창을 다시 숨김 (${why || ''})`); return r; }
   /* 🔐 로그인 한 번 — 정범님이 옆 창 단추를 누르면 이 크롬 창을 앞으로 꺼내 예스24 판매관리 첫 화면(로그인 화면)을 엶 · 아이디·비번은 정범님이 그 창에 직접(우리는 칸을 건드리지 않음) → 로그인되면 저절로 다시 숨김 */
-  async function login(why) { if (!cfg().on) return { ok: false, err: '번외 수집이 꺼져 있음(먼저 켜기)' }; if (isLogger()) return { ok: false, err: '로거 PC에서는 예스24 로그인을 하지 않습니다(약속 0)' }; if (!enabled()) return { ok: false, err: '예스24 판매관리 읽기가 꺼져 있음(옆 창에서 켜기)' };
+  async function login(why) { if (!cfg().on) return { ok: false, err: '번외 수집이 꺼져 있음(먼저 켜기)' }; if (isLogger()) return { ok: false, err: '로거 PC에서는 예스24 로그인을 하지 않습니다(약속 0)' }; if (!mine()) return { ok: false, err: notMineMsg() }; Y.already = null; Y.drops = []; Y.reWhy = null; /* 사람이 누름 = 핑퐁 의심 멈춤도 풂 */ /* (11/11) 사람이 누른 로그인 = 「이미 로그인된」 멈춤을 풂 */ if (!enabled()) return { ok: false, err: '예스24 판매관리 읽기가 꺼져 있음(옆 창에서 켜기)' };
     for (let k = 0; k < 60 && Y.busy; k++) await sleep(500); if (Y.busy) return { ok: false, err: '다른 일을 하는 중 — 잠시 뒤 다시' };
     Y.busy = true; try { await ensure('로그인'); await nav(BASE + '/', 30); const s = await ev(JS_STATE); if (!isLoginSt(s)) { setLogin('ok'); return { ok: true, msg: '이미 로그인돼 있음 — 할 일 없음' }; }
-      Y.login = 'wait'; Y.loginWait = now(); await Y.br.cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: ACT_SRC }, Y.br.sid).catch(() => {}); await ev(ACT_SRC, 5000).catch(() => {}); await show(why || '로그인'); return { ok: true, msg: '예스24 창을 앞으로 꺼냄 — 그 창에서 로그인하면 저절로 숨고 읽기를 시작합니다(아이디·비밀번호는 저장하지 않음)' }; }
+      Y.login = 'wait'; Y.loginWait = now(); Y.already = null; await Y.br.cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: ACT_SRC }, Y.br.sid).catch(() => {}); await ev(ACT_SRC, 5000).catch(() => {}); await show(why || '로그인'); return { ok: true, msg: '예스24 창을 앞으로 꺼냄 — 그 창에서 로그인하면 저절로 숨고 읽기를 시작합니다(아이디·비밀번호는 저장하지 않음)' }; }
     catch (e) { return { ok: false, err: e.message }; } finally { Y.busy = false; } }
   async function loginPoll() { if (Y.login !== 'wait') return; if (now() - Y.loginWait > 15 * 60e3) { Y.login = 'need'; await hide('로그인 기다림 15분 넘음').catch(() => {}); return; } let s = null; try { s = await ev(JS_STATE, 5000); } catch (e) { return; }
     if (s && !isLoginSt(s) && s.rs === 'complete') { setLogin('ok'); await hide('로그인 됨').catch(() => {}); Y.ord.next = now() + 3000; } }
@@ -211,31 +239,39 @@ try{return await ${fn}(document,window,${JSON.stringify({ id: j.id, ono: j.ono, 
   /* 진짜 Enter 키 한 번(DevTools 입력 — 사람이 친 것과 같은 trusted 이벤트) */
   async function keyPress(sid) { const b = Y.br; const k = { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 }; await b.cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', ...k, text: '\r' }, sid); await sleep(60); await b.cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', ...k }, sid); }
   const quickDrops = () => (Y.drops || []).filter((t) => now() - t < 3 * 3600e3).length;
-  async function autoRe() { const R = o.relogin; if (!R) return ''; if (!feedOk()) return '이 PC 수집기(다리)가 안 보임'; if (ppStop(Y.drops, now(), C().ppN)) { if (!Y.ppNoted || now() - Y.ppNoted > 3600e3) { Y.ppNoted = now(); note('⛔ 예스24 로그인이 로그인 뒤 30분 안에 3번 풀림 — 다른 곳(정범님 크롬·다른 PC 번외)에서 같은 계정으로 로그인해 서로 끊는 것으로 의심 · 스스로 다시 로그인을 3시간 멈춤 · 예스24 읽기는 한 PC에서만 켜 두세요'); } return '로그인 뒤 금방 다시 풀림 3번 — 다른 곳 로그인과 서로 끊기는 것으로 의심해 멈춤(3시간)'; } const w = R.why('y24', { hold: holdOn() }); if (w) return w;
-    Y.inLogin = true; Y.loginDlg = ''; let r; try { r = await R.run('y24', { name: '예스24 판매관리', loginUrl: BASE + '/', nav, ev, sleep: sleepR, type: (t) => Y.br.cdp.send('Input.insertText', { text: t }, Y.br.sid), key: (k) => keyPress(Y.br.sid), lastMsg: () => Y.loginDlg, leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), check: async () => { await nav(BASE + '/', 30); return !isLoginSt(await ev(JS_STATE)); } }); } finally { Y.inLogin = false; }
+  async function autoRe() { const R = o.relogin; if (!R) return ''; if (!mine()) return notMineMsg(); if (Y.already) return `「이미 로그인된 예스24」 화면(${Y.already.n}번 · 처음 ${new Date(Y.already.first + 9 * 3600e3).toISOString().slice(11, 16)}) — 되풀이 로그인하지 않고 멈춤 · 맡은 PC에서 [🔐 예스24 로그인]을 한 번 누르면 풀림`; if (!feedOk()) return '이 PC 수집기(다리)가 안 보임'; if (ppStop(Y.drops, now(), C().ppN)) { if (!Y.ppNoted || now() - Y.ppNoted > 3600e3) { Y.ppNoted = now(); note('⛔ 예스24 로그인이 로그인 뒤 30분 안에 3번 풀림 — 다른 곳(정범님 크롬·다른 PC 번외)에서 같은 계정으로 로그인해 서로 끊는 것으로 의심 · 스스로 다시 로그인을 3시간 멈춤 · 예스24 읽기는 한 PC에서만 켜 두세요'); } return '로그인 뒤 금방 다시 풀림 3번 — 다른 곳 로그인과 서로 끊기는 것으로 의심해 멈춤(3시간)'; } const w = R.why('y24', { hold: holdOn() }); if (w) return w;
+    Y.inLogin = true; Y.loginDlg = ''; let r; try { r = await R.run('y24', { name: '예스24 판매관리', shape: true, loginUrl: BASE + '/', nav, ev, sleep: sleepR, type: (t) => Y.br.cdp.send('Input.insertText', { text: t }, Y.br.sid), key: (k) => keyPress(Y.br.sid), lastMsg: () => Y.loginDlg, leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), check: async () => { await nav(BASE + '/', 30); return !isLoginSt(await ev(JS_STATE)); } }); } finally { Y.inLogin = false; }
     if (r.ok) { setLogin('ok'); Y.keepAt = now(); Y.ord.next = now() + 3000; return 'ok'; } return r.why; }
   /* (정범님 11/10 '저장을 누르면 먼저 맞는지 확인') 🔐 ⚙ › 🔐 [확인하고 저장] — 넣은 아이디·비밀번호로 이 PC 번외 예스24 크롬에서 실제로 로그인해 봄 → 맞을 때만 저장(부른 쪽)
    *  · 지금 세션이 살아 있으면 따로 된 임시 창(쿠키가 따로인 브라우저 맥락 · 닫으면 사라짐)에서 해 봄 — 살아 있는 세션 쿠키를 덮거나 로그아웃하지 않음
    *  · 세션이 풀려 있으면 그 자리(본 창)에서 로그인 = 확인과 다시 로그인을 한 번에 · 출고 중·로거·꺼짐이면 확인하지 않고 까닭 */
-  async function verify(id, pw, x) { x = x || {}; const ph = (t) => (x.phase ? x.phase(t) : null); if (isLogger()) return { ok: false, why: '로거 PC에서는 예스24 계정을 쓰지 않습니다(약속 0)' }; if (!cfg().on) return { ok: false, wait: true, why: '번외 수집이 꺼져 있어 확인할 수 없음 — 먼저 켜기' }; if (!enabled()) return { ok: false, wait: true, why: '🟦 예스24 판매관리 읽기가 꺼져 있어 확인할 수 없음 — 그 칸을 켠 뒤 다시' };
+  async function verify(id, pw, x) { x = x || {}; const ph = (t) => (x.phase ? x.phase(t) : null); if (isLogger()) return { ok: false, why: '로거 PC에서는 예스24 계정을 쓰지 않습니다(약속 0)' }; if (!mine()) return { ok: false, wait: true, why: notMineMsg() }; if (!cfg().on) return { ok: false, wait: true, why: '번외 수집이 꺼져 있어 확인할 수 없음 — 먼저 켜기' }; if (!enabled()) return { ok: false, wait: true, why: '🟦 예스24 판매관리 읽기가 꺼져 있어 확인할 수 없음 — 그 칸을 켠 뒤 다시' };
     if (holdOn()) return { ok: false, wait: true, why: '🚚 출고 중 — 끝난 뒤 다시 저장해 주세요(약속 0-1)' }; if (Y.login === 'wait') { ph('예스24 창에서 사람이 입력하는 중인지 보는 중'); const hn = await humanNow(); if (hn.busy) return { ok: false, wait: true, why: hn.why + ' — 끝난 뒤 다시' }; await endWait('⚙ › 🔐 [확인하고 저장] — 창에 입력이 없어 번외가 넣은 값으로 확인'); }
     ph('예스24가 하던 읽기가 끝나기를 기다리는 중'); for (let k = 0; k < 60 && Y.busy; k++) await sleep(500); if (Y.busy) return { ok: false, wait: true, why: '예스24가 다른 읽기를 30초 넘게 하는 중 — 잠시 뒤 다시' };
     Y.busy = true; let T = null, f = null; const L = { m: '' };
-    try { ph('번외 예스24 크롬 준비하는 중'); await ensure('계정 확인'); ph('지금 예스24 세션이 살아 있는지 보는 중'); await nav(BASE + '/', 30); const live = !isLoginSt(await ev(JS_STATE)); let sid = Y.br.sid; if (live) { ph('세션이 살아 있어 쿠키가 따로인 임시 창 여는 중'); T = await Y.br.openTab('about:blank', 15); sid = T.sid; }
+    try { ph('번외 예스24 크롬 준비하는 중'); await ensure('계정 확인'); ph('지금 예스24 세션이 살아 있는지 보는 중'); await nav(BASE + '/', 30); const live = !isLoginSt(await ev(JS_STATE)); let sid = Y.br.sid; if (live) return { ok: false, live: true, why: '예스24 판매관리가 지금 로그인돼 있음 — 확인하려고 로그인을 하나 더 하면 예스24가 지금 세션을 끊음' }; /* (11/11 y24ops2) 예전엔 쿠키가 따로인 임시 창에서 로그인해 확인 → 예스24는 한 계정 세션 하나라 그 로그인이 본 창 세션을 끊었음(정범님 HOME 13:25 저장 뒤 로그인 화면에 멈춤) */
       f = (m, p, s) => { if (s === sid && m === 'Page.javascriptDialogOpening') { L.m = String(p.message || '').replace(/\s+/g, ' ').slice(0, 120); if (T) Y.br.cdp.send('Page.handleJavaScriptDialog', { accept: DLG(p.type, L.m) }, sid).catch(() => {}); else Y.loginDlg = L.m; } }; Y.br.cdp.on.push(f); if (!T) { Y.inLogin = true; Y.loginDlg = ''; } /* 임시 창은 여기서 답함 · 본 창은 onDialog(로그인 중 규칙) */
       const N = (u, sec) => nav(u, sec, sid), E = (x, ms) => ev(x, ms, sid);
-      const r = await o.relogin.tryWith('y24', { name: '예스24 판매관리', phase: x.phase, loginUrl: BASE + '/', nav: N, ev: E, sleep: sleepR, type: (t) => Y.br.cdp.send('Input.insertText', { text: t }, sid), key: () => keyPress(sid), leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), lastMsg: () => L.m, check: async () => { await N(BASE + '/', 30); return !isLoginSt(await E(JS_STATE)); } }, id, pw);
-      if (r.ok && !live) { setLogin('ok'); Y.keepAt = now(); Y.ord.next = now() + 3000; } return { ...r, where: live ? 'tab' : 'main' }; }
+      const r = await o.relogin.tryWith('y24', { name: '예스24 판매관리', shape: true, phase: x.phase, loginUrl: BASE + '/', nav: N, ev: E, sleep: sleepR, type: (t) => Y.br.cdp.send('Input.insertText', { text: t }, sid), key: () => keyPress(sid), leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), lastMsg: () => L.m, check: async () => { await N(BASE + '/', 30); return !isLoginSt(await E(JS_STATE)); } }, id, pw);
+      if (r.ok && !live) { setLogin('ok'); Y.drops = []; Y.reWhy = null; Y.keepAt = now(); Y.ord.next = now() + 3000; } return { ...r, where: live ? 'tab' : 'main' }; }
     catch (e) { return { ok: false, unsure: true, why: String(e.message || e).slice(0, 140) }; } finally { Y.inLogin = false; if (f && Y.br) Y.br.cdp.on = Y.br.cdp.on.filter((x) => x !== f); if (T && Y.br) await Y.br.closeTab(T).catch(() => {}); Y.busy = false; } }
   /* ── 한 바퀴 ── */
+  /* (11/11 y24ops1) 🧰 운영 화면 한 바퀴 — 화면마다 [조회]만 · 화면 사이 8~20초(사람 속도) · 출고 중·로그인 풀림·꺼짐·맡긴 일이 오면 멈춤 */
+  async function opsRun() { const T = { at: now(), end: 0, stop: null, res: {} }; Y.ops = T;
+    for (const m of OPS_PAGES) { if (!enabled() || holdOn() || Y.login !== 'ok' || Y.jobs.some((j) => !Y.jd[j.id]) || (W && W.pick())) { T.stop = holdOn() ? 'hold' : Y.login !== 'ok' ? 'login' : 'pause'; break; }
+      Y.tourCur = m.p.toLowerCase(); Y.tourResp = null; const r = await learn(m.p, null).catch((e) => 'err:' + e.message); Y.tourCur = null;
+      if (r === 'login') { T.res[m.k] = { st: 'fail', msg: '로그인 화면', at: now() }; T.stop = 'login'; setLogin('need', '운영 화면 읽기 중 로그인 화면'); break; }
+      await sleepR(1500, 2500); T.res[m.k] = { st: r === 'nobtn' ? 'nobtn' : Y.tourResp ? 'ok' : 'fail', cnt: Y.tourResp ? Y.tourResp.cnt : null, at: now() };
+      await sleepR(8000, 20000); }
+    T.end = now(); const ok = Object.values(T.res).filter((x) => x.st === 'ok').length; note(`🧰 예스24 운영 화면 ${T.stop ? '멈춤(' + T.stop + ')' : '읽음'} — 받음 ${ok}/${OPS_PAGES.length}${Y.opsNum.qaNo != null ? ' · 미답변 문의 ' + Y.opsNum.qaNo : ''}${Y.opsNum.retReq != null ? ' · 반품 요청 ' + Y.opsNum.retReq : ''}`); }
   async function step() { const c = C();
-    if (!enabled()) { if (Y.br) await close(isLogger() ? '로거 PC' : '꺼짐'); Y.msg = isLogger() ? '로거 PC — 예스24 판매관리 읽기 안 함(약속 0 · 계정·쿠키 금지)' : !cfg().on ? '번외 수집 꺼짐' : '예스24 판매관리 읽기 꺼 둠'; return 30e3; }
+    if (!enabled()) { const nm = !isLogger() && !mine(); if (Y.br) await close(isLogger() ? '로거 PC' : nm ? '예스24를 맡은 PC 아님' : '꺼짐'); if (nm) { Y.login = 'unknown'; Y.landed = false; } Y.msg = isLogger() ? '로거 PC — 예스24 판매관리 읽기 안 함(약속 0 · 계정·쿠키 금지)' : !cfg().on ? '번외 수집 꺼짐' : nm ? notMineMsg() : '예스24 판매관리 읽기 꺼 둠'; return 30e3; }
     if (Y.login === 'wait') { await loginPoll(); if (Y.login === 'wait') { const R = o.relogin; const can = R && !R.why('y24', { hold: holdOn() }); const hn = can ? await humanNow() : null;
         if (can && hn && !hn.busy) await endWait('저장된 계정이 있어 번외가 스스로 로그인(창에 ' + Math.round(humanMs() / 1000) + '초 넘게 입력 없음)');
         else { Y.msg = '🔐 예스24 로그인 창이 열려 있음 — 로그인하면 저절로 숨김' + (can ? ` · 입력이 ${Math.round(humanMs() / 1000)}초 넘게 없으면 저장된 계정으로 번외가 스스로 로그인` : ''); return 3000; } } }
     try { await ensure(Y.br ? '예스24 크롬이 꺼져 있음' : '켜짐'); } catch (e) { Y.msg = '예스24 크롬 준비 실패: ' + e.message; return 60e3; }
     if (!Y.landed) { Y.landed = true; try { await nav(BASE + '/', 30); const s = await ev(JS_STATE); if (isLoginSt(s)) setLogin('need', '판매관리 첫 화면이 로그인 화면'); else { setLogin('ok'); Y.keepAt = now(); } } catch (e) { Y.msg = '예스24 첫 화면 실패: ' + e.message; Y.landed = false; return 60e3; } }
-    if (Y.login === 'need') { const ar = await autoRe(); if (ar === 'ok') return 300; Y.msg = '🔐 예스24 로그인 필요 — 옆 창의 [🔐 예스24 로그인] 단추를 한 번(그 뒤엔 세션 유지)' + (ar ? ' · 스스로 다시 로그인: ' + ar : ''); return 15e3; }
+    if (Y.login === 'need') { const ar = await autoRe(); if (ar === 'ok') { Y.reWhy = null; return 300; } if (!Y.reWhy || Y.reWhy.why !== ar) Y.reWhy = { at: now(), why: String(ar || '').slice(0, 300) }; /* (11/11 y24ops2) 저장된 계정이 있어도 스스로 다시 로그인하지 않는 까닭을 화면에 그대로 */ Y.msg = '🔐 예스24 로그인 필요 — 옆 창의 [🔐 예스24 로그인] 단추를 한 번(그 뒤엔 세션 유지)' + (ar ? ' · 스스로 다시 로그인: ' + ar : ''); return 15e3; }
     if (holdOn()) { Y.msg = '🚚 출고 중(이 PC 출고 보호) — 예스24 읽기 멈춤 · 끝나면 이어감'; return 15e3; }
     if (!feedOk()) { Y.msg = '이 PC 리드나우 수집기(알라딘 탭)가 안 보여 쉼 — 받은 것을 올릴 곳이 없음(수집기가 다시 보이면 이어감)'; return 15e3; }
     if (Y.feed.cfg && Y.feed.cfg.off) { Y.msg = '웹앱 설정에서 예스24 모으기를 꺼 둠'; return 60e3; }
@@ -246,29 +282,31 @@ try{return await ${fn}(document,window,${JSON.stringify({ id: j.id, ono: j.ono, 
     const ordMin = ordMinNow();
     if (ordMin > 0 && now() >= Y.ord.next) { const r = await ordOnce(); Y.ord.next = now() + ordMin * 60e3 * (0.7 + Math.random() * 0.6) * (TEST ? SC : 1); Y.keepAt = now(); Y.msg = r === 'ok' ? '🔁 주문 두 목록 읽음' : r === 'login' ? '🔐 로그인 필요' : Y.ord.err; return 1000; }
     if (c.prdH > 0 && now() >= Y.prd.next && Y.login === 'ok') { Y.prd.next = now() + c.prdH * 3600e3; await prdAll(); Y.keepAt = now(); return 1000; }
+    if (c.opsH > 0 && now() >= Y.opsNext && Y.login === 'ok') { Y.opsNext = now() + c.opsH * 3600e3 * (TEST ? SC : 1); await opsRun(); Y.keepAt = now(); return 1000; }
     if (c.tourH > 0 && now() >= Y.tourNext && Y.login === 'ok') { Y.tourNext = now() + c.tourH * 3600e3; await tourRun(); Y.keepAt = now(); return 1000; }
     if (now() - Y.keepAt > c.keepMin * 60e3) { Y.keepAt = now(); try { await nav(BASE + '/', 30); const s = await ev(JS_STATE); if (isLoginSt(s)) setLogin('need', '세션 확인 때 로그인 화면'); } catch (e) {} }
     Y.msg = ordMin > 0 ? `🔁 다음 주문 읽기 ${Math.max(0, Math.round((Y.ord.next - now()) / 60e3))}분 뒤` : '🔁 주문 다시 읽기 꺼 둠(웹앱 설정)'; return 15e3; }
   async function loop() { clearTimeout(Y.t); let next = 15e3; if (!Y.busy) { Y.busy = true; try { next = await step(); } catch (e) { Y.msg = '예스24 읽기 오류: ' + e.message; next = 60e3; if (!alive()) Y.landed = false; } finally { Y.busy = false; } } else next = 2000; Y.t = setTimeout(loop, next); }
   const kick = (ms) => { clearTimeout(Y.t); Y.t = setTimeout(loop, ms == null ? 300 : ms); };
   /* ── 수집기 다리(이 PC 알라딘 일하는 탭 · 10초마다) — 받기·보냄 확인·맡긴 일·출고 보호·웹앱 설정 ── */
-  function feed(b, by) { Y.feed = { at: now(), cfg: b.cfg && typeof b.cfg === 'object' ? { ordMin: b.cfg.ordMin, off: !!b.cfg.off } : Y.feed.cfg, hold: b.hold && typeof b.hold === 'object' ? { on: !!b.hold.on, why: String(b.hold.why || '').slice(0, 120) } : null, by: String(by || b.by || '').slice(0, 80) };
+  function feed(b, by) { const h0 = holder(); Y.feed = { at: now(), cfg: b.cfg && typeof b.cfg === 'object' ? { ordMin: b.cfg.ordMin, off: !!b.cfg.off, holder: holdNm(b.cfg.holder) || null } : Y.feed.cfg, hold: b.hold && typeof b.hold === 'object' ? { on: !!b.hold.on, why: String(b.hold.why || '').slice(0, 120) } : null, by: String(by || b.by || '').slice(0, 80) };
+    { const fh = Y.feed.cfg && Y.feed.cfg.holder; if (fh && fh !== Y.holdF.h) { Y.holdF = { h: fh, at: now(), by: Y.feed.by }; wr(HOLD_F, Y.holdF); } const h1 = holder(); if (h1 !== h0) { note(`🔒 예스24를 맡은 PC가 ${h0 || '(정하지 않음)'} → ${h1}(으)로 바뀜 — ${isHolder(pcName(), h1) ? '이 PC가 맡음(예스24 로그인·읽기 시작)' : '이 PC 번외는 예스24 일을 멈춤'}`); kick(300); } } /* (11/11 y24ops2) 웹앱 app_settings/platforms.y24Holder → 수집기 cfg.holder */
     const ack = new Set(Array.isArray(b.ack) ? b.ack.map(String) : []); if (ack.size) { const n0 = Y.q.length; Y.q = Y.q.filter((r) => !ack.has(r.id)); Y.qBytes = Y.q.reduce((a, r) => a + (r.body ? r.body.length : 0), 0); Y.sentN += n0 - Y.q.length; }
     for (const id of Array.isArray(b.jack) ? b.jack.map(String) : []) delete Y.jres[id];
     const took = []; if (Array.isArray(b.jobs) && jobsOk()) for (const j of b.jobs.slice(0, 20)) { if (!j || !/^[\w.:-]{3,120}$/.test(String(j.id || '')) || !JPATH[j.kind]) continue; if (Y.jd[j.id] && Y.jd[j.id].st !== 'run') continue; if (!Y.jobs.some((x) => x.id === j.id) && !Y.jd[j.id]) Y.jobs.push({ id: String(j.id), ono: String(j.ono || ''), kind: j.kind, courier: j.courier || null, no: j.no || null, confirm: !!j.confirm, fast: j.fast !== false, at: now() }); took.push(String(j.id)); if (!Y.busy) kick(200); }
     let bytes = 0; const recs = []; for (const r of Y.q) { const n = r.body ? r.body.length : 0; if (recs.length && bytes + n > 3e6) break; recs.push(r); bytes += n; if (recs.length >= 20) break; }
     return { ok: true, y24: sum(), recs, took, jres: Y.jres, jstep: Y.jstep, tour: Y.tour && Y.tour.at ? Y.tour : null }; }
   const jobsOk = () => enabled() && jobsOn() && Y.login === 'ok' && alive() && !holdOn();
-  function sum() { return { on: enabled(), logger: isLogger(), login: Y.login, pg: Y.pg || null, inLogin: !!Y.inLogin, drops: quickDrops(), loginAt: Y.loginAt || null, loginMsg: Y.loginMsg || null, alive: alive(), shown: Y.shown, active: enabled() && Y.login === 'ok' && alive() && feedOk(), jobsOk: jobsOk(), msg: Y.msg, q: Y.q.length, drop: Y.drop, sent: Y.sentN, recs: Y.recN, day: Y.day,
-      ord: { at: Y.ord.at || null, n: Y.ord.n, err: Y.ord.err, nextMs: Y.ord.next ? Math.max(0, Y.ord.next - now()) : null }, prd: { at: Y.prd.at || null, n: Y.prd.n, pages: Y.prd.pages, err: Y.prd.err, on: Y.prd.on }, tour: Y.tour ? { at: Y.tour.at, end: Y.tour.end, stop: Y.tour.stop, sum: Y.tour.sum || null } : null,
+  function sum() { return { on: enabled(), logger: isLogger(), holder: holder() || null, mine: mine(), already: Y.already ? { at: Y.already.at, n: Y.already.n, first: Y.already.first } : null, reWhy: Y.login === 'need' && Y.reWhy ? Y.reWhy : null, login: Y.login, pg: Y.pg || null, inLogin: !!Y.inLogin, drops: quickDrops(), loginAt: Y.loginAt || null, loginMsg: Y.loginMsg || null, alive: alive(), shown: Y.shown, active: enabled() && Y.login === 'ok' && alive() && feedOk(), jobsOk: jobsOk(), msg: Y.msg, q: Y.q.length, drop: Y.drop, sent: Y.sentN, recs: Y.recN, day: Y.day,
+      ord: { at: Y.ord.at || null, n: Y.ord.n, err: Y.ord.err, nextMs: Y.ord.next ? Math.max(0, Y.ord.next - now()) : null }, prd: { at: Y.prd.at || null, n: Y.prd.n, pages: Y.prd.pages, err: Y.prd.err, on: Y.prd.on }, tour: Y.tour ? { at: Y.tour.at, end: Y.tour.end, stop: Y.tour.stop, sum: Y.tour.sum || null } : null, ops: Y.ops ? { at: Y.ops.at, end: Y.ops.end, stop: Y.ops.stop, res: Y.ops.res } : null, opsNextMs: Y.opsNext ? Math.max(0, Y.opsNext - now()) : null, main: Y.main, opsNum: Y.opsNum && Object.keys(Y.opsNum).length ? Y.opsNum : null,
       reg: REG ? (() => { const r = REG.state(); return { ok1: r.ok1, done: r.done, wait: r.wait.length, cur: r.cur, why: r.why, msg: r.msg }; })() : null, w: W ? (() => { const r = W.state(); return { ok1: r.ok1, stop: r.stop ? r.stop.why : null, wait: r.wait.length, cur: r.cur, why: r.why, msg: r.msg }; })() : null, tpl: Object.keys(Y.tpl), hold: holdOn() ? Y.feed.hold : null, feedAt: Y.feed.at || null, feedBy: Y.feed.by || null, jobs: { wait: Y.jobs.filter((j) => !Y.jd[j.id]).length, res: Object.keys(Y.jres).length }, act: Y.act.err }; }
-  async function runNow(what) { if (what === 'prd') Y.prd.next = 0; else if (what === 'tour') Y.tourNext = 0; else Y.ord.next = 0; kick(100); return { ok: true, msg: what === 'prd' ? '📋 등록상품 전부 읽기를 곧 시작' : what === 'tour' ? '🛰 둘러보기를 곧 시작' : '🔁 주문 두 목록을 곧 읽음' }; }
-  const start = () => { Y.tourNext = now() + (TEST ? 3600e3 : 30 * 60e3); Y.prd.next = now() + (TEST ? 3600e3 : 20 * 60e3); kick(TEST ? 500 : 20e3); }; /* 켜진 뒤 첫 등록상품·둘러보기는 20·30분 뒤(근거: 없음 — 주문 읽기 먼저) */
+  async function runNow(what) { if (what === 'prd') Y.prd.next = 0; else if (what === 'tour') Y.tourNext = 0; else if (what === 'ops') Y.opsNext = 0; else Y.ord.next = 0; kick(100); return { ok: true, msg: what === 'ops' ? '🧰 운영 화면(반품·문의·정산) 읽기를 곧 시작' : what === 'prd' ? '📋 등록상품 전부 읽기를 곧 시작' : what === 'tour' ? '🛰 둘러보기를 곧 시작' : '🔁 주문 두 목록을 곧 읽음' }; }
+  const start = () => { Y.opsNext = now() + (TEST ? 3600e3 : 12 * 60e3); Y.tourNext = now() + (TEST ? 3600e3 : 30 * 60e3); Y.prd.next = now() + (TEST ? 3600e3 : 20 * 60e3); kick(TEST ? 500 : 20e3); }; /* 켜진 뒤 첫 등록상품·둘러보기는 20·30분 뒤(근거: 없음 — 주문 읽기 먼저) */
   /* (11/10 y24auto) 🟦 예스24 자동 올림 — helper/col2-y24reg.js(웹앱이 장부에 먼저 적고 맡김 → 이 숨은 크롬이 대량 등록 엑셀 업로드) */
   REG = require('./col2-y24reg.js').makeY24Reg({ HOME, TEST, note, log, SC, Y, BASE, JS_STATE, nav, ev, isLoginSt, setLogin, learn, ordShift, rawList, kick, pcName, isLogger, enabled, holdOn, login: () => Y.login });
   REG.cur = () => !!REG.R.cur;
   /* (11/11 y24w) 🟦 예스24 쓰기(수량·판매중지·판매재개) — helper/col2-y24w.js(웹앱 🛠 처리할 일에서 맡김 → 이 숨은 크롬이 등록상품 관리 화면에서 사람처럼 고치고 다시 읽어 확인) */
   W = require('./col2-y24w.js').makeY24W({ HOME, TEST, note, log, SC, Y, BASE, JS_STATE, nav, ev, isLoginSt, setLogin, kick, pcName, isLogger, enabled, holdOn, login: () => Y.login });
-  return { start, kick, feed, sum, login, verify, close, runNow, reg: REG, w: W, MARK, Y, _t: { ordShift, hdrFresh, pickMenus, cutAct } };
+  return { start, kick, feed, sum, login, verify, close, runNow, reg: REG, w: W, MARK, Y, _t: { ordShift, hdrFresh, pickMenus, cutAct, mainSum, opsNum } };
 }
-module.exports = { makeY24, ppStop, ordShift, hdrFresh, pickMenus, cutAct, SAFE, DANGER, SECRET };
+module.exports = { makeY24, ppStop, holderOf, isHolder, HOLD_DEF, ALREADY_RE, ordShift, hdrFresh, pickMenus, cutAct, SAFE, DANGER, SECRET, OPS_PAGES, mainSum, opsNum };

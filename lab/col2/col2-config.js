@@ -3,7 +3,7 @@
 (function (root) {
   'use strict';
   const COL2 = {
-    COL2_VER: '0.1.21', /* 번외 일꾼 판 번호 — 운영 APP_VER·수집기 @version과 따로 */
+    COL2_VER: '0.1.22', /* 번외 일꾼 판 번호 — 운영 APP_VER·수집기 @version과 따로 */
     PORT: 8797, /* 번외 도우미 포트 — 운영 인쇄 도우미 8898·로거 도우미 8899와 겹치면 켜지 않음 */
     PROD_PORTS: [8898, 8899],
     PREFIX: 'col2_', /* Firestore 쓰기는 이 머리 칸만 */
@@ -54,6 +54,12 @@
     /* (11/10 밤 col2n) prodShare — 공개 상품 화면 그림자가 하루 몫(PACE.dayCap)의 이 비율을 넘게 읽은 날엔 그림자 일(외부 정보·시세·KPIPA 등)에 차례를 먼저 줌(그림자 일이 쉴 때만 상품 화면) · 11/10 HOME: 상품 1,020장이 하루 1,600장 몫의 대부분을 써 낮 12시쯤 다 쓰고 그 뒤 그림자 일 표본이 쌓이지 않음 · 근거: 없음, 설정으로 바꿈(col2.json prodShare · 0~1) */
     AUTO: { on: true, nightOn: true, nightFrom: 1, nightTo: 5, prodShare: 0.4 }, /* 근거: 없음, 설정으로 바꿈 */
     /* 운영 웹앱과 같은 Firebase(공개 설정값 — 운영 app.html에 이미 공개돼 있음) · 쓰기는 col2_* 만 */
+    /* (0.1.22 정범님 11/11 결정 (나)) 🟩 네이버 커머스API — 고정 IP 로거 PC의 번외만 부름(약속 0의 정범님 예외: 네이버 일만 · 알라딘·예스24 계정·쿠키·우리 숍 화면은 여전히 로거 금지)
+     *  base = 커머스API 게이트웨이(원문 docs/auth 'Token URL: https://api.commerce.naver.com/external/v1/oauth2/token')
+     *  minGapMs: 요청 사이 최소 간격(원문 docs/restriction — 초당 동시 요청 수 제한·429 GW.RATE_LIMIT · 값은 API마다 달라 공개 안 됨) — 근거: 없음, 설정(col2.json nvcfg)으로 바꿈
+     *  cool429Sec: 429면 쉬는 시간(두 번째부터 두 배 · 최대 10분) · ordMin: 주문 변경 읽기 주기 · prdH: 상품 목록 다시 읽기 주기 · firstH: 처음 주문을 거슬러 읽는 시간(원문: 한 번에 24시간 창)
+     *  write: 실제 쓰기(발주 확인·발송·판매 상태·등록) 기본 끔 — 웹앱 ⚙ 🟩 칸에서 연결 시험이 맞은 뒤 두 번 눌러 켬 */
+    NAVER: { base: 'https://api.commerce.naver.com/external', pc: /^LOGGER/i, minGapMs: 600, cool429Sec: 30, ordMin: 10, prdH: 6, firstH: 72, maxCalls: 60, write: false },
     FIREBASE: { apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385', storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15' },
     FIREBASE_SDK: 'https://www.gstatic.com/firebasejs/10.12.2/',
   };

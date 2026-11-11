@@ -6,14 +6,18 @@
  *   ext   출처 다름 — 운영 문서 값은 교보·예스24·네이버에서 온 것(infoFrom) · 알라딘 화면 값과 다를 수 있음
  *   fill  운영 문서 칸이 비어 있음(그림자만 값이 있음)
  *   lack  그림자 칸이 비어 있음(운영만 값이 있음) — 해석이 달라졌을 수 있음 → 다름으로 셈
+ *   old   운영이 오래전에 읽음 — 운영 마지막 읽기(lastFetchedAt)가 oldDays일(기본 7) 넘게 지났고 그 뒤 화면 값을 본 적 없음(seenInfo 없음) → 그사이 알라딘 화면이 바뀌었을 수(까닭 있는 다름)
+ *         (11/11 col2rep1 · 11/11 진단: 상품 화면 다름 53건 중 분류(categories) 39건 — 처음 값을 지키는 칸이라 운영이 다시 읽기 전엔 seenInfo가 없음)
  *   diff  다름 */
 (function (root) {
   'use strict';
   const sortKeys = (v) => (Array.isArray(v) ? v.map(sortKeys) : v && typeof v === 'object' ? Object.keys(v).sort().reduce((o, k) => { o[k] = sortKeys(v[k]); return o; }, {}) : v);
   const stab = (v) => JSON.stringify(sortKeys(v === undefined ? null : v));
   const empty = (v) => v == null || v === '' || (Array.isArray(v) && !v.length);
-  const LABEL = { same: '같음', seen: '같음(운영도 지금 이 값을 봄 · 처음 값을 지킴)', ext: '출처 다름(운영은 바깥 정보 값)', fill: '운영 칸 비어 있음', lack: '그림자 칸 비어 있음', diff: '다름' };
-  function compareBook(prod, sh, fields) { const F = ['aladinItemId', ...(fields || [])]; const rows = []; const n = { same: 0, seen: 0, ext: 0, fill: 0, lack: 0, diff: 0 };
+  const LABEL = { old: '운영이 오래전에 읽음(그 뒤 화면이 바뀌었을 수)', same: '같음', seen: '같음(운영도 지금 이 값을 봄 · 처음 값을 지킴)', ext: '출처 다름(운영은 바깥 정보 값)', fill: '운영 칸 비어 있음', lack: '그림자 칸 비어 있음', diff: '다름' };
+  const ageDays = (prod, now) => { const t = prod && prod.lastFetchedAt; const ms = typeof t === 'string' ? Date.parse(t) : t && typeof t === 'object' && (t.seconds != null || t._seconds != null) ? (+(t.seconds ?? t._seconds)) * 1000 : +t || NaN; return Number.isFinite(ms) && ms > 0 ? ((now || Date.now()) - ms) / 864e5 : null; };
+  function compareBook(prod, sh, fields, o) { o = o || {}; const F = ['aladinItemId', ...(fields || [])]; const rows = []; const n = { same: 0, seen: 0, ext: 0, fill: 0, lack: 0, old: 0, diff: 0 };
+    const age = ageDays(prod, o.now); const oldD = Number.isFinite(+o.oldDays) && +o.oldDays > 0 ? +o.oldDays : 7; const isOld = age != null && age > oldD;
     const seenInfo = (prod && prod.seenInfo) || {}; const infoFrom = (prod && prod.infoFrom) || {};
     for (const f of F) { const a = prod ? prod[f] : null, b = sh ? sh[f] : null; let k;
       if (empty(a) && empty(b)) continue;
@@ -22,9 +26,9 @@
       else if (infoFrom[f]) k = 'ext';
       else if (empty(a)) k = 'fill';
       else if (empty(b)) k = 'lack';
-      else k = 'diff';
+      else k = isOld && f !== 'aladinItemId' ? 'old' : 'diff';
       n[k]++; rows.push({ f, k, label: LABEL[k], prod: a == null ? null : a, shadow: b == null ? null : b }); }
-    const bad = n.diff + n.lack; return { rows, n, verdict: !prod ? 'noprod' : bad ? 'diff' : 'same', diffFields: rows.filter((r) => r.k === 'diff' || r.k === 'lack').map((r) => r.f) }; }
+    const bad = n.diff + n.lack + n.old; return { rows, n, ageDays: age == null ? null : Math.round(age * 10) / 10, verdict: !prod ? 'noprod' : bad ? 'diff' : 'same', diffFields: rows.filter((r) => r.k === 'diff' || r.k === 'lack' || r.k === 'old').map((r) => r.f) }; }
   /* 그림자 결과에서 저장할 칸만(작게) */
   function pickPage(page, fields) { const o = {}; for (const f of ['aladinItemId', ...(fields || []), 'priceList', 'priceSales']) o[f] = page && page[f] !== undefined ? page[f] : null; return o; }
   const show = (v) => (v == null ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v));

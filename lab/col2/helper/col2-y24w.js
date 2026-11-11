@@ -2,6 +2,9 @@
  * 쓰는 곳: 웹앱 🧾 통합 장부 › 🛠 처리할 일 › 예스24 줄 「🟦 예스24 … 맡기기」(두 번 누르기) → POST /y24/w/put(127.0.0.1:8797 · 이 PC 안에서만)
  *   → 이 도우미가 예스24 숨은 크롬(로그인 세션 그대로 · col2-y24.js와 같은 탭)에서 상품관리 › 등록상품 관리 화면을 열고 사람이 하는 그대로:
  *      ① 검색어 '자체상품코드' = 우리 SKU · 기간 가장 길게 · 판매상태 '전체' → [조회](읽기)
+ *         (11/11 led2b) 예스24 자체코드가 비었는데 장부가 그 예스24 상품을 하나로 정한 줄(fill) — 검색어 'ISBN'(없으면 '상품명')으로 조회 → 상품번호가 꼭 맞는 줄 하나
+ *           · 그 줄 자체코드가 이미 다른 값이면 짝이 다를 수 있어 아무것도 안 누름 · 일이 끝난 뒤 그 줄 '판매자상품코드 *' 칸에 우리 SKU를 채우고 [수정항목 저장] → 자체코드로 다시 조회해 확인
+ *           · 그 칸을 표에서 고칠 수 없으면(잠김·칸 없음) 건너뛰고 까닭만 남김(수량·판매중지 결과는 그대로)
  *      ② 표(RealGrid #productGrid)에서 상품번호(GOODS_NO)·자체코드가 둘 다 맞는 줄이 꼭 하나인지 봄(없거나 둘 이상이면 아무것도 안 누름)
  *      ③ 이미 그 값이면(수량이 같음·이미 판매중지) 아무것도 안 누르고 끝(되풀이 0)
  *      ④ 수량: 그 줄 '재고수량 *' 칸을 고침 → [수정항목 저장] 한 번(그 확인 물음에만 '예')
@@ -12,6 +15,7 @@
  *   · 안내 '수정할 값을 더블 클릭 … 수정이 완료 되시면 반드시 수정항목 저장을 클릭' · 표 머리 '재고수량 *'·'판매상태 *'(수정 가능 칸) · 단추 [판매상태/기간 변경]·[수정항목 저장]
  *   · 창 '판매상태/기간 변경' — 라디오 goodsStatGb 02 판매중 · 08 판매중지 · 04 판매완료 · 07 판매종료 · [변경]·[취소] · '재고수량0인 상품을 판매중으로 변경하면 재고수량은 1로 자동변환'
  *   · 응답 칸 GOODS_NO·ENTR_GOODS_CD(판매자상품코드 = 우리 SKU)·ORD_REMAIN_CNT(재고수량)·SALE_STATE_GB(판매상태) — GUIDE.md 1-1
+ *   (11/11 y24ops1) 판매가: 그 줄 판매가 칸(표에서 고칠 수 있는 칸일 때만 · 아니면 아무것도 안 누르고 사람에게) → [수정항목 저장] → 다시 읽어 확인 · 판매중인 상품만 · 한 번에 50% 넘게 바뀌면 안 누름
  * 지킴: 같은 맡김·같은 할 일(rk) 두 번 안 함(이 PC 기록 y24-w.json) · 같은 상품번호가 맡김 줄에 이미 있으면 거절 · 처음 성공(목록에서 확인)이 없으면 1건짜리 맡김만 · 한 번에 30줄까지
  *       로거 PC·MJ-MAIN에서는 안 함 · 🚚 출고 중엔 기다림(누르기 전) · 로그인이 풀리면 기다림(누르기 전) · '확실하지 않음'·누른 뒤 실패면 이 쓰기 줄 전체를 멈춤(웹앱 [▶ 이어 가기]로만 다시)
  *       누르는 단추는 [조회]·기간 '1년'·판매상태 '전체'(읽기) · 그 줄 고르기·재고수량 칸 · [수정항목 저장] · [판매상태/기간 변경]·판매중지/판매중 라디오·[변경]뿐 — 상품삭제·바이백·판매완료·판매종료 등은 안 누름 */
@@ -20,20 +24,25 @@ const fs = require('fs'), path = require('path');
 const PG = '/Product/ProductList';
 const ID_RE = /^[\w.:|-]{3,160}$/;
 const MAXN = 30;
-const KINDS = { qty: '수량', stop: '판매중지', start: '판매재개' };
+const KINDS = { qty: '수량', stop: '판매중지', start: '판매재개', price: '판매가' }; /* (11/11 y24ops1) price = 판매가 바꾸기(웹앱 🧰 예스24 운영에서 사람이 두 번 눌러 맡김 · 가격 감시 제안과 이음) */
+const PRICE_JUMP = 0.5; /* 한 번에 50% 넘게 바뀌는 판매가는 누르지 않고 사람에게(근거: 없음 — 잘못 친 값·자리 밀림 막이) */
 const ST_CODE = { stop: '08', start: '02' };
+const SELF_RE = /^[\w.-]{2,40}$/;
+const sp = (s) => String(s || '').split(/[,\s]+/).filter(Boolean);
 const BAD_DLG = /삭제|바이백|출금|탈퇴|반품|환불|판매\s*완료|판매\s*종료|취소하시|일괄/;
 /* 맡김 검사(순수 셈 · 시험 t_y24w가 직접 부름) — rec = 이 PC 기록 { ok1, rk:{} } */
 function checkJob(j, rec) { if (!j || !ID_RE.test(String(j.id || ''))) return '맡김 이름표가 이상함'; const R = Array.isArray(j.rows) ? j.rows : []; if (!R.length) return '고칠 줄이 없음'; if (R.length > MAXN) return `한 번에 ${MAXN}줄까지 — ${R.length}줄`;
   if (!(rec && rec.ok1) && R.length > 1) return '처음 한 건이 예스24 목록에서 확인되기 전에는 1건짜리 맡김만 받음';
   const seenN = new Set(), seenR = new Set();
-  for (const r of R) { if (!r || !ID_RE.test(String(r.rid || ''))) return '줄 이름(rid)이 이상함'; if (!/^\d{5,15}$/.test(String(r.no || ''))) return `예스24 상품번호가 이상함(${r.rid})`; if (!/^[\w.-]{2,40}$/.test(String(r.self || ''))) return `자체코드(SKU)가 이상함(${r.rid})`;
+  for (const r of R) { if (!r || !ID_RE.test(String(r.rid || ''))) return '줄 이름(rid)이 이상함'; if (!/^\d{5,15}$/.test(String(r.no || ''))) return `예스24 상품번호가 이상함(${r.rid})`; if (r.self) { if (!SELF_RE.test(String(r.self))) return `자체코드(SKU)가 이상함(${r.rid})`; }
+    else { if (r.fill && !SELF_RE.test(String(r.fill))) return `채울 자체코드(SKU)가 이상함(${r.rid})`; if (!/^\d{10,13}$/.test(String(r.isbn || '')) && String(r.q || '').trim().length < 2) return `자체코드가 없으면 찾을 ISBN·제목이 있어야 함(${r.rid})`; }
     if (!KINDS[r.kind]) return `할 일 종류가 이상함(${r.rid})`; if (r.kind === 'qty' && !(Number.isInteger(+r.to) && +r.to >= 1 && +r.to <= 999)) return `수량은 1~999권(${r.rid}) — 0권이면 판매중지로`;
+    if (r.kind === 'price' && !(Number.isInteger(+r.to) && +r.to >= 100 && +r.to <= 1000000 && +r.to % 10 === 0)) return `판매가는 100원~100만 원 · 10원 단위(${r.rid})`;
     const rk = String(r.rk || ''); if (!ID_RE.test(rk)) return `할 일 열쇠(rk)가 이상함(${r.rid})`;
     if (seenN.has(r.no)) return `같은 상품번호가 한 맡김에 두 번(${r.no})`; if (seenR.has(rk) || (rec && rec.rk && rec.rk[rk])) return `같은 할 일을 이미 함(${r.no}) — 되풀이 0`; seenN.add(r.no); seenR.add(rk); }
   return ''; }
 /* 줄 값이 목표와 같은가(이미 됨) — v = { qty, st } */
-function isDone(r, v) { if (!v) return false; if (r.kind === 'qty') return +v.qty === +r.to; return String(v.st || '') === ST_CODE[r.kind]; }
+function isDone(r, v) { if (!v) return false; if (r.kind === 'qty') return +v.qty === +r.to; if (r.kind === 'price') return v.price != null && +v.price === +r.to; return String(v.st || '') === ST_CODE[r.kind]; }
 
 /* ── 화면 쪽 짧은 코드(그 탭에서 Runtime.evaluate) ── */
 /* 표 찾기 — RealGrid GridView(getDataSource)를 #productGrid 둘레 Vue 구성 요소에서 찾음 · 줄 값 칸 이름은 응답 칸 이름(GOODS_NO·ENTR_GOODS_CD·ORD_REMAIN_CNT·SALE_STATE_GB) 정규식으로 */
@@ -43,24 +52,38 @@ for(let el=g;el&&!gv;el=el.parentElement){for(let v=el.__vue__,d=0;v&&!gv&&d<6;v
 const vis=(b)=>{try{return b.offsetParent!==null&&getComputedStyle(b).visibility!=='hidden'}catch(e){return false}};const inPop=(b)=>!!(b.closest&&b.closest('.layerPop'));
 const busy=()=>{try{const lb=document.getElementById('loading-bg');const cs=lb&&getComputedStyle(lb);return !!cs&&cs.display!=='none'&&cs.visibility!=='hidden'&&+cs.opacity!==0}catch(e){return false}};
 const FK=(o,re)=>Object.keys(o||{}).find((k)=>re.test(k));
-const rowsOf=(gv)=>{const ds=gv.getDataSource();const n=+ds.getRowCount()||0;const out=[];for(let r=0;r<n&&r<500;r++){const o=ds.getJsonRow?ds.getJsonRow(r):null;if(!o)continue;const kN=FK(o,/^GOODS_NO$/i),kS=FK(o,/^ENTR_GOODS_CD$|SELF|OWN_?CD/i),kQ=FK(o,/^ORD_REMAIN_CNT$|REMAIN|STOCK|JAEGO/i),kT=FK(o,/^SALE_STATE_GB$|^(SALE_|GOODS_)?(STAT|STATE)(_GB|_CD)?$/i),kTN=FK(o,/^SALE_STATE_GB_NM$|STATE.*NM$/i);out.push({r,no:String(o[kN]==null?'':o[kN]),self:String(o[kS]==null?'':o[kS]),qty:o[kQ]==null?null:+o[kQ],st:String(o[kT]==null?'':o[kT]),stNm:String(o[kTN]==null?'':o[kTN]),kQ,kT})}return out};`;
+const rowsOf=(gv)=>{const ds=gv.getDataSource();const n=+ds.getRowCount()||0;const out=[];for(let r=0;r<n&&r<500;r++){const o=ds.getJsonRow?ds.getJsonRow(r):null;if(!o)continue;const kN=FK(o,/^GOODS_NO$/i),kS=FK(o,/^ENTR_GOODS_CD$|SELF|OWN_?CD/i),kQ=FK(o,/^ORD_REMAIN_CNT$|REMAIN|STOCK|JAEGO/i),kT=FK(o,/^SALE_STATE_GB$|^(SALE_|GOODS_)?(STAT|STATE)(_GB|_CD)?$/i),kTN=FK(o,/^SALE_STATE_GB_NM$|STATE.*NM$/i),kP=FK(o,/^(SHOP_SALE_PRICE|USED_SALE_PRICE|SALE_PRICE|SELL_PRICE|SALE_PRC|USED_PRICE)$/i);out.push({r,no:String(o[kN]==null?'':o[kN]),self:String(o[kS]==null?'':o[kS]),qty:o[kQ]==null?null:+o[kQ],st:String(o[kT]==null?'':o[kT]),stNm:String(o[kTN]==null?'':o[kTN]),price:kP&&o[kP]!=null&&o[kP]!==''?+o[kP]:null,kQ,kT,kS,kP:kP||null})}return out};`;
 /* ① 검색 칸 채우고 [조회] — 읽기만(자체상품코드 = 우리 SKU · 기간 1년 · 판매상태 전체) */
-const JS_SEARCH = (self) => `(()=>{${GV_JS}if(/login/i.test(location.pathname)||document.querySelector('input[type=password]'))return{login:true};
-const sel=[...document.querySelectorAll('select')].find((s)=>[...s.options].some((o)=>o.value==='5'&&/자체상품코드/.test(o.textContent)));if(!sel)return{ok:false,why:'검색어 고르기 칸(자체상품코드)이 없음'};
-sel.value='5';sel.dispatchEvent(new Event('change',{bubbles:true}));const inp=(sel.parentElement&&sel.parentElement.querySelector('input[type=text]'))||null;if(!inp)return{ok:false,why:'검색어 넣는 칸이 없음'};
+const SRCH = { 5: ['자체상품코드', '자체상품코드'], 3: ['ISBN', 'ISBN'], 0: ['상품명', '상품명'] };
+const JS_SEARCH = (self, opt) => { const op = String(opt == null ? 5 : opt); const nm = (SRCH[op] || SRCH[5])[0]; return `(()=>{${GV_JS}if(/login/i.test(location.pathname)||document.querySelector('input[type=password]'))return{login:true};
+const sel=[...document.querySelectorAll('select')].find((s)=>[...s.options].some((o)=>o.value===${JSON.stringify(op)}&&o.textContent.indexOf(${JSON.stringify(nm)})>=0));if(!sel)return{ok:false,why:'검색어 고르기 칸(${nm})이 없음'};
+sel.value=${JSON.stringify(op)};sel.dispatchEvent(new Event('change',{bubbles:true}));const inp=(sel.parentElement&&sel.parentElement.querySelector('input[type=text]'))||null;if(!inp)return{ok:false,why:'검색어 넣는 칸이 없음'};
 const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;set.call(inp,${JSON.stringify(self)});inp.dispatchEvent(new Event('input',{bubbles:true}));inp.dispatchEvent(new Event('change',{bubbles:true}));
 const yr=[...document.querySelectorAll('button')].find((b)=>(b.innerText||'').trim()==='1년'&&vis(b)&&!inPop(b));if(yr)yr.click();
 const all=[...document.querySelectorAll('input[type=radio][name=goodsStatGb]')].find((x)=>x.value===''&&!inPop(x));if(all&&!all.checked){const lb=document.querySelector('label[for="'+all.id+'"]');(lb||all).click()}
-const q=[...document.querySelectorAll('button')].filter((b)=>/^\\s*조회\\s*$/.test(b.innerText||'')&&vis(b)&&!inPop(b));if(!q.length)return{ok:false,why:'[조회] 단추가 없음'};q[0].click();return{ok:true,yr:!!yr,all:!!all}})()`;
+const q=[...document.querySelectorAll('button')].filter((b)=>/^\\s*조회\\s*$/.test(b.innerText||'')&&vis(b)&&!inPop(b));if(!q.length)return{ok:false,why:'[조회] 단추가 없음'};q[0].click();return{ok:true,yr:!!yr,all:!!all}})()`; };
 /* ② 표에서 우리 줄 찾기 */
 const JS_FIND = (no, self) => `(()=>{${GV_JS}if(busy())return{busy:true};const gv=findGV();if(!gv)return{ok:false,nogv:true,why:'등록상품 표(RealGrid)를 못 찾음'};let L;try{L=rowsOf(gv)}catch(e){return{ok:false,why:'표 줄 읽기 실패: '+String(e.message||e).slice(0,80)}}
-const S=${JSON.stringify(self)};const hit=L.filter((x)=>x.no===${JSON.stringify(no)}&&x.self.split(/[,\\s]+/).filter(Boolean).includes(S));const same=L.filter((x)=>x.self.split(/[,\\s]+/).filter(Boolean).includes(S)).length;return{ok:true,n:L.length,same,hit:hit.map((x)=>({r:x.r,no:x.no,self:x.self,qty:x.qty,st:x.st,stNm:x.stNm,kQ:x.kQ,kT:x.kT}))}})()`;
+const S=${JSON.stringify(self || '')};const has=(x)=>!S||x.self.split(/[,\\s]+/).filter(Boolean).includes(S);const hit=L.filter((x)=>x.no===${JSON.stringify(no)}&&has(x));const same=S?L.filter(has).length:L.filter((x)=>x.no===${JSON.stringify(no)}).length;return{ok:true,n:L.length,same,hit:hit.map((x)=>({r:x.r,no:x.no,self:x.self,qty:x.qty,st:x.st,stNm:x.stNm,price:x.price,kQ:x.kQ,kT:x.kT,kS:x.kS,kP:x.kP}))}})()`;
+/* (11/11 led2b) '판매자상품코드 *' 칸에 우리 SKU 넣기 — 수량 칸과 같은 길(편집기 → 값 → 확정 · 안 되면 표 API) · 칸이 잠겨 있으면(editable false) 손대지 않음 · 아직 저장하지 않음 */
+const JS_SELF = (r, kS, v) => `(()=>{${GV_JS}const gv=findGV();if(!gv)return{ok:false,why:'표를 못 찾음'};const ds=gv.getDataSource();const it=gv.getItemIndex(${r});if(!(it>=0))return{ok:false,why:'줄 위치를 못 찾음'};const K=${JSON.stringify(kS)},V=${JSON.stringify(String(v))};
+try{const col=typeof gv.columnByField==='function'?gv.columnByField(K):null;if(col&&(col.editable===false||(col.editor&&col.editor.readOnly)))return{ok:false,ro:true,why:"'판매자상품코드' 칸이 표에서 잠겨 있음"}}catch(e){}
+let how='';try{gv.setCurrent({itemIndex:it,fieldName:K});if(typeof gv.showEditor==='function'){gv.showEditor();const ed=[...document.querySelectorAll('#productGrid .rg-editor input,#productGrid .rg-editor textarea,#productGrid input.rg-editor,#productGrid textarea.rg-editor')].find((x)=>vis(x));
+if(ed){const P=ed.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(P,'value').set.call(ed,V);ed.dispatchEvent(new Event('input',{bubbles:true}));if(typeof gv.commit==='function')gv.commit();how='editor'}}}catch(e){}
+try{if(String(ds.getValue(${r},K)==null?'':ds.getValue(${r},K))!==V){gv.setValue(it,K,V);if(typeof gv.commit==='function')gv.commit();how='setValue'}}catch(e){return{ok:false,ro:true,why:"'판매자상품코드' 칸을 못 고침: "+String(e.message||e).slice(0,80)}}
+const x=String(ds.getValue(${r},K)==null?'':ds.getValue(${r},K));return x===V?{ok:true,how}:{ok:false,ro:true,why:"'판매자상품코드' 칸이 바뀌지 않음"}})()`;
 /* ③ 수량 칸 고치기(사람이 칸을 두 번 눌러 고치는 것과 같은 길 — 편집기 → 값 → 확정 · 편집기가 안 뜨면 표 API setValue) · 아직 저장하지 않음 */
 const JS_QTY = (r, kQ, to) => `(()=>{${GV_JS}const gv=findGV();if(!gv)return{ok:false,why:'표를 못 찾음'};const ds=gv.getDataSource();const it=gv.getItemIndex(${r});if(!(it>=0))return{ok:false,why:'줄 위치를 못 찾음'};
 let how='';try{gv.setCurrent({itemIndex:it,fieldName:${JSON.stringify(kQ)}});if(typeof gv.showEditor==='function'){gv.showEditor();const ed=[...document.querySelectorAll('#productGrid .rg-editor input,#productGrid .rg-editor textarea,#productGrid input.rg-editor,#productGrid textarea.rg-editor')].find((x)=>vis(x));
 if(ed){const P=ed.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(P,'value').set.call(ed,${JSON.stringify(String(to))});ed.dispatchEvent(new Event('input',{bubbles:true}));if(typeof gv.commit==='function')gv.commit();how='editor'}}}catch(e){}
 try{if(+ds.getValue(${r},${JSON.stringify(kQ)})!==${+to}){gv.setValue(it,${JSON.stringify(kQ)},${+to});if(typeof gv.commit==='function')gv.commit();how='setValue'}}catch(e){return{ok:false,why:'재고수량 칸을 못 고침: '+String(e.message||e).slice(0,80)}}
 const v=+ds.getValue(${r},${JSON.stringify(kQ)});return v===${+to}?{ok:true,how}:{ok:false,why:'재고수량 칸이 바뀌지 않음('+v+')'}})()`;
+/* ③-2 (11/11 y24ops1) 판매가 칸 고치기 — 표에서 그 칸이 고칠 수 있는 칸일 때만(RealGrid columnByField(...).editable === false 면 아무것도 안 함) · 아직 저장하지 않음 */
+const JS_PRICE = (r, kP, to) => `(()=>{${GV_JS}const gv=findGV();if(!gv)return{ok:false,why:'표를 못 찾음'};const ds=gv.getDataSource();const it=gv.getItemIndex(${r});if(!(it>=0))return{ok:false,why:'줄 위치를 못 찾음'};
+let col=null;try{col=typeof gv.columnByField==='function'?gv.columnByField(${JSON.stringify(kP)}):null}catch(e){}if(col&&(col.editable===false||col.readOnly===true))return{ok:false,lock:true,why:'등록상품 표의 판매가 칸은 고칠 수 없는 칸'};
+try{gv.setCurrent({itemIndex:it,fieldName:${JSON.stringify(kP)}});if(typeof gv.showEditor==='function'){gv.showEditor();const ed=[...document.querySelectorAll('#productGrid .rg-editor input,#productGrid input.rg-editor')].find((x)=>vis(x));if(ed){Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(ed,${JSON.stringify(String(to))});ed.dispatchEvent(new Event('input',{bubbles:true}));if(typeof gv.commit==='function')gv.commit()}}}catch(e){}
+try{if(+ds.getValue(${r},${JSON.stringify(kP)})!==${+to}){gv.setValue(it,${JSON.stringify(kP)},${+to});if(typeof gv.commit==='function')gv.commit()}}catch(e){return{ok:false,why:'판매가 칸을 못 고침: '+String(e.message||e).slice(0,80)}}
+const v=+ds.getValue(${r},${JSON.stringify(kP)});return v===${+to}?{ok:true}:{ok:false,why:'판매가 칸이 바뀌지 않음('+v+')'}})()`;
 /* ④ 그 줄 하나만 고름(판매상태 변경용) */
 const JS_CHECK = (r) => `(()=>{${GV_JS}const gv=findGV();if(!gv)return{ok:false,why:'표를 못 찾음'};const it=gv.getItemIndex(${r});if(!(it>=0))return{ok:false,why:'줄 위치를 못 찾음'};try{if(typeof gv.checkAll==='function')gv.checkAll(false);gv.checkItem(it,true)}catch(e){return{ok:false,why:'줄 고르기 실패: '+String(e.message||e).slice(0,80)}}
 let c=[];try{c=(gv.getCheckedRows&&gv.getCheckedRows())||(gv.getCheckedItems&&gv.getCheckedItems().map((i)=>gv.getDataRow(i)))||[]}catch(e){}return c.length===1&&+c[0]===${r}?{ok:true}:{ok:false,why:'고른 줄이 하나가 아님('+c.length+'줄)'}})()`;
@@ -90,8 +113,8 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
     const why = checkJob(b, R.rec); if (why) return { code: 400, body: { ok: false, err: why } };
     if (!R.rec.ok1 && R.q.jobs.length) return { code: 409, body: { ok: false, err: '처음 한 건을 확인하는 중 — 그 결과를 본 뒤 이어 맡김(첫 실행은 1건 확인 뒤)' } };
     const BN = busyNo(); for (const r of b.rows) if (BN.has(String(r.no))) return { code: 400, body: { ok: false, err: `같은 상품(${r.no})이 이미 맡김 줄에 있음 — 되풀이 0` } };
-    const j = { id: String(b.id), rows: b.rows.map((r) => ({ rid: String(r.rid), rk: String(r.rk), no: String(r.no), self: String(r.self), kind: r.kind, to: r.kind === 'qty' ? +r.to : null, title: String(r.title || '').slice(0, 60) })), st: 'wait', at: now(), by: String(b.by || '').slice(0, 60) };
-    R.q.jobs.push(j); saveQ(); note(`🟦 예스24 쓰기 맡김 받음 — ${j.rows.length}건(${j.rows[0].title || j.rows[0].no} ${KINDS[j.rows[0].kind]}${j.rows[0].kind === 'qty' ? ' ' + j.rows[0].to + '권' : ''}${j.rows.length > 1 ? ' 외' : ''})`); o.kick(300); return { code: 200, body: { ok: true, took: j.id } }; }
+    const j = { id: String(b.id), rows: b.rows.map((r) => ({ rid: String(r.rid), rk: String(r.rk), no: String(r.no), self: String(r.self || ''), ...(r.self ? {} : { fill: String(r.fill || ''), isbn: String(r.isbn || ''), q: String(r.q || '').slice(0, 60) }), kind: r.kind, to: r.kind === 'qty' || r.kind === 'price' ? +r.to : null, title: String(r.title || '').slice(0, 60) })), st: 'wait', at: now(), by: String(b.by || '').slice(0, 60) };
+    R.q.jobs.push(j); saveQ(); note(`🟦 예스24 쓰기 맡김 받음 — ${j.rows.length}건(${j.rows[0].title || j.rows[0].no} ${KINDS[j.rows[0].kind]}${j.rows[0].kind === 'qty' ? ' ' + j.rows[0].to + '권' : j.rows[0].kind === 'price' ? ' ' + j.rows[0].to + '원' : ''}${j.rows.length > 1 ? ' 외' : ''})`); o.kick(300); return { code: 200, body: { ok: true, took: j.id } }; }
   function ack(ids) { for (const id of Array.isArray(ids) ? ids.map(String) : []) delete R.q.res[id]; saveQ(); return { ok: true }; }
   function resume(by) { const was = R.rec.stop; R.rec.stop = null; saveRec(); if (was) note(`▶ 예스24 쓰기 이어 감 — ${String(by || '').slice(0, 40)}`); o.kick(300); return { ok: true, was: !!was }; }
   const why0 = () => banPc() || (!o.enabled() ? '예스24 읽기 꺼짐' : R.rec.stop ? '⛔ 멈춤 — ' + R.rec.stop.why : o.login() !== 'ok' ? '예스24 로그인 기다림(누르기 전)' : o.holdOn() ? '🚚 출고 중 — 끝나면 이어감(약속 0-1)' : '');
@@ -102,24 +125,40 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
   function dialog(p) { const m = String(p.message || '').replace(/\s+/g, ' ').slice(0, 160); R.dlg.push(m); if (p.type === 'alert') return true; if (R.phase === 'qty') return /저장|수정/.test(m) && !BAD_DLG.test(m); if (R.phase === 'state') return /변경|판매\s*중|상태/.test(m) && !BAD_DLG.test(m); return false; }
   /* 화면을 열고 검색 → 우리 줄 찾기 (읽기만) — { login } | { err } | { hit, same, n } */
   async function look(r) { await o.nav(o.BASE + PG + '?t=' + now(), 30); if (o.isLoginSt(await o.ev(o.JS_STATE))) return { login: true }; await sleep(1500 * SC);
-    const t0 = now(); const s = await o.ev(JS_SEARCH(r.self)); if (s && s.login) return { login: true }; if (!s || !s.ok) return { err: (s && s.why) || '검색 칸을 못 채움', shape: true };
+    const t0 = now(); const s = await o.ev(r.self ? JS_SEARCH(r.self, 5) : /^\d{10,13}$/.test(String(r.isbn || '')) ? JS_SEARCH(r.isbn, 3) : JS_SEARCH(String(r.q || '').slice(0, 40), 0)); if (s && s.login) return { login: true }; if (!s || !s.ok) return { err: (s && s.why) || '검색 칸을 못 채움', shape: true };
     for (let k = 0; k < 60 && !(o.Y.plAt > t0); k++) await sleep(250); await sleep(900 * SC);
     let f = null; for (let k = 0; k < 40; k++) { f = await o.ev(JS_FIND(r.no, r.self)); if (f && !f.busy) break; await sleep(300); }
     if (!f || f.busy) return { err: '등록상품 목록이 다 그려지지 않음' }; if (!f.ok) return { err: f.why, shape: !!f.nogv }; if (!(o.Y.plAt > t0)) return { err: '[조회] 뒤 등록상품 목록 응답을 못 봄' }; return f; }
-  const vOf = (h) => (h ? { qty: h.qty, st: h.st, stNm: h.stNm } : null);
-  const vTxt = (v) => (v ? `${v.stNm || v.st || '?'}·${v.qty == null ? '?' : v.qty}권` : '?');
+  const vOf = (h) => (h ? { qty: h.qty, st: h.st, stNm: h.stNm, price: h.price == null ? null : +h.price } : null);
+  const vTxt = (v) => (v ? `${v.stNm || v.st || '?'}·${v.qty == null ? '?' : v.qty}권${v.price != null ? '·' + v.price + '원' : ''}` : '?');
   /* 줄 하나 — 돌려줌 { state: done|already|fail|unsure|login, pre, msg, todo, before, after } */
-  async function rowRun(j, r) { const what = r.kind === 'qty' ? `수량 ${r.to}권` : KINDS[r.kind]; j.step = `${r.no} 찾는 중`;
+  /* (11/11 led2b) 자체코드 채우기 — 수량·판매중지가 끝난(done·already) 자체코드 없는 줄만 · 실패해도 앞 결과는 그대로(까닭만 붙음) · 저장 뒤 자체코드로 다시 조회해 확인 */
+  async function fillSelf(j, r) { if (o.holdOn()) return { state: 'skip', msg: '🚚 출고 중이 되어 자체코드 채우기는 건너뜀' }; j.step = `${r.no} 자체코드 칸 채우는 중`;
+    const a = await look({ ...r, self: '' }); if (a.login || a.err || !a.hit || a.hit.length !== 1) return { state: 'skip', msg: `자체코드 채우기 건너뜀 — 줄을 하나로 다시 못 찾음${a.err ? '(' + a.err + ')' : ''}` };
+    const h = a.hit[0]; if (sp(h.self).includes(r.fill)) return { state: 'already', msg: `자체코드 ${r.fill} 이미 있음` }; if (sp(h.self).length) return { state: 'skip', msg: `자체코드가 이미 ${h.self}라 채우지 않음` };
+    if (!h.kS) return { state: 'skip', msg: "등록상품 표에 '판매자상품코드' 칸이 없어 자체코드 채우기는 건너뜀" };
+    const e = await o.ev(JS_SELF(h.r, h.kS, r.fill)); if (!e || !e.ok) return { state: 'skip', msg: `${(e && e.why) || "'판매자상품코드' 칸을 못 고침"} — 자체코드 채우기는 건너뜀(저장 안 함)` };
+    await sleep(800 * SC); R.dlg = []; R.phase = 'qty'; j.step = `${r.no} 자체코드 [수정항목 저장] 누름`; const c = await o.ev(JS_BTN('수정항목 저장')); if (!c || !c.ok) { R.phase = ''; return { state: 'skip', msg: `${(c && c.why) || '[수정항목 저장]을 못 누름'} — 자체코드는 그대로` }; }
+    await sleep(2500 * SC); R.phase = ''; j.step = `${r.no} 자체코드 확인`; let b = null; try { b = await look({ ...r, self: r.fill }); } catch (er) { b = null; }
+    if (b && b.hit && b.hit.length === 1) return { state: 'done', msg: `자체코드 ${r.fill} 채움(등록상품 목록에서 확인 — 다음부터 바로 짝지어짐)` };
+    return { state: 'unsure', msg: `자체코드 저장은 눌렀지만 목록에서 확인 못 함${R.dlg.length ? ' — 예스24 알림: ' + R.dlg.slice(-1)[0] : ''}` }; }
+  async function rowRun(j, r) { const x = await rowMain(j, r); if (r.fill && !r.self && !r._has && (x.state === 'done' || x.state === 'already')) { let f; try { f = await fillSelf(j, r); } catch (e) { R.phase = ''; f = { state: 'skip', msg: '자체코드 채우기 오류 — ' + String(e.message || e).slice(0, 100) }; } x.fill = f; x.msg = `${x.msg || ''} · ${f.msg}`; } return x; }
+  async function rowMain(j, r) { const what = r.kind === 'qty' ? `수량 ${r.to}권` : r.kind === 'price' ? `판매가 ${r.to}원` : KINDS[r.kind]; j.step = `${r.no} 찾는 중`;
     const a = await look(r); if (a.login) return { state: 'login' }; if (a.err) return { state: 'fail', pre: true, msg: `${a.err} — 아무것도 누르지 않음`, todo: a.shape ? '예스24 등록상품 관리 화면 모양이 바뀌었을 수 있음 — 손으로 고친 뒤 「✓ 예스24에서 고쳤음」 · 리드나우 방에 알려 주세요' : '잠시 뒤 다시 맡기기 · 안 되면 손으로' };
-    if (!a.hit.length) return { state: 'fail', pre: true, gone: true, msg: `예스24 등록상품 목록에서 상품번호 ${r.no}·자체코드 ${r.self} 줄을 못 찾음(같은 자체코드 ${a.same}줄) — 아무것도 누르지 않음`, todo: '예스24 판매관리에서 그 상품이 지워졌거나 자체코드가 다른지 보고 손으로' };
+    if (!a.hit.length) return { state: 'fail', pre: true, gone: true, msg: r.self ? `예스24 등록상품 목록에서 상품번호 ${r.no}·자체코드 ${r.self} 줄을 못 찾음(같은 자체코드 ${a.same}줄) — 아무것도 누르지 않음` : `예스24 등록상품 목록에서 상품번호 ${r.no} 줄을 못 찾음(${r.isbn ? 'ISBN ' + r.isbn : '제목'}으로 조회 ${a.n}줄) — 아무것도 누르지 않음`, todo: '예스24 판매관리에서 그 상품이 지워졌거나 자체코드가 다른지 보고 손으로' };
     if (a.hit.length > 1) return { state: 'fail', pre: true, msg: `같은 상품번호·자체코드 줄이 ${a.hit.length}개 — 아무것도 누르지 않음`, todo: '예스24 판매관리에서 손으로' };
     const h = a.hit[0]; const before = vOf(h);
+    if (!r.self) { const hs = sp(h.self); if (hs.length && !(r.fill && hs.includes(r.fill))) return { state: 'fail', pre: true, msg: `예스24 ${r.no}의 자체코드가 이미 ${h.self} — 장부가 이은 실물(${r.fill || '?'})과 달라 아무것도 누르지 않음`, before, todo: '🔗 연결 표에서 이 예스24 상품의 짝을 확인한 뒤 손으로' }; r._has = hs.length > 0; }
     if (isDone(r, before)) return { state: 'already', msg: `이미 ${what}(${vTxt(before)}) — 아무것도 누르지 않음`, before, after: before };
     if (r.kind === 'qty' && h.st !== '02') return { state: 'fail', pre: true, msg: `판매중이 아닌 상품(${h.stNm || h.st})의 수량은 바꾸지 않음 — 아무것도 누르지 않음`, before, todo: '예스24 판매관리에서 상태를 보고 손으로' };
+    if (r.kind === 'price') { if (h.st !== '02') return { state: 'fail', pre: true, msg: `판매중이 아닌 상품(${h.stNm || h.st})의 판매가는 바꾸지 않음 — 아무것도 누르지 않음`, before, todo: '예스24 판매관리에서 상태를 보고 손으로' };
+      if (!h.kP || h.price == null) return { state: 'fail', pre: true, msg: '등록상품 목록에서 판매가 칸을 못 찾음 — 아무것도 누르지 않음', before, todo: '예스24 판매관리 › 등록상품 관리에서 손으로 판매가를 고친 뒤 「✓ 예스24에서 고쳤음」 · 리드나우 방에 알려 주세요(칸 이름 확인)' };
+      if (h.price > 0 && Math.abs(r.to - h.price) / h.price > PRICE_JUMP) return { state: 'fail', pre: true, msg: `지금 ${h.price}원 → ${r.to}원은 ${Math.round(PRICE_JUMP * 100)}% 넘게 바뀜 — 잘못 친 값일 수 있어 누르지 않음`, before, todo: '값이 맞으면 예스24 판매관리에서 손으로 · 아니면 웹앱에서 값을 고쳐 다시 맡기기' }; }
     if (r.kind === 'start' && !/^(08)$/.test(h.st)) return { state: 'fail', pre: true, msg: `판매중지가 아닌 상품(${h.stNm || h.st})은 다시 열지 않음 — 아무것도 누르지 않음`, before, todo: '예스24 판매관리에서 손으로' };
     if (r.kind === 'stop' && h.st !== '02') return { state: 'fail', pre: true, msg: `판매중이 아닌 상품(${h.stNm || h.st})은 판매중지로 바꾸지 않음 — 아무것도 누르지 않음`, before, todo: '예스24 판매관리에서 상태를 보고 손으로' };
     if (o.holdOn()) return { state: 'hold' }; R.dlg = [];
-    if (r.kind === 'qty') { j.step = `${r.no} 재고수량 칸 고치는 중`; const e = await o.ev(JS_QTY(h.r, h.kQ, r.to)); if (!e || !e.ok) return { state: 'fail', pre: true, msg: `${(e && e.why) || '재고수량 칸을 못 고침'} — 저장하지 않음`, before, todo: '예스24 판매관리에서 손으로 고친 뒤 「✓ 예스24에서 고쳤음」' };
+    if (r.kind === 'qty' || r.kind === 'price') { const pr = r.kind === 'price'; j.step = `${r.no} ${pr ? '판매가' : '재고수량'} 칸 고치는 중`; const e = await o.ev(pr ? JS_PRICE(h.r, h.kP, r.to) : JS_QTY(h.r, h.kQ, r.to));
+      if (pr && e && e.lock) return { state: 'fail', pre: true, lock: true, msg: '등록상품 관리 표에서 판매가 칸을 고칠 수 없게 돼 있음 — 아무것도 누르지 않음', before, todo: '예스24 판매관리 › 등록상품 관리에서 그 상품을 열어 손으로 판매가를 고친 뒤 「✓ 예스24에서 고쳤음」(다른 길은 리드나우 방이 원문을 보고 만듦)' }; if (!e || !e.ok) return { state: 'fail', pre: true, msg: `${(e && e.why) || (pr ? '판매가' : '재고수량') + ' 칸을 못 고침'} — 저장하지 않음`, before, todo: '예스24 판매관리에서 손으로 고친 뒤 「✓ 예스24에서 고쳤음」' };
       await sleep(800 * SC); j.st = 'click'; j.at1 = r.rid; j.step = `${r.no} [수정항목 저장] 누름`; saveQ(); R.phase = 'qty'; const c = await o.ev(JS_BTN('수정항목 저장')); if (!c || !c.ok) { R.phase = ''; j.st = 'run'; saveQ(); return { state: 'fail', pre: true, msg: `${(c && c.why) || '[수정항목 저장]을 못 누름'} — 아무것도 저장되지 않음`, before, todo: '예스24 판매관리에서 손으로' }; } }
     else { j.step = `${r.no} 줄 고르는 중`; const c1 = await o.ev(JS_CHECK(h.r)); if (!c1 || !c1.ok) return { state: 'fail', pre: true, msg: `${(c1 && c1.why) || '줄을 못 고름'} — 아무것도 누르지 않음`, before, todo: '예스24 판매관리에서 손으로' };
       const c2 = await o.ev(JS_BTN('판매상태/기간 변경')); if (!c2 || !c2.ok) return { state: 'fail', pre: true, msg: `${(c2 && c2.why) || '[판매상태/기간 변경]을 못 누름'} — 아무것도 바뀌지 않음`, before, todo: '예스24 판매관리에서 손으로' };
@@ -150,4 +189,4 @@ function makeY24W(o) { const { HOME, note } = o; const now = () => Date.now(); c
     catch (e) { return end(j, { state: 'fail', rows, msg: '예스24 쓰기 오류 — ' + String(e.message || e).slice(0, 140) }); } }
   return { put, ack, resume, state, pick, once, cur, dialog, R };
 }
-module.exports = { makeY24W, checkJob, isDone, KINDS, ST_CODE, MAXN };
+module.exports = { makeY24W, checkJob, isDone, KINDS, ST_CODE, MAXN, PRICE_JUMP };

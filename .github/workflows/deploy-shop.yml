@@ -1,0 +1,41 @@
+# 🛍 우리숍 booksqueen.com 손님 화면을 Firebase Hosting 둘째 사이트에 냄 (11/11 shop1)
+#  · 관리 사이트(readnow-3a385 · readnow.kr)와 따로 — 이 사이트엔 shop/ 손님 화면만 · 검색 허용(noindex 없음)
+#  · 열쇠 없음: deploy-hosting과 같은 OIDC(gh-deployer · roles/firebasehosting.admin) · 사이트가 없으면 처음 한 번 만듦(돈 안 듦)
+#  · 사용자 지정 도메인 booksqueen.com 연결은 '사용자 지정 도메인' 작업(hosting-domain.yml)에 사이트 이름을 넣어 한 번
+name: 우리숍 내기 (Firebase Hosting 둘째 사이트)
+on:
+  push:
+    branches: [main]
+    paths: ['shop/**', 'hosting/shop.json', 'hosting/build-shop.js', 'hosting/site.js', 'hosting/deploy.js', '.github/workflows/deploy-shop.yml']
+  workflow_dispatch:
+concurrency: { group: deploy-shop, cancel-in-progress: true }
+permissions: { contents: read, id-token: write }
+env:
+  WIF: projects/63884079760/locations/global/workloadIdentityPools/github/providers/readnow-scripts
+  SA: gh-deployer@readnow-3a385.iam.gserviceaccount.com
+jobs:
+  shop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
+        with: { fetch-depth: 1 }
+      - name: 결과물 모으기
+        run: node hosting/build-shop.js
+      - id: auth
+        name: 구글 로그인 (열쇠 없이 OIDC)
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}', token_format: access_token }
+      - name: 사이트 있는지 보고 없으면 만들기
+        env: { HOSTING_TOKEN: '${{ steps.auth.outputs.access_token }}' }
+        run: node hosting/site.js
+      - name: 올리기 (바뀐 파일만)
+        env: { HOSTING_TOKEN: '${{ steps.auth.outputs.access_token }}', HOSTING_CONF: hosting/shop.json }
+        run: |
+          SITE=$(node -e "console.log(require('./hosting/shop.json').site)")
+          node hosting/deploy.js .hosting/shop "$SITE"
+      - name: 올라간 것 확인
+        run: |
+          SITE=$(node -e "console.log(require('./hosting/shop.json').site)")
+          for i in 1 2 3 4 5 6; do GOT=$(curl -fsS "https://$SITE.web.app/hosting-stamp.json?t=$(date +%s)" | python3 -c "import json,sys;print(json.load(sys.stdin).get('commit',''))" 2>/dev/null || true); [ "$GOT" = "$GITHUB_SHA" ] && break; sleep 5; done
+          if [ "$GOT" = "$GITHUB_SHA" ]; then echo "### 🛍 우리숍 ${GITHUB_SHA::7} 올라감 — https://$SITE.web.app" >> "$GITHUB_STEP_SUMMARY"; else echo "::warning::우리숍 사이트에 이 커밋이 아직 안 보임"; fi

@@ -4,14 +4,16 @@
 //        · 일괄(고른 줄) 두 번 · 예스24 = 판매관리 바로 가기 + ✓ 고쳤음(두 번) · 로거 PC는 맡기지 않음
 //        · (11/11 y24w) 🟦 예스24 맡기기 두 번 → 이 PC 번외(가짜 127.0.0.1:8797) /y24/w/put 1건(상품번호·자체코드·판매중지·할 일 열쇠) · ⏳ 고치는 중 · 결과 done → ack · 처리할 일에서 빠짐
 //          · 실패면 까닭·할 일 + 단추 다시 · 멈춤이면 [▶ 예스24 쓰기 이어 가기](두 번) · MJ-MAIN·번외 없는 기기는 맡기지 않음
+//        · (11/11 led2b · 정범님 '여기서 바로 예스24 수량 조절·판매중지') 자체코드 없는 예스24 줄도 장부가 이은 예스24 상품이 꼭 하나면 🟦 맡기기 단추(번호로 찾고 자체코드 칸에 우리 SKU 채움 맡김)
+//          · 같은 ISBN 예스24 상품이 여럿이면 그 자리 '어느 상품인지 고르기' → 고른 상품으로 맡기기 · 보이는 줄 모두 고르기 → 고른 줄 예스24 맡기기에 자체코드 없는 줄도 · 로그인 풀림 = 🔐 로그인 기다림(맡김은 그대로)
 //        · 재고 품목 🗑 한 번 = 무장(대상 표시) · 0.4초 안 겹누름 무시 · 4초 안 다시 = regDel 1건 · 검토 판·입력 칸 없음 · 여러 개 검토 판도 입력 칸 없이 확인 단추 두 번
 // 실행: pw/ 안(harness.js·seed.js 옆) RN_PORT=<포트> node tLED1111.js · 시험 자료에 손님 정보 없음
 const fs = require('fs'); const path = require('path');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 600)); } else console.log('  ✓', m); };
 const APP = process.env.RN_APP || [path.resolve(__dirname, '..', 'app.html'), path.resolve(__dirname, '..', '..', 'src', 'app.html')].find((x) => fs.existsSync(x));
 const T = fs.readFileSync(APP, 'utf8'); const cut = (a, b) => { const i = T.indexOf(a); const j = T.indexOf(b); if (i < 0 || j < i) throw new Error('덩어리 못 찾음: ' + a); return T.slice(i, j); };
-const F = new Function(cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + '\nreturn { ledBuild, ledTodo, ledAlCh, MC_DAYS };')();
-const FW = new Function('ledGuard', 'deviceName', 'localStorage', 'S', cut('/* (11/11 y24w) 🟦 예스24 맡기기 — 이 기기 기록', '/* 맡김 — 돌려줌') + '\nreturn { ledY24Row, ledY24Guard };');
+const F = new Function(cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + '\nreturn { ledBuild, ledTodo, ledAlCh, MC_DAYS, ledY24One, omniPick };')();
+const FW = new Function('ledGuard', 'deviceName', 'localStorage', 'S', 'ledY24One', cut('/* (11/11 y24w) 🟦 예스24 맡기기 — 이 기기 기록', '/* 맡김 — 돌려줌') + '\nreturn { ledY24Row, ledY24Guard, ledY24Can };');
 console.log('① 순수 셈');
 const INP = (o) => ({ now: '2026-11-11T03:00:00Z', days: 30,
   al: [{ id: 'aladin_U1', title: '책1', isbn: '9788900000001', grade: '상', price: 8000, qty: 1, live: true, st: '판매중', skus: ['S1'] }, { id: 'aladin_U2', title: '책2', isbn: '9788900000002', grade: '중', price: 5000, qty: 3, live: true, st: '판매중', skus: ['S2a', 'S2b', 'S2c'] }, { id: 'aladin_U3', title: '책3', price: 3000, qty: 1, live: true, st: '판매중', skus: ['S3'] }],
@@ -26,10 +28,23 @@ const INP = (o) => ({ now: '2026-11-11T03:00:00Z', days: 30,
   const V3 = F.ledBuild(INP({ ord: INP().ord.concat([{ ch: 'aladin', no: 'o9', at: '2026-11-10T00:00:00Z', amt: 8000, lines: [{ lid: 'aladin_U1', qty: 1, amt: 8000 }] }]) })); const t3 = F.ledTodo(V3).find((x) => x.key === 'S1'); ok(t3 && t3.over, '⛔ 과판매(동시 주문)도 처리할 일에');
   { const y = TD.find((x) => x.key === 'S3') || null; void y; const V4 = F.ledBuild(INP({ ord: INP().ord.concat([{ ch: 'aladin', no: 'o7', at: '2026-11-10T00:00:00Z', amt: 3000, lines: [{ lid: 'aladin_U3', qty: 1, amt: 3000 }] }]) })); const t4 = F.ledTodo(V4).find((x) => x.key === 'S3'); const ay = t4 && t4.acts.find((a) => a.ch === 'yes24');
     ok(ay && ay.no === '903' && ay.self === 'S3' && ay.k === 'down', '(y24w) 알라딘에서 팔림 → 예스24 할 일에 상품번호·자체코드(SKU)', t4 && t4.acts);
-    const mem = {}; const LS = { getItem: (k) => (k in mem ? mem[k] : null), setItem: (k, v) => (mem[k] = String(v)) }; let dev = 'HOME'; const W = FW(() => '', () => dev, LS, {});
+    const mem = {}; const LS = { getItem: (k) => (k in mem ? mem[k] : null), setItem: (k, v) => (mem[k] = String(v)) }; let dev = 'HOME'; const W = FW(() => '', () => dev, LS, {}, F.ledY24One);
     const r1 = W.ledY24Row(t4, ay); ok(r1.kind === 'stop' && r1.to === null && r1.no === '903' && r1.self === 'S3' && r1.rid === 'S3|903' && /^S3\|903\|stop\|\|20261110/.test(r1.rk), '(y24w) 맡길 줄 = 상품번호·자체코드·판매중지 · 할 일 열쇠(줄+할 일+값+마지막 주문 시각)', r1);
     const r2 = W.ledY24Row({ ...t4, last: '2026-11-11T00:00:00Z' }, { ...ay, k: 'qty', to: 2 }); ok(r2.kind === 'qty' && r2.to === 2 && r2.rk !== r1.rk, '(y24w) 수량이면 qty·고칠 값 · 새로 팔리면 새 열쇠(같은 할 일만 되풀이 0)', r2);
     ok(/번외 수집기가 없음/.test(W.ledY24Guard()) && (LS.setItem('rn-c2seen', '1'), W.ledY24Guard() === '') && ((dev = 'MJ-MAIN'), /MJ-MAIN/.test(W.ledY24Guard())), '(y24w) 번외 없는 기기·MJ-MAIN은 맡기지 않음'); }
+  { /* (11/11 led2b) 정범님 화면 그대로 — 실물 3권(SKU 3개)·현금으로 2권 팔림 → 남은 1권 · 예스24 지금 2권(자체코드 없음 · ISBN으로 이은 상품 하나) → 1권 */
+    const mem = {}; const LS = { getItem: (k) => (k in mem ? mem[k] : null), setItem: (k, v) => (mem[k] = String(v)) }; const W = FW(() => '', () => 'HOME', LS, {}, F.ledY24One);
+    const I5 = { now: '2026-11-11T06:00:00Z', days: 30, al: [{ id: 'aladin_H1', title: '핫 시험 책', isbn: '9788900000301', grade: '상', price: 9000, qty: 3, live: true, st: '판매중', skus: ['PNKt0301EX', 'PNKt0302EX', 'PNKt0303EX'] }],
+      y24: [{ no: '3010001', title: '핫 시험 책', isbn: '9788900000301', grade: '상', price: 9500, stock: 2, live: true, self: '', alIds: ['aladin_H1'], flags: [] }],
+      ord: [{ ch: 'cash', no: 'c1', at: '2026-11-11T02:00:00Z', amt: 9000, lines: [{ lid: 'aladin_H1', qty: 2 }] }] };
+    const T5 = F.ledTodo(F.ledBuild(I5)).find((x) => x.key === 'PNKt0301EX'); const a5 = T5 && T5.acts.find((a) => a.ch === 'yes24'); const R5 = a5 && W.ledY24Row(T5, a5);
+    ok(T5 && T5.P === 3 && T5.rem === 1 && a5 && a5.k === 'qty' && a5.to === 1 && a5.cur === 2 && !a5.self && a5.how === 'pick' && a5.cands.length === 1, '(led2b) 실물 3권·남은 1권 · 예스24 지금 2권 → 1권 — 자체코드 없음 · 장부가 이은 예스24 상품 하나', { T5, a5 });
+    ok(R5 && R5.mode === 'fill' && R5.no === '3010001' && R5.self === '' && R5.fill === 'PNKt0301EX' && R5.isbn === '9788900000301' && R5.kind === 'qty' && R5.to === 1 && W.ledY24Can(R5) && R5.rid === 'PNKt0301EX|3010001', '(led2b) 맡길 줄 = 예스24 상품 번호로 · 자체코드 칸에 우리 SKU 채움 · ISBN으로 찾음', R5);
+    const P5 = F.omniPick([T5], { from: '2026-11-11T01:00:00Z' }); ok(P5.some((p) => p.a.ch === 'yes24'), '(led2b) 🤖 자동 내림도 같은 규칙 — 하나로 정해지면 자동', P5.map((p) => p.a.ch));
+    const I6 = { ...I5, y24: I5.y24.concat([{ no: '3010002', title: '핫 시험 책', isbn: '9788900000301', grade: '상', price: 9800, stock: 1, live: true, self: '', alIds: ['aladin_H1'], flags: [] }]) }; const T6 = F.ledTodo(F.ledBuild(I6)).find((x) => x.key === 'PNKt0301EX'); const a6 = T6.acts.find((a) => a.ch === 'yes24'); const R6 = W.ledY24Row(T6, a6);
+    ok(R6.mode === 'pick' && !W.ledY24Can(R6) && /2개/.test(R6.why) && !F.omniPick([T6], { from: '2026-11-11T01:00:00Z' }).some((p) => p.a.ch === 'yes24'), '(led2b) 같은 ISBN 예스24 상품이 둘 = 하나로 못 정함 → 고르기(맡기기·자동 안 함)', R6);
+    LS.setItem('rn-led-y24pk', JSON.stringify({ PNKt0301EX: { no: '3010002', at: Date.now() } })); const R7 = W.ledY24Row(T6, a6, { PNKt0301EX: '3010002' });
+    ok(R7.mode === 'fill' && R7.no === '3010002' && R7.rid === 'PNKt0301EX|' + a6.no && W.ledY24Can(R7), '(led2b) 고르면 그 예스24 상품 번호로 맡김(줄 열쇠는 그대로)', R7); }
   ok(JSON.stringify(F.ledAlCh(0, 1)) === '{"state":"판매중지"}' && JSON.stringify(F.ledAlCh('2', 3)) === '{"qty":2}' && F.ledAlCh(3, 3) === null && F.ledAlCh(-1, 3) === null && F.ledAlCh('1.5', 3) === null && F.ledAlCh('', 3) === null && F.ledAlCh('x', 3) === null, '고친 값 → 0 = 판매중지 · 지금보다 적으면 수량 · 같음·음수·소수·빈칸은 맡기지 않음'); }
 console.log('③ 약속 44 — 글자 입력 확인');
 { ok(!/그대로 입력하세요/.test(T) && !/id="bdel_in"/.test(T), "웹앱에 '그대로 입력하세요' 글자 입력 확인 창이 없음");
@@ -74,7 +89,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   const C2 = { puts: [], acks: [], resumes: 0, res: {}, stop: null, wait: [] };
   await p.route(/127\.0\.0\.1:8797\//, async (rt) => { const u = new URL(rt.request().url()); let b = {}; try { b = JSON.parse(rt.request().postData() || '{}'); } catch (e) {} const J = (o, st) => rt.fulfill({ status: st || 200, contentType: 'application/json', body: JSON.stringify(o) });
     if (u.pathname === '/y24/w/put') { C2.puts.push(b); C2.wait = [{ id: b.id, n: b.rows.length, rids: b.rows.map((r) => r.rid) }]; return J({ ok: true, took: b.id }); }
-    if (u.pathname === '/y24/w/state') return J({ ok: true, ok1: 1, stop: C2.stop, wait: C2.wait, cur: null, res: C2.res, login: 'ok' });
+    if (u.pathname === '/y24/w/state') return J({ ok: true, ok1: 1, stop: C2.stop, wait: C2.wait, cur: null, res: C2.res, login: C2.login || 'ok', why: C2.why || null });
     if (u.pathname === '/y24/w/ack') { C2.acks.push(...(b.ids || [])); for (const id of b.ids || []) delete C2.res[id]; return J({ ok: true }); }
     if (u.pathname === '/y24/w/resume') { C2.resumes++; C2.stop = null; return J({ ok: true, was: true }); }
     return J({ ok: false }, 404); });
@@ -96,6 +111,37 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   ok(/확실하지 않음/.test(W4.td) && /할 일/.test(W4.td) && W4.go && W4.rb && C2.resumes === 1 && !W4.stop, "실패·확실하지 않음 = 줄에 까닭·할 일 + 맡기기 다시 · 멈춤 띠 [▶ 예스24 쓰기 이어 가기] 두 번 = 이어 감", { W4, res: C2.resumes });
   const W5 = await p.evaluate(async () => { const d0 = localStorage.getItem('rn-device'); localStorage.setItem('rn-device', 'MJ-MAIN'); const T = ledTodo(ledNow()).find((x) => x.key === 'SK14'); const why = await ledY24Go([{ T, a: T.acts.find((x) => x.ch === 'yes24') }]); if (d0 == null) localStorage.removeItem('rn-device'); else localStorage.setItem('rn-device', d0); return why; });
   ok(/MJ-MAIN/.test(W5) && C2.puts.length === 1, 'MJ-MAIN에서는 예스24 맡기기 안 함', W5);
+  /* (11/11 led2b) 자체코드 없는 예스24 줄 — 정범님 화면(실물 3권·남은 1권 · 예스24 지금 2권 → 1권)과 같은 꼴 · A = 이은 예스24 상품 하나 · B = 같은 ISBN 예스24 상품 둘(고르기) · C = 하나(판매중지) */
+  await p.evaluate(() => { localStorage.removeItem('rn-led-y24w'); localStorage.removeItem('rn-led-y24pk'); localStorage.removeItem('rn-led-y24mk'); S._y24wStop = null; S._y24wWhy = null;
+    window.ledNow = () => { const now = new Date().toISOString(); const t1 = new Date(Date.now() - 3600e3).toISOString();
+      const al = [{ id: 'aladin_H1', title: '핫 시험 책', isbn: '9788900000301', grade: '상', price: 9000, qty: 3, live: true, st: '판매중', skus: ['PNKt0301EX', 'PNKt0302EX', 'PNKt0303EX'] }, { id: 'aladin_H2', title: '둘 있는 시험 책', isbn: '9788900000302', grade: '중', price: 5000, qty: 1, live: true, st: '판매중', skus: ['PNKt0311EX'] }, { id: 'aladin_H3', title: '셋째 시험 책', isbn: '9788900000303', grade: '상', price: 4000, qty: 1, live: true, st: '판매중', skus: ['PNKt0321EX'] }];
+      const y24 = [{ no: '3010001', title: '핫 시험 책', isbn: '9788900000301', grade: '상', price: 9500, stock: 2, live: true, self: '', alIds: ['aladin_H1'], flags: [] }, { no: '3020001', title: '둘 있는 시험 책', isbn: '9788900000302', grade: '중', price: 5200, stock: 1, live: true, self: '', alIds: ['aladin_H2'], flags: [] }, { no: '3020002', title: '둘 있는 시험 책', isbn: '9788900000302', grade: '중', price: 5600, stock: 1, live: true, self: '', alIds: ['aladin_H2'], flags: [] }, { no: '3030001', title: '셋째 시험 책', isbn: '9788900000303', grade: '상', price: 4200, stock: 1, live: true, self: '', alIds: ['aladin_H3'], flags: [] }];
+      const ord = [{ ch: 'cash', no: 'c1', at: t1, amt: 9000, lines: [{ lid: 'aladin_H1', qty: 2 }] }, { ch: 'cash', no: 'c2', at: t1, amt: 5000, lines: [{ lid: 'aladin_H2', qty: 1 }] }, { ch: 'cash', no: 'c3', at: t1, amt: 4000, lines: [{ lid: 'aladin_H3', qty: 1 }] }];
+      return ledBuild({ al, y24, ord, reg: [], chs: ledChs(), days: 30, now }); };
+    S._led = null; S._ledSel = new Set(); ledRedraw(); });
+  await p.waitForTimeout(400);
+  const Z1 = await p.evaluate(() => { const sh = document.getElementById('sheet'); const td = [...sh.querySelectorAll('.ledtd')].map((x) => x.textContent).join('|'); const gA = sh.querySelector('[data-ledy24go="PNKt0301EX|3010001"]'), gC = sh.querySelector('[data-ledy24go="PNKt0321EX|3030001"]'); const pk = sh.querySelector('[data-ledy24pk]');
+    return { td, gA: gA && gA.textContent, gC: gC && gC.textContent, pk: pk && pk.dataset.ledy24pk, opts: pk ? [...pk.options].map((o) => o.value).filter(Boolean) : [], goB: !!sh.querySelector('[data-ledy24go^="PNKt0311EX|"]'), hand: /자체코드\(SKU\)가 없어 자동으로 못 찾음/.test(td), fill: /＋ 자체코드 PNKt0301EX 채움/.test(td) }; });
+  ok(Z1.gA && /🟦 예스24 3010001 수량 1로 맡기기/.test(Z1.gA) && Z1.fill && /예스24 지금 2권/.test(Z1.td) && !Z1.hand, "(led2b) 자체코드 없는 예스24 줄(실물 3권·남은 1권 · 예스24 지금 2권) = 「🟦 예스24 3010001 수량 1로 맡기기」 + '＋ 자체코드 채움' · '자동으로 못 찾음 — 손으로'가 없음", Z1);
+  ok(Z1.pk === 'PNKt0311EX|3020001' && Z1.opts.join() === '3020001,3020002' && !Z1.goB && Z1.gC && /판매중지 맡기기/.test(Z1.gC), '(led2b) 같은 ISBN 예스24 상품이 둘이면 그 자리 「어느 상품인지 고르기」(맡기기 단추 대신) · 하나면 판매중지 맡기기', Z1);
+  if (process.env.RN_SHOT2) { await p.locator('[data-ledy24pk]').scrollIntoViewIfNeeded(); await p.waitForTimeout(200); await p.screenshot({ path: process.env.RN_SHOT2 }); }
+  const nZ0 = C2.puts.length; C2.wait = []; await p.locator('[data-ledy24go="PNKt0301EX|3010001"]').click(); await p.waitForTimeout(500); const nZ1 = C2.puts.length; await p.locator('[data-ledy24go="PNKt0301EX|3010001"]').click(); await p.waitForTimeout(900);
+  const zr = (C2.puts[nZ0] || { rows: [] }).rows[0] || {};
+  ok(nZ1 === nZ0 && C2.puts.length === nZ0 + 1 && zr.no === '3010001' && zr.self === '' && zr.fill === 'PNKt0301EX' && zr.isbn === '9788900000301' && zr.kind === 'qty' && zr.to === 1 && zr.rid === 'PNKt0301EX|3010001', '(led2b) 두 번 = 번외에 맡김(예스24 상품 번호 · 자체코드 없음 → ISBN으로 찾기 · 자체코드 칸에 우리 SKU 채우기 · 수량 1)', zr);
+  await p.selectOption('[data-ledy24pk="PNKt0311EX|3020001"]', '3020002'); await p.waitForTimeout(700);
+  const Z2 = await p.evaluate(() => { const sh = document.getElementById('sheet'); const g = sh.querySelector('[data-ledy24go="PNKt0311EX|3020001"]'); return { g: g && g.textContent, pk: ledY24Pk(), sel: !!sh.querySelector('[data-ledy24pk]') }; });
+  ok(Z2.g && /3020002 판매중지 맡기기/.test(Z2.g) && Z2.pk.PNKt0311EX === '3020002' && !Z2.sel, '(led2b) 고르면 그 자리에서 고른 상품(3020002) 맡기기 단추 · 이 기기에 기억', Z2);
+  /* 보이는 줄 모두 고르기 → 고른 줄 예스24 맡기기(자체코드 없는 줄도) — A는 이미 맡김(진행 중)이라 빠짐 */
+  await p.locator('#led_selall').click(); await p.waitForTimeout(400); const nZ2 = C2.puts.length; C2.wait = [];
+  await p.locator('#led_bulky24go').click(); await p.waitForTimeout(500); const nZ3 = C2.puts.length; await p.locator('#led_bulky24go').click(); await p.waitForTimeout(900);
+  const zb = (C2.puts[nZ2] || { rows: [] }).rows; const nos = zb.map((r) => r.no).sort();
+  ok(nZ3 === nZ2 && C2.puts.length === nZ2 + 1 && nos.join() === '3020002,3030001' && zb.every((r) => r.self === '' && /^PNKt03[12]1EX$/.test(r.fill) && r.kind === 'stop'), "(led2b) '보이는 줄 모두 고르기' → 「🟦 고른 줄 예스24 맡기기」 두 번 = 자체코드 없는 줄도 한꺼번에(고른 상품 3020002 · 3030001)", zb);
+  /* 예스24 로그인이 풀림 → 맡김은 그대로 '🔐 로그인 기다림'(실패로 버리지 않음) */
+  C2.login = 'need'; C2.why = '예스24 로그인 기다림(누르기 전)'; C2.wait = [{ id: C2.puts[nZ0].id, n: 1, rids: ['PNKt0301EX|3010001'] }, { id: C2.puts[nZ2].id, n: 2, rids: zb.map((r) => r.rid) }];
+  const Z3 = await p.evaluate(async () => { await ledY24WPoll(); S._led = null; ledRedraw(); await new Promise((r) => setTimeout(r, 300)); const td = [...document.querySelectorAll('#sheet .ledtd')].map((x) => x.textContent).join('|'); const w = ledY24W(); return { td, st: Object.values(w).map((x) => x.st) }; });
+  ok(/🔐 예스24 로그인 기다림/.test(Z3.td) && /풀리면 이어 감/.test(Z3.td) && Z3.st.length === 3 && Z3.st.every((s) => s === 'run'), "(led2b) 예스24 로그인이 풀려 있으면 맡긴 줄은 '🔐 로그인 기다림'으로 그대로(실패 아님)", Z3);
+  if (process.env.RN_SHOT) { await p.evaluate(() => { localStorage.removeItem('rn-led-y24w'); S._y24wWhy = null; S._led = null; ledRedraw(); }); await p.waitForTimeout(300); await p.screenshot({ path: process.env.RN_SHOT, fullPage: false }); }
+  C2.login = 'ok'; C2.why = null;
   /* 로거 PC는 맡기지 않음 */
   const LG = await p.evaluate(async () => { const d0 = localStorage.getItem('rn-device'); localStorage.setItem('rn-device', 'LOGGER'); const g = ledGuard(); const why = await ledAlGo('SK14', 0); if (d0 == null) localStorage.removeItem('rn-device'); else localStorage.setItem('rn-device', d0); return { g, why }; });
   ok(/약속 0/.test(LG.g) && /로거/.test(LG.why), '로거 PC에서는 맡기지 않음', LG);
