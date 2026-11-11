@@ -85,6 +85,9 @@ fieldset { border: 1px solid var(--line); border-radius: var(--r); background: v
 .bp-tx h1 { font-size: 22px; margin: 0 0 4px; line-height: 1.35; } .bp-tx .pr b { font-size: 24px; } .bp-tx .pr s { color: var(--mut); margin-left: 6px; } .bp-tx .pr em { color: var(--red); font-style: normal; font-weight: 700; margin-left: 4px; }
 .bp .stt { padding: 8px 10px; border-radius: 8px; background: rgba(31, 111, 74, .1); } .bp .stt.st-o { background: rgba(201, 162, 74, .18); } .bp .stt.st-x { background: rgba(176, 50, 42, .12); color: var(--red); }
 .bp .bk.sold img { filter: grayscale(.8); opacity: .75; }
+/* (11/11 shop4) 🆕 새로 들어온 책 — 첫 화면 '오늘 N권 새로' · 책마다 들어온 날 */
+h2 #nwh { flex: 1; margin-left: 8px; } .fresh { display: inline-block; font-size: 12.5px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--gold); color: #1d2b45; vertical-align: middle; } .fresh.wk { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+.card .nw { position: absolute; right: 6px; bottom: 6px; background: rgba(255,255,255,.92); color: #1d2b45; font-size: 11.5px; font-weight: 600; padding: 1px 7px; border-radius: 6px; } .card .nw.td { background: var(--gold); font-weight: 800; }
 /* (11/11 shelf1) 📚 서가 책장 기다림 · ♡ 찜 목록 */
 .bqs-wait { padding: 60px 0; text-align: center; color: var(--mut); }
 .wcard { display: flex; flex-direction: column; } .wcard .card { flex: 1; } .wact { display: flex; gap: 6px; margin-top: 6px; } .wact .btn { min-height: 38px; flex: 1; padding: 0 8px; font-size: 14px; } .wact .btn + .btn { flex: 0 0 44px; }

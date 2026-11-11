@@ -22,18 +22,30 @@
   const errBox = (e, again) => `<div class="err"><b>⚠ ${esc(e.message || e)}</b><button class="btn ghost" id="again">다시 해 보기</button></div>`;
   const bindAgain = (fn) => { const a = $('#again'); if (a) a.onclick = fn; };
   const gTag = (g) => (g ? `<span class="g g-${esc(g)}" title="${esc(B.gradeOf(g)[1])}">${esc(g)}</span>` : '');
-  const cardH = (x) => `<a class="card${x.st === 'o' ? ' held' : ''}" href="#/b/${encodeURIComponent(x.id)}"><div class="im">${x.im ? `<img loading="lazy" src="${esc(x.im)}" alt="">` : '<span class="noim">📕</span>'}${x.st === 'o' ? '<span class="hold">주문 중</span>' : ''}</div>
+  const newTag = (x, day) => { const w = x.st !== 'o' && day ? B.ago(x.d, day) : ''; return w ? `<span class="nw${w === '오늘' ? ' td' : ''}">${w === '오늘' ? '오늘 들어옴' : esc(w)}</span>` : ''; };
+  const cardH = (x, day) => `<a class="card${x.st === 'o' ? ' held' : ''}" href="#/b/${encodeURIComponent(x.id)}"><div class="im">${x.im ? `<img loading="lazy" src="${esc(x.im)}" alt="">` : '<span class="noim">📕</span>'}${x.st === 'o' ? '<span class="hold">주문 중</span>' : ''}${newTag(x, day)}</div>
     <div class="tx"><div class="t">${esc(x.t)}</div>${x.a ? `<div class="a">${esc(x.a)}</div>` : ''}<div class="pr">${gTag(x.g)}<b>${won(x.p)}</b>${B.offPct(x.p, x.lp) ? `<small class="off">${B.offPct(x.p, x.lp)}%</small>` : ''}</div></div></a>`;
   function closedBar(c) { if (c.open) return c.notice ? `<div class="bar info">📢 ${esc(c.notice)}</div>` : ''; return `<div class="bar wait">🛠 <b>곧 문을 엽니다</b> — 지금은 책을 둘러보실 수 있고, 주문은 문을 연 뒤에 받습니다.</div>`; }
   function searchBox(q) { return `<form class="search" id="sf" role="search"><input id="sq" type="search" enterkeyhint="search" placeholder="책 제목 · 지은이 · 출판사 · ISBN" value="${esc(q || '')}" aria-label="책 찾기"><button class="btn" aria-label="찾기">찾기</button></form>`; }
   function bindSearch() { const f = $('#sf'); if (f) f.onsubmit = (e) => { e.preventDefault(); const q = $('#sq').value.trim(); location.hash = '#/list?' + B.qs({ q }); }; }
 
+  /* (11/11 shop4) 🆕 새로 들어온 책 자동 갱신 — 성공 사례(AbeBooks 'Recently added'·Shopify 'New arrivals'·헌책 자사몰 '오늘 입고'):
+   *  첫 화면에 '오늘 N권 · 이번 주 N권' · 책마다 '오늘 들어옴/어제/N일 전' · 첫 화면을 띄워 둔 채면 5분마다(화면이 보일 때만) 조용히 다시 받아 새 책만 알림 */
+  const FR = { t: null, at: 0, items: null };
+  const freshHead = (L) => (L.today ? `<span class="fresh">오늘 ${L.today.toLocaleString('ko-KR')}권 새로</span>` : L.wk ? `<span class="fresh wk">이번 주 ${L.wk.toLocaleString('ko-KR')}권</span>` : '');
+  const newGrid = (L) => (L.items.length ? `<div class="grid">${L.items.slice(0, 12).map((x) => cardH(x, L.day)).join('')}</div>` : '<div class="empty">아직 올라온 책이 없습니다</div>');
+  async function freshPoll(force) { if (B.route(location.hash).name !== 'home' || document.hidden || !$('#nwg')) return; if (!force && Date.now() - FR.at < 4.5 * 60e3) return; FR.at = Date.now();
+    try { const L = await api('/shop/list?s=new'); if (B.route(location.hash).name !== 'home' || !$('#nwg')) return; const add = B.freshIds(FR.items, L.items.slice(0, 12)); FR.items = L.items.slice(0, 12);
+      $('#nwg').innerHTML = newGrid(L); const fh = $('#nwh'); if (fh) fh.innerHTML = freshHead(L); if (add.length) toast(`새 책 ${add.length}권이 들어왔습니다`); } catch (e) {} }
+  function freshArm() { clearInterval(FR.t); FR.t = setInterval(() => freshPoll(false), 5 * 60e3); }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) freshPoll(false); });
   async function home() { main().innerHTML = `<section class="hero"><h1>읽은 책, 다음 사람에게</h1><p>한 권 한 권 직접 살펴 등급을 매긴 헌책 — 사진 그대로 보내 드립니다.</p>${searchBox('')}</section><div id="hc">${loading(6)}</div>`; bindSearch();
     try { const [c, L] = await Promise.all([cfg(), api('/shop/list?s=new')]);
-      $('#hc').innerHTML = `${closedBar(c)}${(c.cats || []).length ? `<h2>분야</h2><div class="chips">${c.cats.slice(0, 16).map(([k, n]) => `<a class="chip" href="#/list?${B.qs({ c: k })}">${esc(k)} <small>${n}</small></a>`).join('')}</div>` : ''}
-        <h2>새로 들어온 책 <a class="more" href="#/list?s=new">전체 ${c.n != null ? c.n.toLocaleString('ko-KR') + '권' : ''} ›</a></h2>${L.items.length ? `<div class="grid">${L.items.slice(0, 12).map(cardH).join('')}</div>` : '<div class="empty">아직 올라온 책이 없습니다</div>'}
-        <section class="trust"><div>📷<b>실물 사진</b><small>받으실 그 책을 찍었습니다</small></div><div>🔎<b>등급 풀이</b><small>최상·상·중·하 — 책마다 표시</small></div><div>📦<b>한 권뿐</b><small>주문하면 바로 '주문 중'으로 잡아 둡니다</small></div></section>`; }
-    catch (e) { $('#hc').innerHTML = errBox(e); bindAgain(home); } }
+      if (!$('#hc')) return; $('#hc').innerHTML = `${closedBar(c)}${(c.cats || []).length ? `<h2>분야</h2><div class="chips">${c.cats.slice(0, 16).map(([k, n]) => `<a class="chip" href="#/list?${B.qs({ c: k })}">${esc(k)} <small>${n}</small></a>`).join('')}</div>` : ''}
+        <h2>새로 들어온 책 <span id="nwh">${freshHead(L)}</span><a class="more" href="#/list?s=new">전체 ${c.n != null ? c.n.toLocaleString('ko-KR') + '권' : ''} ›</a></h2><div id="nwg">${newGrid(L)}</div>
+        <section class="trust"><div>📷<b>실물 사진</b><small>받으실 그 책을 찍었습니다</small></div><div>🔎<b>등급 풀이</b><small>최상·상·중·하 — 책마다 표시</small></div><div>📦<b>한 권뿐</b><small>주문하면 바로 '주문 중'으로 잡아 둡니다</small></div></section>`;
+      FR.items = L.items.slice(0, 12); FR.at = Date.now(); freshArm(); }
+    catch (e) { if (!$('#hc')) return; $('#hc').innerHTML = errBox(e); bindAgain(home); } }
 
   async function list(q) { const p0 = { q: q.q || '', c: q.c || '', g: q.g || '', s: q.s || 'new' };
     main().innerHTML = `${searchBox(p0.q)}<div class="fl"><div class="chips sm">${['', '최상', '상', '중', '하'].map((g) => `<a class="chip${p0.g === g ? ' on' : ''}" href="#/list?${B.qs({ ...p0, g })}">${g || '모든 등급'}</a>`).join('')}</div>
@@ -41,15 +53,15 @@
       <div id="lh" class="lh">${p0.c ? `분야 <b>${esc(p0.c)}</b> <a href="#/list?${B.qs({ ...p0, c: '' })}">✕</a>` : ''}</div><div id="lg">${loading(8)}</div><div id="lm"></div>`; bindSearch();
     $('#srt').onchange = (e) => { location.hash = '#/list?' + B.qs({ ...p0, s: e.target.value }); };
     let page = 0; const grid = $('#lg');
-    const load = async () => { try { const r = await api('/shop/list?' + B.qs({ ...p0, p: page })); if (!page) grid.innerHTML = r.items.length ? `<div class="grid">${r.items.map(cardH).join('')}</div>` : `<div class="empty">찾는 책이 없습니다${p0.q ? ` — '${esc(p0.q)}'` : ''}<br><small>낱말을 줄이거나 다른 이름(지은이·출판사)으로 찾아 보세요</small></div>`;
-        else $('.grid', grid).insertAdjacentHTML('beforeend', r.items.map(cardH).join(''));
+    const load = async () => { try { const r = await api('/shop/list?' + B.qs({ ...p0, p: page })); if (!grid.isConnected) return; /* (shop4) 받는 사이 다른 화면으로 갔으면 그만(실제 점검: innerHTML null 오류) */ if (!page) grid.innerHTML = r.items.length ? `<div class="grid">${r.items.map((x) => cardH(x, r.day)).join('')}</div>` : `<div class="empty">찾는 책이 없습니다${p0.q ? ` — '${esc(p0.q)}'` : ''}<br><small>낱말을 줄이거나 다른 이름(지은이·출판사)으로 찾아 보세요</small></div>`;
+        else $('.grid', grid).insertAdjacentHTML('beforeend', r.items.map((x) => cardH(x, r.day)).join(''));
         $('#lh').innerHTML = `${p0.q ? `'${esc(p0.q)}' ` : ''}${p0.c ? `분야 <b>${esc(p0.c)}</b> <a href="#/list?${B.qs({ ...p0, c: '' })}" aria-label="분야 빼기">✕</a> ` : ''}<b>${r.total.toLocaleString('ko-KR')}</b>권`;
         $('#lm').innerHTML = r.more ? '<button class="btn ghost wide" id="more">더 보기</button>' : ''; const m = $('#more'); if (m) m.onclick = () => { page++; m.disabled = true; m.textContent = '불러오는 중…'; load(); }; }
-      catch (e) { if (!page) { grid.innerHTML = errBox(e); bindAgain(() => list(q)); } else { toast(e.message); $('#lm').innerHTML = '<button class="btn ghost wide" id="more">더 보기</button>'; $('#more').onclick = () => load(); } } };
+      catch (e) { if (!grid.isConnected) return; if (!page) { grid.innerHTML = errBox(e); bindAgain(() => list(q)); } else { toast(e.message); $('#lm').innerHTML = '<button class="btn ghost wide" id="more">더 보기</button>'; $('#more').onclick = () => load(); } } };
     load(); }
 
   async function item(id) { main().innerHTML = `<div class="det sk"><div class="gal"><div class="ph"></div></div><div class="info"><i></i><i></i><i></i></div></div>`;
-    try { const [c, r] = await Promise.all([cfg(), api('/shop/item?' + B.qs({ id }))]); const x = r.item; const pics = [x.im, ...(x.ph || [])].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i); const G = B.gradeOf(x.g); const off = B.offPct(x.p, x.lp); const inCart = cart().some((y) => y.id === x.id);
+    try { const [c, r] = await Promise.all([cfg(), api('/shop/item?' + B.qs({ id }))]); if (B.route(location.hash).arg !== id) return; const x = r.item; const pics = [x.im, ...(x.ph || [])].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i); const G = B.gradeOf(x.g); const off = B.offPct(x.p, x.lp); const inCart = cart().some((y) => y.id === x.id);
       document.title = x.t + ' — ' + (c.name || '북스퀸');
       main().innerHTML = `<div class="det"><div class="gal" id="gal">${pics.length ? pics.map((u, i) => `<div class="ph"><img src="${esc(u)}" alt="${i ? '실물 사진 ' + i : '표지'}" ${i ? 'loading="lazy"' : ''}></div>`).join('') : '<div class="ph"><span class="noim">📕</span></div>'}</div>${pics.length > 1 ? `<div class="dots">${pics.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}
         <div class="info"><h1>${esc(x.t)}</h1><div class="meta">${[x.a, x.pb, x.pd ? x.pd.replace('-', '년 ') + '월' : ''].filter(Boolean).map(esc).join(' · ')}</div>
@@ -97,7 +109,7 @@
         $('#oerr').hidden = false; $('#oerr').innerHTML = `<b>⚠ ${esc(er.message)}</b>${bad && bad.length ? `<ul>${bad.map((x) => `<li>${esc(x.t || (L.find((y) => y.id === x.id) || {}).t || x.id)} — ${esc(x.why)}</li>`).join('')}</ul><small>그 책은 장바구니에서 뺐습니다 — 나머지로 다시 주문해 주세요</small> <a href="#/cart">장바구니 보기</a>` : ''}`; } }; }
 
   async function done(no, q) { main().innerHTML = loading(2);
-    try { const o = await api('/shop/order?' + B.qs({ no, t: q.t })); const cxl = o.st === 'new';
+    try { const o = await api('/shop/order?' + B.qs({ no, t: q.t })); if (B.route(location.hash).arg !== no) return; const cxl = o.st === 'new';
       main().innerHTML = `<div class="done">${q.new ? '<div class="ok">✅ 주문을 받았습니다</div>' : ''}<h1 class="pt">주문 ${esc(o.no)}</h1><div class="stt st-${esc(o.st)}">${esc(o.stTxt)}</div>
         ${o.st === 'new' && o.pay && o.pay.how === 'bank' ? `<div class="bank"><div>입금하실 곳</div><b class="acct">${esc(o.pay.bank)} ${esc(o.pay.acct)}</b><div>예금주 ${esc(o.pay.holder)}</div><div class="amt">${won(o.total)}</div><small>${esc(String(o.due || '').slice(0, 10))}까지 · 입금자 ${esc(o.dep)} 이름으로 — 입금이 확인되면 포장해 보내 드립니다</small><button class="btn ghost" id="cp">계좌 번호 복사</button></div>` : o.st === 'new' ? '<div class="bank"><b>결제 안내 준비 중</b><small>가게에서 결제 방법을 연락드립니다</small></div>' : ''}
         ${o.inv ? `<div class="bank">🚚 ${esc(o.inv.courier || '택배')} <b>${esc(o.inv.no)}</b></div>` : ''}${o.cxl ? `<div class="hint">취소 까닭: ${esc(o.cxl)}</div>` : ''}
@@ -156,5 +168,8 @@
   cfg().then((c) => { const n = $('#navShelf'); if (n && c && c.shelf && c.shelf.on === false) n.hidden = true; }).catch(() => {});
   async function render() { const R = B.route(location.hash); document.title = (ST.cfg && ST.cfg.name) || '북스퀸 — 헌책방'; if (SHL.h) { SHL.h.destroy(); SHL.h = null; } document.body.classList.remove('shelf-on'); window.scrollTo(0, 0); $$('.nav a').forEach((a) => a.classList.toggle('on', a.dataset.r === R.name));
     if (R.name === 'shelf') return shelfPage(R.q); if (R.name === 'wish') return wishPage(); if (R.name === 'list') return list(R.q); if (R.name === 'b') return item(R.arg); if (R.name === 'cart') return cartPage(); if (R.name === 'order') return orderPage(); if (R.name === 'done') return done(R.arg, R.q); if (R.name === 'my') return my(); if (R.name === 'p') return policy(R.arg); return home(); }
+  /* (11/11 shop4) 사진이 안 열리면(실제 배포본 점검: Storage 작은 사진 *_t.webp가 ORB로 막힘) → 큰 사진으로 한 번 더 → 그래도 안 되면 📕 (깨진 그림 아이콘 0) */
+  document.addEventListener('error', (e) => { const i = e.target; if (!i || i.tagName !== 'IMG') return; const big = i.src.replace(/_t\.(webp|jpe?g|png)(?=\?|$)/i, '.$1');
+    if (!i.dataset.fb && big !== i.src) { i.dataset.fb = '1'; i.src = big; return; } if (i.dataset.fb === 'x') return; i.dataset.fb = 'x'; const n = document.createElement('span'); n.className = 'noim'; n.textContent = '📕'; i.replaceWith(n); }, true);
   window.addEventListener('hashchange', render); badge(); wishBadge(); foot(); cfg().catch(() => {}); render();
 })();
