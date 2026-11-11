@@ -2,15 +2,17 @@
 //   ① 순수 셈: 클라우드 창구(cloud/shop.js) 공개 요약·목록·주문 검사 · 손님 화면(shop/shop-core.js) 장바구니·주문서 · 웹앱 ◆shop 덩어리(설정·단계·장부 어댑터·출고 기록) · 통합 장부 내릴 일
 //   ② 클라우드 창구(가짜 Firestore + 진짜 http): 목록에 내부 값 없음 · 주문 → shop_orders·주문 중 · 같은 책 두 주문 0 · 조회 열쇠 · 손님 취소 · 닫힌 가게 · CORS
 //   ④ (11/11 shop2) 검색 노출(/b/<상품> HTML · schema.org Book/Offer · sitemap · 품절) · 다른 판매처 팔림 표(sold hold) · 메일 칸 · ✉ 손님 알림 글 틀·기록 · 🤖 자동 내림 이음 · 🔁 알라딘 다시 판매중 · Hosting 넘김 설정
+//   ⑤ (11/11 shop3) 🔁 입금 전 취소 → 다시 올릴 일(bqUpPlan) · ✅ 문 열기 전 점검표(bqChkRows · 클라우드 selfCheck 가짜 fetch·DNS) · 🤖 자동 내림 ↔ 우리숍 '주문 중' 두 번 0(출고로 보낸 뒤 할 일 열쇠 그대로) · 화면: ⚙ 맨 위 점검표 · 🛠 🔁 다시 올릴 일 카드(알라딘 판매중·예스24 판매재개 두 번) · 홈 알림
+//   ⑥ (11/11 shop4) 🆕 새로 들어온 책: 들어온 날(한국 날짜)·오늘 N권·이번 주 N권 · 손님 화면 '오늘 들어옴/어제/N일 전' · 첫 화면 5분 자동 갱신(가짜 시계)
 //   ③ 화면(RN_PORT · pw/ 안 harness.js 옆): 손님 화면(휴대폰 390px)으로 둘러보기 → 담기 → 주문서 빈 칸 알림 → 주문 → 입금 안내 · 웹앱 🛍 우리숍 주문(입금 확인 두 번 → 출고로 보내기 두 번 → 현금 기록 · 출고 칩) · 브라우저 창 0
 // 실행: node src/tests/tSHOP1111.js · 화면까지: RN_PORT=<웹앱·shop/을 내는 포트> node tSHOP1111.js (pw/ 안) · 화면 사진은 RN_SHOT 폴더 · 시험 자료에 실제 손님 정보 없음(손님A · 010-0000-0000)
 const fs = require('fs'); const path = require('path'); const http = require('http');
-let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } else console.log('  ✓', m); };
+let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 700)); } else console.log('  ✓', m); };
 const ROOTS = [path.resolve(__dirname, '..', '..'), path.resolve(__dirname, '..'), process.env.RN_REPO || ''].filter(Boolean);
 const find = (rel) => ROOTS.map((r) => path.join(r, rel)).find((x) => fs.existsSync(x));
 const SH = require(find('cloud/shop.js')); const BQ = require(find('shop/shop-core.js'));
 const APP = process.env.RN_APP || find('src/app.html') || find('app.html'); const T = fs.readFileSync(APP, 'utf8'); const cut = (a, b) => { const i = T.indexOf(a); const j = T.indexOf(b); if (i < 0 || j < i) throw new Error('덩어리 못 찾음: ' + a); return T.slice(i, j); };
-const F = new Function(cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + cut('/* ◆shop 시작', '/* ◆shop 끝 */') + '\nreturn { ledBuild, mcPlan, chList, ledTodo, omniPick, bqCfgOf, bqOpenNeed, bqStage, bqDueOver, bqLedOrds, bqCashDoc, BQ_DEF, BQ_MSG_DEF, bqMsgFill, bqMsgBytes, bqMsgPlan, bqMsgDue };')();
+const F = new Function(cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + cut('/* ◆shop 시작', '/* ◆shop 끝 */') + '\nreturn { ledY24One, omniRk, bqUpPlan, bqChkRows, bqLedAtOf, ledBuild, mcPlan, chList, ledTodo, omniPick, bqCfgOf, bqOpenNeed, bqStage, bqDueOver, bqLedOrds, bqCashDoc, BQ_DEF, BQ_MSG_DEF, bqMsgFill, bqMsgBytes, bqMsgPlan, bqMsgDue };')();
 const PH = '01000000000';
 (async () => {
 console.log('① 순수 셈');
@@ -73,6 +75,61 @@ console.log('①-2 (shop2) 검색 노출 · 알림 · 자동 내림 이음 — �
   const TD = F.ledTodo(V); const pk = F.omniPick(TD, { from: '2026-11-01T00:00:00Z' }); ok(TD.length === 1 && TD[0].from.join() === 'shop' && pk.some((x) => x.a.ch === 'aladin' && x.a.id === 'aladin_U1' && x.a.k === 'down') && pk.some((x) => x.a.ch === 'yes24' && x.a.no === '9001'), '🤖 자동 내림: 우리숍 주문 → 알라딘(상품 열쇠)·예스24(자체코드 = SKU) 판매중지를 고름');
   ok(!F.omniPick(TD, { from: '2026-11-10T01:00:00Z' }).length, '🤖 자동 내림: 켜기 전 우리숍 주문은 안 고름(사람이 🛠)'); }
 
+console.log('①-3 (shop3) 두 번 0 · 다시 올릴 일 · 문 열기 전 점검 — 순수 셈');
+{ /* 🤖 자동 내림 ↔ 우리숍 '주문 중' — 실제 main 덩어리(◆ledger·◆shop)로: 주문 접수 → 자동 내림 → 출고로 보냄(현금 기록) 뒤에도 같은 할 일을 다시 맡기지 않음 · 한 번만 셈 */
+  const T0 = '2026-11-11T01:00:00.000Z', FROM = '2026-11-11T00:00:00Z'; const it = { lid: 'aladin_U1', sku: 'S1', p: 8000, t: '시험 책' }; const o = { no: 'BQ20261111-AAAAA', at: T0, st: 'new', sum: 8000, shipFee: 3500, items: [it], buyer: { name: '손님A', phone: PH }, rcv: { name: '손님A', phone: PH, zip: '06000', addr1: '서울' } };
+  const AL = (live) => [{ id: 'aladin_U1', title: '시험 책', price: 8000, qty: 1, live, st: live ? '판매중' : '판매중지', skus: ['S1'] }]; const Y = (live) => [{ no: '9001', title: '시험 책', price: 9000, stock: 1, live, self: 'S1', flags: [] }];
+  const V1 = F.ledBuild({ now: '2026-11-11T01:05:00Z', days: 30, al: AL(true), y24: Y(true), ord: F.bqLedOrds([o], '2026-10-01') }); const TD1 = F.ledTodo(V1); const P1 = F.omniPick(TD1, { from: FROM }); const done = new Set(P1.map((x) => x.rk));
+  ok(P1.length === 2 && P1.every((x) => x.a.k === 'down') && TD1[0].sold === 1, '접수 → 🤖 자동 내림이 알라딘·예스24 판매중지 2건(한 번씩)', P1.map((x) => x.rk));
+  const o2 = { ...o, st: 'ship', paidAt: '2026-11-11T02:00:00Z', cashId: 'cash_shop_' + o.no }; const cd = F.bqCashDoc(o2, new Map([['aladin_U1', { id: 'aladin_U1', title: '시험 책', grade: '상', price: 8000, sku: 'S1', qty: 1 }]]), 'admin', '2026-11-11T02:00:00Z');
+  const ledCash = (at) => ({ ch: 'shop', no: cd.orderNo, at, amt: 8000, fee: 0, lines: [{ lid: 'aladin_U1', sku: 'S1', qty: 1, amt: 8000 }] });
+  const LO2 = F.bqLedOrds([o2], '2026-10-01').concat([ledCash(F.bqLedAtOf(cd, new Map([[o.no, o2]])))]); /* 알라딘은 이미 판매중지 · 예스24 목록은 아직 판매중(목록 읽기 늦음) */
+  const V2 = F.ledBuild({ now: '2026-11-11T02:05:00Z', days: 30, al: AL(false), y24: Y(true), ord: LO2 }); const TD2 = F.ledTodo(V2); const P2 = F.omniPick(TD2, { from: FROM, done });
+  ok(cd.shopAt === T0 && F.bqLedAtOf(cd) === T0 && F.bqLedAtOf({ ...cd, shopAt: null }, new Map([[o.no, o2]])) === T0 && F.bqLedAtOf({ orderedAt: 'x' }) === 'x', '현금 기록 장부 시각 = 우리숍 주문 시각(ISO) · 옛 기록은 우리숍 주문 Map에서', [cd.shopAt, cd.orderedAt]);
+  ok(V2.sum.shop.ord === 1 && TD2[0] && TD2[0].sold === 1 && !TD2[0].over && P2.length === 0, '출고로 보낸 뒤: 우리숍 주문 1건으로만 셈(과판매 0) · 🤖 자동 내림이 같은 예스24 판매중지를 다시 맡기지 않음', { ord: V2.sum.shop.ord, td: TD2.map((x) => [x.sold, x.over, x.last]), p2: P2.map((x) => x.rk) });
+  const Vold = F.ledBuild({ now: '2026-11-11T02:05:00Z', days: 30, al: AL(false), y24: Y(true), ord: F.bqLedOrds([o2], '2026-10-01').concat([ledCash(cd.orderedAt)]) }); const ya = (TD) => { const T = TD[0]; const a = T && T.acts.find((x) => x.ch === 'yes24'); return a ? F.omniRk(T, a) : null; }; const rk1 = P1.find((x) => x.a.ch === 'yes24').rk;
+  ok(ya(TD2) === rk1 && ya(F.ledTodo(Vold)) !== rk1 && F.ledTodo(Vold)[0].last === cd.orderedAt, '할 일 열쇠: 고친 뒤 = 접수 때와 같음(예스24 맡김 확인이 그대로 이어져 🛠에 다시 안 뜸) · (고치기 전 꼴) 현금 기록 한국 시각을 쓰면 열쇠가 바뀌어 같은 판매중지가 다시 할 일로 떴음', [rk1, ya(TD2), ya(F.ledTodo(Vold))]);
+  const y24o = { ch: 'yes24', no: 'Y1', at: '2026-11-11T01:30:00Z', amt: 9000, lines: [{ sku: 'S1', qty: 1 }] }; const V3 = F.ledBuild({ now: '2026-11-11T02:05:00Z', days: 30, al: AL(false), y24: Y(true), ord: LO2.concat([y24o]) }); const t3 = F.ledTodo(V3)[0];
+  ok(t3 && t3.over && t3.sold === 2 && t3.keep === 'shop', '같은 실물이 우리숍(먼저)·예스24에서 함께 팔림 = 진짜 과판매로만 보임(먼저 온 우리숍 주문 보냄)', t3); }
+{ const T0 = '2026-11-11T01:00:00.000Z'; const NOW = '2026-11-11T05:00:00Z'; const rowsOf = (o) => F.ledBuild({ now: NOW, days: 30, al: [{ id: 'aladin_U1', title: '시험 책', price: 8000, qty: 1, live: false, st: (o && o.ast) || '판매중지', skus: ['S1'] }], y24: [{ no: '9001', title: '시험 책', price: 9000, stock: 1, live: !!(o && o.ylive), self: 'S1', flags: [] }], ord: (o && o.ord) || [] }).rows;
+  const cx = { no: 'BQ20261111-CXCXC', at: T0, st: 'cancel', cxl: { at: '2026-11-11T03:00:00Z', why: '입금 기한이 지나 취소' }, items: [{ lid: 'aladin_U1', t: '시험 책' }] };
+  const LG = [{ key: 'S1', ch: 'aladin', k: 'down', to: 0, id: 'aladin_U1', from: 'shop', st: 'sent', at: '2026-11-11T01:01:00Z' }, { key: 'S1', ch: 'yes24', k: 'down', to: 0, no: '9001', self: 'S1', from: 'shop', st: 'sent', at: '2026-11-11T01:02:00Z' }];
+  const U = F.bqUpPlan({ ords: [cx], log: LG, rows: rowsOf(), now: NOW }); const u = U[0];
+  ok(U.length === 1 && u.key === 'S1' && u.no === cx.no && u.acts.map((a) => a.ch + ':' + a.k).join() === 'aladin:up,yes24:up' && u.acts[0].id === 'aladin_U1' && u.acts[1].no === '9001', '🔁 입금 전 취소 + 🤖 자동 내림이 내린 기록 → 알라딘·예스24 다시 올릴 일', U);
+  const one = F.ledY24One(u, u.acts[1]); ok(one.mode === 'self' && one.no === '9001' && one.self === 'S1', '예스24 다시 올릴 일 = 그 예스24 상품 하나(자체코드 S1 · 번외 판매재개로 맡김)', one);
+  ok(!F.bqUpPlan({ ords: [{ ...cx, paidAt: '2026-11-11T02:00:00Z' }], log: LG, rows: rowsOf(), now: NOW }).length && !F.bqUpPlan({ ords: [{ ...cx, cashId: 'c' }], log: LG, rows: rowsOf(), now: NOW }).length, '입금 확인 뒤 취소·출고로 보낸 주문은 빠짐(환불·반품 길)');
+  ok(!F.bqUpPlan({ ords: [{ ...cx, st: 'new' }], log: LG, rows: rowsOf(), now: NOW }).length && !F.bqUpPlan({ ords: [cx], log: LG.map((e) => ({ ...e, from: 'yes24' })), rows: rowsOf(), now: NOW }).length && !F.bqUpPlan({ ords: [cx], log: LG.map((e) => ({ ...e, st: 'fail' })), rows: rowsOf(), now: NOW }).length, '취소 아님·우리숍 때문에 내린 게 아님·맡기지 못한 기록이면 없음');
+  ok(!F.bqUpPlan({ ords: [cx], log: LG, rows: rowsOf({ ord: [{ ch: 'aladin', no: 'A1', at: '2026-11-11T02:00:00Z', amt: 8000, lines: [{ lid: 'aladin_U1', qty: 1 }] }] }), now: NOW }).length, '그 뒤 다른 판매처에서 팔렸으면 올리지 않음(실물이 나감)');
+  const u2 = F.bqUpPlan({ ords: [cx], log: LG, rows: rowsOf({ ast: '판매완료', ylive: true }), now: NOW }); ok(!u2.length, '알라딘이 판매완료(판매중지 아님)·예스24가 이미 판매중이면 할 일 없음', u2);
+  ok(!F.bqUpPlan({ ords: [cx], log: LG, rows: rowsOf(), now: '2026-11-15T05:00:00Z' }).length && !F.bqUpPlan({ ords: [cx], log: LG.map((e) => ({ ...e, at: '2026-11-11T00:30:00Z' })), rows: rowsOf(), now: NOW }).length, '취소 3일 넘음(자동 내림 기록 보관 밖) · 주문 전에 내린 기록은 빠짐');
+  const ck0 = F.bqChkRows(F.bqCfgOf({}), null, [], []); const st0 = Object.fromEntries(ck0.map((r) => [r.k, r.ok]));
+  ok(ck0.length === 9 && st0.biz === false && st0.bank === false && st0.mo === false && st0.dom === null && st0.cert === null && st0.test === false && ck0.every((r) => r.todo) && /정부24/.test(ck0.find((r) => r.k === 'mo').todo), '✅ 점검표 9줄: 빈 설정은 ✗ · 클라우드 점검 전엔 … · 줄마다 할 일·누르는 곳', st0);
+  const full = F.bqCfgOf({ bank: { name: '은행', acct: '1', holder: '가게' }, biz: { name: 'a', ceo: 'b', no: 'c', mo: 'd', addr: 'e', tel: 'f' } }); const K = { at: NOW, dom: { a: ['199.36.158.100'], txt: ['hosting-site=booksqueen'] }, https: { ok: true, st: 200 }, web: { ok: true }, sm: { ok: true }, b: { ok: true }, ph: { ok: true } };
+  const ck1 = F.bqChkRows(full, K, [cx], []); ok(ck1.every((r) => r.ok === true), '✅ 다 채우고 클라우드 점검 통과 · 테스트 주문 취소 · 다시 올릴 일 끝 = 모두 ✓', ck1.filter((r) => r.ok !== true));
+  const ck2 = Object.fromEntries(F.bqChkRows(full, { ...K, https: { ok: false, k: 'cert', why: '인증서가 아직' }, ph: { ok: false, why: 'Storage 규칙' }, sm: { ok: false, why: 'Cloud Run이 공개 호출을 막음' } }, [cx], U).map((r) => [r.k, r.ok]));
+  ok(ck2.dom === true && ck2.cert === false && ck2.ph === false && ck2.rw === false && ck2.test === false, '인증서만 아직 = 도메인 ✓·인증서 ✗ · 사진 막힘·넘김 403 ✗ · 다시 올릴 일 남으면 테스트 주문 ✗', ck2); }
+{ /* 클라우드 /shop-check — 가짜 fetch·DNS(바깥에 나가지 않음) */
+  const mk = (map) => async (u) => { const v = map(u); if (v instanceof Error) throw v; return { status: v.st, headers: { get: (h) => (h === 'content-type' ? v.ct || '' : '') }, text: async () => v.body || '' }; };
+  const e = (code) => Object.assign(new TypeError('fetch failed'), { cause: { code } }); const DN = (a) => ({ resolve4: async () => { if (!a) throw Object.assign(new Error('x'), { code: 'ENOTFOUND' }); return a; }, resolveTxt: async () => [['hosting-site=booksqueen']] });
+  const item = { id: 'aladin_U1', ph: ['https://firebasestorage.googleapis.com/v0/b/x/o/p%2F1.jpg?alt=media'] };
+  const r1 = await SH.selfCheck({ item, dns: DN(null), fetch: mk((u) => (/booksqueen\.com/.test(u) ? e('ENOTFOUND') : /robots/.test(u) ? { st: 200, body: 'Sitemap: x' } : /sitemap/.test(u) ? { st: 403 } : /booksqueen.*\/b\//.test(u) ? { st: 403 } : { st: 403 })) });
+  ok(r1.https.k === 'dns' && r1.web.ok && r1.base === 'https://booksqueen.web.app' && !r1.sm.ok && /공개 호출/.test(r1.sm.why) && /Storage/.test(r1.ph.why) && r1.dom.err, 'DNS 없음 → 도메인 ✗ · 사이트(web.app)로 넘김을 봄 · 403 = Cloud Run 공개 호출 막힘 · 사진 403 = Storage 규칙', r1);
+  const r2 = await SH.selfCheck({ item, dns: DN(['199.36.158.100']), fetch: mk((u) => (/booksqueen\.com\/robots/.test(u) ? e('ERR_TLS_CERT_ALTNAME_INVALID') : /robots/.test(u) ? { st: 200, body: 'Sitemap: x' } : /sitemap/.test(u) ? { st: 200, body: '<urlset>' } : /booksqueen.*\/b\//.test(u) ? { st: 200, body: 'ld+json schema.org' } : { st: 200, ct: 'image/jpeg' })) });
+  ok(r2.https.k === 'cert' && r2.sm.ok && r2.b.ok && r2.ph.ok && r2.dom.a[0] === '199.36.158.100' && r2.dom.txt.length === 1, 'DNS는 옴·인증서 아직 → 인증서 ✗ · 넘김·책 주소·사진 ✓', r2);
+  const r3 = await SH.selfCheck({ item: null, dns: DN(['1.1.1.1']), fetch: mk((u) => (/robots/.test(u) ? { st: 200, body: 'Sitemap: x' } : { st: 200, body: '<urlset>' })) }); ok(r3.https.ok && r3.base === 'https://booksqueen.com' && r3.b.ok === null && r3.ph.ok === null, '공개 책이 아직 없으면 책 주소·사진은 … (못 봄)', r3);
+  const ix = fs.readFileSync(find('cloud/index.js'), 'utf8'); ok(/path === '\/shop-check'\) \{ await authUser\(req\)/.test(ix), '클라우드 /shop-check = 관리자 로그인만');
+  ok(!/\b(alert|confirm|prompt)\s*\(/.test(cut('/* ══ (11/11 shop3) ✅ 문 열기 전 점검표', "PAGE_GUIDES['shopAdm']")), 'shop3 화면 코드에 브라우저 창 없음'); }
+
+console.log('①-4 (shop4) 🆕 새로 들어온 책 — 들어온 날·오늘 N권·자동 갱신 셈');
+{ const NOW = Date.parse('2026-11-11T03:00:00Z'); /* 한국 11/11 12시 */
+  const A = [{ id: 'n1', t: '오늘 책', p: 1000, at: '2026-11-10T16:30:00Z' }, { id: 'n2', t: '어제 책', p: 1000, at: '2026-11-10T02:00:00Z' }, { id: 'n3', t: '닷새 전', p: 1000, at: '2026-11-06T05:00:00Z' }, { id: 'n4', t: '열흘 전', p: 1000, at: '2026-11-01T05:00:00Z' }, { id: 'n5', t: '날 모름', p: 1000, at: null }];
+  ok(SH.kstDay('2026-11-10T16:30:00Z') === '2026-11-11' && SH.kstDay('2026-11-10T14:59:00Z') === '2026-11-10' && SH.kstDay(null) === null && SH.kstDay('엉터리') === null, '들어온 날 = 한국 날짜(15시 UTC 넘으면 다음 날)');
+  const r = SH.listItems(A, {}, null, null, NOW); ok(r.today === 1 && r.wk === 3 && r.day === '2026-11-11' && r.items[0].id === 'n1' && r.items[0].d === '2026-11-11' && r.items.find((x) => x.id === 'n5').d === null, "목록: 오늘 1권 · 이번 주(7일) 3권 · 책마다 d(날짜만 — 시각 없음)", r);
+  ok(!('at' in r.items[0]), '목록 칸에 정확한 등록 시각(at)은 그대로 안 보냄');
+  ok(SH.listItems(A, { q: '어제' }, null, null, NOW).today === 0 && SH.listItems(A, { q: '어제' }, null, null, NOW).wk === 1, '오늘·이번 주 셈은 찾기·분야로 거른 뒤의 책만');
+  ok(BQ.ago('2026-11-11', '2026-11-11') === '오늘' && BQ.ago('2026-11-10', '2026-11-11') === '어제' && BQ.ago('2026-11-06', '2026-11-11') === '5일 전' && BQ.ago('2026-11-01', '2026-11-11') === '' && BQ.ago(null, '2026-11-11') === '' && BQ.ago('2026-11-12', '2026-11-11') === '오늘', "손님 화면 표: 오늘·어제·N일 전 · 7일 넘거나 날 모르면 표 없음 · 시계 어긋나 앞날이면 '오늘'");
+  ok(BQ.freshIds([{ id: 'a' }, { id: 'b' }], [{ id: 'c' }, { id: 'a' }, { id: 'd' }]).join() === 'c,d' && BQ.freshIds(null, [{ id: 'a' }]).join() === 'a' && BQ.freshIds([{ id: 'a' }], []).length === 0, '자동 갱신: 앞에 없던 책만 새 책으로 셈'); }
+
 console.log('② 클라우드 창구(가짜 Firestore)');
 const store = {}; const col = (n) => (store[n] = store[n] || {}); const clone = (x) => JSON.parse(JSON.stringify(x));
 const FV = { serverTimestamp: () => new Date().toISOString(), arrayUnion: (...a) => ({ __au: a }) }; const merge = (cur, v) => { const o = { ...(cur || {}) }; for (const [k, x] of Object.entries(v)) o[k] = x && x.__au ? [...(o[k] || []), ...x.__au] : x; return o; };
@@ -128,6 +185,7 @@ if (!process.env.RN_PORT) { srv.close(); console.log(bad ? `❌ tSHOP1111 ${bad}
 console.log('③ 화면');
 const SHOT = process.env.RN_SHOT || require('os').tmpdir() + '/'; const { chromium } = require('playwright');
 { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }); const dlg = []; const errs = []; p.on('dialog', (d) => { dlg.push(d.message()); d.dismiss().catch(() => {}); }); p.on('pageerror', (e) => errs.push(e.message));
+  await p.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (rt) => rt.fulfill({ status: 404, body: '' })); /* (shop4) 바깥 사진 주소(알라딘 표지)는 바로 404 — 막힌 망에서 load가 30초 늘어지던 것 */
   await p.addInitScript((u) => { window.BQ_API = u; }, base); await p.goto(`http://localhost:${process.env.RN_PORT}/shop/index.html`); await p.waitForSelector('.grid .card', { timeout: 8000 }).catch(() => {});
   ok(await p.locator('.grid .card').count() >= 4 && /새로 들어온 책/.test(await p.textContent('#main')) && /사업자등록번호/.test(await p.textContent('#foot')), '첫 화면: 새로 들어온 책 · 아래 사업자 표시'); await p.screenshot({ path: SHOT + 'shop_home.png', fullPage: true });
   const ow = await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1); ok(ow, '휴대폰 폭에서 옆으로 넘치지 않음');
@@ -146,6 +204,27 @@ const SHOT = process.env.RN_SHOT || require('os').tmpdir() + '/'; const { chromi
     await p.goto('http://127.0.0.1:' + s6.address().port + '/b/aladin_U5'); ok(/품절/.test(await p.textContent('body')), "/b/ 팔린 책 화면 '품절'"); await p.screenshot({ path: SHOT + 'shop_seo_sold.png', fullPage: true }); s6.close(); delete col('shop_holds').aladin_U5; }
   await b.close();
   global.__shopNo = no; }
+console.log('⑥ (shop4) 화면 — 🆕 새로 들어온 책 표 · 5분 자동 갱신(가짜 시계)');
+{ const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }); const dlg = []; const errs = []; p.on('dialog', (d) => { dlg.push(d.message()); d.dismiss().catch(() => {}); }); p.on('pageerror', (e) => errs.push(e.message));
+  const day = SH.kstDay(new Date().toISOString()); let extra = null; let lists = 0;
+  await p.route('**/shop/list**', async (rt) => { lists++; const r = await rt.fetch(); const j = await r.json(); j.items = j.items.map((x) => ({ ...x, d: day })); /* 앞 시험이 주문해 둔 책('주문 중')엔 표를 안 붙이므로 모든 책을 오늘로 */ j.today = Math.max(1, j.today || 0); j.day = day; if (extra) { j.items = [extra, ...j.items]; j.today++; } await rt.fulfill({ response: r, json: j }); });
+  await p.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (rt) => rt.fulfill({ status: 404, body: '' })); /* 바깥 사진 주소는 바로 404(가짜 시계에서 load가 늘어지지 않게) */
+  await p.clock.install(); await p.addInitScript((u) => { window.BQ_API = u; }, base); await p.goto(`http://localhost:${process.env.RN_PORT}/shop/index.html`, { waitUntil: 'domcontentloaded' }); await p.waitForSelector('#nwg .card', { timeout: 8000 }).catch(() => {});
+  const nwh = await p.textContent('#nwh').catch(() => '(없음)'); ok(/오늘 \d+권 새로/.test(nwh) && (await p.locator('#nwg .card .nw.td').count()) >= 1 && /오늘 들어옴/.test(await p.textContent('#nwg')), "첫 화면 '새로 들어온 책' 옆 '오늘 N권 새로' · 책에 '오늘 들어옴' 표", { nwh, td: await p.locator('#nwg .card .nw.td').count(), lists });
+  await p.waitForTimeout(300); const brk = await p.evaluate(() => [...document.querySelectorAll('#nwg img')].filter((i) => i.complete && i.naturalWidth === 0).length); ok(brk === 0 && (await p.locator('#nwg .card .noim').count()) >= 1, '안 열리는 사진(바깥 404)은 깨진 그림 대신 📕', { brk });
+  { const p2 = await b.newPage(); let big = 0; await p2.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (rt) => { const u = rt.request().url(); if (/_t\.jpg/.test(u)) return rt.fulfill({ status: 403, body: '{"error":{}}', contentType: 'application/json' }); big++; return rt.fulfill({ status: 200, contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="3" height="4"/>' }); });
+    await p2.addInitScript((u) => { window.BQ_API = u; }, base); await p2.goto(`http://localhost:${process.env.RN_PORT}/shop/index.html#/b/aladin_U3`, { waitUntil: 'domcontentloaded' }); await p2.waitForSelector('#gal img', { timeout: 6000 }).catch(() => {}); await p2.waitForTimeout(600);
+    const fb = await p2.evaluate(() => [...document.querySelectorAll('#gal img')].map((i) => [i.dataset.fb || '', i.naturalWidth > 0, /_t\.jpg/.test(i.src)])); ok(fb.some(([f, w, t]) => f === '1' && w && !t), "작은 사진(_t)이 안 열리면 큰 사진으로 한 번 더(열림)", fb); await p2.close(); }
+  const n0 = await p.locator('#nwg .card').count(); const l0 = lists; await p.screenshot({ path: SHOT + 'shop4_fresh.png', fullPage: false });
+  extra = { id: 'aladin_NEW', t: '방금 들어온 책', a: '지은이A', g: '최상', p: 7000, lp: 12000, im: null, d: day, st: 's' };
+  await p.clock.runFor(2 * 60e3); await p.waitForTimeout(200); ok(lists === l0, '5분 전엔 다시 받지 않음(손님 기기·클라우드 아낌)');
+  await p.clock.runFor(3.2 * 60e3); await p.waitForFunction(() => /방금 들어온 책/.test(document.querySelector('#nwg').textContent), null, { timeout: 5000 }).catch(() => {});
+  ok(lists === l0 + 1 && /방금 들어온 책/.test(await p.textContent('#nwg')) && /새 책 1권이 들어왔습니다/.test(await p.textContent('#toast')) && (await p.locator('#nwg .card').count()) === Math.min(12, n0 + 1), "첫 화면을 띄워 두면 5분 뒤 조용히 다시 받아 새 책을 맨 앞에 · '새 책 1권' 알림");
+  await p.screenshot({ path: SHOT + 'shop4_fresh_after.png', fullPage: false });
+  await p.evaluate(() => { location.hash = '#/list?s=new'; }); await p.waitForSelector('#lg .card', { timeout: 5000 }).catch(() => {}); const l1 = lists; ok(/오늘 들어옴/.test(await p.textContent('#lg')), "목록에도 '오늘 들어옴' 표");
+  await p.clock.runFor(6 * 60e3); await p.waitForTimeout(200); ok(lists === l1, '첫 화면이 아니면 자동 갱신 안 함');
+  const ow = await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1); ok(ow && !errs.length && !dlg.length, '휴대폰 폭 넘침 0 · 화면 오류 0 · 브라우저 창 0 ' + errs.join(' | '));
+  await b.close(); }
 srv.close();
 await require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { dlg.push(d.type() + ': ' + d.message().slice(0, 80)); d.dismiss().catch(() => {}); });
   await p.evaluate(require('./seed.js')); await p.waitForTimeout(300); const no = global.__shopNo; const so = clone(col('shop_orders')[no]);
@@ -171,10 +250,36 @@ await require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) 
   const r = await p.evaluate(async () => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; const l = [...S.plist.values()][1]; l.status = '판매중지'; const now = new Date().toISOString(); S._led = null; let rk = 'k1'; try { const rr = ledNow().rows.find((x) => x.ch.aladin && x.ch.aladin.id === l.id); if (rr) rk = rr.key; } catch (e) {}
     await db.collection('app_settings').doc('omni_auto').set({ c: { 'k1|aladin|down|0|1': { key: rk, ch: 'aladin', k: 'down', to: 0, id: l.id, from: 'shop', st: 'sent', at: now, title: l.title }, 'k1|yes24|down|0|1': { key: rk, ch: 'yes24', k: 'down', to: 0, no: '9001', from: 'shop', st: 'sent', at: now } } });
     await db.collection('shop_orders').doc('BQ20261111-CXCXC').set({ no: 'BQ20261111-CXCXC', at: now, st: 'cancel', cxl: { why: '입금 기한이 지나 취소' }, sum: 5000, shipFee: 3500, total: 8500, items: [{ lid: l.id, t: l.title, g: l.grade, p: 5000 }], buyer: { name: '손님A', phone: '01000000000' }, rcv: {} });
-    S.omni.at = 0; await omniLoad(true); S._bqTab = 'cancel'; openShopAdm(true); await Wt(500); const sh = document.getElementById('sheet'); const b = sh.querySelector('[data-bqrel]'); o.btn = !!b; o.txt = /자동 내림이 알라딘을 판매중지/.test(sh.textContent) && /예스24도 내렸다면/.test(sh.textContent);
+    S.omni.at = 0; await omniLoad(true); S._bqTab = 'cancel'; openShopAdm(true); await Wt(500); const sh = document.getElementById('sheet'); const b = sh.querySelector('[data-bqrel]'); o.btn = !!b; o.txt = /자동 내림이 알라딘을 판매중지/.test(sh.textContent) && /예스24도 내렸음 — .*다시 올릴 일/.test(sh.textContent); /* (11/11 shop3) 예스24는 🛠 🔁 다시 올릴 일로 */
     if (b) { b.click(); await Wt(150); o.once = !Object.values(window.__FS.shp_cmds || {}).some((x) => x.listingKey === l.id && x.ch && x.ch.state === '판매중'); sh.querySelector('[data-bqrel]').click(); await Wt(600); }
     o.cmd = Object.values(window.__FS.shp_cmds || {}).some((x) => x.type === 'prdEdit' && x.listingKey === l.id && x.ch && x.ch.state === '판매중'); return o; });
-  ok(r.btn && r.txt && r.once && r.cmd, "✖ 취소된 주문: 🤖 자동 내림이 내린 알라딘 → 「🔁 알라딘 다시 판매중」(두 번) → 샵매니저 판매중 맡김 · 예스24는 손으로 안내 " + JSON.stringify(r)); await p.evaluate(() => { const c = document.querySelector('[data-bqno="BQ20261111-CXCXC"]'); if (c) c.scrollIntoView({ block: 'start' }); }); await p.waitForTimeout(200); await p.screenshot({ path: SHOT + 'shop_relist.png' });
+  ok(r.btn && r.txt && r.once && r.cmd, "✖ 취소된 주문: 🤖 자동 내림이 내린 알라딘 → 「🔁 알라딘 다시 판매중」(두 번) → 샵매니저 판매중 맡김 · 예스24는 🛠 「🔁 다시 올릴 일」로 안내 " + JSON.stringify(r)); await p.evaluate(() => { const c = document.querySelector('[data-bqno="BQ20261111-CXCXC"]'); if (c) c.scrollIntoView({ block: 'start' }); }); await p.waitForTimeout(200); await p.screenshot({ path: SHOT + 'shop_relist.png' });
+  /* (11/11 shop3) ✅ 문 열기 전 점검표(⚙ 맨 위) — 클라우드 /shop-check는 가짜(cloudCall 바꿔 끼움) */
+  const ck = await p.evaluate(async () => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; window.__ckN = 0; window.cloudCall = async (path, b) => { if (path !== '/shop-check') throw new Error('HTTP 404'); window.__ckN++; return { ok: true, at: new Date().toISOString(), n: 3, base: 'https://booksqueen.web.app', dom: { a: [], txt: [], err: '도메인을 못 찾음' }, https: { ok: false, k: 'dns', why: '도메인을 못 찾음(DNS A 레코드가 아직 없음)' }, web: { ok: true }, sm: { ok: true }, b: { ok: true }, ph: { ok: false, why: 'Storage 규칙이 사진 공개 읽기를 막음' } }; };
+    await db.collection('app_settings').doc('shop').set({ open: 0 }, { merge: true }); S.app.bqCfg = { ...(S.app.bqCfg || {}), open: 0 }; S._bqCfgOpen = null; S._bqChkAt = 0; window.pptCloudUrl = () => 'https://cloud.test'; /* 다른 설정 듣기가 S.app을 통째로 바꿔도 */ S._bqChk = null; history.back(); await Wt(300); openShopAdm(); await Wt(900); const sh = document.getElementById('sheet'); const cf = sh.querySelector('#bq_cfg'); const ch = sh.querySelector('#bq_chk');
+    o.first = !!(cf && ch && cf.firstElementChild && cf.firstElementChild.nextElementSibling === ch); o.open = !!(cf && cf.open); o.rows = [...sh.querySelectorAll('[data-bqchk]')].map((r) => r.dataset.bqchk + ':' + (r.querySelector('.bqchk-y') ? 'y' : r.querySelector('.bqchk-n') ? 'n' : 'q')); o.n = window.__ckN; o.sum = /문 열기 전 점검 \d\/9/.test(cf.querySelector('summary').textContent);
+    o.todo = /정부24/.test(ch.textContent) && /Cloud Shell/.test(ch.textContent) && /Storage › 규칙/.test(ch.textContent); sh.querySelector('#bqchk_go').click(); await Wt(400); o.n2 = window.__ckN; ch.scrollIntoView(); return o; });
+  ok(ck.first && ck.open && ck.sum && ck.n === 1 && ck.n2 === 2 && ck.todo && ck.rows.length === 9 && ck.rows.includes('dom:n') && ck.rows.includes('site:y') && ck.rows.includes('ph:n') && ck.rows.includes('rw:y') && ck.rows.includes('mo:n') && ck.rows.some((x) => /^test:/.test(x)), '⚙ 우리숍 설정 맨 위 ✅ 점검표 9줄(닫힌 가게는 펼쳐 둠) · 클라우드 점검 결과 ✓/✗ · 할 일·누르는 곳 · 🔍 다시 확인', ck);
+  await p.screenshot({ path: SHOT + 'shop3_check.png', fullPage: false });
+  /* 🔁 다시 올릴 일 — 취소된 주문(입금 전) + 자동 내림 기록 → 🧾 통합 장부 › 🛠 처리할 일 카드 · 알라딘 판매중 · 예스24 판매재개(가짜 번외) */
+  const C2 = { puts: [] }; await p.route(/127\.0\.0\.1:8797\//, async (rt) => { const u = new URL(rt.request().url()); let b = {}; try { b = JSON.parse(rt.request().postData() || '{}'); } catch (e) {} const J = (o) => rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(o) }); if (u.pathname === '/y24/w/put') { C2.puts.push(b); return J({ ok: true, took: b.id }); } if (u.pathname === '/y24/w/state') return J({ ok: true, wait: [], res: {} }); return J({ ok: true }); });
+  const up = await p.evaluate(async () => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; const l = [...S.plist.values()][2]; l.status = '판매중지'; const T0 = new Date(Date.now() - 3600e3).toISOString(); const key = 'SKUP1';
+    window.ledNow = () => ledBuild({ al: [{ id: l.id, title: l.title, price: l.price, qty: 1, live: false, st: '판매중지', skus: [key] }], y24: [{ no: '9301', title: l.title, price: 6000, stock: 1, live: false, self: key, flags: [] }], ord: [], reg: [], chs: ledChs(), days: 30, now: new Date().toISOString() });
+    await db.collection('app_settings').doc('omni_auto').set({ c: { up1: { key, ch: 'aladin', k: 'down', to: 0, id: l.id, from: 'shop', st: 'sent', at: new Date(Date.now() - 3500e3).toISOString(), title: l.title }, up2: { key, ch: 'yes24', k: 'down', to: 0, no: '9301', self: key, from: 'shop', st: 'sent', at: new Date(Date.now() - 3500e3).toISOString(), title: l.title } } });
+    await db.collection('shop_orders').doc('BQ20261111-UPUPU').set({ no: 'BQ20261111-UPUPU', at: T0, st: 'cancel', cxl: { at: new Date(Date.now() - 600e3).toISOString(), why: '입금 기한이 지나 취소' }, sum: 5000, shipFee: 3500, total: 8500, items: [{ lid: l.id, t: l.title, g: l.grade, p: 5000 }], buyer: { name: '손님A', phone: '01000000000' }, rcv: {} });
+    S.omni.at = 0; await omniLoad(true); await Wt(300); const A = []; bqAlerts((lv, t, k) => A.push(k + ':' + t)); o.alert = A.some((x) => /^bqup:🔁 우리숍 취소 — 다시 올릴 일 1건/.test(x));
+    history.back(); await Wt(300); S._ledView = 'todo'; openLedger(); await Wt(700); const sh = document.getElementById('sheet'); const c = sh.querySelector('#bqup_card'); o.card = !!c && /다시 올릴 일 — 우리숍 입금 전 취소 1건/.test(c.textContent); o.order = c && !!c.compareDocumentPosition && !!sh.querySelector('#omni_card') && !!(sh.querySelector('#omni_card').compareDocumentPosition(c) & 4);
+    const ba = c && c.querySelector('[data-bqupal]'); const by = c && c.querySelector('[data-bqupy]'); o.btns = !!ba && !!by; c.scrollIntoView(); window.__lid = l.id; return o; });
+  await p.screenshot({ path: SHOT + 'shop3_relist.png', fullPage: false });
+  const up2 = await p.evaluate(async () => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; const sh = document.getElementById('sheet'); const cmds = () => Object.values(window.__FS.shp_cmds || {}).filter((x) => x.type === 'prdEdit' && x.listingKey === window.__lid && x.ch && x.ch.state === '판매중');
+    sh.querySelector('[data-bqupal]').click(); await Wt(600); o.once = cmds().length === 0; sh.querySelector('[data-bqupal]').click(); await Wt(800); o.cmd = cmds().length === 1;
+    localStorage.setItem('rn-c2seen', '1'); openLedger(); await Wt(500); const by = document.querySelector('[data-bqupy]'); o.alPend = /다시 판매중 반영 기다림/.test((document.querySelector('#bqup_card') || {}).textContent || ''); by.click(); await Wt(600); document.querySelector('[data-bqupy]').click(); await Wt(900);
+    o.run = /번외 수집기가 판매재개하는 중/.test((document.querySelector('#bqup_card') || {}).textContent || ''); return o; });
+  const put = C2.puts[0] && C2.puts[0].rows[0];
+  ok(up.alert && up.card && up.order && up.btns, '🔁 입금 전 취소 → 홈 알림 「다시 올릴 일 1건」 · 🧾 🛠 처리할 일(🤖 자동 내림 카드 아래)에 카드 · 알라딘·예스24 단추', up);
+  ok(up2.once && up2.cmd && up2.alPend, '🟥 알라딘 다시 판매중: 한 번은 아무것도 안 함 · 두 번째에 샵매니저 판매중 맡김(shp_cmds prdEdit) → ⏳ 반영 기다림', up2);
+  ok(C2.puts.length === 1 && put && put.kind === 'start' && put.no === '9301' && put.self === 'SKUP1' && up2.run, "🟦 예스24 판매재개: 두 번 → 번외에 kind 'start'(판매중지 상품만 다시 엶) 1건 · ⏳ 줄", C2.puts);
+  await p.screenshot({ path: SHOT + 'shop3_relist_after.png', fullPage: false });
   ok(!dlg.length, '웹앱 브라우저 창 0 ' + dlg.join(' | ')); });
 console.log(bad ? `❌ tSHOP1111 ${bad}개 실패` : '✓ tSHOP1111 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 멈춤', e); process.exit(1); });

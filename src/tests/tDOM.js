@@ -41,5 +41,7 @@ const ROOT = [path.join(__dirname, '../..'), path.join(__dirname, '..')].find((p
   ok(d.code === 1 && /도메인 꼴이 아님/.test(d.out), '이상한 도메인 글은 거절');
   const Y = fs.readFileSync(path.join(ROOT, '.github/workflows/hosting-domain.yml'), 'utf8');
   ok(/workflow_dispatch:/.test(Y) && !/\n  push:/.test(Y) && /custom_domain:/.test(Y) && /node hosting\/domain\.js/.test(Y), '작업 파일: 손으로만 돎 · custom_domain 입력 · domain.js 부름');
+  { const { redirectBody: rb } = require(path.join(ROOT, 'hosting/domain.js')); ok(rb('www.booksqueen.com', 'booksqueen.com').redirectTarget === 'booksqueen.com' && !Object.keys(rb('booksqueen.com', 'booksqueen.com')).length && !Object.keys(rb('www.booksqueen.com', '')).length && !Object.keys(rb('www.booksqueen.com', 'bad host')).length, '(shop4) www 넘김: 다른 도메인일 때만 redirectTarget · 같거나 비거나 꼴 틀리면 넘김 없음');
+    ok(/DOMAIN_REDIRECT: '\$\{\{ inputs\.redirect \}\}'/.test(Y), '(shop4) 작업 파일: redirect 입력 → DOMAIN_REDIRECT'); }
   srv.close(); console.log(bad ? `tDOM ❌ ${bad}개 실패` : 'tDOM ✅ 모두 통과'); process.exit(bad ? 1 : 0);
 })();
