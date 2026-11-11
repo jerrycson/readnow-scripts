@@ -1,1 +1,2 @@
-@kpin kpin/aud_20261111-152413.json
+ver=1&adapt=1&ttbcmp=8&spbatch=1&naverchk=1&blist=Bestseller
+# 2743526776
