@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.476 예스24 쓰기",
- "since": "2026-11-11T02:44:06Z",
- "beat": "2026-11-11T02:44:06Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-11T02:18:13Z"
+  "at": "2026-11-11T02:44:14Z"
  },
- "host": "vm"
+ "host": null
 }
