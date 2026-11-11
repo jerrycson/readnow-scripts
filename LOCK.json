@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "rel4 판 내기",
+ "since": "2026-11-11T14:57:13Z",
+ "beat": "2026-11-11T14:57:13Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "rel3 판 냄 — 웹앱 1.78.486·수집기 1.89.266·클라우드 0.35.128·번외 0.1.25 · 62bfae3",
   "at": "2026-11-11T14:35:12Z"
  },
- "host": null
+ "host": "vm"
 }
