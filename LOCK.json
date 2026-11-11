@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "rel5b 판 내기 (adapt2)",
+ "since": "2026-11-11T17:24:07Z",
+ "beat": "2026-11-11T17:24:07Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "rel5 판 냄 — 웹앱 1.78.489·클라우드 0.35.131·번외 0.1.28 · 7d3298c (col2solo1·shelf4)",
   "at": "2026-11-11T17:09:21Z"
  },
- "host": null
+ "host": "vm"
 }
