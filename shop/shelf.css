@@ -190,10 +190,10 @@
 .sp[data-p="38"] .sk::before { background: repeating-linear-gradient(20deg, transparent 0 4px, rgba(255, 255, 255, .07) 4px 5px), repeating-linear-gradient(-70deg, transparent 0 6px, rgba(0, 0, 0, .06) 6px 7px), repeating-linear-gradient(110deg, transparent 0 9px, rgba(255, 255, 255, .06) 9px 10px); }
 .sp[data-p="39"] .sk::before { background: repeating-linear-gradient(90deg, rgba(0, 0, 0, .14) 0 1px, rgba(255, 255, 255, .1) 1px 2px, transparent 2px 3px); }
 .sp[data-p="40"] .sk::before { background: linear-gradient(90deg, rgba(255, 255, 255, .0), rgba(255, 255, 255, .22) 40%, rgba(0, 0, 0, .18)); }
-/* ── 모양 10 (책 몸 — 모서리·등 볼록·머리띠 · 1 = 반듯) */
+/* ── 모양 50 = 몸 10(data-s · 모서리·등 굴림·홈·닳음 · 1 = 반듯) × 머리 5(data-h · .hd · 1 = 그대로) */
 .sp[data-s="2"] .sk { border-radius: 4px 4px 2px 2px; box-shadow: inset 4px 0 6px rgba(255, 255, 255, .28), inset -6px 0 8px rgba(0, 0, 0, .45), 1px 0 1px rgba(0, 0, 0, .35); }
 .sp[data-s="3"] .sk { border-radius: calc(7px * var(--z)) calc(7px * var(--z)) 3px 3px; }
-.sp[data-s="4"] .sk::after { inset: 0 0 auto; height: calc(4px * var(--z)); background: repeating-linear-gradient(90deg, #b8322a 0 2px, #f1e6cf 2px 4px); }
+.sp[data-s="4"] .sk::after { background: linear-gradient(90deg, transparent 9%, rgba(0, 0, 0, .3) 9% 11%, rgba(255, 255, 255, .18) 11% 13%, transparent 13% 87%, rgba(0, 0, 0, .3) 87% 89%, rgba(255, 255, 255, .18) 89% 91%, transparent 91%); }
 .sp[data-s="5"] .sk { clip-path: polygon(0 2.5%, 14% 0, 86% 0, 100% 3.5%, 100% 100%, 0 100%); }
 .sp[data-s="6"] .sk { border-radius: 1px; box-shadow: inset 1px 0 1px rgba(255, 255, 255, .2), inset -1px 0 2px rgba(0, 0, 0, .25), 1px 0 1px rgba(0, 0, 0, .25); }
 .sp[data-s="7"] .sk { box-shadow: inset 0 0 0 calc(1.5px * var(--z)) rgba(255, 255, 255, .28), inset -3px 0 4px rgba(0, 0, 0, .35), 1px 0 1px rgba(0, 0, 0, .35); }
@@ -242,3 +242,9 @@
 body.shelf-on #main.wrap { max-width: none; } body.shelf-on .foot { display: none; }
 @media (max-width: 640px) { .bqs-bar { top: 56px; gap: 6px 8px; } .bqs-h { font-size: 17px; flex-basis: 100%; } .bqs-sl { font-size: 13px; } .bqs-cart { width: 56px; height: 56px; } .bqs-cart-i { font-size: 26px; } .bqs-tip { display: none; } }
 @media (prefers-reduced-motion: reduce) { .bqs *, .bqs *::before { animation: none !important; transition: none !important; } }
+.sp .hd { position: absolute; left: 0; right: 0; top: 0; height: calc(4px * var(--z)); z-index: 2; pointer-events: none; }
+.sp[data-h="2"] .hd { background: repeating-linear-gradient(90deg, #b8322a 0 2px, #f1e6cf 2px 4px); }
+.sp[data-h="3"] .hd { background: repeating-linear-gradient(90deg, #1f3a6b 0 2px, #d9b45a 2px 4px); }
+.sp[data-h="4"] .hd { top: calc(5px * var(--z)); height: calc(1.5px * var(--z)); background: var(--g); box-shadow: 0 calc(3px * var(--z)) 0 var(--g); }
+.sp[data-h="5"] .hd { height: 14%; background: linear-gradient(rgba(235, 220, 190, .45), transparent); }
+.sp.img.ok .hd { display: none; }
