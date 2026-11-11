@@ -50,9 +50,9 @@ function makeJobs(ctx) {
     if (t.src === 'fx') return x.fxRun({ keys, http: ctx.http, day: kday() });
     return x.run(t.src, { isbn: a.isbn || '', title: a.title || '', author: a.author || '', media: a.media || null, keys, http: ctx.http, render: renderFor, cache: {}, cfg: x.cfgOf ? x.cfgOf({}) : {} }); }
   /* (0.1.10) 🖼 그려 읽기 — 운영 extRender와 같은 꼴: 도우미 /render(따로 된 칸 탭에 그려 HTML) → 운영 본체 extRenderHelper(글자 그대로)가 그 답을 해석 · 그릴 때마다 속도 규칙 한 장 */
-  async function renderFor(url, opt) { const o = opt || {}; const tk = await ctx.pace.take(); if (!tk.ok) return { ok: false, why: tk.why };
+  async function renderFor(url, opt) { const o = opt || {}; const sk = S.curSite; const tk = sk && ctx.site ? await ctx.site.take(sk) : await ctx.pace.take(); if (!tk.ok) return { ok: false, why: tk.why }; /* (11/11) 바깥 사이트를 그리면 그 사이트 몫 */
     const core = await ctx.core(); const br = await ctx.browser(); const wait = Math.min(30000, Math.max(6000, o.max || 12000));
-    const Rd = await br.render(ctx.extUrl ? ctx.extUrl(url) : url, { wait, re: o.re, reFlags: o.reFlags }); if (!Rd.ok) ctx.pace.fail('error');
+    const Rd = await br.render(ctx.extUrl ? ctx.extUrl(url) : url, { wait, re: o.re, reFlags: o.reFlags }); if (!Rd.ok) { if (sk && ctx.site) ctx.site.fail(sk, 'error'); else ctx.pace.fail('error'); }
     const expr = `(async () => { const X = globalThis.__col2; X.gm = 'render'; X.rendered = ${JSON.stringify(Rd)}; try { return await Col2Lift.extRenderHelper(${JSON.stringify(url)}, ${JSON.stringify(o)}); } finally { X.gm = null; X.rendered = null; } })()`;
     const r = await br.mainJob(core.src, expr, 60); return r && typeof r === 'object' ? r : { ok: false, why: '그린 화면 해석 답 없음' }; }
   /* (0.1.10) 📚 KPIPA 마지막 날 — 운영 kpipaJob과 같은 규칙(한국 14:30 뒤면 어제 · 그 전엔 그제) · 날짜 셈은 떼어 온 kpYmd·kpAdd */
@@ -68,25 +68,31 @@ function makeJobs(ctx) {
     /* (11/10) 🗣 판매자 구매평·문의 글 모으기(로거만) — 몫(처음 큼 → 점점 다른 일과 같게)만큼 차례를 받음 · 속도 규칙은 같이 셈 */
     const V = ctx.voice; const vTurn = !!(V && V.wantTurn(L.length));
     if (!L.length && !vTurn) return { did: false, why: S.wait.length ? `운영 값 기다림 ${S.wait.length}건` : '그림자 일 차례 없음', rest: S.wait.length ? 5000 : 15e3 };
-    const pc = ctx.pace.check(); if (!pc.ok) return { did: false, rest: pc.retryMs == null ? 30 * 60e3 : Math.min(pc.retryMs + 500, 30 * 60e3), why: pc.why }; if (pc.waitMs > 0) return { did: false, rest: pc.waitMs + 50, why: '차례 기다림' };
-    if (vTurn) { let r; try { r = await V.step(L.length); } catch (e) { r = { did: false, rest: 10e3, why: '🗣 ' + e.message }; } return r; }
+    /* (11/11 정범님 '바깥 사이트 읽기 몫') 알라딘 몫(ctx.pace — 사람 속도 두 배)은 알라딘 화면 일(cls pub)만 · 바깥 사이트 일(cls ext)은 사이트마다 따로(ctx.site — 운영 출처 간격·하루 상한)
+     *  → 알라딘 하루 몫을 다 써도 바깥 일은 이어 가고, 바깥 한 사이트가 쉬어도 다른 사이트·알라딘은 그대로 */
+    const pc = ctx.pace.check(); const alReady = pc.ok && !(pc.waitMs > 0); const siteOf = (k) => { const t = TK.byK[k]; return t && t.cls === 'ext' ? (t.reader === 'kp' ? 'kpipa' : t.src || k) : null; };
+    const rests = []; const L2 = L.filter((k) => { const sk = siteOf(k); if (!sk || !ctx.site) { if (!alReady) rests.push(pc.ok ? { ms: pc.waitMs + 50, why: '차례 기다림' } : { ms: pc.retryMs == null ? 30 * 60e3 : Math.min(pc.retryMs + 500, 30 * 60e3), why: pc.why }); return alReady; }
+      const c = ctx.site.check(sk); if (c.ok && !(c.waitMs > 0)) return true; rests.push(c.ok ? { ms: c.waitMs + 50, why: '바깥 사이트 차례 기다림' } : { ms: c.retryMs == null ? 30 * 60e3 : Math.min(c.retryMs + 500, 30 * 60e3), why: c.why }); return false; });
+    if (vTurn && !alReady) { rests.push(pc.ok ? { ms: pc.waitMs + 50, why: '차례 기다림' } : { ms: pc.retryMs == null ? 30 * 60e3 : Math.min(pc.retryMs + 500, 30 * 60e3), why: pc.why }); }
+    if (!(vTurn && alReady) && !L2.length) { rests.sort((a, b) => a.ms - b.ms); const r0 = rests[0] || { ms: 15e3, why: '그림자 일 차례 없음' }; return { did: false, rest: r0.ms, why: r0.why }; }
+    if (vTurn && alReady) { let r; try { r = await V.step(L.length); } catch (e) { r = { did: false, rest: 10e3, why: '🗣 ' + e.message }; } return r; }
     if (V) V.otherTurn();
     /* (11/10 밤 col2n) 표본이 모자란 일부터 — 예전엔 차례대로 돌아(일 수만큼 나눔) 표본 30개를 일찍 채운 일도 같은 몫을 받아, 하루 1,600장 몫이 낮 12시쯤 다 쓰이면 남은 일은 30개를 못 채움
      *  → 오늘 해 본 수(견줌+못 읽음+운영 값 없음+건너뜀)가 가장 적은 일 먼저(같으면 예전 차례) · 모든 일이 표본을 채운 뒤엔 다시 고르게 */
-    const k = pickK(L); const t = TK.byK[k]; const a = S.q[k].shift(); (S.seen[k] || (S.seen[k] = {}))[a.key] = kday(); { const sk = Object.keys(S.seen[k]); if (sk.length > SEENMAX) for (const x of sk.slice(0, sk.length - SEENMAX)) delete S.seen[k][x]; }
+    const k = pickK(L2); const t = TK.byK[k]; const SK = siteOf(k); const SP = ctx.site && SK ? { take: () => ctx.site.take(SK), ok: () => ctx.site.ok(SK), fail: (x) => ctx.site.fail(SK, x) } : ctx.pace; /* 바깥 일은 그 사이트 몫 */ const a = S.q[k].shift(); (S.seen[k] || (S.seen[k] = {}))[a.key] = kday(); { const sk = Object.keys(S.seen[k]); if (sk.length > SEENMAX) for (const x of sk.slice(0, sk.length - SEENMAX)) delete S.seen[k][x]; }
     const t0 = now(); let r;
     if (t.reader === 'al') { const p = TK.pathOf(t, a, own()); if (!p) { record(t, a, a.key, 'skip', [], { why: '정한 주소 꼴이 아님(또는 우리 숍)' }); return { did: true }; }
       let core, br; try { core = await ctx.core(); br = await ctx.browser(); } catch (e) { S.q[k].unshift(a); delete S.seen[k][a.key]; ctx.pace.fail('error'); return { did: false, rest: 10e3, why: '작업 창 준비 실패: ' + e.message }; }
       const tk = await ctx.pace.take(); if (!tk.ok) { S.q[k].unshift(a); delete S.seen[k][a.key]; return { did: false, rest: 5000, why: tk.why }; }
       r = await br.readJob(ctx.aladin + p, t.parse, core.src, 30) || { ok: false, why: '빈 응답' }; if (r.ok) ctx.pace.ok(); else if (!r.needLogin) ctx.pace.fail(r.kind || 'error'); r.url = p; }
     else if (t.reader === 'dyn' || t.reader === 'nb' || t.reader === 'kp') { const back = (why, ms) => { S.q[k].unshift(a); delete S.seen[k][a.key]; return { did: false, rest: ms || 5000, why }; };
-      let core, br; try { core = await ctx.core(); br = await ctx.browser(); } catch (e) { ctx.pace.fail('error'); return back('작업 창 준비 실패: ' + e.message, 10e3); }
+      let core, br; try { core = await ctx.core(); br = await ctx.browser(); } catch (e) { SP.fail('error'); return back('작업 창 준비 실패: ' + e.message, 10e3); }
       if (t.reader === 'dyn' && !TK.pathOf(t, a, own())) { record(t, a, a.key, 'skip', [], { why: '정한 주소 꼴이 아님' }); return { did: true }; }
-      for (let i = 0; i < (t.cost || 1); i++) { const tk = await ctx.pace.take(); if (!tk.ok) return back(tk.why); } /* 화면 통째(그림·스크립트까지)는 운영처럼 3장 몫 */
+      for (let i = 0; i < (t.cost || 1); i++) { const tk = await SP.take(); if (!tk.ok) return back(tk.why); } /* 화면 통째(그림·스크립트까지)는 운영처럼 3장 몫 */
       try { r = t.reader === 'dyn' ? await dynRead(br, core, t, a) : t.reader === 'nb' ? await nbRead(br, core, a) : await kpRead(br, core); } catch (e) { r = { ok: false, why: e.message, kind: 'error' }; }
-      if (r && r.ok) ctx.pace.ok(); else if (r && !r.needLogin) ctx.pace.fail(r.kind === '429' ? '429' : 'error'); }
-    else { const tk = await ctx.pace.take(); if (!tk.ok) { S.q[k].unshift(a); delete S.seen[k][a.key]; return { did: false, rest: 5000, why: tk.why }; }
-      try { r = await extCall(t, a); } catch (e) { r = { ok: false, why: e.message }; } if (r && /HTTP (429|503)/.test(String(r.why || ''))) ctx.pace.fail('429'); else if (r && r.ok === false) ctx.pace.fail('error'); else ctx.pace.ok(); }
+      if (r && r.ok) SP.ok(); else if (r && !r.needLogin) SP.fail(r.kind === '429' ? '429' : 'error'); }
+    else { const tk = await SP.take(); if (!tk.ok) { S.q[k].unshift(a); delete S.seen[k][a.key]; return { did: false, rest: 5000, why: tk.why }; }
+      S.curSite = SK; try { r = await extCall(t, a); } catch (e) { r = { ok: false, why: e.message }; } finally { S.curSite = null; } if (r && /HTTP (429|503)/.test(String(r.why || ''))) SP.fail('429'); else if (r && r.ok === false) SP.fail('error'); else SP.ok(); }
     r = r || { ok: false, why: '빈 응답' }; const ms = now() - t0;
     if (r.skip) { record(t, a, a.key, 'skip', [], { why: r.skip, ms }); return { did: true }; }
     if (!r.ok) { record(t, a, a.key, r.needLogin ? 'skip' : 'fail', [], { why: r.why || '못 읽음', ms }); return { did: true }; }
