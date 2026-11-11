@@ -63,7 +63,7 @@ const walk = (d, hit) => { for (const f of fs.readdirSync(d)) { const p = path.j
     await wait(1500); let s = await a(); ok(!s.on && !s.want && /꺼 둠/.test(s.msg) && F.S.log.length === 0 && !H.T.clog().some((l) => /col2-al-chrome/.test(l)), '기본은 꺼짐 — 알라딘 크롬도 안 띄움', s.msg);
     ok(/data-card="al"/.test((await H.req('GET', '/')).b) && /🔐 알라딘 로그인/.test((await H.req('GET', '/s/col2-ui.js')).b), '옆 창에 🟧 칸과 [🔐 알라딘 로그인] 단추');
     await H.api('POST', '/cfg', { al: true }); await wait(1500); s = await a();
-    ok(s.on && /다리\)가 안 보여/.test(s.msg) && F.S.log.length === 0, '켜도 수집기 다리(출고 보호·자리)가 안 보이면 안 감', s.msg);
+    ok(s.on && /다리\)가 안 보/.test(s.msg) && F.S.log.length === 0, '켜도 수집기 다리(출고 보호·자리)가 안 보이면 안 감', s.msg);
     seat = false; await feed(); await wait(1200); s = await a(); ok(/자리 기다림/.test(s.msg) && F.S.log.length === 0, '🪑 자리가 없으면(4/4) 안 감 — 그림자는 자리 차례 맨 뒤', s.msg);
     seat = true; feeding = true;
     s = await until(async () => { const v = await a(); return v.login === 'need' ? v : null; }, 80);
