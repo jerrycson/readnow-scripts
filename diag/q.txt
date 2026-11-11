@@ -1,2 +1,2 @@
-doc=app_settings/freeship_stats
-# 307920612
+col2=1&heads=1
+# 823823456
