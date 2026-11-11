@@ -73,18 +73,29 @@
   /* 회차를 셈에 쓸지 — 첫 바퀴(base)·숍을 끝까지 못 읽은 회차·뺀 회차·기간 0은 뺌(클라우드 benchRunUse와 같은 뜻) */
   const runUse = (v) => !!v && !v.base && v.complete !== false && v.full !== false && +v.spanDays > 0 && v.excl !== true;
 
+  /* (정범님 11/11 밤 · bavg1) ⏸ 빈 날 배분 · 사람 값 먼저 — 웹앱 판매자 상세의 🧩 빈 날 채우기(fill.days)·✎ 고치기(edit)가 있으면 그 값을 씀(원래 수집 값은 문서에 그대로)
+   *  effRun: 셈에 쓸 회차 값(채운 회차 = 채운 날 값의 합 · 고친 회차 = 고친 값) + _per(날마다 새로 올림 — 채운 날 값 또는 benchFillPlan과 같은 규칙으로 고르게 나눔 · 나머지는 뒤쪽 날)
+   *  나눌 날 수 = 그 회차가 담은 날(spanDays 반올림 · 1~60일) — 며칠 건너뛰고 읽은 회차의 몫이 '하루'로 몰려 세지지 않게 */
+  const splitInt = (n, k) => { n = Math.max(0, Math.round(+n || 0)); const b = Math.floor(n / k), r = n - b * k; return Array.from({ length: k }, (_, i) => b + (i >= k - r ? 1 : 0)); };
+  const SUMK = ['add', 'gone', 'sumGone', 'sumAdd'];
+  function effRun(v) { if (!v) return v; const o = { ...v }; const F = v.fill && Array.isArray(v.fill.days) && v.fill.days.length >= 2 ? v.fill.days.filter((d) => d && d.day).slice().sort((a, b) => String(a.day).localeCompare(String(b.day))) : null;
+    if (F) { SUMK.forEach((k) => { if (F.some((d) => num(d[k]) != null)) o[k] = F.reduce((t, d) => t + (num(d[k]) || 0), 0); }); o._human = 'fill'; }
+    else if (v.edit && typeof v.edit === 'object') { SUMK.forEach((k) => { if (num(v.edit[k]) != null) { o[k] = num(v.edit[k]); o._human = 'edit'; } }); }
+    const dd = F ? F.length : Math.max(1, Math.min(60, Math.round(+v.spanDays || 1))); o._per = F ? F.map((d) => num(d.add) || 0) : splitInt(num(o.add) ?? 0, dd); return o; }
+  /* 날 수로 무게를 둔 가운데 값 — 4일치 회차는 4일로 셈(예전엔 회차 하나 = 한 표) */
+  const wmed = (pairs) => { const a = pairs.filter(([x, w]) => x != null && Number.isFinite(x) && w > 0).sort((p, q) => p[0] - q[0]); const W = a.reduce((t, [, w]) => t + w, 0); if (!W) return null; let c = 0; for (const [x, w] of a) { c += w; if (c >= W / 2) return x; } return a[a.length - 1][0]; };
   /* 회차마다 쓸 사라짐 수 — ① 몰아서 내림(하루 사라짐이 그 판매자 가운데 값의 5배 넘고 100건 넘음)은 가운데 값 3배로 자름(내림을 팔림으로 세지 않게)
    *  ② 기간이 14일 넘는 회차는 14일 몫만(배지 연구 badgeStudy와 같음) → { s 쓴 날, g 사라짐, rev 판매가 합, k 목록 배율, cut 자른 회차 } */
-  function goneAdj(R) { const rate = R.map((v) => (num(v.gone) ?? num(v.goneNew) ?? 0) / Math.max(0.5, +v.spanDays)); const m = med(rate) || 0;
+  function goneAdj(R) { const rate = R.map((v) => (num(v.gone) ?? num(v.goneNew) ?? 0) / Math.max(0.5, +v.spanDays)); const m = wmed(R.map((v, i) => [rate[i], Math.max(0.5, +v.spanDays)])) || 0; /* (11/11) 날 수 무게 */
     return R.map((v, i) => { const sp = Math.max(0.5, +v.spanDays); const s = Math.min(sp, 14); let g = num(v.gone) ?? num(v.goneNew) ?? 0; let rev = num(v.sumGone) ?? num(v.sumGoneNew) ?? 0; let cut = false;
       if (m > 0 && rate[i] > 5 * m && g > 100) { const g2 = 3 * m * sp; rev = rev * (g2 / g); g = g2; cut = true; } const f = s / sp; return { s, g: g * f, rev: rev * f, raw: num(v.gone) ?? 0, gk: g / Math.max(1, num(v.gone) ?? g), cut }; }); }
   /* ── ② 판매자 주력(한 판매자 회차 목록 → 요약) ──
    *  runs = bench_days 문서들(그 판매자 · 아무 순서) — 쓰는 칸: day, spanDays, total, add, goneNew, sumGoneNew, addList, goneList, trunc
    *  look = { isbn → { sp, pub, au } } (있으면 SP·출판사·저자) */
-  function profile(runs, look, opt) { const O = { minRuns: 2, ...(opt || {}) }; const R = (runs || []).filter(runUse).sort((a, b) => String(a.day).localeCompare(String(b.day)));
+  function profile(runs, look, opt) { const O = { minRuns: 2, ...(opt || {}) }; const R = (runs || []).filter(runUse).map(effRun).sort((a, b) => String(a.day).localeCompare(String(b.day)));
     if (R.length < O.minRuns) return null; let days = 0, sold = 0, rev = 0, add = 0, exT = 0; const addByDay = []; const lastDay = R[R.length - 1].day;
     const kw = {}; const cat = {}, catAdd = {}, band = {}, grade = {}, yr = { new12: 0, y3: 0, old: 0, unk: 0 }, life = [], price = [], sp = [], pub = {}, au = {}; let listN = 0, spKnown = 0, paKnown = 0, addListN = 0;
-    const GA = goneAdj(R); let cutN = 0; R.forEach((v, i) => { const s = GA[i].s; days += s; sold += GA[i].g; rev += GA[i].rev; if (GA[i].cut) cutN++; /* 사라짐 전부(첫 바퀴부터 있던 것 포함) = 판매 가늠 */ const a = (num(v.add) ?? 0) * (s / Math.max(0.5, +v.spanDays)); add += a; exT += (num(v.total) || 0) * s; addByDay.push((num(v.add) ?? 0) / Math.max(1, +v.spanDays)); });
+    const GA = goneAdj(R); let cutN = 0; R.forEach((v, i) => { const s = GA[i].s; days += s; sold += GA[i].g; rev += GA[i].rev; if (GA[i].cut) cutN++; /* 사라짐 전부(첫 바퀴부터 있던 것 포함) = 판매 가늠 */ const a = (num(v.add) ?? 0) * (s / Math.max(0.5, +v.spanDays)); add += a; exT += (num(v.total) || 0) * s; addByDay.push(...v._per); }); /* (11/11) ⏸ 날마다 — 며칠치 회차의 새로 올림을 빈 날까지 나눠(사람이 채운 날 값 먼저) · 예전엔 회차 하나 = 하루 */
     for (const v of R) {
       for (const r of rowsOf(v.goneList)) { const lf = num(r[4]); listN++; const p = num(r[2]); if (p) price.push(p); if (lf != null) life.push(lf); /* 걸린 날은 첫 바퀴 뒤 올린 것만 앎 */ words(r[1]).forEach((w) => inc(kw, w)); inc(cat, topicKey(r[8]) || '분류 모름'); inc(band, bandOf(p)); inc(grade, r[3] || '?'); const pa = pubAgeM(r[9], v.day); if (pa == null) yr.unk++; else if (pa <= 12) yr.new12++; else if (pa <= 36) yr.y3++; else yr.old++;
         const L = look && r[7] ? look[r[7]] : null; if (L) { if (L.sp != null) { sp.push(+L.sp); spKnown++; } if (L.pub || L.au) { paKnown++; inc(pub, L.pub || null); inc(au, L.au || null); } } }
@@ -93,7 +104,7 @@
     const catS = share(cat, listN).slice(0, 8).map((x) => ({ ...x, addS: addListN ? r4((catAdd[x.k] || 0) / addListN) : null }));
     const top = (m, n) => share(m, Object.values(m).reduce((x, y) => x + y, 0)).slice(0, n);
     return { runs: R.length, days: r3(days), lastDay, cutRuns: cutN, sold: Math.round(sold), soldPerDay: r3(sold / days), revPerDay: Math.round(rev / days), addPerDay: r3(add / days), stock: num(R[R.length - 1].total), turn: exT ? r4(sold / exT) : null,
-      regDaysShare: r3(regDays / R.length), addCv: mA ? r3(sdA / mA) : null, listN, cats: catS, bands: share(band, listN), grades: share(grade, listN).slice(0, 6), years: { ...yr, new12S: listN ? r4(yr.new12 / listN) : null },
+      regDaysShare: r3(regDays / (addByDay.length || 1)), regDays: addByDay.length, humanRuns: R.filter((v) => v._human).length, addCv: mA ? r3(sdA / mA) : null, listN, cats: catS, bands: share(band, listN), grades: share(grade, listN).slice(0, 6), years: { ...yr, new12S: listN ? r4(yr.new12 / listN) : null },
       lifeMed: med(life), lifeN: life.length, words: top(kw, 12).filter((x) => x.n >= 3), catKnownS: listN ? r3(1 - (cat['분류 모름'] || 0) / listN) : null, priceMed: med(price), spMed: med(sp), spKnownS: listN ? r3(spKnown / listN) : null, pubs: top(pub, 6), authors: top(au, 6), paKnownS: listN ? r3(paKnown / listN) : null }; }
 
   /* ── 롤모델 고르기 ── profiles = [{ sc, name, p: profile, f: 판정 사실 }] · opt.by: rev(하루 판매가 합)·sold(하루 판매 수)·turn(회전율)·rev6(6개월 평가 수)
@@ -117,7 +128,7 @@
     if (m.priceMed && U.priceMed) tips.push({ kind: 'price', k: 'med', t: `💰 팔린 값 가운데 ${Math.round(m.priceMed).toLocaleString()}원 · 우리 판매중 가운데 ${Math.round(U.priceMed).toLocaleString()}원`, gap: r4(m.priceMed / U.priceMed - 1) });
     if (m.years && m.years.new12S != null && U.new12S != null && m.years.new12S - U.new12S >= O.gap) tips.push({ kind: 'buy', k: 'new12', t: `🆕 출간 1년 안 책(화제 신간) 몫 — 롤모델 판매의 ${pc(m.years.new12S)} · 우리 판매중의 ${pc(U.new12S)}`, gap: r4(m.years.new12S - U.new12S) });
     if (m.spMed != null && U.spMed != null && m.spMed > U.spMed * 1.2) tips.push({ kind: 'buy', k: 'sp', t: `📈 SP(판매지수) 높은 책 — 롤모델 팔린 책 SP 가운데 ${Math.round(m.spMed).toLocaleString()} · 우리 판매중 ${Math.round(U.spMed).toLocaleString()}`, gap: r4(m.spMed / U.spMed - 1) });
-    if (m.addPerDay != null) { const u = U.addPerDay; const t = `🗓 등록 방식: 롤모델 하루 ${m.addPerDay.toFixed(1)}권 · 등록한 회차 몫 ${pc(m.regDaysShare)}${m.addCv != null ? ` · 들쭉날쭉 ${m.addCv.toFixed(2)}(0에 가까울수록 고름)` : ''}${u != null ? ` — 우리 하루 ${(+u).toFixed(1)}권` : ''}`; tips.push({ kind: 'reg', k: 'pace', t, gap: u != null && u > 0 ? r4(m.addPerDay / u - 1) : null }); }
+    if (m.addPerDay != null) { const u = U.addPerDay; const t = `🗓 등록 방식: 롤모델 하루 ${m.addPerDay.toFixed(1)}권 · 등록한 날 몫 ${pc(m.regDaysShare)}${m.addCv != null ? ` · 들쭉날쭉 ${m.addCv.toFixed(2)}(0에 가까울수록 고름)` : ''}${u != null ? ` — 우리 하루 ${(+u).toFixed(1)}권` : ''}`; tips.push({ kind: 'reg', k: 'pace', t, gap: u != null && u > 0 ? r4(m.addPerDay / u - 1) : null }); }
     (m.pubs || []).slice(0, 3).forEach((p) => p.k && tips.push({ kind: 'buy', k: 'pub:' + p.k, t: `🏢 롤모델이 많이 판 출판사: ${p.k} (${pc(p.s)})`, gap: null }));
     return tips; }
 
@@ -125,7 +136,7 @@
    *  사라진 상품마다: 처음 본 날 뒤 사라질 때까지 새로 올라온 수(회차 add 합) < fp → 앞 쪽에 있던 동안 팔림
    *  노출: 회차마다 min(fp, 전체) × 기간 = 앞 쪽 상품-날 · 전체 × 기간 · 첫 7일 판매 몫 = 7일 안에 사라진 수 ÷ 새로 올린 수 · 머문 날 = fp ÷ 하루 등록 */
   const FRONT_DEF = { per: 24, pages: 10 };
-  function frontOne(runs, opt) { const O = { ...FRONT_DEF, ...(opt || {}) }; const FP = O.per * O.pages; const R = (runs || []).filter(runUse).sort((a, b) => String(a.day).localeCompare(String(b.day))); if (R.length < 2) return null;
+  function frontOne(runs, opt) { const O = { ...FRONT_DEF, ...(opt || {}) }; const FP = O.per * O.pages; const R = (runs || []).filter(runUse).map(effRun).sort((a, b) => String(a.day).localeCompare(String(b.day))); if (R.length < 2) return null;
     const cum = []; let c = 0, sp0 = 0; for (const v of R) { c += num(v.add) || 0; sp0 += Math.min(+v.spanDays, 14); cum.push([dayN(v.day), c]); } const apd0 = sp0 ? c / sp0 : 0; /* 첫 회차 앞(기록 없는 날)은 하루 평균 등록으로 메움 */
     const cumAt = (d) => { if (d < cum[0][0]) return (d - cum[0][0]) * apd0; let x = 0; for (const [dd, cc] of cum) { if (dd <= d) x = cc; else break; } return x; };
     let fpDays = 0, allDays = 0, sold = 0, add = 0, days = 0, sFP = 0, sOff = 0, listN = 0, early7 = 0; const tr = { new12: [0, 0], old: [0, 0] }; const trBand = {};
