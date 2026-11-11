@@ -60,7 +60,9 @@
   "pg_checkout": "자사몰 결제(PG 결제창)",
   "escrow": "구매안전서비스",
   "law_notice": "법 표시(사업자 정보·청약철회·처리방침)",
-  "shop_platform": "숍 솔루션에 얹을까 직접 만들까"
+  "shop_platform": "숍 솔루션에 얹을까 직접 만들까",
+  "channel_board": "판매처마다 할 일·주문·어긋남을 한 줄씩",
+  "item_channels": "상품 하나에 모든 판매처 상태(값·재고·판매중)"
  },
  "cases": [
   {
@@ -448,6 +450,92 @@
    "new": false
   },
   {
+   "id": "shopify_publishing",
+   "co": "Shopify",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "상품 화면 판매 채널(Publishing) 칸 — 상품 하나가 어느 판매 채널에 올라 있는지 한 카드 · 채널 관리 단추로 바로",
+   "urls": [
+    "https://help.shopify.com/manual/products/add-update-products"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "item_channels"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": true
+  },
+  {
+   "id": "linnlive_grid",
+   "co": "Linnworks(LinnLive)",
+   "region": "해외",
+   "kind": "multichannel",
+   "screen": "재고 격자 오른쪽에 판매처마다 매물 칸 · 오류 매물은 빨강 · 판매처별·오류만 거르기",
+   "urls": [
+    "https://www.linnworks.com/Doc/linnlive_inventory.html"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "item_channels",
+    "channel_board"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": true
+  },
+  {
+   "id": "linnworks_linking",
+   "co": "Linnworks",
+   "region": "해외",
+   "kind": "multichannel",
+   "screen": "재고 연결 화면 — 상품마다 판매처별 상태 기호 · Not Linked(그 판매처 매물과 안 이어짐)",
+   "urls": [
+    "https://desktop.linnworks.com/Doc/inventory_linking"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "sku_link",
+    "item_channels"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": true
+  },
+  {
+   "id": "linnworks_insights",
+   "co": "Linnworks",
+   "region": "해외",
+   "kind": "multichannel",
+   "screen": "Insights — 판매처마다 주문·매출·재고·이익 · 판매처 하나만 떼어 견줌",
+   "urls": [
+    "https://www.linnworks.com/features/reporting-insights"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "channel_board"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": true
+  },
+  {
    "id": "naver_center_home",
    "co": "네이버 스마트스토어센터",
    "region": "국내",
@@ -595,6 +683,29 @@
    "w": 0.8,
    "dw": 0.0,
    "new": false
+  },
+  {
+   "id": "sellerhub",
+   "co": "셀러허브",
+   "region": "국내",
+   "kind": "multichannel",
+   "screen": "20여 판매처 상품 등록·주문·CS·정산을 한 곳에서 · 실시간 대시보드(주문별·상품별)",
+   "urls": [
+    "https://www.innoforest.co.kr/company/CP00000287/%EC%85%80%EB%9F%AC%ED%97%88%EB%B8%8C",
+    "https://blog.iquest.co.kr/entry/%EC%87%BC%ED%95%91%EB%AA%B0-%ED%86%B5%ED%95%A9-%EA%B4%80%EB%A6%AC-%EB%AA%A8%EB%93%A0-%ED%94%8C%EB%9E%AB%ED%8F%BC%EC%9D%84-%ED%95%9C%EA%B3%B3%EC%97%90%EC%84%9C-%EA%B0%84%ED%8E%B8%ED%95%98%EA%B2%8C-%EA%B4%80%EB%A6%AC%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95"
+   ],
+   "grade": "보도",
+   "fits": [
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "channel_board",
+    "one_ledger"
+   ],
+   "w": 0.8,
+   "dw": 0.0,
+   "new": true
   },
   {
    "id": "seller_app_tabs",
@@ -1493,9 +1604,189 @@
    "probe": "",
    "metric": "휴대폰 페이지 바꾸는 누름",
    "auto": null
+  },
+  {
+   "id": "U15",
+   "surf": "ui2",
+   "topics": [
+    "channel_board",
+    "order_todo"
+   ],
+   "cases": [
+    "ebay_hub",
+    "naver_center_home",
+    "linnworks_insights",
+    "sellerhub"
+   ],
+   "t": "🛒 판매처 상황판(리드나우 2)",
+   "how": "알라딘·예스24·네이버·우리숍 한 줄씩 — 판매중·처리할 주문(오늘 출고)·진행 주문·🔻 재고 어긋남·30일 주문 · 칸 한 번 누름 = 그 판매처만 걸러진 지금 웹앱 화면(오늘 출고·주문 모음·🛠 처리할 일·운영 화면)",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "숫자는 지금 웹앱 통합 장부·오늘 출고 셈(ledNow·ledTodoNow·ledOrdRows·shipCnt) 그대로 — 두 곳이 어긋나지 않음 · 읽기만",
+   "probe": "U2.omni",
+   "metric": "판매처 일 화면까지 누름 1번(시험 t_omni)",
+   "auto": null
+  },
+  {
+   "id": "U16",
+   "surf": "ui2",
+   "topics": [
+    "item_channels"
+   ],
+   "cases": [
+    "shopify_publishing",
+    "linnlive_grid"
+   ],
+   "t": "🔍 상품 하나 · 모든 판매처 카드(리드나우 2)",
+   "how": "제목·ISBN·SKU로 찾거나 어긋난 책 고르기 줄에서 누르면 네 판매처 칸(판매중/중지·값·재고) 한 카드 · 칸마다 '열기 ›'(알라딘 상품 상세·예스24 전체 상품 그 번호·장부) · '🧾 통합 장부에서 이 책'",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "장부 줄(실물 한 권 = SKU 한 줄)을 그대로 보여 줄 뿐 — 짝 맞추기·고치기는 지금 웹앱 화면",
+   "probe": "U2.omni.card",
+   "metric": "한 책의 판매처 화면까지 누름 2번 안(시험 t_omni)",
+   "auto": null
+  },
+  {
+   "id": "U17",
+   "surf": "ui2",
+   "topics": [
+    "sku_link"
+   ],
+   "cases": [
+    "linnworks_linking"
+   ],
+   "t": "판매처에 '올라 있지 않음' 표시(리드나우 2)",
+   "how": "카드에서 그 판매처 매물이 없으면 '○ 올라 있지 않음'(쓰는 판매처) · '준비 중'(아직 안 켠 판매처)으로 흐리게 — 빈 칸 없음",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "예스24 짝 맞추기는 지금 웹앱 🔗 예스24 연결 표 그대로",
+   "probe": "U2.omni.card",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "U18",
+   "surf": "ui2",
+   "topics": [
+    "stop_other"
+   ],
+   "cases": [
+    "sabangnet",
+    "godomall"
+   ],
+   "t": "한 곳 팔리면 다른 곳 내릴 일을 빨강으로(리드나우 2)",
+   "how": "상황판 🔻 재고 어긋남 칸·카드 판매처 칸을 빨강 + '🔻 내릴 일(판매중지)/수량 n권으로' · 한 번 누름 = 지금 웹앱 🛠 처리할 일",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "고치기·자동 내림은 지금 웹앱 🛠 처리할 일(번외·출고 보호 그대로) — 새 웹앱은 쓰기 0",
+   "probe": "U2.omni",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "U19",
+   "surf": "ui2",
+   "topics": [
+    "channel_price"
+   ],
+   "cases": [
+    "playauto",
+    "cafe24_market"
+   ],
+   "t": "판매처마다 값 차이 표시(리드나우 2)",
+   "how": "판매중인 판매처끼리 값이 다르면 카드 맨 위 '💱 값 차이 최저~최고'(일부러 다르게 둔 값일 수 있어 경고가 아니라 알림 색)",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "값 바꾸기 없음(약속 36 무손해)",
+   "probe": "U2.omni.card",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "U20",
+   "surf": "ui2",
+   "topics": [
+    "channel_board"
+   ],
+   "cases": [
+    "ebay_hub"
+   ],
+   "t": "🛒 판매처 페이지 맨 위에 상황판·상품 카드(리드나우 2)",
+   "how": "새 웹앱 🛒 판매처 페이지 기본 = 머리줄 + 상황판 + 상품 카드 + 지금 웹앱 판매처 탭 그대로 · ✏ 꾸미기 견본 '🛒 통합 판매처'",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "정범님이 판매처 페이지를 이미 게시했으면 그 배치 그대로(기본만 바뀜) · '숫자 줄 기본 배치' 결정과는 따로(🚦 줄은 넣지 않음)",
+   "probe": "U2.omni",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "U21",
+   "surf": "ui2",
+   "topics": [
+    "notify_once"
+   ],
+   "cases": [
+    "playauto"
+   ],
+   "t": "어긋남이 새로 생길 때 한 번만 알림(리드나우 2)",
+   "how": "상황판 🔻 재고 어긋남이 0 → 1 이상이 되는 순간 🔔 알림 한 자리에 한 번(같은 책은 다시 안 울림)",
+   "st": "prop",
+   "ver": "",
+   "conflict": "지금 웹앱 경고·책방 친구 알림과 겹치지 않게 따진 뒤",
+   "probe": "",
+   "metric": "알림 수 / 새 어긋남 수",
+   "auto": null
+  },
+  {
+   "id": "U22",
+   "surf": "ui2",
+   "topics": [
+    "one_ledger"
+   ],
+   "cases": [
+    "sabangnet",
+    "sellerhub"
+   ],
+   "t": "판매처 숫자는 모두 한 장부에서(리드나우 2)",
+   "how": "🧾 통합 장부 페이지(0.4.7 · 지금 웹앱 화면 그대로) + 🛒 상황판·상품 카드의 모든 숫자를 지금 웹앱 통합 장부 한 셈에서 · 상황판 맨 위 '🧾 통합 장부 ›'",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "새 웹앱이 따로 세지 않음 — 장부가 바뀌면 같이 바뀜",
+   "probe": "U2.omni",
+   "metric": "판매처 숫자 출처 1곳",
+   "auto": null
   }
  ],
  "gaps": [
+  {
+   "surf": "ledger",
+   "topic": "item_channels",
+   "t": "상품 하나에 모든 판매처 상태(값·재고·판매중)",
+   "kind": "gap",
+   "cases": [
+    "shopify_publishing",
+    "linnlive_grid",
+    "linnworks_linking"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 9.0
+  },
+  {
+   "surf": "ledger",
+   "topic": "channel_board",
+   "t": "판매처마다 할 일·주문·어긋남을 한 줄씩",
+   "kind": "gap",
+   "cases": [
+    "linnlive_grid",
+    "linnworks_insights",
+    "sellerhub"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 8.4
+  },
   {
    "surf": "web",
    "topic": "confirm_style",
@@ -2157,6 +2448,24 @@
   },
   {
    "t": "U12 ☰ 메뉴를 할 일 갈래로(리드나우 2) — 효과 숫자: 메뉴에서 일 찾는 시간(갈래 머리 6)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U15 🛒 판매처 상황판(리드나우 2) — 효과 숫자: 판매처 일 화면까지 누름 1번(시험 t_omni)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U16 🔍 상품 하나 · 모든 판매처 카드(리드나우 2) — 효과 숫자: 한 책의 판매처 화면까지 누름 2번 안(시험 t_omni)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U22 판매처 숫자는 모두 한 장부에서(리드나우 2) — 효과 숫자: 판매처 숫자 출처 1곳",
    "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
    "for": "ui2",
    "by": "엔진"
