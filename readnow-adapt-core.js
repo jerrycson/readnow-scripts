@@ -251,6 +251,11 @@
       { how: 'sel', f: (b) => txt(b.querySelector('.ebook_price em')) || null },
       { how: 'ctx', f: (b) => (ttxt(b).match(/전자책\s*:?\s*([\d,]+)\s*원/) || [])[1] || null },
     ] },
+    /* (adapt5 11/11) 이 줄에 전자책이 있다는 표시(점수 밖) — '전자책 값 채움 ÷ 전자책 있는 줄'로 TTB ebookList 대체를 판정(전엔 전자책 없는 책까지 분모라 47%에 멈춤) */
+    ebookHas: { type: 'str', opt: true, paths: [
+      { how: 'sel', f: (b) => (b.querySelector('.ebook_price, a.view_blue_btn[title*="보러"]') ? '1' : null) },
+      { how: 'ctx', f: (b) => (/이\s*책의\s*전자책/.test(ttxt(b)) ? '1' : null) },
+    ] },
     pubYm: { type: 'date', paths: [
       { how: 'sel', f: (b) => { const P = bylineOf(b); const x = P ? P.find((y) => /^\s*\d{4}\s*(?:년|-)/.test(y)) : null; return x ? NORM.date(x) : null; } }, /* (0.1.3) 지은이 줄의 날짜 마디 */
       { how: 'ctx', f: (b) => { const m = ttxt(b).match(/(\d{4})\s*년\s*(\d{1,2})\s*월/) || ttxt(b).match(/\|\s*(\d{4})-(\d{2})(?:-\d{2})?\s*(?:\||$)/); return m ? `${m[1]}-${String(m[2]).padStart(2, '0')}` : null; } },
@@ -497,18 +502,22 @@
    *  · 표지 이름이 없는 상품만 지은이 묶음(같은 지은이 2권 넘게) → 제목 검색 · 쪽당 맞춘 수(길마다 성적)를 배워 성적 나쁜 길은 저절로 뒤로(yield) */
   const kCode = (k) => { const s = String(k || '').toUpperCase(); return /^K\d{9}$/.test(s) ? s : null; };
   const idKeyOf = (it) => NORM.isbn(it.isbn) || coverIsbn(it.coverKey) || kCode(it.coverKey) || null;
-  function spBatchPlan3(items, opt) { const o = { k: 12, maxQ: 400, kcode: true, author: true, yield: null, ...(opt || {}) }; const k = Math.min(Math.max(+o.k || 12, 2), 30);
+  /* (adapt5 11/11) 11/11 실제 회차: k 24(쪽 48 · 줄 494 = 쪽당 10.3줄)인데 맞춤률 0.425 — 같은 날 편집자 추천은 번호 12개 검색 3쪽에 36/36권, dry(k 12)는 쪽당 10.75권 0.823
+   *  → 한 검색어에 번호가 12개(약 170자)를 넘으면 뒤 번호는 찾지 않음(알라딘이 검색어를 자름 · 쪽 크기 25·50과 무관) · 그런데 쪽이 '꽉 찬 것'(줄 ≥ 25)으로 안 보여 뒤 번호 12개를 '없는 책'으로 7일 쉼에 넣었음
+   *  → k 상한 kMax(기본 12) · 검색어 글자 상한 qMax(기본 170자 · 넘으면 그 쪽은 거기서 끊음) · 여러 번호에서 한 번 못 찾은 상품(missM)은 다음엔 지은이·제목 검색으로 */
+  function spBatchPlan3(items, opt) { const o = { k: 12, maxQ: 400, kcode: true, author: true, yield: null, kMax: 12, qMax: 170, ...(opt || {}) }; const kMax = Math.min(Math.max(+o.kMax || 12, 2), 30); const k = Math.min(Math.max(+o.k || 12, 2), kMax); const qMax = Math.max(+o.qMax || 170, 30);
     const byI = new Map(), byA = new Map(), byT = new Map(); const solo = [];
-    for (const it of items || []) { let key = NORM.isbn(it.isbn) || coverIsbn(it.coverKey); if (!key && o.kcode) key = kCode(it.coverKey); if (key) { if (!byI.has(key)) byI.set(key, []); byI.get(key).push(it.id); continue; } solo.push(it); }
-    const Q = []; const keys = [...byI.keys()]; for (let i = 0; i < keys.length; i += k) { const part = keys.slice(i, i + k); Q.push({ q: part.join(' '), field: 'Multi', keys: part, ids: part.flatMap((x) => byI.get(x)), pri: 3 }); }
+    for (const it of items || []) { let key = NORM.isbn(it.isbn) || coverIsbn(it.coverKey); if (!key && o.kcode) key = kCode(it.coverKey); if (key && !(+it.missM > 0)) { if (!byI.has(key)) byI.set(key, []); byI.get(key).push(it.id); continue; } solo.push(it); }
+    const Q = []; const keys = [...byI.keys()]; let part = []; const cut = () => { if (part.length) Q.push({ q: part.join(' '), field: 'Multi', keys: part, ids: part.flatMap((x) => byI.get(x)), pri: 3 }); part = []; };
+    for (const x of keys) { if (part.length && (part.length >= k || part.join(' ').length + 1 + x.length > qMax)) cut(); part.push(x); } cut();
     const au = (it) => { const a = String(it.author || '').split(/[,(·|]/)[0].replace(/\s+/g, ' ').trim(); return a.length >= 2 && a.length <= 20 && !/^(편집부|편집 ?부|저자|미상|작자 미상|기획|글|그림)$/.test(a) ? a : null; };
     if (o.author) for (const it of solo) { const a = au(it); if (!a) continue; const kk = keyOf('str', a); if (!byA.has(kk)) byA.set(kk, { a, L: [] }); byA.get(kk).L.push(it); }
-    const yA = o.yield && o.yield.author, yT = o.yield && o.yield.title; const authorOk = !(yA && yA[0] >= 10 && yT && yT[0] >= 10 && yA[1] / yA[0] < yT[1] / yT[0]); /* 지은이 묶음 성적이 제목 검색보다 나쁘면(쪽 10개 넘게 본 뒤) 안 씀 */
+    const yA = o.yield && (o.yield.Author || o.yield.author), yT = o.yield && (o.yield.Title || o.yield.title); /* (adapt5) 배운 성적 칸 이름은 'Author'·'Title'(전엔 소문자만 봐서 늘 못 읽음) */ const authorOk = !(yA && yA[0] >= 10 && yT && yT[0] >= 10 && yA[1] / yA[0] < yT[1] / yT[0]); /* 지은이 묶음 성적이 제목 검색보다 나쁘면(쪽 10개 넘게 본 뒤) 안 씀 */
     const inA = new Set(); if (authorOk) for (const { a, L } of [...byA.values()].sort((x, y) => y.L.length - x.L.length)) { if (L.length < 2) continue; Q.push({ q: a, field: 'Author', ids: L.map((x) => x.id), pri: 2 }); L.forEach((x) => inA.add(x.id)); }
     for (const it of solo) { if (inA.has(it.id)) continue; const q = cleanTitle(it.title); if (q.length < 2) continue; const kk = keyOf('str', q); if (!byT.has(kk)) byT.set(kk, { q, field: 'Title', ids: [], pri: 1 }); byT.get(kk).ids.push(it.id); }
     Q.push(...byT.values()); Q.sort((a, b) => b.pri - a.pri || b.ids.length - a.ids.length); return Q.slice(0, o.maxQ); }
   /* 한 쪽이 꽉 찼는데(줄 수 ≥ 쪽 크기) 못 맞춘 번호 = 잘렸을 수 있음(없는 책이 아님) → 다음 회차로 · 다 맞고 쪽이 넉넉하면 k를 늘림 */
-  function spMultiLearn(k, res) { const K = Math.min(Math.max(+k || 12, 2), 30); if (!res || !res.n) return K; if (res.full && res.miss > 0) return Math.max(4, K - 2); if (!res.full && res.hit / res.n >= 0.8 && res.rows < res.cap * 0.6) return Math.min(24, K + 2); return K; }
+  function spMultiLearn(k, res) { const kMax = Math.min(Math.max(+((res && res.kMax) || 12), 2), 30); const K = Math.min(Math.max(+k || 12, 2), kMax); if (!res || !res.n) return K; if (res.full && res.miss > 0) return Math.max(4, K - 2); if (!res.full && res.hit / res.n >= 0.8 && res.rows < res.cap * 0.6) return Math.min(24, kMax, K + 2); return K; } /* (adapt5) k는 kMax(기본 12 · 검색어 자름 한도)를 넘지 않음 */
   /* SP 다시 읽기 간격(일) — 7일마다 모두 다시 읽던 것 → 변동 적은 책은 길게(7 → 14 → 28일) · 많이 팔리는 책(3천 넘음)·크게 바뀐 책은 7일 */
   function spKeepDays(prev, cur, prevDays) { const d0 = Math.min(Math.max(+prevDays || 7, 7), 28); if (cur == null || !Number.isFinite(+cur)) return 7; if (prev == null || !Number.isFinite(+prev)) return 7; const a = +prev, b = +cur; if (b >= 3000) return 7;
     const rel = Math.abs(b - a) / Math.max(a, 1); const tiny = Math.abs(b - a) <= 3 && Math.max(a, b) < 30; if (tiny || rel <= 0.1) return Math.min(28, d0 * 2); if (rel <= 0.3) return d0; return 7; }

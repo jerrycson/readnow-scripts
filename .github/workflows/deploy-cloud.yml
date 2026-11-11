@@ -98,6 +98,8 @@ jobs:
             if grep -q "iam.serviceAccounts.getAccessToken\|generateAccessToken\|workloadIdentityUser" /tmp/deploy.log; then echo "::error::배포 계정을 쓸 권한(GitHub → gh-deployer 묶음)이 아직 없음 — Cloud Shell에서 setup-autodeploy.sh를 다시 실행하세요"; fi
             exit 1; fi
           tail -n 5 /tmp/deploy.log
+          # (adapt5 11/11) 동시 처리·메모리·CPU가 실제로 들어갔는지 알림으로 남김(읽기만 · 실패해도 배포는 성공)
+          C=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(spec.template.spec.containerConcurrency,spec.template.spec.containers[0].resources.limits.memory,spec.template.spec.containers[0].resources.limits.cpu,status.latestReadyRevisionName)' 2>/dev/null || true); echo "::notice::클라우드 설정(동시 처리·메모리·CPU·판) $C"
       - name: 올라간 판 확인
         if: env.DO_DEPLOY == '1'
         run: |
