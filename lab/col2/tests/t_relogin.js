@@ -89,8 +89,8 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
     await feed(); s = await until(async () => { await feed(); const v = await y(); return v.login === 'ok' ? v : null; }, 120);
     ok(s && s.login === 'ok' && logins().length === 1 && logins()[0].okId && logins()[0].okPw, '세션이 풀려 있었으니 확인 로그인이 곧 다시 로그인 → 살아남(로그인 한 번)', JSON.stringify(logins()));
     let jl = (await H.api('GET', '/log/lines?after=0')).j.lines.map((e) => e.x).join('\n'); ok(/계정 확인 — 로그인 됨/.test(jl) && /맞지 않아 저장하지 않음/.test(jl), '기록에 확인 로그인 결과(맞음·틀림 — 값 없음)');
-    /* 세션이 살아 있을 때 저장 = 따로 된 임시 창에서 확인 · 본 세션은 그대로 */ { const sess0 = [...Y.S.sess]; const n0 = logins().length; r = await H.api('POST', '/cred/save', { pf: 'y24', id: ID, pw: PW }, { Origin: `http://127.0.0.1:${H.port}` });
-      ok(r.j.ok && logins().length === n0 + 1 && sess0.every((x) => Y.S.sess.has(x)) && (await y()).login === 'ok', '세션이 살아 있을 때 = 쿠키가 따로인 임시 창에서 로그인해 확인 · 살아 있던 세션 그대로', { ok: r.j, n: logins().length - n0 }); }
+    /* 세션이 살아 있을 때 저장 = 로그인하지 않고 잠가 저장(확인은 다음 다시 로그인 때) · 본 세션은 그대로 */ { const sess0 = [...Y.S.sess]; const n0 = logins().length; r = await H.api('POST', '/cred/save', { pf: 'y24', id: ID, pw: PW }, { Origin: `http://127.0.0.1:${H.port}` });
+      ok(r.j.ok && r.j.pending && r.j.kind === 'live' && logins().length === n0 && sess0.every((x) => Y.S.sess.has(x)) && (await y()).login === 'ok', '(11/11 y24ops2) 세션이 살아 있을 때 = 로그인을 하나 더 하지 않고 잠가 저장(예스24는 한 계정 세션 하나 — 임시 창 로그인이 본 세션을 끊었음) · 살아 있던 세션 그대로', { ok: r.j, n: logins().length - n0 }); }
     const n1 = logins().length; Y.S.sess.clear(); await H.api('POST', '/y24/run', { what: 'ord' }); await feed();
     s = await until(async () => { await feed(); return logins().length > n1 && (await y()).login === 'ok'; }, 160); ok(s, '다시 세션이 풀리면(로그아웃) 스스로 또 로그인', logins().length - n1);
     jl = (await H.api('GET', '/log/lines?after=0')).j.lines.map((e) => e.x).join('\n'); ok(/스스로 다시 로그인함/.test(jl) && /스스로 다시 로그인 됨/.test(jl), '기록에 다시 로그인한 일·결과');
