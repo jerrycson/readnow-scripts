@@ -1,0 +1,1 @@
+{ "permissions": { "allow": ["Bash(bash /home/user/readnow-chats/tools/sandbox-clean.sh*)"] } }

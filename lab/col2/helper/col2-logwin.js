@@ -50,7 +50,7 @@
       if (p.coolMs) W.push({ l: 'warn', t: `알라딘이 '요청이 너무 많다'(429)고 해 ${Math.ceil(p.coolMs / 60000)}분 쉼(저절로 다시)` });
       if (s.core && s.core.err) W.push({ l: 'warn', t: '운영 공용 파일: ' + s.core.err });
       if (rl.err) W.push({ l: 'warn', t: '웹앱이 대신 기록하지 못함: ' + rl.err });
-      if (pc !== 'logger' && y.on && y.login === 'need') W.push({ l: 'err', t: '🔐 예스24 로그인 필요 — 옆 창 [🔐 예스24 로그인] 한 번' }); }
+      if (pc !== 'logger' && y.on && y.login === 'need') W.push(y.re && y.re.auto ? { l: 'warn', t: '🔐 예스24 세션이 풀림 — 저장된 계정으로 스스로 다시 로그인함' + (y.reWhy && y.reWhy.why ? ' · 지금: ' + y.reWhy.why : '') } : { l: 'err', t: '🔐 예스24 로그인 필요 — 옆 창 [🔐 예스24 로그인] 한 번' + (y.re && y.re.stop ? ' (까닭: 스스로 다시 로그인 멈춤 — ' + y.re.stop + ')' : y.reWhy && y.reWhy.why ? ' (까닭: ' + y.reWhy.why + ')' : '') }); } /* (11/11 fix5) 저장 계정이면 수동 안내 대신 · 실패면 까닭과 함께 */
     return W; }
   function roundsHtml(R, pc, open) { if (!R || !R.length) return ''; const one = (r) => `<div class="rd"><b>${esc(r.h)}</b> 읽은 화면 <b>${r.reads}</b>${r.reads ? ` · 같음 ${r.same} · <span class="${r.diff ? 'warn' : ''}">다름 ${r.diff}</span> · 운영 칸 없음 ${r.no} · <span class="${r.fail ? 'err' : ''}">실패 ${r.fail}</span>` : ''}${r.avgMs ? ` · 한 장 ${(r.avgMs / 1000).toFixed(1)}초` : ''}${r.err ? ` · <span class="err">오류 줄 ${r.err}</span>` : ''}${pc !== 'logger' && r.y24 ? ` · 예스24 ${r.y24}줄` : ''}${r.rest.length ? `<br><span class="sub">쉼 까닭: ${r.rest.map((x) => esc(x.w) + ' ×' + x.c).join(' · ')}</span>` : ''}</div>`;
     return `<details class="rds"${open ? ' open' : ''}><summary>🧾 회차 요약 <span class="sub">(한 시간 = 한 회차 · ${esc(JOBS[pc === 'logger' ? 'logger' : 'office'].read)})</span></summary>${R.map(one).join('')}</details>`; }

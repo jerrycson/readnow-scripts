@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.263의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.264의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.263' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.263', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.264' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.264', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -1625,6 +1625,7 @@
       if (ld || !same) b2.set(C('prd_metric_changes').doc(), { bookId, at, kind: 'usedListings', add: ld ? ld.add : [], del: ld ? ld.del : [], chg: ld ? ld.chg : [], orderOnly: !ld, page: JSON.parse(JSON.stringify(used.listings || [])), firstRecord: ld ? ld.first : !(prevM && prevM.usedFirstPage), lastPage: used.lastPage || null, usedTotal: used.usedTotal ?? null, ...W() }); }
     for (const t of rk.started) b2.set(C('prd_rank_periods').doc(), { bookId, title: t, firstSeenAt: at, lastSeenAt: at, endedSeenAt: null, ...W() });
     await b2.commit();
+    if (PUBONLY && page.aladinItemId) { const Q = (globalThis.__rnC2lgBk = globalThis.__rnC2lgBk || []); Q.push({ bookId, itemId: String(page.aladinItemId) }); if (Q.length > 300) Q.splice(0, Q.length - 300); } /* (11/11 col2rep2) 🛰 로거 — 방금 읽은 책을 번외 로거 다리(rnC2lg)가 그림자 차례로(메모리에만 · 300권) */
     if (rk.continuing.length || rk.ended.length) { // 이어지는/끝난 순위 기간 갱신
       const qs = await C('prd_rank_periods').where('bookId', '==', bookId).where('endedSeenAt', '==', null).get();
       const b3 = db.batch();
@@ -1844,11 +1845,13 @@
       for (; prog.i < prog.list.length; prog.i++) {
         if (stopFlag) { if (w) await b.commit(); await saveProgress(name, prog); throw new Error('멈춤'); }
         const [id, sc] = String(prog.list[prog.i]).split('|');
+        /* (engfix1 11/11) ☁ 목록을 만든 뒤 다른 곳(클라우드 숍 요약 다시 읽기 · 다른 회차)이 이미 새로 읽은 판매자는 건너뜀 — 로거 테더링 몫을 아낌 · 판매자 문서 읽기는 한 번(아래 sPrev로 다시 씀) */
+        let sPre = null; if (mode !== 'all') { const sd0 = await C('sellers').doc(id).get().catch(() => null); sPre = sd0 && sd0.exists ? sd0.data() : {}; if (sPre.rev6mAt && Date.now() - Date.parse(sPre.rev6mAt) < Math.max(1, SET.rev6mDays || 7) * 864e5) { prog.skipFresh = (prog.skipFresh || 0) + 1; continue; } }
         let doc; try { ({ doc } = await getDoc(`/shop/usedshop/wshopitem.aspx?SC=${sc}`)); } catch (e) { if (e && /🛡 로거/.test(String(e.message || ''))) { log(`SC ${sc}: 🛡 로거 크롬이 열지 않는 주소(우리 숍·로그인 영역) — 건너뜀 (7일 뒤 다시)`, 1); b.set(C('sellers').doc(id), { rev6mTriedAt: nowIso(), rev6mTriedVer: RSV.VERSION, ...W() }, { merge: true }); w++; continue; } /* (1.89.224 🔬 정밀 점검 11/06) 막힌 주소는 재시도 없이 건너뜀 */ if (!(e && e.goneSeller)) throw e; log(`SC ${sc}: 알라딘에서 탈퇴한 판매자 — 건너뜀 (7일 뒤 다시)`, 1); b.set(C('sellers').doc(id), { rev6mTriedAt: nowIso(), rev6mTriedVer: RSV.VERSION, shopGone: true, ...W() }, { merge: true }); w++; continue; } /* (1.89.160) */
         const r = RSV.parseShopSummary(doc); let shopSigNow = null; // (1.89.32 3시간 점검) shopSig를 아래 sellers 쓰기 한 번에 함께 — 전엔 같은 문서를 따로 두 번 써 판매자마다 쓰기가 한 번 더 났음
         if (r.status === 'ok' || r.status === 'lt3') { // lt3 = 최근 6개월 평가 3건 미만(알라딘이 '-'로 표시) — 실패가 아니라 '최근 활동 거의 없음'이라는 정보
           { const sNew = { rev6m: r.rev6m ?? null, rev6mLt3: r.rev6mLt3 ?? null, shopPeriods: r.periods ?? null, shopTotal: r.total ?? null, aladinGrade: r.grade ?? null, isPro: r.isPro ?? null, cancel3m: r.cancel3m ?? null, bizInfo: r.info || null, contactNote: r.infoNote || null };
-            const sSig = JSON.stringify(sNew); const sd = (await C('sellers').doc(id).get().catch(() => null)); const sPrev = sd && sd.exists ? sd.data() : {};
+            const sSig = JSON.stringify(sNew); const sd = sPre ? null : (await C('sellers').doc(id).get().catch(() => null)); const sPrev = sPre || (sd && sd.exists ? sd.data() : {});
             if (sPrev.shopSig !== sSig) { b.set(C('seller_history').doc(`${id}_${nowIso().replace(/[:.]/g, '-')}`), { sellerId: id, sc, kind: 'shopSummary', at: nowIso(), ...sNew, ...W() }); w++; } // 숍 화면 내용이 바뀌면 그 판을 시각과 함께 보관 (sellers 문서는 지금 값만)
             shopSigNow = sSig; }
           if (qSet.has('*') || qSet.has(String(sc))) { b.set(C('app_settings').doc('seller_queue'), { sc: firebase.firestore.FieldValue.arrayRemove(String(sc)) }, { merge: true }); qSet.delete(String(sc)); w++; } /* (1.84.8) 모으기 줄에서 뺌 · (1.89.32 3시간 점검) 줄에 있던 판매자만 — 전엔 판매자마다 같은 설정 문서를 지워 쓰기가 한 번씩 더 났음 */
@@ -1863,7 +1866,7 @@
       }
       if (w) await b.commit();
       await finishJob(name, { sellers: prog.list.length, got: prog.got });
-      log(`6개월 평가 수 완료: ${prog.got}/${prog.list.length}곳 (그중 최근 6개월 평가 3건 미만 ${prog.lt3 || 0}곳 — 개인셀러에 많음)`);
+      log(`6개월 평가 수 완료: ${prog.got}/${prog.list.length}곳 (그중 최근 6개월 평가 3건 미만 ${prog.lt3 || 0}곳 — 개인셀러에 많음${prog.skipFresh ? ` · 이미 새로 읽힌 ${prog.skipFresh}곳 건너뜀` : ''})`);
     } finally { await releaseLane('aladin'); }
   }
   const num6 = (n) => Number(n).toLocaleString();
@@ -3014,7 +3017,7 @@
     try { if (!AU.cfg || Date.now() - AU.cfgAt > 30e3) { const d = (await C('app_settings').doc('ship_auto').get()).data() || {}; const c = SHC.autoCfg(d); c.since = d.since || null; c.holds = d.holds && typeof d.holds === 'object' ? d.holds : {}; /* (11/04 정범님) ⏸ 보류 목록(웹앱 출고 카드) */ AU.cfg = c; AU.cfgAt = Date.now(); if (!AU.bbx || Date.now() - (AU.bbxAt || 0) > 5 * 60e3) { /* (정범님 11/05 밤) 🏷 알라딘 매입 후보 판정 재료(공용 bbNear) — 웹앱·클라우드와 같은 출처: 기준 차액 app_settings/main.bbMargin · 배송비 정책 crm_system/shopPolicy.current · 판정 엔진 DEFAULTS · 5분마다 */ const bx = { margin: null, policy: null, D: null }; try { bx.margin = ((await C('app_settings').doc('main').get()).data() || {}).bbMargin ?? null; } catch (e) {} try { const pc = ((await C('crm_system').doc('shopPolicy').get()).data() || {}).current || {}; bx.policy = { fee: pc.fee ?? null, freeOver: pc.freeOver ?? null }; } catch (e) {} const PRb = window.ReadnowPricing || globalThis.ReadnowPricing || null; bx.D = (PRb && PRb.DEFAULTS) || null; AU.bbx = bx; AU.bbxAt = Date.now(); } if ((d.rejudgeAt || null) !== (AU.rjAt || null)) { AU.rjAt = d.rejudgeAt || null; (d.rejudgeOrders || []).forEach((x) => AU.mem.delete(String(x))); } /* (정범님 11/02) 🔄 웹앱 '시장 다시 읽기' 뒤 다시 판단할 주문 — 기억을 지워 다시 봄 */ if (c.on && !c.since) { c.since = nowIso(); await C('app_settings').doc('ship_auto').set({ since: c.since, sinceBy: `${PC_NAME} (처음 켜짐 — 이 시각 뒤 주문부터)` }, { merge: true }).catch(() => {}); } }
       const cfg = AU.cfg; if (!cfg.on) return null;
       if (Date.now() - AU.beatAt > 120e3) { AU.beatAt = Date.now(); C('app_settings').doc('ship_auto').set({ beatAt: nowIso(), beatVer: APP_VER, beatBy: PC_NAME, beats: { [PC_NAME]: nowIso() } }, { merge: true }).catch(() => {}); }
-      const cfgRec = { on: cfg.on, minQty: cfg.minQty, qtyMax: cfg.qtyMax, bundleOn: cfg.bundleOn, bundleSize: cfg.bundleSize, bundleWon: cfg.bundleWon, bundleRound: cfg.bundleRound, maxItemWon: cfg.maxItemWon, maxTotalWon: cfg.maxTotalWon, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, lowOn: cfg.lowOn, lowPrice: cfg.lowPrice, lowSku: cfg.lowSku, bbMargin: SHC.bbMarginOf ? SHC.bbMarginOf(AU.bbx && AU.bbx.margin) : null, since: cfg.since }; /* (10/28) ⑥ 저가·YLW 매입가 기준도 그때 설정으로 남김 · (11/05 밤) 매입 후보 기준 차액도 */ if (AU.mem.size > 3000) AU.mem.clear();
+      const cfgRec = { on: cfg.on, minQty: cfg.minQty, qtyMax: cfg.qtyMax, bundleOn: cfg.bundleOn, bundleSize: cfg.bundleSize, bundleWon: cfg.bundleWon, bundleRound: cfg.bundleRound, maxItemWon: cfg.maxItemWon, maxTotalWon: cfg.maxTotalWon, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, sellerReview: !!cfg.sellerReview, lowOn: cfg.lowOn, lowPrice: cfg.lowPrice, lowSku: cfg.lowSku, bbMargin: SHC.bbMarginOf ? SHC.bbMarginOf(AU.bbx && AU.bbx.margin) : null, since: cfg.since }; /* (10/28) ⑥ 저가·YLW 매입가 기준도 그때 설정으로 남김 · (11/05 밤) 매입 후보 기준 차액도 */ if (AU.mem.size > 3000) AU.mem.clear();
       for (const o of orders || []) { const ono = String(o.orderNo || ''); if (!ono || o.platform === 'cash') continue; let m = AU.mem.get(ono); if (m && m.final) continue; const ref = C('shp_auto').doc(ono);
         if ((cfg.holds || {})[ono]) { out.hold = (out.hold || 0) + 1; continue; } /* (11/04 정범님) ⏸ 보류 — 이 주문은 자동 판단 안 함(풀면 30초 안에 다시 봄) */
         if (!m) { const v0 = (await ref.get()).data() || null; if (v0 && v0.state && v0.state !== 'wait') { AU.mem.set(ono, { final: true }); continue; } /* 상태 없는 기록(보류만 적힌 것)은 아직 판단 전 */ m = { firstAt: (v0 && Date.parse(v0.firstAt || '')) || Date.now(), doc: !!v0, rj: (v0 && v0.rejudge) || null }; AU.mem.set(ono, m); }
@@ -3023,9 +3026,9 @@
         if (!m.rj && cfg.since && oAt && oAt < Date.parse(cfg.since) - 60e3) { await auFinal(ref, { ...base, state: 'skip', reasons: ['자동 발송요청을 켜기 전에 들어온 주문 — 사람이 처리'], decidedAt: nowIso() }, null, m).catch(() => {}); m.final = !m.held; continue; }
         if (!m.hcAt || Date.now() - m.hcAt > 60e3) { m.hcAt = Date.now(); const qs = await C('shp_cmds').where('orderNos', 'array-contains', ono).limit(20).get(); const hd = qs.docs.find((x) => { const y = x.data() || {}; return (y.type === 'startDelivery' || y.type === 'cancelOrder') && !y.auto && !['cancelled', 'cancel'].includes(y.status); }); /* (1.89.189 정밀 점검) 사람이 ✖ 주문 취소를 맡긴 주문도 '사람이 처리 중' — 클라우드 autoHumanCmd와 같은 규칙 */
           if (hd) { await auFinal(ref, { ...base, state: 'human', humanCmd: hd.id, reasons: ['사람이 먼저 발송준비시작을 맡김 — 자동 판단 안 함'], decidedAt: nowIso() }, null, m).catch(() => {}); m.final = !m.held; continue; } }
-        if (cfg.custBlock && m.cust === undefined) m.cust = await auCust(o, SHC);
+        if ((cfg.custBlock || cfg.sellerReview) && m.cust === undefined) m.cust = await auCust(o, SHC);
         const E = {}; for (const it of o.items || []) { const lid = String(it.listingId || ''); if (!lid) continue; try { const e = (await C('shp_enrich').doc(lid).get()).data(); if (e) E[lid] = e; } catch (e2) {} }
-        const D = SHC.autoShipDecide({ order: o, enrich: E, cfg, evalSale: ML.evalSale, now: Date.now(), firstAt: m.firstAt, cust: cfg.custBlock ? m.cust : null, bb: AU.bbx || null });
+        const D = SHC.autoShipDecide({ order: o, enrich: E, cfg, evalSale: ML.evalSale, now: Date.now(), firstAt: m.firstAt, cust: cfg.custBlock || cfg.sellerReview ? m.cust : null, bb: AU.bbx || null });
         const rec = { ...base, qty: D.qty, total: D.total, top: D.top, items: D.items, reasons: D.reasons, kinds: D.kinds, cust: (m.cust && m.cust.hits) || [], custErr: (m.cust && m.cust.err) || null, shipVer: SHC.VERSION || null, mlVer: ML.VERSION || null };
         if (D.state === 'wait') { out.wait++; if (!m.doc) { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); if (!sn.exists) tx.set(ref, { ...rec, state: 'wait', waitLeftMs: D.waitLeftMs, ...W() }); }).catch(() => {}); m.doc = true; } continue; }
         if (D.state === 'pass') { const cref = C('shp_cmds').doc('auto_' + ono); const ok = await auFinal(ref, { ...rec, state: 'sent', cmdId: cref.id, decidedAt: nowIso() }, { ref: cref, v: { type: 'startDelivery', orderNos: [ono], status: 'queued', createdAt: nowIso(), by: `🤖 자동 발송요청 (${PC_NAME} 판단)`, auto: true, dev: PC_NAME, uploadedAt: TS() } }, m).catch((e) => { log(`🤖 자동 발송요청 기록 실패(${ono}): ${e.message}`, 1); return false; });
@@ -4608,7 +4611,11 @@
     else {
     ui('출판 판매 통계: 이미 받은 날 확인', 0, 0); const have = new Map(); (await C('mkt_kpipa').where(firebase.firestore.FieldPath.documentId(), '>=', start).where(firebase.firestore.FieldPath.documentId(), '<=', '99999999').get()).forEach((d) => { if (/^\d{8}$/.test(d.id)) have.set(d.id, d.data()); }); /* (1.63.12) zx_… (더 가져온 표)는 날짜 줄이 아님 */
     const recent = kpAdd(end, -6); const plan = [];
-    for (const type of ['onOff', 'bookType']) { const need = []; for (let d = start; d <= end; d = kpAdd(d, 1)) { const x = have.get(d); if (!x || !x[type] || d >= recent) need.push(d); }
+    /* (11/11 col2rep2 · 약속 38·48) 🔀 번외로 넘김 — app_settings/col2_handoff.jobs.kpipa가 켜져 있고 맡은 번외 PC 소식(beat)이 8시간 안이면 '최근 7일 일별 표'는 번외가 씀 → 운영은 그 앞 빈 날 채우기·주제분류·더 가져오기만
+     *  끄면(웹앱 ⚙ › 🔀 번외로 넘기기 [되돌리기]) 다음 회차부터 곧바로 운영이 다시 함 · 번외가 8시간 소식 없으면 운영이 스스로 다시 함(lab/col2/shadow/col2-handoff.js 규칙과 같음) */
+    const HO_KP = await (async () => { try { const h = (await C('app_settings').doc('col2_handoff').get()).data() || {}; const x = h.jobs && h.jobs.kpipa; if (!x || x.on !== true) return null; const ref = Math.max(Date.parse(x.beat || '') || +x.beat || 0, Date.parse(x.at || '') || +x.at || 0); return ref && Date.now() - ref < 8 * 3600e3 ? String(x.pc || '') : null; } catch (e) { return null; } })();
+    if (HO_KP) log(`📚 출판 판매 통계: 최근 7일 일별 표는 번외 수집기(${HO_KP})로 넘김 — 운영은 그 앞 빈 날만 채움 · 되돌리기는 ⚙ › 🔀 번외로 넘기기`);
+    for (const type of ['onOff', 'bookType']) { const need = []; for (let d = start; d <= end; d = kpAdd(d, 1)) { const x = have.get(d); if (HO_KP ? (!x || !x[type]) && d < recent : (!x || !x[type] || d >= recent)) need.push(d); }
       // 이어진 날짜끼리 31일 이하 묶음으로 (화면 규칙: 5~31일) — 5일보다 짧으면 앞으로 늘려 5일
       let i = 0; while (i < need.length) { let j = i; while (j + 1 < need.length && need[j + 1] === kpAdd(need[j], 1) && j - i < 30) j++; let from = need[i]; const to = need[j]; let n = j - i + 1; if (n < 5) { from = kpAdd(to, -4); n = 5; } plan.push({ type, from, to }); i = j + 1; } }
     log(`📚 출판 판매 통계: ${start.slice(0, 4)}-${start.slice(4, 6)}-${start.slice(6)} ~ ${end.slice(0, 4)}-${end.slice(4, 6)}-${end.slice(6)} (${days}일) · 이미 ${have.size}일 있음 · 받을 묶음 ${plan.length}개 (31일씩, 판매채널별·도서유형별)`);

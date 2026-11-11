@@ -60,7 +60,7 @@ const F = require('./fixtures.js');
     await H.api('POST', '/win/app?p=compare', {}); await wait(800); ca = appL().slice(-1)[0] || ''; ok(appL().length === 2 && /--window-position=100,50/.test(ca) && /--window-size=400,600/.test(ca), '닫았다 다시 열면 기억한 자리·크기', ca.slice(0, 200));
     killMark('col2-win-chrome'); await wait(500); await H.api('POST', '/win/hrect', { p: 'compare', x: 6000, y: 3000, w: 380, h: 560 });
     await H.api('POST', '/win/app?p=compare', {}); await wait(800); ca = appL().slice(-1)[0] || ''; ok(/--window-position=1540,0/.test(ca), '기억한 자리가 화면 밖이면 오른쪽 위', ca.slice(0, 200)); killMark('col2-win-chrome');
-    const pg2 = await H.req('GET', '/'); ok(/data-a="app\?p=compare"/.test(pg2.b) && !/target="_blank"/.test(pg2.b) && /max-width:100%|overflow-x:hidden/.test(pg2.b) && /<details/.test(pg2.b) && /이 PC:/.test(pg2.b) && /알라딘 로그인: 이 단계에선 안 함/.test(pg2.b), '📊 상태 창 = 작은 창 꾸밈(접는 칸) · 비교 화면은 새 탭 대신 작은 창 단추 · 이 PC 이름 · 알라딘 로그인 안 하는 까닭');
+    const pg2 = await H.req('GET', '/'); ok(/data-a="app\?p=compare"/.test(pg2.b) && !/target="_blank"/.test(pg2.b) && /max-width:100%|overflow-x:hidden/.test(pg2.b) && /<details/.test(pg2.b) && /이 PC:/.test(pg2.b) && /id="glance"/.test(pg2.b) && /class="ib"/.test(pg2.b), '📊 상태 창 = 작은 창 꾸밈(접는 칸) · 비교 화면은 새 탭 대신 작은 창 단추 · 이 PC 이름 · (11/11) 맨 위 한눈 카드 · 설명은 ⓘ');
 
     console.log('⑤ 지킴이 — 꺼지면 다시 띄움 · 다시 열기 · 끄기');
     await H.api('POST', '/cfg', { watch: { tickSec: 1, pause: false } });

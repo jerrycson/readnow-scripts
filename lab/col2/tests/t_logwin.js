@@ -90,7 +90,7 @@ const JR = require('../helper/col2-journal.js'); const LW = require('../helper/c
     { const st = async () => (await H.api('GET', '/status')).j; const spawns = () => H.T.clog().filter((l) => /--app=\S*\/log/.test(l)).length; const acts = () => H.T.win().acts || []; const btnOn = () => p.evaluate(() => document.getElementById('jwBtn').classList.contains('on'));
       ok(require(path.join(L.ROOT, 'helper', 'col2-ui.js')).normalize({}).logPop === true, '기본값 = 따로 작은 창(설정이 없으면)');
       if (await vis()) await p.click('#rnjX'); await H.api('POST', '/win/log', { act: 'close', why: '시험 처음' }); await wait(400);
-      await p.click('#setBtn'); await wait(300); await p.check('#lpop1'); await wait(500); await p.click('#setBtn'); await wait(200);
+      await p.click('#setBtn'); await p.evaluate(() => document.querySelectorAll('details.grp').forEach((d) => (d.open = true))); /* (11/11 col2ui1) ⚙ 자세히 묶음은 처음엔 접힘 — 시험은 펼쳐 봄 */ await wait(300); await p.check('#lpop1'); await wait(500); await p.click('#setBtn'); await p.evaluate(() => document.querySelectorAll('details.grp').forEach((d) => (d.open = true))); /* (11/11 col2ui1) ⚙ 자세히 묶음은 처음엔 접힘 — 시험은 펼쳐 봄 */ await wait(200);
       ok((await H.api('GET', '/ui')).j.ui.logPop === true, '⚙ › 창 › 🗒 기록창 여는 곳 = 따로 작은 창으로 바꿔 저장(PC마다)');
       const n0 = spawns(); await p.click('#jwBtn'); await wait(1000); let s = await st();
       const la = H.T.clog().filter((l) => /--app=\S*\/log/.test(l)).pop() || '';
@@ -105,13 +105,13 @@ const JR = require('../helper/col2-journal.js'); const LW = require('../helper/c
       ok(spawns() === n0 + 2 && /--window-size=410,600/.test(la2) && /--window-position=900,120/.test(la2) && s.lwin.open, 'Alt+L = 따로 창을 기억한 자리·크기로 다시 엶', la2.slice(-80));
       await p2.reload(); await wait(900); ok((await H.api('GET', '/status')).j.lwin.open, '따로 창이 살아 있다는 소식(15초마다) — 단추 색이 맞음');
       { const a0 = acts().length; await p2.keyboard.press('Alt+L'); await wait(900); ok(acts().slice(a0).includes('close:col2-log-chrome') && !(await st()).lwin.open, '따로 창 안에서 Alt+L = 그 창을 닫음'); }
-      await p.click('#setBtn'); await wait(300); await p.check('#lpop0'); await wait(400); await p.click('#setBtn'); await wait(200); const n2 = spawns(); await p.click('#jwBtn'); await wait(700);
+      await p.click('#setBtn'); await p.evaluate(() => document.querySelectorAll('details.grp').forEach((d) => (d.open = true))); /* (11/11 col2ui1) ⚙ 자세히 묶음은 처음엔 접힘 — 시험은 펼쳐 봄 */ await wait(300); await p.check('#lpop0'); await wait(400); await p.click('#setBtn'); await p.evaluate(() => document.querySelectorAll('details.grp').forEach((d) => (d.open = true))); /* (11/11 col2ui1) ⚙ 자세히 묶음은 처음엔 접힘 — 시험은 펼쳐 봄 */ await wait(200); const n2 = spawns(); await p.click('#jwBtn'); await wait(700);
       ok(await vis() && spawns() === n2 && (await H.api('GET', '/ui')).j.ui.logPop === false, '⚙에서 "이 옆 창 안"을 고르면 예전처럼 옆 창 안 칸'); await p.click('#rnjX');
       ok(!dialogs.length && !errs.length, '③-2 팝업·화면 오류 없음', (dialogs.concat(errs)).slice(0, 3).join(' | ')); }
     console.log('③-3 (11/10 아침 정범님 "기록 단추가 작동하지 않아") 기록창이 확실히 뜸 · 못 뜨면 2초 안에 옆 창 안으로 · 굳지 않음 · 한 줄 알림');
     { const st = async () => (await H.api('GET', '/status')).j; const spawns = () => H.T.clog().filter((l) => /--app=\S*\/log/.test(l)).length; const acts = () => H.T.win().acts || [];
       const msgT = () => p.evaluate(() => { const m = document.getElementById('rnjMsg'); return m ? m.textContent : ''; });
-      await H.api('POST', '/win/log', { act: 'close', why: '시험' }); await wait(400); await p.click('#setBtn'); await wait(300); await p.check('#lpop1'); await wait(400); await p.click('#setBtn'); await wait(200);
+      await H.api('POST', '/win/log', { act: 'close', why: '시험' }); await wait(400); await p.click('#setBtn'); await p.evaluate(() => document.querySelectorAll('details.grp').forEach((d) => (d.open = true))); /* (11/11 col2ui1) ⚙ 자세히 묶음은 처음엔 접힘 — 시험은 펼쳐 봄 */ await wait(300); await p.check('#lpop1'); await wait(400); await p.click('#setBtn'); await p.evaluate(() => document.querySelectorAll('details.grp').forEach((d) => (d.open = true))); /* (11/11 col2ui1) ⚙ 자세히 묶음은 처음엔 접힘 — 시험은 펼쳐 봄 */ await wait(200);
       /* ① PowerShell이 아주 느려도(4초) 누름의 답은 곧바로 · 크롬은 PowerShell을 기다리지 않고 바로 뜸 */
       fs.writeFileSync(path.join(H.D, 'ps-slow'), '4000'); const n0 = spawns(), a0 = acts().length; const t0 = Date.now(); const r1 = await H.api('POST', '/win/log', { act: 'toggle', why: '시험' }); const ms = Date.now() - t0;
       ok(r1.j && r1.j.ok && r1.j.spawned && ms < 500, '창 찾기 PowerShell이 4초 걸려도 🗒 답은 곧바로(PowerShell을 기다리지 않음)', ms + 'ms');

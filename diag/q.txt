@@ -1,2 +1,2 @@
-col2=2026-11-11
-# 3205923590
+benchday=2026-11-10&doc=app_settings/bench,app_settings/badge_study
+# 1357131863

@@ -15,7 +15,7 @@
  *       · 사람 속도보다 훨씬 느리게: 한 장 뒤 3~6초 · 시간 30장 · 하루 300장 · 밤 1~5시 쉼 · 429면 30분 쉼(운영 출고 읽기와 같은 계정·같은 IP이므로 넉넉히) — 근거: 없음, 설정(col2.json alcfg)으로 바꿈 */
 'use strict';
 const fs = require('fs'), path = require('path');
-const AC = require('../shadow/col2-al-compare.js'); const { dlgOk: DLG, ACT_SRC, JS_ACT } = require('./col2-relogin.js');
+const AC = require('../shadow/col2-al-compare.js'); const RLM = require('./col2-relogin.js'); const { dlgOk: DLG, ACT_SRC, JS_ACT } = RLM;
 const JS_STATE = `(()=>({h:location.hostname,p:location.pathname,pw:!!document.querySelector('input[type=password]'),out:!!document.querySelector('a[href*="wC2Cuser_logout"]'),rs:document.readyState}))()`;
 const KINDS = ['chk', 'confirm', 'deliv', 'list', 'qna'];
 const LIST_ST = ['판매중', '판매중지', '일시판매중지'];
@@ -76,8 +76,17 @@ function makeAl(o) {
     }
     if (w.at && wsFresh()) { if (w.err) return { src: 'web', now: `웹앱(${w.by || by || '이 PC'})이 자리 문서를 고치지 못함(마지막 ${hm(w.at)}) — ${w.err}`, todo: '이 PC 리드나우 웹앱을 새로고침(F5) 뒤 다시 [확인하고 저장]', held };
       return { src: 'web', now: `웹앱(${w.by || by || '이 PC'})이 자리 문서로 확인(마지막 ${hm(w.at)} ${ago(w.at)}) — ${w.n != null ? `알라딘 판매자 로그인 ${w.n}/${w.max}대` : w.why}${heldS ? ' · 자리를 쥔 기기: ' + heldS : ''}`, todo: heldS ? `위 기기 중 하나가 알라딘 일을 멈추면(신호 30분 끊김) 저절로 받아 곧바로 확인 · 급하면 [그래도 잠가 저장] 두 번(확인 없이 · 다음 로그인 때 확인)` : '잠시 뒤(1~10분) 저절로 다시 물음', held }; }
-    if (webSeen()) return { src: 'webOld', now: `이 PC 운영 수집기(다리)가 꺼져 있고, 웹앱(${by || '이 PC'})은 보이지만 자리 문서 확인 답을 보내지 않음${w.at ? `(마지막 답 ${hm(w.at)} ${ago(w.at)})` : ''} — 웹앱이 자리 확인이 없는 옛 판일 수 있음`, todo: '이 PC 리드나우 웹앱을 새로고침(F5 · 새 판을 받음) 뒤 다시 [확인하고 저장] · 또는 이 PC Tampermonkey 수집기를 켬', held };
-    return { src: 'none', now: `이 PC 운영 수집기(다리)도 리드나우 웹앱도 안 보임${A.feed.at ? ` · 다리 마지막 소식 ${hm(A.feed.at)} ${ago(A.feed.at)}` : ''}${w.at ? ` · 웹앱 마지막 답 ${hm(w.at)} ${ago(w.at)}` : ''} — 자리 문서(동시 로그인 4대)를 확인할 길이 없음`, todo: '이 PC에서 리드나우 웹앱(readnow.kr)을 열어 두고 다시 [확인하고 저장](웹앱이 곧바로 자리 문서로 확인)', held }; }
+    if (webSeen()) return { src: 'webOld', now: `이 PC 운영 수집기(다리)가 꺼져 있고, 웹앱(${by || '이 PC'})은 보이지만 자리 문서 확인 답을 보내지 않음${w.at ? `(마지막 답 ${hm(w.at)} ${ago(w.at)})` : ''} — 웹앱이 자리 확인이 없는 옛 판일 수 있음 · ${webLine()}`, todo: '이 PC 리드나우 웹앱을 새로고침(F5 · 새 판을 받음) 뒤 다시 [확인하고 저장] · 또는 이 PC Tampermonkey 수집기를 켬', held };
+    { const x = WI(); if (webFresh(x.helloAt) && !webFresh(x.pullAt)) return { src: 'webLogin', now: `이 PC 운영 수집기(다리)가 꺼져 있고, 웹앱(${x.helloOrg || '?'}${x.helloVer ? ' · 판 ' + x.helloVer : ''})은 열려 있지만 구글 로그인 전이라 자리 문서를 못 읽음 · ${webLine()}`, todo: `그 웹앱 탭(${x.helloOrg || APP_URLS})에서 구글 로그인 → 1분 안에 저절로 자리를 확인 → 다시 [확인하고 저장]`, held, web: x }; }
+    { const x = WI(); return { src: 'none', now: `이 PC 운영 수집기(다리)도 리드나우 웹앱도 안 보임 · ${A.feed.at ? `다리 마지막 소식 ${hm(A.feed.at)} ${ago(A.feed.at)}` : '다리 소식 없음'} · ${webLine()}${w.at ? ` · 웹앱 마지막 답 ${hm(w.at)} ${ago(w.at)}` : ''} — 자리 문서(동시 로그인 4대)를 확인할 길이 없음`, todo: x.rej && now() - x.rej.at < 30 * 60e3 && !webFresh(x.at) ? `${x.rej.org}는 우리 웹앱 주소가 아니라 막았음 — 이 PC 크롬에서 리드나우 웹앱(${APP_URLS})을 열고 구글 로그인 → 1분 뒤 다시 [확인하고 저장]` : `이 PC 크롬에서 리드나우 웹앱 탭(${APP_URLS})을 앞에 띄우고 F5(새 판 받기) · 구글 로그인 확인 → 1분 안에 옆 창에 '웹앱 마지막 소식'이 뜨면 다시 [확인하고 저장](웹앱이 곧바로 자리 문서로 확인) · 그래도 안 뜨면 크롬 주소창 왼쪽 자물쇠 › 사이트 설정에서 '로컬 네트워크(이 기기의 앱)' 허용`, held, web: x }; } }
+  /* (11/11 seatfix1 · 정범님 16:48 HOME — 웹앱은 jerrycson.github.io로 열려 있는데 「웹앱도 안 보임 · readnow.kr을 열어 두고」) 무엇이 안 보이는지 정확히:
+   *  웹앱 주소(출처)·판·마지막 소식(대신 읽기 묻기 / 로그인 전 알림 / 다른 부름) · 우리 주소가 아니라 막은 부름 · 할 일에 두 주소 모두 */
+  const APP_URLS = 'readnow.kr 또는 jerrycson.github.io/readnow-scripts/app/';
+  const WI = () => { try { return (o.webInfo && o.webInfo()) || {}; } catch (e) { return {}; } };
+  const webFresh = (t) => !!t && now() - t < 3 * 60e3 * WSC;
+  function webLine() { const x = WI(); const tag = (org, ver) => [org || '', ver ? '판 ' + ver : ''].filter(Boolean).join(' · ');
+    const last = x.pullAt && !(x.helloAt > x.pullAt) ? `웹앱 마지막 소식 ${hm(x.pullAt)} ${ago(x.pullAt)}(${tag(x.pullOrg, x.pullVer) || '주소 모름'})` : x.helloAt ? `웹앱 마지막 소식 ${hm(x.helloAt)} ${ago(x.helloAt)}(${tag(x.helloOrg, x.helloVer)} · 구글 로그인 전)` : x.at ? `웹앱 부름은 ${hm(x.at)} ${ago(x.at)}(${x.org} ${x.path}) — 대신 읽기 묻기는 없음` : `번외를 켠 ${hm(x.boot)} 뒤로 이 PC 웹앱 소식이 한 번도 없음(어느 주소에서도)`;
+    const rej = x.rej && now() - x.rej.at < 6 * 3600e3 ? ` · ⛔ 우리 주소가 아니라 막은 부름: ${x.rej.org} ${hm(x.rej.at)}(${x.rej.n}번)` : ''; return last + rej; }
   const tellTxt = () => { const t = seatTell(); return `${t.now} → 지금 할 일: ${t.todo}`; };
   const alive = () => !!(A.br && A.br.alive());
   const kday = () => new Date(now() + 9 * 3600e3).toISOString().slice(0, 10); const khour = () => new Date(now() + 9 * 3600e3).toISOString().slice(0, 13);
@@ -116,7 +125,7 @@ function makeAl(o) {
     if ((!a || a.age == null) && since < humanMs()) return { busy: true, why: `알라딘 로그인 창을 띄운 지 ${Math.round(since / 1000)}초 — 사람이 칠 수 있게 기다림` }; return { busy: false }; }
   async function endWait(why) { if (A.login !== 'wait') return; A.login = 'need'; A.loginMsg = why; note('🔐 알라딘 로그인 창에서 입력이 없어 기다림을 끝냄 — ' + why); await hide('입력 없음').catch(() => {}); }
   async function keyPress(sid) { const b = A.br; const k = { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 }; await b.cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', ...k, text: '\r' }, sid); await sleep(60); await b.cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', ...k }, sid); }
-  function setLogin(st, why) { if (A.login !== st) { A.login = st; if (st === 'need') { A.loginMsg = why || ''; note('🔐 알라딘 샵매니저 로그인이 필요 — 옆 창의 [🔐 알라딘 로그인] 단추를 한 번 눌러 주세요(' + (why || '') + ' · 이 PC에 계정을 저장해 두었으면 스스로 다시 로그인)'); } if (st === 'ok') { A.loginAt = now(); note('🟧 알라딘 샵매니저 세션 살아 있음 — 그림자 읽기 시작(읽기만)'); } } }
+  function setLogin(st, why) { if (A.login !== st) { A.login = st; if (st === 'need') { A.loginMsg = why || ''; note('🔐 알라딘 샵매니저 로그인이 필요 — 옆 창의 [🔐 알라딘 로그인] 단추를 한 번 눌러 열린 창에서 「네이버로 로그인」으로 해 주세요(' + (why || '') + ' · 번외 크롬에 네이버 로그인이 남아 있으면 스스로 네이버 길로 다시 로그인)'); } if (st === 'ok') { A.loginAt = now(); note('🟧 알라딘 샵매니저 세션 살아 있음 — 그림자 읽기 시작(읽기만)'); } } }
 
   /* ── 읽기 한 장(화면 없이 · 떨어진 칸 fetch) ── */
   async function readOne(kind, arg) { const u = AC.READ[kind].url(arg); if (!AC.isReadUrl(u)) throw new Error('읽기 목록 밖 주소라 보내지 않음: ' + u); /* 이 줄 밖으로는 알라딘에 아무것도 안 감 */
@@ -152,14 +161,28 @@ function makeAl(o) {
     if (holdOn()) return { ok: false, err: '🚚 출고 중 — 끝난 뒤에 로그인해 주세요(약속 0-1)' };
     for (let k = 0; k < 60 && A.busy; k++) await sleep(500); if (A.busy) return { ok: false, err: '다른 일을 하는 중 — 잠시 뒤 다시' };
     A.busy = true; A.pp = null; try { await ensure('로그인'); await nav(BASE + '/scm/wmain.aspx', 30); A.landed = true; const s = await ev(JS_STATE); if (!isLoginSt(s)) { setLogin('ok'); return { ok: true, msg: '이미 로그인돼 있음 — 할 일 없음' }; }
-      A.login = 'wait'; A.loginWait = now(); await A.br.cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: ACT_SRC }, A.br.sid).catch(() => {}); await ev(ACT_SRC, 5000).catch(() => {}); await show(why || '로그인'); return { ok: true, msg: '알라딘 창을 앞으로 꺼냄 — 그 창에서 직접 로그인하면 저절로 숨고 그림자 읽기를 시작합니다(아이디·비밀번호는 저장하지 않음)' }; }
+      A.login = 'wait'; A.loginWait = now(); await A.br.cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: ACT_SRC }, A.br.sid).catch(() => {}); await ev(ACT_SRC, 5000).catch(() => {}); await show(why || '로그인'); return { ok: true, msg: '알라딘 창을 앞으로 꺼냄 — 그 창에서 「네이버로 로그인」(네이버 \'로그인 상태 유지\' 켬)으로 직접 로그인하면 저절로 숨고 그림자 읽기를 시작합니다(아이디·비밀번호는 저장하지 않음 · 알라딘이 아이디 로그인을 42FB로 막고 있어 아이디 칸으로는 안 될 수 있음 · 네이버로 한 번 하면 다음부터 번외가 그 길로 스스로 다시 로그인)' }; }
     catch (e) { return { ok: false, err: e.message }; } finally { A.busy = false; } }
   async function loginPoll() { if (now() - A.loginWait > 15 * 60e3) { A.login = 'need'; A.loginMsg = '로그인 기다림 15분 넘음'; await hide('로그인 기다림 15분 넘음').catch(() => {}); return; } let s = null; try { s = await ev(JS_STATE, 5000); } catch (e) { return; }
     if (s && s.rs === 'complete' && !s.pw && !/login/i.test(s.p || '') && (s.h === HOST || s.h === HOST.split(':')[0])) { if (!onScm(s)) { try { await nav(BASE + '/scm/wmain.aspx', 30); s = await ev(JS_STATE, 5000); } catch (e) { return; } } if (!isLoginSt(s)) { setLogin('ok'); await hide('로그인 됨').catch(() => {}); A.next.chk = now() + (TEST ? 0 : 60e3); } } }
 
   /* (11/10 정범님 '다른 플랫폼들도 끊길 경우 스스로 로그인') 🔐 알라딘 — 번외 자리(<PC>~col2)를 받은 때만 · 출고 중·핑퐁 의심·로거면 안 함(col2-relogin.js) */
-  async function autoRe() { const R = o.relogin; if (!R) return ''; const w = R.why('al', { hold: holdOn(), seat: seatOk(), pp: A.pp }); if (w) return w;
-    A.inLogin = true; A.loginDlg = ''; let r; try { r = await R.run('al', { name: '알라딘 샵매니저', loginUrl: BASE + '/scm/wmain.aspx', nav, ev, sleep: sleepR, type: (t) => A.br.cdp.send('Input.insertText', { text: t }, A.br.sid), key: () => keyPress(A.br.sid), lastMsg: () => A.loginDlg, leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), check: async () => { await nav(BASE + '/scm/wmain.aspx', 30); return !isLoginSt(await ev(JS_STATE)); } }); } finally { A.inLogin = false; }
+  /* (11/11 fix5) 「네이버로 로그인」 먼저 — 알라딘이 아이디·비밀번호 새 로그인을 42FB로 막고 있어(app_settings/aladin_login: 10/26~11/07 아이디 로그인 11번 모두 42FB6013 · 네이버 길은 성공) 운영 수집기와 같은 길(/login/wlogin_naver.aspx)을 씀
+   *  · 이 번외 크롬 프로필에 네이버 '로그인 상태 유지'가 남아 있으면 값 없이 끝남 · 네이버 로그인 화면(nid.naver.com)이 뜨면 아무것도 넣지 않고 그만(네이버 아이디·비밀번호는 절대 안 넣음)
+   *  · 설정 alcfg.naverRe=false면 이 길을 안 씀 · 저장된 아이디·비밀번호가 없어도 이 길은 함(값을 쓰지 않으므로) — 나머지 규칙(자리·출고·핑퐁·속도·연속 실패 멈춤)은 그대로 */
+  const NV_URL = () => BASE + '/login/wlogin_naver.aspx?returnurl=' + encodeURIComponent(BASE + '/scm/wmain.aspx') + '&snsAppId=1&SecureOpener=1';
+  const JS_LOC = `(()=>({h:location.hostname,p:location.pathname}))()`;
+  const naverOn = () => C().naverRe !== false;
+  async function chkScm() { await nav(BASE + '/scm/wmain.aspx', 30); return !isLoginSt(await ev(JS_STATE)); }
+  async function naverTry() { await nav(NV_URL(), 30); let st = null;
+    for (let i = 0; i < (TEST ? 4 : 14); i++) { st = await ev(JS_LOC, 10000).catch(() => null); const h = String((st && st.h) || ''), pth = String((st && st.p) || '');
+      if (/(^|\.)naver\.com$/i.test(h) && /login/i.test(pth)) return { ok: false, why: '이 번외 크롬에 네이버 로그인이 없음(네이버 로그인 화면이 뜸 · 값은 넣지 않음)' };
+      if (st && !/(^|\.)naver\.com$/i.test(h) && !/wlogin_naver/i.test(pth)) break; await sleep(TEST ? 150 : 1500); }
+    if (A.loginDlg && RLM.isBlock(A.loginDlg)) return { ok: false, why: `네이버 길도 막힘(알림: '${String(A.loginDlg).slice(0, 80)}')` };
+    return (await chkScm()) ? { ok: true } : { ok: false, why: '네이버로 로그인 뒤에도 샵매니저가 로그인 화면' }; }
+  async function autoRe() { const R = o.relogin; if (!R) return ''; const w = R.why('al', { hold: holdOn(), seat: seatOk(), pp: A.pp, naver: naverOn() }); if (w) return w;
+    A.inLogin = true; A.loginDlg = ''; let r; try { r = await R.run('al', { name: '알라딘 샵매니저', loginUrl: BASE + '/scm/wmain.aspx', nav, ev, sleep: sleepR, type: (t) => A.br.cdp.send('Input.insertText', { text: t }, A.br.sid), key: () => keyPress(A.br.sid), lastMsg: () => A.loginDlg, leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), check: chkScm,
+      pre: naverOn() ? async () => { const x = await naverTry(); if (!x.ok) A.loginDlg = A.loginDlg && RLM.isBlock(A.loginDlg) ? A.loginDlg : ''; return x; } : null, preOnly: !(o.relogin.hasCred ? o.relogin.hasCred('al') : true) }); } finally { A.inLogin = false; }
     if (r.ok) { setLogin('ok'); A.next.chk = now() + C().chkMin * 60e3; return 'ok'; } return r.why; }
   /* ── 한 바퀴 ── */
   async function step() { const c = C();
@@ -169,7 +192,7 @@ function makeAl(o) {
         if (can && hn && !hn.busy) await endWait('저장된 계정·번외 자리가 있어 번외가 스스로 로그인(창에 ' + Math.round(humanMs() / 1000) + '초 넘게 입력 없음)');
         else { A.msg = '🔐 알라딘 로그인 창이 열려 있음 — 로그인하면 저절로 숨김'; return 3000; } } }
     if (holdOn()) { A.msg = '🚚 출고 중(이 PC 출고 보호) — 알라딘 그림자 읽기 멈춤 · 끝나면 이어감'; return 15e3; }
-    if (!feedOk() && !seatWeb()) { A.msg = '이 PC 리드나우 수집기(다리)가 안 보임 — ' + (webSeen() ? `웹앱이 자리 문서(동시 로그인 4대)로 직접 확인 중${A.ws.at ? ' · ' + A.ws.why + heldTxt() : ''}` : '이 PC 리드나우 웹앱도 안 보여 로그인 자리를 확인할 수 없어 쉼(웹앱을 열어 두면 곧바로 확인)'); return 15e3; }
+    if (!feedOk() && !seatWeb()) { A.msg = '이 PC 리드나우 수집기(다리)가 안 보임 — ' + (webSeen() ? `웹앱이 자리 문서(동시 로그인 4대)로 직접 확인 중${A.ws.at ? ' · ' + A.ws.why + heldTxt() : ''}` : '이 PC 리드나우 웹앱도 안 보여 로그인 자리를 확인할 수 없어 쉼(웹앱을 열어 두면 곧바로 확인) · ' + webLine()); return 15e3; }
     if (A.feed.off) { A.msg = '웹앱(관리도구)에서 이 PC 알라딘 그림자를 꺼 둠'; return 60e3; }
     if (!seatOk()) { A.msg = '🪑 로그인 자리 기다림 — ' + ((feedOk() ? A.feed.seat && A.feed.seat.why : A.ws.why + heldTxt()) || '다리가 이 PC 번외 세션 자리를 아직 안 줌') + (ownOn() ? '(🏠 이어받기 — 운영 자리를 놓은 뒤 받음 · 판매자 동시 로그인 ≤4대)' : '(판매자 동시 로그인 ≤4대 · 그림자는 맨 뒤)'); return 30e3; }
     if (night()) { A.msg = '🌙 밤 1~5시 — 알라딘 그림자 읽기 쉼'; return 5 * 60e3; }
@@ -209,7 +232,7 @@ function makeAl(o) {
       const r = await o.relogin.tryWith('al', { name: '알라딘 샵매니저', phase: x.phase, loginUrl: BASE + '/scm/wmain.aspx', nav, ev, sleep: sleepR, type: (t) => A.br.cdp.send('Input.insertText', { text: t }, sid), key: () => keyPress(sid), leaveSec: TEST ? 3 : 15, settle: () => sleep(TEST ? 300 : 1500), lastMsg: () => L.m, check: async () => { await nav(BASE + '/scm/wmain.aspx', 30); return !isLoginSt(await ev(JS_STATE)); } }, id, pw);
       if (r.ok) setLogin('ok'); return { ...r, where: 'main' }; }
     catch (e) { return { ok: false, unsure: true, why: String(e.message || e).slice(0, 140) }; } finally { A.inLogin = false; if (f && A.br) A.br.cdp.on = A.br.cdp.on.filter((x) => x !== f); A.busy = false; } }
-  function sum() { return { tell: enabled() || cfg().al === true || A.ws.at ? seatTell() : null, /* (11/11 col2rep1) 🪑 자리를 쥔 기기·마지막 소식·지금 할 일 */ on: enabled(), own: ownOn(), want: cfg().al === true, logger: isLogger(), login: A.login, pg: A.pg || null, seatWhy: (feedOk() ? A.feed.seat && A.feed.seat.why : A.ws.at ? A.ws.why : null) || null, seatBy: seatSrc(), feed: feedOk(), web: webSeen(), ws: A.ws.at ? { ok: A.ws.ok, why: A.ws.why, n: A.ws.n, max: A.ws.max, held: A.ws.held, at: A.ws.at, fresh: wsFresh(), err: A.ws.err } : null, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
+  function sum() { return { webLine: seatOk() ? null : webLine(), /* (11/11 seatfix1) 🌐 이 PC 웹앱 주소·판·마지막 소식 */ tell: enabled() || cfg().al === true || A.ws.at ? seatTell() : null, /* (11/11 col2rep1) 🪑 자리를 쥔 기기·마지막 소식·지금 할 일 */ on: enabled(), own: ownOn(), want: cfg().al === true, logger: isLogger(), login: A.login, pg: A.pg || null, seatWhy: (feedOk() ? A.feed.seat && A.feed.seat.why : A.ws.at ? A.ws.why : null) || null, seatBy: seatSrc(), feed: feedOk(), web: webSeen(), ws: A.ws.at ? { ok: A.ws.ok, why: A.ws.why, n: A.ws.n, max: A.ws.max, held: A.ws.held, at: A.ws.at, fresh: wsFresh(), err: A.ws.err } : null, loginAt: A.loginAt || null, loginMsg: A.loginMsg || null, alive: alive(), shown: A.shown, seat: seatOk(), hold: holdOn() ? (A.feed.hold || { on: true }) : null, pp: A.pp,
       active: enabled() && A.login === 'ok' && alive() && feedOk() && seatOk() && !holdOn() && !A.pp, msg: A.msg, hour: A.hour.n, day: A.day, last: A.last, cmpWait: A.cmpQ.length, feedAt: A.feed.at || null, feedBy: A.feed.by || null, core: A.core.ver, reads: A.reads.slice(-8) }; }
   async function runNow(what) { const k = KINDS.includes(what) ? what : 'confirm'; A.next[k] = 0; kick(100); return { ok: true, msg: `🟧 ${AC.READ[k].t}을 곧 읽음(읽기만)` }; }
   const start = () => { KINDS.forEach((k, i) => (A.next[k] = TEST ? 0 : now() + (i + 1) * 60e3)); kick(TEST ? 500 : 25e3); };
