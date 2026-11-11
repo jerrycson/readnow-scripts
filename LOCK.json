@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "rel6 판 내기 (서가 5차 shelf5)",
+ "since": "2026-11-11T18:12:25Z",
+ "beat": "2026-11-11T18:12:25Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "rel5b 판 냄 — 웹앱 1.78.490·수집기 1.89.269·클라우드 0.35.132·적응 엔진 0.1.2·외부 0.6.19·상품 0.19.8·감시기 0.10.48·노선표 0.14.171 · 754efc5 (adapt2)",
   "at": "2026-11-11T17:24:49Z"
  },
- "host": null
+ "host": "vm"
 }
