@@ -29307,9 +29307,15 @@ if (typeof document !== 'undefined') document.addEventListener('click', async (e
   const r = twiceArm(b, on ? `${J.name.slice(0, 18)} → ${pc} 번외로 넘기기` : `${J.name.slice(0, 18)} 운영으로 되돌리기`, { tip: on ? `운영 수집기는 이 일(${J.name})만 쉬고 ${pc} 번외가 운영 칸(${J.col})에 씀 · ${pc} 웹앱이 열려 있어야 씀 · ${J.beatMaxH}시간 넘게 소식이 없으면 운영이 스스로 다시 함` : '다음 회차부터 운영 수집기가 다시 하고 번외는 운영 칸에 쓰지 않음(그림자 비교는 그대로)', ext: 1 }); if (r !== 'go') return;
   try { await c2HoSet(k, on, pc); toast(on ? `✓ ${J.name} → ${pc} 번외로 넘김` : `↩ ${J.name} — 운영 수집기로 되돌림`); } catch (er) { toast('저장 못 함: ' + errKo(er), 1); } c2HoRedraw(); });
 async function c2RelayTick() { let next = 60e3;
-  try { if (!(S.user && typeof db !== 'undefined' && db)) return; let seen = false; try { seen = localStorage.getItem('rn-c2seen') === '1'; } catch (e) {} if (!seen && S._c2rTried && !(S.c2 && S.c2.st && S.c2.st.running)) return; S._c2rTried = 1;
-    const H = { 'X-RN-Col2': '1', 'Content-Type': 'application/json' }; const f = async (p, b) => { const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), b && b.pool ? 60e3 : 8e3); try { const r = await fetch(C2R.base + p, b ? { method: 'POST', headers: H, body: JSON.stringify(b), cache: 'no-store', signal: ac.signal } : { headers: H, cache: 'no-store', signal: ac.signal }); return await r.json(); } finally { clearTimeout(tm); } };
-    const pd = await f('/relay/pending?by=' + encodeURIComponent(c2By())); if (!pd || !pd.ok) return; try { localStorage.setItem('rn-c2seen', '1'); } catch (e) {}
+  /* (11/11 seatfix1 · 정범님 16:48 HOME '오래 놔뒀는데 진척이 없어' — HOME 크롬 웹앱은 jerrycson.github.io 주소 · 번외 옆 창은 「웹앱도 안 보임」)
+   *  ① 번외를 본 적 없다는 표시(rn-c2seen)는 주소(출처)마다 따로라, 처음 한 번 못 닿으면 그 주소 탭은 다시 묻지 않았음 → 5분마다 다시 물음(연결 거절 기록은 5분에 한 줄)
+   *  ② 구글 로그인 전이면 번외에 '웹앱은 열려 있고 로그인 전'만 알림(/web/hello · 판·로그인 여부만 — 계정·문서 없음) → 옆 창이 '무엇이 안 보이는지'를 정확히 보여 줌
+   *  ③ 묻는 줄에 웹앱 판(v)을 실음 → 옆 창이 '웹앱 주소·판·마지막 소식'을 보여 줌(주소는 번외가 요청 머리 Origin으로 앎 · 우리 두 주소만 받음) */
+  const H = { 'X-RN-Col2': '1', 'Content-Type': 'application/json' }; const f = async (p, b) => { const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), b && b.pool ? 60e3 : 8e3); try { const r = await fetch(C2R.base + p, b ? { method: 'POST', headers: H, body: JSON.stringify(b), cache: 'no-store', signal: ac.signal } : { headers: H, cache: 'no-store', signal: ac.signal }); return await r.json(); } finally { clearTimeout(tm); } };
+  try { let seen = false; try { seen = localStorage.getItem('rn-c2seen') === '1'; } catch (e) {} const run = !!(S.c2 && S.c2.st && S.c2.st.running);
+    if (!(S.user && typeof db !== 'undefined' && db)) { if ((seen || run) && !IS_MOBILE_DEV) await f('/web/hello?u=0&v=' + encodeURIComponent(APP_VER) + '&by=' + encodeURIComponent(c2By())).catch(() => {}); return; }
+    if (!seen && S._c2rTried && Date.now() - S._c2rTried < 5 * 60e3 && !run) return; S._c2rTried = Date.now();
+    const pd = await f('/relay/pending?by=' + encodeURIComponent(c2By()) + '&v=' + encodeURIComponent(APP_VER) + '&u=1'); if (!pd || !pd.ok) return; try { localStorage.setItem('rn-c2seen', '1'); } catch (e) {}
     { const was = JSON.stringify(c2ySum(S.c2y)); S.c2y = pd.y24 ? { ...pd.y24, at: Date.now() } : null; if (JSON.stringify(c2ySum(S.c2y)) !== was) c2Redraw(); } /* (11/10) 🟦 예스24 판매관리 읽기 상태 — PC별 한 줄·col2_ctl */
     { const was = JSON.stringify(c2alSum(S.c2al)); S.c2al = pd.al ? { ...pd.al, at: Date.now() } : null; if (JSON.stringify(c2alSum(S.c2al)) !== was) c2Redraw(); } /* (11/10) 🟧 알라딘 샵매니저 읽기 그림자 상태 */
     try { await c2AlSeatGive(pd, f); } catch (e) {} /* (11/11) 🪑 다리 없을 때 알라딘 자리 문서 대신 확인 */
