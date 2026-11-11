@@ -24,14 +24,16 @@ const path = require('path'); const fs = require('fs');
         o.openKeys = Object.keys(RH_OPEN).every((k) => rhOpenOk(k));
         S.ordersLoaded = true; S.tab = 'biz'; renderTabs(); renderMain(); await Wt(1500); const bc = document.querySelector('#main [data-gopage="research"]'); o.bizCard = !!bc;
         // 경영 탭 카드로 열기
-        bc.click(); const sh = document.getElementById('sheet'); for (let n = 0; n < 40 && !(sh.querySelector('#rh_list .rh-it') && sh.querySelector('#rh_wx td')); n++) await Wt(100);
+        bc.click(); const sh = document.getElementById('sheet'); for (let n = 0; n < 40 && !(sh.querySelector('#rh_list .rh-it') && sh.querySelector('#rh_wx td') && sh.querySelector('#rh_list .rh-tag')); n++) await Wt(100);
         o.open = sh.classList.contains('on') && S.detail && S.detail.research; o.nRow = sh.querySelectorAll('#rh_list .rh-it').length; o.nOpen = sh.querySelectorAll('#rh_list [data-rhopen]').length; o.nNo = (sh.querySelector('#rh_list').textContent.match(/아직 웹앱 화면 없음/g) || []).length;
-        o.noneCard = (sh.querySelector('#rh_none') || {}).textContent || ''; const t = sh.querySelector('#rh_list').textContent; o.hasQ = /❓/.test(t) && /📌 최신 결과/.test(t) && /📂 원본: 비공개 연구 폴더/.test(t) && /마지막 갱신/.test(t);
-        const vrow = sh.querySelector('[data-rhid="N06"]'); o.voiceAt = vrow ? /마지막 갱신 11-11 10:00/.test(vrow.textContent) : false;
+        o.noneCard = (sh.querySelector('#rh_none') || {}).textContent || ''; const t = sh.querySelector('#rh_list').textContent; o.hasQ = /❓/.test(t) && /📌 문서에 적힌 최신 결과/.test(t) && /📂 원본: 비공개 연구 폴더/.test(t) && /설계 단계/.test(t);
+        const vrow = sh.querySelector('[data-rhid="N06"]'); o.voiceAt = vrow ? /기록 11-11 10:00/.test(vrow.textContent) : false;
         o.ev0 = ((sh.querySelector('#rh_ev') || {}).textContent || ''); o.ev0Rows = (sh.querySelector('#rh_list').textContent.match(/아직 셈 없음/g) || []).length; o.ev0Svg = sh.querySelectorAll('.rh-sp').length;
         const wx = sh.querySelector('#rh_wx'); o.wx = wx ? wx.textContent : ''; o.wxRows = wx ? wx.querySelectorAll('tr').length - 1 : 0;
         // 거르기·찾기
-        sh.querySelector('[data-rhst="result"]').click(); await Wt(200); o.resOnly = [...sh.querySelectorAll('#rh_list .rh-it')].every((x) => /결과 있음/.test(x.textContent)) && sh.querySelectorAll('#rh_list .rh-it').length > 3; sh.querySelector('[data-rhst=""]').click(); await Wt(200);
+        // 셈 기록이 없으면 모든 줄이 ⚪ 아직 셈 없음 — '돌고 있음' 표시 0건
+        o.tags0 = [...sh.querySelectorAll('#rh_list .rh-tag')].map((x) => x.dataset.rhk); o.liveFake0 = [...sh.querySelectorAll('#rh_list .rh-it')].filter((x) => /돌고 있음|결과 있음|자료 모으는 중/.test((x.querySelector('.bc-st') || {}).textContent || '')).length;
+        sh.querySelector('[data-rhst="none"]').click(); await Wt(200); o.noneOnly = sh.querySelectorAll('#rh_list .rh-it').length; o.noLive = !sh.querySelector('[data-rhst="live"]'); sh.querySelector('[data-rhst=""]').click(); await Wt(200);
         const q = sh.querySelector('#rh_q'); q.value = '날씨'; q.dispatchEvent(new Event('input')); await Wt(500); o.qN = sh.querySelectorAll('#rh_list .rh-it').length; o.qFocus = document.activeElement && document.activeElement.id === 'rh_q';
         const q2 = sh.querySelector('#rh_q'); q2.value = ''; q2.dispatchEvent(new Event('input')); await Wt(500); o.qBack = sh.querySelectorAll('#rh_list .rh-it').length;
         window.scrollTo(0, 0); sh.scrollTop = 0; await Wt(100);
@@ -60,7 +62,9 @@ const path = require('path'); const fs = require('fs');
         // 🧬 진화 증거 기록이 있을 때(엔진 회차가 올린 꼴 그대로)
         const day = (n) => new Date(Date.now() - n * 864e5).toISOString(); window.__FS.app_settings.research_pulse = { at: day(0), round: 3, studies: { R02: { at: day(0), metric: '검증 AUC', value: 0.762, trend: [[day(2).slice(0, 10), 0.70], [day(1).slice(0, 10), 0.74], [day(0).slice(0, 10), 0.762]], champ: { name: '기준선', v: 0.484 }, chall: { name: '도전자', v: 0.762 }, swapAt: day(1), changed: '도전자 AUC 0.74 → 0.762' }, R06: { at: day(5), metric: '중앙 오차', value: 12, trend: [5] } } };
         openResearch(); for (let n = 0; n < 30 && !sh.querySelector('[data-rhid="R02"] .rh-sp'); n++) await Wt(100);
-        const r02 = sh.querySelector('[data-rhid="R02"] .rh-ev'); o.ev1 = r02 ? r02.textContent : ''; o.ev1Pts = sh.querySelectorAll('[data-rhid="R02"] .rh-sp circle').length; const r06 = sh.querySelector('[data-rhid="R06"] .rh-ev'); o.ev1Stale = !!(r06 && r06.classList.contains('rh-stale') && /멈춤 5일/.test(r06.textContent) && /점 1개/.test(r06.textContent));
+        const r02 = sh.querySelector('[data-rhid="R02"] .rh-ev'); o.ev1 = r02 ? r02.textContent : ''; o.ev1Pts = sh.querySelectorAll('[data-rhid="R02"] .rh-sp circle').length; o.tag1 = Object.fromEntries([...sh.querySelectorAll('#rh_list .rh-it')].map((x) => [x.dataset.rhid, (x.querySelector('.rh-tag') || {}).dataset ? x.querySelector('.rh-tag').dataset.rhk : '?'])); o.tag1t = ((sh.querySelector('[data-rhid="R06"] .rh-tag') || {}).textContent || '') + ' | ' + ((sh.querySelector('[data-rhid="R02"]') || {}).textContent || '').slice(0, 120);
+        o.liveFake1 = [...sh.querySelectorAll('#rh_list .rh-it')].filter((x) => /돌고 있음/.test((x.querySelector('.bc-st') || {}).textContent || '') && !/마지막 셈/.test(x.querySelector('.rh-ev') ? x.querySelector('.rh-ev').textContent : '')).length;
+        const r06 = sh.querySelector('[data-rhid="R06"] .rh-ev'); o.ev1Stale = !!(r06 && r06.classList.contains('rh-stale') && /멈춤 5일/.test(r06.textContent) && /점 1개/.test(r06.textContent));
         o.ev1Sum = (sh.querySelector('#rh_ev') || {}).textContent || ''; o.ev1None = /아직 셈 없음/.test((sh.querySelector('[data-rhid="R01"]') || {}).textContent || ''); history.back(); await Wt(500);
         o.writes = (window.__FSW || []).filter((w) => /research|prd_price_actions|shp_cmds|prd_listings|wx_/.test(w.n || '')).length;
       } catch (e) { o.err.push(e.message + ' ' + (e.stack || '').split('\n')[1]); } return o; });
@@ -76,13 +80,14 @@ const path = require('path'); const fs = require('fs');
     ok(/N04/.test(r.noneCard) && /C01/.test(r.noneCard), '② 화면 없는 연구 목록(판매자 가치·시장 구조 연구 등)');
     ok(r.voiceAt, '요약 문서(app_settings/voice_study)의 at이 더 새것이면 마지막 갱신으로');
     ok(r.wxRows === 2 && /서울/.test(r.wx) && /2024-11-11 ~ 2026-11-10/.test(r.wx) && /7도/.test(r.wx) && /5도/.test(r.wx), '🌦 날씨 표 — 지점 둘 · 모은 기간 · 평균 기온(서울 7도 · 수원 5도) ' + r.wx.slice(0, 160));
-    ok(r.resOnly, "거르기 '결과 있음'만"); ok(r.qN >= 1 && r.qN < N && r.qFocus && r.qBack === N, `찾기 '날씨' → ${r.qN}줄 · 찾기 칸 그대로 · 지우면 다시 전부`);
+    ok(r.tags0.length === N && r.tags0.every((k) => k === 'none') && r.liveFake0 === 0 && r.noneOnly === N && r.noLive, `셈 기록이 없으면 모든 줄 ⚪ 아직 셈 없음 · '돌고 있음' 표시 ${r.liveFake0}건 · 거르기 '아직 셈 없음' ${r.noneOnly}/${N}`); ok(r.qN >= 1 && r.qN < N && r.qFocus && r.qBack === N, `찾기 '날씨' → ${r.qN}줄 · 찾기 칸 그대로 · 지우면 다시 전부`);
     ok(!r2.e1 && r2.voice && r2.back1 && r2.keep, '[열기] 🗣 구매평·문의 연구 → 뒤로 → 연구 모음으로 돌아옴(받은 판 쥠)');
     ok(!r2.e2 && r2.bench && !r2.e3 && r2.psy && !r2.e4 && r2.backOk, '[열기] 🏢 성공 사례 견줌 · 📚 공식 자료 🧠 소비심리 탭 · 👀 조회수 → 뒤로 돌아옴');
     ok(!r2.e5 && r2.setTab === 'settings' && r2.setOpen && r2.sheetOff && /평균 기온/.test(r2.setWx) && /7도/.test(r2.setWx), '[열기] 🌦 → ⚙ 설정 › 🌦 기상청 날씨 칸이 열림 · 그 표에도 평균 기온');
     ok(!r2.allBad.length, '화면 있는 연구 [열기] 모두 그 화면이 열리고 뒤로 돌아옴 ' + JSON.stringify(r2.allBad));
-    ok(/아직 셈 없음/.test(r.ev0) && /엔진 회차가 안 돌았음/.test(r.ev0) && r.ev0Rows === N && r.ev0Svg === 0, `🧬 진화 증거 기록이 없으면 '아직 셈 없음 · 엔진 회차가 안 돌았음' 그대로(줄 ${r.ev0Rows}/${N} · 그래프 0)`);
+    ok(/아직 셈 없음/.test(r.ev0) && /엔진 회차가 안 돌았음/.test(r.ev0) && r.ev0Rows === 2 * N && r.ev0Svg === 0, `🧬 진화 증거 기록이 없으면 '아직 셈 없음 · 엔진 회차가 안 돌았음' 그대로(위 표시·진화 증거 줄 ${r.ev0Rows}/${2 * N} · 그래프 0)`);
     ok(/검증 AUC: 0.762/.test(r2.ev1) && r2.ev1Pts === 3 && /챔피언 기준선 0.484/.test(r2.ev1) && /도전자 도전자 0.762/.test(r2.ev1) && /바뀐 날/.test(r2.ev1) && /이번 회차에 바뀐 것: 도전자 AUC 0.74 → 0.762/.test(r2.ev1), '🧬 기록이 있으면 마지막 셈·핵심 숫자·추세 선(3점)·챔피언/도전자·바뀐 날·이번 회차에 바뀐 것 ' + r2.ev1.slice(0, 200));
+    ok(r2.tag1.R02 === 'live' && r2.tag1.R06 === 'stale' && /멈춤 5일/.test(r2.tag1t) && /마지막 셈/.test(r2.tag1t) && Object.entries(r2.tag1).filter(([k]) => !['R02', 'R06'].includes(k)).every(([, v]) => v === 'none') && r2.liveFake1 === 0, `셈 기록대로 위 표시 — R02 🟢 돌고 있음(마지막 셈) · R06 ⏸ 멈춤 5일 · 나머지 ⚪ · 셈 없음인데 돌고 있음 ${r2.liveFake1}건 ` + r2.tag1t.slice(0, 120));
     ok(r2.ev1Stale && /멈춤 1/.test(r2.ev1Sum.replace(/\s+/g, ' ')) && /셈 있는 연구 2/.test(r2.ev1Sum.replace(/\s+/g, ' ')) && r2.ev1None, '🧬 5일 전 셈은 빨강 ⏸ 멈춤 5일 · 요약(셈 있는 연구 2 · 멈춤 1) · 기록 없는 연구는 아직 셈 없음 ' + r2.ev1Sum.slice(0, 160));
     ok(r2.freed, '연구 모음을 닫으면 받은 판을 버림(메모리)');
     ok(r2.viaFeat && r2.viaGo, '🔍 기능 찾기 · 🚪 바로 가기로도 열림');
