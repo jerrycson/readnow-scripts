@@ -2876,6 +2876,55 @@ async function diagSfp(q) { q = q || {}; const out = {}; const lim = Math.min(50
     out.eng_fence_ledger = { n: L.length, last: lastN(L, Math.min(14, +q.fenceDays || 3)).map(({ id, v }) => ({ day: id, ...sumOf(v) })) }; } catch (e) { out.eng_fence_ledger = { err: e.message }; }
   for (const k of ['seller_fp_state', 'y24_mkt_state']) { try { out[k] = diagScrub((await C('app_settings').doc(k).get()).data() || null); } catch (e) { out[k] = { err: e.message }; } }
   return out; }
+/* (engfix1 11/11 · 약속 49) 🏪 판매자 숍 요약 다시 읽기(sellerShop) — 클라우드가 알라딘 판매자 가게 첫 화면(공개 · 로그인 없음 · 손님으로)을 사람 속도로 읽어
+ *  판매자 문서(sellers)의 6개월 평가 수·등급·품절 취소율·기간별 만족도·전체 상품 수를 새로 고침
+ *  왜: 로거의 '⭐ 6개월 평가 수(오래된 것)'가 11/09 00:58 목록 12,504곳(모으기 줄 1,090곳 포함)을 만든 뒤 11/11 03:38까지 537곳만 읽음 —
+ *      쉴 때 일은 정한 시각 일에 자리를 내주고(11/09 01:00), 정한 회차(일·수 03:00)는 '오늘 남은 테더링 몫이 없음'으로 11분 만에 멈춤 → 판매자 가치(N04)·S20 시험 재료가 멈춤
+ *  약속 0: 로거 PC에 일을 더 얹지 않고 사무실 PC가 이어받지도 않음 — 클라우드는 이미 공개 화면(시장 다시 읽기·판매자 깊이 읽기)을 읽는 자리
+ *  누구를: ① 모으기 줄(app_settings/seller_queue — 기록 없던 판매자) ② 판매자 문서 중 refreshDays(기본 7)일 넘게 숍 화면을 안 읽은 곳 — 최근 6개월 평가가 많은(활동이 큰) 판매자부터 · 우리 숍은 읽지 않음
+ *  사람 속도: 화면 사이 4~8초(공용 y24PaceMs) · 한 회차 tickMax(기본 4)화면 · 하루 cap(기본 300)화면 · 403/429/캡차면 stopH(기본 6)시간 멈춤 · 출고 마감(12:30~14:10)엔 쉼
+ *    모두 app_settings/seller_shop_state(근거: 없음, 설정으로 바꿈) · 끄기 on:false
+ *  쓰는 것(로거 rev6mJob과 같은 칸): sellers/{sc_번호} rev6m·rev6mLt3·rev6mAt·shopPeriods·shopTotal·aladinGrade·isPro·cancel3m·shopAt·shopSig + shopItems·shopItemsAt(전체 상품 수 — 예전 totalItems는 옛 툴팁 값이라 덮지 않음) · rev6mBy 'cloud'
+ *    seller_rev6m/{id}.days·items[날짜] · 바뀌면 seller_history(옛 기록 지우지 않음) · 모으기 줄에서 뺌 · 값·비용은 건드리지 않음 */
+let sshAt = 0;
+const SSH_DEF = { cap: 300, tickMax: 4, refreshDays: 7, stopH: 6, listMax: 4000, quiet: ['12:30', '14:10'] };
+function sshSumOf(X, html) { const I = X.alShopInfoOf(html); const p6 = I.periods['최근 6개월']; let rev6m = p6 ? p6.count : null;
+  if (rev6m == null && !(p6 && p6.lt3)) { const m = X.strip(html).replace(/\s+/g, ' ').match(/최근\s*6\s*개월,?\s*([\d,]+)\s*개\s*평가/); if (m) rev6m = +m[1].replace(/,/g, ''); }
+  const sawTable = Object.keys(I.periods).length > 0; const status = rev6m != null ? 'ok' : (p6 && p6.lt3) || sawTable ? 'lt3' : 'missing'; const tot = I.periods['전체 기간'];
+  return { status, periods: I.periods, rev6m, rev6mLt3: !!(p6 && p6.lt3), total: tot ? tot.count : null, totalLt3: !!(tot && tot.lt3), grade: I.grade, isPro: I.isPro, cancel3m: I.cancel3m, info: I.info, infoNote: I.infoNote, items: I.items }; }
+async function sshList(st, day) { const cfg = { ...SSH_DEF, ...st }; const cut = Date.now() - (+cfg.refreshDays || 7) * 864e5; const L = []; const seen = new Set(['996008', '0']);
+  let q = []; try { q = ((await C('app_settings').doc('seller_queue').get()).data() || {}).sc || []; } catch (e) {} for (const sc of q.map(String)) if (/^\d{1,9}$/.test(sc) && !seen.has(sc)) { seen.add(sc); L.push(sc); }
+  const S = []; (await C('sellers').select('sc', 'rev6mAt', 'rev6m', 'shopAt').get()).forEach((d) => { const v = d.data() || {}; const sc = String(v.sc || (/^sc_\d+$/.test(d.id) ? d.id.slice(3) : '')); if (!/^\d{1,9}$/.test(sc) || seen.has(sc)) return; const at = Date.parse(v.rev6mAt || '') || 0; if (at > cut) return; seen.add(sc); S.push({ sc, at, n: +v.rev6m || 0 }); });
+  S.sort((a, b) => b.n - a.n || a.at - b.at); for (const x of S) L.push(x.sc); /* 활동이 큰 판매자(우리 비교 대상에 자주 드는 곳)부터 · 같으면 오래 안 읽은 곳부터 */
+  return { list: L.slice(0, +cfg.listMax || 4000), listDay: day, pos: 0, listN: L.length, queueN: q.length }; }
+async function sellerShopTick(force) { if (!force && Date.now() - sshAt < 170e3) return null; sshAt = Date.now(); const X = await extMod(); if (!X || !X.alShopInfoOf || !X.y24Gate) return null;
+  const sref = C('app_settings').doc('seller_shop_state'); let st = (await sref.get()).data() || {}; if (st.on === false) return null; const cfg = { ...SSH_DEF, ...st };
+  const kst = new Date(Date.now() + 9 * 3600e3); const hm = kst.toISOString().slice(11, 16); if (!force && Array.isArray(cfg.quiet) && cfg.quiet.length === 2 && hm >= cfg.quiet[0] && hm < cfg.quiet[1]) return null; /* 출고 마감 집중 시간엔 쉼 */
+  const G = X.y24Gate({ ...st, cap: +cfg.cap }, Date.now()); if (!G.ok) return G.stopped ? { stop: G.why } : null; const day = G.day;
+  if (st.listDay !== day || !Array.isArray(st.list) || (st.pos || 0) >= st.list.length) { if (st.listDay === day) return null; /* 오늘 목록을 다 읽음 → 내일 새 목록 */ const N = await sshList(st, day); await sref.set(N, { merge: true }); st = { ...st, ...N }; }
+  const tickMax = Math.max(1, +cfg.tickMax || 4); let used = G.used, pages = 0, last = 0, stop = null, pos = +st.pos || 0, got = 0, skip = 0, miss = 0; const cut = Date.now() - (+cfg.refreshDays || 7) * 864e5; const out = { pages: 0, got: 0, skip: 0, items: 0 };
+  let qSet = null; try { qSet = new Set((((await C('app_settings').doc('seller_queue').get()).data() || {}).sc || []).map(String)); } catch (e) { qSet = new Set(); }
+  let reads = 0; for (; pos < st.list.length && pages < tickMax && used < G.cap && !stop && reads < tickMax * 15; pos++) { reads++; const sc = String(st.list[pos]); const id = 'sc_' + sc; const ref = C('sellers').doc(id); const pd = await ref.get(); const prev = pd.exists ? pd.data() || {} : {};
+    if ((Date.parse(prev.rev6mAt || '') || 0) > cut) { skip++; continue; } /* 그사이 로거·다른 회차가 새로 읽음 */
+    const gap = X.y24PaceMs(Math.random(), st); const w = last ? gap - (Date.now() - last) : 0; if (w > 0) await sleep(w); /* 사람 속도: 화면 사이 4~8초 */
+    const u = `https://www.aladin.co.kr/shop/usedshop/wshopitem.aspx?SC=${encodeURIComponent(sc)}`; let r = null, text = ''; const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 30000);
+    try { r = await fetch(u, { redirect: 'follow', headers: { 'User-Agent': UA, 'Accept-Language': 'ko-KR,ko;q=0.9', Referer: 'https://www.aladin.co.kr/' }, signal: ctl.signal }); text = sdpDec(Buffer.from(await r.arrayBuffer()), r.headers.get('content-type')); } catch (e) { text = ''; r = r || { ok: false, status: 0, url: '' }; } finally { clearTimeout(t); last = Date.now(); pages++; used++; }
+    const b = X.y24Blocked(r.status, text); if (b) { stop = b; break; } /* 막히면 아무 기록도 덮지 않고 멈춤 */
+    if (/wlogin|\/login\//i.test(String(r.url || '')) || !r.ok) { miss++; await ref.set({ rev6mTriedAt: nowIso(), rev6mTriedBy: 'cloud' }, { merge: true }); continue; }
+    const R = sshSumOf(X, text); const at = nowIso();
+    if (R.status === 'missing') { miss++; await ref.set({ rev6mTriedAt: at, rev6mTriedBy: 'cloud' }, { merge: true }); continue; }
+    const sNew = { rev6m: R.rev6m ?? null, rev6mLt3: R.rev6mLt3 ?? null, shopPeriods: R.periods ?? null, shopTotal: R.total ?? null, aladinGrade: R.grade ?? null, isPro: R.isPro ?? null, cancel3m: R.cancel3m ?? null, bizInfo: R.info || null, contactNote: R.infoNote || null }; /* 로거 rev6mJob의 shopSig와 같은 꼴(같은 내용이면 이력이 겹치지 않음) */
+    const sig = JSON.stringify(sNew); const itemsCh = R.items != null && prev.shopItems !== R.items;
+    if (prev.shopSig !== sig || itemsCh) await C('seller_history').doc(`${id}_${at.replace(/[:.]/g, '-')}`).set({ sellerId: id, sc, kind: 'shopSummary', at, by: 'cloud', ...sNew, items: R.items ?? null, prevItems: prev.shopItems ?? null, ...W() }); /* 바뀌면 그 판을 시각과 함께 보관(지우지 않음) */
+    await ref.set({ shopSig: sig, sc, rev6m: R.rev6m, rev6mLt3: R.rev6mLt3, rev6mAt: at, rev6mBy: 'cloud', shopPeriods: R.periods, shopTotal: R.total, shopTotalLt3: R.totalLt3, aladinGrade: R.grade, isPro: R.isPro, cancel3m: R.cancel3m, ...(R.info ? { bizInfo: R.info } : {}), ...(R.infoNote ? { contactNote: R.infoNote } : {}), shopAt: at, ...(R.items != null ? { shopItems: R.items, shopItemsAt: at } : {}), ...W() }, { merge: true });
+    if (R.rev6m != null || R.items != null) await C('seller_rev6m').doc(id).set({ sc, ...(R.rev6m != null ? { days: { [day]: R.rev6m } } : {}), ...(R.items != null ? { items: { [day]: R.items } } : {}), ...W() }, { merge: true }); /* 날짜별로 쌓음(상품 수 급증 셈 S20 재료) */
+    if (qSet.has(sc)) { await C('app_settings').doc('seller_queue').set({ sc: FV.arrayRemove(sc) }, { merge: true }); qSet.delete(sc); }
+    got++; if (R.items != null) out.items++; }
+  const P = { day, n: used, pos, lastTick: { at: nowIso(), pages, got, skip, miss, err: stop || null }, sum: { day, got: (st.sum && st.sum.day === day ? +st.sum.got || 0 : 0) + got, skip: (st.sum && st.sum.day === day ? +st.sum.skip || 0 : 0) + skip, miss: (st.sum && st.sum.day === day ? +st.sum.miss || 0 : 0) + miss } };
+  if (stop) Object.assign(P, X.y24StopOf(stop, Date.now(), st)); await sref.set(P, { merge: true });
+  Object.assign(out, { pages, got, skip, miss, pos, of: st.list.length, ...(stop ? { stop } : {}) }); if (pages || stop) log(`🏪 판매자 숍 요약 ${got}곳 새로 · 건너뜀 ${skip} · 못 읽음 ${miss} · ${pos}/${st.list.length} · 오늘 ${used}/${G.cap}화면${stop ? ' · ⛔ 멈춤: ' + stop : ''}`); return out; }
+/* 끝: 판매자 숍 요약 다시 읽기 */
+setInterval(() => { sellerShopTick().catch((e) => log('🏪 판매자 숍 요약 실패', e.message)); }, 3 * 60e3); setTimeout(() => { sellerShopTick().catch(() => {}); }, 330e3);
 /* (정범님 11/09 밤) 🔎 판매자 깊이 읽기(seller_deep) — 무리로 보이는 판매자의 공개 화면을 사람 속도로 읽어 원문 그대로 남김(비공개 Firestore만 · 로그인 없음 · 손님으로)
  *  누구를: app_settings/seller_deep_state.targets([{plat:'al'|'y24', id, why}] — 연구 일꾼·메인 세션이 더함) + auto(같은 사업자 번호·상호로 찾은 예스24 가게 · 클라우드가 더함) + 알라딘 판매자 중 시트 '허위 매물' 표시(번호 있는 것)
  *  무엇을: 알라딘 — 가게 첫 화면(wshopitem · 등급·판매자 정보·만족도·품절 취소율·첫 쪽 매물 번호) + 평가 1쪽(wshopsurvey · 날짜·만족도·글) · 예스24 — 가게 첫 화면·공지·평가·분야 메뉴·상품 목록 1쪽(매물 번호) + 낱개 매물 descN(기본 2)개(설명 문장)
@@ -4156,8 +4205,8 @@ const server = http.createServer(async (req, res) => {
             out.L = ls.docs.map((d) => { const v = d.data() || {}; return [d.id, v.active ? 1 : 0, v.status || null, v.price ?? null, v.grade || null, String(v.registeredAt || '').slice(0, 10) || null, v.soldAt || null, v.bookId || null, v.isbn13 || null, v.qty ?? null, v.priceList ?? null, String(v.sku || '').slice(0, 6) || null, v.listingId || null, v.usedCode || null, v.goneFromActiveAt || null, v.deletedAt || null]; });
             out.B = bs.docs.map((d) => { const v = d.data() || {}; const cat = (v.categories || [])[0]; return [d.id, v.pubDate || null, v.pages ?? null, v.weightG ?? null, v.size || null, v.publisher || null, (v.contributors || []).slice(0, 3).map((c) => (c.name || '') + '|' + (c.role || '')), cat ? (cat.path || []).slice(0, 4) : null, String(v.title || '').length, v.subtitle ? 1 : 0, v.originalTitle ? 1 : 0, v.title || null, v.priceList ?? null, v.priceSales ?? null, v.availability || null, v.salesPoint ?? null, v.series || null]; });
             out.M = ms.docs.map((d) => { const v = d.data() || {}; const P = (v.usedFirstPage || []).slice(0, 20).map((r) => [r.sellerCode || null, r.grade || null, r.price ?? null, r.ship ?? null, r.soldOut ? 1 : 0, r.usedCode || null, r.sellerName && /중고매장|우주점|알라딘/.test(r.sellerName) ? 1 : 0]); return [d.id, v.lastCheckedAt || null, v.priceSales ?? null, v.priceList ?? null, v.salesPoint ?? null, v.usedTotal ?? null, v.availability || null, v.rating ?? null, v.commentCount ?? null, v.reviewCount ?? null, (v.activeRanks || []).slice(0, 3), v.buyback || null, P, v.usedMins || null]; }); }
-          if (part === 'S' || part === 'sell') { const ss = await C('sellers').select('sc', 'rev6m', 'rev6mLt3', 'cancel3m', 'outstockRate', 'reviewCount', 'ourGrade', 'grade', 'aladinGrade', 'isPro', 'shopTotal', 'rating', 'totalItems', 'reviewStats').get(); /* 고객 칸(crm_)은 진단에서 읽지 않음 — 판매는 상품 기록(판매완료·soldAt)과 ml_outcomes로 */
-            out.S = ss.docs.map((d) => { const v = d.data() || {}; return [d.id, v.sc || null, v.rev6m ?? null, v.rev6mLt3 ? 1 : 0, v.cancel3m ?? null, v.outstockRate ?? null, v.reviewCount ?? null, v.ourGrade || v.grade || null, v.aladinGrade || null, v.isPro ?? null, v.shopTotal ?? null, v.rating ?? null, v.totalItems ?? null, (v.reviewStats && v.reviewStats.d180) ?? null]; });
+          if (part === 'S' || part === 'sell') { const ss = await C('sellers').select('sc', 'rev6m', 'rev6mLt3', 'cancel3m', 'outstockRate', 'reviewCount', 'ourGrade', 'grade', 'aladinGrade', 'isPro', 'shopTotal', 'rating', 'totalItems', 'reviewStats', 'shopItems', 'rev6mAt', 'rev6mBy').get(); /* 고객 칸(crm_)은 진단에서 읽지 않음 — 판매는 상품 기록(판매완료·soldAt)과 ml_outcomes로 */
+            out.S = ss.docs.map((d) => { const v = d.data() || {}; return [d.id, v.sc || null, v.rev6m ?? null, v.rev6mLt3 ? 1 : 0, v.cancel3m ?? null, v.outstockRate ?? null, v.reviewCount ?? null, v.ourGrade || v.grade || null, v.aladinGrade || null, v.isPro ?? null, v.shopTotal ?? null, v.rating ?? null, v.totalItems ?? null, (v.reviewStats && v.reviewStats.d180) ?? null, v.shopItems ?? null, v.rev6mAt || null, v.rev6mBy || null]; }); /* (engfix1 11/11) 끝에 [14] 숍 화면 전체 상품 수 · [15] 숍 화면 읽은 시각 · [16] 누가(cloud면 클라우드) — 앞 칸 차례는 그대로 */
             }
           if (part === 'days') { const dm = await C('ml_days').where('day', '>=', String(q.from || '2026-10-01')).where('day', '<=', String(q.to || '9999')).get(); out.D = []; dm.forEach((d) => { const v = d.data() || {}; if (v.cols) out.D.push({ day: v.day, i: v.i, cols: v.cols }); else out.D.push({ day: v.day, meta: { shards: v.shards, n: v.n, colNames: v.colNames, ver: v.ver } }); }); }
           if (part === 'sales') { const ss = await C('ml_sales').get(); out.SL = ss.docs.filter((d) => d.id !== '_meta').map((d) => ({ ym: d.id, rows: d.data().rows || [] })); }
