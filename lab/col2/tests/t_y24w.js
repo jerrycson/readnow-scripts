@@ -1,0 +1,118 @@
+/* t_y24w — (11/11 y24w · 정범님 '🛠 처리할 일에서 예스24도 맡기기') 🟦 예스24 쓰기 — 수량 바꾸기 · 판매중지 · 판매재개를 사람 손 없이
+ *  가짜 예스24 판매관리(이 시험 안에서만 꾸민 작은 서버 · 로그인된 세션으로 봄) — 등록상품 관리 화면: 검색어(자체상품코드)·기간·판매상태 '전체'·[조회]
+ *    · 표 #productGrid(RealGrid 흉내 — Vue 구성 요소 안 gridView: getDataSource·getItemIndex·setValue·checkItem…) · [수정항목 저장](확인 물음) · [판매상태/기간 변경] 창(라디오 02·08·04·07 · [변경] 확인 물음)
+ *    · [상품삭제]·[바이백으로 전환](절대 안 누름)
+ *  ① 순수 셈: 맡김 검사(처음엔 1건만 · 30줄까지 · 수량 1~999 · 같은 할 일 되풀이 0) · 이미 됨 셈 · 로거·MJ-MAIN 거절 · 확인 물음(그 일 단계에서만 '예' · 위험 낱말 '아니오')
+ *  ② 실제 흐름(숨은 크롬): 수량 3→2 → [수정항목 저장] → 목록 다시 읽어 확인 → done · 첫 건 확인 전엔 둘째 맡김 거절 · 같은 할 일 다시 → 거절
+ *     · 판매중지 → done · 이미 판매중지면 아무것도 안 누름 · 판매재개 · 🚚 출고 중엔 기다림 · 목록에 없으면 안 누름 · 저장해도 안 바뀌면 '확실하지 않음' → 멈춤 → 이어 가기 · 여러 줄
+ * 시험 자료에 손님 정보 없음 · 실행: node tests/t_y24w.js */
+const L = require('./lib.js'); const { ok, wait } = L; const fs = require('fs'), path = require('path'), http = require('http'), os = require('os');
+const W = require('../helper/col2-y24w.js');
+const until = async (f, n, ms) => { let v; for (let k = 0; k < (n || 60); k++) { v = await f(); if (v) return v; await wait(ms || 250); } return v; };
+const killDir = (D) => { for (const p of fs.readdirSync('/proc').filter((p) => /^\d+$/.test(p))) { try { if (fs.readFileSync('/proc/' + p + '/cmdline', 'utf8').includes(D)) process.kill(+p, 'SIGKILL'); } catch (e) {} } };
+const NM = { '02': '판매중', '08': '판매중지', '04': '판매완료', '07': '판매종료' };
+
+function fakeY24() { const S = { prods: [
+    { GOODS_NO: '300000001', EAN: '9788900000101', ENTR_GOODS_CD: 'A01SKU1', ORD_REMAIN_CNT: 3, SALE_STATE_GB: '02' },
+    { GOODS_NO: '300000002', EAN: '9788900000102', ENTR_GOODS_CD: 'A01SKU2', ORD_REMAIN_CNT: 1, SALE_STATE_GB: '02' },
+    { GOODS_NO: '300000003', EAN: '9788900000103', ENTR_GOODS_CD: 'A01SKU3', ORD_REMAIN_CNT: 1, SALE_STATE_GB: '02' },
+    { GOODS_NO: '300000004', EAN: '9788900000104', ENTR_GOODS_CD: 'A01SKU4', ORD_REMAIN_CNT: 2, SALE_STATE_GB: '02' },
+    { GOODS_NO: '300000005', EAN: '9788900000105', ENTR_GOODS_CD: 'A01SKU5, B9', ORD_REMAIN_CNT: 4, SALE_STATE_GB: '02' }], log: [], ignoreSave: false };
+  const page = (h, b) => `<!doctype html><html><head><meta charset="utf-8"><title>${h}</title><script>function api(p,o,cb){var x=new XMLHttpRequest();x.open('POST',p);x.setRequestHeader('Content-Type','application/json');x.onload=function(){cb&&cb(x.responseText)};x.send(JSON.stringify(o))}</script></head><body>${b}</body></html>`;
+  const plist = () => page('등록상품', `<div id="app"><section>
+<select id="kw"><option value="">선택하세요</option><option value="0">상품명</option><option value="3">ISBN</option><option value="5">자체상품코드</option></select> <input type="text" id="kwv">
+<div role="group" class="btn-group"><button type="button" class="btn">오늘</button><button type="button" class="btn">1년</button></div>
+<div class="custom-radio"><input type="radio" name="goodsStatGb" value="" id="s0"><label for="s0">전체</label></div><div class="custom-radio"><input type="radio" name="goodsStatGb" value="02" id="s1" checked><label for="s1">판매중</label></div>
+<button type="button" class="btn btn-secondary" id="q"> 조회 </button></section>
+<button type="button" class="btn btn-primary" id="bb">바이백으로 전환</button> <button type="button" class="btn btn-primary" id="chg">판매상태/기간 변경</button> <button type="button" class="btn btn-primary" id="save">수정항목 저장</button> <button type="button" class="btn btn-outline-primary" id="del">상품삭제</button>
+<div id="wrap"><div id="productGrid" class="rg-root">조회된 데이터가 없습니다</div></div>
+<div class="layerPop" id="pop" style="display:none"><h1> 판매상태/기간 변경 </h1><button type="button" class="close">×</button>
+${['02', '08', '04', '07'].map((v, i) => `<div class="custom-radio"><input type="radio" name="goodsStatGb" value="${v}" id="p${i}"><label for="p${i}">${NM[v]}</label></div>`).join('')}
+<input type="checkbox" name="changeDateYn" disabled value="Y"><button type="button" class="btn btn-primary" id="go"> 변경 </button><button type="button" class="btn" id="cc"> 취소 </button></div></div>
+<script>var ROWS=[],CHK=new Set(),DIRTY=new Set();
+var ds={getRowCount:function(){return ROWS.length},getJsonRow:function(r){return Object.assign({},ROWS[r])},getValue:function(r,f){return ROWS[r][f]},setValue:function(r,f,v){ROWS[r][f]=v;DIRTY.add(r)}};
+var gv={getDataSource:function(){return ds},getItemIndex:function(r){return r},getDataRow:function(i){return i},setCurrent:function(){},showEditor:function(){},commit:function(){},setValue:function(i,f,v){ds.setValue(i,f,v)},checkAll:function(c){if(!c)CHK.clear()},checkItem:function(i,c){if(c)CHK.add(i);else CHK.delete(i)},getCheckedRows:function(){return [...CHK]}};
+document.getElementById('wrap').__vue__={gridView:gv,$parent:null,title:'x'};
+function draw(){document.getElementById('productGrid').innerText=ROWS.length?ROWS.map(function(r){return r.GOODS_NO+' '+r.SALE_STATE_GB+' '+r.ORD_REMAIN_CNT}).join(' | '):'조회된 데이터가 없습니다'}
+document.getElementById('q').onclick=function(){var k=document.getElementById('kw').value,v=document.getElementById('kwv').value;var st=document.querySelector('input[name=goodsStatGb]:checked');api('/api/Product/ProductList',{SEARCH_GB:k,SEARCH_TXT:v,goodsStatGb:st?st.value:'02',PERIOD:window.YR?'1Y':'1D'},function(t){var j=JSON.parse(t);ROWS=j.PRODUCT_LIST;CHK.clear();DIRTY.clear();draw()})};
+document.querySelectorAll('.btn-group button').forEach(function(b){b.onclick=function(){window.YR=b.innerText.trim()==='1년'}});
+document.getElementById('save').onclick=function(){if(!DIRTY.size)return alert('수정된 항목이 없습니다');if(!confirm('수정된 항목을 저장하시겠습니까?'))return;api('/api/Product/SaveProduct',{rows:[...DIRTY].map(function(r){return {GOODS_NO:ROWS[r].GOODS_NO,ORD_REMAIN_CNT:ROWS[r].ORD_REMAIN_CNT}})},function(){alert('저장되었습니다.');DIRTY.clear()})};
+document.getElementById('chg').onclick=function(){if(CHK.size<1)return alert('상품을 선택하세요');document.getElementById('pop').style.display='block'};
+document.getElementById('go').onclick=function(){var r=document.querySelector('#pop input[type=radio]:checked');if(!r)return alert('판매상태를 선택하세요');if(!confirm('선택한 상품의 판매상태를 변경하시겠습니까?'))return;api('/api/Product/ChangeState',{nos:[...CHK].map(function(i){return ROWS[i].GOODS_NO}),st:r.value},function(){alert('변경되었습니다.');document.getElementById('pop').style.display='none'})};
+document.querySelector('#pop .close').onclick=document.getElementById('cc').onclick=function(){document.getElementById('pop').style.display='none'};
+document.getElementById('del').onclick=function(){if(confirm('상품을 삭제하시겠습니까?'))api('/api/Product/DeleteAll',{})};document.getElementById('bb').onclick=function(){if(confirm('바이백으로 전환하시겠습니까?'))api('/api/Product/Buyback',{})};</script>`);
+  const srv = http.createServer((q, s) => { const u = new URL(q.url, 'http://x'); let b = ''; q.on('data', (c) => (b += c)); q.on('end', () => { S.log.push({ m: q.method, p: u.pathname, body: b.slice(0, 300) });
+      const H = (code, type, body) => { s.writeHead(code, { 'Content-Type': type + '; charset=utf-8' }); s.end(body); };
+      if (u.pathname === '/api/Product/ProductList') { let o = {}; try { o = JSON.parse(b || '{}'); } catch (e) {} let L0 = S.prods; if (o.SEARCH_GB === '5' && o.SEARCH_TXT) L0 = L0.filter((p) => p.ENTR_GOODS_CD.split(/[,\s]+/).includes(o.SEARCH_TXT)); if (o.goodsStatGb) L0 = L0.filter((p) => p.SALE_STATE_GB === o.goodsStatGb);
+        return H(200, 'application/json', JSON.stringify({ PRODUCT_LIST: L0.map((p) => ({ ...p, SALE_STATE_GB_NM: NM[p.SALE_STATE_GB] })), TOTAL_COUNT: L0.length, RESULT_CODE: 'S000' })); }
+      if (u.pathname === '/api/Product/SaveProduct') { const o = JSON.parse(b || '{}'); if (!S.ignoreSave) for (const r of o.rows || []) { const p = S.prods.find((x) => x.GOODS_NO === r.GOODS_NO); if (p) p.ORD_REMAIN_CNT = +r.ORD_REMAIN_CNT; } return H(200, 'application/json', '{"RESULT_CODE":"S000"}'); }
+      if (u.pathname === '/api/Product/ChangeState') { const o = JSON.parse(b || '{}'); for (const n of o.nos || []) { const p = S.prods.find((x) => x.GOODS_NO === n); if (p) p.SALE_STATE_GB = o.st; } return H(200, 'application/json', '{"RESULT_CODE":"S000"}'); }
+      if (u.pathname === '/api/Product/DeleteAll' || u.pathname === '/api/Product/Buyback') return H(200, 'application/json', '{}');
+      if (u.pathname.startsWith('/api/')) return H(200, 'application/json', JSON.stringify({ RESULT_LIST: [], TOTAL_COUNT: 0 }));
+      if (u.pathname === '/') return H(200, 'text/html', page('판매관리', '첫 화면'));
+      if (u.pathname === '/Product/ProductList') return H(200, 'text/html', plist());
+      return H(200, 'text/html', page('기타', '없음')); }); });
+  return new Promise((r) => srv.listen(0, '127.0.0.1', () => r({ srv, S, base: `http://127.0.0.1:${srv.address().port}` }))); }
+let K = 0; const row = (no, self, kind, to, o) => ({ rid: 'led|' + no, rk: 'rk-' + no + '-' + kind + '-' + (to == null ? '' : to) + '-' + (o && o.tag ? o.tag : 'a'), no, self, kind, to, title: '시험 책 ' + no });
+const job = (rows) => ({ id: 'y24w-t' + ++K, rows, by: '시험 웹앱' });
+
+(async () => {
+  console.log('① 순수 셈');
+  { const c = W.checkJob; const R0 = { ok1: null, rk: {} }; const a = row('300000001', 'A01SKU1', 'qty', 2), b = row('300000002', 'A01SKU2', 'stop');
+    ok(c(job([a]), R0) === '' && /1건짜리/.test(c(job([a, b]), R0)) && c(job([a, b]), { ...R0, ok1: 1 }) === '', '처음엔 1건짜리만 · 첫 성공 뒤 여러 건');
+    ok(/수량은 1~999/.test(c(job([row('300000001', 'A01SKU1', 'qty', 0)]), R0)) && /종류/.test(c(job([row('300000001', 'A01SKU1', 'del')]), R0)) && /상품번호/.test(c(job([row('x1', 'A01SKU1', 'stop')]), R0)) && /자체코드/.test(c(job([row('300000001', '', 'stop')]), R0)) && /30줄/.test(c(job(Array.from({ length: 31 }, (_, i) => row(String(300000100 + i), 'S' + i, 'stop'))), { ok1: 1 })), '수량 1~999 · 종류(수량·판매중지·판매재개만) · 상품번호·자체코드 검사 · 30줄까지');
+    ok(/되풀이/.test(c(job([a]), { ...R0, rk: { [a.rk]: {} } })) && /두 번/.test(c(job([a, row('300000001', 'A01SKU1', 'stop')]), { ok1: 1 })), '되풀이 0 — 같은 할 일(rk)·같은 상품번호 한 맡김에 두 번');
+    ok(W.isDone({ kind: 'qty', to: 2 }, { qty: 2 }) && !W.isDone({ kind: 'qty', to: 2 }, { qty: 3 }) && W.isDone({ kind: 'stop' }, { st: '08' }) && !W.isDone({ kind: 'stop' }, { st: '02' }) && W.isDone({ kind: 'start' }, { st: '02' }), '이미 됨 셈(수량 같음·판매중지·판매중)');
+    const D0 = fs.mkdtempSync(path.join(os.tmpdir(), 'y24w_')); const mk = (pc) => W.makeY24W({ HOME: D0, note: () => {}, pcName: () => pc, isLogger: () => /^LOGGER/.test(pc), enabled: () => true, holdOn: () => false, login: () => 'ok', kick: () => {} });
+    const A = mk('MJ-MAIN').put(job([a])), B = mk('LOGGER').put(job([a])), C0 = mk('HOME');
+    ok(A.code === 409 && /MJ-MAIN/.test(A.body.err) && B.code === 409 && /로거/.test(B.body.err), 'MJ-MAIN·로거 PC는 맡김을 받지 않음(출고 보호 · 약속 0)', A.body.err + ' / ' + B.body.err);
+    const d1 = C0.dialog({ type: 'confirm', message: '수정된 항목을 저장하시겠습니까?' }); C0.R.phase = 'qty'; const d2 = C0.dialog({ type: 'confirm', message: '수정된 항목을 저장하시겠습니까?' }), d3 = C0.dialog({ type: 'confirm', message: '상품을 삭제하시겠습니까?' }); C0.R.phase = 'state'; const d4 = C0.dialog({ type: 'confirm', message: '선택한 상품의 판매상태를 변경하시겠습니까?' }), d5 = C0.dialog({ type: 'confirm', message: '바이백으로 전환하시겠습니까?' }), d6 = C0.dialog({ type: 'confirm', message: '판매종료로 변경하시겠습니까?' });
+    ok(!d1 && d2 && !d3 && d4 && !d5 && !d6, "확인 물음: 저장·변경 단계에서만 '예' · 삭제·바이백·판매종료는 '아니오'");
+    fs.rmSync(D0, { recursive: true, force: true }); }
+
+  const Y = await fakeY24(); const repo = process.env.COL2_PROD_REPO || path.join(__dirname, '..', '..', '..');
+  const env = { RN_COL2_Y24: Y.base, RN_COL2_Y24_SCALE: '0.05', RN_COL2_CORE_DIR: repo };
+  const H = await L.startHelper({ cfg: { on: true, y24: true, pc: 'HOME', auto: false, headless: true, watch: { tickSec: 60, handoffMs: 200 } }, env }); const D = H.D;
+  const feed = (b) => H.api('POST', '/y24/feed', { by: '시험 수집기', cfg: { ordMin: 0 }, hold: { on: false }, ...(b || {}) });
+  const ws = async () => (await H.api('GET', '/y24/w/state')).j;
+  const resOf = async (id, n, hold) => until(async () => { await feed(hold ? { hold: { on: true, why: '시험 출고' } } : null); const s = await ws(); return s.res && s.res[id] ? s.res[id] : null; }, n || 240);
+  const P = (no) => Y.S.prods.find((p) => p.GOODS_NO === no); const nCall = (p) => Y.S.log.filter((l) => l.p === p).length;
+  try {
+    console.log('② 실제 흐름(숨은 크롬) — 수량');
+    await feed(); const lg = await until(async () => { await feed(); const s = (await H.api('GET', '/status')).j.y24; return s.login === 'ok' && s.alive ? s : null; }, 120); ok(lg, '숨은 예스24 크롬이 판매관리 세션을 봄(로그인 됨)');
+    let r = await H.api('POST', '/y24/w/put', job([row('300000001', 'A01SKU1', 'qty', 2), row('300000002', 'A01SKU2', 'stop')])); ok(r.st === 400 && /1건짜리/.test(r.j.err), '처음엔 2건 맡김을 거절', r.j && r.j.err);
+    const j1 = job([row('300000001', 'A01SKU1', 'qty', 2)]); r = await H.api('POST', '/y24/w/put', j1); ok(r.j.ok && r.j.took === j1.id, '1건 맡김 받음(수량 3 → 2)');
+    r = await H.api('POST', '/y24/w/put', job([row('300000002', 'A01SKU2', 'stop')])); ok(r.st === 409 && /처음 한 건/.test(r.j.err), '첫 건 확인 전엔 다른 맡김을 받지 않음(1건 확인 뒤 이어 감)', r.j && r.j.err);
+    r = await H.api('POST', '/y24/w/put', j1); ok(r.j.ok && r.j.already, '같은 맡김 이름표를 또 보내면 이미 받음(되풀이 0)');
+    let x = await resOf(j1.id); const rr = x && x.rows && x.rows['led|300000001'];
+    ok(x && x.state === 'done' && P('300000001').ORD_REMAIN_CNT === 2 && nCall('/api/Product/SaveProduct') === 1 && rr && rr.before.qty === 3 && rr.after.qty === 2, '검색 → 재고수량 칸 고침 → [수정항목 저장] → 목록 다시 읽어 확인 → done', x && x.msg);
+    ok(Y.S.log.some((l) => l.p === '/api/Product/ProductList' && /"SEARCH_GB":"5"/.test(l.body) && /A01SKU1/.test(l.body) && /"goodsStatGb":""/.test(l.body) && /1Y/.test(l.body)), "검색은 자체상품코드 = 우리 SKU · 판매상태 '전체' · 기간 1년");
+    let s = await ws(); ok(s.ok1 && !s.stop, '첫 성공 기록(이 PC) → 여러 건이 열림');
+    await H.api('POST', '/y24/w/ack', { ids: [j1.id] }); ok(!(await ws()).res[j1.id], '웹앱이 받은 결과는 지움(ack)');
+    r = await H.api('POST', '/y24/w/put', job([row('300000001', 'A01SKU1', 'qty', 2)])); ok(r.st === 400 && /되풀이/.test(r.j.err), '같은 할 일(rk)을 다시 맡기면 거절(되풀이 0)', r.j.err);
+    console.log('③ 판매중지 · 이미 됨 · 판매재개');
+    const j2 = job([row('300000002', 'A01SKU2', 'stop')]); await H.api('POST', '/y24/w/put', j2); x = await resOf(j2.id);
+    ok(x && x.state === 'done' && P('300000002').SALE_STATE_GB === '08' && nCall('/api/Product/ChangeState') === 1, '그 줄만 고름 → [판매상태/기간 변경] → 판매중지 → [변경] → 목록에서 판매중지 확인 → done', x && x.msg);
+    const j3 = job([row('300000002', 'A01SKU2', 'stop', null, { tag: 'b' })]); await H.api('POST', '/y24/w/put', j3); x = await resOf(j3.id);
+    ok(x && x.state === 'done' && x.rows['led|300000002'].state === 'already' && nCall('/api/Product/ChangeState') === 1, '이미 판매중지면 아무것도 안 누르고 끝(already)', x && x.msg);
+    const j4 = job([row('300000002', 'A01SKU2', 'start')]); await H.api('POST', '/y24/w/put', j4); x = await resOf(j4.id);
+    ok(x && x.state === 'done' && P('300000002').SALE_STATE_GB === '02', '판매재개(판매중지 → 판매중)', x && x.msg);
+    console.log('④ 출고 중 · 목록에 없음');
+    const c0 = nCall('/api/Product/ChangeState'); const j5 = job([row('300000003', 'A01SKU3', 'stop')]); await feed({ hold: { on: true, why: '시험 출고' } }); await H.api('POST', '/y24/w/put', j5);
+    for (let k = 0; k < 12; k++) { await feed({ hold: { on: true, why: '시험 출고' } }); await wait(250); } s = await ws(); ok(nCall('/api/Product/ChangeState') === c0 && s.wait.length === 1 && /출고/.test(s.why || ''), '🚚 출고 중엔 아무것도 안 누르고 기다림', s.why);
+    x = await resOf(j5.id); ok(x && x.state === 'done' && P('300000003').SALE_STATE_GB === '08', '출고가 끝나면 이어감 → done', x && x.msg);
+    const j6 = job([row('300000099', 'A01SKU9', 'stop')]); await H.api('POST', '/y24/w/put', j6); x = await resOf(j6.id);
+    ok(x && x.state === 'fail' && x.rows['led|300000099'].pre && /못 찾음/.test(x.msg) && x.todo, '목록에 그 줄이 없으면 아무것도 안 누르고 까닭·할 일', x && x.msg);
+    console.log("⑤ 저장해도 안 바뀌면 '확실하지 않음' → 멈춤 → 이어 가기");
+    Y.S.ignoreSave = true; const sv0 = nCall('/api/Product/SaveProduct'); const j7 = job([row('300000004', 'A01SKU4', 'qty', 1)]); await H.api('POST', '/y24/w/put', j7); x = await resOf(j7.id);
+    ok(x && x.state === 'unsure' && x.stop && x.todo && nCall('/api/Product/SaveProduct') === sv0 + 1, "눌렀지만 목록 값이 그대로 → '확실하지 않음'(다시 누르지 않음)", x && x.msg);
+    r = await H.api('POST', '/y24/w/put', job([row('300000005', 'B9', 'qty', 3)])); ok(r.st === 409 && r.j.stop, '멈춘 동안엔 새 맡김을 받지 않음', r.j && r.j.err);
+    Y.S.ignoreSave = false; r = await H.api('POST', '/y24/w/resume', { by: '시험' }); ok(r.j.ok && r.j.was && !(await ws()).stop, '[▶ 이어 가기] → 멈춤 풂');
+    console.log('⑥ 여러 줄(첫 성공 뒤)');
+    const j8 = job([row('300000005', 'B9', 'qty', 3), row('300000003', 'A01SKU3', 'start')]); await H.api('POST', '/y24/w/put', j8); x = await resOf(j8.id, 300);
+    ok(x && x.state === 'done' && P('300000005').ORD_REMAIN_CNT === 3 && P('300000003').SALE_STATE_GB === '02', '2줄 맡김 → 둘 다 done(자체코드가 여럿인 줄도)', x && x.msg);
+    ok(!Y.S.log.some((l) => /DeleteAll|Buyback/.test(l.p)) && Y.S.prods.length === 5, '상품삭제·바이백으로 전환 같은 다른 단추는 끝까지 안 누름');
+    const st = (await H.api('GET', '/status')).j.y24; ok(st.w && st.w.ok1 && st.w.stop == null, '상태(/status y24.w)에 쓰기 줄 요약');
+  } finally { try { await H.stop(); } catch (e) {} killDir(D); }
+  Y.srv.close(); L.done('t_y24w');
+})();
