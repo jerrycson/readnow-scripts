@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.264의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.265의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.264' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.264', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.265' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.265', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -1024,6 +1024,7 @@
     await db.runTransaction(async (t) => { out = null; const sn = await t.get(REF); const d = (sn.exists && sn.data()) || {}; const now = Date.now(); const me = (d.dev || {})[who], w0 = (d.wait || {})[who];
       const drop = (how, why, until) => { if ((me && me.in) || w0) t.set(REF, { dev: { [who]: { in: false, at: now, how, pri: PRI, yield: false } }, wait: { [who]: null } }, { merge: true }); out = { ok: false, why, until: until || 0, off: !!d.col2Off }; };
       if (!want) return drop('번외 쉼', '번외가 알라딘 읽기를 하지 않음');
+      if (+d.holdUntil > now) return drop('계정 쉼', `정범님이 켠 계정 새 로그인 쉼(${d.holdWhy || ''}) — 번외에 자리를 주지 않음`, Math.min(+d.holdUntil, now + 10 * 60e3)); /* (🔬 정밀 점검 11/11 🔗 수 묶음 가-8) 사람이 켠 계정 쉼(aladin_login.holdUntil)을 번외 자리 다리도 따름 — 예전엔 쉼 중에도 자리를 줘 번외가 다시 로그인함(사람이 정한 값을 자동이 덮음) */
       if (d.col2Off) return drop('번외 끔', '계정 문서에서 번외 자리를 꺼 둠(col2Off)', now + 10 * 60e3);
       const V = RULE.seatView(d, now); const mine = V.live.some((x) => x.who === who); const others = V.wait.filter((x) => x.who !== who);
       if (mine && others.length && !own) { t.set(REF, { dev: { [who]: { in: false, at: now, how: '번외 양보', pri: PRI, yield: true } } }, { merge: true }); out = { ok: false, why: `${others[0].who}가 자리를 기다려 번외가 넘김(그림자는 자리 차례 맨 뒤)`, until: now + RULE.between(V.cfg.retrySec, Math.random()) }; return; }

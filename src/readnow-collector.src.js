@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.264
+// @version      1.89.265
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -4358,7 +4358,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
    *  로거가 10분(설정 prd_system/autoSched.lgAway.min) 넘게 신호가 없거나 일시 정지·테더링 길 막힘이면 → 이 사무실 PC가 ⏰ 비로그인 알라딘 일 중 벤치마킹(bench*)이 아닌 것(시장 지표·구매자 분포·평가·새상품 없는 시세·구매 풀 정보)을 담당 PC 차례로 이어받음
    *  로거가 돌아오면 새 회차는 다시 로거(하던 회차는 끝까지) · 판정은 공용 AS.loggerAway */
   const LGA = { prev: null, at: 0, r: null };
-  const loggerAway = () => { if (PUBONLY || !pubPcMode() || !AS || !AS.loggerAway) return false; try { if (!(Date.now() - BEATS_AT < 5 * 60e3)) return false; /* (1.89.263 4시간 점검 11/11 · 🧠 근원) 이 탭의 PC 신호표(BEATS)가 5분 넘게 묵었으면(쉬는 탭 · 막 일하는 탭이 된 탭) 로거 부재를 판단하지 않음 — 예전엔 묵은 표로 '로거 신호 28분째 없음'이라 하고 1분 뒤 일하는 탭은 '살아 있음(2분 전)'이라 하여 오후 4시간에 경고 10번이 엇갈렸고, 막 일하는 탭이 된 탭은 첫 신호 전까지 로거 비로그인 알라딘 일을 사무실 PC로 잘못 이어받을 수 있었음 · 일하는 탭은 2분마다 새로 읽으므로 로거가 정말 꺼지면 그대로 잡음 */ if (!LGA.r || Date.now() - LGA.at > 30e3) { LGA.at = Date.now(); LGA.r = AS.loggerAway(SCHED || {}, typeof BEATS !== 'undefined' ? BEATS : {}, PUBPC.name, Date.now()); if (LGA.prev !== null && LGA.prev !== LGA.r.away) log(LGA.r.away ? `🔁 ${LGA.r.why} — 벤치마킹 말고 로거 비로그인 일(시장 지표 등)을 사무실 담당 PC가 이어받음` : `🔁 ${LGA.r.why} — 비로그인 일 새 회차는 다시 로거가 맡음`, 1); LGA.prev = LGA.r.away; } return !!LGA.r.away; } catch (e) { return false; } };
+  const loggerAway = () => { if (PUBONLY || !pubPcMode() || !AS || !AS.loggerAway) return false; try { if (!(Date.now() - BEATS_AT < 5 * 60e3)) return false; /* (1.89.263 4시간 점검 11/11 · 🧠 근원) 이 탭의 PC 신호표(BEATS)가 5분 넘게 묵었으면(쉬는 탭 · 막 일하는 탭이 된 탭) 로거 부재를 판단하지 않음 — 예전엔 묵은 표로 '로거 신호 28분째 없음'이라 하고 1분 뒤 일하는 탭은 '살아 있음(2분 전)'이라 하여 오후 4시간에 경고 10번이 엇갈렸고, 막 일하는 탭이 된 탭은 첫 신호 전까지 로거 비로그인 알라딘 일을 사무실 PC로 잘못 이어받을 수 있었음 · 일하는 탭은 2분마다 새로 읽으므로 로거가 정말 꺼지면 그대로 잡음 */ if (!LGA.r || Date.now() - LGA.at > 30e3) { LGA.at = Date.now(); LGA.r = AS.loggerAway(SCHED || {}, typeof BEATS !== 'undefined' ? BEATS : {}, PUBPC.name, Date.now()); if (LGA.prev !== null && LGA.prev !== LGA.r.away) log(LGA.r.away ? (SET.loggerTakeOk === true ? `🔁 ${LGA.r.why} — 벤치마킹 말고 로거 비로그인 일(시장 지표 등)을 사무실 담당 PC가 이어받음(설정 loggerTakeOk 켬)` : `🔁 ${LGA.r.why} — 알라딘 비로그인 일은 사무실 PC가 이어받지 않음(🛡 11/09 최우선 법칙 · 설정 loggerTakeOk 꺼짐 — 알라딘 아닌 와이파이 도서 정보만 담당 PC가 이어감 · 로거가 돌아오면 로거가 함)`) : `🔁 ${LGA.r.why} — 비로그인 일 새 회차는 다시 로거가 맡음`, 1); /* (🔬 정밀 점검 11/11) 기록 글을 사실대로 — 11/11 JS-MAIN 24시간에 '사무실 담당 PC가 이어받음' 11번이 적혔지만 실제 이어받기는 설정(기본 끔)으로 막혀 있었음 · 4시간 점검도 이 글을 보고 '이어받았다'고 읽음 */ LGA.prev = LGA.r.away; } return !!LGA.r.away; } catch (e) { return false; } };
   /* (정범님 11/09 최우선 법칙) 알라딘이 로거를 우리와 엮게 하지 않음 — 사무실 PC(북스킹 계정 IP)가 로거의 비로그인 일·벤치마킹을 이어받지 않음(같은 목록·같은 자리를 사무실 IP로 이어 가면 엮임) · 설정 loggerTakeOk가 true일 때만(기본 끔) */
   const lgTakeKey = (k) => SET.loggerTakeOk === true && loggerAway() && (!isBenchKey(k) || benchTakeKey(k)); /* 이 비로그인 일을 지금 사무실 PC가 이어받아도 되나 */
   /* (11/09 오후 정범님 '로거가 멈춰도 다른 PC가 이어받음') 🎯 매시 '못 끝낸 판매자 이어 읽기'(benchResume)만 — 로거가 30분 넘게(app_settings/bench.awayMin · 근거: 없음, 설정으로 바꿈) 알라딘 일을 못 하면 사무실 담당 PC가 맡음
@@ -10373,6 +10373,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     await db.runTransaction(async (t) => { out = null; const sn = await t.get(REF); const d = (sn.exists && sn.data()) || {}; const now = Date.now(); const me = (d.dev || {})[who], w0 = (d.wait || {})[who];
       const drop = (how, why, until) => { if ((me && me.in) || w0) t.set(REF, { dev: { [who]: { in: false, at: now, how, pri: PRI, yield: false } }, wait: { [who]: null } }, { merge: true }); out = { ok: false, why, until: until || 0, off: !!d.col2Off }; };
       if (!want) return drop('번외 쉼', '번외가 알라딘 읽기를 하지 않음');
+      if (+d.holdUntil > now) return drop('계정 쉼', `정범님이 켠 계정 새 로그인 쉼(${d.holdWhy || ''}) — 번외에 자리를 주지 않음`, Math.min(+d.holdUntil, now + 10 * 60e3)); /* (🔬 정밀 점검 11/11 🔗 수 묶음 가-8) 사람이 켠 계정 쉼(aladin_login.holdUntil)을 번외 자리 다리도 따름 — 예전엔 쉼 중에도 자리를 줘 번외가 다시 로그인함(사람이 정한 값을 자동이 덮음) */
       if (d.col2Off) return drop('번외 끔', '계정 문서에서 번외 자리를 꺼 둠(col2Off)', now + 10 * 60e3);
       const V = RULE.seatView(d, now); const mine = V.live.some((x) => x.who === who); const others = V.wait.filter((x) => x.who !== who);
       if (mine && others.length && !own) { t.set(REF, { dev: { [who]: { in: false, at: now, how: '번외 양보', pri: PRI, yield: true } } }, { merge: true }); out = { ok: false, why: `${others[0].who}가 자리를 기다려 번외가 넘김(그림자는 자리 차례 맨 뒤)`, until: now + RULE.between(V.cfg.retrySec, Math.random()) }; return; }

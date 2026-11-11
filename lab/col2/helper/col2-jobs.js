@@ -134,7 +134,7 @@ function makeJobs(ctx) {
   const slimRes = (r) => { const o = { ok: !!r.ok, none: !!r.none, skip: r.skip || null, why: r.why || null }; if (r.d !== undefined) o.d = r.d; if (r.rates) { o.rates = r.rates; o.src = r.src; o.date = r.date; } return o; };
 
   /* (11/11 col2rep2 · 약속 38·48) 🔀 넘긴 KPIPA — 이 PC로 넘겼으면(웹앱 ⚙ › 🔀 번외로 넘기기) 운영 kpipaJob과 같은 꼴로 mkt_kpipa/<날짜>에 씀(같으면 안 씀 · 바뀌면 옛 값을 history에) · 넘기지 않았으면 아무것도 안 함 */
-  function hoKp(w, v, cmp) { if (!ctx.handed || !ctx.handed('kpipa') || !ctx.opOut) return; const sh = w.sh || {}; if (!sh.type || !sh.series || cmp.verdict === 'same') return; const pv = v && v[sh.type] && v[sh.type].series ? v[sh.type].series : null; const at = new Date().toISOString(); const id = String(w.id);
+  function hoKp(w, v, cmp) { if (!ctx.handed || !ctx.handed('kpipa') || !ctx.opOut) return; const sh = w.sh || {}; if (ctx.beat) ctx.beat('kpipa'); /* (🔬 정밀 점검 11/11) 값이 같아도 '돌렸다'는 소식 — 소식이 없으면 8시간 뒤 운영이 넘김을 풀고 최근 7일을 다시 받아 썼음 */ if (!sh.type || !sh.series || cmp.verdict === 'same') return; const pv = v && v[sh.type] && v[sh.type].series ? v[sh.type].series : null; const at = new Date().toISOString(); const id = String(w.id);
     if (ctx.opOut('kpipa', 'mkt_kpipa', id, { date: `${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6)}`, [sh.type]: { series: sh.series, at } }, { hist: pv ? { at, type: sh.type, old: pv } : null })) ctx.note(`🔀 넘긴 일 📚 KPIPA ${id} ${sh.type === 'onOff' ? '판매채널별' : '도서유형별'} — ${pv ? '바뀐 값(옛 값은 history)' : '새 날'}을 운영 칸에 맡김(웹앱이 씀)`, { k: 'read', m: '🔀 넘김' }); }
   /* 운영 문서가 왔는지 보고 견줌 */
   function settle() { const P0 = P(); const keep = [];
