@@ -1,2 +1,2 @@
-logs=1&pc=LOGGER&from=202611111200&doc=prd_jobs/autoSched
-# 2430029942
+logs=1&pc=LOGGER&from=202611101740&to=202611101950&recentUp=sellers&mins=240
+# 3017419456
