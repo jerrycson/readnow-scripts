@@ -1,5 +1,2 @@
-logs=1&pc=LOGGER&from=202611102130
-logs=1&pc=HOME&from=202611102130
-logs=1&pc=JS-MAIN&from=202611102130
-logs=1&pc=MJ-MAIN&from=202611102130
-# 293042617
+benchday=2026-11-10&doc=app_settings/bench,app_settings/badge_study
+# 1357131863
