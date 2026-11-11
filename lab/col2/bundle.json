@@ -30,6 +30,8 @@
   "helper/col2-cred.js",
   "helper/col2-relogin.js",
   "helper/col2-y24reg.js",
-  "helper/col2-y24w.js"
+  "helper/col2-y24w.js",
+  "helper/col2-bcrypt.js",
+  "helper/col2-nv.js"
  ]
 }
