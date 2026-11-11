@@ -1,0 +1,23 @@
+// tSELLEARN2ui — 🔭 시장조사 › 🏪 경쟁 판매자 🧑‍🏫 카드 안: 🗂 앞 페이지 구성 · 👥 구매자 분포 · 🧬 진화 제안(두 번 눌러 확정) 화면 시험(sell2 · 꾸민 자료만)
+// 실행: cd pw && RN_PORT=<포트> node tSELLEARN2ui.js (harness.js·seed.js 옆)
+let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 600)); } else console.log('  ✓', m); };
+require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js')); await p.waitForTimeout(400);
+  const r = await p.evaluate(async () => { const W = (ms) => new Promise((x) => setTimeout(x, ms)); S.devOk = true; S.sellersLoaded = true; S.sellers = new Map(); S.sellers.set('sc_101', { id: 'sc_101', name: '판매자1', sc: 1, totalItems: 1000 });
+    const X = ReadnowSellerLearn; const sug = X.normOrder(['goodShip', ...X.DEFAULT_ORDER]);
+    S.slL = { open: true, at: Date.now(), doc: { day: '2026-11-11', sellers: 1, cfg: { role: { by: 'rev' }, front: { per: 24, pages: 10 } }, role: [{ sc: '101' }], profiles: [{ sc: '101', name: '판매자1', p: { runs: 5, days: 10, soldPerDay: 5, revPerDay: 50000, stock: 900, cats: [{ k: '국내도서>어린이', s: 0.5 }], catKnownS: 0.9, bands: [{ k: '6천~1만', s: 0.5 }], grades: [], years: {}, words: [], pubs: [], authors: [] }, f: { rating: 0.99, cancel: 0.001 } }],
+      ours: { stock: 100, cats: { '국내도서>어린이': 0.1 }, bands: { '6천~1만': 0.1 } }, plans: [{ sc: '101', tips: [{ kind: 'buy', k: '국내도서>어린이', t: '📚 더 매입: 어린이', gap: 0.4 }] }], front: { pool: { n: 3 }, rows: [] },
+      comp: { shops: 10, oursRows: 55, rows: 308, tests: 360, sig: 24, sigRep: 24, oos: { champ: 0.334, chall: 0.395, n: 107 }, top: [{ f: 'ageMed', ft: '앞 쪽 상품 나이(일)', y: 'r1', yt: '다음 회차 매출/일', r: -0.39, eff: -0.24, q: 0.016, rep: true, n: 308, groups: 10 }], ledger: { sup: 1, cand: 300, rej: 5 }, best: [{ st: '지지', t: '앞 쪽 상품 나이(일)', yt: '다음 회차 매출/일', score: 0.8, n: 3, r: -0.39 }], pending: ['ageMed*k_kid'], kw: ['수학'], note: '관계일 뿐' },
+      evo2: { snaps: 20, cond: { pairs: 700, ready: true, changed: true, order: sug, base: { bad: 0.1, good: 0.5 }, conflict: { n: 3, bad: 1, avoidFirst: true }, conds: [{ k: 'goodShip', t: '품절 취소율 1% 아래 · 평점 99% 넘음', n: 40, pBad: 0.05, pGood: 0.8, w: 1.6, enough: true }] }, role: { by: { rev: { n: 5, m: 0.6 }, turn: { n: 5, m: 0.8 } }, cur: 'rev', best: 'turn' }, follow: null, note: '제안만' } } };
+    S.slA = { at: Date.now(), doc: { day: '2026-11-11', items: 400, bd: 300, cover: 0.75, relN: 200, soldN: 120, U: [{ a: '10대', f: 0.1, m: 0.1 }], coSell: { pairs: 30, near7: 0.2, base7: 0.1, lift: 2 }, r06: { fem: 0.1, age: -0.2, young: 0.1, old: -0.1 }, explore: { top: [{ f: 'aYoung', y: 'sold30', r: 0.3, q: 0.01, rep: true, n: 300 }] }, ledger: { sup: 0, cand: 20, rej: 0 }, note: '알라딘 전체 구매자' } };
+    S.slFw = { at: Date.now(), d: {} }; localStorage.removeItem('rn-sltrack'); S.slC = null; S.tab = 'sellers'; S.q = ''; renderTabs(); renderMainNow(); await W(500); const m = document.querySelector('#main'); const T = m.querySelector('#sl_learn').textContent; const out = {};
+    out.comp = /앞 페이지 '구성'/.test(T) && /보정 뒤 유의 24개/.test(T) && /앞 쪽 상품 나이/.test(T) && /나아지지 않음/.test(T); out.aud = /구매자 분포·함께 산 책/.test(T) && /10·20대 몫/.test(T) && /2배/.test(T); out.evo = /진화 제안/.test(T) && /1\.6/.test(T) && /회전율/.test(T);
+    const b = m.querySelector('#sl_evoord'); out.btn = !!b; if (b) { b.click(); await W(300); renderMainNow(); await W(200); } out.draft = S.slC.draft && S.slC.draft[0]; out.order0 = S.slC.order[0]; out.osave = !!document.querySelector('#main #sl_osave');
+    const s1 = document.querySelector('#main #sl_osave'); if (s1) { s1.click(); await W(200); renderMainNow(); await W(100); const s2 = document.querySelector('#main #sl_osave'); out.arm = s2 && s2.textContent; s2 && s2.click(); await W(200); } out.saved = S.slC.order[0];
+    const by = document.querySelector('#main #sl_evoby'); if (by) { by.click(); await W(300); } out.by = (S.slR || {}).by;
+    const fw = document.querySelector('#main [data-slfw][data-slfs="go"]'); out.fw = !!fw; if (fw) { fw.click(); await W(300); } out.fwState = Object.values((S.slFw || {}).d || {}).map((x) => x.state).join(',');
+    return out; });
+  ok(r.comp, '🗂 앞 페이지 구성 → 숍 전체 판매: 유의 수·맨 위 특징·채점(나아지지 않음도 그대로)', r); ok(r.aud, '👥 구매자 분포·함께 산 책 칸', r); ok(r.evo, '🧬 판정 조건 무게·롤모델 기준 견줌', r);
+  ok(r.btn && r.draft === 'goodShip' && r.order0 !== 'goodShip' && r.osave, "제안 순서 넣기 = 초안만(확정 전엔 순서 그대로)", r);
+  ok(/한 번 더/.test(r.arm || '') && r.saved === 'goodShip', '두 번 눌러야 확정', r); ok(r.by === 'turn', '롤모델 기준 제안을 기준 칸에 넣음(저장은 ☁ 두 번)', r);
+  ok(r.fw && r.fwState === 'go', "따라 하기 '진행' 표시", r);
+  console.log(bad ? `❌ ${bad}개 실패` : '✓ 모두 통과'); });
