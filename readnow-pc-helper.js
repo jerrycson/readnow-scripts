@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.265의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.266의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.265' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.265', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.266' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.266', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -890,6 +890,11 @@
    *        맡긴 일 결과 → rn-y24jres·rn-y24jdone(위 jobSync가 crm_y24_orders로) · 지금 단계 → rn-y24jstep(단계 실시간) · 둘러보기 요약 → rn-y24tour(위 tourUp이 y24_raw_idx/_tour로)
    *  rn-col2y {on·jobs·login·at} → 예스24 '리드나우 연결' 창(열어 둔 경우)은 주문 다시 읽기·맡긴 일을 쉼(겹침 막기) · 로거 크롬은 안 함(계정·쿠키 금지 · 약속 0) · 번외가 없으면 5분에 한 번만 물음 · 머리(@connect 127.0.0.1) 그대로 */
   { const C2Y = 'http://127.0.0.1:8797'; let busy = false, miss = 0, nextAt = 0, ack = [], jack = []; let lastStep = '';
+    /* (11/11 y24ops3 · 진단 11/11 17:25 — HOME 웹앱이 닫혀 col2_ctl/HOME이 12:24 뒤로 안 바뀌어 HOME 번외 예스24가 로그인됐는지·왜 멈췄는지 아무도 모름) 💓 이 PC 번외 예스24 상태 한 줄을 수집기가 직접 col2_ctl/<PC>.y24hb에
+     *  · 웹앱을 안 열어 둬도(이 수집기 탭만 살아 있으면) 웹앱 🧰 예스24 운영·홈 경보·진단이 맡은 PC의 실제 상태(로그인·멈춘 까닭·첫 쓰기 결과·판매 숫자)를 봄
+     *  · 숫자·상태 글만(손님 정보 없음) · 바뀐 때만(1분 안 두 번 안 씀) · 같아도 10분에 한 번 '살아 있음' · 번외 도우미가 답하지 않으면 hlp:false 한 번(10분마다) · 로거 크롬은 안 함(위 rn-pubChrome) */
+    let hbSig = '', hbAt = 0; const hbPut = async (pc, o) => { try { if (!pc) return; const sg = JSON.stringify(o); const t = Date.now(); if (sg === hbSig ? t - hbAt < 10 * 60e3 : t - hbAt < 60e3) return; hbSig = sg; hbAt = t; await firebase.firestore().collection('col2_ctl').doc(pc).set({ y24hb: { ...o, at: new Date().toISOString(), by: 'collector' } }, { merge: true }); } catch (e) {} };
+    const hbOf = (y) => { const c = (v, n) => (v == null ? null : String(v).slice(0, n || 160)); const w = y.w || null; return { hlp: true, on: !!y.on, mine: y.mine !== false, holder: c(y.holder, 40), login: c(y.login, 20), loginMsg: c(y.loginMsg), reWhy: y.reWhy ? c(y.reWhy.why, 200) : null, already: y.already ? { n: +y.already.n || 1, at: y.already.at || null } : null, alive: !!y.alive, active: !!y.active, msg: c(y.msg, 200), ord: y.ord ? { at: y.ord.at || null, err: c(y.ord.err) } : null, main: y.main || null, goods: y.goods || null, opsNum: y.opsNum || null, w: w ? { ok1: w.ok1 || null, stop: c(w.stop), wait: +w.wait || 0, msg: c(w.msg), hist: (w.hist || []).slice(0, 5), grid: w.grid || null } : null, reg: y.reg ? { ok1: y.reg.ok1 || null, done: y.reg.done || null, wait: +y.reg.wait || 0, msg: c(y.reg.msg) } : null, learn: y.learn || null }; };
     const gx = (m, p, b) => new Promise((res) => { try { GM_xmlhttpRequest({ method: m, url: C2Y + p, headers: { 'X-RN-Col2': '1', 'Content-Type': 'application/json' }, data: b ? JSON.stringify(b) : undefined, timeout: 15000, anonymous: true, onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {} res(r.status === 200 ? j : null); }, onerror: () => res(null), ontimeout: () => res(null) }); } catch (e) { res(null); } });
     const gv2 = (k, d) => { try { const v = GM_getValue(k, d); return v == null ? d : v; } catch (e) { return d; } };
     const c2yTick = async () => { if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || gv2('rn-pubChrome', false)) return; if (!(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return;
@@ -898,8 +903,8 @@
         const prev = c2yNow(); if (prev && prev.jobs) { const L = gv2('rn-y24job', []), D = gv2('rn-y24jdone', {}); for (const j of L) { if (!j || !j.id || D[j.id]) continue; D[j.id] = { at: Date.now(), st: 'run', by: 'col2' }; jobs.push(j); } if (jobs.length) GM_setValue('rn-y24jdone', D); }
         const r = await gx('POST', '/y24/feed', { by: pc, cfg: cfg ? { ordMin: cfg.ordMin, off: !!cfg.off, holder: cfg.holder || null } : null, hold, jobs, ack, jack });
         const undo = (keep) => { if (!jobs.length) return; const D = gv2('rn-y24jdone', {}); let ch = false; for (const j of jobs) if (!(keep && keep.has(j.id)) && D[j.id] && D[j.id].by === 'col2' && D[j.id].st === 'run') { delete D[j.id]; ch = true; } if (ch) GM_setValue('rn-y24jdone', D); };
-        if (!r || !r.ok) { undo(null); miss++; if (miss >= 3) nextAt = Date.now() + 5 * 60e3; if (prev) GM_setValue('rn-col2y', { on: false, jobs: false, login: null, at: Date.now() }); return; }
-        miss = 0; ack = []; jack = []; const y = r.y24 || {}; GM_setValue('rn-col2y', { on: !!y.active, jobs: !!y.jobsOk, login: y.login || null, at: Date.now() });
+        if (!r || !r.ok) { undo(null); miss++; if (miss >= 3) { nextAt = Date.now() + 5 * 60e3; hbPut(pc, { hlp: false, holder: cfg && cfg.holder ? String(cfg.holder).slice(0, 40) : null, msg: '이 PC 번외 도우미(127.0.0.1:8797)가 답하지 않음 — 번외가 꺼져 있거나 깔리지 않음' }); } if (prev) GM_setValue('rn-col2y', { on: false, jobs: false, login: null, at: Date.now() }); return; }
+        miss = 0; ack = []; jack = []; const y = r.y24 || {}; GM_setValue('rn-col2y', { on: !!y.active, jobs: !!y.jobsOk, login: y.login || null, at: Date.now() }); if (!y.logger) hbPut(pc, hbOf(y));
         undo(new Set(Array.isArray(r.took) ? r.took : []));
         if (Array.isArray(r.recs) && r.recs.length) { const seen = gv2('rn-c2yids', []); const S0 = new Set(seen); const q = qGet(); let bytes = q.reduce((a, x) => a + (x.body ? x.body.length : 0), 0), drop = 0, add = 0;
           for (const x of r.recs) { if (!x || !x.id) continue; ack.push(x.id); if (S0.has(x.id)) continue; S0.add(x.id); seen.push(x.id); const { id, src, ...rec } = x; q.push(rec); bytes += rec.body ? rec.body.length : 0; add++; }
@@ -983,7 +988,8 @@
     busy = true; let next = 60e3; try {
       const tg = window.__rnTgate ? window.__rnTgate() : null; const tgOk = !(tg && tg.ok === false);
       if (tgWas !== tgOk) { const r0 = await gx('POST', '/busy', tgOk ? { sec: 0, why: '테더링 문 열림' } : { sec: 600, why: '🛡 로거 테더링 문 닫힘 — ' + String((tg && tg.why) || '').slice(0, 50) }); if (r0) tgWas = tgOk; } else if (!tgOk) await gx('POST', '/busy', { sec: 600, why: '🛡 로거 테더링 문 닫힘' });
-      const pd = await gx('GET', '/relay/pending?by=' + encodeURIComponent('수집기 ' + (pcOf() || 'LOGGER'))); if (!pd || !pd.ok) { if (++miss >= 3) next = 5 * 60e3; return; } miss = 0;
+      const pd = await gx('GET', '/relay/pending?by=' + encodeURIComponent('수집기 ' + (pcOf() || 'LOGGER'))); if (!pd || !pd.ok) { G.__rnC2lgPd = { at: Date.now(), miss: miss + 1 }; if (++miss >= 3) next = 5 * 60e3; return; } miss = 0;
+      G.__rnC2lgPd = { at: Date.now(), miss: 0, webAt: +pd.webAt || 0, kind: pd.kind || '', ver: pd.ver || '' }; /* (11/11 nvfix1) 🟩 네이버 다리 rnC2nv가 '이 PC 웹앱이 3분 안에 왔나'·번외 판을 따로 묻지 않고 봄 */
       if (pd.kind && pd.kind !== 'logger') { next = 30 * 60e3; return; } /* 번외가 사무실 설정이면 이 다리는 손대지 않음 */
       { const Q = G.__rnC2lgBk || []; if (Q.length) { const take = Q.splice(0, 300); const r1 = await gx('POST', '/lg/books', { books: take }); if (!r1) G.__rnC2lgBk = take.concat(G.__rnC2lgBk || []).slice(-300); } }
       if (pd.webAt && Date.now() - pd.webAt < 3 * 60e3) return; /* 이 PC 웹앱이 대신 해 주는 중 */
@@ -1000,6 +1006,55 @@
       if ((pd.want || []).length || (pd.out || []).length >= 25) next = 5000;
     } catch (e) {} finally { busy = false; nextAt = Date.now() + next; } };
   G.__rnC2lgTick = lgTick; setTimeout(() => lgTick().catch(() => {}), 30000); setInterval(() => lgTick().catch(() => {}), 5000);
+})();
+/* (11/11 nvfix1 · 정범님 11/11 '네이버 키값을 로거에서만 넣을 수 있는 거야? 지금 로거가 켜져 있는데도 이래') 🟩 네이버 로거 다리 — 로거 PC엔 웹앱이 늘 열려 있지 않아(11/11 진단: 로거 웹앱 마지막 소식 12:34 · 그 뒤 수집기 탭만)
+ *  웹앱 nvRelayTick(로거 웹앱만 돎)이 할 일이 영영 안 돌았음 → 받는 열쇠(col2_naver/pub)·상태(col2_naver/state)가 안 올라와 ⚙ 🟩 「🔒 잠가 보내고 연결 시험」이 꺼져 있었음
+ *  로거 알라딘 일하는 탭(lead · Firebase 로그인됨)이 웹앱과 똑같이: /nv/st → 받는 열쇠·상태 올림 · col2_naver_cmd 새 봉투를 하나씩 붙잡아(트랜잭션 — 웹앱과 둘이 같은 봉투를 두 번 넘기지 않음) /nv/cmd로 넘기고 봉투 지움
+ *  · /nv/feed → crm_naver_orders(받는 분만)·nv_listings·col2_naver_jobs 쓰고 ack — 이 PC 웹앱이 3분 안에 왔거나(번외 webAt) 웹앱이 상태를 6분 안에 썼으면 비킴(웹앱이 먼저 · 하나만)
+ *  · 번외가 없거나 옛 판(네이버 없음)·네이버를 안 맡으면 그 까닭을 상태(off)에 적어 ⚙ 🟩 칸이 '로거에서 무엇을 하면 되는지'를 보여 줌
+ *  네이버 칸 다섯 말고는 읽지도 쓰지도 않음(약속 0의 정범님 11/11 네이버 예외 — 알라딘·예스24 계정·우리 숍 화면 없음) · 시크릿 평문은 여기 없음(봉투 암호문은 번외만 풂) · 로거가 아닌 PC에선 돌지 않음 · 머리 그대로 */
+(function rnC2nv() { if (window.top !== window) return; const G = globalThis; if (!/(^|\.)aladin\.co\.kr$/i.test(location.hostname)) return;
+  const gv = (k, d) => { try { const v = GM_getValue(k, d); return v == null ? d : v; } catch (e) { return d; } };
+  const pcOf = () => { try { return (window.__rnPcName && window.__rnPcName.get()) || ''; } catch (e) { return ''; } };
+  const isLogger = () => !!(G.__rnPubChrome || G.__rnPubHome || gv('rn-pubChrome', false)) || /^LOGGER/i.test(pcOf());
+  const fsx = () => { try { return G.firebase && firebase.apps.length && firebase.auth().currentUser ? firebase.firestore() : null; } catch (e) { return null; } };
+  const COLV = ((typeof G.__RN_FILE_VER === 'string' && G.__RN_FILE_VER) || (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version)) || '';
+  const B = 'http://127.0.0.1:8797'; const iso = () => new Date().toISOString(); const L = (lv, m) => { try { window.__rnLog && window.__rnLog('상품', lv, m); } catch (e) {} };
+  const gs = (m, p, b, ms) => new Promise((res) => { try { GM_xmlhttpRequest({ method: m, url: B + p, headers: { 'X-RN-Col2': '1', 'Content-Type': 'application/json' }, data: b ? JSON.stringify(b) : undefined, timeout: ms || 20000, anonymous: true, onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {} res({ s: r.status, j }); }, onerror: () => res({ s: 0, j: null }), ontimeout: () => res({ s: -1, j: null }) }); } catch (e) { res({ s: 0, j: null }); } });
+  const OUT = { crm_naver_orders: /^[\w-]{2,40}$/, nv_listings: /^\d{1,20}$/, col2_naver_jobs: /^[\w.-]{4,150}$/, nv_inq: /^[cq]\d{1,20}$/, nv_settle: /^\d{8}(_[A-Z_]{1,12})?$/, nv_settle_case: /^[\w-]{4,120}$/ }; /* 웹앱 NV_OUT_OK와 같음 · (rel3) 네이버 3회차 문의·정산 칸 더함 */
+  let busy = false, nextAt = 0, noAt = 0, D = {}, un = null, sig = '', sigAt = 0, offSig = '', offAt = 0, said = 0;
+  const listen = (db) => { if (un) return; try { un = db.collection('col2_naver').onSnapshot((q) => { const o = {}; q.forEach((d) => { o[d.id] = d.data() || {}; }); D = o; }, () => { un = null; }); } catch (e) { un = null; } };
+  /* 이 PC 웹앱이 대신 하는 중인가 — 번외가 본 웹앱 당김(3분) 또는 웹앱이 쓴 상태(6분 · 4분마다 다시 씀) */
+  const webOn = () => { const p = G.__rnC2lgPd; if (p && p.webAt && Date.now() - p.webAt < 3 * 60e3) return true; const s = D.state; return !!(s && s.via !== 'col' && !s.off && s.at && Date.now() - Date.parse(s.at) < 6 * 60e3); };
+  /* 못 하는 까닭을 상태에 — 저장된 값·연결 시험 줄은 그대로 두고(merge) 까닭·판만 · 같은 까닭은 15분에 한 번 */
+  const offPut = async (db, why, ver) => { if (webOn()) return; const o = { pc: pcOf() || 'LOGGER', ver: String(ver || ''), at: iso(), via: 'col', colVer: COLV, off: String(why || '').slice(0, 200) }; const g = JSON.stringify({ ...o, at: 0 }); if (g === offSig && Date.now() - offAt < 15 * 60e3) return;
+    try { await db.collection('col2_naver').doc('state').set(o, { merge: true }); offSig = g; offAt = Date.now(); sig = ''; } catch (e) {} };
+  const tick = async () => { if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || !isLogger()) return; const db = fsx(); if (!db) return; listen(db);
+    busy = true; let next = 60e3; try {
+      if (webOn()) return; /* 웹앱이 먼저 — 두 번 하지 않음 */
+      if (noAt && Date.now() - noAt < 10 * 60e3) return;
+      const P = G.__rnC2lgPd || {}; const r0 = await gs('GET', '/nv/st', null, 8000);
+      if (r0.s === 404) { noAt = Date.now(); return await offPut(db, `로거 번외가 옛 판(${P.ver || '판 모름'} · 네이버 길 없음) — 번외 0.1.22 이상을 받아야 함`, P.ver); }
+      if (r0.s !== 200 || !r0.j || !r0.j.ok) { noAt = Date.now(); return await offPut(db, r0.s <= 0 ? '로거 PC 번외 수집기(127.0.0.1:8797)가 응답 없음 — 번외가 꺼져 있거나 깔리지 않음' : `로거 번외 응답 이상(HTTP ${r0.s})`, P.ver); }
+      const s = r0.j; if (!s.nv || !s.nv.on) { noAt = Date.now(); return await offPut(db, (s.nv && s.nv.why) || '로거 번외가 네이버 일을 맡지 않음', s.ver); }
+      if (!Object.prototype.hasOwnProperty.call(s.nv, 'net')) { noAt = Date.now(); return await offPut(db, `로거 번외 ${s.ver || ''}에 🛑 와이파이 확인이 없음 — 새 번외를 받아야 네이버 일을 함(테더링으로 나갈 수 있는 판엔 열쇠·값을 넘기지 않음)`, s.ver); } /* (정범님 11/11 절대 지시 '와이파이만') */
+      noAt = 0; next = 30e3; const pc = s.pc || pcOf() || 'LOGGER';
+      const pub = s.nv.pub; const cur = D.pub; if (pub && (!cur || cur.spki !== pub)) { await db.collection('col2_naver').doc('pub').set({ spki: pub, pc, at: iso(), alg: 'RSA-OAEP-256+A256GCM', via: 'col' }); D.pub = { spki: pub }; }
+      /* 명령 넘기기 — 새 것만 · 붙잡기는 트랜잭션(웹앱과 겹쳐도 한 번만) · 봉투는 넘긴 뒤 지움 */
+      const q = await db.collection('col2_naver_cmd').where('st', '==', 'new').limit(10).get(); const CL = []; q.forEach((d) => CL.push({ id: d.id, ...d.data() }));
+      for (const c of CL.sort((a, b) => String(a.at).localeCompare(String(b.at)))) { const ref = db.collection('col2_naver_cmd').doc(c.id); let got = false;
+        try { got = await db.runTransaction(async (t) => { const d = await t.get(ref); if (!d.exists || (d.data() || {}).st !== 'new') return false; t.set(ref, { st: 'took', tookAt: iso(), tookBy: '수집기 ' + pc }, { merge: true }); return true; }); } catch (e) { got = false; }
+        if (!got) continue;
+        let r = await gs('POST', '/nv/cmd', { k: c.k, env: c.env, on: c.on, prd: c.prd, job: c.job, ip: c.ip, by: c.by || '' }, 90000); r = r.s === 404 ? { ok: false, err: '이 PC 번외가 옛 판(네이버 없음) — 번외 새 판을 받은 뒤 다시' } : r.s === 200 && r.j ? r.j : { ok: false, err: '이 PC 번외에 닿지 못함' + (r.s > 0 ? ` (HTTP ${r.s})` : '') };
+        const res = { ok: !!r.ok, saved: r.saved, err: r.err || null, test: r.test ? { ok: !!r.test.ok, msg: r.test.msg || '', ip: !!r.test.ip } : null };
+        await ref.set({ st: 'done', doneAt: iso(), res, env: firebase.firestore.FieldValue.delete() }, { merge: true }); if (r.nv) s.nv = r.nv; next = 3000; }
+      /* 읽은 것 쓰기 — 네이버 칸 셋만 */
+      const fd = await gs('POST', '/nv/feed', {}); const keys = []; for (const o of ((fd.j && fd.j.out) || []).slice(0, 150)) { const re = OUT[o.c]; if (!re || !re.test(String(o.id))) continue; try { await db.collection(o.c).doc(String(o.id)).set(o.v || {}, { merge: true }); keys.push(o.k); } catch (e) {} }
+      if (keys.length) { await gs('POST', '/nv/feed', { ack: keys }); next = 3000; if (!said) { said = 1; L('info', `🟩 네이버 로거 다리 — 웹앱 없이 번외가 읽은 주문·상품 ${keys.length}건을 넘김`); } }
+      const sum = { pc, ver: s.ver || '', at: iso(), via: 'col', colVer: COLV, nv: { cred: s.nv.cred, test: s.nv.test, write: s.nv.write, ord: s.nv.ord, prd: s.nv.prd, inq: s.nv.inq || null, stl: s.nv.stl || null, blocked: s.nv.blocked || 0, cool: s.nv.cool || 0, q: s.nv.q || 0, cats: s.nv.cats || null, net: s.nv.net || null, ipReg: s.nv.ipReg || null } }; /* net = 🛑 와이파이 문(번외가 요청마다 확인) */
+      const g = JSON.stringify({ ...sum, at: 0, nv: { ...sum.nv, net: sum.nv.net ? { ...sum.nv.net, at: 0, ms: 0 } : null } }); if (g !== sig || Date.now() - sigAt > 4 * 60e3) { await db.collection('col2_naver').doc('state').set(sum); sig = g; sigAt = Date.now(); offSig = ''; }
+    } catch (e) {} finally { busy = false; nextAt = Date.now() + next; } };
+  G.__rnC2nvTick = tick; setTimeout(() => tick().catch(() => {}), 20000); setInterval(() => tick().catch(() => {}), 5000);
 })();
 /* (11/10 정범님 11/09 밤 '로그인 일(알라딘 샵매니저)도 번외로' · lab/col2/LOGIN_PLAN.md ⑤-1) 🟧 번외 수집기 알라딘 다리 — 이 PC 알라딘 일하는 탭(lead)이 10초마다 번외 도우미(127.0.0.1:8797)에 알림(예스24 다리 c2yTick과 같은 꼴)
  *  보냄 POST /al/feed { by, seat:{ok,why}, hold, opLostAt, cfg:{off} }
