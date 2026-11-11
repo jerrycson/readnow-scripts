@@ -382,12 +382,13 @@ async function credSave(o, J) { const pf = String(o.pf || ''); if (pf === 'al' &
       if (v.wait && v.seat && pf === 'al' && !o.queued) { CQ.al = { id: o.id, pw: o.pw, until: now() + CQ_MS() }; o.id = o.pw = null; const tl = v.tell || AL.seatTell(); const msg = `🪑 번외 알라딘 자리를 받는 대로 저절로 확인하고, 맞으면 잠가 저장합니다(${Math.round(CQ_MS() / 60e3)}분 안 · 넣은 값은 이 PC 도우미 메모리에만 잠시 — 파일·기록에 안 남김) · 지금: ${v.why} · 할 일: ${tl.todo}`;
         note('🔐 알라딘 샵매니저 — 자리를 받으면 곧바로 확인 로그인하려고 기다림(값은 메모리에만 · 기록하지 않음)', { k: 'sys', m: '로그인' }); RLG.jobEnd(pf, { ok: false, kind: 'queued', msg: '⏳ ' + msg, canForce: true }); return J(200, { ok: false, queued: true, kind: 'queued', err: msg, canForce: true, wait: true, relogin: RLG.sum() }); }
       o.id = o.pw = null; let err, kind;
-      if (v.bad) { kind = 'bad'; err = `저장하지 않았습니다 — 다시 넣어 주세요 · 까닭: ${v.why}`; }
+      if (v.blocked) { kind = 'blocked'; err = `저장하지 않았습니다 — ${v.why} · 넣은 값은 그대로 두셔도 됨(틀림으로 보지 않음) · 할 일: 옆 창 [🔐 ${nm} 로그인]을 눌러 열린 창에서 「네이버로 로그인」(네이버 '로그인 상태 유지' 켬)으로 한 번 직접 로그인 → 번외가 그 세션으로 읽고, 풀리면 네이버 길로 스스로 다시 로그인(값 없이)`; } /* (11/11 fix5) 42FB 막힘 — 아이디 로그인을 더 두드리지 않음 · 「그래도 잠가 저장」도 안 띄움(그 값으로는 다시 로그인이 안 되므로) */
+      else if (v.bad) { kind = 'bad'; err = `저장하지 않았습니다 — 다시 넣어 주세요 · 까닭: ${v.why}`; }
       else if (v.human) { kind = 'human'; err = `저장하지 않았습니다 — ${v.why} · 보안 문자·2단계 인증은 사람이 옆 창 [🔐 로그인]으로 직접 한 번 해 주세요`; }
       else if (v.wait) { kind = v.own ? 'own' : 'wait'; err = `지금은 확인할 수 없어 저장하지 않았습니다 — ${v.why}`; }
       else { kind = 'unsure'; err = `확인 못 함 — ${v.why} · 저장하지 않았습니다`; }
-      const canForce = kind !== 'bad' && !/로거/.test(v.why || ''); if (canForce) err += ' · 값이 맞다고 확신하면 [그래도 잠가 저장]을 두 번 누르면 확인 없이 잠가 저장(다음 다시 로그인 때 확인)';
-      RLG.jobEnd(pf, { ok: false, kind, msg: '✗ ' + err, canForce }); return J(200, { ok: false, err, kind, canForce, human: kind === 'human', wait: kind === 'wait' || kind === 'own', unsure: kind === 'unsure', relogin: RLG.sum() }); }
+      const canForce = kind !== 'bad' && kind !== 'blocked' && !/로거/.test(v.why || ''); if (canForce) err += ' · 값이 맞다고 확신하면 [그래도 잠가 저장]을 두 번 누르면 확인 없이 잠가 저장(다음 다시 로그인 때 확인)';
+      RLG.jobEnd(pf, { ok: false, kind, msg: '✗ ' + err, canForce }); return J(200, { ok: false, err, kind, canForce, human: kind === 'human', wait: kind === 'wait' || kind === 'own', unsure: kind === 'unsure', blocked: kind === 'blocked', relogin: RLG.sum() }); }
 async function credQueueTick() { const q = CQ.al; if (!q) return; if (now() > q.until) { delete CQ.al; const tl = AL.seatTell(); RLG.jobEnd('al', { ok: false, kind: 'wait', msg: `✗ ${Math.round(CQ_MS() / 60e3)}분 기다려도 번외 알라딘 자리를 받지 못해 확인하지 않았고 저장하지 않았습니다 — 지금: ${tl.now} → 지금 할 일: ${tl.todo}`, tell: tl, canForce: true }); /* (11/11 col2rep1 — 정범님 15:00 '🏠가 켜져 있는지' 같은 막연한 안내 대신 무엇이 자리를 쥐고 있는지·할 일) */ note('🔐 알라딘 샵매니저 — 자리를 기다린 확인을 그만둠(시간 넘음 · 값은 메모리에서 지움)', { k: 'sys', m: '로그인' }); return; }
   const a = AL.sum(); if (!a.seat || RLG.jobOn('al')) return; delete CQ.al; note('🪑 번외 알라딘 자리를 받음 — 기다리던 계정 확인 로그인을 곧바로 함', { k: 'sys', m: '로그인' });
   await credSave({ pf: 'al', id: q.id, pw: q.pw, queued: true }, () => {}).catch(() => {}); q.id = q.pw = null; }

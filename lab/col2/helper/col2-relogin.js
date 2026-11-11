@@ -42,11 +42,21 @@ const JS_SHAPE = `(()=>{const vis=(e)=>!!e&&e.getClientRects().length>0&&getComp
 const hid=I.filter((e)=>(e.getAttribute('type')||'').toLowerCase()==='hidden').length;const B=[...document.querySelectorAll('button,input[type=submit],input[type=button],a[role=button],[role=button]')].filter(vis).map((b)=>(b.innerText||b.value||'').replace(/\s+/g,' ').trim().slice(0,12)).filter(Boolean).slice(0,8);
 const fr=document.querySelectorAll('iframe').length;const cap=!!document.querySelector('iframe[src*="recaptcha"],.g-recaptcha,[name*="captcha" i],[id*="captcha" i],img[src*="captcha" i]');
 return '주소 '+location.pathname.slice(0,40)+' · 입력 칸 '+(Object.entries(c).map(([k,v])=>k+' '+v).join('·')||'없음')+' · 숨은 칸 '+hid+' · 단추 ['+B.join(' | ')+'] · 틀 '+fr+(cap?' · 보안 문자 칸 있음':' · 보안 문자 칸 없음')+(document.forms.length?' · 양식 '+document.forms.length:' · 양식 없음')})()`;
+/* (11/11 fix5 · 정범님 'HOME 번외 알라딘 확인하고 저장이 실패 — 알림 「로그인 과정에 문제가 발생하였습니다.(에러코드:42FB6013-…)」') 알라딘 '새 로그인 막힘' 알림
+ *  근거: app_settings/aladin_login 기록 — 10/26~11/07 아이디·비밀번호(cred) 새 로그인 11번이 모두 같은 코드 42FB6013-7046으로 막힘 · 같은 때 네이버로 로그인(naver)은 성공(JS-MAIN 11/01)
+ *        · 10/14·10/26 정범님 시크릿 창(사람 손)도 같은 막힘 · 운영 수집기는 그래서 '네이버로 로그인'만 씀(src/readnow-collector.src.js rnNaverLogin · BLOCK_RE 같은 글자)
+ *  → 이 알림은 아이디·비밀번호가 틀린 것이 아님(bad로 보지 않음 · 저장 값 '틀림' 표시·계정 잠김 셈을 하지 않음) · 아이디 로그인을 거듭 두드리지 않고 그 자리에서 멈춤 */
+const BLOCK_RE = /로그인\s*과정에\s*문제|에러\s*코드\s*[:：]?\s*42FB|\b42FB[0-9A-F]{2,}/i;
+const isBlock = (m) => BLOCK_RE.test(String(m || ''));
+const codeOf = (m) => { const x = String(m || '').match(/에러\s*코드\s*[:：]?\s*([0-9A-F]{4,}(?:-[0-9A-F]+)?)/i) || String(m || '').match(/\b(42FB[0-9A-F]{2,}(?:-[0-9A-F]+)?)/i); return x ? x[1].toUpperCase().slice(0, 24) : isBlock(m) ? '42FB' : null; };
+const blockWhy = (nm, code) => `${nm || '사이트'}이(가) 이 계정의 아이디·비밀번호 새 로그인을 막음(에러코드 ${code || '42FB'} — 아이디·비밀번호가 틀린 것이 아님 · 10/14·10/26부터 알라딘이 아이디 로그인을 막아 운영 수집기도 '네이버로 로그인'만 씀)`;
 const JS_ENTER = `(()=>{const pw=document.querySelector('[data-rn3-pw]');if(!pw)return false;pw.focus();for(const t of ['keydown','keypress','keyup'])pw.dispatchEvent(new KeyboardEvent(t,{key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true}));return true})()`;
 /* 로그인 한 번(사람처럼) — getK()는 {ok,id,pw}|{ok:false,err}를 주는 함수(저장된 계정 풀기 또는 지금 넣은 값) · 풀린 값은 이 안에서만 쓰고 버림 → {ok, how}|{ok:false, why, human, bad}
  *  (11/10 밤 정범님 '예스24는 「확인 중」만 오래 있다가 그냥 풀려') ctx.phase(글)로 지금 무엇을 하는지 알림(화면에 '몇 초째'로) — 시간이 넘으면 phase가 오류를 던져 그 자리에서 멈춤
  *  bad = 로그인 칸에 넣고 눌렀는데도 로그인 화면(사이트가 틀렸다고 함) — 이것만 '틀림'으로 봄 · 나머지 실패(화면이 안 열림·칸 못 찾음·크롬 응답 없음·시간 넘음)는 '확인 못 함' */
 async function doLogin(ctx, getK) { let res = null; const ph = (t) => (ctx.phase ? ctx.phase(t) : null);
+  /* (11/11 fix5) ctx.pre = 값을 넣지 않는 다른 길(알라딘 = 이 번외 크롬에 남은 네이버 '로그인 상태 유지'로 「네이버로 로그인」 — 운영 수집기와 같은 길) · 되면 아이디·비밀번호를 쓰지 않음 */
+  if (ctx.pre) { ph(`${ctx.name || ''} — 네이버로 로그인 해 보는 중(아이디·비밀번호를 넣지 않음)`); let pr = null; try { pr = await ctx.pre(); } catch (e) { pr = { ok: false, why: String(e && e.message || e).slice(0, 80) }; } if (pr && pr.ok) return { ok: true, how: 'naver' }; ctx.preWhy = (pr && pr.why) || '네이버로 로그인 안 됨'; if (ctx.preOnly) return { ok: false, blocked: !!ctx.preBlocked, why: ctx.preWhy }; }
   ph(`${ctx.name || ''} 로그인 화면 여는 중`); await ctx.nav(ctx.loginUrl, 30); ph('보안 문자·추가 인증 화면인지 살피는 중'); const h0 = await ctx.ev(JS_HUMAN, 10000).catch(() => '');
       if (h0) res = { ok: false, human: true, why: `로그인 화면에 ${h0} — 사람 손이 필요` };
       else { ph('아이디·비밀번호 칸 찾는 중'); const f = await ctx.ev(JS_FORM, 10000); if (!f || !f.pw || !f.id) res = { ok: false, why: '로그인 칸을 못 찾음(화면이 바뀐 듯)' };
@@ -61,7 +71,8 @@ async function doLogin(ctx, getK) { let res = null; const ph = (t) => (ctx.phase
               ph('로그인 화면을 떠나기를 기다리는 중'); let w = null; const t0 = Date.now(); const lim = (ctx.leaveSec == null ? 15 : +ctx.leaveSec) * 1000; for (;;) { w = await ctx.ev(JS_WHERE, 10000).catch(() => null); if (!w || !w.login || Date.now() - t0 >= lim) break; await ctx.sleep(700, 1000); }
               ph('로그인 뒤 화면 살피는 중'); const h1 = await ctx.ev(JS_HUMAN, 10000).catch(() => ''); if (h1) res = { ok: false, human: true, why: `로그인 뒤 ${h1} 화면 — 사람 손이 필요` };
               else { ph('로그인 됐는지 첫 화면으로 확인하는 중'); const em = (w && w.login && w.err) ? w.err : '';
-                res = (await ctx.check()) ? { ok: true, how: go } : { ok: false, bad: true, how: go, why: '로그인 뒤에도 로그인 화면(아이디·비밀번호가 틀렸거나 막힘)' + (em ? ` · 화면 글: '${em}'` : '') + ` · 누른 방법: ${({ click: '단추', submit: '양식 보냄', key: 'Enter 키', enter: '가짜 Enter' })[go] || go}` }; } } } } }
+                const dm = ctx.lastMsg ? String(ctx.lastMsg() || '') : ''; const bm = isBlock(dm) ? dm : isBlock(em) ? em : '';
+                res = (await ctx.check()) ? { ok: true, how: go } : bm ? { ok: false, blocked: true, code: codeOf(bm), how: go, why: blockWhy(ctx.name, codeOf(bm)) + (ctx.preWhy ? ` · 네이버로 로그인: ${ctx.preWhy}` : '') } : { ok: false, bad: true, how: go, why: '로그인 뒤에도 로그인 화면(아이디·비밀번호가 틀렸거나 막힘)' + (em ? ` · 화면 글: '${em}'` : '') + ` · 누른 방법: ${({ click: '단추', submit: '양식 보냄', key: 'Enter 키', enter: '가짜 Enter' })[go] || go}` }; } } } } }
   if (res && !res.ok && !res.human && ctx.shape) { const sh = await ctx.ev(JS_SHAPE, 8000).catch(() => ''); if (sh) { res.why = (res.why || '') + ` · 화면 모양: ${String(sh).slice(0, 220)}`; res.shape = String(sh).slice(0, 220); } } /* (11/11 y24ops2) 실패면 까닭에 화면 모양까지(값 없음) */
   return res; }
 /* (11/11) 로그인하는 동안 뜬 브라우저 알림·물음 — 알림(alert)은 닫고, '다른 곳 접속을 끊고 로그인할까요' 같은 로그인 이어 가기 물음만 '예'(사람이 로그인할 때 누르는 것과 같음)
@@ -82,19 +93,21 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
   const autoOn = (pf) => P(pf).auto !== false;
   /* 지금 해도 되나 → null(됨) | 까닭 */
   function why(pf, ctx) { const p = P(pf), c = C(), t = now(); p.tries = p.tries.filter((x) => t - x < 86400e3);
-    if (isLogger()) return '로거 PC — 계정을 쓰지 않음(약속 0)'; if (!cred.has(pf)) return '저장된 계정 없음(⚙ › 🔐 스스로 다시 로그인에서 넣으면 됨)'; if (!autoOn(pf)) return '스스로 다시 로그인 꺼 둠';
+    if (isLogger()) return '로거 PC — 계정을 쓰지 않음(약속 0)'; if (!cred.has(pf) && !ctx.naver) return '저장된 계정 없음(⚙ › 🔐 스스로 다시 로그인에서 넣으면 됨)'; if (!autoOn(pf)) return '스스로 다시 로그인 꺼 둠';
     if (p.stop) return `멈춤 — ${p.stop.why} (⚙ › 🔐에서 [다시 해 보기])`; if (ctx.hold) return '🚚 출고 중 — 끝난 뒤 다시 로그인(약속 0-1)'; if (ctx.seat === false) return '🪑 번외 로그인 자리를 아직 못 받음 — 자리를 받으면 다시 로그인';
     if (ctx.pp) return '핑퐁 의심으로 멈춘 동안은 안 함'; const last = p.tries[p.tries.length - 1] || 0; if (t - last < c.gapMin * 60e3) return `앞 시도 뒤 ${c.gapMin}분 기다림`;
     if (p.tries.filter((x) => t - x < 3600e3).length >= c.perHour) return `한 시간 ${c.perHour}번까지 — 다음 시간에`; if (p.tries.length >= c.perDay) return `하루 ${c.perDay}번까지 — 내일`; return null; }
   /* 한 번 다시 로그인 — ctx = { name, loginUrl, nav(url,sec), ev(js,ms), type(text), check()→참/거짓, sleep(ms) } → { ok, why, human } */
   async function run(pf, ctx) { const p = P(pf), c = C(); p.tries.push(now()); p.n++; save(); const nm = ctx.name; let res = null;
-    note(`🔐 ${nm} 세션이 풀려 저장된 계정으로 스스로 다시 로그인함(오늘 ${p.tries.length}번째 · 비밀번호는 기록하지 않음)`);
+    note(`🔐 ${nm} 세션이 풀려 ${cred.has(pf) ? '저장된 계정으로' : '「네이버로 로그인」으로(저장된 계정 없음 — 값을 넣지 않는 길만)'} 스스로 다시 로그인함(오늘 ${p.tries.length}번째 · 비밀번호는 기록하지 않음)`);
     try { res = await doLogin(ctx, () => cred.open(pf)); }
     catch (e) { res = { ok: false, why: String(e && e.message || e).slice(0, 120) }; }
     res = res || { ok: false, why: '모름' }; if (!res.ok && ctx.lastMsg) { const m = String(ctx.lastMsg() || '').slice(0, 120); if (m) res.why += ` · ${nm} 알림: '${m}'`; }
     p.last = { at: now(), ok: res.ok, why: res.ok ? null : res.why };
     const was = cred.chkOf ? cred.chkOf(pf) : 'ok';
-    if (res.ok) { p.fails = 0; if (was !== 'ok' && cred.mark) { cred.mark(pf, 'ok'); note(`🔐 ${nm} — 확인하지 못한 채 잠가 두었던 아이디·비밀번호가 맞음(이번 다시 로그인으로 확인됨)`, { l: 'ok' }); } note(`🔐 ${nm} 스스로 다시 로그인 됨 — 하던 일을 이어 감`, { l: 'ok' }); }
+    if (res.ok) { p.fails = 0; if (res.how !== 'naver' && was !== 'ok' && cred.mark) { cred.mark(pf, 'ok'); note(`🔐 ${nm} — 확인하지 못한 채 잠가 두었던 아이디·비밀번호가 맞음(이번 다시 로그인으로 확인됨)`, { l: 'ok' }); } note(`🔐 ${nm} 스스로 다시 로그인 됨${res.how === 'naver' ? '(네이버로 로그인 — 아이디·비밀번호 안 씀)' : ''} — 하던 일을 이어 감`, { l: 'ok' }); }
+    else if (res.blocked) { p.fails++; p.stop = { at: now(), why: res.why, blocked: true };
+      note(`⛔ ${nm} 스스로 다시 로그인 멈춤 — ${res.why} · 아이디 로그인을 거듭 두드리지 않음 · 할 일: 옆 창 [🔐 ${nm} 로그인]을 눌러 열린 창에서 「네이버로 로그인」(네이버 '로그인 상태 유지' 켬)으로 한 번 직접 → 다음부터 번외가 네이버 길로 스스로 다시 로그인`, { l: 'err' }); }
     else if (res.bad && was === 'pending') { p.fails++; if (cred.mark) cred.mark(pf, 'bad'); p.stop = { at: now(), why: '잠가 저장할 때 확인하지 못했던 아이디·비밀번호가 맞지 않음 — ⚙ › 🔐에서 다시 넣어 주세요', bad: true };
       note(`⛔ ${nm} — 확인하지 못한 채 잠가 두었던 아이디·비밀번호가 맞지 않음(이번 다시 로그인에서 드러남) · 스스로 다시 로그인을 멈춤(계정 잠김 막기) · 옆 창 ⚙ › 🔐에서 바른 값을 다시 넣어 주세요`, { l: 'err' }); }
     else { p.fails++; if (res.human) { p.stop = { at: now(), why: res.why, human: true }; note(`⛔ ${nm} 스스로 다시 로그인 멈춤 — ${res.why} · 옆 창 [🔐 ${nm} 로그인]으로 직접 한 번 해 주세요`, { l: 'err' }); }
@@ -109,9 +122,9 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
     p.vt.push(t); save(); const nm = ctx.name; note(`🔐 ${nm} — 넣은 아이디·비밀번호가 맞는지 이 PC에서 실제로 로그인해 봄(저장 전 확인 · 값은 기록하지 않음)`);
     let res; try { res = await doLogin(ctx, async () => ({ ok: true, id: String(id == null ? '' : id), pw: String(pw == null ? '' : pw) })); } catch (e) { res = { ok: false, why: String(e && e.message || e).slice(0, 120) }; } finally { id = pw = null; }
     res = res || { ok: false, why: '모름' }; if (!res.ok && ctx.lastMsg) { const m = String(ctx.lastMsg() || '').slice(0, 120); if (m) res.why += ` · ${nm} 알림: '${m}'`; }
-    if (!res.ok && !res.bad && !res.human) res.unsure = true; /* 사이트가 틀렸다고 한 게 아님 — 확인을 끝내지 못함 */
-    p.lastV = { at: now(), ok: !!res.ok, why: res.ok ? null : res.why, human: !!res.human, unsure: !!res.unsure }; if (res.ok) { p.stop = null; p.fails = 0; } save();
-    note(res.ok ? `🔐 ${nm} 계정 확인 — 로그인 됨(맞음)` : res.unsure ? `🔐 ${nm} 계정 확인 못 함 — 저장하지 않음 · ${res.why}` : `🔐 ${nm} 계정 확인 — 맞지 않아 저장하지 않음 · ${res.why}`, { l: res.ok ? 'ok' : 'warn' }); return res; }
+    if (!res.ok && !res.bad && !res.human && !res.blocked) res.unsure = true; /* 사이트가 틀렸다고 한 게 아님 — 확인을 끝내지 못함 */
+    p.lastV = { at: now(), ok: !!res.ok, why: res.ok ? null : res.why, human: !!res.human, unsure: !!res.unsure, blocked: !!res.blocked }; if (res.ok) { p.stop = null; p.fails = 0; } save();
+    note(res.ok ? `🔐 ${nm} 계정 확인 — 로그인 됨(맞음)` : res.blocked ? `⛔ ${nm} 계정 확인 못 함 — 저장하지 않음 · ${res.why}` : res.unsure ? `🔐 ${nm} 계정 확인 못 함 — 저장하지 않음 · ${res.why}` : `🔐 ${nm} 계정 확인 — 맞지 않아 저장하지 않음 · ${res.why}`, { l: res.ok ? 'ok' : 'warn' }); return res; }
   /* (11/10 밤) [확인하고 저장] 진행 — 화면이 '확인 중 — 무엇을(몇 초째)'·끝난 결과를 그대로 보이게(값 없음) · 도우미가 다시 켜지면 하던 확인은 '끊김'으로 */
   for (const k of Object.keys(S)) { const jb = S[k] && S[k].job; if (jb && jb.on) { jb.on = false; jb.end = now(); jb.res = { ok: false, kind: 'unsure', msg: '확인하는 동안 도우미가 다시 켜져 확인이 끊김 — 다시 [확인하고 저장]을 눌러 주세요(저장하지 않음)', canForce: true }; } }
   function jobStart(pf, maxSec) { const p = P(pf); const jb = { on: true, at0: now(), phase: '시작', atP: now(), max: maxSec || 0, abort: false, res: null }; p.job = jb; save();
@@ -123,6 +136,7 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
   const reset = (pf) => { const p = P(pf); p.stop = null; p.fails = 0; save(); note(`🔐 ${(cred.PF[pf] || {}).name || pf} 스스로 다시 로그인 — 멈춤을 풀고 다시 해 봄`); return { ok: true }; };
   const setAuto = (pf, on) => { P(pf).auto = !!on; save(); return { ok: true }; };
   const sum = () => { const out = {}; const cs = cred.sum(); for (const k of Object.keys(cred.PF)) { const p = P(k); out[k] = { ...cs[k], auto: autoOn(k), stop: p.stop, last: p.last, job: jobView(k), today: p.tries.filter((x) => now() - x < 86400e3).length, n: p.n }; } return out; };
-  return { why, run, tryWith, reset, setAuto, sum, C, jobStart, jobEnd, jobOn, anyJob };
+  const hasCred = (pf) => { try { return !!cred.has(pf); } catch (e) { return false; } };
+  return { why, run, tryWith, reset, setAuto, sum, C, jobStart, jobEnd, jobOn, anyJob, hasCred };
 }
-module.exports = { makeRelogin, doLogin, dlgOk, ACT_SRC, JS_ACT, DEF, JS_HUMAN, JS_FORM, JS_SUBMIT, JS_WHERE };
+module.exports = { makeRelogin, doLogin, dlgOk, ACT_SRC, JS_ACT, DEF, JS_HUMAN, JS_FORM, JS_SUBMIT, JS_WHERE, isBlock, codeOf, blockWhy };
