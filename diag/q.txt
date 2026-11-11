@@ -1,2 +1,2 @@
-doc=prd_jobs/rev6mStale,prd_jobs/rev6mAll,prd_jobs/revTop,prd_system/autoSched,app_settings/seller_queue
-# 288520607
+col2=2026-11-11&doc=app_settings/aladin_login
+# 172033144
