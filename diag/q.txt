@@ -1,2 +1,2 @@
-logs=1&pc=JS-MAIN&from=202611111220
-# 1023927690
+doc=app_settings/ship_auto,app_settings/strat,app_settings/mkt_trend_state
+# 2218112172
