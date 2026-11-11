@@ -18,9 +18,9 @@ require('./harness.js')(async (p) => { await p.evaluate(require('./seed.js'));
   const op = (id, extra) => ({ k: 'p' + id, c: 'mkt_kpipa', id, op: true, job: 'kpipa', merge: true, v: { date: id.slice(0, 4) + '-' + id.slice(4, 6) + '-' + id.slice(6), onOff: { series: { 온라인: { qty: 3, titles: 2, amt: 9000 } }, at: '2026-11-11T07:00:00Z' }, secret: 'x' }, hist: { at: '2026-11-11T07:00:00Z', type: 'onOff', old: { 온라인: { qty: 1, titles: 1, amt: 1 } } }, ...(extra || {}) });
   await p.evaluate(async ({ d0, d1 }) => { localStorage.setItem('rn-device', 'JS-MAIN'); localStorage.setItem('rn-c2seen', '1'); S.devOk = true;
     const T = (n, same, can, un) => ({ name: n, n: same, same, diff: 0, un: un || 0, fail: 0, pass: { n: same, can, why: can ? '넘길 수 있음' : '표본 모자람' } });
-    await db.collection('col2_jday').doc(d0 + '_JS-MAIN').set({ d: d0, pc: 'JS-MAIN', tasks: { kpipa: T('📚 출판 판매 통계(KPIPA)', 14, true), 'ext.nl': T('🔎 국립중앙도서관 ISBN 서지', 20, false), product: T('📘 공개 상품 화면', 583, false, 38) } });
-    await db.collection('col2_jday').doc(d0 + '_HOME').set({ d: d0, pc: 'HOME', tasks: { kpipa: T('📚 출판 판매 통계(KPIPA)', 28, true), 'ext.nl': T('🔎 국립중앙도서관 ISBN 서지', 40, true) } });
-    await db.collection('col2_jday').doc(d1 + '_HOME').set({ d: d1, pc: 'HOME', tasks: { 'ext.nl': T('🔎 국립중앙도서관 ISBN 서지', 5, true) } });
+    await db.collection('col2_jday').doc(d0 + '_JS-MAIN').set({ d: d0, pc: 'JS-MAIN', ver: '0.1.28', at: new Date().toISOString(), tasks: { kpipa: T('📚 출판 판매 통계(KPIPA)', 14, true), 'ext.nl': T('🔎 국립중앙도서관 ISBN 서지', 20, false), product: T('📘 공개 상품 화면', 583, false, 38) } });
+    await db.collection('col2_jday').doc(d0 + '_HOME').set({ d: d0, pc: 'HOME', ver: '0.1.28', at: new Date().toISOString(), tasks: { kpipa: T('📚 출판 판매 통계(KPIPA)', 28, true), 'ext.nl': T('🔎 국립중앙도서관 ISBN 서지', 40, true) } });
+    await db.collection('col2_jday').doc(d1 + '_HOME').set({ d: d1, pc: 'HOME', ver: '0.1.28', at: new Date().toISOString(), tasks: { 'ext.nl': T('🔎 국립중앙도서관 ISBN 서지', 5, true) } });
     await db.collection('mkt_kpipa').doc('20261105').set({ date: '2026-11-05', onOff: { series: { 온라인: { qty: 1, titles: 1, amt: 1 } }, at: '2026-11-10T00:00:00Z' } }); }, { d0: kday(0), d1: kday(1) });
   const tick = async () => p.evaluate(async () => { S._c2rTried = 0; clearTimeout(S._c2rT); await c2RelayTick(); clearTimeout(S._c2rT); });
   /* ① 넘기기 전 */

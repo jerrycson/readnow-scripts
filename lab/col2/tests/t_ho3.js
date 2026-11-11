@@ -63,6 +63,12 @@ const X0 = require(path.join(L.PROD_REPO, 'readnow-ext-core.js'));
   c = CMP.compareExt(X0, 'kakao', pv({ title: '가', publisher: '갑' }), { ok: true, d: { title: '가', publisher: '을' } }); ok(c.reasons[0] === 'diff' && c.rows[0].f === 'publisher' && c.rows[0].prod === '갑', "출판사처럼 바뀌지 않는 칸이 다르면 그대로 '까닭 모름' · 어느 칸인지 보임", c.rows);
   c = CMP.compareExt(X0, 'kakao', { ...pv({ priceSales: 1 }), chk: new Date().toISOString() }, { ok: true, d: { priceSales: 2 } }); ok(c.reasons[0] === 'diff', '운영이 방금 읽었는데 값이 다르면 까닭 모름(때 차이로 덮지 않음)');
 
+  /* (11/12 col2rep6) 칸 줄이 빈 다름 — 구글 북스 201건(진단 11/12) */
+  c = CMP.compareExt(X0, 'google', { at: ago, chk: ago, none: true, sig: X0.sig({ none: true, d: null }, 'google'), d: null }, { ok: true, d: { title: '가' } });
+  ok(c.reasons[0] === 'fill' && c.rows[0].f === '(지문)' && /없음/.test(c.rows[0].prod), "운영은 '없음', 그림자는 찾음 → '운영 칸 빔(그림자만 값)'(까닭 있음) · 한 줄 남김", c);
+  c = CMP.compareExt(X0, 'google', { at: ago, chk: ago, sig: 'zz:1' }, { ok: true, none: true, d: null });
+  ok(c.reasons[0] === 'diff' && c.rows.length === 1 && /받아 둔 값 없음/.test(c.rows[0].prod) && /없음/.test(c.rows[0].shadow), "운영 칸에 값 원문이 없고 그림자는 '없음' → 다름 그대로 + 무엇이 없는지 한 줄", c);
+
   console.log('⑥ 수집기 본문');
   const SRC = fs.readFileSync(path.join(L.PROD_REPO, 'src/readnow-collector.src.js'), 'utf8'); const head = SRC.slice(0, SRC.indexOf('// ==/UserScript=='));
   ok(/async function c2HoLive\(k, maxH\)/.test(SRC) && /!\(hoNl && s === 'nl'\)/.test(SRC) && /c2HoLive\('ext\.fx', 30\); if \(ho\) return null;/.test(SRC) && /hoNb \? !have\.get\(k\)/.test(SRC), '넘긴 일만 쉼: 국중은 외부 정보 한 바퀴에서 뺌 · 환율은 쉼(지금 받기 force는 그대로) · 시세는 처음 보는 상품만');

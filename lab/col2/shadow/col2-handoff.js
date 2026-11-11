@@ -69,10 +69,15 @@
   const shard = (isbn) => (+String(isbn).slice(-2) || 0) % 8; /* 운영 ReadnowExt.shard와 같음(출처 색인 8조각) */
   /* 넘김 후보 — 하루 요약(col2_jday 여러 날·여러 PC)에서 일마다 '넘길 수 있음'이 나온 날 수·표본·까닭 모를 다름 · 넘김 표(JOBS)에 쓰는 길이 있는 일만 [넘기기] 가능
    *  차례 = 같음이 오래(날 수) → 표본 많음 · pc = 표본이 가장 많은 PC */
-  function candidates(jdays) { const by = {};
+  /* (11/12 col2rep6) 맡을 PC = 그 일을 하는 번외 판(외부 정보 14곳 0.1.26 · 그 밖 0.1.25) · 최근 3시간 안 하루 요약을 올린 PC만 — 웹앱 c2HoCand와 같음 · 없으면 pc null + no(까닭) */
+  const MINV = (k) => (/^ext\./.test(k) && !['ext.nl', 'ext.fx'].includes(k) ? '0.1.26' : '0.1.25'); const FRESH_H = 3;
+  const verGE = (a, b) => { const x = String(a || '').split('.').map((n) => +n || 0), y = String(b || '').split('.').map((n) => +n || 0); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return true; };
+  function candidates(jdays, t) { t = t || Date.now(); const by = {}; const last = {}; for (const j of jdays || []) { const a = Date.parse((j && j.at) || '') || 0; const u = String((j && j.pc) || ''); if (!last[u] || a > last[u].at) last[u] = { at: a, ver: (j && j.ver) || null }; }
     for (const j of jdays || []) { const T = (j && j.tasks) || {}; for (const [k, s] of Object.entries(T)) { if (!s || !s.pass) continue; const o = by[k] || (by[k] = { k, name: s.name || k, days: new Set(), canDays: new Set(), n: 0, same: 0, un: 0, pcs: {} });
       o.days.add(j.d); o.n += +s.n || 0; o.same += +s.same || 0; o.un += +s.un || 0; if (s.pass.can) o.canDays.add(j.d); const p = o.pcs[j.pc] || (o.pcs[j.pc] = { n: 0, can: 0 }); p.n += +s.n || 0; if (s.pass.can) p.can++; } }
-    return Object.values(by).map((o) => { const pc = pickPc(o.k, o.pcs); return { k: o.k, name: o.name, days: o.days.size, canDays: o.canDays.size, n: o.n, same: o.same, un: o.un, pc: pc ? pc[0] : null, path: !!JOBS[o.k], can: o.canDays.size > 0 && o.un === 0 }; })
+    return Object.values(by).map((o) => { const mv = MINV(o.k); const okPc = (x) => { const l = last[x] || {}; return verGE(l.ver, mv) && l.at && t - l.at < FRESH_H * 3600e3; }; const E = Object.fromEntries(Object.entries(o.pcs).filter(([x, v]) => v.can > 0 && okPc(x))); const pc = Object.keys(E).length ? pickPc(o.k, E) : null;
+      const no = pc ? null : Object.keys(o.pcs).map((x) => { const l = last[x] || {}; return `${x} ${!verGE(l.ver, mv) ? `번외 ${l.ver || '?'}(${mv} 이상 필요)` : `${Math.round((t - l.at) / 3600e3)}시간째 소식 없음`}`; }).join(' · ');
+      return { k: o.k, name: o.name, days: o.days.size, canDays: o.canDays.size, n: o.n, same: o.same, un: o.un, pc: pc ? pc[0] : null, no, path: !!JOBS[o.k], can: o.canDays.size > 0 && o.un === 0 }; })
       .filter((o) => o.can).sort((a, b) => b.canDays - a.canDays || b.same - a.same); }
   const api = { EXT_HO, PC_PLAN, planPc, JOBS, DOC, state, mine, writeOk, candidates, extPlan, shard };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Col2Handoff = api;
