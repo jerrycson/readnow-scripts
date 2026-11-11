@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "h4",
+ "what": "4시간 점검: 구매 풀 도서 정보 통째 읽기 줄이기",
+ "since": "2026-11-11T03:19:21Z",
+ "beat": "2026-11-11T03:19:21Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
   "at": "2026-11-11T03:17:17Z"
  },
- "host": null
+ "host": "vm"
 }
