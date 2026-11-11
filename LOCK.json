@@ -1,13 +1,13 @@
 {
- "holder": "h4",
- "what": "4시간 점검 16:15 — 휴대폰 시험 새 탭 맞춤",
- "since": "2026-11-11T07:24:51Z",
- "beat": "2026-11-11T07:31:31Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "lead",
-  "done": "setup-hosting.sh 우리숍 조건",
-  "at": "2026-11-11T07:19:10Z"
+  "who": "h4",
+  "done": "4시간 점검 16:15 — 수집기 1.89.263 · 웹앱 1.78.482 8c1fd567",
+  "at": "2026-11-11T07:31:46Z"
  },
- "host": "vm"
+ "host": null
 }
