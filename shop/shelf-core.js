@@ -27,11 +27,18 @@
     ['noto-sans-l', 'Noto Sans KR', 'wght@300', 'sans-serif', 300], ['noto-sans-b', 'Noto Sans KR', 'wght@900', 'sans-serif', 900], ['noto-serif-l', 'Noto Serif KR', 'wght@300', 'serif', 300], ['noto-serif-b', 'Noto Serif KR', 'wght@900', 'serif', 900],
     ['gothic-a1-l', 'Gothic A1', 'wght@300', 'sans-serif', 300], ['gothic-a1-b', 'Gothic A1', 'wght@900', 'sans-serif', 900], ['ibm-plex-l', 'IBM Plex Sans KR', 'wght@300', 'sans-serif', 300], ['ibm-plex-b', 'IBM Plex Sans KR', 'wght@700', 'sans-serif', 700],
     ['hahmlet-l', 'Hahmlet', 'wght@300', 'serif', 300], ['hahmlet-b', 'Hahmlet', 'wght@900', 'serif', 900], ['nanum-myeongjo-b', 'Nanum Myeongjo', 'wght@800', 'serif', 800], ['nanum-gothic-b', 'Nanum Gothic', 'wght@800', 'sans-serif', 800],
-    ['sunflower-b', 'Sunflower', 'wght@700', 'sans-serif', 700]].map(([id, name, ax, gen, wt]) => ({ id, name, ax, gen, wt, label: name + (wt === 300 ? ' 가늘게' : wt >= 800 ? ' 아주 굵게' : '') }));
+    ['sunflower-b', 'Sunflower', 'wght@700', 'sans-serif', 700],
+    /* (shelf5 · 51~68) 스스로 올려 쓰는 상업 무료 글꼴 18 — 모두 SIL OFL 1.1(근거 shop/FONTS_LICENSE.md 2절) · 클라우드 /shop/font가 쓰인 글자만 잘라 줌(cloud/shop-font.js LIST와 같은 별칭) · 여섯째 칸 1 = 우리 클라우드 글꼴 */
+    ['pretendard-b', 'Pretendard', '', 'sans-serif', 700, 1], ['pretendard-k', 'Pretendard', '', 'sans-serif', 900, 1], ['suit-b', 'SUIT', '', 'sans-serif', 700, 1], ['suit-h', 'SUIT', '', 'sans-serif', 900, 1],
+    ['wanted-b', 'Wanted Sans', '', 'sans-serif', 700, 1], ['wanted-k', 'Wanted Sans', '', 'sans-serif', 950, 1], ['galmuri', '갈무리11', '', 'monospace', 700, 1], ['maruburi-b', '마루 부리', '', 'serif', 700, 1],
+    ['maruburi-l', '마루 부리', '', 'serif', 300, 1], ['nsquare-b', '나눔스퀘어', '', 'sans-serif', 700, 1], ['nsquare-k', '나눔스퀘어', '', 'sans-serif', 800, 1], ['nsround-b', '나눔스퀘어 라운드', '', 'sans-serif', 700, 1],
+    ['nsround-k', '나눔스퀘어 라운드', '', 'sans-serif', 800, 1], ['barun-gothic', '나눔바른고딕', '', 'sans-serif', 700, 1], ['barun-pen', '나눔바른펜', '', 'cursive', 700, 1], ['ridi-batang', '리디바탕', '', 'serif', 400, 1],
+    ['line-seed', 'LINE Seed KR', '', 'sans-serif', 700, 1], ['neodgm', 'Neo둥근모', '', 'monospace', 400, 1]].map(([id, name, ax, gen, wt, bq]) => ({ id, name, ax, gen, wt, ...(bq ? { bq: 1 } : {}), label: name + (wt === 300 ? ' 가늘게' : wt >= 800 ? ' 아주 굵게' : '') }));
   /* ── (shelf4 · 정범님 11/12) 글꼴 갈래 — 앞표지 제목 글꼴과 '느낌'이 비슷한 것을 고르려고 FONTS마다 갈래를 붙임(목록 순서와 같음 · 새 글꼴도 뒤에 덧붙이며 갈래도 함께)
    *  my 명조·바탕 · go 고딕 · bd 굵은 제목체 · rd 둥근 · hw 손글씨 · br 붓글씨 · tw 타자기·코딩 · dp 꾸밈 */
-  const FGEN = ['go', 'my', 'go', 'my', 'hw', 'br', 'bd', 'bd', 'rd', 'go', 'my', 'hw', 'hw', 'my', 'go', 'hw', 'go', 'go', 'my', 'rd', 'tw', 'dp', 'hw', 'br', 'br', 'hw', 'dp', 'dp', 'hw', 'hw', 'go', 'bd', 'my', 'bd', 'dp', 'dp', 'tw', 'go', 'bd', 'my', 'my', 'go', 'bd', 'go', 'go', 'my', 'my', 'my', 'bd', 'go'];
-  const THIN = ['grandiflora', 'moirai', 'bw-picture', 'hi-melody', 'single-day', 'noto-sans-l', 'noto-serif-l', 'gothic-a1-l', 'ibm-plex-l', 'hahmlet-l', 'diphylleia']; /* 획이 가는 글꼴 — 작은 글자에선 흐려 보여 얇은 테를 더함 */
+  const FGEN = ['go', 'my', 'go', 'my', 'hw', 'br', 'bd', 'bd', 'rd', 'go', 'my', 'hw', 'hw', 'my', 'go', 'hw', 'go', 'go', 'my', 'rd', 'tw', 'dp', 'hw', 'br', 'br', 'hw', 'dp', 'dp', 'hw', 'hw', 'go', 'bd', 'my', 'bd', 'dp', 'dp', 'tw', 'go', 'bd', 'my', 'my', 'go', 'bd', 'go', 'go', 'my', 'my', 'my', 'bd', 'go',
+    /* 51~68 (shelf5) */ 'go', 'bd', 'go', 'bd', 'go', 'bd', 'dp', 'my', 'my', 'go', 'bd', 'rd', 'rd', 'go', 'hw', 'my', 'go', 'dp'];
+  const THIN = ['grandiflora', 'moirai', 'bw-picture', 'hi-melody', 'single-day', 'noto-sans-l', 'noto-serif-l', 'gothic-a1-l', 'ibm-plex-l', 'hahmlet-l', 'diphylleia', 'maruburi-l']; /* 획이 가는 글꼴 — 작은 글자에선 흐려 보여 얇은 테를 더함 */
   const GENRES = { my: '명조·바탕', go: '고딕', bd: '굵은 제목체', rd: '둥근', hw: '손글씨', br: '붓글씨', tw: '타자기', dp: '꾸밈' };
   const fontsOfGenre = (g) => FONTS.map((f, i) => i + 1).filter((i) => FGEN[i - 1] === g);
   /* 디자인 갈래 — 고전(금박·양장·가죽)은 명조·붓, 현대(블록·나눔)는 고딕·굵은 제목체, 귀여움(동그라미·아치·별)은 둥근·손글씨와 어울림 · 그 밖은 아무 글꼴 */
@@ -134,7 +141,7 @@
     { k: 'hVar', group: '책등', label: '크기 정보 없는 책의 키 들쭉날쭉(%)', type: 'number', def: 16, min: 0, max: 35 },
     { k: 'seed', group: '책등', label: '섞기 번호(바꾸면 새로 정하는 책의 색·디자인·글꼴이 새로 섞임)', type: 'number', def: 1, min: 0, max: 99999 },
     { k: 'fontsOn', group: '글꼴', label: '무료 한글 글꼴 받아 쓰기(끄면 기기 글꼴만 — 더 가벼움)', type: 'check', def: true },
-    { k: 'fonts', group: '글꼴', label: '쓸 글꼴(비우면 50가지 모두)', type: 'multi', def: [], opts: Object.fromEntries(FONTS.map((f) => [f.id, f.label])) },
+    { k: 'fonts', group: '글꼴', label: '쓸 글꼴(비우면 68가지 모두)', type: 'multi', def: [], opts: Object.fromEntries(FONTS.map((f) => [f.id, f.label])) },
     { k: 'popMode', group: '움직임', label: '책등을 누르면', type: 'select', def: 'spine', opts: { spine: '책등 표면에 바로 단추(장바구니·찜·자세히)', bubble: '책등 위 말풍선 창' } },
     { k: 'cartAnim', group: '움직임', label: '장바구니 담기 움직임', type: 'select', def: 'rand', opts: { rand: '매번 랜덤', ...opt(CART_ANIMS), off: '움직임 없음' } },
     { k: 'wishAnim', group: '움직임', label: '찜 움직임', type: 'select', def: 'rand', opts: { rand: '매번 랜덤', ...opt(WISH_ANIMS), off: '움직임 없음' } },
@@ -364,11 +371,16 @@
   /* ── 글꼴: 책장 하나에 쓰인 글자만 받는 주소(Google Fonts text= — 한 글꼴 수십 KB) */
   const fontById = (id) => FONTS.find((f) => f.id === id) || FONTS[0];
   /* 같은 글꼴 집안의 다른 굵기는 받는 주소가 달라 별칭도 따로(bqf-별칭) */
+  /* (shelf5) 우리 클라우드 글꼴(bq) — CSS를 받지 않고 바로 만듦(@font-face 하나 · 글자는 정렬·겹침 뺌 → 같은 책장이면 같은 주소라 캐시가 맞음) */
+  const FONT_API = 'https://readnow-cloud-63884079760.asia-northeast3.run.app';
+  const fontText = (text) => [...new Set(String(text || ''))].sort().join('').slice(0, 900);
+  const fontCss = (id, text, alias, api) => { const f = fontById(id); if (!f.bq) return null; const t = fontText(text); if (!t) return null;
+    return `@font-face{font-family:'${String(alias || f.id).replace(/['\\]/g, '')}';src:url(${String(api || FONT_API).replace(/\/+$/, '')}/shop/font?f=${encodeURIComponent(f.id)}&t=${encodeURIComponent(t)}) format('woff2');font-weight:${f.wt};font-style:normal;font-display:swap}`; };
   const fontUrl = (id, text) => { const f = fontById(id); return 'https://fonts.googleapis.com/css2?family=' + f.name.replace(/ /g, '+') + (f.ax ? ':' + f.ax : '') + '&display=swap&text=' + encodeURIComponent([...new Set(String(text || ''))].sort().join('').slice(0, 900)); };
   /* 설정 미리 보기 주소(관리 화면 → 손님 화면 #/shelf?cfg=… · 저장 안 하고 그 화면만) */
   const b64e = (s) => { try { return (typeof btoa === 'function' ? btoa(unescape(encodeURIComponent(s))) : Buffer.from(s, 'utf8').toString('base64')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); } catch (e) { return ''; } };
   const b64d = (s) => { try { s = String(s || '').replace(/-/g, '+').replace(/_/g, '/'); return typeof atob === 'function' ? decodeURIComponent(escape(atob(s))) : Buffer.from(s, 'base64').toString('utf8'); } catch (e) { return ''; } };
   const previewArg = (c) => b64e(JSON.stringify(cfgDiff(c)));
   const previewCfg = (arg) => { try { return JSON.parse(b64d(arg)) || {}; } catch (e) { return {}; } };
-  return { callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.0', FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
+  return { fontCss, fontText, FONT_API, callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.0', FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
 });

@@ -20,6 +20,28 @@
 
 Google Fonts의 한글 글꼴은 이 37개 집안이 전부입니다(11/12 후보 이름 60여 개를 직접 물어 확인 — Pretendard·Jeju·Nanum Square 등은 Google Fonts에 없음).
 
+## 1-2. (11/12 shelf5) 우리 클라우드 글꼴 18개 — 51~68번 (`FONTS` 뒤에 덧붙임 · `cloud/shop-font.js` LIST와 같은 별칭)
+
+받는 법: 클라우드 `GET /shop/font?f=<별칭>&t=<글자>` — npm 꾸러미(판 고정)의 woff2를 jsDelivr(안 되면 unpkg)에서 한 번 받아 두고, `subset-font`(BSD-3 · harfbuzz MIT)로 **그 책장에 쓰인 글자만** 잘라 woff2로 돌려줌(1년 캐시). 실제 글꼴 18개로 잘라 봄(11/12): 글자 20자 기준 1~14KB · 한 번 20~160ms.
+라이선스 확인(11/12): 꾸러미 안 라이선스 파일 또는 글꼴 이름표(name 13·14)를 직접 열어 봄.
+
+| 번호 | 별칭 | 글꼴(굵기) | 갈래 | 꾸러미 | 라이선스 근거 |
+|---|---|---|---|---|---|
+| 51·52 | pretendard-b·-k | Pretendard 굵게·아주 굵게 | 고딕·굵은 제목체 | `pretendard@1.3.9` | 꾸러미 LICENSE.txt — OFL 1.1 |
+| 53·54 | suit-b·-h | SUIT 굵게·아주 굵게 | 고딕·굵은 제목체 | `@sun-typeface/suit@2.0.5` | 꾸러미 LICENSE — OFL 1.1 |
+| 55·56 | wanted-b·-k | Wanted Sans 굵게·아주 굵게 | 고딕·굵은 제목체 | `wanted-sans@1.0.3` | 꾸러미 fonts/OFL.txt |
+| 57 | galmuri | 갈무리11 굵게 | 꾸밈(점 글꼴) | `galmuri@2.40.3` | 꾸러미 ofl.md · dist/LICENSE.txt |
+| 58·59 | maruburi-b·-l | 마루 부리 굵게·가늘게 | 명조 | `@kfonts/maruburi@0.1.0` | 네이버 나눔글꼴 공지 OFL 1.1(이름표엔 저작권만) |
+| 60·61 | nsquare-b·-k | 나눔스퀘어 굵게·아주 굵게 | 고딕·굵은 제목체 | `@kfonts/nanum-square@0.2.0` | 네이버 나눔글꼴 공지 OFL 1.1 |
+| 62·63 | nsround-b·-k | 나눔스퀘어 라운드 굵게·아주 굵게 | 둥근 | `@kfonts/nanum-square-round@0.2.0` | 네이버 나눔글꼴 공지 OFL 1.1 |
+| 64 | barun-gothic | 나눔바른고딕 굵게 | 고딕 | `@kfonts/nanum-barun-gothic@0.3.0` | 네이버 나눔글꼴 공지 OFL 1.1 |
+| 65 | barun-pen | 나눔바른펜 굵게 | 손글씨 | `@kfonts/nanum-barun-pen@0.2.0` | 네이버 나눔글꼴 공지 OFL 1.1 |
+| 66 | ridi-batang | 리디바탕 | 명조 | `@kfonts/ridi-batang@0.2.0` | 리디 배포 공지 OFL 1.1(이름표엔 저작권만) |
+| 67 | line-seed | LINE Seed KR 굵게 | 고딕 | `@kfonts/line-seed-sans-kr@0.1.0` | 글꼴 이름표 13번 — "licensed under the SIL Open Font License, Version 1.1" |
+| 68 | neodgm | Neo둥근모 | 꾸밈(점 글꼴) | `@kfonts/neodgm@0.5.0` | 글꼴 이름표 14번 — scripts.sil.org/OFL |
+
+OFL은 부분 글꼴(잘라 쓰기)·웹 삽입·상업 사용을 허락함(글꼴 자체를 따로 팔지만 않으면 됨). 2절의 학교안심·KCC 한빛은 원 배포처 확인 전이라 아직 안 넣음.
+
 ## 2. 더 늘릴 수 있는 것 — 스스로 올려 쓰는 상업 무료 글꼴(아직 안 씀)
 
 npm 꾸러미(registry.npmjs.org — 클라우드가 받을 수 있음)의 라이선스 칸으로 1차 확인. **원 배포처 라이선스를 한 번 더 확인한 뒤** 목록에 덧붙입니다.
@@ -42,7 +64,7 @@ npm 꾸러미(registry.npmjs.org — 클라우드가 받을 수 있음)의 라�
 
 **빼 둔 것**: 배달의민족 글꼴(`@kfonts/bm-*` — npm엔 OFL로 적혀 있으나 원 라이선스는 배민 자체 약관) · 넥슨 글꼴(`SEE LICENSE IN README`) · G마켓 산스 등 자체 약관 글꼴 — 원 약관 확인 전엔 쓰지 않음.
 
-### 쓰려면 남은 일 (제안)
+### 쓰려면 남은 일 (제안) — (11/12 shelf5) 창구를 만들고 위 1-2절 18개를 넣음 · 더 넣을 땐 LIST·FONTS·FGEN 뒤에 같은 차례로 덧붙임
 한글 글꼴 파일은 하나에 1~10MB라 손님 화면이 통째로 받으면 첫 화면이 느려집니다. Google Fonts처럼 **그 책장에 쓰인 글자만** 잘라 주는 창구가 필요합니다:
 클라우드 `/shop/font?f=<글꼴>&t=<글자>` → npm 꾸러미의 woff2를 한 번 받아 두고(저장소) `subset-font`(MIT · harfbuzz wasm)로 잘라 woff2로 돌려줌 · 같은 글자 묶음은 캐시.
 그 뒤 FONTS 뒤에 덧붙이고(번호 51~ · 저장 글 `fi`는 두 자리까지 → 99개까지) FGEN에 갈래를 함께 덧붙입니다.

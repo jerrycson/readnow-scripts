@@ -7,9 +7,13 @@
  *      세로 획이 가로 획보다 많이 두꺼움(대비 1.6배 넘음) → my(명조) · 굵은 획(그림 폭의 2% 넘음) → bd(굵은 제목체) · 그 밖 → go(고딕) — 어림이라 손글씨·붓·둥근은 고르지 않음(분야·제목 낱말 몫)
  *      그림·사진이 많은 표지(잉크 비율이 3~35% 밖)는 갈래를 정하지 않음(손님 화면이 분야·제목 낱말로 고름)
  *  저장: shop_cover/b00~b31 {m:{도서키:'rrggbb.갈래'|'x'}} (상품 번호가 아니라 그림 폴더 bk_<도서> — 같은 책 여러 매물이 한 번만)
- *  비용: 회차마다 새 책 최대 N권(기본 120 · 10분마다) · 그림 받기는 같은 구역 저장소 → 바깥 전송 아님 · 한 권 약 30~60ms */
+ *  비용: 회차마다 새 책 최대 N권(기본 300 · 5분마다 · shelf5 — 전엔 120 · 10분) · 그림 받기는 같은 구역 저장소 → 바깥 전송 아님 · 한 권 약 30~60ms */
 'use strict';
 const N_BUCKET = 32;
+/* (shelf5) 셈 속도 — 전엔 10분마다 120권(16,000권에 약 22시간) → 5분마다 300권 · 셋씩 나란히(약 4시간) · 차례는 '책등 그림 없는 책 → 새로 들어온 책'(책등 그림이 있으면 대표색을 안 씀 · 첫 책장이 새 책) */
+const PAR = 3, TICK_N = 300, TICK_MS = 300e3;
+/* 셈할 차례: 책등 그림(sp) 없는 것 먼저 · 그 안에서 새로 들어온(at) 것 먼저 · 우리 저장소 표지만 */
+const order = (items) => (items || []).filter((x) => x && keyOfIm(x.im)).sort((a, b) => (a.sp ? 1 : 0) - (b.sp ? 1 : 0) || String(b.at || '').localeCompare(String(a.at || '')));
 const bucketOf = (k) => { let h = 2166136261 >>> 0; const t = String(k); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return 'b' + String(h % N_BUCKET).padStart(2, '0'); };
 /* 표지 주소(서가 칸 im) → 저장소 폴더 키 'bk_123' (우리 저장소 그림만) */
 const keyOfIm = (im) => { const m = /img(?:%2F|\/)(bk_[0-9A-Za-z_-]{1,40})(?:%2F|\/)/.exec(String(im || '')); return m ? m[1] : null; };
@@ -52,11 +56,14 @@ function makeCover({ C, bucket, log }) {
   /* 회차: 아직 셈하지 않은 책 최대 n권 */
   async function tick(items, n) { if (ST.busy) return ST.busy; ST.busy = (async () => { await load(); let jpeg = null; try { jpeg = require('jpeg-js'); } catch (e) { ST.lastErr = 'jpeg-js 없음'; return 0; }
     const want = []; const seen = new Set(); for (const x of items) { const k = keyOfIm(x.im); if (!k || seen.has(k) || ST.m.has(k)) continue; seen.add(k); want.push(k); if (want.length >= (n || 120)) break; }
-    const B = bucket(); let done = 0;
-    for (const k of want) { try { const [buf] = await B.file(`img/${k}/front.jpg`).download(); const im = jpeg.decode(buf, { useTArray: true, maxMemoryUsageInMB: 256, formatAsRGBA: true }); const v = analyze(im.data, im.width, im.height); ST.m.set(k, v); ST.dirty.set(k, v); done++; }
-      catch (e) { ST.fail++; ST.lastErr = String(e.message || e).slice(0, 120); if (/No such object|404/.test(ST.lastErr)) { ST.m.set(k, 'x'); ST.dirty.set(k, 'x'); } } }
-    if (ST.dirty.size) await flush(); ST.done += done; ST.runAt = Date.now(); return done; })().finally(() => { ST.busy = null; }); return ST.busy; }
+    const B = bucket(); let done = 0; const t0 = Date.now();
+    /* (shelf5) 셋씩 나란히 받음 — 한 권 시간의 대부분이 그림 받기 기다림(셈은 30~60ms) · 풀기는 한 번에 하나라 메모리는 그대로(그림 한 장 ≈ 1MB) · 150권마다 중간 저장(회차가 끊겨도 한 일은 남음 · 쓰기 수는 회차당 약 60번) */
+    let qi = 0; const one = async () => { while (qi < want.length) { const k = want[qi++]; try { const [buf] = await B.file(`img/${k}/front.jpg`).download(); const im = jpeg.decode(buf, { useTArray: true, maxMemoryUsageInMB: 256, formatAsRGBA: true }); const v = analyze(im.data, im.width, im.height); ST.m.set(k, v); ST.dirty.set(k, v); done++; }
+      catch (e) { ST.fail++; ST.lastErr = String(e.message || e).slice(0, 120); if (/No such object|404/.test(ST.lastErr)) { ST.m.set(k, 'x'); ST.dirty.set(k, 'x'); } }
+      if (ST.dirty.size >= 150) await flush(); } };
+    await Promise.all(Array.from({ length: Math.min(PAR, want.length) }, one));
+    if (ST.dirty.size) await flush(); ST.done += done; ST.runAt = Date.now(); ST.lastMs = Date.now() - t0; ST.lastN = done; return done; })().finally(() => { ST.busy = null; }); return ST.busy; }
   const cvOf = (im) => { const k = keyOfIm(im); return k ? ST.m.get(k) || null : null; };
-  return { tick, cvOf, load, state: () => ({ n: ST.m.size, done: ST.done, fail: ST.fail, runAt: ST.runAt, lastErr: ST.lastErr }) };
+  return { tick, cvOf, load, state: () => ({ n: ST.m.size, done: ST.done, fail: ST.fail, runAt: ST.runAt, lastErr: ST.lastErr, lastMs: ST.lastMs || null, lastN: ST.lastN || 0 }) };
 }
-module.exports = { analyze, dominant, genreOf, shrink, keyOfIm, bucketOf, makeCover, CV_RE };
+module.exports = { order, PAR, TICK_N, TICK_MS, analyze, dominant, genreOf, shrink, keyOfIm, bucketOf, makeCover, CV_RE };

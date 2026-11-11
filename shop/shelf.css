@@ -318,6 +318,10 @@ body.shelf-on #main.wrap { max-width: none; } body.shelf-on .foot { display: non
 .bqs-chips button[aria-selected="true"] { background: #1d2b45; color: #fff; border-color: #1d2b45; }
 .bqs.mob .bqs-arrow, .bqs.mob .bqs-zoom, .bqs.mob .bqs-sl, .bqs.mob .bqs-wl, .bqs.mob .bqs-cart, .bqs.mob .bqs-dots, .bqs.mob .bqs-nav { display: none !important; }
 .bqs-mbar .mb-v { white-space: nowrap; }
+/* (shelf5 · 리드나우2 일꾼 알림) 아래 고정 줄과 우리숍의 다른 떠 있는 것이 겹치지 않게 — [hidden]이면 정말 숨김(display:flex가 hidden을 이기던 것) · 알림 토스트는 줄 위로 · 둥근 카트는 휴대폰에서 숨김(줄의 🛒가 대신) */
+.bqs-mbar[hidden] { display: none !important; }
+body.shelf-mob .toast { bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 50; }
+body.shelf-mob .foot, body.shelf-mob .gobar { display: none; }
 .bqs.mob .bqs-stage { perspective: none !important; }
 .bqs.mob .mcase { padding: 8px 0 120px; }
 .mrow { margin: 0 0 6px; } .mrow h3 { margin: 8px 12px 4px; font: 800 16px/1.3 system-ui, sans-serif; color: #f6ead0; } .mrow h3 small { font-weight: 600; opacity: .7; font-size: 12px; }
