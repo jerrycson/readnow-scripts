@@ -27,7 +27,7 @@ function bridge(H, DB) { const got = []; let stop = false, pulls = 0;
 (async () => {
   const A = await fake(); const ID = Object.keys(F.BOOKS)[0];
   console.log('① 바쁨 알림');
-  let H = await L.startHelper({ aladin: A.base, cfg: { pc: 'LOGGER-L', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, off: ['dynamic', 'shopSum', 'survey', 'bench'], pass: { minN: 1, waitMin: 0.2 } } } }); const D = H.D;
+  let H = await L.startHelper({ aladin: A.base, cfg: { pc: 'LOGGER-L', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, fx: { after: '00:00', keyWaitMin: 0 }, off: ['dynamic', 'shopSum', 'survey', 'bench'], pass: { minN: 1, waitMin: 0.2 } } } }); const D = H.D;
   const DB = {}; const BR = bridge(H, DB);
   try {
     const b1 = await H.api('POST', '/busy', { sec: 180, why: '도서 정보·시장 지표 갱신' }); const s1 = (await H.api('GET', '/status')).j;

@@ -28212,13 +28212,42 @@ async function c2AlSeatGive(pd, f) { const q = pd && pd.alSeat; const S2 = S._c2
  *  · 넘김 표(어느 일을 · 어느 칸에 · 어떤 문서 이름 꼴로 · 어떤 칸만)는 lab/col2/shadow/col2-handoff.js와 같음(lab/col2/tests/t_handoff.js가 견줌) — 표에 없는 일·칸은 쓰지 않음
  *  · 이 PC 번외가 맡은 일만(pc) 이 PC 웹앱이 대신 씀 · 쓴 이는 '번외 <PC>' · 바뀐 날의 옛 값은 history(운영 kpipaJob과 같은 꼴)
  *  · 운영 수집기는 같은 문서를 보고 그 일의 그 부분만 쉼 · 맡은 PC 소식(beat)이 beatMaxH 시간 넘게 없으면 운영이 스스로 다시 함 · [되돌리기] = on:false 한 칸 */
-const C2HO_JOBS = /*C2HO{*/{ kpipa: { name: '📚 출판 판매 통계(KPIPA) — 최근 7일 일별 표', col: 'mkt_kpipa', idRe: '^\\d{8}$', fields: ['date', 'onOff', 'bookType'], hist: true, beatMaxH: 8 } }/*}C2HO*/;
+const C2HO_JOBS = /*C2HO{*/{ kpipa: { name: '📚 출판 판매 통계(KPIPA) — 최근 7일 일별 표', col: 'mkt_kpipa', idRe: '^\\d{8}$', fields: ['date', 'onOff', 'bookType'], hist: true, beatMaxH: 8 },
+  'ext.nl': { name: '🔎 국립중앙도서관 ISBN 서지', col: 'ext_basic', idRe: '^97[89]\\d{10}$', fields: ['obj', 'title', 'author'], mode: 'ext', src: 'nl', beatMaxH: 8 },
+  nbMarket: { name: '🔍 새상품 없는 시세(미등록·세트)', col: 'prd_market_nobook', idRe: '^[\\w.-]{1,150}$', fields: ['main', 'vdoc', 'sig', 'hist'], mode: 'nb', beatMaxH: 48 },
+  'ext.fx': { name: '💱 환율(수출입은행)', col: 'ext_fx', idRe: '^\\d{4}-\\d{2}-\\d{2}$', fields: ['date', 'rates', 'src', 'warn'], mode: 'once', srcOnly: 'koreaexim', beatMaxH: 30 } }/*}C2HO*/;
 function c2HoWatch() { if (S._c2hoW || typeof db === 'undefined' || !db) return; S._c2hoW = 1; try { db.collection('app_settings').doc('col2_handoff').onSnapshot((d) => { const v = d.exists ? (d.data() || {}) : {}; S.c2ho = { jobs: v.jobs || {}, log: Array.isArray(v.log) ? v.log : [], _sig: JSON.stringify(Object.entries(v.jobs || {}).map(([k, x]) => [k, !!(x && x.on), (x && x.pc) || ''])) }; c2HoRedraw(); }, (e) => { S.c2ho = { _err: e.code || e.message }; S._c2hoW = 0; }); } catch (e) { S._c2hoW = 0; } }
 function c2HoState(k) { const J = C2HO_JOBS[k]; const x = S.c2ho && S.c2ho.jobs && S.c2ho.jobs[k]; if (!J || !x || x.on !== true) return { on: false }; const ref = Math.max(Date.parse(x.beat || '') || 0, Date.parse(x.at || '') || 0); return { on: true, pc: String(x.pc || ''), fresh: !!ref && Date.now() - ref < J.beatMaxH * 3600e3, beat: x.beat || null, at: x.at || null, by: x.by || '' }; }
 async function c2HoWrite(o) { const k = String(o.job || ''); const J = C2HO_JOBS[k]; if (!J) return '넘김 표에 없는 일'; const st = c2HoState(k); if (!st.on || !deviceName() || st.pc.toUpperCase() !== String(deviceName()).toUpperCase()) return '이 PC로 넘긴 일이 아님(⚙ 🔀 번외로 넘기기)';
   if (o.c !== J.col || !new RegExp(J.idRe).test(String(o.id || ''))) return `${k}는 ${J.col} 칸 정한 문서만`; const v = {}; for (const f of J.fields) if (o.v && o.v[f] !== undefined) v[f] = o.v[f]; if (!Object.keys(v).length) return '쓸 칸이 없음';
+  if (J.mode) { try { return await c2HoWriteMode(J, String(o.id), v); } catch (e) { return e.code || e.message; } } /* (11/11 col2rep3) 국중·시세·환율 — 운영과 같은 쓰기 규칙 */
   const FV = firebase.firestore.FieldValue; const up = { ...v, writer: '번외 ' + deviceName(), uploadedAt: FV.serverTimestamp() }; if (J.hist && o.hist && typeof o.hist === 'object') up.history = FV.arrayUnion({ at: String(o.hist.at || new Date().toISOString()), type: String(o.hist.type || ''), old: o.hist.old ?? null, by: '번외 ' + deviceName() });
   try { await db.collection(J.col).doc(String(o.id)).set(up, { merge: true }); return true; } catch (e) { return e.code || e.message; } }
+/* (11/11 col2rep3) 운영과 같은 쓰기 — 운영 문서를 이 자리에서 다시 읽고 판단(번외가 받아 둔 옛 문서로 판단하지 않음)
+ *  ext  = 운영 extSave(readnow-collector): 같으면 확인 시각(chk)만 · '없음'이면 받아 둔 값 그대로(noneAt) · 바뀌면 옛 값을 ext_hist에 먼저 남기고(실패하면 안 바꿈) 바꿈 · 출처 색인 ext_index/<출처>_<조각>
+ *  nb   = 운영 nbMarketJob: 이미 있는 상품만(처음 보는 상품은 운영) · 후보가 바뀌면 판(v)을 통째로 보관 · 시세가 바뀌면 sig·history 한 줄
+ *  once = 운영 extFx: ext_fx/<고시일>이 없을 때만 만듦 · 수출입은행 출처만 · ext_run.fx 상태 줄도 운영과 같은 꼴 */
+async function c2HoWriteMode(J, id, v) { const FV = firebase.firestore.FieldValue; const by = '번외 ' + deviceName(); const W2 = { writer: by, uploadedAt: FV.serverTimestamp() }; const now = new Date().toISOString(); const ref = db.collection(J.col).doc(id);
+  if (J.mode === 'once') { if (J.srcOnly && v.src !== J.srcOnly) return `출처가 ${J.srcOnly}가 아님`; if (!v.rates || !(+v.rates.USD > 0)) return '환율 값이 없음'; const ex = await ref.get(); if (ex.exists) return true; /* 운영처럼 이미 있으면 안 씀 */
+    await ref.set({ date: v.date || id, rates: v.rates, src: v.src, warn: v.warn || null, at: now, by, ...W2 }); const k = new Date(Date.now() + 9 * 3600e3); const day = k.toISOString().slice(0, 10);
+    await db.collection('app_settings').doc('ext_run').set({ fx: { day: k.getUTCHours() * 60 + k.getUTCMinutes() >= 11 * 60 + 30 ? day : null, date: v.date || id, src: v.src, usd: v.rates.USD, at: now, err: null, by } }, { merge: true }).catch(() => {}); return true; }
+  if (J.mode === 'nb') { const M = v.main; if (!M || M.src !== 'usedSearch' || typeof v.sig !== 'string') return '시세 문서 꼴이 다름'; const cur = await ref.get(); if (!cur.exists) return '처음 보는 상품은 운영이 씀(이미 본 상품만 번외)'; const old = cur.data() || {};
+    if (v.vdoc && typeof v.vdoc === 'object' && old.candSig !== M.candSig) await ref.collection('v').doc(String(M.at || now).replace(/[:.]/g, '-')).set({ at: v.vdoc.at || M.at || now, query: v.vdoc.query || M.query || null, cands: v.vdoc.cands || [], market: v.vdoc.market || null, ...W2 });
+    const up = { ...M, ...W2 }; delete up.history; delete up.sig; if (old.sig !== v.sig) { up.sig = v.sig; up.history = FV.arrayUnion({ at: (v.hist && v.hist.at) || now, median: v.hist ? v.hist.median ?? null : null, low: v.hist ? v.hist.low ?? null : null, n: v.hist ? v.hist.n ?? null : null, our: v.hist ? v.hist.our ?? null : null }); }
+    await ref.set(up, { merge: true }); return true; }
+  if (J.mode === 'ext') { const X = window.ReadnowExt; if (!X || !X.SOURCES || !X.SOURCES[J.src]) return '외부 정보 공용 파일이 없음'; const obj = v.obj; if (!obj || typeof obj.sig !== 'string' || !obj.sig) return '지문(sig) 없는 결과'; const src = J.src; const grp = X.SOURCES[src].grp;
+    /* 한 묶음(트랜잭션)으로 — 운영 로거가 같은 책 문서의 다른 출처 칸을 같은 때 써도 서로 지우지 않게(src 칸을 읽은 그대로 두고 이 출처만 바꿈 · 겹치면 다시 읽고 다시 함) */
+    await db.runTransaction(async (tx) => { const snap = await tx.get(ref); const cur = snap.exists ? snap.data() : null; const prev = cur && cur.src ? cur.src[src] : null; const t = obj.chk || obj.at || now;
+      const same = prev ? (X.sameSig ? X.sameSig(src, prev, obj.sig) : prev.sig === obj.sig ? 'sig' : '') : ''; const S2 = { ...((cur && cur.src) || {}) }; const p0 = { ...(prev || {}) };
+      let hist = null; if (same) { p0.chk = t; delete p0.err; delete p0.noneAt; if (same === 'resign') p0.sig = obj.sig; S2[src] = p0; }
+      else if (obj.none && prev && prev.d && !prev.none && grp === 'basic') { p0.noneAt = prev.noneAt || t; p0.chk = t; delete p0.err; S2[src] = p0; } /* 받아 둔 값 그대로(운영 정범님 11/08 규칙) */
+      else if (obj.none && prev && prev.d && !prev.none && !prev.noneAt) { p0.noneAt = t; p0.chk = t; delete p0.err; S2[src] = p0; }
+      else { if (prev && prev.at) { const hid = `${J.col}_${id}_${src}_${String(prev.at).replace(/[^0-9]/g, '').slice(0, 14)}`; const hr = db.collection('ext_hist').doc(hid); const ex = await tx.get(hr); if (!ex.exists) hist = { hr, v: { col: J.col, isbn: id, src, at: prev.at, chk: prev.chk || null, none: !!prev.none, d: prev.d ?? null, sig: prev.sig || null, ...W2 } }; }
+        S2[src] = { at: obj.at || t, chk: t, sig: obj.sig, none: !!obj.none, d: obj.d ?? null, by, q: obj.q || null }; }
+      if (hist) tx.set(hist.hr, hist.v); /* 옛 값 보관을 같은 묶음에 — 보관이 실패하면 바꾸지도 않음(운영과 같음) */
+      if (cur) tx.update(ref, { src: S2, ...(v.title && !cur.title ? { title: v.title } : {}), ...W2 }); else tx.set(ref, { isbn: id, title: v.title || null, author: v.author || null, src: S2, ...W2 }, { merge: true }); });
+    const kd = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); await db.collection('ext_index').doc(`${src}_${X.shard ? X.shard(id) : (+id.slice(-2) || 0) % 8}`).set({ m: { [id]: kd }, ...W2 }, { merge: true }).catch(() => {}); return true; }
+  return '모르는 쓰기 꼴'; }
 /* 맡은 PC 번외가 그 일을 해낸 때 → beat(30분에 한 번까지) — 운영 수집기가 '번외가 살아 있음'을 이것으로 봄 */
 async function c2HoBeat(pd) { const B = pd && pd.handBeat; if (!B || typeof B !== 'object') return; for (const [k, t] of Object.entries(B)) { const st = c2HoState(k); if (!st.on || st.pc.toUpperCase() !== String(deviceName() || '').toUpperCase() || !(+t > 0)) continue; const was = Date.parse(st.beat || '') || 0; if (+t - was < 30 * 60e3) continue;
     await db.collection('app_settings').doc('col2_handoff').set({ jobs: { [k]: { beat: new Date(+t).toISOString() } } }, { merge: true }); } }

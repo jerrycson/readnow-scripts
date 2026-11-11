@@ -11,6 +11,20 @@
     kpipa: { name: '📚 출판 판매 통계(KPIPA) — 최근 7일 일별 표', col: 'mkt_kpipa', idRe: '^\\d{8}$', fields: ['date', 'onOff', 'bookType'], hist: true, everyH: 3, beatMaxH: 8,
       ops: "운영 kpipaJob의 '최근 7일 일별 표(판매채널별·도서유형별)'만 건너뜀 — 730일 빈 날 채우기·주제분류·더 가져오기는 운영 그대로",
       why: '두 PC 그림자 42줄 모두 같음(11/11 HOME 28 · JS-MAIN 14) · 운영과 같은 해석 함수(kpParse·kpFetch 글자 그대로)' },
+    /* (11/11 col2rep3) 🔎 국립중앙도서관 ISBN 서지 — 운영 extSave와 같은 쓰기: 같으면 확인 시각(chk)만 · 바뀌면 옛 값을 ext_hist에 남긴 뒤 바꿈 · 받아 둔 값이 있는데 '없음'이면 받아 둔 값 그대로(noneAt만) · 출처 색인 ext_index/nl_<조각>
+     *  번외는 지문(sig)까지 운영 공용 파일(ReadnowExt.sig)로 만들어 넘기고, 웹앱이 운영 문서를 다시 읽어 견준 뒤 씀(번외가 받아 둔 옛 문서로 판단하지 않음) */
+    'ext.nl': { name: '🔎 국립중앙도서관 ISBN 서지', col: 'ext_basic', idRe: '^97[89]\\d{10}$', fields: ['obj', 'title', 'author'], mode: 'ext', src: 'nl', refreshDays: 120, everyH: 0, beatMaxH: 8,
+      ops: "운영 외부 정보 한 바퀴(extFill)가 국립중앙도서관을 묻지 않음 — 다시 볼 날(120일)·옛 값 보관·색인은 번외가 운영과 같은 규칙으로 · 국중 날짜 차례(우리 책이 아닌 책)는 운영 그대로",
+      why: '11/11 HOME 40건·JS-MAIN 27건 모두 같음(운영 공용 파일 ReadnowExt.run·sig 그대로)' },
+    /* (11/11 col2rep3) 🔍 새상품 없는 시세 — 운영 nbMarketJob 쓰기 그대로(번외가 글자 그대로 떼어 온 nbMarketJob이 만든 문서): 후보가 바뀌면 판(v)을 통째로 보관 · 시세가 바뀌면 history 한 줄
+     *  나눔: 처음 보는 상품은 운영 · 이미 본 상품 다시 보기(7일마다)는 번외 */
+    nbMarket: { name: '🔍 새상품 없는 시세(미등록·세트)', col: 'prd_market_nobook', idRe: '^[\\w.-]{1,150}$', fields: ['main', 'vdoc', 'sig', 'hist'], mode: 'nb', nbDays: 7, everyH: 0, beatMaxH: 48,
+      ops: '운영 nbMarketJob은 처음 보는 상품만 — 이미 본 상품의 다시 보기(7일마다)는 번외',
+      why: "11/11 HOME 40·JS-MAIN 33 — 다른 것은 모두 '때가 다름'(움직이는 시세 · 운영이 읽은 뒤 바뀜)" },
+    /* (11/11 col2rep3) 💱 환율 — 운영 extFx와 같은 쓰기: ext_fx/<고시일> 이 없을 때만 만듦 · 출처가 수출입은행(koreaexim)일 때만(운영과 같은 출처) */
+    'ext.fx': { name: '💱 환율(수출입은행)', col: 'ext_fx', idRe: '^\\d{4}-\\d{2}-\\d{2}$', fields: ['date', 'rates', 'src', 'warn'], mode: 'once', srcOnly: 'koreaexim', everyH: 24, beatMaxH: 30,
+      ops: '운영 extFx(하루 한 번 환율)가 쉼 — 번외가 한국 11:35 뒤 수출입은행 고시를 받아 없을 때만 씀',
+      why: '11/11 HOME 같음 1 · JS-MAIN은 키가 늦게 와 frankfurter(출처 다름) → 이번 판부터 키가 온 뒤·11:35 뒤에만 읽음' },
   };
   const DOC = { col: 'app_settings', id: 'col2_handoff' };
   /* 그 일이 넘겨져 있나 — { on(켬) · pc(맡은 PC) · fresh(맡은 PC 소식이 beatMaxH 안) · live(on && fresh = 운영이 쉬어도 됨) } */
@@ -23,7 +37,20 @@
   function writeOk(doc, it, pc) { const k = String((it && it.job) || ''); const J = JOBS[k]; if (!J) return { ok: false, why: '넘김 표에 없는 일' };
     if (!mine(doc, k, pc)) return { ok: false, why: '이 PC로 넘긴 일이 아님(⚙ 🔀 번외로 넘기기)' }; if (it.c !== J.col) return { ok: false, why: `${k}는 ${J.col} 칸에만` };
     if (!new RegExp(J.idRe).test(String(it.id || ''))) return { ok: false, why: '문서 이름 꼴이 다름' };
-    const v = {}; for (const f of J.fields) if (it.v && it.v[f] !== undefined) v[f] = it.v[f]; if (!Object.keys(v).length) return { ok: false, why: '쓸 칸이 없음' }; return { ok: true, v }; }
+    const v = {}; for (const f of J.fields) if (it.v && it.v[f] !== undefined) v[f] = it.v[f]; if (!Object.keys(v).length) return { ok: false, why: '쓸 칸이 없음' };
+    if (J.mode === 'ext' && !(v.obj && typeof v.obj === 'object' && typeof v.obj.sig === 'string' && v.obj.sig)) return { ok: false, why: '지문(sig) 없는 결과' };
+    if (J.mode === 'nb' && !(v.main && typeof v.main === 'object' && v.main.src === 'usedSearch' && typeof v.sig === 'string')) return { ok: false, why: '시세 문서 꼴이 다름' };
+    if (J.mode === 'once' && J.srcOnly && v.src !== J.srcOnly) return { ok: false, why: `출처가 ${J.srcOnly}가 아님(운영과 같은 출처만)` };
+    return { ok: true, v }; }
+  /* (11/11 col2rep3) 운영 extSave 판단 그대로(순수) — cur = 운영 문서(ext_basic/<ISBN>) · sameSig = 운영 공용 파일 ReadnowExt.sameSig · obj = 번외 결과 {at, chk, sig, none, d, by, q}
+   *  → { st: same|keep|none1|changed|new, hist: 옛 값 보관 문서(없으면 null), up: 고칠 칸 } · 웹앱이 같은 규칙으로 씀(tCOL2HO가 견줌) */
+  function extPlan(cur, src, obj, grp, sameSig) { const prev = cur && cur.src ? cur.src[src] : null; const now = obj.chk || obj.at;
+    const same = !prev ? '' : sameSig ? sameSig(src, prev, obj.sig) : prev.sig === obj.sig ? 'sig' : ''; /* 운영 ReadnowExt.sameSig — 'resign' = 옛 방식 지문이지만 받아 둔 값으로 다시 만들면 같음(지문만 고쳐 적음) */
+    if (same) return { st: 'same', hist: null, up: { chk: now, errDel: true, noneDel: true, ...(same === 'resign' ? { sig: obj.sig } : {}) } };
+    if (obj.none && prev && prev.d && !prev.none && grp === 'basic') return { st: 'keep', hist: null, up: { noneAt: prev.noneAt || now, chk: now, errDel: true } };
+    if (obj.none && prev && prev.d && !prev.none && !prev.noneAt) return { st: 'none1', hist: null, up: { noneAt: now, chk: now, errDel: true } };
+    const hist = prev && prev.at ? { at: prev.at, chk: prev.chk || null, none: !!prev.none, d: prev.d ?? null, sig: prev.sig || null } : null; return { st: prev ? 'changed' : 'new', hist, up: { obj } }; }
+  const shard = (isbn) => (+String(isbn).slice(-2) || 0) % 8; /* 운영 ReadnowExt.shard와 같음(출처 색인 8조각) */
   /* 넘김 후보 — 하루 요약(col2_jday 여러 날·여러 PC)에서 일마다 '넘길 수 있음'이 나온 날 수·표본·까닭 모를 다름 · 넘김 표(JOBS)에 쓰는 길이 있는 일만 [넘기기] 가능
    *  차례 = 같음이 오래(날 수) → 표본 많음 · pc = 표본이 가장 많은 PC */
   function candidates(jdays) { const by = {};
@@ -31,6 +58,6 @@
       o.days.add(j.d); o.n += +s.n || 0; o.same += +s.same || 0; o.un += +s.un || 0; if (s.pass.can) o.canDays.add(j.d); const p = o.pcs[j.pc] || (o.pcs[j.pc] = { n: 0, can: 0 }); p.n += +s.n || 0; if (s.pass.can) p.can++; } }
     return Object.values(by).map((o) => { const pc = Object.entries(o.pcs).sort((a, b) => b[1].can - a[1].can || b[1].n - a[1].n)[0]; return { k: o.k, name: o.name, days: o.days.size, canDays: o.canDays.size, n: o.n, same: o.same, un: o.un, pc: pc ? pc[0] : null, path: !!JOBS[o.k], can: o.canDays.size > 0 && o.un === 0 }; })
       .filter((o) => o.can).sort((a, b) => b.canDays - a.canDays || b.same - a.same); }
-  const api = { JOBS, DOC, state, mine, writeOk, candidates };
+  const api = { JOBS, DOC, state, mine, writeOk, candidates, extPlan, shard };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Col2Handoff = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

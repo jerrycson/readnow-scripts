@@ -110,7 +110,7 @@ const allFiles = (D) => { const out = []; const walk = (d) => { for (const f of 
 
   console.log('① 사무실 PC — 새상품 없는 시세 · KPIPA · 네이버(그려 읽기) · 키 쓰는 출처 5곳');
   const OFF1 = TK.TASKS.filter((t) => /^ext\./.test(t.k) && !['ext.naverbook', 'ext.ttb', 'ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].includes(t.k)).map((t) => t.k);
-  let H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base, RN_COL2_KPIPA_BASE: A.base }, cfg: { pc: 'MJ-MORE', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 150 }, watch: { tickSec: 1 }, jobs: { on: true, off: OFF1, kpipa: { after: '00:00' }, pass: { minN: 1, waitMin: 0.2 } } } }); const D1 = H.D;
+  let H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base, RN_COL2_KPIPA_BASE: A.base }, cfg: { pc: 'MJ-MORE', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 150 }, watch: { tickSec: 1 }, jobs: { on: true, fx: { after: '00:00', keyWaitMin: 0 }, off: OFF1, kpipa: { after: '00:00' }, pass: { minN: 1, waitMin: 0.2 } } } }); const D1 = H.D;
   const W = webapp(H, DB, ['prd_ids', 'prd_books', 'prd_market_nobook', 'mkt_kpipa', 'ext_basic', 'ext_foreign', 'ext_lib'], { keys: KEYS, handoff: { jobs: { kpipa: { on: true, pc: 'MJ-MORE', at: new Date().toISOString() }, 'ext.nl': { on: true, pc: 'OTHER-PC', at: new Date().toISOString() } } } });
   try { await H.api('POST', '/relay/answer', { pool });
     const want = ['nbMarket', 'kpipa', 'ext.naverbook', 'ext.ttb', 'ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'];
@@ -143,7 +143,7 @@ const allFiles = (D) => { const out = []; const walk = (d) => { for (const f of 
   const DB2 = {}; DB2['prd_book_metrics/b1'] = { buyerDist: dynOps.b, relationBuyIds: dynOps.rb, clickRelation: dynOps.cr, dynAt: nowI };
   DB2['prd_book_metrics/b2'] = { buyerDist: dynOps.b, relationBuyIds: [{ title: '예전 함께 산 책', aladinItemId: '9' }], clickRelation: [], dynAt: old }; /* 4시간 전 값 — 때가 다름 */
   A.reqs.length = 0;
-  H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base, RN_COL2_KPIPA_BASE: A.base }, cfg: { pc: 'LOGGER-MORE', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 150 }, watch: { tickSec: 1 }, jobs: { on: true, extShare: true, off: ['metrics', 'usedPage', 'shopSum', 'survey', 'bench', ...TK.TASKS.filter((t) => /^ext\./.test(t.k)).map((t) => t.k)], kpipa: { after: '00:00' }, pass: { minN: 1, waitMin: 0.2 } } } }); const D2 = H.D;
+  H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base, RN_COL2_KPIPA_BASE: A.base }, cfg: { pc: 'LOGGER-MORE', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 150 }, watch: { tickSec: 1 }, jobs: { on: true, fx: { after: '00:00', keyWaitMin: 0 }, extShare: true, off: ['metrics', 'usedPage', 'shopSum', 'survey', 'bench', ...TK.TASKS.filter((t) => /^ext\./.test(t.k)).map((t) => t.k)], kpipa: { after: '00:00' }, pass: { minN: 1, waitMin: 0.2 } } } }); const D2 = H.D;
   const W2 = webapp(H, DB2, ['prd_ids', 'prd_books', 'prd_book_metrics'], { keys: KEYS });
   try { await H.api('POST', '/relay/answer', { pool });
     const kr = await H.api('POST', '/relay/keys', { keys: KEYS }); const ln = await H.api('POST', '/relay/answer', { lists: { prd_market_nobook: [{ id: 'aladin_U77', v: DB['prd_market_nobook/aladin_U77'] }] } });
