@@ -102,3 +102,12 @@ legend .edit { font-size: 13px; font-weight: 500; margin-left: 8px; }
 label.f.good input { border-color: #2f7d4f; }
 @media (max-width: 640px) { .gobar { position: sticky; bottom: 0; z-index: 5; margin: 0 -16px; padding: 6px 16px calc(6px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--bg) 30%); } .gobar .btn.wide { margin: 4px 0; } }
 .toast.on:has(.undo) { pointer-events: auto; }
+/* (11/11 shopc1) 🏷 배지 · 할인가 · 무료 배송 막대 · 쿠폰 칸 */
+.bds { position: absolute; right: 6px; top: 6px; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; } .bds.in { position: static; flex-direction: row; flex-wrap: wrap; align-items: center; margin-bottom: 4px; }
+.bd { display: inline-block; font-size: 11px; font-weight: 800; line-height: 1.5; padding: 0 7px; border-radius: 6px; background: var(--navy); color: #fff; letter-spacing: .01em; }
+.bd-sale { background: var(--red); } .bd-new { background: var(--gold); color: #1d2b45; } .bd-pick { background: #1f6f4a; } .bd-rare { background: #6b3fa0; } .bd-last { background: #8a4b00; } .bd-hot { background: #c2410c; }
+.card .pr s.was, .row s.was, .ol s.was { color: var(--mut); font-size: 12px; } .off.sale { color: var(--red); } .price .left { color: var(--red); font-weight: 700; }
+.freebar { margin: 10px 0 0; } .freebar > div { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; } .freebar span { display: block; height: 100%; background: var(--gold); border-radius: 99px; } .freebar.ok span { background: var(--ok); } .freebar small { display: block; margin-top: 3px; font-size: 13px; }
+.sum .dc b { color: var(--red); } .nb { margin: 6px 0 0; } .cprow { display: flex; gap: 6px; } .cprow input { flex: 1; min-width: 0; }
+.grid.rel { margin-bottom: 16px; }
+.card .pr { flex-wrap: wrap; row-gap: 0; } s.was { white-space: nowrap; margin-right: 2px; } .row s.was { margin: 0 4px; }
