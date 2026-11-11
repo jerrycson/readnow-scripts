@@ -1,2 +1,3 @@
-@health&hours=3
-# 3034525
+y24p=1
+doc=app_settings/y24_ord_state,app_settings/y24_reg,app_settings/y24_link
+# 2758721838
