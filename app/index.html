@@ -1281,6 +1281,16 @@ body:has(header.top.cond) .ux2-sgtoc{top:calc(26px - var(--hdrh,0px))}
 html.ux2-rgtop #sheet.on:has(> .rgsearch){display:flex;flex-direction:column}html.ux2-rgtop #sheet.on:has(> .rgsearch)>*{flex-shrink:0}html.ux2-rgtop #sheet.on:has(> .rgsearch)>.sh{order:-3}html.ux2-rgtop #sheet.on:has(> .rgsearch)>.rgsearch{order:-2}html.ux2-rgtop #sheet.on:has(> .rgsearch)>.rgsetrow{order:-1;margin-bottom:6px}
 html.ux2-rgtop .rgsetrow:not(:has(> details[open])){flex-wrap:nowrap;gap:6px}html.ux2-rgtop .rgsetrow:not(:has(> details[open]))>details{padding:5px 10px!important;flex:1 1 0}html.ux2-rgtop .rgsetrow:not(:has(> details[open]))>details>summary{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}html.ux2-rgtop .rgsetrow:not(:has(> details[open]))>details>summary .vztg{display:none}
 @media (max-width:760px){html.ux2-rgtop .rgsetrow:not(:has(> details[open])){flex-direction:column;gap:3px}}
+/* (11/11 정범님 '등록의 작업대 줄은 맨 위로 가고 고정되게') ⑮ rgws — 🗂 작업대 줄을 머리줄 바로 아래(🔎 넣고 조회보다 위)에 두고 굴려도 붙어 있음
+ *  #sheet가 스스로 굴리는 칸(position:fixed · 위 여백 없음)이라 top = 등록 머리줄(.sh) 높이 하나만(--rgshh · 머리 칸 높이를 두 번 더하지 않음 — 1.78.470 설정 찾기 바 실수) · 붙으면 한 줄(.stuck · 넘치면 옆으로 밀어 봄) · 줄어든 높이만큼 아래 여백을 더해 카드가 튀지 않음 */
+html.ux2-rgws #sheet.on>.rgws{position:sticky;top:var(--rgshh,0px);z-index:6}
+html.ux2-rgws.ux2-rgtop #sheet.on:has(> .rgsearch)>.sh{order:-5}html.ux2-rgws.ux2-rgtop #sheet.on:has(> .rgsearch)>.rgws{order:-4}
+html.ux2-rgws #sheet.on:has(> .rgws){scroll-padding-top:calc(var(--rgshh,0px) + var(--rgwsh,0px) + 6px)}
+html.ux2-rgws #sheet.on>.rgws.stuck{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:4px;padding:3px 6px;border-radius:0 0 10px 10px;box-shadow:0 3px 8px rgba(0,0,0,.10);scrollbar-width:none}html.ux2-rgws #sheet.on>.rgws.stuck::-webkit-scrollbar{display:none}
+html.ux2-rgws #sheet.on>.rgws.stuck>*{flex:none;margin-top:0;margin-bottom:0}html.ux2-rgws #sheet.on>.rgws.stuck button{padding:2px 9px;font-size:12px;white-space:nowrap;margin-top:0;margin-bottom:0}html.ux2-rgws #sheet.on>.rgws.stuck .rgws-tools{display:inline-flex;gap:4px;flex-wrap:nowrap}html.ux2-rgws #sheet.on>.rgws.stuck .rgws-gone{display:none}
+.rgws-tools{display:inline-flex;flex-wrap:wrap;gap:5px;align-items:center}.rgws .linkbtn{border:0!important;background:none!important;padding:2px 4px!important;font-weight:600!important;color:#5A4A10!important}.rgws .linkbtn:disabled{opacity:.35;cursor:default}.rgws .rgws-del{color:#B0322A!important}.rgws .rgws-del.ux2-armed{color:#fff!important;background:#B0322A!important;border-radius:14px}
+.rgws-ed{display:inline-flex;gap:4px;align-items:center}.rgws-ed input{width:130px;font-size:13px;padding:3px 8px;border:2px solid #7A5A00;border-radius:14px}.rgws [data-rgws].rgws-drag{opacity:.45}.rgws [data-rgws].rgws-over{outline:2px dashed #7A5A00;outline-offset:2px}
+.rgws-gone{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;padding-top:4px;border-top:1px dashed #E3CF95}
 #tabs>.ux2-thide{display:none!important}.ux2-tmb{display:none}@media (max-width:760px){html.ux2-t5 #tabs>.ux2-tm{display:none!important}html.ux2-t5 .ux2-tmb{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;border:0;background:none;color:inherit;font:inherit;font-size:11px;cursor:pointer;padding:6px 0}.ux2-tmb.on{color:var(--cloth,#2F5D50);font-weight:700}.ux2-tmi{font-size:20px;line-height:1}}
 .ux2-tmenu{position:fixed;right:8px;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:9995;display:flex;flex-direction:column;gap:2px;min-width:170px;padding:6px;background:var(--paper,#fff);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.2)}.ux2-tmenu button{display:flex;align-items:center;gap:8px;border:0;background:none;padding:10px;font-size:15px;border-radius:8px;cursor:pointer;text-align:left}.ux2-tmenu button svg{width:20px;height:20px}.ux2-tmenu button.on{background:#E7F1EC;font-weight:700}.ux2-tmenu small{padding:4px 8px}
 .ux2-mksub{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 10px}.ux2-mksub button{border:1px solid var(--line);background:#fff;border-radius:16px;padding:6px 14px;font-size:14px;font-weight:700;cursor:pointer}.ux2-mksub button.on{background:#2F5D50;color:#fff;border-color:#2F5D50}
@@ -1310,7 +1320,7 @@ html.ux2-rgtop .rgsetrow:not(:has(> details[open])){flex-wrap:nowrap;gap:6px}htm
 <script src="../readnow-exec-core.js?v=0.1.1"></script>
 <script src="../readnow-ml-core.js?v=0.9.11"></script>
 <script src="../readnow-register-core.js?v=0.7.5"></script>
-<script>const APP_VER = '1.78.473';</script>
-<script src="readnow-webapp.js?v=1.78.473"></script>
+<script>const APP_VER = '1.78.474';</script>
+<script src="readnow-webapp.js?v=1.78.474"></script>
 </body>
 </html>
