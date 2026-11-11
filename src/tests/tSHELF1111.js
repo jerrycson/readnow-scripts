@@ -1,0 +1,126 @@
+// tSHELF1111 — (11/11 shelf1) 📚 우리숍 서가 책장(booksqueen.com/#/shelf)
+//   ① 순수 셈(shop/shelf-core.js): 설정 틀·범위 · 정렬 6가지 · 책장 나눔(수용 20~300 · 표찰로 작은 분야 함께) · 칸 나눔 · 책등 모양(같은 책 같은 모양 · 글자 대비) · 원형 배치·방위 · 찜 · 받은 줄 풀기 · 미리 보기 주소
+//   ② 클라우드(cloud/shop.js): /shop/shelf 묶음(칸 이름·그림 주소 줄임·판매지수는 순위만·주문 중·gzip) · /shop/cfg 의 shelf 칸 거름 · 웹앱 ◆shelf 덩어리 문법
+//   ③ 화면(RN_SHELF_UI=1 · 브라우저 하나 · 60초 제한 · 끝나면 닫음): 데스크톱·휴대폰 책장 · 키보드(→ ↓ Enter Esc ]) · aria · 담기 → 카트 · 찜 → 찜 목록 · 돌리기 · 확대 · 화면 사진(RN_SHOT 폴더)
+// 실행: node src/tests/tSHELF1111.js · 화면까지: RN_SHELF_UI=1 RN_SHOT=<사진 폴더> node src/tests/tSHELF1111.js (playwright 필요) · 시험 자료는 지어낸 책(손님 정보 없음)
+const fs = require('fs'); const path = require('path'); const http = require('http'); const zlib = require('zlib');
+let bad = 0; const ok = (c, m) => { if (!c) { bad++; console.log('  ❌', m); } else console.log('  ✓', m); };
+const ROOT = path.resolve(__dirname, '..', '..'); const BQS = require(path.join(ROOT, 'shop/shelf-core.js')); const SH = require(path.join(ROOT, 'cloud/shop.js'));
+(async () => {
+console.log('① 순수 셈');
+{ const c = BQS.cfgOf({}); ok(c.cap === 200 && c.sort0 === 'cat' && c.inner === 'reg' && c.sorts.length === 6 && c.fontsOn && c.spineImg, '기본: 책장 200권 · 주제 분류 · 그 안은 등록순 · 정렬 6 · 글꼴·책등 그림 켬');
+  const x = BQS.cfgOf({ cap: 5000, wMin: 30, wMax: 10, sort0: 'zz', designs: '3,99,7', fonts: ['jua', 'nope'], orient: 'q', zoom0: 9, sorts: ['title', 'price'] });
+  ok(x.cap === 300 && BQS.cfgOf({ cap: 1 }).cap === 20 && x.wMax >= x.wMin + 4 && x.designs.join() === '3,7' && x.fonts.join() === 'jua' && x.orient === 'rand' && x.zoom0 === 2.5 && x.sort0 === 'title', '범위 지킴(수용 20~300 · 두께 · 모르는 디자인·글꼴 버림 · 고를 수 없는 처음 정렬은 첫 정렬로)');
+  ok(BQS.FONTS.length === 20 && BQS.DESIGNS.length === 30 && BQS.CART_ANIMS.length === 5 && BQS.WISH_ANIMS.length === 5 && new Set(BQS.FONTS.map((f) => f.name)).size === 20, '무료 한글 글꼴 20 · 책등 디자인 30 · 담기 움직임 5 · 찜 움직임 5');
+  ok(BQS.SCHEMA.every((p) => p.k && p.label && p.type && 'def' in p && p.group) && JSON.stringify(BQS.cfgDiff({ cap: 120, title: '서가 책장' })) === '{"cap":120}', '설정 틀 한 줄마다 칸·이름·종류·기본·묶음 · 저장은 기본과 다른 칸만');
+  const pv = BQS.previewArg({ cap: 80, title: '책 방' }); ok(/^[A-Za-z0-9_-]+$/.test(pv) && BQS.previewCfg(pv).cap === 80 && BQS.previewCfg(pv).title === '책 방' && JSON.stringify(BQS.previewCfg('%%')) === '{}', '미리 보기 주소(한글 포함 · 깨진 값은 빈 설정)'); }
+const items = BQS.demoItems(1000);
+{ const c = BQS.cfgOf({ cap: 100 }); const P = BQS.plan(items.map((x) => ({ ...x })), c, 'cat'); const books = P.cases.reduce((a, cs) => a + cs.slots.filter((s) => !s.lab).length, 0);
+  ok(books === 1000 && P.cases.every((cs) => cs.n <= 100 && cs.slots.filter((s) => !s.lab).length === cs.n) && P.cases.length >= 10, `주제 분류: 1,000권 모두 · 책장마다 100권 안 · 책장 ${P.cases.length}개`);
+  const big = P.cases[0]; ok(/1\/\d/.test(big.name) && big.slots[0].lab, '큰 분야는 나눠 「분야 1/n」 · 책장 맨 앞에 표찰');
+  const packed = P.cases.find((cs) => cs.groups.length > 1); ok(!!packed && packed.slots.filter((s) => s.lab).length === packed.groups.length, '작은 분야는 남은 자리에 표찰을 세워 함께 꽂음');
+  const noPack = BQS.plan(items.map((x) => ({ ...x })), BQS.cfgOf({ cap: 100, pack: false }), 'cat'); ok(noPack.cases.every((cs) => cs.groups.length === 1), '함께 꽂기 끄면 분야마다 책장 따로');
+  const first = P.cases[0].slots.filter((s) => !s.lab); ok(first.every((x, i) => !i || String(first[i - 1].at) >= String(x.at)), '분야 안은 우리 등록순(새로 들어온 책 먼저)');
+  const T = BQS.plan(items.map((x) => ({ ...x })), c, 'title'); ok(T.cases[0].slots[0].lab.startsWith('ㄱ') && T.cases.some((cs) => cs.slots.some((s) => s.lab && /A–Z/.test(s.lab))), '상품명: 첫소리 ㄱ부터 · 영문은 A–Z 표찰');
+  const Pr = BQS.plan(items.map((x) => ({ ...x })), c, 'price'); const pl = Pr.cases.flatMap((cs) => cs.slots.filter((s) => !s.lab).map((s) => s.p)); ok(pl.every((p, i) => !i || pl[i - 1] <= p) && /아래/.test(Pr.cases[0].slots[0].lab), '가격대: 낮은 값부터 · 「5천원 아래」 같은 표찰');
+  const R = BQS.plan(items.map((x) => ({ ...x })), c, 'reg'); ok(R.cases.length === 10 && R.cases[1].sub === '101~200번째' && !R.cases[0].slots[0].lab, '등록순: 한 줄로 100권씩 책장 10개(표찰 없음)');
+  const S = BQS.plan(items.map((x) => ({ ...x })), c, 'sales'); const sr = S.cases[0].slots.map((x) => x.sr || 1e9); ok(sr.every((v, i) => !i || sr[i - 1] <= v), '판매량: 판매 순위 차례(순위 없는 책은 뒤)');
+  const Rc = BQS.plan(items.map((x) => ({ ...x })), BQS.cfgOf({ cap: 100, picks: 'demo500\ndemo7' }), 'rec'); ok(Rc.cases[0].slots[0].id === 'demo500' && Rc.cases[0].slots[1].id === 'demo7', '추천순: 정범님이 고른 추천 책이 맨 앞(적은 차례)');
+  const grow = BQS.plan(BQS.demoItems(16000).map((x) => x), BQS.cfgOf({}), 'reg'); ok(grow.cases.length === 80, '상품이 늘면 책장이 저절로 늘어남(16,000권 → 200권 책장 80개)'); }
+{ const sl = [{ lab: 'A' }, ...items.slice(0, 10), { lab: 'B' }, ...items.slice(10, 13)]; const p = BQS.split(sl, 3); ok(p.length === 3 && p.flat().length === sl.length && p.every((b) => !b.length || !b[b.length - 1].lab), '칸 나눔: 모두 담고 표찰이 칸 끝에 홀로 남지 않음');
+  ok(BQS.bays(1400, BQS.cfgOf({}), 1) === 3 && BQS.bays(360, BQS.cfgOf({}), 1) === 1 && BQS.bays(1400, BQS.cfgOf({}), 2) === 1, '넓이 → 칸 수(넓으면 3칸 · 휴대폰 1칸 · 크게 보면 줄어듦)'); }
+{ const c = BQS.cfgOf({}); const a = BQS.look(items[3], c), b = BQS.look(items[3], c), d = BQS.look(items[3], BQS.cfgOf({ seed: 2 }));
+  ok(JSON.stringify(a) === JSON.stringify(b) && JSON.stringify(a) !== JSON.stringify(d), '같은 책은 늘 같은 책등(섞기 번호를 바꾸면 달라짐)');
+  const L = items.slice(0, 400).map((x) => BQS.look(x, c)); ok(new Set(L.map((x) => x.d)).size >= 28 && new Set(L.map((x) => x.f)).size >= 18 && new Set(L.map((x) => x.c)).size >= 30 && L.some((x) => x.o === 'v') && L.some((x) => x.o === 'h'), '랜덤: 디자인·글꼴·색·글 방향이 고루 섞임');
+  ok(L.every((x) => BQS.contrast(x.c, x.k) >= 3), '책등 글자색은 바탕과 대비 3:1 넘음(큰 글씨 기준)');
+  const V = BQS.look(items[0], BQS.cfgOf({ orient: 'v', designs: ['4'], fonts: ['jua'], palette: 'mono' })); ok(V.o === 'v' && V.d === 4 && V.f === 'jua' && BQS.PALETTES.mono.includes(V.c), '하나 고정(세로쓰기·디자인·글꼴·색 묶음)');
+  const thin = BQS.look({ id: 'x', pg: 60 }, c), thick = BQS.look({ id: 'x', pg: 900 }, c); ok(thin.w < thick.w && thick.w <= c.wMax, '쪽수가 많을수록 두꺼운 책');
+  ok(/text=/.test(BQS.fontUrl('jua', '가나다가')) && decodeURIComponent(BQS.fontUrl('jua', '가나다가').split('text=')[1]) === '가나다', '글꼴은 그 책장에 쓰인 글자만 받음(text=)'); }
+{ const g = BQS.ring(4, 1000); ok(g.step === 90 && g.R === 500 && BQS.compass(1, 0, 4) === '서' && BQS.compass(2, 0, 4) === '남' && BQS.compass(3, 0, 4) === '동' && BQS.compass(0, 0, 4) === '북', '4개 = 북·서·남·동(다음 책장이 서쪽 → 오른쪽 화살표로 북쪽으로 옴)');
+  ok(BQS.ring(1, 900).R === 0 && BQS.ring(80, 1000).R > 10000 && BQS.mod(-1, 5) === 4 && BQS.mod(7, 5) === 2, 'N개 일반화(1개는 안 돎 · 끝과 끝이 이어짐)'); }
+{ let w = []; w = BQS.wishToggle(w, items[0]).wish; w = BQS.wishToggle(w, items[1]).wish; const r = BQS.wishToggle(w, items[0]); ok(w.length === 2 && w[0].id === items[1].id && !r.on && r.wish.length === 1 && BQS.wishHas(w, items[0].id), '찜: 넣기(최근 먼저) · 다시 누르면 빼기'); }
+console.log('② 클라우드 /shop/shelf');
+{ const snap = (n, id) => { const v = (DB[n] || {})[id]; return { id, exists: !!v, data: () => v }; }; const DB = {}; const col = (n) => (DB[n] = DB[n] || {});
+  const C = (n) => { const q = (flt) => ({ where: (f, op, v) => q([...flt, [f, op, v]]), select: () => q(flt), get: async () => { const docs = Object.keys(col(n)).filter((id) => flt.every(([f, op, v]) => (op === '==' ? col(n)[id][f] === v : true))).map((id) => snap(n, id)); return { size: docs.length, forEach: (f) => docs.forEach(f) }; } }); return { ...q([]), doc: (id) => ({ _n: n, id, get: async () => snap(n, id), set: async (v) => { col(n)[id] = { ...(col(n)[id] || {}), ...v }; } }) }; };
+  const db = { getAll: async (...r) => r.map((x) => snap(x._n, x.id)) }; const FV = { serverTimestamp: () => new Date(), arrayUnion: (...a) => a };
+  for (let i = 0; i < 4500; i++) { col('prd_listings')['L' + i] = { status: '판매중', active: true, qty: 1, price: 3000 + (i % 9) * 1000, grade: '상', sku: 'A01SECRET' + i, title: '시험 책 ' + i, bookId: 'b' + i, registeredAt: new Date(Date.parse('2026-10-01') + i * 6e4).toISOString() };
+    col('prd_books')['b' + i] = { author: '지은이' + (i % 7), categories: [{ path: '국내도서>' + ['소설/시/희곡', '과학', '역사'][i % 3] + '>x' }], images: { front: 'https://image.aladin.co.kr/product/1/' + i + '/cover.jpg', spine: i % 2 ? 'https://image.aladin.co.kr/product/1/' + i + '/spine.jpg' : null, back: { stored: 'covers/b' + i + '_back.jpg' } }, pages: 100 + i % 400 };
+    if (i % 5 === 0) col('prd_book_metrics')['b' + i] = { salesPoint: 10000 - i }; }
+  col('shop_holds').L3 = { on: 1, no: 'BQ1' }; col('shop_holds').L4 = { on: 1, sold: 1, until: new Date(Date.now() + 864e5).toISOString() };
+  col('app_settings').shop = { open: 1, shelf: { cap: 120, wood: 'walnut', picks: 'L1\nL2', bad: { x: 1 }, 'no-key': 1, html: '<b>x</b>' } };
+  const SHOP = SH.makeShop({ db, C, FV, log: () => {} }); const srv = http.createServer(async (req, res) => { const p0 = (req.url || '/').split('?')[0]; if (await SHOP.handle(req, res, p0)) return; res.writeHead(404); res.end(); });
+  await new Promise((r) => srv.listen(0, '127.0.0.1', r)); const base = 'http://127.0.0.1:' + srv.address().port;
+  const get = (p, gz) => new Promise((ok2) => http.get(base + p, { headers: gz ? { 'Accept-Encoding': 'gzip' } : {} }, (r) => { const ch = []; r.on('data', (d) => ch.push(d)); r.on('end', () => { let b = Buffer.concat(ch); const raw = b.length; if (r.headers['content-encoding'] === 'gzip') b = zlib.gunzipSync(b); ok2({ s: r.statusCode, h: r.headers, raw, j: JSON.parse(b.toString('utf8')) }); }); }));
+  const a = await get('/shop/shelf?k=0', true), b = await get('/shop/shelf?k=1');
+  ok(a.s === 200 && a.j.kn === 2 && a.j.n === 4499 && a.j.rows.length === 4000 && b.j.rows.length === 499 && a.h['content-encoding'] === 'gzip' && a.raw < JSON.stringify(a.j).length / 3, `판매중 4,499권(다른 판매처 팔림 1권 뺌)을 4,000권씩 2묶음 · gzip ${Math.round(a.raw / 1024)}KB`);
+  const L = [...BQS.unpack(a.j), ...BQS.unpack(b.j)]; const x1 = L.find((x) => x.id === 'L1'), x3 = L.find((x) => x.id === 'L3'), x5 = L.find((x) => x.id === 'L5');
+  ok(x1 && x1.c === '과학' && x1.sp === 'https://image.aladin.co.kr/product/1/1/spine.jpg' && /firebasestorage.*b1_back/.test(decodeURIComponent(x1.bk)) && x1.pg === 101 && x1.at === '2026-10-01' && x3.st === 'o', '풀면: 분야·책등 그림·뒤표지·쪽수·들어온 날 · 주문 중 표시');
+  ok(L.find((x) => x.id === 'L0').sr === 1 && x5.sr === 2 && !L.find((x) => x.id === 'L1').sr && !JSON.stringify(a.j).includes('salesPoint') && !JSON.stringify(a.j).includes('9995') && !JSON.stringify(a.j).includes('SECRET'), '판매지수 숫자는 안 나가고 순위만 · SKU 없음');
+  ok(L.every((x, i) => !i || String(L[i - 1].at) <= String(x.at)), '줄 차례 = 등록순(오래된 것 먼저 — 손님 화면이 뒤집음)');
+  const cfg = (await get('/shop/cfg')).j; ok(cfg.shelf.cap === 120 && cfg.shelf.wood === 'walnut' && cfg.shelf.picks === 'L1 L2' && !('bad' in cfg.shelf) && !('no-key' in cfg.shelf) && cfg.shelf.html === 'bx/b', '/shop/cfg 에 서가 책장 설정(꼴만 지킴 — 묶음·이상한 칸 이름 버림 · 꺾쇠 없앰)');
+  ok(SH.shelfPub(null) && JSON.stringify(SH.shelfPub([1])) === '{}', '설정이 없거나 이상하면 빈 칸'); srv.close(); }
+{ const T = fs.readFileSync(path.join(ROOT, 'src/app.html'), 'utf8'); const i = T.indexOf('/* ◆shelf 시작'), j = T.indexOf('/* ◆shelf 끝 */'); let er = null; try { new Function(T.slice(i, j)); } catch (e) { er = e.message; }
+  ok(i > 0 && j > i && !er && /bqShelfCfgHtml\(\)/.test(T) && /bqShelfWire\(sh\)/.test(T) && !/\balert\(|\bconfirm\(|\bprompt\(/.test(T.slice(i, j)), '웹앱 ⚙ 우리숍 › 📚 서가 책장 설정 덩어리(문법 · 화면 · 연결 · 브라우저 창 0)');
+  const H = fs.readFileSync(path.join(ROOT, 'hosting/build.js'), 'utf8'); ok(/shop\/shelf-core\.js/.test(H), '관리 사이트 결과물에 설정 틀(shop/shelf-core.js) 함께'); }
+for (const f of ['shop/shelf.js', 'shop/shelf-core.js', 'shop/shop.js']) { const t = fs.readFileSync(path.join(ROOT, f), 'utf8'); ok(!/\balert\(|\bconfirm\(|\bprompt\(/.test(t) && !/console\.log/.test(t), f + ': 브라우저 창·console.log 없음'); }
+if (process.env.RN_PORT) { console.log('④ 웹앱 🛍 우리숍 › 📚 서가 책장 설정(RN_PORT · pw/ 안 harness.js · 서버의 shop/ 에 shelf-core.js)');
+  await require(path.join(process.cwd(), 'harness.js'))(async (p) => { const dlg = []; p.on('dialog', (d) => { dlg.push(d.message()); d.dismiss().catch(() => {}); });
+    const r = await p.evaluate(async () => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; S.user = S.user || { email: 'tester@x' }; await db.collection('app_settings').doc('shop').set({ open: 0, shelf: { cap: 120 } }); S.app = S.app || {}; S.app.bqCfg = { open: 0, shelf: { cap: 120 } }; openShopAdm(); await Wt(800);
+      const sh = document.getElementById('sheet'); const box = sh.querySelector('#bq_shelf'); o.card = !!box; box.open = true; box.dispatchEvent(new Event('toggle')); for (let i = 0; i < 30 && !sh.querySelector('#bqs_cap'); i++) await Wt(200);
+      o.cap = (sh.querySelector('#bqs_cap') || {}).value; o.groups = sh.querySelectorAll('#bq_shelf fieldset').length; o.designs = sh.querySelectorAll('#bq_shelf [data-bqm="designs"] input').length; o.fonts = sh.querySelectorAll('#bq_shelf [data-bqm="fonts"] input').length;
+      const cap = sh.querySelector('#bqs_cap'); cap.value = '250'; cap.dispatchEvent(new Event('input', { bubbles: true })); const w = sh.querySelector('#bqs_wood'); w.value = 'black'; w.dispatchEvent(new Event('change', { bubbles: true }));
+      o.pv = sh.querySelector('#bqs_pv').href; const sv = sh.querySelector('#bqs_save'); window.__FSW = []; sv.click(); await Wt(200); o.once = (window.__FSW || []).length; sv.click(); await Wt(600);
+      const wr = (window.__FSW || []).find((x) => x.n === 'app_settings' && x.id === 'shop'); o.saved = wr && wr.v && wr.v.shelf; o.w = JSON.stringify((window.__FSW || []).map((x) => [x.n + '/' + x.id, Object.keys(x.v || {})])).slice(0, 200); o.keep = S._bqShelfLast; return o; }).catch((e) => { bad++; console.log('  ❌ 관리 화면 시험 멈춤', e.message); return null; }); if (!r) return;
+    const pv = BQS.previewCfg(decodeURIComponent(r.pv.split('cfg=')[1] || '')); ok(r.card && r.cap === '120' && r.groups === 6 && r.designs === 30 && r.fonts === 20, `설정 칸을 설정 틀에서 그림(묶음 ${r.groups} · 디자인 ${r.designs} · 글꼴 ${r.fonts} · 저장된 수용 120)`);
+    ok(pv.cap === 250 && pv.wood === 'black' && /booksqueen\.com\/#\/shelf\?cfg=/.test(r.pv), '고치는 대로 미리 보기 주소가 따라감(저장 안 함)');
+    ok(r.once === 0 && r.saved && r.saved.cap === 250 && r.saved.wood === 'black' && Object.keys(r.saved).length === 2 && r.keep.cap === 250 && !dlg.length, '저장은 두 번 눌러야 · 기본과 다른 칸만 shelf에 · 브라우저 창 0 ' + JSON.stringify(r.saved) + ' ' + r.w);
+    await p.screenshot({ path: path.join(process.env.RN_SHOT || require('os').tmpdir(), 'shelf_admin_cfg.png'), fullPage: false }); }); }
+if (!process.env.RN_SHELF_UI) { console.log(bad ? `❌ tSHELF1111 ${bad}개 실패` : '✓ tSHELF1111 순수 셈·클라우드 통과 (화면 시험은 RN_SHELF_UI=1)'); process.exit(bad ? 1 : 0); }
+
+console.log('③ 화면(브라우저 하나 · 60초 제한)');
+const SHOT = process.env.RN_SHOT || require('os').tmpdir(); const { chromium } = require('playwright');
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
+const demoRows = BQS.demoItems(1500); const pubRows = demoRows.map((x) => [x.id, x.t, x.a, x.c, x.p, x.lp, x.g, x.at, null, null, null, x.st, x.sr || null, x.pg, x.pb]);
+const srv = http.createServer((req, res) => { const u = new URL(req.url, 'http://x'); if (u.pathname === '/shop/cfg') { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, open: 1, name: '북스퀸', shipFee: 3500, maxItems: 20, n: 1500, cats: [], pay: { how: 'wait' }, biz: {}, shelf: { cap: 150 } })); }
+  if (u.pathname === '/shop/shelf') { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, n: 1500, k: 0, kn: 1, cols: SH.SHELF_COLS, pre: SH.SHELF_PRE, rows: pubRows })); }
+  const f = path.join(ROOT, 'shop', u.pathname.replace(/^\/s\//, '').replace(/\.\./g, '') || 'index.html'); if (!u.pathname.startsWith('/s/') || !fs.existsSync(f)) { res.writeHead(404); return res.end('{}'); } res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'text/plain' }); fs.createReadStream(f).pipe(res); });
+await new Promise((r) => srv.listen(0, '127.0.0.1', r)); const base = 'http://127.0.0.1:' + srv.address().port;
+const kill = setTimeout(() => { console.log('  ❌ 60초 넘음 — 브라우저를 닫고 끝냄'); process.exit(1); }, 60000);
+const br = await chromium.launch({ args: ['--disable-gpu', '--no-sandbox'] });
+try {
+  const ctx = await br.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 }); const p = await ctx.newPage(); const errs = [], dlg = []; p.on('pageerror', (e) => errs.push(e.message)); p.on('dialog', (d) => { dlg.push(d.message()); d.dismiss().catch(() => {}); });
+  if (!process.env.RN_FONTS) await p.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  await p.addInitScript((u) => { window.BQ_API = u; try { localStorage.setItem('bq-shelf-view', JSON.stringify({ cartAnim: 'arc', wishAnim: 'wink' })); } catch (e) {} }, base); await p.goto(base + '/s/index.html#/shelf'); await p.waitForSelector('.bqs-case.cur .sp', { timeout: 15000 });
+  const A = await p.evaluate(() => { const c = document.querySelector('.bqs-case.cur'); return { n: document.querySelectorAll('.bqs-case').length, sp: c.querySelectorAll('.sp').length, bays: c.querySelectorAll('.bqs-bay').length, lab: c.querySelectorAll('.lab').length, aria: c.getAttribute('aria-label'), tab: [...c.querySelectorAll('.sp')].filter((s) => s.tabIndex === 0).length, al: c.querySelector('.sp').getAttribute('aria-label'), arrows: !document.querySelector('.bqs-arrow.r').hidden, here: document.querySelector('.bqs-here small').textContent }; });
+  ok(A.n === 3 && A.sp > 50 && A.sp <= 150 && A.bays === 3 && A.lab >= 1 && /^책장 1\/\d+: /.test(A.aria) && A.tab === 1 && /원/.test(A.al) && A.arrows && /북쪽 · 다음 책장은/.test(A.here), `데스크톱: 책장 3개만 DOM(지금+양옆) · 책 ${A.sp}권 · 칸 ${A.bays} · 표찰 · aria · Tab 자리 하나 · 방위`);
+  await p.screenshot({ path: path.join(SHOT, 'shelf_desktop.png') });
+  const sp1 = p.locator('.bqs-case.cur .sp').nth(4); await sp1.hover(); await p.waitForTimeout(500); const tipOn = await p.evaluate(() => !document.querySelector('.bqs-tip').hidden && /앞표지/.test(document.querySelector('.bqs-tip').textContent)); ok(tipOn, '책등에 마우스 → 앞·뒤 표지 자리와 책 정보');
+  await p.screenshot({ path: path.join(SHOT, 'shelf_desktop_tip.png') });
+  await p.focus('.bqs-case.cur .sp[tabindex="0"]'); const f0 = await p.evaluate(() => document.activeElement.dataset.id); await p.keyboard.press('ArrowRight'); const f1 = await p.evaluate(() => document.activeElement.dataset.id); await p.keyboard.press('ArrowDown'); const f2 = await p.evaluate(() => ({ id: document.activeElement.dataset.id, t: document.activeElement.tabIndex }));
+  ok(f0 !== f1 && f2.id !== f1 && f2.t === 0, '키보드: → 옆 책 · ↓ 아래 선반 · Tab 자리가 따라감');
+  await p.keyboard.press('Enter'); await p.waitForTimeout(200); const pop = await p.evaluate(() => ({ on: !document.querySelector('.bqs-pop').hidden, out: !!document.querySelector('.sp.out'), f: document.activeElement.closest('.bqs-pop') ? 1 : 0 })); ok(pop.on && pop.out && pop.f, 'Enter → 그 자리에 담기·찜 창(책이 앞으로 빠짐 · 초점이 창으로)');
+  await p.screenshot({ path: path.join(SHOT, 'shelf_desktop_pop.png') });
+  await p.keyboard.press('Escape'); ok(await p.evaluate(() => document.querySelector('.bqs-pop').hidden && document.activeElement.classList.contains('sp')), 'Esc → 창 닫고 책등으로 초점 돌아옴');
+  await p.click('.bqs-case.cur .sp:not(.held) >> nth=10'); await p.click('.bqs-pop [data-a="cart"]'); await p.waitForTimeout(350); const fly = await p.evaluate(() => document.querySelectorAll('.bqs-fly').length); await p.screenshot({ path: path.join(SHOT, 'shelf_desktop_fly.png') }); await p.waitForTimeout(1000);
+  const ct = await p.evaluate(() => ({ n: JSON.parse(localStorage.getItem('bq-cart') || '[]').length, b: document.querySelector('.bqs-cn').textContent, fly: document.querySelectorAll('.bqs-fly').length, top: document.querySelector('#cartN').textContent })); ok(fly === 1 && ct.n === 1 && ct.b === '1' && ct.top === '1' && ct.fly === 0, '장바구니: 책이 카트로 날아감(움직임 끝나면 사라짐) · 카트·머리줄 수 1');
+  await p.click('.bqs-case.cur .sp:not(.held) >> nth=20'); await p.click('.bqs-pop [data-a="wish"]'); await p.waitForTimeout(250); const wz = await p.evaluate(() => ({ say: document.querySelectorAll('.bqs-fx.say').length, w: JSON.parse(localStorage.getItem('bq-wish') || '[]').length, mark: document.querySelectorAll('.bqs-case.cur .sp.wished').length, n: document.querySelector('.bqs-wn').textContent }));
+  await p.screenshot({ path: path.join(SHOT, 'shelf_desktop_wish.png') }); ok(wz.say === 1 && wz.w === 1 && wz.mark === 1 && wz.n === '1', '찜: 윙크하며 "데려가 주세요!" · 책등에 빨간 책갈피 · 찜 수 1');
+  const before = await p.evaluate(() => document.querySelector('.bqs-here b').textContent); await p.click('.bqs-arrow.r'); await p.waitForTimeout(250); const mid = await p.evaluate(() => document.querySelector('.bqs').classList.contains('turning')); await p.screenshot({ path: path.join(SHOT, 'shelf_desktop_turn.png') }); await p.waitForTimeout(1100);
+  const T2 = await p.evaluate(() => ({ h: document.querySelector('.bqs-here b').textContent, i: document.querySelector('.bqs-case.cur').dataset.i, n: document.querySelectorAll('.bqs-case').length, hash: location.hash }));
+  ok(mid && T2.h !== before && T2.i === '1' && T2.n === 3 && /i=1/.test(T2.hash), `오른쪽 화살표 → 3D로 돌아 다음 책장(${T2.h}) · 주소에 자리`);
+  await p.keyboard.press('['); await p.waitForTimeout(1200); await p.keyboard.press('['); await p.waitForTimeout(1200); const wrap = await p.evaluate(() => { const c = document.querySelector('.bqs-case.cur'); return { i: +c.dataset.i, N: +c.getAttribute('aria-label').match(/\/(\d+)/)[1] }; }); ok(wrap.i === wrap.N - 1, '[ 두 번 → 첫 책장 앞으로 = 마지막 책장(끝과 끝이 이어짐)');
+  await p.click('[data-z="+"]'); await p.click('[data-z="+"]'); const zz = await p.evaluate(() => ({ z: getComputedStyle(document.querySelector('.bqs')).getPropertyValue('--z').trim(), w: document.querySelector('.bqs-case.cur .sp').getBoundingClientRect().width, bays: document.querySelectorAll('.bqs-case.cur .bqs-bay').length, ls: localStorage.getItem('bq-shelf-zoom') }));
+  ok(+zz.z === 1.3 && zz.bays === 2 && zz.ls === '1.3', `확대 + 두 번 → 130%(칸 ${zz.bays} · 기억)`); await p.mouse.move(700, 500); await p.keyboard.down('Control'); await p.mouse.wheel(0, 300); await p.keyboard.up('Control'); await p.waitForTimeout(200); ok(+(await p.evaluate(() => localStorage.getItem('bq-shelf-zoom'))) < 1.3, 'Ctrl+휠 → 작게');
+  await p.selectOption('.bqs-sort', 'price'); await p.waitForTimeout(200); const ps = await p.evaluate(() => ({ lab: document.querySelector('.bqs-case.cur .lab span').textContent, ls: localStorage.getItem('bq-shelf-sort') })); ok(/아래/.test(ps.lab) && ps.ls === '"price"', '정렬 → 가격대(표찰 「…아래」) · 고른 정렬 기억');
+  await p.goto(base + '/s/index.html#/wish'); await p.waitForSelector('.wcard'); ok((await p.locator('.wcard').count()) === 1, '♡ 찜 목록 화면');
+  await p.goto(base + '/s/index.html#/shelf'); await p.waitForSelector('.bqs-case.cur .sp'); ok(await p.evaluate(() => document.querySelector('.bqs-sort').value === 'price'), '다시 오면 전에 고른 정렬로');
+  ok(!errs.length && !dlg.length, '오류 0 · 브라우저 창 0 ' + errs.join(' | ')); await ctx.close();
+  const m = await br.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true }); const q = await m.newPage(); const e2 = []; q.on('pageerror', (e) => e2.push(e.message)); await q.route(/fonts\.(googleapis|gstatic)\.com/, (r) => r.abort());
+  await q.addInitScript((u) => { window.BQ_API = u; }, base); await q.goto(base + '/s/index.html#/shelf'); await q.waitForSelector('.bqs-case.cur .sp', { timeout: 15000 });
+  const M = await q.evaluate(() => ({ bays: document.querySelectorAll('.bqs-case.cur .bqs-bay').length, sw: document.documentElement.scrollWidth, rows: new Set([...document.querySelectorAll('.bqs-case.cur .sp')].map((s) => Math.round(s.getBoundingClientRect().top))).size }));
+  ok(M.bays === 1 && M.sw <= 392 && M.rows >= 6, `휴대폰: 한 칸 · 선반 ${M.rows}줄로 아래로 이어짐 · 가로 넘침 없음(넓이 ${M.sw})`); await q.screenshot({ path: path.join(SHOT, 'shelf_mobile.png') }); await q.screenshot({ path: path.join(SHOT, 'shelf_mobile_full.png'), fullPage: true });
+  await q.tap('.bqs-case.cur .sp >> nth=6'); await q.waitForTimeout(200); await q.screenshot({ path: path.join(SHOT, 'shelf_mobile_pop.png') }); ok(await q.evaluate(() => !document.querySelector('.bqs-pop').hidden), '휴대폰: 눌러서 담기·찜 창'); ok(!e2.length, '휴대폰 오류 0 ' + e2.join(' | ')); await m.close();
+} finally { await br.close(); srv.close(); clearTimeout(kill); }
+console.log(bad ? `❌ tSHELF1111 ${bad}개 실패` : '✓ tSHELF1111 모두 통과');
+process.exit(bad ? 1 : 0);
+})().catch((e) => { console.log('  ❌ 시험 멈춤', e.stack || e); process.exit(1); });
