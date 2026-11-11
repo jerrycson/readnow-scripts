@@ -352,12 +352,16 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
   let nextOrd = 0, nextPrd = 0, nextInq = 0, nextStl = 0;
   async function tick(why) { if (M.busy || !mine()) return; M.busy = true; try { if (!(await keyReady()).ok) return; const cr = await credLoad(); if (!cr) return; if (M.cool > now()) return;
       if (st.test && st.test.auth) return; /* 인증이 틀린 값으로 되풀이해 두드리지 않음 — 새 값을 넣거나 다시 시험하면 풀림 */
-      while (M.jobs.length && wOn()) { const j = M.jobs.shift(); const jr = await jobRun(j); if (jr && jr.wait) { M.jobs.unshift(j); M.jres[j.id] = { st: 'queued', at: now(), wait: String(jr.why || '').slice(0, 200) }; break; } if (M.cool > now()) break; }
+      const jobs = async () => { while (M.jobs.length && wOn()) { const j = M.jobs.shift(); const jr = await jobRun(j); if (jr && jr.wait) { M.jobs.unshift(j); M.jres[j.id] = { st: 'queued', at: now(), wait: String(jr.why || '').slice(0, 200) }; break; } if (M.cool > now()) break; } }; /* (rel3) 읽기 사이사이에도 — 정산·문의 읽기가 길어도 맡긴 쓰기(판매중지·발송)가 그 뒤로 밀리지 않게 */
+      await jobs();
       if (M.net && !M.net.ok) { nextOrd = Math.min(nextOrd, now() + 60e3); return; } /* (nvfix1) 🛑 길이 막혔으면 남은 일(읽기 포함)은 대기 — 1분 뒤 다시 확인 */
       const C = NC(); if (now() >= nextOrd) { nextOrd = now() + Math.max(1, +C.ordMin || 10) * 60e3; const r1 = await pullOrd(why || '주기'); if (r1 && r1.net) { nextOrd = now() + 60e3; return; } } /* (nvfix1) 길이 바뀌어 멈췄으면 상품 읽기로 넘어가지 않음 · 1분 뒤 다시 */
       if (now() >= nextPrd) { nextPrd = now() + Math.max(0.5, +C.prdH || 6) * 3600e3; const r2 = await pullPrd(why || '주기'); if (r2 && r2.net) { nextPrd = now() + 60e3; return; } }
+      await jobs(); if ((M.net && !M.net.ok) || M.cool > now()) return;
       if (M.cool <= now() && now() >= nextInq) { nextInq = now() + Math.max(5, +C.inqMin || 30) * 60e3; const r3 = await pullInq(why || '주기'); if (r3 && r3.net) { nextInq = now() + 60e3; return; } } /* (0.1.23 naver3) 문의 30분 */
-      if (M.cool <= now() && now() >= nextStl) { nextStl = now() + Math.max(1, +C.stlH || 6) * 3600e3; const r4 = await pullStl(why || '주기'); if (r4 && r4.net) nextStl = now() + 60e3; } } /* (0.1.23 naver3) 정산 6시간 */
+      await jobs(); if ((M.net && !M.net.ok) || M.cool > now()) return;
+      if (M.cool <= now() && now() >= nextStl) { nextStl = now() + Math.max(1, +C.stlH || 6) * 3600e3; const r4 = await pullStl(why || '주기'); if (r4 && r4.net) nextStl = now() + 60e3; }
+      await jobs(); } /* (0.1.23 naver3) 정산 6시간 */
     catch (e) { log('네이버 돌기 오류: ' + e.message); } finally { M.busy = false; } }
   function kick(ms) { clearTimeout(M.t); M.t = setTimeout(() => tick('바로').catch(() => {}), ms || 500); }
   function start() { setInterval(() => tick().catch(() => {}), TEST ? 1000 : 60e3); if (mine()) setTimeout(() => keyReady().catch(() => {}), TEST ? 100 : 3000); kick(TEST ? 400 : 20e3); }
