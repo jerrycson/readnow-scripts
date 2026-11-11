@@ -1,2 +1,2 @@
-blist=ItemEditorChoice&cid=1
-# 1351321424
+adapt=1
+# 1310410241
