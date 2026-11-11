@@ -139,9 +139,9 @@ require('./harness.js')(G(async (p) => {
   const d = await p.evaluate(() => ({ b: document.getElementById('dlp').getBoundingClientRect().bottom, t: document.getElementById('tabs').getBoundingClientRect().top }));
   ok(d.b <= d.t, '📱 내려받기 띠가 아래 탭 줄(홈·고객 단추)을 덮지 않음', d);
   const tb = await p.evaluate(() => [...document.querySelectorAll('#tabs > button')].filter((b) => getComputedStyle(b).display !== 'none').map((b) => b.dataset.tab || 'more'));
-  ok(tb.join() === 'home,products,orders,purchase,more', '⑫ 휴대폰 아래 탭 = 홈·상품·주문·매입·⋯', tb);
+  ok(tb.join() === 'home,purchase,products,ledger,orders,more', '⑫ 휴대폰 아래 탭 = 홈·매입·상품·🧾 통합 장부·주문·⋯ (11/11 nav1 일의 흐름 차례)', tb);
   await p.click('[data-ux2tmore]'); await p.waitForTimeout(200); const mm = await p.evaluate(() => [...document.querySelectorAll('#ux2tmenu [data-ux2tgo]')].map((b) => b.dataset.ux2tgo));
-  ok(mm.join() === 'search,biz,market,projects', '⑫ ⋯ 안 = 고객·경영·시장조사·프로젝트(판매자는 시장조사 안)', mm);
+  ok(mm.join() === 'channels,search,biz,research,market,projects', '⑫ ⋯ 안 = 판매처·고객·경영·연구·시장조사·프로젝트(판매자는 시장조사 안)', mm);
   await p.click('#ux2tmenu [data-ux2tgo="search"]'); await p.waitForTimeout(600); ok(await p.evaluate(() => S.tab === 'search' && !document.getElementById('ux2tmenu') && document.querySelector('[data-ux2tmore]').classList.contains('on') && /고객/.test(document.querySelector('[data-ux2tmore]').textContent)), '⑫ ⋯에서 고르면 그 탭 · ⋯ 자리에 지금 탭 이름');
-  await p.evaluate(() => { ux2Put('tabs5', 0); renderTabs(); }); ok(await p.evaluate(() => [...document.querySelectorAll('#tabs > button')].filter((b) => getComputedStyle(b).display !== 'none').length === 8), '⑫ 끄면 탭 모두(판매자는 ⑭로 시장조사 안)'); await p.evaluate(() => localStorage.removeItem('rn-ux2'));
+  await p.evaluate(() => { ux2Put('tabs5', 0); renderTabs(); }); ok(await p.evaluate(() => [...document.querySelectorAll('#tabs > button')].filter((b) => getComputedStyle(b).display !== 'none').length === 11), '⑫ 끄면 탭 모두(판매자는 ⑭로 시장조사 안 · 11/11 통합 장부·판매처·연구 더해 11)'); await p.evaluate(() => localStorage.removeItem('rn-ux2'));
 }), { vp: { width: 390, height: 844 }, touch: true })).then(() => { console.log(bad ? `❌ tUX1 실패 ${bad}` : '✓ tUX1 통과'); process.exit(bad ? 1 : 0); });
