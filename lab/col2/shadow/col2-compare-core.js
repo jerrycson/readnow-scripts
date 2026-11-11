@@ -54,6 +54,12 @@
     if (res.none && prev.d && !prev.none) r = 'none'; else if (grp !== 'basic' && !(age < (o.oldH || 6))) r = 'old';
     else if (grp === 'basic' && rows.length && rows.every((x) => x.k === 'move') && !(age < (o.moveH || 6))) r = 'move'; /* 값·상태·표지만 다르고 운영이 6시간 넘게 전에 읽음 = 때가 다름(까닭 있음) */
     else r = 'diff';
+    /* (11/12 col2rep6 · 진단 11/12 JS-MAIN 구글 북스 '까닭 모를 다름' 201 — 다름 줄(rows)이 비어 무엇이 다른지 못 봄 · 운영 값은 400~740시간 전)
+     *  칸마다 견줌이 빈 까닭: 한쪽이 '없음'(none)이면 칸을 견주지 않음 · 운영 칸에 받아 둔 값(d)이 없음 · 지문에만 드는 깊은 칸이 다름
+     *  → 운영은 '없음', 그림자는 찾음 = '운영 칸 빔(그림자만 값)'(fill · 까닭 있음) · 나머지는 그대로 '다름'이되 지문·없음·원문 유무를 한 줄로 남김(다음 진단에서 까닭을 봄) */
+    if (r === 'diff' && !rows.length) { const pN = !!prev.none, sN = !!res.none, pD = 'd' in prev && prev.d != null;
+      if (pN && !sN) r = 'fill';
+      rows.push({ f: '(지문)', k: r === 'fill' ? 'fill' : 'diff', prod: `${pN ? '없음' : pD ? '값 있음' : '받아 둔 값 없음'} · ${String(prev.sig || '').slice(0, 24)}`, shadow: `${sN ? '없음' : '값 있음'} · ${String(sg || '').slice(0, 24)}` }); }
     return { verdict: 'diff', reasons: [r], rows: rows.slice(0, 8), sig: sg, prodSig: prev.sig || null, ageH: Number.isFinite(age) ? Math.round(age * 10) / 10 : null }; }
   /* 기본 정보 결과에서 시간이 지나면 바뀌는 칸(값·판매 상태·표지 주소·평점) — 이것만 다르면 '때가 다름' · 지문에 들지 않는 칸(주소 등)은 견주지 않음 */
   const EXT_MOVE = new Set(['priceList', 'priceSales', 'listPrice', 'status', 'cover', 'rating', 'ratingN', 'reviewN', 'salesIndex', 'salesPoint', 'rank']);
