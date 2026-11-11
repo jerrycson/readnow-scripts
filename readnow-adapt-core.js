@@ -7,7 +7,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.1.4'; // (0.1.4 adapt4) SP 묶음 4판 spBatchPlan3·spMultiLearn·spKeepDays·spKeepPerH · 지문 견줌 양쪽 시험 조각만 // (0.1.3 adapt3) 중고 최저가 요약 칸 · 중고 줄 수 두 번째 길 · 목록 지은이·출판사·출간 연월·재고·중고 표시 두 번째 길 · 제목 문맥 길 · 예스24 목록(같은 틀) · 훈련 화면(drill) · TTB 견줌 기준(공저·SP 0) · 편집자 추천 제목 꺾쇠 // (0.1.2 adapt2) reduce 없앰(알라딘 prototype.js) · 목록 SP · 전자책 값 · 외국책 정가 · 편집자 추천 // (0.1.1) 목록 화면 정가 길 — 할인율(10%)을 정가로 읽던 것 고침(진단 blist 정가 5·10) // (0.1.0) 첫 판 — 여러 길 추출·합의·지문·칸 건강·새 길 찾기·운영 파서 견줌·TTB 대체 견줌·목록 화면 주소 후보·SP 묶음 검색 계획
+  const VERSION = '0.1.5'; // (0.1.5 adapt5) SP 묶음 k≤12·170자·posN/posHit·성적 칸 대문자 · ebookHas // (0.1.4 adapt4) SP 묶음 4판 spBatchPlan3·spMultiLearn·spKeepDays·spKeepPerH · 지문 견줌 양쪽 시험 조각만 // (0.1.3 adapt3) 중고 최저가 요약 칸 · 중고 줄 수 두 번째 길 · 목록 지은이·출판사·출간 연월·재고·중고 표시 두 번째 길 · 제목 문맥 길 · 예스24 목록(같은 틀) · 훈련 화면(drill) · TTB 견줌 기준(공저·SP 0) · 편집자 추천 제목 꺾쇠 // (0.1.2 adapt2) reduce 없앰(알라딘 prototype.js) · 목록 SP · 전자책 값 · 외국책 정가 · 편집자 추천 // (0.1.1) 목록 화면 정가 길 — 할인율(10%)을 정가로 읽던 것 고침(진단 blist 정가 5·10) // (0.1.0) 첫 판 — 여러 길 추출·합의·지문·칸 건강·새 길 찾기·운영 파서 견줌·TTB 대체 견줌·목록 화면 주소 후보·SP 묶음 검색 계획
 
   /* ── 도움 함수 ── */
   const txt = (el) => (el ? String(el.textContent || '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim() : '');

@@ -11,7 +11,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.2.1'; // (0.2.1 rel4) sell2 배분(benchSpread·benchFix)과 bavg1 사람 값·날 수 무게를 하나로 // (0.2.0 sell2)
+  const VERSION = '0.3.0'; // (0.3.0 sell3) 장르 14갈래·표지 값·채운 정보 합치기·채움률·minFill·fillSens // (0.2.1 rel4) sell2 배분(benchSpread·benchFix)과 bavg1 사람 값·날 수 무게를 하나로 // (0.2.0 sell2)
 
   /* ── ① 판정 조건 ── v = 판정 종류: avoid 배척 · watch 주의 · learn 배움 · info 정보 */
   const VERDICT = { avoid: { t: '배척', c: '#B0322A' }, watch: { t: '주의', c: '#B26A00' }, learn: { t: '배움', c: '#1E7B4E' }, info: { t: '정보', c: '#4A5A55' } };

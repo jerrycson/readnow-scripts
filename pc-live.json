@@ -1,7 +1,7 @@
 {
- "ver": "1.89.272",
+ "ver": "1.89.273",
  "hsig": "8ab2f661d1d8afa8",
- "at": "2026-11-11T19:48:27.066Z",
+ "at": "2026-11-11T20:39:59.770Z",
  "files": [
   {
    "f": "readnow-orders-core.js",
@@ -41,9 +41,9 @@
   },
   {
    "f": "readnow-registry.js",
-   "v": "0.14.173",
-   "sha": "b990e6a34c6c242f806f8f307cdd957cd74a8e28c306537356e54f5a1b2d4a5d",
-   "n": 79261
+   "v": "0.14.174",
+   "sha": "7eaecb5a698b7c2f168a49a90c5244e6fc4de9d3d7cd247db6039fd550459ffe",
+   "n": 79340
   },
   {
    "f": "readnow-ext-core.js",
@@ -83,38 +83,38 @@
   },
   {
    "f": "readnow-pc-boot.js",
-   "v": "1.89.272",
-   "sha": "e8139b331274ad128a74a3c0ee41926a4f5cc37da8cb20bdb69f9ade66db619f",
+   "v": "1.89.273",
+   "sha": "79f12947e2c4dbfdb823b577db2d0474e12b7f7760c7ea389c9804457e6b5b17",
    "n": 51727
   },
   {
    "f": "readnow-pc-runtime.js",
-   "v": "1.89.272",
-   "sha": "c25b50ed2a5697aae9059b4fa88d5d2d65dc1e19e71293ef24d9f54d4102ec75",
+   "v": "1.89.273",
+   "sha": "af5d93618ebe113030915a76fb484d9e0157fd7405a1ce47956cf3b5923ff815",
    "n": 265816
   },
   {
    "f": "readnow-pc-crm.js",
-   "v": "1.89.272",
-   "sha": "a3d060bfc52476fe10218111690fc4a1ca7746ea053a2e4b9df8dfea2cab10da",
+   "v": "1.89.273",
+   "sha": "6069e646c3d7d8046d83041007ab8395845dcc9ea7f800b4194d4368dfefb64c",
    "n": 263963
   },
   {
    "f": "readnow-pc-products.js",
-   "v": "1.89.272",
-   "sha": "6044a40c6746d0ab959e7fabe55b24b69264f228967f57c6f2c65c2921954dcc",
+   "v": "1.89.273",
+   "sha": "5b15b88b1bcc5f8a44074cf48537fbfe5d8e4b8c8e5e693675684bbd0ecb29a4",
    "n": 1244321
   },
   {
    "f": "readnow-pc-ship.js",
-   "v": "1.89.272",
-   "sha": "9a2f813d4a5b6d4f208b96c649bf036b4aa50f401223e8bdfa537c12a72e9c14",
+   "v": "1.89.273",
+   "sha": "2cddece7ae8cf7baad3f2d135bc655a0a4f93c8265b3acca31a7e90c4e4fc6f5",
    "n": 66152
   },
   {
    "f": "readnow-pc-helper.js",
-   "v": "1.89.272",
-   "sha": "58d0fcc8748d3e5b5947d26ed73cb4c21aafb422fcfd215c21087753f5db1d78",
+   "v": "1.89.273",
+   "sha": "e0900a33f4cdd7793bab4ee7abd30828f0d13a18c5d5292be63a836294ee57ac",
    "n": 332627
   }
  ]
