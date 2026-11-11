@@ -11,14 +11,21 @@ const until = async (f, n, ms) => { let v; for (let k = 0; k < (n || 60); k++) {
 const killDir = (D) => { for (const p of fs.readdirSync('/proc').filter((p) => /^\d+$/.test(p))) { try { if (fs.readFileSync('/proc/' + p + '/cmdline', 'utf8').includes(D)) process.kill(+p, 'SIGKILL'); } catch (e) {} } };
 const ID = 'sellerid' + Math.random().toString(36).slice(2, 8), PW = 'Pw!' + Math.random().toString(36).slice(2, 12);
 
-function fakeY24() { const S = { pw: PW, sess: new Set(), log: [], captcha: false };
+function fakeY24() { const S = { pw: PW, sess: new Set(), log: [], captcha: false, spa: '', dup: false };
+  /* (11/11) 실제 예스24 판매관리처럼 양식(form)이 없는 한 장 화면 — 머리·바닥에 검색 칸 · [로그인]은 type=button(누르면 fetch) 또는 단추 없이 비밀번호 칸의 진짜 Enter만 · 다른 곳 접속이면 '기존 접속을 끊을까요' 물음 */
+  const spa = () => `<!doctype html><html><head><meta charset="utf-8"><title>로그인</title></head><body><div id="app"><header><input type="text" placeholder="통합검색"></header><main><input type="text" id="uid" placeholder="아이디"><input type="password" id="upw" placeholder="비밀번호">${S.spa === 'btn' ? '<button type="button" id="gob" class="btn">로그인</button>' : ''}<p id="msg"></p></main><footer><input type="text" placeholder="빠른 검색"></footer></div>
+<script>const go=async()=>{const id=uid.value,pw=upw.value;const P=(x)=>fetch('/api/Login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(x)}).then((r)=>r.json());let r=await P({id,pw});
+if(r.dup){if(!confirm('다른 곳에서 로그인 중입니다. 기존 접속을 끊고 로그인하시겠습니까?'))return;r=await P({id,pw,force:true})}if(r.ok)location.href='/';else msg.textContent='아이디 또는 비밀번호가 일치하지 않습니다.'};
+${S.spa === 'btn' ? "gob.addEventListener('click',go)" : "upw.addEventListener('keyup',(e)=>{if(e.key==='Enter'&&e.isTrusted)go()})"}</script></body></html>`;
   const page = (h, b) => `<!doctype html><html><head><meta charset="utf-8"><title>${h}</title></head><body><h1>${h}</h1>${b}</body></html>`;
   const form = (x) => page('로그인', `<form method="post" action="/Account/Login"><input name="id"><input type="password" name="pw">${S.captcha ? '<div>보안문자를 입력해 주세요 <input name="captcha"></div>' : ''}<button>로그인</button></form>${x || ''}`);
   const srv = http.createServer((q, s) => { const u = new URL(q.url, 'http://x'); const ck = (q.headers.cookie || '').match(/sid=(\w+)/); const auth = !!(ck && S.sess.has(ck[1])); let b = ''; q.on('data', (c) => (b += c)); q.on('end', () => {
       const H = (code, type, body, x) => { s.writeHead(code, { 'Content-Type': type + '; charset=utf-8', ...(x || {}) }); s.end(body); };
       if (u.pathname === '/Account/Login' && q.method === 'POST') { const f = new URLSearchParams(b); S.log.push({ login: true, okId: f.get('id') === ID, okPw: f.get('pw') === S.pw, t: Date.now() }); if (f.get('id') !== ID || f.get('pw') !== S.pw || S.captcha) return H(200, 'text/html', form('틀림')); const id = Math.random().toString(36).slice(2); S.sess.add(id); return H(302, 'text/html', '', { 'Set-Cookie': `sid=${id}; Path=/; HttpOnly`, Location: '/' }); }
+      if (u.pathname === '/api/Login' && q.method === 'POST') { let j = {}; try { j = JSON.parse(b); } catch (e) {} if (S.dup && !j.force) { S.log.push({ dupAsk: true }); return H(200, 'application/json', '{"dup":true}'); } S.log.push({ login: true, spa: true, okId: j.id === ID, okPw: j.pw === S.pw, force: !!j.force, t: Date.now() });
+        if (j.id !== ID || j.pw !== S.pw) return H(200, 'application/json', '{"ok":false}'); const id = Math.random().toString(36).slice(2); S.sess.add(id); return H(200, 'application/json', '{"ok":true}', { 'Set-Cookie': `sid=${id}; Path=/; HttpOnly` }); }
       S.log.push({ m: q.method, p: u.pathname, auth });
-      if (u.pathname === '/Account/Login') return H(200, 'text/html', form());
+      if (u.pathname === '/Account/Login') return H(200, 'text/html', S.spa ? spa() : form());
       if (u.pathname.startsWith('/api/')) return auth ? H(200, 'application/json', JSON.stringify({ RESULT_LIST: [], MENU_LIST: [] })) : H(401, 'application/json', '{}');
       if (!auth) return H(302, 'text/html', '', { Location: '/Account/Login' });
       return H(200, 'text/html', page('판매관리', '첫 화면')); }); });
@@ -48,6 +55,12 @@ function fakeY24() { const S = { pw: PW, sess: new Set(), log: [], captcha: fals
       const jb = R7.jobStart('y24', 9); const seen = []; const ctxPh = { ...ctxFail, phase: (t) => { seen.push(t); return jb.ph(t); } }; await R7.tryWith('y24', ctxPh, 'a', 'b'); ok(seen.length >= 3 && /로그인 화면 여는 중/.test(seen[0]), '진행 단계를 차례로 알림', seen.join(' → '));
       jb.abort = true; const u2 = await R7.tryWith('y24', ctxPh, 'a', 'b'); ok(u2.unsure && /9초 안에 끝나지 않아 확인을 멈춤/.test(u2.why), '시간 넘음 표시가 서면 다음 단계에서 멈춤(더 진행하지 않음)', u2.why);
       R7.jobEnd('y24', { ok: false, kind: 'unsure', msg: '✗ 확인 못 함', canForce: true }); ok(!R7.jobOn('y24') && !R7.anyJob(), '확인 끝 = 도는 확인 없음'); }
+    /* (11/11) 예전 판의 '[로그인]을 누르지 못한' 멈춤은 고친 판이 처음 켜질 때 한 번만 풂 · 보안 문자·틀린 값 멈춤은 그대로 */
+    { const D9 = fs.mkdtempSync(path.join(os.tmpdir(), 'c2rl_')); const old = { y24: { tries: [Date.now()], fails: 2, stop: { at: Date.now(), why: '연속 2번 실패 — 로그인 뒤에도 로그인 화면(아이디·비밀번호가 틀렸거나 막힘)' }, auto: true, n: 2 }, al: { tries: [], fails: 1, stop: { at: Date.now(), why: '로그인 화면에 보안 문자 — 사람 손이 필요', human: true }, auto: true, n: 1 } };
+      fs.writeFileSync(path.join(D9, 'relogin.json'), JSON.stringify(old)); const nt = []; const mk = () => makeRelogin({ HOME: D9, cred: { has: () => true, PF: { y24: {}, al: {} }, sum: () => ({ y24: {}, al: {} }) }, cfg: () => ({ relogin: { gapMin: 0 } }), isLogger: () => false, note: (m) => nt.push(m) });
+      const R9 = mk(); ok(R9.why('y24', {}) === null && /멈춤/.test(R9.why('al', {}) || '') && nt.some((m) => /고친 판에서 한 번 풂/.test(m)), "고친 판이 켜지면 예전 '로그인 뒤에도 로그인 화면' 멈춤만 한 번 풂(보안 문자 멈춤은 그대로)", [R9.why('y24', {}), R9.why('al', {})]);
+      fs.writeFileSync(path.join(D9, 'relogin.json'), JSON.stringify(old)); const R10 = mk(); ok(/멈춤/.test(R10.why('y24', {}) || ''), '두 번째 켜질 때부턴 풀지 않음(다시 2번 실패한 멈춤은 그대로)'); }
+    { const { dlgOk } = require(path.join(L.ROOT, 'helper', 'col2-relogin.js')); ok(dlgOk('alert', 'x') && dlgOk('confirm', '다른 곳에서 로그인 중입니다. 기존 접속을 끊고 로그인하시겠습니까?') && !dlgOk('confirm', '상품을 삭제하시겠습니까?') && !dlgOk('confirm', '비밀번호를 변경하시겠습니까?') && !dlgOk('confirm', '발송처리 하시겠습니까?'), "로그인 중 물음: '기존 접속을 끊고 로그인'만 예 · 삭제·변경·발송은 아니오"); }
     const { ppStop } = require(path.join(L.ROOT, 'helper', 'col2-y24.js')); const T0 = Date.now(); ok(!ppStop([T0 - 1e3, T0 - 2e3], T0) && ppStop([T0 - 1e3, T0 - 2e3, T0 - 3e3], T0) && !ppStop([T0 - 4 * 3600e3, T0 - 1e3, T0 - 2e3], T0) && !ppStop([T0, T0, T0], T0, 0), '(11/10 예스24 계속 풀림) 로그인 뒤 금방 다시 풀림이 3시간에 3번이면 스스로 다시 로그인 멈춤(다른 곳 로그인과 서로 끊기 의심) · 0이면 끔'); }
 
   const Y = await fakeY24();
@@ -55,7 +68,7 @@ function fakeY24() { const S = { pw: PW, sess: new Set(), log: [], captcha: fals
   const D = fs.mkdtempSync(path.join(require('os').tmpdir(), 'col2t_')); const HOME = D + '/home'; fs.mkdirSync(D + '/bin', { recursive: true }); fs.writeFileSync(D + '/bin/dpapi', `#!/usr/bin/env node
 const A=process.argv;const act=A[A.indexOf('-Act')+1];let t='';process.stdin.on('data',(c)=>t+=c);process.stdin.on('end',()=>{const k=Buffer.from('rn3-test-key');const x=(b)=>Buffer.from(b.map((v,i)=>v^k[i%k.length]));
 if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toString('base64'));else process.stdout.write('ok:'+x([...Buffer.from(t.trim(),'base64')]).toString('utf8'))});`); fs.chmodSync(D + '/bin/dpapi', 0o755);
-  const H = await L.startHelper({ dir: D, cfg: { on: true, y24: true, auto: false, headless: true, pc: 'MJ-TEST', pcSrc: 'pc', relogin: { gapMin: 0, perHour: 20, perDay: 50, vGapSec: 0 }, y24cfg: { keepMin: 0.02, prdH: 0, tourH: 0, ppN: 0 }, watch: { tickSec: 60, handoffMs: 200 } }, env: { ...env, RN_COL2_DPAPI: D + '/bin/dpapi' } });
+  const H = await L.startHelper({ dir: D, cfg: { on: true, y24: true, auto: false, headless: true, pc: 'MJ-TEST', pcSrc: 'pc', relogin: { gapMin: 0, perHour: 20, perDay: 50, vGapSec: 0, vPerHour: 50 }, y24cfg: { keepMin: 0.02, prdH: 0, tourH: 0, ppN: 0 }, watch: { tickSec: 60, handoffMs: 200 } }, env: { ...env, RN_COL2_DPAPI: D + '/bin/dpapi' } });
   const st = async () => (await H.api('GET', '/status')).j; const y = async () => (await st()).y24;
   const feed = (b) => H.api('POST', '/y24/feed', { by: '시험 수집기', cfg: { ordMin: 0 }, hold: { on: false }, ...(b || {}) });
   const logins = () => Y.S.log.filter((x) => x.login);
@@ -104,6 +117,25 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
     { const n5 = logins().length; const r6 = await H.api('POST', '/cred/save', { pf: 'y24', id: ID, pw: PW }, { Origin: `http://127.0.0.1:${H.port}` }); ok(!r6.j.ok && r6.j.human && /보안/.test(r6.j.err) && /직접 한 번/.test(r6.j.err) && logins().length === n5, '저장 전 확인에서 보안 문자가 보이면 = 저장 안 함 · 그 사실과 직접 로그인 안내(누르지 않음)', r6.j.err);
       await feed({ hold: { on: true, why: '시험 출고' } }); const r7 = await H.api('POST', '/cred/save', { pf: 'y24', id: ID, pw: PW }, { Origin: `http://127.0.0.1:${H.port}` }); ok(!r7.j.ok && r7.j.wait && /출고 중/.test(r7.j.err) && logins().length === n5, '🚚 출고 중엔 확인 로그인도 안 함 → 「지금은 확인할 수 없어 저장하지 않았습니다」', r7.j.err); await feed(); }
     Y.S.captcha = false;
+    console.log('⑨ (11/11 정범님 \'예스24 아이디·비번이 안 먹힘\') 양식 없는 한 장 화면 · 진짜 Enter · 다른 곳 접속 물음 · 「직접 로그인하는 중」 오판');
+    { await H.api('POST', '/cred/reset', { pf: 'y24' }); Y.S.spa = 'btn'; Y.S.dup = true; const n6 = logins().length; Y.S.sess.clear(); await H.api('POST', '/y24/run', { what: 'ord' });
+      s = await until(async () => { await feed(); return logins().length > n6 && (await y()).login === 'ok' ? await st() : null; }, 200); const L6 = logins().slice(n6);
+      ok(s && L6.length === 1 && L6[0].spa && L6[0].okId && L6[0].okPw && L6[0].force && !s.relogin.y24.stop, "양식 없는 화면(type=button [로그인]) — 머리·바닥 검색 칸이 아니라 비밀번호 앞 칸에 아이디 · 단추를 눌러 로그인 · '기존 접속을 끊고 로그인' 물음엔 예", { L6, stop: s && s.relogin.y24.stop });
+      ok(s && s.y24.pg && !s.y24.pg.login, '로그인 뒤 창 주소 = 로그인 화면 아님(화면 표시도 그대로)', s && s.y24.pg);
+      Y.S.dup = false; Y.S.spa = 'enter'; const n7 = logins().length; Y.S.sess.clear(); await H.api('POST', '/y24/run', { what: 'ord' });
+      s = await until(async () => { await feed(); return logins().length > n7 && (await y()).login === 'ok'; }, 200); ok(s && logins().slice(n7).every((x) => x.spa && x.okPw), '단추가 없고 진짜 Enter(isTrusted)에만 반응하는 화면도 로그인됨(예전 가짜 keydown은 못 함)', logins().slice(n7));
+      /* 「직접 로그인하는 중」 — [🔐 예스24 로그인]으로 창만 띄우고 아무도 안 치면 */
+      Y.S.spa = 'btn'; Y.S.sess.clear(); await H.api('POST', '/y24/run', { what: 'ord' }); await until(async () => { await feed(); return (await y()).login === 'need'; }, 120);
+      { const sw = await H.api('GET', '/status'); const p0 = sw.j.y24.pg; ok(p0 && p0.login, "세션이 풀리면 창 주소(로그인 화면)로도 '로그인 안 됨' 표시", p0); }
+      await H.api('POST', '/cred/auto', { pf: 'y24', on: false }); r = await H.api('POST', '/y24/login', { why: '시험' }); ok(r.j.ok && (await y()).login === 'wait', '[🔐 예스24 로그인] = 창을 앞으로 · 기다림', r.j);
+      r = await H.api('POST', '/cred/save', { pf: 'y24', id: ID, pw: PW }, { Origin: `http://127.0.0.1:${H.port}` }); ok(!r.j.ok && r.j.wait && /칠 수 있게/.test(r.j.err), '창을 막 띄운 때만 「사람이 칠 수 있게 기다림」(그 뒤엔 입력이 없으면 기다리지 않음)', r.j.err);
+      await wait(5200); const n8 = logins().length; r = await H.api('POST', '/cred/save', { pf: 'y24', id: ID, pw: PW }, { Origin: `http://127.0.0.1:${H.port}` });
+      ok(r.j.ok && logins().length === n8 + 1 && (await y()).login === 'ok', "창에 입력이 없으면 「직접 로그인하는 중」으로 막지 않고 넣은 값으로 확인 → 저장 · 로그인", r.j.err || r.j.msg);
+      await H.api('POST', '/cred/auto', { pf: 'y24', on: true }); Y.S.sess.clear(); await H.api('POST', '/y24/run', { what: 'ord' }); await until(async () => { await feed(); return (await y()).login === 'need'; }, 120);
+      await H.api('POST', '/y24/login', { why: '시험' }); const n9 = logins().length;
+      s = await until(async () => { await feed(); return logins().length > n9 && (await y()).login === 'ok'; }, 200); jl = (await H.api('GET', '/log/lines?after=0')).j.lines.map((e) => e.x).join('\n');
+      ok(s && /입력이 없어 기다림을 끝냄/.test(jl), '창만 떠 있고 입력이 없으면 저장된 계정으로 번외가 스스로 로그인(기다림을 끝냄)', logins().length - n9);
+      Y.S.spa = ''; }
     console.log('⑧ 화면 — 계정 칸 · 로거는 칸이 없음');
     { const pg = await (await (await L.chromium().launch()).newContext()).newPage(); await pg.goto(`http://127.0.0.1:${H.port}/`); await wait(1500); await pg.click('#setBtn').catch(() => {}); await wait(500);
       const v1 = await pg.evaluate(() => { const b = document.getElementById('crbox'); return { has: !!b, shown: !!b && getComputedStyle(b).display !== 'none', st: (document.getElementById('crs_y24') || {}).textContent || '', pwType: (document.getElementById('crp_y24') || {}).type }; });
