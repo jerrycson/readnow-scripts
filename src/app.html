@@ -2,6 +2,45 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
+<script>/* (리드나우 2 이전 · 단계 13 · 정범님 ㉮) 이 기기 저장 rn2-move(새 웹앱만 씀)가 'on'이면 본문을 받기 전에 새 웹앱으로 넘김(?·# 그대로 + from=old) · 글이 없거나 'off'·'back'이면 아무 일 없음
+ *  ?old=1(옛 화면 주소)로 연 탭은 닫을 때까지 옛 화면(sessionStorage rn2-old) + 머리 띠 '옛 화면 — ○일 뒤 닫힘 · 리드나우 2로 ›' · 새 웹앱 안(window.U2)·다른 창 안(iframe)에서는 아무것도 안 함
+ *  RN2_MOVE_SYNC(db) = 로그인 뒤 한 번 ui2_site/main 문서 1개 읽기(새 웹앱을 한 번도 안 연 기기) · 견본 readnow-ui2 tools/move-snippet.js · 시험 tU2MOVE1111 */
+(function () {
+  try {
+    if (window.U2 || window.top !== window) return;
+    var q = new URLSearchParams(location.search), old = false;
+    if (q.get('old') === '1') { old = true; try { sessionStorage.setItem('rn2-old', '1'); } catch (e) {} }
+    else { try { old = sessionStorage.getItem('rn2-old') === '1'; } catch (e) {} }
+    var m = null; try { m = JSON.parse(localStorage.getItem('rn2-move') || 'null'); } catch (e) {}
+    if (old) {
+      if (!m || m.state !== 'on' || !m.to) return;
+      window.RN2_OLD_BAND = function () { try { if (document.getElementById('rn2oldband')) return; try { if (sessionStorage.getItem('rn2-old-hide') === '1') return; } catch (e) {}
+        var d = m.until ? Math.max(0, Math.ceil((new Date(m.until) - Date.now()) / 864e5)) : null; var b = document.createElement('div'); b.id = 'rn2oldband';
+        b.style.cssText = 'position:fixed;left:8px;right:8px;top:56px;z-index:9997;background:#FFF4E5;color:#7A4A10;border:1px solid #E8B062;border-radius:8px;padding:6px 10px;font-size:12.5px;box-shadow:0 2px 8px rgba(0,0,0,.15);display:flex;gap:8px;align-items:center';
+        var t = document.createElement('span'); t.style.flex = '1'; t.textContent = '↩ 옛 화면' + (d == null ? '' : d > 0 ? ' — ' + d + '일 뒤 닫힘' : ' — 30일이 지났습니다');
+        var a = document.createElement('a'); a.id = 'rn2oldgo'; a.textContent = '리드나우 2로 ›'; a.style.cssText = 'color:#1F5FAF;font-weight:700;cursor:pointer;text-decoration:none';
+        var p = new URLSearchParams(location.search); p.delete('old'); p.set('from', 'old'); a.href = m.to + '?' + p.toString() + location.hash;
+        a.onclick = function () { try { sessionStorage.removeItem('rn2-old'); } catch (e) {} };
+        var x = document.createElement('span'); x.textContent = '×'; x.title = '이 탭에서 띠 닫기'; x.style.cssText = 'cursor:pointer;font-size:16px;padding:0 4px'; x.onclick = function () { try { sessionStorage.setItem('rn2-old-hide', '1'); } catch (e) {} b.remove(); };
+        b.appendChild(t); b.appendChild(a); b.appendChild(x); document.body.appendChild(b); } catch (e) {} };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.RN2_OLD_BAND); else window.RN2_OLD_BAND();
+      return;
+    }
+    if (!m || m.state !== 'on' || !m.to) return;
+    window.RN2_MOVING = true; q.set('from', 'old');
+    location.replace(m.to + '?' + q.toString() + location.hash);
+  } catch (e) {}
+})();
+window.RN2_MOVE_SYNC = function (db) {
+  try {
+    if (window.U2 || window.RN2_MOVING || window.top !== window || window.RN2_MOVE_DONE) return; window.RN2_MOVE_DONE = 1;
+    var q = new URLSearchParams(location.search); if (q.get('old') === '1') return; try { if (sessionStorage.getItem('rn2-old') === '1') return; } catch (e) {}
+    db.collection('ui2_site').doc('main').get().then(function (d) {
+      var m = d && d.exists ? (d.data() || {}).move : null; window.RN2_MOVE_LAST = { at: Date.now(), state: (m && m.state) || 'none' }; if (!m || m.state !== 'on' || !m.to) return;
+      window.RN2_MOVING = true; q.set('from', 'old'); location.replace(m.to + '?' + q.toString() + location.hash);
+    }).catch(function (e) { window.RN2_MOVE_LAST = { at: Date.now(), err: String((e && (e.code || e.message)) || e) }; });
+  } catch (e) {}
+};</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#2F5D50">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -9,7 +48,7 @@
 (function () { try { var K = ['home', 'confirm', 'deliv', 'reg', 'ppt', 'batch', 'products', 'orders', 'search', 'mgr']; var C = { home: '#2F5D50', confirm: '#B0322A', deliv: '#A8661B', reg: '#1F5FAF', ppt: '#6B3FA0', batch: '#1F7A6E', products: '#3B6E2F', orders: '#8A4B00', search: '#4A4F8A', mgr: '#333B39' };
   var q = new URLSearchParams(location.search); var g = q.get('go') || 'home'; if (K.indexOf(g) < 0) g = 'home';
   var sa = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
-  if (sa && !q.get('st')) { var o = null; try { o = localStorage.getItem('rn-start:' + g); } catch (e) {} if (o && o !== g && K.indexOf(o) >= 0) { location.replace(location.pathname + (o === 'home' ? '?st=1' : '?go=' + o + '&st=1') + location.hash); return; } }
+  if (sa && !q.get('st') && !window.RN2_MOVING) { var o = null; try { o = localStorage.getItem('rn-start:' + g); } catch (e) {} if (o && o !== g && K.indexOf(o) >= 0) { location.replace(location.pathname + (o === 'home' ? '?st=1' : '?go=' + o + '&st=1') + location.hash); return; } }
   var l = document.createElement('link'); l.rel = 'manifest'; l.href = 'm/' + g + '.webmanifest'; document.head.appendChild(l);
   var a = document.createElement('link'); a.rel = 'apple-touch-icon'; a.href = 'm/' + g + '-180.png'; document.head.appendChild(a);
   var t = document.querySelector('meta[name=theme-color]'); if (t) t.content = C[g]; window.__rnAppKey = g; } catch (e) {} })();</script>
@@ -29370,6 +29409,7 @@ async function permProbe(col, write, docPath) { const out = { col, read: null, w
   if (write) { const ref = db.collection(col).doc('_permprobe_' + Math.random().toString(36).slice(2, 10)); try { const b = db.batch(); b.set(ref, { probe: true, at: new Date().toISOString() }); b.delete(ref); await permTO(b.commit()); out.write = true; } catch (e) { out.write = permIsDenied(e) ? false : null; out.werr = e.code || e.message; /* (1.18.10) 예전엔 여기서 '따로 만들고 지우기'를 다시 했는데, 연결이 느리면 만들기만 늦게 서버에 들어가 시험 문서(_permprobe_)가 진짜 기록 칸에 남았음 → 다시 하지 않음(모르면 '모름') */ } }
   return out; }
 function permTargets() { const R = REGF(); const C0 = (R && R.COLLECTIONS) || {}; const L = Object.entries(C0).map(([k, v]) => ({ col: k, write: (v.w || []).some((x) => x !== 'cloud'), note: v.note || '', who: (v.w || []).join('·') }));
+  L.push({ col: 'ui2_site', write: false, doc: 'main', note: '🚚 리드나우 2 이전 상태 읽기(로그인 뒤 문서 1개)', who: 'webapp' }); /* 이전 장치 RN2_MOVE_SYNC가 읽는 문서 — 규칙이 막으면 ✗로 보임 */
   if (isAdminDevice()) L.push({ col: 'app_secrets', write: true, doc: 'ext', note: '🌐 외부 연결 키 (관리자 기기)', who: 'webapp' }); return L; }
 /* (1.18.10) 권한 시험이 남긴 시험 문서(_permprobe_…) 치우기 — 문서 번호가 '_permprobe_'로 시작하고 내용이 {probe:true}뿐인 것만 지움(진짜 기록은 건드리지 않음) · 하루 한 번 · 대표 탭 */
 async function permProbeCleanup() { try { const last = +localStorage.getItem('rn-probe-clean') || 0; if (Date.now() - last < 864e5) return; const R = REGF(); const cols = Object.keys((R && R.COLLECTIONS) || {}); const FP = firebase.firestore.FieldPath; let n = 0;
@@ -36004,7 +36044,7 @@ async function placeRestore(P) { if (!P) return; const wait = (ms) => new Promis
 setTimeout(() => { const a = document.getElementById('app'); if (S._authFired || !a || a.innerHTML) return; a.innerHTML = `<div style="max-width:560px;margin:40px auto;padding:20px;border:2px solid #C9A227;border-radius:12px;background:#FFF8E0;font:15px/1.6 sans-serif"><b>로그인 확인이 10초 넘게 끝나지 않습니다</b><br>웹앱 v${APP_VER}은 받았지만, 브라우저 저장소(로그인 기록이 있는 곳)에서 답이 오지 않습니다.<ol style="padding-left:20px"><li>열려 있는 <b>다른 리드나우 웹앱 탭</b>을 모두 닫고 이 탭을 새로 고침</li><li>그래도 같으면 크롬 오른쪽 위 <b>'업데이트를 위해 다시 시작'</b>(또는 크롬을 완전히 껐다 켬)</li><li>알라딘 수집기 탭은 닫지 않아도 됩니다(웹앱과 저장소가 다름)</li></ol><button onclick="location.reload()" style="padding:8px 14px;border-radius:8px;border:1px solid #888;background:#fff">새로 고침</button></div>`; }, 10000);
 firebase.auth().onAuthStateChanged(async (u) => { S._authFired = true;
   if (!u) { S.user = null; loginView(); return; }
-  S.user = u; pm('auth'); if (u) setTimeout(pdCrashCheck, 4000); /* (1.68.0) 🛟 */
+  S.user = u; pm('auth'); try { if (window.RN2_MOVE_SYNC) RN2_MOVE_SYNC(db); } catch (e) {} /* 🚚 리드나우 2 이전 상태 문서 1개(ui2_site/main) — 'on'이면 새 웹앱으로 */ if (u) setTimeout(pdCrashCheck, 4000); /* (1.68.0) 🛟 */
   loggerWatchBanner(); cloudFbBanner(); // (1.33.0) 🌐 로거 멈춤·테더링 끊김 알림 띠
   setTimeout(() => regAwayCheck('boot').catch(() => {}), 6000); /* (1.78.61) 📥 자리 비운 사이 끝난·멈춘 등록 */
   const PLACE = (GO === 'confirm' || GO === 'deliv' || GO === 'y24ord' || /#c=/.test(location.hash)) ? null : placeRead(); placeApplyUi(PLACE); // (1.4.0) 새로고침 전 자리
