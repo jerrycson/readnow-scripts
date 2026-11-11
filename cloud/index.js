@@ -3776,6 +3776,17 @@ async function sched1024a() { try { const ref = C('prd_system').doc('autoSched')
     const slots = [...d.slots]; slots.splice(i >= 0 ? i + 1 : 0, 0, add);
     tx.set(ref, { slots, rev: (+d.rev || 0) + 1, at: nowIso(), by: 'cloud 0.34.7 (정범님 10/24 16:22 벤치마킹 이어 읽기)', sched1024a: { at: nowIso() } }, { merge: true }); did = true; }); if (did) log('⏰ 🎯 못 끝낸 판매자 이어 읽기 칸 넣음'); } catch (e) { log('⏰ 이어 읽기 칸 넣기 실패', e.message); } }
 setTimeout(sched1024a, 125e3);
+/* (11/11 col2fix6 · 정범님 결정 「①로」) 📶 로거 테더링 하루 몫 — '판매자 정보 다시 읽기'를 앞쪽 칸(먼저 몫 확보), '구매자 분포·함께 산 책'은 그 뒤
+ *  근거(4시간 점검 11/11 20:15): 이번 달 일반 몫 13.3GB 중 구매자 분포 7.99GB(60%) · 판매자 6개월 평가 수(오래된 것만) 1.02GB · 일반 몫이 오후마다 바닥(14:40·18:10) → 판매자 문서가 48시간 2곳만 고쳐짐
+ *  ① '⭐ 6개월 평가 수 (오래된 것만)'(lgRev6m) = 일·수 03:00 → 매일 00:20(일반 몫 첫 시간대 00:00이 열리자마자 · 🎯 벤치마킹 00:05 바로 뒤 — 벤치마킹은 주요 몫이라 서로 안 겹침)
+ *  ② ✨ 쉴 때 하는 일(로거 테더링 남음) 차례 = 판매자(rev6mStale·revTop…) 먼저 → 시장 지표 → 구매자 분포(dynamic·dynamic0·dynAll·explore)
+ *  ③ '👥 구매자 분포·함께 산 책'은 13:00 그대로(판매자 칸 뒤) · 바꾸기 전 값은 sched1111a.prev(되돌리기 쉽게) · 한 번만 · 정범님이 그 뒤 ⏰ 편집기에서 바꾸면 그대로 둠 */
+function sellerFirst1111(d) { const SELL = /^prd:(rev6mStale|rev6mAll|revTop|revAll)$/, DYN = /^prd:(dynamic|dynamic0|dynAll|explore)$/; const slots = (d.slots || []).map((x) => (x && x.id === 'lgRev6m' && x.job === 'prd:rev6mStale' ? { ...x, on: true, trig: { t: 'time', times: ['00:20'] }, days: null, name: '⭐ 6개월 평가 수 (오래된 것만) — 매일 먼저(판매자 정보 다시 읽기 · 정범님 11/11 ①)' } : x));
+  const r0 = d.rest || {}; const lgA = Array.isArray(r0.lgA) ? r0.lgA.map(String) : []; const rank = (j) => (SELL.test(j) ? 0 : DYN.test(j) ? 2 : 1); const lgA2 = lgA.map((j, i) => [j, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map((x) => x[0]); if (!lgA2.includes('prd:rev6mStale')) lgA2.unshift('prd:rev6mStale');
+  return { slots, rest: { ...r0, lgA: lgA2 } }; }
+async function sched1111a() { try { const ref = C('prd_system').doc('autoSched'); let did = false; await db.runTransaction(async (tx) => { const d = (await tx.get(ref)).data() || {}; if (d.sched1111a || !Array.isArray(d.slots)) return; const n = sellerFirst1111(d);
+    tx.set(ref, { slots: n.slots, rest: n.rest, rev: (+d.rev || 0) + 1, at: nowIso(), by: "cloud (정범님 11/11 「①로」 — 판매자 정보 다시 읽기를 하루 몫 앞쪽으로)", sched1111a: { at: nowIso(), prev: { slots: d.slots, rest: d.rest || null } } }, { merge: true }); did = true; }); if (did) log('⏰ 📶 판매자 정보 다시 읽기를 하루 몫 앞쪽으로(매일 00:20 · 쉴 때 일도 판매자 먼저 · 구매자 분포는 뒤)'); } catch (e) { log('⏰ 판매자 먼저 바꾸기 실패', e.message); } }
+setTimeout(sched1111a, 130e3);
 
 
 

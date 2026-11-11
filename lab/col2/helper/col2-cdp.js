@@ -60,6 +60,9 @@ class Browser {
       '--no-first-run', '--no-default-browser-check', '--disable-extensions', '--disable-sync', '--mute-audio', '--disable-default-apps', '--hide-crash-restore-bubble',
       /* 가려져도 늦추지 않음(로거 공개 수집 크롬과 같은 세 플래그) — 이 크롬에만 적용(정범님 크롬 바로가기는 그대로) */
       '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding');
+    /* (11/11 col2fix6 · 로거 '알라딘 첫 화면을 못 엶: net::ERR_NAME_NOT_RESOLVED') 로거는 이 크롬도 운영 로거 도우미(127.0.0.1:8899) 길로만 — 그 도우미가 알라딘을 테더링으로만 내보내고(와이파이로 안 샘) 테더링이 안 되면 거절
+     *  예전엔 프록시 없이 윈도우 기본 길(와이파이 · 테더링은 9000 뒤로)로 나가려 했고, 로거 hosts가 알라딘 주소를 0.0.0.0으로 막아 둬(local/install.ps1 ②) 이름을 못 찾음 */
+    if (o.proxy) a.push(`--proxy-server=${o.proxy}`);
     if (process.env.RN_COL2_NOSANDBOX) a.unshift('--no-sandbox'); a.push('about:blank'); return a; }
   /* (0.1.2 정범님 11/06 '숨은 크롬이 켜자마자 꺼짐') 띄우기 전에 이 프로필을 쥐고 있는 옛 번외 크롬을 치움
    *  크롬은 같은 --user-data-dir를 다른 크롬이 쓰고 있으면 그 크롬에 일을 넘기고 곧바로 끝남(종료 코드 0) → '바로 꺼짐'이 거듭되어 지킴이가 한 시간 4번 상한에 걸림
@@ -111,7 +114,7 @@ class Browser {
     this.ready = true; return this; }
   /* 처음 한 번 알라딘 첫 화면에 들어감(사람처럼 들어온 탭 — 이 탭 안에서 같은 출처로 읽음) */
   async land(url, timeoutSec) { if (this.landed) return; const sid = this.sid; const done = new Promise((res) => { const f = (m, p, s) => { if (s === sid && m === 'Page.loadEventFired') { this.cdp.on = this.cdp.on.filter((x) => x !== f); res(true); } }; this.cdp.on.push(f); setTimeout(() => res(false), (timeoutSec || 25) * 1000); });
-    const nav = await this.cdp.send('Page.navigate', { url }, sid); if (nav && nav.errorText) throw new Error('알라딘 첫 화면을 못 엶: ' + nav.errorText); this.frameId = nav.frameId; await done; this.landed = true; this.ctxId = null; }
+    const nav = await this.cdp.send('Page.navigate', { url }, sid); if (nav && nav.errorText) throw new Error('알라딘 첫 화면을 못 엶: ' + nav.errorText + (this.o.netHint ? this.o.netHint(nav.errorText) : '')); this.frameId = nav.frameId; await done; this.landed = true; this.ctxId = null; }
   async world(srcs) { if (this.ctxId) return this.ctxId; const ft = await this.cdp.send('Page.getFrameTree', {}, this.sid); this.frameId = ft.frameTree.frame.id;
     const w = await this.cdp.send('Page.createIsolatedWorld', { frameId: this.frameId, worldName: 'rn3-col2', grantUniveralAccess: false }, this.sid); const ctx = w.executionContextId;
     for (const s of srcs) { const r = await this.cdp.send('Runtime.evaluate', { expression: s, contextId: ctx, returnByValue: true }, this.sid); if (r.exceptionDetails) throw new Error('운영 공용 파일 넣기 실패: ' + String(r.exceptionDetails.text || '').slice(0, 120)); }

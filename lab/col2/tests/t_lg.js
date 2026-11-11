@@ -34,6 +34,11 @@ function bridge(H, DB) { const got = []; let stop = false, pulls = 0;
     ok(b1.j && b1.j.lgIgnore && !s1.busy, "로거: 운영 일 '바쁨' 알림은 쉼으로 보지 않음(로거 운영은 늘 일함)", JSON.stringify(s1.busy));
     await H.api('POST', '/busy', { sec: 120, why: '🛡 로거 테더링 문 닫힘 — 몫 다 씀' }); const s2 = (await H.api('GET', '/status')).j; await H.api('POST', '/busy', { sec: 0, why: '테더링 문 열림' }); const s3 = (await H.api('GET', '/status')).j;
     ok(s2.busy && /테더링/.test(s2.busy.why) && !s3.busy, '로거: 테더링 문이 닫혔다는 알림만 쉼 · 열리면 풂', JSON.stringify([s2.busy, s3.busy]));
+    { /* (11/11 col2fix6) 하루 몫 다 씀 — 다리가 다시 여는 때까지 글로 · 화면에 '작업 창 준비 실패'가 아니라 그 글 */
+      await H.api('POST', '/busy', { sec: 90, why: '📏 로거 테더링 오늘 몫 다 씀 — 내일 00:00 재개(새 하루 몫)' }); let sq = null; for (let k = 0; k < 80 && !sq; k++) { await wait(300); const t = JSON.stringify((await H.api('GET', '/status')).j); if (/⏸ 📏 로거 테더링 오늘 몫 다 씀 — 내일 00:00 재개/.test(t)) sq = t; }
+      ok(sq && !/작업 창 준비 실패/.test(sq), "몫 다 씀이면 화면에 '⏸ 📏 로거 테더링 오늘 몫 다 씀 — 내일 00:00 재개'(그동안 알라딘에 안 감)", sq ? '' : 'X'); await H.api('POST', '/busy', { sec: 0, why: '테더링 문 열림' }); }
+    { const { Browser } = require('../helper/col2-cdp.js'); const a1 = new Browser({ profile: '/x/col2-work-chrome', proxy: 'http://127.0.0.1:8899' }).args(), a2 = new Browser({ profile: '/x/col2-work-chrome' }).args(); const HS = fs.readFileSync(path.join(__dirname, '../helper/readnow-col2-helper.js'), 'utf8');
+      ok(a1.includes('--proxy-server=http://127.0.0.1:8899') && !a2.some((x) => /proxy/.test(x)) && /const lgProxy = \(\) => \{ if \(!isLoggerPc\(\)\) return null;/.test(HS) && /COL2\.PROD_PORTS\[1\]/.test(HS) && /proxy: lgProxy\(\), netHint/.test(HS), '로거 작업 크롬만 운영 로거 도우미(8899) 길 — 테더링만 · 와이파이로 안 샘 · 사무실 PC는 그대로', a1.filter((x) => /proxy/.test(x)).join(' ')); }
     ok(s1.auto && s1.auto.dayCap === COL2.LOGGER.dayCap, `로거 그림자 하루 몫은 따로 작게(${COL2.LOGGER.dayCap}장 · 테더링)`, s1.auto && s1.auto.dayCap);
     { const r = await H.api('POST', '/set', { k: 'pace.dayCap', v: 1600 }); const sx = (await H.api('GET', '/status')).j; ok(r.j && r.j.ok && sx.auto && sx.auto.dayCap === COL2.LOGGER.dayCap, `모든 PC 공통 '알라딘 화면 하루'(1600)가 와도 로거 몫(${COL2.LOGGER.dayCap})이 먼저(판 내기 합침)`, sx.auto && sx.auto.dayCap); await H.api('POST', '/set', { k: 'pace.dayCap', v: null }); }
     console.log('② 운영 로거가 읽은 책 → 그림자');
@@ -56,6 +61,8 @@ function bridge(H, DB) { const got = []; let stop = false, pulls = 0;
   console.log('④ 운영 수집기 본문');
   const SRC = fs.readFileSync(path.join(L.PROD_REPO, 'src/readnow-collector.src.js'), 'utf8'); const i0 = SRC.indexOf('(function rnC2lg()'); const i1 = SRC.indexOf('})();', i0); const BRG = i0 > 0 ? SRC.slice(i0, i1) : '';
   ok(BRG && /!isLogger\(\)\) return/.test(BRG) && /\^col2_\[\\w-\]\+\$/.test(BRG) && /o\.op \|\|/.test(BRG) && !/prd_listings|prd_books'|shp_state|crm_|app_secrets|prd_ids/.test(BRG) && /\/lg\/books/.test(BRG) && /__rnTgate/.test(BRG) && /webAt/.test(BRG), '다리 rnC2lg: 로거에서만 · col2_ 칸만 씀(넘김 op 안 씀) · 우리 상품·매물·주문·문의·키 칸을 읽지 않음 · 책 차례·테더링 문·웹앱 있으면 비킴', BRG.length);
+  ok(/db\.collection\('col2_ctl'\)\.doc\(/.test(BRG) && /via: 'col'/.test(BRG) && /Date\.now\(\) - \(G\.__rnC2lgCtl \|\| 0\) > 5 \* 60e3/.test(BRG) && BRG.indexOf("col2_ctl") > BRG.indexOf('pd.webAt && Date.now() - pd.webAt < 3 * 60e3'), '다리: 로거 웹앱이 없으면 번외 상태 기록(col2_ctl)을 5분마다 대신 씀(웹앱이 3분 안에 왔으면 비킴 · 판·몫·글·새 판 결과만)');
+  ok(/const budOut = !!\(tgOk && bud && bud\.left && !bud\.free && !\(bud\.left\.gen > 0\)\)/.test(BRG) && /내일 00:00/.test(BRG) && /\[360, 720, 1080, 1440\]/.test(BRG) && /until: Date\.now\(\) \+ budSec \* 1000/.test(BRG) && /why: budWhy/.test(BRG), "다리: 오늘 일반 몫(번외는 '기타'로 셈)이 0이면 번외도 쉼 · 다시 여는 때를 글로(두 몫 0 = 내일 0시 · 일반만 0 = 다음 시간대)");
   ok(/if \(PUBONLY && page\.aladinItemId\) \{ const Q = \(globalThis\.__rnC2lgBk/.test(SRC) && /Q\.length > 300/.test(SRC), '시장 지표 뒤 책 기록은 로거(PUBONLY)에서만 · 메모리 300권(GM에 안 씀)');
   ok(/const HO_KP = await/.test(SRC) && /HO_KP \? \(!x \|\| !x\[type\]\) && d < recent/.test(SRC) && /8 \* 3600e3/.test(SRC), "KPIPA: 넘김이 켜지고 번외 소식이 8시간 안일 때만 '최근 7일'을 건너뜀(빈 날 채우기·주제분류는 그대로)");
   console.log('⑤ 🟩 네이버 로거 다리 rnC2nv (11/11 nvfix1 · 로거 웹앱 없이 받는 열쇠·상태·봉투·주문)');
