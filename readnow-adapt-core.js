@@ -13,6 +13,9 @@
   const txt = (el) => (el ? String(el.textContent || '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim() : '');
   /* 문맥 글 — 글 조각마다 띄어 붙임(textContent는 '4,210'과 '300쪽'을 '4,210300쪽'으로 붙여 숫자를 틀리게 읽음) · script·style 뺌 */
   const ttxt = (el) => { if (!el) return ''; const out = []; const walk = (n) => { if (n.nodeType === 3) { out.push(n.nodeValue); return; } if (n.nodeType !== 1 && n.nodeType !== 9 && n.nodeType !== 11) return; const t = n.tagName; if (t === 'SCRIPT' || t === 'STYLE' || t === 'NOSCRIPT' || t === 'TEMPLATE') return; for (let c = n.firstChild; c; c = c.nextSibling) walk(c); }; walk(el); return out.join(' ').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim(); };
+  /* (0.1.2 adapt2) 합 — 알라딘 화면은 옛 prototype.js를 실어 Array.prototype.reduce가 '배열 그대로/첫 값'을 돌려줌 → 화면 안에서 신뢰도가 모두 NaN(진단: 모든 칸 conf null → 점수 50점)
+   *  그래서 이 파일은 reduce를 쓰지 않고 이 for 고리만 씀 */
+  const sumOf = (L, f) => { let t = 0; for (let i = 0; i < L.length; i++) t += +f(L[i]) || 0; return t; };
   const toInt = (s) => { if (s == null) return null; if (typeof s === 'number') return isFinite(s) ? Math.round(s) : null; const m = String(s).replace(/,/g, '').match(/-?\d+/); return m ? +m[0] : null; };
   const toNum = (s) => { if (s == null) return null; if (typeof s === 'number') return isFinite(s) ? s : null; const m = String(s).replace(/,/g, '').match(/-?\d+(?:\.\d+)?/); return m ? +m[0] : null; };
   const isbn10to13 = (s) => { const d = String(s || '').replace(/[^0-9Xx]/g, ''); if (d.length !== 10) return null; const b = '978' + d.slice(0, 9); let t = 0; for (let i = 0; i < 12; i++) t += +b[i] * (i % 2 ? 3 : 1); return b + ((10 - (t % 10)) % 10); };
@@ -196,12 +199,12 @@
       { how: 'ctx', f: (b) => (ttxt(b).match(/[\d,]+\s*원\s*→\s*([\d,]+)\s*원/) || [])[1] || null },
     ] },
     priceList: { type: 'int', range: [100, 3000000], paths: [
-      { how: 'sel', f: (b) => { const t = [...b.querySelectorAll('span.ss_p, del, strike, s')].map((e) => txt(e)).find((x) => x && /원/.test(x) && +String(x).replace(/[^\d]/g, '') >= 100); return t || null; } }, /* (0.1.1 rel4 진단) 첫 span.ss_p가 '(10%할인)'이면 10을 정가로 읽던 것 — '원'이 붙은 100 넘는 값만 */
+      { how: 'sel', f: (b) => { const t = [...b.querySelectorAll('span.ss_p, del, strike, s')].map((e) => txt(e)).find((x) => x && /원/.test(x) && +String(x).replace(/[^\d]/g, '') >= 100); if (t) return t; /* (0.1.2) 실제 목록: <span class="">18,000</span>원 → … — 숫자만 든 span 바로 뒤 글이 '원 →' */ const e = [...b.querySelectorAll('span')].find((x) => /^[\d,]{3,}$/.test(txt(x)) && /^\s*원\s*→/.test((x.nextSibling && x.nextSibling.nodeValue) || '')); return e ? txt(e) : null; } }, /* (0.1.1 rel4 진단) 첫 span.ss_p가 '(10%할인)'이면 10을 정가로 읽던 것 — '원'이 붙은 100 넘는 값만 */
       { how: 'ctx', f: (b) => (ttxt(b).match(/([\d,]+)\s*원\s*→/) || [])[1] || null },
     ] },
-    salesPoint: { type: 'int', range: [0, 10000000], paths: [
-      { how: 'sel', f: (b) => { const li = [...b.querySelectorAll('li, span, div')].reverse().find((x) => /Sales\s*Point/i.test(x.textContent || '') && x.querySelector('b, strong')); return li ? txt(li.querySelector('b, strong')) : null; } },
-      { how: 'ctx', f: (b) => (ttxt(b).match(/Sales\s*Point\s*:?\s*([\d,]+)/i) || [])[1] || null },
+    salesPoint: { type: 'int', range: [0, 10000000], paths: [ /* (0.1.2 adapt2) 실제 검색·베스트셀러 목록은 '세일즈포인트 :<span class="sales_point"> 270</span>'(한글 · 2026-11-11 보관 원문) — 'Sales Point'만 찾아 목록 SP가 0%였음 */
+      { how: 'sel', f: (b) => { const e = b.querySelector('.sales_point'); if (e) return txt(e); const li = [...b.querySelectorAll('li, span, div')].reverse().find((x) => /Sales\s*Point|세일즈\s*포인트/i.test(x.textContent || '') && x.querySelector('b, strong')); return li ? txt(li.querySelector('b, strong')) : null; } },
+      { how: 'ctx', f: (b) => (ttxt(b).match(/(?:Sales\s*Point|세일즈\s*포인트)\s*:?\s*([\d,]+)/i) || [])[1] || null },
     ] },
     stock: { type: 'avail', paths: [
       { how: 'ctx', f: (b) => { const t = ttxt(b); const m = t.match(/(절판|일시\s*품절|품절)(?=\s|\)|$|,|입니다|되었)/); if (m) return m[1]; return /[\d,]+\s*원/.test(t) && /장바구니|바로구매|cart/i.test((b.innerHTML || '')) ? 'onSale' : null; } },
@@ -214,19 +217,34 @@
     ] },
     isbn13: { type: 'isbn', paths: [
       { how: 're', f: (b) => { const m = (b.innerHTML || '').match(/\/([0-9Xx]{10}|97[89]\d{10})_\d+\.(?:jpg|jpeg|gif|png)/); return m ? m[1] : null; } },
+      /* (0.1.2) 장바구니 네모 이름 chkCart.<ISBN10> · 보관함 상자 isbn="…"(실제 검색 화면) — 표지 그림 이름이 ISBN이 아닐 때도 */
+      { how: 'sel', f: (b) => { const c = b.querySelector('input[name^="chkCart."]'); const v = c ? String(c.getAttribute('name')).slice(8) : null; if (v && /^[0-9Xx]{10}$|^97[89]\d{10}$/.test(v)) return v; const e = b.querySelector('[isbn]'); return e ? e.getAttribute('isbn') : null; } },
+    ] },
+    /* (0.1.2) 표지 그림 이름(ISBN10·K코드 등) — 판매자 숍 상품(bench_items.coverKey)과 같은 책을 잇는 가장 센 열쇠 · 점수에는 안 셈(opt) */
+    coverKey: { type: 'str', opt: true, paths: [
+      { how: 're', f: (b) => { const im = b.querySelector('img.front_cover') || b.querySelector('img[src*="/cover"]'); const m = String((im && im.getAttribute('src')) || '').match(/\/([0-9A-Za-z]{8,13})_\d+\.(?:jpe?g|gif|png)/i); return m ? m[1] : null; } },
+    ] },
+    /* (0.1.2) 상품 갈래 [국내도서]·[외국도서]·[전자책]·[중고] — 전자책 줄을 새책으로 잇지 않게 */
+    kind: { type: 'str', opt: true, paths: [
+      { how: 'sel', f: (b) => (txt(b.querySelector('.tit_category')).match(/\[([^\]]+)\]/) || [])[1] || null },
+    ] },
+    /* (0.1.2 · 연구 8-6) 이 책의 전자책 값 — TTB가 주던 칸 중 하나 · 목록 한 쪽에서 함께 */
+    ebookPrice: { type: 'int', opt: true, range: [100, 3000000], paths: [
+      { how: 'sel', f: (b) => txt(b.querySelector('.ebook_price em')) || null },
+      { how: 'ctx', f: (b) => (ttxt(b).match(/전자책\s*:?\s*([\d,]+)\s*원/) || [])[1] || null },
     ] },
     pubYm: { type: 'date', paths: [
       { how: 'ctx', f: (b) => { const m = ttxt(b).match(/(\d{4})\s*년\s*(\d{1,2})\s*월/) || ttxt(b).match(/\|\s*(\d{4})-(\d{2})(?:-\d{2})?\s*(?:\||$)/); return m ? `${m[1]}-${String(m[2]).padStart(2, '0')}` : null; } },
     ] },
     used: { type: 'str', paths: [
-      { how: 'ctx', f: (b) => (/\[중고\]/.test(ttxt(b)) ? 'used' : 'new') },
+      { how: 'ctx', f: (b) => (/\[중고\]/.test(ttxt(b)) ? 'used' : /^\s*\[전자책\]/.test(txt(b.querySelector('.tit_category'))) ? 'ebook' : 'new') },
     ] },
   };
 
   /* ── 합의 ── votes = [{how, w, v}] (v는 이미 맞춤 꼴) → { v, conf, n, of, hows, alt } */
   function vote(type, votes, of, tol) { const G = []; for (const x of votes) { if (x.v == null) continue; const g = G.find((y) => same(type, y.v, x.v, tol)); if (g) { g.w += x.w; g.hows.push(x.how); if (keyOf(type, x.v).length > keyOf(type, g.v).length && type === 'str') g.v = g.v; } else G.push({ v: x.v, w: x.w, hows: [x.how] }); }
     if (!G.length) return { v: null, conf: 0, n: 0, of: of || 0, hows: [], alt: [] };
-    G.sort((a, b) => b.w - a.w); const tw = G.reduce((s, g) => s + g.w, 0); const g = G[0]; const n = votes.filter((x) => x.v != null).length;
+    G.sort((a, b) => b.w - a.w); const tw = sumOf(G, (g) => g.w); const g = G[0]; const n = votes.filter((x) => x.v != null).length;
     const share = g.w / tw; const conf = Math.round(share * (g.hows.length >= 2 ? 1 : of > 1 ? 0.6 : 0.7) * 100) / 100;
     return { v: g.v, conf, n, of: of || n, hows: g.hows, alt: G.slice(1, 3).map((y) => ({ v: y.v, hows: y.hows })) }; }
   const TOL = { salesPoint: 0, salesIndex: 0 };
@@ -244,13 +262,14 @@
 
   /* 목록 화면 — 상자 찾기(길 여럿 · 가장 많이 찾은 길) → 상자마다 칸 합의 · 상자를 못 찾으면 상품 링크로 묶음(auto) */
   function autoBoxes(doc) { const A = [...doc.querySelectorAll('a[href*="wproduct.aspx?ItemId="], a[href*="wproduct.aspx?itemid="]')]; const seen = new Map();
-    for (const a of A) { const id = ((a.getAttribute('href') || '').match(/ItemId=(\d+)/i) || [])[1]; if (!id) continue; let e = a; let best = null;
+    for (const a of A) { const id = ((a.getAttribute('href') || '').match(/ItemId=(\d+)/i) || [])[1]; if (!id) continue; if (/view_blue_btn/.test(a.getAttribute('class') || '') || /^\s*보러\s*가기\s*$/.test(txt(a))) continue; /* (0.1.2) '이 책의 전자책 … 보러 가기'를 따로 상품으로 세던 것(베스트셀러 50권 → 74줄) */ let e = a; let best = null;
       for (let k = 0; k < 8 && e && e.parentElement; k++) { e = e.parentElement; const ids = new Set([...(e.innerHTML || '').matchAll(/wproduct\.aspx\?ItemId=(\d+)/gi)].map((m) => m[1])); if (ids.size > 1) break; if (/[\d,]+\s*원/.test(e.textContent || '')) best = e; }
       if (best && !seen.has(id)) seen.set(id, best); }
     return [...new Set(seen.values())]; }
   function extractList(doc, opts) { const o = opts || {}; if (!doc) return null; const tries = LIST_BOX.concat(((o.learned || {}).al_list || {})._box || []).map((b) => { let L = []; try { L = [...doc.querySelectorAll(b.sel)]; } catch (e) {} if (b.sel === '.ss_book_list') L = L.map((x) => x.closest('table') || x.parentElement || x); return { how: b.how || 'learned', sel: b.sel, L }; });
     tries.push({ how: 'auto', sel: '(상품 링크로 묶음)', L: autoBoxes(doc) }); tries.forEach((t) => { t.n = new Set(t.L.map((b) => ((b.getAttribute && b.getAttribute('itemid')) || ((b.innerHTML || '').match(/ItemId=(\d+)/i) || [])[1]))).size; });
-    const best = tries.slice().sort((a, b) => b.n - a.n)[0]; const boxes = { tried: tries.map((t) => ({ how: t.how, sel: t.sel, n: t.n })), use: best.n ? best.sel : null };
+    const aut = tries[tries.length - 1]; const sels = tries.slice(0, -1).sort((a, b) => b.n - a.n); /* (0.1.2) 선택자 상자가 자동 묶음 수의 60% 넘으면 선택자 상자(상자 안에 표지·장바구니까지 다 들어 있음) — 자동 묶음은 상자를 잘게 쪼개 ISBN(표지)을 놓쳤음 */
+    const best = sels[0] && sels[0].n >= 1 && sels[0].n >= aut.n * 0.6 ? sels[0] : aut.n ? aut : sels[0]; const boxes = { tried: tries.map((t) => ({ how: t.how, sel: t.sel, n: t.n })), use: best.n ? best.sel : null };
     const rows = []; const seen = new Set();
     for (const b of best.L) { const r = { _conf: {} }; for (const [fd, spec] of Object.entries(LIST_FIELDS)) { const P = spec.paths.concat((((o.learned || {}).al_list || {})[fd] || []).map((x) => ({ how: 'learned', f: (bx) => { const e = x.sel ? bx.querySelector(x.sel) : bx; const t = txt(e); if (x.re) { const m = t.match(new RegExp(x.re)); return m ? m[1] : null; } return t || null; } })));
         const votes = P.map((p) => { let raw = null; try { raw = p.f(b); } catch (e) {} return { how: p.how, w: W_DEF[p.how] || 1, v: NORM[spec.type](raw) }; }); const v = vote(spec.type, votes, P.length, TOL[fd]); r[fd] = v.v; r._conf[fd] = v.conf; }
@@ -273,12 +292,12 @@
     for (const [fd, spec] of Object.entries(K.fields)) { const F = R.map((r) => (r.fields ? r.fields[fd] : null)).filter(Boolean); if (!F.length) continue; const filled = F.filter((x) => x.v != null); const pf = {};
       R.forEach((r) => ((r.paths || {})[fd] || []).forEach((p) => { const z = (pf[p.how] = pf[p.how] || { n: 0, got: 0, ok: 0 }); z.n++; if (p.v != null) z.got++; if (p.ok) z.ok++; }));
       Object.values(pf).forEach((z) => { z.fill = z.n ? Math.round((z.got / z.n) * 1000) / 1000 : 0; z.agree = z.got ? Math.round((z.ok / z.got) * 1000) / 1000 : null; });
-      out.fields[fd] = { fill: Math.round((filled.length / F.length) * 1000) / 1000, conf: filled.length ? Math.round((filled.reduce((s, x) => s + x.conf, 0) / filled.length) * 1000) / 1000 : 0, agree: filled.length ? Math.round((filled.filter((x) => x.n >= 2 && x.hows.length === x.n).length / filled.length) * 1000) / 1000 : 0, inRange: filled.length ? Math.round((filled.filter((x) => !x.outOfRange).length / filled.length) * 1000) / 1000 : 1, must: !!spec.must, paths: pf }; }
-    const fs = Object.values(out.fields); out.score = fs.length ? Math.round((fs.reduce((s, f) => s + f.fill * (0.5 + 0.5 * f.conf), 0) / fs.length) * 1000) / 1000 : 0; return out; }
+      out.fields[fd] = { fill: Math.round((filled.length / F.length) * 1000) / 1000, conf: filled.length ? Math.round((sumOf(filled, (x) => x.conf) / filled.length) * 1000) / 1000 : 0, agree: filled.length ? Math.round((filled.filter((x) => x.n >= 2 && x.hows.length === x.n).length / filled.length) * 1000) / 1000 : 0, inRange: filled.length ? Math.round((filled.filter((x) => !x.outOfRange).length / filled.length) * 1000) / 1000 : 1, must: !!spec.must, opt: !!spec.opt, paths: pf }; }
+    const fs = Object.values(out.fields).filter((f) => !f.opt); out.score = fs.length ? Math.round((sumOf(fs, (f) => f.fill * (0.5 + 0.5 * (+f.conf || 0))) / fs.length) * 1000) / 1000 : 0; return out; }
   /* 목록 화면 건강 — 줄들의 칸 채움률(상자 길 이름 포함) */
   function healthOfList(lists) { const L = (lists || []).filter(Boolean); const rows = L.flatMap((x) => x.rows || []); const out = { kind: 'al_list', n: L.length, rows: rows.length, fields: {}, box: L.map((x) => x.boxes && x.boxes.use) };
-    for (const [fd, spec] of Object.entries(LIST_FIELDS)) { if (!rows.length) { out.fields[fd] = { fill: 0, conf: 0, must: !!spec.must }; continue; } const got = rows.filter((r) => r[fd] != null); out.fields[fd] = { fill: Math.round((got.length / rows.length) * 1000) / 1000, conf: got.length ? Math.round((got.reduce((s, r) => s + (r._conf[fd] || 0), 0) / got.length) * 1000) / 1000 : 0, must: !!spec.must }; }
-    const fs = Object.values(out.fields); out.score = fs.length ? Math.round((fs.reduce((s, f) => s + f.fill * (0.5 + 0.5 * f.conf), 0) / fs.length) * 1000) / 1000 : 0; return out; }
+    for (const [fd, spec] of Object.entries(LIST_FIELDS)) { if (!rows.length) { out.fields[fd] = { fill: 0, conf: 0, must: !!spec.must, opt: !!spec.opt }; continue; } const got = rows.filter((r) => r[fd] != null); out.fields[fd] = { fill: Math.round((got.length / rows.length) * 1000) / 1000, conf: got.length ? Math.round((sumOf(got, (r) => (r._conf || {})[fd] || 0) / got.length) * 1000) / 1000 : 0, must: !!spec.must, opt: !!spec.opt }; }
+    const fs = Object.values(out.fields).filter((f) => !f.opt); out.score = fs.length ? Math.round((sumOf(fs, (f) => f.fill * (0.5 + 0.5 * (+f.conf || 0))) / fs.length) * 1000) / 1000 : 0; return out; }
   /* 오늘 vs 전날 → 칸마다 판정: broken(못 읽음) · drop(채움률 크게 떨어짐) · path(합의는 살았지만 길 하나가 죽음 — 새 길 찾기 시작) · range · ok */
   function healthJudge(today, prev, opt) { const o = { drop: 0.25, low: 0.5, pathDead: 0.2, pathWas: 0.8, ...(opt || {}) }; const out = { kind: today && today.kind, st: 'ok', fields: {}, broken: [], warn: [], deadPaths: [] }; if (!today) return out;
     for (const [fd, f] of Object.entries(today.fields || {})) { const p = prev && prev.fields ? prev.fields[fd] : null; let st = 'ok'; const why = [];
@@ -320,10 +339,12 @@
 
   /* ── TTB 대체 견줌 ── 10/30 전에 TTB가 준 값(ext_basic.src.ttb.d)과 지금 대체(공개 화면 읽기)의 같은 칸 */
   const TTB_FIELDS = [['title', 'title', 'str'], ['authors', 'author', 'str'], ['publisher', 'publisher', 'str'], ['pubDate', 'pubDate', 'date'], ['priceList', 'priceList', 'int'], ['priceSales', 'priceSales', 'int'], ['salesPoint', 'salesPoint', 'int'], ['stock', 'availability', 'avail'], ['rating', 'rating', 'num']];
-  const TTB_TOL = { salesPoint: 0.5, priceSales: 0.15, rating: 0.15 }; /* SP·판매가는 그사이 바뀜(10/30 전 값) — 넓게 · 근거: 없음(첫 회차 뒤 다시 정함) */
+  const TTB_TOL = { salesPoint: 0.5, priceSales: 0.15, rating: 0.15, priceListForeign: 0.15 }; /* (0.1.2 adapt2) 외국 책(ISBN이 978-89·979-11이 아님)의 원화 정가는 환율 따라 바뀜 — 11/11 ttbcmp 정가 일치 0.25(8권 중 원서가 대부분 · 판매가는 15% 너그러움으로 1.0) → 외국 책 정가도 판매가처럼 15% · 틀린 예(miss)를 함께 남김 */
+  const isKrIsbn = (i) => /^(97889|97911)\d{8}$/.test(String(i || '')); /* SP·판매가는 그사이 바뀜(10/30 전 값) — 넓게 · 근거: 없음(첫 회차 뒤 다시 정함) */
   function ttbCompare(pairs) { const P = (pairs || []).filter((x) => x && x.ttb); const out = { n: P.length, fields: {}, ok: true, worse: [] };
-    for (const [tk, nk, ty] of TTB_FIELDS) { let tf = 0, nf = 0, both = 0, ag = 0; for (const x of P) { let a = x.ttb[tk]; if (tk === 'authors' && a) a = String(a).split(/[,(]/)[0]; const A = NORM[ty](a); const B = NORM[ty]((x.now || {})[nk]); if (A != null) tf++; if (B != null) nf++; if (A != null && B != null) { both++; if (ty === 'str' ? keyOf('str', A).slice(0, 6) === keyOf('str', B).slice(0, 6) : same(ty, A, B, TTB_TOL[tk])) ag++; } }
-      const f = { ttbFill: P.length ? Math.round((tf / P.length) * 1000) / 1000 : 0, nowFill: P.length ? Math.round((nf / P.length) * 1000) / 1000 : 0, both, agree: both ? Math.round((ag / both) * 1000) / 1000 : null };
+    for (const [tk, nk, ty] of TTB_FIELDS) { let tf = 0, nf = 0, both = 0, ag = 0, bKr = 0, aKr = 0; const miss = []; for (const x of P) { let a = x.ttb[tk]; if (tk === 'authors' && a) a = String(a).split(/[,(]/)[0]; const A = NORM[ty](a); const B = NORM[ty]((x.now || {})[nk]); if (A != null) tf++; if (B != null) nf++;
+        if (A != null && B != null) { both++; const kr = isKrIsbn(x.isbn); const tol = tk === 'priceList' && !kr ? TTB_TOL.priceListForeign : TTB_TOL[tk]; const hit = ty === 'str' ? keyOf('str', A).slice(0, 6) === keyOf('str', B).slice(0, 6) : same(ty, A, B, tol); if (hit) ag++; if (kr) { bKr++; if (hit) aKr++; } if (!hit && miss.length < 4) miss.push({ isbn: x.isbn || null, ttb: A, now: B, kr }); } }
+      const f = { ttbFill: P.length ? Math.round((tf / P.length) * 1000) / 1000 : 0, nowFill: P.length ? Math.round((nf / P.length) * 1000) / 1000 : 0, both, agree: both ? Math.round((ag / both) * 1000) / 1000 : null, agreeKr: bKr ? Math.round((aKr / bKr) * 1000) / 1000 : null, nKr: bKr, miss };
       f.ok = f.nowFill >= f.ttbFill - 0.05 && (f.agree == null || f.agree >= (tk === 'salesPoint' ? 0.6 : 0.9)); out.fields[nk] = f; if (!f.ok) { out.ok = false; out.worse.push(nk); } }
     return out; }
 
@@ -333,8 +354,20 @@
     BlogBest: { label: '블로거 베스트', urls: ['/shop/common/wbest.aspx?BestType=BlogBest&BranchType={b}&CID={c}&page={p}', '/shop/common/wblogbest.aspx?BranchType={b}&page={p}'] },
     ItemNewAll: { label: '신간 전체', urls: ['/shop/common/wnew.aspx?NewType=New&BranchType={b}&CID={c}&page={p}', '/shop/common/wnew.aspx?BranchType={b}&page={p}'] },
     ItemNewSpecial: { label: '주목할 만한 신간', urls: ['/shop/common/wnew.aspx?NewType=SpecialNew&BranchType={b}&CID={c}&page={p}', '/shop/common/wnew.aspx?NewType=Special&BranchType={b}&page={p}'] },
-    ItemEditorChoice: { label: '편집자 추천', urls: ['/shop/common/wchoice.aspx?BranchType={b}&CID={c}&page={p}', '/shop/common/wnew.aspx?NewType=EditorChoice&BranchType={b}&CID={c}&page={p}', '/shop/wbrowse.aspx?CID={c}&BrowseTarget=EditorRecommend&page={p}'] },
+    /* (0.1.2 adapt2) 진단 blist: 앞 두 주소는 '알라딘' 빈 화면(9.5만 자 · 상자 0) · wbrowse CID=1&BrowseTarget=EditorRecommend는 분야 첫 화면(값 없는 상품 링크 119개 — 목록 아님)
+     *  → 목록 주소를 짐작하지 않고 분야 첫 화면(hubs)에서 '편집장의 선택' 같은 제목 칸(sec)을 찾아 그 칸의 상품만 · 칸 안 '더보기' 링크가 있으면 그 화면을 목록으로 */
+    ItemEditorChoice: { label: '편집자 추천', urls: ['/shop/common/wchoice.aspx?BranchType={b}&CID={c}&page={p}', '/shop/common/wnew.aspx?NewType=EditorChoice&BranchType={b}&CID={c}&page={p}'], hubs: ['/shop/wbrowse.aspx?CID={c1}', '/'], sec: ['편집장의\\s*선택', '편집자\\s*(?:추천|의\\s*선택)', '에디터\\s*(?:추천|픽|PICK)', 'MD\\s*(?:추천|의\\s*선택)'] },
   };
+  /* (0.1.2) 화면 안 제목 칸('편집장의 선택' 등) 아래 상품만 — 제목 글(30자 안)을 찾아 위로 올라가며 상품이 3~60개 든 가장 가까운 상자 · 그 상자 안 '더보기' 주소도 */
+  function sectionOf(doc, reSrc) { let re; try { re = new RegExp(reSrc, 'i'); } catch (e) { return null; } const idsIn = (e) => new Set([...(e.innerHTML || '').matchAll(/wproduct\.aspx\?ItemId=(\d+)/gi)].map((m) => m[1])).size;
+    const heads = [...doc.querySelectorAll('h1, h2, h3, h4, h5, strong, b, em, span, a, p, li, div, img[alt], dt')].filter((e) => { const t = e.tagName === 'IMG' ? String(e.getAttribute('alt') || '') : txt(e); return t && t.length <= 30 && re.test(t); }).slice(0, 12);
+    for (const h of heads) { let e = h; for (let k = 0; k < 7 && e && e.parentElement; k++) { e = e.parentElement; const n = idsIn(e); if (n > 60) break; if (n >= 3) { const more = [...e.querySelectorAll('a[href]')].find((a) => /더\s*보기|전체\s*보기|more/i.test(txt(a) + ' ' + (a.getAttribute('title') || '') + ' ' + ((a.querySelector('img') || { getAttribute: () => '' }).getAttribute('alt') || '')) && !/wproduct\.aspx/i.test(a.getAttribute('href') || '')); return { el: e, head: (h.tagName === 'IMG' ? String(h.getAttribute('alt') || '') : txt(h)).slice(0, 30) || null, n, more: more ? more.getAttribute('href') : null }; } } }
+    return null; }
+  /* 제목 칸 안 상품 줄 — 값이 없는 칸(그림·제목만)이라도 상품 번호·제목·지은이·출판사·표지 이름만은 · 값이 든 상자가 있으면 extractList 그대로 */
+  function sectionRows(el, opts) { const X = extractList(el, { ...(opts || {}), fp: false }); if (X.rows.length >= 3) return X; const by = new Map();
+    for (const a of el.querySelectorAll('a[href*="wproduct.aspx?ItemId="], a[href*="wproduct.aspx?itemid="]')) { const id = ((a.getAttribute('href') || '').match(/ItemId=(\d+)/i) || [])[1]; if (!id) continue; const z = by.get(id) || { itemId: id, title: null, author: null, publisher: null, coverKey: null, used: 'new', _conf: { itemId: 0.6 } }; const t = txt(a); if (t && !/^\s*보러\s*가기\s*$/.test(t) && (!z.title || t.length > z.title.length)) z.title = t;
+      const im = a.querySelector('img'); const m = im ? String(im.getAttribute('src') || '').match(/\/([0-9A-Za-z]{8,13})_\d+\.(?:jpe?g|gif|png)/i) : null; if (m) z.coverKey = m[1]; const box = a.closest('li, dd, td, div') || a.parentElement; if (box && !z.author) { const au = box.querySelector('a[href*="AuthorSearch"]'); const pu = box.querySelector('a[href*="PublisherSearch"]'); z.author = au ? txt(au) || null : null; z.publisher = pu ? txt(pu) || null : null; } by.set(id, z); }
+    const rows = [...by.values()].filter((r) => r.title); return { rows, boxes: { tried: X.boxes.tried, use: rows.length ? '(제목 칸 링크)' : X.boxes.use }, fp: null }; }
   function listUrls(type, o) { const L = LISTS[type]; if (!L) return []; const b = (o && o.branch) || 1, c = (o && o.cid) || 0, p = (o && o.page) || 1; const mem = o && o.known ? [o.known] : []; return [...new Set(mem.concat(L.urls))].map((u) => u.replace('{b}', b).replace('{c}', c).replace('{p}', p)); }
 
   /* ── SP 묶음 검색 계획 ── (정범님 11/11 밤 '검색 결과 목록으로 한꺼번에') 목록 한 쪽 = 상품마다 SP·판매가·정가·재고·ISBN(표지)·저자·출판사·출간 연월 — 상품 화면 한 권씩보다 수십 배 싼 길 SP가 빈 상품을 출판사(없으면 저자)로 묶어 '검색 결과 한 쪽 = 여러 권 SP'
@@ -351,6 +384,29 @@
       if (r && (r.salesPoint != null || all)) out.set(it.id, { sp: r.salesPoint ?? null, itemId: r.itemId, how, priceSales: r.priceSales ?? null, stock: r.stock ?? null, ...(all ? { row: r } : {}) }); }
     return out; }
 
+  /* ── (0.1.2 adapt2) SP 묶음 2판 ── 11/11 진단 spbatch=1: 대상 7,511 · 검색 8쪽 · 맞춤 1 — 까닭 ① 목록 SP 길이 깨짐('세일즈포인트') ② 출판사 이름 낱말 검색 한 쪽(50줄)은 그 출판사 인기책뿐이라 판매자 숍의 옛 책이 거의 안 나옴
+   *  ③ 판매자 숍 상품엔 ISBN이 거의 없고(상세 읽은 것만) 표지 그림 이름(coverKey)·정가·지은이|출판사(byline)는 있음 → 시장 지표·SP 표본 맞대기(ISBN으로만)가 0
+   *  2판: 표지 이름이 ISBN 꼴(검사 숫자까지 맞음)이면 그 ISBN을 '짐작 ISBN'으로 → ㉠ 맞대기에 씀 · ㉡ ISBN 검색 한 쪽(정확) / 아니면 정리한 제목 검색 한 쪽 · 같은 제목은 한 번만
+   *  맞추기: 한 쪽의 모든 줄을 '남은 모든 상품'과 견줌(묶음 덤) — 표지 이름 같음 > ISBN 같음 > 제목 같음 + (출판사·지은이·정가 중 하나 같음 · 후보 하나) */
+  function isbnOk(v) { const s = String(v || '').replace(/[^0-9Xx]/g, '').toUpperCase(); if (s.length === 10) { let t = 0; for (let i = 0; i < 9; i++) { if (!/\d/.test(s[i])) return false; t += (10 - i) * +s[i]; } const c = s[9] === 'X' ? 10 : /\d/.test(s[9]) ? +s[9] : -1; return c >= 0 && (t + c) % 11 === 0; }
+    if (/^97[89]\d{10}$/.test(s)) { let t = 0; for (let i = 0; i < 12; i++) t += +s[i] * (i % 2 ? 3 : 1); return (10 - (t % 10)) % 10 === +s[12]; } return false; }
+  const coverIsbn = (k) => (isbnOk(k) ? NORM.isbn(k) : null);
+  /* 판매자 숍 제목 정리 — [중고]·세트 꼬리·괄호 판 정보·부제 뒤를 떼어 검색어로 */
+  const cleanTitle = (t) => String(t || '').replace(/^\s*\[[^\]]{1,8}\]\s*/, '').replace(/\s*-\s*전\s*\d+\s*권.*$/, '').replace(/\s*[\(\[][^)\]]{0,30}(판|권|호|개정|증보|합본|세트|양장|무선|반양장)[^)\]]{0,10}[\)\]]\s*/g, ' ').replace(/\s+-\s+.*$/, '').replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
+  const tkey = (t) => keyOf('str', cleanTitle(t));
+  function spBatchPlan2(items, opt) { const o = { maxQ: 60, ...(opt || {}) }; const Q = []; const byT = new Map();
+    for (const it of items || []) { const ib = NORM.isbn(it.isbn) || coverIsbn(it.coverKey); if (ib) { Q.push({ q: ib, field: 'ISBN', ids: [it.id], pri: 2 }); continue; } const q = cleanTitle(it.title); if (q.length < 2) continue; const k = keyOf('str', q); if (!byT.has(k)) byT.set(k, { q, field: 'Title', ids: [], pri: 1 }); byT.get(k).ids.push(it.id); }
+    Q.push(...byT.values()); Q.sort((a, b) => b.pri - a.pri || b.ids.length - a.ids.length); return Q.slice(0, o.maxQ); }
+  function spBatchMatch2(rows, items) { const out = new Map(); const R = (rows || []).filter((r) => r && r.itemId && r.used !== 'used' && r.used !== 'ebook' && r.kind !== '전자책' && r.kind !== '중고');
+    const byCov = new Map(), byIsbn = new Map(); for (const r of R) { if (r.coverKey) byCov.set(String(r.coverKey).toUpperCase(), r); if (r.isbn13) byIsbn.set(r.isbn13, r); }
+    for (const it of items || []) { let r = null, how = null; const ck = it.coverKey ? String(it.coverKey).toUpperCase() : null; const ib = NORM.isbn(it.isbn) || coverIsbn(it.coverKey);
+      if (ck && byCov.has(ck)) { r = byCov.get(ck); how = 'cover'; } else if (ib && byIsbn.has(ib)) { r = byIsbn.get(ib); how = 'isbn'; }
+      else if (it.title) { const kt = tkey(it.title); if (kt.length >= 2) { const C = R.filter((x) => { const kx = tkey(x.title); return kx && (kx === kt || (Math.min(kx.length, kt.length) >= 4 && (kx.startsWith(kt) || kt.startsWith(kx)))); });
+          const agree = (x) => (it.publisher && x.publisher && same('str', x.publisher, it.publisher) ? 1 : 0) + (it.author && x.author && same('str', String(x.author).split(/[,(]/)[0], String(it.author).split(/[,(]/)[0]) ? 1 : 0) + (it.priceList && x.priceList && +it.priceList === +x.priceList ? 1 : 0);
+          const S = C.map((x) => ({ x, a: agree(x) })).filter((z) => z.a >= 1).sort((p, q) => q.a - p.a); if (S.length === 1 || (S.length > 1 && S[0].a > S[1].a)) { r = S[0].x; how = 'title'; } } }
+      if (r) out.set(it.id, { sp: r.salesPoint ?? null, itemId: r.itemId, how, priceSales: r.priceSales ?? null, stock: r.stock ?? null, row: r }); }
+    return out; }
+
   /* ── 대기열·캐시·차등 갱신 ── 같은 회차에 같은 화면을 두 번 읽지 않고, 오래된 것·중요한 것부터 */
   function makeCache(ttlMs, max) { const M = new Map(); const T = ttlMs || 6 * 3600e3; const X = max || 2000; return { get: (k) => { const e = M.get(k); if (!e) return undefined; if (Date.now() - e.t > T) { M.delete(k); return undefined; } return e.v; }, set: (k, v) => { if (M.size >= X) M.delete(M.keys().next().value); M.set(k, { v, t: Date.now() }); return v; }, size: () => M.size }; }
   /* 차례 점수 = 지난 읽기부터 흐른 시간(시간) × 무게(우리 매물·벤치마킹·연구) ÷ (최근 값이 안 바뀐 횟수 + 1) — 자주 안 바뀌는 것은 덜 자주 */
@@ -361,6 +417,6 @@
   /* 하루 요약 한 줄(리드가 매일 봄) — 종류마다 점수·깨진 칸·죽은 길·지문 바뀜 */
   function dailyLine(H) { const parts = []; for (const [k, v] of Object.entries((H && H.kinds) || {})) { const j = v.judge || {}; parts.push(`${(KINDS[k] && KINDS[k].label) || (k === 'al_list' ? '알라딘 목록 화면' : k)} ${v.health ? Math.round(v.health.score * 100) : '-'}점${j.broken && j.broken.length ? ` · 깨짐 ${j.broken.join(',')}` : ''}${j.deadPaths && j.deadPaths.length ? ` · 죽은 길 ${j.deadPaths.map((d) => d.field + '/' + d.how).join(',')}` : ''}${v.fp && v.fp.changed ? ' · 화면 구조 바뀜' : ''}${v.guard && v.guard.bad && v.guard.bad.length ? ` · 운영 파서 어긋남 ${v.guard.bad.join(',')}` : ''}`); } return parts.join(' │ '); }
 
-  const api = { VERSION, KINDS, LIST_FIELDS, LIST_BOX, NORM, same, keyOf, isbn10to13, extract, extractList, autoBoxes, fingerprint, fpCompare, healthOf, healthOfList, healthJudge, discover, verifyCand, heal, cssPath, guardCompare, GUARD_MAP, ttbCompare, TTB_FIELDS, LISTS, listUrls, spBatchPlan, spBatchMatch, makeCache, prioritize, changed, dailyLine, vote };
+  const api = { VERSION, KINDS, LIST_FIELDS, LIST_BOX, NORM, same, keyOf, isbn10to13, extract, extractList, autoBoxes, fingerprint, fpCompare, healthOf, healthOfList, healthJudge, discover, verifyCand, heal, cssPath, guardCompare, GUARD_MAP, ttbCompare, TTB_FIELDS, LISTS, listUrls, spBatchPlan, spBatchMatch, sectionOf, sectionRows, spBatchPlan2, spBatchMatch2, coverIsbn, isbnOk, cleanTitle, isKrIsbn, makeCache, prioritize, changed, dailyLine, vote };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowAdapt = api;
 })(typeof window !== 'undefined' ? window : this);

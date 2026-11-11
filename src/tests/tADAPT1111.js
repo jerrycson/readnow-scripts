@@ -71,7 +71,7 @@ const searchPage = (L, boxCls) => `<html><body>${L.map((b) => `<div class="${box
   ok(plan.length === 2 && plan[0].field === 'Publisher' && plan[0].ids.length === 2 && plan[1].field === 'ISBN', '출판사 묶음 → 검색 한 쪽에 두 권 · 혼자면 ISBN 검색', plan);
   const mt = A.spBatchMatch(L1.rows, [{ id: 'a', title: '시험책 하나', publisher: '시험출판' }, { id: 'c', isbn: '9790000000035' }, { id: 'z', title: '없는 책' }]);
   ok(mt.get('a').sp === 4210 && mt.get('a').how === 'title' && mt.get('c').sp === 120345 && mt.get('c').how === 'isbn' && !mt.has('z'), '목록 줄 → 상품 맞추기(ISBN·제목 앞부분+출판사)', [...mt]);
-  ok(A.listUrls('Bestseller', { page: 2 })[0] === '/shop/common/wbest.aspx?BestType=Bestseller&BranchType=1&CID=0&page=2&cnt=50' && A.listUrls('ItemEditorChoice').length === 3 && A.listUrls('Bestseller', { known: '/x?p={p}' })[0] === '/x?p=1', '목록 종류 주소 후보(기억한 주소 먼저)');
+  ok(A.listUrls('Bestseller', { page: 2 })[0] === '/shop/common/wbest.aspx?BestType=Bestseller&BranchType=1&CID=0&page=2&cnt=50' && A.listUrls('ItemEditorChoice').length === 2 && (A.LISTS.ItemEditorChoice.hubs || []).length >= 1 && A.listUrls('Bestseller', { known: '/x?p={p}' })[0] === '/x?p=1', '목록 종류 주소 후보(기억한 주소 먼저)');
   ok(Object.keys(A.LISTS).sort().join() === 'Bestseller,BlogBest,ItemEditorChoice,ItemNewAll,ItemNewSpecial', '목록 종류 다섯 가지 모두');
 
   console.log('⑤ 운영 파서 견줌');
@@ -83,13 +83,13 @@ const searchPage = (L, boxCls) => `<html><body>${L.map((b) => `<div class="${box
     { ttb: { title: '시험책 둘', publisher: '시험출판', priceList: 12000, salesPoint: 90 }, now: { title: '시험책 둘', publisher: '시험출판', priceList: 12000, salesPoint: null } }];
   const tc = A.ttbCompare(pairs); ok(tc.n === 2 && tc.fields.title.agree === 1 && tc.fields.priceList.ok && tc.fields.salesPoint.ttbFill === 1 && tc.fields.salesPoint.nowFill === 0.5 && !tc.fields.salesPoint.ok && tc.worse.includes('salesPoint'), 'TTB가 주던 칸을 같은 품질로 주는지 — SP 채움 50%면 나쁨으로', tc.fields.salesPoint);
 
-  console.log('⑦ 네이버 책 검색 — 종료 확인 필요');
-  const NV = X.SOURCES.naver; ok(NV.endedSure === false && /확인 필요/.test(NV.label) && /SE05/.test(NV.endedWhy || ''), "'종료됨' → '종료 확인 필요'(근거: 10/13 응답 SE05 한 번 · 공식 공지 없음)", NV.label);
+  console.log('⑦ 네이버 책 검색 — (adapt2 11/11) 11/11 실제 물음도 SE05 → 종료 확정');
+  const NV = X.SOURCES.naver; ok(NV.endedSure === true && /종료됨/.test(NV.label) && /SE05/.test(NV.endedWhy || '') && /11\/11/.test(NV.endedWhy || ''), "'종료 확인 필요' → '종료됨' 확정(10/13·11/11 두 번 SE05)", NV.label);
   let nh = 0; const http = async () => { nh++; return { status: 200, text: '{"items":[{"title":"시험","isbn":"9790000000011"}]}' }; };
-  const r0 = await X.run('naver', { isbn: '9790000000011', keys: { naverId: 'a', naverSecret: 'b' }, http, cache: {}, cfg: X.cfgOf({}) }); ok(nh === 0 && /종료 확인 필요/.test(r0.skip || ''), '정기 수집은 여전히 묻지 않음(헛호출 0)', r0);
-  const rp = await X.probeLive('naver', { isbn: '9790000000011', keys: { naverId: 'a', naverSecret: 'b' }, http, cache: {}, cfg: X.cfgOf({}) }); ok(nh === 1 && rp && rp.ok !== undefined, '사실 확인(probeLive)만 한 번 실제로 물음', rp);
-  const cr = X.cfgOf({ revive: { naver: { at: 'x' }, ttb: { at: 'x' } } }); ok(cr.src.naver.on === true && cr.src.ttb.on === false && X.eligible('naver', { isbn: '9790000000011', title: 't' }, cr) !== false, '살아 있으면 revive로 다시 켬 · TTB(공식 종료)는 못 켬');
-  nh = 0; await X.run('naver', { isbn: '9790000000011', keys: { naverId: 'a', naverSecret: 'b' }, http, cache: {}, cfg: cr }); ok(nh === 1, '다시 켠 뒤엔 정기 수집이 물음');
+  const r0 = await X.run('naver', { isbn: '9790000000011', keys: { naverId: 'a', naverSecret: 'b' }, http, cache: {}, cfg: X.cfgOf({}) }); ok(nh === 0 && /종료됨/.test(r0.skip || '') && !/확인 필요/.test(r0.skip || ''), '정기 수집은 묻지 않음(헛호출 0) · 표시 종료됨', r0);
+  const rp = await X.probeLive('naver', { isbn: '9790000000011', keys: { naverId: 'a', naverSecret: 'b' }, http, cache: {}, cfg: X.cfgOf({}) }); ok(nh === 1 && rp && rp.ok !== undefined, '사실 확인(probeLive · 진단 naverchk)은 그대로 한 번 물을 수 있음', rp);
+  const cr = X.cfgOf({ revive: { naver: { at: 'x' }, ttb: { at: 'x' } } }); ok(cr.src.naver.on !== true && cr.src.ttb.on === false && !cr.revive.naver && X.eligible('naver', { isbn: '9790000000011', title: 't' }, cr) === false, '종료 확정 뒤엔 revive가 남아 있어도 다시 켜지 않음 · TTB도');
+  nh = 0; await X.run('naver', { isbn: '9790000000011', keys: { naverId: 'a', naverSecret: 'b' }, http, cache: {}, cfg: cr }); ok(nh === 0, 'revive가 남아도 정기 수집은 안 물음');
 
   console.log('⑧ 클라우드');
   ok(/'readnow-adapt-core\.js'\];/.test(CSRC) && /CORES_OPTIONAL = new Set\(\['readnow-register-core\.js', 'readnow-adapt-core\.js'\]\)/.test(CSRC), '적응 엔진을 화면에 함께 실음(없어도 다른 일은 그대로)');
@@ -97,7 +97,7 @@ const searchPage = (L, boxCls) => `<html><body>${L.map((b) => `<div class="${box
   const jd = new JSDOM('<html></html>'); global.DOMParser = jd.window.DOMParser; global.window = { ReadnowProducts: P, ReadnowAdapt: A };
   global.fetch = async (u) => { const k = Object.keys(fx).find((x) => String(u).startsWith(x)); return { ok: !!k, status: k ? 200 : 404, url: 'https://www.aladin.co.kr' + u, text: async () => (k ? fx[k] : '') }; };
   const alPubItem = new Function(cut(CSRC, 'async function alPubItem(p, o)', '\n/* 벤치마킹 그룹이 중고 요약') .replace(/\/\* ◆adapt[\s\S]*$/, '') + '\nreturn alPubItem;')();
-  const fakeP = { evaluate: async (fn, o) => fn(o) }; const it = await alPubItem(fakeP, { isbn: '9790000000011' });
+  const fakeP = { evaluate: async (fn, ...a) => fn(...a) }; const it = await alPubItem(fakeP, { isbn: '9790000000011' });
   ok(it && it.salesPoint === 4210 && it.priceSales === 13500 && it.title === '시험책 하나' && (it.adapt || []).includes('salesPoint') && (it.adapt || []).includes('title'), '바뀐 화면 — 운영 파서가 비운 SP·제목·판매가를 적응 엔진이 채움(남은 길로 계속)', it);
   fx['/shop/wproduct.aspx'] = alProd(BOOKS[0]); const it2 = await alPubItem(fakeP, { isbn: '9790000000011' }); ok(it2.salesPoint === 4210 && it2.adapt === null, '지금 화면 — 운영 파서 값 그대로(채운 칸 없음)', it2.adapt);
   const block = cut(CSRC, '/* ◆adapt 🧬', '/* ◆adapt 끝 */'); ok(/credentials: 'omit'/.test(block) && !/credentials: 'include'/.test(block) && !/\/scm\//.test(block) && !/wshop|UsedShop\/wshopitem|SC=/.test(block), "약속 0 — 공개 화면만(로그인 정보 없이) · 샵매니저·판매자 숍 화면을 열지 않음");
@@ -116,7 +116,7 @@ const searchPage = (L, boxCls) => `<html><body>${L.map((b) => `<div class="${box
   const li = await alListItem(fakeP, '9790000000035'); ok(li && li.salesPoint === 120345 && li.priceSales === 19800 && li.src === 'list', 'ISBN 한 권 SP = 검색 목록 한 쪽(상품 화면 안 엶)', li);
   ok((await alListItem(fakeP, '9790000000099')) === null, '목록에 같은 ISBN이 없으면 null → 상품 화면 길로');
   const spp = cut(CSRC, 'async function spPanelTick()', '\nsetInterval(() => spPanelTick()'); ok(/await alListItem\(p, isbn\)/.test(spp) && /else x = await alPubItem\(p, \{ isbn \}\)/.test(spp), 'SP 매일 표본도 목록 한 쪽 먼저 · 못 맞추면 상품 화면');
-  const spb = cut(CSRC, 'async function spBatchTick(o)', '\n/* (정범님 11/11 밤 ②'); ok(/cfg = \{ on: true, maxQ: 8/.test(spb) && /listTryAt: at/.test(spb) && /fillSrc: 'list'/.test(spb) && /it\.miss\.isbn && r\.isbn13/.test(spb) && /it\.miss\.pubYm && r\.pubYm/.test(spb) && !/wproduct\.aspx/.test(spb), '벤치마킹 상품 빈 칸 메우기 — 기본 켬 · 회차 상한 · 빈 칸만 · 못 맞춘 것 7일 쉼 · 상품 화면 안 엶');
+  const spb = cut(CSRC, 'async function spBatchTick(o)', '\n/* (정범님 11/11 밤 ②'); ok(/cfg = \{ on: true, maxQ: 24/.test(spb) && /listTryAt: at/.test(spb) && /fillSrc: 'list'/.test(spb) && /it\.miss\.isbn && r\.isbn13/.test(spb) && /it\.miss\.pubYm && r\.pubYm/.test(spb) && !/wproduct\.aspx/.test(spb), '벤치마킹 상품 빈 칸 메우기 — 기본 켬 · 회차 상한 · 빈 칸만 · 못 맞춘 것 7일 쉼 · 상품 화면 안 엶');
 
   console.log('⑨ 웹앱');
   const alertOf = new Function(cut(APP, 'const ADAPT_KN = ', '\nfunction adaptAlerts(add)') + '\nreturn adaptAlertOf;')(); const now = Date.parse('2026-11-12T00:00:00Z');
