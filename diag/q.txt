@@ -1,2 +1,2 @@
-doc=app_settings/research_pulse
-# 1096320875
+doc=col2_books/bk_1000403,col2_books/bk_1001422,col2_books/bk_101631223,prd_books/bk_1000403
+# 287921030
