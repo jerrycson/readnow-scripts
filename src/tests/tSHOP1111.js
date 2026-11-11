@@ -3,6 +3,7 @@
 //   ② 클라우드 창구(가짜 Firestore + 진짜 http): 목록에 내부 값 없음 · 주문 → shop_orders·주문 중 · 같은 책 두 주문 0 · 조회 열쇠 · 손님 취소 · 닫힌 가게 · CORS
 //   ④ (11/11 shop2) 검색 노출(/b/<상품> HTML · schema.org Book/Offer · sitemap · 품절) · 다른 판매처 팔림 표(sold hold) · 메일 칸 · ✉ 손님 알림 글 틀·기록 · 🤖 자동 내림 이음 · 🔁 알라딘 다시 판매중 · Hosting 넘김 설정
 //   ⑤ (11/11 shop3) 🔁 입금 전 취소 → 다시 올릴 일(bqUpPlan) · ✅ 문 열기 전 점검표(bqChkRows · 클라우드 selfCheck 가짜 fetch·DNS) · 🤖 자동 내림 ↔ 우리숍 '주문 중' 두 번 0(출고로 보낸 뒤 할 일 열쇠 그대로) · 화면: ⚙ 맨 위 점검표 · 🛠 🔁 다시 올릴 일 카드(알라딘 판매중·예스24 판매재개 두 번) · 홈 알림
+//   ⑥ (11/11 shop4) 🆕 새로 들어온 책: 들어온 날(한국 날짜)·오늘 N권·이번 주 N권 · 손님 화면 '오늘 들어옴/어제/N일 전' · 첫 화면 5분 자동 갱신(가짜 시계)
 //   ③ 화면(RN_PORT · pw/ 안 harness.js 옆): 손님 화면(휴대폰 390px)으로 둘러보기 → 담기 → 주문서 빈 칸 알림 → 주문 → 입금 안내 · 웹앱 🛍 우리숍 주문(입금 확인 두 번 → 출고로 보내기 두 번 → 현금 기록 · 출고 칩) · 브라우저 창 0
 // 실행: node src/tests/tSHOP1111.js · 화면까지: RN_PORT=<웹앱·shop/을 내는 포트> node tSHOP1111.js (pw/ 안) · 화면 사진은 RN_SHOT 폴더 · 시험 자료에 실제 손님 정보 없음(손님A · 010-0000-0000)
 const fs = require('fs'); const path = require('path'); const http = require('http');
@@ -119,6 +120,16 @@ console.log('①-3 (shop3) 두 번 0 · 다시 올릴 일 · 문 열기 전 점�
   const ix = fs.readFileSync(find('cloud/index.js'), 'utf8'); ok(/path === '\/shop-check'\) \{ await authUser\(req\)/.test(ix), '클라우드 /shop-check = 관리자 로그인만');
   ok(!/\b(alert|confirm|prompt)\s*\(/.test(cut('/* ══ (11/11 shop3) ✅ 문 열기 전 점검표', "PAGE_GUIDES['shopAdm']")), 'shop3 화면 코드에 브라우저 창 없음'); }
 
+console.log('①-4 (shop4) 🆕 새로 들어온 책 — 들어온 날·오늘 N권·자동 갱신 셈');
+{ const NOW = Date.parse('2026-11-11T03:00:00Z'); /* 한국 11/11 12시 */
+  const A = [{ id: 'n1', t: '오늘 책', p: 1000, at: '2026-11-10T16:30:00Z' }, { id: 'n2', t: '어제 책', p: 1000, at: '2026-11-10T02:00:00Z' }, { id: 'n3', t: '닷새 전', p: 1000, at: '2026-11-06T05:00:00Z' }, { id: 'n4', t: '열흘 전', p: 1000, at: '2026-11-01T05:00:00Z' }, { id: 'n5', t: '날 모름', p: 1000, at: null }];
+  ok(SH.kstDay('2026-11-10T16:30:00Z') === '2026-11-11' && SH.kstDay('2026-11-10T14:59:00Z') === '2026-11-10' && SH.kstDay(null) === null && SH.kstDay('엉터리') === null, '들어온 날 = 한국 날짜(15시 UTC 넘으면 다음 날)');
+  const r = SH.listItems(A, {}, null, null, NOW); ok(r.today === 1 && r.wk === 3 && r.day === '2026-11-11' && r.items[0].id === 'n1' && r.items[0].d === '2026-11-11' && r.items.find((x) => x.id === 'n5').d === null, "목록: 오늘 1권 · 이번 주(7일) 3권 · 책마다 d(날짜만 — 시각 없음)", r);
+  ok(!('at' in r.items[0]), '목록 칸에 정확한 등록 시각(at)은 그대로 안 보냄');
+  ok(SH.listItems(A, { q: '어제' }, null, null, NOW).today === 0 && SH.listItems(A, { q: '어제' }, null, null, NOW).wk === 1, '오늘·이번 주 셈은 찾기·분야로 거른 뒤의 책만');
+  ok(BQ.ago('2026-11-11', '2026-11-11') === '오늘' && BQ.ago('2026-11-10', '2026-11-11') === '어제' && BQ.ago('2026-11-06', '2026-11-11') === '5일 전' && BQ.ago('2026-11-01', '2026-11-11') === '' && BQ.ago(null, '2026-11-11') === '' && BQ.ago('2026-11-12', '2026-11-11') === '오늘', "손님 화면 표: 오늘·어제·N일 전 · 7일 넘거나 날 모르면 표 없음 · 시계 어긋나 앞날이면 '오늘'");
+  ok(BQ.freshIds([{ id: 'a' }, { id: 'b' }], [{ id: 'c' }, { id: 'a' }, { id: 'd' }]).join() === 'c,d' && BQ.freshIds(null, [{ id: 'a' }]).join() === 'a' && BQ.freshIds([{ id: 'a' }], []).length === 0, '자동 갱신: 앞에 없던 책만 새 책으로 셈'); }
+
 console.log('② 클라우드 창구(가짜 Firestore)');
 const store = {}; const col = (n) => (store[n] = store[n] || {}); const clone = (x) => JSON.parse(JSON.stringify(x));
 const FV = { serverTimestamp: () => new Date().toISOString(), arrayUnion: (...a) => ({ __au: a }) }; const merge = (cur, v) => { const o = { ...(cur || {}) }; for (const [k, x] of Object.entries(v)) o[k] = x && x.__au ? [...(o[k] || []), ...x.__au] : x; return o; };
@@ -174,6 +185,7 @@ if (!process.env.RN_PORT) { srv.close(); console.log(bad ? `❌ tSHOP1111 ${bad}
 console.log('③ 화면');
 const SHOT = process.env.RN_SHOT || require('os').tmpdir() + '/'; const { chromium } = require('playwright');
 { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }); const dlg = []; const errs = []; p.on('dialog', (d) => { dlg.push(d.message()); d.dismiss().catch(() => {}); }); p.on('pageerror', (e) => errs.push(e.message));
+  await p.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (rt) => rt.fulfill({ status: 404, body: '' })); /* (shop4) 바깥 사진 주소(알라딘 표지)는 바로 404 — 막힌 망에서 load가 30초 늘어지던 것 */
   await p.addInitScript((u) => { window.BQ_API = u; }, base); await p.goto(`http://localhost:${process.env.RN_PORT}/shop/index.html`); await p.waitForSelector('.grid .card', { timeout: 8000 }).catch(() => {});
   ok(await p.locator('.grid .card').count() >= 4 && /새로 들어온 책/.test(await p.textContent('#main')) && /사업자등록번호/.test(await p.textContent('#foot')), '첫 화면: 새로 들어온 책 · 아래 사업자 표시'); await p.screenshot({ path: SHOT + 'shop_home.png', fullPage: true });
   const ow = await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1); ok(ow, '휴대폰 폭에서 옆으로 넘치지 않음');
@@ -192,6 +204,23 @@ const SHOT = process.env.RN_SHOT || require('os').tmpdir() + '/'; const { chromi
     await p.goto('http://127.0.0.1:' + s6.address().port + '/b/aladin_U5'); ok(/품절/.test(await p.textContent('body')), "/b/ 팔린 책 화면 '품절'"); await p.screenshot({ path: SHOT + 'shop_seo_sold.png', fullPage: true }); s6.close(); delete col('shop_holds').aladin_U5; }
   await b.close();
   global.__shopNo = no; }
+console.log('⑥ (shop4) 화면 — 🆕 새로 들어온 책 표 · 5분 자동 갱신(가짜 시계)');
+{ const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }); const dlg = []; const errs = []; p.on('dialog', (d) => { dlg.push(d.message()); d.dismiss().catch(() => {}); }); p.on('pageerror', (e) => errs.push(e.message));
+  const day = SH.kstDay(new Date().toISOString()); let extra = null; let lists = 0;
+  await p.route('**/shop/list**', async (rt) => { lists++; const r = await rt.fetch(); const j = await r.json(); j.items = j.items.map((x, i) => (i === 0 ? { ...x, d: day } : x)); j.today = Math.max(1, j.today || 0); j.day = day; if (extra) { j.items = [extra, ...j.items]; j.today++; } await rt.fulfill({ response: r, json: j }); });
+  await p.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (rt) => rt.fulfill({ status: 404, body: '' })); /* 바깥 사진 주소는 바로 404(가짜 시계에서 load가 늘어지지 않게) */
+  await p.clock.install(); await p.addInitScript((u) => { window.BQ_API = u; }, base); await p.goto(`http://localhost:${process.env.RN_PORT}/shop/index.html`, { waitUntil: 'domcontentloaded' }); await p.waitForSelector('#nwg .card', { timeout: 8000 }).catch(() => {});
+  const nwh = await p.textContent('#nwh').catch(() => '(없음)'); ok(/오늘 \d+권 새로/.test(nwh) && (await p.locator('#nwg .card .nw.td').count()) >= 1 && /오늘 들어옴/.test(await p.textContent('#nwg')), "첫 화면 '새로 들어온 책' 옆 '오늘 N권 새로' · 책에 '오늘 들어옴' 표", { nwh, td: await p.locator('#nwg .card .nw.td').count(), lists });
+  const n0 = await p.locator('#nwg .card').count(); const l0 = lists; await p.screenshot({ path: SHOT + 'shop4_fresh.png', fullPage: false });
+  extra = { id: 'aladin_NEW', t: '방금 들어온 책', a: '지은이A', g: '최상', p: 7000, lp: 12000, im: null, d: day, st: 's' };
+  await p.clock.runFor(2 * 60e3); await p.waitForTimeout(200); ok(lists === l0, '5분 전엔 다시 받지 않음(손님 기기·클라우드 아낌)');
+  await p.clock.runFor(3.2 * 60e3); await p.waitForFunction(() => /방금 들어온 책/.test(document.querySelector('#nwg').textContent), null, { timeout: 5000 }).catch(() => {});
+  ok(lists === l0 + 1 && /방금 들어온 책/.test(await p.textContent('#nwg')) && /새 책 1권이 들어왔습니다/.test(await p.textContent('#toast')) && (await p.locator('#nwg .card').count()) === Math.min(12, n0 + 1), "첫 화면을 띄워 두면 5분 뒤 조용히 다시 받아 새 책을 맨 앞에 · '새 책 1권' 알림");
+  await p.screenshot({ path: SHOT + 'shop4_fresh_after.png', fullPage: false });
+  await p.evaluate(() => { location.hash = '#/list?s=new'; }); await p.waitForSelector('#lg .card', { timeout: 5000 }).catch(() => {}); const l1 = lists; ok(/오늘 들어옴/.test(await p.textContent('#lg')), "목록에도 '오늘 들어옴' 표");
+  await p.clock.runFor(6 * 60e3); await p.waitForTimeout(200); ok(lists === l1, '첫 화면이 아니면 자동 갱신 안 함');
+  const ow = await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1); ok(ow && !errs.length && !dlg.length, '휴대폰 폭 넘침 0 · 화면 오류 0 · 브라우저 창 0 ' + errs.join(' | '));
+  await b.close(); }
 srv.close();
 await require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { dlg.push(d.type() + ': ' + d.message().slice(0, 80)); d.dismiss().catch(() => {}); });
   await p.evaluate(require('./seed.js')); await p.waitForTimeout(300); const no = global.__shopNo; const so = clone(col('shop_orders')[no]);

@@ -22,17 +22,29 @@
   const errBox = (e, again) => `<div class="err"><b>⚠ ${esc(e.message || e)}</b><button class="btn ghost" id="again">다시 해 보기</button></div>`;
   const bindAgain = (fn) => { const a = $('#again'); if (a) a.onclick = fn; };
   const gTag = (g) => (g ? `<span class="g g-${esc(g)}" title="${esc(B.gradeOf(g)[1])}">${esc(g)}</span>` : '');
-  const cardH = (x) => `<a class="card${x.st === 'o' ? ' held' : ''}" href="#/b/${encodeURIComponent(x.id)}"><div class="im">${x.im ? `<img loading="lazy" src="${esc(x.im)}" alt="">` : '<span class="noim">📕</span>'}${x.st === 'o' ? '<span class="hold">주문 중</span>' : ''}</div>
+  const newTag = (x, day) => { const w = x.st !== 'o' && day ? B.ago(x.d, day) : ''; return w ? `<span class="nw${w === '오늘' ? ' td' : ''}">${w === '오늘' ? '오늘 들어옴' : esc(w)}</span>` : ''; };
+  const cardH = (x, day) => `<a class="card${x.st === 'o' ? ' held' : ''}" href="#/b/${encodeURIComponent(x.id)}"><div class="im">${x.im ? `<img loading="lazy" src="${esc(x.im)}" alt="">` : '<span class="noim">📕</span>'}${x.st === 'o' ? '<span class="hold">주문 중</span>' : ''}${newTag(x, day)}</div>
     <div class="tx"><div class="t">${esc(x.t)}</div>${x.a ? `<div class="a">${esc(x.a)}</div>` : ''}<div class="pr">${gTag(x.g)}<b>${won(x.p)}</b>${B.offPct(x.p, x.lp) ? `<small class="off">${B.offPct(x.p, x.lp)}%</small>` : ''}</div></div></a>`;
   function closedBar(c) { if (c.open) return c.notice ? `<div class="bar info">📢 ${esc(c.notice)}</div>` : ''; return `<div class="bar wait">🛠 <b>곧 문을 엽니다</b> — 지금은 책을 둘러보실 수 있고, 주문은 문을 연 뒤에 받습니다.</div>`; }
   function searchBox(q) { return `<form class="search" id="sf" role="search"><input id="sq" type="search" enterkeyhint="search" placeholder="책 제목 · 지은이 · 출판사 · ISBN" value="${esc(q || '')}" aria-label="책 찾기"><button class="btn" aria-label="찾기">찾기</button></form>`; }
   function bindSearch() { const f = $('#sf'); if (f) f.onsubmit = (e) => { e.preventDefault(); const q = $('#sq').value.trim(); location.hash = '#/list?' + B.qs({ q }); }; }
 
+  /* (11/11 shop4) 🆕 새로 들어온 책 자동 갱신 — 성공 사례(AbeBooks 'Recently added'·Shopify 'New arrivals'·헌책 자사몰 '오늘 입고'):
+   *  첫 화면에 '오늘 N권 · 이번 주 N권' · 책마다 '오늘 들어옴/어제/N일 전' · 첫 화면을 띄워 둔 채면 5분마다(화면이 보일 때만) 조용히 다시 받아 새 책만 알림 */
+  const FR = { t: null, at: 0, items: null };
+  const freshHead = (L) => (L.today ? `<span class="fresh">오늘 ${L.today.toLocaleString('ko-KR')}권 새로</span>` : L.wk ? `<span class="fresh wk">이번 주 ${L.wk.toLocaleString('ko-KR')}권</span>` : '');
+  const newGrid = (L) => (L.items.length ? `<div class="grid">${L.items.slice(0, 12).map((x) => cardH(x, L.day)).join('')}</div>` : '<div class="empty">아직 올라온 책이 없습니다</div>');
+  async function freshPoll(force) { if (B.route(location.hash).name !== 'home' || document.hidden || !$('#nwg')) return; if (!force && Date.now() - FR.at < 4.5 * 60e3) return; FR.at = Date.now();
+    try { const L = await api('/shop/list?s=new'); if (B.route(location.hash).name !== 'home' || !$('#nwg')) return; const add = B.freshIds(FR.items, L.items.slice(0, 12)); FR.items = L.items.slice(0, 12);
+      $('#nwg').innerHTML = newGrid(L); const fh = $('#nwh'); if (fh) fh.innerHTML = freshHead(L); if (add.length) toast(`새 책 ${add.length}권이 들어왔습니다`); } catch (e) {} }
+  function freshArm() { clearInterval(FR.t); FR.t = setInterval(() => freshPoll(false), 5 * 60e3); }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) freshPoll(false); });
   async function home() { main().innerHTML = `<section class="hero"><h1>읽은 책, 다음 사람에게</h1><p>한 권 한 권 직접 살펴 등급을 매긴 헌책 — 사진 그대로 보내 드립니다.</p>${searchBox('')}</section><div id="hc">${loading(6)}</div>`; bindSearch();
     try { const [c, L] = await Promise.all([cfg(), api('/shop/list?s=new')]);
       $('#hc').innerHTML = `${closedBar(c)}${(c.cats || []).length ? `<h2>분야</h2><div class="chips">${c.cats.slice(0, 16).map(([k, n]) => `<a class="chip" href="#/list?${B.qs({ c: k })}">${esc(k)} <small>${n}</small></a>`).join('')}</div>` : ''}
-        <h2>새로 들어온 책 <a class="more" href="#/list?s=new">전체 ${c.n != null ? c.n.toLocaleString('ko-KR') + '권' : ''} ›</a></h2>${L.items.length ? `<div class="grid">${L.items.slice(0, 12).map(cardH).join('')}</div>` : '<div class="empty">아직 올라온 책이 없습니다</div>'}
-        <section class="trust"><div>📷<b>실물 사진</b><small>받으실 그 책을 찍었습니다</small></div><div>🔎<b>등급 풀이</b><small>최상·상·중·하 — 책마다 표시</small></div><div>📦<b>한 권뿐</b><small>주문하면 바로 '주문 중'으로 잡아 둡니다</small></div></section>`; }
+        <h2>새로 들어온 책 <span id="nwh">${freshHead(L)}</span><a class="more" href="#/list?s=new">전체 ${c.n != null ? c.n.toLocaleString('ko-KR') + '권' : ''} ›</a></h2><div id="nwg">${newGrid(L)}</div>
+        <section class="trust"><div>📷<b>실물 사진</b><small>받으실 그 책을 찍었습니다</small></div><div>🔎<b>등급 풀이</b><small>최상·상·중·하 — 책마다 표시</small></div><div>📦<b>한 권뿐</b><small>주문하면 바로 '주문 중'으로 잡아 둡니다</small></div></section>`;
+      FR.items = L.items.slice(0, 12); FR.at = Date.now(); freshArm(); }
     catch (e) { $('#hc').innerHTML = errBox(e); bindAgain(home); } }
 
   async function list(q) { const p0 = { q: q.q || '', c: q.c || '', g: q.g || '', s: q.s || 'new' };
@@ -41,8 +53,8 @@
       <div id="lh" class="lh">${p0.c ? `분야 <b>${esc(p0.c)}</b> <a href="#/list?${B.qs({ ...p0, c: '' })}">✕</a>` : ''}</div><div id="lg">${loading(8)}</div><div id="lm"></div>`; bindSearch();
     $('#srt').onchange = (e) => { location.hash = '#/list?' + B.qs({ ...p0, s: e.target.value }); };
     let page = 0; const grid = $('#lg');
-    const load = async () => { try { const r = await api('/shop/list?' + B.qs({ ...p0, p: page })); if (!page) grid.innerHTML = r.items.length ? `<div class="grid">${r.items.map(cardH).join('')}</div>` : `<div class="empty">찾는 책이 없습니다${p0.q ? ` — '${esc(p0.q)}'` : ''}<br><small>낱말을 줄이거나 다른 이름(지은이·출판사)으로 찾아 보세요</small></div>`;
-        else $('.grid', grid).insertAdjacentHTML('beforeend', r.items.map(cardH).join(''));
+    const load = async () => { try { const r = await api('/shop/list?' + B.qs({ ...p0, p: page })); if (!page) grid.innerHTML = r.items.length ? `<div class="grid">${r.items.map((x) => cardH(x, r.day)).join('')}</div>` : `<div class="empty">찾는 책이 없습니다${p0.q ? ` — '${esc(p0.q)}'` : ''}<br><small>낱말을 줄이거나 다른 이름(지은이·출판사)으로 찾아 보세요</small></div>`;
+        else $('.grid', grid).insertAdjacentHTML('beforeend', r.items.map((x) => cardH(x, r.day)).join(''));
         $('#lh').innerHTML = `${p0.q ? `'${esc(p0.q)}' ` : ''}${p0.c ? `분야 <b>${esc(p0.c)}</b> <a href="#/list?${B.qs({ ...p0, c: '' })}" aria-label="분야 빼기">✕</a> ` : ''}<b>${r.total.toLocaleString('ko-KR')}</b>권`;
         $('#lm').innerHTML = r.more ? '<button class="btn ghost wide" id="more">더 보기</button>' : ''; const m = $('#more'); if (m) m.onclick = () => { page++; m.disabled = true; m.textContent = '불러오는 중…'; load(); }; }
       catch (e) { if (!page) { grid.innerHTML = errBox(e); bindAgain(() => list(q)); } else { toast(e.message); $('#lm').innerHTML = '<button class="btn ghost wide" id="more">더 보기</button>'; $('#more').onclick = () => load(); } } };

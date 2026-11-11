@@ -31,7 +31,7 @@ const say = (v) => (v ? `${v} — ${SAY[v] || ''}`.replace(/ — $/, '') : '(없
 function describe(cd, domain) {
   const L = [];
   L.push(`### 🌐 ${domain} (Firebase Hosting 사용자 지정 도메인)`);
-  L.push(`- 호스트: ${say(cd.hostState)}`);
+  L.push(`- 호스트: ${say(cd.hostState)}`); if (cd.redirectTarget) L.push(`- 넘김: → ${cd.redirectTarget}`);
   L.push(`- 주인 확인: ${say(cd.ownershipState)}`);
   const c = cd.cert || {}; L.push(`- 인증서: ${say(c.state)}${c.type ? ' · ' + c.type : ''}${c.expireTime ? ' · 끝 ' + c.expireTime : ''}`);
   if (cd.reconciling) L.push('- (Firebase가 아직 맞추는 중 — 몇 분 뒤 다시 보면 바뀜)');
@@ -51,6 +51,9 @@ function describe(cd, domain) {
   return L.join('\n');
 }
 
+/* (11/11 shop4) www.booksqueen.com 준비 — DOMAIN_REDIRECT=<본 도메인>이면 등록 때 redirectTarget(손님이 www로 와도 본 주소로 넘김 · 같은 사이트)
+ *  · 처음 등록할 때만 쓰임(이미 있으면 상태만 읽음 — 바꾸지 않음) · 본 도메인과 같거나 꼴이 틀리면 넘김 없이 등록 */
+function redirectBody(domain, to) { to = String(to == null ? process.env.DOMAIN_REDIRECT || '' : to).trim().toLowerCase(); return to && to !== domain && /^[a-z0-9.-]+\.[a-z]{2,}$/.test(to) ? { redirectTarget: to } : {}; }
 async function run(domain, site, mode) {
   /* (11/11 shop3) 'projects/-'(아무 프로젝트)는 customDomains에서 새 사이트를 못 찾음(HTTP 404 Resource projects/-/sites/booksqueen not found — 사이트는 있었음) → 프로젝트 이름을 그대로 */
   const proj = process.env.DOMAIN_PROJECT || process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT || 'readnow-3a385';
@@ -59,7 +62,7 @@ async function run(domain, site, mode) {
   try { cd = await call('GET', `${base}/${encodeURIComponent(domain)}`); }
   catch (e) { if (e.status !== 404) throw e; }
   if (!cd && mode !== 'status') {
-    let op = null; try { op = await call('POST', `${base}?customDomainId=${encodeURIComponent(domain)}`, {}); made = true; }
+    let op = null; try { op = await call('POST', `${base}?customDomainId=${encodeURIComponent(domain)}`, redirectBody(domain)); made = true; }
     catch (e) { if (e.status !== 409) throw e; /* 그 사이 정범님이 콘솔에서 먼저 등록함 = 이미 있음 → 상태만 읽음 */ }
     cd = (op && op.response) || null;
     for (let i = 0; i < 6 && !(cd && cd.requiredDnsUpdates); i++) { /* 등록 직후엔 DNS 바람이 비어 있을 수 있음 → 조금 기다려 다시 읽음 */
@@ -73,7 +76,7 @@ async function run(domain, site, mode) {
   return { cd, made, legacy };
 }
 
-module.exports = { run, describe };
+module.exports = { run, describe, redirectBody };
 if (require.main === module) {
   const domain = (process.argv[2] || process.env.CUSTOM_DOMAIN || 'readnow.kr').trim().toLowerCase();
   const site = process.argv[3] || JSON.parse(fs.readFileSync(path.join(ROOT, 'firebase.json'), 'utf8')).hosting.site;

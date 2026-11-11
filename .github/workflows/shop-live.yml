@@ -1,0 +1,89 @@
+# 🛍 우리숍 실제 점검 (11/11 shop4) — booksqueen.web.app·booksqueen.com을 바깥에서 열어 봄(작업 환경에선 그 주소가 막혀서)
+#  · dns: 공개 DNS(8.8.8.8·1.1.1.1) A·TXT·www + Firebase 도메인 상태(읽기만 · mode=status와 같음 · 열쇠 없이 OIDC — 안 되면 건너뜀)
+#  · live: 진짜 브라우저(휴대폰·PC)로 첫 화면→목록→분야→책→장바구니→주문서→주문 뒤 · /b/ · sitemap — 🧪 주문은 시험 모드(클라우드에 주문 0)
+#    사진·report.json·report.md → 결과물 'shop-live' · 작업 요약에 표
+#  · test: tSHOP1111 순수 셈·클라우드 창구·손님 화면(휴대폰) — 웹앱 화면 부분은 건너뜀(fbstub 없음)
+#  · 30분마다(main에 들어온 뒤): dns만 · 손으로(Run workflow)·작업 가지 push: 셋 다
+name: 우리숍 실제 점검
+on:
+  workflow_dispatch:
+    inputs:
+      base: { description: '점검할 주소', required: false, default: 'https://booksqueen.web.app' }
+  push:
+    branches: ['work/shop*']
+    paths: ['.github/workflows/shop-live.yml', 'hosting/shop-live.js', 'shop/**', 'src/tests/tSHOP1111.js', 'cloud/shop.js']
+  schedule:
+    - cron: '7,37 * * * *'
+permissions: { contents: read, id-token: write }
+env:
+  WIF: projects/63884079760/locations/global/workloadIdentityPools/github/providers/readnow-scripts
+  SA: gh-deployer@readnow-3a385.iam.gserviceaccount.com
+  D: booksqueen.com
+jobs:
+  dns:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
+        with: { fetch-depth: 1 }
+      - name: 공개 DNS 보기
+        run: |
+          { echo "### 🌐 $D 공개 DNS · $(date -u +%FT%TZ)"; echo '```'
+            for ns in 8.8.8.8 1.1.1.1; do for t in A TXT; do echo "$ns $t $D: $(dig +short $t $D @$ns | tr '\n' ' ')"; done; done
+            echo "8.8.8.8 www.$D: $(dig +short www.$D @8.8.8.8 | tr '\n' ' ')"
+            echo "https://$D → $(curl -sS -m 10 -o /dev/null -w '%{http_code} (인증서 %{ssl_verify_result})' https://$D/ 2>&1 | tail -1)"
+            echo '```'
+            A=$(dig +short A $D @8.8.8.8 | sort | tr '\n' ' '); T=$(dig +short TXT $D @8.8.8.8)
+            if [ "$A" = "199.36.158.100 " ] && echo "$T" | grep -q 'hosting-site=booksqueen'; then echo '✅ DNS 3줄 맞음(A 하나 · TXT)'; else echo "⏳ DNS 아직 — A=[$A] (199.36.158.100 하나만이어야) · TXT hosting-site=booksqueen $(echo "$T" | grep -q hosting-site && echo 있음 || echo 없음)"; fi
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+      - id: auth
+        name: 구글 로그인 (열쇠 없이 OIDC)
+        continue-on-error: true
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}', token_format: access_token }
+      - name: Firebase 도메인 상태(읽기만)
+        if: steps.auth.outcome == 'success'
+        continue-on-error: true
+        env: { HOSTING_TOKEN: '${{ steps.auth.outputs.access_token }}', DOMAIN_MODE: status, DOMAIN_OUT: domain-status.json }
+        run: |
+          node hosting/domain.js "$D" booksqueen | sed -n '1,/---- 원문/p'
+          node hosting/domain.js "www.$D" booksqueen | sed -n '1,/---- 원문/p' || true
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: domain-status, path: domain-status.json, if-no-files-found: ignore, retention-days: 7 }
+  live:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
+        with: { fetch-depth: 1 }
+      - name: playwright 설치
+        run: npm i --no-save --no-audit --no-fund playwright@1.56.1 && npx playwright install --with-deps chromium
+      - name: 배포본 둘러보기(휴대폰·PC · 시험 주문)
+        env: { LIVE_BASE: '${{ inputs.base || ''https://booksqueen.web.app'' }}', LIVE_OUT: live }
+        run: node hosting/shop-live.js
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: shop-live, path: live, retention-days: 14 }
+  test:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
+        with: { fetch-depth: 1 }
+      - name: playwright 설치
+        run: npm i --no-save --no-audit --no-fund playwright@1.56.1 && npx playwright install --with-deps chromium
+      - name: tSHOP1111 (손님 화면까지 · 웹앱 화면은 건너뜀)
+        run: |
+          mkdir -p .pw shots
+          echo "module.exports = async () => { console.log('  (웹앱 화면 건너뜀 — 이 작업엔 fbstub 없음)'); };" > .pw/harness.js
+          cp src/tests/tSHOP1111.js .pw/
+          node -e "const h=require('http'),f=require('fs'),p=require('path');h.createServer((q,s)=>{const u=decodeURIComponent(q.url.split('?')[0]);const x=p.join(process.cwd(),u);if(!x.startsWith(process.cwd())||!f.existsSync(x)||f.statSync(x).isDirectory()){s.writeHead(404);return s.end();}s.writeHead(200,{'Content-Type':{'.html':'text/html','.js':'application/javascript','.css':'text/css'}[p.extname(x)]||'application/octet-stream'});f.createReadStream(x).pipe(s);}).listen(8765)" &
+          sleep 1
+          set +e; cd .pw && NODE_PATH=$GITHUB_WORKSPACE/node_modules RN_REPO=$GITHUB_WORKSPACE RN_PORT=8765 RN_SHOT=$GITHUB_WORKSPACE/shots/ node tSHOP1111.js > ../t.txt 2>&1; rc=$?; cat ../t.txt
+          { echo '### 🧪 tSHOP1111'; echo '```'; grep -E '❌|^[①②③④⑤⑥]|통과|실패|멈춤' ../t.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"; exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with: { name: shop-test-shots, path: shots, retention-days: 7, if-no-files-found: ignore }

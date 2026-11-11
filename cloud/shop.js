@@ -45,13 +45,17 @@ function pubItem(id, l, b) {
 const holdOn = (h, now) => !!(h && h.on && !(h.until && Date.parse(h.until) < (now || Date.now())));
 const norm = (x) => String(x || '').toLowerCase().replace(/[\s\-_.,·:;!?'"()[\]{}<>/\\]+/g, '');
 /* 목록 거르기·정렬·쪽 — 순수 셈(시험 tSHOP1111) */
-function listItems(all, o, held, sold) {
+/* (11/11 shop4) 🆕 들어온 날(한국 날짜) — 손님 화면 '오늘·어제·N일 전' 표 · 첫 화면 '오늘 N권 새로' 셈 */
+const kstDay = (iso) => { const t = Date.parse(iso || ''); return Number.isFinite(t) ? new Date(t + 9 * 3600e3).toISOString().slice(0, 10) : null; };
+function listItems(all, o, held, sold, now) {
   o = o || {}; const X = sold || new Set(); if (X.size) all = all.filter((x) => !X.has(x.id)); const q = String(o.q || '').trim(); const toks = q.split(/\s+/).map(norm).filter(Boolean); const dig = q.replace(/\D/g, '');
   let L = all.filter((x) => (!o.c || x.c === o.c) && (!o.g || x.g === o.g));
   if (toks.length) L = L.filter((x) => { if (dig.length >= 10 && x.isbn && x.isbn.includes(dig)) return true; const h = norm(x.t + ' ' + (x.a || '') + ' ' + (x.pb || '')); return toks.every((k) => h.includes(k)); });
   const srt = o.s === 'low' ? (a, b) => a.p - b.p : o.s === 'high' ? (a, b) => b.p - a.p : (a, b) => String(b.at || '').localeCompare(String(a.at || ''));
   L = L.slice().sort(srt); const p = Math.max(0, Math.min(500, parseInt(o.p, 10) || 0)); const H = held || new Set();
-  return { total: L.length, p, more: (p + 1) * PAGE < L.length, items: L.slice(p * PAGE, (p + 1) * PAGE).map((x) => ({ id: x.id, t: x.t, a: x.a, g: x.g, p: x.p, lp: x.lp, im: x.im, st: H.has(x.id) ? 'o' : 's' })) };
+  const t0 = now || Date.now(); const today = kstDay(new Date(t0).toISOString()); const wk0 = kstDay(new Date(t0 - 6 * 864e5).toISOString()); let nT = 0, nW = 0;
+  for (const x of L) { const d = kstDay(x.at); if (!d) continue; if (d === today) nT++; if (d >= wk0) nW++; }
+  return { total: L.length, p, more: (p + 1) * PAGE < L.length, today: nT, wk: nW, day: today, items: L.slice(p * PAGE, (p + 1) * PAGE).map((x) => ({ id: x.id, t: x.t, a: x.a, g: x.g, p: x.p, lp: x.lp, im: x.im, d: kstDay(x.at), st: H.has(x.id) ? 'o' : 's' })) };
 }
 /* 손님 주문 입력 검사 — 순수 셈 · 돌려줌 { ok, err, v } */
 const PHONE = /^01[016789]\d{7,8}$/;
@@ -254,4 +258,4 @@ async function selfCheck(o) { o = o || {}; const f = o.fetch || fetch; const dns
   const pu = it && ((it.ph && it.ph[0]) || null); if (pu) { const p = await chkGet(pu, f); out.ph = p.err ? { ok: false, why: p.err.t } : { ok: p.st === 200 && /^image\//.test(p.ct), st: p.st, why: p.st === 200 ? '' : p.st === 403 || p.st === 401 ? 'Storage 규칙이 사진 공개 읽기를 막음(손님 화면에 사진이 안 보임)' : 'HTTP ' + p.st }; } else out.ph = { ok: null, why: '실물 사진이 있는 공개 책이 아직 없음(표지만)' };
   return out; }
 
-module.exports = { selfCheck, chkWhy, makeShop, pubItem, listItems, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };
+module.exports = { selfCheck, chkWhy, makeShop, pubItem, listItems, kstDay, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };

@@ -26,9 +26,13 @@
     rcv: f.same ? { name: String(f.name || '').trim(), phone: String(f.phone || '').replace(/\D/g, ''), zip: String(f.zip || '').replace(/\D/g, ''), addr1: String(f.addr1 || '').trim(), addr2: String(f.addr2 || '').trim(), memo: String(f.memo || '').trim() }
       : { name: String(f.rname || '').trim(), phone: String(f.rphone || '').replace(/\D/g, ''), zip: String(f.zip || '').replace(/\D/g, ''), addr1: String(f.addr1 || '').trim(), addr2: String(f.addr2 || '').trim(), memo: String(f.memo || '').trim() },
     depositor: String(f.dep || '').trim() || String(f.name || '').trim(), agree: { privacy: !!f.agreeP, terms: !!f.agreeT }, hp: f.hp || '' });
+  /* (11/11 shop4) 🆕 들어온 날 표 — d·day = 한국 날짜 YYYY-MM-DD(클라우드가 줌) · 7일 넘으면 표 없음 */
+  const ago = (d, day) => { const a = Date.parse(d || ''), b = Date.parse(day || ''); if (!Number.isFinite(a) || !Number.isFinite(b)) return ''; const n = Math.round((b - a) / 864e5); return n <= 0 ? '오늘' : n === 1 ? '어제' : n < 7 ? n + '일 전' : ''; };
+  /* 새로 들어온 책 자동 갱신 — 앞에 없던 책 수(첫 화면에 그 수만큼 알림) */
+  const freshIds = (prev, next) => { const P = new Set((prev || []).map((x) => x && x.id)); return (next || []).filter((x) => x && x.id && !P.has(x.id)).map((x) => x.id); };
   /* 주소 해시 길(#/…) 풀기 */
   function route(h) { const s = String(h || '').replace(/^#/, '') || '/'; const [p, qs] = s.split('?'); const q = {}; (qs || '').split('&').filter(Boolean).forEach((kv) => { const [k, v] = kv.split('='); try { q[decodeURIComponent(k)] = decodeURIComponent((v || '').replace(/\+/g, ' ')); } catch (e) {} });
     const seg = p.split('/').filter(Boolean); return { name: seg[0] || 'home', arg: seg[1] ? decodeURIComponent(seg[1]) : null, q }; }
   const qs = (o) => Object.entries(o || {}).filter(([, v]) => v != null && v !== '').map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-  return { won, esc, GRADE, gradeOf, offPct, cartAdd, cartDel, cartSum, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs };
+  return { won, esc, GRADE, gradeOf, offPct, cartAdd, cartDel, cartSum, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs, ago, freshIds };
 });
