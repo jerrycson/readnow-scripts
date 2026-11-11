@@ -1,2 +1,2 @@
-mlx=L
-# 31447921
+doc=app_settings/freeship_stats
+# 150065940
