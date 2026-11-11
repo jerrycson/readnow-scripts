@@ -12,7 +12,7 @@
  *  쓰는 법(release.js 한 줄): require(이 파일)({ W, O, RN_REPO, bad }) — bad 배열에 넣으면 빌드 실패 */
 const fs = require('fs'); const crypto = require('crypto');
 /* 고르기 없이 휴대폰도 PC와 같은 화면인 탭 — 이유 (새 탭은 여기 넣지 말고 THIN_SEC에 고르기 항목을 만드는 것이 기본) */
-const PLAIN = { home: '홈 — 칸마다 가벼운 요약본(home_sum)으로 그림 · 칸은 홈 편집(WIDGETS)으로 휴대폰마다 고름', search: '고객 — 고객 목록·찾기 · 큰 자료(상품·시장 지표·판매자 전체) 없음', orders: '주문·매출 — 휴대폰도 그대로(오늘 출고는 화면에 나온 상품만 한 건씩)', research: '🔬 연구(11/11) — 묶음 카드만(큰 자료 없음 · 카드를 눌러야 그 화면이 자료를 받음)', channels: '🛒 판매처(11/11) — 묶음 카드만(큰 자료 없음)' };
+const PLAIN = { home: '홈 — 칸마다 가벼운 요약본(home_sum)으로 그림 · 칸은 홈 편집(WIDGETS)으로 휴대폰마다 고름', search: '고객 — 고객 목록·찾기 · 큰 자료(상품·시장 지표·판매자 전체) 없음', orders: '주문·매출 — 휴대폰도 그대로(오늘 출고는 화면에 나온 상품만 한 건씩)', research: '🔬 연구(11/11) — 묶음 카드만(큰 자료 없음 · 카드를 눌러야 그 화면이 자료를 받음)', channels: '🛒 판매처(11/11) — 묶음 카드만(큰 자료 없음)', ledger: '🧾 통합 장부(11/11) — 본문 탭이 아니라 누르면 통합 장부 화면을 엶(그 화면이 자료를 받음)' };
 const PREFIX = { bz_: 'biz', pu_: 'purchase', pj_: 'projects' }; /* 섹션 id 머리 → 탭 (p_ → 상품 pt_ · sl_ → 판매자 'all') */
 const RENDER = { biz: 'renderBiz', purchase: 'renderPurchase', market: 'renderMarket', projects: 'renderProjects' };
 const sha = (t) => crypto.createHash('sha256').update(t || '', 'utf8').digest('hex').slice(0, 16);

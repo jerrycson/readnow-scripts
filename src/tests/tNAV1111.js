@@ -12,7 +12,12 @@ require('./harness.js')(G(async (p) => {
   await p.evaluate(require('./seed.js')); await p.waitForTimeout(500);
   // ① 탭 차례
   const tabs = await p.evaluate(() => { localStorage.removeItem('rn-navhub-fold'); S.tab = 'home'; renderTabs(); return [...document.querySelectorAll('#tabs > button[data-tab]')].map((b) => b.dataset.tab); });
-  ok(tabs.join() === 'home,purchase,products,channels,orders,search,biz,research,market,sellers,projects', '① 탭 차례 = 일의 흐름 · 새 탭 🛒 판매처 · 🔬 연구', tabs);
+  ok(tabs.join() === 'home,purchase,products,ledger,channels,orders,search,biz,research,market,sellers,projects', '① 탭 차례 = 일의 흐름 · 새 탭 🧾 통합 장부 · 🛒 판매처 · 🔬 연구', tabs);
+  // ①-2 🧾 통합 장부 = 탭 줄 한 번에 열림 (정범님 11/11 15시)
+  await p.evaluate(() => document.querySelector('#tabs [data-tab="ledger"]').click()); await p.waitForTimeout(500);
+  ok(await p.evaluate(() => !!document.querySelector('#sheet.on') && S.detail && S.detail.bigTable === 'ledger' && S.tab === 'home'), '①-2 🧾 통합 장부 탭 한 번 = 통합 장부 화면(본문 탭은 그대로)'); await shut(p);
+  await draw(p, 'home'); await p.waitForTimeout(500); ok(await p.evaluate(() => !!document.querySelector('#main [data-w="ledger"], #main [data-navgo="ledger"]') && homeLayout('admin').indexOf('ledger') === homeLayout('admin').indexOf('alerts') + 1), '①-3 홈 첫 화면에 🧾 통합 장부 칸(알림 바로 아래)');
+  await draw(p, 'channels'); await p.waitForTimeout(300); ok(await p.evaluate(() => { const h = document.querySelector('#main .np-hero[data-navgo="ledger"]'); const c = document.querySelector('#main .np-c'); return !!h && !!c && h.getBoundingClientRect().top < c.getBoundingClientRect().top; }), '①-4 🛒 판매처 탭 맨 위 큰 카드 = 🧾 통합 장부');
   ok(await p.evaluate(() => [...document.querySelectorAll('#tabs > button')].filter((b) => getComputedStyle(b).display !== 'none' && !b.dataset.tab).length === 0), '① PC 탭 줄 끝에 ⋯ 더 보기가 보이지 않음');
   // ② 탭마다 묶음 카드 줄
   const want = await p.evaluate(() => Object.fromEntries(Object.keys(NAV_HUB).map((k) => [k, navGroups(k).reduce((a, x) => a + x[1].length, 0)])));
@@ -84,7 +89,7 @@ require('./harness.js')(G(async (p) => {
   // ⑨ 휴대폰 390px
   await p.evaluate(require('./seed.js')); await p.waitForTimeout(600); await p.evaluate(() => { localStorage.removeItem('rn-navhub-fold'); localStorage.removeItem('rn-ux2'); S.tab = 'home'; renderTabs(); renderMainNow(); afterRender(); });
   const tb = await p.evaluate(() => [...document.querySelectorAll('#tabs > button')].filter((b) => getComputedStyle(b).display !== 'none').map((b) => b.dataset.tab || 'more'));
-  ok(tb.join() === 'home,purchase,products,orders,more', '⑨ 휴대폰 아래 탭 = 홈·매입·상품·주문·⋯', tb);
+  ok(tb.join() === 'home,purchase,products,ledger,orders,more', '⑨ 휴대폰 아래 탭 = 홈·매입·상품·🧾 통합 장부·주문·⋯', tb);
   await p.click('[data-ux2tmore]'); await p.waitForTimeout(200);
   const mm = await p.evaluate(() => [...document.querySelectorAll('#ux2tmenu [data-ux2tgo]')].map((b) => b.dataset.ux2tgo));
   ok(mm.includes('channels') && mm.includes('research'), '⑨ ⋯ 안에 🛒 판매처 · 🔬 연구', mm); await p.click('#ux2tmenu [data-ux2tgo="research"]'); await p.waitForTimeout(500);
