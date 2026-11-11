@@ -1,1 +1,2 @@
-@kpin kpin/aud_20261110-232421.json
+mktchk=*&n=20&shpauto=20&shplog=1
+# 313178037
