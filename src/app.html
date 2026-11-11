@@ -8217,7 +8217,7 @@ function vrHtml(ev, mode) { if (!ev) return ''; if (ev.err) return `<div class="
  * 매입 기회 = 🧠 판매가치 팔 값(알라딘) − 수수료 − 그 플랫폼 최저가 — 1년 안 팔릴 확률을 곱한 1년 기대 이익(판매가치 판정 valueRec, 그 플랫폼 최저가를 매입가로) */
 const BL_PLAT = [['aladin', '알라딘', '알라딘 시장 — 그 상품의 알라딘 온라인 중고 첫 페이지·팔 값(🧠 판매가치)·알라딘 매입가 · 끄면 알라딘 시장은 읽지 않음(책 목록은 그대로 알라딘 공식 API로 뽑음 · 매입 기회·판매가치 칸이 비게 됨)'], ['yes24', '예스24 중고', '그 상품의 예스24 중고 매물·최저가(ISBN)'], ['naver', '네이버', '네이버 도서 화면의 새책 값(책 검색 API는 2026-07-31에 끝남)'], ['coupang', '쿠팡', '쿠팡은 자동 읽기를 막아(봇 차단) 지금은 못 읽음', false, true], ['daangn', '당근', '그 상품 제목으로 당근 중고 글·값'], ['bunjang', '번개장터', '그 상품 제목으로 번개장터 글·값'], ['joongna', '중고나라', '그 상품 제목으로 중고나라 글·값']];
 const BL_EXT = { yes24: 'yes24used', bunjang: 'bunjang', joongna: 'joongna', daangn: 'daangn', naver: 'naverbook' };
-const BL_LIST = [['search', '검색어로 찾기'], ['ItemNewAll', '신간 전체 — 🛑 10/30 종료'], ['ItemNewSpecial', '주목할 만한 신간 — 🛑 10/30 종료'], ['ItemEditorChoice', '편집자 추천 — 🛑 10/30 종료'], ['Bestseller', '베스트셀러 — 🛑 10/30 종료'], ['BlogBest', '블로거 베스트 — 🛑 10/30 종료']] /* (ttb1 11/11) 목록 종류는 알라딘 OpenAPI(TTB)로만 받던 것 — 2026-10-30 종료 · 검색어는 알라딘 공개 검색 화면으로 이어 감 */;
+const BL_LIST = [['search', '검색어로 찾기'], ['ItemNewAll', '신간 전체 (공개 목록 화면)'], ['ItemNewSpecial', '주목할 만한 신간 (공개 목록 화면)'], ['ItemEditorChoice', '편집자 추천 (공개 목록 화면)'], ['Bestseller', '베스트셀러 (공개 목록 화면)'], ['BlogBest', '블로거 베스트 (공개 목록 화면)']] /* (adapt1 11/11) 🧬 TTB 목록 대신 알라딘 공개 목록 화면(클라우드 · 주소 후보를 차례로 · 맞은 주소 기억) */ /* (ttb1 11/11) 목록 종류는 알라딘 OpenAPI(TTB)로만 받던 것 — 2026-10-30 종료 · 검색어는 알라딘 공개 검색 화면으로 이어 감 */;
 const BL_SORT = [['Accuracy', '정확도'], ['SalesPoint', '판매량(Sales Point)'], ['PublishTime', '출간일'], ['Title', '상품명'], ['CustomerRating', '고객 평점'], ['MyReviewCount', '리뷰 수'], ['RegNew', '등록순'], ['PriceDesc', '고가순'], ['PriceAsc', '저가순']]; /* (1.78.8) 정범님 10/22: 등록순·고가순·저가순 — 알라딘 API에 없어 클라우드가 조건을 지난 책을 끝(최대 1,000권)까지 모은 뒤 정렬해 앞에서 '최대 몇 권'만 남김 */
 const BL_LOCSORT = ['RegNew', 'PriceDesc', 'PriceAsc'];
 const BL_COLS = [['aladin', '알라딘측'], ['dkgreen', '짙은 초록'], ['green', '초록'], ['yellow', '노랑'], ['orange', '주황'], ['red', '빨강'], ['unknown', '모름']];
@@ -14278,6 +14278,7 @@ function bizAlerts(B) {
   try { probAlerts(add); } catch (e) {} try { probGuessAlerts(add); } catch (e) {}
   try { mgrAlerts(add); } catch (e) {}
   try { mlStallAlerts(add); } catch (e) {} /* (11/09 엔진 점검) 🫀 학습 엔진 멈춤 */
+  try { adaptAlerts(add); } catch (e) {} /* (adapt1 11/11) 🧬 수집 적응 엔진 — 화면 바뀜·깨진 칸 */
   try { shipAutoAlerts(add); } catch (e) {}
   /* (알림 개편) 테더링 여분은 '써도 되는 기회' 알림이라 ⓘ 정보 */
   try { const bu = netBudget(); if (bu && bu.alert) add('info', `📶 이번 달 로거 테더링 여분 약 ${(bu.spare / 1073741824).toFixed(1)}GB가 남을 것 같음(하루 평균 ${(bu.avg / 1073741824).toFixed(2)}GB로 달 끝까지) — 무거운 비로그인 일(평가 전체·분포 전체·탐색 등)을 돌릴 때 · 🔓 '이번 달 남은 여분 마음껏 쓰기'`, 'netuse', { k: 'netuse', s: today.slice(0, 7), why: `이번 달 하루 평균 ${(bu.avg / 1073741824).toFixed(2)}GB로 달 끝까지 쓰면 약 ${(bu.spare / 1073741824).toFixed(1)}GB가 남음 — 테더링 몫 설정의 '여분 알림 날·기준'에 걸림` }); } catch (e) {} /* (1.28.0) 25일쯤 여분 알림 */ // (0.96.0) 관리도구: 멈춘 일·모르는 종류·늦은 일
@@ -29332,6 +29333,16 @@ function mlStallAlerts(add) { const ML = window.ReadnowML; if (!ML || !ML.stallC
   if ((!C || Date.now() - C.at > 30 * 60e3) && !S._mlStallBusy) { S._mlStallBusy = 1; Promise.all([db.collection('app_settings').doc('ml_state').get(), db.collection('app_settings').doc('sp_obs').get()]).then(([a, b]) => { const so = b.exists ? b.data() || {} : {}; S._mlStall = { at: Date.now(), st: a.exists ? a.data() || {} : {}, so: { days: so.days || [] } }; if (S._wcache) delete S._wcache.alerts; }).catch(() => {}).finally(() => { S._mlStallBusy = 0; }); }
   if (!C) return; const sc = ML.stallCheck({ ml_state: C.st, value_model: S.vm || null, sp_obs: C.so }, Date.now()); const red = sc.rows.filter((x) => x.red && (S.vm || !/^value_/.test(x.k)));
   if (red.length) add('red', `🫀 학습 엔진 ${red.length}곳이 ${sc.stallH}시간 넘게 멈춤 (${red.map((x) => x.name).join(', ')})`, 'mgr', { k: 'mlstall', n: red.length, s: red.map((x) => x.k).join(','), why: red.map((x) => `${x.name}: 마지막 ${x.at ? kTime(new Date(x.at).toISOString()) : '기록 없음'}${x.ageH != null ? ` (${num(Math.round(x.ageH))}시간 전)` : ''}`).join(' · ') + (C.st.lastErr ? ` · 마지막 오류: ${C.st.lastErr}` : '') + ` · 기준 ${sc.stallH}시간(app_settings/ml_state.stallH)` }); }
+/* (adapt1 11/11 · 약속 55) 🧬 수집 적응 엔진 — 클라우드 매일 점검(app_settings/adapt_health)이 알라딘·예스24 공개 화면에서 칸을 못 읽거나(빨강) · 읽는 길 하나가 죽었거나 · 화면 구조가 바뀌었거나 · 수집기·클라우드 운영 파서가 합의값과 어긋나면(노랑) 홈 '오늘 확인할 것'에
+ *  읽기: 그 문서 하나를 30분에 한 번만 · 이틀 넘게 점검이 없으면 노랑(점검 자체가 멈춤) */
+const ADAPT_KN = { al_product: '알라딘 상품 화면', al_used: '알라딘 전체 중고 화면', al_list: '알라딘 목록 화면', y24_product: '예스24 상품 화면' };
+function adaptAlertOf(H, nowMs) { if (!H || !H.day) return null; const age = nowMs - (Date.parse(H.at || 0) || 0); const nm = (x) => { const [k, f] = String(x).split('.'); return (ADAPT_KN[k] || k) + (f ? ' ' + f : ''); };
+  if ((H.broken || []).length) return { lv: 'red', k: 'adaptbroken', t: `🧬 수집 화면이 바뀌어 ${H.broken.length}칸을 못 읽음 (${H.broken.slice(0, 4).map(nm).join(', ')}) — 남은 길로 계속 · 새 길 후보 ${Object.keys(H.cands || {}).length}칸`, why: `클라우드 수집 적응 엔진 ${H.day} 점검(견본 ${(H.n || {}).gold || 0}권) · ${H.line || ''}${(H.adopted || []).length ? ' · 스스로 채택한 새 길 ' + H.adopted.length + '개' : ''}` };
+  if (age > 50 * 3600e3) return { lv: 'amber', k: 'adaptstale', t: `🧬 수집 적응 엔진 점검이 ${Math.round(age / 3600e3)}시간째 없음`, why: '클라우드 매일 일(dailyJobs)의 수집 적응 엔진 회차가 돌지 않음 — 클라우드 상태 확인' };
+  if ((H.warn || []).length) return { lv: 'amber', k: 'adaptwarn', t: `🧬 수집 화면 주의 ${H.warn.length}곳 (${H.warn.slice(0, 3).map(nm).join(', ')}) — 값은 계속 읽힘`, why: `읽는 길 하나가 죽었거나·화면 구조가 바뀌었거나·운영 파서가 합의값과 어긋남 · ${H.line || ''}` };
+  return null; }
+function adaptAlerts(add) { if (!S.user || !db) return; const C0 = S._adaptH; if ((!C0 || Date.now() - C0.at > 30 * 60e3) && !S._adaptBusy) { S._adaptBusy = 1; db.collection('app_settings').doc('adapt_health').get().then((d) => { const v = d.exists ? d.data() || {} : null; S._adaptH = { at: Date.now(), v: v ? { day: v.day, at: v.at, broken: v.broken || [], warn: v.warn || [], line: v.line || '', n: v.n || {}, cands: v.cands || {}, adopted: v.adopted || [] } : null }; if (S._wcache) delete S._wcache.alerts; }).catch(() => {}).finally(() => { S._adaptBusy = 0; }); }
+  if (!C0 || !C0.v) return; const a = adaptAlertOf(C0.v, Date.now()); if (a) add(a.lv, a.t, 'mgr', { k: a.k, why: a.why }); }
 /* (알림 개편) 결과 모름 중 '다음 시도가 끝남'인 것 찾기 — 열쇠가 '…#번호'(다시 맡길 때마다 번호+1: 현금 판매중지·한 권 등록 등)이면 #번호+1~3 문서를 한 번만 읽어 봄(그 뒤엔 이 기기에 기억) */
 function exSupCheck(L) { const X = window.ReadnowExec; if (!X || !S.user) return; const M = S._exSup || (S._exSup = new Map());
   L.forEach((x) => { if (M.has(x.id)) return; const m = /^(.*)#(\d+)$/.exec(String(x.key || '')); if (!m || !x.kind) { M.set(x.id, false); return; } M.set(x.id, null);

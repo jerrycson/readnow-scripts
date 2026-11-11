@@ -43,7 +43,7 @@ const cut = (s, a, b) => { const i = s.indexOf(a); const j = s.indexOf(b, i + a.
   const L = [{ sp: 5, title: '나', pubDate: '2020-01-01', rating: 9, reviews: 1 }, { sp: 50, title: '가', pubDate: '2024-01-01', rating: 7, reviews: 9 }];
   ok(L.slice().sort(SORT.BL_PGSORT.SalesPoint)[0].sp === 50 && L.slice().sort(SORT.BL_PGSORT.Title)[0].title === '가' && L.slice().sort(SORT.BL_PGSORT.PublishTime)[0].pubDate === '2024-01-01' && L.slice().sort(SORT.BL_PGSORT.CustomerRating)[0].rating === 9 && SORT.BL_PGSORT_NAME.MyReviewCount === '리뷰 수', 'TTB Sort 대신 다 본 뒤 줄 세움(판매량·상품명·출간일·평점·리뷰)');
   const cand = cut(CSRC, "  if (g.phase === 'cand') {", "  const L = (await BLI()");
-  ok(/q\.list && q\.list !== 'search'/.test(cand) && /ttbEnded: TTB_END/.test(cand) && /wsearchresult\.aspx\?SearchTarget=/.test(cand) && /stage: 'scan'/.test(cand) && /phase: 'look'/.test(cand), "벤치마킹: 목록 종류는 '종료됨'으로 멈춤 · 검색어는 공개 검색 화면 → look(공개 상품 화면)");
+  ok(/q\.list && q\.list !== 'search'/.test(cand) && /ttbEnded: TTB_END/.test(cand) && /wsearchresult\.aspx\?SearchTarget=/.test(cand) && /stage: 'scan'/.test(cand) && /phase: 'look'/.test(cand), "벤치마킹: 목록 종류는 공개 목록 화면(못 읽으면 멈춤) · 검색어는 공개 검색 화면 → look(공개 상품 화면)");
   const look = cut(CSRC, "  if (g.phase === 'look') {", "  if (g.phase === 'cand') {"); ok(/alPubItem\(p, \{ isbn, id: v\.newId/.test(look) && /\(RG && RG\.badges\)/.test(look) && /검색어 없음/.test(look) && /분류 다름/.test(look), 'look 단계 = 공개 상품 화면 · 검색어 그룹도 받음(RG 없음) · 제목·저자·출판사·분류는 읽은 값으로 거름');
   ok(/const TTB_END = '2026-10-30'/.test(CSRC) && /ttbEnded: TTB_END, src:/.test(CSRC), "SP 표본 상태에 '알라딘 OpenAPI 종료 → 대체 출처' 남김");
   const ut = cut(CSRC, 'async function utTick()', '\nasync function'); ok(/wsearchresult\.aspx\?SearchTarget=All&SearchWord=/.test(ut) && !/blTtb/.test(ut), "'전체 중고 (N)' 채우기 = ISBN → 상품 번호를 공개 검색 화면으로");
@@ -57,7 +57,7 @@ const cut = (s, a, b) => { const i = s.indexOf(a); const j = s.indexOf(b, i + a.
   ok(/data-extkey="kakaoRest"/.test(html) && /data-extkey="nlKey"/.test(html), '다른 키 칸은 그대로');
   const row = (html.match(/<tr data-extsrcend="ttb"[\s\S]*?<\/tr>/) || [''])[0]; ok(row && /종료됨 \(2026-10-30\)/.test(row) && /대체 출처: 알라딘 공개 상품 화면/.test(row) && !/999/.test(row) && !/data-extsrc="ttb"/.test(html), "출처 표 TTB 줄 = '종료됨 — 대체 출처'(실패 ✗ 기록 대신)", row.slice(0, 300));
   ok(/<tr data-extsrcend="naver"/.test(html), '끝난 네이버 책 검색 줄도 같은 꼴');
-  ok(/\['Bestseller', '베스트셀러 — 🛑 10\/30 종료'\]/.test(APP) && /공개 검색 화면/.test(APP) && /10\/30 종료 전에 받은 값/.test(APP), '벤치마킹 목록 종류에 종료 표시 · 설명서에 대체 출처 · 예전 TTB 값엔 「10/30 종료 전」');
+  ok(/\['Bestseller', '베스트셀러 \(공개 목록 화면\)'\]/.test(APP) && /공개 검색 화면/.test(APP) && /10\/30 종료 전에 받은 값/.test(APP), '벤치마킹 목록 종류 = 공개 목록 화면(adapt1 11/11 되살림) · 설명서에 대체 출처 · 예전 TTB 값엔 「10/30 종료 전」');
 
   console.log('④ 번외 수집기');
   const t = TK.byK['ext.ttb']; ok(t && t.state === 'ended' && t.ended === '2026-10-30' && !TK.plan('office', {}).includes('ext.ttb') && !TK.plan('logger', { extShare: true }).includes('ext.ttb'), '번외 ext.ttb = 종료됨 · 어느 PC 계획에도 없음', t && t.state);
