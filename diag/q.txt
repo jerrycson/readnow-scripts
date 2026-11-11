@@ -1,2 +1,2 @@
-blist=ItemEditorChoice&cid=1
-# 262757572
+blist=Bestseller
+# 240679083
