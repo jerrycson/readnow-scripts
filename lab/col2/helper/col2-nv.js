@@ -37,7 +37,7 @@ function nvPrd(c) { const L = []; for (const ch of (c && c.channelProducts) || [
  * g = 판매자 설정 { leafCategoryId, deliveryCompany, baseFee, freeOver, returnFee, exchangeFee, asTel, asGuide, returnAddressId, shippingAddressId }
  * 돌려줌 { ok, body } | { ok:false, miss:[빠진 칸] } — 빠진 칸이 있으면 보내지 않음 */
 function nvBody(b, g) { b = b || {}; g = g || {}; const miss = []; const need = (v, n) => { if (v == null || v === '' || (Array.isArray(v) && !v.length)) miss.push(n); return v; };
-  const isbn = String(b.isbn13 || '').replace(/\D/g, ''); if (!/^97[89]\d{10}$/.test(isbn)) miss.push('ISBN13'); need(g.leafCategoryId, '카테고리(도서 › 중고)'); need(b.title, '제목'); need(b.images, '사진'); need(b.publisher, '출판사'); need(b.author, '저자'); need(g.asTel, 'A/S 전화'); need(g.deliveryCompany, '택배사');
+  const isbn = String(b.isbn13 || '').replace(/\D/g, ''); if (!/^97[89]\d{10}$/.test(isbn)) miss.push('ISBN13'); need(g.leafCategoryId, '카테고리(도서 › 중고)'); need(b.title, '제목'); need(b.images, '사진'); need(b.publisher, '출판사'); need(b.author, '저자'); need(g.asTel, 'A/S 전화'); need(g.deliveryCompany, '택배사'); need(g.shippingAddressId, '출고지 주소록 번호'); need(g.returnAddressId, '반품지 주소록 번호'); /* (naver2) 정범님 11/11 — 출고지·반품지는 판매자 주소록 번호로 꼭 */
   const price = Math.round(num(b.price)); if (!(price >= 100)) miss.push('판매가'); const qty = Math.max(1, Math.min(999, Math.round(num(b.qty) || 1)));
   const pub = String(b.pubDate || '').replace(/[^\d]/g, ''); const pubDay = pub.length >= 8 ? `${pub.slice(0, 4)}-${pub.slice(4, 6)}-${pub.slice(6, 8)}` : pub.length >= 6 ? `${pub.slice(0, 4)}-${pub.slice(4, 6)}-01` : null; if (!pubDay) miss.push('출간일');
   if (miss.length) return { ok: false, miss };
@@ -179,15 +179,30 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
     const k = String(j.k || ''); if (!/^(confirm|dispatch|status|reg)$/.test(k)) return { ok: false, err: '모르는 할 일' };
     if (k === 'dispatch') { for (const d of j.rows || []) { const key = String(d.co || '') + ':' + String(d.no || ''); const was = M.inv[key]; if (was && was !== String(d.po)) return { ok: false, err: `송장번호 ${String(d.no).slice(-4)}는 다른 주문에 이미 썼음(약속 10)` }; } }
     M.jobs.push({ ...j, id, k, by: String(by || '').slice(0, 40), at: now() }); M.jres[id] = { st: 'queued', at: now() }; kick(300); return { ok: true, queued: true }; }
+  /* (0.1.22 naver2) 상품 사진 올리기 — 우리 Firebase 사진 저장소 주소만 받아(다른 곳은 거절) 내려받고 → POST /v1/product-images/upload(multipart · imageFiles 최대 10장 · JPG·GIF·PNG·BMP) → 네이버 주소
+   *  원문: 등록 몸의 이미지 주소는 반드시 이 API로 올리고 받은 주소여야 함(RAW_API.md 'images') · 사진은 메모리에서만(파일로 남기지 않음) */
+  const IMG_OK = /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/readnow-3a385\.firebasestorage\.app\/o\//;
+  async function upImgs(urls) { const L = (urls || []).map(String).filter((u) => IMG_OK.test(u)).slice(0, 10); if (!L.length) return { ok: false, err: '사진 주소 없음(우리 사진 저장소 주소만 받음)' }; const fd = new FormData(); let n = 0;
+    for (const u of L) { try { const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 30000); const r = await fetch(TEST && process.env.RN_COL2_NVIMG ? process.env.RN_COL2_NVIMG + '?u=' + encodeURIComponent(u) : u, { signal: ac.signal, redirect: 'error' }); clearTimeout(tm); if (!r.ok) continue; const b = Buffer.from(await r.arrayBuffer()); if (!b.length || b.length > 10 * 1048576) continue; const ty = /png/i.test(r.headers.get('content-type') || '') ? 'image/png' : 'image/jpeg'; fd.append('imageFiles', new Blob([b], { type: ty }), `p${++n}.${ty === 'image/png' ? 'png' : 'jpg'}`); } catch (e) {} }
+    if (!n) return { ok: false, err: '사진을 내려받지 못함' }; const t = await token(); if (!t.ok) return { ok: false, err: t.err };
+    const go = () => raw('POST', '/v1/product-images/upload', { body: fd, headers: { Authorization: 'Bearer ' + M.tok }, ms: 60000 }); let r = await go(); if (r.http === 401) { const t2 = await token(true); if (t2.ok) r = await go(); }
+    if (!r.ok) { const e = r.cool ? { msg: '요청량 제한으로 쉬는 중' } : nvErr(r.http, r.j); return { ok: false, err: '사진 올리기 실패 — ' + e.msg, later: !!(e.later || e.rate || r.cool) }; }
+    const out = ((r.j && r.j.images) || []).map((x) => x && x.url).filter(Boolean); return out.length ? { ok: true, urls: out } : { ok: false, err: '사진 올리기 응답에 주소 없음' }; }
   async function jobRun(j) { M.step = '쓰기 ' + j.k; let r;
     if (j.k === 'confirm') r = await call('POST', '/v1/pay-order/seller/product-orders/confirm', { productOrderIds: (j.ids || []).map(String).slice(0, 30) });
     else if (j.k === 'dispatch') r = await call('POST', '/v1/pay-order/seller/product-orders/dispatch', { dispatchProductOrders: (j.rows || []).slice(0, 30).map((d) => ({ productOrderId: String(d.po), deliveryMethod: 'DELIVERY', deliveryCompanyCode: String(d.co), trackingNumber: String(d.no), dispatchDate: kstIso(now()) })) });
     else if (j.k === 'status') r = await call('PUT', `/v1/products/origin-products/${encodeURIComponent(String(j.originNo))}/change-status`, { statusType: String(j.to || 'SUSPENSION'), ...(j.stock != null ? { stockQuantity: +j.stock } : {}) });
-    else if (j.k === 'reg') { const b = nvBody(j.book, { ...(NC().reg || {}), ...(j.g || {}) }); if (!b.ok) r = { ok: false, err: '빠진 칸: ' + b.miss.join('·') }; else r = await call('POST', '/v2/products', b.body); }
+    else if (j.k === 'reg') { const g = { ...(NC().reg || {}), ...(j.g || {}) }; let book = { ...(j.book || {}) }; const m0 = nvBody({ ...book, images: book.images && book.images.length ? book.images : ['x'] }, g); /* 사진 말고 빠진 칸이 있으면 사진을 올리지 않음 */
+      if (!m0.ok) r = { ok: false, err: '빠진 칸: ' + m0.miss.join('·') }; else { if (!(book.images && book.images.length)) { M.step = '사진 올리기'; const u = await upImgs(j.imgs); if (u.ok) book.images = u.urls; else r = { ok: false, err: u.err, later: u.later }; }
+        if (!r) { const b = nvBody(book, g); if (!b.ok) r = { ok: false, err: '빠진 칸: ' + b.miss.join('·') }; else r = await call('POST', '/v2/products', b.body); } } }
     /* 원문: 발주 확인·발송 처리 응답 data.successProductOrderIds / failProductOrderInfos */
     const d = (r && r.j && r.j.data) || {}; const fails = (d.failProductOrderInfos || []).map((x) => `${x.productOrderId}: ${x.message || x.code || ''}`).slice(0, 5);
     const res = r.ok && !fails.length ? { st: 'done', at: now(), ok: true, ...(j.k === 'reg' ? { originNo: r.j && r.j.originProductNo ? String(r.j.originProductNo) : null, chNo: r.j && r.j.smartstoreChannelProductNo ? String(r.j.smartstoreChannelProductNo) : null } : {}) } : { st: 'fail', at: now(), ok: false, err: (r.ok ? '일부 실패 — ' + fails.join(' · ') : r.err).slice(0, 300), later: !!r.later };
     if (res.ok && j.k === 'dispatch') { for (const x of j.rows || []) M.inv[String(x.co) + ':' + String(x.no)] = String(x.po); wr(INVF, M.inv); }
+    /* (0.1.22 naver2) 판매 상태가 맞게 바뀌면 그 매물 줄을 곧바로 고쳐 넘김(6시간 목록 읽기를 기다리지 않음 — 🧾 🛠 처리할 일·🤖 자동 내림이 반영을 바로 봄) · 지문을 지워 다음 목록 읽기가 네이버 값으로 다시 덮음 */
+    if (res.ok && j.k === 'status' && j.originNo) { const to = String(j.to || 'SUSPENSION'); const on = to === 'SALE'; push('nv_listings', String(j.originNo), { originNo: String(j.originNo), st: to, live: on && !(j.stock != null && +j.stock <= 0), ...(j.stock != null ? { qty: +j.stock } : on ? {} : { qty: 0 }), ch: 'naver', chgAt: new Date().toISOString(), chgBy: 'job' }); delete st.sig['p' + String(j.originNo)]; save(); }
+    if (res.ok && j.k === 'reg') nextPrd = 0; /* (naver2) 등록이 맞으면 다음 돌기에 상품 목록을 다시 읽음(통합 장부에 바로 붙게) */
+    if (res.ok && (j.k === 'dispatch' || j.k === 'confirm')) nextOrd = 0; /* (naver2) 발주 확인·발송 처리가 맞으면 다음 돌기에 주문을 곧바로 다시 읽음(📦 오늘 출고 단계가 10분 기다리지 않음) */
     if (!res.later) { M.jd[j.id] = res; wr(JDF, M.jd); } M.jres[j.id] = res; push('col2_naver_jobs', j.id.replace(/[^\w.-]/g, '_').slice(0, 140), { id: j.id, k: j.k, by: j.by, ...res }); M.step = '';
     note(`🟩 네이버 쓰기 ${j.k} — ${res.ok ? '맞음' : '실패: ' + res.err}`, { k: res.ok ? 'sys' : 'err', l: res.ok ? 'ok' : 'warn', m: '네이버' }); return res; }
 
