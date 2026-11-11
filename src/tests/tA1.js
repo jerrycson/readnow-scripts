@@ -51,7 +51,8 @@ D = SH.autoShipDecide({ ...base, cfg: { aloneOn: false }, order: ord([it('1', 30
 // 6) 고객
 const cr = SH.custRisk({ flags: { blacklist: { on: true, reason: '허위 반품' } } }); ok(cr.bl && !cr.seller, 'custRisk 블랙리스트(수동)'); ok(!SH.custRisk({ flags: { blacklist: { on: false } }, sheetFlags: { blacklist: {} } }).bl, '수동으로 끈 블랙리스트는 시트 표시보다 먼저');
 ok(SH.custRisk({ sellerLinks: [{ name: 'X서점', strong: true }] }).seller && !SH.custRisk({ sellerLinks: [{ name: 'X', strong: false }] }).seller, 'custRisk 판매자 연관(강한 연결만)');
-D = SH.autoShipDecide({ ...base, order: ord([it('1', 9000)]), enrich: { 1: E([row('green', '상', 9500)]) }, cust: { hits: [{ who: '수령인', name: '김받음', seller: true, sellers: ['X서점'], weak: true }] } }); ok(D.state === 'review' && /수령인 김받음: 🔗 판매자 연관/.test(D.reasons[0]), '수령인 쪽 판매자 연관 → 검토: ' + D.reasons[0]);
+D = SH.autoShipDecide({ ...base, order: ord([it('1', 9000)]), enrich: { 1: E([row('green', '상', 9500)]) }, cust: { hits: [{ who: '수령인', name: '김받음', seller: true, sellers: ['X서점'], weak: true }] } }); ok(D.state === 'pass' && !D.reasons.length && /수령인 김받음: 🕵 허위매물 판매자/.test(D.notes[0] || ''), '(정범님 11/11) 수령인 쪽 허위매물 판매자만 → 검토 아님(블랙리스트와 다름 · 풀이 notes): ' + D.notes[0]);
+D = SH.autoShipDecide({ ...base, cfg: { sellerReview: true }, order: ord([it('1', 9000)]), enrich: { 1: E([row('green', '상', 9500)]) }, cust: { hits: [{ who: '수령인', name: '김받음', seller: true, sellers: ['X서점'], weak: true }] } }); ok(D.state === 'review' && D.kinds.includes('seller') && !D.kinds.includes('cust'), '⚙ 허위매물 판매자도 검토 켬 → 검토(kind seller): ' + D.reasons[0]);
 D = SH.autoShipDecide({ ...base, cfg: { custBlock: false }, order: ord([it('1', 9000)]), enrich: { 1: E([row('green', '상', 9500)]) }, cust: { hits: [{ who: '주문인', name: 'A', bl: true }] } }); ok(D.state === 'pass', '고객 조건 끄면 통과');
 // 7) 읽기 이상
 D = SH.autoShipDecide({ ...base, order: ord([]), enrich: {} }); ok(D.state === 'review' && D.kinds.includes('read'), '상품 0개 → 검토');
