@@ -1,2 +1,2 @@
-adapt=1
-# 1310410241
+doc=app_settings/adapt_health&blist=ItemEditorChoice&cid=1
+# 103016553
