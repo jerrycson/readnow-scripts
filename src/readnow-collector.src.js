@@ -5323,6 +5323,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (ld || !same) b2.set(C('prd_metric_changes').doc(), { bookId, at, kind: 'usedListings', add: ld ? ld.add : [], del: ld ? ld.del : [], chg: ld ? ld.chg : [], orderOnly: !ld, page: JSON.parse(JSON.stringify(used.listings || [])), firstRecord: ld ? ld.first : !(prevM && prevM.usedFirstPage), lastPage: used.lastPage || null, usedTotal: used.usedTotal ?? null, ...W() }); }
     for (const t of rk.started) b2.set(C('prd_rank_periods').doc(), { bookId, title: t, firstSeenAt: at, lastSeenAt: at, endedSeenAt: null, ...W() });
     await b2.commit();
+    if (PUBONLY && page.aladinItemId) { const Q = (globalThis.__rnC2lgBk = globalThis.__rnC2lgBk || []); Q.push({ bookId, itemId: String(page.aladinItemId) }); if (Q.length > 300) Q.splice(0, Q.length - 300); } /* (11/11 col2rep2) 🛰 로거 — 방금 읽은 책을 번외 로거 다리(rnC2lg)가 그림자 차례로(메모리에만 · 300권) */
     if (rk.continuing.length || rk.ended.length) { // 이어지는/끝난 순위 기간 갱신
       const qs = await C('prd_rank_periods').where('bookId', '==', bookId).where('endedSeenAt', '==', null).get();
       const b3 = db.batch();
@@ -8308,7 +8309,11 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     else {
     ui('출판 판매 통계: 이미 받은 날 확인', 0, 0); const have = new Map(); (await C('mkt_kpipa').where(firebase.firestore.FieldPath.documentId(), '>=', start).where(firebase.firestore.FieldPath.documentId(), '<=', '99999999').get()).forEach((d) => { if (/^\d{8}$/.test(d.id)) have.set(d.id, d.data()); }); /* (1.63.12) zx_… (더 가져온 표)는 날짜 줄이 아님 */
     const recent = kpAdd(end, -6); const plan = [];
-    for (const type of ['onOff', 'bookType']) { const need = []; for (let d = start; d <= end; d = kpAdd(d, 1)) { const x = have.get(d); if (!x || !x[type] || d >= recent) need.push(d); }
+    /* (11/11 col2rep2 · 약속 38·48) 🔀 번외로 넘김 — app_settings/col2_handoff.jobs.kpipa가 켜져 있고 맡은 번외 PC 소식(beat)이 8시간 안이면 '최근 7일 일별 표'는 번외가 씀 → 운영은 그 앞 빈 날 채우기·주제분류·더 가져오기만
+     *  끄면(웹앱 ⚙ › 🔀 번외로 넘기기 [되돌리기]) 다음 회차부터 곧바로 운영이 다시 함 · 번외가 8시간 소식 없으면 운영이 스스로 다시 함(lab/col2/shadow/col2-handoff.js 규칙과 같음) */
+    const HO_KP = await (async () => { try { const h = (await C('app_settings').doc('col2_handoff').get()).data() || {}; const x = h.jobs && h.jobs.kpipa; if (!x || x.on !== true) return null; const ref = Math.max(Date.parse(x.beat || '') || +x.beat || 0, Date.parse(x.at || '') || +x.at || 0); return ref && Date.now() - ref < 8 * 3600e3 ? String(x.pc || '') : null; } catch (e) { return null; } })();
+    if (HO_KP) log(`📚 출판 판매 통계: 최근 7일 일별 표는 번외 수집기(${HO_KP})로 넘김 — 운영은 그 앞 빈 날만 채움 · 되돌리기는 ⚙ › 🔀 번외로 넘기기`);
+    for (const type of ['onOff', 'bookType']) { const need = []; for (let d = start; d <= end; d = kpAdd(d, 1)) { const x = have.get(d); if (HO_KP ? (!x || !x[type]) && d < recent : (!x || !x[type] || d >= recent)) need.push(d); }
       // 이어진 날짜끼리 31일 이하 묶음으로 (화면 규칙: 5~31일) — 5일보다 짧으면 앞으로 늘려 5일
       let i = 0; while (i < need.length) { let j = i; while (j + 1 < need.length && need[j + 1] === kpAdd(need[j], 1) && j - i < 30) j++; let from = need[i]; const to = need[j]; let n = j - i + 1; if (n < 5) { from = kpAdd(to, -4); n = 5; } plan.push({ type, from, to }); i = j + 1; } }
     log(`📚 출판 판매 통계: ${start.slice(0, 4)}-${start.slice(4, 6)}-${start.slice(6)} ~ ${end.slice(0, 4)}-${end.slice(4, 6)}-${end.slice(6)} (${days}일) · 이미 ${have.size}일 있음 · 받을 묶음 ${plan.length}개 (31일씩, 판매채널별·도서유형별)`);
@@ -10302,6 +10307,48 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (ship) { if (!g || !(g.alw || g.on) || Date.now() - (+g.at || 0) > 6 * 3600e3) return false; const q = gv('rn-c2wq-ship', []); q.push(mk(true)); const cap = (a) => { let s = JSON.stringify(a); while (a.length > 1 && s.length > 524288) { a = a.slice(Math.ceil(a.length / 10)); s = JSON.stringify(a); } return a; }; GM_setValue('rn-c2wq-ship', cap(q.slice(-300))); return true; } /* (1.89.259 🔬 정밀 점검 11/10 🪶) 개수(300)만 자르던 묶음을 512KB로도 — 송장·엑셀 입력(in 최대 400줄)이 든 항목이 쌓이면 출고 중 GM_setValue마다 수 MB를 통째로 다시 적었음(HOME rn-c2wq 하루 8.7MB) · 가장 오래된 것부터 버림(late 표시는 그대로) */
       if (!g || !g.on || Date.now() - (+g.at || 0) > 90e3) return false; /* 번외가 받는다고 한 때만 · 출고 중 아님 */
       const q = gv('rn-c2wq', []); q.push(mk(false)); GM_setValue('rn-c2wq', q.slice(-40)); return true; } catch (e) { return false; } };
+})();
+/* (11/11 col2rep2 · 약속 38·48 '로거 번외 읽은 것 0') 🛰 번외 로거 다리 — 로거 PC는 웹앱을 늘 열어 두지 않아(11/11 12:34 깔고 난 뒤 웹앱 탭 없음) 번외 그림자 일이 대상·운영 값·결과 올리기를 받을 길이 없었음
+ *  로거 알라딘 일하는 탭(lead · Firebase 로그인됨)이 1분마다 이 PC 번외 도우미(127.0.0.1:8797)와 주고받음 — 그 PC 웹앱이 3분 안에 대신 해 주고 있으면 ①⑤만
+ *  ① 책 차례: 운영 로거가 방금 시장 지표를 읽은 책(도서 번호·알라딘 상품 번호만 · globalThis.__rnC2lgBk) → POST /lg/books (새로 로거에 가는 정보 없음)
+ *  ② 운영 값 부탁(읽기만): 로거 고유 일이 견줄 칸 prd_book_metrics·bench_items·sellers·seller_review_daily(견줄 칸만) · app_settings/bench(숍 번호·켜짐만) → /relay/answer
+ *  ③ 판매자 목록(숍 번호·이름·평가 수만 · 우리 숍 뺌) ④ 결과 쓰기: col2_* 칸만(넘김 op·운영 칸은 안 씀) → /relay/ack
+ *  ⑤ 운영 로거 테더링 문이 닫히면 /busy(테더링) — 열리면 풀어 줌
+ *  우리 상품·매물·주문·문의 칸·운영 키는 다루지 않음(약속 0) · 로거가 아닌 PC에선 돌지 않음 · 머리(@connect 127.0.0.1·GM_xmlhttpRequest) 그대로 */
+(function rnC2lg() { if (window.top !== window) return; const G = globalThis; if (!/(^|\.)aladin\.co\.kr$/i.test(location.hostname)) return;
+  const gv = (k, d) => { try { const v = GM_getValue(k, d); return v == null ? d : v; } catch (e) { return d; } };
+  const pcOf = () => { try { return (window.__rnPcName && window.__rnPcName.get()) || ''; } catch (e) { return ''; } };
+  const isLogger = () => !!(G.__rnPubChrome || G.__rnPubHome || gv('rn-pubChrome', false)) || /^LOGGER/i.test(pcOf());
+  const fsx = () => { try { return G.firebase && firebase.apps.length && firebase.auth().currentUser ? firebase.firestore() : null; } catch (e) { return null; } };
+  const B = 'http://127.0.0.1:8797'; let busy = false, miss = 0, nextAt = 0, tgWas = null;
+  const gx = (m, p, b) => new Promise((res) => { try { GM_xmlhttpRequest({ method: m, url: B + p, headers: { 'X-RN-Col2': '1', 'Content-Type': 'application/json' }, data: b ? JSON.stringify(b) : undefined, timeout: 20000, anonymous: true, onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {} res(r.status === 200 ? j : null); }, onerror: () => res(null), ontimeout: () => res(null) }); } catch (e) { res(null); } });
+  const L = (lv, m) => { try { window.__rnLog && window.__rnLog('상품', lv, m); } catch (e) {} };
+  const pick = (v, ks) => { if (!v || typeof v !== 'object') return null; const o = {}; for (const k of ks) if (v[k] !== undefined) o[k] = v[k]; return o; };
+  /* 견줄 칸만 — 번외 차림표(lab/col2/shadow/col2-tasks.js)의 map·move·at 칸 */
+  const KEEP = { prd_book_metrics: ['bookId', 'priceList', 'priceSales', 'salesPoint', 'rating', 'commentCount', 'reviewCount', 'availability', 'usedTotal', 'usedTabs', 'usedMins', 'buyback', 'buyerDist', 'relationBuyIds', 'relationBuy', 'clickRelation', 'lastCheckedAt', 'usedAt', 'dynAt', 'checkedBy'],
+    sellers: ['sc', 'name', 'rev6m', 'shopTotal', 'aladinGrade', 'isPro', 'cancel3m', 'rev6mAt', 'at', 'lastSeen'], seller_review_daily: ['days', 'at', 'stats'], bench_items: ['title', 'price', 'grade', 'at', 'lastSeen', 'chk', 'sc'] };
+  const RID = /^[\w.-]{1,150}$/;
+  const lgTick = async () => { if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || !isLogger()) return; const db = fsx(); if (!db) return;
+    busy = true; let next = 60e3; try {
+      const tg = window.__rnTgate ? window.__rnTgate() : null; const tgOk = !(tg && tg.ok === false);
+      if (tgWas !== tgOk) { const r0 = await gx('POST', '/busy', tgOk ? { sec: 0, why: '테더링 문 열림' } : { sec: 600, why: '🛡 로거 테더링 문 닫힘 — ' + String((tg && tg.why) || '').slice(0, 50) }); if (r0) tgWas = tgOk; } else if (!tgOk) await gx('POST', '/busy', { sec: 600, why: '🛡 로거 테더링 문 닫힘' });
+      const pd = await gx('GET', '/relay/pending?by=' + encodeURIComponent('수집기 ' + (pcOf() || 'LOGGER'))); if (!pd || !pd.ok) { if (++miss >= 3) next = 5 * 60e3; return; } miss = 0;
+      if (pd.kind && pd.kind !== 'logger') { next = 30 * 60e3; return; } /* 번외가 사무실 설정이면 이 다리는 손대지 않음 */
+      { const Q = G.__rnC2lgBk || []; if (Q.length) { const take = Q.splice(0, 300); const r1 = await gx('POST', '/lg/books', { books: take }); if (!r1) G.__rnC2lgBk = take.concat(G.__rnC2lgBk || []).slice(-300); } }
+      if (pd.webAt && Date.now() - pd.webAt < 3 * 60e3) return; /* 이 PC 웹앱이 대신 해 주는 중 */
+      const docs = []; for (const w of (pd.want || []).slice(0, 40)) { const c = String((w && w.c) || ''), id = String((w && w.id) || ''); if (!RID.test(id)) continue;
+        if (c === 'app_settings') { if (id !== 'bench') continue; try { const d = await db.collection(c).doc(id).get(); const v = d.exists ? d.data() || {} : null; docs.push({ c, id, v: v ? { targets: (Array.isArray(v.targets) ? v.targets : []).filter((t) => t && t.sc).slice(0, 200).map((t) => ({ sc: String(t.sc), on: t.on !== false })) } : null }); } catch (e) {} continue; }
+        if (!KEEP[c]) continue; try { const d = await db.collection(c).doc(id).get(); docs.push({ c, id, v: d.exists ? pick(d.data(), KEEP[c]) : null }); } catch (e) {} }
+      let lists = null; for (const w of (Array.isArray(pd.lists) ? pd.lists : []).slice(0, 3)) { if (!w || w.c !== 'sellers' || lists) continue; const n = Math.max(1, Math.min(500, +w.n || 200));
+        try { let q = db.collection('sellers').orderBy(firebase.firestore.FieldPath.documentId()); if (w.after && RID.test(String(w.after))) q = q.startAfter(String(w.after)); const g = await q.limit(n).get(); const A = []; g.forEach((d) => { const v = d.data() || {}; const sc = String(v.sc || '').replace(/\D/g, ''); if (!/^sc_\d{1,10}$/.test(d.id) || !sc || sc === '996008') { A.push({ id: d.id, v: null }); return; } A.push({ id: d.id, v: { sc, name: typeof v.name === 'string' ? v.name.slice(0, 40) : null, n: Number(String(v.totalReviewCount ?? '').replace(/[^\d]/g, '')) || null } }); }); lists = { sellers: A }; } catch (e) {} }
+      if (docs.length || lists) await gx('POST', '/relay/answer', { docs, ...(lists ? { lists } : {}) });
+      const keys = [], errs = {}; for (const o of (pd.out || []).slice(0, 25)) { if (o.op || !/^col2_[\w-]+$/.test(String(o.c || '')) || !RID.test(String(o.id || ''))) { errs[o.k] = '로거 다리는 col2_ 칸만 씀'; continue; }
+        try { await db.collection(o.c).doc(o.id).set(o.v || {}, o.merge ? { merge: true } : undefined); keys.push(o.k); } catch (e) { errs[o.k] = e.code || e.message; } }
+      if (keys.length || Object.keys(errs).length) await gx('POST', '/relay/ack', { keys, errs });
+      if (keys.length && !G.__rnC2lgSaid) { G.__rnC2lgSaid = 1; L('info', `🛰 번외 로거 다리 — 번외 그림자 결과 ${keys.length}건을 col2_ 칸에 대신 씀(웹앱 없이 · 운영 칸엔 안 씀)`); }
+      if ((pd.want || []).length || (pd.out || []).length >= 25) next = 5000;
+    } catch (e) {} finally { busy = false; nextAt = Date.now() + next; } };
+  G.__rnC2lgTick = lgTick; setTimeout(() => lgTick().catch(() => {}), 30000); setInterval(() => lgTick().catch(() => {}), 5000);
 })();
 /* (11/10 정범님 11/09 밤 '로그인 일(알라딘 샵매니저)도 번외로' · lab/col2/LOGIN_PLAN.md ⑤-1) 🟧 번외 수집기 알라딘 다리 — 이 PC 알라딘 일하는 탭(lead)이 10초마다 번외 도우미(127.0.0.1:8797)에 알림(예스24 다리 c2yTick과 같은 꼴)
  *  보냄 POST /al/feed { by, seat:{ok,why}, hold, opLostAt, cfg:{off} }

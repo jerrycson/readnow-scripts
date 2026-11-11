@@ -62,7 +62,8 @@ function makeJobs(ctx) {
   async function step() {
     const b = busy(); if (b && b.on) { if (now() - S.busyLog > 10 * 60e3) { S.busyLog = now(); ctx.note(`그림자 일 쉼 — 운영이 바쁨(${b.why || ''}) · 끝나면 이어감`, { k: 'rest', m: '그림자 일' }); } return { did: false, rest: ctx.BUSY.restMs, why: '운영이 바쁨: ' + (b.why || '') }; }
     settle(); benchFeed();
-    if (inPlan('kpipa') && S.kpDay !== kday() && kpNeed()) { S.kpDay = kday(); push('kpipa', { day: kday() }, kday()); }
+    if (inPlan('kpipa') && S.kpDay !== kday() && kpNeed()) { S.kpDay = kday(); S.kpAt = now(); push('kpipa', { day: kday() }, kday()); }
+    else if (inPlan('kpipa') && ctx.handed && ctx.handed('kpipa') && now() - (S.kpAt || 0) > 3 * 3600e3) { S.kpAt = now(); const key = kday() + '_' + new Date(now() + 9 * 3600e3).getUTCHours(); push('kpipa', { day: kday() }, key); } /* (11/11 col2rep2) 넘긴 뒤엔 운영처럼 3시간마다 최근 7일(공표 뒤 고쳐짐) */
     if (inPlan('ext.fx') && S.fxDay !== kday() && TK.shareOk(kind(), kday().slice(-1), C())) { S.fxDay = kday(); push('ext.fx', { day: kday() }, kday()); }
     const L = plan().filter((k) => k !== 'product' && (S.q[k] || []).length);
     /* (11/10) 🗣 판매자 구매평·문의 글 모으기(로거만) — 몫(처음 큼 → 점점 다른 일과 같게)만큼 차례를 받음 · 속도 규칙은 같이 셈 */
@@ -132,6 +133,9 @@ function makeJobs(ctx) {
     S.wait.push({ k: t.k, a, id, c: t.col, sh: t.shape === 'survey' ? TK.surveyDays(pg) : pg, at: now(), ms }); }
   const slimRes = (r) => { const o = { ok: !!r.ok, none: !!r.none, skip: r.skip || null, why: r.why || null }; if (r.d !== undefined) o.d = r.d; if (r.rates) { o.rates = r.rates; o.src = r.src; o.date = r.date; } return o; };
 
+  /* (11/11 col2rep2 · 약속 38·48) 🔀 넘긴 KPIPA — 이 PC로 넘겼으면(웹앱 ⚙ › 🔀 번외로 넘기기) 운영 kpipaJob과 같은 꼴로 mkt_kpipa/<날짜>에 씀(같으면 안 씀 · 바뀌면 옛 값을 history에) · 넘기지 않았으면 아무것도 안 함 */
+  function hoKp(w, v, cmp) { if (!ctx.handed || !ctx.handed('kpipa') || !ctx.opOut) return; const sh = w.sh || {}; if (!sh.type || !sh.series || cmp.verdict === 'same') return; const pv = v && v[sh.type] && v[sh.type].series ? v[sh.type].series : null; const at = new Date().toISOString(); const id = String(w.id);
+    if (ctx.opOut('kpipa', 'mkt_kpipa', id, { date: `${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6)}`, [sh.type]: { series: sh.series, at } }, { hist: pv ? { at, type: sh.type, old: pv } : null })) ctx.note(`🔀 넘긴 일 📚 KPIPA ${id} ${sh.type === 'onOff' ? '판매채널별' : '도서유형별'} — ${pv ? '바뀐 값(옛 값은 history)' : '새 날'}을 운영 칸에 맡김(웹앱이 씀)`, { k: 'read', m: '🔀 넘김' }); }
   /* 운영 문서가 왔는지 보고 견줌 */
   function settle() { const P0 = P(); const keep = [];
     for (const w of S.wait) { const t = TK.byK[w.k]; if (!t) continue; const g = ctx.want(w.c, w.id);
@@ -147,6 +151,7 @@ function makeJobs(ctx) {
       else if (CMP.stab(pv.series) === CMP.stab(sh.series)) cmp = { verdict: 'same', reasons: [] }; /* 운영 kpSig와 같은 셈(칸 순서 상관없이 같은 값) */
       else { const ageH = (now() - Date.parse(pv.at || 0)) / 3600e3; cmp = { verdict: 'diff', reasons: [ageH >= 3 ? 'old' : 'diff'], rows: [{ f: sh.type, k: 'diff', prod: pv.series, shadow: sh.series }], ageH: Number.isFinite(ageH) ? Math.round(ageH * 10) / 10 : null }; } } /* 최근 7일은 공표 뒤 고쳐질 수 있어 운영도 3시간마다 다시 받음 → 3시간 넘은 운영 값이면 '오래됨' */
     else cmp = CMP.compareMap(v || null, w.sh || {}, t.map || {}, { move: t.move, prodAt: t.at && v ? v[t.at] || atOf(v) : atOf(v) });
+    if (t.k === 'kpipa') hoKp(w, v, cmp);
     record(t, w.a, w.id, cmp.verdict, cmp.reasons || [], { ms: w.ms, rows: (cmp.rows || []).filter((x) => x.k !== 'same').slice(0, 8), how: cmp.how || null, ageH: cmp.ageH == null ? null : cmp.ageH, why: cmp.why || null }); }
 
   /* 기록 — col2_jobs 한 건 · col2_jday 하루 요약(일마다 같음 비율·다름 까닭·넘길 수 있음) · 기록창 한 줄 */
