@@ -1,1 +1,2 @@
-@kpin kpin/pulse_20261111-061341.json
+doc=app_settings/research_pulse
+# 1096320875
