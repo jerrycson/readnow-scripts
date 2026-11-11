@@ -1,2 +1,17 @@
-benchday=2026-11-10&doc=app_settings/bench,app_settings/seller_track,app_settings/research_pulse
-# 2891515490
+@health&hours=24
+perf=400
+doc=app_settings/write_watch
+doc=prd_jobs/pcBeat
+doc=app_settings/value_model
+doc=app_settings/buyback_stats
+doc=app_settings/extras_study
+doc=app_settings/research_pulse
+doc=app_settings/y24_reg
+doc=app_settings/cons_study
+doc=prd_system/autoSched
+doc=app_settings/main
+recentUp=sellers&mins=2880
+recentUp=prd_listings&mins=240
+cmds=y24reg&n=20
+cmds=shopRead&n=10
+# 2348130654
