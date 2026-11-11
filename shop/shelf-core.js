@@ -36,7 +36,8 @@
     '체스판 머리', '위아래 톱니', '두 색 대각', '가운데 흰 창', '금박 점선', '세 칸 나눔', '위 가는 줄 · 아래 굵은 줄', '리본 매듭', '안쪽 점선 칼선', '가죽 덧댄 모서리'];
   /* ── 무늬 40 = 겉감 결(책등 위에 한 겹 더 — .sp[data-p="번호"] .sk::before) · 덧붙이기만 */
   const PATTERNS = ['민결', '천 결', '리넨', '가죽 결', '마블', '잔 점', '큰 물방울', '가는 세로줄', '굵은 세로줄', '가로 줄무늬', '사선 줄무늬', '체크', '깅엄', '타탄', '헤링본', '물결', '비늘', '마름모 격자', '벌집', '별빛',
-    '잔꽃', '나뭇잎', '지그재그', '동심원', '물결 반원', '바구니 짜임', '벽돌', '종이 결', '바랜 얼룩', '금빛 반짝이', '줄 노트', '모눈종이', '십자', '세모', '굵은 사선 띠', '빗살', '구름', '한지 섬유', '코르덴', '빛 결'];
+    '잔꽃', '나뭇잎', '지그재그', '동심원', '물결 반원', '바구니 짜임', '벽돌', '종이 결', '바랜 얼룩', '금빛 반짝이', '줄 노트', '모눈종이', '십자', '세모', '굵은 사선 띠', '빗살', '구름', '한지 섬유', '코르덴', '빛 결',
+    /* (shelf3 · 정범님 11/11: 무늬 50) 덧붙인 10 */ '돋을 점', '가는 격자', '대나무 마디', '청해파(파도 비늘)', '세로 나뭇결', '바랜 물 얼룩', '가는 사선 망', '사방 꽃 연속', '책 천 굵은 결', '먼지 낀 결'];
   /* ── 모양 50 = 책 몸 10(모서리·등 굴림·홈·닳음 — .sp[data-s="번호"] .sk) × 머리 5(헤드밴드·금박 머리선·닳은 머리 — .sp[data-h="번호"] .hd) · 덧붙이기만
    *  모양 번호 s = (몸-1)×5 + 머리 (1~50) */
   const BODIES = ['반듯', '둥근 등', '둥근 모서리', '양장 홈 줄', '낡아 깎인 모서리', '얇은 문고판', '천 장정 테', '반짝이 비닐', '머리가 좁은 책', '오래 읽은 책'];
@@ -45,14 +46,27 @@
   const shapeOf = (s) => ({ body: Math.floor((s - 1) / HEADS.length) + 1, head: ((s - 1) % HEADS.length) + 1 });
   /* ── 장식색 4(금박·띠·테두리에 쓰는 색 --g) · 덧붙이기만 */
   const ACCENTS = [['gold', '금박'], ['silver', '은박'], ['ink', '먹(또는 흰)'], ['tone', '곁색']];
-  /* ── 색 20 = 책 천·가죽에 흔한 색(색 무리 12 · 밝기 0 짙음~8 옅음 · HSL 식) — 정범님 11/11: 색은 줄임 · 무리·밝기는 덧붙이기만 */
+  /* ── 색 70(처음 20 + shelf3 덧붙인 50) = 책 천·가죽에 흔한 색(색 무리 12 · 밝기 0 짙음~8 옅음 · HSL 식) — 정범님 11/11: 색은 줄임 · 무리·밝기는 덧붙이기만 */
   const FAMS = [['red', '빨강', 356, 62], ['orange', '주황', 22, 70], ['yellow', '노랑', 44, 72], ['olive', '올리브', 72, 38], ['green', '초록', 140, 42], ['teal', '청록', 178, 48],
     ['blue', '파랑', 208, 58], ['navy', '남색', 228, 50], ['purple', '보라', 272, 38], ['pink', '분홍', 334, 55], ['brown', '갈색', 26, 36], ['gray', '먹·회색', 30, 6]];
   const TONES = [16, 24, 32, 40, 50, 60, 70, 80, 90];
   const hsl = (h, s, l) => { s /= 100; l /= 100; const a = s * Math.min(l, 1 - l); const f = (n) => { const k = (n + h / 30) % 12; return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); }; return '#' + [f(0), f(8), f(4)].map((x) => Math.round(x * 255).toString(16).padStart(2, '0')).join(''); };
   const C20 = [['red', 1, '포도주'], ['red', 4, '다홍'], ['orange', 4, '주황'], ['yellow', 5, '겨자'], ['olive', 2, '올리브'], ['green', 1, '짙은 초록'], ['green', 5, '연두'], ['teal', 2, '짙은 청록'], ['teal', 6, '옥색'], ['blue', 3, '파랑'],
-    ['blue', 7, '하늘'], ['navy', 0, '먹남색'], ['navy', 1, '남색'], ['purple', 2, '보라'], ['pink', 3, '장미'], ['pink', 6, '분홍'], ['brown', 1, '고동'], ['brown', 3, '밤색'], ['gray', 0, '먹'], ['gray', 7, '미색']];
-  const COLORS = C20.map(([fam, t, name]) => { const F = FAMS.find((x) => x[0] === fam); return { hex: hsl(F[2], t >= 6 ? F[3] * 0.78 : F[3], TONES[t]), fam, t, name }; });
+    ['blue', 7, '하늘'], ['navy', 0, '먹남색'], ['navy', 1, '남색'], ['purple', 2, '보라'], ['pink', 3, '장미'], ['pink', 6, '분홍'], ['brown', 1, '고동'], ['brown', 3, '밤색'], ['gray', 0, '먹'], ['gray', 7, '미색'],
+    /* (shelf3 · 정범님 11/11: 색 70) 덧붙인 50색 — 헌책방 천·가죽·바랜 종이 빛 · [무리, 밝기, 이름, 색] · 서로 구별되게(시험이 가장 가까운 두 색 거리를 잼) */
+    ['red', 2, '벽돌', '#8e3b2f'], ['red', 4, '주홍', '#c8442c'], ['red', 2, '연지', '#a8243b'], ['red', 1, '팥', '#6e2a2a'], ['red', 5, '산호', '#e07a5f'],
+    ['orange', 4, '호박', '#d9822b'], ['orange', 3, '구리', '#a8572c'], ['orange', 6, '살구', '#f2b38a'], ['orange', 5, '귤', '#eda02a'],
+    ['yellow', 4, '황토', '#b8913a'], ['yellow', 5, '개나리', '#f0d23c'], ['yellow', 7, '바랜 노랑', '#e6d39a'], ['yellow', 4, '꿀', '#c98f1e'], ['yellow', 6, '모래', '#bfa57a'],
+    ['olive', 3, '쑥', '#7d8a4e'], ['olive', 2, '국방', '#55582e'], ['olive', 3, '이끼', '#7a8c1c'],
+    ['green', 5, '청자', '#7fa98f'], ['green', 1, '소나무', '#3b5a1f'], ['green', 3, '풀', '#4f8a3c'], ['green', 7, '박하', '#a9d3b8'], ['green', 0, '짙은 녹', '#1f3d2b'],
+    ['teal', 4, '청록 회', '#5f8c8a'], ['teal', 4, '물빛', '#3e9fab'], ['teal', 1, '짙은 바다', '#1e4d55'], ['teal', 3, '비취', '#2f8f78'],
+    ['blue', 2, '쪽', '#2c4f86'], ['blue', 3, '코발트', '#2f62c0'], ['blue', 4, '회청', '#6c84a3'], ['blue', 7, '바랜 하늘', '#8fb4d6'], ['blue', 1, '군청', '#23337a'],
+    ['navy', 1, '청람', '#40407a'], ['navy', 2, '청회', '#46536b'],
+    ['purple', 1, '가지', '#4a2f4f'], ['purple', 6, '라벤더', '#a99bc7'], ['purple', 2, '자주', '#7a2e5c'], ['purple', 2, '포도', '#6a3a9a'],
+    ['pink', 4, '진달래', '#c95d8a'], ['pink', 6, '바랜 장미', '#b98a8f'], ['pink', 7, '복숭아', '#f2c2b8'],
+    ['brown', 0, '초콜릿', '#4a2414'], ['brown', 2, '가죽', '#7b4a2a'], ['brown', 3, '계피', '#b0683a'], ['brown', 4, '모카', '#6f5a4a'], ['brown', 5, '크라프트', '#b8916a'], ['brown', 7, '낡은 종이', '#d9c3a0'],
+    ['gray', 0, '숯', '#4a4a4a'], ['gray', 3, '쥐색', '#77736b'], ['gray', 5, '은회', '#aaa69d'], ['gray', 8, '한지', '#efe8d6']];
+  const COLORS = C20.map(([fam, t, name, hx]) => { const F = FAMS.find((x) => x[0] === fam); return { hex: hx || hsl(F[2], t >= 6 ? F[3] * 0.78 : F[3], TONES[t]), fam, t, name }; });
   /* 색 묶음(설정) = 20색 가운데 고르는 거름 */
   const PALS = { mix: () => true, classic: (x) => (['red', 'green', 'navy', 'brown', 'purple', 'teal'].includes(x.fam) && x.t <= 3) || (x.fam === 'gray' && x.t <= 1), vivid: (x) => x.fam !== 'gray' && x.t >= 3 && x.t <= 6,
     earth: (x) => ['brown', 'olive', 'orange', 'yellow'].includes(x.fam) || (x.fam === 'gray'), pastel: (x) => x.t >= 5, mono: (x) => x.fam === 'gray' || (x.fam === 'navy' && x.t <= 1) };
@@ -80,7 +94,8 @@
     { k: 'sorts', group: '정렬', label: '손님이 고를 수 있는 정렬', type: 'multi', def: SORTS.map((x) => x[0]), opts: opt(SORTS) },
     { k: 'inner', group: '정렬', label: '주제 분류 안의 차례', type: 'select', def: 'reg', opts: { reg: '우리 등록순', title: '상품명', price: '낮은 값', sales: '판매량' } },
     { k: 'regDir', group: '정렬', label: '등록순 방향', type: 'select', def: 'new', opts: { new: '새로 들어온 책 먼저', old: '먼저 들어온 책 먼저' } },
-    { k: 'catOrder', group: '정렬', label: '분야 차례', type: 'select', def: 'n', opts: { n: '책이 많은 분야 먼저', name: '분야 이름 가나다' } },
+    { k: 'catOrder', group: '정렬', label: '분야 차례(손님이 들어오자마자 보는 책장)', type: 'select', def: 'shop', opts: { shop: '서점 일반 차례(소설·에세이·인문… 종교는 뒤)', sales: '많이 팔리는 분야 먼저', n: '책이 많은 분야 먼저', name: '분야 이름 가나다' } },
+    { k: 'catFirst', group: '정렬', label: '맨 앞에 둘 분야(쉼표 · 예: 소설·시,에세이)', type: 'text', def: '', max: 200, help: '여기 적은 큰 분야가 차례보다 먼저' },
     { k: 'bands', group: '정렬', label: '가격대 경계(원 · 쉼표)', type: 'text', def: '5000,10000,20000,30000' },
     { k: 'picks', group: '정렬', label: '추천 책 상품 번호(한 줄에 하나 · 추천순 맨 앞)', type: 'area', def: '' },
     { k: 'remember', group: '정렬', label: '손님이 고른 정렬을 그 기기에 기억', type: 'check', def: true },
@@ -93,9 +108,9 @@
     { k: 'fullText', group: '책등', label: '책등에 제목·지은이를 되도록 전체로(크게 보면 전체 · 작게 보면 줄임)', type: 'check', def: true },
     { k: 'minFs', group: '책등', label: '전체로 쓸 때 가장 작은 글자(px)', type: 'number', def: 9, min: 6, max: 14, step: 0.5, help: '이보다 작아지면 줄여(…) 씀' },
     { k: 'designs', group: '책등', label: '쓸 책등 디자인(비우면 50가지 모두)', type: 'multi', def: [], opts: num1(DESIGNS) },
-    { k: 'pats', group: '책등', label: '쓸 무늬(비우면 40가지 모두)', type: 'multi', def: [], opts: num1(PATTERNS) },
+    { k: 'pats', group: '책등', label: '쓸 무늬(비우면 50가지 모두)', type: 'multi', def: [], opts: num1(PATTERNS) },
     { k: 'shapes', group: '책등', label: '쓸 책 모양(비우면 50가지 모두 = 몸 10 × 머리 5)', type: 'multi', def: [], opts: num1(SHAPES) },
-    { k: 'palette', group: '책등', label: '색 묶음', type: 'select', def: 'mix', opts: { mix: '고루 섞기(20색)', classic: '고전 천 색', vivid: '선명한 색', earth: '흙빛', pastel: '파스텔', mono: '흑백' } },
+    { k: 'palette', group: '책등', label: '색 묶음', type: 'select', def: 'mix', opts: { mix: '고루 섞기(70색)', classic: '고전 천 색', vivid: '선명한 색', earth: '흙빛', pastel: '파스텔', mono: '흑백' } },
     { k: 'orient', group: '책등', label: '글 방향', type: 'select', def: 'rand', opts: { rand: '책마다 랜덤', v: '세로쓰기(한 글자씩 세움)', h: '가로쓰기(눕혀 씀)' } },
     { k: 'wMin', group: '책등', label: '가장 얇은 책(px)', type: 'number', def: 20, min: 12, max: 40 },
     { k: 'wMax', group: '책등', label: '가장 두꺼운 책(px)', type: 'number', def: 48, min: 24, max: 80 },
@@ -170,6 +185,30 @@
     [/외국어/, { fam: ['blue', 'red'], des: [2, 19] }], [/건강|취미/, { fam: ['green', 'teal'], pat: [3, 2] }]];
   function themeOf(it) { const out = {}; const add = (o) => { for (const k in o) if (!out[k]) out[k] = o[k]; }; const t = ' ' + String((it && it.t) || '') + ' ';
     for (const [re, o] of WORDS) if (re.test(t)) { add(o); break; } const c = String((it && it.c) || ''); for (const [re, o] of CATS) if (re.test(c)) { add(o); break; } return Object.keys(out).length ? out : null; }
+  /* ── (shelf3) 큰 분야 — 알라딘 분류 경로('국내도서>소설/시/희곡>한국소설' 또는 쉼표로 이은 것)에서 사람이 읽는 짧은 이름 · 서점 일반 차례
+   *  근거(약속 42): 교보·영풍 매장 안내도(문학 → 에세이 → 인문 → 역사 → 사회 → 경제경영 → 자기계발 → 과학 → 예술 → 어린이·청소년 → 취미·실용 → 외국어·수험 → 종교) · 알라딘 1단계 분류 이름 */
+  const BIG = [['novel', '소설·시', /소설|시\/|희곡|^시$|^(한국|외국|세계|영미|일본|고전)?문학$/], ['essay', '에세이', /에세이/], ['human', '인문', /인문|철학|심리/], ['history', '역사', /역사|문화/], ['society', '사회·정치', /사회|정치|법/],
+    ['econ', '경제경영', /경제|경영/], ['self', '자기계발', /자기계발/], ['science', '과학', /과학|공학|의학/], ['art', '예술', /예술|대중문화|음악|미술|사진|건축/], ['kids', '어린이', /어린이|초등/], ['baby', '유아', /유아/],
+    ['teen', '청소년', /청소년/], ['comic', '만화', /만화|라이트\s?노벨/], ['family', '가정·육아', /가정|육아|부모|임신/], ['cook', '요리·살림', /요리|살림/], ['travel', '여행', /여행/], ['health', '건강·취미', /건강|취미|레저|스포츠/],
+    ['lang', '외국어', /외국어|영어|일본어|중국어/], ['it', '컴퓨터·IT', /컴퓨터|모바일|IT/], ['exam', '수험서·참고서', /수험|자격|참고서|교재|대학교재|전집|교육/], ['religion', '종교', /종교|역학|기독교|불교|천주교|가톨릭/], ['etc', '여러 분야', /$^/]];
+  const BIGK = Object.fromEntries(BIG.map((b, i) => [b[0], i]));
+  /* 분류가 없는 책 — 제목·지은이 낱말로 큰 분야 짐작(맞는 것이 없으면 '여러 분야') · 차례가 중요(앞이 먼저) */
+  const GUESS = [['religion', /성경|성서|기도|교회|하나님|하느님|예수|그리스도|복음|설교|신앙|묵상|큐티|찬송|목사|불교|불경|부처|사찰|스님|명상|선禪|천주교|가톨릭|성당|교리/], ['exam', /기출|문제집|모의고사|수능|공무원|자격증|검정고시|EBS|해커스|시나공|에듀윌|참고서|교과서|개념원리|쎈|평가문제/i],
+    ['lang', /영어|일본어|중국어|회화|토익|토플|TOEIC|TOEFL|IELTS|JLPT|HSK|문법|단어장|English|Japanese/i], ['it', /파이썬|자바스크립트|자바|코딩|프로그래밍|엑셀|파워포인트|컴퓨터|인공지능|머신러닝|딥러닝|챗GPT|Python|Java|SQL|C\+\+|리눅스/i],
+    ['cook', /요리|레시피|베이킹|밥상|반찬|도시락|살림|정리 수납/], ['travel', /여행|가이드북|트래블|배낭|걷기 여행/], ['family', /육아|임신|출산|태교|엄마표|아이 키우|부모 수업|자녀교육/], ['health', /건강|다이어트|요가|필라테스|운동|등산|낚시|바둑|골프|캠핑|뜨개|정원 가꾸/],
+    ['kids', /그림책|동화|어린이|초등|유치원|전래/], ['comic', /만화|코믹|웹툰|애니메이션/], ['econ', /경제|경영|투자|주식|부동산|마케팅|재테크|회계|창업|브랜딩|세금/], ['self', /자기계발|성공|습관|리더십|화술|말하기|시간 관리|부자/],
+    ['history', /역사|조선|고려|삼국|백제|신라|세계사|한국사|전쟁사|문명/], ['science', /과학|물리|화학|생물|우주|수학|뇌과학|진화|유전/], ['human', /철학|심리|인문|사유|니체|소크라테스/], ['art', /미술|음악|사진|디자인|영화|건축|그림 그리기|드로잉/],
+    ['society', /사회|정치|민주주의|법률|헌법|노동|페미니즘/], ['essay', /에세이|산문|수필|산문집/], ['novel', /장편소설|단편소설|소설|시집|연작|추리|미스터리|스릴러|판타지|로맨스|문학/]];
+  /* 분류 글 → 큰 분야 번호(없으면 -1) · c는 '종교/역학' 같은 둘째 칸 또는 경로 통째 */
+  function bigOfCat(c) { const seg = String(c || '').split(/\s*[>,]\s*/).map((x) => x.trim()).filter((x) => x && !/^(국내도서|외국도서|중고도서|eBook|전자책|음반|DVD|중고샵)$/i.test(x)); if (!seg.length) return -1;
+    for (const x of seg.slice(0, 2)) for (let i = 0; i < BIG.length - 1; i++) if (BIG[i][2].test(x)) return i; return -1; }
+  /* 작은 분야(표찰) 이름 다듬기 — '기독교(개신교)' → '기독교' · 너무 길면 12자 */
+  const smallName = (x) => { const t = String(x || '').replace(/\([^)]*\)?/g, '').replace(/\s+/g, ' ').trim(); return t.length > 12 ? t.slice(0, 12) : t; };
+  /* 책 → { k: 큰 분야 열쇠, b: 큰 이름, s: 작은 이름(없으면 ''), g: 짐작했나 } — c2 = 셋째 칸(클라우드) · 없으면 c 경로에서 */
+  function catOf(x) { const c = String((x && x.c) || ''); let i = bigOfCat(c); let g = false; const seg = c.split(/\s*[>,]\s*/).map((v) => v.trim()).filter((v) => v && !/^(국내도서|외국도서|중고도서)$/.test(v));
+    let sm = x && x.c2 ? smallName(x.c2) : seg.length > 1 ? smallName(seg[1]) : '';
+    if (i < 0) { const t = ' ' + String((x && x.t) || '') + ' ' + String((x && x.a) || '') + ' '; const G = GUESS.find((q) => q[1].test(t)); i = G ? BIGK[G[0]] : BIGK.etc; g = true; if (!G) sm = ''; else if (!sm && seg.length === 1) sm = ''; }
+    if (sm && sm === BIG[i][1]) sm = ''; return { k: BIG[i][0], b: BIG[i][1], s: sm, g }; }
   /* ── 고르기: 설정의 거름(쓸 디자인·무늬·모양·글꼴·색 묶음) 안에서 · 추천 목록이 있으면 4번 중 3번은 그 안에서 */
   const range = (n) => Array.from({ length: n }, (_, i) => i + 1);
   const allowed = (c) => ({ D: c.designs && c.designs.length ? c.designs.map(Number) : range(DESIGNS.length), P: c.pats && c.pats.length ? c.pats.map(Number) : range(PATTERNS.length), S: c.shapes && c.shapes.length ? c.shapes.map(Number) : range(SHAPES.length),
@@ -200,12 +239,17 @@
   function textFit(t, a, w, hp) { const W = Math.max(6, w * 0.8), nt = Math.max(1, glen(t)), na = glen(a); const Ht = hp * (na ? 0.66 : 0.86), Ha = hp * 0.22;
     const fit = (n, H, top) => { for (let f = top; f >= 4; f -= 0.5) { const k = Math.floor(W / (f * 1.14)); const per = Math.floor(H / (f * 1.04)); if (k >= 1 && per >= 1 && k * per >= n) return f; } return 4; };
     const ft = fit(nt, Ht, 22); const fa = na ? Math.min(ft * 0.8, fit(na, Ha, 14)) : 0; return { ft, fa }; }
+  /* ── (shelf3) 책등 글 자리 — 디자인마다 장식(띠·동그라미·이름표·라벨)이 없는 곳 [위 %, 아래 %, 옆 %] · 글은 이 안에서만(넘치면 화면이 재서 글을 줄이거나 줄 수를 늘림)
+   *  정범님 11/11(리드 화면 확인): '장식이 글을 가림' — 장식은 글 뒤 또는 글 없는 자리 */
+  const ZONE_D = { 2: [8, 8], 3: [10, 10], 7: [7, 7, 9], 9: [17, 17, 8], 11: [6, 13], 13: [24, 22], 14: [6, 12], 15: [6, 25], 16: [6, 24], 19: [19, 5], 20: [23, 15], 21: [6, 6, 11], 22: [6, 13], 23: [15, 5], 25: [9, 5], 26: [6, 10], 27: [6, 21],
+    28: [18, 18], 29: [6, 5, 17], 34: [6, 28], 36: [17, 5], 37: [6, 15], 38: [6, 39], 41: [10, 5], 42: [10, 10], 44: [11, 21, 13], 45: [9, 9], 47: [6, 17], 50: [9, 9] };
+  const zoneOf = (d) => { const z = ZONE_D[d] || []; return { zt: z[0] || 6, zb: z[1] || 5, zs: z[2] || 6 }; };
   /* 책등 하나의 모든 것(화면이 쓰는 꼴) — A(조합)는 저장된 것 또는 assign() 결과 */
   function dress(it, A, c) { c = c || DEF; const z = sizeOf(it, c); const col = COLORS[A.ci - 1]; const base = col.hex; const R = rng(hash(((it && it.id) || '') + '|ink'));
     const c2 = lum(base) > 0.4 ? shade(base, -0.28) : shade(base, 0.32); const k = A.d === 9 || A.d === 44 ? '#1b1712' : inkFor(base, R());
     const g = ['#d9b45a', '#cfd3d8', lum(base) > 0.35 ? '#1b1712' : '#f4efe4', lum(base) > 0.4 ? shade(base, -0.45) : shade(base, 0.55)][A.a - 1]; const f = FONTS[A.fi - 1];
     const skH = (c.rowH - 24) * z.h / 100; const T = textFit(it && it.t, it && it.a, z.w, skH);
-    const sh = shapeOf(A.s); return { code: encode(A), src: A.src, g: A.g, d: A.d, ci: A.ci, p: A.p, s: A.s, body: sh.body, head: sh.head, a: A.a, o: A.o, f: f.id, fw: f.wt, c: base, c2, k, ac: g, w: z.w, h: z.h, tilt: z.tilt, ft: T.ft, fa: T.fa, real: z.real }; }
+    const sh = shapeOf(A.s); return { code: encode(A), src: A.src, g: A.g, d: A.d, ci: A.ci, p: A.p, s: A.s, body: sh.body, head: sh.head, a: A.a, o: A.o, f: f.id, fw: f.wt, c: base, c2, k, ac: g, w: z.w, h: z.h, tilt: z.tilt, ft: T.ft, fa: T.fa, real: z.real, ...zoneOf(A.d) }; }
   /* 옛 부름(look) 그대로 — 저장된 조합이 없을 때 새로 정함 */
   function look(it, c, cc) { c = c || DEF; return dress(it, assign(it, c, cc || (it && it.cc) || null), c); }
   /* 조합 수 — 실제로 만든 목록 길이를 곱함(정범님 11/11: 1억 넘게) */
@@ -231,18 +275,25 @@
     const picks = String(c.picks || '').split(/[\s,]+/).map((x) => x.trim()).filter(Boolean); const P = new Map(picks.map((id, i) => [id, i]));
     if (key === 'rec') for (const x of L) x._rs = P.has(x.id) ? 1e6 - P.get(x.id) : recScore(x, now);
     let groups;
-    if (key === 'cat') { const M = new Map(); for (const x of L) { const g = x.c || '분야 모름'; if (!M.has(g)) M.set(g, []); M.get(g).push(x); } const ic = cmpOf(c.inner === 'reg' ? 'reg' : c.inner, c, now);
-      groups = [...M].map(([name, xs]) => ({ name, xs: xs.sort(ic) })).sort((a, b) => (a.name === '분야 모름') - (b.name === '분야 모름') || (c.catOrder === 'name' ? KO.compare(a.name, b.name) : b.xs.length - a.xs.length || KO.compare(a.name, b.name))); }
+    if (key === 'cat') { const M = new Map(); for (const x of L) { const k = catOf(x); x._k = k; if (!M.has(k.k)) M.set(k.k, { key: k.k, name: k.b, xs: [] }); M.get(k.k).xs.push(x); } const ic = cmpOf(c.inner === 'reg' ? 'reg' : c.inner, c, now);
+      const first = String(c.catFirst || '').split(/[,，]/).map((v) => v.trim()).filter(Boolean); const fi = (g) => { const i = first.findIndex((v) => v === g.name || v === g.key); return i < 0 ? 99 : i; };
+      const salesOf = (g) => g.xs.reduce((a, x) => a + (x.sr ? 1 / Math.log2(1 + x.sr) : 0), 0);
+      groups = [...M.values()]; for (const g of groups) { const SM = new Map(); for (const x of g.xs) { const k = x._k.s || ''; if (!SM.has(k)) SM.set(k, []); SM.get(k).push(x); }
+        const subs = [...SM].sort((a, b) => (a[0] === '') - (b[0] === '') || b[1].length - a[1].length || KO.compare(a[0], b[0])); g.xs = subs.flatMap(([k, xs]) => xs.sort(ic)); g.subs = subs.map(([k, xs]) => [k, xs.length]); }
+      const ord = c.catOrder === 'name' ? (a, b) => KO.compare(a.name, b.name) : c.catOrder === 'n' ? (a, b) => b.xs.length - a.xs.length : c.catOrder === 'sales' ? (a, b) => salesOf(b) - salesOf(a) || b.xs.length - a.xs.length : (a, b) => BIGK[a.key] - BIGK[b.key];
+      groups.sort((a, b) => (a.key === 'etc') - (b.key === 'etc') || fi(a) - fi(b) || ord(a, b) || KO.compare(a.name, b.name)); }
     else if (key === 'title') { const M = new Map(); for (const x of L.slice().sort(cmpOf('title'))) { const g = initial(x.t); if (!M.has(g)) M.set(g, []); M.get(g).push(x); } groups = ORDER_INIT.filter((g) => M.has(g)).map((g) => ({ name: g, xs: M.get(g) })); }
     else if (key === 'price') { const B = bandsOf(c.bands).length ? bandsOf(c.bands) : bandsOf(DEF.bands); const M = new Map(); for (const x of L.slice().sort(cmpOf('price'))) { const [i, nm] = bandName(B, x.p); if (!M.has(i)) M.set(i, { name: nm, xs: [] }); M.get(i).xs.push(x); } groups = [...M.keys()].sort((a, b) => a - b).map((i) => M.get(i)); }
     else { const nm = { reg: c.regDir === 'old' ? '먼저 들어온 차례' : '새로 들어온 차례', sales: '많이 팔리는 차례', rec: '추천 차례' }[key]; groups = [{ name: nm, xs: L.slice().sort(cmpOf(key, c, now)), seq: 1 }]; }
     const cap = c.cap; const cases = []; let cur = null; const open = () => { cur = { slots: [], groups: [], n: 0 }; cases.push(cur); };
     for (const g of groups) { const parts = Math.ceil(g.xs.length / cap) || 1;
       if (g.seq) { for (let i = 0; i < parts; i++) { open(); const xs = g.xs.slice(i * cap, (i + 1) * cap); cur.slots = xs; cur.n = xs.length; cur.groups.push({ name: g.name, from: i * cap + 1, to: i * cap + xs.length, of: g.xs.length }); cur.name = g.name; cur.sub = `${(i * cap + 1).toLocaleString('ko-KR')}~${(i * cap + xs.length).toLocaleString('ko-KR')}번째`; } cur = null; continue; }
-      if (c.pack && cur && g.xs.length <= cap - cur.n && cur.n > 0) { cur.slots.push({ lab: g.name, n: g.xs.length }, ...g.xs); cur.n += g.xs.length; cur.groups.push({ name: g.name, n: g.xs.length }); continue; }
-      for (let i = 0; i < parts; i++) { open(); const xs = g.xs.slice(i * cap, (i + 1) * cap); cur.slots.push({ lab: parts > 1 ? `${g.name} ${i + 1}/${parts}` : g.name, n: xs.length }, ...xs); cur.n = xs.length; cur.groups.push({ name: g.name, part: parts > 1 ? i + 1 : 0, parts, n: xs.length }); }
+      const labsOf = (xs, head) => { if (!g.subs) return [{ lab: head, n: xs.length }, ...xs]; const out = []; let k = null, at = -1; xs.forEach((x) => { const sk = (x._k && x._k.s) || ''; if (sk !== k) { k = sk; at = out.length; out.push({ lab: out.length ? (sk || '그 밖') : (sk ? g.name + ' › ' + sk : head), n: 0, big: g.name, sm: sk }); } out[at].n++; out.push(x); }); return out; };
+      if (c.pack && cur && g.xs.length <= cap - cur.n && cur.n > 0) { cur.slots.push(...labsOf(g.xs, g.name)); cur.n += g.xs.length; cur.groups.push({ name: g.name, n: g.xs.length }); continue; }
+      for (let i = 0; i < parts; i++) { open(); const xs = g.xs.slice(i * cap, (i + 1) * cap); cur.slots.push(...labsOf(xs, parts > 1 ? `${g.name} ${i + 1}/${parts}` : g.name)); cur.n = xs.length; cur.groups.push({ name: g.name, part: parts > 1 ? i + 1 : 0, parts, n: xs.length }); }
       if (!c.pack) cur = null; }
-    for (const cs of cases) if (!cs.name) { const g = cs.groups; cs.name = g[0].part ? `${g[0].name} ${g[0].part}/${g[0].parts}` : g[0].name; cs.sub = g.length > 1 ? `외 ${g.length - 1}분야` : ''; }
+    for (const cs of cases) if (!cs.name) { const g = cs.groups; cs.name = g[0].part ? `${g[0].name} ${g[0].part}/${g[0].parts}` : g[0].name; const sm = [...new Set(cs.slots.filter((x) => x.lab && x.sm && x.big === g[0].name).map((x) => x.sm))];
+      cs.sub = [sm.length ? sm.slice(0, 2).join(' · ') + (sm.length > 2 ? ` 외 ${sm.length - 2}` : '') : '', g.length > 1 ? `+ ${g.slice(1, 3).map((v) => v.name).join(' · ')}${g.length > 3 ? ` 외 ${g.length - 3}분야` : ''}` : ''].filter(Boolean).join(' '); }
     return { key, cases, n: L.length }; }
   /* ── 넓이 → 칸 수(넓은 화면은 칸을 나눠 실제 책장처럼 · 좁으면 한 칸에 선반이 늘어남) */
   const bays = (innerW, c, z) => clamp(Math.floor(innerW / Math.max(120, (c || DEF).bayW * (z || 1))), 1, 5);
@@ -256,21 +307,27 @@
   const mod = (a, n) => ((a % n) + n) % n;
   /* 나침반 이름: 지금 책장이 북쪽일 때 i번 책장의 방위(4개면 북·서·남·동 — 다음 책장이 서쪽) */
   function compass(i, cur, N) { const a = mod((i - cur) * (360 / N), 360); const D = ['북', '북서', '서', '남서', '남', '남동', '동', '북동']; return D[Math.round(a / 45) % 8]; }
+  /* ── (shelf3) 할인가·배지 — 우리숍 손님 화면(shop-core saleOf·BADGE)과 같은 뜻 · 서가 책장 칸에도 */
+  const BADGE = { sale: '할인', new: 'NEW', pick: '추천', rare: '희귀', last: '마지막 1권', hot: '인기' };
+  const saleOf = (x) => { if (x && x.p0 > x.p && x.p > 0) return { pct: Math.round((1 - x.p / x.p0) * 100), from: 'p0', was: x.p0 }; return x && x.lp > 0 && x.p > 0 && x.p < x.lp ? { pct: Math.round((1 - x.p / x.lp) * 100), from: 'lp', was: x.lp } : null; };
+  const tagOf = (x) => { const o = saleOf(x); if (o && o.from === 'p0') return { k: 'sale', t: '−' + o.pct + '%' }; const b = (x && x.bd || []).find((k) => BADGE[k] && k !== 'sale'); return b ? { k: b, t: b === 'last' ? '1권' : BADGE[b] } : null; };
   /* ── 찜 목록(이 기기) */
   const wishHas = (w, id) => (w || []).some((x) => x && x.id === id);
   const wishToggle = (w, it, max) => { const L = (w || []).filter((x) => x && x.id); if (wishHas(L, it.id)) return { wish: L.filter((x) => x.id !== it.id), on: false }; const n = [{ id: it.id, t: it.t, a: it.a || null, p: +it.p || 0, g: it.g || null, im: it.im || null, at: new Date().toISOString() }, ...L].slice(0, max || 300); return { wish: n, on: true }; };
   /* ── 받은 줄(cols + rows) → 책 · 그림 주소 앞부분 되살림 */
   function unpack(J) { const C = J.cols || []; const pre = J.pre || []; const ix = Object.fromEntries(C.map((k, i) => [k, i])); const U = (u) => (typeof u === 'string' && u[0] === '~' ? (pre[+u[1]] || '') + u.slice(2) : u || null);
-    return (J.rows || []).map((r, o) => ({ id: String(r[ix.id]), t: r[ix.t] || '', a: r[ix.a] || null, c: r[ix.c] || null, p: +r[ix.p] || 0, lp: +r[ix.lp] || 0, g: r[ix.g] || null, at: r[ix.at] || null, im: U(r[ix.im]), sp: U(r[ix.sp]), bk: U(r[ix.bk]), st: r[ix.st] || 's', sr: +r[ix.sr] || 0, pg: +r[ix.pg] || 0, pb: r[ix.pb] || null, sz: ix.sz != null ? r[ix.sz] || null : null, lk: ix.lk != null ? r[ix.lk] || null : null, _o: o })); }
+    return (J.rows || []).map((r, o) => ({ id: String(r[ix.id]), t: r[ix.t] || '', a: r[ix.a] || null, c: r[ix.c] || null, p: +r[ix.p] || 0, lp: +r[ix.lp] || 0, g: r[ix.g] || null, at: r[ix.at] || null, im: U(r[ix.im]), sp: U(r[ix.sp]), bk: U(r[ix.bk]), st: r[ix.st] || 's', sr: +r[ix.sr] || 0, pg: +r[ix.pg] || 0, pb: r[ix.pb] || null, sz: ix.sz != null ? r[ix.sz] || null : null, lk: ix.lk != null ? r[ix.lk] || null : null, c2: ix.c2 != null ? r[ix.c2] || null : null, p0: ix.p0 != null ? +r[ix.p0] || 0 : 0, bd: ix.bd != null && Array.isArray(r[ix.bd]) ? r[ix.bd] : null, _o: o })); }
   /* ── 시범 자료(#/shelf?demo=N) — 실제 자료가 없을 때 보기·시험용 · 손님·상품 정보 아님 */
   const DW = ['바다', '별', '시간', '고양이', '여름', '도시', '숲', '편지', '기억', '노래', '정원', '바람', '겨울', '사람', '빛', '밤', '길', '섬', '꿈', '집', '창문', '나무', '강', '모래', '구름', '불꽃', '종이', '시계', '거울', '여행'];
   const DT = ['의 끝에서', '을 걷는 법', ' 이야기', '과 나', '의 문법', ' 산책', '이 오는 소리', '의 역사', ' 수업', '을 위한 변명', ' 일기', '에게', ' 안내서', '의 모든 것', ''];
   const DC = ['소설/시/희곡', '에세이', '인문학', '역사', '과학', '경제경영', '자기계발', '어린이', '만화', '예술/대중문화', '사회과학', '종교/역학', '요리/살림', '여행', '외국어', '컴퓨터/모바일', '건강/취미', '청소년', '유아', '수험서/자격증'];
+  const DS = { '소설/시/희곡': ['한국소설', '외국소설', '추리소설', '시'], '에세이': ['한국에세이', '여행에세이'], '인문학': ['철학', '심리학'], '역사': ['한국사', '세계사'], '종교/역학': ['기독교(개신교)', '불교', '천주교'], '어린이': ['그림책', '동화'], '경제경영': ['투자', '마케팅'] };
   const DA = ['지은이 가', '지은이 나', '지은이 다', '지은이 라', '지은이 마', '지은이 바', '지은이 사', '지은이 아', '글쓴이 갑', '글쓴이 을', 'A. Writer', 'B. Author', '옮긴이 하나', '엮은이 둘', '그린이 셋']; /* 지어낸 이름(실제 사람 아님) */
   function demoItems(n, seed) { const R = rng(hash('demo' + (seed || 7))); const out = []; const day0 = Date.parse('2026-08-01');
     for (let i = 0; i < n; i++) { const w = DW[Math.floor(R() * DW.length)]; const t = (R() < 0.12 ? 'The ' + ['Sea', 'Star', 'Garden', 'Night', 'Road'][Math.floor(R() * 5)] : w + DT[Math.floor(R() * DT.length)]) + (R() < 0.15 ? ' ' + (1 + Math.floor(R() * 3)) : '');
-      const lp = (8 + Math.floor(R() * 30)) * 1000; const p = Math.max(1000, Math.round(lp * (0.2 + R() * 0.6) / 100) * 100); const ci = Math.floor(Math.pow(R(), 1.7) * DC.length);
-      out.push({ id: 'demo' + i, t, a: DA[Math.floor(R() * DA.length)], c: DC[ci], p, lp, g: ['최상', '상', '상', '중', '하'][Math.floor(R() * 5)], at: new Date(day0 + Math.floor(R() * 100) * 864e5).toISOString().slice(0, 10), im: null, sp: null, bk: null, st: R() < 0.03 ? 'o' : 's', sr: R() < 0.7 ? 1 + Math.floor(R() * n) : 0, pg: 80 + Math.floor(R() * 600), pb: '시범출판', sz: R() < 0.7 ? ['127x188', '128x188', '140x210', '145x210', '152x225', '153x224', '170x230', '176x248', '188x257', '210x297', '110x175'][Math.floor(R() * 11)] + 'x' + (6 + Math.floor(R() * 40)) : null, _o: i }); }
+      const lp = (8 + Math.floor(R() * 30)) * 1000; const p = Math.max(1000, Math.round(lp * (0.2 + R() * 0.6) / 100) * 100); const ci = Math.floor(Math.pow(R(), 1.7) * DC.length); const sale = R() < 0.12;
+      const sub = DS[DC[ci]]; const c2 = sub ? sub[Math.floor(R() * sub.length)] : null; const noC = R() < 0.05;
+      out.push({ id: 'demo' + i, t, a: DA[Math.floor(R() * DA.length)], c: noC ? null : DC[ci], c2: noC ? null : c2, p, lp, g: ['최상', '상', '상', '중', '하'][Math.floor(R() * 5)], at: new Date(day0 + Math.floor(R() * 100) * 864e5).toISOString().slice(0, 10), im: null, sp: null, bk: null, st: R() < 0.03 ? 'o' : 's', sr: R() < 0.7 ? 1 + Math.floor(R() * n) : 0, pg: 80 + Math.floor(R() * 600), pb: '시범출판', p0: sale ? Math.round(p / (0.7 + R() * 0.2) / 100) * 100 : 0, bd: sale ? ['sale'] : R() < 0.05 ? ['new'] : R() < 0.03 ? ['pick'] : null, sz: R() < 0.7 ? ['127x188', '128x188', '140x210', '145x210', '152x225', '153x224', '170x230', '176x248', '188x257', '210x297', '110x175'][Math.floor(R() * 11)] + 'x' + (6 + Math.floor(R() * 40)) : null, _o: i }); }
     return out; }
   /* ── 글꼴: 책장 하나에 쓰인 글자만 받는 주소(Google Fonts text= — 한 글꼴 수십 KB) */
   const fontById = (id) => FONTS.find((f) => f.id === id) || FONTS[0];
@@ -281,5 +338,5 @@
   const b64d = (s) => { try { s = String(s || '').replace(/-/g, '+').replace(/_/g, '/'); return typeof atob === 'function' ? decodeURIComponent(escape(atob(s))) : Buffer.from(s, 'base64').toString('utf8'); } catch (e) { return ''; } };
   const previewArg = (c) => b64e(JSON.stringify(cfgDiff(c)));
   const previewCfg = (arg) => { try { return JSON.parse(b64d(arg)) || {}; } catch (e) { return {}; } };
-  return { VER: '0.2.0', FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
+  return { BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.0', FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
 });
