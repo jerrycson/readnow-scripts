@@ -19,6 +19,7 @@
  *     웹앱 → GET /relay/pending(부탁·쓸 것) · POST /relay/answer {docs,sample}(prd_ids·prd_books 만) · /relay/ack {keys,errs}
  *   POST /read/product { itemId } → { ok, page, coreVer, ms, waited } (한 번에 하나 · 속도 규칙)
  *   (0.1.5 정범님 11/09 밤) 🟦 예스24 판매관리 읽기(col2-y24.js — 화면을 열지 않음 · 따로 된 프로필 col2-y24-chrome에 로그인 세션만):
+ *     (11/11 y24ops3) POST /y24/learn {on,page,min,by} · GET /y24/learn — 🎓 배우기 모드(사람이 1건 처리할 때 저장 요청 모양만 · 값 없음)
  *     POST /y24/feed {cfg,hold,jobs,ack,jack} ← 이 PC 수집기(알라딘 일하는 탭)가 10초마다 → { y24, recs(받은 응답), took, jres, jstep, tour } · POST /y24/login(로그인 한 번) · POST /y24/run {what: ord|prd|tour|ops}
  *   (그림자 쓰기) 🟧✍ POST /al/wfeed {by, w:[{id,k,at,in,rq,ok,http}]} ← 이 PC 수집기가 알라딘에 쓰기를 보낸 직후(번호·값만 · 출고 중·로거는 안 알림) → {ack} · 견줌만, 번외는 알라딘에 쓰기를 보내지 않음(col2-alw.js)
  *   📊 옆 창(작은 앱 창 · 자리·크기 기억)은 켜질 때 저절로 뜸(col2.json side:false 로 끔)
@@ -609,7 +610,8 @@ const srv = http.createServer((req, res) => {
   if (u.pathname === '/log/day' && req.method === 'GET') return J(200, { ok: true, lines: JRN.day(u.searchParams.get('d')) });
   if (u.pathname === '/log/all' && req.method === 'GET') { res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', ...H }); return res.end(JRN.allText()); }
   if (u.pathname === '/y24/reg/state' && req.method === 'GET') return J(200, Y24.reg.state()); /* (11/10 y24auto) 🟦 예스24 자동 올림 — 맡김·결과(웹앱이 받아 장부에 적음) */
-  if (u.pathname === '/y24/w/state' && req.method === 'GET') return J(200, Y24.w.state()); /* (11/11 y24w) 🟦 예스24 쓰기(수량·판매중지) — 맡김·결과(웹앱 🛠 처리할 일이 받아 줄에 보임) */
+  if (u.pathname === '/y24/w/state' && req.method === 'GET') return J(200, Y24.w.state());
+  if (u.pathname === '/y24/learn' && req.method === 'GET') return J(200, Y24.learn.state()); /* (11/11 y24ops3) 🎓 배우기 모드 — 받은 저장 요청 모양(값·손님 정보 없음) */ /* (11/11 y24w) 🟦 예스24 쓰기(수량·판매중지) — 맡김·결과(웹앱 🛠 처리할 일이 받아 줄에 보임) */
   if (u.pathname === '/nv/st' && req.method === 'GET') return J(200, { ok: true, ver: VERSION, pc: CFG.pc || os.hostname(), nv: NV.sum() }); /* (0.1.22) 🟩 네이버 — 상태만(시크릿·토큰 없음 · 공개 열쇠는 있음) */
   if (u.pathname === '/relay/pending' && req.method === 'GET') return J(200, relayPending(u.searchParams.get('by')));
   if (req.method !== 'POST') return J(405, { ok: false });
@@ -656,6 +658,7 @@ const srv = http.createServer((req, res) => {
   if (p === '/nv/feed') return body((o) => J(200, NV.feed(o)), 262144);
   if (p === '/y24/w/put') return body((o) => { const r = Y24.w.put(o); J(r.code, r.body); }, 256 * 1024);
   if (p === '/y24/w/ack') return body((o) => J(200, Y24.w.ack(o.ids)));
+  if (p === '/y24/learn') return body(async (o) => { const r = await Y24.learn.set(o); J(r.ok ? 200 : 409, r); }); /* (11/11 y24ops3) 🎓 배우기 켜기·끄기 {on, page, min, by} */
   if (p === '/y24/w/resume') return body((o) => J(200, Y24.w.resume(o.by || o.why || '')));
   if (p === '/y24/feed') return body((o) => J(200, Y24.feed(o, o.by)), 1048576);
   if (p === '/y24/login') return body(async (o) => { const r = await Y24.login(o.why || '옆 창 단추'); J(200, { ...r, state: status() }); });
