@@ -1,13 +1,13 @@
 {
- "holder": "shop3",
- "what": "우리숍 도메인 작업 고침(hosting/domain.js 프로젝트 이름)",
- "since": "2026-11-11T07:50:46Z",
- "beat": "2026-11-11T07:50:46Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "h4",
-  "done": "4시간 점검 16:15 — 수집기 1.89.263 · 웹앱 1.78.482 8c1fd567",
-  "at": "2026-11-11T07:31:46Z"
+  "who": "shop3",
+  "done": "도메인 작업 고침 2ccdca8",
+  "at": "2026-11-11T07:51:01Z"
  },
- "host": "vm"
+ "host": null
 }
