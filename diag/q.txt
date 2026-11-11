@@ -1,2 +1,2 @@
-logs=1&pc=LOGGER&from=202611110250&to=202611110500
-# 2503125685
+col2=2026-11-10&doc=app_settings/kpipa
+# 275158098
