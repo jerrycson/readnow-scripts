@@ -1,2 +1,2 @@
-doc=app_settings/aladin_login
-# 79336120
+doc=app_settings/freeship_stats
+# 150065940
