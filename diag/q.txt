@@ -1,2 +1,2 @@
-col2=1&doc=rn_status/LOGGER,prd_system/col2
-# 2411424382
+col2=2026-11-12
+# 25522664
