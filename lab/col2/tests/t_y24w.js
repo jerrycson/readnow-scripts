@@ -17,7 +17,8 @@ function fakeY24() { const S = { prods: [
     { GOODS_NO: '300000002', EAN: '9788900000102', ENTR_GOODS_CD: 'A01SKU2', ORD_REMAIN_CNT: 1, SALE_STATE_GB: '02' },
     { GOODS_NO: '300000003', EAN: '9788900000103', ENTR_GOODS_CD: 'A01SKU3', ORD_REMAIN_CNT: 1, SALE_STATE_GB: '02' },
     { GOODS_NO: '300000004', EAN: '9788900000104', ENTR_GOODS_CD: 'A01SKU4', ORD_REMAIN_CNT: 2, SALE_STATE_GB: '02' },
-    { GOODS_NO: '300000005', EAN: '9788900000105', ENTR_GOODS_CD: 'A01SKU5, B9', ORD_REMAIN_CNT: 4, SALE_STATE_GB: '02' }], log: [], ignoreSave: false };
+    { GOODS_NO: '300000005', EAN: '9788900000105', ENTR_GOODS_CD: 'A01SKU5, B9', ORD_REMAIN_CNT: 4, SALE_STATE_GB: '02' },
+    { GOODS_NO: '300000006', EAN: '9788900000106', ENTR_GOODS_CD: 'A01SKU6', ORD_REMAIN_CNT: 1, SALE_STATE_GB: '02' }].map((p, i) => ({ ...p, SHOP_SALE_PRICE: 5000 + i * 1000 })), log: [], ignoreSave: false, priceLock: false };
   const page = (h, b) => `<!doctype html><html><head><meta charset="utf-8"><title>${h}</title><script>function api(p,o,cb){var x=new XMLHttpRequest();x.open('POST',p);x.setRequestHeader('Content-Type','application/json');x.onload=function(){cb&&cb(x.responseText)};x.send(JSON.stringify(o))}</script></head><body>${b}</body></html>`;
   const plist = () => page('등록상품', `<div id="app"><section>
 <select id="kw"><option value="">선택하세요</option><option value="0">상품명</option><option value="3">ISBN</option><option value="5">자체상품코드</option></select> <input type="text" id="kwv">
@@ -29,14 +30,14 @@ function fakeY24() { const S = { prods: [
 <div class="layerPop" id="pop" style="display:none"><h1> 판매상태/기간 변경 </h1><button type="button" class="close">×</button>
 ${['02', '08', '04', '07'].map((v, i) => `<div class="custom-radio"><input type="radio" name="goodsStatGb" value="${v}" id="p${i}"><label for="p${i}">${NM[v]}</label></div>`).join('')}
 <input type="checkbox" name="changeDateYn" disabled value="Y"><button type="button" class="btn btn-primary" id="go"> 변경 </button><button type="button" class="btn" id="cc"> 취소 </button></div></div>
-<script>var ROWS=[],CHK=new Set(),DIRTY=new Set();
+<script>window.PLOCK=${S.priceLock ? 'true' : 'false'};var ROWS=[],CHK=new Set(),DIRTY=new Set();
 var ds={getRowCount:function(){return ROWS.length},getJsonRow:function(r){return Object.assign({},ROWS[r])},getValue:function(r,f){return ROWS[r][f]},setValue:function(r,f,v){ROWS[r][f]=v;DIRTY.add(r)}};
-var gv={getDataSource:function(){return ds},getItemIndex:function(r){return r},getDataRow:function(i){return i},setCurrent:function(){},showEditor:function(){},commit:function(){},setValue:function(i,f,v){ds.setValue(i,f,v)},checkAll:function(c){if(!c)CHK.clear()},checkItem:function(i,c){if(c)CHK.add(i);else CHK.delete(i)},getCheckedRows:function(){return [...CHK]}};
+var gv={getDataSource:function(){return ds},getItemIndex:function(r){return r},getDataRow:function(i){return i},setCurrent:function(){},showEditor:function(){},commit:function(){},columnByField:function(f){return {fieldName:f,editable:!(f==='SHOP_SALE_PRICE'&&window.PLOCK)}},setValue:function(i,f,v){ds.setValue(i,f,v)},checkAll:function(c){if(!c)CHK.clear()},checkItem:function(i,c){if(c)CHK.add(i);else CHK.delete(i)},getCheckedRows:function(){return [...CHK]}};
 document.getElementById('wrap').__vue__={gridView:gv,$parent:null,title:'x'};
 function draw(){document.getElementById('productGrid').innerText=ROWS.length?ROWS.map(function(r){return r.GOODS_NO+' '+r.SALE_STATE_GB+' '+r.ORD_REMAIN_CNT}).join(' | '):'조회된 데이터가 없습니다'}
 document.getElementById('q').onclick=function(){var k=document.getElementById('kw').value,v=document.getElementById('kwv').value;var st=document.querySelector('input[name=goodsStatGb]:checked');api('/api/Product/ProductList',{SEARCH_GB:k,SEARCH_TXT:v,goodsStatGb:st?st.value:'02',PERIOD:window.YR?'1Y':'1D'},function(t){var j=JSON.parse(t);ROWS=j.PRODUCT_LIST;CHK.clear();DIRTY.clear();draw()})};
 document.querySelectorAll('.btn-group button').forEach(function(b){b.onclick=function(){window.YR=b.innerText.trim()==='1년'}});
-document.getElementById('save').onclick=function(){if(!DIRTY.size)return alert('수정된 항목이 없습니다');if(!confirm('수정된 항목을 저장하시겠습니까?'))return;api('/api/Product/SaveProduct',{rows:[...DIRTY].map(function(r){return {GOODS_NO:ROWS[r].GOODS_NO,ORD_REMAIN_CNT:ROWS[r].ORD_REMAIN_CNT}})},function(){alert('저장되었습니다.');DIRTY.clear()})};
+document.getElementById('save').onclick=function(){if(!DIRTY.size)return alert('수정된 항목이 없습니다');if(!confirm('수정된 항목을 저장하시겠습니까?'))return;api('/api/Product/SaveProduct',{rows:[...DIRTY].map(function(r){return {GOODS_NO:ROWS[r].GOODS_NO,ORD_REMAIN_CNT:ROWS[r].ORD_REMAIN_CNT,SHOP_SALE_PRICE:ROWS[r].SHOP_SALE_PRICE}})},function(){alert('저장되었습니다.');DIRTY.clear()})};
 document.getElementById('chg').onclick=function(){if(CHK.size<1)return alert('상품을 선택하세요');document.getElementById('pop').style.display='block'};
 document.getElementById('go').onclick=function(){var r=document.querySelector('#pop input[type=radio]:checked');if(!r)return alert('판매상태를 선택하세요');if(!confirm('선택한 상품의 판매상태를 변경하시겠습니까?'))return;api('/api/Product/ChangeState',{nos:[...CHK].map(function(i){return ROWS[i].GOODS_NO}),st:r.value},function(){alert('변경되었습니다.');document.getElementById('pop').style.display='none'})};
 document.querySelector('#pop .close').onclick=document.getElementById('cc').onclick=function(){document.getElementById('pop').style.display='none'};
@@ -45,7 +46,7 @@ document.getElementById('del').onclick=function(){if(confirm('상품을 삭제�
       const H = (code, type, body) => { s.writeHead(code, { 'Content-Type': type + '; charset=utf-8' }); s.end(body); };
       if (u.pathname === '/api/Product/ProductList') { let o = {}; try { o = JSON.parse(b || '{}'); } catch (e) {} let L0 = S.prods; if (o.SEARCH_GB === '5' && o.SEARCH_TXT) L0 = L0.filter((p) => p.ENTR_GOODS_CD.split(/[,\s]+/).includes(o.SEARCH_TXT)); if (o.goodsStatGb) L0 = L0.filter((p) => p.SALE_STATE_GB === o.goodsStatGb);
         return H(200, 'application/json', JSON.stringify({ PRODUCT_LIST: L0.map((p) => ({ ...p, SALE_STATE_GB_NM: NM[p.SALE_STATE_GB] })), TOTAL_COUNT: L0.length, RESULT_CODE: 'S000' })); }
-      if (u.pathname === '/api/Product/SaveProduct') { const o = JSON.parse(b || '{}'); if (!S.ignoreSave) for (const r of o.rows || []) { const p = S.prods.find((x) => x.GOODS_NO === r.GOODS_NO); if (p) p.ORD_REMAIN_CNT = +r.ORD_REMAIN_CNT; } return H(200, 'application/json', '{"RESULT_CODE":"S000"}'); }
+      if (u.pathname === '/api/Product/SaveProduct') { const o = JSON.parse(b || '{}'); if (!S.ignoreSave) for (const r of o.rows || []) { const p = S.prods.find((x) => x.GOODS_NO === r.GOODS_NO); if (p) { p.ORD_REMAIN_CNT = +r.ORD_REMAIN_CNT; if (r.SHOP_SALE_PRICE != null) p.SHOP_SALE_PRICE = +r.SHOP_SALE_PRICE; } } return H(200, 'application/json', '{"RESULT_CODE":"S000"}'); }
       if (u.pathname === '/api/Product/ChangeState') { const o = JSON.parse(b || '{}'); for (const n of o.nos || []) { const p = S.prods.find((x) => x.GOODS_NO === n); if (p) p.SALE_STATE_GB = o.st; } return H(200, 'application/json', '{"RESULT_CODE":"S000"}'); }
       if (u.pathname === '/api/Product/DeleteAll' || u.pathname === '/api/Product/Buyback') return H(200, 'application/json', '{}');
       if (u.pathname.startsWith('/api/')) return H(200, 'application/json', JSON.stringify({ RESULT_LIST: [], TOTAL_COUNT: 0 }));
@@ -111,7 +112,18 @@ const job = (rows) => ({ id: 'y24w-t' + ++K, rows, by: '시험 웹앱' });
     console.log('⑥ 여러 줄(첫 성공 뒤)');
     const j8 = job([row('300000005', 'B9', 'qty', 3), row('300000003', 'A01SKU3', 'start')]); await H.api('POST', '/y24/w/put', j8); x = await resOf(j8.id, 300);
     ok(x && x.state === 'done' && P('300000005').ORD_REMAIN_CNT === 3 && P('300000003').SALE_STATE_GB === '02', '2줄 맡김 → 둘 다 done(자체코드가 여럿인 줄도)', x && x.msg);
-    ok(!Y.S.log.some((l) => /DeleteAll|Buyback/.test(l.p)) && Y.S.prods.length === 5, '상품삭제·바이백으로 전환 같은 다른 단추는 끝까지 안 누름');
+    console.log('⑦ (11/11 y24ops1) 판매가 바꾸기');
+    { const c = W.checkJob; ok(/10원 단위/.test(c(job([row('300000006', 'A01SKU6', 'price', 5005)]), { ok1: 1, rk: {} })) && /100원/.test(c(job([row('300000006', 'A01SKU6', 'price', 50)]), { ok1: 1, rk: {} })) && c(job([row('300000006', 'A01SKU6', 'price', 9000)]), { ok1: 1, rk: {} }) === '', '판매가 검사: 100원~100만 원 · 10원 단위');
+      ok(W.isDone({ kind: 'price', to: 9000 }, { price: 9000 }) && !W.isDone({ kind: 'price', to: 9000 }, { price: 8000 }) && !W.isDone({ kind: 'price', to: 9000 }, { price: null }), '판매가 이미 됨 셈'); }
+    const sv1 = nCall('/api/Product/SaveProduct'); const j9 = job([row('300000006', 'A01SKU6', 'price', 11000)]); await H.api('POST', '/y24/w/put', j9); x = await resOf(j9.id);
+    ok(x && x.state === 'done' && P('300000006').SHOP_SALE_PRICE === 11000 && nCall('/api/Product/SaveProduct') === sv1 + 1 && x.rows['led|300000006'].before.price === 10000 && x.rows['led|300000006'].after.price === 11000, '판매가 10,000 → 11,000 → [수정항목 저장] → 목록 다시 읽어 확인 → done', x && x.msg);
+    const j10 = job([row('300000006', 'A01SKU6', 'price', 30000)]); await H.api('POST', '/y24/w/put', j10); x = await resOf(j10.id);
+    ok(x && x.state === 'fail' && x.rows['led|300000006'].pre && /50%/.test(x.msg) && P('300000006').SHOP_SALE_PRICE === 11000 && nCall('/api/Product/SaveProduct') === sv1 + 1, '한 번에 50% 넘게 바뀌는 값은 아무것도 안 누름', x && x.msg);
+    Y.S.priceLock = true; const j11 = job([row('300000006', 'A01SKU6', 'price', 12000)]); await H.api('POST', '/y24/w/put', j11); x = await resOf(j11.id); Y.S.priceLock = false;
+    ok(x && x.state === 'fail' && x.rows['led|300000006'].pre && /고칠 수 없/.test(x.msg) && x.todo && P('300000006').SHOP_SALE_PRICE === 11000 && nCall('/api/Product/SaveProduct') === sv1 + 1, '표의 판매가 칸이 고칠 수 없는 칸이면 아무것도 안 누르고 까닭·할 일', x && x.msg);
+    const j12 = job([row('300000003', 'A01SKU3', 'stop', null, { tag: 'p' })]); await H.api('POST', '/y24/w/put', j12); await resOf(j12.id); const j13 = job([row('300000003', 'A01SKU3', 'price', 7500)]); await H.api('POST', '/y24/w/put', j13); x = await resOf(j13.id);
+    ok(x && x.state === 'fail' && /판매중이 아닌/.test(x.msg) && P('300000003').SHOP_SALE_PRICE === 7000, '판매중지 상품의 판매가는 안 바꿈', x && x.msg);
+    ok(!Y.S.log.some((l) => /DeleteAll|Buyback/.test(l.p)) && Y.S.prods.length === 6, '상품삭제·바이백으로 전환 같은 다른 단추는 끝까지 안 누름');
     const st = (await H.api('GET', '/status')).j.y24; ok(st.w && st.w.ok1 && st.w.stop == null, '상태(/status y24.w)에 쓰기 줄 요약');
   } finally { try { await H.stop(); } catch (e) {} killDir(D); }
   Y.srv.close(); L.done('t_y24w');

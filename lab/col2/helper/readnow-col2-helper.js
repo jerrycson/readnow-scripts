@@ -19,7 +19,7 @@
  *     웹앱 → GET /relay/pending(부탁·쓸 것) · POST /relay/answer {docs,sample}(prd_ids·prd_books 만) · /relay/ack {keys,errs}
  *   POST /read/product { itemId } → { ok, page, coreVer, ms, waited } (한 번에 하나 · 속도 규칙)
  *   (0.1.5 정범님 11/09 밤) 🟦 예스24 판매관리 읽기(col2-y24.js — 화면을 열지 않음 · 따로 된 프로필 col2-y24-chrome에 로그인 세션만):
- *     POST /y24/feed {cfg,hold,jobs,ack,jack} ← 이 PC 수집기(알라딘 일하는 탭)가 10초마다 → { y24, recs(받은 응답), took, jres, jstep, tour } · POST /y24/login(로그인 한 번) · POST /y24/run {what: ord|prd|tour}
+ *     POST /y24/feed {cfg,hold,jobs,ack,jack} ← 이 PC 수집기(알라딘 일하는 탭)가 10초마다 → { y24, recs(받은 응답), took, jres, jstep, tour } · POST /y24/login(로그인 한 번) · POST /y24/run {what: ord|prd|tour|ops}
  *   (그림자 쓰기) 🟧✍ POST /al/wfeed {by, w:[{id,k,at,in,rq,ok,http}]} ← 이 PC 수집기가 알라딘에 쓰기를 보낸 직후(번호·값만 · 출고 중·로거는 안 알림) → {ack} · 견줌만, 번외는 알라딘에 쓰기를 보내지 않음(col2-alw.js)
  *   📊 옆 창(작은 앱 창 · 자리·크기 기억)은 켜질 때 저절로 뜸(col2.json side:false 로 끔)
  * 켜는 법: 운영 웹앱에 단추를 넣기 전까지는 README '켜는 법' — 이 파일은 운영 도우미가 불러 쓰지 않음(완전히 따로) */
