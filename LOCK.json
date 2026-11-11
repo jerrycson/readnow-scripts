@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "rel3 판 내기",
- "since": "2026-11-11T14:20:42Z",
- "beat": "2026-11-11T14:33:29Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "daily",
-  "done": "🔬 정밀 점검 11/11 끝 — 웹앱 1.78.485·수집기 1.89.265·번외 0.1.24",
-  "at": "2026-11-11T14:18:16Z"
+  "who": "lead",
+  "done": "rel3 판 냄 — 웹앱 1.78.486·수집기 1.89.266·클라우드 0.35.128·번외 0.1.25 · 62bfae3",
+  "at": "2026-11-11T14:35:12Z"
  },
- "host": "vm"
+ "host": null
 }
