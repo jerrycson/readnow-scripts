@@ -1,2 +1,2 @@
-recentUp=sellers&mins=2880
-# 2862629220
+recentUp=ext_basic&mins=120&perf=0
+# 182267042
