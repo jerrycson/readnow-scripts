@@ -1,2 +1,2 @@
-doc=prd_jobs/rev6mStale,prd_jobs/rev6mAll,prd_jobs/revTop,prd_system/autoSched,app_settings/seller_queue
-# 365212756
+logs=1&pc=LOGGER&from=202611111200&doc=prd_jobs/autoSched
+# 2430029942
