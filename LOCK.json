@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "h4",
+ "what": "4시간 점검 — HOME 번외 이어받기 중 매일 자동 담당에서 빼기",
+ "since": "2026-11-11T23:24:35Z",
+ "beat": "2026-11-11T23:24:35Z",
  "ask": null,
  "last": {
   "who": "kpsum",
   "done": "요약 0개 — GitHub 자동 작업이 20:20Z부터 줄만 서고 안 돎(받기 결과 안 옴)",
   "at": "2026-11-11T21:20:00Z"
  },
- "host": null
+ "host": "vm"
 }
