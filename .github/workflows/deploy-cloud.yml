@@ -93,7 +93,7 @@ jobs:
           # (11/10 big1) 공용 파일을 이미지에 함께 넣음(cores_<파일> · cores_commit.js) — 클라우드가 GitHub에서 받지 않고 이 커밋의 사본을 읽음(없거나 커밋이 다르면 예전처럼 GitHub)
           for f in ../readnow-*-core.js ../readnow-registry.js; do cp "$f" "cores_$(basename "$f")"; done; echo "module.exports = '$GITHUB_SHA';" > cores_commit.js; ls cores_* | wc -l
           # 실패하면 마지막 줄들을 알림(annotation)으로 — GitHub 화면·Claude가 로그 파일 없이도 까닭을 봄
-          if ! gcloud run deploy "$SERVICE" --source . --region "$REGION" --project "$PROJECT" --update-env-vars "CODE_SHA=$GITHUB_SHA" --quiet > /tmp/deploy.log 2>&1; then
+          if ! gcloud run deploy "$SERVICE" --source . --region "$REGION" --project "$PROJECT" --update-env-vars "CODE_SHA=$GITHUB_SHA" --concurrency 8 --quiet > /tmp/deploy.log 2>&1; then
             tail -n 25 /tmp/deploy.log | sed 's/^/  /'; grep -iE 'error|denied|permission|not found|failed' /tmp/deploy.log | tail -n 6 | while IFS= read -r l; do echo "::error::$l"; done
             if grep -q "iam.serviceAccounts.getAccessToken\|generateAccessToken\|workloadIdentityUser" /tmp/deploy.log; then echo "::error::배포 계정을 쓸 권한(GitHub → gh-deployer 묶음)이 아직 없음 — Cloud Shell에서 setup-autodeploy.sh를 다시 실행하세요"; fi
             exit 1; fi

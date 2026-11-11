@@ -1,8 +1,8 @@
-/* readnow-pc-helper.js — 리드나우 수집기 1.89.270의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
+/* readnow-pc-helper.js — 리드나우 수집기 1.89.271의 모듈 ⑥ 화면 도우미 — 고객 응대 문구
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.270' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.270', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { helper: '1.89.271' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['helper', '1.89.271', function () {
 /* ══════════ 고객 응대 문구 도우미 (1.34.0): 묻고 답하기 답변 입력 화면 · 구매평 목록 ══════════
  * 세 칸: ① 인사말 ② 내용 ③ 마무리. 문구를 누르면 답변 칸(지금 커서 자리, 없으면 맨 끝)에 한 줄로 들어감. 순서대로 누르면 답변 완성.
  * 칸마다 문구 고치기·지우기·끌어서 순서 바꾸기·새로 넣기. 문구는 Firebase(app_settings/qna_phrases) 한 곳에 두고 모든 PC·웹앱(⚙ 설정)이 같이 씀 — 이 PC에도 사본을 둬서 바로 뜸.
@@ -932,6 +932,13 @@
           const prog = { step: inCur ? String(st.cur.step || '').slice(0, 60) : '', wait: !inCur, why: st.why ? String(st.why).slice(0, 160) : null }; const sg = JSON.stringify(prog); if (wSig[d.id] === sg) continue; wSig[d.id] = sg; await fs.collection(W_CMD).doc(d.id).set({ prog, progAt: iso() }, { merge: true }); } catch (e) {} }
       if (acks.length) await gxs('POST', '/y24/w/ack', { ids: acks }); };
     G.__rnC2yWRelay = wRelay; G.__rnC2yWCut = wSafe;
+    /* (11/12 col2rep6 · 진단 11/12 03:40 — HOME col2_ctl 번외 상태가 00:12 0.1.25에서 멈춤(웹앱 탭 닫힘) · 11/11 JS-MAIN도 16:47 뒤 같은 꼴 · 💓 y24hb만 살아 있어 번외가 새 판을 받았는지·오늘 몇 장인지 아무도 모름)
+     *  로거 다리(rnC2lg)처럼 사무실 PC도 — 이 PC 웹앱이 3분 넘게 번외에 안 왔고(relay.pullAt) 🔌 홀로 연결도 살아 있지 않으면 5분마다 col2_ctl/<PC>.st를 대신 씀(판·켜짐·오늘 몫·지금 글·새 판 받기 결과만 · 손님 정보·키 없음 · by '수집기 다리')
+     *  · 웹앱이 다시 오면 웹앱이 씀(이 다리는 비킴) · 결과(하루 요약·견줌)는 여전히 웹앱 또는 홀로 연결이 올림 */
+    let stAt = 0; const stPut = async (pc) => { if (!pc || Date.now() - stAt < 5 * 60e3) return; stAt = Date.now(); const st = await gx('GET', '/status'); if (!st || !st.ok || st.kind === 'logger') return; const rl = st.relay || {}; const pull = +rl.pullAt || 0; if (pull && Date.now() - pull < 3 * 60e3) return; if (st.solo && st.solo.live) return;
+      const au = st.auto || {}; const up = st.upd || null; const now = new Date().toISOString();
+      try { await firebase.firestore().collection('col2_ctl').doc(String(st.pc || pc).replace(/[^\w-]/g, '_').slice(0, 40)).set({ at: now, by: '수집기 다리 ' + pc, via: 'col', st: { ver: st.ver || null, running: true, on: !!st.on, want: !!st.on, dayN: au.dayN != null ? +au.dayN : null, dayCap: au.dayCap != null ? +au.dayCap : null, msg: String(st.msg || au.msg || '').slice(0, 200), upd: up && (up.msg || up.at) ? { at: up.at || null, msg: String(up.msg || '').slice(0, 160) } : null, webAt: pull ? new Date(pull).toISOString() : null, at: now } }, { merge: true }); } catch (e) {} };
+    G.__rnC2yStPut = stPut;
     const c2yTick = async () => { if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || gv2('rn-pubChrome', false)) return; if (!(G.firebase && firebase.apps.length && firebase.auth().currentUser)) return;
       busy = true; let jobs = [];
       try { const pc = (window.__rnPcName && window.__rnPcName.get()) || ''; const cfg = gv2('rn-y24cfg', null); let hold = null; try { hold = window.__rnSgShip ? window.__rnSgShip() : null; } catch (e) {}
@@ -939,7 +946,7 @@
         const r = await gx('POST', '/y24/feed', { by: pc, cfg: cfg ? { ordMin: cfg.ordMin, off: !!cfg.off, holder: cfg.holder || null } : null, hold, jobs, ack, jack });
         const undo = (keep) => { if (!jobs.length) return; const D = gv2('rn-y24jdone', {}); let ch = false; for (const j of jobs) if (!(keep && keep.has(j.id)) && D[j.id] && D[j.id].by === 'col2' && D[j.id].st === 'run') { delete D[j.id]; ch = true; } if (ch) GM_setValue('rn-y24jdone', D); };
         if (!r || !r.ok) { undo(null); miss++; if (miss >= 3) { nextAt = Date.now() + 5 * 60e3; hbPut(pc, { hlp: false, holder: cfg && cfg.holder ? String(cfg.holder).slice(0, 40) : null, msg: '이 PC 번외 도우미(127.0.0.1:8797)가 답하지 않음 — 번외가 꺼져 있거나 깔리지 않음' }); } if (prev) GM_setValue('rn-col2y', { on: false, jobs: false, login: null, at: Date.now() }); return; }
-        miss = 0; ack = []; jack = []; const y = r.y24 || {}; GM_setValue('rn-col2y', { on: !!y.active, jobs: !!y.jobsOk, login: y.login || null, at: Date.now() }); if (!y.logger) hbPut(pc, hbOf(y)); if (!y.logger) wRelay(pc, y).catch(() => {}); /* (11/11 y24ops4) 원격 예스24 쓰기 다리 */
+        miss = 0; ack = []; jack = []; const y = r.y24 || {}; GM_setValue('rn-col2y', { on: !!y.active, jobs: !!y.jobsOk, login: y.login || null, at: Date.now() }); if (!y.logger) hbPut(pc, hbOf(y)); if (!y.logger) stPut(pc).catch(() => {}); /* (11/12 col2rep6) 웹앱이 닫혀도 번외 상태 한 줄 */ if (!y.logger) wRelay(pc, y).catch(() => {}); /* (11/11 y24ops4) 원격 예스24 쓰기 다리 */
         undo(new Set(Array.isArray(r.took) ? r.took : []));
         if (Array.isArray(r.recs) && r.recs.length) { const seen = gv2('rn-c2yids', []); const S0 = new Set(seen); const q = qGet(); let bytes = q.reduce((a, x) => a + (x.body ? x.body.length : 0), 0), drop = 0, add = 0;
           for (const x of r.recs) { if (!x || !x.id) continue; ack.push(x.id); if (S0.has(x.id)) continue; S0.add(x.id); seen.push(x.id); const { id, src, ...rec } = x; q.push(rec); bytes += rec.body ? rec.body.length : 0; add++; }
