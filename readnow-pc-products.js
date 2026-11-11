@@ -1,8 +1,8 @@
-/* readnow-pc-products.js — 리드나우 수집기 1.89.264의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
+/* readnow-pc-products.js — 리드나우 수집기 1.89.265의 모듈 ②③⑤⑦ 상품·시장·판매자·매입·일괄/매일 자동 — 상품 조회, 도서 정보·시장 지표, 사진, 매물 유의 사항, 판매자 평가, 구매자 분포, 알라딘 구매·팔기, 맡긴 일, 일정
  * Tampermonkey의 '리드나우 수집기' 본체가 @require로 불러옴 (이 파일만 따로 설치하지 않음). 본체와 판이 같아야 함 — 다르면 관제판에 빨간 띠.
  * 원본 한 파일에서 기계로 나눈 것: 모듈을 차례로 이으면 원본 코드와 글자 하나까지 같음 (같은 코드 = 같은 기록). */
-;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.264' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
-;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.264', function () {
+;(function (g) { g.ReadnowPcMods = Object.assign(g.ReadnowPcMods || {}, { products: '1.89.265' }); })(typeof globalThis !== 'undefined' ? globalThis : this);
+;(globalThis.__rnModQ = globalThis.__rnModQ || []).push(['products', '1.89.265', function () {
 /* ═════════════ 상품·판매자·매입 (예전 상품 수집기) ═════════════ */
 
 /* 원칙
@@ -660,7 +660,7 @@
    *  로거가 10분(설정 prd_system/autoSched.lgAway.min) 넘게 신호가 없거나 일시 정지·테더링 길 막힘이면 → 이 사무실 PC가 ⏰ 비로그인 알라딘 일 중 벤치마킹(bench*)이 아닌 것(시장 지표·구매자 분포·평가·새상품 없는 시세·구매 풀 정보)을 담당 PC 차례로 이어받음
    *  로거가 돌아오면 새 회차는 다시 로거(하던 회차는 끝까지) · 판정은 공용 AS.loggerAway */
   const LGA = { prev: null, at: 0, r: null };
-  const loggerAway = () => { if (PUBONLY || !pubPcMode() || !AS || !AS.loggerAway) return false; try { if (!(Date.now() - BEATS_AT < 5 * 60e3)) return false; /* (1.89.263 4시간 점검 11/11 · 🧠 근원) 이 탭의 PC 신호표(BEATS)가 5분 넘게 묵었으면(쉬는 탭 · 막 일하는 탭이 된 탭) 로거 부재를 판단하지 않음 — 예전엔 묵은 표로 '로거 신호 28분째 없음'이라 하고 1분 뒤 일하는 탭은 '살아 있음(2분 전)'이라 하여 오후 4시간에 경고 10번이 엇갈렸고, 막 일하는 탭이 된 탭은 첫 신호 전까지 로거 비로그인 알라딘 일을 사무실 PC로 잘못 이어받을 수 있었음 · 일하는 탭은 2분마다 새로 읽으므로 로거가 정말 꺼지면 그대로 잡음 */ if (!LGA.r || Date.now() - LGA.at > 30e3) { LGA.at = Date.now(); LGA.r = AS.loggerAway(SCHED || {}, typeof BEATS !== 'undefined' ? BEATS : {}, PUBPC.name, Date.now()); if (LGA.prev !== null && LGA.prev !== LGA.r.away) log(LGA.r.away ? `🔁 ${LGA.r.why} — 벤치마킹 말고 로거 비로그인 일(시장 지표 등)을 사무실 담당 PC가 이어받음` : `🔁 ${LGA.r.why} — 비로그인 일 새 회차는 다시 로거가 맡음`, 1); LGA.prev = LGA.r.away; } return !!LGA.r.away; } catch (e) { return false; } };
+  const loggerAway = () => { if (PUBONLY || !pubPcMode() || !AS || !AS.loggerAway) return false; try { if (!(Date.now() - BEATS_AT < 5 * 60e3)) return false; /* (1.89.263 4시간 점검 11/11 · 🧠 근원) 이 탭의 PC 신호표(BEATS)가 5분 넘게 묵었으면(쉬는 탭 · 막 일하는 탭이 된 탭) 로거 부재를 판단하지 않음 — 예전엔 묵은 표로 '로거 신호 28분째 없음'이라 하고 1분 뒤 일하는 탭은 '살아 있음(2분 전)'이라 하여 오후 4시간에 경고 10번이 엇갈렸고, 막 일하는 탭이 된 탭은 첫 신호 전까지 로거 비로그인 알라딘 일을 사무실 PC로 잘못 이어받을 수 있었음 · 일하는 탭은 2분마다 새로 읽으므로 로거가 정말 꺼지면 그대로 잡음 */ if (!LGA.r || Date.now() - LGA.at > 30e3) { LGA.at = Date.now(); LGA.r = AS.loggerAway(SCHED || {}, typeof BEATS !== 'undefined' ? BEATS : {}, PUBPC.name, Date.now()); if (LGA.prev !== null && LGA.prev !== LGA.r.away) log(LGA.r.away ? (SET.loggerTakeOk === true ? `🔁 ${LGA.r.why} — 벤치마킹 말고 로거 비로그인 일(시장 지표 등)을 사무실 담당 PC가 이어받음(설정 loggerTakeOk 켬)` : `🔁 ${LGA.r.why} — 알라딘 비로그인 일은 사무실 PC가 이어받지 않음(🛡 11/09 최우선 법칙 · 설정 loggerTakeOk 꺼짐 — 알라딘 아닌 와이파이 도서 정보만 담당 PC가 이어감 · 로거가 돌아오면 로거가 함)`) : `🔁 ${LGA.r.why} — 비로그인 일 새 회차는 다시 로거가 맡음`, 1); /* (🔬 정밀 점검 11/11) 기록 글을 사실대로 — 11/11 JS-MAIN 24시간에 '사무실 담당 PC가 이어받음' 11번이 적혔지만 실제 이어받기는 설정(기본 끔)으로 막혀 있었음 · 4시간 점검도 이 글을 보고 '이어받았다'고 읽음 */ LGA.prev = LGA.r.away; } return !!LGA.r.away; } catch (e) { return false; } };
   /* (정범님 11/09 최우선 법칙) 알라딘이 로거를 우리와 엮게 하지 않음 — 사무실 PC(북스킹 계정 IP)가 로거의 비로그인 일·벤치마킹을 이어받지 않음(같은 목록·같은 자리를 사무실 IP로 이어 가면 엮임) · 설정 loggerTakeOk가 true일 때만(기본 끔) */
   const lgTakeKey = (k) => SET.loggerTakeOk === true && loggerAway() && (!isBenchKey(k) || benchTakeKey(k)); /* 이 비로그인 일을 지금 사무실 PC가 이어받아도 되나 */
   /* (11/09 오후 정범님 '로거가 멈춰도 다른 PC가 이어받음') 🎯 매시 '못 끝낸 판매자 이어 읽기'(benchResume)만 — 로거가 30분 넘게(app_settings/bench.awayMin · 근거: 없음, 설정으로 바꿈) 알라딘 일을 못 하면 사무실 담당 PC가 맡음

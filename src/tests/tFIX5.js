@@ -37,7 +37,7 @@ require('./harness.js')(async (p) => {
     return out; });
   ok(r.bestLink && /"product":"aladin_U9100001"/.test(r.bestOpen), '① 잘 팔린 책 상품명 → 그 상품 페이지', r.bestOpen);
   ok(/"product":/.test(r.oldOpen) && /"product":/.test(r.listOpen), '① 오래 안 팔린 책·상품 목록도 그대로 상품 페이지', [r.oldOpen, r.listOpen]);
-  ok(/0\.1\.21 → 0\.1\.24/.test(r.nv) && /읽는 중 — 다음에/.test(r.nv) && /수집 작업 창/.test(r.nv) && /깔고 켜기/.test(r.nv), '② 로거 번외 옛 판 — 까닭·어디서', r.nv.slice(0, 200));
+  ok(/0\.1\.21 → 0\.1\.25/.test(r.nv) && /읽는 중 — 다음에/.test(r.nv) && /수집 작업 창/.test(r.nv) && /깔고 켜기/.test(r.nv), '② 로거 번외 옛 판 — 까닭·어디서', r.nv.slice(0, 200));
   ok(r.c2u && /GitHub 0\.1\.23/.test(r.c2u.msg), '② 번외 상태 요약이 새 판 확인 결과를 남김', r.c2u);
   ok(r.y1.auto && /스스로 다시 로그인/.test(r.y1.t) && !/\[🔐 예스24 로그인\]/.test(r.y1.t) && /앞 시도 뒤 5분/.test(r.y1.t), '③ 저장 계정 — 수동 안내 없음 · 지금 까닭', r.y1.t);
   ok(!r.y2.auto && /\[🔐 예스24 로그인\]/.test(r.y2.t) && /저장된 예스24 계정 없음/.test(r.y2.t), '③ 계정 없음 — 까닭과 수동 안내', r.y2.t);
