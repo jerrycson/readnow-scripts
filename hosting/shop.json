@@ -1,0 +1,14 @@
+{
+  "_설명": "🛍 우리숍 booksqueen.com — Firebase Hosting 둘째 사이트 설정(관리 사이트 readnow-3a385와 따로 · 검색 허용 · 관리 화면 0) · site 이름은 처음 만들 때 비어 있는 것(hosting/site.js)",
+  "site": "booksqueen",
+  "public": ".hosting/shop",
+  "headers": [
+    { "source": "**", "headers": [
+      { "key": "X-Content-Type-Options", "value": "nosniff" },
+      { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+      { "key": "X-Frame-Options", "value": "DENY" },
+      { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" } ] },
+    { "source": "**/*.@(js|css|html|json|txt)", "headers": [
+      { "key": "Cache-Control", "value": "no-cache" } ] }
+  ]
+}
