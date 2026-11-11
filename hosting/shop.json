@@ -5,7 +5,9 @@
   "_rewrites_설명": "(11/11 shop2) 검색 노출 — /b/<상품 번호>(책 한 권 HTML)·/sitemap*.xml은 클라우드(Cloud Run readnow-cloud · 서울)가 판매중 목록에서 만듦 · 정적 파일이 먼저라 손님 화면은 그대로",
   "rewrites": [
     { "source": "/b/**", "run": { "serviceId": "readnow-cloud", "region": "asia-northeast3" } },
-    { "source": "/sitemap*.xml", "run": { "serviceId": "readnow-cloud", "region": "asia-northeast3" } } ],
+    { "source": "/sitemap*.xml", "run": { "serviceId": "readnow-cloud", "region": "asia-northeast3" } },
+    { "source": "/shop/**", "run": { "serviceId": "readnow-cloud", "region": "asia-northeast3" } } ],
+  "_rewrites_shelf6": "(11/12 shelf6) /shop/** 읽기 창구(서가 자료·글꼴·설정·목록)도 같은 주소로 — 손님 화면이 booksqueen.com/shop/…로 부르면 출처 미리 묻기(CORS) 없이 · Firebase CDN이 s-maxage 동안 대신 답해 클라우드(한 대 · 동시 4개)에 덜 감 · 주문(POST)은 그대로 클라우드 주소로",
   "headers": [
     { "source": "**", "headers": [
       { "key": "X-Content-Type-Options", "value": "nosniff" },
