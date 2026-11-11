@@ -34,6 +34,7 @@
   "helper/col2-y24w.js",
   "helper/col2-bcrypt.js",
   "helper/col2-nv.js",
-  "helper/col2-settings.js"
+  "helper/col2-settings.js",
+  "helper/col2-y24learn.js"
  ]
 }
