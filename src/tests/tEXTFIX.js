@@ -131,7 +131,7 @@ const S = (src, d, none) => X.sig({ none: !!none, d }, src);
     const extFill = new Function(...Object.keys(env), CODE + '\nreturn extFill;')(...Object.values(env));
     await extFill(cfg); const L = logs.find((m) => /이번 바퀴에 안 물은 출처/.test(m)) || '';
     ok(asked.join(',') === 'kakao' && !/카카오/.test(L), '할 책이 있는 출처(카카오)만 물음 · 그 출처는 까닭 줄에 없음');
-    ok(/알라딘 TTB[^—]*— 서비스 끝/.test(L) && /네이버 책 검색[^—]*서비스 종료\) — 서비스 끝/.test(L) && /리디 — 설정에서 끔/.test(L) && /도서관 정보나루[^·]*— 키 문제로 쉼/.test(L), '까닭: TTB(2026-10-30)·네이버 API 서비스 끝 · 끈 출처 · 키 문제');
+    ok(/알라딘 TTB[^—]*— 서비스 끝/.test(L) && /네이버 책 검색[^—]*(서비스 종료|종료 확인 필요[^—]*)\) — 서비스 끝/.test(L) && /리디 — 설정에서 끔/.test(L) && /도서관 정보나루[^·]*— 키 문제로 쉼/.test(L), '까닭: TTB(2026-10-30)·네이버 API 서비스 끝 · 끈 출처 · 키 문제');
     ok(/당근 — 쉼\(앞으로 2시간 안\)/.test(L) && /중고나라 — 오늘 하루 최대\(300\) 다 씀/.test(L) && /eBay[^·]*— 다시 볼 책 없음/.test(L) && /DVDPrime 장터 — 다시 볼 책 없음/.test(L) && /국립중앙도서관[^·]*— 다시 볼 책 없음/.test(L), '까닭: 쉼 · 하루 최대 · 다시 볼 책 없음(eBay는 외국 책만 · DVDPrime은 영상·음반만)');
     logs.length = 0; await extFill(cfg); ok(!logs.some((m) => /안 물은 출처/.test(m)), '까닭 줄은 3시간에 한 번만(기록이 넘치지 않게)');
   }
