@@ -27,8 +27,29 @@ function nvOrd(x) { const o = (x && x.order) || {}, p = (x && x.productOrder) ||
     unit: num(p.unitPrice), amt: num(p.totalPaymentAmount), fee, settle: p.expectedSettlementAmount != null ? num(p.expectedSettlementAmount) : null, dlvFee: num(p.deliveryFeeAmount),
     sku: p.sellerProductCode ? String(p.sellerProductCode) : null, chNo: p.productId ? String(p.productId) : null, originNo: p.originalProductId ? String(p.originalProductId) : null,
     shipDue: p.shippingDueDate || null, inv: d.trackingNumber ? { co: d.deliveryCompany || null, no: String(d.trackingNumber), at: d.sendDate || null } : null,
-    rcv: a && (a.name || a.baseAddress) ? { name: a.name || '', tel: a.tel1 || '', zip: a.zipCode || '', addr: a.baseAddress || '', addr2: a.detailedAddress || '' } : null, memo: p.shippingMemo ? String(p.shippingMemo).slice(0, 300) : null };
+    rcv: a && (a.name || a.baseAddress) ? { name: a.name || '', tel: a.tel1 || '', zip: a.zipCode || '', addr: a.baseAddress || '', addr2: a.detailedAddress || '' } : null, memo: p.shippingMemo ? String(p.shippingMemo).slice(0, 300) : null, cl: nvClaimOf(x, cl, cs) };
 }
+/* (0.1.23 naver3) 클레임(취소·반품·교환) 자세히 — 원문 상품 주문 상세 응답 currentClaim.{cancel|return|exchange}(옛 cancel·return·exchange 칸도) · 요청 사유 코드·요청일·수량·클레임 번호만(손님 이름·연락처 없음 · 상세 사유는 손님 글이라 120자까지)
+ *  돌려줌 null(클레임 없음) | { type, st, id, at, reason, why, qty } */
+const NV_CLR = { INTENT_CHANGED: '구매 의사 취소', COLOR_AND_SIZE: '색상·사이즈 변경', WRONG_ORDER: '다른 상품 잘못 주문', PRODUCT_UNSATISFIED: '서비스 불만족', DELAYED_DELIVERY: '배송 지연', SOLD_OUT: '상품 품절', DROPPED_DELIVERY: '배송 누락', BROKEN: '상품 파손', INCORRECT_INFO: '상품 정보 상이', WRONG_DELIVERY: '오배송', WRONG_OPTION: '색상 등이 다른 상품을 잘못 배송' };
+function nvClaimOf(x, type, st) { if (!type) return null; const k = type === 'CANCEL' || type === 'ADMIN_CANCEL' ? 'cancel' : type === 'RETURN' ? 'return' : type === 'EXCHANGE' ? 'exchange' : null; const cc = (x && x.currentClaim) || {}; const c = (k && (cc[k] || (x && x[k]))) || {};
+  const code = String(c[k + 'Reason'] || c.claimReason || ''); const det = c[k + 'DetailedReason'];
+  return { type, st: st || null, id: c.claimId ? String(c.claimId) : null, at: c.claimRequestDate || null, reason: code ? NV_CLR[code] || code : null, why: det ? String(det).slice(0, 120) : null, qty: c.requestQuantity != null ? num(c.requestQuantity) : null }; }
+/* (0.1.23 naver3) 고객 문의(GET /v1/pay-user/inquiries content[]) · 상품 문의(GET /v1/contents/qnas contents[]) → 문의 줄(nv_inq) — 원문 받은 날 11/11(readnow-chats reports/NAVER_1111/RAW_API.md 덧붙임)
+ *  구매자 이름·아이디(customerName·customerId·maskedWriterId)는 옮기지 않음 · 글은 300자까지 · 답은 스마트스토어센터에서(이 판은 읽기만) */
+function nvInq(x) { if (!x || x.inquiryNo == null) return null; return { id: 'c' + String(x.inquiryNo), kind: 'cust', no: String(x.inquiryNo), cat: x.category ? String(x.category).slice(0, 20) : null, title: String(x.title || '').slice(0, 80), body: String(x.inquiryContent || '').slice(0, 300), at: x.inquiryRegistrationDateTime || null, ans: !!x.answered, ansAt: x.answerRegistrationDateTime || null, orderId: x.orderId ? String(x.orderId) : null, poIds: String(x.productOrderIdList || '').split(',').map((s) => s.trim()).filter(Boolean).slice(0, 10), prodNo: x.productNo ? String(x.productNo) : null, prodName: String(x.productName || '').slice(0, 100) }; }
+function nvQna(x) { if (!x || x.questionId == null) return null; const A = Array.isArray(x.answers) ? x.answers : []; const la = A.length ? A[A.length - 1] : null; return { id: 'q' + String(x.questionId), kind: 'qna', no: String(x.questionId), cat: '상품', title: String(x.productName || '').slice(0, 80), body: String(x.question || '').slice(0, 300), at: x.createDate || null, ans: !!x.answered, ansAt: la && la.createDate ? la.createDate : null, orderId: null, poIds: [], prodNo: x.productId != null ? String(x.productId) : null, prodName: String(x.productName || '').slice(0, 100) }; }
+/* (0.1.23 naver3) 정산 — 일별(GET /v1/pay-settle/settle/daily elements[]) · 건별(GET /v1/pay-settle/settle/case elements[]) → nv_settle · nv_settle_case
+ *  계좌 번호·예금주·은행·가맹점·구매자 이름은 옮기지 않음(돈 셈에 쓰는 칸만) */
+function nvStlDay(x) { if (!x || !x.settleBasisStartDate) return null; const d = String(x.settleBasisStartDate).slice(0, 10); return { id: d.replace(/-/g, '') + (x.settleMethodType ? '_' + String(x.settleMethodType).slice(0, 12) : ''), d, d2: x.settleBasisEndDate ? String(x.settleBasisEndDate).slice(0, 10) : d, exp: x.settleExpectDate || null, done: x.settleCompleteDate || null, amt: num(x.settleAmount), pay: num(x.paySettleAmount), fee: num(x.commissionSettleAmount), ben: num(x.benefitSettleAmount), hold: num(x.payHoldbackAmount), minus: num(x.minusChargeAmount), quick: num(x.quickSettleAmount), normal: num(x.normalSettleAmount), how: x.settleMethodType || null }; }
+function nvStlCase(x) { if (!x || !x.productOrderId) return null; const ty = String(x.productOrderType || ''); return { id: (String(x.productOrderId) + '_' + ty + '_' + String(x.settleType || '')).replace(/[^\w-]/g, '_').slice(0, 120), po: String(x.productOrderId), orderId: x.orderId ? String(x.orderId) : null, type: ty, st: x.settleType || null, basis: x.settleBasisDate || null, exp: x.settleExpectDate || null, done: x.settleCompleteDate || null, pay: num(x.paySettleAmount), fee: num(x.totalPayCommissionAmount) + num(x.sellingInterlockCommissionAmount) + num(x.freeInstallmentCommissionAmount), ben: num(x.benefitSettleAmount), expAmt: num(x.settleExpectAmount), name: String(x.productName || '').slice(0, 80) }; }
+/* (0.1.23 naver3 · 리드 판단: 우리 사진 저장소는 네이버 등록 사진 올리기용 = 네이버 예외 안) 로거 번외 네이버 길이 부르는 주소 허용 목록 — 네이버 커머스API · 우리 Firebase 사진 저장소(우리 버킷만) 밖은 부르지 않음(설정을 바꿔도) */
+const NV_API = 'https://api.commerce.naver.com/external';
+const IMG_OK = /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/readnow-3a385\.firebasestorage\.app\/o\//;
+function nvUrlOk(u, test) { let x; try { x = new URL(String(u || '')); } catch (e) { return false; } if (x.username || x.password) return false; /* 주소를 풀어(.. 정리 뒤) 집·길을 봄 — 글자 앞머리만 보면 '/o/../../남의 버킷'이 지나감 */
+  if (x.protocol === 'https:' && !x.port && x.hostname === 'api.commerce.naver.com' && x.pathname.startsWith('/external/')) return true;
+  if (x.protocol === 'https:' && !x.port && x.hostname === 'firebasestorage.googleapis.com' && x.pathname.startsWith('/v0/b/readnow-3a385.firebasestorage.app/o/') && IMG_OK.test(x.origin + x.pathname)) return true;
+  if (test) { for (const b of [process.env.RN_COL2_NV, process.env.RN_COL2_NVIMG].filter(Boolean)) { let y; try { y = new URL(b); } catch (e) { continue; } if (y.origin === x.origin && /^(127\.0\.0\.1|localhost)$/.test(x.hostname)) return true; } } return false; }
 /* 상품 목록(POST /v1/products/search 의 contents[]) → 판매처 매물 줄(스마트스토어 채널만) — 장부 other 꼴 { ch, no, sku, live, qty, price, st } 바탕 */
 function nvPrd(c) { const L = []; for (const ch of (c && c.channelProducts) || []) { if (ch.channelServiceType && ch.channelServiceType !== 'STOREFARM') continue;
     L.push({ originNo: String(c.originProductNo || ch.originProductNo || ''), no: String(ch.channelProductNo || ''), name: String(ch.name || '').slice(0, 200), sku: ch.sellerManagementCode ? String(ch.sellerManagementCode) : null, price: num(ch.salePrice), disc: ch.discountedPrice != null ? num(ch.discountedPrice) : null, qty: num(ch.stockQuantity), st: String(ch.statusType || ''), disp: ch.channelProductDisplayStatusType || null, live: ch.statusType === 'SALE' && ch.channelProductDisplayStatusType !== 'SUSPENSION', cat: ch.categoryId || null, regAt: ch.regDate || null, modAt: ch.modifiedDate || null }); }
@@ -96,8 +117,8 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
   const D = path.join(HOME, 'cred'), OLD = path.join(D, 'old'); const CF = path.join(D, 'naver.dat'), KF = path.join(D, 'nv-key.dat'); const SF = path.join(HOME, 'nv-state.json'), JDF = path.join(HOME, 'nv-jdone.json'), INVF = path.join(HOME, 'nv-inv.json');
   const rd = (f, d) => { try { const v = JSON.parse(fs.readFileSync(f, 'utf8')); return v && typeof v === 'object' ? v : d; } catch (e) { return d; } };
   const wr = (f, v) => { try { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f + '.t', JSON.stringify(v)); fs.renameSync(f + '.t', f); return true; } catch (e) { log('네이버 파일 저장 실패: ' + e.message); return false; } };
-  const ST = rd(SF, {}); const st = { ordCur: ST.ordCur || 0, ordAt: ST.ordAt || 0, ordN: ST.ordN || 0, ordErr: ST.ordErr || null, prdAt: ST.prdAt || 0, prdN: ST.prdN || 0, prdErr: ST.prdErr || null, test: ST.test || null, write: ST.write || { on: false }, seen: ST.seen || [], sig: ST.sig || {}, cats: ST.cats || null, ip: ST.ip || null, netRaw: ST.netRaw || null };
-  const save = () => wr(SF, { ordCur: st.ordCur, ordAt: st.ordAt, ordN: st.ordN, ordErr: st.ordErr, prdAt: st.prdAt, prdN: st.prdN, prdErr: st.prdErr, test: st.test, write: st.write, seen: st.seen.slice(-60), sig: st.sig, cats: st.cats, ip: st.ip, netRaw: st.netRaw || null });
+  const ST = rd(SF, {}); const st = { ordCur: ST.ordCur || 0, ordAt: ST.ordAt || 0, ordN: ST.ordN || 0, ordErr: ST.ordErr || null, prdAt: ST.prdAt || 0, prdN: ST.prdN || 0, prdErr: ST.prdErr || null, test: ST.test || null, write: ST.write || { on: false }, seen: ST.seen || [], sig: ST.sig || {}, cats: ST.cats || null, ip: ST.ip || null, netRaw: ST.netRaw || null, inq: ST.inq || null, stl: ST.stl || null, stlCase: ST.stlCase || '' };
+  const save = () => wr(SF, { ordCur: st.ordCur, ordAt: st.ordAt, ordN: st.ordN, ordErr: st.ordErr, prdAt: st.prdAt, prdN: st.prdN, prdErr: st.prdErr, test: st.test, write: st.write, seen: st.seen.slice(-60), sig: st.sig, cats: st.cats, ip: st.ip, netRaw: st.netRaw || null, inq: st.inq, stl: st.stl, stlCase: st.stlCase });
   const M = { key: null, pub: null, cred: null, tok: null, tokExp: 0, last: 0, cool: 0, coolN: 0, busy: false, q: [], qk: new Set(), jobs: [], jres: {}, jd: rd(JDF, {}), inv: rd(INVF, {}), calls: { d: '', n: 0 }, t: null, step: '' };
 
   /* ── Windows DPAPI(그 PC 같은 사용자만 풂) — col2-cred.js와 같은 잠그개(PS) · 값은 표준 입력으로만 ── */
@@ -186,6 +207,7 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
   const netBlock = (g) => ({ http: 0, j: { code: 'NOWIFI', message: '🛑 와이파이 아님 — 네이버 일 멈춤: ' + g.why }, net: true });
   let chain = Promise.resolve(); /* 한 번에 하나씩 */
   function raw(method, p, opt) { const run = async () => { const gap = Math.max(TEST ? 0 : 300, +NC().minGapMs || 600); const w = M.last + gap - now(); if (w > 0) await sleep(w); if (M.cool > now()) return { http: 0, j: { code: 'COOL' }, cool: true };
+      if (!nvUrlOk(BASE() + p, TEST)) { M.blocked = (M.blocked || 0) + 1; log('네이버 길: 허용 목록 밖 주소라 부르지 않음'); return { http: 0, j: { code: 'BLOCKED', message: '허용 목록 밖 주소(네이버 커머스API·우리 사진 저장소만)' } }; } /* (0.1.23 naver3) */
       let body = opt && opt.body; const hd = { Accept: 'application/json;charset=UTF-8', ...((opt && opt.headers) || {}) };
       if (body && typeof body === 'object' && !Buffer.isBuffer(body) && typeof body.append === 'function') { const rq = new Response(body); hd['Content-Type'] = rq.headers.get('content-type'); body = Buffer.from(await rq.arrayBuffer()); } /* (naver4) 사진 올리기 multipart를 미리 바이트로 */
       const g = await netGate(p.split('?')[0]); if (!g.ok) return netBlock(g); /* 🛑 바로 앞에서 — 와이파이·등록 IP가 아니면 네이버에 한 건도 안 보냄 */
@@ -253,6 +275,32 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
       if (cs.length < 100 || (r.j && r.j.last)) break; }
     st.prdAt = now(); st.prdN = total; st.prdErr = err; save(); M.step = ''; note(`🟩 네이버 상품 목록 — 전체 ${total}건 · 바뀐 ${n}건${err ? ' · 실패: ' + err : ''} (${why || ''})`, { k: err ? 'err' : 'read', l: err ? 'warn' : 'detail', m: '네이버' }); return { ok: !err, total, n, err, net }; }
   const trimSig = () => { const ks = Object.keys(st.sig); if (ks.length > 20000) for (const k of ks.slice(0, ks.length - 20000)) delete st.sig[k]; };
+  /* (0.1.23 naver3) ── 문의 읽기(30분) — 고객 문의(pay-user/inquiries · 30일) + 상품 문의(contents/qnas · 30일) · 바뀐 줄만 넘김 · 권한이 없으면 까닭만(주문·상품 읽기는 그대로) ── */
+  const kdOff = (d) => new Date(now() + 9 * 3600e3 + d * 864e5).toISOString().slice(0, 10);
+  const why403 = (r, g) => (r.http === 403 ? `권한 없음 — 커머스API센터 › 애플리케이션 › API 그룹에 「${g}」를 더해 주세요` : r.err);
+  async function pullInq(why) { const C = NC(); const days = Math.max(1, Math.min(90, +C.inqDays || 30)); let n = 0, un = 0, tot = 0, net = false; const err = [];
+    M.step = '문의 읽기';
+    for (let page = 1; page <= 5; page++) { const r = await call('GET', '/v1/pay-user/inquiries', null, { page, size: 100, startSearchDate: kdOff(-days + 1), endSearchDate: kdOff(0) }); if (!r.ok) { net = net || !!r.net; /* (rel3) 🛑 길 막힘 */  err.push('고객 문의: ' + why403(r, '문의')); break; }
+      const cs = (r.j && r.j.content) || []; for (const x of cs) { const v = nvInq(x); if (!v) continue; tot++; if (!v.ans) un++; const s = sigOf(v); if (st.sig['i' + v.id] === s) continue; st.sig['i' + v.id] = s; push('nv_inq', v.id, { ...v, ch: 'naver', seenAt: new Date().toISOString() }); n++; }
+      if (!cs.length || (r.j && r.j.last) || cs.length < 100) break; }
+    for (let page = 1; page <= 5; page++) { const r = await call('GET', '/v1/contents/qnas', null, { page, size: 100, fromDate: kstIso(now() - days * 864e5), toDate: kstIso(now()) }); if (!r.ok) { net = net || !!r.net; /* (rel3) 🛑 길 막힘 */  err.push('상품 문의: ' + why403(r, '문의')); break; }
+      const cs = (r.j && r.j.contents) || []; for (const x of cs) { const v = nvQna(x); if (!v) continue; tot++; if (!v.ans) un++; const s = sigOf(v); if (st.sig['i' + v.id] === s) continue; st.sig['i' + v.id] = s; push('nv_inq', v.id, { ...v, ch: 'naver', seenAt: new Date().toISOString() }); n++; }
+      if (!cs.length || (r.j && r.j.last) || cs.length < 100) break; }
+    st.inq = { at: now(), n: tot, un, err: err.length ? err.join(' · ').slice(0, 300) : null }; trimSig(); save(); M.step = '';
+    note(`🟩 네이버 문의 읽기 — ${tot}건(답 안 함 ${un}) · 새로 넘길 ${n}건${err.length ? ' · ' + err.join(' · ') : ''} (${why || ''})`, { k: err.length ? 'err' : 'read', l: err.length ? 'warn' : 'detail', m: '네이버' }); return { ok: !err.length, n, un, tot, net }; }
+  /* (0.1.23 naver3) ── 정산 읽기(6시간) — 일별(최근 35일) + 건별(정산 기준일마다 · 처음 14일, 그 뒤 최근 3일) ── */
+  async function pullStl(why) { const C = NC(); let n = 0, nc = 0, net = false; const err = []; M.step = '정산 읽기'; let dn = 0, sum = 0;
+    { const r = await call('GET', '/v1/pay-settle/settle/daily', null, { startDate: kdOff(-34), endDate: kdOff(0), pageNumber: 1, pageSize: 100 }); if (!r.ok) { net = net || !!r.net; err.push('일별 정산: ' + why403(r, '정산')); }
+      else for (const x of (r.j && r.j.elements) || []) { const v = nvStlDay(x); if (!v) continue; dn++; sum += v.amt; const s = sigOf(v); if (st.sig['s' + v.id] === s) continue; st.sig['s' + v.id] = s; push('nv_settle', v.id, { ...v, ch: 'naver', seenAt: new Date().toISOString() }); n++; } }
+    if (!err.length) { const first = !st.stlCase; const back = first ? Math.max(3, Math.min(35, +C.stlFirstD || 14)) : 3; let d = 0;
+      for (; d < back; d++) { const day = kdOff(-d); let page = 1, bad = null;
+        for (; page <= 3; page++) { const r = await call('GET', '/v1/pay-settle/settle/case', null, { searchDate: day, periodType: 'SETTLE_CASEBYCASE_SETTLE_BASIS_DATE', pageNumber: page, pageSize: 1000 }); if (!r.ok) { net = net || !!r.net; /* (rel3) 🛑 길 막힘 */  bad = '건별 정산: ' + why403(r, '정산'); break; }
+          const es = (r.j && r.j.elements) || []; for (const x of es) { const v = nvStlCase(x); if (!v) continue; const s = sigOf(v); if (st.sig['c' + v.id] === s) continue; st.sig['c' + v.id] = s; push('nv_settle_case', v.id, { ...v, ch: 'naver', seenAt: new Date().toISOString() }); nc++; }
+          const pg = (r.j && r.j.pagination) || {}; if (!es.length || es.length < 1000 || (pg.totalPages && page >= pg.totalPages)) break; }
+        if (bad) { err.push(bad); break; } }
+      if (!err.length) st.stlCase = kday(); }
+    st.stl = { at: now(), days: dn, sum, n, nc, err: err.length ? err.join(' · ').slice(0, 300) : null }; trimSig(); save(); M.step = '';
+    note(`🟩 네이버 정산 읽기 — 일별 ${dn}줄 · 새로 넘길 ${n}줄 · 건별 ${nc}건${err.length ? ' · ' + err.join(' · ') : ''} (${why || ''})`, { k: err.length ? 'err' : 'read', l: err.length ? 'warn' : 'detail', m: '네이버' }); return { ok: !err.length, n, nc, net }; }
   /* 도서 › 중고 카테고리 찾기(등록 설정용 · 읽기만) */
   async function cats() { const r = await call('GET', '/v1/categories', null, { last: true }); if (!r.ok) return { ok: false, err: r.err }; const L = (Array.isArray(r.j) ? r.j : (r.j && r.j.contents) || []).filter((c) => /^도서/.test(String(c.wholeCategoryName || '')) && /중고/.test(String(c.wholeCategoryName || ''))).slice(0, 40).map((c) => ({ id: String(c.id), n: String(c.wholeCategoryName) })); st.cats = { at: now(), L }; save(); return { ok: true, L }; }
 
@@ -261,14 +309,15 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
   function setWrite(on, by) { if (on && !(st.test && st.test.ok)) return { ok: false, err: '연결 시험이 맞은 뒤에 켤 수 있음' }; st.write = { on: !!on, by: String(by || '').slice(0, 40), at: now() }; save(); note(`🟩 네이버 실제 쓰기 ${on ? '켬' : '끔'} — ${st.write.by}`, { k: 'sys', l: on ? 'warn' : 'ok', m: '네이버' }); return { ok: true, write: st.write }; }
   function jobPut(j, by) { if (!wOn()) return { ok: false, err: '네이버 실제 쓰기가 꺼져 있음(⚙ 🟩 칸에서 두 번 눌러 켬)' }; const id = String((j && j.id) || ''); if (!/^[\w.:|-]{4,120}$/.test(id)) return { ok: false, err: '할 일 열쇠 없음' };
     if (M.jd[id]) return { ok: true, dup: true, res: M.jd[id] }; if (M.jobs.some((x) => x.id === id)) return { ok: true, dup: true, queued: true };
-    const k = String(j.k || ''); if (!/^(confirm|dispatch|status|reg)$/.test(k)) return { ok: false, err: '모르는 할 일' };
+    const k = String(j.k || ''); if (!/^(confirm|dispatch|status|reg|price|claim)$/.test(k)) return { ok: false, err: '모르는 할 일' };
+    if (k === 'price' && !(/^\d{1,20}$/.test(String(j.originNo || '')) && Number.isInteger(+j.price) && +j.price >= 100 && +j.price <= 10000000)) return { ok: false, err: '판매가 바꾸기 — 원상품번호·판매가(100원 이상 정수)가 필요' }; /* (0.1.23 naver3) */
+    if (k === 'claim' && !(/^[\w-]{2,40}$/.test(String(j.po || '')) && /^(cancel|return|exchange)$/.test(String(j.act || '')))) return { ok: false, err: '요청 승인 — 상품 주문 번호·종류(취소·반품·교환 수거)가 필요' }; /* (0.1.23 naver3) */
     if (k === 'dispatch') { for (const d of j.rows || []) { const key = String(d.co || '') + ':' + String(d.no || ''); const was = M.inv[key]; if (was && was !== String(d.po)) return { ok: false, err: `송장번호 ${String(d.no).slice(-4)}는 다른 주문에 이미 썼음(약속 10)` }; } }
     M.jobs.push({ ...j, id, k, by: String(by || '').slice(0, 40), at: now() }); M.jres[id] = { st: 'queued', at: now() }; kick(300); return { ok: true, queued: true }; }
   /* (0.1.22 naver2) 상품 사진 올리기 — 우리 Firebase 사진 저장소 주소만 받아(다른 곳은 거절) 내려받고 → POST /v1/product-images/upload(multipart · imageFiles 최대 10장 · JPG·GIF·PNG·BMP) → 네이버 주소
    *  원문: 등록 몸의 이미지 주소는 반드시 이 API로 올리고 받은 주소여야 함(RAW_API.md 'images') · 사진은 메모리에서만(파일로 남기지 않음) */
-  const IMG_OK = /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/readnow-3a385\.firebasestorage\.app\/o\//;
   async function upImgs(urls) { const L = (urls || []).map(String).filter((u) => IMG_OK.test(u)).slice(0, 10); if (!L.length) return { ok: false, err: '사진 주소 없음(우리 사진 저장소 주소만 받음)' }; const fd = new FormData(); let n = 0;
-    for (const u of L) { const g = await netGate('사진 받기'); if (!g.ok) return { ok: false, err: '🛑 와이파이 아님 — 네이버 일 멈춤: ' + g.why, later: true, net: true }; /* (nvfix1) 사진 저장소 요청도 하나하나 앞에서 */ const r = await bound(TEST && process.env.RN_COL2_NVIMG ? process.env.RN_COL2_NVIMG + '?u=' + encodeURIComponent(u) : u, { lip: g.lip, ms: 30000, max: 10 * 1048576 + 1 }); /* (naver4) 🔒 와이파이 주소에 묶어 받음 */
+    for (const u of L) { const g = await netGate('사진 받기'); if (!g.ok) return { ok: false, err: '🛑 와이파이 아님 — 네이버 일 멈춤: ' + g.why, later: true, net: true }; /* (nvfix1) 사진 저장소 요청도 하나하나 앞에서 */ const fu = TEST && process.env.RN_COL2_NVIMG ? process.env.RN_COL2_NVIMG + '?u=' + encodeURIComponent(u) : u; if (!nvUrlOk(fu, TEST)) { M.blocked = (M.blocked || 0) + 1; continue; } /* (naver3) 허용 목록 */ const r = await bound(fu, { lip: g.lip, ms: 30000, max: 10 * 1048576 + 1 }); /* (naver4) 🔒 와이파이 주소에 묶어 받음 */
       if (r.code === 'SOCK') { sockStop(r, '사진 받기'); return { ok: false, err: '🛑 나가는 소켓 주소가 와이파이 주소와 다름 — 사진을 버리고 멈춤', later: true, net: true }; } if (r.net) return { ok: false, err: '🛑 와이파이 아님 — 네이버 일 멈춤: ' + r.err, later: true, net: true };
       try { if (!r.ok) continue; const b = r.buf; if (!b.length || b.length > 10 * 1048576) continue; const ty = /png/i.test(String((r.headers && r.headers['content-type']) || '')) ? 'image/png' : 'image/jpeg'; fd.append('imageFiles', new Blob([b], { type: ty }), `p${++n}.${ty === 'image/png' ? 'png' : 'jpg'}`); } catch (e) {} }
     if (!n) return { ok: false, err: '사진을 내려받지 못함' }; const t = await token(); if (!t.ok) return { ok: false, err: t.err };
@@ -279,6 +328,8 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
     if (j.k === 'confirm') r = await call('POST', '/v1/pay-order/seller/product-orders/confirm', { productOrderIds: (j.ids || []).map(String).slice(0, 30) });
     else if (j.k === 'dispatch') r = await call('POST', '/v1/pay-order/seller/product-orders/dispatch', { dispatchProductOrders: (j.rows || []).slice(0, 30).map((d) => ({ productOrderId: String(d.po), deliveryMethod: 'DELIVERY', deliveryCompanyCode: String(d.co), trackingNumber: String(d.no), dispatchDate: kstIso(now()) })) });
     else if (j.k === 'status') r = await call('PUT', `/v1/products/origin-products/${encodeURIComponent(String(j.originNo))}/change-status`, { statusType: String(j.to || 'SUSPENSION'), ...(j.stock != null ? { stockQuantity: +j.stock } : {}) });
+    else if (j.k === 'price') r = await call('PATCH', '/v1/products/origin-products/multi-update', { multiProductUpdateRequestVos: [{ originProductNo: +j.originNo, multiUpdateTypes: ['SALE_PRICE'], productSalePrice: { salePrice: Math.round(+j.price) } }] }); /* (0.1.23 naver3) 판매가만 — 원문 RAW_API.md multi-update */
+    else if (j.k === 'claim') r = await call('POST', `/v1/pay-order/seller/product-orders/${encodeURIComponent(String(j.po))}/claim/${j.act === 'exchange' ? 'exchange/collect' : j.act}/approve`, null); /* (0.1.23 naver3) 취소 요청 승인 · 반품 요청 승인 · 교환 수거 완료 승인 — 원문 seller-approve-* */
     else if (j.k === 'reg') { const g = { ...(NC().reg || {}), ...(j.g || {}) }; let book = { ...(j.book || {}) }; const m0 = nvBody({ ...book, images: book.images && book.images.length ? book.images : ['x'] }, g); /* 사진 말고 빠진 칸이 있으면 사진을 올리지 않음 */
       if (!m0.ok) r = { ok: false, err: '빠진 칸: ' + m0.miss.join('·') }; else { if (!(book.images && book.images.length)) { M.step = '사진 올리기'; const u = await upImgs(j.imgs); if (u.ok) book.images = u.urls; else r = { ok: false, err: u.err, later: u.later }; }
         if (!r) { const b = nvBody(book, g); if (!b.ok) r = { ok: false, err: '빠진 칸: ' + b.miss.join('·') }; else r = await call('POST', '/v2/products', b.body); } } }
@@ -290,33 +341,37 @@ function makeNv(o) { const { HOME, note, log } = o; const TEST = !!o.TEST; const
     if (res.ok && j.k === 'dispatch') { for (const x of j.rows || []) M.inv[String(x.co) + ':' + String(x.no)] = String(x.po); wr(INVF, M.inv); }
     /* (0.1.22 naver2) 판매 상태가 맞게 바뀌면 그 매물 줄을 곧바로 고쳐 넘김(6시간 목록 읽기를 기다리지 않음 — 🧾 🛠 처리할 일·🤖 자동 내림이 반영을 바로 봄) · 지문을 지워 다음 목록 읽기가 네이버 값으로 다시 덮음 */
     if (res.ok && j.k === 'status' && j.originNo) { const to = String(j.to || 'SUSPENSION'); const on = to === 'SALE'; push('nv_listings', String(j.originNo), { originNo: String(j.originNo), st: to, live: on && !(j.stock != null && +j.stock <= 0), ...(j.stock != null ? { qty: +j.stock } : on ? {} : { qty: 0 }), ch: 'naver', chgAt: new Date().toISOString(), chgBy: 'job' }); delete st.sig['p' + String(j.originNo)]; save(); }
+    if (res.ok && j.k === 'price' && j.originNo) { push('nv_listings', String(j.originNo), { originNo: String(j.originNo), price: Math.round(+j.price), disc: null, ch: 'naver', pxAt: new Date().toISOString(), pxBy: 'job' }); delete st.sig['p' + String(j.originNo)]; save(); } /* (naver3) 값이 맞게 바뀌면 매물 줄 곧바로 · 다음 목록 읽기가 네이버 값으로 덮음 */
+    if (res.ok && j.k === 'claim') nextOrd = 0; /* (naver3) 승인 뒤 주문을 곧바로 다시 읽음(클레임 상태가 바로 보이게) */
     if (res.ok && j.k === 'reg') nextPrd = 0; /* (naver2) 등록이 맞으면 다음 돌기에 상품 목록을 다시 읽음(통합 장부에 바로 붙게) */
     if (res.ok && (j.k === 'dispatch' || j.k === 'confirm')) nextOrd = 0; /* (naver2) 발주 확인·발송 처리가 맞으면 다음 돌기에 주문을 곧바로 다시 읽음(📦 오늘 출고 단계가 10분 기다리지 않음) */
     if (!res.later) { M.jd[j.id] = res; wr(JDF, M.jd); } M.jres[j.id] = res; push('col2_naver_jobs', j.id.replace(/[^\w.-]/g, '_').slice(0, 140), { id: j.id, k: j.k, by: j.by, ...res }); M.step = '';
     note(`🟩 네이버 쓰기 ${j.k} — ${res.ok ? '맞음' : '실패: ' + res.err}`, { k: res.ok ? 'sys' : 'err', l: res.ok ? 'ok' : 'warn', m: '네이버' }); return res; }
 
   /* ── 돌기 ── */
-  let nextOrd = 0, nextPrd = 0;
+  let nextOrd = 0, nextPrd = 0, nextInq = 0, nextStl = 0;
   async function tick(why) { if (M.busy || !mine()) return; M.busy = true; try { if (!(await keyReady()).ok) return; const cr = await credLoad(); if (!cr) return; if (M.cool > now()) return;
       if (st.test && st.test.auth) return; /* 인증이 틀린 값으로 되풀이해 두드리지 않음 — 새 값을 넣거나 다시 시험하면 풀림 */
       while (M.jobs.length && wOn()) { const j = M.jobs.shift(); const jr = await jobRun(j); if (jr && jr.wait) { M.jobs.unshift(j); M.jres[j.id] = { st: 'queued', at: now(), wait: String(jr.why || '').slice(0, 200) }; break; } if (M.cool > now()) break; }
       if (M.net && !M.net.ok) { nextOrd = Math.min(nextOrd, now() + 60e3); return; } /* (nvfix1) 🛑 길이 막혔으면 남은 일(읽기 포함)은 대기 — 1분 뒤 다시 확인 */
       const C = NC(); if (now() >= nextOrd) { nextOrd = now() + Math.max(1, +C.ordMin || 10) * 60e3; const r1 = await pullOrd(why || '주기'); if (r1 && r1.net) { nextOrd = now() + 60e3; return; } } /* (nvfix1) 길이 바뀌어 멈췄으면 상품 읽기로 넘어가지 않음 · 1분 뒤 다시 */
-      if (now() >= nextPrd) { nextPrd = now() + Math.max(0.5, +C.prdH || 6) * 3600e3; const r2 = await pullPrd(why || '주기'); if (r2 && r2.net) nextPrd = now() + 60e3; } }
+      if (now() >= nextPrd) { nextPrd = now() + Math.max(0.5, +C.prdH || 6) * 3600e3; const r2 = await pullPrd(why || '주기'); if (r2 && r2.net) { nextPrd = now() + 60e3; return; } }
+      if (M.cool <= now() && now() >= nextInq) { nextInq = now() + Math.max(5, +C.inqMin || 30) * 60e3; const r3 = await pullInq(why || '주기'); if (r3 && r3.net) { nextInq = now() + 60e3; return; } } /* (0.1.23 naver3) 문의 30분 */
+      if (M.cool <= now() && now() >= nextStl) { nextStl = now() + Math.max(1, +C.stlH || 6) * 3600e3; const r4 = await pullStl(why || '주기'); if (r4 && r4.net) nextStl = now() + 60e3; } } /* (0.1.23 naver3) 정산 6시간 */
     catch (e) { log('네이버 돌기 오류: ' + e.message); } finally { M.busy = false; } }
   function kick(ms) { clearTimeout(M.t); M.t = setTimeout(() => tick('바로').catch(() => {}), ms || 500); }
   function start() { setInterval(() => tick().catch(() => {}), TEST ? 1000 : 60e3); if (mine()) setTimeout(() => keyReady().catch(() => {}), TEST ? 100 : 3000); kick(TEST ? 400 : 20e3); }
 
   /* ── 웹앱 다리 ── */
   function sum() { const on = mine(); return { on, why: on ? '' : '네이버 일은 로거 PC만(정범님 11/11 지정)', pub: on ? M.pub : null, cred: on ? credSum() : { has: false }, test: st.test, write: st.write, step: M.step,
-    ord: { at: st.ordAt, n: st.ordN, err: st.ordErr, cur: st.ordCur }, prd: { at: st.prdAt, n: st.prdN, err: st.prdErr }, cool: M.cool > now() ? M.cool : 0, q: M.q.length, jobs: M.jobs.length, calls: M.calls.n, cats: st.cats, net: M.net ? { ...M.net, raw: st.netRaw || null, sockN: M.sockN || 0 } : null, ipReg: regIp() }; } /* (nvfix1) net = 🛑 와이파이 문 마지막 판단(ok·kind·why·ip) · ipReg = 등록한 고정 IP(비밀 아님) */
+    ord: { at: st.ordAt, n: st.ordN, err: st.ordErr, cur: st.ordCur }, prd: { at: st.prdAt, n: st.prdN, err: st.prdErr }, inq: st.inq, stl: st.stl, blocked: M.blocked || 0, cool: M.cool > now() ? M.cool : 0, q: M.q.length, jobs: M.jobs.length, calls: M.calls.n, cats: st.cats, net: M.net ? { ...M.net, raw: st.netRaw || null, sockN: M.sockN || 0 } : null, ipReg: regIp() }; } /* (nvfix1) net = 🛑 와이파이 문 마지막 판단(ok·kind·why·ip) · ipReg = 등록한 고정 IP(비밀 아님) */
   async function cmd(c) { c = c || {}; const k = String(c.k || ''); if (!mine()) return { ok: false, err: '네이버 일은 로거 PC만' };
     if (k === 'cred') return credPut(c.env, c.by); if (k === 'test') return retest('웹앱 단추 · ' + String(c.by || '').slice(0, 30));
-    if (k === 'sync') { nextOrd = 0; if (c.prd) nextPrd = 0; kick(200); return { ok: true }; }
+    if (k === 'sync') { nextOrd = 0; if (c.prd) nextPrd = 0; if (c.prd || c.all) { nextInq = 0; nextStl = 0; } kick(200); return { ok: true }; }
     if (k === 'write') return setWrite(c.on === true, c.by); if (k === 'job') return jobPut(c.job, c.by); if (k === 'cats') return cats();
     if (k === 'ip') { const ip = ipv4(c.ip); if (!ip) return { ok: false, err: '고정 IP 꼴이 아님(예: 211.0.0.1)' }; st.ip = ip; save(); note(`🟩 네이버에 등록한 고정 IP를 ${ip}로 둠 — ${String(c.by || '').slice(0, 30)}`, { k: 'sys', l: 'ok', m: '네이버' }); kick(500); return { ok: true, ip }; } /* (nvfix1) 와이파이 문이 견줄 IP */
     return { ok: false, err: '모르는 명령' }; }
   function feed(o2) { for (const k of (o2 && o2.ack) || []) { const i = M.q.findIndex((x) => x.k === k); if (i >= 0) { M.q.splice(i, 1); M.qk.delete(k); } } return { ok: true, st: sum(), out: M.q.slice(0, 150), jres: M.jres }; }
-  return { start, tick, kick, sum, cmd, feed, keyReady, M, st };
+  return { start, tick, kick, sum, cmd, feed, keyReady, M, st, pullInq, pullStl };
 }
-module.exports = { makeNv, nvOrd, nvPrd, nvBody, nvErr, kstIso, netKind, netPick, netParse, ipv4 };
+module.exports = { makeNv, nvOrd, nvPrd, nvBody, nvErr, kstIso, nvClaimOf, nvInq, nvQna, nvStlDay, nvStlCase, nvUrlOk, NV_API, netKind, netPick, netParse, ipv4 };

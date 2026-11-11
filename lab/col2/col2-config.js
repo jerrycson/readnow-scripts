@@ -61,7 +61,7 @@
      *  minGapMs: 요청 사이 최소 간격(원문 docs/restriction — 초당 동시 요청 수 제한·429 GW.RATE_LIMIT · 값은 API마다 달라 공개 안 됨) — 근거: 없음, 설정(col2.json nvcfg)으로 바꿈
      *  cool429Sec: 429면 쉬는 시간(두 번째부터 두 배 · 최대 10분) · ordMin: 주문 변경 읽기 주기 · prdH: 상품 목록 다시 읽기 주기 · firstH: 처음 주문을 거슬러 읽는 시간(원문: 한 번에 24시간 창)
      *  write: 실제 쓰기(발주 확인·발송·판매 상태·등록) 기본 끔 — 웹앱 ⚙ 🟩 칸에서 연결 시험이 맞은 뒤 두 번 눌러 켬 */
-    NAVER: { base: 'https://api.commerce.naver.com/external', pc: /^LOGGER/i, minGapMs: 600, cool429Sec: 30, ordMin: 10, prdH: 6, firstH: 72, maxCalls: 60, write: false },
+    NAVER: { base: 'https://api.commerce.naver.com/external', pc: /^LOGGER/i, minGapMs: 600, cool429Sec: 30, ordMin: 10, prdH: 6, inqMin: 30, stlH: 6, firstH: 72, maxCalls: 60, write: false },
     FIREBASE: { apiKey: 'AIzaSyCpHjgQgqB-P1Bh4JLlRbX3FItPOALXbEk', authDomain: 'readnow-3a385.firebaseapp.com', projectId: 'readnow-3a385', storageBucket: 'readnow-3a385.firebasestorage.app', messagingSenderId: '63884079760', appId: '1:63884079760:web:4f538bf29af5898ca51e15' },
     FIREBASE_SDK: 'https://www.gstatic.com/firebasejs/10.12.2/',
   };

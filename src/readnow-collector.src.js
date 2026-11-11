@@ -10365,7 +10365,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const COLV = ((typeof G.__RN_FILE_VER === 'string' && G.__RN_FILE_VER) || (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version)) || '';
   const B = 'http://127.0.0.1:8797'; const iso = () => new Date().toISOString(); const L = (lv, m) => { try { window.__rnLog && window.__rnLog('상품', lv, m); } catch (e) {} };
   const gs = (m, p, b, ms) => new Promise((res) => { try { GM_xmlhttpRequest({ method: m, url: B + p, headers: { 'X-RN-Col2': '1', 'Content-Type': 'application/json' }, data: b ? JSON.stringify(b) : undefined, timeout: ms || 20000, anonymous: true, onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {} res({ s: r.status, j }); }, onerror: () => res({ s: 0, j: null }), ontimeout: () => res({ s: -1, j: null }) }); } catch (e) { res({ s: 0, j: null }); } });
-  const OUT = { crm_naver_orders: /^[\w-]{2,40}$/, nv_listings: /^\d{1,20}$/, col2_naver_jobs: /^[\w.-]{4,150}$/ }; /* 웹앱 NV_OUT_OK와 같음 */
+  const OUT = { crm_naver_orders: /^[\w-]{2,40}$/, nv_listings: /^\d{1,20}$/, col2_naver_jobs: /^[\w.-]{4,150}$/, nv_inq: /^[cq]\d{1,20}$/, nv_settle: /^\d{8}(_[A-Z_]{1,12})?$/, nv_settle_case: /^[\w-]{4,120}$/ }; /* 웹앱 NV_OUT_OK와 같음 · (rel3) 네이버 3회차 문의·정산 칸 더함 */
   let busy = false, nextAt = 0, noAt = 0, D = {}, un = null, sig = '', sigAt = 0, offSig = '', offAt = 0, said = 0;
   const listen = (db) => { if (un) return; try { un = db.collection('col2_naver').onSnapshot((q) => { const o = {}; q.forEach((d) => { o[d.id] = d.data() || {}; }); D = o; }, () => { un = null; }); } catch (e) { un = null; } };
   /* 이 PC 웹앱이 대신 하는 중인가 — 번외가 본 웹앱 당김(3분) 또는 웹앱이 쓴 상태(6분 · 4분마다 다시 씀) */
@@ -10395,7 +10395,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       /* 읽은 것 쓰기 — 네이버 칸 셋만 */
       const fd = await gs('POST', '/nv/feed', {}); const keys = []; for (const o of ((fd.j && fd.j.out) || []).slice(0, 150)) { const re = OUT[o.c]; if (!re || !re.test(String(o.id))) continue; try { await db.collection(o.c).doc(String(o.id)).set(o.v || {}, { merge: true }); keys.push(o.k); } catch (e) {} }
       if (keys.length) { await gs('POST', '/nv/feed', { ack: keys }); next = 3000; if (!said) { said = 1; L('info', `🟩 네이버 로거 다리 — 웹앱 없이 번외가 읽은 주문·상품 ${keys.length}건을 넘김`); } }
-      const sum = { pc, ver: s.ver || '', at: iso(), via: 'col', colVer: COLV, nv: { cred: s.nv.cred, test: s.nv.test, write: s.nv.write, ord: s.nv.ord, prd: s.nv.prd, cool: s.nv.cool || 0, q: s.nv.q || 0, cats: s.nv.cats || null, net: s.nv.net || null, ipReg: s.nv.ipReg || null } }; /* net = 🛑 와이파이 문(번외가 요청마다 확인) */
+      const sum = { pc, ver: s.ver || '', at: iso(), via: 'col', colVer: COLV, nv: { cred: s.nv.cred, test: s.nv.test, write: s.nv.write, ord: s.nv.ord, prd: s.nv.prd, inq: s.nv.inq || null, stl: s.nv.stl || null, blocked: s.nv.blocked || 0, cool: s.nv.cool || 0, q: s.nv.q || 0, cats: s.nv.cats || null, net: s.nv.net || null, ipReg: s.nv.ipReg || null } }; /* net = 🛑 와이파이 문(번외가 요청마다 확인) */
       const g = JSON.stringify({ ...sum, at: 0, nv: { ...sum.nv, net: sum.nv.net ? { ...sum.nv.net, at: 0, ms: 0 } : null } }); if (g !== sig || Date.now() - sigAt > 4 * 60e3) { await db.collection('col2_naver').doc('state').set(sum); sig = g; sigAt = Date.now(); offSig = ''; }
     } catch (e) {} finally { busy = false; nextAt = Date.now() + next; } };
   G.__rnC2nvTick = tick; setTimeout(() => tick().catch(() => {}), 20000); setInterval(() => tick().catch(() => {}), 5000);
