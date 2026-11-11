@@ -149,7 +149,7 @@ function bookPage(it, o) { o = o || {}; const st = o.st || 's'; const base = o.b
 <meta name="description" content="${hx(desc)}"><link rel="canonical" href="${hx(url)}">${st === 'x' ? '<meta name="robots" content="noindex, follow">' : ''}
 <meta property="og:type" content="product"><meta property="og:title" content="${hx(title)}"><meta property="og:description" content="${hx(desc)}"><meta property="og:url" content="${hx(url)}">${pics[0] ? `<meta property="og:image" content="${hx(pics[0])}">` : ''}
 <meta property="product:price:amount" content="${it.p}"><meta property="product:price:currency" content="KRW"><meta property="product:condition" content="used"><meta property="product:availability" content="${st === 'x' ? 'out of stock' : 'in stock'}">
-<link rel="stylesheet" href="/shop.css?v=0.1.0"><script type="application/ld+json">${bookLd(it, st, base)}</script></head>
+<link rel="stylesheet" href="/shop.css?v=0.1.3"><script type="application/ld+json">${bookLd(it, st, base)}</script></head>
 <body><header class="top"><a class="logo" href="/#/"><span class="crown">♛</span>${hx(nm)}<small>헌책방</small></a><nav class="nav"><a href="/#/list?s=new">책 찾기</a><a href="/#/cart">🛒</a></nav></header>
 <main class="wrap bp"><nav class="hint"><a href="/#/">첫 화면</a>${it.c ? ` › <a href="/#/list?c=${encodeURIComponent(it.c)}">${hx(it.c)}</a>` : ''}</nav>
 <article class="bk${st === 'x' ? ' sold' : ''}"><div class="bp-ph">${pics.length ? pics.map((u, i) => `<img src="${hx(u)}" alt="${hx(it.t)} ${i ? '실물 사진 ' + i : '표지'}" loading="${i ? 'lazy' : 'eager'}" width="320">`).join('') : '<div class="noimg">사진 준비 중</div>'}</div>
@@ -255,7 +255,7 @@ function makeShop({ db, C, FV, log, bucket }) {
   /* (11/11 shop2) 책 한 권 HTML — 판매중·주문 중은 목록 요약 · 팔린 책은 기억(CAT.gone) → 없으면 상품 문서를 한 번 봄(같은 번호는 10분 기억) */
   const MISS = new Map();
   async function seoPage(res, id) { const html = (code, body, cache) => { res.writeHead(code, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': cache || 'public, max-age=300, s-maxage=600' }); res.end(body); return true; };
-    const nf = () => html(404, `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width, initial-scale=1"><title>없는 책 | 북스퀸</title><link rel="stylesheet" href="/shop.css?v=0.1.0"></head><body><main class="wrap"><h1>찾는 책이 없습니다</h1><p><a class="btn" href="/#/">책 둘러보기</a></p></main></body></html>`, 'public, max-age=120');
+    const nf = () => html(404, `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="robots" content="noindex"><meta name="viewport" content="width=device-width, initial-scale=1"><title>없는 책 | 북스퀸</title><link rel="stylesheet" href="/shop.css?v=0.1.3"></head><body><main class="wrap"><h1>찾는 책이 없습니다</h1><p><a class="btn" href="/#/">책 둘러보기</a></p></main></body></html>`, 'public, max-age=120');
     if (!/^[\w.-]{1,80}$/.test(id)) return nf(); await ready(); const c = await cfg(); const H = await held(); const X = await soldX(); const V = await vw(); /* (shopc1) 값은 규칙을 얹은 우리숍 판매가 */
     const same = (it) => (it.isbn ? [...V.values()].filter((x) => x.isbn === it.isbn && x.id !== it.id && !X.has(x.id) && !H.has(x.id)) : []);
     let it = V.get(id); let st = it ? (X.has(id) ? 'x' : H.has(id) ? 'o' : 's') : null;

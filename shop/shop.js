@@ -203,7 +203,7 @@
   function wishBadge() { const n = wish().length; const b = $('#wishN'); if (b) { b.textContent = n; b.hidden = !n; } }
   const SHL = { h: null, items: null, at: 0, js: null };
   const loadRes = (tag, attr) => new Promise((ok, no) => { const e = document.createElement(tag); Object.assign(e, attr); e.onload = ok; e.onerror = () => no(new Error('책장 화면을 받지 못했습니다')); document.head.appendChild(e); });
-  const shelfJs = () => SHL.js || (SHL.js = Promise.all([window.BQS ? 1 : loadRes('script', { src: 'shelf-core.js?v=0.2.0' }), loadRes('link', { rel: 'stylesheet', href: 'shelf.css?v=0.2.0' })]).then(() => (window.BQShelf ? 1 : loadRes('script', { src: 'shelf.js?v=0.2.0' }))).catch((e) => { SHL.js = null; throw e; }));
+  const shelfJs = () => SHL.js || (SHL.js = Promise.all([window.BQS ? 1 : loadRes('script', { src: 'shelf-core.js?v=0.2.1' }), loadRes('link', { rel: 'stylesheet', href: 'shelf.css?v=0.2.1' })]).then(() => (window.BQShelf ? 1 : loadRes('script', { src: 'shelf.js?v=0.2.1' }))).catch((e) => { SHL.js = null; throw e; }));
   /* (shelf4) 첫 화면 빠르게: 첫 묶음(새 책 4,000권)은 화면 파일과 함께 미리 받기 시작 → 오면 바로 첫 책장(early) · 나머지 묶음은 한꺼번에(나란히) 받아 뒤에서 더함 */
   async function shelfItems(prog, early) { if (SHL.items && Date.now() - SHL.at < 5 * 60e3) return SHL.items; const S = window.BQS; let all = [];
     try { const J0 = await (SHL.p0 || api('/shop/shelf?k=0')); SHL.p0 = null; all = S.unpack(J0); prog(all.length, J0.n); if (J0.kn > 1 && early) early(all.slice());
