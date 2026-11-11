@@ -1,2 +1,2 @@
-spbatch=1
-# 1952328815
+doc=app_settings/adapt_health
+# 2525024792
