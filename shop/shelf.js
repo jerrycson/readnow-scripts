@@ -47,7 +47,7 @@
     const badge = () => { WS = null; const n = o.cart && o.cart.n ? o.cart.n() : 0; $('.bqs-cn').textContent = n; $('.bqs-cart').classList.toggle('has', n > 0); const w = (o.wish && o.wish.get()) || []; $('.bqs-wn').textContent = w.length; const c2 = $('.bqs-cn2'), w2 = $('.bqs-wn2'); if (c2) c2.textContent = n; if (w2) w2.textContent = w.length; };
     const setZ = (z, anchor) => { z = Math.round(clamp(z, 0.5, 4) * 100) / 100; if (z === st.z && sec.style.getPropertyValue('--z')) return; const a = anchor || centerSpine(); const y0 = a ? a.getBoundingClientRect().top : 0;
       st.z = z; sec.style.setProperty('--z', z); $('.bqs-zv').textContent = Math.round(z * 100) + '%'; LS.set('zoom', z); relayout(); cutAll(); if (a && a.isConnected) { const y1 = a.getBoundingClientRect().top; window.scrollBy(0, y1 - y0); } };
-    sec.style.setProperty('--rh', C.rowH); sec.style.setProperty('--z', st.z); $('.bqs-zv').textContent = Math.round(st.z * 100) + '%';
+    sec.style.setProperty('--rh', C.rowH); sec.style.setProperty('--ep', C.edgePct); sec.style.setProperty('--z', st.z); $('.bqs-zv').textContent = Math.round(st.z * 100) + '%';
 
     /* ── 책장 하나 그리기 */
     let WS = null; const wishSet = () => WS || (WS = new Set(((o.wish && o.wish.get()) || []).map((w) => (w && typeof w === 'object' ? w.id : w)))); const isWish = (id) => wishSet().has(id); /* (shelf4) 찜 목록도 한 번만 읽어 둠 — 바뀌면 badge()가 지움 */
@@ -55,13 +55,13 @@
     const tcy = (t) => { const S = String(t == null ? '' : t); const re = /([A-Za-z][A-Za-z0-9'’.&+\-]*(?: [A-Za-z0-9][A-Za-z0-9'’.&+\-]*)*)|([0-9]{3,})|([0-9]{1,2})|([:;,…!?]+)/g; let o = '', k = 0, m;
       while ((m = re.exec(S))) { o += esc(S.slice(k, m.index)); o += m[3] != null ? `<span class="tcy">${m[0]}</span>` : m[4] != null ? `<span class="pn">${esc(m[0])}</span>` : `<span class="lt">${esc(m[0])}</span>`; k = m.index + m[0].length; } return o + esc(S.slice(k)); };
     const auOf = (x) => B.auName(x.a); /* (shelf4) 책등엔 이름만 */
-    const spineH = (x, cs, ck) => { const L = lookOf(x); const f = B.fontById(L.f); const fb = f.gen === 'serif' ? `'Noto Serif KR','Batang','AppleMyungjo',serif` : `'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',${f.gen}`; const ff = C.fontsOn ? `'bqf-${L.f}-${ck}','${f.name}',${fb}` : fb; /* (shelf4) 받기 전·못 받을 때도 세로 글자 자리(세로 metrics)가 바른 한글 글꼴로 */ const img = C.spineImg && x.sp; const tg = B.tagOf(x); const so = B.saleOf(x);
+    const spineH = (x, cs, ck) => { const L = lookOf(x); const f = B.fontById(L.f); const fb = f.gen === 'serif' ? `'Noto Serif KR','Batang','AppleMyungjo',serif` : `'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',${f.gen}`; const ff = C.fontsOn ? `'bqf-${L.f}-${ck}','${f.name}',${fb}` : fb; /* (shelf4) 받기 전·못 받을 때도 세로 글자 자리(세로 metrics)가 바른 한글 글꼴로 */ const img = C.spineImg && x.sp; const eg = !img && C.edgeSpine && x.im; /* (shelf6) 책등 그림이 없으면 앞표지 왼쪽 가장자리 띠를 늘려 책등으로 */ const tg = B.tagOf(x); const so = B.saleOf(x);
       const lab = `${x.t}${x.a ? ' · ' + x.a : ''} · ${won(x.p)}${so && so.from === 'p0' ? ` (할인 ${so.pct}% · 원래 ${won(so.was)})` : ''}${tg && tg.k !== 'sale' ? ' · ' + B.BADGE[tg.k] : ''}${x.st === 'o' ? ' · 주문 중' : ''}${isWish(x.id) ? ' · 찜함' : ''}`;
-      return `<button type="button" class="sp${img ? ' img' : ''}${x.st === 'o' ? ' held' : ''}${isWish(x.id) ? ' wished' : ''}${tg ? ' tag' : ''}${L.tilt ? ' tilt' + (L.tilt > 0 ? 'r' : 'l') : ''}" data-id="${esc(x.id)}" data-d="${L.d}" data-p="${L.p}" data-s="${L.body}" data-h="${L.head}" data-o="${L.o}" data-tk="${L.tk}" data-fg="${L.fg}"${L.tp ? ' data-tp="1"' : ''}${L.thin ? ' data-thin="1"' : ''} tabindex="-1" aria-label="${esc(lab)}" style="--bw:${L.w};--bh:${L.h};--c:${L.c};--c2:${L.c2};--k:${L.k};--g:${L.ac};--ft:${L.ft};--fa:${L.fa};--fw:${L.fw};--zt:${L.zt};--zb:${L.zb};--zs:${L.zs};${L.tp ? `--tp:${L.tp};` : ''}font-family:${esc(ff)}"><span class="sk">${img ? `<img class="si" src="${esc(x.sp)}" alt="" loading="lazy" decoding="async">` : ''}${L.head > 1 ? '<span class="hd" aria-hidden="true"></span>' : ''}${x.st === 'o' ? '<span class="hb" aria-hidden="true">주문중</span>' : ''}<span class="tx" aria-hidden="true"><span class="tt">${tcy(x.t)}</span>${auOf(x) ? `<span class="au">${tcy(auOf(x))}</span>` : ''}</span>${L.d === 37 ? `<span class="cn" aria-hidden="true">${B.callNo(x).map(esc).join('<br>')}</span>` : ''}${tg ? `<span class="bt bt-${tg.k}" aria-hidden="true">${esc(tg.t)}</span>` : ''}</span><span class="rb" aria-hidden="true"></span></button>`; };
+      return `<button type="button" class="sp${img ? ' img' : ''}${x.st === 'o' ? ' held' : ''}${isWish(x.id) ? ' wished' : ''}${tg ? ' tag' : ''}${L.tilt ? ' tilt' + (L.tilt > 0 ? 'r' : 'l') : ''}" data-id="${esc(x.id)}" data-d="${L.d}" data-p="${L.p}" data-s="${L.body}" data-h="${L.head}" data-o="${L.o}" data-tk="${L.tk}" data-fg="${L.fg}"${L.tp ? ' data-tp="1"' : ''}${L.thin ? ' data-thin="1"' : ''} tabindex="-1" aria-label="${esc(lab)}" style="--bw:${L.w};--bh:${L.h};--c:${L.c};--c2:${L.c2};--k:${L.k};--g:${L.ac};--ft:${L.ft};--fa:${L.fa};--fw:${L.fw};--zt:${L.zt};--zb:${L.zb};--zs:${L.zs};${L.tp ? `--tp:${L.tp};` : ''}font-family:${esc(ff)}"><span class="sk">${img ? `<img class="si" src="${esc(x.sp)}" alt="" loading="lazy" decoding="async">` : eg ? `<span class="eg" aria-hidden="true"><img class="ei" src="${esc(x.im)}" alt="" loading="lazy" decoding="async"></span>` : ''}${L.head > 1 ? '<span class="hd" aria-hidden="true"></span>' : ''}${x.st === 'o' ? '<span class="hb" aria-hidden="true">주문중</span>' : ''}<span class="tx" aria-hidden="true"><span class="tt">${tcy(x.t)}</span>${auOf(x) ? `<span class="au">${tcy(auOf(x))}</span>` : ''}</span>${L.d === 37 ? `<span class="cn" aria-hidden="true">${B.callNo(x).map(esc).join('<br>')}</span>` : ''}${tg ? `<span class="bt bt-${tg.k}" aria-hidden="true">${esc(tg.t)}</span>` : ''}</span><span class="rb" aria-hidden="true"></span></button>`; };
     /* ── (shelf3) 책등 글 맞추기 — 실제로 재서 맞춤(정범님 '확대하면 전체, 축소하면 줄임' · 리드 화면 확인: 잘림·넘침·겹침)
      *  글 자리(.tx = 장식이 없는 곳) 안에서 제목·지은이 칸 높이를 나누고, 글자 크기를 반씩 좁혀 찾음(모든 책등을 한꺼번에 — 쓰기 한 번·읽기 한 번 × 8번)
      *  가장 작은 글자(minFs · 화면 px)로도 안 들어가면 그때만 앞부분 + 「…」 — 글이 글 자리 밖으로 나가는 일은 없음 */
-    const FIT = { z: 0, fk: 0 };
+    const FIT = { z: 0, fk: 0 }; const OVL = { n: 0 }; /* (shelf6) 여러 줄 겹침을 찾아 한 줄로 바꾼 수(시험·진단용 sec.dataset.ovl) */
     function fitSpines(list) { if (st.dead) return; const t0 = performance.now(); const sps = [...list].filter((b) => b.isConnected && !(b.classList.contains('img') && b.classList.contains('ok'))); if (!sps.length) return;
       const minF = C.minFs, J = [];
       for (const b of sps) { const tx = b.querySelector('.tx'); if (!tx) continue; const tt = tx.querySelector('.tt'), au = tx.querySelector('.au'); const x = byId.get(b.dataset.id) || { t: tt.textContent, a: au ? au.textContent : '' };
@@ -88,8 +88,15 @@
         const up = S.filter((q) => q.ok && q.bad && q.bad - q.f > 0.6); for (const q of up) { q.f0 = q.f; q.el.style.fontSize = (q.f + q.bad) / 2 + 'px'; } for (const q of up) if (fits(q.el, q.j.W, q.H)) q.f0 = (q.f + q.bad) / 2; for (const q of up) { q.f = q.f0; q.el.style.fontSize = q.f0 + 'px'; }
         return S; };
       /* 한 줄이 여러 줄보다 많이 작지 않으면(50% 넘게) 한 줄 · 여러 줄로도 다 안 들어가면 한 줄로 돌아가 줄임(…) */
+      /* (shelf6) 여러 줄 글자 겹침 찾기 — 휴대폰 사진(서가 2행)에서 여러 줄 제목의 두 줄이 같은 자리에 겹쳐 그려진 책등('어린 가정부 조앤') · 글 상자 크기 검사는 통과했음
+       *  → 글자마다 상자(Range)를 재어 서로 30% 넘게 겹치는 두 글자가 있으면 여러 줄을 버리고 한 줄(+ 줄임 …)로 · 글자 40자까지만 셈(가벼움) */
+      const overlapped = (el) => { const B = []; const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); let n; const rg = document.createRange();
+        while ((n = w.nextNode()) && B.length < 40) { const t = n.data; for (let i = 0; i < t.length && B.length < 40; i++) { if (/\s/.test(t[i])) continue; rg.setStart(n, i); rg.setEnd(n, i + 1); const r = rg.getBoundingClientRect(); if (r.width && r.height) B.push(r); } }
+        for (let a = 0; a < B.length; a++) for (let b = a + 1; b < B.length; b++) { const x = Math.min(B[a].right, B[b].right) - Math.max(B[a].left, B[b].left), y = Math.min(B[a].bottom, B[b].bottom) - Math.max(B[a].top, B[b].top);
+          if (x > 0 && y > 0 && x * y > 0.3 * Math.min(B[a].width * B[a].height, B[b].width * B[b].height)) return true; } return false; };
       const lay = (pick, hiOf, txt) => { const S1 = one(pick, hiOf, txt); const go2 = S1.filter((q) => !q.ok || q.f < 0.5 * est(q.n, q.j.W, q.H, q.hi)); const back = new Map(go2.map((q) => [q, q.f]));
         const S2 = go2.length ? multi(go2, hiOf, txt) : []; const cut = [];
+        for (const q of S2) if (q.ok && overlapped(q.el)) { q.ok = false; q.ovl = 1; OVL.n++; } /* 겹치면 여러 줄 실패로 셈 */
         for (const q of S2) { const q1 = go2[S2.indexOf(q)]; if (q.ok && !(q1.ok && q.f < back.get(q1) * 1.12)) continue; if (q1.ok) { mode(q.el, 'one'); q.el.style.fontSize = back.get(q1) + 'px'; continue; } mode(q.el, 'one'); cut.push(q); }
         return cut; };
       const trim = (L, txt) => { const put = (u) => { u.q.el.innerHTML = tcy(u.ch.slice(0, u.n).join('').replace(/\s+$/, '')) + '<span class="pn">…</span>'; };
@@ -108,7 +115,7 @@
       const hiA = (j, H) => Math.min(j.W * 0.8, H * 0.9, (j.ftNow || minF) * 0.62, 20 * st.z, 24);
       if (C.fullText) { const cutA = lay((j) => j.au, hiA, (j) => j.a); trim(cutA, (j) => j.a); }
       else { const L = J.filter((j) => j.au); for (const j of L) { mode(j.au, 'one'); j.au.style.fontSize = clamp(j.W * 0.45, minF, 13 * st.z) + 'px'; } trim(L.filter((j) => !fits(j.au, j.W, j.Ha)).map((j) => ({ j, el: j.au, H: j.Ha })), (j) => j.a); }
-      for (const j of J) { j.b.dataset.ft = Math.round((parseFloat(j.tt.style.fontSize) || 0) * 10) / 10; j.b.dataset.fz = st.z; } sec.dataset.fit = (+sec.dataset.fit || 0) + 1; sec.dataset.fitMs = Math.round(performance.now() - t0); /* 시험이 '다시 맞췄나'·걸린 시간 봄 */ }
+      for (const j of J) { j.b.dataset.ft = Math.round((parseFloat(j.tt.style.fontSize) || 0) * 10) / 10; j.b.dataset.fz = st.z; } sec.dataset.fit = (+sec.dataset.fit || 0) + 1; sec.dataset.ovl = OVL.n; sec.dataset.fitMs = Math.round(performance.now() - t0); /* 시험이 '다시 맞췄나'·걸린 시간 봄 */ }
     /* 지금 책장은 바로 · 양옆 책장은 한가할 때(또는 돌기 직전) — 확대·글꼴이 바뀌면 다시(확대 중엔 0.15초 모아서) */
     /* (shelf4 첫 화면 1초) 지금 화면 안(과 한 화면 아래)까지만 바로 맞추고, 나머지는 한가할 때 60권씩 — 다 맞추면 sec.dataset.fitBusy 지움 */
     let fitTok = 0; const idleF = (f) => (root.requestIdleCallback ? root.requestIdleCallback(f, { timeout: 300 }) : setTimeout(f, 30));
@@ -352,7 +359,8 @@
     const centerSpine = () => { const r = stage.getBoundingClientRect(); const e = document.elementFromPoint(clamp(innerWidth / 2, 0, innerWidth - 1), clamp(innerHeight / 2, Math.max(0, r.top), Math.min(innerHeight - 1, r.bottom))); return e && e.closest ? e.closest('.sp') : null; };
     /* 책등 그림이 오면 그 그림 비율로 두께를 맞춤(진짜 책 두께) · 안 열리면 디자인 책등으로 */
     on(ring, 'load', (e) => { const im = e.target; if (!im.classList || !im.classList.contains('si') || !im.naturalHeight) return; const b = im.closest('.sp'); const w = clamp(Math.round((C.rowH * 0.86 * (+b.style.getPropertyValue('--bh') || 92) / 100) * im.naturalWidth / im.naturalHeight), 10, 90); b.style.setProperty('--bw', w); b.classList.add('ok'); }, true);
-    on(ring, 'error', (e) => { const im = e.target; if (im.classList && im.classList.contains('si')) { const b = im.closest('.sp'); im.remove(); if (b) { b.classList.remove('img'); fitSpines([b]); } } }, true);
+    on(ring, 'load', (e) => { const im = e.target; if (im.classList && im.classList.contains('ei') && im.naturalWidth) { const b = im.closest('.sp'); if (b) b.classList.add('eok'); } }, true); /* (shelf6) 표지 띠 책등 — 받은 뒤에만 보임(받기 전·실패는 지금처럼 지어낸 책등) */
+    on(ring, 'error', (e) => { const im = e.target; if (im.classList && im.classList.contains('ei')) { const g = im.closest('.eg'); if (g) g.remove(); return; } if (im.classList && im.classList.contains('si')) { const b = im.closest('.sp'); im.remove(); if (b) { b.classList.remove('img'); fitSpines([b]); } } }, true);
 
     /* ── 자료 받기 → 그리기 */
     const T0 = performance.now(); badge(); const lt = $('.bqs-load span'), lb = $('.bqs-lbar i');

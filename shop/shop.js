@@ -9,9 +9,21 @@
   const ST = { cfg: null, cfgAt: 0, list: null, busy: false };
   const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
   const cart = () => LS.get('bq-cart', []); const setCart = (c) => { LS.set('bq-cart', c); badge(); };
-  async function api(path, opt) { const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), (opt && opt.ms) || 15000);
-    try { const r = await fetch(API + path, { ...(opt || {}), signal: ctl.signal, headers: { 'Content-Type': 'application/json' } }); let j = null; try { j = await r.json(); } catch (e) {} if (!r.ok || !j || j.ok === false) { const e = new Error((j && j.err) || '연결이 잠시 안 됩니다'); e.j = j; e.status = r.status; throw e; } return j; }
-    catch (e) { if (e.name === 'AbortError') throw new Error('응답이 늦습니다 — 잠시 뒤 다시 해 주세요'); if (e instanceof TypeError) throw new Error('인터넷 연결을 확인해 주세요'); throw e; } finally { clearTimeout(t); } }
+  /* (shelf6) 클라우드가 바쁠 때(429 'Rate exceeded' — 클라우드 한 대가 동시 4개까지만 받음 · 그 429엔 출처(CORS) 머리가 없어 브라우저는 '연결 실패'로만 봄)
+   *  ① 읽기(GET)는 booksqueen.com 같은 주소 /shop/…로(Hosting이 클라우드로 넘김 · Firebase CDN이 1분 대신 답함 · 출처 미리 묻기 없음) — 같은 주소가 안 되면(옛 Hosting 설정) 그 화면 동안 클라우드 주소로
+   *  ② 읽기에 'Content-Type' 머리를 붙이지 않음(붙이면 브라우저가 요청마다 OPTIONS를 먼저 보내 클라우드 자리를 두 배로 씀)
+   *  ③ 읽기가 429·502·503·504·연결 실패면 Retry-After(없으면 1.5·4·8초 + 흔들기)만큼 기다렸다 최대 3번 다시 — 주문(POST)은 다시 보내지 않음(두 번 접수 막기) */
+  const SAME = { on: !window.BQ_API && /(^|\.)booksqueen\.(com|web\.app|firebaseapp\.com)$/.test(location.hostname || '') };
+  const RETRY_ST = [429, 502, 503, 504]; const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  async function api1(path, opt) { const get = !opt || !opt.method || opt.method === 'GET'; const base = get && SAME.on ? location.origin : API; const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), (opt && opt.ms) || 15000);
+    try { const r = await fetch(base + path, { ...(opt || {}), signal: ctl.signal, ...(get ? {} : { headers: { 'Content-Type': 'application/json' } }) }); let j = null; try { j = await r.json(); } catch (e) {}
+      if (get && base !== API && (!j || typeof j !== 'object') && r.status !== 429 && r.status < 500) { SAME.on = false; return api1(path, opt); } /* 같은 주소 넘김이 아직 없음(HTML 404 등) → 클라우드 주소로 */
+      if (!r.ok || !j || j.ok === false) { const e = new Error((j && j.err) || (r.status === 429 ? '사람이 많아 잠시 기다리는 중입니다' : '연결이 잠시 안 됩니다')); e.j = j; e.status = r.status; e.wait = +(r.headers.get('Retry-After') || 0) * 1000 || (j && j.retry ? j.retry * 1000 : 0); throw e; } return j; }
+    catch (e) { if (e.name === 'AbortError') { const x = new Error('응답이 늦습니다 — 잠시 뒤 다시 해 주세요'); x.slow = 1; throw x; } if (e instanceof TypeError) { const x = new Error('인터넷 연결을 확인해 주세요'); x.net = 1; throw x; } throw e; } finally { clearTimeout(t); } }
+  async function api(path, opt) { const get = !opt || !opt.method || opt.method === 'GET'; const tries = get && !(opt && opt.retry === false) ? 3 : 0;
+    for (let i = 0; ; i++) { try { return await api1(path, opt); }
+      catch (e) { const again = i < tries && (e.net || RETRY_ST.includes(e.status)) && navigator.onLine !== false; if (!again) throw e;
+        await sleep(Math.min(20000, e.wait || [1500, 4000, 8000][i]) + Math.round(Math.random() * 700)); } } }
   async function cfg(force) { if (!force && ST.cfg && Date.now() - ST.cfgAt < 60e3) return ST.cfg; ST.cfg = await api('/shop/cfg'); ST.cfgAt = Date.now(); foot(); return ST.cfg; }
   let tT = null; function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(tT); tT = setTimeout(() => t.classList.remove('on'), 2600); }
   /* 두 번 눌러 확정(브라우저 확인 창 없음) */
@@ -215,7 +227,9 @@
   /* (shelf4) 첫 화면 빠르게: 첫 묶음(새 책 4,000권)은 화면 파일과 함께 미리 받기 시작 → 오면 바로 첫 책장(early) · 나머지 묶음은 한꺼번에(나란히) 받아 뒤에서 더함 */
   async function shelfItems(prog, early) { if (SHL.items && Date.now() - SHL.at < 5 * 60e3) return SHL.items; const S = window.BQS; let all = [];
     try { const k0 = () => api('/shop/shelf?k=0', { ms: 30000 }); const J0 = await (SHL.p0 || k0()).catch((e) => { if (e.status === 404) throw e; return new Promise((r) => setTimeout(r, 1200)).then(k0); }); SHL.p0 = null; /* (shelf5) 클라우드가 막 깨어나 책 목록을 처음 세우면 15초를 넘길 때가 있음 → 첫 묶음은 30초 · 한 번 더 */ all = S.unpack(J0); prog(all.length, J0.n); if (J0.kn > 1 && early) early(all.slice());
-      const rest = await Promise.all(Array.from({ length: Math.max(0, J0.kn - 1) }, (_, i) => api('/shop/shelf?k=' + (i + 1)).then((J) => { prog(all.length + (J.rows || []).length, J0.n); return J; })));
+      /* (shelf6) 나머지 묶음은 한 번에(k=1-) — 전엔 묶음마다 나란히(4번)라 클라우드 자리(동시 4개)를 혼자 다 씀 · 클라우드가 옛 판이면(k2 없음) 남은 묶음을 하나씩 차례로 */
+      const rest = []; if (J0.kn > 1) { const J1 = await api('/shop/shelf?k=1-', { ms: 45000 }); rest.push(J1); prog(all.length + (J1.rows || []).length, J0.n);
+        for (let k = (J1.k2 != null ? J1.k2 : J1.k || 1) + 1; k < J0.kn; k++) { const J = await api('/shop/shelf?k=' + k); rest.push(J); prog(all.length + rest.reduce((a, x) => a + (x.rows || []).length, 0), J0.n); } }
       for (const J of rest) { const base = all.length; all = all.concat(S.unpack(J).map((x) => ({ ...x, _o: base + x._o }))); } prog(all.length, J0.n); }
     catch (e) { if (e.status !== 404) throw e; /* 클라우드 옛 판 — 새로 들어온 차례 쪽을 모음(최대 40쪽) */ all = []; for (let p = 0; p < 40; p++) { const r = await api('/shop/list?' + B.qs({ s: 'new', p })); const base = all.length; all = all.concat(r.items.map((x, i) => ({ ...x, c: x.c || null, at: x.at || null, _o: -(base + i) }))); prog(all.length, r.total); if (!r.more) break; } }
     const seen = new Set(); all = all.filter((x) => !seen.has(x.id) && seen.add(x.id)); SHL.items = all; SHL.at = Date.now(); return all; }
@@ -229,6 +243,7 @@
       load: (prog, early) => (demo ? Promise.resolve(S.demoItems(demo)) : shelfItems(prog, early)),
       cart: { n: () => cart().length, has: (id) => cart().some((y) => y.id === id), add: (x) => { if (demo) return '시범 자료라 담지 않습니다(움직임만 보기는 ⚙ 보기에서)'; const r = B.cartAdd(cart(), x, c.maxItems); if (r.why) return r.why; setCart(r.cart); return null; } },
       saveLooks: demo ? null : (L, g) => api('/shop/spines', { method: 'POST', body: JSON.stringify({ g, L }) }).catch(() => {}), /* (shelf2) 책등 모양 영구 저장 — 먼저 정한 것이 이김 */
+      get fontApi() { return SAME.on ? location.origin : null; }, /* (shelf6) 글꼴도 같은 주소(CDN 1년 캐시)로 — 넘김이 아직 없으면 클라우드 주소 */
       wish: { get: wish, set: setWish }, open: (id) => { if (!demo) location.hash = '#/b/' + encodeURIComponent(id); else toast('시범 자료 — 자세히 화면 없음'); },
       onState: (s) => { const h = '#/shelf?' + B.qs({ s: s.s, i: s.i, demo: demo || '', cfg: q.cfg || '' }); if (location.hash !== h) history.replaceState(null, '', h); } });
     if (demo) main().insertAdjacentHTML('afterbegin', `<div class="bar info">🧪 시범 자료 ${demo.toLocaleString('ko-KR')}권 — 실제 책이 아닙니다</div>`); if (q.cfg) main().insertAdjacentHTML('afterbegin', '<div class="bar info">👀 설정 미리 보기 — 저장하지 않은 설정으로 보고 있습니다</div>'); }

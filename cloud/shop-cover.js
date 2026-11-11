@@ -47,9 +47,22 @@ function genreOf(rgba, w, h) { const W = Math.min(w, 360), sc = w / W, H = Math.
 function analyze(rgba, w, h) { if (!rgba || !w || !h) return 'x'; const c = dominant(shrink(rgba, w, h, 16)); if (!c) return 'x'; const g = genreOf(rgba, w, h); return c + (g.fg ? '.' + g.fg : ''); }
 const CV_RE = /^(?:[0-9a-f]{6}(?:\.[a-z]{2})?|x)$/;
 
-/* 클라우드 일 — makeShop이 부름 · deps: { C(컬렉션), bucket()(저장소), log } */
-function makeCover({ C, bucket, log }) {
-  const ST = { m: new Map(), at: 0, busy: null, dirty: new Map(), runAt: 0, done: 0, fail: 0, lastErr: null };
+/* (shelf6) 표지 한 장 받기·풀기 — 저장소 그림(도서 정보의 실제 길 · 없으면 front.jpg)을 꼴대로 풂(JPEG·PNG·GIF)
+ *  WebP·AVIF 등 못 푸는 꼴이면 알라딘 원래 주소를 'JPEG·PNG만 받겠다'(Accept)고 다시 받아 풂 — 공개 그림 한 장 · 로그인·쿠키 없음(약속 0)
+ *  deps: B(저장소) · jpeg(jpeg-js) · pathOf(k)/srcOf(k)(도서 정보에서) · fx(시험용 fetch) */
+const IMG = require('./shop-img.js');
+const ALADIN_IMG = /^https:\/\/image\.aladin\.co\.kr\//i;
+async function loadCover(k, d) { const path = (d.pathOf && d.pathOf(k)) || `img/${k}/front.jpg`; let fmt = null;
+  try { const [buf] = await d.B.file(path).download(); return { im: IMG.decode(buf, d.jpeg), how: IMG.sniff(buf) }; }
+  catch (e) { const m = /^fmt:(.+)$/.exec(String(e.message || '')); if (!m) throw e; fmt = m[1]; }
+  const src = d.srcOf && d.srcOf(k); if (!src || !ALADIN_IMG.test(src)) throw new Error('fmt:' + fmt + ' (다시 받을 원래 주소 없음)');
+  const r = await d.fx(src, { headers: { Accept: 'image/jpeg,image/png;q=0.9,image/gif;q=0.8' }, redirect: 'follow', signal: AbortSignal.timeout(10000) }); if (!r.ok) throw new Error('원래 주소 HTTP ' + r.status);
+  const buf = Buffer.from(await r.arrayBuffer()); if (buf.length > 8e6) throw new Error('원래 그림 너무 큼'); return { im: IMG.decode(buf, d.jpeg), how: fmt + '→원래 ' + IMG.sniff(buf) }; }
+
+/* 클라우드 일 — makeShop이 부름 · deps: { C(컬렉션), bucket()(저장소), log, pathOf, srcOf, fetch } */
+function makeCover({ C, bucket, log, pathOf, srcOf, fetch: F }) {
+  const fx = F || ((u, o) => fetch(u, o));
+  const ST = { m: new Map(), at: 0, busy: null, dirty: new Map(), runAt: 0, done: 0, fail: 0, lastErr: null, how: {} };
   const load = async () => { if (ST.at && Date.now() - ST.at < 3600e3) return; try { const ss = await C('shop_cover').get(); ss.forEach((d) => { const m = (d.data() || {}).m || {}; for (const k in m) if (CV_RE.test(m[k])) ST.m.set(k, m[k]); }); ST.at = Date.now(); } catch (e) { log && log('📚 표지 셈 읽기 실패', e.message); } };
   const flush = async () => { const by = new Map(); for (const [k, v] of ST.dirty) { const b = bucketOf(k); if (!by.has(b)) by.set(b, {}); by.get(b)[k] = v; } ST.dirty.clear();
     for (const [b, m] of by) { try { await C('shop_cover').doc(b).set({ m, at: new Date().toISOString(), writer: 'cloud-shop' }, { merge: true }); } catch (e) { log && log('📚 표지 셈 쓰기 실패', b, e.message); } } };
@@ -58,12 +71,12 @@ function makeCover({ C, bucket, log }) {
     const want = []; const seen = new Set(); for (const x of items) { const k = keyOfIm(x.im); if (!k || seen.has(k) || ST.m.has(k)) continue; seen.add(k); want.push(k); if (want.length >= (n || 120)) break; }
     const B = bucket(); let done = 0; const t0 = Date.now();
     /* (shelf5) 셋씩 나란히 받음 — 한 권 시간의 대부분이 그림 받기 기다림(셈은 30~60ms) · 풀기는 한 번에 하나라 메모리는 그대로(그림 한 장 ≈ 1MB) · 150권마다 중간 저장(회차가 끊겨도 한 일은 남음 · 쓰기 수는 회차당 약 60번) */
-    let qi = 0; const one = async () => { while (qi < want.length) { const k = want[qi++]; try { const [buf] = await B.file(`img/${k}/front.jpg`).download(); const im = jpeg.decode(buf, { useTArray: true, maxMemoryUsageInMB: 256, formatAsRGBA: true }); const v = analyze(im.data, im.width, im.height); ST.m.set(k, v); ST.dirty.set(k, v); done++; }
-      catch (e) { ST.fail++; ST.lastErr = String(e.message || e).slice(0, 120); if (/No such object|404/.test(ST.lastErr)) { ST.m.set(k, 'x'); ST.dirty.set(k, 'x'); } }
+    let qi = 0; const one = async () => { while (qi < want.length) { const k = want[qi++]; try { const { im, how } = await loadCover(k, { B, jpeg, pathOf, srcOf, fx }); const v = analyze(im.data, im.width, im.height); ST.m.set(k, v); ST.dirty.set(k, v); done++; ST.how[how] = (ST.how[how] || 0) + 1; }
+      catch (e) { ST.fail++; ST.lastErr = String(e.message || e).slice(0, 120); if (/No such object|404|^fmt:|SOI not found|png |gif /.test(ST.lastErr)) { ST.m.set(k, 'x'); ST.dirty.set(k, 'x'); ST.how.x = (ST.how.x || 0) + 1; } } /* 없음·풀 수 없는 꼴은 'x'(다시 안 셈 — 손님 화면은 제목 낱말·분야로) */
       if (ST.dirty.size >= 150) await flush(); } };
     await Promise.all(Array.from({ length: Math.min(PAR, want.length) }, one));
     if (ST.dirty.size) await flush(); ST.done += done; ST.runAt = Date.now(); ST.lastMs = Date.now() - t0; ST.lastN = done; return done; })().finally(() => { ST.busy = null; }); return ST.busy; }
   const cvOf = (im) => { const k = keyOfIm(im); return k ? ST.m.get(k) || null : null; };
-  return { tick, cvOf, load, state: () => ({ n: ST.m.size, done: ST.done, fail: ST.fail, runAt: ST.runAt, lastErr: ST.lastErr, lastMs: ST.lastMs || null, lastN: ST.lastN || 0 }) };
+  return { tick, cvOf, load, state: () => ({ n: ST.m.size, done: ST.done, fail: ST.fail, runAt: ST.runAt, lastErr: ST.lastErr, lastMs: ST.lastMs || null, lastN: ST.lastN || 0, how: ST.how }) };
 }
-module.exports = { order, PAR, TICK_N, TICK_MS, analyze, dominant, genreOf, shrink, keyOfIm, bucketOf, makeCover, CV_RE };
+module.exports = { loadCover, order, PAR, TICK_N, TICK_MS, analyze, dominant, genreOf, shrink, keyOfIm, bucketOf, makeCover, CV_RE };

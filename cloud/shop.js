@@ -51,6 +51,10 @@ function pubItem(id, l, b) {
  *  판매지수(sp)는 숫자를 내보내지 않고 순위(sr · 1이 가장 많이 팔림)만 — 공개 요약 칸 밖의 시장 지표를 새지 않게 · 주문 중 'o' · 다른 판매처에서 팔린 책은 뺌 */
 const SHELF_COLS = ['id', 't', 'a', 'c', 'p', 'lp', 'g', 'at', 'im', 'sp', 'bk', 'st', 'sr', 'pg', 'pb', 'sz', 'lk', 'c2', 'p0', 'bd', 'cv']; /* (shelf2) sz 판형 · lk 영구 책등 모양 · (shelf3) c2 작은 분야 · p0 할인 전 값 · bd 배지 · (shelf4) cv 앞표지 대표색.글꼴 갈래(클라우드 셈) */
 const SHELF_PRE = [IMG_BASE, 'https://image.aladin.co.kr/product/'];
+/* (shelf6) 서가 창구 제한 — IP당 1분 120번(손님 한 명이 서가를 열 때 2번: 첫 묶음 + 나머지 한꺼번에 · 같은 IP 손님 60명이 1분 안에 열어도 됨) · 나머지 창구는 그대로 240번 */
+const SHELF_RL = [120, 60e3];
+/* (shelf6) 묶음 고르기 — k=0(한 묶음) · k=1-(1번부터 끝까지 한꺼번에) · k=1-3(1~3) → [첫, 끝] (범위 밖은 안으로) */
+const shelfK = (q, n) => { const m = /^(\d{1,3})(?:-(\d{0,3}))?$/.exec(String(q == null ? '0' : q).trim()); const last = Math.max(0, n - 1); if (!m) return [0, 0]; const a = Math.min(last, +m[1]); const b = m[2] === undefined ? a : m[2] === '' ? last : Math.min(last, Math.max(a, +m[2])); return [a, b]; };
 const SHELF_PART = 4000; /* 근거: 한 묶음 ≈ 4,000권 × 250바이트 ≈ 1MB(gzip ≈ 200KB) — 휴대폰 첫 화면이 1~2초 안에 그려지게 */
 const preOf = (u) => { if (!u) return null; for (let i = 0; i < SHELF_PRE.length; i++) if (u.startsWith(SHELF_PRE[i])) return '~' + i + u.slice(SHELF_PRE[i].length); return u; };
 function shelfRows(all, held, sold, sp, lk, cvf) { const H = held || new Set(); const X = sold || new Set(); const SP = sp || new Map(); const LK = lk || new Map();
@@ -182,7 +186,8 @@ function suggest(all, q0, X) { const q = norm(q0); X = X || new Set(); if (q.len
   return { s: [...top(T, 6, 't'), ...top(A, 3, 'a'), ...top(P, 2, 'pb')] }; }
 
 function makeShop({ db, C, FV, log, bucket }) {
-  const COV = bucket ? require('./shop-cover.js').makeCover({ C, bucket, log }) : null; /* (shelf4) 📚 앞표지 대표색·글꼴 갈래 — 저장소 그림을 클라우드가 미리 셈 */
+  const fr = (k) => { const b = CAT.books.get(k); const f = b && b.images && b.images.front; return f && typeof f === 'object' ? f : null; }; /* (shelf6) 표지 셈 — 도서 정보의 실제 저장 길(png·gif일 수 있음)·알라딘 원래 주소 */
+  const COV = bucket ? require('./shop-cover.js').makeCover({ C, bucket, log, pathOf: (k) => { const f = fr(k); return f && typeof f.stored === 'string' && f.stored.startsWith('img/' + k + '/') ? f.stored : null; }, srcOf: (k) => { const f = fr(k); return f && typeof f.src === 'string' ? f.src : null; } }) : null; /* (shelf4) 📚 앞표지 대표색·글꼴 갈래 — 저장소 그림을 클라우드가 미리 셈 */
   const FONT = require('./shop-font.js').makeFont({ log }); /* (shelf5) 📚 글자만 자른 글꼴 창구 */
   const SPX = require('./shop-spine.js').makeSpine({ C, FV, log }); /* (shelf5) 📚 책등 없는 책에 알라딘 책등 규칙 주소를 물어 채움(공개 그림 HEAD만) */
   const CAT = { bk: new Map(), items: new Map(), books: new Map(), gone: new Map(), sp: new Map(), pv: new Map(), full: 0, delta: 0, busy: null, err: null }; /* (11/11 shopc1) pv = 상품 → 숨은 칸 { sku, cp(분류 경로), k(종류) } — 할인 규칙 고르기에만 · 밖으로 안 나감 */ const SHELF = { key: '', parts: [] }; /* (11/11 shelf1) sp = 상품 → 알라딘 판매지수(밖으로는 순위만) · SHELF = 서가 책장 묶음 기억 */
@@ -201,8 +206,9 @@ function makeShop({ db, C, FV, log, bucket }) {
     const m = new Map(); for (const [k, x] of CAT.items) m.set(k, BQP.applyOne(x, CAT.pv.get(k), P, now)); VIEW.key = key; VIEW.m = m; return m; };
   /* (shelf5) 서가 뒷일 — 표지 대표색(5분마다 300권 · 책등 없는 책·새 책 먼저) · 책등 규칙 주소(10분마다 40권) · 서가를 부를 때와 1분 시계 둘 다에서(손님이 없어도 돎) */
   const covKick = () => { if (!COV || !CAT.items.size) return; const CV = require('./shop-cover.js'); if (Date.now() - (COV.state().runAt || 0) < CV.TICK_MS) return; COV.tick(CV.order([...CAT.items.values()]), CV.TICK_N).catch(() => {}); };
-  const spxKick = async () => { if (!CAT.items.size) return; const st = SPX.state(); if (Date.now() - (st.runAt || 0) < 600e3) return; const c = await cfg(); const sc = (c && c.shelf) || {}; if (sc.spineRule === false) return;
-    const cand = []; for (const [k, x] of CAT.items) { const id = CAT.bk.get(k); if (id && !x.sp) cand.push({ id, at: x.at }); } return SPX.tick(cand, CAT.books, { n: Math.max(1, Math.min(120, +sc.spineRuleN || 40)) }).catch(() => {}); };
+  const spxKick = async () => { if (!CAT.items.size) return; const st = SPX.state(); if (Date.now() - (st.runAt || 0) < ((st.auto && st.auto.every) || 600e3)) return; const c = await cfg(); const sc = (c && c.shelf) || {};
+    const pl = await SPX.plan(sc); if (!pl.n) { return; } /* (shelf6) 맞춤률이 낮으면 저절로 '천천히'(1시간 10권)·'멈춤'(14일) — 설정 spineRule·spineRuleAuto·spineRuleMin은 그대로 둠 */
+    const cand = []; for (const [k, x] of CAT.items) { const id = CAT.bk.get(k); if (id && !x.sp) cand.push({ id, at: x.at }); } return SPX.tick(cand, CAT.books, { n: pl.n }).catch(() => {}); };
   const kickT = setInterval(() => { try { covKick(); spxKick().catch(() => {}); } catch (e) {} }, 60e3); if (kickT.unref) kickT.unref();
   async function booksFor(ids) { const need = [...new Set(ids.filter((x) => x && !CAT.books.has(x)))]; for (let i = 0; i < need.length; i += 200) { const ss = await db.getAll(...need.slice(i, i + 200).map((x) => C('prd_books').doc(String(x)))); const part = need.slice(i, i + 200); let ms = []; try { ms = await db.getAll(...part.map((x) => C('prd_book_metrics').doc(String(x)))); } catch (e) {} const SPM = new Map(); ms.forEach((d) => { if (d.exists) { const v = (d.data() || {}).salesPoint; if (v != null && !isNaN(+v)) SPM.set(d.id, +v); } });
       ss.forEach((d) => CAT.books.set(d.id, d.exists ? slimB({ ...d.data(), ...(SPM.has(d.id) ? { _sp: SPM.get(d.id) } : {}) }) : null)); } }
@@ -223,7 +229,9 @@ function makeShop({ db, C, FV, log, bucket }) {
       log && log(`🛍 우리숍 목록 ${full ? '전체' : '바뀐 것'} ${docs.length}줄 읽음 → 판매 ${CAT.items.size}권`); } catch (e) { CAT.err = e.message; log && log('🛍 우리숍 목록 실패', e.message); } finally { CAT.busy = null; } })(); return CAT.busy; }
   const ready = async () => { const p = build(); if (!CAT.full) await p; }; /* 처음만 기다림 · 그 뒤엔 뒤에서 새로 고침 */
   const ipKey = (req) => crypto.createHash('sha256').update('bq-ip|' + String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim()).digest('hex').slice(0, 16);
-  const limited = (k, n, ms) => { const now = Date.now(); const a = (RL.get(k) || []).filter((t) => now - t < ms); if (a.length >= n) { RL.set(k, a); return true; } a.push(now); RL.set(k, a); if (RL.size > 5000) RL.clear(); return false; };
+  /* (shelf6) 막혔으면 다시 해도 되는 때까지 남은 ms(> 0) · 안 막혔으면 0 — 429 응답의 Retry-After에 씀 */
+  const limitWait = (k, n, ms) => { const now = Date.now(); const a = (RL.get(k) || []).filter((t) => now - t < ms); if (a.length >= n) { RL.set(k, a); return Math.max(1000, ms - (now - a[0])); } a.push(now); RL.set(k, a); if (RL.size > 5000) RL.clear(); return 0; };
+  const limited = (k, n, ms) => limitWait(k, n, ms) > 0;
 
   async function order(req, body) {
     const c = await cfg(); if (!c.open) return [403, { ok: false, err: '아직 주문을 받지 않습니다 — 곧 문을 엽니다' }];
@@ -277,23 +285,30 @@ function makeShop({ db, C, FV, log, bucket }) {
     if (/^\/b\/[^/]+$/.test(path) || /^\/sitemap(-\d+)?\.xml$/.test(path)) path = '/shop' + path; /* (11/11 shop2) Hosting이 넘긴 검색 주소 */
     if (!/^\/shop\//.test(path)) return false;
     const origin = req.headers.origin || ''; const extra = String(process.env.SHOP_ORIGINS || '').split(',').map((x) => x.trim()).filter(Boolean);
-    if ([...SHOP_ORIGINS, ...extra].includes(origin)) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin'); res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); }
+    if ([...SHOP_ORIGINS, ...extra].includes(origin)) { res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin'); res.setHeader('Access-Control-Allow-Headers', 'Content-Type'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS'); res.setHeader('Access-Control-Expose-Headers', 'Retry-After, ETag'); res.setHeader('Access-Control-Max-Age', '600'); } /* (shelf6) 손님 화면이 Retry-After를 읽어 기다렸다 다시 · 미리 묻기(OPTIONS)는 10분 기억 */
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return true; }
-    const send = (code, obj, cache) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': cache || 'no-store', 'X-Robots-Tag': 'noindex' }); res.end(JSON.stringify(obj)); return true; };
+    const send = (code, obj, cache, extraH) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': cache || 'no-store', 'X-Robots-Tag': 'noindex', ...(extraH || {}) }); res.end(JSON.stringify(obj)); return true; };
+    /* (shelf6) 막힘 응답 — 출처(CORS) 머리는 위에서 이미 붙음 · Retry-After(초)로 언제 다시 할지 알려 줌 */
+    const busy = (ms, err) => send(429, { ok: false, err: err || '잠시 뒤 다시 해 주세요', retry: Math.ceil(ms / 1000) }, 'no-store', { 'Retry-After': String(Math.min(600, Math.ceil(ms / 1000))) });
     const q = Object.fromEntries(new URL(req.url, 'http://x').searchParams);
     try {
-      if (limited('r' + ipKey(req), 240, 60e3)) return send(429, { ok: false, err: '잠시 뒤 다시 해 주세요' });
+      /* (shelf6) 제한 갈래 — 서가 자료(/shop/shelf)·글꼴(/shop/font)은 따로 넉넉히(같은 주소를 쓰는 회사·학교 손님 여럿이 한꺼번에 서가를 열어도) · 나머지는 IP당 1분 240번 그대로 */
+      { const ik = ipKey(req); const w = path === '/shop/shelf' ? limitWait('sh' + ik, SHELF_RL[0], SHELF_RL[1]) : path === '/shop/font' ? 0 : limitWait('r' + ik, 240, 60e3); if (w) return busy(w); }
       if (path.startsWith('/shop/b/') && req.method === 'GET') return await seoPage(res, decodeURIComponent(path.slice(8)).slice(0, 80));
       { const m = /^\/shop\/sitemap(?:-(\d+))?\.xml$/.exec(path); if (m) { await ready(); const X = await soldX(); const H = await held(); const xml = sitemapXml([...CAT.items.values()].filter((x) => !X.has(x.id) && !H.has(x.id)), { n: m[1] ? +m[1] : 0 }); if (!xml) return send(404, { ok: false, err: '없는 쪽' });
         res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=1800, s-maxage=3600' }); res.end(xml); return true; } }
-      if (path === '/shop/cfg') { await ready(); return send(200, { ok: true, ...pubCfg(await cfg(), CAT.meta, await promo()), err: CAT.err && !CAT.items.size ? '목록 준비 중' : null }, 'public, max-age=60'); }
-      if (path === '/shop/list') { await ready(); const H = await held(); const r = listItems([...(await vw()).values()], q, H, await soldX()); return send(200, { ok: true, ...r, at: CAT.meta && CAT.meta.at }, 'public, max-age=30'); }
+      if (path === '/shop/cfg') { await ready(); return send(200, { ok: true, ...pubCfg(await cfg(), CAT.meta, await promo()), err: CAT.err && !CAT.items.size ? '목록 준비 중' : null }, 'public, max-age=60, s-maxage=60'); }
+      if (path === '/shop/list') { await ready(); const H = await held(); const r = listItems([...(await vw()).values()], q, H, await soldX()); return send(200, { ok: true, ...r, at: CAT.meta && CAT.meta.at }, 'public, max-age=30, s-maxage=30'); }
       if (path === '/shop/shelf') { await ready(); const H = await held(); const X = await soldX(); const V = await vw(); await spinesLoad(); if (SPN.kv !== SPN.v && !(Date.now() - (SPN.kvAt || 0) < 60e3)) { SPN.kv = SPN.v; SPN.kvAt = Date.now(); } /* 새 모양은 1분에 한 번만 묶음에 다시 넣음(gzip 다시 만들기 줄임) · (shopc1) 값 = 우리숍 판매가(규칙 얹음) */ covKick(); spxKick().catch(() => {}); const key = [CAT.meta && CAT.meta.at, HELD.at, CAT.items.size, SPN.kv, VIEW.key, COV ? Math.floor((COV.state().runAt || 0) / 600e3) : 0].join('|'); /* 표지 셈은 5분마다 300권씩(뒤에서 · 묶음은 10분에 한 번만 다시 만듦) */
         if (SHELF.key !== key) { SHELF.parts = shelfParts(shelfRows([...V.values()], H, X, CAT.sp, SPN.m, COV && COV.cvOf)); SHELF.key = key; SHELF.gz = new Map(); }
-        const k = Math.max(0, Math.min(SHELF.parts.length - 1, parseInt(q.k, 10) || 0)); const P = SHELF.parts[k] || { rows: [] };
-        const body = JSON.stringify({ ok: true, v: 1, n: SHELF.parts.reduce((a, x) => a + x.rows.length, 0), k, kn: SHELF.parts.length, at: CAT.meta && CAT.meta.at, pre: SHELF_PRE, cols: SHELF_COLS, rows: P.rows });
-        const gz = /\bgzip\b/.test(String(req.headers['accept-encoding'] || '')); const hd = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60', 'X-Robots-Tag': 'noindex', Vary: 'Accept-Encoding, Origin' };
-        if (gz) { let z = SHELF.gz.get(k); if (!z) { z = zlib.gzipSync(body, { level: 6 }); SHELF.gz.set(k, z); } res.writeHead(200, { ...hd, 'Content-Encoding': 'gzip' }); res.end(z); } else { res.writeHead(200, hd); res.end(body); } return true; }
+        const [k, k2] = shelfK(q.k, SHELF.parts.length); const gk = k + '-' + k2; /* (shelf6) 나머지 묶음을 한 번에(k=1-) — 손님 한 명 요청 5번 → 2번 */
+        const etag = '"' + crypto.createHash('sha1').update(SHELF.key + '|' + gk).digest('hex').slice(0, 20) + '"'; /* (shelf6) 같은 자료면 브라우저·CDN이 304로(본문 안 보냄) */
+        const hd = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=120', 'X-Robots-Tag': 'noindex', Vary: origin ? 'Accept-Encoding, Origin' : 'Accept-Encoding', ETag: etag }; /* s-maxage — booksqueen.com 같은 주소(Hosting 넘김)로 부르면 Firebase CDN이 1분 동안 대신 답함(클라우드에 안 옴) */
+        if (String(req.headers['if-none-match'] || '').split(/\s*,\s*/).some((t) => t.replace(/^W\//, '') === etag)) { res.writeHead(304, hd); res.end(); return true; }
+        const rows = k === k2 ? (SHELF.parts[k] || { rows: [] }).rows : SHELF.parts.slice(k, k2 + 1).reduce((a, x) => a.concat(x.rows), []);
+        const body = JSON.stringify({ ok: true, v: 1, n: SHELF.parts.reduce((a, x) => a + x.rows.length, 0), k, k2, kn: SHELF.parts.length, at: CAT.meta && CAT.meta.at, pre: SHELF_PRE, cols: SHELF_COLS, rows });
+        const gz = /\bgzip\b/.test(String(req.headers['accept-encoding'] || ''));
+        if (gz) { let z = SHELF.gz.get(gk); if (!z) { z = zlib.gzipSync(body, { level: 6 }); SHELF.gz.set(gk, z); } res.writeHead(200, { ...hd, 'Content-Encoding': 'gzip' }); res.end(z); } else { res.writeHead(200, hd); res.end(body); } return true; }
       if (path === '/shop/check') { /* (shelf2 · 원칙 56) 장바구니 살펴보기 — 담은 책이 아직 판매중인지·값이 바뀌었는지(최대 50권 · 손님 정보 없음) */ await ready(); const H = await held(); const X = await soldX(); const V = await vw(); const ids = [...new Set(String(q.ids || '').split(',').map((x) => s(x, 80)).filter(Boolean))].slice(0, 50); const st = {}, p = {};
         for (const id of ids) { const it = V.get(id); st[id] = !it || X.has(id) ? 'x' : H.has(id) ? 'o' : 's'; if (it) p[id] = it.p; } return send(200, { ok: true, st, p }); }
       if (path === '/shop/item') { await ready(); const H = await held(); const X = await soldX(); const V = await vw(); const it0 = V.get(s(q.id, 80)); const it = it0 && !X.has(it0.id) ? it0 : null; if (!it) return send(404, { ok: false, err: '판매가 끝났거나 없는 책입니다' });
@@ -304,10 +319,10 @@ function makeShop({ db, C, FV, log, bucket }) {
         const ids = [...new Set((Array.isArray(b.items) ? b.items : []).map((x) => s(x, 80)).filter(Boolean))].slice(0, pc.maxItems); const bad = []; const L = [];
         for (const id of ids) { const x = V.get(id); if (!x || X.has(id)) bad.push({ id, why: '방금 팔렸거나 판매를 멈춘 책' }); else if (H.has(id)) bad.push({ id, t: x.t, why: '다른 분이 먼저 주문한 책' }); else L.push({ id, p: x.p, p0: x.p0 || null, t: x.t }); }
         const r = BQP.quote(L, P, pc, s(b.cp, 30), Date.now()); return send(200, { ok: true, ...r, items: L.map((x) => ({ id: x.id, p: x.p, p0: x.p0 })), bad }); }
-      if (path === '/shop/font') { /* (shelf5) 📚 쓰인 글자만 자른 글꼴(woff2) — 공개 글꼴이라 어느 곳에서 불러도 됨(리드나우2 꾸밈 블록 포함) · 같은 글자 묶음은 1년 캐시 */ if (limited('ft' + ipKey(req), 400, 600e3)) return send(429, { ok: false, err: '잠시 뒤 다시' });
+      if (path === '/shop/font') { /* (shelf5) 📚 쓰인 글자만 자른 글꼴(woff2) — 공개 글꼴이라 어느 곳에서 불러도 됨(리드나우2 꾸밈 블록 포함) · 같은 글자 묶음은 1년 캐시 */ { const w = limitWait('ft' + ipKey(req), 1200, 600e3); if (w) return busy(w, '잠시 뒤 다시'); }
         try { const b = await FONT.get(s(q.f, 40), String(q.t || '').slice(0, 2000)); res.writeHead(200, { 'Content-Type': 'font/woff2', 'Cache-Control': 'public, max-age=31536000, immutable', 'Access-Control-Allow-Origin': '*', 'X-Robots-Tag': 'noindex', 'Cross-Origin-Resource-Policy': 'cross-origin' }); res.end(b); return true; }
         catch (e) { return send(e.code === 404 ? 404 : e.code === 400 ? 400 : 502, { ok: false, err: e.code ? e.message : '글꼴을 잠시 못 만듦' }); } }
-      if (path === '/shop/spines' && req.method === 'POST') { if (limited('sp' + ipKey(req), 40, 600e3)) return send(429, { ok: false, err: '잠시 뒤 다시' }); const body = await readBody(req); await ready(); await spinesLoad(); const c = await cfg(); const gen = Math.max(0, Math.round(+((c.shelf || {}).lookGen) || 0));
+      if (path === '/shop/spines' && req.method === 'POST') { { const w = limitWait('sp' + ipKey(req), 40, 600e3); if (w) return busy(w, '잠시 뒤 다시'); } const body = await readBody(req); await ready(); await spinesLoad(); const c = await cfg(); const gen = Math.max(0, Math.round(+((c.shelf || {}).lookGen) || 0));
         const take = spineTake(body.L, SPN.m, (id) => CAT.items.has(id), gen); for (const [id, code] of take) { SPN.m.set(id, code); SPN.dirty.set(id, code); } if (take.length) { SPN.v++; if (!SPN.t) SPN.t = setTimeout(() => spinesFlush().catch(() => {}), 15e3); } return send(200, { ok: true, n: take.length, gen }); }
       if (path === '/shop/order' && req.method === 'POST') { const body = await readBody(req); const [code, obj] = await order(req, body); return send(code, obj); }
       if (path === '/shop/order') { const r = await lookup(q.no, q.t); if (!r) return send(404, { ok: false, err: '주문을 찾을 수 없습니다(주문 번호·조회 주소 확인)' }); return send(200, view(r.o)); }
@@ -348,4 +363,4 @@ async function selfCheck(o) { o = o || {}; const f = o.fetch || fetch; const dns
   const pu = it && ((it.ph && it.ph[0]) || null); if (pu) { const p = await chkGet(pu, f); out.ph = p.err ? { ok: false, why: p.err.t } : { ok: p.st === 200 && /^image\//.test(p.ct), st: p.st, why: p.st === 200 ? '' : p.st === 403 || p.st === 401 ? 'Storage 규칙이 사진 공개 읽기를 막음(손님 화면에 사진이 안 보임)' : 'HTTP ' + p.st }; } else out.ph = { ok: null, why: '실물 사진이 있는 공개 책이 아직 없음(표지만)' };
   return out; }
 
-module.exports = { relItems, suggest, selfCheck, chkWhy, makeShop, shelfPub, shelfRows, shelfParts, spineTake, spineBucket, SPINE_RE, szOf, SHELF_COLS, SHELF_PRE, SHELF_PART, pubItem, listItems, kstDay, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };
+module.exports = { shelfK, SHELF_RL, relItems, suggest, selfCheck, chkWhy, makeShop, shelfPub, shelfRows, shelfParts, spineTake, spineBucket, SPINE_RE, szOf, SHELF_COLS, SHELF_PRE, SHELF_PART, pubItem, listItems, kstDay, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };
