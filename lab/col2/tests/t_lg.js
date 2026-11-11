@@ -35,6 +35,7 @@ function bridge(H, DB) { const got = []; let stop = false, pulls = 0;
     await H.api('POST', '/busy', { sec: 120, why: '🛡 로거 테더링 문 닫힘 — 몫 다 씀' }); const s2 = (await H.api('GET', '/status')).j; await H.api('POST', '/busy', { sec: 0, why: '테더링 문 열림' }); const s3 = (await H.api('GET', '/status')).j;
     ok(s2.busy && /테더링/.test(s2.busy.why) && !s3.busy, '로거: 테더링 문이 닫혔다는 알림만 쉼 · 열리면 풂', JSON.stringify([s2.busy, s3.busy]));
     ok(s1.auto && s1.auto.dayCap === COL2.LOGGER.dayCap, `로거 그림자 하루 몫은 따로 작게(${COL2.LOGGER.dayCap}장 · 테더링)`, s1.auto && s1.auto.dayCap);
+    { const r = await H.api('POST', '/set', { k: 'pace.dayCap', v: 1600 }); const sx = (await H.api('GET', '/status')).j; ok(r.j && r.j.ok && sx.auto && sx.auto.dayCap === COL2.LOGGER.dayCap, `모든 PC 공통 '알라딘 화면 하루'(1600)가 와도 로거 몫(${COL2.LOGGER.dayCap})이 먼저(판 내기 합침)`, sx.auto && sx.auto.dayCap); await H.api('POST', '/set', { k: 'pace.dayCap', v: null }); }
     console.log('② 운영 로거가 읽은 책 → 그림자');
     const bad = await H.api('POST', '/lg/books', { books: [{ bookId: 'b/1', itemId: '1' }, { bookId: 'b2', itemId: 'x' }] }); ok(bad.j && bad.j.n === 0, '이상한 번호는 버림', JSON.stringify(bad.j));
     const PB = await L.prodBooks(F.productHtml, [ID], COL2.BOOK_FIXED); const pg = PB[0];
