@@ -6,6 +6,8 @@
  *     · 주문 변경(more 이어 받기) → 상세 → 줄(crm_naver_orders) · 상품 목록(nv_listings) · 받음 확인(ack)이면 줄에서 빠짐 · 401이면 토큰 다시 받고 한 번 더 · 429면 쉼
  *     · 쓰기 기본 끔 → 켜기는 연결 시험이 맞은 뒤 · 발송 1건 · 같은 할 일 두 번 안 함 · 같은 송장 다른 주문 거절 · IP 막힘이면 '로거 공인 IP' 안내
  *     · 상태·기록·설정 파일 어디에도 시크릿·아이디·토큰·전자서명 없음
+ *  ⑤ 🛑 와이파이 문(nvfix1) ⑥ 🔒 와이파이 주소에 묶기(naver4) — 가짜 인터페이스 둘(와이파이 127.0.0.1 · 테더링 127.0.0.2) · 모든 요청이 묶인 주소로만 · 와이파이 주소 없으면 0건
+ *     · 보내기 전 소켓 주소 다르면 끊음(0건) · 응답 소켓 주소 다르면 결과 버림·멈춤(쓰기는 다시 안 보냄) · PowerShell 원문 상태에 남김
  * 실행: node tests/t_naver.js */
 const L = require('./lib.js'); const { ok, wait } = L; const fs = require('fs'), path = require('path'), http = require('http'), os = require('os');
 const B = require('../helper/col2-bcrypt.js'); const NVM = require('../helper/col2-nv.js');
@@ -16,7 +18,7 @@ function fakeNv() { const S = { log: [], tok: null, ip: false, r429: 0, r401: 0,
   const PO = (i) => ({ order: { orderId: 'O' + i, orderDate: '2026-11-10T10:00:00.000+09:00', paymentDate: '2026-11-10T10:01:00.000+09:00', ordererName: '주문자이름' + i, ordererTel: '010-0000-0000', ordererId: 'buyerid' + i },
     productOrder: { productOrderId: 'PO' + i, productOrderStatus: 'PAYED', placeOrderStatus: 'NOT_YET', productName: '시험 책 ' + i, quantity: 1, unitPrice: 9000, totalPaymentAmount: 9000, paymentCommission: 330, channelCommission: 180, expectedSettlementAmount: 8490, deliveryFeeAmount: 3000, sellerProductCode: 'SKU' + i, productId: '77' + i, originalProductId: '66' + i, shippingDueDate: '2026-11-12T23:59:59.000+09:00', shippingAddress: { name: '받는분' + i, tel1: '010-0000-0000', zipCode: '00000', baseAddress: '시험시 시험로 1', detailedAddress: '101호' }, shippingMemo: '문 앞' } });
   const srv = http.createServer((q, s) => { const u = new URL(q.url, 'http://x'); let b = ''; q.on('data', (c) => (b += c)); q.on('end', () => {
-      const J = (code, o) => { s.writeHead(code, { 'Content-Type': 'application/json;charset=UTF-8' }); s.end(JSON.stringify(o)); }; S.log.push({ m: q.method, p: u.pathname, q: u.search, auth: q.headers.authorization || null, b });
+      const J = (code, o) => { s.writeHead(code, { 'Content-Type': 'application/json;charset=UTF-8' }); s.end(JSON.stringify(o)); }; S.log.push({ m: q.method, p: u.pathname, q: u.search, auth: q.headers.authorization || null, b, ra: String(q.socket.remoteAddress || '').replace(/^::ffff:/, '') }); /* (naver4) ra = 요청이 나온 주소(묶인 주소인지) */
       if (u.pathname === '/img') { S.imgGet = (S.imgGet || 0) + 1; s.writeHead(200, { 'Content-Type': 'image/jpeg' }); return s.end(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 0xff, 0xd9])); } /* (naver2) 사진 받기 대역(RN_COL2_NVIMG) */
       if (u.pathname === '/myip') { S.ipHits = (S.ipHits || 0) + 1; if (S.myipFail) { s.writeHead(500); return s.end('x'); } s.writeHead(200, { 'Content-Type': 'text/plain' }); return s.end(String(S.myip || '') + '\n'); } /* (nvfix1) 공인 IP 확인 대역(RN_COL2_NVIP) — 네이버 요청 수에 안 셈 */
       if (S.onReq) { try { S.onReq(u.pathname); } catch (e) {} }
@@ -59,9 +61,10 @@ const allText = (dir) => { let t = ''; const walk = (d) => { for (const f of fs.
     const op = g.ok && g.body.originProduct; ok(g.ok && op.saleType === 'OLD' && op.statusType === 'SALE' && op.detailAttribute.productInfoProvidedNotice.productInfoProvidedNoticeType === 'BOOKS' && op.detailAttribute.isbnInfo.isbn13.length === 13 && op.detailAttribute.bookInfo.publishDay === '2020-03-15' && op.detailAttribute.bookInfo.authors.length === 2 && op.images.optionalImages.length === 1 && op.detailAttribute.sellerCodeInfo.sellerManagementCode === 'SKU1' && op.deliveryInfo.deliveryFee.deliveryFeeType === 'PAID' && /\[중고-상\]$/.test(op.name), '등록 몸 — 중고(OLD)·BOOKS 고시·ISBN·출간일·저자 둘·사진·관리코드=SKU·유료 배송·이름 끝 [중고-상]', op && op.name);
     ok(/API 호출 IP/.test(NVM.nvErr(403, { code: 'GW.IP_NOT_ALLOWED' }).msg) && NVM.nvErr(401, { code: 'GW.AUTHN' }).auth && NVM.nvErr(429, {}).rate, '게이트웨이 오류 → 한국어 까닭·할 일');
     ok(NVM.kstIso(Date.UTC(2026, 10, 11, 0, 0, 0, 5)) === '2026-11-11T09:00:00.005+09:00', '날짜 꼴 yyyy-MM-ddTHH:mm:ss.SSS+09:00(원문 restful-api)'); }
-  { const W = { m: 35, name: 'Wi-Fi', desc: 'Intel(R) Wi-Fi 6 AX201', media: 9, pmt: 'Native 802.11', itype: 71 }; const K = NVM.netKind; /* (nvfix1) 🛑 나가는 길 가르기 */
+  { const W = { m: 35, name: 'Wi-Fi', desc: 'Intel(R) Wi-Fi 6 AX201', media: 9, pmt: 'Native 802.11', itype: 71, ip: '192.168.0.20', ix: 12 }; const K = NVM.netKind; /* (nvfix1) 🛑 나가는 길 가르기 */
     ok(K(W) === 'wifi' && K({ ...W, media: 0, pmt: '' }) === 'unknown' && K({ ...W, itype: 6 }) !== 'wifi' && K({ desc: 'Remote NDIS based Internet Sharing Device', itype: 6 }) === 'tether' && K({ desc: 'Apple Mobile Device Ethernet', itype: 6, media: 14 }) === 'tether' && K({ desc: 'Bluetooth Device (Personal Area Network)', media: 10 }) === 'tether' && K({ ...W, desc: 'Microsoft Wi-Fi Direct Virtual Adapter' }) === 'tether' && K({ desc: 'Realtek PCIe GbE', itype: 6, media: 14 }) === 'wired' && K(null) === 'unknown', '길 가르기 — 와이파이(802.11·무선 71)만 와이파이 · RNDIS·애플·블루투스·Wi-Fi Direct = 테더링 · 이더넷 = 유선 · 모르면 모름');
     const P = NVM.netPick; ok(P([W]).ok && !P(null).ok && !P([]).ok && !P([{ ...W, m: 40 }, { desc: 'Remote NDIS', itype: 6, m: 10 }]).ok && P([W, { desc: 'Remote NDIS', itype: 6, m: 90 }]).ok && !P([W, { desc: 'Remote NDIS', itype: 6, m: 35 }]).ok && !P([{ m: 'x' }]).ok, '가장 앞 길이 와이파이일 때만 · 같은 우선순위에 다른 길이 있으면 막음 · 목록 없음/빔 = 막음');
+    { const a = P([W]); ok(a.ok && a.lip === '192.168.0.20' && a.ix === 12 && !P([{ ...W, ip: '' }]).ok && /주소\(IPv4\)를 모름/.test(P([{ ...W, ip: '' }]).why) && !P([{ ...W, ip: '169.254.3.4' }]).ok && !P([{ ...W, ip: 'fe80::1' }]).ok, '(naver4) 와이파이여도 그 IPv4 주소를 모르면(빈 칸·169.254·IPv6만) 막음 · 아는 주소 = 묶을 주소', a); }
     ok(NVM.ipv4(' 203.0.113.7\n') === '203.0.113.7' && !NVM.ipv4('256.1.1.1') && !NVM.ipv4('<html>') && !NVM.ipv4(''), '공인 IP 꼴 확인'); }
 
   const F = await fakeNv(); const D = fs.mkdtempSync(path.join(os.tmpdir(), 'col2nv_')); fs.mkdirSync(D + '/bin', { recursive: true });
@@ -69,10 +72,10 @@ const allText = (dir) => { let t = ''; const walk = (d) => { for (const f of fs.
 const A=process.argv;const act=A[A.indexOf('-Act')+1];let t='';process.stdin.on('data',(c)=>t+=c);process.stdin.on('end',()=>{const k=Buffer.from('rn3-test-key');const x=(b)=>Buffer.from(b.map((v,i)=>v^k[i%k.length]));
 if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toString('base64'));else process.stdout.write('ok:'+x([...Buffer.from(t.trim(),'base64')]).toString('utf8'))});`); fs.chmodSync(D + '/bin/dpapi', 0o755);
   /* (nvfix1) 🛑 와이파이 문 대역 — 경로 파일(RN_COL2_NET · 바꾸면 다음 요청부터)과 공인 IP 확인(RN_COL2_NVIP) · 등록 고정 IP = nvcfg.ip */
-  const NETF = D + '/net.json'; const WIFI = [{ m: 35, name: 'Wi-Fi', desc: 'Intel(R) Wi-Fi 6 AX201 160MHz', media: 9, pmt: 'Native 802.11', itype: 71, pnp: 'PCI\\VEN_8086', gw: '192.168.0.1', ip: '192.168.0.20' }];
-  const TETH = [{ m: 25, name: '이더넷 3', desc: 'Remote NDIS based Internet Sharing Device', media: 0, pmt: 'Unspecified', itype: 6, pnp: 'USB\\VID_04E8' }, ...WIFI]; const net = (v) => fs.writeFileSync(NETF, JSON.stringify(v)); net(WIFI); F.S.myip = '203.0.113.7';
+  const NETF = D + '/net.json'; const WIFI = [{ m: 35, name: 'Wi-Fi', desc: 'Intel(R) Wi-Fi 6 AX201 160MHz', media: 9, pmt: 'Native 802.11', itype: 71, pnp: 'PCI\\VEN_8086&DEV_A0F0\\3&11583659&0&A3', gw: '127.0.0.254', ip: '127.0.0.1', ix: 12 }]; /* (naver4) 가짜 와이파이 주소 127.0.0.1 */
+  const TETH = [{ m: 25, name: '이더넷 3', desc: 'Remote NDIS based Internet Sharing Device', media: 0, pmt: 'Unspecified', itype: 6, pnp: 'USB\\VID_04E8', ip: '127.0.0.2', ix: 25 }, ...WIFI]; /* 가짜 테더링 주소 127.0.0.2 */ const net = (v) => fs.writeFileSync(NETF, JSON.stringify(v)); net(WIFI); F.S.myip = '203.0.113.7';
   const nvN = () => F.S.log.filter((x) => x.p !== '/img' && x.p !== '/myip').length; /* 네이버(가짜) 요청 수 */
-  const env = { RN_COL2_NV: F.base, RN_COL2_DPAPI: D + '/bin/dpapi', RN_COL2_NVIMG: F.base + '/img', RN_COL2_NET: NETF, RN_COL2_NVIP: F.base + '/myip' }; const cfg0 = { on: false, y24: false, al: false, auto: false, side: false, headless: true, pcSrc: 'pc', nvcfg: { ip: '203.0.113.7', minGapMs: 0, ordMin: 0.02, prdH: 0.0005, cool429Sec: 1 } };
+  const env = { RN_COL2_NV: F.base, RN_COL2_DPAPI: D + '/bin/dpapi', RN_COL2_NVIMG: F.base + '/img', RN_COL2_NET: NETF, RN_COL2_NVIP: F.base + '/myip', RN_COL2_NVBINDX: D + '/bindx.json' }; const cfg0 = { on: false, y24: false, al: false, auto: false, side: false, headless: true, pcSrc: 'pc', nvcfg: { ip: '203.0.113.7', minGapMs: 0, ordMin: 0.02, prdH: 0.0005, cool429Sec: 1 } };
 
   console.log('③ 로거가 아닌 PC');
   { const H = await L.startHelper({ dir: D + '/office', port: L.PORT + 7, cfg: { ...cfg0, pc: 'HOME' }, env });
@@ -81,7 +84,7 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
     await wait(600); ok(!fs.existsSync(D + '/office/home/cred/nv-key.dat') && !F.S.log.length, '열쇠 파일 없음 · 네이버를 부르지 않음'); await H.stop(); }
 
   console.log('④ 로거 PC');
-  const H = await L.startHelper({ dir: D + '/lg', port: L.PORT + 8, cfg: { ...cfg0, pc: 'LOGGER' }, env }); const HOMEd = D + '/lg/home'; process.on('exit', () => { try { H.pr.kill('SIGKILL'); } catch (e) {} });
+  const H = await L.startHelper({ dir: D + '/lg', port: L.PORT + 8, cfg: { ...cfg0, pc: 'LOGGER' }, env }); const HOMEd = D + '/lg/home'; global.__H = H; /* 시험 오류 때 도우미 출력 끝을 보임 */ process.on('exit', () => { try { H.pr.kill('SIGKILL'); } catch (e) {} });
   const st0 = await until(async () => { const s = await H.api('GET', '/nv/st'); return s.j && s.j.nv && s.j.nv.pub ? s.j.nv : null; }, 80); ok(st0 && st0.on && st0.pub.length > 300 && !st0.cred.has, '로거 — 공개 열쇠(spki)만 보임 · 아직 저장 값 없음');
   const kf = JSON.parse(fs.readFileSync(HOMEd + '/cred/nv-key.dat', 'utf8')); ok(kf.priv && !/PRIVATE KEY/.test(fs.readFileSync(HOMEd + '/cred/nv-key.dat', 'utf8')), '비밀 열쇠는 DPAPI로 잠근 채 파일에(평문 PEM 없음)');
   { const r = await H.api('POST', '/nv/cmd', { k: 'cred', env: await seal(st0.pub, { id: ID, sec: '$2a$04$zzzzzzzzzzzzzzzzzzzzzz', ts: Date.now() }), by: '시험' }); ok(r.j && r.j.saved === false && r.j.test && r.j.test.ok === false && !fs.existsSync(HOMEd + '/cred/naver.dat'), '틀린 시크릿 — 연결 시험 실패 · 저장 안 함', r.j && r.j.err); }
@@ -159,8 +162,44 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
     await H.api('POST', '/nv/cmd', { k: 'write', on: true, by: '시험' }); net(TETH); const g0 = F.S.imgGet || 0; const n2 = nvN();
     await H.api('POST', '/nv/cmd', { k: 'job', job: { id: 'nvreg:L9:1', k: 'reg', book: { title: '등록 시험 책', isbn13: '9788900000011', author: '저자1', publisher: '출판사', pubDate: '2020-03-15', grade: '상', price: 8000, qty: 1, sku: 'SKU9' }, g: { leafCategoryId: '50005000', deliveryCompany: 'HYUNDAI', baseFee: 0, returnFee: 3000, exchangeFee: 6000, asTel: '010-0000-0000', asGuide: '문의', shippingAddressId: 101, returnAddressId: 102 }, imgs: ['https://firebasestorage.googleapis.com/v0/b/readnow-3a385.firebasestorage.app/o/p%2F2.jpg?alt=media'] } });
     await wait(3000); ok((F.S.imgGet || 0) === g0 && nvN() === n2, '테더링이면 사진 저장소에서도 안 받음 · 네이버 0건', { img: (F.S.imgGet || 0) - g0, dn: nvN() - n2 }); net(WIFI); await wait(2500); await H.api('POST', '/nv/cmd', { k: 'write', on: false, by: '시험' }); }
+  /* (naver4) 🔒 와이파이 주소에 묶기 — 확인과 요청 사이 틈 막기 */
+  console.log('⑥ 🔒 와이파이 주소에 묶기');
+  { const BX = D + '/bindx.json'; const bx = (v) => (v ? fs.writeFileSync(BX, JSON.stringify(v)) : fs.rmSync(BX, { force: true }));
+    const ras = () => [...new Set(F.S.log.map((x) => x.ra))]; ok(F.S.log.length > 20 && ras().length === 1 && ras()[0] === '127.0.0.1', '지금까지 나간 요청 모두(네이버·공인 IP 확인·사진) 와이파이 주소 127.0.0.1에서만 나옴', ras());
+    /* 가짜 인터페이스 둘 — 와이파이(앞) + 테더링(뒤 · 다른 주소) */
+    net([...WIFI, { ...TETH[0], m: 90 }]); const k0 = F.S.log.length; const r = await H.api('POST', '/nv/cmd', { k: 'test' }); const nl = F.S.log.slice(k0);
+    ok(r.j && r.j.test && r.j.test.ok && nl.length >= 2 && nl.every((x) => x.ra === '127.0.0.1') && !nl.some((x) => x.ra === '127.0.0.2'), '와이파이·테더링 둘 다 있어도 묶인 와이파이 주소로만 나감(테더링 주소 0건)', nl.map((x) => x.p + '@' + x.ra));
+    /* 와이파이 주소를 모름 → 0건 */
+    net([{ ...WIFI[0], ip: '' }, { ...TETH[0], m: 90 }]); { const n0 = F.S.log.length; const r2 = await H.api('POST', '/nv/cmd', { k: 'test' }); await wait(1500); const s = (await H.api('GET', '/nv/st')).j.nv;
+      ok(r2.j && r2.j.test && !r2.j.test.ok && F.S.log.length === n0 && s.net && !s.net.ok && /주소\(IPv4\)를 모름/.test(s.net.why), '와이파이 주소(IPv4)를 모르면 보내지 않음 — 네이버·공인 IP 확인 모두 0건', { dn: F.S.log.length - n0, why: s.net && s.net.why }); }
+    net(WIFI);
+    /* 보내기 전 소켓 주소가 다름(묶기가 안 들었다고 흉내 — 실제로 127.0.0.2에 묶음) → 연결만 되고 끊음 · 0건 · 멈춤 */
+    bx({ bind: '127.0.0.2' }); { const n0 = F.S.log.length; const tS = Date.now(); const r3 = await H.api('POST', '/nv/cmd', { k: 'test' }); const s = (await H.api('GET', '/nv/st')).j.nv;
+      ok(r3.j && r3.j.test && !r3.j.test.ok && F.S.log.length === n0 && s.net && !s.net.ok && /소켓 주소/.test(s.net.why) && s.net.sockN >= 1, '보내기 전에 소켓 주소가 와이파이 주소와 다름 → 끊음 · 요청 0건 · 멈춤(상태에 까닭)', { dn: F.S.log.length - n0, why: s.net && s.net.why });
+      bx(null); const r4 = await H.api('POST', '/nv/cmd', { k: 'test' }); const late = Date.now() - tS > 5500; /* 기계가 멈춰 멈춤 시간(시험 6초)이 이미 지났으면 이 칸은 볼 수 없음 */ ok(late || (r4.j && r4.j.test && !r4.j.test.ok && F.S.log.length === n0), '멈춤 동안은 길이 돌아와도 바로 안 부름(0건)' + (late ? ' — (기계가 느려 멈춤 시간이 지나 건너뜀)' : ''), r4.j && r4.j.test && r4.j.test.msg); }
+    await wait(6300); { const r5 = await H.api('POST', '/nv/cmd', { k: 'test' }); ok(r5.j && r5.j.test && r5.j.test.ok, '멈춤 시간이 지나고 와이파이로 묶이면 다시 맞음', r5.j && r5.j.test && r5.j.test.msg); }
+    /* 응답 소켓 주소가 다름 — 네이버 요청은 나갔지만(127.0.0.2) 결과를 버림 */
+    bx({ bind: '127.0.0.2', skipConn: true, only: '/v1/oauth2/token' }); { const k1 = F.S.log.length; const t0 = (await H.api('GET', '/nv/st')).j.nv.test; const r6 = await H.api('POST', '/nv/cmd', { k: 'test' }); const nl2 = F.S.log.slice(k1); const s = (await H.api('GET', '/nv/st')).j.nv;
+      ok(nl2.some((x) => x.p === '/v1/oauth2/token' && x.ra === '127.0.0.2') && r6.j && r6.j.test && !r6.j.test.ok && /소켓 주소/.test(r6.j.test.msg) && !nl2.some((x) => x.p === '/v1/products/search') && s.net && !s.net.ok && /결과를 버림/.test(s.net.why), '응답이 온 소켓 주소가 와이파이 주소와 다름 → 받은 토큰을 쓰지 않음 · 다음 요청 안 함 · 멈춤 기록', { p: nl2.map((x) => x.p + '@' + x.ra), msg: r6.j && r6.j.test && r6.j.test.msg, why: s.net && s.net.why }); void t0; }
+    bx(null); await wait(6300); await H.api('POST', '/nv/cmd', { k: 'test' });
+    /* 쓰기(발주 확인)가 응답 소켓 주소 다름으로 버려지면 — 실패(확인 필요)로 남기고 저절로 다시 안 보냄(겹치기 방지) */
+    await H.api('POST', '/nv/cmd', { k: 'write', on: true, by: '시험' }); const c0 = F.S.confirmed.length; bx({ bind: '127.0.0.2', skipConn: true, only: '/confirm' });
+    await H.api('POST', '/nv/cmd', { k: 'job', job: { id: 'conf|PO1|sock', k: 'confirm', ids: ['PO1'] } });
+    const jr = await until(async () => { const f = await H.api('POST', '/nv/feed', {}); return (f.j.out || []).find((x) => x.c === 'col2_naver_jobs' && x.v.id === 'conf|PO1|sock') || null; }, 40); bx(null); await wait(6500);
+    ok(jr && jr.v.st === 'fail' && jr.v.unsure && /확인해 주세요/.test(jr.v.err) && F.S.confirmed.length === c0 + 1 && (await H.api('GET', '/nv/st')).j.nv.jobs === 0, '쓰기 응답이 다른 소켓 주소로 옴 → 결과 버림 · 「확인 필요」 실패로 남김 · 다시 안 보냄(네이버에 1번만)', { v: jr && jr.v, c: F.S.confirmed.length - c0 });
+    const rd2 = await H.api('POST', '/nv/cmd', { k: 'job', job: { id: 'conf|PO1|sock', k: 'confirm', ids: ['PO1'] } }); await wait(800); ok(rd2.j && rd2.j.dup && F.S.confirmed.length === c0 + 1, '같은 할 일을 다시 맡겨도 안 보냄');
+    await H.api('POST', '/nv/cmd', { k: 'write', on: false, by: '시험' });
+    /* PowerShell 원문 대신(시험은 파일) — 상태 칸 raw가 있고 해석 실패면 '모름' 막음 */
+    const s9 = await until(async () => { await H.api('POST', '/nv/cmd', { k: 'test' }); const v = (await H.api('GET', '/nv/st')).j.nv; return v.net && v.net.ok ? v : null; }, 20, 500); ok(s9 && s9.net.lip === '127.0.0.1', '마지막 판단에 묶은 와이파이 주소가 보임', JSON.stringify(s9 && s9.net)); /* 멈춤이 풀린 뒤 */
+    /* PowerShell 출력 그대로(실제와 같은 해석 길) — 첫 실행 원문이 상태에 남고 PnP 일련번호는 가림 · 해석 실패면 '모름'으로 막음 */
+    const PSOUT = 'ok:' + JSON.stringify({ ...WIFI[0], rm: 0, im: 35 }); fs.writeFileSync(NETF, JSON.stringify({ ps: PSOUT })); const r7 = await H.api('POST', '/nv/cmd', { k: 'test' }); const s7 = (await H.api('GET', '/nv/st')).j.nv; const rw = s7.net && s7.net.raw;
+    ok(r7.j && r7.j.test && r7.j.test.ok && rw && rw.ok && rw.n === 1 && rw.L[0].ix === 12 && rw.L[0].kind === 'wifi' && rw.L[0].im === 35 && /Intel/.test(rw.txt) && !/11583659/.test(rw.txt) && /PCI\\\\VEN_8086&DEV_A0F0/.test(rw.txt), 'PowerShell 원문(어댑터 이름·종류·인터페이스 번호·metric)이 상태에 남음 · PnP 뒤 일련번호는 가림', rw);
+    fs.writeFileSync(NETF, JSON.stringify({ ps: 'Get-NetRoute : 오류\nok:[{"name":"Wi-Fi"' })); { const n0 = nvN(); const r8 = await H.api('POST', '/nv/cmd', { k: 'test' }); const s8 = (await H.api('GET', '/nv/st')).j.nv;
+      ok(r8.j && r8.j.test && !r8.j.test.ok && nvN() === n0 && s8.net && !s8.net.ok && /읽지 못함/.test(s8.net.why) && s8.net.raw && s8.net.raw.ok === false && /해석 실패/.test(s8.net.raw.err), '해석 실패 → \'모름\'으로 막음(0건) · 원문과 까닭이 상태에', s8.net); }
+    ok(!NVM.netParse(null, 'ok:[{"name":"x"}]').v && NVM.netParse(null, 'ok:{"m":5}').v.length === 1 && !NVM.netParse({ code: 1 }, 'ok:[]').v && !NVM.netParse(null, '[]').v, '해석 — m 없음·오류·ok: 없음이면 모름 · 하나짜리는 목록으로');
+    net(WIFI); }
   /* 값이 어디에도 없음 */
   { await H.stop(); const t = allText(HOMEd) + H.out(); ok(!t.includes(SECRET) && !t.includes(ID) && !t.includes('TOK') , '자료 폴더(설정·상태·기록·journal)·도우미 출력 어디에도 시크릿·아이디·토큰 없음'); }
   F.srv.close(); try { fs.rmSync(D, { recursive: true, force: true }); } catch (e) {}
   L.done('t_naver');
-})().catch((e) => { console.log('✗ 시험 오류', e); process.exit(1); });
+})().catch((e) => { console.log('✗ 시험 오류', e, global.__H ? '\n도우미 출력 끝:\n' + global.__H.out().slice(-2500) : ''); process.exit(1); });
