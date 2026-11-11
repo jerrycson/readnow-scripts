@@ -1,2 +1,2 @@
-doc=app_settings/ext_run
-# 1489720550
+doc=prd_system/autoSched,app_settings/aladin_login,app_settings/col2_cfg
+# 2846267
