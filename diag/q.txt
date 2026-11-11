@@ -1,2 +1,2 @@
-samp=prd_books,prd_listings&doc=app_settings/cons_cat,app_settings/cons_cfg
-# 22431993
+doc=app_settings/ext_run
+# 2282716860
