@@ -1,2 +1,2 @@
-alpv=https://www.aladin.co.kr/shop/common/wnew.aspx?NewType=EditorRecommend%26BranchType=1|https://www.aladin.co.kr/shop/common/wchoice.aspx?BranchType=1|https://www.aladin.co.kr/shop/common/wbest.aspx?BestType=EditorChoice%26BranchType=1|https://www.aladin.co.kr/shop/common/weditorchoice.aspx?BranchType=1|https://www.aladin.co.kr/shop/wbrowse.aspx?CID=1|https://www.aladin.co.kr/shop/common/wnew.aspx?NewType=Editor%26BranchType=1|https://www.aladin.co.kr/shop/book/wEditorChoice.aspx|https://www.aladin.co.kr/shop/common/wnew.aspx?NewType=SpecialNew%26BranchType=1
-# 2671031805
+blist=ItemEditorChoice&cid=1
+# 1134913956
