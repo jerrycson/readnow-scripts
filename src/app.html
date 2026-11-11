@@ -29937,7 +29937,7 @@ async function c2HoSet(k, on, pc) { const J = C2HO_JOBS[k]; if (!J) throw new Er
   await db.runTransaction(async (tx) => { const d = await tx.get(ref); const v = d.exists ? (d.data() || {}) : {}; const log = Array.isArray(v.log) ? v.log.slice(0, 39) : []; log.unshift({ k, on: !!on, pc: pc || null, at, by });
     tx.set(ref, { jobs: { [k]: on ? { on: true, pc: String(pc || ''), at, by, beat: null } : { on: false, offAt: at, offBy: by } }, log }, { merge: true }); }); }
 async function c2HoLoad(force) { if (!force && S.c2hoC && Date.now() - S.c2hoC.at < 5 * 60e3) return; const d0 = new Date(Date.now() + 9 * 3600e3 - 2 * 864e5).toISOString().slice(0, 10); S.c2hoC = S.c2hoC || { at: 0, L: null };
-  try { const q = await db.collection('col2_jday').where('d', '>=', d0).get(); const L = []; q.forEach((d) => { const v = d.data() || {}; L.push({ d: v.d, pc: v.pc, tasks: v.tasks || {} }); }); S.c2hoC = { at: Date.now(), L }; } catch (e) { S.c2hoC = { at: Date.now(), L: null, err: errKo(e) }; } c2HoRedraw(); }
+  try { const q = await db.collection('col2_jday').where('d', '>=', d0).get(); const L = []; q.forEach((d) => { const v = d.data() || {}; L.push({ d: v.d, pc: v.pc, ver: v.ver || null, at: v.at || null, tasks: v.tasks || {} }); /* (11/12 col2rep6) 판·시각 — 맡을 PC 고르기 */ }); S.c2hoC = { at: Date.now(), L }; } catch (e) { S.c2hoC = { at: Date.now(), L: null, err: errKo(e) }; } c2HoRedraw(); }
 /* (11/11 col2rep5) 맡길 PC 차림표 — lab/col2/shadow/col2-handoff.js PC_PLAN과 같음 · 그 PC가 '넘길 수 있음'을 낸 적이 있으면 단추 기본 PC(HOME = 바깥 사이트 일 · JS-MAIN = 알라딘 화면 일) */
 const C2HO_PCPLAN = { kpipa: 'HOME', 'ext.fx': 'HOME', 'ext.nl': 'HOME', nbMarket: 'JS-MAIN', 'ext.*': 'HOME' };
 /* 후보 셈 — lab/col2/shadow/col2-handoff.js candidates와 같은 규칙(넘길 수 있음이 나온 날·까닭 모를 다름 0) */
