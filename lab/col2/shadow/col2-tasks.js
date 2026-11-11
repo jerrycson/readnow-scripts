@@ -70,7 +70,7 @@
   /* 하루 셈 — 일마다 { n(견줌) · same · diff · un(까닭 모를 다름) · why{까닭:수} · fail · noprod · skip } */
   const dayNew = (d) => ({ d, t: {} });
   function dayAdd(D, k, v, reasons) { const s = D.t[k] || (D.t[k] = { n: 0, same: 0, diff: 0, un: 0, why: {}, fail: 0, noprod: 0, skip: 0 });
-    if (v === 'same' || v === 'diff') { s.n++; s[v]++; } else if (v === 'fail') s.fail++; else if (v === 'skip') s.skip++; else s.noprod++;
+    if (v === 'same' || v === 'diff') { s.n++; s[v]++; } else if (v === 'fail') s.fail++; else if (v === 'skip') s.skip++; else if (v === 'pre') s.pre = (s.pre || 0) + 1; /* (11/11 col2rep5) 운영 값 먼저 보기로 바깥에 묻지 않은 책 — 표본·차례 셈에 안 듦 */ else s.noprod++;
     if (v === 'diff') { let un = false; for (const r of reasons || []) { s.why[r] = (s.why[r] || 0) + 1; if (UNEXPLAINED.includes(r)) un = true; } if (un) s.un++; }
     return s; }
   const UNEXPLAINED = ['diff', 'lack'];

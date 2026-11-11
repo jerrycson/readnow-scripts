@@ -26,6 +26,22 @@
       ops: '운영 extFx(하루 한 번 환율)가 쉼 — 번외가 한국 11:35 뒤 수출입은행 고시를 받아 없을 때만 씀',
       why: '11/11 HOME 같음 1 · JS-MAIN은 키가 늦게 와 frankfurter(출처 다름) → 이번 판부터 키가 온 뒤·11:35 뒤에만 읽음' },
   };
+  /* (11/11 col2rep5) 🔀 외부 정보 다른 출처도 국중과 같은 길로 — 운영 extSave(모든 출처 같은 함수)와 같은 쓰기: 같으면 확인 시각만 · 바뀌면 옛 값을 ext_hist에 먼저 · 기본 정보는 '없음'이면 받아 둔 값 그대로 · 출처 색인
+   *  나눔: ISBN 있는 책은 번외(다시 볼 날 = 운영 공용 파일 기본 — 기본 정보 120일 · 장터 7일 · 해외 14일 · 전자책 30일) · ISBN 없는 상품(장터 시세만)·국중 날짜 차례는 운영 그대로
+   *  [넘기기] 단추는 최근 3일 그림자에서 '넘길 수 있음'·까닭 모를 다름 0인 일에만 보임(쓰는 길이 있다고 바로 넘기지 않음)
+   *  뺀 것: 🅣 알라딘 TTB(알라딘이 이 주소 서비스를 끝냄 · 로거는 안 씀) · 📚 도서관 정보나루(사무실 PC 공인 IP가 키 계정에 없어 사무실 번외는 못 읽음 — 운영 로거만 됨) · 💱 환율(위 'once' 길) */
+  const EXT_HO = [['kyobo', '🔎 교보문고', 'ext_basic'], ['yes24', '🔎 예스24 도서 정보', 'ext_basic'], ['naverbook', '🔎 네이버 도서(화면)', 'ext_basic'], ['google', '🔎 구글 북스', 'ext_basic'], ['kakao', '🔎 카카오 책 검색', 'ext_basic'],
+    ['joongmo', '🔎 중고닷(통합 장터)', 'ext_used'], ['yes24used', '🔎 예스24 중고', 'ext_used'], ['bunjang', '🔎 번개장터', 'ext_used'], ['joongna', '🔎 중고나라', 'ext_used'], ['daangn', '🔎 당근', 'ext_used'], ['dvdprime', '🔎 DVDPrime 장터', 'ext_used'],
+    ['ebay', '🔎 eBay(공식)', 'ext_foreign'], ['abebooks', '🔎 AbeBooks', 'ext_foreign'], ['ridi', '🔎 리디(전자책)', 'ext_ebook']];
+  for (const [src, name, col] of EXT_HO) JOBS['ext.' + src] = { name, col, idRe: '^97[89]\\d{10}$', fields: ['obj', 'title', 'author'], mode: 'ext', src, everyH: 0, beatMaxH: 8,
+    ops: `운영 외부 정보 한 바퀴(extFill)가 ${name.replace(/^🔎 /, '')}에서 ISBN 있는 책을 묻지 않음 — 다시 볼 날·옛 값 보관·색인은 번외가 운영과 같은 규칙으로 · ISBN 없는 상품은 운영 그대로`,
+    why: '운영 공용 파일 ReadnowExt.run·sig 그대로 · 웹앱이 운영 문서를 다시 읽고 extSave와 같은 판단으로 씀' };
+  /* (11/11 col2rep5 · 정범님 11/11 'JS-MAIN에도 번외가 깔림') 맡길 PC 차림표 — 그 PC가 '넘길 수 있음'을 낸 적이 있으면 그 PC가 [넘기기] 단추의 기본(없으면 표본 많은 PC)
+   *  HOME = 바깥 사이트 일(외부 정보·KPIPA·환율) — HOME은 알라딘 하루 몫 1,600장을 상품 화면이 새벽에 다 쓰지만 바깥 사이트 몫은 따로라 남음 · 표본도 가장 많음(11/11 국중 368·eBay 34·리디 40)
+   *  JS-MAIN = 알라딘 화면을 읽는 일(🔍 새상품 없는 시세 = 알라딘 중고 검색) — 11/11 알라딘 몫 642/1,600장만 씀 · 사무실 상시 켜짐 · 알라딘 로그인 그림자(읽기·쓰기)도 이 PC */
+  const PC_PLAN = { kpipa: 'HOME', 'ext.fx': 'HOME', 'ext.nl': 'HOME', nbMarket: 'JS-MAIN', 'ext.*': 'HOME' };
+  const planPc = (k) => PC_PLAN[k] || (/^ext\./.test(k) ? PC_PLAN['ext.*'] : null);
+  const pickPc = (k, pcs) => { const P = planPc(k); const x = P && Object.entries(pcs).find(([pc, v]) => pc.toUpperCase() === P && v.can > 0); return x || Object.entries(pcs).sort((a, b) => b[1].can - a[1].can || b[1].n - a[1].n)[0]; };
   const DOC = { col: 'app_settings', id: 'col2_handoff' };
   /* 그 일이 넘겨져 있나 — { on(켬) · pc(맡은 PC) · fresh(맡은 PC 소식이 beatMaxH 안) · live(on && fresh = 운영이 쉬어도 됨) } */
   function state(doc, k, t) { const J = JOBS[k]; const x = (doc && doc.jobs && doc.jobs[k]) || null; if (!J || !x || x.on !== true) return { on: false, pc: null, fresh: false, live: false };
@@ -56,8 +72,8 @@
   function candidates(jdays) { const by = {};
     for (const j of jdays || []) { const T = (j && j.tasks) || {}; for (const [k, s] of Object.entries(T)) { if (!s || !s.pass) continue; const o = by[k] || (by[k] = { k, name: s.name || k, days: new Set(), canDays: new Set(), n: 0, same: 0, un: 0, pcs: {} });
       o.days.add(j.d); o.n += +s.n || 0; o.same += +s.same || 0; o.un += +s.un || 0; if (s.pass.can) o.canDays.add(j.d); const p = o.pcs[j.pc] || (o.pcs[j.pc] = { n: 0, can: 0 }); p.n += +s.n || 0; if (s.pass.can) p.can++; } }
-    return Object.values(by).map((o) => { const pc = Object.entries(o.pcs).sort((a, b) => b[1].can - a[1].can || b[1].n - a[1].n)[0]; return { k: o.k, name: o.name, days: o.days.size, canDays: o.canDays.size, n: o.n, same: o.same, un: o.un, pc: pc ? pc[0] : null, path: !!JOBS[o.k], can: o.canDays.size > 0 && o.un === 0 }; })
+    return Object.values(by).map((o) => { const pc = pickPc(o.k, o.pcs); return { k: o.k, name: o.name, days: o.days.size, canDays: o.canDays.size, n: o.n, same: o.same, un: o.un, pc: pc ? pc[0] : null, path: !!JOBS[o.k], can: o.canDays.size > 0 && o.un === 0 }; })
       .filter((o) => o.can).sort((a, b) => b.canDays - a.canDays || b.same - a.same); }
-  const api = { JOBS, DOC, state, mine, writeOk, candidates, extPlan, shard };
+  const api = { EXT_HO, PC_PLAN, planPc, JOBS, DOC, state, mine, writeOk, candidates, extPlan, shard };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Col2Handoff = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
