@@ -726,4 +726,11 @@ srv.on('error', (e) => { log(`✗ 127.0.0.1:${PORT}를 못 엶: ${e.message}`); 
 srv.listen(PORT, '127.0.0.1', () => { log(`번외 수집 도우미 ${VERSION} 시작 — 127.0.0.1:${PORT} · 번외 수집 ${CFG.on ? '켜짐' : '꺼짐'} · 자료 ${HOME}`);
   loadCore().catch((e) => { CORE.err = e.message; log('운영 공용 파일 받기 실패: ' + e.message); });
   ST.timers.push(setInterval(() => tick().catch(() => {}), W('tickSec') * 1000)); setTimeout(() => tick('도우미 시작').catch(() => {}), TEST ? 300 : 5000); AU.t = setTimeout(autoLoop, TEST ? 800 : 15e3); Y24.start(); AL.start(); NV.start(); ST.timers.push(setInterval(() => credQueueTick().catch(() => {}), TEST ? 500 : 5000)); setTimeout(() => { if (CFG.on) sideOpen('도우미 시작'); }, TEST ? 600 : 4000); ST.timers.push(setInterval(() => selfUpdate().catch(() => {}), UPD.ms)); setTimeout(() => selfUpdate().catch(() => {}), Math.min(UPD.ms, 2 * 60e3)); /* (0.1.2) 켜진 뒤 2분 안에 한 번(30분 기다리지 않음) */ });
-const bye = () => { try { if (B) B.kill(); } catch (e) {} try { if (Y24.Y.br) Y24.Y.br.kill(); } catch (e) {} try { if (AL.A.br) AL.A.br.kill(); } catch (e) {} process.exit(0); }; process.on('SIGTERM', bye); process.on('SIGINT', bye);
+/* (11/11 col2rep4) 시험 모드(RN_COL2_TEST=1)에서만 — 끝날 때 이 도우미가 띄운 자손 프로세스(크롬·크롬 자식·따로 띄운 detached 작은 앱 창 포함)를 모두 끔 · 운영(Windows)에서는 아무것도 안 함
+ * 자손만 끔(같은 자료 폴더를 쓰는 다른 도우미 것은 안 건드림) — 남는 것은 시험 도구(tests/lib.js)가 표(COL2T_RUN)로 한 번 더 쓸어 냄 */
+const testSweep = () => { if (!TEST || !fs.existsSync('/proc')) return; const kids = {};
+  for (const p of fs.readdirSync('/proc')) { if (!/^\d+$/.test(p)) continue; try { const pp = +fs.readFileSync('/proc/' + p + '/stat', 'utf8').split(') ')[1].split(' ')[1]; (kids[pp] = kids[pp] || []).push(+p); } catch (e) {} }
+  const all = [], q = [process.pid]; while (q.length) { const x = q.shift(); for (const c of kids[x] || []) { all.push(c); q.push(c); } }
+  for (const p of all) { try { process.kill(p, 'SIGKILL'); } catch (e) {} } };
+if (TEST) process.on('exit', testSweep);
+const bye = () => { try { if (B) B.kill(); } catch (e) {} try { if (Y24.Y.br) Y24.Y.br.kill(); } catch (e) {} try { if (AL.A.br) AL.A.br.kill(); } catch (e) {} try { testSweep(); } catch (e) {} process.exit(0); }; process.on('SIGTERM', bye); process.on('SIGINT', bye); if (TEST) process.on('SIGHUP', bye);
