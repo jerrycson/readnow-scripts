@@ -1827,6 +1827,7 @@ async function tick(why) {
     if (Date.now() - FBC.at > 20 * 3600e3) { FBC.at = Date.now(); try { const ids = (await db.listCollections()).map((c) => c.id).filter((x) => x !== 'app_secrets').sort(); await db.collection('prd_system').doc('fbCols').set({ cols: ids, n: ids.length, at: new Date().toISOString() }); out0.fbCols = ids.length; } catch (e) { out0.fbCols = { err: e.message }; } } /* (0.35.1) 💾 로거 자료 보관의 칸 목록 */
     if (J.ml) { try { const er = await tm('engx', () => engExpTick()); if (er) out0.engx = { full: !!er.full, out: er.out ?? null, created: er.created ?? null, err: er.err || null }; } catch (e) { out0.engx = { err: e.message }; } } /* (11/10 eng2) 🧪 엔진 실험 장부 — 20분마다 사람 손댐 감시 · 새 감시 그룹·전략이 생기면 바로 · 전체 채점 하루 한 번 */
     if (J.strat && J.cmds) { try { const sr = await tm('strat', () => stratTick()); if (sr) out0.strat = { n: sr.n ?? null, acted: sr.acted ?? null, trips: sr.trips ?? null, err: sr.err || null, idle: sr.idle || null }; } catch (e) { out0.strat = { err: e.message }; } } /* (0.34.0) ⚡ 전략 실행 — 20분마다 */
+    if (J.cmds) { try { const oc = await tm('omni', () => omniCloudTick()); if (oc) out0.omni = oc; } catch (e) { out0.omni = { err: String(e.message || e).slice(0, 120) }; } } /* (11/11 omni2) 🤖 자동 내림 — 웹앱 열린 PC가 없을 때 알라딘 쪽 */
     if (J.repair) { try { const nr = await repairSweep(); if (nr) log('유의 사항 되살림', nr, '건'); } catch (e) {} } // 6시간에 한 번: 빈 판으로 덮였던 유의 사항을 지난 판에서 되살림
     // (0.9.0) 빠른 고리: 남은 시간 동안 15초마다 ① 주문확인요청을 다시 읽고, 맡긴 일(발송준비시작 등)이 들어오면 기다리지 않고 바로 처리 — 새 주문이 웹앱에 15초 안에, 단추를 누르면 몇 초 안에
     { const fm = J.fast && J.confirm && !pcR ? await fastMode() : { on: false, why: pcR ? `${pcR.pc} PC가 15초마다 읽는 중(PC 먼저)` : '설정 ☁에서 끔' }; out0.fastMode = fm.on ? fm.why : '꺼짐 · ' + fm.why; p = curPage(p); if (pageBroken) p = await getPage(); const r2 = await tm('fast', () => fastLoop(p, fm.on ? t0 + 50000 : Date.now(), cr, cm, J)); if (r2.cr) cr = r2.cr; if (r2.rd) rd = r2.rd; cm.n += r2.n; out0.fast = r2.loops; out0.fastChanged = r2.changed; }
@@ -3235,6 +3236,45 @@ async function fenceReconcile(ML, o) { o = o || {}; const nowMs = Date.now(); co
   return res; }
 /* FENCE2-END */
 /* ENGX-END */
+/* ══ (11/11 omni2 · 통합 솔루션) 🤖 자동 내림 — 웹앱 열린 PC가 없을 때 알라딘 쪽만 클라우드가 대신
+ *  까닭: 자동 내림 판단(웹앱 omniTick)은 웹앱이 열린 PC에서만 돌았음 · 알라딘 샵매니저 쓰기(prdEdit)는 이미 클라우드가 함(클라우드 로그인 · 전략 실행·🛠 맡기기와 같은 길)
+ *  언제: 자동 내림 켬(app_settings/platforms.omni.autoDown) + 모든 PC 맥박(omni_auto.hb — 웹앱이 4분마다)이 OMNI_PC_MS 넘게 없음 · 2분마다
+ *  무엇: 켠 시각 뒤 들어온 예스24 주문(crm_y24_orders · 취소·반품 뺌) · 우리숍 주문(shop_orders · 취소 뺌)의 줄마다 실물 SKU(예스24 자체코드 10글자의 고유 5칸 · 우리숍은 상품 열쇠) → 알라딘 상품
+ *    → 그 상품이 판매중이고 실물 한 권(SKU 하나 · 수량 1)일 때만 판매중지 맡김(shp_cmds prdEdit · 까닭 prd_stop_reasons 'elsewhere') · 여러 권·짝 모름·이미 맡긴 수정 진행 중은 PC/사람(🛠 처리할 일)
+ *  안전: 내리기만 · 판매 뒤 다시 올린 상품(등록 시각 > 주문 시각)은 안 건드림 · 같은 할 일 열쇠는 omni_auto.c에 트랜잭션으로 먼저 적음(웹앱과 같은 열쇠 → 두 곳이 같은 일을 하지 않음) · 한 번에 OMNI_C_LIM건
+ *  웹앱 예스24 쪽(번외 수집기 · 예스24 로그인)은 PC만 — 클라우드는 하지 않음 · 손님 정보는 읽지 않음(줄의 상품·SKU만) */
+const OMNI_PC_MS = 10 * 60e3; /* 근거: 없음 — PC 맥박 4분 간격의 두 번 반 */ const OMNI_C_LIM = 5; /* 근거: 없음 — 한 번(2분)에 맡기는 수 상한(웹앱 OMNI_LIM 알라딘과 같음) */
+const OMNI_C = { at: 0, busy: false, map: null, mapAt: 0, last: '', lastAt: 0 };
+async function omniSkuMap() { if (OMNI_C.map && Date.now() - OMNI_C.mapAt < 10 * 60e3) return OMNI_C.map; const seq = (await C('app_settings').doc('sku_seq').get()).data() || {}; const n = +seq.mapN || 0; const byCore = new Map(); const cores = new Map();
+  for (let i = 0; i <= n; i++) { const m = ((await C('app_settings').doc('sku_map_' + i).get()).data() || {}).m || {}; for (const [lid, v] of Object.entries(m)) { const cs = (v.c || []).map((c) => String(c).replace(/^RN(?=[a-z0-9]{5}$)/, '')); cores.set(lid, cs); cs.forEach((c) => { if (!byCore.has(c)) byCore.set(c, lid); }); } }
+  OMNI_C.map = { byCore, cores }; OMNI_C.mapAt = Date.now(); return OMNI_C.map; }
+async function omniCloudTick() { if (OMNI_C.busy || Date.now() - OMNI_C.at < 120e3) return null; OMNI_C.busy = true; OMNI_C.at = Date.now(); const ref = C('app_settings').doc('omni_auto'); const out = { n: 0, skip: 0 };
+  const note = async (o) => { const sig = JSON.stringify([o.idle || '', o.err || '', o.n || 0]); if (sig === OMNI_C.last && Date.now() - OMNI_C.lastAt < 10 * 60e3) return; OMNI_C.last = sig; OMNI_C.lastAt = Date.now(); await ref.set({ cloud: { at: nowIso(), ver: VER, idle: o.idle || null, err: o.err || null, n: o.n || 0, skip: o.skip || 0, msg: o.msg || null } }, { merge: true }).catch(() => {}); };
+  try { const ad = ((((await C('app_settings').doc('platforms').get()).data() || {}).omni) || {}).autoDown || {}; const on = ad.on == null ? 1 : ad.on ? 1 : 0;
+    if (!on) { await note({ idle: '자동 내림 꺼 둠' }); return { idle: 'off' }; } const from = String(ad.from || ''); if (!from) { await note({ idle: '켠 시각 없음 — 웹앱 PC가 처음 돌 때 정함' }); return { idle: 'nofrom' }; }
+    const x0 = (await ref.get()).data() || {}; const pcAt = Object.values(x0.hb || {}).reduce((m, v) => Math.max(m, Date.parse((v || {}).at || 0) || 0), 0);
+    if (Date.now() - pcAt < OMNI_PC_MS) { await note({ idle: 'PC가 돎 — 클라우드는 쉼' }); return { idle: 'pc' }; }
+    /* 켠 시각 뒤 주문 줄(최근 14일 안 · 웹앱 처리할 일 창과 같음) */ const cut = new Date(Math.max(Date.parse(from) || 0, Date.now() - 14 * 864e5)).toISOString(); const L = [];
+    const ys = await C('crm_y24_orders').where('lastSeenAt', '>=', cut).get(); ys.forEach((d) => { const o = d.data() || {}; const at = String(o.orderedAt || o.firstSeenAt || ''); if (!at || at < cut) return; if (/취소|반품/.test(String(o.stNm || '')) || ['cancel', 'claim'].includes(o.ystage)) return;
+      for (const it of o.items || []) { const sku = String(it.self || '').split(/[,\s]+/)[0]; if (sku) L.push({ ch: 'yes24', no: String(o.orderNo || d.id), at, sku, lid: null, title: String(it.title || '').slice(0, 40) }); } });
+    try { const ss = await C('shop_orders').where('at', '>=', cut).get(); ss.forEach((d) => { const o = d.data() || {}; if (o.st === 'cancel') return; for (const it of o.items || []) if (it.lid || it.sku) L.push({ ch: 'shop', no: String(o.no || d.id), at: String(o.at || ''), sku: it.sku || null, lid: it.lid || null, title: String(it.t || '').slice(0, 40) }); }); } catch (e) {} /* 우리숍 칸이 아직 없으면 그냥 넘어감 */
+    if (!L.length) { await note({ idle: 'PC 없음 — 켠 뒤 예스24·우리숍 주문 없음' }); return { idle: 'none' }; }
+    const M = await omniSkuMap(); const seen = new Set();
+    for (const ln of L.sort((a, b) => a.at.localeCompare(b.at))) { if (out.n >= OMNI_C_LIM) break; const core = ln.sku && ln.sku.length >= 8 ? ln.sku.slice(3, 8) : null; const lid = ln.lid || (core && M.byCore.get(core)) || null; if (!lid || seen.has(lid)) { if (!lid) out.skip++; continue; } seen.add(lid);
+      const cs = M.cores.get(lid) || []; const sd = await C('prd_listings').doc(lid).get(); if (!sd.exists) { out.skip++; continue; } const l = sd.data() || {};
+      if (l.status !== '판매중' || l.active === false || l.qty === 0) continue; /* 이미 내려감 */ if (cs.length > 1 || (+l.qty || 1) > 1) { out.skip++; continue; } /* 여러 권 — 남은 실물 셈은 PC(🛠) */
+      const reg = String(l.registeredAt || l.firstSeenAt || ''); if (reg && reg > ln.at) { out.skip++; continue; } /* 판매 뒤 다시 올림 */
+      const busy = await C('shp_cmds').where('listingKey', '==', lid).get(); if (busy.docs.some((d) => { const v = d.data() || {}; return v.type === 'prdEdit' && ['queued', 'running', 'verify', 'stuck'].includes(v.status); })) { out.skip++; continue; }
+      const key = cs.length ? ln.sku || 'al:' + lid : 'al:' + lid; const rk = [key, 'aladin', 'down', 0, ln.at.replace(/\D/g, '').slice(0, 14)].join('|'); let got = false; const at = nowIso();
+      await db.runTransaction(async (tx) => { got = false; const d = await tx.get(ref); const x = (d.exists ? d.data() : null) || {}; const c = { ...(x.c || {}) }; if (c[rk] || Object.entries(c).some(([k, v]) => k.startsWith(key + '|aladin|') && v && Date.now() - Date.parse(v.at || 0) < 3 * 864e5)) return;
+        c[rk] = { key, ch: 'aladin', k: 'down', to: 0, title: String(l.title || ln.title || '').slice(0, 40), last: ln.at, from: ln.ch, id: lid, no: null, self: null, at, dev: '☁ 클라우드', by: 'omni-cloud', st: 'claim' }; tx.set(ref, { c }, { merge: true }); got = true; });
+      if (!got) continue; const why = `${ln.ch === 'shop' ? '우리숍' : '예스24'} 주문 ${ln.no}에서 팔림(웹앱 열린 PC 없음 — 클라우드 자동 내림)`;
+      try { const cref = C('shp_cmds').doc(); await cref.set({ type: 'prdEdit', status: 'queued', claim: null, listingKey: lid, listingId: String(l.listingId || ''), usedCode: l.usedCode || null, title: String(l.title || '').slice(0, 100), ch: { state: '판매중지' }, before: { state: l.status || null }, f: { state: { st: 'queued', at } }, createdAt: at, by: 'omni-cloud', dev: '☁ 클라우드 자동 내림', trail: [{ at, m: '🤖 자동 내림 — ' + why, pc: '클라우드' }], uploadedAt: FV.serverTimestamp() });
+        await C('prd_stop_reasons').doc(lid).set({ listingId: l.listingId || null, usedCode: l.usedCode || null, sku: l.sku || null, title: l.title || null, reason: 'elsewhere', note: '🤖 ' + why, at, by: 'omni-cloud', uploadedAt: FV.serverTimestamp(), history: FV.arrayUnion({ at, by: 'omni-cloud', to: 'elsewhere', note: why }) }, { merge: true }).catch(() => {});
+        await ref.set({ c: { [rk]: { st: 'sent', msg: '☁ 클라우드가 샵매니저 판매중지를 맡김', cmd: cref.id, doneAt: nowIso() } } }, { merge: true }); out.n++; log('🤖 클라우드 자동 내림', lid, why); }
+      catch (e) { await ref.set({ c: { [rk]: { st: 'fail', msg: '클라우드가 맡기지 못함: ' + String(e.message || e).slice(0, 120), doneAt: nowIso() } } }, { merge: true }).catch(() => {}); } }
+    await note({ n: out.n, skip: out.skip, msg: `PC 없음 — 주문 줄 ${L.length} · 맡김 ${out.n} · PC/사람 몫 ${out.skip}` }); return out; }
+  catch (e) { await note({ err: String(e.message || e).slice(0, 120) }); return { err: e.message }; } finally { OMNI_C.busy = false; } }
 async function stratTick(force) { if (STR.busy) return null; const runRef = C('app_settings').doc('strat_run'); let run = {}; try { run = (await runRef.get()).data() || {}; } catch (e) { return null; }
   if (!force && run.lastRun && Date.now() - Date.parse(run.lastRun) < 20 * 60e3) return null; STR.busy = true; const t0 = Date.now(); const today = stratDay();
   try { const cfgSnap = await C('app_settings').doc('strat').get(); const SC = (cfgSnap.exists && cfgSnap.data()) || {}; const ML = await mlMod(); if (!ML || !ML.stratDecide) { await runRef.set({ lastRun: nowIso(), err: '공용 파일 ml-core 0.9.0이 아님', at: nowIso() }, { merge: true }); return { err: 'ml-core' }; }
