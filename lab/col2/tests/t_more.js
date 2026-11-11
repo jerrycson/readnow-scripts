@@ -63,13 +63,14 @@ async function rendered(url) { const br = await L.chromium().launch(); try { con
 const extHttp = (base) => async (o) => { const x = new URL(o.url); const r = await fetch(base + '/__ext/' + x.host + x.pathname + x.search, { method: o.method || 'GET', headers: o.headers || {}, body: o.data }); return { status: r.status, text: await r.text() }; };
 
 /* 웹앱 흉내 — 부탁한 운영 문서 · 🔑 키(부탁하면 · 이 흉내는 키를 메모리 변수로만 들고 있음) · 운영 문서 목록(prd_market_nobook) · 맡긴 결과(col2_*만) */
-function webapp(H, DB, okCols, o) { o = o || {}; const got = []; const seen = { keysAsk: 0, keysPut: [], listsAsk: 0 }; let stop = false;
+function webapp(H, DB, okCols, o) { o = o || {}; const got = [], ops = []; const seen = { keysAsk: 0, keysPut: [], listsAsk: 0 }; let stop = false;
   (async () => { while (!stop) { try { const pd = (await H.api('GET', '/relay/pending?by=t')).j; if (pd && pd.ok) {
         const docs = (pd.want || []).filter((w) => okCols.includes(w.c)).map((w) => ({ c: w.c, id: w.id, v: DB[w.c + '/' + w.id] === undefined ? null : DB[w.c + '/' + w.id] })); if (docs.length) await H.api('POST', '/relay/answer', { docs });
         if (pd.keys && o.keys) { seen.keysAsk++; const pick = {}; for (const k of pd.keys) if (o.keys[k]) pick[k] = o.keys[k]; const r = await H.api('POST', '/relay/keys', { keys: pick, by: 't' }); seen.keysPut.push(r.st); }
         for (const L0 of pd.lists || []) { seen.listsAsk++; if (L0.c !== 'prd_market_nobook') continue; const L1 = Object.keys(DB).filter((k) => k.startsWith('prd_market_nobook/')).slice(0, L0.n).map((k) => ({ id: k.split('/')[1], v: DB[k] })); await H.api('POST', '/relay/answer', { lists: { prd_market_nobook: L1 } }); }
-        const keys = (pd.out || []).filter((x) => /^col2_/.test(x.c)).map((x) => { got.push(x); return x.k; }); if (keys.length) await H.api('POST', '/relay/ack', { keys }); } } catch (e) {} await wait(250); } })();
-  return { got, seen, stop: () => { stop = true; }, last: (c) => got.filter((x) => x.c === c).slice(-1)[0] || null }; }
+        if (o.handoff) await H.api('POST', '/relay/answer', { handoff: o.handoff }); /* (11/11 col2rep2) 🔀 넘김 상태 — 웹앱처럼 */
+        const keys = (pd.out || []).filter((x) => /^col2_/.test(x.c) || (x.op && o.handoff)).map((x) => { if (x.op) ops.push(x); else got.push(x); return x.k; }); if (keys.length) await H.api('POST', '/relay/ack', { keys }); } } catch (e) {} await wait(250); } })();
+  return { got, ops, seen, stop: () => { stop = true; }, last: (c) => got.filter((x) => x.c === c).slice(-1)[0] || null }; }
 const leak = (s) => Object.values(KEYS).filter((k) => String(s).includes(k) || String(s).includes(encodeURIComponent(k)));
 const allFiles = (D) => { const out = []; const walk = (d) => { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); let st; try { st = fs.statSync(p); } catch (e) { continue; } if (st.isDirectory()) { if (!/chrome/.test(f)) walk(p); } else if (st.size < 5e6) out.push(p); } }; walk(D); return out; };
 
@@ -110,7 +111,7 @@ const allFiles = (D) => { const out = []; const walk = (d) => { for (const f of 
   console.log('① 사무실 PC — 새상품 없는 시세 · KPIPA · 네이버(그려 읽기) · 키 쓰는 출처 5곳');
   const OFF1 = TK.TASKS.filter((t) => /^ext\./.test(t.k) && !['ext.naverbook', 'ext.ttb', 'ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].includes(t.k)).map((t) => t.k);
   let H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base, RN_COL2_KPIPA_BASE: A.base }, cfg: { pc: 'MJ-MORE', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 150 }, watch: { tickSec: 1 }, jobs: { on: true, off: OFF1, kpipa: { after: '00:00' }, pass: { minN: 1, waitMin: 0.2 } } } }); const D1 = H.D;
-  const W = webapp(H, DB, ['prd_ids', 'prd_books', 'prd_market_nobook', 'mkt_kpipa', 'ext_basic', 'ext_foreign', 'ext_lib'], { keys: KEYS });
+  const W = webapp(H, DB, ['prd_ids', 'prd_books', 'prd_market_nobook', 'mkt_kpipa', 'ext_basic', 'ext_foreign', 'ext_lib'], { keys: KEYS, handoff: { jobs: { kpipa: { on: true, pc: 'MJ-MORE', at: new Date().toISOString() }, 'ext.nl': { on: true, pc: 'OTHER-PC', at: new Date().toISOString() } } } });
   try { await H.api('POST', '/relay/answer', { pool });
     const want = ['nbMarket', 'kpipa', 'ext.naverbook', 'ext.ttb', 'ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'];
     const jd = await until(() => { const o = W.last('col2_jday'); const t = o && o.v.tasks; return t && t.nbMarket && t.nbMarket.n >= 2 && t.kpipa && t.kpipa.n >= 13 && want.slice(2).every((k) => t[k] && t[k].n + t[k].fail >= 2) ? o : null; }, 480);
@@ -118,6 +119,8 @@ const allFiles = (D) => { const out = []; const walk = (d) => { for (const f of 
     ok(W.seen.keysAsk >= 1 && W.seen.keysPut.includes(200), '🔑 도우미가 키를 부탁(이름만) → 웹앱이 메모리로 넘김(POST /relay/keys)', JSON.stringify(W.seen));
     ok(T && T.nbMarket.same === 1 && T.nbMarket.diff === 1 && T.nbMarket.un === 0 && T.nbMarket.why.move === 1, "🔍 새상품 없는 시세: 운영 nbMarketJob과 같음 1 · 4시간 전에 본 다른 시세 = '때가 다름' 1", T && JSON.stringify(T.nbMarket));
     ok(T && T.kpipa.n === 14 && T.kpipa.same === 11 && T.kpipa.why.old === 1 && T.kpipa.why.fill === 1 && T.kpipa.un === 1, "📚 KPIPA: 7일 × 두 종류 — 같음 11(칸 순서는 상관없음) · 오래된 운영 값 1 · 운영 칸 빔 1 · 까닭 모를 다름 1", T && JSON.stringify(T.kpipa));
+    { const HOF = require('../shadow/col2-handoff.js'); const HD = { jobs: { kpipa: { on: true, pc: 'MJ-MORE', at: new Date().toISOString() } } }; await until(() => W.ops.length >= 3, 40); const kp = W.ops.filter((x) => x.job === 'kpipa');
+      ok(kp.length === 3 && kp.every((x) => x.c === 'mkt_kpipa' && /^\d{8}$/.test(x.id) && HOF.writeOk(HD, x, 'MJ-MORE').ok && !HOF.writeOk(HD, x, 'HOME').ok) && kp.filter((x) => x.hist && x.hist.old).length === 2 && !W.ops.some((x) => x.job !== 'kpipa'), '🔀 KPIPA를 이 PC로 넘기면 같지 않은 3줄(오래됨·빈 칸·다름)만 운영 칸 mkt_kpipa에 맡김 · 바뀐 2줄은 옛 값을 history로 · 같은 11줄은 안 씀 · 다른 PC로 넘긴 일(국중)은 안 씀', JSON.stringify(kp.map((x) => x.id + ':' + Object.keys(x.v).join('/') + (x.hist ? '+h' : '')))); }
     ok(T && T['ext.naverbook'].same === 2, '🔎 네이버 도서(그려 읽기 · 운영 extRenderHelper·naverPage 그대로): 2권 운영과 같은 지문', T && JSON.stringify(T['ext.naverbook']));
     ok(T && ['ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].every((k) => T[k].same === 2) && T['ext.ttb'].same === 1 && T['ext.ttb'].fail === 1, '🔑 카카오·국중·eBay·정보나루 2권씩 · TTB 1권 운영과 같음(TTB 1권은 바깥이 오류)', T && JSON.stringify(['ext.ttb', 'ext.kakao', 'ext.nl', 'ext.ebay', 'ext.lib'].map((k) => [k, T[k].same, T[k].fail])));
     const ttbFail = W.got.filter((x) => x.c === 'col2_jobs' && x.v.task === 'ext.ttb' && x.v.verdict === 'fail').slice(-1)[0];

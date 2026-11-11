@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.263
+// @version      1.89.264
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -24,8 +24,8 @@
 // @require      https://readnow.kr/readnow-products-core.js?v=0.19.7
 // @require      https://readnow.kr/readnow-core.js?v=1.4.3
 // @require      https://readnow.kr/readnow-pricing-core.js?v=0.17.13
-// @require      https://readnow.kr/readnow-shipping-core.js?v=0.7.14
-// @require      https://readnow.kr/readnow-registry.js?v=0.14.166
+// @require      https://readnow.kr/readnow-shipping-core.js?v=0.7.15
+// @require      https://readnow.kr/readnow-registry.js?v=0.14.167
 // @require      https://readnow.kr/readnow-ext-core.js?v=0.6.16
 // @require      https://readnow.kr/readnow-register-core.js?v=0.7.5
 // @require      https://readnow.kr/readnow-ml-core.js?v=0.9.11
@@ -1439,7 +1439,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (eff(c, 'caution').on) out.push('<span class="rnb rnb-cau">주의</span>');
       if (eff(c, 'vip').on) out.push('<span class="rnb rnb-vip">VIP</span>');
       if (rc.bad) out.push(`<span class="rnb rnb-bl">불만족 ${rc.bad}</span>`);
-      if (strongSel(c).length) out.push('<span class="rnb rnb-bl">판매자 정보 일치</span>');
+      if (strongSel(c).length) out.push('<span class="rnb rnb-fs" title="허위매물 판매자 — 알라딘 판매자 정보와 일치 (블랙리스트 고객과 다름 · 정범님 11/11)">🕵 허위매물 판매자</span>');
       else if ((c.otherRecipientCount || 0) >= 3) out.push(`<span class="rnb rnb-cau">수령인 ${c.otherRecipientCount}명</span>`);
       { /* (정범님 11/03) '이 주문 전' 기준 — 예전엔 이 주문까지 센 전체 주문 수(2 이상이면 재구매)라, 이 주문이 고객 기록에 들어오기 전·후로 같은 고객이 '첫 구매'↔'재구매'로 달라졌음 · 웹앱 출고 카드와 같은 기준 */
         const mine = !!ono && (c.orderIds || []).some((id) => String(id) === 'aladin_' + ono || String(id).endsWith('_' + ono)); const ex = b.prior && ono && b.prior[ono]; const prior = ex != null ? ex : Math.max(0, (c.saleOrderCount || 0) - (mine ? 1 : 0)); /* ex = 그 고객 주문 기록으로 센 정확한 값(판매관리 지난 주문 — 그 뒤에 산 주문은 빼고) */
@@ -1501,7 +1501,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       .rncard .act{margin-top:6px;border-top:1px solid #D6DDDA;padding-top:6px} .rncard textarea{width:100%;box-sizing:border-box;min-height:38px;border:1px solid #D6DDDA;border-radius:5px;font:inherit;padding:4px}
       .rncard .ab{display:flex;gap:4px;flex-wrap:wrap;margin:4px 0} .rncard .ab button{border:1px solid #2F5D50;background:#fff;color:#2F5D50;border-radius:5px;padding:3px 7px;font-size:11px;cursor:pointer} .rncard .ab button:first-child{background:#2F5D50;color:#fff}
       .rncard a{display:block;text-align:center;padding:4px;border:1px solid #2F5D50;border-radius:5px;color:#2F5D50;text-decoration:none;font-weight:bold}
-      .rnb{display:inline-block;margin:0 0 0 3px;padding:0 5px;border-radius:4px;font:bold 11px "Malgun Gothic",sans-serif;cursor:pointer;vertical-align:middle;white-space:nowrap} .rnb-bl{background:#FDECEA;color:#B0322A} .rnb-cau{background:#FFF4E5;color:#A8661B} .rnb-vip{background:#FBF3DC;color:#8A6D1D} .rnb-rep{background:#E6EFEB;color:#2F5D50} .rnb-new{background:#EEF1F3;color:#56636C} .rnb-none{background:#F3F3F3;color:#999}
+      .rnb{display:inline-block;margin:0 0 0 3px;padding:0 5px;border-radius:4px;font:bold 11px "Malgun Gothic",sans-serif;cursor:pointer;vertical-align:middle;white-space:nowrap} .rnb-bl{background:#FDECEA;color:#B0322A} .rnb-fs{background:#EFE6FA;color:#5B2E91} .rnb-cau{background:#FFF4E5;color:#A8661B} .rnb-vip{background:#FBF3DC;color:#8A6D1D} .rnb-rep{background:#E6EFEB;color:#2F5D50} .rnb-new{background:#EEF1F3;color:#56636C} .rnb-none{background:#F3F3F3;color:#999}
       .rnfloat{position:fixed;z-index:2147483646}`;
     function style() { if (globalThis.__rnById('rn-card-css')) return; const st = document.createElement('style'); st.id = 'rn-card-css'; st.textContent = CSS; document.head.appendChild(st); }
     /* (정범님 11/03) 판매관리 지난 주문: 고객 기록의 주문 수에는 그 주문 '뒤'에 산 주문도 들어 있음 → 재구매 고객만 그 고객 주문 기록을 한 번 읽어(고객마다 한 번 · 이 화면에서만) 그 주문보다 앞선 판매 주문만 셈 */
@@ -5323,6 +5323,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (ld || !same) b2.set(C('prd_metric_changes').doc(), { bookId, at, kind: 'usedListings', add: ld ? ld.add : [], del: ld ? ld.del : [], chg: ld ? ld.chg : [], orderOnly: !ld, page: JSON.parse(JSON.stringify(used.listings || [])), firstRecord: ld ? ld.first : !(prevM && prevM.usedFirstPage), lastPage: used.lastPage || null, usedTotal: used.usedTotal ?? null, ...W() }); }
     for (const t of rk.started) b2.set(C('prd_rank_periods').doc(), { bookId, title: t, firstSeenAt: at, lastSeenAt: at, endedSeenAt: null, ...W() });
     await b2.commit();
+    if (PUBONLY && page.aladinItemId) { const Q = (globalThis.__rnC2lgBk = globalThis.__rnC2lgBk || []); Q.push({ bookId, itemId: String(page.aladinItemId) }); if (Q.length > 300) Q.splice(0, Q.length - 300); } /* (11/11 col2rep2) 🛰 로거 — 방금 읽은 책을 번외 로거 다리(rnC2lg)가 그림자 차례로(메모리에만 · 300권) */
     if (rk.continuing.length || rk.ended.length) { // 이어지는/끝난 순위 기간 갱신
       const qs = await C('prd_rank_periods').where('bookId', '==', bookId).where('endedSeenAt', '==', null).get();
       const b3 = db.batch();
@@ -5542,11 +5543,13 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       for (; prog.i < prog.list.length; prog.i++) {
         if (stopFlag) { if (w) await b.commit(); await saveProgress(name, prog); throw new Error('멈춤'); }
         const [id, sc] = String(prog.list[prog.i]).split('|');
+        /* (engfix1 11/11) ☁ 목록을 만든 뒤 다른 곳(클라우드 숍 요약 다시 읽기 · 다른 회차)이 이미 새로 읽은 판매자는 건너뜀 — 로거 테더링 몫을 아낌 · 판매자 문서 읽기는 한 번(아래 sPrev로 다시 씀) */
+        let sPre = null; if (mode !== 'all') { const sd0 = await C('sellers').doc(id).get().catch(() => null); sPre = sd0 && sd0.exists ? sd0.data() : {}; if (sPre.rev6mAt && Date.now() - Date.parse(sPre.rev6mAt) < Math.max(1, SET.rev6mDays || 7) * 864e5) { prog.skipFresh = (prog.skipFresh || 0) + 1; continue; } }
         let doc; try { ({ doc } = await getDoc(`/shop/usedshop/wshopitem.aspx?SC=${sc}`)); } catch (e) { if (e && /🛡 로거/.test(String(e.message || ''))) { log(`SC ${sc}: 🛡 로거 크롬이 열지 않는 주소(우리 숍·로그인 영역) — 건너뜀 (7일 뒤 다시)`, 1); b.set(C('sellers').doc(id), { rev6mTriedAt: nowIso(), rev6mTriedVer: RSV.VERSION, ...W() }, { merge: true }); w++; continue; } /* (1.89.224 🔬 정밀 점검 11/06) 막힌 주소는 재시도 없이 건너뜀 */ if (!(e && e.goneSeller)) throw e; log(`SC ${sc}: 알라딘에서 탈퇴한 판매자 — 건너뜀 (7일 뒤 다시)`, 1); b.set(C('sellers').doc(id), { rev6mTriedAt: nowIso(), rev6mTriedVer: RSV.VERSION, shopGone: true, ...W() }, { merge: true }); w++; continue; } /* (1.89.160) */
         const r = RSV.parseShopSummary(doc); let shopSigNow = null; // (1.89.32 3시간 점검) shopSig를 아래 sellers 쓰기 한 번에 함께 — 전엔 같은 문서를 따로 두 번 써 판매자마다 쓰기가 한 번 더 났음
         if (r.status === 'ok' || r.status === 'lt3') { // lt3 = 최근 6개월 평가 3건 미만(알라딘이 '-'로 표시) — 실패가 아니라 '최근 활동 거의 없음'이라는 정보
           { const sNew = { rev6m: r.rev6m ?? null, rev6mLt3: r.rev6mLt3 ?? null, shopPeriods: r.periods ?? null, shopTotal: r.total ?? null, aladinGrade: r.grade ?? null, isPro: r.isPro ?? null, cancel3m: r.cancel3m ?? null, bizInfo: r.info || null, contactNote: r.infoNote || null };
-            const sSig = JSON.stringify(sNew); const sd = (await C('sellers').doc(id).get().catch(() => null)); const sPrev = sd && sd.exists ? sd.data() : {};
+            const sSig = JSON.stringify(sNew); const sd = sPre ? null : (await C('sellers').doc(id).get().catch(() => null)); const sPrev = sPre || (sd && sd.exists ? sd.data() : {});
             if (sPrev.shopSig !== sSig) { b.set(C('seller_history').doc(`${id}_${nowIso().replace(/[:.]/g, '-')}`), { sellerId: id, sc, kind: 'shopSummary', at: nowIso(), ...sNew, ...W() }); w++; } // 숍 화면 내용이 바뀌면 그 판을 시각과 함께 보관 (sellers 문서는 지금 값만)
             shopSigNow = sSig; }
           if (qSet.has('*') || qSet.has(String(sc))) { b.set(C('app_settings').doc('seller_queue'), { sc: firebase.firestore.FieldValue.arrayRemove(String(sc)) }, { merge: true }); qSet.delete(String(sc)); w++; } /* (1.84.8) 모으기 줄에서 뺌 · (1.89.32 3시간 점검) 줄에 있던 판매자만 — 전엔 판매자마다 같은 설정 문서를 지워 쓰기가 한 번씩 더 났음 */
@@ -5561,7 +5564,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       }
       if (w) await b.commit();
       await finishJob(name, { sellers: prog.list.length, got: prog.got });
-      log(`6개월 평가 수 완료: ${prog.got}/${prog.list.length}곳 (그중 최근 6개월 평가 3건 미만 ${prog.lt3 || 0}곳 — 개인셀러에 많음)`);
+      log(`6개월 평가 수 완료: ${prog.got}/${prog.list.length}곳 (그중 최근 6개월 평가 3건 미만 ${prog.lt3 || 0}곳 — 개인셀러에 많음${prog.skipFresh ? ` · 이미 새로 읽힌 ${prog.skipFresh}곳 건너뜀` : ''})`);
     } finally { await releaseLane('aladin'); }
   }
   const num6 = (n) => Number(n).toLocaleString();
@@ -6712,7 +6715,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     try { if (!AU.cfg || Date.now() - AU.cfgAt > 30e3) { const d = (await C('app_settings').doc('ship_auto').get()).data() || {}; const c = SHC.autoCfg(d); c.since = d.since || null; c.holds = d.holds && typeof d.holds === 'object' ? d.holds : {}; /* (11/04 정범님) ⏸ 보류 목록(웹앱 출고 카드) */ AU.cfg = c; AU.cfgAt = Date.now(); if (!AU.bbx || Date.now() - (AU.bbxAt || 0) > 5 * 60e3) { /* (정범님 11/05 밤) 🏷 알라딘 매입 후보 판정 재료(공용 bbNear) — 웹앱·클라우드와 같은 출처: 기준 차액 app_settings/main.bbMargin · 배송비 정책 crm_system/shopPolicy.current · 판정 엔진 DEFAULTS · 5분마다 */ const bx = { margin: null, policy: null, D: null }; try { bx.margin = ((await C('app_settings').doc('main').get()).data() || {}).bbMargin ?? null; } catch (e) {} try { const pc = ((await C('crm_system').doc('shopPolicy').get()).data() || {}).current || {}; bx.policy = { fee: pc.fee ?? null, freeOver: pc.freeOver ?? null }; } catch (e) {} const PRb = window.ReadnowPricing || globalThis.ReadnowPricing || null; bx.D = (PRb && PRb.DEFAULTS) || null; AU.bbx = bx; AU.bbxAt = Date.now(); } if ((d.rejudgeAt || null) !== (AU.rjAt || null)) { AU.rjAt = d.rejudgeAt || null; (d.rejudgeOrders || []).forEach((x) => AU.mem.delete(String(x))); } /* (정범님 11/02) 🔄 웹앱 '시장 다시 읽기' 뒤 다시 판단할 주문 — 기억을 지워 다시 봄 */ if (c.on && !c.since) { c.since = nowIso(); await C('app_settings').doc('ship_auto').set({ since: c.since, sinceBy: `${PC_NAME} (처음 켜짐 — 이 시각 뒤 주문부터)` }, { merge: true }).catch(() => {}); } }
       const cfg = AU.cfg; if (!cfg.on) return null;
       if (Date.now() - AU.beatAt > 120e3) { AU.beatAt = Date.now(); C('app_settings').doc('ship_auto').set({ beatAt: nowIso(), beatVer: APP_VER, beatBy: PC_NAME, beats: { [PC_NAME]: nowIso() } }, { merge: true }).catch(() => {}); }
-      const cfgRec = { on: cfg.on, minQty: cfg.minQty, qtyMax: cfg.qtyMax, bundleOn: cfg.bundleOn, bundleSize: cfg.bundleSize, bundleWon: cfg.bundleWon, bundleRound: cfg.bundleRound, maxItemWon: cfg.maxItemWon, maxTotalWon: cfg.maxTotalWon, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, lowOn: cfg.lowOn, lowPrice: cfg.lowPrice, lowSku: cfg.lowSku, bbMargin: SHC.bbMarginOf ? SHC.bbMarginOf(AU.bbx && AU.bbx.margin) : null, since: cfg.since }; /* (10/28) ⑥ 저가·YLW 매입가 기준도 그때 설정으로 남김 · (11/05 밤) 매입 후보 기준 차액도 */ if (AU.mem.size > 3000) AU.mem.clear();
+      const cfgRec = { on: cfg.on, minQty: cfg.minQty, qtyMax: cfg.qtyMax, bundleOn: cfg.bundleOn, bundleSize: cfg.bundleSize, bundleWon: cfg.bundleWon, bundleRound: cfg.bundleRound, maxItemWon: cfg.maxItemWon, maxTotalWon: cfg.maxTotalWon, cheapPct: cfg.cheapPct, waitMin: cfg.waitMin, noValid: cfg.noValid, custBlock: cfg.custBlock, sellerReview: !!cfg.sellerReview, lowOn: cfg.lowOn, lowPrice: cfg.lowPrice, lowSku: cfg.lowSku, bbMargin: SHC.bbMarginOf ? SHC.bbMarginOf(AU.bbx && AU.bbx.margin) : null, since: cfg.since }; /* (10/28) ⑥ 저가·YLW 매입가 기준도 그때 설정으로 남김 · (11/05 밤) 매입 후보 기준 차액도 */ if (AU.mem.size > 3000) AU.mem.clear();
       for (const o of orders || []) { const ono = String(o.orderNo || ''); if (!ono || o.platform === 'cash') continue; let m = AU.mem.get(ono); if (m && m.final) continue; const ref = C('shp_auto').doc(ono);
         if ((cfg.holds || {})[ono]) { out.hold = (out.hold || 0) + 1; continue; } /* (11/04 정범님) ⏸ 보류 — 이 주문은 자동 판단 안 함(풀면 30초 안에 다시 봄) */
         if (!m) { const v0 = (await ref.get()).data() || null; if (v0 && v0.state && v0.state !== 'wait') { AU.mem.set(ono, { final: true }); continue; } /* 상태 없는 기록(보류만 적힌 것)은 아직 판단 전 */ m = { firstAt: (v0 && Date.parse(v0.firstAt || '')) || Date.now(), doc: !!v0, rj: (v0 && v0.rejudge) || null }; AU.mem.set(ono, m); }
@@ -6721,9 +6724,9 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
         if (!m.rj && cfg.since && oAt && oAt < Date.parse(cfg.since) - 60e3) { await auFinal(ref, { ...base, state: 'skip', reasons: ['자동 발송요청을 켜기 전에 들어온 주문 — 사람이 처리'], decidedAt: nowIso() }, null, m).catch(() => {}); m.final = !m.held; continue; }
         if (!m.hcAt || Date.now() - m.hcAt > 60e3) { m.hcAt = Date.now(); const qs = await C('shp_cmds').where('orderNos', 'array-contains', ono).limit(20).get(); const hd = qs.docs.find((x) => { const y = x.data() || {}; return (y.type === 'startDelivery' || y.type === 'cancelOrder') && !y.auto && !['cancelled', 'cancel'].includes(y.status); }); /* (1.89.189 정밀 점검) 사람이 ✖ 주문 취소를 맡긴 주문도 '사람이 처리 중' — 클라우드 autoHumanCmd와 같은 규칙 */
           if (hd) { await auFinal(ref, { ...base, state: 'human', humanCmd: hd.id, reasons: ['사람이 먼저 발송준비시작을 맡김 — 자동 판단 안 함'], decidedAt: nowIso() }, null, m).catch(() => {}); m.final = !m.held; continue; } }
-        if (cfg.custBlock && m.cust === undefined) m.cust = await auCust(o, SHC);
+        if ((cfg.custBlock || cfg.sellerReview) && m.cust === undefined) m.cust = await auCust(o, SHC);
         const E = {}; for (const it of o.items || []) { const lid = String(it.listingId || ''); if (!lid) continue; try { const e = (await C('shp_enrich').doc(lid).get()).data(); if (e) E[lid] = e; } catch (e2) {} }
-        const D = SHC.autoShipDecide({ order: o, enrich: E, cfg, evalSale: ML.evalSale, now: Date.now(), firstAt: m.firstAt, cust: cfg.custBlock ? m.cust : null, bb: AU.bbx || null });
+        const D = SHC.autoShipDecide({ order: o, enrich: E, cfg, evalSale: ML.evalSale, now: Date.now(), firstAt: m.firstAt, cust: cfg.custBlock || cfg.sellerReview ? m.cust : null, bb: AU.bbx || null });
         const rec = { ...base, qty: D.qty, total: D.total, top: D.top, items: D.items, reasons: D.reasons, kinds: D.kinds, cust: (m.cust && m.cust.hits) || [], custErr: (m.cust && m.cust.err) || null, shipVer: SHC.VERSION || null, mlVer: ML.VERSION || null };
         if (D.state === 'wait') { out.wait++; if (!m.doc) { await db.runTransaction(async (tx) => { const sn = await tx.get(ref); if (!sn.exists) tx.set(ref, { ...rec, state: 'wait', waitLeftMs: D.waitLeftMs, ...W() }); }).catch(() => {}); m.doc = true; } continue; }
         if (D.state === 'pass') { const cref = C('shp_cmds').doc('auto_' + ono); const ok = await auFinal(ref, { ...rec, state: 'sent', cmdId: cref.id, decidedAt: nowIso() }, { ref: cref, v: { type: 'startDelivery', orderNos: [ono], status: 'queued', createdAt: nowIso(), by: `🤖 자동 발송요청 (${PC_NAME} 판단)`, auto: true, dev: PC_NAME, uploadedAt: TS() } }, m).catch((e) => { log(`🤖 자동 발송요청 기록 실패(${ono}): ${e.message}`, 1); return false; });
@@ -8306,7 +8309,11 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     else {
     ui('출판 판매 통계: 이미 받은 날 확인', 0, 0); const have = new Map(); (await C('mkt_kpipa').where(firebase.firestore.FieldPath.documentId(), '>=', start).where(firebase.firestore.FieldPath.documentId(), '<=', '99999999').get()).forEach((d) => { if (/^\d{8}$/.test(d.id)) have.set(d.id, d.data()); }); /* (1.63.12) zx_… (더 가져온 표)는 날짜 줄이 아님 */
     const recent = kpAdd(end, -6); const plan = [];
-    for (const type of ['onOff', 'bookType']) { const need = []; for (let d = start; d <= end; d = kpAdd(d, 1)) { const x = have.get(d); if (!x || !x[type] || d >= recent) need.push(d); }
+    /* (11/11 col2rep2 · 약속 38·48) 🔀 번외로 넘김 — app_settings/col2_handoff.jobs.kpipa가 켜져 있고 맡은 번외 PC 소식(beat)이 8시간 안이면 '최근 7일 일별 표'는 번외가 씀 → 운영은 그 앞 빈 날 채우기·주제분류·더 가져오기만
+     *  끄면(웹앱 ⚙ › 🔀 번외로 넘기기 [되돌리기]) 다음 회차부터 곧바로 운영이 다시 함 · 번외가 8시간 소식 없으면 운영이 스스로 다시 함(lab/col2/shadow/col2-handoff.js 규칙과 같음) */
+    const HO_KP = await (async () => { try { const h = (await C('app_settings').doc('col2_handoff').get()).data() || {}; const x = h.jobs && h.jobs.kpipa; if (!x || x.on !== true) return null; const ref = Math.max(Date.parse(x.beat || '') || +x.beat || 0, Date.parse(x.at || '') || +x.at || 0); return ref && Date.now() - ref < 8 * 3600e3 ? String(x.pc || '') : null; } catch (e) { return null; } })();
+    if (HO_KP) log(`📚 출판 판매 통계: 최근 7일 일별 표는 번외 수집기(${HO_KP})로 넘김 — 운영은 그 앞 빈 날만 채움 · 되돌리기는 ⚙ › 🔀 번외로 넘기기`);
+    for (const type of ['onOff', 'bookType']) { const need = []; for (let d = start; d <= end; d = kpAdd(d, 1)) { const x = have.get(d); if (HO_KP ? (!x || !x[type]) && d < recent : (!x || !x[type] || d >= recent)) need.push(d); }
       // 이어진 날짜끼리 31일 이하 묶음으로 (화면 규칙: 5~31일) — 5일보다 짧으면 앞으로 늘려 5일
       let i = 0; while (i < need.length) { let j = i; while (j + 1 < need.length && need[j + 1] === kpAdd(need[j], 1) && j - i < 30) j++; let from = need[i]; const to = need[j]; let n = j - i + 1; if (n < 5) { from = kpAdd(to, -4); n = 5; } plan.push({ type, from, to }); i = j + 1; } }
     log(`📚 출판 판매 통계: ${start.slice(0, 4)}-${start.slice(4, 6)}-${start.slice(6)} ~ ${end.slice(0, 4)}-${end.slice(4, 6)}-${end.slice(6)} (${days}일) · 이미 ${have.size}일 있음 · 받을 묶음 ${plan.length}개 (31일씩, 판매채널별·도서유형별)`);
@@ -10300,6 +10307,98 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       if (ship) { if (!g || !(g.alw || g.on) || Date.now() - (+g.at || 0) > 6 * 3600e3) return false; const q = gv('rn-c2wq-ship', []); q.push(mk(true)); const cap = (a) => { let s = JSON.stringify(a); while (a.length > 1 && s.length > 524288) { a = a.slice(Math.ceil(a.length / 10)); s = JSON.stringify(a); } return a; }; GM_setValue('rn-c2wq-ship', cap(q.slice(-300))); return true; } /* (1.89.259 🔬 정밀 점검 11/10 🪶) 개수(300)만 자르던 묶음을 512KB로도 — 송장·엑셀 입력(in 최대 400줄)이 든 항목이 쌓이면 출고 중 GM_setValue마다 수 MB를 통째로 다시 적었음(HOME rn-c2wq 하루 8.7MB) · 가장 오래된 것부터 버림(late 표시는 그대로) */
       if (!g || !g.on || Date.now() - (+g.at || 0) > 90e3) return false; /* 번외가 받는다고 한 때만 · 출고 중 아님 */
       const q = gv('rn-c2wq', []); q.push(mk(false)); GM_setValue('rn-c2wq', q.slice(-40)); return true; } catch (e) { return false; } };
+})();
+/* (11/11 col2rep2 · 약속 38·48 '로거 번외 읽은 것 0') 🛰 번외 로거 다리 — 로거 PC는 웹앱을 늘 열어 두지 않아(11/11 12:34 깔고 난 뒤 웹앱 탭 없음) 번외 그림자 일이 대상·운영 값·결과 올리기를 받을 길이 없었음
+ *  로거 알라딘 일하는 탭(lead · Firebase 로그인됨)이 1분마다 이 PC 번외 도우미(127.0.0.1:8797)와 주고받음 — 그 PC 웹앱이 3분 안에 대신 해 주고 있으면 ①⑤만
+ *  ① 책 차례: 운영 로거가 방금 시장 지표를 읽은 책(도서 번호·알라딘 상품 번호만 · globalThis.__rnC2lgBk) → POST /lg/books (새로 로거에 가는 정보 없음)
+ *  ② 운영 값 부탁(읽기만): 로거 고유 일이 견줄 칸 prd_book_metrics·bench_items·sellers·seller_review_daily(견줄 칸만) · app_settings/bench(숍 번호·켜짐만) → /relay/answer
+ *  ③ 판매자 목록(숍 번호·이름·평가 수만 · 우리 숍 뺌) ④ 결과 쓰기: col2_* 칸만(넘김 op·운영 칸은 안 씀) → /relay/ack
+ *  ⑤ 운영 로거 테더링 문이 닫히면 /busy(테더링) — 열리면 풀어 줌
+ *  우리 상품·매물·주문·문의 칸·운영 키는 다루지 않음(약속 0) · 로거가 아닌 PC에선 돌지 않음 · 머리(@connect 127.0.0.1·GM_xmlhttpRequest) 그대로 */
+(function rnC2lg() { if (window.top !== window) return; const G = globalThis; if (!/(^|\.)aladin\.co\.kr$/i.test(location.hostname)) return;
+  const gv = (k, d) => { try { const v = GM_getValue(k, d); return v == null ? d : v; } catch (e) { return d; } };
+  const pcOf = () => { try { return (window.__rnPcName && window.__rnPcName.get()) || ''; } catch (e) { return ''; } };
+  const isLogger = () => !!(G.__rnPubChrome || G.__rnPubHome || gv('rn-pubChrome', false)) || /^LOGGER/i.test(pcOf());
+  const fsx = () => { try { return G.firebase && firebase.apps.length && firebase.auth().currentUser ? firebase.firestore() : null; } catch (e) { return null; } };
+  const B = 'http://127.0.0.1:8797'; let busy = false, miss = 0, nextAt = 0, tgWas = null;
+  const gx = (m, p, b) => new Promise((res) => { try { GM_xmlhttpRequest({ method: m, url: B + p, headers: { 'X-RN-Col2': '1', 'Content-Type': 'application/json' }, data: b ? JSON.stringify(b) : undefined, timeout: 20000, anonymous: true, onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {} res(r.status === 200 ? j : null); }, onerror: () => res(null), ontimeout: () => res(null) }); } catch (e) { res(null); } });
+  const L = (lv, m) => { try { window.__rnLog && window.__rnLog('상품', lv, m); } catch (e) {} };
+  const pick = (v, ks) => { if (!v || typeof v !== 'object') return null; const o = {}; for (const k of ks) if (v[k] !== undefined) o[k] = v[k]; return o; };
+  /* 견줄 칸만 — 번외 차림표(lab/col2/shadow/col2-tasks.js)의 map·move·at 칸 */
+  const KEEP = { prd_book_metrics: ['bookId', 'priceList', 'priceSales', 'salesPoint', 'rating', 'commentCount', 'reviewCount', 'availability', 'usedTotal', 'usedTabs', 'usedMins', 'buyback', 'buyerDist', 'relationBuyIds', 'relationBuy', 'clickRelation', 'lastCheckedAt', 'usedAt', 'dynAt', 'checkedBy'],
+    sellers: ['sc', 'name', 'rev6m', 'shopTotal', 'aladinGrade', 'isPro', 'cancel3m', 'rev6mAt', 'at', 'lastSeen'], seller_review_daily: ['days', 'at', 'stats'], bench_items: ['title', 'price', 'grade', 'at', 'lastSeen', 'chk', 'sc'] };
+  const RID = /^[\w.-]{1,150}$/;
+  const lgTick = async () => { if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || !isLogger()) return; const db = fsx(); if (!db) return;
+    busy = true; let next = 60e3; try {
+      const tg = window.__rnTgate ? window.__rnTgate() : null; const tgOk = !(tg && tg.ok === false);
+      if (tgWas !== tgOk) { const r0 = await gx('POST', '/busy', tgOk ? { sec: 0, why: '테더링 문 열림' } : { sec: 600, why: '🛡 로거 테더링 문 닫힘 — ' + String((tg && tg.why) || '').slice(0, 50) }); if (r0) tgWas = tgOk; } else if (!tgOk) await gx('POST', '/busy', { sec: 600, why: '🛡 로거 테더링 문 닫힘' });
+      const pd = await gx('GET', '/relay/pending?by=' + encodeURIComponent('수집기 ' + (pcOf() || 'LOGGER'))); if (!pd || !pd.ok) { G.__rnC2lgPd = { at: Date.now(), miss: miss + 1 }; if (++miss >= 3) next = 5 * 60e3; return; } miss = 0;
+      G.__rnC2lgPd = { at: Date.now(), miss: 0, webAt: +pd.webAt || 0, kind: pd.kind || '', ver: pd.ver || '' }; /* (11/11 nvfix1) 🟩 네이버 다리 rnC2nv가 '이 PC 웹앱이 3분 안에 왔나'·번외 판을 따로 묻지 않고 봄 */
+      if (pd.kind && pd.kind !== 'logger') { next = 30 * 60e3; return; } /* 번외가 사무실 설정이면 이 다리는 손대지 않음 */
+      { const Q = G.__rnC2lgBk || []; if (Q.length) { const take = Q.splice(0, 300); const r1 = await gx('POST', '/lg/books', { books: take }); if (!r1) G.__rnC2lgBk = take.concat(G.__rnC2lgBk || []).slice(-300); } }
+      if (pd.webAt && Date.now() - pd.webAt < 3 * 60e3) return; /* 이 PC 웹앱이 대신 해 주는 중 */
+      const docs = []; for (const w of (pd.want || []).slice(0, 40)) { const c = String((w && w.c) || ''), id = String((w && w.id) || ''); if (!RID.test(id)) continue;
+        if (c === 'app_settings') { if (id !== 'bench') continue; try { const d = await db.collection(c).doc(id).get(); const v = d.exists ? d.data() || {} : null; docs.push({ c, id, v: v ? { targets: (Array.isArray(v.targets) ? v.targets : []).filter((t) => t && t.sc).slice(0, 200).map((t) => ({ sc: String(t.sc), on: t.on !== false })) } : null }); } catch (e) {} continue; }
+        if (!KEEP[c]) continue; try { const d = await db.collection(c).doc(id).get(); docs.push({ c, id, v: d.exists ? pick(d.data(), KEEP[c]) : null }); } catch (e) {} }
+      let lists = null; for (const w of (Array.isArray(pd.lists) ? pd.lists : []).slice(0, 3)) { if (!w || w.c !== 'sellers' || lists) continue; const n = Math.max(1, Math.min(500, +w.n || 200));
+        try { let q = db.collection('sellers').orderBy(firebase.firestore.FieldPath.documentId()); if (w.after && RID.test(String(w.after))) q = q.startAfter(String(w.after)); const g = await q.limit(n).get(); const A = []; g.forEach((d) => { const v = d.data() || {}; const sc = String(v.sc || '').replace(/\D/g, ''); if (!/^sc_\d{1,10}$/.test(d.id) || !sc || sc === '996008') { A.push({ id: d.id, v: null }); return; } A.push({ id: d.id, v: { sc, name: typeof v.name === 'string' ? v.name.slice(0, 40) : null, n: Number(String(v.totalReviewCount ?? '').replace(/[^\d]/g, '')) || null } }); }); lists = { sellers: A }; } catch (e) {} }
+      if (docs.length || lists) await gx('POST', '/relay/answer', { docs, ...(lists ? { lists } : {}) });
+      const keys = [], errs = {}; for (const o of (pd.out || []).slice(0, 25)) { if (o.op || !/^col2_[\w-]+$/.test(String(o.c || '')) || !RID.test(String(o.id || ''))) { errs[o.k] = '로거 다리는 col2_ 칸만 씀'; continue; }
+        try { await db.collection(o.c).doc(o.id).set(o.v || {}, o.merge ? { merge: true } : undefined); keys.push(o.k); } catch (e) { errs[o.k] = e.code || e.message; } }
+      if (keys.length || Object.keys(errs).length) await gx('POST', '/relay/ack', { keys, errs });
+      if (keys.length && !G.__rnC2lgSaid) { G.__rnC2lgSaid = 1; L('info', `🛰 번외 로거 다리 — 번외 그림자 결과 ${keys.length}건을 col2_ 칸에 대신 씀(웹앱 없이 · 운영 칸엔 안 씀)`); }
+      if ((pd.want || []).length || (pd.out || []).length >= 25) next = 5000;
+    } catch (e) {} finally { busy = false; nextAt = Date.now() + next; } };
+  G.__rnC2lgTick = lgTick; setTimeout(() => lgTick().catch(() => {}), 30000); setInterval(() => lgTick().catch(() => {}), 5000);
+})();
+/* (11/11 nvfix1 · 정범님 11/11 '네이버 키값을 로거에서만 넣을 수 있는 거야? 지금 로거가 켜져 있는데도 이래') 🟩 네이버 로거 다리 — 로거 PC엔 웹앱이 늘 열려 있지 않아(11/11 진단: 로거 웹앱 마지막 소식 12:34 · 그 뒤 수집기 탭만)
+ *  웹앱 nvRelayTick(로거 웹앱만 돎)이 할 일이 영영 안 돌았음 → 받는 열쇠(col2_naver/pub)·상태(col2_naver/state)가 안 올라와 ⚙ 🟩 「🔒 잠가 보내고 연결 시험」이 꺼져 있었음
+ *  로거 알라딘 일하는 탭(lead · Firebase 로그인됨)이 웹앱과 똑같이: /nv/st → 받는 열쇠·상태 올림 · col2_naver_cmd 새 봉투를 하나씩 붙잡아(트랜잭션 — 웹앱과 둘이 같은 봉투를 두 번 넘기지 않음) /nv/cmd로 넘기고 봉투 지움
+ *  · /nv/feed → crm_naver_orders(받는 분만)·nv_listings·col2_naver_jobs 쓰고 ack — 이 PC 웹앱이 3분 안에 왔거나(번외 webAt) 웹앱이 상태를 6분 안에 썼으면 비킴(웹앱이 먼저 · 하나만)
+ *  · 번외가 없거나 옛 판(네이버 없음)·네이버를 안 맡으면 그 까닭을 상태(off)에 적어 ⚙ 🟩 칸이 '로거에서 무엇을 하면 되는지'를 보여 줌
+ *  네이버 칸 다섯 말고는 읽지도 쓰지도 않음(약속 0의 정범님 11/11 네이버 예외 — 알라딘·예스24 계정·우리 숍 화면 없음) · 시크릿 평문은 여기 없음(봉투 암호문은 번외만 풂) · 로거가 아닌 PC에선 돌지 않음 · 머리 그대로 */
+(function rnC2nv() { if (window.top !== window) return; const G = globalThis; if (!/(^|\.)aladin\.co\.kr$/i.test(location.hostname)) return;
+  const gv = (k, d) => { try { const v = GM_getValue(k, d); return v == null ? d : v; } catch (e) { return d; } };
+  const pcOf = () => { try { return (window.__rnPcName && window.__rnPcName.get()) || ''; } catch (e) { return ''; } };
+  const isLogger = () => !!(G.__rnPubChrome || G.__rnPubHome || gv('rn-pubChrome', false)) || /^LOGGER/i.test(pcOf());
+  const fsx = () => { try { return G.firebase && firebase.apps.length && firebase.auth().currentUser ? firebase.firestore() : null; } catch (e) { return null; } };
+  const COLV = ((typeof G.__RN_FILE_VER === 'string' && G.__RN_FILE_VER) || (typeof GM_info !== 'undefined' && GM_info.script && GM_info.script.version)) || '';
+  const B = 'http://127.0.0.1:8797'; const iso = () => new Date().toISOString(); const L = (lv, m) => { try { window.__rnLog && window.__rnLog('상품', lv, m); } catch (e) {} };
+  const gs = (m, p, b, ms) => new Promise((res) => { try { GM_xmlhttpRequest({ method: m, url: B + p, headers: { 'X-RN-Col2': '1', 'Content-Type': 'application/json' }, data: b ? JSON.stringify(b) : undefined, timeout: ms || 20000, anonymous: true, onload: (r) => { let j = null; try { j = JSON.parse(r.responseText); } catch (e) {} res({ s: r.status, j }); }, onerror: () => res({ s: 0, j: null }), ontimeout: () => res({ s: -1, j: null }) }); } catch (e) { res({ s: 0, j: null }); } });
+  const OUT = { crm_naver_orders: /^[\w-]{2,40}$/, nv_listings: /^\d{1,20}$/, col2_naver_jobs: /^[\w.-]{4,150}$/ }; /* 웹앱 NV_OUT_OK와 같음 */
+  let busy = false, nextAt = 0, noAt = 0, D = {}, un = null, sig = '', sigAt = 0, offSig = '', offAt = 0, said = 0;
+  const listen = (db) => { if (un) return; try { un = db.collection('col2_naver').onSnapshot((q) => { const o = {}; q.forEach((d) => { o[d.id] = d.data() || {}; }); D = o; }, () => { un = null; }); } catch (e) { un = null; } };
+  /* 이 PC 웹앱이 대신 하는 중인가 — 번외가 본 웹앱 당김(3분) 또는 웹앱이 쓴 상태(6분 · 4분마다 다시 씀) */
+  const webOn = () => { const p = G.__rnC2lgPd; if (p && p.webAt && Date.now() - p.webAt < 3 * 60e3) return true; const s = D.state; return !!(s && s.via !== 'col' && !s.off && s.at && Date.now() - Date.parse(s.at) < 6 * 60e3); };
+  /* 못 하는 까닭을 상태에 — 저장된 값·연결 시험 줄은 그대로 두고(merge) 까닭·판만 · 같은 까닭은 15분에 한 번 */
+  const offPut = async (db, why, ver) => { if (webOn()) return; const o = { pc: pcOf() || 'LOGGER', ver: String(ver || ''), at: iso(), via: 'col', colVer: COLV, off: String(why || '').slice(0, 200) }; const g = JSON.stringify({ ...o, at: 0 }); if (g === offSig && Date.now() - offAt < 15 * 60e3) return;
+    try { await db.collection('col2_naver').doc('state').set(o, { merge: true }); offSig = g; offAt = Date.now(); sig = ''; } catch (e) {} };
+  const tick = async () => { if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || !isLogger()) return; const db = fsx(); if (!db) return; listen(db);
+    busy = true; let next = 60e3; try {
+      if (webOn()) return; /* 웹앱이 먼저 — 두 번 하지 않음 */
+      if (noAt && Date.now() - noAt < 10 * 60e3) return;
+      const P = G.__rnC2lgPd || {}; const r0 = await gs('GET', '/nv/st', null, 8000);
+      if (r0.s === 404) { noAt = Date.now(); return await offPut(db, `로거 번외가 옛 판(${P.ver || '판 모름'} · 네이버 길 없음) — 번외 0.1.22 이상을 받아야 함`, P.ver); }
+      if (r0.s !== 200 || !r0.j || !r0.j.ok) { noAt = Date.now(); return await offPut(db, r0.s <= 0 ? '로거 PC 번외 수집기(127.0.0.1:8797)가 응답 없음 — 번외가 꺼져 있거나 깔리지 않음' : `로거 번외 응답 이상(HTTP ${r0.s})`, P.ver); }
+      const s = r0.j; if (!s.nv || !s.nv.on) { noAt = Date.now(); return await offPut(db, (s.nv && s.nv.why) || '로거 번외가 네이버 일을 맡지 않음', s.ver); }
+      if (!Object.prototype.hasOwnProperty.call(s.nv, 'net')) { noAt = Date.now(); return await offPut(db, `로거 번외 ${s.ver || ''}에 🛑 와이파이 확인이 없음 — 새 번외를 받아야 네이버 일을 함(테더링으로 나갈 수 있는 판엔 열쇠·값을 넘기지 않음)`, s.ver); } /* (정범님 11/11 절대 지시 '와이파이만') */
+      noAt = 0; next = 30e3; const pc = s.pc || pcOf() || 'LOGGER';
+      const pub = s.nv.pub; const cur = D.pub; if (pub && (!cur || cur.spki !== pub)) { await db.collection('col2_naver').doc('pub').set({ spki: pub, pc, at: iso(), alg: 'RSA-OAEP-256+A256GCM', via: 'col' }); D.pub = { spki: pub }; }
+      /* 명령 넘기기 — 새 것만 · 붙잡기는 트랜잭션(웹앱과 겹쳐도 한 번만) · 봉투는 넘긴 뒤 지움 */
+      const q = await db.collection('col2_naver_cmd').where('st', '==', 'new').limit(10).get(); const CL = []; q.forEach((d) => CL.push({ id: d.id, ...d.data() }));
+      for (const c of CL.sort((a, b) => String(a.at).localeCompare(String(b.at)))) { const ref = db.collection('col2_naver_cmd').doc(c.id); let got = false;
+        try { got = await db.runTransaction(async (t) => { const d = await t.get(ref); if (!d.exists || (d.data() || {}).st !== 'new') return false; t.set(ref, { st: 'took', tookAt: iso(), tookBy: '수집기 ' + pc }, { merge: true }); return true; }); } catch (e) { got = false; }
+        if (!got) continue;
+        let r = await gs('POST', '/nv/cmd', { k: c.k, env: c.env, on: c.on, prd: c.prd, job: c.job, ip: c.ip, by: c.by || '' }, 90000); r = r.s === 404 ? { ok: false, err: '이 PC 번외가 옛 판(네이버 없음) — 번외 새 판을 받은 뒤 다시' } : r.s === 200 && r.j ? r.j : { ok: false, err: '이 PC 번외에 닿지 못함' + (r.s > 0 ? ` (HTTP ${r.s})` : '') };
+        const res = { ok: !!r.ok, saved: r.saved, err: r.err || null, test: r.test ? { ok: !!r.test.ok, msg: r.test.msg || '', ip: !!r.test.ip } : null };
+        await ref.set({ st: 'done', doneAt: iso(), res, env: firebase.firestore.FieldValue.delete() }, { merge: true }); if (r.nv) s.nv = r.nv; next = 3000; }
+      /* 읽은 것 쓰기 — 네이버 칸 셋만 */
+      const fd = await gs('POST', '/nv/feed', {}); const keys = []; for (const o of ((fd.j && fd.j.out) || []).slice(0, 150)) { const re = OUT[o.c]; if (!re || !re.test(String(o.id))) continue; try { await db.collection(o.c).doc(String(o.id)).set(o.v || {}, { merge: true }); keys.push(o.k); } catch (e) {} }
+      if (keys.length) { await gs('POST', '/nv/feed', { ack: keys }); next = 3000; if (!said) { said = 1; L('info', `🟩 네이버 로거 다리 — 웹앱 없이 번외가 읽은 주문·상품 ${keys.length}건을 넘김`); } }
+      const sum = { pc, ver: s.ver || '', at: iso(), via: 'col', colVer: COLV, nv: { cred: s.nv.cred, test: s.nv.test, write: s.nv.write, ord: s.nv.ord, prd: s.nv.prd, cool: s.nv.cool || 0, q: s.nv.q || 0, cats: s.nv.cats || null, net: s.nv.net || null, ipReg: s.nv.ipReg || null } }; /* net = 🛑 와이파이 문(번외가 요청마다 확인) */
+      const g = JSON.stringify({ ...sum, at: 0, nv: { ...sum.nv, net: sum.nv.net ? { ...sum.nv.net, at: 0, ms: 0 } : null } }); if (g !== sig || Date.now() - sigAt > 4 * 60e3) { await db.collection('col2_naver').doc('state').set(sum); sig = g; sigAt = Date.now(); offSig = ''; }
+    } catch (e) {} finally { busy = false; nextAt = Date.now() + next; } };
+  G.__rnC2nvTick = tick; setTimeout(() => tick().catch(() => {}), 20000); setInterval(() => tick().catch(() => {}), 5000);
 })();
 /* (11/10 정범님 11/09 밤 '로그인 일(알라딘 샵매니저)도 번외로' · lab/col2/LOGIN_PLAN.md ⑤-1) 🟧 번외 수집기 알라딘 다리 — 이 PC 알라딘 일하는 탭(lead)이 10초마다 번외 도우미(127.0.0.1:8797)에 알림(예스24 다리 c2yTick과 같은 꼴)
  *  보냄 POST /al/feed { by, seat:{ok,why}, hold, opLostAt, cfg:{off} }

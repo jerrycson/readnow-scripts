@@ -332,3 +332,10 @@ node tests/t_more.js                  # (다음 판) 남은 9가지 — 그려 �
 - ✗ 그림자 일 '못 읽음' 까닭을 꼴별로 묶어 하루 요약 `col2_jday … tasks.<일>.failWhy`(많은 것 6가지)
 - 📘 상품 화면: 운영 마지막 읽기(`lastFetchedAt`)가 7일(`col2.json pass.oldDays`) 넘은 문서의 고정형 칸 다름 = '오래됨(old)' — 까닭 있는 다름으로 셈
 - 시험: `tests/t_seatwhy.js` 새로(11/11 14시 실제 자리 문서 꼴 · 꽉 참 · 옛 웹앱 · 아무도 없음 · 다리) · `t_unit` 오래됨 셋
+
+## (11/11 col2ui1) ⚙ 설정 한 곳 · 옆 창 개편 (정범님 '하루 1600장 같은 굳은 값을 설정으로 · 직관적이고 심플하게')
+- **설정 표** `helper/col2-settings.js` — 굳은 값 48개(알라딘 몫·샵매니저·다시 로그인·주기·새벽·KPIPA·시세·바쁨·작업 창·키·넘길 수 있음 + 이 PC 켜끔) · 바깥 사이트는 `siteCfg.<출처>.*`(fin1 규칙). 일 파일은 안 고치고 그 파일들이 이미 읽는 col2.json 덮어쓰기 칸에 값을 넣음 → 바꾸면 바로 반영 · KPIPA·NB·BUSY·새벽 시각은 `applyDirect`가 제자리 바꿔 끼움.
+- **공통/이 PC**: 공통 값 = Firestore `app_settings/col2_cfg`(도우미는 쓰지 않음 — 옆 창에서 바꾸면 `setPend` → 그 PC 웹앱 `c2CfgSync`가 1분 안에 올리고, 다른 PC 웹앱이 자기 번외에 `/cfg {shared}`로 넘김). 이 PC 켜끔은 예전 `setCfg` 길 그대로.
+- **길**: `GET /settings` · `POST /set {k,v}`(null = 기본값) · `POST /pause {min}`(⏸ 잠깐 멈춤 → 정한 시각에 저절로 켬) · `POST /read/now` · `/relay/pending`에 `setPend·sharedAt·setSum` · 상태에 `set`·`pause`.
+- **옆 창**: 맨 위 한눈 카드(상태 점 · 알라딘/예스24/네이버 점 · 오늘 읽음/한도 막대 · 지금 하는 일 · 문제 두 줄과 [고치기] · 🔐 로그인 · ▶ 지금 읽기 · ⏸ 30분 멈춤 · ⚙ 자세히) · 아래 칸은 처음엔 접힘 · ⚙ 자세히 = ⭐ 자주 + 접힌 묶음 7개 · 설명은 ⓘ · 색·글자는 웹앱 토큰.
+- 시험: `tests/t_settings.js` · 운영 `src/tests/tC2SET1111.js`. 전수 조사 표: readnow-chats `reports/COL2_UI_1111.md`.

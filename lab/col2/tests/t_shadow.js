@@ -57,7 +57,7 @@ const killDir = (D) => { for (const p of fs.readdirSync('/proc').filter((p) => /
     await p.goto(`http://127.0.0.1:${H.port}/compare`); await p.waitForFunction(() => /꺼짐/.test(document.getElementById('hst').textContent), null, { timeout: 15000 });
     await wait(1500); const top = await p.evaluate(() => ({ fb: !!window.firebase, login: !!document.getElementById('loginb'), rec: document.getElementById('fbst').textContent, pc: document.getElementById('pcn').textContent, al: document.getElementById('pcbar').textContent, sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth }));
     ok(!top.fb && !top.login && /웹앱이 대신 기록함/.test(top.rec) && !outside.some((u) => /gstatic|firebase/.test(u)), "구글 로그인 칸 없음 · Firebase를 열지 않음 · '웹앱이 대신 기록함' 표시", top.rec);
-    ok(top.pc && top.pc !== '—' && /알라딘 로그인: 이 단계에선 안 함/.test(top.al), '맨 위에 이 PC 이름 · 알라딘 로그인 안 하는 까닭 한 줄', top.pc);
+    ok(top.pc && top.pc !== '—' && /ⓘ/.test(top.al) && !/알라딘 로그인: 이 단계에선 안 함/.test(top.al), '맨 위에 이 PC 이름 · (11/11) 옛 「알라딘 로그인 안 함」 글은 빼고 설명은 ⓘ', top.pc);
     ok(top.sw <= top.cw, '작은 창(380px)에서 가로 넘침 없음', top.sw + ' ≤ ' + top.cw);
     await p.click('#pcb'); await p.fill('#pci', 'HOME-시험'); await p.click('#pcv'); await wait(400); const st0 = (await H.api('GET', '/status')).j;
     ok(st0.pc === 'HOME-시험' && st0.pcSrc === 'pc' && (await p.textContent('#pcn')) === 'HOME-시험', 'PC 이름 바꾸기 → 저장(웹앱 기기 이름이 덮지 않음)');

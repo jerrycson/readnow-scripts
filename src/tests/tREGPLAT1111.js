@@ -10,7 +10,7 @@ const APP = process.env.RN_APP || [path.resolve(__dirname, '..', 'app.html'), pa
 const T = fs.readFileSync(APP, 'utf8');
 console.log('① 코드 꼴');
 { const i = T.indexOf('◆regplat 시작'); const j = T.indexOf('/* ◆regplat 끝 */'); const blk = i > 0 && j > i ? T.slice(i, j) : '';
-  ok(blk && /const REGPLAT_DEF = \{ al: 1, y24: 0 \}/.test(blk) && /'rn-regplat-' \+ k/.test(blk), '처음 기본 알라딘 켬 · 예스24 끔 · 기기 열쇠 rn-regplat-');
+  ok(blk && /const REGPLAT_DEF = \{ al: 1, y24: 0(, nv: 0)? \}/.test(blk) && /'rn-regplat-' \+ k/.test(blk), '처음 기본 알라딘 켬 · 예스24 끔 · 기기 열쇠 rn-regplat-');
   ok(blk && !/\balert\(|\bconfirm\(|\bprompt\(/.test(blk) && !/01[016789]-?\d{3,4}-?\d{4}/.test(blk) && !/app_settings/.test(blk), '새 덩어리에 브라우저 창·전화 번호 꼴·서버 설정 쓰기 없음');
   ok(/\$\{tools\}\$\{regPlatBar\(\)\}/.test(T) && /actions: A, buyp: true, plat: true/.test(T), '작업대 줄 · 살핀 상품 패널에 토글');
   ok(/const regAutoWhyNot = \(it\) => \{ if \(!regAlOn\(it\)\)/.test(T) && /if \(!regAlOn\(it\)\) \{ bad\.push/.test(T) && /if \(!regAlOn\(it\)\) return toast\('🟥 알라딘 등록이 꺼진 상품/.test(T), '알라딘으로 보내는 길(대량 줄·창 없이 자동·채워서 열기)이 모두 토글 값을 봄');
