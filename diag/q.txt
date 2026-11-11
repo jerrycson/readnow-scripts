@@ -1,2 +1,2 @@
-blist=ItemNewSpecial
-# 2575825617
+ttbcmp=20&doc=app_settings/adapt_sel
+# 131973673
