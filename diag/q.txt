@@ -1,2 +1,2 @@
-ttbcmp=20&doc=app_settings/adapt_sel
-# 131973673
+col2=2026-11-12
+# 573929584
