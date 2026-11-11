@@ -41,11 +41,11 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) freshPoll(false); });
   async function home() { main().innerHTML = `<section class="hero"><h1>읽은 책, 다음 사람에게</h1><p>한 권 한 권 직접 살펴 등급을 매긴 헌책 — 사진 그대로 보내 드립니다.</p>${searchBox('')}</section><div id="hc">${loading(6)}</div>`; bindSearch();
     try { const [c, L] = await Promise.all([cfg(), api('/shop/list?s=new')]);
-      $('#hc').innerHTML = `${closedBar(c)}${(c.cats || []).length ? `<h2>분야</h2><div class="chips">${c.cats.slice(0, 16).map(([k, n]) => `<a class="chip" href="#/list?${B.qs({ c: k })}">${esc(k)} <small>${n}</small></a>`).join('')}</div>` : ''}
+      if (!$('#hc')) return; $('#hc').innerHTML = `${closedBar(c)}${(c.cats || []).length ? `<h2>분야</h2><div class="chips">${c.cats.slice(0, 16).map(([k, n]) => `<a class="chip" href="#/list?${B.qs({ c: k })}">${esc(k)} <small>${n}</small></a>`).join('')}</div>` : ''}
         <h2>새로 들어온 책 <span id="nwh">${freshHead(L)}</span><a class="more" href="#/list?s=new">전체 ${c.n != null ? c.n.toLocaleString('ko-KR') + '권' : ''} ›</a></h2><div id="nwg">${newGrid(L)}</div>
         <section class="trust"><div>📷<b>실물 사진</b><small>받으실 그 책을 찍었습니다</small></div><div>🔎<b>등급 풀이</b><small>최상·상·중·하 — 책마다 표시</small></div><div>📦<b>한 권뿐</b><small>주문하면 바로 '주문 중'으로 잡아 둡니다</small></div></section>`;
       FR.items = L.items.slice(0, 12); FR.at = Date.now(); freshArm(); }
-    catch (e) { $('#hc').innerHTML = errBox(e); bindAgain(home); } }
+    catch (e) { if (!$('#hc')) return; $('#hc').innerHTML = errBox(e); bindAgain(home); } }
 
   async function list(q) { const p0 = { q: q.q || '', c: q.c || '', g: q.g || '', s: q.s || 'new' };
     main().innerHTML = `${searchBox(p0.q)}<div class="fl"><div class="chips sm">${['', '최상', '상', '중', '하'].map((g) => `<a class="chip${p0.g === g ? ' on' : ''}" href="#/list?${B.qs({ ...p0, g })}">${g || '모든 등급'}</a>`).join('')}</div>
@@ -53,15 +53,15 @@
       <div id="lh" class="lh">${p0.c ? `분야 <b>${esc(p0.c)}</b> <a href="#/list?${B.qs({ ...p0, c: '' })}">✕</a>` : ''}</div><div id="lg">${loading(8)}</div><div id="lm"></div>`; bindSearch();
     $('#srt').onchange = (e) => { location.hash = '#/list?' + B.qs({ ...p0, s: e.target.value }); };
     let page = 0; const grid = $('#lg');
-    const load = async () => { try { const r = await api('/shop/list?' + B.qs({ ...p0, p: page })); if (!page) grid.innerHTML = r.items.length ? `<div class="grid">${r.items.map((x) => cardH(x, r.day)).join('')}</div>` : `<div class="empty">찾는 책이 없습니다${p0.q ? ` — '${esc(p0.q)}'` : ''}<br><small>낱말을 줄이거나 다른 이름(지은이·출판사)으로 찾아 보세요</small></div>`;
+    const load = async () => { try { const r = await api('/shop/list?' + B.qs({ ...p0, p: page })); if (!grid.isConnected) return; /* (shop4) 받는 사이 다른 화면으로 갔으면 그만(실제 점검: innerHTML null 오류) */ if (!page) grid.innerHTML = r.items.length ? `<div class="grid">${r.items.map((x) => cardH(x, r.day)).join('')}</div>` : `<div class="empty">찾는 책이 없습니다${p0.q ? ` — '${esc(p0.q)}'` : ''}<br><small>낱말을 줄이거나 다른 이름(지은이·출판사)으로 찾아 보세요</small></div>`;
         else $('.grid', grid).insertAdjacentHTML('beforeend', r.items.map((x) => cardH(x, r.day)).join(''));
         $('#lh').innerHTML = `${p0.q ? `'${esc(p0.q)}' ` : ''}${p0.c ? `분야 <b>${esc(p0.c)}</b> <a href="#/list?${B.qs({ ...p0, c: '' })}" aria-label="분야 빼기">✕</a> ` : ''}<b>${r.total.toLocaleString('ko-KR')}</b>권`;
         $('#lm').innerHTML = r.more ? '<button class="btn ghost wide" id="more">더 보기</button>' : ''; const m = $('#more'); if (m) m.onclick = () => { page++; m.disabled = true; m.textContent = '불러오는 중…'; load(); }; }
-      catch (e) { if (!page) { grid.innerHTML = errBox(e); bindAgain(() => list(q)); } else { toast(e.message); $('#lm').innerHTML = '<button class="btn ghost wide" id="more">더 보기</button>'; $('#more').onclick = () => load(); } } };
+      catch (e) { if (!grid.isConnected) return; if (!page) { grid.innerHTML = errBox(e); bindAgain(() => list(q)); } else { toast(e.message); $('#lm').innerHTML = '<button class="btn ghost wide" id="more">더 보기</button>'; $('#more').onclick = () => load(); } } };
     load(); }
 
   async function item(id) { main().innerHTML = `<div class="det sk"><div class="gal"><div class="ph"></div></div><div class="info"><i></i><i></i><i></i></div></div>`;
-    try { const [c, r] = await Promise.all([cfg(), api('/shop/item?' + B.qs({ id }))]); const x = r.item; const pics = [x.im, ...(x.ph || [])].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i); const G = B.gradeOf(x.g); const off = B.offPct(x.p, x.lp); const inCart = cart().some((y) => y.id === x.id);
+    try { const [c, r] = await Promise.all([cfg(), api('/shop/item?' + B.qs({ id }))]); if (B.route(location.hash).arg !== id) return; const x = r.item; const pics = [x.im, ...(x.ph || [])].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i); const G = B.gradeOf(x.g); const off = B.offPct(x.p, x.lp); const inCart = cart().some((y) => y.id === x.id);
       document.title = x.t + ' — ' + (c.name || '북스퀸');
       main().innerHTML = `<div class="det"><div class="gal" id="gal">${pics.length ? pics.map((u, i) => `<div class="ph"><img src="${esc(u)}" alt="${i ? '실물 사진 ' + i : '표지'}" ${i ? 'loading="lazy"' : ''}></div>`).join('') : '<div class="ph"><span class="noim">📕</span></div>'}</div>${pics.length > 1 ? `<div class="dots">${pics.map((_, i) => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>` : ''}
         <div class="info"><h1>${esc(x.t)}</h1><div class="meta">${[x.a, x.pb, x.pd ? x.pd.replace('-', '년 ') + '월' : ''].filter(Boolean).map(esc).join(' · ')}</div>
@@ -109,7 +109,7 @@
         $('#oerr').hidden = false; $('#oerr').innerHTML = `<b>⚠ ${esc(er.message)}</b>${bad && bad.length ? `<ul>${bad.map((x) => `<li>${esc(x.t || (L.find((y) => y.id === x.id) || {}).t || x.id)} — ${esc(x.why)}</li>`).join('')}</ul><small>그 책은 장바구니에서 뺐습니다 — 나머지로 다시 주문해 주세요</small> <a href="#/cart">장바구니 보기</a>` : ''}`; } }; }
 
   async function done(no, q) { main().innerHTML = loading(2);
-    try { const o = await api('/shop/order?' + B.qs({ no, t: q.t })); const cxl = o.st === 'new';
+    try { const o = await api('/shop/order?' + B.qs({ no, t: q.t })); if (B.route(location.hash).arg !== no) return; const cxl = o.st === 'new';
       main().innerHTML = `<div class="done">${q.new ? '<div class="ok">✅ 주문을 받았습니다</div>' : ''}<h1 class="pt">주문 ${esc(o.no)}</h1><div class="stt st-${esc(o.st)}">${esc(o.stTxt)}</div>
         ${o.st === 'new' && o.pay && o.pay.how === 'bank' ? `<div class="bank"><div>입금하실 곳</div><b class="acct">${esc(o.pay.bank)} ${esc(o.pay.acct)}</b><div>예금주 ${esc(o.pay.holder)}</div><div class="amt">${won(o.total)}</div><small>${esc(String(o.due || '').slice(0, 10))}까지 · 입금자 ${esc(o.dep)} 이름으로 — 입금이 확인되면 포장해 보내 드립니다</small><button class="btn ghost" id="cp">계좌 번호 복사</button></div>` : o.st === 'new' ? '<div class="bank"><b>결제 안내 준비 중</b><small>가게에서 결제 방법을 연락드립니다</small></div>' : ''}
         ${o.inv ? `<div class="bank">🚚 ${esc(o.inv.courier || '택배')} <b>${esc(o.inv.no)}</b></div>` : ''}${o.cxl ? `<div class="hint">취소 까닭: ${esc(o.cxl)}</div>` : ''}

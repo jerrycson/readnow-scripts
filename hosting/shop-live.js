@@ -37,6 +37,9 @@ async function run(kind, browser) {
   p.on('dialog', (d) => { dlg.push(d.message()); d.dismiss().catch(() => {}); });
   p.on('requestfailed', (q) => fails.push(q.url().slice(0, 160) + ' ' + ((q.failure() || {}).errorText || '')));
   p.on('response', (r) => { if (r.status() >= 400 && !/\/b\/없는/.test(r.url())) fails.push(r.status() + ' ' + r.url().slice(0, 160)); });
+  /* LIVE_LOCAL=1 — 손님 화면 파일(shop/)만 이 가지 것으로 바꿔 진짜 자료로 미리 봄(배포 전 확인) */
+  if (process.env.LIVE_LOCAL) { const SH = path.join(__dirname, '..', 'shop'); const CT = { '.html': 'text/html', '.js': 'application/javascript', '.css': 'text/css' };
+    await p.route((u) => u.origin === new URL(BASE).origin && (u.pathname === '/' || /^\/[\w.-]+\.(js|css|html)$/.test(u.pathname)), (rt) => { const n = new URL(rt.request().url()).pathname.slice(1) || 'index.html'; const f = path.join(SH, n); if (!fs.existsSync(f)) return rt.continue(); return rt.fulfill({ status: 200, contentType: CT[path.extname(f)], body: fs.readFileSync(f) }); }); }
   /* 🧪 시험 모드 — 가게 설정만 브라우저 안에서 '문 엶' · 주문 POST/조회는 가짜 */
   let fakeNo = null;
   await p.route('**/shop/**', async (rt) => { const q = rt.request(); const u = new URL(q.url());
@@ -77,7 +80,7 @@ async function run(kind, browser) {
   R[kind] = { errs: errs.slice(0, 20), fails: [...new Set(fails)].slice(0, 30), orderPosts }; console.log(`  ${kind} 실패한 요청:\n    ` + R[kind].fails.join('\n    ') + (errs.length ? `\n  화면 오류: ${errs.slice(0, 5).join(' | ')}` : '')); await ctx.close();
 }
 
-function md() { const L = [`### 🛍 우리숍 실제 점검 — ${BASE} · ${R.at}`, '', R.bad.length ? `**❌ 깨진 곳 ${R.bad.length}**` : '**✅ 깨진 곳 없음**', ...R.bad.map((x) => '- ' + x), '',
+function md() { const L = [`### 🛍 우리숍 실제 점검 — ${BASE}${process.env.LIVE_LOCAL ? ' (손님 화면 파일은 이 가지 것 — 배포 전 미리 보기)' : ''} · ${R.at}`, '', R.bad.length ? `**❌ 깨진 곳 ${R.bad.length}**` : '**✅ 깨진 곳 없음**', ...R.bad.map((x) => '- ' + x), '',
   `가게 설정(진짜): 문 ${R.cfg ? (R.cfg.open ? '열림' : '닫힘') : '?'} · 판매 ${R.cfg && R.cfg.n != null ? R.cfg.n : '?'}권 · 분야 ${R.cfg ? R.cfg.cats : '?'} · 결제 ${R.cfg ? R.cfg.pay || '준비 중' : '?'} · sitemap 주소 ${R.sitemapN != null ? R.sitemapN : '?'}개`, '',
   '| 주소 | HTTP | ms |', '|---|---|---|', ...R.http.map((h) => `| ${h.u} | ${h.st || '✗ ' + (h.err || '').slice(0, 60)}${h.loc ? ' → ' + h.loc : ''} | ${h.ms || ''} |`), '',
   '| 기기 | 화면 | 됨 | ms | 넘침 | 깨진 사진 | 📕 바꿈 | 큰 사진으로 | 사진 |', '|---|---|---|---|---|---|---|---|---|', ...R.pages.map((x) => `| ${x.kind} | ${x.name} | ${x.ok ? '✓' : '✗'} | ${x.ms} | ${x.over > 1 ? x.over + 'px' : '0'} | ${x.broken.length} | ${x.noim} | ${x.big} | ${x.shot} |`), '', R.imgProbe ? '**사진 까닭(브라우저 밖 HTTP)**\n```\n' + JSON.stringify(R.imgProbe, null, 1) + '\n```' : ''];
