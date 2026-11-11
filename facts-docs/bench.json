@@ -1,7 +1,7 @@
 {
  "v": 1,
- "at": "2026-11-11",
- "round": 3,
+ "at": "2026-11-12",
+ "round": 4,
  "about": "성공 기업 사례와 견준 기준점 — 사례(회사·화면·원문 주소) · 우리 적용 방식 · 적용 상태 · 충돌 따짐 · 빈 곳 · 모을 정보. 매일 견줌 엔진이 고침(공개 판 — 사례 요약·적용 상태만).",
  "obsVer": "1.78.479",
  "surfaces": {
@@ -60,7 +60,9 @@
   "pg_checkout": "자사몰 결제(PG 결제창)",
   "escrow": "구매안전서비스",
   "law_notice": "법 표시(사업자 정보·청약철회·처리방침)",
-  "shop_platform": "숍 솔루션에 얹을까 직접 만들까"
+  "shop_platform": "숍 솔루션에 얹을까 직접 만들까",
+  "channel_board": "판매처마다 할 일·주문·어긋남을 한 줄씩",
+  "item_channels": "상품 하나에 모든 판매처 상태(값·재고·판매중)"
  },
  "cases": [
   {
@@ -85,7 +87,7 @@
     "shortcut_common"
    ],
    "w": 1.3,
-   "dw": 0.3,
+   "dw": 0.0,
    "new": false
   },
   {
@@ -109,7 +111,7 @@
     "order_todo"
    ],
    "w": 1.2,
-   "dw": 0.2,
+   "dw": 0.0,
    "new": false
   },
   {
@@ -133,7 +135,7 @@
     "confirm_style"
    ],
    "w": 1.1,
-   "dw": 0.1,
+   "dw": 0.0,
    "new": false
   },
   {
@@ -156,7 +158,7 @@
     "scan_first"
    ],
    "w": 1.1,
-   "dw": 0.1,
+   "dw": 0.0,
    "new": false
   },
   {
@@ -177,7 +179,7 @@
     "order_todo"
    ],
    "w": 1.1,
-   "dw": 0.1,
+   "dw": 0.0,
    "new": false
   },
   {
@@ -201,7 +203,7 @@
     "confirm_style"
    ],
    "w": 1.1,
-   "dw": 0.1,
+   "dw": 0.0,
    "new": false
   },
   {
@@ -448,6 +450,92 @@
    "new": false
   },
   {
+   "id": "shopify_publishing",
+   "co": "Shopify",
+   "region": "해외",
+   "kind": "seller_center",
+   "screen": "상품 화면 판매 채널(Publishing) 칸 — 상품 하나가 어느 판매 채널에 올라 있는지 한 카드 · 채널 관리 단추로 바로",
+   "urls": [
+    "https://help.shopify.com/manual/products/add-update-products"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "item_channels"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": true
+  },
+  {
+   "id": "linnlive_grid",
+   "co": "Linnworks(LinnLive)",
+   "region": "해외",
+   "kind": "multichannel",
+   "screen": "재고 격자 오른쪽에 판매처마다 매물 칸 · 오류 매물은 빨강 · 판매처별·오류만 거르기",
+   "urls": [
+    "https://www.linnworks.com/Doc/linnlive_inventory.html"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "item_channels",
+    "channel_board"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": true
+  },
+  {
+   "id": "linnworks_linking",
+   "co": "Linnworks",
+   "region": "해외",
+   "kind": "multichannel",
+   "screen": "재고 연결 화면 — 상품마다 판매처별 상태 기호 · Not Linked(그 판매처 매물과 안 이어짐)",
+   "urls": [
+    "https://desktop.linnworks.com/Doc/inventory_linking"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "sku_link",
+    "item_channels"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": true
+  },
+  {
+   "id": "linnworks_insights",
+   "co": "Linnworks",
+   "region": "해외",
+   "kind": "multichannel",
+   "screen": "Insights — 판매처마다 주문·매출·재고·이익 · 판매처 하나만 떼어 견줌",
+   "urls": [
+    "https://www.linnworks.com/features/reporting-insights"
+   ],
+   "grade": "공식",
+   "fits": [
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "channel_board"
+   ],
+   "w": 1.0,
+   "dw": 0.0,
+   "new": true
+  },
+  {
    "id": "naver_center_home",
    "co": "네이버 스마트스토어센터",
    "region": "국내",
@@ -466,7 +554,7 @@
     "order_todo"
    ],
    "w": 0.88,
-   "dw": 0.08,
+   "dw": 0.0,
    "new": false
   },
   {
@@ -595,6 +683,29 @@
    "w": 0.8,
    "dw": 0.0,
    "new": false
+  },
+  {
+   "id": "sellerhub",
+   "co": "셀러허브",
+   "region": "국내",
+   "kind": "multichannel",
+   "screen": "20여 판매처 상품 등록·주문·CS·정산을 한 곳에서 · 실시간 대시보드(주문별·상품별)",
+   "urls": [
+    "https://www.innoforest.co.kr/company/CP00000287/%EC%85%80%EB%9F%AC%ED%97%88%EB%B8%8C",
+    "https://blog.iquest.co.kr/entry/%EC%87%BC%ED%95%91%EB%AA%B0-%ED%86%B5%ED%95%A9-%EA%B4%80%EB%A6%AC-%EB%AA%A8%EB%93%A0-%ED%94%8C%EB%9E%AB%ED%8F%BC%EC%9D%84-%ED%95%9C%EA%B3%B3%EC%97%90%EC%84%9C-%EA%B0%84%ED%8E%B8%ED%95%98%EA%B2%8C-%EA%B4%80%EB%A6%AC%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95"
+   ],
+   "grade": "보도",
+   "fits": [
+    "ui2",
+    "ledger"
+   ],
+   "topics": [
+    "channel_board",
+    "one_ledger"
+   ],
+   "w": 0.8,
+   "dw": 0.0,
+   "new": true
   },
   {
    "id": "seller_app_tabs",
@@ -1328,21 +1439,353 @@
    "probe": "U2.data.alias",
    "metric": "받은편지함 줄 중 눌러도 안 가는 줄 0(시험 t_bench)",
    "auto": null
-  }
- ],
- "gaps": [
+  },
   {
+   "id": "U06",
    "surf": "ui2",
-   "topic": "confirm_style",
-   "t": "확인 방식 하나로(되돌리기·대상 보이는 확인)",
-   "kind": "own",
+   "topics": [
+    "confirm_style"
+   ],
    "cases": [
     "shopify_frame",
     "shopify_shipping"
    ],
+   "t": "확인 방식 하나로(리드나우 2)",
+   "how": "두 번 누르기 단추를 더블클릭하면 두 번째 누름은 무시(0.4초 · 단추가 살짝 흔들림) · 한 뒤 알림 '↶ 되돌리기'(공용 모양 저장·견본으로 바꿈·PC 배치 따름·개인 배치 끄기) — 지금 웹앱 W11과 같은 규칙",
+   "st": "done",
+   "ver": "ui2 0.4.10",
+   "conflict": "브라우저 확인 창 금지 규칙 그대로(화면 안 확인·두 번 누르기만) · 키보드·스크립트 누름은 그대로 실행",
+   "probe": "U2.twice",
+   "metric": "더블클릭으로 두 번 실행 0(시험 t_scanlist)",
+   "auto": null
+  },
+  {
+   "id": "U07",
+   "surf": "ui2",
+   "topics": [
+    "scan_first"
+   ],
+   "cases": [
+    "amazon_app",
+    "bibliopolis"
+   ],
+   "t": "📷 스캔(ISBN)이 첫 동작(리드나우 2)",
+   "how": "입력 칸 밖에서 바코드 스캐너로 찍으면 🔎 찾기가 그 ISBN으로 열리고 맨 위 = 📥 등록에 넣기(등록 「넣고 조회」 칸에 넣어 둠 · 조회는 사람이 Enter) · 다음 = 우리 자료에서 찾기",
+   "st": "done",
+   "ver": "ui2 0.4.10",
+   "conflict": "등록 화면이 열려 있거나 입력 칸 안이면 손대지 않음(지금 웹앱 등록의 스캐너 처리 그대로) · 손으로 천천히 친 숫자는 스캔으로 보지 않음",
+   "probe": "U2.find.isbn",
+   "metric": "스캔 → 등록 칸까지 누름 1번(Enter · 시험 t_scanlist)",
+   "auto": null
+  },
+  {
+   "id": "U08",
+   "surf": "ui2",
+   "topics": [
+    "list_views"
+   ],
+   "cases": [
+    "shopify_views",
+    "linnworks_views"
+   ],
+   "t": "📋 목록 보기 탭(리드나우 2)",
+   "how": "지금 웹앱 큰 목록(상품 전체·주문 전체·예스24 전체·통합 장부·우리숍 주문)을 한 줄 탭으로 · 연 목록의 검색어·거르기·정렬을 ⭐ 탭으로 저장(이 기기) · 누르면 그 거르기로 다시 엶 · 지우기 되돌리기",
+   "st": "done",
+   "ver": "ui2 0.4.10",
+   "conflict": "목록 엔진·단추는 지금 웹앱 그대로(새로 그리지 않음 — 고유 결정 단추 보존) · Firestore 쓰기 없음",
+   "probe": "U2W.lvNow",
+   "metric": "저장한 보기로 다시 여는 누름 1번(시험 t_scanlist)",
+   "auto": null
+  },
+  {
+   "id": "U09",
+   "surf": "ui2",
+   "topics": [
+    "filter_chips"
+   ],
+   "cases": [
+    "shopify_views"
+   ],
+   "t": "켜진 거르기 칩 · ＋ 거르기(리드나우 2)",
+   "how": "📋 목록 보기 탭 위젯 — 열린 지금 웹앱 목록의 켜진 거르기·찾기 글을 칩으로(× 풀기 · 2개부터 모두 풀기) · ＋ 거르기 = 갈래·값 판(누르면 바로 · 2번 누름) · ⭐ 보기에 거르기 이름(갈래: 값)",
+   "st": "done",
+   "ver": "ui2 0.4.11",
+   "conflict": "거르는 일은 지금 웹앱 거르기 단추를 대신 누르는 것뿐(목록 엔진·셈 그대로 · 저장·쓰기 없음) · 지금 웹앱 '⚙ 거르기·정렬' 접힘은 그대로",
+   "probe": "U2W.lvFilters",
+   "metric": "거르기 하나 켜기·풀기 누름 2번·1번(시험 t_chips)",
+   "auto": null
+  },
+  {
+   "id": "U10",
+   "surf": "ui2",
+   "topics": [
+    "settings_search"
+   ],
+   "cases": [
+    "shopify_search"
+   ],
+   "t": "⚙ 설정 갈래 목차 + 설정 찾기(리드나우 2)",
+   "how": "🔎 찾기(Ctrl+K) '⚙ 설정' 범위를 빈 칸으로 열면 갈래 목차(지금 웹앱 ⑧ 설정 묶음 8갈래 그대로 + 🧩 리드나우 2 이 웹앱 설정) · 갈래를 누르면 그 갈래 칸만 · 글을 치면 설정 전체에서 찾기(0.4.8) · ☰ '⚙ 설정 목차·찾기'",
+   "st": "done",
+   "ver": "ui2 0.4.11",
+   "conflict": "갈래 이름·나눔은 지금 웹앱 UX2_SG·UX2_SGSEC를 읽기만(두 곳이 어긋나지 않음 · 없으면 한 묶음) · 연 칸은 지금 웹앱 featGo 그대로",
+   "probe": "U2.find.sgToc",
+   "metric": "설정 갈래까지 누름 2번(시험 t_chips)",
+   "auto": null
+  },
+  {
+   "id": "U11",
+   "surf": "ui2",
+   "topics": [
+    "settings_one_place"
+   ],
+   "cases": [
+    "shopify_shipping"
+   ],
+   "t": "저장한 보기는 한 곳(리드나우 2)",
+   "how": "☰ 메뉴 ⭐ 보기 갈래에 저장한 보기 두 가지(자료 보기 · 📋 목록 보기 탭의 ⭐)를 함께 — 열기·지우기(↶ 되돌리기)가 위젯과 같은 자료(이 기기)",
+   "st": "done",
+   "ver": "ui2 0.4.11",
+   "conflict": "자료 보기(ui2_site·기기)와 목록 보기(rn2-listViews) 저장 자리는 그대로 — 보여 주고 고치는 곳만 하나 · 지운 것은 위젯에서도 바로 사라짐",
+   "probe": "U2.menu",
+   "metric": "같은 일이 두 곳에 있는 설정 수(리드나우 2 보기 2 → 1)",
+   "auto": null
+  },
+  {
+   "id": "U12",
+   "surf": "ui2",
+   "topics": [
+    "nav_grouping"
+   ],
+   "cases": [
+    "amazon_menu"
+   ],
+   "t": "☰ 메뉴를 할 일 갈래로(리드나우 2)",
+   "how": "한 줄로 늘어선 단추 14개 → 갈래 6(🎨 모양 · 🪟 옛 화면 · ⭐ 보기 · 📐 배치 · 🔒 안전 · 🧭 살피기·옮기기) · 단추·하는 일은 그대로",
+   "st": "done",
+   "ver": "ui2 0.4.11",
+   "conflict": "지금 웹앱 탭 줄·휴대폰 아래 탭(정범님 결정 기다림)은 건드리지 않음 — 새 웹앱 ☰ 메뉴만",
+   "probe": "U2.menu",
+   "metric": "메뉴에서 일 찾는 시간(갈래 머리 6)",
+   "auto": null
+  },
+  {
+   "id": "U13",
+   "surf": "ui2",
+   "topics": [
+    "header_slim"
+   ],
+   "cases": [
+    "shopify_search"
+   ],
+   "t": "머리 칸 얇게(리드나우 2)",
+   "how": "새 웹앱 머리줄·시범 띠를 얇게(상태는 점 하나) — 지금 웹앱 W04를 이어서",
+   "st": "ask",
+   "ver": "",
+   "conflict": "정범님 결정 기다림(머리 칸 얇게 · 시범 띠) — 결정 전엔 손대지 않음",
+   "probe": "",
+   "metric": "휴대폰 머리 높이",
+   "auto": null
+  },
+  {
+   "id": "U14",
+   "surf": "ui2",
+   "topics": [
+    "bottom_tabs"
+   ],
+   "cases": [
+    "seller_app_tabs"
+   ],
+   "t": "휴대폰 아래 탭 줄(리드나우 2)",
+   "how": "휴대폰에서 자주 쓰는 페이지 4~5개 + 더 보기를 아래 탭으로",
+   "st": "ask",
+   "ver": "",
+   "conflict": "정범님 결정 기다림(휴대폰 아래 탭 줄) — 지금 웹앱 아래 탭·떠 있는 단추 자리와 겹침 따짐 뒤",
+   "probe": "",
+   "metric": "휴대폰 페이지 바꾸는 누름",
+   "auto": null
+  },
+  {
+   "id": "U15",
+   "surf": "ui2",
+   "topics": [
+    "channel_board",
+    "order_todo"
+   ],
+   "cases": [
+    "ebay_hub",
+    "naver_center_home",
+    "linnworks_insights",
+    "sellerhub"
+   ],
+   "t": "🛒 판매처 상황판(리드나우 2)",
+   "how": "알라딘·예스24·네이버·우리숍 한 줄씩 — 판매중·처리할 주문(오늘 출고)·진행 주문·🔻 재고 어긋남·30일 주문 · 칸 한 번 누름 = 그 판매처만 걸러진 지금 웹앱 화면(오늘 출고·주문 모음·🛠 처리할 일·운영 화면)",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "숫자는 지금 웹앱 통합 장부·오늘 출고 셈(ledNow·ledTodoNow·ledOrdRows·shipCnt) 그대로 — 두 곳이 어긋나지 않음 · 읽기만",
+   "probe": "U2.omni",
+   "metric": "판매처 일 화면까지 누름 1번(시험 t_omni)",
+   "auto": null
+  },
+  {
+   "id": "U16",
+   "surf": "ui2",
+   "topics": [
+    "item_channels"
+   ],
+   "cases": [
+    "shopify_publishing",
+    "linnlive_grid"
+   ],
+   "t": "🔍 상품 하나 · 모든 판매처 카드(리드나우 2)",
+   "how": "제목·ISBN·SKU로 찾거나 어긋난 책 고르기 줄에서 누르면 네 판매처 칸(판매중/중지·값·재고) 한 카드 · 칸마다 '열기 ›'(알라딘 상품 상세·예스24 전체 상품 그 번호·장부) · '🧾 통합 장부에서 이 책'",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "장부 줄(실물 한 권 = SKU 한 줄)을 그대로 보여 줄 뿐 — 짝 맞추기·고치기는 지금 웹앱 화면",
+   "probe": "U2.omni.card",
+   "metric": "한 책의 판매처 화면까지 누름 2번 안(시험 t_omni)",
+   "auto": null
+  },
+  {
+   "id": "U17",
+   "surf": "ui2",
+   "topics": [
+    "sku_link"
+   ],
+   "cases": [
+    "linnworks_linking"
+   ],
+   "t": "판매처에 '올라 있지 않음' 표시(리드나우 2)",
+   "how": "카드에서 그 판매처 매물이 없으면 '○ 올라 있지 않음'(쓰는 판매처) · '준비 중'(아직 안 켠 판매처)으로 흐리게 — 빈 칸 없음",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "예스24 짝 맞추기는 지금 웹앱 🔗 예스24 연결 표 그대로",
+   "probe": "U2.omni.card",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "U18",
+   "surf": "ui2",
+   "topics": [
+    "stop_other"
+   ],
+   "cases": [
+    "sabangnet",
+    "godomall"
+   ],
+   "t": "한 곳 팔리면 다른 곳 내릴 일을 빨강으로(리드나우 2)",
+   "how": "상황판 🔻 재고 어긋남 칸·카드 판매처 칸을 빨강 + '🔻 내릴 일(판매중지)/수량 n권으로' · 한 번 누름 = 지금 웹앱 🛠 처리할 일",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "고치기·자동 내림은 지금 웹앱 🛠 처리할 일(번외·출고 보호 그대로) — 새 웹앱은 쓰기 0",
+   "probe": "U2.omni",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "U19",
+   "surf": "ui2",
+   "topics": [
+    "channel_price"
+   ],
+   "cases": [
+    "playauto",
+    "cafe24_market"
+   ],
+   "t": "판매처마다 값 차이 표시(리드나우 2)",
+   "how": "판매중인 판매처끼리 값이 다르면 카드 맨 위 '💱 값 차이 최저~최고'(일부러 다르게 둔 값일 수 있어 경고가 아니라 알림 색)",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "값 바꾸기 없음(약속 36 무손해)",
+   "probe": "U2.omni.card",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "U20",
+   "surf": "ui2",
+   "topics": [
+    "channel_board"
+   ],
+   "cases": [
+    "ebay_hub"
+   ],
+   "t": "🛒 판매처 페이지 맨 위에 상황판·상품 카드(리드나우 2)",
+   "how": "새 웹앱 🛒 판매처 페이지 기본 = 머리줄 + 상황판 + 상품 카드 + 지금 웹앱 판매처 탭 그대로 · ✏ 꾸미기 견본 '🛒 통합 판매처'",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "정범님이 판매처 페이지를 이미 게시했으면 그 배치 그대로(기본만 바뀜) · '숫자 줄 기본 배치' 결정과는 따로(🚦 줄은 넣지 않음)",
+   "probe": "U2.omni",
+   "metric": "",
+   "auto": null
+  },
+  {
+   "id": "U21",
+   "surf": "ui2",
+   "topics": [
+    "notify_once"
+   ],
+   "cases": [
+    "playauto"
+   ],
+   "t": "어긋남이 새로 생길 때 한 번만 알림(리드나우 2)",
+   "how": "상황판 🔻 재고 어긋남이 0 → 1 이상이 되는 순간 🔔 알림 한 자리에 한 번(같은 책은 다시 안 울림)",
+   "st": "prop",
+   "ver": "",
+   "conflict": "지금 웹앱 경고·책방 친구 알림과 겹치지 않게 따진 뒤",
+   "probe": "",
+   "metric": "알림 수 / 새 어긋남 수",
+   "auto": null
+  },
+  {
+   "id": "U22",
+   "surf": "ui2",
+   "topics": [
+    "one_ledger"
+   ],
+   "cases": [
+    "sabangnet",
+    "sellerhub"
+   ],
+   "t": "판매처 숫자는 모두 한 장부에서(리드나우 2)",
+   "how": "🧾 통합 장부 페이지(0.4.7 · 지금 웹앱 화면 그대로) + 🛒 상황판·상품 카드의 모든 숫자를 지금 웹앱 통합 장부 한 셈에서 · 상황판 맨 위 '🧾 통합 장부 ›'",
+   "st": "done",
+   "ver": "ui2 0.4.12",
+   "conflict": "새 웹앱이 따로 세지 않음 — 장부가 바뀌면 같이 바뀜",
+   "probe": "U2.omni",
+   "metric": "판매처 숫자 출처 1곳",
+   "auto": null
+  }
+ ],
+ "gaps": [
+  {
+   "surf": "ledger",
+   "topic": "item_channels",
+   "t": "상품 하나에 모든 판매처 상태(값·재고·판매중)",
+   "kind": "gap",
+   "cases": [
+    "shopify_publishing",
+    "linnlive_grid",
+    "linnworks_linking"
+   ],
    "items": [],
    "carry": null,
-   "pri": 6.6
+   "pri": 9.0
+  },
+  {
+   "surf": "ledger",
+   "topic": "channel_board",
+   "t": "판매처마다 할 일·주문·어긋남을 한 줄씩",
+   "kind": "gap",
+   "cases": [
+    "linnlive_grid",
+    "linnworks_insights",
+    "sellerhub"
+   ],
+   "items": [],
+   "carry": null,
+   "pri": 8.4
   },
   {
    "surf": "web",
@@ -1358,19 +1801,6 @@
    ],
    "carry": null,
    "pri": 6.6
-  },
-  {
-   "surf": "ui2",
-   "topic": "scan_first",
-   "t": "스캔(ISBN)이 첫 동작",
-   "kind": "gap",
-   "cases": [
-    "amazon_app",
-    "bibliopolis"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 6.3
   },
   {
    "surf": "web",
@@ -1428,19 +1858,6 @@
    "pri": 4.0
   },
   {
-   "surf": "ui2",
-   "topic": "list_views",
-   "t": "한 목록 + 보기 탭(저장한 거르기)",
-   "kind": "gap",
-   "cases": [
-    "shopify_views",
-    "linnworks_views"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 4.0
-  },
-  {
    "surf": "web",
    "topic": "list_views",
    "t": "한 목록 + 보기 탭(저장한 거르기)",
@@ -1483,11 +1900,13 @@
    "surf": "ui2",
    "topic": "header_slim",
    "t": "머리 칸을 얇게(상태는 점 하나)",
-   "kind": "gap",
+   "kind": "behind",
    "cases": [
     "shopify_search"
    ],
-   "items": [],
+   "items": [
+    "U13"
+   ],
    "carry": "web",
    "pri": 3.9
   },
@@ -1605,18 +2024,6 @@
    "pri": 2.0
   },
   {
-   "surf": "ui2",
-   "topic": "filter_chips",
-   "t": "조건은 탭이 아니라 거르기 칩",
-   "kind": "gap",
-   "cases": [
-    "shopify_views"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 2.0
-  },
-  {
    "surf": "web",
    "topic": "filter_chips",
    "t": "조건은 탭이 아니라 거르기 칩",
@@ -1667,30 +2074,6 @@
    "pri": 1.3
   },
   {
-   "surf": "ui2",
-   "topic": "settings_search",
-   "t": "설정 갈래 목차 + 설정 찾기",
-   "kind": "gap",
-   "cases": [
-    "shopify_search"
-   ],
-   "items": [],
-   "carry": "web",
-   "pri": 1.3
-  },
-  {
-   "surf": "ui2",
-   "topic": "settings_one_place",
-   "t": "한 일의 설정은 한 곳",
-   "kind": "gap",
-   "cases": [
-    "shopify_shipping"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 1.1
-  },
-  {
    "surf": "web",
    "topic": "settings_one_place",
    "t": "한 일의 설정은 한 곳",
@@ -1736,11 +2119,13 @@
    "surf": "ui2",
    "topic": "bottom_tabs",
    "t": "휴대폰 아래 탭 4~5개 + 더 보기",
-   "kind": "gap",
+   "kind": "behind",
    "cases": [
     "seller_app_tabs"
    ],
-   "items": [],
+   "items": [
+    "U14"
+   ],
    "carry": null,
    "pri": 1.0
   },
@@ -1799,18 +2184,6 @@
    "pri": 0.5
   },
   {
-   "surf": "ui2",
-   "topic": "nav_grouping",
-   "t": "메뉴를 할 일 갈래로",
-   "kind": "own",
-   "cases": [
-    "amazon_menu"
-   ],
-   "items": [],
-   "carry": null,
-   "pri": 0.5
-  },
-  {
    "surf": "web",
    "topic": "nav_grouping",
    "t": "메뉴를 할 일 갈래로",
@@ -1825,67 +2198,7 @@
    "pri": 0.5
   }
  ],
- "events": [
-  {
-   "item": "W01",
-   "d": 0.1,
-   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
-   "cases": [
-    "shopify_frame"
-   ]
-  },
-  {
-   "item": "W02",
-   "d": 0.1,
-   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
-   "cases": [
-    "ebay_hub",
-    "amazon_app"
-   ]
-  },
-  {
-   "item": "W04",
-   "d": 0.1,
-   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
-   "cases": [
-    "shopify_search"
-   ]
-  },
-  {
-   "item": "W05",
-   "d": 0.1,
-   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
-   "cases": [
-    "shopify_search"
-   ]
-  },
-  {
-   "item": "W06",
-   "d": 0.1,
-   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
-   "cases": [
-    "naver_center_home",
-    "ebay_hub",
-    "shopify_orders"
-   ]
-  },
-  {
-   "item": "W08",
-   "d": 0.1,
-   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
-   "cases": [
-    "shopify_search"
-   ]
-  },
-  {
-   "item": "W13",
-   "d": 0.1,
-   "why": "새로 적용됨(가지에 있음(판 전) → 적용됨)",
-   "cases": [
-    "shopify_shipping"
-   ]
-  }
- ],
+ "events": [],
  "collect": [
   {
    "t": "쿠팡 윙 판매자 센터 공식 도움말(주문·정산·상품 등록 화면)",
@@ -2093,6 +2406,66 @@
   },
   {
    "t": "U05 📥 할 일 받은편지함에 등록·출고 숫자 — 효과 숫자: 받은편지함 줄 중 눌러도 안 가는 줄 0(시험 t_bench)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U06 확인 방식 하나로(리드나우 2) — 효과 숫자: 더블클릭으로 두 번 실행 0(시험 t_scanlist)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U07 📷 스캔(ISBN)이 첫 동작(리드나우 2) — 효과 숫자: 스캔 → 등록 칸까지 누름 1번(Enter · 시험 t_scanlist)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U08 📋 목록 보기 탭(리드나우 2) — 효과 숫자: 저장한 보기로 다시 여는 누름 1번(시험 t_scanlist)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U09 켜진 거르기 칩 · ＋ 거르기(리드나우 2) — 효과 숫자: 거르기 하나 켜기·풀기 누름 2번·1번(시험 t_chips)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U10 ⚙ 설정 갈래 목차 + 설정 찾기(리드나우 2) — 효과 숫자: 설정 갈래까지 누름 2번(시험 t_chips)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U11 저장한 보기는 한 곳(리드나우 2) — 효과 숫자: 같은 일이 두 곳에 있는 설정 수(리드나우 2 보기 2 → 1)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U12 ☰ 메뉴를 할 일 갈래로(리드나우 2) — 효과 숫자: 메뉴에서 일 찾는 시간(갈래 머리 6)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U15 🛒 판매처 상황판(리드나우 2) — 효과 숫자: 판매처 일 화면까지 누름 1번(시험 t_omni)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U16 🔍 상품 하나 · 모든 판매처 카드(리드나우 2) — 효과 숫자: 한 책의 판매처 화면까지 누름 2번 안(시험 t_omni)",
+   "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
+   "for": "ui2",
+   "by": "엔진"
+  },
+  {
+   "t": "U22 판매처 숫자는 모두 한 장부에서(리드나우 2) — 효과 숫자: 판매처 숫자 출처 1곳",
    "why": "적용됐지만 효과를 아직 안 잼 → 사례 가중치를 효과로 못 고침",
    "for": "ui2",
    "by": "엔진"
