@@ -90,8 +90,8 @@ require('./harness.js')(G(async (p) => {
   // ── (오후) ⑨ 등록 화면 배치
   await p.evaluate(() => { S.tab = 'home'; renderTabs(); renderMainNow(); openRegister(); }); await p.waitForTimeout(1500);
   const rg = await p.evaluate(() => { const y = (s) => { const e = document.querySelector('#sheet > ' + s); return e ? Math.round(e.getBoundingClientRect().top) : null; }; const h = (s) => { const e = document.querySelector('#sheet > ' + s); return e ? Math.round(e.getBoundingClientRect().height) : null; }; return { sh: y('.sh'), q: y('.rgsearch'), set: y('.rgsetrow'), ws: y('.rgws'), live: y('.rglive'), setH: h('.rgsetrow'), inp: !!document.getElementById('rg_in') }; });
-  ok(rg.inp && rg.q < rg.set && rg.q < rg.ws && rg.q < rg.live && rg.q - rg.sh < 90, '⑨ 등록: 넣고 조회 칸이 머리줄 바로 아래 맨 위', rg);
-  ok(rg.setH <= 60 && rg.set < rg.ws, '⑨ 등록: 조건 세 칸은 닫혀 있으면 한 줄 요약', rg);
+  ok(rg.inp && rg.q < rg.set && rg.ws < rg.q && rg.q < rg.live && rg.q - rg.sh < 150, '⑨ 등록: 넣고 조회 칸이 맨 위 쪽(머리줄 › (11/11 ⑮) 🗂 작업대 줄 바로 아래)', rg);
+  ok(rg.setH <= 60 && rg.q < rg.set && rg.set < rg.live, '⑨ 등록: 조건 세 칸은 닫혀 있으면 한 줄 요약(넣고 조회 바로 아래)', rg);
   await p.evaluate(() => { const d = document.querySelector('#sheet .rgsetrow > details.regcfg'); d.open = true; }); await p.waitForTimeout(150); ok(await p.evaluate(() => document.querySelector('#sheet > .rgsetrow').getBoundingClientRect().height > 200), '⑨ 요약을 누르면 그 칸이 펼쳐짐'); await p.evaluate(() => { document.querySelector('#sheet .rgsetrow > details.regcfg').open = false; });
   await p.evaluate(() => { ux2Put('regtop', 0); ux2Apply(); }); await p.waitForTimeout(150);
   const rg0 = await p.evaluate(() => { const y = (s) => Math.round(document.querySelector('#sheet > ' + s).getBoundingClientRect().top); return { q: y('.rgsearch'), ws: y('.rgws'), set: y('.rgsetrow') }; });
