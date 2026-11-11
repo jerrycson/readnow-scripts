@@ -16629,6 +16629,7 @@ const NAV_X = {
   ledOrd: ['📋 판매처 주문 모음', '모든 판매처 주문을 한 표로(통합 장부)', () => openLedgerOrd(), () => typeof openLedgerOrd === 'function'],
   naver: ['🟩 네이버 스마트스토어', '준비 중 — 커머스 API를 잇고 통합 장부 ⚙ 판매처 목록에 더하면 장부·주문 모음에 저절로', () => toast('🟩 네이버 스마트스토어는 아직 잇기 전입니다 — 🧾 통합 장부 › ⚙ 판매처 목록에 더하면 장부·주문 모음에 저절로 들어옵니다')],
   wx: ['🌦 기상청 날씨', '소비심리 연구 재료 — 인증키·지점·모은 기간', () => featGo({ go: { tab: 'settings', sec: 'set_wx' } })],
+  evo: ['🧬 진화 증거', '연구마다 엔진이 날마다 다시 셈하나 — 챔피언·도전자·추세(🔬 연구 모음 안)', () => openResearch(), () => typeof openResearch === 'function'],
   mgr: ['🧭 관리도구', '노선표·건강판 · PC 원격 조작 · 늘 켜 둘 PC', () => openMgr()],
   obsEdit: ['🔭 관찰 도구 칸 만들기', '알라딘 관찰 도구 칸 ✏ 만들기·고치기', () => openObsEdit(null)],
 };
