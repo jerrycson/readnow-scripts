@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "daily",
+ "what": "🔬 정밀 점검 11/11 추가 — 휴대폰 등록할 곳 토글 잘림 고침",
+ "since": "2026-11-11T14:02:45Z",
+ "beat": "2026-11-11T14:02:45Z",
  "ask": null,
  "last": {
   "who": "daily",
   "done": "🔬 정밀 점검 11/11 끝 — 4cd72b24 웹앱 1.78.484·수집기 1.89.265·번외 0.1.24 · 보고 e3bd2cca · 점검 기록 넣기",
   "at": "2026-11-11T14:00:48Z"
  },
- "host": null
+ "host": "vm"
 }
