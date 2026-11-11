@@ -5542,11 +5542,13 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       for (; prog.i < prog.list.length; prog.i++) {
         if (stopFlag) { if (w) await b.commit(); await saveProgress(name, prog); throw new Error('멈춤'); }
         const [id, sc] = String(prog.list[prog.i]).split('|');
+        /* (engfix1 11/11) ☁ 목록을 만든 뒤 다른 곳(클라우드 숍 요약 다시 읽기 · 다른 회차)이 이미 새로 읽은 판매자는 건너뜀 — 로거 테더링 몫을 아낌 · 판매자 문서 읽기는 한 번(아래 sPrev로 다시 씀) */
+        let sPre = null; if (mode !== 'all') { const sd0 = await C('sellers').doc(id).get().catch(() => null); sPre = sd0 && sd0.exists ? sd0.data() : {}; if (sPre.rev6mAt && Date.now() - Date.parse(sPre.rev6mAt) < Math.max(1, SET.rev6mDays || 7) * 864e5) { prog.skipFresh = (prog.skipFresh || 0) + 1; continue; } }
         let doc; try { ({ doc } = await getDoc(`/shop/usedshop/wshopitem.aspx?SC=${sc}`)); } catch (e) { if (e && /🛡 로거/.test(String(e.message || ''))) { log(`SC ${sc}: 🛡 로거 크롬이 열지 않는 주소(우리 숍·로그인 영역) — 건너뜀 (7일 뒤 다시)`, 1); b.set(C('sellers').doc(id), { rev6mTriedAt: nowIso(), rev6mTriedVer: RSV.VERSION, ...W() }, { merge: true }); w++; continue; } /* (1.89.224 🔬 정밀 점검 11/06) 막힌 주소는 재시도 없이 건너뜀 */ if (!(e && e.goneSeller)) throw e; log(`SC ${sc}: 알라딘에서 탈퇴한 판매자 — 건너뜀 (7일 뒤 다시)`, 1); b.set(C('sellers').doc(id), { rev6mTriedAt: nowIso(), rev6mTriedVer: RSV.VERSION, shopGone: true, ...W() }, { merge: true }); w++; continue; } /* (1.89.160) */
         const r = RSV.parseShopSummary(doc); let shopSigNow = null; // (1.89.32 3시간 점검) shopSig를 아래 sellers 쓰기 한 번에 함께 — 전엔 같은 문서를 따로 두 번 써 판매자마다 쓰기가 한 번 더 났음
         if (r.status === 'ok' || r.status === 'lt3') { // lt3 = 최근 6개월 평가 3건 미만(알라딘이 '-'로 표시) — 실패가 아니라 '최근 활동 거의 없음'이라는 정보
           { const sNew = { rev6m: r.rev6m ?? null, rev6mLt3: r.rev6mLt3 ?? null, shopPeriods: r.periods ?? null, shopTotal: r.total ?? null, aladinGrade: r.grade ?? null, isPro: r.isPro ?? null, cancel3m: r.cancel3m ?? null, bizInfo: r.info || null, contactNote: r.infoNote || null };
-            const sSig = JSON.stringify(sNew); const sd = (await C('sellers').doc(id).get().catch(() => null)); const sPrev = sd && sd.exists ? sd.data() : {};
+            const sSig = JSON.stringify(sNew); const sd = sPre ? null : (await C('sellers').doc(id).get().catch(() => null)); const sPrev = sPre || (sd && sd.exists ? sd.data() : {});
             if (sPrev.shopSig !== sSig) { b.set(C('seller_history').doc(`${id}_${nowIso().replace(/[:.]/g, '-')}`), { sellerId: id, sc, kind: 'shopSummary', at: nowIso(), ...sNew, ...W() }); w++; } // 숍 화면 내용이 바뀌면 그 판을 시각과 함께 보관 (sellers 문서는 지금 값만)
             shopSigNow = sSig; }
           if (qSet.has('*') || qSet.has(String(sc))) { b.set(C('app_settings').doc('seller_queue'), { sc: firebase.firestore.FieldValue.arrayRemove(String(sc)) }, { merge: true }); qSet.delete(String(sc)); w++; } /* (1.84.8) 모으기 줄에서 뺌 · (1.89.32 3시간 점검) 줄에 있던 판매자만 — 전엔 판매자마다 같은 설정 문서를 지워 쓰기가 한 번씩 더 났음 */
@@ -5561,7 +5563,7 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
       }
       if (w) await b.commit();
       await finishJob(name, { sellers: prog.list.length, got: prog.got });
-      log(`6개월 평가 수 완료: ${prog.got}/${prog.list.length}곳 (그중 최근 6개월 평가 3건 미만 ${prog.lt3 || 0}곳 — 개인셀러에 많음)`);
+      log(`6개월 평가 수 완료: ${prog.got}/${prog.list.length}곳 (그중 최근 6개월 평가 3건 미만 ${prog.lt3 || 0}곳 — 개인셀러에 많음${prog.skipFresh ? ` · 이미 새로 읽힌 ${prog.skipFresh}곳 건너뜀` : ''})`);
     } finally { await releaseLane('aladin'); }
   }
   const num6 = (n) => Number(n).toLocaleString();
