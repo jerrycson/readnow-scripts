@@ -1,2 +1,2 @@
-doc=app_settings/aladin_login
-# 1284816538
+recentUp=ext_basic&mins=120&perf=0
+# 182267042

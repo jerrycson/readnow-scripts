@@ -11,10 +11,13 @@ const fs = require('fs'), path = require('path'), zlib = require('zlib'), crypto
 const ROOT = path.join(__dirname, '..');
 const API = (process.env.HOSTING_API || 'https://firebasehosting.googleapis.com').replace(/\/$/, '');
 const TOKEN = process.env.HOSTING_TOKEN || '';
-const fbj = JSON.parse(fs.readFileSync(path.join(ROOT, 'firebase.json'), 'utf8')).hosting;
+/* (11/11 shop1) HOSTING_CONF=<설정 json> → 그 설정(site·headers)으로 — 우리숍 둘째 사이트(hosting/shop.json) · 없으면 예전처럼 firebase.json */
+const fbj = process.env.HOSTING_CONF ? JSON.parse(fs.readFileSync(path.resolve(ROOT, process.env.HOSTING_CONF), 'utf8')) : JSON.parse(fs.readFileSync(path.join(ROOT, 'firebase.json'), 'utf8')).hosting;
 
 /* firebase.json의 headers([{source, headers:[{key,value}]}]) → REST 설정([{glob, headers:{키:값}}]) */
-const restConfig = (h = fbj) => ({ headers: (h.headers || []).map((x) => ({ glob: x.source, headers: Object.fromEntries((x.headers || []).map((k) => [k.key, k.value])) })) });
+const restConfig = (h = fbj) => ({ headers: (h.headers || []).map((x) => ({ glob: x.source, headers: Object.fromEntries((x.headers || []).map((k) => [k.key, k.value])) })),
+  /* (11/11 shop2) rewrites [{source, run:{serviceId, region}}] → REST [{glob, run}] — 우리숍 검색 주소(/b/**·sitemap)만 · 관리 사이트(firebase.json)엔 없어 예전과 같음 */
+  ...((h.rewrites || []).length ? { rewrites: h.rewrites.filter((x) => x && x.source && x.run && x.run.serviceId).map((x) => ({ glob: x.source, run: { serviceId: x.run.serviceId, region: x.run.region || 'asia-northeast3' } })) } : {}) });
 
 function walk(dir, rel = '', out = []) {
   for (const n of fs.readdirSync(dir).sort()) { const p = path.join(dir, n), r = rel + '/' + n; const st = fs.statSync(p); if (st.isDirectory()) walk(p, r, out); else out.push({ path: r, abs: p }); }

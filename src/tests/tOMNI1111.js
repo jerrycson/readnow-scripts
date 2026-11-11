@@ -2,7 +2,7 @@
 //   (11/11 omni2 더함) ③ 재고 맞추기 알라딘 쪽(예스24에서 팔렸는데 알라딘 판매중 · 30일 밖 주문도 SKU · 판매 뒤 다시 올린 것은 뺌) · 💓 웹앱 열린 PC 없음 경보(omniAlarm)
 //        · 🛍 우리숍 주문 어댑터 자리(LED_ORD_AD — shop1 shop_orders 모양) → 장부·자동 내림 · ☁ 클라우드 대신 자동 내림(cloud/index.js omniCloudTick — 가짜 Firestore)
 //        · 화면: 홈 알림 '못 맡김 n건'·'PC 없음' → 누르면 🛠 처리할 일 › 🤖 자동 내림 카드 · 휴대폰 공유 요약에도 · 카드 💓 맥박 줄 · 🔍 알라딘 줄 맡기기 두 번 · 📋 주문 모음 🛍 칩
-//   ① 순수 셈: ◆ledger 덩어리만 떼어 돌림 — omniPick(켠 뒤 주문만 · 팔린 판매처는 안 건드림 · 예스24는 자체코드 = SKU만 · 같은 열쇠 한 번 · 상한) · omniRecon(실물 없음·짝 없음·자체코드 없음 · 판매처 합계)
+//   ① 순수 셈: ◆ledger 덩어리만 떼어 돌림 — omniPick(켠 뒤 주문만 · 팔린 판매처는 안 건드림 · 예스24는 하나로 정해질 때(자체코드 = SKU · (11/11 led2b) 자체코드가 비어도 이은 예스24 상품이 꼭 하나면) · 같은 열쇠 한 번 · 상한) · omniRecon(실물 없음·짝 없음·자체코드 없음 · 판매처 합계)
 //   ② 화면(harness): 🛠 처리할 일 위 🤖 자동 내림 카드(기본 켬) → 1분 돌기(omniTick) 한 번 = 예스24 주문 → 알라딘 판매중지 맡김 1건 · 다시 돌아도 되풀이 0 · 단계 줄
 //        · 알라딘 주문 → 예스24 판매중지를 번외(가짜 127.0.0.1:8797)에 맡김 · 끄면(두 기기 같은 설정) 맡기지 않음 · 켜기 전 주문은 안 맡김 · 로거 PC는 안 돎
 //        · 🔍 재고 맞추기 카드 · 실물 없음 줄 🟦 맡기기 두 번 = 번외에 판매중지 1건 · 📋 주문 모음 보기(판매처 칩·상태)
@@ -11,7 +11,7 @@ const fs = require('fs'); const path = require('path');
 let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 700)); } else console.log('  ✓', m); };
 const APP = process.env.RN_APP || [path.resolve(__dirname, '..', 'app.html'), path.resolve(__dirname, '..', '..', 'src', 'app.html')].find((x) => fs.existsSync(x));
 const T = fs.readFileSync(APP, 'utf8'); const cut = (a, b) => { const i = T.indexOf(a); const j = T.indexOf(b); if (i < 0 || j < i) throw new Error('덩어리 못 찾음: ' + a); return T.slice(i, j); };
-const F = new Function(cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + '\nreturn { ledBuild, ledTodo, omniPick, omniRk, omniRecon, OMNI_LIM, omniAlarm, OMNI_HB_MIN };')();
+const F = new Function(cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + '\nreturn { ledBuild, ledTodo, ledY24One, omniPick, omniRk, omniRecon, OMNI_LIM, omniAlarm, OMNI_HB_MIN };')();
 console.log('① 순수 셈');
 { const I = { now: '2026-11-11T05:00:00Z', days: 30,
     al: [{ id: 'aladin_U1', title: '책1', price: 8000, qty: 1, live: true, st: '판매중', skus: ['S1'] }, { id: 'aladin_U3', title: '책3', price: 3000, qty: 0, live: false, st: '판매완료', skus: ['S3'] }, { id: 'aladin_U4', title: '책4', price: 3000, qty: 1, live: true, st: '판매중', skus: ['S4'] }],
@@ -21,10 +21,22 @@ console.log('① 순수 셈');
   ok(t1 && t1.from.join() === 'yes24' && t3 && t3.from.join() === 'aladin', '처리할 일에 어디서 팔렸는지(from)', TD.map((x) => [x.key, x.from]));
   ok(t3 && t3.acts.some((a) => a.ch === 'yes24' && a.k === 'down' && a.no === '903'), '알라딘에서 팔려 판매완료가 된 상품도 장부에 남아 → 예스24 내릴 일이 생김(예전엔 사라졌음)', t3);
   const P = F.omniPick(TD, { from: '2026-11-11T03:00:00Z' }); const ks = P.map((p) => p.T.key + ':' + p.a.ch).sort();
-  ok(JSON.stringify(ks) === JSON.stringify(['S1:aladin', 'S3:yes24']), '고르기: 예스24 주문 → 알라딘 · 알라딘 주문 → 예스24(자체코드 = SKU) · 자체코드 없는 예스24(짐작 짝)는 사람 손', ks);
+  ok(JSON.stringify(ks) === JSON.stringify(['S1:aladin', 'S3:yes24', 'S4:yes24']), '고르기: 예스24 주문 → 알라딘 · 알라딘 주문 → 예스24(자체코드 = SKU) · (led2b) 자체코드 없는 예스24도 이은 상품이 꼭 하나면 자동(번호로 찾고 자체코드 채움)', ks);
+  { const t4 = TD.find((x) => x.key === 'S4'); const a4 = t4.acts.find((a) => a.ch === 'yes24'); const o4 = F.ledY24One(t4, a4); ok(o4.mode === 'fill' && o4.no === '904' && o4.fill === 'S4' && !o4.self, '(led2b) 자체코드 없는 예스24 904 = 하나로 정해짐 → 번호 904로 맡기고 자체코드 S4 채움', o4); }
+  { /* 같은 ISBN 예스24 상품이 둘(905·906)이고 둘 다 알라딘 U5와 이어짐 → 하나로 못 정함 = 자동 안 함 · 사람이 고르면(pk) 그것으로 자동도 됨 · 같은 책 알라딘 여럿과 이은 예스24(multi)도 사람 손 */
+    const I2 = { ...I, al: I.al.concat([{ id: 'aladin_U5', title: '책5', isbn: '9788900000005', price: 3000, qty: 1, live: true, st: '판매중', skus: ['S5'] }, { id: 'aladin_U6', title: '책6', isbn: '9788900000006', price: 3000, qty: 1, live: true, st: '판매중', skus: ['S6'] }, { id: 'aladin_U7', title: '책6', isbn: '9788900000006', price: 3000, qty: 1, live: true, st: '판매중', skus: ['S7'] }]),
+      y24: I.y24.concat([{ no: '905', title: '책5', isbn: '9788900000005', stock: 1, live: true, self: '', alIds: ['aladin_U5'], flags: [] }, { no: '906', title: '책5', isbn: '9788900000005', stock: 1, live: true, self: '', alIds: ['aladin_U5'], flags: [] }, { no: '907', title: '책6', isbn: '9788900000006', stock: 1, live: true, self: '', alIds: ['aladin_U6', 'aladin_U7'], flags: [] }]),
+      ord: I.ord.concat([{ ch: 'aladin', no: 'o5', at: '2026-11-11T04:30:00Z', amt: 3000, lines: [{ lid: 'aladin_U5', qty: 1 }] }, { ch: 'aladin', no: 'o6', at: '2026-11-11T04:31:00Z', amt: 3000, lines: [{ lid: 'aladin_U6', qty: 1 }] }]) };
+    const TD2 = F.ledTodo(F.ledBuild(I2)); const t5 = TD2.find((x) => x.key === 'S5'), t6 = TD2.find((x) => x.key === 'S6'); const a5 = t5 && t5.acts.find((a) => a.ch === 'yes24'), a6 = t6 && t6.acts.find((a) => a.ch === 'yes24');
+    const o5 = a5 && F.ledY24One(t5, a5), o6 = a6 && F.ledY24One(t6, a6); const k2 = F.omniPick(TD2, { from: '2026-11-11T03:00:00Z' }).map((p) => p.T.key + ':' + p.a.ch);
+    ok(o5 && o5.mode === 'pick' && /2개/.test(o5.why) && a5.cands.length === 2 && o6 && o6.mode === 'pick' && /여럿/.test(o6.why) && !k2.includes('S5:yes24') && !k2.includes('S6:yes24'), '같은 ISBN 예스24 상품이 둘 · 알라딘 여럿과 이은 예스24 = 하나로 못 정함 → 자동 안 함(그 줄에서 고르기)', { o5, o6, k2 });
+    const o5p = F.ledY24One(t5, a5, { S5: '906' }); const k3 = F.omniPick(TD2, { from: '2026-11-11T03:00:00Z', pk: { S5: '906' } }).find((p) => p.T.key === 'S5' && p.a.ch === 'yes24');
+    ok(o5p.mode === 'fill' && o5p.no === '906' && o5p.fill === 'S5' && k3, '사람이 906을 고르면 그 상품으로 정해짐(맡기기·자동 모두)', { o5p, k3: !!k3 });
+    const I3 = { ...I2, y24: I2.y24.map((y) => (y.no === '906' ? { ...y, man: true } : y)) }; const TD3 = F.ledTodo(F.ledBuild(I3)); const t5m = TD3.find((x) => x.key === 'S5'); const o5m = F.ledY24One(t5m, t5m.acts.find((a) => a.ch === 'yes24'));
+    ok(o5m.mode === 'fill' && o5m.no === '906', '연결 표에서 사람이 고른 짝(man)이 꼭 하나면 그것으로 정함(다른 기기에서도)', o5m); }
   ok(!P.some((p) => p.a.ch === p.T.from[0]), '팔린 판매처 자신은 건드리지 않음');
-  ok(F.omniPick(TD, { from: '2026-11-11T04:15:00Z' }).length === 0 && F.omniPick(TD, { from: '' }).length === 0, '켠 시각 앞 주문은 안 고름 · 켠 시각이 없으면 아무것도 안 고름');
-  const done = new Set([P[0].rk]); ok(F.omniPick(TD, { from: '2026-11-11T03:00:00Z', done }).length === 1, '같은 할 일 열쇠는 한 번만');
+  ok(F.omniPick(TD, { from: '2026-11-11T04:25:00Z' }).length === 0 && F.omniPick(TD, { from: '' }).length === 0, '켠 시각 앞 주문은 안 고름 · 켠 시각이 없으면 아무것도 안 고름');
+  const done = new Set([P[0].rk]); ok(F.omniPick(TD, { from: '2026-11-11T03:00:00Z', done }).length === P.length - 1, '같은 할 일 열쇠는 한 번만');
   ok(F.omniPick(TD, { from: '2026-11-11T03:00:00Z', lim: { aladin: 0 } }).every((p) => p.a.ch !== 'aladin'), '판매처마다 한 번에 맡기는 수 상한');
   const t1b = { ...t1, last: '2026-11-11T06:00:00Z' }; ok(F.omniRk(t1b, t1.acts[0]) !== F.omniRk(t1, t1.acts[0]), '새로 팔리면(주문 시각이 바뀌면) 새 열쇠');
   const R = F.omniRecon({ al: [{ id: 'a', st: '판매중', live: true, skus: ['K1'], qty: 1 }, { id: 'b', st: '판매완료', live: false, skus: ['K2'] }, { id: 'c', st: '판매중지', live: false, skus: ['K5'] }],

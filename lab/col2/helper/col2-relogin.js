@@ -37,6 +37,11 @@ if(b){b.click();return'click'}if(f){f.requestSubmit?f.requestSubmit():f.submit()
 const JS_WHERE = `(()=>{const vis=(e)=>!!e&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden';const pw=[...document.querySelectorAll('input[type=password]')].some(vis);
 const t=(document.body&&document.body.innerText||'').slice(0,20000);const m=t.match(/[^\n]{0,40}(일치하지|올바르지|잘못\s*입력|틀렸|확인해\s*주|다시\s*입력|잠금|잠겼|제한|정지|실패|중복\s*로그인|다른\s*(곳|기기|PC)에서)[^\n]{0,40}/);
 return{login:/login/i.test(location.pathname)||pw,p:location.pathname,err:m?m[0].trim().slice(0,120):''}})()`;
+/* (11/11 y24ops2 · 정범님 HOME '저장된 계정이 있는데 로그인 화면에 멈춤') 실패 때 로그인 화면 모양 — 입력 칸 종류·수 · 보이는 단추 글(짧게) · 숨은 칸 수 · 틀(iframe) 수 · 보안 문자 칸 · 주소 — 값은 읽지 않음 */
+const JS_SHAPE = `(()=>{const vis=(e)=>!!e&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden';const I=[...document.querySelectorAll('input')];const c={};I.filter(vis).forEach((e)=>{const t=(e.getAttribute('type')||'text').toLowerCase();c[t]=(c[t]||0)+1});
+const hid=I.filter((e)=>(e.getAttribute('type')||'').toLowerCase()==='hidden').length;const B=[...document.querySelectorAll('button,input[type=submit],input[type=button],a[role=button],[role=button]')].filter(vis).map((b)=>(b.innerText||b.value||'').replace(/\s+/g,' ').trim().slice(0,12)).filter(Boolean).slice(0,8);
+const fr=document.querySelectorAll('iframe').length;const cap=!!document.querySelector('iframe[src*="recaptcha"],.g-recaptcha,[name*="captcha" i],[id*="captcha" i],img[src*="captcha" i]');
+return '주소 '+location.pathname.slice(0,40)+' · 입력 칸 '+(Object.entries(c).map(([k,v])=>k+' '+v).join('·')||'없음')+' · 숨은 칸 '+hid+' · 단추 ['+B.join(' | ')+'] · 틀 '+fr+(cap?' · 보안 문자 칸 있음':' · 보안 문자 칸 없음')+(document.forms.length?' · 양식 '+document.forms.length:' · 양식 없음')})()`;
 const JS_ENTER = `(()=>{const pw=document.querySelector('[data-rn3-pw]');if(!pw)return false;pw.focus();for(const t of ['keydown','keypress','keyup'])pw.dispatchEvent(new KeyboardEvent(t,{key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true}));return true})()`;
 /* 로그인 한 번(사람처럼) — getK()는 {ok,id,pw}|{ok:false,err}를 주는 함수(저장된 계정 풀기 또는 지금 넣은 값) · 풀린 값은 이 안에서만 쓰고 버림 → {ok, how}|{ok:false, why, human, bad}
  *  (11/10 밤 정범님 '예스24는 「확인 중」만 오래 있다가 그냥 풀려') ctx.phase(글)로 지금 무엇을 하는지 알림(화면에 '몇 초째'로) — 시간이 넘으면 phase가 오류를 던져 그 자리에서 멈춤
@@ -57,6 +62,7 @@ async function doLogin(ctx, getK) { let res = null; const ph = (t) => (ctx.phase
               ph('로그인 뒤 화면 살피는 중'); const h1 = await ctx.ev(JS_HUMAN, 10000).catch(() => ''); if (h1) res = { ok: false, human: true, why: `로그인 뒤 ${h1} 화면 — 사람 손이 필요` };
               else { ph('로그인 됐는지 첫 화면으로 확인하는 중'); const em = (w && w.login && w.err) ? w.err : '';
                 res = (await ctx.check()) ? { ok: true, how: go } : { ok: false, bad: true, how: go, why: '로그인 뒤에도 로그인 화면(아이디·비밀번호가 틀렸거나 막힘)' + (em ? ` · 화면 글: '${em}'` : '') + ` · 누른 방법: ${({ click: '단추', submit: '양식 보냄', key: 'Enter 키', enter: '가짜 Enter' })[go] || go}` }; } } } } }
+  if (res && !res.ok && !res.human && ctx.shape) { const sh = await ctx.ev(JS_SHAPE, 8000).catch(() => ''); if (sh) { res.why = (res.why || '') + ` · 화면 모양: ${String(sh).slice(0, 220)}`; res.shape = String(sh).slice(0, 220); } } /* (11/11 y24ops2) 실패면 까닭에 화면 모양까지(값 없음) */
   return res; }
 /* (11/11) 로그인하는 동안 뜬 브라우저 알림·물음 — 알림(alert)은 닫고, '다른 곳 접속을 끊고 로그인할까요' 같은 로그인 이어 가기 물음만 '예'(사람이 로그인할 때 누르는 것과 같음)
  *  · 삭제·탈퇴·해지·변경 같은 말이 있으면 늘 '아니오' · 로그인 일 밖에서는 이 규칙을 쓰지 않음(부른 쪽이 로그인 중일 때만) */
@@ -110,7 +116,7 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
   for (const k of Object.keys(S)) { const jb = S[k] && S[k].job; if (jb && jb.on) { jb.on = false; jb.end = now(); jb.res = { ok: false, kind: 'unsure', msg: '확인하는 동안 도우미가 다시 켜져 확인이 끊김 — 다시 [확인하고 저장]을 눌러 주세요(저장하지 않음)', canForce: true }; } }
   function jobStart(pf, maxSec) { const p = P(pf); const jb = { on: true, at0: now(), phase: '시작', atP: now(), max: maxSec || 0, abort: false, res: null }; p.job = jb; save();
     jb.ph = (t) => { if (jb.abort) throw new Error(`${jb.max}초 안에 끝나지 않아 확인을 멈춤(마지막 단계: ${jb.phase})`); jb.phase = String(t || '').slice(0, 80); jb.atP = now(); }; return jb; }
-  function jobEnd(pf, r) { const p = P(pf); const jb = p.job; if (!jb) return; jb.on = false; jb.end = now(); jb.res = r ? { ok: !!r.ok, kind: String(r.kind || ''), msg: String(r.msg || '').slice(0, 400), canForce: !!r.canForce } : null; save(); }
+  function jobEnd(pf, r) { const p = P(pf); const jb = p.job; if (!jb) return; jb.on = false; jb.end = now(); jb.res = r ? { ok: !!r.ok, kind: String(r.kind || ''), msg: String(r.msg || '').slice(0, 800) /* (11/11) 자리 안내(쥔 기기·할 일)가 길어 400 → 800 */, canForce: !!r.canForce } : null; save(); }
   const jobOn = (pf) => { const jb = P(pf).job; return !!(jb && jb.on); };
   const anyJob = () => Object.keys(S).some((k) => jobOn(k));
   const jobView = (pf) => { const jb = P(pf).job; if (!jb) return null; return { on: !!jb.on, at0: jb.at0, phase: jb.phase, atP: jb.atP, max: jb.max, end: jb.end || null, res: jb.res || null }; };
