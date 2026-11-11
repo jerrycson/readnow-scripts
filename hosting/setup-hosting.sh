@@ -1,7 +1,7 @@
 #!/bin/bash
 # 🌐 Firebase Hosting 준비 (한 번 · Google Cloud Shell에서 프로젝트 소유자 계정으로) — 11/10
 #   붙여 넣기(한 줄): curl -sL https://raw.githubusercontent.com/jerrycson/readnow-scripts/main/hosting/setup-hosting.sh | bash
-#   하는 일: ⓪ GitHub 확인 통로에 Hosting 작업(deploy-hosting.yml)도 허용(11/09 실패 원인: 조건이 deploy-cloud.yml만 허용) ① Hosting 기능 켜기 ② 자동 배포 계정(gh-deployer)에 Hosting 올리기 권한 ③ 기본 사이트(readnow-3a385.web.app)가 없으면 만들기
+#   하는 일: ⓪ GitHub 확인 통로에 Hosting 작업(deploy-hosting.yml)도 허용(11/09 실패 원인: 조건이 deploy-cloud.yml만 허용) · (11/11) 🛍 우리숍 내기(deploy-shop.yml)도 허용 — 11/11 첫 실행이 'attribute condition'으로 막힘 ① Hosting 기능 켜기 ② 자동 배포 계정(gh-deployer)에 Hosting 올리기 권한 ③ 기본 사이트(readnow-3a385.web.app)가 없으면 만들기
 #   비밀번호·열쇠를 만들거나 받지 않음 · 여러 번 실행해도 같음 · 되돌리기: 맨 아래 주석
 set -e
 PROJECT=readnow-3a385; SA=gh-deployer@$PROJECT.iam.gserviceaccount.com; SITE=$PROJECT
@@ -10,9 +10,9 @@ echo "⓪ GitHub 확인 통로에 Hosting 작업도 허용"
 REPO=jerrycson/readnow-scripts
 RID=$(curl -fsS "https://api.github.com/repos/$REPO" | grep -m1 -oP '"id":\s*\K[0-9]+' || true)
 if [ -n "$RID" ]; then
-  COND="assertion.repository_id=='$RID' && assertion.ref=='refs/heads/main' && (assertion.workflow_ref.startsWith('$REPO/.github/workflows/deploy-cloud.yml@') || assertion.workflow_ref.startsWith('$REPO/.github/workflows/deploy-hosting.yml@') || assertion.workflow_ref.startsWith('$REPO/.github/workflows/hosting-domain.yml@'))"
+  COND="assertion.repository_id=='$RID' && assertion.ref=='refs/heads/main' && (assertion.workflow_ref.startsWith('$REPO/.github/workflows/deploy-cloud.yml@') || assertion.workflow_ref.startsWith('$REPO/.github/workflows/deploy-hosting.yml@') || assertion.workflow_ref.startsWith('$REPO/.github/workflows/hosting-domain.yml@') || assertion.workflow_ref.startsWith('$REPO/.github/workflows/deploy-shop.yml@'))"
   gcloud iam workload-identity-pools providers update-oidc readnow-scripts --location=global --workload-identity-pool=github --attribute-condition="$COND" >/dev/null
-  echo "   통로 조건: 이 저장소 main의 클라우드 배포·Hosting 두 작업만"
+  echo "   통로 조건: 이 저장소 main의 클라우드 배포 · Hosting 내기 · 사용자 지정 도메인 · 🛍 우리숍 내기 작업만"
 else echo "   ⚠ 저장소 번호를 못 읽음 — 한 번 더 실행해 주세요"; exit 1; fi
 echo "① Hosting 기능 켜기"; gcloud services enable firebasehosting.googleapis.com firebase.googleapis.com
 echo "② 자동 배포 계정에 Hosting 권한"; gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$SA" --role=roles/firebasehosting.admin --condition=None >/dev/null; echo "   roles/firebasehosting.admin"
