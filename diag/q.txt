@@ -1,2 +1,2 @@
-doc=app_settings/ext_run,app_settings/sp_panel,ml_oop_study/2026-11-04,ml_oop_study/2026-11-05,ml_oop_study/2026-11-06,ml_oop_study/2026-11-07,ml_oop_study/2026-11-08,ml_oop_study/2026-11-09,ml_oop_study/2026-11-10
-# 107369531
+recentUp=ext_basic&mins=120&perf=0
+# 182267042
