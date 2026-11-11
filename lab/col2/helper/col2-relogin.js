@@ -110,7 +110,7 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
   for (const k of Object.keys(S)) { const jb = S[k] && S[k].job; if (jb && jb.on) { jb.on = false; jb.end = now(); jb.res = { ok: false, kind: 'unsure', msg: '확인하는 동안 도우미가 다시 켜져 확인이 끊김 — 다시 [확인하고 저장]을 눌러 주세요(저장하지 않음)', canForce: true }; } }
   function jobStart(pf, maxSec) { const p = P(pf); const jb = { on: true, at0: now(), phase: '시작', atP: now(), max: maxSec || 0, abort: false, res: null }; p.job = jb; save();
     jb.ph = (t) => { if (jb.abort) throw new Error(`${jb.max}초 안에 끝나지 않아 확인을 멈춤(마지막 단계: ${jb.phase})`); jb.phase = String(t || '').slice(0, 80); jb.atP = now(); }; return jb; }
-  function jobEnd(pf, r) { const p = P(pf); const jb = p.job; if (!jb) return; jb.on = false; jb.end = now(); jb.res = r ? { ok: !!r.ok, kind: String(r.kind || ''), msg: String(r.msg || '').slice(0, 400), canForce: !!r.canForce } : null; save(); }
+  function jobEnd(pf, r) { const p = P(pf); const jb = p.job; if (!jb) return; jb.on = false; jb.end = now(); jb.res = r ? { ok: !!r.ok, kind: String(r.kind || ''), msg: String(r.msg || '').slice(0, 800) /* (11/11) 자리 안내(쥔 기기·할 일)가 길어 400 → 800 */, canForce: !!r.canForce } : null; save(); }
   const jobOn = (pf) => { const jb = P(pf).job; return !!(jb && jb.on); };
   const anyJob = () => Object.keys(S).some((k) => jobOn(k));
   const jobView = (pf) => { const jb = P(pf).job; if (!jb) return null; return { on: !!jb.on, at0: jb.at0, phase: jb.phase, atP: jb.atP, max: jb.max, end: jb.end || null, res: jb.res || null }; };

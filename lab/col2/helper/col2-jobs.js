@@ -150,7 +150,15 @@ function makeJobs(ctx) {
     record(t, w.a, w.id, cmp.verdict, cmp.reasons || [], { ms: w.ms, rows: (cmp.rows || []).filter((x) => x.k !== 'same').slice(0, 8), how: cmp.how || null, ageH: cmp.ageH == null ? null : cmp.ageH, why: cmp.why || null }); }
 
   /* 기록 — col2_jobs 한 건 · col2_jday 하루 요약(일마다 같음 비율·다름 까닭·넘길 수 있음) · 기록창 한 줄 */
+  /* (11/11 col2rep1) ✗ 못 읽음 까닭 묶음 — 11/11 진단에서 예스24 도서 정보·네이버 도서·알라딘 TTB·예스24 중고가 두 PC 모두 '못 읽음 100%'인데 하루 요약에 까닭이 없어 고칠 곳을 못 찾았음
+   *  → 까닭 글을 꼴로 묶어(숫자·주소 뺌) 일마다 많은 것 6가지만 하루 요약(col2_jday … tasks.<일>.failWhy)에 · 값·손님 정보 없음 */
+  const failKey = (w) => { const t = String(w || '못 읽음'); const h = t.match(/HTTP\s*(\d{3})/i); if (h) return 'HTTP ' + h[1]; if (/키|key/i.test(t)) return '키 없음·틀림'; if (/30초|시간|timeout|abort/i.test(t)) return '시간 넘음';
+    if (/연결 실패|ENOTFOUND|ECONN|fetch failed|getaddrinfo|certificate|TLS/i.test(t)) return '연결 실패'; if (/몫|상한|차례|쉼|pace|429/i.test(t)) return '속도 몫·쉼'; if (/작업 창|크롬|브라우저|render|그린/i.test(t)) return '작업 창·그리기';
+    return t.replace(/https?:\/\/\S+/g, '').replace(/[\d,.]+/g, '#').replace(/\s+/g, ' ').trim().slice(0, 40) || '못 읽음'; };
+  function failAdd(k, why) { const s = S.day.t && S.day.t[k]; if (!s) return; const f = s.failWhy || (s.failWhy = {}); const key = failKey(why); f[key] = (f[key] || 0) + 1;
+    const ks = Object.keys(f); if (ks.length > 12) { ks.sort((a, b) => f[a] - f[b]); for (const x of ks.slice(0, ks.length - 12)) delete f[x]; } }
   function record(t, a, id, v, reasons, x) { x = x || {}; const d = kday(); if (S.day.d !== d) S.day = TK.dayNew(d); const s = TK.dayAdd(S.day, t.k, v, reasons); const ps = TK.passOf(s, P(), t.k);
+    if (v === 'fail') failAdd(t.k, x.why);
     const pcn = ctx.pc(); const did = String(t.k + '_' + id).replace(/[^\w.-]/g, '_').slice(0, 150);
     if (!x.noItem) ctx.out('col2_jobs', did, R({ task: t.k, name: t.name, col: t.col, id: String(id), key: a && a.key || null, at: new Date().toISOString(), d, verdict: v, reasons, why: x.why || null, rows: x.rows || [], how: x.how || null, ageH: x.ageH == null ? null : x.ageH, ms: x.ms || null, pc: pcn, kind: kind(), ver: ctx.VERSION }));
     ctx.out('col2_jday', `${d}_${String(pcn).replace(/[^\w.-]/g, '_')}`.slice(0, 150), { d, pc: pcn, kind: kind(), at: new Date().toISOString(), ver: ctx.VERSION, rule: ps.rule, tasks: summary() });
@@ -159,7 +167,7 @@ function makeJobs(ctx) {
     if (!x.quiet) ctx.note(`${t.name} ${id} — ${lab}${reasons && reasons.length ? '(' + reasons.map((r) => TK.WHY[r] || r).join('·') + ')' : ''}${x.why ? ' · ' + x.why : ''}`, { k: 'read', l: v === 'same' ? 'ok' : v === 'diff' && reasons.some((r) => TK.UNEXPLAINED.includes(r)) ? 'warn' : v === 'fail' ? 'warn' : 'info', m: t.name, d: { task: t.k, v, ms: x.ms || null } });
     if (ps.can && !(was && was.can)) ctx.note(`✅ ${t.name} — 오늘 '넘길 수 있음'(표본 ${ps.n} · 같음 ${ps.rate}% · ${ps.rule})`, { k: 'read', l: 'ok', m: t.name });
     save(); }
-  function summary() { const P0 = P(); const o = {}; for (const [k, s] of Object.entries(S.day.t || {})) { const t = TK.byK[k]; o[k] = { name: t ? t.name : k, n: s.n, same: s.same, diff: s.diff, un: s.un, fail: s.fail, noprod: s.noprod, skip: s.skip, why: s.why, pass: TK.passOf(s, P0, k) }; } return o; }
+  function summary() { const P0 = P(); const o = {}; for (const [k, s] of Object.entries(S.day.t || {})) { const t = TK.byK[k]; o[k] = { name: t ? t.name : k, n: s.n, same: s.same, diff: s.diff, un: s.un, fail: s.fail, noprod: s.noprod, skip: s.skip, why: s.why, failWhy: s.failWhy ? Object.fromEntries(Object.entries(s.failWhy).sort((a, b) => b[1] - a[1]).slice(0, 6)) : undefined, pass: TK.passOf(s, P0, k) }; } return o; }
   /* 화면용 — 일 목록(이 PC가 하는지 · 차례 · 오늘 셈 · 넘길 수 있음) */
   function view() { const pl = plan(); const sm = summary(); const lg = kind() === 'logger';
     return { kind: kind(), pc: ctx.pc(), d: S.day.d, rule: TK.passOf(null, P()).rule, wait: S.wait.length, busy: busy(), tasks: TK.TASKS.map((t) => ({ k: t.k, name: t.name, ops: t.ops, cls: t.cls, reader: t.reader, col: t.col, who: t.who, state: t.state, why: t.why || null, note: t.note || null,
