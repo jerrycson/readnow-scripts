@@ -1,2 +1,2 @@
-blist=ItemEditorChoice
-# 209199221
+doc=app_settings/adapt_ttbcmp,app_settings/adapt_cfg,app_settings/adapt_health,app_settings/ext_alive,app_settings/adapt_sel&alraw=1
+# 2859328319
