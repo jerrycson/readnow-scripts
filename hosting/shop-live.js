@@ -47,7 +47,7 @@ async function run(kind, browser) {
     const info = await p.evaluate(() => ({ title: document.title, over: document.documentElement.scrollWidth - window.innerWidth, broken: [...document.images].filter((i) => i.complete && i.naturalWidth === 0 && i.src && !i.src.startsWith('data:')).map((i) => i.src.slice(0, 120)), err: (document.querySelector('.err') || {}).textContent || '' }));
     const row = { kind, name, url: p.url().replace(BASE, ''), ok: okSel, ms: Date.now() - t0, ...info, shot: await shot(name), ...(extra ? await extra() : {}) }; R.pages.push(row);
     if (!okSel) bad(`${kind} ${name}: '${sel}' 안 보임 ${info.err.slice(0, 80)}`); if (info.over > 1) bad(`${kind} ${name}: 옆으로 ${info.over}px 넘침`); if (info.broken.length) bad(`${kind} ${name}: 깨진 사진 ${info.broken.length}장 (${info.broken[0]})`);
-    console.log(`  ${okSel ? '✓' : '✗'} ${kind} ${name} ${row.ms}ms`); return row; };
+    console.log(`  ${okSel ? '✓' : '✗'} ${kind} ${name} ${row.ms}ms ${row.url} ${JSON.stringify({ cards: row.cards, chips: row.chips, head: row.head, price: row.price, rows: row.rows, total: row.total, text: row.text })}`); return row; };
   await p.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
   await check('home', '#hc .grid .card, #hc .empty', async () => ({ cards: await p.locator('#hc .card').count(), chips: await p.locator('#hc .chip').count(), foot: ((await p.textContent('#foot')) || '').slice(0, 200) }));
   await p.evaluate(() => { location.hash = '#/list?s=new'; }); await check('list', '#lg .grid .card, #lg .empty', async () => ({ head: ((await p.textContent('#lh')) || '').trim() }));
@@ -56,6 +56,7 @@ async function run(kind, browser) {
   const chip2 = chip || (await p.evaluate(() => { const a = document.querySelector('#hc .chip'); return a ? a.getAttribute('href') : null; }));
   if (chip2) { await p.evaluate((h) => { location.hash = h; }, chip2); await check('category', '#lg .grid .card, #lg .empty'); }
   await p.evaluate(() => { location.hash = '#/list?s=new'; }); await p.waitForSelector('#lg .grid .card', { timeout: 15000 }).catch(() => {});
+  console.log('  목록 카드', await p.locator('#lg .card').count(), '주문 중', await p.locator('#lg .card.held').count(), p.url().replace(BASE, ''));
   const first = await p.evaluate(() => { const a = [...document.querySelectorAll('#lg .card')].find((x) => !x.classList.contains('held')); return a ? a.getAttribute('href') : null; });
   if (!first) { bad(`${kind}: 목록에 주문할 수 있는 책이 없음`); } else {
     await p.evaluate((h) => { location.hash = h; }, first); await check('item', '.det .info h1', async () => ({ price: ((await p.textContent('.price').catch(() => '')) || '').trim(), pics: await p.locator('#gal img').count() }));
@@ -70,7 +71,7 @@ async function run(kind, browser) {
   if (R.sampleB) { await p.goto(BASE + new URL(R.sampleB).pathname, { waitUntil: 'domcontentloaded' }); await check('b_page', 'h1'); }
   await p.goto(BASE + '/#/p/privacy', { waitUntil: 'domcontentloaded' }); await check('privacy', '.doc h1');
   if (errs.length) bad(`${kind}: 화면 오류 ${errs.length}개 — ${errs[0].slice(0, 160)}`); if (dlg.length) bad(`${kind}: 브라우저 창 ${dlg.length}번`);
-  R[kind] = { errs: errs.slice(0, 20), fails: [...new Set(fails)].slice(0, 30), orderPosts }; await ctx.close();
+  R[kind] = { errs: errs.slice(0, 20), fails: [...new Set(fails)].slice(0, 30), orderPosts }; console.log(`  ${kind} 실패한 요청:\n    ` + R[kind].fails.join('\n    ') + (errs.length ? `\n  화면 오류: ${errs.slice(0, 5).join(' | ')}` : '')); await ctx.close();
 }
 
 function md() { const L = [`### 🛍 우리숍 실제 점검 — ${BASE} · ${R.at}`, '', R.bad.length ? `**❌ 깨진 곳 ${R.bad.length}**` : '**✅ 깨진 곳 없음**', ...R.bad.map((x) => '- ' + x), '',
