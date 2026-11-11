@@ -230,7 +230,28 @@ function makeShop({ db, C, FV, log }) {
     } catch (e) { log && log('🛍 우리숍 창구 오류', path, e.message); return send(e.code === 413 ? 413 : 500, { ok: false, err: '잠시 문제가 생겼습니다 — 잠시 뒤 다시 해 주세요' }); }
   }
   const readBody = (req) => new Promise((ok, no) => { const ch = []; let n = 0; req.on('data', (c) => { n += c.length; if (n > 32e3) { no(Object.assign(new Error('너무 큼'), { code: 413 })); req.destroy(); } else ch.push(c); }); req.on('end', () => { try { ok(ch.length ? JSON.parse(Buffer.concat(ch).toString('utf8')) : {}); } catch (e) { ok({}); } }); req.on('error', no); });
-  return { handle, build, _cat: CAT };
+  let CHK = null; /* (11/11 shop3) 🔍 문 열기 전 점검 — 5분 기억(관리 기기 여럿이 열어도 한 번) */
+  async function check(force) { if (!force && CHK && Date.now() - CHK.t < 5 * 60e3) return CHK.v; try { await build(); } catch (e) {} const it = [...CAT.items.values()].find((x) => x && x.ph && x.ph.length) || [...CAT.items.values()][0] || null; const v = await selfCheck({ item: it }); v.n = CAT.items.size; CHK = { t: Date.now(), v }; return v; }
+  return { handle, build, check, _cat: CAT };
 }
 
-module.exports = { makeShop, pubItem, listItems, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };
+/* (11/11 shop3) 🔍 문 열기 전 점검 — 공개 주소를 클라우드가 직접 열어 봄(브라우저는 다른 출처라 상태 번호를 못 읽음) · 손님 정보 없음 · 결과 5분 기억
+ *  ① booksqueen.com 도메인(DNS A·TXT · https 열림 → 도메인 연결·인증서) ② booksqueen.web.app(사이트가 만들어지고 손님 화면이 올라감)
+ *  ③ /sitemap.xml · /b/<판매중 한 권>(Hosting → Cloud Run 넘김 · Cloud Run 공개 호출) ④ 실물 사진 한 장(Storage 사진 공개 읽기)
+ *  돌려줌 { at, dom: { a, txt, err }, https: { ok, st, err, why }, web: {...}, sm: {...}, b: {...}, ph: {...}, base } — 각 칸 ok(참·거짓·null = 못 봄) */
+const CHK_HOST = 'booksqueen.com'; const CHK_WEB = 'https://booksqueen.web.app';
+function chkWhy(e) { const c = String((e && ((e.cause && (e.cause.code || e.cause.message)) || e.code || e.message)) || ''); if (/ENOTFOUND|EAI_AGAIN|ENODATA/.test(c)) return { k: 'dns', t: '도메인을 못 찾음(DNS A 레코드가 아직 없음)' };
+  if (/CERT|SSL|TLS|ALTNAME|self.signed|UNABLE_TO_VERIFY|DEPTH_ZERO/i.test(c)) return { k: 'cert', t: '인증서가 아직(https 안 됨 — Firebase가 DNS를 보고 저절로 발급 · 몇 분~24시간)' };
+  if (/abort|timeout|ETIMEDOUT/i.test(c)) return { k: 'time', t: '응답이 늦음(10초)' }; if (/ECONNREFUSED|ECONNRESET/.test(c)) return { k: 'conn', t: '연결 거절(다른 서버를 가리킴?)' }; return { k: 'err', t: c.slice(0, 80) || '열기 실패' }; }
+async function chkGet(u, f, ms) { const ac = new AbortController(); const t = setTimeout(() => ac.abort(), ms || 10e3); try { const r = await f(u, { redirect: 'manual', signal: ac.signal, headers: { 'User-Agent': 'readnow-shop-check' } }); const ct = String((r.headers && r.headers.get && r.headers.get('content-type')) || ''); let body = ''; try { body = (await r.text()).slice(0, 2000); } catch (e) {} return { st: r.status, ct, body }; } catch (e) { return { err: chkWhy(e) }; } finally { clearTimeout(t); } }
+async function selfCheck(o) { o = o || {}; const f = o.fetch || fetch; const dns = o.dns || require('dns').promises; const out = { at: new Date().toISOString() };
+  const dn = {}; try { dn.a = await dns.resolve4(CHK_HOST); } catch (e) { dn.a = []; dn.err = chkWhy(e).t; } try { dn.txt = (await dns.resolveTxt(CHK_HOST)).map((x) => x.join('')).filter((x) => /hosting-site|firebase/i.test(x)).slice(0, 4); } catch (e) { dn.txt = []; } out.dom = dn;
+  const h = await chkGet('https://' + CHK_HOST + '/robots.txt', f); out.https = h.err ? { ok: false, k: h.err.k, why: h.err.t } : { ok: h.st === 200, st: h.st, why: h.st === 200 ? '' : h.st === 404 ? '도메인은 열리는데 손님 화면이 없음(Firebase 사이트에 아직 안 이어짐)' : 'HTTP ' + h.st };
+  const w = await chkGet(CHK_WEB + '/robots.txt', f); out.web = w.err ? { ok: false, why: w.err.t } : { ok: w.st === 200 && /Sitemap/i.test(w.body), st: w.st, why: w.st === 200 ? '' : w.st === 404 ? '사이트 booksqueen이 아직 없음(🛍 우리숍 내기 작업을 기다림)' : 'HTTP ' + w.st };
+  const base = out.https.ok ? 'https://' + CHK_HOST : CHK_WEB; out.base = base; const rw = (r, want) => r.err ? { ok: false, why: r.err.t } : { ok: r.st === 200 && want(r), st: r.st, why: r.st === 200 ? (want(r) ? '' : '내용이 다름(넘김 설정 확인)') : r.st === 403 ? 'Cloud Run이 공개 호출을 막음(allUsers 호출 권한)' : r.st === 404 ? '넘김(rewrites)이 아직 안 올라감 — 🛍 우리숍 내기 작업' : 'HTTP ' + r.st };
+  const sm = await chkGet(base + '/sitemap.xml', f); out.sm = rw(sm, (r) => /<(urlset|sitemapindex)/.test(r.body));
+  const it = o.item || null; if (it && it.id) { const b = await chkGet(base + '/b/' + encodeURIComponent(it.id), f); out.b = { ...rw(b, (r) => /schema\.org|ld\+json/.test(r.body)), id: it.id }; } else out.b = { ok: null, why: '판매중 공개 책이 아직 없음' };
+  const pu = it && ((it.ph && it.ph[0]) || null); if (pu) { const p = await chkGet(pu, f); out.ph = p.err ? { ok: false, why: p.err.t } : { ok: p.st === 200 && /^image\//.test(p.ct), st: p.st, why: p.st === 200 ? '' : p.st === 403 || p.st === 401 ? 'Storage 규칙이 사진 공개 읽기를 막음(손님 화면에 사진이 안 보임)' : 'HTTP ' + p.st }; } else out.ph = { ok: null, why: '실물 사진이 있는 공개 책이 아직 없음(표지만)' };
+  return out; }
+
+module.exports = { selfCheck, chkWhy, makeShop, pubItem, listItems, checkOrder, bookPage, bookLd, sitemapXml, holdOn, BASE, SITEMAP_MAX, shipFeeOf, pubCfg, maskName, orderNo, hashTok, DEF, SHOP_ORIGINS, PAGE };
