@@ -9,7 +9,7 @@
   const ST = { cfg: null, cfgAt: 0, list: null, busy: false };
   const LS = { get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
   const cart = () => LS.get('bq-cart', []); const setCart = (c) => { LS.set('bq-cart', c); badge(); };
-  async function api(path, opt) { const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 15000);
+  async function api(path, opt) { const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), (opt && opt.ms) || 15000);
     try { const r = await fetch(API + path, { ...(opt || {}), signal: ctl.signal, headers: { 'Content-Type': 'application/json' } }); let j = null; try { j = await r.json(); } catch (e) {} if (!r.ok || !j || j.ok === false) { const e = new Error((j && j.err) || '연결이 잠시 안 됩니다'); e.j = j; e.status = r.status; throw e; } return j; }
     catch (e) { if (e.name === 'AbortError') throw new Error('응답이 늦습니다 — 잠시 뒤 다시 해 주세요'); if (e instanceof TypeError) throw new Error('인터넷 연결을 확인해 주세요'); throw e; } finally { clearTimeout(t); } }
   async function cfg(force) { if (!force && ST.cfg && Date.now() - ST.cfgAt < 60e3) return ST.cfg; ST.cfg = await api('/shop/cfg'); ST.cfgAt = Date.now(); foot(); return ST.cfg; }
@@ -202,17 +202,25 @@
   const wish = () => LS.get('bq-wish', []); const setWish = (w) => { LS.set('bq-wish', w); wishBadge(); };
   function wishBadge() { const n = wish().length; const b = $('#wishN'); if (b) { b.textContent = n; b.hidden = !n; } }
   const SHL = { h: null, items: null, at: 0, js: null };
-  const loadRes = (tag, attr) => new Promise((ok, no) => { const e = document.createElement(tag); Object.assign(e, attr); e.onload = ok; e.onerror = () => no(new Error('책장 화면을 받지 못했습니다')); document.head.appendChild(e); });
+  /* (shelf5) 첫 로딩이 가끔 한 번 실패('책장 화면을 받지 못했습니다') — 휴대폰 망이 잠깐 끊기거나 새 판을 올리는 몇 초 사이 파일 하나가 안 오면 곧바로 실패로 끝냈음
+   *  → 파일마다 15초 기다림 · 실패하면 그 태그를 떼고 0.8초·2초 뒤 다시(주소에 r=번호를 붙여 캐시를 피함 · 최대 3번) · 오프라인이면 다시 연결될 때까지 기다렸다 다시 · 끝내 안 되면 어느 파일인지 알려 줌 */
+  const loadRes = (tag, attr) => { const key = tag === 'link' ? 'href' : 'src'; const u0 = attr[key];
+    const one = (n) => new Promise((ok, no) => { const e = document.createElement(tag); Object.assign(e, attr); if (n) e[key] = u0 + (u0.includes('?') ? '&' : '?') + 'r=' + n; let done = false;
+      const fin = (f, v) => { if (done) return; done = true; clearTimeout(t); if (f === no) e.remove(); f(v); }; const t = setTimeout(() => fin(no, new Error('시간 넘음')), 15000);
+      e.onload = () => fin(ok); e.onerror = () => fin(no, new Error('못 받음')); document.head.appendChild(e); });
+    const waitOn = () => (navigator.onLine === false ? new Promise((r) => { const f = () => { window.removeEventListener('online', f); r(); }; window.addEventListener('online', f); setTimeout(f, 20000); }) : Promise.resolve());
+    const go = (n) => one(n).catch((e) => { if (n >= 2) { const x = new Error(`책장 화면을 받지 못했습니다(${String(u0).split('?')[0]} · ${e.message}) — 인터넷 연결을 확인한 뒤 다시 해 보기를 눌러 주세요`); x.res = u0; throw x; } return waitOn().then(() => new Promise((r) => setTimeout(r, n ? 2000 : 800))).then(() => go(n + 1)); });
+    return go(0); };
   const shelfJs = () => SHL.js || (SHL.js = Promise.all([window.BQS ? 1 : loadRes('script', { src: 'shelf-core.js?v=0.2.1' }), loadRes('link', { rel: 'stylesheet', href: 'shelf.css?v=0.2.1' })]).then(() => (window.BQShelf ? 1 : loadRes('script', { src: 'shelf.js?v=0.2.1' }))).catch((e) => { SHL.js = null; throw e; }));
   /* (shelf4) 첫 화면 빠르게: 첫 묶음(새 책 4,000권)은 화면 파일과 함께 미리 받기 시작 → 오면 바로 첫 책장(early) · 나머지 묶음은 한꺼번에(나란히) 받아 뒤에서 더함 */
   async function shelfItems(prog, early) { if (SHL.items && Date.now() - SHL.at < 5 * 60e3) return SHL.items; const S = window.BQS; let all = [];
-    try { const J0 = await (SHL.p0 || api('/shop/shelf?k=0')); SHL.p0 = null; all = S.unpack(J0); prog(all.length, J0.n); if (J0.kn > 1 && early) early(all.slice());
+    try { const k0 = () => api('/shop/shelf?k=0', { ms: 30000 }); const J0 = await (SHL.p0 || k0()).catch((e) => { if (e.status === 404) throw e; return new Promise((r) => setTimeout(r, 1200)).then(k0); }); SHL.p0 = null; /* (shelf5) 클라우드가 막 깨어나 책 목록을 처음 세우면 15초를 넘길 때가 있음 → 첫 묶음은 30초 · 한 번 더 */ all = S.unpack(J0); prog(all.length, J0.n); if (J0.kn > 1 && early) early(all.slice());
       const rest = await Promise.all(Array.from({ length: Math.max(0, J0.kn - 1) }, (_, i) => api('/shop/shelf?k=' + (i + 1)).then((J) => { prog(all.length + (J.rows || []).length, J0.n); return J; })));
       for (const J of rest) { const base = all.length; all = all.concat(S.unpack(J).map((x) => ({ ...x, _o: base + x._o }))); } prog(all.length, J0.n); }
     catch (e) { if (e.status !== 404) throw e; /* 클라우드 옛 판 — 새로 들어온 차례 쪽을 모음(최대 40쪽) */ all = []; for (let p = 0; p < 40; p++) { const r = await api('/shop/list?' + B.qs({ s: 'new', p })); const base = all.length; all = all.concat(r.items.map((x, i) => ({ ...x, c: x.c || null, at: x.at || null, _o: -(base + i) }))); prog(all.length, r.total); if (!r.more) break; } }
     const seen = new Set(); all = all.filter((x) => !seen.has(x.id) && seen.add(x.id)); SHL.items = all; SHL.at = Date.now(); return all; }
   async function shelfPage(q) { document.body.classList.add('shelf-on'); main().innerHTML = '<div class="bqs-wait">📚 책장을 세우는 중…</div>';
-    if (!q.demo && !(SHL.items && Date.now() - SHL.at < 5 * 60e3) && !SHL.p0) { SHL.p0 = api('/shop/shelf?k=0'); SHL.p0.catch(() => { SHL.p0 = null; }); } /* 화면 파일·설정과 나란히 */
+    if (!q.demo && !(SHL.items && Date.now() - SHL.at < 5 * 60e3) && !SHL.p0) { SHL.p0 = api('/shop/shelf?k=0', { ms: 30000 }); SHL.p0.catch(() => { SHL.p0 = null; }); } /* 화면 파일·설정과 나란히 */
     let c = {}; try { await Promise.all([shelfJs(), cfg().then((x) => { c = x; }, () => {})]); } catch (e) { main().innerHTML = errBox(e); bindAgain(() => shelfPage(q)); return; } if (B.route(location.hash).name !== 'shelf') return;
     const S = window.BQS; const raw = { ...((c && c.shelf) || {}), ...(q.cfg ? S.previewCfg(q.cfg) : {}) }; const sc = S.cfgOf(raw);
     if (!sc.on && !q.cfg && !q.demo) { main().innerHTML = '<div class="empty">서가 책장은 지금 쉬는 중입니다<br><a href="#/list?s=new">책 찾기로</a></div>'; return; }
