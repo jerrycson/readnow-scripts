@@ -1,2 +1,1 @@
-logs=1&pc=LOGGER&from=202611111440
-# 651030563
+@kpin kpin/pulse_20261111-072504.json
