@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "shop3: 우리숍 도메인 작업 고침(hosting/domain.js)",
- "since": "2026-11-11T07:51:13Z",
- "beat": "2026-11-11T07:51:13Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
-  "who": "shop3",
-  "done": "도메인 작업 고침 2ccdca8",
-  "at": "2026-11-11T07:51:01Z"
+  "who": "lead",
+  "done": "shop3 도메인 작업 고침 9e5343b",
+  "at": "2026-11-11T07:51:20Z"
  },
- "host": "vm"
+ "host": null
 }
