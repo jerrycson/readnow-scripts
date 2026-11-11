@@ -28,6 +28,23 @@
     ['gothic-a1-l', 'Gothic A1', 'wght@300', 'sans-serif', 300], ['gothic-a1-b', 'Gothic A1', 'wght@900', 'sans-serif', 900], ['ibm-plex-l', 'IBM Plex Sans KR', 'wght@300', 'sans-serif', 300], ['ibm-plex-b', 'IBM Plex Sans KR', 'wght@700', 'sans-serif', 700],
     ['hahmlet-l', 'Hahmlet', 'wght@300', 'serif', 300], ['hahmlet-b', 'Hahmlet', 'wght@900', 'serif', 900], ['nanum-myeongjo-b', 'Nanum Myeongjo', 'wght@800', 'serif', 800], ['nanum-gothic-b', 'Nanum Gothic', 'wght@800', 'sans-serif', 800],
     ['sunflower-b', 'Sunflower', 'wght@700', 'sans-serif', 700]].map(([id, name, ax, gen, wt]) => ({ id, name, ax, gen, wt, label: name + (wt === 300 ? ' 가늘게' : wt >= 800 ? ' 아주 굵게' : '') }));
+  /* ── (shelf4 · 정범님 11/12) 글꼴 갈래 — 앞표지 제목 글꼴과 '느낌'이 비슷한 것을 고르려고 FONTS마다 갈래를 붙임(목록 순서와 같음 · 새 글꼴도 뒤에 덧붙이며 갈래도 함께)
+   *  my 명조·바탕 · go 고딕 · bd 굵은 제목체 · rd 둥근 · hw 손글씨 · br 붓글씨 · tw 타자기·코딩 · dp 꾸밈 */
+  const FGEN = ['go', 'my', 'go', 'my', 'hw', 'br', 'bd', 'bd', 'rd', 'go', 'my', 'hw', 'hw', 'my', 'go', 'hw', 'go', 'go', 'my', 'rd', 'tw', 'dp', 'hw', 'br', 'br', 'hw', 'dp', 'dp', 'hw', 'hw', 'go', 'bd', 'my', 'bd', 'dp', 'dp', 'tw', 'go', 'bd', 'my', 'my', 'go', 'bd', 'go', 'go', 'my', 'my', 'my', 'bd', 'go'];
+  const THIN = ['grandiflora', 'moirai', 'bw-picture', 'hi-melody', 'single-day', 'noto-sans-l', 'noto-serif-l', 'gothic-a1-l', 'ibm-plex-l', 'hahmlet-l', 'diphylleia']; /* 획이 가는 글꼴 — 작은 글자에선 흐려 보여 얇은 테를 더함 */
+  const GENRES = { my: '명조·바탕', go: '고딕', bd: '굵은 제목체', rd: '둥근', hw: '손글씨', br: '붓글씨', tw: '타자기', dp: '꾸밈' };
+  const fontsOfGenre = (g) => FONTS.map((f, i) => i + 1).filter((i) => FGEN[i - 1] === g);
+  /* 디자인 갈래 — 고전(금박·양장·가죽)은 명조·붓, 현대(블록·나눔)는 고딕·굵은 제목체, 귀여움(동그라미·아치·별)은 둥근·손글씨와 어울림 · 그 밖은 아무 글꼴 */
+  const DGEN = { classic: [3, 7, 10, 15, 21, 28, 29, 45, 50, 48, 2], modern: [11, 12, 17, 18, 43, 46, 47, 19, 16, 5, 6], cute: [13, 23, 24, 34, 35, 36, 22, 42, 14, 27] };
+  const DFIT = { classic: ['my', 'br', 'dp'], modern: ['go', 'bd', 'tw'], cute: ['rd', 'hw', 'dp', 'bd'] };
+  const dgenOf = (d) => Object.keys(DGEN).find((k) => DGEN[k].includes(d)) || null;
+  /* (shelf4) 도서관 청구기호 라벨(디자인 37)에 넣을 번호 — 한국십진분류(KDC) 큰 갈래 + 제목 첫소리 (빈 흰 네모로 보이던 것) */
+  const KDC = { '소설·시': '813', 에세이: '814', 인문: '100', 역사: '911', 과학: '400', 경제경영: '320', 자기계발: '325', 어린이: '808', 만화: '657', 예술: '600', 사회: '300', 종교: '200', 요리: '594', 여행: '981', 외국어: '740', '컴퓨터·IT': '004', 건강: '512', 청소년: '808', 유아: '808', '수험서·참고서': '370' };
+  const callNo = (it) => { const b = catOf(it || {}).b || ''; const k = Object.keys(KDC).find((x) => b.startsWith(x)); return [(k ? KDC[k] : '000') + '.' + ((hash(String((it && it.id) || '')) % 9) + 1), (initial(it && it.t) || '') + ((hash(String((it && it.t) || '')) % 89) + 11)]; };
+  /* 지은이 칸은 이름만(정범님 11/12 — '지은이'·'글쓴이'·'옮긴이' 같은 항목 표시는 책등에 넣지 않음) · '(지은이)' 꼴도 · 이름 안 낱말('지은이와')은 그대로 */
+  const ROLE = '지은이|글쓴이|옮긴이|엮은이|그린이|글·그림|글그림|그림|글|지음|옮김|엮음|편저|편역|감수|해설|사진|기획|원작|역자|저자|역|저|편|공저|공역';
+  const ROLE_RE = new RegExp('\\s*\\((?:' + ROLE + ')\\)|(^|[\\s,·/])(?:' + ROLE + ')(?=$|[\\s,·/:])\\s*:?', 'g');
+  const auName = (a) => String(a || '').replace(ROLE_RE, '$1').replace(/\s*,\s*/g, ', ').replace(/\s*·\s*/g, '·').replace(/(^[\s,·]+|[\s,·]+$)/g, '').replace(/\s{2,}/g, ' ').replace(/(,\s*){2,}/g, ', ').trim();
   /* ── 책등 디자인 50 = 짜임(띠·이름표·금박·나눔 — 그림은 shelf.css의 .sp[data-d="번호"] .sk) · 덧붙이기만 */
   const DESIGNS = ['민무늬', '위아래 띠', '금박 두 줄', '가운데 이름표', '위 색 바꿈', '아래 색 바꿈', '금박 테두리', '사선 리본', '문고판(가운데 흰 종이)', '고전 양장(마디 넷)',
     '모던 블록', '사선 나눔', '동그라미 둘', '아래 톱니 띠', '금장 띠', '전집 번호', '좌우 두 색', '가운데 굵은 띠', '세 줄 띠', '위 이름표 · 아래 띠',
@@ -221,7 +238,10 @@
     const th = c.themeOn !== false ? themeOf(it) : null; let src = it && it.sp && c.spineImg ? 's' : cc && c.coverColor ? 'c' : th ? 't' : 'r';
     let ci; if (cc && c.coverColor) ci = nearest(cc, A.C); else if (th && (th.fam || th.tone)) { const L = A.C.filter((i) => (!th.fam || th.fam.includes(COLORS[i].fam)) && (!th.tone || th.tone.includes(COLORS[i].t))); ci = (L.length ? L : A.C)[Math.floor(R() * (L.length || A.C.length))]; }
     else ci = A.C[Math.floor(R() * A.C.length)];
-    const shp = th && th.shape ? th.shape.flatMap((b) => range(HEADS.length).map((h) => (b - 1) * HEADS.length + h)) : null; const d = pickIn(R, th && th.des, A.D), p = pickIn(R, th && th.pat, A.P), fi = pickIn(R, th && th.font, A.F), s = pickIn(R, shp, A.S);
+    const shp = th && th.shape ? th.shape.flatMap((b) => range(HEADS.length).map((h) => (b - 1) * HEADS.length + h)) : null; let d = pickIn(R, th && th.des, A.D); const p = pickIn(R, th && th.pat, A.P), s = pickIn(R, shp, A.S);
+    /* (shelf4) 글꼴: 앞표지 제목 글꼴 갈래(클라우드 셈 it.fg) → 그 갈래 안에서 · 없으면 제목 낱말·분야(themeOf) · 디자인은 글꼴 갈래와 어울리는 것으로 한 번 더 고름 */
+    const fg = it && GENRES[it.fg] ? it.fg : null; const gF = fg ? fontsOfGenre(fg).filter((i) => A.F.includes(i)) : []; const fi = gF.length ? gF[Math.floor(R() * gF.length)] : pickIn(R, th && th.font, A.F);
+    { const fgen = FGEN[fi - 1]; const dg = dgenOf(d); if (dg && !DFIT[dg].includes(fgen)) { const ok = A.D.filter((x) => { const g2 = dgenOf(x); return !g2 || DFIT[g2].includes(fgen); }); if (ok.length) d = ok[Math.floor(R() * ok.length)]; } }
     const a = Math.floor(R() * ACCENTS.length); const o = c.orient === 'rand' ? (R() < 0.62 ? 'v' : 'h') : c.orient;
     return { g: c.lookGen || 0, src, d, ci: ci + 1, p, fi, s, a: a + 1, o }; }
   const CODE_RE = /^(\d{1,4})\.([scrt])\.(\d{1,2})\.(\d{1,3})\.(\d{1,2})\.(\d{1,2})\.(\d{1,2})\.(\d)\.([vh])$/;
@@ -252,7 +272,14 @@
     const c2 = lum(base) > 0.4 ? shade(base, -0.28) : shade(base, 0.32); const k = A.d === 9 || A.d === 44 ? '#1b1712' : inkFor(base, R());
     const g = ['#d9b45a', '#cfd3d8', lum(base) > 0.35 ? '#1b1712' : '#f4efe4', lum(base) > 0.4 ? shade(base, -0.45) : shade(base, 0.55)][A.a - 1]; const f = FONTS[A.fi - 1];
     const skH = (c.rowH - 24) * z.h / 100; const T = textFit(it && it.t, it && it.a, z.w, skH);
-    const sh = shapeOf(A.s); return { code: encode(A), src: A.src, g: A.g, d: A.d, ci: A.ci, p: A.p, s: A.s, body: sh.body, head: sh.head, a: A.a, o: A.o, f: f.id, fw: f.wt, c: base, c2, k, ac: g, w: z.w, h: z.h, tilt: z.tilt, ft: T.ft, fa: T.fa, real: z.real, ...zoneOf(A.d) }; }
+    /* (shelf4 · 정범님 11/12 '일률적·붕 뜬 느낌') 제목 맵시 tk: 금박(g) · 먹(i) · 흰 글씨(w) · 글 상자 띠(tp — 밋밋한 디자인에서만 · 띠색과 글자 대비 4.5 넘을 때) */
+    const tk = k === '#f1d488' || (A.a === 1 && A.d !== 9 && A.d !== 44 && lum(base) < 0.18 && contrast(base, '#e8c66a') >= 4.5) ? 'g' : lum(k) < 0.2 ? 'i' : 'w'; let kk = tk === 'g' ? (k === '#f1d488' ? k : '#e8c66a') : k;
+    const plain = [1, 4, 5, 6, 30, 31, 32, 33, 40].includes(A.d); const pc = lum(kk) > 0.5 ? shade(base, -0.42) : shade(base, 0.5); let tp = plain && A.d !== 9 && A.d !== 44 && R() < 0.45 && contrast(pc, kk) >= 4.5 ? pc : null;
+    /* 바탕과 글자 대비가 6 아래(중간 밝기 바탕 · 가는 글꼴이면 흐려 보임 — 리드 화면 '길의 끝에서')면 어느 디자인이든 글 상자 띠로 대비 7 넘게 */
+    const paper = A.d === 9 || A.d === 44; /* 문고판·흰 창 = 글이 흰 종이 위 — 대비 손질 안 함 */ const need = paper ? 0 : THIN.includes(f.id) || f.wt <= 300 ? 6.5 : 4.5; /* 가는 글꼴은 더 높은 대비 */
+    if (!paper && !tp && contrast(base, kk) < need + 1 && tk !== 'g') { const pure = contrast(base, '#0d0b09') >= contrast(base, '#ffffff') ? '#0d0b09' : '#ffffff'; if (contrast(base, pure) > contrast(base, kk)) kk = pure; } /* 먼저 아주 짙은 먹·흰 글씨로 */
+    if (!tp && contrast(base, kk) < need) { const want = lum(kk) > 0.5 ? [shade(base, -0.6), '#1d1a16'] : [shade(base, 0.7), '#f6efdf']; tp = want.find((x) => contrast(x, kk) >= 7) || want[1]; }
+    const sh = shapeOf(A.s); return { tk, tp, thin: THIN.includes(f.id) ? 1 : 0, code: encode(A), src: A.src, g: A.g, d: A.d, ci: A.ci, p: A.p, s: A.s, body: sh.body, head: sh.head, a: A.a, o: A.o, f: f.id, fw: f.wt, fg: FGEN[A.fi - 1] || 'go', c: base, c2, k: kk, ac: g, w: z.w, h: z.h, tilt: z.tilt, ft: T.ft, fa: T.fa, real: z.real, ...zoneOf(A.d) }; }
   /* 옛 부름(look) 그대로 — 저장된 조합이 없을 때 새로 정함 */
   function look(it, c, cc) { c = c || DEF; return dress(it, assign(it, c, cc || (it && it.cc) || null), c); }
   /* 조합 수 — 실제로 만든 목록 길이를 곱함(정범님 11/11: 1억 넘게) */
@@ -318,8 +345,10 @@
   const wishHas = (w, id) => (w || []).some((x) => x && x.id === id);
   const wishToggle = (w, it, max) => { const L = (w || []).filter((x) => x && x.id); if (wishHas(L, it.id)) return { wish: L.filter((x) => x.id !== it.id), on: false }; const n = [{ id: it.id, t: it.t, a: it.a || null, p: +it.p || 0, g: it.g || null, im: it.im || null, at: new Date().toISOString() }, ...L].slice(0, max || 300); return { wish: n, on: true }; };
   /* ── 받은 줄(cols + rows) → 책 · 그림 주소 앞부분 되살림 */
+  /* (shelf4) 클라우드가 앞표지를 미리 셈한 칸 cv = 'rrggbb' 또는 'rrggbb.갈래' (예 '8a2b1c.my') · 'x' = 셈했는데 쓸 만한 색 없음 */
+  const cvOf = (v) => { const m = /^([0-9a-f]{6})(?:\.([a-z]{2}))?$/.exec(String(v || '')); return m ? { cc: '#' + m[1], fg: GENRES[m[2]] ? m[2] : null, cv: 1 } : v === 'x' ? { cv: 1 } : {}; };
   function unpack(J) { const C = J.cols || []; const pre = J.pre || []; const ix = Object.fromEntries(C.map((k, i) => [k, i])); const U = (u) => (typeof u === 'string' && u[0] === '~' ? (pre[+u[1]] || '') + u.slice(2) : u || null);
-    return (J.rows || []).map((r, o) => ({ id: String(r[ix.id]), t: r[ix.t] || '', a: r[ix.a] || null, c: r[ix.c] || null, p: +r[ix.p] || 0, lp: +r[ix.lp] || 0, g: r[ix.g] || null, at: r[ix.at] || null, im: U(r[ix.im]), sp: U(r[ix.sp]), bk: U(r[ix.bk]), st: r[ix.st] || 's', sr: +r[ix.sr] || 0, pg: +r[ix.pg] || 0, pb: r[ix.pb] || null, sz: ix.sz != null ? r[ix.sz] || null : null, lk: ix.lk != null ? r[ix.lk] || null : null, c2: ix.c2 != null ? r[ix.c2] || null : null, p0: ix.p0 != null ? +r[ix.p0] || 0 : 0, bd: ix.bd != null && Array.isArray(r[ix.bd]) ? r[ix.bd] : null, _o: o })); }
+    return (J.rows || []).map((r, o) => ({ id: String(r[ix.id]), t: r[ix.t] || '', a: r[ix.a] || null, c: r[ix.c] || null, p: +r[ix.p] || 0, lp: +r[ix.lp] || 0, g: r[ix.g] || null, at: r[ix.at] || null, im: U(r[ix.im]), sp: U(r[ix.sp]), bk: U(r[ix.bk]), st: r[ix.st] || 's', sr: +r[ix.sr] || 0, pg: +r[ix.pg] || 0, pb: r[ix.pb] || null, sz: ix.sz != null ? r[ix.sz] || null : null, lk: ix.lk != null ? r[ix.lk] || null : null, c2: ix.c2 != null ? r[ix.c2] || null : null, p0: ix.p0 != null ? +r[ix.p0] || 0 : 0, bd: ix.bd != null && Array.isArray(r[ix.bd]) ? r[ix.bd] : null, ...cvOf(ix.cv != null ? r[ix.cv] : null), _o: o })); }
   /* ── 시범 자료(#/shelf?demo=N) — 실제 자료가 없을 때 보기·시험용 · 손님·상품 정보 아님 */
   const DW = ['바다', '별', '시간', '고양이', '여름', '도시', '숲', '편지', '기억', '노래', '정원', '바람', '겨울', '사람', '빛', '밤', '길', '섬', '꿈', '집', '창문', '나무', '강', '모래', '구름', '불꽃', '종이', '시계', '거울', '여행'];
   const DT = ['의 끝에서', '을 걷는 법', ' 이야기', '과 나', '의 문법', ' 산책', '이 오는 소리', '의 역사', ' 수업', '을 위한 변명', ' 일기', '에게', ' 안내서', '의 모든 것', ''];
@@ -341,5 +370,5 @@
   const b64d = (s) => { try { s = String(s || '').replace(/-/g, '+').replace(/_/g, '/'); return typeof atob === 'function' ? decodeURIComponent(escape(atob(s))) : Buffer.from(s, 'base64').toString('utf8'); } catch (e) { return ''; } };
   const previewArg = (c) => b64e(JSON.stringify(cfgDiff(c)));
   const previewCfg = (arg) => { try { return JSON.parse(b64d(arg)) || {}; } catch (e) { return {}; } };
-  return { BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.0', FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
+  return { callNo, FGEN, GENRES, fontsOfGenre, dgenOf, auName, cvOf, BIG, GUESS, catOf, bigOfCat, smallName, zoneOf, BADGE, saleOf, tagOf, VER: '0.3.0', FONTS, DESIGNS, PATTERNS, SHAPES, BODIES, HEADS, shapeOf, ACCENTS, COLORS, FAMS, PALETTES, CASES, CART_ANIMS, WISH_ANIMS, SORTS, SCHEMA, DEF, cfgOf, cfgDiff, hash, rng, lum, contrast, inkFor, shade, cdist, nearest, dominant, themeOf, assign, encode, decode, CODE_RE, sizeOf, textFit, dress, look, combos, initial, bandsOf, bandName, recScore, plan, bays, split, ring, mod, compass, wishHas, wishToggle, unpack, demoItems, fontById, fontUrl, previewArg, previewCfg };
 });

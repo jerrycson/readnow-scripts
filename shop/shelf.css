@@ -76,25 +76,43 @@
 .sp .sk { position: absolute; left: 0; right: 0; bottom: var(--pk); height: calc((100% - var(--pk) - 10px * var(--z)) * var(--bh) / 100); border-radius: 2px 2px 1px 1px; overflow: hidden; background-color: var(--c); transition: transform .18s ease, box-shadow .18s ease;
   box-shadow: inset 2px 0 2px rgba(255, 255, 255, .22), inset -3px 0 4px rgba(0, 0, 0, .35), 1px 0 1px rgba(0, 0, 0, .35); transform-origin: 50% 100%; }
 .sp .sk::before, .sp .sk::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+/* (shelf4 · 원칙 56 '뽑아 보기') 마우스를 올리면 그 책등만 살짝 앞으로 나오며 커짐 — 얇은 책일수록 더 크게(글자가 30px 폭으로 보일 만큼 · 1.7배까지) · 마우스 있는 기기만 · 움직임 줄이기면 커지기만 */
+.sp .sk { transition: transform .16s ease-out, box-shadow .16s; transform-origin: 50% 100%; }
 .sp:hover .sk { transform: translateY(calc(-5px * var(--z))); }
+@media (hover: hover) and (pointer: fine) {
+  .sp:not(.out):hover { z-index: 6; }
+  .sp:not(.out):hover .sk { --pz: max(1.08, min(1.7, calc(34 / (var(--bw) * var(--z))))); transform: translateY(calc(-7px * var(--z))) scale(var(--pz)); box-shadow: inset 2px 0 2px rgba(255, 255, 255, .25), inset -3px 0 4px rgba(0, 0, 0, .35), 0 12px 22px rgba(0, 0, 0, .55); z-index: 6; }
+}
+@media (prefers-reduced-motion: reduce) { .sp .sk { transition: none; } }
 .sp.out .sk { transform: translateY(-9%) scale(1.06, 1.02); box-shadow: inset 2px 0 2px rgba(255, 255, 255, .25), inset -3px 0 4px rgba(0, 0, 0, .35), 0 10px 16px rgba(0, 0, 0, .45); z-index: 2; }
 .sp:focus-visible { outline: none; } .sp:focus-visible .sk { outline: 3px solid #ffd54a; outline-offset: 2px; }
 .sp.tiltl .sk { transform: rotate(-3.5deg); transform-origin: 0 100%; } .sp.tiltr .sk { transform: rotate(3.5deg); transform-origin: 100% 100%; }
 /* (shelf3) 글 자리 = 디자인마다 장식이 없는 곳(--zt 위 · --zb 아래 · --zs 옆 % · shelf-core zoneOf) · 머리 장식·주문중·할인 띠가 있으면 그만큼 비킴 · 글 크기·줄 수는 shelf.js가 재서 맞춤 */
 .sp .tx { position: absolute; z-index: 2; left: calc(var(--zs, 6) * 1%); right: calc(var(--zs, 6) * 1%); top: calc(var(--zt, 6) * 1%); bottom: calc(var(--zb, 5) * 1%); display: flex; flex-direction: column; align-items: center; justify-content: space-between; pointer-events: none; overflow: visible; contain: size layout style; } /* 자르지 않음 — 크기는 shelf.js가 재서 글 자리 안에 맞춤(세로 글자 그림이 글꼴에 따라 조금 내려 그려져도 반쯤 잘리지 않게) */
 .sp:is([data-h="2"], [data-h="3"], [data-h="4"]) .tx { top: calc(var(--zt, 6) * 1% + 9px * var(--z)); } .sp[data-h="5"] .tx { top: max(calc(var(--zt, 6) * 1%), 14.5%); }
-.sp.held .tx { top: max(calc(var(--zt, 6) * 1% + 13px * var(--z)), 14.5%) !important; } .sp.tag .tx { bottom: calc(var(--zb, 5) * 1% + 13px * var(--z)); }
-.sp .tt, .sp .au { display: block; flex: 0 0 auto; writing-mode: vertical-rl; line-height: 1.1; color: var(--k); text-align: center; word-break: keep-all; overflow-wrap: anywhere; line-break: strict; max-width: none; min-height: 0; font-weight: var(--fw, 700); white-space: normal;
-  text-shadow: 0 0 1px var(--c), 0 0 2px var(--c), 0 0 3px var(--c); /* 바탕색 테두리 — 무늬·장식 위에서도 글이 또렷 */ }
-.sp .tt { font-size: calc(var(--ft) * var(--z) * 1px); letter-spacing: .01em; }
-.sp .au { font-size: calc(var(--fa) * var(--z) * 1px); opacity: .92; font-weight: calc(var(--fw, 700) - 100); }
-.sp[data-o="v"] .tt, .sp[data-o="v"] .au { text-orientation: mixed; letter-spacing: -.01em; } .sp[data-o="h"] .tt, .sp[data-o="h"] .au { text-orientation: sideways; }
+.sp.held .tx { top: max(calc(var(--zt, 6) * 1% + 16px * var(--z)), 16%) !important; } .sp.tag .tx { bottom: calc(var(--zb, 5) * .5% + 17px * var(--z)) !important; } /* (shelf4) 띠와 글 사이 3px 더 띄움(잉크가 띠에 닿던 것) */
+/* (shelf4 · 정범님 11/12) 세로 글은 왼쪽 줄부터 오른쪽으로(vertical-lr — 일본식 오른쪽→왼쪽 아님) · 한 줄(.one)은 가운데 · 여러 줄(.ml)은 줄 머리 맞춤·줄 사이 넓게 */
+.sp .tt, .sp .au { display: block; flex: 0 0 auto; writing-mode: vertical-lr; line-height: 1.1; color: var(--k); text-align: center; word-break: keep-all; overflow-wrap: anywhere; line-break: strict; max-width: none; min-height: 0; font-weight: var(--fw, 700); white-space: normal; letter-spacing: .05em;
+  text-shadow: 0 0 1px var(--c), 0 1px 0 var(--c); /* 바탕색 얇은 테두리 — 무늬 위에서 또렷하되 번져 뜨지 않게 */ }
+.sp .tt.one, .sp .au.one { white-space: nowrap; } .sp .tt.ml, .sp .au.ml { line-height: 1.34; text-align: start; }
+.sp .lt { margin-block: 0; margin-inline: .14em; } .sp .tcy { margin-inline: .14em; } .sp .pn { margin-inline: .06em .16em; } /* 영문·숫자 덩어리 앞뒤를 한글에서 띄움 */
+.sp .tt { font-size: calc(var(--ft) * var(--z) * 1px); }
+.sp .au { font-size: calc(var(--fa) * var(--z) * 1px); opacity: .88; font-weight: calc(var(--fw, 700) - 200); letter-spacing: .03em; }
+/* 제목 맵시(정범님 11/12 '일률적·붕 뜬 느낌'): 금박 = 금빛 + 눌린 그림자 · 먹 = 짙은 먹 + 밝은 눌림 · 흰 글씨 = 아래 그림자 · 글 상자 띠(--tp)는 밋밋한 디자인에서 제목 뒤에 */
+.sp[data-tk="g"] .tt { color: var(--k); text-shadow: 0 1px 0 rgba(0, 0, 0, .55), 0 -1px 0 rgba(255, 245, 200, .25); }
+.sp[data-tk="i"] .tt { text-shadow: 0 1px 0 rgba(255, 255, 255, .28); }
+.sp[data-tk="w"] .tt { text-shadow: 0 1px 1px rgba(0, 0, 0, .5); }
+.sp[data-tp] .tt { background: var(--tp); box-shadow: 0 0 0 calc(3px * var(--z)) var(--tp), 0 1px 3px calc(3px * var(--z)) rgba(0, 0, 0, .25); border-radius: 1px; }
+.sp[data-thin] .tt { -webkit-text-stroke: calc(.45px + .15px * var(--z)) var(--k); } /* 가는 글꼴은 얇은 테로 또렷하게 */
+.sp[data-o="v"] .tt, .sp[data-o="v"] .au { text-orientation: mixed; } .sp[data-o="h"] .tt, .sp[data-o="h"] .au { text-orientation: sideways; writing-mode: vertical-rl; } /* 눕힌 글(고개를 오른쪽으로 기울여 읽음)은 첫 줄이 위(= 책등 오른쪽)라야 바름 */
 .sp[data-o="v"] .tcy { text-combine-upright: all; -webkit-text-combine: horizontal; } .sp[data-o="h"] .tcy { text-combine-upright: none; }
 .sp .si { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; z-index: 3; } .sp.img.ok .tx, .sp.img.ok .bt { display: none; } .sp.img.ok .sk::before, .sp.img.ok .sk::after { display: none; }
 /* 주문중(위)·할인·배지(아래) — 책등 안 가로 띠 · 글 자리 밖 */
 .sp.held .sk { filter: saturate(.55) brightness(.85); } .sp .hb, .sp .bt { position: absolute; left: 0; right: 0; height: calc(13px * var(--z)); z-index: 4; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; font-family: system-ui, sans-serif; font-weight: 800; letter-spacing: -.03em; line-height: 1; pointer-events: none;
   font-size: clamp(5px, min(calc(9px * var(--z)), calc(var(--w) * .26)), 13px); }
 .sp .hb { top: 0; background: #b0322a; color: #fff; } .sp .bt { bottom: calc(var(--zb, 5) * .5%); background: #1d2b45; color: #fff; }
+.sp .cn { position: absolute; z-index: 3; left: 13%; right: 13%; top: 82.4%; height: 10%; display: flex; flex-direction: column; align-items: center; justify-content: center; font: 700 calc(7px * var(--z))/1.05 ui-monospace, monospace; color: #2a2a2a; letter-spacing: -.02em; overflow: hidden; white-space: nowrap; pointer-events: none; } /* (shelf4) 도서관 라벨에 청구기호(빈 흰 네모로 보이던 것) */
+.sp.img.ok .cn { display: none; }
 .sp .bt-sale { background: #c62828; } .sp .bt-new { background: #c9a24a; color: #1d2b45; } .sp .bt-pick { background: #1f6f4a; } .sp .bt-rare { background: #6b3fa0; } .sp .bt-last { background: #8a4b00; } .sp .bt-hot { background: #c2410c; }
 /* 찜 책갈피 — 책 머리 위로 삐져나옴(글을 가리지 않음) */
 .sp .rb { position: absolute; top: auto; left: 50%; width: calc(9px * var(--z)); height: calc(15px * var(--z)); margin-left: calc(-4.5px * var(--z)); bottom: calc(var(--pk) + (100% - var(--pk) - 10px * var(--z)) * var(--bh) / 100 - 4px * var(--z)); background: #d62839; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%); display: none; z-index: 1; }
@@ -291,3 +309,38 @@ body.shelf-on #main.wrap { max-width: none; } body.shelf-on .foot { display: non
 .sp[data-h="4"] .hd { top: calc(5px * var(--z)); height: calc(1.5px * var(--z)); background: var(--g); box-shadow: 0 calc(3px * var(--z)) 0 var(--g); }
 .sp[data-h="5"] .hd { height: 14%; background: linear-gradient(rgba(235, 220, 190, .45), transparent); }
 .sp.img.ok .hd { display: none; }
+
+/* ── (shelf4 · 정범님 11/12) 휴대폰 서가 — 분야 칩(위) · 줄마다 가로로 쓸어 넘기는 선반 · 아래 시트 · 아래 고정 줄(정렬·표지/책등·찜·장바구니) · 누름 자리 44px 넘게
+ *  본뜬 곳: 넷플릭스·쿠팡 홈(줄마다 한 주제 가로 줄) · 무신사·쿠팡 상단 카테고리 칩 · 쿠팡·아마존 앱 상품 아래 시트 · 알라딘·교보 앱 목록(표지 보기) · 당근(아래 고정 줄·길게 눌러 빠른 동작) */
+.bqs-chips { display: flex; gap: 8px; overflow-x: auto; padding: 6px 2px 10px; scrollbar-width: none; position: sticky; top: 56px; z-index: 12; background: inherit; }
+.bqs-chips::-webkit-scrollbar { display: none; }
+.bqs-chips button { flex: 0 0 auto; min-height: 44px; padding: 0 16px; border-radius: 22px; border: 1px solid #c9b48a; background: #fffaf0; color: #3a2c1a; font: 700 15px/1 system-ui, sans-serif; white-space: nowrap; }
+.bqs-chips button[aria-selected="true"] { background: #1d2b45; color: #fff; border-color: #1d2b45; }
+.bqs.mob .bqs-arrow, .bqs.mob .bqs-zoom, .bqs.mob .bqs-sl, .bqs.mob .bqs-wl, .bqs.mob .bqs-cart, .bqs.mob .bqs-dots, .bqs.mob .bqs-nav { display: none !important; }
+.bqs-mbar .mb-v { white-space: nowrap; }
+.bqs.mob .bqs-stage { perspective: none !important; }
+.bqs.mob .mcase { padding: 8px 0 120px; }
+.mrow { margin: 0 0 6px; } .mrow h3 { margin: 8px 12px 4px; font: 800 16px/1.3 system-ui, sans-serif; color: #f6ead0; } .mrow h3 small { font-weight: 600; opacity: .7; font-size: 12px; }
+.mstrip { display: flex; align-items: flex-end; gap: 3px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding: 4px 12px 10px; scrollbar-width: none; border-bottom: calc(12px * var(--z)) solid #7a5230; box-shadow: inset 0 -6px 10px rgba(0, 0, 0, .35); min-height: calc(var(--rh) * var(--z) * 1px); }
+.mstrip::-webkit-scrollbar { display: none; } .mstrip .sp { scroll-snap-align: start; min-width: 30px; } .mstrip .lab { display: none; }
+.mstrip.cov { gap: 12px; align-items: flex-start; }
+.sp.cvb { width: 112px; height: auto; contain: none; display: flex; flex-direction: column; gap: 4px; padding: 0; border: 0; background: none; text-align: left; color: #f6ead0; scroll-snap-align: start; }
+.cvb .cvf { position: relative; width: 112px; height: 160px; border-radius: 4px; overflow: hidden; background: #e9dcc0; box-shadow: 0 4px 10px rgba(0, 0, 0, .4); display: flex; align-items: center; justify-content: center; }
+.cvb .cvf img { width: 100%; height: 100%; object-fit: cover; } .cvb .cvf i { font-style: normal; color: #3a2c1a; padding: 8px; font-size: 13px; }
+.cvb .cvf em { position: absolute; left: 0; top: 0; background: #c62828; color: #fff; font: 800 12px/1 system-ui; padding: 4px 6px; font-style: normal; } .cvb .cvf u { position: absolute; left: 0; right: 0; bottom: 0; background: #b0322a; color: #fff; text-decoration: none; font: 700 12px/1.8 system-ui; text-align: center; }
+.cvb b { font: 700 13px/1.3 system-ui, sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .cvb small { font: 800 14px/1 system-ui; color: #ffd98a; }
+.bqs-mbar { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: flex; gap: 6px; align-items: center; padding: 8px max(10px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-bottom)); background: rgba(255, 252, 245, .97); box-shadow: 0 -4px 16px rgba(0, 0, 0, .25); }
+.bqs-mbar > * { min-height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; font: 700 14px/1 system-ui, sans-serif; color: #1d2b45; text-decoration: none; }
+.bqs-mbar .mb-s { flex: 1 1 auto; gap: 4px; padding: 0 2px; } .bqs-mbar .mb-s span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); } .bqs-mbar select { min-height: 44px; flex: 1; max-width: 140px; font-size: 14px; border-radius: 8px; border: 1px solid #c9b48a; background: #fff; }
+.bqs-mbar .mb-v { padding: 0 12px; border: 1px solid #c9b48a; background: #fff; } .bqs-mbar .mb-w { min-width: 52px; border: 1px solid #c9b48a; background: #fff; } .bqs-mbar .mb-c { min-width: 70px; background: #1d2b45; color: #fff; }
+.bqs-mbar b { margin-left: 4px; }
+.bqs-sheet { position: fixed; inset: 0; z-index: 60; } .bqs-sheet .sh-bg { position: absolute; inset: 0; background: rgba(0, 0, 0, 0); transition: background .2s; } .bqs-sheet.on .sh-bg { background: rgba(0, 0, 0, .45); }
+.bqs-sheet .sh-p { position: absolute; left: 0; right: 0; bottom: 0; background: #fffdf8; border-radius: 16px 16px 0 0; padding: 6px 16px max(16px, env(safe-area-inset-bottom)); transform: translateY(100%); transition: transform .2s ease-out; box-shadow: 0 -8px 30px rgba(0, 0, 0, .35); }
+.bqs-sheet.on .sh-p { transform: translateY(0); } .sh-grip { width: 44px; height: 5px; border-radius: 3px; background: #cdbf9f; margin: 4px auto 10px; }
+.sh-top { display: flex; gap: 14px; position: relative; } .sh-im { width: 96px; height: 138px; object-fit: cover; border-radius: 4px; box-shadow: 0 3px 10px rgba(0, 0, 0, .25); flex: 0 0 auto; }
+.sh-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; padding-right: 36px; } .sh-tx b { font: 800 18px/1.35 system-ui, sans-serif; color: #1d1a16; } .sh-tx small { color: #6b5d48; font-size: 14px; }
+.sh-pr strong { font: 800 22px/1 system-ui; color: #1d2b45; } .sh-pr s { color: #8a7d68; } .sh-pr em { color: #c62828; font-style: normal; font-weight: 800; } .sh-lp { color: #8a7d68; font-size: 13px; } .sh-g { font-size: 14px; color: #3a2c1a; }
+.sh-x { position: absolute; right: -6px; top: -4px; width: 44px; height: 44px; border: 0; background: none; font-size: 20px; color: #6b5d48; }
+.sh-act { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; margin-top: 16px; } .sh-act > * { min-height: 50px; border-radius: 12px; font: 800 16px/1 system-ui, sans-serif; border: 1px solid #c9b48a; background: #fff; color: #1d2b45; display: flex; align-items: center; justify-content: center; padding: 0 14px; text-decoration: none; }
+.sh-act .sb-c { background: #1d2b45; color: #fff; border-color: #1d2b45; } .sh-act .sb-c[disabled] { opacity: .55; } .sh-act .sb-w.on { color: #c62828; border-color: #c62828; }
+@media (prefers-reduced-motion: reduce) { .bqs-sheet .sh-p, .bqs-sheet .sh-bg { transition: none; } }

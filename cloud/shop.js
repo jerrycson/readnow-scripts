@@ -49,14 +49,14 @@ function pubItem(id, l, b) {
 }
 /* ══ (11/11 shelf1) 📚 서가 책장 — 판매중 책 전부를 가볍게(칸 이름 cols · 줄마다 배열 · 그림 주소 앞부분은 pre 번호로 줄임) · 4,000권씩 나눠 받음
  *  판매지수(sp)는 숫자를 내보내지 않고 순위(sr · 1이 가장 많이 팔림)만 — 공개 요약 칸 밖의 시장 지표를 새지 않게 · 주문 중 'o' · 다른 판매처에서 팔린 책은 뺌 */
-const SHELF_COLS = ['id', 't', 'a', 'c', 'p', 'lp', 'g', 'at', 'im', 'sp', 'bk', 'st', 'sr', 'pg', 'pb', 'sz', 'lk', 'c2', 'p0', 'bd']; /* (shelf2) sz 판형 · lk 영구 책등 모양 · (shelf3) c2 작은 분야 · p0 할인 전 값 · bd 배지 */
+const SHELF_COLS = ['id', 't', 'a', 'c', 'p', 'lp', 'g', 'at', 'im', 'sp', 'bk', 'st', 'sr', 'pg', 'pb', 'sz', 'lk', 'c2', 'p0', 'bd', 'cv']; /* (shelf2) sz 판형 · lk 영구 책등 모양 · (shelf3) c2 작은 분야 · p0 할인 전 값 · bd 배지 · (shelf4) cv 앞표지 대표색.글꼴 갈래(클라우드 셈) */
 const SHELF_PRE = [IMG_BASE, 'https://image.aladin.co.kr/product/'];
 const SHELF_PART = 4000; /* 근거: 한 묶음 ≈ 4,000권 × 250바이트 ≈ 1MB(gzip ≈ 200KB) — 휴대폰 첫 화면이 1~2초 안에 그려지게 */
 const preOf = (u) => { if (!u) return null; for (let i = 0; i < SHELF_PRE.length; i++) if (u.startsWith(SHELF_PRE[i])) return '~' + i + u.slice(SHELF_PRE[i].length); return u; };
-function shelfRows(all, held, sold, sp, lk) { const H = held || new Set(); const X = sold || new Set(); const SP = sp || new Map(); const LK = lk || new Map();
-  const L = (all || []).filter((x) => x && !X.has(x.id)).slice().sort((a, b) => String(a.at || '').localeCompare(String(b.at || '')) || String(a.id).localeCompare(String(b.id))); /* 등록순(오래된 것 먼저) */
+function shelfRows(all, held, sold, sp, lk, cvf) { const H = held || new Set(); const X = sold || new Set(); const SP = sp || new Map(); const LK = lk || new Map();
+  const L = (all || []).filter((x) => x && !X.has(x.id)).slice().sort((a, b) => String(b.at || '').localeCompare(String(a.at || '')) || String(b.id).localeCompare(String(a.id))); /* 등록순(오래된 것 먼저) */ /* (shelf4) 새 책 먼저 — 손님 화면이 첫 묶음(4,000권)만 받고 바로 첫 책장을 그림(나머지는 뒤에서) */
   const R = L.map((x) => [x.id, SP.has(x.id) ? +SP.get(x.id) || 0 : -1]).filter((r) => r[1] >= 0).sort((a, b) => b[1] - a[1]); const rank = new Map(R.map((r, i) => [r[0], i + 1]));
-  return L.map((x) => [x.id, x.t, x.a || null, x.c || null, x.p, x.lp || null, x.g || null, x.at ? String(x.at).slice(0, 10) : null, preOf(x.im), preOf(x.sp), preOf(x.bk), H.has(x.id) ? 'o' : 's', rank.get(x.id) || null, x.pg || null, x.pb || null, x.sz || null, LK.get(x.id) || null, x.c2 || null, x.p0 || null, x.bd && x.bd.length ? x.bd : null]); }
+  return L.map((x) => [x.id, x.t, x.a || null, x.c || null, x.p, x.lp || null, x.g || null, x.at ? String(x.at).slice(0, 10) : null, preOf(x.im), preOf(x.sp), preOf(x.bk), H.has(x.id) ? 'o' : 's', rank.get(x.id) || null, x.pg || null, x.pb || null, x.sz || null, LK.get(x.id) || null, x.c2 || null, x.p0 || null, x.bd && x.bd.length ? x.bd : null, cvf ? cvf(x.im) : null]); }
 /* (shelf2) 📚 책등 모양 영구 저장 — shop_spines/b00~b31 문서(상품 번호 해시로 32칸 · {m:{상품:모양}}) · 손님 화면이 정해 보내면 '먼저 정한 것'이 이김
  *  모양 글 = '세대.출처.디자인.색.무늬.글꼴.모양.장식.방향'(shop/shelf-core.js encode) · 세대(lookGen)가 지금 설정과 다른 것은 안 씀(지우지 않음 — 관리 화면 '다시 정하기') */
 const SPINE_RE = /^(\d{1,4})\.[scrt]\.\d{1,2}\.\d{1,3}\.\d{1,2}\.\d{1,2}\.\d{1,2}\.\d\.[vh]$/;
@@ -181,7 +181,8 @@ function suggest(all, q0, X) { const q = norm(q0); X = X || new Set(); if (q.len
   const top = (m, n, k) => [...m.entries()].sort((a, b) => (norm(a[0]).startsWith(q) ? 0 : 1) - (norm(b[0]).startsWith(q) ? 0 : 1) || b[1] - a[1] || a[0].length - b[0].length).slice(0, n).map(([v, c]) => ({ v, k, n: c }));
   return { s: [...top(T, 6, 't'), ...top(A, 3, 'a'), ...top(P, 2, 'pb')] }; }
 
-function makeShop({ db, C, FV, log }) {
+function makeShop({ db, C, FV, log, bucket }) {
+  const COV = bucket ? require('./shop-cover.js').makeCover({ C, bucket, log }) : null; /* (shelf4) 📚 앞표지 대표색·글꼴 갈래 — 저장소 그림을 클라우드가 미리 셈 */
   const CAT = { items: new Map(), books: new Map(), gone: new Map(), sp: new Map(), pv: new Map(), full: 0, delta: 0, busy: null, err: null }; /* (11/11 shopc1) pv = 상품 → 숨은 칸 { sku, cp(분류 경로), k(종류) } — 할인 규칙 고르기에만 · 밖으로 안 나감 */ const SHELF = { key: '', parts: [] }; /* (11/11 shelf1) sp = 상품 → 알라딘 판매지수(밖으로는 순위만) · SHELF = 서가 책장 묶음 기억 */
   const SPN = { m: new Map(), at: 0, v: 0, dirty: new Map(), t: null, busy: null }; /* (shelf2) 책등 모양 영구 저장 — 10분마다 다시 읽음 · 받은 것은 15초 모아 칸(문서)마다 한 번 씀 */
   const spinesLoad = async () => { if (SPN.at && Date.now() - SPN.at < 600e3) return; if (SPN.busy) return SPN.busy; SPN.busy = (async () => { try { const ss = await C('shop_spines').get(); ss.forEach((d) => { const m = (d.data() || {}).m || {}; for (const k in m) if (typeof m[k] === 'string' && !SPN.dirty.has(k)) SPN.m.set(k, m[k]); }); SPN.v++; } catch (e) { log && log('🛍 책등 모양 읽기 실패', e.message); } SPN.at = Date.now(); SPN.busy = null; })(); return SPN.busy; };
@@ -280,8 +281,8 @@ function makeShop({ db, C, FV, log }) {
         res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public, max-age=1800, s-maxage=3600' }); res.end(xml); return true; } }
       if (path === '/shop/cfg') { await ready(); return send(200, { ok: true, ...pubCfg(await cfg(), CAT.meta, await promo()), err: CAT.err && !CAT.items.size ? '목록 준비 중' : null }, 'public, max-age=60'); }
       if (path === '/shop/list') { await ready(); const H = await held(); const r = listItems([...(await vw()).values()], q, H, await soldX()); return send(200, { ok: true, ...r, at: CAT.meta && CAT.meta.at }, 'public, max-age=30'); }
-      if (path === '/shop/shelf') { await ready(); const H = await held(); const X = await soldX(); const V = await vw(); await spinesLoad(); if (SPN.kv !== SPN.v && !(Date.now() - (SPN.kvAt || 0) < 60e3)) { SPN.kv = SPN.v; SPN.kvAt = Date.now(); } /* 새 모양은 1분에 한 번만 묶음에 다시 넣음(gzip 다시 만들기 줄임) · (shopc1) 값 = 우리숍 판매가(규칙 얹음) */ const key = [CAT.meta && CAT.meta.at, HELD.at, CAT.items.size, SPN.kv, VIEW.key].join('|');
-        if (SHELF.key !== key) { SHELF.parts = shelfParts(shelfRows([...V.values()], H, X, CAT.sp, SPN.m)); SHELF.key = key; SHELF.gz = new Map(); }
+      if (path === '/shop/shelf') { await ready(); const H = await held(); const X = await soldX(); const V = await vw(); await spinesLoad(); if (SPN.kv !== SPN.v && !(Date.now() - (SPN.kvAt || 0) < 60e3)) { SPN.kv = SPN.v; SPN.kvAt = Date.now(); } /* 새 모양은 1분에 한 번만 묶음에 다시 넣음(gzip 다시 만들기 줄임) · (shopc1) 값 = 우리숍 판매가(규칙 얹음) */ if (COV) { const due = Date.now() - (COV.state().runAt || 0) > 600e3; if (due) COV.tick([...CAT.items.values()], 120).catch(() => {}); } const key = [CAT.meta && CAT.meta.at, HELD.at, CAT.items.size, SPN.kv, VIEW.key, COV ? Math.floor((COV.state().runAt || 0) / 600e3) : 0].join('|'); /* 표지 셈은 10분마다 새 책 120권씩(뒤에서) */
+        if (SHELF.key !== key) { SHELF.parts = shelfParts(shelfRows([...V.values()], H, X, CAT.sp, SPN.m, COV && COV.cvOf)); SHELF.key = key; SHELF.gz = new Map(); }
         const k = Math.max(0, Math.min(SHELF.parts.length - 1, parseInt(q.k, 10) || 0)); const P = SHELF.parts[k] || { rows: [] };
         const body = JSON.stringify({ ok: true, v: 1, n: SHELF.parts.reduce((a, x) => a + x.rows.length, 0), k, kn: SHELF.parts.length, at: CAT.meta && CAT.meta.at, pre: SHELF_PRE, cols: SHELF_COLS, rows: P.rows });
         const gz = /\bgzip\b/.test(String(req.headers['accept-encoding'] || '')); const hd = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60', 'X-Robots-Tag': 'noindex', Vary: 'Accept-Encoding, Origin' };
@@ -315,7 +316,7 @@ function makeShop({ db, C, FV, log }) {
   async function promoPreview(b) { b = b || {}; await ready(); const P = await promo(true); const items = [...CAT.items.values()]; const kinds = {}; for (const x of items) { const k = (CAT.pv.get(x.id) || {}).k || 'etc'; kinds[k] = (kinds[k] || 0) + 1; }
     const live = P.rules.filter((r) => BQP.ruleSt(r) === 'on').length; if (!b.rule) return { n: items.length, kinds, live, at: CAT.meta && CAT.meta.at };
     return { ...BQP.preview(items, (id) => CAT.pv.get(id), P, b.rule, Date.now()), kinds0: kinds, live, at: CAT.meta && CAT.meta.at }; }
-  return { handle, build, check, promoPreview, _cat: CAT, _spn: SPN, spinesFlush };
+  return { handle, build, check, promoPreview, _cat: CAT, _spn: SPN, spinesFlush, _cov: COV };
 }
 
 /* (11/11 shop3) 🔍 문 열기 전 점검 — 공개 주소를 클라우드가 직접 열어 봄(브라우저는 다른 출처라 상태 번호를 못 읽음) · 손님 정보 없음 · 결과 5분 기억

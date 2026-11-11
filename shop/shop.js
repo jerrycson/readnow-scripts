@@ -192,17 +192,21 @@
   const SHL = { h: null, items: null, at: 0, js: null };
   const loadRes = (tag, attr) => new Promise((ok, no) => { const e = document.createElement(tag); Object.assign(e, attr); e.onload = ok; e.onerror = () => no(new Error('책장 화면을 받지 못했습니다')); document.head.appendChild(e); });
   const shelfJs = () => SHL.js || (SHL.js = Promise.all([window.BQS ? 1 : loadRes('script', { src: 'shelf-core.js?v=0.2.0' }), loadRes('link', { rel: 'stylesheet', href: 'shelf.css?v=0.2.0' })]).then(() => (window.BQShelf ? 1 : loadRes('script', { src: 'shelf.js?v=0.2.0' }))).catch((e) => { SHL.js = null; throw e; }));
-  async function shelfItems(prog) { if (SHL.items && Date.now() - SHL.at < 5 * 60e3) return SHL.items; const S = window.BQS; let all = [];
-    try { const J0 = await api('/shop/shelf?k=0'); all = S.unpack(J0); prog(all.length, J0.n); for (let k = 1; k < J0.kn; k++) { const J = await api('/shop/shelf?k=' + k); const base = all.length; all = all.concat(S.unpack(J).map((x) => ({ ...x, _o: base + x._o }))); prog(all.length, J0.n); } }
+  /* (shelf4) 첫 화면 빠르게: 첫 묶음(새 책 4,000권)은 화면 파일과 함께 미리 받기 시작 → 오면 바로 첫 책장(early) · 나머지 묶음은 한꺼번에(나란히) 받아 뒤에서 더함 */
+  async function shelfItems(prog, early) { if (SHL.items && Date.now() - SHL.at < 5 * 60e3) return SHL.items; const S = window.BQS; let all = [];
+    try { const J0 = await (SHL.p0 || api('/shop/shelf?k=0')); SHL.p0 = null; all = S.unpack(J0); prog(all.length, J0.n); if (J0.kn > 1 && early) early(all.slice());
+      const rest = await Promise.all(Array.from({ length: Math.max(0, J0.kn - 1) }, (_, i) => api('/shop/shelf?k=' + (i + 1)).then((J) => { prog(all.length + (J.rows || []).length, J0.n); return J; })));
+      for (const J of rest) { const base = all.length; all = all.concat(S.unpack(J).map((x) => ({ ...x, _o: base + x._o }))); } prog(all.length, J0.n); }
     catch (e) { if (e.status !== 404) throw e; /* 클라우드 옛 판 — 새로 들어온 차례 쪽을 모음(최대 40쪽) */ all = []; for (let p = 0; p < 40; p++) { const r = await api('/shop/list?' + B.qs({ s: 'new', p })); const base = all.length; all = all.concat(r.items.map((x, i) => ({ ...x, c: x.c || null, at: x.at || null, _o: -(base + i) }))); prog(all.length, r.total); if (!r.more) break; } }
     const seen = new Set(); all = all.filter((x) => !seen.has(x.id) && seen.add(x.id)); SHL.items = all; SHL.at = Date.now(); return all; }
   async function shelfPage(q) { document.body.classList.add('shelf-on'); main().innerHTML = '<div class="bqs-wait">📚 책장을 세우는 중…</div>';
-    let c = {}; try { await shelfJs(); c = await cfg().catch(() => ({})); } catch (e) { main().innerHTML = errBox(e); bindAgain(() => shelfPage(q)); return; } if (B.route(location.hash).name !== 'shelf') return;
+    if (!q.demo && !(SHL.items && Date.now() - SHL.at < 5 * 60e3) && !SHL.p0) { SHL.p0 = api('/shop/shelf?k=0'); SHL.p0.catch(() => { SHL.p0 = null; }); } /* 화면 파일·설정과 나란히 */
+    let c = {}; try { await Promise.all([shelfJs(), cfg().then((x) => { c = x; }, () => {})]); } catch (e) { main().innerHTML = errBox(e); bindAgain(() => shelfPage(q)); return; } if (B.route(location.hash).name !== 'shelf') return;
     const S = window.BQS; const raw = { ...((c && c.shelf) || {}), ...(q.cfg ? S.previewCfg(q.cfg) : {}) }; const sc = S.cfgOf(raw);
     if (!sc.on && !q.cfg && !q.demo) { main().innerHTML = '<div class="empty">서가 책장은 지금 쉬는 중입니다<br><a href="#/list?s=new">책 찾기로</a></div>'; return; }
     const demo = Math.max(0, Math.min(20000, parseInt(q.demo, 10) || 0));
     SHL.h = window.BQShelf.mount(main(), { cfg: raw, sort: q.s, start: q.i != null ? { i: +q.i } : null, shop: { open: !!(c && c.open) || !!demo }, toast,
-      load: (prog) => (demo ? Promise.resolve(S.demoItems(demo)) : shelfItems(prog)),
+      load: (prog, early) => (demo ? Promise.resolve(S.demoItems(demo)) : shelfItems(prog, early)),
       cart: { n: () => cart().length, has: (id) => cart().some((y) => y.id === id), add: (x) => { if (demo) return '시범 자료라 담지 않습니다(움직임만 보기는 ⚙ 보기에서)'; const r = B.cartAdd(cart(), x, c.maxItems); if (r.why) return r.why; setCart(r.cart); return null; } },
       saveLooks: demo ? null : (L, g) => api('/shop/spines', { method: 'POST', body: JSON.stringify({ g, L }) }).catch(() => {}), /* (shelf2) 책등 모양 영구 저장 — 먼저 정한 것이 이김 */
       wish: { get: wish, set: setWish }, open: (id) => { if (!demo) location.hash = '#/b/' + encodeURIComponent(id); else toast('시범 자료 — 자세히 화면 없음'); },
