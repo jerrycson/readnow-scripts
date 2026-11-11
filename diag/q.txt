@@ -1,2 +1,2 @@
-doc=col2_ctl/HOME
-# 2341919724
+doc=app_settings/aladin_login
+# 2622810875
