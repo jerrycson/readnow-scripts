@@ -140,7 +140,12 @@ class Browser {
   /* 도우미 /render와 같은 꼴 { ok, html, ms } — opt.re(링크 꼴)가 보이거나 wait(ms)가 지나면 그때 화면 HTML */
   async render(url, opt) { const o = opt || {}; const wait = Math.max(3000, Math.min(30000, +o.wait || 12000)); const t0 = Date.now(); let T = null;
     try { T = await this.openTab(url, Math.ceil(wait / 1000) + 10); const ctx = await this.tabWorld(T, []); const re = o.re ? JSON.stringify([o.re, o.reFlags || '']) : 'null';
-      const html = await this.evalIn(T.sid, ctx, `(async () => { const R = ${re}; const re = R ? new RegExp(R[0], R[1]) : null; const t0 = Date.now(); for (;;) { const hit = re && [...document.querySelectorAll('a[href]')].some((a) => re.test(a.href)); if (hit || Date.now() - t0 > ${wait}) break; await new Promise((r) => setTimeout(r, 400)); } await new Promise((r) => setTimeout(r, 300)); return document.documentElement ? document.documentElement.outerHTML : ''; })()`, wait + 15000);
+      /* (11/11 col2rep2 · 외부 정보 '못 읽음 100%' — 예스24 도서·예스24 중고·네이버 도서) 예전엔 링크 꼴(/goods/숫자)이 하나라도 보이면 곧바로 HTML을 떴는데, 예스24·네이버 검색 화면은 머리·광고·추천에 같은 꼴 링크가 먼저 있고
+       *  검색 결과 목록(itemUnit 등)은 조금 뒤 따로 불러옴 → 결과 목록이 없는 HTML을 떠 '검색 결과 목록이 화면에 없음'으로 늘 실패
+       *  운영 도우미 /render(readnow-local.js)는 화면을 1280×6000으로 크게 열고 wait 동안 다 그린 뒤 뜸(--virtual-time-budget · --dump-dom) → 같은 뜻으로: 화면 크게(지연 로딩 칸이 참) · 최소 minMs 기다림 · 그 뒤 링크 수가 3번(1.2초) 그대로일 때 뜸 · 최대 wait */
+      try { await this.cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 6000, deviceScaleFactor: 1, mobile: false }, T.sid); } catch (e) {}
+      const minMs = Math.min(wait, Math.max(1500, +o.minMs || 5000));
+      const html = await this.evalIn(T.sid, ctx, `(async () => { const R = ${re}; const re = R ? new RegExp(R[0], R[1]) : null; const t0 = Date.now(); let last = -1, same = 0; for (;;) { const n = re ? [...document.querySelectorAll('a[href]')].filter((a) => re.test(a.href)).length : 0; same = n === last ? same + 1 : 0; last = n; const el = Date.now() - t0; if ((n > 0 && el >= ${minMs} && same >= 3) || el > ${wait}) break; await new Promise((r) => setTimeout(r, 400)); } await new Promise((r) => setTimeout(r, 300)); return document.documentElement ? document.documentElement.outerHTML : ''; })()`, wait + 15000);
       if (typeof html !== 'string' || !html) return { ok: false, why: '그리기 실패: ' + ((html && html.why) || '빈 화면') }; return { ok: true, html: html.slice(0, 3000000), ms: Date.now() - t0 }; }
     catch (e) { return { ok: false, why: '그리기 실패: ' + e.message }; } finally { await this.closeTab(T); } }
   /* 따로 된 칸 탭에서 화면을 열고(그려) 운영 공용 파일·떼어 온 함수·받침을 넣은 뒤 expr 하나를 부름 — 끝나면 탭·칸을 버림 */

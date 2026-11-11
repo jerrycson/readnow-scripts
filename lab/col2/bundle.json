@@ -8,6 +8,7 @@
   "helper/col2-win.js",
   "helper/col2-y24.js",
   "shadow/col2-compare-core.js",
+  "shadow/col2-handoff.js",
   "shadow/col2-compare.js",
   "shadow/col2-store.js",
   "shadow/compare.html",
