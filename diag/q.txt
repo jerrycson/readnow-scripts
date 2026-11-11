@@ -1,2 +1,2 @@
-doc=col2_books/bk_1000403,col2_books/bk_1001422,col2_books/bk_101631223,prd_books/bk_1000403
-# 287921030
+doc=col2_books/bk_1000403
+# 220169599
