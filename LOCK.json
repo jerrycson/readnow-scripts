@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "큰 판 1.78.481 내기(rel1 — fin1·glitch1·shop2·hub1·consres·y24ops1/2·naver1·nav1·led2b·col2rep1)",
+ "since": "2026-11-11T07:13:44Z",
+ "beat": "2026-11-11T07:13:44Z",
  "ask": null,
  "last": {
   "who": "eng",
   "done": "클라우드 0.35.125 연구 진화 기록 받는 곳 1be3383",
   "at": "2026-11-11T06:06:28Z"
  },
- "host": null
+ "host": "vm"
 }
