@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "lead",
+ "what": "rel8 판 내기",
+ "since": "2026-11-11T20:38:37Z",
+ "beat": "2026-11-11T20:38:37Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "rel7 판 냄 — 웹앱 1.78.493·수집기 1.89.272·클라우드 0.35.134·적응 엔진 0.1.4·노선표 0.14.173·번외 0.1.29 · 40d3557 (adapt4+shelf6+col2rep6+bench u2go8 · 동시 처리 8)",
   "at": "2026-11-11T19:54:21Z"
  },
- "host": null
+ "host": "vm"
 }
