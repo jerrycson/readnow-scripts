@@ -111,7 +111,12 @@ async function loadCore(force) { if (!force && CORE.src.length && now() - CORE.a
 const ST = { opens: [], shown: false, open: false, rect: null, busy: false, msg: '', reads: [], reading: null, lastWin: null, timers: [], hwinOpen: false };
 const opensHour = () => { ST.opens = ST.opens.filter((t) => now() - t < 3600e3); return ST.opens.length; };
 let B = null;
-function newBrowser() { return new Browser({ exe: chromeExe(), profile: path.join(HOME, WORK_MARK), headless: !!CFG.headless, rect: { x: -32000, y: 40, w: W('hideW'), h: W('hideH') }, stale: () => WIN.run('kill', WORK_MARK), handoffMs: TEST && CFG.watch && +CFG.watch.handoffMs >= 0 && CFG.watch.handoffMs != null ? +CFG.watch.handoffMs : W('handoffSec') * 1000 }); }
+/* (11/11 col2fix6) 🛰 로거 작업 크롬 = 운영 로거 도우미 길(테더링만 · fail-closed) · 실패 글에 까닭(몫 다 씀·도우미 꺼짐·hosts 막힘) */
+const lgProxy = () => { if (!isLoggerPc()) return null; const L = CFG.logger || {}; if (L.proxy === false) return null; if (typeof L.proxy === 'string' && /^http:\/\/127\.0\.0\.1:\d+$/.test(L.proxy)) return L.proxy; return TEST ? null : 'http://127.0.0.1:' + COL2.PROD_PORTS[1]; };
+const netHint = (err) => { if (!isLoggerPc()) return ''; const b = busyNow(); if (b && /테더링/.test(b.why)) return ' — ' + b.why; const e = String(err || '');
+  if (/NAME_NOT_RESOLVED|ADDRESS_INVALID/.test(e)) return lgProxy() ? ' — 로거 도우미(8899)가 알라딘 주소를 못 찾음(테더링 DNS)' : ' — 로거 hosts가 알라딘 주소를 막아 둠(0.0.0.0) · 이 크롬은 로거 도우미(8899) 길로만 나가야 함(col2.json logger.proxy)';
+  if (/TUNNEL|PROXY_CONNECTION|CONNECTION_REFUSED|CONNECTION_RESET|EMPTY_RESPONSE/.test(e)) return ' — 로거 도우미(8899)가 거절함: 테더링 확인 안 됨·한 달 상한·도우미 꺼짐 중 하나(로거 도우미 상태 화면 확인)'; return ''; };
+function newBrowser() { return new Browser({ exe: chromeExe(), profile: path.join(HOME, WORK_MARK), headless: !!CFG.headless, proxy: lgProxy(), netHint, rect: { x: -32000, y: 40, w: W('hideW'), h: W('hideH') }, stale: () => WIN.run('kill', WORK_MARK), handoffMs: TEST && CFG.watch && +CFG.watch.handoffMs >= 0 && CFG.watch.handoffMs != null ? +CFG.watch.handoffMs : W('handoffSec') * 1000 }); }
 /* (0.1.2) 크롬 띄우기 기록 — 바로 꺼진 까닭(종료 코드·마지막 줄)을 상태(웹앱 col2_ctl·상태 창)에 남김 */
 const CH = { fails: 0, last: null, okAt: 0, coolUntil: 0, cools: 0, adopts: 0, retries: 0 }; /* (0.1.3) adopts = 넘겨받아 쓴 횟수 · retries = 한 번 더 띄워 된 횟수 */
 const coolMs = () => (TEST && CFG.watch && +CFG.watch.coolMs > 0 ? +CFG.watch.coolMs : W('coolMin') * 60e3);
@@ -469,7 +474,7 @@ async function autoStep() {
   const h = kHour(); if (!nightOn() && h >= AC.nightFrom && h < AC.nightTo) { AU.msg = `새벽 ${AC.nightFrom}~${AC.nightTo}시 쉼(설정 nightOn 꺼짐)`; return 10 * 60e3; }
   if (ST.reading) return 3000;
   /* (0.1.9) 그림자 일 — 공개 상품 화면 읽기와 번갈아 하나씩(같은 속도 규칙 PACE를 함께 씀) · 상품 그림자를 하지 않는 PC(로거)는 표본 책을 일 차례로만 넘기고 그림자 일만 */
-  { const bz = busyNow(); if (bz) { AU.msg = '운영이 바빠 쉼 — ' + bz.why; JOBS.step().catch(() => {}); return COL2.BUSY.restMs; } }
+  { const bz = busyNow(); if (bz) { AU.msg = isLoggerPc() && /테더링/.test(bz.why) ? '⏸ ' + bz.why + ' (그동안 알라딘에 안 감)' : '운영이 바빠 쉼 — ' + bz.why; /* (11/11 col2fix6) 로거 몫 다 씀은 '작업 창 준비 실패'가 아니라 다시 여는 때까지 */ JOBS.step().catch(() => {}); return COL2.BUSY.restMs; } }
   if (!prodPlan() && AU.cur < AU.pool.length && JOBS.bookQ() < 50) { const L = AU.pool.slice(AU.cur, AU.cur + 100); AU.cur += L.length; AU.lap.read += L.length; JOBS.feedBooks(L); savePos(); }
   if (!prodPlan() || AU.cur >= AU.pool.length || prodFull() || (AU.turn = (AU.turn || 0) + 1) % 2 === 0) { /* (11/10 밤) prodFull = 오늘 상품 화면이 하루 몫의 prodShare를 넘음 → 그림자 일 먼저 */ /* (0.1.10) 읽을 표본 책이 없을 때는 그림자 일을 차례마다(예전엔 한 번 걸러 15초씩 쉬어 사무실 PC 그림자 일이 16초에 하나) */ if (RL.out.length < RC.outMax) { ST.reading = { job: true, at: now() }; let j; try { j = await JOBS.step(); } catch (e) { j = { did: false, rest: 10e3, why: e.message }; } finally { ST.reading = null; }
       if (j.did) { AU.msg = '그림자 일 도는 중'; return 1000; } if (!prodPlan() || (AU.cur >= AU.pool.length && /차례 기다림|운영 값 기다림/.test(j.why || ''))) { if (AU.cur >= AU.pool.length && AU.lap.end && AU.pool.length) lapNext(); AU.msg = '그림자 일: ' + (j.why || '쉼') + (AU.cur >= AU.pool.length ? ' · 표본 책을 기다림(이 PC 웹앱이 넘김)' : ''); return Math.max(1000, Math.min(j.rest || 15e3, 30 * 60e3)); } } }

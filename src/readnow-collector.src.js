@@ -10331,12 +10331,24 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
   const lgTick = async () => { if (busy || Date.now() < nextAt) return; const role = window.__rnRole ? window.__rnRole() : 'lead'; if (role !== 'lead' || !isLogger()) return; const db = fsx(); if (!db) return;
     busy = true; let next = 60e3; try {
       const tg = window.__rnTgate ? window.__rnTgate() : null; const tgOk = !(tg && tg.ok === false);
-      if (tgWas !== tgOk) { const r0 = await gx('POST', '/busy', tgOk ? { sec: 0, why: '테더링 문 열림' } : { sec: 600, why: '🛡 로거 테더링 문 닫힘 — ' + String((tg && tg.why) || '').slice(0, 50) }); if (r0) tgWas = tgOk; } else if (!tgOk) await gx('POST', '/busy', { sec: 600, why: '🛡 로거 테더링 문 닫힘' });
+      /* (11/11 col2fix6 · 로거 번외 '작업 창 준비 실패: net::ERR_NAME_NOT_RESOLVED' — 같은 때 테더링 오늘 몫 4.00GB 다 씀) 테더링 문(TGATE)은 하루 몫이 바닥나도 열려 있어(몫은 수집기 BUD가 지킴) 번외가 계속 알라딘을 열려 했음
+       *  → 오늘 일반 몫(번외는 '기타'로 셈 — 일반 몫에서 빠지고 넘치면 벤치마킹 몫까지 먹음)이 0이면 번외 그림자도 쉼 · 다시 여는 때를 글로(두 몫 다 0 = 내일 0시 새 몫 · 일반만 0 = 다음 일반 몫 시간대) */
+      let bud = null; try { bud = window.__rnPub && window.__rnPub.diag ? window.__rnPub.diag().bud : null; } catch (e) { bud = null; }
+      const budOut = !!(tgOk && bud && bud.left && !bud.free && !(bud.left.gen > 0)); let budWhy = '', budSec = 600;
+      if (budOut) { const k = new Date(Date.now() + 9 * 3600e3); const mi = k.getUTCHours() * 60 + k.getUTCMinutes(); const both = !(bud.left.main > 0); const at = both ? 1440 : [360, 720, 1080, 1440].find((x) => x > mi) || 1440;
+        budSec = Math.max(60, Math.min(1800, (at - mi) * 60)); budWhy = `📏 로거 테더링 오늘 ${both ? '몫' : '일반 몫'} 다 씀 — ${at >= 1440 ? '내일 00:00' : String(at / 60).padStart(2, '0') + ':00'} 재개${both ? '(새 하루 몫)' : '(일반 몫 다음 시간대)'}`; }
+      const gst = !tgOk ? 'tg' : budOut ? 'bud:' + budWhy : 'ok';
+      if (tgWas !== gst) { const r0 = await gx('POST', '/busy', gst === 'ok' ? { sec: 0, why: '테더링 문 열림' } : gst === 'tg' ? { sec: 600, why: '🛡 로거 테더링 문 닫힘 — ' + String((tg && tg.why) || '').slice(0, 50) } : { sec: budSec, why: budWhy, until: Date.now() + budSec * 1000 }); if (r0) tgWas = gst; }
+      else if (gst === 'tg') await gx('POST', '/busy', { sec: 600, why: '🛡 로거 테더링 문 닫힘' }); else if (budOut) await gx('POST', '/busy', { sec: budSec, why: budWhy });
       const pd = await gx('GET', '/relay/pending?by=' + encodeURIComponent('수집기 ' + (pcOf() || 'LOGGER'))); if (!pd || !pd.ok) { G.__rnC2lgPd = { at: Date.now(), miss: miss + 1 }; if (++miss >= 3) next = 5 * 60e3; return; } miss = 0;
       G.__rnC2lgPd = { at: Date.now(), miss: 0, webAt: +pd.webAt || 0, kind: pd.kind || '', ver: pd.ver || '' }; /* (11/11 nvfix1) 🟩 네이버 다리 rnC2nv가 '이 PC 웹앱이 3분 안에 왔나'·번외 판을 따로 묻지 않고 봄 */
       if (pd.kind && pd.kind !== 'logger') { next = 30 * 60e3; return; } /* 번외가 사무실 설정이면 이 다리는 손대지 않음 */
       { const Q = G.__rnC2lgBk || []; if (Q.length) { const take = Q.splice(0, 300); const r1 = await gx('POST', '/lg/books', { books: take }); if (!r1) G.__rnC2lgBk = take.concat(G.__rnC2lgBk || []).slice(-300); } }
       if (pd.webAt && Date.now() - pd.webAt < 3 * 60e3) return; /* 이 PC 웹앱이 대신 해 주는 중 */
+      /* (11/11 col2fix6 · 진단 'LOGGER 번외 상태 기록이 12:34 0.1.21에서 멈춤 — 화면은 0.1.23') 번외 상태 기록(col2_ctl/<PC>)은 그 PC 웹앱 탭만 5분마다 썼음 → 로거는 웹앱 탭이 없어 멈춰 있었음
+       *  웹앱이 3분 넘게 안 오면 이 다리가 5분마다 대신 씀(판·켜짐·오늘 몫·지금 글·새 판 받기 결과만 · 손님 정보·키 없음 · by '수집기 다리') */
+      if (Date.now() - (G.__rnC2lgCtl || 0) > 5 * 60e3) { const st = await gx('GET', '/status'); if (st && st.ok) { G.__rnC2lgCtl = Date.now(); const au = st.auto || {}; const up = st.upd || null; const now = new Date().toISOString();
+        try { await db.collection('col2_ctl').doc(String(st.pc || pcOf() || 'LOGGER').replace(/[^\w-]/g, '_').slice(0, 40)).set({ at: now, by: '수집기 다리 ' + (pcOf() || 'LOGGER'), via: 'col', st: { ver: st.ver || null, running: true, on: !!st.on, want: !!st.on, dayN: au.dayN != null ? +au.dayN : null, dayCap: au.dayCap != null ? +au.dayCap : null, msg: String(st.msg || au.msg || '').slice(0, 200), upd: up && (up.msg || up.at) ? { at: up.at || null, msg: String(up.msg || '').slice(0, 160) } : null, at: now } }, { merge: true }); } catch (e) {} } }
       const docs = []; for (const w of (pd.want || []).slice(0, 40)) { const c = String((w && w.c) || ''), id = String((w && w.id) || ''); if (!RID.test(id)) continue;
         if (c === 'app_settings') { if (id !== 'bench') continue; try { const d = await db.collection(c).doc(id).get(); const v = d.exists ? d.data() || {} : null; docs.push({ c, id, v: v ? { targets: (Array.isArray(v.targets) ? v.targets : []).filter((t) => t && t.sc).slice(0, 200).map((t) => ({ sc: String(t.sc), on: t.on !== false })) } : null }); } catch (e) {} continue; }
         if (!KEEP[c]) continue; try { const d = await db.collection(c).doc(id).get(); docs.push({ c, id, v: d.exists ? pick(d.data(), KEEP[c]) : null }); } catch (e) {} }
