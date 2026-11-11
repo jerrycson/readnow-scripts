@@ -1,2 +1,2 @@
-recentUp=col2_jobs&mins=300
-# 1088626789
+doc=app_settings/research_pulse
+# 1826412846
