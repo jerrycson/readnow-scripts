@@ -1,2 +1,2 @@
 doc=app_settings/adapt_cfg
-# 1782628884
+# 4427072
