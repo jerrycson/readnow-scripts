@@ -89,7 +89,7 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
       ok(r.j.ok && r.j.pending && r.j.kind === 'live' && /지금 로그인돼 있어서 바로 확인하지 않음/.test(r.j.msg) && /다시 로그인할 때 이 값으로 확인/.test(r.j.msg) && A.S.log.filter((x) => x.login).length === n && chk(datA) === 'pending', '세션이 살아 있으면 = 로그인을 더 하지 않고 잠가 저장 · 화면에 「바로 확인하지 않음 · 다음 다시 로그인 때 확인」', r.j.msg || r.j.err); }
     console.log('④ 화면 — 진행 글 · 결과가 남음 · 답이 끊겨도 · 두 번 누르기');
     { const br = await L.chromium().launch(); const pg = await (await br.newContext()).newPage(); await pg.goto(`http://127.0.0.1:${H.port}/`); await wait(1500); await pg.click('#setBtn'); await wait(500);
-      Y.S.hang = true; await pg.fill('#cri_y24', ID); await pg.fill('#crp_y24', PW); await pg.click('#crb_y24'); await wait(1300);
+      Y.S.hang = true; (await pg.$('#crch_y24') && await pg.isVisible('#crch_y24') ? await pg.click('#crch_y24') : null); await pg.fill('#cri_y24', ID); await pg.fill('#crp_y24', PW); await pg.click('#crb_y24'); await wait(1300);
       const a1 = await pg.evaluate(() => ({ m: document.getElementById('crm_y24').textContent, b: document.getElementById('crb_y24').textContent, d: document.getElementById('crb_y24').disabled }));
       ok(/⏳ 확인 중 — /.test(a1.m) && /초째/.test(a1.m) && a1.d && /확인하는 중/.test(a1.b), "누르면 곧바로 '⏳ 확인 중 — 무엇을 하는 중(몇 초째)'", a1.m);
       const a2 = await until(async () => { const v = await pg.evaluate(() => document.getElementById('crm_y24').textContent); return /확인 못 함/.test(v) ? v : null; }, 60, 500);
@@ -100,10 +100,10 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
       await pg.click('#crf_y24'); const f1 = await pg.evaluate(() => document.getElementById('crf_y24').textContent); ok(/한 번 더/.test(f1) && chk(datY) === 'ok', '그래도 저장은 한 번 누르면 「한 번 더 누르면…」만(아직 안 바꿈)', f1);
       await pg.click('#crf_y24'); const f2 = await until(async () => { const v = await pg.evaluate(() => document.getElementById('crm_y24').textContent); return /확인하지 못한 채 잠가 저장/.test(v) ? v : null; }, 30, 300);
       ok(f2 && chk(datY) === 'pending' && (await pg.evaluate(() => document.getElementById('crp_y24').value)) === '', '두 번 누르면 확인 없이 잠가 저장 · 결과 줄 · 비밀번호 칸 비움', f2);
-      await wait(4500); const s1 = await pg.evaluate(() => document.getElementById('crs_y24').textContent); ok(/확인 기다림/.test(s1), "상태 줄 '✓ 저장됨 · ⚠ 확인 기다림'", s1);
+      await wait(4500); const s1 = await pg.evaluate(() => document.getElementById('crbadge_y24').textContent + ' ' + document.getElementById('crs_y24').textContent); ok(/확인 기다림/.test(s1), "상태 줄 '✓ 저장됨 · ⚠ 확인 기다림'", s1);
       /* 도우미 답이 끊김(예전 '그냥 풀림' — 화면엔 아무 글 없이 단추만 돌아옴) → 그래도 결과를 받아 보임 */
       await pg.route('**/cred/save', async (rt) => { rt.fetch().catch(() => {}); await wait(300); await rt.abort('connectionreset'); });
-      await pg.fill('#cri_y24', ID); await pg.fill('#crp_y24', PW); await pg.click('#crb_y24');
+      (await pg.$('#crch_y24') && await pg.isVisible('#crch_y24') ? await pg.click('#crch_y24') : null); await pg.fill('#cri_y24', ID); await pg.fill('#crp_y24', PW); await pg.click('#crb_y24');
       const c1 = await until(async () => { const v = await pg.evaluate(() => document.getElementById('crm_y24').textContent); return /로그인 확인됨/.test(v) ? v : null; }, 80, 500);
       ok(c1 && chk(datY) === 'ok', '도우미 답이 끊겨도 도우미에 남은 결과를 받아 「✓ 로그인 확인됨」을 보임', c1 || await pg.evaluate(() => document.getElementById('crm_y24').textContent));
       await br.close(); }

@@ -32,4 +32,31 @@ function makePace(file, getCfg, o) {
   function state() { tidy(); const c = cfg(); return { last: S.last || null, hourN: S.hour.length, hourCap: c.hourCap, dayN: S.day.n, dayCap: c.dayCap, minGapMs: c.minGapMs, coolMs: Math.max(0, S.coolUntil - now()), fails: S.fails, oks: S.oks }; }
   return { check, take, fail, ok, state, trueUp, _S: () => S };
 }
-module.exports = { makePace };
+
+/* (11/11 정범님 '바깥 사이트 읽기 몫') 바깥 사이트(교보·예스24 공개·번개장터·KPIPA·환율 …) 속도 — 알라딘 몫(makePace · 사람 속도 두 배 = 알라딘 화면 규칙)과 따로
+ *  · 사이트(주소 host)마다 요청 사이 간격 = 운영 외부 정보 공용 파일의 출처 paceMs(같은 host를 쓰는 출처는 가장 긴 간격 · 흩음 ±15%)
+ *  · 출처마다 하루(한국 날짜) 상한 = 운영 출처 cap(덮어쓰기 col2.json siteCfg) · 429·503이면 그 사이트만 cool429Min분 × 횟수(최대 10배) 쉼
+ *  · 알라딘(aladin.co.kr)은 여기서 셈하지 않음(늘 makePace) · 기록은 site-pace.json(작음 · 출처·사이트 수십 개) */
+function makeSitePace(file, getCfg, o) {
+  o = o || {}; const now = o.now || Date.now; const sleep = o.sleep || ((ms) => new Promise((r) => setTimeout(r, ms)));
+  let S = { h: {}, s: {} };
+  try { const v = JSON.parse(fs.readFileSync(file, 'utf8')); if (v && typeof v === 'object') S = { h: v.h || {}, s: v.s || {} }; } catch (e) {}
+  const save = () => { try { fs.writeFileSync(file, JSON.stringify(S)); } catch (e) {} };
+  /* cfg(src) → { host, label, gapMs, dayCap, jitter, cool429Min } */
+  const cfg = (src) => getCfg(src);
+  const H = (h) => S.h[h] || (S.h[h] = { last: 0, coolUntil: 0, n429: 0 });
+  const D = (src) => { const d = kday(now()); const x = S.s[src]; if (!x || x.d !== d) S.s[src] = { d, n: 0, ok: 0, fail: 0 }; return S.s[src]; };
+  function check(src) { const c = cfg(src); const h = H(c.host); const d = D(src); const t = now();
+    if (h.coolUntil > t) return { ok: false, why: `${c.label}이(가) '요청이 많음'이라 답해 ${Math.ceil((h.coolUntil - t) / 60e3)}분 쉬는 중(이 사이트만)`, retryMs: h.coolUntil - t };
+    if (d.n >= c.dayCap) return { ok: false, why: `${c.label} 하루 ${c.dayCap}번까지 — 오늘은 다 씀(다른 사이트·알라딘은 따로)`, retryMs: null };
+    const gap = c.gapMs * (1 - c.jitter + Math.random() * 2 * c.jitter); return { ok: true, waitMs: Math.round(Math.max(0, (h.last || 0) + gap - t)) }; }
+  async function take(src) { const c0 = check(src); if (!c0.ok) return c0; if (c0.waitMs > 0) await sleep(c0.waitMs); const c1 = check(src); if (!c1.ok) return c1; if (c1.waitMs > 0) await sleep(c1.waitMs);
+    const c = cfg(src); H(c.host).last = now(); D(src).n++; save(); return { ok: true, waited: c0.waitMs + (c1.waitMs || 0) }; }
+  function fail(src, kind) { const c = cfg(src); const h = H(c.host); D(src).fail++; if (kind === '429') { h.n429 = (h.n429 || 0) + 1; h.coolUntil = now() + Math.min(10, h.n429) * c.cool429Min * 60e3; } save(); }
+  function ok(src) { const c = cfg(src); const h = H(c.host); D(src).ok++; if (h.n429 && now() - h.last > 3600e3) h.n429 = 0; save(); }
+  /* 화면용 — 오늘 쓴 출처만(쓴 수 많은 차례) */
+  function state() { const d = kday(now()); const out = []; for (const [src, x] of Object.entries(S.s)) { if (!x || x.d !== d) continue; const c = cfg(src); const h = S.h[c.host] || {}; out.push({ src, label: c.label, host: c.host, n: x.n, cap: c.dayCap, ok: x.ok || 0, fail: x.fail || 0, gapMs: c.gapMs, coolMs: Math.max(0, (h.coolUntil || 0) - now()) }); }
+    out.sort((a, b) => b.n - a.n); return { day: d, sites: out, n: out.reduce((a, x) => a + x.n, 0) }; }
+  return { check, take, fail, ok, state, _S: () => S };
+}
+module.exports = { makePace, makeSitePace };

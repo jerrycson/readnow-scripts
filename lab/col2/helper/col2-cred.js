@@ -7,6 +7,8 @@
  * 시험(리눅스)에는 DPAPI가 없어 RN_COL2_DPAPI(가짜 잠그개)를 씀 — 실제 PC는 powershell.exe */
 'use strict';
 const fs = require('fs'), path = require('path'), cp = require('child_process');
+/* (11/11 정범님 '입력했는지 안 했는지 헷갈림') 화면에 보이는 아이디 표시 — 앞 3자 + *** (3자 이하면 앞 1자) · 비밀번호는 어떤 꼴로도 안 남김 */
+const maskId = (id) => { const t = String(id || '').trim(); if (!t) return ''; return (t.length > 3 ? t.slice(0, 3) : t.slice(0, 1)) + '***'; };
 const PF = { y24: { name: '예스24 판매관리' }, al: { name: '알라딘 샵매니저' } }; /* 번외가 쓰는 로그인 — 늘어나면 여기 한 줄 */
 const PS = `param([string]$Act = 'protect')
 [Console]::InputEncoding = [Text.Encoding]::UTF8
@@ -36,7 +38,7 @@ function makeCred(o) { const { HOME } = o; const D = path.join(HOME, 'cred'); co
     id = String(id == null ? '' : id); pw = String(pw == null ? '' : pw); if (!id.trim() || !pw) return { ok: false, err: '아이디와 비밀번호를 모두 넣어 주세요' }; if (id.length > 200 || pw.length > 200) return { ok: false, err: '너무 깁니다' };
     const a = await run('protect', id); if (!a.ok) return a; const b = await run('protect', pw); if (!b.ok) return b;
     try { fs.mkdirSync(OLD, { recursive: true }); if (fs.existsSync(fileOf(pf))) fs.renameSync(fileOf(pf), path.join(OLD, `${pf}-${Date.now()}.dat`));
-      const tmp = fileOf(pf) + '.t'; fs.writeFileSync(tmp, JSON.stringify({ v: 1, how: process.env.RN_COL2_DPAPI ? 'test' : 'dpapi-user', at: Date.now(), chk, chkAt: Date.now(), id: a.v, pw: b.v })); fs.renameSync(tmp, fileOf(pf)); } catch (e) { return { ok: false, err: '잠근 파일을 못 씀' }; }
+      const tmp = fileOf(pf) + '.t'; fs.writeFileSync(tmp, JSON.stringify({ v: 1, how: process.env.RN_COL2_DPAPI ? 'test' : 'dpapi-user', at: Date.now(), chk, chkAt: Date.now(), hint: maskId(id), id: a.v, pw: b.v })); fs.renameSync(tmp, fileOf(pf)); } catch (e) { return { ok: false, err: '잠근 파일을 못 씀' }; }
     return { ok: true }; }
   /* 풀기 — 로그인 칸에 넣기 바로 전에만 · {ok, id, pw} (부른 쪽이 쓰고 버림) */
   async function open(pf) { if (isLogger()) return { ok: false, err: '로거 PC — 계정을 쓰지 않음' }; const j = read(pf); if (!j) return { ok: false, err: '저장된 계정 없음' };
@@ -46,7 +48,9 @@ function makeCred(o) { const { HOME } = o; const D = path.join(HOME, 'cred'); co
   const chkOf = (pf) => { const j = isLogger() ? null : read(pf); return j ? (j.chk || 'ok') : null; }; /* 옛 파일(chk 없음)은 확인하고 저장한 것 */
   /* 화면·상태용 — 값 없음 */
   const has = (pf) => !isLogger() && !!read(pf);
-  const sum = () => { const out = {}; for (const k of Object.keys(PF)) { const j = isLogger() ? null : read(k); out[k] = { name: PF[k].name, has: !!j, at: j ? j.at : null, chk: j ? (j.chk || 'ok') : null, chkAt: j ? (j.chkAt || j.at) : null }; } return out; };
-  return { save, open, has, sum, mark, chkOf, PF };
+  const sum = () => { const out = {}; for (const k of Object.keys(PF)) { const j = isLogger() ? null : read(k); out[k] = { name: PF[k].name, has: !!j, at: j ? j.at : null, chk: j ? (j.chk || 'ok') : null, chkAt: j ? (j.chkAt || j.at) : null, hint: j ? j.hint || null : null }; } return out; };
+  /* 예전에 저장한 파일(표시 없음)은 한 번 풀어 앞 3자 표시만 더함(값은 그대로 잠긴 채) */
+  async function hintFill() { if (isLogger()) return 0; let n = 0; for (const k of Object.keys(PF)) { const j = read(k); if (!j || j.hint) continue; const a = await run('unprotect', j.id); if (!a.ok) continue; j.hint = maskId(a.v); a.v = null; try { const tmp = fileOf(k) + '.t'; fs.writeFileSync(tmp, JSON.stringify(j)); fs.renameSync(tmp, fileOf(k)); n++; } catch (e) {} } return n; }
+  return { save, open, has, sum, mark, chkOf, hintFill, PF };
 }
-module.exports = { makeCred, PF, PS };
+module.exports = { makeCred, PF, PS, maskId };
