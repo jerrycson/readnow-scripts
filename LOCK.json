@@ -1,13 +1,13 @@
 {
- "holder": "lead",
- "what": "웹앱 1.78.478 번외 로그인",
- "since": "2026-11-11T03:17:09Z",
- "beat": "2026-11-11T03:17:09Z",
+ "holder": null,
+ "what": null,
+ "since": null,
+ "beat": null,
  "ask": null,
  "last": {
   "who": "lead",
   "done": "",
-  "at": "2026-11-11T03:12:27Z"
+  "at": "2026-11-11T03:17:17Z"
  },
- "host": "vm"
+ "host": null
 }
