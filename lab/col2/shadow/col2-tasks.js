@@ -36,20 +36,20 @@
    *  키 없는 화면·공개 API만 돎 · 키가 필요한 공식 API는 hold(키는 app_secrets에만) · 그려 읽기만 되는 출처(네이버 도서)는 hold */
   const EXT = [
     ['kyobo', '교보문고', 'basic', 'run'], ['yes24', '예스24 도서 정보', 'basic', 'run'], ['naverbook', '네이버 도서(화면)', 'basic', 'render'], ['google', '구글 북스', 'basic', 'run'],
-    ['ttb', '알라딘 TTB(공식)', 'basic', 'key'], ['kakao', '카카오 책 검색', 'basic', 'key'], ['nl', '국립중앙도서관 ISBN 서지', 'basic', 'key'],
+    ['ttb', '알라딘 TTB(공식 · 2026-10-30 종료)', 'basic', 'ended'], ['kakao', '카카오 책 검색', 'basic', 'key'], ['nl', '국립중앙도서관 ISBN 서지', 'basic', 'key'],
     ['joongmo', '중고닷(통합 장터)', 'used', 'run'], ['yes24used', '예스24 중고', 'used', 'run'], ['bunjang', '번개장터', 'used', 'run'], ['joongna', '중고나라', 'used', 'run'], ['daangn', '당근', 'used', 'run'], ['dvdprime', 'DVDPrime 장터', 'used', 'run'],
     ['ebay', 'eBay(공식)', 'foreign', 'key'], ['abebooks', 'AbeBooks', 'foreign', 'run'], ['lib', '도서관 정보나루', 'lib', 'key'], ['ridi', '리디(전자책)', 'ebook', 'run'],
   ];
   const GCOL = { basic: 'ext_basic', used: 'ext_used', foreign: 'ext_foreign', lib: 'ext_lib', ebook: 'ext_ebook' };
   /* (0.1.10) 그려 읽기(render)는 번외 크롬 따로 된 칸 탭으로 돎(운영 도우미 /render와 같은 꼴 · 해석은 운영 본체 extRenderHelper 그대로) · 키(key)는 사무실 PC만(웹앱이 메모리로만 넘김 · 로거엔 안 줌) */
-  for (const [src, label, grp, st] of EXT) T.push({ k: 'ext.' + src, src, name: '🔎 ' + label, ops: ['extBurst'], cls: 'ext', reader: 'ext', col: GCOL[grp], grp, id: '{isbn}', input: 'book', who: st === 'key' ? 'office' : 'share', state: 'run',
-    ...(st === 'key' ? { keys: true, note: '운영 키(Firestore app_secrets/ext.keys)는 이 PC 운영 웹앱이 읽어 번외 도우미 메모리로만 넘김(파일·기록·Firestore에 안 남김) · 우리 계정 키라 로거엔 주지 않음 → 사무실 PC만' } : st === 'render' ? { render: true, note: '글자로 받으면 늘 막힘(418) — 번외 크롬 따로 된 칸 탭에 그려 읽음' } : {}) });
+  for (const [src, label, grp, st] of EXT) T.push({ k: 'ext.' + src, src, name: '🔎 ' + label, ops: ['extBurst'], cls: 'ext', reader: 'ext', col: GCOL[grp], grp, id: '{isbn}', input: 'book', who: st === 'key' || st === 'ended' ? 'office' : 'share', state: st === 'ended' ? 'ended' : 'run',
+    ...(st === 'ended' ? { ended: '2026-10-30', why: '알라딘 OpenAPI 종료(2026-10-30) — 묻지 않음', note: '(ttb1 11/11) 알라딘 OpenAPI 종료(2026-10-30) — 운영도 묻지 않음 · 번외도 돌리지 않음(헛호출 0) · 대체 출처: 알라딘 공개 상품 화면·국립중앙도서관·교보·예스24' } : st === 'key' ? { keys: true, note: '운영 키(Firestore app_secrets/ext.keys)는 이 PC 운영 웹앱이 읽어 번외 도우미 메모리로만 넘김(파일·기록·Firestore에 안 남김) · 우리 계정 키라 로거엔 주지 않음 → 사무실 PC만' } : st === 'render' ? { render: true, note: '글자로 받으면 늘 막힘(418) — 번외 크롬 따로 된 칸 탭에 그려 읽음' } : {}) });
   T.push({ k: 'ext.fx', src: 'fx', name: '💱 환율(수출입은행 → frankfurter)', ops: ['extBurst'], cls: 'ext', reader: 'ext', col: 'ext_fx', id: '{day}', input: 'day', who: 'share', state: 'run', minN: 1, /* 하루 한 문서뿐 */ note: '키 없는 frankfurter 길만(수출입은행은 키 필요) — 운영과 출처가 다르면 까닭 \'출처 다름\'' });
 
   /* (0.1.10) 🔑 키 규칙 — 운영 키는 Firestore app_secrets/ext.keys(운영 수집기 extKeys가 읽는 곳 · 웹앱 설정 ⑱에서 넣음)
    *  번외는 그 PC 운영 웹앱이 대신 읽어 도우미 메모리로만 넘김(POST /relay/keys) · 파일·기록창·col2_*·상태엔 이름만(값 없음)
    *  로거: 어느 키도 받지 않음 — TTB는 우리 알라딘 계정(판매자와 같은 계정)으로 받은 키 · 나머지도 우리 이름으로 받은 개발자 계정 키(로거가 우리와 엮이지 않게 · 약속 0) */
-  const KEY_RULE = { aladinTtb: { who: '우리 알라딘 계정의 TTB 키 — 판매자 계정과 엮임', logger: false }, kakaoRest: { who: '우리 카카오 개발자 계정', logger: false }, nlKey: { who: '우리 이름으로 받은 국립중앙도서관 인증키', logger: false },
+  const KEY_RULE = { aladinTtb: { who: '우리 알라딘 계정의 TTB 키 — 판매자 계정과 엮임 (2026-10-30 알라딘 OpenAPI 종료 — 쓰지 않음)', logger: false }, kakaoRest: { who: '우리 카카오 개발자 계정', logger: false }, nlKey: { who: '우리 이름으로 받은 국립중앙도서관 인증키', logger: false },
     d4lKey: { who: '우리 이름으로 받은 도서관 정보나루 인증키', logger: false }, ebayAppId: { who: '우리 eBay 개발자 계정', logger: false }, ebayCertId: { who: '우리 eBay 개발자 계정(비밀 짝)', logger: false },
     googleBooks: { who: '우리 구글 클라우드 계정(없어도 됨)', logger: false }, eximKey: { who: '우리 이름으로 받은 수출입은행 인증키(없어도 됨)', logger: false } };
   const KEY_OK = Object.keys(KEY_RULE);

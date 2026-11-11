@@ -1,5 +1,5 @@
 /* readnow-ext-core.js — 🌐 외부 정보 엔진 (공용 파일 · 웹앱·PC 수집기가 같은 기준을 씀 · 나중에 클라우드도 그대로)
- * 알라딘 밖에서 책 정보를 모음 — ① 기본 정보(교보·예스24·구글 북스 + 공식 API: 알라딘 TTB·카카오·네이버·국립중앙도서관)
+ * 알라딘 밖에서 책 정보를 모음 — ① 기본 정보(교보·예스24·구글 북스 + 공식 API: 카카오·국립중앙도서관 · 알라딘 TTB는 2026-10-30·네이버 책 검색은 2026-07-31 서비스 종료)
  *   ② 중고 시세(예스24 중고·번개장터·중고나라·당근 · (0.3.0) DVDPrime 장터 — 영상·음반만) ③ 외국 시세(eBay 공식 API 먼저, AbeBooks 보조) ④ 도서관 대출(도서관 정보나루)
  *   ⑤ 전자책(리디) ⑥ 환율(한국수출입은행 → 안 되면 frankfurter)
  * 이 파일은 '어떻게 묻고 어떻게 읽는지'와 '숫자 계산'만 — 요청을 보내는 길(http)은 쓰는 쪽이 넣어 줌:
@@ -12,7 +12,7 @@
 
   /* ── 키 (웹앱 설정 ⑱에서 넣음 → Firebase app_secrets/ext · 백업 파일엔 넣지 않음) ── */
   const KEYS = [
-    { k: 'aladinTtb', label: '알라딘 TTB 키', for: ['ttb'], get: 'https://www.aladin.co.kr/ttb/wblog_manage.aspx', note: '알라딘 블로그 › TTB 키 발급 (하루 5,000번)' },
+    { k: 'aladinTtb', label: '알라딘 TTB 키 — 알라딘 OpenAPI 종료(10/30)', for: ['ttb'], ended: '2026-10-30', get: 'https://blog.aladin.co.kr/cscenter/17483675', note: '알라딘이 2026-10-30에 OpenAPI를 끝냄(신규 키 9/4 끝 · 기존 키도 응답 999) — 넣을 필요 없음 · 같은 칸은 알라딘 공개 상품 화면·국립중앙도서관·교보·예스24에서' }, /* (ttb1 11/11) 키 칸 대신 종료 안내 */
     { k: 'kakaoRest', label: '카카오 REST API 키', for: ['kakao'], get: 'https://developers.kakao.com/console/app', note: '카카오 개발자 › 내 애플리케이션 › 앱 키 › REST API 키' },
     { k: 'naverId', label: '네이버 Client ID', for: ['naver'], get: 'https://developers.naver.com/apps/#/register', note: '네이버 개발자 › 애플리케이션 등록(검색 API) › Client ID (하루 25,000번)' },
     { k: 'naverSecret', label: '네이버 Client Secret', for: ['naver'], get: 'https://developers.naver.com/apps/#/list', note: '같은 애플리케이션의 Client Secret', secret: true },
@@ -39,7 +39,7 @@
     naverbook: { grp: 'basic', label: '네이버 도서 (화면)', kind: 'page', host: 'search.shopping.naver.com', keys: [], cap: 400, paceMs: 3500 }, /* (0.6.0) 네이버 책 검색 API가 끝나 화면으로 — 사장님 10/16: 교보 > 예스24 > 네이버 > 알라딘 */
     yes24: { grp: 'basic', label: '예스24', kind: 'page', host: 'www.yes24.com', keys: [], cap: 500, paceMs: 2500 },
     google: { grp: 'basic', label: '구글 북스', kind: 'api', host: 'www.googleapis.com', keys: ['googleBooks'], keyOptional: true, cap: 900, paceMs: 1200 },
-    ttb: { grp: 'basic', label: '알라딘 TTB (공식)', kind: 'api', host: 'www.aladin.co.kr', keys: ['aladinTtb'], cap: 4500, paceMs: 800 },
+    ttb: { grp: 'basic', label: '알라딘 TTB (공식 · 2026-10-30 서비스 종료)', ended: '2026-10-30', alt: '알라딘 공개 상품 화면(시장 지표·상품 화면 읽기) · 국립중앙도서관 · 교보 · 예스24', /* (ttb1 11/11) 알라딘이 OpenAPI를 끝냄 — 응답 '999 …OpenAPI서비스는 종료되었습니다' · 대체 주소 없음(공지 blog.aladin.co.kr/cscenter/17483675) · 묻지 않음 */ kind: 'api', host: 'www.aladin.co.kr', keys: ['aladinTtb'], cap: 0, paceMs: 800 },
     kakao: { grp: 'basic', label: '카카오 책 검색 (공식)', kind: 'api', host: 'dapi.kakao.com', keys: ['kakaoRest'], cap: 25000, paceMs: 500 }, /* (0.6.2) 카카오 공식 일간 쿼터 책 검색 30,000건(앱 기준 · developers.kakao.com/docs/ko/getting-started/quota) → 여유 두고 25,000 */
     naver: { grp: 'basic', label: '네이버 책 검색 (공식 · 2026-07-31 서비스 종료)', ended: '2026-07-31', /* (0.4.3) 네이버가 책 검색 API를 2026-07-31에 끝냄(NAVER API HUB로 옮기지 않음) — 응답 SE05 '존재하지 않는 검색 api' · 묻지 않음 */ kind: 'api', host: 'openapi.naver.com', keys: ['naverId', 'naverSecret'], cap: 5000, paceMs: 500 },
     nl: { grp: 'basic', label: '국립중앙도서관 ISBN 서지 (공식)', kind: 'api', host: 'www.nl.go.kr', keys: ['nlKey'], cap: 3000, paceMs: 800 },
@@ -153,14 +153,10 @@
   const J = (t) => { const s = String(t || '').trim().replace(/;\s*$/, ''); try { return JSON.parse(s); } catch (e) { return JSON.parse(s.replace(/\\'/g, "'")); } }; /* 알라딘 TTB output=js는 작은따옴표를 \\'로 내보냄 — JSON이 받지 않으므로 고쳐 다시 읽음 */
   const ADP = {};
 
-  /* 알라딘 TTB ItemLookUp — 공식. 중고 재고 요약(알라딘·회원·매장)과 전자책 목록까지 한 번에 */
-  ADP.ttb = async ({ isbn, keys, http }) => { const url = `https://www.aladin.co.kr/ttb/api/ItemLookUp.aspx?ttbkey=${enc(keys.aladinTtb)}&itemIdType=ISBN13&ItemId=${isbn}&output=js&Version=20131101&OptResult=ebookList,usedList,packing,ratingInfo,bestSellerRank`;
-    const r = await http({ method: 'GET', url }); if (!okStatus(r)) return { ok: false, why: `HTTP ${r.status}` }; let j; try { j = J(r.text); } catch (e) { return probe(r.text, 'JSON이 아님', url); }
-    if (j.errorCode) return /존재하지|없습니다|not found/i.test(j.errorMessage || '') ? { ok: true, none: true } : { ok: false, why: `${j.errorCode} ${j.errorMessage || ''}`.trim() };
-    const it = (j.item || [])[0]; if (!it) return { ok: true, none: true }; const si = it.subInfo || {}; const pk = si.packing || {}; const U = si.usedList || {};
-    const u = (x) => (x && (x.itemCount || x.minPrice) ? { n: +x.itemCount || 0, min: +x.minPrice || null } : null);
-    return { ok: true, d: { title: it.title || null, sub: si.subTitle || null, orig: si.originalTitle || null, authors: it.author || null, publisher: it.publisher || null, pubDate: ymd(it.pubDate), priceList: toNum(it.priceStandard), priceSales: toNum(it.priceSales), pages: toNum(si.itemPage), size: pk.sizeWidth ? `${pk.sizeWidth}*${pk.sizeHeight}*${pk.sizeDepth}mm` : null, weightG: toNum(pk.weight), cover: it.cover || null, cat: it.categoryName || null, desc: clip(strip(it.description || ''), 1500) || null, url: it.link || null, salesPoint: toNum(it.salesPoint), rating: toNum(it.customerReviewRank), rank: si.bestSellerRank || null, stock: it.stockStatus || null,
-      used: { aladin: u(U.aladinUsed), user: u(U.userUsed), space: u(U.spaceUsed) }, ebook: (si.ebookList || []).slice(0, 3).map((e) => ({ id: e.itemId, p: toNum(e.priceSales), isbn: e.isbn13 || e.isbn || null })) } }; };
+  /* 알라딘 TTB ItemLookUp — 공식. 중고 재고 요약(알라딘·회원·매장)과 전자책 목록까지 한 번에
+   *  (ttb1 11/11) 2026-10-30 서비스 종료 — 부르면 묻지 않고 바로 '종료됨'(헛호출 0) · 예전에 받은 값(ext_basic.src.ttb)은 지우지 않고 그대로 보임 */
+  const TTB_ENDED = { ok: false, ended: '2026-10-30', why: '종료됨 — 알라딘 OpenAPI 2026-10-30 종료 · 대체 출처: 알라딘 공개 상품 화면·국립중앙도서관·교보·예스24' };
+  ADP.ttb = async () => ({ ...TTB_ENDED });
 
   ADP.kakao = async ({ isbn, keys, http }) => { const url = `https://dapi.kakao.com/v3/search/book?target=isbn&query=${isbn}&size=10`;
     const r = await http({ method: 'GET', url, headers: { Authorization: `KakaoAK ${keys.kakaoRest}` } }); if (r.status === 401 || r.status === 403) return { ok: false, why: `키가 맞지 않음 (HTTP ${r.status})` }; if (!okStatus(r)) return { ok: false, why: `HTTP ${r.status}` };
@@ -920,7 +916,7 @@
     if (s.media) return s.media.includes(b.media) && !!b.title; /* 영상·음반 전용 장터(DVDPrime) */
     if (!isI) return g === 'used' && src !== 'yes24used' && !!b.title; /* ISBN 없는 상품: 장터 시세만 */
     if (g === 'foreign' && !(cfg && cfg.foreignKr) && isKrIsbn(b.isbn)) return false; if ((g === 'used' && src !== 'yes24used') || g === 'ebook') return !!b.title; return true; }
-  async function run(src, a) { const f = ADP[src]; if (!f) return { ok: false, why: '모르는 출처' }; const s = SOURCES[src]; if (!keysReady(src, a.keys)) return { skip: '키 없음' };
+  async function run(src, a) { const f = ADP[src]; if (!f) return { ok: false, why: '모르는 출처' }; const s = SOURCES[src]; if (s && s.ended) return { skip: `종료됨(${s.ended})${s.alt ? ' — 대체 출처 ' + s.alt : ''}`, ended: s.ended }; /* (ttb1 11/11) 끝난 서비스는 묻지 않음 */ if (!keysReady(src, a.keys)) return { skip: '키 없음' };
     if (s.grp === 'used' && src !== 'yes24used' && !a.title) return { skip: '제목 없음' }; try { return await f(a); } catch (e) { return { ok: false, why: e.message || String(e), auth: !!e.auth }; } }
   /* (0.5.0) 출처 키의 지문 — 키가 바뀌었는지(키 문제로 쉬던 출처를 다시 깨움) · 값 자체는 남기지 않음 */ function keySig(src, keys) { const s0 = SOURCES[src]; if (!s0 || !s0.keys) return ''; let h = 0; const t = s0.keys.map((k) => String((keys || {})[k] || '')).join('|'); for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return String(h); }
 

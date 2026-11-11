@@ -20,10 +20,10 @@ let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, 
       /* ⑱ 외부 정보 키 */ const e2 = document.querySelector('details[data-sec="set_ext"]'); e2.open = true; e2.dispatchEvent(new Event('toggle')); await W(1200); adm(); S.ext.keys = { keys: {} }; S.ext.keysErr = null; extRedraw(); await W(300);
       const setK = (k, v) => { const i = document.querySelector(`[data-extkey="${k}"]`); if (i) i.value = v; return !!i; }; const save = async () => { document.getElementById('ext_keysave').click(); await W(700); return (document.getElementById('ext_kchk') || {}).textContent || ''; };
       const sec = async () => { const s = await db.collection('app_secrets').doc('ext').get(); return s.exists ? (s.data() || {}).keys || {} : {}; };
-      kMode = { kakaoRest: 'bad', aladinTtb: 'ok' }; o.hasIn = setK('kakaoRest', 'BADKAKAO123') && setK('aladinTtb', 'GOODTTB123'); o.e1 = await save(); o.dbg2 = { hasIn: o.hasIn, kchk: !!document.getElementById('ext_kchk'), toast: document.getElementById('toast').textContent, X: !!EXTF(), btn: document.getElementById('ext_keysave').disabled, adm: isAdminDevice(), dis: document.querySelector('[data-extkey="kakaoRest"]').disabled }; o.s1 = await sec(); o.kakaoLeft = document.querySelector('[data-extkey="kakaoRest"]').value;
+      kMode = { kakaoRest: 'bad', nlKey: 'ok' }; o.hasIn = setK('kakaoRest', 'BADKAKAO123') && setK('nlKey', 'GOODNL123'); o.e1 = await save(); o.dbg2 = { hasIn: o.hasIn, kchk: !!document.getElementById('ext_kchk'), toast: document.getElementById('toast').textContent, X: !!EXTF(), btn: document.getElementById('ext_keysave').disabled, adm: isAdminDevice(), dis: document.querySelector('[data-extkey="kakaoRest"]').disabled }; o.s1 = await sec(); o.kakaoLeft = document.querySelector('[data-extkey="kakaoRest"]').value;
       kMode = { d4lKey: 'unsure' }; document.querySelectorAll('[data-extkey]').forEach((i) => { i.value = ''; }); setK('d4lKey', 'LIBKEY99999'); o.e2 = await save(); o.s2 = await sec(); setK('d4lKey', 'LIBKEY99999'); o.e3 = await save(); o.s3 = await sec();
-      kMode = { aladinTtb: 'ok' }; document.querySelectorAll('[data-extkey]').forEach((i) => { i.value = ''; }); setK('aladinTtb', 'GOODTTB123'); o.e4 = await save(); o.s4 = await sec();
-      o.kcCalls = calls.filter((c) => c.path === '/key-check').map((c) => c.k);
+      kMode = { nlKey: 'ok' }; document.querySelectorAll('[data-extkey]').forEach((i) => { i.value = ''; }); setK('nlKey', 'GOODNL123'); o.e4 = await save(); o.s4 = await sec();
+      o.kcCalls = calls.filter((c) => c.path === '/key-check').map((c) => c.k); o.ttbIn = !!document.querySelector('[data-extkey="aladinTtb"]'); o.ttbEnd = ((document.querySelector('[data-extkeyend="aladinTtb"]') || {}).textContent || ''); /* (ttb1 11/11) 알라딘 TTB 키 칸 대신 종료 안내 */
       /* 📦 보관 열쇠(GitHub) */ const v = document.querySelector('details[data-sec="set_vault"]'); v.open = true; v.dispatchEvent(new Event('toggle')); await W(900); adm(); S.arcKey = undefined; const ab = document.getElementById('arckey_box'); if (ab) ab.innerHTML = arcKeyBody(); await W(400); const gh = async (val) => { const i = document.getElementById('arckey_in'); if (!i) return 'no-input'; i.value = val; document.getElementById('arckey_save').click(); await W(600); return document.getElementById('toast').textContent; };
       const ghs = async () => { const s = await db.collection('app_secrets').doc('gh_archive').get(); return s.exists ? (s.data() || {}).token || null : null; };
       o.g1 = await gh('github_pat_WRONGWRONGWRONGWRONG1'); o.gs1 = await ghs(); o.g2 = await gh('github_pat_NOREPONOREPONOREPO12'); o.gs2 = await ghs(); o.g3 = await gh('github_pat_GOODGOODGOODGOODGOOD'); o.gs3 = await ghs();
@@ -35,10 +35,11 @@ let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, 
     ok(/맞는 인증키 — 저장했습니다/.test(R.m3) && /서울/.test(R.m3) && R.wxCalls === 3, '맞는 인증키 = 「✓ 맞는 인증키 — 저장했습니다(시험: 서울 …)」', R.m3);
     ok(/인증키 저장됨 ••••ab12/.test(R.after) && /서울/.test(R.after) && /수원/.test(R.after) && /인천/.test(R.after), '저장 뒤 상태 = 끝 4자리만 · 지점 표(서울·수원·인천)', R.after.slice(0, 400));
     ok(R.feat, '🔍 기능 찾기에 「🌦 기상청 날씨」');
-    ok(R.hasIn && /저장하지 않았습니다 — 다시 넣어 주세요/.test(R.e1) && /카카오/.test(R.e1) && !R.s1.kakaoRest && !R.s1.aladinTtb && R.kakaoLeft === '', '⑱ 키 하나라도 틀리면 아무것도 저장 안 함 · 틀린 키 이름·까닭 · 틀린 칸만 비움', { e1: R.e1, s1: R.s1 });
+    ok(R.hasIn && /저장하지 않았습니다 — 다시 넣어 주세요/.test(R.e1) && /카카오/.test(R.e1) && !R.s1.kakaoRest && !R.s1.nlKey && R.kakaoLeft === '', '⑱ 키 하나라도 틀리면 아무것도 저장 안 함 · 틀린 키 이름·까닭 · 틀린 칸만 비움', { e1: R.e1, s1: R.s1 });
     ok(/확인 못 한 키/.test(R.e2) && /한 번 더/.test(R.e2) && !R.s2.d4lKey && R.s3.d4lKey === 'LIBKEY99999' && /확인 못 함\(그대로 저장\)/.test(R.e3), '⑱ 확인 못 함(서버가 안 닿음) = 첫 번째는 저장 안 하고 「한 번 더」 · 두 번째에 저장', { e2: R.e2, e3: R.e3 });
-    ok(/알라딘 TTB 키 맞음/.test(R.e4) && R.s4.aladinTtb === 'GOODTTB123', '⑱ 맞는 키 = 「… 맞음 — 저장」 후 저장', R.e4);
-    ok(R.kcCalls.includes('kakaoRest') && R.kcCalls.includes('aladinTtb') && R.kcCalls.includes('d4lKey'), '⑱ 새 값마다 클라우드 /key-check를 부름', R.kcCalls);
+    ok(/국립중앙도서관 ISBN 서지 API 인증키 맞음/.test(R.e4) && R.s4.nlKey === 'GOODNL123', '⑱ 맞는 키 = 「… 맞음 — 저장」 후 저장', R.e4);
+    ok(!R.ttbIn && /종료됨/.test(R.ttbEnd) && /OpenAPI 종료/.test(R.ttbEnd), '⑱ 알라딘 TTB 키 칸 없음 — 「알라딘 OpenAPI 종료(10/30)」 안내', R.ttbEnd);
+    ok(R.kcCalls.includes('kakaoRest') && R.kcCalls.includes('nlKey') && R.kcCalls.includes('d4lKey'), '⑱ 새 값마다 클라우드 /key-check를 부름', R.kcCalls);
     ok(/저장하지 않았습니다 — 다시 넣어 주세요/.test(R.g1) && /401/.test(R.g1) && R.gs1 === null, '📦 보관 열쇠 — GitHub 401 = 저장 안 함 · 까닭', R.g1);
     ok(/readnow-chats를 볼 수 없음/.test(R.g2) && R.gs2 === null, '📦 보관 열쇠 — 저장소 권한 없음(404) = 저장 안 함 · 까닭', R.g2);
     ok(R.gs3 === 'github_pat_GOODGOODGOODGOODGOOD', '📦 보관 열쇠 — 맞으면 저장', R.g3);
