@@ -53,7 +53,7 @@ jobs:
         with: { name: domain-status, path: domain-status.json, if-no-files-found: ignore, retention-days: 7 }
   live:
     if: github.event_name != 'schedule'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # (playwright가 26.04 크롬을 아직 못 받음)
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
@@ -68,7 +68,7 @@ jobs:
         with: { name: shop-live, path: live, retention-days: 14 }
   test:
     if: github.event_name != 'schedule'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # (playwright가 26.04 크롬을 아직 못 받음)
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6.1.0
