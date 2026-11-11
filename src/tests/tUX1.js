@@ -97,7 +97,7 @@ require('./harness.js')(G(async (p) => {
   const rg0 = await p.evaluate(() => { const y = (s) => Math.round(document.querySelector('#sheet > ' + s).getBoundingClientRect().top); return { q: y('.rgsearch'), ws: y('.rgws'), set: y('.rgsetrow') }; });
   ok(rg0.ws < rg0.set && rg0.set < rg0.q, '⑨ 끄면 예전 배치(작업대 → 조건 → 넣고 조회)', rg0); await p.evaluate(() => { localStorage.removeItem('rn-ux2'); ux2Apply(); }); await shut(p);
   // ── (정범님 지적) 🟦 예스24도 — 한눈에·자세히 모두 칩 · 고르기 줄 단추 · 처음 안내
-  const y4 = await p.evaluate(async () => { localStorage.removeItem('rn-y24w-hint'); openRegister(); await new Promise((r) => setTimeout(r, 1200)); const t0 = new Date().toISOString();
+  const y4 = await p.evaluate(async () => { localStorage.removeItem('rn-y24w-hint'); localStorage.setItem('rn-regplat-y24', '1'); /* (11/11 reg6) 🟦 기본은 끔 — 이 시험은 켠 기기 기준 */ openRegister(); await new Promise((r) => setTimeout(r, 1200)); const t0 = new Date().toISOString();
     for (const id of ['y1', 'y2']) { const d = { stage: 'sel', grade: 2, qty: 1, price: 5000, ws: regWsCur(), createdAt: t0, info: { title: '예스24 시험 책 ' + id, isbn13: id === 'y1' ? '9791100000911' : '9791100000912', categories: [{ path: ['국내도서', '소설/시/희곡'] }], page1: [], priceList: 15000, at: t0 } }; await db.collection('reg_items').doc(id).set(d); S.regItems.set(id, { id, ...d }); }
     const cnt = async (v) => { localStorage.setItem('rn-reg-view', v); S.regT = 'sel'; S.regChk = new Set(); regRerender(); await new Promise((r) => setTimeout(r, 700)); const sh = document.getElementById('sheet'); return ['y1', 'y2'].filter((id) => { const b = sh.querySelector(`.rgy24w[data-y24w="${id}"]`); return b && getComputedStyle(b).display !== 'none' && getComputedStyle(b).opacity === '1'; }).length; };
     const full = await cnt('full'), comp = await cnt('compact'); S.regChk = new Set(['y1', 'y2']); regRerender(); await new Promise((r) => setTimeout(r, 700)); const sb = document.querySelector('#sheet .rgselrow [data-y24wbulk="0"]'); return { full, comp, sel: sb ? sb.textContent : null, chipOn: document.querySelectorAll('#sheet .rgy24w.on').length }; });
@@ -109,7 +109,7 @@ require('./harness.js')(G(async (p) => {
   await p.click('#sheet .rgselrow [data-y24wbulk="1"]'); await p.waitForTimeout(700);
   const y5 = await p.evaluate(() => ({ on: ['y1', 'y2'].every((id) => (y24W()[id] || {}).on), toast: [...document.querySelectorAll('.toast')].map((x) => x.textContent).join(' '), off: (document.querySelector('#sheet .rgselrow [data-y24wbulk="0"]') || {}).textContent || '', chipOn: document.querySelectorAll('#sheet .rgy24w.on').length }));
   ok(y5.on && /저절로/.test(y5.toast) && /끄기/.test(y5.off) && y5.chipOn === 2, '🟦 다시 켜면 두 개 켜짐 · 처음 한 번 안내(예스24에도 저절로) · 단추는 「끄기」로 · 카드 칩 파랑', y5);
-  await p.evaluate(async () => { localStorage.removeItem('rn-reg-view'); for (const id of ['y1', 'y2']) { S.regItems.delete(id); delete window.__FS.reg_items[id]; } }); await shut(p);
+  await p.evaluate(async () => { localStorage.removeItem('rn-reg-view'); localStorage.removeItem('rn-regplat-y24'); for (const id of ['y1', 'y2']) { S.regItems.delete(id); delete window.__FS.reg_items[id]; } }); await shut(p);
   // ── ⑭ 판매자 → 시장조사 안
   await p.evaluate(() => { S.tab = 'market'; renderTabs(); renderMainNow(); }); await p.waitForTimeout(700);
   const mk = await p.evaluate(() => ({ sel: getComputedStyle(document.querySelector('#tabs [data-tab="sellers"]')).display, sub: !!document.querySelector('#main > .ux2-mksub [data-ux2mk="sellers"]') }));
