@@ -41,7 +41,7 @@ console.log('④ 글 검사');
 { ok(/const hbPut = async \(pc, o\)/.test(CS) && /collection\('col2_ctl'\)\.doc\(pc\)\.set\(\{ y24hb:/.test(CS) && /if \(!y\.logger\) hbPut\(pc, hbOf\(y\)\)/.test(CS) && /hlp: false/.test(CS), '수집기 본문: 번외 상태를 col2_ctl/<PC>.y24hb에(도우미가 답하지 않으면 hlp:false)');
   ok(/sg === hbSig \? t - hbAt < 10 \* 60e3 : t - hbAt < 60e3/.test(CS), '바뀐 때만(1분 안 두 번 안 씀) · 같아도 10분에 한 번');
   let head0 = ''; try { head0 = cp.execSync('git -C ' + JSON.stringify(ROOT) + ' show origin/main:src/readnow-collector.src.js', { maxBuffer: 64e6 }).toString(); } catch (e) {}
-  const hd = (s) => s.split('\n').filter((l) => /^\/\/ @(match|grant|connect|require|include|noframes|run-at)/.test(l)).join('\n');
+  const hd = (s) => s.split('\n').filter((l) => /^\/\/ @(match|grant|connect|require|include|noframes|run-at)/.test(l)).map((l) => l.replace(/\?v=[\d.]+/, '')).join('\n'); /* (y24ops4) 판 번호 ?v=는 판 낼 때 바뀜 — 머리 서명(HSIG)과 같게 빼고 견줌 */
   ok(!head0 || hd(head0) === hd(CS), '수집기 머리(@match·@grant·@connect·@require) 그대로');
   const ops = cut('/* (11/11 y24ops3 · 할 일 3)', "document.addEventListener('click', async (e) => { const t = e.target.closest && e.target.closest('[data-y24ops]");
   ok(/data-y24lrn=/.test(ops) && /y24FirstHtml\(O, hold0\)/.test(ops) && /y24LearnHtml\(O, hold0\)/.test(ops) && /collection\('app_settings'\)\.doc\('y24_learn'\)/.test(ops), '🧰 예스24 운영: 🎓 배우기 단추 · 🧪 첫 실행 카드 · 받은 모양을 app_settings/y24_learn에');

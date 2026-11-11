@@ -121,7 +121,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
   ok(L1.length === 1 && L1[0].st === 'sent' && L1[0].ch === 'aladin' && L1[0].dev !== undefined && !C2.puts.length, '기록(app_settings/omni_auto) — 누가·어느 기기·맡김 · 번외 없는 기기는 예스24 쪽을 안 함', L1);
   await p.evaluate(async () => { S.omni.at = 0; await omniTick(); }); await p.waitForTimeout(500); ok((await cmds()).length === 1, '다시 돌아도 같은 할 일은 되풀이 0');
   /* 번외가 있는 기기 → 예스24 쪽 */
-  await p.evaluate(async () => { localStorage.setItem('rn-c2seen', '1'); S.omni.at = 0; await omniTick(); }); await p.waitForTimeout(600);
+  await p.evaluate(async () => { localStorage.setItem('rn-c2seen', '1'); localStorage.setItem('rn-device', 'HOME'); /* (y24ops4) 번외 있는 PC = 예스24를 맡은 PC(기본 HOME) — 이 PC 번외로 바로 */ S.omni.at = 0; await omniTick(); }); await p.waitForTimeout(600);
   const r0 = C2.puts[0] && C2.puts[0].rows[0];
   ok(C2.puts.length === 1 && r0 && r0.no === '777' && r0.self === 'SK14' && r0.kind === 'stop', '알라딘 주문 → 예스24 777(자체코드 SK14) 판매중지를 번외에 저절로 맡김', C2.puts);
   const V = await p.evaluate(() => { S._omniWhy = null; ledRedraw(); const c = document.querySelector('#omni_card'); return { stp: c.querySelectorAll('.shl-stp li').length, rows: c.querySelectorAll('.omni-r').length, txt: c.textContent }; });
