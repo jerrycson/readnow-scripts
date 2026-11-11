@@ -1,2 +1,2 @@
-doc=wx_sum/108
-# 67667401
+doc=app_settings/wx_run
+# 3090712085
