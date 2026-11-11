@@ -8,10 +8,11 @@
   'use strict';
   /* ── 칸(카드) — office: 사무실 PC만(로거엔 칸 자체가 없음 · 약속 0) · open/hide = 기본값 ── */
   const CARDS = [
-    { id: 'now', icon: '▶', t: '지금', open: true },
-    { id: 'y24', icon: '🟦', t: '예스24 판매관리 읽기', open: true, office: true },
-    { id: 'go', icon: '🔗', t: '바로 가기', open: true },
-    { id: 'al', icon: '🟧', t: '알라딘 샵매니저 읽기(그림자)', open: true, office: true }, /* (알라딘 읽기) 읽기만 · 기본 꺼짐 */
+    /* (11/11 col2ui1 정범님 '자주 쓰는 기능은 앞면, 아닌 것은 가리면서') 맨 위 한눈 카드(이 PC·로그인 점·오늘 읽음 막대·지금 하는 일·문제 한 줄·단추 넷)가 앞면 — 아래 칸은 처음엔 접힘 */
+    { id: 'now', icon: '▶', t: '자세한 상태', open: false },
+    { id: 'y24', icon: '🟦', t: '예스24 판매관리 읽기', open: false, office: true },
+    { id: 'go', icon: '🔗', t: '바로 가기', open: false },
+    { id: 'al', icon: '🟧', t: '알라딘 샵매니저 읽기(그림자)', open: false, office: true }, /* (알라딘 읽기) 읽기만 · 기본 꺼짐 */
     { id: 'reads', icon: '📥', t: '최근 그림자 읽기', open: false },
     { id: 'work', icon: '🪟', t: '숨은 작업 창·점검', open: false },
     { id: 'tail', icon: '🧾', t: '도우미 글 끝(옛 칸)', open: false, hide: true },
@@ -92,7 +93,25 @@ details.card>summary{display:flex;gap:4px;align-items:baseline}details.card>summ
 #miniIc{display:none;position:fixed;inset:0;width:100%;height:100%;border:0;border-radius:0;margin:0;background:#5A4A86;color:#fff;font:700 13px system-ui,'Malgun Gothic';cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 #miniIc .dot{width:14px;height:14px;border-radius:50%;background:#9AA5A1;box-shadow:0 0 0 2px #fff}#miniIc .dot.ok{background:#3DBE7A}#miniIc .dot.warn{background:#F0A030}#miniIc .dot.err{background:#E0483C}#miniIc small{font-weight:400;font-size:10.5px;opacity:.9;max-width:96%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini #miniIc{display:flex}body.mini{overflow:hidden}
-.gob{display:flex;flex-wrap:wrap;gap:2px}.gob button{margin:0}.gog{font-size:11px;color:var(--sub);margin:3px 0 1px}#gom{min-height:1.3em}`;
+.gob{display:flex;flex-wrap:wrap;gap:2px}.gob button{margin:0}.gog{font-size:11px;color:var(--sub);margin:3px 0 1px}#gom{min-height:1.3em}
+.gl{background:var(--card);border:1px solid var(--line);border-radius:var(--r,10px);padding:9px 10px;margin:0 0 8px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.gl1{display:flex;align-items:center;gap:6px;min-width:0}.gl1 b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.glsp{flex:1}
+.gdot{width:11px;height:11px;border-radius:50%;background:#9AA5A1;flex:none}.gdot.ok{background:#3DBE7A}.gdot.warn{background:#F0A030}.gdot.err{background:#E0483C}
+.glch{display:flex;gap:5px;flex-wrap:wrap}.ch{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:2px 9px;border-radius:999px;background:var(--bg);border:1px solid var(--line);white-space:nowrap}.ch[hidden]{display:none}.ch i{font-style:normal;color:var(--sub)}
+.ch::before{content:'';width:8px;height:8px;border-radius:50%;background:#9AA5A1}.ch.ok::before{background:#3DBE7A}.ch.warn::before{background:#F0A030}.ch.err::before{background:#E0483C}.ch.err{border-color:var(--no);color:var(--no)}
+.glt{display:flex;justify-content:space-between;font-size:12px;color:var(--sub)}.glt b{color:var(--ink)}.bar{height:8px;border-radius:4px;background:var(--soft,#E6EFEB);overflow:hidden;margin-top:2px}.bar i{display:block;height:100%;width:0;background:var(--pri);transition:width .4s}.bar i.full{background:var(--warn)}
+.glnow{font-size:12.5px;min-height:1.4em;overflow-wrap:anywhere}
+.glerr{display:flex;align-items:center;gap:8px;background:var(--noSoft,#FDECEA);border:1px solid var(--no);border-radius:8px;padding:6px 8px}.glerr[hidden]{display:none}.glerr.warn{background:var(--warnSoft,#FFF4E5);border-color:var(--warn)}.glet{flex:1;min-width:0;display:flex;flex-direction:column}.glet b{color:var(--no);font-size:12.5px}.glerr.warn .glet b{color:var(--warn)}.glet span{font-size:11.5px;color:var(--ink)}.glerr button{flex:none;margin:0}.glerr button[hidden]{display:none}
+.front{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.front button{margin:0;padding:6px 2px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:8px}
+@media (max-width:330px){.front{grid-template-columns:repeat(2,1fr)}}
+.ib{border:0;background:none;color:var(--sub);padding:0 3px;margin:0;font-size:12px;cursor:help}.ibt{background:var(--bg);border-radius:6px;padding:4px 6px;margin:3px 0;font-size:11.5px;white-space:normal}.ibt[hidden]{display:none}
+.gh{font-weight:700;font-size:12.5px;color:var(--pri);margin:4px 0 2px}
+details.grp{border:1px solid var(--line);border-radius:8px;margin:6px 0;padding:0 8px;background:var(--card)}details.grp>summary{cursor:pointer;padding:6px 0;font-weight:700;list-style:none}details.grp>summary::-webkit-details-marker{display:none}details.grp>summary::before{content:'▸ ';color:var(--sub)}details.grp[open]>summary::before{content:'▾ '}details.grp>summary .k{font-weight:400;margin-left:4px}details.grp[open]{padding-bottom:6px}
+.sgrid{display:flex;flex-direction:column}.srow{display:grid;grid-template-columns:1fr auto;gap:2px 6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)}.srow:last-child{border-bottom:0}
+.srow .sl{min-width:0;font-size:12.5px}.srow .sv{display:flex;align-items:center;gap:3px;justify-self:end}.srow .sv input[type=number]{width:72px;text-align:right}.srow .sv input[type=time]{width:92px}.srow .sd{grid-column:1/-1;font-size:11px;color:var(--sub)}.srow .se{grid-column:1/-1;font-size:11px}.srow .se:empty{display:none}.srow .ibt{grid-column:1/-1}
+.bdg{display:inline-block;font-size:10.5px;padding:0 5px;border-radius:999px;border:1px solid var(--line);margin-left:3px}.bdg.all{border-color:var(--pri);color:var(--pri)}.bdg.pc{border-color:var(--warn);color:var(--warn)}
+.srow .rs{padding:0 5px;font-size:11px;margin:0}.sgh{font-size:11.5px;color:var(--sub);margin:6px 0 0;font-weight:700}
+.lg{font-size:11.5px;padding:2px 0;border-bottom:1px dashed var(--line)}`;
 
   /* side({ api, ls, ver }) — 옆 창(상태 창 /) 골격 · 칸 내용(HTML)은 도우미 statusHtml 이 그려 둠 · 여기선 다룸·고침·설정 */
   function side(o) {
@@ -114,7 +133,7 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
     const ovs = { set: $('ovSet'), help: $('ovHelp') };
     const isOpen = (k) => ovs[k].classList.contains('on');
     function openOv(k, on) { for (const x of Object.keys(ovs)) if (x !== k) ovs[x].classList.remove('on'); ovs[k].classList.toggle('on', on == null ? !isOpen(k) : !!on); $(k === 'set' ? 'setBtn' : 'helpBtn').classList.toggle('on', isOpen(k)); $(k === 'set' ? 'helpBtn' : 'setBtn').classList.remove('on');
-      if (isOpen(k)) { if (k === 'set') drawSet(); else drawHelp(); } }
+      if (isOpen(k)) { if (k === 'set') { drawSet(); drawSetRows(); } else drawHelp(); } }
     $('setBtn').onclick = () => openOv('set'); $('helpBtn').onclick = () => openOv('help');
     doc.querySelectorAll('[data-ovx]').forEach((b) => (b.onclick = () => openOv(b.dataset.ovx, false)));
     /* ▁ 작게 — 창 전체를 떠 있는 작은 단추로 · 누르면 원래 자리·크기(도우미가 기억한 옆 창 자리) */
@@ -166,8 +185,66 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
       if (!edit && !UI.cards.rect.hide) { const f = (q, v) => ['x', 'y', 'w', 'h'].forEach((k) => { const i = $(q + k); if (i) i.value = v && v[k] != null ? v[k] : ''; }); f('w', s.win); f('h', s.hwin); } }
     function drawHead(s) { const k = s.kind === 'logger' ? 'logger' : 'office'; if (k !== kind) { kind = k; ls.set('kind', k); apply(); drawGo(); } $('hdP').textContent = '🖥 이 PC: ' + (s.pc || '—') + (kind === 'logger' ? ' · 🛰 로거' : ' · 🏢 사무실'); doc.title = '📊 번외 수집기 — ' + (s.pc || ''); }
     async function load() { lastLoad = Date.now(); try { const s = await api('GET', '/status'); if (s.ver && s.ver !== o.ver && new URLSearchParams(location.search).get('v') !== s.ver) { location.replace(location.pathname + '?v=' + encodeURIComponent(s.ver)); return; }
-        S = s; if (root.pcShow) root.pcShow(s); if (root.__jw && root.__jw.setState) root.__jw.setState(s); drawHead(s); drawMini(); if (UI.mini) return; drawNow(s); if (kind !== 'logger') drawAl(s); if (kind !== 'logger') drawY24(s); drawWork(s); drawLists(s); if (isOpen('set')) drawToggles(); }
-      catch (e) { S = null; drawMini(); if ($('stop')) $('stop').innerHTML = '<div class="no">⛔ 도우미에 닿지 못함: ' + E(e.message) + '</div>'; } }
+        S = s; if (root.pcShow) root.pcShow(s); if (root.__jw && root.__jw.setState) root.__jw.setState(s); drawHead(s); drawMini(); if (UI.mini) return; drawGlance(s); drawNow(s); if (kind !== 'logger') drawAl(s); if (kind !== 'logger') drawY24(s); drawWork(s); drawLists(s); if (isOpen('set')) drawToggles(); }
+      catch (e) { S = null; drawMini(); try { drawGlance(null); } catch (er) {} if ($('stop')) $('stop').innerHTML = '<div class="no">⛔ 도우미에 닿지 못함: ' + E(e.message) + '</div>'; } }
+    /* ── (11/11 col2ui1 정범님 '디자인을 더 직관적이고 심플하게') 한눈 카드 — 이 PC · 로그인 점 · 오늘 읽음/한도 막대 · 지금 하는 일 · 문제 한 줄(무엇·할 일)과 [고치기] ── */
+    const hhmm = (t) => (t ? new Date(+t + 9 * 3600e3).toISOString().slice(11, 16) : '');
+    function probs(s) { const P = []; if (!s) return [{ l: 'err', w: '도우미에 닿지 못함', t: '잠시 기다리세요 — 번외 도우미가 다시 켜지는 중일 수 있음' }];
+      const y = s.y24 || {}, a = s.al || {}, ch = s.chrome || {}, p = s.pace || {}, R = s.relogin || {}, off = kind === 'logger';
+      if (s.pause) P.push({ l: 'warn', w: '⏸ 잠깐 멈춤', t: hhmm(s.pause) + '에 저절로 다시 켬', fix: '지금 켜기', go: () => post('/pause', { min: 0 }) });
+      else if (!s.on) P.push({ l: 'err', w: '번외 수집 꺼짐', t: '켜야 읽음 — 운영 수집기는 그대로', fix: '켜기', go: () => post('/cfg', { on: true, src: 'pc' }) });
+      if (s.on && !off && y.on && y.login === 'need') P.push({ l: 'err', w: '예스24 로그인 풀림', t: (R.y24 && R.y24.has ? '저장된 계정으로 스스로 다시 해 보거나, ' : '') + '한 번 로그인하면 이어 읽음', fix: '로그인', go: () => post('/y24/login', { why: '한눈 카드 [고치기]' }) });
+      if (s.on && !off && a.on && a.pp) P.push({ l: 'err', w: '알라딘 읽기 멈춤(핑퐁 의심)', t: '기록을 보고 까닭 확인', fix: '기록 보기', go: async () => { if (root.__jw && root.__jw.setOpen) root.__jw.setOpen(true); return { ok: true, msg: '기록창' }; } });
+      else if (s.on && !off && a.on && a.login === 'need') P.push({ l: 'err', w: '알라딘 샵매니저 로그인 풀림', t: a.seat ? '한 번 로그인하면 이어 읽음' : '로그인 자리가 나면 이어 감', fix: '로그인', go: () => post('/al/login', { why: '한눈 카드 [고치기]' }) });
+      for (const pf of ['y24', 'al']) { const r = R[pf]; if (!off && r && r.stop) P.push({ l: 'err', w: (pf === 'al' ? '알라딘' : '예스24') + ' 스스로 다시 로그인 멈춤', t: '저장된 계정을 확인하고 [다시 해 보기]', fix: '계정 보기', go: async () => { openGrp('cred'); return { ok: true, msg: '계정 칸' }; } }); }
+      if (s.on && ch.coolUntil) P.push({ l: 'err', w: '숨은 크롬이 자꾸 꺼짐', t: String(ch.coolUntil).slice(11, 16) + '까지 쉼 — 다시 열어 볼 수 있음', fix: '다시 열기', go: () => post('/win/reopen', { why: '한눈 카드 [고치기]' }) });
+      if (s.on && p.coolMs) P.push({ l: 'warn', w: '알라딘 「요청 많음」', t: Math.ceil(p.coolMs / 60000) + '분 쉬고 저절로 다시' });
+      if (s.relay && s.relay.err) P.push({ l: 'warn', w: '웹앱이 결과를 못 올림', t: '이 PC 웹앱이 열려 있는지 확인' });
+      return P.sort((x, z) => (x.l === 'err' ? 0 : 1) - (z.l === 'err' ? 0 : 1)); }
+    const chipOf = (el, l, t) => { if (!el) return; el.className = 'ch ' + l; el.querySelector('i').textContent = t; };
+    function drawGlance(s) { const g = $('glance'); if (!g) return; const P = probs(s); const lv = !s ? 'err' : P.some((x) => x.l === 'err') ? 'err' : P.length ? 'warn' : 'ok';
+      $('glDot').className = 'gdot ' + lv; $('glPc').textContent = (s && s.pc) || '이 PC'; $('glKind').textContent = kind === 'logger' ? '🛰 로거' : '🏢 사무실';
+      const y = (s && s.y24) || {}, a = (s && s.al) || {}, nv = s && s.naver; const C = (k) => g.querySelector(`.ch[data-s="${k}"]`);
+      if (kind === 'logger') chipOf(C('al'), s && s.on ? 'ok' : '', '공개 화면만');
+      else if (a.on) chipOf(C('al'), a.login === 'ok' ? 'ok' : a.login === 'need' || a.pp ? 'err' : 'warn', a.pp ? '멈춤' : a.login === 'ok' ? '로그인' : a.login === 'need' ? '로그인 필요' : '확인 중');
+      else chipOf(C('al'), s && s.on ? 'ok' : '', '공개 화면');
+      const cy = C('y24'); cy.hidden = kind === 'logger'; if (!y.on) chipOf(cy, '', '꺼 둠'); else chipOf(cy, y.login === 'ok' ? 'ok' : y.login === 'need' ? 'err' : 'warn', y.login === 'ok' ? '로그인' : y.login === 'need' ? '로그인 필요' : y.login === 'wait' ? '로그인 창 열림' : '확인 중');
+      const cn = C('nv'); cn.hidden = !nv; if (nv) chipOf(cn, !nv.on ? '' : nv.login === 'ok' || nv.ok ? 'ok' : nv.login === 'need' ? 'err' : 'warn', !nv.on ? '꺼 둠' : nv.login === 'need' ? '로그인 필요' : nv.login === 'ok' || nv.ok ? '돎' : '확인 중');
+      const p = (s && s.pace) || {}; const n = +p.dayN || 0, cap = +p.dayCap || 0; $('glN').textContent = `${n.toLocaleString('ko-KR')} / ${cap ? cap.toLocaleString('ko-KR') : '—'}장`; const bi = $('glBar'); bi.style.width = (cap ? Math.min(100, Math.round((n / cap) * 100)) : 0) + '%'; bi.className = cap && n >= cap ? 'full' : '';
+      const au = (s && s.auto) || {}; let now = !s ? '도우미를 찾는 중' : s.pause ? '⏸ 잠깐 멈춤 — ' + hhmm(s.pause) + '에 다시 켬' : !s.on ? '꺼짐' : s.reading ? '📖 알라딘 공개 화면 읽는 중' : cap && n >= cap ? '✓ 오늘 몫을 다 읽음 — 내일 이어 감' : au.msg ? String(au.msg).split(' — ')[0].slice(0, 70) : '돌고 있음';
+      if (s && s.on && !s.pause && au.nextMs != null && !s.reading && !(cap && n >= cap)) { const sec = Math.ceil(au.nextMs / 1000); now += ` · 다음 ${sec >= 120 ? Math.round(sec / 60) + '분' : sec + '초'} 뒤`; } $('glNow').textContent = now;
+      const e = $('glErr'), top = P[0]; e.hidden = !top; if (top) { e.className = 'glerr' + (top.l === 'err' ? '' : ' warn'); $('glErrW').textContent = top.w + (P.length > 1 ? ` (외 ${P.length - 1})` : ''); $('glErrT').textContent = top.t; $('glFix').hidden = !top.go; $('glFix').textContent = top.fix || '고치기';
+        $('glFix').onclick = async () => { msg('…'); try { const j = await top.go(); msg(j && j.ok === false ? '✗ ' + (j.err || '') : '✓ ' + ((j && j.msg) || top.fix)); } catch (er) { msg('✗ ' + er.message); } load(); }; e.title = P.map((x) => x.w + ' — ' + x.t).join('\n'); }
+      /* 앞면 단추 넷 — 로그인 · 지금 읽기 · 잠깐 멈춤 · 자세히 */
+      const need = !s || kind === 'logger' ? null : y.on && y.login === 'need' ? 'y24' : a.on && a.login === 'need' ? 'al' : null; const fl = $('fLogin');
+      fl.disabled = !need; fl.textContent = need ? '🔐 ' + (need === 'y24' ? '예스24' : '알라딘') + ' 로그인' : '🔐 로그인 ✓'; fl.title = need ? '그 사이트 창이 앞으로 나옴 — 직접 로그인하면 저절로 숨음' : kind === 'logger' ? '로거 PC는 로그인 일을 안 함' : '로그인이 필요한 곳 없음';
+      fl.onclick = async () => { if (!need) return; const j = await post(need === 'y24' ? '/y24/login' : '/al/login', { why: '앞면 [로그인]' }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); };
+      const fp = $('fPause'); const ps = !!(s && s.pause), offN = !!(s && !s.on && !s.pause); fp.textContent = ps ? '▶ 다시 켜기' : offN ? '▶ 켜기' : '⏸ 30분 멈춤'; fp.className = ps || offN ? 'p' : ''; fp.title = ps ? '잠깐 멈춤을 풀고 곧바로 다시 켬' : offN ? '번외 수집 켜기' : '30분 동안 숨은 크롬을 닫고 쉼 — 그 뒤 저절로 다시 켬';
+      fp.onclick = async () => { const j = ps ? await post('/pause', { min: 0 }) : offN ? await post('/cfg', { on: true, src: 'pc' }) : await post('/pause', { min: 30 }); msg(j && j.ok === false ? '✗ ' + (j.err || '') : '✓ ' + (ps ? '다시 켬' : offN ? '켰습니다' : '30분 멈춤 — 그 뒤 저절로 다시 켬')); load(); };
+      const fr = $('fRead'); fr.disabled = !s || !s.on; fr.title = '쉬는 중이면 기다리지 않고 지금 다음 차례를 읽음(속도·하루 한도는 그대로)';
+      fr.onclick = async () => { const j = await post('/read/now', {}); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); load(); }; }
+    if ($('fMore')) $('fMore').onclick = () => openOv('set', true);
+    if ($('glBarBox')) $('glBarBox').onclick = () => openGrp('limit');
+    /* ⓘ 설명 — 눌러야 보임(뒤에 오는 .ibt · 없으면 같은 줄 안의 .ibt) */
+    doc.addEventListener('click', (ev) => { const b = ev.target.closest && ev.target.closest('.ib'); if (!b) return; ev.preventDefault(); let t = b.nextElementSibling; while (t && !t.classList.contains('ibt')) t = t.nextElementSibling; if (!t) { const row = b.closest('.srow,.row,#pcbar,#ownbox,.grp'); t = row && row.querySelector('.ibt'); } if (t) t.hidden = !t.hidden; });
+    function openGrp(id) { openOv('set', true); const g = doc.querySelector(`details.grp[data-grp="${id}"]`); if (g) { g.open = true; g.scrollIntoView({ block: 'start' }); } }
+    /* ── (11/11 col2ui1) ⚙ 자세히 — 설정 표(도우미 /settings) · 바꾸면 곧바로 도우미에(범위 검사 · 기록) · 공통 값은 이 PC 웹앱이 모든 PC로 ── */
+    let SETR = null; const SM = root.Col2Set;
+    const shw = (r, v) => (SM ? SM.show(r, v) : String(v));
+    const srcB = (r) => (r.src === 'all' ? '<span class="bdg all" title="모든 PC 같음 — 웹앱 ⚙ 설정 › 🧪 번외 수집기에서도 같은 값">공통</span>' : r.src === 'pc' ? '<span class="bdg pc" title="이 PC에만 적힌 값(예전 설정 파일)">이 PC</span>' : '');
+    const valIn = (r) => r.ty === 'bool' ? `<input type="checkbox" data-sk="${E(r.k)}" ${r.v ? 'checked' : ''}>` : r.ty === 'time' ? `<input type="time" data-sk="${E(r.k)}" value="${E(r.v)}">` : `<input type="number" data-sk="${E(r.k)}" value="${E(Math.round((+r.v / r.mul) * 100) / 100)}" min="${E(r.lo / r.mul)}" max="${E(r.hi / r.mul)}" step="${r.ty === 'int' && r.mul === 1 ? 1 : 'any'}">`;
+    const rowH = (r) => `<div class="srow" data-srow="${E(r.k)}"><span class="sl">${E(r.t)}${r.i ? ' <button class="ib" type="button" title="설명">ⓘ</button>' : ''}${srcB(r)}</span><span class="sv">${valIn(r)}${r.ty !== 'bool' && r.u ? '<span class="k">' + E(r.u) + '</span>' : ''}${r.src !== 'def' && r.sc === 'all' ? `<button class="rs" type="button" data-sreset="${E(r.k)}" title="기본값(${E(shw(r, r.d))})으로">↺</button>` : ''}</span>${r.i ? `<div class="ibt" hidden>${E(r.i)}</div>` : ''}${r.src !== 'def' ? `<span class="sd">기본 ${E(shw(r, r.d))}</span>` : ''}<span class="se"></span></div>`;
+    async function drawSetRows() { if (!$('setG_limit')) return; let j; try { j = await api('GET', '/settings'); } catch (e) { $('setG_limit').textContent = '도우미에 닿지 못함'; return; } if (!j || !j.ok) return; SETR = j;
+      const L = j.rows; const site = L.filter((r) => r.site); const by = (g) => L.filter((r) => r.g === g && !r.site);
+      $('setOften').innerHTML = L.filter((r) => r.f === 'often' && r.g !== 'pc').map(rowH).join('') || '<span class="k">—</span>';
+      $('setG_limit').innerHTML = by('limit').map(rowH).join('') + (site.length ? '<div class="sgh">🌐 바깥 사이트(사이트마다 따로 · 알라딘 몫과 별개)</div>' + site.map(rowH).join('') : '');
+      $('setG_time').innerHTML = by('time').map(rowH).join('');
+      const lg = j.log || []; $('setLog').innerHTML = (j.pend ? `<div class="wa">⏳ 공통 값 ${j.pend}개 — 이 PC 웹앱이 열려 있으면 1분 안에 모든 PC로 올림</div>` : '') + (j.shared && j.shared.at ? `<div class="k">공통 값 마지막: ${E(hmd(j.shared.at))} · ${E(j.shared.by || '')}</div>` : '') + (lg.length ? lg.map((e) => `<div class="lg">${E(hmd(e.at))} <b>${E(e.t)}</b> ${E(e.from)} → <b>${E(e.to)}</b> <span class="k">· ${E(e.by || '')}${e.sc === 'all' ? ' · 공통' : ' · 이 PC'}</span></div>`).join('') : '<span class="k">아직 바꾼 것 없음</span>'); }
+    async function setOne(k, v, el) { const r0 = SETR && SETR.rows.find((x) => x.k === k); const row = el && el.closest('.srow'); const se = row && row.querySelector('.se');
+      let j; try { j = await post('/set', { k, v }); } catch (e) { j = { ok: false, err: e.message }; } const t = j.ok ? `✓ 저장 — ${r0 && r0.sc === 'all' ? '모든 PC 공통(이 PC엔 바로 · 다른 PC엔 웹앱이 1분 안에)' : '이 PC'}` : '✗ ' + (j.err || '저장 못 함') + ' — 값은 그대로';
+      if (se) { se.className = 'se ' + (j.ok ? 'ok' : 'no'); se.textContent = t; } msg(t, $('setm')); if (j.ok) setTimeout(() => { drawSetRows(); load(); }, 1200); else { const keep = t; await drawSetRows(); const r2 = $('ovSet').querySelector(`[data-srow="${k}"] .se`); if (r2) { r2.className = 'se no'; r2.textContent = keep; } } }
+    if ($('ovSet')) { $('ovSet').addEventListener('change', (ev) => { const i = ev.target.closest && ev.target.closest('[data-sk]'); if (!i) return; const r = SETR && SETR.rows.find((x) => x.k === i.dataset.sk); if (!r) return; const v = r.ty === 'bool' ? i.checked : r.ty === 'time' ? i.value : (i.value === '' ? '' : Math.round(+i.value * r.mul * 1e6) / 1e6); setOne(r.k, v, i); });
+      $('ovSet').addEventListener('click', (ev) => { const b = ev.target.closest && ev.target.closest('[data-sreset]'); if (!b) return; setOne(b.dataset.sreset, null, b); }); }
     /* 지금 칸 켜기 — 두 번 누르기 */
     $('onb').onclick = async () => { if (!arm) { arm = Date.now(); if (S) drawNow(S); setTimeout(() => { if (arm && Date.now() - arm >= 4000) { arm = 0; if (S) drawNow(S); } }, 4100); return; } arm = 0; const j = await post('/cfg', { on: !(S && S.on), src: 'pc' }); msg(j.on ? '✓ 켰습니다' : '✓ 껐습니다'); load(); };
     doc.querySelectorAll('[data-a]').forEach((b) => (b.onclick = async () => { msg('…'); try { const j = await post('/win/' + b.dataset.a, { why: '옆 창' }); msg((j.ok ? '✓ ' : '✗ ') + (j.msg || j.err || '')); } catch (e) { msg('✗ ' + e.message); } load(); }));
