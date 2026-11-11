@@ -1,2 +1,2 @@
-sizes=shp_market,shp_enrich&n=4000&perf=400
-# 798121048
+doc=shp_state/current,shp_state/confirm&mktchk=*&n=0&lim=400
+# 6428486
