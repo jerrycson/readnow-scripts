@@ -1,2 +1,1 @@
-doc=app_settings/adapt_cfg
-# 4427072
+@kpq kpq=25&kpcap=3000&kpper=150000&r=20261111205031
