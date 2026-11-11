@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "h4",
+ "what": "4시간 점검 16:15 — 휴대폰 시험 새 탭 맞춤",
+ "since": "2026-11-11T07:24:51Z",
+ "beat": "2026-11-11T07:24:51Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "setup-hosting.sh 우리숍 조건",
   "at": "2026-11-11T07:19:10Z"
  },
- "host": null
+ "host": "vm"
 }
