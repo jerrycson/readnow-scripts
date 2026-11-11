@@ -1,13 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
+ "holder": "eng",
+ "what": "클라우드 연구 진화 기록 받는 곳(research_pulse)",
+ "since": "2026-11-11T06:04:19Z",
+ "beat": "2026-11-11T06:04:19Z",
  "ask": null,
  "last": {
   "who": "lead",
   "done": "1.78.480 냄",
   "at": "2026-11-11T05:21:18Z"
  },
- "host": null
+ "host": "vm"
 }
