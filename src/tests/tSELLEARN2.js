@@ -80,5 +80,5 @@ ok(/if \(q\.saud\)/.test(SRC) && /if \(q\.audx\)/.test(SRC) && !/q\.audx[\s\S]{0
 { const A2 = SRC.slice(SRC.indexOf('async function slStudy2'), SRC.indexOf('/* SELLEARN-END */')); ok(!/\.update\(|prd_listings'\)\.doc\([^)]*\)\.set|shp_cmds|prdEdit/.test(A2), '클라우드 새 셈은 값·상태를 바꾸지 않고 PC에 일을 주지 않음(제안만 · 약속 0·36)'); }
 ok(/function slMore\(D\)/.test(APP) && /id="sl_evoord"/.test(APP) && /data-slfw=/.test(APP) && /seller_follow/.test(APP), '웹앱: 🧑‍🏫 카드 안 구성·구매자 분포·진화 제안 · 따라 하기 진행/보류');
 { const U = APP.slice(APP.indexOf('function slAudDoc'), APP.indexOf('function slLearnBind')); ok(!/\b(alert|confirm|prompt)\(/.test(U), '브라우저 팝업 없음'); }
-ok(/readnow-sellerlearn-core\.js\?v=0\.2\.0/.test(APP) && SL.VERSION === '0.2.0', '공용 파일 0.2.0 · 웹앱 불러오기 판 맞음');
+ok(/readnow-sellerlearn-core\.js\?v=([\d.]+)/.test(APP) && (APP.match(/readnow-sellerlearn-core\.js\?v=([\d.]+)/) || [])[1] === SL.VERSION && SL.VERSION >= '0.2.0', '공용 파일 0.2.0 이상 · 웹앱 불러오기 판 = 공용 파일 판'); // (rel4) 판이 올라도 맞는지만
 console.log(bad ? `❌ ${bad}개 실패` : '✓ 모두 통과'); process.exit(bad ? 1 : 0);
