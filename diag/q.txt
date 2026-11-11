@@ -1,6 +1,2 @@
-col2=1
-doc=col2_naver/state
-doc=col2_naver/pub
-doc=prd_jobs/pcBeat
-doc=col2_ctl/LOGGER
-# 156411566
+mlx=L
+# 31447921
