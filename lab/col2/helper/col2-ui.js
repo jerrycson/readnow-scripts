@@ -135,6 +135,7 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
       else if (a.login === 'need') h = '<span class="no">🔐 알라딘 샵매니저 로그인 필요</span><br><span class="k">아래 단추를 한 번 누르면 알라딘 창이 앞으로 나옵니다 — 그 창에서 직접 로그인하면 저절로 숨음(아이디·비밀번호는 저장하지 않음 · 저절로 다시 로그인하지 않음)' + (a.loginMsg ? ' · 까닭: ' + E(a.loginMsg) : '') + '</span>';
       else if (a.login === 'wait') h = '<span class="wa">🔐 알라딘 로그인 창이 열려 있음</span>';
       else { const d = a.day || {}; h = (a.active ? '<span class="ok">그림자 읽는 중</span>' : '<span class="wa">쉬는 중</span>') + '<br><span class="k">오늘 ' + (d.n || 0) + '장 · 견줌 같음 ' + (d.same || 0) + ' · 다름 ' + (d.diff || 0) + ' · 운영 문서 기다림 ' + (d.wait || 0) + '</span>'; }
+      /* (11/11) 창의 실제 주소로 본 로그인 상태 — 표시가 실제 창과 어긋나지 않게 */ if (a.on && a.pg && a.pg.p) h += '<br><span class="' + (a.pg.login ? 'no' : 'k') + '">창 주소: ' + (a.pg.login ? '로그인 화면(' + E(a.pg.p) + ') — 지금 로그인 안 됨' : E(a.pg.p)) + '</span>';
       if (a.on && a.msg && a.login !== 'need') h += '<br><span class="k">' + E(a.msg) + '</span>'; $('al').innerHTML = h;
       const want = a.logger || !a.on ? '' : a.login !== 'ok' || a.pp ? 'lg' : 'run'; if ($('alb').dataset.w !== want) { $('alb').dataset.w = want;
         $('alb').innerHTML = want === 'lg' ? '<button class="p" id="allg">🔐 알라딘 로그인 (처음 한 번)</button>' : want === 'run' ? '<button data-a="confirm">📦 주문확인요청 지금</button><button data-a="list">📋 상품 목록 지금</button>' : '';
@@ -143,8 +144,9 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
       const cs = cardOf('al') && cardOf('al').querySelector('.cs'); if (cs) cs.textContent = a.logger ? '' : !a.on ? '꺼 둠' : a.pp ? '⛔ 멈춤' : a.login === 'need' ? '🔐 로그인 필요' : a.active ? '읽는 중' : '쉼'; }
     function drawY24(s) { const y = s.y24 || {}; let h; if (y.logger) h = '<span class="k">로거 PC — 예스24 판매관리 읽기 안 함(약속 0)</span>'; else if (!y.on) h = '<span class="wa">꺼 둠</span> <span class="k">' + E(s.on ? '(⚙ 설정 › 일 켜기·끄기에서 켬)' : '(번외 수집이 꺼져 있음)') + '</span>';
       else if (y.login === 'need') h = '<span class="no">🔐 예스24 로그인 필요</span><br><span class="k">아래 단추를 한 번 누르면 예스24 창이 앞으로 나옵니다 — 그 창에서 로그인하면 저절로 숨고 읽기를 이어 갑니다(아이디·비밀번호는 저장하지 않음)' + (y.loginMsg ? ' · 까닭: ' + E(y.loginMsg) : '') + '</span>';
-      else if (y.login === 'wait') h = '<span class="wa">🔐 예스24 로그인 창이 열려 있음</span> <span class="k">— 그 창에서 로그인하면 저절로 숨김</span>';
+      else if (y.login === 'wait') h = '<span class="wa">🔐 예스24 로그인 창이 열려 있음</span> <span class="k">— 그 창에서 로그인하면 저절로 숨김 · 입력이 없으면 저장된 계정으로 번외가 스스로 로그인</span>';
       else h = (y.active ? '<span class="ok">읽는 중</span>' : '<span class="wa">쉬는 중</span>') + ' · 로그인 ' + (y.login === 'ok' ? '<span class="ok">살아 있음</span>' : '확인 중') + '<br><span class="k">주문 두 목록 마지막 ' + hm(y.ord && y.ord.at) + (y.ord && y.ord.nextMs != null ? ' · 다음 ' + Math.ceil(y.ord.nextMs / 60000) + '분 뒤' : '') + ' · 등록상품 ' + (y.prd && y.prd.at ? hm(y.prd.at) + ' 매물 ' + (y.prd.n || 0) : '아직') + '</span>';
+      /* (11/11) 창의 실제 주소로 본 로그인 상태 — 표시가 실제 창과 어긋나지 않게 */ if (y.on && y.pg && y.pg.p) h += '<br><span class="' + (y.pg.login ? 'no' : 'k') + '">창 주소: ' + (y.pg.login ? '로그인 화면(' + E(y.pg.p) + ') — 지금 로그인 안 됨' : E(y.pg.p)) + '</span>';
       if (y.on && y.msg && y.login !== 'need') h += '<br><span class="k">' + E(y.msg) + '</span>'; $('y24').innerHTML = h;
       const want = y.logger || !y.on ? '' : y.login !== 'ok' ? 'lg' : 'run'; if ($('y24b').dataset.w !== want) { $('y24b').dataset.w = want;
         $('y24b').innerHTML = want === 'lg' ? '<button class="p" id="y24lg">🔐 예스24 로그인 (처음 한 번)</button>' : want === 'run' ? '<button data-y="ord">🔁 주문 지금</button><button data-y="prd">📋 등록상품 전부</button><button data-y="tour">🛰 둘러보기</button>' : '';
@@ -201,7 +203,7 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
       if (on) { const at0 = (jb && jb.on && jb.at0) || (CRB[pf] && CRB[pf].t0) || Date.now(); const sec = Math.max(0, Math.round((Date.now() - at0) / 1000)); const ph = (jb && jb.on && jb.phase) || '도우미에 보내는 중';
         m.className = 'k'; m.textContent = `⏳ 확인 중 — ${ph} (${sec}초째${jb && jb.max ? ' · 길어도 ' + jb.max + '초면 끝냄' : ''})${extra ? ' · ' + extra : ''}`; fb.style.display = 'none'; return; }
       const res = jb && jb.res; if (!res) { if (!m.dataset.keep) m.textContent = ''; fb.style.display = 'none'; return; }
-      m.className = res.ok ? (res.kind === 'ok' ? 'ok' : 'wa') : 'no'; m.textContent = `${res.msg}${jb.end ? ' (' + hmd(jb.end) + ')' : ''}`; m.dataset.keep = '1';
+      m.className = res.ok ? (res.kind === 'ok' ? 'ok' : 'wa') : res.kind === 'queued' ? 'wa' : 'no'; m.textContent = `${res.msg}${jb.end ? ' (' + hmd(jb.end) + ')' : ''}`; m.dataset.keep = '1';
       const can = !res.ok && res.canForce && jb.end && Date.now() - jb.end < 15 * 60e3 && !!$('crp_' + pf).value; fb.style.display = can ? '' : 'none'; if (!armF[pf]) fb.textContent = '그래도 잠가 저장'; }
     async function credPoll(pf) { let miss = 0; while (CRB[pf]) { await new Promise((r) => setTimeout(r, 1000)); if (!CRB[pf]) break; try { const s = await api('GET', '/status'); miss = 0; const jb = (s.relogin || {})[pf];
           if (CRB[pf].lost && jb && !jb.on && jb.res && jb.end >= CRB[pf].t0 - 2000) { CRB[pf] = null; S = s; credLine(pf, jb); load(); break; }
@@ -211,7 +213,7 @@ body.mini>*:not(#miniIc):not(script):not(style){display:none!important}body.mini
       CRB[pf] = { t0: Date.now() }; credLine(pf, null); msg(force ? '🔐 확인 없이 잠가 저장하는 중' : '🔐 넣은 아이디·비밀번호로 이 PC에서 실제로 로그인해 보는 중 — 맞으면 저장(진행은 그 칸 아래 줄)', $('setm')); credPoll(pf);
       let j = null; try { j = await post('/cred/save', { pf, id: i.value, pw: p.value, ...(force ? { force: true } : {}) }); } catch (e) { if (CRB[pf]) CRB[pf].lost = true; return; } /* 답이 끊겨도 credPoll이 결과를 기다림 */
       CRB[pf] = null; const kd = j && j.kind; if (j && (j.ok || kd === 'bad')) p.value = ''; if (j && j.ok) i.value = '';
-      const m = $('crm_' + pf); m.dataset.keep = '1'; const text = j ? (j.ok ? j.msg || '✓ 저장함' : '✗ ' + (j.err || '저장 못 함')) : '✗ 저장 못 함';
+      const m = $('crm_' + pf); m.dataset.keep = '1'; const text = j ? (j.ok ? j.msg || '✓ 저장함' : (j.queued ? '⏳ ' : '✗ ') + (j.err || '저장 못 함')) : '✗ 저장 못 함';
       if (j && j.relogin) { S = { ...(S || {}), relogin: j.relogin }; credLine(pf, j.relogin[pf] && j.relogin[pf].job && !j.relogin[pf].job.on ? j.relogin[pf].job : null); }
       if (!j || !j.relogin || !(j.relogin[pf] || {}).job || (j.relogin[pf].job.res || {}).msg == null) { m.className = j && j.ok ? 'ok' : 'no'; m.textContent = text; }
       msg(text, $('setm')); load(); }

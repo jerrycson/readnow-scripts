@@ -16,15 +16,28 @@ const JS_HUMAN = `(()=>{const t=(document.body&&document.body.innerText||'').sli
 if(q('iframe[src*="recaptcha"],iframe[src*="hcaptcha"],.g-recaptcha,[name*="captcha" i],[id*="captcha" i],img[src*="captcha" i],[name*="otp" i],[id*="otp" i]'))return'보안 문자·인증 번호 칸';
 const m=t.match(/(보안\\s*문자|자동\\s*입력\\s*방지|자동입력방지|2단계\\s*인증|2차\\s*인증|추가\\s*인증|본인\\s*인증|인증\\s*번호를?\\s*입력|기기\\s*인증|새로운\\s*기기)/);return m?m[1]:''})()`;
 /* 로그인 칸 찾기(비밀번호 칸이 있는 양식의 보이는 글 칸) — 값은 넣지 않고 표시만 */
+/* (11/11 정범님 '예스24 아이디·비번이 안 먹힘') 양식(form)이 없는 화면(Vue 같은 한 장 화면)도 — 아이디 칸 = 비밀번호 칸 바로 앞의 보이는 글 칸(없으면 바로 뒤) · 화면 전체의 마지막 글 칸(검색 칸 등)을 잡지 않게 */
 const JS_FORM = `(()=>{const vis=(e)=>!!e&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden';const pw=[...document.querySelectorAll('input[type=password]')].find(vis);
-if(!pw)return{pw:false};const f=pw.form||document;const id=[...f.querySelectorAll('input')].filter((e)=>vis(e)&&e!==pw&&/^(text|email|tel|)$/i.test(e.getAttribute('type')||'')).pop();
-document.querySelectorAll('[data-rn3-id],[data-rn3-pw]').forEach((e)=>{e.removeAttribute('data-rn3-id');e.removeAttribute('data-rn3-pw')});pw.setAttribute('data-rn3-pw','1');pw.setAttribute('autocomplete','off');if(id){id.setAttribute('data-rn3-id','1');id.setAttribute('autocomplete','off')}return{pw:true,id:!!id}})()`;
+if(!pw)return{pw:false};const f=pw.form||document;const T=[...f.querySelectorAll('input')].filter((e)=>vis(e)&&e!==pw&&/^(text|email|tel|)$/i.test(e.getAttribute('type')||''));
+const pre=T.filter((e)=>pw.compareDocumentPosition(e)&Node.DOCUMENT_POSITION_PRECEDING);const id=pre.length?pre[pre.length-1]:T.find((e)=>pw.compareDocumentPosition(e)&Node.DOCUMENT_POSITION_FOLLOWING);
+document.querySelectorAll('[data-rn3-id],[data-rn3-pw]').forEach((e)=>{e.removeAttribute('data-rn3-id');e.removeAttribute('data-rn3-pw')});pw.setAttribute('data-rn3-pw','1');pw.setAttribute('autocomplete','off');if(id){id.setAttribute('data-rn3-id','1');id.setAttribute('autocomplete','off')}return{pw:true,id:!!id,form:!!pw.form}})()`;
 const JS_FOCUS = (a) => `(()=>{const e=document.querySelector('[${a}]');if(!e)return false;e.focus();e.select&&e.select();if(e.value){e.value='';e.dispatchEvent(new Event('input',{bubbles:true}))}return document.activeElement===e})()`;
+const JS_FOCUS0 = `(()=>{const e=document.querySelector('[data-rn3-pw]');if(!e)return false;e.focus();return document.activeElement===e})()`;
 const JS_LEN = (a) => `(()=>{const e=document.querySelector('[${a}]');return e?e.value.length:-1})()`;
-const JS_SUBMIT = `(()=>{const pw=document.querySelector('[data-rn3-pw]');if(!pw)return'none';const f=pw.form;const bs=f?[...f.querySelectorAll('button,input[type=submit],input[type=image],a')]:[];
-const b=bs.find((x)=>/^(submit|image)$/i.test(x.type||'')&&!/취소|찾기|가입/.test(x.innerText||x.value||''))||bs.find((x)=>/로그인|login/i.test((x.innerText||x.value||x.alt||'').trim()));
-if(b){b.click();return'click'}if(f){f.requestSubmit?f.requestSubmit():f.submit();return'submit'}pw.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',code:'Enter',keyCode:13,bubbles:true}));return'enter'})()`;
-
+/* [로그인] 누르기 — 양식 안 단추 → (양식이 없거나 단추가 없으면) 화면 전체에서 비밀번호 칸 뒤의 보이는 '로그인' 단추 → 그래도 없으면 'none'(부른 쪽이 진짜 Enter 키를 누름)
+ *  (11/11) 예전엔 양식이 없으면 가짜 Enter(keydown)만 보내 — 한 장 화면(Vue @keyup.enter·@click)은 아무 일도 안 해 '로그인 뒤에도 로그인 화면'이 됐음 */
+const JS_SUBMIT = `(()=>{const pw=document.querySelector('[data-rn3-pw]');if(!pw)return'none';const vis=(e)=>!!e&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden'&&!e.disabled;const f=pw.form;
+const NO=/취소|찾기|가입|카카오|네이버|페이코|애플|구글|간편|인증서|QR|저장/i;const tx=(x)=>(x.innerText||x.value||x.alt||x.title||x.getAttribute('aria-label')||'').replace(/\s+/g,' ').trim();
+const bs=f?[...f.querySelectorAll('button,input[type=submit],input[type=image],a')].filter(vis):[];
+let b=bs.find((x)=>/^(submit|image)$/i.test(x.type||'')&&!NO.test(tx(x)))||bs.find((x)=>/로그인|login/i.test(tx(x))&&!NO.test(tx(x)));
+if(!b){const all=[...document.querySelectorAll('button,input[type=submit],input[type=button],input[type=image],a,[role=button]')].filter((x)=>vis(x)&&x.closest('header,nav')===null&&/^(로그인|login|log in|sign in)$/i.test(tx(x))&&!NO.test(tx(x)));
+b=all.find((x)=>pw.compareDocumentPosition(x)&Node.DOCUMENT_POSITION_FOLLOWING)||all[0]}
+if(b){b.click();return'click'}if(f){f.requestSubmit?f.requestSubmit():f.submit();return'submit'}return'none'})()`;
+/* 로그인 뒤 — 아직 로그인 화면인지(주소·비밀번호 칸) · 화면에 보이는 오류 글(값 없음 · 120자) */
+const JS_WHERE = `(()=>{const vis=(e)=>!!e&&e.getClientRects().length>0&&getComputedStyle(e).visibility!=='hidden';const pw=[...document.querySelectorAll('input[type=password]')].some(vis);
+const t=(document.body&&document.body.innerText||'').slice(0,20000);const m=t.match(/[^\n]{0,40}(일치하지|올바르지|잘못\s*입력|틀렸|확인해\s*주|다시\s*입력|잠금|잠겼|제한|정지|실패|중복\s*로그인|다른\s*(곳|기기|PC)에서)[^\n]{0,40}/);
+return{login:/login/i.test(location.pathname)||pw,p:location.pathname,err:m?m[0].trim().slice(0,120):''}})()`;
+const JS_ENTER = `(()=>{const pw=document.querySelector('[data-rn3-pw]');if(!pw)return false;pw.focus();for(const t of ['keydown','keypress','keyup'])pw.dispatchEvent(new KeyboardEvent(t,{key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true}));return true})()`;
 /* 로그인 한 번(사람처럼) — getK()는 {ok,id,pw}|{ok:false,err}를 주는 함수(저장된 계정 풀기 또는 지금 넣은 값) · 풀린 값은 이 안에서만 쓰고 버림 → {ok, how}|{ok:false, why, human, bad}
  *  (11/10 밤 정범님 '예스24는 「확인 중」만 오래 있다가 그냥 풀려') ctx.phase(글)로 지금 무엇을 하는지 알림(화면에 '몇 초째'로) — 시간이 넘으면 phase가 오류를 던져 그 자리에서 멈춤
  *  bad = 로그인 칸에 넣고 눌렀는데도 로그인 화면(사이트가 틀렸다고 함) — 이것만 '틀림'으로 봄 · 나머지 실패(화면이 안 열림·칸 못 찾음·크롬 응답 없음·시간 넘음)는 '확인 못 함' */
@@ -36,14 +49,28 @@ async function doLogin(ctx, getK) { let res = null; const ph = (t) => (ctx.phase
           else { try { ph('아이디 넣는 중'); await ctx.sleep(800, 1800); if (!(await ctx.ev(JS_FOCUS('data-rn3-id')))) throw new Error('아이디 칸을 못 누름'); await ctx.type(k.id); await ctx.sleep(900, 2000);
               ph('비밀번호 넣는 중'); if (!(await ctx.ev(JS_FOCUS('data-rn3-pw')))) throw new Error('비밀번호 칸을 못 누름'); await ctx.type(k.pw); const n = await ctx.ev(JS_LEN('data-rn3-pw')); if (n !== k.pw.length) throw new Error('비밀번호가 다 들어가지 않음');
             } finally { k = null; } /* 풀린 값은 여기서 버림 */
-            if (!res) { await ctx.sleep(900, 2000); ph('[로그인]을 누르고 답을 기다리는 중'); const go = await ctx.ev(JS_SUBMIT); await ctx.sleep(2500, 4000); if (ctx.settle) await ctx.settle();
+            if (!res) { await ctx.sleep(900, 2000); ph('[로그인]을 누르고 답을 기다리는 중'); let go = await ctx.ev(JS_SUBMIT);
+              if (go === 'none') { if (ctx.key && (await ctx.ev(JS_FOCUS0))) { await ctx.key('Enter'); go = 'key'; } else { await ctx.ev(JS_ENTER); go = 'enter'; } } /* 단추를 못 찾으면 진짜 Enter 키(사람이 비밀번호 칸에서 Enter를 친 것과 같음) */
+              await ctx.sleep(2500, 4000); if (ctx.settle) await ctx.settle();
+              /* (11/11) 로그인 화면을 떠날 때까지 기다림(요청이 늦으면 너무 일찍 첫 화면으로 가 로그인 요청을 끊지 않게) — 최대 leaveSec초(기본 15) */
+              ph('로그인 화면을 떠나기를 기다리는 중'); let w = null; const t0 = Date.now(); const lim = (ctx.leaveSec == null ? 15 : +ctx.leaveSec) * 1000; for (;;) { w = await ctx.ev(JS_WHERE, 10000).catch(() => null); if (!w || !w.login || Date.now() - t0 >= lim) break; await ctx.sleep(700, 1000); }
               ph('로그인 뒤 화면 살피는 중'); const h1 = await ctx.ev(JS_HUMAN, 10000).catch(() => ''); if (h1) res = { ok: false, human: true, why: `로그인 뒤 ${h1} 화면 — 사람 손이 필요` };
-              else { ph('로그인 됐는지 첫 화면으로 확인하는 중'); res = (await ctx.check()) ? { ok: true, how: go } : { ok: false, bad: true, why: '로그인 뒤에도 로그인 화면(아이디·비밀번호가 틀렸거나 막힘)' }; } } } } }
+              else { ph('로그인 됐는지 첫 화면으로 확인하는 중'); const em = (w && w.login && w.err) ? w.err : '';
+                res = (await ctx.check()) ? { ok: true, how: go } : { ok: false, bad: true, how: go, why: '로그인 뒤에도 로그인 화면(아이디·비밀번호가 틀렸거나 막힘)' + (em ? ` · 화면 글: '${em}'` : '') + ` · 누른 방법: ${({ click: '단추', submit: '양식 보냄', key: 'Enter 키', enter: '가짜 Enter' })[go] || go}` }; } } } } }
   return res; }
+/* (11/11) 로그인하는 동안 뜬 브라우저 알림·물음 — 알림(alert)은 닫고, '다른 곳 접속을 끊고 로그인할까요' 같은 로그인 이어 가기 물음만 '예'(사람이 로그인할 때 누르는 것과 같음)
+ *  · 삭제·탈퇴·해지·변경 같은 말이 있으면 늘 '아니오' · 로그인 일 밖에서는 이 규칙을 쓰지 않음(부른 쪽이 로그인 중일 때만) */
+/* (11/11 정범님 '로그인 화면이 떠 있다는 것만으로 직접 로그인하는 중이라고 봄') 로그인 창에서 사람이 실제로 키·마우스를 쓴 마지막 때(진짜 입력만 · 그 화면 메모리에만 — 우리 기기 저장소는 쓰지 않음 · 화면이 새로 열리면 처음부터) · 값은 읽지 않음 */
+const ACT_SRC = `(()=>{if(window.__rn3a)return;window.__rn3a=1;const f=(e)=>{if(e.isTrusted)window.__rn3k=Date.now()};['keydown','mousedown','paste','wheel'].forEach((t)=>addEventListener(t,f,true))})()`;
+const JS_ACT = `(()=>{${ACT_SRC};const k=+window.__rn3k||0;const a=document.activeElement;return{age:k?Date.now()-k:null,fc:!!a&&/^(INPUT|TEXTAREA)$/.test(a.tagName),p:location.pathname}})()`;
+const dlgOk = (type, msg) => { if (type === 'alert' || type === 'beforeunload') return true; const m = String(msg || ''); return /로그인|접속|세션|중복|기존|계속/.test(m) && !/삭제|탈퇴|해지|변경|취소하시|등록|발송|처리/.test(m); };
 function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () => Date.now(); const F = path.join(HOME, 'relogin.json');
   const C = () => ({ ...DEF, ...(((o.cfg() || {}).relogin) || {}) });
   let S = {}; try { S = JSON.parse(fs.readFileSync(F, 'utf8')) || {}; } catch (e) { S = {}; }
   const save = () => { try { fs.writeFileSync(F + '.t', JSON.stringify(S)); fs.renameSync(F + '.t', F); } catch (e) {} };
+  /* (11/11 정범님 '예스24 아이디·비번이 안 먹힘') 예전 판은 양식이 없는 로그인 화면에서 [로그인]을 실제로 누르지 못해 '연속 2번 실패 — 로그인 뒤에도 로그인 화면'으로 멈췄음
+   *  → 고친 판이 처음 켜질 때 그 멈춤만 한 번 풂(사이트가 틀렸다고 한 '잠가 둔 값이 틀림'·보안 문자 멈춤은 그대로) · 다시 2번 실패하면 또 멈춤 */
+  { const MK = F + '.fix1111'; if (!fs.existsSync(MK)) { for (const k of Object.keys(S)) { const st = S[k] && S[k].stop; if (st && !st.human && !st.bad && /로그인 뒤에도 로그인 화면/.test(st.why || '')) { S[k].stop = null; S[k].fails = 0; S[k].tries = []; try { note(`🔐 ${k === 'y24' ? '예스24 판매관리' : k === 'al' ? '알라딘 샵매니저' : k} — 예전 판의 '[로그인]을 누르지 못한' 멈춤을 고친 판에서 한 번 풂(다시 2번 실패하면 또 멈춤)`); } catch (e) {} } } save(); try { fs.writeFileSync(MK, String(Date.now())); } catch (e) {} } }
   const P = (pf) => (S[pf] = S[pf] || { tries: [], fails: 0, stop: null, last: null, auto: true, n: 0 });
   const isLogger = () => { try { return !!o.isLogger(); } catch (e) { return true; } };
   const autoOn = (pf) => P(pf).auto !== false;
@@ -58,6 +85,7 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
     note(`🔐 ${nm} 세션이 풀려 저장된 계정으로 스스로 다시 로그인함(오늘 ${p.tries.length}번째 · 비밀번호는 기록하지 않음)`);
     try { res = await doLogin(ctx, () => cred.open(pf)); }
     catch (e) { res = { ok: false, why: String(e && e.message || e).slice(0, 120) }; }
+    res = res || { ok: false, why: '모름' }; if (!res.ok && ctx.lastMsg) { const m = String(ctx.lastMsg() || '').slice(0, 120); if (m) res.why += ` · ${nm} 알림: '${m}'`; }
     p.last = { at: now(), ok: res.ok, why: res.ok ? null : res.why };
     const was = cred.chkOf ? cred.chkOf(pf) : 'ok';
     if (res.ok) { p.fails = 0; if (was !== 'ok' && cred.mark) { cred.mark(pf, 'ok'); note(`🔐 ${nm} — 확인하지 못한 채 잠가 두었던 아이디·비밀번호가 맞음(이번 다시 로그인으로 확인됨)`, { l: 'ok' }); } note(`🔐 ${nm} 스스로 다시 로그인 됨 — 하던 일을 이어 감`, { l: 'ok' }); }
@@ -91,4 +119,4 @@ function makeRelogin(o) { const { HOME, note, cred, TEST } = o; const now = () =
   const sum = () => { const out = {}; const cs = cred.sum(); for (const k of Object.keys(cred.PF)) { const p = P(k); out[k] = { ...cs[k], auto: autoOn(k), stop: p.stop, last: p.last, job: jobView(k), today: p.tries.filter((x) => now() - x < 86400e3).length, n: p.n }; } return out; };
   return { why, run, tryWith, reset, setAuto, sum, C, jobStart, jobEnd, jobOn, anyJob };
 }
-module.exports = { makeRelogin, doLogin, DEF, JS_HUMAN, JS_FORM, JS_SUBMIT };
+module.exports = { makeRelogin, doLogin, dlgOk, ACT_SRC, JS_ACT, DEF, JS_HUMAN, JS_FORM, JS_SUBMIT, JS_WHERE };

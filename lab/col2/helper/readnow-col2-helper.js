@@ -310,6 +310,36 @@ function setCfg(o) { const was = !!CFG.on, wasH = !!CFG.headless; const CFG0 = C
   else if (wasH !== !!CFG.headless && B) { closeBrowser('화면 방식 바뀜').then(() => tick('화면 방식 바뀜')); }
   return ch; }
 
+/* (11/10~11) 🔐 [확인하고 저장] — 화면 단추와 (11/11) 자리를 기다린 확인(CQ)이 같이 씀 · J는 답 함수(화면이면 HTTP 답 · 기다린 확인이면 결과만 받음) */
+/* (11/11 정범님 'HOME 🏠를 켜고 자리를 받으면 바로 확인 로그인') 알라딘은 번외 자리(판매자 동시 로그인 ≤4대)를 받아야 로그인해 볼 수 있음 → 자리를 기다리는 동안 넣은 값을 도우미 메모리에만 잠시(기본 10분 · 파일·기록·상태에 없음) 두고, 자리를 받으면 곧바로 같은 확인을 함 */
+const CQ = {}; const CQ_MS = () => Math.max(60e3, (+((CFG.relogin || {}).queueMin) || 10) * 60e3) * (TEST && process.env.RN_COL2_CQ_SCALE ? +process.env.RN_COL2_CQ_SCALE : 1);
+async function credSave(o, J) { const pf = String(o.pf || ''); if (pf === 'al' && !o.queued && CQ.al) { CQ.al.id = CQ.al.pw = null; delete CQ.al; } /* 새로 누르면 기다리던 확인은 버림 */ const eng = pf === 'y24' ? Y24 : pf === 'al' ? AL : null; if (!eng) return J(400, { ok: false, err: '모르는 플랫폼' }); if (!String(o.id == null ? '' : o.id).trim() || !String(o.pw == null ? '' : o.pw)) { o.id = o.pw = null; return J(200, { ok: false, err: '아이디와 비밀번호를 모두 넣어 주세요', relogin: RLG.sum() }); }
+      const nm = (CRED.PF[pf] || {}).name || pf; if (RLG.jobOn(pf)) { o.id = o.pw = null; return J(200, { ok: false, busy: true, err: `${nm} — 앞서 누른 확인이 아직 도는 중 · 끝날 때까지 기다려 주세요`, relogin: RLG.sum() }); }
+      const keep = async (chk, msg, kind) => { const r = await CRED.save(pf, o.id, o.pw, chk); o.id = o.pw = null; if (r.ok) { note(`🔐 ${nm} 계정을 이 PC에 잠가 저장함(Windows DPAPI · 이 PC 이 사용자만 풂 · 값은 기록하지 않음)${chk === 'pending' ? ' — ⚠ 확인하지 못한 채(다음 다시 로그인 때 확인)' : ''}`, { k: 'sys', m: '로그인' }); RLG.reset(pf); }
+        const out = { ok: r.ok, pending: chk === 'pending', kind, msg: r.ok ? msg : null, err: r.ok ? null : r.err }; RLG.jobEnd(pf, { ok: r.ok, kind: r.ok ? kind : 'err', msg: r.ok ? msg : '✗ ' + r.err }); return J(200, { ...out, relogin: RLG.sum() }); };
+      const PEND = '다음에 로그인이 풀려 스스로 다시 로그인할 때 이 값으로 확인하고, 틀리면 기록창에 ⛔로 알리고 스스로 다시 로그인을 멈춤';
+      /* (11/10 밤 정범님 '확인 중만 오래 있다 그냥 풀려') 확인을 끝내지 못했을 때(시간 넘음·화면 안 열림·자리 없음·출고 중 등)만 — 정범님이 [그래도 잠가 저장]을 두 번 눌러 확인 없이 저장(사이트가 '틀림'이라 한 값은 안 됨) */
+      if (o.force === true) { const jb = (RLG.sum()[pf] || {}).job; if (!(jb && !jb.on && jb.res && jb.res.canForce && now() - (jb.end || 0) < 15 * 60e3)) { o.id = o.pw = null; return J(200, { ok: false, err: '먼저 [확인하고 저장]을 눌러 주세요 — 확인을 끝내지 못했을 때만 「그래도 잠가 저장」을 쓸 수 있음', relogin: RLG.sum() }); }
+        RLG.jobStart(pf, 0); return keep('pending', `⚠ 확인하지 못한 채 잠가 저장함(두 번 누름) — ${PEND}`, 'forced'); }
+      /* (정범님 11/10 '저장을 누르면 먼저 맞는지 확인 → 맞으면 저장, 틀리면 다시 넣어 주세요와 까닭') 그 PC에서 실제로 로그인해 본 뒤에만 잠가 저장 · 캡차·2단계 인증이면 그 사실 · 값은 기록·응답에 싣지 않음
+       *  · 진행은 relogin.<pf>.job(무엇을 하는 중·몇 초째 — 값 없음)으로 화면이 따로 읽음(답이 끊겨도 결과가 남음) · 시간 넘음(relogin.vMaxSec 기본 150초)이면 그 자리에서 멈추고 '확인 못 함' */
+      const maxSec = Math.max(5, +((CFG.relogin || {}).vMaxSec) || 150); const jb = RLG.jobStart(pf, maxSec); let tm = null;
+      const dl = new Promise((r) => { tm = setTimeout(() => { jb.abort = true; r({ ok: false, unsure: true, timeout: true, why: `${maxSec}초 안에 확인이 끝나지 않음(마지막 단계: ${jb.phase})` }); }, maxSec * 1000); });
+      let v; try { v = await Promise.race([Promise.resolve().then(() => eng.verify(o.id, o.pw, { phase: jb.ph })).catch((e) => ({ ok: false, unsure: true, why: String(e && e.message || e).slice(0, 140) })), dl]); } finally { clearTimeout(tm); } v = v || { ok: false, unsure: true, why: '모름' };
+      if (v.ok) return keep('ok', `✓ 로그인 확인됨 — 이 PC에 잠가 저장함${v.where === 'tab' ? '(지금 세션은 그대로 두고 쿠키가 따로인 임시 창에서 확인)' : ''}`, 'ok');
+      if (v.live) return keep('pending', `✓ 잠가 저장함 — 단 ${nm}이(가) 지금 로그인돼 있어서 바로 확인하지 않음(확인하려면 로그인을 하나 더 해야 해 동시 로그인 자리를 하나 더 써 다른 PC가 끊길 수 있음) · ${PEND}`, 'live');
+      if (v.wait && v.seat && pf === 'al' && !o.queued) { CQ.al = { id: o.id, pw: o.pw, until: now() + CQ_MS() }; o.id = o.pw = null; const msg = `🪑 번외 알라딘 자리를 받는 대로 저절로 확인하고, 맞으면 잠가 저장합니다(${Math.round(CQ_MS() / 60e3)}분 안 · 넣은 값은 이 PC 도우미 메모리에만 잠시 — 파일·기록에 안 남김) · 지금: ${v.why}`;
+        note('🔐 알라딘 샵매니저 — 자리를 받으면 곧바로 확인 로그인하려고 기다림(값은 메모리에만 · 기록하지 않음)', { k: 'sys', m: '로그인' }); RLG.jobEnd(pf, { ok: false, kind: 'queued', msg: '⏳ ' + msg, canForce: true }); return J(200, { ok: false, queued: true, kind: 'queued', err: msg, canForce: true, wait: true, relogin: RLG.sum() }); }
+      o.id = o.pw = null; let err, kind;
+      if (v.bad) { kind = 'bad'; err = `저장하지 않았습니다 — 다시 넣어 주세요 · 까닭: ${v.why}`; }
+      else if (v.human) { kind = 'human'; err = `저장하지 않았습니다 — ${v.why} · 보안 문자·2단계 인증은 사람이 옆 창 [🔐 로그인]으로 직접 한 번 해 주세요`; }
+      else if (v.wait) { kind = v.own ? 'own' : 'wait'; err = `지금은 확인할 수 없어 저장하지 않았습니다 — ${v.why}`; }
+      else { kind = 'unsure'; err = `확인 못 함 — ${v.why} · 저장하지 않았습니다`; }
+      const canForce = kind !== 'bad' && !/로거/.test(v.why || ''); if (canForce) err += ' · 값이 맞다고 확신하면 [그래도 잠가 저장]을 두 번 누르면 확인 없이 잠가 저장(다음 다시 로그인 때 확인)';
+      RLG.jobEnd(pf, { ok: false, kind, msg: '✗ ' + err, canForce }); return J(200, { ok: false, err, kind, canForce, human: kind === 'human', wait: kind === 'wait' || kind === 'own', unsure: kind === 'unsure', relogin: RLG.sum() }); }
+async function credQueueTick() { const q = CQ.al; if (!q) return; if (now() > q.until) { delete CQ.al; RLG.jobEnd('al', { ok: false, kind: 'wait', msg: '✗ 10분 안에 번외 알라딘 자리를 받지 못해 확인하지 않았고 저장하지 않았습니다 — 🏠가 켜져 있는지 보고 다시 [확인하고 저장]', canForce: true }); note('🔐 알라딘 샵매니저 — 자리를 기다린 확인을 그만둠(시간 넘음 · 값은 메모리에서 지움)', { k: 'sys', m: '로그인' }); return; }
+  const a = AL.sum(); if (!a.seat || RLG.jobOn('al')) return; delete CQ.al; note('🪑 번외 알라딘 자리를 받음 — 기다리던 계정 확인 로그인을 곧바로 함', { k: 'sys', m: '로그인' });
+  await credSave({ pf: 'al', id: q.id, pw: q.pw, queued: true }, () => {}).catch(() => {}); q.id = q.pw = null; }
 function status() { return { ok: true, ver: VERSION, port: PORT, pid: process.pid, jobs: jobsSum(), keys: keysSum(), /* (0.1.10) 키 이름·수만(값 없음) */ busy: busyNow(), /* (운영 도우미 다리 /col2/stop이 이 프로세스만 멈추게) */ pc: CFG.pc || os.hostname(), kind: isLoggerPc() ? 'logger' : 'office', pcSrc: CFG.pcSrc || (CFG.pc ? 'web' : 'os'), cwin: CFG.cwin || null, relay: relaySum(), auto: autoSum(), y24: Y24.sum(), al: AL.sum(), alw: ALW.sum(), alWant: CFG.al === true, relogin: RLG.sum(), /* (11/10) 🔐 저장됨·켬·멈춤·마지막 결과만(아이디·비밀번호 값 없음) */ alOwn: CFG.alOwn === true && !isLoggerPc(), /* (11/10) 🏠 이 PC 알라딘 자리를 번외가 이어받음 */ side: sideOn(), y24Want: CFG.y24 == null ? !TEST : CFG.y24 !== false, y24Jobs: CFG.y24Jobs !== false, upd: { at: UPD.at ? kst(UPD.at) : null, msg: UPD.msg }, on: !!CFG.on, headless: !!CFG.headless, place: CFG.place || 'off', alive: !!(B && B.alive()), open: ST.open, shown: ST.shown, rect: ST.rect, win: CFG.win || null, hwin: CFG.hwin || null, hwinOpen: ST.hwinOpen, lwin: { open: lwinOpen(), rect: CFG.lwin || null, err: LW.err || '', step: LW.step || '' }, /* (0.1.8) 📜 기록창 따로 창이 떠 있는지(🗒 단추 색) */
   opens: opensHour(), chrome: { fails: CH.fails, last: CH.last, okAt: CH.okAt ? kst(CH.okAt) : null, coolUntil: CH.coolUntil ? kst(CH.coolUntil) : null, cools: CH.cools, adopts: CH.adopts, retries: CH.retries }, msg: [ST.msg, CFG.on && AU.msg && AU.msg !== ST.msg ? '자동 읽기: ' + AU.msg : ''].filter(Boolean).join(' · '), /* (0.1.4) 자동 읽기가 왜 쉬는지(하루 몫·표본 기다림·작업 창 준비 실패)도 웹앱 col2_ctl·진단에 보이게 — 예전엔 작업 창 지킴이 글만 보여 멈춘 까닭을 몰랐음 */ reading: ST.reading, reads: ST.reads.slice(-10), pace: PACE.state(), core: { ver: CORE.ver, at: CORE.at ? kst(CORE.at) : null, err: CORE.err }, logs: JRN.tail(15).map((e) => ({ t: e.t, m: e.x, l: e.l, k: e.k })), pcKind: JRN.kind(), aladin: ALADIN === COL2.ALADIN ? 'real' : 'test', at: kst() }; }
 
@@ -577,28 +607,7 @@ const srv = http.createServer((req, res) => {
   if (p === '/al/wfeed') return body((o) => J(200, ALW.take(o)), 512 * 1024); /* (그림자 쓰기) 🟧✍ 운영 수집기가 보낸 쓰기 요청 꼴(번호·값만) — 견줌만 · 보내지 않음 */ /* (알라딘 읽기) 🟧 이 PC 수집기 다리 — 🪑 자리 · 🚚 출고 보호 · 운영 세션 풀림 */
   /* (11/10) 🔐 계정 저장·켜고 끄기·멈춤 풀기 — 이 도우미 화면(옆 창 ⚙)에서만(다른 출처 거절) · 값은 답·기록·상태 어디에도 싣지 않음 · 로거는 거절 */
   if (/^\/cred\//.test(p)) { const og = String(req.headers.origin || ''); if (og && og !== `http://127.0.0.1:${PORT}`) return J(403, { ok: false, err: '이 도우미 화면에서만' }); if (isLoggerPc()) return J(403, { ok: false, err: '로거 PC에는 계정을 저장하지 않습니다(약속 0)' });
-    if (p === '/cred/save') return body(async (o) => { const pf = String(o.pf || ''); const eng = pf === 'y24' ? Y24 : pf === 'al' ? AL : null; if (!eng) return J(400, { ok: false, err: '모르는 플랫폼' }); if (!String(o.id == null ? '' : o.id).trim() || !String(o.pw == null ? '' : o.pw)) { o.id = o.pw = null; return J(200, { ok: false, err: '아이디와 비밀번호를 모두 넣어 주세요', relogin: RLG.sum() }); }
-      const nm = (CRED.PF[pf] || {}).name || pf; if (RLG.jobOn(pf)) { o.id = o.pw = null; return J(200, { ok: false, busy: true, err: `${nm} — 앞서 누른 확인이 아직 도는 중 · 끝날 때까지 기다려 주세요`, relogin: RLG.sum() }); }
-      const keep = async (chk, msg, kind) => { const r = await CRED.save(pf, o.id, o.pw, chk); o.id = o.pw = null; if (r.ok) { note(`🔐 ${nm} 계정을 이 PC에 잠가 저장함(Windows DPAPI · 이 PC 이 사용자만 풂 · 값은 기록하지 않음)${chk === 'pending' ? ' — ⚠ 확인하지 못한 채(다음 다시 로그인 때 확인)' : ''}`, { k: 'sys', m: '로그인' }); RLG.reset(pf); }
-        const out = { ok: r.ok, pending: chk === 'pending', kind, msg: r.ok ? msg : null, err: r.ok ? null : r.err }; RLG.jobEnd(pf, { ok: r.ok, kind: r.ok ? kind : 'err', msg: r.ok ? msg : '✗ ' + r.err }); return J(200, { ...out, relogin: RLG.sum() }); };
-      const PEND = '다음에 로그인이 풀려 스스로 다시 로그인할 때 이 값으로 확인하고, 틀리면 기록창에 ⛔로 알리고 스스로 다시 로그인을 멈춤';
-      /* (11/10 밤 정범님 '확인 중만 오래 있다 그냥 풀려') 확인을 끝내지 못했을 때(시간 넘음·화면 안 열림·자리 없음·출고 중 등)만 — 정범님이 [그래도 잠가 저장]을 두 번 눌러 확인 없이 저장(사이트가 '틀림'이라 한 값은 안 됨) */
-      if (o.force === true) { const jb = (RLG.sum()[pf] || {}).job; if (!(jb && !jb.on && jb.res && jb.res.canForce && now() - (jb.end || 0) < 15 * 60e3)) { o.id = o.pw = null; return J(200, { ok: false, err: '먼저 [확인하고 저장]을 눌러 주세요 — 확인을 끝내지 못했을 때만 「그래도 잠가 저장」을 쓸 수 있음', relogin: RLG.sum() }); }
-        RLG.jobStart(pf, 0); return keep('pending', `⚠ 확인하지 못한 채 잠가 저장함(두 번 누름) — ${PEND}`, 'forced'); }
-      /* (정범님 11/10 '저장을 누르면 먼저 맞는지 확인 → 맞으면 저장, 틀리면 다시 넣어 주세요와 까닭') 그 PC에서 실제로 로그인해 본 뒤에만 잠가 저장 · 캡차·2단계 인증이면 그 사실 · 값은 기록·응답에 싣지 않음
-       *  · 진행은 relogin.<pf>.job(무엇을 하는 중·몇 초째 — 값 없음)으로 화면이 따로 읽음(답이 끊겨도 결과가 남음) · 시간 넘음(relogin.vMaxSec 기본 150초)이면 그 자리에서 멈추고 '확인 못 함' */
-      const maxSec = Math.max(5, +((CFG.relogin || {}).vMaxSec) || 150); const jb = RLG.jobStart(pf, maxSec); let tm = null;
-      const dl = new Promise((r) => { tm = setTimeout(() => { jb.abort = true; r({ ok: false, unsure: true, timeout: true, why: `${maxSec}초 안에 확인이 끝나지 않음(마지막 단계: ${jb.phase})` }); }, maxSec * 1000); });
-      let v; try { v = await Promise.race([Promise.resolve().then(() => eng.verify(o.id, o.pw, { phase: jb.ph })).catch((e) => ({ ok: false, unsure: true, why: String(e && e.message || e).slice(0, 140) })), dl]); } finally { clearTimeout(tm); } v = v || { ok: false, unsure: true, why: '모름' };
-      if (v.ok) return keep('ok', `✓ 로그인 확인됨 — 이 PC에 잠가 저장함${v.where === 'tab' ? '(지금 세션은 그대로 두고 쿠키가 따로인 임시 창에서 확인)' : ''}`, 'ok');
-      if (v.live) return keep('pending', `✓ 잠가 저장함 — 단 ${nm}이(가) 지금 로그인돼 있어서 바로 확인하지 않음(확인하려면 로그인을 하나 더 해야 해 동시 로그인 자리를 하나 더 써 다른 PC가 끊길 수 있음) · ${PEND}`, 'live');
-      o.id = o.pw = null; let err, kind;
-      if (v.bad) { kind = 'bad'; err = `저장하지 않았습니다 — 다시 넣어 주세요 · 까닭: ${v.why}`; }
-      else if (v.human) { kind = 'human'; err = `저장하지 않았습니다 — ${v.why} · 보안 문자·2단계 인증은 사람이 옆 창 [🔐 로그인]으로 직접 한 번 해 주세요`; }
-      else if (v.wait) { kind = v.own ? 'own' : 'wait'; err = `지금은 확인할 수 없어 저장하지 않았습니다 — ${v.why}`; }
-      else { kind = 'unsure'; err = `확인 못 함 — ${v.why} · 저장하지 않았습니다`; }
-      const canForce = kind !== 'bad' && !/로거/.test(v.why || ''); if (canForce) err += ' · 값이 맞다고 확신하면 [그래도 잠가 저장]을 두 번 누르면 확인 없이 잠가 저장(다음 다시 로그인 때 확인)';
-      RLG.jobEnd(pf, { ok: false, kind, msg: '✗ ' + err, canForce }); return J(200, { ok: false, err, kind, canForce, human: kind === 'human', wait: kind === 'wait' || kind === 'own', unsure: kind === 'unsure', relogin: RLG.sum() }); }, 4096);
+    if (p === '/cred/save') return body((o) => credSave(o, J), 4096);
     if (p === '/cred/auto') return body((o) => { if (!CRED.PF[o.pf]) return J(400, { ok: false, err: '모르는 플랫폼' }); RLG.setAuto(String(o.pf), o.on !== false); J(200, { ok: true, relogin: RLG.sum() }); });
     if (p === '/cred/reset') return body((o) => { if (!CRED.PF[o.pf]) return J(400, { ok: false, err: '모르는 플랫폼' }); RLG.reset(String(o.pf)); (o.pf === 'y24' ? Y24 : AL).kick(300); J(200, { ok: true, relogin: RLG.sum() }); });
     return J(404, { ok: false }); }
@@ -624,5 +633,5 @@ const srv = http.createServer((req, res) => {
 srv.on('error', (e) => { log(`✗ 127.0.0.1:${PORT}를 못 엶: ${e.message}`); process.exit(3); });
 srv.listen(PORT, '127.0.0.1', () => { log(`번외 수집 도우미 ${VERSION} 시작 — 127.0.0.1:${PORT} · 번외 수집 ${CFG.on ? '켜짐' : '꺼짐'} · 자료 ${HOME}`);
   loadCore().catch((e) => { CORE.err = e.message; log('운영 공용 파일 받기 실패: ' + e.message); });
-  ST.timers.push(setInterval(() => tick().catch(() => {}), W('tickSec') * 1000)); setTimeout(() => tick('도우미 시작').catch(() => {}), TEST ? 300 : 5000); AU.t = setTimeout(autoLoop, TEST ? 800 : 15e3); Y24.start(); AL.start(); setTimeout(() => { if (CFG.on) sideOpen('도우미 시작'); }, TEST ? 600 : 4000); ST.timers.push(setInterval(() => selfUpdate().catch(() => {}), UPD.ms)); setTimeout(() => selfUpdate().catch(() => {}), Math.min(UPD.ms, 2 * 60e3)); /* (0.1.2) 켜진 뒤 2분 안에 한 번(30분 기다리지 않음) */ });
+  ST.timers.push(setInterval(() => tick().catch(() => {}), W('tickSec') * 1000)); setTimeout(() => tick('도우미 시작').catch(() => {}), TEST ? 300 : 5000); AU.t = setTimeout(autoLoop, TEST ? 800 : 15e3); Y24.start(); AL.start(); ST.timers.push(setInterval(() => credQueueTick().catch(() => {}), TEST ? 500 : 5000)); setTimeout(() => { if (CFG.on) sideOpen('도우미 시작'); }, TEST ? 600 : 4000); ST.timers.push(setInterval(() => selfUpdate().catch(() => {}), UPD.ms)); setTimeout(() => selfUpdate().catch(() => {}), Math.min(UPD.ms, 2 * 60e3)); /* (0.1.2) 켜진 뒤 2분 안에 한 번(30분 기다리지 않음) */ });
 const bye = () => { try { if (B) B.kill(); } catch (e) {} try { if (Y24.Y.br) Y24.Y.br.kill(); } catch (e) {} try { if (AL.A.br) AL.A.br.kill(); } catch (e) {} process.exit(0); }; process.on('SIGTERM', bye); process.on('SIGINT', bye);

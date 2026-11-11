@@ -75,7 +75,14 @@ if(act==='protect')process.stdout.write('ok:'+x([...Buffer.from(t,'utf8')]).toSt
       r = await save({ pf: 'y24', id: ID, pw: PW }); ok(r.j.ok && r.j.kind === 'ok' && chk(datY) === 'ok' && !(await st()).relogin.y24.stop, '바른 값 = 실제로 로그인해 확인 → 저장 · 멈춤도 풂', r.j.msg || r.j.err); }
     console.log('③ 알라딘 — 🏠 꺼짐 · 세션 살아 있음 · 풀려 있음');
     { let r = await save({ pf: 'al', id: ID, pw: PW }); ok(!r.j.ok && r.j.kind === 'own' && /🏠/.test(r.j.err) && /켜면 .*확인됨/.test(r.j.err) && r.j.canForce && A.S.log.filter((x) => x.login).length === 0 && !fs.existsSync(datA), "🏠가 꺼져 자리가 없으면 = 「⚙ › 일 켜기·끄기 맨 위 🏠를 켜면 확인됨」 · 로그인 안 함", r.j.err);
-      await H.api('POST', '/cfg', { alOwn: true, src: 'pc' }); seat = true; await feedA(); await until(async () => (await st()).al && (await st()).al.seat, 40);
+      /* (11/11 정범님 'HOME 🏠를 켜고 자리를 받으면 바로 확인 로그인') 🏠를 켰지만 자리를 아직 못 받았을 때 누르면 = 값을 메모리에만 잠시 두고, 자리를 받는 대로 곧바로 확인 */
+      await H.api('POST', '/cfg', { alOwn: true, src: 'pc' }); await feedA(); await wait(600);
+      { const n0 = A.S.log.filter((x) => x.login).length; const q = await save({ pf: 'al', id: ID, pw: 'wrong-' + PW }); await wait(1500);
+        ok(!q.j.ok && q.j.queued && /자리를 받는 대로 저절로 확인/.test(q.j.err) && A.S.log.filter((x) => x.login).length === n0 && !fs.existsSync(datA), '🏠 켬 · 자리 아직 없음 = 「자리를 받는 대로 저절로 확인」 · 아직 로그인 안 함', q.j.err);
+        const all = JSON.stringify(await st()) + (await H.req('GET', '/log/all', null, { 'X-RN-Col2': '1' })).b; ok(!all.includes('wrong-' + PW) && !all.includes(ID), '기다리는 동안 값은 상태·기록 어디에도 없음(메모리에만)');
+        seat = true; await feedA(); const jr = await until(async () => { const j = ((await st()).relogin.al || {}).job; return j && !j.on && j.res && j.res.kind === 'bad' ? j : null; }, 80);
+        ok(jr && A.S.log.filter((x) => x.login).length === n0 + 1 && !fs.existsSync(datA), '자리를 받자 곧바로 그 값으로 확인 로그인 — 틀린 값이라 저장 안 함 · 화면에 까닭', jr && jr.res.msg); }
+      await until(async () => (await st()).al && (await st()).al.seat, 40);
       r = await save({ pf: 'al', id: ID, pw: 'wrong-' + PW }); ok(!r.j.ok && r.j.kind === 'bad' && /다시 넣어 주세요/.test(r.j.err) && !fs.existsSync(datA), '🏠 켜고 자리를 받으면 실제 로그인으로 확인 — 틀리면 저장 안 함', r.j.err);
       r = await save({ pf: 'al', id: ID, pw: PW }); ok(r.j.ok && r.j.kind === 'ok' && chk(datA) === 'ok', '맞으면 저장(그대로 로그인 된 채)', r.j.msg || r.j.err);
       const n = A.S.log.filter((x) => x.login).length; r = await save({ pf: 'al', id: ID, pw: PW });
