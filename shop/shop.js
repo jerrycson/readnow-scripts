@@ -142,5 +142,8 @@
       <div class="biz">상호 ${v(z.name || c.name)} · 대표 ${v(z.ceo)} · 사업자등록번호 ${v(z.no)} · 통신판매업 신고 ${v(z.mo)}<br>주소 ${v(z.addr)} · 전화 ${v(z.tel)} · 메일 ${v(z.email)} · 호스팅 ${esc(z.host || 'Google Firebase')}</div>`; }
   async function render() { const R = B.route(location.hash); document.title = (ST.cfg && ST.cfg.name) || '북스퀸 — 헌책방'; window.scrollTo(0, 0); $$('.nav a').forEach((a) => a.classList.toggle('on', a.dataset.r === R.name));
     if (R.name === 'list') return list(R.q); if (R.name === 'b') return item(R.arg); if (R.name === 'cart') return cartPage(); if (R.name === 'order') return orderPage(); if (R.name === 'done') return done(R.arg, R.q); if (R.name === 'my') return my(); if (R.name === 'p') return policy(R.arg); return home(); }
+  /* (11/11 shop4) 사진이 안 열리면(실제 배포본 점검: Storage 작은 사진 *_t.webp가 ORB로 막힘) → 큰 사진으로 한 번 더 → 그래도 안 되면 📕 (깨진 그림 아이콘 0) */
+  document.addEventListener('error', (e) => { const i = e.target; if (!i || i.tagName !== 'IMG') return; const big = i.src.replace(/_t\.(webp|jpe?g|png)(?=\?|$)/i, '.$1');
+    if (!i.dataset.fb && big !== i.src) { i.dataset.fb = '1'; i.src = big; return; } if (i.dataset.fb === 'x') return; i.dataset.fb = 'x'; const n = document.createElement('span'); n.className = 'noim'; n.textContent = '📕'; i.replaceWith(n); }, true);
   window.addEventListener('hashchange', render); badge(); foot(); cfg().catch(() => {}); render();
 })();

@@ -28,6 +28,8 @@ async function httpRows() {
   for (const u of ['https://booksqueen.com/', 'http://booksqueen.com/', 'https://www.booksqueen.com/']) await one(u, null);
 }
 
+/* 깨진 사진 까닭 — 작은 사진(_t)·큰 사진 HTTP 상태·종류·본문 앞(브라우저 밖에서) */
+async function probeImgs(urls) { const out = []; for (const u of [...new Set(urls)].slice(0, 3)) { for (const v of [u, u.replace(/_t\.(webp|jpe?g|png)(?=\?|$)/i, '.$1')]) { try { const r = await fetch(v); const b = Buffer.from(await r.arrayBuffer()); out.push({ u: v.slice(0, 160), st: r.status, ct: r.headers.get('content-type'), len: b.length, head: r.ok && /image/.test(r.headers.get('content-type') || '') ? '' : b.toString('utf8', 0, 160) }); } catch (e) { out.push({ u: v.slice(0, 160), err: e.message }); } } } return out; }
 async function run(kind, browser) {
   const ctx = await browser.newContext({ ...VPS[kind], locale: 'ko-KR' }); const p = await ctx.newPage();
   const errs = [], dlg = [], fails = []; let orderPosts = 0;
@@ -44,20 +46,20 @@ async function run(kind, browser) {
     return rt.continue(); });
   const shot = async (name) => { const f = `${kind}_${name}.png`; await p.screenshot({ path: path.join(OUT, f), fullPage: name !== 'order' }); return f; };
   const check = async (name, sel, extra) => { const t0 = Date.now(); let okSel = true; try { await p.waitForSelector(sel, { timeout: 15000 }); } catch (e) { okSel = false; } await p.waitForTimeout(600);
-    const info = await p.evaluate(() => ({ title: document.title, over: document.documentElement.scrollWidth - window.innerWidth, broken: [...document.images].filter((i) => i.complete && i.naturalWidth === 0 && i.src && !i.src.startsWith('data:')).map((i) => i.src.slice(0, 120)), err: (document.querySelector('.err') || {}).textContent || '' }));
+    const info = await p.evaluate(() => ({ title: document.title, over: document.documentElement.scrollWidth - window.innerWidth, broken: [...document.images].filter((i) => i.complete && i.naturalWidth === 0 && i.src && !i.src.startsWith('data:')).map((i) => i.src.slice(0, 120)), noim: document.querySelectorAll('.card .noim, .gal .noim').length, big: document.querySelectorAll('img[data-fb="1"]').length, err: (document.querySelector('.err') || {}).textContent || '' }));
     const row = { kind, name, url: p.url().replace(BASE, ''), ok: okSel, ms: Date.now() - t0, ...info, shot: await shot(name), ...(extra ? await extra() : {}) }; R.pages.push(row);
     if (!okSel) bad(`${kind} ${name}: '${sel}' 안 보임 ${info.err.slice(0, 80)}`); if (info.over > 1) bad(`${kind} ${name}: 옆으로 ${info.over}px 넘침`); if (info.broken.length) bad(`${kind} ${name}: 깨진 사진 ${info.broken.length}장 (${info.broken[0]})`);
     console.log(`  ${okSel ? '✓' : '✗'} ${kind} ${name} ${row.ms}ms ${row.url} ${JSON.stringify({ cards: row.cards, chips: row.chips, head: row.head, price: row.price, rows: row.rows, total: row.total, text: row.text })}`); return row; };
   await p.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
-  await check('home', '#hc .grid .card, #hc .empty', async () => ({ cards: await p.locator('#hc .card').count(), chips: await p.locator('#hc .chip').count(), foot: ((await p.textContent('#foot')) || '').slice(0, 200) }));
-  await p.evaluate(() => { location.hash = '#/list?s=new'; }); await check('list', '#lg .grid .card, #lg .empty', async () => ({ head: ((await p.textContent('#lh')) || '').trim() }));
+  await check('home', '#hc .grid .card:not(.sk), #hc .empty', async () => ({ cards: await p.locator('#hc .card').count(), chips: await p.locator('#hc .chip').count(), foot: ((await p.textContent('#foot')) || '').slice(0, 200) }));
+  await p.evaluate(() => { location.hash = '#/list?s=new'; }); await check('list', '#lg .grid .card:not(.sk), #lg .empty', async () => ({ head: ((await p.textContent('#lh')) || '').trim() }));
   const chip = await p.evaluate(() => { const a = document.querySelector('#hc .chip'); return a ? a.getAttribute('href') : null; });
   await p.goto(BASE + '/', { waitUntil: 'domcontentloaded' }); await p.waitForSelector('#hc .chip, #hc .empty, #hc .grid', { timeout: 15000 }).catch(() => {});
   const chip2 = chip || (await p.evaluate(() => { const a = document.querySelector('#hc .chip'); return a ? a.getAttribute('href') : null; }));
-  if (chip2) { await p.evaluate((h) => { location.hash = h; }, chip2); await check('category', '#lg .grid .card, #lg .empty'); }
-  await p.evaluate(() => { location.hash = '#/list?s=new'; }); await p.waitForSelector('#lg .grid .card', { timeout: 15000 }).catch(() => {});
-  console.log('  목록 카드', await p.locator('#lg .card').count(), '주문 중', await p.locator('#lg .card.held').count(), p.url().replace(BASE, ''));
-  const first = await p.evaluate(() => { const a = [...document.querySelectorAll('#lg .card')].find((x) => !x.classList.contains('held')); return a ? a.getAttribute('href') : null; });
+  if (chip2) { await p.evaluate((h) => { location.hash = h; }, chip2); await check('category', '#lg .grid .card:not(.sk), #lg .empty'); }
+  await p.evaluate(() => { location.hash = '#/list?s=new'; }); await p.waitForSelector('#lg .grid .card:not(.sk)', { timeout: 15000 }).catch(() => {});
+  console.log('  목록 카드', await p.locator('#lg .card:not(.sk)').count(), '주문 중', await p.locator('#lg .card.held').count(), p.url().replace(BASE, ''));
+  const first = await p.evaluate(() => { const a = [...document.querySelectorAll('#lg .card:not(.sk)')].find((x) => !x.classList.contains('held')); return a ? a.getAttribute('href') : null; });
   if (!first) { bad(`${kind}: 목록에 주문할 수 있는 책이 없음`); } else {
     await p.evaluate((h) => { location.hash = h; }, first); await check('item', '.det .info h1', async () => ({ price: ((await p.textContent('.price').catch(() => '')) || '').trim(), pics: await p.locator('#gal img').count() }));
     const add = p.locator('#add'); if (await add.count()) { await add.click(); await p.waitForTimeout(500); } else bad(`${kind} item: '장바구니' 단추 없음(시험 모드인데도 닫힘)`);
@@ -71,13 +73,14 @@ async function run(kind, browser) {
   if (R.sampleB) { await p.goto(BASE + new URL(R.sampleB).pathname, { waitUntil: 'domcontentloaded' }); await check('b_page', 'h1'); }
   await p.goto(BASE + '/#/p/privacy', { waitUntil: 'domcontentloaded' }); await check('privacy', '.doc h1');
   if (errs.length) bad(`${kind}: 화면 오류 ${errs.length}개 — ${errs[0].slice(0, 160)}`); if (dlg.length) bad(`${kind}: 브라우저 창 ${dlg.length}번`);
+  const orb = [...new Set(fails)].filter((x) => /firebasestorage/.test(x)).map((x) => x.split(' ')[0]); if (orb.length) { R.imgProbe = R.imgProbe || await probeImgs(orb); bad(`${kind}: Storage 사진 ${orb.length}장이 안 열림(브라우저가 막음 — 화면은 큰 사진·📕로 바꿈) · 까닭 ${JSON.stringify(R.imgProbe.slice(0, 2)).slice(0, 300)}`); }
   R[kind] = { errs: errs.slice(0, 20), fails: [...new Set(fails)].slice(0, 30), orderPosts }; console.log(`  ${kind} 실패한 요청:\n    ` + R[kind].fails.join('\n    ') + (errs.length ? `\n  화면 오류: ${errs.slice(0, 5).join(' | ')}` : '')); await ctx.close();
 }
 
 function md() { const L = [`### 🛍 우리숍 실제 점검 — ${BASE} · ${R.at}`, '', R.bad.length ? `**❌ 깨진 곳 ${R.bad.length}**` : '**✅ 깨진 곳 없음**', ...R.bad.map((x) => '- ' + x), '',
   `가게 설정(진짜): 문 ${R.cfg ? (R.cfg.open ? '열림' : '닫힘') : '?'} · 판매 ${R.cfg && R.cfg.n != null ? R.cfg.n : '?'}권 · 분야 ${R.cfg ? R.cfg.cats : '?'} · 결제 ${R.cfg ? R.cfg.pay || '준비 중' : '?'} · sitemap 주소 ${R.sitemapN != null ? R.sitemapN : '?'}개`, '',
   '| 주소 | HTTP | ms |', '|---|---|---|', ...R.http.map((h) => `| ${h.u} | ${h.st || '✗ ' + (h.err || '').slice(0, 60)}${h.loc ? ' → ' + h.loc : ''} | ${h.ms || ''} |`), '',
-  '| 기기 | 화면 | 됨 | ms | 넘침 | 깨진 사진 | 사진 |', '|---|---|---|---|---|---|---|', ...R.pages.map((x) => `| ${x.kind} | ${x.name} | ${x.ok ? '✓' : '✗'} | ${x.ms} | ${x.over > 1 ? x.over + 'px' : '0'} | ${x.broken.length} | ${x.shot} |`)];
+  '| 기기 | 화면 | 됨 | ms | 넘침 | 깨진 사진 | 📕 바꿈 | 큰 사진으로 | 사진 |', '|---|---|---|---|---|---|---|---|---|', ...R.pages.map((x) => `| ${x.kind} | ${x.name} | ${x.ok ? '✓' : '✗'} | ${x.ms} | ${x.over > 1 ? x.over + 'px' : '0'} | ${x.broken.length} | ${x.noim} | ${x.big} | ${x.shot} |`), '', R.imgProbe ? '**사진 까닭(브라우저 밖 HTTP)**\n```\n' + JSON.stringify(R.imgProbe, null, 1) + '\n```' : ''];
   return L.join('\n'); }
 
 (async () => {
