@@ -1,2 +1,3 @@
-doc=prd_system/autoSched,app_settings/aladin_login,app_settings/col2_cfg
-# 2846267
+doc=col2_ctl/HOME,col2_ctl/JS-MAIN,col2_ctl/MJ-MAIN,app_settings/y24_state,app_settings/platforms,app_settings/y24_learn,app_settings/col2_cfg
+logs=1&pc=HOME&from=2026111112&to=~
+# 571315398
