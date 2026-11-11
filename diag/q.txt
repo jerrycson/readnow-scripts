@@ -1,2 +1,2 @@
-col2=2026-11-11
-# 147247723
+doc=app_settings/research_pulse
+# 2104518125
