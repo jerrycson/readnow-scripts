@@ -13,7 +13,7 @@ let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, 
 const APP = process.env.RN_APP || [path.resolve(__dirname, '..', 'app.html'), path.resolve(__dirname, '..', '..', 'src', 'app.html')].find((x) => fs.existsSync(x));
 const T = fs.readFileSync(APP, 'utf8'); const cut = (a, b) => { const i = T.indexOf(a); const j = T.indexOf(b); if (i < 0 || j < i) throw new Error('덩어리 못 찾음: ' + a); return T.slice(i, j); };
 const F = new Function(cut('/* ◆ledger 시작', '/* ◆ledger 끝 */') + '\nreturn { ledBuild, ledTodo, ledAlCh, MC_DAYS, ledY24One, omniPick };')();
-const FW = new Function('ledGuard', 'deviceName', 'localStorage', 'S', 'ledY24One', cut('/* (11/11 y24w) 🟦 예스24 맡기기 — 이 기기 기록', '/* 맡김 — 돌려줌') + '\nreturn { ledY24Row, ledY24Guard, ledY24Can };');
+const FW = new Function('ledGuard', 'deviceName', 'localStorage', 'S', 'ledY24One', cut('/* (11/11 y24w) 🟦 예스24 맡기기 — 이 기기 기록', '/* 맡김 — 돌려줌') + '\nreturn { ledY24Row, ledY24Guard, ledY24Can, ledY24HereWhy };');
 console.log('① 순수 셈');
 const INP = (o) => ({ now: '2026-11-11T03:00:00Z', days: 30,
   al: [{ id: 'aladin_U1', title: '책1', isbn: '9788900000001', grade: '상', price: 8000, qty: 1, live: true, st: '판매중', skus: ['S1'] }, { id: 'aladin_U2', title: '책2', isbn: '9788900000002', grade: '중', price: 5000, qty: 3, live: true, st: '판매중', skus: ['S2a', 'S2b', 'S2c'] }, { id: 'aladin_U3', title: '책3', price: 3000, qty: 1, live: true, st: '판매중', skus: ['S3'] }],
@@ -31,7 +31,8 @@ const INP = (o) => ({ now: '2026-11-11T03:00:00Z', days: 30,
     const mem = {}; const LS = { getItem: (k) => (k in mem ? mem[k] : null), setItem: (k, v) => (mem[k] = String(v)) }; let dev = 'HOME'; const W = FW(() => '', () => dev, LS, {}, F.ledY24One);
     const r1 = W.ledY24Row(t4, ay); ok(r1.kind === 'stop' && r1.to === null && r1.no === '903' && r1.self === 'S3' && r1.rid === 'S3|903' && /^S3\|903\|stop\|\|20261110/.test(r1.rk), '(y24w) 맡길 줄 = 상품번호·자체코드·판매중지 · 할 일 열쇠(줄+할 일+값+마지막 주문 시각)', r1);
     const r2 = W.ledY24Row({ ...t4, last: '2026-11-11T00:00:00Z' }, { ...ay, k: 'qty', to: 2 }); ok(r2.kind === 'qty' && r2.to === 2 && r2.rk !== r1.rk, '(y24w) 수량이면 qty·고칠 값 · 새로 팔리면 새 열쇠(같은 할 일만 되풀이 0)', r2);
-    ok(/번외 수집기가 없음/.test(W.ledY24Guard()) && (LS.setItem('rn-c2seen', '1'), W.ledY24Guard() === '') && ((dev = 'MJ-MAIN'), /MJ-MAIN/.test(W.ledY24Guard())), '(y24w) 번외 없는 기기·MJ-MAIN은 맡기지 않음'); }
+    /* (11/11 y24ops4) 사람이 누르는 맡기기는 번외 없는 기기·MJ-MAIN에서도 됨(맡은 PC가 col2_y24_cmd로 받음 — tY24OPS4) · 🤖 자동 내림의 예스24 쪽(ledY24HereWhy)만 예전처럼 번외 있는 PC */
+    ok(W.ledY24Guard() === '' && /번외 수집기가 없음/.test(W.ledY24HereWhy()) && (LS.setItem('rn-c2seen', '1'), W.ledY24HereWhy() === '') && ((dev = 'MJ-MAIN'), W.ledY24Guard() === '' && /MJ-MAIN/.test(W.ledY24HereWhy())), '(y24w) 맡기기는 어느 기기든 · 자동 내림 예스24 쪽은 번외 없는 기기·MJ-MAIN에서 안 함'); }
   { /* (11/11 led2b) 정범님 화면 그대로 — 실물 3권(SKU 3개)·현금으로 2권 팔림 → 남은 1권 · 예스24 지금 2권(자체코드 없음 · ISBN으로 이은 상품 하나) → 1권 */
     const mem = {}; const LS = { getItem: (k) => (k in mem ? mem[k] : null), setItem: (k, v) => (mem[k] = String(v)) }; const W = FW(() => '', () => 'HOME', LS, {}, F.ledY24One);
     const I5 = { now: '2026-11-11T06:00:00Z', days: 30, al: [{ id: 'aladin_H1', title: '핫 시험 책', isbn: '9788900000301', grade: '상', price: 9000, qty: 3, live: true, st: '판매중', skus: ['PNKt0301EX', 'PNKt0302EX', 'PNKt0303EX'] }],
@@ -93,7 +94,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
     if (u.pathname === '/y24/w/ack') { C2.acks.push(...(b.ids || [])); for (const id of b.ids || []) delete C2.res[id]; return J({ ok: true }); }
     if (u.pathname === '/y24/w/resume') { C2.resumes++; C2.stop = null; return J({ ok: true, was: true }); }
     return J({ ok: false }, 404); });
-  const W1 = await p.evaluate(async () => { localStorage.setItem('rn-c2seen', '1'); localStorage.removeItem('rn-led-y24mk'); S._led = null; ledRedraw(); const w = (ms) => new Promise((r) => setTimeout(r, ms)); const sh = document.getElementById('sheet');
+  const W1 = await p.evaluate(async () => { localStorage.setItem('rn-c2seen', '1'); localStorage.setItem('rn-device', 'HOME'); /* (y24ops4) 예스24를 맡은 PC(기본 HOME)에서 = 이 PC 번외로 */ localStorage.removeItem('rn-led-y24mk'); S._led = null; ledRedraw(); const w = (ms) => new Promise((r) => setTimeout(r, ms)); const sh = document.getElementById('sheet');
     const b = sh.querySelector('[data-ledy24go]'); if (!b) return { b: false, td: [...sh.querySelectorAll('.ledtd')].map((x) => x.textContent).join('|') }; const hand = !!sh.querySelector('[data-ledy24]') && [...sh.querySelectorAll('.ledtd a')].some((x) => /uscm\.yes24\.com/.test(x.href)); const t0 = b.textContent;
     b.click(); await w(500); return { b: true, t0, hand, arm: (sh.querySelector('[data-ledy24go]') || {}).textContent || '' }; });
   const nP0 = C2.puts.length; await p.locator('[data-ledy24go]').first().click(); await p.waitForTimeout(900);
@@ -110,7 +111,7 @@ require('./harness.js')(async (p) => { const dlg = []; p.on('dialog', (d) => { d
     const td = [...sh.querySelectorAll('.ledtd')].map((x) => x.textContent).join('|'); const rb = sh.querySelector('#led_y24resume'); const r = { td, go: !!sh.querySelector('[data-ledy24go]'), rb: !!rb }; if (rb) { rb.click(); await w(500); sh.querySelector('#led_y24resume').click(); await w(500); } r.stop = S._y24wStop; return r; });
   ok(/확실하지 않음/.test(W4.td) && /할 일/.test(W4.td) && W4.go && W4.rb && C2.resumes === 1 && !W4.stop, "실패·확실하지 않음 = 줄에 까닭·할 일 + 맡기기 다시 · 멈춤 띠 [▶ 예스24 쓰기 이어 가기] 두 번 = 이어 감", { W4, res: C2.resumes });
   const W5 = await p.evaluate(async () => { const d0 = localStorage.getItem('rn-device'); localStorage.setItem('rn-device', 'MJ-MAIN'); const T = ledTodo(ledNow()).find((x) => x.key === 'SK14'); const why = await ledY24Go([{ T, a: T.acts.find((x) => x.ch === 'yes24') }]); if (d0 == null) localStorage.removeItem('rn-device'); else localStorage.setItem('rn-device', d0); return why; });
-  ok(/MJ-MAIN/.test(W5) && C2.puts.length === 1, 'MJ-MAIN에서는 예스24 맡기기 안 함', W5);
+  ok(/맡은 PC\(HOME\)/.test(W5) && C2.puts.length === 1, '(y24ops4) MJ-MAIN에서는 그 PC 번외를 두드리지 않고 맡은 PC(HOME) 길로 — 시험엔 HOME 소식이 없어 맡기지 않음', W5);
   /* (11/11 led2b) 자체코드 없는 예스24 줄 — 정범님 화면(실물 3권·남은 1권 · 예스24 지금 2권 → 1권)과 같은 꼴 · A = 이은 예스24 상품 하나 · B = 같은 ISBN 예스24 상품 둘(고르기) · C = 하나(판매중지) */
   await p.evaluate(() => { localStorage.removeItem('rn-led-y24w'); localStorage.removeItem('rn-led-y24pk'); localStorage.removeItem('rn-led-y24mk'); S._y24wStop = null; S._y24wWhy = null;
     window.ledNow = () => { const now = new Date().toISOString(); const t1 = new Date(Date.now() - 3600e3).toISOString();

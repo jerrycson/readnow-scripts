@@ -716,6 +716,7 @@ const srv = http.createServer((req, res) => {
   if (p === '/y24/w/resume') return body((o) => J(200, Y24.w.resume(o.by || o.why || '')));
   if (p === '/y24/feed') return body((o) => J(200, Y24.feed(o, o.by)), 1048576);
   if (p === '/y24/login') return body(async (o) => { const r = await Y24.login(o.why || '옆 창 단추'); J(200, { ...r, state: status() }); });
+  if (p === '/y24/re1') return body((o) => { const r = Y24.reOnce(o.by || ''); J(r.ok ? 200 : 409, r); }); /* (11/11 y24ops4) 원격 '다시 로그인 한 번'(맡은 PC 수집기 다리가 부름) */
   if (p === '/y24/run') return body(async (o) => { const r = await Y24.runNow(String(o.what || 'ord')); J(200, { ...r, state: status() }); });
   /* (0.1.2) 운영 인쇄 도우미가 새 판으로 바꾸거나 끌 때 — 번외 크롬을 먼저 닫고(옛 크롬이 프로필을 쥔 채 남지 않게) 이 프로세스를 끝냄 */
   if (p === '/quit') return body(async (o) => { note('끝내기 부탁 — ' + String(o.by || o.why || '').slice(0, 60)); await closeBrowser('도우미 끝냄').catch(() => {}); await Y24.close('도우미 끝냄').catch(() => {}); await AL.close('도우미 끝냄').catch(() => {}); J(200, { ok: true, pid: process.pid }); setTimeout(() => process.exit(0), 200); });
