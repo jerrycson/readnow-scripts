@@ -54,7 +54,7 @@ const items = (W, sc, kind) => shards(W, sc, kind).flatMap((v) => v.items);
   const A = await fake(); const SELL = [{ id: 'sc_12345', v: { sc: '12345', name: '가게일', n: 35 } }, { id: 'sc_' + COL2.OWN_SC[0], v: { sc: COL2.OWN_SC[0], name: '우리', n: 9 } }];
   console.log('② 로거 PC — 구매평·문의 끝까지 → 새 글만');
   const off = ['metrics', 'usedPage', 'shopSum', 'survey', 'bench', 'dynamic'];
-  let H = await L.startHelper({ port: VPORT, aladin: A.base, cfg: { pc: 'LOGGER-V', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 150 }, watch: { tickSec: 1 }, jobs: { on: true, voice: true, off, voiceCfg: { burst: 3, incEveryH: 0 } } } });
+  let H = await L.startHelper({ port: VPORT, aladin: A.base, cfg: { pc: 'LOGGER-V', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 150 }, watch: { tickSec: 1 }, jobs: { on: true, fx: { after: '00:00', keyWaitMin: 0 }, voice: true, off, voiceCfg: { burst: 3, incEveryH: 0 } } } });
   try { await H.api('POST', '/cfg', { on: true }); const W = webapp(H, SELL);
     const done = await until(() => { const s = W.got.filter((o) => o.c === 'col2_voice_s' && o.id === '12345').slice(-1)[0]; return s && s.v.r.done && s.v.q.done ? s : null; }, 240, 250);
     ok(W.asks.length >= 1 && W.asks[0].n > 0, '웹앱에 판매자 목록(숍 번호·이름·평가 수)을 부탁함', W.asks[0]);
@@ -72,7 +72,7 @@ const items = (W, sc, kind) => shards(W, sc, kind).flatMap((v) => v.items);
     W.stop(); } finally { await H.stop(); }
 
   console.log('③ 사무실 PC — 하지 않음');
-  const n1 = A.reqs.length; H = await L.startHelper({ port: VPORT, aladin: A.base, cfg: { pc: 'MJ-V', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 150 }, watch: { tickSec: 1 }, jobs: { on: true, voice: true, off: ['product', 'kpipa', 'nbMarket', 'ext.fx'] } } });
+  const n1 = A.reqs.length; H = await L.startHelper({ port: VPORT, aladin: A.base, cfg: { pc: 'MJ-V', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 150 }, watch: { tickSec: 1 }, jobs: { on: true, fx: { after: '00:00', keyWaitMin: 0 }, voice: true, off: ['product', 'kpipa', 'nbMarket', 'ext.fx'] } } });
   try { const W = webapp(H, SELL); await wait(5000); ok(!A.reqs.slice(n1).some((r) => /wshopsurvey|wshopqna|wshopitem/.test(r.path)) && !W.asks.length && !W.got.some((o) => /^col2_voice/.test(o.c)), '사무실 PC는 판매자 목소리를 읽지도 쓰지도 부탁하지도 않음(로거 고유 일)'); W.stop(); } finally { await H.stop(); }
   A.srv.close(); L.done('t_voice');
 })().catch((e) => { console.error(e); process.exit(1); });
