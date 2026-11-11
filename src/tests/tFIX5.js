@@ -21,7 +21,7 @@ require('./harness.js')(async (p) => {
     // ③ 예스24
     out.y1 = y24LoginTxt({ has: true, on: true, auto: true }, { at: 1, why: '앞 시도 뒤 5분 기다림' }, 'HOME'); out.y2 = y24LoginTxt({ has: false, on: true, auto: false }, null); out.y3 = y24LoginTxt({ has: true, on: true, auto: false, stop: '연속 2번 실패 — 틀림' }, null); out.y4 = y24LoginTxt(null, '모름');
     out.todoA = (y24OpsTodo({}, {}, {}, 'need', { has: true, on: true, auto: true }, null)[0] || {}); out.todoB = (y24OpsTodo({}, {}, {}, 'need', { has: false }, null)[0] || {});
-    out.al = y24HoldAlertOf({ used: true, h: 'HOME', age: 1000, stale: false, others: [], login: 'need', re: { has: true, on: true, auto: true }, reWhy: '앞 시도 뒤 5분 기다림' }); out.al2 = y24HoldAlertOf({ used: true, h: 'HOME', age: 1000, stale: false, others: [], login: 'need', re: null });
+    out.al = y24HoldAlertOf({ used: true, h: 'HOME', age: 1000, stale: false, hlp: true /* (rel3) y24ops3 — 상태 줄엔 늘 hlp가 있음 */, others: [], login: 'need', re: { has: true, on: true, auto: true }, reWhy: '앞 시도 뒤 5분 기다림' }); out.al2 = y24HoldAlertOf({ used: true, h: 'HOME', age: 1000, stale: false, hlp: true /* (rel3) y24ops3 — 상태 줄엔 늘 hlp가 있음 */, others: [], login: 'need', re: null });
     out.ys = c2ySum({ login: 'need', re: { has: true, on: true, auto: true, stop: null }, reWhy: { at: 1, why: 'x' } });
     // ④ 🛍 우리숍 설정 — app_settings/main을 받아도 bqCfg가 남음 · 빈칸 덮어쓰기 막음
     const SHOP = { open: 0, name: '북스퀸', bank: { name: '시험은행', acct: '000-000', holder: '손님A' }, biz: { name: '시험상호', no: '000-00-00000', tel: '010-0000-0000' } };
@@ -37,7 +37,7 @@ require('./harness.js')(async (p) => {
     return out; });
   ok(r.bestLink && /"product":"aladin_U9100001"/.test(r.bestOpen), '① 잘 팔린 책 상품명 → 그 상품 페이지', r.bestOpen);
   ok(/"product":/.test(r.oldOpen) && /"product":/.test(r.listOpen), '① 오래 안 팔린 책·상품 목록도 그대로 상품 페이지', [r.oldOpen, r.listOpen]);
-  ok(/0\.1\.21 → 0\.1\.23/.test(r.nv) && /읽는 중 — 다음에/.test(r.nv) && /수집 작업 창/.test(r.nv) && /깔고 켜기/.test(r.nv), '② 로거 번외 옛 판 — 까닭·어디서', r.nv.slice(0, 200));
+  ok(/0\.1\.21 → 0\.1\.24/.test(r.nv) && /읽는 중 — 다음에/.test(r.nv) && /수집 작업 창/.test(r.nv) && /깔고 켜기/.test(r.nv), '② 로거 번외 옛 판 — 까닭·어디서', r.nv.slice(0, 200));
   ok(r.c2u && /GitHub 0\.1\.23/.test(r.c2u.msg), '② 번외 상태 요약이 새 판 확인 결과를 남김', r.c2u);
   ok(r.y1.auto && /스스로 다시 로그인/.test(r.y1.t) && !/\[🔐 예스24 로그인\]/.test(r.y1.t) && /앞 시도 뒤 5분/.test(r.y1.t), '③ 저장 계정 — 수동 안내 없음 · 지금 까닭', r.y1.t);
   ok(!r.y2.auto && /\[🔐 예스24 로그인\]/.test(r.y2.t) && /저장된 예스24 계정 없음/.test(r.y2.t), '③ 계정 없음 — 까닭과 수동 안내', r.y2.t);

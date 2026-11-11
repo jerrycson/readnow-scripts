@@ -39,7 +39,7 @@ const X0 = require(path.join(L.PROD_REPO, 'readnow-ext-core.js'));
 
   console.log('② TTB 서비스 끝');
   CFGJ = { ...CFGJ, off: TK_OFF(['ext.ttb']) }; calls.length = 0; J.feedBooks([{ itemId: '4', bookId: 'b4', prod: { isbn13: '9788937460470', title: '라' } }, { itemId: '5', bookId: 'b5', prod: { isbn13: '9788937460487', title: '마' } }]); await run(4);
-  const tt = day()['ext.ttb'] || {}; ok(calls.filter((c) => c[0] === 'ttb').length === 1 && tt.fail === 0 && tt.skip >= 2, "'OpenAPI 서비스 종료' 답 → 못 읽음으로 세지 않음(건너뜀) · 그날은 더 묻지 않음", JSON.stringify({ calls, tt }));
+  const tt = day()['ext.ttb'] || {}; ok(calls.filter((c) => c[0] === 'ttb').length === 0 && !tt.fail, "TTB는 종료됨(ttb1 · 2026-10-30) — 아예 묻지 않음 · 못 읽음으로 세지 않음", JSON.stringify({ calls, tt }));
 
   console.log('③ 환율');
   const kmin = (() => { const t = new Date(Date.now() + 9 * 3600e3); return t.getUTCHours() * 60 + t.getUTCMinutes(); })(); CFGJ = { ...CFGJ, off: TK_OFF(['ext.fx']) }; calls.length = 0; ops.length = 0; HAND = { 'ext.fx': true };
