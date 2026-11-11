@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       custom_domain: { description: '도메인 (예 readnow.kr)', required: true, default: 'readnow.kr' }
+      site: { description: '사이트 이름(비우면 관리 사이트 readnow-3a385 · 우리숍은 booksqueen)', required: false, default: '' }
       mode: { description: 'register = 없으면 등록 · status = 읽기만', required: true, default: 'register', type: choice, options: [register, status] }
 permissions: { contents: read, id-token: write }
 env:
@@ -24,8 +25,8 @@ jobs:
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with: { workload_identity_provider: '${{ env.WIF }}', service_account: '${{ env.SA }}', token_format: access_token }
       - name: 도메인 등록·상태 읽기
-        env: { HOSTING_TOKEN: '${{ steps.auth.outputs.access_token }}', CUSTOM_DOMAIN: '${{ inputs.custom_domain }}', DOMAIN_MODE: '${{ inputs.mode }}', DOMAIN_OUT: domain-status.json }
-        run: node hosting/domain.js
+        env: { HOSTING_TOKEN: '${{ steps.auth.outputs.access_token }}', CUSTOM_DOMAIN: '${{ inputs.custom_domain }}', DOMAIN_MODE: '${{ inputs.mode }}', DOMAIN_OUT: domain-status.json, SITE_IN: '${{ inputs.site }}' }
+        run: node hosting/domain.js "$CUSTOM_DOMAIN" ${SITE_IN:+"$SITE_IN"}
       - name: 지금 공개 DNS 보기 (참고)
         if: always()
         env: { D: '${{ inputs.custom_domain }}' }
