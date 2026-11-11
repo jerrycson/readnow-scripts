@@ -34,11 +34,11 @@ const X0 = require(path.join(L.PROD_REPO, 'readnow-ext-core.js'));
   ok(nlOps.length === 1 && o1.c === 'ext_basic' && o1.id === B2 && o1.v.obj.sig === X0.sig({ none: false, d: { title: '책 ' + B2, publisher: '출판사' } }, 'nl') && o1.v.obj.by === '번외 JS-MAIN' && HOF.writeOk(HD, { ...o1, job: 'ext.nl', c: o1.c }, 'JS-MAIN').ok, '결과를 운영 extSave 꼴로 운영 칸(ext_basic)에 맡김 · 지문 = 운영 공용 파일 sig', o1);
   const P = HOF.extPlan(DB['ext_basic/' + B2], 'nl', o1.v.obj, 'basic', X0.sameSig); ok(P.st === 'changed' && P.hist && P.hist.d.title === '옛', "운영 판단 규칙(extPlan): 다르면 '바뀜' · 옛 값을 보관", P.st);
   ok(HOF.extPlan({ src: { nl: { ...o1.v.obj, at: old } } }, 'nl', o1.v.obj, 'basic', X0.sameSig).st === 'same' && HOF.extPlan({ src: { nl: { at: old, d: { title: '옛' } } } }, 'nl', { ...o1.v.obj, none: true, d: null }, 'basic', X0.sameSig).st === 'keep', "같은 지문 = 확인 시각만 · 받아 둔 값이 있는데 '없음' = 받아 둔 값 그대로(운영 11/08 규칙)");
-  HAND = {}; ops.length = 0; J.feedBooks([{ itemId: '3', bookId: 'b3', prod: { isbn13: '9788937460463', title: '다' } }]); calls.length = 0; await run(4);
+  HAND = {}; ops.length = 0; DB['ext_basic/9788937460463'] = { isbn: '9788937460463', src: { nl: { at: fresh, chk: fresh, sig: 'y', d: { title: '다' } } } }; /* (col2rep5) 넘기지 않은 그림자는 운영이 읽어 둔 책만 묻는다 */ J.feedBooks([{ itemId: '3', bookId: 'b3', prod: { isbn13: '9788937460463', title: '다' } }]); calls.length = 0; await run(4);
   ok(calls.length === 1 && !ops.length, '넘기지 않았으면 예전처럼 그림자로만(다시 볼 날 상관없이 묻고 · 운영 칸에 안 맡김)', { calls, ops });
 
   console.log('② TTB 서비스 끝');
-  CFGJ = { ...CFGJ, off: TK_OFF(['ext.ttb']) }; calls.length = 0; J.feedBooks([{ itemId: '4', bookId: 'b4', prod: { isbn13: '9788937460470', title: '라' } }, { itemId: '5', bookId: 'b5', prod: { isbn13: '9788937460487', title: '마' } }]); await run(4);
+  CFGJ = { ...CFGJ, off: TK_OFF(['ext.ttb']) }; calls.length = 0; for (const b of ['9788937460470', '9788937460487']) DB['ext_basic/' + b] = { isbn: b, src: { ttb: { at: fresh, chk: fresh, sig: 'z', d: { title: b } } } }; J.feedBooks([{ itemId: '4', bookId: 'b4', prod: { isbn13: '9788937460470', title: '라' } }, { itemId: '5', bookId: 'b5', prod: { isbn13: '9788937460487', title: '마' } }]); await run(4);
   const tt = day()['ext.ttb'] || {}; ok(calls.filter((c) => c[0] === 'ttb').length === 1 && tt.fail === 0 && tt.skip >= 2, "'OpenAPI 서비스 종료' 답 → 못 읽음으로 세지 않음(건너뜀) · 그날은 더 묻지 않음", JSON.stringify({ calls, tt }));
 
   console.log('③ 환율');
@@ -67,6 +67,6 @@ const X0 = require(path.join(L.PROD_REPO, 'readnow-ext-core.js'));
   const SRC = fs.readFileSync(path.join(L.PROD_REPO, 'src/readnow-collector.src.js'), 'utf8'); const head = SRC.slice(0, SRC.indexOf('// ==/UserScript=='));
   ok(/async function c2HoLive\(k, maxH\)/.test(SRC) && /!\(hoNl && s === 'nl'\)/.test(SRC) && /c2HoLive\('ext\.fx', 30\); if \(ho\) return null;/.test(SRC) && /hoNb \? !have\.get\(k\)/.test(SRC), '넘긴 일만 쉼: 국중은 외부 정보 한 바퀴에서 뺌 · 환율은 쉼(지금 받기 force는 그대로) · 시세는 처음 보는 상품만');
   ok(!/c2Ho|col2_handoff/.test(head), '수집기 머리(@match·@grant·@connect·@require)는 안 바꿈');
-  ok(Object.keys(HOF.JOBS).length === 4 && ['ext.nl', 'nbMarket', 'ext.fx'].every((k) => HOF.JOBS[k].mode && HOF.JOBS[k].ops && HOF.JOBS[k].beatMaxH), '넘김 표: KPIPA + 국중·시세·환율(쓰기 꼴·운영 쪽 쉬는 곳·소식 시간)');
+  ok(Object.keys(HOF.JOBS).length === 4 + HOF.EXT_HO.length && ['ext.nl', 'nbMarket', 'ext.fx', ...HOF.EXT_HO.map((x) => 'ext.' + x[0])].every((k) => HOF.JOBS[k].mode && HOF.JOBS[k].ops && HOF.JOBS[k].beatMaxH), '넘김 표: KPIPA + 국중·시세·환율(쓰기 꼴·운영 쪽 쉬는 곳·소식 시간)');
   L.done('t_ho3');
 })();

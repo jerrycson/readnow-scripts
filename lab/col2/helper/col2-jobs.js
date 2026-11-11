@@ -67,9 +67,39 @@ function makeJobs(ctx) {
   const handed = (k) => !!(ctx.handed && ctx.handed(k) && ctx.opOut);
   /* (11/11 col2rep3) 🅣 알라딘 TTB '이 주소의 OpenAPI 서비스는 종료' — 11/11 두 PC 모두 41·34건 100% 같은 답(운영 ext_run.lastErr.ttb도 같은 글) = 책 문제가 아니라 알라딘 쪽 주소 문제
    *  → 못 읽음으로 세지 않고 '건너뜀(출처 서비스 끝)' · 그날은 더 묻지 않음(헛 요청 하루 수십 건 줄임) · 주소가 바뀌면 운영 공용 파일 고침 뒤 다음 날 다시 */
-  const HO_DUE = { 'ext.nl': (a) => { const isbn = a.isbn; if (!isbn) return 'yes'; const g = ctx.want('ext_basic', isbn); if (g && g.err) return 'yes'; if (!(g && g.have)) { if (!a.preAt) a.preAt = now(); return now() - a.preAt < 10 * 60e3 ? 'wait' : 'yes'; }
-    const p = g.v && g.v.src ? g.v.src.nl : null; if (!p || p.err) return 'yes'; const ref = Date.parse(p.chk || p.at || '') || 0; return now() - ref >= 120 * 864e5 ? 'yes' : 'no'; } };
+  /* (11/11 col2rep5) 🔀 넘긴 외부 정보(국중에서 모든 출처로 넓힘) — 운영처럼 다시 볼 날이 지난 책만 묻는다: 먼저 운영 문서(ext_<묶음>/<ISBN>)를 웹앱에서 받아 보고(바깥 요청 없음) · 10분 안에 못 받으면 그냥 읽음
+   *  다시 볼 날 = 운영 공용 파일 기본(ReadnowExt.cfgOf — 기본 정보 120일 · 장터 7일 · 해외 14일 · 도서관·전자책 30일) · col2.json jobs.refreshDays {출처: 날}로 바꿈
+   *  ISBN 없는 상품(장터 시세만)은 운영 수집기가 그대로 함 → 번외는 묻지 않음('no') */
+  const extBytes = (v) => Buffer.byteLength(JSON.stringify(v), 'utf8'); /* 운영 extBytes와 같음(바이트 · 한글 3바이트) */
+  const HO_EXT = (t) => !!(t && t.cls === 'ext' && t.input === 'book' && t.src && t.src !== 'fx');
+  function refreshOf(src) { const o = C().refreshDays || {}; if (+o[src] > 0) return +o[src]; let cf = null; try { const x = X(); cf = x && x.cfgOf ? x.cfgOf({}) : null; } catch (e) {} const d = cf && cf.src && cf.src[src] ? +cf.src[src].refreshDays : NaN; return d > 0 ? d : 120; }
+  function hoDue(t, a) { const isbn = String(a.isbn || ''); if (!/^97[89]\d{10}$/.test(isbn)) return 'no'; const g = ctx.want(t.col, isbn); if (g && g.err) return 'yes'; if (!(g && g.have)) { if (!a.preAt) a.preAt = now(); return now() - a.preAt < 10 * 60e3 ? 'wait' : 'yes'; }
+    const p = g.v && g.v.src ? g.v.src[t.src] : null; if (!p || (p.err && !p.sig)) return 'yes'; const ref = Date.parse(p.chk || p.at || '') || 0; return now() - ref >= refreshOf(t.src) * 864e5 ? 'yes' : 'no'; }
+  /* (11/11 col2rep5) 🔎 운영 값 먼저 보기 — 넘기지 않은 외부 정보 그림자는 운영이 그 출처로 이미 읽어 둔 책만 바깥에 묻는다
+   *  11/11 진단(HOME 0.1.24): 외부 정보 견줌 약 1,000건에 '운영 값 없음'이 약 3,200건 — 바깥 요청 넷 중 셋이 견줄 수 없는 헛 요청(교보 448·eBay 348·중고나라 334·당근 334·중고닷 316·리디 301…)
+   *   → 표본은 못 채우고(중고나라·당근 하루 8건) 바깥 사이트에는 사람 아닌 요청만 늘어남
+   *  → 웹앱에서 운영 문서를 먼저 받아(바깥 요청 없음 · 받은 문서는 견줄 때 다시 씀) 그 출처 칸이 없거나 운영도 못 읽은 책이면 묻지 않음('pre' — 하루 셈에 따로 · 표본 셈·차례 셈에 안 듦)
+   *  · 웹앱이 preWaitMin분(기본 10) 안에 못 넘기면 예전처럼 묻고 · ISBN 없는 상품은 운영 문서 이름을 몰라 견줄 수 없으니 묻지 않음 · col2.json jobs.preCheck:false면 예전처럼 */
+  function preOf(t, a) { if (!HO_EXT(t) || C().preCheck === false || handed(t.k)) return 'go'; const isbn = String(a.isbn || '');
+    if (!/^97[89]\d{10}$/.test(isbn)) return 'drop:ISBN 없음(장터 시세만 · 운영 문서 이름 모름)'; const g = ctx.want(t.col, isbn); if (g && g.err) return 'go';
+    if (!(g && g.have)) { if (!a.preAt) a.preAt = now(); return now() - a.preAt < (C().preWaitMin == null ? 10 : +C().preWaitMin) * 60e3 ? 'wait' : 'go'; }
+    const p = g.v && g.v.src ? g.v.src[t.src] : null; if (!p) return 'drop:운영이 아직 이 출처로 읽지 않은 책'; if (!p.sig && !p.at) return 'drop:운영도 이 출처로 못 읽은 책'; return 'go'; }
+  /* 그 일 차례 앞쪽(최대 PRE_SCAN개)에서 바깥에 물어도 되는 책을 맨 앞으로 — 없으면 이번엔 그 일을 고르지 않음(다른 일이 차례를 받음 · 굶지 않음) */
+  const PRE_SCAN = 12;
+  function preReady(k) { const t = TK.byK[k]; const q = S.q[k] || []; if (!HO_EXT(t)) return q.length > 0; let seenN = 0;
+    const ho = handed(k); /* 넘긴 일 — 운영 규칙(다시 볼 날)으로 고름 · 기다리는 동안 다른 일이 차례를 받음(예전엔 1.5초씩 다른 일까지 멈춤) */
+    for (let i = 0; i < q.length && seenN < PRE_SCAN; i++) { const a = q[i];
+      if (ho) { const due = hoDue(t, a); if (due === 'yes') { if (i) { q.splice(i, 1); q.unshift(a); } return true; } if (due === 'wait') { seenN++; continue; }
+        q.splice(i, 1); i--; (S.seen[k] || (S.seen[k] = {}))[a.key] = kday(); if (ctx.beat) ctx.beat(k); record(t, a, a.key, 'skip', [], { why: /^97[89]\d{10}$/.test(String(a.isbn || '')) ? `다시 볼 날 전(운영 규칙 ${refreshOf(t.src)}일 · 넘긴 일)` : 'ISBN 없는 상품은 운영 수집기가 그대로 함(넘긴 일)', quiet: true, noItem: true }); continue; }
+      const st = preOf(t, a); if (st === 'go') { if (i) { q.splice(i, 1); q.unshift(a); } return true; }
+      if (st === 'wait') { seenN++; continue; } q.splice(i, 1); i--; (S.seen[k] || (S.seen[k] = {}))[a.key] = kday(); preDrop(t, st.slice(5)); }
+    return false; }
+  function preDrop(t, why) { const d = kday(); if (S.day.d !== d) S.day = TK.dayNew(d); const s = TK.dayAdd(S.day, t.k, 'pre', []); const pw = s.preWhy || (s.preWhy = {}); pw[why] = (pw[why] || 0) + 1;
+    S.preN = (S.preN || 0) + 1; if (now() - (S.preLog || 0) > 30 * 60e3) { S.preLog = now(); ctx.note(`🔎 운영 값 먼저 보기 — 운영이 아직 읽지 않은 책 ${S.preN}건은 바깥에 묻지 않음(헛 요청 줄임 · 견줄 수 있는 책만 묻기)`, { k: 'read', m: '그림자 일' }); S.preN = 0; } save(); }
   const ENDED_RE = /OpenAPI\s*서비스는\s*종료|서비스가\s*종료/;
+  /* (11/11 col2rep5) 📚 도서관 정보나루 '…건 이상 요청 시 IP 등록이 필요' — 11/11 HOME 289건·JS-MAIN 20건 모두 이 답(이 PC 공인 IP가 키 계정에 없음 · 운영 로거는 됨) = 책 문제가 아님
+   *  → 그날은 이 PC에서 더 묻지 않음(헛 요청 하루 수백 건 · 같은 운영 키의 하루 셈을 번외가 먹지 않게 — 약속 36 무손해) · 키 없음·틀림은 30분 쉼(웹앱이 키를 다시 넘길 때까지) */
+  const DAYSTOP_RE = /IP\s*등록이\s*필요/; const KEYERR_RE = /키|key|401|403/i;
 
   /* 하나 하기 → { did, rest(ms), why } */
   async function step() {
@@ -93,11 +123,14 @@ function makeJobs(ctx) {
     if (V) V.otherTurn();
     /* (11/10 밤 col2n) 표본이 모자란 일부터 — 예전엔 차례대로 돌아(일 수만큼 나눔) 표본 30개를 일찍 채운 일도 같은 몫을 받아, 하루 1,600장 몫이 낮 12시쯤 다 쓰이면 남은 일은 30개를 못 채움
      *  → 오늘 해 본 수(견줌+못 읽음+운영 값 없음+건너뜀)가 가장 적은 일 먼저(같으면 예전 차례) · 모든 일이 표본을 채운 뒤엔 다시 고르게 */
-    const k = pickK(L2); const t = TK.byK[k]; const SK = siteOf(k); const SP = ctx.site && SK ? { take: () => ctx.site.take(SK), ok: () => ctx.site.ok(SK), fail: (x) => ctx.site.fail(SK, x) } : ctx.pace; /* 바깥 일은 그 사이트 몫 */ const a = S.q[k].shift(); (S.seen[k] || (S.seen[k] = {}))[a.key] = kday(); { const sk = Object.keys(S.seen[k]); if (sk.length > SEENMAX) for (const x of sk.slice(0, sk.length - SEENMAX)) delete S.seen[k][x]; }
-    if (S.ended && S.ended[k] === kday()) { record(t, a, a.key, 'skip', [], { why: '출처 서비스 끝(알라딘이 이 주소의 OpenAPI를 끝냄) — 오늘은 묻지 않음', quiet: true }); return { did: true }; }
+    /* (11/11 col2rep5) 🔎 운영 값 먼저 보기 · 🔑 키 쉼 — 차례 앞쪽에 바깥에 물을 책이 없는 일 · 키 문제로 쉬는 일은 이번엔 고르지 않음(다른 일이 차례를 받음) */
+    const L3 = L2.filter((k0) => !(S.pause && S.pause[k0] > now()) && preReady(k0));
+    if (!L3.length) return { did: false, rest: 2000, why: '외부 정보 — 운영 문서 먼저 받는 중(바깥 요청 없음)' };
+    const k = pickK(L3); const t = TK.byK[k]; const SK = siteOf(k); const SP = ctx.site && SK ? { take: () => ctx.site.take(SK), ok: () => ctx.site.ok(SK), fail: (x) => ctx.site.fail(SK, x) } : ctx.pace; /* 바깥 일은 그 사이트 몫 */ const a = S.q[k].shift(); (S.seen[k] || (S.seen[k] = {}))[a.key] = kday(); { const sk = Object.keys(S.seen[k]); if (sk.length > SEENMAX) for (const x of sk.slice(0, sk.length - SEENMAX)) delete S.seen[k][x]; }
+    if (S.ended && S.ended[k] === kday()) { record(t, a, a.key, 'skip', [], { why: '출처가 오늘 이 PC 요청을 받지 않음(서비스 끝 · IP 등록 필요) — 오늘은 묻지 않음', quiet: true, noItem: true }); return { did: true }; }
     /* (11/11 col2rep3) 🔀 넘긴 국중 — 운영처럼 다시 볼 날(120일)이 지난 책만 묻는다: 먼저 운영 문서(ext_basic/<ISBN>)를 웹앱에서 받아 보고(바깥 요청 없음) · 10분 안에 못 받으면 그냥 읽음 */
-    if (t.src && handed(k) && TK.byK[k] && HO_DUE[k]) { const due = HO_DUE[k](a); if (due === 'wait') { S.q[k].push(a); delete S.seen[k][a.key]; return { did: false, rest: 1500, why: '넘긴 일 — 운영 문서 먼저 받는 중' }; }
-      if (due === 'no') { record(t, a, a.key, 'skip', [], { why: '다시 볼 날 전(운영 규칙 120일 · 넘긴 일)', quiet: true }); return { did: true }; } }
+    if (HO_EXT(t) && handed(k)) { const due = hoDue(t, a); if (due === 'wait') { S.q[k].push(a); delete S.seen[k][a.key]; return { did: false, rest: 1500, why: '넘긴 일 — 운영 문서 먼저 받는 중' }; }
+      if (due === 'no') { if (ctx.beat) ctx.beat(k); record(t, a, a.key, 'skip', [], { why: /^97[89]\d{10}$/.test(String(a.isbn || '')) ? `다시 볼 날 전(운영 규칙 ${refreshOf(t.src)}일 · 넘긴 일)` : 'ISBN 없는 상품은 운영 수집기가 그대로 함(넘긴 일)', quiet: true, noItem: true }); return { did: true }; } }
     const t0 = now(); let r;
     if (t.reader === 'al') { const p = TK.pathOf(t, a, own()); if (!p) { record(t, a, a.key, 'skip', [], { why: '정한 주소 꼴이 아님(또는 우리 숍)' }); return { did: true }; }
       let core, br; try { core = await ctx.core(); br = await ctx.browser(); } catch (e) { S.q[k].unshift(a); delete S.seen[k][a.key]; ctx.pace.fail('error'); return { did: false, rest: 10e3, why: '작업 창 준비 실패: ' + e.message }; }
@@ -113,6 +146,8 @@ function makeJobs(ctx) {
       S.curSite = SK; try { r = await extCall(t, a); } catch (e) { r = { ok: false, why: e.message }; } finally { S.curSite = null; } if (r && /HTTP (429|503)/.test(String(r.why || ''))) SP.fail('429'); else if (r && r.ok === false) SP.fail('error'); else SP.ok(); }
     r = r || { ok: false, why: '빈 응답' }; const ms = now() - t0;
     if (r.skip) { record(t, a, a.key, 'skip', [], { why: r.skip, ms }); return { did: true }; }
+    if (!r.ok && t.cls === 'ext' && DAYSTOP_RE.test(String(r.why || ''))) { (S.ended || (S.ended = {}))[k] = kday(); record(t, a, a.key, 'fail', [], { why: String(r.why || '').slice(0, 120), ms }); ctx.note(`${t.name} — '이 PC IP 등록이 필요' 답 → 오늘은 이 PC에서 더 묻지 않음(키 계정에 이 PC 공인 IP를 넣으면 다음 날부터)`, { k: 'read', l: 'warn', m: t.name }); return { did: true }; }
+    if (!r.ok && t.cls === 'ext' && failKey(r.why) === '키 없음·틀림') { (S.pause || (S.pause = {}))[k] = now() + 30 * 60e3; }
     if (!r.ok && t.cls === 'ext' && ENDED_RE.test(String(r.why || ''))) { (S.ended || (S.ended = {}))[k] = kday(); record(t, a, a.key, 'skip', [], { why: '출처 서비스 끝 — ' + String(r.why || '').slice(0, 80), ms }); return { did: true }; }
     if (!r.ok) { record(t, a, a.key, r.needLogin ? 'skip' : 'fail', [], { why: r.why || '못 읽음', ms }); return { did: true }; }
     queue(t, a, r, ms); settle(); save(); return { did: true }; }
@@ -158,6 +193,8 @@ function makeJobs(ctx) {
     if (ctx.opOut('kpipa', 'mkt_kpipa', id, { date: `${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6)}`, [sh.type]: { series: sh.series, at } }, { hist: pv ? { at, type: sh.type, old: pv } : null })) ctx.note(`🔀 넘긴 일 📚 KPIPA ${id} ${sh.type === 'onOff' ? '판매채널별' : '도서유형별'} — ${pv ? '바뀐 값(옛 값은 history)' : '새 날'}을 운영 칸에 맡김(웹앱이 씀)`, { k: 'read', m: '🔀 넘김' }); }
   /* (11/11 col2rep3) 🔀 넘긴 국중 — 운영 extSave와 같은 결과 꼴 { at, chk, sig, none, d, by, q } · 지문은 운영 공용 파일 그대로 · 같음·바뀜·없음 판단과 옛 값 보관·색인은 웹앱이 운영 문서를 다시 읽고 함 */
   function hoExt(t, w) { if (!handed(t.k)) return; const res = w.res || {}; if (!res.ok || res.skip) return; const x = X(); if (!x || !x.sig) return; let d = res.d == null ? null : JSON.parse(JSON.stringify(res.d)); const at = new Date().toISOString();
+    if (ctx.beat) ctx.beat(t.k); /* 값이 같아도 소식(beat) — 운영이 넘김을 풀지 않게 */
+    if (d) { let g = 0; while (extBytes(d) > 150000 && g++ < 12) { if (Array.isArray(d.items) && d.items.length > 5) d.items = d.items.slice(0, Math.ceil(d.items.length / 2)); else if (d.kv) d.kv = null; else break; d.trunc = true; } } /* (11/11 col2rep5) 운영 extSave와 같은 줄임(출처 하나 150KB · 장터 글 목록이 길면 반씩) — 지문도 줄인 값으로 */
     const obj = { at, chk: at, sig: x.sig({ none: !!res.none, d }, t.src), none: !!res.none, d, by: '번외 ' + ctx.pc(), q: (d && d.q) || null };
     if (ctx.opOut(t.k, t.col, String(w.id), { obj, title: (w.a && w.a.title) || null, author: (w.a && w.a.author) || null })) ctx.note(`🔀 넘긴 일 ${t.name} ${w.id} — 운영 칸에 맡김(웹앱이 운영 문서와 견줘 같으면 확인 시각만 · 바뀌면 옛 값 보관 뒤)`, { k: 'read', m: '🔀 넘김' }); }
   /* (11/11 col2rep3) 🔀 넘긴 시세 — 떼어 온 운영 nbMarketJob이 만든 문서 그대로 · 시세 지문(sig = 중간값|최저|개수)과 history 한 줄은 운영과 같은 꼴 */
@@ -183,7 +220,7 @@ function makeJobs(ctx) {
       else if (CMP.stab(pv.series) === CMP.stab(sh.series)) cmp = { verdict: 'same', reasons: [] }; /* 운영 kpSig와 같은 셈(칸 순서 상관없이 같은 값) */
       else { const ageH = (now() - Date.parse(pv.at || 0)) / 3600e3; cmp = { verdict: 'diff', reasons: [ageH >= 3 ? 'old' : 'diff'], rows: [{ f: sh.type, k: 'diff', prod: pv.series, shadow: sh.series }], ageH: Number.isFinite(ageH) ? Math.round(ageH * 10) / 10 : null }; } } /* 최근 7일은 공표 뒤 고쳐질 수 있어 운영도 3시간마다 다시 받음 → 3시간 넘은 운영 값이면 '오래됨' */
     else cmp = CMP.compareMap(v || null, w.sh || {}, t.map || {}, { move: t.move, prodAt: t.at && v ? v[t.at] || atOf(v) : atOf(v) });
-    if (t.k === 'kpipa') hoKp(w, v, cmp); else if (t.k === 'nbMarket') hoNb(w); else if (t.src === 'fx') hoFx(w, v); else if (t.cls === 'ext' && HO_DUE[t.k]) hoExt(t, w);
+    if (t.k === 'kpipa') hoKp(w, v, cmp); else if (t.k === 'nbMarket') hoNb(w); else if (t.src === 'fx') hoFx(w, v); else if (HO_EXT(t)) hoExt(t, w);
     record(t, w.a, w.id, cmp.verdict, cmp.reasons || [], { ms: w.ms, rows: (cmp.rows || []).filter((x) => x.k !== 'same').slice(0, 8), how: cmp.how || null, ageH: cmp.ageH == null ? null : cmp.ageH, why: cmp.why || null }); }
 
   /* 기록 — col2_jobs 한 건 · col2_jday 하루 요약(일마다 같음 비율·다름 까닭·넘길 수 있음) · 기록창 한 줄 */
@@ -204,7 +241,7 @@ function makeJobs(ctx) {
     if (!x.quiet) ctx.note(`${t.name} ${id} — ${lab}${reasons && reasons.length ? '(' + reasons.map((r) => TK.WHY[r] || r).join('·') + ')' : ''}${x.why ? ' · ' + x.why : ''}`, { k: 'read', l: v === 'same' ? 'ok' : v === 'diff' && reasons.some((r) => TK.UNEXPLAINED.includes(r)) ? 'warn' : v === 'fail' ? 'warn' : 'info', m: t.name, d: { task: t.k, v, ms: x.ms || null } });
     if (ps.can && !(was && was.can)) ctx.note(`✅ ${t.name} — 오늘 '넘길 수 있음'(표본 ${ps.n} · 같음 ${ps.rate}% · ${ps.rule})`, { k: 'read', l: 'ok', m: t.name });
     save(); }
-  function summary() { const P0 = P(); const o = {}; for (const [k, s] of Object.entries(S.day.t || {})) { const t = TK.byK[k]; o[k] = { name: t ? t.name : k, n: s.n, same: s.same, diff: s.diff, un: s.un, fail: s.fail, noprod: s.noprod, skip: s.skip, why: s.why, failWhy: s.failWhy ? Object.fromEntries(Object.entries(s.failWhy).sort((a, b) => b[1] - a[1]).slice(0, 6)) : undefined, pass: TK.passOf(s, P0, k) }; } return o; }
+  function summary() { const P0 = P(); const o = {}; for (const [k, s] of Object.entries(S.day.t || {})) { const t = TK.byK[k]; o[k] = { name: t ? t.name : k, n: s.n, same: s.same, diff: s.diff, un: s.un, fail: s.fail, noprod: s.noprod, skip: s.skip, pre: s.pre || 0, preWhy: s.preWhy || undefined, why: s.why, failWhy: s.failWhy ? Object.fromEntries(Object.entries(s.failWhy).sort((a, b) => b[1] - a[1]).slice(0, 6)) : undefined, pass: TK.passOf(s, P0, k) }; } return o; }
   /* 화면용 — 일 목록(이 PC가 하는지 · 차례 · 오늘 셈 · 넘길 수 있음) */
   function view() { const pl = plan(); const sm = summary(); const lg = kind() === 'logger';
     return { kind: kind(), pc: ctx.pc(), d: S.day.d, rule: TK.passOf(null, P()).rule, wait: S.wait.length, busy: busy(), tasks: TK.TASKS.map((t) => ({ k: t.k, name: t.name, ops: t.ops, cls: t.cls, reader: t.reader, col: t.col, who: t.who, state: t.state, why: t.why || null, note: t.note || null,

@@ -44,6 +44,7 @@
    *  basic(도서 정보)은 바뀌지 않는 값이라 다르면 '까닭 모름' · 장터·외국·전자책·도서관은 운영이 oldH시간 넘게 전에 봤으면 '운영 값이 오래됨' */
   function compareExt(X, src, prev, res, o) { o = o || {}; if (!res || res.skip) return { verdict: 'skip', reasons: [], why: res && res.skip };
     if (!res.ok) return { verdict: 'fail', reasons: [], why: res.why || '못 읽음' }; if (!prev) return { verdict: 'noprod', reasons: [] };
+    if (!prev.sig && !prev.at) return { verdict: 'noprod', reasons: [], why: '운영도 이 출처로 못 읽음(실패만 적힘)' }; /* (11/11 col2rep5) 예전엔 운영 칸에 실패(err)만 있어도 지문이 없어 '까닭 모를 다름'으로 셈 */
     let d = res.d == null ? null : JSON.parse(JSON.stringify(res.d)); const sg = X.sig({ none: !!res.none, d }, src); const same = X.sameSig ? X.sameSig(src, prev, sg) : prev.sig === sg ? 'sig' : '';
     if (same) return { verdict: 'same', reasons: [], how: same, sig: sg, prodSig: prev.sig || null };
     const grp = (X.SOURCES[src] || {}).grp; const age = (Date.now() - Date.parse(prev.chk || prev.at || 0)) / 3600e3; let r;
