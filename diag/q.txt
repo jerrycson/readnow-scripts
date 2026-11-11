@@ -1,2 +1,2 @@
-doc=app_settings/cons_study
-# 982224645
+col2=2026-11-11
+# 952124384
