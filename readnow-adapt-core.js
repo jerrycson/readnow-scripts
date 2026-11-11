@@ -7,7 +7,7 @@
  */
 (function (root) {
   'use strict';
-  const VERSION = '0.1.0'; // (0.1.0) 첫 판 — 여러 길 추출·합의·지문·칸 건강·새 길 찾기·운영 파서 견줌·TTB 대체 견줌·목록 화면 주소 후보·SP 묶음 검색 계획
+  const VERSION = '0.1.1'; // (0.1.1) 목록 화면 정가 길 — 할인율(10%)을 정가로 읽던 것 고침(진단 blist 정가 5·10) // (0.1.0) 첫 판 — 여러 길 추출·합의·지문·칸 건강·새 길 찾기·운영 파서 견줌·TTB 대체 견줌·목록 화면 주소 후보·SP 묶음 검색 계획
 
   /* ── 도움 함수 ── */
   const txt = (el) => (el ? String(el.textContent || '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim() : '');
@@ -196,7 +196,7 @@
       { how: 'ctx', f: (b) => (ttxt(b).match(/[\d,]+\s*원\s*→\s*([\d,]+)\s*원/) || [])[1] || null },
     ] },
     priceList: { type: 'int', range: [100, 3000000], paths: [
-      { how: 'sel', f: (b) => { const e = b.querySelector('span.ss_p') || b.querySelector('del, strike, s'); return e ? txt(e) : null; } },
+      { how: 'sel', f: (b) => { const t = [...b.querySelectorAll('span.ss_p, del, strike, s')].map((e) => txt(e)).find((x) => x && /원/.test(x) && +String(x).replace(/[^\d]/g, '') >= 100); return t || null; } }, /* (0.1.1 rel4 진단) 첫 span.ss_p가 '(10%할인)'이면 10을 정가로 읽던 것 — '원'이 붙은 100 넘는 값만 */
       { how: 'ctx', f: (b) => (ttxt(b).match(/([\d,]+)\s*원\s*→/) || [])[1] || null },
     ] },
     salesPoint: { type: 'int', range: [0, 10000000], paths: [

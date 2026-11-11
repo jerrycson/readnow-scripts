@@ -124,5 +124,9 @@ const searchPage = (L, boxCls) => `<html><body>${L.map((b) => `<div class="${box
   ok(alertOf({ day: 'd', at: '2026-11-11T23:00:00Z', broken: [], warn: ['y24_product(화면 구조 바뀜)'] }, now).lv === 'amber' && alertOf({ day: 'd', at: '2026-11-09T00:00:00Z', broken: [], warn: [] }, now).k === 'adaptstale' && alertOf({ day: 'd', at: '2026-11-11T23:00:00Z', broken: [], warn: [] }, now) === null, '주의 = 노랑 · 점검 멈춤 = 노랑 · 문제없으면 없음');
   ok(/try \{ adaptAlerts\(add\); \} catch/.test(APP) && /\['Bestseller', '베스트셀러 \(공개 목록 화면\)'\]/.test(APP), "홈 '오늘 확인할 것'에 걸림 · 목록 종류 선택지 되살림");
 
+  { /* (rel4 진단 11/12) 베스트셀러 목록: 첫 span.ss_p가 '(10%할인)'이면 정가를 10으로 읽던 것 */
+    const h = '<html><body>' + [1, 2, 3].map((i) => `<div class="ss_book_box"><a href="/shop/wproduct.aspx?ItemId=40${i}"><b class="bo3">책${i}</b></a><ul><li><span class="ss_p">(10%할인)</span> <span class="ss_p">17,000원</span> → <span class="ss_p2"><b>15,300원</b></span></li></ul></div>`).join('') + '</body></html>';
+    const LX = A.extractList(D(h)); const r0 = LX.rows[0] || {}; ok(r0.priceList === 17000 && r0.priceSales === 15300, "목록 정가 = '원' 붙은 값(할인율 10을 정가로 안 읽음)", r0); }
+
   console.log(bad ? `❌ ${bad}개 실패` : '✓ 모두 통과'); process.exit(bad ? 1 : 0);
 })().catch((e) => { console.log('❌ 시험 오류', e.stack); process.exit(1); });

@@ -106,7 +106,7 @@ console.log('③ 보내기(y24WSend)');
   { const g = cut('function ledY24Guard()', '/* 맡김 — 돌려줌'); ok(!/rn-c2seen/.test(g.split('function ledY24HereWhy')[0]) && !/MJ-MAIN\(등록·출고 PC\) — 예스24 맡기기 안 함/.test(g), '장부 맡기기 지킴에서 「번외 없는 기기」「MJ-MAIN」 막이가 빠짐(원격 길)');
     ok(/const y24ok = !ledY24HereWhy\(\);/.test(T) && /function ledY24HereWhy\(\)[\s\S]{0,600}rn-c2seen/.test(T), '🤖 자동 내림은 예전 지킴(번외 있는 PC만 · 여러 기기가 겹쳐 맡지 않게)');
     ok(/const pr = await y24WSend\(jid, rows\);/.test(T) && /const pr = await y24WSend\(jid, \[P\.row\]\);/.test(T), '장부 맡기기·💲 판매가 모두 y24WSend');
-    const poll = cut('async function ledY24WPoll()', 'setTimeout(ledY24WPoll, 25000);'); ok(/if \(!run\.some\(\(\[, w\]\) => w\.job === jid\)\) continue; acks\.push\(jid\);/.test(poll), '장부 결과 받기는 이 기기가 맡긴 것만 ack(💲 판매가·원격 결과를 지우지 않음)');
+    const poll = cut('async function ledY24WPoll()', 'setTimeout(ledY24WPoll, 25000);'); ok(/if \(!run\.some\(\(\[, w\]\) => w\.job === jid\)\) continue; acks\.push\(jid\);/.test(poll) || /for \(const \[rid, w\] of run\) \{ if \(w\.job !== jid\) continue; acks\.push\(jid\);/.test(poll), /* (rel4b) 정밀 점검 11/11 판(main)과 같은 뜻 */ '장부 결과 받기는 이 기기가 맡긴 것만 ack(💲 판매가·원격 결과를 지우지 않음)');
     ok(/w\.via === 'relay'/.test(poll) && /y24WDocs\(/.test(poll), '원격 맡김은 맡김 문서에서 진행·결과');
     let head0 = ''; try { head0 = cp.execSync('git -C ' + JSON.stringify(ROOT) + ' show origin/main:src/readnow-collector.src.js', { maxBuffer: 64e6 }).toString(); } catch (e) {}
     const hd = (s) => s.split('\n').filter((l) => /^\/\/ @(match|grant|connect|require|include|noframes|run-at)/.test(l)).map((l) => l.replace(/\?v=[\d.]+/, '')).join('\n'); ok(!head0 || hd(head0) === hd(CS), '수집기 머리(@match·@grant·@connect·@require 수 · 판 번호 ?v= 빼고) 그대로');
