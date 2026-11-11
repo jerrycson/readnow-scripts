@@ -1,2 +1,4 @@
-shelfjobs=1
-# 2375123352
+slearn=1
+saud=1
+doc=app_settings/seller_learn,app_settings/seller_hyp,app_settings/seller_aud,app_settings/adapt_cfg,app_settings/bench
+# 3220931587
