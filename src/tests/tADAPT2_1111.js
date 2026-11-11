@@ -60,7 +60,7 @@ const R0 = Array.prototype.reduce; const PROTO = function () { return this.lengt
   ok(!M.get('f'), '제목만 같고 다른 단서가 없으면 맞추지 않음(틀린 SP 막음)');
   const eb = A.spBatchMatch2([{ ...L.rows[0], kind: '전자책', used: 'ebook' }], [items[0]]); ok(!eb.get('a'), '전자책 줄은 새책으로 잇지 않음');
   const spb = cut(CSRC, 'async function spBatchTick(o)', '\n/* (정범님 11/11 밤 ②');
-  ok(/'coverKey'\)\.limit\(per\)/.test(spb) && /A\.coverIsbn\(v\.coverKey\)/.test(spb) && /x\.isbnG && put\.get/.test(spb), '시장 지표·SP 표본 맞대기에 짐작 ISBN(ISBN 없어 0이던 것)');
+  ok(/'coverKey'(, 'spEvery' \/\* \(adapt4\) \*\/)?\)\.limit\(per\)/.test(spb) && /A\.coverIsbn\(v\.coverKey\)/.test(spb) && /x\.isbnG && put\.get/.test(spb), '시장 지표·SP 표본 맞대기에 짐작 ISBN(ISBN 없어 0이던 것)');
   ok(/A\.spBatchMatch2\(rows, pool\)/.test(spb) && /items\.filter\(\(x\) => !matched\.has\(x\.id\)\)/.test(spb), '한 쪽 줄을 남은 모든 상품과 견줌(묶음 덤)');
   ok(/if \(!o\.dry\) B\.set/.test(spb) && /nb && !o\.dry/.test(spb) && /dry: q\.spbatch === 'dry'/.test(CSRC), "셈만(spbatch=dry) — 쓰지 않고 몇 개를 어떻게 맞출지");
   ok(/for \(const id of tried\) if \(!matched\.has\(id\)\)/.test(spb) && /out\.notTried = left\.length - tried\.size/.test(spb), "못 맞춤(noMatch)은 찾아본 것만 · 안 찾아본 것은 notTried(7,510 noMatch가 대부분 '안 찾아봄'이던 것)");

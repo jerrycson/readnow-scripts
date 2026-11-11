@@ -357,9 +357,11 @@
     const cnt = new Map(); const all = doc.querySelectorAll ? doc.querySelectorAll('[class]') : []; let k = 0; for (const e of all) { if (++k > 6000) break; for (const c of String(e.getAttribute('class') || '').split(/\s+/)) { if (!c || /\d{3,}/.test(c) || c.length > 40) continue; cnt.set(c, (cnt.get(c) || 0) + 1); } }
     const cls = [...cnt.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, 40).map((x) => x[0]).sort(); const ldN = doc.querySelectorAll ? doc.querySelectorAll('script[type="application/ld+json"]').length : 0;
     return { kind, sig: hash(JSON.stringify([Object.entries(marks).map(([s, n]) => [s, n > 0 ? 1 : 0]), cls.slice(0, 30), ldN > 0])), marks, cls, ld: ldN }; }
-  function fpCompare(a, b) { if (!a || !b) return { same: null, lost: [], gained: [], jacc: null, changed: false }; const lost = Object.keys(a.marks || {}).filter((s) => (a.marks[s] || 0) > 0 && !((b.marks || {})[s] > 0)); const gained = Object.keys(b.marks || {}).filter((s) => (b.marks[s] || 0) > 0 && !((a.marks || {})[s] > 0));
+  function fpCompare(a, b) { if (!a || !b) return { same: null, lost: [], gained: [], jacc: null, changed: false }; /* (adapt4 11/11) 양쪽이 모두 시험한 조각만 견줌 — 11/11 '중고 화면 구조 바뀜' 경고의 실체: 공용 파일 0.1.3이 중고 최저가 길을 요약 칸으로 옮기며 '.Ere_usedsell_table .price' 조각을 지문 목록에서 뺐을 뿐(클래스 겹침 1.0 · 그 조각은 첫 쪽 최저가 길로 여전히 읽힘) → 엔진 판이 바뀐 날 헛 경고 · 한쪽만 시험한 조각은 untested로 따로 */
+    const am = a.marks || {}, bm = b.marks || {}; const both = (s) => Object.prototype.hasOwnProperty.call(am, s) && Object.prototype.hasOwnProperty.call(bm, s); const untested = [...Object.keys(am), ...Object.keys(bm)].filter((s) => !both(s));
+    const lost = Object.keys(am).filter((s) => both(s) && (am[s] || 0) > 0 && !(bm[s] > 0)); const gained = Object.keys(bm).filter((s) => both(s) && (bm[s] || 0) > 0 && !(am[s] > 0));
     const A = new Set(a.cls || []), B = new Set(b.cls || []); const inter = [...A].filter((x) => B.has(x)).length; const jacc = A.size || B.size ? Math.round((inter / new Set([...A, ...B]).size) * 1000) / 1000 : 1;
-    return { same: a.sig === b.sig, lost, gained, jacc, ldLost: !!(a.ld && !b.ld), changed: a.sig !== b.sig && (lost.length > 0 || jacc < 0.7 || (a.ld && !b.ld)) }; }
+    return { same: a.sig === b.sig, lost, gained, untested: [...new Set(untested)], jacc, ldLost: !!(a.ld && !b.ld), changed: a.sig !== b.sig && (lost.length > 0 || jacc < 0.7 || (a.ld && !b.ld)) }; }
 
   /* ── 칸 건강 ── results = 같은 종류 화면 여럿의 extract 결과 → 칸마다 채움률·합의율·범위 안 몫·길마다 채움률 */
   function healthOf(results, kind) { const R = (results || []).filter(Boolean); const K = KINDS[kind] || { fields: LIST_FIELDS }; const out = { kind, n: R.length, fields: {} };
@@ -489,6 +491,30 @@
       if (r) out.set(it.id, { sp: r.salesPoint ?? null, itemId: r.itemId, how, priceSales: r.priceSales ?? null, stock: r.stock ?? null, row: r }); }
     return out; }
 
+  /* ── (adapt4 11/11) SP 묶음 4판 — 한 검색어에 여러 책 번호(띄어쓰기 = '또는') ──
+   *  11/11 진단: ISBN 검색 한 쪽 = 1.17권(48쪽 → 56권) · 남은 6,119권 → 약 109시간. 같은 날 진단 blt로 확인: 알라딘 공개 검색은 'ISBN ISBN …'(띄어쓰기)를 '또는'으로 읽음
+   *  (ISBN 14개 한 검색어 → 첫 10줄이 모두 다른 견본 책 · K… 표지 코드도 같은 검색어에 섞여 그 책이 나옴) → 표지 이름이 ISBN 꼴이거나 K… 코드인 상품을 k개씩 한 쪽으로
+   *  · 표지 이름이 없는 상품만 지은이 묶음(같은 지은이 2권 넘게) → 제목 검색 · 쪽당 맞춘 수(길마다 성적)를 배워 성적 나쁜 길은 저절로 뒤로(yield) */
+  const kCode = (k) => { const s = String(k || '').toUpperCase(); return /^K\d{9}$/.test(s) ? s : null; };
+  const idKeyOf = (it) => NORM.isbn(it.isbn) || coverIsbn(it.coverKey) || kCode(it.coverKey) || null;
+  function spBatchPlan3(items, opt) { const o = { k: 12, maxQ: 400, kcode: true, author: true, yield: null, ...(opt || {}) }; const k = Math.min(Math.max(+o.k || 12, 2), 30);
+    const byI = new Map(), byA = new Map(), byT = new Map(); const solo = [];
+    for (const it of items || []) { let key = NORM.isbn(it.isbn) || coverIsbn(it.coverKey); if (!key && o.kcode) key = kCode(it.coverKey); if (key) { if (!byI.has(key)) byI.set(key, []); byI.get(key).push(it.id); continue; } solo.push(it); }
+    const Q = []; const keys = [...byI.keys()]; for (let i = 0; i < keys.length; i += k) { const part = keys.slice(i, i + k); Q.push({ q: part.join(' '), field: 'Multi', keys: part, ids: part.flatMap((x) => byI.get(x)), pri: 3 }); }
+    const au = (it) => { const a = String(it.author || '').split(/[,(·|]/)[0].replace(/\s+/g, ' ').trim(); return a.length >= 2 && a.length <= 20 && !/^(편집부|편집 ?부|저자|미상|작자 미상|기획|글|그림)$/.test(a) ? a : null; };
+    if (o.author) for (const it of solo) { const a = au(it); if (!a) continue; const kk = keyOf('str', a); if (!byA.has(kk)) byA.set(kk, { a, L: [] }); byA.get(kk).L.push(it); }
+    const yA = o.yield && o.yield.author, yT = o.yield && o.yield.title; const authorOk = !(yA && yA[0] >= 10 && yT && yT[0] >= 10 && yA[1] / yA[0] < yT[1] / yT[0]); /* 지은이 묶음 성적이 제목 검색보다 나쁘면(쪽 10개 넘게 본 뒤) 안 씀 */
+    const inA = new Set(); if (authorOk) for (const { a, L } of [...byA.values()].sort((x, y) => y.L.length - x.L.length)) { if (L.length < 2) continue; Q.push({ q: a, field: 'Author', ids: L.map((x) => x.id), pri: 2 }); L.forEach((x) => inA.add(x.id)); }
+    for (const it of solo) { if (inA.has(it.id)) continue; const q = cleanTitle(it.title); if (q.length < 2) continue; const kk = keyOf('str', q); if (!byT.has(kk)) byT.set(kk, { q, field: 'Title', ids: [], pri: 1 }); byT.get(kk).ids.push(it.id); }
+    Q.push(...byT.values()); Q.sort((a, b) => b.pri - a.pri || b.ids.length - a.ids.length); return Q.slice(0, o.maxQ); }
+  /* 한 쪽이 꽉 찼는데(줄 수 ≥ 쪽 크기) 못 맞춘 번호 = 잘렸을 수 있음(없는 책이 아님) → 다음 회차로 · 다 맞고 쪽이 넉넉하면 k를 늘림 */
+  function spMultiLearn(k, res) { const K = Math.min(Math.max(+k || 12, 2), 30); if (!res || !res.n) return K; if (res.full && res.miss > 0) return Math.max(4, K - 2); if (!res.full && res.hit / res.n >= 0.8 && res.rows < res.cap * 0.6) return Math.min(24, K + 2); return K; }
+  /* SP 다시 읽기 간격(일) — 7일마다 모두 다시 읽던 것 → 변동 적은 책은 길게(7 → 14 → 28일) · 많이 팔리는 책(3천 넘음)·크게 바뀐 책은 7일 */
+  function spKeepDays(prev, cur, prevDays) { const d0 = Math.min(Math.max(+prevDays || 7, 7), 28); if (cur == null || !Number.isFinite(+cur)) return 7; if (prev == null || !Number.isFinite(+prev)) return 7; const a = +prev, b = +cur; if (b >= 3000) return 7;
+    const rel = Math.abs(b - a) / Math.max(a, 1); const tiny = Math.abs(b - a) <= 3 && Math.max(a, b) < 30; if (tiny || rel <= 0.1) return Math.min(28, d0 * 2); if (rel <= 0.3) return d0; return 7; }
+  /* 유지 비용 셈(시간당 다시 읽을 권수) — 간격 표 [{every}] */
+  const spKeepPerH = (L) => { let t = 0; for (const x of L || []) t += 1 / (Math.min(Math.max(+x.every || 7, 7), 28) * 24); return Math.round(t * 10) / 10; }; /* reduce 안 씀(알라딘 화면 prototype.js) */
+
   /* ── 대기열·캐시·차등 갱신 ── 같은 회차에 같은 화면을 두 번 읽지 않고, 오래된 것·중요한 것부터 */
   function makeCache(ttlMs, max) { const M = new Map(); const T = ttlMs || 6 * 3600e3; const X = max || 2000; return { get: (k) => { const e = M.get(k); if (!e) return undefined; if (Date.now() - e.t > T) { M.delete(k); return undefined; } return e.v; }, set: (k, v) => { if (M.size >= X) M.delete(M.keys().next().value); M.set(k, { v, t: Date.now() }); return v; }, size: () => M.size }; }
   /* 차례 점수 = 지난 읽기부터 흐른 시간(시간) × 무게(우리 매물·벤치마킹·연구) ÷ (최근 값이 안 바뀐 횟수 + 1) — 자주 안 바뀌는 것은 덜 자주 */
@@ -547,6 +573,6 @@
   /* 하루 요약 한 줄(리드가 매일 봄) — 종류마다 점수·깨진 칸·죽은 길·지문 바뀜 */
   function dailyLine(H) { const parts = []; for (const [k, v] of Object.entries((H && H.kinds) || {})) { const j = v.judge || {}; parts.push(`${(KINDS[k] && KINDS[k].label) || (k === 'al_list' ? '알라딘 목록 화면' : k)} ${v.health ? Math.round(v.health.score * 100) : '-'}점${j.broken && j.broken.length ? ` · 깨짐 ${j.broken.join(',')}` : ''}${j.deadPaths && j.deadPaths.length ? ` · 죽은 길 ${j.deadPaths.map((d) => d.field + '/' + d.how).join(',')}` : ''}${v.fp && v.fp.changed ? ' · 화면 구조 바뀜' : ''}${v.guard && v.guard.bad && v.guard.bad.length ? ` · 운영 파서 어긋남 ${v.guard.bad.join(',')}` : ''}`); } return parts.join(' │ '); }
 
-  const api = { VERSION, drill, drillList, MUTS, tokOf, authorSame, bareTitle, KINDS, LIST_FIELDS, LIST_BOX, LISTK, Y24_LIST_FIELDS, NORM, same, keyOf, isbn10to13, extract, extractList, autoBoxes, fingerprint, fpCompare, healthOf, healthOfList, healthJudge, discover, verifyCand, heal, cssPath, guardCompare, GUARD_MAP, ttbCompare, TTB_FIELDS, LISTS, listUrls, spBatchPlan, spBatchMatch, sectionOf, sectionRows, spBatchPlan2, spBatchMatch2, coverIsbn, isbnOk, cleanTitle, isKrIsbn, makeCache, prioritize, changed, dailyLine, vote };
+  const api = { VERSION, drill, drillList, MUTS, tokOf, authorSame, bareTitle, KINDS, LIST_FIELDS, LIST_BOX, LISTK, Y24_LIST_FIELDS, NORM, same, keyOf, isbn10to13, extract, extractList, autoBoxes, fingerprint, fpCompare, healthOf, healthOfList, healthJudge, discover, verifyCand, heal, cssPath, guardCompare, GUARD_MAP, ttbCompare, TTB_FIELDS, LISTS, listUrls, spBatchPlan, spBatchMatch, sectionOf, sectionRows, spBatchPlan2, spBatchMatch2, spBatchPlan3, spMultiLearn, spKeepDays, spKeepPerH, kCode, idKeyOf, coverIsbn, isbnOk, cleanTitle, isKrIsbn, makeCache, prioritize, changed, dailyLine, vote };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.ReadnowAdapt = api;
 })(typeof window !== 'undefined' ? window : this);
