@@ -1,0 +1,166 @@
+// tSHOPC1111 — (11/11 shopc1) 🏷 우리숍 할인·배지·묶음 할인·쿠폰 · 손님 화면 할인가·배지·자동완성·함께 보면 좋은 책·최근 본 책·무료 배송 막대
+//   ① 순수 셈(cloud/shop-promo.js): 고르기 조합 · 값 셈(% · 원 · 끝자리 · 최저가 · 정가까지) · 기간(시작 전·켜짐·끝남·되돌림) · 겹치면 가장 새 규칙 하나 · 배지 합침 · NEW·할인 자동 · 미리 보기 · 묶음·쿠폰 나눠 깎기 · 손님 화면 셈(shop/shop-core.js)
+//   ② 클라우드 창구(가짜 Firestore + 진짜 http): /shop/list·item·b·shelf에 할인가·배지 · 거르기·정렬 · 되돌리기 · 기간 끝 · 주문 값(규칙·묶음·쿠폰 · 책마다 나눔) · 손님이 본 합계와 다르면 주문 안 함(잡지도 않음) · 자동완성 · 함께 보면 · 미리 보기 · 상품 문서 값은 그대로
+//   ③ 화면(RN_PORT · pw/ 안 harness.js 옆): 손님 화면 휴대폰 390px(배지·할인가·장바구니 막대·쿠폰) · 웹앱 🛍 우리숍 › 🏷 할인·배지(편리 단추 → 미리 보기 → 적용 두 번 → 되돌리기 두 번)
+// 실행: node src/tests/tSHOPC1111.js · 화면까지: RN_PORT=<웹앱·shop/·cloud/를 내는 포트> RN_SHOT=<사진 폴더/> node tSHOPC1111.js (pw/ 안) · 시험 자료에 실제 손님 정보 없음(손님A · 010-0000-0000)
+const fs = require('fs'); const path = require('path'); const http = require('http');
+let bad = 0; const ok = (c, m, x) => { if (!c) { bad++; console.log('  ❌', m, x === undefined ? '' : JSON.stringify(x).slice(0, 700)); } else console.log('  ✓', m); };
+const ROOTS = [path.resolve(__dirname, '..', '..'), path.resolve(__dirname, '..'), process.env.RN_REPO || ''].filter(Boolean);
+const find = (rel) => ROOTS.map((r) => path.join(r, rel)).find((x) => fs.existsSync(x));
+const P = require(find('cloud/shop-promo.js')); const SH = require(find('cloud/shop.js')); const BQ = require(find('shop/shop-core.js'));
+const APP = process.env.RN_APP || find('src/app.html') || find('app.html'); const T = fs.readFileSync(APP, 'utf8');
+(async () => {
+console.log('① 순수 셈');
+const NOW = Date.parse('2026-11-11T03:00:00Z'); const iso = (d) => new Date(NOW + d * 864e5).toISOString();
+const X = (o) => ({ id: 'a1', t: '어린 왕자', a: '생텍쥐페리', pb: '문학동네', pd: '2015-03', c: '소설/시/희곡', g: '상', p: 8000, lp: 12000, isbn: '9788900000001', at: iso(-30), ...o });
+const PV = (o) => ({ sku: 'A01BC123PK', cp: '국내도서>소설/시/희곡>외국소설', k: 'kr', ...o });
+{ ok(P.kindOf('국내도서>소설') === 'kr' && P.kindOf('외국도서>ELT') === 'en' && P.kindOf('음반>가요') === 'cd' && P.kindOf('DVD>영화') === 'dvd' && P.kindOf('블루레이>영화') === 'br' && P.kindOf('', 'KHKDVD12') === 'dvd' && P.kindOf('', 'KHKCPD1') === 'cd' && P.kindOf('', 'A01') === 'etc', '상품 종류: 분류 경로 첫 칸 → 국내·외국·CD·DVD·블루레이 · 없으면 관리 코드 · 그래도 없으면 기타');
+  const w = P.whereOf({ k: ['kr', 'zz'], g: ['상', '최상', 'x'], pMin: '5000', pMax: '', code: ' a01, khk-dvd ', q: '  어린 ', ids: ['a1', '../x'], isbn: ['978-89-000-0000-1', '123'], atFrom: '2026-10-01', junk: 1 });
+  ok(w.k.join() === 'kr' && w.g.join() === '상,최상' && w.pMin === 5000 && !('pMax' in w) && w.code.join() === 'A01,KHKDVD' && w.q === '어린' && w.ids.join() === 'a1' && w.isbn.join() === '9788900000001' && w.atFrom === '2026-10-01' && !('junk' in w), '고르기 다듬기: 모르는 값·이상한 번호는 버림 · 코드는 대문자');
+  const m = (wh, x, pv) => P.match(x || X(), pv || PV(), P.whereOf(wh), NOW);
+  ok(m({}) && m({ k: ['kr', 'en'] }) && !m({ k: ['dvd'] }) && m({ g: ['상'] }) && !m({ g: ['하'] }) && m({ pMin: 8000, pMax: 8000 }) && !m({ pMin: 8001 }) && m({ code: ['A01'] }) && !m({ code: ['B'] }), '조건 하나씩: 종류·등급·판매가 범위(끝 포함)·관리 코드 앞부분');
+  ok(m({ q: '어린 생텍' }) && !m({ q: '어린 헤세' }) && !m({ xq: '왕자' }) && m({ a: '생텍쥐' }) && m({ pb: '문학' }) && !m({ pb: '민음' }) && m({ c: '외국소설' }) && m({ ids: ['a1'] }) && !m({ ids: ['a2'] }) && m({ isbn: ['9788900000001'] }), '낱말(모두)·뺄 낱말·지은이·출판사·분야 경로·상품 번호·ISBN');
+  ok(m({ ageMin: 29 }) && !m({ ageMin: 31 }) && m({ atFrom: P.kst(NOW - 31 * 864e5), atTo: P.kst(NOW - 29 * 864e5) }) && !m({ atFrom: P.kst(NOW) }) && m({ yMin: 2010, yMax: 2015 }) && !m({ yMin: 2016 }) && !m({ yMin: 2000 }, X({ pd: null })), '들어온 날 범위·N일 넘음·출판 연도(모르면 안 맞음)');
+  ok(m({ k: ['kr'], g: ['상', '중'], pMax: 9000, q: '왕자' }) && !m({ k: ['kr'], g: ['상'], pMax: 7000 }), '여러 조건 = 모두 맞아야(그리고) · 한 칸 안 여러 개 = 하나만(또는)'); }
+{ const r = (act, o) => P.ruleOf({ act, ...o }); const np = P.newPrice;
+  ok(np(8000, 12000, r({ how: 'pct', v: -10 })) === 7200 && np(8050, 0, r({ how: 'pct', v: -10 })) === 7200 && np(8050, 0, r({ how: 'pct', v: -10 }, { round: 10 })) === 7250 && np(8000, 0, r({ how: 'won', v: -1500 })) === 6500, '% 할인·원 할인 · 끝자리(100원 기본 · 10원)');
+  ok(np(1500, 0, r({ how: 'pct', v: -50 })) === 1000 && np(900, 0, r({ how: 'pct', v: -50 })) === 900 && np(1500, 0, r({ how: 'pct', v: -50 }, { floor: 0 })) === 800 && np(3000, 0, r({ how: 'won', v: -99999 })) === 1000, '최저가 1,000원(기본) 밑으로 안 내림 · 이미 그 밑이면 그대로 · 최저가 0이면 끝자리까지');
+  ok(np(8000, 9000, r({ how: 'pct', v: 20 })) === 9000 && np(8000, 9000, r({ how: 'pct', v: 20 }, { cap: 0 })) === 9600 && np(8000, 0, r({ how: 'won', v: 500 })) === 8500 && np(9500, 9000, r({ how: 'pct', v: 10 })) === 9500, '인상: 정가까지만(끄면 넘음) · 이미 정가 넘은 값은 내리지 않음 · 원 인상');
+  ok(np(8000, 0, r({ how: 'pct', v: -999 })) === 1000 && P.ruleOf({ act: { how: 'pct', v: -999 } }).act.v === -90 && P.ruleOf({ act: { how: 'pct', v: 0 } }).act === null && P.ruleOf({ act: { how: 'x', v: 5 } }).act === null, '울타리: % 할인 최대 90% · 0이나 모르는 꼴은 값 그대로');
+  const R1 = P.ruleOf({ on: 1, from: iso(1) }), R2 = P.ruleOf({ until: iso(-1) }), R3 = P.ruleOf({ off: { at: iso(-1) } }), R4 = P.ruleOf({ from: iso(-1), until: iso(1) });
+  ok(P.ruleSt(R1, NOW) === 'wait' && P.ruleSt(R2, NOW) === 'end' && P.ruleSt(R3, NOW) === 'off' && P.ruleSt(R4, NOW) === 'on' && P.ruleSt(P.ruleOf({ on: 0 }), NOW) === 'off', '기간: 시작 전·끝남·되돌림(꺼짐)·켜짐');
+  const PP = P.promoOf({ newDays: 7, rules: [{ id: 'old', at: '2026-11-01', act: { how: 'pct', v: -10 }, b: ['pick'] }, { id: 'new', at: '2026-11-05', w: { g: ['상'] }, act: { how: 'pct', v: -30 }, until: iso(2) }, { id: 'bd', at: '2026-11-06', w: { pMin: 5000 }, b: ['rare'] }, { id: 'gone', at: '2026-11-07', act: { how: 'pct', v: -50 }, off: { at: iso(-1) } }, { id: 'later', at: '2026-11-08', act: { how: 'pct', v: -40 }, from: iso(1) }] });
+  const a = P.applyOne(X(), PV(), PP, NOW); const b = P.applyOne(X({ g: '중' }), PV(), PP, NOW);
+  ok(a.p === 5600 && a.p0 === 8000 && a.rid === 'new' && a.pe === iso(2) && b.p === 7200 && b.rid === 'old', '겹치면 가장 나중에 만든 켜진 규칙 하나(되돌린 것·시작 전은 빠짐) · 할인 끝 시각');
+  ok(a.bd.join() === 'sale,pick,rare' && !a.bd.includes('new'), '배지는 맞는 규칙 것을 모두 합침 · 값을 내리면 할인 배지 저절로');
+  const n = P.applyOne(X({ at: iso(-2) }), PV(), P.promoOf({ newDays: 7 }), NOW); const n2 = P.applyOne(X({ at: iso(-8) }), PV(), P.promoOf({ newDays: 7 }), NOW); const n3 = P.applyOne(X({ at: iso(-2) }), PV(), P.promoOf({ newDays: 0 }), NOW);
+  ok(n.bd.join() === 'new' && !n2.bd && !n3.bd && n.p === 8000 && !('p0' in n), "새로 들어온 책 NEW: 정한 기간(7일) 안만 · 0이면 끔 · 값은 그대로");
+  ok(P.applyOne(X(), PV(), P.promoOf({ rules: [{ id: 'x', act: { how: 'pct', v: -10 } }], saleBadge: false }), NOW).bd === undefined, "할인 배지 자동을 끄면 안 붙음");
+  ok(P.applyOne(X(), PV(), P.promoOf({ rules: [{ id: 'x', act: { how: 'pct', v: -10 }, until: iso(-0.001) }] }), NOW).p === 8000, '기간이 끝나면 원래 값');
+  const items = [X(), X({ id: 'a2', g: '하', p: 3000 }), X({ id: 'a3', p: 1100 }), X({ id: 'a4', p: 20000, lp: 21000 })]; const pvOf = (id) => PV(id === 'a4' ? { k: 'en', cp: '외국도서>ELT' } : {});
+  const pv = P.preview(items, pvOf, P.promoOf({ rules: [{ id: 'z', at: '2026-01-01', w: { ids: ['a1'] }, act: { how: 'pct', v: -10 } }] }), { act: { how: 'pct', v: -20 }, w: { k: ['kr'] } }, NOW);
+  ok(pv.n === 3 && pv.all === 4 && pv.down === 3 && pv.same === 0 && pv.over === 1 && pv.floorHit === 1 && pv.sum0 === 7200 + 3000 + 1100 && pv.sum1 === 6400 + 2400 + 1000 && pv.kinds.kr === 3 && pv.sample.length === 3 && !pv.whole, '미리 보기: 맞는 수·내림·그대로·겹친 규칙을 이김·최저가에 걸림·합 전후·종류별 · 쓰기 없음');
+  ok(P.preview(items, pvOf, {}, { act: { how: 'pct', v: 10 } }, NOW).whole && P.preview(items, pvOf, {}, { act: { how: 'pct', v: 10 } }, NOW).capHit === 1, '고르기 없음 = 전체(표시) · 인상은 정가에 걸린 수'); }
+{ const cfg = { shipFee: 3500, freeOver: 30000 }; const L = [{ id: 'a', p: 10000 }, { id: 'b', p: 7000 }, { id: 'c', p: 3010 }];
+  const PP = P.promoOf({ bundle: { on: 1, n: 3, pct: 10 }, coupons: [{ code: 'fall10', how: 'pct', v: 10, min: 15000 }, { code: 'WON2000', how: 'won', v: 2000 }, { code: 'OLD', how: 'won', v: 500, until: iso(-1) }, { code: 'SOON', how: 'won', v: 500, from: iso(1) }] });
+  const q = P.quote(L, PP, cfg, '', NOW); ok(q.sum0 === 20010 && q.bundle === 2000 && q.sum === 18010 && q.lines.reduce((a, x) => a + x.p, 0) === q.sum && q.fee === 3500 && q.total === 21510 && q.free.left === 11990 && q.lines.every((x) => x.p <= x.p0 && x.p >= 0), '묶음 할인 3권 10%(10원 단위) · 책마다 나눠 깎아 합 = 낸 책값 · 배송비 · 무료 배송까지 남은 값');
+  const q2 = P.quote(L, PP, cfg, ' fall-10 ', NOW); ok(q2.coupon && q2.coupon.code === 'FALL10' && q2.coupon.d === 1800 && q2.sum === 16210 && q2.disc === 3800 && q2.lines.reduce((a, x) => a + x.p, 0) === 16210 && !q2.cpErr, '쿠폰 %: 묶음 할인 뒤 값에 · 번호 대소문자·띄어쓰기 무시');
+  ok(P.quote(L.slice(0, 1), PP, cfg, 'FALL10', NOW).cpErr && /15,000원/.test(P.quote(L.slice(0, 1), PP, cfg, 'FALL10', NOW).cpErr) && /없는/.test(P.quote(L, PP, cfg, 'NOPE', NOW).cpErr) && /끝났/.test(P.quote(L, PP, cfg, 'OLD', NOW).cpErr) && /아직/.test(P.quote(L, PP, cfg, 'SOON', NOW).cpErr), '쿠폰 안 됨: 최소 금액·없는 번호·기간 끝·시작 전 — 까닭을 손님 말로');
+  const q3 = P.quote([{ id: 'a', p: 1500 }], PP, cfg, 'WON2000', NOW); ok(q3.sum === 0 && q3.fee === 0 && q3.total === 0 && q3.lines[0].p === 0, '원 쿠폰이 책값보다 크면 0원까지만(마이너스 0)');
+  const q4 = P.quote(L.slice(0, 2), PP, { shipFee: 3500, freeOver: 17000 }, 'WON2000', NOW); ok(q4.sum === 15000 && q4.fee === 3500 && q4.nextB.need === 1, '무료 배송 기준은 깎은 뒤 책값(17,000 → 15,000이라 배송비) · 1권 더 담으면 묶음 할인 알림');
+  const pp = P.pubPromo({ bundle: { on: 1, n: 3, pct: 10 }, coupons: [{ code: 'SECRET1', v: 5 }], rules: [{ id: 'x', nm: '내부 메모', act: { how: 'pct', v: -10 } }] }, NOW); ok(pp.bundle.n === 3 && pp.coupon === 1 && !JSON.stringify(pp).includes('SECRET') && !JSON.stringify(pp).includes('내부 메모'), '손님 화면 설정엔 묶음 할인·쿠폰 있음만 — 쿠폰 번호·규칙 내용은 안 나감'); }
+{ ok(JSON.stringify(BQ.BADGE) === JSON.stringify(P.BADGES), '배지 이름: 손님 화면(shop-core)과 클라우드 셈이 같음');
+  ok(BQ.saleOf({ p: 7200, p0: 8000, lp: 12000 }).pct === 10 && BQ.saleOf({ p: 8000, lp: 12000 }).from === 'lp' && BQ.saleOf({ p: 8000 }) === null, '손님 화면 할인율: 할인 규칙이면 원래 우리 값 기준 · 아니면 정가 기준(예전 그대로)');
+  ok(BQ.leftTxt(new Date(NOW + 3 * 864e5).toISOString(), NOW) === '3일 남음' && BQ.leftTxt(new Date(NOW + 3600e3).toISOString(), NOW) === '오늘까지' && BQ.leftTxt(new Date(NOW - 1).toISOString(), NOW) === '' && /까지$/.test(BQ.leftTxt(new Date(NOW + 20 * 864e5).toISOString(), NOW)), '할인 끝까지: 오늘까지·N일 남음·M/D까지·지났으면 없음');
+  const s1 = BQ.seenAdd([], { id: 'a', t: 'A', p: 1 }); const s2 = BQ.seenAdd(BQ.seenAdd(s1, { id: 'b', t: 'B', p: 2 }), { id: 'a', t: 'A', p: 1 }); ok(s2.map((x) => x.id).join() === 'a,b' && BQ.seenAdd(Array.from({ length: 30 }, (_, i) => ({ id: 'x' + i })), { id: 'n' }).length === 20 && !('buyer' in s1[0]), '최근 본 책: 같은 책은 맨 앞 · 20권까지 · 손님 정보 없음');
+  ok(BQ.freeLeft(12000, { freeOver: 30000 }) === 18000 && BQ.freeLeft(31000, { freeOver: 30000 }) === 0 && BQ.freeLeft(1, {}) === null && BQ.rangeOf('5000-10000').pmax === '10000' && BQ.rangeOf('20000-').pmax === '' && BQ.rangeOf('x').pmin === '', '무료 배송까지 · 값 범위 풀기');
+  const ob = BQ.orderBody({ name: '손님A', phone: '010-0000-0000', same: true, zip: '06000', addr1: '서울 어딘가 1길 1', agreeP: 1, agreeT: 1, cp: 'fall10', expect: 12000 }, [{ id: 'a' }]); const c = SH.checkOrder(ob); ok(c.ok && c.v.cp === 'FALL10' && c.v.expect === 12000 && SH.checkOrder({ ...ob, cp: undefined, expect: undefined }).v.expect === null, '주문서: 쿠폰·본 합계를 함께 보냄(없으면 예전 그대로)');
+  ok(BQ.cartAdd([], { id: 'a', t: 'A', p: 7200, p0: 8000 }).cart[0].p0 === 8000 && !('p0' in BQ.cartAdd([], { id: 'a', t: 'A', p: 8000 }).cart[0]), '장바구니에 할인 전 값도(줄 그어 보임)'); }
+{ const a = T.indexOf('/* ◆promo 시작'), b = T.indexOf('/* ◆promo 끝 */'); ok(a > 0 && b > a, '웹앱 ◆promo 덩어리 있음');
+  const F = new Function('S', 'window', T.slice(a, b) + '\nreturn { bqpIdsOf, bqpDraftOf, bqpSig, BQP_FEATS, BQP_PRESETS };')({}, {});
+  const I = F.bqpIdsOf('aladin_U1, 9788900000001\n978-89-000-0000-2 U2159834 123'); ok(I.ids.join() === 'aladin_U1,aladin_U2159834' && I.isbn.join() === '9788900000001,9788900000002', '개별 상품 칸: 상품 번호·숫자 번호·ISBN 13자리(빼기표 무시) · 짧은 숫자는 버림');
+  const d = F.bqpDraftOf({ how: 'pct-down', v: '15', k: ['kr'], b: ['pick'], floor: '', cap: false, ids: 'aladin_U1' }); ok(d.act.how === 'pct' && d.act.v === -15 && d.floor === 1000 && d.cap === 0 && d.w.ids[0] === 'aladin_U1' && F.bqpDraftOf({ how: 'won-up', v: 500 }).act.v === 500 && F.bqpDraftOf({ how: '' }).act === null, '웹앱 칸 → 규칙: % 할인은 −, 원 인상은 + · 비우면 최저가 1,000원');
+  ok(F.bqpSig(d) !== F.bqpSig({ ...d, act: { how: 'pct', v: -20 } }) && F.bqpSig(d) === F.bqpSig({ ...d, nm: '다른 이름', from: 'x' }), '미리 보기 표시: 값·고르기가 바뀌면 다시 봐야 적용(이름·기간만 바꾸면 그대로)');
+  ok(F.BQP_FEATS.filter((x) => x[1] === 'you').some((x) => /PG/.test(x[0])) && F.BQP_FEATS.some((x) => /재입고/.test(x[0])) && F.BQP_PRESETS.length >= 4, '쇼핑몰 기본 기능 점검표(결제 수단은 정범님 결정) · 편리 단추');
+  ok(!/\balert\(|\bconfirm\(|\bprompt\(/.test(T.slice(a, b)) && /y24Arm\(btn/.test(T.slice(a, b)), '브라우저 창 없음 · 적용·되돌리기는 두 번 누름');
+  for (const f of ['shop/shop.js', 'shop/shop-core.js', 'cloud/shop-promo.js']) { const t = fs.readFileSync(find(f), 'utf8'); ok(!/\balert\(|\bconfirm\(|\bprompt\(/.test(t) && !/console\.log/.test(t) && !/010-?(?!0000)\d{4}-?\d{4}/.test(t), f + ': 브라우저 창·console.log·전화번호 없음'); } }
+
+console.log('② 클라우드 창구(가짜 Firestore)');
+const store = {}; const col = (n) => (store[n] = store[n] || {}); const clone = (x) => JSON.parse(JSON.stringify(x));
+const FV = { serverTimestamp: () => new Date().toISOString(), arrayUnion: (...a) => ({ __au: a }) }; const merge = (cur, v) => { const o = { ...(cur || {}) }; for (const [k, x] of Object.entries(v)) o[k] = x && x.__au ? [...(o[k] || []), ...x.__au] : x; return o; };
+const snap = (n, id) => { const d = col(n)[id]; return { id, exists: d != null, data: () => (d == null ? undefined : clone(d)), ref: ref(n, id) }; };
+function ref(n, id) { return { _n: n, id, get: async () => snap(n, id), set: async (v, o) => { col(n)[id] = o && o.merge ? merge(col(n)[id], v) : merge({}, v); } }; }
+const C = (n) => { const q = (flt) => ({ where: (f, op, v) => q([...flt, [f, op, v]]), select: () => q(flt), get: async () => { const docs = Object.keys(col(n)).filter((id) => flt.every(([f, op, v]) => { const x = col(n)[id][f]; return op === '==' ? x === v : op === '>' ? String(x) > String(v instanceof Date ? v.toISOString() : v) : true; })).map((id) => snap(n, id)); return { size: docs.length, forEach: (f) => docs.forEach(f) }; } }); return { ...q([]), doc: (id) => ref(n, id) }; };
+const db = { getAll: async (...r) => r.map((x) => snap(x._n, x.id)), runTransaction: async (fn) => { const W = []; await fn({ get: (r) => r.get(), getAll: async (...r) => r.map((x) => snap(x._n, x.id)), set: (r, v, o) => W.push(() => r.set(v, o)) }); for (const w of W) await w(); } };
+const day = (d) => new Date(Date.now() + d * 864e5).toISOString();
+const LS0 = [['어린 왕자', '생텍쥐페리', '문학동네', '국내도서>소설/시/희곡>외국소설', '상', 8000, 'A01AA1', -40], ['데미안', '헤세', '민음사', '국내도서>소설/시/희곡>외국소설', '중', 5000, 'A01AA2', -20], ['코스모스', '칼 세이건', '사이언스북스', '국내도서>과학>천문학', '최상', 15000, 'B02CC3', -2],
+  ['Harry Potter', 'J.K. Rowling', 'Bloomsbury', '외국도서>어린이>그림책', '상', 12000, 'F01DD4', -100], ['명반 모음', '여러 사람', '음반사', '음반>가요', '중', 9000, 'KHKCPD5', -10], ['영화 한 편', '감독A', '영상사', 'DVD>영화', '하', 6000, 'KHKDVD6', -5], ['어린 왕자 그림책', '생텍쥐페리', '문학동네', '국내도서>어린이>그림책', '상', 7000, 'A01AA7', -1]];
+LS0.forEach(([t, a, pb, cp, g, p, sku, d], i) => { const n = i + 1; col('prd_listings')['aladin_U' + n] = { status: '판매중', active: true, qty: 1, price: p, grade: g, sku, title: t, isbn13: '978890000000' + n, bookId: 'bk' + n, registeredAt: day(d), photos: [] };
+  col('prd_books')['bk' + n] = { title: t, author: a, publisher: pb, pubDate: '2010-01-01', categories: [{ path: cp }], priceList: p + 6000, images: { front: { src: 'https://image.aladin.co.kr/' + n + '.jpg' } } }; });
+col('app_settings').shop = { open: 1, shipFee: 3500, freeOver: 30000, payDays: 2, bank: { name: '시험은행', acct: '000-000', holder: '가게' }, biz: { name: '가게' } };
+col('app_settings').shop_promo = { newDays: 7, saleBadge: true, bundle: { on: 1, n: 3, pct: 10 }, coupons: [{ code: 'FALL10', nm: '가을', how: 'pct', v: 10, min: 10000 }],
+  rules: [{ id: 'r1', at: day(-1), nm: '소설 20%', w: { c: '소설' }, act: { how: 'pct', v: -20 }, until: day(3) }, { id: 'r2', at: day(-0.5), nm: '음반 추천', w: { k: ['cd'] }, b: ['pick', 'last'] }, { id: 'r3', at: day(-0.4), nm: '끝난 행사', w: {}, act: { how: 'pct', v: -50 }, until: day(-0.1) }] };
+process.env.SHOP_ORIGINS = 'http://localhost:' + (process.env.RN_PORT || 8765);
+const mk = () => SH.makeShop({ db, C, FV, log: () => {} }); let SHOP = mk(); const srv = http.createServer(async (req, res) => { const p0 = (req.url || '/').split('?')[0]; if (await SHOP.handle(req, res, p0)) return; res.writeHead(404); res.end(); });
+await new Promise((r) => srv.listen(0, '127.0.0.1', r)); const base = 'http://127.0.0.1:' + srv.address().port;
+const J = async (p, o) => { const r = await fetch(base + p, o ? { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://booksqueen.com' }, body: JSON.stringify(o) } : { headers: { Origin: 'https://booksqueen.com' } }); const tx = await r.text(); let j = null; try { j = JSON.parse(tx); } catch (e) {} return { s: r.status, j, tx }; };
+{ const L = await J('/shop/list'); const by = Object.fromEntries(L.j.items.map((x) => [x.id, x])); const u1 = by.aladin_U1, u3 = by.aladin_U3, u5 = by.aladin_U5, u4 = by.aladin_U4;
+ok(u1.p === 6400 && u1.p0 === 8000 && u1.bd.includes('sale') && u1.pe && by.aladin_U2.p === 4000 && u3.p === 15000 && !u3.p0 && u3.bd.join() === 'new' && u5.bd.join() === 'pick,last' && !u4.bd && u4.p === 12000, '목록: 소설 20% 할인(원래 값 p0·할인 배지·끝 시각) · 새로 들어온 책 NEW · 음반 추천·마지막 1권 · 끝난 행사(50%)는 안 얹음');
+  ok(col('prd_listings').aladin_U1.price === 8000 && !JSON.stringify(L.j).includes('A01AA') && !JSON.stringify(L.j).includes('국내도서>'), '상품 문서 판매가(알라딘)는 그대로 · 관리 코드·분류 경로(숨은 칸)는 안 나감');
+  const s1 = await J('/shop/list?sale=1'); const s2 = await J('/shop/list?pmin=6000&pmax=9000'); const s3 = await J('/shop/list?s=off'); const s4 = await J('/shop/list?bd=pick');
+  ok(s1.j.total === 2 && s1.j.items.every((x) => x.p0 > x.p) && s2.j.items.every((x) => x.p >= 6000 && x.p <= 9000) && s2.j.items.some((x) => x.id === 'aladin_U1') && s3.j.items[0].p0 && s4.j.items.map((x) => x.id).join() === 'aladin_U5', '거르기: 할인만 · 값 범위(할인가로) · 할인 많은 차례 · 배지(추천)');
+  const I = await J('/shop/item?id=aladin_U1'); ok(I.j.item.p === 6400 && I.j.item.p0 === 8000 && I.j.rel.length >= 1 && I.j.rel[0].id === 'aladin_U7' && !I.j.rel.some((x) => x.id === 'aladin_U1') && I.j.rel.every((x) => !('sku' in x)), '책 상세: 할인가 · 함께 보면 좋은 책(같은 지은이 먼저 · 자기 자신 뺌)');
+  const sg = await J('/shop/suggest?q=' + encodeURIComponent('어린')); ok(sg.j.s.filter((x) => x.k === 't').map((x) => x.v).join() === '어린 왕자,어린 왕자 그림책' && (await J('/shop/suggest?q=a')).j.s.length === 0 && (await J('/shop/suggest?q=' + encodeURIComponent('생텍'))).j.s.some((x) => x.k === 'a' && x.n === 2), '자동완성: 제목(앞에서 맞는 것 먼저) · 지은이(권수) · 한 글자는 안 함');
+  const bp = await J('/b/aladin_U1'); ok(/6,400원/.test(bp.tx) && /"price":6400/.test(bp.tx), '검색 페이지(/b/)도 할인가(schema.org 값 같음)');
+  const sh = await J('/shop/shelf'); const ci = sh.j.cols.indexOf('p'); const row = sh.j.rows.find((r) => r[0] === 'aladin_U1'); ok(row && row[ci] === 6400, '서가 책장 자료도 할인가');
+  const cf = await J('/shop/cfg'); ok(cf.j.promo.bundle.n === 3 && cf.j.promo.coupon === 1 && !cf.tx.includes('FALL10') && cf.j.freeOver === 30000, '가게 설정: 묶음 할인·쿠폰 있음(번호 없음)'); }
+{ const q = await J('/shop/quote', { items: ['aladin_U1', 'aladin_U2', 'aladin_U3'], cp: '' }); ok(q.s === 200 && q.j.sum0 === 6400 + 4000 + 15000 && q.j.bundle === 2540 && q.j.sum === 22860 && q.j.fee === 3500 && q.j.free.left === 7140 && q.j.items.find((x) => x.id === 'aladin_U1').p0 === 8000, '/shop/quote: 할인가 합 · 묶음 할인 3권 10% · 배송비 · 무료 배송까지');
+  const q2 = await J('/shop/quote', { items: ['aladin_U1', 'aladin_U2', 'aladin_U3'], cp: 'fall10' }); ok(q2.j.coupon.d === 2280 && q2.j.sum === 20580, '/shop/quote 쿠폰(묶음 뒤 값 10%)');
+  const q3 = await J('/shop/quote', { items: ['aladin_U1', 'nope'], cp: 'XX1' }); ok(q3.j.bad.length === 1 && /없는/.test(q3.j.cpErr) && q3.j.n === 1, '/shop/quote: 없는 책은 bad · 틀린 쿠폰은 까닭'); }
+const body = (ids, o) => ({ items: ids, buyer: { name: '손님A', phone: '010-0000-0000' }, rcv: { zip: '06000', addr1: '서울 어딘가 1길 1', addr2: '101호' }, agree: { privacy: true, terms: true }, ...o });
+{ const holds0 = Object.keys(col('shop_holds')).length; const r0 = await J('/shop/order', body(['aladin_U1', 'aladin_U2', 'aladin_U3'], { cp: 'FALL10', expect: 99999 }));
+  ok(r0.s === 409 && r0.j.price && r0.j.price.total === 20580 + 3500 && Object.keys(col('shop_holds')).length === holds0 && !Object.keys(col('shop_orders')).length, '손님이 본 합계와 서버 셈이 다르면 주문하지 않음 · 책도 잡지 않음 · 새 값을 알려 줌');
+  const rc = await J('/shop/order', body(['aladin_U1'], { cp: 'NOPE1' })); ok(rc.s === 400 && rc.j.cp && /없는/.test(rc.j.err), '틀린 쿠폰 번호 → 주문 전에 알림(400)');
+  const rm = await J('/shop/order', body(['aladin_U2'], { cp: 'FALL10' })); ok(rm.s === 400 && /10,000원/.test(rm.j.err) && !Object.keys(col('shop_holds')).includes('aladin_U2'), '쿠폰 최소 금액 못 넘음 → 주문 안 함(잡지 않음)');
+  const r = await J('/shop/order', body(['aladin_U1', 'aladin_U2', 'aladin_U3'], { cp: 'fall10', expect: 24080 })); const o = col('shop_orders')[r.j.no];
+  ok(r.s === 200 && r.j.total === 24080 && r.j.disc === 4820 && o.sum === 20580 && o.sum0 === 25400 && o.items.reduce((a, x) => a + x.p, 0) === o.sum && o.disc.coupon.code === 'FALL10' && o.disc.bundle === 2540, '주문: 규칙 할인가 → 묶음 → 쿠폰 · 책값 합 = 낸 책값(현금 기록·장부 그대로 맞음)');
+  const i1 = o.items.find((x) => x.lid === 'aladin_U1'); ok(i1.p0 === 8000 && i1.rid === 'r1' && i1.pp === 6400 && i1.p < 6400 && o.items.find((x) => x.lid === 'aladin_U3').p0 === undefined, '주문 줄마다 원래 판매가(p0)·정한 규칙·묶음 전 값(pp) 기록');
+  const v = await J(`/shop/order?no=${r.j.no}&t=${r.j.t}`); ok(v.j.disc === 4820 && v.j.total === 24080, '주문 조회에 할인 합');
+  await J('/shop/cancel', { no: r.j.no, t: r.j.t }); }
+{ col('app_settings').shop_promo.rules[0].off = { at: new Date().toISOString(), by: '시험' }; SHOP = mk(); const L = await J('/shop/list'); const u1 = L.j.items.find((x) => x.id === 'aladin_U1');
+  ok(u1.p === 8000 && !u1.p0 && !(u1.bd || []).includes('sale'), '↩ 되돌리기(규칙 끔) → 원래 판매가 · 할인 배지 빠짐');
+  const r = await J('/shop/order', body(['aladin_U1'], { expect: 8000 + 3500 })); ok(r.s === 200 && col('shop_orders')[r.j.no].items[0].p === 8000 && !col('shop_orders')[r.j.no].disc, '되돌린 뒤 주문은 원래 값 · 할인 기록 없음'); await J('/shop/cancel', { no: r.j.no, t: r.j.t });
+  delete col('app_settings').shop_promo.rules[0].off; col('app_settings').shop_promo.rules[0].until = new Date(Date.now() - 1000).toISOString(); SHOP = mk(); const L2 = await J('/shop/list'); ok(L2.j.items.find((x) => x.id === 'aladin_U1').p === 8000, '기간이 끝난 규칙은 저절로 원래 값');
+  col('app_settings').shop_promo.rules[0].until = day(3); SHOP = mk(); const pv = await SHOP.promoPreview({ rule: { w: { k: ['dvd', 'br', 'cd'] }, act: { how: 'pct', v: -15 } } }); const pv0 = await SHOP.promoPreview({});
+  ok(pv.n === 2 && pv.down === 2 && pv.sum0 === 9000 + 6000 && pv.sum1 === 7700 + 5100 && pv.kinds.cd === 1 && pv.kinds.dvd === 1 && pv0.n === 7 && pv0.kinds.en === 1 && pv0.live === 2 && !col('app_settings').shop_promo.rules.some((r) => r && r.act && Math.abs(+r.act.v) === 15) /* (shelf3) 전엔 글 안 '15'를 찾아 UTC 15시대엔 시각 글자에 걸려 틀리게 실패 */, '관리 미리 보기(promoPreview): CD·DVD 15% → 2개 · 합 전후 · 종류 수 · 쓰기 없음');
+  const ix = fs.readFileSync(find('cloud/index.js'), 'utf8'); ok(/path === '\/shop-promo'\) \{ await authUser\(req\)/.test(ix), '클라우드 /shop-promo는 관리자 로그인만'); }
+{ const old = clone(col('app_settings').shop_promo); delete col('app_settings').shop_promo; SHOP = mk(); const L = await J('/shop/list'); const q = await J('/shop/quote', { items: ['aladin_U1'] });
+  ok(L.j.items.find((x) => x.id === 'aladin_U1').p === 8000 && q.j.total === 11500 && !q.j.bundle, '할인 설정이 없으면 예전과 똑같음(규칙 0 · 묶음 끔)'); col('app_settings').shop_promo = old; SHOP = mk(); }
+if (!process.env.RN_PORT) { srv.close(); console.log(bad ? `❌ tSHOPC1111 ${bad}개 실패` : '✓ tSHOPC1111 순수 셈·클라우드 창구 통과 (화면 시험은 RN_PORT를 주면)'); process.exit(bad ? 1 : 0); }
+
+console.log('③ 화면');
+const SHOT = process.env.RN_SHOT || require('os').tmpdir() + '/'; const { chromium } = require('playwright');
+{ const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }); const dlg = []; const errs = []; p.on('dialog', (d) => { dlg.push(d.message()); d.dismiss().catch(() => {}); }); p.on('pageerror', (e) => errs.push(e.message));
+  await p.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (rt) => rt.fulfill({ status: 404, body: '' }));
+  await p.addInitScript((u) => { window.BQ_API = u; }, base); const U = `http://localhost:${process.env.RN_PORT}/shop/index.html`;
+  await p.goto(U); await p.waitForSelector('#nwg .card', { timeout: 8000 }).catch(() => {});
+  ok(await p.locator('.card .nw').count() >= 1 && await p.locator('.card .bd-sale').count() >= 1 && /3권 넘게 담으면 10% 할인/.test(await p.textContent('#main')) && await p.locator('.card s.was').count() >= 1, '첫 화면: 새로 들어온 표(NEW는 N일 전 표와 겹치지 않게)·할인 배지 · 원래 값 줄 · 묶음 할인 알림'); await p.screenshot({ path: SHOT + 'shopc1_home.png', fullPage: true });
+  await p.goto(U + '#/list?sale=1&s=off'); await p.waitForSelector('#lg .card', { timeout: 6000 }).catch(() => {}); ok(/2권/.test(await p.textContent('#lh')) && await p.locator('#prg').count() === 1, '목록: 🏷 할인만 · 값 범위 고르기');
+  await p.fill('#sq', '어린'); await p.waitForTimeout(700); ok(await p.locator('#sqs option').count() >= 2, '찾기 칸 자동완성(두 글자)'); await p.screenshot({ path: SHOT + 'shopc1_list.png', fullPage: true });
+  await p.goto(U + '#/b/aladin_U1'); await p.waitForSelector('#add', { timeout: 6000 }).catch(() => {}); const pt = await p.textContent('.price');
+  ok(/8,000원/.test(pt) && /6,400원/.test(pt) && /20% 할인/.test(pt) && /남음/.test(pt) && /함께 보면 좋은 책/.test(await p.textContent('#main')), '책 상세: 원래 값 줄·할인율·남은 날 · 함께 보면 좋은 책'); await p.screenshot({ path: SHOT + 'shopc1_item.png', fullPage: true });
+  await p.click('#add'); await p.waitForTimeout(300); for (const id of ['aladin_U2', 'aladin_U3']) { await p.goto(U + '#/b/' + id); await p.waitForSelector('#add', { timeout: 6000 }).catch(() => {}); await p.click('#add'); await p.waitForTimeout(250); }
+  await p.goto(U + '#/'); await p.waitForTimeout(400); ok(/최근 본 책/.test(await p.textContent('#main')), '첫 화면: 최근 본 책(이 기기)');
+  await p.goto(U + '#/cart'); await p.waitForTimeout(900); const ct = await p.textContent('#qsum'); ok(/묶음 할인/.test(ct) && /2,540원/.test(ct) && /더 담으면 무료 배송/.test(ct) && /26,360원/.test(ct), '장바구니: 묶음 할인 · 무료 배송까지 막대 · 합계(클라우드 셈)'); await p.screenshot({ path: SHOT + 'shopc1_cart.png', fullPage: true });
+  await p.goto(U + '#/order'); await p.waitForSelector('#f_cp', { timeout: 6000 }).catch(() => {}); await p.fill('#f_cp', 'nope'); await p.click('#cpgo'); await p.waitForTimeout(500); ok(/없는 쿠폰/.test(await p.textContent('[data-f="cp"]')), '쿠폰 틀리면 칸에 까닭');
+  await p.fill('#f_cp', 'fall10'); await p.click('#cpgo'); await p.waitForTimeout(500); ok(/2,280원 할인/.test(await p.textContent('[data-f="cp"]')) && /24,080원 주문하기/.test(await p.textContent('#go')), '쿠폰 적용 → 주문 단추 합계 바뀜');
+  await p.fill('#f_name', '손님A'); await p.fill('#f_phone', '01000000000'); await p.fill('#f_zip', '06000'); await p.fill('#f_addr1', '서울 어딘가 1길 1'); await p.check('#f_agreeP'); await p.check('#f_agreeT'); await p.screenshot({ path: SHOT + 'shopc1_order.png', fullPage: true });
+  col('app_settings').shop_promo.rules[0].off = { at: new Date().toISOString() }; SHOP = mk(); /* 손님이 주문서를 보는 사이 할인이 끝남 */
+  await p.click('#go'); await p.waitForTimeout(1200); const et = await p.textContent('#main'); ok(/값이 바뀌었습니다/.test(et) && !Object.values(col('shop_orders')).some((o) => o.st === 'new'), '주문서 보는 사이 할인이 끝나면 주문하지 않고 알림 · 새 값으로 다시 맞춤'); await p.screenshot({ path: SHOT + 'shopc1_changed.png', fullPage: true });
+  await p.click('#go'); await p.waitForTimeout(1200); ok(/주문을 받았습니다/.test(await p.textContent('#main')), '새 값 확인 뒤 다시 누르면 주문됨'); await p.screenshot({ path: SHOT + 'shopc1_done.png', fullPage: true });
+  delete col('app_settings').shop_promo.rules[0].off; SHOP = mk();
+  const ow = await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1); ok(ow && !errs.length && !dlg.length, '휴대폰 폭 넘침 0 · 화면 오류 0 · 브라우저 창 0 ' + errs.join(' | ')); await b.close(); }
+await require(path.join(process.cwd(), 'harness.js'))(async (p) => { const dlg = []; p.on('dialog', (d) => { dlg.push(d.type() + ': ' + d.message().slice(0, 80)); d.dismiss().catch(() => {}); });
+  await p.exposeFunction('__pv', async (b) => SHOP.promoPreview(b));
+  const o = await p.evaluate(async () => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; window.cloudCall = async (path, b) => { if (path !== '/shop-promo') throw new Error('HTTP 404'); return { ok: true, ...(await window.__pv(b)) }; };
+    await db.collection('app_settings').doc('shop').set({ open: 1 }); S._bqpOpen = 1; openShopAdm(); await Wt(1500); const sh = document.getElementById('sheet'); const box = sh.querySelector('#bq_promo'); o.card = !!box && box.open && !!sh.querySelector('#bqp_pv'); o.feat = /쇼핑몰 기본 기능 점검표/.test(box.textContent);
+    sh.querySelector('[data-bqppre="3"]').click(); await Wt(300); const k = [...document.querySelectorAll('#bq_promo [data-bqpm="k"]:checked')].map((e) => e.value).join(); o.pre = k === 'cd,dvd,br' && document.querySelector('#bqp_how').value === 'pct-down' && document.querySelector('#bqp_v').value === '15' && !!document.querySelector('#bqp_until').value;
+    o.goOff = document.querySelector('#bqp_go').disabled; document.querySelector('#bqp_pv').click(); await Wt(800); o.pvTxt = document.querySelector('#bqp_pvbox').textContent; o.goOn = !document.querySelector('#bqp_go').disabled;
+    const go = document.querySelector('#bqp_go'); go.click(); await Wt(200); o.once = !((window.__FS.app_settings || {}).shop_promo || {}).rules; document.querySelector('#bqp_go').click(); await Wt(800);
+    const R = ((window.__FS.app_settings || {}).shop_promo || {}).rules || []; o.saved = R.length === 1 && R[0].act.v === -15 && R[0].w.k.join() === 'cd,dvd,br' && R[0].n0 === 2 && !!R[0].until && R[0].log.length === 1; o.list = /음반·영상 15% 7일/.test(document.querySelector('#bq_promo').textContent) && /켜짐/.test(document.querySelector('#bq_promo').textContent);
+    return o; });
+  ok(o.card && o.feat, '웹앱 🛍 우리숍 › 🏷 할인·배지 카드 · 쇼핑몰 기능 점검표'); ok(o.pre, "편리 단추 'CD·DVD·블루레이 15% 7일' → 칸 채움(종류·할 일·끝날)");
+  ok(o.goOff && o.goOn && /맞는 상품 2개/.test(o.pvTxt) && /9,000원/.test(o.pvTxt) && /7,700원/.test(o.pvTxt), '미리 보기 전엔 적용 못 함 → 미리 보기(맞는 2개 · 전후 값) → 적용 켜짐 ' + o.pvTxt.slice(0, 160));
+  ok(o.once && o.saved && o.list, '✅ 적용: 한 번은 아무것도 안 함 · 두 번째에 규칙 저장(맞은 수·기록) · 목록에 켜짐');
+
+  const r = await p.evaluate(async () => { const Wt = (ms) => new Promise((r) => setTimeout(r, ms)); const o = {}; const b = document.querySelector('[data-bqpoff]'); b.click(); await Wt(150); o.once = !window.__FS.app_settings.shop_promo.rules[0].off; document.querySelector('[data-bqpoff]').click(); await Wt(700);
+    const R = window.__FS.app_settings.shop_promo.rules; o.off = R.length === 1 && !!R[0].off && R[0].log.length === 2; o.txt = /되돌림/.test(document.querySelector('#bq_promo').textContent) && !!document.querySelector('[data-bqpon]');
+    const s = document.querySelector('#bqp_set'); s.open = true; document.querySelector('#bqpc_code').value = 'WELCOME5'; document.querySelector('#bqpc_how').value = 'won'; document.querySelector('#bqpc_v').value = '500'; const ca = document.querySelector('#bqpc_add'); ca.click(); await Wt(100); document.querySelector('#bqpc_add').click(); await Wt(700);
+    o.cp = ((window.__FS.app_settings.shop_promo.coupons) || []).some((c) => c.code === 'WELCOME5' && c.v === 500 && c.how === 'won'); document.querySelector('#bqp_feat').open = true; return o; });
+  ok(r.once && r.off && r.txt, '↩ 되돌리기(두 번) → 규칙 꺼짐(지우지 않음 · 기록 2줄) · 다시 켜기 단추'); ok(r.cp, '🎟 쿠폰 만들기(두 번)');
+  await p.evaluate(async () => { document.querySelector('[data-bqppre="1"]').click(); await new Promise((r) => setTimeout(r, 300)); document.querySelector('#bqp_pv').click(); await new Promise((r) => setTimeout(r, 800)); document.querySelector('#bqp_pvbox').scrollIntoView({ block: 'center' }); }); await p.waitForTimeout(200); await p.screenshot({ path: SHOT + 'shopc1_admin_preview.png', fullPage: false });
+  await p.evaluate(() => document.querySelector('#bq_promo h4').scrollIntoView()); await p.waitForTimeout(200); await p.screenshot({ path: SHOT + 'shopc1_admin_rules.png', fullPage: false });
+  await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(300); await p.evaluate(() => document.querySelector('#bq_promo').scrollIntoView()); await p.screenshot({ path: SHOT + 'shopc1_admin_phone.png', fullPage: false });
+  const ow = await p.evaluate(() => { const s = document.getElementById('sheet'); return s.scrollWidth <= s.clientWidth + 2; }); ok(ow && !dlg.length, '웹앱 휴대폰 폭에서 카드 넘침 0 · 브라우저 창 0 ' + dlg.join(' | ')); });
+srv.close(); console.log(bad ? `❌ tSHOPC1111 ${bad}개 실패` : '✓ tSHOPC1111 모두 통과'); process.exit(bad ? 1 : 0);
+})().catch((e) => { console.log('❌ 시험 멈춤', e); process.exit(1); });

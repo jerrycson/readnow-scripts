@@ -3,6 +3,7 @@
  *    const h = BQShelf.mount(자리, { cfg, load(진행) → 책[], shop:{open}, cart:{ has(id), add(책) → 못 담은 까닭|null, n() }, wish:{ get(), set(목록) }, open(id), toast(글), key:'bq-shelf-' })
  *    h.destroy() — 붙인 듣개·글꼴 모두 뗌
  *  가볍게: DOM엔 지금 책장과 양옆 둘(최대 3 × 300권)만 · 그림은 화면 가까이 올 때 받음 · 글꼴은 그 책장에 쓰인 글자만(Google Fonts text=)
+ *  (shelf2) 책등 모양은 상품 번호마다 한 번 정하면 영구(서버 lk · 이 기기 lk) · 앞표지 대표색은 canvas 16×16(CORS 안 되면 제목 낱말로) · 책등을 누르면 그 책등 표면에 바로 단추 셋(담기·찜·자세히)
  *  접근성: 책등 = 단추(이름에 제목·지은이·값) · 화살표 ←→ 옆 책 · ↑↓ 위아래 선반 · Home/End · Enter 담기 창 · Esc 닫기 · [ ] 책장 돌리기 · + − 확대 · 움직임 줄이기 설정을 따름 */
 (function (root) {
   'use strict';
@@ -11,7 +12,7 @@
   const won = (n) => (Math.round(+n || 0)).toLocaleString('ko-KR') + '원';
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   const RM = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
-  const FONT_CSS = new Map(); /* 별칭 → <style> (최근 12개만) */
+  const FONT_CSS = new Map(); /* 별칭 → <style> (최근 160개만 · 책장이 DOM에서 빠지면 그 책장 별칭도 뗌) */
   const MEM = {}; /* 정렬마다 마지막 책장·스크롤(다른 화면 갔다 와도) */
 
   function mount(el, o) {
@@ -32,24 +33,87 @@
         ${C0.viewerCfg ? '<button type="button" class="bqs-gear" aria-expanded="false" aria-controls="bqsView">⚙ 보기</button>' : ''}
       </div>
       <div class="bqs-view" id="bqsView" hidden></div>
-      <nav class="bqs-nav" aria-label="책장 넘기기" hidden><button type="button" class="bqs-pv"></button><div class="bqs-here"><b></b><small></small><div class="bqs-dots" aria-hidden="true"></div></div><button type="button" class="bqs-nx"></button></nav>
+      <nav class="bqs-nav" aria-label="책장 넘기기" hidden><button type="button" class="bqs-pv"></button><div class="bqs-here"><b></b><small></small><div class="bqs-dots" aria-hidden="true"></div><span class="bqs-loop" title="끝과 끝이 이어진 둥근 책장 — 마지막 다음은 처음" aria-hidden="true">↻ 이어짐</span></div><button type="button" class="bqs-nx"></button></nav>
       <div class="bqs-stage"><div class="bqs-ring"></div><div class="bqs-load" role="status"><div class="bqs-lbar"><i></i></div><span>책을 꽂는 중…</span></div></div>
-      <button type="button" class="bqs-arrow l" aria-label="이전 책장" hidden><span>‹</span></button><button type="button" class="bqs-arrow r" aria-label="다음 책장" hidden><span>›</span></button>
+      <button type="button" class="bqs-arrow l" aria-label="이전 책장" hidden><i class="ab" aria-hidden="true"><span>‹</span></i><em class="pk" aria-hidden="true"></em></button><button type="button" class="bqs-arrow r" aria-label="다음 책장" hidden><i class="ab" aria-hidden="true"><span>›</span></i><em class="pk" aria-hidden="true"></em></button>
       <div class="bqs-tip" role="tooltip" hidden></div><div class="bqs-pop" role="dialog" aria-modal="false" hidden></div>
       <a class="bqs-cart" href="#/cart" aria-label="장바구니"><span class="bqs-cart-i" aria-hidden="true">🛒</span><b class="bqs-cn">0</b></a>
       <div class="bqs-sr" aria-live="polite"></div></section>`;
     const $ = (s) => el.querySelector(s); const sec = $('.bqs'), ring = $('.bqs-ring'), stage = $('.bqs-stage'), tip = $('.bqs-tip'), pop = $('.bqs-pop'), live = $('.bqs-sr');
     const say = (m) => { live.textContent = ''; setTimeout(() => { live.textContent = m; }, 30); };
     const badge = () => { const n = o.cart && o.cart.n ? o.cart.n() : 0; $('.bqs-cn').textContent = n; $('.bqs-cart').classList.toggle('has', n > 0); const w = (o.wish && o.wish.get()) || []; $('.bqs-wn').textContent = w.length; };
-    const setZ = (z, anchor) => { z = Math.round(clamp(z, 0.5, 2.5) * 100) / 100; if (z === st.z && sec.style.getPropertyValue('--z')) return; const a = anchor || centerSpine(); const y0 = a ? a.getBoundingClientRect().top : 0;
-      st.z = z; sec.style.setProperty('--z', z); $('.bqs-zv').textContent = Math.round(z * 100) + '%'; LS.set('zoom', z); relayout(); if (a && a.isConnected) { const y1 = a.getBoundingClientRect().top; window.scrollBy(0, y1 - y0); } };
+    const setZ = (z, anchor) => { z = Math.round(clamp(z, 0.5, 4) * 100) / 100; if (z === st.z && sec.style.getPropertyValue('--z')) return; const a = anchor || centerSpine(); const y0 = a ? a.getBoundingClientRect().top : 0;
+      st.z = z; sec.style.setProperty('--z', z); $('.bqs-zv').textContent = Math.round(z * 100) + '%'; LS.set('zoom', z); relayout(); cutAll(); if (a && a.isConnected) { const y1 = a.getBoundingClientRect().top; window.scrollBy(0, y1 - y0); } };
     sec.style.setProperty('--rh', C.rowH); sec.style.setProperty('--z', st.z); $('.bqs-zv').textContent = Math.round(st.z * 100) + '%';
 
     /* ── 책장 하나 그리기 */
     const isWish = (id) => B.wishHas((o.wish && o.wish.get()) || [], id);
-    const spineH = (x, cs, ck) => { const L = B.look(x, C); const f = B.fontById(L.f); const ff = C.fontsOn ? `'bqf-${L.f}-${ck}','${f.name}',${f.gen}` : f.gen; const img = C.spineImg && x.sp;
-      const lab = `${x.t}${x.a ? ' · ' + x.a : ''} · ${won(x.p)}${x.st === 'o' ? ' · 주문 중' : ''}${isWish(x.id) ? ' · 찜함' : ''}`;
-      return `<button type="button" class="sp${img ? ' img' : ''}${x.st === 'o' ? ' held' : ''}${isWish(x.id) ? ' wished' : ''}${L.tilt ? ' tilt' + (L.tilt > 0 ? 'r' : 'l') : ''}" data-id="${esc(x.id)}" data-d="${L.d}" data-o="${L.o}" tabindex="-1" aria-label="${esc(lab)}" style="--bw:${L.w};--bh:${L.h};--c:${L.c};--c2:${L.c2};--k:${L.k};font-family:${esc(ff)}"><span class="sk">${img ? `<img class="si" src="${esc(x.sp)}" alt="" loading="lazy" decoding="async">` : ''}<span class="tt">${esc(x.t)}</span>${x.a ? `<span class="au">${esc(x.a)}</span>` : ''}</span>${x.st === 'o' ? '<span class="hb" aria-hidden="true">주문 중</span>' : ''}<span class="rb" aria-hidden="true"></span></button>`; };
+    /* (shelf3) 세로쓰기에서 짧은 숫자(1~2자리)는 한 칸에 눕히지 않고 세워 묶음(text-combine-upright) · 나머지는 그대로 */
+    const tcy = (t) => esc(t).replace(/(^|[^0-9])([0-9]{1,2})(?![0-9])/g, '$1<span class="tcy">$2</span>');
+    const spineH = (x, cs, ck) => { const L = lookOf(x); const f = B.fontById(L.f); const ff = C.fontsOn ? `'bqf-${L.f}-${ck}','${f.name}',${f.gen}` : f.gen; const img = C.spineImg && x.sp; const tg = B.tagOf(x); const so = B.saleOf(x);
+      const lab = `${x.t}${x.a ? ' · ' + x.a : ''} · ${won(x.p)}${so && so.from === 'p0' ? ` (할인 ${so.pct}% · 원래 ${won(so.was)})` : ''}${tg && tg.k !== 'sale' ? ' · ' + B.BADGE[tg.k] : ''}${x.st === 'o' ? ' · 주문 중' : ''}${isWish(x.id) ? ' · 찜함' : ''}`;
+      return `<button type="button" class="sp${img ? ' img' : ''}${x.st === 'o' ? ' held' : ''}${isWish(x.id) ? ' wished' : ''}${tg ? ' tag' : ''}${L.tilt ? ' tilt' + (L.tilt > 0 ? 'r' : 'l') : ''}" data-id="${esc(x.id)}" data-d="${L.d}" data-p="${L.p}" data-s="${L.body}" data-h="${L.head}" data-o="${L.o}" tabindex="-1" aria-label="${esc(lab)}" style="--bw:${L.w};--bh:${L.h};--c:${L.c};--c2:${L.c2};--k:${L.k};--g:${L.ac};--ft:${L.ft};--fa:${L.fa};--fw:${L.fw};--zt:${L.zt};--zb:${L.zb};--zs:${L.zs};font-family:${esc(ff)}"><span class="sk">${img ? `<img class="si" src="${esc(x.sp)}" alt="" loading="lazy" decoding="async">` : ''}${L.head > 1 ? '<span class="hd" aria-hidden="true"></span>' : ''}${x.st === 'o' ? '<span class="hb" aria-hidden="true">주문중</span>' : ''}<span class="tx" aria-hidden="true"><span class="tt">${tcy(x.t)}</span>${x.a ? `<span class="au">${tcy(x.a)}</span>` : ''}</span>${tg ? `<span class="bt bt-${tg.k}" aria-hidden="true">${esc(tg.t)}</span>` : ''}</span><span class="rb" aria-hidden="true"></span></button>`; };
+    /* ── (shelf3) 책등 글 맞추기 — 실제로 재서 맞춤(정범님 '확대하면 전체, 축소하면 줄임' · 리드 화면 확인: 잘림·넘침·겹침)
+     *  글 자리(.tx = 장식이 없는 곳) 안에서 제목·지은이 칸 높이를 나누고, 글자 크기를 반씩 좁혀 찾음(모든 책등을 한꺼번에 — 쓰기 한 번·읽기 한 번 × 8번)
+     *  가장 작은 글자(minFs · 화면 px)로도 안 들어가면 그때만 앞부분 + 「…」 — 글이 글 자리 밖으로 나가는 일은 없음 */
+    const FIT = { z: 0, fk: 0 };
+    function fitSpines(list) { if (st.dead) return; const t0 = performance.now(); const sps = [...list].filter((b) => b.isConnected && !(b.classList.contains('img') && b.classList.contains('ok'))); if (!sps.length) return;
+      const minF = C.minFs, J = [];
+      for (const b of sps) { const tx = b.querySelector('.tx'); if (!tx) continue; const tt = tx.querySelector('.tt'), au = tx.querySelector('.au'); const x = byId.get(b.dataset.id) || { t: tt.textContent, a: au ? au.textContent : '' };
+        J.push({ b, tx, tt, au, t: x.t || '', a: (au && x.a) || '', W: 0, H: 0 }); }
+      for (const j of J) if (j.b.classList.contains('cut')) { j.tt.innerHTML = tcy(j.t); if (j.au) j.au.innerHTML = tcy(j.a); j.b.classList.remove('cut'); } /* 줄였던 책만 글을 되돌림 */
+      for (const j of J) { j.W = j.tx.clientWidth; j.H = j.tx.clientHeight; }
+      for (const j of J) { const nt = Math.max(1, [...j.t].length), na = j.au ? [...j.a].length : 0; const gap = na ? Math.max(2, j.H * 0.035) : 0; const ra = na ? clamp(na / (nt + na), 0.16, 0.38) : 0;
+        j.Ha = j.H * ra; j.Ht = j.H - j.Ha - gap; j.tt.style.height = j.Ht + 'px'; if (j.au) j.au.style.height = j.Ha + 'px'; }
+      const fits = (el, W, H) => { const tx = el.parentNode; return el.offsetWidth <= W - 2 && el.scrollWidth <= W - 2 && el.scrollHeight <= H + 0.5 && tx.scrollWidth <= tx.clientWidth && tx.scrollHeight <= tx.clientHeight; }; /* 글 자리 넘침까지(제목을 맞추는 동안 지은이는 숨겨 둠 — 서로 탓하지 않게) */ /* 양옆 1px씩 남김(세운 숫자·기울임 글자 잉크) */ /* scrollWidth = 글자 잉크가 삐져나온 것까지 */
+      /* 셈으로 먼저 어림(세로 글 한 줄 = 높이 ÷ 글자 크기 · 줄 너비 ≈ 글자 × 1.12) → 한 번 재 보고 안 들어가면 8%씩 줄임(보통 1~3번 재면 끝 · 전엔 반씩 찾기 20번 넘게) */
+      const est = (n, W, H, hi) => { for (let f = hi; f > minF; f -= 0.25) { const per = Math.max(1, Math.floor(H / (f * 1.02))); if (Math.ceil(n / per) * f * 1.12 <= W - 2) return f; } return minF; };
+      const search = (pick, hiOf, txt) => { const S = J.map((j) => { const el = pick(j); if (!el) return null; const H = el === j.tt ? j.Ht : j.Ha; const hi = Math.max(minF, hiOf(j, H)); return { j, el, H, f: est([...txt(j)].length, j.W, H, hi), ok: false, bad: null }; }).filter(Boolean);
+        let L = S; for (let it = 0; it < 8 && L.length; it++) { for (const q of L) q.el.style.fontSize = q.f + 'px'; for (const q of L) q.ok = fits(q.el, q.j.W, q.H);
+          L = L.filter((q) => !q.ok && q.f > minF); for (const q of L) { q.bad = q.f; q.f = Math.max(minF, Math.round(q.f * 0.92 * 4) / 4); } }
+        const up = S.filter((q) => q.ok && q.bad && q.bad - q.f > 0.6); for (const q of up) { q.f0 = q.f; q.el.style.fontSize = (q.f + q.bad) / 2 + 'px'; } for (const q of up) if (fits(q.el, q.j.W, q.H)) q.f0 = (q.f + q.bad) / 2; for (const q of up) q.el.style.fontSize = q.f0 + 'px'; /* 한 번 더 키워 봄 */
+        return S.filter((q) => !q.ok); };
+      /* 가장 작은 글자로도 안 들어가는 칸만 줄임(…) — 들어갈 만한 글자 수를 어림해 넣고 안 되면 15%씩 덜어냄 */
+      const trim = (L, txt) => { const put = (u) => { u.q.el.innerHTML = tcy(u.ch.slice(0, u.n).join('').replace(/\s+$/, '')) + '…'; };
+        let S = L.map((q) => { const ch = [...txt(q.j)]; const per = Math.max(1, Math.floor(q.H / (minF * 1.02))); const cols = Math.max(1, Math.floor((q.j.W - 2) / (minF * 1.12))); return { q, ch, n: Math.max(0, Math.min(ch.length - 1, per * cols - 1)) }; });
+        for (const u of S) { u.q.el.style.fontSize = minF + 'px'; u.q.j.b.classList.add('cut'); }
+        for (let it = 0; it < 10 && S.length; it++) { for (const u of S) put(u); S = S.filter((u) => !fits(u.q.el, u.q.j.W, u.q.H) && u.n > 0); for (const u of S) u.n = Math.max(0, Math.min(u.n - 1, Math.floor(u.n * 0.85))); }
+        for (const u of S) { u.n = 0; put(u); } };
+      for (const j of J) if (j.au) j.au.style.display = 'none'; /* 제목을 맞추는 동안 지은이는 잠깐 숨김 */
+      const hiT = (j, H) => Math.min(j.W * 0.92, H * 0.9, 34 * st.z, 46); const T0 = search((j) => j.tt, hiT, (j) => j.t);
+      for (const j of J) j.ftNow = parseFloat(j.tt.style.fontSize) || minF;
+      if (C.fullText) trim(T0, (j) => j.t); for (const j of J) if (j.au) j.au.style.display = ''; /* 제목 다 맞춘 뒤(줄임까지) 지은이 */
+      const A0 = search((j) => j.au, (j, H) => Math.min(j.W * 0.8, H * 0.9, (j.ftNow || minF) * 0.86, 26 * st.z, 32), (j) => j.a);
+      if (!C.fullText) { for (const j of J) { j.tt.style.fontSize = clamp(j.W * 0.62, minF, 18 * st.z) + 'px'; if (j.au) j.au.style.fontSize = clamp(j.W * 0.45, minF, 13 * st.z) + 'px'; } const nf = J.flatMap((j) => [{ j, el: j.tt, H: j.Ht }, ...(j.au ? [{ j, el: j.au, H: j.Ha }] : [])]).filter((q) => !fits(q.el, q.j.W, q.H)); trim(nf.filter((q) => q.el === q.j.tt), (j) => j.t); trim(nf.filter((q) => q.el !== q.j.tt), (j) => j.a); }
+      else trim(A0, (j) => j.a);
+      for (const j of J) { j.b.dataset.ft = Math.round((parseFloat(j.tt.style.fontSize) || 0) * 10) / 10; j.b.dataset.fz = st.z; } sec.dataset.fit = (+sec.dataset.fit || 0) + 1; sec.dataset.fitMs = Math.round(performance.now() - t0); /* 시험이 '다시 맞췄나'·걸린 시간 봄 */ }
+    /* 지금 책장은 바로 · 양옆 책장은 한가할 때(또는 돌기 직전) — 확대·글꼴이 바뀌면 다시(확대 중엔 0.15초 모아서) */
+    const fitCase = (c) => { if (!c || c.dataset.fz === String(st.z) + '|' + (+sec.dataset.fk || 0)) return; fitSpines(c.querySelectorAll('.sp')); c.dataset.fz = String(st.z) + '|' + (+sec.dataset.fk || 0); };
+    let sideT = 0; const fitSides = () => { clearTimeout(sideT); const idle = root.requestIdleCallback || ((f) => setTimeout(f, 200)); sideT = setTimeout(() => idle(() => { if (!st.dead && !st.busy) [...ring.children].forEach((c) => fitCase(c)); }), 250); };
+    let fitT = 0; const refit = (fontChanged) => { if (fontChanged) sec.dataset.fk = (+sec.dataset.fk || 0) + 1; clearTimeout(fitT); fitT = setTimeout(() => { fitT = 0; fitCase(curCase()); fitSides(); }, 150); };
+    const cutAll = () => refit();
+    try { if (document.fonts && document.fonts.addEventListener) { const fl = () => refit(true); document.fonts.addEventListener('loadingdone', fl); offs.push(() => document.fonts.removeEventListener('loadingdone', fl)); } } catch (e) {}
+    /* ── 책등 모양 영구 저장(정범님 11/11): 서버에 정해진 것(x.lk) → 이 기기에 정한 것 → 새로 정함(앞표지 대표색을 기다려야 하면 잠깐 임시 모양 · 저장 안 함) */
+    const LKC = new Map(); const LKL = LS.get('lk', {}) || {}; const LQ = []; let lkT = 0; const gen = C0.lookGen || 0;
+    const CC = { ok: !!(root.document && root.HTMLCanvasElement), fail: 0, okN: 0, got: new Map(), done: new Set(), q: [], run: 0 };
+    function keep(id, code) { if (!C0.lookKeep) return; LKL[id] = code; LQ.push([id, code]); clearTimeout(lkT); lkT = setTimeout(() => { const ks = Object.keys(LKL); if (ks.length > 6000) ks.slice(0, ks.length - 6000).forEach((k) => delete LKL[k]); LS.set('lk', LKL);
+      const L = LQ.splice(0, LQ.length); if (L.length && o.saveLooks) for (let i = 0; i < L.length; i += 300) o.saveLooks(L.slice(i, i + 300), gen); }, 2500); }
+    keep.flush = () => { clearTimeout(lkT); lkT = setTimeout(() => { const L = LQ.splice(0, LQ.length); if (L.length && o.saveLooks) for (let i = 0; i < L.length; i += 300) o.saveLooks(L.slice(i, i + 300), gen); }, 2500); };
+    function lookOf(x) { let L = LKC.get(x.id); if (L) return L; let A = null; let temp = false;
+      if (C0.lookKeep) for (const code of [x.lk, LKL[x.id]]) { const a = code && B.decode(code); if (a && a.g === gen) { A = a; if (code !== x.lk && !o.demo) { LQ.push([x.id, code]); keep.flush(); } break; } } /* 이 기기에만 있던 모양은 서버에도 알림(서버가 먼저 정한 것이 있으면 서버 것) */
+      if (!A) { const want = C0.coverColor && x.im && !(C0.spineImg && x.sp) && CC.ok && !CC.done.has(x.id); A = B.assign(x, C0, CC.got.get(x.id) || null); if (want) { temp = true; ccAsk(x); } else keep(x.id, B.encode(A)); }
+      const vo = view().orient; if (vo === 'v' || vo === 'h') A = { ...A, o: vo }; /* 손님 ⚙ 보기 글 방향은 그 기기 화면만(저장하는 모양은 그대로) */
+      L = B.dress(x, A, C); L.temp = temp; LKC.set(x.id, L); return L; }
+    /* 앞표지 대표색 — 16×16으로 줄여 읽음(그림 서버가 CORS를 안 열면 canvas가 막힘 → 4번 막히면 이 화면에선 그만 · 제목 낱말로) */
+    function readColor(u) { return new Promise((ok) => { let dn = false; const im = new Image(); const fin = (v) => { if (dn) return; dn = true; clearTimeout(t); ok(v); }; const t = setTimeout(() => fin(undefined), 6000);
+      im.crossOrigin = 'anonymous'; im.decoding = 'async'; im.onload = () => { try { const cv = document.createElement('canvas'); cv.width = cv.height = 16; const g = cv.getContext('2d', { willReadFrequently: true }); g.drawImage(im, 0, 0, 16, 16); CC.okN++; fin(B.dominant(g.getImageData(0, 0, 16, 16).data)); } catch (e) { CC.fail++; fin(null); } };
+      im.onerror = () => { CC.fail++; fin(null); }; im.src = u; }); }
+    function ccAsk(x) { CC.q.push(x); ccRun(); }
+    function ccRun() { while (CC.run < 3 && CC.q.length && !st.dead) { const x = CC.q.shift(); if (CC.done.has(x.id)) continue; CC.run++;
+      readColor(x.im).then((hex) => { CC.run--; if (st.dead) return; if (hex === undefined) { ccRun(); return; } CC.done.add(x.id); if (hex) CC.got.set(x.id, hex); if (CC.fail >= 4 && !CC.okN) CC.ok = false;
+        LKC.delete(x.id); const A = B.assign(x, C0, hex || null); keep(x.id, B.encode(A)); const b = ring.querySelector(`.sp[data-id="${CSS.escape(x.id)}"]`); if (b && b !== popFor) { const c = b.closest('.bqs-case'); const ti = b.tabIndex; b.outerHTML = spineH(x, null, st.sort + c.dataset.i); const n = ring.querySelector(`.sp[data-id="${CSS.escape(x.id)}"]`); if (n) { n.tabIndex = ti; if (c.classList.contains('cur')) fitSpines([n]); } ccFont(); }
+        if (!CC.ok) CC.q.splice(0).forEach((y) => { CC.done.add(y.id); LKC.delete(y.id); keep(y.id, B.encode(B.assign(y, C0, null))); }); ccRun(); }); } }
+    let ccFT = 0; const ccFont = () => { clearTimeout(ccFT); ccFT = setTimeout(() => fontsFor(curCase()), 400); };
     const labH = (s) => `<div class="lab" role="heading" aria-level="3"><span>${esc(s.lab)}</span><small>${(s.n || 0).toLocaleString('ko-KR')}권</small></div>`;
     function caseH(j) { const P = st.P; const N = P.cases.length; const i = B.mod(j, N); const cs = P.cases[i]; const ck = st.sort + i; const W = innerW(); const k = B.bays(W, C, st.z);
       const parts = B.split(cs.slots, k);
@@ -60,55 +124,67 @@
     const innerW = () => Math.max(260, stage.clientWidth - 24);
     /* ── 원형 배치 · 돌리기 */
     let RG = B.ring(1, 1000);
-    const place = (j) => (C.turn3d ? `rotateY(${j * RG.step}deg) translateZ(${-RG.R}px)` : `translateX(${j * (st.W + 40)}px)`);
-    const ringT = (j, pull) => (C.turn3d ? `translateZ(${RG.R - (pull || 0)}px) rotateY(${-j * RG.step}deg)` : `translateX(${-j * (st.W + 40)}px) scale(${pull ? 0.94 : 1})`);
+    const DIR = -1; /* (shelf3 · 정범님 11/12) 도는 방향 뒤집음: 다음 책장은 오른쪽에 서 있다가 → · ] · 왼쪽으로 쓸기로 다가옴 */
+    const place = (j) => (C.turn3d ? `rotateY(${DIR * j * RG.step}deg) translateZ(${-RG.R}px)` : `translateX(${j * (st.W + 40)}px)`);
+    const ringT = (j, pull) => (C.turn3d ? `translateZ(${RG.R - (pull || 0)}px) rotateY(${-DIR * j * RG.step}deg)` : `translateX(${-j * (st.W + 40)}px) scale(${pull ? 0.94 : 1})`);
     const want = () => { const N = st.P.cases.length; if (N <= 1) return [st.j]; if (N === 2) return [st.j, st.j + 1]; return [st.j - 1, st.j, st.j + 1]; };
     function sync(full) { /* 필요한 책장만 DOM에 */ if (!st.P || st.dead) return; st.W = stage.clientWidth; RG = B.ring(st.P.cases.length, st.W); stage.style.perspective = RG.persp + 'px';
-      const need = new Set(want()); [...ring.children].forEach((c) => { const j = +c.dataset.j; if (full || !need.has(j)) { fontsDrop(c); c.remove(); } });
+      const need = new Set(want()); [...ring.children].forEach((c) => { const j = +c.dataset.j; if (full || !need.has(j)) { if (!need.has(j)) fontsDrop(c); c.remove(); } });
       const have = new Set([...ring.children].map((c) => +c.dataset.j)); for (const j of need) if (!have.has(j)) ring.insertAdjacentHTML('beforeend', caseH(j));
       [...ring.children].forEach((c) => { c.style.transform = place(+c.dataset.j); const cur = +c.dataset.j === st.j; c.classList.toggle('cur', cur); c.inert = !cur; c.setAttribute('aria-hidden', cur ? 'false' : 'true'); });
-      ring.style.transform = ringT(st.j); fitH(); fontsFor(curCase()); roving(); navH(); }
+      ring.style.transform = ringT(st.j); fitCase(curCase()); fitSides(); fitH(); fontsFor(curCase()); roving(); navH(); }
     const curCase = () => ring.querySelector(`.bqs-case[data-j="${st.j}"]`);
     function fitH() { if (st.dead) return; const c = curCase(); if (c) stage.style.height = c.offsetHeight + 'px'; }
     function navH() { const N = st.P.cases.length; const i = B.mod(st.j, N); const cs = st.P.cases[i]; const nv = $('.bqs-nav'); nv.hidden = N <= 1; $('.bqs-arrow.l').hidden = $('.bqs-arrow.r').hidden = N <= 1;
       const nm = (d) => st.P.cases[B.mod(st.j + d, N)].name; $('.bqs-pv').innerHTML = `‹ <span>${esc(nm(-1))}</span>`; $('.bqs-nx').innerHTML = `<span>${esc(nm(1))}</span> ›`; $('.bqs-pv').setAttribute('aria-label', '이전 책장: ' + nm(-1)); $('.bqs-nx').setAttribute('aria-label', '다음 책장: ' + nm(1));
-      $('.bqs-arrow.l').setAttribute('aria-label', '이전 책장: ' + nm(-1)); $('.bqs-arrow.r').setAttribute('aria-label', '다음 책장: ' + nm(1));
+      $('.bqs-arrow.l').setAttribute('aria-label', '이전 책장: ' + nm(-1)); $('.bqs-arrow.r').setAttribute('aria-label', '다음 책장: ' + nm(1)); $('.bqs-arrow.l .pk').textContent = '‹ ' + nm(-1); $('.bqs-arrow.r .pk').textContent = nm(1) + ' ›'; $('.bqs-loop').hidden = N <= 2;
       $('.bqs-here b').textContent = cs.name; $('.bqs-here small').textContent = `${i + 1} / ${N} · ${B.compass(i, i, N)}쪽 · 다음 책장은 ${B.compass(i + 1, i, N)}쪽`;
       const D = Math.min(N, 24); $('.bqs-dots').innerHTML = N > 1 ? Array.from({ length: D }, (_, k) => `<i class="${Math.floor(i * D / N) === k ? 'on' : ''}"></i>`).join('') : '';
       MEM[st.sort] = { j: st.j }; LS.set('pos', { s: st.sort, i }); o.onState && o.onState({ s: st.sort, i }); }
     function turn(d) { if (!st.P || st.busy || st.P.cases.length <= 1) return; closePop(); hideTip(); const N = st.P.cases.length; const j0 = st.j, j1 = st.j + d;
-      if (!ring.querySelector(`.bqs-case[data-j="${j1}"]`)) ring.insertAdjacentHTML('beforeend', caseH(j1)); [...ring.children].forEach((c) => { c.style.transform = place(+c.dataset.j); c.inert = true; });
+      if (!ring.querySelector(`.bqs-case[data-j="${j1}"]`)) ring.insertAdjacentHTML('beforeend', caseH(j1)); fitCase(ring.querySelector(`.bqs-case[data-j="${j1}"]`)); /* 다가올 책장 글을 미리 맞춤 */ [...ring.children].forEach((c) => { c.style.transform = place(+c.dataset.j); c.inert = true; });
       const nc = ring.querySelector(`.bqs-case[data-j="${j1}"]`); stage.style.height = Math.max(stage.offsetHeight, nc.offsetHeight) + 'px';
       const r = stage.getBoundingClientRect(); stage.style.perspectiveOrigin = `50% ${clamp(innerHeight / 2 - r.top, 80, r.height - 80)}px`;
       const ms = RM() ? 0 : C.turnMs; st.busy = true; sec.classList.add('turning'); const pull = Math.min(320, st.W * 0.22);
-      const done = () => { if (st.dead) return; st.j = j1; ring.style.transform = ringT(j1); sec.classList.remove('turning'); st.busy = false; sync(false); const t = curCase(); const top = t.getBoundingClientRect().top; if (top < 0) window.scrollBy(0, top - 60);
+      const done = () => { if (st.dead) return; ring.style.transition = 'none'; st.peek = 0; sec.classList.remove('peekl', 'peekr'); st.j = j1; /* sync가 새 책장 글을 맞춤 */ ring.style.transform = ringT(j1); sec.classList.remove('turning'); st.busy = false; sync(false); const t = curCase(); const top = t.getBoundingClientRect().top; if (top < 0) window.scrollBy(0, top - 60);
         say(`책장 ${B.mod(j1, N) + 1}/${N}: ${st.P.cases[B.mod(j1, N)].name}`); };
       if (!ms || !ring.animate) return done();
-      const a = ring.animate([{ transform: ringT(j0) }, { transform: ringT(j0 + d * 0.5, pull), offset: 0.5 }, { transform: ringT(j1) }], { duration: ms, easing: 'cubic-bezier(.45,.05,.25,1)' }); a.onfinish = done; a.oncancel = done; }
+      const j0s = j0 + (st.peek || 0); peekOff(true); dust(d, ms); if (N > 2 && B.mod(j1, N) === (d > 0 ? 0 : N - 1)) loopFx(d);
+      const a = ring.animate([{ transform: ringT(j0s) }, { transform: ringT(j0 + d * 0.5, pull), offset: 0.5 }, { transform: ringT(j1) }], { duration: ms, easing: 'cubic-bezier(.45,.05,.25,1)' }); a.onfinish = done; a.oncancel = done; }
+    /* ── (shelf3) 엿보기 — 화살표에 다가가면 책장 둘레가 그쪽으로 살짝 돌아 다음 책장 모서리가 보임(누르지 않으면 제자리) */
+    function peekOn(d) { if (!C.peek || RM() || st.busy || !st.P || st.P.cases.length <= 1 || st.peek === d * 0.07) return; st.peek = d * 0.07; ring.style.transition = 'transform .45s cubic-bezier(.3,.7,.3,1)'; ring.style.transform = ringT(st.j + st.peek); sec.classList.toggle('peekl', d < 0); sec.classList.toggle('peekr', d > 0); }
+    function peekOff(now) { if (!st.peek) return; st.peek = 0; sec.classList.remove('peekl', 'peekr'); ring.style.transition = now ? 'none' : 'transform .35s ease'; if (!now) ring.style.transform = ringT(st.j); }
+    /* 책장이 돌 때 먼지·종이 조각이 그 쪽에서 살짝 날림(0.8초 · 12개 · 움직임 줄이기면 안 함) */
+    function dust(d, ms) { if (!C.turnFx || RM() || !sec.animate) return; const r = stage.getBoundingClientRect(); const x0 = d > 0 ? r.right - 30 : r.left + 30; const y0 = clamp(innerHeight / 2, r.top + 40, r.bottom - 40);
+      for (let i = 0; i < 12; i++) { const e = document.createElement('i'); const paper = i % 3 === 0; e.className = 'bqs-dust' + (paper ? ' pp' : ''); e.setAttribute('aria-hidden', 'true'); Object.assign(e.style, { left: x0 + 'px', top: y0 + (Math.random() - 0.5) * 220 + 'px' }); sec.appendChild(e);
+        const dx = -d * (60 + Math.random() * 160), dy = (Math.random() - 0.6) * 120, rot = (Math.random() - 0.5) * 540; e.animate([{ transform: 'translate(0,0) rotate(0)', opacity: 0 }, { opacity: paper ? 0.95 : 0.7, offset: 0.2 }, { transform: `translate(${dx}px,${dy}px) rotate(${rot}deg)`, opacity: 0 }], { duration: Math.min(1100, ms * 0.9 + Math.random() * 300), delay: Math.random() * 120, easing: 'cubic-bezier(.2,.6,.4,1)' }).onfinish = () => e.remove(); setTimeout(() => e.remove(), 1600); } }
+    /* 끝 → 처음(또는 처음 → 끝)으로 넘어갈 때 '한 바퀴' 표시 */
+    function loopFx(d) { const t = document.createElement('div'); t.className = 'bqs-lapt'; t.setAttribute('role', 'status'); t.textContent = d > 0 ? '↻ 한 바퀴 — 첫 책장으로' : '↺ 거꾸로 한 바퀴 — 마지막 책장으로'; stage.appendChild(t); setTimeout(() => t.remove(), 1700); }
     function go(i) { if (!st.P) return; const N = st.P.cases.length; st.j = B.mod(i, N); sync(true); }
 
     /* ── 손님 ⚙ 보기(이 기기만) */
     function viewH() { const v = view(); const sel = (k, L, d) => `<select data-v="${k}">${L.map(([a, n]) => `<option value="${a}"${String(v[k] != null ? v[k] : C0[k]) === String(a) ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>`;
       const ck = (k, n) => `<label><input type="checkbox" data-v="${k}"${(v[k] != null ? v[k] : C0[k]) ? ' checked' : ''}> ${esc(n)}</label>`;
-      return `<div class="bqs-vg"><label>담기 움직임 ${sel('cartAnim', [['rand', '매번 랜덤'], ...B.CART_ANIMS, ['off', '없음']])}</label><label>찜 움직임 ${sel('wishAnim', [['rand', '매번 랜덤'], ...B.WISH_ANIMS, ['off', '없음']])}</label>
+      return `<div class="bqs-vg"><label>책장 종류 ${sel('wood', B.CASES)}</label><label>책등 누르면 ${sel('popMode', [['spine', '책등에 바로 단추'], ['bubble', '말풍선 창']])}</label><label>담기 움직임 ${sel('cartAnim', [['rand', '매번 랜덤'], ...B.CART_ANIMS, ['off', '없음']])}</label><label>찜 움직임 ${sel('wishAnim', [['rand', '매번 랜덤'], ...B.WISH_ANIMS, ['off', '없음']])}</label>
         <label>책등 글 ${sel('orient', [['rand', '책마다 랜덤'], ['v', '세로쓰기'], ['h', '가로쓰기(눕힘)']])}</label>${ck('turn3d', '책장 3D로 돌기')}${ck('tip', '마우스 올리면 책 정보')}${ck('fontsOn', '여러 글꼴(끄면 더 가벼움)')}
         <button type="button" class="bqs-vr">가게 기본으로</button></div><p class="bqs-hint">이 기기에만 저장됩니다 · 키보드: ←→ 옆 책 · ↑↓ 위아래 선반 · Enter 담기 창 · [ ] 책장 돌리기 · + − 확대 · Ctrl+휠·두 손가락으로도 확대</p>`; }
-    function setView(k, v) { const V = view(); if (k == null) { LS.set('view', {}); } else { V[k] = v; LS.set('view', V); } C = B.cfgOf({ ...C0, ...view() }); sync(true); $('#bqsView').innerHTML = viewH(); }
+    function setView(k, v) { const V = view(); if (k == null) { LS.set('view', {}); } else { V[k] = v; LS.set('view', V); } C = B.cfgOf({ ...C0, ...view() }); sec.className = `bqs room-${C.room} wood-${C.wood}`; LKC.clear(); sync(true); $('#bqsView').innerHTML = viewH(); }
 
     /* ── 글꼴: 그 책장에 쓰인 글자만 받아 별칭(bqf-글꼴-책장)으로 */
     function fontsFor(cEl) { if (!C.fontsOn || !cEl || !root.fetch) return; const ck = st.sort + cEl.dataset.i; const by = new Map();
-      cEl.querySelectorAll('.sp:not(.img)').forEach((b) => { const x = byId.get(b.dataset.id); if (!x) return; const f = B.look(x, C).f; by.set(f, (by.get(f) || '') + x.t + (x.a || '')); });
+      cEl.querySelectorAll('.sp:not(.ok)').forEach((b) => { const x = byId.get(b.dataset.id); if (!x) return; const f = lookOf(x).f; by.set(f, (by.get(f) || '') + x.t + (x.a || '')); });
       const jobs = [...by].map(([f, txt]) => () => { const al = `bqf-${f}-${ck}`; if (FONT_CSS.has(al)) { const s = FONT_CSS.get(al); FONT_CSS.delete(al); FONT_CSS.set(al, s); return Promise.resolve(); }
         return fetch(B.fontUrl(f, txt)).then((r) => (r.ok ? r.text() : '')).then((css) => { if (!css || st.dead) return; const s = document.createElement('style'); s.dataset.bqf = al; s.textContent = css.replace(/font-family:\s*'[^']+'/g, `font-family:'${al}'`); document.head.appendChild(s); FONT_CSS.set(al, s);
-          while (FONT_CSS.size > 12) { const [k0, s0] = FONT_CSS.entries().next().value; s0.remove(); FONT_CSS.delete(k0); } }).catch(() => {}); });
+          while (FONT_CSS.size > 160) { const [k0, s0] = FONT_CSS.entries().next().value; s0.remove(); FONT_CSS.delete(k0); } }).catch(() => {}); });
       let n = 0; const next = () => { if (st.dead || n >= jobs.length) return; jobs[n++]().then(next); }; const idle = root.requestIdleCallback || ((f) => setTimeout(f, 60)); idle(() => { for (let i = 0; i < 4; i++) next(); }); }
-    const fontsDrop = () => {};
+    const fontsDrop = (c) => { if (!c || !c.dataset) return; const ck = '-' + st.sort + c.dataset.i; for (const [al, s0] of [...FONT_CSS]) if (al.endsWith(ck)) { s0.remove(); FONT_CSS.delete(al); } };
 
     /* ── 툴팁(앞·뒤 표지 · 책 정보) */
     const byId = new Map();
     function showTip(b) { const x = byId.get(b.dataset.id); if (!x || !C.tip) return; const off = x.lp > 0 && x.p < x.lp ? Math.round((1 - x.p / x.lp) * 100) : 0;
-      tip.innerHTML = `<div class="tc">${x.im ? `<img src="${esc(x.im)}" alt="앞표지">` : '<span class="ni">앞표지<br>사진 없음</span>'}${x.bk ? `<img src="${esc(x.bk)}" alt="뒤표지">` : '<span class="ni">뒤표지<br>사진 없음</span>'}</div>
-        <b>${esc(x.t)}</b><div class="tm">${esc([x.a, x.pb].filter(Boolean).join(' · '))}</div><div class="tp">${x.g ? `<span class="g g-${esc(x.g)}">${esc(x.g)}</span> ` : ''}<b>${won(x.p)}</b>${off ? ` <small class="off">${off}%↓</small>` : ''}${x.lp ? ` <s>${won(x.lp)}</s>` : ''}</div>
+      const so = B.saleOf(x); const bdH = (x.bd || []).filter((k) => B.BADGE[k]).slice(0, 3).map((k) => `<span class="bd bd-${k}">${B.BADGE[k]}</span>`).join('');
+      tip.innerHTML = `${bdH ? `<div class="bds in">${bdH}</div>` : ''}<div class="tc">${x.im ? `<img src="${esc(x.im)}" alt="앞표지">` : '<span class="ni">앞표지<br>사진 없음</span>'}${x.bk ? `<img src="${esc(x.bk)}" alt="뒤표지">` : '<span class="ni">뒤표지<br>사진 없음</span>'}</div>
+        <b>${esc(x.t)}</b><div class="tm">${esc([x.a, x.pb].filter(Boolean).join(' · '))}</div><div class="tp">${x.g ? `<span class="g g-${esc(x.g)}">${esc(x.g)}</span> ` : ''}${so && so.from === 'p0' ? `<s class="was">${won(so.was)}</s> ` : ''}<b>${won(x.p)}</b>${so && so.from === 'p0' ? ` <small class="off sale">할인 ${so.pct}%</small>` : off ? ` <small class="off">${off}%↓</small>` : ''}${x.lp ? ` <small class="lp">정가 ${won(x.lp)}</small>` : ''}</div>
         <div class="tm">${esc([x.c, x.at ? x.at.slice(5).replace('-', '/') + ' 들어옴' : '', x.pg ? x.pg + '쪽' : ''].filter(Boolean).join(' · '))}${x.st === 'o' ? ' · <b>주문 중</b>' : ''}${isWish(x.id) ? ' · ♥ 찜함' : ''}</div><small class="tk">눌러서 담기·찜</small>`;
       tip.hidden = false; const r = b.getBoundingClientRect(); const tw = tip.offsetWidth, th = tip.offsetHeight; let L = r.right + 12; if (L + tw > innerWidth - 8) L = r.left - tw - 12; if (L < 8) L = clamp(r.left + r.width / 2 - tw / 2, 8, innerWidth - tw - 8);
       let T = clamp(r.top + r.height / 2 - th / 2, 8, innerHeight - th - 8); tip.style.left = L + 'px'; tip.style.top = T + 'px'; }
@@ -118,15 +194,29 @@
 
     /* ── 책등 누름 → 그 자리에 담기·찜 */
     let popFor = null;
-    function openPop(b) { hideTip(); closePop(); const x = byId.get(b.dataset.id); if (!x) return; popFor = b; b.classList.add('out'); const inC = o.cart && o.cart.has && o.cart.has(x.id); const w = isWish(x.id);
-      const cartB = x.st === 'o' ? '<button type="button" disabled>다른 분이 주문함</button>' : !(o.shop && o.shop.open) ? '<button type="button" disabled title="문을 연 뒤 주문">🛒 문 연 뒤 담기</button>' : inC ? '<a class="pb" href="#/cart">🛒 담겨 있음 ›</a>' : '<button type="button" class="pc" data-a="cart">🛒 장바구니</button>';
-      pop.innerHTML = `<div class="pt"><b>${esc(x.t)}</b><small>${esc(x.a || '')} · ${won(x.p)}</small></div><div class="pa">${cartB}<button type="button" class="pw${w ? ' on' : ''}" data-a="wish" aria-pressed="${w}">${w ? '♥ 찜함' : '♡ 찜'}</button><button type="button" data-a="open">자세히 ›</button></div><button type="button" class="px" data-a="x" aria-label="닫기">✕</button>`;
-      pop.setAttribute('aria-label', x.t + ' — 담기·찜'); pop.hidden = false; posPop(); const f = pop.querySelector('button:not([disabled]),a'); if (f) f.focus({ preventScroll: true }); }
-    function posPop() { if (!popFor || pop.hidden) return; const r = popFor.getBoundingClientRect(); const pw = pop.offsetWidth, ph = pop.offsetHeight; let L = clamp(r.left + r.width / 2 - pw / 2, 8, innerWidth - pw - 8); let T = r.top - ph - 10; if (T < 8) T = Math.min(innerHeight - ph - 8, r.bottom + 10);
+    /* 책등을 누르면(정범님 11/11): 기본은 그 책등 표면에 바로 단추 셋 — 누른 높이에 🛒이 오게(커서를 거의 안 움직이고 담기·찜) · 설정 popMode=bubble이면 옛 말풍선 */
+    function openPop(b, y) { hideTip(); closePop(); const x = byId.get(b.dataset.id); if (!x) return; popFor = b; b.classList.add('out'); const inC = o.cart && o.cart.has && o.cart.has(x.id); const w = isWish(x.id); const sp = C.popMode !== 'bubble';
+      const lb = (i, t) => (sp ? `<i aria-hidden="true">${i}</i><small>${t}</small>` : `${i} ${t}`);
+      const cartB = x.st === 'o' ? `<button type="button" disabled aria-label="다른 분이 주문함">${lb('⏳', '주문 중')}</button>` : !(o.shop && o.shop.open) ? `<button type="button" disabled title="문을 연 뒤 주문" aria-label="문을 연 뒤 담기">${lb('🛒', '문 연 뒤')}</button>` : inC ? `<a class="pb" href="#/cart" aria-label="장바구니에 담겨 있음 — 보러 가기">${lb('✓', '담김')}</a>` : `<button type="button" class="pc" data-a="cart" aria-label="장바구니에 담기">${lb('🛒', sp ? '담기' : '장바구니')}</button>`;
+      const wishB = `<button type="button" class="pw${w ? ' on' : ''}" data-a="wish" aria-pressed="${w}" aria-label="${w ? '찜 빼기' : '찜하기'}">${lb(w ? '♥' : '♡', w ? '찜함' : '찜')}</button>`; const openB = `<button type="button" data-a="open" aria-label="자세히 보기">${lb('ⓘ', '자세히')}</button>`;
+      const so = B.saleOf(x); const prH = `${so && so.from === 'p0' ? `<s>${won(so.was)}</s> ` : ''}${won(x.p)}${so && so.from === 'p0' ? ` <em>−${so.pct}%</em>` : ''}`;
+      pop.className = 'bqs-pop' + (sp ? ' onsp' : ''); pop.removeAttribute('style');
+      pop.innerHTML = sp ? `<div class="pcap"><b>${esc(x.t)}</b><small>${esc(x.a || '')}${x.a ? ' · ' : ''}${prH}</small><button type="button" class="px" data-a="x" aria-label="닫기">✕</button></div><div class="pa">${cartB}${wishB}${openB}</div>`
+        : `<div class="pt"><b>${esc(x.t)}</b><small>${esc(x.a || '')} · ${prH}</small></div><div class="pa">${cartB}${wishB}${openB}</div><button type="button" class="px" data-a="x" aria-label="닫기">✕</button>`;
+      if (sp) { pop.style.setProperty('--c', b.style.getPropertyValue('--c')); pop.style.setProperty('--k', b.style.getPropertyValue('--k')); pop.style.setProperty('--g', b.style.getPropertyValue('--g')); }
+      pop.setAttribute('aria-label', x.t + ' — 담기·찜'); pop.hidden = false; st.popY = y; st.popAt = Date.now(); posPop(); const f = pop.querySelector('.pa button:not([disabled]),.pa a'); if (f) f.focus({ preventScroll: true }); }
+    function posPop() { if (!popFor || pop.hidden) return; const sk = popFor.querySelector('.sk') || popFor; const r = sk.getBoundingClientRect(); const pw = pop.offsetWidth, ph = pop.offsetHeight;
+      if (pop.classList.contains('onsp')) { /* (shelf3) 정범님: 단추는 책등 표면 안 — 너비 = 책등 너비 · 좁으면 작은 아이콘만 세로로 · 누른 높이에 🛒(표면 안에서) */
+        const w = Math.max(16, r.width); const n = pop.querySelectorAll('.pa > *').length || 3; const g = clamp(w * 0.08, 2, 5); const bh = clamp(Math.min(w * 1.15, 52, (r.height - g * (n + 1)) / n), 14, 52);
+        pop.style.width = w + 'px'; pop.style.setProperty('--bh2', bh + 'px'); pop.style.setProperty('--gap', g + 'px'); pop.style.setProperty('--ic', clamp(Math.min(w * 0.56, bh * 0.5), 9, 19) + 'px'); pop.classList.toggle('slim', w < 46 || bh < 34);
+        const ph2 = pop.offsetHeight; const pa = pop.querySelector('.pa'); const b0 = pa.firstElementChild; const off = b0 ? b0.offsetTop + b0.offsetHeight / 2 : ph2 / 2; const y = st.popY != null ? st.popY : r.top + r.height / 2;
+        let T = ph2 <= r.height ? clamp(y - off, r.top, r.bottom - ph2) : r.top + (r.height - ph2) / 2; T = clamp(T, 4, innerHeight - ph2 - 4); const L = r.left;
+        pop.style.left = L + 'px'; pop.style.top = T + 'px'; const cap = pop.querySelector('.pcap'); if (cap) { const cw = cap.offsetWidth; const cl = clamp(L + w / 2 - cw / 2, 8, innerWidth - cw - 8); cap.style.left = (cl - L) + 'px'; const up = r.top - cap.offsetHeight - 8 >= 4; cap.classList.toggle('below', !up); cap.style.setProperty('--cy', (up ? r.top - T : r.bottom - T) + 'px'); } return; }
+      let L = clamp(r.left + r.width / 2 - pw / 2, 8, innerWidth - pw - 8); let T = r.top - ph - 10; if (T < 8) T = Math.min(innerHeight - ph - 8, r.bottom + 10);
       pop.style.left = L + 'px'; pop.style.top = T + 'px'; pop.style.setProperty('--ax', clamp(r.left + r.width / 2 - L, 14, pw - 14) + 'px'); pop.classList.toggle('below', T > r.top); }
     function closePop(back) { if (pop.hidden) return; pop.hidden = true; const b = popFor; popFor = null; if (b) { b.classList.remove('out'); if (back) b.focus({ preventScroll: true }); } }
-    on(ring, 'click', (e) => { const b = e.target.closest('.sp'); if (!b || st.busy) return; e.preventDefault(); if (popFor === b) return closePop(true); setFocus(b); openPop(b); });
-    on(pop, 'click', (e) => { const a = e.target.closest('[data-a]'); if (!a) return; const b = popFor; const x = b && byId.get(b.dataset.id); const k = a.dataset.a;
+    on(ring, 'click', (e) => { const b = e.target.closest('.sp'); if (!b || st.busy) return; e.preventDefault(); if (popFor === b) return closePop(true); setFocus(b); openPop(b, e.detail ? e.clientY : null); });
+    on(pop, 'click', (e) => { const a = e.target.closest('[data-a]'); if (!a) return; if (e.detail > 1) return; /* 책등을 두 번 누른 둘째 누름이 담기로 새지 않게 */ const b = popFor; const x = b && byId.get(b.dataset.id); const k = a.dataset.a;
       if (k === 'x') return closePop(true); if (!x) return; if (k === 'open') { closePop(); return o.open && o.open(x.id); }
       if (k === 'cart') { const why = o.cart.add(x); if (why) { o.toast && o.toast(why); return; } closePop(); flyCart(b, x); say(x.t + ' — 장바구니에 담았습니다'); }
       if (k === 'wish') { const r = B.wishToggle((o.wish && o.wish.get()) || [], x); o.wish.set(r.wish); b.classList.toggle('wished', r.on); b.setAttribute('aria-label', b.getAttribute('aria-label').replace(/ · 찜함$/, '') + (r.on ? ' · 찜함' : '')); closePop(true); badge(); if (r.on) wishFx(b); o.toast && o.toast(r.on ? '♥ 찜 목록에 넣었습니다' : '찜을 뺐습니다'); } });
@@ -181,7 +271,8 @@
     on(stage, 'pointerup', pUp); on(stage, 'pointercancel', pUp);
     /* ── 좌우 화살표 — 커서가 가까이 가면 살아남 */
     const AL = $('.bqs-arrow.l'), AR = $('.bqs-arrow.r'); on(AL, 'click', () => turn(-1)); on(AR, 'click', () => turn(1)); on($('.bqs-pv'), 'click', () => turn(-1)); on($('.bqs-nx'), 'click', () => turn(1));
-    on(window, 'pointermove', (e) => { if (e.pointerType !== 'mouse' || AL.hidden) return; for (const A of [AL, AR]) { const r = A.getBoundingClientRect(); const d = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)); const k = clamp(1 - d / 300, 0, 1); A.style.setProperty('--near', k.toFixed(3)); A.classList.toggle('hot', d < 90); } }, { passive: true });
+    on(window, 'pointermove', (e) => { if (e.pointerType !== 'mouse' || AL.hidden) return; for (const A of [AL, AR]) { const r = A.getBoundingClientRect(); const d = Math.hypot(e.clientX - (r.left + r.width / 2), e.clientY - (r.top + r.height / 2)); const k = clamp(1 - d / 300, 0, 1); A.style.setProperty('--near', k.toFixed(3)); A.classList.toggle('hot', d < 90); } const hot = AR.classList.contains('hot') ? 1 : AL.classList.contains('hot') ? -1 : 0; if (hot) peekOn(hot); else peekOff(); }, { passive: true });
+    on(AL, 'focus', () => peekOn(-1)); on(AR, 'focus', () => peekOn(1)); on(AL, 'blur', () => peekOff()); on(AR, 'blur', () => peekOff());
     /* ── 정렬 · 보기 · 크기 바뀜 */
     on($('.bqs-sort'), 'change', (e) => { st.sort = e.target.value; if (C.remember) LS.set('sort', st.sort); st.P = B.plan(st.items, C, st.sort); st.focusId = null; st.j = (MEM[st.sort] && MEM[st.sort].j) || 0; sync(true); say(`${e.target.selectedOptions[0].textContent}으로 · 책장 ${st.P.cases.length}개`); });
     const gear = $('.bqs-gear'); if (gear) on(gear, 'click', () => { const v = $('#bqsView'); v.hidden = !v.hidden; gear.setAttribute('aria-expanded', String(!v.hidden)); if (!v.hidden) v.innerHTML = viewH(); });
@@ -193,7 +284,7 @@
     const centerSpine = () => { const r = stage.getBoundingClientRect(); const e = document.elementFromPoint(clamp(innerWidth / 2, 0, innerWidth - 1), clamp(innerHeight / 2, Math.max(0, r.top), Math.min(innerHeight - 1, r.bottom))); return e && e.closest ? e.closest('.sp') : null; };
     /* 책등 그림이 오면 그 그림 비율로 두께를 맞춤(진짜 책 두께) · 안 열리면 디자인 책등으로 */
     on(ring, 'load', (e) => { const im = e.target; if (!im.classList || !im.classList.contains('si') || !im.naturalHeight) return; const b = im.closest('.sp'); const w = clamp(Math.round((C.rowH * 0.86 * (+b.style.getPropertyValue('--bh') || 92) / 100) * im.naturalWidth / im.naturalHeight), 10, 90); b.style.setProperty('--bw', w); b.classList.add('ok'); }, true);
-    on(ring, 'error', (e) => { const im = e.target; if (im.classList && im.classList.contains('si')) { const b = im.closest('.sp'); im.remove(); if (b) b.classList.remove('img'); } }, true);
+    on(ring, 'error', (e) => { const im = e.target; if (im.classList && im.classList.contains('si')) { const b = im.closest('.sp'); im.remove(); if (b) { b.classList.remove('img'); fitSpines([b]); } } }, true);
 
     /* ── 자료 받기 → 그리기 */
     badge(); const lt = $('.bqs-load span'), lb = $('.bqs-lbar i');
@@ -203,8 +294,8 @@
         st.P = B.plan(st.items, C, st.sort); const N = st.P.cases.length; const p0 = o.start || {}; const pos = LS.get('pos', null);
         st.j = p0.i != null ? B.mod(+p0.i || 0, N) : MEM[st.sort] ? B.mod(MEM[st.sort].j, N) : pos && pos.s === st.sort ? B.mod(pos.i, N) : 0; sync(true); o.ready && o.ready(api); })
       .catch((e) => { if (st.dead) return; const l = $('.bqs-load'); if (l) l.innerHTML = `<div class="err"><b>⚠ ${esc(e.message || e)}</b> <button type="button" class="btn ghost bqs-again">다시 해 보기</button></div>`; const a = $('.bqs-again'); if (a) a.onclick = () => { api.destroy(); mount(el, o); }; });
-    const api = { get state() { return { sort: st.sort, i: st.P ? B.mod(st.j, st.P.cases.length) : 0, N: st.P ? st.P.cases.length : 0, z: st.z, n: st.items.length }; }, turn, go, zoom: setZ, badge,
-      destroy() { st.dead = true; cancelAnimationFrame(rw); offs.forEach((f) => f()); if (RO) RO.disconnect(); closePop(); hideTip(); el.querySelectorAll('.bqs-fly,.bqs-fx').forEach((x) => x.remove()); } };
+    const api = { get state() { return { sort: st.sort, i: st.P ? B.mod(st.j, st.P.cases.length) : 0, N: st.P ? st.P.cases.length : 0, z: st.z, n: st.items.length }; }, turn, go, zoom: setZ, badge, refit: () => { const c = curCase(); if (c) delete c.dataset.fz; fitCase(c); }, lookOf: (id) => { const x = byId.get(id); return x ? lookOf(x) : null; }, get colorState() { return { ok: CC.ok, fail: CC.fail, okN: CC.okN, got: CC.got.size, q: CC.q.length }; },
+      destroy() { st.dead = true; cancelAnimationFrame(rw); offs.forEach((f) => f()); if (RO) RO.disconnect(); closePop(); hideTip(); el.querySelectorAll('.bqs-fly,.bqs-fx,.bqs-dust').forEach((x) => x.remove()); } };
     return api; }
   root.BQShelf = { mount, VER: B.VER };
 })(typeof self !== 'undefined' ? self : this);

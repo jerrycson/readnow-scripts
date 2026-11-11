@@ -8,10 +8,15 @@
   const gradeOf = (g) => GRADE[g] || [g || '등급 모름', ''];
   const offPct = (p, lp) => (lp > 0 && p > 0 && p < lp ? Math.round((1 - p / lp) * 100) : 0);
   /* 장바구니 = [{ id, t, g, p, im }] · 한 권 상품이라 같은 책은 한 번만 */
-  const cartAdd = (cart, it, max) => { const c = (cart || []).filter((x) => x && x.id); if (c.some((x) => x.id === it.id)) return { cart: c, why: '이미 담은 책' }; if (c.length >= (max || 20)) return { cart: c, why: `한 번에 ${max || 20}권까지` }; return { cart: [...c, { id: it.id, t: it.t, g: it.g, p: +it.p || 0, im: it.im || null }], why: null }; };
+  const cartAdd = (cart, it, max) => { const c = (cart || []).filter((x) => x && x.id); if (c.some((x) => x.id === it.id)) return { cart: c, why: '이미 담은 책' }; if (c.length >= (max || 20)) return { cart: c, why: `한 번에 ${max || 20}권까지` }; return { cart: [...c, { id: it.id, t: it.t, g: it.g, p: +it.p || 0, im: it.im || null, ...(+it.p0 > +it.p ? { p0: +it.p0 } : {}) }], why: null }; }; /* (shopc1) 할인 전 값 p0도 담음(줄 그어 보임) */
   const cartDel = (cart, id) => (cart || []).filter((x) => x && x.id !== id);
   const shipFee = (sum, cfg) => { const f = Math.max(0, +((cfg || {}).shipFee) || 0); const fo = Math.max(0, +((cfg || {}).freeOver) || 0); return sum <= 0 ? 0 : fo && sum >= fo ? 0 : f; };
   const cartSum = (cart, cfg) => { const sum = (cart || []).reduce((a, x) => a + (+x.p || 0), 0); const fee = shipFee(sum, cfg); return { n: (cart || []).length, sum, fee, total: sum + fee }; };
+  /* (shelf2 · 원칙 56) 장바구니 살펴보기 — 클라우드 /shop/check 결과(st: 상품 → s 판매중·o 주문 중·x 팔림/내림 · p: 지금 값)로 고침 → { cart, gone:[{…, why}], moved:[{t, a, b}] }
+   *  근거: 쿠팡·아마존 장바구니는 품절·가격 바뀜을 결제 전에 먼저 알림 — 주문 단추를 누른 뒤에야 '팔린 책' 오류가 나지 않게 */
+  const cartFix = (cart, st, p) => { const out = [], gone = [], moved = []; for (const x of cart || []) { if (!x || !x.id) continue; const k = st && st[x.id];
+      if (k === 'x' || k === 'o') { gone.push({ ...x, why: k === 'o' ? '다른 분이 먼저 주문한 책' : '방금 팔렸거나 판매를 멈춘 책' }); continue; }
+      const np = p && +p[x.id]; if (np > 0 && np !== +x.p) { moved.push({ id: x.id, t: x.t, a: +x.p || 0, b: np }); out.push({ ...x, p: np }); } else out.push(x); } return { cart: out, gone, moved }; };
   /* 주문서 검사(서버도 같은 검사를 다시 함 — 여기는 손님에게 바로 알려 주기용) */
   const PHONE = /^01[016789]\d{7,8}$/;
   const EMAIL = /^[^\s@]{1,64}@[^\s@]{1,80}\.[a-z]{2,}$/i;
@@ -25,7 +30,21 @@
   const orderBody = (f, cart) => ({ items: (cart || []).map((x) => x.id), buyer: { name: String(f.name || '').trim(), phone: String(f.phone || '').replace(/\D/g, ''), ...(String(f.email || '').trim() ? { email: String(f.email).trim() } : {}) },
     rcv: f.same ? { name: String(f.name || '').trim(), phone: String(f.phone || '').replace(/\D/g, ''), zip: String(f.zip || '').replace(/\D/g, ''), addr1: String(f.addr1 || '').trim(), addr2: String(f.addr2 || '').trim(), memo: String(f.memo || '').trim() }
       : { name: String(f.rname || '').trim(), phone: String(f.rphone || '').replace(/\D/g, ''), zip: String(f.zip || '').replace(/\D/g, ''), addr1: String(f.addr1 || '').trim(), addr2: String(f.addr2 || '').trim(), memo: String(f.memo || '').trim() },
-    depositor: String(f.dep || '').trim() || String(f.name || '').trim(), agree: { privacy: !!f.agreeP, terms: !!f.agreeT }, hp: f.hp || '' });
+    depositor: String(f.dep || '').trim() || String(f.name || '').trim(), agree: { privacy: !!f.agreeP, terms: !!f.agreeT }, hp: f.hp || '', ...(String(f.cp || '').trim() ? { cp: String(f.cp).trim() } : {}), ...(f.expect != null ? { expect: +f.expect } : {}) });
+  /* ══ (11/11 shopc1) 🏷 배지 · 할인가 · 최근 본 책 · 무료 배송까지 — 배지 이름은 cloud/shop-promo.js BADGES와 같음(시험이 견줌) */
+  const BADGE = { sale: '할인', new: 'NEW', pick: '추천', rare: '희귀', last: '마지막 1권', hot: '인기' };
+  const badgeH = (bd, max) => (bd || []).filter((k) => BADGE[k]).slice(0, max || 3).map((k) => `<span class="bd bd-${k}">${BADGE[k]}</span>`).join('');
+  /* 할인율 — 할인 규칙이 있으면 원래 우리 판매가(p0) 기준 · 없으면 정가 기준(예전 그대로) · { pct, from: 'p0'|'lp' } */
+  const saleOf = (x) => { if (x && x.p0 > x.p && x.p > 0) return { pct: Math.round((1 - x.p / x.p0) * 100), from: 'p0', was: x.p0 }; const o = offPct(x && x.p, x && x.lp); return o ? { pct: o, from: 'lp', was: x.lp } : null; };
+  /* 할인 끝까지 — '오늘 자정까지'·'N일 남음'·'M/D까지' (한국 날짜) */
+  const leftTxt = (pe, now) => { const e = Date.parse(pe || ''); const t = now || Date.now(); if (!Number.isFinite(e) || e <= t) return ''; const d = (v) => new Date(v + 9 * 3600e3).toISOString().slice(0, 10); const n = Math.round((Date.parse(d(e)) - Date.parse(d(t))) / 864e5);
+    if (e - t < 864e5 && n <= 0) return '오늘까지'; if (n <= 6) return n + '일 남음'; const k = d(e); return +k.slice(5, 7) + '/' + +k.slice(8, 10) + '까지'; };
+  /* 최근 본 책(이 기기만 · 20권) — 같은 책은 맨 앞으로 */
+  const seenAdd = (L, x, max) => [{ id: x.id, t: x.t, g: x.g || null, p: +x.p || 0, im: x.im || null, a: x.a || null }, ...(L || []).filter((y) => y && y.id !== x.id)].slice(0, max || 20);
+  /* 무료 배송까지 남은 값(0이면 무료) · 기준 없으면 null */
+  const freeLeft = (sum, cfg) => { const fo = Math.max(0, +((cfg || {}).freeOver) || 0); return fo ? Math.max(0, fo - (+sum || 0)) : null; };
+  const PRICE_RANGES = [['', '모든 값'], ['0-5000', '5천 원 아래'], ['5000-10000', '5천~1만 원'], ['10000-20000', '1만~2만 원'], ['20000-', '2만 원 넘게']];
+  const rangeOf = (v) => { const m = /^(\d*)-(\d*)$/.exec(String(v || '')); return m ? { pmin: m[1] || '', pmax: m[2] || '' } : { pmin: '', pmax: '' }; };
   /* (11/11 shop4) 🆕 들어온 날 표 — d·day = 한국 날짜 YYYY-MM-DD(클라우드가 줌) · 7일 넘으면 표 없음 */
   const ago = (d, day) => { const a = Date.parse(d || ''), b = Date.parse(day || ''); if (!Number.isFinite(a) || !Number.isFinite(b)) return ''; const n = Math.round((b - a) / 864e5); return n <= 0 ? '오늘' : n === 1 ? '어제' : n < 7 ? n + '일 전' : ''; };
   /* 새로 들어온 책 자동 갱신 — 앞에 없던 책 수(첫 화면에 그 수만큼 알림) */
@@ -34,5 +53,5 @@
   function route(h) { const s = String(h || '').replace(/^#/, '') || '/'; const [p, qs] = s.split('?'); const q = {}; (qs || '').split('&').filter(Boolean).forEach((kv) => { const [k, v] = kv.split('='); try { q[decodeURIComponent(k)] = decodeURIComponent((v || '').replace(/\+/g, ' ')); } catch (e) {} });
     const seg = p.split('/').filter(Boolean); return { name: seg[0] || 'home', arg: seg[1] ? decodeURIComponent(seg[1]) : null, q }; }
   const qs = (o) => Object.entries(o || {}).filter(([, v]) => v != null && v !== '').map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v)).join('&');
-  return { won, esc, GRADE, gradeOf, offPct, cartAdd, cartDel, cartSum, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs, ago, freshIds };
+  return { BADGE, badgeH, saleOf, leftTxt, seenAdd, freeLeft, PRICE_RANGES, rangeOf, won, esc, GRADE, gradeOf, offPct, cartAdd, cartDel, cartSum, cartFix, shipFee, PHONE, phoneFmt, formCheck, orderBody, route, qs, ago, freshIds };
 });
