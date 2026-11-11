@@ -1,17 +1,13 @@
 {
- "holder": null,
- "what": null,
- "since": null,
- "beat": null,
- "ask": {
-  "who": "lead",
-  "why": "판 내기 기다림: rel7 판 내기",
-  "at": "2026-11-11T19:26:39Z"
- },
+ "holder": "lead",
+ "what": "rel7 판 내기",
+ "since": "2026-11-11T19:37:57Z",
+ "beat": "2026-11-11T19:37:57Z",
+ "ask": null,
  "last": {
   "who": "h4",
   "done": "",
   "at": "2026-11-11T19:37:33Z"
  },
- "host": null
+ "host": "vm"
 }
