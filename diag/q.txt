@@ -1,2 +1,2 @@
-doc=app_settings/freeship_stats
-# 150065940
+doc=y24_probe/POST_api_Product_ProductList,y24_probe/POST_api_Common_GetMainGoods
+# 2850530272
