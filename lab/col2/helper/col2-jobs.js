@@ -33,7 +33,7 @@ function makeJobs(ctx) {
   const bookQ = () => ['metrics', 'usedPage', 'dynamic'].filter(inPlan).reduce((m, k) => Math.max(m, (S.q[k] || []).length), 0);
   function feedShops(scs, from) { let n = 0; for (const sc of scs || []) { const s = String(sc || ''); if (!/^\d{1,10}$/.test(s) || own().includes(s)) continue; for (const k of ['shopSum', 'survey']) if (push(k, { sc: s, from }, s)) n++; } return n; }
   /* (0.1.10) 🔍 새상품 없는 시세 차례 — 웹앱이 넘긴 운영 prd_market_nobook 문서(사무실 PC만 · 로거는 넣지 않음) */
-  function feedNb(docs) { if (kind() === 'logger') return 0; let n = 0; for (const d of docs || []) { const v = d.v || {}; if (!v.title || !v.usedCode) continue; if (push('nbMarket', { key: d.id, usedCode: String(v.usedCode), listingId: v.listingId || null, title: String(v.title), price: v.our == null ? null : +v.our }, d.id)) n++; S.nbAfter = d.id; } if (n) { ctx.note(`🔍 새상품 없는 시세 ${n}건을 그림자 차례에 넣음(사무실 PC만)`, { k: 'read', m: '그림자 일' }); save(); } return n; }
+  function feedNb(docs) { if (kind() === 'logger') return 0; let n = 0; for (const d of docs || []) { const v = d.v || {}; if (!v.title || !v.usedCode) continue; if (handed('nbMarket') && v.at && now() - Date.parse(v.at) < 7 * 864e5) { S.nbAfter = d.id; continue; } /* (11/11 col2rep3) 넘긴 뒤엔 운영처럼 7일 지난 상품만 다시 봄 */ if (push('nbMarket', { key: d.id, usedCode: String(v.usedCode), listingId: v.listingId || null, title: String(v.title), price: v.our == null ? null : +v.our }, d.id)) n++; S.nbAfter = d.id; } if (n) { ctx.note(`🔍 새상품 없는 시세 ${n}건을 그림자 차례에 넣음(사무실 PC만)`, { k: 'read', m: '그림자 일' }); save(); } return n; }
   const qLen = (k) => (S.q[k] || []).length;
   /* 🎯 대상 숍 — 운영 app_settings/bench(읽기만 · 6시간마다) · 없으면 col2.json jobs.benchSc */
   function benchFeed() { if (!inPlan('bench') || now() - S.benchAt < 6 * 3600e3) return; const L = Array.isArray(C().benchSc) ? C().benchSc.map(String) : null;
@@ -58,13 +58,26 @@ function makeJobs(ctx) {
   /* (0.1.10) 📚 KPIPA 마지막 날 — 운영 kpipaJob과 같은 규칙(한국 14:30 뒤면 어제 · 그 전엔 그제) · 날짜 셈은 떼어 온 kpYmd·kpAdd */
   const kpNeed = () => { const K = { ...(ctx.KPIPA || {}), ...(C().kpipa || {}) }; const t = new Date(now() + 9 * 3600e3); const hm = t.getUTCHours() * 60 + t.getUTCMinutes(); const [h, m] = String(K.after || '14:40').split(':').map(Number); return hm >= h * 60 + (m || 0); };
 
+  /* (11/11 col2rep3) 💱 환율 출처 맞춤 — 11/11 JS-MAIN은 하루 첫 걸음(키가 웹앱에서 오기 전)에 읽어 frankfurter로 받음 → 운영(수출입은행)과 '출처 다름'
+   *  운영 extFx처럼 한국 11:35 뒤(수출입은행 고시 뒤)에만 · 사무실 PC는 운영 키(eximKey)가 메모리에 온 뒤에만(3시간 기다려도 안 오면 키 없이 — 그때는 운영 쪽도 키가 없을 때뿐) */
+  const kmin = () => { const t = new Date(now() + 9 * 3600e3); return t.getUTCHours() * 60 + t.getUTCMinutes(); };
+  function fxReady() { const F = C().fx || {}; const [h, m] = String(F.after || '11:35').split(':').map(Number); if (kmin() < h * 60 + (m || 0)) return false; if (kind() === 'logger' || !ctx.keysFor) return true; let k = {}; try { k = ctx.keysFor('fx') || {}; } catch (e) {} if (k.eximKey) return true;
+    if (!S.fxWait || S.fxWait.d !== kday()) S.fxWait = { d: kday(), at: now() }; return now() - S.fxWait.at >= (F.keyWaitMin == null ? 180 : +F.keyWaitMin) * 60e3; } /* col2.json jobs.fx { after, keyWaitMin }로 바꿈(시험은 00:00 · 0) */
+  /* (11/11 col2rep3) 🔀 넘긴 일인가(이 PC로) */
+  const handed = (k) => !!(ctx.handed && ctx.handed(k) && ctx.opOut);
+  /* (11/11 col2rep3) 🅣 알라딘 TTB '이 주소의 OpenAPI 서비스는 종료' — 11/11 두 PC 모두 41·34건 100% 같은 답(운영 ext_run.lastErr.ttb도 같은 글) = 책 문제가 아니라 알라딘 쪽 주소 문제
+   *  → 못 읽음으로 세지 않고 '건너뜀(출처 서비스 끝)' · 그날은 더 묻지 않음(헛 요청 하루 수십 건 줄임) · 주소가 바뀌면 운영 공용 파일 고침 뒤 다음 날 다시 */
+  const HO_DUE = { 'ext.nl': (a) => { const isbn = a.isbn; if (!isbn) return 'yes'; const g = ctx.want('ext_basic', isbn); if (g && g.err) return 'yes'; if (!(g && g.have)) { if (!a.preAt) a.preAt = now(); return now() - a.preAt < 10 * 60e3 ? 'wait' : 'yes'; }
+    const p = g.v && g.v.src ? g.v.src.nl : null; if (!p || p.err) return 'yes'; const ref = Date.parse(p.chk || p.at || '') || 0; return now() - ref >= 120 * 864e5 ? 'yes' : 'no'; } };
+  const ENDED_RE = /OpenAPI\s*서비스는\s*종료|서비스가\s*종료/;
+
   /* 하나 하기 → { did, rest(ms), why } */
   async function step() {
     const b = busy(); if (b && b.on) { if (now() - S.busyLog > 10 * 60e3) { S.busyLog = now(); ctx.note(`그림자 일 쉼 — 운영이 바쁨(${b.why || ''}) · 끝나면 이어감`, { k: 'rest', m: '그림자 일' }); } return { did: false, rest: ctx.BUSY.restMs, why: '운영이 바쁨: ' + (b.why || '') }; }
     settle(); benchFeed();
     if (inPlan('kpipa') && S.kpDay !== kday() && kpNeed()) { S.kpDay = kday(); S.kpAt = now(); push('kpipa', { day: kday() }, kday()); }
     else if (inPlan('kpipa') && ctx.handed && ctx.handed('kpipa') && now() - (S.kpAt || 0) > 3 * 3600e3) { S.kpAt = now(); const key = kday() + '_' + new Date(now() + 9 * 3600e3).getUTCHours(); push('kpipa', { day: kday() }, key); } /* (11/11 col2rep2) 넘긴 뒤엔 운영처럼 3시간마다 최근 7일(공표 뒤 고쳐짐) */
-    if (inPlan('ext.fx') && S.fxDay !== kday() && TK.shareOk(kind(), kday().slice(-1), C())) { S.fxDay = kday(); push('ext.fx', { day: kday() }, kday()); }
+    if (inPlan('ext.fx') && S.fxDay !== kday() && TK.shareOk(kind(), kday().slice(-1), C()) && fxReady()) { S.fxDay = kday(); push('ext.fx', { day: kday() }, kday()); }
     const L = plan().filter((k) => k !== 'product' && (S.q[k] || []).length);
     /* (11/10) 🗣 판매자 구매평·문의 글 모으기(로거만) — 몫(처음 큼 → 점점 다른 일과 같게)만큼 차례를 받음 · 속도 규칙은 같이 셈 */
     const V = ctx.voice; const vTurn = !!(V && V.wantTurn(L.length));
@@ -81,6 +94,10 @@ function makeJobs(ctx) {
     /* (11/10 밤 col2n) 표본이 모자란 일부터 — 예전엔 차례대로 돌아(일 수만큼 나눔) 표본 30개를 일찍 채운 일도 같은 몫을 받아, 하루 1,600장 몫이 낮 12시쯤 다 쓰이면 남은 일은 30개를 못 채움
      *  → 오늘 해 본 수(견줌+못 읽음+운영 값 없음+건너뜀)가 가장 적은 일 먼저(같으면 예전 차례) · 모든 일이 표본을 채운 뒤엔 다시 고르게 */
     const k = pickK(L2); const t = TK.byK[k]; const SK = siteOf(k); const SP = ctx.site && SK ? { take: () => ctx.site.take(SK), ok: () => ctx.site.ok(SK), fail: (x) => ctx.site.fail(SK, x) } : ctx.pace; /* 바깥 일은 그 사이트 몫 */ const a = S.q[k].shift(); (S.seen[k] || (S.seen[k] = {}))[a.key] = kday(); { const sk = Object.keys(S.seen[k]); if (sk.length > SEENMAX) for (const x of sk.slice(0, sk.length - SEENMAX)) delete S.seen[k][x]; }
+    if (S.ended && S.ended[k] === kday()) { record(t, a, a.key, 'skip', [], { why: '출처 서비스 끝(알라딘이 이 주소의 OpenAPI를 끝냄) — 오늘은 묻지 않음', quiet: true }); return { did: true }; }
+    /* (11/11 col2rep3) 🔀 넘긴 국중 — 운영처럼 다시 볼 날(120일)이 지난 책만 묻는다: 먼저 운영 문서(ext_basic/<ISBN>)를 웹앱에서 받아 보고(바깥 요청 없음) · 10분 안에 못 받으면 그냥 읽음 */
+    if (t.src && handed(k) && TK.byK[k] && HO_DUE[k]) { const due = HO_DUE[k](a); if (due === 'wait') { S.q[k].push(a); delete S.seen[k][a.key]; return { did: false, rest: 1500, why: '넘긴 일 — 운영 문서 먼저 받는 중' }; }
+      if (due === 'no') { record(t, a, a.key, 'skip', [], { why: '다시 볼 날 전(운영 규칙 120일 · 넘긴 일)', quiet: true }); return { did: true }; } }
     const t0 = now(); let r;
     if (t.reader === 'al') { const p = TK.pathOf(t, a, own()); if (!p) { record(t, a, a.key, 'skip', [], { why: '정한 주소 꼴이 아님(또는 우리 숍)' }); return { did: true }; }
       let core, br; try { core = await ctx.core(); br = await ctx.browser(); } catch (e) { S.q[k].unshift(a); delete S.seen[k][a.key]; ctx.pace.fail('error'); return { did: false, rest: 10e3, why: '작업 창 준비 실패: ' + e.message }; }
@@ -96,6 +113,7 @@ function makeJobs(ctx) {
       S.curSite = SK; try { r = await extCall(t, a); } catch (e) { r = { ok: false, why: e.message }; } finally { S.curSite = null; } if (r && /HTTP (429|503)/.test(String(r.why || ''))) SP.fail('429'); else if (r && r.ok === false) SP.fail('error'); else SP.ok(); }
     r = r || { ok: false, why: '빈 응답' }; const ms = now() - t0;
     if (r.skip) { record(t, a, a.key, 'skip', [], { why: r.skip, ms }); return { did: true }; }
+    if (!r.ok && t.cls === 'ext' && ENDED_RE.test(String(r.why || ''))) { (S.ended || (S.ended = {}))[k] = kday(); record(t, a, a.key, 'skip', [], { why: '출처 서비스 끝 — ' + String(r.why || '').slice(0, 80), ms }); return { did: true }; }
     if (!r.ok) { record(t, a, a.key, r.needLogin ? 'skip' : 'fail', [], { why: r.why || '못 읽음', ms }); return { did: true }; }
     queue(t, a, r, ms); settle(); save(); return { did: true }; }
 
@@ -111,8 +129,10 @@ function makeJobs(ctx) {
     const expr = `(async () => { const X = globalThis.__col2; X.W = []; X.n = 0; X.st = null; globalThis.SET = { pageTimeoutSec: 25 }; const K = ${JSON.stringify(a.key)}; globalThis.LISTINGS = new Map([[K, ${JSON.stringify(L)}]]);
       try { await Col2Lift.nbMarketJob(); } catch (e) { return { ok: false, why: '검색 시세 오류: ' + e.message, kind: 'error' }; } finally { globalThis.LISTINGS = new Map(); }
       const w = X.W.find((x) => x.p === 'prd_market_nobook/' + K); if (!w) return { ok: false, why: X.st && X.st !== 200 ? '서버 응답 ' + X.st : X.n ? '검색 화면에서 시세를 못 만듦' : '검색어를 만들 수 없음', kind: X.st === 429 || X.st === 503 ? '429' : 'error' };
-      const m = w.v.market || {}; return { ok: true, page: { median: m.median ?? null, low: m.low ?? null, n: m.n ?? null, candSig: w.v.candSig || null, cands: (w.v.cands || []).length }, n: X.n }; })()`;
-    return br.mainJob(core.src, expr, 40); }
+      const m = w.v.market || {}; const vd = ${handed('nbMarket') ? "X.W.find((x) => x.p.indexOf('prd_market_nobook/' + K + '/v/') === 0)" : 'null'};
+      return { ok: true, page: { median: m.median ?? null, low: m.low ?? null, n: m.n ?? null, candSig: w.v.candSig || null, cands: (w.v.cands || []).length }, n: X.n, ${handed('nbMarket') ? 'full: { main: w.v, vdoc: vd ? vd.v : null }' : 'full: null'} }; })()`;
+    const r = await br.mainJob(core.src, expr, 40); if (r && r.full) { HOFULL.set(String(a.key), r.full); while (HOFULL.size > 40) HOFULL.delete(HOFULL.keys().next().value); delete r.full; } return r; }
+  const HOFULL = new Map(); /* (11/11 col2rep3) 넘긴 시세 — 운영 nbMarketJob이 만든 문서 통째(메모리에만 · 40건) */
   /* (0.1.10) 📚 KPIPA — 판매 보고서 화면 탭(따로 된 칸 · 쿠키는 그 칸에만)에서 운영 kpFetch(글자 그대로 — 보안 표 받기 kpToken · 조회 kpReq · 표 읽기 kpParse) · 최근 days일 · 두 종류 사이 3~5초 */
   async function kpRead(br, core) { const K = { ...(ctx.KPIPA || {}), ...(C().kpipa || {}), host: (ctx.KPIPA || {}).host }; const days = Math.max(5, Math.min(31, +K.days || 7)); const base = ctx.kpBase || K.host || 'https://bnk.kpipa.or.kr'; if (ctx.test && !ctx.kpBase) return { ok: false, why: '시험 중엔 바깥 주소에 가지 않음', kind: 'error' };
     const expr = `(async () => { const X = globalThis.__col2; X.gm = 'fetch'; X.from = ${JSON.stringify(K.host || 'https://bnk.kpipa.or.kr')}; X.n = 0; X.st = null; const L = Col2Lift;
@@ -131,11 +151,23 @@ function makeJobs(ctx) {
       S.wait.push({ k: t.k, a, id, c: t.col, res: R(slimRes(r)), at: now(), ms }); return; }
     const id = t.id === 'bookId' ? a.bookId : TK.docId(t, a); if (!id) { record(t, a, a.key, 'noprod', [], { why: '운영 문서 이름 모름(bookId 없음)', ms }); return; }
     S.wait.push({ k: t.k, a, id, c: t.col, sh: t.shape === 'survey' ? TK.surveyDays(pg) : pg, at: now(), ms }); }
-  const slimRes = (r) => { const o = { ok: !!r.ok, none: !!r.none, skip: r.skip || null, why: r.why || null }; if (r.d !== undefined) o.d = r.d; if (r.rates) { o.rates = r.rates; o.src = r.src; o.date = r.date; } return o; };
+  const slimRes = (r) => { const o = { ok: !!r.ok, none: !!r.none, skip: r.skip || null, why: r.why || null }; if (r.d !== undefined) o.d = r.d; if (r.rates) { o.rates = r.rates; o.src = r.src; o.date = r.date; o.warn = r.warn || null; } return o; };
 
   /* (11/11 col2rep2 · 약속 38·48) 🔀 넘긴 KPIPA — 이 PC로 넘겼으면(웹앱 ⚙ › 🔀 번외로 넘기기) 운영 kpipaJob과 같은 꼴로 mkt_kpipa/<날짜>에 씀(같으면 안 씀 · 바뀌면 옛 값을 history에) · 넘기지 않았으면 아무것도 안 함 */
   function hoKp(w, v, cmp) { if (!ctx.handed || !ctx.handed('kpipa') || !ctx.opOut) return; const sh = w.sh || {}; if (!sh.type || !sh.series || cmp.verdict === 'same') return; const pv = v && v[sh.type] && v[sh.type].series ? v[sh.type].series : null; const at = new Date().toISOString(); const id = String(w.id);
     if (ctx.opOut('kpipa', 'mkt_kpipa', id, { date: `${id.slice(0, 4)}-${id.slice(4, 6)}-${id.slice(6)}`, [sh.type]: { series: sh.series, at } }, { hist: pv ? { at, type: sh.type, old: pv } : null })) ctx.note(`🔀 넘긴 일 📚 KPIPA ${id} ${sh.type === 'onOff' ? '판매채널별' : '도서유형별'} — ${pv ? '바뀐 값(옛 값은 history)' : '새 날'}을 운영 칸에 맡김(웹앱이 씀)`, { k: 'read', m: '🔀 넘김' }); }
+  /* (11/11 col2rep3) 🔀 넘긴 국중 — 운영 extSave와 같은 결과 꼴 { at, chk, sig, none, d, by, q } · 지문은 운영 공용 파일 그대로 · 같음·바뀜·없음 판단과 옛 값 보관·색인은 웹앱이 운영 문서를 다시 읽고 함 */
+  function hoExt(t, w) { if (!handed(t.k)) return; const res = w.res || {}; if (!res.ok || res.skip) return; const x = X(); if (!x || !x.sig) return; let d = res.d == null ? null : JSON.parse(JSON.stringify(res.d)); const at = new Date().toISOString();
+    const obj = { at, chk: at, sig: x.sig({ none: !!res.none, d }, t.src), none: !!res.none, d, by: '번외 ' + ctx.pc(), q: (d && d.q) || null };
+    if (ctx.opOut(t.k, t.col, String(w.id), { obj, title: (w.a && w.a.title) || null, author: (w.a && w.a.author) || null })) ctx.note(`🔀 넘긴 일 ${t.name} ${w.id} — 운영 칸에 맡김(웹앱이 운영 문서와 견줘 같으면 확인 시각만 · 바뀌면 옛 값 보관 뒤)`, { k: 'read', m: '🔀 넘김' }); }
+  /* (11/11 col2rep3) 🔀 넘긴 시세 — 떼어 온 운영 nbMarketJob이 만든 문서 그대로 · 시세 지문(sig = 중간값|최저|개수)과 history 한 줄은 운영과 같은 꼴 */
+  function hoNb(w) { if (!handed('nbMarket')) return; const F = HOFULL.get(String(w.id)); if (!F || !F.main) return; HOFULL.delete(String(w.id)); const M = F.main; const mk = M.market || {}; const sig = `${mk.median}|${mk.low}|${mk.n}`;
+    const main = {}; for (const [k0, v0] of Object.entries(M)) { if (k0 === 'history' || k0 === 'sig' || /^(writer|uploadedAt|by)$/.test(k0)) continue; main[k0] = v0; }
+    const hist = { at: M.at || new Date().toISOString(), median: mk.median ?? null, low: mk.low ?? null, n: mk.n ?? null, our: (w.a && w.a.price) ?? null };
+    if (ctx.opOut('nbMarket', 'prd_market_nobook', String(w.id), { main, vdoc: F.vdoc || null, sig, hist })) ctx.note(`🔀 넘긴 일 🔍 새상품 없는 시세 — 다시 본 시세를 운영 칸에 맡김(후보가 바뀌면 판 보관 · 시세가 바뀌면 history)`, { k: 'read', m: '🔀 넘김' }); }
+  /* (11/11 col2rep3) 🔀 넘긴 환율 — 운영 extFx처럼 ext_fx/<고시일>이 없을 때만(웹앱이 다시 확인) · 수출입은행 출처만 */
+  function hoFx(w, v) { if (!handed('ext.fx') || v) return; const res = w.res || {}; if (!res.ok || !res.rates || res.src !== 'koreaexim') return; const id = String(res.date || w.id);
+    if (ctx.opOut('ext.fx', 'ext_fx', id, { date: id, rates: res.rates, src: res.src, warn: res.warn || null })) ctx.note(`🔀 넘긴 일 💱 환율 ${id} — 수출입은행 고시를 운영 칸에 맡김(없을 때만)`, { k: 'read', m: '🔀 넘김' }); }
   /* 운영 문서가 왔는지 보고 견줌 */
   function settle() { const P0 = P(); const keep = [];
     for (const w of S.wait) { const t = TK.byK[w.k]; if (!t) continue; const g = ctx.want(w.c, w.id);
@@ -151,7 +183,7 @@ function makeJobs(ctx) {
       else if (CMP.stab(pv.series) === CMP.stab(sh.series)) cmp = { verdict: 'same', reasons: [] }; /* 운영 kpSig와 같은 셈(칸 순서 상관없이 같은 값) */
       else { const ageH = (now() - Date.parse(pv.at || 0)) / 3600e3; cmp = { verdict: 'diff', reasons: [ageH >= 3 ? 'old' : 'diff'], rows: [{ f: sh.type, k: 'diff', prod: pv.series, shadow: sh.series }], ageH: Number.isFinite(ageH) ? Math.round(ageH * 10) / 10 : null }; } } /* 최근 7일은 공표 뒤 고쳐질 수 있어 운영도 3시간마다 다시 받음 → 3시간 넘은 운영 값이면 '오래됨' */
     else cmp = CMP.compareMap(v || null, w.sh || {}, t.map || {}, { move: t.move, prodAt: t.at && v ? v[t.at] || atOf(v) : atOf(v) });
-    if (t.k === 'kpipa') hoKp(w, v, cmp);
+    if (t.k === 'kpipa') hoKp(w, v, cmp); else if (t.k === 'nbMarket') hoNb(w); else if (t.src === 'fx') hoFx(w, v); else if (t.cls === 'ext' && HO_DUE[t.k]) hoExt(t, w);
     record(t, w.a, w.id, cmp.verdict, cmp.reasons || [], { ms: w.ms, rows: (cmp.rows || []).filter((x) => x.k !== 'same').slice(0, 8), how: cmp.how || null, ageH: cmp.ageH == null ? null : cmp.ageH, why: cmp.why || null }); }
 
   /* 기록 — col2_jobs 한 건 · col2_jday 하루 요약(일마다 같음 비율·다름 까닭·넘길 수 있음) · 기록창 한 줄 */

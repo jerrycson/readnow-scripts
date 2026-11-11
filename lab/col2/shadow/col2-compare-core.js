@@ -47,8 +47,16 @@
     let d = res.d == null ? null : JSON.parse(JSON.stringify(res.d)); const sg = X.sig({ none: !!res.none, d }, src); const same = X.sameSig ? X.sameSig(src, prev, sg) : prev.sig === sg ? 'sig' : '';
     if (same) return { verdict: 'same', reasons: [], how: same, sig: sg, prodSig: prev.sig || null };
     const grp = (X.SOURCES[src] || {}).grp; const age = (Date.now() - Date.parse(prev.chk || prev.at || 0)) / 3600e3; let r;
-    if (res.none && prev.d && !prev.none) r = 'none'; else if (grp !== 'basic' && !(age < (o.oldH || 6))) r = 'old'; else r = 'diff';
-    return { verdict: 'diff', reasons: [r], sig: sg, prodSig: prev.sig || null, ageH: Number.isFinite(age) ? Math.round(age * 10) / 10 : null }; }
+    /* (11/11 col2rep3) 칸마다 무엇이 다른지(rows) — 11/11 진단: 구글 북스 21건·카카오 10건이 '다름'인데 칸이 없어 까닭을 못 찾았음 · 기본 정보도 값·판매 상태·표지 주소는 시간이 지나면 바뀜 */
+    const rows = []; const A = prev.d && typeof prev.d === 'object' ? prev.d : {}, B = d && typeof d === 'object' ? d : {};
+    if (!res.none && !prev.none) for (const f of [...new Set([...Object.keys(A), ...Object.keys(B)])]) { if (EXT_SKIP.has(f)) continue; if (stab(A[f]) === stab(B[f])) continue; rows.push({ f, k: EXT_MOVE.has(f) ? 'move' : 'diff', prod: A[f] === undefined ? null : show(A[f]).slice(0, 160), shadow: B[f] === undefined ? null : show(B[f]).slice(0, 160) }); }
+    if (res.none && prev.d && !prev.none) r = 'none'; else if (grp !== 'basic' && !(age < (o.oldH || 6))) r = 'old';
+    else if (grp === 'basic' && rows.length && rows.every((x) => x.k === 'move') && !(age < (o.moveH || 6))) r = 'move'; /* 값·상태·표지만 다르고 운영이 6시간 넘게 전에 읽음 = 때가 다름(까닭 있음) */
+    else r = 'diff';
+    return { verdict: 'diff', reasons: [r], rows: rows.slice(0, 8), sig: sg, prodSig: prev.sig || null, ageH: Number.isFinite(age) ? Math.round(age * 10) / 10 : null }; }
+  /* 기본 정보 결과에서 시간이 지나면 바뀌는 칸(값·판매 상태·표지 주소·평점) — 이것만 다르면 '때가 다름' · 지문에 들지 않는 칸(주소 등)은 견주지 않음 */
+  const EXT_MOVE = new Set(['priceList', 'priceSales', 'listPrice', 'status', 'cover', 'rating', 'ratingN', 'reviewN', 'salesIndex', 'salesPoint', 'rank']);
+  const EXT_SKIP = new Set(['url', 'api', 'rendered', 'apiTried', 'trunc', 'hit', 'ago', 'queryEcho']);
   const api = { compareBook, pickPage, stab, empty, LABEL, show, compareMap, compareExt };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Col2Compare = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

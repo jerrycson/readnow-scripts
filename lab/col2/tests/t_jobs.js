@@ -88,7 +88,7 @@ function webapp(H, DB, okCols) { const got = []; let stop = false;
   DB['ext_fx/' + kday()] = { date: kday(), rates: { USD: 1 / FX.rates.USD, EUR: 1 / FX.rates.EUR, JPY: 1 / FX.rates.JPY, GBP: 1 / FX.rates.GBP }, src: 'frankfurter', at: new Date().toISOString() };
   { const r = await EXTX.fxRun({ keys: {}, http: async (o) => { const x = new URL(o.url); const q = await fetch(A.base + '/__ext/' + x.host + x.pathname + x.search); return { status: q.status, text: await q.text() }; } }); DB['ext_fx/' + kday()].rates = r.rates; DB['ext_fx/' + kday()].src = r.src; }
   A.reqs.length = 0; /* 위는 시험이 운영 값을 만들려고 한 요청 */
-  let H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base }, cfg: { pc: 'MJ-TEST', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, off: [...EXT_OFF, 'kpipa', 'nbMarket'], pass: { minN: 2, waitMin: 0.1 } } } }); const D = H.D;
+  let H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base }, cfg: { pc: 'MJ-TEST', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, fx: { after: '00:00', keyWaitMin: 0 }, off: [...EXT_OFF, 'kpipa', 'nbMarket'], pass: { minN: 2, waitMin: 0.1 } } } }); const D = H.D;
   const W = webapp(H, DB, ['prd_ids', 'prd_books', 'ext_ebook', 'ext_fx']);
   try {
     await H.api('POST', '/relay/answer', { pool });
@@ -121,7 +121,7 @@ function webapp(H, DB, okCols) { const got = []; let stop = false;
   for (const x of bp) DB2[`bench_items/12345_${x.id}`] = { sc: '12345', id: x.id, title: x.t, price: x.p, grade: x.g };
   DB2['app_settings/bench'] = { targets: [{ sc: '12345', on: true }, { sc: COL2.OWN_SC[0], on: true }] };
   A.reqs.length = 0;
-  H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base }, cfg: { pc: 'LOGGER-T', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, off: ['dynamic'], pass: { minN: 1, waitMin: 0.1 } } } }); const D2 = H.D;
+  H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base }, cfg: { pc: 'LOGGER-T', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, fx: { after: '00:00', keyWaitMin: 0 }, off: ['dynamic'], pass: { minN: 1, waitMin: 0.1 } } } }); const D2 = H.D;
   const W2 = webapp(H, DB2, ['prd_ids', 'prd_books', 'prd_book_metrics', 'sellers', 'seller_review_daily', 'bench_items', 'app_settings']);
   try {
     await H.api('POST', '/relay/answer', { pool: pool.slice(0, 1) });
@@ -136,7 +136,7 @@ function webapp(H, DB, okCols) { const got = []; let stop = false;
   } finally { W2.stop(); await H.stop(); killDir(D2); }
 
   console.log('③ 운영 값을 못 받으면');
-  H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base }, cfg: { pc: 'LOGGER-U', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, off: ['usedPage', 'dynamic'], pass: { minN: 1, waitMin: 0.05 } } } }); const D3 = H.D;
+  H = await L.startHelper({ aladin: A.base, env: { RN_COL2_EXT_BASE: A.base }, cfg: { pc: 'LOGGER-U', pcSrc: 'pc', on: true, headless: true, pace: { minGapMs: 200 }, watch: { tickSec: 1 }, jobs: { on: true, fx: { after: '00:00', keyWaitMin: 0 }, off: ['usedPage', 'dynamic'], pass: { minN: 1, waitMin: 0.05 } } } }); const D3 = H.D;
   const W3 = webapp(H, {}, ['prd_ids', 'prd_books']); /* 지금 웹앱처럼 prd_* 만 넘김 */
   try { await H.api('POST', '/relay/answer', { pool: pool.slice(0, 1) });
     const jd = await until(() => { const o = W3.last('col2_jday'); return o && o.v.tasks.metrics && o.v.tasks.metrics.noprod >= 1 ? o : null; }, 120);
