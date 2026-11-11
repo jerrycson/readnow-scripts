@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         리드나우 수집기
 // @namespace    readnow
-// @version      1.89.260
+// @version      1.89.261
 // @description  고객·주문·상품·판매자·매입(알라딘 구매·팔기)·구매자 분포를 Firebase(readnow-3a385)로 수집하는 통합 수집기 — 고객 수집기·상품 수집기를 합친 것
 // @match        https://www.aladin.co.kr/scm/*
 // @match        https://www.aladin.co.kr/usedstore/*
@@ -5682,11 +5682,16 @@ globalThis.__rnLoginRule = (function () { /* ⟦알라딘 로그인 규칙 — �
     try {
       let prog = await loadProgress('poolInfo');
       if (!prog || !prog.list) {
-        const linked = new Set(); (await C('pur_matches').get()).forEach((d) => { const m = d.data(); if (m.itemKey && m.kind !== 'none' && String(m.itemKey).startsWith('ao_')) linked.add(m.itemKey); });
-        const have = new Set(); const missCut = FORCE_ALL ? '9999' : new Date(Date.now() - 30 * 864e5).toISOString(); (await C('prd_ids').where(firebase.firestore.FieldPath.documentId(), '>=', 'itemId_').where(firebase.firestore.FieldPath.documentId(), '<', 'itemId`').get()).forEach((d) => { const v = d.data(); if (v.bookId || v.poolLine || (v.poolMissAt && v.poolMissAt > missCut)) have.add(d.id.slice(7)); });
-        const list = []; const seen = new Set();
+        /* (1.89.261 4시간 점검 · 🧠 근원) 대상 고르기를 '주문 책 줄 먼저 → 그 책만 확인'으로 — 예전엔 할 책이 0권이어도 매일 pur_matches 2.6만 건 전부 + prd_ids의 itemId_ 전부 + 주문 3천 건을 통째로 받아 로거가 35초 멈추고 힙이 150 → 650MB로 뛰었음(11/10·11/11 12:03). 고르는 기준(취소·반품 주문 뺌 · 연결된 줄 뺌 · 도서 정보 있음·풀 정보 받음·30일 안 못 찾음 뺌 · 같은 책 한 번)과 차례는 그대로 */
+        const missCut = FORCE_ALL ? '9999' : new Date(Date.now() - 30 * 864e5).toISOString();
+        const cand = []; const seen = new Set();
         (await C('pur_aladin_orders').get()).forEach((d) => { const o = d.data(); if (/취소|반품|환불/.test(`${o.note || ''} ${o.status || ''}`)) return;
-          (o.lines || []).forEach((x, i) => { if (!x.itemId || linked.has(`ao_${d.id}#${i}`) || have.has(String(x.itemId)) || seen.has(String(x.itemId))) return; seen.add(String(x.itemId)); list.push(`${x.itemId}|${String(x.title || '').slice(0, 60)}`); }); });
+          (o.lines || []).forEach((x, i) => { if (x.itemId) cand.push([`ao_${d.id}#${i}`, String(x.itemId), String(x.title || '').slice(0, 60)]); }); });
+        const linked = new Set(); if (cand.length) (await C('pur_matches').where('itemKey', '>=', 'ao_').where('itemKey', '<', 'ao`').get()).forEach((d) => { const m = d.data(); if (m.itemKey && m.kind !== 'none' && String(m.itemKey).startsWith('ao_')) linked.add(m.itemKey); });
+        const need = [...new Set(cand.filter((c) => !linked.has(c[0])).map((c) => c[1]))]; const have = new Set();
+        for (let k = 0; k < need.length; k += 300) { const qs = []; for (let j = k; j < Math.min(need.length, k + 300); j += 30) qs.push(C('prd_ids').where(firebase.firestore.FieldPath.documentId(), 'in', need.slice(j, j + 30).map((x) => 'itemId_' + x)).get()); (await Promise.all(qs)).forEach((ss) => ss.forEach((d) => { const v = d.data(); if (v.bookId || v.poolLine || (v.poolMissAt && v.poolMissAt > missCut)) have.add(d.id.slice(7)); })); }
+        const list = [];
+        cand.forEach(([key, id, title]) => { if (linked.has(key) || have.has(id) || seen.has(id)) return; seen.add(id); list.push(`${id}|${title}`); });
         prog = { list, i: 0, ok: 0, fail: 0, startedAt: nowIso() }; await saveProgress('poolInfo', prog);
         log(`알라딘 구매 풀(미연결) 도서 정보: ${list.length.toLocaleString()}권 (연결된 책·이미 정보가 있는 책은 뺌)`);
       }
