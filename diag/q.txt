@@ -1,2 +1,2 @@
-logs=1&pc=LOGGER&from=202611110810
-# 2091217678
+samp=pur_aladin_orders,pur_matches,prd_ids
+# 2016927504
